@@ -94,10 +94,10 @@ namespace gtsam {
   class GTSAM_EXPORT IndeterminantLinearSystemException : public ThreadsafeException<IndeterminantLinearSystemException> {
     Key j_;
   public:
-    IndeterminantLinearSystemException(Key j) throw() : j_(j) {}
-    virtual ~IndeterminantLinearSystemException() throw() {}
+    IndeterminantLinearSystemException(Key j) noexcept : j_(j) {}
+    ~IndeterminantLinearSystemException() noexcept override {}
     Key nearbyVariable() const { return j_; }
-    virtual const char* what() const throw();
+    const char* what() const noexcept override;
   };
 
   /* ************************************************************************* */
@@ -110,12 +110,9 @@ namespace gtsam {
 
     InvalidNoiseModel(DenseIndex factorDims, DenseIndex noiseModelDims) :
       factorDims(factorDims), noiseModelDims(noiseModelDims) {}
-    virtual ~InvalidNoiseModel() throw() {}
+    ~InvalidNoiseModel() noexcept override {}
 
-    virtual const char* what() const throw();
-
-  private:
-    mutable std::string description_;
+    const char* what() const noexcept override;
   };
 
   /* ************************************************************************* */
@@ -128,12 +125,9 @@ namespace gtsam {
 
     InvalidMatrixBlock(DenseIndex factorRows, DenseIndex blockRows) :
       factorRows(factorRows), blockRows(blockRows) {}
-    virtual ~InvalidMatrixBlock() throw() {}
+    ~InvalidMatrixBlock() noexcept override {}
 
-    virtual const char* what() const throw();
-
-  private:
-    mutable std::string description_;
+    const char* what() const noexcept override;
   };
 
   /* ************************************************************************* */

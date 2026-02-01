@@ -22,9 +22,6 @@
 #include <gtsam/linear/Preconditioner.h>
 #include <gtsam/linear/VectorValues.h>
 
-#include <boost/foreach.hpp>
-#include <boost/algorithm/string.hpp>
-
 #include <algorithm>
 #include <iostream>
 #include <stdexcept>
@@ -37,13 +34,20 @@ namespace gtsam {
 void PCGSolverParameters::print(ostream &os) const {
   Base::print(os);
   os << "PCGSolverParameters:" << endl;
-  preconditioner_->print(os);
+  preconditioner->print(os);
 }
 
 /*****************************************************************************/
 PCGSolver::PCGSolver(const PCGSolverParameters &p) {
   parameters_ = p;
-  preconditioner_ = createPreconditioner(p.preconditioner_);
+  preconditioner_ = createPreconditioner(p.preconditioner);
+}
+
+void PCGSolverParameters::print(const std::string &s) const {
+  std::cout << s << std::endl;
+  std::ostringstream os;
+  print(os);
+  std::cout << os.str() << std::endl;
 }
 
 /*****************************************************************************/
@@ -90,7 +94,7 @@ void GaussianFactorGraphSystem::multiply(const Vector &x, Vector& AtAx) const {
   VectorValues vvX = buildVectorValues(x, keyInfo_);
 
   // VectorValues form of A'Ax for multiplyHessianAdd
-  VectorValues vvAtAx;
+  VectorValues vvAtAx = keyInfo_.x0(); // crucial for performance
 
   // vvAtAx += 1.0 * A'Ax for each factor
   gfg_.multiplyHessianAdd(1.0, vvX, vvAtAx);
@@ -127,20 +131,31 @@ void GaussianFactorGraphSystem::rightPrecondition(const Vector &x,
 }
 
 /**********************************************************************************/
+void GaussianFactorGraphSystem::scal(const double alpha, Vector &x) const {
+  x *= alpha;
+}
+double GaussianFactorGraphSystem::dot(const Vector &x, const Vector &y) const {
+  return x.dot(y);
+}
+void GaussianFactorGraphSystem::axpy(const double alpha, const Vector &x,
+                                     Vector &y) const {
+  y += alpha * x;
+}
+/**********************************************************************************/
 VectorValues buildVectorValues(const Vector &v, const Ordering &ordering,
     const map<Key, size_t> & dimensions) {
   VectorValues result;
 
   DenseIndex offset = 0;
   for (size_t i = 0; i < ordering.size(); ++i) {
-    const Key &key = ordering[i];
+    const Key key = ordering[i];
     map<Key, size_t>::const_iterator it = dimensions.find(key);
     if (it == dimensions.end()) {
       throw invalid_argument(
           "buildVectorValues: inconsistent ordering and dimensions");
     }
     const size_t dim = it->second;
-    result.insert(key, v.segment(offset, dim));
+    result.emplace(key, v.segment(offset, dim));
     offset += dim;
   }
 
@@ -150,9 +165,8 @@ VectorValues buildVectorValues(const Vector &v, const Ordering &ordering,
 /**********************************************************************************/
 VectorValues buildVectorValues(const Vector &v, const KeyInfo &keyInfo) {
   VectorValues result;
-  BOOST_FOREACH ( const KeyInfo::value_type &item, keyInfo ) {
-    result.insert(item.first,
-        v.segment(item.second.colstart(), item.second.dim()));
+  for ( const KeyInfo::value_type &item: keyInfo ) {
+    result.emplace(item.first, v.segment(item.second.start, item.second.dim));
   }
   return result;
 }

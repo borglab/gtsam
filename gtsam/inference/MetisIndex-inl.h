@@ -17,18 +17,19 @@
 
 #pragma once
 
-#include <boost/foreach.hpp>
+#include <gtsam/base/timing.h>
+
 #include <map>
 #include <vector>
 
 namespace gtsam {
 
 /* ************************************************************************* */
-template<class FACTOR>
-void MetisIndex::augment(const FactorGraph<FACTOR>& factors) {
+template<class FactorGraphType>
+void MetisIndex::augment(const FactorGraphType& factors) {
   std::map<int32_t, std::set<int32_t> > iAdjMap; // Stores a set of keys that are adjacent to key x, with  adjMap.first
   std::map<int32_t, std::set<int32_t> >::iterator iAdjMapIt;
-  std::set<Key> keySet;
+  KeySet keySet;
 
   /* ********** Convert to CSR format ********** */
   // Assuming that vertex numbering starts from 0 (C style),
@@ -38,14 +39,14 @@ void MetisIndex::augment(const FactorGraph<FACTOR>& factors) {
   // and including adjncy[xadj[i + 1] - 1]).
   int32_t keyCounter = 0;
 
-  // First: Record a copy of each key inside the factorgraph and create a
-  // key to integer mapping. This is referenced during the adjaceny step
+  // First: Record a copy of each key inside the factor graph and create a
+  // key to integer mapping. This is referenced during the adjacency step
   for (size_t i = 0; i < factors.size(); i++) {
     if (factors[i]) {
-      BOOST_FOREACH(const Key& key, *factors[i]) {
+      for(const Key& key: *factors[i]) {
         keySet.insert(keySet.end(), key); // Keep a track of all unique keys
         if (intKeyBMap_.left.find(key) == intKeyBMap_.left.end()) {
-          intKeyBMap_.insert(bm_type::value_type(key, keyCounter));
+          intKeyBMap_.insert(key, keyCounter);
           keyCounter++;
         }
       }
@@ -55,8 +56,8 @@ void MetisIndex::augment(const FactorGraph<FACTOR>& factors) {
   // Create an adjacency mapping that stores the set of all adjacent keys for every key
   for (size_t i = 0; i < factors.size(); i++) {
     if (factors[i]) {
-      BOOST_FOREACH(const Key& k1, *factors[i])
-        BOOST_FOREACH(const Key& k2, *factors[i])
+      for(const Key& k1: *factors[i])
+        for(const Key& k2: *factors[i])
           if (k1 != k2) {
             // Store both in Key and int32_t format
             int i = intKeyBMap_.left.at(k1);

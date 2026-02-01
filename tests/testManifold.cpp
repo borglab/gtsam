@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -29,10 +29,6 @@
 #undef CHECK
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/list_of.hpp>
-using boost::assign::list_of;
-using boost::assign::map_list_of;
-
 using namespace std;
 using namespace gtsam;
 
@@ -41,27 +37,27 @@ typedef PinholeCamera<Cal3Bundler> Camera;
 
 //******************************************************************************
 TEST(Manifold, SomeManifoldsGTSAM) {
-  //BOOST_CONCEPT_ASSERT((IsManifold<int>)); // integer is not a manifold
-  BOOST_CONCEPT_ASSERT((IsManifold<Camera>));
-  BOOST_CONCEPT_ASSERT((IsManifold<Cal3_S2>));
-  BOOST_CONCEPT_ASSERT((IsManifold<Cal3Bundler>));
-  BOOST_CONCEPT_ASSERT((IsManifold<Camera>));
+  //GTSAM_CONCEPT_ASSERT(IsManifold<int>); // integer is not a manifold
+  GTSAM_CONCEPT_ASSERT(IsManifold<Camera>);
+  GTSAM_CONCEPT_ASSERT(IsManifold<Cal3_S2>);
+  GTSAM_CONCEPT_ASSERT(IsManifold<Cal3Bundler>);
+  GTSAM_CONCEPT_ASSERT(IsManifold<Camera>);
 }
 
 //******************************************************************************
 TEST(Manifold, SomeLieGroupsGTSAM) {
-  BOOST_CONCEPT_ASSERT((IsLieGroup<Rot2>));
-  BOOST_CONCEPT_ASSERT((IsLieGroup<Pose2>));
-  BOOST_CONCEPT_ASSERT((IsLieGroup<Rot3>));
-  BOOST_CONCEPT_ASSERT((IsLieGroup<Pose3>));
+  GTSAM_CONCEPT_ASSERT(IsLieGroup<Rot2>);
+  GTSAM_CONCEPT_ASSERT(IsLieGroup<Pose2>);
+  GTSAM_CONCEPT_ASSERT(IsLieGroup<Rot3>);
+  GTSAM_CONCEPT_ASSERT(IsLieGroup<Pose3>);
 }
 
 //******************************************************************************
 TEST(Manifold, SomeVectorSpacesGTSAM) {
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<double>));
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<float>));
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<Point2>));
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<Matrix24>));
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<double>);
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<float>);
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Point2>);
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Matrix24>);
 }
 
 //******************************************************************************
@@ -78,7 +74,7 @@ TEST(Manifold, Identity) {
   EXPECT_DOUBLES_EQUAL(0.0, traits<double>::Identity(), 0.0);
   EXPECT(assert_equal(Matrix(Matrix24::Zero()), Matrix(traits<Matrix24>::Identity())));
   EXPECT(assert_equal(Pose3(), traits<Pose3>::Identity()));
-  EXPECT(assert_equal(Point2(), traits<Point2>::Identity()));
+  EXPECT(assert_equal(Point2(0,0), traits<Point2>::Identity()));
 }
 
 //******************************************************************************
@@ -131,7 +127,7 @@ TEST(Manifold, DefaultChart) {
   EXPECT_DOUBLES_EQUAL(traits<double>::Retract(0, v1), 1, 1e-9);
 
   // Dynamic does not work yet !
-  Vector z = zero(2), v(2);
+  Vector z = Z_2x1, v(2);
   v << 1, 0;
   //DefaultChart<Vector> chart4;
 //  EXPECT(assert_equal(traits<Vector>::Local(z, v), v));
@@ -139,40 +135,14 @@ TEST(Manifold, DefaultChart) {
 
   Vector v3(3);
   v3 << 1, 1, 1;
-  Rot3 I = Rot3::identity();
+  Rot3 I = Rot3::Identity();
   Rot3 R = I.retract(v3);
   //DefaultChart<Rot3> chart5;
   EXPECT(assert_equal(v3, traits<Rot3>::Local(I, R)));
   EXPECT(assert_equal(traits<Rot3>::Retract(I, v3), R));
   // Check zero vector
   //DefaultChart<Rot3> chart6;
-  EXPECT(assert_equal(zero(3), traits<Rot3>::Local(R, R)));
-}
-
-//******************************************************************************
-typedef ProductManifold<Point2,Point2> MyPoint2Pair;
-
-// Define any direct product group to be a model of the multiplicative Group concept
-namespace gtsam {
-template<> struct traits<MyPoint2Pair> : internal::ManifoldTraits<MyPoint2Pair> {
-  static void Print(const MyPoint2Pair& m, const string& s = "") {
-    cout << s << "(" << m.first << "," << m.second << ")" << endl;
-  }
-  static bool Equals(const MyPoint2Pair& m1, const MyPoint2Pair& m2, double tol = 1e-8) {
-    return m1 == m2;
-  }
-};
-}
-
-TEST(Manifold, ProductManifold) {
-  BOOST_CONCEPT_ASSERT((IsManifold<MyPoint2Pair>));
-  MyPoint2Pair pair1;
-  Vector4 d;
-  d << 1,2,3,4;
-  MyPoint2Pair expected(Point2(1,2),Point2(3,4));
-  MyPoint2Pair pair2 = pair1.retract(d);
-  EXPECT(assert_equal(expected,pair2,1e-9));
-  EXPECT(assert_equal(d, pair1.localCoordinates(pair2),1e-9));
+  EXPECT(assert_equal((Vector) Z_3x1, traits<Rot3>::Local(R, R)));
 }
 
 //******************************************************************************

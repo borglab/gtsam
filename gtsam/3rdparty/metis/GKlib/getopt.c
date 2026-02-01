@@ -341,10 +341,10 @@ static int gk_getopt_internal(int argc, char **argv, char *optstring,
 
   if (gk_optind == 0 || !gk_getopt_initialized) {
     if (gk_optind == 0)
-      gk_optind = 1;	/* Don't scan ARGV[0], the program name.  */
-      optstring = gk_getopt_initialize (argc, argv, optstring);
-      gk_getopt_initialized = 1;
-    }
+      gk_optind = 1; /* Don't scan ARGV[0], the program name.  */
+    optstring = gk_getopt_initialize(argc, argv, optstring);
+    gk_getopt_initialized = 1;
+  }
 
   /* Test whether ARGV[gk_optind] points to a non-option argument.
      Either it does not have option syntax, or there is an environment flag
@@ -670,37 +670,38 @@ static int gk_getopt_internal(int argc, char **argv, char *optstring,
 
     if (temp[1] == ':') {
       if (temp[2] == ':') {
-	/* This is an option that accepts an argument optionally.  */
-	if (*nextchar != '\0') {
-  	  gk_optarg = nextchar;
-	  gk_optind++;
-	}
-	else
-	  gk_optarg = NULL;
-	nextchar = NULL;
-      }
-      else {
-	/* This is an option that requires an argument.  */
-	if (*nextchar != '\0') {
-	  gk_optarg = nextchar;
-	  /* If we end this ARGV-element by taking the rest as an arg, we must advance to the next element now.  */
-	  gk_optind++;
-	}
-	else if (gk_optind == argc) {
-	  if (print_errors) {
-	    /* 1003.2 specifies the format of this message.  */
-	    fprintf(stderr, "%s: option requires an argument -- %c\n", argv[0], c);
-	  }
-	  gk_optopt = c;
-	  if (optstring[0] == ':')
-	    c = ':';
-	  else
-	    c = '?';
-	}
-	else
-	  /* We already incremented `gk_optind' once; increment it again when taking next ARGV-elt as argument.  */
-	  gk_optarg = argv[gk_optind++];
-	  nextchar = NULL;
+        /* This is an option that accepts an argument optionally.  */
+        if (*nextchar != '\0') {
+          gk_optarg = nextchar;
+          gk_optind++;
+        } else {
+          gk_optarg = NULL;
+        }
+        nextchar = NULL;
+      } else {
+        /* This is an option that requires an argument.  */
+        if (*nextchar != '\0') {
+          gk_optarg = nextchar;
+          /* If we end this ARGV-element by taking the rest as an arg, we must
+           * advance to the next element now.  */
+          gk_optind++;
+        } else if (gk_optind == argc) {
+          if (print_errors) {
+            /* 1003.2 specifies the format of this message.  */
+            fprintf(stderr, "%s: option requires an argument -- %c\n", argv[0],
+                    c);
+          }
+          gk_optopt = c;
+          if (optstring[0] == ':')
+            c = ':';
+          else
+            c = '?';
+        } else {
+          /* We already incremented `gk_optind' once; increment it again when
+           * taking next ARGV-elt as argument.  */
+          gk_optarg = argv[gk_optind++];
+        }
+        nextchar = NULL;
       }
     }
     return c;

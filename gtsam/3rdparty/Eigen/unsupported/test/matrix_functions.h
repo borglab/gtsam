@@ -10,27 +10,47 @@
 #include "main.h"
 #include <unsupported/Eigen/MatrixFunctions>
 
+// For complex matrices, any matrix is fine.
+template<typename MatrixType, int IsComplex = NumTraits<typename internal::traits<MatrixType>::Scalar>::IsComplex>
+struct processTriangularMatrix
+{
+  static void run(MatrixType&, MatrixType&, const MatrixType&)
+  { }
+};
+
+// For real matrices, make sure none of the eigenvalues are negative.
+template<typename MatrixType>
+struct processTriangularMatrix<MatrixType,0>
+{
+  static void run(MatrixType& m, MatrixType& T, const MatrixType& U)
+  {
+    const Index size = m.cols();
+
+    for (Index i=0; i < size; ++i) {
+      if (i == size - 1 || T.coeff(i+1,i) == 0)
+        T.coeffRef(i,i) = std::abs(T.coeff(i,i));
+      else
+        ++i;
+    }
+    m = U * T * U.transpose();
+  }
+};
+
 template <typename MatrixType, int IsComplex = NumTraits<typename internal::traits<MatrixType>::Scalar>::IsComplex>
 struct generateTestMatrix;
 
-// for real matrices, make sure none of the eigenvalues are negative
 template <typename MatrixType>
 struct generateTestMatrix<MatrixType,0>
 {
   static void run(MatrixType& result, typename MatrixType::Index size)
   {
-    MatrixType mat = MatrixType::Random(size, size);
-    EigenSolver<MatrixType> es(mat);
-    typename EigenSolver<MatrixType>::EigenvalueType eivals = es.eigenvalues();
-    for (typename MatrixType::Index i = 0; i < size; ++i) {
-      if (eivals(i).imag() == 0 && eivals(i).real() < 0)
-	eivals(i) = -eivals(i);
-    }
-    result = (es.eigenvectors() * eivals.asDiagonal() * es.eigenvectors().inverse()).real();
+    result = MatrixType::Random(size, size);
+    RealSchur<MatrixType> schur(result);
+    MatrixType T = schur.matrixT();
+    processTriangularMatrix<MatrixType>::run(result, T, schur.matrixU());
   }
 };
 
-// for complex matrices, any matrix is fine
 template <typename MatrixType>
 struct generateTestMatrix<MatrixType,1>
 {
@@ -41,7 +61,7 @@ struct generateTestMatrix<MatrixType,1>
 };
 
 template <typename Derived, typename OtherDerived>
-double relerr(const MatrixBase<Derived>& A, const MatrixBase<OtherDerived>& B)
+typename Derived::RealScalar relerr(const MatrixBase<Derived>& A, const MatrixBase<OtherDerived>& B)
 {
   return std::sqrt((A - B).cwiseAbs2().sum() / (std::min)(A.cwiseAbs2().sum(), B.cwiseAbs2().sum()));
 }

@@ -9,11 +9,10 @@
 
 #include "main.h"
 #include <Eigen/QR>
+#include "solverbase.h"
 
 template<typename MatrixType> void qr(const MatrixType& m)
 {
-  typedef typename MatrixType::Index Index;
-
   Index rows = m.rows();
   Index cols = m.cols();
 
@@ -43,19 +42,19 @@ template<typename MatrixType, int Cols2> void qr_fixedsize()
 
   VERIFY_IS_APPROX(m1, qr.householderQ() * r);
 
-  Matrix<Scalar,Cols,Cols2> m2 = Matrix<Scalar,Cols,Cols2>::Random(Cols,Cols2);
-  Matrix<Scalar,Rows,Cols2> m3 = m1*m2;
-  m2 = Matrix<Scalar,Cols,Cols2>::Random(Cols,Cols2);
-  m2 = qr.solve(m3);
-  VERIFY_IS_APPROX(m3, m1*m2);
+  check_solverbase<Matrix<Scalar,Cols,Cols2>, Matrix<Scalar,Rows,Cols2> >(m1, qr, Rows, Cols, Cols2);
 }
 
 template<typename MatrixType> void qr_invertible()
 {
   using std::log;
   using std::abs;
+  using std::pow;
+  using std::max;
   typedef typename NumTraits<typename MatrixType::Scalar>::Real RealScalar;
   typedef typename MatrixType::Scalar Scalar;
+
+  STATIC_CHECK(( internal::is_same<typename HouseholderQR<MatrixType>::StorageIndex,int>::value ));
 
   int size = internal::random<int>(10,50);
 
@@ -65,14 +64,13 @@ template<typename MatrixType> void qr_invertible()
   if (internal::is_same<RealScalar,float>::value)
   {
     // let's build a matrix more stable to inverse
-    MatrixType a = MatrixType::Random(size,size*2);
+    MatrixType a = MatrixType::Random(size,size*4);
     m1 += a * a.adjoint();
   }
 
   HouseholderQR<MatrixType> qr(m1);
-  m3 = MatrixType::Random(size,size);
-  m2 = qr.solve(m3);
-  VERIFY_IS_APPROX(m3, m1*m2);
+
+  check_solverbase<MatrixType, MatrixType>(m1, qr, size, size, size);
 
   // now construct a matrix with prescribed determinant
   m1.setZero();
@@ -81,8 +79,11 @@ template<typename MatrixType> void qr_invertible()
   m3 = qr.householderQ(); // get a unitary
   m1 = m3 * m1 * m3;
   qr.compute(m1);
-  VERIFY_IS_APPROX(absdet, qr.absDeterminant());
   VERIFY_IS_APPROX(log(absdet), qr.logAbsDeterminant());
+  // This test is tricky if the determinant becomes too small.
+  // Since we generate random numbers with magnitude range [0,1], the average determinant is 0.5^size
+  VERIFY_IS_MUCH_SMALLER_THAN( abs(absdet-qr.absDeterminant()), numext::maxi(RealScalar(pow(0.5,size)),numext::maxi<RealScalar>(abs(absdet),abs(qr.absDeterminant()))) );
+  
 }
 
 template<typename MatrixType> void qr_verify_assert()
@@ -92,12 +93,14 @@ template<typename MatrixType> void qr_verify_assert()
   HouseholderQR<MatrixType> qr;
   VERIFY_RAISES_ASSERT(qr.matrixQR())
   VERIFY_RAISES_ASSERT(qr.solve(tmp))
+  VERIFY_RAISES_ASSERT(qr.transpose().solve(tmp))
+  VERIFY_RAISES_ASSERT(qr.adjoint().solve(tmp))
   VERIFY_RAISES_ASSERT(qr.householderQ())
   VERIFY_RAISES_ASSERT(qr.absDeterminant())
   VERIFY_RAISES_ASSERT(qr.logAbsDeterminant())
 }
 
-void test_qr()
+EIGEN_DECLARE_TEST(qr)
 {
   for(int i = 0; i < g_repeat; i++) {
    CALL_SUBTEST_1( qr(MatrixXf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE),internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );

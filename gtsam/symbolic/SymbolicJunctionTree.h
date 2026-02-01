@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -16,6 +16,8 @@
  * @author Richard Roberts
  */
 
+#pragma once
+
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
 #include <gtsam/symbolic/SymbolicBayesTree.h>
 #include <gtsam/inference/JunctionTree.h>
@@ -26,7 +28,7 @@ namespace gtsam {
   class SymbolicEliminationTree;
 
   /**
-   * A ClusterTree, i.e., a set of variable clusters with factors, arranged in a tree, with
+   * A EliminatableClusterTree, i.e., a set of variable clusters with factors, arranged in a tree, with
    * the additional property that it represents the clique tree associated with a Bayes net.
    *
    * In GTSAM a junction tree is an intermediate data structure in multifrontal
@@ -42,7 +44,7 @@ namespace gtsam {
    * The tree structure and elimination method are exactly analagous to the EliminationTree,
    * except that in the JunctionTree, at each node multiple variables are eliminated at a time.
    *
-   * \addtogroup Multifrontal
+   * \ingroup Multifrontal
    * \nosubgrouping
    */
   class GTSAM_EXPORT SymbolicJunctionTree :
@@ -50,8 +52,8 @@ namespace gtsam {
   public:
     typedef JunctionTree<SymbolicBayesTree, SymbolicFactorGraph> Base; ///< Base class
     typedef SymbolicJunctionTree This; ///< This class
-    typedef boost::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
-    
+    typedef std::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
+
     /**
     * Build the elimination tree of a factor graph using pre-computed column structure.
     * @param factorGraph The factor graph for which to build the elimination tree
@@ -63,4 +65,6 @@ namespace gtsam {
     SymbolicJunctionTree(const SymbolicEliminationTree& eliminationTree);
   };
 
+  /// typedef for wrapper:
+  using SymbolicCluster = SymbolicJunctionTree::Cluster;
 }

@@ -20,7 +20,6 @@
 
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/VectorValues.h>
-#include <boost/foreach.hpp>
 
 namespace gtsam {
 
@@ -71,8 +70,8 @@ public:
   using JacobianFactor::multiplyHessianAdd;
 
   /** y += alpha * A'*A*x */
-  virtual void multiplyHessianAdd(double alpha, const VectorValues& x,
-      VectorValues& y) const {
+  void multiplyHessianAdd(double alpha, const VectorValues& x,
+      VectorValues& y) const override {
     JacobianFactor::multiplyHessianAdd(alpha, x, y);
   }
 
@@ -83,7 +82,7 @@ public:
   void multiplyHessianAdd(double alpha, const double* x, double* y) const {
     if (empty())
       return;
-    Vector Ax = zero(Ab_.rows());
+    Vector Ax = Vector::Zero(Ab_.rows());
 
     // Just iterate over all A matrices and multiply in correct config part
     for (size_t pos = 0; pos < size(); ++pos)
@@ -103,13 +102,11 @@ public:
       DMap(y + D * keys_[pos]) += Ab_(pos).transpose() * Ax;
   }
 
-  /// Expose base class hessianDiagonal
-  virtual VectorValues hessianDiagonal() const {
-    return JacobianFactor::hessianDiagonal();
-  }
+  /// Using the base method
+  using GaussianFactor::hessianDiagonal;
 
   /// Raw memory access version of hessianDiagonal
-  void hessianDiagonal(double* d) const {
+  void hessianDiagonal(double* d) const override {
     // Loop over all variables in the factor
     for (DenseIndex j = 0; j < (DenseIndex) size(); ++j) {
       // Get the diagonal block, and insert its diagonal
@@ -128,12 +125,12 @@ public:
   }
 
   /// Expose base class gradientAtZero
-  virtual VectorValues gradientAtZero() const {
+  VectorValues gradientAtZero() const override {
     return JacobianFactor::gradientAtZero();
   }
 
   /// Raw memory access version of gradientAtZero
-  void gradientAtZero(double* d) const {
+  void gradientAtZero(double* d) const override {
 
     // Get vector b not weighted
     Vector b = getb();
@@ -173,7 +170,7 @@ public:
    * RAW memory access! Assumes keys start at 0 and go to M-1, and x is laid out that way
    */
   Vector operator*(const double* x) const {
-    Vector Ax = zero(Ab_.rows());
+    Vector Ax = Vector::Zero(Ab_.rows());
     if (empty())
       return Ax;
 

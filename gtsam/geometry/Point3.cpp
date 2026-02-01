@@ -16,72 +16,16 @@
 
 #include <gtsam/geometry/Point3.h>
 #include <cmath>
+#include <iostream>
+#include <vector>
 
 using namespace std;
 
 namespace gtsam {
 
-#ifndef GTSAM_USE_VECTOR3_POINTS
-bool Point3::equals(const Point3 &q, double tol) const {
-  return (fabs(x() - q.x()) < tol && fabs(y() - q.y()) < tol &&
-          fabs(z() - q.z()) < tol);
-}
-
-void Point3::print(const string& s) const {
-  cout << s << *this << endl;
-}
-
 /* ************************************************************************* */
-double Point3::distance(const Point3 &q, OptionalJacobian<1, 3> H1,
-                        OptionalJacobian<1, 3> H2) const {
-  return gtsam::distance(*this,q,H1,H2);
-}
-
-double Point3::norm(OptionalJacobian<1,3> H) const {
-  return gtsam::norm(*this, H);
-}
-
-Point3 Point3::normalized(OptionalJacobian<3,3> H) const {
-  return gtsam::normalize(*this, H);
-}
-
-Point3 Point3::cross(const Point3 &q, OptionalJacobian<3, 3> H1,
-                     OptionalJacobian<3, 3> H2) const {
-  return gtsam::cross(*this, q, H1, H2);
-}
-
-double Point3::dot(const Point3 &q, OptionalJacobian<1, 3> H1,
-                   OptionalJacobian<1, 3> H2) const {
-  return gtsam::dot(*this, q, H1, H2);
-}
-
-/* ************************************************************************* */
-ostream &operator<<(ostream &os, const Point3& p) {
-  os << '[' << p.x() << ", " << p.y() << ", " << p.z() << "]\';";
-  return os;
-}
-
-/* ************************************************************************* */
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-Point3 Point3::add(const Point3 &q, OptionalJacobian<3,3> H1,
-    OptionalJacobian<3,3> H2) const {
-  if (H1) *H1 = I_3x3;
-  if (H2) *H2 = I_3x3;
-  return *this + q;
-}
-
-Point3 Point3::sub(const Point3 &q, OptionalJacobian<3,3> H1,
-    OptionalJacobian<3,3> H2) const {
-  if (H1) *H1 = I_3x3;
-  if (H2) *H2 = -I_3x3;
-  return *this - q;
-}
-#endif
-
-#endif
-/* ************************************************************************* */
-double distance(const Point3 &p1, const Point3 &q, OptionalJacobian<1, 3> H1,
-                OptionalJacobian<1, 3> H2) {
+double distance3(const Point3 &p1, const Point3 &q, OptionalJacobian<1, 3> H1,
+                 OptionalJacobian<1, 3> H2) {
   double d = (q - p1).norm();
   if (H1) {
     *H1 << p1.x() - q.x(), p1.y() - q.y(), p1.z() - q.z();
@@ -94,10 +38,10 @@ double distance(const Point3 &p1, const Point3 &q, OptionalJacobian<1, 3> H1,
   return d;
 }
 
-double norm(const Point3 &p, OptionalJacobian<1, 3> H) {
+double norm3(const Point3 &p, OptionalJacobian<1, 3> H) {
   double r = sqrt(p.x() * p.x() + p.y() * p.y() + p.z() * p.z());
   if (H) {
-    if (fabs(r) > 1e-10)
+    if (std::abs(r) > 1e-10)
       *H << p.x() / r, p.y() / r, p.z() / r;
     else
       *H << 1, 1, 1;  // really infinity, why 1 ?
@@ -106,7 +50,7 @@ double norm(const Point3 &p, OptionalJacobian<1, 3> H) {
 }
 
 Point3 normalize(const Point3 &p, OptionalJacobian<3, 3> H) {
-  Point3 normalized = p / norm(p);
+  Point3 normalized = p / p.norm();
   if (H) {
     // 3*3 Derivative
     double x2 = p.x() * p.x(), y2 = p.y() * p.y(), z2 = p.z() * p.z();
@@ -125,11 +69,33 @@ Point3 cross(const Point3 &p, const Point3 &q, OptionalJacobian<3, 3> H1,
                 p.x() * q.y() - p.y() * q.x());
 }
 
+Point3 doubleCross(const Point3 &p, const Point3 &q,  //
+                   OptionalJacobian<3, 3> H1, OptionalJacobian<3, 3> H2) {
+  if (H1) *H1 = q.dot(p) * I_3x3 + p * q.transpose() - 2 * q * p.transpose();
+  if (H2) {
+    const Matrix3 W = skewSymmetric(p);
+    *H2 = W * W;
+  }
+  return gtsam::cross(p, gtsam::cross(p, q));
+}
+
 double dot(const Point3 &p, const Point3 &q, OptionalJacobian<1, 3> H1,
            OptionalJacobian<1, 3> H2) {
   if (H1) *H1 << q.x(), q.y(), q.z();
   if (H2) *H2 << p.x(), p.y(), p.z();
   return p.x() * q.x() + p.y() * q.y() + p.z() * q.z();
+}
+
+Point3Pair means(const std::vector<Point3Pair> &abPointPairs) {
+  const size_t n = abPointPairs.size();
+  if (n == 0) throw std::invalid_argument("Point3::mean input Point3Pair vector is empty");
+  Point3 aSum(0, 0, 0), bSum(0, 0, 0);
+  for (const Point3Pair &abPair : abPointPairs) {
+    aSum += abPair.first;
+    bSum += abPair.second;
+  }
+  const double f = 1.0 / n;
+  return {aSum * f, bSum * f};
 }
 
 /* ************************************************************************* */

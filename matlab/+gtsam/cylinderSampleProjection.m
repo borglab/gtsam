@@ -13,7 +13,7 @@ function [visiblePoints] = cylinderSampleProjection(K, pose, imageSize, cylinder
 
 import gtsam.*
 
-camera = SimpleCamera(pose, K);
+camera = PinholeCameraCal3_S2(pose, K);
 
 %% memory allocation
 cylinderNum = length(cylinders);
@@ -32,7 +32,7 @@ for i = 1:cylinderNum
                 
         % Cheirality Exception
         sampledPoint3 = cylinders{i}.Points{j};
-        sampledPoint3local = pose.transform_to(sampledPoint3);        
+        sampledPoint3local = pose.transformTo(sampledPoint3);        
         if sampledPoint3local.z <= 0
             continue; 
         end
@@ -50,9 +50,9 @@ for i = 1:cylinderNum
         visible = true;
         for k = 1:cylinderNum
 
-            rayCameraToPoint = pose.translation().between(sampledPoint3).vector();
-            rayCameraToCylinder = pose.translation().between(cylinders{k}.centroid).vector();
-            rayCylinderToPoint = cylinders{k}.centroid.between(sampledPoint3).vector();
+            rayCameraToPoint = pose.translation().between(sampledPoint3);
+            rayCameraToCylinder = pose.translation().between(cylinders{k}.centroid);
+            rayCylinderToPoint = cylinders{k}.centroid.between(sampledPoint3);
 
             % Condition 1: all points in front of the cylinders'
             % surfaces are visible

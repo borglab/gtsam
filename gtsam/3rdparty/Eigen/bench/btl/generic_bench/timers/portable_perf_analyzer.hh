@@ -78,7 +78,7 @@ public:
     // time measurement
     action.calculate();
     _chronos.start();
-    for (int ii=0;ii<_nb_calc;ii++)
+    for (unsigned int ii=0;ii<_nb_calc;ii++)
     {
       action.calculate();
     }

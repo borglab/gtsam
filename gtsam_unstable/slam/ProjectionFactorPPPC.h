@@ -18,131 +18,125 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Cal3_S2.h>
-#include <boost/optional.hpp>
+#include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
+#include <gtsam_unstable/dllexport.h>
+
 
 namespace gtsam {
 
   /**
    * Non-linear factor for a constraint derived from a 2D measurement. This factor
    * estimates the body pose, body-camera transform, 3D landmark, and calibration.
-   * @addtogroup SLAM
+   * @ingroup slam
    */
-  template<class POSE, class LANDMARK, class CALIBRATION = Cal3_S2>
-  class ProjectionFactorPPPC: public NoiseModelFactor4<POSE, POSE, LANDMARK, CALIBRATION> {
-  protected:
+template <class POSE, class LANDMARK, class CALIBRATION = Cal3_S2>
+class ProjectionFactorPPPC
+    : public NoiseModelFactorN<POSE, POSE, LANDMARK, CALIBRATION> {
+ protected:
+  Point2 measured_;  ///< 2D measurement
 
-    Point2 measured_;                    ///< 2D measurement
+  // verbosity handling for Cheirality Exceptions
+  bool throwCheirality_;  ///< If true, rethrows Cheirality exceptions (default: false)
+  bool verboseCheirality_;  ///< If true, prints text for Cheirality exceptions (default: false)
 
-    // verbosity handling for Cheirality Exceptions
-    bool throwCheirality_; ///< If true, rethrows Cheirality exceptions (default: false)
-    bool verboseCheirality_; ///< If true, prints text for Cheirality exceptions (default: false)
+ public:
+  /// shorthand for base class type
+  typedef NoiseModelFactor4<POSE, POSE, LANDMARK, CALIBRATION> Base;
 
-  public:
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
 
-    /// shorthand for base class type
-    typedef NoiseModelFactor4<POSE, POSE, LANDMARK, CALIBRATION> Base;
+  /// shorthand for this class
+  typedef ProjectionFactorPPPC<POSE, LANDMARK, CALIBRATION> This;
 
-    /// shorthand for this class
-    typedef ProjectionFactorPPPC<POSE, LANDMARK, CALIBRATION> This;
+  /// shorthand for a smart pointer to a factor
+  typedef std::shared_ptr<This> shared_ptr;
 
-    /// shorthand for a smart pointer to a factor
-    typedef boost::shared_ptr<This> shared_ptr;
+  /// Default constructor
+  ProjectionFactorPPPC() :
+      measured_(0.0, 0.0), throwCheirality_(false), verboseCheirality_(false) {
+  }
 
-    /// Default constructor
-    ProjectionFactorPPPC() : throwCheirality_(false), verboseCheirality_(false) {}
-
-    /**
-     * Constructor
-     * TODO: Mark argument order standard (keys, measurement, parameters)
-     * @param measured is the 2 dimensional location of point in image (the measurement)
-     * @param model is the standard deviation
-     * @param poseKey is the index of the camera
-     * @param pointKey is the index of the landmark
-     * @param K shared pointer to the constant calibration
-     */
-    ProjectionFactorPPPC(const Point2& measured, const SharedNoiseModel& model,
-        Key poseKey, Key transformKey,  Key pointKey, Key calibKey) :
-          Base(model, poseKey, transformKey, pointKey, calibKey), measured_(measured),
-          throwCheirality_(false), verboseCheirality_(false) {}
 
     /**
      * Constructor with exception-handling flags
      * TODO: Mark argument order standard (keys, measurement, parameters)
-     * @param measured is the 2 dimensional location of point in image (the measurement)
+     * @param measured is the 2 dimensional location of point in image (the
+     * measurement)
      * @param model is the standard deviation
      * @param poseKey is the index of the camera
+     * @param transformKey is the index of the extrinsic calibration
      * @param pointKey is the index of the landmark
-     * @param K shared pointer to the constant calibration
-     * @param throwCheirality determines whether Cheirality exceptions are rethrown
-     * @param verboseCheirality determines whether exceptions are printed for Cheirality
+     * @param calibKey is the index of the intrinsic calibration
+     * @param throwCheirality determines whether Cheirality exceptions are
+     * rethrown
+     * @param verboseCheirality determines whether exceptions are printed for
+     * Cheirality
      */
     ProjectionFactorPPPC(const Point2& measured, const SharedNoiseModel& model,
         Key poseKey, Key transformKey, Key pointKey, Key calibKey,
-        bool throwCheirality, bool verboseCheirality) :
+        bool throwCheirality = false, bool verboseCheirality = false) :
           Base(model, poseKey, transformKey, pointKey, calibKey), measured_(measured),
           throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {}
 
     /** Virtual destructor */
-    virtual ~ProjectionFactorPPPC() {}
+    ~ProjectionFactorPPPC() override {}
 
     /// @return a deep copy of this factor
-    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
-          gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
+    NonlinearFactor::shared_ptr clone() const override {
+      return std::static_pointer_cast<NonlinearFactor>(
+          NonlinearFactor::shared_ptr(new This(*this))); }
 
     /**
      * print
      * @param s optional string naming the factor
      * @param keyFormatter optional formatter useful for printing Symbols
      */
-    void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+    void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
       std::cout << s << "ProjectionFactorPPPC, z = ";
-      measured_.print();
+      traits<Point2>::Print(measured_);
       Base::print("", keyFormatter);
     }
 
     /// equals
-    virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
+    bool equals(const NonlinearFactor& p, double tol = 1e-9) const override {
       const This *e = dynamic_cast<const This*>(&p);
       return e
           && Base::equals(p, tol)
-          && this->measured_.equals(e->measured_, tol);
+          && traits<Point2>::Equals(this->measured_, e->measured_, tol);
     }
 
     /// Evaluate error h(x)-z and optionally derivatives
     Vector evaluateError(const Pose3& pose, const Pose3& transform, const Point3& point, const CALIBRATION& K,
-        boost::optional<Matrix&> H1 = boost::none,
-        boost::optional<Matrix&> H2 = boost::none,
-        boost::optional<Matrix&> H3 = boost::none,
-        boost::optional<Matrix&> H4 = boost::none) const {
+        OptionalMatrixType H1, OptionalMatrixType H2, OptionalMatrixType H3,
+        OptionalMatrixType H4) const override {
       try {
           if(H1 || H2 || H3 || H4) {
-            gtsam::Matrix H0, H02;
-            PinholeCamera<CALIBRATION> camera(pose.compose(transform, H0, H02), K);
-            Point2 reprojectionError(camera.project(point, H1, H3, H4) - measured_);
+            Matrix H0, H02;
+            const PinholeCamera<CALIBRATION> camera(pose.compose(transform, H0, H02), K);
+            const Point2 reprojectionError(camera.project(point, H1, H3, H4) - measured_);
             *H2 = *H1 * H02;
             *H1 = *H1 * H0;
-            return reprojectionError.vector();
+            return reprojectionError;
           } else {
             PinholeCamera<CALIBRATION> camera(pose.compose(transform), K);
-            Point2 reprojectionError(camera.project(point, H1, H3, H4) - measured_);
-            return reprojectionError.vector();
+            return camera.project(point, H1, H3, H4) - measured_;
           }
       } catch( CheiralityException& e) {
-        if (H1) *H1 = zeros(2,6);
-        if (H2) *H2 = zeros(2,6);
-        if (H3) *H3 = zeros(2,3);
-        if (H4) *H4 = zeros(2,CALIBRATION::Dim());
+        if (H1) *H1 = Matrix::Zero(2,6);
+        if (H2) *H2 = Matrix::Zero(2,6);
+        if (H3) *H3 = Matrix::Zero(2,3);
+        if (H4) *H4 = Matrix::Zero(2,CALIBRATION::dimension);
         if (verboseCheirality_)
           std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
               " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
         if (throwCheirality_)
           throw e;
       }
-      return ones(2) * 2.0 * K.fx();
+      return Vector::Ones(2) * 2.0 * K.fx();
     }
 
     /** return the measurement */
@@ -158,6 +152,7 @@ namespace gtsam {
 
   private:
 
+#if GTSAM_ENABLE_BOOST_SERIALIZATION    ///
     /// Serialization function
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -167,7 +162,8 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(throwCheirality_);
       ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
     }
-  };
+#endif
+};
 
   /// traits
   template<class POSE, class LANDMARK, class CALIBRATION>

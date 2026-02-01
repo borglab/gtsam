@@ -4,11 +4,7 @@
  */
 
 #include <iostream>
-#include <boost/foreach.hpp>
-#include <boost/random/linear_congruential.hpp>
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/normal_distribution.hpp>
-#include <boost/random/variate_generator.hpp>
+#include <random>
 
 #include <gtsam_unstable/geometry/SimPolygon2D.h>
 
@@ -17,11 +13,11 @@ namespace gtsam {
 using namespace std;
 
 const size_t max_it = 100000;
-boost::minstd_rand SimPolygon2D::rng(42u);
+std::minstd_rand SimPolygon2D::rng(42u);
 
 /* ************************************************************************* */
 void SimPolygon2D::seedGenerator(unsigned long seed) {
-  rng = boost::minstd_rand(seed);
+  rng = std::minstd_rand(seed);
 }
 
 /* ************************************************************************* */
@@ -47,7 +43,7 @@ SimPolygon2D SimPolygon2D::createRectangle(const Point2& p, double height, doubl
 bool SimPolygon2D::equals(const SimPolygon2D& p, double tol) const {
   if (p.size() != size()) return false;
   for (size_t i=0; i<size(); ++i)
-    if (!landmarks_[i].equals(p.landmarks_[i], tol))
+    if (!traits<Point2>::Equals(landmarks_[i], p.landmarks_[i], tol))
       return false;
   return true;
 }
@@ -55,8 +51,8 @@ bool SimPolygon2D::equals(const SimPolygon2D& p, double tol) const {
 /* ************************************************************************* */
 void SimPolygon2D::print(const string& s) const {
   cout << "SimPolygon " << s << ": " << endl;
-  BOOST_FOREACH(const Point2& p, landmarks_)
-    p.print("   ");
+  for(const Point2& p: landmarks_)
+    traits<Point2>::Print(p, "   ");
 }
 
 /* ************************************************************************* */
@@ -73,12 +69,12 @@ bool SimPolygon2D::contains(const Point2& c) const {
   vector<SimWall2D> edges = walls();
   bool initialized = false;
   bool lastSide = false;
-  BOOST_FOREACH(const SimWall2D& ab, edges) {
+  for(const SimWall2D& ab: edges) {
     // compute cross product of ab and ac
     Point2 dab = ab.b() - ab.a();
     Point2 dac = c - ab.a();
     double cross = dab.x() * dac.y() - dab.y() * dac.x();
-    if (fabs(cross) < 1e-6) // check for on one of the edges
+    if (std::abs(cross) < 1e-6) // check for on one of the edges
       return true;
     bool side = cross > 0;
     // save the first side found
@@ -97,10 +93,10 @@ bool SimPolygon2D::contains(const Point2& c) const {
 
 /* ************************************************************************* */
 bool SimPolygon2D::overlaps(const SimPolygon2D& p) const {
-  BOOST_FOREACH(const Point2& a, landmarks_)
+  for(const Point2& a: landmarks_)
     if (p.contains(a))
       return true;
-  BOOST_FOREACH(const Point2& a, p.landmarks_)
+  for(const Point2& a: p.landmarks_)
     if (contains(a))
       return true;
   return false;
@@ -108,7 +104,7 @@ bool SimPolygon2D::overlaps(const SimPolygon2D& p) const {
 
 /* ***************************************************************** */
 bool SimPolygon2D::anyContains(const Point2& p, const vector<SimPolygon2D>& obstacles) {
-  BOOST_FOREACH(const SimPolygon2D& poly, obstacles)
+  for(const SimPolygon2D& poly: obstacles)
     if (poly.contains(p))
       return true;
   return false;
@@ -116,7 +112,7 @@ bool SimPolygon2D::anyContains(const Point2& p, const vector<SimPolygon2D>& obst
 
 /* ************************************************************************* */
 bool SimPolygon2D::anyOverlaps(const SimPolygon2D& p, const vector<SimPolygon2D>& obstacles) {
-  BOOST_FOREACH(const SimPolygon2D& poly, obstacles)
+  for(const SimPolygon2D& poly: obstacles)
     if (poly.overlaps(p))
       return true;
   return false;
@@ -127,14 +123,14 @@ SimPolygon2D SimPolygon2D::randomTriangle(
     double side_len, double mean_side_len, double sigma_side_len,
     double min_vertex_dist, double min_side_len, const vector<SimPolygon2D>& existing_polys) {
   // get the current set of landmarks
-  std::vector<Point2> lms;
+  Point2Vector lms;
   double d2 = side_len/2.0;
   lms.push_back(Point2( d2, d2));
   lms.push_back(Point2(-d2, d2));
   lms.push_back(Point2(-d2,-d2));
   lms.push_back(Point2( d2,-d2));
 
-  BOOST_FOREACH(const SimPolygon2D& poly, existing_polys)
+  for(const SimPolygon2D& poly: existing_polys)
     lms.insert(lms.begin(), poly.vertices().begin(), poly.vertices().end());
 
   for (size_t i=0; i<max_it; ++i) {
@@ -149,10 +145,10 @@ SimPolygon2D SimPolygon2D::randomTriangle(
 
     // extend from B to find C
     double dBC = randomDistance(mean_side_len, sigma_side_len, min_side_len);
-    Pose2 xC = xB.retract(delta(3, 0, dBC));
+    Pose2 xC = xB.retract(Vector::Unit(3,0)*dBC);
 
     // use triangle equality to verify non-degenerate triangle
-    double dAC = xA.t().distance(xC.t());
+    double dAC = distance2(xA.t(), xC.t());
 
     // form a triangle and test if it meets requirements
     SimPolygon2D test_tri = SimPolygon2D::createTriangle(xA.t(), xB.t(), xC.t());
@@ -165,7 +161,7 @@ SimPolygon2D SimPolygon2D::randomTriangle(
         insideBox(side_len, test_tri.landmark(0)) &&
         insideBox(side_len, test_tri.landmark(1)) &&
         insideBox(side_len, test_tri.landmark(2)) &&
-        test_tri.landmark(1).distance(test_tri.landmark(2)) > min_side_len &&
+        distance2(test_tri.landmark(1), test_tri.landmark(2)) > min_side_len &&
         !nearExisting(lms, test_tri.landmark(0), min_vertex_dist) &&
         !nearExisting(lms, test_tri.landmark(1), min_vertex_dist) &&
         !nearExisting(lms, test_tri.landmark(2), min_vertex_dist) &&
@@ -182,13 +178,13 @@ SimPolygon2D SimPolygon2D::randomRectangle(
     double side_len, double mean_side_len, double sigma_side_len,
     double min_vertex_dist, double min_side_len, const vector<SimPolygon2D>& existing_polys) {
   // get the current set of landmarks
-  std::vector<Point2> lms;
+  Point2Vector lms;
   double d2 = side_len/2.0;
   lms.push_back(Point2( d2, d2));
   lms.push_back(Point2(-d2, d2));
   lms.push_back(Point2(-d2,-d2));
   lms.push_back(Point2( d2,-d2));
-  BOOST_FOREACH(const SimPolygon2D& poly, existing_polys)
+  for(const SimPolygon2D& poly: existing_polys)
     lms.insert(lms.begin(), poly.vertices().begin(), poly.vertices().end());
 
   const Point2 lower_corner(-side_len,-side_len);
@@ -226,30 +222,30 @@ SimPolygon2D SimPolygon2D::randomRectangle(
 
 /* ***************************************************************** */
 Point2 SimPolygon2D::randomPoint2(double s) {
-  boost::uniform_real<>  gen_t(-s/2.0, s/2.0);
+  std::uniform_real_distribution<> gen_t(-s/2.0, s/2.0);
   return Point2(gen_t(rng), gen_t(rng));
 }
 
 /* ***************************************************************** */
 Rot2 SimPolygon2D::randomAngle() {
-  boost::uniform_real<>  gen_r(-M_PI, M_PI); // modified range to avoid degenerate cases in triangles
+   // modified range to avoid degenerate cases in triangles:
+  std::uniform_real_distribution<> gen_r(-M_PI, M_PI);
   return Rot2::fromAngle(gen_r(rng));
 }
 
 /* ***************************************************************** */
 double SimPolygon2D::randomDistance(double mu, double sigma, double min_dist) {
-  boost::normal_distribution<double> norm_dist(mu, sigma);
-  boost::variate_generator<boost::minstd_rand&, boost::normal_distribution<double> > gen_d(rng, norm_dist);
+  std::normal_distribution<> norm_dist(mu, sigma);
   double d = -10.0;
   for (size_t i=0; i<max_it; ++i) {
-    d = fabs(gen_d());
+    d = std::abs(norm_dist(rng));
     if (d > min_dist)
       return d;
   }
   cout << "Non viable distance: " << d << " with mu = " << mu << " sigma = " << sigma
        << " min_dist = " << min_dist << endl;
   throw runtime_error("Failed to find a viable distance");
-  return fabs(norm_dist(rng));
+  return std::abs(norm_dist(rng));
 }
 
 /* ***************************************************************** */
@@ -261,24 +257,24 @@ Point2 SimPolygon2D::randomBoundedPoint2(double boundary_size,
       return p;
   }
   throw runtime_error("Failed to find a place for a landmark!");
-  return Point2();
+  return Point2(0,0);
 }
 
 /* ***************************************************************** */
 Point2 SimPolygon2D::randomBoundedPoint2(double boundary_size,
-    const std::vector<Point2>& landmarks, double min_landmark_dist) {
+    const Point2Vector& landmarks, double min_landmark_dist) {
   for (size_t i=0; i<max_it; ++i) {
     Point2 p = randomPoint2(boundary_size);
     if (!nearExisting(landmarks, p, min_landmark_dist))
       return p;
   }
   throw runtime_error("Failed to find a place for a landmark!");
-  return Point2();
+  return Point2(0,0);
 }
 
 /* ***************************************************************** */
 Point2 SimPolygon2D::randomBoundedPoint2(double boundary_size,
-    const std::vector<Point2>& landmarks,
+    const Point2Vector& landmarks,
     const vector<SimPolygon2D>& obstacles, double min_landmark_dist) {
   for (size_t i=0; i<max_it; ++i) {
     Point2 p = randomPoint2(boundary_size);
@@ -286,17 +282,17 @@ Point2 SimPolygon2D::randomBoundedPoint2(double boundary_size,
       return p;
   }
   throw runtime_error("Failed to find a place for a landmark!");
-  return Point2();
+  return Point2(0,0);
 }
 
 /* ***************************************************************** */
 Point2 SimPolygon2D::randomBoundedPoint2(
     const Point2& LL_corner, const Point2& UR_corner,
-    const std::vector<Point2>& landmarks,
+    const Point2Vector& landmarks,
     const std::vector<SimPolygon2D>& obstacles, double min_landmark_dist) {
 
-  boost::uniform_real<>  gen_x(0.0, UR_corner.x() - LL_corner.x());
-  boost::uniform_real<>  gen_y(0.0, UR_corner.y() - LL_corner.y());
+  std::uniform_real_distribution<> gen_x(0.0, UR_corner.x() - LL_corner.x());
+  std::uniform_real_distribution<> gen_y(0.0, UR_corner.y() - LL_corner.y());
 
   for (size_t i=0; i<max_it; ++i) {
     Point2 p = Point2(gen_x(rng), gen_y(rng)) + LL_corner;
@@ -304,7 +300,7 @@ Point2 SimPolygon2D::randomBoundedPoint2(
       return p;
   }
   throw runtime_error("Failed to find a place for a landmark!");
-  return Point2();
+  return Point2(0,0);
 }
 
 /* ***************************************************************** */
@@ -314,14 +310,14 @@ Pose2 SimPolygon2D::randomFreePose(double boundary_size, const vector<SimPolygon
 
 /* ***************************************************************** */
 bool SimPolygon2D::insideBox(double s, const Point2& p) {
-  return fabs(p.x()) < s/2.0 && fabs(p.y()) < s/2.0;
+  return std::abs(p.x()) < s/2.0 && std::abs(p.y()) < s/2.0;
 }
 
 /* ***************************************************************** */
-bool SimPolygon2D::nearExisting(const std::vector<Point2>& S,
+bool SimPolygon2D::nearExisting(const Point2Vector& S,
     const Point2& p, double threshold) {
-  BOOST_FOREACH(const Point2& Sp, S)
-    if (Sp.distance(p) < threshold)
+  for(const Point2& Sp: S)
+    if (distance2(Sp, p) < threshold)
       return true;
   return false;
 }

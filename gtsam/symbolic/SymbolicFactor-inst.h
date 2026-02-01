@@ -23,9 +23,7 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/base/timing.h>
 
-#include <boost/shared_ptr.hpp>
-#include <boost/foreach.hpp>
-#include <boost/make_shared.hpp>
+#include <memory>
 
 #include <utility>
 
@@ -36,19 +34,21 @@ namespace gtsam
     /** Implementation of dense elimination function for symbolic factors.  This is a templated
      *  version for internally doing symbolic elimination on any factor. */
     template<class FACTOR>
-    std::pair<boost::shared_ptr<SymbolicConditional>, boost::shared_ptr<SymbolicFactor> >
+    std::pair<std::shared_ptr<SymbolicConditional>, std::shared_ptr<SymbolicFactor> >
       EliminateSymbolic(const FactorGraph<FACTOR>& factors, const Ordering& keys)
     {
       gttic(EliminateSymbolic);
 
       // Gather all keys
       KeySet allKeys;
-      BOOST_FOREACH(const boost::shared_ptr<FACTOR>& factor, factors) {
-        allKeys.insert(factor->begin(), factor->end());
+      for(const std::shared_ptr<FACTOR>& factor: factors) {
+        // Non-active factors are nullptr
+        if (factor)
+          allKeys.insert(factor->begin(), factor->end());
       }
 
       // Check keys
-      BOOST_FOREACH(Key key, keys) {
+      for(Key key: keys) {
         if(allKeys.find(key) == allKeys.end())
           throw std::runtime_error("Requested to eliminate a key that is not in the factors");
       }
@@ -58,14 +58,15 @@ namespace gtsam
       const size_t nFrontals = keys.size();
 
       // Build a key vector with the frontals followed by the separator
-      FastVector<Key> orderedKeys(allKeys.size());
+      KeyVector orderedKeys(allKeys.size());
       std::copy(keys.begin(), keys.end(), orderedKeys.begin());
       std::set_difference(allKeys.begin(), allKeys.end(), frontals.begin(), frontals.end(), orderedKeys.begin() + nFrontals);
 
       // Return resulting conditional and factor
-      return std::make_pair(
+      return {
         SymbolicConditional::FromKeysShared(orderedKeys, nFrontals),
-        SymbolicFactor::FromIteratorsShared(orderedKeys.begin() + nFrontals, orderedKeys.end()));
+        SymbolicFactor::FromIteratorsShared(orderedKeys.begin() + nFrontals, orderedKeys.end())
+      };
     }
   }
 }

@@ -18,7 +18,6 @@
  */
 
 #include <gtsam/linear/ConjugateGradientSolver.h>
-#include <boost/algorithm/string.hpp>
 #include <iostream>
 
 using namespace std;
@@ -27,13 +26,13 @@ namespace gtsam {
 
 /*****************************************************************************/
 void ConjugateGradientParameters::print(ostream &os) const {
-   Base::print(os);
-   cout << "ConjugateGradientParameters" << endl
-        << "minIter:       " << minIterations_ << endl
-        << "maxIter:       " << maxIterations_ << endl
-        << "resetIter:     " << reset_ << endl
-        << "eps_rel:       " << epsilon_rel_ << endl
-        << "eps_abs:       " << epsilon_abs_ << endl;
+  Base::print(os);
+  cout << "ConjugateGradientParameters" << endl
+       << "minIter:       " << minIterations << endl
+       << "maxIter:       " << maxIterations << endl
+       << "resetIter:     " << reset << endl
+       << "eps_rel:       " << epsilon_rel << endl
+       << "eps_abs:       " << epsilon_abs << endl;
 }
 
 /*****************************************************************************/
@@ -49,7 +48,9 @@ std::string ConjugateGradientParameters::blasTranslator(const BLASKernel value) 
 /*****************************************************************************/
 ConjugateGradientParameters::BLASKernel ConjugateGradientParameters::blasTranslator(
     const std::string &src) {
-  std::string s = src;  boost::algorithm::to_upper(s);
+  std::string s = src;
+  // Convert to upper case
+  std::transform(s.begin(), s.end(), s.begin(), ::toupper);
   if (s == "GTSAM")  return ConjugateGradientParameters::GTSAM;
 
   /* default is SBM */

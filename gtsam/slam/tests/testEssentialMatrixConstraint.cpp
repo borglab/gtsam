@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file  testEssentialMatrixConstraint.cpp
+ *  @file  TestEssentialMatrixConstraint.cpp
  *  @brief Unit tests for EssentialMatrixConstraint Class
  *  @author Frank Dellaert
  *  @author Pablo Alcantarilla
@@ -22,8 +22,10 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/TestableAssertions.h>
+
 #include <CppUnitLite/TestHarness.h>
 
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -45,17 +47,18 @@ TEST( EssentialMatrixConstraint, test ) {
       Rot3::RzRyRx(0.179693265735950, 0.002945368776519, 0.102274823253840),
       Point3(-3.37493895, 6.14660244, -8.93650986));
 
-  Vector expected = zero(5);
+  Vector expected = Z_5x1;
   Vector actual = factor.evaluateError(pose1,pose2);
   CHECK(assert_equal(expected, actual, 1e-8));
 
   // Calculate numerical derivatives
-  Matrix expectedH1 = numericalDerivative11<Vector5,Pose3>(
-      boost::bind(&EssentialMatrixConstraint::evaluateError, &factor, _1, pose2,
-          boost::none, boost::none), pose1);
-  Matrix expectedH2 = numericalDerivative11<Vector5,Pose3>(
-      boost::bind(&EssentialMatrixConstraint::evaluateError, &factor, pose1, _1,
-          boost::none, boost::none), pose2);
+  Matrix expectedH1 = numericalDerivative11<Vector5, Pose3>(
+		[&factor, &pose2](const Pose3& p1) {return factor.evaluateError(p1, pose2);},
+		pose1);
+
+  Matrix expectedH2 = numericalDerivative11<Vector5, Pose3>(
+		[&factor, &pose1](const Pose3& p2) {return factor.evaluateError(pose1, p2);},
+      pose2);
 
   // Use the factor to calculate the derivative
   Matrix actualH1;

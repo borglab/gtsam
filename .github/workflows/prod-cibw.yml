@@ -1,0 +1,188 @@
+# This workflow builds the Python wheels using cibuildwheel and uploads them to TestPyPI.
+# It can be triggered on push to the develop branch or manually via Github Actions.
+
+name: Build Python Wheels for Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  build_wheels:
+    name: Build Wheels
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux x86_64
+          - os: ubuntu-latest
+            python_version: "3.10"
+            cibw_python_version: 310
+            platform_id: manylinux_x86_64
+            manylinux_image: manylinux2014
+          - os: ubuntu-latest
+            python_version: "3.11"
+            cibw_python_version: 311
+            platform_id: manylinux_x86_64
+            manylinux_image: manylinux2014
+          - os: ubuntu-latest
+            python_version: "3.12"
+            cibw_python_version: 312
+            platform_id: manylinux_x86_64
+            manylinux_image: manylinux2014
+          - os: ubuntu-latest
+            python_version: "3.13"
+            cibw_python_version: 313
+            platform_id: manylinux_x86_64
+            manylinux_image: manylinux2014
+
+          # Linux aarch64
+          - os: ubuntu-24.04-arm
+            python_version: "3.10"
+            cibw_python_version: 310
+            platform_id: manylinux_aarch64
+            manylinux_image: manylinux2014
+          - os: ubuntu-24.04-arm
+            python_version: "3.11"
+            cibw_python_version: 311
+            platform_id: manylinux_aarch64
+            manylinux_image: manylinux2014
+          - os: ubuntu-24.04-arm
+            python_version: "3.12"
+            cibw_python_version: 312
+            platform_id: manylinux_aarch64
+            manylinux_image: manylinux2014
+          - os: ubuntu-24.04-arm
+            python_version: "3.13"
+            cibw_python_version: 313
+            platform_id: manylinux_aarch64
+            manylinux_image: manylinux2014
+
+          # MacOS x86_64
+          - os: macos-15-intel
+            python_version: "3.10"
+            cibw_python_version: 310
+            platform_id: macosx_x86_64
+          - os: macos-15-intel
+            python_version: "3.11"
+            cibw_python_version: 311
+            platform_id: macosx_x86_64
+          - os: macos-15-intel
+            python_version: "3.12"
+            cibw_python_version: 312
+            platform_id: macosx_x86_64
+          - os: macos-15-intel
+            python_version: "3.13"
+            cibw_python_version: 313
+            platform_id: macosx_x86_64
+
+          # MacOS arm64
+          - os: macos-latest
+            python_version: "3.10"
+            cibw_python_version: 310
+            platform_id: macosx_arm64
+          - os: macos-latest
+            python_version: "3.11"
+            cibw_python_version: 311
+            platform_id: macosx_arm64
+          - os: macos-latest
+            python_version: "3.12"
+            cibw_python_version: 312
+            platform_id: macosx_arm64
+          - os: macos-latest
+            python_version: "3.13"
+            cibw_python_version: 313
+            platform_id: macosx_arm64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+
+      - name: Set up Python ${{ matrix.python_version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python_version }}
+
+      - name: Install Dependencies
+        run: |
+          python3 -m pip install -r python/dev_requirements.txt
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            sudo apt-get install -y wget libicu-dev python3-pip python3-setuptools libboost-all-dev ninja-build
+          elif [ "$RUNNER_OS" == "macOS" ]; then
+            brew install boost ninja python-setuptools
+          else
+            echo "$RUNNER_OS not supported"
+            exit 1
+          fi
+
+      # We first build the Python wrapper module on the host machine. This is done because cibuildwheel
+      # expects a setup.py file to be present in the project directory.
+      #
+      # The Python wrapper module is then rebuilt within the cibuildwheel container before building
+      # the wheels to ensure platform compatibility.
+      - name: Run CMake
+        run: |
+          cmake . -B build -DGTSAM_BUILD_PYTHON=1 -DGTSAM_PYTHON_VERSION=${{ matrix.python_version }}
+
+      # If on macOS, we previously installed boost using homebrew for the first build.
+      # We need to uninstall it before building the wheels with cibuildwheel, which will
+      # install boost from source.
+      - name: Uninstall Boost (MacOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew uninstall boost
+
+      - name: Build and test wheels
+        env:
+          # Generate the platform identifier. See https://cibuildwheel.pypa.io/en/stable/options/#build-skip.
+          CIBW_BUILD: cp${{ matrix.cibw_python_version }}-${{ matrix.platform_id }}
+          CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.manylinux_image }}
+          CIBW_MANYLINUX_AARCH64_IMAGE: ${{ matrix.manylinux_image }}
+          CIBW_ARCHS: all
+
+          # Set the minimum required MacOS version for the wheels.
+          MACOSX_DEPLOYMENT_TARGET: 10.15
+
+          # Set DYLD_LIBRARY_PATH to REPAIR_LIBRARY_PATH, which is set in cibw_before_all.sh. REPAIR_LIBRARY_PATH
+          # simply appends BOOST_LIBRARYDIR to the path, which is required during during link-time repair.
+          CIBW_REPAIR_WHEEL_COMMAND_MACOS: DYLD_LIBRARY_PATH=$REPAIR_LIBRARY_PATH delocate-wheel --require-archs {delocate_archs} -w {dest_dir} -v {wheel}
+
+          # Use build instead of pip wheel to build the wheels. This is recommended by PyPA.
+          # See https://cibuildwheel.pypa.io/en/stable/options/#build-frontend.
+          CIBW_BUILD_FRONTEND: "build"
+          CIBW_BEFORE_ALL: bash .github/scripts/python_wheels/cibw_before_all.sh ${{ matrix.python_version }} {project}
+
+          CIBW_BUILD_VERBOSITY: 1
+
+        run: bash .github/scripts/python_wheels/build_wheels.sh
+
+      - name: Store artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cibw-wheels-cp${{ matrix.cibw_python_version }}-${{ matrix.platform_id }}
+          path: wheelhouse/*.whl
+
+  upload_all:
+    name: Upload All
+    needs: build_wheels
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+          merge-multiple: true
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          verbose: true
+          packages-dir: dist/
+          repository-url: https://test.pypi.org/legacy/

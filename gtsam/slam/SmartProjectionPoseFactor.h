@@ -24,7 +24,7 @@
 namespace gtsam {
 /**
  *
- * @addtogroup SLAM
+ * @ingroup slam
  *
  * If you are using the factor, please cite:
  * L. Carlone, Z. Kira, C. Beall, V. Indelman, F. Dellaert, Eliminating conditionally
@@ -39,25 +39,24 @@ namespace gtsam {
  * The factor only constrains poses (variable dimension is 6).
  * This factor requires that values contains the involved poses (Pose3).
  * If the calibration should be optimized, as well, use SmartProjectionFactor instead!
- * @addtogroup SLAM
+ * @ingroup slam
  */
-template<class CALIBRATION>
-class SmartProjectionPoseFactor: public SmartProjectionFactor<
-    PinholePose<CALIBRATION> > {
-
-private:
+template <class CALIBRATION>
+class SmartProjectionPoseFactor
+    : public SmartProjectionFactor<PinholePose<CALIBRATION> > {
+ private:
   typedef PinholePose<CALIBRATION> Camera;
   typedef SmartProjectionFactor<Camera> Base;
   typedef SmartProjectionPoseFactor<CALIBRATION> This;
 
 protected:
 
-  boost::shared_ptr<CALIBRATION> K_; ///< calibration object (one for all cameras)
+  std::shared_ptr<CALIBRATION> K_; ///< calibration object (one for all cameras)
 
 public:
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
 
   /**
    * Default constructor, only for serialization
@@ -66,20 +65,35 @@ public:
 
   /**
    * Constructor
-   * @param Isotropic measurement noise
+   * @param sharedNoiseModel isotropic noise model for the 2D feature measurements
    * @param K (fixed) calibration, assumed to be the same for all cameras
-   * @param body_P_sensor pose of the camera in the body frame
-   * @param params internal parameters of the smart factors
+   * @param params parameters for the smart projection factors
    */
-  SmartProjectionPoseFactor(const SharedNoiseModel& sharedNoiseModel,
-      const boost::shared_ptr<CALIBRATION> K,
-      const boost::optional<Pose3> body_P_sensor = boost::none,
-      const SmartProjectionParams& params = SmartProjectionParams()) :
-      Base(sharedNoiseModel, body_P_sensor, params), K_(K) {
+  SmartProjectionPoseFactor(
+      const SharedNoiseModel& sharedNoiseModel,
+      const std::shared_ptr<CALIBRATION> K,
+      const SmartProjectionParams& params = SmartProjectionParams())
+      : Base(sharedNoiseModel, params), K_(K) {
+  }
+
+  /**
+   * Constructor
+   * @param sharedNoiseModel isotropic noise model for the 2D feature measurements
+   * @param K (fixed) calibration, assumed to be the same for all cameras
+   * @param body_P_sensor pose of the camera in the body frame (optional)
+   * @param params parameters for the smart projection factors
+   */
+  SmartProjectionPoseFactor(
+      const SharedNoiseModel& sharedNoiseModel,
+      const std::shared_ptr<CALIBRATION> K,
+      const std::optional<Pose3> body_P_sensor,
+      const SmartProjectionParams& params = SmartProjectionParams())
+      : SmartProjectionPoseFactor(sharedNoiseModel, K, params) {
+    this->body_P_sensor_ = body_P_sensor;
   }
 
   /** Virtual destructor */
-  virtual ~SmartProjectionPoseFactor() {
+  ~SmartProjectionPoseFactor() override {
   }
 
   /**
@@ -88,13 +102,13 @@ public:
    * @param keyFormatter optional formatter useful for printing Symbols
    */
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const {
+      DefaultKeyFormatter) const override {
     std::cout << s << "SmartProjectionPoseFactor, z = \n ";
     Base::print("", keyFormatter);
   }
 
   /// equals
-  virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
+  bool equals(const NonlinearFactor& p, double tol = 1e-9) const override {
     const This *e = dynamic_cast<const This*>(&p);
     return e && Base::equals(p, tol);
   }
@@ -102,7 +116,7 @@ public:
   /**
    * error calculates the error of the factor.
    */
-  virtual double error(const Values& values) const {
+  double error(const Values& values) const override {
     if (this->active(values)) {
       return this->totalReprojectionError(cameras(values));
     } else { // else of active flag
@@ -111,7 +125,7 @@ public:
   }
 
   /** return calibration shared pointers */
-  inline const boost::shared_ptr<CALIBRATION> calibration() const {
+  inline const std::shared_ptr<CALIBRATION> calibration() const {
     return K_;
   }
 
@@ -121,21 +135,20 @@ public:
    * to keys involved in this factor
    * @return vector of Values
    */
-  typename Base::Cameras cameras(const Values& values) const {
+  typename Base::Cameras cameras(const Values& values) const override {
     typename Base::Cameras cameras;
-    BOOST_FOREACH(const Key& k, this->keys_) {
-      Pose3 pose = values.at<Pose3>(k);
-      if (Base::body_P_sensor_)
-        pose = pose.compose(*(Base::body_P_sensor_));
-
-      Camera camera(pose, K_);
-      cameras.push_back(camera);
+    for (const Key& k : this->keys_) {
+      const Pose3 world_P_sensor_k =
+          Base::body_P_sensor_ ? values.at<Pose3>(k) * *Base::body_P_sensor_
+                               : values.at<Pose3>(k);
+      cameras.emplace_back(world_P_sensor_k, K_);
     }
     return cameras;
   }
 
-private:
+ private:
 
+#if GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -143,7 +156,7 @@ private:
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar & BOOST_SERIALIZATION_NVP(K_);
   }
-
+#endif
 };
 // end of class declaration
 

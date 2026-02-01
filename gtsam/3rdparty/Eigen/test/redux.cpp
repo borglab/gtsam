@@ -2,16 +2,20 @@
 // for linear algebra.
 //
 // Copyright (C) 2008 Benoit Jacob <jacob.benoit.1@gmail.com>
+// Copyright (C) 2015 Gael Guennebaud <gael.guennebaud@inria.fr>
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+#define TEST_ENABLE_TEMPORARY_TRACKING
+#define EIGEN_CACHEFRIENDLY_PRODUCT_THRESHOLD 8
+// ^^ see bug 1449
+
 #include "main.h"
 
 template<typename MatrixType> void matrixRedux(const MatrixType& m)
 {
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   typedef typename MatrixType::RealScalar RealScalar;
 
@@ -21,8 +25,11 @@ template<typename MatrixType> void matrixRedux(const MatrixType& m)
   MatrixType m1 = MatrixType::Random(rows, cols);
 
   // The entries of m1 are uniformly distributed in [0,1], so m1.prod() is very small. This may lead to test
-  // failures if we underflow into denormals. Thus, we scale so that entires are close to 1.
+  // failures if we underflow into denormals. Thus, we scale so that entries are close to 1.
   MatrixType m1_for_prod = MatrixType::Ones(rows, cols) + RealScalar(0.2) * m1;
+
+  Matrix<Scalar, MatrixType::RowsAtCompileTime, MatrixType::RowsAtCompileTime> m2(rows,rows);
+  m2.setRandom();
 
   VERIFY_IS_MUCH_SMALLER_THAN(MatrixType::Zero(rows, cols).sum(), Scalar(1));
   VERIFY_IS_APPROX(MatrixType::Ones(rows, cols).sum(), Scalar(float(rows*cols))); // the float() here to shut up excessive MSVC warning about int->complex conversion being lossy
@@ -42,6 +49,10 @@ template<typename MatrixType> void matrixRedux(const MatrixType& m)
   VERIFY_IS_APPROX(m1_for_prod.prod(), p);
   VERIFY_IS_APPROX(m1.real().minCoeff(), numext::real(minc));
   VERIFY_IS_APPROX(m1.real().maxCoeff(), numext::real(maxc));
+  
+  // test that partial reduction works if nested expressions is forced to evaluate early
+  VERIFY_IS_APPROX((m1.matrix() * m1.matrix().transpose())       .cwiseProduct(m2.matrix()).rowwise().sum().sum(), 
+                   (m1.matrix() * m1.matrix().transpose()).eval().cwiseProduct(m2.matrix()).rowwise().sum().sum());
 
   // test slice vectorization assuming assign is ok
   Index r0 = internal::random<Index>(0,rows-1);
@@ -65,12 +76,15 @@ template<typename MatrixType> void matrixRedux(const MatrixType& m)
   // test empty objects
   VERIFY_IS_APPROX(m1.block(r0,c0,0,0).sum(),   Scalar(0));
   VERIFY_IS_APPROX(m1.block(r0,c0,0,0).prod(),  Scalar(1));
+
+  // test nesting complex expression
+  VERIFY_EVALUATION_COUNT( (m1.matrix()*m1.matrix().transpose()).sum(), (MatrixType::IsVectorAtCompileTime && MatrixType::SizeAtCompileTime!=1 ? 0 : 1) );
+  VERIFY_EVALUATION_COUNT( ((m1.matrix()*m1.matrix().transpose())+m2).sum(),(MatrixType::IsVectorAtCompileTime && MatrixType::SizeAtCompileTime!=1 ? 0 : 1));
 }
 
 template<typename VectorType> void vectorRedux(const VectorType& w)
 {
   using std::abs;
-  typedef typename VectorType::Index Index;
   typedef typename VectorType::Scalar Scalar;
   typedef typename NumTraits<Scalar>::Real RealScalar;
   Index size = w.size();
@@ -137,7 +151,7 @@ template<typename VectorType> void vectorRedux(const VectorType& w)
   VERIFY_RAISES_ASSERT(v.head(0).maxCoeff());
 }
 
-void test_redux()
+EIGEN_DECLARE_TEST(redux)
 {
   // the max size cannot be too large, otherwise reduxion operations obviously generate large errors.
   int maxsize = (std::min)(100,EIGEN_TEST_MAX_SIZE);
@@ -147,8 +161,10 @@ void test_redux()
     CALL_SUBTEST_1( matrixRedux(Array<float, 1, 1>()) );
     CALL_SUBTEST_2( matrixRedux(Matrix2f()) );
     CALL_SUBTEST_2( matrixRedux(Array2f()) );
+    CALL_SUBTEST_2( matrixRedux(Array22f()) );
     CALL_SUBTEST_3( matrixRedux(Matrix4d()) );
     CALL_SUBTEST_3( matrixRedux(Array4d()) );
+    CALL_SUBTEST_3( matrixRedux(Array44d()) );
     CALL_SUBTEST_4( matrixRedux(MatrixXcf(internal::random<int>(1,maxsize), internal::random<int>(1,maxsize))) );
     CALL_SUBTEST_4( matrixRedux(ArrayXXcf(internal::random<int>(1,maxsize), internal::random<int>(1,maxsize))) );
     CALL_SUBTEST_5( matrixRedux(MatrixXd (internal::random<int>(1,maxsize), internal::random<int>(1,maxsize))) );

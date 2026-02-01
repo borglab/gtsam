@@ -14,7 +14,6 @@ template<typename MatrixType> void miscMatrices(const MatrixType& m)
   /* this test covers the following files:
      DiagonalMatrix.h Ones.h
   */
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> VectorType;
   Index rows = m.rows();
@@ -35,7 +34,7 @@ template<typename MatrixType> void miscMatrices(const MatrixType& m)
   VERIFY_IS_APPROX(square, MatrixType::Identity(rows, rows));
 }
 
-void test_miscmatrices()
+EIGEN_DECLARE_TEST(miscmatrices)
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( miscMatrices(Matrix<float, 1, 1>()) );

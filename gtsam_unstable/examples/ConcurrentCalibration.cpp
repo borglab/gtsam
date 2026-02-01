@@ -20,33 +20,35 @@
 
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/utilities.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/dataset.h>
 
 #include <string>
 #include <fstream>
 #include <iostream>
-#include <boost/lexical_cast.hpp>
 
 using namespace std;
 using namespace gtsam;
+using symbol_shorthand::K;
+using symbol_shorthand::L;
+using symbol_shorthand::X;
 
 int main(int argc, char** argv){
 
   Values initial_estimate;
   NonlinearFactorGraph graph;
-  const noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(2,1);
+  const auto model = noiseModel::Isotropic::Sigma(2,1);
 
   string calibration_loc = findExampleDataFile("VO_calibration00s.txt");
   string pose_loc = findExampleDataFile("VO_camera_poses00s.txt");
   string factor_loc = findExampleDataFile("VO_stereo_factors00s.txt");
-  
+
   //read camera calibration info from file
   // focal lengths fx, fy, skew s, principal point u0, v0, baseline b
   double fx, fy, s, u0, v0, b;
@@ -55,13 +57,13 @@ int main(int argc, char** argv){
   calibration_file >> fx >> fy >> s >> u0 >> v0 >> b;
 
   //create stereo camera calibration object
-  const Cal3_S2::shared_ptr K(new Cal3_S2(fx,fy,s,u0,v0));
-  const Cal3_S2::shared_ptr noisy_K(new Cal3_S2(fx*1.2,fy*1.2,s,u0-10,v0+10));
-  
-  initial_estimate.insert(Symbol('K', 0), *noisy_K);
+  const Cal3_S2 true_K(fx,fy,s,u0,v0);
+  const Cal3_S2 noisy_K(fx*1.2,fy*1.2,s,u0-10,v0+10);
 
-  noiseModel::Diagonal::shared_ptr calNoise = noiseModel::Diagonal::Sigmas((Vector(5) << 500, 500, 1e-5, 100, 100).finished());
-  graph.push_back(PriorFactor<Cal3_S2>(Symbol('K', 0), *noisy_K, calNoise));
+  initial_estimate.insert(K(0), noisy_K);
+
+  auto calNoise = noiseModel::Diagonal::Sigmas((Vector(5) << 500, 500, 1e-5, 100, 100).finished());
+  graph.addPrior(K(0), noisy_K, calNoise);
 
 
   ifstream pose_file(pose_loc.c_str());
@@ -75,31 +77,31 @@ int main(int argc, char** argv){
     }
     initial_estimate.insert(Symbol('x', pose_id), Pose3(m));
   }
-  
-  noiseModel::Isotropic::shared_ptr poseNoise = noiseModel::Isotropic::Sigma(6, 0.01);
-  graph.push_back(PriorFactor<Pose3>(Symbol('x', pose_id), Pose3(m), poseNoise));
+
+  auto poseNoise = noiseModel::Isotropic::Sigma(6, 0.01);
+  graph.addPrior(Symbol('x', pose_id), Pose3(m), poseNoise);
 
   // camera and landmark keys
   size_t x, l;
 
   // pixel coordinates uL, uR, v (same for left/right images due to rectification)
   // landmark coordinates X, Y, Z in camera frame, resulting from triangulation
-  double uL, uR, v, X, Y, Z;
+  double uL, uR, v, _X, Y, Z;
   ifstream factor_file(factor_loc.c_str());
   cout << "Reading stereo factors" << endl;
   //read stereo measurement details from file and use to create and add GenericStereoFactor objects to the graph representation
-  while (factor_file >> x >> l >> uL >> uR >> v >> X >> Y >> Z) {
-//    graph.push_back( GenericStereoFactor<Pose3, Point3>(StereoPoint2(uL, uR, v), model, Symbol('x', x), Symbol('l', l), K));
+  while (factor_file >> x >> l >> uL >> uR >> v >> _X >> Y >> Z) {
+//    graph.emplace_shared<GenericStereoFactor<Pose3, Point3> >(StereoPoint2(uL, uR, v), model, X(x), L(l), K);
 
-    graph.push_back(GeneralSFMFactor2<Cal3_S2>(Point2(uL,v), model, Symbol('x', x), Symbol('l', l), Symbol('K', 0)));
+    graph.emplace_shared<GeneralSFMFactor2<Cal3_S2> >(Point2(uL,v), model, X(x), L(l), K(0));
 
 
     //if the landmark variable included in this factor has not yet been added to the initial variable value estimate, add it
-    if (!initial_estimate.exists(Symbol('l', l))) {
-      Pose3 camPose = initial_estimate.at<Pose3>(Symbol('x', x));
-      //transform_from() transforms the input Point3 from the camera pose space, camPose, to the global space
-      Point3 worldPoint = camPose.transform_from(Point3(X, Y, Z));
-      initial_estimate.insert(Symbol('l', l), worldPoint);
+    if (!initial_estimate.exists(L(l))) {
+      Pose3 camPose = initial_estimate.at<Pose3>(X(x));
+      //transformFrom() transforms the input Point3 from the camera pose space, camPose, to the global space
+      Point3 worldPoint = camPose.transformFrom(Point3(_X, Y, Z));
+      initial_estimate.insert(L(l), worldPoint);
     }
   }
 
@@ -107,7 +109,7 @@ int main(int argc, char** argv){
   //constrain the first pose such that it cannot change from its original value during optimization
   // NOTE: NonlinearEquality forces the optimizer to use QR rather than Cholesky
   // QR is much slower than Cholesky, but numerically more stable
-  graph.push_back(NonlinearEquality<Pose3>(Symbol('x',1),first_pose));
+  graph.emplace_shared<NonlinearEquality<Pose3> >(Symbol('x',1),first_pose);
 
   cout << "Optimizing" << endl;
   LevenbergMarquardtParams params;
@@ -115,7 +117,7 @@ int main(int argc, char** argv){
   params.verbosity = NonlinearOptimizerParams::ERROR;
 
   //create Levenberg-Marquardt optimizer to optimize the factor graph
-  LevenbergMarquardtOptimizer optimizer = LevenbergMarquardtOptimizer(graph, initial_estimate,params);
+  LevenbergMarquardtOptimizer optimizer(graph, initial_estimate,params);
 //  Values result = optimizer.optimize();
 
   string K_values_file = "K_values.txt";
@@ -124,7 +126,7 @@ int main(int argc, char** argv){
   double currentError;
 
 
-  stream_K << optimizer.iterations() << " " << optimizer.values().at<Cal3_S2>(Symbol('K',0)).vector().transpose() << endl;
+  stream_K << optimizer.iterations() << " " << optimizer.values().at<Cal3_S2>(K(0)).vector().transpose() << endl;
 
 
   // Iterative loop
@@ -133,7 +135,7 @@ int main(int argc, char** argv){
     currentError = optimizer.error();
     optimizer.iterate();
 
-    stream_K << optimizer.iterations() << " " << optimizer.values().at<Cal3_S2>(Symbol('K',0)).vector().transpose() << endl;
+    stream_K << optimizer.iterations() << " " << optimizer.values().at<Cal3_S2>(K(0)).vector().transpose() << endl;
 
     if(params.verbosity >= NonlinearOptimizerParams::ERROR) cout << "newError: " << optimizer.error() << endl;
   } while(optimizer.iterations() < params.maxIterations &&
@@ -143,13 +145,13 @@ int main(int argc, char** argv){
   Values result = optimizer.values();
 
   cout << "Final result sample:" << endl;
-  Values pose_values = result.filter<Pose3>();
+  Values pose_values = utilities::allPose3s(result);
   pose_values.print("Final camera poses:\n");
 
-  Values(result.filter<Cal3_S2>()).print("Final K\n");
+  result.at<Cal3_S2>(K(0)).print("Final K\n");
 
-  noisy_K->print("Initial noisy K\n");
-  K->print("Initial correct K\n");
+  noisy_K.print("Initial noisy K\n");
+  true_K.print("Initial correct K\n");
 
   return 0;
 }

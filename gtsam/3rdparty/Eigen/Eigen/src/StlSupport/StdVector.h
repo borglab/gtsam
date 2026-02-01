@@ -36,13 +36,16 @@ namespace std \
     vector(InputIterator first, InputIterator last, const allocator_type& a = allocator_type()) : vector_base(first, last, a) {} \
     vector(const vector& c) : vector_base(c) {}  \
     explicit vector(size_type num, const value_type& val = value_type()) : vector_base(num, val) {} \
-    vector(iterator start, iterator end) : vector_base(start, end) {}  \
+    vector(iterator start_, iterator end_) : vector_base(start_, end_) {}  \
     vector& operator=(const vector& x) {  \
       vector_base::operator=(x);  \
       return *this;  \
     } \
   }; \
 }
+
+// Don't specialize if containers are implemented according to C++11
+#if !EIGEN_HAS_CXX11_CONTAINERS
 
 namespace std {
 
@@ -59,7 +62,7 @@ namespace std {
     : vector_base(first, last, a) {} \
     vector(const vector& c) : vector_base(c) {}  \
     explicit vector(size_type num, const value_type& val = value_type()) : vector_base(num, val) {} \
-    vector(iterator start, iterator end) : vector_base(start, end) {}  \
+    vector(iterator start_, iterator end_) : vector_base(start_, end_) {}  \
     vector& operator=(const vector& x) {  \
       vector_base::operator=(x);  \
       return *this;  \
@@ -122,5 +125,7 @@ namespace std {
 #endif
   };
 }
+#endif // !EIGEN_HAS_CXX11_CONTAINERS
+
 
 #endif // EIGEN_STDVECTOR_H

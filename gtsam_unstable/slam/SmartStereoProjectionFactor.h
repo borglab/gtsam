@@ -11,7 +11,7 @@
 
 /**
  * @file   SmartStereoProjectionFactor.h
- * @brief  Smart stereo factor on StereoCameras (pose + calibration)
+ * @brief  Smart stereo factor on StereoCameras (pose)
  * @author Luca Carlone
  * @author Zsolt Kira
  * @author Frank Dellaert
@@ -20,106 +20,29 @@
 
 #pragma once
 
-#include <gtsam/slam/SmartFactorBase.h>
-
-#include <gtsam/geometry/triangulation.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/StereoCamera.h>
-#include <gtsam/slam/StereoFactor.h>
+#include <gtsam/geometry/triangulation.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/slam/SmartFactorBase.h>
+#include <gtsam/slam/SmartFactorParams.h>
+#include <gtsam/slam/StereoFactor.h>
 #include <gtsam/slam/dataset.h>
+#include <gtsam_unstable/dllexport.h>
 
-#include <boost/optional.hpp>
-#include <boost/make_shared.hpp>
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+#include <boost/serialization/optional.hpp>
+#endif
+
+#include <optional>
 #include <vector>
 
 namespace gtsam {
 
-/// Linearization mode: what factor to linearize to
- enum LinearizationMode {
-   HESSIAN, IMPLICIT_SCHUR, JACOBIAN_Q, JACOBIAN_SVD
- };
-
-/// How to manage degeneracy
-enum DegeneracyMode {
-   IGNORE_DEGENERACY, ZERO_ON_DEGENERACY, HANDLE_INFINITY
- };
-
- /*
-  *  Parameters for the smart stereo projection factors
-  */
- struct GTSAM_EXPORT SmartStereoProjectionParams {
-
-   LinearizationMode linearizationMode; ///< How to linearize the factor
-   DegeneracyMode degeneracyMode; ///< How to linearize the factor
-
-   /// @name Parameters governing the triangulation
-   /// @{
-   TriangulationParameters triangulation;
-   double retriangulationThreshold; ///< threshold to decide whether to re-triangulate
-   /// @}
-
-   /// @name Parameters governing how triangulation result is treated
-   /// @{
-   bool throwCheirality; ///< If true, re-throws Cheirality exceptions (default: false)
-   bool verboseCheirality; ///< If true, prints text for Cheirality exceptions (default: false)
-   /// @}
-
-
-   /// Constructor
-   SmartStereoProjectionParams(LinearizationMode linMode = HESSIAN,
-       DegeneracyMode degMode = IGNORE_DEGENERACY, bool throwCheirality = false,
-       bool verboseCheirality = false) :
-       linearizationMode(linMode), degeneracyMode(degMode), retriangulationThreshold(
-           1e-5), throwCheirality(throwCheirality), verboseCheirality(
-           verboseCheirality) {
-   }
-
-   virtual ~SmartStereoProjectionParams() {
-   }
-
-   void print(const std::string& str) const {
-     std::cout << "linearizationMode: " << linearizationMode << "\n";
-     std::cout << "   degeneracyMode: " << degeneracyMode << "\n";
-     std::cout << triangulation << std::endl;
-   }
-
-   LinearizationMode getLinearizationMode() const {
-     return linearizationMode;
-   }
-   DegeneracyMode getDegeneracyMode() const {
-     return degeneracyMode;
-   }
-   TriangulationParameters getTriangulationParameters() const {
-     return triangulation;
-   }
-   bool getVerboseCheirality() const {
-     return verboseCheirality;
-   }
-   bool getThrowCheirality() const {
-     return throwCheirality;
-   }
-   void setLinearizationMode(LinearizationMode linMode) {
-     linearizationMode = linMode;
-   }
-   void setDegeneracyMode(DegeneracyMode degMode) {
-     degeneracyMode = degMode;
-   }
-   void setRankTolerance(double rankTol) {
-     triangulation.rankTolerance = rankTol;
-   }
-   void setEnableEPI(bool enableEPI) {
-     triangulation.enableEPI = enableEPI;
-   }
-   void setLandmarkDistanceThreshold(double landmarkDistanceThreshold) {
-     triangulation.landmarkDistanceThreshold = landmarkDistanceThreshold;
-   }
-   void setDynamicOutlierRejectionThreshold(double dynOutRejectionThreshold) {
-     triangulation.dynamicOutlierRejectionThreshold = dynOutRejectionThreshold;
-   }
- };
-
-
+/*
+ *  Parameters for the smart stereo projection factors (identical to the SmartProjectionParams)
+ */
+typedef SmartProjectionParams SmartStereoProjectionParams;
 
 /**
  * SmartStereoProjectionFactor: triangulates point and keeps an estimate of it around.
@@ -129,8 +52,9 @@ enum DegeneracyMode {
  * If you'd like to store poses in values instead of cameras, use
  * SmartStereoProjectionPoseFactor instead
 */
-class SmartStereoProjectionFactor: public SmartFactorBase<StereoCamera> {
-private:
+class SmartStereoProjectionFactor
+    : public SmartFactorBase<StereoCamera> {
+ private:
 
   typedef SmartFactorBase<StereoCamera> Base;
 
@@ -150,25 +74,30 @@ protected:
 public:
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<SmartStereoProjectionFactor> shared_ptr;
+  typedef std::shared_ptr<SmartStereoProjectionFactor> shared_ptr;
 
   /// Vector of cameras
   typedef CameraSet<StereoCamera> Cameras;
+
+  /// Vector of monocular cameras (stereo treated as 2 monocular)
+  typedef PinholeCamera<Cal3_S2> MonoCamera;
+  typedef CameraSet<MonoCamera> MonoCameras;
+  typedef MonoCamera::MeasurementVector MonoMeasurements;
 
   /**
    * Constructor
    * @param params internal parameters of the smart factors
    */
   SmartStereoProjectionFactor(const SharedNoiseModel& sharedNoiseModel,
-      const SmartStereoProjectionParams& params =
-      SmartStereoProjectionParams()) :
-      Base(sharedNoiseModel), //
+      const SmartStereoProjectionParams& params = SmartStereoProjectionParams(),
+      const std::optional<Pose3> body_P_sensor = {}) :
+      Base(sharedNoiseModel, body_P_sensor), //
       params_(params), //
       result_(TriangulationResult::Degenerate()) {
   }
 
   /** Virtual destructor */
-  virtual ~SmartStereoProjectionFactor() {
+  ~SmartStereoProjectionFactor() override {
   }
 
   /**
@@ -177,7 +106,7 @@ public:
    * @param keyFormatter optional formatter useful for printing Symbols
    */
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const {
+      DefaultKeyFormatter) const override {
     std::cout << s << "SmartStereoProjectionFactor\n";
     std::cout << "linearizationMode:\n" << params_.linearizationMode << std::endl;
     std::cout << "triangulationParameters:\n" << params_.triangulation << std::endl;
@@ -186,7 +115,7 @@ public:
   }
 
   /// equals
-  virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
+  bool equals(const NonlinearFactor& p, double tol = 1e-9) const override {
     const SmartStereoProjectionFactor *e =
         dynamic_cast<const SmartStereoProjectionFactor*>(&p);
     return e && params_.linearizationMode == e->params_.linearizationMode
@@ -240,75 +169,28 @@ public:
     size_t m = cameras.size();
     bool retriangulate = decideIfTriangulate(cameras);
 
-//    if(!retriangulate)
-//      std::cout << "retriangulate = false" << std::endl;
-//
-//    bool retriangulate = true;
-
-    if (retriangulate) {
-//      std::cout << "Retriangulate " << std::endl;
-      std::vector<Point3> reprojections;
-      reprojections.reserve(m);
-      for(size_t i = 0; i < m; i++) {
-        reprojections.push_back(cameras[i].backproject(measured_[i]));
+    // triangulate stereo measurements by treating each stereocamera as a pair of monocular cameras
+    MonoCameras monoCameras;
+    MonoMeasurements monoMeasured;
+    for(size_t i = 0; i < m; i++) {
+      const Pose3 leftPose = cameras[i].pose();
+      const Cal3_S2 monoCal = cameras[i].calibration().calibration();
+      const MonoCamera leftCamera_i(leftPose,monoCal);
+      const Pose3 left_Pose_right = Pose3(Rot3(),Point3(cameras[i].baseline(),0.0,0.0));
+      const Pose3 rightPose = leftPose.compose( left_Pose_right );
+      const MonoCamera rightCamera_i(rightPose,monoCal);
+      const StereoPoint2 zi = measured_[i];
+      monoCameras.push_back(leftCamera_i);
+      monoMeasured.push_back(Point2(zi.uL(),zi.v()));
+      if(!std::isnan(zi.uR())){ // if right point is valid
+        monoCameras.push_back(rightCamera_i);
+        monoMeasured.push_back(Point2(zi.uR(),zi.v()));
       }
-
-      Point3 pw_sum(0,0,0);
-      BOOST_FOREACH(const Point3& pw, reprojections) {
-        pw_sum = pw_sum + pw;
-      }
-      // average reprojected landmark
-      Point3 pw_avg = pw_sum / double(m);
-
-      double totalReprojError = 0;
-
-      // check if it lies in front of all cameras
-      for(size_t i = 0; i < m; i++) {
-        const Pose3& pose = cameras[i].pose();
-        const Point3& pl = pose.transform_to(pw_avg);
-        if (pl.z() <= 0) {
-          result_ = TriangulationResult::BehindCamera();
-          return result_;
-        }
-
-        // check landmark distance
-        if (params_.triangulation.landmarkDistanceThreshold > 0 &&
-            pl.norm() > params_.triangulation.landmarkDistanceThreshold) {
-          result_ = TriangulationResult::Degenerate();
-          return result_;
-        }
-
-        if (params_.triangulation.dynamicOutlierRejectionThreshold > 0) {
-          const StereoPoint2& zi = measured_[i];
-          StereoPoint2 reprojectionError(cameras[i].project(pw_avg) - zi);
-          totalReprojError += reprojectionError.vector().norm();
-        }
-      } // for
-
-      if (params_.triangulation.dynamicOutlierRejectionThreshold > 0
-          && totalReprojError / m > params_.triangulation.dynamicOutlierRejectionThreshold) {
-        result_ = TriangulationResult::Degenerate();
-        return result_;
-      }
-
-      if(params_.triangulation.enableEPI) {
-        try {
-         pw_avg = triangulateNonlinear(cameras, measured_, pw_avg);
-        } catch(StereoCheiralityException& e) {
-          if(params_.verboseCheirality)
-            std::cout << "Cheirality Exception in SmartStereoProjectionFactor" << std::endl;
-          if(params_.throwCheirality)
-            throw;
-          result_ = TriangulationResult::BehindCamera();
-          return TriangulationResult::BehindCamera();
-        }
-      }
-
-      result_ = TriangulationResult(pw_avg);
-
-    } // if retriangulate
+    }
+    if (retriangulate)
+      result_ = gtsam::triangulateSafe(monoCameras, monoMeasured,
+          params_.triangulation);
     return result_;
-
   }
 
   /// triangulate
@@ -318,101 +200,98 @@ public:
   }
 
   /// linearize returns a Hessianfactor that is an approximation of error(p)
-  boost::shared_ptr<RegularHessianFactor<Base::Dim> > createHessianFactor(
+  std::shared_ptr<RegularHessianFactor<Base::Dim> > createHessianFactor(
       const Cameras& cameras, const double lambda = 0.0,  bool diagonalDamping =
           false) const {
 
     size_t numKeys = this->keys_.size();
     // Create structures for Hessian Factors
-    std::vector<Key> js;
+    KeyVector js;
     std::vector<Matrix> Gs(numKeys * (numKeys + 1) / 2);
     std::vector<Vector> gs(numKeys);
 
-    if (this->measured_.size() != cameras.size()) {
-      std::cout
-          << "SmartStereoProjectionHessianFactor: this->measured_.size() inconsistent with input"
-          << std::endl;
-      exit(1);
-    }
+    if (this->measured_.size() != cameras.size())
+      throw std::runtime_error("SmartStereoProjectionHessianFactor: this->"
+                               "measured_.size() inconsistent with input");
 
     triangulateSafe(cameras);
 
     if (params_.degeneracyMode == ZERO_ON_DEGENERACY && !result_) {
       // failed: return"empty" Hessian
-      BOOST_FOREACH(Matrix& m, Gs)
-        m = zeros(Base::Dim, Base::Dim);
-      BOOST_FOREACH(Vector& v, gs)
-        v = zero(Base::Dim);
-      return boost::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_,
+      for(Matrix& m: Gs)
+        m = Matrix::Zero(Base::Dim, Base::Dim);
+      for(Vector& v: gs)
+        v = Vector::Zero(Base::Dim);
+      return std::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_,
           Gs, gs, 0.0);
     }
 
     // Jacobian could be 3D Point3 OR 2D Unit3, difference is E.cols().
-    std::vector<Base::MatrixZD> Fblocks;
+    Base::FBlocks Fs;
     Matrix F, E;
     Vector b;
-    computeJacobiansWithTriangulatedPoint(Fblocks, E, b, cameras);
+    computeJacobiansWithTriangulatedPoint(Fs, E, b, cameras);
 
     // Whiten using noise model
-    Base::whitenJacobians(Fblocks, E, b);
+    Base::whitenJacobians(Fs, E, b);
 
     // build augmented hessian
     SymmetricBlockMatrix augmentedHessian = //
-        Cameras::SchurComplement(Fblocks, E, b, lambda, diagonalDamping);
+        Cameras::SchurComplement(Fs, E, b, lambda, diagonalDamping);
 
-    return boost::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_,
+    return std::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_,
         augmentedHessian);
   }
 
   // create factor
-//  boost::shared_ptr<RegularImplicitSchurFactor<StereoCamera> > createRegularImplicitSchurFactor(
+//  std::shared_ptr<RegularImplicitSchurFactor<StereoCamera> > createRegularImplicitSchurFactor(
 //      const Cameras& cameras, double lambda) const {
 //    if (triangulateForLinearize(cameras))
 //      return Base::createRegularImplicitSchurFactor(cameras, *result_, lambda);
 //    else
 //      // failed: return empty
-//      return boost::shared_ptr<RegularImplicitSchurFactor<StereoCamera> >();
+//      return std::shared_ptr<RegularImplicitSchurFactor<StereoCamera> >();
 //  }
 //
 //  /// create factor
-//  boost::shared_ptr<JacobianFactorQ<Base::Dim, Base::ZDim> > createJacobianQFactor(
+//  std::shared_ptr<JacobianFactorQ<Base::Dim, Base::ZDim> > createJacobianQFactor(
 //      const Cameras& cameras, double lambda) const {
 //    if (triangulateForLinearize(cameras))
 //      return Base::createJacobianQFactor(cameras, *result_, lambda);
 //    else
 //      // failed: return empty
-//      return boost::make_shared<JacobianFactorQ<Base::Dim, Base::ZDim> >(this->keys_);
+//      return std::make_shared<JacobianFactorQ<Base::Dim, Base::ZDim> >(this->keys_);
 //  }
 //
 //  /// Create a factor, takes values
-//  boost::shared_ptr<JacobianFactorQ<Base::Dim, Base::ZDim> > createJacobianQFactor(
+//  std::shared_ptr<JacobianFactorQ<Base::Dim, Base::ZDim> > createJacobianQFactor(
 //      const Values& values, double lambda) const {
 //    return createJacobianQFactor(this->cameras(values), lambda);
 //  }
 
   /// different (faster) way to compute Jacobian factor
-  boost::shared_ptr<JacobianFactor> createJacobianSVDFactor(
+  std::shared_ptr<JacobianFactor> createJacobianSVDFactor(
       const Cameras& cameras, double lambda) const {
     if (triangulateForLinearize(cameras))
       return Base::createJacobianSVDFactor(cameras, *result_, lambda);
     else
-      return boost::make_shared<JacobianFactorSVD<Base::Dim, ZDim> >(this->keys_);
+      return std::make_shared<JacobianFactorSVD<Base::Dim, ZDim> >(this->keys_);
   }
 
 //  /// linearize to a Hessianfactor
-//  virtual boost::shared_ptr<RegularHessianFactor<Base::Dim> > linearizeToHessian(
+//  virtual std::shared_ptr<RegularHessianFactor<Base::Dim> > linearizeToHessian(
 //      const Values& values, double lambda = 0.0) const {
 //    return createHessianFactor(this->cameras(values), lambda);
 //  }
 
 //  /// linearize to an Implicit Schur factor
-//  virtual boost::shared_ptr<RegularImplicitSchurFactor<StereoCamera> > linearizeToImplicit(
+//  virtual std::shared_ptr<RegularImplicitSchurFactor<StereoCamera> > linearizeToImplicit(
 //      const Values& values, double lambda = 0.0) const {
 //    return createRegularImplicitSchurFactor(this->cameras(values), lambda);
 //  }
 //
 //  /// linearize to a JacobianfactorQ
-//  virtual boost::shared_ptr<JacobianFactorQ<Base::Dim, Base::ZDim> > linearizeToJacobian(
+//  virtual std::shared_ptr<JacobianFactorQ<Base::Dim, Base::ZDim> > linearizeToJacobian(
 //      const Values& values, double lambda = 0.0) const {
 //    return createJacobianQFactor(this->cameras(values), lambda);
 //  }
@@ -422,7 +301,7 @@ public:
    * @param values Values structure which must contain camera poses for this factor
    * @return a Gaussian factor
    */
-  boost::shared_ptr<GaussianFactor> linearizeDamped(const Cameras& cameras,
+  std::shared_ptr<GaussianFactor> linearizeDamped(const Cameras& cameras,
       const double lambda = 0.0) const {
     // depending on flag set on construction we may linearize to different linear factors
     switch (params_.linearizationMode) {
@@ -444,7 +323,7 @@ public:
    * @param values Values structure which must contain camera poses for this factor
    * @return a Gaussian factor
    */
-  boost::shared_ptr<GaussianFactor> linearizeDamped(const Values& values,
+  std::shared_ptr<GaussianFactor> linearizeDamped(const Values& values,
       const double lambda = 0.0) const {
     // depending on flag set on construction we may linearize to different linear factors
     Cameras cameras = this->cameras(values);
@@ -452,8 +331,8 @@ public:
   }
 
   /// linearize
-  virtual boost::shared_ptr<GaussianFactor> linearize(
-      const Values& values) const {
+  std::shared_ptr<GaussianFactor> linearize(
+      const Values& values) const override {
     return linearizeDamped(values);
   }
 
@@ -464,7 +343,7 @@ public:
   bool triangulateAndComputeE(Matrix& E, const Cameras& cameras) const {
     bool nonDegenerate = triangulateForLinearize(cameras);
     if (nonDegenerate)
-      cameras.project2(*result_, boost::none, E);
+      cameras.project2(*result_, nullptr, &E);
     return nonDegenerate;
   }
 
@@ -482,7 +361,8 @@ public:
   /// Assumes the point has been computed
   /// Note E can be 2m*3 or 2m*2, in case point is degenerate
   void computeJacobiansWithTriangulatedPoint(
-      std::vector<Base::MatrixZD>& Fblocks, Matrix& E, Vector& b,
+      FBlocks& Fs,
+      Matrix& E, Vector& b,
       const Cameras& cameras) const {
 
     if (!result_) {
@@ -492,32 +372,32 @@ public:
 //      Unit3 backProjected; /* = cameras[0].backprojectPointAtInfinity(
 //          this->measured_.at(0)); */
 //
-//      Base::computeJacobians(Fblocks, E, b, cameras, backProjected);
+//      Base::computeJacobians(Fs, E, b, cameras, backProjected);
     } else {
       // valid result: just return Base version
-      Base::computeJacobians(Fblocks, E, b, cameras, *result_);
+      Base::computeJacobians(Fs, E, b, cameras, *result_);
     }
   }
 
   /// Version that takes values, and creates the point
   bool triangulateAndComputeJacobians(
-      std::vector<Base::MatrixZD>& Fblocks, Matrix& E, Vector& b,
+      FBlocks& Fs, Matrix& E, Vector& b,
       const Values& values) const {
     Cameras cameras = this->cameras(values);
     bool nonDegenerate = triangulateForLinearize(cameras);
     if (nonDegenerate)
-      computeJacobiansWithTriangulatedPoint(Fblocks, E, b, cameras);
+      computeJacobiansWithTriangulatedPoint(Fs, E, b, cameras);
     return nonDegenerate;
   }
 
   /// takes values
   bool triangulateAndComputeJacobiansSVD(
-      std::vector<Base::MatrixZD>& Fblocks, Matrix& Enull, Vector& b,
+      FBlocks& Fs, Matrix& Enull, Vector& b,
       const Values& values) const {
     Cameras cameras = this->cameras(values);
     bool nonDegenerate = triangulateForLinearize(cameras);
     if (nonDegenerate)
-      Base::computeJacobiansSVD(Fblocks, Enull, b, cameras, *result_);
+      Base::computeJacobiansSVD(Fs, Enull, b, cameras, *result_);
     return nonDegenerate;
   }
 
@@ -528,7 +408,7 @@ public:
     if (nonDegenerate)
       return Base::unwhitenedError(cameras, *result_);
     else
-      return zero(cameras.size() * Base::ZDim);
+      return Vector::Zero(cameras.size() * Base::ZDim);
   }
 
   /**
@@ -538,7 +418,7 @@ public:
    * to transform it to \f$ (h(x)-z)^2/\sigma^2 \f$, and then multiply by 0.5.
    */
   double totalReprojectionError(const Cameras& cameras,
-      boost::optional<Point3> externalPoint = boost::none) const {
+      std::optional<Point3> externalPoint = {}) const {
 
     if (externalPoint)
       result_ = TriangulationResult(*externalPoint);
@@ -562,11 +442,37 @@ public:
   }
 
   /// Calculate total reprojection error
-  virtual double error(const Values& values) const {
+  double error(const Values& values) const override {
     if (this->active(values)) {
       return totalReprojectionError(Base::cameras(values));
     } else { // else of active flag
       return 0.0;
+    }
+  }
+
+  /**
+   * This corrects the Jacobians and error vector for the case in which the
+   * right 2D measurement in the monocular camera is missing (nan).
+   */
+  void correctForMissingMeasurements(
+      const Cameras& cameras, Vector& ue,
+      typename Cameras::FBlocks* Fs = nullptr,
+      Matrix* E = nullptr) const override {
+    // when using stereo cameras, some of the measurements might be missing:
+    for (size_t i = 0; i < cameras.size(); i++) {
+      const StereoPoint2& z = measured_.at(i);
+      if (std::isnan(z.uR()))  // if the right 2D measurement is invalid
+      {
+        if (Fs) {  // delete influence of right point on jacobian Fs
+          MatrixZD& Fi = Fs->at(i);
+          for (size_t ii = 0; ii < Dim; ii++) Fi(1, ii) = 0.0;
+        }
+        if (E)  // delete influence of right point on jacobian E
+          E->row(ZDim * i + 1) = Matrix::Zero(1, E->cols());
+
+        // set the corresponding entry of vector ue to zero
+        ue(ZDim * i + 1) = 0.0;
+      }
     }
   }
 
@@ -582,22 +488,23 @@ public:
     }
 
     /// Is result valid?
-    bool isValid() const {
-      return bool(result_);
-    }
+    bool isValid() const { return result_.valid(); }
 
     /** return the degenerate state */
-    bool isDegenerate() const {
-      return result_.degenerate();
-    }
+    bool isDegenerate() const { return result_.degenerate(); }
 
     /** return the cheirality status flag */
-    bool isPointBehindCamera() const {
-      return result_.behindCamera();
-    }
+    bool isPointBehindCamera() const { return result_.behindCamera(); }
+
+    /** return the outlier state */
+    bool isOutlier() const { return result_.outlier(); }
+
+    /** return the farPoint state */
+    bool isFarPoint() const { return result_.farPoint(); }
 
 private:
 
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -606,6 +513,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(params_.throwCheirality);
     ar & BOOST_SERIALIZATION_NVP(params_.verboseCheirality);
   }
+#endif
 };
 
 /// traits

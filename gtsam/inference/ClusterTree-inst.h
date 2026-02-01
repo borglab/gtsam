@@ -7,16 +7,248 @@
  * @brief Collects factorgraph fragments defined on variable clusters, arranged in a tree
  */
 
+#pragma once
+
 #include <gtsam/inference/ClusterTree.h>
 #include <gtsam/inference/BayesTree.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/base/treeTraversal-inst.h>
 
-#include <boost/foreach.hpp>
-#include <boost/bind.hpp>
+#ifdef GTSAM_USE_TBB
+#include <mutex>
+#endif
+#include <queue>
+#include <cassert>
 
 namespace gtsam {
+
+/* ************************************************************************* */
+template<class GRAPH>
+void ClusterTree<GRAPH>::Cluster::print(const std::string& s,
+    const KeyFormatter& keyFormatter) const {
+  std::cout << s << " (" << problemSize_ << ")";
+  PrintKeyVector(orderedFrontalKeys);
+}
+
+/* ************************************************************************* */
+template <class GRAPH>
+std::vector<size_t> ClusterTree<GRAPH>::Cluster::nrFrontalsOfChildren() const {
+  std::vector<size_t> nrFrontals;
+  nrFrontals.reserve(nrChildren());
+  for (const sharedNode& child : children)
+    nrFrontals.push_back(child->nrFrontals());
+  return nrFrontals;
+}
+
+/* ************************************************************************* */
+template <class GRAPH>
+KeySet ClusterTree<GRAPH>::Cluster::separatorKeys(KeySetMap* cache) const {
+  if (cache) {
+    auto it = cache->find(this);
+    if (it != cache->end()) return it->second;
+  }
+
+  KeySet keys;
+  for (const auto& factor : factors) {
+    if (!factor) continue;
+    keys.insert(factor->begin(), factor->end());
+  }
+  for (const auto& child : children) {
+    KeySet childSeparators = child->separatorKeys(cache);
+    keys.insert(childSeparators.begin(), childSeparators.end());
+  }
+  for (Key key : orderedFrontalKeys) {
+    keys.erase(key);
+  }
+
+  if (cache) {
+    auto result = cache->emplace(this, std::move(keys));
+    return result.first->second;
+  }
+  return keys;
+}
+
+/* ************************************************************************* */
+template <class GRAPH>
+void ClusterTree<GRAPH>::Cluster::merge(const std::shared_ptr<Cluster>& cluster) {
+  // Merge keys. For efficiency, we add keys in reverse order at end, calling reverse after..
+  orderedFrontalKeys.insert(orderedFrontalKeys.end(), cluster->orderedFrontalKeys.rbegin(),
+                            cluster->orderedFrontalKeys.rend());
+  factors.push_back(cluster->factors);
+  children.insert(children.end(), cluster->children.begin(), cluster->children.end());
+  // Increment problem size
+  problemSize_ = std::max(problemSize_, cluster->problemSize_);
+}
+
+/* ************************************************************************* */
+template <class GRAPH>
+void ClusterTree<GRAPH>::Cluster::mergeChildren(
+    const std::vector<bool>& merge) {
+  mergeChildren(childrenFromMask(merge));
+}
+
+/* ************************************************************************* */
+template <class GRAPH>
+void ClusterTree<GRAPH>::Cluster::mergeChildren(
+    const Children& selected) {
+  gttic(Cluster_mergeChildren);
+  // Merge selected children into this node while preserving unselected children.
+  if (selected.empty()) return;
+
+  FastSet<const Cluster*> selectedSet;
+  for (const auto& child : selected) {
+    if (child) {
+      selectedSet.insert(child.get());
+    }
+  }
+  if (selectedSet.empty()) return;
+
+  // Count how many keys, factors and children we'll end up with
+  size_t nrKeys = orderedFrontalKeys.size();
+  size_t nrFactors = factors.size();
+  size_t nrNewChildren = 0;
+  for (const sharedNode& child : this->children) {
+    if (child && selectedSet.count(child.get()) != 0) {
+      nrKeys += child->orderedFrontalKeys.size();
+      nrFactors += child->factors.size();
+      nrNewChildren += child->nrChildren();
+    } else {
+      nrNewChildren += 1;  // we keep the child
+    }
+  }
+
+  // now reserve space, and really merge
+  auto oldChildren = this->children;
+  this->children.clear();
+  this->children.reserve(nrNewChildren);
+  orderedFrontalKeys.reserve(nrKeys);
+  factors.reserve(nrFactors);
+  for (const sharedNode& child : oldChildren) {
+    if (child && selectedSet.count(child.get()) != 0) {
+      this->merge(child);
+    } else {
+      this->addChild(child);  // we keep the child
+    }
+  }
+  // merge() appends keys in reverse order to defer a final reverse.
+  std::reverse(orderedFrontalKeys.begin(), orderedFrontalKeys.end());
+}
+
+/* ************************************************************************* */
+template <class GRAPH>
+void ClusterTree<GRAPH>::Cluster::mergeChildrenSiblings(
+    const std::vector<bool>& merge) {
+  mergeChildrenSiblings(childrenFromMask(merge));
+}
+
+/* ************************************************************************* */
+template <class GRAPH>
+void ClusterTree<GRAPH>::Cluster::mergeChildrenSiblings(
+    const Children& selected) {
+  gttic(Cluster_mergeChildrenSiblings);
+  // Merge selected siblings into a new child while keeping unselected children.
+  if (selected.empty()) return;
+
+  FastSet<const Cluster*> selectedSet;
+  for (const auto& child : selected) {
+    if (child) {
+      selectedSet.insert(child.get());
+    }
+  }
+  const size_t selectedCount = selectedSet.size();
+  // Nothing to merge (0 or 1 selected), so keep children unchanged.
+  if (selectedCount <= 1) return;
+
+  auto oldChildren = this->children;
+  Children newChildren;
+  newChildren.reserve(oldChildren.size() - selectedCount + 1);
+  auto merged = std::make_shared<Cluster>();
+  bool inserted = false;
+
+  for (const sharedNode& child : oldChildren) {
+    if (child && selectedSet.count(child.get()) != 0) {
+      // Merge selected siblings into a single new cluster.
+      merged->merge(child);
+      if (!inserted) {
+        // Insert merged cluster at the first selected child's position.
+        newChildren.push_back(merged);
+        inserted = true;
+      }
+    } else {
+      newChildren.push_back(child);
+    }
+  }
+
+  // merge() appends keys in reverse order to defer a final reverse.
+  std::reverse(merged->orderedFrontalKeys.begin(),
+               merged->orderedFrontalKeys.end());
+  this->children.swap(newChildren);
+}
+
+/* ************************************************************************* */
+template <class GRAPH>
+typename ClusterTree<GRAPH>::Cluster::Children
+ClusterTree<GRAPH>::Cluster::childrenFromMask(
+    const std::vector<bool>& merge) const {
+  assert(merge.size() == this->children.size());
+  // Translate a boolean mask into the corresponding child pointers.
+  Children selected;
+  for (size_t i = 0; i < children.size(); ++i) {
+    if (merge[i]) {
+      selected.push_back(children[i]);
+    }
+  }
+  return selected;
+}
+
+/* ************************************************************************* */
+template <class GRAPH>
+void ClusterTree<GRAPH>::print(const std::string& s, const KeyFormatter& keyFormatter) const {
+  treeTraversal::PrintForest(*this, s, keyFormatter);
+}
+
+/* ************************************************************************* */
+
+/* Destructor.
+ * Using default destructor causes stack overflow for large trees due to recursive destruction of nodes;
+ * so we manually decrease the reference count of each node in the tree through a BFS, and the nodes with
+ * reference count 0 will be deleted. Please see [PR-1441](https://github.com/borglab/gtsam/pull/1441) for more details.
+ */
+template <class GRAPH>
+ClusterTree<GRAPH>::~ClusterTree() {
+  // For each tree, we first move the root into a queue; then we do a BFS on the tree with the queue;
+  
+  for (auto&& root : roots_) {
+    std::queue<sharedNode> bfs_queue;
+
+    // first, steal the root and move it to the queue. This invalidates root
+    bfs_queue.push(std::move(root));
+
+    // for each node iterated, if its reference count is 1, it will be deleted while its children are still in the queue.
+    // so that the recursive deletion will not happen.
+    while (!bfs_queue.empty()) {
+      // move the ownership of the front node from the queue to the current variable, invalidating the sharedClique at the front of the queue
+      auto node = std::move(bfs_queue.front());
+      bfs_queue.pop();
+
+      // add the children of the current node to the queue, so that the queue will also own the children nodes.
+      for (auto child : node->children) {
+        bfs_queue.push(std::move(child));
+      } // leaving the scope of current will decrease the reference count of the current node by 1, and if the reference count is 0,
+        // the node will be deleted. Because the children are in the queue, the deletion of the node will not trigger a recursive
+        // deletion of the children.
+    }
+  }
+
+}
+
+/* ************************************************************************* */
+template <class GRAPH>
+ClusterTree<GRAPH>& ClusterTree<GRAPH>::operator=(const This& other) {
+  // Start by duplicating the tree.
+  roots_ = treeTraversal::CloneForest(other);
+  return *this;
+}
 
 /* ************************************************************************* */
 // Elimination traversal data - stores a pointer to the parent data and collects
@@ -34,12 +266,26 @@ struct EliminationData {
   EliminationData* const parentData;
   size_t myIndexInParent;
   FastVector<sharedFactor> childFactors;
-  boost::shared_ptr<BTNode> bayesTreeNode;
+  std::shared_ptr<BTNode> bayesTreeNode;
+#ifdef GTSAM_USE_TBB
+  std::shared_ptr<std::mutex> writeLock;
+#endif
+
   EliminationData(EliminationData* _parentData, size_t nChildren) :
-      parentData(_parentData), bayesTreeNode(boost::make_shared<BTNode>()) {
+      parentData(_parentData), bayesTreeNode(std::make_shared<BTNode>())
+#ifdef GTSAM_USE_TBB
+      , writeLock(std::make_shared<std::mutex>())
+#endif
+    {
     if (parentData) {
+#ifdef GTSAM_USE_TBB
+      parentData->writeLock->lock();
+#endif
       myIndexInParent = parentData->childFactors.size();
       parentData->childFactors.push_back(sharedFactor());
+#ifdef GTSAM_USE_TBB
+      parentData->writeLock->unlock();
+#endif
     } else {
       myIndexInParent = 0;
     }
@@ -56,7 +302,7 @@ struct EliminationData {
       const typename CLUSTERTREE::sharedNode& node,
       EliminationData& parentData) {
     assert(node);
-    EliminationData myData(&parentData, node->children.size());
+    EliminationData myData(&parentData, node->nrChildren());
     myData.bayesTreeNode->problemSize_ = node->problemSize();
     return myData;
   }
@@ -76,120 +322,62 @@ struct EliminationData {
     }
 
     // Function that does the HEAVY lifting
-    void operator()(const typename CLUSTERTREE::sharedNode& node,
-        EliminationData& myData) {
+    void operator()(const typename CLUSTERTREE::sharedNode& node, EliminationData& myData) {
       assert(node);
 
       // Gather factors
       FactorGraphType gatheredFactors;
-      gatheredFactors.reserve(node->factors.size() + node->children.size());
-      gatheredFactors += node->factors;
-      gatheredFactors += myData.childFactors;
+      gatheredFactors.reserve(node->factors.size() + node->nrChildren());
+      gatheredFactors.push_back(node->factors);
+      gatheredFactors.push_back(myData.childFactors);
 
       // Check for Bayes tree orphan subtrees, and add them to our children
-      BOOST_FOREACH(const sharedFactor& f, node->factors) {
-        if (const BayesTreeOrphanWrapper<BTNode>* asSubtree =
-            dynamic_cast<const BayesTreeOrphanWrapper<BTNode>*>(f.get())) {
+      // TODO(frank): should this really happen here?
+      for (const sharedFactor& factor: node->factors) {
+        auto asSubtree = dynamic_cast<const BayesTreeOrphanWrapper<BTNode>*>(factor.get());
+        if (asSubtree) {
           myData.bayesTreeNode->children.push_back(asSubtree->clique);
           asSubtree->clique->parent_ = myData.bayesTreeNode;
         }
       }
 
       // >>>>>>>>>>>>>> Do dense elimination step >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      std::pair<boost::shared_ptr<ConditionalType>,
-          boost::shared_ptr<FactorType> > eliminationResult =
-          eliminationFunction_(gatheredFactors, node->orderedFrontalKeys);
+      auto eliminationResult = eliminationFunction_(gatheredFactors, node->orderedFrontalKeys);
       // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-      // Store conditional in BayesTree clique, and in the case of ISAM2Clique also store the remaining factor
+      // Store conditional in BayesTree clique, and in the case of ISAM2Clique also store the
+      // remaining factor
       myData.bayesTreeNode->setEliminationResult(eliminationResult);
 
       // Fill nodes index - we do this here instead of calling insertRoot at the end to avoid
       // putting orphan subtrees in the index - they'll already be in the index of the ISAM2
       // object they're added to.
-      BOOST_FOREACH(const Key& j, myData.bayesTreeNode->conditional()->frontals())
-        nodesIndex_.insert(std::make_pair(j, myData.bayesTreeNode));
-
+      for (const Key& j : myData.bayesTreeNode->conditional()->frontals()) {
+#ifdef GTSAM_USE_TBB
+        nodesIndex_.insert({j, myData.bayesTreeNode});
+#else
+        nodesIndex_.emplace(j, myData.bayesTreeNode);
+#endif
+      }
       // Store remaining factor in parent's gathered factors
-      if (!eliminationResult.second->empty())
-        myData.parentData->childFactors[myData.myIndexInParent] =
-            eliminationResult.second;
+      if (!eliminationResult.second->empty()) {
+#ifdef GTSAM_USE_TBB
+        myData.parentData->writeLock->lock();
+#endif
+        myData.parentData->childFactors[myData.myIndexInParent] = eliminationResult.second;
+#ifdef GTSAM_USE_TBB
+        myData.parentData->writeLock->unlock();
+#endif
+      }
     }
   };
 };
 
 /* ************************************************************************* */
 template<class BAYESTREE, class GRAPH>
-void ClusterTree<BAYESTREE, GRAPH>::Cluster::print(const std::string& s,
-    const KeyFormatter& keyFormatter) const {
-  std::cout << s << " (" << problemSize_ << ")";
-  PrintKeyVector(orderedFrontalKeys);
-}
-
-/* ************************************************************************* */
-template<class BAYESTREE, class GRAPH>
-void ClusterTree<BAYESTREE, GRAPH>::Cluster::mergeChildren(
-    const std::vector<bool>& merge) {
-  gttic(Cluster_mergeChildren);
-
-  // Count how many keys, factors and children we'll end up with
-  size_t nrKeys = orderedFrontalKeys.size();
-  size_t nrFactors = factors.size();
-  size_t nrNewChildren = 0;
-  // Loop over children
-  size_t i = 0;
-  BOOST_FOREACH(const sharedNode& child, children) {
-    if (merge[i]) {
-      nrKeys += child->orderedFrontalKeys.size();
-      nrFactors += child->factors.size();
-      nrNewChildren += child->children.size();
-    } else {
-      nrNewChildren += 1; // we keep the child
-    }
-    ++i;
-  }
-
-  // now reserve space, and really merge
-  orderedFrontalKeys.reserve(nrKeys);
-  factors.reserve(nrFactors);
-  typename Node::Children newChildren;
-  newChildren.reserve(nrNewChildren);
-  i = 0;
-  BOOST_FOREACH(const sharedNode& child, children) {
-    if (merge[i]) {
-      // Merge keys. For efficiency, we add keys in reverse order at end, calling reverse after..
-      orderedFrontalKeys.insert(orderedFrontalKeys.end(),
-          child->orderedFrontalKeys.rbegin(), child->orderedFrontalKeys.rend());
-      // Merge keys, factors, and children.
-      factors.insert(factors.end(), child->factors.begin(),
-          child->factors.end());
-      newChildren.insert(newChildren.end(), child->children.begin(),
-          child->children.end());
-      // Increment problem size
-      problemSize_ = std::max(problemSize_, child->problemSize_);
-      // Increment number of frontal variables
-    } else {
-      newChildren.push_back(child); // we keep the child
-    }
-    ++i;
-  }
-  children = newChildren;
-  std::reverse(orderedFrontalKeys.begin(), orderedFrontalKeys.end());
-}
-
-/* ************************************************************************* */
-template<class BAYESTREE, class GRAPH>
-void ClusterTree<BAYESTREE, GRAPH>::print(const std::string& s,
-    const KeyFormatter& keyFormatter) const {
-  treeTraversal::PrintForest(*this, s, keyFormatter);
-}
-
-/* ************************************************************************* */
-template<class BAYESTREE, class GRAPH>
-ClusterTree<BAYESTREE, GRAPH>& ClusterTree<BAYESTREE, GRAPH>::operator=(
+EliminatableClusterTree<BAYESTREE, GRAPH>& EliminatableClusterTree<BAYESTREE, GRAPH>::operator=(
     const This& other) {
-  // Start by duplicating the tree.
-  roots_ = treeTraversal::CloneForest(other);
+  ClusterTree<GRAPH>::operator=(other);
 
   // Assign the remaining factors - these are pointers to factors in the original factor graph and
   // we do not clone them.
@@ -199,41 +387,40 @@ ClusterTree<BAYESTREE, GRAPH>& ClusterTree<BAYESTREE, GRAPH>::operator=(
 }
 
 /* ************************************************************************* */
-template<class BAYESTREE, class GRAPH>
-std::pair<boost::shared_ptr<BAYESTREE>, boost::shared_ptr<GRAPH> > ClusterTree<
-    BAYESTREE, GRAPH>::eliminate(const Eliminate& function) const {
+template <class BAYESTREE, class GRAPH>
+std::pair<std::shared_ptr<BAYESTREE>, std::shared_ptr<GRAPH> >
+EliminatableClusterTree<BAYESTREE, GRAPH>::eliminate(const Eliminate& function) const {
   gttic(ClusterTree_eliminate);
   // Do elimination (depth-first traversal).  The rootsContainer stores a 'dummy' BayesTree node
   // that contains all of the roots as its children.  rootsContainer also stores the remaining
-  // uneliminated factors passed up from the roots.
-  boost::shared_ptr<BayesTreeType> result = boost::make_shared<BayesTreeType>();
+  // un-eliminated factors passed up from the roots.
+  std::shared_ptr<BayesTreeType> result = std::make_shared<BayesTreeType>();
+
   typedef EliminationData<This> Data;
-  Data rootsContainer(0, roots_.size());
-  typename Data::EliminationPostOrderVisitor visitorPost(function,
-      result->nodes_);
+  Data rootsContainer(0, this->nrRoots());
+
+  typename Data::EliminationPostOrderVisitor visitorPost(function, result->nodes_);
   {
-    TbbOpenMPMixedScope threadLimiter; // Limits OpenMP threads since we're mixing TBB and OpenMP
-    treeTraversal::DepthFirstForestParallel(*this, rootsContainer,
-        Data::EliminationPreOrderVisitor, visitorPost, 10);
+    TbbOpenMPMixedScope threadLimiter;  // Limits OpenMP threads since we're mixing TBB and OpenMP
+    treeTraversal::DepthFirstForestParallel(*this, rootsContainer, Data::EliminationPreOrderVisitor,
+                                            visitorPost, 10);
   }
 
   // Create BayesTree from roots stored in the dummy BayesTree node.
-  result->roots_.insert(result->roots_.end(),
-      rootsContainer.bayesTreeNode->children.begin(),
-      rootsContainer.bayesTreeNode->children.end());
+  result->roots_.insert(result->roots_.end(), rootsContainer.bayesTreeNode->children.begin(),
+                        rootsContainer.bayesTreeNode->children.end());
 
   // Add remaining factors that were not involved with eliminated variables
-  boost::shared_ptr<FactorGraphType> remaining = boost::make_shared<
-      FactorGraphType>();
-  remaining->reserve(
-      remainingFactors_.size() + rootsContainer.childFactors.size());
+  std::shared_ptr<FactorGraphType> remaining = std::make_shared<FactorGraphType>();
+  remaining->reserve(remainingFactors_.size() + rootsContainer.childFactors.size());
   remaining->push_back(remainingFactors_.begin(), remainingFactors_.end());
-  BOOST_FOREACH(const sharedFactor& factor, rootsContainer.childFactors) {
+  for (const sharedFactor& factor : rootsContainer.childFactors) {
     if (factor)
       remaining->push_back(factor);
   }
+
   // Return result
-  return std::make_pair(result, remaining);
+  return {result, remaining};
 }
 
-}
+} // namespace gtsam

@@ -1,12 +1,9 @@
 # Install headers
 file(GLOB base_headers "*.h")
-install(FILES ${base_headers} DESTINATION include/gtsam/base)
+install(FILES ${base_headers} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam/base)
 
 file(GLOB base_headers_tree "treeTraversal/*.h")
-install(FILES ${base_headers_tree} DESTINATION include/gtsam/base/treeTraversal)
-
-file(GLOB deprecated_headers "deprecated/*.h")
-install(FILES ${deprecated_headers} DESTINATION include/gtsam/base/deprecated)
+install(FILES ${base_headers_tree} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam/base/treeTraversal)
 
 # Build tests
 add_subdirectory(tests)

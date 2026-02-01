@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -15,14 +15,10 @@
  * @author  Michael Kaess
  */
 
-#include <boost/foreach.hpp>
-#include <boost/assign/std/list.hpp> // for operator +=
-using namespace boost::assign;
-
-#include <CppUnitLite/TestHarness.h>
-
 #include <gtsam/symbolic/SymbolicISAM.h>
 #include <gtsam/symbolic/tests/symbolicExampleGraphs.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
@@ -83,11 +79,11 @@ TEST( SymbolicISAM, iSAM )
   // Now we modify the Bayes tree by inserting a new factor over B and S
 
   SymbolicFactorGraph fullGraph;
-  fullGraph += asiaGraph;
-  fullGraph += SymbolicFactor(_B_, _S_);
+  fullGraph.push_back(asiaGraph);
+  fullGraph.emplace_shared<SymbolicFactor>(_B_, _S_);
 
   // This ordering is chosen to match the one chosen by COLAMD during the ISAM update
-  Ordering ordering(list_of(_X_)(_B_)(_S_)(_E_)(_L_)(_T_));
+  Ordering ordering {_X_, _B_, _S_, _E_, _L_, _T_};
   SymbolicBayesTree expected = *fullGraph.eliminateMultifrontal(ordering);
 
   // Add factor on B and S

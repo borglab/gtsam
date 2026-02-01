@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -17,8 +17,10 @@
  * @date June 14, 2012
  */
 
+#pragma once
+
 #include <gtsam/global_includes.h>
-#include <gtsam_unstable/base/dllexport.h>
+#include <gtsam_unstable/dllexport.h>
 #include <string>
 
 namespace gtsam {
@@ -27,6 +29,8 @@ namespace gtsam {
     size_t id;
     Dummy();
     ~Dummy();
+    Dummy(const Dummy& other) = default;
+    Dummy& operator=(const Dummy& other) = default;
     void print(const std::string& s="") const ;
     unsigned char dummyTwoVar(unsigned char a) const ;
   };

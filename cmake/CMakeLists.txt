@@ -4,9 +4,9 @@
 # Set the install directory depending on the platform so it will be found by
 # find_package(GTSAMCMakeTools)
 if(WIN32 AND NOT CYGWIN)
-	set(SCRIPT_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/CMake")
+	set(SCRIPT_INSTALL_DIR "CMake")
 else()
-	set(SCRIPT_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib/cmake")
+	set(SCRIPT_INSTALL_DIR "lib/cmake")
 endif()
 
 # Install scripts
@@ -16,10 +16,8 @@ install(FILES
   dllexport.h.in
   GtsamBuildTypes.cmake
   GtsamMakeConfigFile.cmake
-  GtsamMatlabWrap.cmake
-  GtsamPythonWrap.cmake
   GtsamTesting.cmake
+  GtsamPrinting.cmake
+  FindNumPy.cmake
   README.html
   DESTINATION "${SCRIPT_INSTALL_DIR}/GTSAMCMakeTools")
-
-

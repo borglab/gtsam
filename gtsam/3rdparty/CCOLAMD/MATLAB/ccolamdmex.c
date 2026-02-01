@@ -5,8 +5,6 @@
 /* ----------------------------------------------------------------------------
  * CCOLAMD, Copyright (C), Univ. of Florida.  Authors: Timothy A. Davis,
  * Sivasankaran Rajamanickam, and Stefan Larimore
- * See License.txt for the Version 2.1 of the GNU Lesser General Public License
- * http://www.cise.ufl.edu/research/sparse
  * -------------------------------------------------------------------------- */
 
 /* 
@@ -26,7 +24,7 @@
 #include "matrix.h"
 #include <stdlib.h>
 #include <string.h>
-#include "UFconfig.h"
+#define Long SuiteSparse_long
 
 /* ========================================================================== */
 /* === ccolamd mexFunction ================================================== */
@@ -44,24 +42,24 @@ void mexFunction
 {
     /* === Local variables ================================================== */
 
-    UF_long *A ;		/* ccolamd's copy of the matrix and workspace */
-    UF_long *cmember ;		/* ccolamd's copy of the constraint set */
-    double *in_cmember ;	/* input constraint set */
-    UF_long *p ;		/* ccolamd's copy of the column pointers */
-    UF_long Alen ;		/* size of A */
-    UF_long cslen ;		/* size of CS  */
-    UF_long n_col ;		/* number of columns of A */
-    UF_long n_row ;		/* number of rows of A */
-    UF_long nnz ;		/* number of entries in A */
-    UF_long full ;		/* TRUE if input matrix full, FALSE if sparse */
+    Long *A ;                   /* ccolamd's copy of the matrix and workspace */
+    Long *cmember ;             /* ccolamd's copy of the constraint set */
+    double *in_cmember ;        /* input constraint set */
+    Long *p ;                   /* ccolamd's copy of the column pointers */
+    Long Alen ;                 /* size of A */
+    Long cslen ;                /* size of CS  */
+    Long n_col ;                /* number of columns of A */
+    Long n_row ;                /* number of rows of A */
+    Long nnz ;                  /* number of entries in A */
+    Long full ;                 /* TRUE if input matrix full, FALSE if sparse */
     double knobs [CCOLAMD_KNOBS] ; /* ccolamd user-controllable parameters */
-    double *out_perm ;		/* output permutation vector */
-    double *out_stats ;		/* output stats vector */
-    double *in_knobs ;		/* input knobs vector */
-    UF_long i ;			/* loop counter */
-    mxArray *Ainput ;		/* input matrix handle */
-    UF_long spumoni ;		/* verbosity variable */
-    UF_long stats [CCOLAMD_STATS] ;	/* stats for ccolamd */
+    double *out_perm ;          /* output permutation vector */
+    double *out_stats ;         /* output stats vector */
+    double *in_knobs ;          /* input knobs vector */
+    Long i ;                    /* loop counter */
+    mxArray *Ainput ;           /* input matrix handle */
+    Long spumoni ;              /* verbosity variable */
+    Long stats [CCOLAMD_STATS] ;/* stats for ccolamd */
 
     /* === Check inputs ===================================================== */
 
@@ -80,11 +78,11 @@ void mexFunction
 	cslen = mxGetNumberOfElements (pargin [2]) ;
 	if (cslen != 0)
 	{
-	    cmember = (UF_long *) mxCalloc (cslen, sizeof (UF_long)) ;
+	    cmember = (Long *) mxCalloc (cslen, sizeof (Long)) ;
 	    for (i = 0 ; i < cslen ; i++)
 	    {
 		/* convert cmember from 1-based to 0-based */
-		cmember[i] = ((UF_long) in_cmember [i] - 1) ;
+		cmember[i] = ((Long) in_cmember [i] - 1) ;
 	    }
 	}
     }
@@ -157,10 +155,10 @@ void mexFunction
     n_col = mxGetN (Ainput) ;
 
     /* get column pointer vector */
-    p = (UF_long *) mxCalloc (n_col+1, sizeof (UF_long)) ;
-    (void) memcpy (p, mxGetJc (Ainput), (n_col+1)*sizeof (UF_long)) ;
+    p = (Long *) mxCalloc (n_col+1, sizeof (Long)) ;
+    (void) memcpy (p, mxGetJc (Ainput), (n_col+1)*sizeof (Long)) ;
     nnz = p [n_col] ;
-    Alen = (UF_long) ccolamd_l_recommended (nnz, n_row, n_col) ;
+    Alen = (Long) ccolamd_l_recommended (nnz, n_row, n_col) ;
     if (Alen == 0)
     {
     	mexErrMsgTxt ("ccolamd: problem too large") ;
@@ -168,8 +166,8 @@ void mexFunction
 
     /* === Copy input matrix into workspace ================================= */
 
-    A = (UF_long *) mxCalloc (Alen, sizeof (UF_long)) ;
-    (void) memcpy (A, mxGetIr (Ainput), nnz*sizeof (UF_long)) ;
+    A = (Long *) mxCalloc (Alen, sizeof (Long)) ;
+    (void) memcpy (A, mxGetIr (Ainput), nnz*sizeof (Long)) ;
 
     if (full)
     {

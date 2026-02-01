@@ -13,28 +13,30 @@
  * @file Cal3DS2.cpp
  * @date Feb 28, 2010
  * @author ydjian
+ * @author Varun Agrawal
  */
 
-#include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/Vector.h>
+#include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/Cal3DS2.h>
 
 namespace gtsam {
 
 /* ************************************************************************* */
-void Cal3DS2::print(const std::string& s_) const {
-  Base::print(s_);
+std::ostream& operator<<(std::ostream& os, const Cal3DS2& cal) {
+  os << (Cal3DS2_Base&)cal;
+  return os;
 }
 
 /* ************************************************************************* */
+void Cal3DS2::print(const std::string& s) const { Base::print(s); }
+
+/* ************************************************************************* */
 bool Cal3DS2::equals(const Cal3DS2& K, double tol) const {
-  if (fabs(fx_ - K.fx_) > tol || fabs(fy_ - K.fy_) > tol || fabs(s_ - K.s_) > tol ||
-      fabs(u0_ - K.u0_) > tol || fabs(v0_ - K.v0_) > tol || fabs(k1_ - K.k1_) > tol ||
-      fabs(k2_ - K.k2_) > tol || fabs(p1_ - K.p1_) > tol || fabs(p2_ - K.p2_) > tol)
-    return false;
-  return true;
+  const Cal3DS2_Base* base = dynamic_cast<const Cal3DS2_Base*>(&K);
+  return Cal3DS2_Base::equals(*base, tol);
 }
 
 /* ************************************************************************* */
@@ -46,8 +48,5 @@ Cal3DS2 Cal3DS2::retract(const Vector& d) const {
 Vector Cal3DS2::localCoordinates(const Cal3DS2& T2) const {
   return T2.vector() - vector();
 }
-
 }
 /* ************************************************************************* */
-
-

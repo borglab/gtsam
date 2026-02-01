@@ -26,27 +26,27 @@ currentPoseGlobal = Pose3;
 currentVelocityGlobal = velocity;
 % Initial state (IMU)
 currentPoseGlobalIMU = Pose3; %currentPoseGlobal.compose(IMUinBody);
-%currentVelocityGlobalIMU = IMUinBody.rotation.unrotate(Point3(velocity)).vector; % no Coriolis here? 
+%currentVelocityGlobalIMU = IMUinBody.rotation.unrotate(Point3(velocity)); % no Coriolis here?
 currentVelocityGlobalIMU = IMUinBody.rotation.unrotate( ...
-     Point3(velocity + cross(omega, IMUinBody.translation.vector))).vector;
+     Point3(velocity + cross(omega, IMUinBody.translation)));
    
 
 % Positions
 % body trajectory
 positions = zeros(3, length(times)+1);
-positions(:,1) = currentPoseGlobal.translation.vector;
+positions(:,1) = currentPoseGlobal.translation;
 poses(1).p = positions(:,1);
 poses(1).R = currentPoseGlobal.rotation.matrix;
 
 % Expected IMU trajectory (from body trajectory and lever arm)
 positionsIMUe = zeros(3, length(times)+1);
-positionsIMUe(:,1) = IMUinBody.compose(currentPoseGlobalIMU).translation.vector;
+positionsIMUe(:,1) = IMUinBody.compose(currentPoseGlobalIMU).translation;
 posesIMUe(1).p = positionsIMUe(:,1);
 posesIMUe(1).R = poses(1).R * IMUinBody.rotation.matrix;
 
 % Integrated IMU trajectory (from IMU measurements)
 positionsIMU = zeros(3, length(times)+1);
-positionsIMU(:,1) = IMUinBody.compose(currentPoseGlobalIMU).translation.vector;
+positionsIMU(:,1) = IMUinBody.compose(currentPoseGlobalIMU).translation;
 posesIMU(1).p = positionsIMU(:,1);
 posesIMU(1).R = IMUinBody.compose(currentPoseGlobalIMU).rotation.matrix;
 
@@ -62,9 +62,9 @@ for t = times
         currentPoseGlobalIMU, currentVelocityGlobalIMU, acc_omega, deltaT);
 
     % Store data in some structure for statistics and plots  
-    positions(:,i) = currentPoseGlobal.translation.vector;
-    positionsIMUe(:,i) = currentPoseGlobal.translation.vector + currentPoseGlobal.rotation.matrix * IMUinBody.translation.vector;
-    positionsIMU(:,i) = IMUinBody.compose(currentPoseGlobalIMU).translation.vector;
+    positions(:,i) = currentPoseGlobal.translation;
+    positionsIMUe(:,i) = currentPoseGlobal.translation + currentPoseGlobal.rotation.matrix * IMUinBody.translation;
+    positionsIMU(:,i) = IMUinBody.compose(currentPoseGlobalIMU).translation;
     
     poses(i).p = positions(:,i);
     posesIMUe(i).p = positionsIMUe(:,i);

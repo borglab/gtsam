@@ -16,23 +16,18 @@
  * @author  Kai Ni
  * @author  Frank Dellaert
  * @author  Alex Cunningham
+ * @author  Alex Hagiopol
+ * @author  Varun Agrawal
  */
 
 // \callgraph
 
 #pragma once
+
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/Vector.h>
-#include <gtsam/config.h>      // Configuration from CMake
 
-#include <Eigen/Core>
-#include <Eigen/Cholesky>
-#include <Eigen/LU>
-#include <boost/format.hpp>
-#include <boost/function.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/math/special_functions/fpclassify.hpp>
-
+#include <vector>
 
 /**
  * Matrix is a typedef in the gtsam namespace
@@ -47,67 +42,39 @@ typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> M
 // Create handy typedefs and constants for square-size matrices
 // MatrixMN, MatrixN = MatrixNN, I_NxN, and Z_NxN, for M,N=1..9
 #define GTSAM_MAKE_MATRIX_DEFS(N)   \
-typedef Eigen::Matrix<double, N, N> Matrix##N;  \
-typedef Eigen::Matrix<double, 1, N> Matrix1##N;  \
-typedef Eigen::Matrix<double, 2, N> Matrix2##N;  \
-typedef Eigen::Matrix<double, 3, N> Matrix3##N;  \
-typedef Eigen::Matrix<double, 4, N> Matrix4##N;  \
-typedef Eigen::Matrix<double, 5, N> Matrix5##N;  \
-typedef Eigen::Matrix<double, 6, N> Matrix6##N;  \
-typedef Eigen::Matrix<double, 7, N> Matrix7##N;  \
-typedef Eigen::Matrix<double, 8, N> Matrix8##N;  \
-typedef Eigen::Matrix<double, 9, N> Matrix9##N;  \
+using Matrix##N = Eigen::Matrix<double, N, N>;  \
+using Matrix1##N = Eigen::Matrix<double, 1, N>;  \
+using Matrix2##N = Eigen::Matrix<double, 2, N>;  \
+using Matrix3##N = Eigen::Matrix<double, 3, N>;  \
+using Matrix4##N = Eigen::Matrix<double, 4, N>;  \
+using Matrix5##N = Eigen::Matrix<double, 5, N>;  \
+using Matrix6##N = Eigen::Matrix<double, 6, N>;  \
+using Matrix7##N = Eigen::Matrix<double, 7, N>;  \
+using Matrix8##N = Eigen::Matrix<double, 8, N>;  \
+using Matrix9##N = Eigen::Matrix<double, 9, N>;  \
 static const Eigen::MatrixBase<Matrix##N>::IdentityReturnType I_##N##x##N = Matrix##N::Identity(); \
-static const Eigen::MatrixBase<Matrix##N>::ConstantReturnType Z_##N##x##N = Matrix##N::Zero();
+static const Eigen::MatrixBase<Matrix##N>::ConstantReturnType Z_##N##x##N = Matrix##N::Constant(0.0);
 
-GTSAM_MAKE_MATRIX_DEFS(1);
-GTSAM_MAKE_MATRIX_DEFS(2);
-GTSAM_MAKE_MATRIX_DEFS(3);
-GTSAM_MAKE_MATRIX_DEFS(4);
-GTSAM_MAKE_MATRIX_DEFS(5);
-GTSAM_MAKE_MATRIX_DEFS(6);
-GTSAM_MAKE_MATRIX_DEFS(7);
-GTSAM_MAKE_MATRIX_DEFS(8);
-GTSAM_MAKE_MATRIX_DEFS(9);
+GTSAM_MAKE_MATRIX_DEFS(1)
+GTSAM_MAKE_MATRIX_DEFS(2)
+GTSAM_MAKE_MATRIX_DEFS(3)
+GTSAM_MAKE_MATRIX_DEFS(4)
+GTSAM_MAKE_MATRIX_DEFS(5)
+GTSAM_MAKE_MATRIX_DEFS(6)
+GTSAM_MAKE_MATRIX_DEFS(7)
+GTSAM_MAKE_MATRIX_DEFS(8)
+GTSAM_MAKE_MATRIX_DEFS(9)
 
 // Matrix expressions for accessing parts of matrices
 typedef Eigen::Block<Matrix> SubMatrix;
 typedef Eigen::Block<const Matrix> ConstSubMatrix;
 
-// Matlab-like syntax
+// Matrix formatting arguments when printing.
+// Akin to Matlab style.
+const Eigen::IOFormat& matlabFormat();
 
 /**
- * Creates an zeros matrix, with matlab-like syntax
- *
- * Note: if assigning a block (created from an Eigen block() function) of a matrix to zeros,
- * don't use this function, instead use ".setZero(m,n)" to avoid an Eigen error.
- */
-GTSAM_EXPORT Matrix zeros(size_t m, size_t n);
-
-/**
- * Creates an ones matrix, with matlab-like syntax
- */
-GTSAM_EXPORT Matrix ones(size_t m, size_t n);
-
-/**
- * Creates an identity matrix, with matlab-like syntax
- *
- * Note: if assigning a block (created from an Eigen block() function) of a matrix to identity,
- * don't use this function, instead use ".setIdentity(m,n)" to avoid an Eigen error.
- */
-GTSAM_EXPORT Matrix eye(size_t m, size_t n);
-
-/**
- * Creates a square identity matrix, with matlab-like syntax
- *
- * Note: if assigning a block (created from an Eigen block() function) of a matrix to identity,
- * don't use this function, instead use ".setIdentity(m)" to avoid an Eigen error.
- */
-inline Matrix eye( size_t m ) { return eye(m,m); }
-GTSAM_EXPORT Matrix diag(const Vector& v);
-
-/**
- * equals with an tolerance
+ * equals with a tolerance
  */
 template <class MATRIX>
 bool equal_with_abs_tol(const Eigen::DenseBase<MATRIX>& A, const Eigen::DenseBase<MATRIX>& B, double tol = 1e-9) {
@@ -119,10 +86,9 @@ bool equal_with_abs_tol(const Eigen::DenseBase<MATRIX>& A, const Eigen::DenseBas
 
   for(size_t i=0; i<m1; i++)
     for(size_t j=0; j<n1; j++) {
-      if(boost::math::isnan(A(i,j)) ^ boost::math::isnan(B(i,j)))
+      if(!fpEqual(A(i,j), B(i,j), tol, false)) {
         return false;
-      else if(fabs(A(i,j) - B(i,j)) > tol)
-        return false;
+      }
     }
   return true;
 }
@@ -165,37 +131,6 @@ GTSAM_EXPORT bool linear_independent(const Matrix& A, const Matrix& B, double to
  * check whether the rows of two matrices are linear dependent
  */
 GTSAM_EXPORT bool linear_dependent(const Matrix& A, const Matrix& B, double tol = 1e-9);
-
-/**
- * BLAS Level-2 style e <- e + alpha*A*x
- */
-GTSAM_EXPORT void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e);
-
-/**
- * BLAS Level-2 style e <- e + A*x
- */
-GTSAM_EXPORT void multiplyAdd(const Matrix& A, const Vector& x, Vector& e);
-
-/**
- * overload ^ for trans(A)*v
- * We transpose the vectors for speed.
- */
-GTSAM_EXPORT Vector operator^(const Matrix& A, const Vector & v);
-
-/**
- * BLAS Level-2 style x <- x + alpha*A'*e
- */
-GTSAM_EXPORT void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector& x);
-
-/**
- * BLAS Level-2 style x <- x + A'*e
- */
-GTSAM_EXPORT void transposeMultiplyAdd(const Matrix& A, const Vector& e, Vector& x);
-
-/**
- * BLAS Level-2 style x <- x + alpha*A'*e
- */
-GTSAM_EXPORT void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVector x);
 
 /** products using old-style format to improve compatibility */
 template<class MATRIX>
@@ -282,32 +217,6 @@ const typename MATRIX::ConstRowXpr row(const MATRIX& A, size_t j) {
 }
 
 /**
- * inserts a column into a matrix IN PLACE
- * NOTE: there is no size checking
- * Alternate form allows for vectors smaller than the whole column to be inserted
- * @param A matrix to be modified in place
- * @param col is the vector to be inserted
- * @param j is the index to insert the column
- */
-GTSAM_EXPORT void insertColumn(Matrix& A, const Vector& col, size_t j);
-GTSAM_EXPORT void insertColumn(Matrix& A, const Vector& col, size_t i, size_t j);
-
-GTSAM_EXPORT Vector columnNormSquare(const Matrix &A);
-
-/**
- * Zeros all of the elements below the diagonal of a matrix, in place
- * @param A is a matrix, to be modified in place
- * @param cols is the number of columns to zero, use zero for all columns
- */
-template<class MATRIX>
-void zeroBelowDiagonal(MATRIX& A, size_t cols=0) {
-  const size_t m = A.rows(), n = A.cols();
-  const size_t k = (cols) ? std::min(cols, std::min(m,n)) : std::min(m,n);
-  for (size_t j=0; j<k; ++j)
-    A.col(j).segment(j+1, m-(j+1)).setZero();
-}
-
-/**
  * static transpose function, just calls Eigen transpose member function
  */
 inline Matrix trans(const Matrix& A) { return A.transpose(); }
@@ -351,20 +260,9 @@ struct Reshape<N, M, InOptions, M, N, InOptions> {
 
 template <int OutM, int OutN, int OutOptions, int InM, int InN, int InOptions>
 inline typename Reshape<OutM, OutN, OutOptions, InM, InN, InOptions>::ReshapedType reshape(const Eigen::Matrix<double, InM, InN, InOptions> & m){
-  BOOST_STATIC_ASSERT(InM * InN == OutM * OutN);
+  static_assert(InM * InN == OutM * OutN);
   return Reshape<OutM, OutN, OutOptions, InM, InN, InOptions>::reshape(m);
 }
-
-/**
- * solve AX=B via in-place Lu factorization and backsubstitution
- * After calling, A contains LU, B the solved RHS vectors
- */
-GTSAM_EXPORT void solve(Matrix& A, Matrix& B);
-
-/**
- * invert A
- */
-GTSAM_EXPORT Matrix inverse(const Matrix& A);
 
 /**
  * QR factorization, inefficient, best use imperative householder below
@@ -379,7 +277,7 @@ GTSAM_EXPORT std::pair<Matrix,Matrix> qr(const Matrix& A);
  * @param A is the input matrix, and is the output
  * @param clear_below_diagonal enables zeroing out below diagonal
  */
-void inplace_QR(Matrix& A);
+GTSAM_EXPORT void inplace_QR(Matrix& A);
 
 /**
  * Imperative algorithm for in-place full elimination with
@@ -389,7 +287,7 @@ void inplace_QR(Matrix& A);
  * @param sigmas is a vector of the measurement standard deviation
  * @return list of r vectors, d  and sigma
  */
-GTSAM_EXPORT std::list<boost::tuple<Vector, double, double> >
+GTSAM_EXPORT std::list<std::tuple<Vector, double, double> >
 weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas);
 
 /**
@@ -492,12 +390,6 @@ inline Matrix3 skewSymmetric(const Eigen::MatrixBase<Derived>& w) {
 /** Use Cholesky to calculate inverse square root of a matrix */
 GTSAM_EXPORT Matrix inverse_square_root(const Matrix& A);
 
-/** Calculate the LL^t decomposition of a S.P.D matrix */
-GTSAM_EXPORT Matrix LLt(const Matrix& A);
-
-/** Calculate the R^tR decomposition of a S.P.D matrix */
-GTSAM_EXPORT Matrix RtR(const Matrix& A);
-
 /** Return the inverse of a S.P.D. matrix.  Inversion is done via Cholesky decomposition. */
 GTSAM_EXPORT Matrix cholesky_inverse(const Matrix &A);
 
@@ -522,7 +414,7 @@ GTSAM_EXPORT void svd(const Matrix& A, Matrix& U, Vector& S, Matrix& V);
  * Returns rank of A, minimum error (singular value),
  * and corresponding eigenvector (column of V, with A=U*S*V')
  */
-GTSAM_EXPORT boost::tuple<int, double, Vector>
+GTSAM_EXPORT std::tuple<int, double, Vector>
 DLT(const Matrix& A, double rank_tol = 1e-9);
 
 /**
@@ -547,8 +439,8 @@ struct MultiplyWithInverse {
 
   /// A.inverse() * b, with optional derivatives
   VectorN operator()(const MatrixN& A, const VectorN& b,
-                     OptionalJacobian<N, N* N> H1 = boost::none,
-                     OptionalJacobian<N, N> H2 = boost::none) const {
+                     OptionalJacobian<N, N* N> H1 = {},
+                     OptionalJacobian<N, N> H2 = {}) const {
     const MatrixN invA = A.inverse();
     const VectorN c = invA * b;
     // The derivative in A is just -[c[0]*invA c[1]*invA ... c[N-1]*invA]
@@ -568,13 +460,13 @@ struct MultiplyWithInverse {
  */
 template <typename T, int N>
 struct MultiplyWithInverseFunction {
-  enum { M = traits<T>::dimension };
+  inline constexpr static auto M = traits<T>::dimension;
   typedef Eigen::Matrix<double, N, 1> VectorN;
   typedef Eigen::Matrix<double, N, N> MatrixN;
 
   // The function phi should calculate f(a)*b, with derivatives in a and b.
   // Naturally, the derivative in b is f(a).
-  typedef boost::function<VectorN(
+  typedef std::function<VectorN(
       const T&, const VectorN&, OptionalJacobian<N, M>, OptionalJacobian<N, N>)>
       Operator;
 
@@ -583,16 +475,16 @@ struct MultiplyWithInverseFunction {
 
   /// f(a).inverse() * b, with optional derivatives
   VectorN operator()(const T& a, const VectorN& b,
-                     OptionalJacobian<N, M> H1 = boost::none,
-                     OptionalJacobian<N, N> H2 = boost::none) const {
+                     OptionalJacobian<N, M> H1 = {},
+                     OptionalJacobian<N, N> H2 = {}) const {
     MatrixN A;
-    phi_(a, b, boost::none, A);  // get A = f(a) by calling f once
+    phi_(a, b, {}, A);  // get A = f(a) by calling f once
     const MatrixN invA = A.inverse();
     const VectorN c = invA * b;
 
     if (H1) {
       Eigen::Matrix<double, N, M> H;
-      phi_(a, c, H, boost::none);  // get derivative H of forward mapping
+      phi_(a, c, H, {});  // get derivative H of forward mapping
       *H1 = -invA* H;
     }
     if (H2) *H2 = invA;
@@ -603,35 +495,9 @@ struct MultiplyWithInverseFunction {
   const Operator phi_;
 };
 
-} // namespace gtsam
+GTSAM_EXPORT Matrix LLt(const Matrix& A);
 
-#include <boost/serialization/nvp.hpp>
-#include <boost/serialization/array.hpp>
-#include <boost/serialization/split_free.hpp>
+GTSAM_EXPORT Matrix RtR(const Matrix& A);
 
-namespace boost {
-  namespace serialization {
-
-    // split version - sends sizes ahead
-    template<class Archive>
-    void save(Archive & ar, const gtsam::Matrix & m, unsigned int /*version*/) {
-      const size_t rows = m.rows(), cols = m.cols();
-      ar << BOOST_SERIALIZATION_NVP(rows);
-      ar << BOOST_SERIALIZATION_NVP(cols);
-      ar << make_nvp("data", make_array(m.data(), m.size()));
-    }
-
-    template<class Archive>
-    void load(Archive & ar, gtsam::Matrix & m, unsigned int /*version*/) {
-      size_t rows, cols;
-      ar >> BOOST_SERIALIZATION_NVP(rows);
-      ar >> BOOST_SERIALIZATION_NVP(cols);
-      m.resize(rows, cols);
-      ar >> make_nvp("data", make_array(m.data(), m.size()));
-    }
-
-  } // namespace serialization
-} // namespace boost
-
-BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Matrix);
-
+GTSAM_EXPORT Vector columnNormSquare(const Matrix &A);
+}  // namespace gtsam

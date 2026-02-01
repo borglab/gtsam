@@ -31,24 +31,22 @@ class VectorValues;
 struct PreconditionerParameters;
 
 /**
- * Parameters for PCG
+ * Parameters for Preconditioned Conjugate Gradient solver.
  */
-struct GTSAM_EXPORT PCGSolverParameters: public ConjugateGradientParameters {
-public:
+struct GTSAM_EXPORT PCGSolverParameters : public ConjugateGradientParameters {
   typedef ConjugateGradientParameters Base;
-  typedef boost::shared_ptr<PCGSolverParameters> shared_ptr;
+  typedef std::shared_ptr<PCGSolverParameters> shared_ptr;
 
-  PCGSolverParameters() {
-  }
+  std::shared_ptr<PreconditionerParameters> preconditioner;
 
-  virtual void print(std::ostream &os) const;
+  PCGSolverParameters() {}
 
-  /* interface to preconditioner parameters */
-  inline const PreconditionerParameters& preconditioner() const {
-    return *preconditioner_;
-  }
+  PCGSolverParameters(
+      const std::shared_ptr<PreconditionerParameters> &preconditioner)
+      : preconditioner(preconditioner) {}
 
-  boost::shared_ptr<PreconditionerParameters> preconditioner_;
+  void print(std::ostream &os) const override;
+  void print(const std::string &s) const;
 };
 
 /**
@@ -57,24 +55,24 @@ public:
 class GTSAM_EXPORT PCGSolver: public IterativeSolver {
 public:
   typedef IterativeSolver Base;
-  typedef boost::shared_ptr<PCGSolver> shared_ptr;
+  typedef std::shared_ptr<PCGSolver> shared_ptr;
 
 protected:
 
   PCGSolverParameters parameters_;
-  boost::shared_ptr<Preconditioner> preconditioner_;
+  std::shared_ptr<Preconditioner> preconditioner_;
 
 public:
   /* Interface to initialize a solver without a problem */
   PCGSolver(const PCGSolverParameters &p);
-  virtual ~PCGSolver() {
+  ~PCGSolver() override {
   }
 
   using IterativeSolver::optimize;
 
-  virtual VectorValues optimize(const GaussianFactorGraph &gfg,
+  VectorValues optimize(const GaussianFactorGraph &gfg,
       const KeyInfo &keyInfo, const std::map<Key, Vector> &lambda,
-      const VectorValues &initial);
+      const VectorValues &initial) override;
 
 };
 
@@ -82,30 +80,24 @@ public:
  * System class needed for calling preconditionedConjugateGradient
  */
 class GTSAM_EXPORT GaussianFactorGraphSystem {
-public:
-
-  GaussianFactorGraphSystem(const GaussianFactorGraph &gfg,
-      const Preconditioner &preconditioner, const KeyInfo &info,
-      const std::map<Key, Vector> &lambda);
-
   const GaussianFactorGraph &gfg_;
   const Preconditioner &preconditioner_;
-  const KeyInfo &keyInfo_;
-  const std::map<Key, Vector> &lambda_;
+  KeyInfo keyInfo_;
+  std::map<Key, Vector> lambda_;
+
+ public:
+  GaussianFactorGraphSystem(const GaussianFactorGraph &gfg,
+                            const Preconditioner &preconditioner,
+                            const KeyInfo &info,
+                            const std::map<Key, Vector> &lambda);
 
   void residual(const Vector &x, Vector &r) const;
   void multiply(const Vector &x, Vector& y) const;
   void leftPrecondition(const Vector &x, Vector &y) const;
   void rightPrecondition(const Vector &x, Vector &y) const;
-  inline void scal(const double alpha, Vector &x) const {
-    x *= alpha;
-  }
-  inline double dot(const Vector &x, const Vector &y) const {
-    return x.dot(y);
-  }
-  inline void axpy(const double alpha, const Vector &x, Vector &y) const {
-    y += alpha * x;
-  }
+  void scal(const double alpha, Vector &x) const;
+  double dot(const Vector &x, const Vector &y) const;
+  void axpy(const double alpha, const Vector &x, Vector &y) const;
 
   void getb(Vector &b) const;
 };

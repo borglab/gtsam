@@ -14,10 +14,12 @@
  * @brief   typedef and functions to augment Eigen's VectorXd
  * @author  Kai Ni
  * @author  Frank Dellaert
+ * @author  Alex Hagiopol
+ * @author  Varun Agrawal
+ * @author  Fan Jiang
  */
 
 // \callgraph
-
 
 #pragma once
 #ifndef MKL_BLAS
@@ -41,68 +43,59 @@ typedef Eigen::Matrix<double, 1, 1> Vector1;
 typedef Eigen::Vector2d Vector2;
 typedef Eigen::Vector3d Vector3;
 
-static const Eigen::MatrixBase<Vector2>::ConstantReturnType Z_2x1 = Vector2::Zero();
-static const Eigen::MatrixBase<Vector3>::ConstantReturnType Z_3x1 = Vector3::Zero();
+static const Eigen::MatrixBase<Vector2>::ConstantReturnType Z_2x1 = Vector2::Constant(0.0);
+static const Eigen::MatrixBase<Vector3>::ConstantReturnType Z_3x1 = Vector3::Constant(0.0);
 
 // Create handy typedefs and constants for vectors with N>3
 // VectorN and Z_Nx1, for N=1..9
 #define GTSAM_MAKE_VECTOR_DEFS(N)                \
-  typedef Eigen::Matrix<double, N, 1> Vector##N; \
-  static const Eigen::MatrixBase<Vector##N>::ConstantReturnType Z_##N##x1 = Vector##N::Zero();
+  using Vector##N = Eigen::Matrix<double, N, 1>; \
+  static const Eigen::MatrixBase<Vector##N>::ConstantReturnType Z_##N##x1 = Vector##N::Constant(0.0);
 
-GTSAM_MAKE_VECTOR_DEFS(4);
-GTSAM_MAKE_VECTOR_DEFS(5);
-GTSAM_MAKE_VECTOR_DEFS(6);
-GTSAM_MAKE_VECTOR_DEFS(7);
-GTSAM_MAKE_VECTOR_DEFS(8);
-GTSAM_MAKE_VECTOR_DEFS(9);
-GTSAM_MAKE_VECTOR_DEFS(10);
-GTSAM_MAKE_VECTOR_DEFS(11);
-GTSAM_MAKE_VECTOR_DEFS(12);
+GTSAM_MAKE_VECTOR_DEFS(4)
+GTSAM_MAKE_VECTOR_DEFS(5)
+GTSAM_MAKE_VECTOR_DEFS(6)
+GTSAM_MAKE_VECTOR_DEFS(7)
+GTSAM_MAKE_VECTOR_DEFS(8)
+GTSAM_MAKE_VECTOR_DEFS(9)
+GTSAM_MAKE_VECTOR_DEFS(10)
+GTSAM_MAKE_VECTOR_DEFS(11)
+GTSAM_MAKE_VECTOR_DEFS(12)
+GTSAM_MAKE_VECTOR_DEFS(15)
 
 typedef Eigen::VectorBlock<Vector> SubVector;
 typedef Eigen::VectorBlock<const Vector> ConstSubVector;
 
 /**
- * Create basis vector of dimension n,
- * with a constant in spot i
- * @param n is the size of the vector
- * @param i index of the one
- * @param value is the value to insert into the vector
- * @return delta vector
- */
-GTSAM_EXPORT Vector delta(size_t n, size_t i, double value);
+  * Ensure we are not including a different version of Eigen in user code than
+  * while compiling gtsam, since it can lead to hard-to-understand runtime
+  * crashes.
+  */
+#if defined(GTSAM_EIGEN_VERSION_WORLD)
+static_assert(
+    GTSAM_EIGEN_VERSION_WORLD==EIGEN_WORLD_VERSION &&
+    GTSAM_EIGEN_VERSION_MAJOR==EIGEN_MAJOR_VERSION,
+  "Error: GTSAM was built against a different version of Eigen");
+#endif
 
 /**
- * Create basis vector of dimension n,
- * with one in spot i
- * @param n is the size of the vector
- * @param i index of the one
- * @return basis vector
+ * Numerically stable function for comparing if floating point values are equal
+ * within epsilon tolerance.
+ * Used for vector and matrix comparison with C++11 compatible functions.
+ *
+ * If either value is NaN or Inf, we check for both values to be NaN or Inf
+ * respectively for the comparison to be true.
+ * If one is NaN/Inf and the other is not, returns false.
+ *
+ * @param check_relative_also is a flag which toggles additional checking for
+ * relative error. This means that if either the absolute error or the relative
+ * error is within the tolerance, the result will be true.
+ * By default, the flag is true.
+ *
+ * Return true if two numbers are close wrt tol.
  */
-inline Vector basis(size_t n, size_t i) { return delta(n, i, 1.0); }
-
-/**
- * Create zero vector
- * @param n size
- */
-inline Vector zero(size_t n) { return Vector::Zero(n);}
-
-/**
- * Create vector initialized to ones
- * @param n size
- */
-inline Vector ones(size_t n) { return Vector::Ones(n); }
-
-/**
- * check if all zero
- */
-GTSAM_EXPORT bool zero(const Vector& v);
-
-/**
- * dimensionality == size
- */
-inline size_t dim(const Vector& v) { return v.size(); }
+GTSAM_EXPORT bool fpEqual(double a, double b, double tol,
+                          bool check_relative_also = true);
 
 /**
  * print without optional string, must specify cout yourself
@@ -201,35 +194,13 @@ GTSAM_EXPORT Vector ediv_(const Vector &a, const Vector &b);
  */
 template<class V1, class V2>
 inline double dot(const V1 &a, const V2& b) {
-  assert (b.size()==a.size());
   return a.dot(b);
 }
 
 /** compatibility version for ublas' inner_prod() */
 template<class V1, class V2>
 inline double inner_prod(const V1 &a, const V2& b) {
-  assert (b.size()==a.size());
   return a.dot(b);
-}
-
-/**
- * BLAS Level 1 scal: x <- alpha*x
- * \deprecated: use operators instead
- */
-inline void scal(double alpha, Vector& x) { x *= alpha; }
-
-/**
- * BLAS Level 1 axpy: y <- alpha*x + y
- * \deprecated: use operators instead
- */
-template<class V1, class V2>
-inline void axpy(double alpha, const V1& x, V2& y) {
-  assert (y.size()==x.size());
-  y += alpha * x;
-}
-inline void axpy(double alpha, const Vector& x, SubVector y) {
-  assert (y.size()==x.size());
-  y += alpha * x;
 }
 
 /**
@@ -271,62 +242,4 @@ GTSAM_EXPORT Vector concatVectors(const std::list<Vector>& vs);
  * concatenate Vectors
  */
 GTSAM_EXPORT Vector concatVectors(size_t nrVectors, ...);
-
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-GTSAM_EXPORT inline Vector abs(const Vector& v){return v.cwiseAbs();}
-GTSAM_EXPORT inline Vector ediv(const Vector &a, const Vector &b) {assert (b.size()==a.size()); return a.cwiseQuotient(b);}
-GTSAM_EXPORT inline Vector esqrt(const Vector& v) { return v.cwiseSqrt();}
-GTSAM_EXPORT inline Vector emul(const Vector &a, const Vector &b) {assert (b.size()==a.size()); return a.cwiseProduct(b);}
-GTSAM_EXPORT inline double max(const Vector &a){return a.maxCoeff();}
-GTSAM_EXPORT inline double norm_2(const Vector& v) {return v.norm();}
-GTSAM_EXPORT inline Vector reciprocal(const Vector &a) {return a.array().inverse();}
-GTSAM_EXPORT inline Vector repeat(size_t n, double value) {return Vector::Constant(n, value);}
-GTSAM_EXPORT inline const Vector sub(const Vector &v, size_t i1, size_t i2) {return v.segment(i1,i2-i1);}
-GTSAM_EXPORT inline void subInsert(Vector& fullVector, const Vector& subVector, size_t i) {fullVector.segment(i, subVector.size()) = subVector;}
-GTSAM_EXPORT inline double sum(const Vector &a){return a.sum();}
-#endif
-
-} // namespace gtsam
-
-#include <boost/serialization/nvp.hpp>
-#include <boost/serialization/array.hpp>
-#include <boost/serialization/split_free.hpp>
-
-namespace boost {
-  namespace serialization {
-
-    // split version - copies into an STL vector for serialization
-    template<class Archive>
-    void save(Archive & ar, const gtsam::Vector & v, unsigned int /*version*/) {
-      const size_t size = v.size();
-      ar << BOOST_SERIALIZATION_NVP(size);
-      ar << make_nvp("data", make_array(v.data(), v.size()));
-    }
-
-    template<class Archive>
-    void load(Archive & ar, gtsam::Vector & v, unsigned int /*version*/) {
-      size_t size;
-      ar >> BOOST_SERIALIZATION_NVP(size);
-      v.resize(size);
-      ar >> make_nvp("data", make_array(v.data(), v.size()));
-    }
-
-    // split version - copies into an STL vector for serialization
-    template<class Archive, int D>
-    void save(Archive & ar, const Eigen::Matrix<double,D,1> & v, unsigned int /*version*/) {
-      ar << make_nvp("data", make_array(v.data(), v.RowsAtCompileTime));
-    }
-
-    template<class Archive, int D>
-    void load(Archive & ar, Eigen::Matrix<double,D,1> & v, unsigned int /*version*/) {
-      ar >> make_nvp("data", make_array(v.data(), v.RowsAtCompileTime));
-    }
-
-  } // namespace serialization
-} // namespace boost
-
-BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Vector)
-BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Vector2)
-BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Vector3)
-BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Vector6)
+}  // namespace gtsam

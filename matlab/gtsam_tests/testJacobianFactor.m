@@ -54,7 +54,8 @@ S13 = [
 +0.00,-8.94427
 ];
 d=[2.23607;-1.56525];
-expectedCG = GaussianConditional(x2,d,R11,l1,S12,x1,S13);
+unit2 = noiseModel.Unit.Create(2);
+expectedCG = GaussianConditional(x2,d,R11,l1,S12,x1,S13,unit2);
 % check if the result matches
 CHECK('actualCG.equals(expectedCG,1e-5)',actualCG.equals(expectedCG,1e-4));
 

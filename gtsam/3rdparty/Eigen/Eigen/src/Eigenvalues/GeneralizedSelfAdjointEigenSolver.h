@@ -50,7 +50,6 @@ class GeneralizedSelfAdjointEigenSolver : public SelfAdjointEigenSolver<_MatrixT
     typedef SelfAdjointEigenSolver<_MatrixType> Base;
   public:
 
-    typedef typename Base::Index Index;
     typedef _MatrixType MatrixType;
 
     /** \brief Default constructor for fixed-size matrices.
@@ -74,7 +73,7 @@ class GeneralizedSelfAdjointEigenSolver : public SelfAdjointEigenSolver<_MatrixT
       *
       * \sa compute() for an example
       */
-    GeneralizedSelfAdjointEigenSolver(Index size)
+    explicit GeneralizedSelfAdjointEigenSolver(Index size)
         : Base(size)
     {}
 
@@ -122,7 +121,7 @@ class GeneralizedSelfAdjointEigenSolver : public SelfAdjointEigenSolver<_MatrixT
       *
       * \returns    Reference to \c *this
       *
-      * Accoring to \p options, this function computes eigenvalues and (if requested)
+      * According to \p options, this function computes eigenvalues and (if requested)
       * the eigenvectors of one of the following three generalized eigenproblems:
       * - \c Ax_lBx: \f$ Ax = \lambda B x \f$
       * - \c ABx_lx: \f$ ABx = \lambda x \f$

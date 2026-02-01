@@ -57,7 +57,7 @@ template<typename Scalar> void smallVectors()
   }
 }
 
-void test_smallvectors()
+EIGEN_DECLARE_TEST(smallvectors)
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST(smallVectors<int>() );

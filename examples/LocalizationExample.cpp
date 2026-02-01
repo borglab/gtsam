@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -62,74 +62,77 @@ using namespace gtsam;
 //
 // The factor will be a unary factor, affect only a single system variable. It will
 // also use a standard Gaussian noise model. Hence, we will derive our new factor from
-// the NoiseModelFactor1.
+// the NoiseModelFactorN.
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
-class UnaryFactor: public NoiseModelFactor1<Pose2> {
-
+class UnaryFactor: public NoiseModelFactorN<Pose2> {
   // The factor will hold a measurement consisting of an (X,Y) location
   // We could this with a Point2 but here we just use two doubles
   double mx_, my_;
 
-public:
+ public:
+
+  // Provide access to Matrix& version of evaluateError:
+  using NoiseModelFactor1<Pose2>::evaluateError;
+
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<UnaryFactor> shared_ptr;
+  typedef std::shared_ptr<UnaryFactor> shared_ptr;
 
   // The constructor requires the variable key, the (X, Y) measurement value, and the noise model
   UnaryFactor(Key j, double x, double y, const SharedNoiseModel& model):
-    NoiseModelFactor1<Pose2>(model, j), mx_(x), my_(y) {}
+    NoiseModelFactorN<Pose2>(model, j), mx_(x), my_(y) {}
 
-  virtual ~UnaryFactor() {}
+  ~UnaryFactor() override {}
 
-  // Using the NoiseModelFactor1 base class there are two functions that must be overridden.
+  // Using the NoiseModelFactorN base class there are two functions that must be overridden.
   // The first is the 'evaluateError' function. This function implements the desired measurement
   // function, returning a vector of errors when evaluated at the provided variable value. It
   // must also calculate the Jacobians for this measurement function, if requested.
-  Vector evaluateError(const Pose2& q, boost::optional<Matrix&> H = boost::none) const
-  {
-    // The measurement function for a GPS-like measurement is simple:
-    // error_x = pose.x - measurement.x
-    // error_y = pose.y - measurement.y
-    // Consequently, the Jacobians are:
-    // [ derror_x/dx  derror_x/dy  derror_x/dtheta ] = [1 0 0]
-    // [ derror_y/dx  derror_y/dy  derror_y/dtheta ] = [0 1 0]
-    if (H) (*H) = (Matrix(2,3) << 1.0,0.0,0.0, 0.0,1.0,0.0).finished();
+  Vector evaluateError(const Pose2& q, OptionalMatrixType H) const override {
+    // The measurement function for a GPS-like measurement h(q) which predicts the measurement (m) is h(q) = q, q = [qx qy qtheta]
+    // The error is then simply calculated as E(q) = h(q) - m:
+    // error_x = q.x - mx
+    // error_y = q.y - my
+    // Node's orientation reflects in the Jacobian, in tangent space this is equal to the right-hand rule rotation matrix
+    // H =  [ cos(q.theta)  -sin(q.theta) 0 ]
+    //      [ sin(q.theta)   cos(q.theta) 0 ]
+    const Rot2& R = q.rotation();
+    if (H) (*H) = (gtsam::Matrix(2, 3) << R.c(), -R.s(), 0.0, R.s(), R.c(), 0.0).finished();
     return (Vector(2) << q.x() - mx_, q.y() - my_).finished();
   }
 
   // The second is a 'clone' function that allows the factor to be copied. Under most
   // circumstances, the following code that employs the default copy constructor should
   // work fine.
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new UnaryFactor(*this))); }
 
   // Additionally, we encourage you the use of unit testing your custom factors,
   // (as all GTSAM factors are), in which you would need an equals and print, to satisfy the
   // GTSAM_CONCEPT_TESTABLE_INST(T) defined in Testable.h, but these are not needed below.
-
-}; // UnaryFactor
+};  // UnaryFactor
 
 
 int main(int argc, char** argv) {
-
   // 1. Create a factor graph container and add factors to it
   NonlinearFactorGraph graph;
 
   // 2a. Add odometry factors
   // For simplicity, we will use the same noise model for each odometry factor
-  noiseModel::Diagonal::shared_ptr odometryNoise = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));
+  auto odometryNoise = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));
   // Create odometry (Between) factors between consecutive poses
-  graph.add(BetweenFactor<Pose2>(1, 2, Pose2(2.0, 0.0, 0.0), odometryNoise));
-  graph.add(BetweenFactor<Pose2>(2, 3, Pose2(2.0, 0.0, 0.0), odometryNoise));
+  graph.emplace_shared<BetweenFactor<Pose2> >(1, 2, Pose2(2.0, 0.0, 0.0), odometryNoise);
+  graph.emplace_shared<BetweenFactor<Pose2> >(2, 3, Pose2(2.0, 0.0, 0.0), odometryNoise);
 
   // 2b. Add "GPS-like" measurements
   // We will use our custom UnaryFactor for this.
-  noiseModel::Diagonal::shared_ptr unaryNoise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1)); // 10cm std on x,y
-  graph.add(boost::make_shared<UnaryFactor>(1, 0.0, 0.0, unaryNoise));
-  graph.add(boost::make_shared<UnaryFactor>(2, 2.0, 0.0, unaryNoise));
-  graph.add(boost::make_shared<UnaryFactor>(3, 4.0, 0.0, unaryNoise));
-  graph.print("\nFactor Graph:\n"); // print
+  auto unaryNoise =
+      noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));  // 10cm std on x,y
+  graph.emplace_shared<UnaryFactor>(1, 0.0, 0.0, unaryNoise);
+  graph.emplace_shared<UnaryFactor>(2, 2.0, 0.0, unaryNoise);
+  graph.emplace_shared<UnaryFactor>(3, 4.0, 0.0, unaryNoise);
+  graph.print("\nFactor Graph:\n");  // print
 
   // 3. Create the data structure to hold the initialEstimate estimate to the solution
   // For illustrative purposes, these have been deliberately set to incorrect values
@@ -137,7 +140,7 @@ int main(int argc, char** argv) {
   initialEstimate.insert(1, Pose2(0.5, 0.0, 0.2));
   initialEstimate.insert(2, Pose2(2.3, 0.1, -0.2));
   initialEstimate.insert(3, Pose2(4.1, 0.1, 0.1));
-  initialEstimate.print("\nInitial Estimate:\n"); // print
+  initialEstimate.print("\nInitial Estimate:\n");  // print
 
   // 4. Optimize using Levenberg-Marquardt optimization. The optimizer
   // accepts an optional set of configuration parameters, controlling

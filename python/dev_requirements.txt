@@ -1,0 +1,3 @@
+-r requirements.txt
+pyparsing>=3.2.5
+pybind11-stubgen>=2.5.1

@@ -1,0 +1,23 @@
+>> priorNoise
+diagonal sigmas [0.3; 0.3; 0.1];
+
+>> graph
+size: 6
+factor 0: PriorFactor on 1
+  prior mean: (0, 0, 0)
+  noise model: diagonal sigmas [0.3; 0.3; 0.1];
+factor 1: BetweenFactor(1,2)
+  measured: (2, 0, 0)
+  noise model: diagonal sigmas [0.2; 0.2; 0.1];
+factor 2: BetweenFactor(2,3)
+  measured: (2, 0, 1.6)
+  noise model: diagonal sigmas [0.2; 0.2; 0.1];
+factor 3: BetweenFactor(3,4)
+  measured: (2, 0, 1.6)
+  noise model: diagonal sigmas [0.2; 0.2; 0.1];
+factor 4: BetweenFactor(4,5)
+  measured: (2, 0, 1.6)
+  noise model: diagonal sigmas [0.2; 0.2; 0.1];
+factor 5: BetweenFactor(5,2)
+  measured: (2, 0, 1.6)
+  noise model: diagonal sigmas [0.2; 0.2; 0.1];

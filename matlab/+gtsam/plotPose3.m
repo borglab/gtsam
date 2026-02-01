@@ -4,7 +4,7 @@ if nargin<3,axisLength=0.1;end
 
 % get rotation and translation (center)
 gRp = pose.rotation().matrix();  % rotation from pose to global
-C = pose.translation().vector();
+C = pose.translation();
 
 if ~isempty(axisLength)
     % draw the camera axes

@@ -29,9 +29,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/list_of.hpp>
-using boost::assign::list_of;
-using boost::assign::map_list_of;
 
 namespace gtsam {
 
@@ -41,7 +38,7 @@ struct Cal3Bundler0 : public Cal3Bundler {
                double v0 = 0)
       : Cal3Bundler(f, k1, k2, u0, v0) {}
   Cal3Bundler0 retract(const Vector& d) const {
-    return Cal3Bundler0(fx() + d(0), k1() + d(1), k2() + d(2), u0(), v0());
+    return Cal3Bundler0(fx() + d(0), k1() + d(1), k2() + d(2), px(), py());
   }
   Vector3 localCoordinates(const Cal3Bundler0& T2) const {
     return T2.vector() - vector();
@@ -168,7 +165,11 @@ Camera camera(Pose3(Rot3().retract(Vector3(0.1, 0.2, 0.3)), Point3(0, 5, 0)),
 Point3 point(10, 0, -5);  // negative Z-axis convention of Snavely!
 Vector9 P = Camera().localCoordinates(camera);
 Vector3 X = point;
+#ifdef GTSAM_POSE3_EXPMAP
+Vector2 expectedMeasurement(1.3124675, 1.2057287);
+#else
 Vector2 expectedMeasurement(1.2431567, 1.2525694);
+#endif
 Matrix E1 = numericalDerivative21<Vector2, Vector9, Vector3>(adapted, P, X);
 Matrix E2 = numericalDerivative22<Vector2, Vector9, Vector3>(adapted, P, X);
 }
@@ -177,7 +178,11 @@ Matrix E2 = numericalDerivative22<Vector2, Vector9, Vector3>(adapted, P, X);
 // Check that Local worked as expected
 TEST(AdaptAutoDiff, Local) {
   using namespace example;
+#ifdef GTSAM_POSE3_EXPMAP
+  Vector9 expectedP = (Vector9() << 0.1, 0.2, 0.3, 0.7583528428, 4.9582357859, -0.224941471539, 1, 0, 0).finished();
+#else
   Vector9 expectedP = (Vector9() << 0.1, 0.2, 0.3, 0, 5, 0, 1, 0, 0).finished();
+#endif
   EXPECT(equal_with_abs_tol(expectedP, P));
   Vector3 expectedX(10, 0, -5);  // negative Z-axis convention of Snavely!
   EXPECT(equal_with_abs_tol(expectedX, X));
@@ -231,14 +236,21 @@ TEST(AdaptAutoDiff, AdaptAutoDiff) {
 /* ************************************************************************* */
 // Test AutoDiff wrapper in an expression
 TEST(AdaptAutoDiff, SnavelyExpression) {
+  typedef AdaptAutoDiff<SnavelyProjection, 2, 9, 3> Adaptor;
+
   Expression<Vector9> P(1);
   Expression<Vector3> X(2);
-  typedef AdaptAutoDiff<SnavelyProjection, 2, 9, 3> Adaptor;
+
   Expression<Vector2> expression(Adaptor(), P, X);
+
+  std::size_t RecordSize =
+    sizeof(internal::BinaryExpression<Vector2, Vector9, Vector3>::Record);
+
   EXPECT_LONGS_EQUAL(
-      sizeof(internal::BinaryExpression<Vector2, Vector9, Vector3>::Record),
-      expression.traceSize());
-  set<Key> expected = list_of(1)(2);
+    internal::upAligned(RecordSize) + P.traceSize() + X.traceSize(),
+    expression.traceSize());
+
+  const KeySet expected{1, 2};
   EXPECT(expected == expression.keys());
 }
 

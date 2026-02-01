@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <gtsam_unstable/base/dllexport.h>
+#include <gtsam_unstable/dllexport.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/linear/Sampler.h>
 
@@ -43,7 +43,7 @@ namespace gtsam {
     SimWall2D scale(double s) const { return SimWall2D(s*a_, s*b_); }
 
     /** geometry */
-    double length() const { return a_.distance(b_); }
+    double length() const { return distance2(a_, b_); }
     Point2 midpoint() const;
 
     /**
@@ -51,7 +51,15 @@ namespace gtsam {
      * returns true if they intersect, with the intersection
      * point in the optional second argument
      */
-    bool intersects(const SimWall2D& wall, boost::optional<Point2&> pt=boost::none) const;
+    bool intersects(const SimWall2D& wall, Point2* pt = nullptr) const;
+    
+    /**
+     * An overload of intersects that takes an l-value reference to a Point2
+     * instead of a pointer.
+     */
+    bool intersects(const SimWall2D& wall, Point2& pt) const {
+      return intersects(wall, &pt);
+    }
 
     /**
      * norm is a 2D point representing the norm of the wall

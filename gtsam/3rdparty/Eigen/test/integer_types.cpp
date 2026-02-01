@@ -18,7 +18,6 @@
 
 template<typename MatrixType> void signed_integer_type_tests(const MatrixType& m)
 {
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
 
   enum { is_signed = (Scalar(-1) > Scalar(0)) ? 0 : 1 };
@@ -49,7 +48,6 @@ template<typename MatrixType> void signed_integer_type_tests(const MatrixType& m
 
 template<typename MatrixType> void integer_type_tests(const MatrixType& m)
 {
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
 
   VERIFY(NumTraits<Scalar>::IsInteger);
@@ -133,7 +131,18 @@ template<typename MatrixType> void integer_type_tests(const MatrixType& m)
   VERIFY_IS_APPROX((m1 * m2.transpose()) * m1, m1 * (m2.transpose() * m1));
 }
 
-void test_integer_types()
+template<int>
+void integer_types_extra()
+{
+  VERIFY_IS_EQUAL(int(internal::scalar_div_cost<int>::value), 8);
+  VERIFY_IS_EQUAL(int(internal::scalar_div_cost<unsigned int>::value), 8);
+  if(sizeof(long)>sizeof(int)) {
+    VERIFY(int(internal::scalar_div_cost<long>::value) > int(internal::scalar_div_cost<int>::value));
+    VERIFY(int(internal::scalar_div_cost<unsigned long>::value) > int(internal::scalar_div_cost<int>::value));
+  }
+}
+
+EIGEN_DECLARE_TEST(integer_types)
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( integer_type_tests(Matrix<unsigned int, 1, 1>()) );
@@ -153,9 +162,12 @@ void test_integer_types()
 
     CALL_SUBTEST_6( integer_type_tests(Matrix<unsigned short, 4, 4>()) );
 
+#if EIGEN_HAS_CXX11
     CALL_SUBTEST_7( integer_type_tests(Matrix<long long, 11, 13>()) );
     CALL_SUBTEST_7( signed_integer_type_tests(Matrix<long long, 11, 13>()) );
 
     CALL_SUBTEST_8( integer_type_tests(Matrix<unsigned long long, Dynamic, 5>(1, 5)) );
+#endif
   }
+  CALL_SUBTEST_9( integer_types_extra<0>() );
 }

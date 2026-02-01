@@ -7,11 +7,13 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/Vector.h>
 
+#include <cassert>
+
 namespace gtsam {
 
 using namespace std;
 
-static const Vector kGravity = delta(3, 2, 9.81);
+static const Vector kGravity = Vector::Unit(3,2)*9.81;
 
 /* ************************************************************************* */
 double bound(double a, double min, double max) {
@@ -99,13 +101,13 @@ PoseRTV PoseRTV::flyingDynamics(
   double yaw2 = r2.yaw();
   double pitch2 = r2.pitch();
   double forward_accel = -thrust * sin(pitch2); // r2, pitch (in global frame?) controls forward force
-  double loss_lift = lift*fabs(sin(pitch2));
+  double loss_lift = lift*std::abs(sin(pitch2));
   Rot3 yaw_correction_bn = Rot3::Yaw(yaw2);
   Point3 forward(forward_accel, 0.0, 0.0);
   Vector Acc_n =
       yaw_correction_bn.rotate(forward)              // applies locally forward force in the global frame
       - drag * (Vector(3) << v1.x(), v1.y(), 0.0).finished()  // drag term dependent on v1
-      + delta(3, 2, loss_lift - lift_control);                // falling due to lift lost from pitch
+      + Vector::Unit(3,2)*(loss_lift - lift_control);                // falling due to lift lost from pitch
 
   // Update Vehicle Position and Velocity
   Velocity3 v2 = v1 + Velocity3(Acc_n * dt);
@@ -172,7 +174,7 @@ double PoseRTV::range(const PoseRTV& other,
   const Point3 t1 = pose().translation(H1 ? &D_t1_pose : 0);
   const Point3 t2 = other.pose().translation(H2 ? &D_t2_other : 0);
   Matrix13 D_d_t1, D_d_t2;
-  double d = distance(t1, t2, H1 ? &D_d_t1 : 0, H2 ? &D_d_t2 : 0);
+  double d = distance3(t1, t2, H1 ? &D_d_t1 : 0, H2 ? &D_d_t2 : 0);
   if (H1) *H1 << D_d_t1 * D_t1_pose, 0,0,0;
   if (H2) *H2 << D_d_t2 * D_t2_other, 0,0,0;
   return d;

@@ -17,7 +17,6 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/ISAM2.h>
@@ -37,8 +36,8 @@ using namespace gtsam::symbol_shorthand;
 
 typedef Pose2 Pose;
 
-typedef NoiseModelFactor1<Pose> NM1;
-typedef NoiseModelFactor2<Pose,Pose> NM2;
+typedef NoiseModelFactorN<Pose> NM1;
+typedef NoiseModelFactorN<Pose,Pose> NM2;
 noiseModel::Unit::shared_ptr model = noiseModel::Unit::Create(3);
 
 int main(int argc, char *argv[]) {
@@ -61,7 +60,7 @@ int main(int argc, char *argv[]) {
     gttic_(Create_measurements);
     if(step == 0) {
       // Add prior
-      newFactors.add(PriorFactor<Pose>(0, Pose(), noiseModel::Unit::Create(3)));
+      newFactors.addPrior(0, Pose(), noiseModel::Unit::Create(3));
       newVariables.insert(0, Pose());
     } else {
       Vector eta = Vector::Random(3) * 0.1;
@@ -93,7 +92,7 @@ int main(int argc, char *argv[]) {
 
   // Write times
   ofstream timesFile("times.txt");
-  BOOST_FOREACH(double t, times) {
+  for(double t: times) {
     timesFile << t << "\n"; }
 
   return 0;

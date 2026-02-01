@@ -1,0 +1,111 @@
+name: macOS CI
+
+on:
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - '**.ipynb' 
+      - 'myst.yml'
+
+# Cancels any in-progress workflow runs for the same PR when a new push is made,
+# allowing the runner to become available more quickly for the latest changes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.name }} ${{ matrix.build_type }}
+    runs-on: ${{ matrix.os }}
+
+    env:
+      CTEST_OUTPUT_ON_FAILURE: ON
+      CTEST_PARALLEL_LEVEL: 2
+      CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
+      GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
+      GTSAM_ALLOW_DEPRECATED_SINCE_V43: OFF
+
+    strategy:
+      fail-fast: true
+      matrix:
+        # Github Actions requires a single row to be added to the build matrix.
+        # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
+        name: [
+          macos-14-xcode-15.4,
+          macos-15-xcode-16,
+          macos-14-xcode-15.4-boost,
+          macos-14-xcode-15.4-geographiclib,
+        ]
+
+        build_type: [Debug, Release]
+        build_unstable: [ON]
+        include:
+          - name: macos-14-xcode-15.4
+            os: macos-14
+            compiler: xcode
+            version: "15.4"
+
+          - name: macos-15-xcode-16
+            os: macos-15
+            compiler: xcode
+            version: "16"
+
+          - name: macos-14-xcode-15.4-boost
+            os: macos-14
+            compiler: xcode
+            version: "15.4"
+
+          - name: macos-14-xcode-15.4-geographiclib
+            os: macos-14
+            compiler: xcode
+            version: "15.4"
+
+        exclude:
+          - name: macos-14-xcode-15.4-boost
+            build_type: Debug
+          - name: macos-14-xcode-15.4-geographiclib
+            build_type: Debug
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Prepare Homebrew (robust)
+        shell: bash
+        run: |
+          set -euxo pipefail
+          export HOMEBREW_NO_AUTO_UPDATE=1
+          export HOMEBREW_NO_INSTALL_FROM_API=1
+          export HOMEBREW_CURL_RETRIES=5
+      
+          brew update-reset -q || true
+          brew tap --repair || true
+          brew analytics off || true
+      
+          # (optional) Show outdated without failing the job
+          brew outdated || true
+
+      - name: Install Dependencies
+        run: |
+          brew upgrade cmake --quiet || brew install cmake --quiet
+          brew upgrade ninja --quiet || brew install ninja --quiet
+          sudo xcode-select -switch /Applications/Xcode.app
+          echo "CC=clang" >> $GITHUB_ENV
+          echo "CXX=clang++" >> $GITHUB_ENV
+
+      - name: Install Boost
+        if: contains(matrix.name, 'boost') && matrix.build_type == 'Release'
+        run: |
+          brew update
+          brew upgrade boost --quiet || brew install boost --quiet
+          echo "GTSAM_USE_BOOST_FEATURES=ON" >> $GITHUB_ENV
+          echo "GTSAM_ENABLE_BOOST_SERIALIZATION=ON" >> $GITHUB_ENV
+
+      - name: Install GeographicLib
+        if: contains(matrix.name, 'geographiclib') && matrix.build_type == 'Release'
+        run: |
+          brew upgrade geographiclib --quiet || brew install geographiclib --quiet
+          echo "GTSAM_ENABLE_GEOGRAPHICLIB=ON" >> $GITHUB_ENV
+
+      - name: Build and Test
+        run: bash .github/scripts/unix.sh -t

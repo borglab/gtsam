@@ -1,12 +1,12 @@
 /* ----------------------------------------------------------------------------
- 
+
  * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
- 
+
  * See LICENSE for the license information
- 
+
  * -------------------------------------------------------------------------- */
 
 /**
@@ -19,8 +19,6 @@
 
 #include <gtsam/geometry/CameraSet.h>
 #include <gtsam/geometry/triangulation.h>
-#include <boost/optional.hpp>
-#include <boost/foreach.hpp>
 
 namespace gtsam {
 
@@ -46,7 +44,7 @@ public:
   /// @{
 
   /// print
-  virtual void print(const std::string& s = "") const {
+  void print(const std::string& s = "") const override {
     Base::print(s);
   }
 
@@ -59,19 +57,21 @@ public:
 
   /// triangulateSafe
   TriangulationResult triangulateSafe(
-      const std::vector<Point2>& measured,
+      const typename CAMERA::MeasurementVector& measured,
       const TriangulationParameters& params) const {
     return gtsam::triangulateSafe(*this, measured, params);
   }
 
 private:
 
+#if GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int version) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
   }
+#endif
 };
 
 template<class CAMERA>

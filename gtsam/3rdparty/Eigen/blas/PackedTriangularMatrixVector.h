@@ -18,7 +18,7 @@ struct packed_triangular_matrix_vector_product;
 template<typename Index, int Mode, typename LhsScalar, bool ConjLhs, typename RhsScalar, bool ConjRhs>
 struct packed_triangular_matrix_vector_product<Index,Mode,LhsScalar,ConjLhs,RhsScalar,ConjRhs,ColMajor>
 {
-  typedef typename scalar_product_traits<LhsScalar, RhsScalar>::ReturnType ResScalar;
+  typedef typename ScalarBinaryOpTraits<LhsScalar, RhsScalar>::ReturnType ResScalar;
   enum {
     IsLower     = (Mode & Lower)   ==Lower,
     HasUnitDiag = (Mode & UnitDiag)==UnitDiag,
@@ -47,7 +47,7 @@ struct packed_triangular_matrix_vector_product<Index,Mode,LhsScalar,ConjLhs,RhsS
 template<typename Index, int Mode, typename LhsScalar, bool ConjLhs, typename RhsScalar, bool ConjRhs>
 struct packed_triangular_matrix_vector_product<Index,Mode,LhsScalar,ConjLhs,RhsScalar,ConjRhs,RowMajor>
 {
-  typedef typename scalar_product_traits<LhsScalar, RhsScalar>::ReturnType ResScalar;
+  typedef typename ScalarBinaryOpTraits<LhsScalar, RhsScalar>::ReturnType ResScalar;
   enum {
     IsLower     = (Mode & Lower)   ==Lower,
     HasUnitDiag = (Mode & UnitDiag)==UnitDiag,

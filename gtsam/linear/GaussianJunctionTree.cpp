@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -23,7 +23,7 @@
 namespace gtsam {
 
   // Instantiate base classes
-  template class ClusterTree<GaussianBayesTree, GaussianFactorGraph>;
+  template class EliminatableClusterTree<GaussianBayesTree, GaussianFactorGraph>;
   template class JunctionTree<GaussianBayesTree, GaussianFactorGraph>;
 
   /* ************************************************************************* */

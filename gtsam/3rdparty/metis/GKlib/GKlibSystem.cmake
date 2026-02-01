@@ -15,7 +15,6 @@ option(GKRAND "enable GKRAND support" OFF)
 
 # Add compiler flags.
 if(MSVC)
-  set(GKlib_COPTS "/Ox")
   set(GKlib_COPTIONS "-DWIN32 -DMSC -D_CRT_SECURE_NO_DEPRECATE -DUSE_GKREGEX")
 elseif(MINGW)
   set(GKlib_COPTS "-DUSE_GKREGEX")

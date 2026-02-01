@@ -1,0 +1,3942 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\begin_preamble
+\usepackage{times}
+\usepackage{listings}
+
+\usepackage[noend]{algpseudocode}
+\usepackage[usenames,dvipsnames]{color}
+% This is the color used for MATLAB comments below
+\definecolor{MyDarkGreen}{rgb}{0.0,0.4,0.0}
+
+% For faster processing, load Matlab syntax for listings
+\lstloadlanguages{Matlab}%
+\lstset{language=Matlab,                        % Use MATLAB
+        frame=single,                           % Single frame around code
+        basicstyle=\small\ttfamily,             % Use small true type font
+        keywordstyle=[1]\color{Blue}\bf,        % MATLAB functions bold and blue
+        keywordstyle=[2]\color{Purple},         % MATLAB function arguments purple
+        keywordstyle=[3]\color{Blue}\underbar,  % User functions underlined and blue
+        identifierstyle=,                       % Nothing special about identifiers
+                                                % Comments small dark green courier
+        commentstyle=\usefont{T1}{pcr}{m}{sl}\color{MyDarkGreen},
+        stringstyle=\color{Purple},             % Strings are purple
+        showstringspaces=false,                 % Don't put marks in string spaces
+        tabsize=5,                              % 5 spaces per tab
+        %
+        %%% Put standard MATLAB functions not included in the default
+        %%% language here
+        morekeywords={normpdf,normcdf,Pose2,Pose2SLAM},
+        %
+        %%% Put MATLAB function parameters here
+        morekeywords=[2]{on, off, interp},
+        %
+        %%% Put user defined functions here
+        morekeywords=[3]{FindESS, homework_example, gtsamSharedNoiseModel_Sigmas},
+        %
+        morecomment=[l][\color{Blue}]{...},     % Line continuation (...) like blue comment
+        numbers=left,                           % Line numbers on left
+        firstnumber=1,                          % Line numbers start with line 1
+        numberstyle=\tiny\color{Blue},          % Line numbers are blue
+        stepnumber=1                            % Line numbers go in steps of 1
+        }
+\end_preamble
+\use_default_options false
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding T1
+\font_roman "ae" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family rmdefault
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize 10
+\spacing onehalf
+\use_hyperref false
+\papersize custom
+\use_geometry true
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 0
+\use_package esint 0
+\use_package mathdots 1
+\use_package mathtools 0
+\use_package mhchem 1
+\use_package stackrel 0
+\use_package stmaryrd 0
+\use_package undertilde 0
+\cite_engine natbib
+\cite_engine_type authoryear
+\biblio_style plainnat
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 0
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\paperwidth 7.44in
+\paperheight 9.68in
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Factor Graphs and GTSAM:
+\begin_inset Newline newline
+\end_inset
+
+A Hands-on Introduction
+\end_layout
+
+\begin_layout Author
+Frank Dellaert
+\end_layout
+
+\begin_layout Date
+Updated Last March 2022
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset include
+LatexCommand input
+filename "common_macros.tex"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Abstract
+In this document I provide a hands-on introduction to both factor graphs
+ and GTSAM.
+ This is an updated version from the 2012 TR that is tailored to our GTSAM
+ 4.0 library and beyond.
+\end_layout
+
+\begin_layout Abstract
+
+\series bold
+Factor graphs
+\series default
+ are graphical models 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "Koller09book"
+literal "true"
+
+\end_inset
+
+ that are well suited to modeling complex estimation problems, such as Simultane
+ous Localization and Mapping (SLAM) or Structure from Motion (SFM).
+ You might be familiar with another often used graphical model, Bayes networks,
+ which are directed acyclic graphs.
+ A 
+\series bold
+factor graph, 
+\series default
+however, is a 
+\emph on
+bipartite
+\emph default
+ graph consisting of factors connected to variables.
+ The 
+\series bold
+variables
+\series default
+ represent the unknown random variables in the estimation problem, whereas
+ the 
+\series bold
+factors
+\series default
+ represent probabilistic constraints on those variables, derived from measuremen
+ts or prior knowledge.
+ In the following sections I will illustrate this with examples from both
+ robotics and vision.
+\end_layout
+
+\begin_layout Abstract
+The GTSAM toolbox (GTSAM stands for 
+\begin_inset Quotes eld
+\end_inset
+
+Georgia Tech Smoothing and Mapping
+\begin_inset Quotes erd
+\end_inset
+
+) toolbox is a BSD-licensed C++ library based on factor graphs, developed
+ at the Georgia Institute of Technology by myself, many of my students,
+ and collaborators.
+ It provides state of the art solutions to the SLAM and SFM problems, but
+ can also be used to model and solve both simpler and more complex estimation
+ problems.
+ It also provides MATLAB and Python wrappers which allow for rapid prototype
+ development, visualization, and user interaction.
+ In addition, it is easy to use in Jupyter notebooks and/or Google's coLaborator
+y.
+\end_layout
+
+\begin_layout Abstract
+GTSAM exploits sparsity to be computationally efficient.
+ Typically measurements only provide information on the relationship between
+ a handful of variables, and hence the resulting factor graph will be sparsely
+ connected.
+ This is exploited by the algorithms implemented in GTSAM to reduce computationa
+l complexity.
+ Even when graphs are too dense to be handled efficiently by direct methods,
+ GTSAM provides iterative methods that are quite efficient regardless.
+\end_layout
+
+\begin_layout Abstract
+You can download the latest version of GTSAM from GitHub at
+\end_layout
+
+\begin_layout Abstract
+\begin_inset Flex URL
+status open
+
+\begin_layout Plain Layout
+
+https://github.com/borglab/gtsam
+\end_layout
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset toc
+LatexCommand tableofcontents
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Factor Graphs
+\end_layout
+
+\begin_layout Standard
+Let us start with a one-page primer on factor graphs, which in no way replaces
+ the excellent and detailed reviews by 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "Kschischang01it"
+literal "true"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "Loeliger04spm"
+literal "true"
+
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement h
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename images/hmm.pdf
+	scale 60
+	BoundingBox 40bp 37bp 400bp 150bp
+	clip
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:unrolledHMM"
+
+\end_inset
+
+An HMM, unrolled over three time-steps, represented by a Bayes net.
+ 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+noindent
+\end_layout
+
+\end_inset
+
+ Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:unrolledHMM"
+
+\end_inset
+
+ shows the 
+\series bold
+Bayes network
+\series default
+ for a hidden Markov model (HMM) over three time steps.
+ In a Bayes net, each node is associated with a conditional density: the
+ top Markov chain encodes the prior 
+\begin_inset Formula $P(X_{1})$
+\end_inset
+
+ and transition probabilities 
+\begin_inset Formula $P(X_{2}|X_{1})$
+\end_inset
+
+ and 
+\begin_inset Formula $P(X_{3}|X_{2})$
+\end_inset
+
+, whereas measurements 
+\begin_inset Formula $Z_{t}$
+\end_inset
+
+ depend only on the state 
+\begin_inset Formula $X_{t}$
+\end_inset
+
+, modeled by conditional densities 
+\begin_inset Formula $P(Z_{t}|X_{t})$
+\end_inset
+
+.
+ Given known measurements 
+\begin_inset Formula $z_{1}$
+\end_inset
+
+, 
+\begin_inset Formula $z_{2}$
+\end_inset
+
+ and 
+\begin_inset Formula $z_{3}$
+\end_inset
+
+ we are interested in the hidden state sequence 
+\begin_inset Formula $(X_{1},X_{2},X_{3})$
+\end_inset
+
+ that maximizes the posterior probability 
+\begin_inset Formula $P(X_{1},X_{2},X_{3}|Z_{1}=z_{1},Z_{2}=z_{2},Z_{3}=z_{3})$
+\end_inset
+
+.
+ Since the measurements 
+\begin_inset Formula $Z_{1}$
+\end_inset
+
+, 
+\begin_inset Formula $Z_{2}$
+\end_inset
+
+, and 
+\begin_inset Formula $Z_{3}$
+\end_inset
+
+ are 
+\emph on
+known
+\emph default
+, the posterior is proportional to the product of six 
+\series bold
+factors
+\series default
+, three of which derive from the the Markov chain, and three likelihood
+ factors defined as 
+\begin_inset Formula $L(X_{t};z)\propto P(Z_{t}=z|X_{t})$
+\end_inset
+
+:
+\begin_inset Formula 
+\[
+P(X_{1},X_{2},X_{3}|Z_{1},Z_{2},Z_{3})\propto P(X_{1})P(X_{2}|X_{1})P(X_{3}|X_{2})L(X_{1};z_{1})L(X_{2};z_{2})L(X_{3};z_{3})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+vspace{-3mm}
+\end_layout
+
+\end_inset
+
+
+\begin_inset Float figure
+placement H
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename images/hmm-FG.pdf
+	scale 60
+	BoundingBox 30bp 40bp 340bp 130bp
+	clip
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:HMM-FG"
+
+\end_inset
+
+An HMM with observed measurements, unrolled over time, represented as a
+ factor graph.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+noindent
+\end_layout
+
+\end_inset
+
+ This motivates a different graphical model, a 
+\series bold
+factor graph
+\series default
+, in which we only represent the unknown variables 
+\begin_inset Formula $X_{1}$
+\end_inset
+
+, 
+\begin_inset Formula $X_{2}$
+\end_inset
+
+, and 
+\begin_inset Formula $X_{3}$
+\end_inset
+
+, connected to factors that encode probabilistic information on them, as
+ in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:HMM-FG"
+
+\end_inset
+
+.
+ To do maximum a-posteriori (MAP) inference, we then maximize the product
+ 
+\begin_inset Formula 
+\[
+f(X_{1},X_{2},X_{3})=\prod f_{i}(\mathcal{X}_{i})
+\]
+
+\end_inset
+
+i.e., the value of the factor graph.
+ It should be clear from the figure that the connectivity of a factor graph
+ encodes, for each factor 
+\begin_inset Formula $f_{i}$
+\end_inset
+
+, which subset of variables 
+\begin_inset Formula $\mathcal{X}_{i}$
+\end_inset
+
+ it depends on.
+ In the examples below, we use factor graphs to model more complex MAP inference
+ problems in robotics.
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Robot-Localization"
+
+\end_inset
+
+Modeling Robot Motion
+\end_layout
+
+\begin_layout Subsection
+Modeling with Factor Graphs
+\end_layout
+
+\begin_layout Standard
+Before diving into a SLAM example, let us consider the simpler problem of
+ modeling robot motion.
+ This can be done with a 
+\emph on
+continuous
+\emph default
+ Markov chain, and provides a gentle introduction to GTSAM.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement h
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename images/FactorGraph.pdf
+	scale 80
+	BoundingBox 40bp 585bp 300bp 625bp
+	clip
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:OdometryFG"
+
+\end_inset
+
+Factor graph for robot localization.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+noindent
+\end_layout
+
+\end_inset
+
+ The factor graph for a simple example is shown in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:OdometryFG"
+
+\end_inset
+
+.
+ There are three variables 
+\begin_inset Formula $x_{1}$
+\end_inset
+
+, 
+\begin_inset Formula $x_{2}$
+\end_inset
+
+, and 
+\begin_inset Formula $x_{3}$
+\end_inset
+
+ which represent the poses of the robot over time, rendered in the figure
+ by the open-circle variable nodes.
+ In this example, we have one 
+\series bold
+unary factor
+\series default
+ 
+\begin_inset Formula $f_{0}(x_{1})$
+\end_inset
+
+ on the first pose 
+\begin_inset Formula $x_{1}$
+\end_inset
+
+ that encodes our prior knowledge about 
+\begin_inset Formula $x_{1}$
+\end_inset
+
+, and two 
+\series bold
+binary factors
+\series default
+ that relate successive poses, respectively 
+\begin_inset Formula $f_{1}(x_{1},x_{2};o_{1})$
+\end_inset
+
+ and 
+\begin_inset Formula $f_{2}(x_{2},x_{3};o_{2})$
+\end_inset
+
+, where 
+\begin_inset Formula $o_{1}$
+\end_inset
+
+ and 
+\begin_inset Formula $o_{2}$
+\end_inset
+
+ represent odometry measurements.
+\end_layout
+
+\begin_layout Subsection
+Creating a Factor Graph
+\end_layout
+
+\begin_layout Standard
+The following C++ code, included in GTSAM as an example, creates the factor
+ graph in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:OdometryFG"
+
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset include
+LatexCommand lstinputlisting
+filename "Code/OdometryExample.cpp"
+lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},caption={Excerpt from examples/OdometryExample.cpp},captionpos=b,frame=single,identifierstyle={\\bfseries},label={listing:OdometryExample},language={C++},numbers=left"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+noindent
+\end_layout
+
+\end_inset
+
+ Above, line 2 creates an empty factor graph.
+ We then add the factor 
+\begin_inset Formula $f_{0}(x_{1})$
+\end_inset
+
+ on lines 5-7 as an instance of 
+\series bold
+\emph on
+PriorFactor<T>
+\series default
+\emph default
+, a templated class provided in the slam subfolder, with 
+\series bold
+\emph on
+T=Pose2
+\series default
+\emph default
+.
+ Its constructor takes a variable 
+\series bold
+\emph on
+Key
+\series default
+\emph default
+ (in this case 1), a mean of type 
+\series bold
+\emph on
+Pose2,
+\series default
+\emph default
+ created on Line 5, and a noise model for the prior density.
+ We provide a diagonal Gaussian of type 
+\series bold
+\emph on
+noiseModel::Diagonal
+\series default
+\emph default
+ by specifying three standard deviations in line 6, respectively 30 cm.
+\begin_inset space ~
+\end_inset
+
+on the robot's position, and 0.1 radians on the robot's orientation.
+ Note that the 
+\series bold
+\emph on
+Sigmas
+\series default
+\emph default
+ constructor returns a shared pointer, anticipating that typically the same
+ noise models are used for many different factors.
+\end_layout
+
+\begin_layout Standard
+Similarly, odometry measurements are specified as 
+\series bold
+\emph on
+Pose2
+\series default
+\emph default
+ on line 10, with a slightly different noise model defined on line 11.
+ We then add the two factors 
+\begin_inset Formula $f_{1}(x_{1},x_{2};o_{1})$
+\end_inset
+
+ and 
+\begin_inset Formula $f_{2}(x_{2},x_{3};o_{2})$
+\end_inset
+
+ on lines 12-13, as instances of yet another templated class, 
+\series bold
+\emph on
+BetweenFactor<T>
+\series default
+\emph default
+, again with 
+\series bold
+\emph on
+T=Pose2
+\series default
+\emph default
+.
+\end_layout
+
+\begin_layout Standard
+When running the example (
+\emph on
+make OdometryExample.run
+\emph default
+ on the command prompt), it will print out the factor graph as follows:
+\family typewriter
+\size small
+
+\begin_inset CommandInset include
+LatexCommand verbatiminput
+filename "Code/OdometryOutput1.txt"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Factor Graphs versus Values
+\end_layout
+
+\begin_layout Standard
+At this point it is instructive to emphasize two important design ideas
+ underlying GTSAM:
+\end_layout
+
+\begin_layout Enumerate
+The factor graph and its embodiment in code specify the joint probability
+ distribution 
+\begin_inset Formula $P(X|Z)$
+\end_inset
+
+ over the 
+\emph on
+entire
+\emph default
+ trajectory 
+\begin_inset Formula $X\define\{x_{1},x_{2},x_{3}\}$
+\end_inset
+
+ of the robot, rather than just the last pose.
+ This 
+\emph on
+smoothing
+\emph default
+ view of the world gives GTSAM its name: 
+\begin_inset Quotes eld
+\end_inset
+
+smoothing and mapping
+\begin_inset Quotes erd
+\end_inset
+
+.
+ Later in this document we will talk about how we can also use GTSAM to
+ do filtering (which often you do 
+\emph on
+not
+\emph default
+ want to do) or incremental inference (which we do all the time).
+\end_layout
+
+\begin_layout Enumerate
+A factor graph in GTSAM is just the specification of the probability density
+ 
+\begin_inset Formula $P(X|Z)$
+\end_inset
+
+, and the corresponding 
+\series bold
+\emph on
+FactorGraph
+\series default
+\emph default
+ class and its derived classes do not ever contain a 
+\begin_inset Quotes eld
+\end_inset
+
+solution
+\begin_inset Quotes erd
+\end_inset
+
+.
+ Rather, there is a separate type 
+\series bold
+\emph on
+Values
+\series default
+\emph default
+ that is used to specify specific values for (in this case) 
+\begin_inset Formula $x_{1}$
+\end_inset
+
+, 
+\begin_inset Formula $x_{2}$
+\end_inset
+
+, and 
+\begin_inset Formula $x_{3}$
+\end_inset
+
+, which can then be used to evaluate the probability (or, more commonly,
+ the error) associated with particular values.
+\end_layout
+
+\begin_layout Standard
+The latter point is often a point of confusion with beginning users of GTSAM.
+ It helps to remember that when designing GTSAM we took a functional approach
+ of classes corresponding to mathematical objects, which are usually 
+\emph on
+immutable
+\emph default
+.
+ You should think of a factor graph as a 
+\emph on
+function
+\emph default
+ to be applied to values -as the notation 
+\begin_inset Formula $f(X)\propto P(X|Z)$
+\end_inset
+
+ implies- rather than as an object to be modified.
+\end_layout
+
+\begin_layout Subsection
+Non-linear Optimization in GTSAM
+\end_layout
+
+\begin_layout Standard
+The listing below creates a 
+\series bold
+\emph on
+Values
+\series default
+\emph default
+ instance, and uses it as the initial estimate to find the maximum a-posteriori
+ (MAP) assignment for the trajectory 
+\begin_inset Formula $X$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset include
+LatexCommand lstinputlisting
+filename "Code/OdometryOptimize.cpp"
+lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},caption={Excerpt from examples/OdometryExample.cpp},captionpos=b,frame=single,identifierstyle={\\bfseries},label={listing:OdometryOptimize},language={C++},numbers=left"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+noindent
+\end_layout
+
+\end_inset
+
+ Lines 2-5 in Listing 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "listing:OdometryOptimize"
+
+\end_inset
+
+ create the initial estimate, and on line 8 we create a non-linear Levenberg-Mar
+quardt style optimizer, and call 
+\series bold
+\emph on
+optimize
+\series default
+\emph default
+ using default parameter settings.
+ The reason why GTSAM needs to perform non-linear optimization is because
+ the odometry factors 
+\begin_inset Formula $f_{1}(x_{1},x_{2};o_{1})$
+\end_inset
+
+ and 
+\begin_inset Formula $f_{2}(x_{2},x_{3};o_{2})$
+\end_inset
+
+ are non-linear, as they involve the orientation of the robot.
+ This also explains why the factor graph we created in Listing 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "listing:OdometryExample"
+
+\end_inset
+
+ is of type 
+\series bold
+\emph on
+NonlinearFactorGraph
+\series default
+\emph default
+.
+ The optimization class linearizes this graph, possibly multiple times,
+ to minimize the non-linear squared error specified by the factors.
+\end_layout
+
+\begin_layout Standard
+The relevant output from running the example is as follows: 
+\family typewriter
+\size small
+
+\begin_inset CommandInset include
+LatexCommand verbatiminput
+filename "Code/OdometryOutput2.txt"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+noindent
+\end_layout
+
+\end_inset
+
+ It can be seen that, subject to very small tolerance, the ground truth
+ solution 
+\begin_inset Formula $x_{1}=(0,0,0)$
+\end_inset
+
+, 
+\begin_inset Formula $x_{2}=(2,0,0)$
+\end_inset
+
+, and 
+\begin_inset Formula $x_{3}=(4,0,0)$
+\end_inset
+
+ is recovered.
+\end_layout
+
+\begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "subsec:Full-Posterior-Inference"
+
+\end_inset
+
+Full Posterior Inference
+\end_layout
+
+\begin_layout Standard
+GTSAM can also be used to calculate the covariance matrix for each pose
+ after incorporating the information from all measurements 
+\begin_inset Formula $Z$
+\end_inset
+
+.
+ Recognizing that the factor graph encodes the 
+\series bold
+posterior density
+\series default
+ 
+\begin_inset Formula $P(X|Z)$
+\end_inset
+
+, the mean 
+\begin_inset Formula $\mu$
+\end_inset
+
+ together with the covariance 
+\begin_inset Formula $\Sigma$
+\end_inset
+
+ for each pose 
+\begin_inset Formula $x$
+\end_inset
+
+ approximate the 
+\series bold
+marginal posterior density
+\series default
+ 
+\begin_inset Formula $P(x|Z)$
+\end_inset
+
+.
+ Note that this is just an approximation, as even in this simple case the
+ odometry factors are actually non-linear in their arguments, and GTSAM
+ only computes a Gaussian approximation to the true underlying posterior.
+\end_layout
+
+\begin_layout Standard
+The following C++ code will recover the posterior marginals:
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset include
+LatexCommand lstinputlisting
+filename "Code/OdometryMarginals.cpp"
+lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},captionpos=b,frame=single,identifierstyle={\\bfseries},language={C++},numbers=left,caption={Excerpt from examples/OdometryExample.cpp},label={listing:OdometryMarginals}"
+
+\end_inset
+
+The relevant output from running the example is as follows:
+\size footnotesize
+
+\begin_inset CommandInset include
+LatexCommand verbatiminput
+filename "Code/OdometryOutput3.txt"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+noindent
+\end_layout
+
+\end_inset
+
+ What we see is that the marginal covariance 
+\begin_inset Formula $P(x_{1}|Z)$
+\end_inset
+
+ on 
+\begin_inset Formula $x_{1}$
+\end_inset
+
+ is simply the prior knowledge on 
+\begin_inset Formula $x_{1}$
+\end_inset
+
+, but as the robot moves the uncertainty in all dimensions grows without
+ bound, and the 
+\begin_inset Formula $y$
+\end_inset
+
+ and 
+\begin_inset Formula $\theta$
+\end_inset
+
+ components of the pose become (positively) correlated.
+\end_layout
+
+\begin_layout Standard
+An important fact to note when interpreting these numbers is that covariance
+ matrices are given in 
+\emph on
+relative
+\emph default
+ coordinates, not absolute coordinates.
+ This is because internally GTSAM optimizes for a change with respect to
+ a linearization point, as do all nonlinear optimization libraries.
+\end_layout
+
+\begin_layout Section
+Robot Localization
+\end_layout
+
+\begin_layout Subsection
+Unary Measurement Factors
+\end_layout
+
+\begin_layout Standard
+In this section we add measurements to the factor graph that will help us
+ actually 
+\emph on
+localize
+\emph default
+ the robot over time.
+ The example also serves as a tutorial on creating new factor types.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement h
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename images/FactorGraph2.pdf
+	scale 80
+	BoundingBox 70bp 550bp 300bp 630bp
+	clip
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:LocalizationFG"
+
+\end_inset
+
+Robot localization factor graph with unary measurement factors at each time
+ step.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+noindent
+\end_layout
+
+\end_inset
+
+ In particular, we use 
+\series bold
+unary measurement factors
+\series default
+ to handle external measurements.
+ The example from Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Robot-Localization"
+
+\end_inset
+
+ is not very useful on a real robot, because it only contains factors correspond
+ing to odometry measurements.
+ These are imperfect and will lead to quickly accumulating uncertainty on
+ the last robot pose, at least in the absence of any external measurements
+ (see Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Full-Posterior-Inference"
+
+\end_inset
+
+).
+ Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:LocalizationFG"
+
+\end_inset
+
+ shows a new factor graph where the prior 
+\begin_inset Formula $f_{0}(x_{1})$
+\end_inset
+
+ is omitted and instead we added three unary factors 
+\begin_inset Formula $f_{1}(x_{1};z_{1})$
+\end_inset
+
+, 
+\begin_inset Formula $f_{2}(x_{2};z_{2})$
+\end_inset
+
+, and 
+\begin_inset Formula $f_{3}(x_{3};z_{3})$
+\end_inset
+
+, one for each localization measurement 
+\begin_inset Formula $z_{t}$
+\end_inset
+
+, respectively.
+ Such unary factors are applicable for measurements 
+\begin_inset Formula $z_{t}$
+\end_inset
+
+ that depend 
+\emph on
+only
+\emph default
+ on the current robot pose, e.g., GPS readings, correlation of a laser range-finde
+r in a pre-existing map, or indeed the presence of absence of ceiling lights
+ (see 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "Dellaert99b"
+literal "true"
+
+\end_inset
+
+ for that amusing example).
+\end_layout
+
+\begin_layout Subsection
+Defining Custom Factors
+\end_layout
+
+\begin_layout Standard
+In GTSAM, you can create custom unary factors by deriving a new class from
+ the built-in class 
+\series bold
+\emph on
+NoiseModelFactor1<T>
+\series default
+\emph default
+, which implements a unary factor corresponding to a measurement likelihood
+ with a Gaussian noise model,
+\begin_inset Formula 
+\[
+L(q;m)=exp\left\{ -\frac{1}{2}\SqrMah{h(q)}{m}{\Sigma}\right\} \define f(q)
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $m$
+\end_inset
+
+ is the measurement, 
+\begin_inset Formula $q\in SE(2)$
+\end_inset
+
+ is the unknown variable, 
+\begin_inset Formula $h(q)$
+\end_inset
+
+ is a 
+\series bold
+measurement function
+\series default
+, and 
+\begin_inset Formula $\Sigma$
+\end_inset
+
+ is the noise covariance.
+ Note that 
+\begin_inset Formula $m$
+\end_inset
+
+ is considered 
+\emph on
+known
+\emph default
+ above, and the likelihood 
+\begin_inset Formula $L(q;m)$
+\end_inset
+
+
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+ of 
+\begin_inset Formula $q$
+\end_inset
+
+ given 
+\begin_inset Formula $m$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+ will only ever be evaluated as a function of 
+\begin_inset Formula $q$
+\end_inset
+
+, which explains why it is a unary factor 
+\begin_inset Formula $f(q)$
+\end_inset
+
+.
+ It is always the unknown variable 
+\begin_inset Formula $q$
+\end_inset
+
+ that is either likely or unlikely, given the measurement.
+ 
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+Note: 
+\series default
+many people get this backwards, often misled by the conditional density
+ notation 
+\begin_inset Formula $P(m|q)$
+\end_inset
+
+.
+ In fact, the likelihood 
+\begin_inset Formula $L(q;m)$
+\end_inset
+
+ is 
+\emph on
+defined
+\emph default
+ as any function of 
+\begin_inset Formula $q$
+\end_inset
+
+ proportional to 
+\begin_inset Formula $P(m|q)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Listing 
+\begin_inset CommandInset ref
+LatexCommand vref
+reference "listing:LocalizationFactor"
+
+\end_inset
+
+ shows an example on how to define the custom factor class 
+\series bold
+\emph on
+UnaryFactor
+\series default
+\emph default
+ which implements a 
+\begin_inset Quotes eld
+\end_inset
+
+GPS-like
+\begin_inset Quotes erd
+\end_inset
+
+ measurement likelihood:
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset include
+LatexCommand lstinputlisting
+filename "Code/LocalizationFactor.cpp"
+lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},captionpos=b,frame=single,identifierstyle={\\bfseries},language={C++},numbers=left,caption={Excerpt from examples/LocalizationExample.cpp},label={listing:LocalizationFactor}"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+noindent
+\end_layout
+
+\end_inset
+
+ In defining the derived class on line 1, we provide the template argument
+ 
+\series bold
+\emph on
+Pose2
+\series default
+\emph default
+ to indicate the type of the variable 
+\begin_inset Formula $q$
+\end_inset
+
+, whereas the measurement is stored as the instance variables 
+\series bold
+\emph on
+mx_
+\series default
+\emph default
+ and 
+\series bold
+\emph on
+my_
+\series default
+\emph default
+, defined on line 2.
+ The constructor on lines 5-6 simply passes on the variable key 
+\begin_inset Formula $j$
+\end_inset
+
+ and the noise model to the superclass, and stores the measurement values
+ provided.
+ The most important function to has be implemented by every factor class
+ is 
+\series bold
+\emph on
+evaluateError
+\series default
+\emph default
+, which should return 
+\begin_inset Formula 
+\[
+E(q)\define h(q)-m
+\]
+
+\end_inset
+
+which is done on line 14.
+ Importantly, because we want to use this factor for nonlinear optimization
+ (see e.g., 
+\begin_inset CommandInset citation
+LatexCommand citealt
+key "Dellaert06ijrr"
+literal "true"
+
+\end_inset
+
+ for details), whenever the optional argument 
+\begin_inset Formula $H$
+\end_inset
+
+ is provided, a 
+\series bold
+\emph on
+Matrix
+\series default
+\emph default
+ reference, the function should assign the 
+\series bold
+Jacobian
+\series default
+ of 
+\begin_inset Formula $h(q)$
+\end_inset
+
+ to it, evaluated at the provided value for 
+\begin_inset Formula $q$
+\end_inset
+
+.
+ This is done for this example on line 11.
+ In this case, the Jacobian of the 2-dimensional function 
+\begin_inset Formula $h$
+\end_inset
+
+, which just returns the position of the robot, 
+\begin_inset Formula 
+\[
+h(q)=\left[\begin{array}{c}
+q_{x}\\
+q_{y}
+\end{array}\right]
+\]
+
+\end_inset
+
+ with respect the 3-dimensional pose 
+\begin_inset Formula $q=\left(q_{x},q_{y},q_{\theta}\right)$
+\end_inset
+
+, yields the following 
+\begin_inset Formula $2\times3$
+\end_inset
+
+ matrix:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+H=\left[\begin{array}{ccc}
+\cos(q_{\theta}) & -\sin(q_{\theta}) & 0\\
+\sin(q_{\theta}) & \cos(q_{\theta}) & 0
+\end{array}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Paragraph*
+Important Note
+\end_layout
+
+\begin_layout Standard
+Many of our users, when attempting to create a custom factor, are initially
+ surprised at the Jacobian matrix not agreeing with their intuition.
+ For example, above you might simply expect a 
+\begin_inset Formula $2\times3$
+\end_inset
+
+ identity matrix.
+ This 
+\emph on
+would
+\emph default
+ be true for variables belonging to a vector space.
+ However, in GTSAM we define the Jacobian more generally to be the matrix
+ 
+\begin_inset Formula $H$
+\end_inset
+
+ such that
+\begin_inset Formula 
+\[
+h(q\exp\hat{\xi})\approx h(q)+H\xi
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $\xi=(\delta x,\delta y,\delta\theta)$
+\end_inset
+
+ is an incremental update and 
+\begin_inset Formula $\exp\hat{\xi}$
+\end_inset
+
+ is the 
+\series bold
+exponential map
+\series default
+ for the variable we want to update.
+ In this case 
+\begin_inset Formula $q\in SE(2)$
+\end_inset
+
+, where 
+\begin_inset Formula $SE(2)$
+\end_inset
+
+ is the group of 2D rigid transforms, implemented by 
+\series bold
+\emph on
+Pose2
+\emph default
+.
+ 
+\series default
+The exponential map for 
+\begin_inset Formula $SE(2)$
+\end_inset
+
+ can be approximated to first order as
+\begin_inset Formula 
+\[
+\exp\hat{\xi}\approx\left[\begin{array}{ccc}
+1 & -\delta\theta & \delta x\\
+\delta\theta & 1 & \delta y\\
+0 & 0 & 1
+\end{array}\right]
+\]
+
+\end_inset
+
+when using the 
+\begin_inset Formula $3\times3$
+\end_inset
+
+ matrix representation for 2D poses, and hence 
+\begin_inset Formula 
+\[
+h(qe^{\hat{\xi}})\approx h\left(\left[\begin{array}{ccc}
+\cos(q_{\theta}) & -\sin(q_{\theta}) & q_{x}\\
+\sin(q_{\theta}) & \cos(q_{\theta}) & q_{y}\\
+0 & 0 & 1
+\end{array}\right]\left[\begin{array}{ccc}
+1 & -\delta\theta & \delta x\\
+\delta\theta & 1 & \delta y\\
+0 & 0 & 1
+\end{array}\right]\right)=\left[\begin{array}{c}
+q_{x}+\cos(q_{\theta})\delta x-\sin(q_{\theta})\delta y\\
+q_{y}+\sin(q_{\theta})\delta x+\cos(q_{\theta})\delta y
+\end{array}\right]
+\]
+
+\end_inset
+
+which then explains the Jacobian 
+\begin_inset Formula $H$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Lie groups are very relevant in the robotics context, and you can read more
+ here:
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Flex URL
+status open
+
+\begin_layout Plain Layout
+
+https://github.com/borglab/gtsam/blob/develop/doc/LieGroups.pdf
+\end_layout
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Flex URL
+status open
+
+\begin_layout Plain Layout
+
+https://github.com/borglab/gtsam/blob/develop/doc/math.pdf
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In some cases you want to go even beyond Lie groups to a looser concept,
+ 
+\series bold
+manifolds
+\series default
+, because not all unknown variables behave like a group, e.g., the space of
+ 3D planes, 2D lines, directions in space, etc.
+ For manifolds we do not always have an exponential map, but we have a retractio
+n that plays the same role.
+ Some of this is explained here:
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Flex URL
+status open
+
+\begin_layout Plain Layout
+
+https://gtsam.org/notes/GTSAM-Concepts.html 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Using Custom Factors
+\end_layout
+
+\begin_layout Standard
+The following C++ code fragment illustrates how to create and add custom
+ factors to a factor graph:
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset include
+LatexCommand lstinputlisting
+filename "Code/LocalizationExample2.cpp"
+lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},caption={Excerpt from examples/LocalizationExample.cpp},captionpos=b,frame=single,identifierstyle={\\bfseries},label={listing:LocalizationExample2},language={C++},numbers=left"
+
+\end_inset
+
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+noindent
+\end_layout
+
+\end_inset
+
+ In Listing 
+\begin_inset CommandInset ref
+LatexCommand vref
+reference "listing:LocalizationExample2"
+
+\end_inset
+
+, we create the noise model on line 2-3, which now specifies two standard
+ deviations on the measurements 
+\begin_inset Formula $m_{x}$
+\end_inset
+
+ and 
+\begin_inset Formula $m_{y}$
+\end_inset
+
+.
+ On lines 4-6 we create 
+\series bold
+\emph on
+shared_ptr
+\series default
+\emph default
+ versions of three newly created 
+\series bold
+\emph on
+UnaryFactor
+\series default
+\emph default
+ instances, and add them to graph.
+ GTSAM uses shared pointers to refer to factors, and 
+\series bold
+\emph on
+emplace_shared
+\series default
+\emph default
+ is a convenience method to simultaneously construct a class and create
+ a 
+\series bold
+\emph on
+shared_ptr
+\series default
+\emph default
+ to it.
+ We obtain the factor graph from Figure 
+\begin_inset CommandInset ref
+LatexCommand vref
+reference "fig:LocalizationFG"
+
+\end_inset
+
+.
+ 
+\family typewriter
+\size small
+
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
+The relevant output from running the example is as follows:
+\family typewriter
+\size small
+
+\begin_inset CommandInset include
+LatexCommand verbatiminput
+filename "Code/LocalizationOutput4.txt"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Full Posterior Inference
+\end_layout
+
+\begin_layout Standard
+The three GPS factors are enough to fully constrain all unknown poses and
+ tie them to a 
+\begin_inset Quotes eld
+\end_inset
+
+global
+\begin_inset Quotes erd
+\end_inset
+
+ reference frame, including the three unknown orientations.
+ If not, GTSAM would have exited with a singular matrix exception.
+ The marginals can be recovered exactly as in Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Full-Posterior-Inference"
+
+\end_inset
+
+, and the solution and marginal covariances are now given by the following:
+\size footnotesize
+
+\begin_inset CommandInset include
+LatexCommand verbatiminput
+filename "Code/LocalizationOutput5.txt"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Comparing this with the covariance matrices in Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "subsec:Full-Posterior-Inference"
+
+\end_inset
+
+, we can see that the uncertainty no longer grows without bounds as measurement
+ uncertainty accumulates.
+ Instead, the 
+\begin_inset Quotes eld
+\end_inset
+
+GPS
+\begin_inset Quotes erd
+\end_inset
+
+ measurements more or less constrain the poses evenly, as expected.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement h
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename images/Odometry.pdf
+	width 80text%
+	BoundingBox 70bp 310bp 525bp 500bp
+	clip
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Odometry marginals
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\align center
+\begin_inset space ~
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename images/Localization.pdf
+	width 80text%
+	BoundingBox 70bp 310bp 525bp 500bp
+	clip
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+Localization Marginals
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:CompareMarginals"
+
+\end_inset
+
+Comparing the marginals resulting from the 
+\begin_inset Quotes eld
+\end_inset
+
+odometry
+\begin_inset Quotes erd
+\end_inset
+
+ factor graph in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:OdometryFG"
+
+\end_inset
+
+ and the 
+\begin_inset Quotes eld
+\end_inset
+
+localization
+\begin_inset Quotes erd
+\end_inset
+
+ factor graph in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:LocalizationFG"
+
+\end_inset
+
+.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+It helps a lot when we view this graphically, as in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:CompareMarginals"
+
+\end_inset
+
+, where I show the marginals on position as 5-sigma covariance ellipses
+ that contain 99.9996% of all probability mass.
+ For the odometry marginals, it is immediately apparent from the figure
+ that (1) the uncertainty on pose keeps growing, and (2) the uncertainty
+ on angular odometry translates into increasing uncertainty on y.
+ The localization marginals, in contrast, are constrained by the unary factors
+ and are all much smaller.
+ In addition, while less apparent, the uncertainty on the middle pose is
+ actually smaller as it is constrained by odometry from two sides.
+\end_layout
+
+\begin_layout Standard
+You might now be wondering how we produced these figures.
+ The answer is via the MATLAB interface of GTSAM, which we will demonstrate
+ in the next section.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Pose2SLAM"
+
+\end_inset
+
+
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:WithMarginals"
+
+\end_inset
+
+PoseSLAM
+\end_layout
+
+\begin_layout Subsection
+Loop Closure Constraints
+\end_layout
+
+\begin_layout Standard
+The simplest instantiation of a SLAM problem is 
+\series bold
+PoseSLAM
+\series default
+, which avoids building an explicit map of the environment.
+ The goal of SLAM is to simultaneously localize a robot and map the environment
+ given incoming sensor measurements 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "DurrantWhyte06ram"
+literal "true"
+
+\end_inset
+
+.
+ Besides wheel odometry, one of the most popular sensors for robots moving
+ on a plane is a 2D laser-range finder, which provides both odometry constraints
+ between successive poses, and loop-closure constraints when the robot re-visits
+ a previously explored part of the environment.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement h
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename images/FactorGraph3.pdf
+	scale 80
+	BoundingBox 40bp 585bp 330bp 710bp
+	clip
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Pose2SLAM"
+
+\end_inset
+
+Factor graph for PoseSLAM.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+noindent
+\end_layout
+
+\end_inset
+
+ A factor graph example for PoseSLAM is shown in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Pose2SLAM"
+
+\end_inset
+
+.
+ The following C++ code, included in GTSAM as an example, creates this factor
+ graph in code: 
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset include
+LatexCommand lstinputlisting
+filename "Code/Pose2SLAMExample.cpp"
+lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},caption={Excerpt from examples/Pose2SLAMExample.cpp},captionpos=b,frame=single,identifierstyle={\\bfseries},label={listing:Pose2SLAMExample},language={C++},numbers=left"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+noindent
+\end_layout
+
+\end_inset
+
+ As before, lines 1-4 create a nonlinear factor graph and add the unary
+ factor 
+\begin_inset Formula $f_{0}(x_{1})$
+\end_inset
+
+.
+ As the robot travels through the world, it creates binary factors 
+\begin_inset Formula $f_{t}(x_{t},x_{t+1})$
+\end_inset
+
+ corresponding to odometry, added to the graph in lines 6-12 (Note that
+ M_PI_2 refers to pi/2).
+ But line 15 models a different event: a 
+\series bold
+loop closure
+\series default
+.
+ For example, the robot might recognize the same location using vision or
+ a laser range finder, and calculate the geometric pose constraint to when
+ it first visited this location.
+ This is illustrated for poses 
+\begin_inset Formula $x_{5}$
+\end_inset
+
+ and 
+\begin_inset Formula $x_{2}$
+\end_inset
+
+, and generates the (red) loop closing factor 
+\begin_inset Formula $f_{5}(x_{5},x_{2})$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement h
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename images/example1.pdf
+	width 80text%
+	BoundingBox 30bp 170bp 610bp 630bp
+	clip
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:example"
+
+\end_inset
+
+The result of running optimize on the factor graph in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Pose2SLAM"
+
+\end_inset
+
+.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We can optimize this factor graph as before, by creating an initial estimate
+ of type 
+\series bold
+\emph on
+Values
+\series default
+\emph default
+, and creating and running an optimizer.
+ The result is shown graphically in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:example"
+
+\end_inset
+
+, along with covariance ellipses shown in green.
+ These 5-sigma covariance ellipses in 2D indicate the marginal over position,
+ over all possible orientations, and show the area which contain 99.9996%
+ of the probability mass.
+ The graph shows in a clear manner that the uncertainty on pose 
+\begin_inset Formula $x_{5}$
+\end_inset
+
+ is now much less than if there would be only odometry measurements.
+ The pose with the highest uncertainty, 
+\begin_inset Formula $x_{4}$
+\end_inset
+
+, is the one furthest away from the unary constraint 
+\begin_inset Formula $f_{0}(x_{1})$
+\end_inset
+
+, which is the only factor tying the graph to a global coordinate frame.
+\end_layout
+
+\begin_layout Standard
+The figure above was created using an interface that allows you to use GTSAM
+ from within MATLAB, which provides for visualization and rapid development.
+ We discuss this next.
+\end_layout
+
+\begin_layout Subsection
+Using the MATLAB Interface
+\end_layout
+
+\begin_layout Standard
+A large subset of the GTSAM functionality can be accessed through wrapped
+ classes from within MATLAB 
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+GTSAM also allows you to wrap your own custom-made classes, although this
+ is outside the scope of this manual
+\end_layout
+
+\end_inset
+
+.
+ The following code excerpt is the MATLAB equivalent of the C++ code in
+ Listing 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "listing:Pose2SLAMExample"
+
+\end_inset
+
+:
+\begin_inset CommandInset include
+LatexCommand lstinputlisting
+filename "Code/Pose2SLAMExample.m"
+lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},captionpos=b,frame=single,identifierstyle={\\bfseries},language={Matlab},numbers=left,caption={Excerpt from matlab/gtsam\\_examples/Pose2SLAMExample.m},label={listing:Pose2SLAMExample-MATLAB}"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+noindent
+\end_layout
+
+\end_inset
+
+ Note that the code is almost identical, although there are a few syntax
+ and naming differences:
+\end_layout
+
+\begin_layout Itemize
+Objects are created by calling a constructor instead of allocating them
+ on the heap.
+\end_layout
+
+\begin_layout Itemize
+Namespaces are done using dot notation, i.e., 
+\series bold
+\emph on
+noiseModel::Diagonal::SigmasClasses
+\series default
+\emph default
+ becomes 
+\series bold
+\emph on
+noiseModel.Diagonal.Sigmas
+\series default
+\emph default
+.
+\end_layout
+
+\begin_layout Itemize
+
+\series bold
+\emph on
+Vector
+\series default
+\emph default
+ and 
+\series bold
+\emph on
+Matrix
+\series default
+\emph default
+ classes in C++ are just vectors/matrices in MATLAB.
+\end_layout
+
+\begin_layout Itemize
+As templated classes do not exist in MATLAB, these have been hardcoded in
+ the GTSAM interface, e.g., 
+\series bold
+\emph on
+PriorFactorPose2
+\series default
+\emph default
+ corresponds to the C++ class 
+\series bold
+\emph on
+PriorFactor<Pose2>
+\series default
+\emph default
+, etc.
+\end_layout
+
+\begin_layout Standard
+After executing the code, you can call 
+\emph on
+whos 
+\emph default
+on the MATLAB command prompt to see the objects created.
+ Note that the indicated 
+\emph on
+Class
+\emph default
+ corresponds to the wrapped C++ classes:
+\size small
+
+\begin_inset CommandInset include
+LatexCommand verbatiminput
+filename "Code/whos.txt"
+
+\end_inset
+
+
+\size default
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+noindent
+\end_layout
+
+\end_inset
+
+ In addition, any GTSAM object can be examined in detail, yielding identical
+ output to C++:
+\size small
+ 
+\begin_inset CommandInset include
+LatexCommand verbatiminput
+filename "Code/print.txt"
+
+\end_inset
+
+
+\size default
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+noindent
+\end_layout
+
+\end_inset
+
+ And it does not stop there: we can also call some of the functions defined
+ for factor graphs.
+ E.g.,
+\end_layout
+
+\begin_layout Standard
+
+\size small
+\begin_inset CommandInset include
+LatexCommand verbatiminput
+filename "Code/calls.txt"
+
+\end_inset
+
+
+\size default
+
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+noindent
+\end_layout
+
+\end_inset
+
+ computes the sum-squared error 
+\begin_inset Formula $\frac{1}{2}\sum_{i}\SqrMah{h_{i}(X_{i})}{z_{i}}{\Sigma}$
+\end_inset
+
+ before and after optimization.
+\end_layout
+
+\begin_layout Subsection
+Reading and Optimizing Pose Graphs 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement h
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename images/w100-result.pdf
+	width 80text%
+	BoundingBox 30bp 170bp 610bp 630bp
+	clip
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:w100"
+
+\end_inset
+
+MATLAB plot of small Manhattan world example with 100 poses (due to Ed Olson).
+ The initial estimate is shown in green.
+ The optimized trajectory, with covariance ellipses, in blue.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The ability to work in MATLAB adds a much quicker development cycle, and
+ effortless graphical output.
+ The optimized trajectory in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:w100"
+
+\end_inset
+
+ was produced by the code below, in which 
+\emph on
+load2D
+\emph default
+ reads TORO files.
+ To see how plotting is done, refer to the full source code.
+\begin_inset CommandInset include
+LatexCommand lstinputlisting
+filename "Code/Pose2SLAMExample-graph.m"
+lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},captionpos=b,frame=single,identifierstyle={\\bfseries},language={Matlab},numbers=left,caption={Excerpt from matlab/gtsam\\_examples/Pose2SLAMExample\\_graph.m},label={listing:Pose2SLAMExample-graph}"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+PoseSLAM in 3D
+\end_layout
+
+\begin_layout Standard
+PoseSLAM can easily be extended to 3D poses, but some care is needed to
+ update 3D rotations.
+ GTSAM supports both 
+\series bold
+quaternions
+\series default
+ and 
+\begin_inset Formula $3\times3$
+\end_inset
+
+ 
+\series bold
+rotation matrices 
+\series default
+to represent 3D rotations.
+ The selection is made via the compile flag GTSAM_USE_QUATERNIONS.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement h
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename images/sphere2500-result.pdf
+	width 70text%
+	BoundingBox 60bp 150bp 610bp 610bp
+	clip
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:w100-1"
+
+\end_inset
+
+3D plot of sphere example (due to Michael Kaess).
+ The very wrong initial estimate, derived from odometry, is shown in green.
+ The optimized trajectory is shown red.
+ Code below:
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset include
+LatexCommand lstinputlisting
+filename "Code/Pose3SLAMExample-graph.m"
+lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},captionpos=b,frame=single,identifierstyle={\\bfseries},language={Matlab},numbers=left,caption={Excerpt from matlab/gtsam\\_examples/Pose3SLAMExample\\_graph.m},label={listing:Pose3SLAMExample-graph-1}"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Landmark-based-SLAM"
+
+\end_inset
+
+Landmark-based SLAM
+\end_layout
+
+\begin_layout Subsection
+Basics
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement h
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename images/FactorGraph4.pdf
+	scale 80
+	BoundingBox 50bp 590bp 290bp 710bp
+	clip
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:SLAM"
+
+\end_inset
+
+Factor graph for landmark-based SLAM
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+noindent
+\end_layout
+
+\end_inset
+
+ In 
+\series bold
+landmark-based SLAM
+\series default
+, we explicitly build a map with the location of observed landmarks, which
+ introduces a second type of variable in the factor graph besides robot
+ poses.
+ An example factor graph for a landmark-based SLAM example is shown in Figure
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:SLAM"
+
+\end_inset
+
+, which shows the typical connectivity: poses are connected in an odometry
+ Markov chain, and landmarks are observed from multiple poses, inducing
+ binary factors.
+ In addition, the pose 
+\begin_inset Formula $x_{1}$
+\end_inset
+
+ has the usual prior on it.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement h
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename images/example2.pdf
+	scale 47
+	BoundingBox 90bp 220bp 520bp 555bp
+	clip
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:PlanarSLAMExample"
+
+\end_inset
+
+The optimized result along with covariance ellipses for both poses (in green)
+ and landmarks (in blue).
+ Also shown are the trajectory (red) and landmark sightings (cyan).
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The factor graph from Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:SLAM"
+
+\end_inset
+
+ can be created using the MATLAB code in Listing 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "listing:PlanarSLAMExample"
+
+\end_inset
+
+.
+ As before, on line 2 we create the factor graph, and Lines 8-18 create
+ the prior/odometry chain we are now familiar with.
+ However, the code on lines 20-25 is new: it creates three 
+\series bold
+measurement factors
+\series default
+, in this case 
+\begin_inset Quotes eld
+\end_inset
+
+bearing/range
+\begin_inset Quotes erd
+\end_inset
+
+ measurements from the pose to the landmark.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset include
+LatexCommand lstinputlisting
+filename "Code/PlanarSLAMExample.m"
+lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},captionpos=b,frame=single,identifierstyle={\\bfseries},language={Matlab},numbers=left,caption={Excerpt from matlab/gtsam\\_examples/PlanarSLAMExample.m},label={listing:PlanarSLAMExample}"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Of Keys and Symbols
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+noindent
+\end_layout
+
+\end_inset
+
+ The only unexplained code is on lines 4-6: here we create integer keys
+ for the poses and landmarks using the 
+\series bold
+\emph on
+symbol
+\series default
+\emph default
+ function.
+ In GTSAM, we address all variables using the 
+\series bold
+\emph on
+Ke
+\emph default
+y
+\series default
+ type, which is just a typedef to 
+\series bold
+\emph on
+size_t
+\series default
+\emph default
+
+\begin_inset Foot
+status open
+
+\begin_layout Plain Layout
+a 32 or 64 bit integer, depending on your platform
+\end_layout
+
+\end_inset
+
+.
+ The keys do not have to be numbered continuously, but they do have to be
+ unique within a given factor graph.
+ For factor graphs with different types of variables, we provide the 
+\series bold
+\emph on
+symbol
+\series default
+\emph default
+ function in MATLAB, and the 
+\series bold
+\emph on
+Symbol
+\series default
+\emph default
+ type in C++, to help you create (large) integer keys that are far apart
+ in the space of possible keys, so you don't have to think about starting
+ the point numbering at some arbitrary offset.
+ To create a a 
+\emph on
+symbol key
+\emph default
+ you simply provide a character and an integer index.
+ You can use base 0 or 1, or use arbitrary indices: it does not matter.
+ In the code above, we we use 'x' for poses, and 'l' for landmarks.
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
+, and use the resulting keys 
+\series bold
+\emph on
+i1
+\series default
+\emph default
+, 
+\series bold
+\emph on
+i2
+\series default
+\emph default
+, 
+\series bold
+\emph on
+i3
+\series default
+\emph default
+, 
+\series bold
+\emph on
+j1
+\series default
+\emph default
+, and 
+\series bold
+\emph on
+j2
+\series default
+\emph default
+ to create the factors in the correct way.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The optimized result for the factor graph created by Listing 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "listing:PlanarSLAMExample"
+
+\end_inset
+
+ is shown in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:PlanarSLAMExample"
+
+\end_inset
+
+, and it is readily apparent that the landmark 
+\begin_inset Formula $l_{1}$
+\end_inset
+
+ with two measurements is better localized.
+ In MATLAB we can also examine the actual numerical values, and doing so
+ reveals some more GTSAM magic:
+\end_layout
+
+\begin_layout Standard
+
+\size small
+\begin_inset CommandInset include
+LatexCommand verbatiminput
+filename "Code/PlanarSLAMExample.txt"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+noindent
+\end_layout
+
+\end_inset
+
+ Indeed, the keys generated by symbol are automatically detected by the
+ 
+\series bold
+\emph on
+print
+\series default
+\emph default
+ method in the 
+\series bold
+\emph on
+Values
+\series default
+\emph default
+ class, and rendered in human-readable form 
+\begin_inset Quotes eld
+\end_inset
+
+x1
+\begin_inset Quotes erd
+\end_inset
+
+, 
+\begin_inset Quotes eld
+\end_inset
+
+l2
+\begin_inset Quotes erd
+\end_inset
+
+, etc, rather than as large, unwieldy integers.
+ This magic extends to most factors and other classes where the 
+\series bold
+Key
+\series default
+ type is used.
+\end_layout
+
+\begin_layout Subsection
+A Larger Example
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement h
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename images/littleRobot.pdf
+	width 90text%
+	BoundingBox 0bp 200bp 612bp 600bp
+	clip
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:littleRobot"
+
+\end_inset
+
+A larger example with about 100 poses and 30 or so landmarks, as produced
+ by gtsam_examples/PlanarSLAMExample_graph.m
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+GTSAM comes with a slightly larger example that is read from a .graph file
+ by PlanarSLAMExample_graph.m, shown in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:littleRobot"
+
+\end_inset
+
+.
+ To not clutter the figure only the marginals are shown, not the lines of
+ sight.
+ This example, with 119 (multivariate) variables and 517 factors optimizes
+ in less than 10 ms.
+\end_layout
+
+\begin_layout Subsection
+A Real-World Example
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement h
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename images/Victoria.pdf
+	width 90text%
+	BoundingBox 0bp 0bp 420bp 180bp
+	clip
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Victoria-1"
+
+\end_inset
+
+Small section of optimized trajectory and landmarks (trees detected in a
+ laser range finder scan) from data recorded in Sydney's Victoria Park (dataset
+ due to Jose Guivant, U.
+ Sydney).
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+A real-world example is shown in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Victoria-1"
+
+\end_inset
+
+, using data from a well known dataset collected in Sydney's Victoria Park,
+ using a truck equipped with a laser range-finder.
+ The covariance matrices in this figure were computed very efficiently,
+ as explained in detail in 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "Kaess09ras"
+literal "true"
+
+\end_inset
+
+.
+ The exact covariances (blue, smaller ellipses) obtained by our fast algorithm
+ coincide with the exact covariances based on full inversion (orange, mostly
+ hidden by blue).
+ The much larger conservative covariance estimates (green, large ellipses)
+ were based on our earlier work in 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "Kaess08tro"
+literal "true"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Structure from Motion
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement h
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename images/cube.pdf
+	width 80text%
+	BoundingBox 60bp 90bp 612bp 380bp
+	clip
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:SFMExample"
+
+\end_inset
+
+An optimized 
+\begin_inset Quotes eld
+\end_inset
+
+Structure from Motion
+\begin_inset Quotes erd
+\end_inset
+
+ with 10 cameras arranged in a circle, observing the 8 vertices of a 
+\begin_inset Formula $20\times20\times20$
+\end_inset
+
+ cube centered around the origin.
+ The camera is rendered with color-coded axes, (RGB for XYZ) and the viewing
+ direction is is along the positive Z-axis.
+ Also shown are the 3D error covariance ellipses for both cameras and points.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+noindent
+\end_layout
+
+\end_inset
+
+
+\series bold
+ Structure from Motion
+\series default
+ (SFM) is a technique to recover a 3D reconstruction of the environment
+ from corresponding visual features in a collection of 
+\emph on
+unordered
+\emph default
+ images, see Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:SFMExample"
+
+\end_inset
+
+.
+ In GTSAM this is done using exactly the same factor graph framework, simply
+ using SFM-specific measurement factors.
+ In particular, there is a 
+\series bold
+projection factor
+\series default
+ that calculates the reprojection error 
+\begin_inset Formula $f(x_{i},p_{j};z_{ij},K)$
+\end_inset
+
+ for a given camera pose 
+\begin_inset Formula $x_{i}$
+\end_inset
+
+ (a 
+\series bold
+\emph on
+Pose3
+\series default
+\emph default
+) and point 
+\begin_inset Formula $p_{j}$
+\end_inset
+
+ (a 
+\series bold
+\emph on
+Point3
+\series default
+\emph default
+).
+ The factor is parameterized by the 2D measurement 
+\begin_inset Formula $z_{ij}$
+\end_inset
+
+ (a 
+\series bold
+\emph on
+Point2
+\series default
+\emph default
+), and known calibration parameters 
+\begin_inset Formula $K$
+\end_inset
+
+ (of type 
+\series bold
+\emph on
+Cal3_S2
+\series default
+\emph default
+).
+ The following listing shows how to create the factor graph: 
+\begin_inset CommandInset include
+LatexCommand lstinputlisting
+filename "Code/SFMExample.m"
+lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},captionpos=b,frame=single,identifierstyle={\\bfseries},language={Matlab},numbers=left,caption={Excerpt from matlab/gtsam\\_examples/SFMExample.m},label={listing:SFMExample}"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset ERT
+status open
+
+\begin_layout Plain Layout
+
+
+\backslash
+noindent
+\end_layout
+
+\end_inset
+
+ In Listing 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "listing:SFMExample"
+
+\end_inset
+
+, assuming that the factor graph was already created, we add measurement
+ factors in the double loop.
+ We loop over images with index 
+\begin_inset Formula $i$
+\end_inset
+
+, and in this example the data is given as two cell arrays: Z{i} specifies
+ a set of measurements 
+\begin_inset Formula $z_{k}$
+\end_inset
+
+ in image 
+\begin_inset Formula $i$
+\end_inset
+
+, and 
+\begin_inset Formula $J\{i\}$
+\end_inset
+
+ specifies the corresponding point index.
+ The specific factor type we use is a 
+\series bold
+\emph on
+GenericProjectionFactorCal3_S2
+\series default
+\emph default
+, which is the MATLAB equivalent of the C++ class 
+\series bold
+\emph on
+GenericProjectionFactor<Cal3_S2>
+\series default
+\emph default
+, where 
+\series bold
+\emph on
+Cal3_S2
+\series default
+\emph default
+ is the camera calibration type we choose to use (the standard, no-radial
+ distortion, 5 parameter calibration matrix).
+ As before landmark-based SLAM (Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Landmark-based-SLAM"
+
+\end_inset
+
+), here we use symbol keys except we now use the character 'p' to denote
+ points, rather than 'l' for landmark.
+\end_layout
+
+\begin_layout Standard
+Important note: a very tricky and difficult part of making SFM work is (a)
+ data association, and (b) initialization.
+ GTSAM does neither of these things for you: it simply provides the 
+\begin_inset Quotes eld
+\end_inset
+
+bundle adjustment
+\begin_inset Quotes erd
+\end_inset
+
+ optimization.
+ In the example, we simply assume the data association is known (it is encoded
+ in the J sets), and we initialize with the ground truth, as the intent
+ of the example is simply to show you how to set up the optimization problem.
+\end_layout
+
+\begin_layout Section
+iSAM: Incremental Smoothing and Mapping
+\end_layout
+
+\begin_layout Standard
+GTSAM provides an incremental inference algorithm based on a more advanced
+ graphical model, the Bayes tree, which is kept up to date by the 
+\series bold
+iSAM
+\series default
+ algorithm (incremental Smoothing and Mapping, see 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "Kaess08tro,Kaess12ijrr"
+literal "true"
+
+\end_inset
+
+ for an in-depth treatment).
+ For mobile robots operating in real-time it is important to have access
+ to an updated map as soon as new sensor measurements come in.
+ iSAM keeps the map up-to-date in an efficient manner.
+ 
+\end_layout
+
+\begin_layout Standard
+Listing 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "listing:iSAMExample"
+
+\end_inset
+
+ shows how to use iSAM in a simple visual SLAM example.
+ In line 1-2 we create a 
+\series bold
+\emph on
+NonlinearISAM
+\series default
+\emph default
+ object which will relinearize and reorder the variables every 3 steps.
+ The corect value for this parameter depends on how non-linear your problem
+ is and how close you want to be to gold-standard solution at every step.
+ In iSAM 2.0, this parameter is not needed, as iSAM2 automatically determines
+ when linearization is needed and for which variables.
+\end_layout
+
+\begin_layout Standard
+The example involves eight 3D points that are seen from eight successive
+ camera poses.
+ Hence in the first step -which is omitted here- all eight landmarks and
+ the first pose are properly initialized.
+ In the code this is done by perturbing the known ground truth, but in a
+ real application great care is needed to properly initialize poses and
+ landmarks, especially in a monocular sequence.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\begin_inset CommandInset include
+LatexCommand lstinputlisting
+filename "Code/VisualISAMExample.cpp"
+lstparams "aboveskip=10pt,basicstyle={\\ttfamily\\small},captionpos=b,frame=single,identifierstyle={\\bfseries},language={C++},numbers=left,caption={Excerpt from examples/VisualISAMExample.cpp},label={listing:iSAMExample}"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The remainder of the code illustrates a typical iSAM loop:
+\end_layout
+
+\begin_layout Enumerate
+Create factors for new measurements.
+ Here, in lines 9-18, a small 
+\series bold
+\emph on
+NonlinearFactorGraph
+\series default
+\emph default
+ is created to hold the new factors of type 
+\series bold
+\emph on
+GenericProjectionFactor<Pose3, Point3, Cal3_S2>
+\series default
+\emph default
+.
+\end_layout
+
+\begin_layout Enumerate
+Create an initial estimate for all newly introduced variables.
+ In this small example, all landmarks have been observed in frame 1 and
+ hence the only new variable that needs to be initialized at each time step
+ is the new pose.
+ This is done in lines 20-22.
+ Note we assume a good initial estimate is available as 
+\emph on
+initial_x[i]
+\emph default
+.
+\end_layout
+
+\begin_layout Enumerate
+Finally, we call 
+\emph on
+isam.update()
+\emph default
+, which takes the factors and initial estimates, and incrementally updates
+ the solution, which is available through the method 
+\emph on
+isam.estimate()
+\emph default
+, if desired.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+More Applications
+\end_layout
+
+\begin_layout Standard
+While a detailed discussion of all the things you can do with GTSAM will
+ take us too far, below is a small survey of what you can expect to do,
+ and which we did using GTSAM.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename figures/SAM/FactorGraph.pdf
+	scale 80
+	BoundingBox 40bp 600bp 300bp 792bp
+	clip
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Filtering"
+
+\end_inset
+
+Factor graph explanation of Filtering.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+The factor graph for landmark-based SLAM is shown in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Filtering"
+
+\end_inset
+
+.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Conjugate Gradient Optimization
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+placement h
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename images/Beijing.pdf
+	width 70text%
+	BoundingBox 100bp 240bp 500bp 550bp
+	clip
+
+\end_inset
+
+
+\begin_inset Caption Standard
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Beijing"
+
+\end_inset
+
+ A map of Beijing, with a spanning tree shown in black, and the remaining
+ 
+\emph on
+loop-closing
+\emph default
+ constraints shown in red.
+ A spanning tree can be used as a 
+\emph on
+preconditioner
+\emph default
+ by GTSAM.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+GTSAM also includes efficient preconditioned conjugate gradients (PCG) methods
+ for solving large-scale SLAM problems.
+ While direct methods, popular in the literature, exhibit quadratic convergence
+ and can be quite efficient for sparse problems, they typically require
+ a lot of storage and efficient elimination orderings to be found.
+ In contrast, iterative optimization methods only require access to the
+ gradient and have a small memory footprint, but can suffer from poor convergenc
+e.
+ Our method, 
+\emph on
+subgraph preconditioning
+\emph default
+, explained in detail in 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "Dellaert10iros,Jian11iccv"
+literal "true"
+
+\end_inset
+
+, combines the advantages of direct and iterative methods, by identifying
+ a sub-problem that can be easily solved using direct methods, and solving
+ for the remaining part using PCG.
+ The easy sub-problems correspond to a spanning tree, a planar subgraph,
+ or any other substructure that can be efficiently solved.
+ An example of such a subgraph is shown in Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Beijing"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Visual Odometry
+\end_layout
+
+\begin_layout Standard
+A gentle introduction to vision-based sensing is 
+\series bold
+Visual Odometry
+\series default
+ (abbreviated VO, see e.g.
+ 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "Nister04cvpr2"
+literal "true"
+
+\end_inset
+
+), which provides pose constraints between successive robot poses by tracking
+ or associating visual features in successive images taken by a camera mounted
+ rigidly on the robot.
+ GTSAM includes both C++ and MATLAB example code, as well as VO-specific
+ factors to help you on the way.
+\end_layout
+
+\begin_layout Subsection
+Visual SLAM
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+Visual SLAM
+\series default
+ (see e.g., 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "Davison03iccv"
+literal "true"
+
+\end_inset
+
+) is a SLAM variant where 3D points are observed by a camera as the camera
+ moves through space, either mounted on a robot or moved around by hand.
+ GTSAM, and particularly iSAM (see below), can easily be adapted to be used
+ as the back-end optimizer in such a scenario.
+\end_layout
+
+\begin_layout Subsection
+Fixed-lag Smoothing and Filtering 
+\end_layout
+
+\begin_layout Standard
+GTSAM can easily perform recursive estimation, where only a subset of the
+ poses are kept in the factor graph, while the remaining poses are marginalized
+ out.
+ In all examples above we explicitly optimize for all variables using all
+ available measurements, which is called 
+\series bold
+Smoothing
+\series default
+ because the trajectory is 
+\begin_inset Quotes eld
+\end_inset
+
+smoothed
+\begin_inset Quotes erd
+\end_inset
+
+ out, and this is where GTSAM got its name (GT 
+\emph on
+Smoothing
+\emph default
+ and Mapping).
+ When instead only the last few poses are kept in the graph, one speaks
+ of 
+\series bold
+Fixed-lag Smoothing
+\series default
+.
+ Finally, when only the single most recent poses is kept, one speaks of
+ 
+\series bold
+Filtering
+\series default
+, and indeed the original formulation of SLAM was filter-based 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "Smith87b"
+literal "true"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Discrete Variables and HMMs
+\end_layout
+
+\begin_layout Standard
+Finally, factor graphs are not limited to continuous variables: GTSAM can
+ also be used to model and solve discrete optimization problems.
+ For example, a Hidden Markov Model (HMM) has the same graphical model structure
+ as the Robot Localization problem from Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Robot-Localization"
+
+\end_inset
+
+, except that in an HMM the variables are discrete.
+ GTSAM can optimize and perform inference for discrete models.
+\end_layout
+
+\begin_layout Section*
+Acknowledgements
+\end_layout
+
+\begin_layout Standard
+GTSAM was made possible by the efforts of many collaborators at Georgia
+ Tech and elsewhere, including but not limited to Doru Balcan, Chris Beall,
+ Alex Cunningham, Alireza Fathi, Eohan George, Viorela Ila, Yong-Dian Jian,
+ Michael Kaess, Kai Ni, Carlos Nieto, Duy-Nguyen Ta, Manohar Paluri, Christian
+ Potthast, Richard Roberts, Grant Schindler, and Stephen Williams.
+ In addition, Paritosh Mohan helped me with the manual.
+ Many thanks all for your hard work!
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+bibfiles "gtsam"
+options "apalike"
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document

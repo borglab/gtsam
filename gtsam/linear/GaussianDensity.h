@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -24,17 +24,16 @@
 namespace gtsam {
 
   /**
-  * A Gaussian density.
-  *
-  * It is implemented as a GaussianConditional without parents.
+  * A GaussianDensity is a GaussianConditional without parents.
   * The negative log-probability is given by \f$ |Rx - d|^2 \f$
   * with \f$ \Lambda = \Sigma^{-1} = R^T R \f$ and \f$ \mu = R^{-1} d \f$
+  * @ingroup linear
   */
   class GTSAM_EXPORT GaussianDensity : public GaussianConditional {
 
   public:
 
-    typedef boost::shared_ptr<GaussianDensity> shared_ptr;
+    typedef std::shared_ptr<GaussianDensity> shared_ptr;
 
     /// default constructor needed for serialization
     GaussianDensity() :
@@ -52,12 +51,13 @@ namespace gtsam {
     GaussianDensity(Key key, const Vector& d, const Matrix& R, const SharedDiagonal& noiseModel = SharedDiagonal()) :
       GaussianConditional(key, d, R, noiseModel) {}
 
-    /// Construct using a mean and variance
-    static GaussianDensity FromMeanAndStddev(Key key, const Vector& mean, const double& sigma);
+    /// Construct using a mean and standard deviation
+    static GaussianDensity FromMeanAndStddev(Key key, const Vector& mean,
+                                             double sigma);
 
     /// print
     void print(const std::string& = "GaussianDensity",
-      const KeyFormatter& formatter = DefaultKeyFormatter) const;
+      const KeyFormatter& formatter = DefaultKeyFormatter) const override;
 
     /// Mean \f$ \mu = R^{-1} d \f$
     Vector mean() const;

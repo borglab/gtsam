@@ -2,30 +2,33 @@
  * @file SmartRangeFactor.h
  *
  * @brief A smart factor for range-only SLAM that does initialization and marginalization
- * 
+ *
  * @date Sep 10, 2012
  * @author Alex Cunningham
  */
 
 #pragma once
 
-#include <gtsam_unstable/base/dllexport.h>
+#include <gtsam_unstable/dllexport.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/base/timing.h>
-#include <boost/foreach.hpp>
+
+#include <list>
 #include <map>
+#include <stdexcept>
+#include <string>
+#include <vector>
+#include <optional>
 
 namespace gtsam {
 
 /**
  * Smart factor for range SLAM
- * @addtogroup SLAM
+ * @ingroup slam
  */
 class SmartRangeFactor: public NoiseModelFactor {
-protected:
-
+ protected:
   struct Circle2 {
     Circle2(const Point2& p, double r) :
         center(p), radius(r) {
@@ -36,10 +39,13 @@ protected:
 
   typedef SmartRangeFactor This;
 
-  std::vector<double> measurements_; ///< Range measurements
-  double variance_; ///< variance on noise
+  std::vector<double> measurements_;  ///< Range measurements
+  double variance_;  ///< variance on noise
 
-public:
+ public:
+
+  // Provide access to the Matrix& version of unwhitenedError
+  using NoiseModelFactor::unwhitenedError;
 
   /** Default constructor: don't use directly */
   SmartRangeFactor() {
@@ -49,15 +55,19 @@ public:
    * Constructor
    * @param s standard deviation of range measurement noise
    */
-  SmartRangeFactor(double s) :
+  explicit SmartRangeFactor(double s) :
       NoiseModelFactor(noiseModel::Isotropic::Sigma(1, s)), variance_(s * s) {
   }
 
-  virtual ~SmartRangeFactor() {
+  ~SmartRangeFactor() override {
   }
 
   /// Add a range measurement to a pose with given key.
   void addRange(Key key, double measuredRange) {
+    if(std::find(keys_.begin(), keys_.end(), key) != keys_.end()) {
+      throw std::invalid_argument(
+          "SmartRangeFactor::addRange: adding duplicate measurement for key.");
+    }
     keys_.push_back(key);
     measurements_.push_back(measuredRange);
     size_t n = keys_.size();
@@ -68,14 +78,14 @@ public:
   // Testable
 
   /** print */
-  virtual void print(const std::string& s = "",
-      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+  void print(const std::string& s = "",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     std::cout << s << "SmartRangeFactor with " << size() << " measurements\n";
     NoiseModelFactor::print(s);
   }
 
   /** Check if two factors are equal */
-  virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const {
+  bool equals(const NonlinearFactor& f, double tol = 1e-9) const override {
     return false;
   }
 
@@ -84,9 +94,9 @@ public:
   /**
    * Triangulate a point from at least three pose-range pairs
    * Checks for best pair that includes first point
+   * Raise runtime_error if not well defined.
    */
   Point2 triangulate(const Values& x) const {
-    //gttic_(triangulate);
     // create n circles corresponding to measured range around each pose
     std::list<Circle2> circles;
     size_t n = size();
@@ -96,61 +106,65 @@ public:
     }
 
     Circle2 circle1 = circles.front();
-    boost::optional<Point2> best_fh;
-    boost::optional<Circle2> best_circle;
+    std::optional<Point2> best_fh;
+    std::optional<Circle2> bestCircle2 = std::nullopt;  // fixes issue #38
 
     // loop over all circles
-    BOOST_FOREACH(const Circle2& it, circles) {
+    for (const Circle2& it : circles) {
       // distance between circle centers.
-      double d = circle1.center.dist(it.center);
+      double d = distance2(circle1.center, it.center);
       if (d < 1e-9)
-        continue; // skip circles that are in the same location
+        continue;  // skip circles that are in the same location
       // Find f and h, the intersection points in normalized circles
-      boost::optional<Point2> fh = Point2::CircleCircleIntersection(
+      std::optional<Point2> fh = circleCircleIntersection(
           circle1.radius / d, it.radius / d);
       // Check if this pair is better by checking h = fh->y()
       // if h is large, the intersections are well defined.
       if (fh && (!best_fh || fh->y() > best_fh->y())) {
         best_fh = fh;
-        best_circle = it;
+        bestCircle2 = it;
       }
     }
 
     // use best fh to find actual intersection points
-    std::list<Point2> intersections = Point2::CircleCircleIntersection(
-        circle1.center, best_circle->center, best_fh);
+    if (bestCircle2 && best_fh) {
+      auto bestCircleCenter = bestCircle2->center;
+      std::list<Point2> intersections =
+          circleCircleIntersection(circle1.center, bestCircleCenter, best_fh);
 
-    // pick winner based on other measurements
-    double error1 = 0, error2 = 0;
-    Point2 p1 = intersections.front(), p2 = intersections.back();
-    BOOST_FOREACH(const Circle2& it, circles) {
-      error1 += it.center.dist(p1);
-      error2 += it.center.dist(p2);
+      // pick winner based on other measurements
+      double error1 = 0, error2 = 0;
+      Point2 p1 = intersections.front(), p2 = intersections.back();
+      for (const Circle2& it : circles) {
+        error1 += distance2(it.center, p1);
+        error2 += distance2(it.center, p2);
+      }
+      return (error1 < error2) ? p1 : p2;
+    } else {
+      throw std::runtime_error("triangulate failed");
     }
-    return (error1 < error2) ? p1 : p2;
-    //gttoc_(triangulate);
   }
 
   /**
    * Error function *without* the NoiseModel, \f$ z-h(x) \f$.
    */
-  virtual Vector unwhitenedError(const Values& x,
-      boost::optional<std::vector<Matrix>&> H = boost::none) const {
+  Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = nullptr) const override {
     size_t n = size();
     if (n < 3) {
-      if (H)
+      if (H) {
         // set Jacobians to zero for n<3
         for (size_t j = 0; j < n; j++)
-          (*H)[j] = zeros(3, 1);
-      return zero(1);
+          (*H)[j] = Matrix::Zero(3, 1);
+      }
+      return Z_1x1;
     } else {
-      Vector error = zero(1);
+      Vector error = Z_1x1;
 
       // triangulate to get the optimized point
-      // TODO: Should we have a (better?) variant that does this in relative coordinates ?
+      // TODO(dellaert): Should we have a (better?) variant that does this in relative coordinates ?
       Point2 optimizedPoint = triangulate(x);
 
-      // TODO: triangulation should be followed by an optimization given poses
+      // TODO(dellaert): triangulation should be followed by an optimization given poses
       // now evaluate the errors between predicted and measured range
       for (size_t j = 0; j < n; j++) {
         const Pose2& pose = x.at<Pose2>(keys_[j]);
@@ -165,12 +179,10 @@ public:
   }
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
-
 };
-
-} // \namespace gtsam
+}  // \namespace gtsam
 

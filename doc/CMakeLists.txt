@@ -4,10 +4,12 @@ option(GTSAM_BUILD_DOCS                  "Enable/Disable building of doxygen doc
 # configure doxygen
 option(GTSAM_BUILD_DOC_HTML              "Enable/Disable doxygen HTML output"    ON)
 option(GTSAM_BUILD_DOC_LATEX             "Enable/Disable doxygen LaTeX output"   OFF)
+option(GTSAM_GENERATE_DOC_XML            "Enable/Disable doxygen XML output"     OFF)
 
 # add a target to generate API documentation with Doxygen
 if (GTSAM_BUILD_DOCS)
-    # Convert configuration to YES/NO variables
+    # The following if statements convert ON/OFF CMake flags to YES/NO variables
+    # since Doxygen expects YES/NO for boolean options.
     if (GTSAM_BUILD_DOC_HTML)
         set(GTSAM_BUILD_DOC_HTML_YN "YES")
     else() 
@@ -20,20 +22,27 @@ if (GTSAM_BUILD_DOCS)
         set(GTSAM_BUILD_DOC_LATEX_YN "NO")
     endif()
 
+    if (GTSAM_GENERATE_DOC_XML)
+        set(GTSAM_GENERATE_XML_YN "YES")
+    else() 
+        set(GTSAM_GENERATE_XML_YN "NO")
+    endif()
+
     # GTSAM core subfolders
     set(gtsam_doc_subdirs 
-        gtsam/base 
-        gtsam/discrete 
-        gtsam/geometry 
-        gtsam/inference 
-        gtsam/linear 
-        gtsam/navigation 
-        gtsam/nonlinear 
-        gtsam/sam 
-        gtsam/sfm 
-        gtsam/slam 
-        gtsam/smart 
-        gtsam/symbolic 
+        gtsam/base
+        gtsam/basis 
+        gtsam/discrete
+        gtsam/geometry
+        gtsam/hybrid
+        gtsam/inference
+        gtsam/linear
+        gtsam/navigation
+        gtsam/nonlinear
+        gtsam/sam
+        gtsam/sfm
+        gtsam/slam
+        gtsam/symbolic
         gtsam
     )
     
@@ -41,10 +50,12 @@ if (GTSAM_BUILD_DOCS)
     set(gtsam_unstable_doc_subdirs
         gtsam_unstable/base
         gtsam_unstable/discrete
+        gtsam_unstable/dynamics
+        gtsam_unstable/geometry
         gtsam_unstable/linear
-        gtsam_unstable/nonlinear 
-        gtsam_unstable/slam 
-        gtsam_unstable/dynamics 
+        gtsam_unstable/nonlinear
+        gtsam_unstable/partition
+        gtsam_unstable/slam
         gtsam_unstable
     )
     
@@ -53,7 +64,7 @@ if (GTSAM_BUILD_DOCS)
     if (GTSAM_BUILD_UNSTABLE)
         list(APPEND doc_subdirs ${gtsam_unstable_doc_subdirs})
     endif()
-    if (GTSAM_BUILD_EXAMPLES)
+    if (GTSAM_BUILD_EXAMPLES_ALWAYS)
         list(APPEND doc_subdirs examples)
     endif()
     

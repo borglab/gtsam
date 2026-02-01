@@ -18,8 +18,6 @@
     VERIFY(threw && "should have thrown bad_alloc: " #a);     \
   }
 
-typedef DenseIndex Index;
-
 template<typename MatrixType>
 void triggerMatrixBadAlloc(Index rows, Index cols)
 {
@@ -36,7 +34,7 @@ void triggerVectorBadAlloc(Index size)
   VERIFY_THROWS_BADALLOC( VectorType v; v.conservativeResize(size) );
 }
 
-void test_sizeoverflow()
+EIGEN_DECLARE_TEST(sizeoverflow)
 {
   // there are 2 levels of overflow checking. first in PlainObjectBase.h we check for overflow in rows*cols computations.
   // this is tested in tests of the form times_itself_gives_0 * times_itself_gives_0

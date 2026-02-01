@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -21,8 +21,6 @@
 #include <iostream>
 using namespace std;
 
-#include <boost/tuple/tuple.hpp>
-#include <boost/assign/list_of.hpp>
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/linear/JacobianFactor.h>
@@ -31,7 +29,6 @@ using namespace std;
 #include <gtsam/linear/NoiseModel.h>
 
 using namespace gtsam;
-using namespace boost::assign;
 
 static const Key _x1_=1, _x2_=2, _l1_=3;
 
@@ -54,7 +51,7 @@ int main()
 {
   // create a linear factor
   Matrix Ax2 = (Matrix(8, 2) <<
-           // x2  
+           // x2
            -5., 0.,
            +0.,-5.,
            10., 0.,
@@ -64,9 +61,9 @@ int main()
            10., 0.,
            +0.,10.
            ).finished();
-                     
+
   Matrix Al1 = (Matrix(8, 10) <<
-           // l1     
+           // l1
            5., 0.,1.,2.,3.,4.,5.,6.,7.,8.,
            0., 5.,1.,2.,3.,4.,5.,6.,7.,8.,
            0., 0.,1.,2.,3.,4.,5.,6.,7.,8.,
@@ -76,7 +73,7 @@ int main()
            0., 0.,1.,2.,3.,4.,5.,6.,7.,8.,
            0., 0.,1.,2.,3.,4.,5.,6.,7.,8.
            ).finished();
-                     
+
   Matrix Ax1 = (Matrix(8, 2) <<
            // x1
            0.00,  0.,1.,2.,3.,4.,5.,6.,7.,8.,
@@ -99,7 +96,7 @@ int main()
   b2(5) = 1.5;
   b2(6) = 2;
   b2(7) = -1;
-  
+
   // time eliminate
   JacobianFactor combined(_x2_, Ax2,  _l1_, Al1, _x1_, Ax1, b2, noiseModel::Isotropic::Sigma(8,1));
   long timeLog = clock();
@@ -108,8 +105,8 @@ int main()
   JacobianFactor::shared_ptr factor;
 
   for(int i = 0; i < n; i++)
-    boost::tie(conditional, factor) =
-        JacobianFactor(combined).eliminate(Ordering(boost::assign::list_of(_x2_)));
+    std::tie(conditional, factor) =
+        JacobianFactor(combined).eliminate(Ordering{_x2_});
 
   long timeLog2 = clock();
   double seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;
@@ -118,8 +115,7 @@ int main()
   cout << ((double)n/seconds) << " calls/second" << endl;
 
   // time matrix_augmented
-//  Ordering ordering;
-//  ordering += _x2_, _l1_, _x1_;
+//  const Ordering ordering{_x2_, _l1_, _x1_};
 //  size_t n1 = 10000000;
 //  timeLog = clock();
 //

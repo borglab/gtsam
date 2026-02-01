@@ -1,0 +1,39 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<doxygen xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="compound.xsd" version="1.8.11">
+  <compounddef id="structgtsam_1_1traits_3_01NonlinearFactor_01_4" kind="struct" language="C++" prot="public">
+    <compoundname>gtsam::traits&lt; NonlinearFactor &gt;</compoundname>
+    <basecompoundref prot="public" virt="non-virtual">Testable&lt; NonlinearFactor &gt;</basecompoundref>
+    <includes refid="NonlinearFactor_8h" local="no">NonlinearFactor.h</includes>
+    <templateparamlist>
+    </templateparamlist>
+    <briefdescription>
+<para>traits </para>    </briefdescription>
+    <detaileddescription>
+    </detaileddescription>
+    <inheritancegraph>
+      <node id="163">
+        <label>Testable&lt; NonlinearFactor &gt;</label>
+      </node>
+      <node id="162">
+        <label>gtsam::traits&lt; NonlinearFactor &gt;</label>
+        <link refid="structgtsam_1_1traits_3_01NonlinearFactor_01_4"/>
+        <childnode refid="163" relation="public-inheritance">
+        </childnode>
+      </node>
+    </inheritancegraph>
+    <collaborationgraph>
+      <node id="165">
+        <label>Testable&lt; NonlinearFactor &gt;</label>
+      </node>
+      <node id="164">
+        <label>gtsam::traits&lt; NonlinearFactor &gt;</label>
+        <link refid="structgtsam_1_1traits_3_01NonlinearFactor_01_4"/>
+        <childnode refid="165" relation="public-inheritance">
+        </childnode>
+      </node>
+    </collaborationgraph>
+    <location file="tests/doc-test-files/NonlinearFactor.h" line="149" column="1" bodyfile="tests/doc-test-files/NonlinearFactor.h" bodystart="149" bodyend="150"/>
+    <listofallmembers>
+    </listofallmembers>
+  </compounddef>
+</doxygen>

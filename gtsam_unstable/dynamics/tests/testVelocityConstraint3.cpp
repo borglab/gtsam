@@ -23,7 +23,7 @@ TEST( testVelocityConstraint3, evaluateError) {
   VelocityConstraint3 constraint(X(1), X(2), V(1), dt);
 
   // verify error function
-  EXPECT(assert_equal(zero(1), constraint.evaluateError(x1, x2, v), tol));
+  EXPECT(assert_equal(Z_1x1, constraint.evaluateError(x1, x2, v), tol));
 }
 
 /* ************************************************************************* */

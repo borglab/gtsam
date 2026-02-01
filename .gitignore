@@ -1,10 +1,34 @@
-/build*
+/build
+/debug*
+.idea
 *.pyc
 *.DS_Store
+*.swp
+*:Zone.Identifier
 /examples/Data/dubrovnik-3-7-pre-rewritten.txt
 /examples/Data/pose2example-rewritten.txt
 /examples/Data/pose3example-rewritten.txt
 *.txt.user
 *.txt.user.6d59f0c
-/python-build/
 *.pydevproject
+.vscode
+.env
+/.vs/
+/CMakeSettings.json
+# for QtCreator:
+CMakeLists.txt.user*
+xcode/
+/Dockerfile
+/python/gtsam/notebooks/.ipynb_checkpoints/ellipses-checkpoint.ipynb
+.cache/
+.venv/
+
+# MyST build outputs
+_build
+GEMINI.md
+doc/#*.lyx#
+/cmake-build-debug/
+.venv/
+conductor/
+.ccache/
+gtsam_unstable/timing/data/

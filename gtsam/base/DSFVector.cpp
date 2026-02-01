@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -17,9 +17,8 @@
  */
 
 #include <gtsam/base/DSFVector.h>
-#include <boost/make_shared.hpp>
-#include <boost/foreach.hpp>
 #include <algorithm>
+#include <cassert>
 
 using namespace std;
 
@@ -27,14 +26,14 @@ namespace gtsam {
 
 /* ************************************************************************* */
 DSFBase::DSFBase(const size_t numNodes) {
-  v_ = boost::make_shared < V > (numNodes);
+  v_ = std::make_shared < V > (numNodes);
   int index = 0;
   for (V::iterator it = v_->begin(); it != v_->end(); it++, index++)
     *it = index;
 }
 
 /* ************************************************************************* */
-DSFBase::DSFBase(const boost::shared_ptr<V>& v_in) {
+DSFBase::DSFBase(const std::shared_ptr<V>& v_in) {
   v_ = v_in;
   int index = 0;
   for (V::iterator it = v_->begin(); it != v_->end(); it++, index++)
@@ -70,7 +69,7 @@ DSFVector::DSFVector(const std::vector<size_t>& keys) :
 }
 
 /* ************************************************************************* */
-DSFVector::DSFVector(const boost::shared_ptr<V>& v_in,
+DSFVector::DSFVector(const std::shared_ptr<V>& v_in,
     const std::vector<size_t>& keys) :
     DSFBase(v_in), keys_(keys) {
   assert(*(std::max_element(keys.begin(), keys.end()))<v_in->size());
@@ -79,7 +78,7 @@ DSFVector::DSFVector(const boost::shared_ptr<V>& v_in,
 /* ************************************************************************* */
 bool DSFVector::isSingleton(const size_t& label) const {
   bool result = false;
-  BOOST_FOREACH(size_t key,keys_) {
+  for(size_t key: keys_) {
     if (find(key) == label) {
       if (!result) // find the first occurrence
         result = true;
@@ -93,7 +92,7 @@ bool DSFVector::isSingleton(const size_t& label) const {
 /* ************************************************************************* */
 std::set<size_t> DSFVector::set(const size_t& label) const {
   std::set < size_t > set;
-  BOOST_FOREACH(size_t key,keys_)
+  for(size_t key: keys_)
     if (find(key) == label)
       set.insert(key);
   return set;
@@ -102,7 +101,7 @@ std::set<size_t> DSFVector::set(const size_t& label) const {
 /* ************************************************************************* */
 std::map<size_t, std::set<size_t> > DSFVector::sets() const {
   std::map<size_t, std::set<size_t> > sets;
-  BOOST_FOREACH(size_t key,keys_)
+  for(size_t key: keys_)
     sets[find(key)].insert(key);
   return sets;
 }
@@ -110,7 +109,7 @@ std::map<size_t, std::set<size_t> > DSFVector::sets() const {
 /* ************************************************************************* */
 std::map<size_t, std::vector<size_t> > DSFVector::arrays() const {
   std::map<size_t, std::vector<size_t> > arrays;
-  BOOST_FOREACH(size_t key,keys_)
+  for(size_t key: keys_)
     arrays[find(key)].push_back(key);
   return arrays;
 }

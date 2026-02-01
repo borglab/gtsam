@@ -1,17 +1,40 @@
 # - Config file for @CMAKE_PROJECT_NAME@
 # It defines the following variables
 #  @PACKAGE_NAME@_INCLUDE_DIR - include directories for @CMAKE_PROJECT_NAME@
- 
+
+if (POLICY CMP0167)
+    cmake_policy(SET CMP0167 OLD) # Don't complain about boost
+endif()
+
 # Compute paths
 get_filename_component(OUR_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 if(EXISTS "${OUR_CMAKE_DIR}/CMakeCache.txt")
   # In build tree
-  set(@PACKAGE_NAME@_INCLUDE_DIR @CMAKE_SOURCE_DIR@ CACHE PATH "@PACKAGE_NAME@ include directory")
+  set(@PACKAGE_NAME@_INCLUDE_DIR @GTSAM_SOURCE_DIR@ CACHE PATH "@PACKAGE_NAME@ include directory")
 else()
   # Find installed library
   set(@PACKAGE_NAME@_INCLUDE_DIR "${OUR_CMAKE_DIR}/@CONF_REL_INCLUDE_DIR@" CACHE PATH "@PACKAGE_NAME@ include directory")
 endif()
-  
+
+# Find dependencies, required by cmake exported targets:
+include(CMakeFindDependencyMacro)
+# Allow using cmake < 3.8
+if (@GTSAM_ENABLE_BOOST_SERIALIZATION@ OR @GTSAM_USE_BOOST_FEATURES@)
+  if(${CMAKE_VERSION} VERSION_LESS "3.8.0" OR ${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.30.0")
+    find_package(Boost @BOOST_FIND_MINIMUM_VERSION@ COMPONENTS @BOOST_FIND_MINIMUM_COMPONENTS@)
+  else()
+    find_dependency(Boost @BOOST_FIND_MINIMUM_VERSION@ COMPONENTS @BOOST_FIND_MINIMUM_COMPONENTS@)
+  endif()
+endif()
+
+if(@GTSAM_USE_TBB@)
+    find_dependency(TBB 4.4 COMPONENTS tbb tbbmalloc)
+endif()
+
+if(@GTSAM_USE_SYSTEM_EIGEN@)
+find_dependency(Eigen3 REQUIRED)
+endif()
+
 # Load exports
 include(${OUR_CMAKE_DIR}/@PACKAGE_NAME@-exports.cmake)
 

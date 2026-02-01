@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -11,54 +11,51 @@
 
 /**
  * @file     ThreadSafeException.h
- * @brief    Base exception type that uses tbb_exception if GTSAM is compiled with TBB
+ * @brief    Base exception type that uses tbb_allocator if GTSAM is compiled with TBB
  * @author   Richard Roberts
  * @date     Aug 21, 2010
- * @addtogroup base
+ * @ingroup base
  */
 
 #pragma once
 
 #include <gtsam/config.h> // for GTSAM_USE_TBB
 
-#include <boost/optional/optional.hpp>
+#include <gtsam/dllexport.h>
 #include <string>
 #include <typeinfo>
+#include <exception>
+#include <optional>
 
 #ifdef GTSAM_USE_TBB
 #include <tbb/tbb_allocator.h>
-#include <tbb/tbb_exception.h>
 #include <tbb/scalable_allocator.h>
 #include <iostream>
 #endif
 
 namespace gtsam {
 
-/// Base exception type that uses tbb_exception if GTSAM is compiled with TBB.
+/// Base exception type that uses tbb_allocator if GTSAM is compiled with TBB.
 template<class DERIVED>
 class ThreadsafeException:
-#ifdef GTSAM_USE_TBB
-    public tbb::tbb_exception
-#else
 public std::exception
-#endif
 {
-#ifdef GTSAM_USE_TBB
 private:
-  typedef tbb::tbb_exception Base;
+  typedef std::exception Base;
+#ifdef GTSAM_USE_TBB
 protected:
   typedef std::basic_string<char, std::char_traits<char>,
       tbb::tbb_allocator<char> > String;
+  typedef tbb::tbb_allocator<char> Allocator;
 #else
-private:
-  typedef std::exception Base;
 protected:
   typedef std::string String;
+  typedef std::allocator<char> Allocator;
 #endif
 
 protected:
   bool dynamic_; ///< Whether this object was moved
-  mutable boost::optional<String> description_; ///< Optional description
+  mutable std::optional<String> description_; ///< Optional description
 
   /// Default constructor is protected - may only be created from derived classes
   ThreadsafeException() :
@@ -76,48 +73,18 @@ protected:
           String(description.begin(), description.end())) {
   }
 
-  /// Default destructor doesn't have the throw()
-  virtual ~ThreadsafeException() throw () {
+  /// Default destructor doesn't have the noexcept
+  ~ThreadsafeException() noexcept override {
   }
 
 public:
-  // Implement functions for tbb_exception
-#ifdef GTSAM_USE_TBB
-  virtual tbb::tbb_exception* move() throw () {
-    void* cloneMemory = scalable_malloc(sizeof(DERIVED));
-    if (!cloneMemory) {
-      std::cerr << "Failed allocating memory to copy thrown exception, exiting now." << std::endl;
-      exit(-1);
-    }
-    DERIVED* clone = ::new(cloneMemory) DERIVED(static_cast<DERIVED&>(*this));
-    clone->dynamic_ = true;
-    return clone;
-  }
-
-  virtual void destroy() throw () {
-    if (dynamic_) {
-      DERIVED* derivedPtr = static_cast<DERIVED*>(this);
-      derivedPtr->~DERIVED();
-      scalable_free(derivedPtr);
-    }
-  }
-
-  virtual void throw_self() {
-    throw *static_cast<DERIVED*>(this);
-  }
-
-  virtual const char* name() const throw () {
-    return typeid(DERIVED).name();
-  }
-#endif
-
-  virtual const char* what() const throw () {
+  const char* what() const noexcept override {
     return description_ ? description_->c_str() : "";
   }
 };
 
 /// Thread-safe runtime error exception
-class RuntimeErrorThreadsafe: public ThreadsafeException<RuntimeErrorThreadsafe> {
+class GTSAM_EXPORT RuntimeErrorThreadsafe: public ThreadsafeException<RuntimeErrorThreadsafe> {
 public:
   /// Construct with a string describing the exception
   RuntimeErrorThreadsafe(const std::string& description) :
@@ -148,8 +115,8 @@ public:
 class CholeskyFailed : public gtsam::ThreadsafeException<CholeskyFailed>
 {
 public:
-  CholeskyFailed() throw() {}
-  virtual ~CholeskyFailed() throw() {}
+  CholeskyFailed() noexcept {}
+  ~CholeskyFailed() noexcept override {}
 };
 
 } // namespace gtsam

@@ -15,22 +15,25 @@
 * @date    November 6, 2013
 */
 
-#include <gtsam/global_includes.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/global_includes.h>
 
-#include <boost/assign/list_of.hpp>
-#include <boost/foreach.hpp>
+#include <algorithm>
+#include <iostream>
 #include <map>
+#include <random>
 
 using namespace std;
 using namespace gtsam;
-using boost::assign::list_of;
 
 #ifdef GTSAM_USE_TBB
 
-#include <tbb/tbb.h>
-#undef max // TBB seems to include windows.h and we don't want these macros
-#undef min
+#include <tbb/blocked_range.h>           // tbb::blocked_range
+#include <tbb/tick_count.h>              // tbb::tick_count
+#include <tbb/parallel_for.h>            // tbb::parallel_for
+#include <tbb/cache_aligned_allocator.h> // tbb::cache_aligned_allocator
+#include <tbb/task_arena.h>              // tbb::task_arena
+#include <tbb/task_group.h>              // tbb::task_group
 
 static const DenseIndex numberOfProblems = 1000000;
 static const DenseIndex problemSize = 4;
@@ -52,34 +55,59 @@ struct WorkerWithoutAllocation
 {
   vector<double>& results;
 
-  WorkerWithoutAllocation(vector<double>& results) : results(results) {}
+  WorkerWithoutAllocation(vector<double>& results)
+      : results(results), gen(rd()), dis(-1.0, 1.0) {}
+
+  // Copy constructor for TBB
+  WorkerWithoutAllocation(const WorkerWithoutAllocation& other)
+      : results(other.results), gen(rd()), dis(-1.0, 1.0) {}
 
   void operator()(const tbb::blocked_range<size_t>& r) const
   {
     for(size_t i = r.begin(); i != r.end(); ++i)
     {
-      FixedMatrix m1 = FixedMatrix::Random();
-      FixedMatrix m2 = FixedMatrix::Random();
+      FixedMatrix m1;
+      FixedMatrix m2;
+      std::generate(m1.data(), m1.data() + m1.size(),
+                    [&]() { return dis(gen); });
+      std::generate(m2.data(), m2.data() + m2.size(),
+                    [&]() { return dis(gen); });
       FixedMatrix prod = m1 * m2;
       results[i] = prod.norm();
     }
   }
+  std::random_device rd;
+  mutable std::minstd_rand gen;
+  mutable std::uniform_real_distribution<double> dis;
 };
 
 /* ************************************************************************* */
-map<int, double> testWithoutMemoryAllocation()
+map<int, double> testWithoutMemoryAllocation(int num_threads)
 {
   // A function to do some matrix operations without allocating any memory
+
+  // Create task_arena and task_group
+  tbb::task_arena arena(num_threads);
+  tbb::task_group tg;
 
   // Now call it
   vector<double> results(numberOfProblems);
 
-  const vector<size_t> grainSizes = list_of(1)(10)(100)(1000);
+  const vector<size_t> grainSizes = {1, 10, 100, 1000};
   map<int, double> timingResults;
-  BOOST_FOREACH(size_t grainSize, grainSizes)
+  for(size_t grainSize: grainSizes)
   {
     tbb::tick_count t0 = tbb::tick_count::now();
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, numberOfProblems), WorkerWithoutAllocation(results));
+
+    // Run parallel code (as a task group) inside of task arena
+    arena.execute([&] {
+      tg.run_and_wait([&] {
+        tbb::parallel_for(
+            tbb::blocked_range<size_t>(0, numberOfProblems, grainSize),
+            WorkerWithoutAllocation(results));
+      });
+    });
+
     tbb::tick_count t1 = tbb::tick_count::now();
     cout << "Without memory allocation, grain size = " << grainSize << ", time = " << (t1 - t0).seconds() << endl;
     timingResults[(int)grainSize] = (t1 - t0).seconds();
@@ -93,7 +121,12 @@ struct WorkerWithAllocation
 {
   vector<double>& results;
 
-  WorkerWithAllocation(vector<double>& results) : results(results) {}
+  WorkerWithAllocation(vector<double>& results)
+      : results(results), gen(rd()), dis(-1.0, 1.0) {}
+
+  // Copy constructor for TBB
+  WorkerWithAllocation(const WorkerWithAllocation& other)
+      : results(other.results), gen(rd()), dis(-1.0, 1.0) {}
 
   void operator()(const tbb::blocked_range<size_t>& r) const
   {
@@ -107,8 +140,10 @@ struct WorkerWithAllocation
       double *proddata = allocator.allocate(problemSize * problemSize);
       Eigen::Map<Matrix> prod(proddata, problemSize, problemSize);
 
-      m1 = Eigen::Matrix4d::Random(problemSize, problemSize);
-      m2 = Eigen::Matrix4d::Random(problemSize, problemSize);
+      std::generate(m1.data(), m1.data() + m1.size(),
+                    [&]() { return dis(gen); });
+      std::generate(m2.data(), m2.data() + m2.size(),
+                    [&]() { return dis(gen); });
       prod = m1 * m2;
       results[i] = prod.norm();
 
@@ -117,22 +152,39 @@ struct WorkerWithAllocation
       allocator.deallocate(proddata, problemSize * problemSize);
     }
   }
+
+  std::random_device rd;
+  mutable std::minstd_rand gen;
+  mutable std::uniform_real_distribution<double> dis;
 };
 
 /* ************************************************************************* */
-map<int, double> testWithMemoryAllocation()
+map<int, double> testWithMemoryAllocation(int num_threads)
 {
   // A function to do some matrix operations with allocating memory
+
+  // Create task_arena and task_group
+  tbb::task_arena arena(num_threads);
+  tbb::task_group tg;
 
   // Now call it
   vector<double> results(numberOfProblems);
 
-  const vector<size_t> grainSizes = list_of(1)(10)(100)(1000);
+  const vector<size_t> grainSizes = {1, 10, 100, 1000};
   map<int, double> timingResults;
-  BOOST_FOREACH(size_t grainSize, grainSizes)
+  for(size_t grainSize: grainSizes)
   {
     tbb::tick_count t0 = tbb::tick_count::now();
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, numberOfProblems), WorkerWithAllocation(results));
+
+    // Run parallel code (as a task group) inside of task arena
+    arena.execute([&] {
+      tg.run_and_wait([&] {
+        tbb::parallel_for(
+            tbb::blocked_range<size_t>(0, numberOfProblems, grainSize),
+            WorkerWithAllocation(results));
+      });
+    });
+
     tbb::tick_count t1 = tbb::tick_count::now();
     cout << "With memory allocation, grain size = " << grainSize << ", time = " << (t1 - t0).seconds() << endl;
     timingResults[(int)grainSize] = (t1 - t0).seconds();
@@ -147,32 +199,31 @@ int main(int argc, char* argv[])
   cout << "numberOfProblems = " << numberOfProblems << endl;
   cout << "problemSize = " << problemSize << endl;
 
-  const vector<int> numThreads = list_of(1)(4)(8);
+  const vector<int> numThreads = {1, 4, 8};
   Results results;
 
-  BOOST_FOREACH(size_t n, numThreads)
+  for(size_t n: numThreads)
   {
     cout << "With " << n << " threads:" << endl;
-    tbb::task_scheduler_init init((int)n);
-    results[(int)n].grainSizesWithoutAllocation = testWithoutMemoryAllocation();
-    results[(int)n].grainSizesWithAllocation = testWithMemoryAllocation();
+    results[(int)n].grainSizesWithoutAllocation = testWithoutMemoryAllocation((int)n);
+    results[(int)n].grainSizesWithAllocation = testWithMemoryAllocation((int)n);
     cout << endl;
   }
 
   cout << "Summary of results:" << endl;
-  BOOST_FOREACH(const Results::value_type& threads_result, results)
+  for(const Results::value_type& threads_result: results)
   {
     const int threads = threads_result.first;
     const ResultWithThreads& result = threads_result.second;
     if(threads != 1)
     {
-      BOOST_FOREACH(const ResultWithThreads::value_type& grainsize_time, result.grainSizesWithoutAllocation)
+      for(const ResultWithThreads::value_type& grainsize_time: result.grainSizesWithoutAllocation)
       {
         const int grainsize = grainsize_time.first;
         const double speedup = results[1].grainSizesWithoutAllocation[grainsize] / grainsize_time.second;
         cout << threads << " threads, without allocation, grain size = " << grainsize << ", speedup = " << speedup << endl;
       }
-      BOOST_FOREACH(const ResultWithThreads::value_type& grainsize_time, result.grainSizesWithAllocation)
+      for(const ResultWithThreads::value_type& grainsize_time: result.grainSizesWithAllocation)
       {
         const int grainsize = grainsize_time.first;
         const double speedup = results[1].grainSizesWithAllocation[grainsize] / grainsize_time.second;

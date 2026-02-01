@@ -1,0 +1,10 @@
+# Print warnings at the end
+if(GTSAM_WITH_TBB AND NOT TBB_FOUND)
+    message(WARNING "TBB 4.4 or newer was not found - this is ok, but note that GTSAM parallelization will be disabled.  Set GTSAM_WITH_TBB to 'Off' to avoid this warning.")
+endif()
+if(GTSAM_WITH_EIGEN_MKL AND NOT MKL_FOUND)
+    message(WARNING "MKL was not found - this is ok, but note that MKL will be disabled.  Set GTSAM_WITH_EIGEN_MKL to 'Off' to disable this warning.  See INSTALL.md for notes on performance.")
+endif()
+if(GTSAM_WITH_EIGEN_MKL_OPENMP AND NOT OPENMP_FOUND AND MKL_FOUND)
+    message(WARNING "Your compiler does not support OpenMP.  Set GTSAM_WITH_EIGEN_MKL_OPENMP to 'Off' to avoid this warning. See INSTALL.md for notes on performance.")
+endif()

@@ -20,14 +20,20 @@
 #pragma once
 
 #include <gtsam/base/Manifold.h>
+#include <gtsam/base/types.h>
 #include <gtsam/base/Value.h>
 
-#include <boost/make_shared.hpp>
-#include <boost/pool/pool_alloc.hpp>
-
 #include <cmath>
-#include <iosfwd>
+#include <iostream>
 #include <typeinfo> // operator typeid
+
+#ifdef _WIN32
+#define GENERICVALUE_VISIBILITY
+#else
+// This will trigger a LNKxxxx on MSVC, so disable for MSVC build
+// Please refer to https://github.com/borglab/gtsam/blob/develop/Using-GTSAM-EXPORT.md
+#define GENERICVALUE_VISIBILITY GTSAM_EXPORT
+#endif
 
 namespace gtsam {
 
@@ -50,9 +56,10 @@ public:
   GenericValue(){}
 
   /// Construct from value
-  GenericValue(const T& value) :
-      value_(value) {
-  }
+  GenericValue(const T& value) : Value(),
+      value_(value) {}
+
+  GenericValue(const GenericValue& other) = default;
 
   /// Return a constant value
   const T& value() const {
@@ -65,11 +72,11 @@ public:
   }
 
   /// Destructor
-  virtual ~GenericValue() {
+  ~GenericValue() override {
   }
 
   /// equals implementing generic Value interface
-  virtual bool equals_(const Value& p, double tol = 1e-9) const {
+  bool equals_(const Value& p, double tol = 1e-9) const override {
     // Cast the base class Value pointer to a templated generic class pointer
     const GenericValue& genericValue2 = static_cast<const GenericValue&>(p);
     // Return the result of using the equals traits for the derived class
@@ -82,53 +89,46 @@ public:
   }
 
   /// Virtual print function, uses traits
-  virtual void print(const std::string& str) const {
-    std::cout << "(" << typeid(T).name() << ") ";
+  void print(const std::string& str) const override {
+    std::cout << "(" << demangle(typeid(T).name()) << ")\n";
     traits<T>::Print(value_, str);
   }
 
     /**
      * Create a duplicate object returned as a pointer to the generic Value interface.
-     * For the sake of performance, this function use singleton pool allocator instead of the normal heap allocator.
-     * The result must be deleted with Value::deallocate_, not with the 'delete' operator.
      */
-    virtual Value* clone_() const {
-      void *place = boost::singleton_pool<PoolTag, sizeof(GenericValue)>::malloc();
-      GenericValue* ptr = new (place) GenericValue(*this); // calls copy constructor to fill in
+    Value* clone_() const override {
+      GenericValue* ptr = new GenericValue(*this); // calls copy constructor to fill in
       return ptr;
     }
 
     /**
      * Destroy and deallocate this object, only if it was originally allocated using clone_().
      */
-    virtual void deallocate_() const {
-      this->~GenericValue(); // Virtual destructor cleans up the derived object
-      boost::singleton_pool<PoolTag, sizeof(GenericValue)>::free((void*) this); // Release memory from pool
+    void deallocate_() const override {
+      delete this;
     }
 
     /**
      * Clone this value (normal clone on the heap, delete with 'delete' operator)
      */
-    virtual boost::shared_ptr<Value> clone() const {
-      return boost::make_shared<GenericValue>(*this);
+    std::shared_ptr<Value> clone() const override {
+      return std::allocate_shared<GenericValue>(Eigen::aligned_allocator<GenericValue>(), *this);
     }
 
     /// Generic Value interface version of retract
-    virtual Value* retract_(const Vector& delta) const {
+    Value* retract_(const Vector& delta) const override {
       // Call retract on the derived class using the retract trait function
       const T retractResult = traits<T>::Retract(GenericValue<T>::value(), delta);
 
-      // Create a Value pointer copy of the result
-      void* resultAsValuePlace =
-          boost::singleton_pool<PoolTag, sizeof(GenericValue)>::malloc();
-      Value* resultAsValue = new (resultAsValuePlace) GenericValue(retractResult);
+      Value* resultAsValue = new GenericValue(retractResult);
 
       // Return the pointer to the Value base class
       return resultAsValue;
     }
 
     /// Generic Value interface version of localCoordinates
-    virtual Vector localCoordinates_(const Value& value2) const {
+    Vector localCoordinates_(const Value& value2) const override {
       // Cast the base class Value pointer to a templated generic class pointer
       const GenericValue<T>& genericValue2 =
           static_cast<const GenericValue<T>&>(value2);
@@ -148,12 +148,12 @@ public:
     }
 
     /// Return run-time dimensionality
-    virtual size_t dim() const {
+    size_t dim() const override {
       return traits<T>::GetDimension(value_);
     }
 
     /// Assignment operator
-    virtual Value& operator=(const Value& rhs) {
+    Value& operator=(const Value& rhs) override {
       // Cast the base class Value pointer to a derived class pointer
       const GenericValue& derivedRhs = static_cast<const GenericValue&>(rhs);
 
@@ -164,22 +164,17 @@ public:
 
   protected:
 
-    // implicit assignment operator for (const GenericValue& rhs) works fine here
     /// Assignment operator, protected because only the Value or DERIVED
     /// assignment operators should be used.
-    //  DerivedValue<DERIVED>& operator=(const DerivedValue<DERIVED>& rhs) {
-    //    // Nothing to do, do not call base class assignment operator
-    //    return *this;
-    //  }
+    GenericValue<T>& operator=(const GenericValue<T>& rhs) {
+      Value::operator=(static_cast<Value const&>(rhs));
+      value_ = rhs.value_;
+      return *this;
+    }
 
   private:
 
-    /// Fake Tag struct for singleton pool allocator. In fact, it is never used!
-    struct PoolTag {
-    };
-
-  private:
-
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -187,12 +182,17 @@ public:
       ar & boost::serialization::make_nvp("GenericValue",
               boost::serialization::base_object<Value>(*this));
       ar & boost::serialization::make_nvp("value", value_);
-    }
+	}
+#endif
+
+  // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
+  constexpr static const bool NeedsToAlign = (sizeof(T) % 16) == 0;
+public:
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
+};
 
 /// use this macro instead of BOOST_CLASS_EXPORT for GenericValues
-#define GTSAM_VALUE_EXPORT(Type) BOOST_CLASS_EXPORT(GenericValue<Type>)
-
-};
+#define GTSAM_VALUE_EXPORT(Type) BOOST_CLASS_EXPORT(gtsam::GenericValue<Type>)
 
 // traits
 template <typename ValueType>
@@ -204,5 +204,13 @@ template<typename ValueType>
 const ValueType& Value::cast() const {
   return dynamic_cast<const GenericValue<ValueType>&>(*this).value();
 }
+
+/** Functional constructor of GenericValue<T> so T can be automatically deduced
+  */
+template<class T>
+GenericValue<T> genericValue(const T& v) {
+  return GenericValue<T>(v);
+}
+
 
 } /* namespace gtsam */

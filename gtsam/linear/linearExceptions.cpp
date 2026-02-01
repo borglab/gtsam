@@ -18,20 +18,17 @@
 
 #include <gtsam/linear/linearExceptions.h>
 #include <gtsam/inference/Symbol.h>
-#include <boost/format.hpp>
-#include <boost/lexical_cast.hpp>
 
 namespace gtsam {
 
   /* ************************************************************************* */
-  const char* IndeterminantLinearSystemException::what() const throw()
+  const char* IndeterminantLinearSystemException::what() const noexcept
   {
     if(!description_) {
       description_ = String(
           "\nIndeterminant linear system detected while working near variable\n"
-          + boost::lexical_cast<String>(j_) +
-          + " (Symbol: " + boost::lexical_cast<String>(
-              gtsam::DefaultKeyFormatter(gtsam::Symbol(j_))) + ").\n"
+          + std::to_string(j_) +
+          + " (Symbol: " + gtsam::DefaultKeyFormatter(gtsam::Symbol(j_)) + ").\n"
           "\n\
 Thrown when a linear system is ill-posed.  The most common cause for this\n\
 error is having underconstrained variables.  Mathematically, the system is\n\
@@ -43,25 +40,24 @@ more information.");
   }
 
   /* ************************************************************************* */
-  const char* InvalidNoiseModel::what() const throw() {
-    if(description_.empty())
-      description_ = (boost::format(
-      "A JacobianFactor was attempted to be constructed or modified to use a\n"
-      "noise model of incompatible dimension.  The JacobianFactor has\n"
-      "dimensionality (i.e. length of error vector) %d but the provided noise\n"
-      "model has dimensionality %d.") % factorDims % noiseModelDims).str();
-    return description_.c_str();
+  const char* InvalidNoiseModel::what() const noexcept {
+    if(description_->empty())
+      description_ = "A JacobianFactor was attempted to be constructed or modified to use a\n"
+                     "noise model of incompatible dimension.  The JacobianFactor has\n"
+                     "dimensionality (i.e. length of error vector) " + std::to_string(factorDims) +
+                     " but the provided noise model has dimensionality " + std::to_string(noiseModelDims) + ".";
+    return description_->c_str();
   }
 
   /* ************************************************************************* */
-  const char* InvalidMatrixBlock::what() const throw() {
-    if(description_.empty())
-      description_ = (boost::format(
-      "A JacobianFactor was attempted to be constructed with a matrix block of\n"
-      "inconsistent dimension.  The JacobianFactor has %d rows (i.e. length of\n"
-      "error vector) but the provided matrix block has %d rows.")
-      % factorRows % blockRows).str();
-    return description_.c_str();
+  const char* InvalidMatrixBlock::what() const noexcept {
+    if(description_->empty()) {
+      description_ = "A JacobianFactor was attempted to be constructed with a matrix block of\n"
+                     "inconsistent dimension.  The JacobianFactor has " + std::to_string(factorRows) +
+                     " rows (i.e. length of error vector) but the provided matrix block has " +
+                     std::to_string(blockRows) + " rows.";
+    }
+    return description_->c_str();
   }
 
  }

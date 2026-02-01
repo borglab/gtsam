@@ -1,0 +1,45 @@
+# base image off ubuntu image
+ARG UBUNTU_TAG=22.04
+FROM docker.io/ubuntu:${UBUNTU_TAG}
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+# dependencies
+    libboost-all-dev \
+# optional dependencies
+    libtbb-dev \
+    python3-dev \
+    python3-pip \
+    python3-pyparsing \
+    python3-numpy \
+# build dependencies
+    build-essential \
+    cmake \
+# download dependencies
+    git \
+    ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# build flags
+ARG GTSAM_GIT_TAG=4.2.0
+ARG GTSAM_WITH_TBB=ON
+ARG GTSAM_BUILD_PYTHON=ON
+ARG CORES=4
+
+# build and install gtsam
+RUN mkdir -p /src/github/borglab && cd /src/github/borglab && \
+    git clone https://github.com/borglab/gtsam --depth 1 --branch ${GTSAM_GIT_TAG} && \
+    cd gtsam && \
+    mkdir build && \
+    cd build && \
+    cmake \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DGTSAM_BUILD_TESTS=OFF \
+    -DGTSAM_WITH_TBB=${GTSAM_WITH_TBB} \
+    -DGTSAM_BUILD_PYTHON=${GTSAM_BUILD_PYTHON} \
+    .. && \
+    make -j${CORES} install && \
+    if [ "${GTSAM_BUILD_PYTHON}" = "ON" ] ; then \
+    make python-install; \
+    fi
+
+CMD ["/bin/bash"]

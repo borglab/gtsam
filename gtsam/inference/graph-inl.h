@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -18,7 +18,6 @@
 #pragma once
 
 #include <stdexcept>
-#include <boost/foreach.hpp>
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -31,8 +30,6 @@
 #include <boost/graph/prim_minimum_spanning_tree.hpp>
 
 #include <gtsam/inference/graph.h>
-
-#define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)
 
 namespace gtsam {
 
@@ -51,13 +48,8 @@ public:
 /* ************************************************************************* */
 template<class KEY>
 std::list<KEY> predecessorMap2Keys(const PredecessorMap<KEY>& p_map) {
-
   typedef typename SGraph<KEY>::Vertex SVertex;
-
-  SGraph<KEY> g;
-  SVertex root;
-  std::map<KEY, SVertex> key2vertex;
-  boost::tie(g, root, key2vertex) = gtsam::predecessorMap2Graph<SGraph<KEY>, SVertex, KEY>(p_map);
+  const auto [g, root, key2vertex] = gtsam::predecessorMap2Graph<SGraph<KEY>, SVertex, KEY>(p_map);
 
   // breadth first visit on the graph
   std::list<KEY> keys;
@@ -83,7 +75,7 @@ SDGraph<KEY> toBoostGraph(const G& graph) {
       continue;
 
     // Cast the factor to the user-specified factor type F
-    boost::shared_ptr<F> factor = boost::dynamic_pointer_cast<F>(*itFactor);
+    std::shared_ptr<F> factor = std::dynamic_pointer_cast<F>(*itFactor);
     // Ignore factors that are not of type F
     if (!factor) continue;
 
@@ -117,24 +109,23 @@ SDGraph<KEY> toBoostGraph(const G& graph) {
 
 /* ************************************************************************* */
 template<class G, class V, class KEY>
-boost::tuple<G, V, std::map<KEY,V> >
+std::tuple<G, V, std::map<KEY,V> >
 predecessorMap2Graph(const PredecessorMap<KEY>& p_map) {
 
   G g;
   std::map<KEY, V> key2vertex;
   V v1, v2, root;
-  KEY child, parent;
   bool foundRoot = false;
-  FOREACH_PAIR(child, parent, p_map) {
+  for(const auto& [child, parent]: p_map) {
     if (key2vertex.find(child) == key2vertex.end()) {
        v1 = add_vertex(child, g);
-       key2vertex.insert(std::make_pair(child, v1));
+       key2vertex.emplace(child, v1);
      } else
        v1 = key2vertex[child];
 
     if (key2vertex.find(parent) == key2vertex.end()) {
        v2 = add_vertex(parent, g);
-       key2vertex.insert(std::make_pair(parent, v2));
+       key2vertex.emplace(parent, v2);
      } else
        v2 = key2vertex[parent];
 
@@ -148,7 +139,7 @@ predecessorMap2Graph(const PredecessorMap<KEY>& p_map) {
   if (!foundRoot)
     throw std::invalid_argument("predecessorMap2Graph: invalid predecessor map!");
   else
-    return boost::tuple<G, V, std::map<KEY, V> >(g, root, key2vertex);
+    return std::tuple<G, V, std::map<KEY, V> >(g, root, key2vertex);
 }
 
 /* ************************************************************************* */
@@ -156,11 +147,11 @@ template <class V, class POSE, class KEY>
 class compose_key_visitor : public boost::default_bfs_visitor {
 
 private:
-  boost::shared_ptr<Values> config_;
+  std::shared_ptr<Values> config_;
 
 public:
 
-  compose_key_visitor(boost::shared_ptr<Values> config_in) {config_ = config_in;}
+  compose_key_visitor(std::shared_ptr<Values> config_in) {config_ = config_in;}
 
   template <typename Edge, typename Graph> void tree_edge(Edge edge, const Graph& g) const {
     KEY key_from = boost::get(boost::vertex_name, g, boost::source(edge, g));
@@ -173,7 +164,7 @@ public:
 
 /* ************************************************************************* */
 template<class G, class Factor, class POSE, class KEY>
-boost::shared_ptr<Values> composePoses(const G& graph, const PredecessorMap<KEY>& tree,
+std::shared_ptr<Values> composePoses(const G& graph, const PredecessorMap<KEY>& tree,
     const POSE& rootPose) {
 
   //TODO: change edge_weight_t to edge_pose_t
@@ -182,24 +173,21 @@ boost::shared_ptr<Values> composePoses(const G& graph, const PredecessorMap<KEY>
     boost::property<boost::vertex_name_t, KEY>,
     boost::property<boost::edge_weight_t, POSE> > PoseGraph;
   typedef typename boost::graph_traits<PoseGraph>::vertex_descriptor PoseVertex;
-  typedef typename boost::graph_traits<PoseGraph>::edge_descriptor PoseEdge;
 
   PoseGraph g;
   PoseVertex root;
   std::map<KEY, PoseVertex> key2vertex;
-  boost::tie(g, root, key2vertex) =
+  std::tie(g, root, key2vertex) =
       predecessorMap2Graph<PoseGraph, PoseVertex, KEY>(tree);
 
   // attach the relative poses to the edges
-  PoseEdge edge12, edge21;
-  bool found1, found2;
-  BOOST_FOREACH(typename G::sharedFactor nl_factor, graph) {
+  for(typename G::sharedFactor nl_factor: graph) {
 
     if (nl_factor->keys().size() > 2)
       throw std::invalid_argument("composePoses: only support factors with at most two keys");
 
     // e.g. in pose2graph, nonlinear factor needs to be converted to pose2factor
-    boost::shared_ptr<Factor> factor = boost::dynamic_pointer_cast<Factor>(nl_factor);
+    std::shared_ptr<Factor> factor = std::dynamic_pointer_cast<Factor>(nl_factor);
     if (!factor) continue;
 
     KEY key1 = factor->key1();
@@ -209,8 +197,8 @@ boost::shared_ptr<Values> composePoses(const G& graph, const PredecessorMap<KEY>
     PoseVertex v2 = key2vertex.find(key2)->second;
 
     POSE l1Xl2 = factor->measured();
-    boost::tie(edge12, found1) = boost::edge(v1, v2, g);
-    boost::tie(edge21, found2) = boost::edge(v2, v1, g);
+    const auto [edge12, found1] = boost::edge(v1, v2, g);
+    const auto [edge21, found2] = boost::edge(v2, v1, g);
     if (found1 && found2) throw std::invalid_argument ("composePoses: invalid spanning tree");
     if (!found1 && !found2) continue;
     if (found1)
@@ -220,7 +208,7 @@ boost::shared_ptr<Values> composePoses(const G& graph, const PredecessorMap<KEY>
   }
 
   // compose poses
-  boost::shared_ptr<Values> config(new Values);
+  std::shared_ptr<Values> config(new Values);
   KEY rootKey = boost::get(boost::vertex_name, g, root);
   config->insert(rootKey, rootPose);
   compose_key_visitor<PoseVertex, POSE, KEY> vis(config);
@@ -243,7 +231,7 @@ PredecessorMap<KEY> findMinimumSpanningTree(const G& fg) {
   // convert edge to string pairs
   PredecessorMap<KEY> tree;
   typename SDGraph<KEY>::vertex_iterator itVertex = boost::vertices(g).first;
-  BOOST_FOREACH(const typename SDGraph<KEY>::Vertex& vi, p_map){
+  for(const typename SDGraph<KEY>::Vertex& vi: p_map){
     KEY key = boost::get(boost::vertex_name, g, *itVertex);
     KEY parent = boost::get(boost::vertex_name, g, vi);
     tree.insert(key, parent);
@@ -258,7 +246,7 @@ void split(const G& g, const PredecessorMap<KEY>& tree, G& Ab1, G& Ab2) {
 
   typedef typename G::sharedFactor F ;
 
-  BOOST_FOREACH(const F& factor, g)
+  for(const F& factor: g)
   {
     if (factor->keys().size() > 2)
       throw(std::invalid_argument("split: only support factors with at most two keys"));
@@ -268,7 +256,7 @@ void split(const G& g, const PredecessorMap<KEY>& tree, G& Ab1, G& Ab2) {
       continue;
     }
 
-    boost::shared_ptr<FACTOR2> factor2 = boost::dynamic_pointer_cast<
+    std::shared_ptr<FACTOR2> factor2 = std::dynamic_pointer_cast<
         FACTOR2>(factor);
     if (!factor2) continue;
 

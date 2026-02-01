@@ -15,36 +15,35 @@
  * @author Frank Dellaert
  */
 
+#pragma once
+
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/geometry/CalibratedCamera.h>
-#include <boost/make_shared.hpp>
-#include <boost/lexical_cast.hpp>
 
 namespace gtsam {
 
 /**
  * Non-linear factor for a constraint derived from a 2D measurement.
  * The calibration and pose are assumed known.
- * @addtogroup SLAM
+ * @ingroup slam
  */
 template<class CAMERA>
-class TriangulationFactor: public NoiseModelFactor1<Point3> {
+class TriangulationFactor: public NoiseModelFactorN<Point3> {
 
 public:
 
   /// CAMERA type
-  typedef CAMERA Camera;
+  using Camera = CAMERA;
+  /// shorthand for measurement type, e.g. Point2 or StereoPoint2
+  using Measurement = typename CAMERA::Measurement;
 
 protected:
 
   /// shorthand for base class type
-  typedef NoiseModelFactor1<Point3> Base;
+  using Base = NoiseModelFactorN<Point3>;
 
   /// shorthand for this class
-  typedef TriangulationFactor<CAMERA> This;
-
-  /// shorthand for measurement type, e.g. Point2 or StereoPoint2
-  typedef typename CAMERA::Measurement Measurement;
+  using This = TriangulationFactor<CAMERA>;
 
   // Keep a copy of measurement and calibration for I/O
   const CAMERA camera_; ///< CAMERA in which this landmark was seen
@@ -55,13 +54,17 @@ protected:
   const bool verboseCheirality_; ///< If true, prints text for Cheirality exceptions (default: false)
 
 public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   /// shorthand for a smart pointer to a factor
-  typedef boost::shared_ptr<This> shared_ptr;
+  using shared_ptr = std::shared_ptr<This>;
+
+  // Provide access to the Matrix& version of evaluateError:
+  using NoiseModelFactor1<Point3>::evaluateError;
 
   /// Default constructor
   TriangulationFactor() :
-      throwCheirality_(false), verboseCheirality_(false) {
+      throwCheirality_(false), verboseCheirality_(false), measured_() {
   }
 
   /**
@@ -78,21 +81,20 @@ public:
       bool verboseCheirality = false) :
       Base(model, pointKey), camera_(camera), measured_(measured), throwCheirality_(
           throwCheirality), verboseCheirality_(verboseCheirality) {
-    if (model && model->dim() != Measurement::dimension)
+    if (model && !noiseModel::matchesDimension(*model, measured_))
       throw std::invalid_argument(
           "TriangulationFactor must be created with "
-              + boost::lexical_cast<std::string>((int) Measurement::dimension)
+              + std::to_string((int) traits<Measurement>::dimension)
               + "-dimensional noise model.");
-
   }
 
   /** Virtual destructor */
-  virtual ~TriangulationFactor() {
+  ~TriangulationFactor() override {
   }
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
@@ -102,36 +104,34 @@ public:
    * @param keyFormatter optional formatter useful for printing Symbols
    */
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const {
+      DefaultKeyFormatter) const override {
     std::cout << s << "TriangulationFactor,";
     camera_.print("camera");
-    measured_.print("z");
+    traits<Measurement>::Print(measured_, "z");
     Base::print("", keyFormatter);
   }
 
   /// equals
-  virtual bool equals(const NonlinearFactor& p, double tol = 1e-9) const {
+  bool equals(const NonlinearFactor& p, double tol = 1e-9) const override {
     const This *e = dynamic_cast<const This*>(&p);
     return e && Base::equals(p, tol) && this->camera_.equals(e->camera_, tol)
-        && this->measured_.equals(e->measured_, tol);
+        && traits<Measurement>::Equals(this->measured_, e->measured_, tol);
   }
 
   /// Evaluate error h(x)-z and optionally derivatives
-  Vector evaluateError(const Point3& point, boost::optional<Matrix&> H2 =
-      boost::none) const {
+  Vector evaluateError(const Point3& point, OptionalMatrixType H2) const override {
     try {
-      Measurement error(camera_.project2(point, boost::none, H2) - measured_);
-      return error.vector();
+      return traits<Measurement>::Local(measured_, camera_.project2(point, OptionalNone, H2));
     } catch (CheiralityException& e) {
       if (H2)
-        *H2 = zeros(Measurement::dimension, 3);
+        *H2 = Matrix::Zero(traits<Measurement>::dimension, 3);
       if (verboseCheirality_)
         std::cout << e.what() << ": Landmark "
             << DefaultKeyFormatter(this->key()) << " moved behind camera"
             << std::endl;
       if (throwCheirality_)
         throw e;
-      return ones(Measurement::dimension) * 2.0 * camera_.calibration().fx();
+      return camera_.defaultErrorWhenTriangulatingBehindCamera();
     }
   }
 
@@ -145,29 +145,29 @@ public:
    * \f$ Ax-b \approx h(x+\delta x)-z = h(x) + A \delta x - z \f$
    * Hence \f$ b = z - h(x) = - \mathtt{error\_vector}(x) \f$
    */
-  boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
+  std::shared_ptr<GaussianFactor> linearize(const Values& x) const override {
     // Only linearize if the factor is active
     if (!this->active(x))
-      return boost::shared_ptr<JacobianFactor>();
+      return std::shared_ptr<JacobianFactor>();
 
     // Allocate memory for Jacobian factor, do only once
     if (Ab.rows() == 0) {
       std::vector<size_t> dimensions(1, 3);
-      Ab = VerticalBlockMatrix(dimensions, Measurement::dimension, true);
-      A.resize(Measurement::dimension,3);
-      b.resize(Measurement::dimension);
+      Ab = VerticalBlockMatrix(dimensions, traits<Measurement>::dimension, true);
+      A.resize(traits<Measurement>::dimension,3);
+      b.resize(traits<Measurement>::dimension);
     }
 
     // Would be even better if we could pass blocks to project
     const Point3& point = x.at<Point3>(key());
-    b = -(camera_.project2(point, boost::none, A) - measured_).vector();
+    b = traits<Measurement>::Local(camera_.project2(point, {}, A), measured_);
     if (noiseModel_)
       this->noiseModel_->WhitenSystem(A, b);
 
     Ab(0) = A;
     Ab(1) = b;
 
-    return boost::make_shared<JacobianFactor>(this->keys_, Ab);
+    return std::make_shared<JacobianFactor>(this->keys_, Ab);
   }
 
   /** return the measurement */
@@ -187,6 +187,7 @@ public:
 
 private:
 
+#if GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -197,6 +198,6 @@ private:
     ar & BOOST_SERIALIZATION_NVP(throwCheirality_);
     ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
   }
+#endif
 };
 } // \ namespace gtsam
-

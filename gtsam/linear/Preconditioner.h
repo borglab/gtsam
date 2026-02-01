@@ -9,7 +9,7 @@
 #pragma once
 
 #include <gtsam/base/Vector.h>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <iosfwd>
 #include <map>
 #include <string>
@@ -23,7 +23,7 @@ class VectorValues;
 /* parameters for the preconditioner */
 struct GTSAM_EXPORT PreconditionerParameters {
 
-   typedef boost::shared_ptr<PreconditionerParameters> shared_ptr;
+   typedef std::shared_ptr<PreconditionerParameters> shared_ptr;
 
    enum Kernel { /* Preconditioner Kernel */
      GTSAM = 0,
@@ -44,9 +44,9 @@ struct GTSAM_EXPORT PreconditionerParameters {
    inline Kernel kernel() const { return kernel_; }
    inline Verbosity verbosity() const { return verbosity_; }
 
-   void print() const ;
+   void print() const;
 
-   virtual void print(std::ostream &os) const ;
+   virtual void print(std::ostream &os) const;
 
    static Kernel kernelTranslator(const std::string &s);
    static Verbosity verbosityTranslator(const std::string &s);
@@ -63,28 +63,27 @@ struct GTSAM_EXPORT PreconditionerParameters {
  * The goal of this class is to provide a general interface to all preconditioners */
 class GTSAM_EXPORT Preconditioner {
 public:
-  typedef boost::shared_ptr<Preconditioner> shared_ptr;
+  typedef std::shared_ptr<Preconditioner> shared_ptr;
   typedef std::vector<size_t> Dimensions;
 
   /* Generic Constructor and Destructor */
   Preconditioner() {}
   virtual ~Preconditioner() {}
 
-  /* Computation Interfaces */
+  /* 
+  * Abstract interface for raw vectors. VectorValues is a speed bottleneck
+  * and Yong-Dian has profiled preconditioners (outside GTSAM) with the the
+  * three methods below. In GTSAM, unfortunately, we are still using the
+  * VectorValues methods called in iterative-inl.h
+  */
 
-  /* implement x = L^{-1} y */
+  /// implement x = L^{-1} y
   virtual void solve(const Vector& y, Vector &x) const = 0;
-//  virtual void solve(const VectorValues& y, VectorValues &x) const = 0;
 
-  /* implement x = L^{-T} y */
+  /// implement x = L^{-T} y
   virtual void transposeSolve(const Vector& y, Vector& x) const = 0;
-//  virtual void transposeSolve(const VectorValues& y, VectorValues &x) const = 0;
 
-//  /* implement x = L^{-1} L^{-T} y */
-//  virtual void fullSolve(const Vector& y, Vector &x) const = 0;
-//  virtual void fullSolve(const VectorValues& y, VectorValues &x) const = 0;
-
-  /* build/factorize the preconditioner */
+  /// build/factorize the preconditioner
   virtual void build(
     const GaussianFactorGraph &gfg,
     const KeyInfo &info,
@@ -95,44 +94,37 @@ public:
 /*******************************************************************************************/
 struct GTSAM_EXPORT DummyPreconditionerParameters : public PreconditionerParameters {
   typedef PreconditionerParameters Base;
-  typedef boost::shared_ptr<DummyPreconditionerParameters> shared_ptr;
+  typedef std::shared_ptr<DummyPreconditionerParameters> shared_ptr;
   DummyPreconditionerParameters() : Base() {}
-  virtual ~DummyPreconditionerParameters() {}
+  ~DummyPreconditionerParameters() override {}
 };
 
 /*******************************************************************************************/
 class GTSAM_EXPORT DummyPreconditioner : public Preconditioner {
 public:
   typedef Preconditioner Base;
-  typedef boost::shared_ptr<DummyPreconditioner> shared_ptr;
+  typedef std::shared_ptr<DummyPreconditioner> shared_ptr;
 
 public:
 
   DummyPreconditioner() : Base() {}
-  virtual ~DummyPreconditioner() {}
+  ~DummyPreconditioner() override {}
 
   /* Computation Interfaces for raw vector */
-  virtual void solve(const Vector& y, Vector &x) const { x = y; }
-//  virtual void solve(const VectorValues& y, VectorValues& x) const { x = y; }
-
-  virtual void transposeSolve(const Vector& y, Vector& x) const { x = y; }
-//  virtual void transposeSolve(const VectorValues& y, VectorValues& x) const { x = y; }
-
-//  virtual void fullSolve(const Vector& y, Vector &x) const { x = y; }
-//  virtual void fullSolve(const VectorValues& y, VectorValues& x) const { x = y; }
-
-  virtual void build(
+  void solve(const Vector& y, Vector &x) const override { x = y; }
+  void transposeSolve(const Vector& y, Vector& x) const  override { x = y; }
+  void build(
     const GaussianFactorGraph &gfg,
     const KeyInfo &info,
     const std::map<Key,Vector> &lambda
-    )  {}
+    ) override {}
 };
 
 /*******************************************************************************************/
 struct GTSAM_EXPORT BlockJacobiPreconditionerParameters : public PreconditionerParameters {
   typedef PreconditionerParameters Base;
   BlockJacobiPreconditionerParameters() : Base() {}
-  virtual ~BlockJacobiPreconditionerParameters() {}
+  ~BlockJacobiPreconditionerParameters() override {}
 };
 
 /*******************************************************************************************/
@@ -140,18 +132,16 @@ class GTSAM_EXPORT BlockJacobiPreconditioner : public Preconditioner {
 public:
   typedef Preconditioner Base;
   BlockJacobiPreconditioner() ;
-  virtual ~BlockJacobiPreconditioner() ;
+  ~BlockJacobiPreconditioner() override ;
 
   /* Computation Interfaces for raw vector */
-  virtual void solve(const Vector& y, Vector &x) const;
-  virtual void transposeSolve(const Vector& y, Vector& x) const ;
-//  virtual void fullSolve(const Vector& y, Vector &x) const ;
-
-  virtual void build(
+  void solve(const Vector& y, Vector &x) const override;
+  void transposeSolve(const Vector& y, Vector& x) const override;
+  void build(
     const GaussianFactorGraph &gfg,
     const KeyInfo &info,
     const std::map<Key,Vector> &lambda
-    ) ;
+    ) override;
 
 protected:
 
@@ -165,7 +155,7 @@ protected:
 
 /*********************************************************************************************/
 /* factory method to create preconditioners */
-boost::shared_ptr<Preconditioner> createPreconditioner(const boost::shared_ptr<PreconditionerParameters> parameters);
+std::shared_ptr<Preconditioner> createPreconditioner(const std::shared_ptr<PreconditionerParameters> parameters);
 
 }
 

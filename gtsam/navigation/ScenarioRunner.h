@@ -16,9 +16,11 @@
  */
 
 #pragma once
+#include <gtsam/linear/Sampler.h>
+#include <gtsam/navigation/AHRSFactor.h>
+#include <gtsam/navigation/CombinedImuFactor.h>
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/navigation/Scenario.h>
-#include <gtsam/linear/Sampler.h>
 
 namespace gtsam {
 
@@ -26,7 +28,7 @@ namespace gtsam {
 static noiseModel::Diagonal::shared_ptr Diagonal(const Matrix& covariance) {
   bool smart = true;
   auto model = noiseModel::Gaussian::Covariance(covariance, smart);
-  auto diagonal = boost::dynamic_pointer_cast<noiseModel::Diagonal>(model);
+  auto diagonal = std::dynamic_pointer_cast<noiseModel::Diagonal>(model);
   if (!diagonal)
     throw std::invalid_argument("ScenarioRunner::Diagonal: not a diagonal");
   return diagonal;
@@ -36,22 +38,22 @@ static noiseModel::Diagonal::shared_ptr Diagonal(const Matrix& covariance) {
  *  Simple class to test navigation scenarios.
  *  Takes a trajectory scenario as input, and can generate IMU measurements
  */
-class ScenarioRunner {
+class GTSAM_EXPORT ScenarioRunner {
  public:
   typedef imuBias::ConstantBias Bias;
-  typedef boost::shared_ptr<PreintegratedImuMeasurements::Params> SharedParams;
+  typedef std::shared_ptr<PreintegrationParams> SharedParams;
 
- private:
-  const Scenario* scenario_;
+ protected:
+  const Scenario& scenario_;
   const SharedParams p_;
   const double imuSampleTime_, sqrt_dt_;
   const Bias estimatedBias_;
 
   // Create two samplers for acceleration and omega noise
-  mutable Sampler gyroSampler_, accSampler_;
+  Sampler gyroSampler_, accSampler_;
 
  public:
-  ScenarioRunner(const Scenario* scenario, const SharedParams& p,
+  ScenarioRunner(const Scenario& scenario, const SharedParams& p,
                  double imuSampleTime = 1.0 / 100.0, const Bias& bias = Bias())
       : scenario_(scenario),
         p_(p),
@@ -66,28 +68,31 @@ class ScenarioRunner {
   // also, uses g=10 for easy debugging
   const Vector3& gravity_n() const { return p_->n_gravity; }
 
+  const Scenario& scenario() const { return scenario_; }
+
   // A gyro simply measures angular velocity in body frame
-  Vector3 actualAngularVelocity(double t) const {
-    return scenario_->omega_b(t);
-  }
+  Vector3 actualAngularVelocity(double t) const { return scenario_.omega_b(t); }
 
   // An accelerometer measures acceleration in body, but not gravity
   Vector3 actualSpecificForce(double t) const {
-    Rot3 bRn(scenario_->rotation(t).transpose());
-    return scenario_->acceleration_b(t) - bRn * gravity_n();
+    Rot3 bRn(scenario_.rotation(t).transpose());
+    return scenario_.acceleration_b(t) - bRn * gravity_n();
   }
 
-  // versions corrupted by bias and noise
+  // Angular velocity measured by gyroscope, corrupted by bias and noise
   Vector3 measuredAngularVelocity(double t) const {
     return actualAngularVelocity(t) + estimatedBias_.gyroscope() +
            gyroSampler_.sample() / sqrt_dt_;
   }
+
+  /// Specific force measured by accelerometer, corrupted by bias and noise
   Vector3 measuredSpecificForce(double t) const {
     return actualSpecificForce(t) + estimatedBias_.accelerometer() +
            accSampler_.sample() / sqrt_dt_;
   }
 
-  const double& imuSampleTime() const { return imuSampleTime_; }
+  /// The IMU sample time (i.e. the time between two IMU measurements)
+  double imuSampleTime() const { return imuSampleTime_; }
 
   /// Integrate measurements for T seconds into a PIM
   PreintegratedImuMeasurements integrate(double T,
@@ -104,6 +109,70 @@ class ScenarioRunner {
 
   /// Estimate covariance of sampled noise for sanity-check
   Matrix6 estimateNoiseCovariance(size_t N = 1000) const;
+};
+
+/*
+ *  Simple class to test navigation scenarios with CombinedImuMeasurements.
+ *  Takes a trajectory scenario as input, and can generate IMU measurements
+ */
+class GTSAM_EXPORT CombinedScenarioRunner : public ScenarioRunner {
+ public:
+  typedef std::shared_ptr<PreintegrationCombinedParams> SharedParams;
+
+ private:
+  const SharedParams p_;
+  const Eigen::Matrix<double, 15, 15> preintMeasCov_;
+
+ public:
+  CombinedScenarioRunner(const Scenario& scenario, const SharedParams& p,
+                         double imuSampleTime = 1.0 / 100.0,
+                         const Bias& bias = Bias(),
+                         const Eigen::Matrix<double, 15, 15>& preintMeasCov =
+                             Eigen::Matrix<double, 15, 15>::Zero())
+      : ScenarioRunner(scenario, static_cast<ScenarioRunner::SharedParams>(p),
+                       imuSampleTime, bias),
+        p_(p),
+        preintMeasCov_(preintMeasCov) {}
+
+  /// Integrate measurements for T seconds into a PIM
+  PreintegratedCombinedMeasurements integrate(
+      double T, const Bias& estimatedBias = Bias(),
+      bool corrupted = false) const;
+
+  /// Predict predict given a PIM
+  NavState predict(const PreintegratedCombinedMeasurements& pim,
+                   const Bias& estimatedBias = Bias()) const;
+
+  /// Compute a Monte Carlo estimate of the predict covariance using N samples
+  Eigen::Matrix<double, 15, 15> estimateCovariance(
+      double T, size_t N = 1000, const Bias& estimatedBias = Bias()) const;
+};
+
+/*
+ * Simple class to test navigation scenarios with PreintegratedAhrsMeasurements.
+ * Takes a trajectory scenario as input, and can generate AHRS measurements.
+ */
+class GTSAM_EXPORT AhrsScenarioRunner : public ScenarioRunner {
+ public:
+  AhrsScenarioRunner(const Scenario& scenario, const SharedParams& p,
+                     double imuSampleTime = 1.0 / 100.0,
+                     const Bias& bias = Bias())
+      : ScenarioRunner(scenario,
+                       std::static_pointer_cast<PreintegrationParams>(p),
+                       imuSampleTime, bias) {}
+
+  /// Integrate measurements for T seconds into a PreintegratedAhrsMeasurements
+  PreintegratedAhrsMeasurements integrate(double T,
+                                          const Bias& estimatedBias = Bias(),
+                                          bool corrupted = false) const;
+
+  /// Predict the next rotation given a PreintegratedAhrsMeasurements
+  Rot3 predict(const PreintegratedAhrsMeasurements& pim,
+               const Bias& estimatedBias = Bias()) const;
+
+  /// Compute a Monte Carlo estimate of the predict covariance using N samples
+  Matrix3 estimateCovariance(double T, size_t N = 1000,
+                             const Bias& estimatedBias = Bias()) const;
 };
 
 }  // namespace gtsam

@@ -37,26 +37,26 @@ public:
   }
 
   /// Empty constructor with keys
-  JacobianFactorQ(const FastVector<Key>& keys, //
+  JacobianFactorQ(const KeyVector& keys, //
       const SharedDiagonal& model = SharedDiagonal()) :
       Base() {
     Matrix zeroMatrix = Matrix::Zero(0, D);
     Vector zeroVector = Vector::Zero(0);
     std::vector<KeyMatrix> QF;
     QF.reserve(keys.size());
-    BOOST_FOREACH(const Key& key, keys)
+    for(const Key& key: keys)
       QF.push_back(KeyMatrix(key, zeroMatrix));
     JacobianFactor::fillTerms(QF, zeroVector, model);
   }
 
   /// Constructor
-  JacobianFactorQ(const FastVector<Key>& keys,
-      const std::vector<MatrixZD>& FBlocks, const Matrix& E, const Matrix3& P,
+  JacobianFactorQ(const KeyVector& keys,
+      const std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> >& FBlocks, const Matrix& E, const Matrix3& P,
       const Vector& b, const SharedDiagonal& model = SharedDiagonal()) :
       Base() {
     size_t j = 0, m2 = E.rows(), m = m2 / ZDim;
     // Calculate projector Q
-    Matrix Q = eye(m2) - E * P * E.transpose();
+    Matrix Q = Matrix::Identity(m2,m2) - E * P * E.transpose();
     // Calculate pre-computed Jacobian matrices
     // TODO: can we do better ?
     std::vector<KeyMatrix> QF;

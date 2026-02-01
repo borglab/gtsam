@@ -26,7 +26,7 @@ function(DetermineShortWindowsName WIN_VERSION win_num_version)
 endfunction()
 
 function(DetermineOSVersion OS_VERSION)
-  if (WIN32)
+  if (WIN32 AND CMAKE_HOST_SYSTEM_NAME MATCHES Windows)
     file (TO_NATIVE_PATH "$ENV{COMSPEC}" SHELL)
     exec_program( ${SHELL} ARGS "/c" "ver" OUTPUT_VARIABLE ver_output)
 				

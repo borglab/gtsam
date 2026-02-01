@@ -48,7 +48,7 @@ int main()
   bench<Action_rot<blas_interface<REAL_TYPE> > >(MIN_AXPY,MAX_AXPY,NB_POINT);
 
   bench<Action_matrix_matrix_product<blas_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
-//   bench<Action_ata_product<blas_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
+  bench<Action_ata_product<blas_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
   bench<Action_aat_product<blas_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
 
   bench<Action_trisolve<blas_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
@@ -56,13 +56,13 @@ int main()
 
   bench<Action_trmm<blas_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
 
-  bench<Action_cholesky<blas_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
-  bench<Action_partial_lu<blas_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
+  bench<Action_cholesky<blas_interface<REAL_TYPE> > >(MIN_LU,MAX_LU,NB_POINT);
+  bench<Action_partial_lu<blas_interface<REAL_TYPE> > >(MIN_LU,MAX_LU,NB_POINT);
 
   #ifdef HAS_LAPACK
-  bench<Action_lu_decomp<blas_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
-  bench<Action_hessenberg<blas_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
-  bench<Action_tridiagonalization<blas_interface<REAL_TYPE> > >(MIN_MM,MAX_MM,NB_POINT);
+//   bench<Action_lu_decomp<blas_interface<REAL_TYPE> > >(MIN_LU,MAX_LU,NB_POINT);
+  bench<Action_hessenberg<blas_interface<REAL_TYPE> > >(MIN_LU,MAX_LU,NB_POINT);
+  bench<Action_tridiagonalization<blas_interface<REAL_TYPE> > >(MIN_LU,MAX_LU,NB_POINT);
   #endif
 
   //bench<Action_lu_solve<blas_LU_solve_interface<REAL_TYPE> > >(MIN_LU,MAX_LU,NB_POINT);

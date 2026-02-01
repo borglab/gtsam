@@ -157,7 +157,7 @@ The following example shows how to use array operations on a Matrix object by em
 * to multiply them coefficient-wise and assigns the result to the matrix variable \c result (this is legal
 because Eigen allows assigning array expressions to matrix variables). 
 
-As a matter of fact, this usage case is so common that Eigen provides a \link MatrixBase::cwiseProduct() const
+As a matter of fact, this usage case is so common that Eigen provides a \link MatrixBase::cwiseProduct const
 .cwiseProduct(.) \endlink method for matrices to compute the coefficient-wise product. This is also shown in
 the example program.
 

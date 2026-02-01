@@ -10,7 +10,7 @@ int main()
     MatrixXi m(size,size+1);         // a (size)x(size+1)-matrix of int's
     for (int j=0; j<m.cols(); ++j)   // loop over columns
       for (int i=0; i<m.rows(); ++i) // loop over rows
-        m(i,j) = i+j*m.rows();       // to access matrix coefficients,
+        m(i,j) = i+j*size;           // to access matrix coefficients,
                                      // use operator()(int,int)
     std::cout << m << "\n\n";
   }

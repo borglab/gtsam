@@ -10,17 +10,16 @@
 * -------------------------------------------------------------------------- */
 
 /**
-* @file    EliminationTree-inl.h
+* @file    EliminationTree-inst.h
 * @author  Frank Dellaert
 * @author  Richard Roberts
 * @date    Oct 13, 2010
 */
 #pragma once
 
-#include <boost/foreach.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/bind.hpp>
 #include <stack>
+#include <queue>
+#include <cassert>
 
 #include <gtsam/base/timing.h>
 #include <gtsam/base/treeTraversal-inst.h>
@@ -35,7 +34,7 @@ namespace gtsam {
   template<class BAYESNET, class GRAPH>
   typename EliminationTree<BAYESNET,GRAPH>::sharedFactor
     EliminationTree<BAYESNET,GRAPH>::Node::eliminate(
-    const boost::shared_ptr<BayesNetType>& output,
+    const std::shared_ptr<BayesNetType>& output,
     const Eliminate& function, const FastVector<sharedFactor>& childrenResults) const
   {
     // This function eliminates one node (Node::eliminate) - see below eliminate for the whole tree.
@@ -49,9 +48,8 @@ namespace gtsam {
     gatheredFactors.push_back(childrenResults.begin(), childrenResults.end());
 
     // Do dense elimination step
-    FastVector<Key> keyAsVector(1); keyAsVector[0] = key;
-    std::pair<boost::shared_ptr<ConditionalType>, boost::shared_ptr<FactorType> > eliminationResult =
-      function(gatheredFactors, Ordering(keyAsVector));
+    KeyVector keyAsVector(1); keyAsVector[0] = key;
+    auto eliminationResult = function(gatheredFactors, Ordering(keyAsVector));
 
     // Add conditional to BayesNet
     output->push_back(eliminationResult.first);
@@ -66,7 +64,7 @@ namespace gtsam {
     const std::string& str, const KeyFormatter& keyFormatter) const
   {
     std::cout << str << "(" << keyFormatter(key) << ")\n";
-    BOOST_FOREACH(const sharedFactor& factor, factors) {
+    for(const sharedFactor& factor: factors) {
       if(factor)
         factor->print(str);
       else
@@ -100,14 +98,14 @@ namespace gtsam {
       for (size_t j = 0; j < n; j++)
       {
         // Retrieve the factors involving this variable and create the current node
-        const VariableIndex::Factors& factors = structure[order[j]];
-        const sharedNode node = boost::make_shared<Node>();
+        const FactorIndices& factors = structure[order[j]];
+        const sharedNode node = std::make_shared<Node>();
         node->key = order[j];
 
         // for row i \in Struct[A*j] do
         node->children.reserve(factors.size());
         node->factors.reserve(factors.size());
-        BOOST_FOREACH(const size_t i, factors) {
+        for(const size_t i: factors) {
           // If we already hit a variable in this factor, make the subtree containing the previous
           // variable in this factor a child of the current node.  This means that the variables
           // eliminated earlier in the factor depend on the later variables in the factor.  If we
@@ -185,24 +183,60 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  
+  /** Destructor
+   * Using default destructor causes stack overflow for large trees due to recursive destruction of nodes;
+   * so we manually decrease the reference count of each node in the tree through a BFS, and the nodes with
+   * reference count 0 will be deleted. Please see [PR-1441](https://github.com/borglab/gtsam/pull/1441) for more details.
+   */
   template<class BAYESNET, class GRAPH>
-  std::pair<boost::shared_ptr<BAYESNET>, boost::shared_ptr<GRAPH> >
+  EliminationTree<BAYESNET,GRAPH>::~EliminationTree()
+  {
+    // For each tree, we first move the root into a queue; then we do a BFS on the tree with the queue;
+
+    for (auto&& root : roots_) {
+      std::queue<sharedNode> bfs_queue;
+
+      // first, steal the root and move it to the queue. This invalidates root
+      bfs_queue.push(std::move(root));
+
+      // for each node iterated, if its reference count is 1, it will be deleted while its children are still in the queue.
+      // so that the recursive deletion will not happen.
+      while (!bfs_queue.empty()) {
+        // move the ownership of the front node from the queue to the current variable, invalidating the sharedClique at the front of the queue
+        auto node = std::move(bfs_queue.front());
+        bfs_queue.pop();
+
+        // add the children of the current node to the queue, so that the queue will also own the children nodes.
+        for (auto&& child : node->children) {
+          bfs_queue.push(std::move(child));
+        } // leaving the scope of current will decrease the reference count of the current node by 1, and if the reference count is 0,
+          // the node will be deleted. Because the children are in the queue, the deletion of the node will not trigger a recursive
+          // deletion of the children.
+      }
+    }
+  }
+
+
+  /* ************************************************************************* */
+  template<class BAYESNET, class GRAPH>
+  std::pair<std::shared_ptr<BAYESNET>, std::shared_ptr<GRAPH> >
     EliminationTree<BAYESNET,GRAPH>::eliminate(Eliminate function) const
   {
     gttic(EliminationTree_eliminate);
     // Allocate result
-    boost::shared_ptr<BayesNetType> result = boost::make_shared<BayesNetType>();
+    auto result = std::make_shared<BayesNetType>();
 
     // Run tree elimination algorithm
     FastVector<sharedFactor> remainingFactors = inference::EliminateTree(result, *this, function);
 
     // Add remaining factors that were not involved with eliminated variables
-    boost::shared_ptr<FactorGraphType> allRemainingFactors = boost::make_shared<FactorGraphType>();
+    auto allRemainingFactors = std::make_shared<FactorGraphType>();
     allRemainingFactors->push_back(remainingFactors_.begin(), remainingFactors_.end());
     allRemainingFactors->push_back(remainingFactors.begin(), remainingFactors.end());
 
     // Return result
-    return std::make_pair(result, allRemainingFactors);
+    return {result, allRemainingFactors};
   }
 
   /* ************************************************************************* */
@@ -222,15 +256,15 @@ namespace gtsam {
     // Add roots in sorted order
     {
       FastMap<Key,sharedNode> keys;
-      BOOST_FOREACH(const sharedNode& root, this->roots_) { keys.insert(std::make_pair(root->key, root)); }
+      for(const sharedNode& root: this->roots_) { keys.emplace(root->key, root); }
       typedef typename FastMap<Key,sharedNode>::value_type Key_Node;
-      BOOST_FOREACH(const Key_Node& key_node, keys) { stack1.push(key_node.second); }
+      for(const Key_Node& key_node: keys) { stack1.push(key_node.second); }
     }
     {
       FastMap<Key,sharedNode> keys;
-      BOOST_FOREACH(const sharedNode& root, expected.roots_) { keys.insert(std::make_pair(root->key, root)); }
+      for(const sharedNode& root: expected.roots_) { keys.emplace(root->key, root); }
       typedef typename FastMap<Key,sharedNode>::value_type Key_Node;
-      BOOST_FOREACH(const Key_Node& key_node, keys) { stack2.push(key_node.second); }
+      for(const Key_Node& key_node: keys) { stack2.push(key_node.second); }
     }
 
     // Traverse, adding children in sorted order
@@ -262,15 +296,15 @@ namespace gtsam {
       // Add children in sorted order
       {
         FastMap<Key,sharedNode> keys;
-        BOOST_FOREACH(const sharedNode& node, node1->children) { keys.insert(std::make_pair(node->key, node)); }
+        for(const sharedNode& node: node1->children) { keys.emplace(node->key, node); }
         typedef typename FastMap<Key,sharedNode>::value_type Key_Node;
-        BOOST_FOREACH(const Key_Node& key_node, keys) { stack1.push(key_node.second); }
+        for(const Key_Node& key_node: keys) { stack1.push(key_node.second); }
       }
       {
         FastMap<Key,sharedNode> keys;
-        BOOST_FOREACH(const sharedNode& node, node2->children) { keys.insert(std::make_pair(node->key, node)); }
+        for(const sharedNode& node: node2->children) { keys.emplace(node->key, node); }
         typedef typename FastMap<Key,sharedNode>::value_type Key_Node;
-        BOOST_FOREACH(const Key_Node& key_node, keys) { stack2.push(key_node.second); }
+        for(const Key_Node& key_node: keys) { stack2.push(key_node.second); }
       }
     }
 

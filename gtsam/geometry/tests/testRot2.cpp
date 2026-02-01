@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -23,7 +23,7 @@
 using namespace gtsam;
 
 GTSAM_CONCEPT_TESTABLE_INST(Rot2)
-GTSAM_CONCEPT_LIE_INST(Rot2)
+GTSAM_CONCEPT_MATRIX_LIE_GROUP_INST(Rot2)
 
 Rot2 R(Rot2::fromAngle(0.1));
 Point2 P(0.2, 0.7);
@@ -62,8 +62,8 @@ TEST( Rot2, compose)
 
   Matrix H1, H2;
   (void) Rot2::fromAngle(1.0).compose(Rot2::fromAngle(2.0), H1, H2);
-  EXPECT(assert_equal(eye(1), H1));
-  EXPECT(assert_equal(eye(1), H2));
+  EXPECT(assert_equal(I_1x1, H1));
+  EXPECT(assert_equal(I_1x1, H2));
 }
 
 /* ************************************************************************* */
@@ -74,8 +74,8 @@ TEST( Rot2, between)
 
   Matrix H1, H2;
   (void) Rot2::fromAngle(1.0).between(Rot2::fromAngle(2.0), H1, H2);
-  EXPECT(assert_equal(-eye(1), H1));
-  EXPECT(assert_equal(eye(1), H2));
+  EXPECT(assert_equal(-I_1x1, H1));
+  EXPECT(assert_equal(I_1x1, H2));
 }
 
 /* ************************************************************************* */
@@ -89,7 +89,7 @@ TEST( Rot2, equals)
 /* ************************************************************************* */
 TEST( Rot2, expmap)
 {
-  Vector v = zero(1);
+  Vector v = Z_1x1;
   CHECK(assert_equal(R.retract(v), R));
 }
 
@@ -101,6 +101,25 @@ TEST(Rot2, logmap)
   Vector expected = (Vector(1) << M_PI/2.0).finished();
   Vector actual = rot0.localCoordinates(rot);
   CHECK(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST(Rot2, HatAndVee) {
+  // Create a few test vectors
+  Vector1 v1 = (Vector1() << 1).finished();
+  Vector1 v2 = (Vector1() << 0.1).finished();
+  Vector1 v3 = (Vector1() << 0.0).finished();
+
+  // Test that Vee(Hat(v)) == v for various inputs
+  EXPECT(assert_equal(v1, Rot2::Vee(Rot2::Hat(v1))));
+  EXPECT(assert_equal(v2, Rot2::Vee(Rot2::Hat(v2))));
+  EXPECT(assert_equal(v3, Rot2::Vee(Rot2::Hat(v3))));
+
+  // Check the structure of the Lie Algebra element
+  Matrix2 expected;
+  expected << 0., -1., 1., 0.;
+
+  EXPECT(assert_equal(expected, Rot2::Hat(v1)));
 }
 
 /* ************************************************************************* */
@@ -155,45 +174,54 @@ TEST( Rot2, relativeBearing )
   CHECK(assert_equal(expectedH,actualH));
 }
 
+/* ************************************************************************* */
+TEST(Rot2, vec) {
+  // Test the 'vec' method
+  Vector4 expected_vec = Eigen::Map<Vector4>(R.matrix().data());
+  Matrix41 actualH;
+  Vector4 actual_vec = R.vec(actualH);
+  EXPECT(assert_equal(expected_vec, actual_vec));
+
+  // Verify Jacobian with numerical derivatives
+  std::function<Vector4(const Rot2&)> f = [](const Rot2& p) { return p.vec(); };
+  Matrix41 numericalH = numericalDerivative11<Vector4, Rot2>(f, R);
+  EXPECT(assert_equal(numericalH, actualH, 1e-9));
+}
+
 //******************************************************************************
+namespace {
+Rot2 id;
 Rot2 T1(0.1);
 Rot2 T2(0.2);
+}  // namespace
 
 //******************************************************************************
-TEST(Rot2 , Invariants) {
-  Rot2 id;
+TEST(Rot2, Invariants) {
+  EXPECT(check_group_invariants(id, id));
+  EXPECT(check_group_invariants(id, T1));
+  EXPECT(check_group_invariants(T2, id));
+  EXPECT(check_group_invariants(T2, T1));
 
-  EXPECT(check_group_invariants(id,id));
-  EXPECT(check_group_invariants(id,T1));
-  EXPECT(check_group_invariants(T2,id));
-  EXPECT(check_group_invariants(T2,T1));
-
-  EXPECT(check_manifold_invariants(id,id));
-  EXPECT(check_manifold_invariants(id,T1));
-  EXPECT(check_manifold_invariants(T2,id));
-  EXPECT(check_manifold_invariants(T2,T1));
-
+  EXPECT(check_manifold_invariants(id, id));
+  EXPECT(check_manifold_invariants(id, T1));
+  EXPECT(check_manifold_invariants(T2, id));
+  EXPECT(check_manifold_invariants(T2, T1));
 }
 
 //******************************************************************************
-TEST(Rot2 , LieGroupDerivatives) {
-  Rot2 id;
-
-  CHECK_LIE_GROUP_DERIVATIVES(id,id);
-  CHECK_LIE_GROUP_DERIVATIVES(id,T2);
-  CHECK_LIE_GROUP_DERIVATIVES(T2,id);
-  CHECK_LIE_GROUP_DERIVATIVES(T2,T1);
-
+TEST(Rot2, LieGroupDerivatives) {
+  CHECK_LIE_GROUP_DERIVATIVES(id, id);
+  CHECK_LIE_GROUP_DERIVATIVES(id, T2);
+  CHECK_LIE_GROUP_DERIVATIVES(T2, id);
+  CHECK_LIE_GROUP_DERIVATIVES(T2, T1);
 }
 
 //******************************************************************************
-TEST(Rot2 , ChartDerivatives) {
-  Rot2 id;
-
-  CHECK_CHART_DERIVATIVES(id,id);
-  CHECK_CHART_DERIVATIVES(id,T2);
-  CHECK_CHART_DERIVATIVES(T2,id);
-  CHECK_CHART_DERIVATIVES(T2,T1);
+TEST(Rot2, ChartDerivatives) {
+  CHECK_CHART_DERIVATIVES(id, id);
+  CHECK_CHART_DERIVATIVES(id, T2);
+  CHECK_CHART_DERIVATIVES(T2, id);
+  CHECK_CHART_DERIVATIVES(T2, T1);
 }
 
 /* ************************************************************************* */

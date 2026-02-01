@@ -14,7 +14,6 @@
 template<typename MatrixType, typename JacobiScalar>
 void jacobi(const MatrixType& m = MatrixType())
 {
-  typedef typename MatrixType::Index Index;
   Index rows = m.rows();
   Index cols = m.cols();
 
@@ -58,7 +57,7 @@ void jacobi(const MatrixType& m = MatrixType())
   }
 }
 
-void test_jacobi()
+EIGEN_DECLARE_TEST(jacobi)
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1(( jacobi<Matrix3f, float>() ));

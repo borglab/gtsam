@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -18,7 +18,10 @@
 #pragma once
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixSerialization.h>
 #include <gtsam/base/FastVector.h>
+
+#include <cassert>
 
 namespace gtsam {
 
@@ -37,7 +40,7 @@ namespace gtsam {
    * row for all operations.  To include all rows, rowEnd() should be set to the number of rows in
    * the matrix (i.e. one after the last true row index).
    *
-   * @addtogroup base */
+   * @ingroup base */
   class GTSAM_EXPORT VerticalBlockMatrix
   {
   public:
@@ -54,13 +57,46 @@ namespace gtsam {
     DenseIndex blockStart_; ///< Changes apparent matrix view, see main class comment.
 
   public:
-
     /** Construct an empty VerticalBlockMatrix */
-    VerticalBlockMatrix() :
-      rowStart_(0), rowEnd_(0), blockStart_(0)
-    {
+    VerticalBlockMatrix() : rowStart_(0), rowEnd_(0), blockStart_(0) {
       variableColOffsets_.push_back(0);
-      assertInvariants();
+    }
+
+    // Destructor
+    ~VerticalBlockMatrix() = default;
+
+    // Copy constructor (default)
+    VerticalBlockMatrix(const VerticalBlockMatrix& other) = default;
+
+    // Copy assignment operator (default)
+    VerticalBlockMatrix& operator=(const VerticalBlockMatrix& other) = default;
+
+    // Move constructor
+    VerticalBlockMatrix(VerticalBlockMatrix&& other) noexcept
+      : matrix_(std::move(other.matrix_)),
+        variableColOffsets_(std::move(other.variableColOffsets_)),
+        rowStart_(other.rowStart_),
+        rowEnd_(other.rowEnd_),
+        blockStart_(other.blockStart_) {
+      other.rowStart_ = 0;
+      other.rowEnd_ = 0;
+      other.blockStart_ = 0;
+    }
+
+    // Move assignment operator
+    VerticalBlockMatrix& operator=(VerticalBlockMatrix&& other) noexcept {
+      if (this != &other) {
+        matrix_ = std::move(other.matrix_);
+        variableColOffsets_ = std::move(other.variableColOffsets_);
+        rowStart_ = other.rowStart_;
+        rowEnd_ = other.rowEnd_;
+        blockStart_ = other.blockStart_;
+
+        other.rowStart_ = 0;
+        other.rowEnd_ = 0;
+        other.blockStart_ = 0;
+      }
+      return *this;
     }
 
     /** Construct from a container of the sizes of each vertical block. */
@@ -218,6 +254,7 @@ namespace gtsam {
     friend class SymmetricBlockMatrix;
 
   private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -228,6 +265,7 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(rowEnd_);
       ar & BOOST_SERIALIZATION_NVP(blockStart_);
     }
+#endif
   };
 
 }

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -20,10 +20,11 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/global_includes.h>
 
-#include <boost/foreach.hpp>
-#include <boost/optional.hpp>
+#include <functional>
+#include <optional>
 #include <map>
 #include <iostream>
+#include <sstream>
 #include <vector>
 
 namespace gtsam {
@@ -31,7 +32,8 @@ namespace gtsam {
 /**
  * Equals testing for basic types
  */
-inline bool assert_equal(const Key& expected, const Key& actual, double tol = 0.0) {
+inline bool assert_equal(const Key& expected, const Key& actual) {
+  // TODO - why isn't tol used?
   if(expected != actual) {
     std::cout << "Not equal:\nexpected: " << expected << "\nactual: " << actual << std::endl;
     return false;
@@ -40,21 +42,21 @@ inline bool assert_equal(const Key& expected, const Key& actual, double tol = 0.
 }
 
 /**
- * Comparisons for boost.optional objects that checks whether objects exist
+ * Comparisons for std.optional objects that checks whether objects exist
  * before comparing their values. First version allows for both to be
- * boost::none, but the second, with expected given rather than optional
+ * std::nullopt, but the second, with expected given rather than optional
  *
  * Concept requirement: V is testable
  */
 template<class V>
-bool assert_equal(const boost::optional<V>& expected,
-                  const boost::optional<V>& actual, double tol = 1e-9) {
+bool assert_equal(const std::optional<V>& expected,
+                  const std::optional<V>& actual, double tol = 1e-9) {
   if (!expected && actual) {
-    std::cout << "expected is boost::none, while actual is not" << std::endl;
+    std::cout << "expected is {}, while actual is not" << std::endl;
     return false;
   }
   if (expected && !actual) {
-    std::cout << "actual is boost::none, while expected is not" << std::endl;
+    std::cout << "actual is {}, while expected is not" << std::endl;
     return false;
   }
   if (!expected && !actual)
@@ -63,50 +65,22 @@ bool assert_equal(const boost::optional<V>& expected,
 }
 
 template<class V>
-bool assert_equal(const V& expected, const boost::optional<V>& actual, double tol = 1e-9) {
+bool assert_equal(const V& expected, const std::optional<V>& actual, double tol = 1e-9) {
   if (!actual) {
-    std::cout << "actual is boost::none" << std::endl;
+    std::cout << "actual is {}" << std::endl;
     return false;
   }
   return assert_equal(expected, *actual, tol);
 }
 
 template<class V>
-bool assert_equal(const V& expected, const boost::optional<const V&>& actual, double tol = 1e-9) {
+bool assert_equal(const V& expected, 
+    const std::optional<std::reference_wrapper<const V>>& actual, double tol = 1e-9) {
   if (!actual) {
-    std::cout << "actual is boost::none" << std::endl;
+    std::cout << "actual is std::nullopt" << std::endl;
     return false;
   }
-  return assert_equal(expected, *actual, tol);
-}
-
-/**
- * Version of assert_equals to work with vectors
- * \deprecated: use container equals instead
- */
-template<class V>
-bool assert_equal(const std::vector<V>& expected, const std::vector<V>& actual, double tol = 1e-9) {
-  bool match = true;
-  if (expected.size() != actual.size())
-    match = false;
-  if(match) {
-    size_t i = 0;
-    BOOST_FOREACH(const V& a, expected) {
-      if (!assert_equal(a, actual[i++], tol)) {
-        match = false;
-        break;
-      }
-    }
-  }
-  if(!match) {
-    std::cout << "expected: " << std::endl;
-    BOOST_FOREACH(const V& a, expected) { std::cout << a << " "; }
-    std::cout << "\nactual: " << std::endl;
-    BOOST_FOREACH(const V& a, actual) { std::cout << a << " "; }
-    std::cout << std::endl;
-    return false;
-  }
-  return true;
+  return assert_equal(expected, *actual.get(), tol);
 }
 
 /**
@@ -133,12 +107,12 @@ bool assert_container_equal(const std::map<V1,V2>& expected, const std::map<V1,V
   }
   if(!match) {
     std::cout << "expected: " << std::endl;
-    BOOST_FOREACH(const typename Map::value_type& a, expected) {
+    for(const typename Map::value_type& a: expected) {
       a.first.print("key");
       a.second.print("    value");
     }
     std::cout << "\nactual: " << std::endl;
-    BOOST_FOREACH(const typename Map::value_type& a, actual)  {
+    for(const typename Map::value_type& a: actual)  {
       a.first.print("key");
       a.second.print("    value");
     }
@@ -171,12 +145,12 @@ bool assert_container_equal(const std::map<size_t,V2>& expected, const std::map<
   }
   if(!match) {
     std::cout << "expected: " << std::endl;
-    BOOST_FOREACH(const typename Map::value_type& a, expected) {
+    for(const typename Map::value_type& a: expected) {
       std::cout << "Key: " << a.first << std::endl;
       a.second.print("    value");
     }
     std::cout << "\nactual: " << std::endl;
-    BOOST_FOREACH(const typename Map::value_type& a, actual)  {
+    for(const typename Map::value_type& a: actual)  {
       std::cout << "Key: " << a.first << std::endl;
       a.second.print("    value");
     }
@@ -210,12 +184,12 @@ bool assert_container_equal(const std::vector<std::pair<V1,V2> >& expected,
   }
   if(!match) {
     std::cout << "expected: " << std::endl;
-    BOOST_FOREACH(const typename VectorPair::value_type& a, expected) {
+    for(const typename VectorPair::value_type& a: expected) {
       a.first.print( "    first ");
       a.second.print("    second");
     }
     std::cout << "\nactual: " << std::endl;
-    BOOST_FOREACH(const typename VectorPair::value_type& a, actual)  {
+    for(const typename VectorPair::value_type& a: actual)  {
       a.first.print( "    first ");
       a.second.print("    second");
     }
@@ -247,9 +221,9 @@ bool assert_container_equal(const V& expected, const V& actual, double tol = 1e-
   }
   if(!match) {
     std::cout << "expected: " << std::endl;
-    BOOST_FOREACH(const typename V::value_type& a, expected) { a.print("  "); }
+    for(const typename V::value_type& a: expected) { a.print("  "); }
     std::cout << "\nactual: " << std::endl;
-    BOOST_FOREACH(const typename V::value_type& a, actual) { a.print("  "); }
+    for(const typename V::value_type& a: actual) { a.print("  "); }
     std::cout << std::endl;
     return false;
   }
@@ -279,12 +253,12 @@ bool assert_container_equality(const std::map<size_t,V2>& expected, const std::m
   }
   if(!match) {
     std::cout << "expected: " << std::endl;
-    BOOST_FOREACH(const typename Map::value_type& a, expected) {
+    for(const typename Map::value_type& a: expected) {
       std::cout << "Key:   " << a.first << std::endl;
       std::cout << "Value: " << a.second << std::endl;
     }
     std::cout << "\nactual: " << std::endl;
-    BOOST_FOREACH(const typename Map::value_type& a, actual)  {
+    for(const typename Map::value_type& a: actual)  {
       std::cout << "Key:   " << a.first << std::endl;
       std::cout << "Value: " << a.second << std::endl;
     }
@@ -316,9 +290,9 @@ bool assert_container_equality(const V& expected, const V& actual) {
   }
   if(!match) {
     std::cout << "expected: " << std::endl;
-    BOOST_FOREACH(const typename V::value_type& a, expected) { std::cout << a << " "; }
+    for(const typename V::value_type& a: expected) { std::cout << a << " "; }
     std::cout << "\nactual: " << std::endl;
-    BOOST_FOREACH(const typename V::value_type& a, actual) { std::cout << a << " "; }
+    for(const typename V::value_type& a: actual) { std::cout << a << " "; }
     std::cout << std::endl;
     return false;
   }
@@ -348,6 +322,49 @@ bool assert_inequal(const V& expected, const V& actual, double tol = 1e-9) {
   expected.print("expected");
   actual.print("actual");
   return false;
+}
+
+/**
+ * Capture std out via cout stream and compare against string.
+ */
+template<class V>
+bool assert_stdout_equal(const std::string& expected, const V& actual) {
+  // Redirect output to buffer so we can compare
+  std::stringstream buffer;
+  // Save the original output stream so we can reset later
+  std::streambuf* old = std::cout.rdbuf(buffer.rdbuf());
+
+  // We test against actual std::cout for faithful reproduction
+  std::cout << actual;
+
+  // Get output string and reset stdout
+  std::string actual_ = buffer.str();
+  std::cout.rdbuf(old);
+
+  return assert_equal(expected, actual_);
+}
+
+/**
+ * Capture print function output and compare against string.
+ *
+ * @param s: Optional string to pass to the print() method.
+ */
+template <class V>
+bool assert_print_equal(const std::string& expected, const V& actual,
+                        const std::string& s = "") {
+  // Redirect output to buffer so we can compare
+  std::stringstream buffer;
+  // Save the original output stream so we can reset later
+  std::streambuf* old = std::cout.rdbuf(buffer.rdbuf());
+
+  // We test against actual std::cout for faithful reproduction
+  actual.print(s);
+
+  // Get output string and reset stdout
+  std::string actual_ = buffer.str();
+  std::cout.rdbuf(old);
+
+  return assert_equal(expected, actual_);
 }
 
 } // \namespace gtsam

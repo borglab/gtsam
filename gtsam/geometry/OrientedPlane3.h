@@ -20,29 +20,26 @@
 
 #pragma once
 
-#include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/Pose3.h>
+#include <string>
 
 namespace gtsam {
 
 /**
- * @brief Represents an infinite plane in 3D, which is composed of a planar normal and its
- *  perpendicular distance to the origin.
- * Currently it provides a transform of the plane, and a norm 1 differencing of two planes.
+ * @brief Represents an infinite plane in 3D, which is composed of a planar
+ * normal and its perpendicular distance to the origin.
+ * Currently it provides a transform of the plane, and a norm 1 differencing of
+ * two planes.
  * Refer to Trevor12iros for more math details.
  */
 class GTSAM_EXPORT OrientedPlane3 {
-
 private:
-
   Unit3 n_;     ///< The direction of the planar normal
   double d_;    ///< The perpendicular distance to this plane
 
 public:
-  enum {
-    dimension = 3
-  };
+  inline constexpr static auto dimension = 3;
 
   /// @name Constructors
   /// @{
@@ -53,19 +50,17 @@ public:
   }
 
   /// Construct from a Unit3 and a distance
-  OrientedPlane3(const Unit3& s, double d) :
-    n_(s), d_(d) {
+  OrientedPlane3(const Unit3& n, double d) :
+    n_(n), d_(d) {
   }
 
   /// Construct from a vector of plane coefficients
-  OrientedPlane3(const Vector4& vec) :
-    n_(vec(0), vec(1), vec(2)), d_(vec(3)) {
-  }
+  explicit OrientedPlane3(const Vector4& vec)
+      : n_(vec(0), vec(1), vec(2)), d_(vec(3)) {}
 
   /// Construct from four numbers of plane coeffcients (a, b, c, d)
   OrientedPlane3(double a, double b, double c, double d) {
-    Point3 p(a, b, c);
-    n_ = Unit3(p);
+    n_ = Unit3(a, b, c);
     d_ = d;
   }
 
@@ -78,7 +73,7 @@ public:
 
   /// The equals function with tolerance
   bool equals(const OrientedPlane3& s, double tol = 1e-9) const {
-    return (n_.equals(s.n_, tol) && (fabs(d_ - s.d_) < tol));
+    return (n_.equals(s.n_, tol) && (std::abs(d_ - s.d_) < tol));
   }
 
   /// @}
@@ -90,38 +85,19 @@ public:
    * @return the transformed plane
    */
   OrientedPlane3 transform(const Pose3& xr,
-      OptionalJacobian<3, 3> Hp = boost::none,
-      OptionalJacobian<3, 6> Hr = boost::none) const;
-
-  /**
-   * @deprecated the static method has wrong Jacobian order,
-   *    please use the member method transform()
-   * @param The raw plane
-   * @param xr a transformation in current coordiante
-   * @param Hr optional jacobian wrpt the pose transformation
-   * @param Hp optional Jacobian wrpt the destination plane
-   * @return the transformed plane
-   */
-  static OrientedPlane3 Transform(const OrientedPlane3& plane,
-      const Pose3& xr, OptionalJacobian<3, 6> Hr = boost::none,
-      OptionalJacobian<3, 3> Hp = boost::none) {
-      return plane.transform(xr, Hp, Hr);
-  }
-
-  /** Computes the error between two planes.
-   *  The error is a norm 1 difference in tangent space.
-   * @param the other plane
-   */
-  Vector3 error(const OrientedPlane3& plane) const;
+                           OptionalJacobian<3, 3> Hp = {},
+                           OptionalJacobian<3, 6> Hr = {}) const;
 
   /** Computes the error between the two planes, with derivatives.
-   *  This uses Unit3::errorVector, as opposed to the other .error() in this class, which uses
-   *  Unit3::localCoordinates. This one has correct derivatives.
+   *  This uses Unit3::errorVector, as opposed to the other .error() in this
+   *  class, which uses Unit3::localCoordinates. This one has correct
+   *  derivatives.
    *  NOTE(hayk): The derivatives are zero when normals are exactly orthogonal.
-   * @param the other plane
+   * @param other the other plane
    */
-  Vector3 errorVector(const OrientedPlane3& other, OptionalJacobian<3, 3> H1 = boost::none, //
-                      OptionalJacobian<3, 3> H2 = boost::none) const;
+  Vector3 errorVector(const OrientedPlane3& other,
+                      OptionalJacobian<3, 3> H1 = {},
+                      OptionalJacobian<3, 3> H2 = {}) const;
 
   /// Dimensionality of tangent space = 3 DOF
   inline static size_t Dim() {
@@ -134,7 +110,8 @@ public:
   }
 
   /// The retract function
-  OrientedPlane3 retract(const Vector3& v) const;
+  OrientedPlane3 retract(const Vector3& v,
+                        OptionalJacobian<3, 3> H = {}) const;
 
   /// The local coordinates function
   Vector3 localCoordinates(const OrientedPlane3& s) const;
@@ -146,16 +123,16 @@ public:
   }
 
   /// Return the normal
-  inline Unit3 normal() const {
+  inline Unit3 normal(OptionalJacobian<2, 3> H = {}) const {
+    if (H) *H << I_2x2, Z_2x1;
     return n_;
   }
 
   /// Return the perpendicular distance to the origin
-  inline double distance() const {
+  inline double distance(OptionalJacobian<1, 3> H = {}) const {
+    if (H) *H << 0,0,1;
     return d_;
   }
-
-  /// @}
 };
 
 template<> struct traits<OrientedPlane3> : public internal::Manifold<
@@ -166,5 +143,5 @@ template<> struct traits<const OrientedPlane3> : public internal::Manifold<
 OrientedPlane3> {
 };
 
-} // namespace gtsam
+}  // namespace gtsam
 

@@ -31,31 +31,85 @@ class JointMarginal;
  */
 class GTSAM_EXPORT Marginals {
 
-public:
-
-  /** The linear factorization mode - either CHOLESKY (faster and suitable for most problems) or QR (slower but more numerically stable for poorly-conditioned problems). */
+ public:
+  /** The linear factorization mode - either CHOLESKY (faster and suitable for
+   * most problems) or QR (slower but more numerically stable for
+   * poorly-conditioned problems). */
   enum Factorization {
     CHOLESKY,
     QR
   };
 
-protected:
-
+ protected:
   GaussianFactorGraph graph_;
   Values values_;
   Factorization factorization_;
   GaussianBayesTree bayesTree_;
 
-public:
+ public:
 
-  /** Construct a marginals class.
+  /// Default constructor only for wrappers
+  Marginals(){}
+
+  /** Construct a marginals class from a nonlinear factor graph.
    * @param graph The factor graph defining the full joint density on all variables.
    * @param solution The linearization point about which to compute Gaussian marginals (usually the MLE as obtained from a NonlinearOptimizer).
-   * @param factorization The linear decomposition mode - either Marginals::CHOLESKY (faster and suitable for most problems) or Marginals::QR (slower but more numerically stable for poorly-conditioned problems).
+   * @param factorization The linear decomposition mode: CHOLESKY|QR
+   */
+  Marginals(const NonlinearFactorGraph& graph, const Values& solution,
+            Factorization factorization = CHOLESKY);
+
+  /** Construct a marginals class from a nonlinear factor graph.
+   * @param graph The factor graph defining the full joint density on all variables.
+   * @param solution The linearization point about which to compute Gaussian marginals (usually the MLE as obtained from a NonlinearOptimizer).
+   * @param factorization The linear decomposition mode: CHOLESKY|QR
+   * @param ordering The ordering for elimination.
+   */
+  Marginals(const NonlinearFactorGraph& graph, const Values& solution, const Ordering& ordering,
+              Factorization factorization = CHOLESKY);
+
+  /** Construct a marginals class from a linear factor graph.
+   * @param graph The factor graph defining the full joint density on all variables.
+   * @param solution The solution point to compute Gaussian marginals.
+   * @param factorization The linear decomposition mode: CHOLESKY|QR
+   */
+  Marginals(const GaussianFactorGraph& graph, const Values& solution, Factorization factorization = CHOLESKY);
+
+  /** Construct a marginals class from a linear factor graph.
+   * @param graph The factor graph defining the full joint density on all variables.
+   * @param solution The solution point to compute Gaussian marginals.
+   * @param factorization The linear decomposition mode: CHOLESKY|QR
+   * @param ordering The ordering for elimination.
+   */
+  Marginals(const GaussianFactorGraph& graph, const Values& solution, const Ordering& ordering,
+              Factorization factorization = CHOLESKY);
+
+  /** Construct a marginals class from a linear factor graph.
+   * @param graph The factor graph defining the full joint density on all variables.
+   * @param solution The solution point to compute Gaussian marginals.
+   * @param factorization The linear decomposition mode: CHOLESKY|QR
    * @param ordering An optional variable ordering for elimination.
    */
-  Marginals(const NonlinearFactorGraph& graph, const Values& solution, Factorization factorization = CHOLESKY,
-            EliminateableFactorGraph<GaussianFactorGraph>::OptionalOrdering ordering = boost::none);
+  Marginals(const GaussianFactorGraph& graph, const VectorValues& solution, Factorization factorization = CHOLESKY);
+
+  /** Construct a marginals class from a linear factor graph.
+   * @param graph The factor graph defining the full joint density on all variables.
+   * @param solution The solution point to compute Gaussian marginals.
+   * @param factorization The linear decomposition mode: CHOLESKY|QR
+   * @param ordering An optional variable ordering for elimination.
+   */
+  Marginals(const GaussianFactorGraph& graph, const VectorValues& solution, const Ordering& ordering,
+              Factorization factorization = CHOLESKY);
+
+  /**
+   * Construct a marginals class from a precomputed Bayes tree.
+   * @param bayesTree The precomputed Gaussian Bayes tree representing the
+   * factorization of the linear system.
+   * @param solution The solution point at which to compute Gaussian marginals.
+   * @param factorization The linear decomposition mode: CHOLESKY|QR
+   */
+  Marginals(GaussianBayesTree&& bayesTree, const VectorValues& solution,
+            Factorization factorization = CHOLESKY);
 
   /** print */
   void print(const std::string& str = "Marginals: ", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
@@ -71,13 +125,24 @@ public:
   Matrix marginalCovariance(Key variable) const;
 
   /** Compute the joint marginal covariance of several variables */
-  JointMarginal jointMarginalCovariance(const std::vector<Key>& variables) const;
+  JointMarginal jointMarginalCovariance(const KeyVector& variables) const;
 
   /** Compute the joint marginal information of several variables */
-  JointMarginal jointMarginalInformation(const std::vector<Key>& variables) const;
+  JointMarginal jointMarginalInformation(const KeyVector& variables) const;
+
+  /** Delete cached Bayes tree shortcuts created while computing marginals */
+  void deleteCachedShortcuts();
 
   /** Optimize the bayes tree */
   VectorValues optimize() const;
+
+ protected:
+  
+  /** Compute the Bayes Tree as a helper function to the constructor */
+  void computeBayesTree();
+
+  /** Compute the Bayes Tree as a helper function to the constructor */
+  void computeBayesTree(const Ordering& ordering);
 };
 
 /**
@@ -85,18 +150,14 @@ public:
  */
 class GTSAM_EXPORT JointMarginal {
 
-protected:
+ protected:
   SymmetricBlockMatrix blockMatrix_;
   KeyVector keys_;
   FastMap<Key, size_t> indices_;
 
-public:
-  /** A block view of the joint marginal - this stores a reference to the
-   * JointMarginal object, so the JointMarginal object must be kept in scope
-   * while this block view is needed, otherwise assign this block object to a
-   * Matrix to store it.
-   */
-  typedef SymmetricBlockMatrix::constBlock Block;
+ public:
+  /// Default constructor only for wrappers
+  JointMarginal() {}
 
   /** Access a block, corresponding to a pair of variables, of the joint
    * marginal.  Each block is accessed by its "vertical position",
@@ -111,25 +172,27 @@ public:
    * @param iVariable The nonlinear Key specifying the "vertical position" of the requested block
    * @param jVariable The nonlinear Key specifying the "horizontal position" of the requested block
    */
-  Block operator()(Key iVariable, Key jVariable) const {
-    return blockMatrix_(indices_.at(iVariable), indices_.at(jVariable)); }
+  Matrix operator()(Key iVariable, Key jVariable) const {
+    const auto indexI = indices_.at(iVariable);
+    const auto indexJ = indices_.at(jVariable);
+    return blockMatrix_.block(indexI, indexJ);
+  }
 
   /** Synonym for operator() */
-  Block at(Key iVariable, Key jVariable) const {
-    return (*this)(iVariable, jVariable); }
+  Matrix at(Key iVariable, Key jVariable) const {
+    return (*this)(iVariable, jVariable);
+  }
 
-  /** The full, dense covariance/information matrix of the joint marginal. This returns
-   * a reference to the JointMarginal object, so the JointMarginal object must be kept
-   * in scope while this view is needed. Otherwise assign this block object to a Matrix
-   * to store it.
-   */
-  Eigen::SelfAdjointView<const Matrix, Eigen::Upper> fullMatrix() const { return blockMatrix_.matrix(); }
+  /** The full, dense covariance/information matrix of the joint marginal. */
+  Matrix fullMatrix() const {
+    return blockMatrix_.selfadjointView();
+  }
 
   /** Print */
   void print(const std::string& s = "", const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
-protected:
-  JointMarginal(const Matrix& fullMatrix, const std::vector<size_t>& dims, const std::vector<Key>& keys) :
+ protected:
+  JointMarginal(const Matrix& fullMatrix, const std::vector<size_t>& dims, const KeyVector& keys) :
     blockMatrix_(dims, fullMatrix), keys_(keys), indices_(Ordering(keys).invert()) {}
 
   friend class Marginals;

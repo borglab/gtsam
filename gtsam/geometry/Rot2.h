@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -14,24 +14,25 @@
  * @brief 2D rotation
  * @date Dec 9, 2009
  * @author Frank Dellaert
+ * @author John Lambert
  */
 
 #pragma once
 
 #include <gtsam/geometry/Point2.h>
-#include <gtsam/base/Lie.h>
-#include <boost/optional.hpp>
+#include <gtsam/base/MatrixLieGroup.h>
+
+#include <random>
 
 namespace gtsam {
 
   /**
    * Rotation matrix
    * NOTE: the angle theta is in radians unless explicitly stated
-   * @addtogroup geometry
+   * @ingroup geometry
    * \nosubgrouping
    */
-  class GTSAM_EXPORT Rot2 : public LieGroup<Rot2, 1> {
-
+  class GTSAM_EXPORT Rot2 : public MatrixLieGroup<Rot2, 1, 2> {
     /** we store cos(theta) and sin(theta) */
     double c_, s_;
 
@@ -48,9 +49,16 @@ namespace gtsam {
 
     /** default constructor, zero rotation */
     Rot2() : c_(1.0), s_(0.0) {}
+    
+    /** copy constructor */
+    Rot2(const Rot2& r) = default;
+
+    Rot2& operator=(const Rot2& other) = default;
 
     /// Constructor from angle in radians == exponential map at identity
     Rot2(double theta) : c_(cos(theta)), s_(sin(theta)) {}
+
+    // Rot2& operator=(const gtsam::Rot2& other) = default;
 
     /// Named constructor from angle in radians
     static Rot2 fromAngle(double theta) {
@@ -59,11 +67,11 @@ namespace gtsam {
 
     /// Named constructor from angle in degrees
     static Rot2 fromDegrees(double theta) {
-      const double degree = M_PI / 180;
+      static const double degree = M_PI / 180;
       return fromAngle(theta * degree);
     }
 
-    /// Named constructor from cos(theta),sin(theta) pair, will *not* normalize!
+    /// Named constructor from cos(theta),sin(theta) pair
     static Rot2 fromCosSin(double c, double s);
 
     /**
@@ -74,10 +82,18 @@ namespace gtsam {
      * @return 2D rotation \f$ \in SO(2) \f$
      */
     static Rot2 relativeBearing(const Point2& d, OptionalJacobian<1,2> H =
-        boost::none);
+        {});
 
     /** Named constructor that behaves as atan2, i.e., y,x order (!) and normalizes */
     static Rot2 atan2(double y, double x);
+
+    /**
+     * Random, generates random angle \f$\in\f$ [-pi,pi]
+     * Example:
+     *   std::mt19937 engine(42);
+     *   Unit3 unit = Unit3::Random(engine);
+     */
+    static Rot2 Random(std::mt19937 & rng);
 
     /// @}
     /// @name Testable
@@ -93,8 +109,8 @@ namespace gtsam {
     /// @name Group
     /// @{
 
-    /** identity */
-    inline static Rot2 identity() {  return Rot2(); }
+    /** Identity */
+    inline static Rot2 Identity() {  return Rot2(); }
 
     /** The inverse rotation - negative angle */
     Rot2 inverse() const { return Rot2(c_, -s_);}
@@ -108,36 +124,52 @@ namespace gtsam {
     /// @name Lie Group
     /// @{
 
+    using LieAlgebra = Matrix2;
+
     /// Exponential map at identity - create a rotation from canonical coordinates
-    static Rot2 Expmap(const Vector1& v, ChartJacobian H = boost::none);
+    static Rot2 Expmap(const Vector1& v, ChartJacobian H = {});
 
     /// Log map at identity - return the canonical coordinates of this rotation
-    static Vector1 Logmap(const Rot2& r, ChartJacobian H = boost::none);
+    static Vector1 Logmap(const Rot2& r, ChartJacobian H = {});
 
     /** Calculate Adjoint map */
     Matrix1 AdjointMap() const { return I_1x1; }
 
+    /// Lie-algebra adjoint (zero for abelian SO(2)).
+    static Matrix1 adjointMap(const Vector1&);
+
+    /// Apply Lie-algebra adjoint (always zero).
+    static Vector1 adjoint(const Vector1&, const Vector1&,
+                           OptionalJacobian<1, 1> Hxi = {},
+                           OptionalJacobian<1, 1> Hy = {});
+
     /// Left-trivialized derivative of the exponential map
     static Matrix ExpmapDerivative(const Vector& /*v*/) {
-      return ones(1);
+      return I_1x1;
     }
 
     /// Left-trivialized derivative inverse of the exponential map
     static Matrix LogmapDerivative(const Vector& /*v*/) {
-      return ones(1);
+      return I_1x1;
     }
 
     // Chart at origin simply uses exponential map and its inverse
     struct ChartAtOrigin {
-      static Rot2 Retract(const Vector1& v, ChartJacobian H = boost::none) {
+      static Rot2 Retract(const Vector1& v, ChartJacobian H = {}) {
         return Expmap(v, H);
       }
-      static Vector1 Local(const Rot2& r, ChartJacobian H = boost::none) {
+      static Vector1 Local(const Rot2& r, ChartJacobian H = {}) {
         return Logmap(r, H);
       }
     };
 
     using LieGroup<Rot2, 1>::inverse; // version with derivative
+
+    /// Hat maps from tangent vector to Lie algebra
+    static Matrix2 Hat(const Vector1& xi);
+
+    /// Vee maps from Lie algebra to tangent vector
+    static Vector1 Vee(const Matrix2& X);
 
     /// @}
     /// @name Group Action on Point2
@@ -146,8 +178,8 @@ namespace gtsam {
     /**
      * rotate point from rotated coordinate frame to world \f$ p^w = R_c^w p^c \f$
      */
-    Point2 rotate(const Point2& p, OptionalJacobian<2, 1> H1 = boost::none,
-        OptionalJacobian<2, 2> H2 = boost::none) const;
+    Point2 rotate(const Point2& p, OptionalJacobian<2, 1> H1 = {},
+        OptionalJacobian<2, 2> H2 = {}) const;
 
     /** syntactic sugar for rotate */
     inline Point2 operator*(const Point2& p) const {
@@ -157,8 +189,8 @@ namespace gtsam {
     /**
      * rotate point from world to rotated frame \f$ p^c = (R_c^w)^T p^w \f$
      */
-    Point2 unrotate(const Point2& p, OptionalJacobian<2, 1> H1 = boost::none,
-        OptionalJacobian<2, 2> H2 = boost::none) const;
+    Point2 unrotate(const Point2& p, OptionalJacobian<2, 1> H1 = {},
+        OptionalJacobian<2, 2> H2 = {}) const;
 
     /// @}
     /// @name Standard Interface
@@ -193,10 +225,18 @@ namespace gtsam {
     /** return 2*2 rotation matrix */
     Matrix2 matrix() const;
 
-    /** return 2*2 transpose (inverse) rotation matrix   */
+    /** return 2*2 transpose (inverse) rotation matrix */
     Matrix2 transpose() const;
 
-  private:
+    /** Find closest valid rotation matrix, given a 2x2 matrix */
+    static Rot2 ClosestTo(const Matrix2& M);
+
+    /** Vectorize the rotation matrix into a 4D vector */
+    Vector4 vec(OptionalJacobian<4, 1> H = {}) const;
+    /// @}
+
+    private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -204,13 +244,14 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(c_);
       ar & BOOST_SERIALIZATION_NVP(s_);
     }
+#endif
 
   };
 
-  template<>
-  struct traits<Rot2> : public internal::LieGroup<Rot2> {};
+  template <>
+struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {};
 
-  template<>
-  struct traits<const Rot2> : public internal::LieGroup<Rot2> {};
+template <>
+struct traits<const Rot2> : public internal::MatrixLieGroup<Rot2, 2> {};
 
 } // gtsam

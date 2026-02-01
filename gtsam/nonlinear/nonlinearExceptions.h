@@ -17,7 +17,6 @@
  */
 #pragma once
 
-#include <boost/lexical_cast.hpp>
 #include <exception>
 
 #include <gtsam/inference/Key.h>
@@ -35,13 +34,13 @@ namespace gtsam {
     KeyFormatter formatter_;
     mutable std::string what_;
   public:
-    MarginalizeNonleafException(Key key, KeyFormatter formatter = DefaultKeyFormatter) throw() :
+    MarginalizeNonleafException(Key key, KeyFormatter formatter = DefaultKeyFormatter) noexcept :
       key_(key), formatter_(formatter) {}
-    virtual ~MarginalizeNonleafException() throw() {}
+    virtual ~MarginalizeNonleafException() noexcept {}
     Key key() const { return key_; }
-    virtual const char* what() const throw() {
+    const char* what() const noexcept override {
       if(what_.empty())
-        what_ = 
+        what_ =
 "\nRequested to marginalize out variable " + formatter_(key_) + ", but this variable\n\
 is not a leaf.  To make the variables you would like to marginalize be leaves,\n\
 their ordering should be constrained using the constrainedKeys argument to\n\

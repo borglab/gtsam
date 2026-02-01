@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -16,17 +16,28 @@
  * @author  Richard Roberts
  */
 
+#include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <boost/make_shared.hpp>
-#include <boost/format.hpp>
+
+#include <cassert>
 
 namespace gtsam {
+
+/* ************************************************************************* */
+double NonlinearFactor::error(const Values& c) const {
+  throw std::runtime_error("NonlinearFactor::error is not implemented");
+}
+
+/* ************************************************************************* */
+double NonlinearFactor::error(const HybridValues& c) const {
+  return this->error(c.nonlinear());
+}
 
 /* ************************************************************************* */
 void NonlinearFactor::print(const std::string& s,
     const KeyFormatter& keyFormatter) const {
   std::cout << s << "  keys = { ";
-  BOOST_FOREACH(Key key, keys()) {
+  for(Key key: keys()) {
     std::cout << keyFormatter(key) << " ";
   }
   std::cout << "}" << std::endl;
@@ -52,7 +63,7 @@ NonlinearFactor::shared_ptr NonlinearFactor::rekey(
 
 /* ************************************************************************* */
 NonlinearFactor::shared_ptr NonlinearFactor::rekey(
-    const std::vector<Key>& new_keys) const {
+    const KeyVector& new_keys) const {
   assert(new_keys.size() == keys().size());
   shared_ptr new_factor = clone();
   new_factor->keys() = new_keys;
@@ -77,13 +88,21 @@ bool NoiseModelFactor::equals(const NonlinearFactor& f, double tol) const {
 }
 
 /* ************************************************************************* */
+NoiseModelFactor::shared_ptr NoiseModelFactor::cloneWithNewNoiseModel(
+    const SharedNoiseModel newNoise) const {
+  NoiseModelFactor::shared_ptr new_factor = std::dynamic_pointer_cast<NoiseModelFactor>(clone());
+  new_factor->noiseModel_ = newNoise;
+  return new_factor;
+}
+
+/* ************************************************************************* */
 static void check(const SharedNoiseModel& noiseModel, size_t m) {
-  if (noiseModel && m != noiseModel->dim())
+  if (noiseModel && m != noiseModel->dim()) {
     throw std::invalid_argument(
-        boost::str(
-            boost::format(
-                "NoiseModelFactor: NoiseModel has dimension %1% instead of %2%.")
-                % noiseModel->dim() % m));
+        "NoiseModelFactor: NoiseModel has dimension " +
+        std::to_string(noiseModel->dim()) +
+        " instead of " + std::to_string(m) + ".");
+  }
 }
 
 /* ************************************************************************* */
@@ -94,12 +113,34 @@ Vector NoiseModelFactor::whitenedError(const Values& c) const {
 }
 
 /* ************************************************************************* */
+Vector NoiseModelFactor::unweightedWhitenedError(const Values& c) const {
+  const Vector b = unwhitenedError(c);
+  check(noiseModel_, b.size());
+  return noiseModel_ ? noiseModel_->unweightedWhiten(b) : b;
+}
+
+/* ************************************************************************* */
+double NoiseModelFactor::weight(const Values& c) const {
+  if (active(c)) {
+    if (noiseModel_) {
+      const Vector b = unwhitenedError(c);
+      check(noiseModel_, b.size());
+      return noiseModel_->weight(b);
+    }
+    else
+      return 1.0;
+  } else {
+    return 0.0;
+  }
+}
+
+/* ************************************************************************* */
 double NoiseModelFactor::error(const Values& c) const {
   if (active(c)) {
     const Vector b = unwhitenedError(c);
     check(noiseModel_, b.size());
     if (noiseModel_)
-      return 0.5 * noiseModel_->distance(b);
+      return noiseModel_->loss(noiseModel_->squaredMahalanobisDistance(b));
     else
       return 0.5 * b.squaredNorm();
   } else {
@@ -108,12 +149,12 @@ double NoiseModelFactor::error(const Values& c) const {
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<GaussianFactor> NoiseModelFactor::linearize(
+std::shared_ptr<GaussianFactor> NoiseModelFactor::linearize(
     const Values& x) const {
 
   // Only linearize if the factor is active
   if (!active(x))
-    return boost::shared_ptr<JacobianFactor>();
+    return std::shared_ptr<JacobianFactor>();
 
   // Call evaluate error to get Jacobians and RHS vector b
   std::vector<Matrix> A(size());
@@ -136,9 +177,10 @@ boost::shared_ptr<GaussianFactor> NoiseModelFactor::linearize(
   if (noiseModel_ && noiseModel_->isConstrained())
     return GaussianFactor::shared_ptr(
         new JacobianFactor(terms, b,
-            boost::static_pointer_cast<Constrained>(noiseModel_)->unit()));
-  else
+            std::static_pointer_cast<Constrained>(noiseModel_)->unit()));
+  else {
     return GaussianFactor::shared_ptr(new JacobianFactor(terms, b));
+  }
 }
 
 /* ************************************************************************* */

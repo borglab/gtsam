@@ -34,19 +34,19 @@ currentVelocityGlobalIMUbody = currentVelocityGlobal;
 %% Prepare data structures for actual trajectory and estimates
 % Actual trajectory
 positions = zeros(3, length(times)+1);
-positions(:,1) = currentPoseGlobal.translation.vector;
+positions(:,1) = currentPoseGlobal.translation;
 poses(1).p = positions(:,1);
 poses(1).R = currentPoseGlobal.rotation.matrix;
 
 % Trajectory estimate (integrated in the navigation frame)
 positionsIMUnav = zeros(3, length(times)+1);
-positionsIMUnav(:,1) = currentPoseGlobalIMUbody.translation.vector;
+positionsIMUnav(:,1) = currentPoseGlobalIMUbody.translation;
 posesIMUnav(1).p = positionsIMUnav(:,1);
 posesIMUnav(1).R = poses(1).R;
 
 % Trajectory estimate (integrated in the body frame)
 positionsIMUbody = zeros(3, length(times)+1);
-positionsIMUbody(:,1) = currentPoseGlobalIMUbody.translation.vector;
+positionsIMUbody(:,1) = currentPoseGlobalIMUbody.translation;
 posesIMUbody(1).p = positionsIMUbody(:,1);
 posesIMUbody(1).R = poses(1).R;
 
@@ -72,9 +72,9 @@ for t = times
     currentPoseGlobalIMUnav, currentVelocityGlobalIMUnav, acc_omega, deltaT);
   
   %% Store data in some structure for statistics and plots
-  positions(:,i) = currentPoseGlobal.translation.vector;
-  positionsIMUbody(:,i) = currentPoseGlobalIMUbody.translation.vector;
-  positionsIMUnav(:,i) = currentPoseGlobalIMUnav.translation.vector;  
+  positions(:,i) = currentPoseGlobal.translation;
+  positionsIMUbody(:,i) = currentPoseGlobalIMUbody.translation;
+  positionsIMUnav(:,i) = currentPoseGlobalIMUnav.translation;
   % - 
   poses(i).p = positions(:,i);
   posesIMUbody(i).p = positionsIMUbody(:,i);

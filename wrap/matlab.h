@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -24,27 +24,27 @@
 
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Point3.h>
+#include <gtsam/base/utilities.h>
 
 using gtsam::Vector;
 using gtsam::Matrix;
+using gtsam::Point2;
+using gtsam::Point3;
 
 extern "C" {
 #include <mex.h>
 }
 
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/foreach.hpp>
-
 #include <list>
-#include <string>
-#include <sstream>
-#include <typeinfo>
 #include <set>
+#include <sstream>
 #include <streambuf>
+#include <string>
+#include <typeinfo>
 
 using namespace std;
-using namespace boost; // not usual, but for conciseness of generated code
 
 // start GTSAM Specifics /////////////////////////////////////////////////
 // to enable Matrix and Vector constructor for SharedGaussian:
@@ -61,15 +61,15 @@ using namespace boost; // not usual, but for conciseness of generated code
 // "Unique" key to signal calling the matlab object constructor with a raw pointer
 // to a shared pointer of the same C++ object type as the MATLAB type.
 // Also present in utilities.h
-static const uint64_t ptr_constructor_key =
-  (uint64_t('G') << 56) |
-  (uint64_t('T') << 48) |
-  (uint64_t('S') << 40) |
-  (uint64_t('A') << 32) |
-  (uint64_t('M') << 24) |
-  (uint64_t('p') << 16) |
-  (uint64_t('t') << 8) |
-  (uint64_t('r'));
+static const std::uint64_t ptr_constructor_key =
+  (std::uint64_t('G') << 56) |
+  (std::uint64_t('T') << 48) |
+  (std::uint64_t('S') << 40) |
+  (std::uint64_t('A') << 32) |
+  (std::uint64_t('M') << 24) |
+  (std::uint64_t('p') << 16) |
+  (std::uint64_t('t') << 8) |
+  (std::uint64_t('r'));
 
 //*****************************************************************************
 // Utilities
@@ -111,17 +111,17 @@ protected:
 //*****************************************************************************
 
 void checkArguments(const string& name, int nargout, int nargin, int expected) {
-  stringstream err; 
+  stringstream err;
   err << name << " expects " << expected << " arguments, not " << nargin;
   if (nargin!=expected)
     error(err.str().c_str());
 }
 
 //*****************************************************************************
-// wrapping C++ basis types in MATLAB arrays
+// wrapping C++ basic types in MATLAB arrays
 //*****************************************************************************
 
-// default wrapping throws an error: only basis types are allowed in wrap
+// default wrapping throws an error: only basic types are allowed in wrap
 template <typename Class>
 mxArray* wrap(const Class& value) {
   error("wrap internal error: attempted wrap of invalid type");
@@ -175,6 +175,14 @@ mxArray* wrap<int>(const int& value) {
   return result;
 }
 
+// specialization to gtsam::Key which is an alias for uint64_t
+template<>
+mxArray* wrap<uint64_t>(const uint64_t& value) {
+  mxArray *result = scalar(mxUINT32OR64_CLASS);
+  *(uint64_t*)mxGetData(result) = value;
+  return result;
+}
+
 // specialization to double -> just double
 template<>
 mxArray* wrap<double>(const double& value) {
@@ -193,6 +201,18 @@ mxArray* wrap_Vector(const gtsam::Vector& v) {
 // specialization to Eigen vector -> double vector
 template<>
 mxArray* wrap<gtsam::Vector >(const gtsam::Vector& v) {
+  return wrap_Vector(v);
+}
+
+// specialization to Eigen vector -> double vector
+template<>
+mxArray* wrap<gtsam::Point2 >(const gtsam::Point2& v) {
+  return wrap_Vector(v);
+}
+
+// specialization to Eigen vector -> double vector
+template<>
+mxArray* wrap<gtsam::Point3 >(const gtsam::Point3& v) {
   return wrap_Vector(v);
 }
 
@@ -216,8 +236,26 @@ mxArray* wrap<gtsam::Matrix >(const gtsam::Matrix& A) {
   return wrap_Matrix(A);
 }
 
+/// @brief Wrap the C++ enum to Matlab mxArray
+/// @tparam T The C++ enum type
+/// @param x C++ enum
+/// @param classname Matlab enum classdef used to call Matlab constructor
+template <typename T>
+mxArray* wrap_enum(const T x, const std::string& classname) {
+  // create double array to store value in
+  mxArray* a = mxCreateDoubleMatrix(1, 1, mxREAL);
+  double* data = mxGetPr(a);
+  data[0] = static_cast<double>(x);
+
+  // convert to Matlab enumeration type
+  mxArray* result;
+  mexCallMATLAB(1, &result, 1, &a, classname.c_str());
+
+  return result;
+}
+
 //*****************************************************************************
-// unwrapping MATLAB arrays into C++ basis types
+// unwrapping MATLAB arrays into C++ basic types
 //*****************************************************************************
 
 // default unwrapping throws an error
@@ -226,6 +264,24 @@ template <typename T>
 T unwrap(const mxArray* array) {
   error("wrap internal error: attempted unwrap of invalid type");
   return T();
+}
+
+/// @brief Unwrap from matlab array to C++ enum type
+/// @tparam T The C++ enum type
+/// @param array Matlab mxArray
+template <typename T>
+T unwrap_enum(const mxArray* array) {
+  // Make duplicate to remove const-ness
+  mxArray* a = mxDuplicateArray(array);
+
+  // convert void* to int32* array
+  mxArray* a_int32;
+  mexCallMATLAB(1, &a_int32, 1, &a, "int32");
+
+  // Get the value in the input array
+  int32_T* value = (int32_T*)mxGetData(a_int32);
+  // cast int32 to enum type
+  return static_cast<T>(*value);
 }
 
 // specialization to string
@@ -245,9 +301,9 @@ template <typename T>
 T myGetScalar(const mxArray* array) {
   switch (mxGetClassID(array)) {
     case mxINT64_CLASS:
-      return (T) *(int64_t*) mxGetData(array);
+      return (T) *(std::int64_t*) mxGetData(array);
     case mxUINT64_CLASS:
-      return (T) *(uint64_t*) mxGetData(array);
+      return (T) *(std::uint64_t*) mxGetData(array);
     default:
       // hope for the best!
       return (T) mxGetScalar(array);
@@ -282,6 +338,13 @@ int unwrap<int>(const mxArray* array) {
   return myGetScalar<int>(array);
 }
 
+// specialization to gtsam::Key which is an alias for uint64_t
+template<>
+uint64_t unwrap<uint64_t>(const mxArray* array) {
+  checkScalar(array,"unwrap<uint64_t>");
+  return myGetScalar<uint64_t>(array);
+}
+
 // specialization to size_t
 template<>
 size_t unwrap<size_t>(const mxArray* array) {
@@ -312,6 +375,41 @@ gtsam::Vector unwrap< gtsam::Vector >(const mxArray* array) {
 #endif
   return v;
 }
+
+// specialization to Point2
+template<>
+gtsam::Point2 unwrap< gtsam::Point2 >(const mxArray* array) {
+  int m = mxGetM(array), n = mxGetN(array);
+  if (mxIsDouble(array)==false || n!=1) error("unwrap<vector>: not a vector");
+#ifdef DEBUG_WRAP
+  mexPrintf("unwrap< gtsam::Vector > called with %dx%d argument\n", m,n);
+#endif
+  double* data = (double*)mxGetData(array);
+  gtsam::Vector v(m);
+  for (int i=0;i<m;i++,data++) v(i) = *data;
+#ifdef DEBUG_WRAP
+  gtsam::print(v);
+#endif
+  return v;
+}
+
+// specialization to Point3
+template<>
+gtsam::Point3 unwrap< gtsam::Point3 >(const mxArray* array) {
+  int m = mxGetM(array), n = mxGetN(array);
+  if (mxIsDouble(array)==false || n!=1) error("unwrap<vector>: not a vector");
+#ifdef DEBUG_WRAP
+  mexPrintf("unwrap< gtsam::Vector > called with %dx%d argument\n", m,n);
+#endif
+  double* data = (double*)mxGetData(array);
+  gtsam::Vector v(m);
+  for (int i=0;i<m;i++,data++) v(i) = *data;
+#ifdef DEBUG_WRAP
+  gtsam::print(v);
+#endif
+  return v;
+}
+
 
 // specialization to Eigen matrix
 template<>
@@ -350,7 +448,7 @@ mxArray* create_object(const std::string& classname, void *pointer, bool isVirtu
   int nargin = 2;
   // First input argument is pointer constructor key
   input[0] = mxCreateNumericMatrix(1, 1, mxUINT64_CLASS, mxREAL);
-  *reinterpret_cast<uint64_t*>(mxGetData(input[0])) = ptr_constructor_key;
+  *reinterpret_cast<std::uint64_t*>(mxGetData(input[0])) = ptr_constructor_key;
   // Second input argument is the pointer
   input[1] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
   *reinterpret_cast<void**>(mxGetData(input[1])) = pointer;
@@ -401,36 +499,44 @@ mxArray* create_object(const std::string& classname, void *pointer, bool isVirtu
  class to matlab.
 */
 template <typename Class>
-mxArray* wrap_shared_ptr(boost::shared_ptr< Class > shared_ptr, const std::string& matlabName, bool isVirtual) {
+mxArray* wrap_shared_ptr(std::shared_ptr< Class > shared_ptr, const std::string& matlabName, bool isVirtual) {
   // Create actual class object from out pointer
   mxArray* result;
   if(isVirtual) {
-    boost::shared_ptr<void> void_ptr(shared_ptr);
+    std::shared_ptr<void> void_ptr(shared_ptr);
     result = create_object(matlabName, &void_ptr, isVirtual, typeid(*shared_ptr).name());
   } else {
-    boost::shared_ptr<Class> *heapPtr = new boost::shared_ptr<Class>(shared_ptr);
+    std::shared_ptr<Class> *heapPtr = new std::shared_ptr<Class>(shared_ptr);
     result = create_object(matlabName, heapPtr, isVirtual, "");
   }
   return result;
 }
 
 template <typename Class>
-boost::shared_ptr<Class> unwrap_shared_ptr(const mxArray* obj, const string& propertyName) {
+std::shared_ptr<Class> unwrap_shared_ptr(const mxArray* obj, const string& propertyName) {
 
   mxArray* mxh = mxGetProperty(obj,0, propertyName.c_str());
   if (mxGetClassID(mxh) != mxUINT32OR64_CLASS || mxIsComplex(mxh)
     || mxGetM(mxh) != 1 || mxGetN(mxh) != 1) error(
     "Parameter is not an Shared type.");
 
-  boost::shared_ptr<Class>* spp = *reinterpret_cast<boost::shared_ptr<Class>**> (mxGetData(mxh));
+  std::shared_ptr<Class>* spp = *reinterpret_cast<std::shared_ptr<Class>**> (mxGetData(mxh));
   return *spp;
+}
+
+template <typename Class>
+Class* unwrap_ptr(const mxArray* obj, const string& propertyName) {
+
+  mxArray* mxh = mxGetProperty(obj,0, propertyName.c_str());
+  Class* x = reinterpret_cast<Class*> (mxGetData(mxh));
+  return x;
 }
 
 //// throw an error if unwrap_shared_ptr is attempted for an Eigen Vector
 //template <>
 //Vector unwrap_shared_ptr<Vector>(const mxArray* obj, const string& propertyName) {
 //  bool unwrap_shared_ptr_Vector_attempted = false;
-//  BOOST_STATIC_ASSERT(unwrap_shared_ptr_Vector_attempted, "Vector cannot be unwrapped as a shared pointer");
+//  static_assert(unwrap_shared_ptr_Vector_attempted, "Vector cannot be unwrapped as a shared pointer");
 //  return Vector();
 //}
 
@@ -438,7 +544,7 @@ boost::shared_ptr<Class> unwrap_shared_ptr(const mxArray* obj, const string& pro
 //template <>
 //Matrix unwrap_shared_ptr<Matrix>(const mxArray* obj, const string& propertyName) {
 //  bool unwrap_shared_ptr_Matrix_attempted = false;
-//  BOOST_STATIC_ASSERT(unwrap_shared_ptr_Matrix_attempted, "Matrix cannot be unwrapped as a shared pointer");
+//  static_assert(unwrap_shared_ptr_Matrix_attempted, "Matrix cannot be unwrapped as a shared pointer");
 //  return Matrix();
 //}
 

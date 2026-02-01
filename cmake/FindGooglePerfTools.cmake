@@ -1,42 +1,40 @@
 # -*- cmake -*-
 
-# - Find Google perftools
-# Find the Google perftools includes and libraries
-# This module defines
-#  GOOGLE_PERFTOOLS_INCLUDE_DIR, where to find heap-profiler.h, etc.
-#  GOOGLE_PERFTOOLS_FOUND, If false, do not try to use Google perftools.
-# also defined for general use are
-#  TCMALLOC_LIBRARY, where to find the tcmalloc library.
-
-FIND_PATH(GOOGLE_PERFTOOLS_INCLUDE_DIR google/heap-profiler.h
-/usr/local/include
-/usr/include
-)
+# - Find GPerfTools (formerly Google perftools)
+# Find the GPerfTools libraries
+# If false, do not try to use Google perftools.
+# Also defined for general use are
+# - GPERFTOOLS_TCMALLOC: where to find the tcmalloc library
+# - GPERFTOOLS_PROFILER: where to find the profiler library
 
 SET(TCMALLOC_NAMES ${TCMALLOC_NAMES} tcmalloc)
-FIND_LIBRARY(TCMALLOC_LIBRARY
+find_library(GPERFTOOLS_TCMALLOC
   NAMES ${TCMALLOC_NAMES}
   PATHS /usr/lib /usr/local/lib
-  )
+)
+find_library(GPERFTOOLS_PROFILER
+   NAMES profiler
+   PATHS /usr/lib /usr/local/lib
+)
 
-IF (TCMALLOC_LIBRARY AND GOOGLE_PERFTOOLS_INCLUDE_DIR)
-    SET(TCMALLOC_LIBRARIES ${TCMALLOC_LIBRARY})
-    SET(GOOGLE_PERFTOOLS_FOUND "YES")
-ELSE (TCMALLOC_LIBRARY AND GOOGLE_PERFTOOLS_INCLUDE_DIR)
-  SET(GOOGLE_PERFTOOLS_FOUND "NO")
-ENDIF (TCMALLOC_LIBRARY AND GOOGLE_PERFTOOLS_INCLUDE_DIR)
+IF (GPERFTOOLS_TCMALLOC AND GPERFTOOLS_PROFILER)
+    SET(TCMALLOC_LIBRARIES ${GPERFTOOLS_TCMALLOC})
+    SET(GPERFTOOLS_FOUND "YES")
+ELSE (GPERFTOOLS_TCMALLOC AND GPERFTOOLS_PROFILER)
+  SET(GPERFTOOLS_FOUND "NO")
+ENDIF (GPERFTOOLS_TCMALLOC AND GPERFTOOLS_PROFILER)
 
-IF (GOOGLE_PERFTOOLS_FOUND)
-   IF (NOT GOOGLE_PERFTOOLS_FIND_QUIETLY)
-      MESSAGE(STATUS "Found Google perftools: ${GOOGLE_PERFTOOLS_LIBRARIES}")
-   ENDIF (NOT GOOGLE_PERFTOOLS_FIND_QUIETLY)
-ELSE (GOOGLE_PERFTOOLS_FOUND)
+IF (GPERFTOOLS_FOUND)
+   MESSAGE(STATUS "Found Gperftools: ${GPERFTOOLS_PROFILER}")
+ELSE (GPERFTOOLS_FOUND)
    IF (GOOGLE_PERFTOOLS_FIND_REQUIRED)
       MESSAGE(FATAL_ERROR "Could not find Google perftools library")
    ENDIF (GOOGLE_PERFTOOLS_FIND_REQUIRED)
-ENDIF (GOOGLE_PERFTOOLS_FOUND)
+ENDIF (GPERFTOOLS_FOUND)
 
 MARK_AS_ADVANCED(
-  TCMALLOC_LIBRARY
-  GOOGLE_PERFTOOLS_INCLUDE_DIR
-  )
+  GPERFTOOLS_TCMALLOC
+  GPERFTOOLS_PROFILER
+)
+
+option(GTSAM_ENABLE_GPERFTOOLS                   "Enable/Disable Gperftools" OFF)

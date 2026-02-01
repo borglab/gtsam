@@ -17,77 +17,143 @@
 
 #pragma once
 
-#include <gtsam_unstable/base/dllexport.h>
 #include <gtsam/discrete/DiscreteFactor.h>
-#include <boost/assign.hpp>
+#include <gtsam/discrete/DiscreteValues.h>
+#include <gtsam_unstable/dllexport.h>
+
+#include <map>
 
 namespace gtsam {
 
-  class Domain;
+class Domain;
+using Domains = std::map<Key, Domain>;
 
-  /**
-   * Base class for discrete probabilistic factors
-   * The most general one is the derived DecisionTreeFactor
+/**
+ * Base class for constraint factors
+ * Derived classes include SingleValue, BinaryAllDiff, and AllDiff.
+ */
+class GTSAM_UNSTABLE_EXPORT Constraint : public DiscreteFactor {
+ public:
+  typedef std::shared_ptr<Constraint> shared_ptr;
+
+ protected:
+  /// Construct unary constraint factor.
+  Constraint(Key j) : DiscreteFactor(KeyVector{j}) {}
+
+  /// Construct binary constraint factor.
+  Constraint(Key j1, Key j2) : DiscreteFactor(KeyVector{j1, j2}) {}
+
+  /// Construct n-way constraint factor.
+  Constraint(const KeyVector& js) : DiscreteFactor(js) {}
+
+  /// construct from container
+  template <class KeyIterator>
+  Constraint(KeyIterator beginKey, KeyIterator endKey)
+      : DiscreteFactor(beginKey, endKey) {}
+
+ public:
+  /// @name Standard Constructors
+  /// @{
+
+  /// Default constructor for I/O
+  Constraint();
+
+  /// Virtual destructor
+  ~Constraint() override {}
+
+  /// @}
+  /// @name Standard Interface
+  /// @{
+
+  /*
+   * Ensure Arc-consistency by checking every possible value of domain j.
+   * @param j domain to be checked
+   * @param (in/out) domains all domains, but only domains->at(j) will be
+   * checked.
+   * @return true if domains->at(j) was changed, false otherwise.
    */
-  class Constraint : public DiscreteFactor {
+  virtual bool ensureArcConsistency(Key j, Domains* domains) const = 0;
 
-  public:
+  /// Partially apply known values
+  virtual shared_ptr partiallyApply(const DiscreteValues&) const = 0;
 
-    typedef boost::shared_ptr<Constraint> shared_ptr;
+  /// Partially apply known values, domain version
+  virtual shared_ptr partiallyApply(const Domains&) const = 0;
 
-  protected:
+  /// Multiply factors, DiscreteFactor::shared_ptr edition
+  DiscreteFactor::shared_ptr multiply(
+      const DiscreteFactor::shared_ptr& df) const override {
+    return std::make_shared<DecisionTreeFactor>(
+        this->operator*(df->toDecisionTreeFactor()));
+  }
 
-    /// Construct n-way factor
-    Constraint(const std::vector<Key>& js) :
-      DiscreteFactor(js) {
-    }
+  /// Multiply by a scalar
+  virtual DiscreteFactor::shared_ptr operator*(double s) const override {
+    return this->toDecisionTreeFactor() * s;
+  }
 
-    /// Construct unary factor
-    Constraint(Key j) :
-      DiscreteFactor(boost::assign::cref_list_of<1>(j)) {
-    }
+  /// Multiply by a DecisionTreeFactor and return a DecisionTreeFactor
+  DecisionTreeFactor operator*(const DecisionTreeFactor& dtf) const override {
+    return this->toDecisionTreeFactor() * dtf;
+  }
 
-    /// Construct binary factor
-    Constraint(Key j1, Key j2) :
-      DiscreteFactor(boost::assign::cref_list_of<2>(j1)(j2)) {
-    }
+  /// divide by DiscreteFactor::shared_ptr f (safely)
+  DiscreteFactor::shared_ptr operator/(
+      const DiscreteFactor::shared_ptr& df) const override {
+    return this->toDecisionTreeFactor() / df;
+  }
 
-    /// construct from container
-    template<class KeyIterator>
-    Constraint(KeyIterator beginKey, KeyIterator endKey) :
-      DiscreteFactor(beginKey, endKey) {
-    }
+  /// Get the number of non-zero values contained in this factor.
+  uint64_t nrValues() const override { return 1; };
 
-  public:
+  DiscreteFactor::shared_ptr sum(size_t nrFrontals) const override {
+    return toDecisionTreeFactor().sum(nrFrontals);
+  }
 
-    /// @name Standard Constructors
-    /// @{
+  DiscreteFactor::shared_ptr sum(const Ordering& keys) const override {
+    return toDecisionTreeFactor().sum(keys);
+  }
 
-    /// Default constructor for I/O
-    Constraint();
+  /// Find the max value
+  double max() const override { return toDecisionTreeFactor().max(); }
 
-    /// Virtual destructor
-    virtual ~Constraint() {}
+  DiscreteFactor::shared_ptr max(size_t nrFrontals) const override {
+    return toDecisionTreeFactor().max(nrFrontals);
+  }
 
-    /// @}
-    /// @name Standard Interface
-    /// @{
+  DiscreteFactor::shared_ptr max(const Ordering& keys) const override {
+    return toDecisionTreeFactor().max(keys);
+  }
 
-    /*
-     * Ensure Arc-consistency
-     * @param j domain to be checked
-     * @param domains all other domains
-     */
-    virtual bool ensureArcConsistency(size_t j, std::vector<Domain>& domains) const = 0;
+  /// Compute error for each assignment and return as a tree
+  AlgebraicDecisionTree<Key> errorTree() const override {
+    throw std::runtime_error("Constraint::error not implemented");
+  }
 
-    /// Partially apply known values
-    virtual shared_ptr partiallyApply(const Values&) const = 0;
+  /// Compute error for each assignment and return as a tree
+  DiscreteFactor::shared_ptr restrict(
+      const DiscreteValues& assignment) const override {
+    throw std::runtime_error("Constraint::restrict not implemented");
+  }
+  
+  /// @}
+  /// @name Wrapper support
+  /// @{
 
+  /// Render as markdown table.
+  std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                       const Names& names = {}) const override {
+    return "`Constraint` on " + std::to_string(size()) + " variables\n";
+  }
 
-    /// Partially apply known values, domain version
-    virtual shared_ptr partiallyApply(const std::vector<Domain>&) const = 0;
-    /// @}
-  };
+  /// Render as html table.
+  std::string html(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                   const Names& names = {}) const override {
+    return "<p>Constraint on " + std::to_string(size()) + " variables</p>";
+  }
+
+  /// @}
+};
 // DiscreteFactor
 
-}// namespace gtsam
+}  // namespace gtsam

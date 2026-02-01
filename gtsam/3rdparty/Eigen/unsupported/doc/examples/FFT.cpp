@@ -61,14 +61,14 @@ template <typename T>
 void RandomFill(std::vector<T> & vec)
 {
     for (size_t k=0;k<vec.size();++k)
-        vec[k] = T( rand() )/T(RAND_MAX) - .5;
+        vec[k] = T( rand() )/T(RAND_MAX) - T(.5);
 }
 
 template <typename T>
 void RandomFill(std::vector<std::complex<T> > & vec)
 {
     for (size_t k=0;k<vec.size();++k)
-        vec[k] = std::complex<T> ( T( rand() )/T(RAND_MAX) - .5, T( rand() )/T(RAND_MAX) - .5);
+        vec[k] = std::complex<T> ( T( rand() )/T(RAND_MAX) - T(.5), T( rand() )/T(RAND_MAX) - T(.5));
 }
 
 template <typename T_time,typename T_freq>
@@ -85,7 +85,7 @@ void fwd_inv(size_t nfft)
     vector<T_time> timebuf2;
     fft.inv(timebuf2,freqbuf);
 
-    long double rmse = mag2(timebuf - timebuf2) / mag2(timebuf);
+    T_time rmse = mag2(timebuf - timebuf2) / mag2(timebuf);
     cout << "roundtrip rmse: " << rmse << endl;
 }
 

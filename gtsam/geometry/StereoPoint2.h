@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -20,13 +20,15 @@
 
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/base/VectorSpace.h>
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
+#endif
 
 namespace gtsam {
 
 /**
  * A 2D stereo point, v will be same for rectified images
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 class GTSAM_EXPORT StereoPoint2 {
@@ -35,7 +37,7 @@ private:
   double uL_, uR_, v_;
 
 public:
-  enum { dimension = 3 };
+  inline constexpr static auto dimension = 3;
   /// @name Standard Constructors
   /// @{
 
@@ -44,7 +46,9 @@ public:
       uL_(0), uR_(0), v_(0) {
   }
 
-  /** constructor */
+  /** uL and uR represent the x-axis value of left and right frame coordinates respectively.
+      v represents the y coordinate value. The y-axis value should be the same under the
+      stereo constraint. */
   StereoPoint2(double uL, double uR, double v) :
       uL_(uL), uR_(uR), v_(v) {
   }
@@ -62,8 +66,8 @@ public:
 
   /** equals */
   bool equals(const StereoPoint2& q, double tol = 1e-9) const {
-    return (fabs(uL_ - q.uL_) < tol && fabs(uR_ - q.uR_) < tol
-        && fabs(v_ - q.v_) < tol);
+    return (std::abs(uL_ - q.uL_) < tol && std::abs(uR_ - q.uR_) < tol
+        && std::abs(v_ - q.v_) < tol);
   }
 
   /// @}
@@ -71,7 +75,7 @@ public:
   /// @{
 
   /// identity
-  inline static StereoPoint2 identity() {
+  inline static StereoPoint2 Identity() {
     return StereoPoint2();
   }
 
@@ -126,17 +130,6 @@ public:
     return Point2(uR_, v_);
   }
 
-  /// @name Deprecated
-  /// @{
-  inline StereoPoint2 inverse() const { return StereoPoint2()- (*this);}
-  inline StereoPoint2 compose(const StereoPoint2& p1) const { return *this + p1;}
-  inline StereoPoint2 between(const StereoPoint2& p2) const { return p2 - *this; }
-  inline Vector localCoordinates(const StereoPoint2& t2) const { return Logmap(between(t2)); }
-  inline StereoPoint2 retract(const Vector& v) const { return compose(Expmap(v)); }
-  static inline Vector Logmap(const StereoPoint2& p) { return p.vector(); }
-  static inline StereoPoint2 Expmap(const Vector& d) { return StereoPoint2(d(0), d(1), d(2)); }
-  /// @}
-
   /// Streaming
   GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const StereoPoint2& p);
 
@@ -146,6 +139,7 @@ private:
   /// @name Advanced Interface
   /// @{
 
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -154,10 +148,13 @@ private:
     ar & BOOST_SERIALIZATION_NVP(uR_);
     ar & BOOST_SERIALIZATION_NVP(v_);
   }
+#endif
 
   /// @}
 
 };
+
+typedef std::vector<StereoPoint2> StereoPoint2Vector;
 
 template<>
 struct traits<StereoPoint2> : public internal::VectorSpace<StereoPoint2> {};

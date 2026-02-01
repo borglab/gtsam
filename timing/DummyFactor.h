@@ -40,7 +40,7 @@ public:
   void multiplyHessian(double alpha, const VectorValues& x,
       VectorValues& y) const {
 
-    BOOST_FOREACH(const KeyMatrix2D& Fi, this->Fblocks_) {
+    for(const KeyMatrix2D& Fi: this->Fblocks_) {
       static const Vector empty;
       Key key = Fi.first;
       std::pair<VectorValues::iterator, bool> it = y.tryInsert(key, empty);

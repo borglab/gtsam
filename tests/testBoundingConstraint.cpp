@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -19,6 +19,7 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -27,6 +28,12 @@ using namespace std;
 using namespace gtsam;
 
 static const double tol = 1e-5;
+
+LevenbergMarquardtParams makeLmParams() {
+  LevenbergMarquardtParams params;
+  params.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
+  return params;
+}
 
 SharedDiagonal soft_model2 = noiseModel::Unit::Create(2);
 SharedDiagonal soft_model2_alt = noiseModel::Isotropic::Sigma(2, 0.1);
@@ -54,10 +61,10 @@ TEST( testBoundingConstraint, unary_basics_inactive1 ) {
   EXPECT_DOUBLES_EQUAL(2.0, constraint2.threshold(), tol);
   EXPECT(constraint1.isGreaterThan());
   EXPECT(constraint2.isGreaterThan());
-  EXPECT(assert_equal(ones(1), constraint1.evaluateError(pt1), tol));
-  EXPECT(assert_equal(ones(1), constraint2.evaluateError(pt1), tol));
-  EXPECT(assert_equal(zero(1), constraint1.unwhitenedError(config), tol));
-  EXPECT(assert_equal(zero(1), constraint2.unwhitenedError(config), tol));
+  EXPECT(assert_equal(I_1x1, constraint1.evaluateError(pt1), tol));
+  EXPECT(assert_equal(I_1x1, constraint2.evaluateError(pt1), tol));
+  EXPECT(assert_equal(Z_1x1, constraint1.unwhitenedError(config), tol));
+  EXPECT(assert_equal(Z_1x1, constraint2.unwhitenedError(config), tol));
   EXPECT_DOUBLES_EQUAL(0.0, constraint1.error(config), tol);
   EXPECT_DOUBLES_EQUAL(0.0, constraint2.error(config), tol);
 }
@@ -75,8 +82,8 @@ TEST( testBoundingConstraint, unary_basics_inactive2 ) {
   EXPECT(!constraint4.isGreaterThan());
   EXPECT(assert_equal(Vector::Constant(1, 3.0), constraint3.evaluateError(pt2), tol));
   EXPECT(assert_equal(Vector::Constant(1, 5.0), constraint4.evaluateError(pt2), tol));
-  EXPECT(assert_equal(zero(1), constraint3.unwhitenedError(config), tol));
-  EXPECT(assert_equal(zero(1), constraint4.unwhitenedError(config), tol));
+  EXPECT(assert_equal(Z_1x1, constraint3.unwhitenedError(config), tol));
+  EXPECT(assert_equal(Z_1x1, constraint4.unwhitenedError(config), tol));
   EXPECT_DOUBLES_EQUAL(0.0, constraint3.error(config), tol);
   EXPECT_DOUBLES_EQUAL(0.0, constraint4.error(config), tol);
 }
@@ -90,8 +97,8 @@ TEST( testBoundingConstraint, unary_basics_active1 ) {
   EXPECT(constraint2.active(config));
   EXPECT(assert_equal(Vector::Constant(1,-3.0), constraint1.evaluateError(pt2), tol));
   EXPECT(assert_equal(Vector::Constant(1,-5.0), constraint2.evaluateError(pt2), tol));
-  EXPECT(assert_equal(Vector::Constant(1,-3.0), constraint1.unwhitenedError(config), tol));
-  EXPECT(assert_equal(Vector::Constant(1,-5.0), constraint2.unwhitenedError(config), tol));
+  EXPECT(assert_equal(Vector::Constant(1, 3.0), constraint1.unwhitenedError(config), tol));
+  EXPECT(assert_equal(Vector::Constant(1, 5.0), constraint2.unwhitenedError(config), tol));
   EXPECT_DOUBLES_EQUAL(45.0, constraint1.error(config), tol);
   EXPECT_DOUBLES_EQUAL(125.0, constraint2.error(config), tol);
 }
@@ -103,10 +110,10 @@ TEST( testBoundingConstraint, unary_basics_active2 ) {
   config.insert(key, pt1);
   EXPECT(constraint3.active(config));
   EXPECT(constraint4.active(config));
-  EXPECT(assert_equal(-1.0 * ones(1), constraint3.evaluateError(pt1), tol));
-  EXPECT(assert_equal(-1.0 * ones(1), constraint4.evaluateError(pt1), tol));
-  EXPECT(assert_equal(-1.0 * ones(1), constraint3.unwhitenedError(config), tol));
-  EXPECT(assert_equal(-1.0 * ones(1), constraint4.unwhitenedError(config), tol));
+  // EXPECT(assert_equal(-1.0 * I_1x1, constraint3.evaluateError(pt1), tol));
+  // EXPECT(assert_equal(-1.0 * I_1x1, constraint4.evaluateError(pt1), tol));
+  EXPECT(assert_equal(1.0 * I_1x1, constraint3.unwhitenedError(config), tol));
+  EXPECT(assert_equal(1.0 * I_1x1, constraint4.unwhitenedError(config), tol));
   EXPECT_DOUBLES_EQUAL(5.0, constraint3.error(config), tol);
   EXPECT_DOUBLES_EQUAL(5.0, constraint4.error(config), tol);
 }
@@ -144,14 +151,16 @@ TEST( testBoundingConstraint, unary_simple_optimization1) {
 
   NonlinearFactorGraph graph;
   Symbol x1('x',1);
-  graph += iq2D::PoseXInequality(x1, 1.0, true);
-  graph += iq2D::PoseYInequality(x1, 2.0, true);
-  graph += simulated2D::Prior(start_pt, soft_model2, x1);
+  graph.emplace_shared<iq2D::PoseXInequality>(x1, 1.0, true);
+  graph.emplace_shared<iq2D::PoseYInequality>(x1, 2.0, true);
+  graph.emplace_shared<simulated2D::Prior>(start_pt, soft_model2, x1);
 
   Values initValues;
   initValues.insert(x1, start_pt);
 
-  Values actual = LevenbergMarquardtOptimizer(graph, initValues).optimize();
+  LevenbergMarquardtParams params = makeLmParams();
+  Values actual =
+      LevenbergMarquardtOptimizer(graph, initValues, params).optimize();
   Values expected;
   expected.insert(x1, goal_pt);
   CHECK(assert_equal(expected, actual, tol));
@@ -165,14 +174,16 @@ TEST( testBoundingConstraint, unary_simple_optimization2) {
   Point2 start_pt(2.0, 3.0);
 
   NonlinearFactorGraph graph;
-  graph += iq2D::PoseXInequality(key, 1.0, false);
-  graph += iq2D::PoseYInequality(key, 2.0, false);
-  graph += simulated2D::Prior(start_pt, soft_model2, key);
+  graph.emplace_shared<iq2D::PoseXInequality>(key, 1.0, false);
+  graph.emplace_shared<iq2D::PoseYInequality>(key, 2.0, false);
+  graph.emplace_shared<simulated2D::Prior>(start_pt, soft_model2, key);
 
   Values initValues;
   initValues.insert(key, start_pt);
 
-  Values actual = LevenbergMarquardtOptimizer(graph, initValues).optimize();
+  LevenbergMarquardtParams params = makeLmParams();
+  Values actual =
+      LevenbergMarquardtOptimizer(graph, initValues, params).optimize();
   Values expected;
   expected.insert(key, goal_pt);
   CHECK(assert_equal(expected, actual, tol));
@@ -181,52 +192,52 @@ TEST( testBoundingConstraint, unary_simple_optimization2) {
 /* ************************************************************************* */
 TEST( testBoundingConstraint, MaxDistance_basics) {
   gtsam::Key key1 = 1, key2 = 2;
-  Point2 pt1, pt2(1.0, 0.0), pt3(2.0, 0.0), pt4(3.0, 0.0);
+  Point2 pt1(0,0), pt2(1.0, 0.0), pt3(2.0, 0.0), pt4(3.0, 0.0);
   iq2D::PoseMaxDistConstraint rangeBound(key1, key2, 2.0, mu);
   EXPECT_DOUBLES_EQUAL(2.0, rangeBound.threshold(), tol);
   EXPECT(!rangeBound.isGreaterThan());
   EXPECT(rangeBound.dim() == 1);
 
   EXPECT(assert_equal((Vector(1) << 2.0).finished(), rangeBound.evaluateError(pt1, pt1)));
-  EXPECT(assert_equal(ones(1), rangeBound.evaluateError(pt1, pt2)));
-  EXPECT(assert_equal(zero(1), rangeBound.evaluateError(pt1, pt3)));
-  EXPECT(assert_equal(-1.0*ones(1), rangeBound.evaluateError(pt1, pt4)));
+  EXPECT(assert_equal(I_1x1, rangeBound.evaluateError(pt1, pt2)));
+  EXPECT(assert_equal(Z_1x1, rangeBound.evaluateError(pt1, pt3)));
+  EXPECT(assert_equal(-1.0*I_1x1, rangeBound.evaluateError(pt1, pt4)));
 
   Values config1;
   config1.insert(key1, pt1);
   config1.insert(key2, pt1);
   EXPECT(!rangeBound.active(config1));
-  EXPECT(assert_equal(zero(1), rangeBound.unwhitenedError(config1)));
+  EXPECT(assert_equal(Z_1x1, rangeBound.unwhitenedError(config1)));
   EXPECT(!rangeBound.linearize(config1));
   EXPECT_DOUBLES_EQUAL(0.0, rangeBound.error(config1), tol);
 
   config1.update(key2, pt2);
   EXPECT(!rangeBound.active(config1));
-  EXPECT(assert_equal(zero(1), rangeBound.unwhitenedError(config1)));
+  EXPECT(assert_equal(Z_1x1, rangeBound.unwhitenedError(config1)));
   EXPECT(!rangeBound.linearize(config1));
   EXPECT_DOUBLES_EQUAL(0.0, rangeBound.error(config1), tol);
 
   config1.update(key2, pt3);
   EXPECT(rangeBound.active(config1));
-  EXPECT(assert_equal(zero(1), rangeBound.unwhitenedError(config1)));
+  EXPECT(assert_equal(Z_1x1, rangeBound.unwhitenedError(config1)));
   EXPECT_DOUBLES_EQUAL(0.0, rangeBound.error(config1), tol);
 
   config1.update(key2, pt4);
   EXPECT(rangeBound.active(config1));
-  EXPECT(assert_equal(-1.0*ones(1), rangeBound.unwhitenedError(config1)));
+  EXPECT(assert_equal(1.0*I_1x1, rangeBound.unwhitenedError(config1)));
   EXPECT_DOUBLES_EQUAL(0.5*mu, rangeBound.error(config1), tol);
 }
 
 /* ************************************************************************* */
 TEST( testBoundingConstraint, MaxDistance_simple_optimization) {
 
-  Point2 pt1, pt2_init(5.0, 0.0), pt2_goal(2.0, 0.0);
+  Point2 pt1(0,0), pt2_init(5.0, 0.0), pt2_goal(2.0, 0.0);
   Symbol x1('x',1), x2('x',2);
 
   NonlinearFactorGraph graph;
-  graph += simulated2D::equality_constraints::UnaryEqualityConstraint(pt1, x1);
-  graph += simulated2D::Prior(pt2_init, soft_model2_alt, x2);
-  graph += iq2D::PoseMaxDistConstraint(x1, x2, 2.0);
+  graph.emplace_shared<simulated2D::equality_constraints::UnaryEqualityConstraint>(x1, pt1);
+  graph.emplace_shared<simulated2D::Prior>(pt2_init, soft_model2_alt, x2);
+  graph.emplace_shared<iq2D::PoseMaxDistConstraint>(x1, x2, 2.0);
 
   Values initial_state;
   initial_state.insert(x1, pt1);
@@ -246,16 +257,16 @@ TEST( testBoundingConstraint, avoid_demo) {
 
   Symbol x1('x',1), x2('x',2), x3('x',3), l1('l',1);
   double radius = 1.0;
-  Point2 x1_pt, x2_init(2.0, 0.5), x2_goal(2.0, 1.0), x3_pt(4.0, 0.0), l1_pt(2.0, 0.0);
+  Point2 x1_pt(0,0), x2_init(2.0, 0.5), x2_goal(2.0, 1.0), x3_pt(4.0, 0.0), l1_pt(2.0, 0.0);
   Point2 odo(2.0, 0.0);
 
   NonlinearFactorGraph graph;
-  graph += simulated2D::equality_constraints::UnaryEqualityConstraint(x1_pt, x1);
-  graph += simulated2D::Odometry(odo, soft_model2_alt, x1, x2);
-  graph += iq2D::LandmarkAvoid(x2, l1, radius);
-  graph += simulated2D::equality_constraints::UnaryEqualityPointConstraint(l1_pt, l1);
-  graph += simulated2D::Odometry(odo, soft_model2_alt, x2, x3);
-  graph += simulated2D::equality_constraints::UnaryEqualityConstraint(x3_pt, x3);
+  graph.emplace_shared<simulated2D::equality_constraints::UnaryEqualityConstraint>(x1, x1_pt);
+  graph.emplace_shared<simulated2D::Odometry>(odo, soft_model2_alt, x1, x2);
+  graph.emplace_shared<iq2D::LandmarkAvoid>(x2, l1, radius);
+  graph.emplace_shared<simulated2D::equality_constraints::UnaryEqualityPointConstraint>(l1, l1_pt);
+  graph.emplace_shared<simulated2D::Odometry>(odo, soft_model2_alt, x2, x3);
+  graph.emplace_shared<simulated2D::equality_constraints::UnaryEqualityConstraint>(x3, x3_pt);
 
   Values init, expected;
   init.insert(x1, x1_pt);
@@ -273,4 +284,3 @@ TEST( testBoundingConstraint, avoid_demo) {
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
-

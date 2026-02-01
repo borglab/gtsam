@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -12,21 +12,19 @@
 /**
  * @file   GaussianBayesNet.cpp
  * @brief  Chordal Bayes Net, the result of eliminating a factor graph
- * @author Frank Dellaert
+ * @author Frank Dellaert, Varun Agrawal
  */
 
+#include <gtsam/base/timing.h>
+#include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/inference/FactorGraph-inst.h>
-#include <gtsam/base/timing.h>
 
-#include <boost/foreach.hpp>
+#include <fstream>
+#include <iterator>
 
 using namespace std;
 using namespace gtsam;
-
-#define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL) 
-#define REVERSE_FOREACH_PAIR( KEY, VAL, COL) BOOST_REVERSE_FOREACH (boost::tie(KEY,VAL),COL)
 
 namespace gtsam {
 
@@ -39,28 +37,43 @@ namespace gtsam {
     return Base::equals(bn, tol);
   }
 
-  /* ************************************************************************* */
-  VectorValues GaussianBayesNet::optimize() const
-  {
-    VectorValues soln; // no missing variables -> just create an empty vector
-    return optimize(soln);
+  /* ************************************************************************ */
+  VectorValues GaussianBayesNet::optimize() const {
+    VectorValues solution;  // no missing variables -> create an empty vector
+    return optimize(solution);
   }
 
-  /* ************************************************************************* */
-  VectorValues GaussianBayesNet::optimize(
-      const VectorValues& solutionForMissing) const {
-    VectorValues soln(solutionForMissing); // possibly empty
+  VectorValues GaussianBayesNet::optimize(const VectorValues& given) const {
+    VectorValues solution = given;
     // (R*x)./sigmas = y by solving x=inv(R)*(y.*sigmas)
-    /** solve each node in turn in topological sort order (parents first)*/
-    BOOST_REVERSE_FOREACH(const sharedConditional& cg, *this) {
+    // solve each node in reverse topological sort order (parents first)
+    for (auto it = std::make_reverse_iterator(end()); it != std::make_reverse_iterator(begin()); ++it) {
       // i^th part of R*x=y, x=inv(R)*y
-      // (Rii*xi + R_i*x(i+1:))./si = yi <-> xi = inv(Rii)*(yi.*si - R_i*x(i+1:))
-      soln.insert(cg->solve(soln));
+      // (Rii*xi + R_i*x(i+1:))./si = yi =>
+      // xi = inv(Rii)*(yi.*si - R_i*x(i+1:))
+      solution.insert((*it)->solve(solution));
     }
-    return soln;
+    return solution;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
+  VectorValues GaussianBayesNet::sample(std::mt19937_64* rng) const {
+    VectorValues result;  // no missing variables -> create an empty vector
+    return sample(result, rng);
+  }
+
+  VectorValues GaussianBayesNet::sample(const VectorValues& given,
+                                        std::mt19937_64* rng) const {
+    VectorValues result(given);
+    // sample each node in reverse topological sort order (parents first)
+    for (auto it = std::make_reverse_iterator(end()); it != std::make_reverse_iterator(begin()); ++it) {
+      const VectorValues sampled = (*it)->sample(result, rng);
+      result.insert(sampled);
+    }
+    return result;
+  }
+
+  /* ************************************************************************ */
   VectorValues GaussianBayesNet::optimizeGradientSearch() const
   {
     gttic(GaussianBayesTree_optimizeGradientSearch);
@@ -79,7 +92,25 @@ namespace gtsam {
 
   /* ************************************************************************* */
   double GaussianBayesNet::error(const VectorValues& x) const {
-    return GaussianFactorGraph(*this).error(x);
+    double sum = 0.;
+    for (const auto& gc : *this) {
+      if (gc) sum += gc->error(x);
+    }
+    return sum;
+  }
+
+  /* ************************************************************************* */
+  double GaussianBayesNet::logProbability(const VectorValues& x) const {
+    double sum = 0.;
+    for (const auto& gc : *this) {
+      if (gc) sum += gc->logProbability(x);
+    }
+    return sum;
+  }
+
+  /* ************************************************************************* */
+  double GaussianBayesNet::evaluate(const VectorValues& x) const {
+    return exp(logProbability(x));
   }
 
   /* ************************************************************************* */
@@ -88,8 +119,8 @@ namespace gtsam {
     VectorValues result;
     // TODO this looks pretty sketchy. result is passed as the parents argument
     //  as it's filled up by solving the gaussian conditionals.
-    BOOST_REVERSE_FOREACH(const sharedConditional& cg, *this) {
-      result.insert(cg->solveOtherRHS(result, rhs));
+    for (auto it = std::make_reverse_iterator(end()); it != std::make_reverse_iterator(begin()); ++it) {
+      result.insert((*it)->solveOtherRHS(result, rhs));
     }
     return result;
   }
@@ -107,7 +138,7 @@ namespace gtsam {
 
     // we loop from first-eliminated to last-eliminated
     // i^th part of L*gy=gx is done block-column by block-column of L
-    BOOST_FOREACH(const sharedConditional& cg, *this)
+    for(const sharedConditional& cg: *this)
       cg->solveTransposeInPlace(gy);
 
     return gy;
@@ -141,23 +172,35 @@ namespace gtsam {
   //}
 
   /* ************************************************************************* */
-  pair<Matrix, Vector> GaussianBayesNet::matrix() const {
+  Ordering GaussianBayesNet::ordering() const {
     GaussianFactorGraph factorGraph(*this);
-    KeySet keys = factorGraph.keys();
+    auto keys = factorGraph.keys();
     // add frontal keys in order
     Ordering ordering;
-    BOOST_FOREACH (const sharedConditional& cg, *this)
+    for (const sharedConditional& cg : *this)
       if (cg) {
-        BOOST_FOREACH (Key key, cg->frontals()) {
+        for (Key key : cg->frontals()) {
           ordering.push_back(key);
           keys.erase(key);
         }
       }
     // add remaining keys in case Bayes net is incomplete
-    BOOST_FOREACH (Key key, keys)
-      ordering.push_back(key);
-    // return matrix and RHS
+    for (Key key : keys) ordering.push_back(key);
+    return ordering;
+  }
+
+  /* ************************************************************************* */
+  pair<Matrix, Vector> GaussianBayesNet::matrix(const Ordering& ordering) const {
+    // Convert to a GaussianFactorGraph and use its machinery
+    GaussianFactorGraph factorGraph(*this);
     return factorGraph.jacobian(ordering);
+  }
+
+  /* ************************************************************************* */
+  pair<Matrix, Vector> GaussianBayesNet::matrix() const {
+    // recursively call with default ordering
+    const auto defaultOrdering = this->ordering();
+    return matrix(defaultOrdering);
   }
 
   ///* ************************************************************************* */
@@ -179,19 +222,33 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  double GaussianBayesNet::logDeterminant() const
-  {
+  double GaussianBayesNet::logDeterminant() const {
     double logDet = 0.0;
-    BOOST_FOREACH(const sharedConditional& cg, *this) {
-      if(cg->get_model()) {
-        Vector diag = cg->get_R().diagonal();
-        cg->get_model()->whitenInPlace(diag);
-        logDet += diag.unaryExpr(ptr_fun<double,double>(log)).sum();
-      } else {
-        logDet += cg->get_R().diagonal().unaryExpr(ptr_fun<double,double>(log)).sum();
-      }
+    for (const sharedConditional& cg : *this) {
+      logDet += cg->logDeterminant();
     }
     return logDet;
+  }
+
+  /* ************************************************************************* */
+  double GaussianBayesNet::negLogConstant() const {
+    /*
+    normalization constant = 1.0 / sqrt((2*pi)^n*det(Sigma))
+    negLogConstant = -log(normalizationConstant)
+      = 0.5 * n*log(2*pi) + 0.5 * log(det(Sigma))
+
+    log(det(Sigma)) = -2.0 * logDeterminant()
+    thus, negLogConstant = 0.5*n*log(2*pi) - logDeterminant()
+
+    BayesNet negLogConstant = sum(0.5*n_i*log(2*pi) - logDeterminant_i())
+    = sum(0.5*n_i*log(2*pi)) + sum(logDeterminant_i())
+    = sum(0.5*n_i*log(2*pi)) + bn->logDeterminant()
+    */
+    double negLogNormConst = 0.0;
+    for (const sharedConditional& cg : *this) {
+      negLogNormConst += cg->negLogConstant();
+    }
+    return negLogNormConst;
   }
 
   /* ************************************************************************* */

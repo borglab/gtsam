@@ -28,36 +28,36 @@ currentVelocityGlobalIMUbody = currentVelocityGlobal;
 %% Prepare data structures for actual trajectory and estimates
 % Actual trajectory
 positions = zeros(3, length(times)+1);
-positions(:,1) = currentPoseGlobal.translation.vector;
+positions(:,1) = currentPoseGlobal.translation;
 poses(1).p = positions(:,1);
 poses(1).R = currentPoseGlobal.rotation.matrix;
 
 % Trajectory estimate (integrated in the navigation frame)
 positionsIMUnav = zeros(3, length(times)+1);
-positionsIMUnav(:,1) = currentPoseGlobalIMUbody.translation.vector;
+positionsIMUnav(:,1) = currentPoseGlobalIMUbody.translation;
 posesIMUnav(1).p = positionsIMUnav(:,1);
 posesIMUnav(1).R = poses(1).R;
 
 % Trajectory estimate (integrated in the body frame)
 positionsIMUbody = zeros(3, length(times)+1);
-positionsIMUbody(:,1) = currentPoseGlobalIMUbody.translation.vector;
+positionsIMUbody(:,1) = currentPoseGlobalIMUbody.translation;
 posesIMUbody(1).p = positionsIMUbody(:,1);
 posesIMUbody(1).R = poses(1).R;
 
 %% Solver object
 isamParams = ISAM2Params;
-isamParams.setRelinearizeSkip(1);
+isamParams.relinearizeSkip = 1;
 isam = gtsam.ISAM2(isamParams);
 
 initialValues = Values;
 initialValues.insert(symbol('x',0), currentPoseGlobal);
-initialValues.insert(symbol('v',0), LieVector(currentVelocityGlobal));
+initialValues.insert(symbol('v',0), currentVelocityGlobal);
 initialValues.insert(symbol('b',0), imuBias.ConstantBias([0;0;0],[0;0;0]));
 initialFactors = NonlinearFactorGraph;
 initialFactors.add(PriorFactorPose3(symbol('x',0), ...
     currentPoseGlobal, noiseModel.Isotropic.Sigma(6, 1.0)));
-initialFactors.add(PriorFactorLieVector(symbol('v',0), ...
-    LieVector(currentVelocityGlobal), noiseModel.Isotropic.Sigma(3, 1.0)));
+initialFactors.add(PriorFactorVector(symbol('v',0), ...
+    currentVelocityGlobal, noiseModel.Isotropic.Sigma(3, 1.0)));
 initialFactors.add(PriorFactorConstantBias(symbol('b',0), ...
     imuBias.ConstantBias([0;0;0],[0;0;0]), noiseModel.Isotropic.Sigma(6, 1.0)));
 
@@ -96,7 +96,7 @@ for t = times
           initialVel = isam.calculateEstimate(symbol('v',lastSummaryIndex));
       else
           initialPose = Pose3;
-          initialVel = LieVector(velocity);
+          initialVel = velocity;
       end
       initialValues.insert(symbol('x',lastSummaryIndex+1), initialPose);
       initialValues.insert(symbol('v',lastSummaryIndex+1), initialVel);
@@ -120,9 +120,9 @@ for t = times
     currentPoseGlobalIMUnav, currentVelocityGlobalIMUnav, acc_omega, deltaT);
   
   %% Store data in some structure for statistics and plots
-  positions(:,i) = currentPoseGlobal.translation.vector;
-  positionsIMUbody(:,i) = currentPoseGlobalIMUbody.translation.vector;
-  positionsIMUnav(:,i) = currentPoseGlobalIMUnav.translation.vector;  
+  positions(:,i) = currentPoseGlobal.translation;
+  positionsIMUbody(:,i) = currentPoseGlobalIMUbody.translation;
+  positionsIMUnav(:,i) = currentPoseGlobalIMUnav.translation;
   % - 
   poses(i).p = positions(:,i);
   posesIMUbody(i).p = positionsIMUbody(:,i);

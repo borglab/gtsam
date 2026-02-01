@@ -28,8 +28,8 @@ template<typename MatrixType> void swap(const MatrixType& m)
   typedef typename MatrixType::Scalar Scalar;
 
   eigen_assert((!internal::is_same<MatrixType,OtherMatrixType>::value));
-  typename MatrixType::Index rows = m.rows();
-  typename MatrixType::Index cols = m.cols();
+  Index rows = m.rows();
+  Index cols = m.cols();
   
   // construct 3 matrix guaranteed to be distinct
   MatrixType m1 = MatrixType::Random(rows,cols);
@@ -41,9 +41,15 @@ template<typename MatrixType> void swap(const MatrixType& m)
   OtherMatrixType m3_copy = m3;
   
   // test swapping 2 matrices of same type
+  Scalar *d1=m1.data(), *d2=m2.data();
   m1.swap(m2);
   VERIFY_IS_APPROX(m1,m2_copy);
   VERIFY_IS_APPROX(m2,m1_copy);
+  if(MatrixType::SizeAtCompileTime==Dynamic)
+  {
+    VERIFY(m1.data()==d2);
+    VERIFY(m2.data()==d1);
+  }
   m1 = m1_copy;
   m2 = m2_copy;
   
@@ -68,16 +74,21 @@ template<typename MatrixType> void swap(const MatrixType& m)
   m1 = m1_copy;
   m3 = m3_copy;
   
-  // test assertion on mismatching size -- matrix case
-  VERIFY_RAISES_ASSERT(m1.swap(m1.row(0)));
-  // test assertion on mismatching size -- xpr case
-  VERIFY_RAISES_ASSERT(m1.row(0).swap(m1));
+  if(m1.rows()>1)
+  {
+    // test assertion on mismatching size -- matrix case
+    VERIFY_RAISES_ASSERT(m1.swap(m1.row(0)));
+    // test assertion on mismatching size -- xpr case
+    VERIFY_RAISES_ASSERT(m1.row(0).swap(m1));
+  }
 }
 
-void test_swap()
+EIGEN_DECLARE_TEST(swap)
 {
+  int s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE);
   CALL_SUBTEST_1( swap(Matrix3f()) ); // fixed size, no vectorization 
   CALL_SUBTEST_2( swap(Matrix4d()) ); // fixed size, possible vectorization 
-  CALL_SUBTEST_3( swap(MatrixXd(3,3)) ); // dyn size, no vectorization 
-  CALL_SUBTEST_4( swap(MatrixXf(30,30)) ); // dyn size, possible vectorization 
+  CALL_SUBTEST_3( swap(MatrixXd(s,s)) ); // dyn size, no vectorization 
+  CALL_SUBTEST_4( swap(MatrixXf(s,s)) ); // dyn size, possible vectorization 
+  TEST_SET_BUT_UNUSED_VARIABLE(s)
 }

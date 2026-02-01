@@ -10,7 +10,9 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/base/std_optional_serialization.h>
 
+#include <optional>
 
 namespace gtsam {
 
@@ -28,13 +30,10 @@ class GTSAM_EXPORT LinearContainerFactor : public NonlinearFactor {
 protected:
 
   GaussianFactor::shared_ptr factor_;
-  boost::optional<Values> linearizationPoint_;
-
-  /** Default constructor - necessary for serialization */
-  LinearContainerFactor() {}
+  std::optional<Values> linearizationPoint_;
 
   /** direct copy constructor */
-  LinearContainerFactor(const GaussianFactor::shared_ptr& factor, const boost::optional<Values>& linearizationPoint);
+  LinearContainerFactor(const GaussianFactor::shared_ptr& factor, const std::optional<Values>& linearizationPoint);
 
   // Some handy typedefs
   typedef NonlinearFactor Base;
@@ -42,7 +41,10 @@ protected:
 
 public:
 
-  typedef boost::shared_ptr<This> shared_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
+
+  /** Default constructor - necessary for serialization */
+  LinearContainerFactor() {}
 
   /** Primary constructor: store a linear factor with optional linearization point */
   LinearContainerFactor(const JacobianFactor& factor, const Values& linearizationPoint = Values());
@@ -60,10 +62,10 @@ public:
   // Testable
 
   /** print */
-  void print(const std::string& s = "", const KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter) const;
+  void print(const std::string& s = "", const KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter) const override;
 
   /** Check if two factors are equal */
-  bool equals(const NonlinearFactor& f, double tol = 1e-9) const;
+  bool equals(const NonlinearFactor& f, double tol = 1e-9) const override;
 
   // NonlinearFactor
 
@@ -75,13 +77,13 @@ public:
    *
    * @return nonlinear error if linearizationPoint present, zero otherwise
    */
-  double error(const Values& c) const;
+  double error(const Values& c) const override;
 
   /** get the dimension of the factor: rows of linear factor */
-  size_t dim() const;
+  size_t dim() const override;
 
   /** Extract the linearization point used in recalculating error */
-  const boost::optional<Values>& linearizationPoint() const { return linearizationPoint_; }
+  const std::optional<Values>& linearizationPoint() const { return linearizationPoint_; }
 
   /**
    * Linearize to a GaussianFactor, with method depending on the presence of a linearizationPoint
@@ -99,7 +101,7 @@ public:
    * TODO: better approximation of relinearization
    * TODO: switchable modes for approximation technique
    */
-  GaussianFactor::shared_ptr linearize(const Values& c) const;
+  GaussianFactor::shared_ptr linearize(const Values& c) const override;
 
   /**
    * Creates an anti-factor directly
@@ -117,13 +119,26 @@ public:
    *
    * Clones the underlying linear factor
    */
-  NonlinearFactor::shared_ptr clone() const {
+  NonlinearFactor::shared_ptr clone() const override {
     return NonlinearFactor::shared_ptr(new LinearContainerFactor(factor_,linearizationPoint_));
   }
 
-  // casting syntactic sugar
+  /**
+   * Creates a shared_ptr clone of the
+   * factor with different keys using
+   * a map from old->new keys
+   */
+  NonlinearFactor::shared_ptr rekey(
+      const std::map<Key, Key>& rekey_mapping) const override;
 
-  inline bool hasLinearizationPoint() const { return linearizationPoint_.is_initialized(); }
+  /**
+   * Clones a factor and fully replaces its keys
+   * @param new_keys is the full replacement set of keys
+   */
+  NonlinearFactor::shared_ptr rekey(const KeyVector& new_keys) const override;
+
+  /// Casting syntactic sugar
+  inline bool hasLinearizationPoint() const { return linearizationPoint_.has_value(); }
 
   /**
    * Simple checks whether this is a Jacobian or Hessian factor
@@ -132,23 +147,23 @@ public:
   bool isHessian() const;
 
   /** Casts to JacobianFactor */
-  boost::shared_ptr<JacobianFactor> toJacobian() const;
+  std::shared_ptr<JacobianFactor> toJacobian() const;
 
   /** Casts to HessianFactor */
-  boost::shared_ptr<HessianFactor> toHessian() const;
+  std::shared_ptr<HessianFactor> toHessian() const;
 
   /**
    * Utility function for converting linear graphs to nonlinear graphs
    * consisting of LinearContainerFactors.
    */
-  static NonlinearFactorGraph convertLinearGraph(const GaussianFactorGraph& linear_graph,
+  static NonlinearFactorGraph ConvertLinearGraph(const GaussianFactorGraph& linear_graph,
       const Values& linearizationPoint = Values());
 
-protected:
+ protected:
   void initializeLinearizationPoint(const Values& linearizationPoint);
 
-private:
-
+ private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -158,6 +173,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(factor_);
     ar & BOOST_SERIALIZATION_NVP(linearizationPoint_);
   }
+#endif
 
 }; // \class LinearContainerFactor
 

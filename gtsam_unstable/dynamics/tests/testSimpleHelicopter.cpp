@@ -7,8 +7,11 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam_unstable/dynamics/SimpleHelicopter.h>
+#include "gtsam/base/Vector.h"
+#include "gtsam/geometry/Pose3.h"
 
 /* ************************************************************************* */
+using namespace std::placeholders;
 using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
 
@@ -29,8 +32,8 @@ Vector gamma2 = Vector2(0.0, 0.0);  // no shape
 Vector u2 = Vector2(0.0, 0.0); // no control at time 2
 double distT = 1.0; // distance from the body-centered x axis to the big top motor
 double distR = 5.0; // distance from the body-centered z axis to the small motor
-Matrix Mass = diag((Vector(3) << mass, mass, mass).finished());
-Matrix Inertia = diag((Vector(6) << 2.0/5.0*mass*distR*distR, 2.0/5.0*mass*distR*distR, 2.0/5.0*mass*distR*distR, mass, mass, mass).finished());
+Matrix Mass = ((Vector(3) << mass, mass, mass).finished()).asDiagonal();
+Matrix Inertia = (Vector(6) << 2.0/5.0*mass*distR*distR, 2.0/5.0*mass*distR*distR, 2.0/5.0*mass*distR*distR, mass, mass, mass).finished().asDiagonal();
 
 Vector computeFu(const Vector& gamma, const Vector& control) {
   double gamma_r = gamma(0), gamma_p = gamma(1);
@@ -53,22 +56,18 @@ TEST( Reconstruction, evaluateError) {
   // verify error function
   Matrix H1, H2, H3;
   EXPECT(
-      assert_equal(zero(6), constraint.evaluateError(g2, g1, V1_g1, H1, H2, H3), tol));
+      assert_equal(Z_6x1, constraint.evaluateError(g2, g1, V1_g1, H1, H2, H3), tol));
 
-  Matrix numericalH1 = numericalDerivative31(
-      boost::function<Vector(const Pose3&, const Pose3&, const Vector6&)>(
-          boost::bind(&Reconstruction::evaluateError, constraint, _1, _2, _3,
-              boost::none, boost::none, boost::none)), g2, g1, V1_g1, 1e-5);
+  std::function<Vector(const Pose3&, const Pose3&, const Vector6&)> f = 
+    [&constraint](const Pose3& a1, const Pose3& a2, const Vector6& a3) {
+    return constraint.evaluateError(a1, a2, a3);
+  };
 
-  Matrix numericalH2 = numericalDerivative32(
-      boost::function<Vector(const Pose3&, const Pose3&, const Vector6&)>(
-          boost::bind(&Reconstruction::evaluateError, constraint, _1, _2, _3,
-              boost::none, boost::none, boost::none)), g2, g1, V1_g1, 1e-5);
+  Matrix numericalH1 = numericalDerivative31(f, g2, g1, V1_g1, 1e-5);
 
-  Matrix numericalH3 = numericalDerivative33(
-      boost::function<Vector(const Pose3&, const Pose3&, const Vector6&)>(
-          boost::bind(&Reconstruction::evaluateError, constraint, _1, _2, _3,
-              boost::none, boost::none, boost::none)), g2, g1, V1_g1, 1e-5);
+  Matrix numericalH2 = numericalDerivative32(f, g2, g1, V1_g1, 1e-5);
+
+  Matrix numericalH3 = numericalDerivative33(f, g2, g1, V1_g1, 1e-5);
 
   EXPECT(assert_equal(numericalH1,H1,1e-5));
   EXPECT(assert_equal(numericalH2,H2,1e-5));
@@ -89,7 +88,7 @@ Vector newtonEuler(const Vector& Vb, const Vector& Fb, const Matrix& Inertia) {
 
 TEST( DiscreteEulerPoincareHelicopter, evaluateError) {
   Vector Fu = computeFu(gamma2, u2);
-  Vector fGravity_g1 = zero(6);
+  Vector fGravity_g1 = Z_6x1;
   fGravity_g1.segment<3>(3) = g1.rotation().unrotate(Vector3(0, 0, -mass*9.81));  // gravity force in g1 frame
   Vector Fb = Fu+fGravity_g1;
 
@@ -106,28 +105,18 @@ TEST( DiscreteEulerPoincareHelicopter, evaluateError) {
 
   // verify error function
   Matrix H1, H2, H3;
-  EXPECT(assert_equal(zero(6), constraint.evaluateError(expectedv2, V1_g1, g2, H1, H2, H3), 1e0));
+  EXPECT(assert_equal(Z_6x1, constraint.evaluateError(expectedv2, V1_g1, g2, H1, H2, H3), 1e0));
 
-  Matrix numericalH1 = numericalDerivative31(
-      boost::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
-          boost::bind(&DiscreteEulerPoincareHelicopter::evaluateError, constraint, _1, _2, _3, boost::none, boost::none, boost::none)
-          ),
-          expectedv2, V1_g1, g2, 1e-5
-      );
+  std::function<Vector(const Vector6&, const Vector6&, const Pose3&)> f =
+      [&constraint](const Vector6& a1, const Vector6& a2, const Pose3& a3) {
+        return constraint.evaluateError(a1, a2, a3);
+      };
 
-  Matrix numericalH2 = numericalDerivative32(
-      boost::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
-          boost::bind(&DiscreteEulerPoincareHelicopter::evaluateError, constraint, _1, _2, _3, boost::none, boost::none, boost::none)
-          ),
-          expectedv2, V1_g1, g2, 1e-5
-      );
+  Matrix numericalH1 = numericalDerivative31(f, expectedv2, V1_g1, g2, 1e-5);
 
-  Matrix numericalH3 = numericalDerivative33(
-      boost::function<Vector(const Vector6&, const Vector6&, const Pose3&)>(
-          boost::bind(&DiscreteEulerPoincareHelicopter::evaluateError, constraint, _1, _2, _3, boost::none, boost::none, boost::none)
-          ),
-          expectedv2, V1_g1, g2, 1e-5
-      );
+  Matrix numericalH2 = numericalDerivative32(f, expectedv2, V1_g1, g2, 1e-5);
+
+  Matrix numericalH3 = numericalDerivative33(f, expectedv2, V1_g1, g2, 1e-5);
 
   EXPECT(assert_equal(numericalH1,H1,1e-5));
   EXPECT(assert_equal(numericalH2,H2,1e-5));

@@ -1,0 +1,137 @@
+name: Windows CI
+
+on:
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - '**.ipynb'
+      - 'myst.yml'
+  push:
+    # Run on pushes to develop branch to cache compilations
+    branches: [develop]
+
+# Cancels any in-progress workflow runs for the same PR when a new push is made,
+# allowing the runner to become available more quickly for the latest changes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.name }} ${{ matrix.build_type }}
+    runs-on: ${{ matrix.os }}
+
+    env:
+      CTEST_OUTPUT_ON_FAILURE: ON
+      CTEST_PARALLEL_LEVEL: 2
+      CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
+      GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
+      BOOST_VERSION: 1.72.0
+      BOOST_EXE: boost_1_72_0-msvc-14.2
+      SCCACHE_GHA_ENABLED: ON
+
+    strategy:
+      fail-fast: true
+      matrix:
+        # Github Actions requires a single row to be added to the build matrix.
+        # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
+        name: [
+            windows-2022-cl,
+          ]
+
+        build_type: [
+            Debug,
+            Release
+          ]
+
+        build_unstable: [ON]
+        include:
+          - name: windows-2022-cl
+            os: windows-2022
+            compiler: cl
+            platform: 64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup msbuild
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x${{ matrix.platform }}
+          toolset: 14.40
+
+      - name: cl version
+        shell: cmd
+        run: cl
+
+      - name: Install Dependencies
+        shell: powershell
+        run: |
+          iwr -useb get.scoop.sh -outfile 'install_scoop.ps1'
+          .\install_scoop.ps1 -RunAsAdmin
+
+          scoop install cmake --global  # So we don't get issues with CMP0074 policy
+          scoop install ninja --global
+
+          # Scoop modifies the PATH so we make the modified PATH global.
+          echo "$env:PATH" >> $env:GITHUB_PATH
+
+      - name: Install Boost
+        if: matrix.build_type == 'Release'
+        shell: powershell
+        run: |
+          # Snippet from: https://github.com/actions/virtual-environments/issues/2667
+          $BOOST_PATH = "C:\hostedtoolcache\windows\Boost\$env:BOOST_VERSION\x86_64"
+
+          # Use the prebuilt binary for Windows
+          $Url = "https://sourceforge.net/projects/boost/files/boost-binaries/$env:BOOST_VERSION/$env:BOOST_EXE-${{matrix.platform}}.exe"
+
+          # Create WebClient with appropriate settings and download Boost exe
+          $wc = New-Object System.Net.Webclient
+          $wc.Headers.Add("User-Agent: Other");
+          $wc.DownloadFile($Url, "$env:TEMP\boost.exe")
+
+          Start-Process -Wait -FilePath "$env:TEMP\boost.exe" "/SILENT","/SP-","/SUPPRESSMSGBOXES","/DIR=$BOOST_PATH"
+
+          # Set the BOOST_ROOT variable
+          echo "BOOST_ROOT=$BOOST_PATH" >> $env:GITHUB_ENV
+
+      - name: Install sccache
+        if: matrix.build_type == 'Release'
+        uses: mozilla-actions/sccache-action@v0.0.9
+
+      - name: Configuration
+        shell: bash
+        run: |
+          export CMAKE_GENERATOR=Ninja
+          # Convert Windows backslashes to forward slashes for CMake
+          BOOST_ROOT_UNIX=$(echo "$BOOST_ROOT" | sed 's/\\/\//g')
+          cmake -E remove_directory build
+          if [ "${{ matrix.build_type }}" = "Release" ]; then
+            cmake -B build \
+                  -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
+                  -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
+                  -DGTSAM_USE_BOOST_FEATURES=ON \
+                  -DGTSAM_ENABLE_BOOST_SERIALIZATION=ON \
+                  -DGTSAM_BUILD_WITH_PRECOMPILED_HEADERS=OFF \
+                  -DBOOST_ROOT="${BOOST_ROOT_UNIX}" \
+                  -DBOOST_INCLUDEDIR="${BOOST_ROOT_UNIX}/include" \
+                  -DBOOST_LIBRARYDIR="${BOOST_ROOT_UNIX}/lib" \
+                  -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                  -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          else
+            cmake -B build \
+                  -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
+                  -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
+                  -DGTSAM_USE_BOOST_FEATURES=OFF \
+                  -DGTSAM_ENABLE_BOOST_SERIALIZATION=OFF
+          fi
+
+      - name: Build
+        shell: bash
+        run: cmake --build build -j4 --target all.tests
+
+      - name: Test
+        shell: bash
+        run: cmake --build build -j1 --target check

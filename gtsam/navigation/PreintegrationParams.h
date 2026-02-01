@@ -17,55 +17,79 @@
 #pragma once
 
 #include <gtsam/navigation/PreintegratedRotation.h>
-#include <boost/make_shared.hpp>
 
 namespace gtsam {
 
 /// Parameters for pre-integration:
 /// Usage: Create just a single Params and pass a shared pointer to the constructor
-struct PreintegrationParams: PreintegratedRotation::Params {
-  Matrix3 accelerometerCovariance; ///< continuous-time "Covariance" of accelerometer
+struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
+  /// Continuous-time "Covariance" of accelerometer
+  /// The units for stddev are σ = m/s²/√Hz
+  Matrix3 accelerometerCovariance;
   Matrix3 integrationCovariance; ///< continuous-time "Covariance" describing integration uncertainty
   bool use2ndOrderCoriolis; ///< Whether to use second order Coriolis integration
   Vector3 n_gravity; ///< Gravity vector in nav frame
 
-  /// The Params constructor insists on getting the navigation frame gravity vector
-  /// For convenience, two commonly used conventions are provided by named constructors below
-  PreintegrationParams(const Vector3& n_gravity)
-      : accelerometerCovariance(I_3x3),
+  /// Default constructor for serialization only
+  PreintegrationParams()
+      : PreintegratedRotationParams(),
+        accelerometerCovariance(I_3x3),
         integrationCovariance(I_3x3),
         use2ndOrderCoriolis(false),
-        n_gravity(n_gravity) {}
+        n_gravity(0, 0, -1) {}
+
+  /// The Params constructor insists on getting the navigation frame gravity vector
+  /// For convenience, two commonly used conventions are provided by named constructors below
+  PreintegrationParams(const Vector3& n_gravity_)
+      : PreintegratedRotationParams(),
+        accelerometerCovariance(I_3x3),
+        integrationCovariance(I_3x3),
+        use2ndOrderCoriolis(false),
+        n_gravity(n_gravity_) {}
 
   // Default Params for a Z-down navigation frame, such as NED: gravity points along positive Z-axis
-  static boost::shared_ptr<PreintegrationParams> MakeSharedD(double g = 9.81) {
-    return boost::make_shared<PreintegrationParams>(Vector3(0, 0, g));
+  static std::shared_ptr<PreintegrationParams> MakeSharedD(double g = 9.81) {
+    return std::shared_ptr<PreintegrationParams>(new PreintegrationParams(Vector3(0, 0, g)));
   }
 
   // Default Params for a Z-up navigation frame, such as ENU: gravity points along negative Z-axis
-  static boost::shared_ptr<PreintegrationParams> MakeSharedU(double g = 9.81) {
-    return boost::make_shared<PreintegrationParams>(Vector3(0, 0, -g));
+  static std::shared_ptr<PreintegrationParams> MakeSharedU(double g = 9.81) {
+    return std::shared_ptr<PreintegrationParams>(new PreintegrationParams(Vector3(0, 0, -g)));
   }
 
-  void print(const std::string& s) const;
-  bool equals(const PreintegratedRotation::Params& other, double tol) const;
+  void print(const std::string& s="") const override;
+  bool equals(const PreintegratedRotationParams& other, double tol) const override;
+
+  void setAccelerometerCovariance(const Matrix3& cov) { accelerometerCovariance = cov; }
+  void setIntegrationCovariance(const Matrix3& cov)   { integrationCovariance = cov; }
+  void setUse2ndOrderCoriolis(bool flag)              { use2ndOrderCoriolis = flag; }
+
+  const Matrix3& getAccelerometerCovariance() const { return accelerometerCovariance; }
+  const Matrix3& getIntegrationCovariance()   const { return integrationCovariance; }
+  const Vector3& getGravity()   const { return n_gravity; }
+  bool           getUse2ndOrderCoriolis()     const { return use2ndOrderCoriolis; }
 
 protected:
-  /// Default constructor for serialization only: uninitialized!
-  PreintegrationParams() {}
 
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
     namespace bs = ::boost::serialization;
-    ar & boost::serialization::make_nvp("PreintegratedRotation_Params",
-         boost::serialization::base_object<PreintegratedRotation::Params>(*this));
-    ar & bs::make_nvp("accelerometerCovariance", bs::make_array(accelerometerCovariance.data(), accelerometerCovariance.size()));
-    ar & bs::make_nvp("integrationCovariance", bs::make_array(integrationCovariance.data(), integrationCovariance.size()));
+    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PreintegratedRotationParams);
+    ar & BOOST_SERIALIZATION_NVP(accelerometerCovariance);
+    ar & BOOST_SERIALIZATION_NVP(integrationCovariance);
     ar & BOOST_SERIALIZATION_NVP(use2ndOrderCoriolis);
     ar & BOOST_SERIALIZATION_NVP(n_gravity);
   }
+#endif
+
+#ifdef GTSAM_USE_QUATERNIONS
+  // Align if we are using Quaternions
+public:
+	GTSAM_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 
 } // namespace gtsam

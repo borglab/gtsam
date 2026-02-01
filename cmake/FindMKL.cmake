@@ -21,6 +21,18 @@
 # OPEN - Open MPI library
 # SGI - SGI MPT Library
 
+# vcpkg
+if(DEFINED VCPKG_INSTALLED_DIR)
+    find_package(MKL CONFIG)
+    if(MKL_FOUND)
+        add_library(mkl-gtsam-if INTERFACE)
+        target_link_libraries(mkl-gtsam-if INTERFACE MKL::MKL)
+        set(MKL_LIBRARIES mkl-gtsam-if)
+        list(APPEND GTSAM_EXPORTED_TARGETS mkl-gtsam-if)
+        install(TARGETS mkl-gtsam-if EXPORT GTSAM-exports ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    endif()
+else()
+
 # linux
 IF(UNIX AND NOT APPLE)
     IF(${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64")
@@ -83,10 +95,20 @@ FIND_PATH(MKL_FFTW_INCLUDE_DIR
   NO_DEFAULT_PATH
 )
 
-IF(WIN32)
+IF(WIN32 AND MKL_ROOT_DIR)
         SET(MKL_LIB_SEARCHPATH $ENV{ICC_LIB_DIR} $ENV{MKL_LIB_DIR} "${MKL_ROOT_DIR}/lib/${MKL_ARCH_DIR}" "${MKL_ROOT_DIR}/../compiler" "${MKL_ROOT_DIR}/../compiler/lib/${MKL_ARCH_DIR}")
-        
-        IF (MKL_INCLUDE_DIR MATCHES "10.")
+        IF(MKL_INCLUDE_DIR MATCHES "2017" OR MKL_INCLUDE_DIR MATCHES "2018")
+                IF(CMAKE_CL_64)
+                        SET(MKL_LIBS mkl_core mkl_intel_lp64 mkl_lapack95_lp64 mkl_blas95_lp64)
+                ELSE()
+                        SET(MKL_LIBS mkl_core mkl_intel_s mkl_lapack95 mkl_blas95)
+                ENDIF()
+                IF(TBB_FOUND AND GTSAM_WITH_TBB)
+                        SET(MKL_LIBS ${MKL_LIBS} mkl_tbb_thread)
+                ELSE()
+                        SET(MKL_LIBS ${MKL_LIBS} mkl_intel_thread libiomp5md)
+                ENDIF()
+        ELSEIF(MKL_INCLUDE_DIR MATCHES "10.")
                 IF(CMAKE_CL_64)
                         SET(MKL_LIBS mkl_solver_lp64 mkl_core mkl_intel_lp64 mkl_intel_thread libguide mkl_lapack95_lp64 mkl_blas95_lp64)
                 ELSE()
@@ -105,7 +127,7 @@ IF(WIN32)
         IF (MKL_INCLUDE_DIR MATCHES "10.3")
                 SET(MKL_LIBS ${MKL_LIBS} libiomp5md)
         ENDIF()
-        
+
         FOREACH (LIB ${MKL_LIBS})
                 FIND_LIBRARY(${LIB}_PATH ${LIB} PATHS ${MKL_LIB_SEARCHPATH} ENV LIBRARY_PATH)
                 IF(${LIB}_PATH)
@@ -115,7 +137,7 @@ IF(WIN32)
                 ENDIF()
         ENDFOREACH()
         SET(MKL_FOUND ON)
-ELSE() # UNIX and macOS
+ELSEIF(MKL_ROOT_DIR) # UNIX and macOS
         FIND_LIBRARY(MKL_CORE_LIBRARY
           mkl_core
           PATHS
@@ -137,7 +159,7 @@ ELSE() # UNIX and macOS
                 ${MKL_ROOT_DIR}/lib/${MKL_ARCH_DIR}
                 ${MKL_ROOT_DIR}/lib/
         )
-        
+
         # MKL on Mac OS doesn't ship with GNU thread versions, only Intel versions (see above)
         IF(NOT APPLE)
             FIND_LIBRARY(MKL_GNUTHREAD_LIBRARY
@@ -196,6 +218,15 @@ ELSE() # UNIX and macOS
                 )
         ENDIF()
 
+        IF(NOT MKL_LAPACK_LIBRARY)
+                FIND_LIBRARY(MKL_LAPACK_LIBRARY
+                  mkl_intel_lp64
+                  PATHS
+                        ${MKL_ROOT_DIR}/lib/${MKL_ARCH_DIR}
+                        ${MKL_ROOT_DIR}/lib/
+                )
+        ENDIF()
+
         # iomp5
         IF("${MKL_ARCH_DIR}" STREQUAL "32")
                 IF(UNIX AND NOT APPLE)
@@ -212,6 +243,7 @@ ELSE() # UNIX and macOS
                         FIND_LIBRARY(MKL_IOMP5_LIBRARY
                           iomp5
                           PATHS
+                                ${MKL_ROOT_DIR}/lib/intel64
                                 ${MKL_ROOT_DIR}/../lib/intel64
                         )
                 ELSE()
@@ -235,7 +267,7 @@ ELSE() # UNIX and macOS
         ELSE()
             SET(MKL_LIBRARIES ${MKL_LP_GNUTHREAD_LIBRARIES})
         ENDIF()
-        
+
         MARK_AS_ADVANCED(MKL_CORE_LIBRARY MKL_LP_LIBRARY MKL_ILP_LIBRARY
                 MKL_SEQUENTIAL_LIBRARY MKL_INTELTHREAD_LIBRARY MKL_GNUTHREAD_LIBRARY)
 ENDIF()
@@ -246,5 +278,7 @@ find_package_handle_standard_args(MKL DEFAULT_MSG MKL_INCLUDE_DIR MKL_LIBRARIES)
 #if(MKL_FOUND)
 #        LINK_DIRECTORIES(${MKL_ROOT_DIR}/lib/${MKL_ARCH_DIR}) # hack
 #endif()
+
+endif() # end of vcpkg
 
 MARK_AS_ADVANCED(MKL_INCLUDE_DIR MKL_LIBRARIES)

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -16,6 +16,8 @@
  * @author Frank Dellaert
  * @date   September 2011
  */
+
+#pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/linear/HessianFactor.h>
@@ -100,7 +102,7 @@ namespace gtsam {
     /// @{
 
     /// Destructor
-    virtual ~WhiteNoiseFactor() {
+    ~WhiteNoiseFactor() override {
     }
 
     /// @}
@@ -109,7 +111,7 @@ namespace gtsam {
 
     /// Print
     void print(const std::string& p = "WhiteNoiseFactor",
-        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
       Base::print(p, keyFormatter);
       std::cout << p + ".z: " << z_ << std::endl;
     }
@@ -119,12 +121,12 @@ namespace gtsam {
     /// @{
 
     /// get the dimension of the factor (number of rows on linearization)
-    virtual size_t dim() const {
+    size_t dim() const override {
       return 2;
     }
 
     /// Calculate the error of the factor, typically equal to log-likelihood
-    inline double error(const Values& x) const {
+    double error(const Values& x) const override {
       return f(z_, x.at<double>(meanKey_), x.at<double>(precisionKey_));
     }
 
@@ -153,7 +155,7 @@ namespace gtsam {
     /// @{
 
     /// linearize returns a Hessianfactor that is an approximation of error(p)
-    virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x) const {
+    std::shared_ptr<GaussianFactor> linearize(const Values& x) const override {
       double u = x.at<double>(meanKey_);
       double p = x.at<double>(precisionKey_);
       Key j1 = meanKey_;
@@ -163,8 +165,8 @@ namespace gtsam {
 
     // TODO: Frank commented this out for now, can it go?
     //    /// @return a deep copy of this factor
-    //    virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-    //      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    //    gtsam::NonlinearFactor::shared_ptr clone() const override {
+    //      return std::static_pointer_cast<gtsam::NonlinearFactor>(
     //          gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
     /// @}

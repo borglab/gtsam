@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
   Cal3_S2::shared_ptr K(new Cal3_S2(50.0, 50.0, 0.0, 50.0, 50.0));
 
   // Define the camera observation noise model
-  noiseModel::Isotropic::shared_ptr measurementNoise =
+  auto measurementNoise =
       noiseModel::Isotropic::Sigma(2, 1.0); // one pixel in u and v
 
   // Create the set of ground-truth landmarks and poses
@@ -80,15 +80,15 @@ int main(int argc, char* argv[]) {
 
   // Add a prior on pose x0. This indirectly specifies where the origin is.
   // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
-  noiseModel::Diagonal::shared_ptr noise = noiseModel::Diagonal::Sigmas(
-      (Vector(6) << Vector3::Constant(0.3), Vector3::Constant(0.1)).finished());
-  graph.push_back(PriorFactor<Camera>(0, Camera(poses[0],K), noise));
+  auto noise = noiseModel::Diagonal::Sigmas(
+      (Vector(6) << Vector3::Constant(0.1), Vector3::Constant(0.3)).finished());
+  graph.addPrior(0, poses[0], noise);
 
   // Because the structure-from-motion problem has a scale ambiguity, the problem is
   // still under-constrained. Here we add a prior on the second pose x1, so this will
   // fix the scale by indicating the distance between x0 and x1.
   // Because these two are fixed, the rest of the poses will be also be fixed.
-  graph.push_back(PriorFactor<Camera>(1, Camera(poses[1],K), noise)); // add directly to graph
+  graph.addPrior(1, poses[1], noise); // add directly to graph
 
   graph.print("Factor Graph:\n");
 
@@ -97,7 +97,7 @@ int main(int argc, char* argv[]) {
   Values initialEstimate;
   Pose3 delta(Rot3::Rodrigues(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20));
   for (size_t i = 0; i < poses.size(); ++i)
-    initialEstimate.insert(i, Camera(poses[i].compose(delta), K));
+    initialEstimate.insert(i, poses[i].compose(delta));
   initialEstimate.print("Initial Estimates:\n");
 
   // Optimize the graph and print results
@@ -112,12 +112,12 @@ int main(int argc, char* argv[]) {
   for (size_t j = 0; j < points.size(); ++j) {
 
     // The graph stores Factor shared_ptrs, so we cast back to a SmartFactor first
-    SmartFactor::shared_ptr smart = boost::dynamic_pointer_cast<SmartFactor>(graph[j]);
+    SmartFactor::shared_ptr smart = std::dynamic_pointer_cast<SmartFactor>(graph[j]);
     if (smart) {
-      // The output of point() is in boost::optional<Point3>, as sometimes
+      // The output of point() is in std::optional<Point3>, as sometimes
       // the triangulation operation inside smart factor will encounter degeneracy.
-      boost::optional<Point3> point = smart->point(result);
-      if (point) // ignore if boost::optional return NULL
+      auto point = smart->point(result);
+      if (point) // ignore if std::optional return nullptr
         landmark_result.insert(j, *point);
     }
   }

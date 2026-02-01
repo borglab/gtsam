@@ -1,7 +1,7 @@
 
 if (ACML_LIBRARIES)
   set(ACML_FIND_QUIETLY TRUE)
-endif (ACML_LIBRARIES)
+endif ()
 
 find_library(ACML_LIBRARIES
   NAMES
@@ -17,6 +17,7 @@ find_file(ACML_LIBRARIES
   libacml_mp.so
   PATHS
   /usr/lib
+  /usr/lib64
   $ENV{ACMLDIR}/lib
   ${LIB_INSTALL_DIR}
 )
@@ -35,6 +36,7 @@ if(NOT ACML_LIBRARIES)
         libacml.so libacml_mv.so
         PATHS
         /usr/lib
+        /usr/lib64
         $ENV{ACMLDIR}/lib
         ${LIB_INSTALL_DIR}
         )

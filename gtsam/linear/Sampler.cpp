@@ -11,32 +11,49 @@
 
 /**
  * @file Sampler.cpp
+ * @brief sampling from a diagonal NoiseModel
+ * @author Frank Dellaert
  * @author Alex Cunningham
  */
 
 #include <gtsam/linear/Sampler.h>
+
+#include <cassert>
+
 namespace gtsam {
 
 /* ************************************************************************* */
-Sampler::Sampler(const noiseModel::Diagonal::shared_ptr& model, int32_t seed)
-  : model_(model), generator_(static_cast<unsigned>(seed))
-{
+Sampler::Sampler(const noiseModel::Diagonal::shared_ptr& model,
+                 uint_fast64_t seed)
+    : model_(model), generator_(seed), externalGenerator_(nullptr) {
+  if (!model) {
+    throw std::invalid_argument("Sampler::Sampler needs a non-null model.");
+  }
 }
 
 /* ************************************************************************* */
-Sampler::Sampler(const Vector& sigmas, int32_t seed)
-: model_(noiseModel::Diagonal::Sigmas(sigmas, true)), generator_(static_cast<unsigned>(seed))
-{
+Sampler::Sampler(const Vector& sigmas, uint_fast64_t seed)
+    : model_(noiseModel::Diagonal::Sigmas(sigmas, true)),
+      generator_(seed),
+      externalGenerator_(nullptr) {}
+
+/* ************************************************************************* */
+Sampler::Sampler(const noiseModel::Diagonal::shared_ptr& model,
+                 std::mt19937_64& rng)
+    : model_(model), generator_(0u), externalGenerator_(&rng) {
+  if (!model) {
+    throw std::invalid_argument("Sampler::Sampler needs a non-null model.");
+  }
 }
 
 /* ************************************************************************* */
-Sampler::Sampler(int32_t seed)
-: generator_(static_cast<unsigned>(seed))
-{
-}
+Sampler::Sampler(const Vector& sigmas, std::mt19937_64& rng)
+    : model_(noiseModel::Diagonal::Sigmas(sigmas, true)),
+      generator_(0u),
+      externalGenerator_(&rng) {}
 
 /* ************************************************************************* */
-Vector Sampler::sampleDiagonal(const Vector& sigmas) {
+Vector Sampler::sampleDiagonal(const Vector& sigmas, std::mt19937_64* rng) {
   size_t d = sigmas.size();
   Vector result(d);
   for (size_t i = 0; i < d; i++) {
@@ -46,28 +63,26 @@ Vector Sampler::sampleDiagonal(const Vector& sigmas) {
     if (sigma == 0.0) {
       result(i) = 0.0;
     } else {
-      typedef boost::normal_distribution<double> Normal;
-      Normal dist(0.0, sigma);
-      boost::variate_generator<boost::mt19937_64&, Normal> norm(generator_, dist);
-      result(i) = norm();
+      std::normal_distribution<double> dist(0.0, sigma);
+      result(i) = dist(*rng);
     }
   }
   return result;
 }
 
 /* ************************************************************************* */
-Vector Sampler::sample() {
+Vector Sampler::sampleDiagonal(const Vector& sigmas) const {
+  std::mt19937_64* rng = externalGenerator_ ? externalGenerator_ : &generator_;
+  return sampleDiagonal(sigmas, rng);
+}
+
+/* ************************************************************************* */
+Vector Sampler::sample() const {
   assert(model_.get());
-  const Vector& sigmas = model_->sigmas();
+  const Vector& sigmas = model_->sigmasRef();
   return sampleDiagonal(sigmas);
 }
 
 /* ************************************************************************* */
-Vector Sampler::sampleNewModel(const noiseModel::Diagonal::shared_ptr& model) {
-  assert(model.get());
-  const Vector& sigmas = model->sigmas();
-  return sampleDiagonal(sigmas);
-}
-/* ************************************************************************* */
 
-} // \namespace gtsam
+}  // namespace gtsam

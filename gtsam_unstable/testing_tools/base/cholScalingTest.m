@@ -19,8 +19,8 @@ badscale = 1e-8;
 
 Acoeffs = [
     1 11 badscale
-    (1:10)' (1:10)' -ones(10,1)
-    (1:10)' (2:11)' ones(10,1)
+    (1:10)' (1:10)' -Matrix::Ones(10,1)
+    (1:10)' (2:11)' Matrix::Ones(10,1)
     ]';
 A = full(sparse(Acoeffs(1,:), Acoeffs(2,:), Acoeffs(3,:)));
 b = zeros(size(A,1), 1);

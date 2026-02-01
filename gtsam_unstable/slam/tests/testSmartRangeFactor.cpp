@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -19,7 +19,6 @@
 #include <gtsam_unstable/slam/SmartRangeFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
@@ -46,7 +45,7 @@ TEST( SmartRangeFactor, constructor ) {
 TEST( SmartRangeFactor, addRange ) {
   SmartRangeFactor f(sigma);
   f.addRange(1, 10);
-  f.addRange(1, 12);
+  f.addRange(2, 12);
   LONGS_EQUAL(2, f.size())
 }
 /* ************************************************************************* */
@@ -70,7 +69,7 @@ TEST( SmartRangeFactor, unwhitenedError ) {
   // Check Jacobian for n==1
   vector<Matrix> H1(1);
   f.unwhitenedError(values, H1); // with H now !
-  CHECK(assert_equal(zeros(3,1), H1.front()));
+  CHECK(assert_equal(Matrix::Zero(3,1), H1.front()));
 
   // Whenever there are two ranges or less, error should be zero
   Vector actual1 = f.unwhitenedError(values);
@@ -116,8 +115,8 @@ TEST( SmartRangeFactor, optimization ) {
   graph.push_back(f);
   const noiseModel::Base::shared_ptr //
   priorNoise = noiseModel::Diagonal::Sigmas(Vector3(1, 1, M_PI));
-  graph.push_back(PriorFactor<Pose2>(1, pose1, priorNoise));
-  graph.push_back(PriorFactor<Pose2>(2, pose2, priorNoise));
+  graph.addPrior(1, pose1, priorNoise);
+  graph.addPrior(2, pose2, priorNoise);
 
   // Try optimizing
   LevenbergMarquardtParams params;

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -27,11 +27,14 @@ using namespace gtsam;
 typedef Quaternion Q; // Typedef
 typedef traits<Q>::ChartJacobian QuaternionJacobian;
 
+GTSAM_CONCEPT_TESTABLE_INST(Quaternion)
+GTSAM_CONCEPT_MATRIX_LIE_GROUP_INST(Quaternion)
+
 //******************************************************************************
 TEST(Quaternion , Concept) {
-  BOOST_CONCEPT_ASSERT((IsGroup<Quaternion >));
-  BOOST_CONCEPT_ASSERT((IsManifold<Quaternion >));
-  BOOST_CONCEPT_ASSERT((IsLieGroup<Quaternion >));
+  GTSAM_CONCEPT_ASSERT(IsGroup<Quaternion >);
+  GTSAM_CONCEPT_ASSERT(IsManifold<Quaternion >);
+  GTSAM_CONCEPT_ASSERT(IsMatrixLieGroup<Quaternion >);
 }
 
 //******************************************************************************
@@ -81,13 +84,8 @@ TEST(Quaternion , Compose) {
 }
 
 //******************************************************************************
-Vector3 z_axis(0, 0, 1);
-Q id(Eigen::AngleAxisd(0, z_axis));
-Q R1(Eigen::AngleAxisd(1, z_axis));
-Q R2(Eigen::AngleAxisd(2, Vector3(0, 1, 0)));
-
-//******************************************************************************
 TEST(Quaternion , Between) {
+  Vector3 z_axis(0, 0, 1);
   Q q1(Eigen::AngleAxisd(0.2, z_axis));
   Q q2(Eigen::AngleAxisd(0.1, z_axis));
 
@@ -98,6 +96,7 @@ TEST(Quaternion , Between) {
 
 //******************************************************************************
 TEST(Quaternion , Inverse) {
+  Vector3 z_axis(0, 0, 1);
   Q q1(Eigen::AngleAxisd(0.1, z_axis));
   Q expected(Eigen::AngleAxisd(-0.1, z_axis));
 
@@ -106,7 +105,15 @@ TEST(Quaternion , Inverse) {
 }
 
 //******************************************************************************
-TEST(Quaternion , Invariants) {
+namespace {
+Vector3 Q_z_axis(0, 0, 1);
+Q id(Eigen::AngleAxisd(0, Q_z_axis));
+Q R1(Eigen::AngleAxisd(1, Q_z_axis));
+Q R2(Eigen::AngleAxisd(2, Vector3(0, 1, 0)));
+}  // namespace
+
+//******************************************************************************
+TEST(Quaternion, Invariants) {
   EXPECT(check_group_invariants(id, id));
   EXPECT(check_group_invariants(id, R1));
   EXPECT(check_group_invariants(R2, id));
@@ -119,7 +126,7 @@ TEST(Quaternion , Invariants) {
 }
 
 //******************************************************************************
-TEST(Quaternion , LieGroupDerivatives) {
+TEST(Quaternion, LieGroupDerivatives) {
   CHECK_LIE_GROUP_DERIVATIVES(id, id);
   CHECK_LIE_GROUP_DERIVATIVES(id, R2);
   CHECK_LIE_GROUP_DERIVATIVES(R2, id);
@@ -127,7 +134,7 @@ TEST(Quaternion , LieGroupDerivatives) {
 }
 
 //******************************************************************************
-TEST(Quaternion , ChartDerivatives) {
+TEST(Quaternion, ChartDerivatives) {
   CHECK_CHART_DERIVATIVES(id, id);
   CHECK_CHART_DERIVATIVES(id, R2);
   CHECK_CHART_DERIVATIVES(R2, id);

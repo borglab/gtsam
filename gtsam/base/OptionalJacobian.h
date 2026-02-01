@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -18,21 +18,20 @@
  */
 
 #pragma once
+#include <cstddef>
+#include <functional>
 #include <gtsam/config.h>      // Configuration from CMake
 #include <Eigen/Dense>
-
-#ifndef OPTIONALJACOBIAN_NOBOOST
-#include <boost/optional.hpp>
-#endif
+#include <optional>
+#include <stdexcept>
+#include <string>
 
 namespace gtsam {
 
 /**
  * OptionalJacobian is an Eigen::Ref like class that can take be constructed using
  * either a fixed size or dynamic Eigen matrix. In the latter case, the dynamic
- * matrix will be resized. Finally, there is a constructor that takes
- * boost::none, the default constructor acts like boost::none, and
- * boost::optional<Eigen::MatrixXd&> is also supported for backwards compatibility.
+ * matrix will be resized.
  * Below this class, a dynamic version is also implemented.
  */
 template<int Rows, int Cols>
@@ -55,7 +54,7 @@ private:
   }
 
   // Private and very dangerous constructor straight from memory
-  OptionalJacobian(double* data) : map_(NULL) {
+  OptionalJacobian(double* data) : map_(nullptr) {
     if (data) usurp(data);
   }
 
@@ -64,57 +63,86 @@ private:
 
 public:
 
-  /// Default constructor acts like boost::none
+  /// Default constructor
   OptionalJacobian() :
-      map_(NULL) {
+      map_(nullptr) {
+  }
+
+  /// Default constructor with nullptr_t
+  /// To guide the compiler when nullptr
+  /// is passed to args of the type OptionalJacobian
+  OptionalJacobian(std::nullptr_t /*unused*/) :
+      map_(nullptr) {
   }
 
   /// Constructor that will usurp data of a fixed-size matrix
   OptionalJacobian(Jacobian& fixed) :
-      map_(NULL) {
+      map_(nullptr) {
     usurp(fixed.data());
   }
 
   /// Constructor that will usurp data of a fixed-size matrix, pointer version
   OptionalJacobian(Jacobian* fixedPtr) :
-      map_(NULL) {
+      map_(nullptr) {
     if (fixedPtr)
       usurp(fixedPtr->data());
   }
 
   /// Constructor that will resize a dynamic matrix (unless already correct)
   OptionalJacobian(Eigen::MatrixXd& dynamic) :
-      map_(NULL) {
+      map_(nullptr) {
     dynamic.resize(Rows, Cols); // no malloc if correct size
     usurp(dynamic.data());
   }
 
-#ifndef OPTIONALJACOBIAN_NOBOOST
-
-  /// Constructor with boost::none just makes empty
-  OptionalJacobian(boost::none_t /*none*/) :
-      map_(NULL) {
-  }
-
-  /// Constructor compatible with old-style derivatives
-  OptionalJacobian(const boost::optional<Eigen::MatrixXd&> optional) :
-      map_(NULL) {
-    if (optional) {
-      optional->resize(Rows, Cols);
-      usurp(optional->data());
+  /// Constructor that will resize a dynamic matrix (unless already correct)
+  OptionalJacobian(Eigen::MatrixXd* dynamic) :
+      map_(nullptr) {
+    if (dynamic) {
+      dynamic->resize(Rows, Cols);  // no malloc if correct size
+      usurp(dynamic->data());
     }
   }
 
-#endif
+  /**
+   * @brief Constructor from an Eigen::Ref *value*. Will not usurp if dimension is wrong
+   * @note This is important so we don't overwrite someone else's memory!
+   */
+  template<class MATRIX>
+  OptionalJacobian(Eigen::Ref<MATRIX> dynamic_ref) :
+      map_(nullptr) {
+    if (dynamic_ref.rows() == Rows && dynamic_ref.cols() == Cols && !dynamic_ref.IsRowMajor) {
+      usurp(dynamic_ref.data());
+    } else {
+      throw std::invalid_argument(
+          std::string("OptionalJacobian called with wrong dimensions or "
+                      "storage order.\n"
+                      "Expected: ") +
+          "(" + std::to_string(Rows) + ", " + std::to_string(Cols) + ")");
+    }
+  } 
 
+  /// Constructor with std::nullopt just makes empty
+  OptionalJacobian(std::nullopt_t /*none*/) :
+      map_(nullptr) {
+  }
+
+  /// Constructor compatible with old-style derivatives
+  OptionalJacobian(const std::optional<std::reference_wrapper<Eigen::MatrixXd>> optional) :
+      map_(nullptr) {
+    if (optional) {
+      optional->get().resize(Rows, Cols);
+      usurp(optional->get().data());
+    }
+  }
   /// Constructor that will usurp data of a block expression
   /// TODO(frank): unfortunately using a Map makes usurping non-contiguous memory impossible
   //  template <typename Derived, bool InnerPanel>
-  //  OptionalJacobian(Eigen::Block<Derived,Rows,Cols,InnerPanel> block) : map_(NULL) { ?? }
+  //  OptionalJacobian(Eigen::Block<Derived,Rows,Cols,InnerPanel> block) : map_(nullptr) { ?? }
 
-  /// Return true is allocated, false if default constructor was used
+  /// Return true if allocated, false if default constructor was used
   operator bool() const {
-    return map_.data() != NULL;
+    return map_.data() != nullptr;
   }
 
   /// De-reference, like boost optional
@@ -171,34 +199,31 @@ private:
 
 public:
 
-  /// Default constructor acts like boost::none
+  /// Default constructor 
   OptionalJacobian() :
-    pointer_(NULL) {
+    pointer_(nullptr) {
   }
 
-  /// Constructor that will resize a dynamic matrix (unless already correct)
-  OptionalJacobian(Eigen::MatrixXd& dynamic) :
-      pointer_(&dynamic) {
+  /// Construct from pointer to dynamic matrix
+  OptionalJacobian(Jacobian* pointer) : pointer_(pointer) {}
+
+  /// Construct from refrence to dynamic matrix
+  OptionalJacobian(Jacobian& dynamic) : pointer_(&dynamic) {}
+
+  /// Constructor with std::nullopt just makes empty
+  OptionalJacobian(std::nullopt_t /*none*/) :
+    pointer_(nullptr) {
   }
 
-#ifndef OPTIONALJACOBIAN_NOBOOST
-
-  /// Constructor with boost::none just makes empty
-  OptionalJacobian(boost::none_t /*none*/) :
-    pointer_(NULL) {
+  /// Constructor for optional matrix reference
+  OptionalJacobian(const std::optional<std::reference_wrapper<Eigen::MatrixXd>> optional) :
+      pointer_(nullptr) {
+    if (optional) pointer_ = &((*optional).get());
   }
 
-  /// Constructor compatible with old-style derivatives
-  OptionalJacobian(const boost::optional<Eigen::MatrixXd&> optional) :
-      pointer_(NULL) {
-    if (optional) pointer_ = &(*optional);
-  }
-
-#endif
-
-  /// Return true is allocated, false if default constructor was used
+  /// Return true if allocated, false if default constructor was used
   operator bool() const {
-    return pointer_!=NULL;
+    return pointer_!=nullptr;
   }
 
   /// De-reference, like boost optional

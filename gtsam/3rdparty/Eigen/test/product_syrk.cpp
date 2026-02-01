@@ -11,7 +11,6 @@
 
 template<typename MatrixType> void syrk(const MatrixType& m)
 {
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, MatrixType::ColsAtCompileTime, RowMajor> RMatrixType;
   typedef Matrix<Scalar, MatrixType::ColsAtCompileTime, Dynamic> Rhs1;
@@ -116,20 +115,32 @@ template<typename MatrixType> void syrk(const MatrixType& m)
   m2.setZero();
   VERIFY_IS_APPROX((m2.template selfadjointView<Upper>().rankUpdate(m1.row(c).adjoint(),s1)._expression()),
                    ((s1 * m1.row(c).adjoint() * m1.row(c).adjoint().adjoint()).eval().template triangularView<Upper>().toDenseMatrix()));
+
+  // destination with a non-default inner-stride
+  // see bug 1741
+  {
+    typedef Matrix<Scalar,Dynamic,Dynamic> MatrixX;
+    MatrixX buffer(2*rows,2*cols);
+    Map<MatrixType,0,Stride<Dynamic,2> > map1(buffer.data(),rows,cols,Stride<Dynamic,2>(2*rows,2));
+    buffer.setZero();
+    VERIFY_IS_APPROX((map1.template selfadjointView<Lower>().rankUpdate(rhs2,s1)._expression()),
+                      ((s1 * rhs2 * rhs2.adjoint()).eval().template triangularView<Lower>().toDenseMatrix()));
+  }
 }
 
-void test_product_syrk()
+EIGEN_DECLARE_TEST(product_syrk)
 {
   for(int i = 0; i < g_repeat ; i++)
   {
     int s;
     s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE);
     CALL_SUBTEST_1( syrk(MatrixXf(s, s)) );
-    s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE);
     CALL_SUBTEST_2( syrk(MatrixXd(s, s)) );
+    TEST_SET_BUT_UNUSED_VARIABLE(s)
+    
     s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2);
     CALL_SUBTEST_3( syrk(MatrixXcf(s, s)) );
-    s = internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2);
     CALL_SUBTEST_4( syrk(MatrixXcd(s, s)) );
+    TEST_SET_BUT_UNUSED_VARIABLE(s)
   }
 }

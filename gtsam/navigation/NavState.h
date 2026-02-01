@@ -12,27 +12,32 @@
 /**
  * @file    NavState.h
  * @brief   Navigation state composing of attitude, position, and velocity
- * @author  Frank Dellaert
+ * @authors Frank Dellaert, Varun Agrawal, Fan Jiang
  * @date    July 2015
  **/
 
 #pragma once
 
+#include <gtsam/geometry/BearingRange.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/Vector.h>
-#include <gtsam/base/ProductLieGroup.h>
+#include <gtsam/base/Manifold.h>
 
 namespace gtsam {
 
 /// Velocity is currently typedef'd to Vector3
-typedef Vector3 Velocity3;
+using Velocity3 = Vector3;
 
 /**
  * Navigation state: Pose (rotation, translation) + velocity
- * Implements semi-direct Lie group product of SO(3) and R^6, where R^6 is position/velocity
+ * Following Barrau20icra, this class belongs to the Lie group SE_2(3).
+ * This group is also called "double direct isometries”.
+ *
+ * NOTE: While Barrau20icra follow a R,v,t order,
+ * we use a R,t,v order to maintain backwards compatibility.
  */
-class NavState: public LieGroup<NavState, 9> {
-private:
+class GTSAM_EXPORT NavState : public MatrixLieGroup<NavState, 9, 5> {
+ private:
 
   // TODO(frank):
   // - should we rename t_ to p_? if not, we should rename dP do dT
@@ -41,47 +46,75 @@ private:
   Velocity3 v_; ///< velocity n_v in nav frame
 
 public:
-
-  typedef std::pair<Point3, Velocity3> PositionAndVelocity;
+  using LieAlgebra = Matrix5;
+  using Vector25 = Eigen::Matrix<double, 25, 1>;
 
   /// @name Constructors
   /// @{
 
   /// Default constructor
   NavState() :
-      t_(0,0,0), v_(Vector3::Zero()) {
+      t_(0, 0, 0), v_(Vector3::Zero()) {
   }
+
   /// Construct from attitude, position, velocity
   NavState(const Rot3& R, const Point3& t, const Velocity3& v) :
       R_(R), t_(t), v_(v) {
   }
+
   /// Construct from pose and velocity
   NavState(const Pose3& pose, const Velocity3& v) :
       R_(pose.rotation()), t_(pose.translation()), v_(v) {
   }
-  /// Construct from Matrix group representation (no checking)
-  NavState(const Matrix7& T) :
-      R_(T.block<3, 3>(0, 0)), t_(T.block<3, 1>(0, 6)), v_(T.block<3, 1>(3, 6)) {
-  }
+
   /// Construct from SO(3) and R^6
-  NavState(const Matrix3& R, const Vector9 tv) :
+  NavState(const Matrix3& R, const Vector6& tv) :
       R_(R), t_(tv.head<3>()), v_(tv.tail<3>()) {
   }
+
+  /// Construct from Matrix5
+  NavState(const Matrix5& T) :
+    R_(T.block<3, 3>(0, 0)), t_(T.block<3, 1>(0, 3)), v_(T.block<3, 1>(0, 4)) {
+  }
+
+  /// Named constructor with derivatives
+  static NavState Create(const Rot3& R, const Point3& t, const Velocity3& v,
+                         OptionalJacobian<9, 3> H1 = {},
+                         OptionalJacobian<9, 3> H2 = {},
+                         OptionalJacobian<9, 3> H3 = {});
+
   /// Named constructor with derivatives
   static NavState FromPoseVelocity(const Pose3& pose, const Vector3& vel,
-      OptionalJacobian<9, 6> H1, OptionalJacobian<9, 3> H2);
+                                   OptionalJacobian<9, 6> H1 = {},
+                                   OptionalJacobian<9, 3> H2 = {});
 
   /// @}
   /// @name Component Access
   /// @{
 
-  const Rot3& attitude(OptionalJacobian<3, 9> H = boost::none) const;
-  const Point3& position(OptionalJacobian<3, 9> H = boost::none) const;
-  const Velocity3& velocity(OptionalJacobian<3, 9> H = boost::none) const;
+  const Rot3& attitude(OptionalJacobian<3, 9> H = {}) const;
+  const Point3& position(OptionalJacobian<3, 9> H = {}) const;
+  const Velocity3& velocity(OptionalJacobian<3, 9> H = {}) const;
 
   const Pose3 pose() const {
     return Pose3(attitude(), position());
   }
+
+  /**
+   * Calculate range to a 3D landmark.
+   * @param point 3D location of landmark
+   * @return range (double)
+   */
+  double range(const Point3& point, OptionalJacobian<1, 9> Hself = {},
+               OptionalJacobian<1, 3> Hpoint = {}) const;
+
+  /**
+   * Calculate bearing to a 3D landmark.
+   * @param point 3D location of landmark
+   * @return bearing (Unit3)
+   */
+  Unit3 bearing(const Point3& point, OptionalJacobian<2, 9> Hself = {},
+                OptionalJacobian<2, 3> Hpoint = {}) const;
 
   /// @}
   /// @name Derived quantities
@@ -104,19 +137,22 @@ public:
     return v_;
   }
   // Return velocity in body frame
-  Velocity3 bodyVelocity(OptionalJacobian<3, 9> H = boost::none) const;
+  Velocity3 bodyVelocity(OptionalJacobian<3, 9> H = {}) const;
 
   /// Return matrix group representation, in MATLAB notation:
-  /// nTb = [nRb 0 n_t; 0 nRb n_v; 0 0 1]
-  /// With this embedding in GL(3), matrix product agrees with compose
-  Matrix7 matrix() const;
+  /// nTb = [nRb n_t n_v; 0_1x3 1 0; 0_1x3 0 1]
+  Matrix5 matrix() const;
+
+  /// Vectorize 5x5 matrix into a 25-dim vector.
+  Vector25 vec(OptionalJacobian<25, 9> H = {}) const;
 
   /// @}
   /// @name Testable
   /// @{
 
   /// Output stream operator
-  GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const NavState&  state);
+  GTSAM_EXPORT
+  friend std::ostream &operator<<(std::ostream &os, const NavState& state);
 
   /// print
   void print(const std::string& s = "") const;
@@ -129,27 +165,22 @@ public:
   /// @{
 
   /// identity for group operation
-  static NavState identity() {
+  static NavState Identity() {
     return NavState();
   }
 
   /// inverse transformation with derivatives
   NavState inverse() const;
 
-  /// Group compose is the semi-direct product as specified below:
-  /// nTc = nTb * bTc = (nRb * bRc, nRb * b_t + n_t, nRb * b_v + n_v)
-  NavState operator*(const NavState& bTc) const;
+  using LieGroup<NavState, 9>::inverse;  // version with derivative
 
-  /// Native group action is on position/velocity pairs *in the body frame* as follows:
-  /// nTb * (b_t,b_v) = (nRb * b_t + n_t, nRb * b_v + n_v)
-  PositionAndVelocity operator*(const PositionAndVelocity& b_tv) const;
+  /// compose syntactic sugar
+  NavState operator*(const NavState& T) const {
+    return NavState(R_ * T.R_, t_ + R_ * T.t_, v_ + R_ * T.v_);
+  }
 
-  /// Act on position alone, n_t = nRb * b_t + n_t
-  Point3 operator*(const Point3& b_t) const;
-
-  /// @}
-  /// @name Manifold
-  /// @{
+  /// Syntactic sugar
+  const Rot3& rotation() const { return attitude(); };
 
   // Tangent space sugar.
   // TODO(frank): move to private navstate namespace in cpp
@@ -172,61 +203,128 @@ public:
     return v.segment<3>(6);
   }
 
-  // Chart at origin, constructs components separately (as opposed to Expmap)
-  struct ChartAtOrigin {
-    static NavState Retract(const Vector9& xi, //
-        OptionalJacobian<9, 9> H = boost::none);
-    static Vector9 Local(const NavState& x, //
-        OptionalJacobian<9, 9> H = boost::none);
-  };
+  /// retract with optional derivatives
+  NavState retract(const Vector9& v, //
+      OptionalJacobian<9, 9> H1 = {}, OptionalJacobian<9, 9> H2 =
+          {}) const;
+
+  /// localCoordinates with optional derivatives
+  Vector9 localCoordinates(const NavState& g, //
+      OptionalJacobian<9, 9> H1 = {}, OptionalJacobian<9, 9> H2 =
+          {}) const;
 
   /// @}
   /// @name Lie Group
   /// @{
 
-  /// Exponential map at identity - create a NavState from canonical coordinates
-  static NavState Expmap(const Vector9& xi, //
-      OptionalJacobian<9, 9> H = boost::none);
+  /**
+   * Exponential map at identity - create a NavState from canonical coordinates
+   * \f$ [R_x,R_y,R_z,T_x,T_y,T_z,V_x,V_y,V_z] \f$
+   */
+  static NavState Expmap(const Vector9& xi, OptionalJacobian<9, 9> Hxi = {});
 
-  /// Log map at identity - return the canonical coordinates for this NavState
-  static Vector9 Logmap(const NavState& p, //
-      OptionalJacobian<9, 9> H = boost::none);
+  /**
+   * Log map at identity - return the canonical coordinates \f$
+   * [R_x,R_y,R_z,T_x,T_y,T_z,V_x,V_y,V_z] \f$ of this NavState
+   */
+  static Vector9 Logmap(const NavState& pose, OptionalJacobian<9, 9> Hpose = {});
 
-  /// Calculate Adjoint map, a 9x9 matrix that takes a tangent vector in the body frame, and transforms
-  /// it to a tangent vector at identity, such that Exmap(AdjointMap()*xi) = (*this) * Exmpap(xi);
+  /**
+   * Calculate Adjoint map, transforming a twist in this pose's (i.e, body)
+   * frame to the world spatial frame.
+   */
   Matrix9 AdjointMap() const;
 
-  /// wedge creates Lie algebra element from tangent vector
-  static Matrix7 wedge(const Vector9& xi);
+  /**
+   * Apply this NavState's AdjointMap Ad_g to a twist \f$ \xi_b \f$, i.e. a
+   * body-fixed velocity, transforming it to the spatial frame
+   * \f$ \xi^s = g*\xi^b*g^{-1} = Ad_g * \xi^b \f$
+   * Note that H_xib = AdjointMap()
+   */
+  Vector9 Adjoint(const Vector9& xi_b,
+                  OptionalJacobian<9, 9> H_this = {},
+                  OptionalJacobian<9, 9> H_xib = {}) const;
+  
+  /**
+   * Compute the [ad(w,v)] operator as defined in [Kobilarov09siggraph], pg 11
+   * but for the NavState [ad(w,v)] = [w^, zero3; v^, w^]
+   */
+  static Matrix9 adjointMap(const Vector9& xi);
+
+  /**
+   * Action of the adjointMap on a Lie-algebra vector y, with optional derivatives
+   */
+  static Vector9 adjoint(const Vector9& xi, const Vector9& y,
+                         OptionalJacobian<9, 9> Hxi = {},
+                         OptionalJacobian<9, 9> H_y = {});
+
+  /// Derivative of Expmap
+  static Matrix9 ExpmapDerivative(const Vector9& xi);
+
+  /// Derivative of Logmap
+  static Matrix9 LogmapDerivative(const Vector9& xi);
+
+  /// Derivative of Logmap, NavState version
+  static Matrix9 LogmapDerivative(const NavState& xi);
+
+  // Chart at origin, depends on compile-time flag GTSAM_POSE3_EXPMAP
+  struct GTSAM_EXPORT ChartAtOrigin {
+    static NavState Retract(const Vector9& xi, ChartJacobian Hxi = {});
+    static Vector9 Local(const NavState& state, ChartJacobian Hstate = {});
+  };
+
+  /// Hat maps from tangent vector to Lie algebra
+  static Matrix5 Hat(const Vector9& xi);
+
+  /// Vee maps from Lie algebra to tangent vector
+  static Vector9 Vee(const Matrix5& X);
 
   /// @}
   /// @name Dynamics
   /// @{
 
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V4
-  /// Integrate forward in time given angular velocity and acceleration in body frame
+  // φ: autonomous flow where velocity acts on position for
+  //   dt (R, p, v) -> p += v·dt.
+  struct AutonomousFlow {
+    double dt;
+
+    // Differential at identity (right-trivialized): Φ = I with ∂p/∂v = dt·I.
+    Jacobian dIdentity() const {
+      Jacobian Phi = I_9x9;
+      Phi.template block<3, 3>(3, 6) = I_3x3 * dt;
+      return Phi;
+    }
+
+    // Apply φ(x) by p += v·dt
+    NavState operator()(const NavState& X) const {
+      return {X.attitude(), X.position() + X.velocity() * dt, X.velocity()};
+    }
+  };
+
+/// Integrate forward in time given angular velocity and acceleration in body frame
   /// Uses second order integration for position, returns derivatives except dt.
   NavState update(const Vector3& b_acceleration, const Vector3& b_omega,
-      const double dt, OptionalJacobian<9, 9> F, OptionalJacobian<9, 3> G1,
-      OptionalJacobian<9, 3> G2) const;
-#endif
+                  const double dt, OptionalJacobian<9, 9> F = {},
+                  OptionalJacobian<9, 3> G1 = {},
+                  OptionalJacobian<9, 3> G2 = {}) const;
 
   /// Compute tangent space contribution due to Coriolis forces
   Vector9 coriolis(double dt, const Vector3& omega, bool secondOrder = false,
-      OptionalJacobian<9, 9> H = boost::none) const;
+      OptionalJacobian<9, 9> H = {}) const;
 
   /// Correct preintegrated tangent vector with our velocity and rotated gravity,
   /// taking into account Coriolis forces if omegaCoriolis is given.
   Vector9 correctPIM(const Vector9& pim, double dt, const Vector3& n_gravity,
-      const boost::optional<Vector3>& omegaCoriolis, bool use2ndOrderCoriolis =
-          false, OptionalJacobian<9, 9> H1 = boost::none,
-      OptionalJacobian<9, 9> H2 = boost::none) const;
+      const std::optional<Vector3>& omegaCoriolis, bool use2ndOrderCoriolis =
+          false, OptionalJacobian<9, 9> H1 = {},
+      OptionalJacobian<9, 9> H2 = {}) const;
 
   /// @}
 
 private:
   /// @{
   /// serialization
+#if GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
@@ -234,19 +332,22 @@ private:
     ar & BOOST_SERIALIZATION_NVP(t_);
     ar & BOOST_SERIALIZATION_NVP(v_);
   }
+#endif
   /// @}
 };
 
 // Specialize NavState traits to use a Retract/Local that agrees with IMUFactors
-template<>
-struct traits<NavState> : Testable<NavState>, internal::LieGroupTraits<NavState> {
-};
+template <>
+struct traits<NavState> : public internal::MatrixLieGroup<NavState, 5> {};
 
-// Partial specialization of wedge
-// TODO: deprecate, make part of traits
-template<>
-inline Matrix wedge<NavState>(const Vector& xi) {
-  return NavState::wedge(xi);
-}
+template <>
+struct traits<const NavState> : public internal::MatrixLieGroup<NavState, 5> {};
+
+// bearing and range traits, used in RangeFactor and BearingFactor
+template <>
+struct Bearing<NavState, Point3> : HasBearing<NavState, Point3, Unit3> {};
+
+template <>
+struct Range<NavState, Point3> : HasRange<NavState, Point3, double> {};
 
 } // namespace gtsam

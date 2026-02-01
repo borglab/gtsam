@@ -5,8 +5,6 @@
 /* ----------------------------------------------------------------------------
  * CCOLAMD Copyright (C), Univ. of Florida.  Authors: Timothy A. Davis,
  * Sivasankaran Rajamanickam, and Stefan Larimore
- * See License.txt for the Version 2.1 of the GNU Lesser General Public License
- * http://www.cise.ufl.edu/research/sparse
  * -------------------------------------------------------------------------- */
 
 /*
@@ -37,7 +35,7 @@
 #include "matrix.h"
 #include <stdlib.h>
 #include <string.h>
-#include "UFconfig.h"
+#define Long SuiteSparse_long
 
 #ifdef MIN
 #undef MIN
@@ -47,15 +45,15 @@
 
 static void dump_matrix
 (
-    UF_long A [ ],
-    UF_long p [ ],
-    UF_long n_row,
-    UF_long n_col,
-    UF_long Alen,
-    UF_long limit
+    Long A [ ],
+    Long p [ ],
+    Long n_row,
+    Long n_col,
+    Long Alen,
+    Long limit
 )
 {
-    UF_long col, k, row ;
+    Long col, k, row ;
 
     mexPrintf ("dump matrix: nrow %d ncol %d Alen %d\n", n_row, n_col, Alen) ;
 
@@ -100,23 +98,23 @@ void mexFunction
 {
     /* === Local variables ================================================== */
 
-    UF_long *perm ;		/* column ordering of M and ordering of A */
-    UF_long *A ;		/* row indices of input matrix A */
-    UF_long *p ;		/* column pointers of input matrix A */
-    UF_long n_col ;		/* number of columns of A */
-    UF_long n_row ;		/* number of rows of A */
-    UF_long full ;		/* TRUE if input matrix full, FALSE if sparse */
+    Long *perm ;                /* column ordering of M and ordering of A */
+    Long *A ;                   /* row indices of input matrix A */
+    Long *p ;                   /* column pointers of input matrix A */
+    Long n_col ;                /* number of columns of A */
+    Long n_row ;                /* number of rows of A */
+    Long full ;                 /* TRUE if input matrix full, FALSE if sparse */
     double knobs [CCOLAMD_KNOBS] ; /* ccolamd user-controllable parameters */
-    double *out_perm ;		/* output permutation vector */
-    double *out_stats ;		/* output stats vector */
-    double *in_knobs ;		/* input knobs vector */
-    UF_long i ;			/* loop counter */
-    mxArray *Ainput ;		/* input matrix handle */
-    UF_long spumoni ;		/* verbosity variable */
-    UF_long stats2 [CCOLAMD_STATS] ;/* stats for csymamd */
+    double *out_perm ;          /* output permutation vector */
+    double *out_stats ;         /* output stats vector */
+    double *in_knobs ;          /* input knobs vector */
+    Long i ;                    /* loop counter */
+    mxArray *Ainput ;           /* input matrix handle */
+    Long spumoni ;              /* verbosity variable */
+    Long stats2 [CCOLAMD_STATS] ;/* stats for csymamd */
 
-    UF_long *cp, *cp_end, result, nnz, col, length, ok ;
-    UF_long *stats ;
+    Long *cp, *cp_end, result, nnz, col, length, ok ;
+    Long *stats ;
     stats = stats2 ;
 
     /* === Check inputs ===================================================== */
@@ -192,8 +190,8 @@ void mexFunction
     }
 
     /* p = mxGetJc (Ainput) ; */
-    p = (UF_long *) mxCalloc (n_col+1, sizeof (UF_long)) ;
-    (void) memcpy (p, mxGetJc (Ainput), (n_col+1)*sizeof (UF_long)) ;
+    p = (Long *) mxCalloc (n_col+1, sizeof (Long)) ;
+    (void) memcpy (p, mxGetJc (Ainput), (n_col+1)*sizeof (Long)) ;
 
     nnz = p [n_col] ;
     if (spumoni)
@@ -202,10 +200,10 @@ void mexFunction
     }
 
     /* A = mxGetIr (Ainput) ; */
-    A = (UF_long *) mxCalloc (nnz+1, sizeof (UF_long)) ;
-    (void) memcpy (A, mxGetIr (Ainput), nnz*sizeof (UF_long)) ;
+    A = (Long *) mxCalloc (nnz+1, sizeof (Long)) ;
+    (void) memcpy (A, mxGetIr (Ainput), nnz*sizeof (Long)) ;
 
-    perm = (UF_long *) mxCalloc (n_col+1, sizeof (UF_long)) ;
+    perm = (Long *) mxCalloc (n_col+1, sizeof (Long)) ;
 
     /* === Jumble matrix ==================================================== */
 
@@ -230,7 +228,7 @@ void mexFunction
     */
 
     /* jumble appropriately */
-    switch ((UF_long) in_knobs [3])
+    switch ((Long) in_knobs [3])
     {
 
 	case 0 :
@@ -321,7 +319,7 @@ void mexFunction
 		mexPrintf ("csymamdtest: A not present\n") ;
 	    }
 	    result = 0 ;		/* A not present */
-	    A = (UF_long *) NULL ;
+	    A = (Long *) NULL ;
 	    break ;
 
 	case 8 :
@@ -330,7 +328,7 @@ void mexFunction
 		mexPrintf ("csymamdtest: p not present\n") ;
 	    }
 	    result = 0 ;		/* p not present */
-	    p = (UF_long *) NULL ;
+	    p = (Long *) NULL ;
 	    break ;
 
 	case 9 :
@@ -418,7 +416,7 @@ void mexFunction
 		mexPrintf ("csymamdtest: stats not present\n") ;
 	    }
 	    result = 0 ;		/* stats not present */
-	    stats = (UF_long *) NULL ;
+	    stats = (Long *) NULL ;
 	    break ;
 
 	case 13 :

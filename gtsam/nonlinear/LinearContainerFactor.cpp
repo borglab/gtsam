@@ -11,25 +11,23 @@
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
-#include <boost/foreach.hpp>
-
 namespace gtsam {
 
 /* ************************************************************************* */
 void LinearContainerFactor::initializeLinearizationPoint(const Values& linearizationPoint) {
   if (!linearizationPoint.empty()) {
     linearizationPoint_ = Values();
-    BOOST_FOREACH(const gtsam::Key& key, this->keys()) {
+    for (Key key : keys()) {
       linearizationPoint_->insert(key, linearizationPoint.at(key));
     }
   } else {
-    linearizationPoint_ = boost::none;
+    linearizationPoint_ = {};
   }
 }
 
 /* ************************************************************************* */
 LinearContainerFactor::LinearContainerFactor(const GaussianFactor::shared_ptr& factor,
-    const boost::optional<Values>& linearizationPoint)
+    const std::optional<Values>& linearizationPoint)
 : NonlinearFactor(factor->keys()), factor_(factor), linearizationPoint_(linearizationPoint) {
 }
 
@@ -82,7 +80,7 @@ double LinearContainerFactor::error(const Values& c) const {
 
   // Extract subset of values for comparison
   Values csub;
-  BOOST_FOREACH(const gtsam::Key& key, keys())
+  for (Key key : keys())
     csub.insert(key, c.at(key));
 
   // create dummy ordering for evaluation
@@ -111,7 +109,7 @@ GaussianFactor::shared_ptr LinearContainerFactor::linearize(const Values& c) con
 
   // Extract subset of values
   Values subsetC;
-  BOOST_FOREACH(const gtsam::Key& key, this->keys())
+  for (Key key : keys())
     subsetC.insert(key, c.at(key));
 
   // Determine delta between linearization points using new ordering
@@ -119,14 +117,15 @@ GaussianFactor::shared_ptr LinearContainerFactor::linearize(const Values& c) con
 
   // Apply changes due to relinearization
   if (isJacobian()) {
-    JacobianFactor::shared_ptr jacFactor = boost::dynamic_pointer_cast<JacobianFactor>(linFactor);
+    JacobianFactor::shared_ptr jacFactor = std::dynamic_pointer_cast<JacobianFactor>(linFactor);
     jacFactor->getb() = -jacFactor->unweighted_error(delta);
   } else {
-    HessianFactor::shared_ptr hesFactor = boost::dynamic_pointer_cast<HessianFactor>(linFactor);
-    SymmetricBlockMatrix::constBlock Gview = hesFactor->matrixObject().range(0, hesFactor->size(), 0, hesFactor->size());
+    HessianFactor::shared_ptr hesFactor = std::dynamic_pointer_cast<HessianFactor>(linFactor);
+
+    const auto view = hesFactor->informationView();
     Vector deltaVector = delta.vector(keys());
-    Vector G_delta = Gview.selfadjointView() * deltaVector;
-    hesFactor->constantTerm() += deltaVector.dot(G_delta) - 2.0 * deltaVector.dot(hesFactor->linearTerm());
+    Vector G_delta = view * deltaVector;
+    hesFactor->constantTerm() += deltaVector.dot(G_delta) - 2.0 * deltaVector.dot(hesFactor->linearTerm().col(0));
     hesFactor->linearTerm() -= G_delta;
   }
 
@@ -145,12 +144,12 @@ bool LinearContainerFactor::isHessian() const {
 
 /* ************************************************************************* */
 JacobianFactor::shared_ptr LinearContainerFactor::toJacobian() const {
-  return boost::dynamic_pointer_cast<JacobianFactor>(factor_);
+  return std::dynamic_pointer_cast<JacobianFactor>(factor_);
 }
 
 /* ************************************************************************* */
 HessianFactor::shared_ptr LinearContainerFactor::toHessian() const {
-  return boost::dynamic_pointer_cast<HessianFactor>(factor_);
+  return std::dynamic_pointer_cast<HessianFactor>(factor_);
 }
 
 /* ************************************************************************* */
@@ -166,14 +165,55 @@ NonlinearFactor::shared_ptr LinearContainerFactor::negateToNonlinear() const {
 }
 
 /* ************************************************************************* */
-NonlinearFactorGraph LinearContainerFactor::convertLinearGraph(
-    const GaussianFactorGraph& linear_graph, const Values& linearizationPoint)
-{
+NonlinearFactor::shared_ptr LinearContainerFactor::rekey(
+    const std::map<Key, Key>& rekey_mapping) const {
+  auto rekeyed_base_factor = Base::rekey(rekey_mapping);
+  // Update the keys to the properties as well
+  // Downncast so we have access to members
+  auto new_factor = std::static_pointer_cast<LinearContainerFactor>(rekeyed_base_factor);
+  // Create a new Values to assign later
+  Values newLinearizationPoint;
+  for (size_t i = 0; i < factor_->size(); ++i) {
+    auto mapping = rekey_mapping.find(factor_->keys()[i]);
+    if (mapping != rekey_mapping.end()) {
+      new_factor->factor_->keys()[i] = mapping->second;
+      newLinearizationPoint.insert(mapping->second, linearizationPoint_->at(mapping->first));
+    }
+  }
+  new_factor->linearizationPoint_ = newLinearizationPoint;
+
+  // upcast back and return
+  return std::static_pointer_cast<NonlinearFactor>(new_factor);
+}
+
+/* ************************************************************************* */
+NonlinearFactor::shared_ptr LinearContainerFactor::rekey(
+    const KeyVector& new_keys) const {
+  auto rekeyed_base_factor = Base::rekey(new_keys);
+  // Update the keys to the properties as well
+  // Downncast so we have access to members
+  auto new_factor = std::static_pointer_cast<LinearContainerFactor>(rekeyed_base_factor);
+  new_factor->factor_->keys() = new_factor->keys();
+  // Create a new Values to assign later
+  Values newLinearizationPoint;
+  for(size_t i=0; i<new_keys.size(); ++i) {
+    Key cur_key = linearizationPoint_->keys()[i];
+    newLinearizationPoint.insert(new_keys[i], linearizationPoint_->at(cur_key));
+  }
+  new_factor->linearizationPoint_ = newLinearizationPoint;
+
+  // upcast back and return
+  return std::static_pointer_cast<NonlinearFactor>(new_factor);
+}
+
+/* ************************************************************************* */
+NonlinearFactorGraph LinearContainerFactor::ConvertLinearGraph(
+    const GaussianFactorGraph& linear_graph, const Values& linearizationPoint) {
   NonlinearFactorGraph result;
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& f, linear_graph)
+  result.reserve(linear_graph.size());
+  for (const auto& f : linear_graph)
     if (f)
-      result.push_back(NonlinearFactorGraph::sharedFactor(
-          new LinearContainerFactor(f, linearizationPoint)));
+      result.emplace_shared<LinearContainerFactor>(f, linearizationPoint);
   return result;
 }
 

@@ -25,8 +25,13 @@
 #define GTSAM_VERSION_STRING "@GTSAM_VERSION_STRING@"
 
 // Paths to example datasets distributed with GTSAM
-#define GTSAM_SOURCE_TREE_DATASET_DIR "@PROJECT_SOURCE_DIR@/examples/Data"
+#define GTSAM_SOURCE_TREE_DATASET_DIR "@GTSAM_SOURCE_DIR@/examples/Data"
+#if !defined(__QNX__) 
 #define GTSAM_INSTALLED_DATASET_DIR "@GTSAM_TOOLBOX_INSTALL_PATH@/gtsam_examples/Data"
+#else
+//Set toolbox path to the path on the target.
+#define GTSAM_INSTALLED_DATASET_DIR "@QNX_TARGET_DATASET_DIR@/gtsam_examples/Data"
+#endif
 
 // Whether GTSAM is compiled to use quaternions for Rot3 (otherwise uses rotation matrices)
 #cmakedefine GTSAM_USE_QUATERNIONS
@@ -39,8 +44,17 @@
 	#cmakedefine GTSAM_ROT3_EXPMAP
 #endif
 
+// Whether to enable merging of equal leaf nodes in the Discrete Decision Tree.
+#cmakedefine GTSAM_DT_MERGING
+
+// Whether to enable timing in hybrid factor graph machinery
+#cmakedefine01 GTSAM_HYBRID_TIMING
+
 // Whether we are using TBB (if TBB was found and GTSAM_WITH_TBB is enabled in CMake)
 #cmakedefine GTSAM_USE_TBB
+
+// Whether we are using a TBB version higher than 2020
+#cmakedefine TBB_GREATER_EQUAL_2020
 
 // Whether we are using system-Eigen or our own patched version
 #cmakedefine GTSAM_USE_SYSTEM_EIGEN
@@ -52,6 +66,12 @@
 // Whether Eigen with MKL will use OpenMP (if OpenMP was found, Eigen uses MKL, and GTSAM_WITH_EIGEN_MKL_OPENMP is enabled in CMake)
 #cmakedefine GTSAM_USE_EIGEN_MKL_OPENMP
 
+// Eigen library version (needed to avoid mixing versions, which often leads
+// to segfaults)
+#cmakedefine GTSAM_EIGEN_VERSION_WORLD @GTSAM_EIGEN_VERSION_WORLD@
+#cmakedefine GTSAM_EIGEN_VERSION_MAJOR @GTSAM_EIGEN_VERSION_MAJOR@
+#cmakedefine GTSAM_EIGEN_VERSION_MINOR @GTSAM_EIGEN_VERSION_MINOR@
+
 // The default allocator to use
 #cmakedefine GTSAM_ALLOCATOR_BOOSTPOOL
 #cmakedefine GTSAM_ALLOCATOR_TBB
@@ -61,10 +81,22 @@
 #cmakedefine GTSAM_THROW_CHEIRALITY_EXCEPTION
 
 // Make sure dependent projects that want it can see deprecated functions
-#cmakedefine GTSAM_ALLOW_DEPRECATED_SINCE_V4
-
-// Publish flag about Eigen typedef
-#cmakedefine GTSAM_USE_VECTOR3_POINTS
+#cmakedefine GTSAM_ALLOW_DEPRECATED_SINCE_V43
 
 // Support Metis-based nested dissection
 #cmakedefine GTSAM_SUPPORT_NESTED_DISSECTION
+
+// Support Metis-based nested dissection
+#cmakedefine GTSAM_TANGENT_PREINTEGRATION
+
+// Whether to use the system installed Metis instead of the provided one
+#cmakedefine GTSAM_USE_SYSTEM_METIS
+
+// Toggle switch for BetweenFactor jacobian computation
+#cmakedefine GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR
+
+#cmakedefine GTSAM_SLOW_BUT_CORRECT_EXPMAP
+
+// Boost flags
+#cmakedefine01 GTSAM_ENABLE_BOOST_SERIALIZATION
+#cmakedefine01 GTSAM_USE_BOOST_FEATURES

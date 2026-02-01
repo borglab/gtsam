@@ -24,6 +24,7 @@
 
 #ifdef EIGEN_GOOGLEHASH_SUPPORT
   #include <google/dense_hash_map>
+  #include <google/sparse_hash_map>
 #endif
 
 /**
@@ -36,9 +37,6 @@
   * \endcode
   */
 
-
-#include "../../Eigen/src/misc/Solve.h"
-#include "../../Eigen/src/misc/SparseSolve.h"
 
 #include "src/SparseExtra/DynamicSparseMatrix.h"
 #include "src/SparseExtra/BlockOfDynamicSparseMatrix.h"

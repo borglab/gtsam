@@ -27,6 +27,7 @@
 #include <cmath>
 #include <iostream>
 
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -64,8 +65,9 @@ TEST(PinholeCamera, Create) {
   EXPECT(assert_equal(camera, Camera::Create(pose,K, actualH1, actualH2)));
 
   // Check derivative
-  boost::function<Camera(Pose3,Cal3_S2)> f = //
-      boost::bind(Camera::Create,_1,_2,boost::none,boost::none);
+  std::function<Camera(Pose3, Cal3_S2)> f =  //
+      std::bind(Camera::Create, std::placeholders::_1, std::placeholders::_2,
+                nullptr, nullptr);
   Matrix numericalH1 = numericalDerivative21<Camera,Pose3,Cal3_S2>(f,pose,K);
   EXPECT(assert_equal(numericalH1, actualH1, 1e-9));
   Matrix numericalH2 = numericalDerivative22<Camera,Pose3,Cal3_S2>(f,pose,K);
@@ -79,8 +81,8 @@ TEST(PinholeCamera, Pose) {
   EXPECT(assert_equal(pose, camera.getPose(actualH)));
 
   // Check derivative
-  boost::function<Pose3(Camera)> f = //
-      boost::bind(&Camera::getPose,_1,boost::none);
+  std::function<Pose3(Camera)> f =  //
+      std::bind(&Camera::getPose, std::placeholders::_1, nullptr);
   Matrix numericalH = numericalDerivative11<Pose3,Camera>(f,camera);
   EXPECT(assert_equal(numericalH, actualH, 1e-9));
 }
@@ -116,7 +118,7 @@ TEST( PinholeCamera, lookat)
 
   Matrix R = camera2.pose().rotation().matrix();
   Matrix I = trans(R)*R;
-  EXPECT(assert_equal(I, eye(3)));
+  EXPECT(assert_equal(I, I_3x3));
 }
 
 /* ************************************************************************* */
@@ -153,12 +155,12 @@ TEST( PinholeCamera, backproject2)
   Rot3 rot(1., 0., 0., 0., 0., 1., 0., -1., 0.); // a camera1 looking down
   Camera camera(Pose3(rot, origin), K);
 
-  Point3 actual = camera.backproject(Point2(), 1.);
+  Point3 actual = camera.backproject(Point2(0,0), 1.);
   Point3 expected(0., 1., 0.);
   pair<Point2, bool> x = camera.projectSafe(expected);
 
   EXPECT(assert_equal(expected, actual));
-  EXPECT(assert_equal(Point2(), x.first));
+  EXPECT(assert_equal(Point2(0,0), x.first));
   EXPECT(x.second);
 }
 
@@ -169,12 +171,12 @@ TEST( PinholeCamera, backprojectInfinity2)
   Rot3 rot(1., 0., 0., 0., 0., 1., 0., -1., 0.); // a camera1 looking down
   Camera camera(Pose3(rot, origin), K);
 
-  Unit3 actual = camera.backprojectPointAtInfinity(Point2());
+  Unit3 actual = camera.backprojectPointAtInfinity(Point2(0,0));
   Unit3 expected(0., 1., 0.);
   Point2 x = camera.project(expected);
 
   EXPECT(assert_equal(expected, actual));
-  EXPECT(assert_equal(Point2(), x));
+  EXPECT(assert_equal(Point2(0,0), x));
 }
 
 /* ************************************************************************* */
@@ -184,12 +186,12 @@ TEST( PinholeCamera, backprojectInfinity3)
   Rot3 rot(1., 0., 0., 0., 1., 0., 0., 0., 1.); // identity
   Camera camera(Pose3(rot, origin), K);
 
-  Unit3 actual = camera.backprojectPointAtInfinity(Point2());
+  Unit3 actual = camera.backprojectPointAtInfinity(Point2(0,0));
   Unit3 expected(0., 0., 1.);
   Point2 x = camera.project(expected);
 
   EXPECT(assert_equal(expected, actual));
-  EXPECT(assert_equal(Point2(), x));
+  EXPECT(assert_equal(Point2(0,0), x));
 }
 
 /* ************************************************************************* */
@@ -278,7 +280,7 @@ TEST( PinholeCamera, range0) {
   double result = camera.range(point1, D1, D2);
   Matrix Hexpected1 = numericalDerivative21(range0, camera, point1);
   Matrix Hexpected2 = numericalDerivative22(range0, camera, point1);
-  EXPECT_DOUBLES_EQUAL(distance(point1, camera.pose().translation()), result,
+  EXPECT_DOUBLES_EQUAL(distance3(point1, camera.pose().translation()), result,
       1e-9);
   EXPECT(assert_equal(Hexpected1, D1, 1e-7));
   EXPECT(assert_equal(Hexpected2, D2, 1e-7));
@@ -334,6 +336,15 @@ TEST( PinholeCamera, range3) {
   EXPECT_DOUBLES_EQUAL(1, result, 1e-9);
   EXPECT(assert_equal(Hexpected1, D1, 1e-7));
   EXPECT(assert_equal(Hexpected2, D2, 1e-7));
+}
+
+/* ************************************************************************* */
+TEST( PinholeCamera, Cal3Bundler) {
+  Cal3Bundler calibration;
+  Pose3 wTc;
+  PinholeCamera<Cal3Bundler> camera(wTc, calibration);
+  Point2 p(50, 100);
+  camera.backproject(p, 10);
 }
 
 /* ************************************************************************* */

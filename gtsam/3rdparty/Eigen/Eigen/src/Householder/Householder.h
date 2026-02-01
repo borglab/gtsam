@@ -39,6 +39,7 @@ template<int n> struct decrement_size
   *     MatrixBase::applyHouseholderOnTheRight()
   */
 template<typename Derived>
+EIGEN_DEVICE_FUNC
 void MatrixBase<Derived>::makeHouseholderInPlace(Scalar& tau, RealScalar& beta)
 {
   VectorBlock<Derived, internal::decrement_size<Base::SizeAtCompileTime>::ret> essentialPart(derived(), 1, size()-1);
@@ -62,6 +63,7 @@ void MatrixBase<Derived>::makeHouseholderInPlace(Scalar& tau, RealScalar& beta)
   */
 template<typename Derived>
 template<typename EssentialPart>
+EIGEN_DEVICE_FUNC
 void MatrixBase<Derived>::makeHouseholder(
   EssentialPart& essential,
   Scalar& tau,
@@ -75,8 +77,9 @@ void MatrixBase<Derived>::makeHouseholder(
   
   RealScalar tailSqNorm = size()==1 ? RealScalar(0) : tail.squaredNorm();
   Scalar c0 = coeff(0);
+  const RealScalar tol = (std::numeric_limits<RealScalar>::min)();
 
-  if(tailSqNorm == RealScalar(0) && numext::imag(c0)==RealScalar(0))
+  if(tailSqNorm <= tol && numext::abs2(numext::imag(c0))<=tol)
   {
     tau = RealScalar(0);
     beta = numext::real(c0);
@@ -102,13 +105,14 @@ void MatrixBase<Derived>::makeHouseholder(
   * \param essential the essential part of the vector \c v
   * \param tau the scaling factor of the Householder transformation
   * \param workspace a pointer to working space with at least
-  *                  this->cols() * essential.size() entries
+  *                  this->cols() entries
   *
   * \sa MatrixBase::makeHouseholder(), MatrixBase::makeHouseholderInPlace(), 
   *     MatrixBase::applyHouseholderOnTheRight()
   */
 template<typename Derived>
 template<typename EssentialPart>
+EIGEN_DEVICE_FUNC
 void MatrixBase<Derived>::applyHouseholderOnTheLeft(
   const EssentialPart& essential,
   const Scalar& tau,
@@ -118,7 +122,7 @@ void MatrixBase<Derived>::applyHouseholderOnTheLeft(
   {
     *this *= Scalar(1)-tau;
   }
-  else
+  else if(tau!=Scalar(0))
   {
     Map<typename internal::plain_row_type<PlainObject>::type> tmp(workspace,cols());
     Block<Derived, EssentialPart::SizeAtCompileTime, Derived::ColsAtCompileTime> bottom(derived(), 1, 0, rows()-1, cols());
@@ -139,13 +143,14 @@ void MatrixBase<Derived>::applyHouseholderOnTheLeft(
   * \param essential the essential part of the vector \c v
   * \param tau the scaling factor of the Householder transformation
   * \param workspace a pointer to working space with at least
-  *                  this->cols() * essential.size() entries
+  *                  this->rows() entries
   *
   * \sa MatrixBase::makeHouseholder(), MatrixBase::makeHouseholderInPlace(), 
   *     MatrixBase::applyHouseholderOnTheLeft()
   */
 template<typename Derived>
 template<typename EssentialPart>
+EIGEN_DEVICE_FUNC
 void MatrixBase<Derived>::applyHouseholderOnTheRight(
   const EssentialPart& essential,
   const Scalar& tau,
@@ -155,14 +160,14 @@ void MatrixBase<Derived>::applyHouseholderOnTheRight(
   {
     *this *= Scalar(1)-tau;
   }
-  else
+  else if(tau!=Scalar(0))
   {
     Map<typename internal::plain_col_type<PlainObject>::type> tmp(workspace,rows());
     Block<Derived, Derived::RowsAtCompileTime, EssentialPart::SizeAtCompileTime> right(derived(), 0, 1, rows(), cols()-1);
-    tmp.noalias() = right * essential.conjugate();
+    tmp.noalias() = right * essential;
     tmp += this->col(0);
     this->col(0) -= tau * tmp;
-    right.noalias() -= tau * tmp * essential.transpose();
+    right.noalias() -= tau * tmp * essential.adjoint();
   }
 }
 

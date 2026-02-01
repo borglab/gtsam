@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file SmartRangeExample_plaza2.cpp
+ * @file SmartRangeExample_plaza1.cpp
  * @brief A 2D Range SLAM example
  * @date June 20, 2013
  * @author FRank Dellaert
@@ -37,13 +37,14 @@
 
 // In GTSAM, measurement functions are represented as 'factors'. Several common factors
 // have been provided with the library for solving robotics SLAM problems.
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/sam/RangeFactor.h>
 #include <gtsam_unstable/slam/SmartRangeFactor.h>
 
+// To find data files, we can use `findExampleDataFile`, declared here:
+#include <gtsam/slam/dataset.h>
+
 // Standard headers, added last, so we know headers above work on their own
-#include <boost/foreach.hpp>
 #include <fstream>
 #include <iostream>
 
@@ -60,10 +61,9 @@ namespace NM = gtsam::noiseModel;
 typedef pair<double, Pose2> TimedOdometry;
 list<TimedOdometry> readOdometry() {
   list<TimedOdometry> odometryList;
-  ifstream is("/Users/dellaert/borg/gtsam/examples/Data/Plaza1_DR.txt");
-  if (!is)
-    throw runtime_error(
-        "/Users/dellaert/borg/gtsam/examples/Data/Plaza1_DR.txt file not found");
+  string drFile = findExampleDataFile("Plaza1_DR.txt");
+  ifstream is(drFile);
+  if (!is) throw runtime_error("Plaza1_DR.txt file not found");
 
   while (is) {
     double t, distance_traveled, delta_heading;
@@ -77,13 +77,12 @@ list<TimedOdometry> readOdometry() {
 
 // load the ranges from TD
 //    Time (sec)  Sender / Antenna ID Receiver Node ID  Range (m)
-typedef boost::tuple<double, size_t, double> RangeTriple;
+typedef std::tuple<double, size_t, double> RangeTriple;
 vector<RangeTriple> readTriples() {
   vector<RangeTriple> triples;
-  ifstream is("/Users/dellaert/borg/gtsam/examples/Data/Plaza1_TD.txt");
-  if (!is)
-    throw runtime_error(
-        "/Users/dellaert/borg/gtsam/examples/Data/Plaza1_TD.txt file not found");
+  string tdFile = findExampleDataFile("Plaza1_TD.txt");
+  ifstream is(tdFile);
+  if (!is) throw runtime_error("Plaza1_TD.txt file not found");
 
   while (is) {
     double t, sender, receiver, range;
@@ -99,8 +98,6 @@ int main(int argc, char** argv) {
 
   // load Plaza1 data
   list<TimedOdometry> odometry = readOdometry();
-//  size_t M = odometry.size();
-
   vector<RangeTriple> triples = readTriples();
   size_t K = triples.size();
 
@@ -113,11 +110,11 @@ int main(int argc, char** argv) {
 
   // Set Noise parameters
   Vector priorSigmas = Vector3(1, 1, M_PI);
-  Vector odoSigmas = Vector3(0.05, 0.01, 0.2);
+  Vector odoSigmas = Vector3(0.05, 0.01, 0.1);
+  auto odoNoise = NM::Diagonal::Sigmas(odoSigmas);
   double sigmaR = 100; // range standard deviation
   const NM::Base::shared_ptr // all same type
   priorNoise = NM::Diagonal::Sigmas(priorSigmas), //prior
-  odoNoise = NM::Diagonal::Sigmas(odoSigmas), // odometry
   gaussian = NM::Isotropic::Sigma(1, sigmaR), // non-robust
   tukey = NM::Robust::Create(NM::mEstimator::Tukey::Create(15), gaussian), //robust
   rangeNoise = robust ? tukey : gaussian;
@@ -129,12 +126,10 @@ int main(int argc, char** argv) {
   Pose2 pose0 = Pose2(-34.2086489999201, 45.3007639991120,
       M_PI - 2.02108900000000);
   NonlinearFactorGraph newFactors;
-  newFactors.push_back(PriorFactor<Pose2>(0, pose0, priorNoise));
+  newFactors.addPrior(0, pose0, priorNoise);
 
-  ofstream os2(
-      "/Users/dellaert/borg/gtsam/gtsam_unstable/examples/rangeResultLM.txt");
-  ofstream os3(
-      "/Users/dellaert/borg/gtsam/gtsam_unstable/examples/rangeResultSR.txt");
+  ofstream os2("rangeResultLM.txt");
+  ofstream os3("rangeResultSR.txt");
 
   //  initialize points (Gaussian)
   Values initial;
@@ -149,10 +144,10 @@ int main(int argc, char** argv) {
 
   //  initialize smart range factors
   size_t ids[] = { 1, 6, 0, 5 };
-  typedef boost::shared_ptr<SmartRangeFactor> SmartPtr;
+  typedef std::shared_ptr<SmartRangeFactor> SmartPtr;
   map<size_t, SmartPtr> smartFactors;
   if (smart) {
-    BOOST_FOREACH(size_t jj,ids) {
+    for(size_t jj: ids) {
       smartFactors[jj] = SmartPtr(new SmartRangeFactor(sigmaR));
       newFactors.push_back(smartFactors[jj]);
     }
@@ -166,16 +161,16 @@ int main(int argc, char** argv) {
 
   // Loop over odometry
   gttic_(iSAM);
-  BOOST_FOREACH(const TimedOdometry& timedOdometry, odometry) {
+  for(const TimedOdometry& timedOdometry: odometry) {
     //--------------------------------- odometry loop -----------------------------------------
     double t;
     Pose2 odometry;
-    boost::tie(t, odometry) = timedOdometry;
+    std::tie(t, odometry) = timedOdometry;
+    printf("step %d, time = %g\n",(int)i,t);
 
     // add odometry factor
     newFactors.push_back(
-        BetweenFactor<Pose2>(i - 1, i, odometry,
-            NM::Diagonal::Sigmas(odoSigmas)));
+        BetweenFactor<Pose2>(i - 1, i, odometry, odoNoise));
 
     // predict pose and add as initial estimate
     Pose2 predictedPose = lastPose.compose(odometry);
@@ -184,20 +179,26 @@ int main(int argc, char** argv) {
     landmarkEstimates.insert(i, predictedPose);
 
     // Check if there are range factors to be added
-    while (k < K && t >= boost::get<0>(triples[k])) {
-      size_t j = boost::get<1>(triples[k]);
-      double range = boost::get<2>(triples[k]);
+    while (k < K && t >= std::get<0>(triples[k])) {
+      size_t j = std::get<1>(triples[k]);
+      double range = std::get<2>(triples[k]);
       if (i > start) {
         if (smart && totalCount < minK) {
-          smartFactors[j]->addRange(i, range);
-          printf("adding range %g for %d on %d",range,(int)j,(int)i);cout << endl;
+          try {
+            smartFactors[j]->addRange(i, range);
+            printf("adding range %g for %d",range,(int)j);
+          } catch (const invalid_argument& e) {
+            printf("warning: omitting duplicate range %g for %d: %s", range,
+                   (int)j, e.what());
+          }
+          cout << endl;
         }
         else {
           RangeFactor<Pose2, Point2> factor(i, symbol('L', j), range,
               rangeNoise);
           // Throw out obvious outliers based on current landmark estimates
           Vector error = factor.unwhitenedError(landmarkEstimates);
-          if (k <= 200 || fabs(error[0]) < 5)
+          if (k <= 200 || std::abs(error[0]) < 5)
             newFactors.push_back(factor);
         }
         totalCount += 1;
@@ -219,25 +220,24 @@ int main(int argc, char** argv) {
       if (hasLandmarks) {
         // update landmark estimates
         landmarkEstimates = Values();
-        BOOST_FOREACH(size_t jj,ids)
+        for(size_t jj: ids)
           landmarkEstimates.insert(symbol('L', jj), result.at(symbol('L', jj)));
       }
       newFactors = NonlinearFactorGraph();
       initial = Values();
       if (smart && !hasLandmarks) {
         cout << "initialize from smart landmarks" << endl;
-        BOOST_FOREACH(size_t jj,ids) {
+        for(size_t jj: ids) {
           Point2 landmark = smartFactors[jj]->triangulate(result);
           initial.insert(symbol('L', jj), landmark);
           landmarkEstimates.insert(symbol('L', jj), landmark);
         }
       }
       countK = 0;
-      BOOST_FOREACH(const Values::ConstFiltered<Point2>::KeyValuePair& it, result.filter<Point2>())
-        os2 << it.key << "\t" << it.value.x() << "\t" << it.value.y() << "\t1"
-            << endl;
+      for (const auto& [key, point] : result.extract<Point2>())
+        os2 << key << "\t" << point.x() << "\t" << point.y() << "\t1" << endl;
       if (smart) {
-        BOOST_FOREACH(size_t jj,ids) {
+        for(size_t jj: ids) {
           Point2 landmark = smartFactors[jj]->triangulate(result);
           os3 << jj << "\t" << landmark.x() << "\t" << landmark.y() << "\t1"
               << endl;
@@ -247,7 +247,7 @@ int main(int argc, char** argv) {
     i += 1;
     if (i>end) break;
     //--------------------------------- odometry loop -----------------------------------------
-  } // BOOST_FOREACH
+  } // end for
   gttoc_(iSAM);
 
   // Print timings
@@ -255,11 +255,9 @@ int main(int argc, char** argv) {
 
   // Write result to file
   Values result = isam.calculateEstimate();
-  ofstream os(
-      "/Users/dellaert/borg/gtsam/gtsam_unstable/examples/rangeResult.txt");
-  BOOST_FOREACH(const Values::ConstFiltered<Pose2>::KeyValuePair& it, result.filter<Pose2>())
-    os << it.key << "\t" << it.value.x() << "\t" << it.value.y() << "\t"
-        << it.value.theta() << endl;
+  ofstream os("rangeResult.txt");
+  for (const auto& [key, pose] : result.extract<Pose2>())
+    os << key << "\t" << pose.x() << "\t" << pose.y() << "\t" << pose.theta() << endl;
   exit(0);
 }
 

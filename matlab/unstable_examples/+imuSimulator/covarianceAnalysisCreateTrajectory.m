@@ -40,7 +40,7 @@ if options.useRealData == 1
     
     %% gt Between measurements
     if options.includeBetweenFactors == 1 && i > 0
-      prevPose = values.at(currentPoseKey - 1);
+      prevPose = values.atPose3(currentPoseKey - 1);
       deltaPose = prevPose.between(currentPose);
       measurements(i).deltaVector = Pose3.Logmap(deltaPose);
     end
@@ -65,7 +65,7 @@ if options.useRealData == 1
           IMUdeltaPose = IMUPose1.between(IMUPose2);
           IMUdeltaPoseVector     = Pose3.Logmap(IMUdeltaPose);
           IMUdeltaRotVector      = IMUdeltaPoseVector(1:3);
-          IMUdeltaPositionVector = IMUPose2.translation.vector - IMUPose1.translation.vector; % translation in absolute frame
+          IMUdeltaPositionVector = IMUPose2.translation - IMUPose1.translation; % translation in absolute frame
           
           measurements(i).imu(j).deltaT = deltaT;
           
@@ -82,13 +82,13 @@ if options.useRealData == 1
       end
       
       % Add Values: velocity and bias
-      values.insert(currentVelKey, LieVector(currentVel));
+      values.insert(currentVelKey, currentVel);
       values.insert(currentBiasKey, metadata.imu.zeroBias);
     end
     
     %% gt GPS measurements
     if options.includeGPSFactors == 1 && i > 0
-      gpsPositionVector = imuSimulator.getPoseFromGtScenario(gtScenario,scenarioInd).translation.vector;
+      gpsPositionVector = imuSimulator.getPoseFromGtScenario(gtScenario,scenarioInd).translation;
       measurements(i).gpsPositionVector = gpsPositionVector;
     end
     
@@ -97,8 +97,8 @@ if options.useRealData == 1
       % Create the camera based on the current pose and the pose of the
       % camera in the body
       cameraPose = currentPose.compose(metadata.camera.bodyPoseCamera);
-      camera = SimpleCamera(cameraPose, metadata.camera.calibration);
-      %camera = SimpleCamera(currentPose, metadata.camera.calibration);
+      camera = PinholeCameraCal3_S2(cameraPose, metadata.camera.calibration);
+      %camera = PinholeCameraCal3_S2(currentPose, metadata.camera.calibration);
       
       % Record measurements if the landmark is within visual range
       for j=1:length(metadata.camera.gtLandmarkPoints)

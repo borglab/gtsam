@@ -1,5 +1,5 @@
 /**
- * @file Mechanization_bRn.h
+ * @file Mechanization_bRn2.h
  * @date Jan 25, 2012
  * @author Chris Beall
  * @author Frank Dellaert
@@ -9,7 +9,7 @@
 
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/base/Vector.h>
-#include <gtsam_unstable/base/dllexport.h>
+#include <gtsam_unstable/dllexport.h>
 #include <list>
 
 namespace gtsam {
@@ -30,14 +30,14 @@ public:
    * @param r3 Z-axis of rotated frame
    */
   Mechanization_bRn2(const Rot3& initial_bRn = Rot3(),
-      const Vector3& initial_x_g = zero(3), const Vector3& initial_x_a = zero(3)) :
+      const Vector3& initial_x_g = Z_3x1, const Vector3& initial_x_a = Z_3x1) :
       bRn_(initial_bRn), x_g_(initial_x_g), x_a_(initial_x_a) {
   }
 
   /// Copy constructor
-  Mechanization_bRn2(const Mechanization_bRn2& other) :
-      bRn_(other.bRn_), x_g_(other.x_g_), x_a_(other.x_a_) {
-  }
+  Mechanization_bRn2(const Mechanization_bRn2& other) = default;
+
+  Mechanization_bRn2& operator=(const Mechanization_bRn2& other) = default;
 
   /// gravity in the body frame
   Vector3 b_g(double g_e) const {

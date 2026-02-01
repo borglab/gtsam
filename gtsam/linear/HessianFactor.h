@@ -23,8 +23,6 @@
 #include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/FastVector.h>
 
-#include <boost/make_shared.hpp>
-
 namespace gtsam {
 
   // Forward declarations
@@ -34,12 +32,6 @@ namespace gtsam {
   class GaussianConditional;
   class GaussianBayesNet;
   class GaussianFactorGraph;
-
-  GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<GaussianFactor> >
-    EliminatePreferCholesky(const GaussianFactorGraph& factors, const Ordering& keys);
-
-  GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<HessianFactor> >
-    EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys);
 
   /**
    * @brief A Gaussian factor using the canonical parameters (information form)
@@ -113,7 +105,7 @@ namespace gtsam {
 
     typedef GaussianFactor Base; ///< Typedef to base class
     typedef HessianFactor This; ///< Typedef to this class
-    typedef boost::shared_ptr<This> shared_ptr; ///< A shared_ptr to this class
+    typedef std::shared_ptr<This> shared_ptr; ///< A shared_ptr to this class
     typedef SymmetricBlockMatrix::Block Block; ///< A block from the Hessian matrix
     typedef SymmetricBlockMatrix::constBlock constBlock; ///< A block from the Hessian matrix (const version)
 
@@ -138,7 +130,7 @@ namespace gtsam {
      * term, and f the constant term.
      * JacobianFactor error is \f[ 0.5* (Ax-b)' M (Ax-b) = 0.5*x'A'MAx - x'A'Mb + 0.5*b'Mb \f]
      * HessianFactor  error is \f[ 0.5*(x'Gx - 2x'g + f) = 0.5*x'Gx    - x'*g   + 0.5*f    \f]
-     * So, with \f$ A = [A1 A2] \f$ and \f$ G=A*'M*A = [A1';A2']*M*[A1 A2] \f$ we have
+     * So, with \f$ A = [A1 A2] \f$ and \f$ G=A'*M*A = [A1';A2']*M*[A1 A2] \f$ we have
      \code
       n1*n1 G11 = A1'*M*A1
       n1*n2 G12 = A1'*M*A2
@@ -165,7 +157,7 @@ namespace gtsam {
      * quadratic term (the Hessian matrix) provided in row-order, gs the pieces
      * of the linear vector term, and f the constant term.
      */
-    HessianFactor(const std::vector<Key>& js, const std::vector<Matrix>& Gs,
+    HessianFactor(const KeyVector& js, const std::vector<Matrix>& Gs,
         const std::vector<Vector>& gs, double f);
 
     /** Constructor with an arbitrary number of keys and with the augmented information matrix
@@ -182,31 +174,50 @@ namespace gtsam {
 
     /** Combine a set of factors into a single dense HessianFactor */
     explicit HessianFactor(const GaussianFactorGraph& factors,
-      boost::optional<const Scatter&> scatter = boost::none);
+      const Scatter& scatter);
+
+    /** Combine a set of factors into a single dense HessianFactor */
+    explicit HessianFactor(const GaussianFactorGraph& factors)
+        : HessianFactor(factors, Scatter(factors)) {}
 
     /** Destructor */
-    virtual ~HessianFactor() {}
+    ~HessianFactor() override {}
 
     /** Clone this HessianFactor */
-    virtual GaussianFactor::shared_ptr clone() const {
-      return boost::make_shared<HessianFactor>(*this); }
+    GaussianFactor::shared_ptr clone() const override {
+      return std::make_shared<HessianFactor>(*this); }
 
     /** Print the factor for debugging and testing (implementing Testable) */
-    virtual void print(const std::string& s = "",
-        const KeyFormatter& formatter = DefaultKeyFormatter) const;
+    void print(const std::string& s = "",
+        const KeyFormatter& formatter = DefaultKeyFormatter) const override;
 
     /** Compare to another factor for testing (implementing Testable) */
-    virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const;
+    bool equals(const GaussianFactor& lf, double tol = 1e-9) const override;
 
-    /** Evaluate the factor error f(x), see above. */
-    virtual double error(const VectorValues& c) const; /** 0.5*[x -1]'*H*[x -1] (also see constructor documentation) */
+    /// HybridValues simply extracts the \class VectorValues and calls error.
+    using GaussianFactor::error;
+
+    /** 
+     * Evaluate the factor error f(x). 
+     * returns 0.5*[x -1]'*H*[x -1] (also see constructor documentation)
+     */
+    double error(const VectorValues& c) const override;
+
+    /**
+     * Compute the change in error from zero to c, optionally returning
+     * the old and new errors.
+     */
+    double deltaError(const VectorValues& c, double* oldError = nullptr,
+                      double* newError = nullptr) const override;
 
     /** Return the dimension of the variable pointed to by the given key iterator
      * todo: Remove this in favor of keeping track of dimensions with variables?
      * @param variable An iterator pointing to the slot in this factor.  You can
      * use, for example, begin() + 2 to get the 3rd variable in this factor.
      */
-    virtual DenseIndex getDim(const_iterator variable) const { return info_(variable-this->begin(), 0).rows(); }
+    DenseIndex getDim(const_iterator variable) const override {
+      return info_.getDim(std::distance(begin(), variable));
+    }
 
     /** Return the number of columns and rows of the Hessian matrix, including the information vector. */
     size_t rows() const { return info_.rows(); }
@@ -216,81 +227,58 @@ namespace gtsam {
      * stored stored in this factor.
      * @return a HessianFactor with negated Hessian matrices
      */
-    virtual GaussianFactor::shared_ptr negate() const;
-    
-    /** Check if the factor is empty.  TODO: How should this be defined? */
-    virtual bool empty() const { return size() == 0 /*|| rows() == 0*/; }
-
-    /** Return a view of the block at (j1,j2) of the <em>upper-triangular part</em> of the
-     * information matrix \f$ H \f$, no data is copied.  See HessianFactor class documentation
-     * above to explain that only the upper-triangular part of the information matrix is stored
-     * and returned by this function.
-     * @param j1 Which block row to get, as an iterator pointing to the slot in this factor.  You can
-     * use, for example, begin() + 2 to get the 3rd variable in this factor.
-     * @param j2 Which block column to get, as an iterator pointing to the slot in this factor.  You can
-     * use, for example, begin() + 2 to get the 3rd variable in this factor.
-     * @return A view of the requested block, not a copy.
-     */
-    constBlock info(const_iterator j1, const_iterator j2) const { return info_(j1-begin(), j2-begin()); }
-
-    /** Return a view of the block at (j1,j2) of the <em>upper-triangular part</em> of the
-     * information matrix \f$ H \f$, no data is copied.  See HessianFactor class documentation
-     * above to explain that only the upper-triangular part of the information matrix is stored
-     * and returned by this function.
-     * @param j1 Which block row to get, as an iterator pointing to the slot in this factor.  You can
-     * use, for example, begin() + 2 to get the 3rd variable in this factor.
-     * @param j2 Which block column to get, as an iterator pointing to the slot in this factor.  You can
-     * use, for example, begin() + 2 to get the 3rd variable in this factor.
-     * @return A view of the requested block, not a copy.
-     */
-    Block info(iterator j1, iterator j2) { return info_(j1-begin(), j2-begin()); }
-
-    /** Return the <em>upper-triangular part</em> of the full *augmented* information matrix,
-     * as described above.  See HessianFactor class documentation above to explain that only the
-     * upper-triangular part of the information matrix is stored and returned by this function.
-     */
-    SymmetricBlockMatrix::constBlock info() const { return info_.full(); }
-
-    /** Return the <em>upper-triangular part</em> of the full *augmented* information matrix,
-     * as described above.  See HessianFactor class documentation above to explain that only the
-     * upper-triangular part of the information matrix is stored and returned by this function.
-     */
-    SymmetricBlockMatrix::Block info() { return info_.full(); }
+    GaussianFactor::shared_ptr negate() const override;
 
     /** Return the constant term \f$ f \f$ as described above
      * @return The constant term \f$ f \f$
      */
-    double constantTerm() const { return info_(this->size(), this->size())(0,0); }
+    double constantTerm() const {
+      const auto view = info_.diagonalBlock(size());
+      return view(0, 0);
+    }
 
     /** Return the constant term \f$ f \f$ as described above
      * @return The constant term \f$ f \f$
      */
-    double& constantTerm() { return info_(this->size(), this->size())(0,0); }
+    double& constantTerm() { return info_.diagonalBlock(size())(0, 0); }
 
     /** Return the part of linear term \f$ g \f$ as described above corresponding to the requested variable.
      * @param j Which block row to get, as an iterator pointing to the slot in this factor.  You can
      * use, for example, begin() + 2 to get the 3rd variable in this factor.
      * @return The linear term \f$ g \f$ */
-    constBlock::OffDiagonal::ColXpr linearTerm(const_iterator j) const {
-      return info_(j-begin(), size()).knownOffDiagonal().col(0); }
-
-    /** Return the part of linear term \f$ g \f$ as described above corresponding to the requested variable.
-     * @param j Which block row to get, as an iterator pointing to the slot in this factor.  You can
-     * use, for example, begin() + 2 to get the 3rd variable in this factor.
-     * @return The linear term \f$ g \f$ */
-    Block::OffDiagonal::ColXpr linearTerm(iterator j) {
-      return info_(j-begin(), size()).knownOffDiagonal().col(0); }
+    SymmetricBlockMatrix::constBlock linearTerm(const_iterator j) const {
+#ifndef NDEBUG
+      if(empty()) throw;
+#endif
+      return info_.aboveDiagonalBlock(j - begin(), size());
+    }
 
     /** Return the complete linear term \f$ g \f$ as described above.
      * @return The linear term \f$ g \f$ */
-    constBlock::OffDiagonal::ColXpr linearTerm() const {
-      return info_.range(0, this->size(), this->size(), this->size() + 1).knownOffDiagonal().col(0); }
+    SymmetricBlockMatrix::constBlock linearTerm() const {
+#ifndef NDEBUG
+      if(empty()) throw;
+#endif
+      // get the last column (except the bottom right block)
+      return info_.aboveDiagonalRange(0, size(), size(), size() + 1);
+    }
 
     /** Return the complete linear term \f$ g \f$ as described above.
      * @return The linear term \f$ g \f$ */
-    Block::OffDiagonal::ColXpr linearTerm() {
-      return info_.range(0, this->size(), this->size(), this->size() + 1).knownOffDiagonal().col(0); }
-    
+    SymmetricBlockMatrix::Block linearTerm() {
+#ifndef NDEBUG
+      if(empty()) throw;
+#endif
+      return info_.aboveDiagonalRange(0, size(), size(), size() + 1);
+    }
+
+    /// Return underlying information matrix.
+    const SymmetricBlockMatrix& info() const { return info_; }
+
+    /// Return non-const information matrix.
+    /// TODO(gareth): Review the sanity of having non-const access to this.
+    SymmetricBlockMatrix& info() { return info_; }
+
     /** Return the augmented information matrix represented by this GaussianFactor.
      * The augmented information matrix contains the information matrix with an
      * additional column holding the information vector, and an additional row
@@ -306,100 +294,90 @@ namespace gtsam {
      * representation of the augmented information matrix, which stores only the
      * upper triangle.
      */
-    virtual Matrix augmentedInformation() const;
+    Matrix augmentedInformation() const override;
+
+    /// Return self-adjoint view onto the information matrix (NOT augmented).
+    Eigen::SelfAdjointView<SymmetricBlockMatrix::constBlock, Eigen::Upper> informationView() const;
 
     /** Return the non-augmented information matrix represented by this
      * GaussianFactor.
      */
-    virtual Matrix information() const;
+    Matrix information() const override;
 
-    /// Return the diagonal of the Hessian for this factor
-    virtual VectorValues hessianDiagonal() const;
+    /// Add the current diagonal to a VectorValues instance
+    void hessianDiagonalAdd(VectorValues& d) const override;
+
+    /// Using the base method
+    using Base::hessianDiagonal;
 
     /// Raw memory access version of hessianDiagonal
-    virtual void hessianDiagonal(double* d) const;
+    void hessianDiagonal(double* d) const override;
 
     /// Return the block diagonal of the Hessian for this factor
-    virtual std::map<Key,Matrix> hessianBlockDiagonal() const;
+    std::map<Key,Matrix> hessianBlockDiagonal() const override;
 
-    /**
-     * Return (dense) matrix associated with factor
-     * @param ordering of variables needed for matrix column order
-     * @param set weight to true to bake in the weights
-     */
-    virtual std::pair<Matrix, Vector> jacobian() const;
+    /// Return (dense) matrix associated with factor
+    std::pair<Matrix, Vector> jacobian() const override;
 
     /**
      * Return (dense) matrix associated with factor
      * The returned system is an augmented matrix: [A b]
      * @param set weight to use whitening to bake in weights
      */
-    virtual Matrix augmentedJacobian() const;
-
-    /** Return the full augmented Hessian matrix of this factor as a SymmetricBlockMatrix object. */
-    const SymmetricBlockMatrix& matrixObject() const { return info_; }
+    Matrix augmentedJacobian() const override;
 
     /** Update an information matrix by adding the information corresponding to this factor
      * (used internally during elimination).
-     * @param scatter A mapping from variable index to slot index in this HessianFactor
+     * @param keys THe ordered vector of keys for the information matrix to be updated
      * @param info The information matrix to be updated
      */
-    void updateHessian(const FastVector<Key>& keys, SymmetricBlockMatrix* info) const;
+    void updateHessian(const KeyVector& keys, SymmetricBlockMatrix* info) const override;
+
+    /** Update another Hessian factor
+     * @param other the HessianFactor to be updated
+     */
+    void updateHessian(HessianFactor* other) const {
+#ifndef NDEBUG
+      if(!other) throw;
+#endif
+      updateHessian(other->keys_, &other->info_);
+    }
 
     /** y += alpha * A'*A*x */
-    void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const;
+    void multiplyHessianAdd(double alpha, const VectorValues& x, VectorValues& y) const override;
 
     /// eta for Hessian
-    VectorValues gradientAtZero() const;
+    VectorValues gradientAtZero() const override;
 
     /// Raw memory access version of gradientAtZero
-    virtual void gradientAtZero(double* d) const;
+    void gradientAtZero(double* d) const override;
 
     /**
      * Compute the gradient at a key:
-     *      \grad f(x_i) = \sum_j G_ij*x_j - g_i
+     *  \f$ \grad f(x_i) = \sum_j G_ij*x_j - g_i \f$
      */
-    Vector gradient(Key key, const VectorValues& x) const;
+    Vector gradient(Key key, const VectorValues& x) const override;
 
     /**
-    *   Densely partially eliminate with Cholesky factorization.  JacobianFactors are
-    *   left-multiplied with their transpose to form the Hessian using the conversion constructor
-    *   HessianFactor(const JacobianFactor&).
-    *   
-    *   If any factors contain constrained noise models, this function will fail because our current
-    *   implementation cannot handle constrained noise models in Cholesky factorization.  The
-    *   function EliminatePreferCholesky() automatically does QR instead when this is the case.
-    *   
-    *   Variables are eliminated in the order specified in \c keys.
-    *   
-    *   @param factors Factors to combine and eliminate
-    *   @param keys The variables to eliminate and their elimination ordering
-    *   @return The conditional and remaining factor
-    *   
-    *   \addtogroup LinearSolving */
-    friend GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<HessianFactor> >
-      EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys);
+     *  In-place elimination that returns a conditional on (ordered) keys specified, and leaves
+     *  this factor to be on the remaining keys (separator) only. Does dense partial Cholesky.
+     */
+    std::shared_ptr<GaussianConditional> eliminateCholesky(const Ordering& keys);
 
-    /**
-    *   Densely partially eliminate with Cholesky factorization.  JacobianFactors are
-    *   left-multiplied with their transpose to form the Hessian using the conversion constructor
-    *   HessianFactor(const JacobianFactor&).
-    *   
-    *   This function will fall back on QR factorization for any cliques containing JacobianFactor's
-    *   with constrained noise models.
-    *   
-    *   Variables are eliminated in the order specified in \c keys.
-    *   
-    *   @param factors Factors to combine and eliminate
-    *   @param keys The variables to eliminate and their elimination ordering
-    *   @return The conditional and remaining factor
-    *   
-    *   \addtogroup LinearSolving */
-    friend GTSAM_EXPORT std::pair<boost::shared_ptr<GaussianConditional>, boost::shared_ptr<GaussianFactor> >
-      EliminatePreferCholesky(const GaussianFactorGraph& factors, const Ordering& keys);
+      /// Solve the system A'*A delta = A'*b in-place, return delta as VectorValues
+    VectorValues solve();
 
-  private:
+ private:
+    /// Allocate for given scatter pattern
+    void Allocate(const Scatter& scatter);
 
+    /// Constructor with given scatter pattern, allocating but not initializing storage.
+    HessianFactor(const Scatter& scatter);
+
+    friend class NonlinearFactorGraph;
+    friend class NonlinearClusterTree;
+
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -407,7 +385,45 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(GaussianFactor);
       ar & BOOST_SERIALIZATION_NVP(info_);
     }
+#endif
   };
+
+/**
+*   Densely partially eliminate with Cholesky factorization.  JacobianFactors are
+*   left-multiplied with their transpose to form the Hessian using the conversion constructor
+*   HessianFactor(const JacobianFactor&).
+*
+*   If any factors contain constrained noise models, this function will fail because our current
+*   implementation cannot handle constrained noise models in Cholesky factorization.  The
+*   function EliminatePreferCholesky() automatically does QR instead when this is the case.
+*
+*   Variables are eliminated in the order specified in \c keys.
+*
+*   @param factors Factors to combine and eliminate
+*   @param keys The variables to eliminate and their elimination ordering
+*   @return The conditional and remaining factor
+*
+*   \ingroup LinearSolving */
+GTSAM_EXPORT std::pair<std::shared_ptr<GaussianConditional>, std::shared_ptr<HessianFactor> >
+  EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys);
+
+/**
+*   Densely partially eliminate with Cholesky factorization.  JacobianFactors are
+*   left-multiplied with their transpose to form the Hessian using the conversion constructor
+*   HessianFactor(const JacobianFactor&).
+*
+*   This function will fall back on QR factorization for any cliques containing JacobianFactor's
+*   with constrained noise models.
+*
+*   Variables are eliminated in the order specified in \c keys.
+*
+*   @param factors Factors to combine and eliminate
+*   @param keys The variables to eliminate and their elimination ordering
+*   @return The conditional and remaining factor
+*
+*   \ingroup LinearSolving */
+GTSAM_EXPORT std::pair<std::shared_ptr<GaussianConditional>, std::shared_ptr<GaussianFactor> >
+  EliminatePreferCholesky(const GaussianFactorGraph& factors, const Ordering& keys);
 
 /// traits
 template<>

@@ -5,8 +5,6 @@
 /* ----------------------------------------------------------------------------
  * CCOLAMD, Copyright (C), Univ. of Florida.  Authors: Timothy A. Davis,
  * Sivasankaran Rajamanickam, and Stefan Larimore
- * See License.txt for the Version 2.1 of the GNU Lesser General Public License
- * http://www.cise.ufl.edu/research/sparse
  * -------------------------------------------------------------------------- */
 
 /* 
@@ -25,7 +23,7 @@
 #include "mex.h"
 #include "matrix.h"
 #include <stdlib.h>
-#include "UFconfig.h"
+#define Long SuiteSparse_long
 
 /* ========================================================================== */
 /* === csymamd mexFunction ================================================== */
@@ -43,23 +41,23 @@ void mexFunction
 {
     /* === Local variables ================================================== */
 
-    UF_long *A ;		/* row indices of input matrix A */
-    UF_long *perm ;		/* column ordering of M and ordering of A */
-    UF_long *cmember ;		/* csymamd's copy of the constraint set */
-    double *in_cmember ;	/* input constraint set */
-    UF_long *p ;		/* column pointers of input matrix A */
-    UF_long cslen ;		/* size of constraint set */
-    UF_long n_col ;		/* number of columns of A */
-    UF_long n_row ;		/* number of rows of A */
-    UF_long full ;		/* TRUE if input matrix full, FALSE if sparse */
+    Long *A ;                   /* row indices of input matrix A */
+    Long *perm ;                /* column ordering of M and ordering of A */
+    Long *cmember ;             /* csymamd's copy of the constraint set */
+    double *in_cmember ;        /* input constraint set */
+    Long *p ;                   /* column pointers of input matrix A */
+    Long cslen ;                /* size of constraint set */
+    Long n_col ;                /* number of columns of A */
+    Long n_row ;                /* number of rows of A */
+    Long full ;                 /* TRUE if input matrix full, FALSE if sparse */
     double knobs [CCOLAMD_KNOBS] ; /* csymamd user-controllable parameters */
-    double *out_perm ;		/* output permutation vector */
-    double *out_stats ;		/* output stats vector */
-    double *in_knobs ;		/* input knobs vector */
-    UF_long i ;			/* loop counter */
-    mxArray *Ainput ;		/* input matrix handle */
-    UF_long spumoni ;		/* verbosity variable */
-    UF_long stats [CCOLAMD_STATS] ;	/* stats for symamd */
+    double *out_perm ;          /* output permutation vector */
+    double *out_stats ;         /* output stats vector */
+    double *in_knobs ;          /* input knobs vector */
+    Long i ;                    /* loop counter */
+    mxArray *Ainput ;           /* input matrix handle */
+    Long spumoni ;              /* verbosity variable */
+    Long stats [CCOLAMD_STATS] ;/* stats for symamd */
 
     /* === Check inputs ===================================================== */
 
@@ -78,11 +76,11 @@ void mexFunction
 	cslen = mxGetNumberOfElements (pargin [2]) ;
 	if (cslen != 0)
 	{
-	    cmember = (UF_long *) mxCalloc (cslen, sizeof (UF_long)) ;
+	    cmember = (Long *) mxCalloc (cslen, sizeof (Long)) ;
 	    for (i = 0 ; i < cslen ; i++)
 	    {
 		/* convert cmember from 1-based to 0-based */
-		cmember[i] = ((UF_long) in_cmember [i] - 1) ;
+		cmember[i] = ((Long) in_cmember [i] - 1) ;
 	    }
 	}
     }
@@ -153,9 +151,9 @@ void mexFunction
     	mexErrMsgTxt ("csymamd: cmember must be of length equal to #cols of A");
     }
 
-    A = (UF_long *) mxGetIr (Ainput) ;
-    p = (UF_long *) mxGetJc (Ainput) ;
-    perm = (UF_long *) mxCalloc (n_col+1, sizeof (UF_long)) ;
+    A = (Long *) mxGetIr (Ainput) ;
+    p = (Long *) mxGetJc (Ainput) ;
+    perm = (Long *) mxCalloc (n_col+1, sizeof (Long)) ;
 
     /* === Order the rows and columns of A (does not destroy A) ============= */
 

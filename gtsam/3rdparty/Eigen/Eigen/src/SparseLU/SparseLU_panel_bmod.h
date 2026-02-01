@@ -38,7 +38,7 @@ namespace internal {
  * \brief Performs numeric block updates (sup-panel) in topological order.
  * 
  * Before entering this routine, the original nonzeros in the panel
- * were already copied i nto the spa[m,w]
+ * were already copied into the spa[m,w]
  * 
  * \param m number of rows in the matrix
  * \param w Panel size
@@ -52,8 +52,8 @@ namespace internal {
  * 
  * 
  */
-template <typename Scalar, typename Index>
-void SparseLUImpl<Scalar,Index>::panel_bmod(const Index m, const Index w, const Index jcol, 
+template <typename Scalar, typename StorageIndex>
+void SparseLUImpl<Scalar,StorageIndex>::panel_bmod(const Index m, const Index w, const Index jcol, 
                                             const Index nseg, ScalarVector& dense, ScalarVector& tempv,
                                             IndexVector& segrep, IndexVector& repfnz, GlobalLU_t& glu)
 {
@@ -145,7 +145,7 @@ void SparseLUImpl<Scalar,Index>::panel_bmod(const Index m, const Index w, const 
       eigen_assert(tempv.size()>w*ldu + nrow*w + 1);
       
       Index ldl = internal::first_multiple<Index>(nrow, PacketSize);
-      Index offset = (PacketSize-internal::first_aligned(B.data(), PacketSize)) % PacketSize;
+      Index offset = (PacketSize-internal::first_default_aligned(B.data(), PacketSize)) % PacketSize;
       MappedMatrixBlock L(tempv.data()+w*ldu+offset, nrow, u_cols, OuterStride<>(ldl));
       
       L.setZero();

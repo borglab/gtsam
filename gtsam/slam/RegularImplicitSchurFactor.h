@@ -1,6 +1,6 @@
 /**
  * @file    RegularImplicitSchurFactor.h
- * @brief   A new type of linear factor (GaussianFactor), which is subclass of GaussianFactor
+ * @brief   A subclass of GaussianFactor specialized to structureless SFM.
  * @author  Frank Dellaert
  * @author  Luca Carlone
  */
@@ -10,20 +10,37 @@
 #include <gtsam/geometry/CameraSet.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/VectorValues.h>
-#include <boost/foreach.hpp>
+
 #include <iosfwd>
+#include <map>
+#include <string>
+#include <vector>
 
 namespace gtsam {
 
 /**
  * RegularImplicitSchurFactor
+ * 
+ * A specialization of a GaussianFactor to structure-less SFM, which is very
+ * fast in a conjugate gradient (CG) solver. Specifically, as measured in 
+ * timeSchurFactors.cpp, it stays very fast for an increasing number of cameras.
+ * The magic is in multiplyHessianAdd, which does the Hessian-vector multiply at 
+ * the core of CG, and implements
+ *    y += F'*alpha*(I - E*P*E')*F*x
+ * where 
+ *  - F is the 2mx6m Jacobian of the m 2D measurements wrpt m 6DOF poses
+ *  - E is the 2mx3 Jacabian of the m 2D measurements wrpt a 3D point
+ *  - P is the covariance on the point
+ * The equation above implicitly executes the Schur complement by removing the
+ * information E*P*E' from the Hessian. It is also very fast as we do not use 
+ * the full 6m*6m F matrix, but rather only it's m 6x6 diagonal blocks.
  */
 template<class CAMERA>
 class RegularImplicitSchurFactor: public GaussianFactor {
 
 public:
   typedef RegularImplicitSchurFactor This; ///< Typedef to this class
-  typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+  typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
 protected:
 
@@ -35,9 +52,10 @@ protected:
   static const int ZDim = traits<Z>::dimension; ///< Measurement dimension
 
   typedef Eigen::Matrix<double, ZDim, D> MatrixZD; ///< type of an F block
-  typedef Eigen::Matrix<double, D, D> MatrixDD; ///< camera hessian
+  typedef Eigen::Matrix<double, D, D> MatrixDD; ///< camera Hessian
+  typedef std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> > FBlocks;
 
-  const std::vector<MatrixZD> FBlocks_; ///< All ZDim*D F blocks (one for each camera)
+  FBlocks FBlocks_; ///< All ZDim*D F blocks (one for each camera)
   const Matrix PointCovariance_; ///< the 3*3 matrix P = inv(E'E) (2*2 if degenerate)
   const Matrix E_; ///< The 2m*3 E Jacobian with respect to the point
   const Vector b_; ///< 2m-dimensional RHS vector
@@ -49,17 +67,25 @@ public:
   }
 
   /// Construct from blocks of F, E, inv(E'*E), and RHS vector b
-  RegularImplicitSchurFactor(const FastVector<Key>& keys,
-      const std::vector<MatrixZD>& FBlocks, const Matrix& E, const Matrix& P,
-      const Vector& b) :
-      GaussianFactor(keys), FBlocks_(FBlocks), PointCovariance_(P), E_(E), b_(b) {
-  }
+
+  /**
+   * @brief Construct a new RegularImplicitSchurFactor object.
+   * 
+   * @param keys keys corresponding to cameras
+   * @param Fs All ZDim*D F blocks (one for each camera)
+   * @param E Jacobian of measurements wrpt point.
+   * @param P point covariance matrix
+   * @param b RHS vector
+   */
+  RegularImplicitSchurFactor(const KeyVector& keys, const FBlocks& Fs,
+                             const Matrix& E, const Matrix& P, const Vector& b)
+      : GaussianFactor(keys), FBlocks_(Fs), PointCovariance_(P), E_(E), b_(b) {}
 
   /// Destructor
-  virtual ~RegularImplicitSchurFactor() {
+  ~RegularImplicitSchurFactor() override {
   }
 
-  std::vector<MatrixZD>& FBlocks() const {
+  const FBlocks& Fs() const {
     return FBlocks_;
   }
 
@@ -77,7 +103,7 @@ public:
 
   /// print
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
-      DefaultKeyFormatter) const {
+      DefaultKeyFormatter) const override {
     std::cout << " RegularImplicitSchurFactor " << std::endl;
     Factor::print(s);
     for (size_t pos = 0; pos < size(); ++pos) {
@@ -89,7 +115,7 @@ public:
   }
 
   /// equals
-  bool equals(const GaussianFactor& lf, double tol) const {
+  bool equals(const GaussianFactor& lf, double tol) const override {
     const This* f = dynamic_cast<const This*>(&lf);
     if (!f)
       return false;
@@ -105,48 +131,48 @@ public:
   }
 
   /// Degrees of freedom of camera
-  virtual DenseIndex getDim(const_iterator variable) const {
+  DenseIndex getDim(const_iterator variable) const override {
     return D;
   }
 
-  virtual void updateHessian(const FastVector<Key>& keys,
-                         SymmetricBlockMatrix* info) const {
+  void updateHessian(const KeyVector& keys,
+                         SymmetricBlockMatrix* info) const override {
     throw std::runtime_error(
         "RegularImplicitSchurFactor::updateHessian non implemented");
   }
-  virtual Matrix augmentedJacobian() const {
+  Matrix augmentedJacobian() const override {
     throw std::runtime_error(
         "RegularImplicitSchurFactor::augmentedJacobian non implemented");
     return Matrix();
   }
-  virtual std::pair<Matrix, Vector> jacobian() const {
+  std::pair<Matrix, Vector> jacobian() const override {
     throw std::runtime_error(
         "RegularImplicitSchurFactor::jacobian non implemented");
-    return std::make_pair(Matrix(), Vector());
+    return {Matrix(), Vector()};
   }
 
   /// *Compute* full augmented information matrix
-  virtual Matrix augmentedInformation() const {
-
+  Matrix augmentedInformation() const override {
     // Do the Schur complement
-    SymmetricBlockMatrix augmentedHessian = //
+    SymmetricBlockMatrix augmentedHessian =
         Set::SchurComplement(FBlocks_, E_, b_);
-    return augmentedHessian.matrix();
+    return augmentedHessian.selfadjointView();
   }
 
   /// *Compute* full information matrix
-  virtual Matrix information() const {
+  Matrix information() const override {
     Matrix augmented = augmentedInformation();
     int m = this->keys_.size();
     size_t M = D * m;
     return augmented.block(0, 0, M, M);
   }
 
-  /// Return the diagonal of the Hessian for this factor
-  virtual VectorValues hessianDiagonal() const {
-    // diag(Hessian) = diag(F' * (I - E * PointCov * E') * F);
-    VectorValues d;
+  /// Using the base method
+  using GaussianFactor::hessianDiagonal;
 
+  /// Add the diagonal of the Hessian for this factor to existing VectorValues
+  void hessianDiagonalAdd(VectorValues &d) const override {
+    // diag(Hessian) = diag(F' * (I - E * PointCov * E') * F);
     for (size_t k = 0; k < size(); ++k) { // for each camera
       Key j = keys_[k];
 
@@ -154,7 +180,7 @@ public:
       // D x 3 = (D x ZDim) * (ZDim x 3)
       const MatrixZD& Fj = FBlocks_[k];
       Eigen::Matrix<double, D, 3> FtE = Fj.transpose()
-          * E_.block<ZDim, 3>(ZDim * k, 0);
+                                        * E_.block<ZDim, 3>(ZDim * k, 0);
 
       Eigen::Matrix<double, D, 1> dj;
       for (int k = 0; k < D; ++k) { // for each diagonal element of the camera hessian
@@ -164,16 +190,19 @@ public:
         // (1 x 1) = (1 x 3) * (3 * 3) * (3 x 1)
         dj(k) -= FtE.row(k) * PointCovariance_ * FtE.row(k).transpose();
       }
-      d.insert(j, dj);
+
+      auto result = d.emplace(j, dj);
+      if(!result.second) {
+        result.first->second += dj;
+      }
     }
-    return d;
   }
 
   /**
    * @brief add the contribution of this factor to the diagonal of the hessian
    * d(output) = d(input) + deltaHessianFactor
    */
-  virtual void hessianDiagonal(double* d) const {
+  void hessianDiagonal(double* d) const override {
     // diag(Hessian) = diag(F' * (I - E * PointCov * E') * F);
     // Use eigen magic to access raw memory
     typedef Eigen::Matrix<double, D, 1> DVector;
@@ -199,7 +228,7 @@ public:
   }
 
   /// Return the block diagonal of the Hessian for this factor
-  virtual std::map<Key, Matrix> hessianBlockDiagonal() const {
+  std::map<Key, Matrix> hessianBlockDiagonal() const override {
     std::map<Key, Matrix> blocks;
     // F'*(I - E*P*E')*F
     for (size_t pos = 0; pos < size(); ++pos) {
@@ -224,18 +253,15 @@ public:
     return blocks;
   }
 
-  virtual GaussianFactor::shared_ptr clone() const {
-    return boost::make_shared<RegularImplicitSchurFactor<CAMERA> >(keys_,
+  GaussianFactor::shared_ptr clone() const override {
+    return std::make_shared<RegularImplicitSchurFactor<CAMERA> >(keys_,
         FBlocks_, PointCovariance_, E_, b_);
     throw std::runtime_error(
         "RegularImplicitSchurFactor::clone non implemented");
   }
-  virtual bool empty() const {
-    return false;
-  }
 
-  virtual GaussianFactor::shared_ptr negate() const {
-    return boost::make_shared<RegularImplicitSchurFactor<CAMERA> >(keys_,
+  GaussianFactor::shared_ptr negate() const override {
+    return std::make_shared<RegularImplicitSchurFactor<CAMERA> >(keys_,
         FBlocks_, PointCovariance_, E_, b_);
     throw std::runtime_error(
         "RegularImplicitSchurFactor::negate non implemented");
@@ -253,7 +279,7 @@ public:
     y += F.transpose() * e3;
   }
 
-  typedef std::vector<Vector2> Error2s;
+  typedef std::vector<Vector2, Eigen::aligned_allocator<Vector2>> Error2s;
 
   /**
    * @brief Calculate corrected error Q*(e-ZDim*b) = (I - E*P*E')*(e-ZDim*b)
@@ -285,7 +311,7 @@ public:
    * f = nonlinear error
    * (x'*H*x - 2*x'*eta + f) = x'*F'*Q*F*x - 2*x'*F'*Q *b + f = x'*F'*Q*(F*x - 2*b) + f
    */
-  virtual double error(const VectorValues& x) const {
+  double error(const VectorValues& x) const override {
 
     // resize does not do malloc if correct size
     e1.resize(size());
@@ -380,13 +406,12 @@ public:
   void multiplyHessianAdd(double alpha, const double* x, double* y,
       std::vector<size_t> keys) const {
   }
-  ;
 
   /**
    * @brief Hessian-vector multiply, i.e. y += F'*alpha*(I - E*P*E')*F*x
    */
   void multiplyHessianAdd(double alpha, const VectorValues& x,
-      VectorValues& y) const {
+      VectorValues& y) const override {
 
     // resize does not do malloc if correct size
     e1.resize(size());
@@ -429,7 +454,7 @@ public:
   /**
    * Calculate gradient, which is -F'Q*b, see paper
    */
-  VectorValues gradientAtZero() const {
+  VectorValues gradientAtZero() const override {
     // calculate Q*b
     e1.resize(size());
     e2.resize(size());
@@ -451,7 +476,7 @@ public:
   /**
    * Calculate gradient, which is -F'Q*b, see paper - RAW MEMORY ACCESS
    */
-  virtual void gradientAtZero(double* d) const {
+  void gradientAtZero(double* d) const override {
 
     // Use eigen magic to access raw memory
     typedef Eigen::Matrix<double, D, 1> DVector;
@@ -471,7 +496,7 @@ public:
   }
 
   /// Gradient wrt a key at any values
-  Vector gradient(Key key, const VectorValues& x) const {
+  Vector gradient(Key key, const VectorValues& x) const override {
     throw std::runtime_error(
         "gradient for RegularImplicitSchurFactor is not implemented yet");
   }

@@ -1,12 +1,11 @@
 /**
- * @file Mechanization_bRn.cpp
+ * @file Mechanization_bRn2.cpp
  * @date Jan 25, 2012
  * @author Chris Beall
  * @author Frank Dellaert
  */
 
 #include "Mechanization_bRn2.h"
-#include <boost/foreach.hpp>
 
 namespace gtsam {
 

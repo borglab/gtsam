@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -18,26 +18,26 @@
 #include "TestResult.h"
 #include "TestRegistry.h"
 
-void TestRegistry::addTest (Test *test) 
+void TestRegistry::addTest (Test *test)
 {
   instance ().add (test);
 }
 
 
-int TestRegistry::runAllTests (TestResult& result) 
+int TestRegistry::runAllTests (TestResult& result)
 {
   return instance ().run (result);
 }
 
 
-TestRegistry& TestRegistry::instance () 
+TestRegistry& TestRegistry::instance ()
 {
   static TestRegistry registry;
   return registry;
 }
 
 
-void TestRegistry::add (Test *test) 
+void TestRegistry::add (Test *test)
 {
   if (tests == 0) {
     test->setNext(0);
@@ -52,7 +52,7 @@ void TestRegistry::add (Test *test)
 }
 
 
-int TestRegistry::run (TestResult& result) 
+int TestRegistry::run (TestResult& result)
 {
   result.testsStarted ();
 

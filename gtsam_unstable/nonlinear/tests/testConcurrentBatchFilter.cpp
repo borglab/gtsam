@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -17,7 +17,7 @@
  */
 
 #include <gtsam_unstable/nonlinear/ConcurrentBatchFilter.h>
-#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
@@ -25,7 +25,6 @@
 #include <gtsam/nonlinear/LinearContainerFactor.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/JunctionTree.h>
 #include <gtsam/geometry/Pose3.h>
@@ -47,11 +46,17 @@ const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
 const SharedDiagonal noiseOdometery = noiseModel::Diagonal::Sigmas((Vector(6) << 0.1, 0.1, 0.1, 0.5, 0.5, 0.5).finished());
 const SharedDiagonal noiseLoop = noiseModel::Diagonal::Sigmas((Vector(6) << 0.25, 0.25, 0.25, 1.0, 1.0, 1.0).finished());
 
+LevenbergMarquardtParams makeLmParams() {
+  LevenbergMarquardtParams params;
+  params.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
+  return params;
+}
+
 /* ************************************************************************* */
 Values BatchOptimize(const NonlinearFactorGraph& graph, const Values& theta, int maxIter = 100) {
 
   // Create an L-M optimizer
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   parameters.maxIterations = maxIter;
 
   LevenbergMarquardtOptimizer optimizer(graph, theta, parameters);
@@ -63,28 +68,28 @@ Values BatchOptimize(const NonlinearFactorGraph& graph, const Values& theta, int
 NonlinearFactorGraph CalculateMarginals(const NonlinearFactorGraph& factorGraph, const Values& linPoint, const FastList<Key>& keysToMarginalize){
 
 
-  std::set<Key> KeysToKeep;
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, linPoint) { // we cycle over all the keys of factorGraph
-    KeysToKeep.insert(key_value.key);
+  KeySet KeysToKeep;
+  for(const auto key: linPoint.keys()) { // we cycle over all the keys of factorGraph
+    KeysToKeep.insert(key);
   } // so far we are keeping all keys, but we want to delete the ones that we are going to marginalize
-  BOOST_FOREACH(Key key, keysToMarginalize) {
+  for(Key key: keysToMarginalize) {
     KeysToKeep.erase(key);
   } // we removed the keys that we have to marginalize
 
   Ordering ordering;
-  BOOST_FOREACH(Key key, keysToMarginalize) {
+  for(Key key: keysToMarginalize) {
     ordering.push_back(key);
   } // the keys that we marginalize should be at the beginning in the ordering
-  BOOST_FOREACH(Key key, KeysToKeep) {
+  for(Key key: KeysToKeep) {
     ordering.push_back(key);
   }
 
   GaussianFactorGraph linearGraph = *factorGraph.linearize(linPoint);
 
-  GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(vector<Key>(keysToMarginalize.begin(), keysToMarginalize.end()), EliminateCholesky).second;
+  GaussianFactorGraph marginal = *linearGraph.eliminatePartialMultifrontal(KeyVector(keysToMarginalize.begin(), keysToMarginalize.end()), EliminateCholesky).second;
 
   NonlinearFactorGraph LinearContainerForGaussianMarginals;
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, marginal) {
+  for(const GaussianFactor::shared_ptr& factor: marginal) {
     LinearContainerForGaussianMarginals.push_back(LinearContainerFactor(factor, linPoint));
   }
   return LinearContainerForGaussianMarginals;
@@ -101,15 +106,15 @@ TEST( ConcurrentBatchFilter, equals )
   // TODO: Test 'equals' more vigorously
 
   // Create a Concurrent Batch Filter
-  LevenbergMarquardtParams parameters1;
+  LevenbergMarquardtParams parameters1 = makeLmParams();
   ConcurrentBatchFilter filter1(parameters1);
 
   // Create an identical Concurrent Batch Filter
-  LevenbergMarquardtParams parameters2;
+  LevenbergMarquardtParams parameters2 = makeLmParams();
   ConcurrentBatchFilter filter2(parameters2);
 
   // Create a different Concurrent Batch Filter
-  LevenbergMarquardtParams parameters3;
+  LevenbergMarquardtParams parameters3 = makeLmParams();
   parameters3.maxIterations = 1;
   ConcurrentBatchFilter filter3(parameters3);
 
@@ -122,7 +127,7 @@ TEST( ConcurrentBatchFilter, equals )
 TEST( ConcurrentBatchFilter, getFactors )
 {
   // Create a Concurrent Batch Filter
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   ConcurrentBatchFilter filter(parameters);
 
   // Expected graph is empty
@@ -134,7 +139,7 @@ TEST( ConcurrentBatchFilter, getFactors )
 
   // Add some factors to the filter
   NonlinearFactorGraph newFactors1;
-  newFactors1.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors1.addPrior(1, poseInitial, noisePrior);
   newFactors1.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   Values newValues1;
   newValues1.insert(1, Pose3());
@@ -172,7 +177,7 @@ TEST( ConcurrentBatchFilter, getFactors )
 TEST( ConcurrentBatchFilter, getLinearizationPoint )
 {
   // Create a Concurrent Batch Filter
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   ConcurrentBatchFilter filter(parameters);
 
   // Expected values is empty
@@ -184,7 +189,7 @@ TEST( ConcurrentBatchFilter, getLinearizationPoint )
 
   // Add some factors to the filter
   NonlinearFactorGraph newFactors1;
-  newFactors1.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors1.addPrior(1, poseInitial, noisePrior);
   newFactors1.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   Values newValues1;
   newValues1.insert(1, Pose3());
@@ -234,7 +239,7 @@ TEST( ConcurrentBatchFilter, getDelta )
 TEST( ConcurrentBatchFilter, calculateEstimate )
 {
   // Create a Concurrent Batch Filter
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   ConcurrentBatchFilter filter(parameters);
 
   // Expected values is empty
@@ -246,7 +251,7 @@ TEST( ConcurrentBatchFilter, calculateEstimate )
 
   // Add some factors to the filter
   NonlinearFactorGraph newFactors2;
-  newFactors2.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors2.addPrior(1, poseInitial, noisePrior);
   newFactors2.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   Values newValues2;
   newValues2.insert(1, Pose3().compose(poseError));
@@ -307,7 +312,7 @@ TEST( ConcurrentBatchFilter, calculateEstimate )
 TEST( ConcurrentBatchFilter, update_empty )
 {
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   ConcurrentBatchFilter filter(parameters);
 
   // Call update
@@ -318,7 +323,7 @@ TEST( ConcurrentBatchFilter, update_empty )
 TEST( ConcurrentBatchFilter, update_multiple )
 {
   // Create a Concurrent Batch Filter
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   ConcurrentBatchFilter filter(parameters);
 
   // Expected values is empty
@@ -330,7 +335,7 @@ TEST( ConcurrentBatchFilter, update_multiple )
 
   // Add some factors to the filter
   NonlinearFactorGraph newFactors2;
-  newFactors2.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors2.addPrior(1, poseInitial, noisePrior);
   newFactors2.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   Values newValues2;
   newValues2.insert(1, Pose3().compose(poseError));
@@ -375,12 +380,12 @@ TEST( ConcurrentBatchFilter, update_multiple )
 TEST( ConcurrentBatchFilter, update_and_marginalize )
 {
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   ConcurrentBatchFilter filter(parameters);
 
   // Add some factors to the filter
   NonlinearFactorGraph newFactors;
-  newFactors.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors.addPrior(1, poseInitial, noisePrior);
   newFactors.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   newFactors.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
   newFactors.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
@@ -403,9 +408,9 @@ TEST( ConcurrentBatchFilter, update_and_marginalize )
 
 
   NonlinearFactorGraph partialGraph;
-  partialGraph.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
-  partialGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
-  partialGraph.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
+  partialGraph.addPrior(1, poseInitial, noisePrior);
+  partialGraph.emplace_shared<BetweenFactor<Pose3> >(1, 2, poseOdometry, noiseOdometery);
+  partialGraph.emplace_shared<BetweenFactor<Pose3> >(2, 3, poseOdometry, noiseOdometery);
 
   Values partialValues;
   partialValues.insert(1, optimalValues.at<Pose3>(1));
@@ -419,9 +424,7 @@ TEST( ConcurrentBatchFilter, update_and_marginalize )
   ordering.push_back(3);
 
   // Create the set of marginalizable variables
-  std::vector<Key> linearIndices;
-  linearIndices.push_back(1);
-  linearIndices.push_back(2);
+  KeyVector linearIndices {1, 2};
 
   GaussianFactorGraph linearPartialGraph = *partialGraph.linearize(partialValues);
   GaussianFactorGraph result = *linearPartialGraph.eliminatePartialMultifrontal(linearIndices, EliminateCholesky).second;
@@ -437,10 +440,10 @@ TEST( ConcurrentBatchFilter, update_and_marginalize )
   expectedGraph.push_back(NonlinearFactor::shared_ptr());
   expectedGraph.push_back(NonlinearFactor::shared_ptr());
   // ==========================================================
-  expectedGraph.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(3, 4, poseOdometry, noiseOdometery);
 
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, result) {
-    expectedGraph.push_back(LinearContainerFactor(factor, partialValues));
+  for(const GaussianFactor::shared_ptr& factor: result) {
+    expectedGraph.emplace_shared<LinearContainerFactor>(factor, partialValues);
   }
 
 
@@ -451,7 +454,7 @@ TEST( ConcurrentBatchFilter, update_and_marginalize )
   Values expectedValues = optimalValues;
 
   // Check
-  BOOST_FOREACH(Key key, keysToMove) {
+  for(Key key: keysToMove) {
     expectedValues.erase(key);
   }
 
@@ -464,7 +467,7 @@ TEST( ConcurrentBatchFilter, update_and_marginalize )
 TEST( ConcurrentBatchFilter, synchronize_0 )
 {
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
 
   // Create a Concurrent Batch Filter
   ConcurrentBatchFilter filter(parameters);
@@ -497,7 +500,7 @@ TEST( ConcurrentBatchFilter, synchronize_0 )
 TEST( ConcurrentBatchFilter, synchronize_1 )
 {
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   parameters.maxIterations = 1;
 
   // Create a Concurrent Batch Filter
@@ -506,7 +509,7 @@ TEST( ConcurrentBatchFilter, synchronize_1 )
   // Insert factors into the filter, but do not marginalize out any variables.
   // The synchronization should still be empty
   NonlinearFactorGraph newFactors;
-  newFactors.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors.addPrior(1, poseInitial, noisePrior);
   newFactors.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   Values newValues;
   newValues.insert(1, Pose3().compose(poseError));
@@ -542,7 +545,7 @@ TEST( ConcurrentBatchFilter, synchronize_2 )
 {
   std::cout << "*********************** synchronize_2 ************************" << std::endl;
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   //parameters.maxIterations = 1;
 
   // Create a Concurrent Batch Filter
@@ -610,7 +613,7 @@ TEST( ConcurrentBatchFilter, synchronize_3 )
 {
   std::cout << "*********************** synchronize_3 ************************" << std::endl;
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   //parameters.maxIterations = 1;
 
   // Create a Concurrent Batch Filter
@@ -694,7 +697,7 @@ TEST( ConcurrentBatchFilter, synchronize_3 )
 TEST( ConcurrentBatchFilter, synchronize_4 )
 {
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   parameters.maxIterations = 1;
 
   // Create a Concurrent Batch Filter
@@ -788,7 +791,7 @@ TEST( ConcurrentBatchFilter, synchronize_5 )
 {
   std::cout << "*********************** synchronize_5 ************************" << std::endl;
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   parameters.maxIterations = 1;
 
   // Create a Concurrent Batch Filter
@@ -1008,13 +1011,12 @@ TEST( ConcurrentBatchFilter, CalculateMarginals_1 )
   GaussianFactorGraph linearFactorGraph = *factorGraph.linearize(newValues);
 
   // Create the set of marginalizable variables
-  std::vector<Key> linearIndices;
-  linearIndices.push_back(1);
+  KeyVector linearIndices {1};
 
   GaussianFactorGraph result = *linearFactorGraph.eliminatePartialMultifrontal(linearIndices, EliminateCholesky).second;
 
   NonlinearFactorGraph expectedMarginals;
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, result) {
+  for(const GaussianFactor::shared_ptr& factor: result) {
     expectedMarginals.push_back(LinearContainerFactor(factor, newValues));
 
   }
@@ -1062,14 +1064,12 @@ TEST( ConcurrentBatchFilter, CalculateMarginals_2 )
   GaussianFactorGraph linearFactorGraph = *factorGraph.linearize(newValues);
 
   // Create the set of marginalizable variables
-  std::vector<Key> linearIndices;
-  linearIndices.push_back(1);
-  linearIndices.push_back(2);
+  KeyVector linearIndices {1, 2};
 
   GaussianFactorGraph result = *linearFactorGraph.eliminatePartialMultifrontal(linearIndices, EliminateCholesky).second;
 
   NonlinearFactorGraph expectedMarginals;
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, result) {
+  for(const GaussianFactor::shared_ptr& factor: result) {
     expectedMarginals.push_back(LinearContainerFactor(factor, newValues));
 
   }
@@ -1090,12 +1090,12 @@ TEST( ConcurrentBatchFilter, removeFactors_topology_1 )
   std::cout << "*********************** removeFactors_topology_1 ************************" << std::endl;
 
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   ConcurrentBatchFilter filter(parameters);
 
   // Add some factors to the filter
   NonlinearFactorGraph newFactors;
-  newFactors.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors.addPrior(1, poseInitial, noisePrior);
   newFactors.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   newFactors.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
   newFactors.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
@@ -1126,13 +1126,13 @@ TEST( ConcurrentBatchFilter, removeFactors_topology_1 )
   NonlinearFactorGraph actualGraph = filter.getFactors();
 
   NonlinearFactorGraph expectedGraph;
-  expectedGraph.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
-  // we removed this one: expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  expectedGraph.addPrior(1, poseInitial, noisePrior);
+  // we removed this one: expectedGraph.emplace_shared<BetweenFactor<Pose3> >(1, 2, poseOdometry, noiseOdometery);
   // we should add an empty one, so that the ordering and labeling of the factors is preserved
   expectedGraph.push_back(NonlinearFactor::shared_ptr());
-  expectedGraph.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
-  expectedGraph.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
-  expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(2, 3, poseOdometry, noiseOdometery);
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(3, 4, poseOdometry, noiseOdometery);
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(1, 2, poseOdometry, noiseOdometery);
 
   CHECK(assert_equal(expectedGraph, actualGraph, 1e-6));
 }
@@ -1145,12 +1145,12 @@ TEST( ConcurrentBatchFilter, removeFactors_topology_2 )
 
 
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   ConcurrentBatchFilter filter(parameters);
 
   // Add some factors to the filter
   NonlinearFactorGraph newFactors;
-  newFactors.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors.addPrior(1, poseInitial, noisePrior);
   newFactors.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   newFactors.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
   newFactors.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
@@ -1181,11 +1181,11 @@ TEST( ConcurrentBatchFilter, removeFactors_topology_2 )
   NonlinearFactorGraph actualGraph = filter.getFactors();
 
   NonlinearFactorGraph expectedGraph;
-  expectedGraph.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
-  expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
-  expectedGraph.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
-  expectedGraph.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
-  // we removed this one: expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  expectedGraph.addPrior(1, poseInitial, noisePrior);
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(1, 2, poseOdometry, noiseOdometery);
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(2, 3, poseOdometry, noiseOdometery);
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(3, 4, poseOdometry, noiseOdometery);
+  // we removed this one: expectedGraph.emplace_shared<BetweenFactor<Pose3> >(1, 2, poseOdometry, noiseOdometery);
   // we should add an empty one, so that the ordering and labeling of the factors is preserved
   expectedGraph.push_back(NonlinearFactor::shared_ptr());
 
@@ -1200,13 +1200,13 @@ TEST( ConcurrentBatchFilter, removeFactors_topology_3 )
   // we try removing the first factor
 
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   ConcurrentBatchFilter filter(parameters);
 
   // Add some factors to the filter
   NonlinearFactorGraph newFactors;
-  newFactors.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
-  newFactors.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
+  newFactors.addPrior(1, poseInitial, noisePrior);
+  newFactors.addPrior(1, poseInitial, noisePrior);
   newFactors.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
   newFactors.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
   newFactors.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
@@ -1238,10 +1238,10 @@ TEST( ConcurrentBatchFilter, removeFactors_topology_3 )
   NonlinearFactorGraph expectedGraph;
   // we should add an empty one, so that the ordering and labeling of the factors is preserved
   expectedGraph.push_back(NonlinearFactor::shared_ptr());
-  expectedGraph.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
-  expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
-  expectedGraph.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
-  expectedGraph.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
+  expectedGraph.addPrior(1, poseInitial, noisePrior);
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(1, 2, poseOdometry, noiseOdometery);
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(2, 3, poseOdometry, noiseOdometery);
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(3, 4, poseOdometry, noiseOdometery);
 
   CHECK(assert_equal(expectedGraph, actualGraph, 1e-6));
 }
@@ -1253,16 +1253,16 @@ TEST( ConcurrentBatchFilter, removeFactors_values )
   // we try removing the last factor
 
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   ConcurrentBatchFilter filter(parameters);
 
   // Add some factors to the filter
   NonlinearFactorGraph newFactors;
-  newFactors.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
-  newFactors.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
-  newFactors.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
-  newFactors.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
-  newFactors.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  newFactors.addPrior(1, poseInitial, noisePrior);
+  newFactors.emplace_shared<BetweenFactor<Pose3> >(1, 2, poseOdometry, noiseOdometery);
+  newFactors.emplace_shared<BetweenFactor<Pose3> >(2, 3, poseOdometry, noiseOdometery);
+  newFactors.emplace_shared<BetweenFactor<Pose3> >(3, 4, poseOdometry, noiseOdometery);
+  newFactors.emplace_shared<BetweenFactor<Pose3> >(1, 2, poseOdometry, noiseOdometery);
 
   Values newValues;
   newValues.insert(1, Pose3().compose(poseError));
@@ -1291,11 +1291,11 @@ TEST( ConcurrentBatchFilter, removeFactors_values )
 
   // note: factors are removed before the optimization
   NonlinearFactorGraph expectedGraph;
-  expectedGraph.push_back(PriorFactor<Pose3>(1, poseInitial, noisePrior));
-  expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
-  expectedGraph.push_back(BetweenFactor<Pose3>(2, 3, poseOdometry, noiseOdometery));
-  expectedGraph.push_back(BetweenFactor<Pose3>(3, 4, poseOdometry, noiseOdometery));
-  // we removed this one:   expectedGraph.push_back(BetweenFactor<Pose3>(1, 2, poseOdometry, noiseOdometery));
+  expectedGraph.addPrior(1, poseInitial, noisePrior);
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(1, 2, poseOdometry, noiseOdometery);
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(2, 3, poseOdometry, noiseOdometery);
+  expectedGraph.emplace_shared<BetweenFactor<Pose3> >(3, 4, poseOdometry, noiseOdometery);
+  // we removed this one:   expectedGraph.emplace_shared<BetweenFactor<Pose3> >(1, 2, poseOdometry, noiseOdometery);
   // we should add an empty one, so that the ordering and labeling of the factors is preserved
   expectedGraph.push_back(NonlinearFactor::shared_ptr());
 
@@ -1310,7 +1310,7 @@ TEST( ConcurrentBatchFilter, removeFactors_values )
 //TEST( ConcurrentBatchFilter, synchronize_10 )
 //{
 //  // Create a set of optimizer parameters
-//  LevenbergMarquardtParams parameters;
+//  LevenbergMarquardtParams parameters = makeLmParams();
 //  parameters.maxIterations = 1;
 //
 //  // Create a Concurrent Batch Filter
@@ -1325,7 +1325,7 @@ TEST( ConcurrentBatchFilter, removeFactors_values )
 //TEST( ConcurrentBatchFilter, synchronize_11 )
 //{
 //  // Create a set of optimizer parameters
-//  LevenbergMarquardtParams parameters;
+//  LevenbergMarquardtParams parameters = makeLmParams();
 //  parameters.maxIterations = 1;
 //
 //  // Create a Concurrent Batch Filter

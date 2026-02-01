@@ -17,10 +17,10 @@
  */
 
 #include <gtsam/geometry/CameraSet.h>
+#include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
-#include <boost/bind.hpp>
 
 using namespace std;
 using namespace gtsam;
@@ -32,7 +32,7 @@ using namespace gtsam;
 TEST(CameraSet, Pinhole) {
   typedef PinholeCamera<Cal3Bundler> Camera;
   typedef CameraSet<Camera> Set;
-  typedef vector<Point2> ZZ;
+  typedef Point2Vector ZZ;
   Set set;
   Camera camera;
   set.push_back(camera);
@@ -44,7 +44,7 @@ TEST(CameraSet, Pinhole) {
   EXPECT(!set.equals(set2));
 
   // Check measurements
-  Point2 expected;
+  Point2 expected(0,0);
   ZZ z = set.project2(p);
   EXPECT(assert_equal(expected, z[0]));
   EXPECT(assert_equal(expected, z[1]));
@@ -89,35 +89,29 @@ TEST(CameraSet, Pinhole) {
   Vector4 b = actualV;
   Vector v = Ft * (b - E * P * Et * b);
   schur << Ft * F - Ft * E * P * Et * F, v, v.transpose(), 30;
-  SymmetricBlockMatrix actualReduced = Set::SchurComplement(Fs, E, P, b);
-  EXPECT(assert_equal(schur, actualReduced.matrix()));
+  SymmetricBlockMatrix actualReduced = Set::SchurComplement<3>(Fs, E, P, b);
+  EXPECT(assert_equal(schur, actualReduced.selfadjointView()));
 
   // Check Schur complement update, same order, should just double
-  FastVector<Key> allKeys, keys;
-  allKeys.push_back(1);
-  allKeys.push_back(2);
-  keys.push_back(1);
-  keys.push_back(2);
-  Set::UpdateSchurComplement(Fs, E, P, b, allKeys, keys, actualReduced);
-  EXPECT(assert_equal((Matrix )(2.0 * schur), actualReduced.matrix()));
+  KeyVector allKeys {1, 2}, keys {1, 2};
+  Set::UpdateSchurComplement<3>(Fs, E, P, b, allKeys, keys, actualReduced);
+  EXPECT(assert_equal((Matrix )(2.0 * schur), actualReduced.selfadjointView()));
 
   // Check Schur complement update, keys reversed
-  FastVector<Key> keys2;
-  keys2.push_back(2);
-  keys2.push_back(1);
-  Set::UpdateSchurComplement(Fs, E, P, b, allKeys, keys2, actualReduced);
+  KeyVector keys2 {2, 1};
+  Set::UpdateSchurComplement<3>(Fs, E, P, b, allKeys, keys2, actualReduced);
   Vector4 reverse_b;
   reverse_b << b.tail<2>(), b.head<2>();
   Vector reverse_v = Ft * (reverse_b - E * P * Et * reverse_b);
   Matrix A(19, 19);
   A << Ft * F - Ft * E * P * Et * F, reverse_v, reverse_v.transpose(), 30;
-  EXPECT(assert_equal((Matrix )(2.0 * schur + A), actualReduced.matrix()));
+  EXPECT(assert_equal((Matrix )(2.0 * schur + A), actualReduced.selfadjointView()));
 
   // reprojectionErrorAtInfinity
   Unit3 pointAtInfinity(0, 0, 1000);
   EXPECT(
       assert_equal(pointAtInfinity,
-          camera.backprojectPointAtInfinity(Point2())));
+          camera.backprojectPointAtInfinity(Point2(0,0))));
   actualV = set.reprojectionError(pointAtInfinity, measured, Fs, E);
   EXPECT(assert_equal(expectedV, actualV));
   LONGS_EQUAL(2, Fs.size());
@@ -133,10 +127,93 @@ TEST(CameraSet, Pinhole) {
 }
 
 /* ************************************************************************* */
+TEST(CameraSet, SchurComplementAndRearrangeBlocks) {
+  typedef PinholePose<Cal3Bundler> Camera;
+  typedef CameraSet<Camera> Set;
+
+  // this is the (block) Jacobian with respect to the nonuniqueKeys
+  std::vector<Eigen::Matrix<double, 2, 12>,
+      Eigen::aligned_allocator<Eigen::Matrix<double, 2, 12> > > Fs;
+  Fs.push_back(1 * Matrix::Ones(2, 12));  // corresponding to key pair (0,1)
+  Fs.push_back(2 * Matrix::Ones(2, 12));  // corresponding to key pair (1,2)
+  Fs.push_back(3 * Matrix::Ones(2, 12));  // corresponding to key pair (2,0)
+  Matrix E = 4 * Matrix::Identity(6, 3) + Matrix::Ones(6, 3);
+  E(0, 0) = 3;
+  E(1, 1) = 2;
+  E(2, 2) = 5;
+  Matrix Et = E.transpose();
+  Matrix P = (Et * E).inverse();
+  Vector b = 5 * Vector::Ones(6);
+
+  {  // SchurComplement
+     // Actual
+    SymmetricBlockMatrix augmentedHessianBM = Set::SchurComplement<3, 12>(Fs, E,
+                                                                          P, b);
+    Matrix actualAugmentedHessian = augmentedHessianBM.selfadjointView();
+
+    // Expected
+    Matrix F = Matrix::Zero(6, 3 * 12);
+    F.block<2, 12>(0, 0) = 1 * Matrix::Ones(2, 12);
+    F.block<2, 12>(2, 12) = 2 * Matrix::Ones(2, 12);
+    F.block<2, 12>(4, 24) = 3 * Matrix::Ones(2, 12);
+
+    Matrix Ft = F.transpose();
+    Matrix H = Ft * F - Ft * E * P * Et * F;
+    Vector v = Ft * (b - E * P * Et * b);
+    Matrix expectedAugmentedHessian = Matrix::Zero(3 * 12 + 1, 3 * 12 + 1);
+    expectedAugmentedHessian.block<36, 36>(0, 0) = H;
+    expectedAugmentedHessian.block<36, 1>(0, 36) = v;
+    expectedAugmentedHessian.block<1, 36>(36, 0) = v.transpose();
+    expectedAugmentedHessian(36, 36) = b.squaredNorm();
+
+    EXPECT(assert_equal(expectedAugmentedHessian, actualAugmentedHessian));
+  }
+
+  {  // SchurComplementAndRearrangeBlocks
+    KeyVector nonuniqueKeys;
+    nonuniqueKeys.push_back(0);
+    nonuniqueKeys.push_back(1);
+    nonuniqueKeys.push_back(1);
+    nonuniqueKeys.push_back(2);
+    nonuniqueKeys.push_back(2);
+    nonuniqueKeys.push_back(0);
+
+    KeyVector uniqueKeys;
+    uniqueKeys.push_back(0);
+    uniqueKeys.push_back(1);
+    uniqueKeys.push_back(2);
+
+    // Actual
+    SymmetricBlockMatrix augmentedHessianBM =
+        Set::SchurComplementAndRearrangeBlocks<3, 12, 6>(
+            Fs, E, P, b, nonuniqueKeys, uniqueKeys);
+    Matrix actualAugmentedHessian = augmentedHessianBM.selfadjointView();
+
+    // Expected
+    // we first need to build the Jacobian F according to unique keys
+    Matrix F = Matrix::Zero(6, 18);
+    F.block<2, 6>(0, 0) = Fs[0].block<2, 6>(0, 0);
+    F.block<2, 6>(0, 6) = Fs[0].block<2, 6>(0, 6);
+    F.block<2, 6>(2, 6) = Fs[1].block<2, 6>(0, 0);
+    F.block<2, 6>(2, 12) = Fs[1].block<2, 6>(0, 6);
+    F.block<2, 6>(4, 12) = Fs[2].block<2, 6>(0, 0);
+    F.block<2, 6>(4, 0) = Fs[2].block<2, 6>(0, 6);
+
+    Matrix Ft = F.transpose();
+    Vector v = Ft * (b - E * P * Et * b);
+    Matrix H = Ft * F - Ft * E * P * Et * F;
+    Matrix expectedAugmentedHessian(19, 19);
+    expectedAugmentedHessian << H, v, v.transpose(), b.squaredNorm();
+
+    EXPECT(assert_equal(expectedAugmentedHessian, actualAugmentedHessian));
+  }
+}
+
+/* ************************************************************************* */
 #include <gtsam/geometry/StereoCamera.h>
 TEST(CameraSet, Stereo) {
-  typedef vector<StereoPoint2> ZZ;
   CameraSet<StereoCamera> set;
+  typedef StereoCamera::MeasurementVector ZZ;
   StereoCamera camera;
   set.push_back(camera);
   set.push_back(camera);

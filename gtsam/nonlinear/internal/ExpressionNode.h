@@ -26,6 +26,7 @@
 #include <typeinfo>       // operator typeid
 #include <ostream>
 #include <map>
+#include <cassert>
 
 class ExpressionFactorBinaryTest;
 // Forward declare for testing
@@ -38,7 +39,7 @@ T & upAlign(T & value, unsigned requiredAlignment = TraceAlignment) {
   // right now only word sized types are supported.
   // Easy to extend if needed,
   //   by somehow inferring the unsigned integer of same size
-  BOOST_STATIC_ASSERT(sizeof(T) == sizeof(size_t));
+  static_assert(sizeof(T) == sizeof(size_t));
   size_t & uiValue = reinterpret_cast<size_t &>(value);
   size_t misAlignment = uiValue % requiredAlignment;
   if (misAlignment) {
@@ -57,7 +58,7 @@ T upAligned(T value, unsigned requiredAlignment = TraceAlignment) {
  * Expression node. The superclass for objects that do the heavy lifting
  * An Expression<T> has a pointer to an ExpressionNode<T> underneath
  * allowing Expressions to have polymorphic behaviour even though they
- * are passed by value. This is the same way boost::function works.
+ * are passed by value. This is the same way std::function works.
  * http://loki-lib.sourceforge.net/html/a00652.html
  */
 template<class T>
@@ -84,15 +85,15 @@ public:
   /// Streaming
   GTSAM_EXPORT
   friend std::ostream& operator<<(std::ostream& os, const ExpressionNode& node) {
-    os << "Expression of type " << typeid(T).name();
+    os << "Expression of type " << demangle(typeid(T).name());
     if (node.traceSize_ > 0) os << ", trace size = " << node.traceSize_;
     os << "\n";
     return os;
   }
 
   /// Return keys that play in this expression as a set
-  virtual std::set<Key> keys() const {
-    std::set<Key> keys;
+  virtual KeySet keys() const {
+    KeySet keys;
     return keys;
   }
 
@@ -110,7 +111,7 @@ public:
 
   /// Construct an execution trace for reverse AD
   virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      ExecutionTraceStorage* traceStorage) const = 0;
+      char* traceStorage) const = 0;
 };
 
 //-----------------------------------------------------------------------------
@@ -131,24 +132,26 @@ class ConstantExpression: public ExpressionNode<T> {
 public:
 
   /// Destructor
-  virtual ~ConstantExpression() {
+  ~ConstantExpression() override {
   }
 
   /// Print
-  virtual void print(const std::string& indent = "") const {
+  void print(const std::string& indent = "") const override {
     std::cout << indent << "Constant" << std::endl;
   }
 
   /// Return value
-  virtual T value(const Values& values) const {
+  T value(const Values& values) const override {
     return constant_;
   }
 
   /// Construct an execution trace for reverse AD
-  virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      ExecutionTraceStorage* traceStorage) const {
+  T traceExecution(const Values& values, ExecutionTrace<T>& trace,
+      char* traceStorage) const override {
     return constant_;
   }
+
+  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 //-----------------------------------------------------------------------------
@@ -170,34 +173,34 @@ class LeafExpression: public ExpressionNode<T> {
 public:
 
   /// Destructor
-  virtual ~LeafExpression() {
+  ~LeafExpression() override {
   }
 
   /// Print
-  virtual void print(const std::string& indent = "") const {
-    std::cout << indent << "Leaf, key = " << key_ << std::endl;
+  void print(const std::string& indent = "") const override {
+    std::cout << indent << "Leaf, key = " << DefaultKeyFormatter(key_) << std::endl;
   }
 
   /// Return keys that play in this expression
-  virtual std::set<Key> keys() const {
-    std::set<Key> keys;
+  KeySet keys() const override {
+    KeySet keys;
     keys.insert(key_);
     return keys;
   }
 
   /// Return dimensions for each argument
-  virtual void dims(std::map<Key, int>& map) const {
+  void dims(std::map<Key, int>& map) const override {
     map[key_] = traits<T>::dimension;
   }
 
   /// Return value
-  virtual T value(const Values& values) const {
+  T value(const Values& values) const override {
     return values.at<T>(key_);
   }
 
   /// Construct an execution trace for reverse AD
-  virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      ExecutionTraceStorage* traceStorage) const {
+  T traceExecution(const Values& values, ExecutionTrace<T>& trace,
+      char* traceStorage) const override {
     trace.setLeaf(key_);
     return values.at<T>(key_);
   }
@@ -217,7 +220,7 @@ static void PrintJacobianAndTrace(const std::string& indent,
                                   const typename Jacobian<T, A>::type& dTdA,
                                   const ExecutionTrace<A> trace) {
   static const Eigen::IOFormat kMatlabFormat(0, 1, " ", "; ", "", "", "[", "]");
-  std::cout << indent << "D(" << typeid(T).name() << ")/D(" << typeid(A).name()
+  std::cout << indent << "D(" << demangle(typeid(T).name()) << ")/D(" << demangle(typeid(A).name())
             << ") = " << dTdA.format(kMatlabFormat) << std::endl;
   trace.print(indent);
 }
@@ -228,7 +231,7 @@ template<class T, class A1>
 class UnaryExpression: public ExpressionNode<T> {
 
   typedef typename Expression<T>::template UnaryFunction<A1>::type Function;
-  boost::shared_ptr<ExpressionNode<A1> > expression1_;
+  std::shared_ptr<ExpressionNode<A1> > expression1_;
   Function function_;
 
   /// Constructor with a unary function f, and input argument e1
@@ -242,27 +245,27 @@ class UnaryExpression: public ExpressionNode<T> {
 public:
 
   /// Destructor
-  virtual ~UnaryExpression() {
+  ~UnaryExpression() override {
   }
 
   /// Print
-  virtual void print(const std::string& indent = "") const {
+  void print(const std::string& indent = "") const override {
     std::cout << indent << "UnaryExpression" << std::endl;
     expression1_->print(indent + "  ");
   }
 
   /// Return value
-  virtual T value(const Values& values) const {
-    return function_(expression1_->value(values), boost::none);
+  T value(const Values& values) const override {
+    return function_(expression1_->value(values), {});
   }
 
   /// Return keys that play in this expression
-  virtual std::set<Key> keys() const {
+  KeySet keys() const override {
     return expression1_->keys();
   }
 
   /// Return dimensions for each argument
-  virtual void dims(std::map<Key, int>& map) const {
+  void dims(std::map<Key, int>& map) const override {
     expression1_->dims(map);
   }
 
@@ -274,7 +277,7 @@ public:
     A1 value1;
 
     /// Construct record by calling argument expression
-    Record(const Values& values, const ExpressionNode<A1>& expression1, ExecutionTraceStorage* ptr)
+    Record(const Values& values, const ExpressionNode<A1>& expression1, char* ptr)
         : value1(expression1.traceExecution(values, trace1, ptr + upAligned(sizeof(Record)))) {}
 
     /// Print to std::cout
@@ -305,16 +308,18 @@ public:
   };
 
   /// Construct an execution trace for reverse AD
-  virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      ExecutionTraceStorage* ptr) const {
+  T traceExecution(const Values& values, ExecutionTrace<T>& trace,
+      char* ptr) const override {
     assert(reinterpret_cast<size_t>(ptr) % TraceAlignment == 0);
 
     // Create a Record in the memory pointed to by ptr
-    // Calling the construct will record the traces for all arguments
+    // Calling the constructor will record the traces for all arguments
     // Write an Expression<A> execution trace in record->trace
     // Iff Constant or Leaf, this will not write to traceStorage, only to trace.
     // Iff the expression is functional, write all Records in traceStorage buffer
     // Return value of type T is recorded in record->value
+    // NOTE(frank, abe): The destructor on this record is never called due to this placement new
+    // Records must only contain statically sized objects!
     Record* record = new (ptr) Record(values, *expression1_, ptr);
 
     // Our trace parameter is set to point to the Record
@@ -331,8 +336,8 @@ template<class T, class A1, class A2>
 class BinaryExpression: public ExpressionNode<T> {
 
   typedef typename Expression<T>::template BinaryFunction<A1, A2>::type Function;
-  boost::shared_ptr<ExpressionNode<A1> > expression1_;
-  boost::shared_ptr<ExpressionNode<A2> > expression2_;
+  std::shared_ptr<ExpressionNode<A1> > expression1_;
+  std::shared_ptr<ExpressionNode<A2> > expression2_;
   Function function_;
 
   /// Constructor with a binary function f, and two input arguments
@@ -349,33 +354,33 @@ class BinaryExpression: public ExpressionNode<T> {
 public:
 
   /// Destructor
-  virtual ~BinaryExpression() {
+  ~BinaryExpression() override {
   }
 
   /// Print
-  virtual void print(const std::string& indent = "") const {
+  void print(const std::string& indent = "") const override {
     std::cout << indent << "BinaryExpression" << std::endl;
     expression1_->print(indent + "  ");
     expression2_->print(indent + "  ");
   }
 
   /// Return value
-  virtual T value(const Values& values) const {
-    using boost::none;
+  T value(const Values& values) const override {
+    using std::nullopt;
     return function_(expression1_->value(values), expression2_->value(values),
-        none, none);
+        {}, {});
   }
 
   /// Return keys that play in this expression
-  virtual std::set<Key> keys() const {
-    std::set<Key> keys = expression1_->keys();
-    std::set<Key> myKeys = expression2_->keys();
+  KeySet keys() const override {
+    KeySet keys = expression1_->keys();
+    KeySet myKeys = expression2_->keys();
     keys.insert(myKeys.begin(), myKeys.end());
     return keys;
   }
 
   /// Return dimensions for each argument
-  virtual void dims(std::map<Key, int>& map) const {
+  void dims(std::map<Key, int>& map) const override {
     expression1_->dims(map);
     expression2_->dims(map);
   }
@@ -389,12 +394,13 @@ public:
     ExecutionTrace<A1> trace1;
     ExecutionTrace<A2> trace2;
 
+    // TODO(frank): These aren't needed kill them!
     A1 value1;
     A2 value2;
 
     /// Construct record by calling argument expressions
     Record(const Values& values, const ExpressionNode<A1>& expression1,
-           const ExpressionNode<A2>& expression2, ExecutionTraceStorage* ptr)
+           const ExpressionNode<A2>& expression2, char* ptr)
         : value1(expression1.traceExecution(values, trace1, ptr += upAligned(sizeof(Record)))),
           value2(expression2.traceExecution(values, trace2, ptr += expression1.traceSize())) {}
 
@@ -421,8 +427,8 @@ public:
   };
 
   /// Construct an execution trace for reverse AD, see UnaryExpression for explanation
-  virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-      ExecutionTraceStorage* ptr) const {
+  T traceExecution(const Values& values, ExecutionTrace<T>& trace,
+      char* ptr) const override {
     assert(reinterpret_cast<size_t>(ptr) % TraceAlignment == 0);
     Record* record = new (ptr) Record(values, *expression1_, *expression2_, ptr);
     trace.setFunction(record);
@@ -436,9 +442,9 @@ template<class T, class A1, class A2, class A3>
 class TernaryExpression: public ExpressionNode<T> {
 
   typedef typename Expression<T>::template TernaryFunction<A1, A2, A3>::type Function;
-  boost::shared_ptr<ExpressionNode<A1> > expression1_;
-  boost::shared_ptr<ExpressionNode<A2> > expression2_;
-  boost::shared_ptr<ExpressionNode<A3> > expression3_;
+  std::shared_ptr<ExpressionNode<A1> > expression1_;
+  std::shared_ptr<ExpressionNode<A2> > expression2_;
+  std::shared_ptr<ExpressionNode<A3> > expression3_;
   Function function_;
 
   /// Constructor with a ternary function f, and two input arguments
@@ -455,11 +461,11 @@ class TernaryExpression: public ExpressionNode<T> {
 public:
 
   /// Destructor
-  virtual ~TernaryExpression() {
+  ~TernaryExpression() override {
   }
 
   /// Print
-  virtual void print(const std::string& indent = "") const {
+  void print(const std::string& indent = "") const override {
     std::cout << indent << "TernaryExpression" << std::endl;
     expression1_->print(indent + "  ");
     expression2_->print(indent + "  ");
@@ -467,16 +473,16 @@ public:
   }
 
   /// Return value
-  virtual T value(const Values& values) const {
-    using boost::none;
+  T value(const Values& values) const override {
+    using std::nullopt;
     return function_(expression1_->value(values), expression2_->value(values),
-        expression3_->value(values), none, none, none);
+        expression3_->value(values), {}, {}, {});
   }
 
   /// Return keys that play in this expression
-  virtual std::set<Key> keys() const {
-    std::set<Key> keys = expression1_->keys();
-    std::set<Key> myKeys = expression2_->keys();
+  KeySet keys() const override {
+    KeySet keys = expression1_->keys();
+    KeySet myKeys = expression2_->keys();
     keys.insert(myKeys.begin(), myKeys.end());
     myKeys = expression3_->keys();
     keys.insert(myKeys.begin(), myKeys.end());
@@ -484,7 +490,7 @@ public:
   }
 
   /// Return dimensions for each argument
-  virtual void dims(std::map<Key, int>& map) const {
+  void dims(std::map<Key, int>& map) const override {
     expression1_->dims(map);
     expression2_->dims(map);
     expression3_->dims(map);
@@ -492,6 +498,8 @@ public:
 
   // Inner Record Class
   struct Record: public CallRecordImplementor<Record, traits<T>::dimension> {
+
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     typename Jacobian<T, A1>::type dTdA1;
     typename Jacobian<T, A2>::type dTdA2;
@@ -508,7 +516,7 @@ public:
     /// Construct record by calling 3 argument expressions
     Record(const Values& values, const ExpressionNode<A1>& expression1,
            const ExpressionNode<A2>& expression2,
-           const ExpressionNode<A3>& expression3, ExecutionTraceStorage* ptr)
+           const ExpressionNode<A3>& expression3, char* ptr)
         : value1(expression1.traceExecution(values, trace1, ptr += upAligned(sizeof(Record)))),
           value2(expression2.traceExecution(values, trace2, ptr += expression1.traceSize())),
           value3(expression3.traceExecution(values, trace3, ptr += expression2.traceSize())) {}
@@ -539,8 +547,8 @@ public:
   };
 
   /// Construct an execution trace for reverse AD, see UnaryExpression for explanation
-  virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-                           ExecutionTraceStorage* ptr) const {
+  T traceExecution(const Values& values, ExecutionTrace<T>& trace,
+                           char* ptr) const override {
     assert(reinterpret_cast<size_t>(ptr) % TraceAlignment == 0);
     Record* record = new (ptr) Record(values, *expression1_, *expression2_, *expression3_, ptr);
     trace.setFunction(record);
@@ -554,10 +562,10 @@ public:
 template <class T>
 class ScalarMultiplyNode : public ExpressionNode<T> {
   // Check that T is a vector space
-  BOOST_CONCEPT_ASSERT((gtsam::IsVectorSpace<T>));
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<T>);
 
   double scalar_;
-  boost::shared_ptr<ExpressionNode<T> > expression_;
+  std::shared_ptr<ExpressionNode<T> > expression_;
 
  public:
   /// Constructor with a unary function f, and input argument e1
@@ -566,26 +574,26 @@ class ScalarMultiplyNode : public ExpressionNode<T> {
   }
 
   /// Destructor
-  virtual ~ScalarMultiplyNode() {}
+  ~ScalarMultiplyNode() override {}
 
   /// Print
-  virtual void print(const std::string& indent = "") const {
+  void print(const std::string& indent = "") const override {
     std::cout << indent << "ScalarMultiplyNode" << std::endl;
     expression_->print(indent + "  ");
   }
 
   /// Return value
-  virtual T value(const Values& values) const {
+  T value(const Values& values) const override {
     return scalar_ * expression_->value(values);
   }
 
   /// Return keys that play in this expression
-  virtual std::set<Key> keys() const {
+  KeySet keys() const override {
     return expression_->keys();
   }
 
   /// Return dimensions for each argument
-  virtual void dims(std::map<Key, int>& map) const {
+  void dims(std::map<Key, int>& map) const override {
     expression_->dims(map);
   }
 
@@ -600,7 +608,7 @@ class ScalarMultiplyNode : public ExpressionNode<T> {
     /// Print to std::cout
     void print(const std::string& indent) const {
       std::cout << indent << "ScalarMultiplyNode::Record {" << std::endl;
-      std::cout << indent << "D(" << typeid(T).name() << ")/D(" << typeid(T).name()
+      std::cout << indent << "D(" << demangle(typeid(T).name()) << ")/D(" << demangle(typeid(T).name())
                 << ") = " << scalar_dTdA << std::endl;
       trace.print();
       std::cout << indent << "}" << std::endl;
@@ -619,8 +627,8 @@ class ScalarMultiplyNode : public ExpressionNode<T> {
   };
 
   /// Construct an execution trace for reverse AD
-  virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-                           ExecutionTraceStorage* ptr) const {
+  T traceExecution(const Values& values, ExecutionTrace<T>& trace,
+                           char* ptr) const override {
     assert(reinterpret_cast<size_t>(ptr) % TraceAlignment == 0);
     Record* record = new (ptr) Record();
     ptr += upAligned(sizeof(Record));
@@ -632,109 +640,96 @@ class ScalarMultiplyNode : public ExpressionNode<T> {
   }
 };
 
+
 //-----------------------------------------------------------------------------
-/// Sum Expression
+/// Binary Sum Expression
 template <class T>
-class SumExpressionNode : public ExpressionNode<T> {
+class BinarySumNode : public ExpressionNode<T> {
   typedef ExpressionNode<T> NodeT;
-  std::vector<boost::shared_ptr<NodeT>> expressions_;
+  std::shared_ptr<ExpressionNode<T> > expression1_;
+  std::shared_ptr<ExpressionNode<T> > expression2_;
 
  public:
-  explicit SumExpressionNode(const std::vector<Expression<T>>& expressions) {
+  explicit BinarySumNode() {
     this->traceSize_ = upAligned(sizeof(Record));
-    for (const Expression<T>& e : expressions)
-      add(e);
   }
 
-  void add(const Expression<T>& e) {
-    expressions_.push_back(e.root());
-    this->traceSize_ += e.traceSize();
+  /// Constructor with a binary function f, and two input arguments
+  BinarySumNode(const Expression<T>& e1, const Expression<T>& e2)
+      : expression1_(e1.root()), expression2_(e2.root()) {
+    this->traceSize_ =  //
+        upAligned(sizeof(Record)) + e1.traceSize() + e2.traceSize();
   }
 
   /// Destructor
-  virtual ~SumExpressionNode() {}
-
-  size_t nrTerms() const {
-    return expressions_.size();
-  }
+  ~BinarySumNode() override {}
 
   /// Print
-  virtual void print(const std::string& indent = "") const {
-    std::cout << indent << "SumExpressionNode" << std::endl;
-    for (const auto& node : expressions_)
-      node->print(indent + "  ");
+  void print(const std::string& indent = "") const override {
+    std::cout << indent << "BinarySumNode" << std::endl;
+    expression1_->print(indent + "  ");
+    expression2_->print(indent + "  ");
   }
 
   /// Return value
-  virtual T value(const Values& values) const {
-    auto it = expressions_.begin();
-    T sum = (*it)->value(values);
-    for (++it; it != expressions_.end(); ++it)
-      sum = sum + (*it)->value(values);
-    return sum;
+  T value(const Values& values) const override {
+    return expression1_->value(values) + expression2_->value(values);
   }
 
   /// Return keys that play in this expression
-  virtual std::set<Key> keys() const {
-    std::set<Key> keys;
-    for (const auto& node : expressions_) {
-      std::set<Key> myKeys = node->keys();
-      keys.insert(myKeys.begin(), myKeys.end());
-    }
+  KeySet keys() const override {
+    KeySet keys = expression1_->keys();
+    KeySet myKeys = expression2_->keys();
+    keys.insert(myKeys.begin(), myKeys.end());
     return keys;
   }
 
   /// Return dimensions for each argument
-  virtual void dims(std::map<Key, int>& map) const {
-    for (const auto& node : expressions_)
-      node->dims(map);
+  void dims(std::map<Key, int>& map) const override {
+    expression1_->dims(map);
+    expression2_->dims(map);
   }
 
   // Inner Record Class
   struct Record : public CallRecordImplementor<Record, traits<T>::dimension> {
-    std::vector<ExecutionTrace<T>> traces_;
-
-    explicit Record(size_t nrArguments) : traces_(nrArguments) {}
+    ExecutionTrace<T> trace1;
+    ExecutionTrace<T> trace2;
 
     /// Print to std::cout
     void print(const std::string& indent) const {
-      std::cout << indent << "SumExpressionNode::Record {" << std::endl;
-      for (const auto& trace : traces_)
-        trace.print(indent);
+      std::cout << indent << "BinarySumNode::Record {" << std::endl;
+      trace1.print(indent);
+      trace2.print(indent);
       std::cout << indent << "}" << std::endl;
     }
 
-    /// If the SumExpression is the root, we just start as many pipelines as there are terms.
+    /// If the BinarySumExpression is the root, we just start as many pipelines as there are terms.
     void startReverseAD4(JacobianMap& jacobians) const {
-      for (const auto& trace : traces_)
-        // NOTE(frank): equivalent to trace.reverseAD1(dTdA, jacobians) with dTdA=Identity
-        trace.startReverseAD1(jacobians);
+      // NOTE(frank): equivalent to trace.reverseAD1(dTdA, jacobians) with dTdA=Identity
+      trace1.startReverseAD1(jacobians);
+      trace2.startReverseAD1(jacobians);
     }
 
     /// If we are not the root, we simply pass on the adjoint matrix dFdT to all terms
     template <typename MatrixType>
     void reverseAD4(const MatrixType& dFdT, JacobianMap& jacobians) const {
-      for (const auto& trace : traces_)
-        // NOTE(frank): equivalent to trace.reverseAD1(dFdT * dTdA, jacobians) with dTdA=Identity
-        trace.reverseAD1(dFdT, jacobians);
+      // NOTE(frank): equivalent to trace.reverseAD1(dFdT * dTdA, jacobians) with dTdA=Identity
+      trace1.reverseAD1(dFdT, jacobians);
+      trace2.reverseAD1(dFdT, jacobians);
     }
   };
 
   /// Construct an execution trace for reverse AD
-  virtual T traceExecution(const Values& values, ExecutionTrace<T>& trace,
-                           ExecutionTraceStorage* ptr) const {
+  T traceExecution(const Values &values, ExecutionTrace<T> &trace,
+                   char* ptr) const override {
     assert(reinterpret_cast<size_t>(ptr) % TraceAlignment == 0);
-    size_t nrArguments = expressions_.size();
-    Record* record = new (ptr) Record(nrArguments);
-    ptr += upAligned(sizeof(Record));
-    size_t i = 0;
-    T sum = traits<T>::Identity();
-    for (const auto& node : expressions_) {
-      sum = sum + node->traceExecution(values, record->traces_[i++], ptr);
-      ptr += node->traceSize();
-    }
+    Record *record = new (ptr) Record();
     trace.setFunction(record);
-    return sum;
+
+    auto ptr1 = ptr + upAligned(sizeof(Record));
+    auto ptr2 = ptr1 + expression1_->traceSize();
+    return expression1_->traceExecution(values, record->trace1, ptr1) +
+           expression2_->traceExecution(values, record->trace2, ptr2);
   }
 };
 

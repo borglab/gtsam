@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -31,7 +31,7 @@ namespace gtsam {
 class GTSAM_UNSTABLE_EXPORT ConcurrentBatchFilter : public ConcurrentFilter {
 
 public:
-  typedef boost::shared_ptr<ConcurrentBatchFilter> shared_ptr;
+  typedef std::shared_ptr<ConcurrentBatchFilter> shared_ptr;
   typedef ConcurrentFilter Base; ///< typedef for base class
 
   /** Meta information returned about the update */
@@ -50,7 +50,7 @@ public:
     double error; ///< The final factor graph error
 
     /// Constructor
-    Result() : iterations(0), lambdas(0), nonlinearVariables(0), linearVariables(0), error(0) {};
+    Result() : iterations(0), lambdas(0), nonlinearVariables(0), linearVariables(0), error(0) {}
 
     /// Getter methods
     size_t getIterations() const { return iterations; }
@@ -61,16 +61,16 @@ public:
   };
 
   /** Default constructor */
-  ConcurrentBatchFilter(const LevenbergMarquardtParams& parameters = LevenbergMarquardtParams()) : parameters_(parameters) {};
+  ConcurrentBatchFilter(const LevenbergMarquardtParams& parameters = LevenbergMarquardtParams()) : parameters_(parameters) {}
 
   /** Default destructor */
-  virtual ~ConcurrentBatchFilter() {};
+  ~ConcurrentBatchFilter() override = default;
 
   /** Implement a GTSAM standard 'print' function */
-  virtual void print(const std::string& s = "Concurrent Batch Filter:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+  void print(const std::string& s = "Concurrent Batch Filter:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
   /** Check if two Concurrent Filters are equal */
-  virtual bool equals(const ConcurrentFilter& rhs, double tol = 1e-9) const;
+  bool equals(const ConcurrentFilter& rhs, double tol = 1e-9) const override;
 
   /** Access the current set of factors */
   const NonlinearFactorGraph& getFactors() const {
@@ -124,13 +124,13 @@ public:
    * @param removeFactorIndices An optional set of indices corresponding to the factors you want to remove from the graph
    */
   virtual Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
-      const boost::optional<FastList<Key> >& keysToMove = boost::none, const boost::optional< std::vector<size_t> >& removeFactorIndices = boost::none);
+      const std::optional<FastList<Key> >& keysToMove = {}, const std::optional< std::vector<size_t> >& removeFactorIndices = {});
 
   /**
    * Perform any required operations before the synchronization process starts.
    * Called by 'synchronize'
    */
-  virtual void presync();
+  void presync() override;
 
   /**
    * Populate the provided containers with factors that constitute the filter branch summarization
@@ -139,7 +139,7 @@ public:
    * @param summarizedFactors The summarized factors for the filter branch
    * @param rootValues The linearization points of the root clique variables
    */
-  virtual void getSummarizedFactors(NonlinearFactorGraph& filterSummarization, Values& filterSummarizationValues);
+  void getSummarizedFactors(NonlinearFactorGraph& filterSummarization, Values& filterSummarizationValues) override;
 
   /**
    * Populate the provided containers with factors being sent to the smoother from the filter. These
@@ -149,20 +149,20 @@ public:
    * @param smootherFactors The new factors to be added to the smoother
    * @param smootherValues The linearization points of any new variables
    */
-  virtual void getSmootherFactors(NonlinearFactorGraph& smootherFactors, Values& smootherValues);
+  void getSmootherFactors(NonlinearFactorGraph& smootherFactors, Values& smootherValues) override;
 
   /**
    * Apply the updated version of the smoother branch summarized factors.
    *
    * @param summarizedFactors An updated version of the smoother branch summarized factors
    */
-  virtual void synchronize(const NonlinearFactorGraph& smootherSummarization, const Values& smootherSummarizationValues);
+  void synchronize(const NonlinearFactorGraph& smootherSummarization, const Values& smootherSummarizationValues) override;
 
   /**
    * Perform any required operations after the synchronization process finishes.
    * Called by 'synchronize'
    */
-  virtual void postsync();
+  void postsync() override;
 
 protected:
 
@@ -200,7 +200,7 @@ private:
   void removeFactors(const std::vector<size_t>& slots);
 
   /** Use colamd to update into an efficient ordering */
-  void reorder(const boost::optional<FastList<Key> >& keysToMove = boost::none);
+  void reorder(const std::optional<FastList<Key> >& keysToMove = {});
 
   /** Marginalize out the set of requested variables from the filter, caching them for the smoother
    *  This effectively moves the separator.
@@ -244,7 +244,7 @@ private:
 template<class Container>
 void ConcurrentBatchFilter::PrintKeys(const Container& keys, const std::string& indent, const std::string& title, const KeyFormatter& keyFormatter) {
   std::cout << indent << title;
-  BOOST_FOREACH(Key key, keys) {
+  for(Key key: keys) {
     std::cout << " " << keyFormatter(key);
   }
   std::cout << std::endl;

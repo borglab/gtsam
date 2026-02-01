@@ -10,21 +10,25 @@
 #include "sparse_solver.h"
 #include <Eigen/IterativeLinearSolvers>
 
-template<typename T> void test_bicgstab_T()
+template<typename T, typename I_> void test_bicgstab_T()
 {
-  BiCGSTAB<SparseMatrix<T>, DiagonalPreconditioner<T> > bicgstab_colmajor_diag;
-  BiCGSTAB<SparseMatrix<T>, IdentityPreconditioner    > bicgstab_colmajor_I;
-  BiCGSTAB<SparseMatrix<T>, IncompleteLUT<T> >           bicgstab_colmajor_ilut;
+  BiCGSTAB<SparseMatrix<T,0,I_>, DiagonalPreconditioner<T> >     bicgstab_colmajor_diag;
+  BiCGSTAB<SparseMatrix<T,0,I_>, IdentityPreconditioner    >     bicgstab_colmajor_I;
+  BiCGSTAB<SparseMatrix<T,0,I_>, IncompleteLUT<T,I_> >              bicgstab_colmajor_ilut;
   //BiCGSTAB<SparseMatrix<T>, SSORPreconditioner<T> >     bicgstab_colmajor_ssor;
 
+  bicgstab_colmajor_diag.setTolerance(NumTraits<T>::epsilon()*4);
+  bicgstab_colmajor_ilut.setTolerance(NumTraits<T>::epsilon()*4);
+  
   CALL_SUBTEST( check_sparse_square_solving(bicgstab_colmajor_diag)  );
 //   CALL_SUBTEST( check_sparse_square_solving(bicgstab_colmajor_I)     );
   CALL_SUBTEST( check_sparse_square_solving(bicgstab_colmajor_ilut)     );
   //CALL_SUBTEST( check_sparse_square_solving(bicgstab_colmajor_ssor)     );
 }
 
-void test_bicgstab()
+EIGEN_DECLARE_TEST(bicgstab)
 {
-  CALL_SUBTEST_1(test_bicgstab_T<double>());
-  CALL_SUBTEST_2(test_bicgstab_T<std::complex<double> >());
+  CALL_SUBTEST_1((test_bicgstab_T<double,int>()) );
+  CALL_SUBTEST_2((test_bicgstab_T<std::complex<double>, int>()));
+  CALL_SUBTEST_3((test_bicgstab_T<double,long int>()));
 }

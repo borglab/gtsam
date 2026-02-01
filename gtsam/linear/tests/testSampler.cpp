@@ -10,33 +10,50 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file testSampler
+ * @file testSampler.cpp
+ * @brief unit tests for Sampler class
  * @author Alex Cunningham
+ * @author Frank Dellaert
  */
 
 #include <CppUnitLite/TestHarness.h>
-
 #include <gtsam/linear/Sampler.h>
 
 using namespace gtsam;
 
 const double tol = 1e-5;
 
+static const Vector3 kSigmas(1.0, 0.1, 0.0);
+
 /* ************************************************************************* */
 TEST(testSampler, basic) {
-  Vector sigmas = Vector3(1.0, 0.1, 0.0);
-  noiseModel::Diagonal::shared_ptr model = noiseModel::Diagonal::Sigmas(sigmas);
+  auto model = noiseModel::Diagonal::Sigmas(kSigmas);
   char seed = 'A';
   Sampler sampler1(model, seed), sampler2(model, 1), sampler3(model, 1);
-  EXPECT(assert_equal(sigmas, sampler1.sigmas()));
-  EXPECT(assert_equal(sigmas, sampler2.sigmas()));
+  EXPECT(assert_equal(kSigmas, sampler1.sigmas()));
+  EXPECT(assert_equal(kSigmas, sampler2.sigmas()));
   EXPECT_LONGS_EQUAL(3, sampler1.dim());
   EXPECT_LONGS_EQUAL(3, sampler2.dim());
   Vector actual1 = sampler1.sample();
   EXPECT_DOUBLES_EQUAL(0.0, actual1(2), tol);
   EXPECT(assert_equal(sampler2.sample(), sampler3.sample(), tol));
+
+  // RNG-based constructor should be stateful and match the same sequence as a
+  // seeded sampler.
+  std::mt19937_64 rng(1);
+  Sampler sampler_rng(model, rng);
+  Sampler sampler_seed(model, 1);
+  Vector s1 = sampler_rng.sample();
+  Vector s1_ref = sampler_seed.sample();
+  EXPECT(assert_equal(s1, s1_ref, tol));
+  Vector s2 = sampler_rng.sample();
+  Vector s2_ref = sampler_seed.sample();
+  EXPECT(assert_equal(s2, s2_ref, tol));
 }
 
 /* ************************************************************************* */
-int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
+int main() {
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
+}
 /* ************************************************************************* */

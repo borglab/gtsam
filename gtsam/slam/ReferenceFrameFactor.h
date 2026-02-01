@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -29,9 +29,9 @@ namespace gtsam {
 template<class T, class P>
 P transform_point(
     const T& trans, const P& global,
-    boost::optional<Matrix&> Dtrans,
-    boost::optional<Matrix&> Dglobal) {
-  return trans.transform_from(global, Dtrans, Dglobal);
+    OptionalMatrixType Dtrans,
+    OptionalMatrixType Dglobal) {
+  return trans.transformFrom(global, Dtrans, Dglobal);
 }
 
 /**
@@ -44,7 +44,7 @@ P transform_point(
  *   l = lTg * g
  *
  * The Point and Transform concepts must be Lie types, and the transform
- * relationship "Point = transform_from(Transform, Point)" must exist.
+ * relationship "Point = transformFrom(Transform, Point)" must exist.
  *
  * To implement this function in new domains, specialize a new version of
  * Point transform_point<Transform,Point>(transform, global, Dtrans, Dglobal)
@@ -54,14 +54,17 @@ P transform_point(
  * specific classes of landmarks
  */
 template<class POINT, class TRANSFORM>
-class ReferenceFrameFactor : public NoiseModelFactor3<POINT, TRANSFORM, POINT> {
+class ReferenceFrameFactor : public NoiseModelFactorN<POINT, TRANSFORM, POINT> {
 protected:
   /** default constructor for serialization only */
   ReferenceFrameFactor() {}
 
 public:
-  typedef NoiseModelFactor3<POINT, TRANSFORM, POINT> Base;
+  typedef NoiseModelFactorN<POINT, TRANSFORM, POINT> Base;
   typedef ReferenceFrameFactor<POINT, TRANSFORM> This;
+
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
 
   typedef POINT Point;
   typedef TRANSFORM Transform;
@@ -84,28 +87,28 @@ public:
    * each degree of freedom.
    */
   ReferenceFrameFactor(Key globalKey, Key transKey, Key localKey, double sigma = 1e-2)
-  : Base(noiseModel::Isotropic::Sigma(POINT::dimension, sigma),
+  : Base(noiseModel::Isotropic::Sigma(traits<POINT>::dimension, sigma),
       globalKey, transKey, localKey) {}
 
-  virtual ~ReferenceFrameFactor(){}
+  ~ReferenceFrameFactor() override{}
 
-  virtual NonlinearFactor::shared_ptr clone() const {
-    return boost::static_pointer_cast<NonlinearFactor>(
+  NonlinearFactor::shared_ptr clone() const override {
+    return std::static_pointer_cast<NonlinearFactor>(
         NonlinearFactor::shared_ptr(new This(*this))); }
 
   /** Combined cost and derivative function using boost::optional */
-  virtual Vector evaluateError(const Point& global, const Transform& trans, const Point& local,
-        boost::optional<Matrix&> Dforeign = boost::none,
-        boost::optional<Matrix&> Dtrans = boost::none,
-        boost::optional<Matrix&> Dlocal = boost::none) const  {
+  Vector evaluateError(const Point& global, const Transform& trans, const Point& local,
+        OptionalMatrixType Dforeign, OptionalMatrixType Dtrans,
+        OptionalMatrixType Dlocal) const override {
     Point newlocal = transform_point<Transform,Point>(trans, global, Dtrans, Dforeign);
-    if (Dlocal)
-      *Dlocal = -1* gtsam::eye(Point::dimension);
+    if (Dlocal) {
+      *Dlocal = -1* Matrix::Identity(traits<Point>::dimension, traits<Point>::dimension);
+    }
     return traits<Point>::Local(local,newlocal);
   }
 
-  virtual void print(const std::string& s="",
-      const gtsam::KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+  void print(const std::string& s="",
+      const gtsam::KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     std::cout << s << ": ReferenceFrameFactor("
         << "Global: " << keyFormatter(this->key1()) << ","
         << " Transform: " << keyFormatter(this->key2()) << ","
@@ -119,6 +122,7 @@ public:
   Key local_key() const { return this->key3(); }
 
 private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -126,6 +130,7 @@ private:
     ar & boost::serialization::make_nvp("NonlinearFactor3",
         boost::serialization::base_object<Base>(*this));
   }
+#endif
 };
 
 /// traits

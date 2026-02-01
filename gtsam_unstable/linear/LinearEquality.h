@@ -9,11 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * LinearEquality.h
- * @brief: LinearEquality derived from Base with constrained noise model
- * @date: Nov 27, 2014
- * @author: thduynguyen
+/**
+ * @file    LinearEquality.h
+ * @brief   LinearEquality derived from Base with constrained noise model
+ * @date    Nov 27, 2014
+ * @author  Duy-Nguyen Ta
  */
 
 #pragma once
@@ -23,14 +23,14 @@
 namespace gtsam {
 
 /**
- * This class defines Linear constraints by inherit Base
+ * This class defines a linear equality constraints, inheriting JacobianFactor
  * with the special Constrained noise model
  */
 class LinearEquality: public JacobianFactor {
 public:
   typedef LinearEquality This; ///< Typedef to this class
   typedef JacobianFactor Base; ///< Typedef to base class
-  typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+  typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
 private:
   Key dualKey_;
@@ -39,6 +39,17 @@ public:
   /** default constructor for I/O */
   LinearEquality() :
       Base() {
+  }
+
+  /**
+   * Construct from a constrained noisemodel JacobianFactor with a dual key.
+   */
+  explicit LinearEquality(const JacobianFactor& jf, Key dualKey) :
+      Base(jf), dualKey_(dualKey) {
+    if (!jf.isConstrained()) {
+      throw std::runtime_error(
+          "Cannot convert an unconstrained JacobianFactor to LinearEquality");
+    }
   }
 
   /** Conversion from HessianFactor (does Cholesky to obtain Jacobian matrix) */
@@ -74,31 +85,35 @@ public:
   }
 
   /** Virtual destructor */
-  virtual ~LinearEquality() {
+  ~LinearEquality() override {
   }
 
   /** equals */
-  virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const {
+  bool equals(const GaussianFactor& lf, double tol = 1e-9) const override {
     return Base::equals(lf, tol);
   }
 
   /** print */
-  virtual void print(const std::string& s = "", const KeyFormatter& formatter =
-      DefaultKeyFormatter) const {
+  void print(const std::string& s = "", const KeyFormatter& formatter =
+      DefaultKeyFormatter) const override {
     Base::print(s, formatter);
   }
 
   /** Clone this LinearEquality */
-  virtual GaussianFactor::shared_ptr clone() const {
-    return boost::static_pointer_cast<GaussianFactor>(
-        boost::make_shared<LinearEquality>(*this));
+  GaussianFactor::shared_ptr clone() const override {
+    return std::static_pointer_cast < GaussianFactor
+        > (std::make_shared < LinearEquality > (*this));
   }
 
   /// dual key
-  Key dualKey() const { return dualKey_; }
+  Key dualKey() const {
+    return dualKey_;
+  }
 
   /// for active set method: equality constraints are always active
-  bool active() const { return true; }
+  bool active() const {
+    return true;
+  }
 
   /** Special error_vector for constraints (A*x-b) */
   Vector error_vector(const VectorValues& c) const {
@@ -109,15 +124,16 @@ public:
    * I think it should be zero, as this function is meant for objective cost.
    * But the name "error" can be misleading.
    * TODO: confirm with Frank!! */
-  virtual double error(const VectorValues& c) const {
+  double error(const VectorValues& c) const override {
     return 0.0;
   }
 
-}; // \ LinearEquality
-
+};
+// \ LinearEquality
 
 /// traits
-template<> struct traits<LinearEquality> : public Testable<LinearEquality> {};
+template<> struct traits<LinearEquality> : public Testable<LinearEquality> {
+};
 
 } // \ namespace gtsam
 

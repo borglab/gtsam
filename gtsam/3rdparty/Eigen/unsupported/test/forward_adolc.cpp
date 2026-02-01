@@ -13,8 +13,6 @@
 #define NUMBER_DIRECTIONS 16
 #include <unsupported/Eigen/AdolcForward>
 
-int adtl::ADOLC_numDir;
-
 template<typename Vector>
 EIGEN_DONT_INLINE typename Vector::Scalar foo(const Vector& p)
 {
@@ -37,7 +35,7 @@ struct TestFunc1
   int m_inputs, m_values;
 
   TestFunc1() : m_inputs(InputsAtCompileTime), m_values(ValuesAtCompileTime) {}
-  TestFunc1(int inputs, int values) : m_inputs(inputs), m_values(values) {}
+  TestFunc1(int inputs_, int values_) : m_inputs(inputs_), m_values(values_) {}
 
   int inputs() const { return m_inputs; }
   int values() const { return m_values; }
@@ -121,9 +119,9 @@ template<typename Func> void adolc_forward_jacobian(const Func& f)
     VERIFY_IS_APPROX(j, jref);
 }
 
-void test_forward_adolc()
+EIGEN_DECLARE_TEST(forward_adolc)
 {
-  adtl::ADOLC_numDir = NUMBER_DIRECTIONS;
+  adtl::setNumDir(NUMBER_DIRECTIONS);
 
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST(( adolc_forward_jacobian(TestFunc1<double,2,2>()) ));
@@ -134,7 +132,7 @@ void test_forward_adolc()
   }
 
   {
-    // simple instanciation tests
+    // simple instantiation tests
     Matrix<adtl::adouble,2,1> x;
     foo(x);
     Matrix<adtl::adouble,Dynamic,Dynamic> A(4,4);;

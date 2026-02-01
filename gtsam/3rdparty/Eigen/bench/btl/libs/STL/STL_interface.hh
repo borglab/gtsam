@@ -44,9 +44,9 @@ public :
     return "STL";
   }
 
-  static void free_matrix(gene_matrix & A, int N){}
+  static void free_matrix(gene_matrix & /*A*/, int /*N*/){}
 
-  static void free_vector(gene_vector & B){}
+  static void free_vector(gene_vector & /*B*/){}
 
   static inline void matrix_from_stl(gene_matrix & A, stl_matrix & A_stl){
     A = A_stl;
@@ -78,18 +78,18 @@ public :
         cible[i][j]=source[i][j];
   }
 
-//   static inline void ata_product(const gene_matrix & A, gene_matrix & X, int N)
-//   {
-//     real somme;
-//     for (int j=0;j<N;j++){
-//       for (int i=0;i<N;i++){
-//         somme=0.0;
-//         for (int k=0;k<N;k++)
-//           somme += A[i][k]*A[j][k];
-//         X[j][i]=somme;
-//       }
-//     }
-//   }
+  static inline void ata_product(const gene_matrix & A, gene_matrix & X, int N)
+  {
+    real somme;
+    for (int j=0;j<N;j++){
+      for (int i=0;i<N;i++){
+        somme=0.0;
+        for (int k=0;k<N;k++)
+          somme += A[i][k]*A[j][k];
+        X[j][i]=somme;
+      }
+    }
+  }
 
   static inline void aat_product(const gene_matrix & A, gene_matrix & X, int N)
   {

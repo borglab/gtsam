@@ -64,7 +64,7 @@ int main()
     long timeLog = clock();
     Point2 measurement(0,0);
     for(int i = 0; i < n; i++)
-      measurement.localCoordinates(camera.project(point1));
+      camera.project(point1)-measurement;
     long timeLog2 = clock();
     double seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;
     cout << ((double)seconds*1e9/n) << " nanosecs/call" << endl;
@@ -84,7 +84,7 @@ int main()
     Matrix Dpose, Dpoint;
     long timeLog = clock();
     for(int i = 0; i < n; i++)
-      camera.project(point1, Dpose, Dpoint, boost::none);
+      camera.project(point1, Dpose, Dpoint, {});
     long timeLog2 = clock();
     double seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;
     cout << ((double)seconds*1e9/n) << " nanosecs/call" << endl;

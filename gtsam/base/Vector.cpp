@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -14,16 +14,17 @@
  * @brief   typedef and functions to augment Eigen's Vectors
  * @author  Kai Ni
  * @author  Frank Dellaert
+ * @author  Varun Agrawal
  */
 
 #include <gtsam/base/Vector.h>
-#include <boost/foreach.hpp>
-#include <boost/optional.hpp>
 #include <stdexcept>
 #include <cstdarg>
 #include <limits>
+#include <iostream>
 #include <fstream>
 #include <sstream>
+#include <cassert>
 #include <iomanip>
 #include <cmath>
 #include <cstdio>
@@ -33,18 +34,45 @@ using namespace std;
 
 namespace gtsam {
 
-/* ************************************************************************* */
-bool zero(const Vector& v) {
-  bool result = true;
-  size_t n = v.size();
-  for( size_t j = 0 ; j < n ; j++)
-    result = result && (v(j) == 0.0);
-  return result;
-}
+/* *************************************************************************
+ * References:
+ * 1. https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
+ * 2. https://floating-point-gui.de/errors/comparison/
+ * ************************************************************************* */
+bool fpEqual(double a, double b, double tol, bool check_relative_also) {
+  using std::abs;
+  using std::isnan;
+  using std::isinf;
 
-/* ************************************************************************* */
-Vector delta(size_t n, size_t i, double value) {
-  return Vector::Unit(n, i) * value;
+  double DOUBLE_MIN_NORMAL = numeric_limits<double>::min() + 1.0;
+  double larger = (abs(b) > abs(a)) ? abs(b) : abs(a);
+
+  // handle NaNs
+  if(isnan(a) || isnan(b)) {
+    return isnan(a) && isnan(b);
+  }
+  // handle inf
+  else if(isinf(a) || isinf(b)) {
+    return isinf(a) && isinf(b);
+  }
+  // If the two values are zero or both are extremely close to it
+  // relative error is less meaningful here
+  else if(a == 0 || b == 0 || (abs(a) + abs(b)) < DOUBLE_MIN_NORMAL) {
+    return abs(a-b) <= tol * DOUBLE_MIN_NORMAL;
+  }
+  // Check if the numbers are really close.
+  // Needed when comparing numbers near zero or tol is in vicinity.
+  else if (abs(a - b) <= tol) {
+    return true;
+  }
+  // Check for relative error
+  else if (abs(a - b) <=
+               tol * min(larger, std::numeric_limits<double>::max()) &&
+           check_relative_also) {
+    return true;
+  }
+
+  return false;
 }
 
 /* ************************************************************************* */
@@ -96,9 +124,7 @@ bool equal_with_abs_tol(const Vector& vec1, const Vector& vec2, double tol) {
   if (vec1.size()!=vec2.size()) return false;
   size_t m = vec1.size();
   for(size_t i=0; i<m; ++i) {
-    if(std::isnan(vec1[i]) ^ std::isnan(vec2[i]))
-      return false;
-    if(fabs(vec1[i] - vec2[i]) > tol)
+    if (!fpEqual(vec1[i], vec2[i], tol))
       return false;
   }
   return true;
@@ -109,9 +135,7 @@ bool equal_with_abs_tol(const SubVector& vec1, const SubVector& vec2, double tol
   if (vec1.size()!=vec2.size()) return false;
   size_t m = vec1.size();
   for(size_t i=0; i<m; ++i) {
-    if(std::isnan(vec1[i]) ^ std::isnan(vec2[i]))
-      return false;
-    if(fabs(vec1[i] - vec2[i]) > tol)
+    if (!fpEqual(vec1[i], vec2[i], tol))
       return false;
   }
   return true;
@@ -139,8 +163,8 @@ bool assert_inequal(const Vector& expected, const Vector& actual, double tol) {
 bool assert_equal(const SubVector& expected, const SubVector& actual, double tol) {
   if (equal_with_abs_tol(expected,actual,tol)) return true;
   cout << "not equal:" << endl;
-  print(expected, "expected");
-  print(actual, "actual");
+  print(static_cast<Vector>(expected), "expected");
+  print(static_cast<Vector>(actual), "actual");
   return false;
 }
 
@@ -159,14 +183,14 @@ bool linear_dependent(const Vector& vec1, const Vector& vec2, double tol) {
   bool flag = false;   double scale = 1.0;
   size_t m = vec1.size();
   for(size_t i=0; i<m; i++) {
-    if((fabs(vec1[i])>tol&&fabs(vec2[i])<tol) || (fabs(vec1[i])<tol&&fabs(vec2[i])>tol))
+    if((std::abs(vec1[i])>tol && std::abs(vec2[i])<tol) || (std::abs(vec1[i])<tol && std::abs(vec2[i])>tol))
       return false;
     if(vec1[i] == 0 && vec2[i] == 0) continue;
     if (!flag) {
       scale = vec1[i] / vec2[i];
       flag = true ;
     }
-    else if (fabs(vec1[i] - vec2[i]*scale) > tol) return false;
+    else if (std::abs(vec1[i] - vec2[i]*scale) > tol) return false;
   }
   return flag;
 }
@@ -227,7 +251,7 @@ double weightedPseudoinverse(const Vector& a, const Vector& weights,
 
   // Check once for zero entries of a. TODO: really needed ?
   vector<bool> isZero;
-  for (size_t i = 0; i < m; ++i) isZero.push_back(fabs(a[i]) < 1e-9);
+  for (size_t i = 0; i < m; ++i) isZero.push_back(std::abs(a[i]) < 1e-9);
 
   // If there is a valid (a!=0) constraint (sigma==0) return the first one
   for (size_t i = 0; i < m; ++i) {
@@ -235,7 +259,7 @@ double weightedPseudoinverse(const Vector& a, const Vector& weights,
       // Basically, instead of doing a normal QR step with the weighted
       // pseudoinverse, we enforce the constraint by turning
       // ax + AS = b into x + (A/a)S = b/a, for the first row where a!=0
-      pseudo = delta(m, i, 1.0 / a[i]);
+      pseudo = Vector::Unit(m,i)*(1.0/a[i]);
       return inf;
     }
   }
@@ -275,17 +299,14 @@ weightedPseudoinverse(const Vector& a, const Vector& weights) {
 }
 
 /* ************************************************************************* */
-Vector concatVectors(const std::list<Vector>& vs)
-{
+Vector concatVectors(const std::list<Vector>& vs) {
   size_t dim = 0;
-  BOOST_FOREACH(Vector v, vs)
-  dim += v.size();
+  for (const Vector& v : vs) dim += v.size();
 
   Vector A(dim);
   size_t index = 0;
-  BOOST_FOREACH(Vector v, vs) {
-    for(int d = 0; d < v.size(); d++)
-      A(d+index) = v(d);
+  for (const Vector& v : vs) {
+    for (int d = 0; d < v.size(); d++) A(d + index) = v(d);
     index += v.size();
   }
 

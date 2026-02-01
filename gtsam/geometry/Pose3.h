@@ -11,7 +11,7 @@
 
 /**
  *@file  Pose3.h
- *@brief 3D Pose
+ * @brief 3D Pose manifold SO(3) x R^3 and group SE(3)
  */
 
 // \callgraph
@@ -31,10 +31,10 @@ class Pose2;
 
 /**
  * A 3D pose (R,t) : (Rot3,Point3)
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Pose3: public LieGroup<Pose3, 6> {
+class GTSAM_EXPORT Pose3: public MatrixLieGroup<Pose3, 6, 4> {
 public:
 
   /** Pose Concept requirements */
@@ -44,20 +44,21 @@ public:
 private:
 
   Rot3 R_; ///< Rotation gRp, between global and pose frame
-  Point3 t_; ///< Translation gTp, from global origin to pose frame origin
+  Point3 t_; ///< Translation gPp, from global origin to pose frame origin
 
 public:
+  using Vector16 = Eigen::Matrix<double, 16, 1>;
 
   /// @name Standard Constructors
   /// @{
 
   /** Default constructor is origin */
- Pose3() : R_(traits<Rot3>::Identity()), t_(traits<Point3>::Identity()) {}
+  Pose3() : R_(traits<Rot3>::Identity()), t_(traits<Point3>::Identity()) {}
 
   /** Copy constructor */
-  Pose3(const Pose3& pose) :
-      R_(pose.R_), t_(pose.t_) {
-  }
+  Pose3(const Pose3& pose) = default;
+
+  Pose3& operator=(const Pose3& other) = default;
 
   /** Construct from R,t */
   Pose3(const Rot3& R, const Point3& t) :
@@ -75,16 +76,21 @@ public:
 
   /// Named constructor with derivatives
   static Pose3 Create(const Rot3& R, const Point3& t,
-                      OptionalJacobian<6, 3> H1 = boost::none,
-                      OptionalJacobian<6, 3> H2 = boost::none);
+                      OptionalJacobian<6, 3> HR = {},
+                      OptionalJacobian<6, 3> Ht = {});
+
+  /** Construct from Pose2 in the xy plane, with derivative. */
+  static Pose3 FromPose2(const Pose2& p, OptionalJacobian<6,3> H = {});
 
   /**
    *  Create Pose3 by aligning two point pairs
    *  A pose aTb is estimated between pairs (a_point, b_point) such that a_point = aTb * b_point
-   *  Meant to replace the deprecated function 'align', which orders the pairs the opposite way.
    *  Note this allows for noise on the points but in that case the mapping will not be exact.
    */
-  static boost::optional<Pose3> Align(const std::vector<Point3Pair>& abPointPairs);
+  static std::optional<Pose3> Align(const Point3Pairs& abPointPairs);
+
+  // Version of Pose3::Align that takes 2 matrices.
+  static std::optional<Pose3> Align(const Matrix& a, const Matrix& b);
 
   /// @}
   /// @name Testable
@@ -101,11 +107,11 @@ public:
   /// @{
 
   /// identity for group operation
-  static Pose3 identity() {
+  static Pose3 Identity() {
     return Pose3();
   }
 
-  /// inverse transformation with derivatives
+  /// inverse transformation
   Pose3 inverse() const;
 
   /// compose syntactic sugar
@@ -113,29 +119,57 @@ public:
     return Pose3(R_ * T.R_, t_ + R_ * T.t_);
   }
 
+  /**
+   * Interpolate between two poses via individual rotation and translation
+   * interpolation.
+   *
+   * The default "interpolate" method defined in Lie.h minimizes the geodesic
+   * distance on the manifold, leading to a screw motion interpolation in
+   * Cartesian space, which might not be what is expected.
+   * In contrast, this method executes a straight line interpolation for the
+   * translation, while still using interpolate (aka "slerp") for the rotational
+   * component. This might be more intuitive in many applications.
+   *
+   * @param T End point of interpolation.
+   * @param t A value in [0, 1].
+   */
+  Pose3 interpolateRt(const Pose3& T, double t,
+                      OptionalJacobian<6, 6> Hself = {},
+                      OptionalJacobian<6, 6> Harg = {},
+                      OptionalJacobian<6, 1> Ht = {}) const;
+
   /// @}
   /// @name Lie Group
   /// @{
 
+  using LieAlgebra = Matrix4;
+
   /// Exponential map at identity - create a rotation from canonical coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$
-  static Pose3 Expmap(const Vector6& xi, OptionalJacobian<6, 6> H = boost::none);
+  static Pose3 Expmap(const Vector6& xi, OptionalJacobian<6, 6> Hxi = {});
 
   /// Log map at identity - return the canonical coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ of this rotation
-  static Vector6 Logmap(const Pose3& p, OptionalJacobian<6, 6> H = boost::none);
+  static Vector6 Logmap(const Pose3& pose, OptionalJacobian<6, 6> Hpose = {});
 
   /**
-   * Calculate Adjoint map, transforming a twist in the this pose's (i.e, body) frame to the world spatial frame
+   * Calculate Adjoint map, transforming a twist in this pose's (i.e, body) frame to the world spatial frame
    * Ad_pose is 6*6 matrix that when applied to twist xi \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$, returns Ad_pose(xi)
    */
-  Matrix6 AdjointMap() const; /// FIXME Not tested - marked as incorrect
+  Matrix6 AdjointMap() const;
 
   /**
-   * Apply this pose's AdjointMap Ad_g to a twist \f$ \xi_b \f$, i.e. a body-fixed velocity, transforming it to the spatial frame
+   * Apply this pose's AdjointMap Ad_g to a twist \f$ \xi_b \f$, i.e. a
+   * body-fixed velocity, transforming it to the spatial frame
    * \f$ \xi^s = g*\xi^b*g^{-1} = Ad_g * \xi^b \f$
+   * Note that H_xib = AdjointMap()
    */
-  Vector6 Adjoint(const Vector6& xi_b) const {
-    return AdjointMap() * xi_b;
-  } /// FIXME Not tested - marked as incorrect
+  Vector6 Adjoint(const Vector6& xi_b,
+                  OptionalJacobian<6, 6> H_this = {},
+                  OptionalJacobian<6, 6> H_xib = {}) const;
+  
+  /// The dual version of Adjoint
+  Vector6 AdjointTranspose(const Vector6& x,
+                           OptionalJacobian<6, 6> H_this = {},
+                           OptionalJacobian<6, 6> H_x = {}) const;
 
   /**
    * Compute the [ad(w,v)] operator as defined in [Kobilarov09siggraph], pg 11
@@ -152,45 +186,54 @@ public:
    * and its inverse transpose in the discrete Euler Poincare' (DEP) operator.
    *
    */
-  static Matrix6 adjointMap(const Vector6 &xi);
+  static Matrix6 adjointMap(const Vector6& xi);
 
   /**
    * Action of the adjointMap on a Lie-algebra vector y, with optional derivatives
    */
-  static Vector6 adjoint(const Vector6 &xi, const Vector6 &y,
-      OptionalJacobian<6, 6> = boost::none);
+  static Vector6 adjoint(const Vector6& xi, const Vector6& y,
+                         OptionalJacobian<6, 6> Hxi = {},
+                         OptionalJacobian<6, 6> H_y = {});
+
+  // temporary fix for wrappers until case issue is resolved
+  static Matrix6 adjointMap_(const Vector6 &xi) { return adjointMap(xi);}
+  static Vector6 adjoint_(const Vector6 &xi, const Vector6 &y) { return adjoint(xi, y);}
 
   /**
    * The dual version of adjoint action, acting on the dual space of the Lie-algebra vector space.
    */
   static Vector6 adjointTranspose(const Vector6& xi, const Vector6& y,
-      OptionalJacobian<6, 6> H = boost::none);
+                                  OptionalJacobian<6, 6> Hxi = {},
+                                  OptionalJacobian<6, 6> H_y = {});
 
   /// Derivative of Expmap
   static Matrix6 ExpmapDerivative(const Vector6& xi);
 
   /// Derivative of Logmap
-  static Matrix6 LogmapDerivative(const Pose3& xi);
+  static Matrix6 LogmapDerivative(const Vector6& xi);
+
+  /// Derivative of Logmap, Pose3 version. TODO(Frank): deprecate?
+  static Matrix6 LogmapDerivative(const Pose3& pose);
 
   // Chart at origin, depends on compile-time flag GTSAM_POSE3_EXPMAP
-  struct ChartAtOrigin {
-    static Pose3 Retract(const Vector6& v, ChartJacobian H = boost::none);
-    static Vector6 Local(const Pose3& r, ChartJacobian H = boost::none);
+  struct GTSAM_EXPORT ChartAtOrigin {
+    static Pose3 Retract(const Vector6& xi, ChartJacobian Hxi = {});
+    static Vector6 Local(const Pose3& pose, ChartJacobian Hpose = {});
   };
 
   using LieGroup<Pose3, 6>::inverse; // version with derivative
 
   /**
-   * wedge for Pose3:
+   * Hat for Pose3:
    * @param xi 6-dim twist (omega,v) where
    *  omega = (wx,wy,wz) 3D angular velocity
    *  v (vx,vy,vz) = 3D velocity
    * @return xihat, 4*4 element of Lie algebra that can be exponentiated
    */
-  static Matrix wedge(double wx, double wy, double wz, double vx, double vy,
-      double vz) {
-    return (Matrix(4, 4) << 0., -wz, wy, vx, wz, 0., -wx, vy, -wy, wx, 0., vz, 0., 0., 0., 0.).finished();
-  }
+  static Matrix4 Hat(const Vector6& xi);
+
+  /// Vee maps from Lie algebra to tangent vector
+  static Vector6 Vee(const Matrix4& X);
 
   /// @}
   /// @name Group Action on Point3
@@ -198,38 +241,52 @@ public:
 
   /**
    * @brief takes point in Pose coordinates and transforms it to world coordinates
-   * @param p point in Pose coordinates
-   * @param Dpose optional 3*6 Jacobian wrpt this pose
-   * @param Dpoint optional 3*3 Jacobian wrpt point
+   * @param point point in Pose coordinates
+   * @param Hself optional 3*6 Jacobian wrpt this pose
+   * @param Hpoint optional 3*3 Jacobian wrpt point
    * @return point in world coordinates
    */
-  Point3 transform_from(const Point3& p, OptionalJacobian<3, 6> Dpose =
-      boost::none, OptionalJacobian<3, 3> Dpoint = boost::none) const;
+  Point3 transformFrom(const Point3& point, OptionalJacobian<3, 6> Hself =
+      {}, OptionalJacobian<3, 3> Hpoint = {}) const;
 
-  /** syntactic sugar for transform_from */
-  inline Point3 operator*(const Point3& p) const {
-    return transform_from(p);
+  /**
+   * @brief transform many points in Pose coordinates and transform to world.
+   * @param points 3*N matrix in Pose coordinates
+   * @return points in world coordinates, as 3*N Matrix
+   */
+  Matrix transformFrom(const Matrix& points) const;
+
+  /** syntactic sugar for transformFrom */
+  inline Point3 operator*(const Point3& point) const {
+    return transformFrom(point);
   }
 
   /**
    * @brief takes point in world coordinates and transforms it to Pose coordinates
-   * @param p point in world coordinates
-   * @param Dpose optional 3*6 Jacobian wrpt this pose
-   * @param Dpoint optional 3*3 Jacobian wrpt point
+   * @param point point in world coordinates
+   * @param Hself optional 3*6 Jacobian wrpt this pose
+   * @param Hpoint optional 3*3 Jacobian wrpt point
    * @return point in Pose coordinates
    */
-  Point3 transform_to(const Point3& p, OptionalJacobian<3, 6> Dpose =
-      boost::none, OptionalJacobian<3, 3> Dpoint = boost::none) const;
+  Point3 transformTo(const Point3& point, OptionalJacobian<3, 6> Hself =
+      {}, OptionalJacobian<3, 3> Hpoint = {}) const;
+
+  /**
+   * @brief transform many points in world coordinates and transform to Pose.
+   * @param points 3*N matrix in world coordinates
+   * @return points in Pose coordinates, as 3*N Matrix
+   */
+  Matrix transformTo(const Matrix& points) const;
 
   /// @}
   /// @name Standard Interface
   /// @{
 
   /// get rotation
-  const Rot3& rotation(OptionalJacobian<3, 6> H = boost::none) const;
+  const Rot3& rotation(OptionalJacobian<3, 6> Hself = {}) const;
 
   /// get translation
-  const Point3& translation(OptionalJacobian<3, 6> H = boost::none) const;
+  const Point3& translation(OptionalJacobian<3, 6> Hself = {}) const;
 
   /// get x
   double x() const {
@@ -249,38 +306,56 @@ public:
   /** convert to 4*4 matrix */
   Matrix4 matrix() const;
 
-  /** receives a pose in local coordinates and transforms it to world coordinates
-  * @deprecated: This is actually equivalent to transform_from, so it is WRONG! Use
-  * transform_pose_to instead. */
-  Pose3 transform_to(const Pose3& pose) const;
+  /// Return vectorized SE(3) matrix in column order.
+  Vector16 vec(OptionalJacobian<16, 6> H = {}) const;
 
-  /** receives a pose in world coordinates and transforms it to local coordinates */
-  Pose3 transform_pose_to(const Pose3& pose, OptionalJacobian<6, 6> H1 = boost::none,
-                                             OptionalJacobian<6, 6> H2 = boost::none) const;
+  /** 
+    * Assuming self == wTa, takes a pose aTb in local coordinates 
+    * and transforms it to world coordinates wTb = wTa * aTb.
+    * This is identical to compose.
+    */
+  Pose3 transformPoseFrom(const Pose3& aTb, OptionalJacobian<6, 6> Hself = {},
+                                            OptionalJacobian<6, 6> HaTb = {}) const;
+
+  /** 
+   *  Assuming self == wTa, takes a pose wTb in world coordinates 
+   * and transforms it to local coordinates aTb = inv(wTa) * wTb 
+   */
+  Pose3 transformPoseTo(const Pose3& wTb, OptionalJacobian<6, 6> Hself = {},
+                                          OptionalJacobian<6, 6> HwTb = {}) const;
 
   /**
    * Calculate range to a landmark
    * @param point 3D location of landmark
    * @return range (double)
    */
-  double range(const Point3& point, OptionalJacobian<1, 6> H1 = boost::none,
-      OptionalJacobian<1, 3> H2 = boost::none) const;
+  double range(const Point3& point, OptionalJacobian<1, 6> Hself = {},
+      OptionalJacobian<1, 3> Hpoint = {}) const;
 
   /**
    * Calculate range to another pose
    * @param pose Other SO(3) pose
    * @return range (double)
    */
-  double range(const Pose3& pose, OptionalJacobian<1, 6> H1 = boost::none,
-      OptionalJacobian<1, 6> H2 = boost::none) const;
+  double range(const Pose3& pose, OptionalJacobian<1, 6> Hself = {},
+      OptionalJacobian<1, 6> Hpose = {}) const;
 
   /**
    * Calculate bearing to a landmark
    * @param point 3D location of landmark
    * @return bearing (Unit3)
    */
-  Unit3 bearing(const Point3& point, OptionalJacobian<2, 6> H1 = boost::none,
-      OptionalJacobian<2, 3> H2 = boost::none) const;
+  Unit3 bearing(const Point3& point, OptionalJacobian<2, 6> Hself = {},
+      OptionalJacobian<2, 3> Hpoint = {}) const;
+
+  /**
+   * Calculate bearing to another pose
+   * @param other 3D location and orientation of other body. The orientation
+   * information is ignored.
+   * @return bearing (Unit3)
+   */
+  Unit3 bearing(const Pose3& pose, OptionalJacobian<2, 6> Hself = {},
+      OptionalJacobian<2, 6> Hpose = {}) const;
 
   /// @}
   /// @name Advanced Interface
@@ -292,7 +367,7 @@ public:
    * @return a pair of [start, end] indices into the tangent space vector
    */
   inline static std::pair<size_t, size_t> translationInterval() {
-    return std::make_pair(3, 5);
+    return {3, 5};
   }
 
   /**
@@ -301,14 +376,36 @@ public:
    * @return a pair of [start, end] indices into the tangent space vector
    */
   static std::pair<size_t, size_t> rotationInterval() {
-    return std::make_pair(0, 2);
+    return {0, 2};
   }
+
+    /**
+   * @brief Spherical Linear interpolation between *this and other
+   * @param s a value between 0 and 1.5
+   * @param other final point of interpolation geodesic on manifold
+   */
+  Pose3 slerp(double t, const Pose3& other, OptionalJacobian<6, 6> Hx = {},
+                                             OptionalJacobian<6, 6> Hy = {}) const;
 
   /// Output stream operator
   GTSAM_EXPORT
   friend std::ostream &operator<<(std::ostream &os, const Pose3& p);
 
+  /// @}
+  /// @name deprecated
+  /// @{
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+  /// @deprecated: use Hat
+  static inline LieAlgebra wedge(double wx, double wy, double wz, double vx,
+                                 double vy, double vz) {
+    return Hat((TangentVector() << wx, wy, wz, vx, vy, vz).finished());
+  }
+#endif
+  /// @}
+
  private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
@@ -316,42 +413,45 @@ public:
     ar & BOOST_SERIALIZATION_NVP(R_);
     ar & BOOST_SERIALIZATION_NVP(t_);
   }
+#endif
   /// @}
 
+#ifdef GTSAM_USE_QUATERNIONS
+  // Align if we are using Quaternions
+  public:
+    GTSAM_MAKE_ALIGNED_OPERATOR_NEW
+#endif
 };
 // Pose3 class
 
-/**
- * wedge for Pose3:
- * @param xi 6-dim twist (omega,v) where
- *  omega = 3D angular velocity
- *  v = 3D velocity
- * @return xihat, 4*4 element of Lie algebra that can be exponentiated
- */
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+/// @deprecated: use T::Hat
 template<>
 inline Matrix wedge<Pose3>(const Vector& xi) {
-  return Pose3::wedge(xi(0), xi(1), xi(2), xi(3), xi(4), xi(5));
+  // NOTE(chris): Need eval() as workaround for Apple clang + avx2.
+  return Matrix(Pose3::Hat(xi)).eval();
 }
+#endif
 
-/**
- * Calculate pose between a vector of 3D point correspondences (b_point, a_point)
- * where a_point = Pose3::transform_from(b_point) = t + R*b_point
- * @deprecated: use Pose3::Align with point pairs ordered the opposite way
- */
-GTSAM_EXPORT boost::optional<Pose3> align(const std::vector<Point3Pair>& baPointPairs);
+// Convenience typedef
+using Pose3Pair = std::pair<Pose3, Pose3>;
+using Pose3Pairs = std::vector<std::pair<Pose3, Pose3> >;
 
 // For MATLAB wrapper
 typedef std::vector<Pose3> Pose3Vector;
 
 template <>
-struct traits<Pose3> : public internal::LieGroup<Pose3> {};
+struct traits<Pose3> : public internal::MatrixLieGroup<Pose3, 4> {};
 
 template <>
-struct traits<const Pose3> : public internal::LieGroup<Pose3> {};
+struct traits<const Pose3> : public internal::MatrixLieGroup<Pose3, 4> {};
 
 // bearing and range traits, used in RangeFactor
 template <>
 struct Bearing<Pose3, Point3> : HasBearing<Pose3, Point3, Unit3> {};
+
+template<>
+struct Bearing<Pose3, Pose3> : HasBearing<Pose3, Pose3, Unit3> {};
 
 template <typename T>
 struct Range<Pose3, T> : HasRange<Pose3, T, double> {};

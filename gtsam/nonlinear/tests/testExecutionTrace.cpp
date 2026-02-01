@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -16,6 +16,7 @@
  * @brief unit tests for Expression internals
  */
 
+#include <gtsam/nonlinear/internal/CallRecord.h>
 #include <gtsam/nonlinear/internal/ExecutionTrace.h>
 #include <gtsam/geometry/Point2.h>
 

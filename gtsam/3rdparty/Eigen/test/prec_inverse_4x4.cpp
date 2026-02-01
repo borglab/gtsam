@@ -30,18 +30,17 @@ template<typename MatrixType> void inverse_general_4x4(int repeat)
 {
   using std::abs;
   typedef typename MatrixType::Scalar Scalar;
-  typedef typename MatrixType::RealScalar RealScalar;
   double error_sum = 0., error_max = 0.;
   for(int i = 0; i < repeat; ++i)
   {
     MatrixType m;
-    RealScalar absdet;
+    bool is_invertible;
     do {
       m = MatrixType::Random();
-      absdet = abs(m.determinant());
-    } while(absdet < NumTraits<Scalar>::epsilon());
+      is_invertible = Eigen::FullPivLU<MatrixType>(m).isInvertible();
+    } while(!is_invertible);
     MatrixType inv = m.inverse();
-    double error = double( (m*inv-MatrixType::Identity()).norm() * absdet / NumTraits<Scalar>::epsilon() );
+    double error = double( (m*inv-MatrixType::Identity()).norm());
     error_sum += error;
     error_max = (std::max)(error_max, error);
   }
@@ -53,14 +52,29 @@ template<typename MatrixType> void inverse_general_4x4(int repeat)
    // FIXME that 1.25 used to be 1.2 until we tested gcc 4.1 on 30 June 2010 and got 1.21.
   VERIFY(error_avg < (NumTraits<Scalar>::IsComplex ? 8.0 : 1.25));
   VERIFY(error_max < (NumTraits<Scalar>::IsComplex ? 64.0 : 20.0));
+
+  {
+    int s = 5;//internal::random<int>(4,10);
+    int i = 0;//internal::random<int>(0,s-4);
+    int j = 0;//internal::random<int>(0,s-4);
+    Matrix<Scalar,5,5> mat(s,s);
+    mat.setRandom();
+    MatrixType submat = mat.template block<4,4>(i,j);
+    MatrixType mat_inv = mat.template block<4,4>(i,j).inverse();
+    VERIFY_IS_APPROX(mat_inv, submat.inverse());
+    mat.template block<4,4>(i,j) = submat.inverse();
+    VERIFY_IS_APPROX(mat_inv, (mat.template block<4,4>(i,j)));
+  }
 }
 
-void test_prec_inverse_4x4()
+EIGEN_DECLARE_TEST(prec_inverse_4x4)
 {
   CALL_SUBTEST_1((inverse_permutation_4x4<Matrix4f>()));
   CALL_SUBTEST_1(( inverse_general_4x4<Matrix4f>(200000 * g_repeat) ));
+  CALL_SUBTEST_1(( inverse_general_4x4<Matrix<float,4,4,RowMajor> >(200000 * g_repeat) ));
 
   CALL_SUBTEST_2((inverse_permutation_4x4<Matrix<double,4,4,RowMajor> >()));
+  CALL_SUBTEST_2(( inverse_general_4x4<Matrix<double,4,4,ColMajor> >(200000 * g_repeat) ));
   CALL_SUBTEST_2(( inverse_general_4x4<Matrix<double,4,4,RowMajor> >(200000 * g_repeat) ));
 
   CALL_SUBTEST_3((inverse_permutation_4x4<Matrix4cf>()));

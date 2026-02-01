@@ -34,7 +34,7 @@ using namespace gtsam;
 static Pose3 camera1(Rot3(Vector3(1, -1, -1).asDiagonal()),
         Point3(0,0,6.25));
 
-static boost::shared_ptr<Cal3_S2Stereo> K(new Cal3_S2Stereo(625, 625, 0, 320, 240, 0.5));
+static std::shared_ptr<Cal3_S2Stereo> K(new Cal3_S2Stereo(625, 625, 0, 320, 240, 0.5));
 
 // point X Y Z in meters
 static Point3 p(0, 0, 5);
@@ -185,11 +185,11 @@ TEST( StereoFactor, singlePoint)
 {
   NonlinearFactorGraph graph;
 
-  graph.push_back(NonlinearEquality<Pose3>(X(1), camera1));
+  graph.emplace_shared<NonlinearEquality<Pose3> >(X(1), camera1);
 
   StereoPoint2 measurement(320, 320.0-50, 240);
   // arguments: measurement, sigma, cam#, measurement #, K, baseline (m)
-  graph.push_back(GenericStereoFactor<Pose3, Point3>(measurement, model, X(1), L(1), K));
+  graph.emplace_shared<GenericStereoFactor<Pose3, Point3> >(measurement, model, X(1), L(1), K);
 
   // Create a configuration corresponding to the ground truth
   Values values;

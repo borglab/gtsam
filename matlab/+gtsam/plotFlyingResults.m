@@ -13,7 +13,7 @@ set(gcf, 'Position', [80,1,1800,1000]);
 %% plot all the cylinders and sampled points
 
 axis equal
-axis([0, options.fieldSize.x, 0, options.fieldSize.y, 0, options.height + 30]);
+axis([0, options.fieldSize(1), 0, options.fieldSize(2), 0, options.height + 30]);
 xlabel('X (m)');
 ylabel('Y (m)');
 zlabel('Height (m)');
@@ -50,8 +50,8 @@ for i = 1:cylinderNum
     
     [X,Y,Z] = cylinder(cylinders{i}.radius, sampleDensity * cylinders{i}.radius * cylinders{i}.height);
 
-    X = X + cylinders{i}.centroid.x;
-    Y = Y + cylinders{i}.centroid.y;
+    X = X + cylinders{i}.centroid(1);
+    Y = Y + cylinders{i}.centroid(2);
     Z = Z * cylinders{i}.height;
 
     h_cylinder{i} = surf(X,Y,Z);
@@ -76,7 +76,7 @@ for i = 1:posesSize
     %plotCamera(poses{i}, 3);
     
     gRp = poses{i}.rotation().matrix();  % rotation from pose to global
-    C = poses{i}.translation().vector();
+    C = poses{i}.translation();
     axisLength = 3;
     
     xAxis = C+gRp(:,1)*axisLength;
@@ -111,14 +111,14 @@ for i = 1:posesSize
     for j = 1:pointSize
         if ~isempty(pts3d{j}.cov{i})
             hold on
-            h_point{j} = plot3(pts3d{j}.data.x, pts3d{j}.data.y, pts3d{j}.data.z);
-            h_point_cov{j} = gtsam.covarianceEllipse3D([pts3d{j}.data.x; pts3d{j}.data.y; pts3d{j}.data.z], ...
+            h_point{j} = plot3(pts3d{j}.data(1), pts3d{j}.data(2), pts3d{j}.data(3));
+            h_point_cov{j} = gtsam.covarianceEllipse3D([pts3d{j}.data(1); pts3d{j}.data(2); pts3d{j}.data(3)], ...
                 pts3d{j}.cov{i}, options.plot.covarianceScale);
         end
     end 
     
     axis equal
-    axis([0, options.fieldSize.x, 0, options.fieldSize.y, 0, options.height + 30]);
+    axis([0, options.fieldSize(1), 0, options.fieldSize(2), 0, options.height + 30]);
 
     drawnow
     
@@ -158,7 +158,7 @@ for i = 1 : posesSize
     hold on
     
     campos([poses{i}.x, poses{i}.y, poses{i}.z]);
-    camtarget([options.fieldSize.x/2, options.fieldSize.y/2, 0]);
+    camtarget([options.fieldSize(1)/2, options.fieldSize(2)/2, 0]);
     camlight(hlight, 'headlight');
     
     if options.writeVideo

@@ -5,8 +5,8 @@ values = Values;
 E = EssentialMatrix(Rot3,Unit3);
 tol = 1e-9;
 
-values.insert(0, Point2);
-values.insert(1, Point3);
+values.insert(0, Point2(0, 0));
+values.insert(1, Point3(0, 0, 0));
 values.insert(2, Rot2);
 values.insert(3, Pose2);
 values.insert(4, Rot3);
@@ -21,8 +21,8 @@ values.insert(10, imuBias.ConstantBias);
 values.insert(11, [1;2;3]);
 values.insert(12, [1 2;3 4]);
 
-EXPECT('at',values.atPoint2(0).equals(Point2,tol));
-EXPECT('at',values.atPoint3(1).equals(Point3,tol));
+EXPECT('at',values.atPoint2(0) == Point2(0, 0));
+EXPECT('at',values.atPoint3(1) == Point3(0, 0, 0));
 EXPECT('at',values.atRot2(2).equals(Rot2,tol));
 EXPECT('at',values.atPose2(3).equals(Pose2,tol));
 EXPECT('at',values.atRot3(4).equals(Rot3,tol));

@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<!DOCTYPE boost_serialization>
+<boost_serialization signature="serialization::archive" version="19">
+<data class_id="0" tracking_level="0" version="0">
+	<Base class_id="1" tracking_level="0" version="0">
+		<factors_ class_id="2" tracking_level="0" version="0">
+			<count>2</count>
+			<item_version>1</item_version>
+			<item class_id="3" tracking_level="0" version="1">
+				<px class_id="4" class_name="gtsam::JacobianFactor" tracking_level="1" version="1" object_id="_0">
+					<Base class_id="5" tracking_level="0" version="0">
+						<Base class_id="6" tracking_level="0" version="0">
+							<keys_>
+								<count>2</count>
+								<item_version>0</item_version>
+								<item>0</item>
+								<item>1</item>
+							</keys_>
+						</Base>
+					</Base>
+					<Ab_ class_id="8" tracking_level="0" version="0">
+						<matrix_ class_id="9" tracking_level="0" version="0">
+							<rows>9</rows>
+							<cols>7</cols>
+							<data>
+								<item>1.22427709071730959e+01</item>
+								<item>1.51514613104920048e+01</item>
+								<item>3.60934366857813060e+00</item>
+								<item>-1.18407259026383116e+01</item>
+								<item>7.84826117220921216e+00</item>
+								<item>1.23509165494819051e+01</item>
+								<item>-6.09875015991639735e+00</item>
+								<item>6.16547190708139126e-01</item>
+								<item>3.94972084922329048e+00</item>
+								<item>-4.89208482920378174e+00</item>
+								<item>3.02091647632478866e+00</item>
+								<item>-8.95328692238917512e+00</item>
+								<item>7.89831607220345955e+00</item>
+								<item>-2.36793602009719084e+00</item>
+								<item>1.48517612051941725e+01</item>
+								<item>-3.97284286249233731e-01</item>
+								<item>-1.95744531643153863e+01</item>
+								<item>-3.85954855417462017e+00</item>
+								<item>4.79268277145419042e+00</item>
+								<item>-9.01707953629520453e+00</item>
+								<item>1.37848069005841385e+01</item>
+								<item>1.04829326688375950e+01</item>
+								<item>-5.00630568442241675e+00</item>
+								<item>4.70463561852773182e+00</item>
+								<item>-1.59179134598689274e+01</item>
+								<item>-2.04767784956723942e+00</item>
+								<item>9.54135497908261954e+00</item>
+								<item>0.00000000000000000e+00</item>
+								<item>0.00000000000000000e+00</item>
+								<item>-0.00000000000000000e+00</item>
+								<item>-1.76201757312015372e+00</item>
+								<item>1.98634190821282672e+01</item>
+								<item>1.52966546661624236e+00</item>
+								<item>1.94817649567575373e+01</item>
+								<item>1.39684693294110307e+00</item>
+								<item>4.30228460420588288e+00</item>
+								<item>1.76201757312015372e+00</item>
+								<item>-1.98634190821282672e+01</item>
+								<item>-1.52966546661624236e+00</item>
+								<item>-0.00000000000000000e+00</item>
+								<item>0.00000000000000000e+00</item>
+								<item>0.00000000000000000e+00</item>
+								<item>4.16606867942304948e+00</item>
+								<item>1.86906420801308037e+00</item>
+								<item>-1.94717865319198360e+01</item>
+								<item>-1.94817649567575373e+01</item>
+								<item>-1.39684693294110307e+00</item>
+								<item>-4.30228460420588288e+00</item>
+								<item>-4.16606867942304948e+00</item>
+								<item>-1.86906420801308037e+00</item>
+								<item>1.94717865319198360e+01</item>
+								<item>0.00000000000000000e+00</item>
+								<item>0.00000000000000000e+00</item>
+								<item>0.00000000000000000e+00</item>
+								<item>1.00891462904330531e+01</item>
+								<item>-1.08132497987816869e+01</item>
+								<item>8.66487736568128497e+00</item>
+								<item>2.88370015604634311e+01</item>
+								<item>1.89391698948574643e+01</item>
+								<item>2.12398960190661290e+00</item>
+								<item>1.22150946112124039e+01</item>
+								<item>-2.33658532501596561e+01</item>
+								<item>1.51576204760307363e+01</item>
+							</data>
+						</matrix_>
+						<variableColOffsets_>
+							<count>4</count>
+							<item_version>0</item_version>
+							<item>0</item>
+							<item>3</item>
+							<item>6</item>
+							<item>7</item>
+						</variableColOffsets_>
+						<rowStart_>0</rowStart_>
+						<rowEnd_>9</rowEnd_>
+						<blockStart_>0</blockStart_>
+					</Ab_>
+					<model_null>1</model_null>
+				</px>
+			</item>
+			<item>
+				<px class_id_reference="4" object_id="_1">
+					<Base>
+						<Base>
+							<keys_>
+								<count>2</count>
+								<item_version>0</item_version>
+								<item>0</item>
+								<item>1</item>
+							</keys_>
+						</Base>
+					</Base>
+					<Ab_>
+						<matrix_>
+							<rows>3</rows>
+							<cols>7</cols>
+							<data>
+								<item>1.00000000000000000e+00</item>
+								<item>0.00000000000000000e+00</item>
+								<item>0.00000000000000000e+00</item>
+								<item>0.00000000000000000e+00</item>
+								<item>1.00000000000000000e+00</item>
+								<item>0.00000000000000000e+00</item>
+								<item>0.00000000000000000e+00</item>
+								<item>0.00000000000000000e+00</item>
+								<item>1.00000000000000000e+00</item>
+								<item>1.00000000000000000e+00</item>
+								<item>0.00000000000000000e+00</item>
+								<item>0.00000000000000000e+00</item>
+								<item>0.00000000000000000e+00</item>
+								<item>1.00000000000000000e+00</item>
+								<item>0.00000000000000000e+00</item>
+								<item>0.00000000000000000e+00</item>
+								<item>0.00000000000000000e+00</item>
+								<item>1.00000000000000000e+00</item>
+								<item>0.00000000000000000e+00</item>
+								<item>0.00000000000000000e+00</item>
+								<item>0.00000000000000000e+00</item>
+							</data>
+						</matrix_>
+						<variableColOffsets_>
+							<count>4</count>
+							<item_version>0</item_version>
+							<item>0</item>
+							<item>3</item>
+							<item>6</item>
+							<item>7</item>
+						</variableColOffsets_>
+						<rowStart_>0</rowStart_>
+						<rowEnd_>3</rowEnd_>
+						<blockStart_>0</blockStart_>
+					</Ab_>
+					<model_null>1</model_null>
+				</px>
+			</item>
+		</factors_>
+	</Base>
+</data>
+</boost_serialization>
+

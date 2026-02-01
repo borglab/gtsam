@@ -10,21 +10,27 @@
 
 #include "main.h"
 #include <Eigen/QR>
+#include "solverbase.h"
 
 template<typename MatrixType> void qr()
 {
-  typedef typename MatrixType::Index Index;
+  STATIC_CHECK(( internal::is_same<typename FullPivHouseholderQR<MatrixType>::StorageIndex,int>::value ));
 
-  Index rows = internal::random<Index>(20,200), cols = internal::random<int>(20,200), cols2 = internal::random<int>(20,200);
-  Index rank = internal::random<Index>(1, (std::min)(rows, cols)-1);
+  static const int Rows = MatrixType::RowsAtCompileTime, Cols = MatrixType::ColsAtCompileTime;
+  Index max_size = EIGEN_TEST_MAX_SIZE;
+  Index min_size = numext::maxi(1,EIGEN_TEST_MAX_SIZE/10);
+  Index rows  = Rows == Dynamic ? internal::random<Index>(min_size,max_size) : Rows,
+        cols  = Cols == Dynamic ? internal::random<Index>(min_size,max_size) : Cols,
+        cols2 = Cols == Dynamic ? internal::random<Index>(min_size,max_size) : Cols,
+        rank  = internal::random<Index>(1, (std::min)(rows, cols)-1);
 
   typedef typename MatrixType::Scalar Scalar;
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, MatrixType::RowsAtCompileTime> MatrixQType;
   MatrixType m1;
   createRandomPIMatrixOfRank(rank,rows,cols,m1);
   FullPivHouseholderQR<MatrixType> qr(m1);
-  VERIFY(rank == qr.rank());
-  VERIFY(cols - qr.rank() == qr.dimensionOfKernel());
+  VERIFY_IS_EQUAL(rank, qr.rank());
+  VERIFY_IS_EQUAL(cols - qr.rank(), qr.dimensionOfKernel());
   VERIFY(!qr.isInjective());
   VERIFY(!qr.isInvertible());
   VERIFY(!qr.isSurjective());
@@ -40,12 +46,25 @@ template<typename MatrixType> void qr()
   MatrixType c = qr.matrixQ() * r * qr.colsPermutation().inverse();
 
   VERIFY_IS_APPROX(m1, c);
+  
+  // stress the ReturnByValue mechanism
+  MatrixType tmp;
+  VERIFY_IS_APPROX(tmp.noalias() = qr.matrixQ() * r, (qr.matrixQ() * r).eval());
+  
+  check_solverbase<MatrixType, MatrixType>(m1, qr, rows, cols, cols2);
 
-  MatrixType m2 = MatrixType::Random(cols,cols2);
-  MatrixType m3 = m1*m2;
-  m2 = MatrixType::Random(cols,cols2);
-  m2 = qr.solve(m3);
-  VERIFY_IS_APPROX(m3, m1*m2);
+  {
+    MatrixType m2, m3;
+    Index size = rows;
+    do {
+      m1 = MatrixType::Random(size,size);
+      qr.compute(m1);
+    } while(!qr.isInvertible());
+    MatrixType m1_inv = qr.inverse();
+    m3 = m1 * MatrixType::Random(size,cols2);
+    m2 = qr.solve(m3);
+    VERIFY_IS_APPROX(m2, m1_inv*m3);
+  }
 }
 
 template<typename MatrixType> void qr_invertible()
@@ -55,7 +74,9 @@ template<typename MatrixType> void qr_invertible()
   typedef typename NumTraits<typename MatrixType::Scalar>::Real RealScalar;
   typedef typename MatrixType::Scalar Scalar;
 
-  int size = internal::random<int>(10,50);
+  Index max_size = numext::mini(50,EIGEN_TEST_MAX_SIZE);
+  Index min_size = numext::maxi(1,EIGEN_TEST_MAX_SIZE/10);
+  Index size = internal::random<Index>(min_size,max_size);
 
   MatrixType m1(size, size), m2(size, size), m3(size, size);
   m1 = MatrixType::Random(size,size);
@@ -72,9 +93,7 @@ template<typename MatrixType> void qr_invertible()
   VERIFY(qr.isInvertible());
   VERIFY(qr.isSurjective());
 
-  m3 = MatrixType::Random(size,size);
-  m2 = qr.solve(m3);
-  VERIFY_IS_APPROX(m3, m1*m2);
+  check_solverbase<MatrixType, MatrixType>(m1, qr, size, size, size);
 
   // now construct a matrix with prescribed determinant
   m1.setZero();
@@ -94,6 +113,8 @@ template<typename MatrixType> void qr_verify_assert()
   FullPivHouseholderQR<MatrixType> qr;
   VERIFY_RAISES_ASSERT(qr.matrixQR())
   VERIFY_RAISES_ASSERT(qr.solve(tmp))
+  VERIFY_RAISES_ASSERT(qr.transpose().solve(tmp))
+  VERIFY_RAISES_ASSERT(qr.adjoint().solve(tmp))
   VERIFY_RAISES_ASSERT(qr.matrixQ())
   VERIFY_RAISES_ASSERT(qr.dimensionOfKernel())
   VERIFY_RAISES_ASSERT(qr.isInjective())
@@ -104,11 +125,12 @@ template<typename MatrixType> void qr_verify_assert()
   VERIFY_RAISES_ASSERT(qr.logAbsDeterminant())
 }
 
-void test_qr_fullpivoting()
+EIGEN_DECLARE_TEST(qr_fullpivoting)
 {
- for(int i = 0; i < 1; i++) {
-    // FIXME : very weird bug here
-//     CALL_SUBTEST(qr(Matrix2f()) );
+  for(int i = 0; i < 1; i++) {
+    CALL_SUBTEST_5( qr<Matrix3f>() );
+    CALL_SUBTEST_6( qr<Matrix3d>() );
+    CALL_SUBTEST_8( qr<Matrix2f>() );
     CALL_SUBTEST_1( qr<MatrixXf>() );
     CALL_SUBTEST_2( qr<MatrixXd>() );
     CALL_SUBTEST_3( qr<MatrixXcd>() );

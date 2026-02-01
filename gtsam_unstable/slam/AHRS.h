@@ -5,11 +5,10 @@
  *      Author: cbeall3
  */
 
-#ifndef AHRS_H_
-#define AHRS_H_
+#pragma once
 
 #include "Mechanization_bRn2.h"
-#include <gtsam_unstable/base/dllexport.h>
+#include <gtsam_unstable/dllexport.h>
 #include <gtsam/linear/KalmanFilter.h>
 
 namespace gtsam {
@@ -77,7 +76,8 @@ public:
   void print(const std::string& s = "") const;
 
   virtual ~AHRS();
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 } /* namespace gtsam */
-#endif /* AHRS_H_ */

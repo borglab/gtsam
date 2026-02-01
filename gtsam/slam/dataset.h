@@ -12,31 +12,37 @@
 /**
  * @file dataset.h
  * @date Jan 22, 2010
- * @author nikai, Luca Carlone
+ * @author Ni Kai
+ * @author Luca Carlone
+ * @author Varun Agrawal
  * @brief utility functions for loading datasets
  */
 
 #pragma once
 
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/types.h>
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/PinholeCamera.h>
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/geometry/Rot3.h>
+#include <gtsam/geometry/SL4.h>
+#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/linear/NoiseModel.h>
-#include <gtsam/base/types.h>
+#include <gtsam/sfm/BinaryMeasurement.h>
+#include <gtsam/sfm/SfmData.h>
+#include <gtsam/slam/BetweenFactor.h>
 
-#include <boost/smart_ptr/shared_ptr.hpp>
+#include <iosfwd>
+#include <map>
+#include <optional>
 #include <string>
-#include <utility> // for pair
+#include <utility>  // for pair
 #include <vector>
 
 namespace gtsam {
 
-#ifndef MATLAB_MEX_FILE
 /**
  * Find the full path to an example dataset distributed with gtsam.  The name
  * may be specified with or without a file extension - if no extension is
@@ -55,7 +61,6 @@ GTSAM_EXPORT std::string findExampleDataFile(const std::string& name);
  * for checking read-write oprations
  */
 GTSAM_EXPORT std::string createRewrittenFileName(const std::string& name);
-#endif
 
 /// Indicates how noise parameters are stored in file
 enum NoiseFormat {
@@ -71,18 +76,82 @@ enum KernelFunctionType {
   KernelFunctionTypeNONE, KernelFunctionTypeHUBER, KernelFunctionTypeTUKEY
 };
 
-/// Return type for load functions
-typedef std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> GraphAndValues;
+/**
+ * Parse variables in a line-based text format (like g2o) into a map.
+ * Instantiated in .cpp Pose2, Point2, Pose3, and Point3.
+ * Note the map keys are integer indices, *not* gtsam::Keys. This is is
+ * different below where landmarks will use L(index) symbols.
+ */
+template <typename T>
+GTSAM_EXPORT std::map<size_t, T> parseVariables(const std::string &filename,
+                                                size_t maxIndex = 0);
+
+/**
+ * Parse binary measurements in a line-based text format (like g2o) into a
+ * vector. Instantiated in .cpp for Pose2, Rot2, Pose3, and Rot3. The rotation
+ * versions parse poses and extract only the rotation part, using the marginal
+ * covariance as noise model.
+ */
+template <typename T>
+GTSAM_EXPORT std::vector<BinaryMeasurement<T>>
+parseMeasurements(const std::string &filename,
+                  const noiseModel::Diagonal::shared_ptr &model = nullptr,
+                  size_t maxIndex = 0);
+
+/**
+ * Parse BetweenFactors in a line-based text format (like g2o) into a vector of
+ * shared pointers. Instantiated in .cpp T equal to Pose2 and Pose3.
+ */
+template <typename T>
+GTSAM_EXPORT std::vector<typename BetweenFactor<T>::shared_ptr>
+parseFactors(const std::string &filename,
+             const noiseModel::Diagonal::shared_ptr &model = nullptr,
+             size_t maxIndex = 0);
+
+/// Return type for auxiliary functions
+typedef std::pair<size_t, Pose2> IndexedPose;
+typedef std::pair<size_t, Point2> IndexedLandmark;
+typedef std::pair<std::pair<size_t, size_t>, Pose2> IndexedEdge;
+
+/**
+ * Parse TORO/G2O vertex "id x y yaw"
+ * @param is input stream
+ * @param tag string parsed from input stream, will only parse if vertex type
+ */
+GTSAM_EXPORT std::optional<IndexedPose> parseVertexPose(std::istream& is,
+    const std::string& tag);
+
+/**
+ * Parse G2O landmark vertex "id x y"
+ * @param is input stream
+ * @param tag string parsed from input stream, will only parse if vertex type
+ */
+GTSAM_EXPORT std::optional<IndexedLandmark> parseVertexLandmark(std::istream& is,
+    const std::string& tag);
+
+/**
+ * Parse TORO/G2O edge "id1 id2 x y yaw"
+ * @param is input stream
+ * @param tag string parsed from input stream, will only parse if edge type
+ */
+GTSAM_EXPORT std::optional<IndexedEdge> parseEdge(std::istream& is,
+    const std::string& tag);
+
+/// Return type for load functions, which return a graph and initial values. For
+/// landmarks, the gtsam::Symbol L(index) is used to insert into the Values.
+/// Bearing-range measurements also refer to landmarks with L(index).
+using GraphAndValues =
+    std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr>;
 
 /**
  * Load TORO 2D Graph
  * @param dataset/model pair as constructed by [dataset]
- * @param maxID if non-zero cut out vertices >= maxID
+ * @param maxIndex if non-zero cut out vertices >= maxIndex
  * @param addNoise add noise to the edges
  * @param smart try to reduce complexity of covariance to cheapest model
  */
 GTSAM_EXPORT GraphAndValues load2D(
-    std::pair<std::string, SharedNoiseModel> dataset, int maxID = 0,
+    std::pair<std::string, SharedNoiseModel> dataset, size_t maxIndex = 0,
     bool addNoise = false,
     bool smart = true, //
     NoiseFormat noiseFormat = NoiseFormatAUTO,
@@ -92,21 +161,18 @@ GTSAM_EXPORT GraphAndValues load2D(
  * Load TORO/G2O style graph files
  * @param filename
  * @param model optional noise model to use instead of one specified by file
- * @param maxID if non-zero cut out vertices >= maxID
+ * @param maxIndex if non-zero cut out vertices >= maxIndex
  * @param addNoise add noise to the edges
  * @param smart try to reduce complexity of covariance to cheapest model
  * @param noiseFormat how noise parameters are stored
  * @param kernelFunctionType whether to wrap the noise model in a robust kernel
  * @return graph and initial values
  */
-GTSAM_EXPORT GraphAndValues load2D(const std::string& filename,
-    SharedNoiseModel model = SharedNoiseModel(), Key maxID = 0, bool addNoise =
-        false, bool smart = true, NoiseFormat noiseFormat = NoiseFormatAUTO, //
-    KernelFunctionType kernelFunctionType = KernelFunctionTypeNONE);
-
-/// @deprecated load2D now allows for arbitrary models and wrapping a robust kernel
-GTSAM_EXPORT GraphAndValues load2D_robust(const std::string& filename,
-    noiseModel::Base::shared_ptr& model, int maxID = 0);
+GTSAM_EXPORT GraphAndValues
+load2D(const std::string& filename, SharedNoiseModel model = SharedNoiseModel(),
+       size_t maxIndex = 0, bool addNoise = false, bool smart = true,
+       NoiseFormat noiseFormat = NoiseFormatAUTO,  //
+       KernelFunctionType kernelFunctionType = KernelFunctionTypeNONE);
 
 /** save 2d graph */
 GTSAM_EXPORT void save2D(const NonlinearFactorGraph& graph,
@@ -121,8 +187,9 @@ GTSAM_EXPORT void save2D(const NonlinearFactorGraph& graph,
  * @param kernelFunctionType whether to wrap the noise model in a robust kernel
  * @return graph and initial values
  */
-GTSAM_EXPORT GraphAndValues readG2o(const std::string& g2oFile, const bool is3D = false,
-    KernelFunctionType kernelFunctionType = KernelFunctionTypeNONE);
+GTSAM_EXPORT GraphAndValues
+readG2o(const std::string& g2oFile, const bool is3D = false,
+        KernelFunctionType kernelFunctionType = KernelFunctionTypeNONE);
 
 /**
  * @brief This function writes a g2o file from
@@ -130,128 +197,34 @@ GTSAM_EXPORT GraphAndValues readG2o(const std::string& g2oFile, const bool is3D 
  * @param filename The name of the g2o file to write
  * @param graph NonlinearFactor graph storing the measurements
  * @param estimate Values
+ *
+ * Note:behavior change in PR #471: to be consistent with load2D and load3D, we
+ * write the *indices* to file and not the full Keys. This change really only
+ * affects landmarks, which get read as indices but stored in values with the
+ * symbol L(index).
  */
 GTSAM_EXPORT void writeG2o(const NonlinearFactorGraph& graph,
     const Values& estimate, const std::string& filename);
 
-/**
- * Load TORO 3D Graph
- */
+/// Load TORO 3D Graph
 GTSAM_EXPORT GraphAndValues load3D(const std::string& filename);
 
-/// A measurement with its camera index
-typedef std::pair<size_t, Point2> SfM_Measurement;
+// Wrapper-friendly versions of parseFactors<Pose2> and parseFactors<Pose2>
+using BetweenFactorPose2s = std::vector<BetweenFactor<Pose2>::shared_ptr>;
+GTSAM_EXPORT BetweenFactorPose2s
+parse2DFactors(const std::string &filename,
+               const noiseModel::Diagonal::shared_ptr &model = nullptr,
+               size_t maxIndex = 0);
 
-/// SfM_Track
-typedef std::pair<size_t, size_t> SIFT_Index;
+using BetweenFactorPose3s = std::vector<BetweenFactor<Pose3>::shared_ptr>;
+GTSAM_EXPORT BetweenFactorPose3s
+parse3DFactors(const std::string &filename,
+               const noiseModel::Diagonal::shared_ptr &model = nullptr,
+               size_t maxIndex = 0);
 
-/// Define the structure for the 3D points
-struct SfM_Track {
-  SfM_Track():p(0,0,0) {}
-  Point3 p; ///< 3D position of the point
-  float r, g, b; ///< RGB color of the 3D point
-  std::vector<SfM_Measurement> measurements; ///< The 2D image projections (id,(u,v))
-  std::vector<SIFT_Index> siftIndices;
-  size_t number_measurements() const {
-    return measurements.size();
-  }
-};
+using BetweenFactorSL4s = std::vector<BetweenFactor<SL4>::shared_ptr>;
 
-/// Define the structure for the camera poses
-typedef PinholeCamera<Cal3Bundler> SfM_Camera;
-
-/// Define the structure for SfM data
-struct SfM_data {
-  std::vector<SfM_Camera> cameras; ///< Set of cameras
-  std::vector<SfM_Track> tracks; ///< Sparse set of points
-  size_t number_cameras() const {
-    return cameras.size();
-  } ///< The number of camera poses
-  size_t number_tracks() const {
-    return tracks.size();
-  } ///< The number of reconstructed 3D points
-};
-
-/**
- * @brief This function parses a bundler output file and stores the data into a
- * SfM_data structure
- * @param filename The name of the bundler file
- * @param data SfM structure where the data is stored
- * @return true if the parsing was successful, false otherwise
- */
-GTSAM_EXPORT bool readBundler(const std::string& filename, SfM_data &data);
-
-/**
- * @brief This function parses a "Bundle Adjustment in the Large" (BAL) file and stores the data into a
- * SfM_data structure
- * @param filename The name of the BAL file
- * @param data SfM structure where the data is stored
- * @return true if the parsing was successful, false otherwise
- */
-GTSAM_EXPORT bool readBAL(const std::string& filename, SfM_data &data);
-
-/**
- * @brief This function writes a "Bundle Adjustment in the Large" (BAL) file from a
- * SfM_data structure
- * @param filename The name of the BAL file to write
- * @param data SfM structure where the data is stored
- * @return true if the parsing was successful, false otherwise
- */
-GTSAM_EXPORT bool writeBAL(const std::string& filename, SfM_data &data);
-
-/**
- * @brief This function writes a "Bundle Adjustment in the Large" (BAL) file from a
- * SfM_data structure and a value structure (measurements are the same as the SfM input data,
- * while camera poses and values are read from Values)
- * @param filename The name of the BAL file to write
- * @param data SfM structure where the data is stored
- * @param values structure where the graph values are stored (values can be either Pose3 or PinholeCamera<Cal3Bundler> for the
- * cameras, and should be Point3 for the 3D points). Note that the current version
- * assumes that the keys are "x1" for pose 1 (or "c1" for camera 1) and "l1" for landmark 1
- * @return true if the parsing was successful, false otherwise
- */
-GTSAM_EXPORT bool writeBALfromValues(const std::string& filename,
-    const SfM_data &data, Values& values);
-
-/**
- * @brief This function converts an openGL camera pose to an GTSAM camera pose
- * @param R rotation in openGL
- * @param tx x component of the translation in openGL
- * @param ty y component of the translation in openGL
- * @param tz z component of the translation in openGL
- * @return Pose3 in GTSAM format
- */
-GTSAM_EXPORT Pose3 openGL2gtsam(const Rot3& R, double tx, double ty, double tz);
-
-/**
- * @brief This function converts a GTSAM camera pose to an openGL camera pose
- * @param R rotation in GTSAM
- * @param tx x component of the translation in GTSAM
- * @param ty y component of the translation in GTSAM
- * @param tz z component of the translation in GTSAM
- * @return Pose3 in openGL format
- */
-GTSAM_EXPORT Pose3 gtsam2openGL(const Rot3& R, double tx, double ty, double tz);
-
-/**
- * @brief This function converts a GTSAM camera pose to an openGL camera pose
- * @param PoseGTSAM pose in GTSAM format
- * @return Pose3 in openGL format
- */
-GTSAM_EXPORT Pose3 gtsam2openGL(const Pose3& PoseGTSAM);
-
-/**
- * @brief This function creates initial values for cameras from db
- * @param SfM_data
- * @return Values
- */
-GTSAM_EXPORT Values initialCamerasEstimate(const SfM_data& db);
-
-/**
- * @brief This function creates initial values for cameras and points from db
- * @param SfM_data
- * @return Values
- */
-GTSAM_EXPORT Values initialCamerasAndPointsEstimate(const SfM_data& db);
-
-} // namespace gtsam
+using BinaryMeasurementsUnit3 = std::vector<BinaryMeasurement<Unit3>>;
+using BinaryMeasurementsPoint3 = std::vector<BinaryMeasurement<Point3>>;
+using BinaryMeasurementsRot3 = std::vector<BinaryMeasurement<Rot3>>;
+}  // namespace gtsam

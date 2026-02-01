@@ -153,10 +153,11 @@ not necessary to evaluate the right-hand side explicitly.
 
 \section TopicAliasingMatrixMult Aliasing and matrix multiplication
 
-Matrix multiplication is the only operation in %Eigen that assumes aliasing by default. Thus, if \c matA is a
-matrix, then the statement <tt>matA = matA * matA;</tt> is safe. All other operations in %Eigen assume that
-there are no aliasing problems, either because the result is assigned to a different matrix or because it is a
-component-wise operation.
+Matrix multiplication is the only operation in %Eigen that assumes aliasing by default, <strong>under the
+condition that the destination matrix is not resized</strong>.
+Thus, if \c matA is a \b squared matrix, then the statement <tt>matA = matA * matA;</tt> is safe.
+All other operations in %Eigen assume that there are no aliasing problems,
+either because the result is assigned to a different matrix or because it is a component-wise operation.
 
 <table class="example">
 <tr><th>Example</th><th>Output</th></tr>
@@ -198,6 +199,27 @@ may get wrong results:
 \verbinclude TopicAliasing_mult3.out
 </td></tr></table>
 
+Moreover, starting in Eigen 3.3, aliasing is \b not assumed if the destination matrix is resized and the product is not directly assigned to the destination.
+Therefore, the following example is also wrong:
+
+<table class="example">
+<tr><th>Example</th><th>Output</th></tr>
+<tr><td>
+\include TopicAliasing_mult4.cpp
+</td>
+<td>
+\verbinclude TopicAliasing_mult4.out
+</td></tr></table>
+
+As for any aliasing issue, you can resolve it by explicitly evaluating the expression prior to assignment:
+<table class="example">
+<tr><th>Example</th><th>Output</th></tr>
+<tr><td>
+\include TopicAliasing_mult5.cpp
+</td>
+<td>
+\verbinclude TopicAliasing_mult5.out
+</td></tr></table>
 
 \section TopicAliasingSummary Summary
 

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -36,10 +36,10 @@ namespace gtsam {
   public:
     typedef SymbolicBayesTreeClique This;
     typedef BayesTreeCliqueBase<SymbolicBayesTreeClique, SymbolicFactorGraph> Base;
-    typedef boost::shared_ptr<This> shared_ptr;
-    typedef boost::weak_ptr<This> weak_ptr;
+    typedef std::shared_ptr<This> shared_ptr;
+    typedef std::weak_ptr<This> weak_ptr;
     SymbolicBayesTreeClique() {}
-    SymbolicBayesTreeClique(const boost::shared_ptr<SymbolicConditional>& conditional) : Base(conditional) {}
+    SymbolicBayesTreeClique(const std::shared_ptr<SymbolicConditional>& conditional) : Base(conditional) {}
   };
 
   /* ************************************************************************* */
@@ -53,7 +53,7 @@ namespace gtsam {
 
   public:
     typedef SymbolicBayesTree This;
-    typedef boost::shared_ptr<This> shared_ptr;
+    typedef std::shared_ptr<This> shared_ptr;
 
     /** Default constructor, creates an empty Bayes tree */
     SymbolicBayesTree() {}
@@ -62,12 +62,14 @@ namespace gtsam {
     bool equals(const This& other, double tol = 1e-9) const;
 
   private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     }
+#endif
   };
 
 /// traits

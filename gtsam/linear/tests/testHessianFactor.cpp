@@ -25,11 +25,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/list_of.hpp>
-#include <boost/assign/std/vector.hpp>
-#include <boost/assign/std/map.hpp>
-using namespace boost::assign;
-
 #include <vector>
 #include <utility>
 
@@ -38,10 +33,12 @@ using namespace gtsam;
 
 const double tol = 1e-5;
 
+using Dims = std::vector<Eigen::Index>;  // For constructing block matrices
+
 /* ************************************************************************* */
 TEST(HessianFactor, Slot)
 {
-  FastVector<Key> keys = list_of(2)(4)(1);
+  KeyVector keys {2, 4, 1};
   EXPECT_LONGS_EQUAL(0, GaussianFactor::Slot(keys,2));
   EXPECT_LONGS_EQUAL(1, GaussianFactor::Slot(keys,4));
   EXPECT_LONGS_EQUAL(2, GaussianFactor::Slot(keys,1));
@@ -53,16 +50,16 @@ TEST(HessianFactor, emptyConstructor)
 {
   HessianFactor f;
   DOUBLES_EQUAL(0.0, f.constantTerm(), 1e-9);        // Constant term should be zero
-  EXPECT(assert_equal(Vector(), f.linearTerm()));    // Linear term should be empty
-  EXPECT(assert_equal(zeros(1,1), f.info()));        // Full matrix should be 1-by-1 zero matrix
+  //EXPECT(assert_equal(Vector(), f.linearTerm()));    // Linear term should be empty
+  EXPECT(assert_equal((Matrix) Z_1x1, f.info().selfadjointView())); // Full matrix should be 1-by-1 zero matrix
   DOUBLES_EQUAL(0.0, f.error(VectorValues()), 1e-9); // Should have zero error
 }
 
 /* ************************************************************************* */
 TEST(HessianFactor, ConversionConstructor)
 {
-  HessianFactor expected(list_of(0)(1),
-    SymmetricBlockMatrix(list_of(2)(4)(1), (Matrix(7,7) <<
+  HessianFactor expected(KeyVector{0, 1},
+    SymmetricBlockMatrix(Dims{2, 4, 1}, (Matrix(7,7) <<
       125.0000,       0.0,  -25.0000,       0.0, -100.0000,       0.0,   25.0000,
            0.0,  125.0000,       0.0,  -25.0000,       0.0, -100.0000,  -17.5000,
       -25.0000,       0.0,   25.0000,       0.0,       0.0,       0.0,   -5.0000,
@@ -85,9 +82,7 @@ TEST(HessianFactor, ConversionConstructor)
 
   HessianFactor actual(jacobian);
 
-  VectorValues values = pair_list_of<Key, Vector>
-    (0, Vector2(1.0, 2.0))
-    (1, (Vector(4) << 3.0, 4.0, 5.0, 6.0).finished());
+  VectorValues values{{0, Vector2(1.0, 2.0)}, {1, Vector4(3.0, 4.0, 5.0, 6.0)}};
 
   EXPECT_LONGS_EQUAL(2, (long)actual.size());
   EXPECT(assert_equal(expected, actual, 1e-9));
@@ -103,36 +98,60 @@ TEST(HessianFactor, Constructor1)
   HessianFactor factor(0, G, g, f);
 
   // extract underlying parts
-  EXPECT(assert_equal(G, Matrix(factor.info(factor.begin(), factor.begin()))));
+  EXPECT(assert_equal(G, Matrix(factor.info().diagonalBlock(0))));
   EXPECT_DOUBLES_EQUAL(f, factor.constantTerm(), 1e-10);
   EXPECT(assert_equal(g, Vector(factor.linearTerm())));
   EXPECT_LONGS_EQUAL(1, (long)factor.size());
 
-  VectorValues dx = pair_list_of<Key, Vector>(0, Vector2(1.5, 2.5));
+  VectorValues dx{{0, Vector2(1.5, 2.5)}};
 
   // error 0.5*(f - 2*x'*g + x'*G*x)
   double expected = 80.375;
   double actual = factor.error(dx);
-  double expected_manual = 0.5 * (f - 2.0 * dx[0].dot(g) + dx[0].transpose() * G.selfadjointView<Eigen::Upper>() * dx[0]);
+  const double xGx = dx[0].dot(G * dx[0]);
+  double expected_manual = 0.5 * (f - 2.0 * dx[0].dot(g) + xGx);
   EXPECT_DOUBLES_EQUAL(expected, expected_manual, 1e-10);
   EXPECT_DOUBLES_EQUAL(expected, actual, 1e-10);
 }
 
+/* ************************************************************************* */
+TEST(HessianFactor, deltaError)
+{
+  Matrix G = (Matrix(2,2) << 3.0, 5.0, 5.0, 6.0).finished();
+  Vector g = Vector2(-8.0, -9.0);
+  double f = 10.0;
+  HessianFactor factor(0, G, g, f);
+
+  VectorValues values{{0, Vector2(1.5, 2.5)}};
+  VectorValues zero = VectorValues::Zero(values);
+
+  double expectedOld = factor.error(zero);
+  double expectedNew = factor.error(values);
+  double expectedDelta = expectedOld - expectedNew;
+
+  double oldValue = 0.0;
+  double newValue = 0.0;
+  double delta = factor.deltaError(values, &oldValue, &newValue);
+
+  DOUBLES_EQUAL(expectedOld, oldValue, 1e-10);
+  DOUBLES_EQUAL(expectedNew, newValue, 1e-10);
+  DOUBLES_EQUAL(expectedDelta, delta, 1e-10);
+}
 
 /* ************************************************************************* */
 TEST(HessianFactor, Constructor1b)
 {
   Vector mu = Vector2(1.0,2.0);
-  Matrix Sigma = eye(2,2);
+  Matrix Sigma = I_2x2;
 
   HessianFactor factor(0, mu, Sigma);
 
-  Matrix G = eye(2,2);
+  Matrix G = I_2x2;
   Vector g = G*mu;
   double f = dot(g,mu);
 
   // Check
-  EXPECT(assert_equal(G, Matrix(factor.info(factor.begin(), factor.begin()))));
+  EXPECT(assert_equal(G, Matrix(factor.info().diagonalBlock(0))));
   EXPECT_DOUBLES_EQUAL(f, factor.constantTerm(), 1e-10);
   EXPECT(assert_equal(g, Vector(factor.linearTerm())));
   EXPECT_LONGS_EQUAL(1, (long)factor.size());
@@ -151,9 +170,7 @@ TEST(HessianFactor, Constructor2)
   Vector dx0 = (Vector(1) << 0.5).finished();
   Vector dx1 = Vector2(1.5, 2.5);
 
-  VectorValues dx = pair_list_of
-    (0, dx0)
-    (1, dx1);
+  VectorValues dx{{0, dx0}, {1, dx1}};
 
   HessianFactor factor(0, 1, G11, G12, g1, G22, g2, f);
 
@@ -167,15 +184,12 @@ TEST(HessianFactor, Constructor2)
   Vector linearExpected(3);  linearExpected << g1, g2;
   EXPECT(assert_equal(linearExpected, factor.linearTerm()));
 
-  EXPECT(assert_equal(G11, factor.info(factor.begin(), factor.begin())));
-  EXPECT(assert_equal(G12, factor.info(factor.begin(), factor.begin()+1)));
-  EXPECT(assert_equal(G22, factor.info(factor.begin()+1, factor.begin()+1)));
+  EXPECT(assert_equal(G11, factor.info().diagonalBlock(0)));
+  EXPECT(assert_equal(G12, factor.info().aboveDiagonalBlock(0, 1)));
+  EXPECT(assert_equal(G22, factor.info().diagonalBlock(1)));
 
   // Check case when vector values is larger than factor
-  VectorValues dxLarge = pair_list_of<Key, Vector>
-    (0, dx0)
-    (1, dx1)
-    (2, Vector2(0.1, 0.2));
+  VectorValues dxLarge {{0, dx0}, {1, dx1}, {2, Vector2(0.1, 0.2)}};
   EXPECT_DOUBLES_EQUAL(expected, factor.error(dxLarge), 1e-10);
 }
 
@@ -201,11 +215,7 @@ TEST(HessianFactor, Constructor3)
   Vector dx1 = Vector2(1.5, 2.5);
   Vector dx2 = Vector3(1.5, 2.5, 3.5);
 
-  VectorValues dx = pair_list_of
-    (0, dx0)
-    (1, dx1)
-    (2, dx2);
-
+  VectorValues dx {{0, dx0}, {1, dx1}, {2, dx2}};
   HessianFactor factor(0, 1, 2, G11, G12, G13, g1, G22, G23, g2, G33, g3, f);
 
   double expected = 371.3750;
@@ -218,12 +228,12 @@ TEST(HessianFactor, Constructor3)
   Vector linearExpected(6);  linearExpected << g1, g2, g3;
   EXPECT(assert_equal(linearExpected, factor.linearTerm()));
 
-  EXPECT(assert_equal(G11, factor.info(factor.begin()+0, factor.begin()+0)));
-  EXPECT(assert_equal(G12, factor.info(factor.begin()+0, factor.begin()+1)));
-  EXPECT(assert_equal(G13, factor.info(factor.begin()+0, factor.begin()+2)));
-  EXPECT(assert_equal(G22, factor.info(factor.begin()+1, factor.begin()+1)));
-  EXPECT(assert_equal(G23, factor.info(factor.begin()+1, factor.begin()+2)));
-  EXPECT(assert_equal(G33, factor.info(factor.begin()+2, factor.begin()+2)));
+  EXPECT(assert_equal(G11, factor.info().diagonalBlock(0)));
+  EXPECT(assert_equal(G12, factor.info().aboveDiagonalBlock(0, 1)));
+  EXPECT(assert_equal(G13, factor.info().aboveDiagonalBlock(0, 2)));
+  EXPECT(assert_equal(G22, factor.info().diagonalBlock(1)));
+  EXPECT(assert_equal(G23, factor.info().aboveDiagonalBlock(1, 2)));
+  EXPECT(assert_equal(G33, factor.info().diagonalBlock(2)));
 }
 
 /* ************************************************************************* */
@@ -248,13 +258,9 @@ TEST(HessianFactor, ConstructorNWay)
   Vector dx1 = Vector2(1.5, 2.5);
   Vector dx2 = Vector3(1.5, 2.5, 3.5);
 
-  VectorValues dx = pair_list_of
-    (0, dx0)
-    (1, dx1)
-    (2, dx2);
+  VectorValues dx {{0, dx0}, {1, dx1}, {2, dx2}};
 
-  std::vector<Key> js;
-  js.push_back(0); js.push_back(1); js.push_back(2);
+  KeyVector js {0, 1, 2};
   std::vector<Matrix> Gs;
   Gs.push_back(G11); Gs.push_back(G12); Gs.push_back(G13); Gs.push_back(G22); Gs.push_back(G23); Gs.push_back(G33);
   std::vector<Vector> gs;
@@ -271,12 +277,12 @@ TEST(HessianFactor, ConstructorNWay)
   Vector linearExpected(6);  linearExpected << g1, g2, g3;
   EXPECT(assert_equal(linearExpected, factor.linearTerm()));
 
-  EXPECT(assert_equal(G11, factor.info(factor.begin()+0, factor.begin()+0)));
-  EXPECT(assert_equal(G12, factor.info(factor.begin()+0, factor.begin()+1)));
-  EXPECT(assert_equal(G13, factor.info(factor.begin()+0, factor.begin()+2)));
-  EXPECT(assert_equal(G22, factor.info(factor.begin()+1, factor.begin()+1)));
-  EXPECT(assert_equal(G23, factor.info(factor.begin()+1, factor.begin()+2)));
-  EXPECT(assert_equal(G33, factor.info(factor.begin()+2, factor.begin()+2)));
+  EXPECT(assert_equal(G11, factor.info().diagonalBlock(0)));
+  EXPECT(assert_equal(G12, factor.info().aboveDiagonalBlock(0, 1)));
+  EXPECT(assert_equal(G13, factor.info().aboveDiagonalBlock(0, 2)));
+  EXPECT(assert_equal(G22, factor.info().diagonalBlock(1)));
+  EXPECT(assert_equal(G23, factor.info().aboveDiagonalBlock(1, 2)));
+  EXPECT(assert_equal(G33, factor.info().diagonalBlock(2)));
 }
 
 /* ************************************************************************* */
@@ -311,16 +317,12 @@ TEST(HessianFactor, CombineAndEliminate1) {
           hessian.augmentedInformation(), 1e-9));
 
   // perform elimination on jacobian
-  Ordering ordering = list_of(1);
-  GaussianConditional::shared_ptr expectedConditional;
-  JacobianFactor::shared_ptr expectedFactor;
-  boost::tie(expectedConditional, expectedFactor) = jacobian.eliminate(ordering);
+  Ordering ordering {1};
+  const auto [expectedConditional, expectedFactor] = jacobian.eliminate(ordering);
   CHECK(expectedFactor);
 
   // Eliminate
-  GaussianConditional::shared_ptr actualConditional;
-  HessianFactor::shared_ptr actualHessian;
-  boost::tie(actualConditional, actualHessian) = //
+  const auto [actualConditional, actualHessian] = //
       EliminateCholesky(gfg, ordering);
   actualConditional->setModel(false,Vector3(1,1,1)); // add a unit model for comparison
 
@@ -374,16 +376,12 @@ TEST(HessianFactor, CombineAndEliminate2) {
           hessian.augmentedInformation(), 1e-9));
 
   // perform elimination on jacobian
-  Ordering ordering = list_of(0);
-  GaussianConditional::shared_ptr expectedConditional;
-  JacobianFactor::shared_ptr expectedFactor;
-  boost::tie(expectedConditional, expectedFactor) = //
+  Ordering ordering {0};
+  const auto [expectedConditional, expectedFactor] =
       jacobian.eliminate(ordering);
 
   // Eliminate
-  GaussianConditional::shared_ptr actualConditional;
-  HessianFactor::shared_ptr actualHessian;
-  boost::tie(actualConditional, actualHessian) = //
+  const auto [actualConditional, actualHessian] = //
       EliminateCholesky(gfg, ordering);
   actualConditional->setModel(false,Vector3(1,1,1)); // add a unit model for comparison
 
@@ -439,10 +437,10 @@ TEST(HessianFactor, eliminate2 )
 
   // eliminate the combined factor
   HessianFactor::shared_ptr combinedLF_Chol(new HessianFactor(combined));
-  GaussianFactorGraph combinedLFG_Chol = list_of(combinedLF_Chol);
+  GaussianFactorGraph combinedLFG_Chol {combinedLF_Chol};
 
   std::pair<GaussianConditional::shared_ptr, HessianFactor::shared_ptr> actual_Chol =
-    EliminateCholesky(combinedLFG_Chol, Ordering(list_of(0)));
+    EliminateCholesky(combinedLFG_Chol, Ordering{0});
 
   // create expected Conditional Gaussian
   double oldSigma = 0.0894427; // from when R was made unit
@@ -484,9 +482,9 @@ TEST(HessianFactor, combine) {
   -8.94427191,      0.0,
          0.0, -8.94427191).finished();
   Vector b = Vector2(2.23606798,-1.56524758);
-  SharedDiagonal model = noiseModel::Diagonal::Sigmas(ones(2));
-  GaussianFactor::shared_ptr f(new JacobianFactor(0, A0, 1, A1, 2, A2, b, model));
-  GaussianFactorGraph factors = list_of(f);
+  SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector::Ones(2));
+  GaussianFactorGraph factors{
+      std::make_shared<JacobianFactor>(0, A0, 1, A1, 2, A2, b, model)};
 
   // Form Ab' * Ab
   HessianFactor actual(factors);
@@ -499,7 +497,7 @@ TEST(HessianFactor, combine) {
  -100.0000,       0.0,   20.0000,       0.0,   80.0000,       0.0,  -20.0000,
        0.0, -100.0000,       0.0,   20.0000,       0.0,   80.0000,   14.0000,
    25.0000,  -17.5000,   -5.0000,    3.5000,  -20.0000,   14.0000,    7.4500).finished();
-  EXPECT(assert_equal(expected, Matrix(actual.matrixObject().full()), tol));
+  EXPECT(assert_equal(expected, Matrix(actual.info().selfadjointView()), tol));
 
 }
 
@@ -516,9 +514,9 @@ TEST(HessianFactor, gradientAtZero)
   HessianFactor factor(0, 1, G11, G12, g1, G22, g2, f);
 
   // test gradient at zero
-  VectorValues expectedG = pair_list_of<Key, Vector>(0, -g1) (1, -g2);
-  Matrix A; Vector b; boost::tie(A,b) = factor.jacobian();
-  FastVector<Key> keys; keys += 0,1;
+  VectorValues expectedG{{0, -g1}, {1, -g2}};
+  const auto [A, b] = factor.jacobian();
+  KeyVector keys {0, 1};
   EXPECT(assert_equal(-A.transpose()*b, expectedG.vector(keys)));
   VectorValues actualG = factor.gradientAtZero();
   EXPECT(assert_equal(expectedG, actualG));
@@ -539,7 +537,7 @@ TEST(HessianFactor, gradient)
   // test gradient
   Vector x0 = (Vector(1) << 3.0).finished();
   Vector x1 = (Vector(2) << -3.5, 7.1).finished();
-  VectorValues x = pair_list_of<Key, Vector>(0, x0) (1, x1);
+  VectorValues x {{0, x0}, {1, x1}};
 
   Vector expectedGrad0 = (Vector(1) << 10.0).finished();
   Vector expectedGrad1 = (Vector(2) << 4.5, 16.1).finished();
@@ -573,6 +571,23 @@ TEST(HessianFactor, hessianDiagonal)
   LONGS_EQUAL(2,actualBD.size());
   EXPECT(assert_equal(G11,actualBD[0]));
   EXPECT(assert_equal(G22,actualBD[1]));
+}
+
+/* ************************************************************************* */
+TEST(HessianFactor, Solve)
+{
+  Matrix2 A;
+  A << 1, 2, 3, 4;
+  Matrix2 G = A.transpose() * A;
+  Vector2 b(5, 6);
+  Vector2 g = A.transpose() * b;
+  double f = 0;
+  Key key(55);
+  HessianFactor factor(key, G, g, f);
+
+  VectorValues expected;
+  expected.insert(key, A.inverse() * b);
+  EXPECT(assert_equal(expected, factor.solve()));
 }
 
 /* ************************************************************************* */

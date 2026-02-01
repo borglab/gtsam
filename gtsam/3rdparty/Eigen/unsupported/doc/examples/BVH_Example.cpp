@@ -6,9 +6,7 @@ using namespace Eigen;
 typedef AlignedBox<double, 2> Box2d;
 
 namespace Eigen {
-    namespace internal {
-        Box2d bounding_box(const Vector2d &v) { return Box2d(v, v); } //compute the bounding box of a single point
-    }
+  Box2d bounding_box(const Vector2d &v) { return Box2d(v, v); } //compute the bounding box of a single point
 }
 
 struct PointPointMinimizer //how to compute squared distances between points and rectangles

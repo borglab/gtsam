@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -23,40 +23,19 @@
 #include <Eigen/SVD>
 #include <Eigen/LU>
 
-#include <boost/foreach.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/tokenizer.hpp>
-
 #include <cstdarg>
+#include <cassert>
 #include <cstring>
 #include <iomanip>
 #include <list>
 #include <fstream>
 #include <limits>
+#include <iostream>
+#include <iterator>
 
 using namespace std;
 
 namespace gtsam {
-
-/* ************************************************************************* */
-Matrix zeros( size_t m, size_t n ) {
-  return Matrix::Zero(m,n);
-}
-
-/* ************************************************************************* */
-Matrix ones( size_t m, size_t n ) {
-  return Matrix::Ones(m,n);
-}
-
-/* ************************************************************************* */
-Matrix eye( size_t m, size_t n) {
-  return Matrix::Identity(m, n);
-}
-
-/* ************************************************************************* */ 
-Matrix diag(const Vector& v) {
-  return v.asDiagonal();
-}
 
 /* ************************************************************************* */
 bool assert_equal(const Matrix& expected, const Matrix& actual, double tol) {
@@ -147,54 +126,24 @@ bool linear_dependent(const Matrix& A, const Matrix& B, double tol) {
 }
 
 /* ************************************************************************* */
-void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e) {
-  e += alpha * A * x;
-}
-
-/* ************************************************************************* */
-void multiplyAdd(const Matrix& A, const Vector& x, Vector& e) {
-  e += A * x;
-}
-
-/* ************************************************************************* */
-Vector operator^(const Matrix& A, const Vector & v) {
-  if (A.rows()!=v.size()) throw std::invalid_argument(
-      boost::str(boost::format("Matrix operator^ : A.m(%d)!=v.size(%d)") % A.rows() % v.size()));
-//  Vector vt = v.transpose();
-//  Vector vtA = vt * A;
-//  return vtA.transpose();
-  return A.transpose() * v;
-}
-
-/* ************************************************************************* */
-void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector& x) {
-  x += alpha * A.transpose() * e;
-}
-
-/* ************************************************************************* */
-void transposeMultiplyAdd(const Matrix& A, const Vector& e, Vector& x) {
-  x += A.transpose() * e;
-}
-
-/* ************************************************************************* */
-void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVector x) {
-  x += alpha * A.transpose() * e;
+const Eigen::IOFormat& matlabFormat() {
+  static const Eigen::IOFormat matlab(
+    Eigen::StreamPrecision, // precision
+    Eigen::DontAlignCols, // flags set such that rowSpacers are not added
+    ", ", // coeffSeparator
+    ";\n", // rowSeparator
+    "\t",  // rowPrefix
+    "", // rowSuffix
+    "[\n", // matPrefix
+    "\n]" // matSuffix
+  );
+  return matlab;
 }
 
 /* ************************************************************************* */
 //3 argument call
 void print(const Matrix& A, const string &s, ostream& stream) {
-  static const Eigen::IOFormat matlab(
-      Eigen::StreamPrecision, // precision
-      0, // flags
-      " ", // coeffSeparator
-      ";\n", // rowSeparator
-      " \t",  // rowPrefix
-      "", // rowSuffix
-      "[\n", // matPrefix
-      "\n  ]" // matSuffix
-      );
-  cout << s << A.format(matlab) << endl;
+  stream << s << A.format(matlabFormat()) << endl;
 }
 
 /* ************************************************************************* */
@@ -235,7 +184,7 @@ istream& operator>>(istream& inputStream, Matrix& destinationMatrix) {
   // Copy coefficients to matrix
   destinationMatrix.resize(height, width);
   int row = 0;
-  BOOST_FOREACH(const vector<double>& rowVec, coeffs) {
+  for(const vector<double>& rowVec: coeffs) {
     destinationMatrix.row(row) = Eigen::Map<const Eigen::RowVectorXd>(&rowVec[0], width);
     ++ row;
   }
@@ -250,7 +199,7 @@ Matrix diag(const std::vector<Matrix>& Hs) {
     rows+= Hs[i].rows();
     cols+= Hs[i].cols();
   }
-  Matrix results = zeros(rows,cols);
+  Matrix results = Matrix::Zero(rows,cols);
   size_t r = 0, c = 0;
   for (size_t i = 0; i<Hs.size(); ++i) {
     insertSub(results, Hs[i], r, c);
@@ -258,16 +207,6 @@ Matrix diag(const std::vector<Matrix>& Hs) {
     c+=Hs[i].cols();
   }
   return results;
-}
-
-/* ************************************************************************* */
-void insertColumn(Matrix& A, const Vector& col, size_t j) {
-  A.col(j) = col;
-}
-
-/* ************************************************************************* */
-void insertColumn(Matrix& A, const Vector& col, size_t i, size_t j) {
-  A.col(j).segment(i, col.size()) = col;
 }
 
 /* ************************************************************************* */
@@ -280,23 +219,12 @@ Vector columnNormSquare(const Matrix &A) {
 }
 
 /* ************************************************************************* */
-void solve(Matrix& A, Matrix& B) {
-  // Eigen version - untested
-  B = A.fullPivLu().solve(B);
-}
-
-/* ************************************************************************* */
-Matrix inverse(const Matrix& A) {
-  return A.inverse();
-}
-
-/* ************************************************************************* */
 /** Householder QR factorization, Golub & Van Loan p 224, explicit version    */
 /* ************************************************************************* */
 pair<Matrix,Matrix> qr(const Matrix& A) {
   const size_t m = A.rows(), n = A.cols(), kprime = min(m,n);
 
-  Matrix Q=eye(m,m),R(A);
+  Matrix Q=Matrix::Identity(m,m),R(A);
   Vector v(m);
 
   // loop over the kprime first columns
@@ -311,15 +239,14 @@ pair<Matrix,Matrix> qr(const Matrix& A) {
       xjm(k) = R(j+k, j);
 
     // calculate the Householder vector v
-    double beta; Vector vjm;
-    boost::tie(beta,vjm) = house(xjm);
+    const auto [beta, vjm] = house(xjm);
 
     // pad with zeros to get m-dimensional vector v
     for(size_t k = 0 ; k < m; k++)
       v(k) = k<j ? 0.0 : vjm(k-j);
 
     // create Householder reflection matrix Qj = I-beta*v*v'
-    Matrix Qj = eye(m) - beta * v * v.transpose();
+    Matrix Qj = Matrix::Identity(m,m) - beta * v * v.transpose();
 
     R = Qj * R; // update R
     Q = Q * Qj; // update Q
@@ -330,13 +257,13 @@ pair<Matrix,Matrix> qr(const Matrix& A) {
 }
 
 /* ************************************************************************* */
-list<boost::tuple<Vector, double, double> >
+list<std::tuple<Vector, double, double> >
 weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
   size_t m = A.rows(), n = A.cols(); // get size(A)
   size_t maxRank = min(m,n);
 
   // create list
-  list<boost::tuple<Vector, double, double> > results;
+  list<std::tuple<Vector, double, double> > results;
 
   Vector pseudo(m); // allocate storage for pseudo-inverse
   Vector weights = sigmas.array().square().inverse(); // calculate weights once
@@ -356,7 +283,7 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
     if (precision < 1e-8) continue;
 
     // create solution and copy into r
-    Vector r(basis(n, j));
+    Vector r(Vector::Unit(n,j));
     for (size_t j2=j+1; j2<n; ++j2)
       r(j2) = pseudo.dot(A.col(j2));
 
@@ -365,7 +292,7 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 
     // construct solution (r, d, sigma)
     // TODO: avoid sqrt, store precision or at least variance
-    results.push_back(boost::make_tuple(r, d, 1./sqrt(precision)));
+    results.push_back(std::make_tuple(r, d, 1./sqrt(precision)));
 
     // exit after rank exhausted
     if (results.size()>=maxRank) break;
@@ -485,7 +412,7 @@ Matrix stack(size_t nrMatrices, ...)
 Matrix stack(const std::vector<Matrix>& blocks) {
   if (blocks.size() == 1) return blocks.at(0);
   DenseIndex nrows = 0, ncols = blocks.at(0).cols();
-  BOOST_FOREACH(const Matrix& mat, blocks) {
+  for(const Matrix& mat: blocks) {
     nrows += mat.rows();
     if (ncols != mat.cols())
       throw invalid_argument("Matrix::stack(): column size mismatch!");
@@ -493,7 +420,7 @@ Matrix stack(const std::vector<Matrix>& blocks) {
   Matrix result(nrows, ncols);
 
   DenseIndex cur_row = 0;
-  BOOST_FOREACH(const Matrix& mat, blocks) {
+  for(const Matrix& mat: blocks) {
     result.middleRows(cur_row, mat.rows()) = mat;
     cur_row += mat.rows();
   }
@@ -507,7 +434,7 @@ Matrix collect(const std::vector<const Matrix *>& matrices, size_t m, size_t n)
   size_t dimA1 = m;
   size_t dimA2 = n*matrices.size();
   if (!m && !n) {
-    BOOST_FOREACH(const Matrix* M, matrices) {
+    for(const Matrix* M: matrices) {
       dimA1 =  M->rows();  // TODO: should check if all the same !
       dimA2 += M->cols();
     }
@@ -516,7 +443,7 @@ Matrix collect(const std::vector<const Matrix *>& matrices, size_t m, size_t n)
   // stl::copy version
   Matrix A(dimA1, dimA2);
   size_t hindex = 0;
-  BOOST_FOREACH(const Matrix* M, matrices) {
+  for(const Matrix* M: matrices) {
     size_t row_len = M->cols();
     A.block(0, hindex, dimA1, row_len) = *M;
     hindex += row_len;
@@ -600,19 +527,19 @@ Matrix RtR(const Matrix &A)
 Matrix cholesky_inverse(const Matrix &A)
 {
   Eigen::LLT<Matrix> llt(A);
-  Matrix inv = eye(A.rows());
+  Matrix inv = Matrix::Identity(A.rows(),A.rows());
   llt.matrixU().solveInPlace<Eigen::OnTheRight>(inv);
   return inv*inv.transpose();
 }
 
 /* ************************************************************************* */
-// Semantics: 
+// Semantics:
 // if B = inverse_square_root(A), then all of the following are true:
 // inv(B) * inv(B)' == A
 // inv(B' * B) == A
 Matrix inverse_square_root(const Matrix& A) {
   Eigen::LLT<Matrix> llt(A);
-  Matrix inv = eye(A.rows());
+  Matrix inv = Matrix::Identity(A.rows(),A.rows());
   llt.matrixU().solveInPlace<Eigen::OnTheRight>(inv);
   return inv.transpose();
 }
@@ -626,7 +553,7 @@ void svd(const Matrix& A, Matrix& U, Vector& S, Matrix& V) {
 }
 
 /* ************************************************************************* */
-boost::tuple<int, double, Vector> DLT(const Matrix& A, double rank_tol) {
+std::tuple<int, double, Vector> DLT(const Matrix& A, double rank_tol) {
 
   // Check size of A
   size_t n = A.rows(), p = A.cols(), m = min(n,p);
@@ -643,12 +570,12 @@ boost::tuple<int, double, Vector> DLT(const Matrix& A, double rank_tol) {
 
   // Return rank, error, and corresponding column of V
   double error = m<p ? 0 : s(m-1);
-  return boost::tuple<int, double, Vector>((int)rank, error, Vector(column(V, p-1)));
+  return std::tuple<int, double, Vector>((int)rank, error, Vector(column(V, p-1)));
 }
 
 /* ************************************************************************* */
 Matrix expm(const Matrix& A, size_t K) {
-  Matrix E = eye(A.rows()), A_k = eye(A.rows());
+  Matrix E = Matrix::Identity(A.rows(),A.rows()), A_k = Matrix::Identity(A.rows(),A.rows());
   for(size_t k=1;k<=K;k++) {
     A_k = A_k*A/double(k);
     E = E + A_k;
@@ -674,11 +601,12 @@ std::string formatMatrixIndented(const std::string& label, const Matrix& matrix,
     else
       matrixPrinted << matrix;
     const std::string matrixStr = matrixPrinted.str();
-    boost::tokenizer<boost::char_separator<char> > tok(matrixStr, boost::char_separator<char>("\n"));
 
+    // Split the matrix string into lines and indent them
+    std::string line;
+    std::istringstream iss(matrixStr);
     DenseIndex row = 0;
-    BOOST_FOREACH(const std::string& line, tok)
-    {
+    while (std::getline(iss, line)) {
       assert(row < effectiveRows);
       if(row > 0)
         ss << padding;
@@ -687,6 +615,7 @@ std::string formatMatrixIndented(const std::string& label, const Matrix& matrix,
         ss << "\n";
       ++ row;
     }
+
   } else {
     ss << "Empty (" << matrix.rows() << "x" << matrix.cols() << ")";
   }
@@ -710,7 +639,7 @@ void inplace_QR(Matrix& A){
   Eigen::internal::householder_qr_inplace_blocked<Matrix, HCoeffsType>::run(A, hCoeffs, 48, temp.data());
 #endif
 
-  zeroBelowDiagonal(A);
+  A.triangularView<Eigen::StrictlyLower>().setZero();
 }
 
 } // namespace gtsam

@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    GenericStereoFactor.h
+ * @file    StereoFactor.h
  * @brief   A non-linear factor for stereo measurements
  * @author  Alireza Fathi
  * @author  Chris Beall
@@ -18,23 +18,25 @@
 
 #pragma once
 
+#include <optional>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/geometry/StereoCamera.h>
 
 namespace gtsam {
 
 /**
  * A Generic Stereo Factor
- * @addtogroup SLAM
+ * @ingroup slam
  */
 template<class POSE, class LANDMARK>
-class GenericStereoFactor: public NoiseModelFactor2<POSE, LANDMARK> {
+class GenericStereoFactor: public NoiseModelFactorN<POSE, LANDMARK> {
 private:
 
   // Keep a copy of measurement and calibration for I/O
   StereoPoint2 measured_;                      ///< the measurement
   Cal3_S2Stereo::shared_ptr K_;                ///< shared pointer to calibration
-  boost::optional<POSE> body_P_sensor_;        ///< The pose of the sensor in the body frame
+  std::optional<POSE> body_P_sensor_;        ///< The pose of the sensor in the body frame
 
   // verbosity handling for Cheirality Exceptions
   bool throwCheirality_;                       ///< If true, rethrows Cheirality exceptions (default: false)
@@ -43,10 +45,13 @@ private:
 public:
 
   // shorthand for base class type
-  typedef NoiseModelFactor2<POSE, LANDMARK> Base;             ///< typedef for base class
+  typedef NoiseModelFactorN<POSE, LANDMARK> Base;             ///< typedef for base class
   typedef GenericStereoFactor<POSE, LANDMARK> This;           ///< typedef for this class (with templates)
-  typedef boost::shared_ptr<GenericStereoFactor> shared_ptr;  ///< typedef for shared pointer to this object
+  typedef std::shared_ptr<GenericStereoFactor> shared_ptr;  ///< typedef for shared pointer to this object
   typedef POSE CamPose;                                       ///< typedef for Pose Lie Value type
+
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
 
   /**
    * Default constructor
@@ -65,7 +70,7 @@ public:
    */
   GenericStereoFactor(const StereoPoint2& measured, const SharedNoiseModel& model,
       Key poseKey, Key landmarkKey, const Cal3_S2Stereo::shared_ptr& K,
-      boost::optional<POSE> body_P_sensor = boost::none) :
+      std::optional<POSE> body_P_sensor = {}) :
     Base(model, poseKey, landmarkKey), measured_(measured), K_(K), body_P_sensor_(body_P_sensor),
     throwCheirality_(false), verboseCheirality_(false) {}
 
@@ -83,16 +88,16 @@ public:
   GenericStereoFactor(const StereoPoint2& measured, const SharedNoiseModel& model,
       Key poseKey, Key landmarkKey, const Cal3_S2Stereo::shared_ptr& K,
       bool throwCheirality, bool verboseCheirality,
-      boost::optional<POSE> body_P_sensor = boost::none) :
+      std::optional<POSE> body_P_sensor = {}) :
     Base(model, poseKey, landmarkKey), measured_(measured), K_(K), body_P_sensor_(body_P_sensor),
     throwCheirality_(throwCheirality), verboseCheirality_(verboseCheirality) {}
 
   /** Virtual destructor */
-  virtual ~GenericStereoFactor() {}
+  ~GenericStereoFactor() override {}
 
   /// @return a deep copy of this factor
-  virtual gtsam::NonlinearFactor::shared_ptr clone() const {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   /**
@@ -100,7 +105,7 @@ public:
    * @param s optional string naming the factor
    * @param keyFormatter optional formatter useful for printing Symbols
    */
-  void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+  void print(const std::string& s = "", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     Base::print(s, keyFormatter);
     measured_.print(s + ".z");
     if(this->body_P_sensor_)
@@ -110,7 +115,7 @@ public:
   /**
    * equals
    */
-  virtual bool equals(const NonlinearFactor& f, double tol = 1e-9) const {
+  bool equals(const NonlinearFactor& f, double tol = 1e-9) const override {
     const GenericStereoFactor* e = dynamic_cast<const GenericStereoFactor*> (&f);
     return e
         && Base::equals(f)
@@ -120,7 +125,7 @@ public:
 
   /** h(x)-z */
   Vector evaluateError(const Pose3& pose, const Point3& point,
-      boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
+      OptionalMatrixType H1, OptionalMatrixType H2) const override {
     try {
       if(body_P_sensor_) {
         if(H1) {
@@ -138,15 +143,15 @@ public:
         return (stereoCam.project(point, H1, H2) - measured_).vector();
       }
     } catch(StereoCheiralityException& e) {
-      if (H1) *H1 = zeros(3,6);
-      if (H2) *H2 = zeros(3,3);
+      if (H1) *H1 = Matrix::Zero(3,6);
+      if (H2) *H2 = Z_3x3;
       if (verboseCheirality_)
       std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
           " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
       if (throwCheirality_)
-        throw e;
+        throw StereoCheiralityException(this->key2());
     }
-    return ones(3) * 2.0 * K_->fx();
+    return Vector3::Constant(2.0 * K_->fx());
   }
 
   /** return the measured */
@@ -165,11 +170,18 @@ public:
   /** return flag for throwing cheirality exceptions */
   inline bool throwCheirality() const { return throwCheirality_; }
 
+  /** return the (optional) sensor pose with respect to the vehicle frame */
+  const std::optional<POSE>& body_P_sensor() const {
+    return body_P_sensor_;
+  }
+
 private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
   void serialize(Archive & ar, const unsigned int /*version*/) {
+    // NoiseModelFactor2 instead of NoiseModelFactorN for backward compatibility
     ar & boost::serialization::make_nvp("NoiseModelFactor2",
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(measured_);
@@ -178,6 +190,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(throwCheirality_);
     ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
   }
+#endif
 };
 
 /// traits

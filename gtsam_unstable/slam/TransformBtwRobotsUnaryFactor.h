@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -29,10 +29,10 @@ namespace gtsam {
   /**
    * A class for a measurement predicted by "between(config[key1],config[key2])"
    * @tparam VALUE the Value type
-   * @addtogroup SLAM
+   * @ingroup slam
    */
   template<class VALUE>
-  class TransformBtwRobotsUnaryFactor: public NonlinearFactor { // TODO why not NoiseModelFactor1 ?
+  class TransformBtwRobotsUnaryFactor: public NonlinearFactor { // TODO why not NoiseModelFactorN ?
 
   public:
 
@@ -61,7 +61,7 @@ namespace gtsam {
   public:
 
     // shorthand for a smart pointer to a factor
-    typedef typename boost::shared_ptr<TransformBtwRobotsUnaryFactor> shared_ptr;
+    typedef typename std::shared_ptr<TransformBtwRobotsUnaryFactor> shared_ptr;
 
     /** default constructor - only use for serialization */
     TransformBtwRobotsUnaryFactor() {}
@@ -70,24 +70,24 @@ namespace gtsam {
     TransformBtwRobotsUnaryFactor(Key key, const VALUE& measured, Key keyA, Key keyB,
         const gtsam::Values& valA, const gtsam::Values& valB,
         const SharedGaussian& model) :
-          Base(cref_list_of<1>(key)), key_(key), measured_(measured), keyA_(keyA), keyB_(keyB),
+          Base(KeyVector{key}), key_(key), measured_(measured), keyA_(keyA), keyB_(keyB),
           model_(model){
 
       setValAValB(valA, valB);
 
     }
 
-    virtual ~TransformBtwRobotsUnaryFactor() {}
+    ~TransformBtwRobotsUnaryFactor() override {}
 
 
     /** Clone */
-    virtual gtsam::NonlinearFactor::shared_ptr clone() const { return boost::make_shared<This>(*this); }
+    gtsam::NonlinearFactor::shared_ptr clone() const override { return std::make_shared<This>(*this); }
 
 
     /** implement functions needed for Testable */
 
     /** print */
-    virtual void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const {
+    void print(const std::string& s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
       std::cout << s << "TransformBtwRobotsUnaryFactor("
           << keyFormatter(key_) << ")\n";
       std::cout << "MR between factor keys: "
@@ -99,7 +99,7 @@ namespace gtsam {
     }
 
     /** equals */
-    virtual bool equals(const NonlinearFactor& f, double tol=1e-9) const {
+    bool equals(const NonlinearFactor& f, double tol=1e-9) const override {
       const This *t =  dynamic_cast<const This*> (&f);
 
       if(t && Base::equals(f))
@@ -128,7 +128,7 @@ namespace gtsam {
     }
 
     /* ************************************************************************* */
-    virtual double error(const gtsam::Values& x) const {
+    double error(const gtsam::Values& x) const override {
       return whitenedError(x).squaredNorm();
     }
 
@@ -139,10 +139,10 @@ namespace gtsam {
      * Hence \f$ b = z - h(x) = - \mathtt{error\_vector}(x) \f$
      */
     /* This version of linearize recalculates the noise model each time */
-    virtual boost::shared_ptr<gtsam::GaussianFactor> linearize(const gtsam::Values& x) const {
+    std::shared_ptr<gtsam::GaussianFactor> linearize(const gtsam::Values& x) const override {
       // Only linearize if the factor is active
       if (!this->active(x))
-        return boost::shared_ptr<gtsam::JacobianFactor>();
+        return std::shared_ptr<gtsam::JacobianFactor>();
 
       //std::cout<<"About to linearize"<<std::endl;
       gtsam::Matrix A1;
@@ -156,8 +156,7 @@ namespace gtsam {
 
 
     /* ************************************************************************* */
-    gtsam::Vector whitenedError(const gtsam::Values& x,
-        boost::optional<std::vector<gtsam::Matrix>&> H = boost::none) const {
+    gtsam::Vector whitenedError(const gtsam::Values& x, OptionalMatrixVecType H = nullptr) const {
 
       T orgA_T_currA = valA_.at<T>(keyA_);
       T orgB_T_currB = valB_.at<T>(keyB_);
@@ -166,8 +165,8 @@ namespace gtsam {
       T currA_T_currB_pred;
       if (H) {
         Matrix H_compose, H_between1;
-        T orgA_T_currB = orgA_T_orgB.compose(orgB_T_currB, H_compose, boost::none);
-        currA_T_currB_pred = orgA_T_currA.between(orgA_T_currB, boost::none, H_between1);
+        T orgA_T_currB = orgA_T_orgB.compose(orgB_T_currB, H_compose, {});
+        currA_T_currB_pred = orgA_T_currA.between(orgA_T_currB, {}, H_between1);
         (*H)[0] = H_compose * H_between1;
       }
       else {
@@ -184,6 +183,14 @@ namespace gtsam {
         model_->whitenInPlace(error);
 
       return error;
+    }
+
+    /* ************************************************************************* */
+    /** A function overload to accept a vector<matrix> instead of a pointer to
+     * the said type.
+     */
+    gtsam::Vector whitenedError(const gtsam::Values& x, std::vector<Matrix>& H) const {
+	  return whitenedError(x, &H);
     }
 
 
@@ -203,17 +210,13 @@ namespace gtsam {
 
     /* ************************************************************************* */
 
-    /** number of variables attached to this factor */
-    std::size_t size() const {
-      return 1;
-    }
-
-    virtual size_t dim() const {
+    size_t dim() const override {
       return model_->R().rows() + model_->R().cols();
     }
 
   private:
 
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -222,6 +225,7 @@ namespace gtsam {
           boost::serialization::base_object<Base>(*this));
       //ar & BOOST_SERIALIZATION_NVP(measured_);
     }
+#endif
   }; // \class TransformBtwRobotsUnaryFactor
 
   /// traits

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -21,6 +21,8 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/base/debug.h>
 
+#include <cassert>
+
 namespace gtsam {
 
 /* ************************************************************************* */
@@ -28,17 +30,17 @@ void ConcurrentBatchFilter::PrintNonlinearFactor(const NonlinearFactor::shared_p
     const std::string& indent, const KeyFormatter& keyFormatter) {
   std::cout << indent;
   if(factor) {
-    if(boost::dynamic_pointer_cast<LinearContainerFactor>(factor)) {
+    if(std::dynamic_pointer_cast<LinearContainerFactor>(factor)) {
       std::cout << "l( ";
     } else {
       std::cout << "f( ";
     }
-    BOOST_FOREACH(Key key, *factor) {
+    for(Key key: *factor) {
       std::cout << keyFormatter(key) << " ";
     }
     std::cout << ")" << std::endl;
   } else {
-    std::cout << "{ NULL }" << std::endl;
+    std::cout << "{ nullptr }" << std::endl;
   }
 }
 
@@ -46,7 +48,7 @@ void ConcurrentBatchFilter::PrintNonlinearFactor(const NonlinearFactor::shared_p
 void ConcurrentBatchFilter::PrintNonlinearFactorGraph(const NonlinearFactorGraph& factors,
     const std::string& indent, const std::string& title, const KeyFormatter& keyFormatter) {
   std::cout << indent << title << std::endl;
-  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, factors) {
+  for(const NonlinearFactor::shared_ptr& factor: factors) {
     PrintNonlinearFactor(factor, indent + "  ", keyFormatter);
   }
 }
@@ -55,7 +57,7 @@ void ConcurrentBatchFilter::PrintNonlinearFactorGraph(const NonlinearFactorGraph
 void ConcurrentBatchFilter::PrintNonlinearFactorGraph(const NonlinearFactorGraph& factors, const std::vector<size_t>& slots,
     const std::string& indent, const std::string& title, const KeyFormatter& keyFormatter) {
   std::cout << indent << title << std::endl;
-  BOOST_FOREACH(size_t slot, slots) {
+  for(size_t slot: slots) {
     PrintNonlinearFactor(factors.at(slot), indent + "  ", keyFormatter);
   }
 }
@@ -65,8 +67,8 @@ void ConcurrentBatchFilter::PrintLinearFactor(const GaussianFactor::shared_ptr& 
     const std::string& indent, const KeyFormatter& keyFormatter) {
   std::cout << indent;
   if(factor) {
-    JacobianFactor::shared_ptr jf = boost::dynamic_pointer_cast<JacobianFactor>(factor);
-    HessianFactor::shared_ptr hf = boost::dynamic_pointer_cast<HessianFactor>(factor);
+    JacobianFactor::shared_ptr jf = std::dynamic_pointer_cast<JacobianFactor>(factor);
+    HessianFactor::shared_ptr hf = std::dynamic_pointer_cast<HessianFactor>(factor);
     if(jf) {
       std::cout << "j( ";
     } else if(hf) {
@@ -74,12 +76,12 @@ void ConcurrentBatchFilter::PrintLinearFactor(const GaussianFactor::shared_ptr& 
     } else {
       std::cout << "g( ";
     }
-    BOOST_FOREACH(Key key, *factor) {
+    for(Key key: *factor) {
       std::cout << keyFormatter(key) << " ";
     }
     std::cout << ")" << std::endl;
   } else {
-    std::cout << "{ NULL }" << std::endl;
+    std::cout << "{ nullptr }" << std::endl;
   }
 }
 
@@ -87,7 +89,7 @@ void ConcurrentBatchFilter::PrintLinearFactor(const GaussianFactor::shared_ptr& 
 void ConcurrentBatchFilter::PrintLinearFactorGraph(const GaussianFactorGraph& factors,
     const std::string& indent, const std::string& title, const KeyFormatter& keyFormatter) {
   std::cout << indent << title << std::endl;
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
+  for(const GaussianFactor::shared_ptr& factor: factors) {
     PrintLinearFactor(factor, indent + "  ", keyFormatter);
   }
 }
@@ -119,7 +121,7 @@ bool ConcurrentBatchFilter::equals(const ConcurrentFilter& rhs, double tol) cons
 
 /* ************************************************************************* */
 ConcurrentBatchFilter::Result ConcurrentBatchFilter::update(const NonlinearFactorGraph& newFactors, const Values& newTheta,
-    const boost::optional<FastList<Key> >& keysToMove, const boost::optional< std::vector<size_t> >& removeFactorIndices) {
+    const std::optional<FastList<Key> >& keysToMove, const std::optional< std::vector<size_t> >& removeFactorIndices) {
 
   gttic(update);
 
@@ -139,8 +141,8 @@ ConcurrentBatchFilter::Result ConcurrentBatchFilter::update(const NonlinearFacto
   // Add the new variables to theta
   theta_.insert(newTheta);
   // Add new variables to the end of the ordering
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, newTheta) {
-    ordering_.push_back(key_value.key);
+  for (const auto key : newTheta.keys()) {
+    ordering_.push_back(key);
   }
   // Augment Delta
   delta_.insert(newTheta.zeroVectors());
@@ -209,8 +211,8 @@ void ConcurrentBatchFilter::synchronize(const NonlinearFactorGraph& smootherSumm
   if(debug) { PrintNonlinearFactorGraph(smootherSummarization_, "ConcurrentBatchFilter::synchronize  ", "Previous Smoother Summarization:", DefaultKeyFormatter); }
 
 #ifndef NDEBUG
-  std::set<Key> oldKeys = smootherSummarization_.keys();
-  std::set<Key> newKeys = smootherSummarization.keys();
+  KeySet oldKeys = smootherSummarization_.keys();
+  KeySet newKeys = smootherSummarization.keys();
   assert(oldKeys.size() == newKeys.size());
   assert(std::equal(oldKeys.begin(), oldKeys.end(), newKeys.begin()));
 #endif
@@ -221,10 +223,7 @@ void ConcurrentBatchFilter::synchronize(const NonlinearFactorGraph& smootherSumm
   if(debug) { PrintNonlinearFactorGraph(smootherSummarization_, "ConcurrentBatchFilter::synchronize  ", "Updated Smoother Summarization:", DefaultKeyFormatter); }
 
   // Find the set of new separator keys
-  KeySet newSeparatorKeys;
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
-    newSeparatorKeys.insert(key_value.key);
-  }
+  const KeySet newSeparatorKeys = separatorValues_.keySet();
 
   if(debug) { PrintKeys(newSeparatorKeys, "ConcurrentBatchFilter::synchronize  ", "Current Separator Keys:"); }
 
@@ -236,9 +235,9 @@ void ConcurrentBatchFilter::synchronize(const NonlinearFactorGraph& smootherSumm
     graph.push_back(smootherShortcut_);
     Values values;
     values.insert(smootherSummarizationValues);
-    BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
-      if(!values.exists(key_value.key)) {
-        values.insert(key_value.key, key_value.value);
+    for(const auto key: newSeparatorKeys) {
+      if(!values.exists(key)) {
+        values.insert(key, separatorValues_.at(key));
       }
     }
     // Calculate the summarized factor on just the new separator keys
@@ -321,7 +320,7 @@ std::vector<size_t> ConcurrentBatchFilter::insertFactors(const NonlinearFactorGr
   slots.reserve(factors.size());
 
   // Insert the factor into an existing hole in the factor graph, if possible
-  BOOST_FOREACH(const NonlinearFactor::shared_ptr& factor, factors) {
+  for(const NonlinearFactor::shared_ptr& factor: factors) {
     size_t slot;
     if(availableSlots_.size() > 0) {
       slot = availableSlots_.front();
@@ -345,7 +344,7 @@ void ConcurrentBatchFilter::removeFactors(const std::vector<size_t>& slots) {
   gttic(remove_factors);
 
   // For each factor slot to delete...
-  BOOST_FOREACH(size_t slot, slots) {
+  for(size_t slot: slots) {
 
     // Remove the factor from the graph
     factors_.remove(slot);
@@ -358,11 +357,11 @@ void ConcurrentBatchFilter::removeFactors(const std::vector<size_t>& slots) {
 }
 
 /* ************************************************************************* */
-void ConcurrentBatchFilter::reorder(const boost::optional<FastList<Key> >& keysToMove) {
+void ConcurrentBatchFilter::reorder(const std::optional<FastList<Key> >& keysToMove) {
 
   // COLAMD groups will be used to place marginalize keys in Group 0, and everything else in Group 1
   if(keysToMove && keysToMove->size() > 0) {
-    ordering_ = Ordering::ColamdConstrainedFirst(factors_, std::vector<Key>(keysToMove->begin(), keysToMove->end()));
+    ordering_ = Ordering::ColamdConstrainedFirst(factors_, KeyVector(keysToMove->begin(), keysToMove->end()));
   }else{
     ordering_ = Ordering::Colamd(factors_);
   }
@@ -431,7 +430,7 @@ void ConcurrentBatchFilter::optimize(const NonlinearFactorGraph& factors, Values
         double sigma = 1.0 / std::sqrt(lambda);
 
         // for each of the variables, add a prior at the current solution
-        BOOST_FOREACH(const VectorValues::KeyValuePair& key_value, delta) {
+        for(const VectorValues::KeyValuePair& key_value: delta) {
           size_t dim = key_value.second.size();
           Matrix A = Matrix::Identity(dim,dim);
           Vector b = key_value.second;
@@ -471,8 +470,8 @@ void ConcurrentBatchFilter::optimize(const NonlinearFactorGraph& factors, Values
           // Put the linearization points and deltas back for specific variables
           if(linearValues.size() > 0) {
             theta.update(linearValues);
-            BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, linearValues) {
-              delta.at(key_value.key) = newDelta.at(key_value.key);
+            for(const auto key: linearValues.keys()) {
+              delta.at(key) = newDelta.at(key);
             }
           }
 
@@ -535,8 +534,8 @@ void ConcurrentBatchFilter::moveSeparator(const FastList<Key>& keysToMove) {
   // Identify all of the new factors to be sent to the smoother (any factor involving keysToMove)
   std::vector<size_t> removedFactorSlots;
   VariableIndex variableIndex(factors_);
-  BOOST_FOREACH(Key key, keysToMove) {
-    const FastVector<size_t>& slots = variableIndex[key];
+  for(Key key: keysToMove) {
+    const auto& slots = variableIndex[key];
     removedFactorSlots.insert(removedFactorSlots.end(), slots.begin(), slots.end());
   }
 
@@ -544,14 +543,14 @@ void ConcurrentBatchFilter::moveSeparator(const FastList<Key>& keysToMove) {
   std::sort(removedFactorSlots.begin(), removedFactorSlots.end());
   removedFactorSlots.erase(std::unique(removedFactorSlots.begin(), removedFactorSlots.end()), removedFactorSlots.end());
   // Remove any linear/marginal factor that made it into the set
-  BOOST_FOREACH(size_t index, separatorSummarizationSlots_) {
+  for(size_t index: separatorSummarizationSlots_) {
     removedFactorSlots.erase(std::remove(removedFactorSlots.begin(), removedFactorSlots.end(), index), removedFactorSlots.end());
   }
 
   // TODO: Make this compact
   if(debug) {
     std::cout << "ConcurrentBatchFilter::moveSeparator  Removed Factor Slots: ";
-    BOOST_FOREACH(size_t slot, removedFactorSlots) {
+    for(size_t slot: removedFactorSlots) {
       std::cout << slot << " ";
     }
     std::cout << std::endl;
@@ -559,7 +558,7 @@ void ConcurrentBatchFilter::moveSeparator(const FastList<Key>& keysToMove) {
 
   // Add these factors to a factor graph
   NonlinearFactorGraph removedFactors;
-  BOOST_FOREACH(size_t slot, removedFactorSlots) {
+  for(size_t slot: removedFactorSlots) {
     if(factors_.at(slot)) {
       removedFactors.push_back(factors_.at(slot));
     }
@@ -574,10 +573,8 @@ void ConcurrentBatchFilter::moveSeparator(const FastList<Key>& keysToMove) {
 
   // Calculate the set of new separator keys: AffectedKeys + PreviousSeparatorKeys - KeysToMove
   KeySet newSeparatorKeys = removedFactors.keys();
-  BOOST_FOREACH(const Values::ConstKeyValuePair& key_value, separatorValues_) {
-    newSeparatorKeys.insert(key_value.key);
-  }
-  BOOST_FOREACH(Key key, keysToMove) {
+  newSeparatorKeys.merge(separatorValues_.keySet());
+  for(Key key: keysToMove) {
     newSeparatorKeys.erase(key);
   }
 
@@ -585,7 +582,7 @@ void ConcurrentBatchFilter::moveSeparator(const FastList<Key>& keysToMove) {
 
   // Calculate the set of shortcut keys: NewSeparatorKeys + OldSeparatorKeys
   KeySet shortcutKeys = newSeparatorKeys;
-  BOOST_FOREACH(Key key, smootherSummarization_.keys()) {
+  for(Key key: smootherSummarization_.keys()) {
     shortcutKeys.insert(key);
   }
 
@@ -632,7 +629,7 @@ void ConcurrentBatchFilter::moveSeparator(const FastList<Key>& keysToMove) {
 
   // Update the separatorValues object (should only contain the new separator keys)
   separatorValues_.clear();
-  BOOST_FOREACH(Key key, separatorSummarization.keys()) {
+  for(Key key: separatorSummarization.keys()) {
     separatorValues_.insert(key, theta_.at(key));
   }
 
@@ -641,12 +638,12 @@ void ConcurrentBatchFilter::moveSeparator(const FastList<Key>& keysToMove) {
   removeFactors(removedFactorSlots);
 
   // Add the linearization point of the moved variables to the smoother cache
-  BOOST_FOREACH(Key key, keysToMove) {
+  for(Key key: keysToMove) {
     smootherValues_.insert(key, theta_.at(key));
   }
 
   // Remove marginalized keys from values (and separator)
-  BOOST_FOREACH(Key key, keysToMove) {
+  for(Key key: keysToMove) {
     theta_.erase(key);
     ordering_.erase(std::find(ordering_.begin(), ordering_.end(), key));
     delta_.erase(key);

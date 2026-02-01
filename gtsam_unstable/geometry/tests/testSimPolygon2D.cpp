@@ -1,11 +1,12 @@
 /**
- * @file testSimPolygon
+ * @file testSimPolygon2D.cpp
  * @author Alex Cunningham
  */
 
-#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam_unstable/geometry/SimPolygon2D.h>
+
+#include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
@@ -16,7 +17,7 @@ const double tol=1e-5;
 TEST(testPolygon, triangle_basic) {
 
   // create a triangle from points, extract landmarks/walls, check occupancy
-  Point2 pA, pB(2.0, 0.0), pC(0.0, 1.0);
+  Point2 pA(0,0), pB(2.0, 0.0), pC(0.0, 1.0);
 
   // construct and extract data
   SimPolygon2D actTriangle = SimPolygon2D::createTriangle(pA, pB, pC);

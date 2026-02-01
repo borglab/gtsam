@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -19,14 +19,12 @@
 
 #include <gtsam/inference/VariableIndex.h>
 #include <gtsam/base/timing.h>
-#include <boost/foreach.hpp>
 
 namespace gtsam {
 
 /* ************************************************************************* */
 template<class FG>
-void VariableIndex::augment(const FG& factors,
-    boost::optional<const FastVector<size_t>&> newFactorIndices) {
+void VariableIndex::augment(const FG& factors, const FactorIndices* newFactorIndices) {
   gttic(VariableIndex_augment);
 
   // Augment index for each factor
@@ -34,7 +32,7 @@ void VariableIndex::augment(const FG& factors,
     if (factors[i]) {
       const size_t globalI =
           newFactorIndices ? (*newFactorIndices)[i] : nFactors_;
-      BOOST_FOREACH(const Key key, *factors[i]) {
+      for(const Key key: *factors[i]) {
         index_[key].push_back(globalI);
         ++nEntries_;
       }
@@ -67,9 +65,9 @@ void VariableIndex::remove(ITERATOR firstFactor, ITERATOR lastFactor,
       throw std::invalid_argument(
           "Internal error, requested inconsistent number of factor indices and factors in VariableIndex::remove");
     if (factors[i]) {
-      BOOST_FOREACH(Key j, *factors[i]) {
-        Factors& factorEntries = internalAt(j);
-        Factors::iterator entry = std::find(factorEntries.begin(),
+      for(Key j: *factors[i]) {
+        FactorIndices& factorEntries = internalAt(j);
+        auto entry = std::find(factorEntries.begin(),
             factorEntries.end(), *factorIndex);
         if (entry == factorEntries.end())
           throw std::invalid_argument(

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -31,7 +31,7 @@ namespace gtsam {
 class GTSAM_UNSTABLE_EXPORT ConcurrentBatchSmoother : public ConcurrentSmoother {
 
 public:
-  typedef boost::shared_ptr<ConcurrentBatchSmoother> shared_ptr;
+  typedef std::shared_ptr<ConcurrentBatchSmoother> shared_ptr;
   typedef ConcurrentSmoother Base; ///< typedef for base class
 
   /** Meta information returned about the update */
@@ -43,7 +43,7 @@ public:
     double error; ///< The final factor graph error
 
     /// Constructor
-    Result() : iterations(0), lambdas(0), nonlinearVariables(0), linearVariables(0), error(0) {};
+    Result() : iterations(0), lambdas(0), nonlinearVariables(0), linearVariables(0), error(0) {}
 
     /// Getter methods
     size_t getIterations() const { return iterations; }
@@ -54,16 +54,16 @@ public:
   };
 
   /** Default constructor */
-  ConcurrentBatchSmoother(const LevenbergMarquardtParams& parameters = LevenbergMarquardtParams()) : parameters_(parameters) {};
+  ConcurrentBatchSmoother(const LevenbergMarquardtParams& parameters = LevenbergMarquardtParams()) : parameters_(parameters) {}
 
   /** Default destructor */
-  virtual ~ConcurrentBatchSmoother() {};
+  ~ConcurrentBatchSmoother() override {}
 
   /** Implement a GTSAM standard 'print' function */
-  virtual void print(const std::string& s = "Concurrent Batch Smoother:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+  void print(const std::string& s = "Concurrent Batch Smoother:\n", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
   /** Check if two Concurrent Smoothers are equal */
-  virtual bool equals(const ConcurrentSmoother& rhs, double tol = 1e-9) const;
+  bool equals(const ConcurrentSmoother& rhs, double tol = 1e-9) const override;
 
   /** Access the current set of factors */
   const NonlinearFactorGraph& getFactors() const {
@@ -118,13 +118,13 @@ public:
    * and additionally, variables that were already in the system must not be included here.
    */
   virtual Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(), const Values& newTheta = Values(),
-      const boost::optional< std::vector<size_t> >& removeFactorIndices = boost::none);
+      const std::optional< std::vector<size_t> >& removeFactorIndices = {});
 
   /**
    * Perform any required operations before the synchronization process starts.
    * Called by 'synchronize'
    */
-  virtual void presync();
+  void presync() override;
 
   /**
    * Populate the provided containers with factors that constitute the smoother branch summarization
@@ -132,7 +132,7 @@ public:
    *
    * @param summarizedFactors The summarized factors for the filter branch
    */
-  virtual void getSummarizedFactors(NonlinearFactorGraph& summarizedFactors, Values& separatorValues);
+  void getSummarizedFactors(NonlinearFactorGraph& summarizedFactors, Values& separatorValues) override;
 
   /**
    * Apply the new smoother factors sent by the filter, and the updated version of the filter
@@ -143,14 +143,14 @@ public:
    * @param summarizedFactors An updated version of the filter branch summarized factors
    * @param rootValues The linearization point of the root variables
    */
-  virtual void synchronize(const NonlinearFactorGraph& smootherFactors, const Values& smootherValues,
-      const NonlinearFactorGraph& summarizedFactors, const Values& separatorValues);
+  void synchronize(const NonlinearFactorGraph& smootherFactors, const Values& smootherValues,
+      const NonlinearFactorGraph& summarizedFactors, const Values& separatorValues) override;
 
   /**
    * Perform any required operations after the synchronization process finishes.
    * Called by 'synchronize'
    */
-  virtual void postsync();
+  void postsync() override;
 
 protected:
 

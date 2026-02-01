@@ -29,11 +29,11 @@
 // min vector size for axpy bench
 #define MIN_AXPY 5
 // max vector size for axpy bench
-#define MAX_AXPY 1000000
+#define MAX_AXPY 3000000
 // min matrix size for matrix vector product bench
 #define MIN_MV 5
 // max matrix size for matrix vector product bench
-#define MAX_MV 3000
+#define MAX_MV 5000
 // min matrix size for matrix matrix product bench
 #define MIN_MM 5
 // max matrix size for matrix matrix product bench

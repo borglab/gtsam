@@ -52,7 +52,7 @@ TEST( testPoseRotationFactor, level3_zero_error ) {
   Pose3 pose1(rot3A, point3A);
   Pose3RotationPrior factor(poseKey, rot3A, model3);
   Matrix actH1;
-  EXPECT(assert_equal(zero(3), factor.evaluateError(pose1, actH1)));
+  EXPECT(assert_equal(Z_3x1, factor.evaluateError(pose1, actH1)));
   Matrix expH1 = numericalDerivative22<Vector3,Pose3RotationPrior,Pose3>(evalFactorError3, factor, pose1, 1e-5);
   EXPECT(assert_equal(expH1, actH1, tol));
 }
@@ -78,7 +78,7 @@ TEST( testPoseRotationFactor, level2_zero_error ) {
   Pose2 pose1(rot2A, point2A);
   Pose2RotationPrior factor(poseKey, rot2A, model1);
   Matrix actH1;
-  EXPECT(assert_equal(zero(1), factor.evaluateError(pose1, actH1)));
+  EXPECT(assert_equal(Z_1x1, factor.evaluateError(pose1, actH1)));
   Matrix expH1 = numericalDerivative22<Vector1,Pose2RotationPrior,Pose2>(evalFactorError2, factor, pose1, 1e-5);
   EXPECT(assert_equal(expH1, actH1, tol));
 }

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -21,8 +21,8 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/std/list.hpp> // for operator +=
-using namespace boost::assign;
+#include <sstream>
+
 using namespace std;
 using namespace gtsam;
 
@@ -38,20 +38,43 @@ TEST(Key, KeySymbolConversion) {
 }
 
 /* ************************************************************************* */
+TEST(Key, SymbolGenerator) {
+  const auto x1 = gtsam::symbol_shorthand::X(1);
+  const auto v1 = gtsam::symbol_shorthand::V(1);
+  const auto a1 = gtsam::symbol_shorthand::A(1);
+
+  const auto Z = gtsam::SymbolGenerator('x');
+  const auto DZ = gtsam::SymbolGenerator('v');
+  const auto DDZ = gtsam::SymbolGenerator('a');
+
+  const auto z1 = Z(1);
+  const auto dz1 = DZ(1);
+  const auto ddz1 = DDZ(1);
+
+  EXPECT(assert_equal(x1, z1));
+  EXPECT(assert_equal(v1, dz1));
+  EXPECT(assert_equal(a1, ddz1));
+}
+
+/* ************************************************************************* */
+TEST(Key, SymbolGeneratorConstexpr) {
+  constexpr auto Z = gtsam::SymbolGenerator('x');
+  EXPECT(assert_equal(Z.chr(), 'x'));
+}
+
+/* ************************************************************************* */
 template<int KeySize>
 Key KeyTestValue();
 
-template<>
-Key KeyTestValue<8>()
-{
+template <>
+Key KeyTestValue<8>() {
   return 0x6100000000000005;
-};
+}
 
-template<>
-Key KeyTestValue<4>()
-{
+template <>
+Key KeyTestValue<4>() {
   return 0x61000005;
-};
+}
 
 /* ************************************************************************* */
 TEST(Key, KeySymbolEncoding) {
@@ -68,12 +91,40 @@ TEST(Key, KeySymbolEncoding) {
 
 /* ************************************************************************* */
 TEST(Key, ChrTest) {
-  Key key = Symbol('c',3);
+  Symbol key('c', 3);
   EXPECT(Symbol::ChrTest('c')(key));
   EXPECT(!Symbol::ChrTest('d')(key));
 }
 
 /* ************************************************************************* */
-int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
-/* ************************************************************************* */
+// A custom (nonsensical) formatter.
+string keyMyFormatter(Key key) {
+  return "special";
+}
 
+TEST(Key, Formatting) {
+  Symbol key('c', 3);
+  EXPECT("c3" == DefaultKeyFormatter(key));
+
+  // Try streaming keys, should be default-formatted.
+  stringstream ss;
+  ss << StreamedKey(key);
+  EXPECT("c3" == ss.str());
+
+  // use key_formatter with a function pointer
+  stringstream ss2;
+  ss2 << key_formatter(keyMyFormatter) << StreamedKey(key);
+  EXPECT("special" == ss2.str());
+
+  // use key_formatter with a function object.
+  stringstream ss3;
+  ss3 << key_formatter(DefaultKeyFormatter) << StreamedKey(key);
+  EXPECT("c3" == ss3.str());
+}
+
+/* ************************************************************************* */
+int main() {
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
+}
+/* ************************************************************************* */

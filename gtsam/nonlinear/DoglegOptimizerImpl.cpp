@@ -16,6 +16,7 @@
  */
 
 #include <cmath>
+#include <cassert>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
 
 using namespace std;
@@ -23,24 +24,24 @@ using namespace std;
 namespace gtsam {
 /* ************************************************************************* */
 VectorValues DoglegOptimizerImpl::ComputeDoglegPoint(
-    double Delta, const VectorValues& dx_u, const VectorValues& dx_n, const bool verbose) {
+    double delta, const VectorValues& dx_u, const VectorValues& dx_n, const bool verbose) {
 
-  // Get magnitude of each update and find out which segment Delta falls in
-  assert(Delta >= 0.0);
-  double DeltaSq = Delta*Delta;
+  // Get magnitude of each update and find out which segment delta falls in
+  assert(delta >= 0.0);
+  double deltaSq = delta*delta;
   double x_u_norm_sq = dx_u.squaredNorm();
   double x_n_norm_sq = dx_n.squaredNorm();
   if(verbose) cout << "Steepest descent magnitude " << std::sqrt(x_u_norm_sq) << ", Newton's method magnitude " << std::sqrt(x_n_norm_sq) << endl;
-  if(DeltaSq < x_u_norm_sq) {
+  if(deltaSq < x_u_norm_sq) {
     // Trust region is smaller than steepest descent update
-    VectorValues x_d = std::sqrt(DeltaSq / x_u_norm_sq) * dx_u;
-    if(verbose) cout << "In steepest descent region with fraction " << std::sqrt(DeltaSq / x_u_norm_sq) << " of steepest descent magnitude" << endl;
+    VectorValues x_d = std::sqrt(deltaSq / x_u_norm_sq) * dx_u;
+    if(verbose) cout << "In steepest descent region with fraction " << std::sqrt(deltaSq / x_u_norm_sq) << " of steepest descent magnitude" << endl;
     return x_d;
-  } else if(DeltaSq < x_n_norm_sq) {
+  } else if(deltaSq < x_n_norm_sq) {
     // Trust region boundary is between steepest descent point and Newton's method point
-    return ComputeBlend(Delta, dx_u, dx_n, verbose);
+    return ComputeBlend(delta, dx_u, dx_n, verbose);
   } else {
-    assert(DeltaSq >= x_n_norm_sq);
+    assert(deltaSq >= x_n_norm_sq);
     if(verbose) cout << "In pure Newton's method region" << endl;
     // Trust region is larger than Newton's method point
     return dx_n;
@@ -48,7 +49,7 @@ VectorValues DoglegOptimizerImpl::ComputeDoglegPoint(
 }
 
 /* ************************************************************************* */
-VectorValues DoglegOptimizerImpl::ComputeBlend(double Delta, const VectorValues& x_u, const VectorValues& x_n, const bool verbose) {
+VectorValues DoglegOptimizerImpl::ComputeBlend(double delta, const VectorValues& x_u, const VectorValues& x_n, const bool verbose) {
 
   // See doc/trustregion.lyx or doc/trustregion.pdf
 
@@ -60,25 +61,28 @@ VectorValues DoglegOptimizerImpl::ComputeBlend(double Delta, const VectorValues&
   // Compute quadratic formula terms
   const double a = uu - 2.*un + nn;
   const double b = 2. * (un - uu);
-  const double c = uu - Delta*Delta;
+  const double c = uu - delta*delta;
   double sqrt_b_m4ac = std::sqrt(b*b - 4*a*c);
 
   // Compute blending parameter
   double tau1 = (-b + sqrt_b_m4ac) / (2.*a);
   double tau2 = (-b - sqrt_b_m4ac) / (2.*a);
 
+  // Determine correct solution accounting for machine precision
   double tau;
-  if(0.0 <= tau1 && tau1 <= 1.0) {
-    assert(!(0.0 <= tau2 && tau2 <= 1.0));
+  const double eps = std::numeric_limits<double>::epsilon();
+  if(-eps <= tau1 && tau1 <= 1.0 + eps) {
+    assert(!(-eps <= tau2 && tau2 <= 1.0 + eps));
     tau = tau1;
   } else {
-    assert(0.0 <= tau2 && tau2 <= 1.0);
+    assert(-eps <= tau2 && tau2 <= 1.0 + eps);
     tau = tau2;
   }
 
   // Compute blended point
   if(verbose) cout << "In blend region with fraction " << tau << " of Newton's method point" << endl;
-  VectorValues blend = (1. - tau) * x_u;  axpy(tau, x_n, blend);
+  VectorValues blend = (1. - tau) * x_u;
+  blend += tau * x_n;
   return blend;
 }
 

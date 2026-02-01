@@ -19,8 +19,6 @@
 #include <gtsam/linear/IterativeSolver.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
-#include <boost/algorithm/string.hpp>
-#include <boost/foreach.hpp>
 #include <iostream>
 
 using namespace std;
@@ -49,6 +47,12 @@ void IterativeOptimizationParameters::print(ostream &os) const {
 }
 
 /*****************************************************************************/
+bool IterativeOptimizationParameters::equals(
+    const IterativeOptimizationParameters &other, double tol) const {
+  return verbosity_ == other.verbosity();
+}
+
+/*****************************************************************************/
 ostream& operator<<(ostream &os, const IterativeOptimizationParameters &p) {
   p.print(os);
   return os;
@@ -58,7 +62,8 @@ ostream& operator<<(ostream &os, const IterativeOptimizationParameters &p) {
 IterativeOptimizationParameters::Verbosity IterativeOptimizationParameters::verbosityTranslator(
     const string &src) {
   string s = src;
-  boost::algorithm::to_upper(s);
+  // Convert to upper case
+  std::transform(s.begin(), s.end(), s.begin(), ::toupper);
   if (s == "SILENT")
     return IterativeOptimizationParameters::SILENT;
   else if (s == "COMPLEXITY")
@@ -85,8 +90,7 @@ string IterativeOptimizationParameters::verbosityTranslator(
 
 /*****************************************************************************/
 VectorValues IterativeSolver::optimize(const GaussianFactorGraph &gfg,
-    boost::optional<const KeyInfo&> keyInfo,
-    boost::optional<const std::map<Key, Vector>&> lambda) {
+    const KeyInfo* keyInfo, const std::map<Key, Vector>* lambda) {
   return optimize(gfg, keyInfo ? *keyInfo : KeyInfo(gfg),
       lambda ? *lambda : std::map<Key, Vector>());
 }
@@ -116,9 +120,12 @@ void KeyInfo::initialize(const GaussianFactorGraph &fg) {
   size_t start = 0;
 
   for (size_t i = 0; i < n; ++i) {
-    const size_t key = ordering_[i];
-    const size_t dim = colspec.find(key)->second;
-    insert(make_pair(key, KeyInfoEntry(i, dim, start)));
+    const Key key = ordering_[i];
+    const auto it_key = colspec.find(key);
+    if (it_key==colspec.end())
+      throw std::runtime_error("KeyInfo: Inconsistency in key-dim map");
+    const size_t dim = it_key->second;
+    this->emplace(key, KeyInfoEntry(i, dim, start));
     start += dim;
   }
   numCols_ = start;
@@ -127,8 +134,8 @@ void KeyInfo::initialize(const GaussianFactorGraph &fg) {
 /****************************************************************************/
 vector<size_t> KeyInfo::colSpec() const {
   std::vector<size_t> result(size(), 0);
-  BOOST_FOREACH ( const KeyInfo::value_type &item, *this ) {
-    result[item.second.index()] = item.second.dim();
+  for ( const auto &item: *this ) {
+    result[item.second.index] = item.second.dim;
   }
   return result;
 }
@@ -136,8 +143,8 @@ vector<size_t> KeyInfo::colSpec() const {
 /****************************************************************************/
 VectorValues KeyInfo::x0() const {
   VectorValues result;
-  BOOST_FOREACH ( const KeyInfo::value_type &item, *this ) {
-    result.insert(item.first, Vector::Zero(item.second.dim()));
+  for ( const auto &item: *this ) {
+    result.emplace(item.first, Vector::Zero(item.second.dim));
   }
   return result;
 }

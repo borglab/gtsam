@@ -25,6 +25,8 @@
 #include <gtsam/symbolic/SymbolicConditional.h>
 #include <gtsam/symbolic/SymbolicFactor-inst.h>
 
+#include <cassert>
+
 namespace gtsam {
 
 template<class BAYESTREE, class GRAPH, class ETREE_NODE>
@@ -33,7 +35,7 @@ struct ConstructorTraversalData {
   typedef typename JunctionTree<BAYESTREE, GRAPH>::sharedNode sharedNode;
 
   ConstructorTraversalData* const parentData;
-  sharedNode myJTNode;
+  sharedNode junctionTreeNode;
   FastVector<SymbolicConditional::shared_ptr> childSymbolicConditionals;
   FastVector<SymbolicFactor::shared_ptr> childSymbolicFactors;
 
@@ -47,20 +49,21 @@ struct ConstructorTraversalData {
 
   // Pre-order visitor function
   static ConstructorTraversalData ConstructorTraversalVisitorPre(
-      const boost::shared_ptr<ETREE_NODE>& node,
+      const std::shared_ptr<ETREE_NODE>& node,
       ConstructorTraversalData& parentData) {
     // On the pre-order pass, before children have been visited, we just set up
     // a traversal data structure with its own JT node, and create a child
     // pointer in its parent.
     ConstructorTraversalData myData = ConstructorTraversalData(&parentData);
-    myData.myJTNode = boost::make_shared<Node>(node->key, node->factors);
-    parentData.myJTNode->children.push_back(myData.myJTNode);
+    myData.junctionTreeNode =
+        std::make_shared<Node>(node->key, node->factors);
+    parentData.junctionTreeNode->addChild(myData.junctionTreeNode);
     return myData;
   }
 
   // Post-order visitor function
   static void ConstructorTraversalVisitorPostAlg2(
-      const boost::shared_ptr<ETREE_NODE>& ETreeNode,
+      const std::shared_ptr<ETREE_NODE>& ETreeNode,
       const ConstructorTraversalData& myData) {
     // In this post-order visitor, we combine the symbolic elimination results
     // from the elimination tree children and symbolically eliminate the current
@@ -76,22 +79,20 @@ struct ConstructorTraversalData {
     symbolicFactors.reserve(
         ETreeNode->factors.size() + myData.childSymbolicFactors.size());
     // Add ETree node factors
-    symbolicFactors += ETreeNode->factors;
+    symbolicFactors.push_back(ETreeNode->factors);
     // Add symbolic factors passed up from children
-    symbolicFactors += myData.childSymbolicFactors;
+    symbolicFactors.push_back(myData.childSymbolicFactors);
 
     Ordering keyAsOrdering;
     keyAsOrdering.push_back(ETreeNode->key);
-    SymbolicConditional::shared_ptr myConditional;
-    SymbolicFactor::shared_ptr mySeparatorFactor;
-    boost::tie(myConditional, mySeparatorFactor) = internal::EliminateSymbolic(
-        symbolicFactors, keyAsOrdering);
+    const auto [myConditional, mySeparatorFactor] =
+        internal::EliminateSymbolic(symbolicFactors, keyAsOrdering);
 
     // Store symbolic elimination results in the parent
     myData.parentData->childSymbolicConditionals.push_back(myConditional);
     myData.parentData->childSymbolicFactors.push_back(mySeparatorFactor);
 
-    sharedNode node = myData.myJTNode;
+    sharedNode node = myData.junctionTreeNode;
     const FastVector<SymbolicConditional::shared_ptr>& childConditionals =
         myData.childSymbolicConditionals;
     node->problemSize_ = (int) (myConditional->size() * symbolicFactors.size());
@@ -99,20 +100,20 @@ struct ConstructorTraversalData {
     // Merge our children if they are in our clique - if our conditional has
     // exactly one fewer parent than our child's conditional.
     const size_t myNrParents = myConditional->nrParents();
-    const size_t nrChildren = node->children.size();
+    const size_t nrChildren = node->nrChildren();
     assert(childConditionals.size() == nrChildren);
 
     // decide which children to merge, as index into children
+    std::vector<size_t> nrFrontals = node->nrFrontalsOfChildren();
     std::vector<bool> merge(nrChildren, false);
-    size_t myNrFrontals = 1, i = 0;
-    BOOST_FOREACH(const sharedNode& child, node->children) {
+    size_t myNrFrontals = 1;
+    for (size_t i = 0;i<nrChildren;i++){
       // Check if we should merge the i^th child
       if (myNrParents + myNrFrontals == childConditionals[i]->nrParents()) {
         // Increment number of frontal variables
-        myNrFrontals += child->orderedFrontalKeys.size();
+        myNrFrontals += nrFrontals[i];
         merge[i] = true;
       }
-      ++i;
     }
 
     // now really merge
@@ -138,17 +139,14 @@ JunctionTree<BAYESTREE, GRAPH>::JunctionTree(
   typedef typename EliminationTree<ETREE_BAYESNET, ETREE_GRAPH>::Node ETreeNode;
   typedef ConstructorTraversalData<BAYESTREE, GRAPH, ETreeNode> Data;
   Data rootData(0);
-  rootData.myJTNode = boost::make_shared<typename Base::Node>(); // Make a dummy node to gather
-                                                                 // the junction tree roots
+  // Make a dummy node to gather the junction tree roots
+  rootData.junctionTreeNode = std::make_shared<typename Base::Node>();
   treeTraversal::DepthFirstForest(eliminationTree, rootData,
       Data::ConstructorTraversalVisitorPre,
       Data::ConstructorTraversalVisitorPostAlg2);
 
   // Assign roots from the dummy node
-  typedef typename JunctionTree<BAYESTREE, GRAPH>::Node Node;
-  const typename Node::Children& children = rootData.myJTNode->children;
-  Base::roots_.reserve(children.size());
-  Base::roots_.insert(Base::roots_.begin(), children.begin(), children.end());
+  this->addChildrenAsRoots(rootData.junctionTreeNode);
 
   // Transfer remaining factors from elimination tree
   Base::remainingFactors_ = eliminationTree.remainingFactors();

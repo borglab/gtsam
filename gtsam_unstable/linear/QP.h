@@ -9,29 +9,34 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * QP.h
- * @brief: Factor graphs of a Quadratic Programming problem
- * @date: Dec 8, 2014
- * @author: thduynguyen
+/**
+ * @file    QP.h
+ * @brief   Factor graphs of a Quadratic Programming problem
+ * @date    Dec 8, 2014
+ * @author  Duy-Nguyen Ta
  */
 
 #pragma once
 
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam_unstable/linear/LinearEqualityFactorGraph.h>
-#include <gtsam_unstable/linear/LinearInequalityFactorGraph.h>
+#include <gtsam_unstable/linear/EqualityFactorGraph.h>
+#include <gtsam_unstable/linear/InequalityFactorGraph.h>
+#include <gtsam/slam/dataset.h>
 
 namespace gtsam {
 
 /**
- * struct contains factor graphs of a Quadratic Programming problem
+ * Struct contains factor graphs of a Quadratic Programming problem
  */
 struct QP {
   GaussianFactorGraph cost; //!< Quadratic cost factors
-  LinearEqualityFactorGraph equalities; //!< linear equality constraints
-  LinearInequalityFactorGraph inequalities; //!< linear inequality constraints
+  EqualityFactorGraph equalities; //!< linear equality constraints: cE(x) = 0
+  InequalityFactorGraph inequalities; //!< linear inequality constraints: cI(x) <= 0
 
+private:
+  mutable VariableIndex cachedCostVariableIndex_;
+
+public:
   /** default constructor */
   QP() :
       cost(), equalities(), inequalities() {
@@ -39,8 +44,8 @@ struct QP {
 
   /** constructor */
   QP(const GaussianFactorGraph& _cost,
-      const LinearEqualityFactorGraph& _linearEqualities,
-      const LinearInequalityFactorGraph& _linearInequalities) :
+      const EqualityFactorGraph& _linearEqualities,
+      const InequalityFactorGraph& _linearInequalities) :
       cost(_cost), equalities(_linearEqualities), inequalities(
           _linearInequalities) {
   }
@@ -51,6 +56,23 @@ struct QP {
     cost.print("Quadratic cost factors: ");
     equalities.print("Linear equality factors: ");
     inequalities.print("Linear inequality factors: ");
+  }
+
+  const VariableIndex& costVariableIndex() const {
+    if (cachedCostVariableIndex_.size() == 0)
+      cachedCostVariableIndex_ = VariableIndex(cost);
+    return cachedCostVariableIndex_;
+  }
+
+  Vector costGradient(Key key, const VectorValues& delta) const {
+    Vector g = Vector::Zero(delta.at(key).size());
+    if (costVariableIndex().find(key) != costVariableIndex().end()) {
+      for (size_t factorIx : costVariableIndex()[key]) {
+        GaussianFactor::shared_ptr factor = cost.at(factorIx);
+        g += factor->gradient(key, delta);
+      }
+    }
+    return g;
   }
 };
 

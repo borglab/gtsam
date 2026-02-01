@@ -4,16 +4,16 @@ function [ measurements ] = project_landmarks( pose, landmarks, K )
 
     import gtsam.*;
 
-    camera = SimpleCamera(pose,K);    
+    camera = PinholeCameraCal3_S2(pose,K);    
     measurements = Values;
     
     for i=1:size(landmarks)-1
         z = camera.project(landmarks.atPoint3(symbol('l',i)));
         
         % check bounding box
-        if z.x < 0 || z.x > 1280
+        if z(1) < 0 || z(1) > 1280
             continue
-        elseif z.y < 0 || z.y > 960
+        elseif z(2) < 0 || z(2) > 960
             continue
         end
            

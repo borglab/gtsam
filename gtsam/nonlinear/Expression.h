@@ -24,8 +24,6 @@
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/VectorSpace.h>
 
-#include <boost/bind.hpp>
-#include <boost/make_shared.hpp>
 #include <map>
 
 // Forward declare tests
@@ -36,6 +34,8 @@ namespace gtsam {
 // Forward declares
 class Values;
 template<typename T> class ExpressionFactor;
+template<typename T> class ExpressionEqualityConstraint;
+class ScalarExpressionInequalityConstraint;
 
 namespace internal {
 template<typename T> class ExecutionTrace;
@@ -56,33 +56,33 @@ public:
 protected:
 
   // Paul's trick shared pointer, polymorphic root of entire expression tree
-  boost::shared_ptr<internal::ExpressionNode<T> > root_;
+  std::shared_ptr<internal::ExpressionNode<T> > root_;
 
   /// Construct with a custom root
-  Expression(const boost::shared_ptr<internal::ExpressionNode<T> >& root) : root_(root) {}
+  Expression(const std::shared_ptr<internal::ExpressionNode<T> >& root) : root_(root) {}
 
 public:
 
   // Expressions wrap trees of functions that can evaluate their own derivatives.
   // The meta-functions below are useful to specify the type of those functions.
   // Example, a function taking a camera and a 3D point and yielding a 2D point:
-  //   Expression<Point2>::BinaryFunction<SimpleCamera,Point3>::type
+  //   Expression<Point2>::BinaryFunction<PinholeCamera<Cal3_S2>,Point3>::type
   template<class A1>
   struct UnaryFunction {
-    typedef boost::function<
+    typedef std::function<
         T(const A1&, typename MakeOptionalJacobian<T, A1>::type)> type;
   };
 
   template<class A1, class A2>
   struct BinaryFunction {
-    typedef boost::function<
+    typedef std::function<
         T(const A1&, const A2&, typename MakeOptionalJacobian<T, A1>::type,
             typename MakeOptionalJacobian<T, A2>::type)> type;
   };
 
   template<class A1, class A2, class A3>
   struct TernaryFunction {
-    typedef boost::function<
+    typedef std::function<
         T(const A1&, const A2&, const A3&,
             typename MakeOptionalJacobian<T, A1>::type,
             typename MakeOptionalJacobian<T, A2>::type,
@@ -143,7 +143,7 @@ public:
   }
 
   /// Return keys that play in this expression
-  std::set<Key> keys() const;
+  KeySet keys() const;
 
   /// Return dimensions for each argument, as a map
   void dims(std::map<Key, int>& map) const;
@@ -156,23 +156,33 @@ public:
    * Notes: this is not terribly efficient, and H should have correct size.
    * The order of the Jacobians is same as keys in either keys() or dims()
    */
-  T value(const Values& values, boost::optional<std::vector<Matrix>&> H =
-      boost::none) const;
+  T value(const Values& values, std::vector<Matrix>* H = nullptr) const;
+
+  /**
+   * An overload of the value function to accept reference to vector of matrices instead of
+   * a pointer to vector of matrices.
+   */
+  T value(const Values& values, std::vector<Matrix>& H) const {
+    return value(values, &H);
+  }
 
   /**
    *  @return a "deep" copy of this Expression
    *  "deep" is in quotes because the ExpressionNode hierarchy is *not* cloned.
    *  The intent is for derived classes to be copied using only a Base pointer.
    */
-  virtual boost::shared_ptr<Expression> clone() const {
-    return boost::make_shared<Expression>(*this);
+  virtual std::shared_ptr<Expression> clone() const {
+    return std::make_shared<Expression>(*this);
   }
 
   /// Return root
-  const boost::shared_ptr<internal::ExpressionNode<T> >& root() const;
+  const std::shared_ptr<internal::ExpressionNode<T> >& root() const;
 
   /// Return size needed for memory buffer in traceExecution
   size_t traceSize() const;
+
+  /// Add another expression to this expression
+  Expression<T>& operator+=(const Expression<T>& e);
 
 protected:
 
@@ -189,7 +199,7 @@ protected:
 
   /// trace execution, very unsafe
   T traceExecution(const Values& values, internal::ExecutionTrace<T>& trace,
-      void* traceStorage) const;
+      char* traceStorage) const;
 
   /// brief Return value and derivatives, reverse AD version
   T valueAndJacobianMap(const Values& values,
@@ -198,6 +208,8 @@ protected:
   // be very selective on who can access these private methods:
   friend class ExpressionFactor<T> ;
   friend class internal::ExpressionNode<T>;
+  friend class ExpressionEqualityConstraint<T>;
+  friend class ScalarExpressionInequalityConstraint;
 
   // and add tests
   friend class ::ExpressionFactorShallowTest;
@@ -210,30 +222,25 @@ protected:
 template <typename T>
 class ScalarMultiplyExpression : public Expression<T> {
   // Check that T is a vector space
-  BOOST_CONCEPT_ASSERT((gtsam::IsVectorSpace<T>));
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<T>);
 
  public:
   explicit ScalarMultiplyExpression(double s, const Expression<T>& e);
 };
 
 /**
- *  A SumExpression is a specialization of Expression that just sums the arguments
+ *  A BinarySumExpression is a specialization of Expression that adds two expressions together
  *  It optimizes the Jacobian calculation for this specific case
  */
 template <typename T>
-class SumExpression : public Expression<T> {
+class BinarySumExpression : public Expression<T> {
   // Check that T is a vector space
-  BOOST_CONCEPT_ASSERT((gtsam::IsVectorSpace<T>));
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<T>);
 
  public:
-  explicit SumExpression(const std::vector<Expression<T>>& expressions);
-
-  // Syntactic sugar to allow e1 + e2 + e3...
-  SumExpression operator+(const Expression<T>& e) const;
-  SumExpression& operator+=(const Expression<T>& e);
-
-  size_t nrTerms() const;
+  explicit BinarySumExpression(const Expression<T>& e1, const Expression<T>& e2);
 };
+
 
 /**
  * Create an expression out of a linear function f:T->A with (constant) Jacobian dTdA
@@ -242,7 +249,7 @@ class SumExpression : public Expression<T> {
  */
 template <typename T, typename A>
 Expression<T> linearExpression(
-    const boost::function<T(A)>& f, const Expression<A>& expression,
+    const std::function<T(A)>& f, const Expression<A>& expression,
     const Eigen::Matrix<double, traits<T>::dimension, traits<A>::dimension>& dTdA) {
   // Use lambda to endow f with a linear Jacobian
   typename Expression<T>::template UnaryFunction<A>::type g =
@@ -272,13 +279,14 @@ ScalarMultiplyExpression<T> operator*(double s, const Expression<T>& e) {
  *    Expression<Point2> a(0), b(1), c = a + b;
  */
 template <typename T>
-SumExpression<T> operator+(const Expression<T>& e1, const Expression<T>& e2) {
-  return SumExpression<T>({e1, e2});
+BinarySumExpression<T> operator+(const Expression<T>& e1, const Expression<T>& e2) {
+  return BinarySumExpression<T>(e1, e2);
 }
 
 /// Construct an expression that subtracts one expression from another
 template <typename T>
-SumExpression<T> operator-(const Expression<T>& e1, const Expression<T>& e2) {
+BinarySumExpression<T> operator-(const Expression<T>& e1, const Expression<T>& e2) {
+  // TODO(frank, abe): Implement an actual negate operator instead of multiplying by -1
   return e1 + (-1.0) * e2;
 }
 

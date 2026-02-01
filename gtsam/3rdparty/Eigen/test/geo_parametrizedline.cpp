@@ -19,12 +19,13 @@ template<typename LineType> void parametrizedline(const LineType& _line)
      ParametrizedLine.h
   */
   using std::abs;
-  typedef typename LineType::Index Index;
   const Index dim = _line.dim();
   typedef typename LineType::Scalar Scalar;
   typedef typename NumTraits<Scalar>::Real RealScalar;
   typedef Matrix<Scalar, LineType::AmbientDimAtCompileTime, 1> VectorType;
   typedef Hyperplane<Scalar,LineType::AmbientDimAtCompileTime> HyperplaneType;
+  typedef Matrix<Scalar, HyperplaneType::AmbientDimAtCompileTime,
+                         HyperplaneType::AmbientDimAtCompileTime> MatrixType;
 
   VectorType p0 = VectorType::Random(dim);
   VectorType p1 = VectorType::Random(dim);
@@ -59,6 +60,31 @@ template<typename LineType> void parametrizedline(const LineType& _line)
   VERIFY_IS_MUCH_SMALLER_THAN(hp.signedDistance(pi), RealScalar(1));
   VERIFY_IS_MUCH_SMALLER_THAN(l0.distance(pi), RealScalar(1));
   VERIFY_IS_APPROX(l0.intersectionPoint(hp), pi);
+
+  // transform
+  if (!NumTraits<Scalar>::IsComplex)
+  {
+    MatrixType rot = MatrixType::Random(dim,dim).householderQr().householderQ();
+    DiagonalMatrix<Scalar,LineType::AmbientDimAtCompileTime> scaling(VectorType::Random());
+    Translation<Scalar,LineType::AmbientDimAtCompileTime> translation(VectorType::Random());
+
+    while(scaling.diagonal().cwiseAbs().minCoeff()<RealScalar(1e-4)) scaling.diagonal() = VectorType::Random();
+
+    LineType l1 = l0;
+    VectorType p3 = l0.pointAt(Scalar(1));
+    VERIFY_IS_MUCH_SMALLER_THAN( l1.transform(rot).distance(rot * p3), Scalar(1) );
+    l1 = l0;
+    VERIFY_IS_MUCH_SMALLER_THAN( l1.transform(rot,Isometry).distance(rot * p3), Scalar(1) );
+    l1 = l0;
+    VERIFY_IS_MUCH_SMALLER_THAN( l1.transform(rot*scaling).distance((rot*scaling) * p3), Scalar(1) );
+    l1 = l0;
+    VERIFY_IS_MUCH_SMALLER_THAN( l1.transform(rot*scaling*translation)
+                                   .distance((rot*scaling*translation) * p3), Scalar(1) );
+    l1 = l0;
+    VERIFY_IS_MUCH_SMALLER_THAN( l1.transform(rot*translation,Isometry)
+                                   .distance((rot*translation) * p3), Scalar(1) );
+  }
+
 }
 
 template<typename Scalar> void parametrizedline_alignment()
@@ -66,9 +92,9 @@ template<typename Scalar> void parametrizedline_alignment()
   typedef ParametrizedLine<Scalar,4,AutoAlign> Line4a;
   typedef ParametrizedLine<Scalar,4,DontAlign> Line4u;
 
-  EIGEN_ALIGN16 Scalar array1[8];
-  EIGEN_ALIGN16 Scalar array2[8];
-  EIGEN_ALIGN16 Scalar array3[8+1];
+  EIGEN_ALIGN_MAX Scalar array1[16];
+  EIGEN_ALIGN_MAX Scalar array2[16];
+  EIGEN_ALIGN_MAX Scalar array3[16+1];
   Scalar* array3u = array3+1;
 
   Line4a *p1 = ::new(reinterpret_cast<void*>(array1)) Line4a;
@@ -84,14 +110,9 @@ template<typename Scalar> void parametrizedline_alignment()
   VERIFY_IS_APPROX(p1->origin(), p3->origin());
   VERIFY_IS_APPROX(p1->direction(), p2->direction());
   VERIFY_IS_APPROX(p1->direction(), p3->direction());
-  
-  #if defined(EIGEN_VECTORIZE) && EIGEN_ALIGN_STATICALLY
-  if(internal::packet_traits<Scalar>::Vectorizable)
-    VERIFY_RAISES_ASSERT((::new(reinterpret_cast<void*>(array3u)) Line4a));
-  #endif
 }
 
-void test_geo_parametrizedline()
+EIGEN_DECLARE_TEST(geo_parametrizedline)
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( parametrizedline(ParametrizedLine<float,2>()) );

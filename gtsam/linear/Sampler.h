@@ -10,84 +10,120 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @brief sampling that can be parameterized using a NoiseModel to generate samples from
  * @file Sampler.h
- * the given distribution
+ * @brief sampling from a NoiseModel
+ * @author Frank Dellaert
  * @author Alex Cunningham
  */
 
 #pragma once
 
+#include <gtsam/base/Manifold.h>
 #include <gtsam/linear/NoiseModel.h>
 
-#include <boost/random.hpp>
+#include <random>
 
 namespace gtsam {
 
 /**
  * Sampling structure that keeps internal random number generators for
  * diagonal distributions specified by NoiseModel
- *
- * This is primarily to allow for variable seeds, and does roughly the same
- * thing as sample() in NoiseModel.
  */
 class GTSAM_EXPORT Sampler {
-protected:
-  /** noiseModel created at generation */
+ protected:
+  /// noiseModel created at generation
   noiseModel::Diagonal::shared_ptr model_;
 
-  /** generator */
-  boost::mt19937_64 generator_;
+  /// generator
+  mutable std::mt19937_64 generator_;
 
-public:
-  typedef boost::shared_ptr<Sampler> shared_ptr;
+  /// Non-owning optional external generator. If non-null, sampling uses this.
+  mutable std::mt19937_64* externalGenerator_ = nullptr;
+
+ public:
+  typedef std::shared_ptr<Sampler> shared_ptr;
+
+  /// @name constructors
+  /// @{
 
   /**
    * Create a sampler for the distribution specified by a diagonal NoiseModel
-   * with a manually specified seed
+   * with a manually specified seed.
    *
-   * NOTE: do not use zero as a seed, it will break the generator
+   * This constructor is convenient for deterministic, throw-away sampling.
+   * If you need stateful sampling across calls or across multiple Sampler
+   * instances, prefer the RNG-based constructor and manage the RNG yourself.
+   *
+   * NOTE: do not use zero as a seed, it will break the generator.
    */
-  Sampler(const noiseModel::Diagonal::shared_ptr& model, int32_t seed = 42u);
+  explicit Sampler(const noiseModel::Diagonal::shared_ptr& model,
+                   uint_fast64_t seed = 42u);
 
   /**
-   * Create a sampler for a distribution specified by a vector of sigmas directly
+   * Create a sampler that draws from a caller-supplied RNG (stateful).
    *
-   * NOTE: do not use zero as a seed, it will break the generator
+   * The RNG is non-owning and must outlive this Sampler.
    */
-  Sampler(const Vector& sigmas, int32_t seed = 42u);
+  explicit Sampler(const noiseModel::Diagonal::shared_ptr& model,
+                   std::mt19937_64& rng);
 
   /**
-   * Create a sampler without a given noisemodel - pass in to sample
+   * Create a sampler for a distribution specified by a vector of sigmas
+   * directly.
    *
-   * NOTE: do not use zero as a seed, it will break the generator
+   * This constructor is convenient for deterministic, throw-away sampling.
+   * If you need stateful sampling across calls or across multiple Sampler
+   * instances, prefer the RNG-based constructor and manage the RNG yourself.
+   *
+   * NOTE: do not use zero as a seed, it will break the generator.
    */
-  Sampler(int32_t seed = 42u);
+  explicit Sampler(const Vector& sigmas, uint_fast64_t seed = 42u);
 
-  /** access functions */
-  size_t dim() const { assert(model_.get()); return model_->dim(); }
-  Vector sigmas() const { assert(model_.get()); return model_->sigmas(); }
+  /**
+   * Create a sampler for sigmas that draws from a caller-supplied RNG
+   * (stateful).
+   *
+   * The RNG is non-owning and must outlive this Sampler.
+   */
+  explicit Sampler(const Vector& sigmas, std::mt19937_64& rng);
+
+  /// @}
+  /// @name access functions
+  /// @{
+
+  size_t dim() const { return model_->dim(); }
+
+  Vector sigmas() const { return model_->sigmas(); }
+
   const noiseModel::Diagonal::shared_ptr& model() const { return model_; }
 
-  /**
-   * sample from distribution
-   * NOTE: not const due to need to update the underlying generator
-   */
-  Vector sample();
+  /// @}
+  /// @name basic functionality
+  /// @{
+
+  /// sample from distribution
+  Vector sample() const;
 
   /**
-   * Sample from noisemodel passed in as an argument,
-   * can be used without having initialized a model for the system.
+   * Perturb a value by sampling in its tangent space and applying `retract`.
    *
-   * NOTE: not const due to need to update the underlying generator
+   * The supplied noise model must match the dimensionality expected by `T`.
    */
-  Vector sampleNewModel(const noiseModel::Diagonal::shared_ptr& model);
+  template <typename T>
+  T perturb(const T& value) const {
+    return traits<T>::Retract(value, sample());
+  }
 
-protected:
+  /// sample with given random number generator
+  static Vector sampleDiagonal(const Vector& sigmas, std::mt19937_64* rng);
+  /// @}
 
-  /** given sigmas for a diagonal model, returns a sample */
-  Vector sampleDiagonal(const Vector& sigmas);
-
+ protected:
+  /**
+   * Given sigmas for a diagonal model, returns a sample.
+   * Uses external RNG if available.
+   * */
+  Vector sampleDiagonal(const Vector& sigmas) const;
 };
 
-} // \namespace gtsam
+}  // namespace gtsam

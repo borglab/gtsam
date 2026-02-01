@@ -30,6 +30,7 @@
 #include <gtsam/slam/dataset.h>
 #include <gtsam/geometry/Cal3_S2Stereo.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/utilities.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
@@ -43,8 +44,6 @@ using namespace std;
 using namespace gtsam;
 
 int main(int argc, char** argv){
-
-  typedef PinholePose<Cal3_S2> Camera;
   typedef SmartProjectionPoseFactor<Cal3_S2> SmartFactor;
 
   Values initial_estimate;
@@ -104,7 +103,7 @@ int main(int argc, char** argv){
   //constrain the first pose such that it cannot change from its original value during optimization
   // NOTE: NonlinearEquality forces the optimizer to use QR rather than Cholesky
   // QR is much slower than Cholesky, but numerically more stable
-  graph.push_back(NonlinearEquality<Pose3>(1,firstPose));
+  graph.emplace_shared<NonlinearEquality<Pose3> >(1,firstPose);
 
   LevenbergMarquardtParams params;
   params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
@@ -112,11 +111,11 @@ int main(int argc, char** argv){
 
   cout << "Optimizing" << endl;
   //create Levenberg-Marquardt optimizer to optimize the factor graph
-  LevenbergMarquardtOptimizer optimizer = LevenbergMarquardtOptimizer(graph, initial_estimate, params);
+  LevenbergMarquardtOptimizer optimizer(graph, initial_estimate, params);
   Values result = optimizer.optimize();
 
   cout << "Final result sample:" << endl;
-  Values pose_values = result.filter<Pose3>();
+  Values pose_values = utilities::allPose3s(result);
   pose_values.print("Final camera poses:\n");
 
   return 0;

@@ -17,7 +17,7 @@ macro(ei_add_blas_test testname)
   add_test(${testname} "${Eigen_SOURCE_DIR}/blas/testing/runblastest.sh" "${testname}" "${Eigen_SOURCE_DIR}/blas/testing/${testname}.dat")
   add_dependencies(buildtests ${targetname})
   
-endmacro(ei_add_blas_test)
+endmacro()
 
 ei_add_blas_test(sblat1)
 ei_add_blas_test(sblat2)

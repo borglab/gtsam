@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -23,6 +23,7 @@
 #include <gtsam/base/Testable.h>
 
 #include <CppUnitLite/TestHarness.h>
+#include <iostream>
 
 using namespace std;
 using namespace gtsam;
@@ -76,7 +77,7 @@ template<> struct traits<CallConfig> : public Testable<CallConfig> {};
 
 struct Record: public internal::CallRecordImplementor<Record, Cols> {
   Record() : cc(0, 0) {}
-  virtual ~Record() {
+  ~Record() override {
   }
   void print(const std::string& indent) const {
   }
@@ -97,7 +98,8 @@ struct Record: public internal::CallRecordImplementor<Record, Cols> {
   friend struct internal::CallRecordImplementor;
 };
 
-internal::JacobianMap & NJM= *static_cast<internal::JacobianMap *>(NULL);
+internal::JacobianMap* NJM_ptr = static_cast<internal::JacobianMap *>(nullptr);
+internal::JacobianMap & NJM = *NJM_ptr;
 
 /* ************************************************************************* */
 typedef Eigen::Matrix<double, Eigen::Dynamic, Cols> DynRowMat;
@@ -151,7 +153,7 @@ TEST(CallRecord, virtualReverseAdDispatching) {
   }
   {
     const int Rows = 6;
-    record.CallRecord::reverseAD2(Eigen::Matrix<double, Rows, Cols>(), NJM);
+    record.CallRecord::reverseAD2(Eigen::Matrix<double, Rows, Cols>::Zero(), NJM);
     EXPECT((assert_equal(record.cc, CallConfig(Rows, Cols))));
     record.CallRecord::reverseAD2(DynRowMat(Rows, Cols), NJM);
     EXPECT((assert_equal(record.cc, CallConfig(Eigen::Dynamic, Cols, Rows, Cols))));
@@ -166,4 +168,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

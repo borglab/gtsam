@@ -34,7 +34,7 @@
 //  timer  -------------------------------------------------------------------//
 
 //  A timer object measures CPU time.
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
 
 #define NOMINMAX
 #include <windows.h>
@@ -87,6 +87,48 @@
 
  }; // Portable_Timer
 
+#elif defined(__APPLE__)
+#include <CoreServices/CoreServices.h>
+#include <mach/mach_time.h>
+
+
+class Portable_Timer
+{
+ public:
+
+  Portable_Timer()
+  {
+  }
+
+  void start()
+  {
+    m_start_time = double(mach_absolute_time())*1e-9;;
+
+  }
+
+  void stop()
+  {
+    m_stop_time = double(mach_absolute_time())*1e-9;;
+
+  }
+
+  double elapsed()
+  {
+    return  user_time();
+  }
+
+  double user_time()
+  {
+    return m_stop_time - m_start_time;
+  }
+
+
+private:
+
+  double m_stop_time, m_start_time;
+
+}; // Portable_Timer (Apple)
+
 #else
 
 #include <sys/time.h>
@@ -138,7 +180,7 @@ private:
   int m_clkid;
   double m_stop_time, m_start_time;
 
-}; // Portable_Timer
+}; // Portable_Timer (Linux)
 
 #endif
 

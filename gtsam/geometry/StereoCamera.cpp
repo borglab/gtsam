@@ -37,9 +37,12 @@ namespace gtsam {
   StereoPoint2 StereoCamera::project2(const Point3& point,
       OptionalJacobian<3,6> H1, OptionalJacobian<3,3> H2) const {
 
-    const Point3 q = leftCamPose_.transform_to(point);
+    const Point3 q = leftCamPose_.transformTo(point);
 
-    if ( q.z() <= 0 ) throw StereoCheiralityException();
+#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
+    if (q.z() <= 0)
+      throw StereoCheiralityException();
+#endif
 
     // get calibration
     const Cal3_S2Stereo& K = *K_;
@@ -91,7 +94,7 @@ namespace gtsam {
     double Z = K_->baseline() * K_->fx() / (measured[0] - measured[1]);
     double X = Z * (measured[0] - K_->px()) / K_->fx();
     double Y = Z * (measured[2] - K_->py()) / K_->fy();
-    Point3 point = leftCamPose_.transform_from(Point3(X, Y, Z));
+    Point3 point = leftCamPose_.transformFrom(Point3(X, Y, Z));
     return point;
   }
 
@@ -117,7 +120,7 @@ namespace gtsam {
           -z_partial_uR, z_partial_uR, 0;
 
       Matrix3 D_point_local;
-      const Point3 point = leftCamPose_.transform_from(local, H1, D_point_local);
+      const Point3 point = leftCamPose_.transformFrom(local, H1, D_point_local);
 
       if(H2) {
         *H2 = D_point_local * D_local_z;
@@ -126,7 +129,7 @@ namespace gtsam {
       return point;
     }
 
-    return leftCamPose_.transform_from(local);
+    return leftCamPose_.transformFrom(local);
   }
 
 }

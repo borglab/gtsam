@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file SymbolicISAM.h
+ * @file GaussianISAM.h
  * @date July 29, 2013
  * @author Frank Dellaert
  * @author Richard Roberts
@@ -20,6 +20,7 @@
 
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/inference/ISAM.h>
+#include <gtsam/base/Testable.h>
 
 namespace gtsam {
 
@@ -28,7 +29,7 @@ namespace gtsam {
   public:
     typedef ISAM<GaussianBayesTree> Base;
     typedef GaussianISAM This;
-    typedef boost::shared_ptr<This> shared_ptr;
+    typedef std::shared_ptr<This> shared_ptr;
 
     /// @name Standard Constructors
     /// @{
@@ -42,5 +43,9 @@ namespace gtsam {
     /// @}
 
   };
+
+  /// traits
+  template <>
+  struct traits<GaussianISAM> : public Testable<GaussianISAM> {};
 
 }

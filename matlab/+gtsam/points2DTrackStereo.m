@@ -38,7 +38,7 @@ graph.add(PriorFactorPose3(symbol('x', 1), cameraPoses{1}, posePriorNoise));
 %% initialize graph and values
 initialEstimate = Values;
 for i = 1:pointsNum
-    point_j = points3d{i}.data.retract(0.05*randn(3,1));
+    point_j = points3d{i}.data + (0.05*randn(3,1));
     initialEstimate.insert(symbol('p', i), point_j);    
 end
 

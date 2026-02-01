@@ -21,7 +21,6 @@
 #include <gtsam/slam/InitializePose3.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/geometry/Pose3.h>
 #include <CppUnitLite/TestHarness.h>
@@ -30,7 +29,6 @@
 
 using namespace std;
 using namespace gtsam;
-using namespace boost::assign;
 
 static Symbol x0('x', 0), x1('x', 1), x2('x', 2), x3('x', 3);
 static SharedNoiseModel model(noiseModel::Isotropic::Sigma(6, 0.1));
@@ -67,7 +65,25 @@ NonlinearFactorGraph graph() {
   g.add(BetweenFactor<Pose3>(x2, x3, pose2.between(pose3), model));
   g.add(BetweenFactor<Pose3>(x2, x0, pose2.between(pose0), model));
   g.add(BetweenFactor<Pose3>(x0, x3, pose0.between(pose3), model));
-  g.add(PriorFactor<Pose3>(x0, pose0, model));
+  g.addPrior(x0, pose0, model);
+  return g;
+}
+
+NonlinearFactorGraph graph2() {
+  NonlinearFactorGraph g;
+  g.add(BetweenFactor<Pose3>(x0, x1, pose0.between(pose1), noiseModel::Isotropic::Precision(6, 1.0)));
+  g.add(BetweenFactor<Pose3>(x1, x2, pose1.between(pose2), noiseModel::Isotropic::Precision(6, 1.0)));
+  g.add(BetweenFactor<Pose3>(x2, x3, pose2.between(pose3), noiseModel::Isotropic::Precision(6, 1.0)));
+  // random pose, but zero information
+  auto noise_zero_info = noiseModel::Isotropic::Precision(6, 0.0);
+  g.add(BetweenFactor<Pose3>(
+      x2, x0, Pose3(Rot3::Ypr(0.1, 0.0, 0.1), Point3(0.0, 0.0, 0.0)),
+      noise_zero_info));
+  // random pose, but zero information
+  g.add(BetweenFactor<Pose3>(
+      x0, x3, Pose3(Rot3::Ypr(0.5, -0.2, 0.2), Point3(10, 20, 30)),
+      noise_zero_info));
+  g.addPrior(x0, pose0, model);
   return g;
 }
 }
@@ -92,13 +108,26 @@ TEST( InitializePose3, orientations ) {
 }
 
 /* *************************************************************************** */
+TEST( InitializePose3, orientationsPrecisions ) {
+  NonlinearFactorGraph pose3Graph = InitializePose3::buildPose3graph(simple::graph2());
+
+  Values initial = InitializePose3::computeOrientationsChordal(pose3Graph);
+
+  // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
+  EXPECT(assert_equal(simple::R0, initial.at<Rot3>(x0), 1e-6));
+  EXPECT(assert_equal(simple::R1, initial.at<Rot3>(x1), 1e-6));
+  EXPECT(assert_equal(simple::R2, initial.at<Rot3>(x2), 1e-6));
+  EXPECT(assert_equal(simple::R3, initial.at<Rot3>(x3), 1e-6));
+}
+
+/* *************************************************************************** */
 TEST( InitializePose3, orientationsGradientSymbolicGraph ) {
   NonlinearFactorGraph pose3Graph = InitializePose3::buildPose3graph(simple::graph());
 
   KeyVectorMap adjEdgesMap;
   KeyRotMap factorId2RotMap;
 
-  InitializePose3::createSymbolicGraph(adjEdgesMap, factorId2RotMap, pose3Graph);
+  InitializePose3::createSymbolicGraph(pose3Graph, &adjEdgesMap, &factorId2RotMap);
 
   EXPECT_DOUBLES_EQUAL(adjEdgesMap.at(x0)[0], 0, 1e-9);
   EXPECT_DOUBLES_EQUAL(adjEdgesMap.at(x0)[1], 3, 1e-9);
@@ -126,7 +155,7 @@ TEST( InitializePose3, orientationsGradientSymbolicGraph ) {
 /* *************************************************************************** */
 TEST( InitializePose3, singleGradient ) {
   Rot3 R1 = Rot3();
-  Matrix M = Matrix3::Zero();
+  Matrix M = Z_3x3;
   M(0,1) = -1; M(1,0) = 1; M(2,2) = 1;
   Rot3 R2 = Rot3(M);
   double a = 6.010534238540223;
@@ -202,10 +231,8 @@ TEST( InitializePose3, orientationsGradient ) {
   //  writeG2o(pose3Graph, givenPoses, g2oFile);
 
   const string matlabResultsfile = findExampleDataFile("simpleGraph10gradIter");
-  NonlinearFactorGraph::shared_ptr matlabGraph;
-  Values::shared_ptr matlabValues;
   bool is3D = true;
-  boost::tie(matlabGraph, matlabValues) = readG2o(matlabResultsfile, is3D);
+  const auto [matlabGraph, matlabValues] = readG2o(matlabResultsfile, is3D);
 
   Rot3 R0Expected = matlabValues->at<Pose3>(1).rotation();
   EXPECT(assert_equal(R0Expected, orientations.at<Rot3>(x0), 1e-4));
@@ -235,20 +262,18 @@ TEST( InitializePose3, posesWithGivenGuess ) {
 }
 
 /* ************************************************************************* */
-TEST( InitializePose3, initializePoses )
-{
+TEST(InitializePose3, initializePoses) {
   const string g2oFile = findExampleDataFile("pose3example-grid");
-  NonlinearFactorGraph::shared_ptr inputGraph;
-  Values::shared_ptr expectedValues;
   bool is3D = true;
-  boost::tie(inputGraph, expectedValues) = readG2o(g2oFile, is3D);
-  noiseModel::Unit::shared_ptr priorModel = noiseModel::Unit::Create(6);
-  inputGraph->add(PriorFactor<Pose3>(0, Pose3(), priorModel));
+  const auto [inputGraph, posesInFile] = readG2o(g2oFile, is3D);
+
+  auto priorModel = noiseModel::Unit::Create(6);
+  inputGraph->addPrior(0, Pose3(), priorModel);
 
   Values initial = InitializePose3::initialize(*inputGraph);
-  EXPECT(assert_equal(*expectedValues,initial,0.1));  // TODO(frank): very loose !!
+  EXPECT(assert_equal(*posesInFile, initial,
+                      0.1));  // TODO(frank): very loose !!
 }
-
 
 /* ************************************************************************* */
 int main() {

@@ -1,0 +1,99 @@
+name: Linux CI
+
+on:
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - '**.ipynb'
+      - 'myst.yml'
+
+# Cancels any in-progress workflow runs for the same PR when a new push is made,
+# allowing the runner to become available more quickly for the latest changes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.name }} ${{ matrix.build_type }}
+    runs-on: ${{ matrix.os }}
+    container:
+      image: borglab/gtsam-ci:${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.version }}
+      env:
+        CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
+        GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
+      volumes:
+        - ${{ github.workspace }}:/gtsam
+    strategy:
+      fail-fast: true
+      matrix:
+        # Github Actions requires a single row to be added to the build matrix.
+        # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
+        name: [
+            # "Bracket" the versions from GCC [11-14] and Clang [11-16]
+            ubuntu-22.04-gcc-11,
+            ubuntu-22.04-clang-11,
+            ubuntu-24.04-gcc-14,
+            ubuntu-24.04-clang-16,
+            ubuntu-24.04-clang-16-boost,
+            ubuntu-24.04-clang-16-geographiclib,
+          ]
+
+        build_type: [Debug, Release]
+        build_unstable: [ON]
+        include:
+          - name: ubuntu-22.04-gcc-11
+            os: ubuntu-22.04
+            compiler: gcc
+            version: "11"
+
+          - name: ubuntu-22.04-clang-11
+            os: ubuntu-22.04
+            compiler: clang
+            version: "11"
+
+          - name: ubuntu-24.04-gcc-14
+            os: ubuntu-24.04
+            compiler: gcc
+            version: "14"
+
+          - name: ubuntu-24.04-clang-16
+            os: ubuntu-24.04
+            compiler: clang
+            version: "16"
+
+          - name: ubuntu-24.04-clang-16-boost
+            os: ubuntu-24.04
+            compiler: clang
+            version: "16"
+
+          - name: ubuntu-24.04-clang-16-geographiclib
+            os: ubuntu-24.04
+            compiler: clang
+            version: "16"
+
+        exclude:
+          - name: ubuntu-24.04-clang-16-boost
+            build_type: Debug
+          - name: ubuntu-24.04-clang-16-geographiclib
+            build_type: Debug
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set Boost Environment (Conditional)
+        if : contains(matrix.name, 'boost') && matrix.build_type == 'Release'
+        run: |
+          echo "GTSAM_USE_BOOST_FEATURES=ON" >> $GITHUB_ENV
+          echo "GTSAM_ENABLE_BOOST_SERIALIZATION=ON" >> $GITHUB_ENV
+          echo "Using Boost features."
+      
+      - name: Set GeographicLib Environment (Conditional)
+        if: contains(matrix.name, 'geographiclib') && matrix.build_type == 'Release'
+        run: |
+          echo "GTSAM_ENABLE_GEOGRAPHICLIB=ON" >> $GITHUB_ENV
+
+      - name: Build and Test
+        run: |
+          .github/scripts/unix.sh -t

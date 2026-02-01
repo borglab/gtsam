@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -19,7 +19,6 @@
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/base/testLie.h>
 #include <CppUnitLite/TestHarness.h>
-#include <boost/tuple/tuple.hpp>
 #include <iostream>
 
 using namespace std;
@@ -76,22 +75,6 @@ TEST(Vector, copy )
   double data[] = {10,20};
   Vector b(2);
   copy(data,data+2,b.data());
-  EXPECT(assert_equal(a, b));
-}
-
-/* ************************************************************************* */
-TEST(Vector, zero1 )
-{
-  Vector v = Vector::Zero(2);
-  EXPECT(zero(v));
-}
-
-/* ************************************************************************* */
-TEST(Vector, zero2 )
-{
-  Vector a = zero(2);
-  Vector b = Vector::Zero(2);
-  EXPECT(a==b);
   EXPECT(assert_equal(a, b));
 }
 
@@ -171,8 +154,7 @@ TEST(Vector, weightedPseudoinverse )
   Vector weights = sigmas.array().square().inverse();
 
   // perform solve
-  Vector actual; double precision;
-  boost::tie(actual, precision) = weightedPseudoinverse(x, weights);
+  const auto [actual, precision] = weightedPseudoinverse(x, weights);
 
   // construct expected
   Vector expected(2);
@@ -181,7 +163,7 @@ TEST(Vector, weightedPseudoinverse )
 
   // verify
   EXPECT(assert_equal(expected,actual));
-  EXPECT(fabs(expPrecision-precision) < 1e-5);
+  EXPECT(std::abs(expPrecision-precision) < 1e-5);
 }
 
 /* ************************************************************************* */
@@ -196,8 +178,7 @@ TEST(Vector, weightedPseudoinverse_constraint )
   sigmas(0) = 0.0; sigmas(1) = 0.2;
   Vector weights = sigmas.array().square().inverse();
   // perform solve
-  Vector actual; double precision;
-  boost::tie(actual, precision) = weightedPseudoinverse(x, weights);
+  const auto [actual, precision] = weightedPseudoinverse(x, weights);
 
   // construct expected
   Vector expected(2);
@@ -214,8 +195,7 @@ TEST(Vector, weightedPseudoinverse_nan )
   Vector a = (Vector(4) << 1., 0., 0., 0.).finished();
   Vector sigmas = (Vector(4) << 0.1, 0.1, 0., 0.).finished();
   Vector weights = sigmas.array().square().inverse();
-  Vector pseudo; double precision;
-  boost::tie(pseudo, precision) = weightedPseudoinverse(a, weights);
+  const auto [pseudo, precision] = weightedPseudoinverse(a, weights);
 
   Vector expected = (Vector(4) << 1., 0., 0.,0.).finished();
   EXPECT(assert_equal(expected, pseudo));
@@ -236,8 +216,8 @@ TEST(Vector, axpy )
   Vector x = Vector3(10., 20., 30.);
   Vector y0 = Vector3(2.0, 5.0, 6.0);
   Vector y1 = y0, y2 = y0;
-  axpy(0.1,x,y1);
-  axpy(0.1,x,y2.head(3));
+  y1 += 0.1 * x;
+  y2.head(3) += 0.1 * x;
   Vector expected = Vector3(3.0, 7.0, 9.0);
   EXPECT(assert_equal(expected,y1));
   EXPECT(assert_equal(expected,Vector(y2)));
@@ -256,7 +236,7 @@ TEST(Vector, equals )
 TEST(Vector, greater_than )
 {
   Vector v1 = Vector3(1.0, 2.0, 3.0),
-       v2 = zero(3);
+       v2 = Z_3x1;
   EXPECT(greaterThanOrEqual(v1, v1)); // test basic greater than
   EXPECT(greaterThanOrEqual(v1, v2)); // test equals
 }
@@ -286,11 +266,16 @@ TEST(Vector, linear_dependent3 )
 }
 
 //******************************************************************************
-TEST(Vector, IsVectorSpace) {
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<Vector5>));
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<Vector>));
+TEST(Vector, VectorIsVectorSpace) {
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Vector5>);
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Vector>);
+}
+
+TEST(Vector, RowVectorIsVectorSpace) {
+#if GTSAM_USE_BOOST_FEATURES
   typedef Eigen::Matrix<double,1,-1> RowVector;
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<RowVector>));
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<RowVector>);
+#endif
 }
 
 /* ************************************************************************* */

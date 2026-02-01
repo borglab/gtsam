@@ -17,18 +17,23 @@
 
 #pragma once
 
+#include <gtsam/linear/Scatter.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/ConcurrentMap.h>
 #include <gtsam/base/FastVector.h>
 #include <gtsam/global_includes.h>
-#include <gtsam/inference/Ordering.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
+
+
+#include <map>
+#include <string>
+#include <iosfwd>
 
 namespace gtsam {
 
   /**
-   * This class represents a collection of vector-valued variables associated
+   * VectorValues represents a collection of vector-valued variables associated
    * each with a unique integer index.  It is typically used to store the variables
    * of a GaussianFactorGraph.  Optimizing a GaussianFactorGraph or GaussianBayesNet
    * returns this class.
@@ -42,16 +47,12 @@ namespace gtsam {
    *  - \ref exists (Key) to check if a variable is present
    *  - Other facilities like iterators, size(), dim(), etc.
    *
-   * Indices can be non-consecutive and inserted out-of-order, but you should not
-   * use indices that are larger than a reasonable array size because the indices
-   * correspond to positions in an internal array.
-   *
    * Example:
    * \code
      VectorValues values;
-     values.insert(3, Vector3(1.0, 2.0, 3.0));
-     values.insert(4, Vector2(4.0, 5.0));
-     values.insert(0, (Vector(4) << 6.0, 7.0, 8.0, 9.0).finished());
+     values.emplace(3, Vector3(1.0, 2.0, 3.0));
+     values.emplace(4, Vector2(4.0, 5.0));
+     values.emplace(0, (Vector(4) << 6.0, 7.0, 8.0, 9.0).finished());
 
      // Prints [ 3.0 4.0 ]
      gtsam::print(values[1]);
@@ -63,69 +64,59 @@ namespace gtsam {
    *
    * <h2>Advanced Interface and Performance Information</h2>
    *
-   * Internally, all vector values are stored as part of one large vector.  In
-   * gtsam this vector is always pre-allocated for efficiency, using the
-   * advanced interface described below.  Accessing and modifying already-allocated
-   * values is \f$ O(1) \f$.  Using the insert() function of the standard interface
-   * is slow because it requires re-allocating the internal vector.
-   *
-   * For advanced usage, or where speed is important:
-   *  - Allocate space ahead of time using a pre-allocating constructor
-   *    (\ref AdvancedConstructors "Advanced Constructors"), Zero(),
-   *    SameStructure(), resize(), or append().  Do not use
-   *    insert(Key, const Vector&), which always has to re-allocate the
-   *    internal vector.
-   *  - The vector() function permits access to the underlying Vector, for
-   *    doing mathematical or other operations that require all values.
-   *  - operator[]() returns a SubVector view of the underlying Vector,
-   *    without copying any data.
-   *
-   * Access is through the variable index j, and returns a SubVector,
+   * Access is through the variable Key j, and returns a SubVector,
    * which is a view on the underlying data structure.
    *
    * This class is additionally used in gradient descent and dog leg to store the gradient.
-   * \nosubgrouping
+   * @ingroup linear
    */
   class GTSAM_EXPORT VectorValues {
-  protected:
+   protected:
     typedef VectorValues This;
-    typedef ConcurrentMap<Key, Vector> Values; ///< Typedef for the collection of Vectors making up a VectorValues
-    Values values_; ///< Collection of Vectors making up this VectorValues
+    typedef ConcurrentMap<Key, Vector> Values;  ///< Collection of Vectors making up a VectorValues
+    Values values_;                             ///< Vectors making up this VectorValues
 
-  public:
-    typedef Values::iterator iterator; ///< Iterator over vector values
-    typedef Values::const_iterator const_iterator; ///< Const iterator over vector values
-    //typedef Values::reverse_iterator reverse_iterator; ///< Reverse iterator over vector values
-    //typedef Values::const_reverse_iterator const_reverse_iterator; ///< Const reverse iterator over vector values
-    typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
-    typedef Values::value_type value_type; ///< Typedef to pair<Key, Vector>, a key-value pair
-    typedef value_type KeyValuePair; ///< Typedef to pair<Key, Vector>, a key-value pair
-    typedef std::map<Key,size_t> Dims;
+   public:
+    typedef Values::iterator iterator;              ///< Iterator over vector values
+    typedef Values::const_iterator const_iterator;  ///< Const iterator over vector values
+    typedef std::shared_ptr<This> shared_ptr;       ///< shared_ptr to this class
+    typedef Values::value_type value_type;          ///< Typedef to pair<Key, Vector>
+    typedef value_type KeyValuePair;                ///< Typedef to pair<Key, Vector>
+    typedef std::map<Key, size_t> Dims;             ///< Keyed vector dimensions
 
     /// @name Standard Constructors
     /// @{
 
-    /**
-     * Default constructor creates an empty VectorValues.
-     */
+    /// Default constructor creates an empty VectorValues.
     VectorValues() {}
 
-    /** Merge two VectorValues into one, this is more efficient than inserting elements one by one. */
+    /// Construct from initializer list.
+    VectorValues(std::initializer_list<std::pair<Key, Vector>> init)
+        : values_(init.begin(), init.end()) {}
+
+    /** Merge two VectorValues into one, this is more efficient than inserting
+     * elements one by one. */
     VectorValues(const VectorValues& first, const VectorValues& second);
 
     /** Create from another container holding pair<Key,Vector>. */
     template<class CONTAINER>
     explicit VectorValues(const CONTAINER& c) : values_(c.begin(), c.end()) {}
 
-    /** Implicit copy constructor to specialize the explicit constructor from any container. */
+    /** Copy constructor to specialize the explicit constructor from any container. */
     VectorValues(const VectorValues& c) : values_(c.values_) {}
 
     /** Create from a pair of iterators over pair<Key,Vector>. */
     template<typename ITERATOR>
     VectorValues(ITERATOR first, ITERATOR last) : values_(first, last) {}
 
-    /** Constructor from Vector. */
+    /// Constructor from Vector, with Dims
     VectorValues(const Vector& c, const Dims& dims);
+
+    /// Constructor from Vector, with Scatter
+    VectorValues(const Vector& c, const Scatter& scatter);
+
+    // We override the copy constructor; expicitly declare operator=
+    VectorValues& operator=(const VectorValues& other) = default;
 
     /** Create a VectorValues with the same structure as \c other, but filled with zeros. */
     static VectorValues Zero(const VectorValues& other);
@@ -143,20 +134,26 @@ namespace gtsam {
     /** Check whether a variable with key \c j exists. */
     bool exists(Key j) const { return find(j) != end(); }
 
-    /** Read/write access to the vector value with key \c j, throws std::out_of_range if \c j does not exist, identical to operator[](Key). */
+    /**
+     * Read/write access to the vector value with key \c j, throws
+     * std::out_of_range if \c j does not exist, identical to operator[](Key).
+     */
     Vector& at(Key j) {
       iterator item = find(j);
-      if(item == end())
+      if (item == end())
         throw std::out_of_range(
         "Requested variable '" + DefaultKeyFormatter(j) + "' is not in this VectorValues.");
       else
         return item->second;
     }
 
-    /** Access the vector value with key \c j (const version), throws std::out_of_range if \c j does not exist, identical to operator[](Key). */
+    /**
+     * Access the vector value with key \c j (const version), throws
+     * std::out_of_range if \c j does not exist, identical to operator[](Key).
+     */
     const Vector& at(Key j) const {
       const_iterator item = find(j);
-      if(item == end())
+      if (item == end())
         throw std::out_of_range(
         "Requested variable '" + DefaultKeyFormatter(j) + "' is not in this VectorValues.");
       else
@@ -174,15 +171,7 @@ namespace gtsam {
     /** For all key/value pairs in \c values, replace values with corresponding keys in this class
     *   with those in \c values.  Throws std::out_of_range if any keys in \c values are not present
     *   in this class. */
-    void update(const VectorValues& values);
-
-    /** Insert a vector \c value with key \c j.  Throws an invalid_argument exception if the key \c
-     *  j is already used.
-     * @param value The vector to be inserted.
-     * @param j The index with which the value will be associated. */
-    iterator insert(Key j, const Vector& value) {
-      return insert(std::make_pair(j, value));
-    }
+    VectorValues& update(const VectorValues& values);
 
     /** Insert a vector \c value with key \c j.  Throws an invalid_argument exception if the key \c
      *  j is already used.
@@ -190,43 +179,95 @@ namespace gtsam {
      * @param j The index with which the value will be associated. */
     iterator insert(const std::pair<Key, Vector>& key_value);
 
+    /** Emplace a vector \c value with key \c j.  Throws an invalid_argument exception if the key \c
+     *  j is already used.
+     * @param value The vector to be inserted.
+     * @param j The index with which the value will be associated. */
+    template<class... Args>
+    inline std::pair<VectorValues::iterator, bool> emplace(Key j, Args&&... args) {
+#if ! defined(GTSAM_USE_TBB) || defined (TBB_GREATER_EQUAL_2020)
+      return values_.emplace(std::piecewise_construct, std::forward_as_tuple(j), std::forward_as_tuple(args...));
+#else
+      return values_.insert({j, Vector(std::forward<Args>(args)...)});
+#endif
+    }
+
+    /** Insert a vector \c value with key \c j.  Throws an invalid_argument exception if the key \c
+     *  j is already used.
+     * @param value The vector to be inserted.
+     * @param j The index with which the value will be associated. */
+    iterator insert(Key j, const Vector& value) {
+      return insert({j, value});
+    }
+
     /** Insert all values from \c values.  Throws an invalid_argument exception if any keys to be
      *  inserted are already used. */
-    void insert(const VectorValues& values);
+    VectorValues& insert(const VectorValues& values);
+
+    /** Insert values from a concatenated vector using an explicit key order and dims.
+     * This method splits the concatenated vector according to the dimensions
+     * specified in dims and inserts each segment with the corresponding key from keys.
+     * @param values The concatenated vector to insert.
+     * @param keys The keys in order corresponding to segments in values.
+     * @param dims The dimensions map specifying the size of each key's vector.
+     * @return Reference to this VectorValues for chaining.
+     * @throws invalid_argument if any key already exists or if dimensions don't match. */
+    VectorValues& insert(const Vector& values, const KeyVector& keys,
+                         const Dims& dims);
 
     /** insert that mimics the STL map insert - if the value already exists, the map is not modified
      *  and an iterator to the existing value is returned, along with 'false'.  If the value did not
      *  exist, it is inserted and an iterator pointing to the new element, along with 'true', is
      *  returned. */
-    std::pair<iterator, bool> tryInsert(Key j, const Vector& value) {
-      return values_.insert(std::make_pair(j, value)); }
+    inline std::pair<iterator, bool> tryInsert(Key j, const Vector& value) {
+#ifdef TBB_GREATER_EQUAL_2020
+      return values_.emplace(j, value);
+#else
+      return values_.insert({j, value});
+#endif
+    }
+
+    /// insert_or_assign that mimics the STL map insert_or_assign - if the value already exists, the
+    /// map is updated, otherwise a new value is inserted at j.
+    void insert_or_assign(Key j, const Vector& value) {
+      if (!tryInsert(j, value).second) {
+        (*this)[j] = value;
+      }
+    }
 
     /** Erase the vector with the given key, or throw std::out_of_range if it does not exist */
     void erase(Key var) {
-      if(values_.unsafe_erase(var) == 0)
-        throw std::invalid_argument("Requested variable '" + DefaultKeyFormatter(var) + "', is not in this VectorValues.");
+      if (values_.unsafe_erase(var) == 0)
+        throw std::invalid_argument("Requested variable '" +
+                                    DefaultKeyFormatter(var) +
+                                    "', is not in this VectorValues.");
     }
 
     /** Set all values to zero vectors. */
     void setZero();
 
-    iterator begin()                      { return values_.begin(); }  ///< Iterator over variables
-    const_iterator begin() const          { return values_.begin(); }  ///< Iterator over variables
-    iterator end()                        { return values_.end(); }    ///< Iterator over variables
-    const_iterator end() const            { return values_.end(); }    ///< Iterator over variables
-    //reverse_iterator rbegin()             { return values_.rbegin(); } ///< Reverse iterator over variables
-    //const_reverse_iterator rbegin() const { return values_.rbegin(); } ///< Reverse iterator over variables
-    //reverse_iterator rend()               { return values_.rend(); }   ///< Reverse iterator over variables
-    //const_reverse_iterator rend() const   { return values_.rend(); }   ///< Reverse iterator over variables
+    iterator begin()             { return values_.begin(); }  ///< Iterator over variables
+    const_iterator begin() const { return values_.begin(); }  ///< Iterator over variables
+    iterator end()               { return values_.end(); }    ///< Iterator over variables
+    const_iterator end() const   { return values_.end(); }    ///< Iterator over variables
 
-    /** Return the iterator corresponding to the requested key, or end() if no variable is present with this key. */
+    /**
+     * Return the iterator corresponding to the requested key, or end() if no
+     * variable is present with this key.
+     */
     iterator find(Key j) { return values_.find(j); }
 
-    /** Return the iterator corresponding to the requested key, or end() if no variable is present with this key. */
+    /**
+     * Return the iterator corresponding to the requested key, or end() if no
+     * variable is present with this key.
+     */
     const_iterator find(Key j) const { return values_.find(j); }
 
+    /// overload operator << to print to stringstream
+    GTSAM_EXPORT friend std::ostream& operator<<(std::ostream&, const VectorValues&);
+
     /** print required by Testable for unit testing */
-    void print(const std::string& str = "VectorValues: ",
+    void print(const std::string& str = "VectorValues",
         const KeyFormatter& formatter = DefaultKeyFormatter) const;
 
     /** equals required by Testable for unit testing */
@@ -239,8 +280,50 @@ namespace gtsam {
     /** Retrieve the entire solution as a single vector */
     Vector vector() const;
 
+    /** Compute the total dimension of a subset of relevant keys. */
+    template <typename CONTAINER>
+    DenseIndex totalDim(const CONTAINER& keys) const {
+      DenseIndex totalDim = 0;
+      for (Key key : keys) {
+        totalDim += static_cast<DenseIndex>(at(key).size());
+      }
+      return totalDim;
+    }
+
+    /** Fill a preallocated Eigen vector expression with a subset of relevant keys. */
+    template <typename CONTAINER, typename Derived>
+    void fillVector(const CONTAINER& keys,
+                    const Eigen::MatrixBase<Derived>& result) const {
+      auto& writable = const_cast<Eigen::MatrixBase<Derived>&>(result);
+      DenseIndex pos = 0;
+      for (Key key : keys) {
+        const Vector& v = at(key);
+        writable.segment(pos, v.size()) = v;
+        pos += v.size();
+      }
+    }
+
     /** Access a vector that is a subset of relevant keys. */
-    Vector vector(const FastVector<Key>& keys) const;
+    template <typename CONTAINER>
+    Vector vector(const CONTAINER& keys) const {
+      DenseIndex totalDim = 0;
+      FastVector<const Vector*> items;
+      items.reserve(keys.size());
+      for (Key key : keys) {
+        const Vector* v = &at(key);
+        totalDim += v->size();
+        items.emplace_back(v);
+      }
+
+      Vector result(totalDim);
+      DenseIndex pos = 0;
+      for (const Vector* v : items) {
+        result.segment(pos, v->size()) = *v;
+        pos += v->size();
+      }
+
+      return result;
+    }
 
     /** Access a vector that is a subset of relevant keys, dims version. */
     Vector vector(const Dims& dims) const;
@@ -305,71 +388,33 @@ namespace gtsam {
     /** Element-wise scaling by a constant in-place. */
     VectorValues& scaleInPlace(double alpha);
 
-    /// @}
+    /** Sort by key (primarily for use with TBB, which uses an unordered map)*/
+    std::map<Key, const Vector&> sorted() const;
 
     /// @}
-    /// @name Matlab syntactic sugar for linear algebra operations
+
+    /// @name Wrapper support
     /// @{
 
-    //inline VectorValues scale(const double a, const VectorValues& c) const { return a * (*this); }
+    /**
+     * @brief Output as a html table.
+     *
+     * @param keyFormatter function that formats keys.
+     */
+    std::string html(
+        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
     /// @}
 
-    /**
-     * scale a vector by a scalar
-     */
-    //friend VectorValues operator*(const double a, const VectorValues &v) {
-    //  VectorValues result = VectorValues::SameStructure(v);
-    //  for(Key j = 0; j < v.size(); ++j)
-    //    result.values_[j] = a * v.values_[j];
-    //  return result;
-    //}
-
-    //// TODO: linear algebra interface seems to have been added for SPCG.
-    //friend void axpy(double alpha, const VectorValues& x, VectorValues& y) {
-    //  if(x.size() != y.size())
-    //    throw std::invalid_argument("axpy(VectorValues) called with different vector sizes");
-    //  for(Key j = 0; j < x.size(); ++j)
-    //    if(x.values_[j].size() == y.values_[j].size())
-    //      y.values_[j] += alpha * x.values_[j];
-    //    else
-    //      throw std::invalid_argument("axpy(VectorValues) called with different vector sizes");
-    //}
-    //// TODO: linear algebra interface seems to have been added for SPCG.
-    //friend void sqrt(VectorValues &x) {
-    //  for(Key j = 0; j < x.size(); ++j)
-    //    x.values_[j] = x.values_[j].cwiseSqrt();
-    //}
-
-    //// TODO: linear algebra interface seems to have been added for SPCG.
-    //friend void ediv(const VectorValues& numerator, const VectorValues& denominator, VectorValues &result) {
-    //  if(numerator.size() != denominator.size() || numerator.size() != result.size())
-    //    throw std::invalid_argument("ediv(VectorValues) called with different vector sizes");
-    //  for(Key j = 0; j < numerator.size(); ++j)
-    //    if(numerator.values_[j].size() == denominator.values_[j].size() && numerator.values_[j].size() == result.values_[j].size())
-    //      result.values_[j] = numerator.values_[j].cwiseQuotient(denominator.values_[j]);
-    //    else
-    //      throw std::invalid_argument("ediv(VectorValues) called with different vector sizes");
-    //}
-
-    //// TODO: linear algebra interface seems to have been added for SPCG.
-    //friend void edivInPlace(VectorValues& x, const VectorValues& y) {
-    //  if(x.size() != y.size())
-    //    throw std::invalid_argument("edivInPlace(VectorValues) called with different vector sizes");
-    //  for(Key j = 0; j < x.size(); ++j)
-    //    if(x.values_[j].size() == y.values_[j].size())
-    //      x.values_[j].array() /= y.values_[j].array();
-    //    else
-    //      throw std::invalid_argument("edivInPlace(VectorValues) called with different vector sizes");
-    //}
-
   private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_NVP(values_);
     }
+#endif
   }; // VectorValues definition
 
   /// traits

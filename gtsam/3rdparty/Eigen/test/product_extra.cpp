@@ -11,7 +11,6 @@
 
 template<typename MatrixType> void product_extra(const MatrixType& m)
 {
-  typedef typename MatrixType::Index Index;
   typedef typename MatrixType::Scalar Scalar;
   typedef Matrix<Scalar, 1, Dynamic> RowVectorType;
   typedef Matrix<Scalar, Dynamic, 1> ColVectorType;
@@ -94,10 +93,36 @@ template<typename MatrixType> void product_extra(const MatrixType& m)
 
   VERIFY_IS_APPROX(m1.col(j2).adjoint() * m1.block(0,j,m1.rows(),c), m1.col(j2).adjoint().eval() * m1.block(0,j,m1.rows(),c).eval());
   VERIFY_IS_APPROX(m1.block(i,0,r,m1.cols()) * m1.row(i2).adjoint(), m1.block(i,0,r,m1.cols()).eval() * m1.row(i2).adjoint().eval());
+
+  // test negative strides
+  {
+    Map<MatrixType,Unaligned,Stride<Dynamic,Dynamic> > map1(&m1(rows-1,cols-1), rows, cols, Stride<Dynamic,Dynamic>(-m1.outerStride(),-1));
+    Map<MatrixType,Unaligned,Stride<Dynamic,Dynamic> > map2(&m2(rows-1,cols-1), rows, cols, Stride<Dynamic,Dynamic>(-m2.outerStride(),-1));
+    Map<RowVectorType,Unaligned,InnerStride<-1> > mapv1(&v1(v1.size()-1), v1.size(), InnerStride<-1>(-1));
+    Map<ColVectorType,Unaligned,InnerStride<-1> > mapvc2(&vc2(vc2.size()-1), vc2.size(), InnerStride<-1>(-1));
+    VERIFY_IS_APPROX(MatrixType(map1), m1.reverse());
+    VERIFY_IS_APPROX(MatrixType(map2), m2.reverse());
+    VERIFY_IS_APPROX(m3.noalias() = MatrixType(map1) * MatrixType(map2).adjoint(), m1.reverse() * m2.reverse().adjoint());
+    VERIFY_IS_APPROX(m3.noalias() = map1 * map2.adjoint(), m1.reverse() * m2.reverse().adjoint());
+    VERIFY_IS_APPROX(map1 * vc2, m1.reverse() * vc2);
+    VERIFY_IS_APPROX(m1 * mapvc2, m1 * mapvc2);
+    VERIFY_IS_APPROX(map1.adjoint() * v1.transpose(), m1.adjoint().reverse() * v1.transpose());
+    VERIFY_IS_APPROX(m1.adjoint() * mapv1.transpose(), m1.adjoint() * v1.reverse().transpose());
+  }
   
   // regression test
   MatrixType tmp = m1 * m1.adjoint() * s1;
   VERIFY_IS_APPROX(tmp, m1 * m1.adjoint() * s1);
+
+  // regression test for bug 1343, assignment to arrays
+  Array<Scalar,Dynamic,1> a1 = m1 * vc2;
+  VERIFY_IS_APPROX(a1.matrix(),m1*vc2);
+  Array<Scalar,Dynamic,1> a2 = s1 * (m1 * vc2);
+  VERIFY_IS_APPROX(a2.matrix(),s1*m1*vc2);
+  Array<Scalar,1,Dynamic> a3 = v1 * m1;
+  VERIFY_IS_APPROX(a3.matrix(),v1*m1);
+  Array<Scalar,Dynamic,Dynamic> a4 = m1 * m2.adjoint();
+  VERIFY_IS_APPROX(a4.matrix(),m1*m2.adjoint());
 }
 
 // Regression test for bug reported at http://forum.kde.org/viewtopic.php?f=74&t=96947
@@ -116,8 +141,8 @@ void zero_sized_objects(const MatrixType& m)
   typedef typename MatrixType::Scalar Scalar;
   const int PacketSize  = internal::packet_traits<Scalar>::size;
   const int PacketSize1 = PacketSize>1 ?  PacketSize-1 : 1;
-  DenseIndex rows = m.rows();
-  DenseIndex cols = m.cols();
+  Index rows = m.rows();
+  Index cols = m.cols();
   
   {
     MatrixType res, a(rows,0), b(0,cols);
@@ -169,6 +194,7 @@ void zero_sized_objects(const MatrixType& m)
   }
 }
 
+template<int>
 void bug_127()
 {
   // Bug 127
@@ -193,6 +219,16 @@ void bug_127()
   a*b;
 }
 
+template<int> void bug_817()
+{
+  ArrayXXf B = ArrayXXf::Random(10,10), C;
+  VectorXf x = VectorXf::Random(10);
+  C = (x.transpose()*B.matrix());
+  B = (x.transpose()*B.matrix());
+  VERIFY_IS_APPROX(B,C);
+}
+
+template<int>
 void unaligned_objects()
 {
   // Regression test for the bug reported here:
@@ -222,7 +258,117 @@ void unaligned_objects()
   }
 }
 
-void test_product_extra()
+template<typename T>
+EIGEN_DONT_INLINE
+Index test_compute_block_size(Index m, Index n, Index k)
+{
+  Index mc(m), nc(n), kc(k);
+  internal::computeProductBlockingSizes<T,T>(kc, mc, nc);
+  return kc+mc+nc;
+}
+
+template<typename T>
+Index compute_block_size()
+{
+  Index ret = 0;
+  ret += test_compute_block_size<T>(0,1,1);
+  ret += test_compute_block_size<T>(1,0,1);
+  ret += test_compute_block_size<T>(1,1,0);
+  ret += test_compute_block_size<T>(0,0,1);
+  ret += test_compute_block_size<T>(0,1,0);
+  ret += test_compute_block_size<T>(1,0,0);
+  ret += test_compute_block_size<T>(0,0,0);
+  return ret;
+}
+
+template<typename>
+void aliasing_with_resize()
+{
+  Index m = internal::random<Index>(10,50);
+  Index n = internal::random<Index>(10,50);
+  MatrixXd A, B, C(m,n), D(m,m);
+  VectorXd a, b, c(n);
+  C.setRandom();
+  D.setRandom();
+  c.setRandom();
+  double s = internal::random<double>(1,10);
+
+  A = C;
+  B = A * A.transpose();
+  A = A * A.transpose();
+  VERIFY_IS_APPROX(A,B);
+
+  A = C;
+  B = (A * A.transpose())/s;
+  A = (A * A.transpose())/s;
+  VERIFY_IS_APPROX(A,B);
+
+  A = C;
+  B = (A * A.transpose()) + D;
+  A = (A * A.transpose()) + D;
+  VERIFY_IS_APPROX(A,B);
+
+  A = C;
+  B = D + (A * A.transpose());
+  A = D + (A * A.transpose());
+  VERIFY_IS_APPROX(A,B);
+
+  A = C;
+  B = s * (A * A.transpose());
+  A = s * (A * A.transpose());
+  VERIFY_IS_APPROX(A,B);
+
+  A = C;
+  a = c;
+  b = (A * a)/s;
+  a = (A * a)/s;
+  VERIFY_IS_APPROX(a,b);
+}
+
+template<int>
+void bug_1308()
+{
+  int n = 10;
+  MatrixXd r(n,n);
+  VectorXd v = VectorXd::Random(n);
+  r = v * RowVectorXd::Ones(n);
+  VERIFY_IS_APPROX(r, v.rowwise().replicate(n));
+  r = VectorXd::Ones(n) * v.transpose();
+  VERIFY_IS_APPROX(r, v.rowwise().replicate(n).transpose());
+
+  Matrix4d ones44 = Matrix4d::Ones();
+  Matrix4d m44 = Matrix4d::Ones() * Matrix4d::Ones();
+  VERIFY_IS_APPROX(m44,Matrix4d::Constant(4));
+  VERIFY_IS_APPROX(m44.noalias()=ones44*Matrix4d::Ones(), Matrix4d::Constant(4));
+  VERIFY_IS_APPROX(m44.noalias()=ones44.transpose()*Matrix4d::Ones(), Matrix4d::Constant(4));
+  VERIFY_IS_APPROX(m44.noalias()=Matrix4d::Ones()*ones44, Matrix4d::Constant(4));
+  VERIFY_IS_APPROX(m44.noalias()=Matrix4d::Ones()*ones44.transpose(), Matrix4d::Constant(4));
+
+  typedef Matrix<double,4,4,RowMajor> RMatrix4d;
+  RMatrix4d r44 = Matrix4d::Ones() * Matrix4d::Ones();
+  VERIFY_IS_APPROX(r44,Matrix4d::Constant(4));
+  VERIFY_IS_APPROX(r44.noalias()=ones44*Matrix4d::Ones(), Matrix4d::Constant(4));
+  VERIFY_IS_APPROX(r44.noalias()=ones44.transpose()*Matrix4d::Ones(), Matrix4d::Constant(4));
+  VERIFY_IS_APPROX(r44.noalias()=Matrix4d::Ones()*ones44, Matrix4d::Constant(4));
+  VERIFY_IS_APPROX(r44.noalias()=Matrix4d::Ones()*ones44.transpose(), Matrix4d::Constant(4));
+  VERIFY_IS_APPROX(r44.noalias()=ones44*RMatrix4d::Ones(), Matrix4d::Constant(4));
+  VERIFY_IS_APPROX(r44.noalias()=ones44.transpose()*RMatrix4d::Ones(), Matrix4d::Constant(4));
+  VERIFY_IS_APPROX(r44.noalias()=RMatrix4d::Ones()*ones44, Matrix4d::Constant(4));
+  VERIFY_IS_APPROX(r44.noalias()=RMatrix4d::Ones()*ones44.transpose(), Matrix4d::Constant(4));
+
+//   RowVector4d r4;
+  m44.setOnes();
+  r44.setZero();
+  VERIFY_IS_APPROX(r44.noalias() += m44.row(0).transpose() * RowVector4d::Ones(), ones44);
+  r44.setZero();
+  VERIFY_IS_APPROX(r44.noalias() += m44.col(0) * RowVector4d::Ones(), ones44);
+  r44.setZero();
+  VERIFY_IS_APPROX(r44.noalias() += Vector4d::Ones() * m44.row(0), ones44);
+  r44.setZero();
+  VERIFY_IS_APPROX(r44.noalias() += Vector4d::Ones() * m44.col(0).transpose(), ones44);
+}
+
+EIGEN_DECLARE_TEST(product_extra)
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( product_extra(MatrixXf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
@@ -232,6 +378,13 @@ void test_product_extra()
     CALL_SUBTEST_4( product_extra(MatrixXcd(internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2), internal::random<int>(1,EIGEN_TEST_MAX_SIZE/2))) );
     CALL_SUBTEST_1( zero_sized_objects(MatrixXf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );
   }
-  CALL_SUBTEST_5( bug_127() );
-  CALL_SUBTEST_6( unaligned_objects() );
+  CALL_SUBTEST_5( bug_127<0>() );
+  CALL_SUBTEST_5( bug_817<0>() );
+  CALL_SUBTEST_5( bug_1308<0>() );
+  CALL_SUBTEST_6( unaligned_objects<0>() );
+  CALL_SUBTEST_7( compute_block_size<float>() );
+  CALL_SUBTEST_7( compute_block_size<double>() );
+  CALL_SUBTEST_7( compute_block_size<std::complex<double> >() );
+  CALL_SUBTEST_8( aliasing_with_resize<void>() );
+
 }

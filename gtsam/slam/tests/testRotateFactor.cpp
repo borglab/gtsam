@@ -12,12 +12,13 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/bind.hpp>
-#include <boost/assign/std/vector.hpp>
 #include <vector>
 
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
 using namespace std;
-using namespace boost::assign;
+using namespace std::placeholders;
 using namespace gtsam;
 
 static const double kDegree = M_PI / 180;
@@ -58,7 +59,7 @@ TEST (RotateFactor, checkMath) {
 TEST (RotateFactor, test) {
   Model model = noiseModel::Isotropic::Sigma(3, 0.01);
   RotateFactor f(1, i1Ri2, c1Zc2, model);
-  EXPECT(assert_equal(zero(3), f.evaluateError(iRc), 1e-8));
+  EXPECT(assert_equal(Z_3x1, f.evaluateError(iRc), 1e-8));
 
   Rot3 R = iRc.retract(Vector3(0.1, 0.2, 0.1));
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
@@ -71,14 +72,14 @@ TEST (RotateFactor, test) {
   Matrix actual, expected;
   // Use numerical derivatives to calculate the expected Jacobian
   {
-    expected = numericalDerivative11<Vector3,Rot3>(
-        boost::bind(&RotateFactor::evaluateError, &f, _1, boost::none), iRc);
+    expected = numericalDerivative11<Vector3, Rot3>(
+			[&f](const Rot3& r) { return f.evaluateError(r); }, iRc);
     f.evaluateError(iRc, actual);
     EXPECT(assert_equal(expected, actual, 1e-9));
   }
   {
-    expected = numericalDerivative11<Vector3,Rot3>(
-        boost::bind(&RotateFactor::evaluateError, &f, _1, boost::none), R);
+    expected = numericalDerivative11<Vector3, Rot3>(
+			[&f](const Rot3& r) { return f.evaluateError(r); }, R);
     f.evaluateError(R, actual);
     EXPECT(assert_equal(expected, actual, 1e-9));
   }
@@ -89,9 +90,9 @@ TEST (RotateFactor, minimization) {
   // Let's try to recover the correct iRc by minimizing
   NonlinearFactorGraph graph;
   Model model = noiseModel::Isotropic::Sigma(3, 0.01);
-  graph.add(RotateFactor(1, i1Ri2, c1Zc2, model));
-  graph.add(RotateFactor(1, i2Ri3, c2Zc3, model));
-  graph.add(RotateFactor(1, i3Ri4, c3Zc4, model));
+  graph.emplace_shared<RotateFactor>(1, i1Ri2, c1Zc2, model);
+  graph.emplace_shared<RotateFactor>(1, i2Ri3, c2Zc3, model);
+  graph.emplace_shared<RotateFactor>(1, i3Ri4, c3Zc4, model);
 
   // Check error at ground truth
   Values truth;
@@ -127,7 +128,7 @@ TEST (RotateFactor, minimization) {
 TEST (RotateDirectionsFactor, test) {
   Model model = noiseModel::Isotropic::Sigma(2, 0.01);
   RotateDirectionsFactor f(1, p1, z1, model);
-  EXPECT(assert_equal(zero(2), f.evaluateError(iRc), 1e-8));
+  EXPECT(assert_equal(Z_2x1, f.evaluateError(iRc), 1e-8));
 
   Rot3 R = iRc.retract(Vector3(0.1, 0.2, 0.1));
 
@@ -143,15 +144,13 @@ TEST (RotateDirectionsFactor, test) {
   // Use numerical derivatives to calculate the expected Jacobian
   {
     expected = numericalDerivative11<Vector,Rot3>(
-        boost::bind(&RotateDirectionsFactor::evaluateError, &f, _1,
-            boost::none), iRc);
+			[&f](const Rot3& r) {return f.evaluateError(r);}, iRc);
     f.evaluateError(iRc, actual);
     EXPECT(assert_equal(expected, actual, 1e-9));
   }
   {
     expected = numericalDerivative11<Vector,Rot3>(
-        boost::bind(&RotateDirectionsFactor::evaluateError, &f, _1,
-            boost::none), R);
+			[&f](const Rot3& r) {return f.evaluateError(r);}, R);
     f.evaluateError(R, actual);
     EXPECT(assert_equal(expected, actual, 1e-9));
   }
@@ -162,9 +161,9 @@ TEST (RotateDirectionsFactor, minimization) {
   // Let's try to recover the correct iRc by minimizing
   NonlinearFactorGraph graph;
   Model model = noiseModel::Isotropic::Sigma(2, 0.01);
-  graph.add(RotateDirectionsFactor(1, p1, z1, model));
-  graph.add(RotateDirectionsFactor(1, p2, z2, model));
-  graph.add(RotateDirectionsFactor(1, p3, z3, model));
+  graph.emplace_shared<RotateDirectionsFactor>(1, p1, z1, model);
+  graph.emplace_shared<RotateDirectionsFactor>(1, p2, z2, model);
+  graph.emplace_shared<RotateDirectionsFactor>(1, p3, z3, model);
 
   // Check error at ground truth
   Values truth;

@@ -18,7 +18,6 @@
 
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/sam/RangeFactor.h>
-#include <gtsam/slam/PriorFactor.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/PinholeCamera.h>
@@ -29,10 +28,8 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/base/Testable.h>
 
-#include <boost/assign/std/vector.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <CppUnitLite/TestHarness.h>
-using namespace boost::assign;
 
 #include <iostream>
 #include <vector>
@@ -53,16 +50,16 @@ class Graph: public NonlinearFactorGraph {
 public:
   void addMeasurement(int i, int j, const Point2& z,
       const SharedNoiseModel& model) {
-    push_back(boost::make_shared<Projection>(z, model, X(i), L(j)));
+    emplace_shared<Projection>(z, model, X(i), L(j));
   }
 
   void addCameraConstraint(int j, const GeneralCamera& p) {
-    boost::shared_ptr<CameraConstraint> factor(new CameraConstraint(X(j), p));
+    std::shared_ptr<CameraConstraint> factor(new CameraConstraint(X(j), p));
     push_back(factor);
   }
 
   void addPoint3Constraint(int j, const Point3& p) {
-    boost::shared_ptr<Point3Constraint> factor(new Point3Constraint(L(j), p));
+    std::shared_ptr<Point3Constraint> factor(new Point3Constraint(L(j), p));
     push_back(factor);
   }
 
@@ -118,9 +115,9 @@ static vector<GeneralCamera> genCameraVariableCalibration() {
   return X;
 }
 
-static boost::shared_ptr<Ordering> getOrdering(
+static std::shared_ptr<Ordering> getOrdering(
     const vector<GeneralCamera>& cameras, const vector<Point3>& landmarks) {
-  boost::shared_ptr<Ordering> ordering(new Ordering);
+  std::shared_ptr<Ordering> ordering(new Ordering);
   for (size_t i = 0; i < landmarks.size(); ++i)
     ordering->push_back(L(i));
   for (size_t i = 0; i < cameras.size(); ++i)
@@ -134,10 +131,10 @@ TEST( GeneralSFMFactor, equals ) {
   Point2 z(323., 240.);
   const Symbol cameraFrameNumber('x', 1), landmarkNumber('l', 1);
   const SharedNoiseModel sigma(noiseModel::Unit::Create(1));
-  boost::shared_ptr<Projection> factor1(
+  std::shared_ptr<Projection> factor1(
       new Projection(z, sigma, cameraFrameNumber, landmarkNumber));
 
-  boost::shared_ptr<Projection> factor2(
+  std::shared_ptr<Projection> factor2(
       new Projection(z, sigma, cameraFrameNumber, landmarkNumber));
 
   EXPECT(assert_equal(*factor1, *factor2));
@@ -368,9 +365,9 @@ TEST( GeneralSFMFactor, optimize_varK_BA ) {
   graph.addCameraConstraint(0, cameras[0]);
 
   // Constrain the scale of the problem with a soft range factor of 1m between the cameras
-  graph.push_back(
-      RangeFactor<GeneralCamera, GeneralCamera>(X(0), X(1), 2.,
-          noiseModel::Isotropic::Sigma(1, 10.)));
+  graph.emplace_shared<
+      RangeFactor<GeneralCamera, GeneralCamera> >(X(0), X(1), 2.,
+          noiseModel::Isotropic::Sigma(1, 10.));
 
   const double reproj_error = 1e-5;
 
@@ -385,12 +382,11 @@ TEST(GeneralSFMFactor, GeneralCameraPoseRange) {
   // Tests range factor between a GeneralCamera and a Pose3
   Graph graph;
   graph.addCameraConstraint(0, GeneralCamera());
-  graph.push_back(
-      RangeFactor<GeneralCamera, Pose3>(X(0), X(1), 2.,
-          noiseModel::Isotropic::Sigma(1, 1.)));
-  graph.push_back(
-      PriorFactor<Pose3>(X(1), Pose3(Rot3(), Point3(1., 0., 0.)),
-          noiseModel::Isotropic::Sigma(6, 1.)));
+  graph.emplace_shared<
+      RangeFactor<GeneralCamera, Pose3> >(X(0), X(1), 2.,
+          noiseModel::Isotropic::Sigma(1, 1.));
+  graph.addPrior(X(1), Pose3(Rot3(), Point3(1., 0., 0.)),
+          noiseModel::Isotropic::Sigma(6, 1.));
 
   Values init;
   init.insert(X(0), GeneralCamera());
@@ -413,15 +409,13 @@ TEST(GeneralSFMFactor, GeneralCameraPoseRange) {
 TEST(GeneralSFMFactor, CalibratedCameraPoseRange) {
   // Tests range factor between a CalibratedCamera and a Pose3
   NonlinearFactorGraph graph;
-  graph.push_back(
-      PriorFactor<CalibratedCamera>(X(0), CalibratedCamera(),
-          noiseModel::Isotropic::Sigma(6, 1.)));
-  graph.push_back(
-      RangeFactor<CalibratedCamera, Pose3>(X(0), X(1), 2.,
-          noiseModel::Isotropic::Sigma(1, 1.)));
-  graph.push_back(
-      PriorFactor<Pose3>(X(1), Pose3(Rot3(), Point3(1., 0., 0.)),
-          noiseModel::Isotropic::Sigma(6, 1.)));
+  graph.addPrior(X(0), CalibratedCamera(),
+          noiseModel::Isotropic::Sigma(6, 1.));
+  graph.emplace_shared<
+      RangeFactor<CalibratedCamera, Pose3> >(X(0), X(1), 2.,
+          noiseModel::Isotropic::Sigma(1, 1.));
+  graph.addPrior(X(1), Pose3(Rot3(), Point3(1., 0., 0.)),
+          noiseModel::Isotropic::Sigma(6, 1.));
 
   Values init;
   init.insert(X(0), CalibratedCamera());
@@ -460,12 +454,12 @@ TEST(GeneralSFMFactor, BinaryJacobianFactor) {
     using namespace noiseModel;
     Rot2 R = Rot2::fromAngle(0.3);
     Matrix2 cov = R.matrix() * R.matrix().transpose();
-    models += SharedNoiseModel(), Unit::Create(2), //
-    Isotropic::Sigma(2, 0.5), Constrained::All(2), Gaussian::Covariance(cov);
+    models = {SharedNoiseModel(), Unit::Create(2), Isotropic::Sigma(2, 0.5),
+              Constrained::All(2), Gaussian::Covariance(cov)};
   }
 
   // Now loop over all these noise models
-  BOOST_FOREACH(SharedNoiseModel model, models) {
+  for(SharedNoiseModel model: models) {
     Projection factor(measurement, model, X(1), L(1));
 
     // Test linearize
@@ -489,10 +483,7 @@ TEST(GeneralSFMFactor, BinaryJacobianFactor) {
               actualJacobian.augmentedInformation(), 1e-9));
 
       // Construct from GaussianFactorGraph
-      GaussianFactorGraph gfg1;
-      gfg1 += expected;
-      GaussianFactorGraph gfg2;
-      gfg2 += actual;
+      GaussianFactorGraph gfg1 {expected}, gfg2 {actual};
       HessianFactor hessian1(gfg1), hessian2(gfg2);
       EXPECT(assert_equal(hessian1, hessian2, 1e-9));
     }
@@ -516,7 +507,7 @@ TEST( GeneralSFMFactor, BinaryJacobianFactor2 ) {
     for (size_t j = 0; j < landmarks.size(); ++j) {
       Point2 z = cameras[i].project(landmarks[j]);
       Projection::shared_ptr nonlinear = //
-          boost::make_shared<Projection>(z, sigma1, X(i), L(j));
+          std::make_shared<Projection>(z, sigma1, X(i), L(j));
       GaussianFactor::shared_ptr factor = nonlinear->linearize(values);
       HessianFactor hessian(*factor);
       JacobianFactor jacobian(hessian);

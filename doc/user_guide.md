@@ -1,0 +1,3 @@
+# User Guide
+
+This section contains documentation and usage instructions for many classes within GTSAM via Markdown files (`*.md`) and interactive Python notebooks (`*.ipynb`). Python notebooks with an <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/> button near the top can be opened in your browser, where you can run the files yourself and make edits to play with and understand GTSAM.

@@ -20,39 +20,100 @@
 
 #include <gtsam/linear/linearExceptions.h>
 
+#include <array>
+
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 13
+#pragma GCC diagnostic warning "-Wstringop-overread"
+#endif
+
 namespace gtsam {
 
   /* ************************************************************************* */
-  template<typename TERMS>
-  JacobianFactor::JacobianFactor(const TERMS&terms, const Vector &b, const SharedDiagonal& model)
-  {
+  template <typename TERMS>
+  JacobianFactor::JacobianFactor(const TERMS& terms, const Vector& b,
+                                const SharedDiagonal& model) {
     fillTerms(terms, b, model);
   }
 
   /* ************************************************************************* */
-  template<typename KEYS>
-  JacobianFactor::JacobianFactor(
-    const KEYS& keys, const VerticalBlockMatrix& augmentedMatrix, const SharedDiagonal& model) :
-  Base(keys), Ab_(augmentedMatrix)
-  {
-    // Check noise model dimension
-    if(model && (DenseIndex)model->dim() != augmentedMatrix.rows())
-      throw InvalidNoiseModel(augmentedMatrix.rows(), model->dim());
+  template <int M, int N1, typename>
+  JacobianFactor::JacobianFactor(Key i1, const Eigen::Matrix<double, M, N1>& A1,
+                                const Eigen::Matrix<double, M, 1>& b,
+                                const SharedDiagonal& model)
+      : Base(std::array<Key, 1>{{i1}}) {
+    const DenseIndex rows = static_cast<DenseIndex>(b.rows());
+    if (model && (DenseIndex)model->dim() != rows)
+      throw InvalidNoiseModel(rows, model->dim());
 
-    // Check number of variables
-    if((DenseIndex)Base::keys_.size() != augmentedMatrix.nBlocks() - 1)
-      throw std::invalid_argument(
-      "Error in JacobianFactor constructor input.  Number of provided keys plus\n"
-      "one for the RHS vector must equal the number of provided matrix blocks.");
-
-    // Check RHS dimension
-    if(augmentedMatrix(augmentedMatrix.nBlocks() - 1).cols() != 1)
-      throw std::invalid_argument(
-      "Error in JacobianFactor constructor input.  The last provided matrix block\n"
-      "must be the RHS vector, but the last provided block had more than one column.");
-
-    // Take noise model
+    const std::array<size_t, 1> dims = {
+        static_cast<size_t>(A1.cols())};
+    Ab_ = VerticalBlockMatrix(dims, rows, true);
+    Ab_(0) = A1;
+    getb() = b;
     model_ = model;
+  }
+
+  /* ************************************************************************* */
+  template <int M, int N1, int N2, typename>
+  JacobianFactor::JacobianFactor(Key i1, const Eigen::Matrix<double, M, N1>& A1,
+                                Key i2, const Eigen::Matrix<double, M, N2>& A2,
+                                const Eigen::Matrix<double, M, 1>& b,
+                                const SharedDiagonal& model)
+      : Base(std::array<Key, 2>{{i1, i2}}) {
+    const DenseIndex rows = static_cast<DenseIndex>(b.rows());
+    if (model && (DenseIndex)model->dim() != rows)
+      throw InvalidNoiseModel(rows, model->dim());
+
+    const std::array<size_t, 2> dims = {
+        static_cast<size_t>(A1.cols()),
+        static_cast<size_t>(A2.cols())};
+    Ab_ = VerticalBlockMatrix(dims, rows, true);
+    Ab_(0) = A1;
+    Ab_(1) = A2;
+    getb() = b;
+    model_ = model;
+  }
+
+  /* ************************************************************************* */
+  template <int M, int N1, int N2, int N3, typename>
+  JacobianFactor::JacobianFactor(Key i1, const Eigen::Matrix<double, M, N1>& A1,
+                                Key i2, const Eigen::Matrix<double, M, N2>& A2,
+                                Key i3, const Eigen::Matrix<double, M, N3>& A3,
+                                const Eigen::Matrix<double, M, 1>& b,
+                                const SharedDiagonal& model)
+      : Base(std::array<Key, 3>{{i1, i2, i3}}) {
+    const DenseIndex rows = static_cast<DenseIndex>(b.rows());
+    if (model && (DenseIndex)model->dim() != rows)
+      throw InvalidNoiseModel(rows, model->dim());
+
+    const std::array<size_t, 3> dims = {
+        static_cast<size_t>(A1.cols()),
+        static_cast<size_t>(A2.cols()),
+        static_cast<size_t>(A3.cols())};
+    Ab_ = VerticalBlockMatrix(dims, rows, true);
+    Ab_(0) = A1;
+    Ab_(1) = A2;
+    Ab_(2) = A3;
+    getb() = b;
+    model_ = model;
+  }
+
+  /* ************************************************************************* */
+  template <typename KEYS>
+  JacobianFactor::JacobianFactor(const KEYS& keys,
+                                 const VerticalBlockMatrix& augmentedMatrix,
+                                 const SharedDiagonal& model)
+      : Base(keys), Ab_(augmentedMatrix), model_(model) {
+    checkAb(model, augmentedMatrix);
+  }
+
+  /* ************************************************************************* */
+  template <typename KEYS>
+  JacobianFactor::JacobianFactor(const KEYS& keys,
+                                 VerticalBlockMatrix&& augmentedMatrix,
+                                 const SharedDiagonal& model)
+      : Base(keys), Ab_(std::move(augmentedMatrix)), model_(model) {
+    checkAb(model, Ab_);
   }
 
   /* ************************************************************************* */
@@ -105,4 +166,3 @@ namespace gtsam {
   }
 
 } // gtsam
-

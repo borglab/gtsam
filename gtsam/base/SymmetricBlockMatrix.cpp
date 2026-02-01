@@ -25,6 +25,12 @@
 namespace gtsam {
 
 /* ************************************************************************* */
+SymmetricBlockMatrix::SymmetricBlockMatrix() : blockStart_(0) {
+  variableColOffsets_.push_back(0);
+  assertInvariants();
+}
+
+/* ************************************************************************* */
 SymmetricBlockMatrix SymmetricBlockMatrix::LikeActiveViewOf(
     const SymmetricBlockMatrix& other) {
   SymmetricBlockMatrix result;
@@ -51,33 +57,109 @@ SymmetricBlockMatrix SymmetricBlockMatrix::LikeActiveViewOf(
 }
 
 /* ************************************************************************* */
-VerticalBlockMatrix SymmetricBlockMatrix::choleskyPartial(
-    DenseIndex nFrontals) {
-  // Do dense elimination
-  if (blockStart() != 0)
-    throw std::invalid_argument(
-        "Can only do Cholesky when the SymmetricBlockMatrix is not a restricted view, i.e. when blockStart == 0.");
-  if (!gtsam::choleskyPartial(matrix_, offset(nFrontals)))
+Matrix SymmetricBlockMatrix::block(DenseIndex I, DenseIndex J) const {
+  if (I == J) {
+    return diagonalBlock(I);
+  } else if (I < J) {
+    return aboveDiagonalBlock(I, J);
+  } else {
+    return aboveDiagonalBlock(J, I).transpose();
+  }
+}
+
+/* ************************************************************************* */
+void SymmetricBlockMatrix::negate() {
+  full().triangularView<Eigen::Upper>() *= -1.0;
+}
+
+/* ************************************************************************* */
+void SymmetricBlockMatrix::invertInPlace() {
+  const auto identity = Matrix::Identity(rows(), rows());
+  full().triangularView<Eigen::Upper>() =
+      selfadjointView().llt().solve(identity).triangularView<Eigen::Upper>();
+}
+
+/* ************************************************************************* */
+void SymmetricBlockMatrix::choleskyPartial(DenseIndex nFrontals) {
+  gttic(VerticalBlockMatrix_choleskyPartial);
+  DenseIndex topleft = variableColOffsets_[blockStart_];
+  if (!gtsam::choleskyPartial(matrix_, offset(nFrontals) - topleft, topleft)) {
     throw CholeskyFailed();
+  }
+}
 
-  // Split conditional
+/* ************************************************************************* */
+void SymmetricBlockMatrix::split(DenseIndex nFrontals,
+                                 VerticalBlockMatrix* RSd) {
+  gttic(VerticalBlockMatrix_split);
+  assert(RSd);
 
-  // Create one big conditionals with many frontal variables.
-  gttic(Construct_conditional);
-  const size_t varDim = offset(nFrontals);
-  VerticalBlockMatrix Ab = VerticalBlockMatrix::LikeActiveViewOf(*this, varDim);
-  Ab.full() = matrix_.topRows(varDim);
-  Ab.full().triangularView<Eigen::StrictlyLower>().setZero();
-  gttoc(Construct_conditional);
+  // Construct a VerticalBlockMatrix that contains [R Sd]
+  const DenseIndex n1 = offset(nFrontals);
+  assert(RSd->rows() == n1);
+  assert(RSd->cols() == cols());
+  assert(RSd->nBlocks() == nBlocks());
 
-  gttic(Remaining_factor);
+  // Copy into it.
+  RSd->full() = matrix_.topRows(n1);
+  RSd->full().triangularView<Eigen::StrictlyLower>().setZero();
+
   // Take lower-right block of Ab_ to get the remaining factor
   blockStart() = nFrontals;
-  gttoc(Remaining_factor);
-
-  return Ab;
 }
+
+VerticalBlockMatrix SymmetricBlockMatrix::split(DenseIndex nFrontals) {
+  // Construct a VerticalBlockMatrix that contains [R Sd]
+  const DenseIndex n1 = offset(nFrontals);
+  VerticalBlockMatrix RSd = VerticalBlockMatrix::LikeActiveViewOf(*this, n1);
+  split(nFrontals, &RSd);
+  return RSd;
+}
+
+/* ************************************************************************* */
+void SymmetricBlockMatrix::updateFromMappedBlocks(
+    const SymmetricBlockMatrix& other,
+    const std::vector<DenseIndex>& blockIndices) {
+  assert(static_cast<DenseIndex>(blockIndices.size()) == other.nBlocks());
+  const DenseIndex otherBlocks = other.nBlocks();
+  for (DenseIndex i = 0; i < otherBlocks; ++i) {
+    const DenseIndex I = blockIndices[i];
+    if (I < 0) continue;
+    assert(I < nBlocks());
+    updateDiagonalBlock(I, other.diagonalBlock(i));
+    for (DenseIndex j = i + 1; j < otherBlocks; ++j) {
+      const DenseIndex J = blockIndices[j];
+      if (J < 0) continue;
+      assert(J < nBlocks());
+      updateOffDiagonalBlock(I, J, other.aboveDiagonalBlock(i, j));
+    }
+  }
+}
+
+/* ************************************************************************* */
+void SymmetricBlockMatrix::updateFromOuterProductBlocks(
+    const VerticalBlockMatrix& other,
+    const std::vector<DenseIndex>& blockIndices) {
+  assert(static_cast<DenseIndex>(blockIndices.size()) == other.nBlocks());
+  const DenseIndex otherBlocks = other.nBlocks();
+  for (DenseIndex i = 0; i < otherBlocks; ++i) {
+    const DenseIndex I = blockIndices[i];
+    if (I < 0) continue;
+    assert(I < nBlocks());
+    const auto Si = other(i);
+    Matrix diag = Si.transpose() * Si;
+    updateDiagonalBlock(I, diag);
+    for (DenseIndex j = i + 1; j < otherBlocks; ++j) {
+      const DenseIndex J = blockIndices[j];
+      if (J < 0) continue;
+      assert(J < nBlocks());
+      const auto Sj = other(j);
+      Matrix off = Si.transpose() * Sj;
+      updateOffDiagonalBlock(I, J, off);
+    }
+  }
+}
+
 /* ************************************************************************* */
 
 } //\ namespace gtsam
-

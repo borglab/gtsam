@@ -29,6 +29,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2Stereo.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/utilities.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
@@ -43,6 +44,7 @@
 
 using namespace std;
 using namespace gtsam;
+using symbol_shorthand::X;
 
 int main(int argc, char** argv){
 
@@ -61,7 +63,7 @@ int main(int argc, char** argv){
   string calibration_loc = findExampleDataFile("VO_calibration.txt");
   string pose_loc = findExampleDataFile("VO_camera_poses_large.txt");
   string factor_loc = findExampleDataFile("VO_stereo_factors_large.txt");
-  
+
   //read camera calibration info from file
   // focal lengths fx, fy, skew s, principal point u0, v0, baseline b
   cout << "Reading calibration info" << endl;
@@ -84,26 +86,26 @@ int main(int argc, char** argv){
     if(add_initial_noise){
       m(1,3) += (pose_id % 10)/10.0;
     }
-    initial_estimate.insert(Symbol('x', pose_id), Pose3(m));
+    initial_estimate.insert(X(pose_id), Pose3(m));
   }
 
-  Values initial_pose_values = initial_estimate.filter<Pose3>();
+  const auto initialPoses = initial_estimate.extract<Pose3>();
   if (output_poses) {
     init_pose3Out.open(init_poseOutput.c_str(), ios::out);
-    for (size_t i = 1; i <= initial_pose_values.size(); i++) {
+    for (size_t i = 1; i <= initialPoses.size(); i++) {
       init_pose3Out
           << i << " "
-          << initial_pose_values.at<Pose3>(Symbol('x', i)).matrix().format(
+          << initialPoses.at(X(i)).matrix().format(
               Eigen::IOFormat(Eigen::StreamPrecision, 0, " ", " ")) << endl;
     }
   }
-  
+
   // camera and landmark keys
   size_t x, l;
 
   // pixel coordinates uL, uR, v (same for left/right images due to rectification)
   // landmark coordinates X, Y, Z in camera frame, resulting from triangulation
-  double uL, uR, v, X, Y, Z;
+  double uL, uR, v, _X, Y, Z;
   ifstream factor_file(factor_loc.c_str());
   cout << "Reading stereo factors" << endl;
 
@@ -112,21 +114,21 @@ int main(int argc, char** argv){
   SmartFactor::shared_ptr factor(new SmartFactor(model));
   size_t current_l = 3;   // hardcoded landmark ID from first measurement
 
-  while (factor_file >> x >> l >> uL >> uR >> v >> X >> Y >> Z) {
+  while (factor_file >> x >> l >> uL >> uR >> v >> _X >> Y >> Z) {
 
     if(current_l != l) {
       graph.push_back(factor);
       factor = SmartFactor::shared_ptr(new SmartFactor(model));
       current_l = l;
     }
-    factor->add(StereoPoint2(uL,uR,v), Symbol('x',x), K);
+    factor->add(StereoPoint2(uL,uR,v), X(x), K);
   }
 
-  Pose3 first_pose = initial_estimate.at<Pose3>(Symbol('x',1));
+  Pose3 first_pose = initial_estimate.at<Pose3>(X(1));
   //constrain the first pose such that it cannot change from its original value during optimization
   // NOTE: NonlinearEquality forces the optimizer to use QR rather than Cholesky
   // QR is much slower than Cholesky, but numerically more stable
-  graph.push_back(NonlinearEquality<Pose3>(Symbol('x',1),first_pose));
+  graph.emplace_shared<NonlinearEquality<Pose3> >(X(1),first_pose);
 
   LevenbergMarquardtParams params;
   params.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
@@ -134,17 +136,17 @@ int main(int argc, char** argv){
 
   cout << "Optimizing" << endl;
   //create Levenberg-Marquardt optimizer to optimize the factor graph
-  LevenbergMarquardtOptimizer optimizer = LevenbergMarquardtOptimizer(graph, initial_estimate, params);
+  LevenbergMarquardtOptimizer optimizer(graph, initial_estimate, params);
   Values result = optimizer.optimize();
 
   cout << "Final result sample:" << endl;
-  Values pose_values = result.filter<Pose3>();
+  Values pose_values = utilities::allPose3s(result);
   pose_values.print("Final camera poses:\n");
 
   if(output_poses){
     pose3Out.open(poseOutput.c_str(),ios::out);
     for(size_t i = 1; i<=pose_values.size(); i++){
-      pose3Out << i << " " << pose_values.at<Pose3>(Symbol('x',i)).matrix().format(Eigen::IOFormat(Eigen::StreamPrecision, 0,
+      pose3Out << i << " " << pose_values.at<Pose3>(X(i)).matrix().format(Eigen::IOFormat(Eigen::StreamPrecision, 0,
         " ", " ")) << endl;
     }
     cout << "Writing output" << endl;

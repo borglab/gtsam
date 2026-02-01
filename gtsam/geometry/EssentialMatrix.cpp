@@ -52,13 +52,13 @@ void EssentialMatrix::print(const string& s) const {
 }
 
 /* ************************************************************************* */
-Point3 EssentialMatrix::transform_to(const Point3& p, OptionalJacobian<3, 5> DE,
+Point3 EssentialMatrix::transformTo(const Point3& p, OptionalJacobian<3, 5> DE,
     OptionalJacobian<3, 3> Dpoint) const {
   Pose3 pose(rotation(), direction().point3());
   Matrix36 DE_;
-  Point3 q = pose.transform_to(p, DE ? &DE_ : 0, Dpoint);
+  Point3 q = pose.transformTo(p, DE ? &DE_ : 0, Dpoint);
   if (DE) {
-    // DE returned by pose.transform_to is 3*6, but we need it to be 3*5
+    // DE returned by pose.transformTo is 3*6, but we need it to be 3*5
     // The last 3 columns are derivative with respect to change in translation
     // The derivative of translation with respect to a 2D sphere delta is 3*2 direction().basis()
     // Duy made an educated guess that this needs to be rotated to the local frame

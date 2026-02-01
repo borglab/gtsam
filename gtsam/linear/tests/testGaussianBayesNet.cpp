@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010-2022, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -16,38 +16,42 @@
  */
 
 #include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianDensity.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/inference/Symbol.h>
 
-#include <boost/assign/list_of.hpp>
-#include <boost/assign/std/list.hpp> // for operator +=
-using namespace boost::assign;
+#include <CppUnitLite/TestHarness.h>
 
 // STL/C++
 #include <iostream>
 #include <sstream>
-#include <CppUnitLite/TestHarness.h>
-#include <boost/tuple/tuple.hpp>
-#include <boost/foreach.hpp>
 
+using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
+using symbol_shorthand::X;
 
-static const Key _x_=0, _y_=1;
+static const Key _x_ = 11, _y_ = 22, _z_ = 33;
 
-static GaussianBayesNet smallBayesNet = list_of
-  (GaussianConditional(_x_, (Vector(1) << 9.0).finished(), (Matrix(1, 1) << 1.0).finished(), _y_, (Matrix(1, 1) << 1.0).finished()))
-  (GaussianConditional(_y_, (Vector(1) << 5.0).finished(), (Matrix(1, 1) << 1.0).finished()));
+static GaussianBayesNet smallBayesNet = {
+    std::make_shared<GaussianConditional>(_x_, Vector1::Constant(9), I_1x1, _y_, I_1x1),
+    std::make_shared<GaussianConditional>(_y_, Vector1::Constant(5), I_1x1)};
+
+static GaussianBayesNet noisyBayesNet = {
+    std::make_shared<GaussianConditional>(_x_, Vector1::Constant(9), I_1x1, _y_, I_1x1,
+                        noiseModel::Isotropic::Sigma(1, 2.0)),
+    std::make_shared<GaussianConditional>(_y_, Vector1::Constant(5), I_1x1,
+                        noiseModel::Isotropic::Sigma(1, 3.0))};
 
 /* ************************************************************************* */
-TEST( GaussianBayesNet, matrix )
+TEST( GaussianBayesNet, Matrix )
 {
-  Matrix R; Vector d;
-  boost::tie(R,d) = smallBayesNet.matrix(); // find matrix and RHS
+  const auto [R, d] = smallBayesNet.matrix(); // find matrix and RHS
 
-  Matrix R1 = (Matrix(2, 2) <<
+  Matrix R1 = (Matrix2() <<
           1.0, 1.0,
           0.0, 1.0
     ).finished();
@@ -58,31 +62,86 @@ TEST( GaussianBayesNet, matrix )
 }
 
 /* ************************************************************************* */
-TEST( GaussianBayesNet, optimize )
+// Check that the evaluate function matches direct calculation with R.
+TEST(GaussianBayesNet, Evaluate1) {
+  // Let's evaluate at the mean
+  const VectorValues mean = smallBayesNet.optimize();
+
+  // We get the matrix, which has noise model applied!
+  const Matrix R = smallBayesNet.matrix().first;
+  const Matrix invSigma = R.transpose() * R;
+
+  // The Bayes net is a Gaussian density ~ exp (-0.5*(Rx-d)'*(Rx-d))
+  // which at the mean is 1.0! So, the only thing we need to calculate is
+  // the normalization constant 1.0/sqrt((2*pi*Sigma).det()).
+  // The covariance matrix inv(Sigma) = R'*R, so the determinant is
+  const double constant = sqrt((invSigma / (2 * M_PI)).determinant());
+  EXPECT_DOUBLES_EQUAL(-log(constant),
+                       smallBayesNet.at(0)->negLogConstant() +
+                           smallBayesNet.at(1)->negLogConstant(),
+                       1e-9);
+  EXPECT_DOUBLES_EQUAL(-log(constant), smallBayesNet.negLogConstant(), 1e-9);
+  const double actual = smallBayesNet.evaluate(mean);
+  EXPECT_DOUBLES_EQUAL(constant, actual, 1e-9);
+}
+
+// Check the evaluate with non-unit noise.
+TEST(GaussianBayesNet, Evaluate2) {
+  // See comments in test above.
+  const VectorValues mean = noisyBayesNet.optimize();
+  const Matrix R = noisyBayesNet.matrix().first;
+  const Matrix invSigma = R.transpose() * R;
+  const double constant = sqrt((invSigma / (2 * M_PI)).determinant());
+  const double actual = noisyBayesNet.evaluate(mean);
+  EXPECT_DOUBLES_EQUAL(constant, actual, 1e-9);
+}
+
+/* ************************************************************************* */
+TEST( GaussianBayesNet, NoisyMatrix )
 {
-  VectorValues actual = smallBayesNet.optimize();
+  const auto [R, d] = noisyBayesNet.matrix(); // find matrix and RHS
 
-  VectorValues expected = map_list_of<Key, Vector>
-    (_x_, (Vector(1) << 4.0).finished())
-    (_y_, (Vector(1) << 5.0).finished());
+  Matrix R1 = (Matrix2() <<
+          0.5, 0.5,
+          0.0, 1./3.
+    ).finished();
+  Vector d1 = Vector2(9./2., 5./3.);
 
-  EXPECT(assert_equal(expected,actual));
+  EXPECT(assert_equal(R,R1));
+  EXPECT(assert_equal(d,d1));
+}
+
+/* ************************************************************************* */
+TEST(GaussianBayesNet, Optimize) {
+  const VectorValues expected{{_x_, Vector1::Constant(4)},
+                              {_y_, Vector1::Constant(5)}};
+  const VectorValues actual = smallBayesNet.optimize();
+  EXPECT(assert_equal(expected, actual));
+    }
+
+/* ************************************************************************* */
+TEST(GaussianBayesNet, NoisyOptimize) {
+  const auto [R, d] = noisyBayesNet.matrix();  // find matrix and RHS
+  const Vector x = R.inverse() * d;
+  const VectorValues expected{{_x_, x.head(1)}, {_y_, x.tail(1)}};
+
+  VectorValues actual = noisyBayesNet.optimize();
+  EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
 TEST( GaussianBayesNet, optimizeIncomplete )
 {
-  static GaussianBayesNet incompleteBayesNet = list_of
-    (GaussianConditional(_x_, (Vector(1) << 9.0).finished(), (Matrix(1, 1) << 1.0).finished(), _y_, (Matrix(1, 1) << 1.0).finished()));
+  static GaussianBayesNet incompleteBayesNet;
+  incompleteBayesNet.emplace_shared<GaussianConditional>(
+      _x_, Vector1::Constant(9), I_1x1, _y_, I_1x1);
 
-  VectorValues solutionForMissing = map_list_of<Key, Vector>
-    (_y_, (Vector(1) << 5.0).finished());
+  VectorValues solutionForMissing { {_y_, Vector1::Constant(5)} };
 
   VectorValues actual = incompleteBayesNet.optimize(solutionForMissing);
 
-  VectorValues expected = map_list_of<Key, Vector>
-    (_x_, (Vector(1) << 4.0).finished())
-    (_y_, (Vector(1) << 5.0).finished());
+  VectorValues expected{{_x_, Vector1::Constant(4)},
+                        {_y_, Vector1::Constant(5)}};
 
   EXPECT(assert_equal(expected,actual));
 }
@@ -91,20 +150,96 @@ TEST( GaussianBayesNet, optimizeIncomplete )
 TEST( GaussianBayesNet, optimize3 )
 {
   // y = R*x, x=inv(R)*y
-  // 4 = 1 1   -1 
+  // 4 = 1 1   -1
   // 5     1    5
   // NOTE: we are supplying a new RHS here
 
-  VectorValues expected = map_list_of<Key, Vector>
-    (_x_, (Vector(1) << -1.0).finished())
-    (_y_, (Vector(1) <<  5.0).finished());
+  VectorValues expected { {_x_, Vector1::Constant(-1)},
+                          {_y_, Vector1::Constant(5)} };
 
   // Test different RHS version
-  VectorValues gx = map_list_of<Key, Vector>
-    (_x_, (Vector(1) << 4.0).finished())
-    (_y_, (Vector(1) << 5.0).finished());
+  VectorValues gx{{_x_, Vector1::Constant(4)}, {_y_, Vector1::Constant(5)}};
   VectorValues actual = smallBayesNet.backSubstitute(gx);
   EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+namespace sampling {
+static Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
+static const Vector2 mean(20, 40), b(10, 10);
+static const double sigma = 0.01;
+static const GaussianBayesNet gbn = {
+    GaussianConditional::sharedMeanAndStddev(X(0), A1, X(1), b, sigma),
+    GaussianDensity::sharedMeanAndStddev(X(1), mean, sigma)};
+}  // namespace sampling
+
+/* ************************************************************************* */
+TEST(GaussianBayesNet, sample) {
+  using namespace sampling;
+
+  auto actual = gbn.sample();
+  EXPECT_LONGS_EQUAL(2, actual.size());
+  EXPECT(assert_equal(mean, actual[X(1)], 50 * sigma));
+  EXPECT(assert_equal(A1 * mean + b, actual[X(0)], 50 * sigma));
+
+  // Use a specific random generator
+  std::mt19937_64 rng(4242);
+  auto actual3 = gbn.sample(&rng);
+  EXPECT_LONGS_EQUAL(2, actual.size());
+
+  // regressions
+#if __APPLE__ || _WIN32
+  EXPECT(assert_equal(Vector2(20.0129382, 40.0039798), actual[X(1)], 1e-5));
+  EXPECT(assert_equal(Vector2(110.032083, 230.039811), actual[X(0)], 1e-5));
+#elif __linux__
+  EXPECT(assert_equal(Vector2(20.0070499, 39.9942591), actual[X(1)], 1e-5));
+  EXPECT(assert_equal(Vector2(109.976501, 229.990945), actual[X(0)], 1e-5));
+#endif
+}
+
+/* ************************************************************************* */
+// Do Monte Carlo integration of square deviation, should be equal to 9.0.
+TEST(GaussianBayesNet, MonteCarloIntegration) {
+  GaussianBayesNet gbn;
+  gbn.push_back(noisyBayesNet.at(1));
+
+  double sum = 0.0;
+  constexpr size_t N = 1000;
+  // loop for N samples:
+  for (size_t i = 0; i < N; i++) {
+    const auto X_i = gbn.sample();
+    sum += pow(X_i[_y_].x() - 5.0, 2.0);
+  }
+  // Expected is variance = 3*3
+  EXPECT_DOUBLES_EQUAL(9.0, sum / N, 0.5); // Pretty high.
+}
+
+/* ************************************************************************* */
+TEST(GaussianBayesNet, ordering)
+{
+  const Ordering expected{_x_, _y_};
+  const auto actual = noisyBayesNet.ordering();
+  EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST( GaussianBayesNet, MatrixStress )
+{
+  GaussianBayesNet bn;
+  using GC = GaussianConditional;
+  bn.emplace_shared<GC>(_x_, Vector2(1, 2), 1 * I_2x2, _y_, 2 * I_2x2, _z_, 3 * I_2x2);
+  bn.emplace_shared<GC>(_y_, Vector2(3, 4), 4 * I_2x2, _z_, 5 * I_2x2);
+  bn.emplace_shared<GC>(_z_, Vector2(5, 6), 6 * I_2x2);
+
+  const VectorValues expected = bn.optimize();
+  for (const auto& keys :
+       {KeyVector({_x_, _y_, _z_}), KeyVector({_x_, _z_, _y_}),
+        KeyVector({_y_, _x_, _z_}), KeyVector({_y_, _z_, _x_}),
+        KeyVector({_z_, _x_, _y_}), KeyVector({_z_, _y_, _x_})}) {
+    const Ordering ordering(keys);
+    const auto [R, d] = bn.matrix(ordering);
+    EXPECT(assert_equal(expected.vector(ordering), R.inverse() * d));
+  }
 }
 
 /* ************************************************************************* */
@@ -113,16 +248,35 @@ TEST( GaussianBayesNet, backSubstituteTranspose )
   // x=R'*y, expected=inv(R')*x
   // 2 = 1    2
   // 5   1 1  3
-  VectorValues
-    x = map_list_of<Key, Vector>
-      (_x_, (Vector(1) << 2.0).finished())
-      (_y_, (Vector(1) << 5.0).finished()),
-    expected = map_list_of<Key, Vector>
-      (_x_, (Vector(1) << 2.0).finished())
-      (_y_, (Vector(1) << 3.0).finished());
+  const VectorValues x{{_x_, Vector1::Constant(2)},
+                       {_y_, Vector1::Constant(5)}},
+      expected{{_x_, Vector1::Constant(2)}, {_y_, Vector1::Constant(3)}};
 
   VectorValues actual = smallBayesNet.backSubstituteTranspose(x);
   EXPECT(assert_equal(expected, actual));
+
+  const auto ordering = noisyBayesNet.ordering();
+  const Matrix R = smallBayesNet.matrix(ordering).first;
+  const Vector expected_vector = R.transpose().inverse() * x.vector(ordering);
+  EXPECT(assert_equal(expected_vector, actual.vector(ordering)));
+}
+
+/* ************************************************************************* */
+TEST( GaussianBayesNet, backSubstituteTransposeNoisy )
+{
+  // x=R'*y, expected=inv(R')*x
+  // 2 = 1    2
+  // 5   1 1  3
+  VectorValues x{{_x_, Vector1::Constant(2)}, {_y_, Vector1::Constant(5)}},
+      expected{{_x_, Vector1::Constant(4)}, {_y_, Vector1::Constant(9)}};
+
+  VectorValues actual = noisyBayesNet.backSubstituteTranspose(x);
+  EXPECT(assert_equal(expected, actual));
+
+  const auto ordering = noisyBayesNet.ordering();
+  const Matrix R = noisyBayesNet.matrix(ordering).first;
+  const Vector expected_vector = R.transpose().inverse() * x.vector(ordering);
+  EXPECT(assert_equal(expected_vector, actual.vector(ordering)));
 }
 
 /* ************************************************************************* */
@@ -130,16 +284,16 @@ TEST( GaussianBayesNet, backSubstituteTranspose )
 TEST( GaussianBayesNet, DeterminantTest )
 {
   GaussianBayesNet cbn;
-  cbn += GaussianConditional(
-          0, Vector2(3.0, 4.0 ), (Matrix(2, 2) << 1.0, 3.0, 0.0, 4.0 ).finished(),
-          1, (Matrix(2, 2) << 2.0, 1.0, 2.0, 3.0).finished(), noiseModel::Isotropic::Sigma(2, 2.0));
+  cbn.emplace_shared<GaussianConditional>(
+          0, Vector2(3.0, 4.0), (Matrix2() << 1.0, 3.0, 0.0, 4.0).finished(),
+          1, (Matrix2() << 2.0, 1.0, 2.0, 3.0).finished(), noiseModel::Isotropic::Sigma(2, 2.0));
 
-  cbn += GaussianConditional(
-          1, Vector2(5.0, 6.0 ), (Matrix(2, 2) << 1.0, 1.0, 0.0, 3.0 ).finished(),
-          2, (Matrix(2, 2) << 1.0, 0.0, 5.0, 2.0).finished(), noiseModel::Isotropic::Sigma(2, 2.0));
+  cbn.emplace_shared<GaussianConditional>(
+          1, Vector2(5.0, 6.0), (Matrix2() << 1.0, 1.0, 0.0, 3.0).finished(),
+          2, (Matrix2() << 1.0, 0.0, 5.0, 2.0).finished(), noiseModel::Isotropic::Sigma(2, 2.0));
 
-  cbn += GaussianConditional(
-      3, Vector2(7.0, 8.0 ), (Matrix(2, 2) << 1.0, 1.0, 0.0, 5.0 ).finished(), noiseModel::Isotropic::Sigma(2, 2.0));
+  cbn.emplace_shared<GaussianConditional>(
+      3, Vector2(7.0, 8.0), (Matrix2() << 1.0, 1.0, 0.0, 5.0).finished(), noiseModel::Isotropic::Sigma(2, 2.0));
 
   double expectedDeterminant = 60.0 / 64.0;
   double actualDeterminant = cbn.determinant();
@@ -161,30 +315,30 @@ TEST(GaussianBayesNet, ComputeSteepestDescentPoint) {
 
   // Create an arbitrary Bayes Net
   GaussianBayesNet gbn;
-  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-    0, Vector2(1.0,2.0), (Matrix(2, 2) << 3.0,4.0,0.0,6.0).finished(),
-    3, (Matrix(2, 2) << 7.0,8.0,9.0,10.0).finished(),
-    4, (Matrix(2, 2) << 11.0,12.0,13.0,14.0).finished()));
-  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-    1, Vector2(15.0,16.0), (Matrix(2, 2) << 17.0,18.0,0.0,20.0).finished(),
-    2, (Matrix(2, 2) << 21.0,22.0,23.0,24.0).finished(),
-    4, (Matrix(2, 2) << 25.0,26.0,27.0,28.0).finished()));
-  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-    2, Vector2(29.0,30.0), (Matrix(2, 2) << 31.0,32.0,0.0,34.0).finished(),
-    3, (Matrix(2, 2) << 35.0,36.0,37.0,38.0).finished()));
-  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-    3, Vector2(39.0,40.0), (Matrix(2, 2) << 41.0,42.0,0.0,44.0).finished(),
-    4, (Matrix(2, 2) << 45.0,46.0,47.0,48.0).finished()));
-  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-    4, Vector2(49.0,50.0), (Matrix(2, 2) << 51.0,52.0,0.0,54.0).finished()));
+  gbn.emplace_shared<GaussianConditional>(
+    0, Vector2(1.0,2.0), (Matrix2() << 3.0,4.0,0.0,6.0).finished(),
+    3, (Matrix2() << 7.0,8.0,9.0,10.0).finished(),
+    4, (Matrix2() << 11.0,12.0,13.0,14.0).finished());
+  gbn.emplace_shared<GaussianConditional>(
+    1, Vector2(15.0,16.0), (Matrix2() << 17.0,18.0,0.0,20.0).finished(),
+    2, (Matrix2() << 21.0,22.0,23.0,24.0).finished(),
+    4, (Matrix2() << 25.0,26.0,27.0,28.0).finished());
+  gbn.emplace_shared<GaussianConditional>(
+    2, Vector2(29.0,30.0), (Matrix2() << 31.0,32.0,0.0,34.0).finished(),
+    3, (Matrix2() << 35.0,36.0,37.0,38.0).finished());
+  gbn.emplace_shared<GaussianConditional>(
+    3, Vector2(39.0,40.0), (Matrix2() << 41.0,42.0,0.0,44.0).finished(),
+    4, (Matrix2() << 45.0,46.0,47.0,48.0).finished());
+  gbn.emplace_shared<GaussianConditional>(
+    4, Vector2(49.0,50.0), (Matrix2() << 51.0,52.0,0.0,54.0).finished());
 
   // Compute the Hessian numerically
   Matrix hessian = numericalHessian<Vector10>(
-      boost::bind(&computeError, gbn, _1), Vector10::Zero());
+      std::bind(&computeError, gbn, std::placeholders::_1), Vector10::Zero());
 
   // Compute the gradient numerically
   Vector gradient = numericalGradient<Vector10>(
-      boost::bind(&computeError, gbn, _1), Vector10::Zero());
+      std::bind(&computeError, gbn, std::placeholders::_1), Vector10::Zero());
 
   // Compute the gradient using dense matrices
   Matrix augmentedHessian = GaussianFactorGraph(gbn).augmentedHessian();
@@ -200,7 +354,7 @@ TEST(GaussianBayesNet, ComputeSteepestDescentPoint) {
   VectorValues actual = gbn.optimizeGradientSearch();
 
   // Check that points agree
-  FastVector<Key> keys = list_of(0)(1)(2)(3)(4);
+  KeyVector keys {0, 1, 2, 3, 4};
   Vector actualAsVector = actual.vector(keys);
   EXPECT(assert_equal(expected, actualAsVector, 1e-5));
 
@@ -211,5 +365,31 @@ TEST(GaussianBayesNet, ComputeSteepestDescentPoint) {
 }
 
 /* ************************************************************************* */
-int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
+TEST(GaussianBayesNet, Dot) {
+  GaussianBayesNet fragment;
+  DotWriter writer;
+  writer.variablePositions.emplace(_x_, Vector2(10, 20));
+  writer.variablePositions.emplace(_y_, Vector2(50, 20));
+  
+  auto position = writer.variablePos(_x_);
+  CHECK(position);
+  EXPECT(assert_equal(Vector2(10, 20), *position, 1e-5));
+
+  string actual = noisyBayesNet.dot(DefaultKeyFormatter, writer);
+  EXPECT(actual ==
+    "digraph {\n"
+    "  size=\"5,5\";\n"
+    "\n"
+    "  var11[label=\"11\", pos=\"10,20!\"];\n"
+    "  var22[label=\"22\", pos=\"50,20!\"];\n"
+    "\n"
+    "  var22->var11\n"
+    "}");
+}
+
+/* ************************************************************************* */
+int main() {
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
+}
 /* ************************************************************************* */

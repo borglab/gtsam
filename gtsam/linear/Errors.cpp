@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -17,8 +17,6 @@
  * @author  Christian Potthast
  */
 
-#include <boost/foreach.hpp>
-#include <boost/range/adaptor/map.hpp>
 #include <gtsam/linear/Errors.h>
 #include <gtsam/linear/VectorValues.h>
 
@@ -27,24 +25,23 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-Errors::Errors(){}
-
-/* ************************************************************************* */
-Errors::Errors(const VectorValues& V) {
-  BOOST_FOREACH(const Vector& e, V | boost::adaptors::map_values) {
-    push_back(e);
-  }
+Errors createErrors(const VectorValues& V) {
+  Errors result;
+  // Use a key-sorted view of VectorValues so the resulting Errors
+  // order is deterministic and independent of the underlying map.
+  for (const auto& [key, e] : V.sorted()) result.push_back(e);
+  return result;
 }
 
 /* ************************************************************************* */
-void Errors::print(const std::string& s) const {
+void print(const Errors& e, const string& s) {
   cout << s << endl;
-  BOOST_FOREACH(const Vector& v, *this)
+  for(const Vector& v: e)
     gtsam::print(v);
 }
 
 /* ************************************************************************* */
-struct equalsVector : public std::binary_function<const Vector&, const Vector&, bool> {
+struct equalsVector : public std::function<bool(const Vector&, const Vector&)> {
   double tol_;
   equalsVector(double tol = 1e-9) : tol_(tol) {}
   bool operator()(const Vector& expected, const Vector& actual) {
@@ -52,49 +49,48 @@ struct equalsVector : public std::binary_function<const Vector&, const Vector&, 
   }
 };
 
-bool Errors::equals(const Errors& expected, double tol) const {
-  if( size() != expected.size() ) return false;
-  return equal(begin(),end(),expected.begin(),equalsVector(tol));
+bool equality(const Errors& actual, const Errors& expected, double tol) {
+  if (actual.size() != expected.size()) return false;
+  return equal(actual.begin(), actual.end(), expected.begin(),
+               equalsVector(tol));
 }
 
 /* ************************************************************************* */
-Errors Errors::operator+(const Errors& b) const {
+Errors operator+(const Errors& a, const Errors& b) {
 #ifndef NDEBUG
-  size_t m = size();
+  size_t m = a.size();
   if (b.size()!=m)
     throw(std::invalid_argument("Errors::operator+: incompatible sizes"));
 #endif
   Errors result;
   Errors::const_iterator it = b.begin();
-    BOOST_FOREACH(const Vector& ai, *this)
+    for(const Vector& ai: a)
     result.push_back(ai + *(it++));
   return result;
 }
 
 
 /* ************************************************************************* */
-Errors Errors::operator-(const Errors& b) const {
+Errors operator-(const Errors& a, const Errors& b) {
 #ifndef NDEBUG
-  size_t m = size();
+  size_t m = a.size();
   if (b.size()!=m)
     throw(std::invalid_argument("Errors::operator-: incompatible sizes"));
 #endif
   Errors result;
   Errors::const_iterator it = b.begin();
-  BOOST_FOREACH(const Vector& ai, *this)
+  for(const Vector& ai: a)
     result.push_back(ai - *(it++));
   return result;
 }
 
 /* ************************************************************************* */
-Errors Errors::operator-() const {
+Errors operator-(const Errors& a) {
   Errors result;
-  BOOST_FOREACH(const Vector& ai, *this)
+  for(const Vector& ai: a)
     result.push_back(-ai);
   return result;
 }
-
-
 
 /* ************************************************************************* */
 double dot(const Errors& a, const Errors& b) {
@@ -105,22 +101,16 @@ double dot(const Errors& a, const Errors& b) {
 #endif
   double result = 0.0;
   Errors::const_iterator it = b.begin();
-  BOOST_FOREACH(const Vector& ai, a)
-    result += gtsam::dot(ai, *(it++));
+  for(const Vector& ai: a)
+    result += gtsam::dot<Vector,Vector>(ai, *(it++));
   return result;
 }
 
 /* ************************************************************************* */
-template<>
-void axpy<Errors,Errors>(double alpha, const Errors& x, Errors& y) {
+void axpy(double alpha, const Errors& x, Errors& y) {
   Errors::const_iterator it = x.begin();
-  BOOST_FOREACH(Vector& yi, y)
-    axpy(alpha,*(it++),yi);
-}
-
-/* ************************************************************************* */
-void print(const Errors& a, const string& s) {
-  a.print(s);
+  for(Vector& yi: y)
+    yi += alpha * (*(it++));
 }
 
 /* ************************************************************************* */

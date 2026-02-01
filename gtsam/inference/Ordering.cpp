@@ -18,14 +18,13 @@
 
 #include <vector>
 #include <limits>
-
-#include <boost/format.hpp>
+#include <cassert>
 
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/3rdparty/CCOLAMD/Include/ccolamd.h>
 
 #ifdef GTSAM_SUPPORT_NESTED_DISSECTION
-#include <gtsam/3rdparty/metis/include/metis.h>
+#include <metis.h>
 #endif
 
 using namespace std;
@@ -53,10 +52,21 @@ Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
   gttic(Ordering_COLAMDConstrained);
 
   gttic(Prepare);
-  size_t nEntries = variableIndex.nEntries(), nFactors =
-      variableIndex.nFactors(), nVars = variableIndex.size();
+  const size_t nVars = variableIndex.size();
+  if (nVars == 0)
+  {
+    return Ordering();
+  }
+
+  if (nVars == 1)
+  {
+    return Ordering(KeyVector(1, variableIndex.begin()->first));
+  }
+
+  const size_t nEntries = variableIndex.nEntries(), nFactors =
+      variableIndex.nFactors();
   // Convert to compressed column major format colamd wants it in (== MATLAB format!)
-  size_t Alen = ccolamd_recommended((int) nEntries, (int) nFactors,
+  const size_t Alen = ccolamd_recommended((int) nEntries, (int) nFactors,
       (int) nVars); /* colamd arg 3: size of the array A */
   vector<int> A = vector<int>(Alen); /* colamd arg 4: row indices of A, of size Alen */
   vector<int> p = vector<int>(nVars + 1); /* colamd arg 5: column pointers of A, of size n_col+1 */
@@ -64,18 +74,15 @@ Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
   // Fill in input data for COLAMD
   p[0] = 0;
   int count = 0;
-  vector<Key> keys(nVars); // Array to store the keys in the order we add them so we can retrieve them in permuted order
+  KeyVector keys(nVars); // Array to store the keys in the order we add them so we can retrieve them in permuted order
   size_t index = 0;
-  BOOST_FOREACH(const VariableIndex::value_type key_factors, variableIndex) {
+  for (auto key_factors: variableIndex) {
     // Arrange factor indices into COLAMD format
-    const VariableIndex::Factors& column = key_factors.second;
-    size_t lastFactorId = numeric_limits<size_t>::max();
-    BOOST_FOREACH(size_t factorIndex, column) {
-      if (lastFactorId != numeric_limits<size_t>::max())
-        assert(factorIndex > lastFactorId);
+    const FactorIndices& column = key_factors.second;
+    for(size_t factorIndex: column) {
       A[count++] = (int) factorIndex; // copy sparse column
     }
-    p[index + 1] = count; // column j (base 1) goes from A[j-1] to A[j]-1
+    p[index + 1] = count;  // column j (base 1) goes from A[j-1] to A[j]-1
     // Store key in array and increment index
     keys[index] = key_factors.first;
     ++index;
@@ -83,7 +90,7 @@ Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
 
   assert((size_t)count == variableIndex.nEntries());
 
-  //double* knobs = NULL; /* colamd arg 6: parameters (uses defaults if NULL) */
+  //double* knobs = nullptr; /* colamd arg 6: parameters (uses defaults if nullptr) */
   double knobs[CCOLAMD_KNOBS];
   ccolamd_set_defaults(knobs);
   knobs[CCOLAMD_DENSE_ROW] = -1;
@@ -99,15 +106,15 @@ Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
     gttic(ccolamd);
     int rv = ccolamd((int) nFactors, (int) nVars, (int) Alen, &A[0], &p[0],
         knobs, stats, &cmember[0]);
-    if (rv != 1)
-      throw runtime_error(
-          (boost::format("ccolamd failed with return value %1%") % rv).str());
+    if (rv != 1) {
+      throw runtime_error("ccolamd failed with return value " + to_string(rv));
+    }
   }
 
   //  ccolamd_report(stats);
 
-  gttic(Fill_Ordering);
   // Convert elimination ordering in p to an ordering
+  gttic(Fill_Ordering);
   Ordering result;
   result.resize(nVars);
   for (size_t j = 0; j < nVars; ++j)
@@ -119,22 +126,23 @@ Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
 
 /* ************************************************************************* */
 Ordering Ordering::ColamdConstrainedLast(const VariableIndex& variableIndex,
-    const std::vector<Key>& constrainLast, bool forceOrder) {
+    const KeyVector& constrainLast, bool forceOrder) {
   gttic(Ordering_COLAMDConstrainedLast);
 
   size_t n = variableIndex.size();
   std::vector<int> cmember(n, 0);
 
   // Build a mapping to look up sorted Key indices by Key
+  // TODO(frank): think of a way to not build this
   FastMap<Key, size_t> keyIndices;
   size_t j = 0;
-  BOOST_FOREACH(const VariableIndex::value_type key_factors, variableIndex)
+  for (auto key_factors: variableIndex)
     keyIndices.insert(keyIndices.end(), make_pair(key_factors.first, j++));
 
   // If at least some variables are not constrained to be last, constrain the
   // ones that should be constrained.
   int group = (constrainLast.size() != n ? 1 : 0);
-  BOOST_FOREACH(Key key, constrainLast) {
+  for (Key key: constrainLast) {
     cmember[keyIndices.at(key)] = group;
     if (forceOrder)
       ++group;
@@ -145,7 +153,7 @@ Ordering Ordering::ColamdConstrainedLast(const VariableIndex& variableIndex,
 
 /* ************************************************************************* */
 Ordering Ordering::ColamdConstrainedFirst(const VariableIndex& variableIndex,
-    const std::vector<Key>& constrainFirst, bool forceOrder) {
+    const KeyVector& constrainFirst, bool forceOrder) {
   gttic(Ordering_COLAMDConstrainedFirst);
 
   const int none = -1;
@@ -155,13 +163,13 @@ Ordering Ordering::ColamdConstrainedFirst(const VariableIndex& variableIndex,
   // Build a mapping to look up sorted Key indices by Key
   FastMap<Key, size_t> keyIndices;
   size_t j = 0;
-  BOOST_FOREACH(const VariableIndex::value_type key_factors, variableIndex)
+  for (auto key_factors: variableIndex)
     keyIndices.insert(keyIndices.end(), make_pair(key_factors.first, j++));
 
   // If at least some variables are not constrained to be last, constrain the
   // ones that should be constrained.
   int group = 0;
-  BOOST_FOREACH(Key key, constrainFirst) {
+  for (Key key: constrainFirst) {
     cmember[keyIndices.at(key)] = group;
     if (forceOrder)
       ++group;
@@ -169,7 +177,7 @@ Ordering Ordering::ColamdConstrainedFirst(const VariableIndex& variableIndex,
 
   if (!forceOrder && !constrainFirst.empty())
     ++group;
-  BOOST_FOREACH(int& c, cmember)
+  for(int& c: cmember)
     if (c == none)
       c = group;
 
@@ -186,12 +194,12 @@ Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
   // Build a mapping to look up sorted Key indices by Key
   FastMap<Key, size_t> keyIndices;
   size_t j = 0;
-  BOOST_FOREACH(const VariableIndex::value_type key_factors, variableIndex)
+  for (auto key_factors: variableIndex)
     keyIndices.insert(keyIndices.end(), make_pair(key_factors.first, j++));
 
   // Assign groups
   typedef FastMap<Key, int>::value_type key_group;
-  BOOST_FOREACH(const key_group& p, groups) {
+  for(const key_group& p: groups) {
     // FIXME: check that no groups are skipped
     cmember[keyIndices.at(p.first)] = p.second;
   }
@@ -204,11 +212,21 @@ Ordering Ordering::Metis(const MetisIndex& met) {
 #ifdef GTSAM_SUPPORT_NESTED_DISSECTION
   gttic(Ordering_METIS);
 
+  idx_t size = met.nValues();
+  if (size == 0)
+  {
+    return Ordering();
+  }
+
+  if (size == 1)
+  {
+    return Ordering(KeyVector(1, met.intToKey(0)));
+  }
+
   vector<idx_t> xadj = met.xadj();
   vector<idx_t> adj = met.adj();
   vector<idx_t> perm, iperm;
 
-  idx_t size = met.nValues();
   for (idx_t i = 0; i < size; i++) {
     perm.push_back(0);
     iperm.push_back(0);
@@ -216,7 +234,7 @@ Ordering Ordering::Metis(const MetisIndex& met) {
 
   int outputError;
 
-  outputError = METIS_NodeND(&size, &xadj[0], &adj[0], NULL, NULL, &perm[0],
+  outputError = METIS_NodeND(&size, &xadj[0], &adj[0], nullptr, nullptr, &perm[0],
       &iperm[0]);
   Ordering result;
 
@@ -262,6 +280,29 @@ void Ordering::print(const std::string& str,
   if (!endedOnNewline)
     cout << "\n";
   cout.flush();
+}
+
+/* ************************************************************************* */
+Ordering::This& Ordering::operator+=(Key key) {
+  this->push_back(key);
+  return *this;
+}
+
+/* ************************************************************************* */
+Ordering::This& Ordering::operator,(Key key) {
+  this->push_back(key);
+  return *this;
+}
+
+/* ************************************************************************* */
+Ordering::This& Ordering::operator+=(KeyVector& keys) {
+  this->insert(this->end(), keys.begin(), keys.end());
+  return *this;
+}
+
+/* ************************************************************************* */
+bool Ordering::contains(const Key& key) const {
+  return std::find(this->begin(), this->end(), key) != this->end();
 }
 
 /* ************************************************************************* */

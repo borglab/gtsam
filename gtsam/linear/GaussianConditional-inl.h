@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -32,5 +32,11 @@ namespace gtsam {
   GaussianConditional::GaussianConditional(
     const KEYS& keys, size_t nrFrontals, const VerticalBlockMatrix& augmentedMatrix, const SharedDiagonal& sigmas) :
   BaseFactor(keys, augmentedMatrix, sigmas), BaseConditional(nrFrontals) {}
+
+  /* ************************************************************************* */
+  template<typename KEYS>
+  GaussianConditional::GaussianConditional(
+    const KEYS& keys, size_t nrFrontals, VerticalBlockMatrix&& augmentedMatrix, const SharedDiagonal& sigmas) :
+  BaseFactor(keys, std::move(augmentedMatrix), sigmas), BaseConditional(nrFrontals) {}
 
 } // gtsam

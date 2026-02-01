@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -19,23 +19,23 @@
 #pragma once
 
 #include <gtsam/symbolic/SymbolicConditional.h>
+#include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/base/types.h>
 
 namespace gtsam {
 
-  /** Symbolic Bayes Net
-   *  \nosubgrouping
+  /** 
+   * A SymbolicBayesNet is a Bayes Net of purely symbolic conditionals.
+   * @ingroup symbolic
    */
-  class GTSAM_EXPORT SymbolicBayesNet : public FactorGraph<SymbolicConditional> {
-
-  public:
-
-    typedef FactorGraph<SymbolicConditional> Base;
+  class SymbolicBayesNet : public BayesNet<SymbolicConditional> {
+   public:
+    typedef BayesNet<SymbolicConditional> Base;
     typedef SymbolicBayesNet This;
     typedef SymbolicConditional ConditionalType;
-    typedef boost::shared_ptr<This> shared_ptr; 
-    typedef boost::shared_ptr<ConditionalType> sharedConditional;
+    typedef std::shared_ptr<This> shared_ptr;
+    typedef std::shared_ptr<ConditionalType> sharedConditional;
 
     /// @name Standard Constructors
     /// @{
@@ -44,41 +44,71 @@ namespace gtsam {
     SymbolicBayesNet() {}
 
     /** Construct from iterator over conditionals */
-    template<typename ITERATOR>
-    SymbolicBayesNet(ITERATOR firstConditional, ITERATOR lastConditional) : Base(firstConditional, lastConditional) {}
+    template <typename ITERATOR>
+    SymbolicBayesNet(ITERATOR firstConditional, ITERATOR lastConditional)
+        : Base(firstConditional, lastConditional) {}
 
     /** Construct from container of factors (shared_ptr or plain objects) */
-    template<class CONTAINER>
-    explicit SymbolicBayesNet(const CONTAINER& conditionals) : Base(conditionals) {}
+    template <class CONTAINER>
+    explicit SymbolicBayesNet(const CONTAINER& conditionals) {
+      push_back(conditionals);
+    }
 
-    /** Implicit copy/downcast constructor to override explicit template container constructor */
-    template<class DERIVEDCONDITIONAL>
-    SymbolicBayesNet(const FactorGraph<DERIVEDCONDITIONAL>& graph) : Base(graph) {}
-    
+    /** Implicit copy/downcast constructor to override explicit template
+     * container constructor */
+    template <class DERIVEDCONDITIONAL>
+    explicit SymbolicBayesNet(const FactorGraph<DERIVEDCONDITIONAL>& graph)
+        : Base(graph) {}
+
+    /**
+     * Constructor that takes an initializer list of shared pointers.
+     *  SymbolicBayesNet bn = {make_shared<SymbolicConditional>(), ...};
+     */
+    SymbolicBayesNet(std::initializer_list<std::shared_ptr<SymbolicConditional>> conditionals)
+        : Base(conditionals) {}
+
+    /// Construct from a single conditional
+    SymbolicBayesNet(SymbolicConditional&& c) {
+      emplace_shared<SymbolicConditional>(c);
+    }
+
+    /**
+     * @brief Add a single conditional and return a reference.
+     * This allows for chaining, e.g.,
+     *   SymbolicBayesNet bn = 
+     *     SymbolicBayesNet(SymbolicConditional(...))(SymbolicConditional(...));
+     */
+    SymbolicBayesNet& operator()(SymbolicConditional&& c) {
+      emplace_shared<SymbolicConditional>(c);
+      return *this;
+    }
+
     /// @}
 
     /// @name Testable
     /// @{
-    
-    /** Check equality */
-    bool equals(const This& bn, double tol = 1e-9) const;
 
-    /// @}
-    
-    /// @name Standard Interface
-    /// @{
-    
-    void saveGraph(const std::string &s, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
-    
+    /** Check equality */
+    GTSAM_EXPORT bool equals(const This& bn, double tol = 1e-9) const;
+
+    /// print
+    GTSAM_EXPORT void print(
+        const std::string& s = "SymbolicBayesNet",
+        const KeyFormatter& formatter = DefaultKeyFormatter) const override {
+      Base::print(s, formatter);
+    }
+
     /// @}
 
   private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     }
+#endif
 };
 
   /// traits

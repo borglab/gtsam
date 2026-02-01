@@ -14,12 +14,9 @@
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/PinholePose.h>
 
-#include <boost/assign/list_of.hpp>
-#include <boost/assign/std/vector.hpp>
 #include <fstream>
 
 using namespace std;
-using namespace boost::assign;
 using namespace gtsam;
 
 #define SLOW
@@ -39,8 +36,8 @@ void timeAll(size_t m, size_t N) {
   // create F
   static const int D = CAMERA::dimension;
   typedef Eigen::Matrix<double, 2, D> Matrix2D;
-  FastVector<Key> keys;
-  vector <Matrix2D> Fblocks;
+  KeyVector keys;
+  vector <Matrix2D, Eigen::aligned_allocator<Matrix2D>> Fblocks;
   for (size_t i = 0; i < m; i++) {
     keys.push_back(i);
     Fblocks.push_back((i + 1) * Matrix::Ones(2, D));
@@ -104,12 +101,12 @@ void timeAll(size_t m, size_t N) {
   { // Raw memory Version
     FastVector < Key > keys;
     for (size_t i = 0; i < m; i++)
-      keys += i;
+      keys.push_back(i);
     Vector x = xvalues.vector(keys);
     double* xdata = x.data();
 
     // create a y
-    Vector y = zero(m * D);
+    Vector y = Vector::Zero(m * D);
     TIME(RawImplicit, implicitFactor, xdata, y.data())
     TIME(RawJacobianQ, jf, xdata, y.data())
     TIME(RawJacobianQR, jqr, xdata, y.data())
@@ -147,10 +144,10 @@ int main(void) {
   //  ms += 20, 30, 40, 50;
   // ms += 20,30,40,50,60,70,80,90,100;
   for (size_t m = 2; m <= 50; m += 2)
-    ms += m;
+    ms.push_back(m);
   //for (size_t m=10;m<=100;m+=10) ms += m;
   // loop over number of images
-  BOOST_FOREACH(size_t m,ms)
+  for(size_t m: ms)
     timeAll<PinholePose<Cal3Bundler> >(m, NUM_ITERATIONS);
 }
 

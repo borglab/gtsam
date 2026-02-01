@@ -9,8 +9,71 @@
 
 #include "main.h"
 
-void test_commainitializer()
+
+template<int M1, int M2, int N1, int N2>
+void test_blocks()
 {
+  Matrix<int, M1+M2, N1+N2> m_fixed;
+  MatrixXi m_dynamic(M1+M2, N1+N2);
+
+  Matrix<int, M1, N1> mat11; mat11.setRandom();
+  Matrix<int, M1, N2> mat12; mat12.setRandom();
+  Matrix<int, M2, N1> mat21; mat21.setRandom();
+  Matrix<int, M2, N2> mat22; mat22.setRandom();
+
+  MatrixXi matx11 = mat11, matx12 = mat12, matx21 = mat21, matx22 = mat22;
+
+  {
+    VERIFY_IS_EQUAL((m_fixed << mat11, mat12, mat21, matx22).finished(), (m_dynamic << mat11, matx12, mat21, matx22).finished());
+    VERIFY_IS_EQUAL((m_fixed.template topLeftCorner<M1,N1>()), mat11);
+    VERIFY_IS_EQUAL((m_fixed.template topRightCorner<M1,N2>()), mat12);
+    VERIFY_IS_EQUAL((m_fixed.template bottomLeftCorner<M2,N1>()), mat21);
+    VERIFY_IS_EQUAL((m_fixed.template bottomRightCorner<M2,N2>()), mat22);
+    VERIFY_IS_EQUAL((m_fixed << mat12, mat11, matx21, mat22).finished(), (m_dynamic << mat12, matx11, matx21, mat22).finished());
+  }
+
+  if(N1 > 0)
+  {
+    if(M1 > 0)
+    {
+      VERIFY_RAISES_ASSERT((m_fixed << mat11, mat12, mat11, mat21, mat22));
+    }
+    if(M2 > 0)
+    {
+      VERIFY_RAISES_ASSERT((m_fixed << mat11, mat12, mat21, mat21, mat22));
+    }
+  }
+  else
+  {
+    // allow insertion of zero-column blocks:
+    VERIFY_IS_EQUAL((m_fixed << mat11, mat12, mat11, mat11, mat21, mat21, mat22).finished(), (m_dynamic << mat12, mat22).finished());
+  }
+  if(M1 != M2)
+  {
+    VERIFY_RAISES_ASSERT((m_fixed << mat11, mat21, mat12, mat22));
+  }
+}
+
+
+template<int depth, int N=0>
+struct test_block_recursion
+{
+  static void run()
+  {
+    test_block_recursion<depth-1, N>::run();
+    test_block_recursion<depth-1, N + (1 << (depth-1))>::run();
+  }
+};
+
+template<int N>
+struct test_block_recursion<0,N>
+{
+  static void run() {
+    test_blocks<(N>>6)&3, (N>>4)&3, (N>>2)&3, N & 3>();
+  }
+};
+
+void test_basics() {
   Matrix3d m3;
   Matrix4d m4;
 
@@ -43,4 +106,13 @@ void test_commainitializer()
         4, 5, 6,
         vec[2].transpose();
   VERIFY_IS_APPROX(m3, ref);
+}
+
+EIGEN_DECLARE_TEST(commainitializer)
+{
+
+  CALL_SUBTEST_1(test_basics());
+
+  // recursively test all block-sizes from 0 to 3:
+  CALL_SUBTEST_2(test_block_recursion<8>::run());
 }

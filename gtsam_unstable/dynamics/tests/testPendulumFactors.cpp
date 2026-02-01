@@ -29,7 +29,7 @@ TEST( testPendulumFactor1, evaluateError) {
   PendulumFactor1 constraint(Q(2), Q(1), V(1), h);
 
   // verify error function
-  EXPECT(assert_equal(zero(1), constraint.evaluateError(q2, q1, v1), tol));
+  EXPECT(assert_equal(Z_1x1, constraint.evaluateError(q2, q1, v1), tol));
 }
 
 /* ************************************************************************* */
@@ -38,7 +38,7 @@ TEST( testPendulumFactor2, evaluateError) {
   PendulumFactor2 constraint(V(2), V(1), Q(1), h);
 
   // verify error function
-  EXPECT(assert_equal(zero(1), constraint.evaluateError(v2, v1, q1), tol));
+  EXPECT(assert_equal(Z_1x1, constraint.evaluateError(v2, v1, q1), tol));
 }
 
 /* ************************************************************************* */
@@ -49,7 +49,7 @@ TEST( testPendulumFactorPk, evaluateError) {
   double pk( 1/h * (q2-q1) + h*g*sin(q1) );
 
   // verify error function
-  EXPECT(assert_equal(zero(1), constraint.evaluateError(pk, q1, q2), tol));
+  EXPECT(assert_equal(Z_1x1, constraint.evaluateError(pk, q1, q2), tol));
 }
 
 /* ************************************************************************* */
@@ -60,7 +60,7 @@ TEST( testPendulumFactorPk1, evaluateError) {
   double pk1( 1/h * (q2-q1) );
 
   // verify error function
-  EXPECT(assert_equal(zero(1), constraint.evaluateError(pk1, q1, q2), tol));
+  EXPECT(assert_equal(Z_1x1, constraint.evaluateError(pk1, q1, q2), tol));
 }
 
 

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -23,8 +23,11 @@
 
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/SubgraphSolver.h>
-#include <boost/optional.hpp>
+#include <gtsam/linear/MultifrontalParameters.h>
+
+#include <iosfwd>
 #include <string>
+#include <optional>
 
 namespace gtsam {
 
@@ -38,64 +41,64 @@ public:
     SILENT, TERMINATION, ERROR, VALUES, DELTA, LINEAR
   };
 
-  int maxIterations; ///< The maximum iterations to stop iterating (default 100)
-  double relativeErrorTol; ///< The maximum relative error decrease to stop iterating (default 1e-5)
-  double absoluteErrorTol; ///< The maximum absolute error decrease to stop iterating (default 1e-5)
-  double errorTol; ///< The maximum total error to stop iterating (default 0.0)
-  Verbosity verbosity; ///< The printing verbosity during optimization (default SILENT)
-  Ordering::OrderingType orderingType; ///< The method of ordering use during variable elimination (default COLAMD)
+  size_t maxIterations = 100; ///< The maximum iterations to stop iterating (default 100)
+  double relativeErrorTol = 1e-5; ///< The maximum relative error decrease to stop iterating (default 1e-5)
+  double absoluteErrorTol = 1e-5; ///< The maximum absolute error decrease to stop iterating (default 1e-5)
+  double errorTol = 0.0; ///< The maximum total error to stop iterating (default 0.0)
+  Verbosity verbosity = SILENT; ///< The printing verbosity during optimization (default SILENT)
+  Ordering::OrderingType orderingType = Ordering::COLAMD; ///< The method of ordering use during variable elimination (default COLAMD)
 
-  NonlinearOptimizerParams() :
-      maxIterations(100), relativeErrorTol(1e-5), absoluteErrorTol(1e-5), errorTol(
-          0.0), verbosity(SILENT), orderingType(Ordering::COLAMD),
-          linearSolverType(MULTIFRONTAL_CHOLESKY) {}
+  size_t getMaxIterations() const { return maxIterations; }
+  double getRelativeErrorTol() const { return relativeErrorTol; }
+  double getAbsoluteErrorTol() const { return absoluteErrorTol; }
+  double getErrorTol() const { return errorTol; }
+  std::string getVerbosity() const { return verbosityTranslator(verbosity); }
 
-  virtual ~NonlinearOptimizerParams() {
-  }
-  virtual void print(const std::string& str = "") const;
-
-  int getMaxIterations() const {
-    return maxIterations;
-  }
-  double getRelativeErrorTol() const {
-    return relativeErrorTol;
-  }
-  double getAbsoluteErrorTol() const {
-    return absoluteErrorTol;
-  }
-  double getErrorTol() const {
-    return errorTol;
-  }
-  std::string getVerbosity() const {
-    return verbosityTranslator(verbosity);
-  }
-
-  void setMaxIterations(int value) {
-    maxIterations = value;
-  }
-  void setRelativeErrorTol(double value) {
-    relativeErrorTol = value;
-  }
-  void setAbsoluteErrorTol(double value) {
-    absoluteErrorTol = value;
-  }
-  void setErrorTol(double value) {
-    errorTol = value;
-  }
-  void setVerbosity(const std::string &src) {
+  void setMaxIterations(int value) { maxIterations = value; }
+  void setRelativeErrorTol(double value) { relativeErrorTol = value; }
+  void setAbsoluteErrorTol(double value) { absoluteErrorTol = value; }
+  void setErrorTol(double value) { errorTol = value; }
+  void setVerbosity(const std::string& src) {
     verbosity = verbosityTranslator(src);
   }
 
   static Verbosity verbosityTranslator(const std::string &s) ;
   static std::string verbosityTranslator(Verbosity value) ;
 
-  // Successive Linearization Parameters
+  /** Type for an optional user-provided hook to be called after each
+   * internal optimizer iteration. See iterationHook below. */
+  using IterationHook = std::function<
+    void(size_t /*iteration*/, double/*errorBefore*/, double/*errorAfter*/)>;
 
-public:
+  /** Optional user-provided iteration hook to be called after each
+   * optimization iteration (Default: none).
+   * Note that `IterationHook` is defined as a std::function<> with this
+   * signature:
+   * \code
+   *  void(size_t iteration, double errorBefore, double errorAfter)
+   * \endcode
+   * which allows binding by means of a reference to a regular function:
+   * \code
+   *  void foo(size_t iteration, double errorBefore, double errorAfter);
+   *  // ...
+   *  lmOpts.iterationHook = &foo;
+   * \endcode
+   * or to a C++11 lambda (preferred if you need to capture additional
+   * context variables, such that the optimizer object itself, the factor graph,
+   * etc.):
+   * \code
+   *  lmOpts.iterationHook = [&](size_t iter, double oldError, double newError)
+   *  {
+   *    // ...
+   *  };
+   * \endcode
+   * or to the result of a properly-formed `std::bind` call.
+   */
+  IterationHook iterationHook;
 
   /** See NonlinearOptimizerParams::linearSolverType */
-
   enum LinearSolverType {
+    MULTIFRONTAL_SOLVER,
     MULTIFRONTAL_CHOLESKY,
     MULTIFRONTAL_QR,
     SEQUENTIAL_CHOLESKY,
@@ -104,12 +107,26 @@ public:
     CHOLMOD, /* Experimental Flag */
   };
 
-  LinearSolverType linearSolverType; ///< The type of linear solver to use in the nonlinear optimizer
-  boost::optional<Ordering> ordering; ///< The variable elimination ordering, or empty to use COLAMD (default: empty)
+  std::optional<Ordering> ordering; ///< The optional variable elimination ordering, or empty to use COLAMD (default: empty)
   IterativeOptimizationParameters::shared_ptr iterativeParams; ///< The container for iterativeOptimization parameters. used in CG Solvers.
+  /// Parameters for `gtsam::MultifrontalSolver` when using `MULTIFRONTAL_SOLVER`.
+
+  /// The type of linear solver to use in the nonlinear optimizer
+  LinearSolverType linearSolverType = MULTIFRONTAL_CHOLESKY;
+
+  MultifrontalParameters multifrontalParams;
+
+  NonlinearOptimizerParams() = default;
+  virtual ~NonlinearOptimizerParams() {
+  }
+
+  virtual void print(const std::string& str = "") const;
+
+  bool equals(const NonlinearOptimizerParams& other, double tol = 1e-9) const;
 
   inline bool isMultifrontal() const {
-    return (linearSolverType == MULTIFRONTAL_CHOLESKY)
+    return (linearSolverType == MULTIFRONTAL_SOLVER)
+        || (linearSolverType == MULTIFRONTAL_CHOLESKY)
         || (linearSolverType == MULTIFRONTAL_QR);
   }
 
@@ -128,6 +145,7 @@ public:
 
   GaussianFactorGraph::Eliminate getEliminationFunction() const {
     switch (linearSolverType) {
+    case MULTIFRONTAL_SOLVER:
     case MULTIFRONTAL_CHOLESKY:
     case SEQUENTIAL_CHOLESKY:
       return EliminatePreferCholesky;
@@ -150,7 +168,7 @@ public:
     linearSolverType = linearSolverTranslator(solver);
   }
 
-  void setIterativeParams(const boost::shared_ptr<IterativeOptimizationParameters> params);
+  void setIterativeParams(const std::shared_ptr<IterativeOptimizationParameters> params);
 
   void setOrdering(const Ordering& ordering) {
     this->ordering = ordering;
@@ -168,13 +186,9 @@ public:
 
 private:
   std::string linearSolverTranslator(LinearSolverType linearSolverType) const;
-
   LinearSolverType linearSolverTranslator(const std::string& linearSolverType) const;
-
   std::string orderingTypeTranslator(Ordering::OrderingType type) const;
-
   Ordering::OrderingType orderingTypeTranslator(const std::string& type) const;
-
 };
 
 // For backward compatibility:

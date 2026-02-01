@@ -16,7 +16,6 @@ template<typename Scalar, int Size, int OtherSize> void symm(int size = Size, in
   typedef Matrix<Scalar, OtherSize, Size> Rhs2;
   enum { order = OtherSize==1 ? 0 : RowMajor };
   typedef Matrix<Scalar, Size, OtherSize,order> Rhs3;
-  typedef typename MatrixType::Index Index;
 
   Index rows = size;
   Index cols = size;
@@ -39,6 +38,24 @@ template<typename Scalar, int Size, int OtherSize> void symm(int size = Size, in
   VERIFY_IS_APPROX(rhs12 = (s1*m2).template selfadjointView<Lower>() * (s2*rhs1),
                    rhs13 = (s1*m1) * (s2*rhs1));
 
+  VERIFY_IS_APPROX(rhs12 = (s1*m2).transpose().template selfadjointView<Upper>() * (s2*rhs1),
+                   rhs13 = (s1*m1.transpose()) * (s2*rhs1));
+
+  VERIFY_IS_APPROX(rhs12 = (s1*m2).template selfadjointView<Lower>().transpose() * (s2*rhs1),
+                   rhs13 = (s1*m1.transpose()) * (s2*rhs1));
+
+  VERIFY_IS_APPROX(rhs12 = (s1*m2).conjugate().template selfadjointView<Lower>() * (s2*rhs1),
+                   rhs13 = (s1*m1).conjugate() * (s2*rhs1));
+
+  VERIFY_IS_APPROX(rhs12 = (s1*m2).template selfadjointView<Lower>().conjugate() * (s2*rhs1),
+                   rhs13 = (s1*m1).conjugate() * (s2*rhs1));
+
+  VERIFY_IS_APPROX(rhs12 = (s1*m2).adjoint().template selfadjointView<Upper>() * (s2*rhs1),
+                   rhs13 = (s1*m1).adjoint() * (s2*rhs1));
+
+  VERIFY_IS_APPROX(rhs12 = (s1*m2).template selfadjointView<Lower>().adjoint() * (s2*rhs1),
+                   rhs13 = (s1*m1).adjoint() * (s2*rhs1));
+
   m2 = m1.template triangularView<Upper>(); rhs12.setRandom(); rhs13 = rhs12;
   m3 = m2.template selfadjointView<Upper>();
   VERIFY_IS_EQUAL(m1, m3);
@@ -58,12 +75,12 @@ template<typename Scalar, int Size, int OtherSize> void symm(int size = Size, in
                    rhs13 = (s1*m1.adjoint()) * (s2*rhs2.adjoint()));
 
   // test row major = <...>
-  m2 = m1.template triangularView<Lower>(); rhs12.setRandom(); rhs13 = rhs12;
-  VERIFY_IS_APPROX(rhs12 -= (s1*m2).template selfadjointView<Lower>() * (s2*rhs3),
+  m2 = m1.template triangularView<Lower>(); rhs32.setRandom(); rhs13 = rhs32;
+  VERIFY_IS_APPROX(rhs32.noalias() -= (s1*m2).template selfadjointView<Lower>() * (s2*rhs3),
                    rhs13 -= (s1*m1) * (s2 * rhs3));
 
   m2 = m1.template triangularView<Upper>();
-  VERIFY_IS_APPROX(rhs12 = (s1*m2.adjoint()).template selfadjointView<Lower>() * (s2*rhs3).conjugate(),
+  VERIFY_IS_APPROX(rhs32.noalias() = (s1*m2.adjoint()).template selfadjointView<Lower>() * (s2*rhs3).conjugate(),
                    rhs13 = (s1*m1.adjoint()) * (s2*rhs3).conjugate());
 
 
@@ -75,9 +92,23 @@ template<typename Scalar, int Size, int OtherSize> void symm(int size = Size, in
   VERIFY_IS_APPROX(rhs22 = (rhs2) * (m2).template selfadjointView<Lower>(), rhs23 = (rhs2) * (m1));
   VERIFY_IS_APPROX(rhs22 = (s2*rhs2) * (s1*m2).template selfadjointView<Lower>(), rhs23 = (s2*rhs2) * (s1*m1));
 
+  // destination with a non-default inner-stride
+  // see bug 1741
+  {
+    typedef Matrix<Scalar,Dynamic,Dynamic> MatrixX;
+    MatrixX buffer(2*cols,2*othersize);
+    Map<Rhs1,0,Stride<Dynamic,2> > map1(buffer.data(),cols,othersize,Stride<Dynamic,2>(2*rows,2));
+    buffer.setZero();
+    VERIFY_IS_APPROX( map1.noalias()  = (s1*m2).template selfadjointView<Lower>() * (s2*rhs1),
+                      rhs13 = (s1*m1) * (s2*rhs1));
+
+    Map<Rhs2,0,Stride<Dynamic,2> > map2(buffer.data(),rhs22.rows(),rhs22.cols(),Stride<Dynamic,2>(2*rhs22.outerStride(),2));
+    buffer.setZero();
+    VERIFY_IS_APPROX(map2 = (rhs2) * (m2).template selfadjointView<Lower>(), rhs23 = (rhs2) * (m1));
+  }
 }
 
-void test_product_symm()
+EIGEN_DECLARE_TEST(product_symm)
 {
   for(int i = 0; i < g_repeat ; i++)
   {

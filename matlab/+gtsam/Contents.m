@@ -49,9 +49,6 @@
 %   Ordering                          - class Ordering, see Doxygen page for details
 %   Value                             - class Value, see Doxygen page for details
 %   Values                            - class Values, see Doxygen page for details
-%   LieScalar                         - class LieScalar, see Doxygen page for details
-%   LieVector                         - class LieVector, see Doxygen page for details
-%   LieMatrix                         - class LieMatrix, see Doxygen page for details
 %   NonlinearFactor                   - class NonlinearFactor, see Doxygen page for details
 %   NonlinearFactorGraph              - class NonlinearFactorGraph, see Doxygen page for details
 %
@@ -94,14 +91,13 @@
 %   Rot2                              - class Rot2, see Doxygen page for details
 %   Rot3                              - class Rot3, see Doxygen page for details
 %   SimpleCamera                      - class SimpleCamera, see Doxygen page for details
+%   PinholeCameraCal3_S2              - class PinholeCameraCal3_S2, see Doxygen page for details
 %   StereoPoint2                      - class StereoPoint2, see Doxygen page for details
 % 
 %% SLAM and SFM
 %   BearingFactor2D                   - class BearingFactor2D, see Doxygen page for details
+%   BearingFactor3D                   - class BearingFactor3D, see Doxygen page for details
 %   BearingRangeFactor2D              - class BearingRangeFactor2D, see Doxygen page for details
-%   BetweenFactorLieMatrix            - class BetweenFactorLieMatrix, see Doxygen page for details
-%   BetweenFactorLieScalar            - class BetweenFactorLieScalar, see Doxygen page for details
-%   BetweenFactorLieVector            - class BetweenFactorLieVector, see Doxygen page for details
 %   BetweenFactorPoint2               - class BetweenFactorPoint2, see Doxygen page for details
 %   BetweenFactorPoint3               - class BetweenFactorPoint3, see Doxygen page for details
 %   BetweenFactorPose2                - class BetweenFactorPose2, see Doxygen page for details
@@ -114,9 +110,6 @@
 %   GenericStereoFactor3D             - class GenericStereoFactor3D, see Doxygen page for details
 %   NonlinearEqualityCal3_S2          - class NonlinearEqualityCal3_S2, see Doxygen page for details
 %   NonlinearEqualityCalibratedCamera - class NonlinearEqualityCalibratedCamera, see Doxygen page for details
-%   NonlinearEqualityLieMatrix        - class NonlinearEqualityLieMatrix, see Doxygen page for details
-%   NonlinearEqualityLieScalar        - class NonlinearEqualityLieScalar, see Doxygen page for details
-%   NonlinearEqualityLieVector        - class NonlinearEqualityLieVector, see Doxygen page for details
 %   NonlinearEqualityPoint2           - class NonlinearEqualityPoint2, see Doxygen page for details
 %   NonlinearEqualityPoint3           - class NonlinearEqualityPoint3, see Doxygen page for details
 %   NonlinearEqualityPose2            - class NonlinearEqualityPose2, see Doxygen page for details
@@ -127,9 +120,6 @@
 %   NonlinearEqualityStereoPoint2     - class NonlinearEqualityStereoPoint2, see Doxygen page for details
 %   PriorFactorCal3_S2                - class PriorFactorCal3_S2, see Doxygen page for details
 %   PriorFactorCalibratedCamera       - class PriorFactorCalibratedCamera, see Doxygen page for details
-%   PriorFactorLieMatrix              - class PriorFactorLieMatrix, see Doxygen page for details
-%   PriorFactorLieScalar              - class PriorFactorLieScalar, see Doxygen page for details
-%   PriorFactorLieVector              - class PriorFactorLieVector, see Doxygen page for details
 %   PriorFactorPoint2                 - class PriorFactorPoint2, see Doxygen page for details
 %   PriorFactorPoint3                 - class PriorFactorPoint3, see Doxygen page for details
 %   PriorFactorPose2                  - class PriorFactorPose2, see Doxygen page for details
@@ -142,8 +132,8 @@
 %   RangeFactorCalibratedCameraPoint  - class RangeFactorCalibratedCameraPoint, see Doxygen page for details
 %   RangeFactorPose2                  - class RangeFactorPose2, see Doxygen page for details
 %   RangeFactorPose3                  - class RangeFactorPose3, see Doxygen page for details
-%   RangeFactorPosePoint2             - class RangeFactorPosePoint2, see Doxygen page for details
-%   RangeFactorPosePoint3             - class RangeFactorPosePoint3, see Doxygen page for details
+%   RangeFactor2D                     - class RangeFactor2D, see Doxygen page for details
+%   RangeFactor3D                     - class RangeFactor3D, see Doxygen page for details
 %   RangeFactorSimpleCamera           - class RangeFactorSimpleCamera, see Doxygen page for details
 %   RangeFactorSimpleCameraPoint      - class RangeFactorSimpleCameraPoint, see Doxygen page for details
 %   VisualISAMGenerateData            - VisualISAMGenerateData creates data for viusalSLAM::iSAM examples

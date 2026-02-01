@@ -18,10 +18,10 @@ RelativeElevationFactor::RelativeElevationFactor(Key poseKey, Key pointKey, doub
 
 /* ************************************************************************* */
 Vector RelativeElevationFactor::evaluateError(const Pose3& pose, const Point3& point,
-    boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+    OptionalMatrixType H1, OptionalMatrixType H2) const {
   double hx = pose.z() - point.z();
   if (H1) {
-    *H1 = zeros(1, 6);
+    *H1 = Matrix::Zero(1,6);
     // Use bottom row of rotation matrix for derivative of translation
     (*H1)(0, 3) = pose.rotation().r1().z();
     (*H1)(0, 4) = pose.rotation().r2().z();
@@ -29,7 +29,7 @@ Vector RelativeElevationFactor::evaluateError(const Pose3& pose, const Point3& p
   }
 
   if (H2) {
-    *H2 = zeros(1, 3);
+    *H2 = Matrix::Zero(1,3);
     (*H2)(0, 2) = -1.0;
   }
   return (Vector(1) << hx - measured_).finished();
@@ -38,7 +38,7 @@ Vector RelativeElevationFactor::evaluateError(const Pose3& pose, const Point3& p
 /* ************************************************************************* */
 bool RelativeElevationFactor::equals(const NonlinearFactor& expected, double tol) const {
   const This *e = dynamic_cast<const This*> (&expected);
-  return e != NULL && Base::equals(*e, tol) && fabs(this->measured_ - e->measured_) < tol;
+  return e != nullptr && Base::equals(*e, tol) && std::abs(this->measured_ - e->measured_) < tol;
 }
 
 /* ************************************************************************* */

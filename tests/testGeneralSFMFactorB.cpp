@@ -15,6 +15,7 @@
  * @brief test general SFM class, with nonlinear optimization and BAL files
  */
 
+#include <gtsam/sfm/SfmData.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/geometry/Point3.h>
@@ -29,7 +30,6 @@
 #include <CppUnitLite/Test.h>
 #include <CppUnitLite/TestRegistry.h>
 #include <CppUnitLite/TestResult.h>
-#include <boost/foreach.hpp>
 #include <stddef.h>
 #include <stdexcept>
 #include <string>
@@ -43,16 +43,14 @@ using symbol_shorthand::P;
 /* ************************************************************************* */
 TEST(PinholeCamera, BAL) {
   string filename = findExampleDataFile("dubrovnik-3-7-pre");
-  SfM_data db;
-  bool success = readBAL(filename, db);
-  if (!success) throw runtime_error("Could not access file!");
+  SfmData db = SfmData::FromBalFile(filename);
 
   SharedNoiseModel unit2 = noiseModel::Unit::Create(2);
   NonlinearFactorGraph graph;
 
-  for (size_t j = 0; j < db.number_tracks(); j++) {
-    BOOST_FOREACH (const SfM_Measurement& m, db.tracks[j].measurements)
-      graph.push_back(sfmFactor(m.second, unit2, m.first, P(j)));
+  for (size_t j = 0; j < db.numberTracks(); j++) {
+    for (const SfmMeasurement& m: db.tracks[j].measurements)
+      graph.emplace_shared<sfmFactor>(m.second, unit2, m.first, P(j));
   }
 
   Values initial = initialCamerasAndPointsEstimate(db);
