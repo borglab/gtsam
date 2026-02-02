@@ -27,6 +27,7 @@
 #include <gtsam/navigation/CombinedImuFactor.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/navigation/ImuFactor.h>
+#include <gtsam/navigation/NavStateImuEKF.h>
 #include <gtsam/navigation/ScenarioRunner.h>
 #include <gtsam/nonlinear/Values.h>
 
@@ -311,6 +312,244 @@ TEST(CombinedImuFactor, Accelerating) {
   auto estimatedCov = runner.estimateCovariance(T, 100);
   Eigen::Matrix<double, 15, 15> expected = pim.preintMeasCov();
   EXPECT(assert_equal(estimatedCov, expected, 0.1));
+}
+
+static inline std::shared_ptr<gtsam::PreintegratedCombinedMeasurements::Params>
+MakeParamsU_Combined(const ImuSimConfig& cfg) {
+  // Match MakeSharedU convention: Z-up nav frame => n_gravity = (0,0,-g)
+  auto p = std::make_shared<gtsam::PreintegratedCombinedMeasurements::Params>(
+      gtsam::Vector3(0.0, 0.0, -cfg.g));
+
+  const gtsam::Matrix3 I = gtsam::Matrix3::Identity();
+  p->gyroscopeCovariance      = (cfg.sigma_g_c * cfg.sigma_g_c) * I;
+  p->accelerometerCovariance  = (cfg.sigma_a_c * cfg.sigma_a_c) * I;
+  p->integrationCovariance    = 1e-12 * I;
+
+  // Turn off bias random walk so we can compare to 9D EKF (no bias state)
+  p->biasOmegaCovariance      = gtsam::Matrix3::Zero();
+  p->biasAccCovariance        = gtsam::Matrix3::Zero();
+  p->biasAccOmegaInt.setZero();
+
+  p->use2ndOrderCoriolis      = false;
+  return p;
+}
+
+// -------------------------- Maps15Nav + propagation --------------------------
+struct Maps15Nav {
+  Eigen::Matrix<double,15,15> F;     // dx_e / dx_s
+  Eigen::Matrix<double,15,15> G;     // dx_e / dz   (residual/transition def)
+  Eigen::Matrix<double,15,15> covG;  // dx_e / dz   (covariance def)
+};
+
+static inline Maps15Nav BuildMaps15Nav_Manifold(
+    const Eigen::Matrix3d& dR,
+    const Eigen::Vector3d& dP,
+    const Eigen::Vector3d& dV,
+    double dt) {
+
+  Maps15Nav m;
+  m.F.setZero();
+  m.G.setZero();
+  m.covG.setZero();
+
+  const Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
+  const Eigen::Matrix3d A = dR.transpose();
+
+  // ---- F: NAV15 -> NAV15, error order [dtheta, dp, dv, dba, dbg] ----
+  m.F.block<3,3>(0,0) = A;
+
+  // dp_e = A*dp_s + dt*A*dv_s - A*skew(dP)*dtheta_s
+  m.F.block<3,3>(3,0) = -A * gtsam::skewSymmetric(dP);
+  m.F.block<3,3>(3,3) = A;
+  m.F.block<3,3>(3,6) = dt * A;
+
+  // dv_e = A*dv_s - A*skew(dV)*dtheta_s
+  m.F.block<3,3>(6,0) = -A * gtsam::skewSymmetric(dV);
+  m.F.block<3,3>(6,6) = A;
+
+  // biases constant in this comparison
+  m.F.block<3,3>(9,9)     = I; // dba
+  m.F.block<3,3>(12,12)   = I; // dbg
+
+  // ---- G: residual/transition definition ----
+  // z = [dtheta, dp, dv, dba, dbg]
+  // manifold correction: theta residual uses I (not A)
+  m.G.block<3,3>(0,0)   = I;
+  m.G.block<3,3>(3,3)   = A;
+  m.G.block<3,3>(6,6)   = A;
+  m.G.block<3,3>(9,9)   = -I;
+  m.G.block<3,3>(12,12) = -I;
+
+  // ---- covG: covariance-error definition ----
+  // like 9D manifold: first 9 injected as identity in nav error coords
+  m.covG.setIdentity();
+  m.covG.block<3,3>(9,9)   = -I;
+  m.covG.block<3,3>(12,12) = -I;
+
+  return m;
+}
+
+static inline Maps15Nav BuildMaps15Nav_Tangent(
+    const Eigen::Matrix3d& dR,
+    const Eigen::Vector3d& dP,
+    const Eigen::Vector3d& dV,
+    double dt) {
+
+  Maps15Nav m;
+  m.F.setZero();
+  m.G.setZero();
+  m.covG.setZero();
+
+  const Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
+  const Eigen::Matrix3d A = dR.transpose();
+
+  const gtsam::Vector3 phi = gtsam::Rot3::Logmap(gtsam::Rot3(dR));
+  const Eigen::Matrix3d Jr = gtsam::so3::DexpFunctor(phi).rightJacobian();
+
+  // ---- F ----
+  m.F.block<3,3>(0,0) = A;
+
+  m.F.block<3,3>(3,0) = -A * gtsam::skewSymmetric(dP);
+  m.F.block<3,3>(3,3) = A;
+  m.F.block<3,3>(3,6) = dt * A;
+
+  m.F.block<3,3>(6,0) = -A * gtsam::skewSymmetric(dV);
+  m.F.block<3,3>(6,6) = A;
+
+  m.F.block<3,3>(9,9)     = I;
+  m.F.block<3,3>(12,12)   = I;
+
+  // ---- G: z = [dphi, dp, dv, dba, dbg] ----
+  m.G.block<3,3>(0,0)   = Jr;
+  m.G.block<3,3>(3,3)   = A;
+  m.G.block<3,3>(6,6)   = A;
+  m.G.block<3,3>(9,9)   = -I;
+  m.G.block<3,3>(12,12) = -I;
+
+  // Tangent: covG == G
+  m.covG = m.G;
+
+  return m;
+}
+
+static inline Eigen::Matrix<double,15,15> PropCov15Nav_Combined(
+    const Maps15Nav& m,
+    const Eigen::Matrix<double,15,15>& Sigma_s,
+    const Eigen::Matrix<double,15,15>& Sigma_z) {
+
+  Eigen::Matrix<double,15,15> Sigma_e;
+  Sigma_e.noalias() = m.F * Sigma_s * m.F.transpose();
+  Sigma_e.noalias() += m.covG * Sigma_z * m.covG.transpose();
+  return Sigma_e;
+}
+
+template <class CombinedPimType, class BuildMapsFunc>
+static void RunCombinedVsEkf9D(TestResult& result_, const std::string& name_,
+                              const ImuSimConfig& cfg,
+                              const std::vector<ImuRawSample>& meas,
+                              BuildMapsFunc buildMaps,
+                              const char* tag) {
+  using namespace gtsam;
+  std::cout << "\n--- " << tag << " ---\n";
+  const NavState s0(cfg.Rws0, cfg.pws0, cfg.vws0);
+
+  auto ekfParams = MakeParamsU(cfg);
+  auto pimParams = MakeParamsU_Combined(cfg);
+
+  // EKF (9D) uses [dtheta, dp, dv] covariance
+  NavStateImuEKF ekf(s0, cfg.P0_nav9, ekfParams);
+  Eigen::Matrix<double,9,9> Phi_ekf = Eigen::Matrix<double,9,9>::Identity();
+
+  // Combined preintegration (15D)
+  CombinedPimType pim(pimParams, cfg.bias);
+
+  for (const auto& s : meas) {
+    // Combined integrates RAW (bias handled in predict/combined model)
+    pim.integrateMeasurement(s.measuredAcc, s.measuredOmega, s.dt);
+
+    // EKF integrates UNBIASED
+    const Vector3 omega_unb = s.measuredOmega - cfg.bias.gyroscope();
+    const Vector3 acc_unb   = s.measuredAcc   - cfg.bias.accelerometer();
+
+    NavStateImuEKF::Jacobian A;
+    ekf.Dynamics(ekfParams->n_gravity, ekf.state(), omega_unb, acc_unb, s.dt, A);
+    Phi_ekf = A * Phi_ekf;
+    ekf.predict(omega_unb, acc_unb, s.dt);
+  }
+
+  const NavState s_ekf = ekf.state();
+  const Eigen::Matrix<double,9,9> P_ekf = ekf.covariance();
+
+  const NavState s_pre = pim.predict(s0, cfg.bias);
+  std::cout << "Compare state (combined preint.predict vs EKF)\n";
+  EXPECT_ROT3_NEAR(s_pre.attitude(), s_ekf.attitude(), 5e-4);
+  EXPECT_MAT_NEAR(s_pre.position(), s_ekf.position(), 1e-4, 1e-2);
+  EXPECT_MAT_NEAR(s_pre.velocity(), s_ekf.velocity(), 1e-4, 1e-2);
+
+  const Eigen::Matrix3d dR = pim.deltaRij().matrix();
+  const Eigen::Vector3d dP = pim.deltaPij();
+  const Eigen::Vector3d dV = pim.deltaVij();
+  const double DT = pim.deltaTij();
+
+  const Maps15Nav maps15 = buildMaps(dR, dP, dV, DT);
+
+  // transition compare: EKF Phi vs Maps15.F top-left 9x9
+  std::cout << "Compare transition\n";
+  const Eigen::Matrix<double,9,9> F9 = maps15.F.topLeftCorner<9,9>();
+  EXPECT_MAT_NEAR(Phi_ekf, F9, 1e-4, 2e-2);
+
+  // covariance compare: EKF cov vs propagated (top-left 9x9)
+  Eigen::Matrix<double,15,15> P0_nav15 = Eigen::Matrix<double,15,15>::Zero();
+  P0_nav15.topLeftCorner<9,9>() = cfg.P0_nav9;
+
+  const Eigen::Matrix<double,15,15> Qz15 = pim.preintMeasCov();
+  const Eigen::Matrix<double,15,15> P15  = PropCov15Nav_Combined(maps15, P0_nav15, Qz15);
+
+  std::cout << "Compare covariance\n";
+  const Eigen::Matrix<double,9,9> P9 = P15.topLeftCorner<9,9>();
+  EXPECT_MAT_NEAR(P_ekf, P9, 1e-4, 2e-2);
+}
+
+TEST(CombinedImuFactor, CheckCovTangent) {
+  // Random-ish initial condition and bias; zero bias random-walk to match 9D EKF assumption.
+  const ImuSimConfig cfg(/*seed=*/0, /*zero_bw=*/true);
+
+  // ~10s of IMU at dt=0.005 -> 2000 samples
+  const double T = 10.0;
+  const auto meas = MakeRandomImuMeasurements(cfg, T, /*seed=*/1);
+
+  using PimC_Tan = PreintegratedCombinedMeasurementsT<TangentPreintegration>;
+
+  auto buildMaps = [](const Eigen::Matrix3d& dR,
+                      const Eigen::Vector3d& dP,
+                      const Eigen::Vector3d& dV,
+                      double dt) -> Maps15Nav {
+    return BuildMaps15Nav_Tangent(dR, dP, dV, dt);
+  };
+
+  RunCombinedVsEkf9D<PimC_Tan>(result_, name_,
+      cfg, meas, buildMaps,
+      "Tangent PreintegratedCombinedMeasurements (15D) vs NavStateImuEKF (9D)");
+}
+
+TEST(CombinedImuFactor, CheckCovManifold) {
+  const ImuSimConfig cfg(/*seed=*/0, /*zero_bw=*/true);
+
+  const double T = 10.0;
+  const auto meas = MakeRandomImuMeasurements(cfg, T, /*seed=*/1);
+
+  using PimC_Man = PreintegratedCombinedMeasurementsT<ManifoldPreintegration>;
+
+  auto buildMaps = [](const Eigen::Matrix3d& dR,
+                      const Eigen::Vector3d& dP,
+                      const Eigen::Vector3d& dV,
+                      double dt) -> Maps15Nav {
+    return BuildMaps15Nav_Manifold(dR, dP, dV, dt);
+  };
+
+  RunCombinedVsEkf9D<PimC_Man>(result_, name_,
+      cfg, meas, buildMaps,
+      "Manifold PreintegratedCombinedMeasurements (15D) vs NavStateImuEKF (9D)");
 }
 
 /* ************************************************************************* */

@@ -21,6 +21,7 @@
 // #define ENABLE_TIMING // uncomment for timing results
 
 #include <gtsam/navigation/ImuFactor.h>
+#include <gtsam/navigation/NavStateImuEKF.h>
 #include <gtsam/navigation/ScenarioRunner.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
@@ -875,6 +876,233 @@ TEST_PIM(ImuFactor, CheckCovariance) {
       0, 0, 0, 0, 3.47222e-07, 0, 0, 1.38889e-06, 0,  //
       0, 0, 0, 0, 0, 3.47222e-07, 0, 0, 1.38889e-06;
   EXPECT(assert_equal(expected, actual.preintMeasCov()));
+}
+
+/* ----------------------------------------------------------------------------
+ * Random IMU sim + Maps9 (tangent/manifold) + PIM vs EKF(9D) unit tests
+ *
+ * Goals:
+ *  - Random-but-bounded IMU raw measurements
+ *  - Compare:
+ *      1) state: pim.predict(s0,bias)  vs ekf.state()
+ *      2) transition: jac_ekf          vs Maps9.F
+ *      3) covariance:  ekf.covariance  vs F*P0*F' + covG*Qz*covG'
+ */
+
+// --------------------------- Maps9 ---------------------------
+// Jacobians for X_{e|s} = X_s ⊞ ΔX = f(x_s, z)
+// x is NavState error in right-perturbation: [dtheta, dp, dv]
+struct Maps9 {
+  Eigen::Matrix<double,9,9> F;     // df/dx_s   (Nav ordering)
+  Eigen::Matrix<double,9,9> G;     // df/dz     for "transition-noise mapping"
+  Eigen::Matrix<double,9,9> covG;  // df/dz     for covariance injection (can differ from G!)
+  Eigen::Matrix<double,9,9> G_inv;
+  Eigen::Matrix<double,9,9> covG_inv;
+};
+
+// Manifold preintegration maps (NavState right-perturbation coords)
+static inline Maps9 BuildMaps9_Manifold(
+    const Eigen::Matrix3d& /*Rws*/,
+    const Eigen::Matrix3d& dR,
+    const Eigen::Vector3d& dP,
+    const Eigen::Vector3d& dV,
+    double dt) {
+  Maps9 m;
+  m.F.setZero(); m.G.setZero(); m.covG.setZero();
+
+  const Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
+  const Eigen::Matrix3d A = dR.transpose();
+
+  m.F.block<3,3>(0,0) = A;
+  m.F.block<3,3>(3,0) = -A * gtsam::skewSymmetric(dP);
+  m.F.block<3,3>(3,3) = A;
+  m.F.block<3,3>(3,6) = dt * A;
+  m.F.block<3,3>(6,0) = -A * gtsam::skewSymmetric(dV);
+  m.F.block<3,3>(6,6) = A;
+
+  // G (transition-noise mapping; z=[dtheta,dp,dv] in "preint residual noise coords")
+  m.G.block<3,3>(0,0) = I;
+  m.G.block<3,3>(3,3) = A;
+  m.G.block<3,3>(6,6) = A;
+
+  m.covG.setIdentity();
+
+  m.G_inv = m.G.transpose();       // because blocks are I/A and A is orthonormal
+  m.covG_inv = m.covG;             // Identity
+  return m;
+}
+
+// Tangent preintegration maps (phi with right Jacobian Jr(phi))
+static inline Maps9 BuildMaps9_Tangent(
+    const Eigen::Matrix3d& /*Rws*/,
+    const Eigen::Matrix3d& dR,
+    const Eigen::Vector3d& dP,
+    const Eigen::Vector3d& dV,
+    double dt) {
+  Maps9 m;
+  m.F.setZero(); m.G.setZero(); m.covG.setZero();
+  m.G_inv.setZero(); m.covG_inv.setZero();
+
+  const Eigen::Matrix3d A = dR.transpose();
+
+  // phi = Log(dR)
+  const gtsam::Vector3 phi = gtsam::Rot3::Logmap(gtsam::Rot3(dR));
+  const Eigen::Matrix3d Jr     = gtsam::so3::DexpFunctor(phi).rightJacobian();
+  const Eigen::Matrix3d Jr_inv = gtsam::so3::DexpFunctor(phi).rightJacobianInverse();
+
+  m.F.block<3,3>(0,0) = A;
+  m.F.block<3,3>(3,0) = -A * gtsam::skewSymmetric(dP);
+  m.F.block<3,3>(3,3) = A;
+  m.F.block<3,3>(3,6) = dt * A;
+  m.F.block<3,3>(6,0) = -A * gtsam::skewSymmetric(dV);
+  m.F.block<3,3>(6,6) = A;
+
+  // G (transition-noise mapping uses phi-noise => Jr)
+  m.G.block<3,3>(0,0) = Jr;
+  m.G.block<3,3>(3,3) = A;
+  m.G.block<3,3>(6,6) = A;
+
+  // In tangent case, covariance injection matches G
+  m.covG = m.G;
+
+  // Inverses
+  m.G_inv.block<3,3>(0,0) = Jr_inv;
+  m.G_inv.block<3,3>(3,3) = A.transpose();
+  m.G_inv.block<3,3>(6,6) = A.transpose();
+
+  m.covG_inv = m.G_inv;
+  return m;
+}
+
+// --------------------------- core integration: PIM + EKF ---------------------------
+template <class PimType>
+static void IntegratePimAndEkf9D(
+    const ImuSimConfig& cfg,
+    const std::shared_ptr<gtsam::PreintegrationParams>& params,
+    const std::vector<ImuRawSample>& meas,
+    PimType* pim,
+    gtsam::NavStateImuEKF* ekf,
+    Eigen::Matrix<double,9,9>* jac_ekf_out) {
+
+  using namespace gtsam;
+  jac_ekf_out->setIdentity();
+
+  const Vector3 ba = cfg.bias.accelerometer();
+  const Vector3 bg = cfg.bias.gyroscope();
+
+  for (const auto& s : meas) {
+    const Vector3 omega_m = s.measuredOmega;
+    const Vector3 acc_m   = s.measuredAcc;
+    const double dt = s.dt;
+
+    // PIM integrates RAW
+    pim->integrateMeasurement(acc_m, omega_m, dt);
+
+    // EKF integrates UNBIASED
+    const Vector3 omega = omega_m - bg;
+    const Vector3 acc   = acc_m   - ba;
+
+    NavStateImuEKF::Jacobian A;
+    ekf->Dynamics(params->n_gravity, ekf->state(), omega, acc, dt, A);
+    (*jac_ekf_out) = A * (*jac_ekf_out);
+    ekf->predict(omega, acc, dt);
+  }
+}
+
+static void RunEkfByPreint9D(
+    TestResult& result_,
+    const std::string& name_,
+    bool use_tangent,
+    const char* tag,
+    unsigned int seed_cfg,
+    unsigned int seed_meas) {
+
+  using namespace gtsam;
+  std::cout << "\n--- " << tag << " ---\n";
+
+  ImuSimConfig cfg(seed_cfg);
+
+  const NavState s0(cfg.Rws0, cfg.pws0, cfg.vws0);
+  auto params = MakeParamsU(cfg);
+
+  using PimTan = PreintegratedImuMeasurementsT<TangentPreintegration>;
+  using PimMan = PreintegratedImuMeasurementsT<ManifoldPreintegration>;
+
+  const double T = 10.0; // seconds
+  const auto meas = MakeRandomImuMeasurements(cfg, T, seed_meas);
+
+  Eigen::Matrix<double,9,9> jac_ekf = Eigen::Matrix<double,9,9>::Identity();
+  NavStateImuEKF ekf(s0, cfg.P0_nav9, params);
+
+  if (use_tangent) {
+    PimTan pim(params, cfg.bias);
+    IntegratePimAndEkf9D(cfg, params, meas, &pim, &ekf, &jac_ekf);
+
+    const NavState s_pre = pim.predict(s0, cfg.bias);
+    const NavState s_ekf = ekf.state();
+
+    EXPECT_MAT_NEAR(s_pre.position(), s_ekf.position(), 1e-3, 1e-2);
+    EXPECT_MAT_NEAR(s_pre.velocity(), s_ekf.velocity(), 1e-3, 1e-2);
+    EXPECT_ROT3_NEAR(s_pre.attitude(), s_ekf.attitude(), 5e-3);
+
+    const Eigen::Matrix3d dR = pim.deltaRij().matrix();
+    const Eigen::Vector3d dP = pim.deltaPij();
+    const Eigen::Vector3d dV = pim.deltaVij();
+    const double DT = pim.deltaTij();
+    const Maps9 maps9 = BuildMaps9_Tangent(cfg.Rws0.matrix(), dR, dP, dV, DT);
+
+    EXPECT_MAT_NEAR(jac_ekf, maps9.F, 1e-3, 2e-2);
+
+    // Cov compare: P = F P0 F' + covG Qz covG'
+    const Eigen::Matrix<double,9,9> Qz = pim.preintMeasCov();
+    Eigen::Matrix<double,9,9> cov_pre;
+    cov_pre.noalias() = maps9.F * cfg.P0_nav9 * maps9.F.transpose();
+    cov_pre.noalias() += maps9.covG * Qz * maps9.covG.transpose();
+
+    const Eigen::Matrix<double,9,9> cov_ekf = ekf.covariance();
+    EXPECT_MAT_NEAR(cov_ekf, cov_pre, 1e-3, 2e-2);
+
+  } else {
+    PimMan pim(params, cfg.bias);
+    IntegratePimAndEkf9D(cfg, params, meas, &pim, &ekf, &jac_ekf);
+
+    const NavState s_pre = pim.predict(s0, cfg.bias);
+    const NavState s_ekf = ekf.state();
+
+    EXPECT_MAT_NEAR(s_pre.position(), s_ekf.position(), 1e-3, 1e-2);
+    EXPECT_MAT_NEAR(s_pre.velocity(), s_ekf.velocity(), 1e-3, 1e-2);
+    EXPECT_ROT3_NEAR(s_pre.attitude(), s_ekf.attitude(), 5e-3);
+
+    const Eigen::Matrix3d dR = pim.deltaRij().matrix();
+    const Eigen::Vector3d dP = pim.deltaPij();
+    const Eigen::Vector3d dV = pim.deltaVij();
+    const double DT = pim.deltaTij();
+    const Maps9 maps9 = BuildMaps9_Manifold(cfg.Rws0.matrix(), dR, dP, dV, DT);
+
+    EXPECT_MAT_NEAR(jac_ekf, maps9.F, 1e-3, 2e-2);
+
+    const Eigen::Matrix<double,9,9> Qz = pim.preintMeasCov();
+    Eigen::Matrix<double,9,9> cov_pre;
+    cov_pre.noalias() = maps9.F * cfg.P0_nav9 * maps9.F.transpose();
+    cov_pre.noalias() += maps9.covG * Qz * maps9.covG.transpose();
+
+    const Eigen::Matrix<double,9,9> cov_ekf = ekf.covariance();
+    EXPECT_MAT_NEAR(cov_ekf, cov_pre, 1e-3, 2e-2);
+  }
+}
+
+TEST(ImuFactor, CheckCovTangent) {
+  RunEkfByPreint9D(result_, name_, /*use_tangent=*/true,
+                       "Tangent preintegration (9D)",
+                       /*seed_cfg=*/0,
+                       /*seed_meas=*/1);
+}
+
+TEST(ImuFactor, CheckCovManifold) {
+  RunEkfByPreint9D(result_, name_, /*use_tangent=*/false,
+                       "Manifold preintegration (9D)",
+                       /*seed_cfg=*/0,
+                       /*seed_meas=*/1);
 }
 
 /* ************************************************************************* */
