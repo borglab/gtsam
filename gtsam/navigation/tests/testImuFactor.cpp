@@ -1055,9 +1055,13 @@ static void RunEkfByPreint9D(
 
     // Cov compare: P = F P0 F' + covG Qz covG'
     const Eigen::Matrix<double,9,9> Qz = pim.preintMeasCov();
+    const Eigen::Matrix<double,9,9> Qr = gtsam::imuFactorResidualCov(pim);
     Eigen::Matrix<double,9,9> cov_pre;
     cov_pre.noalias() = maps9.F * cfg.P0_nav9 * maps9.F.transpose();
-    cov_pre.noalias() += maps9.covG * Qz * maps9.covG.transpose();
+    Eigen::Matrix<double,9,9> GQGt = maps9.G * Qr * maps9.G.transpose();
+    Eigen::Matrix<double,9,9> covGQGt = maps9.covG * Qz * maps9.covG.transpose();
+    EXPECT_MAT_NEAR(GQGt, covGQGt, 1e-8, 1e-6);
+    cov_pre.noalias() += covGQGt;
 
     const Eigen::Matrix<double,9,9> cov_ekf = ekf.covariance();
     EXPECT_MAT_NEAR(cov_ekf, cov_pre, 1e-3, 2e-2);
@@ -1082,9 +1086,13 @@ static void RunEkfByPreint9D(
     EXPECT_MAT_NEAR(jac_ekf, maps9.F, 1e-3, 2e-2);
 
     const Eigen::Matrix<double,9,9> Qz = pim.preintMeasCov();
+    const Eigen::Matrix<double,9,9> Qr = gtsam::imuFactorResidualCov(pim);
     Eigen::Matrix<double,9,9> cov_pre;
     cov_pre.noalias() = maps9.F * cfg.P0_nav9 * maps9.F.transpose();
-    cov_pre.noalias() += maps9.covG * Qz * maps9.covG.transpose();
+    Eigen::Matrix<double,9,9> GQGt = maps9.G * Qr * maps9.G.transpose();
+    Eigen::Matrix<double,9,9> covGQGt = maps9.covG * Qz * maps9.covG.transpose();
+    EXPECT_MAT_NEAR(GQGt, covGQGt, 1e-8, 1e-6);
+    cov_pre.noalias() += covGQGt;
 
     const Eigen::Matrix<double,9,9> cov_ekf = ekf.covariance();
     EXPECT_MAT_NEAR(cov_ekf, cov_pre, 1e-3, 2e-2);
@@ -1103,6 +1111,40 @@ TEST(ImuFactor, CheckCovManifold) {
                        "Manifold preintegration (9D)",
                        /*seed_cfg=*/0,
                        /*seed_meas=*/1);
+}
+
+// -----------------------------------------------------------------------------
+// Check that the residual covariance derived from tangent/manifold preint
+// is (almost) identical after applying imuFactorResidualCov() mapping.
+// -----------------------------------------------------------------------------
+TEST(ImuFactor, CheckCov) {
+  using namespace gtsam;
+  const unsigned int seed_cfg  = 0;
+  const unsigned int seed_meas = 1;
+  ImuSimConfig cfg(seed_cfg);
+  auto params = MakeParamsU(cfg);
+
+  const double T = 10.0; // seconds
+  const auto meas = MakeRandomImuMeasurements(cfg, T, seed_meas);
+
+  using PimTan = PreintegratedImuMeasurementsT<TangentPreintegration>;
+  using PimMan = PreintegratedImuMeasurementsT<ManifoldPreintegration>;
+
+  PimTan pim_tan(params, cfg.bias);
+  PimMan pim_man(params, cfg.bias);
+
+  for (const auto& s : meas) {
+    pim_tan.integrateMeasurement(s.measuredAcc, s.measuredOmega, s.dt);
+    pim_man.integrateMeasurement(s.measuredAcc, s.measuredOmega, s.dt);
+  }
+
+  const Matrix9 Qr_tan = gtsam::imuFactorResidualCov(pim_tan);
+  const Matrix9 Qr_man = gtsam::imuFactorResidualCov(pim_man);
+
+  // std::cout << "\n[ImuFactor.CheckCov] Qr_tan:\n" << Qr_tan << "\n";
+  // std::cout << "\n[ImuFactor.CheckCov] Qr_man:\n" << Qr_man << "\n";
+  // They should be extremely close (tune tolerances if needed)
+  EXPECT_MAT_NEAR(Qr_tan, Qr_man, 1e-4, 5e-3);
 }
 
 /* ************************************************************************* */

@@ -451,20 +451,21 @@ static void RunCombinedVsEkf9D(TestResult& result_, const std::string& name_,
                               const char* tag) {
   using namespace gtsam;
   std::cout << "\n--- " << tag << " ---\n";
+
   const NavState s0(cfg.Rws0, cfg.pws0, cfg.vws0);
 
   auto ekfParams = MakeParamsU(cfg);
   auto pimParams = MakeParamsU_Combined(cfg);
 
-  // EKF (9D) uses [dtheta, dp, dv] covariance
+  // EKF (9D)
   NavStateImuEKF ekf(s0, cfg.P0_nav9, ekfParams);
   Eigen::Matrix<double,9,9> Phi_ekf = Eigen::Matrix<double,9,9>::Identity();
 
-  // Combined preintegration (15D)
+  // Combined PIM (15D)
   CombinedPimType pim(pimParams, cfg.bias);
 
   for (const auto& s : meas) {
-    // Combined integrates RAW (bias handled in predict/combined model)
+    // Combined integrates RAW
     pim.integrateMeasurement(s.measuredAcc, s.measuredOmega, s.dt);
 
     // EKF integrates UNBIASED
@@ -480,12 +481,14 @@ static void RunCombinedVsEkf9D(TestResult& result_, const std::string& name_,
   const NavState s_ekf = ekf.state();
   const Eigen::Matrix<double,9,9> P_ekf = ekf.covariance();
 
+  // ------------------ (1) state compare ------------------
   const NavState s_pre = pim.predict(s0, cfg.bias);
   std::cout << "Compare state (combined preint.predict vs EKF)\n";
   EXPECT_ROT3_NEAR(s_pre.attitude(), s_ekf.attitude(), 5e-4);
   EXPECT_MAT_NEAR(s_pre.position(), s_ekf.position(), 1e-4, 1e-2);
   EXPECT_MAT_NEAR(s_pre.velocity(), s_ekf.velocity(), 1e-4, 1e-2);
 
+  // Preint increments
   const Eigen::Matrix3d dR = pim.deltaRij().matrix();
   const Eigen::Vector3d dP = pim.deltaPij();
   const Eigen::Vector3d dV = pim.deltaVij();
@@ -493,63 +496,100 @@ static void RunCombinedVsEkf9D(TestResult& result_, const std::string& name_,
 
   const Maps15Nav maps15 = buildMaps(dR, dP, dV, DT);
 
-  // transition compare: EKF Phi vs Maps15.F top-left 9x9
+  // ------------------ (2) transition compare ------------------
   std::cout << "Compare transition\n";
   const Eigen::Matrix<double,9,9> F9 = maps15.F.topLeftCorner<9,9>();
   EXPECT_MAT_NEAR(Phi_ekf, F9, 1e-4, 2e-2);
 
-  // covariance compare: EKF cov vs propagated (top-left 9x9)
+  // ------------------ (3) covariance mapping sanity check ------------------
+  // Qz15: covariance stored in pim
+  // Qr15: covariance in residual convention (CombinedImuFactor uses this)
+  const Eigen::Matrix<double, 15, 15> Qz15 = pim.preintMeasCov();
+  const Eigen::Matrix<double, 15, 15> Qr15 = combinedImuFactorResidualCov(pim);
+
+  // Compare: G * Qr * G'   vs   covG * Qz * covG'
+  const Eigen::Matrix<double, 15, 15> GQrGt    = maps15.G    * Qr15 * maps15.G.transpose();
+  const Eigen::Matrix<double, 15, 15> covGQzGt = maps15.covG * Qz15 * maps15.covG.transpose();
+  EXPECT_MAT_NEAR(GQrGt, covGQzGt, 1e-8, 1e-6);
+
+  // ------------------ (4) covariance compare to EKF (top-left 9x9) ------------------
   Eigen::Matrix<double,15,15> P0_nav15 = Eigen::Matrix<double,15,15>::Zero();
   P0_nav15.topLeftCorner<9,9>() = cfg.P0_nav9;
 
-  const Eigen::Matrix<double,15,15> Qz15 = pim.preintMeasCov();
-  const Eigen::Matrix<double,15,15> P15  = PropCov15Nav_Combined(maps15, P0_nav15, Qz15);
+  const Eigen::Matrix<double,15,15> P15 =
+      PropCov15Nav_Combined(maps15, P0_nav15, Qz15);
 
-  std::cout << "Compare covariance\n";
+  std::cout << "Compare covariance (EKF P vs propagated P15 top-left)\n";
   const Eigen::Matrix<double,9,9> P9 = P15.topLeftCorner<9,9>();
   EXPECT_MAT_NEAR(P_ekf, P9, 1e-4, 2e-2);
 }
 
 TEST(CombinedImuFactor, CheckCovTangent) {
-  // Random-ish initial condition and bias; zero bias random-walk to match 9D EKF assumption.
   const ImuSimConfig cfg(/*seed=*/0, /*zero_bw=*/true);
-
-  // ~10s of IMU at dt=0.005 -> 2000 samples
   const double T = 10.0;
   const auto meas = MakeRandomImuMeasurements(cfg, T, /*seed=*/1);
 
-  using PimC_Tan = PreintegratedCombinedMeasurementsT<TangentPreintegration>;
-
+  using PimC_Tan = gtsam::PreintegratedCombinedMeasurementsT<gtsam::TangentPreintegration>;
   auto buildMaps = [](const Eigen::Matrix3d& dR,
                       const Eigen::Vector3d& dP,
                       const Eigen::Vector3d& dV,
-                      double dt) -> Maps15Nav {
+                      double dt) {
     return BuildMaps15Nav_Tangent(dR, dP, dV, dt);
   };
 
-  RunCombinedVsEkf9D<PimC_Tan>(result_, name_,
-      cfg, meas, buildMaps,
-      "Tangent PreintegratedCombinedMeasurements (15D) vs NavStateImuEKF (9D)");
+  RunCombinedVsEkf9D<PimC_Tan>(result_, name_, cfg, meas, buildMaps,
+      "Tangent Combined (15D) vs EKF (9D)");
 }
 
 TEST(CombinedImuFactor, CheckCovManifold) {
   const ImuSimConfig cfg(/*seed=*/0, /*zero_bw=*/true);
-
   const double T = 10.0;
   const auto meas = MakeRandomImuMeasurements(cfg, T, /*seed=*/1);
 
-  using PimC_Man = PreintegratedCombinedMeasurementsT<ManifoldPreintegration>;
-
+  using PimC_Man = gtsam::PreintegratedCombinedMeasurementsT<gtsam::ManifoldPreintegration>;
   auto buildMaps = [](const Eigen::Matrix3d& dR,
                       const Eigen::Vector3d& dP,
                       const Eigen::Vector3d& dV,
-                      double dt) -> Maps15Nav {
+                      double dt) {
     return BuildMaps15Nav_Manifold(dR, dP, dV, dt);
   };
 
-  RunCombinedVsEkf9D<PimC_Man>(result_, name_,
-      cfg, meas, buildMaps,
-      "Manifold PreintegratedCombinedMeasurements (15D) vs NavStateImuEKF (9D)");
+  RunCombinedVsEkf9D<PimC_Man>(result_, name_, cfg, meas, buildMaps,
+      "Manifold Combined (15D) vs EKF (9D)");
+}
+
+TEST(ImuCombinedVsEKF, CheckResidualCov15D_TangentVsManifold) {
+  using namespace gtsam;
+  const unsigned int seed_cfg  = 0;
+  const unsigned int seed_meas = 1;
+
+  ImuSimConfig cfg(seed_cfg);
+
+  auto pimParams = MakeParamsU_Combined(cfg);
+
+  const double T = 10.0; // seconds
+  const auto meas = MakeRandomImuMeasurements(cfg, T, seed_meas);
+
+  using PimC_Tan = PreintegratedCombinedMeasurementsT<TangentPreintegration>;
+  using PimC_Man = PreintegratedCombinedMeasurementsT<ManifoldPreintegration>;
+
+  PimC_Tan pim_tan(pimParams, cfg.bias);
+  PimC_Man pim_man(pimParams, cfg.bias);
+
+  for (const auto& s : meas) {
+    pim_tan.integrateMeasurement(s.measuredAcc, s.measuredOmega, s.dt);
+    pim_man.integrateMeasurement(s.measuredAcc, s.measuredOmega, s.dt);
+  }
+
+  // Convert both to the *factor residual* covariance convention
+  const Eigen::Matrix<double, 15, 15> Qr_tan = combinedImuFactorResidualCov(pim_tan);
+  const Eigen::Matrix<double, 15, 15> Qr_man = combinedImuFactorResidualCov(pim_man);
+
+  std::cout << "\n[CheckResidualCov15D] Compare tangent vs manifold residual covariance\n";
+  // std::cout << "Tangent Qr (15x15):\n"  << Qr_tan << "\n";
+  // std::cout << "Manifold Qr (15x15):\n" << Qr_man << "\n";
+
+  EXPECT_MAT_NEAR(Qr_tan, Qr_man, 1e-4, 5e-3);
 }
 
 /* ************************************************************************* */

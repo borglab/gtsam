@@ -193,6 +193,30 @@ class GTSAM_EXPORT PreintegratedCombinedMeasurementsT : public PreintegrationTyp
 // For backward compatibility:
 using PreintegratedCombinedMeasurements = PreintegratedCombinedMeasurementsT<DefaultPreintegrationType>;
 
+// Manifold combined preintegration: convert preintMeasCov() (defined in the
+// “transported” coordinate convention) into the residual covariance convention
+// used by the factor, by rotating the dp/dv blocks with dR.
+inline Eigen::Matrix<double, 15, 15> combinedImuFactorResidualCov(
+    const gtsam::PreintegratedCombinedMeasurementsT<gtsam::ManifoldPreintegration>& pim) {
+  const Eigen::Matrix<double, 15, 15> Sigma = pim.preintMeasCov();
+
+  const gtsam::Matrix3 R = pim.deltaRij().matrix();
+
+  Eigen::Matrix<double, 15, 15> J = Eigen::Matrix<double, 15, 15>::Identity();
+  J.block<3,3>(3,3) = R;  // dp
+  J.block<3,3>(6,6) = R;  // dv
+
+  Eigen::Matrix<double, 15, 15> Sigma_out;
+  Sigma_out.noalias() = J * Sigma * J.transpose();
+  return Sigma_out;
+}
+
+// Fallback for other Combined PIM types.
+template <class PIM>
+inline Eigen::Matrix<double, 15, 15> combinedImuFactorResidualCov(const PIM& pim) {
+  return pim.preintMeasCov();
+}
+
 /**
  * CombinedImuFactor is a 6-ways factor involving previous state (pose and
  * velocity of the vehicle, as well as bias at previous time step), and current
@@ -247,7 +271,7 @@ class GTSAM_EXPORT CombinedImuFactorT
   CombinedImuFactorT(
       Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias_i, Key bias_j,
       const PIM& preintegratedMeasurements)
-      : Base(noiseModel::Gaussian::Covariance(preintegratedMeasurements.preintMeasCov()),
+      : Base(noiseModel::Gaussian::Covariance(combinedImuFactorResidualCov(preintegratedMeasurements)),
              pose_i, vel_i, pose_j, vel_j, bias_i, bias_j),
         pim_(preintegratedMeasurements) {}
 
