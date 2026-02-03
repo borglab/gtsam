@@ -321,8 +321,14 @@ MakeParamsU_Combined(const ImuSimConfig& cfg) {
       gtsam::Vector3(0.0, 0.0, -cfg.g));
 
   const gtsam::Matrix3 I = gtsam::Matrix3::Identity();
-  p->gyroscopeCovariance      = (cfg.sigma_g_c * cfg.sigma_g_c) * I;
-  p->accelerometerCovariance  = (cfg.sigma_a_c * cfg.sigma_a_c) * I;
+  double cov_g_c = cfg.sigma_g_c * cfg.sigma_g_c;
+  double cov_a_c = cfg.sigma_a_c * cfg.sigma_a_c;
+  p->gyroscopeCovariance     = cov_g_c * I;
+  p->accelerometerCovariance = cov_a_c * I;
+  p->gyroscopeCovariance(0, 0) *= 10000;
+  p->gyroscopeCovariance(1, 1) *= 100;
+  p->accelerometerCovariance(0, 0) *= 10000;
+  p->accelerometerCovariance(1, 1) *= 100;
   p->integrationCovariance    = 1e-12 * I;
 
   // Turn off bias random walk so we can compare to 9D EKF (no bias state)
@@ -381,10 +387,7 @@ static inline Maps15Nav BuildMaps15Nav_Manifold(
   m.G.block<3,3>(12,12) = -I;
 
   // ---- covG: covariance-error definition ----
-  // like 9D manifold: first 9 injected as identity in nav error coords
-  m.covG.setIdentity();
-  m.covG.block<3,3>(9,9)   = -I;
-  m.covG.block<3,3>(12,12) = -I;
+  m.covG = m.G;
 
   return m;
 }

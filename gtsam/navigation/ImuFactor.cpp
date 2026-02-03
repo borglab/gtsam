@@ -69,13 +69,19 @@ void PreintegratedImuMeasurementsT<PreintegrationType>::integrateMeasurement(
   Matrix93 B, C;  // Jacobian of state wrpt accel bias and omega bias respectively.
   PreintegrationType::update(measuredAcc, measuredOmega, dt, &A, &B, &C);
 
-  // For ManifoldPreintegration, the perturbation on deltaXij is dX1, the right perturbation of the NavState manifold (as validated by the unit tests on NavState::retract).
   // For TangentPreintegration, the perturbation on deltaXij is dX2, the 3D perturbation of the rotation tangent space + 
-  // 3D perturbation of the translation part + 3D perturbation of the velocity part (as validated by the matrix A_k in the ImuFactor.pdf).
+  // 3D perturbation of the translation part + 3D perturbation of the velocity part,
+  // as validated by the matrix A_k in the ImuFactor.pdf and the unit test on preintegrated_H_biasAcc()
+
+  // For ManifoldPreintegration, for covariance propagation, the perturbation on deltaXij is dX1, 
+  // the right perturbation of the NavState manifold, as validated by the unit tests on NavState::retract);
+  // for jacobian computation, the perturbation on deltaXij is dX2 defined above, as validated by the unit test on delPdelBiasAcc().
+
   // For ImuFactor or CombinedImuFactor, the residual is defined by PreintegrationBase::computeError and 
   // its perturbation is coincident to dX2 (up to a right Jacobian of a small angle ~ identity).
   // So for TangentPreintegration, the covariance of the residual equals to the preintMeasCov of TangentPreintegration.
   // But for ManifoldPreintegration, we need to rotate the position and velocity blocks of the preintMeasCov to get the residual cov.
+  // Otherwise, we can update the cov propagation of manifold preintegration to make it use dX2.
 
   // first order covariance propagation:
   // as in [2] we consider a first order propagation that can be seen as a

@@ -78,7 +78,27 @@ void ManifoldPreintegration::update(const Vector3& measuredAcc,
 
   // Do update
   deltaTij_ += dt;
-  deltaXij_ = deltaXij_.update(acc, omega, dt, A, B, C); // functional
+
+  // Let's denote the right perturbation dXn on the NavState X_ij's manifold, i.e.,
+  // dXn = [\delta \phi_ij, \delta p_ij, \delta v_ij] where R_ij = \hat{R}_ij Exp(\delta \phi_ij)
+  // p_ij = \hat{p}_ij + R_ij \delta p_{ij} and v_ij = \hat{v}_ij + R_ij \delta v_{ij}.
+  // The error state dXt of the preint X_ij is actually defined as
+  // dXt = [\delta \phi_ij, \delta p_ij, \delta v_ij] where R_ij = \hat{R}_ij Exp(\delta \phi_ij)
+  // p_ij = \hat{p}_ij + \delta p_{ij} and v_ij = \hat{v}_ij + \delta v_{ij}.
+  // So to propagate the X_ij's covariance, we need to transform the transition matrix A.
+  // from NavState.update(), An = \frac{\delta X^n_j}{\delta X^n_{j-1}}, and transform it to
+  // At = \frac{\delta X^t_j}{\delta X^t_{j-1}} = \frac{\delta X^t_j}{\delta X^n_j} * An * \frac{\delta X^n_{j-1}}{\delta X^t_{j-1}}
+  Matrix9 D_dXn_dXt_jm1 = Matrix9::Identity();
+  D_dXn_dXt_jm1.block<3, 3>(3, 3).noalias() = deltaXij_.rotation().matrix().transpose();
+  D_dXn_dXt_jm1.block<3, 3>(6, 6) = D_dXn_dXt_jm1.block<3, 3>(3, 3);
+  Matrix9 An;
+  deltaXij_ = deltaXij_.update(acc, omega, dt, &An, B, C); // functional
+  Matrix9 D_dXt_dXn_j = Matrix9::Identity();
+  D_dXt_dXn_j.block<3, 3>(3, 3).noalias() = deltaXij_.rotation().matrix();
+  D_dXt_dXn_j.block<3, 3>(6, 6) = D_dXt_dXn_j.block<3, 3>(3, 3);
+  *A = D_dXt_dXn_j * An * D_dXn_dXt_jm1;
+  *B = D_dXt_dXn_j * *B;
+  *C = D_dXt_dXn_j * *C;
 
   if (p().body_P_sensor) {
     // More complicated derivatives in case of non-trivial sensor pose

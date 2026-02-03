@@ -193,25 +193,6 @@ class GTSAM_EXPORT PreintegratedCombinedMeasurementsT : public PreintegrationTyp
 // For backward compatibility:
 using PreintegratedCombinedMeasurements = PreintegratedCombinedMeasurementsT<DefaultPreintegrationType>;
 
-// Manifold combined preintegration: convert preintMeasCov() (defined in the
-// “transported” coordinate convention) into the residual covariance convention
-// used by the factor, by rotating the dp/dv blocks with dR.
-inline Eigen::Matrix<double, 15, 15> combinedImuFactorResidualCov(
-    const gtsam::PreintegratedCombinedMeasurementsT<gtsam::ManifoldPreintegration>& pim) {
-  const Eigen::Matrix<double, 15, 15> Sigma = pim.preintMeasCov();
-
-  const gtsam::Matrix3 R = pim.deltaRij().matrix();
-
-  Eigen::Matrix<double, 15, 15> J = Eigen::Matrix<double, 15, 15>::Identity();
-  J.block<3,3>(3,3) = R;  // dp
-  J.block<3,3>(6,6) = R;  // dv
-
-  Eigen::Matrix<double, 15, 15> Sigma_out;
-  Sigma_out.noalias() = J * Sigma * J.transpose();
-  return Sigma_out;
-}
-
-// Fallback for other Combined PIM types.
 template <class PIM>
 inline Eigen::Matrix<double, 15, 15> combinedImuFactorResidualCov(const PIM& pim) {
   return pim.preintMeasCov();

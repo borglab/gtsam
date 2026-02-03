@@ -173,24 +173,6 @@ public:
 // controls which class PreintegratedImuMeasurements uses):
 using PreintegratedImuMeasurements = PreintegratedImuMeasurementsT<DefaultPreintegrationType>;
 
-// Manifold 9D: map Sigma -> "residual covariance" by rotating dp/dv blocks with dR.
-inline gtsam::Matrix9 imuFactorResidualCov(
-    const gtsam::PreintegratedImuMeasurementsT<gtsam::ManifoldPreintegration>& pim) {
-  const gtsam::Matrix9 Sigma = pim.preintMeasCov();
-
-  const gtsam::Matrix3 R = pim.deltaRij().matrix();
-
-  // J is 9x9: identity except dp/dv blocks rotated by dR.
-  gtsam::Matrix9 J = gtsam::Matrix9::Identity();
-  J.block<3,3>(3,3) = R;   // dp
-  J.block<3,3>(6,6) = R;   // dv
-
-  gtsam::Matrix9 noting;
-  noting.noalias() = J * Sigma * J.transpose();
-  return noting;
-}
-
-// Fallback for other PIM types.
 template <class PIM>
 inline gtsam::Matrix9 imuFactorResidualCov(const PIM& pim) {
   return pim.preintMeasCov();

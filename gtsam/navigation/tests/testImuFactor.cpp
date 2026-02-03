@@ -925,7 +925,7 @@ static inline Maps9 BuildMaps9_Manifold(
   m.G.block<3,3>(3,3) = A;
   m.G.block<3,3>(6,6) = A;
 
-  m.covG.setIdentity();
+  m.covG = m.G;
 
   m.G_inv = m.G.transpose();       // because blocks are I/A and A is orthonormal
   m.covG_inv = m.covG;             // Identity

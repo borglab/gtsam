@@ -131,8 +131,14 @@ struct ImuSimConfig {
 inline std::shared_ptr<gtsam::PreintegrationParams> MakeParamsU(const ImuSimConfig& cfg) {
   auto p = gtsam::PreintegrationParams::MakeSharedU(cfg.g);
   const Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
-  p->gyroscopeCovariance     = (cfg.sigma_g_c * cfg.sigma_g_c) * I;
-  p->accelerometerCovariance = (cfg.sigma_a_c * cfg.sigma_a_c) * I;
+  double cov_g_c = cfg.sigma_g_c * cfg.sigma_g_c;
+  double cov_a_c = cfg.sigma_a_c * cfg.sigma_a_c;
+  p->gyroscopeCovariance     = cov_g_c * I;
+  p->accelerometerCovariance = cov_a_c * I;
+  p->gyroscopeCovariance(0, 0) *= 10000;
+  p->gyroscopeCovariance(1, 1) *= 100;
+  p->accelerometerCovariance(0, 0) *= 10000;
+  p->accelerometerCovariance(1, 1) *= 100;
   p->integrationCovariance   = 1e-12 * I;
   p->use2ndOrderCoriolis     = false;
   return p;
