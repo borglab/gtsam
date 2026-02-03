@@ -155,6 +155,63 @@ TEST(ManifoldPreintegration, CompareWithPreintegratedRotation) {
                               H2.rightCols<3>()));                      
 }
 
+TEST(ManifoldPreintegration, UpdatePreintegratedFastMatchesSlow) {
+  using namespace gtsam;
+
+  const unsigned int seed_cfg  = 0;
+  const unsigned int seed_meas = 1;
+
+  ImuSimConfig cfg(seed_cfg);
+  auto params = MakeParamsU(cfg);
+
+  const double T = 5.0; // seconds
+  const auto meas = MakeRandomImuMeasurements(cfg, T, seed_meas);
+
+  NavState X_fast;
+  NavState X_slow;
+
+  Matrix9 P_fast = Matrix9::Zero();
+  Matrix9 P_slow = Matrix9::Zero();
+
+  const Matrix3 aCov = params->accelerometerCovariance;
+  const Matrix3 wCov = params->gyroscopeCovariance;
+  const Matrix3 iCov = params->integrationCovariance;
+
+  ManifoldPreintegration mip(params, cfg.bias);
+
+  for (const auto& s : meas) {
+    Matrix9  A_f;
+    Matrix93 B_f, C_f;
+    NavState Xn_fast = mip.UpdatePreintegrated(
+        s.measuredAcc, s.measuredOmega, s.dt, X_fast, &A_f, &B_f, &C_f);
+
+    Matrix9  A_s;
+    Matrix93 B_s, C_s;
+    NavState Xn_slow = mip.UpdatePreintegratedSlow(
+        s.measuredAcc, s.measuredOmega, s.dt, X_slow, &A_s, &B_s, &C_s);
+
+    EXPECT(assert_equal(Xn_fast, Xn_slow, 1e-9));
+
+    EXPECT_MAT_NEAR(A_f, A_s, 1e-9, 1e-6);
+    EXPECT_MAT_NEAR(B_f, B_s, 1e-9, 1e-6);
+    EXPECT_MAT_NEAR(C_f, C_s, 1e-6, 1e-4);
+
+    P_fast = A_f * P_fast * A_f.transpose();
+    P_fast.noalias() += B_f * (aCov / s.dt) * B_f.transpose();
+    P_fast.noalias() += C_f * (wCov / s.dt) * C_f.transpose();
+    P_fast.block<3,3>(3,3).noalias() += iCov * s.dt;
+
+    P_slow = A_s * P_slow * A_s.transpose();
+    P_slow.noalias() += B_s * (aCov / s.dt) * B_s.transpose();
+    P_slow.noalias() += C_s * (wCov / s.dt) * C_s.transpose();
+    P_slow.block<3,3>(3,3).noalias() += iCov * s.dt;
+
+    EXPECT_MAT_NEAR(P_fast, P_slow, 1e-5, 5e-3);
+    X_fast = Xn_fast;
+    X_slow = Xn_slow;
+  }
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;

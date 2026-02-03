@@ -56,6 +56,120 @@ bool ManifoldPreintegration::equals(const ManifoldPreintegration& other,
       && equal_with_abs_tol(delVdelBiasOmega_, other.delVdelBiasOmega_, tol);
 }
 
+NavState ManifoldPreintegration::UpdatePreintegrated(
+    const Eigen::Vector3d& a_body,
+    const Eigen::Vector3d& w_body,
+    double dt,
+    const NavState& X,                       // (R,p,v)
+    gtsam::OptionalJacobian<9,9> A_t,        // dXt_{k+1} / dXt_k
+    gtsam::OptionalJacobian<9,3> B_t,        // dXt_{k+1} / d a_body
+    gtsam::OptionalJacobian<9,3> C_t) {      // dXt_{k+1} / d w_body
+
+  // Let's denote the right perturbation dXn on the NavState X_ij's manifold, i.e.,
+  // dXn = [\delta \phi_ij, \delta p_ij, \delta v_ij] where R_ij = \hat{R}_ij Exp(\delta \phi_ij)
+  // p_ij = \hat{p}_ij + R_ij \delta p_{ij} and v_ij = \hat{v}_ij + R_ij \delta v_{ij}.
+  // The error state dXt of the preint X_ij is actually defined as
+  // dXt = [\delta \phi_ij, \delta p_ij, \delta v_ij] where R_ij = \hat{R}_ij Exp(\delta \phi_ij)
+  // p_ij = \hat{p}_ij + \delta p_{ij} and v_ij = \hat{v}_ij + \delta v_{ij}.
+  // So to propagate the X_ij's covariance, we need to transform the transition matrix A.
+  // from NavState.update(), An = \frac{\delta X^n_j}{\delta X^n_{j-1}}, and transform it to
+  // At = \frac{\delta X^t_j}{\delta X^t_{j-1}} = \frac{\delta X^t_j}{\delta X^n_j} * An * \frac{\delta X^n_{j-1}}{\delta X^t_{j-1}}
+  
+  const double dt2  = dt * dt;
+  const double dt22 = 0.5 * dt2;
+
+  const gtsam::Rot3& R = X.rotation();
+  const Eigen::Matrix3d Rm = R.matrix();
+
+  // Rotation increment
+  const Eigen::Vector3d phi = w_body * dt;
+
+  Eigen::Matrix3d Dexp;  // not used directly here, but cheap to compute
+  const gtsam::Rot3 dR = gtsam::Rot3::Expmap(phi, (A_t || C_t) ? &Dexp : nullptr);
+  const gtsam::Rot3 Rn = R.compose(dR);
+
+  // a_nav uses OLD R (matching typical preintegration / NavState.update structure)
+  const Eigen::Vector3d a_nav = R.rotate(a_body);
+
+  const gtsam::Point3  pn = X.position() + X.v() * dt + a_nav * dt22;
+  const Eigen::Vector3d vn = X.v() + a_nav * dt;
+
+  NavState Xn(Rn, pn, vn);
+
+  if (A_t) {
+    A_t->setZero();
+
+    // dphi+ = dR^T * dphi  (right-perturbation transport)
+    A_t->block<3,3>(0,0) = dR.transpose().matrix();
+
+    // dp+ = dp + dt dv + (d/dphi)(0.5*R*a*dt^2)*dphi
+    // dv+ = dv            + (d/dphi)(R*a*dt)*dphi
+    //
+    // Right perturbation: R Exp(dphi) a ≈ R (I + [dphi]x) a
+    // so δ(R a) = R (dphi x a) = - R [a]x dphi
+    const Eigen::Matrix3d a_skew = skewSymmetric(a_body);
+    A_t->block<3,3>(3,0) = -Rm * a_skew * dt22;
+    A_t->block<3,3>(6,0) = -Rm * a_skew * dt;
+
+    // world-additive p,v parts
+    A_t->block<3,3>(3,3) = Eigen::Matrix3d::Identity();
+    A_t->block<3,3>(3,6) = Eigen::Matrix3d::Identity() * dt;
+    A_t->block<3,3>(6,6) = Eigen::Matrix3d::Identity();
+  }
+
+  if (B_t) {
+    B_t->setZero();
+    // dp+ / da = 0.5 * R * dt^2, dv+ / da = R * dt
+    B_t->block<3,3>(3,0) = Rm * dt22;
+    B_t->block<3,3>(6,0) = Rm * dt;
+  }
+
+  if (C_t) {
+    C_t->setZero();
+    // dphi+ / dw = invJr(phi) * dt
+    so3::DexpFunctor local(phi);
+    const Eigen::Matrix3d invJr = local.InvJacobian().right();
+    C_t->block<3,3>(0,0) = invJr * dt;
+  }
+
+  return Xn;
+}
+
+NavState ManifoldPreintegration::UpdatePreintegratedSlow(
+    const Eigen::Vector3d& a_body,
+    const Eigen::Vector3d& w_body,
+    double dt,
+    const NavState& X,
+    gtsam::OptionalJacobian<9,9> A,
+    gtsam::OptionalJacobian<9,3> B,
+    gtsam::OptionalJacobian<9,3> C) {
+  const Eigen::Matrix3d Rm = X.rotation().matrix();
+
+  Matrix9 D_dXn_dXt_jm1 = Matrix9::Identity();
+  D_dXn_dXt_jm1.block<3,3>(3,3) = Rm.transpose();
+  D_dXn_dXt_jm1.block<3,3>(6,6) = Rm.transpose();
+
+  Matrix9  An;
+  Matrix93 Bn, Cn;
+
+  NavState Xn = X.update(a_body, w_body, dt,
+                         A ? &An : nullptr,
+                         B ? &Bn : nullptr,
+                         C ? &Cn : nullptr);
+
+  const Eigen::Matrix3d Rnm = Xn.rotation().matrix();
+
+  Matrix9 D_dXt_dXn_j = Matrix9::Identity();
+  D_dXt_dXn_j.block<3,3>(3,3) = Rnm;
+  D_dXt_dXn_j.block<3,3>(6,6) = Rnm;
+
+  if (A) *A = D_dXt_dXn_j * An * D_dXn_dXt_jm1;
+  if (B) *B = D_dXt_dXn_j * Bn;
+  if (C) *C = D_dXt_dXn_j * Cn;
+
+  return Xn;
+}
+
 //------------------------------------------------------------------------------
 void ManifoldPreintegration::update(const Vector3& measuredAcc,
     const Vector3& measuredOmega, const double dt, Matrix9* A, Matrix93* B,
@@ -78,27 +192,7 @@ void ManifoldPreintegration::update(const Vector3& measuredAcc,
 
   // Do update
   deltaTij_ += dt;
-
-  // Let's denote the right perturbation dXn on the NavState X_ij's manifold, i.e.,
-  // dXn = [\delta \phi_ij, \delta p_ij, \delta v_ij] where R_ij = \hat{R}_ij Exp(\delta \phi_ij)
-  // p_ij = \hat{p}_ij + R_ij \delta p_{ij} and v_ij = \hat{v}_ij + R_ij \delta v_{ij}.
-  // The error state dXt of the preint X_ij is actually defined as
-  // dXt = [\delta \phi_ij, \delta p_ij, \delta v_ij] where R_ij = \hat{R}_ij Exp(\delta \phi_ij)
-  // p_ij = \hat{p}_ij + \delta p_{ij} and v_ij = \hat{v}_ij + \delta v_{ij}.
-  // So to propagate the X_ij's covariance, we need to transform the transition matrix A.
-  // from NavState.update(), An = \frac{\delta X^n_j}{\delta X^n_{j-1}}, and transform it to
-  // At = \frac{\delta X^t_j}{\delta X^t_{j-1}} = \frac{\delta X^t_j}{\delta X^n_j} * An * \frac{\delta X^n_{j-1}}{\delta X^t_{j-1}}
-  Matrix9 D_dXn_dXt_jm1 = Matrix9::Identity();
-  D_dXn_dXt_jm1.block<3, 3>(3, 3).noalias() = deltaXij_.rotation().matrix().transpose();
-  D_dXn_dXt_jm1.block<3, 3>(6, 6) = D_dXn_dXt_jm1.block<3, 3>(3, 3);
-  Matrix9 An;
-  deltaXij_ = deltaXij_.update(acc, omega, dt, &An, B, C); // functional
-  Matrix9 D_dXt_dXn_j = Matrix9::Identity();
-  D_dXt_dXn_j.block<3, 3>(3, 3).noalias() = deltaXij_.rotation().matrix();
-  D_dXt_dXn_j.block<3, 3>(6, 6) = D_dXt_dXn_j.block<3, 3>(3, 3);
-  *A = D_dXt_dXn_j * An * D_dXn_dXt_jm1;
-  *B = D_dXt_dXn_j * *B;
-  *C = D_dXt_dXn_j * *C;
+  deltaXij_ = UpdatePreintegrated(acc, omega, dt, deltaXij_, A, B, C);
 
   if (p().body_P_sensor) {
     // More complicated derivatives in case of non-trivial sensor pose

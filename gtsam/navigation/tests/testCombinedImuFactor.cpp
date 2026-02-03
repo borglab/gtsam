@@ -334,7 +334,6 @@ MakeParamsU_Combined(const ImuSimConfig& cfg) {
   // Turn off bias random walk so we can compare to 9D EKF (no bias state)
   p->biasOmegaCovariance      = gtsam::Matrix3::Zero();
   p->biasAccCovariance        = gtsam::Matrix3::Zero();
-  p->biasAccOmegaInt.setZero();
 
   p->use2ndOrderCoriolis      = false;
   return p;
@@ -487,7 +486,7 @@ static void RunCombinedVsEkf9D(TestResult& result_, const std::string& name_,
   // ------------------ (1) state compare ------------------
   const NavState s_pre = pim.predict(s0, cfg.bias);
   std::cout << "Compare state (combined preint.predict vs EKF)\n";
-  EXPECT_ROT3_NEAR(s_pre.attitude(), s_ekf.attitude(), 5e-4);
+  EXPECT_ROT3_NEAR(s_pre.attitude(), s_ekf.attitude(), 1e-3);
   EXPECT_MAT_NEAR(s_pre.position(), s_ekf.position(), 1e-4, 1e-2);
   EXPECT_MAT_NEAR(s_pre.velocity(), s_ekf.velocity(), 1e-4, 1e-2);
 

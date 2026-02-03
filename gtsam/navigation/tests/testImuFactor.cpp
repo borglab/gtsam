@@ -948,7 +948,7 @@ static inline Maps9 BuildMaps9_Tangent(
   // phi = Log(dR)
   const gtsam::Vector3 phi = gtsam::Rot3::Logmap(gtsam::Rot3(dR));
   const Eigen::Matrix3d Jr     = gtsam::so3::DexpFunctor(phi).rightJacobian();
-  const Eigen::Matrix3d Jr_inv = gtsam::so3::DexpFunctor(phi).rightJacobianInverse();
+  const Eigen::Matrix3d Jr_inv = gtsam::so3::DexpFunctor(phi).InvJacobian().right();
 
   m.F.block<3,3>(0,0) = A;
   m.F.block<3,3>(3,0) = -A * gtsam::skewSymmetric(dP);
