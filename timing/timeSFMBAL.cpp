@@ -24,6 +24,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <thread>
 
 namespace {
 constexpr const char* kDefaultBenchmarkDataset = "dubrovnik-16-22106-pre";
@@ -183,6 +184,7 @@ double runSolver(const NonlinearFactorGraph& graph, const Values& initial,
   auto start = std::chrono::high_resolution_clock::now();
   LevenbergMarquardtOptimizer lm(graph, initial, params);
   lm.optimize();
+  std::this_thread::sleep_for(std::chrono::seconds(10));
   auto end = std::chrono::high_resolution_clock::now();
 
   std::chrono::duration<double> elapsed = end - start;
