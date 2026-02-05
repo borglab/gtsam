@@ -31,7 +31,7 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-TEST(RISAMGraduatedKernel, error) {
+TEST(RISAMGraduatedKernel, Error) {
   SIGKernel kernel(1.0);
   // At zero error is not dependent on mu
   CHECK(assert_equal(0.0, kernel.error(0.0, 0.0), 1e-9));
@@ -55,7 +55,7 @@ TEST(RISAMGraduatedKernel, error) {
 }
 
 /* ************************************************************************* */
-TEST(RISAMGraduatedKernel, weight) {
+TEST(RISAMGraduatedKernel, Weight) {
   SIGKernel kernel(1.0);
   // At Mu = 0 weights are identical at 0.5
   CHECK(assert_equal(0.5, kernel.weight(0.1, 0.0), 1e-9));
@@ -77,7 +77,7 @@ TEST(RISAMGraduatedKernel, weight) {
 }
 
 /* ************************************************************************* */
-TEST(RISAMGraduatedKernel, weightSystem) {
+TEST(RISAMGraduatedKernel, WeightSystem) {
   SIGKernel kernel(1.0);
   vector<Matrix> A;
   A.push_back(Matrix::Identity(3, 3));
@@ -89,7 +89,7 @@ TEST(RISAMGraduatedKernel, weightSystem) {
 }
 
 /* ************************************************************************* */
-TEST(RISAMGraduatedKernel, muInitInc) {
+TEST(RISAMGraduatedKernel, MuInitInc) {
   SIGKernel kernel(1.0, SIGKernel::muUpdateStable, 0.1);
   CHECK(assert_equal(0.1, kernel.incrementMuInit(0.0), 1e-9));
   CHECK(assert_equal(1.0, kernel.incrementMuInit(1.0), 1e-9));
@@ -99,14 +99,14 @@ TEST(RISAMGraduatedKernel, muInitInc) {
 }
 
 /* ************************************************************************* */
-TEST(RISAMGraduatedKernel, isMuConverged) {
+TEST(RISAMGraduatedKernel, IsMuConverged) {
   SIGKernel kernel(1.0, SIGKernel::muUpdateStable, 0.1);
   CHECK(!kernel.isMuConverged(0.5));
   CHECK(kernel.isMuConverged(1.0));
 }
 
 /* ************************************************************************* */
-TEST(RISAMGraduatedKernel, muUpdateMcGann2023) {
+TEST(RISAMGraduatedKernel, MuUpdateMcGann2023) {
   // Standard Sequence
   CHECK(assert_equal(0.12, SIGKernel::muUpdateMcGann2023(0.0, 0, 0), 1e-9));
   CHECK(assert_equal(0.384, SIGKernel::muUpdateMcGann2023(0.12, 0, 1), 1e-9));
@@ -115,7 +115,7 @@ TEST(RISAMGraduatedKernel, muUpdateMcGann2023) {
 }
 
 /* ************************************************************************* */
-TEST(RISAMGraduatedKernel, muUpdateStable) {
+TEST(RISAMGraduatedKernel, MuUpdateStable) {
   // Standard Sequence
   CHECK(assert_equal(0.5, SIGKernel::muUpdateStable(0.0, 0.0, 0), 1e-9));
   CHECK(assert_equal(0.9, SIGKernel::muUpdateStable(0.5, 0.0, 1), 1e-9));
@@ -131,7 +131,7 @@ TEST(RISAMGraduatedKernel, muUpdateStable) {
 }
 
 /* ************************************************************************* */
-TEST(RISAMGraduatedFactor, linearize) {
+TEST(RISAMGraduatedFactor, Linearize) {
   SIGKernel::shared_ptr kernel = std::make_shared<SIGKernel>(1.0);
   NonlinearFactor::shared_ptr factor =
       RISAM::make_graduated<PriorFactor<double>>(kernel, 0, 0.0,
@@ -147,7 +147,7 @@ TEST(RISAMGraduatedFactor, linearize) {
 }
 
 /* ************************************************************************* */
-TEST(RISAMGraduatedFactor, error) {
+TEST(RISAMGraduatedFactor, Error) {
   SIGKernel::shared_ptr kernel = std::make_shared<SIGKernel>(1.0);
   NonlinearFactor::shared_ptr factor =
       RISAM::make_graduated<PriorFactor<double>>(kernel, 0, 0.0,
@@ -163,22 +163,21 @@ TEST(RISAMGraduatedFactor, error) {
 }
 
 /* ************************************************************************* */
-TEST(RISAM, GaussianRISAMNoOutliers) {
+TEST(RISAM, RISAMIntegrationTest) {
   SharedDiagonal odoNoise = noiseModel::Diagonal::Sigmas(
       (Vector(3) << 0.1, 0.1, M_PI / 100.0).finished());
   SharedDiagonal brNoise =
       noiseModel::Diagonal::Sigmas((Vector(2) << M_PI / 100.0, 0.1).finished());
 
-  // These variables will be reused and accumulate factors and values
+  // Setup the Solver
   SIGKernel::shared_ptr kernel = std::make_shared<SIGKernel>(
       SIGKernel::shapeParamFromInfThresh(0.1, 3, 0.95));
   RISAM::Parameters params;
-  ISAM2DoglegParams dlparams;
-  dlparams.verbose = true;
-  dlparams.initialDelta = 0.01;
-  params.isam2_params = ISAM2Params(dlparams);  // ISAM2DoglegLineSearchParams(0.02,
-                                                // 1.0, 1.5, 1e-3, 1e-4, true));
-  ISAM2 risam(params.isam2_params);
+  params.isam2_params = ISAM2Params(
+      ISAM2DoglegLineSearchParams(0.02, 1.0, 1.5, 1e-3, 1e-4, false));
+  RISAM risam(params);
+
+  // Setup Container for the full problem
   Values fullinit;
   NonlinearFactorGraph fullgraph;
 
@@ -217,10 +216,12 @@ TEST(RISAM, GaussianRISAMNoOutliers) {
     NonlinearFactorGraph newfactors;
     newfactors.emplace_shared<BetweenFactor<Pose2>>(
         i, i + 1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors.push_back(std::make_shared<BearingRangeFactor<Pose2, Point2>>(
-        i, 100, Rot2::fromAngle(M_PI / 2.0), 5.0, brNoise));
-    newfactors.push_back(std::make_shared<BearingRangeFactor<Pose2, Point2>>(
-        i, 101, Rot2::fromAngle(-M_PI / 2.0), 5.0, brNoise));
+    newfactors.push_back(
+        RISAM::make_graduated<BearingRangeFactor<Pose2, Point2>>(
+            kernel, i, 100, Rot2::fromAngle(M_PI / 2.0), 5.0, brNoise));
+    newfactors.push_back(
+        RISAM::make_graduated<BearingRangeFactor<Pose2, Point2>>(
+            kernel, i, 101, Rot2::fromAngle(-M_PI / 2.0), 5.0, brNoise));
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -254,16 +255,20 @@ TEST(RISAM, GaussianRISAMNoOutliers) {
     NonlinearFactorGraph newfactors;
     newfactors.emplace_shared<BetweenFactor<Pose2>>(
         i, i + 1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors.push_back(std::make_shared<BearingRangeFactor<Pose2, Point2>>(
-        i, 100, Rot2::fromAngle((3 * M_PI) / 4.0), 7.07106, brNoise));
-    newfactors.push_back(std::make_shared<BearingRangeFactor<Pose2, Point2>>(
-        i, 101, Rot2::fromAngle(-(3 * M_PI) / 4.0), 7.07106, brNoise));
+    newfactors.push_back(
+        RISAM::make_graduated<BearingRangeFactor<Pose2, Point2>>(
+            kernel, i, 100, Rot2::fromAngle((3 * M_PI) / 4.0), 7.07106,
+            brNoise));
+    newfactors.push_back(
+        RISAM::make_graduated<BearingRangeFactor<Pose2, Point2>>(
+            kernel, i, 101, Rot2::fromAngle(-(3 * M_PI) / 4.0), 7.07106,
+            brNoise));
     fullgraph.push_back(newfactors);
 
-    // Add an Outlier Measurement at 8 [Is not added to fullGraph]
-    // newfactors.push_back(
-    //    RISAM::make_graduated<BearingRangeFactor<Pose2, Point2>>(
-    //        kernel, i, 100, Rot2::fromAngle(0.4), 300, brNoise));
+    // Add an Outlier Measurement [is not added to fullGraph]
+    newfactors.push_back(
+        RISAM::make_graduated<BearingRangeFactor<Pose2, Point2>>(
+            kernel, i, 100, Rot2::fromAngle(0.4), 300, brNoise));
 
     Values init;
     init.insert((i + 1), Pose2(double(i + 1) + 0.1, 0.1, 0.01));
@@ -277,17 +282,17 @@ TEST(RISAM, GaussianRISAMNoOutliers) {
   // Compute Actual
   risam.update();
   Values actual = risam.calculateEstimate();
+  std::set<size_t> actual_outliers = risam.getOutliers(0.95);
   // Compute Expected
   LevenbergMarquardtParams parameters;
   Values expected =
       LevenbergMarquardtOptimizer(fullgraph, fullinit, parameters).optimize();
 
-  std::cout << "Expected Error:" << fullgraph.error(expected) << std::endl;
-  std::cout << "Actual Error:" << fullgraph.error(actual) << std::endl;
-
-  // Test
-  CHECK(assert_equal(expected, actual, 0.1));
-  CHECK(false);
+  // Test Solution Quality
+  CHECK(assert_equal(expected, actual, 0.01));
+  // Test Outlier Identification
+  CHECK(1 == actual_outliers.size());
+  CHECK(fullgraph.size() == *(actual_outliers.begin()));
 }
 
 /* *************************************************************************

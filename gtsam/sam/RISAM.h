@@ -31,22 +31,34 @@ class RISAM {
    */
   struct Parameters {
     /// @brief Explicit constructor to use default values
-    explicit Parameters() = default;
+    Parameters(ISAM2Params isam2_params = ISAM2Params(),
+               bool increment_outlier_mu = true,
+               double outlier_mu_chisq_upper_bound = 0.95,
+               double outlier_mu_chisq_lower_bound = 0.25,
+               double outlier_mu_avg_var_convergence_thresh = 0.01,
+               size_t number_extra_iters = 1)
+        : isam2_params(isam2_params),
+          increment_outlier_mu(increment_outlier_mu),
+          outlier_mu_chisq_upper_bound(outlier_mu_chisq_upper_bound),
+          outlier_mu_chisq_lower_bound(outlier_mu_chisq_lower_bound),
+          outlier_mu_avg_var_convergence_thresh(
+              outlier_mu_avg_var_convergence_thresh),
+          number_extra_iters(number_extra_iters) {};
     /// @brief The parameters for the encapsulated iSAM2 algorithm @Note some
     /// are overriden in RISAM::RISAM()
     ISAM2Params isam2_params;
 
     /// @brief Flag to increment mu_init when the value estimate converges
     // See RISAM::IncrementMuInit for details
-    bool increment_outlier_mu{true};
+    bool increment_outlier_mu;
     /// @brief Increment mu_init if chi^2 > upper bound
-    double outlier_mu_chisq_upper_bound{0.95};
+    double outlier_mu_chisq_upper_bound;
     /// @brief  Decrement mu_init if chi^2 < lower bound
-    double outlier_mu_chisq_lower_bound{0.25};
+    double outlier_mu_chisq_lower_bound;
     /// @brief Average variable delta threshold to identify value convergence
-    double outlier_mu_avg_var_convergence_thresh{0.01};
+    double outlier_mu_avg_var_convergence_thresh;
     /// @brief The number of extra iterations to perform after mu convergence
-    size_t number_extra_iters{1};
+    size_t number_extra_iters;
   };
 
   /** @brief Struct containing information about the riSAM update
@@ -223,11 +235,9 @@ class RISAM {
    * @param args: The arguments required to construct the FACTOR_TYPE
    */
   template <class FACTOR_TYPE, class... Args>
-  static
-      typename GenericGraduatedFactor<FACTOR_TYPE>::shared_ptr
-      make_graduated(Args&&... args) {
-    return std::make_shared<
-        GenericGraduatedFactor<FACTOR_TYPE>>(
+  static typename GenericGraduatedFactor<FACTOR_TYPE>::shared_ptr
+  make_graduated(Args&&... args) {
+    return std::make_shared<GenericGraduatedFactor<FACTOR_TYPE>>(
         std::forward<Args>(args)...);
   }
 };
