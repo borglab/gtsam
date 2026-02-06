@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    AugmentedLagrangianOptimizer.h
+ * @file    BoundConstrainedLagrangian.h
  * @brief   Augmented Lagrangian method for nonlinear constrained optimization.
  * @author  Yetong Zhang
  * @date    Aug 3, 2024
