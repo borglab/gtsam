@@ -105,7 +105,7 @@ BoundConstrainedLagrangian::createUnconstrainedOptimizer(
     const NonlinearFactorGraph& graph, const Values& values) const {
   // TODO(yetong): make compatible with all NonlinearOptimizers.
   return std::make_shared<LevenbergMarquardtOptimizer>(graph, values,
-                                                       p_->lm_params);
+                                                       p_->lmParams);
 }
 
 /* ************************************************************************* */

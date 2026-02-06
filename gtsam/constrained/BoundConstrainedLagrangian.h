@@ -41,7 +41,7 @@ class GTSAM_EXPORT BoundConstrainedLagrangianParams
 
   BoundConstrainedLagrangianParams() {
     // Set default inner optimizer to only iterate once.
-    lm_params.maxIterations = 1;
+    lmParams.maxIterations = 1;
   }
 };
 
