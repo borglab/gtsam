@@ -48,6 +48,8 @@ class GTSAM_EXPORT AugmentedLagrangianState : public PenaltyOptimizerState {
 
   std::vector<Vector> lambdaEq;    // Lagrange multipliers for e-constraints
   std::vector<double> lambdaIneq;  // Lagrange multipliers for i-constraints
+  double muEq;
+  double muIneq;
 
   /** Initialize Lagrange multipliers as zeros. */
   void initializeLagrangeMultipliers(const ConstrainedOptProblem& problem);
@@ -69,7 +71,7 @@ class GTSAM_EXPORT AugmentedLagrangianState : public PenaltyOptimizerState {
 class GTSAM_EXPORT AugmentedLagrangianOptimizer : public ConstrainedOptimizer {
  public:
   using Base = ConstrainedOptimizer;
-  using This = PenaltyOptimizer;
+  using This = AugmentedLagrangianOptimizer;
   using shared_ptr = std::shared_ptr<This>;
 
   using Params = AugmentedLagrangianParams;

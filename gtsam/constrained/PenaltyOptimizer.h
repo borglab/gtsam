@@ -50,7 +50,7 @@ class GTSAM_EXPORT PenaltyOptimizerState : public ConstrainedOptimizerState {
 
   double muEq = 0.0;
   double muIneq = 0.0;
-  size_t unconstrainedIterationss = 0;
+  size_t unconstrainedIterations = 0;
 
   using Base::Base;
 };

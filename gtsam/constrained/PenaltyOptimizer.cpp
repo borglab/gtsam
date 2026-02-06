@@ -37,7 +37,7 @@ PenaltyOptimizer::State PenaltyOptimizer::iterate(const State& state) const {
   // Run unconstrained optimization.
   auto optimizer = createUnconstrainedOptimizer(meritGraph, state.values);
   newState.setValues(optimizer->optimize(), problem_);
-  newState.unconstrainedIterationss = optimizer->iterations();
+  newState.unconstrainedIterations = optimizer->iterations();
 
   return newState;
 }
@@ -118,7 +118,7 @@ void PenaltyOptimizer::logIteration(const State& state) const {
     cout << "|" << setw(10) << setprecision(4) << state.cost;
     cout << "|" << setw(10) << setprecision(4) << state.eqConstraintViolation;
     cout << "|" << setw(10) << setprecision(4) << state.ineqConstraintViolation;
-    cout << "|" << setw(10) << state.unconstrainedIterationss;
+    cout << "|" << setw(10) << state.unconstrainedIterations;
     cout << "|" << setw(10) << state.time;
     cout << "|" << endl;
   }
