@@ -89,6 +89,12 @@ jobs:
           VCPKG_BASH_PATH=${VCPKG_INSTALLATION_ROOT//\\//}
           echo "VCPKG_INSTALLATION_ROOT=$VCPKG_BASH_PATH" >> "$GITHUB_ENV"
 
+      - name: "Pin vcpkg"
+        shell: bash
+        run: |
+          git -C ${VCPKG_INSTALLATION_ROOT} checkout .
+          git -C ${VCPKG_INSTALLATION_ROOT} checkout 2026.01.16
+
       - name: "Install dependencies"
         run: >
           vcpkg x-set-installed --triplet ${{ matrix.triplet }} --host-triplet ${{ matrix.triplet }}
