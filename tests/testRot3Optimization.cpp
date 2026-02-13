@@ -17,7 +17,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/lieProxies.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>

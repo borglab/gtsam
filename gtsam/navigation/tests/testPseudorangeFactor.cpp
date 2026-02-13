@@ -7,7 +7,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/navigation/PseudorangeFactor.h>
 #include <gtsam/navigation/tests/gnssTestHelpers.h>
 #include <gtsam/nonlinear/factorTesting.h>
