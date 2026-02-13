@@ -88,7 +88,7 @@ static bool is_linear_dependent(const Matrix& A, const Matrix& B, double tol) {
   if(m1!=m2 || n1!=n2) dependent = false;
 
   for(size_t i=0; dependent && i<m1; i++) {
-    if (!gtsam::linear_dependent(Vector(row(A,i)), Vector(row(B,i)), tol))
+    if (!gtsam::linear_dependent(Vector(A.row(i)), Vector(B.row(i)), tol))
       dependent = false;
   }
 
@@ -272,7 +272,7 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
   // Then update A and b by substituting x with d-rS, zero-ing out x's column.
   for (size_t j=0; j<n; ++j) {
     // extract the first column of A
-    Vector a(column(A, j));
+    Vector a(A.col(j));
 
     // Calculate weighted pseudo-inverse and corresponding precision
     double precision = weightedPseudoinverse(a, weights, pseudo);
@@ -568,7 +568,8 @@ std::tuple<int, double, Vector> DLT(const Matrix& A, double rank_tol) {
 
   // Return rank, error, and corresponding column of V
   double error = m<p ? 0 : s(m-1);
-  return std::tuple<int, double, Vector>((int)rank, error, Vector(column(V, p-1)));
+  return std::tuple<int, double, Vector>((int)rank, error,
+                                         Vector(V.col(p - 1)));
 }
 
 /* ************************************************************************* */
