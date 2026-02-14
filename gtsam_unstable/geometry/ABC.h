@@ -45,10 +45,7 @@
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Unit3.h>
 
-#include <array>
-#include <functional>
 #include <iostream>
-#include <stdexcept>
 #include <string>
 #include <vector>
 

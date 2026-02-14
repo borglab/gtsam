@@ -16,15 +16,15 @@
  * @author Carlos Nieto
  **/
 
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/base/testLie.h>
-#include <CppUnitLite/TestHarness.h>
+
+#include <Eigen/QR>
+#include <functional>
 #include <iostream>
 #include <sstream>
-#include <optional>
-#include <functional>
-#include <Eigen/QR>
 
 using namespace std;
 using namespace gtsam;

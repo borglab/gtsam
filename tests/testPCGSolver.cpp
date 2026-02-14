@@ -16,18 +16,16 @@
  * @date    Aug 06, 2014
  */
 
-#include <tests/smallExample.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/base/Matrix.h>
-#include <Eigen/Cholesky>
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <tests/smallExample.h>
 
-#include <iostream>
-#include <fstream>
+#include <Eigen/Cholesky>
 
 using namespace std;
 using namespace gtsam;

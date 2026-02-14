@@ -8,14 +8,14 @@
 
 #include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/Preconditioner.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
-#include <gtsam/linear/NoiseModel.h>
 
 #include <Eigen/Cholesky>
-#include <memory>
 #include <iostream>
+#include <memory>
 #include <vector>
 
 using namespace std;

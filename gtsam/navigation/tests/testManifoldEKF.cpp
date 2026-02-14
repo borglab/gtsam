@@ -21,9 +21,8 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/navigation/ManifoldEKF.h>
-#include <Eigen/Cholesky>
 
-#include <iostream>
+#include <Eigen/Cholesky>
 #include <random>
 
 using namespace gtsam;

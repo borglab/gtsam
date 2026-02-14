@@ -16,12 +16,12 @@
  * @author Frank Dellaert
  */
 
-#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/base/timing.h>
-#include <Eigen/Cholesky>
+#include <gtsam/linear/NoiseModel.h>
 
-#include <cmath>
+#include <Eigen/Cholesky>
 #include <cassert>
+#include <cmath>
 #include <iostream>
 #include <limits>
 #include <stdexcept>

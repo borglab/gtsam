@@ -20,12 +20,10 @@
  * @author Frank Dellaert
  */
 
-
-#include <gtsam/linear/KalmanFilter.h>
-
 #include <gtsam/base/Testable.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/KalmanFilter.h>
 
 #include <Eigen/Cholesky>
 

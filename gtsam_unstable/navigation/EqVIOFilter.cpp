@@ -20,7 +20,6 @@
 #include <algorithm>
 #include <cassert>
 #include <limits>
-#include <numeric>
 #include <stdexcept>
 
 namespace gtsam {

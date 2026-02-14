@@ -24,7 +24,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <exception>
 #include <string>
 
 #ifdef GTSAM_USE_TBB

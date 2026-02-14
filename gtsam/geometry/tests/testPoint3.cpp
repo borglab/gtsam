@@ -15,10 +15,11 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-#include <Eigen/Geometry>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Point3.h>
+
+#include <Eigen/Geometry>
 
 using namespace std::placeholders;
 using namespace gtsam;

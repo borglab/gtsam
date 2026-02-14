@@ -18,11 +18,12 @@
  */
 
 #pragma once
-#include <cstddef>
-#include <functional>
-#include <gtsam/config.h>      // Configuration from CMake
+#include <gtsam/config.h>  // Configuration from CMake
+
 #include <Eigen/Core>
 #include <Eigen/LU>
+#include <cstddef>
+#include <functional>
 #include <optional>
 #include <stdexcept>
 #include <string>

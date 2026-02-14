@@ -26,6 +26,7 @@
 #pragma once
 
 #include <gtsam/base/Lie.h>  // Include for Lie group traits and operations
+#include <gtsam/base/VectorSpace.h>
 #include <gtsam/navigation/ManifoldEKF.h>  // Include the base class
 
 #include <functional>  // For std::function

@@ -21,8 +21,8 @@
 #include <gtsam/base/timing.h>
 
 #include <Eigen/Cholesky>
-#include <cmath>
 #include <cassert>
+#include <cmath>
 
 using namespace std;
 

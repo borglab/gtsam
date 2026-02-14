@@ -19,7 +19,6 @@
 #include <gtsam/basis/Chebyshev2.h>
 
 #include <Eigen/SVD>
-
 #include <cassert>
 
 namespace gtsam {
