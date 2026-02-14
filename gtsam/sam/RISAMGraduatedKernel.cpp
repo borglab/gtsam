@@ -45,7 +45,7 @@ bool SIGKernel::isMuConverged(const double& mu) const {
 double SIGKernel::shapeParamFromInfThresh(double influence_thresh, size_t dof,
                                           double chi2_outlier_thresh) {
   double outlier_residual_thresh =
-      internal::chi_squared_quantile(dof, chi2_outlier_thresh);
+      internal::chiSquaredQuantile(dof, chi2_outlier_thresh);
   // Equation from taking derivative of SIGKernel setting equal to
   // influence_thresh and solving for mu=1
   const double t1 =
@@ -57,7 +57,7 @@ double SIGKernel::shapeParamFromInfThresh(double influence_thresh, size_t dof,
 
 /* ************************************************************************* */
 double SIGKernel::shapeParamFromChi2(size_t dof, double chi2_threshold) {
-  return internal::chi_squared_quantile(dof, chi2_threshold);
+  return internal::chiSquaredQuantile(dof, chi2_threshold);
 }
 
 /* ************************************************************************* */
