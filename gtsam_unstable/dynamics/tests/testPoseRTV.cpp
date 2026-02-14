@@ -47,7 +47,7 @@ TEST( testPoseRTV, constructors ) {
   EXPECT(assert_equal(kZero3, state4.v()));
   EXPECT(assert_equal(Pose3(rot, pt), state4.pose()));
 
-  Vector vec_init = (Vector(9) << 0.1, 0.2, 0.3,  1.0, 2.0, 3.0,  0.4, 0.5, 0.6).finished();
+  Vector vec_init{{0.1, 0.2, 0.3, 1.0, 2.0, 3.0, 0.4, 0.5, 0.6}};
   PoseRTV state5(vec_init);
   EXPECT(assert_equal(pt,  state5.t()));
   EXPECT(assert_equal(rot, state5.R()));
@@ -84,8 +84,7 @@ TEST( testPoseRTV, Lie ) {
   EXPECT(assert_equal(state1, (PoseRTV)state1.retract(Z_9x1)));
   EXPECT(assert_equal((Vector) Z_9x1, state1.localCoordinates(state1)));
 
-  Vector delta(9);
-  delta << 0.1, 0.1, 0.1, 0.2, 0.3, 0.4,-0.1,-0.2,-0.3;
+  Vector9 delta{0.1, 0.1, 0.1, 0.2, 0.3, 0.4, -0.1, -0.2, -0.3};
   Pose3 pose2 = Pose3(rot, pt).retract(delta.head<6>());
   Velocity3 vel2 = vel + Velocity3(-0.1, -0.2, -0.3);
   PoseRTV state2(pose2.translation(), pose2.rotation(), vel2);
@@ -243,4 +242,3 @@ TEST(testPoseRTV, RRTMnb) {
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
-

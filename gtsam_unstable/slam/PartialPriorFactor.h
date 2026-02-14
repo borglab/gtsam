@@ -69,10 +69,9 @@ namespace gtsam {
     PartialPriorFactor() {}
 
     /** Single Element Constructor: Prior on a single parameter at index 'idx' in the tangent vector.*/
-    PartialPriorFactor(Key key, size_t idx, double prior, const SharedNoiseModel& model) :
-      Base(model, key),
-      prior_((Vector(1) << prior).finished()),
-      indices_(1, idx) {
+    PartialPriorFactor(Key key, size_t idx, double prior,
+                       const SharedNoiseModel& model)
+        : Base(model, key), prior_(Vector{{prior}}), indices_(1, idx) {
       assert(model->dim() == 1);
     }
 

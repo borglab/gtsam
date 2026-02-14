@@ -29,8 +29,8 @@ Matrix26 PinholeBase::Dpose(const Point2& pn, double d) {
   // optimized version of derivatives, see CalibratedCamera.nb
   const double u = pn.x(), v = pn.y();
   double uv = u * v, uu = u * u, vv = v * v;
-  Matrix26 Dpn_pose;
-  Dpn_pose << uv, -1 - uu, v, -d, 0, d * u, 1 + vv, -uv, -u, 0, -d, d * v;
+  Matrix26 Dpn_pose{{uv, -1 - uu, v, -d, 0, d * u},
+                    {1 + vv, -uv, -u, 0, -d, d * v}};
   return Dpn_pose;
 }
 
@@ -38,10 +38,10 @@ Matrix26 PinholeBase::Dpose(const Point2& pn, double d) {
 Matrix23 PinholeBase::Dpoint(const Point2& pn, double d, const Matrix3& Rt) {
   // optimized version of derivatives, see CalibratedCamera.nb
   const double u = pn.x(), v = pn.y();
-  Matrix23 Dpn_point;
-  Dpn_point << //
-      Rt(0, 0) - u * Rt(2, 0), Rt(0, 1) - u * Rt(2, 1), Rt(0, 2) - u * Rt(2, 2), //
-  /**/Rt(1, 0) - v * Rt(2, 0), Rt(1, 1) - v * Rt(2, 1), Rt(1, 2) - v * Rt(2, 2);
+  // clang-format off
+  Matrix23 Dpn_point{{Rt(0, 0) - u * Rt(2, 0), Rt(0, 1) - u * Rt(2, 1), Rt(0, 2) - u * Rt(2, 2)},
+                     {Rt(1, 0) - v * Rt(2, 0), Rt(1, 1) - v * Rt(2, 1), Rt(1, 2) - v * Rt(2, 2)}};
+  // clang-format on
   Dpn_point *= d;
   return Dpn_point;
 }

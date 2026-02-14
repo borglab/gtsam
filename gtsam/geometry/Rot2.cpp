@@ -80,17 +80,11 @@ Rot2 Rot2::Expmap(const Vector1& v, OptionalJacobian<1, 1> H) {
 Vector1 Rot2::Logmap(const Rot2& r, OptionalJacobian<1, 1> H) {
   if (H)
     *H = I_1x1;
-  Vector1 v;
-  v << r.theta();
-  return v;
+  return Vector1{r.theta()};
 }
 
 /* ************************************************************************* */
-Matrix1 Rot2::adjointMap(const Vector1&) {
-  Matrix1 ad;
-  ad << 0.0;
-  return ad;
-}
+Matrix1 Rot2::adjointMap(const Vector1&) { return Matrix1{{0.0}}; }
 
 /* ************************************************************************* */
 Vector1 Rot2::adjoint(const Vector1&, const Vector1&,
@@ -103,32 +97,17 @@ Vector1 Rot2::adjoint(const Vector1&, const Vector1&,
 
 /* ************************************************************************* */
 Matrix2 Rot2::Hat(const Vector1& xi) {
-  Matrix2 X;
-  X << 0., -xi.x(),
-    xi.x(), 0.;
-  return X;
+  return Matrix2{{0., -xi.x()}, {xi.x(), 0.}};
 }
 
 /* ************************************************************************* */
-Vector1 Rot2::Vee(const Matrix2& X) {
-  TangentVector v;
-  v << X(1, 0);
-  return v;
-}
+Vector1 Rot2::Vee(const Matrix2& X) { return TangentVector{X(1, 0)}; }
 
 /* ************************************************************************* */
-Matrix2 Rot2::matrix() const {
-  Matrix2 rvalue_;
-  rvalue_ <<  c_, -s_, s_, c_;
-  return rvalue_;
-}
+Matrix2 Rot2::matrix() const { return Matrix2{{c_, -s_}, {s_, c_}}; }
 
 /* ************************************************************************* */
-Matrix2 Rot2::transpose() const {
-  Matrix2 rvalue_;
-  rvalue_ <<   c_, s_, -s_, c_;
-  return rvalue_;
-}
+Matrix2 Rot2::transpose() const { return Matrix2{{c_, s_}, {-s_, c_}}; }
 
 /* ************************************************************************* */
 // see doc/math.lyx, SO(2) section

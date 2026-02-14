@@ -52,7 +52,7 @@ namespace gtsam {
      VectorValues values;
      values.emplace(3, Vector3(1.0, 2.0, 3.0));
      values.emplace(4, Vector2(4.0, 5.0));
-     values.emplace(0, (Vector(4) << 6.0, 7.0, 8.0, 9.0).finished());
+     values.emplace(0, Vector{{6.0, 7.0, 8.0, 9.0}});
 
      // Prints [ 3.0 4.0 ]
      gtsam::print(values[1]);

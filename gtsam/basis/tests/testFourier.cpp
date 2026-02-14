@@ -38,10 +38,9 @@ auto model = noiseModel::Unit::Create(1);
 
 // Coefficients for testing, respectively 3 and 7 parameter Fourier basis.
 // They correspond to best approximation of TestFunction(x)
-const Vector k3Coefficients = (Vector3() << 1.5661, 1.2717, 1.2717).finished();
-const Vector7 k7Coefficients =
-    (Vector7() << 1.5661, 1.2717, 1.2717, -0.0000, 0.5887, -0.0943, 0.0943)
-        .finished();
+const Vector k3Coefficients{{1.5661, 1.2717, 1.2717}};
+const Vector7 k7Coefficients{1.5661, 1.2717,  1.2717, -0.0000,
+                             0.5887, -0.0943, 0.0943};
 
 // The test-function used below
 static double TestFunction(double x) { return exp(sin(x) + cos(x)); }
@@ -87,10 +86,8 @@ TEST(Basis, Manual) {
     const double desiredValue = TestFunction(x);
 
     // Manual JacobianFactor
-    Matrix A(1, N);
-    A << 1, cos(x), sin(x);
-    Vector b(1);
-    b << desiredValue;
+    Matrix13 A{{1, cos(x), sin(x)}};
+    Vector1 b{desiredValue};
     JacobianFactor linearFactor(key, A, b);
     graph.add(linearFactor);
 
@@ -139,9 +136,7 @@ TEST(Basis, EvaluationFactor) {
 TEST(Basis, WeightMatrix) {
   // The WeightMatrix creates an m*n matrix, where m is the number of sample
   // points, and n is the number of parameters.
-  Matrix expected(2, 3);
-  expected.row(0) << 1, cos(1), sin(1);
-  expected.row(1) << 1, cos(2), sin(2);
+  Matrix expected{{1, cos(1), sin(1)}, {1, cos(2), sin(2)}};
   Vector2 X(1, 2);
   Matrix actual = FourierBasis::WeightMatrix(3, X);
   EXPECT(assert_equal(expected, actual, 1e-9));
@@ -196,9 +191,8 @@ TEST(Basis, VecDerivativeFunctor) {
   double h = 2 * M_PI / 16;
   Vector2 dotShape(0.5556, -0.8315);  // at h/2
   DotShape dotShapeFunction(2, N, h / 2);
-  Matrix theta = (Matrix32() << 0, 0, 0.7071, 0.7071, 0.7071, -0.7071)
-                     .finished()
-                     .transpose();
+  Matrix theta =
+      Matrix32{{0, 0}, {0.7071, 0.7071}, {0.7071, -0.7071}}.transpose();
   EXPECT(assert_equal(Vector(dotShape), dotShapeFunction(theta), 1e-4));
 }
 
@@ -222,7 +216,7 @@ TEST(Basis, PseudoSpectral) {
   const Key key(1);
 
   // The correct values at X = {0.1,0.2,0.3} are simply W*c
-  const Vector X = (Vector3() << 0.1, 0.2, 0.3).finished();
+  const Vector X{{0.1, 0.2, 0.3}};
   const Matrix W = FourierBasis::WeightMatrix(N, X);
   const Vector expected = W * k3Coefficients;
 
@@ -241,10 +235,8 @@ TEST(Basis, PseudoSpectral) {
     const double desiredValue = TestFunction(x);
 
     // Manual JacobianFactor
-    Matrix A(1, 3);
-    A << 1, cos(x), sin(x);
-    Vector b(1);
-    b << desiredValue;
+    Matrix13 A{{1, cos(x), sin(x)}};
+    Vector1 b{desiredValue};
     JacobianFactor linearFactor(key, A * invW, b);
     graph.add(linearFactor);
   }

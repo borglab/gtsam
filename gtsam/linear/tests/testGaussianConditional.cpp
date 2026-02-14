@@ -38,24 +38,24 @@ using symbol_shorthand::Y;
 
 static const double tol = 1e-5;
 
-static Matrix R = (Matrix(2, 2) <<
-    -12.1244,  -5.1962,
-          0.,   4.6904).finished();
+static Matrix R{//
+                {-12.1244, -5.1962},
+                {0., 4.6904}};
 
 using Dims = std::vector<Eigen::Index>;
 
 /* ************************************************************************* */
 TEST(GaussianConditional, constructor)
 {
-  Matrix S1 = (Matrix(2, 2) <<
-      -5.2786,  -8.6603,
-      5.0254,   5.5432).finished();
-  Matrix S2 = (Matrix(2, 2) <<
-      -10.5573,  -5.9385,
-      5.5737,   3.0153).finished();
-  Matrix S3 = (Matrix(2, 2) <<
-      -11.3820,  -7.2581,
-      -3.0153,  -3.5635).finished();
+  Matrix S1{//
+            {-5.2786, -8.6603},
+            {5.0254, 5.5432}};
+  Matrix S2{//
+            {-10.5573, -5.9385},
+            {5.5737, 3.0153}};
+  Matrix S3{//
+            {-11.3820, -7.2581},
+            {-3.0153, -3.5635}};
 
   Vector d = Vector2(1.0, 2.0);
   SharedDiagonal s = noiseModel::Diagonal::Sigmas(Vector2(3.0, 4.0));
@@ -213,21 +213,24 @@ TEST( GaussianConditional, solve )
   expectedX(0) = 20-3-11 ; expectedX(1) = 40-7-15;
 
   // create a conditional Gaussian node
-  Matrix R = (Matrix(2, 2) <<  1., 0.,
-                            0., 1.).finished();
+  Matrix R{//
+           {1., 0.},
+           {0., 1.}};
 
-  Matrix A1 = (Matrix(2, 2) << 1., 2.,
-                            3., 4.).finished();
+  Matrix A1{//
+            {1., 2.},
+            {3., 4.}};
 
-  Matrix A2 = (Matrix(2, 2) << 5., 6.,
-                            7., 8.).finished();
+  Matrix A2{//
+            {5., 6.},
+            {7., 8.}};
 
-  Vector d(2); d << 20.0, 40.0;
+  Vector d{{20.0, 40.0}};
 
   GaussianConditional cg(1, d, R, 2, A1, 10, A2);
 
-  Vector sx1(2); sx1 << 1.0, 1.0;
-  Vector sl1(2); sl1 << 1.0, 1.0;
+  Vector sx1{{1.0, 1.0}};
+  Vector sl1{{1.0, 1.0}};
 
   VectorValues expected = {{1, expectedX}, {2, sx1}, {10, sl1}};
 
@@ -258,8 +261,7 @@ TEST( GaussianConditional, solve_simple )
   // elimination order: 1, 2
   VectorValues actual = {{2, sx1}};  // parent
 
-  VectorValues expected = {
-      {2, sx1}, {1, (Vector(4) << -3.1, -3.4, -11.9, -13.2).finished()}};
+  VectorValues expected = {{2, sx1}, {1, Vector{{-3.1, -3.4, -11.9, -13.2}}}};
 
   // verify indices/size
   EXPECT_LONGS_EQUAL(2, (long)cg.size());
@@ -312,8 +314,8 @@ TEST( GaussianConditional, solveTranspose ) {
    * 1 1 9
    *   1 5
    */
-  Matrix R11 = (Matrix(1, 1) << 1.0).finished(), S12 = (Matrix(1, 1) << 1.0).finished();
-  Matrix R22 = (Matrix(1, 1) << 1.0).finished();
+  Matrix R11{{1.0}}, S12{{1.0}};
+  Matrix R22{{1.0}};
   Vector d1(1), d2(1);
   d1(0) = 9;
   d2(0) = 5;
@@ -327,10 +329,8 @@ TEST( GaussianConditional, solveTranspose ) {
   // 2 = 1    2
   // 5   1 1  3
 
-  VectorValues x = {{1, (Vector(1) << 2.).finished()},
-                    {2, (Vector(1) << 5.).finished()}},
-               y = {{1, (Vector(1) << 2.).finished()},
-                    {2, (Vector(1) << 3.).finished()}};
+  VectorValues x = {{1, Vector{{2.}}}, {2, Vector{{5.}}}},
+               y = {{1, Vector{{2.}}}, {2, Vector{{3.}}}};
 
   // test functional version
   VectorValues actual = cbn.backSubstituteTranspose(x);
@@ -384,8 +384,8 @@ TEST( GaussianConditional, isGaussianFactor ) {
 /* ************************************************************************* */
 // Test FromMeanAndStddev named constructors
 TEST(GaussianConditional, FromMeanAndStddev) {
-  Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
-  Matrix A2 = (Matrix(2, 2) << 5., 6., 7., 8.).finished();
+  Matrix A1{{1., 2.}, {3., 4.}};
+  Matrix A2{{5., 6.}, {7., 8.}};
   const Vector2 b(20, 40), x0(1, 2), x1(3, 4), x2(5, 6);
   const double sigma = 3;
 
@@ -414,7 +414,7 @@ TEST(GaussianConditional, FromMeanAndStddev) {
 /* ************************************************************************* */
 // Test likelihood method (conversion to JacobianFactor)
 TEST(GaussianConditional, likelihood) {
-  Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
+  Matrix A1{{1., 2.}, {3., 4.}};
   const Vector2 b(20, 40), x0(1, 2);
   const double sigma = 0.01;
 
@@ -441,7 +441,7 @@ TEST(GaussianConditional, likelihood) {
 /* ************************************************************************* */
 // Test sampling
 TEST(GaussianConditional, Sample) {
-  Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
+  Matrix A1{{1., 2.}, {3., 4.}};
   const Vector2 b(20, 40), x1(3, 4);
   const double sigma = 0.01;
 
@@ -499,8 +499,8 @@ TEST(GaussianConditional, NegLogConstant) {
 
 /* ************************************************************************* */
 TEST(GaussianConditional, Print) {
-  Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
-  Matrix A2 = (Matrix(2, 2) << 5., 6., 7., 8.).finished();
+  Matrix A1{{1., 2.}, {3., 4.}};
+  Matrix A2{{5., 6.}, {7., 8.}};
   const Vector2 b(20, 40);
   const double sigma = 3;
 

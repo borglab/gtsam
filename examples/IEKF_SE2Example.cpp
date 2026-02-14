@@ -70,16 +70,13 @@ int main() {
   // Create GPS measurements.
   // z1: Measure robot at (1, 0)
   // z2: Measure robot at (1, 1)
-  Vector2 z1, z2;
-  z1 << 1.0, 0.0;
-  z2 << 1.0, 1.0;
+  Vector2 z1{1.0, 0.0}, z2{1.0, 1.0};
 
   // Define a transformation matrix to convert the covariance into (theta, x, y)
   // form. The paper and data mentioned above uses a (theta, x, y) notation,
   // whereas GTSAM uses (x, y, theta). The transformation matrix is used to
   // directly compare results of the covariance matrix.
-  Matrix3 TransformP;
-  TransformP << 0, 0, 1, 1, 0, 0, 0, 1, 0;
+  Matrix3 TransformP{{0, 0, 1}, {1, 0, 0}, {0, 1, 0}};
 
   // Propagating/updating the filter
   // Initial state and covariance

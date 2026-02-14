@@ -45,13 +45,12 @@ Pose3 Pose3::Create(const Rot3& R, const Point3& t, OptionalJacobian<6, 3> HR,
 }
 
 // Pose2 constructor Jacobian is always the same.
-static const Matrix63 Hpose2 = (Matrix63() << //
-    0., 0., 0., //
-    0., 0., 0.,//
-    0., 0., 1.,//
-    1., 0., 0.,//
-    0., 1., 0.,//
-    0., 0., 0.).finished();
+static const Matrix63 Hpose2 = Matrix63{{0., 0., 0.},  //
+                                        {0., 0., 0.},  //
+                                        {0., 0., 1.},  //
+                                        {1., 0., 0.},  //
+                                        {0., 1., 0.},  //
+                                        {0., 0., 0.}};
 
 Pose3 Pose3::FromPose2(const Pose2& p, OptionalJacobian<6, 3> H) {
   if (H) *H << Hpose2;

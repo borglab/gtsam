@@ -114,7 +114,7 @@ struct NoiseModelFactorAliases<T1, T2, T3, T4, T5, T6, TExtra...> {
  *     // H_T = H_a * a_H_t * t_H_T = the first row of t_H_T
  *     if (H_T) *H_T = (Matrix(1, 6) << t_H_T.row(0)).finished();
  *     // H_p = H_b * b_H_p = -1 * [1, 0, 0]
- *     if (H_p) *H_p = (Matrix(1, 3) << -1., 0., 0.).finished();
+ *     if (H_p) *H_p = Matrix{{-1., 0., 0.}};
  *
  *     return Vector1(error);
  *   }

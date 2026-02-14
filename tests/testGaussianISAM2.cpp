@@ -37,8 +37,10 @@ static const SharedNoiseModel model;
 //  SETDEBUG("ISAM2 recalculate", true);
 
 // Set up parameters
-SharedDiagonal odoNoise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.1, 0.1, M_PI/100.0).finished());
-SharedDiagonal brNoise = noiseModel::Diagonal::Sigmas((Vector(2) << M_PI/100.0, 0.1).finished());
+SharedDiagonal odoNoise =
+    noiseModel::Diagonal::Sigmas(Vector{{0.1, 0.1, M_PI / 100.0}});
+SharedDiagonal brNoise =
+    noiseModel::Diagonal::Sigmas(Vector{{M_PI / 100.0, 0.1}});
 
 ISAM2 createSlamlikeISAM2(
     Values* init_values = nullptr,

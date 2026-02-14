@@ -78,8 +78,8 @@ TEST(QpCost, RowSpaceVectorError) {
 
   const QpCost factor(KeyVector{x0, x1},
                       SymmetricBlockMatrix(std::vector<DenseIndex>{4, 4}, Q));
-  const Vector vector0 = (Vector(4) << 1.0, 2.0, 3.0, 4.0).finished();
-  const Vector vector1 = (Vector(4) << -1.0, 0.5, 2.0, -0.5).finished();
+  const Vector vector0{{1.0, 2.0, 3.0, 4.0}};
+  const Vector vector1{{-1.0, 0.5, 2.0, -0.5}};
   Values values;
   values.insert(x0, vector0);
   values.insert(x1, vector1);
@@ -97,8 +97,8 @@ TEST(QpCost, RowSpaceMatrixErrorD2) {
 
   const SymmetricBlockMatrix blockQ(std::vector<DenseIndex>{2, 3}, Q);
   const QpCost factor(KeyVector{x0, x1}, blockQ, 2);
-  const Matrix X0 = (Matrix(2, 2) << 1.0, 2.0, -0.5, 0.25).finished();
-  const Matrix X1 = (Matrix(3, 2) << 0.2, -0.4, 1.5, 0.7, -1.0, 0.3).finished();
+  const Matrix X0{{1.0, 2.0}, {-0.5, 0.25}};
+  const Matrix X1{{0.2, -0.4}, {1.5, 0.7}, {-1.0, 0.3}};
   const Values values = MatrixValuesForTwoKeys(X0, X1);
 
   EXPECT_DOUBLES_EQUAL(DirectTraceCost(blockQ, X0, X1), factor.error(values),
@@ -114,9 +114,8 @@ TEST(QpCost, RowSpaceMatrixErrorD3) {
 
   const SymmetricBlockMatrix blockQ(std::vector<DenseIndex>{2, 2}, Q);
   const QpCost factor(KeyVector{x0, x1}, blockQ, 3);
-  const Matrix X0 =
-      (Matrix(2, 3) << 1.0, 0.2, -0.5, -0.25, 0.4, 0.7).finished();
-  const Matrix X1 = (Matrix(2, 3) << -0.1, 1.2, 0.3, 0.6, -0.8, 0.5).finished();
+  const Matrix X0{{1.0, 0.2, -0.5}, {-0.25, 0.4, 0.7}};
+  const Matrix X1{{-0.1, 1.2, 0.3}, {0.6, -0.8, 0.5}};
   const Values values = MatrixValuesForTwoKeys(X0, X1);
 
   EXPECT_DOUBLES_EQUAL(DirectTraceCost(blockQ, X0, X1), factor.error(values),
@@ -132,11 +131,10 @@ TEST(QpCost, RowSpaceLinearizeExact) {
   const QpCost factor(KeyVector{x0},
                       SymmetricBlockMatrix(std::vector<DenseIndex>{4}, Q));
   Values linearizationPoint;
-  linearizationPoint.insert(x0,
-                            (Matrix(4, 1) << 1.0, 0.1, -0.2, 0.7).finished());
+  linearizationPoint.insert(x0, Matrix{{1.0}, {0.1}, {-0.2}, {0.7}});
 
   Values perturbed;
-  perturbed.insert(x0, (Matrix(4, 1) << 0.9, 0.3, -0.4, 0.8).finished());
+  perturbed.insert(x0, Matrix{{0.9}, {0.3}, {-0.4}, {0.8}});
 
   const auto linearized = factor.linearize(linearizationPoint);
   const LinearContainerFactor container(linearized, linearizationPoint);
@@ -168,7 +166,7 @@ TEST(QuadraticConstraint, VectorFeasible) {
   const Matrix A = Matrix::Identity(2, 2);
   const QuadraticConstraint constraint = QuadraticConstraint::Equal(x0, A, 5.0);
   const auto factor = constraint.createEqualityFactor();
-  const Values values = VectorValue((Vector(2) << 1.0, 2.0).finished());
+  const Values values = VectorValue(Vector{{1.0, 2.0}});
 
   EXPECT_DOUBLES_EQUAL(0.0, factor->unwhitenedError(values)(0), 1e-12);
 }
@@ -190,8 +188,7 @@ TEST(QuadraticConstraint, Infeasible) {
   A(0, 0) = 1.0;
   const QuadraticConstraint constraint = QuadraticConstraint::Equal(x0, A, 1.0);
   const auto factor = constraint.createEqualityFactor();
-  const Values values =
-      MatrixValue((Matrix(2, 2) << 1.0, 1.0, 0.0, 1.0).finished());
+  const Values values = MatrixValue(Matrix{{1.0, 1.0}, {0.0, 1.0}});
 
   EXPECT_DOUBLES_EQUAL(1.0, factor->unwhitenedError(values)(0), 1e-12);
 }
@@ -208,10 +205,9 @@ TEST(QuadraticConstraint, LessEqualViolation) {
       -1.0, factor->unwhitenedExpr(MatrixValue(Matrix::Zero(2, 1)))(0), 1e-12);
   EXPECT_DOUBLES_EQUAL(
       0.0, factor->unwhitenedError(MatrixValue(Matrix::Zero(2, 1)))(0), 1e-12);
-  EXPECT_DOUBLES_EQUAL(3.0,
-                       factor->unwhitenedError(MatrixValue(
-                           (Matrix(2, 1) << 2.0, 0.0).finished()))(0),
-                       1e-12);
+  EXPECT_DOUBLES_EQUAL(
+      3.0, factor->unwhitenedError(MatrixValue(Matrix{{2.0}, {0.0}}))(0),
+      1e-12);
 }
 
 // Verifies >= constraints are represented by negating the stored expression.
@@ -224,10 +220,9 @@ TEST(QuadraticConstraint, GreaterEqualViolation) {
 
   EXPECT_DOUBLES_EQUAL(
       1.0, factor->unwhitenedError(MatrixValue(Matrix::Zero(2, 1)))(0), 1e-12);
-  EXPECT_DOUBLES_EQUAL(0.0,
-                       factor->unwhitenedError(MatrixValue(
-                           (Matrix(2, 1) << 2.0, 0.0).finished()))(0),
-                       1e-12);
+  EXPECT_DOUBLES_EQUAL(
+      0.0, factor->unwhitenedError(MatrixValue(Matrix{{2.0}, {0.0}}))(0),
+      1e-12);
 }
 
 }  // namespace QuadraticConstraintFixture
@@ -239,8 +234,8 @@ const Key x1 = Symbol('x', 1);
 
 Values ProblemValues() {
   Values values;
-  values.insert(x0, (Matrix(2, 2) << 1.0, 0.0, 0.0, 1.0).finished());
-  values.insert(x1, (Matrix(2, 2) << 0.2, -0.4, 1.5, 0.7).finished());
+  values.insert(x0, Matrix{{1.0, 0.0}, {0.0, 1.0}});
+  values.insert(x1, Matrix{{0.2, -0.4}, {1.5, 0.7}});
   return values;
 }
 
@@ -259,7 +254,7 @@ TEST(QcqpProblem, EvaluateVectorValues) {
   problem.addConstraint(QuadraticConstraint::Equal(x0, Q, 1.0));
 
   Values values;
-  values.insert(x0, (Vector(2) << 1.0, 0.0).finished());
+  values.insert(x0, Vector{{1.0, 0.0}});
 
   const auto [cost, eqViolation, ineqViolation] = problem.evaluate(values);
   EXPECT_DOUBLES_EQUAL(0.5, cost, 1e-12);
@@ -304,9 +299,9 @@ TEST(QcqpProblem, OptimizeAugmentedLagrangianMixedConstraints) {
                          SymmetricBlockMatrix(std::vector<DenseIndex>{2}, Q)));
 
   problem.addConstraint(LinearConstraint::Equal(
-      JacobianFactor(x0, (Matrix(1, 2) << 0.0, 1.0).finished(), Vector1(0.0))));
+      JacobianFactor(x0, Matrix{{0.0, 1.0}}, Vector1(0.0))));
   problem.addConstraint(LinearConstraint::GreaterEqual(
-      JacobianFactor(x0, (Matrix(1, 2) << 1.0, 0.0).finished(), Vector1(0.9))));
+      JacobianFactor(x0, Matrix{{1.0, 0.0}}, Vector1(0.9))));
   problem.addConstraint(QuadraticConstraint::Equal(x0, Q, 1.0));
 
   Matrix yBound = Matrix::Zero(2, 2);
@@ -314,7 +309,7 @@ TEST(QcqpProblem, OptimizeAugmentedLagrangianMixedConstraints) {
   problem.addConstraint(QuadraticConstraint::LessEqual(x0, yBound, 0.01));
 
   Values initialValues;
-  initialValues.insert(x0, (Matrix(2, 1) << 0.8, 0.4).finished());
+  initialValues.insert(x0, Matrix{{0.8}, {0.4}});
 
   auto params = std::make_shared<AugmentedLagrangianParams>();
   params->maxIterations = 50;
@@ -324,7 +319,7 @@ TEST(QcqpProblem, OptimizeAugmentedLagrangianMixedConstraints) {
 
   const Values result =
       AugmentedLagrangianOptimizer(problem, initialValues, params).optimize();
-  const Matrix expected = (Matrix(2, 1) << 1.0, 0.0).finished();
+  const Matrix expected{{1.0}, {0.0}};
   EXPECT(assert_equal(expected, result.at<Matrix>(x0), 1e-4));
 
   const auto [cost, eqViolation, ineqViolation] = problem.evaluate(result);
@@ -376,7 +371,7 @@ TEST(QcqpProblem, UnsupportedFactorThrows) {
 TEST(QcqpProblem, MissingQcqpTraitsThrows) {
   NonlinearFactorGraph graph;
   graph.emplace_shared<FrobeniusBetweenFactor<SO3>>(
-      x0, x1, SO3::Expmap((Vector3() << 0.1, 0.2, 0.3).finished()));
+      x0, x1, SO3::Expmap(Vector3{0.1, 0.2, 0.3}));
 
   EXPECT(ThrowsMissingQcqpTraits(graph));
 }
@@ -428,10 +423,9 @@ std::array<double, 4> D1FrobeniusBetweenFactorErrors(const T& value1,
 }
 
 TEST(QcqpProblem, FrobeniusBetweenFactorRot3D1) {
-  const Rot3 value1 = Rot3::Expmap((Vector3() << 0.2, -0.3, 0.4).finished());
-  const Rot3 value2 = Rot3::Expmap((Vector3() << -0.1, 0.5, 0.2).finished());
-  const Rot3 measurement =
-      Rot3::Expmap((Vector3() << 0.3, 0.1, -0.2).finished());
+  const Rot3 value1 = Rot3::Expmap(Vector3{0.2, -0.3, 0.4});
+  const Rot3 value2 = Rot3::Expmap(Vector3{-0.1, 0.5, 0.2});
+  const Rot3 measurement = Rot3::Expmap(Vector3{0.3, 0.1, -0.2});
   const auto errors = D1FrobeniusBetweenFactorErrors(
       value1, value2, measurement,
       (Vector9() << 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2).finished());
@@ -446,25 +440,23 @@ TEST(QcqpProblem, FrobeniusBetweenFactorPose2D1) {
   const Pose2 measurement(Rot2::fromAngle(0.3), Point2(2.0, -1.0));
   const auto errors = D1FrobeniusBetweenFactorErrors(
       value1, value2, measurement,
-      (Vector9() << 0.4, 1.7, 0.5, 0.6, 1.8, 0.7, 0.8, 1.9, 0.9).finished());
+      Vector9{0.4, 1.7, 0.5, 0.6, 1.8, 0.7, 0.8, 1.9, 0.9});
   EXPECT_DOUBLES_EQUAL(errors[0], errors[1], 1e-10);
   EXPECT_DOUBLES_EQUAL(0.0, errors[2], 1e-12);
   EXPECT_DOUBLES_EQUAL(0.0, errors[3], 1e-12);
 }
 
 TEST(QcqpProblem, FrobeniusBetweenFactorPose3D1) {
-  const Pose3 value1(Rot3::Expmap((Vector3() << 0.2, -0.3, 0.4).finished()),
+  const Pose3 value1(Rot3::Expmap(Vector3{0.2, -0.3, 0.4}),
                      Point3(1.0, -2.0, 0.5));
-  const Pose3 value2(Rot3::Expmap((Vector3() << -0.1, 0.5, 0.2).finished()),
+  const Pose3 value2(Rot3::Expmap(Vector3{-0.1, 0.5, 0.2}),
                      Point3(-3.0, 0.5, 2.0));
-  const Pose3 measurement(
-      Rot3::Expmap((Vector3() << 0.3, 0.1, -0.2).finished()),
-      Point3(2.0, -1.0, 3.0));
+  const Pose3 measurement(Rot3::Expmap(Vector3{0.3, 0.1, -0.2}),
+                          Point3(2.0, -1.0, 3.0));
   const auto errors = D1FrobeniusBetweenFactorErrors(
       value1, value2, measurement,
-      (Eigen::Matrix<double, 16, 1>() << 0.4, 0.5, 0.6, 1.7, 0.7, 0.8, 0.9, 1.8,
-       1.0, 1.1, 1.2, 1.9, 1.3, 1.4, 1.5, 2.0)
-          .finished());
+      Eigen::Matrix<double, 16, 1>{0.4, 0.5, 0.6, 1.7, 0.7, 0.8, 0.9, 1.8, 1.0,
+                                   1.1, 1.2, 1.9, 1.3, 1.4, 1.5, 2.0});
   EXPECT_DOUBLES_EQUAL(errors[0], errors[1], 1e-10);
   EXPECT_DOUBLES_EQUAL(0.0, errors[2], 1e-12);
   EXPECT_DOUBLES_EQUAL(0.0, errors[3], 1e-12);
@@ -565,8 +557,8 @@ HardFrobeniusPriorD1Result<T> HardFrobeniusPriorD1(const T& measured) {
 }
 
 TEST(QcqpProblem, HardFrobeniusPriorRot3D1) {
-  const auto result = HardFrobeniusPriorD1(
-      Rot3::Expmap((Vector3() << 0.2, -0.3, 0.4).finished()));
+  const auto result =
+      HardFrobeniusPriorD1(Rot3::Expmap(Vector3{0.2, -0.3, 0.4}));
   LONGS_EQUAL(0, result.costCount);
   EXPECT(result.foundPrior);
   EXPECT(assert_equal(Matrix::Identity(10, 10), result.A, 1e-12));
@@ -586,8 +578,7 @@ TEST(QcqpProblem, HardFrobeniusPriorPose2D1) {
 
 TEST(QcqpProblem, HardFrobeniusPriorPose3D1) {
   const auto result = HardFrobeniusPriorD1(
-      Pose3(Rot3::Expmap((Vector3() << 0.2, -0.3, 0.4).finished()),
-            Point3(1.0, -2.0, 0.5)));
+      Pose3(Rot3::Expmap(Vector3{0.2, -0.3, 0.4}), Point3(1.0, -2.0, 0.5)));
   LONGS_EQUAL(0, result.costCount);
   EXPECT(result.foundPrior);
   EXPECT(assert_equal(Matrix::Identity(13, 13), result.A, 1e-12));
@@ -973,7 +964,7 @@ TEST(QcqpProblem, Rot2QcqpConstraintsAreDIndependent) {
 // For Rot3 at D=1, x=[1; vec(R)] uses column-major matrix coordinates and
 // satisfies the ten homogeneous SO(3) constraints.
 TEST(QcqpProblem, Rot3D1QcqpValueConstraints) {
-  const Rot3 R = Rot3::Expmap((Vector3() << 0.4, -0.1, 0.7).finished());
+  const Rot3 R = Rot3::Expmap(Vector3{0.4, -0.1, 0.7});
   const Matrix3 rotation = R.matrix();
   const Matrix X = traits<Rot3>::template QcqpValue<1>(R);
   LONGS_EQUAL(10, X.rows());
@@ -993,8 +984,7 @@ TEST(QcqpProblem, Rot3D1QcqpValueConstraints) {
     EXPECT_DOUBLES_EQUAL(b, (X.transpose() * A * X).trace(), 1e-12);
   }
 
-  Matrix3 raw;
-  raw << 1.0, 2.0, 3.0, 4.0, 5.0, 7.0, 8.0, 9.0, 11.0;
+  Matrix3 raw{{1.0, 2.0, 3.0}, {4.0, 5.0, 7.0}, {8.0, 9.0, 11.0}};
   Vector10 rawX;
   rawX(0) = 1.0;
   rawX.tail<9>() = Eigen::Map<const Vector9>(raw.data());
@@ -1051,8 +1041,7 @@ TEST(QcqpProblem, Pose2D1QcqpValueConstraints) {
   LONGS_EQUAL(7, X.rows());
   LONGS_EQUAL(1, X.cols());
 
-  Vector7 expected;
-  expected << 1.0, T(0, 0), T(1, 0), T(0, 1), T(1, 1), T(0, 2), T(1, 2);
+  Vector7 expected{1.0, T(0, 0), T(1, 0), T(0, 1), T(1, 1), T(0, 2), T(1, 2)};
   EXPECT(assert_equal(Vector(expected), Vector(X.col(0)), 1e-12));
 
   const auto constraints = traits<Pose2>::template QcqpConstraints<1>();
@@ -1066,10 +1055,8 @@ TEST(QcqpProblem, Pose2D1QcqpValueConstraints) {
     EXPECT_DOUBLES_EQUAL(b, (X.transpose() * A * X).trace(), 1e-12);
   }
 
-  Matrix2 rawR;
-  rawR << 1.0, 2.0, 3.0, 5.0;
-  Vector7 rawX;
-  rawX << 1.0, rawR(0, 0), rawR(1, 0), rawR(0, 1), rawR(1, 1), 7.0, 11.0;
+  Matrix2 rawR{{1.0, 2.0}, {3.0, 5.0}};
+  Vector7 rawX{1.0, rawR(0, 0), rawR(1, 0), rawR(0, 1), rawR(1, 1), 7.0, 11.0};
   const Matrix2 RRt = rawR * rawR.transpose();
   const std::array<double, 5> expectedForms = {1.0, rawR.determinant(),
                                                RRt(0, 0), RRt(0, 1), RRt(1, 1)};
@@ -1099,11 +1086,11 @@ TEST(QcqpProblem, Pose2D1QcqpValueConstraints) {
   EXPECT_DOUBLES_EQUAL(0.0, insertedConstraints.violationNorm(negatedValues),
                        1e-12);
 
-  Vector7 reflectedX;
-  reflectedX << 1.0, 1.0, 0.0, 0.0, -1.0, 2.0, -3.0;
-  EXPECT(std::abs((reflectedX.transpose() * constraints[1].first * reflectedX)(
-                      0, 0) -
-                  constraints[1].second) > 1e-12);
+  Vector7 reflectedX{1.0, 1.0, 0.0, 0.0, -1.0, 2.0, -3.0};
+  EXPECT(std::abs((reflectedX.transpose() * constraints[1].first *
+                   reflectedX)(0, 0) -
+                  constraints[1].second) >
+         1e-12);
   for (size_t k = 2; k < constraints.size(); ++k) {
     EXPECT_DOUBLES_EQUAL(
         constraints[k].second,
@@ -1115,7 +1102,7 @@ TEST(QcqpProblem, Pose2D1QcqpValueConstraints) {
 // Pose3 D=1 retains the first three homogeneous rows in column-major order and
 // embeds the ten SO(3) constraints without constraining translation.
 TEST(QcqpProblem, Pose3D1QcqpValueConstraints) {
-  const Pose3 pose(Rot3::Expmap((Vector3() << 0.4, -0.1, 0.7).finished()),
+  const Pose3 pose(Rot3::Expmap(Vector3{0.4, -0.1, 0.7}),
                    Point3(2.0, -3.0, 4.0));
   const Matrix4 T = pose.matrix();
   const Matrix X = traits<Pose3>::template QcqpValue<1>(pose);
@@ -1141,8 +1128,7 @@ TEST(QcqpProblem, Pose3D1QcqpValueConstraints) {
     EXPECT_DOUBLES_EQUAL(b, (X.transpose() * A * X).trace(), 1e-12);
   }
 
-  Matrix3 rawR;
-  rawR << 1.0, 2.0, 3.0, 4.0, 5.0, 7.0, 8.0, 9.0, 11.0;
+  Matrix3 rawR{{1.0, 2.0, 3.0}, {4.0, 5.0, 7.0}, {8.0, 9.0, 11.0}};
   Eigen::Matrix<double, 13, 1> rawX;
   rawX(0) = 1.0;
   rawX.segment<9>(1) = Eigen::Map<const Vector9>(rawR.data());
@@ -1185,12 +1171,12 @@ TEST(QcqpProblem, Pose3D1QcqpValueConstraints) {
   EXPECT_DOUBLES_EQUAL(0.0, insertedConstraints.violationNorm(negatedValues),
                        1e-12);
 
-  Eigen::Matrix<double, 13, 1> reflectedX;
-  reflectedX << 1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, -1.0, 2.0, -3.0,
-      4.0;
-  EXPECT(std::abs((reflectedX.transpose() * constraints[1].first * reflectedX)(
-                      0, 0) -
-                  constraints[1].second) > 1e-12);
+  Eigen::Matrix<double, 13, 1> reflectedX{1.0, 1.0, 0.0,  0.0, 0.0,  1.0, 0.0,
+                                          0.0, 0.0, -1.0, 2.0, -3.0, 4.0};
+  EXPECT(std::abs((reflectedX.transpose() * constraints[1].first *
+                   reflectedX)(0, 0) -
+                  constraints[1].second) >
+         1e-12);
   for (size_t k = 4; k < constraints.size(); ++k) {
     EXPECT_DOUBLES_EQUAL(
         constraints[k].second,
@@ -1202,7 +1188,7 @@ TEST(QcqpProblem, Pose3D1QcqpValueConstraints) {
 // For Rot3 at D=N=3, X=R' satisfies the six scalar equations equivalent to
 // XX'=I: three unit-row equations and three row-orthogonality equations.
 TEST(QcqpProblem, Rot3D3QcqpValueConstraints) {
-  const Rot3 R = Rot3::Expmap((Vector3() << 0.4, -0.1, 0.7).finished());
+  const Rot3 R = Rot3::Expmap(Vector3{0.4, -0.1, 0.7});
   const Matrix X = traits<Rot3>::template QcqpValue<3>(R);
   LONGS_EQUAL(3, X.rows());
   LONGS_EQUAL(3, X.cols());
@@ -1239,9 +1225,9 @@ TEST(QcqpProblem, Rot3FrobeniusBetweenFactorD1Accepted) {
 // For Rot3 canonical lifts, the D=3 row-space between cost is exactly the
 // original 0.5*||R_2-R_1*M||_F^2 manifold cost.
 TEST(QcqpProblem, Rot3FrobeniusBetweenFactorD3) {
-  const Rot3 measured = Rot3::Expmap((Vector3() << 0.2, 0.1, -0.3).finished());
-  const Rot3 R0 = Rot3::Expmap((Vector3() << 0.05, 0.10, 0.15).finished());
-  const Rot3 R1 = Rot3::Expmap((Vector3() << 0.10, 0.20, 0.30).finished());
+  const Rot3 measured = Rot3::Expmap(Vector3{0.2, 0.1, -0.3});
+  const Rot3 R0 = Rot3::Expmap(Vector3{0.05, 0.10, 0.15});
+  const Rot3 R1 = Rot3::Expmap(Vector3{0.10, 0.20, 0.30});
 
   NonlinearFactorGraph graph;
   auto noise = noiseModel::Isotropic::Sigma(Rot3::dimension, 1.0);
@@ -1324,7 +1310,7 @@ const Key x0 = Symbol('x', 0);
 // unary linear constraint stays, all three St(2,D) equations appear once.
 TEST(QcqpProblem, InsertQcqpConstraintsMatchesExactQuadratics) {
   NonlinearEqualityConstraints constraints;
-  const Matrix selector = (Matrix(1, 4) << 1.0, 0.0, 0.0, 0.0).finished();
+  const Matrix selector{{1.0, 0.0, 0.0, 0.0}};
   constraints.push_back(
       LinearConstraint::Equal(JacobianFactor(x0, selector, Vector1(1.0)))
           .createEqualityFactor());

@@ -119,9 +119,7 @@ TEST(ExpressionFactor, Unary) {
   Values values;
   values.insert(2, Point3(0, 0, 1));
 
-  JacobianFactor expected( //
-      2, (Matrix(2, 3) << 1, 0, 0, 0, 1, 0).finished(), //
-      Vector2(-17, 30));
+  JacobianFactor expected(2, Matrix{{1, 0, 0}, {0, 1, 0}}, Vector2(-17, 30));
 
   // Create leaves
   Point3_ p(2);
@@ -198,10 +196,8 @@ TEST(ExpressionFactor, Binary) {
   // trace.print();
 
   // Expected Jacobians
-  Matrix25 expected25;
-  expected25 << 0, 0, 0, 1, 0, 0, 0, 0, 0, 1;
-  Matrix2 expected22;
-  expected22 << 1, 0, 0, 1;
+  Matrix25 expected25{{0, 0, 0, 1, 0}, {0, 0, 0, 0, 1}};
+  Matrix2 expected22{{1, 0}, {0, 1}};
 
   // Check matrices
   std::optional<Binary::Record*> r = trace.record<Binary::Record>();
@@ -250,8 +246,7 @@ TEST(ExpressionFactor, Shallow) {
   // trace.print();
 
   // Expected Jacobians
-  Matrix23 expected23;
-  expected23 << 1, 0, 0, 0, 1, 0;
+  Matrix23 expected23{{1, 0, 0}, {0, 1, 0}};
 
   // Check matrices
   std::optional<Unary::Record*> r = trace.record<Unary::Record>();
@@ -780,4 +775,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

@@ -293,7 +293,7 @@ GTSAM_EXPORT Matrix vector_scale(const Matrix& A, const Vector& v, bool inf_mask
 */
 
 inline Matrix3 skewSymmetric(double wx, double wy, double wz) {
-  return (Matrix3() << 0.0, -wz, +wy, +wz, 0.0, -wx, -wy, +wx, 0.0).finished();
+  return Matrix3{{0.0, -wz, +wy}, {+wz, 0.0, -wx}, {-wy, +wx, 0.0}};
 }
 
 template <class Derived>

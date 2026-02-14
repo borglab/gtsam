@@ -318,9 +318,9 @@ TEST(Layout, HeterogeneousRowDims) {
 // stack/unstack round-trip is exact.
 TEST(Layout, StackUnstackRoundTrip) {
   Values values;
-  const Matrix A = (Matrix(2, 3) << 1, 2, 3, 4, 5, 6).finished();
-  const Matrix B = (Matrix(3, 3) << 7, 8, 9, 10, 11, 12, 13, 14, 15).finished();
-  const Matrix C = (Matrix(2, 3) << 16, 17, 18, 19, 20, 21).finished();
+  const Matrix A{{1, 2, 3}, {4, 5, 6}};
+  const Matrix B{{7, 8, 9}, {10, 11, 12}, {13, 14, 15}};
+  const Matrix C{{16, 17, 18}, {19, 20, 21}};
   values.insert(Symbol('x', 0), A);
   values.insert(Symbol('x', 1), B);
   values.insert(Symbol('x', 2), C);

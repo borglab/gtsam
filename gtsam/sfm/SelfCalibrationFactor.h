@@ -188,7 +188,7 @@ class SelfCalibrationFactor : public NoiseModelFactorN<double, double> {
       (*H2)(1, 0) = 2.0 * (1.0 - r1) / fj0;
     }
 
-    return (Vector(2) << r0, r1).finished();
+    return Vector{{r0, r1}};
   }
 };
 

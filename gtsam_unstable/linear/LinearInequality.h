@@ -70,34 +70,35 @@ public:
   }
 
   /** Construct unary factor */
-  LinearInequality(Key i1, const RowVector& A1, double b, Key dualKey) :
-      Base(i1, A1, (Vector(1) << b).finished(),
-          noiseModel::Constrained::All(1)), dualKey_(dualKey), active_(true) {
-  }
+  LinearInequality(Key i1, const RowVector& A1, double b, Key dualKey)
+      : Base(i1, A1, Vector{{b}}, noiseModel::Constrained::All(1)),
+        dualKey_(dualKey),
+        active_(true) {}
 
   /** Construct binary factor */
   LinearInequality(Key i1, const RowVector& A1, Key i2, const RowVector& A2,
-      double b, Key dualKey) :
-      Base(i1, A1, i2, A2, (Vector(1) << b).finished(),
-          noiseModel::Constrained::All(1)), dualKey_(dualKey), active_(true) {
-  }
+                   double b, Key dualKey)
+      : Base(i1, A1, i2, A2, Vector{{b}}, noiseModel::Constrained::All(1)),
+        dualKey_(dualKey),
+        active_(true) {}
 
   /** Construct ternary factor */
   LinearInequality(Key i1, const RowVector& A1, Key i2, const RowVector& A2,
-      Key i3, const RowVector& A3, double b, Key dualKey) :
-      Base(i1, A1, i2, A2, i3, A3, (Vector(1) << b).finished(),
-          noiseModel::Constrained::All(1)), dualKey_(dualKey), active_(true) {
-  }
+                   Key i3, const RowVector& A3, double b, Key dualKey)
+      : Base(i1, A1, i2, A2, i3, A3, Vector{{b}},
+             noiseModel::Constrained::All(1)),
+        dualKey_(dualKey),
+        active_(true) {}
 
   /** Construct an n-ary factor
    * @tparam TERMS A container whose value type is std::pair<Key, Matrix>, specifying the
    *         collection of keys and matrices making up the factor.
    *         In this inequality factor, each matrix must have only one row!! */
-  template<typename TERMS>
-  LinearInequality(const TERMS& terms, double b, Key dualKey) :
-      Base(terms, (Vector(1) << b).finished(), noiseModel::Constrained::All(1)), dualKey_(
-          dualKey), active_(true) {
-  }
+  template <typename TERMS>
+  LinearInequality(const TERMS& terms, double b, Key dualKey)
+      : Base(terms, Vector{{b}}, noiseModel::Constrained::All(1)),
+        dualKey_(dualKey),
+        active_(true) {}
 
   /** Virtual destructor */
   ~LinearInequality() override {

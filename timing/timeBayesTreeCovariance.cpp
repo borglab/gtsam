@@ -243,8 +243,8 @@ Values solveSequentiallyWithISAM2(const NonlinearFactorGraph& graph,
   parameters.relinearizeThreshold = 0.01;
   ISAM2 isam2(parameters);
 
-  const auto priorNoise = noiseModel::Diagonal::Sigmas(
-      (Vector(3) << 1e-6, 1e-6, 1e-6).finished());
+  const auto priorNoise =
+      noiseModel::Diagonal::Sigmas(Vector{{1e-6, 1e-6, 1e-6}});
   size_t nextFactor = 0;
 
   for (size_t stepIndex = 0; stepIndex < allPoseKeys.size(); ++stepIndex) {
@@ -1153,10 +1153,9 @@ int main(int argc, char** argv) {
     Values result = solveSequentiallyWithISAM2(*graphPtr, *initialPtr);
     const KeyVector anchoredPoseKeys = poseKeys(result);
     if (!anchoredPoseKeys.empty()) {
-      graphPtr->addPrior(anchoredPoseKeys.front(),
-                         result.at<Pose2>(anchoredPoseKeys.front()),
-                         noiseModel::Diagonal::Sigmas(
-                             (Vector(3) << 1e-6, 1e-6, 1e-6).finished()));
+      graphPtr->addPrior(
+          anchoredPoseKeys.front(), result.at<Pose2>(anchoredPoseKeys.front()),
+          noiseModel::Diagonal::Sigmas(Vector{{1e-6, 1e-6, 1e-6}}));
     }
     GaussianFactorGraph linearGraph = *graphPtr->linearize(result);
     const KeyVector poseKeyList = poseKeys(result);

@@ -61,8 +61,7 @@ Rot3::Rot3(const Point3& col1, const Point3& col2, const Point3& col3) {
 /* ************************************************************************* */
 Rot3::Rot3(double R11, double R12, double R13, double R21, double R22,
            double R23, double R31, double R32, double R33) {
-  Matrix3 R;
-  R << R11, R12, R13, R21, R22, R23, R31, R32, R33;
+  Matrix3 R{{R11, R12, R13}, {R21, R22, R23}, {R31, R32, R33}};
   rot_ = SO3(R);
 }
 

@@ -62,8 +62,7 @@ struct Unit3EKFTest {
   Unit3EKFTest()
       : p0(Unit3(Point3(1, 0, 0))),  // Start pointing along X-axis
         P0(I_2x2 * 0.01),
-        velocity((Vector2() << 0.0, M_PI / 4.0)
-                     .finished()),  // Rotate towards +Z axis
+        velocity(Vector2{0.0, M_PI / 4.0}),  // Rotate towards +Z axis
         dt(0.1),
         Q(I_2x2 * 0.001),
         R(I_1x1 * 0.01) {}
@@ -115,10 +114,8 @@ TEST(ManifoldEKF_Unit3, Update) {
   Unit3EKFTest data;
 
   // Use a slightly different starting point and covariance for variety
-  Unit3 p_start =
-      Unit3(Point3(0, 1, 0))
-          .retract(
-              (Vector2() << 0.1, 0).finished());  // Perturb pointing along Y
+  Unit3 p_start = Unit3(Point3(0, 1, 0))
+                      .retract(Vector2{0.1, 0});  // Perturb pointing along Y
   Matrix2 P_start = I_2x2 * 0.05;
   ManifoldEKF<Unit3> ekf(p_start, P_start);
 
@@ -158,9 +155,8 @@ TEST(ManifoldEKF_Unit3, Update) {
 //==============================================================================
 namespace pose2_manifold_ekf_example {
 const Pose2 X0(1.0, -2.0, 0.4);
-const Matrix3 P0 =
-    (Matrix3() << 20, 1, -2, 1, 30, 4, -2, 4, 50).finished() * 1e-2;
-const Vector3 eta = (Vector3() << 15, -5, 30).finished() * 1e-2;
+const Matrix3 P0 = Matrix3{{20, 1, -2}, {1, 30, 4}, {-2, 4, 50}} * 1e-2;
+const Vector3 eta = Vector3{15, -5, 30} * 1e-2;
 }  // namespace pose2_manifold_ekf_example
 
 //==============================================================================
@@ -182,9 +178,8 @@ TEST(ManifoldEKF_Pose2, ResetUsesRetractJacobian) {
 //==============================================================================
 TEST(ManifoldEKF_Pose2, ResetCovarianceMonteCarlo) {
   Pose2 X0(0.2, -0.4, 0.3);
-  Matrix3 P0 = (Matrix3() << 20, 3, -1, 3, 25, 2, -1, 2, 15).finished() * 1e-5;
-  Vector3 eta;
-  eta << 1e-3, -8e-4, 1.2e-3;
+  Matrix3 P0 = Matrix3{{20, 3, -1}, {3, 25, 2}, {-1, 2, 15}} * 1e-5;
+  Vector3 eta{1e-3, -8e-4, 1.2e-3};
   ManifoldEKF<Pose2> ekf(X0, P0);
 
   Matrix3 B;
@@ -200,8 +195,7 @@ TEST(ManifoldEKF_Pose2, ResetCovarianceMonteCarlo) {
   Vector3 mean = Vector3::Zero();
   Matrix3 sample_covariance = Matrix3::Zero();
   for (int i = 0; i < kNumSamples; ++i) {
-    Vector3 z;
-    z << normal(rng), normal(rng), normal(rng);
+    Vector3 z{normal(rng), normal(rng), normal(rng)};
     Vector3 delta0 = L * z;
     Pose2 X0_sample = X0.retract(delta0);
     Pose2 X1_sample = traits<Pose2>::Retract(X0_sample, eta);
@@ -249,10 +243,9 @@ double h(const Matrix& p, OptionalJacobian<-1, -1> H = {}) {
 
 //==============================================================================
 TEST(ManifoldEKF_DynamicMatrix, CombinedPredictAndUpdate) {
-  Matrix pInitial = (Matrix(2, 2) << 1.0, 2.0, 3.0, 4.0).finished();
+  Matrix pInitial{{1.0, 2.0}, {3.0, 4.0}};
   Matrix pInitialCovariance = I_4x4 * 0.01;  // Covariance for 2x2 matrix (4x4)
-  Vector vTangent = (Vector(4) << 0.5, 0.1, -0.1, -0.5)
-                        .finished();  // [dp00, dp10, dp01, dp11]/sec
+  Vector vTangent{{0.5, 0.1, -0.1, -0.5}};   // [dp00, dp10, dp01, dp11]/sec
   double deltaTime = 0.1;
   Matrix processNoiseCovariance =
       I_4x4 * 0.001;  // Process noise covariance (4x4)
@@ -296,7 +289,7 @@ TEST(ManifoldEKF_DynamicMatrix, CombinedPredictAndUpdate) {
       1, 4);  // Measurement Jacobian H (1x4 for 2x2 matrix, trace measurement)
   double zPredictionManual =
       manifold_ekf_example::h(pCurrentForUpdate, hJacobian);
-  Matrix hJacobianExpected = (Matrix(1, 4) << 1.0, 0.0, 0.0, 1.0).finished();
+  Matrix hJacobianExpected{{1.0, 0.0, 0.0, 1.0}};
   EXPECT(assert_equal(hJacobianExpected, hJacobian, 1e-9));
 
   // Innovation: y = zObserved - zPredictionManual (since measurement is double)
@@ -326,21 +319,19 @@ TEST(ManifoldEKF_DynamicMatrix, CombinedPredictAndUpdate) {
 //==============================================================================
 TEST(ManifoldEKF_DynamicMatrix, UpdateWithVectorBridge) {
   // State is a 2x2 Matrix manifold (dim=4)
-  Matrix X0 = (Matrix(2, 2) << 1.0, 2.0, 3.0, 4.0).finished();
+  Matrix X0{{1.0, 2.0}, {3.0, 4.0}};
   Matrix P0 = I_4x4 * 0.02;
   ManifoldEKF<Matrix> ekf(X0, P0);
 
   // Simple linear measurement: z = H * vec(X) with m=2
   // Define H to pick [p00 + p11, p01 - p10]
-  Matrix H(2, 4);
-  H << 1.0, 0.0, 0.0, 1.0, 0.0, -1.0, 1.0, 0.0;
+  Matrix H{{1.0, 0.0, 0.0, 1.0}, {0.0, -1.0, 1.0, 0.0}};
 
   // prediction = h(X) at current state
-  Vector prediction(2);
-  prediction << X0(0, 0) + X0(1, 1), X0(0, 1) - X0(1, 0);
+  Vector prediction{{X0(0, 0) + X0(1, 1), X0(0, 1) - X0(1, 0)}};
 
   // Observed z = prediction + noise
-  Vector z = prediction + (Vector(2) << 0.1, -0.05).finished();
+  Vector z{{0.1, -0.05}};
   Matrix R = Matrix::Identity(2, 2) * 0.01;
 
   // Run the bridge update

@@ -142,12 +142,10 @@ TEST(ShonanAveraging3, tryOptimizingAt4) {
 
 /* ************************************************************************* */
 TEST(ShonanAveraging3, TangentVectorValues) {
-  Vector9 v;
-  v << 1, 2, 3, 4, 5, 6, 7, 8, 9;
-  Vector expected0(10), expected1(10), expected2(10);
-  expected0 << 0, 3, -2, 1, 0, 0, 0, 0, 0, 0;
-  expected1 << 0, 6, -5, 4, 0, 0, 0, 0, 0, 0;
-  expected2 << 0, 9, -8, 7, 0, 0, 0, 0, 0, 0;
+  Vector9 v{1, 2, 3, 4, 5, 6, 7, 8, 9};
+  Vector expected0{{0, 3, -2, 1, 0, 0, 0, 0, 0, 0}},
+      expected1{{0, 6, -5, 4, 0, 0, 0, 0, 0, 0}},
+      expected2{{0, 9, -8, 7, 0, 0, 0, 0, 0, 0}};
   const VectorValues xi = ShonanAveraging3::TangentVectorValues(5, v);
   EXPECT(assert_equal(expected0, xi[0]));
   EXPECT(assert_equal(expected1, xi[1]));

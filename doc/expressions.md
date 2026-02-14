@@ -56,8 +56,8 @@ As we said above, expressions also support binary functions, ternary functions, 
 ```c++
 Point3 cross(const Point3 &p, const Point3 & q,
     OptionalJacobian<3, 3> H1 = {}, OptionalJacobian<3, 3> H2 = {}) {
-  if (H1) *H1 << skewSymmetric(-q.x(), -q.y(), -q.z());
-  if (H2) *H2 << skewSymmetric(p.x(), p.y(), p.z());
+  if (H1) *H1 = skewSymmetric(-q.x(), -q.y(), -q.z());
+  if (H2) *H2 = skewSymmetric(p.x(), p.y(), p.z());
   return Point3(p.y() * q.z() - p.z() * q.y(), p.z() * q.x() - p.x() * q.z(),  p.x() * q.y() - p.y() * q.x());
 }
 ```

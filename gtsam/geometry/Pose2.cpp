@@ -224,10 +224,9 @@ Pose2 Pose2::inverse() const {
 
 /* ************************************************************************* */
 Matrix3 Pose2::Hat(const Pose2::TangentVector& xi) {
-  Matrix3 X;
-  X << 0., -xi.z(), xi.x(),
-    xi.z(), 0., xi.y(),
-    0., 0., 0.;
+  Matrix3 X{{0., -xi.z(), xi.x()},  //
+            {xi.z(), 0., xi.y()},
+            {0., 0., 0.}};
   return X;
 }
 
@@ -308,10 +307,9 @@ double Pose2::range(const Point2& point,
   Matrix12 D_r_d;
   double r = norm2(d, D_r_d);
   if (Hpose) {
-      Matrix23 D_d_pose;
-      D_d_pose << -r_.c(),  r_.s(),  0.0,
-                  -r_.s(), -r_.c(),  0.0;
-      *Hpose = D_r_d * D_d_pose;
+    Matrix23 D_d_pose{{-r_.c(), r_.s(), 0.0},  //
+                      {-r_.s(), -r_.c(), 0.0}};
+    *Hpose = D_r_d * D_d_pose;
   }
   if (Hpoint) *Hpoint = D_r_d;
   return r;
