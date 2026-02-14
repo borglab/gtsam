@@ -33,7 +33,7 @@ double SIGKernel::incrementMuInit(const double& mu) const {
 
 /* ************************************************************************* */
 double SIGKernel::incrementMuInitInv(const double& mu) const {
-    return std::max(0.0, mu - this->mu_init_increment);
+  return std::max(0.0, mu - this->mu_init_increment);
 }
 
 /* ************************************************************************* */

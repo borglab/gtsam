@@ -124,8 +124,9 @@ class SIGKernel : public GraduatedKernel {
    * @param mu_update_strat: The update strategy to use for mu updates
    * @param mu_init_increment: The amount to increment/decrement mu init
    */
-  SIGKernel(double shape_param, MuUpdateStrategy mu_update_strat=muUpdateStable,
-            double mu_init_increment=0.2)
+  SIGKernel(double shape_param,
+            MuUpdateStrategy mu_update_strat = muUpdateStable,
+            double mu_init_increment = 0.2)
       : GraduatedKernel(0.0, 1.0),
         shape_param(shape_param),
         mu_update_strat(mu_update_strat),
