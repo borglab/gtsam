@@ -96,6 +96,12 @@ void BoundConstrainedLagrangian::updateMultipliers(const State& previousState,
       state->ita = previousState.ita;
       state->omega = previousState.omega;
     }
+  } else {
+    // keep parameters unchanged.
+    state->lambdaEq = previousState.lambdaEq;
+    state->muEq = previousState.muEq;
+    state->ita = previousState.ita;
+    state->omega = previousState.omega;
   }
 }
 

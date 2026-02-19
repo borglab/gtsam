@@ -18,6 +18,7 @@
 
 #include <gtsam/constrained/AugmentedLagrangianOptimizer.h>
 #include <gtsam/slam/AntiFactor.h>
+#include <iostream>
 
 namespace gtsam {
 
