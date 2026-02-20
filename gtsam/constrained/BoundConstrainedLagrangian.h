@@ -33,7 +33,7 @@ class GTSAM_EXPORT BoundConstrainedLagrangianParams
 
   double k = 2;  // mu increase rate factor
   double alpha = 0.5;
-  double ita0 = 10.0;
+  double ita0 = 1.0;
   double omega0 = 1.0;
   double mu0;
   double ita_threshold = 1e-3;
@@ -104,6 +104,10 @@ class GTSAM_EXPORT BoundConstrainedLagrangian : public ConstrainedOptimizer {
 
   /// Store and log the state after any iteration of the optimization.
   void logIteration(const State& state) const;
+
+  /// Customized convergence check for bound constrained optimization.
+  bool checkConvergenceBC(const State& state, const State& previousState,
+                          const Params& params) const;
 };
 
 }  // namespace gtsam

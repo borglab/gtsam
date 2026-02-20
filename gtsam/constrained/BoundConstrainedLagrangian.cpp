@@ -21,6 +21,8 @@
 
 #include <cmath>
 
+#include "ConstrainedOptimizer.h"
+
 using std::setw, std::cout, std::endl, std::setprecision;
 
 namespace gtsam {
@@ -141,7 +143,7 @@ Values BoundConstrainedLagrangian::optimize() const {
     previousState = std::move(state);
     state = iterate(previousState);
     logIteration(state);
-  } while (!checkConvergence(state, previousState, *p_));
+  } while (!checkConvergenceBC(state, previousState, *p_));
 
   return state.values;
 }
@@ -190,6 +192,16 @@ void BoundConstrainedLagrangian::logIteration(const State& state) const {
   if (p_->storeOptProgress) {
     progress_.emplace_back(state);
   }
+}
+
+bool BoundConstrainedLagrangian::checkConvergenceBC(
+    const State& state, const State& previousState,
+    const Params& params) const {
+  if (state.ita < params.ita_threshold ||
+      state.omega < params.omega_threshold) {
+    return true;
+  }
+  return ConstrainedOptimizer::checkConvergence(state, previousState, params);
 }
 
 }  // namespace gtsam

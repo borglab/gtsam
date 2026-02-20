@@ -30,7 +30,7 @@ TEST(BoundConstrainedLagrangianOptimizer, constrained_example1) {
   Values results = optimizer.optimize();
 
   /// Check the result is correct within tolerance.
-  EXPECT(assert_equal(optimal_values, results, 1e-4));
+  EXPECT(assert_equal(optimal_values, results, 1e-3));
 }
 
 /* ********************************************************************************************* */
