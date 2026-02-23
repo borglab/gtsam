@@ -43,3 +43,36 @@ If you need to update an existing CI image or add a new one (e.g., for a new Ubu
     ```
 
 For more details, see the [README in the docker-images repository](https://github.com/borglab/docker-images/blob/main/gtsam-ci/README.md).
+
+## timeSFMBAL benchmark flow
+
+The `timeSFMBAL` benchmark is split across three workflows that coordinate through `workflow_dispatch` inputs and shared GitHub Actions cache keys:
+
+- **`time-sfmbal-benchmark-trigger.yml`**: Watches PR comments. If a comment is exactly `/bench`, it dispatches `time-sfmbal-benchmark.yml` with the PR number.
+- **`time-sfmbal-benchmark.yml`** (orchestrator): Resolves PR context (head/base SHAs), decides which worker runs are needed, waits for worker completion, collects cached results, compares base vs head, and posts/updates a PR comment.
+- **`time-sfmbal-benchmark-runner.yml`** (worker): Runs on one runner profile (`linux-x64`, `linux-arm64`, or `macos-arm64`) for one target SHA, benchmarks both `GTSAM_WITH_TBB=ON` and `OFF`, then writes result JSONs into cache.
+
+How coordination works:
+
+1. The orchestrator computes six runner specs: 3 runner profiles x 2 roles (`head` and `base`).
+2. For each spec, it checks whether both benchmark cache entries already exist (`tbbON` and `tbbOFF`).
+3. Only missing specs are dispatched as worker workflow runs; fully cached specs are skipped.
+4. The orchestrator waits for dispatched workers, then the `collect` job restores cached JSON files for every `(os, arch, tbb, sha)` matrix entry.
+5. The `summarize` job compares restored `head` vs `base` JSON files via `.github/scripts/compare_time_sfmbal_benchmarks.py` and posts a single benchmark comment (updated in-place on reruns).
+
+Caching details:
+
+- **Dataset cache (worker workflow):**
+  - Key: `bal-problem-135-90642-pre-txt-bz2-v1`
+  - Payload: `examples/Data/problem-135-90642-pre.txt.bz2`
+  - Purpose: avoid re-downloading the BAL dataset archive on every worker run.
+- **Benchmark result cache (worker workflow):**
+  - Key format: `timeSFMBAL-benchmark-v4-<os>-<arch>-tbb<ON|OFF>-<sha>`
+  - Payload: one JSON benchmark result per `(os, arch, tbb, sha)`
+  - Purpose: reuse previously computed benchmark results for identical commit SHA and runner profile.
+- **Cache-aware dispatch (orchestrator):**
+  - Worker dispatch is skipped only when both `tbbON` and `tbbOFF` keys exist for that `(os, arch, sha)`.
+  - This prevents partial reuse from hiding missing variants.
+- **Cache-aware collection (orchestrator):**
+  - The `collect` matrix restores exact `head` and `base` keys and stages either JSON files or explicit miss markers.
+  - Missing cache entries are surfaced in the generated benchmark report.
