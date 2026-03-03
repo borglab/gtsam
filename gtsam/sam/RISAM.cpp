@@ -199,6 +199,7 @@ void RISAM::updateHouseKeeping(const gtsam::NonlinearFactorGraph& new_factors,
   for (const auto fidx : update_params.removeFactorIndices) {
     removed_factors.push_back(factors_.at(fidx));
     factors_.remove(fidx);
+    factors_to_check_status_.erase(fidx);
     mu_.at(fidx).reset();
     mu_inits_.at(fidx).reset();
   }
@@ -240,8 +241,9 @@ void RISAM::augmentMu(const gtsam::NonlinearFactorGraph& new_factors,
 void RISAM::incrementMuInits() {
   // Compute Average Delta
   gtsam::VectorValues delta = solver_->getDelta();
-  bool is_sufficient_delta = delta.norm() / delta.size() <
-                             params_.outlier_mu_avg_var_convergence_thresh;
+  bool is_sufficient_delta =
+      (delta.size() > 0) && (delta.norm() / delta.size() <
+                             params_.outlier_mu_avg_var_convergence_thresh);
 
   // Evaluate All Graduated factors if sufficient average delta
   if (is_sufficient_delta) {
