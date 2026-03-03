@@ -277,7 +277,8 @@ std::set<gtsam::FactorIndex> RISAM::convexifyInvolvedFactors(
     gtsam::ISAM2UpdateParams& update_params, UpdateResult& update_result) {
   // Gather all involved keys - Directly induced by the new factors
   gtsam::KeySet new_factor_keys = new_factors.keys();
-  gtsam::KeySet involved_keys = solver_->traverseTop(new_factors.keyVector());
+  gtsam::KeySet involved_keys =
+      solver_->collectAffectedKeys(new_factors.keyVector());
   involved_keys.insert(new_factor_keys.begin(), new_factor_keys.end());
 
   // Add to the gathered involved keys, any keys specified by the user

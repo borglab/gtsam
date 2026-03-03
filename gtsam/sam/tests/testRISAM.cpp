@@ -174,7 +174,7 @@ TEST(RISAM, RISAMIntegrationTest) {
       SIGKernel::shapeParamFromInfThresh(0.1, 3, 0.95));
   RISAM::Parameters params;
   params.isam2_params = ISAM2Params(
-      ISAM2DoglegLineSearchParams(0.02, 1.0, 1.5, 1e-3, 1e-4, false));
+      ISAM2DoglegLineSearchParams(0.02, 1.0, 1.5, 1e-3, false, 1e-4));
   RISAM risam(params);
 
   // Setup Container for the full problem
