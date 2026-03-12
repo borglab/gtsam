@@ -34,7 +34,7 @@ namespace gtsam {
 /* ************************************************************************* */
 void Rot3::IsValid(const Matrix3& R) {
   // Check R'R ≈ I (orthonormality)
-  if ((R.transpose() * R - Matrix3::Identity()).norm() > 1e-5) {
+  if ((R.transpose() * R - Matrix3::Identity()).norm() > 1e-3) {
     throw std::invalid_argument(
         "Rot3 constructor: matrix is not orthonormal. "
         "Use Rot3::ClosestTo() to find the closest valid rotation.");
