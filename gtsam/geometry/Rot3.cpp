@@ -25,10 +25,26 @@
 #include <cmath>
 #include <cassert>
 #include <random>
+#include <stdexcept>
 
 using namespace std;
 
 namespace gtsam {
+
+/* ************************************************************************* */
+void Rot3::IsValid(const Matrix3& R) {
+  // Check R'R ≈ I (orthonormality)
+  if ((R.transpose() * R - Matrix3::Identity()).norm() > 1e-5) {
+    throw std::invalid_argument(
+        "Rot3 constructor: matrix is not orthonormal. "
+        "Use Rot3::ClosestTo() to find the closest valid rotation.");
+  }
+  // Check det(R) ≈ +1 (proper rotation, not reflection)
+  if (R.determinant() < 0) {
+    throw std::invalid_argument(
+        "Rot3 constructor: matrix has negative determinant (reflection, not rotation).");
+  }
+}
 
 /* ************************************************************************* */
 void Rot3::print(const std::string& s) const {

@@ -1025,6 +1025,16 @@ TEST(Rot3, expmapChainRule) {
 }
 
 /* ************************************************************************* */
+// Invalid rotation matrix should throw, not segfault (#2300)
+TEST(Rot3, InvalidMatrixThrows) {
+  Matrix3 M;
+  M << 0.57, 0.44, 0.87,
+       0.94, 0.06, 0.60,
+       0.92, 0.44, 0.20;
+  CHECK_EXCEPTION(Rot3{M}, std::invalid_argument);
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

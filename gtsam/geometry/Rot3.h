@@ -97,10 +97,13 @@ class GTSAM_EXPORT Rot3 : public MatrixLieGroup<Rot3, 3, 3> {
     template <typename Derived>
 #ifdef GTSAM_USE_QUATERNIONS
     explicit Rot3(const Eigen::MatrixBase<Derived>& R) {
-      quaternion_ = Matrix3(R);
+      const Matrix3 M(R);
+      IsValid(M);
+      quaternion_ = M;
     }
 #else
-    explicit Rot3(const Eigen::MatrixBase<Derived>& R) : rot_(R) {
+    explicit Rot3(const Eigen::MatrixBase<Derived>& R) : rot_(Matrix3(R)) {
+      IsValid(Matrix3(R));
     }
 #endif
 
@@ -109,9 +112,9 @@ class GTSAM_EXPORT Rot3 : public MatrixLieGroup<Rot3, 3, 3> {
      * Overload version for Matrix3 to avoid casting in quaternion mode.
      */
 #ifdef GTSAM_USE_QUATERNIONS
-    explicit Rot3(const Matrix3& R) : quaternion_(R) {}
+    explicit Rot3(const Matrix3& R) : quaternion_(R) { IsValid(R); }
 #else
-    explicit Rot3(const Matrix3& R) : rot_(R) {}
+    explicit Rot3(const Matrix3& R) : rot_(R) { IsValid(R); }
 #endif
 
     /**
@@ -547,6 +550,9 @@ class GTSAM_EXPORT Rot3 : public MatrixLieGroup<Rot3, 3, 3> {
     /// @}
 
    private:
+    /// Throw if R is not a valid rotation matrix (orthonormal with det +1).
+    static void IsValid(const Matrix3& R);
+
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
