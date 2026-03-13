@@ -8,13 +8,13 @@ See LICENSE for the license information
 Unit tests for DCSAM (Discrete-Continuous Smoothing And Mapping).
 Author: Varun Agrawal
 """
+
 # pylint: disable=invalid-name, no-name-in-module, no-member
 
 import unittest
 
 import numpy as np
 
-import gtsam
 from gtsam import (
     DCSAM,
     BetweenFactorPose2,
@@ -69,10 +69,10 @@ class TestDCSAM(GtsamTestCase):
         initial_discrete[mode_key] = 1
 
         dcsam.update(hfg, initial_discrete)
-        dcvals = dcsam.calculateEstimate()
+        dc_values = dcsam.calculateEstimate()
 
         # Mode 1 has a higher weight and should be the MPE
-        self.assertEqual(dcvals.atDiscrete(mode_key), 1)
+        self.assertEqual(dc_values.atDiscrete(mode_key), 1)
 
     def test_simple_mixture_factor(self):
         """Test DCSAM with a HybridNonlinearFactor (1D mixture model).
@@ -81,7 +81,7 @@ class TestDCSAM(GtsamTestCase):
         - Mode 0: tight prior (sigma=1) → more informative
         - Mode 1: loose prior (sigma=8) → less informative
 
-        The log-normalisation constants ensure DCSAM selects the tighter
+        The log-normalization constants ensure DCSAM selects the tighter
         mode (mode 0) as the most probable explanation.
         """
         mode_key = D(1)
@@ -96,13 +96,12 @@ class TestDCSAM(GtsamTestCase):
         f0 = PriorFactorDouble(X(1), 0.0, noise_tight)
         f1 = PriorFactorDouble(X(1), 0.0, noise_loose)
 
-        # Include log-normalisation constants so the discrete selection
-        # accounts for the normalisation of each Gaussian component.
+        # Include log-normalization constants so the discrete selection
+        # accounts for the normalization of each Gaussian component.
         scalar0 = 0.5 * np.log(2 * np.pi * sigma_tight**2)
         scalar1 = 0.5 * np.log(2 * np.pi * sigma_loose**2)
 
-        hybrid_factor = HybridNonlinearFactor(mode, [(f0, scalar0),
-                                                     (f1, scalar1)])
+        hybrid_factor = HybridNonlinearFactor(mode, [(f0, scalar0), (f1, scalar1)])
 
         hfg = HybridNonlinearFactorGraph()
         hfg.push_back(hybrid_factor)
@@ -114,25 +113,26 @@ class TestDCSAM(GtsamTestCase):
         initial_discrete = DiscreteValues()
         initial_discrete[mode_key] = 0
 
-        initial_guess = HybridValues(VectorValues(), initial_discrete,
-                                     initial_continuous)
+        initial_guess = HybridValues(
+            VectorValues(), initial_discrete, initial_continuous
+        )
 
         dcsam = DCSAM()
         dcsam.update(hfg, initial_guess)
-        dcvals = dcsam.calculateEstimate()
+        dc_values = dcsam.calculateEstimate()
 
         # Run one more iteration to refine the estimate
         dcsam.update()
-        dcvals = dcsam.calculateEstimate()
+        dc_values = dcsam.calculateEstimate()
 
         # Mode 0 (tighter prior, lower neg-log-constant) should be preferred
-        self.assertEqual(dcvals.atDiscrete(mode_key), 0)
+        self.assertEqual(dc_values.atDiscrete(mode_key), 0)
 
     def test_simple_slam_batch(self):
         """Test DCSAM on a Pose2 SLAM problem in batch mode.
 
         Constructs an 8-pose octagonal trajectory with odometry factors and
-        verifies the optimised poses match the expected values from the
+        verifies the optimized poses match the expected values from the
         reference DCSAM implementation.
         """
         prior_noise = noiseModel.Isotropic.Sigma(3, 0.1)
@@ -156,10 +156,11 @@ class TestDCSAM(GtsamTestCase):
             initial_continuous.insert(X(i + 1), odom)
 
         dcsam = DCSAM()
-        initial_guess = HybridValues(VectorValues(), DiscreteValues(),
-                                     initial_continuous)
+        initial_guess = HybridValues(
+            VectorValues(), DiscreteValues(), initial_continuous
+        )
         dcsam.update(graph, initial_guess)
-        dcvals = dcsam.calculateEstimate()
+        dc_values = dcsam.calculateEstimate()
 
         # Expected values from the reference DCSAM C++ implementation
         expected = Values()
@@ -172,12 +173,12 @@ class TestDCSAM(GtsamTestCase):
         expected.insert(X(6), Pose2(-0.740961, 1.60781, -1.5108))
         expected.insert(X(7), Pose2(-0.66688, 0.61046, -0.715398))
 
-        self.gtsamAssertEquals(dcvals.nonlinear(), expected, 1e-5)
+        self.gtsamAssertEquals(dc_values.nonlinear(), expected, 1e-5)
 
     def test_simple_slam_incremental(self):
         """Test DCSAM on a Pose2 SLAM problem in incremental mode.
 
-        Adds one pose at a time and verifies the final optimised trajectory
+        Adds one pose at a time and verifies the final optimized trajectory
         matches the expected values from the reference DCSAM implementation.
         """
         prior_noise = noiseModel.Isotropic.Sigma(3, 0.1)
@@ -195,8 +196,9 @@ class TestDCSAM(GtsamTestCase):
         initial_continuous.insert(X(0), pose0)
 
         dcsam = DCSAM()
-        initial_guess = HybridValues(VectorValues(), DiscreteValues(),
-                                     initial_continuous)
+        initial_guess = HybridValues(
+            VectorValues(), DiscreteValues(), initial_continuous
+        )
         dcsam.update(graph, initial_guess)
 
         odom = Pose2(pose0)
@@ -207,17 +209,17 @@ class TestDCSAM(GtsamTestCase):
             initial_continuous = Values()
 
             meas = dx.compose(noise_pose)
-            graph.push_back(
-                BetweenFactorPose2(X(i), X(i + 1), meas, meas_noise))
+            graph.push_back(BetweenFactorPose2(X(i), X(i + 1), meas, meas_noise))
 
             odom = odom.compose(meas)
             initial_continuous.insert(X(i + 1), odom)
 
-            initial_guess = HybridValues(VectorValues(), DiscreteValues(),
-                                         initial_continuous)
+            initial_guess = HybridValues(
+                VectorValues(), DiscreteValues(), initial_continuous
+            )
             dcsam.update(graph, initial_guess)
 
-        dcvals = dcsam.calculateEstimate()
+        dc_values = dcsam.calculateEstimate()
 
         # Expected values from the reference DCSAM C++ implementation
         expected = Values()
@@ -230,7 +232,7 @@ class TestDCSAM(GtsamTestCase):
         expected.insert(X(6), Pose2(-0.740961, 1.60781, -1.5108))
         expected.insert(X(7), Pose2(-0.66688, 0.61046, -0.715398))
 
-        self.gtsamAssertEquals(dcvals.nonlinear(), expected, 1e-5)
+        self.gtsamAssertEquals(dc_values.nonlinear(), expected, 1e-5)
 
 
 if __name__ == "__main__":
