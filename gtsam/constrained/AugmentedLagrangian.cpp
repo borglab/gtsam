@@ -10,12 +10,13 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    AugmentedLagrangianOptimizer.h
+ * @file    AugmentedLagrangian.cpp
  * @brief   Augmented Lagrangian method for nonlinear constrained optimization.
  * @author  Yetong Zhang
  * @date    Aug 3, 2024
  */
 
+#include <gtsam/constrained/AugmentedLagrangian.h>
 #include <gtsam/constrained/AugmentedLagrangianOptimizer.h>
 #include <gtsam/slam/AntiFactor.h>
 #include <iostream>

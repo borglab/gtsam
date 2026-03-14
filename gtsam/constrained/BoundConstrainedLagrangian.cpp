@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    AugmentedLagrangianOptimizer.h
- * @brief   Augmented Lagrangian method for nonlinear constrained optimization.
+ * @file    BoundConstrainedLagrangian.cpp
+ * @brief   Bound-constrained augmented Lagrangian method implementation.
  * @author  Yetong Zhang
  * @date    Aug 3, 2024
  */
@@ -19,7 +19,9 @@
 #include <gtsam/constrained/AugmentedLagrangian.h>
 #include <gtsam/constrained/BoundConstrainedLagrangian.h>
 
+#include <algorithm>
 #include <cmath>
+#include <iomanip>
 
 #include "ConstrainedOptimizer.h"
 
@@ -49,7 +51,7 @@ BoundConstrainedLagrangian::State BoundConstrainedLagrangian::iterate(
   return newState;
 }
 
-double InfNorm(const VectorValues& vector_values) {
+static double InfNorm(const VectorValues& vector_values) {
   double inf_norm = 0;
   for (const auto& [key, value] : vector_values) {
     inf_norm = std::max(inf_norm, value.lpNorm<Eigen::Infinity>());

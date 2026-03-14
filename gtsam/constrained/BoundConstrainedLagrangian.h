@@ -35,7 +35,6 @@ class GTSAM_EXPORT BoundConstrainedLagrangianParams
   double alpha = 0.5;
   double ita0 = 1.0;
   double omega0 = 1.0;
-  double mu0;
   double ita_threshold = 1e-3;
   double omega_threshold = 1e-3;
 
@@ -73,39 +72,42 @@ class GTSAM_EXPORT BoundConstrainedLagrangian : public ConstrainedOptimizer {
   mutable Progress progress_;
 
  public:
-  /// Constructor.
+  /** Constructor. */
   BoundConstrainedLagrangian(const ConstrainedOptProblem& problem,
                              const Values& initialValues,
                              Params::shared_ptr p = std::make_shared<Params>())
       : Base(problem, initialValues), p_(p) {}
 
-  /// Solve one step of optimization, update multipliers and parameters.
+  /** Solve one step of optimization, updating multipliers and parameters. */
   State iterate(const State& state) const;
 
-  /// Run optimization with equality constraints only.
+  /** Run optimization for the bound-constrained problem and return the result. */
   Values optimize() const override;
 
-  /// Return progress of iterations.
+  /** Return progress of iterations as a read-only sequence of states. */
   const Progress& progress() const { return progress_; }
 
  protected:
-  /// Create an unconstrained optimizer that solves the augmented Lagrangian.
+  /** Create an unconstrained optimizer that solves the augmented Lagrangian. */
   SharedOptimizer createUnconstrainedOptimizer(
       const NonlinearFactorGraph& graph, const Values& values) const;
 
   /** Update the Lagrange multipliers using dual ascent. */
   void updateMultipliers(const State& prev_state, State* state) const;
 
+  /** Build the augmented Lagrangian factor graph for the given state. */
   NonlinearFactorGraph augmentedLagrangianFunction(
       const State& state, const double epsilon = 1.0) const;
 
-  /// Store and log the initial state of the optimization.
+  /** Store and log the initial state of the optimization. */
   void logInitialState(const State& state) const;
 
-  /// Store and log the state after any iteration of the optimization.
+  /** Store and log the state after an iteration of the optimization. */
   void logIteration(const State& state) const;
 
-  /// Customized convergence check for bound constrained optimization.
+  /** 
+   * Customized convergence check for bound-constrained optimization.
+   */
   bool checkConvergenceBC(const State& state, const State& previousState,
                           const Params& params) const;
 };

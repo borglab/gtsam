@@ -37,7 +37,7 @@ namespace gtsam {
  *     - 0.5 * epsilon * ||g(x)||^2
  *   = 0.5 * ||f(x)||^2
  *     + 0.5 * muEq * ||h(x)- lambdaEq/muEq||^2
- *     + 0.5 * epsilon * ||g(x)-lambdaIneq/muIneq||^2
+ *     + 0.5 * epsilon * ||g(x)-lambdaIneq/epsilon||^2
  *     + 0.5 * muIneq * ||g(x)_-||^2
  *     - 0.5 * epsilon * ||g(x)||^2
  *     - c
@@ -52,9 +52,9 @@ namespace gtsam {
  * the merit function. The term (-lambdaIneq * g(x)) and (0.5 * epsilon *
  * ||g(x)||^2) can be combined as a least-square term, and the subtraction of
  * (0.5 * epsilon * ||g(x)||^2) can be performed with anti-factor.
- * @return: factor graph representing m(x) + 0.5d * ||g(x)||^2 + c
+ * @return: factor graph representing m(x) + 0.5 * epsilon * ||g(x)||^2 + c
  */
-NonlinearFactorGraph AugmentedLagrangianFunction(
+GTSAM_EXPORT NonlinearFactorGraph AugmentedLagrangianFunction(
     const ConstrainedOptProblem& problem, const std::vector<Vector>& lambdaEq,
     const std::vector<double>& lambdaIneq, double muEq, double muIneq,
     InequalityPenaltyFunction::shared_ptr ineqConstraintPenaltyFunction,

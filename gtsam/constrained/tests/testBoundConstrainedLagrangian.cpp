@@ -1,13 +1,14 @@
 /* ----------------------------------------------------------------------------
- * GTDynamics Copyright 2020, Georgia Tech Research Corporation,
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
  * See LICENSE for the license information
  * -------------------------------------------------------------------------- */
 
 /**
  * @file  testBoundConstrainedLagrangian.cpp
- * @brief Test bound constrained augmented Lagrangian method optimzier for equality constrained
+ * @brief Test bound constrained augmented Lagrangian method optimizer for equality constrained
  * optimization.
  * @author: Yetong Zhang
  */
