@@ -9,6 +9,7 @@
  *  @date Mar 2022
  */
 #pragma once
+#include <memory>
 #include <gtsam/base/FastVector.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/nonlinear/internal/ChiSquaredInverse.h>
