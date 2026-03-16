@@ -1,7 +1,10 @@
 /**
  * @file ABCEquivariantFilter.h
  * @brief Attitude-Bias-Calibration Equivariant Filter for state estimation
+ * @author Jennifer Oum
+ * @author Darshan Rajasekaran
  * @author Rohan Bansal
+ * @author Frank Dellaert
  * @date 2026
  *
  * This file extends the EquivariantFilter class to provide a more user-friendly

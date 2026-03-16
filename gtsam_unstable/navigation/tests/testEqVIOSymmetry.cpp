@@ -36,43 +36,12 @@
 #include <limits>
 
 using namespace gtsam;
+using namespace gtsam::eqvio;
 
 namespace eqvio_test_util {
-
-  class SimplePinholeCamera final : public VIOCameraModel {
-   public:
-    explicit SimplePinholeCamera(double fx = 450.0, double fy = 450.0,
-                                 double cx = 400.0, double cy = 240.0)
-        : fx_(fx), fy_(fy), cx_(cx), cy_(cy) {}
-  
-    Point2 projectPoint(const Point3& p) const override {
-      if (std::abs(p.z()) < 1e-12) {
-        throw std::invalid_argument("SimplePinholeCamera: z is near zero");
-      }
-      return Point2(fx_ * p.x() / p.z() + cx_, fy_ * p.y() / p.z() + cy_);
-    }
-  
-    Vector3 undistortPoint(const Point2& y) const override {
-      return Vector3((y.x() - cx_) / fx_, (y.y() - cy_) / fy_, 1.0);
-    }
-  
-    Matrix23 projectionJacobian(const Vector3& y) const override {
-      if (std::abs(y.z()) < 1e-12) {
-        throw std::invalid_argument("SimplePinholeCamera: z is near zero");
-      }
-      Matrix23 J;
-      const double z2 = y.z() * y.z();
-      J << fx_ / y.z(), 0.0, -fx_ * y.x() / z2, 0.0, fy_ / y.z(),
-          -fy_ * y.y() / z2;
-      return J;
-    }
-  
-   private:
-    double fx_, fy_, cx_, cy_;
-  };
-  
   inline std::shared_ptr<const VIOCameraModel> CreateDefaultCamera() {
-    return std::make_shared<SimplePinholeCamera>();
+    return std::make_shared<VIOCameraModel>(
+        Cal3_S2(450.0, 450.0, 0.0, 400.0, 240.0));
   }
   
   inline VIOSE23 MakeA(const Rot3& R, const Point3& t, const Vector3& w) {
@@ -84,7 +53,7 @@ namespace eqvio_test_util {
   
   inline VIOState RandomStateElement(const std::vector<int>& ids) {
     VIOSensorState sensor;
-    sensor.inputBias = Vector6::Random();
+    sensor.inputBias = VIOBias(Vector3::Random(), Vector3::Random());
     sensor.pose = Pose3::Expmap(Vector6::Random());
     sensor.velocity = Vector3::Random();
     sensor.cameraOffset = Pose3::Expmap(Vector6::Random());
@@ -102,7 +71,7 @@ namespace eqvio_test_util {
     const Pose3 Apose = Pose3::Expmap(Vector6::Random());
     const Vector3 w = Vector3::Random();
     const Pose3 B = Pose3::Expmap(Vector6::Random());
-    const Vector6 beta = Vector6::Random();
+    const VIOBias beta(Vector3::Random(), Vector3::Random());
   
     std::vector<SOT3> Q(ids.size());
     for (size_t i = 0; i < ids.size(); ++i) {
@@ -115,8 +84,8 @@ namespace eqvio_test_util {
                         VIOLandmarkGroup(Q));
   }
   
-  inline IMUVelocity RandomVelocityElement() {
-    IMUVelocity vel;
+  inline IMUInput RandomVelocityElement() {
+    IMUInput vel;
     vel.gyr = Vector3::Random();
     vel.acc = Vector3::Random();
     vel.gyrBiasVel = Vector3::Random();
@@ -129,8 +98,6 @@ namespace eqvio_test_util {
       const std::vector<int>& ids,
       const std::shared_ptr<const VIOCameraModel>& camera) {
     VisionMeasurement measurement;
-    measurement.camera = camera;
-    measurement.stamp = 0.0;
   
     for (int id : ids) {
       Vector3 p;
@@ -141,7 +108,7 @@ namespace eqvio_test_util {
       while (p.z() < 1e-1) {
         p = Vector3::Random().normalized();
       }
-      measurement.camCoordinates[id] = camera->projectPoint(p);
+      measurement[id] = camera->projectPoint(p);
     }
     return measurement;
   }
@@ -154,7 +121,7 @@ namespace eqvio_test_util {
     }
   
     double dist = 0.0;
-    dist += (xi1.sensor.inputBias - xi2.sensor.inputBias).norm();
+    dist += xi1.sensor.inputBias.localCoordinates(xi2.sensor.inputBias).norm();
     dist += xi1.sensor.pose.localCoordinates(xi2.sensor.pose).norm();
     dist += xi1.sensor.cameraOffset.localCoordinates(xi2.sensor.cameraOffset).norm();
     dist += (xi1.sensor.velocity - xi2.sensor.velocity).norm();
@@ -170,10 +137,10 @@ namespace eqvio_test_util {
   
   inline double MeasurementDistance(const VisionMeasurement& y1,
                                     const VisionMeasurement& y2) {
-    Vector y1vec = Vector(y1);
-    Vector y2vec = Vector(y2);
+    Vector y1vec = measurementVector(y1);
+    Vector y2vec = measurementVector(y2);
     const double scale = std::max(1.0, std::max(y1vec.norm(), y2vec.norm()));
-    const Vector diff = Vector(y1 - y2);
+    const Vector diff = measurementDifference(y1, y2);
     return diff.norm() / scale;
   }
   
@@ -225,7 +192,7 @@ std::vector<Landmark> Lms3() {
 
 VIOSensorState SensorA() {
   VIOSensorState s;
-  s.inputBias = (Vector6() << 0.05, -0.04, 0.03, 0.01, -0.02, 0.04).finished();
+  s.inputBias = VIOBias(Vector3(0.01, -0.02, 0.04), Vector3(0.05, -0.04, 0.03));
   s.pose = Pose3(Rot3::RzRyRx(0.1, -0.2, 0.25), Point3(0.4, -0.1, 1.0));
   s.velocity = Vector3(0.3, -0.2, 0.1);
   s.cameraOffset =
@@ -242,7 +209,7 @@ VIOGroup Group0() {
   const Vector3 w(0.01, -0.03, 0.02);
   return makeVIOGroup(
       MakeA(R, t, w),
-      (Vector6() << 0.01, -0.01, 0.02, -0.02, 0.01, 0.0).finished(),
+      VIOBias(Vector3(-0.02, 0.01, 0.0), Vector3(0.01, -0.01, 0.02)),
       Pose3(Rot3::RzRyRx(-0.02, 0.01, 0.03), Point3(0.02, 0.0, -0.01)),
       VIOLandmarkGroup(0));
 }
@@ -259,7 +226,7 @@ VIOGroup Group3() {
                 std::log(1.05));
   return makeVIOGroup(
       MakeA(R, t, w),
-      (Vector6() << 0.01, -0.01, 0.02, -0.02, 0.01, 0.0).finished(),
+      VIOBias(Vector3(-0.02, 0.01, 0.0), Vector3(0.01, -0.01, 0.02)),
       Pose3(Rot3::RzRyRx(-0.02, 0.01, 0.03), Point3(0.02, 0.0, -0.01)),
       VIOLandmarkGroup({q1, q2, q3}));
 }
@@ -276,7 +243,7 @@ VIOGroup Group3b() {
                 std::log(1.08));
   return makeVIOGroup(
       MakeA(R, t, w),
-      (Vector6() << -0.02, 0.03, -0.01, 0.02, 0.01, -0.01).finished(),
+      VIOBias(Vector3(0.02, 0.01, -0.01), Vector3(-0.02, 0.03, -0.01)),
       Pose3(Rot3::RzRyRx(0.01, -0.02, 0.04), Point3(-0.01, 0.03, 0.02)),
       VIOLandmarkGroup({q1, q2, q3}));
 }
@@ -284,9 +251,9 @@ VIOGroup Group3b() {
 Matrix NumericalDerivativeWrtGroup(const VIOSymmetry& phi, const VIOGroup& X,
                                    const VIOState& xi, const VIOState& y0,
                                    double h = 1e-6) {
-  Matrix H = Matrix::Zero(y0.dim(), static_cast<int>(groupDim(X)));
-  for (int j = 0; j < static_cast<int>(groupDim(X)); ++j) {
-    Vector dx = Vector::Zero(static_cast<int>(groupDim(X)));
+  Matrix H = Matrix::Zero(y0.dim(), static_cast<int>(Dim_groupTangent(X)));
+  for (int j = 0; j < static_cast<int>(Dim_groupTangent(X)); ++j) {
+    Vector dx = Vector::Zero(static_cast<int>(Dim_groupTangent(X)));
     dx(j) = h;
     const VIOState yPlus = phi(xi, X.retract(dx));
     dx(j) = -h;
@@ -316,6 +283,7 @@ Matrix NumericalDerivativeWrtState(const VIOSymmetry& phi, const VIOGroup& X,
 }  // namespace
 
 //******************************************************************************
+// Verifies the right-action law for VIOSymmetry.
 TEST(VIOSymmetry, RightActionLaw) {
   const VIOSymmetry phi;
   const VIOState xi = State3();
@@ -325,6 +293,7 @@ TEST(VIOSymmetry, RightActionLaw) {
 }
 
 //******************************************************************************
+// Verifies action Jacobians against numerical derivatives for n=0.
 TEST(VIOSymmetry, JacobiansN0) {
   const VIOSymmetry phi;
   const VIOGroup X = Group0();
@@ -340,6 +309,7 @@ TEST(VIOSymmetry, JacobiansN0) {
 }
 
 //******************************************************************************
+// Verifies action Jacobians against numerical derivatives for n=3.
 TEST(VIOSymmetry, JacobiansN3) {
   const VIOSymmetry phi;
   const VIOGroup X = Group3();
@@ -355,6 +325,7 @@ TEST(VIOSymmetry, JacobiansN3) {
 }
 
 //******************************************************************************
+// Verifies eqvio-ported state action identity and composition checks.
 TEST(VIOSymmetry, StateActionEqvioPort) {
   srand(0);
   const std::vector<int> ids = {0, 1, 2, 3, 4};
@@ -377,6 +348,7 @@ TEST(VIOSymmetry, StateActionEqvioPort) {
 }
 
 //******************************************************************************
+// Verifies eqvio-ported output action identity and composition checks.
 TEST(VIOSymmetry, OutputActionEqvioPort) {
   srand(0);
   const std::vector<int> ids = {0, 1, 2, 3, 4};
@@ -388,18 +360,20 @@ TEST(VIOSymmetry, OutputActionEqvioPort) {
     const VIOGroup X2 = RandomGroupElement(ids);
     const VisionMeasurement y0 = RandomVisionMeasurement(ids, camera);
 
-    const VisionMeasurement y0Id = outputGroupAction(groupId, y0);
+    const VisionMeasurement y0Id = outputGroupAction(groupId, y0, camera);
     const double dist0Id = MeasurementDistance(y0Id, y0);
     EXPECT(dist0Id <= 1e-5);
 
-    const VisionMeasurement y1 = outputGroupAction(X2, outputGroupAction(X1, y0));
-    const VisionMeasurement y2 = outputGroupAction(X1 * X2, y0);
+    const VisionMeasurement y1 =
+        outputGroupAction(X2, outputGroupAction(X1, y0, camera), camera);
+    const VisionMeasurement y2 = outputGroupAction(X1 * X2, y0, camera);
     const double dist12 = MeasurementDistance(y1, y2);
     EXPECT(dist12 <= 1e-5);
   }
 }
 
 //******************************************************************************
+// Verifies measurement equivariance under group action.
 TEST(VIOSymmetry, OutputEquivarianceEqvioPort) {
   srand(0);
   const std::vector<int> ids = {0, 1, 2, 3, 4, 5};
@@ -412,16 +386,17 @@ TEST(VIOSymmetry, OutputEquivarianceEqvioPort) {
     const VisionMeasurement y1 =
         measureSystemState(stateGroupAction(X, xi0), camera);
     const VisionMeasurement y2 =
-        outputGroupAction(X, measureSystemState(xi0, camera));
+        outputGroupAction(X, measureSystemState(xi0, camera), camera);
     const double dist12 = MeasurementDistance(y1, y2);
     EXPECT(dist12 <= 1e-5);
   }
 }
 
 //******************************************************************************
+// Verifies discrete lift update matches direct integration.
 TEST(VIOSymmetry, LiftAndIntegrationSanity) {
   const VIOState xi = State3();
-  IMUVelocity imu;
+  IMUInput imu;
   imu.gyr = Vector3(0.03, -0.02, 0.01);
   imu.acc = Vector3(0.2, -0.1, 9.75);
   imu.gyrBiasVel = Vector3(0.01, 0.0, -0.02);

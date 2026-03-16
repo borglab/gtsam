@@ -19,6 +19,7 @@
 #include <stdexcept>
 
 namespace gtsam {
+namespace eqvio {
 
 
 void Landmark::print(const std::string& s) const {
@@ -37,14 +38,14 @@ Vector3 VIOSensorState::gravityDir() const {
 
 void VIOSensorState::print(const std::string& s) const {
   if (!s.empty()) std::cout << s << std::endl;
-  gtsam::print(Vector(inputBias), "  inputBias");
+  gtsam::print(Vector(inputBias.vector()), "  inputBias");
   pose.print("  pose");
   gtsam::print(Vector(velocity), "  velocity");
   cameraOffset.print("  cameraOffset");
 }
 
 bool VIOSensorState::equals(const VIOSensorState& other, double tol) const {
-  return equal_with_abs_tol(inputBias, other.inputBias, tol) &&
+  return inputBias.equals(other.inputBias, tol) &&
          pose.equals(other.pose, tol) &&
          equal_with_abs_tol(velocity, other.velocity, tol) &&
          cameraOffset.equals(other.cameraOffset, tol);
@@ -74,7 +75,7 @@ VIOState VIOState::retract(const TangentVector& v, ChartJacobian H1,
   Matrix66 Hpose1, Hpose2, Hcam1, Hcam2;
   VIOState out(*this);
 
-  out.sensor.inputBias += v.segment<6>(0);
+  out.sensor.inputBias = sensor.inputBias.retract(v.segment<6>(0));
   out.sensor.pose =
       sensor.pose.retract(v.segment<6>(6), H1 ? &Hpose1 : nullptr,
                           H2 ? &Hpose2 : nullptr);
@@ -123,7 +124,7 @@ VIOState::TangentVector VIOState::localCoordinates(const VIOState& other,
   Matrix66 Hpose1, Hpose2, Hcam1, Hcam2;
   TangentVector out = Vector::Zero(d);
 
-  out.segment<6>(0) = other.sensor.inputBias - sensor.inputBias;
+  out.segment<6>(0) = sensor.inputBias.localCoordinates(other.sensor.inputBias);
   out.segment<6>(6) = sensor.pose.localCoordinates(
       other.sensor.pose, H1 ? &Hpose1 : nullptr, H2 ? &Hpose2 : nullptr);
   out.segment<3>(12) = other.sensor.velocity - sensor.velocity;
@@ -180,4 +181,5 @@ bool VIOState::equals(const VIOState& other, double tol) const {
   return true;
 }
 
+}  // namespace eqvio
 }  // namespace gtsam
