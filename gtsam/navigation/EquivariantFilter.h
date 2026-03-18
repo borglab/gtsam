@@ -320,6 +320,23 @@ class EquivariantFilter : public ManifoldEKF<M> {
     this->validateInputs(prediction, H, z, R);
     update<Vector>(prediction, H, z, R);
   }
+
+  /// Vector measurement update using a custom innovation lift delta_x=f(delta_xi).
+  template <typename InnovationLiftFn>
+  void updateWithVector(const gtsam::Vector& prediction, const Matrix& H,
+                        const gtsam::Vector& z, const Matrix& R,
+                        InnovationLiftFn&& innovationLift) {
+    this->validateInputs(prediction, H, z, R);
+
+    const gtsam::Vector innovation = traits<Vector>::Local(z, prediction);
+    const Matrix K = this->KalmanGain(H, R);
+    const TangentM delta_xi = -K * innovation;
+    const TangentG delta_x = innovationLift(delta_xi);
+
+    g_ = traits<G>::Compose(traits<G>::Expmap(delta_x), g_);
+    this->X_ = act_on_ref_(g_);
+    this->JosephUpdate(K, H, R);
+  }
 };
 
 }  // namespace gtsam

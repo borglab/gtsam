@@ -666,9 +666,10 @@ void EqVIOFilter::update(const VisionMeasurement& measurement,
   if (!camera) {
     throw std::invalid_argument("EqVIOFilter::update: null camera");
   }
-  const VisionMeasurement estimatedMeasurement = measureSystemState(stateEstimate(), camera);
-  const Vector yTilde = measurementResidual(measurement, estimatedMeasurement,
-                                            "EqVIOFilter::update");
+  const VisionMeasurement estimatedMeasurement =
+      measureSystemState(stateEstimate(), camera);
+  const Vector yTilde =
+      measurementResidual(measurement, estimatedMeasurement, "EqVIOFilter::update");
   const Matrix Ct = view_.coordinateSuite->outputMatrixC(
       view_.xi0, view_.X, measurement, camera, useEquivariantOutput);
 
@@ -677,29 +678,30 @@ void EqVIOFilter::update(const VisionMeasurement& measurement,
           ? outputGainMatrix
           : Matrix::Identity(Ct.rows(), Ct.rows()) * params_.measurementNoiseVariance;
 
-  const Matrix SInv = (Ct * view_.Sigma * Ct.transpose() + Rused).inverse();
-  const Matrix K = view_.Sigma * Ct.transpose() * SInv;
-  const Vector Gamma = K * yTilde;
-
   if (DebugQScaleEnabled()) {
+    const Matrix SInv = (Ct * view_.Sigma * Ct.transpose() + Rused).inverse();
+    const Matrix K = view_.Sigma * Ct.transpose() * SInv;
+    const Vector Gamma = K * yTilde;
     std::cerr << "[EqVIOFilter] update_stats t=" << view_.currentTime
               << " meas_n=" << measurement.size()
               << " ||yTilde||=" << yTilde.norm()
               << " ||Gamma||=" << Gamma.norm()
               << " max|Gamma|=" << Gamma.cwiseAbs().maxCoeff() << std::endl;
   }
-
-  VIOGroup delta;
+  const Vector zhat = measurementVector(estimatedMeasurement);
+  const Vector z = measurementVector(measurement);
   if (discreteCorrection) {
-    delta = view_.coordinateSuite->liftInnovationDiscrete(Gamma, view_.xi0);
+    Base::updateWithVector(
+        zhat, Ct, z, Rused, [this](const Vector& delta_xi) -> Vector {
+          return VIOGroup::Logmap(
+              view_.coordinateSuite->liftInnovationDiscrete(delta_xi, view_.xi0));
+        });
   } else {
-    const Vector liftedInnovation =
-        view_.coordinateSuite->liftInnovation(Gamma, view_.xi0);
-    delta = VIOGroup::Expmap(liftedInnovation);
+    Base::updateWithVector(
+        zhat, Ct, z, Rused, [this](const Vector& delta_xi) -> Vector {
+          return view_.coordinateSuite->liftInnovation(delta_xi, view_.xi0);
+        });
   }
-
-  setGroupEstimateAndSyncState(delta * view_.X);
-  setErrorCovariance(view_.Sigma - K * Ct * view_.Sigma);
   syncFromBase();
 }
 
