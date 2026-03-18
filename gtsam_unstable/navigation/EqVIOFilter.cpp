@@ -14,14 +14,9 @@
 
 #include <gtsam_unstable/navigation/EqVIOFilter.h>
 
-#include <unsupported/Eigen/MatrixFunctions>
-
 #include <algorithm>
 #include <cassert>
 #include <cmath>
-#include <cstdlib>
-#include <iostream>
-#include <limits>
 #include <map>
 #include <numeric>
 #include <set>
@@ -33,39 +28,7 @@ namespace eqvio {
 
 namespace {
 
-bool DebugQScaleEnabled() {
-  const char* env = std::getenv("EQVIO_DEBUG_QSCALE");
-  return env && env[0] != '\0' && env[0] != '0';
-}
-
 double SOT3Scale(const SOT3& Q) { return std::exp(Q.second); }
-
-void PrintQScaleStats(const VIOGroup& X, double stamp,
-                      const std::string& where) {
-  if (!DebugQScaleEnabled()) return;
-
-  if (N_landmarkCount(X) == 0) {
-    std::cerr << "[EqVIOFilter] " << where << " t=" << stamp << " n=0"
-              << std::endl;
-    return;
-  }
-
-  double minA = std::numeric_limits<double>::infinity();
-  double maxA = 0.0;
-  int minId = -1;
-  for (size_t i = 0; i < N_landmarkCount(X); ++i) {
-    const double a = SOT3Scale(Q_landmarkTransforms(X)[i]);
-    if (a < minA) {
-      minA = a;
-      minId = static_cast<int>(i);
-    }
-    if (a > maxA) maxA = a;
-  }
-
-  std::cerr << "[EqVIOFilter] " << where << " t=" << stamp
-            << " n=" << N_landmarkCount(X) << " min_scale=" << minA
-            << " min_id=" << minId << " max_scale=" << maxA << std::endl;
-}
 
 void ValidateGroupStateAlignment(const VIOGroup& X, const VIOState& xi0,
                                  const char* context) {
@@ -75,13 +38,6 @@ void ValidateGroupStateAlignment(const VIOGroup& X, const VIOState& xi0,
   }
 }
 
-void ValidateMeasurementAlignment(const VIOGroup& X, const VisionMeasurement& y,
-                                  const char* context) {
-  (void)X;
-  (void)y;
-  (void)context;
-}
-
 }  // namespace
 
 EqVIOFilter::EqVIOFilter() : EqVIOFilter(EqVIOFilterParams()) {}
@@ -89,10 +45,6 @@ EqVIOFilter::EqVIOFilter() : EqVIOFilter(EqVIOFilterParams()) {}
 EqVIOFilter::EqVIOFilter(const EqVIOFilterParams& params)
     : Base(VIOState(), defaultCovariance(0), makeVIOGroupIdentity()),
       params_(params) {
-  view_.coordinateSuite = getCoordinates(params_.coordinateChoice);
-  if (!view_.coordinateSuite) {
-    throw std::invalid_argument("EqVIOFilter: invalid coordinate choice");
-  }
   view_.xi0 = VIOState();
   view_.xi0.sensor.inputBias = VIOBias::Identity();
   view_.xi0.sensor.pose = Pose3::Identity();
@@ -108,10 +60,6 @@ EqVIOFilter::EqVIOFilter(const VIOState& xi0, const Matrix& Sigma0,
                          const EqVIOFilterParams& params, double time)
     : Base(VIOState(), defaultCovariance(0), makeVIOGroupIdentity()),
       params_(params) {
-  view_.coordinateSuite = getCoordinates(params_.coordinateChoice);
-  if (!view_.coordinateSuite) {
-    throw std::invalid_argument("EqVIOFilter: invalid coordinate choice");
-  }
   view_.xi0 = xi0;
   view_.X = makeVIOGroupIdentity(view_.xi0.n());
   view_.Sigma = Sigma0;
@@ -159,8 +107,6 @@ void EqVIOFilter::processVisionData(
   const bool integrationFlag = integrateUpToTime(stamp);
   if (!integrationFlag || !initialized_) return;
 
-  PrintQScaleStats(view_.X, stamp, "before_preprocess");
-
   if (params_.removeLostLandmarks) {
     removeOldLandmarks(measurementIds(measurement));
   }
@@ -174,14 +120,10 @@ void EqVIOFilter::processVisionData(
     return;
   }
 
-  performVisionUpdate(matchedMeasurement, camera, R, params_.useEquivariantOutput,
-                      params_.useDiscreteInnovationLift);
-
-  PrintQScaleStats(view_.X, stamp, "after_update");
+  performVisionUpdate(matchedMeasurement, camera, R);
   if (params_.removeInvalidLandmarks) {
     removeInvalidLandmarksNow();
   }
-  PrintQScaleStats(view_.X, stamp, "after_remove_invalid");
   syncBase(false);
 
   assert(!view_.Sigma.hasNaN());
@@ -253,25 +195,20 @@ void EqVIOFilter::syncFromBase() {
   view_.Sigma = errorCovariance();
 }
 
-void EqVIOFilter::integrateObserverState(const IMUInput& imu, double dt,
-                                         bool discreteLift) {
-  predict(imu, dt, discreteLift);
+void EqVIOFilter::integrateObserverState(const IMUInput& imu, double dt) {
+  predict(imu, dt);
 }
 
-void EqVIOFilter::predict(const IMUInput& imu, double dt, bool discreteLift) {
+void EqVIOFilter::predict(const IMUInput& imu, double dt) {
   const Matrix A = Matrix::Zero(view_.xi0.dim(), view_.xi0.dim());
   const Matrix Qc = Matrix::Zero(view_.xi0.dim(), view_.xi0.dim());
-  predictWithJacobian(imu, dt, discreteLift, A, Qc);
+  predictWithJacobian(imu, dt, A, Qc);
 }
 
 void EqVIOFilter::predictWithJacobian(const IMUInput& imu, double dt,
-                                      bool discreteLift, const Matrix& A,
-                                      const Matrix& Qc) {
-  auto liftFunctor = [imu, dt, discreteLift](const VIOState& xi) -> Vector {
-    if (discreteLift) {
-      return (VIOGroup::Logmap(liftVelocityDiscrete(xi, imu, dt)) / dt).eval();
-    }
-    return liftVelocity(xi, imu);
+                                      const Matrix& A, const Matrix& Qc) {
+  auto liftFunctor = [imu, dt](const VIOState& xi) -> Vector {
+    return (VIOGroup::Logmap(liftVelocityDiscrete(xi, imu, dt)) / dt).eval();
   };
 
   Base::template predictWithJacobian<1>(liftFunctor, A, Qc, dt);
@@ -283,42 +220,10 @@ void EqVIOFilter::integrateRiccatiStateFast(
     const Eigen::Matrix<double, IMUInput::CompDim, IMUInput::CompDim>&
         inputGainMatrix,
     const Matrix& stateGainMatrix) {
-  const Matrix A0t = view_.coordinateSuite->stateMatrixA(view_.X, view_.xi0, imu);
-  const Matrix Bt = view_.coordinateSuite->inputMatrixB(view_.X, view_.xi0);
+  const Matrix A0t = EqFCoordinateSuite_invdepth.stateMatrixA(view_.X, view_.xi0, imu);
+  const Matrix Bt = EqFCoordinateSuite_invdepth.inputMatrixB(view_.X, view_.xi0);
   const Matrix A0tExp = Matrix::Identity(view_.xi0.dim(), view_.xi0.dim()) + dt * A0t;
   view_.Sigma = A0tExp * view_.Sigma * A0tExp.transpose() +
-                dt * (Bt * inputGainMatrix * Bt.transpose() + stateGainMatrix);
-}
-
-void EqVIOFilter::integrateRiccatiStateAccurate(
-    const IMUInput& imu, double dt,
-    const Eigen::Matrix<double, IMUInput::CompDim, IMUInput::CompDim>&
-        inputGainMatrix,
-    const Matrix& stateGainMatrix) {
-  const Matrix A0t = view_.coordinateSuite->stateMatrixA(view_.X, view_.xi0, imu);
-  const Matrix Bt = view_.coordinateSuite->inputMatrixB(view_.X, view_.xi0);
-
-  Matrix AB = Matrix::Zero(A0t.cols() + Bt.cols(), A0t.cols() + Bt.cols());
-  AB.block(0, 0, A0t.rows(), A0t.cols()) = A0t;
-  AB.block(0, A0t.rows(), Bt.rows(), Bt.cols()) = Bt;
-  const Matrix ABExp = (dt * AB).exp();
-  const Matrix A0tExp = ABExp.block(0, 0, A0t.rows(), A0t.cols());
-  const Matrix BtExp = ABExp.block(0, A0t.rows(), Bt.rows(), Bt.cols());
-
-  view_.Sigma = A0tExp * view_.Sigma * A0tExp.transpose() +
-                BtExp * (inputGainMatrix / dt) * BtExp.transpose() +
-                dt * stateGainMatrix;
-}
-
-void EqVIOFilter::integrateRiccatiStateDiscrete(
-    const IMUInput& imu, double dt,
-    const Eigen::Matrix<double, IMUInput::CompDim, IMUInput::CompDim>&
-        inputGainMatrix,
-    const Matrix& stateGainMatrix) {
-  const Matrix Bt = view_.coordinateSuite->inputMatrixB(view_.X, view_.xi0);
-  const Matrix A0tDiscrete =
-      view_.coordinateSuite->stateMatrixADiscrete(view_.X, view_.xi0, imu, dt);
-  view_.Sigma = A0tDiscrete * view_.Sigma * A0tDiscrete.transpose() +
                 dt * (Bt * inputGainMatrix * Bt.transpose() + stateGainMatrix);
 }
 
@@ -347,25 +252,23 @@ bool EqVIOFilter::integrateUpToTime(double newTime) {
     return false;
   }
 
-  if (params_.fastRiccati) {
-    double accumulatedTime = 0.0;
-    IMUInput accumulatedVelocity = IMUInput::Zero();
-    for (size_t i = 0; i < imuBuffer_.size(); ++i) {
-      const double t0 = std::max(imuBuffer_.at(i).stamp, view_.currentTime);
-      const double t1 =
-          i + 1 < imuBuffer_.size() ? std::min(imuBuffer_.at(i + 1).stamp, newTime)
-                                    : newTime;
-      const double dt = std::max(t1 - t0, 0.0);
-      accumulatedTime += dt;
-      accumulatedVelocity = accumulatedVelocity + imuBuffer_.at(i) * dt;
-    }
+  double accumulatedTime = 0.0;
+  IMUInput accumulatedVelocity = IMUInput::Zero();
+  for (size_t i = 0; i < imuBuffer_.size(); ++i) {
+    const double t0 = std::max(imuBuffer_.at(i).stamp, view_.currentTime);
+    const double t1 =
+        i + 1 < imuBuffer_.size() ? std::min(imuBuffer_.at(i + 1).stamp, newTime)
+                                  : newTime;
+    const double dt = std::max(t1 - t0, 0.0);
+    accumulatedTime += dt;
+    accumulatedVelocity = accumulatedVelocity + imuBuffer_.at(i) * dt;
+  }
 
-    if (accumulatedTime > 0.0) {
-      accumulatedVelocity = accumulatedVelocity * (1.0 / accumulatedTime);
-      integrateRiccatiStateFast(accumulatedVelocity, accumulatedTime,
-                                params_.inputNoise, stateProcessNoise(view_.xi0.n()));
-      setErrorCovariance(view_.Sigma);
-    }
+  if (accumulatedTime > 0.0) {
+    accumulatedVelocity = accumulatedVelocity * (1.0 / accumulatedTime);
+    integrateRiccatiStateFast(accumulatedVelocity, accumulatedTime,
+                              params_.inputNoise, stateProcessNoise(view_.xi0.n()));
+    setErrorCovariance(view_.Sigma);
   }
 
   for (size_t i = 0; i < imuBuffer_.size(); ++i) {
@@ -377,20 +280,7 @@ bool EqVIOFilter::integrateUpToTime(double newTime) {
     if (dt <= 0.0) continue;
 
     const IMUInput imu = imuBuffer_.at(i);
-    if (params_.fastRiccati) {
-      integrateObserverState(imu, dt, params_.useDiscreteVelocityLift);
-      continue;
-    }
-
-    if (params_.useDiscreteStateMatrix) {
-      integrateRiccatiStateDiscrete(imu, dt, params_.inputNoise,
-                                    stateProcessNoise(view_.xi0.n()));
-    } else {
-      integrateRiccatiStateAccurate(imu, dt, params_.inputNoise,
-                                    stateProcessNoise(view_.xi0.n()));
-    }
-    setErrorCovariance(view_.Sigma);
-    integrateObserverState(imu, dt, params_.useDiscreteVelocityLift);
+    integrateObserverState(imu, dt);
   }
 
   view_.currentTime = newTime;
@@ -552,7 +442,7 @@ Matrix2 EqVIOFilter::outputCovarianceById(
       static_cast<size_t>(std::distance(view_.xi0.cameraLandmarks.begin(), it));
   const SOT3& Q_i = Q_landmarkTransforms(view_.X)[i];
 
-  const Matrix23 C0i = view_.coordinateSuite->outputMatrixCi(it->p, Q_i, camera);
+  const Matrix23 C0i = EqFCoordinateSuite_invdepth.outputMatrixCi(it->p, Q_i, camera);
   return C0i * lmCov * C0i.transpose();
 }
 
@@ -647,22 +537,16 @@ double EqVIOFilter::getMedianSceneDepth() const {
 void EqVIOFilter::performVisionUpdate(
     const VisionMeasurement& measurement,
     const std::shared_ptr<const VIOCameraModel>& camera,
-    const Matrix& outputGainMatrix, bool useEquivariantOutput,
-    bool discreteCorrection) {
-  (void)discreteCorrection;
+    const Matrix& outputGainMatrix) {
   if (measurement.empty()) return;
   ValidateGroupStateAlignment(view_.X, view_.xi0,
                               "EqVIOFilter::performVisionUpdate");
-  ValidateMeasurementAlignment(view_.X, measurement,
-                               "EqVIOFilter::performVisionUpdate");
-  update(measurement, camera, outputGainMatrix, useEquivariantOutput,
-         discreteCorrection);
+  update(measurement, camera, outputGainMatrix);
 }
 
 void EqVIOFilter::update(const VisionMeasurement& measurement,
                          const std::shared_ptr<const VIOCameraModel>& camera,
-                         const Matrix& outputGainMatrix,
-                         bool useEquivariantOutput, bool discreteCorrection) {
+                         const Matrix& outputGainMatrix) {
   if (!camera) {
     throw std::invalid_argument("EqVIOFilter::update: null camera");
   }
@@ -670,38 +554,19 @@ void EqVIOFilter::update(const VisionMeasurement& measurement,
       measureSystemState(stateEstimate(), camera);
   const Vector yTilde =
       measurementResidual(measurement, estimatedMeasurement, "EqVIOFilter::update");
-  const Matrix Ct = view_.coordinateSuite->outputMatrixC(
-      view_.xi0, view_.X, measurement, camera, useEquivariantOutput);
+  const Matrix Ct = EqFCoordinateSuite_invdepth.outputMatrixC(
+      view_.xi0, view_.X, measurement, camera, true);
 
   const Matrix Rused =
       (outputGainMatrix.rows() == Ct.rows() && outputGainMatrix.cols() == Ct.rows())
           ? outputGainMatrix
           : Matrix::Identity(Ct.rows(), Ct.rows()) * params_.measurementNoiseVariance;
 
-  if (DebugQScaleEnabled()) {
-    const Matrix SInv = (Ct * view_.Sigma * Ct.transpose() + Rused).inverse();
-    const Matrix K = view_.Sigma * Ct.transpose() * SInv;
-    const Vector Gamma = K * yTilde;
-    std::cerr << "[EqVIOFilter] update_stats t=" << view_.currentTime
-              << " meas_n=" << measurement.size()
-              << " ||yTilde||=" << yTilde.norm()
-              << " ||Gamma||=" << Gamma.norm()
-              << " max|Gamma|=" << Gamma.cwiseAbs().maxCoeff() << std::endl;
-  }
   const Vector zhat = measurementVector(estimatedMeasurement);
   const Vector z = measurementVector(measurement);
-  if (discreteCorrection) {
-    Base::updateWithVector(
-        zhat, Ct, z, Rused, [this](const Vector& delta_xi) -> Vector {
-          return VIOGroup::Logmap(
-              view_.coordinateSuite->liftInnovationDiscrete(delta_xi, view_.xi0));
-        });
-  } else {
-    Base::updateWithVector(
-        zhat, Ct, z, Rused, [this](const Vector& delta_xi) -> Vector {
-          return view_.coordinateSuite->liftInnovation(delta_xi, view_.xi0);
-        });
-  }
+  Base::updateWithVector(zhat, Ct, z, Rused, [this](const Vector& delta_xi) -> Vector {
+    return EqFCoordinateSuite_invdepth.liftInnovation(delta_xi, view_.xi0);
+  });
   syncFromBase();
 }
 

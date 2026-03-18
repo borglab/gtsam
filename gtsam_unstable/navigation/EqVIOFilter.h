@@ -27,12 +27,6 @@ namespace eqvio {
 
 /// Runtime parameters for the standalone EqVIO filter.
 struct GTSAM_UNSTABLE_EXPORT EqVIOFilterParams {
-  CoordinateChoice coordinateChoice = CoordinateChoice::InvDepth;
-  bool fastRiccati = false;
-  bool useDiscreteStateMatrix = false;
-  bool useDiscreteVelocityLift = false;
-  bool useDiscreteInnovationLift = false;
-  bool useEquivariantOutput = true;
   bool removeLostLandmarks = true;
   bool removeInvalidLandmarks = true;
   bool useMedianDepth = false;
@@ -63,7 +57,6 @@ class GTSAM_UNSTABLE_EXPORT EqVIOFilter
 
   /// Internal filter state view.
   struct View {
-    const EqFCoordinateSuite* coordinateSuite = &EqFCoordinateSuite_invdepth;
     VIOState xi0;
     VIOGroup X = makeVIOGroupIdentity();
     Matrix Sigma =
@@ -117,22 +110,12 @@ class GTSAM_UNSTABLE_EXPORT EqVIOFilter
   void syncFromBase();
 
   bool integrateUpToTime(double newTime);
-  void integrateObserverState(const IMUInput& imu, double dt, bool discreteLift);
-  void predict(const IMUInput& imu, double dt, bool discreteLift);
-  void predictWithJacobian(const IMUInput& imu, double dt, bool discreteLift,
-                           const Matrix& A, const Matrix& Qc);
+  void integrateObserverState(const IMUInput& imu, double dt);
+  void predict(const IMUInput& imu, double dt);
+  void predictWithJacobian(const IMUInput& imu, double dt, const Matrix& A,
+                           const Matrix& Qc);
 
   void integrateRiccatiStateFast(
-      const IMUInput& imu, double dt,
-      const Eigen::Matrix<double, IMUInput::CompDim, IMUInput::CompDim>&
-          inputGainMatrix,
-      const Matrix& stateGainMatrix);
-  void integrateRiccatiStateAccurate(
-      const IMUInput& imu, double dt,
-      const Eigen::Matrix<double, IMUInput::CompDim, IMUInput::CompDim>&
-          inputGainMatrix,
-      const Matrix& stateGainMatrix);
-  void integrateRiccatiStateDiscrete(
       const IMUInput& imu, double dt,
       const Eigen::Matrix<double, IMUInput::CompDim, IMUInput::CompDim>&
           inputGainMatrix,
@@ -160,13 +143,10 @@ class GTSAM_UNSTABLE_EXPORT EqVIOFilter
 
   void performVisionUpdate(const VisionMeasurement& measurement,
                            const std::shared_ptr<const VIOCameraModel>& camera,
-                           const Matrix& outputGainMatrix,
-                           bool useEquivariantOutput,
-                           bool discreteCorrection);
+                           const Matrix& outputGainMatrix);
   void update(const VisionMeasurement& measurement,
               const std::shared_ptr<const VIOCameraModel>& camera,
-              const Matrix& outputGainMatrix, bool useEquivariantOutput,
-              bool discreteCorrection);
+              const Matrix& outputGainMatrix);
 };
 
 }  // namespace eqvio

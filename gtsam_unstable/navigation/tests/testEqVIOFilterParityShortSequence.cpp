@@ -40,11 +40,7 @@ class SimplePinholeCamera final : public VIOCameraModel {
 
 TEST(EqVIOFilter, ParityShortSequence) {
   EqVIOFilterParams params;
-  params.coordinateChoice = CoordinateChoice::InvDepth;
   params.removeLostLandmarks = false;
-  params.useDiscreteStateMatrix = false;
-  params.useDiscreteVelocityLift = false;
-  params.useDiscreteInnovationLift = false;
 
   EqVIOFilter filter(params);
   auto camera = std::make_shared<SimplePinholeCamera>();

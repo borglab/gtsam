@@ -91,18 +91,6 @@ int main(int argc, char** argv) {
     const EqVIOCsvLog log = readEqVIOCsv(csvPath);
 
     EqVIOFilterParams params;
-    params.coordinateChoice = CoordinateChoice::InvDepth;
-    params.fastRiccati =
-        metadataBool(log, "eqf.fast_riccati", params.fastRiccati);
-    params.useDiscreteStateMatrix = metadataBool(
-        log, "eqf.use_discrete_state_matrix", params.useDiscreteStateMatrix);
-    params.useDiscreteVelocityLift = metadataBool(
-        log, "eqf.use_discrete_velocity_lift", params.useDiscreteVelocityLift);
-    params.useDiscreteInnovationLift = metadataBool(
-        log, "eqf.use_discrete_innovation_lift",
-        params.useDiscreteInnovationLift);
-    params.useEquivariantOutput =
-        metadataBool(log, "eqf.use_equivariant_output", params.useEquivariantOutput);
     params.removeLostLandmarks =
         metadataBool(log, "eqf.remove_lost_landmarks", params.removeLostLandmarks);
     params.removeInvalidLandmarks = true;

@@ -228,67 +228,7 @@ VIOState StateChartInvDepthInv(const Vector& eps, const VIOState& Xi0) {
   return Xi;
 }
 
-Matrix EqFInputMatrixB_euclid(const VIOGroup& X, const VIOState& xi0);
 Matrix EqFInputMatrixB_invdepth(const VIOGroup& X, const VIOState& xi0);
-
-Matrix EqFStateMatrixA_euclid(const VIOGroup& X, const VIOState& xi0,
-                              const IMUInput& imuVel) {
-  const int N = static_cast<int>(xi0.n());
-  Matrix A0t = Matrix::Zero(xi0.dim(), xi0.dim());
-
-  const Matrix B = EqFInputMatrixB_euclid(X, xi0);
-  A0t.block(0, 0, xi0.dim(), 3) = -B.block(0, 3, xi0.dim(), 3);
-  A0t.block(0, 3, xi0.dim(), 3) = -B.block(0, 0, xi0.dim(), 3);
-  A0t.block<3, 3>(9, 12).setIdentity();
-  A0t.block<3, 3>(12, 6) = -GRAVITY_CONSTANT * Rot3::Hat(xi0.sensor.gravityDir());
-
-  const VIOState xiHat = stateGroupAction(X, xi0);
-  const IMUInput vEst = imuVel - xiHat.sensor.inputBias;
-  Vector6 U_I;
-  U_I << vEst.gyr, xiHat.sensor.velocity;
-
-  const Pose3 A = APose(X);
-  const Vector6 commonTwist =
-      xi0.sensor.cameraOffset.inverse().AdjointMap() * A.AdjointMap() * U_I;
-  A0t.block<6, 6>(15, 15) = Pose3::adjointMap(commonTwist);
-
-  const Matrix3 R_IC = xiHat.sensor.cameraOffset.rotation().matrix();
-  const Matrix3 R_A = A.rotation().matrix();
-  for (int i = 0; i < N; ++i) {
-    const Matrix3 Qhat_i = SOT3ScaledRotation(
-        Q_landmarkTransforms(X)[static_cast<size_t>(i)]);
-    A0t.block<3, 3>(VIOSensorState::CompDim + 3 * i, 12) =
-        -Qhat_i * R_IC.transpose() * R_A.transpose();
-  }
-
-  const Matrix66 commonTerm =
-      B_cameraExtrinsics(X).inverse().AdjointMap() * Pose3::adjointMap(commonTwist);
-  for (int i = 0; i < N; ++i) {
-    Matrix36 temp;
-    temp << Rot3::Hat(xi0.cameraLandmarks[static_cast<size_t>(i)].p) *
-                SOT3Rotation(Q_landmarkTransforms(X)[static_cast<size_t>(i)]).matrix(),
-        -SOT3Scale(Q_landmarkTransforms(X)[static_cast<size_t>(i)]) *
-            SOT3Rotation(Q_landmarkTransforms(X)[static_cast<size_t>(i)]).matrix();
-    A0t.block<3, 6>(VIOSensorState::CompDim + 3 * i, 15) = temp * commonTerm;
-  }
-
-  const Vector6 U_C = xiHat.sensor.cameraOffset.inverse().AdjointMap() * U_I;
-  const Vector3 v_C = U_C.tail<3>();
-  for (int i = 0; i < N; ++i) {
-    const Matrix3 Qhat_i = SOT3ScaledRotation(
-        Q_landmarkTransforms(X)[static_cast<size_t>(i)]);
-    const Vector3 qhat_i = xiHat.cameraLandmarks[static_cast<size_t>(i)].p;
-    const Matrix3 A_qi =
-        -Qhat_i *
-        (Rot3::Hat(qhat_i) * Rot3::Hat(v_C) - 2.0 * v_C * qhat_i.transpose() +
-         qhat_i * v_C.transpose()) *
-        Qhat_i.inverse() * (1.0 / qhat_i.squaredNorm());
-    A0t.block<3, 3>(VIOSensorState::CompDim + 3 * i,
-                    VIOSensorState::CompDim + 3 * i) = A_qi;
-  }
-
-  return A0t;
-}
 
 Matrix EqFStateMatrixA_invdepth(const VIOGroup& X, const VIOState& xi0,
                                 const IMUInput& imuVel) {
@@ -353,35 +293,6 @@ Matrix EqFStateMatrixA_invdepth(const VIOGroup& X, const VIOState& xi0,
   return A0t;
 }
 
-Matrix EqFInputMatrixB_euclid(const VIOGroup& X, const VIOState& xi0) {
-  const int N = static_cast<int>(xi0.n());
-  Matrix Bt = Matrix::Zero(xi0.dim(), IMUInput::CompDim);
-
-  const VIOState xiHat = stateGroupAction(X, xi0);
-  const Pose3 A = APose(X);
-
-  Bt.block<3, 3>(0, 9).setIdentity();
-  Bt.block<3, 3>(3, 6).setIdentity();
-
-  const Matrix3 R_A = A.rotation().matrix();
-  Bt.block<3, 3>(6, 0) = R_A;
-  Bt.block<3, 3>(9, 0) = Rot3::Hat(A.translation()) * R_A;
-  Bt.block<3, 3>(12, 0) = R_A * Rot3::Hat(xiHat.sensor.velocity);
-  Bt.block<3, 3>(12, 3) = R_A;
-
-  const Matrix3 RT_IC = xiHat.sensor.cameraOffset.rotation().matrix().transpose();
-  const Point3 x_IC = xiHat.sensor.cameraOffset.translation();
-  for (int i = 0; i < N; ++i) {
-    const Matrix3 Qhat_i = SOT3ScaledRotation(
-        Q_landmarkTransforms(X)[static_cast<size_t>(i)]);
-    const Point3 qhat_i = xiHat.cameraLandmarks[static_cast<size_t>(i)].p;
-    Bt.block<3, 3>(VIOSensorState::CompDim + 3 * i, 0) =
-        Qhat_i * (Rot3::Hat(qhat_i) * RT_IC + RT_IC * Rot3::Hat(x_IC));
-  }
-
-  return Bt;
-}
-
 Matrix EqFInputMatrixB_invdepth(const VIOGroup& X, const VIOState& xi0) {
   const int N = static_cast<int>(xi0.n());
   Matrix Bt = Matrix::Zero(xi0.dim(), IMUInput::CompDim);
@@ -413,11 +324,11 @@ Matrix EqFInputMatrixB_invdepth(const VIOGroup& X, const VIOState& xi0) {
   return Bt;
 }
 
-Matrix23 EqFoutputMatrixCiStar_euclid(
+Matrix23 EqFoutputMatrixCiStar_base(
     const Point3& q0, const SOT3& QHat,
     const std::shared_ptr<const VIOCameraModel>& camera, const Point2& y) {
   if (!camera) {
-    throw std::invalid_argument("EqFoutputMatrixCiStar_euclid: null camera");
+    throw std::invalid_argument("EqFoutputMatrixCiStar_base: null camera");
   }
 
   using Matrix43 = Eigen::Matrix<double, 4, 3>;
@@ -452,38 +363,7 @@ Matrix23 EqFoutputMatrixCiStar_invdepth(
   Matrix3 ind2euc;
   ind2euc.block<3, 2>(0, 0) = r0 * SphereChartStereoInvDiff0(y0);
   ind2euc.block<3, 1>(0, 2) = -r0 * q0;
-  return EqFoutputMatrixCiStar_euclid(q0, QHat, camera, y) * ind2euc;
-}
-
-Vector liftInnovation_euclid(const Vector& totalInnovation, const VIOState& xi0) {
-  if (totalInnovation.size() != xi0.dim()) {
-    throw std::invalid_argument(
-        "liftInnovation_euclid: innovation dimension mismatch");
-  }
-
-  const int N = static_cast<int>(xi0.n());
-  Vector lift = Vector::Zero(21 + 4 * N);
-
-  lift.segment<6>(9) = totalInnovation.segment<6>(0);
-  lift.segment<6>(0) = totalInnovation.segment<6>(6);
-
-  const Vector3 gammaV = totalInnovation.segment<3>(12);
-  lift.segment<3>(6) = -gammaV - Rot3::Hat(lift.segment<3>(0)) * xi0.sensor.velocity;
-
-  lift.segment<6>(15) =
-      totalInnovation.segment<6>(15) +
-      xi0.sensor.cameraOffset.inverse().AdjointMap() * lift.segment<6>(0);
-
-  for (int i = 0; i < N; ++i) {
-    const Vector3 gammaQi0 =
-        totalInnovation.segment<3>(VIOSensorState::CompDim + 3 * i);
-    const Point3 qi0 = xi0.cameraLandmarks[static_cast<size_t>(i)].p;
-
-    lift.segment<3>(21 + 4 * i) = -qi0.cross(gammaQi0) / qi0.squaredNorm();
-    lift(21 + 4 * i + 3) = -qi0.dot(gammaQi0) / qi0.squaredNorm();
-  }
-
-  return lift;
+  return EqFoutputMatrixCiStar_base(q0, QHat, camera, y) * ind2euc;
 }
 
 Vector liftInnovation_invdepth(const Vector& totalInnovation,
@@ -517,40 +397,6 @@ Vector liftInnovation_invdepth(const Vector& totalInnovation,
   }
 
   return lift;
-}
-
-VIOGroup liftInnovationDiscrete_euclid(const Vector& totalInnovation,
-                                       const VIOState& xi0) {
-  if (totalInnovation.size() != xi0.dim()) {
-    throw std::invalid_argument(
-        "liftInnovationDiscrete_euclid: innovation dimension mismatch");
-  }
-
-  const VIOBias beta(totalInnovation.segment<6>(0));
-  const Pose3 A_pose = Pose3::Expmap(totalInnovation.segment<6>(6));
-  const Vector3 w = xi0.sensor.velocity -
-                    A_pose.rotation().matrix() *
-                        (xi0.sensor.velocity + totalInnovation.segment<3>(12));
-
-  const Pose3 B = xi0.sensor.cameraOffset.inverse()
-                      .compose(A_pose)
-                      .compose(xi0.sensor.cameraOffset)
-                      .compose(Pose3::Expmap(totalInnovation.segment<6>(15)));
-
-  std::vector<SOT3> Q;
-  Q.reserve(xi0.n());
-
-  for (size_t i = 0; i < xi0.n(); ++i) {
-    const Point3 qi = xi0.cameraLandmarks[i].p;
-    const Point3 qi1 = qi + totalInnovation.segment<3>(
-                                VIOSensorState::CompDim + 3 * static_cast<int>(i));
-    const Rot3 R = RotationFromTwoVectors(qi1, qi);
-    const double a = qi.norm() / qi1.norm();
-    Q.emplace_back(MakeSOT3(SO3(R.matrix()), a));
-  }
-
-  return makeVIOGroup(MakeA(A_pose.rotation(), A_pose.translation(), w), beta, B,
-                      VIOLandmarkGroup(Q));
 }
 
 VIOGroup liftInnovationDiscrete_invdepth(const Vector& totalInnovation,
@@ -590,15 +436,6 @@ VIOGroup liftInnovationDiscrete_invdepth(const Vector& totalInnovation,
 }
 
 }  // namespace
-
-const EqFCoordinateSuite EqFCoordinateSuite_euclid{
-    [](const VIOState& Xi, const VIOState& Xi0) { return Xi0.localCoordinates(Xi); },
-    [](const Vector& eps, const VIOState& Xi0) { return Xi0.retract(eps); },
-    EqFStateMatrixA_euclid,
-    EqFInputMatrixB_euclid,
-    EqFoutputMatrixCiStar_euclid,
-    liftInnovation_euclid,
-    liftInnovationDiscrete_euclid};
 
 const EqFCoordinateSuite EqFCoordinateSuite_invdepth{
     StateChartInvDepth,
@@ -682,16 +519,6 @@ Matrix23 EqFCoordinateSuite::outputMatrixCi(
   const Vector3 qHat = SOT3ApplyInverse(QHat, q0);
   const Point2 yHat = camera->projectPoint(qHat);
   return outputMatrixCiStar(q0, QHat, camera, yHat);
-}
-
-const EqFCoordinateSuite* getCoordinates(CoordinateChoice coordinateChoice) {
-  if (coordinateChoice == CoordinateChoice::Euclidean) {
-    return &EqFCoordinateSuite_euclid;
-  }
-  if (coordinateChoice == CoordinateChoice::InvDepth) {
-    return &EqFCoordinateSuite_invdepth;
-  }
-  return nullptr;
 }
 
 }  // namespace eqvio

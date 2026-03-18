@@ -50,10 +50,7 @@ class SimplePinholeCamera final : public VIOCameraModel {
 
 TEST(EqVIOFilter, DynamicLandmarksAddRemove) {
   EqVIOFilterParams params;
-  params.coordinateChoice = CoordinateChoice::InvDepth;
   params.removeLostLandmarks = true;
-  params.useDiscreteVelocityLift = true;
-  params.useDiscreteInnovationLift = true;
   params.initialPointDepth = 5.0;
 
   EqVIOFilter filter(params);

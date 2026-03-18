@@ -40,8 +40,6 @@ class SimplePinholeCamera final : public VIOCameraModel {
 
 TEST(EqVIOFilter, InitAndPropagation) {
   EqVIOFilterParams params;
-  params.coordinateChoice = CoordinateChoice::InvDepth;
-  params.useDiscreteVelocityLift = true;
 
   EqVIOFilter filter(params);
   EXPECT(!filter.isInitialized());

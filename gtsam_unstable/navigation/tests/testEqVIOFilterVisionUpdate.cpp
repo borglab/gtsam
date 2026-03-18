@@ -60,9 +60,7 @@ VIOState MakeState1() {
 
 TEST(EqVIOFilter, VisionUpdate) {
   EqVIOFilterParams params;
-  params.coordinateChoice = CoordinateChoice::InvDepth;
   params.removeLostLandmarks = false;
-  params.useDiscreteStateMatrix = false;
 
   const VIOState xi0 = MakeState1();
   const Matrix Sigma0 = Matrix::Identity(xi0.dim(), xi0.dim()) * 1e-3;

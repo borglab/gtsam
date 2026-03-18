@@ -51,10 +51,7 @@ class SimplePinholeCamera final : public VIOCameraModel {
 
 TEST(EqVIOFilter, Smoke) {
   EqVIOFilterParams params;
-  params.coordinateChoice = CoordinateChoice::InvDepth;
   params.removeLostLandmarks = false;
-  params.useDiscreteVelocityLift = true;
-  params.useDiscreteInnovationLift = true;
 
   VIOSensorState sensor;
   sensor.inputBias = VIOBias::Identity();

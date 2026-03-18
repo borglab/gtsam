@@ -28,8 +28,6 @@
 namespace gtsam {
 namespace eqvio {
 
-enum class CoordinateChoice { Euclidean, InvDepth };
-
 struct GTSAM_UNSTABLE_EXPORT EqFCoordinateSuite {
   /// Coordinate chart about xi0 and inverse chart.
   std::function<Vector(const VIOState&, const VIOState&)> stateChart;
@@ -63,12 +61,7 @@ struct GTSAM_UNSTABLE_EXPORT EqFCoordinateSuite {
       const;
 };
 
-extern const GTSAM_UNSTABLE_EXPORT EqFCoordinateSuite EqFCoordinateSuite_euclid;
-extern const GTSAM_UNSTABLE_EXPORT EqFCoordinateSuite
-    EqFCoordinateSuite_invdepth;
-
-const GTSAM_UNSTABLE_EXPORT EqFCoordinateSuite* getCoordinates(
-    CoordinateChoice coordinateChoice);
+extern const GTSAM_UNSTABLE_EXPORT EqFCoordinateSuite EqFCoordinateSuite_invdepth;
 
 }  // namespace eqvio
 }  // namespace gtsam

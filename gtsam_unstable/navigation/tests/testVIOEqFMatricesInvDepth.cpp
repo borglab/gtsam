@@ -125,16 +125,14 @@ bool IsFinite(const Matrix& M) { return M.array().isFinite().all(); }
 
 //******************************************************************************
 TEST(VIOEqFMatricesInvDepth, Selector) {
-  const EqFCoordinateSuite* suite = getCoordinates(CoordinateChoice::InvDepth);
+  const EqFCoordinateSuite* suite = &EqFCoordinateSuite_invdepth;
   EXPECT(suite != nullptr);
 }
 
 //******************************************************************************
 TEST(VIOEqFMatricesInvDepth, ShapesAndFinite) {
   const auto camera = std::make_shared<SimplePinholeCamera>();
-  const EqFCoordinateSuite* suite = getCoordinates(CoordinateChoice::InvDepth);
-  EXPECT(suite != nullptr);
-  if (!suite) return;
+  const EqFCoordinateSuite& suite = EqFCoordinateSuite_invdepth;
 
   for (const auto& pair :
        std::vector<std::pair<VIOState, VIOGroup>>{{State0(), Group0()},
@@ -146,9 +144,9 @@ TEST(VIOEqFMatricesInvDepth, ShapesAndFinite) {
     const VisionMeasurement y =
         measureSystemState(stateGroupAction(X, xi0), camera);
 
-    const Matrix A = suite->stateMatrixA(X, xi0, imu);
-    const Matrix B = suite->inputMatrixB(X, xi0);
-    const Matrix C = suite->outputMatrixC(xi0, X, y, camera, true);
+    const Matrix A = suite.stateMatrixA(X, xi0, imu);
+    const Matrix B = suite.inputMatrixB(X, xi0);
+    const Matrix C = suite.outputMatrixC(xi0, X, y, camera, true);
 
     EXPECT_LONGS_EQUAL(xi0.dim(), A.rows());
     EXPECT_LONGS_EQUAL(xi0.dim(), A.cols());
@@ -165,31 +163,27 @@ TEST(VIOEqFMatricesInvDepth, ShapesAndFinite) {
 
 //******************************************************************************
 TEST(VIOEqFMatricesInvDepth, StateChartRoundTrip) {
-  const EqFCoordinateSuite* suite = getCoordinates(CoordinateChoice::InvDepth);
-  EXPECT(suite != nullptr);
-  if (!suite) return;
+  const EqFCoordinateSuite& suite = EqFCoordinateSuite_invdepth;
 
   for (const VIOState& xi0 : std::vector<VIOState>{State1(), State3()}) {
     const Vector eps = Vector::LinSpaced(xi0.dim(), -1e-3, 1e-3);
-    const VIOState xi = suite->stateChartInv(eps, xi0);
-    const Vector epsRecovered = suite->stateChart(xi, xi0);
+    const VIOState xi = suite.stateChartInv(eps, xi0);
+    const Vector epsRecovered = suite.stateChart(xi, xi0);
     EXPECT(assert_equal(eps, epsRecovered, 1e-8));
   }
 }
 
 //******************************************************************************
 TEST(VIOEqFMatricesInvDepth, SmallStepDiscreteConsistency) {
-  const EqFCoordinateSuite* suite = getCoordinates(CoordinateChoice::InvDepth);
-  EXPECT(suite != nullptr);
-  if (!suite) return;
+  const EqFCoordinateSuite& suite = EqFCoordinateSuite_invdepth;
 
   const VIOState xi0 = State3();
   const VIOGroup X = Group3();
   const IMUInput imu = ImuFixture();
 
   const double dt = 1e-6;
-  const Matrix A = suite->stateMatrixA(X, xi0, imu);
-  const Matrix Phi = suite->stateMatrixADiscrete(X, xi0, imu, dt);
+  const Matrix A = suite.stateMatrixA(X, xi0, imu);
+  const Matrix Phi = suite.stateMatrixADiscrete(X, xi0, imu, dt);
   const Matrix PhiApprox = Matrix::Identity(xi0.dim(), xi0.dim()) + dt * A;
 
   EXPECT(assert_equal(PhiApprox, Phi, 1e-4));
@@ -197,16 +191,14 @@ TEST(VIOEqFMatricesInvDepth, SmallStepDiscreteConsistency) {
 
 //******************************************************************************
 TEST(VIOEqFMatricesInvDepth, InnovationLiftConsistency) {
-  const EqFCoordinateSuite* suite = getCoordinates(CoordinateChoice::InvDepth);
-  EXPECT(suite != nullptr);
-  if (!suite) return;
+  const EqFCoordinateSuite& suite = EqFCoordinateSuite_invdepth;
 
   for (const VIOState& xi0 : std::vector<VIOState>{State1(), State3()}) {
     const Vector gamma = Vector::LinSpaced(xi0.dim(), -0.1, 0.1);
     const double eps = 1e-3;
-    const Vector lift = suite->liftInnovation(eps * gamma, xi0);
+    const Vector lift = suite.liftInnovation(eps * gamma, xi0);
     const VIOGroup dCont = VIOGroup::Expmap(lift);
-    const VIOGroup dDisc = suite->liftInnovationDiscrete(eps * gamma, xi0);
+    const VIOGroup dDisc = suite.liftInnovationDiscrete(eps * gamma, xi0);
 
     const Vector err = dCont.localCoordinates(dDisc);
     EXPECT(err.norm() < 5e-3);
