@@ -26,6 +26,7 @@
 #include <vector>
 
 using namespace gtsam;
+using namespace gtsam::eqvio;
 
 namespace {
 
@@ -78,7 +79,8 @@ Vector3 SOT3ApplyInverse(const SOT3& Q, const Vector3& p) {
 
 VIOState ReasonableStateElement(const std::vector<int>& ids) {
   VIOSensorState sensor;
-  sensor.inputBias = 0.1 * Vector6::Random();
+  sensor.inputBias =
+      VIOBias(0.1 * Vector3::Random(), 0.1 * Vector3::Random());
   sensor.pose = Pose3::Expmap(0.1 * Vector6::Random());
   sensor.velocity = Vector3::Random();
   sensor.cameraOffset = Pose3::Expmap(0.1 * Vector6::Random());
@@ -96,7 +98,7 @@ VIOGroup ReasonableGroupElement(const std::vector<int>& ids) {
   const Pose3 Apose = Pose3::Expmap(0.1 * Vector6::Random());
   const Vector3 w = 0.1 * Vector3::Random();
   const Pose3 B = Pose3::Expmap(0.1 * Vector6::Random());
-  const Vector6 beta = 0.1 * Vector6::Random();
+  const VIOBias beta(0.1 * Vector3::Random(), 0.1 * Vector3::Random());
 
   std::vector<SOT3> Q(ids.size());
   for (size_t i = 0; i < ids.size(); ++i) {
@@ -109,8 +111,8 @@ VIOGroup ReasonableGroupElement(const std::vector<int>& ids) {
                       VIOLandmarkGroup(Q));
 }
 
-IMUVelocity RandomVelocityElement() {
-  IMUVelocity vel;
+IMUInput RandomVelocityElement() {
+  IMUInput vel;
   vel.gyr = Vector3::Random();
   vel.acc = Vector3::Random();
   vel.gyrBiasVel = Vector3::Random();
@@ -222,7 +224,7 @@ TEST(VIOEqFMatricesParity, EuclidInvDepthCompatibility) {
   for (int rep = 0; rep < kTestReps; ++rep) {
     const VIOState xi0 = ReasonableStateElement(ids);
     const VIOGroup X = ReasonableGroupElement(ids);
-    const IMUVelocity vel = RandomVelocityElement();
+    const IMUInput vel = RandomVelocityElement();
 
     const Matrix M = CoordinateDifferentialInvDepthEuclid(xi0);
 
@@ -236,8 +238,8 @@ TEST(VIOEqFMatricesParity, EuclidInvDepthCompatibility) {
 
     const VIOState xiHat = stateGroupAction(X, xi0);
     const VisionMeasurement yHat = measureSystemState(xiHat, camera);
-    const Matrix C_e = euclid->outputMatrixC(xi0, X, yHat);
-    const Matrix C_i = invdepth->outputMatrixC(xi0, X, yHat);
+    const Matrix C_e = euclid->outputMatrixC(xi0, X, yHat, camera);
+    const Matrix C_i = invdepth->outputMatrixC(xi0, X, yHat, camera);
     EXPECT(C_e.array().isFinite().all());
     EXPECT(C_i.array().isFinite().all());
   }
@@ -257,7 +259,7 @@ TEST(VIOEqFMatricesParity, StateMatrixA) {
     for (int rep = 0; rep < kTestReps; ++rep) {
       const VIOState xi0 = ReasonableStateElement(ids);
       const VIOGroup X = ReasonableGroupElement(ids);
-      const IMUVelocity vel = RandomVelocityElement();
+      const IMUInput vel = RandomVelocityElement();
       const Matrix A0t = suite->stateMatrixA(X, xi0, vel);
 
       const auto a0 = [&](const Vector& epsilon) {
@@ -295,12 +297,12 @@ TEST(VIOEqFMatricesParity, InputMatrixB) {
     for (int rep = 0; rep < kTestReps; ++rep) {
       const VIOState xi0 = ReasonableStateElement(ids);
       const VIOGroup X = ReasonableGroupElement(ids);
-      const IMUVelocity vel = RandomVelocityElement();
+      const IMUInput vel = RandomVelocityElement();
       const Matrix Bt = suite->inputMatrixB(X, xi0);
 
       const auto b0 = [&](const Vector& velErrVec) {
-        IMUVelocity::Vector12 velErr12 = velErrVec;
-        IMUVelocity velErr(velErr12);
+        IMUInput::Vector12 velErr12 = velErrVec;
+        IMUInput velErr(velErr12);
         const VIOState xiHat = stateGroupAction(X, xi0);
         const Vector lambdaTilde =
             liftVelocity(xiHat, vel + velErr) - liftVelocity(xiHat, vel);
@@ -310,10 +312,10 @@ TEST(VIOEqFMatricesParity, InputMatrixB) {
         return suite->stateChart(xiE1, xi0);
       };
 
-      const Vector b0AtZero = b0(Vector::Zero(IMUVelocity::CompDim));
+      const Vector b0AtZero = b0(Vector::Zero(IMUInput::CompDim));
       EXPECT(b0AtZero.norm() < 1e-10);
       EXPECT(IsDifferentialClose(
-          b0, Vector::Zero(IMUVelocity::CompDim), Bt,
+          b0, Vector::Zero(IMUInput::CompDim), Bt,
           std::cbrt(std::numeric_limits<double>::epsilon())));
     }
   }
@@ -340,16 +342,17 @@ TEST(VIOEqFMatricesParity, OutputMatrixC) {
       for (size_t i = 0; i < xi0.n(); ++i) {
         const int id = xi0.cameraLandmarks[i].id;
         const Point2 yFromQ =
-            camera->projectPoint(SOT3ApplyInverse(groupQ(X)[i], xi0.cameraLandmarks[i].p));
-        const Point2 yStored = yHat.camCoordinates.at(id);
+            camera->projectPoint(
+                SOT3ApplyInverse(Q_landmarkTransforms(X)[i], xi0.cameraLandmarks[i].p));
+        const Point2 yStored = yHat.at(id);
         EXPECT((yFromQ - yStored).norm() < 1e-10);
       }
 
-      const Matrix Ct = suite->outputMatrixC(xi0, X, yHat);
-      const Matrix Ct2 = suite->outputMatrixC(xi0, X, yHat, false);
-      EXPECT_LONGS_EQUAL(2 * static_cast<long>(yHat.n()), Ct.rows());
+      const Matrix Ct = suite->outputMatrixC(xi0, X, yHat, camera);
+      const Matrix Ct2 = suite->outputMatrixC(xi0, X, yHat, camera, false);
+      EXPECT_LONGS_EQUAL(2 * static_cast<long>(yHat.size()), Ct.rows());
       EXPECT_LONGS_EQUAL(xi0.dim(), Ct.cols());
-      EXPECT_LONGS_EQUAL(2 * static_cast<long>(yHat.n()), Ct2.rows());
+      EXPECT_LONGS_EQUAL(2 * static_cast<long>(yHat.size()), Ct2.rows());
       EXPECT_LONGS_EQUAL(xi0.dim(), Ct2.cols());
       EXPECT(Ct.array().isFinite().all());
       EXPECT(Ct2.array().isFinite().all());
@@ -359,7 +362,7 @@ TEST(VIOEqFMatricesParity, OutputMatrixC) {
         const VIOState xiE = suite->stateChartInv(epsilon, xi0);
         const VIOState xi = stateGroupAction(X, xiE);
         const VisionMeasurement y = measureSystemState(xi, camera);
-        return Vector(y - yHat);
+        return measurementDifference(y, yHat);
       };
 
       const Vector c0AtZero = ct(Vector::Zero(xi0.dim()));

@@ -26,6 +26,7 @@
 #include <vector>
 
 using namespace gtsam;
+using namespace gtsam::eqvio;
 
 namespace {
 
@@ -62,7 +63,9 @@ VIOSE23 MakeA(const Rot3& R, const Point3& t, const Vector3& w) {
 
 VIOSensorState SensorFixture() {
   VIOSensorState s;
-  s.inputBias = (Vector6() << 0.01, -0.02, 0.03, 0.04, -0.01, 0.02).finished();
+  s.inputBias = VIOBias(
+      (Vector3() << 0.01, -0.02, 0.03).finished(),
+      (Vector3() << 0.04, -0.01, 0.02).finished());
   s.pose = Pose3(Rot3::RzRyRx(0.1, -0.05, 0.2), Point3(0.3, -0.4, 1.2));
   s.velocity = Vector3(0.2, -0.1, 0.05);
   s.cameraOffset =
@@ -86,7 +89,8 @@ VIOGroup Group1() {
   return makeVIOGroup(
       MakeA(Rot3::RzRyRx(0.03, -0.02, 0.01), Point3(0.05, -0.01, 0.02),
             Vector3(0.01, -0.02, 0.03)),
-      (Vector6() << 0.01, 0.0, -0.01, 0.02, -0.01, 0.03).finished(),
+      VIOBias((Vector3() << 0.01, 0.0, -0.01).finished(),
+              (Vector3() << 0.02, -0.01, 0.03).finished()),
       Pose3(Rot3::RzRyRx(-0.01, 0.02, -0.03), Point3(0.02, 0.01, -0.01)),
       VIOLandmarkGroup({q1}));
 }
@@ -100,13 +104,14 @@ VIOGroup Group3() {
   return makeVIOGroup(
       MakeA(Rot3::RzRyRx(0.03, -0.02, 0.01), Point3(0.05, -0.01, 0.02),
             Vector3(0.01, -0.02, 0.03)),
-      (Vector6() << 0.01, 0.0, -0.01, 0.02, -0.01, 0.03).finished(),
+      VIOBias((Vector3() << 0.01, 0.0, -0.01).finished(),
+              (Vector3() << 0.02, -0.01, 0.03).finished()),
       Pose3(Rot3::RzRyRx(-0.01, 0.02, -0.03), Point3(0.02, 0.01, -0.01)),
       VIOLandmarkGroup({q1, q2, q3}));
 }
 
-IMUVelocity ImuFixture() {
-  IMUVelocity u;
+IMUInput ImuFixture() {
+  IMUInput u;
   u.gyr = Vector3(0.02, -0.01, 0.03);
   u.acc = Vector3(0.1, -0.05, 9.7);
   u.gyrBiasVel = Vector3(0.01, 0.0, -0.01);
@@ -131,19 +136,19 @@ TEST(VIOEqFMatrices, ShapesAndFinite) {
                                                    {State3(), Group3()}}) {
     const VIOState& xi0 = pair.first;
     const VIOGroup& X = pair.second;
-    const IMUVelocity imu = ImuFixture();
+    const IMUInput imu = ImuFixture();
     const VisionMeasurement y =
         measureSystemState(stateGroupAction(X, xi0), camera);
 
     const Matrix A = suite->stateMatrixA(X, xi0, imu);
     const Matrix B = suite->inputMatrixB(X, xi0);
-    const Matrix C = suite->outputMatrixC(xi0, X, y, true);
+    const Matrix C = suite->outputMatrixC(xi0, X, y, camera, true);
 
     EXPECT_LONGS_EQUAL(xi0.dim(), A.rows());
     EXPECT_LONGS_EQUAL(xi0.dim(), A.cols());
     EXPECT_LONGS_EQUAL(xi0.dim(), B.rows());
-    EXPECT_LONGS_EQUAL(IMUVelocity::CompDim, B.cols());
-    EXPECT_LONGS_EQUAL(2 * static_cast<long>(y.n()), C.rows());
+    EXPECT_LONGS_EQUAL(IMUInput::CompDim, B.cols());
+    EXPECT_LONGS_EQUAL(2 * static_cast<long>(y.size()), C.rows());
     EXPECT_LONGS_EQUAL(xi0.dim(), C.cols());
 
     EXPECT(IsFinite(A));
@@ -160,7 +165,7 @@ TEST(VIOEqFMatrices, SmallStepDiscreteConsistency) {
 
   const VIOState xi0 = State3();
   const VIOGroup X = Group3();
-  const IMUVelocity imu = ImuFixture();
+  const IMUInput imu = ImuFixture();
 
   const double dt = 1e-6;
   const Matrix A = suite->stateMatrixA(X, xi0, imu);
@@ -195,24 +200,26 @@ TEST(VIOEqFMatrices, SimpleRegressionN0) {
   if (!suite) return;
 
   VIOSensorState sensor;
-  sensor.inputBias.setZero();
+  sensor.inputBias = VIOBias::Identity();
   sensor.pose = Pose3::Identity();
   sensor.velocity.setZero();
   sensor.cameraOffset = Pose3::Identity();
   const VIOState xi0(sensor, {});
   const VIOGroup X = makeVIOGroupIdentity(0);
-  const IMUVelocity imu = IMUVelocity::Zero();
+  const IMUInput imu = IMUInput::Zero();
 
   const Matrix B = suite->inputMatrixB(X, xi0);
   Matrix BExpected = Matrix::Zero(21, 12);
-  BExpected.block<6, 6>(0, 6).setIdentity();
+  BExpected.block<3, 3>(0, 9).setIdentity();
+  BExpected.block<3, 3>(3, 6).setIdentity();
   BExpected.block<3, 3>(6, 0).setIdentity();
   BExpected.block<3, 3>(12, 3).setIdentity();
   EXPECT(assert_equal(BExpected, B, 1e-12));
 
   const Matrix A = suite->stateMatrixA(X, xi0, imu);
   Matrix AExpected = Matrix::Zero(21, 21);
-  AExpected.block(0, 0, 21, 6) = -BExpected.block(0, 0, 21, 6);
+  AExpected.block(0, 0, 21, 3) = -BExpected.block(0, 3, 21, 3);
+  AExpected.block(0, 3, 21, 3) = -BExpected.block(0, 0, 21, 3);
   AExpected.block<3, 3>(9, 12).setIdentity();
   AExpected.block<3, 3>(12, 6) =
       -GRAVITY_CONSTANT * Rot3::Hat(Vector3::UnitZ());

@@ -23,8 +23,10 @@
 #include <gtsam_unstable/dllexport.h>
 
 #include <functional>
+#include <memory>
 
 namespace gtsam {
+namespace eqvio {
 
 enum class CoordinateChoice { Euclidean, InvDepth };
 
@@ -34,7 +36,7 @@ struct GTSAM_UNSTABLE_EXPORT EqFCoordinateSuite {
   std::function<VIOState(const Vector&, const VIOState&)> stateChartInv;
 
   /// Continuous-time matrices.
-  std::function<Matrix(const VIOGroup&, const VIOState&, const IMUVelocity&)>
+  std::function<Matrix(const VIOGroup&, const VIOState&, const IMUInput&)>
       stateMatrixA;
   std::function<Matrix(const VIOGroup&, const VIOState&)> inputMatrixB;
 
@@ -50,10 +52,11 @@ struct GTSAM_UNSTABLE_EXPORT EqFCoordinateSuite {
 
   Matrix outputMatrixC(const VIOState& xi0, const VIOGroup& X,
                        const VisionMeasurement& y,
+                       const std::shared_ptr<const VIOCameraModel>& camera,
                        bool useEquivariance = true) const;
 
   Matrix stateMatrixADiscrete(const VIOGroup& X, const VIOState& xi0,
-                              const IMUVelocity& imuVel, double dt) const;
+                              const IMUInput& imuVel, double dt) const;
 
   Matrix23 outputMatrixCi(const Point3& q0, const SOT3& QHat,
                           const std::shared_ptr<const VIOCameraModel>& camera)
@@ -67,4 +70,5 @@ extern const GTSAM_UNSTABLE_EXPORT EqFCoordinateSuite
 const GTSAM_UNSTABLE_EXPORT EqFCoordinateSuite* getCoordinates(
     CoordinateChoice coordinateChoice);
 
+}  // namespace eqvio
 }  // namespace gtsam

@@ -26,6 +26,7 @@
 #include <vector>
 
 using namespace gtsam;
+using namespace gtsam::eqvio;
 
 namespace {
 
@@ -62,7 +63,9 @@ VIOSE23 MakeA(const Rot3& R, const Point3& t, const Vector3& w) {
 
 VIOSensorState SensorFixture() {
   VIOSensorState s;
-  s.inputBias = (Vector6() << 0.01, -0.02, 0.03, 0.04, -0.01, 0.02).finished();
+  s.inputBias = VIOBias(
+      (Vector3() << 0.01, -0.02, 0.03).finished(),
+      (Vector3() << 0.04, -0.01, 0.02).finished());
   s.pose = Pose3(Rot3::RzRyRx(0.1, -0.05, 0.2), Point3(0.3, -0.4, 1.2));
   s.velocity = Vector3(0.2, -0.1, 0.05);
   s.cameraOffset =
@@ -86,7 +89,8 @@ VIOGroup Group1() {
   return makeVIOGroup(
       MakeA(Rot3::RzRyRx(0.03, -0.02, 0.01), Point3(0.05, -0.01, 0.02),
             Vector3(0.01, -0.02, 0.03)),
-      (Vector6() << 0.01, 0.0, -0.01, 0.02, -0.01, 0.03).finished(),
+      VIOBias((Vector3() << 0.01, 0.0, -0.01).finished(),
+              (Vector3() << 0.02, -0.01, 0.03).finished()),
       Pose3(Rot3::RzRyRx(-0.01, 0.02, -0.03), Point3(0.02, 0.01, -0.01)),
       VIOLandmarkGroup({q1}));
 }
@@ -100,13 +104,14 @@ VIOGroup Group3() {
   return makeVIOGroup(
       MakeA(Rot3::RzRyRx(0.03, -0.02, 0.01), Point3(0.05, -0.01, 0.02),
             Vector3(0.01, -0.02, 0.03)),
-      (Vector6() << 0.01, 0.0, -0.01, 0.02, -0.01, 0.03).finished(),
+      VIOBias((Vector3() << 0.01, 0.0, -0.01).finished(),
+              (Vector3() << 0.02, -0.01, 0.03).finished()),
       Pose3(Rot3::RzRyRx(-0.01, 0.02, -0.03), Point3(0.02, 0.01, -0.01)),
       VIOLandmarkGroup({q1, q2, q3}));
 }
 
-IMUVelocity ImuFixture() {
-  IMUVelocity u;
+IMUInput ImuFixture() {
+  IMUInput u;
   u.gyr = Vector3(0.02, -0.01, 0.03);
   u.acc = Vector3(0.1, -0.05, 9.7);
   u.gyrBiasVel = Vector3(0.01, 0.0, -0.01);
@@ -137,19 +142,19 @@ TEST(VIOEqFMatricesInvDepth, ShapesAndFinite) {
                                                    {State3(), Group3()}}) {
     const VIOState& xi0 = pair.first;
     const VIOGroup& X = pair.second;
-    const IMUVelocity imu = ImuFixture();
+    const IMUInput imu = ImuFixture();
     const VisionMeasurement y =
         measureSystemState(stateGroupAction(X, xi0), camera);
 
     const Matrix A = suite->stateMatrixA(X, xi0, imu);
     const Matrix B = suite->inputMatrixB(X, xi0);
-    const Matrix C = suite->outputMatrixC(xi0, X, y, true);
+    const Matrix C = suite->outputMatrixC(xi0, X, y, camera, true);
 
     EXPECT_LONGS_EQUAL(xi0.dim(), A.rows());
     EXPECT_LONGS_EQUAL(xi0.dim(), A.cols());
     EXPECT_LONGS_EQUAL(xi0.dim(), B.rows());
-    EXPECT_LONGS_EQUAL(IMUVelocity::CompDim, B.cols());
-    EXPECT_LONGS_EQUAL(2 * static_cast<long>(y.n()), C.rows());
+    EXPECT_LONGS_EQUAL(IMUInput::CompDim, B.cols());
+    EXPECT_LONGS_EQUAL(2 * static_cast<long>(y.size()), C.rows());
     EXPECT_LONGS_EQUAL(xi0.dim(), C.cols());
 
     EXPECT(IsFinite(A));
@@ -180,7 +185,7 @@ TEST(VIOEqFMatricesInvDepth, SmallStepDiscreteConsistency) {
 
   const VIOState xi0 = State3();
   const VIOGroup X = Group3();
-  const IMUVelocity imu = ImuFixture();
+  const IMUInput imu = ImuFixture();
 
   const double dt = 1e-6;
   const Matrix A = suite->stateMatrixA(X, xi0, imu);

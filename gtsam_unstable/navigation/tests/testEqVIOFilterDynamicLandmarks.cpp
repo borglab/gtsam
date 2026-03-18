@@ -9,10 +9,9 @@
 
  * -------------------------------------------------------------------------- */
 
-/// @file testEqVIOFilter.cpp
+/// @file testEqVIOFilterDynamicLandmarks.cpp
 
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/TestableAssertions.h>
 #include <gtsam_unstable/navigation/EqVIOFilter.h>
 
 #include <cmath>
@@ -40,8 +39,8 @@ class SimplePinholeCamera final : public VIOCameraModel {
     if (std::abs(y.z()) < 1e-12) {
       throw std::invalid_argument("SimplePinholeCamera: z near zero");
     }
-    Matrix23 J;
     const double z2 = y.z() * y.z();
+    Matrix23 J;
     J << 1.0 / y.z(), 0.0, -y.x() / z2, 0.0, 1.0 / y.z(), -y.y() / z2;
     return J;
   }
@@ -49,46 +48,44 @@ class SimplePinholeCamera final : public VIOCameraModel {
 
 }  // namespace
 
-TEST(EqVIOFilter, Smoke) {
+TEST(EqVIOFilter, DynamicLandmarksAddRemove) {
   EqVIOFilterParams params;
   params.coordinateChoice = CoordinateChoice::InvDepth;
-  params.removeLostLandmarks = false;
+  params.removeLostLandmarks = true;
   params.useDiscreteVelocityLift = true;
   params.useDiscreteInnovationLift = true;
+  params.initialPointDepth = 5.0;
 
-  VIOSensorState sensor;
-  sensor.inputBias = VIOBias::Identity();
-  sensor.pose = Pose3::Identity();
-  sensor.velocity.setZero();
-  sensor.cameraOffset = Pose3::Identity();
-
-  VIOState xi0(sensor, {{Point3(0.8, -0.2, 4.5), 11}, {Point3(-0.6, 0.3, 3.8), 22}});
-  Matrix Sigma0 = Matrix::Identity(xi0.dim(), xi0.dim()) * 1e-3;
-
-  EqVIOFilter filter(xi0, Sigma0, params, 0.0);
+  EqVIOFilter filter(params);
   auto camera = std::make_shared<SimplePinholeCamera>();
 
-  const double dt = 0.01;
-  double t = 0.0;
-  for (int k = 0; k < 100; ++k) {
-    t += dt;
-    IMUInput imu;
-    imu.stamp = t;
-    imu.gyr = Vector3::Zero();
-    imu.acc = Vector3(0.0, 0.0, GRAVITY_CONSTANT);
-    filter.processIMUData(imu);
+  IMUInput imu0;
+  imu0.stamp = 0.0;
+  imu0.acc = Vector3(0.0, 0.0, GRAVITY_CONSTANT);
+  imu0.gyr = Vector3::Zero();
+  filter.processIMUData(imu0);
 
-    if (k % 5 == 0) {
-      VisionMeasurement y = measureSystemState(filter.stateEstimate(), camera);
-      filter.processVisionData(t, y, camera);
-    }
-  }
+  IMUInput imu1 = imu0;
+  imu1.stamp = 0.01;
+  filter.processIMUData(imu1);
+
+  VisionMeasurement meas1;
+  meas1[1] = camera->projectPoint(Point3(0.2, -0.1, 3.5));
+  meas1[2] = camera->projectPoint(Point3(-0.3, 0.15, 4.0));
+  filter.processVisionData(0.02, meas1, camera);
+  EXPECT_LONGS_EQUAL(2, filter.stateEstimate().n());
+
+  IMUInput imu2 = imu0;
+  imu2.stamp = 0.02;
+  filter.processIMUData(imu2);
+
+  VisionMeasurement meas2;
+  meas2[1] = meas1.at(1);
+  filter.processVisionData(0.03, meas2, camera);
 
   const VIOState est = filter.stateEstimate();
-  EXPECT_LONGS_EQUAL(2, est.n());
-  EXPECT_LONGS_EQUAL(xi0.dim(), filter.view().Sigma.rows());
-  EXPECT_LONGS_EQUAL(xi0.dim(), filter.view().Sigma.cols());
-  EXPECT(filter.view().Sigma.array().isFinite().all());
+  EXPECT_LONGS_EQUAL(1, est.n());
+  EXPECT_LONGS_EQUAL(1, est.cameraLandmarks.front().id);
 }
 
 int main() {

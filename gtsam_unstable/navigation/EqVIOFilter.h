@@ -19,38 +19,55 @@
 #include <gtsam_unstable/navigation/VIOEqFMatrices.h>
 #include <gtsam_unstable/dllexport.h>
 
+#include <memory>
 #include <vector>
 
 namespace gtsam {
+namespace eqvio {
 
 /// Runtime parameters for the standalone EqVIO filter.
 struct GTSAM_UNSTABLE_EXPORT EqVIOFilterParams {
   CoordinateChoice coordinateChoice = CoordinateChoice::InvDepth;
+  bool fastRiccati = false;
   bool useDiscreteStateMatrix = false;
   bool useDiscreteVelocityLift = false;
   bool useDiscreteInnovationLift = false;
   bool useEquivariantOutput = true;
   bool removeLostLandmarks = true;
+  bool removeInvalidLandmarks = true;
+  bool useMedianDepth = false;
   double initialPointDepth = 10.0;
   double initialPointVariance = 1.0;
   double measurementNoiseVariance = 1e-4;
-  Eigen::Matrix<double, IMUVelocity::CompDim, IMUVelocity::CompDim> inputNoise =
-      Eigen::Matrix<double, IMUVelocity::CompDim, IMUVelocity::CompDim>::Identity() *
+  double outlierThresholdAbs = 1e8;
+  double outlierThresholdProb = 1e8;
+  double featureRetention = 0.3;
+  double biasOmegaProcessVariance = 0.001;
+  double biasAccelProcessVariance = 0.001;
+  double attitudeProcessVariance = 0.001;
+  double positionProcessVariance = 0.001;
+  double velocityProcessVariance = 0.001;
+  double cameraAttitudeProcessVariance = 0.001;
+  double cameraPositionProcessVariance = 0.001;
+  double pointProcessVariance = 0.001;
+  Eigen::Matrix<double, IMUInput::CompDim, IMUInput::CompDim> inputNoise =
+      Eigen::Matrix<double, IMUInput::CompDim, IMUInput::CompDim>::Identity() *
       1e-3;
 };
 
-/// Lightweight EqVIO filter independent from the eqvio application code.
+/// Standalone EqVIO filter.
 class GTSAM_UNSTABLE_EXPORT EqVIOFilter
     : public EquivariantFilter<VIOState, VIOSymmetry> {
  public:
   using Base = EquivariantFilter<VIOState, VIOSymmetry>;
 
-  /// Minimal debug view of internal EqF state.
+  /// Internal filter state view.
   struct View {
     const EqFCoordinateSuite* coordinateSuite = &EqFCoordinateSuite_invdepth;
     VIOState xi0;
     VIOGroup X = makeVIOGroupIdentity();
-    Matrix Sigma = Matrix::Identity(VIOSensorState::CompDim, VIOSensorState::CompDim);
+    Matrix Sigma =
+        Matrix::Identity(VIOSensorState::CompDim, VIOSensorState::CompDim);
     double currentTime = -1.0;
   };
 
@@ -58,7 +75,7 @@ class GTSAM_UNSTABLE_EXPORT EqVIOFilter
   EqVIOFilterParams params_;
   View view_;
   bool initialized_ = false;
-  std::vector<IMUVelocity> imuBuffer_;
+  std::vector<IMUInput> imuBuffer_;
 
  public:
   EqVIOFilter();
@@ -67,23 +84,24 @@ class GTSAM_UNSTABLE_EXPORT EqVIOFilter
               const EqVIOFilterParams& params, double time = 0.0);
 
   /// Initialize orientation from gravity in the first IMU sample.
-  void initializeFromIMU(const IMUVelocity& imu);
-  /// Set new manifold origin and covariance (group estimate reset to identity).
+  void initializeFromIMU(const IMUInput& imu);
+  /// Set manifold reference/origin and covariance.
   void setReferenceState(const VIOState& xi0, const Matrix& Sigma0);
 
-  /// Queue an IMU sample for integration.
-  void processIMUData(const IMUVelocity& imu);
-  /// Integrate to `measurement.stamp` and perform one correction step.
-  void processVisionData(const VisionMeasurement& measurement,
+  /// Queue one IMU input sample.
+  void processIMUData(const IMUInput& imu);
+  /// Integrate to `stamp` and apply one vision correction.
+  void processVisionData(double stamp, const VisionMeasurement& measurement,
+                         const std::shared_ptr<const VIOCameraModel>& camera,
                          const Matrix& R = Matrix());
 
-  /// Current full state estimate `phi(X, xi0)`.
+  /// Current full state estimate.
   VIOState stateEstimate() const;
   /// Current filter time.
   double currentTime() const { return view_.currentTime; }
-  /// Whether the filter has been initialized from IMU.
+  /// True after IMU-based initialization.
   bool isInitialized() const { return initialized_; }
-  /// Current reference/group/covariance tuple.
+  /// Access internal reference/group/covariance state.
   const View& view() const { return view_; }
 
  private:
@@ -99,15 +117,57 @@ class GTSAM_UNSTABLE_EXPORT EqVIOFilter
   void syncFromBase();
 
   bool integrateUpToTime(double newTime);
-  void integrateObserverState(const IMUVelocity& imu, double dt);
+  void integrateObserverState(const IMUInput& imu, double dt, bool discreteLift);
+  void predict(const IMUInput& imu, double dt, bool discreteLift);
+  void predictWithJacobian(const IMUInput& imu, double dt, bool discreteLift,
+                           const Matrix& A, const Matrix& Qc);
 
-  void synchronizeLandmarksToMeasurement(const VisionMeasurement& measurement);
-  void addLandmarksInternal(const std::vector<Landmark>& newLandmarks);
+  void integrateRiccatiStateFast(
+      const IMUInput& imu, double dt,
+      const Eigen::Matrix<double, IMUInput::CompDim, IMUInput::CompDim>&
+          inputGainMatrix,
+      const Matrix& stateGainMatrix);
+  void integrateRiccatiStateAccurate(
+      const IMUInput& imu, double dt,
+      const Eigen::Matrix<double, IMUInput::CompDim, IMUInput::CompDim>&
+          inputGainMatrix,
+      const Matrix& stateGainMatrix);
+  void integrateRiccatiStateDiscrete(
+      const IMUInput& imu, double dt,
+      const Eigen::Matrix<double, IMUInput::CompDim, IMUInput::CompDim>&
+          inputGainMatrix,
+      const Matrix& stateGainMatrix);
+  Matrix stateProcessNoise(size_t nLandmarks) const;
+  double getMedianSceneDepth() const;
+
+  void synchronizeLandmarksToMeasurement(
+      const VisionMeasurement& measurement,
+      const std::shared_ptr<const VIOCameraModel>& camera);
+  void addNewLandmarks(const VisionMeasurement& measurement,
+                       const std::shared_ptr<const VIOCameraModel>& camera);
+  void addLandmarksInternal(std::vector<Landmark>& newLandmarks,
+                            const Matrix& newLandmarkCov);
   void removeLandmarkByIndex(int idx);
+  void removeLandmarkById(int id);
   void removeOldLandmarks(const std::vector<int>& measurementIds);
+  void removeOutliers(VisionMeasurement& measurement,
+                      const std::shared_ptr<const VIOCameraModel>& camera);
+  void removeInvalidLandmarksNow();
+  Matrix3 getLandmarkCovById(int id) const;
+  Matrix2 outputCovarianceById(
+      int id, const Point2& y,
+      const std::shared_ptr<const VIOCameraModel>& camera) const;
 
-  void updateVision(const VisionMeasurement& measurement, const Matrix& R);
+  void performVisionUpdate(const VisionMeasurement& measurement,
+                           const std::shared_ptr<const VIOCameraModel>& camera,
+                           const Matrix& outputGainMatrix,
+                           bool useEquivariantOutput,
+                           bool discreteCorrection);
+  void update(const VisionMeasurement& measurement,
+              const std::shared_ptr<const VIOCameraModel>& camera,
+              const Matrix& outputGainMatrix, bool useEquivariantOutput,
+              bool discreteCorrection);
 };
 
+}  // namespace eqvio
 }  // namespace gtsam
-

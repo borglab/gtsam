@@ -30,6 +30,7 @@
 #include <vector>
 
 using namespace gtsam;
+using namespace gtsam::eqvio;
 
 namespace {
 
@@ -117,7 +118,7 @@ int main(int argc, char** argv) {
   params.measurementNoiseVariance = 4.0;
 
   VIOSensorState sensor;
-  sensor.inputBias.setZero();
+  sensor.inputBias = VIOBias::Identity();
   sensor.pose = Pose3::Identity();
   sensor.velocity.setZero();
   sensor.cameraOffset = Pose3::Identity();
@@ -142,7 +143,7 @@ int main(int argc, char** argv) {
       sensor_msgs::ImuConstPtr imuMsg = m.instantiate<sensor_msgs::Imu>();
       if (!imuMsg) continue;
 
-      IMUVelocity imu;
+      IMUInput imu;
       imu.stamp = imuMsg->header.stamp.toSec();
       imu.gyr = Vector3(imuMsg->angular_velocity.x, imuMsg->angular_velocity.y,
                         imuMsg->angular_velocity.z);
@@ -197,14 +198,13 @@ int main(int argc, char** argv) {
       }
 
       VisionMeasurement y;
-      y.stamp = imageMsg->header.stamp.toSec();
-      y.camera = camera;
+      const double stamp = imageMsg->header.stamp.toSec();
       for (size_t i = 0; i < trackedPts.size(); ++i) {
-        y.camCoordinates[trackedIds[i]] = Point2(trackedPts[i].x, trackedPts[i].y);
+        y[trackedIds[i]] = Point2(trackedPts[i].x, trackedPts[i].y);
       }
 
-      if (!y.camCoordinates.empty()) {
-        filter.processVisionData(y);
+      if (!y.empty()) {
+        filter.processVisionData(stamp, y, camera);
         ++visionCount;
       }
 

@@ -19,6 +19,7 @@
 #include <memory>
 
 using namespace gtsam;
+using namespace gtsam::eqvio;
 
 namespace {
 
@@ -57,7 +58,7 @@ int main() {
   params.measurementNoiseVariance = 1e-6;
 
   VIOSensorState sensor;
-  sensor.inputBias.setZero();
+  sensor.inputBias = VIOBias::Identity();
   sensor.pose = Pose3::Identity();
   sensor.velocity.setZero();
   sensor.cameraOffset = Pose3::Identity();
@@ -78,7 +79,7 @@ int main() {
   for (int k = 0; k < 500; ++k) {
     t += dt;
 
-    IMUVelocity imu;
+    IMUInput imu;
     imu.stamp = t;
     imu.gyr = Vector3::Zero();
     imu.acc = Vector3(0.0, 0.0, GRAVITY_CONSTANT);
@@ -86,9 +87,7 @@ int main() {
 
     if (k % 5 == 0) {
       VisionMeasurement y = measureSystemState(filter.stateEstimate(), camera);
-      y.stamp = t;
-      y.camera = camera;
-      filter.processVisionData(y);
+      filter.processVisionData(t, y, camera);
     }
   }
 

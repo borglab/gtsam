@@ -9,10 +9,9 @@
 
  * -------------------------------------------------------------------------- */
 
-/// @file testEqVIOFilter.cpp
+/// @file testEqVIOFilterVisionUpdate.cpp
 
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/TestableAssertions.h>
 #include <gtsam_unstable/navigation/EqVIOFilter.h>
 
 #include <cmath>
@@ -40,54 +39,47 @@ class SimplePinholeCamera final : public VIOCameraModel {
     if (std::abs(y.z()) < 1e-12) {
       throw std::invalid_argument("SimplePinholeCamera: z near zero");
     }
-    Matrix23 J;
     const double z2 = y.z() * y.z();
+    Matrix23 J;
     J << 1.0 / y.z(), 0.0, -y.x() / z2, 0.0, 1.0 / y.z(), -y.y() / z2;
     return J;
   }
 };
 
+VIOState MakeState1() {
+  VIOSensorState sensor;
+  sensor.inputBias = VIOBias(Vector3(0.03, -0.01, 0.02), Vector3(0.1, -0.2, 0.05));
+  sensor.pose = Pose3(Rot3::RzRyRx(0.2, -0.1, 0.15), Point3(0.4, -0.2, 1.0));
+  sensor.velocity = Vector3(0.5, -0.3, 0.2);
+  sensor.cameraOffset =
+      Pose3(Rot3::RzRyRx(-0.08, 0.04, -0.03), Point3(0.1, 0.0, 0.05));
+  return VIOState(sensor, {{Point3(0.3, -0.15, 4.5), 10}});
+}
+
 }  // namespace
 
-TEST(EqVIOFilter, Smoke) {
+TEST(EqVIOFilter, VisionUpdate) {
   EqVIOFilterParams params;
   params.coordinateChoice = CoordinateChoice::InvDepth;
   params.removeLostLandmarks = false;
-  params.useDiscreteVelocityLift = true;
-  params.useDiscreteInnovationLift = true;
+  params.useDiscreteStateMatrix = false;
 
-  VIOSensorState sensor;
-  sensor.inputBias = VIOBias::Identity();
-  sensor.pose = Pose3::Identity();
-  sensor.velocity.setZero();
-  sensor.cameraOffset = Pose3::Identity();
-
-  VIOState xi0(sensor, {{Point3(0.8, -0.2, 4.5), 11}, {Point3(-0.6, 0.3, 3.8), 22}});
-  Matrix Sigma0 = Matrix::Identity(xi0.dim(), xi0.dim()) * 1e-3;
-
+  const VIOState xi0 = MakeState1();
+  const Matrix Sigma0 = Matrix::Identity(xi0.dim(), xi0.dim()) * 1e-3;
   EqVIOFilter filter(xi0, Sigma0, params, 0.0);
+
+  IMUInput imu;
+  imu.stamp = 0.0;
+  imu.gyr = Vector3::Zero();
+  imu.acc = Vector3(0.0, 0.0, GRAVITY_CONSTANT);
+  filter.processIMUData(imu);
+
   auto camera = std::make_shared<SimplePinholeCamera>();
+  const VisionMeasurement meas = measureSystemState(filter.stateEstimate(), camera);
+  filter.processVisionData(0.01, meas, camera);
 
-  const double dt = 0.01;
-  double t = 0.0;
-  for (int k = 0; k < 100; ++k) {
-    t += dt;
-    IMUInput imu;
-    imu.stamp = t;
-    imu.gyr = Vector3::Zero();
-    imu.acc = Vector3(0.0, 0.0, GRAVITY_CONSTANT);
-    filter.processIMUData(imu);
-
-    if (k % 5 == 0) {
-      VisionMeasurement y = measureSystemState(filter.stateEstimate(), camera);
-      filter.processVisionData(t, y, camera);
-    }
-  }
-
-  const VIOState est = filter.stateEstimate();
-  EXPECT_LONGS_EQUAL(2, est.n());
-  EXPECT_LONGS_EQUAL(xi0.dim(), filter.view().Sigma.rows());
-  EXPECT_LONGS_EQUAL(xi0.dim(), filter.view().Sigma.cols());
+  EXPECT(std::abs(filter.currentTime() - 0.01) < 1e-12);
+  EXPECT_LONGS_EQUAL(1, filter.stateEstimate().n());
   EXPECT(filter.view().Sigma.array().isFinite().all());
 }
 
