@@ -92,12 +92,6 @@ struct GTSAM_UNSTABLE_EXPORT IMUInput {
 
   IMUInput() = default;
 
-  /// Construct from stacked [gyr, acc].
-  explicit IMUInput(const Vector6& vec) {
-    gyr = vec.head<3>();
-    acc = vec.tail<3>();
-  }
-
   /// Construct from stacked [gyr, acc, gyrBiasVel, accBiasVel].
   explicit IMUInput(const Vector12& vec) {
     gyr = vec.segment<3>(0);
@@ -114,24 +108,6 @@ struct GTSAM_UNSTABLE_EXPORT IMUInput {
     out.acc = acc + other.acc;
     out.gyrBiasVel = gyrBiasVel + other.gyrBiasVel;
     out.accBiasVel = accBiasVel + other.accBiasVel;
-    return out;
-  }
-
-  /// Subtract stacked [gyr, acc].
-  IMUInput operator-(const Vector6& vec) const {
-    IMUInput out(*this);
-    out.gyr -= vec.head<3>();
-    out.acc -= vec.tail<3>();
-    return out;
-  }
-
-  /// Subtract stacked [gyr, acc, gyrBiasVel, accBiasVel].
-  IMUInput operator-(const Vector12& vec) const {
-    IMUInput out(*this);
-    out.gyr -= vec.segment<3>(0);
-    out.acc -= vec.segment<3>(3);
-    out.gyrBiasVel -= vec.segment<3>(6);
-    out.accBiasVel -= vec.segment<3>(9);
     return out;
   }
 
