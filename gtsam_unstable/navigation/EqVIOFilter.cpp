@@ -72,18 +72,16 @@ EqVIOFilter::EqVIOFilter(const EqVIOFilterParams& params)
   view_.xi0.sensor.cameraOffset = Pose3::Identity();
   view_.X = makeVIOGroupIdentity();
   view_.Sigma = defaultCovariance(0);
-  view_.currentTime = -1.0;
   syncBase(true);
 }
 
 EqVIOFilter::EqVIOFilter(const VIOState& xi0, const Matrix& Sigma0,
-                         const EqVIOFilterParams& params, double time)
+                         const EqVIOFilterParams& params)
     : Base(VIOState(), defaultCovariance(0), makeVIOGroupIdentity()),
       params_(params) {
   view_.xi0 = xi0;
   view_.X = makeVIOGroupIdentity(view_.xi0.n());
   view_.Sigma = Sigma0;
-  view_.currentTime = time;
   initialized_ = true;
   syncBase(true);
 }
@@ -95,10 +93,11 @@ void EqVIOFilter::initializeFromIMU(const IMUInput& imu) {
 
   Vector3 approxGravity = imu.acc;
   if (approxGravity.norm() < 1e-9) approxGravity = Vector3::UnitZ();
-  const Rot3 R0 =
-      rotationFromTwoVectors(approxGravity.normalized(), Vector3::UnitZ());
+  // Build initial attitude that aligns measured gravity with +Z.
+  Quaternion q;
+  q.setFromTwoVectors(approxGravity.normalized(), Vector3::UnitZ());
+  const Rot3 R0(q);
   view_.xi0.sensor.pose = Pose3(R0, Point3::Zero());
-  view_.currentTime = imu.stamp;
   initialized_ = true;
   syncBase(true);
 }
@@ -114,18 +113,45 @@ void EqVIOFilter::setReferenceState(const VIOState& xi0, const Matrix& Sigma0) {
   syncBase(true);
 }
 
-void EqVIOFilter::processIMUData(const IMUInput& imu) {
-  if (!initialized_) {
-    initializeFromIMU(imu);
-  }
-  imuBuffer_.push_back(imu);
+void EqVIOFilter::propagate(const IMUInput& imu, double dt) {
+  propagateCovariance(imu, dt);
+  propagateState(imu, dt);
 }
 
-void EqVIOFilter::processVisionData(
-    double stamp, const VisionMeasurement& measurement,
-    const std::shared_ptr<const VIOCameraModel>& camera, const Matrix& R) {
-  const bool integrationFlag = integrateUpToTime(stamp);
-  if (!integrationFlag || !initialized_) return;
+void EqVIOFilter::propagateCovariance(const IMUInput& imu, double dt) {
+  if (!initialized_ || dt <= 0.0) {
+    return;
+  }
+  const Matrix A0t =
+      EqFCoordinateSuite_invdepth.stateMatrixA(view_.X, view_.xi0, imu);
+  const Matrix Bt = EqFCoordinateSuite_invdepth.inputMatrixB(view_.X, view_.xi0);
+  const Matrix A0tExp =
+      Matrix::Identity(view_.xi0.dim(), view_.xi0.dim()) + dt * A0t;
+  view_.Sigma = A0tExp * view_.Sigma * A0tExp.transpose() +
+                dt * (Bt * params_.inputNoise * Bt.transpose() +
+                      stateProcessNoise(view_.xi0.n()));
+  setErrorCovariance(view_.Sigma);
+}
+
+void EqVIOFilter::propagateState(const IMUInput& imu, double dt) {
+  if (!initialized_ || dt <= 0.0) {
+    return;
+  }
+  auto liftFunctor = [imu, dt](const VIOState& xi) -> Vector {
+    return (VIOGroup::Logmap(liftVelocityDiscrete(xi, imu, dt)) / dt).eval();
+  };
+  const Matrix A = Matrix::Zero(view_.xi0.dim(), view_.xi0.dim());
+  const Matrix Qc = Matrix::Zero(view_.xi0.dim(), view_.xi0.dim());
+  Base::template predictWithJacobian<1>(liftFunctor, A, Qc, dt);
+  syncFromBase();
+}
+
+void EqVIOFilter::correct(const VisionMeasurement& measurement,
+                          const std::shared_ptr<const VIOCameraModel>& camera,
+                          const Matrix& R) {
+  if (!initialized_) {
+    return;
+  }
 
   removeOldLandmarks(measurementIds(measurement));
 
@@ -155,43 +181,12 @@ Matrix EqVIOFilter::defaultCovariance(size_t nLandmarks) {
   return Matrix::Identity(d, d);
 }
 
-Rot3 EqVIOFilter::rotationFromTwoVectors(const Vector3& from,
-                                         const Vector3& to) {
-  Quaternion q;
-  q.setFromTwoVectors(from, to);
-  return Rot3(q);
-}
-
-void EqVIOFilter::removeRows(Matrix& mat, int startRow, int numRows) {
-  const int rows = mat.rows();
-  const int cols = mat.cols();
-  assert(startRow + numRows <= rows);
-  mat.block(startRow, 0, rows - numRows - startRow, cols) =
-      mat.block(startRow + numRows, 0, rows - numRows - startRow, cols);
-  mat.conservativeResize(rows - numRows, Eigen::NoChange);
-}
-
-void EqVIOFilter::removeCols(Matrix& mat, int startCol, int numCols) {
-  const int rows = mat.rows();
-  const int cols = mat.cols();
-  assert(startCol + numCols <= cols);
-  mat.block(0, startCol, rows, cols - numCols - startCol) =
-      mat.block(0, startCol + numCols, rows, cols - numCols - startCol);
-  mat.conservativeResize(Eigen::NoChange, cols - numCols);
-}
-
 void EqVIOFilter::syncBase(bool resetReference) {
   if (resetReference) {
     resetReferenceAndGroup(view_.xi0, view_.Sigma, view_.X);
     return;
   }
-  if (referenceState().n() != N_landmarkCount(view_.X)) {
-    throw std::invalid_argument(
-        "EqVIOFilter::syncBase(false): referenceState.n()=" +
-        std::to_string(referenceState().n()) +
-        ", X.n()=" + std::to_string(N_landmarkCount(view_.X)) +
-        ", xi0.n()=" + std::to_string(view_.xi0.n()));
-  }
+  // ensure referenceState().n() == N_landmarkCount(view_.X))
   setGroupEstimateAndSyncState(view_.X);
   setErrorCovariance(view_.Sigma);
 }
@@ -199,18 +194,6 @@ void EqVIOFilter::syncBase(bool resetReference) {
 void EqVIOFilter::syncFromBase() {
   view_.X = groupEstimate();
   view_.Sigma = errorCovariance();
-}
-
-void EqVIOFilter::integrateRiccatiStateFast(
-    const IMUInput& imu, double dt,
-    const Eigen::Matrix<double, IMUInput::CompDim, IMUInput::CompDim>&
-        inputGainMatrix,
-    const Matrix& stateGainMatrix) {
-  const Matrix A0t = EqFCoordinateSuite_invdepth.stateMatrixA(view_.X, view_.xi0, imu);
-  const Matrix Bt = EqFCoordinateSuite_invdepth.inputMatrixB(view_.X, view_.xi0);
-  const Matrix A0tExp = Matrix::Identity(view_.xi0.dim(), view_.xi0.dim()) + dt * A0t;
-  view_.Sigma = A0tExp * view_.Sigma * A0tExp.transpose() +
-                dt * (Bt * inputGainMatrix * Bt.transpose() + stateGainMatrix);
 }
 
 Matrix EqVIOFilter::stateProcessNoise(size_t nLandmarks) const {
@@ -230,64 +213,6 @@ Matrix EqVIOFilter::stateProcessNoise(size_t nLandmarks) const {
         params_.pointProcessVariance;
   }
   return Q;
-}
-
-bool EqVIOFilter::integrateUpToTime(double newTime) {
-  if (newTime <= view_.currentTime || view_.currentTime < 0.0 ||
-      imuBuffer_.empty()) {
-    return false;
-  }
-
-  double accumulatedTime = 0.0;
-  IMUInput accumulatedVelocity = IMUInput::Zero();
-  for (size_t i = 0; i < imuBuffer_.size(); ++i) {
-    const double t0 = std::max(imuBuffer_.at(i).stamp, view_.currentTime);
-    const double t1 =
-        i + 1 < imuBuffer_.size() ? std::min(imuBuffer_.at(i + 1).stamp, newTime)
-                                  : newTime;
-    const double dt = std::max(t1 - t0, 0.0);
-    accumulatedTime += dt;
-    accumulatedVelocity = accumulatedVelocity + imuBuffer_.at(i) * dt;
-  }
-
-  if (accumulatedTime > 0.0) {
-    accumulatedVelocity = accumulatedVelocity * (1.0 / accumulatedTime);
-    integrateRiccatiStateFast(accumulatedVelocity, accumulatedTime,
-                              params_.inputNoise, stateProcessNoise(view_.xi0.n()));
-    setErrorCovariance(view_.Sigma);
-  }
-
-  for (size_t i = 0; i < imuBuffer_.size(); ++i) {
-    const double t0 = std::max(imuBuffer_.at(i).stamp, view_.currentTime);
-    const double t1 =
-        i + 1 < imuBuffer_.size() ? std::min(imuBuffer_.at(i + 1).stamp, newTime)
-                                  : newTime;
-    const double dt = std::max(t1 - t0, 0.0);
-    if (dt <= 0.0) continue;
-
-    const IMUInput imu = imuBuffer_.at(i);
-    auto liftFunctor = [imu, dt](const VIOState& xi) -> Vector {
-      return (VIOGroup::Logmap(liftVelocityDiscrete(xi, imu, dt)) / dt).eval();
-    };
-    const Matrix A = Matrix::Zero(view_.xi0.dim(), view_.xi0.dim());
-    const Matrix Qc = Matrix::Zero(view_.xi0.dim(), view_.xi0.dim());
-    Base::template predictWithJacobian<1>(liftFunctor, A, Qc, dt);
-    syncFromBase();
-  }
-
-  view_.currentTime = newTime;
-
-  auto it = std::find_if(imuBuffer_.begin(), imuBuffer_.end(),
-                         [this](const IMUInput& imu) {
-                           return imu.stamp >= this->view_.currentTime;
-                         });
-  if (it != imuBuffer_.begin()) {
-    --it;
-    imuBuffer_.erase(imuBuffer_.begin(), it);
-  }
-
-  syncFromBase();
-  return true;
 }
 
 void EqVIOFilter::addNewLandmarks(

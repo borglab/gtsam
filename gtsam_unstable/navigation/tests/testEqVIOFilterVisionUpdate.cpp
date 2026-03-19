@@ -35,24 +35,22 @@ VIOState MakeState1() {
 
 TEST(EqVIOFilter, VisionUpdate) {
   EqVIOFilterParams params;
-  params.removeLostLandmarks = false;
 
   const VIOState xi0 = MakeState1();
   const Matrix Sigma0 = Matrix::Identity(xi0.dim(), xi0.dim()) * 1e-3;
-  EqVIOFilter filter(xi0, Sigma0, params, 0.0);
+  EqVIOFilter filter(xi0, Sigma0, params);
 
   IMUInput imu;
   imu.stamp = 0.0;
   imu.gyr = Vector3::Zero();
   imu.acc = Vector3(0.0, 0.0, GRAVITY_CONSTANT);
-  filter.processIMUData(imu);
+  filter.propagate(imu, 0.01);
 
   auto camera =
       std::make_shared<VIOCameraModel>(Pose3::Identity(), Cal3_S2(1, 1, 0, 0, 0));
   const VisionMeasurement meas = measureSystemState(filter.stateEstimate(), camera);
-  filter.processVisionData(0.01, meas, camera);
+  filter.correct(meas, camera);
 
-  EXPECT(std::abs(filter.currentTime() - 0.01) < 1e-12);
   EXPECT_LONGS_EQUAL(1, filter.stateEstimate().n());
   EXPECT(filter.view().Sigma.array().isFinite().all());
 }

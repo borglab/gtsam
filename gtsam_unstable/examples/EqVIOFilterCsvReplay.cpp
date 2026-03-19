@@ -15,12 +15,14 @@
 #include <gtsam_unstable/navigation/EqVIOCsv.h>
 #include <gtsam_unstable/navigation/EqVIOFilter.h>
 
+#include <algorithm>
 #include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 using namespace gtsam;
 using namespace gtsam::eqvio;
@@ -38,6 +40,53 @@ double metadataFiniteDouble(const EqVIOCsvLog& log, const std::string& key,
   const double v = metadataDouble(log, key, fallback);
   if (!std::isfinite(v)) return fallback;
   return v;
+}
+
+void propagateBufferedImu(EqVIOFilter& filter, std::vector<IMUInput>& imuBuffer,
+                          double& currentTime, double targetTime) {
+  if (!filter.isInitialized() || imuBuffer.empty() ||
+      targetTime <= currentTime) {
+    return;
+  }
+
+  const double tRef = currentTime;
+  double accumulatedTime = 0.0;
+  IMUInput accumulatedVelocity = IMUInput::Zero();
+  for (size_t i = 0; i < imuBuffer.size(); ++i) {
+    const double t0 = std::max(imuBuffer[i].stamp, tRef);
+    const double t1 =
+        i + 1 < imuBuffer.size() ? std::min(imuBuffer[i + 1].stamp, targetTime)
+                                 : targetTime;
+    const double dt = std::max(t1 - t0, 0.0);
+    accumulatedTime += dt;
+    accumulatedVelocity = accumulatedVelocity + imuBuffer[i] * dt;
+  }
+
+  if (accumulatedTime > 0.0) {
+    accumulatedVelocity = accumulatedVelocity * (1.0 / accumulatedTime);
+    filter.propagateCovariance(accumulatedVelocity, accumulatedTime);
+
+    for (size_t i = 0; i < imuBuffer.size(); ++i) {
+      const double t0 = std::max(imuBuffer[i].stamp, tRef);
+      const double t1 =
+          i + 1 < imuBuffer.size() ? std::min(imuBuffer[i + 1].stamp, targetTime)
+                                   : targetTime;
+      const double dt = std::max(t1 - t0, 0.0);
+      if (dt > 0.0) {
+        filter.propagateState(imuBuffer[i], dt);
+        currentTime += dt;
+      }
+    }
+  }
+
+  auto it = std::find_if(imuBuffer.begin(), imuBuffer.end(),
+                         [targetTime](const IMUInput& imu) {
+                           return imu.stamp >= targetTime;
+                         });
+  if (it != imuBuffer.begin()) {
+    --it;
+    imuBuffer.erase(imuBuffer.begin(), it);
+  }
 }
 
 }  // namespace
@@ -135,16 +184,23 @@ int main(int argc, char** argv) {
     size_t imuCount = 0;
     size_t visionFrameCount = 0;
     size_t visionFeatureCount = 0;
+    double currentTime = -1.0;
+    std::vector<IMUInput> imuBuffer;
     for (const EqVIOCsvEvent& event : log.events) {
       if (event.type == EqVIOCsvEvent::Type::Imu) {
-        filter.processIMUData(event.imu);
+        if (!filter.isInitialized()) {
+          filter.initializeFromIMU(event.imu);
+          currentTime = event.imu.stamp;
+        }
+        if (filter.isInitialized()) imuBuffer.push_back(event.imu);
         ++imuCount;
       } else {
+        propagateBufferedImu(filter, imuBuffer, currentTime, event.tAbs);
         const Matrix R =
             Matrix::Identity(static_cast<int>(2 * event.vision.size()),
                              static_cast<int>(2 * event.vision.size())) *
             params.measurementNoiseVariance;
-        filter.processVisionData(event.tAbs, event.vision, camera, R);
+        filter.correct(event.vision, camera, R);
         ++visionFrameCount;
         visionFeatureCount += event.vision.size();
       }
@@ -158,7 +214,7 @@ int main(int argc, char** argv) {
     std::cout << "Measurement noise variance (normalized): "
               << params.measurementNoiseVariance << "\n";
     std::cout << std::setprecision(17);
-    std::cout << "Filter time: " << filter.currentTime() << "\n";
+    std::cout << "Filter time: " << currentTime << "\n";
     std::cout << std::setprecision(10);
     std::cout << "Landmarks: " << estimate.n() << "\n";
     std::cout << "Pose translation: "

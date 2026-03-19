@@ -22,7 +22,6 @@ using namespace gtsam::eqvio;
 
 TEST(EqVIOFilter, Smoke) {
   EqVIOFilterParams params;
-  params.removeLostLandmarks = false;
 
   VIOSensorState sensor;
   sensor.inputBias = VIOBias::Identity();
@@ -33,7 +32,7 @@ TEST(EqVIOFilter, Smoke) {
   VIOState xi0(sensor, {{Point3(0.8, -0.2, 4.5), 11}, {Point3(-0.6, 0.3, 3.8), 22}});
   Matrix Sigma0 = Matrix::Identity(xi0.dim(), xi0.dim()) * 1e-3;
 
-  EqVIOFilter filter(xi0, Sigma0, params, 0.0);
+  EqVIOFilter filter(xi0, Sigma0, params);
   auto camera =
       std::make_shared<VIOCameraModel>(Pose3::Identity(), Cal3_S2(1, 1, 0, 0, 0));
 
@@ -45,11 +44,11 @@ TEST(EqVIOFilter, Smoke) {
     imu.stamp = t;
     imu.gyr = Vector3::Zero();
     imu.acc = Vector3(0.0, 0.0, GRAVITY_CONSTANT);
-    filter.processIMUData(imu);
+    filter.propagate(imu, dt);
 
     if (k % 5 == 0) {
       VisionMeasurement y = measureSystemState(filter.stateEstimate(), camera);
-      filter.processVisionData(t, y, camera);
+      filter.correct(y, camera);
     }
   }
 

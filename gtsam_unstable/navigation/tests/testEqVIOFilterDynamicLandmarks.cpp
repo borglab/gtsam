@@ -21,7 +21,6 @@ using namespace gtsam::eqvio;
 
 TEST(EqVIOFilter, DynamicLandmarksAddRemove) {
   EqVIOFilterParams params;
-  params.removeLostLandmarks = true;
   params.initialPointDepth = 5.0;
 
   EqVIOFilter filter(params);
@@ -32,25 +31,26 @@ TEST(EqVIOFilter, DynamicLandmarksAddRemove) {
   imu0.stamp = 0.0;
   imu0.acc = Vector3(0.0, 0.0, GRAVITY_CONSTANT);
   imu0.gyr = Vector3::Zero();
-  filter.processIMUData(imu0);
+  filter.initializeFromIMU(imu0);
 
   IMUInput imu1 = imu0;
   imu1.stamp = 0.01;
-  filter.processIMUData(imu1);
+  filter.propagate(imu1, 0.01);
 
   VisionMeasurement meas1;
   meas1[1] = camera->project2(Point3(0.2, -0.1, 3.5));
   meas1[2] = camera->project2(Point3(-0.3, 0.15, 4.0));
-  filter.processVisionData(0.02, meas1, camera);
+  filter.propagate(imu1, 0.01);
+  filter.correct(meas1, camera);
   EXPECT_LONGS_EQUAL(2, filter.stateEstimate().n());
 
   IMUInput imu2 = imu0;
   imu2.stamp = 0.02;
-  filter.processIMUData(imu2);
+  filter.propagate(imu2, 0.01);
 
   VisionMeasurement meas2;
   meas2[1] = meas1.at(1);
-  filter.processVisionData(0.03, meas2, camera);
+  filter.correct(meas2, camera);
 
   const VIOState est = filter.stateEstimate();
   EXPECT_LONGS_EQUAL(1, est.n());

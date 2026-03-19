@@ -21,7 +21,6 @@ using namespace gtsam::eqvio;
 
 TEST(EqVIOFilter, ParityShortSequence) {
   EqVIOFilterParams params;
-  params.removeLostLandmarks = false;
 
   EqVIOFilter filter(params);
   auto camera =
@@ -31,7 +30,7 @@ TEST(EqVIOFilter, ParityShortSequence) {
   initImu.stamp = 0.0;
   initImu.gyr = Vector3::Zero();
   initImu.acc = Vector3(0.0, 0.0, GRAVITY_CONSTANT);
-  filter.processIMUData(initImu);
+  filter.initializeFromIMU(initImu);
 
   VIOState manual = filter.stateEstimate();
   double t = 0.01;
@@ -43,10 +42,10 @@ TEST(EqVIOFilter, ParityShortSequence) {
     imu.acc = Vector3(0.02, -0.01, GRAVITY_CONSTANT - 0.03);
     imu.gyrBiasVel = Vector3(0.0005, -0.0002, 0.0001);
     imu.accBiasVel = Vector3(-0.0004, 0.0003, -0.0001);
-    filter.processIMUData(imu);
+    filter.propagate(imu, dt);
 
     VisionMeasurement emptyMeas;
-    filter.processVisionData(t + dt, emptyMeas, camera);
+    filter.correct(emptyMeas, camera);
 
     manual = integrateSystemFunction(manual, imu, dt);
     t += dt;
@@ -55,7 +54,6 @@ TEST(EqVIOFilter, ParityShortSequence) {
   const VIOState est = filter.stateEstimate();
   const Vector eps = manual.localCoordinates(est);
   EXPECT(eps.norm() < 2e-5);
-  EXPECT(std::abs(filter.currentTime() - 0.09) < 1e-12);
 }
 
 int main() {

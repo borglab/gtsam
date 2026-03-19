@@ -57,37 +57,37 @@ class GTSAM_UNSTABLE_EXPORT EqVIOFilter
     VIOGroup X = makeVIOGroupIdentity();
     Matrix Sigma =
         Matrix::Identity(VIOSensorState::CompDim, VIOSensorState::CompDim);
-    double currentTime = -1.0;
   };
 
  private:
-  EqVIOFilterParams params_;
+ EqVIOFilterParams params_;
   View view_;
   bool initialized_ = false;
-  std::vector<IMUInput> imuBuffer_;
 
  public:
   EqVIOFilter();
   explicit EqVIOFilter(const EqVIOFilterParams& params);
   EqVIOFilter(const VIOState& xi0, const Matrix& Sigma0,
-              const EqVIOFilterParams& params, double time = 0.0);
+              const EqVIOFilterParams& params);
 
   /// Initialize orientation from gravity in the first IMU sample.
   void initializeFromIMU(const IMUInput& imu);
   /// Set manifold reference/origin and covariance.
   void setReferenceState(const VIOState& xi0, const Matrix& Sigma0);
 
-  /// Queue one IMU input sample.
-  void processIMUData(const IMUInput& imu);
-  /// Integrate to `stamp` and apply one vision correction.
-  void processVisionData(double stamp, const VisionMeasurement& measurement,
-                         const std::shared_ptr<const VIOCameraModel>& camera,
-                         const Matrix& R = Matrix());
+  /// Propagate observer by one IMU hold over `dt`.
+  void propagate(const IMUInput& imu, double dt);
+  /// Propagate covariance only over `dt` with one IMU hold.
+  void propagateCovariance(const IMUInput& imu, double dt);
+  /// Propagate observer state only over `dt` with one IMU hold.
+  void propagateState(const IMUInput& imu, double dt);
+  /// Apply one visual correction at current observer time.
+  void correct(const VisionMeasurement& measurement,
+               const std::shared_ptr<const VIOCameraModel>& camera,
+               const Matrix& R = Matrix());
 
   /// Current full state estimate.
   VIOState stateEstimate() const;
-  /// Current filter time.
-  double currentTime() const { return view_.currentTime; }
   /// True after IMU-based initialization.
   bool isInitialized() const { return initialized_; }
   /// Access internal reference/group/covariance state.
@@ -95,20 +95,10 @@ class GTSAM_UNSTABLE_EXPORT EqVIOFilter
 
  private:
   static Matrix defaultCovariance(size_t nLandmarks);
-  static Rot3 rotationFromTwoVectors(const Vector3& from, const Vector3& to);
-  static void removeRows(Matrix& mat, int startRow, int numRows);
-  static void removeCols(Matrix& mat, int startCol, int numCols);
 
   void syncBase(bool resetReference);
   void syncFromBase();
 
-  bool integrateUpToTime(double newTime);
-
-  void integrateRiccatiStateFast(
-      const IMUInput& imu, double dt,
-      const Eigen::Matrix<double, IMUInput::CompDim, IMUInput::CompDim>&
-          inputGainMatrix,
-      const Matrix& stateGainMatrix);
   Matrix stateProcessNoise(size_t nLandmarks) const;
   double getMedianSceneDepth() const;
 

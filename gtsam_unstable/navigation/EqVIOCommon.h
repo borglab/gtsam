@@ -33,6 +33,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <cassert>
 #include <cmath>
 #include <stdexcept>
 #include <tuple>
@@ -169,6 +170,26 @@ inline std::vector<int> measurementIds(const VisionMeasurement& measurement) {
     ids.push_back(item.first);
   }
   return ids;
+}
+
+/// Remove a contiguous row block from a matrix.
+inline void removeRows(Matrix& mat, int startRow, int numRows) {
+  const int rows = mat.rows();
+  const int cols = mat.cols();
+  assert(startRow >= 0 && numRows >= 0 && startRow + numRows <= rows);
+  mat.block(startRow, 0, rows - numRows - startRow, cols) =
+      mat.block(startRow + numRows, 0, rows - numRows - startRow, cols);
+  mat.conservativeResize(rows - numRows, Eigen::NoChange);
+}
+
+/// Remove a contiguous column block from a matrix.
+inline void removeCols(Matrix& mat, int startCol, int numCols) {
+  const int rows = mat.rows();
+  const int cols = mat.cols();
+  assert(startCol >= 0 && numCols >= 0 && startCol + numCols <= cols);
+  mat.block(0, startCol, rows, cols - numCols - startCol) =
+      mat.block(0, startCol + numCols, rows, cols - numCols - startCol);
+  mat.conservativeResize(Eigen::NoChange, cols - numCols);
 }
 
 /// Readable accessors for the composed ProductLieGroup VIOGroup.

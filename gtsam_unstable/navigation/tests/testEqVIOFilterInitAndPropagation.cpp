@@ -23,23 +23,26 @@ TEST(EqVIOFilter, InitAndPropagation) {
   EqVIOFilterParams params;
 
   EqVIOFilter filter(params);
+  EXPECT(!filter.isInitialized());
 
   IMUInput imu0;
   imu0.stamp = 1.0;
   imu0.acc = Vector3(0.0, 0.0, GRAVITY_CONSTANT);
   imu0.gyr = Vector3::Zero();
-  filter.processIMUData(imu0);
+  filter.initializeFromIMU(imu0);
+  EXPECT(filter.isInitialized());
 
   IMUInput imu1 = imu0;
   imu1.stamp = 1.01;
-  filter.processIMUData(imu1);
+  filter.propagate(imu1, 0.01);
+  filter.propagate(imu1, 0.01);
 
   auto camera =
       std::make_shared<VIOCameraModel>(Pose3::Identity(), Cal3_S2(1, 1, 0, 0, 0));
   VisionMeasurement meas;
-  filter.processVisionData(1.02, meas, camera);
+  filter.correct(meas, camera);
 
-  EXPECT(std::abs(filter.currentTime() - 1.02) < 1e-12);
+  EXPECT(filter.view().Sigma.array().isFinite().all());
 }
 
 int main() {
