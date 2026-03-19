@@ -26,19 +26,6 @@
 namespace gtsam {
 namespace eqvio {
 
-namespace {
-
-double SOT3Scale(const SOT3& Q) { return std::exp(Q.second); }
-
-void ValidateGroupStateAlignment(const VIOGroup& X, const VIOState& xi0,
-                                 const char* context) {
-  if (N_landmarkCount(X) != xi0.n()) {
-    throw std::invalid_argument(std::string(context) +
-                                ": X and xi0 landmark counts differ");
-  }
-}
-
-}  // namespace
 
 EqVIOFilter::EqVIOFilter() : EqVIOFilter(EqVIOFilterParams()) {}
 
@@ -120,7 +107,7 @@ void EqVIOFilter::processVisionData(
     return;
   }
 
-  performVisionUpdate(matchedMeasurement, camera, R);
+  update(matchedMeasurement, camera, R);
   if (params_.removeInvalidLandmarks) {
     removeInvalidLandmarksNow();
   }
@@ -130,7 +117,6 @@ void EqVIOFilter::processVisionData(
 }
 
 VIOState EqVIOFilter::stateEstimate() const {
-  ValidateGroupStateAlignment(view_.X, view_.xi0, "EqVIOFilter::stateEstimate");
   return stateGroupAction(view_.X, view_.xi0);
 }
 
@@ -144,16 +130,6 @@ Rot3 EqVIOFilter::rotationFromTwoVectors(const Vector3& from,
   Quaternion q;
   q.setFromTwoVectors(from, to);
   return Rot3(q);
-}
-
-Vector EqVIOFilter::measurementResidual(const VisionMeasurement& z,
-                                        const VisionMeasurement& zhat,
-                                        const char* context) {
-  try {
-    return measurementDifference(z, zhat);
-  } catch (const std::exception& e) {
-    throw std::invalid_argument(std::string(context) + ": " + e.what());
-  }
 }
 
 void EqVIOFilter::removeRows(Matrix& mat, int startRow, int numRows) {
@@ -193,26 +169,6 @@ void EqVIOFilter::syncBase(bool resetReference) {
 void EqVIOFilter::syncFromBase() {
   view_.X = groupEstimate();
   view_.Sigma = errorCovariance();
-}
-
-void EqVIOFilter::integrateObserverState(const IMUInput& imu, double dt) {
-  predict(imu, dt);
-}
-
-void EqVIOFilter::predict(const IMUInput& imu, double dt) {
-  const Matrix A = Matrix::Zero(view_.xi0.dim(), view_.xi0.dim());
-  const Matrix Qc = Matrix::Zero(view_.xi0.dim(), view_.xi0.dim());
-  predictWithJacobian(imu, dt, A, Qc);
-}
-
-void EqVIOFilter::predictWithJacobian(const IMUInput& imu, double dt,
-                                      const Matrix& A, const Matrix& Qc) {
-  auto liftFunctor = [imu, dt](const VIOState& xi) -> Vector {
-    return (VIOGroup::Logmap(liftVelocityDiscrete(xi, imu, dt)) / dt).eval();
-  };
-
-  Base::template predictWithJacobian<1>(liftFunctor, A, Qc, dt);
-  syncFromBase();
 }
 
 void EqVIOFilter::integrateRiccatiStateFast(
@@ -280,7 +236,13 @@ bool EqVIOFilter::integrateUpToTime(double newTime) {
     if (dt <= 0.0) continue;
 
     const IMUInput imu = imuBuffer_.at(i);
-    integrateObserverState(imu, dt);
+    auto liftFunctor = [imu, dt](const VIOState& xi) -> Vector {
+      return (VIOGroup::Logmap(liftVelocityDiscrete(xi, imu, dt)) / dt).eval();
+    };
+    const Matrix A = Matrix::Zero(view_.xi0.dim(), view_.xi0.dim());
+    const Matrix Qc = Matrix::Zero(view_.xi0.dim(), view_.xi0.dim());
+    Base::template predictWithJacobian<1>(liftFunctor, A, Qc, dt);
+    syncFromBase();
   }
 
   view_.currentTime = newTime;
@@ -296,15 +258,6 @@ bool EqVIOFilter::integrateUpToTime(double newTime) {
 
   syncFromBase();
   return true;
-}
-
-void EqVIOFilter::synchronizeLandmarksToMeasurement(
-    const VisionMeasurement& measurement,
-    const std::shared_ptr<const VIOCameraModel>& camera) {
-  if (params_.removeLostLandmarks) {
-    removeOldLandmarks(measurementIds(measurement));
-  }
-  addNewLandmarks(measurement, camera);
 }
 
 void EqVIOFilter::addNewLandmarks(
@@ -534,26 +487,21 @@ double EqVIOFilter::getMedianSceneDepth() const {
   return medianDepth;
 }
 
-void EqVIOFilter::performVisionUpdate(
-    const VisionMeasurement& measurement,
-    const std::shared_ptr<const VIOCameraModel>& camera,
-    const Matrix& outputGainMatrix) {
-  if (measurement.empty()) return;
-  ValidateGroupStateAlignment(view_.X, view_.xi0,
-                              "EqVIOFilter::performVisionUpdate");
-  update(measurement, camera, outputGainMatrix);
-}
-
 void EqVIOFilter::update(const VisionMeasurement& measurement,
                          const std::shared_ptr<const VIOCameraModel>& camera,
                          const Matrix& outputGainMatrix) {
+  if (measurement.empty()) return;
   if (!camera) {
     throw std::invalid_argument("EqVIOFilter::update: null camera");
   }
   const VisionMeasurement estimatedMeasurement =
       measureSystemState(stateEstimate(), camera);
-  const Vector yTilde =
-      measurementResidual(measurement, estimatedMeasurement, "EqVIOFilter::update");
+  Vector yTilde;
+  try {
+    yTilde = measurementDifference(measurement, estimatedMeasurement);
+  } catch (const std::exception& e) {
+    throw std::invalid_argument(std::string("EqVIOFilter::update: ") + e.what());
+  }
   const Matrix Ct = EqFCoordinateSuite_invdepth.outputMatrixC(
       view_.xi0, view_.X, measurement, camera, true);
 

@@ -16,7 +16,6 @@
 
 #include <gtsam/navigation/EquivariantFilter.h>
 #include <gtsam_unstable/navigation/EqVIOSymmetry.h>
-#include <gtsam_unstable/navigation/VIOEqFMatrices.h>
 #include <gtsam_unstable/dllexport.h>
 
 #include <memory>
@@ -100,9 +99,6 @@ class GTSAM_UNSTABLE_EXPORT EqVIOFilter
  private:
   static Matrix defaultCovariance(size_t nLandmarks);
   static Rot3 rotationFromTwoVectors(const Vector3& from, const Vector3& to);
-  static Vector measurementResidual(const VisionMeasurement& z,
-                                    const VisionMeasurement& zhat,
-                                    const char* context);
   static void removeRows(Matrix& mat, int startRow, int numRows);
   static void removeCols(Matrix& mat, int startCol, int numCols);
 
@@ -110,10 +106,6 @@ class GTSAM_UNSTABLE_EXPORT EqVIOFilter
   void syncFromBase();
 
   bool integrateUpToTime(double newTime);
-  void integrateObserverState(const IMUInput& imu, double dt);
-  void predict(const IMUInput& imu, double dt);
-  void predictWithJacobian(const IMUInput& imu, double dt, const Matrix& A,
-                           const Matrix& Qc);
 
   void integrateRiccatiStateFast(
       const IMUInput& imu, double dt,
@@ -123,9 +115,6 @@ class GTSAM_UNSTABLE_EXPORT EqVIOFilter
   Matrix stateProcessNoise(size_t nLandmarks) const;
   double getMedianSceneDepth() const;
 
-  void synchronizeLandmarksToMeasurement(
-      const VisionMeasurement& measurement,
-      const std::shared_ptr<const VIOCameraModel>& camera);
   void addNewLandmarks(const VisionMeasurement& measurement,
                        const std::shared_ptr<const VIOCameraModel>& camera);
   void addLandmarksInternal(std::vector<Landmark>& newLandmarks,
@@ -141,9 +130,6 @@ class GTSAM_UNSTABLE_EXPORT EqVIOFilter
       int id, const Point2& y,
       const std::shared_ptr<const VIOCameraModel>& camera) const;
 
-  void performVisionUpdate(const VisionMeasurement& measurement,
-                           const std::shared_ptr<const VIOCameraModel>& camera,
-                           const Matrix& outputGainMatrix);
   void update(const VisionMeasurement& measurement,
               const std::shared_ptr<const VIOCameraModel>& camera,
               const Matrix& outputGainMatrix);

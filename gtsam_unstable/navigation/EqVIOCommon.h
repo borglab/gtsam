@@ -52,6 +52,30 @@ using VIOGroup = ProductLieGroup<VIOSensorCore, VIOLandmarkCore>;
 /// Approximate gravitational acceleration magnitude in m/s^2.
 constexpr double GRAVITY_CONSTANT = 9.80665;
 
+/// Return positive scale component of SOT3.
+inline double SOT3Scale(const SOT3& Q) { return std::exp(Q.second); }
+
+/// Return SO3 rotation component of SOT3.
+inline const SO3& SOT3Rotation(const SOT3& Q) { return Q.first; }
+
+/// Return scaled-rotation matrix a*R for SOT3 element (R,log(a)).
+inline Matrix3 SOT3ScaledRotation(const SOT3& Q) {
+  return SOT3Rotation(Q).matrix() * SOT3Scale(Q);
+}
+
+/// Apply inverse SOT3 transform to a 3D point.
+inline Vector3 SOT3ApplyInverse(const SOT3& Q, const Vector3& p) {
+  return (1.0 / SOT3Scale(Q)) * (SOT3Rotation(Q).matrix().transpose() * p);
+}
+
+/// Construct SOT3 from rotation and positive scale.
+inline SOT3 MakeSOT3(const SO3& R, double scale) {
+  if (scale <= 0.0) {
+    throw std::invalid_argument("MakeSOT3: scale must be strictly positive");
+  }
+  return SOT3(R, std::log(scale));
+}
+
 /// IMU input bundle used by EqVIO propagation.
 struct GTSAM_UNSTABLE_EXPORT IMUInput {
   static constexpr int CompDim = 12;

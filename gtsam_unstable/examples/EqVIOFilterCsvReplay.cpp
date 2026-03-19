@@ -37,30 +37,6 @@ constexpr double kTimeTolerance = 1e-1;
 constexpr double kPositionTolerance = 5e-2;
 constexpr double kVelocityTolerance = 5e-2;
 
-class NormalizedCamera final : public VIOCameraModel {
- public:
-  Point2 projectPoint(const Point3& p) const override {
-    if (std::abs(p.z()) < 1e-12) {
-      throw std::invalid_argument("NormalizedCamera: z near zero");
-    }
-    return Point2(p.x() / p.z(), p.y() / p.z());
-  }
-
-  Vector3 undistortPoint(const Point2& y) const override {
-    return Vector3(y.x(), y.y(), 1.0);
-  }
-
-  Matrix23 projectionJacobian(const Vector3& y) const override {
-    if (std::abs(y.z()) < 1e-12) {
-      throw std::invalid_argument("NormalizedCamera: z near zero");
-    }
-    Matrix23 J;
-    const double z2 = y.z() * y.z();
-    J << 1.0 / y.z(), 0.0, -y.x() / z2, 0.0, 1.0 / y.z(), -y.y() / z2;
-    return J;
-  }
-};
-
 bool metadataBool(const EqVIOCsvLog& log, const std::string& key, bool fallback) {
   const auto it = log.metadata.find(key);
   if (it == log.metadata.end()) return fallback;
@@ -172,7 +148,8 @@ int main(int argc, char** argv) {
 
     EqVIOFilter filter(params);
     filter.setReferenceState(xi0, Sigma0);
-    auto camera = std::make_shared<NormalizedCamera>();
+    auto camera =
+        std::make_shared<VIOCameraModel>(Cal3_S2(1.0, 1.0, 0.0, 0.0, 0.0));
 
     size_t imuCount = 0;
     size_t visionFrameCount = 0;

@@ -16,7 +16,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
-#include <gtsam_unstable/navigation/VIOEqFMatrices.h>
 #include <gtsam_unstable/navigation/EqVIOSymmetry.h>
 
 #include <cmath>
