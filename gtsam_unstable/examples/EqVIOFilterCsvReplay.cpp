@@ -33,19 +33,6 @@ struct HardcodedGroundTruth {
   static Vector3 velocity() { return Vector3(-0.120739, -0.314283, 0.119599); }
 };
 
-constexpr double kTimeTolerance = 1e-1;
-constexpr double kPositionTolerance = 5e-2;
-constexpr double kVelocityTolerance = 5e-2;
-
-bool metadataBool(const EqVIOCsvLog& log, const std::string& key, bool fallback) {
-  const auto it = log.metadata.find(key);
-  if (it == log.metadata.end()) return fallback;
-  const std::string& v = it->second;
-  if (v == "1" || v == "true" || v == "TRUE" || v == "True") return true;
-  if (v == "0" || v == "false" || v == "FALSE" || v == "False") return false;
-  return fallback;
-}
-
 double metadataFiniteDouble(const EqVIOCsvLog& log, const std::string& key,
                             double fallback) {
   const double v = metadataDouble(log, key, fallback);
@@ -67,12 +54,6 @@ int main(int argc, char** argv) {
     const EqVIOCsvLog log = readEqVIOCsv(csvPath);
 
     EqVIOFilterParams params;
-    params.removeLostLandmarks =
-        metadataBool(log, "eqf.remove_lost_landmarks", params.removeLostLandmarks);
-    params.removeInvalidLandmarks = true;
-    params.useMedianDepth =
-        metadataBool(log, "eqf.use_median_depth", params.useMedianDepth);
-
     params.initialPointDepth = metadataFiniteDouble(
         log, "eqf.initial_point_depth", params.initialPointDepth);
     params.initialPointVariance = metadataFiniteDouble(
@@ -148,8 +129,8 @@ int main(int argc, char** argv) {
 
     EqVIOFilter filter(params);
     filter.setReferenceState(xi0, Sigma0);
-    auto camera =
-        std::make_shared<VIOCameraModel>(Cal3_S2(1.0, 1.0, 0.0, 0.0, 0.0));
+    auto camera = std::make_shared<VIOCameraModel>(
+        Pose3::Identity(), Cal3_S2(1.0, 1.0, 0.0, 0.0, 0.0));
 
     size_t imuCount = 0;
     size_t visionFrameCount = 0;

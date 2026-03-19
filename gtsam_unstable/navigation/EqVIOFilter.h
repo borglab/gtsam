@@ -26,9 +26,6 @@ namespace eqvio {
 
 /// Runtime parameters for the standalone EqVIO filter.
 struct GTSAM_UNSTABLE_EXPORT EqVIOFilterParams {
-  bool removeLostLandmarks = true;
-  bool removeInvalidLandmarks = true;
-  bool useMedianDepth = false;
   double initialPointDepth = 10.0;
   double initialPointVariance = 1.0;
   double measurementNoiseVariance = 1e-4;

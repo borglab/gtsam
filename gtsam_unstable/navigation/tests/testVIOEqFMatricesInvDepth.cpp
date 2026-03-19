@@ -18,7 +18,6 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam_unstable/navigation/EqVIOSymmetry.h>
 
-#include <cmath>
 #include <memory>
 #include <stdexcept>
 #include <utility>
@@ -28,30 +27,6 @@ using namespace gtsam;
 using namespace gtsam::eqvio;
 
 namespace {
-
-class SimplePinholeCamera final : public VIOCameraModel {
- public:
-  Point2 projectPoint(const Point3& p) const override {
-    if (std::abs(p.z()) < 1e-12) {
-      throw std::invalid_argument("SimplePinholeCamera: z is near zero");
-    }
-    return Point2(p.x() / p.z(), p.y() / p.z());
-  }
-
-  Vector3 undistortPoint(const Point2& y) const override {
-    return Vector3(y.x(), y.y(), 1.0).normalized();
-  }
-
-  Matrix23 projectionJacobian(const Vector3& y) const override {
-    if (std::abs(y.z()) < 1e-12) {
-      throw std::invalid_argument("SimplePinholeCamera: z is near zero");
-    }
-    Matrix23 J;
-    const double z2 = y.z() * y.z();
-    J << 1.0 / y.z(), 0.0, -y.x() / z2, 0.0, 1.0 / y.z(), -y.y() / z2;
-    return J;
-  }
-};
 
 VIOSE23 MakeA(const Rot3& R, const Point3& t, const Vector3& w) {
   VIOSE23::Matrix3K x;
@@ -130,7 +105,8 @@ TEST(VIOEqFMatricesInvDepth, Selector) {
 
 //******************************************************************************
 TEST(VIOEqFMatricesInvDepth, ShapesAndFinite) {
-  const auto camera = std::make_shared<SimplePinholeCamera>();
+  const auto camera =
+      std::make_shared<VIOCameraModel>(Pose3::Identity(), Cal3_S2(1, 1, 0, 0, 0));
   const EqFCoordinateSuite& suite = EqFCoordinateSuite_invdepth;
 
   for (const auto& pair :

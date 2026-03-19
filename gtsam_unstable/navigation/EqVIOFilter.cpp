@@ -26,6 +26,39 @@
 namespace gtsam {
 namespace eqvio {
 
+namespace {
+
+Vector measurementVector(const VisionMeasurement& measurement) {
+  Vector v = Vector::Zero(static_cast<int>(2 * measurement.size()));
+  int i = 0;
+  for (const auto& item : measurement) {
+    v.segment<2>(2 * i) = item.second;
+    ++i;
+  }
+  return v;
+}
+
+Vector measurementDifference(const VisionMeasurement& lhs,
+                             const VisionMeasurement& rhs) {
+  if (lhs.size() != rhs.size()) {
+    throw std::invalid_argument("measurementDifference: size mismatch");
+  }
+
+  Vector diff = Vector::Zero(static_cast<int>(2 * lhs.size()));
+  auto itL = lhs.begin();
+  auto itR = rhs.begin();
+  int i = 0;
+  for (; itL != lhs.end(); ++itL, ++itR) {
+    if (itL->first != itR->first) {
+      throw std::invalid_argument("measurementDifference: id mismatch");
+    }
+    diff.segment<2>(2 * i) = itL->second - itR->second;
+    ++i;
+  }
+  return diff;
+}
+
+}  // namespace
 
 EqVIOFilter::EqVIOFilter() : EqVIOFilter(EqVIOFilterParams()) {}
 
@@ -94,9 +127,7 @@ void EqVIOFilter::processVisionData(
   const bool integrationFlag = integrateUpToTime(stamp);
   if (!integrationFlag || !initialized_) return;
 
-  if (params_.removeLostLandmarks) {
-    removeOldLandmarks(measurementIds(measurement));
-  }
+  removeOldLandmarks(measurementIds(measurement));
 
   VisionMeasurement matchedMeasurement = measurement;
   removeOutliers(matchedMeasurement, camera);
@@ -108,9 +139,8 @@ void EqVIOFilter::processVisionData(
   }
 
   update(matchedMeasurement, camera, R);
-  if (params_.removeInvalidLandmarks) {
-    removeInvalidLandmarksNow();
-  }
+  removeInvalidLandmarksNow();
+
   syncBase(false);
 
   assert(!view_.Sigma.hasNaN());
@@ -274,14 +304,13 @@ void EqVIOFilter::addNewLandmarks(
     if (std::find(existingIds.begin(), existingIds.end(), id) != existingIds.end()) {
       continue;
     }
-    const Vector3 bearing = camera->undistortPoint(coord);
+    const Vector3 bearing = undistortPoint(*camera, coord);
     newLandmarks.push_back(Landmark{bearing, id});
   }
 
   if (newLandmarks.empty()) return;
 
-  const double initialDepth =
-      params_.useMedianDepth ? getMedianSceneDepth() : params_.initialPointDepth;
+  const double initialDepth = params_.initialPointDepth;
   for (Landmark& lm : newLandmarks) lm.p *= initialDepth;
 
   const Matrix newLandmarksCov =
@@ -298,17 +327,17 @@ void EqVIOFilter::addLandmarksInternal(std::vector<Landmark>& newLandmarks,
   view_.xi0.cameraLandmarks.insert(view_.xi0.cameraLandmarks.end(),
                                    newLandmarks.begin(), newLandmarks.end());
 
+  const auto& [A, Beta, B, Q] = view_.X;
   std::vector<SOT3> q;
-  q.reserve(N_landmarkCount(view_.X) + newLandmarks.size());
-  for (size_t i = 0; i < N_landmarkCount(view_.X); ++i) {
-    q.push_back(Q_landmarkTransforms(view_.X)[i]);
+  q.reserve(Q.size() + newLandmarks.size());
+  for (size_t i = 0; i < Q.size(); ++i) {
+    q.push_back(Q[i]);
   }
   for (size_t i = 0; i < newLandmarks.size(); ++i) {
     q.push_back(SOT3::Identity());
   }
 
-  view_.X = makeVIOGroup(A_sensorKinematics(view_.X), Beta_biasOffset(view_.X),
-                         B_cameraExtrinsics(view_.X), VIOLandmarkGroup(q));
+  view_.X = makeVIOGroup(A, Beta, B, VIOLandmarkGroup(q));
 
   const int oldSize = view_.Sigma.rows();
   const int newN = static_cast<int>(newLandmarks.size());
@@ -345,15 +374,15 @@ void EqVIOFilter::removeOldLandmarks(const std::vector<int>& measurementIds) {
 void EqVIOFilter::removeLandmarkByIndex(int idx) {
   view_.xi0.cameraLandmarks.erase(view_.xi0.cameraLandmarks.begin() + idx);
 
+  const auto& [A, Beta, B, Q] = view_.X;
   std::vector<SOT3> q;
-  q.reserve(N_landmarkCount(view_.X) - 1);
-  for (size_t i = 0; i < N_landmarkCount(view_.X); ++i) {
+  q.reserve(Q.size() - 1);
+  for (size_t i = 0; i < Q.size(); ++i) {
     if (static_cast<int>(i) == idx) continue;
-    q.push_back(Q_landmarkTransforms(view_.X)[i]);
+    q.push_back(Q[i]);
   }
 
-  view_.X = makeVIOGroup(A_sensorKinematics(view_.X), Beta_biasOffset(view_.X),
-                         B_cameraExtrinsics(view_.X), VIOLandmarkGroup(q));
+  view_.X = makeVIOGroup(A, Beta, B, VIOLandmarkGroup(q));
 
   removeRows(view_.Sigma, VIOSensorState::CompDim + 3 * idx, 3);
   removeCols(view_.Sigma, VIOSensorState::CompDim + 3 * idx, 3);
@@ -382,9 +411,8 @@ Matrix3 EqVIOFilter::getLandmarkCovById(int id) const {
 }
 
 Matrix2 EqVIOFilter::outputCovarianceById(
-    int id, const Point2& y,
+    int id, const Point2&,
     const std::shared_ptr<const VIOCameraModel>& camera) const {
-  (void)y;
   const Matrix3 lmCov = getLandmarkCovById(id);
   const auto it = std::find_if(
       view_.xi0.cameraLandmarks.begin(), view_.xi0.cameraLandmarks.end(),
@@ -393,16 +421,18 @@ Matrix2 EqVIOFilter::outputCovarianceById(
 
   const size_t i =
       static_cast<size_t>(std::distance(view_.xi0.cameraLandmarks.begin(), it));
-  const SOT3& Q_i = Q_landmarkTransforms(view_.X)[i];
+  const auto& Q = gtsam::get<3>(view_.X);
+  const SOT3& Q_i = Q[i];
 
   const Matrix23 C0i = EqFCoordinateSuite_invdepth.outputMatrixCi(it->p, Q_i, camera);
   return C0i * lmCov * C0i.transpose();
 }
 
 void EqVIOFilter::removeInvalidLandmarksNow() {
+  const auto& Q = gtsam::get<3>(view_.X);
   std::set<int> invalidIds;
-  for (size_t i = 0; i < N_landmarkCount(view_.X); ++i) {
-    const double a = SOT3Scale(Q_landmarkTransforms(view_.X)[i]);
+  for (size_t i = 0; i < Q.size(); ++i) {
+    const double a = SOT3Scale(Q[i]);
     if (!std::isfinite(a) || a <= 1e-8 || a > 1e8) {
       invalidIds.insert(view_.xi0.cameraLandmarks[i].id);
     }

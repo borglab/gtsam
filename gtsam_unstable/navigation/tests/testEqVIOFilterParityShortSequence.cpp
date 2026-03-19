@@ -14,36 +14,18 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam_unstable/navigation/EqVIOFilter.h>
 
-#include <cmath>
 #include <memory>
 
 using namespace gtsam;
 using namespace gtsam::eqvio;
-
-namespace {
-
-class SimplePinholeCamera final : public VIOCameraModel {
- public:
-  Point2 projectPoint(const Point3& p) const override {
-    if (std::abs(p.z()) < 1e-12) {
-      throw std::invalid_argument("SimplePinholeCamera: z near zero");
-    }
-    return Point2(p.x() / p.z(), p.y() / p.z());
-  }
-
-  Vector3 undistortPoint(const Point2& y) const override {
-    return Vector3(y.x(), y.y(), 1.0).normalized();
-  }
-};
-
-}  // namespace
 
 TEST(EqVIOFilter, ParityShortSequence) {
   EqVIOFilterParams params;
   params.removeLostLandmarks = false;
 
   EqVIOFilter filter(params);
-  auto camera = std::make_shared<SimplePinholeCamera>();
+  auto camera =
+      std::make_shared<VIOCameraModel>(Pose3::Identity(), Cal3_S2(1, 1, 0, 0, 0));
 
   IMUInput initImu;
   initImu.stamp = 0.0;

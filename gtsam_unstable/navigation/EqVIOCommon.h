@@ -35,6 +35,7 @@
 #include <string>
 #include <cmath>
 #include <stdexcept>
+#include <tuple>
 #include <vector>
 
 namespace gtsam {
@@ -130,50 +131,32 @@ struct GTSAM_UNSTABLE_EXPORT IMUInput {
   }
 };
 
-/// EqVIO camera built on top of GTSAM PinholeCamera<Cal3_S2>.
-class GTSAM_UNSTABLE_EXPORT VIOCameraModel
-    : public PinholeCamera<Cal3_S2> {
- public:
-  using Base = PinholeCamera<Cal3_S2>;
+/// EqVIO camera model.
+using VIOCameraModel = PinholeCamera<Cal3_S2>;
 
-  VIOCameraModel() : Base(Pose3::Identity(), Cal3_S2()) {}
-  explicit VIOCameraModel(const Cal3_S2& K) : Base(Pose3::Identity(), K) {}
-  VIOCameraModel(const Pose3& pose, const Cal3_S2& K) : Base(pose, K) {}
-  virtual ~VIOCameraModel() = default;
+/// Convert image coordinates to an undistorted 3D bearing-like vector.
+inline Vector3 undistortPoint(const VIOCameraModel& camera, const Point2& y) {
+  const Point2 p = camera.calibration().calibrate(y);
+  return Vector3(p.x(), p.y(), 1.0);
+}
 
-  /// Project a camera-frame 3D point to image coordinates.
-  virtual Point2 projectPoint(const Point3& p) const {
-    if (std::abs(p.z()) < 1e-12) {
-      throw std::invalid_argument("VIOCameraModel::projectPoint: z is near zero");
-    }
-    const Point2 pn(p.x() / p.z(), p.y() / p.z());
-    return this->calibration().uncalibrate(pn);
+/// Projection Jacobian with respect to the input 3D vector.
+inline Matrix23 projectionJacobian(const VIOCameraModel& camera, const Vector3& y) {
+  if (std::abs(y.z()) < 1e-12) {
+    throw std::invalid_argument("projectionJacobian: z is near zero");
   }
 
-  /// Convert image coordinates to an undistorted 3D bearing-like vector.
-  virtual Vector3 undistortPoint(const Point2& y) const {
-    const Point2 p = this->calibration().calibrate(y);
-    return Vector3(p.x(), p.y(), 1.0);
-  }
+  const double invz = 1.0 / y.z();
+  const double invz2 = invz * invz;
+  const double fx = camera.calibration().fx();
+  const double fy = camera.calibration().fy();
+  const double s = camera.calibration().skew();
 
-  /// Projection Jacobian with respect to the input 3D vector.
-  virtual Matrix23 projectionJacobian(const Vector3& y) const {
-    if (std::abs(y.z()) < 1e-12) {
-      throw std::invalid_argument("VIOCameraModel::projectionJacobian: z is near zero");
-    }
-
-    const double invz = 1.0 / y.z();
-    const double invz2 = invz * invz;
-    const double fx = this->calibration().fx();
-    const double fy = this->calibration().fy();
-    const double s = this->calibration().skew();
-
-    Matrix23 J;
-    J << fx * invz, s * invz, -(fx * y.x() + s * y.y()) * invz2, 0.0,
-        fy * invz, -fy * y.y() * invz2;
-    return J;
-  }
-};
+  Matrix23 J;
+  J << fx * invz, s * invz, -(fx * y.x() + s * y.y()) * invz2, 0.0, fy * invz,
+      -fy * y.y() * invz2;
+  return J;
+}
 
 /// Vision measurement keyed by landmark id.
 using VisionMeasurement = std::map<int, Point2>;
@@ -182,44 +165,10 @@ using VisionMeasurement = std::map<int, Point2>;
 inline std::vector<int> measurementIds(const VisionMeasurement& measurement) {
   std::vector<int> ids;
   ids.reserve(measurement.size());
-  for (const auto& [id, _] : measurement) {
-    (void)_;
-    ids.push_back(id);
+  for (const auto& item : measurement) {
+    ids.push_back(item.first);
   }
   return ids;
-}
-
-/// Flatten measurements to [u0,v0,u1,v1,...] in map iteration order.
-inline Vector measurementVector(const VisionMeasurement& measurement) {
-  Vector v = Vector::Zero(static_cast<int>(2 * measurement.size()));
-  int i = 0;
-  for (const auto& [_, y] : measurement) {
-    (void)_;
-    v.segment<2>(2 * i) = y;
-    ++i;
-  }
-  return v;
-}
-
-/// Compute lhs-rhs in flattened measurement coordinates.
-inline Vector measurementDifference(const VisionMeasurement& lhs,
-                                    const VisionMeasurement& rhs) {
-  if (lhs.size() != rhs.size()) {
-    throw std::invalid_argument("measurementDifference: size mismatch");
-  }
-
-  Vector diff = Vector::Zero(static_cast<int>(2 * lhs.size()));
-  auto itL = lhs.begin();
-  auto itR = rhs.begin();
-  int i = 0;
-  for (; itL != lhs.end(); ++itL, ++itR) {
-    if (itL->first != itR->first) {
-      throw std::invalid_argument("measurementDifference: id mismatch");
-    }
-    diff.segment<2>(2 * i) = itL->second - itR->second;
-    ++i;
-  }
-  return diff;
 }
 
 /// Readable accessors for the composed ProductLieGroup VIOGroup.
@@ -262,3 +211,62 @@ inline VIOGroup makeVIOGroupIdentity(size_t n = 0) {
 }  // namespace eqvio
 
 }  // namespace gtsam
+
+namespace gtsam {
+
+template <size_t I>
+inline decltype(auto) get(eqvio::VIOGroup& X) {
+  static_assert(I < 4, "VIOGroup index out of range");
+  if constexpr (I == 0) {
+    return (X.first.first);
+  } else if constexpr (I == 1) {
+    return (X.first.second);
+  } else if constexpr (I == 2) {
+    return (X.second.first);
+  } else {
+    return (X.second.second);
+  }
+}
+
+template <size_t I>
+inline decltype(auto) get(const eqvio::VIOGroup& X) {
+  static_assert(I < 4, "VIOGroup index out of range");
+  if constexpr (I == 0) {
+    return (X.first.first);
+  } else if constexpr (I == 1) {
+    return (X.first.second);
+  } else if constexpr (I == 2) {
+    return (X.second.first);
+  } else {
+    return (X.second.second);
+  }
+}
+
+}  // namespace gtsam
+
+namespace std {
+
+template <>
+struct tuple_size<gtsam::eqvio::VIOGroup> : std::integral_constant<size_t, 4> {};
+
+template <>
+struct tuple_element<0, gtsam::eqvio::VIOGroup> {
+  using type = gtsam::eqvio::VIOSE23;
+};
+
+template <>
+struct tuple_element<1, gtsam::eqvio::VIOGroup> {
+  using type = gtsam::eqvio::VIOBias;
+};
+
+template <>
+struct tuple_element<2, gtsam::eqvio::VIOGroup> {
+  using type = gtsam::Pose3;
+};
+
+template <>
+struct tuple_element<3, gtsam::eqvio::VIOGroup> {
+  using type = gtsam::eqvio::VIOLandmarkGroup;
+};
+
+}  // namespace std

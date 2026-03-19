@@ -27,10 +27,14 @@ namespace eqvio {
 namespace {
 
 Pose3 APose(const VIOGroup& X) {
-  return Pose3(A_sensorKinematics(X).rotation(), A_sensorKinematics(X).x(0));
+  const auto& A = gtsam::get<0>(X);
+  return Pose3(A.rotation(), A.x(0));
 }
 
-Vector3 AW(const VIOGroup& X) { return A_sensorKinematics(X).x(1); }
+Vector3 AW(const VIOGroup& X) {
+  const auto& A = gtsam::get<0>(X);
+  return A.x(1);
+}
 
 VIOSE23 MakeA(const Rot3& R, const Point3& x0, const Vector3& w) {
   VIOSE23::Matrix3K x;
@@ -361,10 +365,10 @@ Matrix23 EqFoutputMatrixCiStar_base(
   const auto DRho = [&camera](const Vector3& yVec) -> Matrix24 {
     Matrix34 DRhoVec = Matrix34::Zero();
     DRhoVec.block<3, 3>(0, 0) = Rot3::Hat(yVec);
-    return camera->projectionJacobian(yVec) * DRhoVec;
+    return projectionJacobian(*camera, yVec) * DRhoVec;
   };
 
-  const Vector3 yTru = camera->undistortPoint(y);
+  const Vector3 yTru = undistortPoint(*camera, y);
   const Matrix24 drhoSym = 0.5 * (DRho(yTru) + DRho(yHat));
   const Matrix44 adjQInv = QHat.inverse().AdjointMap();
   return drhoSym * adjQInv * m2g;
@@ -454,31 +458,33 @@ VIOGroup liftInnovationDiscrete_invdepth(const Vector& totalInnovation,
 
 VIOSensorState sensorStateGroupAction(const VIOGroup& X,
                                       const VIOSensorState& sensor) {
+  const auto& Beta = gtsam::get<1>(X);
+  const auto& B = gtsam::get<2>(X);
   const Pose3 A = APose(X);
   const Vector3 w = AW(X);
 
   VIOSensorState out;
-  out.inputBias = sensor.inputBias + Beta_biasOffset(X);
+  out.inputBias = sensor.inputBias + Beta;
   out.pose = sensor.pose.compose(A);
   out.velocity = A.rotation().unrotate(sensor.velocity - w);
-  out.cameraOffset =
-      A.inverse().compose(sensor.cameraOffset).compose(B_cameraExtrinsics(X));
+  out.cameraOffset = A.inverse().compose(sensor.cameraOffset).compose(B);
   return out;
 }
 
 VIOState stateGroupAction(const VIOGroup& X, const VIOState& state) {
-  if (N_landmarkCount(X) != state.n()) {
+  const auto& Q = gtsam::get<3>(X);
+  if (Q.size() != state.n()) {
     throw std::invalid_argument(
         "stateGroupAction: group and state landmark counts do not match");
   }
 
   VIOState out;
   out.sensor = sensorStateGroupAction(X, state.sensor);
-  out.cameraLandmarks.resize(N_landmarkCount(X));
+  out.cameraLandmarks.resize(Q.size());
 
-  for (size_t i = 0; i < N_landmarkCount(X); ++i) {
+  for (size_t i = 0; i < Q.size(); ++i) {
     out.cameraLandmarks[i].p =
-        SOT3ApplyInverse(Q_landmarkTransforms(X)[i], state.cameraLandmarks[i].p);
+        SOT3ApplyInverse(Q[i], state.cameraLandmarks[i].p);
     out.cameraLandmarks[i].id = state.cameraLandmarks[i].id;
   }
 
@@ -488,26 +494,26 @@ VIOState stateGroupAction(const VIOGroup& X, const VIOState& state) {
 VisionMeasurement outputGroupAction(const VIOGroup& X,
                                     const VisionMeasurement& measurement,
                                     const std::shared_ptr<const VIOCameraModel>& camera) {
+  const auto& Q = gtsam::get<3>(X);
   VisionMeasurement out;
   if (!camera) {
     throw std::invalid_argument("outputGroupAction: camera model is null");
   }
 
   const std::vector<int> qIds = QIdsForMeasurement(X, measurement);
-  if (qIds.size() != N_landmarkCount(X)) {
+  if (qIds.size() != Q.size()) {
     throw std::invalid_argument(
         "outputGroupAction: invalid Q-to-id mapping cardinality");
   }
 
-  for (size_t i = 0; i < N_landmarkCount(X); ++i) {
+  for (size_t i = 0; i < Q.size(); ++i) {
     const int id = qIds[i];
     const auto it = measurement.find(id);
     if (it == measurement.end()) continue;
 
-    const Vector3 bearing = camera->undistortPoint(it->second);
-    const Vector3 rotated =
-        SOT3Rotation(Q_landmarkTransforms(X)[i]).matrix().transpose() * bearing;
-    out[id] = camera->projectPoint(rotated);
+    const Vector3 bearing = undistortPoint(*camera, it->second);
+    const Vector3 rotated = SOT3Rotation(Q[i]).matrix().transpose() * bearing;
+    out[id] = camera->project2(rotated);
   }
 
   return out;
@@ -634,7 +640,7 @@ VisionMeasurement measureSystemState(
 
   VisionMeasurement out;
   for (const Landmark& lm : state.cameraLandmarks) {
-    out[lm.id] = camera->projectPoint(lm.p);
+    out[lm.id] = camera->project2(lm.p);
   }
   return out;
 }
@@ -658,6 +664,7 @@ Matrix EqFCoordinateSuite::outputMatrixC(
   const int M = static_cast<int>(xi0.n());
   const std::vector<int> yIds = measurementIds(y);
   const int N = static_cast<int>(yIds.size());
+  const auto& Q = gtsam::get<3>(X);
 
   Matrix C = Matrix::Zero(2 * N, VIOSensorState::CompDim + Landmark::CompDim * M);
 
@@ -669,7 +676,7 @@ Matrix EqFCoordinateSuite::outputMatrixC(
     const size_t k = static_cast<size_t>(i);
     const int j = static_cast<int>(std::distance(yIds.begin(), itY));
     const Point3& qi0 = xi0.cameraLandmarks[static_cast<size_t>(i)].p;
-    const SOT3& Qk = Q_landmarkTransforms(X)[k];
+    const SOT3& Qk = Q[k];
 
     const Matrix23 Ci = useEquivariance
                             ? outputMatrixCiStar(qi0, Qk, camera, y.at(idNum))
@@ -677,7 +684,7 @@ Matrix EqFCoordinateSuite::outputMatrixC(
     if (!Ci.array().isFinite().all()) {
       const Point3 qHat = SOT3ApplyInverse(Qk, qi0);
       const Point2 yObs = y.at(idNum);
-      const Vector3 yUnd = camera->undistortPoint(yObs);
+      const Vector3 yUnd = undistortPoint(*camera, yObs);
       throw std::runtime_error(
           "EqFCoordinateSuite::outputMatrixC: non-finite Ci for id " +
           std::to_string(idNum) + ", qi0_norm=" + std::to_string(qi0.norm()) +
@@ -719,7 +726,7 @@ Matrix23 EqFCoordinateSuite::outputMatrixCi(
     throw std::invalid_argument("EqFCoordinateSuite::outputMatrixCi: null camera");
   }
   const Vector3 qHat = SOT3ApplyInverse(QHat, q0);
-  const Point2 yHat = camera->projectPoint(qHat);
+  const Point2 yHat = camera->project2(qHat);
   return outputMatrixCiStar(q0, QHat, camera, yHat);
 }
 
@@ -742,7 +749,9 @@ VIOState VIOSymmetry::operator()(
     Matrix66 HtmpCamera, Hcamera;
     const Pose3 tmp = A.inverse().compose(xi.sensor.cameraOffset, {},
                                           HtmpCamera);
-    (void)tmp.compose(B_cameraExtrinsics(X), Hcamera, {});
+    const auto& B = gtsam::get<2>(X);
+    const auto& Q = gtsam::get<3>(X);
+    tmp.compose(B, Hcamera, {});
     H_xi->block<6, 6>(15, 15) = Hcamera * HtmpCamera;
 
     H_xi->block<6, 6>(0, 0).setIdentity();
@@ -751,8 +760,7 @@ VIOState VIOSymmetry::operator()(
     for (size_t i = 0; i < xi.n(); ++i) {
       const int row = VIOSensorState::CompDim + 3 * static_cast<int>(i);
       H_xi->block<3, 3>(row, row) =
-          (1.0 / SOT3Scale(Q_landmarkTransforms(X)[i])) *
-          SOT3Rotation(Q_landmarkTransforms(X)[i]).matrix().transpose();
+          (1.0 / SOT3Scale(Q[i])) * SOT3Rotation(Q[i]).matrix().transpose();
     }
   }
 

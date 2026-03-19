@@ -14,37 +14,12 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam_unstable/navigation/EqVIOFilter.h>
 
-#include <cmath>
 #include <memory>
 
 using namespace gtsam;
 using namespace gtsam::eqvio;
 
 namespace {
-
-class SimplePinholeCamera final : public VIOCameraModel {
- public:
-  Point2 projectPoint(const Point3& p) const override {
-    if (std::abs(p.z()) < 1e-12) {
-      throw std::invalid_argument("SimplePinholeCamera: z near zero");
-    }
-    return Point2(p.x() / p.z(), p.y() / p.z());
-  }
-
-  Vector3 undistortPoint(const Point2& y) const override {
-    return Vector3(y.x(), y.y(), 1.0).normalized();
-  }
-
-  Matrix23 projectionJacobian(const Vector3& y) const override {
-    if (std::abs(y.z()) < 1e-12) {
-      throw std::invalid_argument("SimplePinholeCamera: z near zero");
-    }
-    const double z2 = y.z() * y.z();
-    Matrix23 J;
-    J << 1.0 / y.z(), 0.0, -y.x() / z2, 0.0, 1.0 / y.z(), -y.y() / z2;
-    return J;
-  }
-};
 
 VIOState MakeState1() {
   VIOSensorState sensor;
@@ -72,7 +47,8 @@ TEST(EqVIOFilter, VisionUpdate) {
   imu.acc = Vector3(0.0, 0.0, GRAVITY_CONSTANT);
   filter.processIMUData(imu);
 
-  auto camera = std::make_shared<SimplePinholeCamera>();
+  auto camera =
+      std::make_shared<VIOCameraModel>(Pose3::Identity(), Cal3_S2(1, 1, 0, 0, 0));
   const VisionMeasurement meas = measureSystemState(filter.stateEstimate(), camera);
   filter.processVisionData(0.01, meas, camera);
 

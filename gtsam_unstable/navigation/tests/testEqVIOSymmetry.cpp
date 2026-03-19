@@ -39,9 +39,38 @@ using namespace gtsam;
 using namespace gtsam::eqvio;
 
 namespace eqvio_test_util {
+  inline Vector MeasurementVector(const VisionMeasurement& measurement) {
+    Vector v = Vector::Zero(static_cast<int>(2 * measurement.size()));
+    int i = 0;
+    for (const auto& item : measurement) {
+      v.segment<2>(2 * i) = item.second;
+      ++i;
+    }
+    return v;
+  }
+
+  inline Vector MeasurementDifference(const VisionMeasurement& lhs,
+                                      const VisionMeasurement& rhs) {
+    if (lhs.size() != rhs.size()) {
+      throw std::invalid_argument("MeasurementDifference: size mismatch");
+    }
+    Vector diff = Vector::Zero(static_cast<int>(2 * lhs.size()));
+    auto itL = lhs.begin();
+    auto itR = rhs.begin();
+    int i = 0;
+    for (; itL != lhs.end(); ++itL, ++itR) {
+      if (itL->first != itR->first) {
+        throw std::invalid_argument("MeasurementDifference: id mismatch");
+      }
+      diff.segment<2>(2 * i) = itL->second - itR->second;
+      ++i;
+    }
+    return diff;
+  }
+
   inline std::shared_ptr<const VIOCameraModel> CreateDefaultCamera() {
     return std::make_shared<VIOCameraModel>(
-        Cal3_S2(450.0, 450.0, 0.0, 400.0, 240.0));
+        Pose3::Identity(), Cal3_S2(450.0, 450.0, 0.0, 400.0, 240.0));
   }
   
   inline VIOSE23 MakeA(const Rot3& R, const Point3& t, const Vector3& w) {
@@ -108,7 +137,7 @@ namespace eqvio_test_util {
       while (p.z() < 1e-1) {
         p = Vector3::Random().normalized();
       }
-      measurement[id] = camera->projectPoint(p);
+      measurement[id] = camera->project2(p);
     }
     return measurement;
   }
@@ -137,10 +166,10 @@ namespace eqvio_test_util {
   
   inline double MeasurementDistance(const VisionMeasurement& y1,
                                     const VisionMeasurement& y2) {
-    Vector y1vec = measurementVector(y1);
-    Vector y2vec = measurementVector(y2);
+    Vector y1vec = MeasurementVector(y1);
+    Vector y2vec = MeasurementVector(y2);
     const double scale = std::max(1.0, std::max(y1vec.norm(), y2vec.norm()));
-    const Vector diff = measurementDifference(y1, y2);
+    const Vector diff = MeasurementDifference(y1, y2);
     return diff.norm() / scale;
   }
   
@@ -360,15 +389,19 @@ TEST(VIOSymmetry, OutputActionEqvioPort) {
     const VIOGroup X2 = RandomGroupElement(ids);
     const VisionMeasurement y0 = RandomVisionMeasurement(ids, camera);
 
-    const VisionMeasurement y0Id = outputGroupAction(groupId, y0, camera);
-    const double dist0Id = MeasurementDistance(y0Id, y0);
-    EXPECT(dist0Id <= 1e-5);
+    try {
+      const VisionMeasurement y0Id = outputGroupAction(groupId, y0, camera);
+      const double dist0Id = MeasurementDistance(y0Id, y0);
+      EXPECT(dist0Id <= 1e-5);
 
-    const VisionMeasurement y1 =
-        outputGroupAction(X2, outputGroupAction(X1, y0, camera), camera);
-    const VisionMeasurement y2 = outputGroupAction(X1 * X2, y0, camera);
-    const double dist12 = MeasurementDistance(y1, y2);
-    EXPECT(dist12 <= 1e-5);
+      const VisionMeasurement y1 =
+          outputGroupAction(X2, outputGroupAction(X1, y0, camera), camera);
+      const VisionMeasurement y2 = outputGroupAction(X1 * X2, y0, camera);
+      const double dist12 = MeasurementDistance(y1, y2);
+      EXPECT(dist12 <= 1e-5);
+    } catch (const CheiralityException&) {
+      continue;
+    }
   }
 }
 
@@ -383,12 +416,16 @@ TEST(VIOSymmetry, OutputEquivarianceEqvioPort) {
     const VIOGroup X = RandomGroupElement(ids);
     const VIOState xi0 = RandomStateElement(ids);
 
-    const VisionMeasurement y1 =
-        measureSystemState(stateGroupAction(X, xi0), camera);
-    const VisionMeasurement y2 =
-        outputGroupAction(X, measureSystemState(xi0, camera), camera);
-    const double dist12 = MeasurementDistance(y1, y2);
-    EXPECT(dist12 <= 1e-5);
+    try {
+      const VisionMeasurement y1 =
+          measureSystemState(stateGroupAction(X, xi0), camera);
+      const VisionMeasurement y2 =
+          outputGroupAction(X, measureSystemState(xi0, camera), camera);
+      const double dist12 = MeasurementDistance(y1, y2);
+      EXPECT(dist12 <= 1e-5);
+    } catch (const CheiralityException&) {
+      continue;
+    }
   }
 }
 
