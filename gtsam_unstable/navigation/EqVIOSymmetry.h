@@ -9,9 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/// @file EqVIOSymmetry.h
-/// @brief EqVIO symmetry actions and lift helpers.
-/// @author Rohan Bansal
+/**
+ * @file EqVIOSymmetry.h
+ * @brief EqVIO symmetry actions and lift helpers.
+ * @author Rohan Bansal
+ */
 
 #pragma once
 

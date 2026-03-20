@@ -90,7 +90,7 @@ namespace eqvio_test_util {
     std::vector<Landmark> lms(ids.size());
     for (size_t i = 0; i < ids.size(); ++i) {
       Point3 p = 10.0 * Vector3::Random();
-      if (std::abs(p.z()) < 1e-3) p.z() += (p.z() >= 0.0 ? 1.0 : -1.0);
+      p.z() = std::abs(p.z()) + 1.0;
       lms[i] = Landmark{p, ids[i]};
     }
     return State(sensor, lms);
@@ -105,8 +105,8 @@ namespace eqvio_test_util {
     std::vector<SOT3> Q(ids.size());
     for (size_t i = 0; i < ids.size(); ++i) {
       const double scale = 2.0 * static_cast<double>(rand()) / RAND_MAX + 1.0;
-      Q[i] =
-          SOT3(SO3::Expmap(Vector3::Random()), std::log(scale));
+      const double yaw = 0.3 * (2.0 * static_cast<double>(rand()) / RAND_MAX - 1.0);
+      Q[i] = SOT3(SO3::Expmap(Vector3(0.0, 0.0, yaw)), std::log(scale));
     }
   
     return makeVioGroup(MakeA(Apose.rotation(), Apose.translation(), w), beta, B,
@@ -140,6 +140,35 @@ namespace eqvio_test_util {
       measurement[id] = camera->project2(p);
     }
     return measurement;
+  }
+
+  inline Vector MeasurementVector(const VisionMeasurement& measurement) {
+    Vector y = Vector::Zero(2 * static_cast<int>(measurement.size()));
+    int i = 0;
+    for (const auto& [id, p] : measurement) {
+      (void)id;
+      y.segment<2>(2 * i) << p.x(), p.y();
+      ++i;
+    }
+    return y;
+  }
+
+  inline Vector MeasurementDifference(const VisionMeasurement& y1,
+                                      const VisionMeasurement& y2) {
+    if (y1.size() != y2.size()) {
+      throw std::invalid_argument("MeasurementDifference: size mismatch");
+    }
+    Vector diff = Vector::Zero(2 * static_cast<int>(y1.size()));
+    int i = 0;
+    for (const auto& [id, p1] : y1) {
+      const auto it = y2.find(id);
+      if (it == y2.end()) {
+        throw std::invalid_argument("MeasurementDifference: id mismatch");
+      }
+      diff.segment<2>(2 * i) << p1.x() - it->second.x(), p1.y() - it->second.y();
+      ++i;
+    }
+    return diff;
   }
   
   inline double LogNorm(const VioGroup& X) { return VioGroup::Logmap(X).norm(); }

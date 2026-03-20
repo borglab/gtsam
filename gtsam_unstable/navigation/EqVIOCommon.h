@@ -9,9 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/// @file EqVIOCommon.h
-/// @brief Common EqVIO math/data types for unstable navigation.
-/// @author Rohan Bansal
+/**
+ * @file EqVIOCommon.h
+ * @brief Common EqVIO math/data types for unstable navigation.
+ * @author Rohan Bansal
+ */
 
 #pragma once
 

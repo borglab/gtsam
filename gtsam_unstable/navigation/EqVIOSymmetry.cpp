@@ -9,9 +9,12 @@
 
  * -------------------------------------------------------------------------- */
 
-/// @file EqVIOSymmetry.cpp
-/// @brief EqVIO symmetry actions and lift helpers.
-/// @author Rohan Bansal
+/**
+ * @file EqVIOSymmetry.cpp
+ * @brief EqVIO symmetry actions and lift helpers.
+ * @author Rohan Bansal
+ */
+
 
 #include <gtsam_unstable/navigation/EqVIOSymmetry.h>
 
@@ -43,6 +46,7 @@ Se23 MakeA(const Rot3& R, const Point3& x0, const Vector3& w) {
   return Se23(R, x);
 }
 
+/// Construct the shortest-arc rotation that maps first vector to second vector.
 Rot3 RotationFromTwoVectors(const Vector3& from, const Vector3& to) {
   gtsam::Quaternion q;
   q.setFromTwoVectors(from, to);
@@ -59,6 +63,7 @@ std::vector<int> QIdsForMeasurement(const VioGroup& X,
   return measurementIds(measurement);
 }
 
+/// Numerical derivative of the state action with respect to group coordinates.
 Matrix NumericalDerivativeActionWrtGroup(
     const std::function<State(const VioGroup&)>& f, const VioGroup& X,
     const State& y0, double h = 1e-6) {
@@ -540,6 +545,7 @@ Vector liftVelocity(const State& state, const IMUInput& velocity) {
   const Vector3 omegaC = U_C.head<3>();
   const Vector3 vC = U_C.tail<3>();
 
+  // Lift the landmark transform velocities
   for (size_t i = 0; i < N; ++i) {
     const Vector3 p = state.cameraLandmarks[i].p;
     Vector4 W;
@@ -574,6 +580,7 @@ VioGroup liftVelocityDiscrete(const State& state, const IMUInput& velocity,
                                         .compose(A_pose.inverse())
                                         .compose(sensor.cameraOffset);
 
+  // Construct the landmark transform velocities
   std::vector<SOT3> q;
   q.resize(state.n());
   for (size_t i = 0; i < state.n(); ++i) {
@@ -622,6 +629,8 @@ State integrateSystemFunction(const State& state, const IMUInput& velocity,
                                         .compose(poseChange.inverse())
                                         .compose(sensor.cameraOffset);
   out.cameraLandmarks.resize(state.n());
+
+  // Transform the body-fixed landmarks
   for (size_t i = 0; i < state.n(); ++i) {
     out.cameraLandmarks[i].p =
         cameraPoseChangeInv.transformFrom(state.cameraLandmarks[i].p);
@@ -632,12 +641,14 @@ State integrateSystemFunction(const State& state, const IMUInput& velocity,
   return out;
 }
 
+/// Predict ideal normalized image measurements from current landmark state.
 VisionMeasurement measureSystemState(
     const State& state, const std::shared_ptr<const CameraModel>& camera) {
   if (!camera) {
     throw std::invalid_argument("measureSystemState: camera model is null");
   }
 
+  // Project each landmark through the camera model
   VisionMeasurement out;
   for (const Landmark& lm : state.cameraLandmarks) {
     out[lm.id] = camera->project2(lm.p);
@@ -757,6 +768,7 @@ State Symmetry::operator()(
     H_xi->block<6, 6>(0, 0).setIdentity();
     H_xi->block<3, 3>(12, 12) = A.rotation().matrix().transpose();
 
+    // Compute the Jacobian of the landmark transform velocities
     for (size_t i = 0; i < xi.n(); ++i) {
       const int row = SensorState::CompDim + 3 * static_cast<int>(i);
       H_xi->block<3, 3>(row, row) =

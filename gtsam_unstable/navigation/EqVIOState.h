@@ -9,9 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/// @file EqVIOState.h
-/// @brief Dynamic EqVIO manifold state.
-/// @author Rohan Bansal
+/**
+ * @file EqVIOState.h
+ * @brief Dynamic EqVIO manifold state.
+ * @author Rohan Bansal
+ */
 
 #pragma once
 
@@ -29,10 +31,18 @@
 namespace gtsam {
 namespace eqvio {
 
+/**
+ * @brief One visual landmark state block.
+ *
+ * Stores a 3D landmark position plus its integer id. The Lie/chart dimension
+ * contribution is 3.
+ */
 struct GTSAM_UNSTABLE_EXPORT Landmark {
   static constexpr int CompDim = 3;
 
+  /// Landmark position in world coordinates.
   Point3 p = Point3::Zero();
+  /// Stable landmark identifier used for ordering/alignment.
   int id = -1;
 
   void print(const std::string& s = "") const;
@@ -44,7 +54,9 @@ struct GTSAM_UNSTABLE_EXPORT SensorState {
 
   Bias inputBias = Bias::Identity();
   Pose3 pose = Pose3::Identity();
+  /// Body/IMU translational velocity in world frame.
   Vector3 velocity = Vector3::Zero();
+  /// Camera pose relative to IMU/body frame.
   Pose3 cameraOffset = Pose3::Identity();
 
   /// Unit gravity direction expressed in the body frame.
@@ -89,6 +101,11 @@ class GTSAM_UNSTABLE_EXPORT State {
 
 }  // namespace eqvio
 
+/**
+ * @brief Traits specialization for State.
+ *
+ * This allows State to be used as a manifold type in GTSAM.
+ */
 template <>
 struct traits<eqvio::State> {
   static constexpr int dimension = Eigen::Dynamic;
