@@ -39,35 +39,6 @@ using namespace gtsam;
 using namespace gtsam::eqvio;
 
 namespace eqvio_test_util {
-  inline Vector MeasurementVector(const VisionMeasurement& measurement) {
-    Vector v = Vector::Zero(static_cast<int>(2 * measurement.size()));
-    int i = 0;
-    for (const auto& item : measurement) {
-      v.segment<2>(2 * i) = item.second;
-      ++i;
-    }
-    return v;
-  }
-
-  inline Vector MeasurementDifference(const VisionMeasurement& lhs,
-                                      const VisionMeasurement& rhs) {
-    if (lhs.size() != rhs.size()) {
-      throw std::invalid_argument("MeasurementDifference: size mismatch");
-    }
-    Vector diff = Vector::Zero(static_cast<int>(2 * lhs.size()));
-    auto itL = lhs.begin();
-    auto itR = rhs.begin();
-    int i = 0;
-    for (; itL != lhs.end(); ++itL, ++itR) {
-      if (itL->first != itR->first) {
-        throw std::invalid_argument("MeasurementDifference: id mismatch");
-      }
-      diff.segment<2>(2 * i) = itL->second - itR->second;
-      ++i;
-    }
-    return diff;
-  }
-
   inline std::shared_ptr<const CameraModel> CreateDefaultCamera() {
     return std::make_shared<CameraModel>(
         Pose3::Identity(), Cal3_S2(450.0, 450.0, 0.0, 400.0, 240.0));
