@@ -24,7 +24,7 @@ TEST(EqVIOFilter, ParityShortSequence) {
 
   EqVIOFilter filter(params);
   auto camera =
-      std::make_shared<VIOCameraModel>(Pose3::Identity(), Cal3_S2(1, 1, 0, 0, 0));
+      std::make_shared<CameraModel>(Pose3::Identity(), Cal3_S2(1, 1, 0, 0, 0));
 
   IMUInput initImu;
   initImu.stamp = 0.0;
@@ -32,7 +32,7 @@ TEST(EqVIOFilter, ParityShortSequence) {
   initImu.acc = Vector3(0.0, 0.0, GRAVITY_CONSTANT);
   filter.initializeFromIMU(initImu);
 
-  VIOState manual = filter.stateEstimate();
+  State manual = filter.stateEstimate();
   double t = 0.01;
   const double dt = 0.01;
   for (int k = 0; k < 8; ++k) {
@@ -51,7 +51,7 @@ TEST(EqVIOFilter, ParityShortSequence) {
     t += dt;
   }
 
-  const VIOState est = filter.stateEstimate();
+  const State est = filter.stateEstimate();
   const Vector eps = manual.localCoordinates(est);
   EXPECT(eps.norm() < 2e-5);
 }

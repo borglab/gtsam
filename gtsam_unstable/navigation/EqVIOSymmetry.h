@@ -28,67 +28,67 @@ namespace gtsam {
 namespace eqvio {
 
 /// Right group action on the sensor-only block.
-GTSAM_UNSTABLE_EXPORT VIOSensorState sensorStateGroupAction(
-    const VIOGroup& X, const VIOSensorState& sensor);
+GTSAM_UNSTABLE_EXPORT SensorState sensorStateGroupAction(
+    const VioGroup& X, const SensorState& sensor);
 /// Right group action on full state.
-GTSAM_UNSTABLE_EXPORT VIOState stateGroupAction(const VIOGroup& X,
-                                                const VIOState& state);
+GTSAM_UNSTABLE_EXPORT State stateGroupAction(const VioGroup& X,
+                                                const State& state);
 /// Right group action on vision measurements.
 GTSAM_UNSTABLE_EXPORT VisionMeasurement outputGroupAction(
-    const VIOGroup& X, const VisionMeasurement& measurement,
-    const std::shared_ptr<const VIOCameraModel>& camera);
+    const VioGroup& X, const VisionMeasurement& measurement,
+    const std::shared_ptr<const CameraModel>& camera);
 
-/// Continuous-time lift map from IMU velocity to VIOGroup tangent.
-GTSAM_UNSTABLE_EXPORT Vector liftVelocity(const VIOState& state,
+/// Continuous-time lift map from IMU velocity to VioGroup tangent.
+GTSAM_UNSTABLE_EXPORT Vector liftVelocity(const State& state,
                                           const IMUInput& velocity);
-/// Discrete-time lift map from IMU velocity to VIOGroup increment.
-GTSAM_UNSTABLE_EXPORT VIOGroup liftVelocityDiscrete(const VIOState& state,
+/// Discrete-time lift map from IMU velocity to VioGroup increment.
+GTSAM_UNSTABLE_EXPORT VioGroup liftVelocityDiscrete(const State& state,
                                                     const IMUInput& velocity,
                                                     double dt);
 
 /// Integrate system dynamics forward by dt.
-GTSAM_UNSTABLE_EXPORT VIOState integrateSystemFunction(
-    const VIOState& state, const IMUInput& velocity, double dt);
+GTSAM_UNSTABLE_EXPORT State integrateSystemFunction(
+    const State& state, const IMUInput& velocity, double dt);
 /// Generate ideal camera measurements from state.
 GTSAM_UNSTABLE_EXPORT VisionMeasurement measureSystemState(
-    const VIOState& state, const std::shared_ptr<const VIOCameraModel>& camera);
+    const State& state, const std::shared_ptr<const CameraModel>& camera);
 
 /// InvDepth EqF coordinate suite and associated matrices/lifts.
 struct GTSAM_UNSTABLE_EXPORT EqFCoordinateSuite {
-  std::function<Vector(const VIOState&, const VIOState&)> stateChart;
-  std::function<VIOState(const Vector&, const VIOState&)> stateChartInv;
-  std::function<Matrix(const VIOGroup&, const VIOState&, const IMUInput&)>
+  std::function<Vector(const State&, const State&)> stateChart;
+  std::function<State(const Vector&, const State&)> stateChartInv;
+  std::function<Matrix(const VioGroup&, const State&, const IMUInput&)>
       stateMatrixA;
-  std::function<Matrix(const VIOGroup&, const VIOState&)> inputMatrixB;
+  std::function<Matrix(const VioGroup&, const State&)> inputMatrixB;
   std::function<Matrix23(const Point3&, const SOT3&,
-                         const std::shared_ptr<const VIOCameraModel>&,
+                         const std::shared_ptr<const CameraModel>&,
                          const Point2&)>
       outputMatrixCiStar;
-  std::function<Vector(const Vector&, const VIOState&)> liftInnovation;
-  std::function<VIOGroup(const Vector&, const VIOState&)> liftInnovationDiscrete;
+  std::function<Vector(const Vector&, const State&)> liftInnovation;
+  std::function<VioGroup(const Vector&, const State&)> liftInnovationDiscrete;
 
-  Matrix outputMatrixC(const VIOState& xi0, const VIOGroup& X,
+  Matrix outputMatrixC(const State& xi0, const VioGroup& X,
                        const VisionMeasurement& y,
-                       const std::shared_ptr<const VIOCameraModel>& camera,
+                       const std::shared_ptr<const CameraModel>& camera,
                        bool useEquivariance = true) const;
 
-  Matrix stateMatrixADiscrete(const VIOGroup& X, const VIOState& xi0,
+  Matrix stateMatrixADiscrete(const VioGroup& X, const State& xi0,
                               const IMUInput& imuVel, double dt) const;
 
   Matrix23 outputMatrixCi(const Point3& q0, const SOT3& QHat,
-                          const std::shared_ptr<const VIOCameraModel>& camera)
+                          const std::shared_ptr<const CameraModel>& camera)
       const;
 };
 
 extern const GTSAM_UNSTABLE_EXPORT EqFCoordinateSuite EqFCoordinateSuite_invdepth;
 
 /// Right action phi(xi, X) = stateGroupAction(X, xi).
-struct GTSAM_UNSTABLE_EXPORT VIOSymmetry
-    : public GroupAction<VIOSymmetry, VIOGroup, VIOState> {
+struct GTSAM_UNSTABLE_EXPORT Symmetry
+    : public GroupAction<Symmetry, VioGroup, State> {
   static constexpr ActionType type = ActionType::Right;
 
   /// Evaluate right action phi(xi, X).
-  VIOState operator()(const VIOState& xi, const VIOGroup& X,
+  State operator()(const State& xi, const VioGroup& X,
                       OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H_xi = {},
                       OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H_X = {})
       const;

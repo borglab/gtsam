@@ -47,16 +47,16 @@ struct GTSAM_UNSTABLE_EXPORT EqVIOFilterParams {
 
 /// Standalone EqVIO filter.
 class GTSAM_UNSTABLE_EXPORT EqVIOFilter
-    : public EquivariantFilter<VIOState, VIOSymmetry> {
+    : public EquivariantFilter<State, Symmetry> {
  public:
-  using Base = EquivariantFilter<VIOState, VIOSymmetry>;
+  using Base = EquivariantFilter<State, Symmetry>;
 
   /// Internal filter state view.
   struct View {
-    VIOState xi0;
-    VIOGroup X = makeVIOGroupIdentity();
+    State xi0;
+    VioGroup X = makeVioGroupIdentity();
     Matrix Sigma =
-        Matrix::Identity(VIOSensorState::CompDim, VIOSensorState::CompDim);
+        Matrix::Identity(SensorState::CompDim, SensorState::CompDim);
   };
 
  private:
@@ -67,13 +67,13 @@ class GTSAM_UNSTABLE_EXPORT EqVIOFilter
  public:
   EqVIOFilter();
   explicit EqVIOFilter(const EqVIOFilterParams& params);
-  EqVIOFilter(const VIOState& xi0, const Matrix& Sigma0,
+  EqVIOFilter(const State& xi0, const Matrix& Sigma0,
               const EqVIOFilterParams& params);
 
   /// Initialize orientation from gravity in the first IMU sample.
   void initializeFromIMU(const IMUInput& imu);
   /// Set manifold reference/origin and covariance.
-  void setReferenceState(const VIOState& xi0, const Matrix& Sigma0);
+  void setReferenceState(const State& xi0, const Matrix& Sigma0);
 
   /// Propagate observer by one IMU hold over `dt`.
   void propagate(const IMUInput& imu, double dt);
@@ -83,11 +83,11 @@ class GTSAM_UNSTABLE_EXPORT EqVIOFilter
   void propagateState(const IMUInput& imu, double dt);
   /// Apply one visual correction at current observer time.
   void correct(const VisionMeasurement& measurement,
-               const std::shared_ptr<const VIOCameraModel>& camera,
+               const std::shared_ptr<const CameraModel>& camera,
                const Matrix& R = Matrix());
 
   /// Current full state estimate.
-  VIOState stateEstimate() const;
+  State stateEstimate() const;
   /// True after IMU-based initialization.
   bool isInitialized() const { return initialized_; }
   /// Access internal reference/group/covariance state.
@@ -103,22 +103,22 @@ class GTSAM_UNSTABLE_EXPORT EqVIOFilter
   double getMedianSceneDepth() const;
 
   void addNewLandmarks(const VisionMeasurement& measurement,
-                       const std::shared_ptr<const VIOCameraModel>& camera);
+                       const std::shared_ptr<const CameraModel>& camera);
   void addLandmarksInternal(std::vector<Landmark>& newLandmarks,
                             const Matrix& newLandmarkCov);
   void removeLandmarkByIndex(int idx);
   void removeLandmarkById(int id);
   void removeOldLandmarks(const std::vector<int>& measurementIds);
   void removeOutliers(VisionMeasurement& measurement,
-                      const std::shared_ptr<const VIOCameraModel>& camera);
+                      const std::shared_ptr<const CameraModel>& camera);
   void removeInvalidLandmarksNow();
   Matrix3 getLandmarkCovById(int id) const;
   Matrix2 outputCovarianceById(
       int id, const Point2& y,
-      const std::shared_ptr<const VIOCameraModel>& camera) const;
+      const std::shared_ptr<const CameraModel>& camera) const;
 
   void update(const VisionMeasurement& measurement,
-              const std::shared_ptr<const VIOCameraModel>& camera,
+              const std::shared_ptr<const CameraModel>& camera,
               const Matrix& outputGainMatrix);
 };
 

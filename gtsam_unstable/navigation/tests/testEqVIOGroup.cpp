@@ -86,8 +86,8 @@ void testChartDerivativesN(TestResult& result_, const std::string& name_,
       H2));
 }
 
-using SE23 = VIOSE23;
-using LandmarkGroup = VIOLandmarkGroup;
+using SE23 = Se23;
+using LandmarkGroup = LandmarkGroup;
 
 const Rot3 kR1 = Rot3::RzRyRx(0.1, -0.2, 0.3);
 const Rot3 kR2 = Rot3::RzRyRx(-0.3, 0.2, -0.1);
@@ -102,8 +102,8 @@ const SE23::Matrix3K kX2 =
 const SE23 kA1(kR1, kX1);
 const SE23 kA2(kR2, kX2);
 
-const VIOBias kBeta1(Vector3(-0.4, 0.2, 0.05), Vector3(0.1, -0.2, 0.3));
-const VIOBias kBeta2(Vector3(0.2, -0.15, 0.07), Vector3(-0.05, 0.3, -0.1));
+const Bias kBeta1(Vector3(-0.4, 0.2, 0.05), Vector3(0.1, -0.2, 0.3));
+const Bias kBeta2(Vector3(0.2, -0.15, 0.07), Vector3(-0.05, 0.3, -0.1));
 
 const Pose3 kB1(kR3, Point3(0.2, -0.5, 1.1));
 const Pose3 kB2(kR4, Point3(-0.6, 0.7, 0.3));
@@ -127,12 +127,12 @@ LandmarkGroup MakeQ1B() { return LandmarkGroup({kQ2}); }
 LandmarkGroup MakeQ3A() { return LandmarkGroup({kQ1, kQ2, kQ3}); }
 LandmarkGroup MakeQ3B() { return LandmarkGroup({kQ4, kQ5, kQ6}); }
 
-VIOGroup MakeG0() { return makeVIOGroup(kA1, kBeta1, kB1, MakeQ0()); }
-VIOGroup MakeG0b() { return makeVIOGroup(kA2, kBeta2, kB2, MakeQ0()); }
-VIOGroup MakeG1() { return makeVIOGroup(kA1, kBeta1, kB1, MakeQ1A()); }
-VIOGroup MakeG1b() { return makeVIOGroup(kA2, kBeta2, kB2, MakeQ1B()); }
-VIOGroup MakeG3() { return makeVIOGroup(kA1, kBeta1, kB1, MakeQ3A()); }
-VIOGroup MakeG3b() { return makeVIOGroup(kA2, kBeta2, kB2, MakeQ3B()); }
+VioGroup MakeG0() { return makeVioGroup(kA1, kBeta1, kB1, MakeQ0()); }
+VioGroup MakeG0b() { return makeVioGroup(kA2, kBeta2, kB2, MakeQ0()); }
+VioGroup MakeG1() { return makeVioGroup(kA1, kBeta1, kB1, MakeQ1A()); }
+VioGroup MakeG1b() { return makeVioGroup(kA2, kBeta2, kB2, MakeQ1B()); }
+VioGroup MakeG3() { return makeVioGroup(kA1, kBeta1, kB1, MakeQ3A()); }
+VioGroup MakeG3b() { return makeVioGroup(kA2, kBeta2, kB2, MakeQ3B()); }
 
 Vector Xi0() {
   return (Vector(21) << 0.05, -0.04, 0.03, 0.2, -0.1, 0.15, -0.05, 0.07,
@@ -156,25 +156,25 @@ Vector Xi3() {
 
 }  // namespace
 
-// Verifies VIOGroup satisfies the required concept checks.
-TEST(VIOGroup, Concept) {
-  GTSAM_CONCEPT_ASSERT(IsGroup<VIOGroup>);
-  GTSAM_CONCEPT_ASSERT(IsManifold<VIOGroup>);
-  GTSAM_CONCEPT_ASSERT(IsLieGroup<VIOGroup>);
-  GTSAM_CONCEPT_ASSERT(IsTestable<VIOGroup>);
+// Verifies VioGroup satisfies the required concept checks.
+TEST(VioGroup, Concept) {
+  GTSAM_CONCEPT_ASSERT(IsGroup<VioGroup>);
+  GTSAM_CONCEPT_ASSERT(IsManifold<VioGroup>);
+  GTSAM_CONCEPT_ASSERT(IsLieGroup<VioGroup>);
+  GTSAM_CONCEPT_ASSERT(IsTestable<VioGroup>);
 }
 
 // Verifies identity sizing and factor accessors.
-TEST(VIOGroup, ConstructorsAndAccessors) {
-  const VIOGroup empty = makeVIOGroupIdentity();
+TEST(VioGroup, ConstructorsAndAccessors) {
+  const VioGroup empty = makeVioGroupIdentity();
   EXPECT_LONGS_EQUAL(0, N_landmarkCount(empty));
   EXPECT_LONGS_EQUAL(21, Dim_groupTangent(empty));
 
-  const VIOGroup identity3 = makeVIOGroupIdentity(3);
+  const VioGroup identity3 = makeVioGroupIdentity(3);
   EXPECT_LONGS_EQUAL(3, N_landmarkCount(identity3));
   EXPECT_LONGS_EQUAL(33, Dim_groupTangent(identity3));
 
-  const VIOGroup g = MakeG3();
+  const VioGroup g = MakeG3();
   EXPECT(assert_equal(kA1, A_sensorKinematics(g)));
   EXPECT(assert_equal(kBeta1.vector(), Beta_biasOffset(g).vector()));
   EXPECT(assert_equal(kB1, B_cameraExtrinsics(g)));
@@ -182,10 +182,10 @@ TEST(VIOGroup, ConstructorsAndAccessors) {
 }
 
 // Verifies compose, between, and inverse behavior.
-TEST(VIOGroup, GroupOperations) {
-  const VIOGroup g1 = MakeG3();
-  const VIOGroup g2 = MakeG3b();
-  const VIOGroup composed = g1.compose(g2);
+TEST(VioGroup, GroupOperations) {
+  const VioGroup g1 = MakeG3();
+  const VioGroup g2 = MakeG3b();
+  const VioGroup composed = g1.compose(g2);
 
   EXPECT(assert_equal(A_sensorKinematics(g1).compose(A_sensorKinematics(g2)),
                       A_sensorKinematics(composed)));
@@ -196,37 +196,37 @@ TEST(VIOGroup, GroupOperations) {
   EXPECT(assert_equal(Q_landmarkTransforms(g1).compose(Q_landmarkTransforms(g2)),
                       Q_landmarkTransforms(composed)));
 
-  const VIOGroup between = g1.between(g2);
+  const VioGroup between = g1.between(g2);
   EXPECT(assert_equal(g1.inverse() * g2, between));
-  EXPECT(assert_equal(makeVIOGroupIdentity(3), g1.compose(g1.inverse())));
+  EXPECT(assert_equal(makeVioGroupIdentity(3), g1.compose(g1.inverse())));
 }
 
 // Verifies Expmap/Logmap round-trip and adjoint consistency.
-TEST(VIOGroup, ExpmapLogmapAndAdjoint) {
+TEST(VioGroup, ExpmapLogmapAndAdjoint) {
   const Vector xi0 = Xi0();
   const Vector xi1 = Xi1();
   const Vector xi3 = Xi3();
 
-  const VIOGroup g0 = VIOGroup::Expmap(xi0);
-  const VIOGroup g1 = VIOGroup::Expmap(xi1);
-  const VIOGroup g3 = VIOGroup::Expmap(xi3);
+  const VioGroup g0 = VioGroup::Expmap(xi0);
+  const VioGroup g1 = VioGroup::Expmap(xi1);
+  const VioGroup g3 = VioGroup::Expmap(xi3);
 
-  EXPECT(assert_equal(xi0, VIOGroup::Logmap(g0), 1e-9));
-  EXPECT(assert_equal(xi1, VIOGroup::Logmap(g1), 1e-9));
-  EXPECT(assert_equal(xi3, VIOGroup::Logmap(g3), 1e-9));
+  EXPECT(assert_equal(xi0, VioGroup::Logmap(g0), 1e-9));
+  EXPECT(assert_equal(xi1, VioGroup::Logmap(g1), 1e-9));
+  EXPECT(assert_equal(xi3, VioGroup::Logmap(g3), 1e-9));
 
-  VIOGroup core(VIOSensorCore(A_sensorKinematics(g3), Beta_biasOffset(g3)),
-                VIOLandmarkCore(B_cameraExtrinsics(g3),
+  VioGroup core(SensorCore(A_sensorKinematics(g3), Beta_biasOffset(g3)),
+                LandmarkCore(B_cameraExtrinsics(g3),
                                 Q_landmarkTransforms(g3)));
   EXPECT(assert_equal(core.AdjointMap(), g3.AdjointMap(), 1e-9));
 }
 
 // Verifies Lie and chart derivatives for n=0 landmarks.
-TEST(VIOGroup, DerivativesN0) {
+TEST(VioGroup, DerivativesN0) {
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
-  const VIOGroup id = makeVIOGroupIdentity();
-  const VIOGroup g = MakeG0();
-  const VIOGroup h = MakeG0b();
+  const VioGroup id = makeVioGroupIdentity();
+  const VioGroup g = MakeG0();
+  const VioGroup h = MakeG0b();
 
   testLieGroupDerivativesN<21>(result_, name_, id, g);
   testLieGroupDerivativesN<21>(result_, name_, g, h);
@@ -238,11 +238,11 @@ TEST(VIOGroup, DerivativesN0) {
 }
 
 // Verifies Lie and chart derivatives for n=1 landmark.
-TEST(VIOGroup, DerivativesN1) {
+TEST(VioGroup, DerivativesN1) {
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
-  const VIOGroup id = makeVIOGroupIdentity(1);
-  const VIOGroup g = MakeG1();
-  const VIOGroup h = MakeG1b();
+  const VioGroup id = makeVioGroupIdentity(1);
+  const VioGroup g = MakeG1();
+  const VioGroup h = MakeG1b();
 
   testLieGroupDerivativesN<25>(result_, name_, id, g);
   testLieGroupDerivativesN<25>(result_, name_, g, h);
@@ -254,11 +254,11 @@ TEST(VIOGroup, DerivativesN1) {
 }
 
 // Verifies Lie and chart derivatives for n=3 landmarks.
-TEST(VIOGroup, DerivativesN3) {
+TEST(VioGroup, DerivativesN3) {
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
-  const VIOGroup id = makeVIOGroupIdentity(3);
-  const VIOGroup g = MakeG3();
-  const VIOGroup h = MakeG3b();
+  const VioGroup id = makeVioGroupIdentity(3);
+  const VioGroup g = MakeG3();
+  const VioGroup h = MakeG3b();
 
   testLieGroupDerivativesN<33>(result_, name_, id, g);
   testLieGroupDerivativesN<33>(result_, name_, g, h);

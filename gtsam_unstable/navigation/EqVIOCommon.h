@@ -44,12 +44,12 @@ namespace eqvio {
 
 using SOT3 = ProductLieGroup<SO3, double>;
 
-using VIOSE23 = ExtendedPose3<2>;
-using VIOBias = imuBias::ConstantBias;
-using VIOLandmarkGroup = PowerLieGroup<SOT3, Eigen::Dynamic>;
-using VIOSensorCore = ProductLieGroup<VIOSE23, VIOBias>;
-using VIOLandmarkCore = ProductLieGroup<Pose3, VIOLandmarkGroup>;
-using VIOGroup = ProductLieGroup<VIOSensorCore, VIOLandmarkCore>;
+using Se23 = ExtendedPose3<2>;
+using Bias = imuBias::ConstantBias;
+using LandmarkGroup = PowerLieGroup<SOT3, Eigen::Dynamic>;
+using SensorCore = ProductLieGroup<Se23, Bias>;
+using LandmarkCore = ProductLieGroup<Pose3, LandmarkGroup>;
+using VioGroup = ProductLieGroup<SensorCore, LandmarkCore>;
 
 /// Approximate gravitational acceleration magnitude in m/s^2.
 constexpr double GRAVITY_CONSTANT = 9.80665;
@@ -114,7 +114,7 @@ struct GTSAM_UNSTABLE_EXPORT IMUInput {
   }
 
   /// Subtract a ConstantBias from [gyr, acc].
-  IMUInput operator-(const VIOBias& bias) const {
+  IMUInput operator-(const Bias& bias) const {
     IMUInput out(*this);
     out.gyr -= bias.gyroscope();
     out.acc -= bias.accelerometer();
@@ -132,17 +132,42 @@ struct GTSAM_UNSTABLE_EXPORT IMUInput {
   }
 };
 
-/// EqVIO camera model.
-using VIOCameraModel = PinholeCamera<Cal3_S2>;
+/**
+ * @brief Camera model used by EqVIO measurement functions.
+ *
+ * We reuse GTSAM's existing `PinholeCamera<Cal3_S2>` instead of defining a new
+ * camera class here.
+ *
+ * More general camera models (distortion, fisheye, etc.) are intentionally not
+ * used here because EqVIO also needs:
+ * 1. an explicit "undistort to normalized bearing" operation, and
+ * 2. a closed-form projection Jacobian with respect to the 3D ray.
+ * Those operations are model-specific for non-pinhole cameras and would add
+ * extra branches and conversion code.
+ */
+using CameraModel = PinholeCamera<Cal3_S2>;
 
-/// Convert image coordinates to an undistorted 3D bearing-like vector.
-inline Vector3 undistortPoint(const VIOCameraModel& camera, const Point2& y) {
+/**
+ * @brief Convert image coordinates into a normalized bearing-like vector.
+ *
+ * For `Cal3_S2`, calibration inversion maps pixel coordinates to normalized
+ * image coordinates `(x/z, y/z)`. EqVIO represents this as a 3D direction-like
+ * vector `[x/z, y/z, 1]`.
+ */
+inline Vector3 undistortPoint(const CameraModel& camera, const Point2& y) {
   const Point2 p = camera.calibration().calibrate(y);
   return Vector3(p.x(), p.y(), 1.0);
 }
 
-/// Projection Jacobian with respect to the input 3D vector.
-inline Matrix23 projectionJacobian(const VIOCameraModel& camera, const Vector3& y) {
+/**
+ * @brief Jacobian of pixel projection with respect to a camera-frame 3D point.
+ *
+ * This returns `d pi(y) / d y` for the `Cal3_S2` pinhole projection used by
+ * EqVIO's linearized output model.
+ *
+ * @throws std::invalid_argument if `y.z()` is numerically near zero.
+ */
+inline Matrix23 projectionJacobian(const CameraModel& camera, const Vector3& y) {
   if (std::abs(y.z()) < 1e-12) {
     throw std::invalid_argument("projectionJacobian: z is near zero");
   }
@@ -192,41 +217,41 @@ inline void removeCols(Matrix& mat, int startCol, int numCols) {
   mat.conservativeResize(Eigen::NoChange, cols - numCols);
 }
 
-/// Readable accessors for the composed ProductLieGroup VIOGroup.
-inline const VIOSE23& A_sensorKinematics(const VIOGroup& X) {
+/// Readable accessors for the composed ProductLieGroup VioGroup.
+inline const Se23& A_sensorKinematics(const VioGroup& X) {
   return X.first.first;
 }
 
-inline const VIOBias& Beta_biasOffset(const VIOGroup& X) {
+inline const Bias& Beta_biasOffset(const VioGroup& X) {
   return X.first.second;
 }
 
-inline const Pose3& B_cameraExtrinsics(const VIOGroup& X) {
+inline const Pose3& B_cameraExtrinsics(const VioGroup& X) {
   return X.second.first;
 }
 
-inline const VIOLandmarkGroup& Q_landmarkTransforms(const VIOGroup& X) {
+inline const LandmarkGroup& Q_landmarkTransforms(const VioGroup& X) {
   return X.second.second;
 }
 
-inline size_t N_landmarkCount(const VIOGroup& X) {
+inline size_t N_landmarkCount(const VioGroup& X) {
   return Q_landmarkTransforms(X).size();
 }
-inline size_t Dim_groupTangent(const VIOGroup& X) {
+inline size_t Dim_groupTangent(const VioGroup& X) {
   return 21 + 4 * N_landmarkCount(X);
 }
 
-inline VIOGroup makeVIOGroup(const VIOSE23& sensor_kinematics,
-                             const VIOBias& bias_offset,
+inline VioGroup makeVioGroup(const Se23& sensor_kinematics,
+                             const Bias& bias_offset,
                              const Pose3& camera_extrinsics,
-                             const VIOLandmarkGroup& landmark_transforms) {
-  return VIOGroup(VIOSensorCore(sensor_kinematics, bias_offset),
-                  VIOLandmarkCore(camera_extrinsics, landmark_transforms));
+                             const LandmarkGroup& landmark_transforms) {
+  return VioGroup(SensorCore(sensor_kinematics, bias_offset),
+                  LandmarkCore(camera_extrinsics, landmark_transforms));
 }
 
-inline VIOGroup makeVIOGroupIdentity(size_t n = 0) {
-  return makeVIOGroup(VIOSE23::Identity(), VIOBias::Identity(), Pose3::Identity(),
-                      VIOLandmarkGroup(n));
+inline VioGroup makeVioGroupIdentity(size_t n = 0) {
+  return makeVioGroup(Se23::Identity(), Bias::Identity(), Pose3::Identity(),
+                      LandmarkGroup(n));
 }
 
 }  // namespace eqvio
@@ -236,8 +261,8 @@ inline VIOGroup makeVIOGroupIdentity(size_t n = 0) {
 namespace gtsam {
 
 template <size_t I>
-inline decltype(auto) get(eqvio::VIOGroup& X) {
-  static_assert(I < 4, "VIOGroup index out of range");
+inline decltype(auto) get(eqvio::VioGroup& X) {
+  static_assert(I < 4, "VioGroup index out of range");
   if constexpr (I == 0) {
     return (X.first.first);
   } else if constexpr (I == 1) {
@@ -250,8 +275,8 @@ inline decltype(auto) get(eqvio::VIOGroup& X) {
 }
 
 template <size_t I>
-inline decltype(auto) get(const eqvio::VIOGroup& X) {
-  static_assert(I < 4, "VIOGroup index out of range");
+inline decltype(auto) get(const eqvio::VioGroup& X) {
+  static_assert(I < 4, "VioGroup index out of range");
   if constexpr (I == 0) {
     return (X.first.first);
   } else if constexpr (I == 1) {
@@ -268,26 +293,26 @@ inline decltype(auto) get(const eqvio::VIOGroup& X) {
 namespace std {
 
 template <>
-struct tuple_size<gtsam::eqvio::VIOGroup> : std::integral_constant<size_t, 4> {};
+struct tuple_size<gtsam::eqvio::VioGroup> : std::integral_constant<size_t, 4> {};
 
 template <>
-struct tuple_element<0, gtsam::eqvio::VIOGroup> {
-  using type = gtsam::eqvio::VIOSE23;
+struct tuple_element<0, gtsam::eqvio::VioGroup> {
+  using type = gtsam::eqvio::Se23;
 };
 
 template <>
-struct tuple_element<1, gtsam::eqvio::VIOGroup> {
-  using type = gtsam::eqvio::VIOBias;
+struct tuple_element<1, gtsam::eqvio::VioGroup> {
+  using type = gtsam::eqvio::Bias;
 };
 
 template <>
-struct tuple_element<2, gtsam::eqvio::VIOGroup> {
+struct tuple_element<2, gtsam::eqvio::VioGroup> {
   using type = gtsam::Pose3;
 };
 
 template <>
-struct tuple_element<3, gtsam::eqvio::VIOGroup> {
-  using type = gtsam::eqvio::VIOLandmarkGroup;
+struct tuple_element<3, gtsam::eqvio::VioGroup> {
+  using type = gtsam::eqvio::LandmarkGroup;
 };
 
 }  // namespace std

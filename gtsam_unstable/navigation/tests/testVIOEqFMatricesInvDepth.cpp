@@ -28,16 +28,16 @@ using namespace gtsam::eqvio;
 
 namespace {
 
-VIOSE23 MakeA(const Rot3& R, const Point3& t, const Vector3& w) {
-  VIOSE23::Matrix3K x;
+Se23 MakeA(const Rot3& R, const Point3& t, const Vector3& w) {
+  Se23::Matrix3K x;
   x.col(0) = t;
   x.col(1) = w;
-  return VIOSE23(R, x);
+  return Se23(R, x);
 }
 
-VIOSensorState SensorFixture() {
-  VIOSensorState s;
-  s.inputBias = VIOBias(
+SensorState SensorFixture() {
+  SensorState s;
+  s.inputBias = Bias(
       (Vector3() << 0.01, -0.02, 0.03).finished(),
       (Vector3() << 0.04, -0.01, 0.02).finished());
   s.pose = Pose3(Rot3::RzRyRx(0.1, -0.05, 0.2), Point3(0.3, -0.4, 1.2));
@@ -47,41 +47,41 @@ VIOSensorState SensorFixture() {
   return s;
 }
 
-VIOState State0() { return VIOState(SensorFixture(), {}); }
-VIOState State1() { return VIOState(SensorFixture(), {{Point3(0.8, -0.2, 4.5), 11}}); }
-VIOState State3() {
-  return VIOState(SensorFixture(),
+State State0() { return State(SensorFixture(), {}); }
+State State1() { return State(SensorFixture(), {{Point3(0.8, -0.2, 4.5), 11}}); }
+State State3() {
+  return State(SensorFixture(),
                   {{Point3(0.8, -0.2, 4.5), 11},
                    {Point3(-0.6, 0.3, 3.8), 22},
                    {Point3(0.1, 0.7, 5.2), 33}});
 }
 
-VIOGroup Group0() { return makeVIOGroupIdentity(0); }
-VIOGroup Group1() {
+VioGroup Group0() { return makeVioGroupIdentity(0); }
+VioGroup Group1() {
   const SOT3 q1(SO3::Expmap((Vector3() << 0.02, -0.01, 0.03).finished()),
                 std::log(1.1));
-  return makeVIOGroup(
+  return makeVioGroup(
       MakeA(Rot3::RzRyRx(0.03, -0.02, 0.01), Point3(0.05, -0.01, 0.02),
             Vector3(0.01, -0.02, 0.03)),
-      VIOBias((Vector3() << 0.01, 0.0, -0.01).finished(),
+      Bias((Vector3() << 0.01, 0.0, -0.01).finished(),
               (Vector3() << 0.02, -0.01, 0.03).finished()),
       Pose3(Rot3::RzRyRx(-0.01, 0.02, -0.03), Point3(0.02, 0.01, -0.01)),
-      VIOLandmarkGroup({q1}));
+      LandmarkGroup({q1}));
 }
-VIOGroup Group3() {
+VioGroup Group3() {
   const SOT3 q1(SO3::Expmap((Vector3() << 0.02, -0.01, 0.03).finished()),
                 std::log(1.1));
   const SOT3 q2(SO3::Expmap((Vector3() << -0.01, 0.03, -0.02).finished()),
                 std::log(0.95));
   const SOT3 q3(SO3::Expmap((Vector3() << 0.01, 0.02, 0.01).finished()),
                 std::log(1.05));
-  return makeVIOGroup(
+  return makeVioGroup(
       MakeA(Rot3::RzRyRx(0.03, -0.02, 0.01), Point3(0.05, -0.01, 0.02),
             Vector3(0.01, -0.02, 0.03)),
-      VIOBias((Vector3() << 0.01, 0.0, -0.01).finished(),
+      Bias((Vector3() << 0.01, 0.0, -0.01).finished(),
               (Vector3() << 0.02, -0.01, 0.03).finished()),
       Pose3(Rot3::RzRyRx(-0.01, 0.02, -0.03), Point3(0.02, 0.01, -0.01)),
-      VIOLandmarkGroup({q1, q2, q3}));
+      LandmarkGroup({q1, q2, q3}));
 }
 
 IMUInput ImuFixture() {
@@ -106,15 +106,15 @@ TEST(VIOEqFMatricesInvDepth, Selector) {
 //******************************************************************************
 TEST(VIOEqFMatricesInvDepth, ShapesAndFinite) {
   const auto camera =
-      std::make_shared<VIOCameraModel>(Pose3::Identity(), Cal3_S2(1, 1, 0, 0, 0));
+      std::make_shared<CameraModel>(Pose3::Identity(), Cal3_S2(1, 1, 0, 0, 0));
   const EqFCoordinateSuite& suite = EqFCoordinateSuite_invdepth;
 
   for (const auto& pair :
-       std::vector<std::pair<VIOState, VIOGroup>>{{State0(), Group0()},
+       std::vector<std::pair<State, VioGroup>>{{State0(), Group0()},
                                                    {State1(), Group1()},
                                                    {State3(), Group3()}}) {
-    const VIOState& xi0 = pair.first;
-    const VIOGroup& X = pair.second;
+    const State& xi0 = pair.first;
+    const VioGroup& X = pair.second;
     const IMUInput imu = ImuFixture();
     const VisionMeasurement y =
         measureSystemState(stateGroupAction(X, xi0), camera);
@@ -140,9 +140,9 @@ TEST(VIOEqFMatricesInvDepth, ShapesAndFinite) {
 TEST(VIOEqFMatricesInvDepth, StateChartRoundTrip) {
   const EqFCoordinateSuite& suite = EqFCoordinateSuite_invdepth;
 
-  for (const VIOState& xi0 : std::vector<VIOState>{State1(), State3()}) {
+  for (const State& xi0 : std::vector<State>{State1(), State3()}) {
     const Vector eps = Vector::LinSpaced(xi0.dim(), -1e-3, 1e-3);
-    const VIOState xi = suite.stateChartInv(eps, xi0);
+    const State xi = suite.stateChartInv(eps, xi0);
     const Vector epsRecovered = suite.stateChart(xi, xi0);
     EXPECT(assert_equal(eps, epsRecovered, 1e-8));
   }
@@ -152,8 +152,8 @@ TEST(VIOEqFMatricesInvDepth, StateChartRoundTrip) {
 TEST(VIOEqFMatricesInvDepth, SmallStepDiscreteConsistency) {
   const EqFCoordinateSuite& suite = EqFCoordinateSuite_invdepth;
 
-  const VIOState xi0 = State3();
-  const VIOGroup X = Group3();
+  const State xi0 = State3();
+  const VioGroup X = Group3();
   const IMUInput imu = ImuFixture();
 
   const double dt = 1e-6;
@@ -168,12 +168,12 @@ TEST(VIOEqFMatricesInvDepth, SmallStepDiscreteConsistency) {
 TEST(VIOEqFMatricesInvDepth, InnovationLiftConsistency) {
   const EqFCoordinateSuite& suite = EqFCoordinateSuite_invdepth;
 
-  for (const VIOState& xi0 : std::vector<VIOState>{State1(), State3()}) {
+  for (const State& xi0 : std::vector<State>{State1(), State3()}) {
     const Vector gamma = Vector::LinSpaced(xi0.dim(), -0.1, 0.1);
     const double eps = 1e-3;
     const Vector lift = suite.liftInnovation(eps * gamma, xi0);
-    const VIOGroup dCont = VIOGroup::Expmap(lift);
-    const VIOGroup dDisc = suite.liftInnovationDiscrete(eps * gamma, xi0);
+    const VioGroup dCont = VioGroup::Expmap(lift);
+    const VioGroup dDisc = suite.liftInnovationDiscrete(eps * gamma, xi0);
 
     const Vector err = dCont.localCoordinates(dDisc);
     EXPECT(err.norm() < 5e-3);

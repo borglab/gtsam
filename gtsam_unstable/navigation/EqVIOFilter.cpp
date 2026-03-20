@@ -63,31 +63,31 @@ Vector measurementDifference(const VisionMeasurement& lhs,
 EqVIOFilter::EqVIOFilter() : EqVIOFilter(EqVIOFilterParams()) {}
 
 EqVIOFilter::EqVIOFilter(const EqVIOFilterParams& params)
-    : Base(VIOState(), defaultCovariance(0), makeVIOGroupIdentity()),
+    : Base(State(), defaultCovariance(0), makeVioGroupIdentity()),
       params_(params) {
-  view_.xi0 = VIOState();
-  view_.xi0.sensor.inputBias = VIOBias::Identity();
+  view_.xi0 = State();
+  view_.xi0.sensor.inputBias = Bias::Identity();
   view_.xi0.sensor.pose = Pose3::Identity();
   view_.xi0.sensor.velocity.setZero();
   view_.xi0.sensor.cameraOffset = Pose3::Identity();
-  view_.X = makeVIOGroupIdentity();
+  view_.X = makeVioGroupIdentity();
   view_.Sigma = defaultCovariance(0);
   syncBase(true);
 }
 
-EqVIOFilter::EqVIOFilter(const VIOState& xi0, const Matrix& Sigma0,
+EqVIOFilter::EqVIOFilter(const State& xi0, const Matrix& Sigma0,
                          const EqVIOFilterParams& params)
-    : Base(VIOState(), defaultCovariance(0), makeVIOGroupIdentity()),
+    : Base(State(), defaultCovariance(0), makeVioGroupIdentity()),
       params_(params) {
   view_.xi0 = xi0;
-  view_.X = makeVIOGroupIdentity(view_.xi0.n());
+  view_.X = makeVioGroupIdentity(view_.xi0.n());
   view_.Sigma = Sigma0;
   initialized_ = true;
   syncBase(true);
 }
 
 void EqVIOFilter::initializeFromIMU(const IMUInput& imu) {
-  view_.xi0.sensor.inputBias = VIOBias::Identity();
+  view_.xi0.sensor.inputBias = Bias::Identity();
   view_.xi0.sensor.pose = Pose3::Identity();
   view_.xi0.sensor.velocity.setZero();
 
@@ -102,13 +102,13 @@ void EqVIOFilter::initializeFromIMU(const IMUInput& imu) {
   syncBase(true);
 }
 
-void EqVIOFilter::setReferenceState(const VIOState& xi0, const Matrix& Sigma0) {
+void EqVIOFilter::setReferenceState(const State& xi0, const Matrix& Sigma0) {
   if (Sigma0.rows() != xi0.dim() || Sigma0.cols() != xi0.dim()) {
     throw std::invalid_argument(
         "EqVIOFilter::setReferenceState: covariance dimension mismatch");
   }
   view_.xi0 = xi0;
-  view_.X = makeVIOGroupIdentity(xi0.n());
+  view_.X = makeVioGroupIdentity(xi0.n());
   view_.Sigma = Sigma0;
   syncBase(true);
 }
@@ -137,8 +137,8 @@ void EqVIOFilter::propagateState(const IMUInput& imu, double dt) {
   if (!initialized_ || dt <= 0.0) {
     return;
   }
-  auto liftFunctor = [imu, dt](const VIOState& xi) -> Vector {
-    return (VIOGroup::Logmap(liftVelocityDiscrete(xi, imu, dt)) / dt).eval();
+  auto liftFunctor = [imu, dt](const State& xi) -> Vector {
+    return (VioGroup::Logmap(liftVelocityDiscrete(xi, imu, dt)) / dt).eval();
   };
   const Matrix A = Matrix::Zero(view_.xi0.dim(), view_.xi0.dim());
   const Matrix Qc = Matrix::Zero(view_.xi0.dim(), view_.xi0.dim());
@@ -147,7 +147,7 @@ void EqVIOFilter::propagateState(const IMUInput& imu, double dt) {
 }
 
 void EqVIOFilter::correct(const VisionMeasurement& measurement,
-                          const std::shared_ptr<const VIOCameraModel>& camera,
+                          const std::shared_ptr<const CameraModel>& camera,
                           const Matrix& R) {
   if (!initialized_) {
     return;
@@ -172,12 +172,12 @@ void EqVIOFilter::correct(const VisionMeasurement& measurement,
   assert(!view_.Sigma.hasNaN());
 }
 
-VIOState EqVIOFilter::stateEstimate() const {
+State EqVIOFilter::stateEstimate() const {
   return stateGroupAction(view_.X, view_.xi0);
 }
 
 Matrix EqVIOFilter::defaultCovariance(size_t nLandmarks) {
-  const int d = VIOSensorState::CompDim + 3 * static_cast<int>(nLandmarks);
+  const int d = SensorState::CompDim + 3 * static_cast<int>(nLandmarks);
   return Matrix::Identity(d, d);
 }
 
@@ -198,8 +198,8 @@ void EqVIOFilter::syncFromBase() {
 
 Matrix EqVIOFilter::stateProcessNoise(size_t nLandmarks) const {
   Matrix Q = Matrix::Identity(
-      VIOSensorState::CompDim + 3 * static_cast<int>(nLandmarks),
-      VIOSensorState::CompDim + 3 * static_cast<int>(nLandmarks));
+      SensorState::CompDim + 3 * static_cast<int>(nLandmarks),
+      SensorState::CompDim + 3 * static_cast<int>(nLandmarks));
   Q.block<3, 3>(0, 0) *= params_.biasOmegaProcessVariance;
   Q.block<3, 3>(3, 3) *= params_.biasAccelProcessVariance;
   Q.block<3, 3>(6, 6) *= params_.attitudeProcessVariance;
@@ -208,7 +208,7 @@ Matrix EqVIOFilter::stateProcessNoise(size_t nLandmarks) const {
   Q.block<3, 3>(15, 15) *= params_.cameraAttitudeProcessVariance;
   Q.block<3, 3>(18, 18) *= params_.cameraPositionProcessVariance;
   if (nLandmarks > 0) {
-    Q.block(VIOSensorState::CompDim, VIOSensorState::CompDim,
+    Q.block(SensorState::CompDim, SensorState::CompDim,
             3 * static_cast<int>(nLandmarks), 3 * static_cast<int>(nLandmarks)) *=
         params_.pointProcessVariance;
   }
@@ -217,7 +217,7 @@ Matrix EqVIOFilter::stateProcessNoise(size_t nLandmarks) const {
 
 void EqVIOFilter::addNewLandmarks(
     const VisionMeasurement& measurement,
-    const std::shared_ptr<const VIOCameraModel>& camera) {
+    const std::shared_ptr<const CameraModel>& camera) {
   if (measurement.empty()) return;
   if (!camera) {
     throw std::invalid_argument("EqVIOFilter::addNewLandmarks: null camera");
@@ -262,7 +262,7 @@ void EqVIOFilter::addLandmarksInternal(std::vector<Landmark>& newLandmarks,
     q.push_back(SOT3::Identity());
   }
 
-  view_.X = makeVIOGroup(A, Beta, B, VIOLandmarkGroup(q));
+  view_.X = makeVioGroup(A, Beta, B, LandmarkGroup(q));
 
   const int oldSize = view_.Sigma.rows();
   const int newN = static_cast<int>(newLandmarks.size());
@@ -307,10 +307,10 @@ void EqVIOFilter::removeLandmarkByIndex(int idx) {
     q.push_back(Q[i]);
   }
 
-  view_.X = makeVIOGroup(A, Beta, B, VIOLandmarkGroup(q));
+  view_.X = makeVioGroup(A, Beta, B, LandmarkGroup(q));
 
-  removeRows(view_.Sigma, VIOSensorState::CompDim + 3 * idx, 3);
-  removeCols(view_.Sigma, VIOSensorState::CompDim + 3 * idx, 3);
+  removeRows(view_.Sigma, SensorState::CompDim + 3 * idx, 3);
+  removeCols(view_.Sigma, SensorState::CompDim + 3 * idx, 3);
 
   syncBase(true);
 }
@@ -331,13 +331,13 @@ Matrix3 EqVIOFilter::getLandmarkCovById(int id) const {
   assert(it != view_.xi0.cameraLandmarks.end());
   const int i =
       static_cast<int>(std::distance(view_.xi0.cameraLandmarks.begin(), it));
-  return view_.Sigma.block<3, 3>(VIOSensorState::CompDim + 3 * i,
-                                 VIOSensorState::CompDim + 3 * i);
+  return view_.Sigma.block<3, 3>(SensorState::CompDim + 3 * i,
+                                 SensorState::CompDim + 3 * i);
 }
 
 Matrix2 EqVIOFilter::outputCovarianceById(
     int id, const Point2&,
-    const std::shared_ptr<const VIOCameraModel>& camera) const {
+    const std::shared_ptr<const CameraModel>& camera) const {
   const Matrix3 lmCov = getLandmarkCovById(id);
   const auto it = std::find_if(
       view_.xi0.cameraLandmarks.begin(), view_.xi0.cameraLandmarks.end(),
@@ -369,7 +369,7 @@ void EqVIOFilter::removeInvalidLandmarksNow() {
 
 void EqVIOFilter::removeOutliers(
     VisionMeasurement& measurement,
-    const std::shared_ptr<const VIOCameraModel>& camera) {
+    const std::shared_ptr<const CameraModel>& camera) {
   const size_t maxOutliers = static_cast<size_t>(
       (1.0 - params_.featureRetention) * measurement.size());
   if (!camera) return;
@@ -443,7 +443,7 @@ double EqVIOFilter::getMedianSceneDepth() const {
 }
 
 void EqVIOFilter::update(const VisionMeasurement& measurement,
-                         const std::shared_ptr<const VIOCameraModel>& camera,
+                         const std::shared_ptr<const CameraModel>& camera,
                          const Matrix& outputGainMatrix) {
   if (measurement.empty()) return;
   if (!camera) {

@@ -11,7 +11,7 @@
 
 /**
  * @file   testEqVIOState.cpp
- * @brief  Unit tests for VIOState manifold
+ * @brief  Unit tests for State manifold
  * @author Rohan Bansal
  */
 
@@ -30,38 +30,38 @@ namespace {
 
 template <int N>
 void testChartDerivativesN(TestResult& result_, const std::string& name_,
-                           const VIOState& t1, const VIOState& t2) {
+                           const State& t1, const State& t2) {
   Matrix H1, H2;
-  using T = traits<VIOState>;
+  using T = traits<State>;
   using V = typename T::TangentVector;
   using OJ = OptionalJacobian<T::dimension, T::dimension>;
 
   OJ none;
   const V w12 = T::Local(t1, t2);
-  EXPECT(assert_equal<VIOState>(t2, T::Retract(t1, w12, H1, H2)));
+  EXPECT(assert_equal<State>(t2, T::Retract(t1, w12, H1, H2)));
   EXPECT(assert_equal(
-      numericalDerivative41<VIOState, VIOState, V, OJ, OJ, N>(T::Retract, t1,
+      numericalDerivative41<State, State, V, OJ, OJ, N>(T::Retract, t1,
                                                                w12, none, none),
       H1, 1e-5));
   EXPECT(assert_equal(
-      numericalDerivative42<VIOState, VIOState, V, OJ, OJ, N>(T::Retract, t1,
+      numericalDerivative42<State, State, V, OJ, OJ, N>(T::Retract, t1,
                                                                w12, none, none),
       H2, 1e-5));
 
   EXPECT(assert_equal(w12, T::Local(t1, t2, H1, H2), 1e-9));
   EXPECT(assert_equal(
-      numericalDerivative41<V, VIOState, VIOState, OJ, OJ, N>(T::Local, t1, t2,
+      numericalDerivative41<V, State, State, OJ, OJ, N>(T::Local, t1, t2,
                                                                none, none),
       H1, 1e-5));
   EXPECT(assert_equal(
-      numericalDerivative42<V, VIOState, VIOState, OJ, OJ, N>(T::Local, t1, t2,
+      numericalDerivative42<V, State, State, OJ, OJ, N>(T::Local, t1, t2,
                                                                none, none),
       H2, 1e-5));
 }
 
-VIOSensorState MakeSensor1() {
-  VIOSensorState s;
-  s.inputBias = VIOBias(Vector3(0.03, -0.01, 0.02), Vector3(0.1, -0.2, 0.05));
+SensorState MakeSensor1() {
+  SensorState s;
+  s.inputBias = Bias(Vector3(0.03, -0.01, 0.02), Vector3(0.1, -0.2, 0.05));
   s.pose = Pose3(Rot3::RzRyRx(0.2, -0.1, 0.15), Point3(0.4, -0.2, 1.0));
   s.velocity = Vector3(0.5, -0.3, 0.2);
   s.cameraOffset =
@@ -69,10 +69,10 @@ VIOSensorState MakeSensor1() {
   return s;
 }
 
-VIOSensorState MakeSensor2() {
-  VIOSensorState s;
+SensorState MakeSensor2() {
+  SensorState s;
   s.inputBias =
-      VIOBias(Vector3(0.02, 0.05, -0.06), Vector3(-0.04, 0.07, -0.03));
+      Bias(Vector3(0.02, 0.05, -0.06), Vector3(-0.04, 0.07, -0.03));
   s.pose = Pose3(Rot3::RzRyRx(-0.1, 0.2, -0.25), Point3(-0.3, 0.5, 0.8));
   s.velocity = Vector3(-0.2, 0.4, -0.1);
   s.cameraOffset =
@@ -98,28 +98,28 @@ std::vector<Landmark> Lms3B() {
           {Point3(0.1, 0.65, 4.9), 33}};
 }
 
-VIOState MakeState0A() { return VIOState(MakeSensor1(), Lms0()); }
-VIOState MakeState0B() { return VIOState(MakeSensor2(), Lms0()); }
-VIOState MakeState1A() { return VIOState(MakeSensor1(), Lms1A()); }
-VIOState MakeState1B() { return VIOState(MakeSensor2(), Lms1B()); }
-VIOState MakeState3A() { return VIOState(MakeSensor1(), Lms3A()); }
-VIOState MakeState3B() { return VIOState(MakeSensor2(), Lms3B()); }
+State MakeState0A() { return State(MakeSensor1(), Lms0()); }
+State MakeState0B() { return State(MakeSensor2(), Lms0()); }
+State MakeState1A() { return State(MakeSensor1(), Lms1A()); }
+State MakeState1B() { return State(MakeSensor2(), Lms1B()); }
+State MakeState3A() { return State(MakeSensor1(), Lms3A()); }
+State MakeState3B() { return State(MakeSensor2(), Lms3B()); }
 
 }  // namespace
 
 //******************************************************************************
-// Verifies VIOState satisfies manifold and testable concept checks.
-TEST(VIOState, Concept) {
-  GTSAM_CONCEPT_ASSERT(IsManifold<VIOState>);
-  GTSAM_CONCEPT_ASSERT(IsTestable<VIOState>);
+// Verifies State satisfies manifold and testable concept checks.
+TEST(State, Concept) {
+  GTSAM_CONCEPT_ASSERT(IsManifold<State>);
+  GTSAM_CONCEPT_ASSERT(IsTestable<State>);
 }
 
 //******************************************************************************
 // Verifies dynamic dimensions and landmark id accessors.
-TEST(VIOState, DimensionsAndAccessors) {
-  const VIOState s0 = MakeState0A();
-  const VIOState s1 = MakeState1A();
-  const VIOState s3 = MakeState3A();
+TEST(State, DimensionsAndAccessors) {
+  const State s0 = MakeState0A();
+  const State s1 = MakeState1A();
+  const State s3 = MakeState3A();
 
   EXPECT_LONGS_EQUAL(0, s0.n());
   EXPECT_LONGS_EQUAL(21, s0.dim());
@@ -135,13 +135,13 @@ TEST(VIOState, DimensionsAndAccessors) {
 
 //******************************************************************************
 // Verifies localCoordinates/retract round-trip consistency.
-TEST(VIOState, RetractLocalRoundTrip) {
+TEST(State, RetractLocalRoundTrip) {
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
-  const VIOState s3a = MakeState3A();
-  const VIOState s3b = MakeState3B();
+  const State s3a = MakeState3A();
+  const State s3b = MakeState3B();
 
   const Vector v = s3a.localCoordinates(s3b);
-  const VIOState recovered = s3a.retract(v);
+  const State recovered = s3a.retract(v);
   EXPECT(assert_equal(s3b, recovered, 1e-9));
 #else
   EXPECT(true);
@@ -150,7 +150,7 @@ TEST(VIOState, RetractLocalRoundTrip) {
 
 //******************************************************************************
 // Verifies chart Jacobians for n=0 landmarks.
-TEST(VIOState, DerivativesN0) {
+TEST(State, DerivativesN0) {
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
   testChartDerivativesN<21>(result_, name_, MakeState0A(), MakeState0B());
 #else
@@ -160,7 +160,7 @@ TEST(VIOState, DerivativesN0) {
 
 //******************************************************************************
 // Verifies chart Jacobians for n=1 landmark.
-TEST(VIOState, DerivativesN1) {
+TEST(State, DerivativesN1) {
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
   testChartDerivativesN<24>(result_, name_, MakeState1A(), MakeState1B());
 #else
@@ -170,7 +170,7 @@ TEST(VIOState, DerivativesN1) {
 
 //******************************************************************************
 // Verifies chart Jacobians for n=3 landmarks.
-TEST(VIOState, DerivativesN3) {
+TEST(State, DerivativesN3) {
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
   testChartDerivativesN<30>(result_, name_, MakeState3A(), MakeState3B());
 #else

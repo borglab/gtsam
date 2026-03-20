@@ -25,7 +25,7 @@ TEST(EqVIOFilter, DynamicLandmarksAddRemove) {
 
   EqVIOFilter filter(params);
   auto camera =
-      std::make_shared<VIOCameraModel>(Pose3::Identity(), Cal3_S2(1, 1, 0, 0, 0));
+      std::make_shared<CameraModel>(Pose3::Identity(), Cal3_S2(1, 1, 0, 0, 0));
 
   IMUInput imu0;
   imu0.stamp = 0.0;
@@ -52,7 +52,7 @@ TEST(EqVIOFilter, DynamicLandmarksAddRemove) {
   meas2[1] = meas1.at(1);
   filter.correct(meas2, camera);
 
-  const VIOState est = filter.stateEstimate();
+  const State est = filter.stateEstimate();
   EXPECT_LONGS_EQUAL(1, est.n());
   EXPECT_LONGS_EQUAL(1, est.cameraLandmarks.front().id);
 }

@@ -39,10 +39,10 @@ struct GTSAM_UNSTABLE_EXPORT Landmark {
   bool equals(const Landmark& other, double tol = 1e-9) const;
 };
 
-struct GTSAM_UNSTABLE_EXPORT VIOSensorState {
+struct GTSAM_UNSTABLE_EXPORT SensorState {
   static constexpr int CompDim = 21;
 
-  VIOBias inputBias = VIOBias::Identity();
+  Bias inputBias = Bias::Identity();
   Pose3 pose = Pose3::Identity();
   Vector3 velocity = Vector3::Zero();
   Pose3 cameraOffset = Pose3::Identity();
@@ -51,11 +51,11 @@ struct GTSAM_UNSTABLE_EXPORT VIOSensorState {
   Vector3 gravityDir() const;
 
   void print(const std::string& s = "") const;
-  bool equals(const VIOSensorState& other, double tol = 1e-9) const;
+  bool equals(const SensorState& other, double tol = 1e-9) const;
 };
 
 /// Dynamic VIO state manifold with dimension 21 + 3n.
-class GTSAM_UNSTABLE_EXPORT VIOState {
+class GTSAM_UNSTABLE_EXPORT State {
  public:
   static constexpr int dimension = Eigen::Dynamic;
 
@@ -63,13 +63,13 @@ class GTSAM_UNSTABLE_EXPORT VIOState {
   using Jacobian = Matrix;
   using ChartJacobian = OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>;
 
-  VIOSensorState sensor;
+  SensorState sensor;
   std::vector<Landmark> cameraLandmarks;
 
   /// Construct default-initialized state.
-  VIOState() = default;
+  State() = default;
   /// Construct from explicit sensor and landmark blocks.
-  VIOState(const VIOSensorState& sensor_, const std::vector<Landmark>& lms);
+  State(const SensorState& sensor_, const std::vector<Landmark>& lms);
 
   /// Number of landmarks.
   size_t n() const;
@@ -77,52 +77,52 @@ class GTSAM_UNSTABLE_EXPORT VIOState {
   std::vector<int> ids() const;
 
   /// Retract in the state chart.
-  VIOState retract(const TangentVector& v, ChartJacobian H1 = {},
+  State retract(const TangentVector& v, ChartJacobian H1 = {},
                    ChartJacobian H2 = {}) const;
   /// Local coordinates in the state chart.
-  TangentVector localCoordinates(const VIOState& other, ChartJacobian H1 = {},
+  TangentVector localCoordinates(const State& other, ChartJacobian H1 = {},
                                  ChartJacobian H2 = {}) const;
 
   void print(const std::string& s = "") const;
-  bool equals(const VIOState& other, double tol = 1e-9) const;
+  bool equals(const State& other, double tol = 1e-9) const;
 };
 
 }  // namespace eqvio
 
 template <>
-struct traits<eqvio::VIOState> {
+struct traits<eqvio::State> {
   static constexpr int dimension = Eigen::Dynamic;
   using TangentVector = Vector;
-  using ManifoldType = eqvio::VIOState;
+  using ManifoldType = eqvio::State;
   using structure_category = manifold_tag;
 
-  static int GetDimension(const eqvio::VIOState& xi) { return xi.dim(); }
+  static int GetDimension(const eqvio::State& xi) { return xi.dim(); }
 
-  static eqvio::VIOState Retract(
-      const eqvio::VIOState& xi, const TangentVector& v,
+  static eqvio::State Retract(
+      const eqvio::State& xi, const TangentVector& v,
       OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H1 = {},
       OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H2 = {}) {
     return xi.retract(v, H1, H2);
   }
 
   static TangentVector Local(
-      const eqvio::VIOState& xi, const eqvio::VIOState& other,
+      const eqvio::State& xi, const eqvio::State& other,
       OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H1 = {},
       OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H2 = {}) {
     return xi.localCoordinates(other, H1, H2);
   }
 
-  static void Print(const eqvio::VIOState& xi, const std::string& s = "") {
+  static void Print(const eqvio::State& xi, const std::string& s = "") {
     xi.print(s);
   }
 
-  static bool Equals(const eqvio::VIOState& xi1, const eqvio::VIOState& xi2,
+  static bool Equals(const eqvio::State& xi1, const eqvio::State& xi2,
                      double tol = 1e-9) {
     return xi1.equals(xi2, tol);
   }
 };
 
 template <>
-struct traits<const eqvio::VIOState> : traits<eqvio::VIOState> {};
+struct traits<const eqvio::State> : traits<eqvio::State> {};
 
 }  // namespace gtsam

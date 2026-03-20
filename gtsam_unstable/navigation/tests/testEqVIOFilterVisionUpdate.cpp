@@ -21,14 +21,14 @@ using namespace gtsam::eqvio;
 
 namespace {
 
-VIOState MakeState1() {
-  VIOSensorState sensor;
-  sensor.inputBias = VIOBias(Vector3(0.03, -0.01, 0.02), Vector3(0.1, -0.2, 0.05));
+State MakeState1() {
+  SensorState sensor;
+  sensor.inputBias = Bias(Vector3(0.03, -0.01, 0.02), Vector3(0.1, -0.2, 0.05));
   sensor.pose = Pose3(Rot3::RzRyRx(0.2, -0.1, 0.15), Point3(0.4, -0.2, 1.0));
   sensor.velocity = Vector3(0.5, -0.3, 0.2);
   sensor.cameraOffset =
       Pose3(Rot3::RzRyRx(-0.08, 0.04, -0.03), Point3(0.1, 0.0, 0.05));
-  return VIOState(sensor, {{Point3(0.3, -0.15, 4.5), 10}});
+  return State(sensor, {{Point3(0.3, -0.15, 4.5), 10}});
 }
 
 }  // namespace
@@ -36,7 +36,7 @@ VIOState MakeState1() {
 TEST(EqVIOFilter, VisionUpdate) {
   EqVIOFilterParams params;
 
-  const VIOState xi0 = MakeState1();
+  const State xi0 = MakeState1();
   const Matrix Sigma0 = Matrix::Identity(xi0.dim(), xi0.dim()) * 1e-3;
   EqVIOFilter filter(xi0, Sigma0, params);
 
@@ -47,7 +47,7 @@ TEST(EqVIOFilter, VisionUpdate) {
   filter.propagate(imu, 0.01);
 
   auto camera =
-      std::make_shared<VIOCameraModel>(Pose3::Identity(), Cal3_S2(1, 1, 0, 0, 0));
+      std::make_shared<CameraModel>(Pose3::Identity(), Cal3_S2(1, 1, 0, 0, 0));
   const VisionMeasurement meas = measureSystemState(filter.stateEstimate(), camera);
   filter.correct(meas, camera);
 

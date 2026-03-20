@@ -154,12 +154,12 @@ int main(int argc, char** argv) {
         metadataFiniteDouble(log, "eqf.input_var_acc_bias_walk",
                              params.inputNoise(9, 9));
 
-    VIOSensorState sensor;
-    sensor.inputBias = VIOBias::Identity();
+    SensorState sensor;
+    sensor.inputBias = Bias::Identity();
     sensor.pose = Pose3::Identity();
     sensor.velocity.setZero();
     sensor.cameraOffset = cameraExtrinsicsFromMetadata(log).value_or(Pose3::Identity());
-    VIOState xi0(sensor, {});
+    State xi0(sensor, {});
     Matrix Sigma0 = Matrix::Identity(xi0.dim(), xi0.dim());
     Sigma0.block<3, 3>(0, 0) *= metadataFiniteDouble(
         log, "eqf.initial_var_bias_omega", 0.1);
@@ -178,7 +178,7 @@ int main(int argc, char** argv) {
 
     EqVIOFilter filter(params);
     filter.setReferenceState(xi0, Sigma0);
-    auto camera = std::make_shared<VIOCameraModel>(
+    auto camera = std::make_shared<CameraModel>(
         Pose3::Identity(), Cal3_S2(1.0, 1.0, 0.0, 0.0, 0.0));
 
     size_t imuCount = 0;
@@ -206,7 +206,7 @@ int main(int argc, char** argv) {
       }
     }
 
-    const VIOState estimate = filter.stateEstimate();
+    const State estimate = filter.stateEstimate();
     std::cout << "CSV replay complete.\n";
     std::cout << "Events: " << log.events.size() << ", IMU: " << imuCount
               << ", vision frames: " << visionFrameCount

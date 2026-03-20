@@ -38,7 +38,7 @@ TEST(EqVIOFilter, InitAndPropagation) {
   filter.propagate(imu1, 0.01);
 
   auto camera =
-      std::make_shared<VIOCameraModel>(Pose3::Identity(), Cal3_S2(1, 1, 0, 0, 0));
+      std::make_shared<CameraModel>(Pose3::Identity(), Cal3_S2(1, 1, 0, 0, 0));
   VisionMeasurement meas;
   filter.correct(meas, camera);
 
