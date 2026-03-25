@@ -24,7 +24,8 @@
 namespace gtsam {
 
 class RISAM {
-  /** TYPES **/
+  /// @name Types
+  /// @{
  public:
   /** @brief Struct Containing all configuration parameters for riSAM
    * See below for details on each parameters
@@ -76,8 +77,10 @@ class RISAM {
     /// @brief The set of factors convexified in this update
     std::set<FactorIndex> convexified_factors;
   };
+  /// @}
 
-  /** FIELDS **/
+  /// @name Fields
+  /// @{
  protected:
   /// @brief Configuration parameters for the riSAM algorithm
   Parameters params_;
@@ -106,8 +109,10 @@ class RISAM {
   /// @brief The Factors for the underlying system
   /// INVARIANT: matches that of solver_ after every update
   NonlinearFactorGraph factors_;
+  /// @}
 
-  /** INTERFACE **/
+  /// @name Public Interface
+  /// @{
  public:
   /** @brief Constructs an instance of the riSAM algorithm with provided
    * configuration. Note this constructor will override some values in
@@ -173,8 +178,10 @@ class RISAM {
    * algorithm.
    */
   std::set<size_t> getOutliers(double chi2_outlier_thresh);
+  /// @}
 
-  /** HELPERS **/
+  /// @name Private Interface
+  /// @{
  protected:
   /** @brief Preforms a robust update to the system.
    * A robust update is required any time new_factors contains GraduatedFactors
@@ -226,9 +233,11 @@ class RISAM {
       const NonlinearFactorGraph& new_factors, const Values& new_theta,
       const std::optional<std::set<Key>> extra_gnc_involved_keys,
       ISAM2UpdateParams& internal_update_params, UpdateResult& update_result);
+  /// @}
 
+  /// @name Static Helpers
+  /// @{
  public:
-  /** STATIC HELPERS **/
   /** @brief Constructs a shared_ptr of FACTOR_TYPE graduated factor for riSAM
    * This identifies a factor as a potential outlier measurement.
    * @param kernel: The graduated kernel to use for this factor
@@ -240,6 +249,7 @@ class RISAM {
     return std::make_shared<GenericGraduatedFactor<FACTOR_TYPE>>(
         std::forward<Args>(args)...);
   }
+  /// @}
 };
 
 }  // namespace gtsam

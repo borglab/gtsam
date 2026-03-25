@@ -9,11 +9,11 @@
  *  @date Mar 2022
  */
 #pragma once
-#include <memory>
 #include <gtsam/base/FastVector.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/nonlinear/internal/ChiSquaredInverse.h>
 
+#include <memory>
 #include <optional>
 
 namespace gtsam {
@@ -22,18 +22,23 @@ namespace gtsam {
  * Advanced users can write their own kernels by inheriting from this class
  */
 class GraduatedKernel {
-  /** TYPES **/
+  /// @name Types
+  /// @{
  public:
   typedef std::shared_ptr<GraduatedKernel> shared_ptr;
+  /// @}
 
-  /** FIELDS **/
+  /// @name Fields
+  /// @{
  protected:
   /// @brief The initial Value for mu
   const double mu_init_;
   /// @brief The threshold at which to consider mu to be converged
   const double convergence_thresh_;
+  /// @}
 
-  /** INTERFACE **/
+  /// @name Public Interface
+  /// @{
  public:
   GraduatedKernel(double mu_init, double convergence_thresh)
       : mu_init_(mu_init), convergence_thresh_(convergence_thresh) {}
@@ -92,6 +97,7 @@ class GraduatedKernel {
   /// @brief Returns true iff the value of \mu has converged to a non-convex
   /// state
   virtual bool isMuConverged(const double& mu) const = 0;
+  /// @}
 };
 
 /* ************************************************************************* */
@@ -103,14 +109,17 @@ class GraduatedKernel {
  * where c is the shape parameter and r is the residual of the factor
  */
 class SIGKernel : public GraduatedKernel {
-  /** TYPES **/
+  /// @name Types
+  /// @{
  public:
   /// @brief Shortcut for shared pointer
   typedef std::shared_ptr<SIGKernel> shared_ptr;
   /// @brief Function type for mu update sequence
   typedef std::function<double(double, double, size_t)> MuUpdateStrategy;
+  /// @}
 
-  /** FIELDS **/
+  /// @name Fields
+  /// @{
  public:
   /// @brief The shape parameter of the SIG kernel 'c'
   double shape_param;
@@ -119,7 +128,12 @@ class SIGKernel : public GraduatedKernel {
   /// @brief The amount to increment/decrement mu init if the factor is a strong
   /// inlier/outlier when values converge
   double mu_init_increment;
+  /// @}
 
+
+  /// @name Public Interface
+  /// @{
+ public:
   /** @brief Individual Parameter Constructor
    * @param shape_param: The shape parameter for the kernel
    * @param mu_update_strat: The update strategy to use for mu updates
@@ -133,8 +147,6 @@ class SIGKernel : public GraduatedKernel {
         mu_update_strat(mu_update_strat),
         mu_init_increment(mu_init_increment) {}
 
-  /** Interface **/
- public:
   /// @brief @see GraduatedKernel
   double error(const double& residual, const double& mu) const override;
   /// @brief @see GraduatedKernel
@@ -148,8 +160,10 @@ class SIGKernel : public GraduatedKernel {
   double incrementMuInitInv(const double& mu) const override;
   /// @brief @see GraduatedKernel
   bool isMuConverged(const double& mu) const override;
+  /// @}
 
-  /** STATIC HELPERS **/
+  /// @name Static Helpers
+  /// @{
  public:
   /** @brief Computes a shape param based on an an influence threshold for
    * outliers Computes a shape param such that an outlier (any measurement with
@@ -187,5 +201,6 @@ class SIGKernel : public GraduatedKernel {
   /// algorithm was published
   static double muUpdateStable(const double& mu, const double& residual,
                                const size_t& update_count);
+  /// @}
 };
 }  // namespace gtsam

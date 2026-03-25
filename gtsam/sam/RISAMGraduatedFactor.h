@@ -24,21 +24,26 @@ namespace gtsam {
 
 /// @brief Graduated Factor for riSAM base class
 class GraduatedFactor {
-  /** TYPES **/
+  /// @name Types
+  /// @{
  public:
   typedef std::shared_ptr<GraduatedFactor> shared_ptr;
+  /// @}
 
-  /** FIELDS **/
+  /// @name Fields
+  /// @{
  protected:
   /// @brief The Graduated Robust Kernel for this factor
   GraduatedKernel::shared_ptr kernel_;
   /// @brief The unique mu control parameter for this factor
   std::shared_ptr<double> mu_;
+  /// @}
 
   /// Befriend RISAM to give access to these protected values
   friend class RISAM;
 
-  /**INTERFACE**/
+  /// @name Public Interface
+  /// @{
  public:
   /** @brief Constructor
    * @param kernel: The graduated kernel to apply to this factor
@@ -73,6 +78,7 @@ class GraduatedFactor {
   /// @brief Copies this factor as an instance of its base type without the
   /// graduated kernel
   virtual gtsam::NonlinearFactor::shared_ptr cloneUngraduated() const = 0;
+  /// @}
 };
 
 /// @brief Instantiation of Graduated Factor wrapping any Nonlinear Factor
@@ -82,11 +88,14 @@ class GenericGraduatedFactor : public FACTOR_TYPE, public GraduatedFactor {
                 "GraduatedFactor Must be instantiated with a Factor Derived "
                 "from gtsam::NonlinearFactor.");
 
-  /** TYPES **/
+  /// @name Types
+  /// @{
  public:
   typedef std::shared_ptr<GenericGraduatedFactor<FACTOR_TYPE>> shared_ptr;
+  /// @}
 
-  /**INTERFACE**/
+  /// @name Factor Interface
+  /// @{
  public:
   /** @brief Constructor
    * @param kernel: The graduated kernel to use for this factor
@@ -153,8 +162,10 @@ class GenericGraduatedFactor : public FACTOR_TYPE, public GraduatedFactor {
   double error(const gtsam::Values& values) const override {
     return 0.5 * std::pow(robustResidual(values), 2);
   }
+  /// @}
 
-  /** GRADUATED INTERFACE **/
+  /// @name Graduated Interface
+  /// @{
   /// @brief See GraduatedFactor::residual
   double residual(const gtsam::Values& current_estimate) const override {
     return sqrt(2.0 * FACTOR_TYPE::error(current_estimate));
@@ -169,5 +180,6 @@ class GenericGraduatedFactor : public FACTOR_TYPE, public GraduatedFactor {
   gtsam::NonlinearFactor::shared_ptr cloneUngraduated() const override {
     return FACTOR_TYPE::clone();
   }
+  /// @}
 };
 }  // namespace gtsam
