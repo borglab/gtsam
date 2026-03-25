@@ -504,7 +504,7 @@ class GncOptimizer {
         for (size_t k = 0; k < nfg_.size(); k++) {
           if (needsWeightUpdate(factorTypes_[k])) {
             double u2_k = nfg_[k]->error(currentEstimate);  // squared (and whitened) residual
-            weights[k] = noiseModel::mEstimator::GemanMcClure::Weight(u2_k, mu * barcSq_[k]);
+            weights[k] = noiseModel::mEstimator::GemanMcClure::Weight(mu * barcSq_[k], u2_k);
           }
         }
         return weights;
@@ -517,7 +517,7 @@ class GncOptimizer {
               case GncScheduler::SuperLinear: {
                 double lowerbound = barcSq_[k];
                 double upperbound = ((mu + 1.0) * (mu + 1.0) / (mu * mu)) * barcSq_[k];
-                auto w = noiseModel::mEstimator::TruncatedLeastSquares::Weight(u2_k, lowerbound, upperbound);
+                auto w = noiseModel::mEstimator::TruncatedLeastSquares::GNCWeight(u2_k, lowerbound, upperbound);
                 if (w) {
                   weights[k] = *w;
                 }
@@ -530,7 +530,7 @@ class GncOptimizer {
               case GncScheduler::Linear: {  // use eq (14) in GNC paper
                 double upperbound = ((mu + 1.0) / mu) * barcSq_[k];
                 double lowerbound = (mu / (mu + 1.0)) * barcSq_[k];
-                auto w = noiseModel::mEstimator::TruncatedLeastSquares::Weight(u2_k, lowerbound, upperbound);
+                auto w = noiseModel::mEstimator::TruncatedLeastSquares::GNCWeight(u2_k, lowerbound, upperbound);
                 if (w) {
                   weights[k] = *w;
                 }

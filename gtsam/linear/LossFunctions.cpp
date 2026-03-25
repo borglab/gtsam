@@ -155,6 +155,14 @@ double Fair::loss(double distance) const {
   return c_2 * (normalizedError - std::log1p(normalizedError));
 }
 
+double Fair::graduatedWeight(double /*error*/, double /*error*/) const {
+  throw std::logic_error("Fair loss has no graduated form.");
+}
+
+double Fair::graduatedLoss(double /*error*/, double /*error*/) const {
+  throw std::logic_error("Fair loss has no graduated form.");
+}
+
 void Fair::print(const std::string &s="") const
 { cout << s << "fair (" << c_ << ")" << endl; }
 
@@ -177,18 +185,30 @@ Huber::Huber(double k, const ReweightScheme reweight) : Base(reweight), k_(k) {
   }
 }
 
-double Huber::weight(double distance) const {
+double Huber::Weight(double k, double distance) {
   const double absError = std::abs(distance);
-  return (absError <= k_) ? (1.0) : (k_ / absError);
+  return (absError <= k) ? (1.0) : (k / absError);
 }
 
-double Huber::loss(double distance) const {
+double Huber::Loss(double k, double distance) {
   const double absError = std::abs(distance);
-  if (absError <= k_) {  // |x| <= k
-    return distance*distance / 2;
-  } else { // |x| > k
-    return k_ * (absError - (k_/2));
+  if (absError <= k) {  // |x| <= k
+    return distance * distance / 2;
+  } else {  // |x| > k
+    return k * (absError - (k / 2));
   }
+}
+
+double Huber::weight(double distance) const { return Weight(k_, distance); }
+
+double Huber::loss(double distance) const { return Loss(k_, distance); }
+
+double Huber::graduatedWeight(double distance, double mu) const {
+  return Weight(mu * k_, distance);
+}
+
+double Huber::graduatedLoss(double distance, double mu) const {
+  return Loss(mu * k_, distance);
 }
 
 void Huber::print(const std::string &s="") const {
@@ -215,13 +235,27 @@ Cauchy::Cauchy(double k, const ReweightScheme reweight) : Base(reweight), k_(k),
   }
 }
 
-double Cauchy::weight(double distance) const {
-  return ksquared_ / (ksquared_ + distance*distance);
+double Cauchy::Weight(double ksquared, double distance) {
+  return ksquared / (ksquared + distance * distance);
 }
 
-double Cauchy::loss(double distance) const {
-  const double val = std::log1p(distance * distance / ksquared_);
-  return ksquared_ * val * 0.5;
+double Cauchy::Loss(double ksquared, double distance) {
+  const double val = std::log1p(distance * distance / ksquared);
+  return ksquared * val * 0.5;
+}
+
+double Cauchy::weight(double distance) const {
+  return Weight(ksquared_, distance);
+}
+
+double Cauchy::loss(double distance) const { return Loss(ksquared_, distance); }
+
+double Cauchy::graduatedWeight(double distance, double mu) const {
+  return Cauchy::Weight((mu * mu) * ksquared_, distance);
+}
+
+double Cauchy::graduatedLoss(double distance, double mu) const {
+  return Cauchy::Loss((mu * mu) * ksquared_, distance);
 }
 
 void Cauchy::print(const std::string &s="") const {
@@ -248,23 +282,39 @@ Tukey::Tukey(double c, const ReweightScheme reweight) : Base(reweight), c_(c), c
   }
 }
 
-double Tukey::weight(double distance) const {
-  if (std::abs(distance) <= c_) {
-    const double one_minus_xc2 = 1.0 - distance*distance/csquared_;
+double Tukey::Weight(double c, double csquared, double distance) {
+  if (std::abs(distance) <= c) {
+    const double one_minus_xc2 = 1.0 - distance * distance / csquared;
     return one_minus_xc2 * one_minus_xc2;
   }
   return 0.0;
 }
 
-double Tukey::loss(double distance) const {
-  double absError = std::abs(distance);
-  if (absError <= c_) {
-    const double one_minus_xc2 = 1.0 - distance*distance/csquared_;
-    const double t = one_minus_xc2*one_minus_xc2*one_minus_xc2;
-    return csquared_ * (1 - t) / 6.0;
+double Tukey::Loss(double c, double csquared, double distance) {
+  const double absError = std::abs(distance);
+  if (absError <= c) {
+    const double one_minus_xc2 = 1.0 - distance * distance / csquared;
+    const double t = one_minus_xc2 * one_minus_xc2 * one_minus_xc2;
+    return csquared * (1 - t) / 6.0;
   } else {
-    return csquared_ / 6.0;
+    return csquared / 6.0;
   }
+}
+
+double Tukey::weight(double distance) const {
+  return Weight(c_, csquared_, distance);
+}
+
+double Tukey::loss(double distance) const {
+  return Loss(c_, csquared_, distance);
+}
+
+double Tukey::graduatedWeight(double distance, double mu) const {
+  return Weight(mu * c_, (mu * mu) * csquared_, distance);
+}
+
+double Tukey::graduatedLoss(double distance, double mu) const {
+  return Loss(mu * c_, (mu * mu) * csquared_, distance);
 }
 
 void Tukey::print(const std::string &s="") const {
@@ -287,14 +337,28 @@ Tukey::shared_ptr Tukey::Create(double c, const ReweightScheme reweight) {
 
 Welsch::Welsch(double c, const ReweightScheme reweight) : Base(reweight), c_(c), csquared_(c * c) {}
 
-double Welsch::weight(double distance) const {
-  const double xc2 = (distance*distance)/csquared_;
+double Welsch::Weight(double csquared, double distance) {
+  const double xc2 = (distance * distance) / csquared;
   return std::exp(-xc2);
 }
 
-double Welsch::loss(double distance) const {
-  const double xc2 = (distance*distance)/csquared_;
-  return csquared_ * 0.5 * -std::expm1(-xc2);
+double Welsch::Loss(double csquared, double distance) {
+  const double xc2 = (distance * distance) / csquared;
+  return csquared * 0.5 * -std::expm1(-xc2);
+}
+
+double Welsch::weight(double distance) const {
+  return Weight(csquared_, distance);
+}
+
+double Welsch::loss(double distance) const { return Loss(csquared_, distance); }
+
+double Welsch::graduatedWeight(double distance, double mu) const {
+  return Weight((mu * mu) * csquared_, distance);
+}
+
+double Welsch::graduatedLoss(double distance, double mu) const {
+  return Loss((mu * mu) * csquared_, distance);
 }
 
 void Welsch::print(const std::string &s="") const {
@@ -314,23 +378,47 @@ Welsch::shared_ptr Welsch::Create(double c, const ReweightScheme reweight) {
 /* ************************************************************************* */
 // GemanMcClure
 /* ************************************************************************* */
-GemanMcClure::GemanMcClure(double c, const ReweightScheme reweight)
-  : Base(reweight), c_(c), csquared_(c * c) {
+GemanMcClure::GemanMcClure(double c, const GemanMcClure::GradScheme graduation,
+                           const ReweightScheme reweight)
+    : Base(reweight), c_(c), csquared_(c * c), graduation_(graduation) {}
+
+double GemanMcClure::Weight(double csquared, double distance) {
+  const double c4 = csquared * csquared;
+  const double c2error = csquared + (distance * distance);
+  return c4 / (c2error * c2error);
+}
+
+double GemanMcClure::Loss(double csquared, double distance) {
+  const double error2 = distance * distance;
+  return 0.5 * (csquared * error2) / (csquared + error2);
 }
 
 double GemanMcClure::weight(double distance) const {
-  return Weight(distance*distance, csquared_);
-}
-
-double GemanMcClure::Weight(double distance2, double c2) {
-  const double c4 = c2*c2;
-  const double c2error = c2 + distance2;
-  return c4/(c2error*c2error);
+  return Weight(csquared_, distance);
 }
 
 double GemanMcClure::loss(double distance) const {
-  const double error2 = distance*distance;
-  return 0.5 * (csquared_ * error2) / (csquared_ + error2);
+  return Loss(csquared_, distance);
+}
+
+double GemanMcClure::graduatedWeight(double distance, double mu) const {
+  if (graduation_ == GemanMcClure::GradScheme::STANDARD) {
+    return Weight(mu * csquared_, distance);
+  } else {  // GemanMcClure::GradScheme::SCALE_INVARIANT
+    const double d2 = distance * distance;
+    const double sqrt_denom = csquared_ + std::pow(d2, mu);
+    return (csquared_ * (csquared_ + std::pow(d2, mu) * (1 - mu))) /
+           (sqrt_denom * sqrt_denom);
+  }
+}
+
+double GemanMcClure::graduatedLoss(double distance, double mu) const {
+  if (graduation_ == GemanMcClure::GradScheme::STANDARD) {
+    return Loss(mu * csquared_, distance);
+  } else {  // GemanMcClure::GradScheme::SCALE_INVARIANT
+    const double d2 = distance * distance;
+    return 0.5 * (csquared_ * d2) / (csquared_ + std::pow(d2, mu));
+  }
 }
 
 void GemanMcClure::print(const std::string &s="") const {
@@ -343,8 +431,10 @@ bool GemanMcClure::equals(const Base &expected, double tol) const {
   return std::abs(c_ - p->c_) < tol;
 }
 
-GemanMcClure::shared_ptr GemanMcClure::Create(double c, const ReweightScheme reweight) {
-  return shared_ptr(new GemanMcClure(c, reweight));
+GemanMcClure::shared_ptr GemanMcClure::Create(
+    double c, const GemanMcClure::GradScheme graduation,
+    const ReweightScheme reweight) {
+  return shared_ptr(new GemanMcClure(c, graduation, reweight));
 }
 
 /* ************************************************************************* */
@@ -358,22 +448,43 @@ TruncatedLeastSquares::TruncatedLeastSquares(double c, const ReweightScheme rewe
   }
 }
 
-double TruncatedLeastSquares::weight(double distance) const {
-  const auto w = Weight(distance * distance, csquared_, csquared_);
-  return w.value();
+double TruncatedLeastSquares::Weight(double c, double distance) {
+  if (std::abs(distance) <= c) {
+    return 1.0;
+  }
+  return 0.0;
 }
 
-std::optional<double> TruncatedLeastSquares::Weight(double distance2, double lowerbound, double upperbound) {
+double TruncatedLeastSquares::Loss(double c, double csquared, double distance) {
+  if (std::abs(distance) <= c) {
+    return 0.5 * distance * distance;
+  }
+  return 0.5 * csquared;
+}
+
+std::optional<double> TruncatedLeastSquares::GNCWeight(double distance2,
+                                                       double lowerbound,
+                                                       double upperbound) {
   if (distance2 <= lowerbound) return 1.0;
   if (distance2 >= upperbound) return 0.0;
   return std::nullopt;
 }
 
+double TruncatedLeastSquares::weight(double distance) const {
+  return Weight(c_, distance);
+}
+
 double TruncatedLeastSquares::loss(double distance) const {
-  if (std::abs(distance) <= c_) {
-    return 0.5 * distance * distance;
-  }
-  return 0.5 * csquared_;
+  return Loss(c_, csquared_, distance);
+}
+
+double TruncatedLeastSquares::graduatedWeight(double distance,
+                                              double mu) const {
+  return Weight(mu * c_, distance);
+}
+
+double TruncatedLeastSquares::graduatedLoss(double distance, double mu) const {
+  return Weight(mu * c_, distance);
 }
 
 void TruncatedLeastSquares::print(const std::string &s="") const {
@@ -397,25 +508,34 @@ DCS::DCS(double c, const ReweightScheme reweight)
   : Base(reweight), c_(c) {
 }
 
-double DCS::weight(double distance) const {
-  const double e2 = distance*distance;
-  if (e2 > c_)
-  {
-    const double w = 2.0*c_/(c_ + e2);
-    return w*w;
+double DCS::Weight(double c, double distance) {
+  const double e2 = distance * distance;
+  if (e2 > c) {
+    const double w = 2.0 * c / (c + e2);
+    return w * w;
   }
-
   return 1.0;
 }
 
-double DCS::loss(double distance) const {
+double DCS::Loss(double c, double distance) {
   // This is the simplified version of Eq 9 from (Agarwal13icra)
   // after you simplify and cancel terms.
-  const double e2 = distance*distance;
-  const double e4 = e2*e2;
-  const double c2 = c_*c_;
+  const double e2 = distance * distance;
+  const double e4 = e2 * e2;
+  const double c2 = c * c;
+  return (c2 * e2 + c * e4) / ((e2 + c) * (e2 + c));
+}
 
-  return (c2*e2 + c_*e4) / ((e2 + c_)*(e2 + c_));
+double DCS::weight(double distance) const { return Weight(c_, distance); }
+
+double DCS::loss(double distance) const { return Loss(c_, distance); }
+
+double DCS::graduatedWeight(double distance, double mu) const {
+  return Weight(mu * c_, distance);
+}
+
+double DCS::graduatedLoss(double distance, double mu) const {
+  return Weight(mu * c_, distance);
 }
 
 void DCS::print(const std::string &s="") const {
@@ -455,6 +575,15 @@ double L2WithDeadZone::weight(double distance) const {
 double L2WithDeadZone::loss(double distance) const {
   const double abs_error = std::abs(distance);
   return (abs_error < k_) ? 0.0 : 0.5*(k_-abs_error)*(k_-abs_error);
+}
+
+double L2WithDeadZone::graduatedWeight(double /*error*/,
+                                       double /*error*/) const {
+  throw std::logic_error("L2WithDeadZone loss has no graduated form.");
+}
+
+double L2WithDeadZone::graduatedLoss(double /*error*/, double /*error*/) const {
+  throw std::logic_error("L2WithDeadZone loss has no graduated form.");
 }
 
 void L2WithDeadZone::print(const std::string &s="") const {
@@ -505,6 +634,16 @@ double AsymmetricTukey::loss(double distance) const {
   return csquared_ / 6.0;
 }
 
+double AsymmetricTukey::graduatedWeight(double /*error*/,
+                                        double /*error*/) const {
+  throw std::logic_error("AsymmetricTukey loss has no graduated form.");
+}
+
+double AsymmetricTukey::graduatedLoss(double /*error*/,
+                                      double /*error*/) const {
+  throw std::logic_error("AsymmetricTukey loss has no graduated form.");
+}
+
 void AsymmetricTukey::print(const std::string &s="") const {
   std::cout << s << ": AsymmetricTukey (" << c_ << ")" << std::endl;
 }
@@ -549,6 +688,16 @@ double AsymmetricCauchy::loss(double distance) const {
   return ksquared_ * val * 0.5;
 }
 
+double AsymmetricCauchy::graduatedWeight(double /*error*/,
+                                         double /*error*/) const {
+  throw std::logic_error("AsymmetricCauchy loss has no graduated form.");
+}
+
+double AsymmetricCauchy::graduatedLoss(double /*error*/,
+                                       double /*error*/) const {
+  throw std::logic_error("AsymmetricCauchy loss has no graduated form.");
+}
+
 void AsymmetricCauchy::print(const std::string &s="") const {
   std::cout << s << ": AsymmetricCauchy (" << k_ << ")" << std::endl;
 }
@@ -568,16 +717,36 @@ AsymmetricCauchy::shared_ptr AsymmetricCauchy::Create(double k, const ReweightSc
 // Custom
 /* ************************************************************************* */
 
-Custom::Custom(std::function<double(double)> weight, std::function<double(double)> loss, const ReweightScheme reweight,
-               std::string name)
-    : Base(reweight), weight_(std::move(weight)), loss_(loss), name_(std::move(name)) {}
+Custom::Custom(std::function<double(double)> weight,
+               std::function<double(double)> loss,
+               std::optional<std::function<double(double, double)>> grad_weight,
+               std::optional<std::function<double(double, double)>> grad_loss,
+               const ReweightScheme reweight, std::string name)
+    : Base(reweight),
+      weight_(std::move(weight)),
+      loss_(loss),
+      grad_weight_(grad_weight),
+      grad_loss_(grad_loss),
+      name_(std::move(name)) {}
 
-double Custom::weight(double distance) const {
-  return weight_(distance);
+double Custom::weight(double distance) const { return weight_(distance); }
+
+double Custom::loss(double distance) const { return loss_(distance); }
+
+double Custom::graduatedWeight(double distance, double mu) const {
+  if (grad_weight_) {
+    return (*grad_weight_)(distance, mu);
+  } else {
+    throw std::logic_error("Custom loss provided no graduated form.");
+  }
 }
 
-double Custom::loss(double distance) const {
-  return loss_(distance);
+double Custom::graduatedLoss(double distance, double mu) const {
+  if (grad_loss_) {
+    return (*grad_loss_)(distance, mu);
+  } else {
+    throw std::logic_error("Custom loss provided no graduated form.");
+  }
 }
 
 void Custom::print(const std::string &s = "") const {
@@ -592,9 +761,14 @@ bool Custom::equals(const Base &expected, double tol) const {
          loss_.target<double(double)>() == p->loss_.target<double(double)>() && reweight_ == p->reweight_;
 }
 
-Custom::shared_ptr Custom::Create(std::function<double(double)> weight, std::function<double(double)> loss,
-                                  const ReweightScheme reweight, const std::string &name) {
-  return std::make_shared<Custom>(std::move(weight), std::move(loss), reweight, name);
+Custom::shared_ptr Custom::Create(
+    std::function<double(double)> weight, std::function<double(double)> loss,
+    std::optional<std::function<double(double, double)>> grad_weight,
+    std::optional<std::function<double(double, double)>> grad_loss,
+    const ReweightScheme reweight, const std::string& name) {
+  return std::make_shared<Custom>(std::move(weight), std::move(loss),
+                                  std::move(grad_weight), std::move(grad_loss),
+                                  reweight, name);
 }
 
 } // namespace mEstimator
