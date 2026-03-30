@@ -35,6 +35,8 @@
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>
 
+#include <bitset>
+
 #include "Switching.h"
 
 using namespace std;
