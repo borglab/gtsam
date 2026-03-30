@@ -17,6 +17,7 @@
  */
 
 #include <gtsam/linear/LossFunctions.h>
+#include <gtsam/nonlinear/internal/ChiSquaredInverse.h>
 
 #include <iostream>
 #include <optional>
@@ -438,6 +439,19 @@ GemanMcClure::shared_ptr GemanMcClure::Create(
 }
 
 /* ************************************************************************* */
+double GemanMcClure::shapeParamFromInfThresh(double influence_thresh, size_t dof,
+                                          double chi2_outlier_thresh) {
+  double outlier_residual_thresh =
+      internal::chiSquaredQuantile(dof, chi2_outlier_thresh);
+  // Equation [d/dr \rho(x) = influence_thresh] solved for c
+  const double t1 =
+      std::sqrt(2 * influence_thresh * std::pow(outlier_residual_thresh, 5));
+  const double t2 = influence_thresh * std::pow(outlier_residual_thresh, 2);
+  const double t3 = influence_thresh - 2 * outlier_residual_thresh;
+  return std::sqrt(-((t1 + t2) / t3));
+}
+
+/* ************************************************************************* */
 // TruncatedLeastSquares
 /* ************************************************************************* */
 
@@ -484,7 +498,7 @@ double TruncatedLeastSquares::graduatedWeight(double distance,
 }
 
 double TruncatedLeastSquares::graduatedLoss(double distance, double mu) const {
-  return Weight(mu * c_, distance);
+  return Loss(mu * c_, (mu * mu) * csquared_, distance);
 }
 
 void TruncatedLeastSquares::print(const std::string &s="") const {

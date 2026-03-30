@@ -469,6 +469,20 @@ class GTSAM_EXPORT GemanMcClure : public Base {
   /// @brief Static implementation of GemanMcClure Loss
   static double Loss(double csquared, double distance);
 
+  /** @brief Static helper to compute shape param (c) using outlier influence.
+   * Computes a shape param such that an outlier (any measurement with
+   * residual equal to or greater than the chi2_outlier_threshold) will have an
+   * "influence" (derivative of loss) less than or equal to the
+   * influence_threshold: d/dx(\rho(x)) < influence_thresh
+   * @param influence_thresh - The max influence permited by an outlier
+   * @param dof - The degrees of freedom of the corresponding measurement
+   * @param chi2_outlier_thresh - The threshold for outlier (i.e. 0.95 = any
+   * measurement with residual greater than 95% of expected is an outlier)
+   * @returns The shape param
+   */
+  static double shapeParamFromInfThresh(double influence_thresh, size_t dof,
+                                        double chi2_outlier_thresh);
+
  protected:
   double c_;
   double csquared_;
