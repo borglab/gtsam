@@ -1,0 +1,175 @@
+/** @brief Interface and implementations for GraduationScheduler
+ * These are used to define the sequence of problems solved by RISAM.
+ * The scheduler defines these problems using the the control parameter $\mu$
+ * for a specific Graduated Robust Loss Function.
+ *  @author Dan McGann
+ *  @date Mar 2022
+ */
+#pragma once
+#include <gtsam/base/FastVector.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/nonlinear/internal/ChiSquaredInverse.h>
+
+#include <memory>
+#include <optional>
+
+namespace gtsam {
+
+/** @brief Base class for graduation scheduling for riSAM
+ * Advanced users can write their own schedulers by inheriting from this class
+ */
+class GraduationScheduler {
+  /// @name Types
+  /// @{
+ public:
+  typedef std::shared_ptr<GraduationScheduler> shared_ptr;
+  /// @}
+
+  /// @name Fields
+  /// @{
+ protected:
+  /// @brief The initial value for mu $\mu_{init}$
+  const double mu_init_;
+  /// @brief The threshold at which to consider mu to be converged
+  const double convergence_thresh_;
+  /// @}
+
+  /// @name Public Interface
+  /// @{
+ public:
+  GraduationScheduler(double mu_init, double convergence_thresh)
+      : mu_init_(mu_init), convergence_thresh_(convergence_thresh) {}
+
+  /// @brief Returns the value of $\mu_{init}$ for this graduated
+  double muInit() const { return mu_init_; }
+
+  /** @brief Returns the next value of $\mu$ for this graduated
+   * @param mu: The current value of $\mu$
+   * @param residual: The current residual of the factor
+   * @param update_count: The number of mu updates during this solve
+   */
+  virtual double updateMu(const double& mu, const double& residual,
+                          const size_t& update_count) const = 0;
+
+  /** @brief Returns the next value of $\mu_{init}$ for strong inliers/outliers
+   *  - Inliers are updated to have more convex $\mu_{init}$
+   *  - Outliers are update to have less convex $\mu_{init}$
+   * @param mu_init: The current value of $\mu_{init}$
+   * @param is_inlier: Flag indicating inlier update otherwise an outlier update
+   */
+  virtual double updateMuInit(const double& mu_init,
+                              const bool is_inlier) const = 0;
+
+  /// @brief Returns true iff the value of $\mu$ has converged
+  virtual bool isMuConverged(const double& mu) const = 0;
+  /// @}
+};
+
+/* ************************************************************************* */
+/** @brief Scheduler for Geman McClure Loss with Scale Invariant Graduation
+ */
+class SIGScheduler : public GraduationScheduler {
+  /// @name Types
+  /// @{
+ public:
+  /// @brief Shortcut for shared pointer
+  typedef std::shared_ptr<SIGScheduler> shared_ptr;
+  /// @brief Function type for $\mu$ update sequence
+  typedef std::function<double(double, double, size_t)> MuUpdateStrategy;
+  /// @}
+
+  /// @name Fields
+  /// @{
+ private:
+  /// @brief The update strategy for the sequence $\mu$ values
+  MuUpdateStrategy mu_update_strat_;
+  /// @brief The amount to increment/decrement $\mu_{init}$ if the factor is a
+  /// strong inlier/outlier when values converge
+  double mu_init_increment_;
+  /// @}
+
+  /// @name Public Interface
+  /// @{
+ public:
+  /** @brief Individual Parameter Constructor
+   * @param mu_update_strat: The update strategy to use for $\mu$ updates
+   *    Recommend: muUpdateStable, Alt: muUpdateMcGann2023 or Custom
+   * @param mu_init_increment: The amount to increment/decrement $\mu_{init}$
+   */
+  SIGScheduler(MuUpdateStrategy mu_update_strat = muUpdateStable,
+               double mu_init_increment = 0.2)
+      : GraduationScheduler(0.0, 1.0),
+        mu_update_strat_(mu_update_strat),
+        mu_init_increment_(mu_init_increment) {}
+
+  /// @brief @see GraduationScheduler
+  double updateMu(const double& mu, const double& residual,
+                  const size_t& update_count) const override;
+  /// @brief @see GraduationScheduler
+  double updateMuInit(const double& mu_init,
+                      const bool is_inlier) const override;
+  /// @brief @see GraduationScheduler
+  bool isMuConverged(const double& mu) const override;
+  /// @}
+
+  /// @name Default $\mu$ Update Strategies
+  /// @{
+ public:
+  /// @brief $\mu$ update sequence empirically discovered and presented in the
+  /// orig riSAM paper
+  static double muUpdateMcGann2023(const double& mu, const double& residual,
+                                   const size_t& update_count);
+  /// @brief More stable $\mu$ Update sequence developed empirically since
+  /// algorithm was published
+  static double muUpdateStable(const double& mu, const double& residual,
+                               const size_t& update_count);
+  /// @}
+};
+
+/* ************************************************************************* */
+/** @brief Scheduler losses that use scaled shape parameters for graduation.
+ * Examples include: Cauchy, TLS, Tukey
+ * These losses are Convex at \mu=\infty and Robust at \mu=1.0
+ */
+class ScaledScheduler : public GraduationScheduler {
+  /// @name Types
+  /// @{
+ public:
+  /// @brief Shortcut for shared pointer
+  typedef std::shared_ptr<ScaledScheduler> shared_ptr;
+  /// @}
+
+  /// @name Fields
+  /// @{
+ private:
+  /// @brief The scale factor to update $\mu$ values
+  double mu_scale_;
+  /// @brief The scale factor to update $\mu_{init}$ values
+  double mu_init_scale_;
+  /// @}
+
+  /// @name Public Interface
+  /// @{
+ public:
+  /** @brief Individual Parameter Constructor
+   * @param mu_init: The initial value for mu
+   * @param mu_scale: The scale factor for $\mu$ updates
+   * @param mu_init_increment: The amount to increment/decrement $\mu_{init}$
+   */
+  ScaledScheduler(double mu_init = 1e4, double mu_scale = 0.715,
+                  double mu_init_scale = 0.9)
+      : GraduationScheduler(mu_init, 1.0),
+        mu_scale_(mu_scale),
+        mu_init_scale_(mu_init_scale) {}
+
+  /// @brief @see GraduationScheduler
+  double updateMu(const double& mu, const double& residual,
+                  const size_t& update_count) const override;
+  /// @brief @see GraduationScheduler
+  double updateMuInit(const double& mu_init,
+                      const bool is_inlier) const override;
+  /// @brief @see GraduationScheduler
+  bool isMuConverged(const double& mu) const override;
+  /// @}
+};
+}  // namespace gtsam

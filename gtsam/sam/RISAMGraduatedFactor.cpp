@@ -13,26 +13,25 @@
 
 namespace gtsam {
 /* ************************************************************************* */
-GraduatedFactor::GraduatedFactor(GraduatedKernel::shared_ptr kernel)
-    : kernel_(kernel) {
-  mu_ = std::make_shared<double>(kernel_->muInit());
+GraduatedFactor::GraduatedFactor(GraduatedFactor::RobustLoss::shared_ptr loss,
+                                 GraduationScheduler::shared_ptr scheduler)
+    : robust_loss_(loss), scheduler_(scheduler) {
+  mu_ = std::make_shared<double>(scheduler_->muInit());
 }
 
 /* ************************************************************************* */
 GraduatedFactor::GraduatedFactor(const GraduatedFactor& other)
-    : kernel_(other.kernel_) {
+    : robust_loss_(other.robust_loss_), scheduler_(other.scheduler_) {
   mu_ = std::make_shared<double>(*(other.mu_));
 }
 
 /* ************************************************************************* */
-const GraduatedKernel::shared_ptr GraduatedFactor::kernel() const {
-  return kernel_;
+const GraduatedFactor::RobustLoss::shared_ptr GraduatedFactor::loss() const {
+  return robust_loss_;
+}
+/* ************************************************************************* */
+const GraduationScheduler::shared_ptr GraduatedFactor::scheduler() const {
+  return scheduler_;
 }
 
-/* ************************************************************************* */
-void GraduatedFactor::updateKernel(
-    const GraduatedKernel::shared_ptr& new_kernel) {
-  kernel_ = new_kernel;
-  *mu_ = new_kernel->muInit();
-}
 }  // namespace gtsam

@@ -115,7 +115,7 @@ RISAM::UpdateResult RISAM::updateRobust(
     for (gtsam::FactorIndex fidx : remaining_convex_factors) {
       auto grad_factor =
           std::dynamic_pointer_cast<GraduatedFactor>(factors_.at(fidx));
-      *(mu_[fidx]) = grad_factor->kernel()->updateMu(
+      *(mu_[fidx]) = grad_factor->scheduler()->updateMu(
           *(mu_[fidx]), grad_factor->residual(current_est),
           mu_update_count[fidx]);
       convexKeys.insert(convexKeys.end(), factors_.at(fidx)->begin(),
@@ -139,7 +139,7 @@ RISAM::UpdateResult RISAM::updateRobust(
     for (gtsam::FactorIndex fidx : remaining_convex_factors) {
       auto grad_factor =
           std::dynamic_pointer_cast<GraduatedFactor>(factors_.at(fidx));
-      if (!grad_factor->kernel()->isMuConverged(*(mu_[fidx])))
+      if (!grad_factor->scheduler()->isMuConverged(*(mu_[fidx])))
         new_remaining_convex_factors.push_back(fidx);
     }
     remaining_convex_factors = new_remaining_convex_factors;
@@ -220,7 +220,7 @@ void RISAM::augmentMu(const gtsam::NonlinearFactorGraph& new_factors,
     std::shared_ptr<double> mu, mu_init;
     if (grad_factor) {
       mu = grad_factor->mu_;
-      mu_init = std::make_shared<double>(grad_factor->kernel()->muInit());
+      mu_init = std::make_shared<double>(grad_factor->scheduler()->muInit());
     } else {
       mu = std::make_shared<double>(0);
       mu_init = std::make_shared<double>(0);
@@ -260,10 +260,10 @@ void RISAM::incrementMuInits() {
 
       if (mahdist > mah_upper_bound) {
         *(mu_inits_[fidx]) =
-            grad_factor->kernel()->incrementMuInit(*(mu_inits_[fidx]));
+            grad_factor->scheduler()->updateMuInit(*(mu_inits_[fidx]), false);
       } else if (mahdist < mah_lower_bound) {
         *(mu_inits_[fidx]) =
-            grad_factor->kernel()->incrementMuInitInv(*(mu_inits_[fidx]));
+            grad_factor->scheduler()->updateMuInit(*(mu_inits_[fidx]), true);
       }
     }
     // Reset accumulator

@@ -18,7 +18,7 @@
  */
 #pragma once
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/sam/RISAMGraduatedKernel.h>
+#include <gtsam/sam/RISAMGraduationScheduler.h>
 
 namespace gtsam {
 
@@ -28,13 +28,17 @@ class GraduatedFactor {
   /// @{
  public:
   typedef std::shared_ptr<GraduatedFactor> shared_ptr;
+  typedef noiseModel::mEstimator::Base RobustLoss;
   /// @}
 
   /// @name Fields
   /// @{
  protected:
-  /// @brief The Graduated Robust Kernel for this factor
-  GraduatedKernel::shared_ptr kernel_;
+  /// @brief The robust loss for this factor
+  RobustLoss::shared_ptr robust_loss_;
+  /// @brief The control param ($\mu$) scheduler for this factor
+  GraduationScheduler::shared_ptr scheduler_;
+
   /// @brief The unique mu control parameter for this factor
   std::shared_ptr<double> mu_;
   /// @}
@@ -46,10 +50,12 @@ class GraduatedFactor {
   /// @{
  public:
   /** @brief Constructor
-   * @param kernel: The graduated kernel to apply to this factor
    * @param args: The arguments required to construct the FACTOR_TYPE
+   * @param loss: The graduated robust loss applied to this factor
+   * @param scheduler: The control param $\mu$ scheduler for this factor
    */
-  GraduatedFactor(GraduatedKernel::shared_ptr kernel);
+  GraduatedFactor(RobustLoss::shared_ptr loss,
+                  GraduationScheduler::shared_ptr scheduler);
 
   /// @brief Copy constructor
   GraduatedFactor(const GraduatedFactor& other);
@@ -68,15 +74,14 @@ class GraduatedFactor {
   virtual double robustResidual(
       const gtsam::Values& current_estimate) const = 0;
 
-  /// @brief Returns the kernel for this graduated factor
-  const GraduatedKernel::shared_ptr kernel() const;
+  /// @brief Returns the robust loss for this graduated factor
+  const RobustLoss::shared_ptr loss() const;
 
-  /// @brief Updates the Kernel of this Graduated Factor
-  /// WARN: Resets mu_ to the mu_init of the kernel
-  void updateKernel(const GraduatedKernel::shared_ptr& new_kernel);
+  /// @brief Returns the graduation scheduler for this factor
+  const GraduationScheduler::shared_ptr scheduler() const;
 
   /// @brief Copies this factor as an instance of its base type without the
-  /// graduated kernel
+  /// graduated robust loss or scheduler
   virtual gtsam::NonlinearFactor::shared_ptr cloneUngraduated() const = 0;
   /// @}
 };
@@ -98,16 +103,21 @@ class GenericGraduatedFactor : public FACTOR_TYPE, public GraduatedFactor {
   /// @{
  public:
   /** @brief Constructor
-   * @param kernel: The graduated kernel to use for this factor
    * @param args: The arguments required to construct the FACTOR_TYPE
+   * @param loss: The graduated robust loss applied to this factor
+   * @param scheduler: The control param $\mu$ scheduler for this factor
    */
   template <class... Args>
-  GenericGraduatedFactor(GraduatedKernel::shared_ptr kernel, Args&&... args)
-      : FACTOR_TYPE(std::forward<Args>(args)...), GraduatedFactor(kernel) {}
+  GenericGraduatedFactor(RobustLoss::shared_ptr loss,
+                         GraduationScheduler::shared_ptr scheduler,
+                         Args&&... args)
+      : FACTOR_TYPE(std::forward<Args>(args)...),
+        GraduatedFactor(loss, scheduler) {}
 
   /// @brief Copy Constructor
   GenericGraduatedFactor(const GenericGraduatedFactor<FACTOR_TYPE>& other)
-      : FACTOR_TYPE(other), GraduatedFactor(other.kernel_) {}
+      : FACTOR_TYPE(other),
+        GraduatedFactor(other.robust_loss_, other.scheduler_) {}
 
   /// @brief Makes a deep copy of the factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -119,7 +129,7 @@ class GenericGraduatedFactor : public FACTOR_TYPE, public GraduatedFactor {
   /// @brief Linearizes the factor using the current value of mu
   gtsam::GaussianFactor::shared_ptr linearizeGraduated(
       const gtsam::Values& current_estimate) const override {
-    double r = residual(current_estimate);
+    double residual = this->residual(current_estimate);
 
     // Use base factor to linearize
     gtsam::Matrix A;
@@ -140,7 +150,11 @@ class GenericGraduatedFactor : public FACTOR_TYPE, public GraduatedFactor {
     }
 
     // Weight the Linearized Blocks
-    kernel_->weightSystem(Ablocks, b, r, *mu_);
+    double sqrt_weight = sqrt(robust_loss_->graduatedWeight(residual, *mu_));
+    for (gtsam::Matrix& Aj : Ablocks) {
+      Aj *= sqrt_weight;
+    }
+    b *= sqrt_weight;
 
     // Construct a jacobian factor from the weighted system
     gtsam::FastMap<gtsam::Key, gtsam::Matrix> Ablock_map;
@@ -173,7 +187,7 @@ class GenericGraduatedFactor : public FACTOR_TYPE, public GraduatedFactor {
 
   /// @brief See GraduatedFactor::robustResidual
   double robustResidual(const gtsam::Values& current_estimate) const override {
-    return kernel_->error(residual(current_estimate), *mu_);
+    return robust_loss_->graduatedLoss(residual(current_estimate), *mu_);
   }
 
   /// @brief See GraduatedFactor::cloneUngraduated
