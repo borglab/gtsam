@@ -19,6 +19,7 @@
 #include <gtsam/constrained/AugmentedLagrangian.h>
 #include <gtsam/constrained/AugmentedLagrangianOptimizer.h>
 #include <gtsam/slam/AntiFactor.h>
+
 #include <iostream>
 
 namespace gtsam {
@@ -97,7 +98,7 @@ NonlinearFactorGraph AugmentedLagrangianFunction(
   const NonlinearEqualityConstraints& eqConstraints = problem.eConstraints();
   for (size_t i = 0; i < eqConstraints.size(); i++) {
     const auto& constraint = eqConstraints.at(i);
-    Vector bias = lambdaEq[i] / muEq * constraint->sigmas();
+    Vector bias = (lambdaEq[i] / muEq).cwiseProduct(constraint->sigmas());
     auto penalty_l2 = constraint->penaltyFactor(muEq);
     graph.emplace_shared<BiasedFactor>(penalty_l2, bias);
   }
@@ -111,7 +112,7 @@ NonlinearFactorGraph AugmentedLagrangianFunction(
   // Create factors corresponding to Lagrange multiplier terms of i-constraints.
   for (size_t i = 0; i < ineqConstraints.size(); i++) {
     const auto& constraint = ineqConstraints.at(i);
-    Vector bias = lambdaIneq[i] / epsilon * constraint->sigmas();
+    Vector bias = constraint->sigmas() * (lambdaIneq[i] / epsilon);
     auto penalty_l2 = constraint->penaltyFactorEquality(epsilon);
     graph.emplace_shared<BiasedFactor>(penalty_l2, bias);
     graph.emplace_shared<AntiFactor>(penalty_l2);

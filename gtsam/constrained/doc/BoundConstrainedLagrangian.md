@@ -202,9 +202,9 @@ and then repeats outer iterations until [checkConvergenceBC()](../BoundConstrain
 The customized stopping rule terminates as soon as either
 
 $$
-\eta_k < \texttt{eta_threshold}
+\eta_k < \eta_{threshold}
 \qquad \text{or} \qquad
-\omega_k < \texttt{omega_threshold}.
+\omega_k < \omega_{threshold}.
 $$
 
 ## What the Current Code Is, and Is Not

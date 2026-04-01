@@ -23,7 +23,7 @@
 
 namespace gtsam {
 
-/// Parameters for Augmented Lagrangian method
+/// Parameters for the bound-constrained augmented Lagrangian outer loop.
 class GTSAM_EXPORT BoundConstrainedLagrangianParams
     : public AugmentedLagrangianParams {
  public:
@@ -31,11 +31,24 @@ class GTSAM_EXPORT BoundConstrainedLagrangianParams
   using This = BoundConstrainedLagrangianParams;
   using shared_ptr = std::shared_ptr<BoundConstrainedLagrangianParams>;
 
-  double k = 2;  // mu increase rate factor
+  /// Multiplicative factor used to increase the equality penalty `muEq`
+  /// when the iterate is not yet feasible enough for a multiplier update.
+  double k = 2;
+
+  /// Exponent used in the BCL threshold update
+  /// `eta_{k+1} = eta_k / mu_k^alpha` after an accepted multiplier step.
   double alpha = 0.5;
+
+  /// Initial feasibility threshold for the equality-constraint violation.
   double eta0 = 1.0;
+
+  /// Initial stationarity threshold for the cost-gradient infinity norm.
   double omega0 = 1.0;
+
+  /// Stop when feasibility threshold `eta` has been reduced below this value.
   double eta_threshold = 1e-3;
+
+  /// Stop when threshold `omega` has been reduced below this value.
   double omega_threshold = 1e-3;
 
   BoundConstrainedLagrangianParams() {
@@ -57,6 +70,9 @@ class GTSAM_EXPORT BoundConstrainedLagrangianState
   using Base::Base;
 };
 
+/**
+ * Augmented Lagrangian method with BCL globalization strategy
+ */
 class GTSAM_EXPORT BoundConstrainedLagrangian : public ConstrainedOptimizer {
  public:
   using Base = ConstrainedOptimizer;
@@ -72,42 +88,40 @@ class GTSAM_EXPORT BoundConstrainedLagrangian : public ConstrainedOptimizer {
   mutable Progress progress_;
 
  public:
-  /** Constructor. */
+  /// Constructor.
   BoundConstrainedLagrangian(const ConstrainedOptProblem& problem,
                              const Values& initialValues,
                              Params::shared_ptr p = std::make_shared<Params>())
       : Base(problem, initialValues), p_(p) {}
 
-  /** Solve one step of optimization, updating multipliers and parameters. */
+  /// Solve one step of optimization, updating multipliers and parameters.
   State iterate(const State& state) const;
 
-  /** Run optimization for the bound-constrained problem and return the result. */
+  /// Run optimization for the bound-constrained problem and return the result.
   Values optimize() const override;
 
-  /** Return progress of iterations as a read-only sequence of states. */
+  /// Return progress of iterations as a read-only sequence of states.
   const Progress& progress() const { return progress_; }
 
  protected:
-  /** Create an unconstrained optimizer that solves the augmented Lagrangian. */
+  /// Create an unconstrained optimizer that solves the augmented Lagrangian.
   SharedOptimizer createUnconstrainedOptimizer(
       const NonlinearFactorGraph& graph, const Values& values) const;
 
-  /** Update the Lagrange multipliers using dual ascent. */
+  /// Update the Lagrange multipliers using dual ascent.
   void updateMultipliers(const State& prev_state, State* state) const;
 
-  /** Build the augmented Lagrangian factor graph for the given state. */
+  /// Build the augmented Lagrangian factor graph for the given state.
   NonlinearFactorGraph augmentedLagrangianFunction(
       const State& state, const double epsilon = 1.0) const;
 
-  /** Store and log the initial state of the optimization. */
+  /// Store and log the initial state of the optimization.
   void logInitialState(const State& state) const;
 
-  /** Store and log the state after an iteration of the optimization. */
+  /// Store and log the state after an iteration of the optimization.
   void logIteration(const State& state) const;
 
-  /** 
-   * Customized convergence check for bound-constrained optimization.
-   */
+  /// Customized convergence check for bound-constrained optimization.
   bool checkConvergenceBC(const State& state, const State& previousState,
                           const Params& params) const;
 };
