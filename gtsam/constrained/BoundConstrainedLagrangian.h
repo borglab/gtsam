@@ -33,9 +33,9 @@ class GTSAM_EXPORT BoundConstrainedLagrangianParams
 
   double k = 2;  // mu increase rate factor
   double alpha = 0.5;
-  double ita0 = 1.0;
+  double eta0 = 1.0;
   double omega0 = 1.0;
-  double ita_threshold = 1e-3;
+  double eta_threshold = 1e-3;
   double omega_threshold = 1e-3;
 
   BoundConstrainedLagrangianParams() {
@@ -52,7 +52,7 @@ class GTSAM_EXPORT BoundConstrainedLagrangianState
   using shared_ptr = std::shared_ptr<This>;
 
   double omega;  // Threshold to compare gradient against;
-  double ita;    // Threshold to compare constraint violation against;
+  double eta;    // Threshold to compare constraint violation against;
 
   using Base::Base;
 };

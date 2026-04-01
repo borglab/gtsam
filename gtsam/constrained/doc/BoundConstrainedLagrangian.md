@@ -95,7 +95,7 @@ after an accepted multiplier update, and leaves the thresholds unchanged when fe
 The important point is the role of the tests:
 
 - `omega` says "do not trust the outer update unless the current inner solve is stationary enough."
-- `ita` says "do not trust the multiplier update unless the current point is feasible enough."
+- `eta` says "do not trust the multiplier update unless the current point is feasible enough."
 - increasing `mu` is the fallback globalization move when feasibility is lagging.
 
 That is the BCL strategy, expressed with the same sign and penalty convention used in the current `gtsam` implementation.
@@ -109,9 +109,9 @@ The implementation lives in [BoundConstrainedLagrangian.h](../BoundConstrainedLa
 [BoundConstrainedLagrangian.h](../BoundConstrainedLagrangian.h) defines the parameters:
 
 - `k`: multiplicative factor used when increasing `muEq`
-- `alpha`: exponent used when shrinking `ita`
-- `ita0`, `omega0`: initial BCL tolerances
-- `ita_threshold`, `omega_threshold`: stopping thresholds
+- `alpha`: exponent used when shrinking `eta`
+- `eta0`, `omega0`: initial BCL tolerances
+- `eta_threshold`, `omega_threshold`: stopping thresholds
 
 It also sets
 
@@ -125,7 +125,7 @@ The state extends the generic augmented-Lagrangian state with:
 
 - `muEq`
 - `lambdaEq`
-- `ita`
+- `eta`
 - `omega`
 
 ### Building the Inner Subproblem
@@ -147,7 +147,7 @@ That function does the following:
 
 1. It linearizes the original cost graph `problem_.costs()` at the previous iterate and computes the infinity norm of the corresponding gradient.
 2. If that norm is below `previousState.omega`, it computes the equality-constraint violations at the previous iterate and takes their infinity norm.
-3. If the violation norm is also below `previousState.ita`, it accepts a multiplier update.
+3. If the violation norm is also below `previousState.eta`, it accepts a multiplier update.
 4. Otherwise, it keeps the multipliers fixed and increases the penalty.
 
 In formulas, the implemented logic is
@@ -194,7 +194,7 @@ If the stationarity test fails, everything is left unchanged.
 
 - `lambdaEq` from zero multipliers
 - `muEq` from `initialMuEq`
-- `ita` from `ita0`
+- `eta` from `eta0`
 - `omega` from `omega0`
 
 and then repeats outer iterations until [checkConvergenceBC()](../BoundConstrainedLagrangian.h) or the inherited constrained-optimizer stopping conditions fire.
@@ -202,7 +202,7 @@ and then repeats outer iterations until [checkConvergenceBC()](../BoundConstrain
 The customized stopping rule terminates as soon as either
 
 $$
-\eta_k < \texttt{ita_threshold}
+\eta_k < \texttt{eta_threshold}
 \qquad \text{or} \qquad
 \omega_k < \texttt{omega_threshold}.
 $$
@@ -217,7 +217,7 @@ It is important to be precise about what is actually implemented:
 - The acceptance test uses the gradient of the original cost, not the gradient of the full augmented Lagrangian.
 - The constraint test uses `whitenedError(previousState.values)` for each equality constraint.
 - The inner solver is one LM step, not an inner solve driven to an adaptive tolerance.
-- Globalization outside that LM step is limited to the `ita` / `omega` logic and the penalty update.
+- Globalization outside that LM step is limited to the `eta` / `omega` logic and the penalty update.
 
 So this is clearly in the Conn/Nocedal augmented-Lagrangian family, but it is a relatively lightweight specialization of that family.
 

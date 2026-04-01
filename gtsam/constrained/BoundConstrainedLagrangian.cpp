@@ -85,26 +85,26 @@ void BoundConstrainedLagrangian::updateMultipliers(const State& previousState,
           constraint_violation_inf_norm, violation.lpNorm<Eigen::Infinity>());
     }
 
-    if (constraint_violation_inf_norm < previousState.ita) {
+    if (constraint_violation_inf_norm < previousState.eta) {
       state->lambdaEq.resize(eqConstraints.size());
       for (size_t i = 0; i < eqConstraints.size(); i++) {
         state->lambdaEq[i] = previousState.lambdaEq[i] +
                              previousState.muEq * constraint_violations[i];
       }
       state->muEq = previousState.muEq;
-      state->ita = previousState.ita / std::pow(previousState.muEq, p_->alpha);
+      state->eta = previousState.eta / std::pow(previousState.muEq, p_->alpha);
       state->omega = previousState.omega / previousState.muEq;
     } else {
       state->lambdaEq = previousState.lambdaEq;
       state->muEq = previousState.muEq * p_->k;
-      state->ita = previousState.ita;
+      state->eta = previousState.eta;
       state->omega = previousState.omega;
     }
   } else {
     // keep parameters unchanged.
     state->lambdaEq = previousState.lambdaEq;
     state->muEq = previousState.muEq;
-    state->ita = previousState.ita;
+    state->eta = previousState.eta;
     state->omega = previousState.omega;
   }
 }
@@ -136,7 +136,7 @@ Values BoundConstrainedLagrangian::optimize() const {
   State state(0, initialValues_, problem_);
   state.initializeLagrangeMultipliers(problem_);
   state.muEq = p_->initialMuEq;
-  state.ita = p_->ita0;
+  state.eta = p_->eta0;
   state.omega = p_->omega0;
   logInitialState(state);
 
@@ -199,7 +199,7 @@ void BoundConstrainedLagrangian::logIteration(const State& state) const {
 bool BoundConstrainedLagrangian::checkConvergenceBC(
     const State& state, const State& previousState,
     const Params& params) const {
-  if (state.ita < params.ita_threshold ||
+  if (state.eta < params.eta_threshold ||
       state.omega < params.omega_threshold) {
     return true;
   }

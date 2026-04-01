@@ -15,7 +15,7 @@ The `constrained` module provides nonlinear constrained optimization tools on to
 - [ConstrainedOptimizer](ConstrainedOptimizer.h): Base class for constrained optimizers, including shared convergence logic and iteration state.
 - [PenaltyOptimizer](PenaltyOptimizer.h): Classical penalty method. Each outer iteration increases penalty parameters and solves an unconstrained nonlinear least-squares subproblem.
 - [AugmentedLagrangianOptimizer](AugmentedLagrangianOptimizer.h): Generic augmented Lagrangian method with explicit multiplier updates for equality and inequality constraints.
-- [BoundConstrainedLagrangian](BoundConstrainedLagrangian.h): A more specialized bound-constrained augmented Lagrangian variant with `ita` and `omega` thresholds controlling multiplier and penalty updates.
+- [BoundConstrainedLagrangian](BoundConstrainedLagrangian.h): A more specialized bound-constrained augmented Lagrangian variant with `eta` and `omega` thresholds controlling multiplier and penalty updates.
 
 ## Supporting Pieces
 
@@ -44,7 +44,7 @@ This is the main generic constrained optimizer currently in the module.
 `BoundConstrainedLagrangian` is a more specialized outer-loop strategy. Instead of always updating multipliers, it checks:
 
 - the infinity norm of the cost gradient against `omega`
-- the infinity norm of the equality constraint violation against `ita`
+- the infinity norm of the equality constraint violation against `eta`
 
 If the iterate is sufficiently stationary and feasible, it updates multipliers and tightens thresholds; otherwise, it increases the penalty parameter. This solver currently focuses on the equality-constrained case and reuses the augmented-Lagrangian factor-graph construction.
 
