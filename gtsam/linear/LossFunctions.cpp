@@ -549,7 +549,7 @@ double DCS::graduatedWeight(double distance, double mu) const {
 }
 
 double DCS::graduatedLoss(double distance, double mu) const {
-  return Weight(mu * c_, distance);
+  return Loss(mu * c_, distance);
 }
 
 void DCS::print(const std::string &s="") const {
