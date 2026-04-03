@@ -19,7 +19,6 @@
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/internal/ChiSquaredInverse.h>
 #include <gtsam/sam/RISAMGraduatedFactor.h>
-#include <gtsam/sam/RISAMGraduatedKernel.h>
 
 namespace gtsam {
 
