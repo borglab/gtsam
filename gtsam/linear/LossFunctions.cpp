@@ -383,30 +383,29 @@ GemanMcClure::GemanMcClure(double c, const GemanMcClure::GradScheme graduation,
                            const ReweightScheme reweight)
     : Base(reweight), c_(c), csquared_(c * c), graduation_(graduation) {}
 
-double GemanMcClure::Weight(double csquared, double distance) {
+double GemanMcClure::Weight(double csquared, double distance2) {
   const double c4 = csquared * csquared;
-  const double c2error = csquared + (distance * distance);
+  const double c2error = csquared + distance2;
   return c4 / (c2error * c2error);
 }
 
-double GemanMcClure::Loss(double csquared, double distance) {
-  const double error2 = distance * distance;
-  return 0.5 * (csquared * error2) / (csquared + error2);
+double GemanMcClure::Loss(double csquared, double distance2) {
+  return 0.5 * (csquared * distance2) / (csquared + distance2);
 }
 
 double GemanMcClure::weight(double distance) const {
-  return Weight(csquared_, distance);
+  return Weight(csquared_, distance * distance);
 }
 
 double GemanMcClure::loss(double distance) const {
-  return Loss(csquared_, distance);
+  return Loss(csquared_, distance * distance);
 }
 
 double GemanMcClure::graduatedWeight(double distance, double mu) const {
+  const double d2 = distance * distance;
   if (graduation_ == GemanMcClure::GradScheme::STANDARD) {
-    return Weight(mu * csquared_, distance);
+    return Weight(mu * csquared_, d2);
   } else {  // GemanMcClure::GradScheme::SCALE_INVARIANT
-    const double d2 = distance * distance;
     const double sqrt_denom = csquared_ + std::pow(d2, mu);
     return (csquared_ * (csquared_ + std::pow(d2, mu) * (1 - mu))) /
            (sqrt_denom * sqrt_denom);
@@ -414,10 +413,10 @@ double GemanMcClure::graduatedWeight(double distance, double mu) const {
 }
 
 double GemanMcClure::graduatedLoss(double distance, double mu) const {
+  const double d2 = distance * distance;
   if (graduation_ == GemanMcClure::GradScheme::STANDARD) {
-    return Loss(mu * csquared_, distance);
+    return Loss(mu * csquared_, d2);
   } else {  // GemanMcClure::GradScheme::SCALE_INVARIANT
-    const double d2 = distance * distance;
     return 0.5 * (csquared_ * d2) / (csquared_ + std::pow(d2, mu));
   }
 }
@@ -455,64 +454,105 @@ double GemanMcClure::shapeParamFromInfThresh(double influence_thresh, size_t dof
 // TruncatedLeastSquares
 /* ************************************************************************* */
 
-TruncatedLeastSquares::TruncatedLeastSquares(double c, const ReweightScheme reweight)
-  : Base(reweight), c_(c), csquared_(c * c) {
+TruncatedLeastSquares::TruncatedLeastSquares(
+    double c, const TruncatedLeastSquares::GradScheme graduation,
+    const ReweightScheme reweight)
+    : Base(reweight), c_(c), csquared_(c * c), graduation_(graduation) {
   if (c_ <= 0) {
-    throw runtime_error("mEstimator TruncatedLeastSquares takes only positive double in constructor.");
+    throw runtime_error(
+        "mEstimator TruncatedLeastSquares takes only positive double in "
+        "constructor.");
   }
 }
 
-double TruncatedLeastSquares::Weight(double c, double distance) {
-  if (std::abs(distance) <= c) {
+double TruncatedLeastSquares::Weight(double csquared, double distance2) {
+  if (distance2 <= csquared) {
     return 1.0;
   }
   return 0.0;
 }
 
-double TruncatedLeastSquares::Loss(double c, double csquared, double distance) {
-  if (std::abs(distance) <= c) {
-    return 0.5 * distance * distance;
+double TruncatedLeastSquares::Loss(double csquared, double distance2) {
+  if (distance2 <= csquared) {
+    return 0.5 * distance2;
   }
   return 0.5 * csquared;
 }
 
-std::optional<double> TruncatedLeastSquares::GNCWeight(double distance2,
-                                                       double lowerbound,
-                                                       double upperbound) {
-  if (distance2 <= lowerbound) return 1.0;
-  if (distance2 >= upperbound) return 0.0;
-  return std::nullopt;
+double TruncatedLeastSquares::GraduatedWeight(GradScheme graduation,
+                                              double csquared, double distance2,
+                                              double mu) {
+  if (graduation == TruncatedLeastSquares::GradScheme::STANDARD) {
+    return Weight(csquared * (mu * mu), distance2);
+  } else if (graduation == TruncatedLeastSquares::GradScheme::GNC_LINEAR) {
+    const double lowerbound = (mu / (mu + 1.0)) * csquared;
+    const double upperbound = ((mu + 1.0) / mu) * csquared;
+
+    if (distance2 <= lowerbound) return 1.0;
+    if (distance2 >= upperbound) return 0.0;
+    return std::sqrt(csquared * mu * (mu + 1.0) / distance2) - mu;
+  } else {  // TruncatedLeastSquares::GradScheme::GNC_SUPERLINEAR
+    const double lowerbound = csquared;
+    const double upperbound = ((mu + 1.0) * (mu + 1.0) / (mu * mu)) * csquared;
+
+    if (distance2 <= lowerbound) return 1.0;
+    if (distance2 >= upperbound) return 0.0;
+    return std::sqrt(csquared / distance2) * (mu + 1.0) - mu;
+  }
+}
+
+double TruncatedLeastSquares::GraduatedLoss(GradScheme graduation,
+                                            double csquared, double distance2,
+                                            double mu) {
+  if (graduation == TruncatedLeastSquares::GradScheme::STANDARD) {
+    return Loss((mu * mu) * csquared, distance2);
+  } else if (graduation == TruncatedLeastSquares::GradScheme::GNC_LINEAR) {
+    const double lowerbound = (mu / (mu + 1.0)) * csquared;
+    const double upperbound = ((mu + 1.0) / mu) * csquared;
+
+    if (distance2 <= lowerbound) return 0.5 * distance2;
+    if (distance2 >= upperbound) return 0.5 * csquared;
+    return std::sqrt(csquared) * std::sqrt(distance2) *
+               std::sqrt(mu * (mu + 1.0)) -
+           (mu * (csquared + distance2));
+  } else {  // TruncatedLeastSquares::GradScheme::GNC_SUPERLINEAR
+    throw std::runtime_error(
+        "TLS with GradScheme::GNC_SUPERLINEAR has no loss form");
+  }
 }
 
 double TruncatedLeastSquares::weight(double distance) const {
-  return Weight(c_, distance);
+  return Weight(csquared_, distance * distance);
 }
 
 double TruncatedLeastSquares::loss(double distance) const {
-  return Loss(c_, csquared_, distance);
+  return Loss(csquared_, distance * distance);
 }
 
 double TruncatedLeastSquares::graduatedWeight(double distance,
                                               double mu) const {
-  return Weight(mu * c_, distance);
+  return GraduatedWeight(graduation_, csquared_, distance * distance, mu);
 }
 
 double TruncatedLeastSquares::graduatedLoss(double distance, double mu) const {
-  return Loss(mu * c_, (mu * mu) * csquared_, distance);
+  return GraduatedLoss(graduation_, csquared_, distance * distance, mu);
 }
 
-void TruncatedLeastSquares::print(const std::string &s="") const {
+void TruncatedLeastSquares::print(const std::string& s = "") const {
   std::cout << s << ": TLS (" << c_ << ")" << std::endl;
 }
 
-bool TruncatedLeastSquares::equals(const Base &expected, double tol) const {
-  const TruncatedLeastSquares* p = dynamic_cast<const TruncatedLeastSquares*>(&expected);
+bool TruncatedLeastSquares::equals(const Base& expected, double tol) const {
+  const TruncatedLeastSquares* p =
+      dynamic_cast<const TruncatedLeastSquares*>(&expected);
   if (p == nullptr) return false;
   return std::abs(c_ - p->c_) < tol;
 }
 
-TruncatedLeastSquares::shared_ptr TruncatedLeastSquares::Create(double c, const ReweightScheme reweight) {
-  return shared_ptr(new TruncatedLeastSquares(c, reweight));
+TruncatedLeastSquares::shared_ptr TruncatedLeastSquares::Create(
+    double c, TruncatedLeastSquares::GradScheme graduation,
+    const ReweightScheme reweight) {
+  return shared_ptr(new TruncatedLeastSquares(c, graduation, reweight));
 }
 
 /* ************************************************************************* */

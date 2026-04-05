@@ -797,7 +797,7 @@ TEST(NoiseModel, robustFunctionTLS)
   DOUBLES_EQUAL(0.1250, tls->loss(error4), 1e-8);
 }
 
-TEST(NoiseModel, robustFunctionTruncatedLeastSquaresGraduated) {
+TEST(NoiseModel, robustFunctionTruncatedLeastSquaresGraduatedStandard) {
   const double k = 5.0, e1 = 1.0, e2 = 10.0;
   const mEstimator::TruncatedLeastSquares::shared_ptr tls =
       mEstimator::TruncatedLeastSquares::Create(k);
@@ -813,6 +813,38 @@ TEST(NoiseModel, robustFunctionTruncatedLeastSquaresGraduated) {
   // Standard for \mu = 1
   DOUBLES_EQUAL(tls->loss(e1), tls->graduatedLoss(e1, 1.0), 1e-6);
   DOUBLES_EQUAL(tls->loss(e2), tls->graduatedLoss(e2, 1.0), 1e-6);
+}
+
+TEST(NoiseModel, robustFunctionTruncatedLeastSquaresGraduatedLinear) {
+  const double k = 5.0, e1 = 1.0, e2 = 10.0;
+  const mEstimator::TruncatedLeastSquares::shared_ptr tls =
+      mEstimator::TruncatedLeastSquares::Create(
+          k, mEstimator::TruncatedLeastSquares::GradScheme::GNC_LINEAR);
+  // Convex for \mu = 0
+  DOUBLES_EQUAL(0.005, tls->graduatedWeight(e1, 1e-6), 1e-6);
+  DOUBLES_EQUAL(0.0005, tls->graduatedWeight(e2, 1e-6), 1e-6);
+  // Standard for large \mu
+  DOUBLES_EQUAL(tls->weight(e1), tls->graduatedWeight(e1, 1e8), 1e-6);
+  DOUBLES_EQUAL(tls->weight(e2), tls->graduatedWeight(e2, 1e8), 1e-6);
+  // Convex for \mu = 0
+  DOUBLES_EQUAL(0.0005, tls->graduatedLoss(e1, 1e-8), 1e-4);
+  DOUBLES_EQUAL(0.005, tls->graduatedLoss(e2, 1e-8), 1e-4);
+  // Standard for large \mu
+  DOUBLES_EQUAL(tls->loss(e1), tls->graduatedLoss(e1, 1e8), 1e-6);
+  DOUBLES_EQUAL(tls->loss(e2), tls->graduatedLoss(e2, 1e8), 1e-6);
+}
+
+TEST(NoiseModel, robustFunctionTruncatedLeastSquaresGraduatedSuperLinear) {
+  const double k = 5.0, e1 = 1.0, e2 = 10.0;
+  const mEstimator::TruncatedLeastSquares::shared_ptr tls =
+      mEstimator::TruncatedLeastSquares::Create(
+          k, mEstimator::TruncatedLeastSquares::GradScheme::GNC_SUPERLINEAR);
+  // Convex for \mu = 0
+  DOUBLES_EQUAL(1, tls->graduatedWeight(e1, 1e-6), 1e-6);
+  DOUBLES_EQUAL(0.5, tls->graduatedWeight(e2, 1e-6), 1e-6);
+  // Standard for large \mu
+  DOUBLES_EQUAL(tls->weight(e1), tls->graduatedWeight(e1, 1e8), 1e-6);
+  DOUBLES_EQUAL(tls->weight(e2), tls->graduatedWeight(e2, 1e8), 1e-6);
 }
 
 TEST(NoiseModel, robustFunctionWelsch)
@@ -1007,8 +1039,10 @@ TEST(NoiseModel, robustNoiseTLS)
   Matrix A = (Matrix(2, 2) << a00, a01, a10, a11).finished();
   Vector b = Vector2(error1, error2);
   const Robust::shared_ptr robust = Robust::Create(
-    mEstimator::TruncatedLeastSquares::Create(k, mEstimator::TruncatedLeastSquares::Scalar),
-    Unit::Create(2));
+      mEstimator::TruncatedLeastSquares::Create(
+          k, mEstimator::TruncatedLeastSquares::GradScheme::STANDARD,
+          mEstimator::TruncatedLeastSquares::Scalar),
+      Unit::Create(2));
 
   robust->WhitenSystem(A, b);
 
@@ -1092,8 +1126,7 @@ TEST(NoiseModel, robustNoiseCustomHuber) {
   DOUBLES_EQUAL(sqrt(k / 100.0) * 1000.0, A(1, 1), 1e-8);
 }
 
-TEST(NoiseModel, lossFunctionAtZero)
-{
+TEST(NoiseModel, lossFunctionAtZero) {
   const double k = 5.0;
   auto fair = mEstimator::Fair::Create(k);
   DOUBLES_EQUAL(fair->loss(0), 0, 1e-8);
@@ -1125,6 +1158,9 @@ TEST(NoiseModel, lossFunctionAtZero)
   auto assy_tukey = mEstimator::AsymmetricTukey::Create(k);
   DOUBLES_EQUAL(assy_tukey->loss(0), 0, 1e-8);
   DOUBLES_EQUAL(assy_tukey->weight(0), 1, 1e-8);
+  auto tls = mEstimator::TruncatedLeastSquares::Create(k);
+  DOUBLES_EQUAL(tls->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(tls->weight(0), 1, 1e-8);
 }
 
 TEST(NoiseModel, lossFunctionAtZeroGraduated) {
@@ -1152,6 +1188,17 @@ TEST(NoiseModel, lossFunctionAtZeroGraduated) {
   auto dcs = mEstimator::DCS::Create(k);
   DOUBLES_EQUAL(dcs->graduatedLoss(0, mu), 0, 1e-8);
   DOUBLES_EQUAL(dcs->graduatedWeight(0, mu), 1, 1e-8);
+  auto tls_std = mEstimator::TruncatedLeastSquares::Create(
+      k, mEstimator::TruncatedLeastSquares::GradScheme::STANDARD);
+  DOUBLES_EQUAL(tls_std->graduatedLoss(0, mu), 0, 1e-8);
+  DOUBLES_EQUAL(tls_std->graduatedWeight(0, mu), 1, 1e-8);
+  auto tls_lin = mEstimator::TruncatedLeastSquares::Create(
+      k, mEstimator::TruncatedLeastSquares::GradScheme::GNC_LINEAR);
+  DOUBLES_EQUAL(tls_lin->graduatedLoss(0, mu), 0, 1e-8);
+  DOUBLES_EQUAL(tls_lin->graduatedWeight(0, mu), 1, 1e-8);
+  auto tls_sup = mEstimator::TruncatedLeastSquares::Create(
+      k, mEstimator::TruncatedLeastSquares::GradScheme::GNC_SUPERLINEAR);
+  DOUBLES_EQUAL(tls_sup->graduatedWeight(0, mu), 1, 1e-8);
 }
 
 /* ************************************************************************* */

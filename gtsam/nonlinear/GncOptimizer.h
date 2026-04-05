@@ -515,29 +515,19 @@ class GncOptimizer {
             double u2_k = nfg_[k]->error(currentEstimate);  // squared (and whitened) residual
             switch (params_.scheduler) {
               case GncScheduler::SuperLinear: {
-                double lowerbound = barcSq_[k];
-                double upperbound = ((mu + 1.0) * (mu + 1.0) / (mu * mu)) * barcSq_[k];
-                auto w = noiseModel::mEstimator::TruncatedLeastSquares::GNCWeight(u2_k, lowerbound, upperbound);
-                if (w) {
-                  weights[k] = *w;
-                }
-                else {
-                  double transition_weight = std::sqrt(barcSq_[k] / u2_k) * (mu + 1.0)  - mu;
-                  weights[k] = std::clamp(transition_weight, 0.0, 1.0);
-                }
+                weights[k] = noiseModel::mEstimator::TruncatedLeastSquares::
+                    GraduatedWeight(
+                        noiseModel::mEstimator::TruncatedLeastSquares::
+                            GradScheme::GNC_SUPERLINEAR,
+                        barcSq_[k], u2_k, mu);
                 break;
               }
               case GncScheduler::Linear: {  // use eq (14) in GNC paper
-                double upperbound = ((mu + 1.0) / mu) * barcSq_[k];
-                double lowerbound = (mu / (mu + 1.0)) * barcSq_[k];
-                auto w = noiseModel::mEstimator::TruncatedLeastSquares::GNCWeight(u2_k, lowerbound, upperbound);
-                if (w) {
-                  weights[k] = *w;
-                }
-                else {
-                  double transition_weight = std::sqrt(barcSq_[k] * mu * (mu + 1.0) / u2_k) - mu;
-                  weights[k] = std::clamp(transition_weight, 0.0, 1.0);
-                }
+                weights[k] = noiseModel::mEstimator::TruncatedLeastSquares::
+                    GraduatedWeight(
+                        noiseModel::mEstimator::TruncatedLeastSquares::
+                            GradScheme::GNC_LINEAR,
+                        barcSq_[k], u2_k, mu);
                 break;
               }
               default:

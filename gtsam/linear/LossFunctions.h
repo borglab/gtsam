@@ -508,46 +508,62 @@ class GTSAM_EXPORT GemanMcClure : public Base {
  * - Loss       \rho(x) = 0.5 x^2  if |x|<=c, 0.5 c^2 otherwise
  * - Derivative \phi(x) = x        if |x|<=c, 0 otherwise
  * - Weight     w(x) = \phi(x)/x = 1 if |x|<=c, 0 otherwise
- * 
- *  TLS loss is graduated from Convex: \infty -> Robust: 1
+ *
+ *  TLS has three graduated forms
+ *
+ *  STANDARD TLS is graduated from Convex: \infty -> Robust: 1
  * - Loss, Derivative, and Weight computed by scaling c by control parameter mu
+ *
+ *  GNC_LINEAR is graduated from Convex: 0 -> Robust \infty
+ *  Let LB = c^2 (\mu / (\mu + 1)) and UB =  c^2 ((\mu + 1) / \mu)
+ * - Loss  \rho(x,\mu) = 0.5 * x^2 if x < LB
+ *                     = c|x|\sqrt(\mu(\mu+1))-\mu(c^2 + r^2) if LB < x < UB
+ *                     = c^2 if UB < x
+ * - Weight w(x, \mu)  = 1 if x < LB
+ *                     = \sqrt(c^2 \mu ((\mu + 1.0) / x^2)) - \mu if LB < x < UB
+ *                     = 0 if UB < x
+ *
+ * GNC_SUPERLINEAR is graduated from Convex: 0 -> Robust \infty
+ *  Let LB = c^2 and UB = c^2 (\mu + 1)^2 / \mu^2
+ * - Loss  \rho(x, \mu) = (not formally defined)
+ * - Weight w(x, \mu)   = 1 if x < LB
+ *                      = sqrt(c^2 / x^2) * (\mu + 1.0) - \mu
  */
 class GTSAM_EXPORT TruncatedLeastSquares : public Base {
  public:
   typedef std::shared_ptr<TruncatedLeastSquares> shared_ptr;
+  enum GradScheme { STANDARD, GNC_LINEAR, GNC_SUPERLINEAR };
 
-  TruncatedLeastSquares(double c = 1.0, const ReweightScheme reweight = Block);
+  TruncatedLeastSquares(double c = 1.0,
+                        GradScheme graduation = GradScheme::STANDARD,
+                        const ReweightScheme reweight = Block);
   double weight(double distance) const override;
   double loss(double distance) const override;
   double graduatedWeight(double distance, double mu) const override;
   double graduatedLoss(double distance, double mu) const override;
-  void print(const std::string &s) const override;
-  bool equals(const Base &expected, double tol = 1e-8) const override;
-  static shared_ptr Create(double c, const ReweightScheme reweight = Block);
+  void print(const std::string& s) const override;
+  bool equals(const Base& expected, double tol = 1e-8) const override;
+  static shared_ptr Create(double c,
+                           GradScheme graduation = GradScheme::STANDARD,
+                           const ReweightScheme reweight = Block);
   double modelParameter() const { return c_; }
 
   /// @brief Static implementation of TLS Weight
-  static double Weight(double c, double distance);
+  static double Weight(double csquared, double distance2);
   /// @brief Static implementation of TLS Loss
-  static double Loss(double c, double csquared, double distance);
+  static double Loss(double csquared, double distance2);
 
-  /** @brief A static helper function to compute the TLS GNC robust weight.
-   * The static function takes the squared value of the residual, the squared lower bound, the squared upper bound.
-   * This helper returns a optional<double> because it is also used for GNC, and we encounter transition weight cases,
-   * where the weight is not strictly binary (0 or 1) when the residual is within the transition region between inliers and outliers.
-   * The weight member function now calls the this function.
-   * While the member function takes the residual as input, it passes x², c² and c² to the static helper.
-   * 
-   * @param distance2 Squared residual magnitude.
-   * @param lowerbound Squared lower bound.
-   * @param upperbound Squared upper bound.
-   * @return Weight w(x) is {0, 1} or None if the residual is between lowerbound and upperbound.
-   */
-   static std::optional<double> GNCWeight(double distance2, double lowerbound, double upperbound);
+  /// @brief Static implementation of TLS Graduated Weight
+  static double GraduatedWeight(GradScheme graduation, double csquared,
+                                double distance2, double mu);
+  /// @brief Static implementation of TLS Graduated Loss
+  static double GraduatedLoss(GradScheme graduation, double csquared,
+                              double distance2, double mu);
 
  protected:
   double c_;
   double csquared_;
+  GradScheme graduation_;
 
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
