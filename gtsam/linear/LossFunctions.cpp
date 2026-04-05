@@ -16,8 +16,8 @@
  * @author Frank Dellaert
  */
 
+#include <gtsam/3rdparty/cephes/cephes.h>
 #include <gtsam/linear/LossFunctions.h>
-#include <gtsam/nonlinear/internal/ChiSquaredInverse.h>
 
 #include <iostream>
 #include <optional>
@@ -441,7 +441,7 @@ GemanMcClure::shared_ptr GemanMcClure::Create(
 double GemanMcClure::shapeParamFromInfThresh(double influence_thresh, size_t dof,
                                           double chi2_outlier_thresh) {
   double outlier_residual_thresh =
-      internal::chiSquaredQuantile(dof, chi2_outlier_thresh);
+      2 * gtsam_cephes_igami(dof / 2, chi2_outlier_thresh);
   // Equation [d/dr \rho(x) = influence_thresh] solved for c
   const double t1 =
       std::sqrt(2 * influence_thresh * std::pow(outlier_residual_thresh, 5));
@@ -512,9 +512,9 @@ double TruncatedLeastSquares::GraduatedLoss(GradScheme graduation,
 
     if (distance2 <= lowerbound) return 0.5 * distance2;
     if (distance2 >= upperbound) return 0.5 * csquared;
-    return std::sqrt(csquared) * std::sqrt(distance2) *
-               std::sqrt(mu * (mu + 1.0)) -
-           (mu * (csquared + distance2));
+    return 0.5 * (2 * std::sqrt(csquared) * std::sqrt(distance2) *
+                      std::sqrt(mu * (mu + 1.0)) -
+                  (mu * (csquared + distance2)));
   } else {  // TruncatedLeastSquares::GradScheme::GNC_SUPERLINEAR
     throw std::runtime_error(
         "TLS with GradScheme::GNC_SUPERLINEAR has no loss form");
