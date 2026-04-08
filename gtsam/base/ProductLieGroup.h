@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/base/GroupAction.h>
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Testable.h>
 
@@ -26,16 +27,55 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <utility>  // pair
 #include <vector>
 
 namespace gtsam {
 
+template <typename G, typename H>
+struct DirectProductAction;
+
+template <typename G, typename H>
+struct DirectProductAction
+    : public GroupAction<DirectProductAction<G, H>, G, H> {
+  static constexpr ActionType type = ActionType::Left;
+
+  H operator()(const G& g, const H& h,
+               OptionalJacobian<traits<H>::dimension, traits<G>::dimension> Hg =
+                   {},
+               OptionalJacobian<traits<H>::dimension, traits<H>::dimension> Hh =
+                   {}) const {
+    if (Hg) {
+      if constexpr (traits<H>::dimension == Eigen::Dynamic ||
+                    traits<G>::dimension == Eigen::Dynamic) {
+        Hg->setZero(static_cast<Eigen::Index>(traits<H>::GetDimension(h)),
+                    static_cast<Eigen::Index>(traits<G>::GetDimension(g)));
+      } else {
+        Hg->setZero();
+      }
+    }
+    if (Hh) {
+      if constexpr (traits<H>::dimension == Eigen::Dynamic) {
+        const Eigen::Index hDim =
+            static_cast<Eigen::Index>(traits<H>::GetDimension(h));
+        Hh->setIdentity(hDim, hDim);
+      } else {
+        Hh->setIdentity();
+      }
+    }
+    return h;
+  }
+};
+
 /**
  * @brief Template to construct the product Lie group of two other Lie groups
- * Assumes Lie group structure for G and H
+ * Assumes Lie group structure for G and H. If Action is omitted the group is
+ * the direct product G x H. If Action is provided the group is the left
+ * semidirect product G ⋉ H.
  */
-template <typename G, typename H>
+template <typename G, typename H,
+          typename Action = DirectProductAction<G, H>>
 class ProductLieGroup : public std::pair<G, H> {
   GTSAM_CONCEPT_ASSERT(IsLieGroup<G>);
   GTSAM_CONCEPT_ASSERT(IsLieGroup<H>);
@@ -45,6 +85,11 @@ class ProductLieGroup : public std::pair<G, H> {
  public:
   /// Base pair type
   typedef std::pair<G, H> Base;
+  using FirstFactor = G;
+  using SecondFactor = H;
+
+  static_assert(Action::type == ActionType::Left,
+                "ProductLieGroup only supports left group actions");
 
  protected:
   /// Dimensions of the two subgroups
@@ -52,6 +97,8 @@ class ProductLieGroup : public std::pair<G, H> {
   inline constexpr static int dimension2 = traits<H>::dimension;
   inline constexpr static bool firstDynamic = dimension1 == Eigen::Dynamic;
   inline constexpr static bool secondDynamic = dimension2 == Eigen::Dynamic;
+  inline constexpr static bool isDirectProduct =
+      std::is_same_v<Action, DirectProductAction<G, H>>;
 
  public:
   /// Manifold dimension
@@ -74,6 +121,7 @@ class ProductLieGroup : public std::pair<G, H> {
                          Eigen::Matrix<double, dimension, dimension>>;
   using Jacobian1 = typename traits<G>::Jacobian;
   using Jacobian2 = typename traits<H>::Jacobian;
+  using DynamicJacobian = OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>;
 
  public:
   /// @name Standard Constructors
@@ -157,8 +205,7 @@ class ProductLieGroup : public std::pair<G, H> {
   static ProductLieGroup Expmap(
       const Eigen::Ref<const typename traits<G>::TangentVector>& v1,
       const Eigen::Ref<const typename traits<H>::TangentVector>& v2,
-      OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H1 = {},
-      OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H2 = {});
+      DynamicJacobian H1 = {}, DynamicJacobian H2 = {});
 
   /// Logarithmic map
   static TangentVector Logmap(const ProductLieGroup& p, ChartJacobian Hp = {});
@@ -523,9 +570,9 @@ class PowerLieGroup<G, Eigen::Dynamic>
 };
 
 /// Traits specialization for ProductLieGroup
-template <typename G, typename H>
-struct traits<ProductLieGroup<G, H>>
-    : internal::LieGroup<ProductLieGroup<G, H>> {};
+template <typename G, typename H, typename Action>
+struct traits<ProductLieGroup<G, H, Action>>
+    : internal::LieGroup<ProductLieGroup<G, H, Action>> {};
 
 /// Traits specialization for PowerLieGroup
 template <typename G, int N>

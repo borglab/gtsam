@@ -9,16 +9,17 @@
 
  * -------------------------------1-------------------------------------------
  */
-
+ 
 /**
  * @file testActionProductLieGroup.cpp
  * @date April, 2026
- * @author Frank Dellaert
+ * @author Rohan Bansal
+ * @author Jennifer Oum
  * @brief unit tests for action-parameterized product Lie groups
  */
 
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/ActionProductLieGroup.h>
+#include <gtsam/base/ProductLieGroup.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/testLie.h>
 #include <gtsam/geometry/Point2.h>
@@ -31,7 +32,8 @@ using namespace gtsam;
 constexpr double kTol = 1e-9;
 
 using Product = ProductLieGroup<Point2, Pose2>;
-using DirectActionProduct = ActionProductLieGroup<Point2, Pose2>;
+using ExplicitDirectProduct =
+    ProductLieGroup<Point2, Pose2, DirectProductAction<Point2, Pose2>>;
 
 struct Rot3VectorAction : public GroupAction<Rot3VectorAction, Rot3, Vector3> {
   static constexpr ActionType type = ActionType::Left;
@@ -75,8 +77,7 @@ struct Rot3VectorAction : public GroupAction<Rot3VectorAction, Rot3, Vector3> {
   }
 };
 
-using Semidirect =
-    ActionProductLieGroup<Rot3, Vector3, Rot3VectorAction>;
+using Semidirect = ProductLieGroup<Rot3, Vector3, Rot3VectorAction>;
 
 namespace {
 
@@ -114,44 +115,44 @@ Pose3 asPose3(const Semidirect& state) {
 }  // namespace
 
 /* ************************************************************************* */
-TEST(Lie, ActionProductLieGroupDirect) {
-  GTSAM_CONCEPT_ASSERT(IsGroup<DirectActionProduct>);
-  GTSAM_CONCEPT_ASSERT(IsManifold<DirectActionProduct>);
-  GTSAM_CONCEPT_ASSERT(IsLieGroup<DirectActionProduct>);
+TEST(Lie, ProductLieGroupExplicitDirectAction) {
+  GTSAM_CONCEPT_ASSERT(IsGroup<ExplicitDirectProduct>);
+  GTSAM_CONCEPT_ASSERT(IsManifold<ExplicitDirectProduct>);
+  GTSAM_CONCEPT_ASSERT(IsLieGroup<ExplicitDirectProduct>);
 
   const Product state(Point2(1, 2), Pose2(3, 4, 5));
   const Product other(Point2(-0.5, 0.25), Pose2(-1, 2, -0.4));
-  const DirectActionProduct actionState(state.first, state.second);
-  const DirectActionProduct actionOther(other.first, other.second);
+  const ExplicitDirectProduct actionState(state.first, state.second);
+  const ExplicitDirectProduct actionOther(other.first, other.second);
 
   const Product defaultComposed = state.compose(other);
-  const DirectActionProduct actionComposed = actionState.compose(actionOther);
+  const ExplicitDirectProduct actionComposed = actionState.compose(actionOther);
   EXPECT(assert_equal(defaultComposed.first, actionComposed.first, kTol));
   EXPECT(assert_equal(defaultComposed.second, actionComposed.second, kTol));
 
   const Product defaultBetween = state.between(other);
-  const DirectActionProduct actionBetween = actionState.between(actionOther);
+  const ExplicitDirectProduct actionBetween = actionState.between(actionOther);
   EXPECT(assert_equal(defaultBetween.first, actionBetween.first, kTol));
   EXPECT(assert_equal(defaultBetween.second, actionBetween.second, kTol));
 
   const Product defaultInverse = state.inverse();
-  const DirectActionProduct actionInverse = actionState.inverse();
+  const ExplicitDirectProduct actionInverse = actionState.inverse();
   EXPECT(assert_equal(defaultInverse.first, actionInverse.first, kTol));
   EXPECT(assert_equal(defaultInverse.second, actionInverse.second, kTol));
 
   Vector5 xi;
   xi << 0.1, -0.2, 0.05, 0.1, -0.15;
   const Product defaultExp = Product::Expmap(xi);
-  const DirectActionProduct actionExp = DirectActionProduct::Expmap(xi);
+  const ExplicitDirectProduct actionExp = ExplicitDirectProduct::Expmap(xi);
   EXPECT(assert_equal(defaultExp.first, actionExp.first, kTol));
   EXPECT(assert_equal(defaultExp.second, actionExp.second, kTol));
   EXPECT(assert_equal(Product::Logmap(defaultExp),
-                      DirectActionProduct::Logmap(actionExp), kTol));
+                      ExplicitDirectProduct::Logmap(actionExp), kTol));
   EXPECT(assert_equal(state.AdjointMap(), actionState.AdjointMap(), kTol));
 }
 
 /* ************************************************************************* */
-TEST(Lie, ActionProductLieGroupSemidirect) {
+TEST(Lie, ProductLieGroupSemidirectAction) {
   GTSAM_CONCEPT_ASSERT(IsGroup<Semidirect>);
   GTSAM_CONCEPT_ASSERT(IsManifold<Semidirect>);
   GTSAM_CONCEPT_ASSERT(IsLieGroup<Semidirect>);
