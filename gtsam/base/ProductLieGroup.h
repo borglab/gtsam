@@ -18,7 +18,6 @@
 
 #pragma once
 
-#include <gtsam/base/GroupAction.h>
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Testable.h>
 
@@ -27,145 +26,16 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
-#include <type_traits>
 #include <utility>  // pair
 #include <vector>
 
 namespace gtsam {
 
-template <typename G, typename H>
-struct DirectProductAction;
-
-template <typename G, typename H, typename Action>
-class ProductLieGroup;
-
-namespace product_lie_group_detail {
-
-template <typename Action, typename G, typename H, typename = void>
-struct IsStatelessLeftActionPolicy : std::false_type {};
-
-template <typename Action, typename G, typename H>
-struct IsStatelessLeftActionPolicy<Action, G, H,
-                                   std::void_t<decltype(Action::type)>>
-    : std::bool_constant<
-          std::is_empty_v<Action> && std::is_default_constructible_v<Action> &&
-          std::is_base_of_v<GroupAction<Action, G, H>, Action> &&
-          Action::type == ActionType::Left &&
-          std::is_invocable_r_v<
-              H, const Action&, const G&, const H&,
-              OptionalJacobian<traits<H>::dimension, traits<G>::dimension>,
-              OptionalJacobian<traits<H>::dimension, traits<H>::dimension>>> {
-};
-
-template <typename G, typename H>
-using ProductChartJacobian = std::conditional_t<
-    traits<G>::dimension == Eigen::Dynamic || traits<H>::dimension == Eigen::Dynamic,
-    OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>,
-    OptionalJacobian<traits<G>::dimension + traits<H>::dimension,
-                     traits<G>::dimension + traits<H>::dimension>>;
-
-template <typename G, typename H>
-using ProductTangentVector = std::conditional_t<
-    traits<G>::dimension == Eigen::Dynamic || traits<H>::dimension == Eigen::Dynamic,
-    Vector,
-    Eigen::Matrix<double, traits<G>::dimension + traits<H>::dimension, 1>>;
-
-template <typename G, typename H>
-using ProductJacobian = std::conditional_t<
-    traits<G>::dimension == Eigen::Dynamic || traits<H>::dimension == Eigen::Dynamic,
-    Matrix,
-    Eigen::Matrix<double, traits<G>::dimension + traits<H>::dimension,
-                  traits<G>::dimension + traits<H>::dimension>>;
-
-template <typename Product, typename Action, typename G, typename H,
-          typename = void>
-struct HasSemidirectExpmap : std::false_type {};
-
-template <typename Product, typename Action, typename G, typename H>
-struct HasSemidirectExpmap<
-    Product, Action, G, H,
-    std::void_t<decltype(Action::template Expmap<Product>(
-        std::declval<const typename traits<G>::TangentVector&>(),
-        std::declval<const typename traits<H>::TangentVector&>(),
-        std::declval<OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>>(),
-        std::declval<OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>>()))>>
-    : std::bool_constant<std::is_convertible_v<
-          decltype(Action::template Expmap<Product>(
-              std::declval<const typename traits<G>::TangentVector&>(),
-              std::declval<const typename traits<H>::TangentVector&>(),
-              std::declval<OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>>(),
-              std::declval<OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>>())),
-          Product>> {};
-
-template <typename Product, typename Action, typename G, typename H,
-          typename = void>
-struct HasSemidirectLogmap : std::false_type {};
-
-template <typename Product, typename Action, typename G, typename H>
-struct HasSemidirectLogmap<
-    Product, Action, G, H,
-    std::void_t<decltype(Action::template Logmap<Product>(
-        std::declval<const Product&>(),
-        std::declval<ProductChartJacobian<G, H>>()))>>
-    : std::bool_constant<std::is_convertible_v<
-          decltype(Action::template Logmap<Product>(
-              std::declval<const Product&>(),
-              std::declval<ProductChartJacobian<G, H>>())),
-          ProductTangentVector<G, H>>> {};
-
-template <typename Product, typename Action, typename G, typename H,
-          typename = void>
-struct HasSemidirectAdjointMap : std::false_type {};
-
-template <typename Product, typename Action, typename G, typename H>
-struct HasSemidirectAdjointMap<
-    Product, Action, G, H,
-    std::void_t<decltype(Action::template AdjointMap<Product>(
-        std::declval<const Product&>()))>>
-    : std::bool_constant<std::is_convertible_v<
-          decltype(Action::template AdjointMap<Product>(
-              std::declval<const Product&>())),
-          ProductJacobian<G, H>>> {};
-
-}  // namespace product_lie_group_detail
-
-template <typename G, typename H>
-struct DirectProductAction
-    : public GroupAction<DirectProductAction<G, H>, G, H> {
-  static constexpr ActionType type = ActionType::Left;
-
-  H operator()(const G& g, const H& h,
-               OptionalJacobian<traits<H>::dimension, traits<G>::dimension> Hg =
-                   {},
-               OptionalJacobian<traits<H>::dimension, traits<H>::dimension> Hh =
-                   {}) const {
-    if (Hg) {
-      if constexpr (traits<H>::dimension == Eigen::Dynamic ||
-                    traits<G>::dimension == Eigen::Dynamic) {
-        Hg->setZero(static_cast<Eigen::Index>(traits<H>::GetDimension(h)),
-                    static_cast<Eigen::Index>(traits<G>::GetDimension(g)));
-      } else {
-        Hg->setZero();
-      }
-    }
-    if (Hh) {
-      if constexpr (traits<H>::dimension == Eigen::Dynamic) {
-        const Eigen::Index hDim =
-            static_cast<Eigen::Index>(traits<H>::GetDimension(h));
-        Hh->setIdentity(hDim, hDim);
-      } else {
-        Hh->setIdentity();
-      }
-    }
-    return h;
-  }
-};
-
 /**
  * @brief Template to construct the product Lie group of two other Lie groups
  * Assumes Lie group structure for G and H
  */
-template <typename G, typename H, typename Action = DirectProductAction<G, H>>
+template <typename G, typename H>
 class ProductLieGroup : public std::pair<G, H> {
   GTSAM_CONCEPT_ASSERT(IsLieGroup<G>);
   GTSAM_CONCEPT_ASSERT(IsLieGroup<H>);
@@ -173,24 +43,15 @@ class ProductLieGroup : public std::pair<G, H> {
   GTSAM_CONCEPT_ASSERT(IsTestable<H>);
 
  public:
-  using This = ProductLieGroup<G, H, Action>;
-  using FirstFactor = G;
-  using SecondFactor = H;
-  using ActionPolicy = Action;
-
   /// Base pair type
   typedef std::pair<G, H> Base;
 
  protected:
-  using DefaultAction = DirectProductAction<G, H>;
-
   /// Dimensions of the two subgroups
   inline constexpr static int dimension1 = traits<G>::dimension;
   inline constexpr static int dimension2 = traits<H>::dimension;
   inline constexpr static bool firstDynamic = dimension1 == Eigen::Dynamic;
   inline constexpr static bool secondDynamic = dimension2 == Eigen::Dynamic;
-  inline constexpr static bool isDirectProduct =
-      std::is_same_v<Action, DefaultAction>;
 
  public:
   /// Manifold dimension
@@ -207,19 +68,12 @@ class ProductLieGroup : public std::pair<G, H> {
                          OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>,
                          OptionalJacobian<dimension, dimension>>;
 
-  using DynamicJacobian = OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>;
-
   /// Jacobian types for internal use
   using Jacobian =
       std::conditional_t<dimension == Eigen::Dynamic, Matrix,
                          Eigen::Matrix<double, dimension, dimension>>;
   using Jacobian1 = typename traits<G>::Jacobian;
   using Jacobian2 = typename traits<H>::Jacobian;
-
-  static_assert(product_lie_group_detail::IsStatelessLeftActionPolicy<
-                    Action, G, H>::value,
-                "ProductLieGroup action must be a stateless left "
-                "GroupAction policy on H.");
  public:
   /// @name Standard Constructors
   /// @{
@@ -302,7 +156,8 @@ class ProductLieGroup : public std::pair<G, H> {
   static ProductLieGroup Expmap(
       const Eigen::Ref<const typename traits<G>::TangentVector>& v1,
       const Eigen::Ref<const typename traits<H>::TangentVector>& v2,
-      DynamicJacobian H1 = {}, DynamicJacobian H2 = {});
+      OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H1 = {},
+      OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H2 = {});
 
   /// Logarithmic map
   static TangentVector Logmap(const ProductLieGroup& p, ChartJacobian Hp = {});
@@ -667,9 +522,9 @@ class PowerLieGroup<G, Eigen::Dynamic>
 };
 
 /// Traits specialization for ProductLieGroup
-template <typename G, typename H, typename Action>
-struct traits<ProductLieGroup<G, H, Action>>
-    : internal::LieGroup<ProductLieGroup<G, H, Action>> {};
+template <typename G, typename H>
+struct traits<ProductLieGroup<G, H>>
+    : internal::LieGroup<ProductLieGroup<G, H>> {};
 
 /// Traits specialization for PowerLieGroup
 template <typename G, int N>
