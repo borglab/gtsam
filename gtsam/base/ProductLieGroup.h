@@ -41,11 +41,11 @@ struct DirectProductAction
     : public GroupAction<DirectProductAction<G, H>, G, H> {
   static constexpr ActionType type = ActionType::Left;
 
-  H operator()(const G& g, const H& h,
-               OptionalJacobian<traits<H>::dimension, traits<G>::dimension> Hg =
-                   {},
-               OptionalJacobian<traits<H>::dimension, traits<H>::dimension> Hh =
-                   {}) const {
+  H operator()(
+      const G& g, const H& h,
+      OptionalJacobian<traits<H>::dimension, traits<G>::dimension> Hg = {},
+      OptionalJacobian<traits<H>::dimension, traits<H>::dimension> Hh = {})
+      const {
     if (Hg) {
       if constexpr (traits<H>::dimension == Eigen::Dynamic ||
                     traits<G>::dimension == Eigen::Dynamic) {
@@ -74,8 +74,7 @@ struct DirectProductAction
  * the direct product G x H. If Action is provided the group is the left
  * semidirect product G ⋉ H.
  */
-template <typename G, typename H,
-          typename Action = DirectProductAction<G, H>>
+template <typename G, typename H, typename Action = DirectProductAction<G, H>>
 class ProductLieGroup : public std::pair<G, H> {
   GTSAM_CONCEPT_ASSERT(IsLieGroup<G>);
   GTSAM_CONCEPT_ASSERT(IsLieGroup<H>);

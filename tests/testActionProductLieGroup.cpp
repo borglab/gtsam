@@ -9,7 +9,7 @@
 
  * -------------------------------1-------------------------------------------
  */
- 
+
 /**
  * @file testActionProductLieGroup.cpp
  * @date April, 2026
@@ -79,6 +79,46 @@ using Semidirect = ProductLieGroup<Rot3, Vector3, Rot3VectorAction>;
 
 namespace {
 
+Product directState() { return Product(Point2(1, 2), Pose2(3, 4, 5)); }
+
+Product directOther() {
+  return Product(Point2(-0.5, 0.25), Pose2(-1, 2, -0.4));
+}
+
+Vector5 directXi() {
+  Vector5 xi;
+  xi << 0.1, -0.2, 0.05, 0.1, -0.15;
+  return xi;
+}
+
+Semidirect semidirectState1() {
+  return Semidirect(Rot3::RzRyRx(0.1, 0.2, -0.3), Vector3(1.0, -0.5, 0.25));
+}
+
+Semidirect semidirectState2() {
+  return Semidirect(Rot3::RzRyRx(-0.2, 0.1, 0.15), Vector3(-0.75, 0.4, 1.2));
+}
+
+Semidirect semidirectState3() {
+  return Semidirect(Rot3::RzRyRx(0.2, -0.1, 0.05), Vector3(0.3, -0.6, 0.8));
+}
+
+Semidirect semidirectState4() {
+  return Semidirect(Rot3::RzRyRx(0.1, -0.2, 0.3), Vector3(0.4, -0.1, 0.2));
+}
+
+Vector6 semidirectXi() {
+  Vector6 xi;
+  xi << 0.1, -0.2, 0.3, 0.4, -0.1, 0.2;
+  return xi;
+}
+
+Vector6 retractDelta() {
+  Vector6 delta;
+  delta << 0.05, -0.04, 0.03, 0.1, -0.2, 0.05;
+  return delta;
+}
+
 Semidirect composeSemidirectProxy(const Semidirect& A, const Semidirect& B) {
   return A.compose(B);
 }
@@ -113,13 +153,15 @@ Pose3 asPose3(const Semidirect& state) {
 }  // namespace
 
 /* ************************************************************************* */
+// Verify the explicit direct-action specialization matches the original
+// direct-product behavior.
 TEST(Lie, ProductLieGroupExplicitDirectAction) {
   GTSAM_CONCEPT_ASSERT(IsGroup<ExplicitDirectProduct>);
   GTSAM_CONCEPT_ASSERT(IsManifold<ExplicitDirectProduct>);
   GTSAM_CONCEPT_ASSERT(IsLieGroup<ExplicitDirectProduct>);
 
-  const Product state(Point2(1, 2), Pose2(3, 4, 5));
-  const Product other(Point2(-0.5, 0.25), Pose2(-1, 2, -0.4));
+  const Product state = directState();
+  const Product other = directOther();
   const ExplicitDirectProduct actionState(state.first, state.second);
   const ExplicitDirectProduct actionOther(other.first, other.second);
 
@@ -138,8 +180,7 @@ TEST(Lie, ProductLieGroupExplicitDirectAction) {
   EXPECT(assert_equal(defaultInverse.first, actionInverse.first, kTol));
   EXPECT(assert_equal(defaultInverse.second, actionInverse.second, kTol));
 
-  Vector5 xi;
-  xi << 0.1, -0.2, 0.05, 0.1, -0.15;
+  const Vector5 xi = directXi();
   const Product defaultExp = Product::Expmap(xi);
   const ExplicitDirectProduct actionExp = ExplicitDirectProduct::Expmap(xi);
   EXPECT(assert_equal(defaultExp.first, actionExp.first, kTol));
@@ -150,6 +191,8 @@ TEST(Lie, ProductLieGroupExplicitDirectAction) {
 }
 
 /* ************************************************************************* */
+// Verify the semidirect product obeys the left action law and matches Pose3
+// behavior.
 TEST(Lie, ProductLieGroupSemidirectAction) {
   GTSAM_CONCEPT_ASSERT(IsGroup<Semidirect>);
   GTSAM_CONCEPT_ASSERT(IsManifold<Semidirect>);
@@ -162,29 +205,27 @@ TEST(Lie, ProductLieGroupSemidirectAction) {
   EXPECT_LEFT_ACTION(action, R1, R2, t);
 
   const Semidirect identity;
-  Vector6 xi;
-  xi << 0.1, -0.2, 0.3, 0.4, -0.1, 0.2;
+  const Vector6 xi = semidirectXi();
   const Semidirect actual = identity.expmap(xi);
   EXPECT(assert_equal(Pose3::Expmap(xi), asPose3(actual), kTol));
   EXPECT(assert_equal(xi, identity.logmap(actual), kTol));
 
-  const Semidirect a(Rot3::RzRyRx(0.1, 0.2, -0.1),
-                     Vector3(1.0, -2.0, 0.5));
-  const Semidirect b(Rot3::RzRyRx(-0.3, 0.15, 0.2),
-                     Vector3(-0.25, 0.4, 1.5));
-  const Semidirect c(Rot3::RzRyRx(0.2, -0.1, 0.05),
-                     Vector3(0.3, -0.6, 0.8));
+  const Semidirect a =
+      Semidirect(Rot3::RzRyRx(0.1, 0.2, -0.1), Vector3(1.0, -2.0, 0.5));
+  const Semidirect b =
+      Semidirect(Rot3::RzRyRx(-0.3, 0.15, 0.2), Vector3(-0.25, 0.4, 1.5));
+  const Semidirect c = semidirectState3();
   EXPECT(assert_equal(asPose3((a * b) * c), asPose3(a * (b * c)), kTol));
   EXPECT(assert_equal(asPose3(a * a.inverse()), Pose3(), kTol));
   EXPECT(assert_equal(asPose3(a * b), asPose3(a) * asPose3(b), kTol));
 }
 
 /* ************************************************************************* */
+// Check semidirect compose values and Jacobians against Pose3 and numerical
+// derivatives.
 TEST(testActionProduct, compose) {
-  const Semidirect state1(Rot3::RzRyRx(0.1, 0.2, -0.3),
-                          Vector3(1.0, -0.5, 0.25));
-  const Semidirect state2(Rot3::RzRyRx(-0.2, 0.1, 0.15),
-                          Vector3(-0.75, 0.4, 1.2));
+  const Semidirect state1 = semidirectState1();
+  const Semidirect state2 = semidirectState2();
 
   Matrix actH1, actH2;
   const Semidirect actual = state1.compose(state2, actH1, actH2);
@@ -193,17 +234,18 @@ TEST(testActionProduct, compose) {
   const Matrix numericH2 =
       numericalDerivative22(composeSemidirectProxy, state1, state2);
 
-  EXPECT(assert_equal(asPose3(actual), asPose3(state1) * asPose3(state2), kTol));
+  EXPECT(
+      assert_equal(asPose3(actual), asPose3(state1) * asPose3(state2), kTol));
   EXPECT(assert_equal(numericH1, actH1, 1e-6));
   EXPECT(assert_equal(numericH2, actH2, 1e-6));
 }
 
 /* ************************************************************************* */
+// Check semidirect between values and Jacobians against Pose3 and numerical
+// derivatives.
 TEST(testActionProduct, between) {
-  const Semidirect state1(Rot3::RzRyRx(0.1, 0.2, -0.3),
-                          Vector3(1.0, -0.5, 0.25));
-  const Semidirect state2(Rot3::RzRyRx(-0.2, 0.1, 0.15),
-                          Vector3(-0.75, 0.4, 1.2));
+  const Semidirect state1 = semidirectState1();
+  const Semidirect state2 = semidirectState2();
 
   Matrix actH1, actH2;
   const Semidirect actual = state1.between(state2, actH1, actH2);
@@ -219,9 +261,11 @@ TEST(testActionProduct, between) {
 }
 
 /* ************************************************************************* */
+// Check the semidirect inverse and its Jacobian against Pose3 and numerical
+// derivatives.
 TEST(testActionProduct, inverse) {
-  const Semidirect state(Rot3::RzRyRx(0.2, -0.1, 0.05),
-                         Vector3(0.5, -1.2, 0.8));
+  const Semidirect state =
+      Semidirect(Rot3::RzRyRx(0.2, -0.1, 0.05), Vector3(0.5, -1.2, 0.8));
 
   Matrix actH;
   const Semidirect actual = state.inverse(actH);
@@ -232,9 +276,10 @@ TEST(testActionProduct, inverse) {
 }
 
 /* ************************************************************************* */
+// Check the semidirect Expmap and its Jacobian against Pose3 and numerical
+// derivatives.
 TEST(testActionProduct, Expmap) {
-  Vector6 xi;
-  xi << 0.1, -0.2, 0.3, 0.4, -0.1, 0.2;
+  const Vector6 xi = semidirectXi();
 
   Matrix actH;
   const Semidirect actual = Semidirect::Expmap(xi, actH);
@@ -245,9 +290,10 @@ TEST(testActionProduct, Expmap) {
 }
 
 /* ************************************************************************* */
+// Check the semidirect Logmap and its Jacobian against Pose3 and numerical
+// derivatives.
 TEST(testActionProduct, Logmap) {
-  const Semidirect state(Rot3::RzRyRx(0.1, -0.2, 0.3),
-                         Vector3(0.4, -0.1, 0.2));
+  const Semidirect state = semidirectState4();
 
   Matrix actH;
   const Vector6 actual = Semidirect::Logmap(state, actH);
@@ -258,24 +304,23 @@ TEST(testActionProduct, Logmap) {
 }
 
 /* ************************************************************************* */
+// Check that the semidirect adjoint matches the Pose3 adjoint.
 TEST(testActionProduct, AdjointMap) {
-  const Semidirect state(Rot3::RzRyRx(0.1, -0.2, 0.3),
-                         Vector3(0.4, -0.1, 0.2));
+  const Semidirect state = semidirectState4();
 
   EXPECT(assert_equal(asPose3(state).AdjointMap(), state.AdjointMap(), kTol));
 }
 
 /* ************************************************************************* */
+// Check retract/localCoordinates consistency and both Jacobians against
+// numerical derivatives.
 TEST(testActionProduct, retractAndLocalCoordinates) {
-  const Semidirect state(Rot3::RzRyRx(0.1, -0.2, 0.3),
-                         Vector3(0.4, -0.1, 0.2));
-  Vector6 delta;
-  delta << 0.05, -0.04, 0.03, 0.1, -0.2, 0.05;
+  const Semidirect state = semidirectState4();
+  const Vector6 delta = retractDelta();
 
   Matrix retractH1, retractH2, localH1, localH2;
   const Semidirect updated = state.retract(delta, retractH1, retractH2);
-  const Vector6 recovered =
-      state.localCoordinates(updated, localH1, localH2);
+  const Vector6 recovered = state.localCoordinates(updated, localH1, localH2);
 
   EXPECT(assert_equal(asPose3(updated), asPose3(state).retract(delta), kTol));
   EXPECT(assert_equal(delta, recovered, kTol));

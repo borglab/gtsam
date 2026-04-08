@@ -66,10 +66,9 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::retract(
     Jacobian1 D_g_second;
     Jacobian2 D_h_first;
     Jacobian2 D_h_second;
-    G g =
-        traits<G>::Retract(this->first, tangentSegment<G>(v, 0, firstDimension),
-                           H1 ? &D_g_first : nullptr,
-                           H2 ? &D_g_second : nullptr);
+    G g = traits<G>::Retract(
+        this->first, tangentSegment<G>(v, 0, firstDimension),
+        H1 ? &D_g_first : nullptr, H2 ? &D_g_second : nullptr);
     H h = traits<H>::Retract(
         this->second, tangentSegment<H>(v, firstDimension, secondDimension),
         H1 ? &D_h_first : nullptr, H2 ? &D_h_second : nullptr);
@@ -116,9 +115,9 @@ ProductLieGroup<G, H, Action>::localCoordinates(const ProductLieGroup& g,
     typename traits<G>::TangentVector v1 =
         traits<G>::Local(this->first, g.first, H1 ? &D_g_first : nullptr,
                          H2 ? &D_g_second : nullptr);
-    typename traits<H>::TangentVector v2 = traits<H>::Local(
-        this->second, g.second, H1 ? &D_h_first : nullptr,
-        H2 ? &D_h_second : nullptr);
+    typename traits<H>::TangentVector v2 =
+        traits<H>::Local(this->second, g.second, H1 ? &D_h_first : nullptr,
+                         H2 ? &D_h_second : nullptr);
     if (H1) {
       *H1 = zeroJacobian(productDimension);
       H1->block(0, 0, firstDimension, firstDimension) = D_g_first;
