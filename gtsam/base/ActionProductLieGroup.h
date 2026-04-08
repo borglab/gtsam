@@ -28,99 +28,6 @@ namespace gtsam {
 template <typename G, typename H>
 struct DirectProductAction;
 
-namespace action_product_lie_group_detail {
-
-template <typename Action, typename G, typename H, typename = void>
-struct IsStatelessLeftActionPolicy : std::false_type {};
-
-template <typename Action, typename G, typename H>
-struct IsStatelessLeftActionPolicy<Action, G, H,
-                                   std::void_t<decltype(Action::type)>>
-    : std::bool_constant<
-          std::is_empty_v<Action> && std::is_default_constructible_v<Action> &&
-          std::is_base_of_v<GroupAction<Action, G, H>, Action> &&
-          Action::type == ActionType::Left &&
-          std::is_invocable_r_v<
-              H, const Action&, const G&, const H&,
-              OptionalJacobian<traits<H>::dimension, traits<G>::dimension>,
-              OptionalJacobian<traits<H>::dimension, traits<H>::dimension>>> {
-};
-
-template <typename G, typename H>
-using ProductChartJacobian = std::conditional_t<
-    traits<G>::dimension == Eigen::Dynamic ||
-        traits<H>::dimension == Eigen::Dynamic,
-    OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>,
-    OptionalJacobian<traits<G>::dimension + traits<H>::dimension,
-                     traits<G>::dimension + traits<H>::dimension>>;
-
-template <typename G, typename H>
-using ProductTangentVector = std::conditional_t<
-    traits<G>::dimension == Eigen::Dynamic ||
-        traits<H>::dimension == Eigen::Dynamic,
-    Vector,
-    Eigen::Matrix<double, traits<G>::dimension + traits<H>::dimension, 1>>;
-
-template <typename G, typename H>
-using ProductJacobian = std::conditional_t<
-    traits<G>::dimension == Eigen::Dynamic ||
-        traits<H>::dimension == Eigen::Dynamic,
-    Matrix,
-    Eigen::Matrix<double, traits<G>::dimension + traits<H>::dimension,
-                  traits<G>::dimension + traits<H>::dimension>>;
-
-template <typename Product, typename Action, typename G, typename H,
-          typename = void>
-struct HasSemidirectExpmap : std::false_type {};
-
-template <typename Product, typename Action, typename G, typename H>
-struct HasSemidirectExpmap<
-    Product, Action, G, H,
-    std::void_t<decltype(Action::template Expmap<Product>(
-        std::declval<const typename traits<G>::TangentVector&>(),
-        std::declval<const typename traits<H>::TangentVector&>(),
-        std::declval<OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>>(),
-        std::declval<OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>>()))>>
-    : std::bool_constant<std::is_convertible_v<
-          decltype(Action::template Expmap<Product>(
-              std::declval<const typename traits<G>::TangentVector&>(),
-              std::declval<const typename traits<H>::TangentVector&>(),
-              std::declval<OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>>(),
-              std::declval<OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>>())),
-          Product>> {};
-
-template <typename Product, typename Action, typename G, typename H,
-          typename = void>
-struct HasSemidirectLogmap : std::false_type {};
-
-template <typename Product, typename Action, typename G, typename H>
-struct HasSemidirectLogmap<
-    Product, Action, G, H,
-    std::void_t<decltype(Action::template Logmap<Product>(
-        std::declval<const Product&>(),
-        std::declval<ProductChartJacobian<G, H>>()))>>
-    : std::bool_constant<std::is_convertible_v<
-          decltype(Action::template Logmap<Product>(
-              std::declval<const Product&>(),
-              std::declval<ProductChartJacobian<G, H>>())),
-          ProductTangentVector<G, H>>> {};
-
-template <typename Product, typename Action, typename G, typename H,
-          typename = void>
-struct HasSemidirectAdjointMap : std::false_type {};
-
-template <typename Product, typename Action, typename G, typename H>
-struct HasSemidirectAdjointMap<
-    Product, Action, G, H,
-    std::void_t<decltype(Action::template AdjointMap<Product>(
-        std::declval<const Product&>()))>>
-    : std::bool_constant<std::is_convertible_v<
-          decltype(Action::template AdjointMap<Product>(
-              std::declval<const Product&>())),
-          ProductJacobian<G, H>>> {};
-
-}  // namespace action_product_lie_group_detail
-
 template <typename G, typename H>
 struct DirectProductAction
     : public GroupAction<DirectProductAction<G, H>, G, H> {
@@ -191,11 +98,6 @@ class ActionProductLieGroup : public ProductLieGroup<G, H> {
   inline constexpr static int dimension = Base::dimension;
   inline constexpr static int manifoldDimension = dimension;
   using DynamicJacobian = OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>;
-
-  static_assert(action_product_lie_group_detail::IsStatelessLeftActionPolicy<
-                    Action, G, H>::value,
-                "ActionProductLieGroup action must be a stateless left "
-                "GroupAction policy on H.");
 
   typedef multiplicative_group_tag group_flavor;
 

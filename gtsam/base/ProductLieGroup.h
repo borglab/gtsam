@@ -74,6 +74,7 @@ class ProductLieGroup : public std::pair<G, H> {
                          Eigen::Matrix<double, dimension, dimension>>;
   using Jacobian1 = typename traits<G>::Jacobian;
   using Jacobian2 = typename traits<H>::Jacobian;
+  
  public:
   /// @name Standard Constructors
   /// @{

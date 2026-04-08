@@ -9,6 +9,7 @@
 
  * -------------------------------------------------------------------------- */
 
+
 /**
  * @file ActionProductLieGroup-inl.h
  * @date April, 2026
@@ -214,11 +215,6 @@ ActionProductLieGroup<G, H, Action>::Expmap(
   if constexpr (isDirectProduct) {
     return This(Base::Expmap(v1, v2, H1, H2));
   } else {
-    static_assert(action_product_lie_group_detail::HasSemidirectExpmap<
-                      This, Action, G, H>::value,
-                  "ActionProductLieGroup semidirect actions must provide "
-                  "template <class Product> static Product Expmap(v1, v2, H1, "
-                  "H2).");
     return Action::template Expmap<This>(v1, v2, H1, H2);
   }
 }
@@ -230,11 +226,6 @@ ActionProductLieGroup<G, H, Action>::Logmap(const This& p,
   if constexpr (isDirectProduct) {
     return Base::Logmap(p, Hp);
   } else {
-    static_assert(action_product_lie_group_detail::HasSemidirectLogmap<
-                      This, Action, G, H>::value,
-                  "ActionProductLieGroup semidirect actions must provide "
-                  "template <class Product> static typename Product::"
-                  "TangentVector Logmap(const Product&, ChartJacobian).");
     return Action::template Logmap<This>(p, Hp);
   }
 }
@@ -251,11 +242,6 @@ ActionProductLieGroup<G, H, Action>::AdjointMap() const {
   if constexpr (isDirectProduct) {
     return Base::AdjointMap();
   } else {
-    static_assert(action_product_lie_group_detail::HasSemidirectAdjointMap<
-                      This, Action, G, H>::value,
-                  "ActionProductLieGroup semidirect actions must provide "
-                  "template <class Product> static typename Product::Jacobian "
-                  "AdjointMap(const Product&).");
     return Action::template AdjointMap<This>(*this);
   }
 }
