@@ -33,16 +33,6 @@
 
 namespace gtsam {
 
-namespace product_lie_group {
-
-template <typename Action>
-struct IsValidAction : std::bool_constant<Action::type == ActionType::Left> {};
-
-template <>
-struct IsValidAction<void> : std::true_type {};
-
-}  // namespace product_lie_group
-
 /**
  * @brief Template to construct the product Lie group of two other Lie groups
  * Assumes Lie group structure for G and H. If Action is omitted the group is
@@ -59,9 +49,6 @@ class ProductLieGroup : public std::pair<G, H> {
  public:
   /// Base pair type
   typedef std::pair<G, H> Base;
-
-  static_assert(product_lie_group::IsValidAction<Action>::value,
-                "ProductLieGroup only supports left group actions");
 
  protected:
   /// Dimensions of the two subgroups
