@@ -46,10 +46,8 @@ struct Rot3VectorAction : public GroupAction<Rot3VectorAction, Rot3, Vector3> {
 
   template <typename ProductType>
   static ProductType Expmap(
-      const Eigen::Ref<const typename traits<typename ProductType::FirstFactor>::
-                           TangentVector>& w,
-      const Eigen::Ref<const typename traits<typename ProductType::SecondFactor>::
-                           TangentVector>& rho,
+      const Eigen::Ref<const typename traits<Rot3>::TangentVector>& w,
+      const Eigen::Ref<const typename traits<Vector3>::TangentVector>& rho,
       OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H1 = {},
       OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H2 = {}) {
     Matrix6 Hpose;

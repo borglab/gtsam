@@ -85,8 +85,6 @@ class ProductLieGroup : public std::pair<G, H> {
  public:
   /// Base pair type
   typedef std::pair<G, H> Base;
-  using FirstFactor = G;
-  using SecondFactor = H;
 
   static_assert(Action::type == ActionType::Left,
                 "ProductLieGroup only supports left group actions");
@@ -121,7 +119,6 @@ class ProductLieGroup : public std::pair<G, H> {
                          Eigen::Matrix<double, dimension, dimension>>;
   using Jacobian1 = typename traits<G>::Jacobian;
   using Jacobian2 = typename traits<H>::Jacobian;
-  using DynamicJacobian = OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>;
 
  public:
   /// @name Standard Constructors
@@ -205,7 +202,8 @@ class ProductLieGroup : public std::pair<G, H> {
   static ProductLieGroup Expmap(
       const Eigen::Ref<const typename traits<G>::TangentVector>& v1,
       const Eigen::Ref<const typename traits<H>::TangentVector>& v2,
-      DynamicJacobian H1 = {}, DynamicJacobian H2 = {});
+      OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H1 = {},
+      OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H2 = {});
 
   /// Logarithmic map
   static TangentVector Logmap(const ProductLieGroup& p, ChartJacobian Hp = {});

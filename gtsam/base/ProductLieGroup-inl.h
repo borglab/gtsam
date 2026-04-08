@@ -278,8 +278,11 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::Expmap(
   const auto v1 = tangentSegment<G>(v, 0, firstDimension);
   const auto v2 = tangentSegment<H>(v, firstDimension, secondDimension);
   ProductLieGroup result =
-      Expmap(v1, v2, Hv ? DynamicJacobian(D_g_first) : DynamicJacobian(),
-             Hv ? DynamicJacobian(D_h_second) : DynamicJacobian());
+      Expmap(v1, v2,
+             Hv ? OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>(D_g_first)
+                : OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>(),
+             Hv ? OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>(D_h_second)
+                : OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>());
   if (Hv) {
     const size_t productDimension =
         combinedDimension(firstDimension, secondDimension);
@@ -295,7 +298,8 @@ template <typename G, typename H, typename Action>
 ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::Expmap(
     const Eigen::Ref<const typename traits<G>::TangentVector>& v1,
     const Eigen::Ref<const typename traits<H>::TangentVector>& v2,
-    DynamicJacobian H1, DynamicJacobian H2) {
+    OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H1,
+    OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H2) {
   if constexpr (isDirectProduct) {
     const size_t firstDimension = static_cast<size_t>(v1.size());
     const size_t secondDimension = static_cast<size_t>(v2.size());
