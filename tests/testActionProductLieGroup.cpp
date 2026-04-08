@@ -152,7 +152,8 @@ Pose3 asPose3(const Semidirect& state) {
 }  // namespace
 
 /* ************************************************************************* */
-// Verify the dummy-action specialization matches the original direct-product behavior.
+// Verify the dummy-action specialization matches the original direct-product
+// behavior.
 TEST(Lie, ProductLieGroupExplicitDirectAction) {
   GTSAM_CONCEPT_ASSERT(IsGroup<ExplicitDirectProduct>);
   GTSAM_CONCEPT_ASSERT(IsManifold<ExplicitDirectProduct>);
