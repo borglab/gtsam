@@ -32,8 +32,7 @@ using namespace gtsam;
 constexpr double kTol = 1e-9;
 
 using Product = ProductLieGroup<Point2, Pose2>;
-using ExplicitDirectProduct =
-    ProductLieGroup<Point2, Pose2, DirectProductAction<Point2, Pose2>>;
+using ExplicitDirectProduct = ProductLieGroup<Point2, Pose2, void>;
 
 struct Rot3VectorAction : public GroupAction<Rot3VectorAction, Rot3, Vector3> {
   static constexpr ActionType type = ActionType::Left;
@@ -153,8 +152,7 @@ Pose3 asPose3(const Semidirect& state) {
 }  // namespace
 
 /* ************************************************************************* */
-// Verify the explicit direct-action specialization matches the original
-// direct-product behavior.
+// Verify the dummy-action specialization matches the original direct-product behavior.
 TEST(Lie, ProductLieGroupExplicitDirectAction) {
   GTSAM_CONCEPT_ASSERT(IsGroup<ExplicitDirectProduct>);
   GTSAM_CONCEPT_ASSERT(IsManifold<ExplicitDirectProduct>);
@@ -312,8 +310,8 @@ TEST(testActionProduct, AdjointMap) {
 }
 
 /* ************************************************************************* */
-// Check retract/localCoordinates consistency and both Jacobians against
-// numerical derivatives.
+// Check Expmap-based retract/localCoordinates consistency and both Jacobians
+// against numerical derivatives.
 TEST(testActionProduct, retractAndLocalCoordinates) {
   const Semidirect state = semidirectState4();
   const Vector6 delta = retractDelta();
@@ -322,7 +320,8 @@ TEST(testActionProduct, retractAndLocalCoordinates) {
   const Semidirect updated = state.retract(delta, retractH1, retractH2);
   const Vector6 recovered = state.localCoordinates(updated, localH1, localH2);
 
-  EXPECT(assert_equal(asPose3(updated), asPose3(state).retract(delta), kTol));
+  EXPECT(assert_equal(asPose3(updated),
+                      asPose3(state).compose(Pose3::Expmap(delta)), kTol));
   EXPECT(assert_equal(delta, recovered, kTol));
 
   const Matrix numericRetractH1 =

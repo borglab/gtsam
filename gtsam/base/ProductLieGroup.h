@@ -33,40 +33,15 @@
 
 namespace gtsam {
 
-template <typename G, typename H>
-struct DirectProductAction;
+namespace product_lie_group {
 
-template <typename G, typename H>
-struct DirectProductAction
-    : public GroupAction<DirectProductAction<G, H>, G, H> {
-  static constexpr ActionType type = ActionType::Left;
+template <typename Action>
+struct IsValidAction : std::bool_constant<Action::type == ActionType::Left> {};
 
-  H operator()(
-      const G& g, const H& h,
-      OptionalJacobian<traits<H>::dimension, traits<G>::dimension> Hg = {},
-      OptionalJacobian<traits<H>::dimension, traits<H>::dimension> Hh = {})
-      const {
-    if (Hg) {
-      if constexpr (traits<H>::dimension == Eigen::Dynamic ||
-                    traits<G>::dimension == Eigen::Dynamic) {
-        Hg->setZero(static_cast<Eigen::Index>(traits<H>::GetDimension(h)),
-                    static_cast<Eigen::Index>(traits<G>::GetDimension(g)));
-      } else {
-        Hg->setZero();
-      }
-    }
-    if (Hh) {
-      if constexpr (traits<H>::dimension == Eigen::Dynamic) {
-        const Eigen::Index hDim =
-            static_cast<Eigen::Index>(traits<H>::GetDimension(h));
-        Hh->setIdentity(hDim, hDim);
-      } else {
-        Hh->setIdentity();
-      }
-    }
-    return h;
-  }
-};
+template <>
+struct IsValidAction<void> : std::true_type {};
+
+}  // namespace product_lie_group
 
 /**
  * @brief Template to construct the product Lie group of two other Lie groups
@@ -74,7 +49,7 @@ struct DirectProductAction
  * the direct product G x H. If Action is provided the group is the left
  * semidirect product G ⋉ H.
  */
-template <typename G, typename H, typename Action = DirectProductAction<G, H>>
+template <typename G, typename H, typename Action = void>
 class ProductLieGroup : public std::pair<G, H> {
   GTSAM_CONCEPT_ASSERT(IsLieGroup<G>);
   GTSAM_CONCEPT_ASSERT(IsLieGroup<H>);
@@ -85,7 +60,7 @@ class ProductLieGroup : public std::pair<G, H> {
   /// Base pair type
   typedef std::pair<G, H> Base;
 
-  static_assert(Action::type == ActionType::Left,
+  static_assert(product_lie_group::IsValidAction<Action>::value,
                 "ProductLieGroup only supports left group actions");
 
  protected:
@@ -94,8 +69,7 @@ class ProductLieGroup : public std::pair<G, H> {
   inline constexpr static int dimension2 = traits<H>::dimension;
   inline constexpr static bool firstDynamic = dimension1 == Eigen::Dynamic;
   inline constexpr static bool secondDynamic = dimension2 == Eigen::Dynamic;
-  inline constexpr static bool isDirectProduct =
-      std::is_same_v<Action, DirectProductAction<G, H>>;
+  inline constexpr static bool isDirectProduct = std::is_void_v<Action>;
 
  public:
   /// Manifold dimension
