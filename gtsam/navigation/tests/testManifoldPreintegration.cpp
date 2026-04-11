@@ -155,6 +155,41 @@ TEST(ManifoldPreintegration, CompareWithPreintegratedRotation) {
                               H2.rightCols<3>()));                      
 }
 
+static NavState UpdatePreintegratedSlow(
+    const Eigen::Vector3d& a_body,
+    const Eigen::Vector3d& w_body,
+    double dt,
+    const NavState& X,
+    gtsam::OptionalJacobian<9,9> A = {},
+    gtsam::OptionalJacobian<9,3> B = {},
+    gtsam::OptionalJacobian<9,3> C = {}) {
+  const Eigen::Matrix3d Rm = X.rotation().matrix();
+
+  Matrix9 D_dXn_dXt_jm1 = Matrix9::Identity();
+  D_dXn_dXt_jm1.block<3,3>(3,3) = Rm.transpose();
+  D_dXn_dXt_jm1.block<3,3>(6,6) = Rm.transpose();
+
+  Matrix9  An;
+  Matrix93 Bn, Cn;
+
+  NavState Xn = X.update(a_body, w_body, dt,
+                         A ? &An : nullptr,
+                         B ? &Bn : nullptr,
+                         C ? &Cn : nullptr);
+
+  const Eigen::Matrix3d Rnm = Xn.rotation().matrix();
+
+  Matrix9 D_dXt_dXn_j = Matrix9::Identity();
+  D_dXt_dXn_j.block<3,3>(3,3) = Rnm;
+  D_dXt_dXn_j.block<3,3>(6,6) = Rnm;
+
+  if (A) *A = D_dXt_dXn_j * An * D_dXn_dXt_jm1;
+  if (B) *B = D_dXt_dXn_j * Bn;
+  if (C) *C = D_dXt_dXn_j * Cn;
+
+  return Xn;
+}
+
 TEST(ManifoldPreintegration, UpdatePreintegratedFastMatchesSlow) {
   using namespace gtsam;
 
@@ -187,7 +222,7 @@ TEST(ManifoldPreintegration, UpdatePreintegratedFastMatchesSlow) {
 
     Matrix9  A_s;
     Matrix93 B_s, C_s;
-    NavState Xn_slow = mip.UpdatePreintegratedSlow(
+    NavState Xn_slow = UpdatePreintegratedSlow(
         s.measuredAcc, s.measuredOmega, s.dt, X_slow, &A_s, &B_s, &C_s);
 
     EXPECT(assert_equal(Xn_fast, Xn_slow, 1e-9));
@@ -210,6 +245,47 @@ TEST(ManifoldPreintegration, UpdatePreintegratedFastMatchesSlow) {
     X_fast = Xn_fast;
     X_slow = Xn_slow;
   }
+}
+
+// verify that B and C from update() are correct when body_P_sensor
+// has both rotation and non-zero translation. The non-zero translation activates
+// the cross-term (*C += *B * D_correctedAcc_omega).
+TEST(ManifoldPreintegration, UpdateJacobiansWithSensorPose) {
+  const Pose3 body_P_sensor(Rot3::RzRyRx(0.1, 0.2, -0.15), Point3(0.1, -0.05, 0.2));
+  auto params = testing::Params();
+  params->body_P_sensor = body_P_sensor;
+
+  const imuBias::ConstantBias zeroBias;
+  const Vector3 measuredAcc(0.3, -0.2, 9.91);
+  const Vector3 measuredOmega(0.05, -0.1, 0.15);
+  const double dt = 0.01;
+
+  // Run one update step from the identity state
+  auto tangentAfterUpdate = [&](const Vector3& acc, const Vector3& omega) -> Vector9 {
+    ManifoldPreintegration pim(params, zeroBias);
+    Matrix9 A; Matrix93 B, C;
+    pim.update(acc, omega, dt, &A, &B, &C);
+    const NavState& Xn = pim.deltaXij();
+    Vector9 xi;
+    xi.segment<3>(0) = Rot3::Logmap(Xn.attitude());
+    xi.segment<3>(3) = Xn.position();
+    xi.segment<3>(6) = Xn.velocity();
+    return xi;
+  };
+
+  // Analytic Jacobians
+  ManifoldPreintegration pim(params, zeroBias);
+  Matrix9 A; Matrix93 B, C;
+  pim.update(measuredAcc, measuredOmega, dt, &A, &B, &C);
+
+  // Numerical Jacobians
+  auto f_acc   = [&](const Vector3& a) { return tangentAfterUpdate(a, measuredOmega); };
+  auto f_omega = [&](const Vector3& w) { return tangentAfterUpdate(measuredAcc, w); };
+  const Matrix93 B_num = numericalDerivative11<Vector9, Vector3>(f_acc,   measuredAcc,   1e-5);
+  const Matrix93 C_num = numericalDerivative11<Vector9, Vector3>(f_omega, measuredOmega, 1e-5);
+
+  EXPECT_MAT_NEAR(B, B_num, 1e-7, 3e-5);
+  EXPECT_MAT_NEAR(C, C_num, 1e-7, 3e-5);
 }
 
 /* ************************************************************************* */

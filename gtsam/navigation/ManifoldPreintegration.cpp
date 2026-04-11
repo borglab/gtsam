@@ -135,41 +135,6 @@ NavState ManifoldPreintegration::UpdatePreintegrated(
   return Xn;
 }
 
-NavState ManifoldPreintegration::UpdatePreintegratedSlow(
-    const Eigen::Vector3d& a_body,
-    const Eigen::Vector3d& w_body,
-    double dt,
-    const NavState& X,
-    gtsam::OptionalJacobian<9,9> A,
-    gtsam::OptionalJacobian<9,3> B,
-    gtsam::OptionalJacobian<9,3> C) {
-  const Eigen::Matrix3d Rm = X.rotation().matrix();
-
-  Matrix9 D_dXn_dXt_jm1 = Matrix9::Identity();
-  D_dXn_dXt_jm1.block<3,3>(3,3) = Rm.transpose();
-  D_dXn_dXt_jm1.block<3,3>(6,6) = Rm.transpose();
-
-  Matrix9  An;
-  Matrix93 Bn, Cn;
-
-  NavState Xn = X.update(a_body, w_body, dt,
-                         A ? &An : nullptr,
-                         B ? &Bn : nullptr,
-                         C ? &Cn : nullptr);
-
-  const Eigen::Matrix3d Rnm = Xn.rotation().matrix();
-
-  Matrix9 D_dXt_dXn_j = Matrix9::Identity();
-  D_dXt_dXn_j.block<3,3>(3,3) = Rnm;
-  D_dXt_dXn_j.block<3,3>(6,6) = Rnm;
-
-  if (A) *A = D_dXt_dXn_j * An * D_dXn_dXt_jm1;
-  if (B) *B = D_dXt_dXn_j * Bn;
-  if (C) *C = D_dXt_dXn_j * Cn;
-
-  return Xn;
-}
-
 //------------------------------------------------------------------------------
 void ManifoldPreintegration::update(const Vector3& measuredAcc,
     const Vector3& measuredOmega, const double dt, Matrix9* A, Matrix93* B,

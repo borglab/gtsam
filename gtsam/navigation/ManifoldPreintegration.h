@@ -105,15 +105,6 @@ public:
       gtsam::OptionalJacobian<9,3> B = {},        // dXt_{k+1} / d a_body
       gtsam::OptionalJacobian<9,3> C = {});       // dXt_{k+1} / d w_body
 
-  static NavState UpdatePreintegratedSlow(
-      const Eigen::Vector3d& a_body,
-      const Eigen::Vector3d& w_body,
-      double dt,
-      const NavState& X,                          // (R,p,v)
-      gtsam::OptionalJacobian<9,9> A = {},        // dXt_{k+1} / dXt_k
-      gtsam::OptionalJacobian<9,3> B = {},        // dXt_{k+1} / d a_body
-      gtsam::OptionalJacobian<9,3> C = {});       // dXt_{k+1} / d w_body
-
   /// Update preintegrated measurements and get derivatives
   /// It takes measured quantities in the j frame
   /// Modifies preintegrated quantities in place after correcting for bias and possibly sensor pose
