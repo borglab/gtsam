@@ -65,15 +65,20 @@ NavState ManifoldPreintegration::UpdatePreintegrated(
     gtsam::OptionalJacobian<9,3> B_t,        // dXt_{k+1} / d a_body
     gtsam::OptionalJacobian<9,3> C_t) {      // dXt_{k+1} / d w_body
 
-  // Let's denote the right perturbation dXn on the NavState X_ij's manifold, i.e.,
-  // dXn = [\delta \phi_ij, \delta p_ij, \delta v_ij] where R_ij = \hat{R}_ij Exp(\delta \phi_ij)
-  // p_ij = \hat{p}_ij + R_ij \delta p_{ij} and v_ij = \hat{v}_ij + R_ij \delta v_{ij}.
-  // The error state dXt of the preint X_ij is actually defined as
-  // dXt = [\delta \phi_ij, \delta p_ij, \delta v_ij] where R_ij = \hat{R}_ij Exp(\delta \phi_ij)
-  // p_ij = \hat{p}_ij + \delta p_{ij} and v_ij = \hat{v}_ij + \delta v_{ij}.
-  // So to propagate the X_ij's covariance, we need to transform the transition matrix A.
-  // from NavState.update(), An = \frac{\delta X^n_j}{\delta X^n_{j-1}}, and transform it to
-  // At = \frac{\delta X^t_j}{\delta X^t_{j-1}} = \frac{\delta X^t_j}{\delta X^n_j} * An * \frac{\delta X^n_{j-1}}{\delta X^t_{j-1}}
+  // NavState right perturbation dXn on the NavState X_ij's manifold:
+  //   dXn = [delta_phi_ij, delta_p_ij, delta_v_ij] where
+  //     R_ij  = R̂_ij * Exp(delta_phi_ij)
+  //     p_ij  = p̂_ij + R_ij * delta_p_ij    (body-frame additive)
+  //     v_ij  = v̂_ij + R_ij * delta_v_ij    (body-frame additive)
+  // The preintegration error state dXt uses navigation-frame additive p_ij, v_ij:
+  //   dXt = [delta_phi_ij, delta_p_ij, delta_v_ij] where
+  //     R_ij  = R̂_ij * Exp(delta_phi_ij)
+  //     p_ij  = p̂_ij + delta_p_ij            (navigation-frame additive)
+  //     v_ij  = v̂_ij + delta_v_ij            (navigation-frame additive)
+  // To propagate X_ij's covariance we need A_t in the dXt convention, not A_n
+  // from NavState.update() in the dXn convention.  The relation is:
+  //   A_t = (dXt_j/dXn_j) * A_n * (dXn_{j-1}/dXt_{j-1})
+  // A_t, B_t, C_t below are computed directly in the dXt convention.
   
   const double dt2  = dt * dt;
   const double dt22 = 0.5 * dt2;

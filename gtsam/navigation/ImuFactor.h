@@ -174,16 +174,16 @@ public:
 using PreintegratedImuMeasurements = PreintegratedImuMeasurementsT<DefaultPreintegrationType>;
 
 /**
- * For TangentPreintegration, the perturbation on deltaXij is dXt, the 3D perturbation of the rotation tangent space + 
- * 3D perturbation of the translation part + 3D perturbation of the velocity part,
- * as validated by the matrix A_k in the ImuFactor.pdf and the unit test on preintegrated_H_biasAcc().
-
- * For ManifoldPreintegration, the perturbation on deltaXij is also dXt, as validated by the unit test on delPdelBiasAcc().
-
- * For ImuFactor or CombinedImuFactor, the residual is defined by PreintegrationBase::computeError and 
- * its perturbation is coincident to dXt (up to a right Jacobian of a small angle ~ identity).
-
- * So for both ManifoldPreintegration and TangentPreintegration, the covariance of the residual equals to the preintMeasCov.
+ * The preint error state dXt = [delta_phi_ij, delta_p_ij, delta_v_ij] is defined as:
+ *   R_ij = R̂_ij Exp(delta_phi_ij)
+ *   p_ij = p̂_ij + delta_p_ij   (additive in the body frame of state_i)
+ *   v_ij = v̂_ij + delta_v_ij   (additive in the body frame of state_i)
+ * and preintMeasCov is the covariance of dXt.
+ *
+ * PreintegrationBase::computeError defines the residual as:
+ *   r = [Log(R_j^{-1} R_pred), R_i^T (p_pred - p_j), R_i^T (v_pred - v_j)]
+ * so the Jacobian of r w.r.t. dXt is identity (up to the rotation right-Jacobian
+ * which is ~I for small angles), and preintMeasCov applies directly.
  */
 template <class PIM>
 inline gtsam::Matrix9 imuFactorResidualCov(const PIM& pim) {

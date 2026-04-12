@@ -152,15 +152,64 @@ Vector9 PreintegrationBase::computeError(const NavState& state_i,
   NavState predictedState_j = predict(
       state_i, bias_i, H1 ? &D_predict_state_i : 0, H3 ? &D_predict_bias_i : 0);
 
-  // Calculate error
-  Matrix9 D_error_state_j, D_error_predict;
-  Vector9 error =
-      state_j.localCoordinates(predictedState_j, H2 ? &D_error_state_j : 0,
-                               H1 || H3 ? &D_error_predict : 0);
+  // Rotation residual: r_R = Log(R_j^{-1} R_pred).
+  Matrix3 D_Rrel_Rj, D_Rrel_Rpred, D_rR_Rrel;
+  const Rot3 Rrel = state_j.attitude().between(predictedState_j.attitude(),
+      H2 ? &D_Rrel_Rj : nullptr, (H1 || H3) ? &D_Rrel_Rpred : nullptr);
+  const Vector3 r_R = Rot3::Logmap(Rrel, (H1 || H2 || H3) ? &D_rR_Rrel : nullptr);
 
-  if (H1) *H1 << D_error_predict * D_predict_state_i;
-  if (H2) *H2 << D_error_state_j;
-  if (H3) *H3 << D_error_predict * D_predict_bias_i;
+  // Position and velocity residuals in body frame of state_i.
+  // Using R_i^T makes the Jacobian of [r_p; r_v] w.r.t. preint error state dXt
+  // equal to identity, so preintMeasCov_ applies directly as residual covariance.
+  const Matrix3 Ri_T = state_i.R().transpose();
+  const Vector3 dp = predictedState_j.t() - state_j.t();
+  const Vector3 dv = predictedState_j.v() - state_j.v();
+  const Vector3 r_p = Ri_T * dp;
+  const Vector3 r_v = Ri_T * dv;
+
+  Vector9 error;
+  error << r_R, r_p, r_v;
+
+  // NavState retract uses the body-frame (dXn) perturbation convention:
+  //   dXn = [delta_phi, delta_p, delta_v] where
+  //     R_i'  = R_i * Exp(delta_phi)
+  //     p_i'  = p_i + R_i * delta_p     (body-frame additive)
+  //     v_i'  = v_i + R_i * delta_v     (body-frame additive)
+  // Therefore D_predict_state_i and D_predict_bias_i have their position/velocity
+  // rows expressed in the body frame of predictedState_j.
+  if (H1) {
+    // r_R depends on R_pred only through D_predict_state_i.topRows<3>().
+    // D_predict_state_i's position/velocity rows are in the body frame of
+    // predictedState_j; convert to navigation frame via R_i^T * R_pred.
+    const Matrix3 D_rR_Rpred = D_rR_Rrel * D_Rrel_Rpred;
+    const Matrix3 RiT_Rpred = Ri_T * predictedState_j.R();
+    const Eigen::Matrix<double,3,9> H1_rot = D_rR_Rpred * D_predict_state_i.topRows<3>();
+    Eigen::Matrix<double,3,9> H1_pos, H1_vel;
+    H1_pos << skewSymmetric(r_p) + RiT_Rpred * D_predict_state_i.block<3,3>(3,0),
+               RiT_Rpred * D_predict_state_i.block<3,3>(3,3),
+               RiT_Rpred * D_predict_state_i.block<3,3>(3,6);
+    H1_vel << skewSymmetric(r_v) + RiT_Rpred * D_predict_state_i.block<3,3>(6,0),
+               RiT_Rpred * D_predict_state_i.block<3,3>(6,3),
+               RiT_Rpred * D_predict_state_i.block<3,3>(6,6);
+    *H1 << H1_rot, H1_pos, H1_vel;
+  }
+
+  if (H2) {
+    // r_R = Log(R_j^{-1} R_pred) depends on R_j; r_p, r_v depend on p_j, v_j via -R_i^T R_j.
+    const Matrix3 D_rR_Rj = D_rR_Rrel * D_Rrel_Rj;
+    const Matrix3 neg_RiT_Rj = -(Ri_T * state_j.R());
+    *H2 << D_rR_Rj,      Z_3x3,       Z_3x3,
+           Z_3x3,        neg_RiT_Rj,  Z_3x3,
+           Z_3x3,        Z_3x3,       neg_RiT_Rj;
+  }
+
+  if (H3) {
+    const Matrix3 D_rR_Rpred = D_rR_Rrel * D_Rrel_Rpred;
+    const Matrix3 RiT_Rpred = Ri_T * predictedState_j.R();
+    *H3 << D_rR_Rpred * D_predict_bias_i.topRows<3>(),
+           RiT_Rpred * D_predict_bias_i.middleRows<3>(3),
+           RiT_Rpred * D_predict_bias_i.middleRows<3>(6);
+  }
 
   return error;
 }
