@@ -28,6 +28,8 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::operator*(
     return ProductLieGroup(traits<G>::Compose(this->first, other.first),
                            traits<H>::Compose(this->second, other.second));
   } else {
+    // Semidirect multiplication first moves the RHS second factor by the
+    // LHS first factor's action, then composes in H.
     const Action action{};
     const H actedSecond = action(this->first, other.second);
     return ProductLieGroup(traits<G>::Compose(this->first, other.first),
@@ -62,6 +64,8 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::retract(
   }
 
   if constexpr (isDirectProduct) {
+    // Keep the direct product on the component charts. Using Expmap here would
+    // change behavior for factors with custom retract/localCoordinates charts.
     Jacobian1 D_g_first;
     Jacobian1 D_g_second;
     Jacobian2 D_h_first;
@@ -108,6 +112,7 @@ ProductLieGroup<G, H, Action>::localCoordinates(const ProductLieGroup& g,
       combinedDimension(firstDimension, secondDimension);
 
   if constexpr (isDirectProduct) {
+    // Keep this componentwise for the same chart reason as retract().
     Jacobian1 D_g_first;
     Jacobian1 D_g_second;
     Jacobian2 D_h_first;
@@ -146,90 +151,27 @@ template <typename G, typename H, typename Action>
 ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::compose(
     const ProductLieGroup& other, ChartJacobian H1, ChartJacobian H2) const {
   checkMatchingDimensions(other, "compose");
-  const size_t firstDimension = firstDim();
-  const size_t secondDimension = secondDim();
-  const size_t productDimension =
-      combinedDimension(firstDimension, secondDimension);
-
-  if constexpr (isDirectProduct) {
-    Jacobian1 D_g_first;
-    Jacobian2 D_h_second;
-    G g =
-        traits<G>::Compose(this->first, other.first, H1 ? &D_g_first : nullptr);
-    H h = traits<H>::Compose(this->second, other.second,
-                             H1 ? &D_h_second : nullptr);
-    if (H1) {
-      *H1 = zeroJacobian(productDimension);
-      H1->block(0, 0, firstDimension, firstDimension) = D_g_first;
-      H1->block(firstDimension, firstDimension, secondDimension,
-                secondDimension) = D_h_second;
-    }
-    if (H2) *H2 = identityJacobian(productDimension);
-    return ProductLieGroup(g, h);
-  } else {
-    const ProductLieGroup result = (*this) * other;
-    if (H1) *H1 = other.inverse().AdjointMap();
-    if (H2) *H2 = identityJacobian(productDimension);
-    return result;
-  }
+  const ProductLieGroup result = (*this) * other;
+  if (H1) *H1 = other.inverse().AdjointMap();
+  if (H2) *H2 = identityJacobian(dim());
+  return result;
 }
 
 template <typename G, typename H, typename Action>
 ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::between(
     const ProductLieGroup& other, ChartJacobian H1, ChartJacobian H2) const {
   checkMatchingDimensions(other, "between");
-  const size_t firstDimension = firstDim();
-  const size_t secondDimension = secondDim();
-  const size_t productDimension =
-      combinedDimension(firstDimension, secondDimension);
-
-  if constexpr (isDirectProduct) {
-    Jacobian1 D_g_first;
-    Jacobian2 D_h_second;
-    G g =
-        traits<G>::Between(this->first, other.first, H1 ? &D_g_first : nullptr);
-    H h = traits<H>::Between(this->second, other.second,
-                             H1 ? &D_h_second : nullptr);
-    if (H1) {
-      *H1 = zeroJacobian(productDimension);
-      H1->block(0, 0, firstDimension, firstDimension) = D_g_first;
-      H1->block(firstDimension, firstDimension, secondDimension,
-                secondDimension) = D_h_second;
-    }
-    if (H2) *H2 = identityJacobian(productDimension);
-    return ProductLieGroup(g, h);
-  } else {
-    const ProductLieGroup result = this->inverse() * other;
-    if (H1) *H1 = -result.inverse().AdjointMap();
-    if (H2) *H2 = identityJacobian(productDimension);
-    return result;
-  }
+  const ProductLieGroup result = this->inverse() * other;
+  if (H1) *H1 = -result.inverse().AdjointMap();
+  if (H2) *H2 = identityJacobian(dim());
+  return result;
 }
 
 template <typename G, typename H, typename Action>
 ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::inverse(
     ChartJacobian D) const {
-  const size_t firstDimension = firstDim();
-  const size_t secondDimension = secondDim();
-  const size_t productDimension =
-      combinedDimension(firstDimension, secondDimension);
-
-  if constexpr (isDirectProduct) {
-    Jacobian1 D_g_first;
-    Jacobian2 D_h_second;
-    G g = traits<G>::Inverse(this->first, D ? &D_g_first : nullptr);
-    H h = traits<H>::Inverse(this->second, D ? &D_h_second : nullptr);
-    if (D) {
-      *D = zeroJacobian(productDimension);
-      D->block(0, 0, firstDimension, firstDimension) = D_g_first;
-      D->block(firstDimension, firstDimension, secondDimension,
-               secondDimension) = D_h_second;
-    }
-    return ProductLieGroup(g, h);
-  } else {
-    if (D) *D = -AdjointMap();
-    return inverse();
-  }
+  if (D) *D = -AdjointMap();
+  return inverse();
 }
 
 template <typename G, typename H, typename Action>
@@ -319,6 +261,8 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::Expmap(
     }
     return ProductLieGroup(g, h);
   } else {
+    // A semidirect Expmap is not determined by Action::operator() alone.
+    // The action must provide the Lie-level formula for its coupling.
     return Action::template Expmap<ProductLieGroup>(v1, v2, H1, H2);
   }
 }
@@ -348,6 +292,8 @@ ProductLieGroup<G, H, Action>::Logmap(const ProductLieGroup& p,
     }
     return v;
   } else {
+    // As with Expmap, the semidirect Logmap depends on the action's Lie-level
+    // coupling and cannot be inferred from the group action alone.
     return Action::template Logmap<ProductLieGroup>(p, Hp);
   }
 }
@@ -371,6 +317,7 @@ ProductLieGroup<G, H, Action>::AdjointMap() const {
     adj.block(d1, d1, d2, d2) = adjH;
     return adj;
   } else {
+    // The semidirect adjoint carries the action-specific coupling blocks.
     return Action::template AdjointMap<ProductLieGroup>(*this);
   }
 }
