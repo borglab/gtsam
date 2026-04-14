@@ -22,17 +22,12 @@
 #include <gtsam/base/ProductLieGroup.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/testLie.h>
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Rot3.h>
 
 using namespace gtsam;
 
 constexpr double kTol = 1e-9;
-
-using Product = ProductLieGroup<Point2, Pose2>;
-using ExplicitDirectProduct = ProductLieGroup<Point2, Pose2, void>;
 
 struct Rot3VectorAction : public GroupAction<Rot3VectorAction, Rot3, Vector3> {
   static constexpr ActionType type = ActionType::Left;
@@ -45,8 +40,7 @@ struct Rot3VectorAction : public GroupAction<Rot3VectorAction, Rot3, Vector3> {
 
   template <typename ProductType>
   static ProductType Expmap(
-      const Eigen::Ref<const typename traits<Rot3>::TangentVector>& w,
-      const Eigen::Ref<const typename traits<Vector3>::TangentVector>& rho,
+      const Vector3& w, const Vector3& rho,
       OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H1 = {},
       OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H2 = {}) {
     Matrix6 Hpose;
@@ -59,8 +53,8 @@ struct Rot3VectorAction : public GroupAction<Rot3VectorAction, Rot3, Vector3> {
   }
 
   template <typename ProductType>
-  static typename ProductType::TangentVector Logmap(
-      const ProductType& p, typename ProductType::ChartJacobian H = {}) {
+  static Vector6 Logmap(const ProductType& p,
+                        OptionalJacobian<6, 6> H = {}) {
     Matrix6 Hpose;
     const Vector6 xi =
         Pose3::Logmap(Pose3(p.first, p.second), H ? &Hpose : nullptr);
@@ -68,27 +62,11 @@ struct Rot3VectorAction : public GroupAction<Rot3VectorAction, Rot3, Vector3> {
     return xi;
   }
 
-  template <typename ProductType>
-  static typename ProductType::Jacobian AdjointMap(const ProductType& p) {
-    return Pose3(p.first, p.second).AdjointMap();
-  }
 };
 
 using Semidirect = ProductLieGroup<Rot3, Vector3, Rot3VectorAction>;
 
 namespace {
-
-Product directState() { return Product(Point2(1, 2), Pose2(3, 4, 5)); }
-
-Product directOther() {
-  return Product(Point2(-0.5, 0.25), Pose2(-1, 2, -0.4));
-}
-
-Vector5 directXi() {
-  Vector5 xi;
-  xi << 0.1, -0.2, 0.05, 0.1, -0.15;
-  return xi;
-}
 
 Semidirect semidirectState1() {
   return Semidirect(Rot3::RzRyRx(0.1, 0.2, -0.3), Vector3(1.0, -0.5, 0.25));
@@ -150,44 +128,6 @@ Pose3 asPose3(const Semidirect& state) {
 }
 
 }  // namespace
-
-/* ************************************************************************* */
-// Verify the dummy-action specialization matches the original direct-product
-// behavior.
-TEST(Lie, ProductLieGroupExplicitDirectAction) {
-  GTSAM_CONCEPT_ASSERT(IsGroup<ExplicitDirectProduct>);
-  GTSAM_CONCEPT_ASSERT(IsManifold<ExplicitDirectProduct>);
-  GTSAM_CONCEPT_ASSERT(IsLieGroup<ExplicitDirectProduct>);
-
-  const Product state = directState();
-  const Product other = directOther();
-  const ExplicitDirectProduct actionState(state.first, state.second);
-  const ExplicitDirectProduct actionOther(other.first, other.second);
-
-  const Product defaultComposed = state.compose(other);
-  const ExplicitDirectProduct actionComposed = actionState.compose(actionOther);
-  EXPECT(assert_equal(defaultComposed.first, actionComposed.first, kTol));
-  EXPECT(assert_equal(defaultComposed.second, actionComposed.second, kTol));
-
-  const Product defaultBetween = state.between(other);
-  const ExplicitDirectProduct actionBetween = actionState.between(actionOther);
-  EXPECT(assert_equal(defaultBetween.first, actionBetween.first, kTol));
-  EXPECT(assert_equal(defaultBetween.second, actionBetween.second, kTol));
-
-  const Product defaultInverse = state.inverse();
-  const ExplicitDirectProduct actionInverse = actionState.inverse();
-  EXPECT(assert_equal(defaultInverse.first, actionInverse.first, kTol));
-  EXPECT(assert_equal(defaultInverse.second, actionInverse.second, kTol));
-
-  const Vector5 xi = directXi();
-  const Product defaultExp = Product::Expmap(xi);
-  const ExplicitDirectProduct actionExp = ExplicitDirectProduct::Expmap(xi);
-  EXPECT(assert_equal(defaultExp.first, actionExp.first, kTol));
-  EXPECT(assert_equal(defaultExp.second, actionExp.second, kTol));
-  EXPECT(assert_equal(Product::Logmap(defaultExp),
-                      ExplicitDirectProduct::Logmap(actionExp), kTol));
-  EXPECT(assert_equal(state.AdjointMap(), actionState.AdjointMap(), kTol));
-}
 
 /* ************************************************************************* */
 // Verify the semidirect product obeys the left action law and matches Pose3

@@ -39,25 +39,22 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::operator*(
 
 template <typename G, typename H, typename Action>
 ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::inverse() const {
+  const G gInv = traits<G>::Inverse(this->first);
+  const H hInv = traits<H>::Inverse(this->second);
   if constexpr (isDirectProduct) {
-    return ProductLieGroup(traits<G>::Inverse(this->first),
-                           traits<H>::Inverse(this->second));
+    return ProductLieGroup(gInv, hInv);
   } else {
-    const Action action{};
-    const G gInv = traits<G>::Inverse(this->first);
-    const H hInv = traits<H>::Inverse(this->second);
-    return ProductLieGroup(gInv, action(gInv, hInv));
+    return ProductLieGroup(gInv, Action{}(gInv, hInv));
   }
 }
 
 template <typename G, typename H, typename Action>
 ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::retract(
     const TangentVector& v, ChartJacobian H1, ChartJacobian H2) const {
-  const size_t firstDimension = firstDim();
-  const size_t secondDimension = secondDim();
-  const size_t productDimension =
-      combinedDimension(firstDimension, secondDimension);
-  if (static_cast<size_t>(v.size()) != productDimension) {
+  const size_t d1 = firstDim();
+  const size_t d2 = secondDim();
+  const size_t d = combinedDimension(d1, d2);
+  if (static_cast<size_t>(v.size()) != d) {
     throw std::invalid_argument(
         "ProductLieGroup::retract tangent dimension does not match product "
         "dimension");
@@ -70,23 +67,21 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::retract(
     Jacobian1 D_g_second;
     Jacobian2 D_h_first;
     Jacobian2 D_h_second;
-    G g = traits<G>::Retract(
-        this->first, tangentSegment<G>(v, 0, firstDimension),
-        H1 ? &D_g_first : nullptr, H2 ? &D_g_second : nullptr);
-    H h = traits<H>::Retract(
-        this->second, tangentSegment<H>(v, firstDimension, secondDimension),
-        H1 ? &D_h_first : nullptr, H2 ? &D_h_second : nullptr);
+    G g = traits<G>::Retract(this->first, tangentSegment<G>(v, 0, d1),
+                             H1 ? &D_g_first : nullptr,
+                             H2 ? &D_g_second : nullptr);
+    H h = traits<H>::Retract(this->second, tangentSegment<H>(v, d1, d2),
+                             H1 ? &D_h_first : nullptr,
+                             H2 ? &D_h_second : nullptr);
     if (H1) {
-      *H1 = zeroJacobian(productDimension);
-      H1->block(0, 0, firstDimension, firstDimension) = D_g_first;
-      H1->block(firstDimension, firstDimension, secondDimension,
-                secondDimension) = D_h_first;
+      *H1 = zeroJacobian(d);
+      H1->block(0, 0, d1, d1) = D_g_first;
+      H1->block(d1, d1, d2, d2) = D_h_first;
     }
     if (H2) {
-      *H2 = zeroJacobian(productDimension);
-      H2->block(0, 0, firstDimension, firstDimension) = D_g_second;
-      H2->block(firstDimension, firstDimension, secondDimension,
-                secondDimension) = D_h_second;
+      *H2 = zeroJacobian(d);
+      H2->block(0, 0, d1, d1) = D_g_second;
+      H2->block(d1, d1, d2, d2) = D_h_second;
     }
     return ProductLieGroup(g, h);
   } else {
@@ -106,10 +101,9 @@ ProductLieGroup<G, H, Action>::localCoordinates(const ProductLieGroup& g,
                                                 ChartJacobian H1,
                                                 ChartJacobian H2) const {
   checkMatchingDimensions(g, "localCoordinates");
-  const size_t firstDimension = firstDim();
-  const size_t secondDimension = secondDim();
-  const size_t productDimension =
-      combinedDimension(firstDimension, secondDimension);
+  const size_t d1 = firstDim();
+  const size_t d2 = secondDim();
+  const size_t d = combinedDimension(d1, d2);
 
   if constexpr (isDirectProduct) {
     // Keep this componentwise for the same chart reason as retract().
@@ -124,18 +118,16 @@ ProductLieGroup<G, H, Action>::localCoordinates(const ProductLieGroup& g,
         traits<H>::Local(this->second, g.second, H1 ? &D_h_first : nullptr,
                          H2 ? &D_h_second : nullptr);
     if (H1) {
-      *H1 = zeroJacobian(productDimension);
-      H1->block(0, 0, firstDimension, firstDimension) = D_g_first;
-      H1->block(firstDimension, firstDimension, secondDimension,
-                secondDimension) = D_h_first;
+      *H1 = zeroJacobian(d);
+      H1->block(0, 0, d1, d1) = D_g_first;
+      H1->block(d1, d1, d2, d2) = D_h_first;
     }
     if (H2) {
-      *H2 = zeroJacobian(productDimension);
-      H2->block(0, 0, firstDimension, firstDimension) = D_g_second;
-      H2->block(firstDimension, firstDimension, secondDimension,
-                secondDimension) = D_h_second;
+      *H2 = zeroJacobian(d);
+      H2->block(0, 0, d1, d1) = D_g_second;
+      H2->block(d1, d1, d2, d2) = D_h_second;
     }
-    return makeTangentVector(v1, v2, firstDimension, secondDimension);
+    return makeTangentVector(v1, v2, d1, d2);
   } else {
     const ProductLieGroup relative = between(g);
     Jacobian D_logmap;
@@ -317,8 +309,36 @@ ProductLieGroup<G, H, Action>::AdjointMap() const {
     adj.block(d1, d1, d2, d2) = adjH;
     return adj;
   } else {
-    // The semidirect adjoint carries the action-specific coupling blocks.
-    return Action::template AdjointMap<ProductLieGroup>(*this);
+    // Generic semidirect AdjointMap assembled from the action's Jacobians:
+    //
+    //   Ad_(g,h) = [[ Ad_G(g),              0   ],
+    //               [ -Jg * Ad_G(g),        Jh  ]]
+    //
+    // where Jg = D_g φ(e_G, h)  (action Jacobian w.r.t. G at identity)
+    //       Jh = D_h φ(g, e_H)  (action Jacobian w.r.t. H at identity)
+    //
+    // Both come directly from the action's operator() Jacobian arguments.
+    const size_t d1 = firstDim();
+    const size_t d2 = secondDim();
+    const size_t d = combinedDimension(d1, d2);
+
+    const Action action{};
+
+    // Jg: DimH × DimG — evaluated at (e_G, h)
+    ActionJacobianG Jg;
+    action(defaultIdentity<G>(), this->second, &Jg, {});
+
+    // Jh: DimH × DimH — evaluated at (g, e_H)
+    Jacobian2 Jh;
+    action(this->first, defaultIdentity<H>(), {}, &Jh);
+
+    const auto adjG = traits<G>::AdjointMap(this->first);
+
+    Jacobian adj = zeroJacobian(d);
+    adj.block(0, 0, d1, d1) = adjG;
+    adj.block(d1, d1, d2, d2) = Jh;
+    adj.block(d1, 0, d2, d1) = -Jg * adjG;
+    return adj;
   }
 }
 

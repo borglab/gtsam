@@ -34,10 +34,28 @@
 namespace gtsam {
 
 /**
- * @brief Template to construct the product Lie group of two other Lie groups
- * Assumes Lie group structure for G and H. If Action is omitted the group is
- * the direct product G x H. If Action is provided the group is the left
- * semidirect product G ⋉ H.
+ * @brief Product Lie group of G and H, optionally with a semidirect structure.
+ *
+ * When Action is omitted (default void), this is the direct product G × H:
+ * operations are componentwise and tangent vectors concatenate independently.
+ *
+ * When Action is provided, this is the left semidirect product G ⋉ H, where G
+ * acts on H via the left group action φ: G × H → H. The group law becomes:
+ *
+ *   (g₁, h₁) · (g₂, h₂) = (g₁g₂,  h₁ · φ(g₁, h₂))
+ *   (g, h)⁻¹             = (g⁻¹,   φ(g⁻¹, h⁻¹))
+ *
+ * Action must derive from GroupAction<Action, G, H> and implement:
+ *   - operator()(g, h, Hg={}, Hh={}) — the group action with optional
+ *     Jacobians w.r.t. g (DimH×DimG) and h (DimH×DimH). These Jacobians are
+ *     used to automatically derive the AdjointMap.
+ *   - static Expmap<ProductType>(v1, v2, H1={}, H2={}) — product exponential
+ *     map (cannot be derived generically from the action alone).
+ *   - static Logmap<ProductType>(p, H={}) — product logarithm.
+ *
+ * Example: SE(3) as a semidirect product:
+ *   using SE3 = ProductLieGroup<Rot3, Vector3, Rot3VectorAction>;
+ * where Rot3VectorAction implements φ(R, t) = R·t.
  */
 template <typename G, typename H, typename Action = void>
 class ProductLieGroup : public std::pair<G, H> {
@@ -79,6 +97,11 @@ class ProductLieGroup : public std::pair<G, H> {
                          Eigen::Matrix<double, dimension, dimension>>;
   using Jacobian1 = typename traits<G>::Jacobian;
   using Jacobian2 = typename traits<H>::Jacobian;
+  /// Jacobian of the action w.r.t. G (DimH × DimG), used in the generic
+  /// semidirect AdjointMap formula.
+  using ActionJacobianG = std::conditional_t<
+      firstDynamic || secondDynamic, Matrix,
+      Eigen::Matrix<double, dimension2, dimension1>>;
 
  public:
   /// @name Standard Constructors
