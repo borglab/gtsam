@@ -25,13 +25,13 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::operator*(
     const ProductLieGroup& other) const {
   checkMatchingDimensions(other, "operator*");
   if constexpr (isDirectProduct) {
+    // Direct product: (g₁,h₁)·(g₂,h₂) = (g₁g₂, h₁h₂)
     return ProductLieGroup(traits<G>::Compose(this->first, other.first),
                            traits<H>::Compose(this->second, other.second));
   } else {
-    // Semidirect multiplication first moves the RHS second factor by the
-    // LHS first factor's action, then composes in H.
-    const Action action{};
-    const H actedSecond = action(this->first, other.second);
+    // Semidirect product: (g₁,h₁)·(g₂,h₂) = (g₁g₂, h₁·φ(g₁,h₂)).
+    // The LHS G-component acts on the RHS H-component before composing in H.
+    const H actedSecond = Action{}(this->first, other.second);
     return ProductLieGroup(traits<G>::Compose(this->first, other.first),
                            traits<H>::Compose(this->second, actedSecond));
   }
@@ -42,8 +42,11 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::inverse() const {
   const G gInv = traits<G>::Inverse(this->first);
   const H hInv = traits<H>::Inverse(this->second);
   if constexpr (isDirectProduct) {
+    // Direct product: (g,h)⁻¹ = (g⁻¹, h⁻¹)
     return ProductLieGroup(gInv, hInv);
   } else {
+    // Semidirect product: (g,h)⁻¹ = (g⁻¹, φ(g⁻¹, h⁻¹)).
+    // g⁻¹ must also un-rotate h⁻¹ to undo the action baked into the group law.
     return ProductLieGroup(gInv, Action{}(gInv, hInv));
   }
 }
@@ -59,40 +62,28 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::retract(
         "ProductLieGroup::retract tangent dimension does not match product "
         "dimension");
   }
-
-  if constexpr (isDirectProduct) {
-    // Keep the direct product on the component charts. Using Expmap here would
-    // change behavior for factors with custom retract/localCoordinates charts.
-    Jacobian1 D_g_first;
-    Jacobian1 D_g_second;
-    Jacobian2 D_h_first;
-    Jacobian2 D_h_second;
-    G g = traits<G>::Retract(this->first, tangentSegment<G>(v, 0, d1),
-                             H1 ? &D_g_first : nullptr,
-                             H2 ? &D_g_second : nullptr);
-    H h = traits<H>::Retract(this->second, tangentSegment<H>(v, d1, d2),
-                             H1 ? &D_h_first : nullptr,
-                             H2 ? &D_h_second : nullptr);
-    if (H1) {
-      *H1 = zeroJacobian(d);
-      H1->block(0, 0, d1, d1) = D_g_first;
-      H1->block(d1, d1, d2, d2) = D_h_first;
-    }
-    if (H2) {
-      *H2 = zeroJacobian(d);
-      H2->block(0, 0, d1, d1) = D_g_second;
-      H2->block(d1, d1, d2, d2) = D_h_second;
-    }
-    return ProductLieGroup(g, h);
-  } else {
-    Jacobian D_expmap;
-    const ProductLieGroup delta = ProductLieGroup::Expmap(
-        v, H2 ? ChartJacobian(&D_expmap) : ChartJacobian());
-    const ProductLieGroup result = compose(delta);
-    if (H1) *H1 = delta.inverse().AdjointMap();
-    if (H2) *H2 = D_expmap;
-    return result;
+  // Expmap-based retract works for both direct and semidirect products:
+  //   retract(p, v) = p · Expmap(v)
+  // The chart Jacobians are H1 = Ad(Expmap(v)⁻¹) and H2 = D_Expmap(v).
+  // For a direct product these are block-diagonal and match the componentwise
+  // formula; for a semidirect product they carry the full coupled structure.
+  //
+  // We pre-split v here so the 2-arg Expmap overload is used, which handles
+  // the dynamic-dynamic case correctly (the 1-arg form can't infer the split
+  // without an instance to query d1 and d2 from).
+  Matrix D_v1, D_v2;
+  using DynJ = OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>;
+  const ProductLieGroup delta =
+      Expmap(tangentSegment<G>(v, 0, d1), tangentSegment<H>(v, d1, d2),
+             H2 ? DynJ(D_v1) : DynJ(), H2 ? DynJ(D_v2) : DynJ());
+  const ProductLieGroup result = compose(delta);
+  if (H1) *H1 = delta.inverse().AdjointMap();
+  if (H2) {
+    *H2 = zeroJacobian(d);
+    H2->leftCols(d1) = D_v1;
+    H2->rightCols(d2) = D_v2;
   }
+  return result;
 }
 
 template <typename G, typename H, typename Action>
@@ -101,42 +92,18 @@ ProductLieGroup<G, H, Action>::localCoordinates(const ProductLieGroup& g,
                                                 ChartJacobian H1,
                                                 ChartJacobian H2) const {
   checkMatchingDimensions(g, "localCoordinates");
-  const size_t d1 = firstDim();
-  const size_t d2 = secondDim();
-  const size_t d = combinedDimension(d1, d2);
-
-  if constexpr (isDirectProduct) {
-    // Keep this componentwise for the same chart reason as retract().
-    Jacobian1 D_g_first;
-    Jacobian1 D_g_second;
-    Jacobian2 D_h_first;
-    Jacobian2 D_h_second;
-    typename traits<G>::TangentVector v1 =
-        traits<G>::Local(this->first, g.first, H1 ? &D_g_first : nullptr,
-                         H2 ? &D_g_second : nullptr);
-    typename traits<H>::TangentVector v2 =
-        traits<H>::Local(this->second, g.second, H1 ? &D_h_first : nullptr,
-                         H2 ? &D_h_second : nullptr);
-    if (H1) {
-      *H1 = zeroJacobian(d);
-      H1->block(0, 0, d1, d1) = D_g_first;
-      H1->block(d1, d1, d2, d2) = D_h_first;
-    }
-    if (H2) {
-      *H2 = zeroJacobian(d);
-      H2->block(0, 0, d1, d1) = D_g_second;
-      H2->block(d1, d1, d2, d2) = D_h_second;
-    }
-    return makeTangentVector(v1, v2, d1, d2);
-  } else {
-    const ProductLieGroup relative = between(g);
-    Jacobian D_logmap;
-    TangentVector v = ProductLieGroup::Logmap(
-        relative, H1 || H2 ? ChartJacobian(&D_logmap) : ChartJacobian());
-    if (H1) *H1 = -D_logmap * relative.inverse().AdjointMap();
-    if (H2) *H2 = D_logmap;
-    return v;
-  }
+  // Logmap-based local coordinates work for both direct and semidirect
+  // products:
+  //   localCoordinates(p, q) = Logmap(p⁻¹·q)
+  // For a direct product Logmap is componentwise; for a semidirect product it
+  // carries the full coupled Lie algebra structure from Action::Logmap.
+  const ProductLieGroup relative = between(g);
+  Jacobian D_logmap;
+  TangentVector v =
+      Logmap(relative, H1 || H2 ? ChartJacobian(&D_logmap) : ChartJacobian());
+  if (H1) *H1 = -D_logmap * relative.inverse().AdjointMap();
+  if (H2) *H2 = D_logmap;
+  return v;
 }
 
 template <typename G, typename H, typename Action>
@@ -234,6 +201,9 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::Expmap(
     OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H1,
     OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H2) {
   if constexpr (isDirectProduct) {
+    // Direct product: the two Lie algebras are independent, so the exponential
+    // is componentwise: exp(v₁,v₂) = (exp_G(v₁), exp_H(v₂)).
+    // The Jacobian columns split cleanly between the G and H blocks.
     const size_t firstDimension = static_cast<size_t>(v1.size());
     const size_t secondDimension = static_cast<size_t>(v2.size());
     const size_t productDimension =
@@ -253,8 +223,9 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::Expmap(
     }
     return ProductLieGroup(g, h);
   } else {
-    // A semidirect Expmap is not determined by Action::operator() alone.
-    // The action must provide the Lie-level formula for its coupling.
+    // Semidirect product: the Lie bracket couples the two algebra components
+    // via the infinitesimal action, so the exponential cannot be derived from
+    // Action::operator() alone. The action must supply the formula explicitly.
     return Action::template Expmap<ProductLieGroup>(v1, v2, H1, H2);
   }
 }
@@ -264,6 +235,8 @@ typename ProductLieGroup<G, H, Action>::TangentVector
 ProductLieGroup<G, H, Action>::Logmap(const ProductLieGroup& p,
                                       ChartJacobian Hp) {
   if constexpr (isDirectProduct) {
+    // Direct product: the inverse of a componentwise Expmap is componentwise,
+    // so log(g,h) = (log_G(g), log_H(h)) with a block-diagonal Jacobian.
     const size_t firstDimension = p.firstDim();
     const size_t secondDimension = p.secondDim();
     const size_t productDimension =
@@ -284,8 +257,8 @@ ProductLieGroup<G, H, Action>::Logmap(const ProductLieGroup& p,
     }
     return v;
   } else {
-    // As with Expmap, the semidirect Logmap depends on the action's Lie-level
-    // coupling and cannot be inferred from the group action alone.
+    // Semidirect product: the inverse of the coupled Expmap is equally coupled
+    // and cannot be inferred from the action alone.
     return Action::template Logmap<ProductLieGroup>(p, Hp);
   }
 }
@@ -300,6 +273,8 @@ template <typename G, typename H, typename Action>
 typename ProductLieGroup<G, H, Action>::Jacobian
 ProductLieGroup<G, H, Action>::AdjointMap() const {
   if constexpr (isDirectProduct) {
+    // Direct product: the two algebras are independent, so the adjoint is
+    // block-diagonal: Ad_(g,h) = diag(Ad_G(g), Ad_H(h)).
     const auto adjG = traits<G>::AdjointMap(this->first);
     const auto adjH = traits<H>::AdjointMap(this->second);
     const size_t d1 = static_cast<size_t>(adjG.rows());
@@ -309,7 +284,8 @@ ProductLieGroup<G, H, Action>::AdjointMap() const {
     adj.block(d1, d1, d2, d2) = adjH;
     return adj;
   } else {
-    // Generic semidirect AdjointMap assembled from the action's Jacobians:
+    // Semidirect product: the action couples the algebra blocks, producing an
+    // off-diagonal term. The formula is assembled from the action's Jacobians:
     //
     //   Ad_(g,h) = [[ Ad_G(g),              0   ],
     //               [ -Jg * Ad_G(g),        Jh  ]]

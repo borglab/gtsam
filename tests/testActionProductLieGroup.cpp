@@ -53,15 +53,13 @@ struct Rot3VectorAction : public GroupAction<Rot3VectorAction, Rot3, Vector3> {
   }
 
   template <typename ProductType>
-  static Vector6 Logmap(const ProductType& p,
-                        OptionalJacobian<6, 6> H = {}) {
+  static Vector6 Logmap(const ProductType& p, OptionalJacobian<6, 6> H = {}) {
     Matrix6 Hpose;
     const Vector6 xi =
         Pose3::Logmap(Pose3(p.first, p.second), H ? &Hpose : nullptr);
     if (H) *H = Hpose;
     return xi;
   }
-
 };
 
 using Semidirect = ProductLieGroup<Rot3, Vector3, Rot3VectorAction>;

@@ -46,12 +46,12 @@ namespace gtsam {
  *   (g, h)⁻¹             = (g⁻¹,   φ(g⁻¹, h⁻¹))
  *
  * Action must derive from GroupAction<Action, G, H> and implement:
- *   - operator()(g, h, Hg={}, Hh={}) — the group action with optional
+ *   - operator()(g, h, Hg={}, Hh={}): the group action with optional
  *     Jacobians w.r.t. g (DimH×DimG) and h (DimH×DimH). These Jacobians are
  *     used to automatically derive the AdjointMap.
- *   - static Expmap<ProductType>(v1, v2, H1={}, H2={}) — product exponential
+ *   - static Expmap<ProductType>(v1, v2, H1={}, H2={}): product exponential
  *     map (cannot be derived generically from the action alone).
- *   - static Logmap<ProductType>(p, H={}) — product logarithm.
+ *   - static Logmap<ProductType>(p, H={}): product logarithm.
  *
  * Example: SE(3) as a semidirect product:
  *   using SE3 = ProductLieGroup<Rot3, Vector3, Rot3VectorAction>;
@@ -99,9 +99,9 @@ class ProductLieGroup : public std::pair<G, H> {
   using Jacobian2 = typename traits<H>::Jacobian;
   /// Jacobian of the action w.r.t. G (DimH × DimG), used in the generic
   /// semidirect AdjointMap formula.
-  using ActionJacobianG = std::conditional_t<
-      firstDynamic || secondDynamic, Matrix,
-      Eigen::Matrix<double, dimension2, dimension1>>;
+  using ActionJacobianG =
+      std::conditional_t<firstDynamic || secondDynamic, Matrix,
+                         Eigen::Matrix<double, dimension2, dimension1>>;
 
  public:
   /// @name Standard Constructors
