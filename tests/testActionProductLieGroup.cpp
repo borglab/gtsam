@@ -29,6 +29,10 @@ using namespace gtsam;
 
 constexpr double kTol = 1e-9;
 
+// Rot3 acting on Vector3 by rotation: φ(R, t) = R·t.
+// The infinitesimal generator Aφ(u)·t = d/dt(exp(tu∧)·t)|₀ = u∧·t,
+// so generator(u) = u∧ (skew-symmetric matrix). ProductLieGroup derives
+// Expmap and Logmap automatically via φ₁(u∧) = SO(3) left Jacobian.
 struct Rot3VectorAction : public GroupAction<Rot3VectorAction, Rot3, Vector3> {
   static constexpr ActionType type = ActionType::Left;
 
@@ -38,28 +42,7 @@ struct Rot3VectorAction : public GroupAction<Rot3VectorAction, Rot3, Vector3> {
     return R.rotate(t, HR, Ht);
   }
 
-  template <typename ProductType>
-  static ProductType Expmap(
-      const Vector3& w, const Vector3& rho,
-      OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H1 = {},
-      OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H2 = {}) {
-    Matrix6 Hpose;
-    Vector6 xi;
-    xi << w, rho;
-    const Pose3 pose = Pose3::Expmap(xi, H1 || H2 ? &Hpose : nullptr);
-    if (H1) *H1 = Hpose.leftCols<3>();
-    if (H2) *H2 = Hpose.rightCols<3>();
-    return ProductType(pose.rotation(), pose.translation());
-  }
-
-  template <typename ProductType>
-  static Vector6 Logmap(const ProductType& p, OptionalJacobian<6, 6> H = {}) {
-    Matrix6 Hpose;
-    const Vector6 xi =
-        Pose3::Logmap(Pose3(p.first, p.second), H ? &Hpose : nullptr);
-    if (H) *H = Hpose;
-    return xi;
-  }
+  static Matrix3 generator(const Vector3& u) { return skewSymmetric(u); }
 };
 
 using Semidirect = ProductLieGroup<Rot3, Vector3, Rot3VectorAction>;

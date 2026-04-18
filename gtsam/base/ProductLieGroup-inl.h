@@ -18,7 +18,40 @@
 
 #pragma once
 
+#include <unsupported/Eigen/MatrixFunctions>
+
 namespace gtsam {
+
+// ---------------------------------------------------------------------------
+// phi01Kernel: compute φ₀(A)=exp(A) and φ₁(A)=Σ Aᵏ/(k+1)! in one shot.
+//
+// Identity: exp([[A, I], [0, 0]]) = [[exp(A), φ₁(A)], [0, I]]
+//   Proof: M = [[A,I],[0,0]]; M^k = [[A^k, A^{k-1}],[0,0]] for k≥1.
+//   exp(M) = I + Σ M^k/k! = [[exp(A), Σ A^{k-1}/k!],[0,I]] = [[φ₀,φ₁],[0,I]].
+//
+// A single (2r)×(2r) matrix exponential yields both kernels.
+// Only called when ProductLieGroup::hasGenerator is true.
+// ---------------------------------------------------------------------------
+template <typename G, typename H, typename Action>
+std::pair<typename ProductLieGroup<G, H, Action>::Jacobian2,
+          typename ProductLieGroup<G, H, Action>::Jacobian2>
+ProductLieGroup<G, H, Action>::phi01Kernel(const Jacobian2& A) {
+  const int r = static_cast<int>(A.rows());
+  Eigen::MatrixXd M = Eigen::MatrixXd::Zero(2 * r, 2 * r);
+  M.topLeftCorner(r, r) = A;
+  M.topRightCorner(r, r) = Eigen::MatrixXd::Identity(r, r);
+  const Eigen::MatrixXd expM = M.exp();
+  Jacobian2 phi0, phi1;
+  if constexpr (secondDynamic) {
+    phi0.resize(r, r);
+    phi1.resize(r, r);
+  }
+  phi0 = expM.topLeftCorner(r, r);
+  phi1 = expM.topRightCorner(r, r);
+  return {phi0, phi1};
+}
+
+
 
 template <typename G, typename H, typename Action>
 ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::operator*(
@@ -222,10 +255,55 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::Expmap(
           D_h_second;
     }
     return ProductLieGroup(g, h);
+  } else if constexpr (hasGenerator) {
+    // Generic semidirect Expmap for vector-space H via the φ₁ kernel:
+    //   Expmap(u, v) = (expG(u),  φ₁(Aφ(u)) · v)
+    // where Aφ(u) = Action::generator(u) is the infinitesimal generator and
+    // φ₁(A) = Σ Aᵏ/(k+1)! is computed from exp([[A,I],[0,0]]).
+    const size_t d1 = static_cast<size_t>(v1.size());
+    const size_t d2 = static_cast<size_t>(v2.size());
+    const size_t d = combinedDimension(d1, d2);
+
+    const Jacobian2 A = Action::generator(v1);
+    auto [phi0, phi1] = phi01Kernel(A);
+    const auto phi0Solver = phi0.lu();
+
+    Jacobian1 D_G;
+    const G g = traits<G>::Expmap(v1, H1 ? &D_G : nullptr);
+    const H h = phi1 * v2;
+
+    if (H1) {
+      // Top rows: D Exp_G(u) in the output chart (from traits::Expmap).
+      // Bottom rows: D(φ₁(Aφ(u))·v) pulled back by φ₀(A)⁻¹, because
+      // Expmap Jacobians are expressed in local coordinates at Expmap(u,v).
+      // Linearity of generator: generator(u ± ε·eⱼ) = A ± ε·generator(eⱼ),
+      // so function values are exact and the only error is O(ε²) truncation.
+      *H1 = Matrix::Zero(d, d1);
+      H1->topRows(d1) = D_G;
+      const double eps = 1e-5;
+      typename traits<G>::TangentVector ej;
+      if constexpr (firstDynamic) ej.resize(static_cast<Eigen::Index>(d1));
+      ej.setZero();
+      for (Eigen::Index j = 0; j < static_cast<Eigen::Index>(d1); ++j) {
+        ej(j) = 1.0;
+        const Jacobian2 Bj = Action::generator(ej);
+        const Jacobian2 phi1p = phi01Kernel(A + eps * Bj).second;
+        const Jacobian2 phi1m = phi01Kernel(A - eps * Bj).second;
+        const typename traits<H>::TangentVector dh =
+            (phi1p - phi1m) * v2 / (2.0 * eps);
+        H1->col(j).tail(d2) = phi0Solver.solve(dh);
+        ej(j) = 0.0;
+      }
+    }
+    if (H2) {
+      // ∂(φ₁(A)·v)/∂v = φ₁(A) in coordinates, then pulled back by φ₀(A)⁻¹
+      // to match the output chart. For SO(3) this is Rᵀ J_l = J_r.
+      *H2 = Matrix::Zero(d, d2);
+      H2->bottomRows(d2) = phi0Solver.solve(phi1);
+    }
+    return ProductLieGroup(g, h);
   } else {
-    // Semidirect product: the Lie bracket couples the two algebra components
-    // via the infinitesimal action, so the exponential cannot be derived from
-    // Action::operator() alone. The action must supply the formula explicitly.
+    // Semidirect product with no generator: action must supply the formula.
     return Action::template Expmap<ProductLieGroup>(v1, v2, H1, H2);
   }
 }
@@ -256,9 +334,52 @@ ProductLieGroup<G, H, Action>::Logmap(const ProductLieGroup& p,
                 secondDimension) = D_h_second;
     }
     return v;
+  } else if constexpr (hasGenerator) {
+    // Generic semidirect Logmap for vector-space H via the φ₁ kernel:
+    //   Logmap(g, h) = (logG(g),  φ₁(Aφ(logG(g)))⁻¹ · h)
+    // This is the exact inverse of the Expmap formula above.
+    const size_t d1 = p.firstDim();
+    const size_t d2 = p.secondDim();
+    const size_t d = combinedDimension(d1, d2);
+
+    Jacobian1 D_G;
+    const auto v1 = traits<G>::Logmap(p.first, Hp ? &D_G : nullptr);
+    const Jacobian2 A = Action::generator(v1);
+    auto [phi0, phi1] = phi01Kernel(A);
+    const typename traits<H>::TangentVector v2 = phi1.lu().solve(p.second);
+    TangentVector v = makeTangentVector(v1, v2, d1, d2);
+
+    if (Hp) {
+      *Hp = zeroJacobian(d);
+      // Top-left: ∂logG(g)/∂g — analytic.
+      Hp->topLeftCorner(d1, d1) = D_G;
+      // Top-right: 0 — logG doesn't depend on h (already zeroed).
+      // Bottom-right: ∂v₂/∂(δh) = φ₁(A)⁻¹ · φ₀(A).
+      // Perturbing h by δh in the semidirect frame moves h by φ₀(A)·δh
+      // (because Expmap(0, δh) = (I, δh) and (g,h)*(I,δh) → h + φ₀(A)·δh),
+      // so ∂v₂/∂(δh) = φ₁⁻¹ · φ₀.
+      Hp->bottomRightCorner(d2, d2) = phi1.lu().solve(phi0);
+      // Bottom-left: ∂v₂/∂(δg) — perturbing g via right multiplication
+      // changes u=logG(g) non-linearly; computed by central differences.
+      // Values are exact (matrix exp), so error is O(ε²).
+      const double eps = 1e-5;
+      for (Eigen::Index j = 0; j < static_cast<Eigen::Index>(d1); ++j) {
+        typename traits<G>::TangentVector ej;
+        if constexpr (firstDynamic) ej.resize(static_cast<Eigen::Index>(d1));
+        ej.setZero();
+        ej(j) = eps;
+        const G gp = traits<G>::Compose(p.first, traits<G>::Expmap(ej));
+        ej(j) = -eps;
+        const G gm = traits<G>::Compose(p.first, traits<G>::Expmap(ej));
+        const Jacobian2 phi1p = phi01Kernel(Action::generator(traits<G>::Logmap(gp))).second;
+        const Jacobian2 phi1m = phi01Kernel(Action::generator(traits<G>::Logmap(gm))).second;
+        Hp->col(j).tail(d2) =
+            (phi1p.lu().solve(p.second) - phi1m.lu().solve(p.second)) / (2.0 * eps);
+      }
+    }
+    return v;
   } else {
-    // Semidirect product: the inverse of the coupled Expmap is equally coupled
-    // and cannot be inferred from the action alone.
+    // Semidirect product with no generator: action must supply the formula.
     return Action::template Logmap<ProductLieGroup>(p, Hp);
   }
 }
