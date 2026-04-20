@@ -65,15 +65,11 @@ struct IsVectorGroup<Eigen::Matrix<double, N, 1>> : std::true_type {};
  *     Jacobians w.r.t. g (DimH×DimG) and h (DimH×DimH). These Jacobians are
  *     used to automatically derive the AdjointMap.
  *
- * When H is a vector-space Lie group (Eigen column vector), the action may
- * also supply the infinitesimal generator:
+ * Semidirect products require H to be a fixed-size vector-space Lie group
+ * (Eigen column vector) and the action to supply the infinitesimal generator:
  *   - static Jacobian_H generator(const TangentVector_G& u): returns the
  *     DimH×DimH matrix Aφ(u) = d/dt φ(expG(t·u), ·)|_{t=0} (linear in u).
- *     If provided, Expmap and Logmap are derived automatically via φ₁(Aφ(u)).
- *
- * Otherwise (non-vector H or no generator), the action must supply:
- *   - static Expmap<ProductType>(v1, v2, H1={}, H2={}): product exponential.
- *   - static Logmap<ProductType>(p, H={}): product logarithm.
+ *     Expmap and Logmap are derived automatically via φ₁(Aφ(u)).
  *
  * Example: SE(3) as a semidirect product:
  *   using SE3 = ProductLieGroup<Rot3, Vector3, Rot3VectorAction>;
@@ -97,11 +93,13 @@ class ProductLieGroup : public std::pair<G, H> {
   inline constexpr static bool firstDynamic = dimension1 == Eigen::Dynamic;
   inline constexpr static bool secondDynamic = dimension2 == Eigen::Dynamic;
   inline constexpr static bool isDirectProduct = std::is_void_v<Action>;
-  /// True when H is a vector-space group AND Action provides generator().
-  /// Enables generic semidirect Expmap/Logmap via the φ₁ kernel formula.
+  /// True when the semidirect product has the required generator support.
   inline constexpr static bool hasGenerator =
       !isDirectProduct && IsVectorGroup<H>::value && !secondDynamic &&
       HasGenerator<Action, typename traits<G>::TangentVector>::value;
+  static_assert(isDirectProduct || hasGenerator,
+                "ProductLieGroup semidirect products require H to be a "
+                "fixed-size Eigen column vector and Action::generator(u).");
 
  public:
   /// Manifold dimension

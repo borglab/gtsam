@@ -303,8 +303,9 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::Expmap(
     }
     return ProductLieGroup(g, h);
   } else {
-    // Semidirect product with no generator: action must supply the formula.
-    return Action::template Expmap<ProductLieGroup>(v1, v2, H1, H2);
+    static_assert(hasGenerator,
+                  "ProductLieGroup semidirect Expmap requires H to be a "
+                  "fixed-size Eigen column vector and Action::generator(u).");
   }
 }
 
@@ -379,8 +380,9 @@ ProductLieGroup<G, H, Action>::Logmap(const ProductLieGroup& p,
     }
     return v;
   } else {
-    // Semidirect product with no generator: action must supply the formula.
-    return Action::template Logmap<ProductLieGroup>(p, Hp);
+    static_assert(hasGenerator,
+                  "ProductLieGroup semidirect Logmap requires H to be a "
+                  "fixed-size Eigen column vector and Action::generator(u).");
   }
 }
 
