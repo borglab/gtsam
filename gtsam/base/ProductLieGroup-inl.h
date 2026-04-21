@@ -237,22 +237,20 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::Expmap(
     // Direct product: the two Lie algebras are independent, so the exponential
     // is componentwise: exp(v₁,v₂) = (exp_G(v₁), exp_H(v₂)).
     // The Jacobian columns split cleanly between the G and H blocks.
-    const size_t firstDimension = static_cast<size_t>(v1.size());
-    const size_t secondDimension = static_cast<size_t>(v2.size());
-    const size_t productDimension =
-        combinedDimension(firstDimension, secondDimension);
+    const size_t d1 = static_cast<size_t>(v1.size());
+    const size_t d2 = static_cast<size_t>(v2.size());
+    const size_t d = combinedDimension(d1, d2);
     Jacobian1 D_g_first;
     Jacobian2 D_h_second;
     G g = traits<G>::Expmap(v1, H1 ? &D_g_first : nullptr);
     H h = traits<H>::Expmap(v2, H2 ? &D_h_second : nullptr);
     if (H1) {
-      *H1 = Matrix::Zero(productDimension, firstDimension);
-      H1->block(0, 0, firstDimension, firstDimension) = D_g_first;
+      *H1 = Matrix::Zero(d, d1);
+      H1->block(0, 0, d1, d1) = D_g_first;
     }
     if (H2) {
-      *H2 = Matrix::Zero(productDimension, secondDimension);
-      H2->block(firstDimension, 0, secondDimension, secondDimension) =
-          D_h_second;
+      *H2 = Matrix::Zero(d, d2);
+      H2->block(d1, 0, d2, d2) = D_h_second;
     }
     return ProductLieGroup(g, h);
   } else if constexpr (hasGenerator) {
