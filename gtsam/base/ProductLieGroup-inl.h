@@ -23,13 +23,15 @@
 namespace gtsam {
 
 // ---------------------------------------------------------------------------
-// phi01Kernel: compute φ₀(A)=exp(A) and φ₁(A)=Σ Aᵏ/(k+1)! in one shot.
+// phi01Kernel: compute φ₀(A)=exp(A) and φ₁(A)=Σ Aᵏ/(k+1)! from one block
+// matrix exponential.
 //
 // Identity: exp([[A, I], [0, 0]]) = [[exp(A), φ₁(A)], [0, I]]
 //   Proof: M = [[A,I],[0,0]]; M^k = [[A^k, A^{k-1}],[0,0]] for k≥1.
 //   exp(M) = I + Σ M^k/k! = [[exp(A), Σ A^{k-1}/k!],[0,I]] = [[φ₀,φ₁],[0,I]].
 //
-// A single (2r)×(2r) matrix exponential yields both kernels.
+// This is the generic path for arbitrary generators, not a faster replacement
+// for closed-form kernels available for specific groups such as Rot3.
 // Only called when ProductLieGroup::hasGenerator is true.
 // ---------------------------------------------------------------------------
 template <typename G, typename H, typename Action>
