@@ -267,10 +267,14 @@ class ProductLieGroup : public std::pair<G, H> {
   void checkMatchingDimensions(const ProductLieGroup& other,
                                const char* operation) const;
 
-  /// Compute φ₀(A) = exp(A) and φ₁(A) = Σ_{k≥0} Aᵏ/(k+1)! together.
-  /// Uses the identity: exp([[A, I], [0, 0]]) = [[φ₀(A), φ₁(A)], [0, I]].
+  /// Compute φ₀(A) = exp(A).
+  /// Only valid/called when hasGenerator is true.
+  static Jacobian2 phi0Kernel(const Jacobian2& A);
+
+  /// Compute φ₁(A) = Σ_{k≥0} Aᵏ/(k+1)! via the block identity
+  /// exp([[A, I], [0, 0]]) = [[φ₀(A), φ₁(A)], [0, I]].
   /// Only valid (and only called) when hasGenerator is true.
-  static std::pair<Jacobian2, Jacobian2> phi01Kernel(const Jacobian2& A);
+  static Jacobian2 phi1Kernel(const Jacobian2& A);
 
  public:
   /// @name Testable interface
