@@ -276,6 +276,18 @@ class ProductLieGroup : public std::pair<G, H> {
   /// Only valid (and only called) when hasGenerator is true.
   static Jacobian2 phi1Kernel(const Jacobian2& A);
 
+  /// Result of the analytic Fréchet derivative helper for φ₁.
+  struct Phi1FrechetResult {
+    Jacobian2 phi0;   ///< exp(A)
+    Jacobian2 phi1;   ///< φ₁(A)
+    Jacobian2 Lphi1;  ///< Fréchet derivative L_{φ₁}(A, B)
+  };
+
+  /// Compute exp(A), φ₁(A), and the Fréchet derivative L_{φ₁}(A, B) from a
+  /// single block exponential. Only valid/called when hasGenerator is true.
+  static Phi1FrechetResult phi1FrechetBlock(const Jacobian2& A,
+                                            const Jacobian2& B);
+
  public:
   /// @name Testable interface
   /// @{
