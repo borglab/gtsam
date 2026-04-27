@@ -23,6 +23,9 @@
 #include <gtsam/base/MatrixLieGroup.h>
 
 #include <random>
+#include <stdexcept>
+#include <utility>
+#include <vector>
 
 namespace gtsam {
 
@@ -248,10 +251,96 @@ namespace gtsam {
 
   };
 
-  template <>
-struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {};
+template <>
+struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
+  /**
+   * Return a matrix-valued QCQP lift for Rot2.
+   *
+   * D=1 is a vectorized SO(2) lift as a 4-by-1 matrix.
+   * D=2 returns R' as a 2-by-2 row-space orthonormal matrix.
+   * D=3 returns [R', 0] as a 2-by-3 Stiefel/Burer-Monteiro extension.
+   */
+  template <int D = 1>
+  static Matrix QcqpValue(const Rot2& value) {
+    if constexpr (D == 1) {
+      const Matrix2 R = value.matrix();
+      return Eigen::Map<const Matrix>(R.data(), 4, 1);
+    } else if constexpr (D == 2) {
+      return value.matrix().transpose();
+    } else if constexpr (D == 3) {
+      Matrix X = Matrix::Zero(2, 3);
+      X.leftCols<2>() = value.matrix().transpose();
+      return X;
+    } else {
+      throw std::invalid_argument(
+          "traits<Rot2>::QcqpValue only supports D=1, D=2, and D=3.");
+    }
+  }
+
+  /**
+   * Return row-space QCQP equality constraints A, b such that
+   * trace(X' A X) = b. For D=1 these are the legacy vec(R) constraints,
+   * including orientation. For D=2 and D=3 the same 2-by-2 constraints
+   * enforce X X' = I_2.
+   */
+  template <int D = 1>
+  static std::vector<std::pair<Matrix, double>> QcqpConstraints() {
+    if constexpr (D == 1) {
+      std::vector<std::pair<Matrix, double>> constraints;
+      constraints.reserve(4);
+
+      Matrix A = Matrix::Zero(4, 4);
+
+      A(0, 0) = 1.0;
+      A(1, 1) = 1.0;
+      constraints.emplace_back(A, 1.0);
+
+      A.setZero();
+      A(2, 2) = 1.0;
+      A(3, 3) = 1.0;
+      constraints.emplace_back(A, 1.0);
+
+      A.setZero();
+      A(0, 2) = 0.5;
+      A(2, 0) = 0.5;
+      A(1, 3) = 0.5;
+      A(3, 1) = 0.5;
+      constraints.emplace_back(A, 0.0);
+
+      A.setZero();
+      A(0, 3) = 0.5;
+      A(3, 0) = 0.5;
+      A(1, 2) = -0.5;
+      A(2, 1) = -0.5;
+      constraints.emplace_back(A, 1.0);
+
+      return constraints;
+    } else if constexpr (D == 2 || D == 3) {
+      std::vector<std::pair<Matrix, double>> constraints;
+      constraints.reserve(3);
+
+      Matrix A = Matrix::Zero(2, 2);
+      A(0, 0) = 1.0;
+      constraints.emplace_back(A, 1.0);
+
+      A.setZero();
+      A(1, 1) = 1.0;
+      constraints.emplace_back(A, 1.0);
+
+      A.setZero();
+      A(0, 1) = 0.5;
+      A(1, 0) = 0.5;
+      constraints.emplace_back(A, 0.0);
+
+      return constraints;
+    } else {
+      throw std::invalid_argument(
+          "traits<Rot2>::QcqpConstraints only supports D=1, D=2, and D=3.");
+    }
+  }
+};
 
 template <>
-struct traits<const Rot2> : public internal::MatrixLieGroup<Rot2, 2> {};
+struct traits<const Rot2> : public traits<Rot2> {};
 
 } // gtsam

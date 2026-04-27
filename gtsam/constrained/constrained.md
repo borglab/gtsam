@@ -39,11 +39,17 @@ It includes classes for representing constraints, building constrained problems,
 - [`QcqpProblem`](doc/QcqpProblem.ipynb): Holds quadratic costs and linear/quadratic constraints over vector or matrix variables.
 - [`QpCost`](doc/QcqpProblem.ipynb): Also used for QCQP objectives; `QpCost(keys, Q, columnDim)` creates a pure row-space quadratic cost $\frac{1}{2}\sum_{ij}\operatorname{tr}(X_i^\top Q_{ij}X_j)$ over vectors or matrices $X_i \in \mathbb{R}^{r_i \times d}$.
 - [`QuadraticConstraint`](doc/QcqpProblem.ipynb): Scalar quadratic constraint $\operatorname{tr}(X^\top A X) \sim b$, where $\sim$ is equal, less-equal, or greater-equal.
+- `QcqpProblem(graph, columnDim)`: Opt-in conversion hook for supported nonlinear factors that can populate `QpCost` objectives and `QuadraticConstraint` equalities over lifted matrix variables.
+- `InsertLiftedValue<T, D>` and `InsertQcqpConstraints<T, D>`: Helpers for inserting supported lifted manifold values and their equality constraints.
 
 The leading factor of `1/2` in row-space `QpCost` construction is intentional:
 it follows GTSAM's standard factor-error convention. To represent a QCQP
 objective written without the `1/2`, pass twice the row-space `Q` blocks to
 `QpCost`.
+
+The current factor-graph conversion example is intentionally narrow:
+`FrobeniusBetweenFactor<Rot2>` can be lifted for `D=1`, `D=2`, or `D=3`.
+Unsupported factors throw from `NonlinearFactor::qcqpFactors`.
 
 ## Optimizers
 

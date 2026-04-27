@@ -37,6 +37,9 @@
 
 namespace gtsam {
 
+class NonlinearEqualityConstraints;
+class NonlinearFactorGraph;
+
 /* ************************************************************************* */
 
 /** These typedefs and aliases will help with making the evaluateError interface
@@ -144,6 +147,15 @@ public:
   /** linearize to a GaussianFactor */
   virtual std::shared_ptr<GaussianFactor>
   linearize(const Values& c) const = 0;
+
+  /**
+   * Add this factor's QCQP cost and constraints over lifted matrix
+   * coordinates with the given column dimension. The default implementation
+   * throws for unsupported factors.
+   */
+  virtual void qcqpFactors(NonlinearFactorGraph* costs,
+                           NonlinearEqualityConstraints* constraints,
+                           size_t columnDimension = 1) const;
 
   /**
    * Creates a shared_ptr clone of the factor - needs to be specialized to allow

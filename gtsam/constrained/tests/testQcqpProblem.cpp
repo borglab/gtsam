@@ -24,7 +24,10 @@
 #include <gtsam/constrained/QuadraticConstraint.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/LinearContainerFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/FrobeniusFactor.h>
 
+#include <cmath>
 #include <vector>
 
 using namespace gtsam;
@@ -309,6 +312,234 @@ TEST(QcqpProblem, OptimizeAugmentedLagrangianMixedConstraints) {
 }
 
 }  // namespace QcqpProblemFixture
+/* ************************************************************************* */
+namespace QcqpSingleFactorFixture {
+
+const Key x0 = Symbol('x', 0);
+const Key x1 = Symbol('x', 1);
+
+Values SingleFactorManifoldValues() {
+  Values values;
+  values.insert(x0, Rot2::fromAngle(0.3));
+  values.insert(x1, Rot2::fromAngle(-0.2));
+  return values;
+}
+
+Values SingleFactorLiftedValues() {
+  Values values;
+  InsertLiftedValue<Rot2, 1>(x0, Rot2::fromAngle(0.3), &values);
+  InsertLiftedValue<Rot2, 1>(x1, Rot2::fromAngle(-0.2), &values);
+  return values;
+}
+
+// Verifies unsupported factors still reject QCQP conversion.
+TEST(QcqpProblem, UnsupportedFactorThrows) {
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<BetweenFactor<Rot2>>(x0, x1, Rot2::fromAngle(0.1));
+
+  CHECK_EXCEPTION({ QcqpProblem problem(graph); }, std::runtime_error);
+}
+
+// Verifies one Rot2 Frobenius factor converts exactly in the D=1 lift.
+TEST(QcqpProblem, SingleFrobeniusBetweenFactor) {
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusBetweenFactor<Rot2>>(x0, x1,
+                                                     Rot2::fromAngle(0.4));
+
+  const Values values = SingleFactorManifoldValues();
+  const QcqpProblem problem(graph);
+  const Values liftedValues = SingleFactorLiftedValues();
+
+  EXPECT_DOUBLES_EQUAL(graph.error(values), problem.costs().error(liftedValues),
+                       1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(liftedValues),
+                       1e-12);
+}
+
+}  // namespace QcqpSingleFactorFixture
+/* ************************************************************************* */
+namespace QcqpRingFixture {
+
+NonlinearFactorGraph RingGraph(size_t numPoses, double delta) {
+  NonlinearFactorGraph graph;
+  for (size_t i = 0; i < numPoses; ++i) {
+    graph.emplace_shared<FrobeniusBetweenFactor<Rot2>>(
+        Symbol('x', i), Symbol('x', (i + 1) % numPoses),
+        Rot2::fromAngle(delta));
+  }
+  return graph;
+}
+
+Values RingValues(size_t numPoses, double delta, double perturbation) {
+  Values values;
+  for (size_t i = 0; i < numPoses; ++i) {
+    values.insert(
+        Symbol('x', i),
+        Rot2::fromAngle(i * delta + perturbation * static_cast<double>(i)));
+  }
+  return values;
+}
+
+Values RingLiftedValues(size_t numPoses, double delta, double perturbation) {
+  Values values;
+  for (size_t i = 0; i < numPoses; ++i) {
+    InsertLiftedValue<Rot2, 1>(
+        Symbol('x', i),
+        Rot2::fromAngle(i * delta + perturbation * static_cast<double>(i)),
+        &values);
+  }
+  return values;
+}
+
+// Verifies a Rot2 ring graph preserves cost and constraints after D=1 lifting.
+TEST(QcqpProblem, Rot2RingPgo) {
+  constexpr size_t N = 5;
+  constexpr double delta = 2.0 * M_PI / static_cast<double>(N);
+
+  const NonlinearFactorGraph graph = RingGraph(N, delta);
+  const Values values = RingValues(N, delta, 0.01);
+  const QcqpProblem problem(graph);
+  const Values liftedValues = RingLiftedValues(N, delta, 0.01);
+
+  EXPECT_DOUBLES_EQUAL(graph.error(values), problem.costs().error(liftedValues),
+                       1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(liftedValues),
+                       1e-12);
+}
+
+// Verifies the constrained optimizer still reduces a lifted Rot2 ring problem.
+TEST(QcqpProblem, AugmentedLagrangianOptimizerRot2Ring) {
+  constexpr size_t N = 5;
+  constexpr double delta = 2.0 * M_PI / static_cast<double>(N);
+
+  const NonlinearFactorGraph graph = RingGraph(N, delta);
+  const QcqpProblem problem(graph);
+  const Values initialValues = RingLiftedValues(N, delta, 0.03);
+  const double initialCost = problem.costs().error(initialValues);
+
+  auto params = std::make_shared<AugmentedLagrangianParams>();
+  params->maxIterations = 5;
+  params->initialMuEq = 10.0;
+  params->muEqIncreaseRate = 5.0;
+  params->absoluteViolationTolerance = 1e-6;
+  params->absoluteCostTolerance = 1e-12;
+  params->verbose = false;
+
+  const AugmentedLagrangianOptimizer optimizer(problem, initialValues, params);
+  const Values result = optimizer.optimize();
+
+  EXPECT(problem.eConstraints().violationNorm(result) < 1e-5);
+  EXPECT(problem.costs().error(result) <= initialCost + 1e-9);
+}
+
+}  // namespace QcqpRingFixture
+/* ************************************************************************* */
+namespace QcqpRot2LiftFixture {
+
+const Key x0 = Symbol('x', 0);
+const Key x1 = Symbol('x', 1);
+
+template <int D>
+Values LiftedValues(const Rot2& R0, const Rot2& R1) {
+  Values values;
+  InsertLiftedValue<Rot2, D>(x0, R0, &values);
+  InsertLiftedValue<Rot2, D>(x1, R1, &values);
+  return values;
+}
+
+template <int D>
+double DirectLiftedBetweenCost(const Rot2& R0, const Rot2& R1,
+                               const Rot2& measured) {
+  const Matrix X0 = traits<Rot2>::template QcqpValue<D>(R0);
+  const Matrix X1 = traits<Rot2>::template QcqpValue<D>(R1);
+  const Matrix residual = X1 - measured.matrix().transpose() * X0;
+  return 0.5 * residual.squaredNorm();
+}
+
+// Verifies the D=2 Rot2 lift is row-orthonormal and constraint-feasible.
+TEST(QcqpProblem, Rot2LiftD2Constraints) {
+  const Rot2 R = Rot2::fromAngle(0.3);
+  const Matrix X = traits<Rot2>::QcqpValue<2>(R);
+  LONGS_EQUAL(2, X.rows());
+  LONGS_EQUAL(2, X.cols());
+  EXPECT(assert_equal(Matrix(Matrix2::Identity()), X * X.transpose(), 1e-12));
+
+  NonlinearEqualityConstraints constraints;
+  InsertQcqpConstraints<Rot2, 2>(x0, &constraints);
+  Values values;
+  values.insert(x0, X);
+
+  EXPECT_DOUBLES_EQUAL(0.0, constraints.violationNorm(values), 1e-12);
+}
+
+// Verifies the D=3 Rot2 Stiefel lift reuses the D=2 row constraints.
+TEST(QcqpProblem, Rot2LiftD3StiefelConstraints) {
+  const Rot2 R = Rot2::fromAngle(-0.4);
+  const Matrix X = traits<Rot2>::QcqpValue<3>(R);
+  LONGS_EQUAL(2, X.rows());
+  LONGS_EQUAL(3, X.cols());
+  EXPECT(assert_equal(Matrix(Matrix2::Identity()), X * X.transpose(), 1e-12));
+
+  const auto constraintsD2 = traits<Rot2>::QcqpConstraints<2>();
+  const auto constraintsD3 = traits<Rot2>::QcqpConstraints<3>();
+  LONGS_EQUAL(constraintsD2.size(), constraintsD3.size());
+  for (size_t i = 0; i < constraintsD2.size(); ++i) {
+    EXPECT(assert_equal(constraintsD2[i].first, constraintsD3[i].first, 1e-12));
+    EXPECT_DOUBLES_EQUAL(constraintsD2[i].second, constraintsD3[i].second,
+                         1e-12);
+  }
+
+  NonlinearEqualityConstraints constraints;
+  InsertQcqpConstraints<Rot2, 3>(x0, &constraints);
+  Values values;
+  values.insert(x0, X);
+
+  EXPECT_DOUBLES_EQUAL(0.0, constraints.violationNorm(values), 1e-12);
+}
+
+// Verifies D=2 row-space Frobenius conversion matches the manifold factor.
+TEST(QcqpProblem, Rot2FrobeniusBetweenFactorD2) {
+  const Rot2 measured = Rot2::fromAngle(0.4);
+  const Rot2 R0 = Rot2::fromAngle(0.3);
+  const Rot2 R1 = Rot2::fromAngle(-0.2);
+
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusBetweenFactor<Rot2>>(x0, x1, measured);
+
+  Values manifoldValues;
+  manifoldValues.insert(x0, R0);
+  manifoldValues.insert(x1, R1);
+
+  const QcqpProblem problem(graph, 2);
+  const Values liftedValues = LiftedValues<2>(R0, R1);
+
+  EXPECT_DOUBLES_EQUAL(graph.error(manifoldValues),
+                       problem.costs().error(liftedValues), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(liftedValues),
+                       1e-12);
+}
+
+// Verifies D=3 Frobenius conversion matches the direct lifted residual.
+TEST(QcqpProblem, Rot2FrobeniusBetweenFactorD3) {
+  const Rot2 measured = Rot2::fromAngle(0.4);
+  const Rot2 R0 = Rot2::fromAngle(0.3);
+  const Rot2 R1 = Rot2::fromAngle(-0.2);
+
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusBetweenFactor<Rot2>>(x0, x1, measured);
+
+  const QcqpProblem problem(graph, 3);
+  const Values liftedValues = LiftedValues<3>(R0, R1);
+  const double liftedCost = problem.costs().error(liftedValues);
+
+  EXPECT(std::isfinite(liftedCost));
+  EXPECT_DOUBLES_EQUAL(DirectLiftedBetweenCost<3>(R0, R1, measured), liftedCost,
+                       1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(liftedValues),
+                       1e-12);
+}
+
+}  // namespace QcqpRot2LiftFixture
 /* ************************************************************************* */
 int main() {
   TestResult tr;
