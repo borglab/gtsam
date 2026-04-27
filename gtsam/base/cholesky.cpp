@@ -161,6 +161,7 @@ bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft) {
 bool choleskyPartialBlocked(Matrix& ABC, size_t nFrontal, size_t topleft,
                             size_t blockSize) {
   if (nFrontal == 0) return true;
+  assert(blockSize > 0);
 
   // For small frontal sizes fall through to the scalar path – the panel
   // overhead is not worth it and the underconstrained-pivot logic in
@@ -176,20 +177,12 @@ bool choleskyPartialBlocked(Matrix& ABC, size_t nFrontal, size_t topleft,
   // Work on the submatrix starting at (topleft, topleft).
   // Layout (upper triangular, augmented with RHS column):
   //
-  //   [ A   B ]    A: nFrontal x nFrontal  (frontal block)
-  //   [ B'  C ]    C: (n-nFrontal) x (n-nFrontal)  (Schur complement)
+  //   [ A   B ]    A: nFrontal x nFrontal  (frontal block to factor)
+  //   [ B'  C ]    C: (n-nFrontal) x (n-nFrontal)  (Schur complement target)
   //
-  // Right-looking blocked Cholesky on A, accumulating Schur updates to C.
-  //
-  // At panel k (column offset into A):
-  //   bs  = min(blockSize, nFrontal - k)   actual panel width
-  //   Akk = A(k:k+bs, k:k+bs)             diagonal panel
-  //   Akr = A(k:k+bs, k+bs:nFrontal)      right part of A's current row
-  //   Ak_ = A(k:k+bs, k:n)                full row panel (incl. B columns)
-  //   Arr = A(k+bs:nFrontal, k+bs:nFrontal) trailing frontal submatrix
-  //   Cr  = C                              Schur complement (only updated at
-  //                                         the last panel for simplicity,
-  //                                         or lazily per panel – see below)
+  // Right-looking blocked Cholesky: each panel of bs columns eliminates its
+  // contribution from the entire trailing submatrix (both remaining A columns
+  // and C) in three steps.
 
   for (size_t k = 0; k < nFrontal; k += blockSize) {
     const size_t bs = std::min(blockSize, nFrontal - k);
@@ -208,15 +201,16 @@ bool choleskyPartialBlocked(Matrix& ABC, size_t nFrontal, size_t topleft,
     // R_panel is the bs x bs upper-triangular block we just factored.
     auto R_panel = ABC.block(tl, tl, bs, bs).triangularView<Eigen::Upper>();
 
-    // --- Step 2: Solve panel right of diagonal: Akr = inv(R_panel') * Akr ---
-    // This covers everything to the right: remaining frontal columns and Schur.
+    // --- Step 2: Triangular solve (TRSM): S = R^{-T} * Akr ---
+    // Solves R' * S = Akr in-place for the bs x trailing_cols panel.
+    // trailing_cols covers both remaining A columns and the B (Schur) columns.
     const size_t trailing_cols = n - (k + bs);
     if (trailing_cols > 0) {
       auto Akr = ABC.block(tl, tl + bs, bs, trailing_cols);
-      R_panel.transpose().solveInPlace(Akr);
+      R_panel.transpose().solveInPlace(Akr);  // Akr <- R^{-T} * Akr
 
-      // --- Step 3: Rank-bs Schur update on trailing submatrix (Level-3 BLAS).
-      // C_trailing -= Akr' * Akr  (upper triangle only)
+      // --- Step 3: Rank-bs Schur update (SYRK): trailing -= S' * S ---
+      // Updates the upper triangle only; lower triangle is never read.
       auto C_trailing =
           ABC.block(tl + bs, tl + bs, trailing_cols, trailing_cols);
       C_trailing.selfadjointView<Eigen::Upper>().rankUpdate(Akr.transpose(),

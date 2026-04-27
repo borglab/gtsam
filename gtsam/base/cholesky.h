@@ -64,8 +64,9 @@ GTSAM_EXPORT bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft=0
 /**
  * Blocked (panel) partial Cholesky.  Identical contract to choleskyPartial but
  * operates on panels of `blockSize` columns at a time, turning Level-2 BLAS
- * rank-1 updates into Level-3 BLAS rank-k updates (SYRK/GEMM).  Substantially
- * faster when nFrontal is large (>> blockSize) and an optimised BLAS is linked.
+ * rank-1 updates into Level-3 BLAS operations (SYRK for the Schur update,
+ * TRSM for the panel solve).  Substantially faster when nFrontal is large
+ * (>> blockSize) and an optimised BLAS is linked.
  *
  * Falls back to choleskyPartial behaviour for small nFrontal values.
  *
