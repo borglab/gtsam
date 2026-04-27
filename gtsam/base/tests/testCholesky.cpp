@@ -19,6 +19,8 @@
 #include <gtsam/base/cholesky.h>
 #include <CppUnitLite/TestHarness.h>
 
+#include <cstdlib>
+
 using namespace gtsam;
 using namespace std;
 
@@ -135,6 +137,108 @@ TEST(cholesky, underconstrained) {
   LONGS_EQUAL(long(false), long(choleskyPartial(A1, 6)));
   LONGS_EQUAL(long(false), long(choleskyPartial(A2, 6)));
   LONGS_EQUAL(long(false), long(choleskyPartial(A3, 6)));
+}
+
+/* ************************************************************************* */
+// Helper: build a random SPD matrix of size n
+static Matrix randomSPD(size_t n, unsigned seed = 42) {
+  srand(seed);
+  Matrix A = Matrix::Random(n, n);
+  // Make SPD: A'A + n*I
+  return A.transpose() * A + static_cast<double>(n) * Matrix::Identity(n, n);
+}
+
+// Returns max abs error of R'R vs original frontal block A.
+static double blockedFactorizationError(const Matrix& original,
+                                        const Matrix& factored,
+                                        size_t nFrontal,
+                                        size_t topleft) {
+  Matrix origA = original.block(topleft, topleft, nFrontal, nFrontal)
+                     .selfadjointView<Eigen::Upper>();
+  Matrix R = factored.block(topleft, topleft, nFrontal, nFrontal)
+                 .triangularView<Eigen::Upper>();
+  Matrix RtR = R.transpose() * R;
+  return (origA - RtR).cwiseAbs().maxCoeff();
+}
+
+/* ************************************************************************* */
+TEST(cholesky, blockedSmall_fallback) {
+  // Small matrix: blocked falls through to scalar path; compare directly
+  const size_t N = 8;
+  const size_t nF = 4;
+  Matrix A = randomSPD(N);
+  Matrix upper = A.triangularView<Eigen::Upper>();
+
+  Matrix M1(upper), M2(upper);
+  bool ok1 = choleskyPartial(M1, nF);
+  bool ok2 = choleskyPartialBlocked(M2, nF, 0, 64);  // blockSize > nF → fallback
+
+  EXPECT(ok1);
+  EXPECT(ok2);
+  EXPECT(assert_equal(M1, M2, 1e-12));
+}
+
+/* ************************************************************************* */
+TEST(cholesky, blockedInvariant_medium) {
+  // Medium matrix: two panels.  Verify R'R = A (frontal block).
+  const size_t N = 32;
+  const size_t nF = 24;
+  Matrix A = randomSPD(N);
+  Matrix upper = A.triangularView<Eigen::Upper>();
+  Matrix M(upper);
+  EXPECT(choleskyPartialBlocked(M, nF, 0, 8));
+  DOUBLES_EQUAL(0.0, blockedFactorizationError(upper, M, nF, 0), 1e-9);
+}
+
+/* ************************************************************************* */
+TEST(cholesky, blockedInvariant_large) {
+  // Large matrix: many panels.  Verify R'R = A (frontal block).
+  const size_t N = 128;
+  const size_t nF = 96;
+  Matrix A = randomSPD(N, 7);
+  Matrix upper = A.triangularView<Eigen::Upper>();
+  Matrix M(upper);
+  EXPECT(choleskyPartialBlocked(M, nF, 0, 16));
+  DOUBLES_EQUAL(0.0, blockedFactorizationError(upper, M, nF, 0), 1e-7);
+}
+
+/* ************************************************************************* */
+TEST(cholesky, blockedWithTopleft) {
+  // Verify the topleft offset works correctly.
+  const size_t N = 32;
+  const size_t topleft = 4;
+  const size_t nF = 12;
+  Matrix A = randomSPD(N);
+  Matrix upper = A.triangularView<Eigen::Upper>();
+  Matrix M(upper);
+  EXPECT(choleskyPartialBlocked(M, nF, topleft, 4));
+  DOUBLES_EQUAL(0.0, blockedFactorizationError(upper, M, nF, topleft), 1e-9);
+}
+
+/* ************************************************************************* */
+TEST(cholesky, blockedRecovery) {
+  // Verify factorization invariant: R'R + Schur contribution = original
+  // Same test structure as choleskyPartial test above
+  Matrix ABC = (Matrix(7, 7) <<
+    4.0375, 3.4584, 3.5735, 2.4815, 2.1471, 2.7400, 2.2063,
+        0., 4.7267, 3.8423, 2.3624, 2.8091, 2.9579, 2.5914,
+        0.,     0., 5.1600, 2.0797, 3.4690, 3.2419, 2.9992,
+        0.,     0.,     0., 1.8786, 1.0535, 1.4250, 1.3347,
+        0.,     0.,     0.,     0., 3.0788, 2.6283, 2.3791,
+        0.,     0.,     0.,     0.,     0., 2.9227, 2.4056,
+        0.,     0.,     0.,     0.,     0.,     0., 2.5776).finished();
+
+  Matrix RSL(ABC);
+  choleskyPartialBlocked(RSL, 3, 0, 2);  // blockSize=2 forces multiple panels
+
+  Matrix R1 = RSL.transpose();
+  Matrix R2 = RSL;
+  R1.block(3, 3, 4, 4).setIdentity();
+  R2.block(3, 3, 4, 4) = R2.block(3, 3, 4, 4).selfadjointView<Eigen::Upper>();
+
+  Matrix actual = R1 * R2;
+  Matrix expected = ABC.selfadjointView<Eigen::Upper>();
+  EXPECT(assert_equal(expected, actual, 1e-9));
 }
 
 /* ************************************************************************* */

@@ -61,5 +61,19 @@ GTSAM_EXPORT std::pair<size_t,bool> choleskyCareful(Matrix& ATA, int order = -1)
  */
 GTSAM_EXPORT bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft=0);
 
+/**
+ * Blocked (panel) partial Cholesky.  Identical contract to choleskyPartial but
+ * operates on panels of `blockSize` columns at a time, turning Level-2 BLAS
+ * rank-1 updates into Level-3 BLAS rank-k updates (SYRK/GEMM).  Substantially
+ * faster when nFrontal is large (>> blockSize) and an optimised BLAS is linked.
+ *
+ * Falls back to choleskyPartial behaviour for small nFrontal values.
+ *
+ * @param blockSize  Panel width.  Typical good values: 8–64.  Defaults to 64.
+ */
+GTSAM_EXPORT bool choleskyPartialBlocked(Matrix& ABC, size_t nFrontal,
+                                         size_t topleft = 0,
+                                         size_t blockSize = 64);
+
 }
 

@@ -157,4 +157,85 @@ bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft) {
     return true;
   }
 }
+/* ************************************************************************* */
+bool choleskyPartialBlocked(Matrix& ABC, size_t nFrontal, size_t topleft,
+                            size_t blockSize) {
+  if (nFrontal == 0) return true;
+
+  // For small frontal sizes fall through to the scalar path – the panel
+  // overhead is not worth it and the underconstrained-pivot logic in
+  // choleskyStep is already scalar.
+  if (nFrontal <= blockSize)
+    return choleskyPartial(ABC, nFrontal, topleft);
+
+  assert(ABC.cols() == ABC.rows());
+  assert(size_t(ABC.rows()) >= topleft);
+  const size_t n = static_cast<size_t>(ABC.rows() - topleft);
+  assert(nFrontal <= n);
+
+  // Work on the submatrix starting at (topleft, topleft).
+  // Layout (upper triangular, augmented with RHS column):
+  //
+  //   [ A   B ]    A: nFrontal x nFrontal  (frontal block)
+  //   [ B'  C ]    C: (n-nFrontal) x (n-nFrontal)  (Schur complement)
+  //
+  // Right-looking blocked Cholesky on A, accumulating Schur updates to C.
+  //
+  // At panel k (column offset into A):
+  //   bs  = min(blockSize, nFrontal - k)   actual panel width
+  //   Akk = A(k:k+bs, k:k+bs)             diagonal panel
+  //   Akr = A(k:k+bs, k+bs:nFrontal)      right part of A's current row
+  //   Ak_ = A(k:k+bs, k:n)                full row panel (incl. B columns)
+  //   Arr = A(k+bs:nFrontal, k+bs:nFrontal) trailing frontal submatrix
+  //   Cr  = C                              Schur complement (only updated at
+  //                                         the last panel for simplicity,
+  //                                         or lazily per panel – see below)
+
+  for (size_t k = 0; k < nFrontal; k += blockSize) {
+    const size_t bs = std::min(blockSize, nFrontal - k);
+    const size_t tl = topleft + k;  // absolute top-left of current panel
+
+    // --- Step 1: Factor the bs x bs diagonal panel column-by-column. ---
+    // choleskyStep works directly on ABC using absolute indices, so it
+    // correctly handles the underconstrained-pivot logic.
+    for (size_t j = 0; j < bs; ++j) {
+      int stepResult = choleskyStep(ABC, tl + j, tl + bs);
+      if (stepResult == -1) return false;
+      // stepResult == 0 means zero pivot; underconstrainedPrior was inserted,
+      // proceed to next column.
+    }
+
+    // R_panel is the bs x bs upper-triangular block we just factored.
+    auto R_panel = ABC.block(tl, tl, bs, bs).triangularView<Eigen::Upper>();
+
+    // --- Step 2: Solve panel right of diagonal: Akr = inv(R_panel') * Akr ---
+    // This covers everything to the right: remaining frontal columns and Schur.
+    const size_t trailing_cols = n - (k + bs);
+    if (trailing_cols > 0) {
+      auto Akr = ABC.block(tl, tl + bs, bs, trailing_cols);
+      R_panel.transpose().solveInPlace(Akr);
+
+      // --- Step 3: Rank-bs Schur update on trailing submatrix (Level-3 BLAS).
+      // C_trailing -= Akr' * Akr  (upper triangle only)
+      auto C_trailing =
+          ABC.block(tl + bs, tl + bs, trailing_cols, trailing_cols);
+      C_trailing.selfadjointView<Eigen::Upper>().rankUpdate(Akr.transpose(),
+                                                            -1.0);
+    }
+  }
+
+  // Check last diagonal element condition (mirrors choleskyPartial).
+  auto R = ABC.block(topleft, topleft, nFrontal, nFrontal);
+  if (nFrontal >= 2) {
+    int exp2, exp1;
+    (void)frexp(R(nFrontal - 2, nFrontal - 2), &exp2);
+    (void)frexp(R(nFrontal - 1, nFrontal - 1), &exp1);
+    return (exp2 - exp1 < underconstrainedExponentDifference);
+  } else {
+    int exp1;
+    (void)frexp(R(0, 0), &exp1);
+    return (exp1 > -underconstrainedExponentDifference);
+  }
+}
+
 }  // namespace gtsam
