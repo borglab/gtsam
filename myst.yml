@@ -29,6 +29,9 @@ project:
       - file: ./gtsam/nonlinear/nonlinear.md
         children:
         - pattern: ./gtsam/nonlinear/doc/*
+      - file: ./gtsam/constrained/constrained.md
+        children:
+        - pattern: ./gtsam/constrained/doc/*
       - file: ./gtsam/symbolic/symbolic.md
         children:
         - pattern: ./gtsam/symbolic/doc/*

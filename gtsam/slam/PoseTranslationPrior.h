@@ -66,8 +66,8 @@ public:
   Vector evaluateError(const Pose& pose, OptionalMatrixType H) const override {
     const Translation& newTrans = pose.translation();
     const Rotation& R = pose.rotation();
-    const int tDim = traits<Translation>::GetDimension(newTrans);
-    const int xDim = traits<Pose>::GetDimension(pose);
+    const size_t tDim = traits<Translation>::GetDimension(newTrans);
+    const size_t xDim = traits<Pose>::GetDimension(pose);
     if (H) {
       *H = Matrix::Zero(tDim, xDim);
       std::pair<size_t, size_t> transInterval = POSE::translationInterval();
@@ -106,7 +106,6 @@ private:
 };
 
 } // \namespace gtsam
-
 
 
 

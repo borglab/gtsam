@@ -209,6 +209,7 @@ struct LieGroupTraits : public GetDimensionImpl<Class, Class::dimension> {
   // GetDimensionImpl handles resolving this to a static value or providing GetDimension(obj).
   inline constexpr static auto dimension = Class::dimension;
   using TangentVector = Eigen::Matrix<double, dimension, 1>;
+  using Jacobian = Eigen::Matrix<double, dimension, dimension>;
   using ChartJacobian = OptionalJacobian<dimension, dimension>;
 
   static TangentVector Local(const Class& origin, const Class& other,

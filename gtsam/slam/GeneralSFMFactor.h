@@ -42,6 +42,7 @@
 #endif
 #include <iostream>
 #include <string>
+#include <type_traits>
 
 namespace boost {
 namespace serialization {
@@ -62,14 +63,16 @@ class GeneralSFMFactor: public NoiseModelFactorN<CAMERA, LANDMARK> {
   GTSAM_CONCEPT_MANIFOLD_TYPE(CAMERA)
   GTSAM_CONCEPT_MANIFOLD_TYPE(LANDMARK)
 
+  using Measurement = typename CAMERA::Measurement;
   static const int DimC = FixedDimension<CAMERA>::value;
   static const int DimL = FixedDimension<LANDMARK>::value;
-  typedef Eigen::Matrix<double, 2, DimC> JacobianC;
-  typedef Eigen::Matrix<double, 2, DimL> JacobianL;
+  static const int ZDim = traits<Measurement>::dimension;
+  typedef Eigen::Matrix<double, ZDim, DimC> JacobianC;
+  typedef Eigen::Matrix<double, ZDim, DimL> JacobianL;
 
 protected:
 
-  Point2 measured_; ///< the 2D measurement
+  Measurement measured_; ///< the measurement
 
 public:
 
@@ -89,14 +92,18 @@ public:
    * @param cameraKey is the index of the camera
    * @param landmarkKey is the index of the landmark
    */
-  GeneralSFMFactor(const Point2& measured, const SharedNoiseModel& model,
+  GeneralSFMFactor(const Measurement& measured, const SharedNoiseModel& model,
                    Key cameraKey, Key landmarkKey)
       : Base(model, cameraKey, landmarkKey), measured_(measured) {}
 
-  GeneralSFMFactor() : measured_(0.0, 0.0) {}  ///< default constructor
-  ///< constructor that takes a Point2
+  GeneralSFMFactor() : measured_(Measurement()) {}  ///< default constructor
+  ///< constructor that takes a Point2 (only enabled for Point2 measurements)
+  template <typename M = Measurement,
+            typename std::enable_if<std::is_same<M, Point2>::value, int>::type = 0>
   GeneralSFMFactor(const Point2& p) : measured_(p) {}
   ///< constructor that takes doubles x,y to make a Point2
+  template <typename M = Measurement,
+            typename std::enable_if<std::is_same<M, Point2>::value, int>::type = 0>
   GeneralSFMFactor(double x, double y) : measured_(x, y) {}
 
   ~GeneralSFMFactor() override {} ///< destructor
@@ -113,7 +120,7 @@ public:
    */
   void print(const std::string& s = "SFMFactor", const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     Base::print(s, keyFormatter);
-    traits<Point2>::Print(measured_, s + ".z");
+    traits<Measurement>::Print(measured_, s + ".z");
   }
 
   /**
@@ -121,20 +128,21 @@ public:
    */
   bool equals(const NonlinearFactor &p, double tol = 1e-9) const override {
     const This* e = dynamic_cast<const This*>(&p);
-    return e && Base::equals(p, tol) && traits<Point2>::Equals(this->measured_, e->measured_, tol);
+    return e && Base::equals(p, tol) &&
+           traits<Measurement>::Equals(this->measured_, e->measured_, tol);
   }
 
   /** h(x)-z */
   Vector evaluateError(const CAMERA& camera, const LANDMARK& point,
       OptionalMatrixType H1, OptionalMatrixType H2) const override {
     try {
-      return camera.project2(point,H1,H2) - measured_;
-    }
-    catch( CheiralityException& e [[maybe_unused]]) {
+      Measurement predicted = camera.project2(point, H1, H2);
+      return traits<Measurement>::Local(measured_, predicted);
+    } catch (CheiralityException& e [[maybe_unused]]) {
       if (H1) *H1 = JacobianC::Zero();
       if (H2) *H2 = JacobianL::Zero();
       //TODO Print the exception via logging
-      return Z_2x1;
+      return Vector::Zero(ZDim);
     }
   }
 
@@ -144,17 +152,19 @@ public:
     if (!this->active(values)) return std::shared_ptr<JacobianFactor>();
 
     const Key key1 = this->key1(), key2 = this->key2();
-    JacobianC H1;
-    JacobianL H2;
-    Vector2 b;
+    JacobianC Dcamera;
+    JacobianL Dlandmark;
+    Vector b;
     try {
-      const CAMERA& camera = values.atRef<CAMERA>(key1);
-      const LANDMARK& point = values.atRef<LANDMARK>(key2);
-      b = measured() - camera.project2(point, H1, H2);
+      const CAMERA& camera = values.at<CAMERA>(key1);
+      const LANDMARK& point = values.at<LANDMARK>(key2);
+      Measurement predicted = camera.project2(point, &Dcamera, &Dlandmark);
+
+      b = -Vector(traits<Measurement>::Local(measured_, predicted));
     } catch (CheiralityException& e [[maybe_unused]]) {
-      H1.setZero();
-      H2.setZero();
-      b.setZero();
+      Dcamera.setZero();
+      Dlandmark.setZero();
+      b = Vector::Zero(ZDim);
       //TODO Print the exception via logging
     }
 
@@ -163,8 +173,8 @@ public:
     if (noiseModel && !noiseModel->isUnit()) {
       // TODO: implement WhitenSystem for fixed size matrices and include
       // above
-      H1 = noiseModel->Whiten(H1);
-      H2 = noiseModel->Whiten(H2);
+      Dcamera = noiseModel->Whiten(Dcamera);
+      Dlandmark = noiseModel->Whiten(Dlandmark);
       b = noiseModel->Whiten(b);
     }
 
@@ -174,11 +184,13 @@ public:
       model = std::static_pointer_cast<noiseModel::Constrained>(noiseModel)->unit();
     }
 
-    return std::make_shared<BinaryJacobianFactor<2, DimC, DimL> >(key1, H1, key2, H2, b, model);
+    return std::make_shared<BinaryJacobianFactor<ZDim, DimC, DimL>>(key1, Dcamera,
+                                                                    key2, Dlandmark,
+                                                                    b, model);
   }
 
   /** return the measured */
-  inline const Point2 measured() const {
+  inline const Measurement measured() const {
     return measured_;
   }
 

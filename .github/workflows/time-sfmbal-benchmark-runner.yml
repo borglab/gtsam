@@ -28,6 +28,10 @@ on:
         description: Commit SHA used in cache key
         required: true
         type: string
+      orchestrator_run_id:
+        description: Orchestrator run ID for cache-busting
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -47,36 +51,37 @@ jobs:
         id: dataset_cache_restore
         uses: actions/cache/restore@v4
         with:
-          path: examples/Data/problem-16-22106-pre.txt.bz2
-          key: bal-problem-16-22106-pre-txt-bz2-v1
+          path: examples/Data/problem-135-90642-pre.txt.bz2
+          key: bal-problem-135-90642-pre-txt-bz2-v1
 
       - name: Download BAL dataset archive
         if: steps.dataset_cache_restore.outputs.cache-hit != 'true'
         run: |
           curl --fail --location --show-error \
-            --output examples/Data/problem-16-22106-pre.txt.bz2 \
-            https://grail.cs.washington.edu/projects/bal/data/dubrovnik/problem-16-22106-pre.txt.bz2
+            --output examples/Data/problem-135-90642-pre.txt.bz2 \
+            https://grail.cs.washington.edu/projects/bal/data/dubrovnik/problem-135-90642-pre.txt.bz2
 
       - name: Save BAL dataset archive cache
         if: steps.dataset_cache_restore.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         continue-on-error: true
         with:
-          path: examples/Data/problem-16-22106-pre.txt.bz2
-          key: bal-problem-16-22106-pre-txt-bz2-v1
+          path: examples/Data/problem-135-90642-pre.txt.bz2
+          key: bal-problem-135-90642-pre-txt-bz2-v1
 
       - name: Extract BAL dataset
         run: |
-          bzip2 -dc examples/Data/problem-16-22106-pre.txt.bz2 > examples/Data/dubrovnik-16-22106-pre.txt
+          bzip2 -dc examples/Data/problem-135-90642-pre.txt.bz2 > examples/Data/dubrovnik-135-90642-pre.txt
 
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ninja-build
+          sudo apt-get install -y libtbb-dev
 
-      - name: Configure
+      # ── TBB=ON ──
+      - name: Configure (TBB=ON)
         run: |
-          cmake -S . -B build -GNinja \
+          cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="-w" \
             -DGTSAM_BUILD_TESTS=OFF \
@@ -84,28 +89,67 @@ jobs:
             -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
             -DGTSAM_BUILD_TIMING_ALWAYS=ON \
             -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
+            -DGTSAM_WITH_TBB=ON \
             -DGTSAM_USE_BOOST_FEATURES=OFF \
             -DGTSAM_ENABLE_BOOST_SERIALIZATION=OFF
 
-      - name: Build timeSFMBAL
+      - name: Build timeSFMBAL (TBB=ON)
         run: cmake --build build --target timeSFMBAL -j2
 
-      - name: Run benchmark
-        run: ./build/timing/timeSFMBAL --benchmark-action-json benchmark-results.json
+      - name: Run benchmark (TBB=ON)
+        run: ./build/timing/timeSFMBAL --benchmark-action-json benchmark-results-tbbON.json examples/Data/dubrovnik-135-90642-pre.txt
 
-      - name: Prepare cache payload
+      - name: Prepare cache payload (TBB=ON)
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p benchmark-cache
-          cp benchmark-results.json "benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-${{ inputs.target_sha }}.json"
+          cp benchmark-results-tbbON.json "benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-tbbON-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}.json"
 
-      - name: Save benchmark cache
+      - name: Save benchmark cache (TBB=ON)
         uses: actions/cache/save@v4
         continue-on-error: true
         with:
-          path: benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-${{ inputs.target_sha }}.json
-          key: timeSFMBAL-benchmark-v3-${{ inputs.os_name }}-${{ inputs.arch }}-${{ inputs.target_sha }}
+          path: benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-tbbON-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}.json
+          key: timeSFMBAL-benchmark-v4-${{ inputs.os_name }}-${{ inputs.arch }}-tbbON-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}
+
+      # ── TBB=OFF ──
+      - name: Clean build directory
+        run: rm -rf build
+
+      - name: Configure (TBB=OFF)
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_FLAGS="-w" \
+            -DGTSAM_BUILD_TESTS=OFF \
+            -DGTSAM_BUILD_UNSTABLE=ON \
+            -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
+            -DGTSAM_BUILD_TIMING_ALWAYS=ON \
+            -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
+            -DGTSAM_WITH_TBB=OFF \
+            -DGTSAM_USE_BOOST_FEATURES=OFF \
+            -DGTSAM_ENABLE_BOOST_SERIALIZATION=OFF
+
+      - name: Build timeSFMBAL (TBB=OFF)
+        run: cmake --build build --target timeSFMBAL -j2
+
+      - name: Run benchmark (TBB=OFF)
+        run: ./build/timing/timeSFMBAL --benchmark-action-json benchmark-results-tbbOFF.json examples/Data/dubrovnik-135-90642-pre.txt
+
+      - name: Prepare cache payload (TBB=OFF)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p benchmark-cache
+          cp benchmark-results-tbbOFF.json "benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-tbbOFF-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}.json"
+
+      - name: Save benchmark cache (TBB=OFF)
+        uses: actions/cache/save@v4
+        continue-on-error: true
+        with:
+          path: benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-tbbOFF-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}.json
+          key: timeSFMBAL-benchmark-v4-${{ inputs.os_name }}-${{ inputs.arch }}-tbbOFF-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}
 
   benchmark_linux_arm64:
     if: inputs.runner_id == 'linux-arm64'
@@ -121,36 +165,37 @@ jobs:
         id: dataset_cache_restore
         uses: actions/cache/restore@v4
         with:
-          path: examples/Data/problem-16-22106-pre.txt.bz2
-          key: bal-problem-16-22106-pre-txt-bz2-v1
+          path: examples/Data/problem-135-90642-pre.txt.bz2
+          key: bal-problem-135-90642-pre-txt-bz2-v1
 
       - name: Download BAL dataset archive
         if: steps.dataset_cache_restore.outputs.cache-hit != 'true'
         run: |
           curl --fail --location --show-error \
-            --output examples/Data/problem-16-22106-pre.txt.bz2 \
-            https://grail.cs.washington.edu/projects/bal/data/dubrovnik/problem-16-22106-pre.txt.bz2
+            --output examples/Data/problem-135-90642-pre.txt.bz2 \
+            https://grail.cs.washington.edu/projects/bal/data/dubrovnik/problem-135-90642-pre.txt.bz2
 
       - name: Save BAL dataset archive cache
         if: steps.dataset_cache_restore.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         continue-on-error: true
         with:
-          path: examples/Data/problem-16-22106-pre.txt.bz2
-          key: bal-problem-16-22106-pre-txt-bz2-v1
+          path: examples/Data/problem-135-90642-pre.txt.bz2
+          key: bal-problem-135-90642-pre-txt-bz2-v1
 
       - name: Extract BAL dataset
         run: |
-          bzip2 -dc examples/Data/problem-16-22106-pre.txt.bz2 > examples/Data/dubrovnik-16-22106-pre.txt
+          bzip2 -dc examples/Data/problem-135-90642-pre.txt.bz2 > examples/Data/dubrovnik-135-90642-pre.txt
 
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ninja-build
+          sudo apt-get install -y libtbb-dev
 
-      - name: Configure
+      # ── TBB=ON ──
+      - name: Configure (TBB=ON)
         run: |
-          cmake -S . -B build -GNinja \
+          cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="-w" \
             -DGTSAM_BUILD_TESTS=OFF \
@@ -158,32 +203,71 @@ jobs:
             -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
             -DGTSAM_BUILD_TIMING_ALWAYS=ON \
             -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
+            -DGTSAM_WITH_TBB=ON \
             -DGTSAM_USE_BOOST_FEATURES=OFF \
             -DGTSAM_ENABLE_BOOST_SERIALIZATION=OFF
 
-      - name: Build timeSFMBAL
+      - name: Build timeSFMBAL (TBB=ON)
         run: cmake --build build --target timeSFMBAL -j2
 
-      - name: Run benchmark
-        run: ./build/timing/timeSFMBAL --benchmark-action-json benchmark-results.json
+      - name: Run benchmark (TBB=ON)
+        run: ./build/timing/timeSFMBAL --benchmark-action-json benchmark-results-tbbON.json examples/Data/dubrovnik-135-90642-pre.txt
 
-      - name: Prepare cache payload
+      - name: Prepare cache payload (TBB=ON)
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p benchmark-cache
-          cp benchmark-results.json "benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-${{ inputs.target_sha }}.json"
+          cp benchmark-results-tbbON.json "benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-tbbON-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}.json"
 
-      - name: Save benchmark cache
+      - name: Save benchmark cache (TBB=ON)
         uses: actions/cache/save@v4
         continue-on-error: true
         with:
-          path: benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-${{ inputs.target_sha }}.json
-          key: timeSFMBAL-benchmark-v3-${{ inputs.os_name }}-${{ inputs.arch }}-${{ inputs.target_sha }}
+          path: benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-tbbON-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}.json
+          key: timeSFMBAL-benchmark-v4-${{ inputs.os_name }}-${{ inputs.arch }}-tbbON-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}
+
+      # ── TBB=OFF ──
+      - name: Clean build directory
+        run: rm -rf build
+
+      - name: Configure (TBB=OFF)
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_FLAGS="-w" \
+            -DGTSAM_BUILD_TESTS=OFF \
+            -DGTSAM_BUILD_UNSTABLE=ON \
+            -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
+            -DGTSAM_BUILD_TIMING_ALWAYS=ON \
+            -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
+            -DGTSAM_WITH_TBB=OFF \
+            -DGTSAM_USE_BOOST_FEATURES=OFF \
+            -DGTSAM_ENABLE_BOOST_SERIALIZATION=OFF
+
+      - name: Build timeSFMBAL (TBB=OFF)
+        run: cmake --build build --target timeSFMBAL -j2
+
+      - name: Run benchmark (TBB=OFF)
+        run: ./build/timing/timeSFMBAL --benchmark-action-json benchmark-results-tbbOFF.json examples/Data/dubrovnik-135-90642-pre.txt
+
+      - name: Prepare cache payload (TBB=OFF)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p benchmark-cache
+          cp benchmark-results-tbbOFF.json "benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-tbbOFF-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}.json"
+
+      - name: Save benchmark cache (TBB=OFF)
+        uses: actions/cache/save@v4
+        continue-on-error: true
+        with:
+          path: benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-tbbOFF-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}.json
+          key: timeSFMBAL-benchmark-v4-${{ inputs.os_name }}-${{ inputs.arch }}-tbbOFF-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}
 
   benchmark_macos_arm64:
     if: inputs.runner_id == 'macos-arm64'
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - name: Checkout target ref
         uses: actions/checkout@v4
@@ -195,34 +279,35 @@ jobs:
         id: dataset_cache_restore
         uses: actions/cache/restore@v4
         with:
-          path: examples/Data/problem-16-22106-pre.txt.bz2
-          key: bal-problem-16-22106-pre-txt-bz2-v1
+          path: examples/Data/problem-135-90642-pre.txt.bz2
+          key: bal-problem-135-90642-pre-txt-bz2-v1
 
       - name: Download BAL dataset archive
         if: steps.dataset_cache_restore.outputs.cache-hit != 'true'
         run: |
           curl --fail --location --show-error \
-            --output examples/Data/problem-16-22106-pre.txt.bz2 \
-            https://grail.cs.washington.edu/projects/bal/data/dubrovnik/problem-16-22106-pre.txt.bz2
+            --output examples/Data/problem-135-90642-pre.txt.bz2 \
+            https://grail.cs.washington.edu/projects/bal/data/dubrovnik/problem-135-90642-pre.txt.bz2
 
       - name: Save BAL dataset archive cache
         if: steps.dataset_cache_restore.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         continue-on-error: true
         with:
-          path: examples/Data/problem-16-22106-pre.txt.bz2
-          key: bal-problem-16-22106-pre-txt-bz2-v1
+          path: examples/Data/problem-135-90642-pre.txt.bz2
+          key: bal-problem-135-90642-pre-txt-bz2-v1
 
       - name: Extract BAL dataset
         run: |
-          bzip2 -dc examples/Data/problem-16-22106-pre.txt.bz2 > examples/Data/dubrovnik-16-22106-pre.txt
+          bzip2 -dc examples/Data/problem-135-90642-pre.txt.bz2 > examples/Data/dubrovnik-135-90642-pre.txt
 
       - name: Install dependencies
-        run: brew install ninja || true
+        run: brew install tbb || true
 
-      - name: Configure
+      # ── TBB=ON ──
+      - name: Configure (TBB=ON)
         run: |
-          cmake -S . -B build -GNinja \
+          cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="-w" \
             -DGTSAM_BUILD_TESTS=OFF \
@@ -230,25 +315,64 @@ jobs:
             -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
             -DGTSAM_BUILD_TIMING_ALWAYS=ON \
             -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
+            -DGTSAM_WITH_TBB=ON \
             -DGTSAM_USE_BOOST_FEATURES=OFF \
             -DGTSAM_ENABLE_BOOST_SERIALIZATION=OFF
 
-      - name: Build timeSFMBAL
+      - name: Build timeSFMBAL (TBB=ON)
         run: cmake --build build --target timeSFMBAL -j2
 
-      - name: Run benchmark
-        run: ./build/timing/timeSFMBAL --benchmark-action-json benchmark-results.json
+      - name: Run benchmark (TBB=ON)
+        run: ./build/timing/timeSFMBAL --benchmark-action-json benchmark-results-tbbON.json examples/Data/dubrovnik-135-90642-pre.txt
 
-      - name: Prepare cache payload
+      - name: Prepare cache payload (TBB=ON)
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p benchmark-cache
-          cp benchmark-results.json "benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-${{ inputs.target_sha }}.json"
+          cp benchmark-results-tbbON.json "benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-tbbON-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}.json"
 
-      - name: Save benchmark cache
+      - name: Save benchmark cache (TBB=ON)
         uses: actions/cache/save@v4
         continue-on-error: true
         with:
-          path: benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-${{ inputs.target_sha }}.json
-          key: timeSFMBAL-benchmark-v3-${{ inputs.os_name }}-${{ inputs.arch }}-${{ inputs.target_sha }}
+          path: benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-tbbON-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}.json
+          key: timeSFMBAL-benchmark-v4-${{ inputs.os_name }}-${{ inputs.arch }}-tbbON-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}
+
+      # ── TBB=OFF ──
+      - name: Clean build directory
+        run: rm -rf build
+
+      - name: Configure (TBB=OFF)
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_FLAGS="-w" \
+            -DGTSAM_BUILD_TESTS=OFF \
+            -DGTSAM_BUILD_UNSTABLE=ON \
+            -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
+            -DGTSAM_BUILD_TIMING_ALWAYS=ON \
+            -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
+            -DGTSAM_WITH_TBB=OFF \
+            -DGTSAM_USE_BOOST_FEATURES=OFF \
+            -DGTSAM_ENABLE_BOOST_SERIALIZATION=OFF
+
+      - name: Build timeSFMBAL (TBB=OFF)
+        run: cmake --build build --target timeSFMBAL -j2
+
+      - name: Run benchmark (TBB=OFF)
+        run: ./build/timing/timeSFMBAL --benchmark-action-json benchmark-results-tbbOFF.json examples/Data/dubrovnik-135-90642-pre.txt
+
+      - name: Prepare cache payload (TBB=OFF)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p benchmark-cache
+          cp benchmark-results-tbbOFF.json "benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-tbbOFF-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}.json"
+
+      - name: Save benchmark cache (TBB=OFF)
+        uses: actions/cache/save@v4
+        continue-on-error: true
+        with:
+          path: benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-tbbOFF-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}.json
+          key: timeSFMBAL-benchmark-v4-${{ inputs.os_name }}-${{ inputs.arch }}-tbbOFF-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}

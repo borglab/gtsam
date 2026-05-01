@@ -180,11 +180,21 @@ namespace gtsam {
      */
     sharedFactorGraph joint(Key j1, Key j2, const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
 
+    /** Return a joint factor graph on an arbitrary set of variables. */
+    sharedFactorGraph joint(
+        const KeyVector& keys,
+        const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
+
     /**
      * return joint on two variables as a BayesNet
      * Limitation: can only calculate joint if cliques are disjoint or one of them is root
      */
     sharedBayesNet jointBayesNet(Key j1, Key j2, const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
+
+    /** Return a joint marginal on an arbitrary set of variables as a BayesNet. */
+    sharedBayesNet jointBayesNet(
+        const KeyVector& keys,
+        const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
 
     /// @}   
     /// @name Graph Display
@@ -245,7 +255,17 @@ namespace gtsam {
     /** Add all cliques in this BayesTree to the specified factor graph */
     void addFactorsToGraph(FactorGraph<FactorType>* graph) const;
 
-  protected:
+    /**
+     * @brief Returns the set of keys from the tree that are affected by a
+     * update to 'keys'
+     * @param keys: The keys updated and in-turn affecting the tree
+     * @returns The set of keys from the tree that are affected
+     * @note Note: Return matches contents of BayesNet from removeTop without
+     * affecting the tree
+     */
+    gtsam::KeySet collectAffectedKeys(const gtsam::KeyVector& keys) const;
+
+   protected:
 
     /** private helper method for saving the Tree to a text file in GraphViz format */
     void dot(std::ostream &s, sharedClique clique, const KeyFormatter& keyFormatter,
@@ -259,6 +279,11 @@ namespace gtsam {
 
     /** Fill the nodes index for a subtree */
     void fillNodesIndex(const sharedClique& subtree);
+
+    /// @brief Helper for collectAffectedKeys that recursively aggregates
+    /// affected keys from a path from 'clique' to the root of tree
+    void collectAffectedPathKeys(gtsam::KeySet& traversedKeys,
+                                 const sharedClique& clique) const;
 
     // Friend JunctionTree because it directly fills roots and nodes index.
     template<class BAYESTREE, class GRAPH> friend class EliminatableClusterTree;

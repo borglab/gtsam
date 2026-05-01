@@ -55,7 +55,7 @@ namespace gtsam {
  * if it is defined.
  * @ingroup geometry
  */
-class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
+class GTSAM_EXPORT Rot3 : public MatrixLieGroup<Rot3, 3, 3> {
  public:
   static constexpr size_t MatrixM = 3;
  private:
@@ -397,12 +397,7 @@ class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
     Matrix3 AdjointMap() const { return matrix(); }
 
     /// Matrix representation of the Lie-algebra adjoint operator ad_xi on so(3).
-    static Matrix3 adjointMap(const Vector3& xi);
-
-    /// Apply the Lie-algebra adjoint map to y with optional derivatives.
-    static Vector3 adjoint(const Vector3& xi, const Vector3& y,
-                           OptionalJacobian<3, 3> Hxi = {},
-                           OptionalJacobian<3, 3> Hy = {});
+    static Matrix3 adjointMap(const Vector3& xi) { return Hat(xi); }
 
     // Chart at origin, depends on compile-time flag ROT3_DEFAULT_COORDINATES_MODE
     struct GTSAM_EXPORT ChartAtOrigin {

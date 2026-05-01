@@ -23,6 +23,7 @@
 
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
 
+#include <filesystem>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -31,7 +32,6 @@
 #include <gtsam/base/TestableAssertions.h>
 
 #include <boost/serialization/serialization.hpp>
-#include <boost/filesystem.hpp>
 
 
 // whether to print the serialized text to stdout
@@ -47,10 +47,10 @@ T create() {
 }
 
 // Creates or empties a folder in the build folder and returns the relative path
-inline boost::filesystem::path resetFilesystem(
-    boost::filesystem::path folder = "actual") {
-  boost::filesystem::remove_all(folder);
-  boost::filesystem::create_directory(folder);
+inline std::filesystem::path resetFilesystem(
+    std::filesystem::path folder = "actual") {
+  std::filesystem::remove_all(folder);
+  std::filesystem::create_directory(folder);
   return folder;
 }
 
@@ -65,7 +65,7 @@ void roundtrip(const T& input, T& output) {
 // Templated round-trip serialization using a file
 template<class T>
 void roundtripFile(const T& input, T& output) {
-  boost::filesystem::path path = resetFilesystem()/"graph.dat";
+  std::filesystem::path path = resetFilesystem()/"graph.dat";
   serializeToFile(input, path.string());
   deserializeFromFile(path.string(), output);
 }
@@ -106,7 +106,7 @@ void roundtripXML(const T& input, T& output) {
 // Templated round-trip serialization using XML File
 template<class T>
 void roundtripXMLFile(const T& input, T& output) {
-  boost::filesystem::path path = resetFilesystem()/"graph.xml";
+  std::filesystem::path path = resetFilesystem()/"graph.xml";
   serializeToXMLFile(input, path.string());
   deserializeFromXMLFile(path.string(), output);
 }
@@ -147,7 +147,7 @@ void roundtripBinary(const T& input, T& output) {
 // Templated round-trip serialization using Binary file
 template<class T>
 void roundtripBinaryFile(const T& input, T& output) {
-  boost::filesystem::path path = resetFilesystem()/"graph.bin";
+  std::filesystem::path path = resetFilesystem()/"graph.bin";
   serializeToBinaryFile(input, path.string());
   deserializeFromBinaryFile(path.string(), output);
 }

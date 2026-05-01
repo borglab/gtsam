@@ -158,29 +158,10 @@ public:
    */
   Matrix3 AdjointMap() const;
 
-  /// Apply AdjointMap to twist xi
-  inline Vector3 Adjoint(const Vector3& xi) const {
-    return AdjointMap()*xi;
-  }
-
   /**
    * Compute the [ad(w,v)] operator for SE2 as in [Kobilarov09siggraph], pg 19
    */
   static Matrix3 adjointMap(const Vector3& v);
-
-  /**
-   * Action of the adjointMap on a Lie-algebra vector y, with optional derivatives
-   */
-  static Vector3 adjoint(const Vector3& xi, const Vector3& y) {
-    return adjointMap(xi) * y;
-  }
-
-  /**
-   * The dual version of adjoint action, acting on the dual space of the Lie-algebra vector space.
-   */
-  static Vector3 adjointTranspose(const Vector3& xi, const Vector3& y) {
-    return adjointMap(xi).transpose() * y;
-  }
 
   // temporary fix for wrappers until case issue is resolved
   static Matrix3 adjointMap_(const Vector3 &xi) { return adjointMap(xi);}
@@ -393,4 +374,3 @@ template <typename T>
 struct Range<Pose2, T> : HasRange<Pose2, T, double> {};
 
 } // namespace gtsam
-

@@ -25,6 +25,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/SL4.h>
 #include <gtsam/geometry/Cal3DS2.h>
+#include <gtsam/geometry/SphericalCamera.h>
 //#include <gtsam/geometry/Cal3_S2Stereo.h>
 
 using namespace gtsam;
@@ -82,6 +83,8 @@ typedef GenericProjectionFactor<Pose3, Point3, Cal3DS2> GenericProjectionFactorC
 
 typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3_S2, gtsam::Point3> GeneralSFMFactorCal3_S2;
 typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3DS2, gtsam::Point3> GeneralSFMFactorCal3DS2;
+typedef gtsam::GeneralSFMFactor<gtsam::SphericalCamera, gtsam::Point3>
+    GeneralSFMFactorSphericalCamera;
 
 typedef gtsam::GeneralSFMFactor2<gtsam::Cal3_S2> GeneralSFMFactor2Cal3_S2;
 
@@ -173,6 +176,8 @@ BOOST_CLASS_EXPORT_GUID(GenericProjectionFactorCal3DS2, "gtsam::GenericProjectio
 
 BOOST_CLASS_EXPORT_GUID(GeneralSFMFactorCal3_S2, "gtsam::GeneralSFMFactorCal3_S2");
 BOOST_CLASS_EXPORT_GUID(GeneralSFMFactorCal3DS2, "gtsam::GeneralSFMFactorCal3DS2");
+BOOST_CLASS_EXPORT_GUID(GeneralSFMFactorSphericalCamera,
+                        "gtsam::GeneralSFMFactorSphericalCamera");
 
 BOOST_CLASS_EXPORT_GUID(GeneralSFMFactor2Cal3_S2, "gtsam::GeneralSFMFactor2Cal3_S2");
 
@@ -287,5 +292,4 @@ Values::shared_ptr gtsam::deserializeValuesFromXMLFile(const std::string& fname,
 }
 
 /* ************************************************************************* */
-
 

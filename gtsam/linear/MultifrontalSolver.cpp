@@ -26,8 +26,7 @@
 #include <gtsam/linear/MultifrontalClique.h>
 #include <gtsam/linear/MultifrontalSolver.h>
 #include <gtsam/linear/NoiseModel.h>
-#include <gtsam/symbolic/SymbolicEliminationTree.h>
-#include <gtsam/symbolic/SymbolicFactorGraph.h>
+#include <gtsam/symbolic/IndexedJunctionTree.h>
 #include <gtsam/symbolic/SymbolicJunctionTree.h>
 
 #include <algorithm>
@@ -129,30 +128,6 @@ PrecomputeScratch precomputeFromGraph(const GaussianFactorGraph& graph) {
     out.fixedKeys.insert(*jacobianFactor->begin());
   }
   return out;
-}
-
-// Build SymbolicFactorGraph from GaussianFactorGraph
-SymbolicFactorGraph buildSymbolicGraph(
-    const GaussianFactorGraph& graph,
-    const std::unordered_set<Key>& fixedKeys,
-    const std::vector<size_t>& rowCounts) {
-  SymbolicFactorGraph symbolicGraph;
-  symbolicGraph.reserve(graph.size());
-  for (size_t i = 0; i < graph.size(); ++i) {
-    if (!graph[i]) continue;
-    KeyVector keys;
-    keys.reserve(graph[i]->size());
-    for (Key key : graph[i]->keys()) {
-      if (!fixedKeys.count(key)) {
-        keys.push_back(key);
-      }
-    }
-    // Skip factors that are fully constrained away.
-    if (keys.empty()) continue;
-    symbolicGraph.emplace_shared<internal::IndexedSymbolicFactor>(
-        keys, i, rowCounts.at(i));
-  }
-  return symbolicGraph;
 }
 
 // Sum the dimensions of frontal variables in a symbolic cluster.
@@ -455,6 +430,7 @@ struct CliqueBuilder {
   std::vector<MultifrontalSolver::CliquePtr>* cliques;
   const std::unordered_set<Key>* fixedKeys;
   const MultifrontalParameters* params;
+  const std::vector<size_t>* rowCounts;
   SymbolicJunctionTree::Cluster::KeySetMap separatorCache = {};
 
   BuiltClique build(const SymbolicJunctionTree::sharedNode& cluster,
@@ -472,7 +448,7 @@ struct CliqueBuilder {
       auto indexed =
           std::static_pointer_cast<internal::IndexedSymbolicFactor>(factor);
       factorIndices.push_back(indexed->index_);
-      vbmRows += indexed->rows_;
+      vbmRows += rowCounts->at(indexed->index_);
     }
 
     // Create the clique node and cache static structure.
@@ -535,30 +511,31 @@ MultifrontalSolver::MultifrontalSolver(PrecomputedData data,
   }
 
   // Report the symbolic structure before any merge.
-  reportStructure(data.junctionTree, dims_, "Symbolic cluster structure",
+  reportStructure(data.indexedJunctionTree, dims_, "Symbolic cluster structure",
                   params_.reportStream);
 
   // If applicable, merge leaf children by a separate cap first.
   if (params_.leafMergeDimCap > 0) {
-    for (const auto& rootCluster : data.junctionTree.roots()) {
+    for (const auto& rootCluster : data.indexedJunctionTree.roots()) {
       mergeLeafChildren(rootCluster, dims_, params_.leafMergeDimCap);
     }
-    reportStructure(data.junctionTree, dims_,
+    reportStructure(data.indexedJunctionTree, dims_,
                     "Clique structure after leaf merge", params_.reportStream);
   }
 
   // If applicable, merge small child cliques bottom-up.
   if (params_.mergeDimCap > 0) {
-    for (const auto& rootCluster : data.junctionTree.roots()) {
+    for (const auto& rootCluster : data.indexedJunctionTree.roots()) {
       mergeSmallClusters(rootCluster, dims_, params_.mergeDimCap);
     }
-    reportStructure(data.junctionTree, dims_, "Clique structure after merge",
+    reportStructure(data.indexedJunctionTree, dims_, "Clique structure after merge",
                     params_.reportStream);
   }
 
   // Build the actual MultifrontalClique structure.
-  CliqueBuilder builder{dims_, &solution_, &cliques_, &fixedKeys_, &params_};
-  for (const auto& rootCluster : data.junctionTree.roots()) {
+  CliqueBuilder builder{dims_, &solution_, &cliques_, &fixedKeys_, &params_,
+                        &data.rowCounts};
+  for (const auto& rootCluster : data.indexedJunctionTree.roots()) {
     if (rootCluster) {
       roots_.push_back(
           builder.build(rootCluster, std::weak_ptr<MultifrontalClique>())
@@ -582,14 +559,12 @@ MultifrontalSolver::PrecomputedData MultifrontalSolver::Precompute(
     }
   }
 
-  SymbolicFactorGraph symbolicGraph =
-      buildSymbolicGraph(graph, scratch.fixedKeys, scratch.rowCounts);
-  SymbolicEliminationTree eliminationTree(symbolicGraph, reducedOrdering);
-  SymbolicJunctionTree junctionTree(eliminationTree);
+  IndexedJunctionTree indexedJunctionTree =
+      graph.buildIndexedJunctionTree(reducedOrdering, scratch.fixedKeys);
 
   return MultifrontalSolver::PrecomputedData{
       std::move(scratch.dims), std::move(scratch.fixedKeys),
-      std::move(junctionTree)};
+      std::move(indexedJunctionTree), std::move(scratch.rowCounts)};
 }
 
 /* ************************************************************************* */

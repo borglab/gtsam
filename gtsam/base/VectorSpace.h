@@ -29,7 +29,7 @@ struct VectorSpaceImpl {
   typedef Eigen::Matrix<double, N, 1> TangentVector;
   typedef OptionalJacobian<N, N> ChartJacobian;
   typedef Eigen::Matrix<double, N, N> Jacobian;
-  static int GetDimension(const Class&) { return N;}
+  static size_t GetDimension(const Class&) { return static_cast<size_t>(N);}
 
   static TangentVector Local(const Class& origin, const Class& other,
       ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
@@ -107,10 +107,10 @@ struct VectorSpaceImpl<Class,Eigen::Dynamic> {
   /// @{
   typedef Eigen::VectorXd TangentVector;
   typedef OptionalJacobian<Eigen::Dynamic,Eigen::Dynamic> ChartJacobian;
-  static int GetDimension(const Class& m) { return m.dim();}
+  static size_t GetDimension(const Class& m) { return m.dim();}
 
   static Eigen::MatrixXd Eye(const Class& m) {
-    int dim = GetDimension(m);
+    size_t dim = GetDimension(m);
     return Eigen::MatrixXd::Identity(dim, dim);
   }
 
@@ -141,7 +141,7 @@ struct VectorSpaceImpl<Class,Eigen::Dynamic> {
 
   static Class Expmap(const TangentVector& v, ChartJacobian Hv = {}) {
     Class result(v);
-    if (Hv) *Hv = Eye(v);
+    if (Hv) *Hv = Eye(result);
     return result;
   }
 
@@ -395,12 +395,12 @@ struct DynamicTraits {
   typedef OptionalJacobian<dimension, dimension> ChartJacobian;
   typedef Dynamic ManifoldType;
 
-  static int GetDimension(const Dynamic& m) {
-    return m.rows() * m.cols();
+  static size_t GetDimension(const Dynamic& m) {
+    return static_cast<size_t>(m.rows() * m.cols());
   }
 
   static Jacobian Eye(const Dynamic& m) {
-    int dim = GetDimension(m);
+    size_t dim = GetDimension(m);
     return Eigen::Matrix<double, dimension, dimension>::Identity(dim, dim);
   }
 
@@ -432,9 +432,23 @@ struct DynamicTraits {
     return result;
   }
 
-  static Dynamic Expmap(const TangentVector& /*v*/, ChartJacobian H = {}) {
-    static_cast<void>(H);
-    throw std::runtime_error("Expmap not defined for dynamic types");
+  static Dynamic Expmap(const TangentVector& v, ChartJacobian H = {}) {
+    if constexpr (M == Eigen::Dynamic && N == Eigen::Dynamic) {
+      static_cast<void>(v);
+      static_cast<void>(H);
+      throw std::runtime_error("Expmap not defined for fully dynamic matrices");
+    } else {
+      const int rows = (M == Eigen::Dynamic) ? v.size() / N : M;
+      const int cols = (N == Eigen::Dynamic) ? v.size() / M : N;
+      if (rows * cols != v.size()) {
+        throw std::invalid_argument(
+            "Dynamic Expmap tangent dimension does not match matrix shape");
+      }
+      Dynamic result(rows, cols);
+      result = Eigen::Map<const Dynamic>(v.data(), rows, cols);
+      if (H) *H = Jacobian::Identity(v.size(), v.size());
+      return result;
+    }
   }
 
   static Dynamic Inverse(const Dynamic& m, ChartJacobian H = {}) {

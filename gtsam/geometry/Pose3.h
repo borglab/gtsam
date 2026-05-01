@@ -20,9 +20,14 @@
 #include <gtsam/config.h>
 
 #include <gtsam/geometry/BearingRange.h>
+#include <gtsam/geometry/ExtendedPose3.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/base/Lie.h>
+
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+#include <boost/serialization/base_object.hpp>
+#endif
 
 namespace gtsam {
 
@@ -34,45 +39,41 @@ class Pose2;
  * @ingroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Pose3: public MatrixLieGroup<Pose3, 6, 4> {
+class GTSAM_EXPORT Pose3: public ExtendedPose3<1, Pose3> {
 public:
+  using Base = ExtendedPose3<1, Pose3>;
 
   /** Pose Concept requirements */
   typedef Rot3 Rotation;
   typedef Point3 Translation;
-
-private:
-
-  Rot3 R_; ///< Rotation gRp, between global and pose frame
-  Point3 t_; ///< Translation gPp, from global origin to pose frame origin
+  inline constexpr static auto dimension = 6;
 
 public:
   using Vector16 = Eigen::Matrix<double, 16, 1>;
+  using Base::operator*;
 
   /// @name Standard Constructors
   /// @{
 
   /** Default constructor is origin */
-  Pose3() : R_(traits<Rot3>::Identity()), t_(traits<Point3>::Identity()) {}
+  Pose3() : Base() {}
 
   /** Copy constructor */
   Pose3(const Pose3& pose) = default;
 
   Pose3& operator=(const Pose3& other) = default;
 
+  Pose3(const Base& other) : Base(other) {}
+
   /** Construct from R,t */
-  Pose3(const Rot3& R, const Point3& t) :
-      R_(R), t_(t) {
-  }
+  Pose3(const Rot3& R, const Point3& t)
+      : Base(R, Vector3(t.x(), t.y(), t.z())) {}
 
   /** Construct from Pose2 */
   explicit Pose3(const Pose2& pose2);
 
   /** Constructor from 4*4 matrix */
-  Pose3(const Matrix &T) :
-      R_(T(0, 0), T(0, 1), T(0, 2), T(1, 0), T(1, 1), T(1, 2), T(2, 0), T(2, 1),
-          T(2, 2)), t_(T(0, 3), T(1, 3), T(2, 3)) {
-  }
+  Pose3(const Matrix &T) : Base(Matrix4(T)) {}
 
   /// Named constructor with derivatives
   static Pose3 Create(const Rot3& R, const Point3& t,
@@ -106,19 +107,6 @@ public:
   /// @name Group
   /// @{
 
-  /// identity for group operation
-  static Pose3 Identity() {
-    return Pose3();
-  }
-
-  /// inverse transformation
-  Pose3 inverse() const;
-
-  /// compose syntactic sugar
-  Pose3 operator*(const Pose3& T) const {
-    return Pose3(R_ * T.R_, t_ + R_ * T.t_);
-  }
-
   /**
    * Interpolate between two poses via individual rotation and translation
    * interpolation.
@@ -138,102 +126,29 @@ public:
                       OptionalJacobian<6, 6> Harg = {},
                       OptionalJacobian<6, 1> Ht = {}) const;
 
+  /// Compose syntactic sugar.
+  Pose3 operator*(const Pose3& T) const {
+    return Pose3(R_ * T.R_, t_ + R_ * T.t_);
+  }
+
   /// @}
   /// @name Lie Group
   /// @{
 
   using LieAlgebra = Matrix4;
 
-  /// Exponential map at identity - create a rotation from canonical coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$
+  /// Exponential map at identity.
   static Pose3 Expmap(const Vector6& xi, OptionalJacobian<6, 6> Hxi = {});
-
-  /// Log map at identity - return the canonical coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ of this rotation
-  static Vector6 Logmap(const Pose3& pose, OptionalJacobian<6, 6> Hpose = {});
-
-  /**
-   * Calculate Adjoint map, transforming a twist in this pose's (i.e, body) frame to the world spatial frame
-   * Ad_pose is 6*6 matrix that when applied to twist xi \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$, returns Ad_pose(xi)
-   */
-  Matrix6 AdjointMap() const;
-
-  /**
-   * Apply this pose's AdjointMap Ad_g to a twist \f$ \xi_b \f$, i.e. a
-   * body-fixed velocity, transforming it to the spatial frame
-   * \f$ \xi^s = g*\xi^b*g^{-1} = Ad_g * \xi^b \f$
-   * Note that H_xib = AdjointMap()
-   */
-  Vector6 Adjoint(const Vector6& xi_b,
-                  OptionalJacobian<6, 6> H_this = {},
-                  OptionalJacobian<6, 6> H_xib = {}) const;
-  
-  /// The dual version of Adjoint
-  Vector6 AdjointTranspose(const Vector6& x,
-                           OptionalJacobian<6, 6> H_this = {},
-                           OptionalJacobian<6, 6> H_x = {}) const;
-
-  /**
-   * Compute the [ad(w,v)] operator as defined in [Kobilarov09siggraph], pg 11
-   * [ad(w,v)] = [w^, zero3; v^, w^]
-   * Note that this is the matrix representation of the adjoint operator for se3 Lie algebra,
-   * aka the Lie bracket, and also the derivative of Adjoint map for the Lie group SE3.
-   *
-   * Let \f$ \hat{\xi}_i \f$ be the se3 Lie algebra, and \f$ \hat{\xi}_i^\vee = \xi_i = [\omega_i,v_i] \in \mathbb{R}^6\f$ be its
-   * vector representation.
-   * We have the following relationship:
-   * \f$ [\hat{\xi}_1,\hat{\xi}_2]^\vee = ad_{\xi_1}(\xi_2) = [ad_{(\omega_1,v_1)}]*\xi_2 \f$
-   *
-   * We use this to compute the discrete version of the inverse right-trivialized tangent map,
-   * and its inverse transpose in the discrete Euler Poincare' (DEP) operator.
-   *
-   */
-  static Matrix6 adjointMap(const Vector6& xi);
-
-  /**
-   * Action of the adjointMap on a Lie-algebra vector y, with optional derivatives
-   */
-  static Vector6 adjoint(const Vector6& xi, const Vector6& y,
-                         OptionalJacobian<6, 6> Hxi = {},
-                         OptionalJacobian<6, 6> H_y = {});
 
   // temporary fix for wrappers until case issue is resolved
   static Matrix6 adjointMap_(const Vector6 &xi) { return adjointMap(xi);}
   static Vector6 adjoint_(const Vector6 &xi, const Vector6 &y) { return adjoint(xi, y);}
-
-  /**
-   * The dual version of adjoint action, acting on the dual space of the Lie-algebra vector space.
-   */
-  static Vector6 adjointTranspose(const Vector6& xi, const Vector6& y,
-                                  OptionalJacobian<6, 6> Hxi = {},
-                                  OptionalJacobian<6, 6> H_y = {});
-
-  /// Derivative of Expmap
-  static Matrix6 ExpmapDerivative(const Vector6& xi);
-
-  /// Derivative of Logmap
-  static Matrix6 LogmapDerivative(const Vector6& xi);
-
-  /// Derivative of Logmap, Pose3 version. TODO(Frank): deprecate?
-  static Matrix6 LogmapDerivative(const Pose3& pose);
 
   // Chart at origin, depends on compile-time flag GTSAM_POSE3_EXPMAP
   struct GTSAM_EXPORT ChartAtOrigin {
     static Pose3 Retract(const Vector6& xi, ChartJacobian Hxi = {});
     static Vector6 Local(const Pose3& pose, ChartJacobian Hpose = {});
   };
-
-  using LieGroup<Pose3, 6>::inverse; // version with derivative
-
-  /**
-   * Hat for Pose3:
-   * @param xi 6-dim twist (omega,v) where
-   *  omega = (wx,wy,wz) 3D angular velocity
-   *  v (vx,vy,vz) = 3D velocity
-   * @return xihat, 4*4 element of Lie algebra that can be exponentiated
-   */
-  static Matrix4 Hat(const Vector6& xi);
-
-  /// Vee maps from Lie algebra to tangent vector
-  static Vector6 Vee(const Matrix4& X);
 
   /// @}
   /// @name Group Action on Point3
@@ -282,32 +197,23 @@ public:
   /// @name Standard Interface
   /// @{
 
-  /// get rotation
-  const Rot3& rotation(OptionalJacobian<3, 6> Hself = {}) const;
-
   /// get translation
   const Point3& translation(OptionalJacobian<3, 6> Hself = {}) const;
 
   /// get x
   double x() const {
-    return t_.x();
+    return translation().x();
   }
 
   /// get y
   double y() const {
-    return t_.y();
+    return translation().y();
   }
 
   /// get z
   double z() const {
-    return t_.z();
+    return translation().z();
   }
-
-  /** convert to 4*4 matrix */
-  Matrix4 matrix() const;
-
-  /// Return vectorized SE(3) matrix in column order.
-  Vector16 vec(OptionalJacobian<16, 6> H = {}) const;
 
   /** 
     * Assuming self == wTa, takes a pose aTb in local coordinates 

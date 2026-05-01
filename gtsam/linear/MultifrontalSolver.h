@@ -24,7 +24,7 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/MultifrontalParameters.h>
 #include <gtsam/linear/VectorValues.h>
-#include <gtsam/symbolic/SymbolicJunctionTree.h>
+#include <gtsam/symbolic/IndexedJunctionTree.h>
 
 #include <iosfwd>
 #include <map>
@@ -82,10 +82,12 @@ class GTSAM_EXPORT MultifrontalSolver
   /// Tuning parameters for traversal and reporting.
   using Parameters = MultifrontalParameters;
 
+  /// Precomputed symbolic and sizing data for multifrontal solver construction.
   struct PrecomputedData {
-    std::map<Key, size_t> dims;         ///< Map from variable key to dimension.
-    std::unordered_set<Key> fixedKeys;  ///< Keys fixed by constrained factors.
-    SymbolicJunctionTree junctionTree;  ///< Precomputed symbolic junction tree.
+    std::map<Key, size_t> dims;                 ///< Map from variable key to dimension.
+    std::unordered_set<Key> fixedKeys;          ///< Keys fixed by constrained factors.
+    IndexedJunctionTree indexedJunctionTree;    ///< Precomputed indexed junction tree.
+    std::vector<size_t> rowCounts;              ///< Row counts indexed by factor index.
   };
 
   /// Shared pointer to a MultifrontalClique.
@@ -109,7 +111,7 @@ class GTSAM_EXPORT MultifrontalSolver
  public:
   /**
    * Construct the solver from a factor graph and an ordering.
-   * This builds the symbolic junction tree and pre-allocates all matrices.
+   * This builds the indexed junction tree and pre-allocates all matrices.
    * Call load() before eliminating to populate numerical values.
    * @param graph The factor graph to solve.
    *              Must contain only JacobianFactor instances.
@@ -129,8 +131,16 @@ class GTSAM_EXPORT MultifrontalSolver
   MultifrontalSolver(PrecomputedData data, const Ordering& ordering,
                      const Parameters& params = Parameters{});
 
-  /// Precompute symbolic structure and sizing data from a factor graph.
-  /// Only JacobianFactor inputs are supported.
+  /**
+   * Precompute symbolic structure and sizing data from a factor graph.
+   * This builds an IndexedJunctionTree that can be reused across multiple
+   * solver instances when the graph structure and ordering remain unchanged.
+   * Only JacobianFactor inputs are supported.
+   * 
+   * @param graph The factor graph (must contain only JacobianFactor instances)
+   * @param ordering The variable elimination ordering
+   * @return PrecomputedData containing the indexed junction tree and sizing info
+   */
   static PrecomputedData Precompute(const GaussianFactorGraph& graph,
                                     const Ordering& ordering);
 

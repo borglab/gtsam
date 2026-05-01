@@ -32,7 +32,6 @@
 
 #include <boost/fusion/include/vector.hpp>
 #include <boost/fusion/sequence.hpp>
-#include <boost/lambda/lambda.hpp>
 #include <boost/phoenix/bind.hpp>
 #include <boost/spirit/include/classic.hpp>
 #include <boost/spirit/include/qi.hpp>

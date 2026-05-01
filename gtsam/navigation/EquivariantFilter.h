@@ -70,6 +70,39 @@ class EquivariantFilter : public ManifoldEKF<M> {
 
   G g_;  // Group element estimate
 
+ protected:
+
+  /**
+   * @brief Synchronization hooks for derived filters with dynamic runtime structure.
+   *
+   * Most fixed-dimension filters can rely on the public predict/update path only.
+   * These functions are primarily for dynamic cases (for example variable-size
+   * state/group representations) where derived classes need to resize/reset.
+   */
+
+  /// Reset reference, covariance, and group estimate; sync manifold state.
+  void resetReferenceAndGroup(const M& xi_ref, const CovarianceM& P,
+                              const G& g) {
+    xi_ref_ = xi_ref;
+    g_ = g;
+
+    // Recompute Dphi0 and innovation lift matrix from current reference state
+    act_on_ref_ = typename Symmetry::Orbit(xi_ref_);
+    const G identity_at_g = traits<G>::Compose(g_.inverse(), g_);
+    act_on_ref_(identity_at_g, &Dphi0_);
+    InnovationLift_ = Dphi0_.completeOrthogonalDecomposition().pseudoInverse();
+
+    if constexpr (DimM == Eigen::Dynamic) {
+      this->n_ = traits<M>::GetDimension(xi_ref_);
+      this->I_ = MatrixM::Identity(this->n_, this->n_);
+    }
+    this->P_ = P;
+    this->X_ = act_on_ref_(g_);
+  }
+
+  /// Access current reference state used as the EqF chart origin.
+  const M& referenceState() const { return xi_ref_; }
+
  public:
   /**
    * @brief Initialize the Equivariant Filter.
@@ -82,7 +115,8 @@ class EquivariantFilter : public ManifoldEKF<M> {
                     const G& X0 = traits<G>::Identity())
       : Base(xi_ref, Sigma), xi_ref_(xi_ref), act_on_ref_(xi_ref), g_(X0) {
     // Compute differential of action phi at identity (Dphi0)
-    act_on_ref_(traits<G>::Identity(), &Dphi0_);
+    const G identity_at_g = traits<G>::Compose(g_.inverse(), g_);
+    act_on_ref_(identity_at_g, &Dphi0_);
 
     // Precompute the Innovation Lift matrix (pseudo-inverse of Dphi0)
     InnovationLift_ = Dphi0_.completeOrthogonalDecomposition().pseudoInverse();
@@ -283,6 +317,23 @@ class EquivariantFilter : public ManifoldEKF<M> {
                         const gtsam::Vector& z, const Matrix& R) {
     this->validateInputs(prediction, H, z, R);
     update<Vector>(prediction, H, z, R);
+  }
+
+  /// Vector measurement update using a custom innovation lift delta_x=f(delta_xi).
+  template <typename InnovationLiftFn>
+  void updateWithVector(const gtsam::Vector& prediction, const Matrix& H,
+                        const gtsam::Vector& z, const Matrix& R,
+                        InnovationLiftFn&& innovationLift) {
+    this->validateInputs(prediction, H, z, R);
+
+    const gtsam::Vector innovation = traits<Vector>::Local(z, prediction);
+    const Matrix K = this->KalmanGain(H, R);
+    const TangentM delta_xi = -K * innovation;
+    const TangentG delta_x = innovationLift(delta_xi);
+
+    g_ = traits<G>::Compose(traits<G>::Expmap(delta_x), g_);
+    this->X_ = act_on_ref_(g_);
+    this->JosephUpdate(K, H, R);
   }
 };
 

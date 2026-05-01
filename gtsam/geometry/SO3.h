@@ -143,7 +143,7 @@ struct GTSAM_EXPORT ExpmapFunctor {
 
   // Ethan Eade's constants:
   double A;  // A = sin(theta) / theta
-  double B;  // B = (1 - cos(theta))
+  double B;  // B = (1 - cos(theta)) / theta^2
 
   /// Constructor with element of Lie algebra so(3)
   explicit ExpmapFunctor(const Vector3& omega);
@@ -155,7 +155,7 @@ struct GTSAM_EXPORT ExpmapFunctor {
   ExpmapFunctor(const Vector3& axis, double angle);
 
   /// Rodrigues formula
-  Matrix3 expmap() const;
+  inline Matrix3 expmap() const { return I_3x3 + A * W + B * WW; }
 
 protected:
   void init(double nearZeroThresholdSq);

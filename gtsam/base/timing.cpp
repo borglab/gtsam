@@ -23,6 +23,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstddef>
+#include <limits>
 #include <iomanip>
 #include <iostream>
 #include <map>
@@ -62,7 +63,8 @@ void TimingOutline::add(size_t usecs, size_t usecsWall) {
 
 /* ************************************************************************* */
 TimingOutline::TimingOutline(const std::string& label, size_t id) :
-    id_(id), t_(0), tWall_(0), t2_(0.0), tIt_(0), tMax_(0), tMin_(0), n_(0), myOrder_(
+    id_(id), t_(0), tWall_(0), t2_(0.0), tIt_(0), tMax_(0),
+        tMin_(std::numeric_limits<size_t>::max()), n_(0), myOrder_(
         0), lastChildOrder_(0), label_(label) {
 #if GTSAM_USE_BOOST_FEATURES
 #ifdef GTSAM_USING_NEW_BOOST_TIMERS
@@ -298,7 +300,7 @@ void TimingOutline::toc() {
 void TimingOutline::finishedIteration() {
   if (tIt_ > tMax_)
     tMax_ = tIt_;
-  if (tMin_ == 0 || tIt_ < tMin_)
+  if (tIt_ < tMin_)
     tMin_ = tIt_;
   tIt_ = 0;
   for(ChildMap::value_type& child: children_) {

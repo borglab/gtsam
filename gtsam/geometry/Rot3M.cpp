@@ -24,11 +24,27 @@
 
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/SO3.h>
+#include <cassert>
 #include <cmath>
 
 using namespace std;
 
 namespace gtsam {
+
+namespace {
+
+#if !defined(NDEBUG) && defined(GTSAM_EXTRA_CONSISTENCY_CHECKS)
+void assertRot3Invariant(const Rot3& rotation) {
+  const Matrix3 matrix = rotation.matrix();
+  assert(matrix.allFinite());
+  assert((matrix.transpose() * matrix - I_3x3).norm() <= 1e-9);
+  assert(std::abs(matrix.determinant() - 1.0) <= 1e-9);
+}
+#else
+void assertRot3Invariant(const Rot3&) {}
+#endif
+
+}  // namespace
 
 /* ************************************************************************* */
 Rot3::Rot3() : rot_(I_3x3) {}
@@ -136,7 +152,7 @@ Rot3 Rot3::normalized() const {
 
 /* ************************************************************************* */
 Rot3 Rot3::operator*(const Rot3& R2) const {
-  return Rot3(rot_*R2.rot_);
+  return Rot3(rot_ * R2.rot_);
 }
 
 /* ************************************************************************* */
@@ -157,7 +173,9 @@ Rot3 Rot3::Expmap(const Vector3& omega, OptionalJacobian<3, 3> H) {
   so3::DexpFunctor local(omega);
   if (H) *H = local.rightJacobian();
   const Matrix3 M = local.expmap();
-  return Rot3(M);
+  const Rot3 result(M);
+  assertRot3Invariant(result);
+  return result;
 }
       
 /* ************************************************************************* */
@@ -172,9 +190,13 @@ Rot3 Rot3::CayleyChart::Retract(const Vector3& omega, OptionalJacobian<3,3> H) {
   const double x2 = x * x, y2 = y * y, z2 = z * z;
   const double xy = x * y, xz = x * z, yz = y * z;
   const double f = 1.0 / (4.0 + x2 + y2 + z2), _2f = 2.0 * f;
-  return Rot3((4 + x2 - y2 - z2) * f, (xy - 2 * z) * _2f, (xz + 2 * y) * _2f,
-          (xy + 2 * z) * _2f, (4 - x2 + y2 - z2) * f, (yz - 2 * x) * _2f,
-          (xz - 2 * y) * _2f, (yz + 2 * x) * _2f, (4 - x2 - y2 + z2) * f);
+  const Rot3 result((4 + x2 - y2 - z2) * f, (xy - 2 * z) * _2f,
+                    (xz + 2 * y) * _2f, (xy + 2 * z) * _2f,
+                    (4 - x2 + y2 - z2) * f, (yz - 2 * x) * _2f,
+                    (xz - 2 * y) * _2f, (yz + 2 * x) * _2f,
+                    (4 - x2 - y2 + z2) * f);
+  assertRot3Invariant(result);
+  return result;
 }
 
 /* ************************************************************************* */
@@ -208,9 +230,15 @@ Vector3 Rot3::CayleyChart::Local(const Rot3& R, OptionalJacobian<3,3> H) {
 /* ************************************************************************* */
 Rot3 Rot3::ChartAtOrigin::Retract(const Vector3& omega, ChartJacobian H) {
   static const CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE;
-  if (mode == Rot3::EXPMAP) return Expmap(omega, H);
-  if (mode == Rot3::CAYLEY) return CayleyChart::Retract(omega, H);
-  else throw std::runtime_error("Rot3::Retract: unknown mode");
+  Rot3 result = Rot3();
+  if (mode == Rot3::EXPMAP)
+    result = Expmap(omega, H);
+  else if (mode == Rot3::CAYLEY)
+    result = CayleyChart::Retract(omega, H);
+  else
+    throw std::runtime_error("Rot3::Retract: unknown mode");
+  assertRot3Invariant(result);
+  return result;
 }
 
 /* ************************************************************************* */

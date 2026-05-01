@@ -160,8 +160,7 @@ namespace gtsam {
       static_assert(IsManifold<T>::value,
                     "noiseModel::matchesDimension requires a manifold type.");
       if constexpr (traits<T>::dimension == Eigen::Dynamic) {
-        return model.dim() ==
-               static_cast<size_t>(traits<T>::GetDimension(measured));
+        return model.dim() == traits<T>::GetDimension(measured);
       } else {
         return model.dim() == static_cast<size_t>(traits<T>::dimension);
       }
@@ -673,7 +672,7 @@ namespace gtsam {
         static_assert(IsManifold<T>::value,
                       "noiseModel::Unit::Create requires a manifold type.");
         if constexpr (traits<T>::dimension == Eigen::Dynamic) {
-          return Create(static_cast<size_t>(traits<T>::GetDimension(measured)));
+          return Create(traits<T>::GetDimension(measured));
         } else {
           static const shared_ptr kDefault =
               Create(static_cast<size_t>(traits<T>::dimension));

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "$baseline_comment": [
+    "`builtin-baseline` pins the vcpkg *registry snapshot* (a commit in the vcpkg repo).",
+    "It makes dependency resolution reproducible across machines/CI.",
+    "Policy suggestion for GTSAM: only bump this SHA in a dedicated PR (with CI green), so upgrades are deliberate.",
+    "Current commit is from 2025-01-16."
+  ],
+  "builtin-baseline": "66c0373dc7fca549e5803087b9487edfe3aca0a1",
+
+  "dependencies": [
+    {
+      "$mkl_comment": [
+        "MKL is only used on Windows/Linux (not macOS).",
+        "The platform expression uses OR; `windows,linux` is equivalent to `windows | linux`.",
+        "If we later want a different BLAS/LAPACK backend on macOS, add it as a separate dependency with `platform: osx`."
+      ],
+      "name": "intel-mkl",
+      "platform": "windows | linux"
+    },
+    "tbb",
+    "pybind11",
+    "geographiclib",
+    "eigen3",
+    "boost-concept-check",
+    "boost-fusion",
+    "boost-graph",
+    "boost-move",
+    "boost-optional",
+    "boost-phoenix",
+    "boost-pool",
+    "boost-program-options",
+    "boost-random",
+    "boost-range",
+    "boost-serialization",
+    "boost-smart-ptr",
+    "boost-spirit",
+    "boost-timer",
+    "boost-tokenizer",
+    "boost-type-traits"
+  ]
+}

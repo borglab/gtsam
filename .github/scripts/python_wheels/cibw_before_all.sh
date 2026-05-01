@@ -8,7 +8,7 @@ set -x
 
 PYTHON_VERSION="$1"
 PROJECT_DIR="$2"
-ARCH=$(uname -m)
+WHEEL_BUILD_JOBS=2
 
 export PYTHON="python${PYTHON_VERSION}"
 
@@ -33,11 +33,26 @@ BOOST_PREFIX="$HOME/opt/boost"
 ./bootstrap.sh --prefix=${BOOST_PREFIX}
 
 if [ "$(uname)" == "Linux" ]; then
-    ./b2 install --prefix=${BOOST_PREFIX} --with=all -d0
+    ./b2 -j${WHEEL_BUILD_JOBS} install --prefix=${BOOST_PREFIX} -d0 --with-graph \
+        --with-move --with-optional --with-program_options --with-random \
+        --with-serialization --with-smart_ptr --with-timer --with-chrono
 elif [ "$(uname)" == "Darwin" ]; then
-    ./b2 install --prefix=${BOOST_PREFIX} --with=all -d0 \
+    ./b2 -j${WHEEL_BUILD_JOBS} install --prefix=${BOOST_PREFIX} -d0 --with-graph \
+        --with-move --with-optional --with-program_options --with-random \
+        --with-serialization --with-smart_ptr --with-timer --with-chrono \
+        architecture=arm \
         cxxflags="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
         linkflags="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}"
+    ./b2 -j${WHEEL_BUILD_JOBS} install --prefix=${BOOST_PREFIX}/x86 -d0 --with-graph \
+        --with-move --with-optional --with-program_options --with-random \
+        --with-serialization --with-smart_ptr --with-timer --with-chrono \
+        architecture=x86 \
+        cxxflags="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
+        linkflags="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}"
+    for dylib in ${BOOST_PREFIX}/lib/*.dylib; do
+        lipo -create -output $dylib $dylib ${BOOST_PREFIX}/x86/lib/$(basename $dylib)
+    done
+    rm -r ${BOOST_PREFIX}/x86
 fi
 cd ..
 
@@ -67,6 +82,7 @@ rm -rf CMakeCache.txt CMakeFiles
 cmake $PROJECT_DIR \
     -B build \
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
+    -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
     -DGTSAM_BUILD_TESTS=OFF \
     -DGTSAM_BUILD_UNSTABLE=${GTSAM_BUILD_UNSTABLE:-ON} \
     -DGTSAM_USE_QUATERNIONS=OFF \
@@ -87,11 +103,5 @@ doxygen build/doc/Doxyfile
 
 # Install the Python wrapper module and generate Python stubs
 cd $PROJECT_DIR/build/python
-if [ "$(uname)" == "Linux" ]; then
-    make -j $(nproc) install
-    make -j $(nproc) python-stubs
-elif [ "$(uname)" == "Darwin" ]; then
-    make -j $(sysctl -n hw.logicalcpu) install
-    make -j $(sysctl -n hw.logicalcpu) python-stubs
-fi
-
+make -j${WHEEL_BUILD_JOBS} install
+make -j${WHEEL_BUILD_JOBS} python-stubs

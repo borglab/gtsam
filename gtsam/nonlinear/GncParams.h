@@ -38,6 +38,13 @@ enum GncLossType {
   TLS /*Truncated least squares*/
 };
 
+/// Choice of GNC scheduling strategy.
+/// SuperLinear reference https://openaccess.thecvf.com/content/CVPR2023/papers/Peng_On_the_Convergence_of_IRLS_and_Its_Variants_in_Outlier-Robust_CVPR_2023_paper.pdf
+enum class GncScheduler {
+  Linear,
+  SuperLinear
+};
+
 template<class BaseOptimizerParameters>
 class GncParams {
  public:
@@ -67,11 +74,14 @@ class GncParams {
   BaseOptimizerParameters baseOptimizerParams;  ///< Optimization parameters used to solve the weighted least squares problem at each GNC iteration
   /// any other specific GNC parameters:
   GncLossType lossType = TLS;  ///< Default loss
+  GncScheduler scheduler = GncScheduler::Linear;  ///< Default scheduler
   size_t maxIterations = 100;  ///<  Maximum number of iterations
   double muStep = 1.4;  ///< Multiplicative factor to reduce/increase the mu in gnc
   double relativeCostTol = 1e-5;  ///< If relative cost change is below this threshold, stop iterating
   double weightsTol = 1e-4;  ///< If the weights are within weightsTol from being binary, stop iterating (only for TLS)
+  double muMax = 1e16;  ///< Maximum value of mu in GNC, acts as a cap (only for TLS)
   Verbosity verbosity = SILENT;  ///< Verbosity level
+  bool allowNonNoiseModelFactors = false;  ///< If true, factors without noise model are not reweighted and not not included in mu calculation
 
   /// Use IndexVector for inliers and outliers since it is fast
   using IndexVector = FastVector<uint64_t>;
@@ -83,6 +93,11 @@ class GncParams {
   /// Set the robust loss function to be used in GNC (chosen among the ones in GncLossType).
   void setLossType(const GncLossType type) {
     lossType = type;
+  }
+
+  /// Set the scheduler type.
+  void setScheduler(const GncScheduler s) {
+    scheduler = s;
   }
 
   /// Set the maximum number of iterations in GNC (changing the max nr of iters might lead to less accurate solutions and is not recommended).
@@ -137,13 +152,19 @@ class GncParams {
     std::sort(knownOutliers.begin(), knownOutliers.end());
   }
 
+  void setAllowNonNoiseModelFactors(bool allow) {
+    allowNonNoiseModelFactors = allow;
+  }
+
   /// Equals.
   bool equals(const GncParams& other, double tol = 1e-9) const {
     return baseOptimizerParams.equals(other.baseOptimizerParams)
         && lossType == other.lossType && maxIterations == other.maxIterations
         && std::fabs(muStep - other.muStep) <= tol
+        && scheduler == other.scheduler
         && verbosity == other.verbosity && knownInliers == other.knownInliers
-        && knownOutliers == other.knownOutliers;
+        && knownOutliers == other.knownOutliers
+        && allowNonNoiseModelFactors == other.allowNonNoiseModelFactors;
   }
 
   /// Print.
@@ -159,6 +180,16 @@ class GncParams {
       default:
         throw std::runtime_error("GncParams::print: unknown loss type.");
     }
+    switch (scheduler) {
+      case GncScheduler::Linear:
+        std::cout << "scheduler: Linear" << "\n";
+        break;
+      case GncScheduler::SuperLinear:
+        std::cout << "scheduler: SuperLinear" << "\n";
+        break;
+      default:
+        throw std::runtime_error("GncParams::print: unknown scheduler type.");
+    }
     std::cout << "maxIterations: " << maxIterations << "\n";
     std::cout << "muStep: " << muStep << "\n";
     std::cout << "relativeCostTol: " << relativeCostTol << "\n";
@@ -168,6 +199,7 @@ class GncParams {
       std::cout << "knownInliers: " << knownInliers[i] << "\n";
     for (size_t i = 0; i < knownOutliers.size(); i++)
       std::cout << "knownOutliers: " << knownOutliers[i] << "\n";
+    std::cout << "allowNonNoiseModelFactors: " << allowNonNoiseModelFactors << "\n";
     baseOptimizerParams.print("Base optimizer params: ");
   }
 };

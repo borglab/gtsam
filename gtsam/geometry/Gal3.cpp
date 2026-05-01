@@ -389,29 +389,6 @@ Gal3::Jacobian Gal3::AdjointMap() const {
   return Ad;
 }
 
-//------------------------------------------------------------------------------
-Gal3::TangentVector Gal3::Adjoint(const TangentVector& xi, OptionalJacobian<10, 10> H_g, OptionalJacobian<10, 10> H_xi) const {
-    Jacobian Ad = AdjointMap();
-    TangentVector y = Ad * xi;
-
-    if (H_xi) {
-        *H_xi = Ad;
-    }
-
-    if (H_g) {
-        // NOTE: Using numerical derivative for the Jacobian with respect to
-        // the group element instead of deriving the analytical expression.
-        // Future work to use analytical instead.
-        std::function<TangentVector(const Gal3&, const TangentVector&)> adjoint_action_wrt_g =
-          [&](const Gal3& g_in, const TangentVector& xi_in) {
-              return g_in.Adjoint(xi_in);
-          };
-        *H_g = numericalDerivative21(adjoint_action_wrt_g, *this, xi, 1e-7);
-    }
-    return y;
-}
-
-//------------------------------------------------------------------------------
 Gal3::Jacobian Gal3::adjointMap(const TangentVector& xi) {
   // Implements adjoint representation as in Equation 28, Page 10
   const Matrix3 Omega = skewSymmetric(xi_w(xi));
@@ -429,16 +406,6 @@ Gal3::Jacobian Gal3::adjointMap(const TangentVector& xi) {
 }
 
 //------------------------------------------------------------------------------
-Gal3::TangentVector Gal3::adjoint(const TangentVector& xi, const TangentVector& y, OptionalJacobian<10, 10> Hxi, OptionalJacobian<10, 10> Hy) {
-    Jacobian ad_xi = adjointMap(xi);
-    if (Hy) *Hy = ad_xi;
-    if (Hxi) {
-         *Hxi = -adjointMap(y);
-    }
-    return ad_xi * y;
-}
-
-//------------------------------------------------------------------------------
 Gal3::Jacobian Gal3::ExpmapDerivative(const TangentVector& xi) {
   Gal3::Jacobian J;
   Expmap(xi, J);
@@ -446,16 +413,48 @@ Gal3::Jacobian Gal3::ExpmapDerivative(const TangentVector& xi) {
 }
 
 //------------------------------------------------------------------------------
+Gal3::Jacobian Gal3::LogmapDerivative(const TangentVector& xi) {
+  // Analytical implementation via the chain rule identity
+  //   Logmap(Expmap(xi)) = xi
+  //   => dLogmap/dg |_{g=Expmap(xi)} * dExpmap/dxi = I
+  //   => LogmapDerivative(xi) = ExpmapDerivative(xi)^{-1}
+  //
+  // Use the known SO(3) top-left block analytically and treat the remaining
+  // 7x7 block of ExpmapDerivative as opaque. Since the Jacobian is block lower
+  // triangular,
+  //
+  //   J = [Jr  0]
+  //       [L   B]
+  //
+  // with Jr the SO(3) right Jacobian, we can invert it as
+  //
+  //   J^{-1} = [Jr^{-1}                  0]
+  //            [-B^{-1} L Jr^{-1}   B^{-1}]
+  //
+  // This avoids a dense 10x10 inverse while preserving the exact SO(3) block.
+  if (xi.norm() < kSmallAngleThreshold) return Jacobian::Identity();
+
+  const Vector3 w = xi_w(xi);
+  const so3::DexpFunctor local(w);
+  const Matrix3 Jr_inv = local.InvJacobian().right();
+
+  const Jacobian J = ExpmapDerivative(xi);  
+  const auto L = J.block<7, 3>(3, 0);
+  const Matrix7 B = J.block<7, 7>(3, 3);
+
+  Eigen::PartialPivLU<Matrix7> lu(B);
+
+  Jacobian H = Jacobian::Zero();
+  H.block<3, 3>(0, 0) = Jr_inv;
+  H.block<7, 7>(3, 3) = lu.solve(Matrix7::Identity());
+  H.block<7, 3>(3, 0) = -lu.solve(L * Jr_inv);
+  return H;
+}
+
+//------------------------------------------------------------------------------
 Gal3::Jacobian Gal3::LogmapDerivative(const Gal3& g) {
-    // Related to the inverse of left Jacobian in Equations 31-36, Pages 10-11
-    // NOTE: Using numerical approximation instead of implementing the analytical
-    // expression for the inverse Jacobian. Future work to replace this
-    // with analytical derivative.
-    TangentVector xi = Gal3::Logmap(g);
-    if (xi.norm() < kSmallAngleThreshold) return Jacobian::Identity();
-    std::function<TangentVector(const Gal3&)> fn =
-        [](const Gal3& g_in) { return Gal3::Logmap(g_in); };
-    return numericalDerivative11<TangentVector, Gal3>(fn, g, 1e-5);
+  TangentVector xi = Gal3::Logmap(g);
+  return LogmapDerivative(xi);
 }
 
 //------------------------------------------------------------------------------

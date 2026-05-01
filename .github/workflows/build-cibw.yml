@@ -33,11 +33,6 @@ jobs:
         include:
           # Linux x86_64
           - os: ubuntu-latest
-            python_version: "3.10"
-            cibw_python_version: 310
-            platform_id: manylinux_x86_64
-            manylinux_image: manylinux2014
-          - os: ubuntu-latest
             python_version: "3.11"
             cibw_python_version: 311
             platform_id: manylinux_x86_64
@@ -50,16 +45,16 @@ jobs:
           - os: ubuntu-latest
             python_version: "3.13"
             cibw_python_version: 313
+            platform_id: manylinux_x86_64
+            manylinux_image: manylinux2014
+          - os: ubuntu-latest
+            python_version: "3.14"
+            cibw_python_version: 314
             platform_id: manylinux_x86_64
             manylinux_image: manylinux2014
 
           # Linux aarch64
           - os: ubuntu-24.04-arm
-            python_version: "3.10"
-            cibw_python_version: 310
-            platform_id: manylinux_aarch64
-            manylinux_image: manylinux2014
-          - os: ubuntu-24.04-arm
             python_version: "3.11"
             cibw_python_version: 311
             platform_id: manylinux_aarch64
@@ -74,42 +69,29 @@ jobs:
             cibw_python_version: 313
             platform_id: manylinux_aarch64
             manylinux_image: manylinux2014
-
-          # MacOS x86_64
-          - os: macos-15-intel
-            python_version: "3.10"
-            cibw_python_version: 310
-            platform_id: macosx_x86_64
-          - os: macos-15-intel
-            python_version: "3.11"
-            cibw_python_version: 311
-            platform_id: macosx_x86_64
-          - os: macos-15-intel
-            python_version: "3.12"
-            cibw_python_version: 312
-            platform_id: macosx_x86_64
-          - os: macos-15-intel
-            python_version: "3.13"
-            cibw_python_version: 313
-            platform_id: macosx_x86_64
+          - os: ubuntu-24.04-arm
+            python_version: "3.14"
+            cibw_python_version: 314
+            platform_id: manylinux_aarch64
+            manylinux_image: manylinux2014
 
           # MacOS arm64
           - os: macos-latest
-            python_version: "3.10"
-            cibw_python_version: 310
-            platform_id: macosx_arm64
-          - os: macos-latest
             python_version: "3.11"
             cibw_python_version: 311
-            platform_id: macosx_arm64
+            platform_id: macosx_universal2
           - os: macos-latest
             python_version: "3.12"
             cibw_python_version: 312
-            platform_id: macosx_arm64
+            platform_id: macosx_universal2
           - os: macos-latest
             python_version: "3.13"
             cibw_python_version: 313
-            platform_id: macosx_arm64
+            platform_id: macosx_universal2
+          - os: macos-latest
+            python_version: "3.14"
+            cibw_python_version: 314
+            platform_id: macosx_universal2
 
     steps:
       - name: Checkout
@@ -131,9 +113,10 @@ jobs:
         run: |
           python3 -m pip install -r python/dev_requirements.txt
           if [ "$RUNNER_OS" == "Linux" ]; then
-            sudo apt-get install -y wget libicu-dev python3-pip python3-setuptools libboost-all-dev ninja-build
+            sudo apt update
+            sudo apt-get install -y libicu-dev python3-pip python3-setuptools libboost-all-dev
           elif [ "$RUNNER_OS" == "macOS" ]; then
-            brew install wget icu4c boost ninja python-setuptools
+            brew install boost python-setuptools
           else
             echo "$RUNNER_OS not supported"
             exit 1
@@ -146,7 +129,7 @@ jobs:
       # the wheels to ensure platform compatibility.
       - name: Run CMake
         run: |
-          cmake . -B build -DGTSAM_BUILD_PYTHON=1 -DGTSAM_PYTHON_VERSION=${{ matrix.python_version }}
+          cmake -B build -G Ninja -DGTSAM_BUILD_PYTHON=1 -DGTSAM_PYTHON_VERSION=${{ matrix.python_version }}
 
       # If on macOS, we previously installed boost using homebrew for the first build.
       # We need to uninstall it before building the wheels with cibuildwheel, which will
@@ -163,6 +146,7 @@ jobs:
           CIBW_MANYLINUX_X86_64_IMAGE: ${{ matrix.manylinux_image }}
           CIBW_MANYLINUX_AARCH64_IMAGE: ${{ matrix.manylinux_image }}
           CIBW_ARCHS: all
+          CIBW_ARCHS_MACOS: universal2
           CIBW_ENVIRONMENT_PASS_LINUX: DEVELOP TIMESTAMP
 
           # Set the minimum required MacOS version for the wheels.
@@ -180,6 +164,17 @@ jobs:
           CIBW_BUILD_VERBOSITY: 1
 
         run: bash .github/scripts/python_wheels/build_wheels.sh
+
+      - name: Test wheel
+        run: |
+          python3 -m pip install wheelhouse/*.whl
+          python3 -c "import platform; print(platform.machine()); import gtsam"
+          if [ "$RUNNER_OS" == "macOS" ]; then
+            # Uninstall numpy and reinstall wheel to get x86 numpy for smoke test
+            arch -x86_64 python3 -m pip uninstall -y numpy
+            arch -x86_64 python3 -m pip install wheelhouse/*.whl
+            arch -x86_64 python3 -c "import platform; print(platform.machine()); import gtsam;"
+          fi
 
       - name: Store artifacts
         uses: actions/upload-artifact@v4

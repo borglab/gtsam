@@ -133,10 +133,9 @@ TEST(OrientedPlane3, errorVector) {
                       Vector2(actual[0], actual[1])));
   EXPECT(assert_equal(plane1.distance() - plane2.distance(), actual[2]));
 
-  std::function<Vector3(const OrientedPlane3&, const OrientedPlane3&)> f =
-    [](const OrientedPlane3& p1, const OrientedPlane3& p2) {
-      return p1.errorVector(p2);
-    };
+  auto f = [](const OrientedPlane3& p1, const OrientedPlane3& p2) {
+    return p1.errorVector(p2);
+  };
   expectedH1 = numericalDerivative21(f, plane1, plane2);
   expectedH2 = numericalDerivative22(f, plane1, plane2);
   EXPECT(assert_equal(expectedH1, actualH1, 1e-5));
@@ -147,9 +146,7 @@ TEST(OrientedPlane3, errorVector) {
 TEST(OrientedPlane3, jacobian_retract) {
   OrientedPlane3 plane(-1, 0.1, 0.2, 5);
   Matrix33 H_actual;
-  std::function<OrientedPlane3(const Vector3&)> f = [&plane](const Vector3& v) {
-    return plane.retract(v);
-  };
+  auto f = [&plane](const Vector3& v) { return plane.retract(v); };
 
   {
       Vector3 v(-0.1, 0.2, 0.3);
@@ -170,9 +167,7 @@ TEST(OrientedPlane3, jacobian_normal) {
   Matrix23 H_actual, H_expected;
   OrientedPlane3 plane(-1, 0.1, 0.2, 5);
 
-  std::function<Unit3(const OrientedPlane3&)> f = [](const OrientedPlane3& p) {
-    return p.normal();
-  };
+  auto f = [](const OrientedPlane3& p) { return p.normal(); };
 
   H_expected = numericalDerivative11(f, plane);
   plane.normal(H_actual);
@@ -184,9 +179,7 @@ TEST(OrientedPlane3, jacobian_distance) {
   Matrix13 H_actual, H_expected;
   OrientedPlane3 plane(-1, 0.1, 0.2, 5);
 
-  std::function<double(const OrientedPlane3&)> f = [](const OrientedPlane3& p) {
-    return p.distance();
-  };
+  auto f = [](const OrientedPlane3& p) { return p.distance(); };
 
   H_expected = numericalDerivative11(f, plane);
   plane.distance(H_actual);

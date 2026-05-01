@@ -25,10 +25,11 @@
 #include <gtsam/linear/SubgraphSolver.h>
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/symbolic/IndexedJunctionTree.h>
 
 
-#include <limits>
 #include <stdexcept>
 #include <iostream>
 #include <iomanip>
@@ -139,8 +140,15 @@ VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph& gfg,
   // Check which solver we are using
   if (params.isMultifrontal()) {
     // Multifrontal QR or Cholesky (decided by params.getEliminationFunction())
-    if (params.ordering)
-      delta = gfg.optimize(*params.ordering, params.getEliminationFunction());
+    if (params.ordering) {
+      if (!indexedJunctionTreeCache_.has_value()) {
+        indexedJunctionTreeCache_ = gfg.buildIndexedJunctionTree(*params.ordering);
+      }
+
+      delta = gfg.eliminateMultifrontal(*indexedJunctionTreeCache_,
+                                        params.getEliminationFunction())
+                  ->optimize();
+    }
     else
       delta = gfg.optimize(params.getEliminationFunction());
   } else if (params.isSequential()) {

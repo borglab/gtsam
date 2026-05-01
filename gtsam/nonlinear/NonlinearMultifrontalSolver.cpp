@@ -21,8 +21,7 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/MultifrontalClique.h>
 #include <gtsam/nonlinear/NonlinearMultifrontalSolver.h>
-#include <gtsam/symbolic/SymbolicEliminationTree.h>
-#include <gtsam/symbolic/SymbolicFactorGraph.h>
+#include <gtsam/symbolic/IndexedJunctionTree.h>
 #include <gtsam/symbolic/SymbolicJunctionTree.h>
 
 namespace gtsam {
@@ -48,28 +47,6 @@ std::unordered_set<Key> collectFixedKeys(const NonlinearFactorGraph& graph) {
     }
   }
   return fixedKeys;
-}
-
-SymbolicFactorGraph buildSymbolicGraph(
-    const NonlinearFactorGraph& graph,
-    const std::unordered_set<Key>& fixedKeys) {
-  SymbolicFactorGraph symbolicGraph;
-  symbolicGraph.reserve(graph.size());
-  for (size_t i = 0; i < graph.size(); ++i) {
-    if (!graph[i]) continue;
-    KeyVector keys;
-    keys.reserve(graph[i]->size());
-    for (Key key : graph[i]->keys()) {
-      if (!fixedKeys.count(key)) {
-        keys.push_back(key);
-      }
-    }
-    if (keys.empty()) continue;
-    const size_t rows = graph[i]->dim();
-    symbolicGraph.emplace_shared<internal::IndexedSymbolicFactor>(keys, i,
-                                                                  rows);
-  }
-  return symbolicGraph;
 }
 
 }  // namespace
@@ -99,12 +76,17 @@ MultifrontalSolver::PrecomputedData NonlinearMultifrontalSolver::Precompute(
     }
   }
 
-  SymbolicFactorGraph symbolicGraph = buildSymbolicGraph(graph, fixedKeys);
-  SymbolicEliminationTree eliminationTree(symbolicGraph, reducedOrdering);
-  SymbolicJunctionTree junctionTree(eliminationTree);
+  IndexedJunctionTree indexedJunctionTree(graph, reducedOrdering, fixedKeys);
+  
+  std::vector<size_t> rowCounts;
+  rowCounts.reserve(graph.size());
+  for (const auto& factor : graph) {
+    size_t dim = factor ? factor->dim() : 0;
+    rowCounts.push_back(dim);
+  }
 
   return MultifrontalSolver::PrecomputedData{
-      std::move(dims), std::move(fixedKeys), std::move(junctionTree)};
+      std::move(dims), std::move(fixedKeys), std::move(indexedJunctionTree), std::move(rowCounts)};
 }
 
 /* ************************************************************************* */

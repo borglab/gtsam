@@ -188,17 +188,6 @@ class GTSAM_EXPORT Gal3 : public MatrixLieGroup<Gal3, 10, 5> {
   /// Calculate Adjoint map Ad_g
   Jacobian AdjointMap() const;
 
-  /// Apply this element's AdjointMap Ad_g to a tangent vector xi_base at
-  /// identity
-  TangentVector Adjoint(const TangentVector& xi_base,
-                        OptionalJacobian<10, 10> H_g = {},
-                        OptionalJacobian<10, 10> H_xi = {}) const;
-
-  /// The adjoint action `ad(xi, y)` = `adjointMap(xi) * y`
-  static TangentVector adjoint(const TangentVector& xi, const TangentVector& y,
-                               OptionalJacobian<10, 10> Hxi = {},
-                               OptionalJacobian<10, 10> Hy = {});
-
   /// Compute the adjoint map `ad(xi)` associated with tangent vector xi
   static Jacobian adjointMap(const TangentVector& xi);
 
@@ -207,6 +196,9 @@ class GTSAM_EXPORT Gal3 : public MatrixLieGroup<Gal3, 10, 5> {
 
   /// Derivative of Logmap(g) w.r.t. g
   static Jacobian LogmapDerivative(const Gal3& g);
+
+  /// Derivative of Logmap(g), tangent version
+  static Jacobian LogmapDerivative(const TangentVector& xi);
 
   /// Chart at origin, uses Expmap/Logmap for Retract/Local
   struct ChartAtOrigin {

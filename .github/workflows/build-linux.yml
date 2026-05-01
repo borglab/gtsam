@@ -94,6 +94,11 @@ jobs:
         run: |
           echo "GTSAM_ENABLE_GEOGRAPHICLIB=ON" >> $GITHUB_ENV
 
+      - name: Enable Consistency Checks (Debug)
+        if: matrix.build_type == 'Debug'
+        run: |
+          echo "GTSAM_ENABLE_CONSISTENCY_CHECKS=ON" >> $GITHUB_ENV
+
       - name: Build and Test
         run: |
           .github/scripts/unix.sh -t

@@ -73,7 +73,7 @@ class ManifoldEKF {
     n_ = traits<M>::GetDimension(X0);
     if constexpr (Dim == Eigen::Dynamic) {
       // Validate dimensions of initial covariance P0.
-      if (P0.rows() != n_ || P0.cols() != n_) {
+      if (!isMatrixOfSize(P0, n_, n_)) {
         throw std::invalid_argument(
             "ManifoldEKF: Initial covariance P0 dimensions (" +
             std::to_string(P0.rows()) + "x" + std::to_string(P0.cols()) +
@@ -97,7 +97,7 @@ class ManifoldEKF {
   const Covariance& covariance() const { return P_; }
 
   /// @return runtime dimension of the manifold.
-  int dimension() const { return n_; }
+  size_t dimension() const { return n_; }
 
   /**
    * Basic predict step: Updates state and covariance given the predicted next
@@ -115,8 +115,7 @@ class ManifoldEKF {
    */
   void predict(const M& X_next, const Jacobian& F, const Covariance& Q) {
     if constexpr (Dim == Eigen::Dynamic) {
-      if (F.rows() != n_ || F.cols() != n_ || Q.rows() != n_ ||
-          Q.cols() != n_) {
+      if (!isMatrixOfSize(F, n_, n_) || !isMatrixOfSize(Q, n_, n_)) {
         throw std::invalid_argument(
             "ManifoldEKF::predict: Dynamic F/Q dimensions must match state "
             "dimension " +
@@ -257,29 +256,37 @@ class ManifoldEKF {
   /// Validate inputs to update.
   void validateInputs(const gtsam::Vector& prediction, const Matrix& H,
                       const gtsam::Vector& z, const Matrix& R) {
-    const int m = static_cast<int>(prediction.size());
-    if (static_cast<int>(z.size()) != m) {
+    const size_t m = static_cast<size_t>(prediction.size());
+    if (static_cast<size_t>(z.size()) != m) {
       throw std::invalid_argument(
           "ManifoldEKF::updateWithVector: prediction and z must have same "
           "length.");
     }
-    if (H.rows() != m || H.cols() != n_) {
+    if (!isMatrixOfSize(H, m, n_)) {
       throw std::invalid_argument(
           "ManifoldEKF::updateWithVector: H must be m x n where m = "
           "measurement size and n = state dimension.");
     }
-    if (R.rows() != m || R.cols() != m) {
+    if (!isMatrixOfSize(R, m, m)) {
       throw std::invalid_argument(
           "ManifoldEKF::updateWithVector: R must be m x m where m = "
           "measurement size.");
     }
   }
 
+  /// Check whether a matrix has the expected runtime dimensions.
+  template <typename MatrixType>
+  static bool isMatrixOfSize(const MatrixType& matrix, size_t rows,
+                             size_t cols) {
+    return static_cast<size_t>(matrix.rows()) == rows &&
+           static_cast<size_t>(matrix.cols()) == cols;
+  }
+
  protected:
   M X_;           ///< Manifold state estimate.
   Covariance P_;  ///< Covariance (Eigen::Matrix<double, Dim, Dim>).
   Jacobian I_;    ///< Identity matrix sized to the state dimension.
-  int n_;         ///< Runtime tangent space dimension of M.
+  size_t n_;      ///< Runtime tangent space dimension of M.
 
  private:
   // Detection helper: check if traits<T>::Retract(x, v, Jacobian*) is valid.

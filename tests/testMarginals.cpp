@@ -27,6 +27,7 @@
 
 // for modeling measurement uncertainty - all models included here
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/config.h>
 
 // add in headers for specific factors
 #include <gtsam/slam/BetweenFactor.h>
@@ -36,6 +37,68 @@
 
 using namespace std;
 using namespace gtsam;
+
+namespace {
+
+/* ************************************************************************* */
+KeyVector uniqueSortedKeys(const KeyVector& keys) {
+  KeyVector result = keys;
+  std::sort(result.begin(), result.end());
+  result.erase(std::unique(result.begin(), result.end()), result.end());
+  return result;
+}
+
+/* ************************************************************************* */
+GaussianFactorGraph legacyJointFactorGraph(
+    const GaussianFactorGraph& graph, const Ordering& ordering,
+    const KeyVector& variables, Marginals::Factorization factorization) {
+  const KeyVector sortedVariables = uniqueSortedKeys(variables);
+  if (factorization == Marginals::CHOLESKY) {
+    GaussianBayesTree bayesTree =
+        *graph.eliminateMultifrontal(ordering, EliminatePreferCholesky);
+    if (sortedVariables.size() == 2) {
+      return *bayesTree.joint(sortedVariables[0], sortedVariables[1],
+                              EliminatePreferCholesky);
+    }
+    return GaussianFactorGraph(*graph.marginalMultifrontalBayesTree(
+        sortedVariables, EliminatePreferCholesky));
+  } else {
+    GaussianBayesTree bayesTree =
+        *graph.eliminateMultifrontal(ordering, EliminateQR);
+    if (sortedVariables.size() == 2) {
+      return *bayesTree.joint(sortedVariables[0], sortedVariables[1],
+                              EliminateQR);
+    }
+    return GaussianFactorGraph(
+        *graph.marginalMultifrontalBayesTree(sortedVariables, EliminateQR));
+  }
+}
+
+/* ************************************************************************* */
+Matrix legacyJointCovariance(const GaussianFactorGraph& graph,
+                             const Ordering& ordering,
+                             const KeyVector& variables,
+                             Marginals::Factorization factorization) {
+  const KeyVector sortedVariables = uniqueSortedKeys(variables);
+  if (sortedVariables.size() == 1) {
+    GaussianBayesTree bayesTree =
+        factorization == Marginals::CHOLESKY
+            ? *graph.eliminateMultifrontal(ordering, EliminatePreferCholesky)
+            : *graph.eliminateMultifrontal(ordering, EliminateQR);
+    return bayesTree.marginalFactor(sortedVariables.front())
+        ->information()
+        .inverse();
+  }
+
+  const GaussianFactorGraph jointFG =
+      legacyJointFactorGraph(graph, ordering, sortedVariables, factorization);
+  const Matrix augmentedInfo = jointFG.augmentedHessian();
+  const Matrix information = augmentedInfo.topLeftCorner(
+      augmentedInfo.rows() - 1, augmentedInfo.cols() - 1);
+  return information.inverse();
+}
+
+}  // namespace
 
 TEST(Marginals, planarSLAMmarginals) {
 
@@ -189,6 +252,18 @@ TEST(Marginals, planarSLAMmarginals) {
   marginals = Marginals(gfg, soln_lin, Marginals::QR);
   testMarginals(marginals);
   testJointMarginals(marginals);
+
+  const Ordering ordering = Ordering::Colamd(gfg);
+  for (const auto factorization : {Marginals::CHOLESKY, Marginals::QR}) {
+    Marginals orderedMarginals(gfg, soln_lin, ordering, factorization);
+    const KeyVector unorderedVariables{x3, l2, x1};
+    const Matrix actual =
+        orderedMarginals.jointMarginalCovariance(unorderedVariables)
+            .fullMatrix();
+    const Matrix expected =
+        legacyJointCovariance(gfg, ordering, unorderedVariables, factorization);
+    EXPECT(assert_equal(expected, actual, 1e-8));
+  }
 }
 
 /* ************************************************************************* */
@@ -256,6 +331,129 @@ TEST(Marginals, order) {
   marginals = Marginals(gfg, vals);
   set = gfg.keys();
   testMarginals(marginals, set);
+}
+
+#ifdef GTSAM_SUPPORT_NESTED_DISSECTION
+/* ************************************************************************* */
+TEST(Marginals, orderingEquivalence) {
+  NonlinearFactorGraph graph;
+  graph.addPrior(0, Pose2(), noiseModel::Unit::Create(3));
+  graph.emplace_shared<BetweenFactor<Pose2>>(0, 1, Pose2(1, 0, 0),
+                                             noiseModel::Unit::Create(3));
+  graph.emplace_shared<BetweenFactor<Pose2>>(1, 2, Pose2(1, 0, 0),
+                                             noiseModel::Unit::Create(3));
+  graph.emplace_shared<BetweenFactor<Pose2>>(2, 3, Pose2(1, 0, 0),
+                                             noiseModel::Unit::Create(3));
+  graph.emplace_shared<BetweenFactor<Pose2>>(3, 4, Pose2(1, 0, 0),
+                                             noiseModel::Unit::Create(3));
+
+  Values values;
+  values.insert(0, Pose2());
+  values.insert(1, Pose2(1, 0, 0));
+  values.insert(2, Pose2(2, 0, 0));
+  values.insert(3, Pose2(3, 0, 0));
+  values.insert(4, Pose2(4, 0, 0));
+
+  GaussianFactorGraph linearGraph = *graph.linearize(values);
+  const Ordering colamd = Ordering::Create(Ordering::COLAMD, linearGraph);
+  const Ordering metis = Ordering::Create(Ordering::METIS, linearGraph);
+  const KeyVector query{4, 1, 3};
+
+  for (const auto factorization : {Marginals::CHOLESKY, Marginals::QR}) {
+    Marginals colamdMarginals(linearGraph, values, colamd, factorization);
+    Marginals metisMarginals(linearGraph, values, metis, factorization);
+    EXPECT(assert_equal(
+        colamdMarginals.jointMarginalCovariance(query).fullMatrix(),
+        metisMarginals.jointMarginalCovariance(query).fullMatrix(), 1e-8));
+  }
+}
+#endif
+
+/* ************************************************************************* */
+TEST(Marginals, jointCovarianceMatchesFullHessianInverse) {
+  auto dimsForKeys = [](const Values& values, const KeyVector& keys) {
+    std::vector<size_t> dims;
+    dims.reserve(keys.size());
+    for (Key key : keys) {
+      dims.push_back(values.at(key).dim());
+    }
+    return dims;
+  };
+
+  auto blockOffsets = [](const std::vector<size_t>& dims) {
+    std::vector<size_t> offsets(dims.size() + 1, 0);
+    for (size_t index = 0; index < dims.size(); ++index) {
+      offsets[index + 1] = offsets[index] + dims[index];
+    }
+    return offsets;
+  };
+
+  auto covarianceBlockFromFullHessian = [&](const GaussianFactorGraph& graph,
+                                            const Values& values,
+                                            const KeyVector& queryKeys) {
+    const KeyVector orderedQuery = uniqueSortedKeys(queryKeys);
+    const KeySet graphKeys = graph.keys();
+    KeyVector allKeys(graphKeys.begin(), graphKeys.end());
+    const Ordering ordering(allKeys);
+    const auto [information, eta] = graph.hessian(ordering);
+    (void)eta;
+    const Matrix covariance = information.inverse();
+
+    const std::vector<size_t> allDims = dimsForKeys(values, allKeys);
+    const std::vector<size_t> allOffsets = blockOffsets(allDims);
+    const std::vector<size_t> queryDims = dimsForKeys(values, orderedQuery);
+    const std::vector<size_t> queryOffsets = blockOffsets(queryDims);
+
+    FastMap<Key, size_t> indexByKey;
+    for (size_t index = 0; index < allKeys.size(); ++index) {
+      indexByKey[allKeys[index]] = index;
+    }
+
+    Matrix result = Matrix::Zero(queryOffsets.back(), queryOffsets.back());
+    for (size_t rowIndex = 0; rowIndex < orderedQuery.size(); ++rowIndex) {
+      const size_t sourceRow = indexByKey.at(orderedQuery[rowIndex]);
+      const size_t rowDim = queryDims[rowIndex];
+      for (size_t colIndex = 0; colIndex < orderedQuery.size(); ++colIndex) {
+        const size_t sourceCol = indexByKey.at(orderedQuery[colIndex]);
+        const size_t colDim = queryDims[colIndex];
+        result.block(queryOffsets[rowIndex], queryOffsets[colIndex], rowDim,
+                     colDim) =
+            covariance.block(allOffsets[sourceRow], allOffsets[sourceCol],
+                             rowDim, colDim);
+      }
+    }
+    return result;
+  };
+
+  NonlinearFactorGraph graph;
+  const auto priorNoise = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));
+  const auto odometryNoise =
+      noiseModel::Diagonal::Sigmas(Vector3(0.1, 0.1, 0.05));
+
+  graph.addPrior(0, Pose2(), priorNoise);
+  graph.emplace_shared<BetweenFactor<Pose2>>(0, 1, Pose2(1, 0, 0),
+                                             odometryNoise);
+  graph.emplace_shared<BetweenFactor<Pose2>>(1, 2, Pose2(1, 0, 0),
+                                             odometryNoise);
+  graph.emplace_shared<BetweenFactor<Pose2>>(2, 3, Pose2(1, 0, 0),
+                                             odometryNoise);
+
+  Values values;
+  values.insert(0, Pose2());
+  values.insert(1, Pose2(1, 0, 0));
+  values.insert(2, Pose2(2, 0, 0));
+  values.insert(3, Pose2(3, 0, 0));
+
+  const GaussianFactorGraph linearGraph = *graph.linearize(values);
+  const KeyVector query{3, 1, 2};
+  const Matrix expected =
+      covarianceBlockFromFullHessian(linearGraph, values, query);
+
+  for (const auto factorization : {Marginals::CHOLESKY, Marginals::QR}) {
+    const Marginals marginals(linearGraph, values, factorization);
+    const Matrix actual = marginals.jointMarginalCovariance(query).fullMatrix();
+    EXPECT(assert_equal(expected, actual, 1e-8));
+  }
 }
 
 /* ************************************************************************* */

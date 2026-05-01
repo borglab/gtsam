@@ -14,7 +14,7 @@ Author: Shangjie Xue, Varun Agrawal, Frank Dellaert
 import unittest
 
 import numpy as np
-from gtsam.symbol_shorthand import D, V, M
+from gtsam.symbol_shorthand import D, M, V
 from gtsam.utils.test_case import GtsamTestCase
 
 import gtsam
@@ -58,6 +58,12 @@ class TestHybridValues(GtsamTestCase):
         self.assertEqual(len(hv_all.discrete()), 2)
         self.assertEqual(hv_all.nonlinear().size(), 1)
         self.assertTrue(hv_all.nonlinear().equals(self.nonlinear_values, 1e-9))
+
+        hv_dn = gtsam.HybridValues(self.discrete_values, self.nonlinear_values)
+        self.assertEqual(hv_dn.continuous().size(), 0)
+        self.assertEqual(len(hv_dn.discrete()), 2)
+        self.assertEqual(hv_dn.nonlinear().size(), 1)
+        self.assertTrue(hv_dn.nonlinear().equals(self.nonlinear_values, 1e-9))
 
     def test_accessors(self):
         """Test accessing underlying containers."""

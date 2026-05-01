@@ -114,9 +114,8 @@ TEST(Unit3, Dot) {
 
   // Use numerical derivatives to calculate the expected Jacobians
   Matrix H1, H2;
-  std::function<double(const Unit3&, const Unit3&)> f =
-      std::bind(&Unit3::dot, std::placeholders::_1, std::placeholders::_2,  //
-                nullptr, nullptr);
+  auto f = std::bind(&Unit3::dot, std::placeholders::_1, std::placeholders::_2,
+                     nullptr, nullptr);
   {
     p.dot(q, H1, H2);
     EXPECT(
@@ -380,8 +379,7 @@ TEST(Unit3, Retract) {
 TEST (Unit3, JacobianRetract) {
   Matrix22 H;
   Unit3 p;
-  std::function<Unit3(const Vector2&)> f =
-      std::bind(&Unit3::retract, p, std::placeholders::_1, nullptr);
+  auto f = std::bind(&Unit3::retract, p, std::placeholders::_1, nullptr);
   {
     Vector2 v(-0.2, 0.1);
     p.retract(v, H);
@@ -513,8 +511,7 @@ TEST(actualH, Serialization) {
 /* ************************************************************************* */
 TEST(Unit3, cross) {
   Matrix22 aH1, aH2;
-  std::function<Unit3(const Unit3&, const Unit3&)> f =
-      [](const Unit3& p, const Unit3& q) { return cross(p, q); };
+  auto f = [](const Unit3& p, const Unit3& q) { return cross(p, q); };
   const Unit3 p(0, 1, 4), q(4, 6, 8);
   Unit3 actual = cross(p, q, aH1, aH2);
   EXPECT(assert_equal(p.cross(q), actual, 1e-9));
@@ -538,8 +535,7 @@ TEST(Unit3, MixedCrossUnit3Point3) {
   EXPECT(assert_equal(cross(p.point3(), q), actual, 1e-9));
 
   // Define a lambda function for numerical differentiation
-  std::function<Point3(const Unit3&, const Point3&)> f = [](const Unit3& p,
-                                                            const Point3& q) {
+  auto f = [](const Unit3& p, const Point3& q) {
     return cross(p, q, nullptr, nullptr);
   };
 
@@ -572,8 +568,7 @@ TEST(Unit3, MixedCrossPoint3Unit3) {
   EXPECT(assert_equal(expected, actual, 1e-9));
 
   // Define a lambda function for numerical differentiation
-  std::function<Point3(const Point3&, const Unit3&)> f = [](const Point3& p,
-                                                            const Unit3& q) {
+  auto f = [](const Point3& p, const Unit3& q) {
     return cross(p, q, nullptr, nullptr);
   };
 

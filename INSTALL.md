@@ -289,58 +289,50 @@ or
 when importing GTSAM using the python wrapper.
 
 
-## Compile gtsam with vcpkg. (For linux/wsl)
-Install python dependencies + ninja + build essential in linux:   
-```
+## Compile gtsam with vcpkg
+
+vcpkg is an easy, cross-platform way to install all the dependencies gtsam uses, including Boost, MKL, and pybind11. It will calculate the proper [triplet for your system](https://learn.microsoft.com/en-us/vcpkg/concepts/triplets), like x64-linux, x64-windows, or arm64-osx, and install dependencies accordingly. That triplet will be referred to as `<triplet>` in this guide.
+
+To get started, install some base dependencies.
+
+On Linux, install Python dependencies + ninja + build-essential:
+
+```bash
 sudo apt update
 sudo apt-get install autoconf automake autoconf-archive ninja-build build-essential -y
 ```
 
-On your home dir near gtsam dir:   
-Setup vcpkg   
+On Windows, see [the Prerequisites section earlier](#Prerequisites).
+
+On Mac, install Python dependencies + ninja:
+
+```bash
+brew install autoconf autoconf-archive automake libtool
+```
+
+Go to your gtsam folder `cd gtsam`, and set up vcpkg:
+
 ```bash
 git clone https://github.com/microsoft/vcpkg
-cd vcpkg
-./bootstrap-vcpkg.sh
+./vcpkg/bootstrap-vcpkg.sh # or ./vcpkg/bootstrap-vcpkg.bat on Windows
 ```
 
-vcpkg install dependencies   
-on vcpkg dir:   
+Setup vcpkg and Python dependencies
+
 ```bash
-./vcpkg x-set-installed         \
-          boost-assign          \
-          boost-bimap           \
-          boost-chrono          \
-          boost-date-time       \
-          boost-filesystem      \
-          boost-format          \
-          boost-graph           \
-          boost-math            \
-          boost-program-options \
-          boost-regex           \
-          boost-serialization   \
-          boost-system          \
-          boost-thread          \
-          boost-timer           \
-          tbb                   \
-          pybind11
+./vcpkg/vcpkg install
+# The Python executable is called python, not python3 on Windows
+./vcpkg_installed/<triplet>/tools/python3/python3 -m ensurepip --upgrade
+./vcpkg_installed/<triplet>/tools/python3/python3 -m pip install -r python/dev_requirements.txt
 ```
 
-Setup python dependencies   
-Go to your gtsam folder `cd gtsam`:   
+Configure CMake build:
 ```bash
-../vcpkg/installed/x64-linux/tools/python3/python3 -m ensurepip --upgrade
-../vcpkg/installed/x64-linux/tools/python3/python3 -m pip install -r python/dev_requirements.txt
-```
-
-Cmake config:   
-In gtsam folder   
-```bash
-cmake . -B build -G Ninja \
-    -DCMAKE_TOOLCHAIN_FILE=../scripts/buildsystems/vcpkg.cmake \
-    -DVCPKG_INSTALLED_DIR=../installed \
-    -DVCPKG_TARGET_TRIPLET=x64-linux \
-    -DVCPKG_HOST_TRIPLET=x64-linux \
+cmake -B build -G Ninja \
+    -DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake \
+    -DVCPKG_INSTALLED_DIR=vcpkg_installed \
+    -DVCPKG_TARGET_TRIPLET=<triplet> \
+    -DVCPKG_HOST_TRIPLET=<triplet> \
     -DCMAKE_BUILD_TYPE=Release \
     -DGTSAM_BUILD_EXAMPLES_ALWAYS=ON \
     -DGTSAM_ROT3_EXPMAP=ON \
@@ -355,22 +347,32 @@ cmake . -B build -G Ninja \
     -DGTSAM_SUPPORT_NESTED_DISSECTION=ON
 ```
 
-cmake compile:   
-In gtsam folder:   
+Build gtsam:
+
 ```bash
 cmake --build build
 ```
 
-Run python tests:   
+Add vcpkg libraries to PATH:
+
+Linux/Mac:
+```bash
+export PATH="$PATH:/path/to/gtsam/vcpkg_installed/<triplet>/bin"
 ```
-VCPKG_INSTALLATION_ROOT=<abs path to vcpkg root dir>
-export PATH="$PATH:$VCPKG_INSTALLATION_ROOT/installed/x64-linux/bin"
+
+Windows (PowerShell):
+```pwsh
+$env:Path = "$env:Path;\path\to\gtsam\vcpkg_installed\<triplet>\bin"
+```
+
+Run Python tests:
+```bash
 cmake --build build --target python-install
 cmake --build build --target python-test
 cmake --build build --target python-test-unstable
 ```
 
-Run gtsam tests:   
+Run gtsam tests:
 ```bash
 cmake --build build --target check
 ```

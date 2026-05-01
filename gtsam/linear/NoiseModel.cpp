@@ -277,6 +277,10 @@ Diagonal::Diagonal(const Vector& sigmas)
       sigmas_(sigmas),
       invsigmas_(sigmas.array().inverse()),
       precisions_(invsigmas_.array().square()) {
+  if ((sigmas.array() < 0).any()) {
+    throw invalid_argument(
+        "Diagonal noise model: sigma values must be non-negative");
+  }
 }
 
 /* ************************************************************************* */
@@ -696,12 +700,16 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
 // Isotropic
 /* ************************************************************************* */
 Isotropic::shared_ptr Isotropic::Sigma(size_t dim, double sigma, bool smart)  {
+  if (sigma < 0)
+    throw invalid_argument("Isotropic::Sigma: sigma value must be non-negative");
   if (smart && std::abs(sigma-1.0)<1e-9) return Unit::Create(dim);
   return shared_ptr(new Isotropic(dim, sigma));
 }
 
 /* ************************************************************************* */
 Isotropic::shared_ptr Isotropic::Variance(size_t dim, double variance, bool smart)  {
+  if (variance < 0)
+    throw invalid_argument("Isotropic::Variance: variance must be non-negative");
   if (smart && std::abs(variance-1.0)<1e-9) return Unit::Create(dim);
   return shared_ptr(new Isotropic(dim, sqrt(variance)));
 }

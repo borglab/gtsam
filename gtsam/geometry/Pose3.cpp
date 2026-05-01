@@ -31,10 +31,9 @@ namespace gtsam {
 GTSAM_CONCEPT_POSE_INST(Pose3)
 
 /* ************************************************************************* */
-Pose3::Pose3(const Pose2& pose2) :
-    R_(Rot3::Rodrigues(0, 0, pose2.theta())), t_(
-        Point3(pose2.x(), pose2.y(), 0)) {
-}
+Pose3::Pose3(const Pose2& pose2)
+    : Base(Rot3::Rodrigues(0, 0, pose2.theta()),
+           Vector3(pose2.x(), pose2.y(), 0.0)) {}
 
 /* ************************************************************************* */
 Pose3 Pose3::Create(const Rot3& R, const Point3& t, OptionalJacobian<6, 3> HR,
@@ -56,124 +55,6 @@ static const Matrix63 Hpose2 = (Matrix63() << //
 Pose3 Pose3::FromPose2(const Pose2& p, OptionalJacobian<6, 3> H) {
   if (H) *H << Hpose2;
   return Pose3(p);
-}
-
-/* ************************************************************************* */
-Pose3 Pose3::inverse() const {
-  Rot3 Rt = R_.inverse();
-  return Pose3(Rt, Rt * (-t_));
-}
-
-/* ************************************************************************* */
-// Calculate Adjoint map
-// Ad_pose is 6*6 matrix that when applied to twist xi, returns Ad_pose(xi)
-Matrix6 Pose3::AdjointMap() const {
-  const Matrix3 R = R_.matrix();
-  Matrix3 A = skewSymmetric(t_.x(), t_.y(), t_.z()) * R;
-  Matrix6 adj;
-  adj << R, Z_3x3, A, R;  // Gives [R 0; A R]
-  return adj;
-}
-
-/* ************************************************************************* */
-// Calculate AdjointMap applied to xi_b, with Jacobians
-Vector6 Pose3::Adjoint(const Vector6& xi_b, OptionalJacobian<6, 6> H_pose,
-                       OptionalJacobian<6, 6> H_xib) const {
-  const Matrix6 Ad = AdjointMap();
-
-  // Jacobians
-  // D1 Ad_T(xi_b) = D1 Ad_T Ad_I(xi_b) = Ad_T * D1 Ad_I(xi_b) = Ad_T * ad_xi_b
-  // D2 Ad_T(xi_b) = Ad_T
-  // See docs/math.pdf for more details.
-  // In D1 calculation, we could be more efficient by writing it out, but do not
-  // for readability
-  if (H_pose) *H_pose = -Ad * adjointMap(xi_b);
-  if (H_xib) *H_xib = Ad;
-
-  return Ad * xi_b;
-}
-
-/* ************************************************************************* */
-/// The dual version of Adjoint
-Vector6 Pose3::AdjointTranspose(const Vector6& x, OptionalJacobian<6, 6> H_pose,
-                                OptionalJacobian<6, 6> H_x) const {
-  const Matrix6 Ad = AdjointMap();
-  const Vector6 AdTx = Ad.transpose() * x;
-
-  // Jacobians
-  // See docs/math.pdf for more details.
-  if (H_pose) {
-    const auto w_T_hat = skewSymmetric(AdTx.head<3>()),
-               v_T_hat = skewSymmetric(AdTx.tail<3>());
-    *H_pose << w_T_hat, v_T_hat,  //
-        /*  */ v_T_hat, Z_3x3;
-  }
-  if (H_x) {
-    *H_x = Ad.transpose();
-  }
-
-  return AdTx;
-}
-
-/* ************************************************************************* */
-Matrix6 Pose3::adjointMap(const Vector6& xi) {
-  Matrix3 w_hat = skewSymmetric(xi(0), xi(1), xi(2));
-  Matrix3 v_hat = skewSymmetric(xi(3), xi(4), xi(5));
-  Matrix6 adj;
-  adj << w_hat, Z_3x3, v_hat, w_hat;
-
-  return adj;
-}
-
-/* ************************************************************************* */
-Vector6 Pose3::adjoint(const Vector6& xi, const Vector6& y,
-                       OptionalJacobian<6, 6> Hxi, OptionalJacobian<6, 6> H_y) {
-  if (Hxi) {
-    Hxi->setZero();
-    for (int i = 0; i < 6; ++i) {
-      Vector6 dxi;
-      dxi.setZero();
-      dxi(i) = 1.0;
-      Matrix6 Gi = adjointMap(dxi);
-      Hxi->col(i) = Gi * y;
-    }
-  }
-  const Matrix6& ad_xi = adjointMap(xi);
-  if (H_y) *H_y = ad_xi;
-  return ad_xi * y;
-}
-
-/* ************************************************************************* */
-Vector6 Pose3::adjointTranspose(const Vector6& xi, const Vector6& y,
-    OptionalJacobian<6, 6> Hxi, OptionalJacobian<6, 6> H_y) {
-  if (Hxi) {
-    Hxi->setZero();
-    for (int i = 0; i < 6; ++i) {
-      Vector6 dxi;
-      dxi.setZero();
-      dxi(i) = 1.0;
-      Matrix6 GTi = adjointMap(dxi).transpose();
-      Hxi->col(i) = GTi * y;
-    }
-  }
-  const Matrix6& adT_xi = adjointMap(xi).transpose();
-  if (H_y) *H_y = adT_xi;
-  return adT_xi * y;
-}
-
-/* ************************************************************************* */
-Matrix4 Pose3::Hat(const Vector6& xi) {
-  Matrix4 X;
-  const double wx = xi(0), wy = xi(1), wz = xi(2), vx = xi(3), vy = xi(4), vz = xi(5);
-  X << 0., -wz, wy, vx, wz, 0., -wx, vy, -wy, wx, 0., vz, 0., 0., 0., 0.;
-  return X;
-}
-
-/* ************************************************************************* */
-Vector6 Pose3::Vee(const Matrix4& Xi) {
-  Vector6 xi;
-  xi << Xi(2, 1), Xi(0, 2), Xi(1, 0), Xi(0, 3), Xi(1, 3), Xi(2, 3);
-  return xi;
 }
 
 /* ************************************************************************* */
@@ -209,7 +90,6 @@ Pose3 Pose3::interpolateRt(const Pose3& T, double t,
   }
   return Pose3(interpolate<Rot3>(R_, T.R_, t),
                interpolate<Point3>(t_, T.t_, t));
-
 }
 
 /* ************************************************************************* */
@@ -245,29 +125,13 @@ Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> Hxi) {
   if (Hxi) {
     // The Jacobian of expmap is given by the right Jacobian of SO(3):
     const Matrix3 Jr = local.Jacobian().right();
-    // We are creating a Pose3, so we still need to chain H with R^T, the
-    // Jacobian of Pose3::Create with respect to t.
+    // Chain H with R^T, the Jacobian of Pose3::Create with respect to t.
     const Matrix3 Rt = R.transpose();
     *Hxi << Jr, Z_3x3,  // Jr here *is* the Jacobian of expmap
-        Rt * H, Jr;     // Here Jr = R^T * Jl, with Jl the Jacobian of t in v.
+        Rt * H, Jr;     // Jr = R^T * Jl, with Jl Jacobian of t in v.
   }
 
   return Pose3(R, t);
-}
-
-/* ************************************************************************* */
-Vector6 Pose3::Logmap(const Pose3& pose, OptionalJacobian<6, 6> Hpose) {
-  const Vector3 w = Rot3::Logmap(pose.rotation());
-
-  // Instantiate functor for Dexp-related operations:
-  const so3::DexpFunctor local(w);
-
-  const Vector3 t = pose.translation();
-  const Vector3 u = local.InvJacobian().applyLeft(t);
-  Vector6 xi;
-  xi << w, u;
-  if (Hpose) *Hpose = LogmapDerivative(xi);
-  return xi;
 }
 
 /* ************************************************************************* */
@@ -276,12 +140,12 @@ Pose3 Pose3::ChartAtOrigin::Retract(const Vector6& xi, ChartJacobian Hxi) {
   return Expmap(xi, Hxi);
 #else
   Matrix3 DR;
-  Rot3 R = Rot3::Retract(xi.head<3>(), Hxi ? &DR : 0);
+  const Rot3 R = Rot3::Retract(xi.head<3>(), Hxi ? &DR : nullptr);
   if (Hxi) {
-    *Hxi = I_6x6;
-    Hxi->topLeftCorner<3, 3>() = DR;
+    Hxi->setIdentity();
+    Hxi->block<3, 3>(0, 0) = DR;
   }
-  return Pose3(R, Point3(xi.tail<3>()));
+  return Pose3(R, xi.tail<3>());
 #endif
 }
 
@@ -291,97 +155,21 @@ Vector6 Pose3::ChartAtOrigin::Local(const Pose3& pose, ChartJacobian Hpose) {
   return Logmap(pose, Hpose);
 #else
   Matrix3 DR;
-  Vector3 omega = Rot3::LocalCoordinates(pose.rotation(), Hpose ? &DR : 0);
-  if (Hpose) {
-    *Hpose = I_6x6;
-    Hpose->topLeftCorner<3, 3>() = DR;
-  }
   Vector6 xi;
-  xi << omega, pose.translation();
+  xi.head<3>() = Rot3::LocalCoordinates(pose.rotation(), Hpose ? &DR : nullptr);
+  xi.tail<3>() = pose.translation();
+  if (Hpose) {
+    Hpose->setIdentity();
+    Hpose->block<3, 3>(0, 0) = DR;
+  }
   return xi;
 #endif
-}
-
-/* ************************************************************************* */
-Matrix6 Pose3::ExpmapDerivative(const Vector6& xi) {
-  Matrix6 J;
-  Expmap(xi, J);
-  return J;
-}
-
-/* ************************************************************************* */
-Matrix6 Pose3::LogmapDerivative(const Vector6& xi) {
-  const Vector3 w = xi.head<3>();
-  Vector3 v = xi.segment<3>(3);
-
-  // Instantiate functor for Dexp-related operations:
-  const so3::DexpFunctor local(w);
-
-  // Call applyLeftJacobian to get its Jacobians
-  Matrix3 H_t_w;
-  local.Jacobian().applyLeft(v, H_t_w);
-
-  // Multiply with R^T to account for NavState::Create Jacobian.
-  const Matrix3 R = local.expmap();
-  const Matrix3 Qt = R.transpose() * H_t_w;
-
-  // Now compute the blocks of the LogmapDerivative Jacobian
-  const Matrix3 Jw = Rot3::LogmapDerivative(w);
-  const Matrix3 Qt2 = -Jw * Qt * Jw;
-
-  Matrix6 J;
-  J << Jw, Z_3x3, Qt2, Jw;
-  return J;
-}
-
-/* ************************************************************************* */
-Matrix6 Pose3::LogmapDerivative(const Pose3& pose) {
-  const Vector6 xi = Logmap(pose);
-  return LogmapDerivative(xi);
 }
 
 /* ************************************************************************* */
 const Point3& Pose3::translation(OptionalJacobian<3, 6> Hself) const {
   if (Hself) *Hself << Z_3x3, rotation().matrix();
   return t_;
-}
-
-/* ************************************************************************* */
-const Rot3& Pose3::rotation(OptionalJacobian<3, 6> Hself) const {
-  if (Hself) {
-    *Hself << I_3x3, Z_3x3;
-  }
-  return R_;
-}
-
-/* ************************************************************************* */
-Matrix4 Pose3::matrix() const {
-  static const auto A14 = Eigen::RowVector4d(0,0,0,1);
-  Matrix4 mat;
-  mat << R_.matrix(), t_, A14;
-  return mat;
-}
-
-/* ************************************************************************* */
-Pose3::Vector16 Pose3::vec(OptionalJacobian<16, 6> H) const {
-  // Vectorize
-  const Matrix4 M = matrix();
-  const Vector16 v = Eigen::Map<const Vector16>(M.data());
-
-  // If requested, calculate H
-  if (H) {
-    H->setZero();
-    auto R = M.block<3, 3>(0, 0);
-    H->block<3, 1>(0, 1) = -R.col(2);
-    H->block<3, 1>(0, 2) = R.col(1);
-    H->block<3, 1>(4, 0) = R.col(2);
-    H->block<3, 1>(4, 2) = -R.col(0);
-    H->block<3, 1>(8, 0) = -R.col(1);
-    H->block<3, 1>(8, 1) = R.col(0);
-    H->block<3,3>(12,3) = R;
-  }
-
-  return v;
 }
 
 /* ************************************************************************* */

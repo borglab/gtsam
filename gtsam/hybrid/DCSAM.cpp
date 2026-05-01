@@ -24,10 +24,10 @@ namespace gtsam {
 
 DCSAM::DCSAM() : isam_(ISAM2(ISAM2Params())) {}
 
-DCSAM::DCSAM(const ISAM2Params &isam_params) : isam_(ISAM2(isam_params)) {}
+DCSAM::DCSAM(const ISAM2Params& isam_params) : isam_(ISAM2(isam_params)) {}
 
-void DCSAM::update(const HybridNonlinearFactorGraph &hnfg,
-                   const HybridValues &initialGuess) {
+void DCSAM::update(const HybridNonlinearFactorGraph& hnfg,
+                   const HybridValues& initialGuess) {
   // First things first: combine currContinuous_ estimate with
   // the new continuous values from initialGuess to
   // produce the full continuous variable state.
@@ -35,7 +35,7 @@ void DCSAM::update(const HybridNonlinearFactorGraph &hnfg,
 
   // Also combine currDiscrete_ estimate with new discrete values from
   // initialGuess to give a full discrete variable state.
-  for (const auto &kv : initialGuess.discrete()) {
+  for (const auto& kv : initialGuess.discrete()) {
     // This will update the element with key `kv.first` if one exists, or add a
     // new element with key `kv.first` if not.
     currDiscrete_[kv.first] = kv.second;
@@ -48,7 +48,7 @@ void DCSAM::update(const HybridNonlinearFactorGraph &hnfg,
   NonlinearFactorGraph continuousFactors;
   DiscreteFactorGraph discreteFactors;
 
-  for (auto &factor : hnfg) {
+  for (auto& factor : hnfg) {
     if (auto hybrid_factor = std::dynamic_pointer_cast<HybridFactor>(factor)) {
       if (auto nonlinear_mixture =
               std::dynamic_pointer_cast<HybridNonlinearFactor>(hybrid_factor)) {
@@ -79,28 +79,28 @@ void DCSAM::update(const HybridNonlinearFactorGraph &hnfg,
 
 void DCSAM::update() { update(HybridNonlinearFactorGraph()); }
 
-void DCSAM::updateDiscrete(const DiscreteFactorGraph &dfg,
-                           const DiscreteValues &discreteVals) {
-  for (auto &factor : dfg) {
+void DCSAM::updateDiscrete(const DiscreteFactorGraph& dfg,
+                           const DiscreteValues& discreteVals) {
+  for (auto& factor : dfg) {
     dfg_.push_back(factor);
   }
 
   // Update current discrete state estimate.
   DiscreteValues mpe = solveDiscrete();
   // Update the current discrete estimate with the latest solution.
-  for (auto &&kv : mpe) {
+  for (auto&& kv : mpe) {
     currDiscrete_[kv.first] = kv.second;
   }
 }
 
-void DCSAM::updateContinuous(const NonlinearFactorGraph &newFactors,
-                             const Values &initialGuess) {
+void DCSAM::updateContinuous(const NonlinearFactorGraph& newFactors,
+                             const Values& initialGuess) {
   // Initialize continuous factors
   NonlinearFactorGraph graph(newFactors);
 
   // Given the best discrete values estimate,
   // we get the corresponding continuous factors.
-  for (auto &factor : hfg_) {
+  for (auto& factor : hfg_) {
     if (auto nonlinear_mixture =
             std::dynamic_pointer_cast<HybridNonlinearFactor>(factor)) {
       auto sharedContinuous = nonlinear_mixture->factors()(currDiscrete_).first;
@@ -115,7 +115,7 @@ void DCSAM::updateContinuous(const NonlinearFactorGraph &newFactors,
   FastMap<FactorIndex, KeySet> newAffectedKeys;
   for (size_t j = 0; j < nfg_.size(); j++) {
     auto continuousFactor = nfg_[j];
-    for (const Key &k : continuousFactor->keys()) {
+    for (const Key& k : continuousFactor->keys()) {
       newAffectedKeys[j].insert(k);
     }
   }
@@ -132,7 +132,7 @@ DiscreteValues DCSAM::solveDiscrete() const {
   // Next we add the hybrid factors as DiscreteBoundary factors
   // This step ensures we use the latest currContinuous_ values
   // to compute the discrete factors
-  for (auto &factor : hfg_) {
+  for (auto& factor : hfg_) {
     auto nonlinear_mixture =
         std::dynamic_pointer_cast<HybridNonlinearFactor>(factor);
     if (nonlinear_mixture) {
@@ -157,8 +157,12 @@ HybridValues DCSAM::calculateEstimate() const {
   return values;
 }
 
+const VectorValues& DCSAM::getDelta() const { return isam_.getDelta(); }
+
+double DCSAM::error(const VectorValues& x) const { return isam_.error(x); }
+
 // TODO(Varun) Create HybridMarginals
-//  // NOTE separate dcmarginals class?
+//  NOTE separate dcmarginals class?
 //  DCMarginals DCSAM::getMarginals(const NonlinearFactorGraph &graph,
 //                                  const Values &continuousEst,
 //                                  const DiscreteFactorGraph &dfg) {

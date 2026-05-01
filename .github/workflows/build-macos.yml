@@ -31,39 +31,33 @@ jobs:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name: [
-          macos-14-xcode-15.4,
           macos-15-xcode-16,
-          macos-14-xcode-15.4-boost,
-          macos-14-xcode-15.4-geographiclib,
+          macos-15-xcode-16-boost,
+          macos-15-xcode-16-geographiclib,
         ]
 
         build_type: [Debug, Release]
         build_unstable: [ON]
         include:
-          - name: macos-14-xcode-15.4
-            os: macos-14
-            compiler: xcode
-            version: "15.4"
-
           - name: macos-15-xcode-16
             os: macos-15
             compiler: xcode
             version: "16"
 
-          - name: macos-14-xcode-15.4-boost
-            os: macos-14
+          - name: macos-15-xcode-16-boost
+            os: macos-15
             compiler: xcode
-            version: "15.4"
+            version: "16"
 
-          - name: macos-14-xcode-15.4-geographiclib
-            os: macos-14
+          - name: macos-15-xcode-16-geographiclib
+            os: macos-15
             compiler: xcode
-            version: "15.4"
+            version: "16"
 
         exclude:
-          - name: macos-14-xcode-15.4-boost
+          - name: macos-15-xcode-16-boost
             build_type: Debug
-          - name: macos-14-xcode-15.4-geographiclib
+          - name: macos-15-xcode-16-geographiclib
             build_type: Debug
 
     steps:
@@ -85,10 +79,8 @@ jobs:
           # (optional) Show outdated without failing the job
           brew outdated || true
 
-      - name: Install Dependencies
+      - name: Set up compilers
         run: |
-          brew upgrade cmake --quiet || brew install cmake --quiet
-          brew upgrade ninja --quiet || brew install ninja --quiet
           sudo xcode-select -switch /Applications/Xcode.app
           echo "CC=clang" >> $GITHUB_ENV
           echo "CXX=clang++" >> $GITHUB_ENV
@@ -106,6 +98,11 @@ jobs:
         run: |
           brew upgrade geographiclib --quiet || brew install geographiclib --quiet
           echo "GTSAM_ENABLE_GEOGRAPHICLIB=ON" >> $GITHUB_ENV
+
+      - name: Enable Consistency Checks (Debug)
+        if: matrix.build_type == 'Debug'
+        run: |
+          echo "GTSAM_ENABLE_CONSISTENCY_CHECKS=ON" >> $GITHUB_ENV
 
       - name: Build and Test
         run: bash .github/scripts/unix.sh -t

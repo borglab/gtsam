@@ -19,9 +19,14 @@
 #pragma once
 
 #include <gtsam/geometry/BearingRange.h>
+#include <gtsam/geometry/ExtendedPose3.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Manifold.h>
+
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+#include <boost/serialization/base_object.hpp>
+#endif
 
 namespace gtsam {
 
@@ -36,46 +41,37 @@ using Velocity3 = Vector3;
  * NOTE: While Barrau20icra follow a R,v,t order,
  * we use a R,t,v order to maintain backwards compatibility.
  */
-class GTSAM_EXPORT NavState : public MatrixLieGroup<NavState, 9, 5> {
- private:
-
-  // TODO(frank):
-  // - should we rename t_ to p_? if not, we should rename dP do dT
-  Rot3 R_; ///< Rotation nRb, rotates points/velocities in body to points/velocities in nav
-  Point3 t_; ///< position n_t, in nav frame
-  Velocity3 v_; ///< velocity n_v in nav frame
-
+class GTSAM_EXPORT NavState : public ExtendedPose3<2, NavState> {
 public:
+  using Base = ExtendedPose3<2, NavState>;
   using LieAlgebra = Matrix5;
   using Vector25 = Eigen::Matrix<double, 25, 1>;
+  inline constexpr static auto dimension = 9;
 
   /// @name Constructors
   /// @{
 
   /// Default constructor
-  NavState() :
-      t_(0, 0, 0), v_(Vector3::Zero()) {
-  }
+  NavState() : Base() {}
+
+  NavState(const Base& other) : Base(other) {}
 
   /// Construct from attitude, position, velocity
-  NavState(const Rot3& R, const Point3& t, const Velocity3& v) :
-      R_(R), t_(t), v_(v) {
-  }
+  NavState(const Rot3& R, const Point3& t, const Velocity3& v)
+      : Base(R, (Eigen::Matrix<double, 3, 2>() << t.x(), v.x(), t.y(), v.y(),
+                 t.z(), v.z())
+                    .finished()) {}
 
   /// Construct from pose and velocity
-  NavState(const Pose3& pose, const Velocity3& v) :
-      R_(pose.rotation()), t_(pose.translation()), v_(v) {
-  }
+  NavState(const Pose3& pose, const Velocity3& v)
+      : NavState(pose.rotation(), pose.translation(), v) {}
 
   /// Construct from SO(3) and R^6
-  NavState(const Matrix3& R, const Vector6& tv) :
-      R_(R), t_(tv.head<3>()), v_(tv.tail<3>()) {
-  }
+  NavState(const Matrix3& R, const Vector6& tv)
+      : NavState(Rot3(R), tv.head<3>(), tv.tail<3>()) {}
 
   /// Construct from Matrix5
-  NavState(const Matrix5& T) :
-    R_(T.block<3, 3>(0, 0)), t_(T.block<3, 1>(0, 3)), v_(T.block<3, 1>(0, 4)) {
-  }
+  NavState(const Matrix5& T) : Base(T) {}
 
   /// Named constructor with derivatives
   static NavState Create(const Rot3& R, const Point3& t, const Velocity3& v,
@@ -93,8 +89,8 @@ public:
   /// @{
 
   const Rot3& attitude(OptionalJacobian<3, 9> H = {}) const;
-  const Point3& position(OptionalJacobian<3, 9> H = {}) const;
-  const Velocity3& velocity(OptionalJacobian<3, 9> H = {}) const;
+  Point3 position(OptionalJacobian<3, 9> H = {}) const;
+  Velocity3 velocity(OptionalJacobian<3, 9> H = {}) const;
 
   const Pose3 pose() const {
     return Pose3(attitude(), position());
@@ -130,21 +126,14 @@ public:
   }
   /// Return position as Vector3
   Vector3 t() const {
-    return t_;
+    return t_.col(0);
   }
-  /// Return velocity as Vector3. Computation-free.
-  const Vector3& v() const {
-    return v_;
+  /// Return velocity as Vector3.
+  Vector3 v() const {
+    return velocity();
   }
   // Return velocity in body frame
   Velocity3 bodyVelocity(OptionalJacobian<3, 9> H = {}) const;
-
-  /// Return matrix group representation, in MATLAB notation:
-  /// nTb = [nRb n_t n_v; 0_1x3 1 0; 0_1x3 0 1]
-  Matrix5 matrix() const;
-
-  /// Vectorize 5x5 matrix into a 25-dim vector.
-  Vector25 vec(OptionalJacobian<25, 9> H = {}) const;
 
   /// @}
   /// @name Testable
@@ -164,23 +153,10 @@ public:
   /// @name Group
   /// @{
 
-  /// identity for group operation
-  static NavState Identity() {
-    return NavState();
-  }
-
-  /// inverse transformation with derivatives
-  NavState inverse() const;
-
-  using LieGroup<NavState, 9>::inverse;  // version with derivative
-
-  /// compose syntactic sugar
-  NavState operator*(const NavState& T) const {
-    return NavState(R_ * T.R_, t_ + R_ * T.t_, v_ + R_ * T.v_);
-  }
-
   /// Syntactic sugar
-  const Rot3& rotation() const { return attitude(); };
+  const Rot3& rotation(OptionalJacobian<3, 9> H = {}) const {
+    return attitude(H);
+  };
 
   // Tangent space sugar.
   // TODO(frank): move to private navstate namespace in cpp
@@ -203,81 +179,28 @@ public:
     return v.segment<3>(6);
   }
 
-  /// retract with optional derivatives
+  /**
+   * Manifold retract used by optimization.
+   * This intentionally uses a component-wise chart (R via Expmap, and p/v via
+   * world-frame rotation of the tangent increments), not the default LieGroup
+   * chart based on full Expmap/Logmap.
+   */
   NavState retract(const Vector9& v, //
       OptionalJacobian<9, 9> H1 = {}, OptionalJacobian<9, 9> H2 =
           {}) const;
 
-  /// localCoordinates with optional derivatives
+  /**
+   * Inverse of the custom manifold chart used by retract.
+   * Kept consistent with retract for optimization; Lie expmap/logmap remain
+   * available separately for group operations.
+   */
   Vector9 localCoordinates(const NavState& g, //
       OptionalJacobian<9, 9> H1 = {}, OptionalJacobian<9, 9> H2 =
           {}) const;
 
   /// @}
-  /// @name Lie Group
+  /// @name Lie Group (all Lie group operations are implemented in ExtendedPose3)
   /// @{
-
-  /**
-   * Exponential map at identity - create a NavState from canonical coordinates
-   * \f$ [R_x,R_y,R_z,T_x,T_y,T_z,V_x,V_y,V_z] \f$
-   */
-  static NavState Expmap(const Vector9& xi, OptionalJacobian<9, 9> Hxi = {});
-
-  /**
-   * Log map at identity - return the canonical coordinates \f$
-   * [R_x,R_y,R_z,T_x,T_y,T_z,V_x,V_y,V_z] \f$ of this NavState
-   */
-  static Vector9 Logmap(const NavState& pose, OptionalJacobian<9, 9> Hpose = {});
-
-  /**
-   * Calculate Adjoint map, transforming a twist in this pose's (i.e, body)
-   * frame to the world spatial frame.
-   */
-  Matrix9 AdjointMap() const;
-
-  /**
-   * Apply this NavState's AdjointMap Ad_g to a twist \f$ \xi_b \f$, i.e. a
-   * body-fixed velocity, transforming it to the spatial frame
-   * \f$ \xi^s = g*\xi^b*g^{-1} = Ad_g * \xi^b \f$
-   * Note that H_xib = AdjointMap()
-   */
-  Vector9 Adjoint(const Vector9& xi_b,
-                  OptionalJacobian<9, 9> H_this = {},
-                  OptionalJacobian<9, 9> H_xib = {}) const;
-  
-  /**
-   * Compute the [ad(w,v)] operator as defined in [Kobilarov09siggraph], pg 11
-   * but for the NavState [ad(w,v)] = [w^, zero3; v^, w^]
-   */
-  static Matrix9 adjointMap(const Vector9& xi);
-
-  /**
-   * Action of the adjointMap on a Lie-algebra vector y, with optional derivatives
-   */
-  static Vector9 adjoint(const Vector9& xi, const Vector9& y,
-                         OptionalJacobian<9, 9> Hxi = {},
-                         OptionalJacobian<9, 9> H_y = {});
-
-  /// Derivative of Expmap
-  static Matrix9 ExpmapDerivative(const Vector9& xi);
-
-  /// Derivative of Logmap
-  static Matrix9 LogmapDerivative(const Vector9& xi);
-
-  /// Derivative of Logmap, NavState version
-  static Matrix9 LogmapDerivative(const NavState& xi);
-
-  // Chart at origin, depends on compile-time flag GTSAM_POSE3_EXPMAP
-  struct GTSAM_EXPORT ChartAtOrigin {
-    static NavState Retract(const Vector9& xi, ChartJacobian Hxi = {});
-    static Vector9 Local(const NavState& state, ChartJacobian Hstate = {});
-  };
-
-  /// Hat maps from tangent vector to Lie algebra
-  static Matrix5 Hat(const Vector9& xi);
-
-  /// Vee maps from Lie algebra to tangent vector
-  static Vector9 Vee(const Matrix5& X);
 
   /// @}
   /// @name Dynamics
@@ -328,9 +251,7 @@ private:
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-    ar & BOOST_SERIALIZATION_NVP(R_);
-    ar & BOOST_SERIALIZATION_NVP(t_);
-    ar & BOOST_SERIALIZATION_NVP(v_);
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
   }
 #endif
   /// @}

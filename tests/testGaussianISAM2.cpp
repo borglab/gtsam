@@ -318,6 +318,20 @@ TEST(ISAM2, slamlike_solution_dogleg)
 }
 
 /* ************************************************************************* */
+TEST(ISAM2, SlamlikeSolutionDoglegLineSearch) {
+  // These variables will be reused and accumulate factors and values
+  Values fullinit;
+  NonlinearFactorGraph fullgraph;
+  ISAM2 isam = createSlamlikeISAM2(
+      &fullinit, &fullgraph,
+      ISAM2Params(ISAM2DoglegLineSearchParams(0.1, 1.0, 3, 1e-4, false, 1e-3),
+                  0.0, 0, false));
+
+  // Compare solutions
+  CHECK(isam_check(fullgraph, fullinit, isam, *this, result_));
+}
+
+/* ************************************************************************* */
 TEST(ISAM2, slamlike_solution_gaussnewton_qr)
 {
   // These variables will be reused and accumulate factors and values
@@ -336,6 +350,20 @@ TEST(ISAM2, slamlike_solution_dogleg_qr)
   Values fullinit;
   NonlinearFactorGraph fullgraph;
   ISAM2 isam = createSlamlikeISAM2(&fullinit, &fullgraph, ISAM2Params(ISAM2DoglegParams(1.0), 0.0, 0, false, false, ISAM2Params::QR));
+
+  // Compare solutions
+  CHECK(isam_check(fullgraph, fullinit, isam, *this, result_));
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, SlamlikeSolutionDoglegLineSearchQr) {
+  // These variables will be reused and accumulate factors and values
+  Values fullinit;
+  NonlinearFactorGraph fullgraph;
+  ISAM2 isam = createSlamlikeISAM2(
+      &fullinit, &fullgraph,
+      ISAM2Params(ISAM2DoglegLineSearchParams(0.1, 10.0, 3, 1e-4, false, 1e-3),
+                  0.0, 0, false, false, ISAM2Params::QR));
 
   // Compare solutions
   CHECK(isam_check(fullgraph, fullinit, isam, *this, result_));
@@ -985,6 +1013,30 @@ TEST(ISAM2, marginalCovariance)
 }
 
 /* ************************************************************************* */
+TEST(ISAM2, marginalInformation) {
+  ISAM2 isam = createSlamlikeISAM2();
+
+  Matrix expected = Marginals(isam.getFactorsUnsafe(), isam.getLinearizationPoint(),
+                              Marginals::CHOLESKY)
+                        .marginalInformation(5);
+  Matrix actual = isam.marginalInformation(5);
+  EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, jointMarginals) {
+  ISAM2 isam = createSlamlikeISAM2();
+  const KeyVector query{101, 5, 100};
+  Marginals marginals(isam.getFactorsUnsafe(), isam.getLinearizationPoint(),
+                      Marginals::CHOLESKY);
+
+  EXPECT(assert_equal(marginals.jointMarginalCovariance(query).fullMatrix(),
+                      isam.jointMarginalCovariance(query).fullMatrix(), 1e-9));
+  EXPECT(assert_equal(marginals.jointMarginalInformation(query).fullMatrix(),
+                      isam.jointMarginalInformation(query).fullMatrix(), 1e-9));
+}
+
+/* ************************************************************************* */
 TEST(ISAM2, calculate_nnz)
 {
   ISAM2 isam = createSlamlikeISAM2();
@@ -994,6 +1046,65 @@ TEST(ISAM2, calculate_nnz)
   EXPECT_LONGS_EQUAL(expected, actual);
 }
 
+/* ************************************************************************* */
+TEST(ISAM2, PredictUpdateInfo) {
+  // Setup iSAM2
+  ISAM2Params params;
+  params.findUnusedFactorSlots = true;
+  params.enableDetailedResults = true;
+
+  ISAM2 isam{params};
+
+  // Generate scenario - Straight motion along X w/ loop closures at 3 points
+  for (int i = 0; i < 50; i++) {
+    ISAM2UpdateParams update_params;
+    NonlinearFactorGraph factors;
+    Values values;
+    // Add Values
+    values.insert(i, Pose2(i, 0, 0));
+
+    // Add Odometry
+    if (i == 0) {
+      factors.emplace_shared<PriorFactor<Pose2>>(0, Pose2(), odoNoise);
+    } else {
+      factors.emplace_shared<BetweenFactor<Pose2>>(i - 1, i, Pose2(1, 0, 0),
+                                                   odoNoise);
+    }
+
+    // Add Loop Closures at various points
+    if (i == 10)
+      factors.emplace_shared<BetweenFactor<Pose2>>(10, 0, Pose2(-10, 0, 0),
+                                                   odoNoise);
+    if (i == 20)
+      factors.emplace_shared<BetweenFactor<Pose2>>(20, 5, Pose2(-15, 0, 0),
+                                                   odoNoise);
+    if (i == 40)
+      factors.emplace_shared<BetweenFactor<Pose2>>(40, 35, Pose2(5, 0, 0),
+                                                   odoNoise);
+
+    // Predict the Update
+    std::pair<KeySet, bool> predicted =
+        isam.predictUpdateInfo(factors, values, update_params);
+
+    // Actually perform the update
+    ISAM2Result result = isam.update(factors, values, update_params);
+    isam.calculateEstimate();
+
+    // Validate
+    if (result.details()->variableStatus.size() == size_t(i + 1)) {
+      EXPECT(predicted.second);
+    } else {
+      for (auto kvp : result.details()->variableStatus) {
+        if (kvp.second.isReeliminated) {
+          EXPECT(predicted.first.count(kvp.first) == 1 ||
+                 kvp.second.isAboveRelinThreshold);
+        }
+      }
+    }
+  }
+}
+
+/* ************************************************************************* */
 class FixActiveFactor : public NoiseModelFactorN<Vector2> {
   using Base = NoiseModelFactorN<Vector2>;
   bool is_active_;

@@ -5,6 +5,7 @@ project(gtsam_unstable LANGUAGES CXX)
 set (gtsam_unstable_subdirs
     base
     geometry
+    navigation
     linear
     discrete
     dynamics
@@ -69,6 +70,7 @@ install(FILES "${PROJECT_BINARY_DIR}/dllexport.h" DESTINATION ${CMAKE_INSTALL_IN
 set(gtsam_unstable_srcs
     ${base_srcs}
     ${geometry_srcs}
+    ${navigation_srcs}
     ${linear_srcs}
     ${discrete_srcs}
     ${dynamics_srcs}

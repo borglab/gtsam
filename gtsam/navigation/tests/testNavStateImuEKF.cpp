@@ -75,8 +75,7 @@ TEST(NavStateImuEKF, DynamicsJacobian) {
   double dt = 0.01;
   Matrix9 A;
   (void)NavStateImuEKF::Dynamics(params->n_gravity, X0, omega_b, f_b, dt, A);
-  std::function<NavState(const NavState&)> f =
-      [&](const NavState& Xq) -> NavState {
+  auto f = [&](const NavState& Xq) -> NavState {
     return NavStateImuEKF::Dynamics(params->n_gravity, Xq, omega_b, f_b, dt);
   };
   Matrix9 expected = numericalDerivative11(f, X0);
@@ -140,7 +139,7 @@ TEST(NavStateImuEKF, PositionMeasurementJacobian) {
   H.block<3, 3>(0, 3) = X.attitude().matrix();
 
   // Numerical Jacobian via central differencing
-  std::function<Point3(const NavState&)> h = [](const NavState& Xq) {
+  auto h = [](const NavState& Xq) {
     return Xq.position();
   };
   Matrix39 expected = numericalDerivative11<Point3, NavState>(h, X);

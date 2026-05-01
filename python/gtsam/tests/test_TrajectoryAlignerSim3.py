@@ -59,6 +59,35 @@ class TestTrajectoryAlignerSim3(GtsamTestCase):
         recovered = result.atSimilarity3(gtsam.Symbol("S", 0).key())
         self.assertTrue(gt_bSa.equals(recovered, 1e-6))
 
+    def test_perfect_alignment_without_initial_sim_with_points(self):
+        parent = make_parent_poses()
+        gt_bSa = gtsam.Similarity3(
+            gtsam.Rot3.RzRyRx(0.2, -0.1, 0.05),
+            gtsam.Point3(0.3, -0.2, 0.1),
+            1.4,
+        )
+        child = transform_poses(gt_bSa, parent)
+
+        aTi = make_measurements(parent)
+        bTi_all = [make_measurements(child)]
+
+        parent_points = [
+            gtsam.Point3(0.25, -0.10, 0.80),
+            gtsam.Point3(1.00, 0.30, -0.20),
+            gtsam.Point3(-0.40, 0.50, 0.15),
+            gtsam.Point3(0.70, -0.60, 0.25),
+        ]
+        overlap_child = [(p, gt_bSa.transformFrom(p)) for p in parent_points]
+        overlapping_points = [overlap_child]
+
+        aligner = gtsam.TrajectoryAlignerSim3(
+            aTi, bTi_all, [], False, overlapping_points, 1e-3
+        )
+        result = aligner.solve()
+
+        recovered = result.atSimilarity3(gtsam.Symbol("S", 0).key())
+        self.assertTrue(gt_bSa.equals(recovered, 1e-6))
+
     def test_noisy_alignment_with_initial_guess(self):
         parent = make_parent_poses()
         gt_bSa = gtsam.Similarity3(

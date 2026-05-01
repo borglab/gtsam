@@ -41,7 +41,7 @@ TEST(EssentialMatrix, FromRotationAndDirection) {
       1e-8));
 
   {
-    std::function<EssentialMatrix(const Rot3&)> fn = [](const Rot3& R) {
+    auto fn = [](const Rot3& R) {
       return EssentialMatrix::FromRotationAndDirection(R, trueDirection);
     };
     Matrix expectedH1 = numericalDerivative11<EssentialMatrix, Rot3>(fn, trueRotation);
@@ -49,7 +49,7 @@ TEST(EssentialMatrix, FromRotationAndDirection) {
   }
 
   {
-    std::function<EssentialMatrix(const Unit3&)> fn = [](const Unit3& t) {
+    auto fn = [](const Unit3& t) {
       return EssentialMatrix::FromRotationAndDirection(trueRotation, t);
     };
     Matrix expectedH2 = numericalDerivative11<EssentialMatrix, Unit3>(fn, trueDirection);
@@ -178,7 +178,7 @@ TEST (EssentialMatrix, FromPose3_a) {
   Matrix actualH;
   Pose3 pose(trueRotation, trueTranslation); // Pose between two cameras
   EXPECT(assert_equal(trueE, EssentialMatrix::FromPose3(pose, actualH), 1e-8));
-  std::function<EssentialMatrix(const Pose3&)> fn = [](const Pose3& pose) {
+  auto fn = [](const Pose3& pose) {
     return EssentialMatrix::FromPose3(pose);
   };
   Matrix expectedH = numericalDerivative11<EssentialMatrix, Pose3>(fn, pose);
@@ -193,7 +193,7 @@ TEST (EssentialMatrix, FromPose3_b) {
   EssentialMatrix E(c1Rc2, Unit3(c1Tc2));
   Pose3 pose(c1Rc2, c1Tc2); // Pose between two cameras
   EXPECT(assert_equal(E, EssentialMatrix::FromPose3(pose, actualH), 1e-8));
-  std::function<EssentialMatrix(const Pose3&)> fn = [](const Pose3& pose) {
+  auto fn = [](const Pose3& pose) {
     return EssentialMatrix::FromPose3(pose);
   };
   Matrix expectedH = numericalDerivative11<EssentialMatrix, Pose3>(fn, pose);

@@ -687,6 +687,21 @@ TEST(NoiseModel, robustFunctionGemanMcClure)
   DOUBLES_EQUAL(0.2500, gmc->loss(error4), 1e-8);
 }
 
+TEST(NoiseModel, robustFunctionTLS)
+{
+  const double k = 4.0, error1 = 0.5, error2 = 10.0, error3 = -10.0, error4 = -0.5;
+  const mEstimator::TruncatedLeastSquares::shared_ptr tls = mEstimator::TruncatedLeastSquares::Create(k);
+  DOUBLES_EQUAL(1.0, tls->weight(error1), 1e-8);
+  DOUBLES_EQUAL(0.0, tls->weight(error2), 1e-8);
+  DOUBLES_EQUAL(0.0, tls->weight(error3), 1e-8);
+  DOUBLES_EQUAL(1.0, tls->weight(error4), 1e-8);
+
+  DOUBLES_EQUAL(0.1250, tls->loss(error1), 1e-8);
+  DOUBLES_EQUAL(8.0, tls->loss(error2), 1e-8);
+  DOUBLES_EQUAL(8.0, tls->loss(error3), 1e-8);
+  DOUBLES_EQUAL(0.1250, tls->loss(error4), 1e-8);
+}
+
 TEST(NoiseModel, robustFunctionWelsch)
 {
   const double k = 5.0, error1 = 1.0, error2 = 10.0, error3 = -10.0, error4 = -1.0;
@@ -806,6 +821,30 @@ TEST(NoiseModel, robustNoiseGemanMcClure)
 
   const double sqrt_weight_error1 = sqrt(0.25);
   const double sqrt_weight_error2 = sqrt(k4/(k2error*k2error));
+
+  DOUBLES_EQUAL(sqrt_weight_error1*error1, b(0), 1e-8);
+  DOUBLES_EQUAL(sqrt_weight_error2*error2, b(1), 1e-8);
+
+  DOUBLES_EQUAL(sqrt_weight_error1*a00, A(0,0), 1e-8);
+  DOUBLES_EQUAL(sqrt_weight_error1*a01, A(0,1), 1e-8);
+  DOUBLES_EQUAL(sqrt_weight_error2*a10, A(1,0), 1e-8);
+  DOUBLES_EQUAL(sqrt_weight_error2*a11, A(1,1), 1e-8);
+}
+
+TEST(NoiseModel, robustNoiseTLS)
+{
+  const double k = 1.0, error1 = 1.0, error2 = 100.0;
+  const double a00 = 1.0, a01 = 10.0, a10 = 100.0, a11 = 1000.0;
+  Matrix A = (Matrix(2, 2) << a00, a01, a10, a11).finished();
+  Vector b = Vector2(error1, error2);
+  const Robust::shared_ptr robust = Robust::Create(
+    mEstimator::TruncatedLeastSquares::Create(k, mEstimator::TruncatedLeastSquares::Scalar),
+    Unit::Create(2));
+
+  robust->WhitenSystem(A, b);
+
+  const double sqrt_weight_error1 = 1.0;
+  const double sqrt_weight_error2 = 0.0;
 
   DOUBLES_EQUAL(sqrt_weight_error1*error1, b(0), 1e-8);
   DOUBLES_EQUAL(sqrt_weight_error2*error2, b(1), 1e-8);
@@ -1033,6 +1072,14 @@ TEST(NoiseModel, NegLogNormalizationConstant3D) {
     expected_value = 0.5 * n * log(2 * M_PI * sigma * sigma);
     EXPECT_DOUBLES_EQUAL(expected_value, actual_value, 1e-9);
   }
+}
+
+/* ************************************************************************* */
+// Negative sigma values should throw (#695)
+TEST(NoiseModel, NegativeSigmaThrows) {
+  CHECK_EXCEPTION(noiseModel::Isotropic::Sigma(2, -2.0), std::invalid_argument);
+  CHECK_EXCEPTION(noiseModel::Isotropic::Variance(2, -1.0), std::invalid_argument);
+  CHECK_EXCEPTION(noiseModel::Diagonal::Sigmas(Vector3(-1.0, 2.0, 3.0)), std::invalid_argument);
 }
 
 /* ************************************************************************* */

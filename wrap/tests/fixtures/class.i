@@ -82,7 +82,6 @@ class Test {
 
   // This should be callable as .print() in python
   void print() const;
-  // Since this is a reserved keyword, it should be updated to `lambda_`
   void lambda() const;
 
   void set_container(std::vector<testing::Test> container);

@@ -58,15 +58,14 @@ TEST( PinholePose, constructor)
 }
 
 //******************************************************************************
-/* Already in testPinholeCamera??? 
+/* Already in testPinholeCamera???
 TEST(PinholeCamera, Pose) {
 
   Matrix actualH;
   EXPECT(assert_equal(pose, camera.getPose(actualH)));
 
   // Check derivative
-  std::function<Pose3(Camera)> f = //
-      std::bind(&Camera::getPose,_1,{});
+  auto f = std::bind(&Camera::getPose,_1,{});
   Matrix numericalH = numericalDerivative11<Pose3,Camera>(f,camera);
   EXPECT(assert_equal(numericalH, actualH, 1e-9));
 }

@@ -24,6 +24,7 @@ Point2Pairs = list
 Point3Pairs = list
 Pose2Pairs = list
 Pose3Pairs = list
+Se23 = ExtendedPose32
 # sfm
 BinaryMeasurementsPoint3 = list
 BinaryMeasurementsUnit3 = list

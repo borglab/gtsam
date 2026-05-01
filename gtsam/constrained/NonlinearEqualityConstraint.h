@@ -47,8 +47,9 @@ class GTSAM_EXPORT NonlinearEqualityConstraint : public NonlinearConstraint {
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& boost::serialization::make_nvp("NonlinearEqualityConstraint",
-                                       boost::serialization::base_object<Base>(*this));
+    ar& boost::serialization::make_nvp(
+        "NonlinearEqualityConstraint",
+        boost::serialization::base_object<Base>(*this));
   }
 #endif
 };
@@ -73,11 +74,14 @@ class ExpressionEqualityConstraint : public NonlinearEqualityConstraint {
    * @param expression  expression representing g(x).
    * @param tolerance   vector representing tolerance in each dimension.
    */
-  ExpressionEqualityConstraint(const Expression<T>& expression, const T& rhs, const Vector& sigmas);
+  ExpressionEqualityConstraint(const Expression<T>& expression, const T& rhs,
+                               const Vector& sigmas);
 
-  virtual Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = nullptr) const override;
+  virtual Vector unwhitenedError(
+      const Values& x, OptionalMatrixVecType H = nullptr) const override;
 
-  virtual NoiseModelFactor::shared_ptr penaltyFactor(const double mu = 1.0) const override;
+  virtual NoiseModelFactor::shared_ptr penaltyFactor(
+      const double mu = 1.0) const override;
 
   const Expression<T>& expression() const { return expression_; }
 
@@ -93,8 +97,9 @@ class ExpressionEqualityConstraint : public NonlinearEqualityConstraint {
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& boost::serialization::make_nvp("ExpressionEqualityConstraint",
-                                       boost::serialization::base_object<Base>(*this));
+    ar& boost::serialization::make_nvp(
+        "ExpressionEqualityConstraint",
+        boost::serialization::base_object<Base>(*this));
     ar& BOOST_SERIALIZATION_NVP(expression_);
     ar& BOOST_SERIALIZATION_NVP(rhs_);
     ar& BOOST_SERIALIZATION_NVP(dims_);
@@ -102,7 +107,7 @@ class ExpressionEqualityConstraint : public NonlinearEqualityConstraint {
 #endif
 };
 
-/** Equality constraint that enforce the cost factor with zero error. 
+/** Equality constraint that enforce the cost factor with zero error.
  * e.g., for a factor with unwhitened cost 2x-1, the constraint enforces the
  * equality 2x-1=0.
  */
@@ -123,9 +128,11 @@ class GTSAM_EXPORT ZeroCostConstraint : public NonlinearEqualityConstraint {
    */
   ZeroCostConstraint(const NoiseModelFactor::shared_ptr& factor);
 
-  virtual Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = nullptr) const override;
+  virtual Vector unwhitenedError(
+      const Values& x, OptionalMatrixVecType H = nullptr) const override;
 
-  virtual NoiseModelFactor::shared_ptr penaltyFactor(const double mu = 1.0) const override;
+  virtual NoiseModelFactor::shared_ptr penaltyFactor(
+      const double mu = 1.0) const override;
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -139,15 +146,16 @@ class GTSAM_EXPORT ZeroCostConstraint : public NonlinearEqualityConstraint {
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& boost::serialization::make_nvp("ZeroCostConstraint",
-                                       boost::serialization::base_object<Base>(*this));
+    ar& boost::serialization::make_nvp(
+        "ZeroCostConstraint", boost::serialization::base_object<Base>(*this));
     ar& BOOST_SERIALIZATION_NVP(factor_);
   }
 #endif
 };
 
 /// Container of NonlinearEqualityConstraint.
-class GTSAM_EXPORT NonlinearEqualityConstraints : public FactorGraph<NonlinearEqualityConstraint> {
+class GTSAM_EXPORT NonlinearEqualityConstraints
+    : public FactorGraph<NonlinearEqualityConstraint> {
  public:
   using shared_ptr = std::shared_ptr<NonlinearEqualityConstraints>;
   using Base = FactorGraph<NonlinearEqualityConstraint>;
@@ -156,7 +164,8 @@ class GTSAM_EXPORT NonlinearEqualityConstraints : public FactorGraph<NonlinearEq
   using Base::Base;
 
   /// Create constraints ensuring the cost of factors of a graph is zero.
-  static NonlinearEqualityConstraints FromCostGraph(const NonlinearFactorGraph& graph);
+  static NonlinearEqualityConstraints FromCostGraph(
+      const NonlinearFactorGraph& graph);
 
   size_t dim() const;
 
@@ -174,8 +183,9 @@ class GTSAM_EXPORT NonlinearEqualityConstraints : public FactorGraph<NonlinearEq
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& boost::serialization::make_nvp("NonlinearEqualityConstraints",
-                                       boost::serialization::base_object<Base>(*this));
+    ar& boost::serialization::make_nvp(
+        "NonlinearEqualityConstraints",
+        boost::serialization::base_object<Base>(*this));
   }
 #endif
 };

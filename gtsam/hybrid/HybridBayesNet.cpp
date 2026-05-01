@@ -46,17 +46,17 @@ HybridBayesNet HybridBayesNet::prune(
   gttic_(HybridPruning);
 #endif
   // Collect all the discrete conditionals. Could be small if already pruned.
-  const DiscreteBayesNet marginal = discreteMarginal();
+  const DiscreteBayesNet discreteMarginalBN = discreteMarginal();
 
   // We use a separate value here since we need this to perform `restrict` on
   // the HybridConditionals later.
   DiscreteValues fixed;
   // Prune discrete Bayes net
   DiscreteBayesNet prunedBN =
-      marginal.prune(maxNrLeaves, marginalThreshold, &fixed);
+      discreteMarginalBN.prune(maxNrLeaves, marginalThreshold, &fixed);
 
   // Multiply into one big conditional.
-  // NOTE: This is cheap since marginal.prune above creates a
+  // NOTE: This is cheap since discreteMarginalBN.prune above creates a
   // DBN with a single joint conditional.
   DiscreteConditional pruned = prunedBN.joint();
 

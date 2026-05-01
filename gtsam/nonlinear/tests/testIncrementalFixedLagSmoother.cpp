@@ -355,6 +355,166 @@ TEST(IncrementalFixedLagSmoother, Example) {
   }
 }
 
+/* ************************************************************************* */
+TEST( IncrementalFixedLagSmoother, ExampleWithFactorRemoval )
+{
+  // Test the IncrementalFixedLagSmoother in a pure linear environment. Thus, full optimization and
+  // the IncrementalFixedLagSmoother should be identical (even with the linearized approximations at
+  // the end of the smoothing lag)
+
+  SETDEBUG("IncrementalFixedLagSmoother update", true);
+
+  // Set up parameters
+  SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
+
+  // Create a Fixed-Lag Smoother
+  typedef IncrementalFixedLagSmoother::KeyTimestampMap Timestamps;
+  IncrementalFixedLagSmoother smoother(5.0, ISAM2Params());
+
+  // Create containers to keep the full graph
+  Values fullinit;
+  NonlinearFactorGraph fullgraph;
+
+  // i keeps track of the time step
+  size_t i = 0;
+
+  // Add a prior at time 0 and update the HMF
+  {
+    Key key0 = X(0);
+
+    NonlinearFactorGraph newFactors;
+    Values newValues;
+    Timestamps newTimestamps;
+
+    newFactors.addPrior(key0, Point2(0.0, 0.0), noise);
+    newValues.insert(key0, Point2(0.01, 0.01));
+    newTimestamps[key0] = 0.0;
+
+    fullgraph.push_back(newFactors);
+    fullinit.insert(newValues);
+
+    // Update the smoother
+    smoother.update(newFactors, newValues, newTimestamps);
+
+    // Check
+    CHECK(check_smoother(fullgraph, fullinit, smoother, key0));
+
+    ++i;
+  }
+
+  FactorIndices factorsToRemove;
+  size_t ref_i = 0;
+  Key prev_key = 0;
+
+  // The lambda below helps to set up a usage pattern of the smoother where we
+  // add new values and update at a certain frequency, but do not keep all added
+  // values in the smoother in the long term. This is achieved by storing the
+  // indices of the new factors being added, and using them to remove the
+  // factors later. The removal of factors may cause keys to become unused and
+  // be removed from the smoother.
+  const auto add_x_check_keep_every_y = [&](size_t num_new_values,
+                                      size_t keep_every) {
+    for (size_t j = 0; j < num_new_values; ++j) {
+      Key key1 = X(ref_i);
+      Key key2 = X(i);
+
+      NonlinearFactorGraph newFactors;
+      Values newValues;
+      Timestamps newTimestamps;
+
+      newFactors.push_back(
+          BetweenFactor<Point2>(key1, key2, Point2(i - ref_i, 0.0), noise));
+      newFactors.addPrior(key2, Point2(double(i), 0.0), noise);
+      newValues.insert(key2, Point2(double(i) + 0.1, -0.1));
+      newTimestamps[key2] = double(i);
+
+      auto fullNewFactorIndices = fullgraph.add_factors(newFactors);
+      fullinit.insert(newValues);
+
+      // Update the smoother
+      smoother.update(newFactors, newValues, newTimestamps, factorsToRemove);
+
+      // Check that removed factors are not there.
+      //
+      // NOTE: this test only work when factor slots are not being reused.
+      const NonlinearFactorGraph& actual = smoother.getFactors();
+      for (auto factor_i : factorsToRemove) {
+        EXPECT(not actual[factor_i]);
+      }
+
+      if (not factorsToRemove.empty()) {
+        // Check that the previously added value is not in the smoother
+        // anymore.
+        EXPECT(not smoother.getLinearizationPoint().exists(prev_key));
+      }
+
+      // Store indexes of new factors so we're able to remove them later, if
+      // needed.
+      factorsToRemove = smoother.getISAM2Result().newFactorsIndices;
+
+      // Check
+      CHECK(check_smoother(fullgraph, fullinit, smoother, key2));
+
+      // Decide if we want to keep the new value in the smoother
+      if ((j + 1) % keep_every == 0) {
+        // We want to keep it. Clear factorsToRemove so newValue stays
+        // connected to the graph.
+        factorsToRemove.clear();
+        // Store new reference
+        ref_i = i;
+      } else {
+        // We do not want to keep it. Remove value and factors from the
+        // full* structures, preparing them for the next pass.
+        for (const auto index : fullNewFactorIndices) {
+          fullgraph.remove(index);
+        }
+        fullinit.erase(key2);
+      }
+
+      prev_key = key2;
+      ++i;
+    }
+  };
+
+  // NOTE: The call below adds 9 values, keeping every 3rd value. This setup
+  // exposed 2 bugs:
+  //
+  //   1. A bug in the IncrementalFixedLagSmoother that happened whenever a
+  //      marginalization occurred while keys became unused due to factor
+  //      removal.
+  //
+  //   2. A bug in ISAM2 (but caused by IncrementalFixedLagSmoother) that
+  //      happened whenever the following conditions held:
+  //
+  //      1. Keys were being marginalized during the update;
+  //
+  //      2. Factors were being removed during the same update, and removing
+  //         them made some keys to become unused;
+  //
+  //      3. More than 65% of keys were being affected by the update (see
+  //         kBatchThreshold in ISAM2.cpp), making ISAM2 prefer to call
+  //         ISAM2::recalculateBatch instead of ISAM2::recalculateIncremental.
+  //
+  //      The first bug appeared in this setup when i == 7. The second appeared
+  //      when i == 9, but only after the first bug was fixed.
+  //
+  // Both bugs were fixed in PR #2474.
+  add_x_check_keep_every_y(9, 3);
+
+  // In the lines below:
+  //
+  //   - First we add a new value, and leave it ready to be removed in the
+  //     following update;
+  //
+  //   - Then we advance the time enough so that this value becomes both unused
+  //     and marginalizable.
+  //
+  // This setup exposed another bug, also fixed on PR #2474.
+  add_x_check_keep_every_y(1, 3);
+  i = 16;
+  add_x_check_keep_every_y(1, 1);
+}
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

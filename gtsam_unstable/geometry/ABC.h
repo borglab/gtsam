@@ -62,7 +62,7 @@ inline Vector6 toInputVector(const Vector3& w) {
 
 /// Bundle of calibration rotations modeled as a Lie group
 template <size_t N>
-using Calibrations = PowerLieGroup<Rot3, N>;
+using Calibrations = PowerLieGroup<Rot3, static_cast<int>(N)>;
 
 //========================================================================
 // State Manifold
@@ -78,7 +78,7 @@ struct State {
   Vector3 b;          // Gyroscope bias b
   Calibrations<N> S;  // Sensor calibrations S
 
-  static constexpr int dimension = 6 + 3 * N;
+  static constexpr int dimension = 6 + 3 * static_cast<int>(N);
   using TangentVector = Eigen::Matrix<double, dimension, 1>;
 
   /// Constructor
@@ -480,11 +480,5 @@ struct traits<abc::State<N>> : public internal::Manifold<abc::State<N>> {};
 template <size_t N>
 struct traits<const abc::State<N>> : public internal::Manifold<abc::State<N>> {
 };
-
-template <size_t N>
-struct traits<abc::Group<N>> : internal::LieGroup<abc::Group<N>> {};
-
-template <size_t N>
-struct traits<const abc::Group<N>> : internal::LieGroup<abc::Group<N>> {};
 
 }  // namespace gtsam

@@ -53,6 +53,9 @@ endif()
 
 # Set the wrapping script variable
 set(PYBIND_WRAP_SCRIPT "${PROJECT_SOURCE_DIR}/wrap/scripts/pybind_wrap.py")
+
+# Disable pybind11's default LTO for wrapper modules to improve link times.
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
 ############################################################
 
 add_custom_target(gtsam_header DEPENDS "${PROJECT_SOURCE_DIR}/gtsam/gtsam.i")
@@ -95,6 +98,7 @@ set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/inference/inference.i
     ${PROJECT_SOURCE_DIR}/gtsam/discrete/discrete.i
     ${PROJECT_SOURCE_DIR}/gtsam/geometry/geometry.i
+    ${PROJECT_SOURCE_DIR}/gtsam/geometry/cameras.i
     ${PROJECT_SOURCE_DIR}/gtsam/linear/linear.i
     ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/nonlinear.i
     ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/values.i
@@ -132,6 +136,17 @@ pybind_wrap(${GTSAM_PYTHON_TARGET} # target
             )
 
 SET_PYTHON_TARGET_PROPERTIES(${GTSAM_PYTHON_TARGET} ${GTSAM_OUTPUT_NAME} "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam")
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    # Generated pybind wrappers can trigger GCC's non-actionable psABI notes.
+    target_compile_options(${GTSAM_PYTHON_TARGET} PRIVATE -Wno-psabi)
+endif()
+
+if(GTSAM_ENABLE_BOOST_SERIALIZATION)
+    # Boost 1.87 emits deprecated-header pragma messages through serialization
+    # internals; limit suppression to wrapper compilation.
+    target_compile_definitions(${GTSAM_PYTHON_TARGET} PRIVATE BOOST_ALLOW_DEPRECATED_HEADERS)
+endif()
 
 if(WIN32)
     set_target_properties(${GTSAM_PYTHON_TARGET} PROPERTIES
@@ -241,6 +256,17 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             )
 
     SET_PYTHON_TARGET_PROPERTIES(${GTSAM_PYTHON_UNSTABLE_TARGET} ${GTSAM_UNSTABLE_OUTPUT_NAME} "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable")
+
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        # Generated pybind wrappers can trigger GCC's non-actionable psABI notes.
+        target_compile_options(${GTSAM_PYTHON_UNSTABLE_TARGET} PRIVATE -Wno-psabi)
+    endif()
+
+    if(GTSAM_ENABLE_BOOST_SERIALIZATION)
+        # Boost 1.87 emits deprecated-header pragma messages through serialization
+        # internals; limit suppression to wrapper compilation.
+        target_compile_definitions(${GTSAM_PYTHON_UNSTABLE_TARGET} PRIVATE BOOST_ALLOW_DEPRECATED_HEADERS)
+    endif()
 
     set(GTSAM_UNSTABLE_MODULE_PATH ${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable)
 

@@ -39,9 +39,12 @@ BOOST_CLASS_EXPORT_GUID(noiseModel::Unit, "gtsam_noiseModel_Unit")
 BOOST_CLASS_EXPORT_GUID(noiseModel::Isotropic, "gtsam_noiseModel_Isotropic")
 BOOST_CLASS_EXPORT_GUID(SharedNoiseModel, "gtsam_SharedNoiseModel")
 BOOST_CLASS_EXPORT_GUID(SharedDiagonal, "gtsam_SharedDiagonal")
-BOOST_CLASS_EXPORT_GUID(PreintegratedImuMeasurements, "gtsam_PreintegratedImuMeasurements")
-BOOST_CLASS_EXPORT_GUID(PreintegrationCombinedParams, "gtsam_PreintegrationCombinedParams")
-BOOST_CLASS_EXPORT_GUID(PreintegratedCombinedMeasurements, "gtsam_PreintegratedCombinedMeasurements")
+BOOST_CLASS_EXPORT_GUID(PreintegratedImuMeasurements,
+                        "gtsam_PreintegratedImuMeasurements")
+BOOST_CLASS_EXPORT_GUID(PreintegrationCombinedParams,
+                        "gtsam_PreintegrationCombinedParams")
+BOOST_CLASS_EXPORT_GUID(PreintegratedCombinedMeasurements,
+                        "gtsam_PreintegratedCombinedMeasurements")
 
 template <typename P>
 P getPreintegratedMeasurements() {
@@ -112,10 +115,10 @@ TEST(CombinedImuFactor, Serialization) {
 }
 
 /* ************************************************************************* */
-TEST(Rot3AttitudeFactor, Serialization) {
+TEST(AttitudeFactorRot3, Serialization) {
   Unit3 nDown(0, 0, -1);
   SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.25);
-  Rot3AttitudeFactor factor(0, nDown, model);
+  AttitudeFactor<Rot3> factor(0, nDown, model);
 
   EXPECT(serializationTestHelpers::equalsObj(factor));
   EXPECT(serializationTestHelpers::equalsXML(factor));
@@ -123,10 +126,54 @@ TEST(Rot3AttitudeFactor, Serialization) {
 }
 
 /* ************************************************************************* */
-TEST(Pose3AttitudeFactor, Serialization) {
+TEST(AttitudeFactorPose3, Serialization) {
   Unit3 nDown(0, 0, -1);
   SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.25);
-  Pose3AttitudeFactor factor(0, nDown, model);
+  AttitudeFactor<Pose3> factor(0, nDown, model);
+
+  EXPECT(serializationTestHelpers::equalsObj(factor));
+  EXPECT(serializationTestHelpers::equalsXML(factor));
+  EXPECT(serializationTestHelpers::equalsBinary(factor));
+}
+
+/* ************************************************************************* */
+TEST(AttitudeFactorNavState, Serialization) {
+  Unit3 nDown(0, 0, -1);
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.25);
+  AttitudeFactor<NavState> factor(0, nDown, model);
+
+  EXPECT(serializationTestHelpers::equalsObj(factor));
+  EXPECT(serializationTestHelpers::equalsXML(factor));
+  EXPECT(serializationTestHelpers::equalsBinary(factor));
+}
+
+/* ************************************************************************* */
+TEST(AttitudeFactorGal3, Serialization) {
+  Unit3 nDown(0, 0, -1);
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.25);
+  AttitudeFactor<Gal3> factor(0, nDown, model);
+
+  EXPECT(serializationTestHelpers::equalsObj(factor));
+  EXPECT(serializationTestHelpers::equalsXML(factor));
+  EXPECT(serializationTestHelpers::equalsBinary(factor));
+}
+
+/* ************************************************************************* */
+TEST(AttitudeFactorSe23, Serialization) {
+  Unit3 nDown(0, 0, -1);
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.25);
+  AttitudeFactor<Se23> factor(0, nDown, model);
+
+  EXPECT(serializationTestHelpers::equalsObj(factor));
+  EXPECT(serializationTestHelpers::equalsXML(factor));
+  EXPECT(serializationTestHelpers::equalsBinary(factor));
+}
+
+/* ************************************************************************* */
+TEST(AttitudeFactorExtendedPose3d, Serialization) {
+  Unit3 nDown(0, 0, -1);
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.25);
+  AttitudeFactor<ExtendedPose3d> factor(0, nDown, model);
 
   EXPECT(serializationTestHelpers::equalsObj(factor));
   EXPECT(serializationTestHelpers::equalsXML(factor));

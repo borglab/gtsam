@@ -658,7 +658,7 @@ struct traits<MyType> {
     return (a - b).array().abs().maxCoeff() < tol;
   }
   static void Print(const MyType&, const string&) {}
-  static int GetDimension(const MyType&) { return dimension; }
+  static size_t GetDimension(const MyType&) { return dimension; }
   static MyType Retract(const MyType& a, const TangentVector& v,
                         ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
     if (H1) *H1 = Matrix3::Identity();

@@ -97,10 +97,10 @@ public:
         NonlinearFactor::shared_ptr(new This(*this))); }
 
   /** Combined cost and derivative function using boost::optional */
-  Vector evaluateError(const Point& global, const Transform& trans, const Point& local,
+  Vector evaluateError(const Point& _global, const Transform& trans, const Point& local,
         OptionalMatrixType Dforeign, OptionalMatrixType Dtrans,
         OptionalMatrixType Dlocal) const override {
-    Point newlocal = transform_point<Transform,Point>(trans, global, Dtrans, Dforeign);
+    Point newlocal = transform_point<Transform,Point>(trans, _global, Dtrans, Dforeign);
     if (Dlocal) {
       *Dlocal = -1* Matrix::Identity(traits<Point>::dimension, traits<Point>::dimension);
     }

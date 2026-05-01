@@ -121,7 +121,7 @@ Unit3 Rot3::unrotate(const Unit3& p,
     OptionalJacobian<2,3> HR, OptionalJacobian<2,2> Hp) const {
   Matrix32 Dp;
   Unit3 q = Unit3(unrotate(p.point3(Dp)));
-  if (Hp) *Hp = q.basis().transpose() * matrix().transpose () * Dp;
+  if (Hp) *Hp = q.basis().transpose() * matrix().transpose() * Dp;
   if (HR) *HR = q.basis().transpose() * q.skew();
   return q;
 }
@@ -243,19 +243,6 @@ Matrix3 Rot3::ExpmapDerivative(const Vector3& x) {
 /* ************************************************************************* */
 Matrix3 Rot3::LogmapDerivative(const Vector3& x)    {
   return SO3::LogmapDerivative(x);
-}
-
-/* ************************************************************************* */
-Matrix3 Rot3::adjointMap(const Vector3& xi) { return Hat(xi); }
-
-/* ************************************************************************* */
-Vector3 Rot3::adjoint(const Vector3& xi, const Vector3& y,
-                      OptionalJacobian<3, 3> Hxi,
-                      OptionalJacobian<3, 3> Hy) {
-  const Matrix3 ad_xi = adjointMap(xi);
-  if (Hxi) *Hxi = -Hat(y);
-  if (Hy) *Hy = ad_xi;
-  return ad_xi * y;
 }
 
 /* ************************************************************************* */

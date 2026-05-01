@@ -122,6 +122,7 @@ class Scheduler {
 
       // Notify waiters only when work transitions to "done".
       if (activeTasks_.fetch_sub(1, std::memory_order_release) == 1) {
+        std::lock_guard<std::mutex> lock(waitMutex_);
         condition_.notify_all();
       }
     }
@@ -183,7 +184,10 @@ class Scheduler {
 
     queuedTasks_.fetch_add(1, std::memory_order_release);
     activeTasks_.fetch_add(1, std::memory_order_release);
-    condition_.notify_one();
+    {
+      std::lock_guard<std::mutex> lock(waitMutex_);
+      condition_.notify_one();
+    }
     return true;
   }
 
@@ -201,6 +205,7 @@ class Scheduler {
     } catch (...) { /* ignore */
     }
     if (activeTasks_.fetch_sub(1, std::memory_order_release) == 1) {
+      std::lock_guard<std::mutex> lock(waitMutex_);
       condition_.notify_all();
     }
   }

@@ -31,22 +31,19 @@ using namespace std::placeholders;
 TEST(ManifoldPreintegration, BiasCorrectionJacobians) {
   testing::SomeMeasurements measurements;
 
-  std::function<Rot3(const Vector3&, const Vector3&)> deltaRij =
-      [&](const Vector3& a, const Vector3& w) {
+  auto deltaRij = [&](const Vector3& a, const Vector3& w) {
         ManifoldPreintegration pim(testing::Params(), Bias(a, w));
         testing::integrateMeasurements(measurements, &pim);
         return pim.deltaRij();
       };
 
-  std::function<Point3(const Vector3&, const Vector3&)> deltaPij =
-      [&](const Vector3& a, const Vector3& w) {
+  auto deltaPij = [&](const Vector3& a, const Vector3& w) {
         ManifoldPreintegration pim(testing::Params(), Bias(a, w));
         testing::integrateMeasurements(measurements, &pim);
         return pim.deltaPij();
       };
 
-  std::function<Vector3(const Vector3&, const Vector3&)> deltaVij =
-      [&](const Vector3& a, const Vector3& w) {
+  auto deltaVij = [&](const Vector3& a, const Vector3& w) {
         ManifoldPreintegration pim(testing::Params(), Bias(a, w));
         testing::integrateMeasurements(measurements, &pim);
         return pim.deltaVij();
@@ -86,9 +83,7 @@ TEST(ManifoldPreintegration, computeError) {
   Matrix9 aH1, aH2;
   Matrix96 aH3;
   pim.computeError(x1, x2, bias, aH1, aH2, aH3);
-  std::function<Vector9(const NavState&, const NavState&,
-                        const imuBias::ConstantBias&)>
-      f = std::bind(&ManifoldPreintegration::computeError, pim,
+  auto f = std::bind(&ManifoldPreintegration::computeError, pim,
                     std::placeholders::_1, std::placeholders::_2,
                     std::placeholders::_3, nullptr, nullptr,
                     nullptr);

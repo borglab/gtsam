@@ -140,6 +140,25 @@ class GTSAM_EXPORT HybridSmoother {
   /// Return all the recorded nonlinear factors
   HybridNonlinearFactorGraph allFactors() const;
 
+  /**
+   * @brief Compute the linear error using the underlying solver for
+   * the explicitly provided discrete assignment.
+   *
+   * @param x The vector and discrete values to compute the error for.
+   * @return double The error value.
+   */
+  double error(const HybridValues& x) const;
+
+  /**
+   * @brief Compute the linear error using the underlying solver.
+   * The error is computed using the computed Most-Probable Explanation (MPE)
+   * of the discrete variables.
+   *
+   * @param x The vector values to compute the error for.
+   * @return double The error value.
+   */
+  double error(const VectorValues& x) const;
+
  private:
   /// Helper to compute the ordering if ordering is not given.
   Ordering maybeComputeOrdering(const HybridGaussianFactorGraph& updatedGraph,

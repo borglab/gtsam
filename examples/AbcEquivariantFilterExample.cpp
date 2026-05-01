@@ -17,9 +17,23 @@
  * @author Frank Dellaert
  * @date 2025
  */
+
 #include <gtsam/slam/dataset.h>
 #include <gtsam_unstable/geometry/ABC.h>
 #include <gtsam_unstable/geometry/ABCEquivariantFilter.h>
+
+#include <array>
+#include <chrono>
+#include <cmath>
+#include <cstddef>
+#include <exception>
+#include <fstream>
+#include <iostream>
+#include <numeric>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 // Use namespace for convenience
 using namespace gtsam;

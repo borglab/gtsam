@@ -39,6 +39,7 @@ class HybridValues {
   HybridValues();
   HybridValues(const gtsam::VectorValues& cv, const gtsam::DiscreteValues& dv);
   HybridValues(const gtsam::VectorValues& cv, const gtsam::DiscreteValues& dv, const gtsam::Values& v);
+  HybridValues(const gtsam::DiscreteValues& dv, const gtsam::Values& v);
 
   void print(string s = "HybridValues",
              const gtsam::KeyFormatter& keyFormatter =
@@ -553,6 +554,27 @@ class HybridJunctionTree {
   void print(const std::string& s = "",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
+};
+
+#include <gtsam/hybrid/DCSAM.h>
+class DCSAM {
+  DCSAM();
+  DCSAM(const gtsam::ISAM2Params& isam_params);
+
+  void update();
+  void update(const gtsam::HybridNonlinearFactorGraph& graph,
+              const gtsam::HybridValues& initialGuess = gtsam::HybridValues());
+  void update(const gtsam::HybridNonlinearFactorGraph& graph,
+              const gtsam::DiscreteValues& initialGuessDiscrete);
+
+  gtsam::HybridValues calculateEstimate() const;
+
+  const gtsam::DiscreteFactorGraph& getDiscreteFactorGraph() const;
+  const gtsam::NonlinearFactorGraph& getNonlinearFactorGraph() const;
+
+  const gtsam::VectorValues& getDelta() const;
+  double error(const gtsam::VectorValues& x) const;
+
 };
 
 }  // namespace gtsam

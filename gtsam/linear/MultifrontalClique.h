@@ -46,17 +46,6 @@ using KeyDimMap = std::map<Key, size_t>;
 
 namespace internal {
 
-/// Helper class to track original factor indices and row counts.
-class IndexedSymbolicFactor : public SymbolicFactor {
- public:
-  size_t index_;
-  size_t rows_;
-  IndexedSymbolicFactor(const KeyVector& keys, size_t index, size_t rows)
-      : SymbolicFactor(), index_(index), rows_(rows) {
-    keys_ = keys;
-  }
-};
-
 /// Sum variable dimensions for a key range, skipping unknown keys.
 template <typename KeyRange>
 inline size_t sumDims(const KeyDimMap& dims, const KeyRange& keys) {

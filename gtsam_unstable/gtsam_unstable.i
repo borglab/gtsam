@@ -760,9 +760,9 @@ virtual class SmartStereoProjectionFactor : gtsam::NonlinearFactor {
   bool isFarPoint() const;
 
   gtsam::GaussianFactor linearizeDamped(const gtsam::CameraSet<gtsam::StereoCamera>& cameras,
-      const double lambda) const;
+      const double _lambda) const;
   gtsam::GaussianFactor linearizeDamped(const gtsam::Values& values,
-      const double lambda) const;
+      const double _lambda) const;
 };
 
 #include <gtsam_unstable/slam/SmartStereoProjectionPoseFactor.h>
@@ -814,5 +814,85 @@ virtual class ProjectionFactorRollingShutter : gtsam::NoiseModelFactor {
   // enabling serialization functionality
   void serialize() const;
 };
+
+//*************************************************************************
+// navigation (EqVIO)
+//*************************************************************************
+#include <gtsam_unstable/navigation/EqVIOState.h>
+#include <gtsam_unstable/navigation/EqVIOFilter.h>
+namespace eqvio {
+
+class IMUInput {
+  IMUInput();
+  double stamp;
+  gtsam::Vector3 gyr;
+  gtsam::Vector3 acc;
+  gtsam::Vector3 gyrBiasVel;
+  gtsam::Vector3 accBiasVel;
+};
+
+class State {
+  State();
+  gtsam::imuBias::ConstantBias bias;
+  gtsam::Pose3 cameraOffset;
+  size_t n() const;
+  int dim() const;
+  gtsam::Pose3 pose() const;
+  gtsam::Vector3 velocity() const;
+  gtsam::Vector3 gravityDir() const;
+};
+
+class EqVIOFilterParams {
+  EqVIOFilterParams();
+  double initialPointDepth;
+  double initialPointVariance;
+  double outlierThresholdAbs;
+  double featureRetention;
+  double biasOmegaProcessVariance;
+  double biasAccelProcessVariance;
+  double attitudeProcessVariance;
+  double positionProcessVariance;
+  double velocityProcessVariance;
+  double cameraAttitudeProcessVariance;
+  double cameraPositionProcessVariance;
+  double pointProcessVariance;
+  gtsam::Matrix inputNoise;
+};
+
+class EqVIOFilter {
+  EqVIOFilter(const gtsam::eqvio::EqVIOFilterParams& params);
+  EqVIOFilter(const gtsam::eqvio::State& xi_ref, const gtsam::Matrix& Sigma,
+              const gtsam::KeyVector& landmarkKeys,
+              const gtsam::eqvio::EqVIOFilterParams& params);
+  void initializeFromIMU(const gtsam::eqvio::IMUInput& imu);
+  void predict(const gtsam::eqvio::IMUInput& imu, double dt);
+  void update(const std::map<gtsam::Key, gtsam::Point2>& measurement,
+              const std::shared_ptr<gtsam::eqvio::CameraModel>& camera,
+              const gtsam::Matrix& R);
+
+  bool isInitialized() const;
+  size_t landmarkCount() const;
+  gtsam::Point3 position() const;
+  gtsam::Vector3 velocity() const;
+};
+
+}  // namespace eqvio
+
+#include <gtsam_unstable/slam/LocalOrientedPlane3Factor.h>
+
+virtual class LocalOrientedPlane3Factor : gtsam::NoiseModelFactor {
+  LocalOrientedPlane3Factor(const gtsam::Vector4& z,
+                            const gtsam::noiseModel::Base* noiseModel,
+                            gtsam::Key poseKey,
+                            gtsam::Key anchorPoseKey,
+                            gtsam::Key landmarkKey);
+  LocalOrientedPlane3Factor(const gtsam::OrientedPlane3& z,
+                            const gtsam::noiseModel::Base* noiseModel,
+                            gtsam::Key poseKey,
+                            gtsam::Key anchorPoseKey,
+                            gtsam::Key landmarkKey);
+  void serialize() const;
+};
+
 
 } //\namespace gtsam

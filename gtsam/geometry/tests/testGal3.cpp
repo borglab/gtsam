@@ -93,7 +93,7 @@ TEST(Gal3, RetractJacobians) {
   Matrix actualH1, actualH2;
   traits<Gal3>::Retract(g, v, &actualH1, &actualH2);
 
-  std::function<Gal3(const Gal3&, const Vector10&)> retract_proxy =
+  auto retract_proxy =
       [](const Gal3& g_, const Vector10& v_) { return g_.retract(v_); };
   Matrix expectedH1 =
       numericalDerivative21<Gal3, Gal3, Vector10>(retract_proxy, g, v);
@@ -272,7 +272,7 @@ TEST(Gal3, ExpmapZero) {
     EXPECT(assert_equal(expected, custom_exp_1, kTol));
 
     // Check Jacobian
-    std::function<Gal3(const Vector10&)> f = [](const Vector10& v){ return Gal3::Expmap(v); };
+    auto f = [](const Vector10& v){ return Gal3::Expmap(v); };
     Matrix expectedH = numericalDerivative11(f, xi);
     EXPECT(assert_equal(expectedH, aH, 1e-6));
 }
@@ -288,7 +288,7 @@ TEST(Gal3, ExpmapBoost) {
     EXPECT(assert_equal(expected, custom_exp_1, kTol));
 
     // Check Jacobian
-    std::function<Gal3(const Vector10&)> f = [](const Vector10& v){ return Gal3::Expmap(v); };
+    auto f = [](const Vector10& v){ return Gal3::Expmap(v); };
     Matrix expectedH = numericalDerivative11(f, xi);
     EXPECT(assert_equal(expectedH, aH, 1e-6));
 }
@@ -317,7 +317,7 @@ TEST(Gal3, Expmap) {
     // Check derivatives
     Gal3::Jacobian aH;
     Gal3::Expmap(xi, aH);
-    std::function<Gal3(const Vector10&)> f = [](const Vector10& v){ return Gal3::Expmap(v); };
+    auto f = [](const Vector10& v){ return Gal3::Expmap(v); };
     Matrix expectedH = numericalDerivative11(f, xi);
     EXPECT(assert_equal(expectedH, aH, 1e-6));
 }
@@ -624,8 +624,7 @@ TEST(Gal3, Jacobian_Logmap) {
     EXPECT(assert_equal(expected_log_tau1, log1_gtsam, kTol));
 
     // Verify Jacobian against numerical derivative
-    std::function<Vector10(const Gal3&)> logmap_func1 =
-        [](const Gal3& g_in) { return Gal3::Logmap(g_in); };
+    auto logmap_func1 = [](const Gal3& g_in) { return Gal3::Logmap(g_in); };
     Matrix H_numerical1 = numericalDerivative11<Vector10, Gal3>(logmap_func1, g1, jac_tol);
     EXPECT(assert_equal(H_numerical1, Hg1_gtsam, jac_tol));
 
@@ -652,10 +651,24 @@ TEST(Gal3, Jacobian_Logmap) {
     EXPECT(assert_equal(expected_log_tau2, log2_gtsam, kTol));
 
     // Verify Jacobian against numerical derivative
-    std::function<Vector10(const Gal3&)> logmap_func2 =
-        [](const Gal3& g_in) { return Gal3::Logmap(g_in); };
+    auto logmap_func2 = [](const Gal3& g_in) { return Gal3::Logmap(g_in); };
     Matrix H_numerical2 = numericalDerivative11<Vector10, Gal3>(logmap_func2, g2, jac_tol);
     EXPECT(assert_equal(H_numerical2, Hg2_gtsam, jac_tol));
+}
+
+/* ************************************************************************* */
+TEST(Gal3, LogmapDerivativeInverseConsistency) {
+  Vector10 xi =
+      (Vector10() << 0.3, -0.2, 0.1, 0.5, -0.4, 0.2, -0.3, 0.2, -0.1, 0.05)
+          .finished();
+
+  Gal3::Jacobian Jexp, Jlog;
+
+  Gal3::Expmap(xi, Jexp);
+  Jlog = Gal3::LogmapDerivative(xi);
+
+  Matrix I = Jlog * Jexp;
+  EXPECT(assert_equal(Matrix::Identity(10, 10), I, 1e-6));
 }
 
 /* ************************************************************************* */
@@ -672,7 +685,7 @@ TEST(Gal3, Jacobian_Expmap) {
     Gal3::Expmap(xi, aH);
 
     // Check derivatives
-    std::function<Gal3(const Vector10&)> f = [](const Vector10& v){ return Gal3::Expmap(v); };
+    auto f = [](const Vector10& v){ return Gal3::Expmap(v); };
     Matrix expectedH = numericalDerivative11(f, xi);
     EXPECT(assert_equal(expectedH, aH, 1e-6));
 }
@@ -704,8 +717,7 @@ TEST(Gal3, Jacobian_Between) {
     Gal3::Jacobian H1_analytical, H2_analytical;
     g1.between(g2, H1_analytical, H2_analytical);
 
-    std::function<Gal3(const Gal3&, const Gal3&)> between_func =
-        [](const Gal3& g1_in, const Gal3& g2_in) { return g1_in.between(g2_in); };
+    auto between_func = [](const Gal3& g1_in, const Gal3& g2_in) { return g1_in.between(g2_in); };
 
     // Verify H1
     Matrix H1_numerical = numericalDerivative21(between_func, g1, g2, 1e-6);
@@ -736,10 +748,9 @@ TEST(Gal3, Jacobian_AdjointMap) {
     Gal3::Jacobian Ad_analytical = g.AdjointMap();
 
     // Numerical derivative of Adjoint action Ad_g(xi) w.r.t xi should equal Adjoint Map
-    std::function<Vector10(const Gal3&, const Vector10&)> adjoint_action =
-        [](const Gal3& g_in, const Vector10& xi_in) {
-            return g_in.Adjoint(xi_in);
-        };
+    auto adjoint_action = [](const Gal3& g_in, const Vector10& xi_in) {
+      return g_in.Adjoint(xi_in);
+    };
     Matrix H_xi_numerical = numericalDerivative22(adjoint_action, g, xi);
     EXPECT(assert_equal(Ad_analytical, H_xi_numerical, 1e-7)); // Tolerance for numerical diff
 
@@ -748,10 +759,10 @@ TEST(Gal3, Jacobian_AdjointMap) {
     g.Adjoint(xi, H_g_analytical); // Calculate analytical H_g
 
     // Need wrapper that only returns value for numericalDerivative21
-    std::function<Vector10(const Gal3&, const Vector10&)> adjoint_action_wrt_g_val =
-      [](const Gal3& g_in, const Vector10& xi_in) {
-        return g_in.Adjoint(xi_in); // Return only value
-      };
+    auto adjoint_action_wrt_g_val = [](const Gal3& g_in,
+                                       const Vector10& xi_in) {
+      return g_in.Adjoint(xi_in);  // Return only value
+    };
     Matrix H_g_numerical = numericalDerivative21(adjoint_action_wrt_g_val, g, xi);
     EXPECT(assert_equal(H_g_analytical, H_g_numerical, 1e-7));
 }
@@ -785,24 +796,28 @@ TEST(Gal3, Act) {
     EXPECT_DOUBLES_EQUAL(expected_t_out1, e_out1_gtsam.time(), kTol);
 
     // Verify H1g: Derivative of output Event wrt Gal3 g1
-    std::function<Point3(const Gal3&, const Event&)> act_func1_loc_wrt_g =
-        [](const Gal3& g_in, const Event& e_in) { return g_in.act(e_in).location(); };
+    auto act_func1_loc_wrt_g = [](const Gal3& g_in, const Event& e_in) {
+      return g_in.act(e_in).location();
+    };
     Matrix H1g_loc_numerical = numericalDerivative21<Point3, Gal3, Event>(act_func1_loc_wrt_g, g1, e_in1, jac_tol);
     EXPECT(assert_equal(H1g_loc_numerical, H1g_gtsam.block<3, 10>(1, 0), jac_tol));
 
-    std::function<double(const Gal3&, const Event&)> act_func1_time_wrt_g =
-        [](const Gal3& g_in, const Event& e_in) { return g_in.act(e_in).time(); };
+    auto act_func1_time_wrt_g = [](const Gal3& g_in, const Event& e_in) {
+      return g_in.act(e_in).time();
+    };
     Matrix H1g_time_numerical = numericalDerivative21<double, Gal3, Event>(act_func1_time_wrt_g, g1, e_in1, jac_tol);
     EXPECT(assert_equal(H1g_time_numerical, H1g_gtsam.row(0), jac_tol));
 
     // Verify H1e: Derivative of output Event wrt Event e1
-    std::function<Point3(const Gal3&, const Event&)> act_func1_loc_wrt_e =
-        [](const Gal3& g_in, const Event& e_in) { return g_in.act(e_in).location(); };
+    auto act_func1_loc_wrt_e = [](const Gal3& g_in, const Event& e_in) {
+      return g_in.act(e_in).location();
+    };
     Matrix H1e_loc_numerical = numericalDerivative22<Point3, Gal3, Event>(act_func1_loc_wrt_e, g1, e_in1, jac_tol);
     EXPECT(assert_equal(H1e_loc_numerical, H1e_gtsam.block<3, 4>(1, 0), jac_tol));
 
-    std::function<double(const Gal3&, const Event&)> act_func1_time_wrt_e =
-        [](const Gal3& g_in, const Event& e_in) { return g_in.act(e_in).time(); };
+    auto act_func1_time_wrt_e = [](const Gal3& g_in, const Event& e_in) {
+      return g_in.act(e_in).time();
+    };
     Matrix H1e_time_numerical = numericalDerivative22<double, Gal3, Event>(act_func1_time_wrt_e, g1, e_in1, jac_tol);
     EXPECT(assert_equal(H1e_time_numerical, H1e_gtsam.row(0), jac_tol));
 
@@ -830,24 +845,28 @@ TEST(Gal3, Act) {
     EXPECT_DOUBLES_EQUAL(expected_t_out2, e_out2_gtsam.time(), kTol);
 
     // Verify H2g: Derivative of output Event wrt Gal3 g2
-    std::function<Point3(const Gal3&, const Event&)> act_func2_loc_wrt_g =
-        [](const Gal3& g_in, const Event& e_in) { return g_in.act(e_in).location(); };
+    auto act_func2_loc_wrt_g = [](const Gal3& g_in, const Event& e_in) {
+      return g_in.act(e_in).location();
+    };
     Matrix H2g_loc_numerical = numericalDerivative21(act_func2_loc_wrt_g, g2, e_in2, jac_tol);
     EXPECT(assert_equal(H2g_loc_numerical, H2g_gtsam.block<3, 10>(1, 0), jac_tol));
 
-    std::function<double(const Gal3&, const Event&)> act_func2_time_wrt_g =
-        [](const Gal3& g_in, const Event& e_in) { return g_in.act(e_in).time(); };
+    auto act_func2_time_wrt_g = [](const Gal3& g_in, const Event& e_in) {
+      return g_in.act(e_in).time();
+    };
     Matrix H2g_time_numerical = numericalDerivative21(act_func2_time_wrt_g, g2, e_in2, jac_tol);
     EXPECT(assert_equal(H2g_time_numerical, H2g_gtsam.row(0), jac_tol));
 
     // Verify H2e: Derivative of output Event wrt Event e2
-    std::function<Point3(const Gal3&, const Event&)> act_func2_loc_wrt_e =
-        [](const Gal3& g_in, const Event& e_in) { return g_in.act(e_in).location(); };
+    auto act_func2_loc_wrt_e = [](const Gal3& g_in, const Event& e_in) {
+      return g_in.act(e_in).location();
+    };
     Matrix H2e_loc_numerical = numericalDerivative22(act_func2_loc_wrt_e, g2, e_in2, jac_tol);
     EXPECT(assert_equal(H2e_loc_numerical, H2e_gtsam.block<3, 4>(1, 0), jac_tol));
 
-    std::function<double(const Gal3&, const Event&)> act_func2_time_wrt_e =
-        [](const Gal3& g_in, const Event& e_in) { return g_in.act(e_in).time(); };
+    auto act_func2_time_wrt_e = [](const Gal3& g_in, const Event& e_in) {
+      return g_in.act(e_in).time();
+    };
     Matrix H2e_time_numerical = numericalDerivative22(act_func2_time_wrt_e, g2, e_in2, jac_tol);
     EXPECT(assert_equal(H2e_time_numerical, H2e_gtsam.row(0), jac_tol));
 }
@@ -917,10 +936,8 @@ TEST(Gal3, Jacobian_StaticConstructors) {
     Matrix H1_ana, H2_ana, H3_ana, H4_ana;
     Gal3::Create(kTestRot, kTestPos, kTestVel, kTestTime, H1_ana, H2_ana, H3_ana, H4_ana);
 
-    std::function<Gal3(const Rot3&, const Point3&, const Velocity3&, const double&)> create_func =
-        [](const Rot3& R, const Point3& r, const Velocity3& v, const double& t){
-            return Gal3::Create(R, r, v, t); // Call without Jacobians for numerical diff
-        };
+    auto create_func = [](const Rot3& R, const Point3& r, const Velocity3& v,
+                          const double& t) { return Gal3::Create(R, r, v, t); };
 
     const double& time_ref = kTestTime; // Needed for lambda capture if using C++11/14
     Matrix H1_num = numericalDerivative41(create_func, kTestRot, kTestPos, kTestVel, time_ref, jac_tol);
@@ -937,10 +954,10 @@ TEST(Gal3, Jacobian_StaticConstructors) {
     Matrix Hpv1_ana, Hpv2_ana, Hpv3_ana;
     Gal3::FromPoseVelocityTime(kTestPose, kTestVel, kTestTime, Hpv1_ana, Hpv2_ana, Hpv3_ana);
 
-    std::function<Gal3(const Pose3&, const Velocity3&, const double&)> fromPoseVelTime_func =
-        [](const Pose3& pose, const Velocity3& v, const double& t){
-            return Gal3::FromPoseVelocityTime(pose, v, t); // Call without Jacobians
-        };
+    auto fromPoseVelTime_func = [](const Pose3& pose, const Velocity3& v,
+                                   const double& t) {
+      return Gal3::FromPoseVelocityTime(pose, v, t);
+    };
 
     Matrix Hpv1_num = numericalDerivative31(fromPoseVelTime_func, kTestPose, kTestVel, time_ref, jac_tol);
     Matrix Hpv2_num = numericalDerivative32(fromPoseVelTime_func, kTestPose, kTestVel, time_ref, jac_tol);
@@ -960,32 +977,28 @@ TEST(Gal3, Jacobian_Accessors) {
     // Test rotation() / attitude() Jacobian
     Matrix Hrot_ana;
     kTestGal3.rotation(Hrot_ana);
-    std::function<Rot3(const Gal3&)> rot_func =
-        [](const Gal3& g) { return g.rotation(); };
+    auto rot_func = [](const Gal3& g) { return g.rotation(); };
     Matrix Hrot_num = numericalDerivative11(rot_func, kTestGal3, jac_tol);
     EXPECT(assert_equal(Hrot_num, Hrot_ana, jac_tol));
 
     // Test translation() / position() Jacobian
     Matrix Hpos_ana;
     kTestGal3.translation(Hpos_ana);
-    std::function<Point3(const Gal3&)> pos_func =
-        [](const Gal3& g) { return g.translation(); };
+    auto pos_func = [](const Gal3& g) { return g.translation(); };
     Matrix Hpos_num = numericalDerivative11(pos_func, kTestGal3, jac_tol);
     EXPECT(assert_equal(Hpos_num, Hpos_ana, jac_tol));
 
     // Test velocity() Jacobian
     Matrix Hvel_ana;
     kTestGal3.velocity(Hvel_ana);
-    std::function<Velocity3(const Gal3&)> vel_func =
-        [](const Gal3& g) { return g.velocity(); };
+    auto vel_func = [](const Gal3& g) { return g.velocity(); };
     Matrix Hvel_num = numericalDerivative11(vel_func, kTestGal3, jac_tol);
     EXPECT(assert_equal(Hvel_num, Hvel_ana, jac_tol));
 
     // Test time() Jacobian
     Matrix Htime_ana;
     kTestGal3.time(Htime_ana);
-    std::function<double(const Gal3&)> time_func =
-        [](const Gal3& g) { return g.time(); };
+    auto time_func = [](const Gal3& g) { return g.time(); };
     Matrix Htime_num = numericalDerivative11(time_func, kTestGal3, jac_tol);
     EXPECT(assert_equal(Htime_num, Htime_ana, jac_tol));
 }
@@ -1004,10 +1017,10 @@ TEST(Gal3, Jacobian_Interpolate) {
     Matrix H1_ana, H2_ana, Ha_ana;
     interpolate(g1, g2, alpha, H1_ana, H2_ana, Ha_ana);
 
-    std::function<Gal3(const Gal3&, const Gal3&, const double&)> interp_func =
-        [](const Gal3& g1_in, const Gal3& g2_in, const double& a){
-            return interpolate(g1_in, g2_in, a); // Call without Jacobians
-        };
+    auto interp_func = [](const Gal3& g1_in, const Gal3& g2_in,
+                          const double& a) {
+      return interpolate(g1_in, g2_in, a);  // Call without Jacobians
+    };
 
     const double& alpha_ref = alpha; // Needed for lambda capture if using C++11/14
     Matrix H1_num = numericalDerivative31(interp_func, g1, g2, alpha_ref, jac_tol);
@@ -1034,10 +1047,9 @@ TEST(Gal3, StaticAdjoint) {
     EXPECT(assert_equal(ad_xi_map_times_y, ad_xi_y_direct, kTol)); // Check ad(xi)*y == [xi,y]
 
     // Verify d(adjoint(xi,y))/dy == adjointMap(xi) numerically
-    std::function<Vector10(const Vector10&, const Vector10&)> static_adjoint_func =
-        [](const Vector10& xi_in, const Vector10& y_in){
-            return Gal3::adjoint(xi_in, y_in); // Call without Jacobians
-        };
+    auto static_adjoint_func = [](const Vector10& xi_in, const Vector10& y_in) {
+      return Gal3::adjoint(xi_in, y_in);
+    };
     Matrix Hy_num = numericalDerivative22(static_adjoint_func, xi, y, jac_tol);
     EXPECT(assert_equal(ad_xi_map, Hy_num, jac_tol));
 
@@ -1115,10 +1127,8 @@ TEST(Gal3, Vec) {
     // 2. Test the Jacobian
     Eigen::Matrix<double, 25, 10> H_actual;
     gal3.vec(H_actual);
-    auto vec_fun = [](const Gal3& g) -> Vector25 {
-        return g.vec();
-        };
-    Matrix H_numerical = numericalDerivative11<Vector25, Gal3, 10>(vec_fun, gal3);
+    auto f = [](const Gal3& g) -> Vector25 { return g.vec(); };
+    Matrix H_numerical = numericalDerivative11(f, gal3);
     EXPECT(assert_equal(H_numerical, H_actual, 1e-7));
 }
 

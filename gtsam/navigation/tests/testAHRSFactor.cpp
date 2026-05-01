@@ -161,8 +161,7 @@ TEST(AHRSFactor, PIMComputeError) {
   pim.integrateMeasurement(measuredOmega, deltaT);
 
   // Use a wrapper to call the new PIM::computeError for numerical derivatives
-  std::function<Vector3(const Rot3&, const Rot3&, const Vector3&)> f =
-      [&pim](const Rot3& r1, const Rot3& r2, const Vector3& b) -> Vector3 {
+  auto f = [&pim](const Rot3& r1, const Rot3& r2, const Vector3& b) -> Vector3 {
     return pim.computeError(r1, r2, b);
   };
 
@@ -421,8 +420,7 @@ TEST(AHRSFactor, PIM_predict_and_Jacobians) {
 
   // --- Test Jacobians ---
   // Define a wrapper for numerical derivatives
-  std::function<Rot3(const Rot3&, const Vector3&)> f =
-      [&pim](const Rot3& r, const Vector3& b) { return pim.predict(r, b); };
+  auto f = [&pim](const Rot3& r, const Vector3& b) { return pim.predict(r, b); };
 
   // Get analytical Jacobians from the predict call
   Matrix3 H1_actual, H2_actual;
@@ -458,8 +456,7 @@ TEST(AHRSFactor, PIM_predict_and_Jacobians_with_Coriolis) {
 
   // --- Test Jacobians ---
   // Define a wrapper for numerical derivatives
-  std::function<Rot3(const Rot3&, const Vector3&)> f =
-      [&pim](const Rot3& r, const Vector3& b) { return pim.predict(r, b); };
+  auto f = [&pim](const Rot3& r, const Vector3& b) { return pim.predict(r, b); };
 
   // Get analytical Jacobians from the predict call
   Matrix3 H1_actual, H2_actual;

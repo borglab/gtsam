@@ -120,6 +120,7 @@ The group of rigid body motions. This section uses the convention adopted by GTS
     Q_r(\omega, v) & J_r(\omega)
     \end{pmatrix}
     $$
+    
 -   **Block Formulas:** The diagonal blocks are the standard right Jacobian of $\text{SO}(3)$, $J_r(\omega)$. The off-diagonal block $Q_r$ requires a two-step process to derive:
     1.  **World-Frame Derivative ($Q_l$):** First, we compute the derivative of the translation $t$ with respect to the rotation $\omega$. Since $t$ is a point in the world frame, this derivative is also in the world frame. This is, by definition, the off-diagonal block of the **left Jacobian** of $\text{SE}(3)$, which we can call $Q_l$. It is computed using the Fréchet derivative of the $J_l$ kernel.
         $$

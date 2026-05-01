@@ -342,6 +342,20 @@ void BatchFixedLagSmoother::marginalize(const KeyVector& marginalizeKeys) {
 
   // Insert the new marginal factors
   insertFactors(marginalFactors);
+
+  // Record the linearization points of variables involved in new marginal
+  // factors. When enforceConsistency_ is enabled, these variables must keep
+  // their current linearization point so the LinearContainerFactors remain
+  // valid across future optimization iterations.
+  if (enforceConsistency_) {
+    for (const auto& factor : marginalFactors) {
+      for (Key key : factor->keys()) {
+        if (!linearValues_.exists(key)) {
+          linearValues_.insert(key, theta_.at(key));
+        }
+      }
+    }
+  }
 }
 
 /* ************************************************************************* */

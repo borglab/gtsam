@@ -390,6 +390,32 @@ TEST(TestLinearContainerFactor, Rekey2) {
 }
 
 /* ************************************************************************* */
+// Test that rekey works without a linearization point (issue #1904)
+TEST(TestLinearContainerFactor, RekeyWithoutLinearizationPoint) {
+  double mu = 1e10;
+  size_t dim = 3;
+  Key key = 0;
+
+  HessianFactor H(key, mu * Matrix::Identity(dim, dim), Vector::Zero(dim),
+                   0.0);
+  LinearContainerFactor factor(H);
+
+  // Rekey with map
+  Key new_key = 1;
+  std::map<Key, Key> rekey_mapping = {{key, new_key}};
+  auto rekeyed = factor.rekey(rekey_mapping);
+  CHECK(rekeyed);
+  EXPECT(rekeyed->keys()[0] == new_key);
+
+  // Rekey with vector
+  Key new_key2 = 2;
+  KeyVector rekey_vector = {new_key2};
+  auto rekeyed2 = factor.rekey(rekey_vector);
+  CHECK(rekeyed2);
+  EXPECT(rekeyed2->keys()[0] == new_key2);
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
 

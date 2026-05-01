@@ -20,11 +20,30 @@
 #ifdef GTSAM_USE_QUATERNIONS
 
 #include <gtsam/geometry/Rot3.h>
+#include <cassert>
 #include <cmath>
 
 using namespace std;
 
 namespace gtsam {
+
+namespace {
+
+#if !defined(NDEBUG) && defined(GTSAM_EXTRA_CONSISTENCY_CHECKS)
+void assertRot3Invariant(const Rot3& rotation) {
+  const auto quaternion = rotation.toQuaternion();
+  const Matrix3 matrix = rotation.matrix();
+  assert(quaternion.coeffs().allFinite());
+  assert(std::abs(quaternion.norm() - 1.0) <= 1e-9);
+  assert(matrix.allFinite());
+  assert((matrix.transpose() * matrix - I_3x3).norm() <= 1e-9);
+  assert(std::abs(matrix.determinant() - 1.0) <= 1e-9);
+}
+#else
+void assertRot3Invariant(const Rot3&) {}
+#endif
+
+}  // namespace
 
   /* ************************************************************************* */
   Rot3::Rot3() : quaternion_(Quaternion::Identity()) {}
@@ -119,7 +138,9 @@ namespace gtsam {
   /* ************************************************************************* */
   Rot3 Rot3::Expmap(const Vector3& v, OptionalJacobian<3,3> H) {
     if(H) *H = Rot3::ExpmapDerivative(v);
-    return traits<gtsam::Quaternion>::Expmap(v);
+    const Rot3 result = traits<gtsam::Quaternion>::Expmap(v);
+    assertRot3Invariant(result);
+    return result;
   }
 
   /* ************************************************************************* */
@@ -130,8 +151,13 @@ namespace gtsam {
   /* ************************************************************************* */
   Rot3 Rot3::ChartAtOrigin::Retract(const Vector3& omega, ChartJacobian H) {
     static const CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE;
-    if (mode == Rot3::EXPMAP) return Expmap(omega, H);
-    else throw std::runtime_error("Rot3::Retract: unknown mode");
+    if (mode == Rot3::EXPMAP) {
+      const Rot3 result = Expmap(omega, H);
+      assertRot3Invariant(result);
+      return result;
+    } else {
+      throw std::runtime_error("Rot3::Retract: unknown mode");
+    }
   }
 
   /* ************************************************************************* */

@@ -410,7 +410,7 @@ TEST(ABC, LiftEquivariance) {
 TEST(ABC, InputAction_stateMatrixA) {
   using namespace abc_input_action_example;
 
-  Matrix A_matrix = abc::stateMatrixA(psi_u, X_hat);
+  Matrix A_matrix = abc::stateMatrixA<2>(psi_u, X_hat);
   Matrix3 W0 = Rot3::Hat(psi_u(X_hat.inverse()).head<3>());
 
   Matrix expected_A1 = Matrix::Zero(6, 6);
@@ -441,7 +441,7 @@ TEST(ABC, ComputeErrorDynamicsMatrixMatchesLegacy) {
   // A_provided should now be the Manifold-space matrix
   // stateMatrixA returns the correct Manifold-space matrix (DimM x DimM)
   InputOrbit psi_u(u);
-  Matrix expected_A = abc::stateMatrixA(psi_u, X_hat);
+  Matrix expected_A = abc::stateMatrixA<2>(psi_u, X_hat);
 
   // A_computed is now computed on Manifold (D_act * D_lift)
   Matrix A_computed = filter.computeErrorDynamicsMatrix<Lift>(psi_u);
@@ -574,7 +574,7 @@ TEST(ABC, InputAction_stateTransitionMatchesLieGroupEKF) {
   Matrix Phi_expected = stateTransitionMatrix<2>(psi_u, X_hat, dt);
 
   Group::Jacobian ad_xi = adjointMap(xi);
-  Group::Jacobian Df = abc::stateMatrixA(psi_u, X_hat) + ad_xi;
+  Group::Jacobian Df = abc::stateMatrixA<2>(psi_u, X_hat) + ad_xi;
   Group::Jacobian P0 = Group::Jacobian::Identity();
   LieGroupEKF<Group> ekf(X_hat, P0);
 
@@ -598,7 +598,7 @@ TEST(ABC, InputAction_stateTransitionMatchesLieGroupEKF_K1) {
 
   double dt = 1e-4;
 
-  Group::Jacobian Df = abc::stateMatrixA(psi_u, X_hat) + adjointMap(xi);
+  Group::Jacobian Df = abc::stateMatrixA<2>(psi_u, X_hat) + adjointMap(xi);
   Group::Jacobian P0 = Group::Jacobian::Identity();
   LieGroupEKF<Group> ekf(X_hat, P0);
 
@@ -619,7 +619,7 @@ TEST(ABC, InputAction_inputMatrix) {
   using abc_examples::A1;
   using abc_examples::B1;
 
-  Matrix input_matrix = abc::inputMatrixB(X_hat);
+  Matrix input_matrix = abc::inputMatrixB<2>(X_hat);
 
   const Matrix3 A = A1.matrix();
   Matrix expected_B1 = gtsam::diag({A, A});
@@ -805,7 +805,7 @@ TEST(ABC, EqFilter) {
   Matrix Sigma = I_6x6;
   double dt = 0.01;
   Matrix Q = abc::inputProcessNoise<2>(Sigma);
-  Matrix B = abc::inputMatrixB(g_0);
+  Matrix B = abc::inputMatrixB<2>(g_0);
   Matrix Qc = B * Q * B.transpose();  // manifold continuous-time covariance
   Lift lift_u(u2);
   InputOrbit psi_u(u2);
@@ -853,12 +853,12 @@ TEST(ABC, EqFilter_BespokeDynamics) {
   Matrix Sigma = I_6x6;
   double dt = 0.01;
   Matrix Q = abc::inputProcessNoise<2>(Sigma);
-  Matrix B = abc::inputMatrixB(g_0);
+  Matrix B = abc::inputMatrixB<2>(g_0);
   Matrix Qc = B * Q * B.transpose();
   Lift lift_u(u2);
   InputOrbit psi_u(u2);
 
-  Matrix A = abc::stateMatrixA(psi_u, g_0);
+  Matrix A = abc::stateMatrixA<2>(psi_u, g_0);
   filter.predictWithJacobian<2>(lift_u, A, Qc, dt);
 
   EXPECT(assert_equal(expected_predict, filter.groupEstimate(), 1e-4));

@@ -24,7 +24,6 @@
 #include <gtsam/slam/expressions.h>
 #include <gtsam/nonlinear/utilities.h>
 
-#include <random>
 #include <vector>
 
 using namespace gtsam;
@@ -89,6 +88,10 @@ const Similarity3 gtSim3(Rot3::RzRyRx(0.05, -0.08, 0.12),
 bool simClose(const Similarity3& expected, const Similarity3& actual,
               double tol) {
   return assert_equal<Similarity3>(expected, actual, tol);
+}
+
+double simErrorNorm(const Similarity3& expected, const Similarity3& actual) {
+  return Similarity3::Logmap(expected.inverse() * actual).norm();
 }
 
 }  // namespace
@@ -234,6 +237,52 @@ TEST(TrajectoryAlignerSim3, ThreeChildrenNoisy) {
     const Key key = kv.key;
     EXPECT(assert_equal<Pose3>(parent.at<Pose3>(key), result.at<Pose3>(key), 1e-2));
   }
+}
+
+TEST(TrajectoryAlignerSim3, TwoChildrenWithOverlappingPoints) {
+  const auto parent = makeParentValues();
+  const auto child1 = transformValues(gtSim1, parent);
+  const auto child2 = transformValues(gtSim2, parent);
+
+  // Add noise to pose measurements only.
+  PoseMeasurements aTi = makeMeasurements(perturbPoses(parent), 8e-2);
+  PoseMeasurements b1 = makeMeasurements(perturbPoses(child1), 8e-2);
+  PoseMeasurements b2 = makeMeasurements(perturbPoses(child2), 8e-2);
+  ChildrenPoses bTi_all{b1, b2};
+
+  std::vector<Similarity3> sims{perturbSim3(gtSim1), perturbSim3(gtSim2)};
+
+  // 4 exact overlapping Point3 correspondences per child.
+  const std::vector<Point3> parentPoints{
+      Point3(0.25, -0.10, 0.80), Point3(1.00, 0.30, -0.20),
+      Point3(-0.40, 0.50, 0.15), Point3(0.70, -0.60, 0.25)};
+
+  std::vector<std::pair<Point3, Point3>> overlap1, overlap2;
+  overlap1.reserve(parentPoints.size());
+  overlap2.reserve(parentPoints.size());
+  for (const auto& pA : parentPoints) {
+    overlap1.emplace_back(pA, gtSim1.transformFrom(pA));
+    overlap2.emplace_back(pA, gtSim2.transformFrom(pA));
+  }
+  std::vector<std::vector<std::pair<Point3, Point3>>> overlappingPoints{
+      overlap1, overlap2};
+
+  // Optimize without point correspondences.
+  TrajectoryAlignerSim3 alignerNoPoints(aTi, bTi_all, sims);
+  const Values resultNoPoints = alignerNoPoints.solve();
+  const double simErrorNoPoints =
+      simErrorNorm(gtSim1, resultNoPoints.at<Similarity3>(Symbol('S', 0))) +
+      simErrorNorm(gtSim2, resultNoPoints.at<Similarity3>(Symbol('S', 1)));
+
+  // Optimize with exact point correspondences.
+  TrajectoryAlignerSim3 alignerWithPoints(aTi, bTi_all, sims, false, overlappingPoints,
+                                          1e-3);
+  const Values resultWithPoints = alignerWithPoints.solve();
+  const double simErrorWithPoints =
+      simErrorNorm(gtSim1, resultWithPoints.at<Similarity3>(Symbol('S', 0))) +
+      simErrorNorm(gtSim2, resultWithPoints.at<Similarity3>(Symbol('S', 1)));
+
+  EXPECT(simErrorWithPoints < simErrorNoPoints);
 }
 
 /* ************************************************************************* */

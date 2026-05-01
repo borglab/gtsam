@@ -8,10 +8,12 @@ See LICENSE for the license information
 Unit tests for testing dataset access.
 Author: Frank Dellaert & Duy Nguyen Ta (Python)
 """
+
 # pylint: disable=invalid-name, no-name-in-module, no-member
 
 from __future__ import print_function
 
+from pathlib import Path
 import unittest
 
 import gtsam
@@ -24,8 +26,7 @@ class TestDataset(GtsamTestCase):
 
     def setUp(self):
         """Get some common paths."""
-        self.pose3_example_g2o_file = gtsam.findExampleDataFile(
-            "pose3example.txt")
+        self.pose3_example_g2o_file = gtsam.findExampleDataFile("pose3example.txt")
 
     def test_readG2o3D(self):
         """Test reading directly into factor graph."""
@@ -40,6 +41,13 @@ class TestDataset(GtsamTestCase):
         self.assertEqual(len(factors), 6)
         self.assertIsInstance(factors[0], BetweenFactorPose3)
 
+    def test_find_nested_example_data_file(self):
+        """Nested example paths should resolve against the example-data roots."""
+        metadata_path = Path(gtsam.findExampleDataFile("legged_staircase/metadata.csv"))
+        self.assertTrue(metadata_path.is_file())
+        self.assertEqual(metadata_path.name, "metadata.csv")
+        self.assertEqual(metadata_path.parent.name, "legged_staircase")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

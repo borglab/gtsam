@@ -131,7 +131,7 @@ class ProjectionFactorPPPC
         if (H3) *H3 = Matrix::Zero(2,3);
         if (H4) *H4 = Matrix::Zero(2,CALIBRATION::dimension);
         if (verboseCheirality_)
-          std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
+          std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key3()) <<
               " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
         if (throwCheirality_)
           throw e;

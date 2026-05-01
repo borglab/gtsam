@@ -144,7 +144,7 @@ namespace gtsam {
         if (H3) *H3 = Matrix::Zero(2,3);
         if (verboseCheirality_)
             std::cout << e.what() << ": Landmark "
-                      << DefaultKeyFormatter(this->key2())
+                      << DefaultKeyFormatter(this->key3())
                       << " moved behind camera "
                       << DefaultKeyFormatter(this->key1())
                       << std::endl;

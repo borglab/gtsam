@@ -21,9 +21,12 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/VariableSlots.h>
 #include <gtsam/inference/VariableIndex.h>
+#include <gtsam/symbolic/IndexedJunctionTree.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/VerticalBlockMatrix.h>
 
@@ -455,6 +458,20 @@ TEST(GaussianFactorGraph, DenseSolve) {
   VectorValues expected = fg.optimize();
   VectorValues actual = fg.optimizeDensely();
   EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST(GaussianFactorGraph, optimizeWithIndexedJunctionTree) {
+  GaussianFactorGraph fg = createSimpleGaussianFactorGraph();
+  Ordering ordering{0, 1, 2};  // x2=0, l1=1, x1=2
+
+  IndexedJunctionTree indexedJunctionTree = fg.buildIndexedJunctionTree(ordering);
+
+  VectorValues expected = fg.optimize(ordering, EliminateQR);
+  VectorValues actual =
+      fg.eliminateMultifrontal(indexedJunctionTree, EliminateQR)->optimize();
+
+  EXPECT(assert_equal(expected, actual, 1e-9));
 }
 
 /* ************************************************************************* */
