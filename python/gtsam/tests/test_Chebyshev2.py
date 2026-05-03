@@ -194,22 +194,28 @@ class TestChebyshev2(GtsamTestCase):
     def test_IntegrationMatrix(self):
         """Test integration matrix properties and accuracy on polynomial functions."""
         N = 10
-        a, b = 0.0, 10.0
+        a, b = 0.0, 2.0
         P = Chebyshev2.IntegrationMatrix(N, a, b)
+        self.assertEqual(P.shape, (N + 1, N))
+
         F = P.dot(np.ones(N))
         self.assertAlmostEqual(F[0], 0.0, delta=1e-9)
-        points = Chebyshev2.Points(N, a, b)
-        ramp = points - a
+        output_points = Chebyshev2.Points(N + 1, a, b)
+        ramp = output_points - a
         np.testing.assert_allclose(F, ramp, rtol=0, atol=1e-9)
+
         fp = Chebyshev2_vector(fprime, N, a, b)
         F_est = P.dot(fp)
         self.assertAlmostEqual(F_est[0], 0.0, delta=1e-9)
         F_est += f(a)
-        F_true = Chebyshev2_vector(f, N, a, b)
+        F_true = Chebyshev2_vector(f, N + 1, a, b)
         np.testing.assert_allclose(F_est, F_true, rtol=0, atol=1e-9)
-        D = Chebyshev2.DifferentiationMatrix(N, a, b)
-        ff_est = D.dot(F_est)
-        np.testing.assert_allclose(ff_est, fp, rtol=0, atol=1e-9)
+
+        input_points = Chebyshev2.Points(N, a, b)
+        high_degree_input = input_points ** (N - 1)
+        high_degree_integral = P.dot(high_degree_input)
+        expected = output_points**N / N
+        np.testing.assert_allclose(high_degree_integral, expected, rtol=0, atol=1e-8)
 
     def test_IntegrationWeights7(self):
         """Test integration weights against known values for N=7."""
@@ -233,6 +239,7 @@ class TestChebyshev2(GtsamTestCase):
         self.assertAlmostEqual(actual.dot(fp), expectedF, delta=1e-9)
         P = Chebyshev2.IntegrationMatrix(N)
         p7 = P[-1, :]
+        np.testing.assert_allclose(p7, actual, rtol=0, atol=1e-12)
         self.assertAlmostEqual(p7.dot(fp), expectedF, delta=1e-9)
         fvals = Chebyshev2_vector(f, N)
         self.assertAlmostEqual(p7.dot(fvals), actual.dot(fvals), delta=1e-9)
