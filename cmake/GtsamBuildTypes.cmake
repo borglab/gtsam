@@ -112,12 +112,12 @@ if(MSVC)
   set(CMAKE_3_15 $<VERSION_LESS:${CMAKE_VERSION},3.15>)
   set(CMAKE_3_25 $<VERSION_LESS:${CMAKE_VERSION},3.25>)
   # Common to all configurations, next for each configuration:
-  set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON          /W3 /WX /GR /EHsc /MP  CACHE STRING "(User editable) Private compiler flags for all configurations.")
-  set(GTSAM_COMPILE_OPTIONS_PRIVATE_DEBUG           $<${CMAKE_3_15}:/MDd> $<${CMAKE_3_25}:/Zi> /Ob0 /Od /RTC1  CACHE STRING "(User editable) Private compiler flags for Debug configuration.")
-  set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELWITHDEBINFO  $<${CMAKE_3_15}:/MD> /O2  $<${CMAKE_3_25}:/Zi>  CACHE STRING "(User editable) Private compiler flags for RelWithDebInfo configuration.")
-  set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELEASE         $<${CMAKE_3_15}:/MD> /O2  CACHE STRING "(User editable) Private compiler flags for Release configuration.")
-  set(GTSAM_COMPILE_OPTIONS_PRIVATE_PROFILING       $<${CMAKE_3_15}:/MD> /O2  $<${CMAKE_3_25}:/Zi>  CACHE STRING "(User editable) Private compiler flags for Profiling configuration.")
-  set(GTSAM_COMPILE_OPTIONS_PRIVATE_TIMING          $<${CMAKE_3_15}:/MD> /O2  CACHE STRING "(User editable) Private compiler flags for Timing configuration.")
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON          /W3 /WX /GR /EHsc /MP)
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_DEBUG           $<${CMAKE_3_15}:/MDd> $<${CMAKE_3_25}:/Zi> /Ob0 /Od /RTC1)
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELWITHDEBINFO  $<${CMAKE_3_15}:/MD> /O2  $<${CMAKE_3_25}:/Zi>)
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELEASE         $<${CMAKE_3_15}:/MD> /O2)
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_PROFILING       $<${CMAKE_3_15}:/MD> /O2  $<${CMAKE_3_25}:/Zi>)
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_TIMING          $<${CMAKE_3_15}:/MD> /O2)
 else()
   # Common to all configurations, next for each configuration:
 
@@ -144,21 +144,13 @@ else()
     -Wreturn-type                                  # Error on missing return()
     -Wformat -Werror=format-security               # Error on wrong printf() arguments
     $<$<COMPILE_LANGUAGE:CXX>:${flag_override_}>   # Enforce the use of the override keyword
-    #
-    CACHE STRING "(User editable) Private compiler flags for all configurations.")
-  set(GTSAM_COMPILE_OPTIONS_PRIVATE_DEBUG           -g -fno-inline  CACHE STRING "(User editable) Private compiler flags for Debug configuration.")
-  set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELWITHDEBINFO  -g -O3  CACHE STRING "(User editable) Private compiler flags for RelWithDebInfo configuration.")
-  set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELEASE         -O3  CACHE STRING "(User editable) Private compiler flags for Release configuration.")
-  set(GTSAM_COMPILE_OPTIONS_PRIVATE_PROFILING       -O3  CACHE STRING "(User editable) Private compiler flags for Profiling configuration.")
-  set(GTSAM_COMPILE_OPTIONS_PRIVATE_TIMING          -g -O3  CACHE STRING "(User editable) Private compiler flags for Timing configuration.")
+    )
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_DEBUG           -g -fno-inline)
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELWITHDEBINFO  -g -O3)
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELEASE         -O3)
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_PROFILING       -O3)
+  set(GTSAM_COMPILE_OPTIONS_PRIVATE_TIMING          -g -O3)
 endif()
-
-mark_as_advanced(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON)
-mark_as_advanced(GTSAM_COMPILE_OPTIONS_PRIVATE_DEBUG)
-mark_as_advanced(GTSAM_COMPILE_OPTIONS_PRIVATE_RELWITHDEBINFO)
-mark_as_advanced(GTSAM_COMPILE_OPTIONS_PRIVATE_RELEASE)
-mark_as_advanced(GTSAM_COMPILE_OPTIONS_PRIVATE_PROFILING)
-mark_as_advanced(GTSAM_COMPILE_OPTIONS_PRIVATE_TIMING)
 
 # Enable C++17:
 set(GTSAM_COMPILE_FEATURES_PUBLIC "cxx_std_17" CACHE STRING "CMake compile features property for all gtsam targets.")
