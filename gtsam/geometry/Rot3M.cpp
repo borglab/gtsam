@@ -185,7 +185,11 @@ Vector3 Rot3::Logmap(const Rot3& R, OptionalJacobian<3,3> H) {
 
 /* ************************************************************************* */
 Rot3 Rot3::CayleyChart::Retract(const Vector3& omega, OptionalJacobian<3,3> H) {
-  if (H) throw std::runtime_error("Rot3::CayleyChart::Retract Derivative");
+  if (H) {
+    const double s = omega.squaredNorm();
+    const double f = 4.0 / (4.0 + s);
+    *H = f * (Matrix3::Identity() - 0.5 * skewSymmetric(omega));
+  }
   const double x = omega(0), y = omega(1), z = omega(2);
   const double x2 = x * x, y2 = y * y, z2 = z * z;
   const double xy = x * y, xz = x * z, yz = y * z;
@@ -201,12 +205,10 @@ Rot3 Rot3::CayleyChart::Retract(const Vector3& omega, OptionalJacobian<3,3> H) {
 
 /* ************************************************************************* */
 Vector3 Rot3::CayleyChart::Local(const Rot3& R, OptionalJacobian<3,3> H) {
-  if (H) throw std::runtime_error("Rot3::CayleyChart::Local Derivative");
-  // Create a fixed-size matrix
   Matrix3 A = R.matrix();
 
-  // Check if (A+I) is invertible. Same as checking for -1 eigenvalue.
-  if ((A + I_3x3).determinant() == 0.0) {
+  const double kDeterminantTol = 1e-10;
+  if (std::abs((A + I_3x3).determinant()) < kDeterminantTol) {
     throw std::runtime_error("Rot3::CayleyChart::Local Invalid Rotation");
   }
 
@@ -224,7 +226,12 @@ Vector3 Rot3::CayleyChart::Local(const Rot3& R, OptionalJacobian<3,3> H) {
   const double x = a * f - cd + f;
   const double y = b * f - ce - c;
   const double z = fg - di - d;
-  return K * Vector3(x, y, z);
+  const Vector3 omega = K * Vector3(x, y, z);
+  if (H) {
+    *H = Matrix3::Identity() + 0.5 * skewSymmetric(omega) +
+         0.25 * omega * omega.transpose();
+  }
+  return omega;
 }
 
 /* ************************************************************************* */

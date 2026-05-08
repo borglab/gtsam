@@ -352,7 +352,7 @@ class GTSAM_EXPORT Rot3 : public MatrixLieGroup<Rot3, 3, 3> {
 #ifndef GTSAM_USE_QUATERNIONS
 
     // Cayley chart around origin
-    struct CayleyChart {
+    struct GTSAM_EXPORT CayleyChart {
     static Rot3 Retract(const Vector3& v, OptionalJacobian<3, 3> H = {});
     static Vector3 Local(const Rot3& r, OptionalJacobian<3, 3> H = {});
     };
