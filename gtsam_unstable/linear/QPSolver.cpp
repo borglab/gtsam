@@ -21,6 +21,8 @@
 #include <gtsam_unstable/linear/InfeasibleInitialValues.h>
 #include <gtsam_unstable/linear/QPInitSolver.h>
 
+#include <gtsam/linear/linearExceptions.h>
+
 #include <stdexcept>
 
 namespace gtsam {
@@ -43,7 +45,36 @@ QPSolver::QPSolver(const QP& qp) : problem_(qp) {
   hessianOrdering_ = Ordering::Colamd(VariableIndex(qp.cost));
 
   // Eliminate the cost graph once to get a sparse Cholesky (GaussianBayesNet).
-  costBN_ = qp.cost.eliminateSequential(hessianOrdering_);
+  // Some QPS benchmark problems (e.g. HS51, HS52) have rank-deficient cost
+  // Hessians whose null space is only filled by equality constraints.  When
+  // Cholesky fails with IndeterminantLinearSystemException, we add a small
+  // Tikhonov regularization (eps * I per variable) and retry.  The resulting
+  // (H + eps*I) is positive definite and, for eps = 1e-9, changes the
+  // optimum by O(eps) — well within any practical tolerance.
+  auto tryEliminate = [&](const GaussianFactorGraph& graph) {
+    return graph.eliminateSequential(hessianOrdering_);
+  };
+  try {
+    costBN_ = tryEliminate(qp.cost);
+  } catch (const IndeterminantLinearSystemException&) {
+    // Collect key dimensions from cost factors, then regularize.
+    KeySet seen;
+    GaussianFactorGraph regularized = qp.cost;
+    static constexpr double kRegEps = 1e-9;
+    for (const auto& factor : qp.cost) {
+      if (!factor) continue;
+      for (auto it = factor->begin(); it != factor->end(); ++it) {
+        if (seen.insert(*it).second) {
+          size_t dim = factor->getDim(it);
+          regularized.push_back(JacobianFactor(
+              *it,
+              std::sqrt(kRegEps) * Matrix::Identity(dim, dim),
+              Vector::Zero(dim)));
+        }
+      }
+    }
+    costBN_ = tryEliminate(regularized);
+  }
 
   // Use the unconstrained optimum to discover key dimensions and cache H^{-1}η.
   VectorValues x0 = costBN_->optimize();
