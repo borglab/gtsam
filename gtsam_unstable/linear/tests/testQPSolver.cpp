@@ -16,6 +16,11 @@
  * @author Frank Dellaert
  */
 
+#include <gtsam/config.h>
+#if GTSAM_USE_BOOST_FEATURES
+#include <gtsam_unstable/linear/QPSParser.h>
+#endif
+
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam_unstable/linear/InfeasibleInitialValues.h>
@@ -205,6 +210,106 @@ TEST(QPSolver, WarmStart) {
   CHECK(assert_equal(expected, x1, 1e-7));
   CHECK(s1.iterations <= s0.iterations);
 }
+
+/* ************************************************************************* */
+#if GTSAM_USE_BOOST_FEATURES
+static pair<QP, QP> testParser(QPSParser parser) {
+  QP exampleqp = parser.Parse();
+  QP expected;
+  Key X1(Symbol('X', 1)), X2(Symbol('X', 2));
+  // min f(x,y) = 4 + 1.5x -y + 0.58x^2 + 2xy + 2yx + 10y^2
+  expected.cost.push_back(HessianFactor(X1, X2, 8.0 * I_1x1, 2.0 * I_1x1,
+                                        -1.5 * kOne, 10.0 * I_1x1, 2.0 * kOne,
+                                        8.0));
+  expected.inequalities.add(X1, -2.0 * I_1x1, X2, -I_1x1, -2, 0);  // 2x + y >= 2
+  expected.inequalities.add(X1, -I_1x1, X2, 2.0 * I_1x1, 6, 1);    // -x + 2y <= 6
+  expected.inequalities.add(X1, I_1x1, 20, 4);                       // x <= 20
+  expected.inequalities.add(X1, -I_1x1, 0, 2);                       // x >= 0
+  expected.inequalities.add(X2, -I_1x1, 0, 3);                       // y >= 0
+  return {expected, exampleqp};
+}
+
+TEST(QPSolver, ParserSyntaticTest) {
+  auto result = testParser(QPSParser("QPExample.QPS"));
+  CHECK(assert_equal(result.first.cost, result.second.cost, 1e-7));
+  CHECK(assert_equal(result.first.inequalities, result.second.inequalities, 1e-7));
+  CHECK(assert_equal(result.first.equalities, result.second.equalities, 1e-7));
+}
+
+TEST(QPSolver, ParserSemanticTest) {
+  auto result = testParser(QPSParser("QPExample.QPS"));
+  VectorValues expected = QPSolver(result.first).optimize().first;
+  VectorValues actual = QPSolver(result.second).optimize().first;
+  CHECK(assert_equal(actual, expected, 1e-7));
+}
+
+TEST(QPSolver, QPExampleTest) {
+  QP problem = QPSParser("QPExample.QPS").Parse();
+  auto solver = QPSolver(problem);
+  VectorValues actual = solver.optimize().first;
+  VectorValues expected;
+  expected.insert(Symbol('X', 1), 0.7625 * I_1x1);
+  expected.insert(Symbol('X', 2), 0.4750 * I_1x1);
+  double error_expected = problem.cost.error(expected);
+  double error_actual = problem.cost.error(actual);
+  CHECK(assert_equal(expected, actual, 1e-7))
+  CHECK(assert_equal(error_expected, error_actual))
+}
+
+TEST(QPSolver, HS21) {
+  QP problem = QPSParser("HS21.QPS").Parse();
+  VectorValues expected;
+  expected.insert(Symbol('X', 1), 2.0 * I_1x1);
+  expected.insert(Symbol('X', 2), 0.0 * I_1x1);
+  VectorValues actual = QPSolver(problem).optimize().first;
+  double error_actual = problem.cost.error(actual);
+  CHECK(assert_equal(-99.9599999, error_actual, 1e-7))
+  CHECK(assert_equal(expected, actual))
+}
+
+TEST(QPSolver, HS35) {
+  QP problem = QPSParser("HS35.QPS").Parse();
+  VectorValues actual = QPSolver(problem).optimize().first;
+  double error_actual = problem.cost.error(actual);
+  CHECK(assert_equal(1.11111111e-01, error_actual, 1e-7))
+}
+
+TEST(QPSolver, HS35MOD) {
+  QP problem = QPSParser("HS35MOD.QPS").Parse();
+  VectorValues actual = QPSolver(problem).optimize().first;
+  double error_actual = problem.cost.error(actual);
+  CHECK(assert_equal(2.50000001e-01, error_actual, 1e-7))
+}
+
+TEST(QPSolver, HS51) {
+  QP problem = QPSParser("HS51.QPS").Parse();
+  VectorValues actual = QPSolver(problem).optimize().first;
+  double error_actual = problem.cost.error(actual);
+  CHECK(assert_equal(8.88178420e-16, error_actual, 1e-7))
+}
+
+TEST(QPSolver, HS52) {
+  QP problem = QPSParser("HS52.QPS").Parse();
+  VectorValues actual = QPSolver(problem).optimize().first;
+  double error_actual = problem.cost.error(actual);
+  CHECK(assert_equal(5.32664756, error_actual, 1e-7))
+}
+
+TEST(QPSolver, HS268) {  // This test needs an extra order of magnitude of
+                         // tolerance than the rest
+  QP problem = QPSParser("HS268.QPS").Parse();
+  VectorValues actual = QPSolver(problem).optimize().first;
+  double error_actual = problem.cost.error(actual);
+  CHECK(assert_equal(5.73107049e-07, error_actual, 1e-6))
+}
+
+TEST(QPSolver, QPTEST) {  // REQUIRES Jacobian Fix
+  QP problem = QPSParser("QPTEST.QPS").Parse();
+  VectorValues actual = QPSolver(problem).optimize().first;
+  double error_actual = problem.cost.error(actual);
+  CHECK(assert_equal(0.437187500e01, error_actual, 1e-7))
+}
+#endif
 
 /* ************************************************************************* */
 int main() {
