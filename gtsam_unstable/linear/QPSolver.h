@@ -12,7 +12,8 @@
 /**
  * @file     QPSolver.h
  * @brief    Active-set QP solver using a cached Hessian factorization +
- *           Schur complement for ~100x speedup over the reference solver.
+ *           Schur complement for significant speedup (2–5× in benchmarks)
+ *           over the reference solver.
  * @author   Frank Dellaert
  * @date     May 2026
  *
@@ -200,9 +201,8 @@ class GTSAM_UNSTABLE_EXPORT QPSolver {
   /**
    * Perform one active-set iteration.
    *
-   * When stalled, KKT multipliers are available from solveKKT() and
-   * stalled, the KKT multipliers λ are already available from solveKKT()
-   * and no separate dual-graph solve is needed.
+   * When stalled (no progress), the KKT multipliers λ are already available
+   * from solveKKT() and no separate dual-graph solve is needed.
    */
   State iterate(const State& state) const;
 

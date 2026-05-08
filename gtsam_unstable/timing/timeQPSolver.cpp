@@ -31,6 +31,7 @@
 #include <gtsam_unstable/linear/QPSolver.h>
 
 #include <chrono>
+#include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <random>

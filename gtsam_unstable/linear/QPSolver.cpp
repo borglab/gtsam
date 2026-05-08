@@ -21,6 +21,8 @@
 #include <gtsam_unstable/linear/InfeasibleInitialValues.h>
 #include <gtsam_unstable/linear/QPInitSolver.h>
 
+#include <stdexcept>
+
 namespace gtsam {
 
 // =============================================================================
@@ -54,6 +56,16 @@ QPSolver::QPSolver(const QP& qp) : problem_(qp) {
     }
   }
   totalDim_ = offset;
+
+  // Validate that every constrained variable appears in the cost graph.
+  for (const Key key : constrainedKeys_) {
+    if (keyOffsets_.find(key) == keyOffsets_.end()) {
+      throw std::invalid_argument(
+          "QPSolver: variable " + DefaultKeyFormatter(key) +
+          " appears in constraints but not in qp.cost. "
+          "All primal variables must appear in the cost.");
+    }
+  }
 
   // Cache H^{-1}η (unconstrained optimum) in dense layout.
   hinvEtaVec_ = toVector(x0);
@@ -176,11 +188,15 @@ std::pair<VectorValues, VectorValues> QPSolver::solveKKT(
   VectorValues x = toValues(x_vec);
 
   // Pack λ into VectorValues keyed by each constraint's dualKey().
+  // Rows for the same factor are contiguous and share a dualKey; gather them
+  // into a single vector per key.
   VectorValues duals;
-  for (size_t r = 0; r < m; ++r) {
+  size_t r = 0;
+  while (r < m) {
     Key dk = rowDualKey[r];
-    if (!duals.exists(dk))
-      duals.insert(dk, (Vector(1) << lambda[r]).finished());
+    size_t start = r;
+    while (r < m && rowDualKey[r] == dk) ++r;
+    duals.insert(dk, lambda.segment(start, r - start));
   }
 
   return {x, duals};
@@ -290,13 +306,20 @@ QPSolver::State QPSolver::iterate(const State& state) const {
 // Public optimize() interface
 // =============================================================================
 
+static constexpr size_t kMaxIterations = 1000;
+
 std::pair<VectorValues, VectorValues> QPSolver::optimize(
     const VectorValues& initialValues, const VectorValues& duals,
     bool useWarmStart) const {
   InequalityFactorGraph workingSet = identifyActiveConstraints(
       problem_.inequalities, initialValues, duals, useWarmStart);
   State state(initialValues, duals, workingSet, false, 0);
-  while (!state.converged) state = iterate(state);
+  while (!state.converged) {
+    if (state.iterations >= kMaxIterations)
+      throw std::runtime_error("QPSolver: failed to converge after " +
+                               std::to_string(kMaxIterations) + " iterations");
+    state = iterate(state);
+  }
   return {state.values, state.duals};
 }
 
@@ -312,7 +335,12 @@ QPSolver::optimizeWithState(const VectorValues& initialValues,
   InequalityFactorGraph workingSet = identifyActiveConstraints(
       problem_.inequalities, initialValues, duals, useWarmStart);
   State state(initialValues, duals, workingSet, false, 0);
-  while (!state.converged) state = iterate(state);
+  while (!state.converged) {
+    if (state.iterations >= kMaxIterations)
+      throw std::runtime_error("QPSolver: failed to converge after " +
+                               std::to_string(kMaxIterations) + " iterations");
+    state = iterate(state);
+  }
   return {state.values, state.duals, state};
 }
 
