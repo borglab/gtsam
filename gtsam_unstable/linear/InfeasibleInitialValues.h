@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include <gtsam/base/ThreadsafeException.h>
+
 namespace gtsam {
 /* ************************************************************************* */
 /** An exception indicating that the provided initial value is infeasible
