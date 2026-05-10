@@ -49,8 +49,9 @@ QPSolver::QPSolver(const QP& qp) : problem_(qp) {
   // Hessians whose null space is only filled by equality constraints.  When
   // Cholesky fails with IndeterminantLinearSystemException, we add a small
   // Tikhonov regularization (eps * I per variable) and retry.  The resulting
-  // (H + eps*I) is positive definite and, for eps = 1e-9, changes the
-  // optimum by O(eps) — well within any practical tolerance.
+  // (H + eps*I) is positive definite and changes the optimum by O(eps).
+  // Use 1e-6 rather than a near-machine-epsilon value so
+  // Eigen's LLT sees a numerically positive pivot in optimized builds.
   auto tryEliminate = [&](const GaussianFactorGraph& graph) {
     return graph.eliminateSequential(hessianOrdering_);
   };
@@ -60,7 +61,7 @@ QPSolver::QPSolver(const QP& qp) : problem_(qp) {
     // Collect key dimensions from cost factors, then regularize.
     KeySet seen;
     GaussianFactorGraph regularized = qp.cost;
-    static constexpr double kRegEps = 1e-9;
+    static constexpr double kRegEps = 1e-6;
     for (const auto& factor : qp.cost) {
       if (!factor) continue;
       for (auto it = factor->begin(); it != factor->end(); ++it) {
@@ -173,7 +174,6 @@ std::pair<VectorValues, VectorValues> QPSolver::solveKKT(
   Vector b_W = Vector::Zero(m);
   // Also track dual keys per row (for packing the λ VectorValues).
   std::vector<Key> rowDualKey(m);
-  std::vector<size_t> rowDim(m, 1);  // currently all constraints are 1-D
 
   size_t row = 0;
   for (const LinearEquality::shared_ptr& f : problem_.equalities) {

@@ -185,15 +185,35 @@ class GTSAM_UNSTABLE_EXPORT QPSolver {
   // Public API
   // =========================================================================
 
+  /**
+   * Build the active working set from a feasible initial point.
+   *
+   * If @p useWarmStart is true and duals are provided, constraints with a
+   * stored dual value are marked active. Otherwise constraints whose residual
+   * is numerically zero are marked active, and infeasible initial values throw.
+   */
   InequalityFactorGraph identifyActiveConstraints(
       const InequalityFactorGraph& inequalities,
       const VectorValues& initialValues,
       const VectorValues& duals = VectorValues(),
       bool useWarmStart = false) const;
 
+  /**
+   * Return the active inequality with the largest positive KKT multiplier.
+   *
+   * A return value of -1 means every active inequality satisfies the KKT sign
+   * condition and no constraint should leave the working set.
+   */
   int identifyLeavingConstraint(const InequalityFactorGraph& workingSet,
                                 const VectorValues& lambdas) const;
 
+  /**
+   * Compute the largest feasible step along @p p from @p xk.
+   *
+   * @return (alpha, factor_index), where factor_index is the inactive
+   * inequality that blocks the full step, or -1 if no inactive constraint
+   * blocks it.
+   */
   std::tuple<double, int> computeStepSize(
       const InequalityFactorGraph& workingSet, const VectorValues& xk,
       const VectorValues& p, double maxAlpha) const;
@@ -206,13 +226,25 @@ class GTSAM_UNSTABLE_EXPORT QPSolver {
    */
   State iterate(const State& state) const;
 
+  /**
+   * Optimize from a caller-provided feasible initial value.
+   *
+   * Optional @p duals may be used to warm-start the active set when
+   * @p useWarmStart is true.
+   */
   std::pair<VectorValues, VectorValues> optimize(
       const VectorValues& initialValues,
       const VectorValues& duals = VectorValues(),
       bool useWarmStart = false) const;
 
+  /// Find a feasible initial value and optimize the QP.
   std::pair<VectorValues, VectorValues> optimize() const;
 
+  /**
+   * Optimize and also return the final active-set state.
+   *
+   * The returned State can be reused for warm-started solves of nearby QPs.
+   */
   std::tuple<VectorValues, VectorValues, State> optimizeWithState(
       const VectorValues& initialValues,
       const VectorValues& duals = VectorValues(),
