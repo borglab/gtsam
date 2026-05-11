@@ -25,6 +25,7 @@ fi
 
 export PYTHON="python${PYTHON_VERSION}"
 NO_BOOST_BUILD=OFF
+SCCACHE=OFF
 
 function install_dependencies()
 {
@@ -62,6 +63,11 @@ function build()
     fi
   fi
 
+  SCCACHE_CMAKE_ARGS=""
+  if [ "${SCCACHE}" == "ON" ]; then
+    SCCACHE_CMAKE_ARGS="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache"
+  fi
+
   cmake $GITHUB_WORKSPACE \
       -B build -G Ninja \
       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
@@ -71,6 +77,7 @@ function build()
       -DGTSAM_WITH_TBB=${GTSAM_WITH_TBB:-OFF} \
       -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
       -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
+      -DGTSAM_BUILD_WITH_PRECOMPILED_HEADERS=OFF \
       -DGTSAM_BUILD_PYTHON=${BUILD_PYBIND} \
       -DGTSAM_UNSTABLE_BUILD_PYTHON=${GTSAM_BUILD_UNSTABLE:-ON} \
       -DGTSAM_PYTHON_VERSION=$PYTHON_VERSION \
@@ -79,8 +86,12 @@ function build()
       -DGTSAM_ENABLE_BOOST_SERIALIZATION=${ENABLE_BOOST_SERIALIZATION} \
       -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
       -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/gtsam_install \
-      $BOOST_CMAKE_ARGS
+      $BOOST_CMAKE_ARGS \
+      $SCCACHE_CMAKE_ARGS
 
+  # Unset environment variables so sccache can reuse caches.
+  unset PYTHON
+  unset PYTHON_VERSION
   if [ "${NO_BOOST_BUILD}" == "ON" ]; then
     # Build only wrapper targets for the no-Boost verification lane.
     cmake --build build -j2 --target gtsam_py gtsam_unstable_py
@@ -122,6 +133,9 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --no-boost)
       NO_BOOST_BUILD=ON
+      ;;
+    --sccache)
+      SCCACHE=ON
       ;;
     *)
       echo "Unknown option: $1"
