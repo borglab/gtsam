@@ -254,11 +254,11 @@ namespace gtsam {
 template <>
 struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
   /**
-   * Return a matrix-valued QCQP lift for Rot2.
+   * Return a matrix-valued QCQP variable for Rot2.
    *
-   * D=1 is a vectorized SO(2) lift as a 4-by-1 matrix.
-   * D=2 returns R' as a 2-by-2 row-space orthonormal matrix.
-   * D=3 returns [R', 0] as a 2-by-3 Stiefel/Burer-Monteiro extension.
+   * D=1 is vectorized SO(2) as a 4-by-1 matrix.
+   * D=2 returns R' as a 2-by-2 row-orthonormal matrix.
+   * D=3 returns [R', 0] as a 2-by-3 row-orthonormal matrix.
    */
   template <int D = 1>
   static Matrix QcqpValue(const Rot2& value) {
@@ -279,9 +279,9 @@ struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
 
   /**
    * Return row-space QCQP equality constraints A, b such that
-   * trace(X' A X) = b. For D=1 these are the legacy vec(R) constraints,
+   * trace(X' A X) = b. For D=1 these are the vec(R) SO(2) constraints,
    * including orientation. For D=2 and D=3 the same 2-by-2 constraints
-   * enforce X X' = I_2.
+   * enforce row orthonormality.
    */
   template <int D = 1>
   static std::vector<std::pair<Matrix, double>> QcqpConstraints() {

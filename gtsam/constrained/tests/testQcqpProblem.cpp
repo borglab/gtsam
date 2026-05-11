@@ -22,12 +22,14 @@
 #include <gtsam/constrained/QcqpProblem.h>
 #include <gtsam/constrained/QpCost.h>
 #include <gtsam/constrained/QuadraticConstraint.h>
+#include <gtsam/geometry/SO3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/LinearContainerFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/FrobeniusFactor.h>
 
 #include <cmath>
+#include <string>
 #include <vector>
 
 using namespace gtsam;
@@ -325,11 +327,21 @@ Values SingleFactorManifoldValues() {
   return values;
 }
 
-Values SingleFactorLiftedValues() {
+Values SingleFactorQcqpValues() {
   Values values;
-  InsertLiftedValue<Rot2, 1>(x0, Rot2::fromAngle(0.3), &values);
-  InsertLiftedValue<Rot2, 1>(x1, Rot2::fromAngle(-0.2), &values);
+  InsertQcqpValue<Rot2, 1>(x0, Rot2::fromAngle(0.3), &values);
+  InsertQcqpValue<Rot2, 1>(x1, Rot2::fromAngle(-0.2), &values);
   return values;
+}
+
+bool ThrowsMissingQcqpTraits(const NonlinearFactorGraph& graph) {
+  try {
+    QcqpProblem problem(graph);
+  } catch (const std::runtime_error& exception) {
+    return std::string(exception.what()).find("QCQP variable traits") !=
+           std::string::npos;
+  }
+  return false;
 }
 
 // Verifies unsupported factors still reject QCQP conversion.
@@ -340,7 +352,16 @@ TEST(QcqpProblem, UnsupportedFactorThrows) {
   CHECK_EXCEPTION({ QcqpProblem problem(graph); }, std::runtime_error);
 }
 
-// Verifies one Rot2 Frobenius factor converts exactly in the D=1 lift.
+// Verifies missing QCQP variable traits produce a generic conversion error.
+TEST(QcqpProblem, MissingQcqpTraitsThrows) {
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusBetweenFactor<SO3>>(
+      x0, x1, SO3::Expmap((Vector3() << 0.1, 0.2, 0.3).finished()));
+
+  EXPECT(ThrowsMissingQcqpTraits(graph));
+}
+
+// Verifies one Rot2 Frobenius factor converts exactly with D=1 QCQP variables.
 TEST(QcqpProblem, SingleFrobeniusBetweenFactor) {
   NonlinearFactorGraph graph;
   graph.emplace_shared<FrobeniusBetweenFactor<Rot2>>(x0, x1,
@@ -348,11 +369,11 @@ TEST(QcqpProblem, SingleFrobeniusBetweenFactor) {
 
   const Values values = SingleFactorManifoldValues();
   const QcqpProblem problem(graph);
-  const Values liftedValues = SingleFactorLiftedValues();
+  const Values qcqpValues = SingleFactorQcqpValues();
 
-  EXPECT_DOUBLES_EQUAL(graph.error(values), problem.costs().error(liftedValues),
+  EXPECT_DOUBLES_EQUAL(graph.error(values), problem.costs().error(qcqpValues),
                        1e-12);
-  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(liftedValues),
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
                        1e-12);
 }
 
@@ -380,10 +401,10 @@ Values RingValues(size_t numPoses, double delta, double perturbation) {
   return values;
 }
 
-Values RingLiftedValues(size_t numPoses, double delta, double perturbation) {
+Values RingQcqpValues(size_t numPoses, double delta, double perturbation) {
   Values values;
   for (size_t i = 0; i < numPoses; ++i) {
-    InsertLiftedValue<Rot2, 1>(
+    InsertQcqpValue<Rot2, 1>(
         Symbol('x', i),
         Rot2::fromAngle(i * delta + perturbation * static_cast<double>(i)),
         &values);
@@ -391,7 +412,7 @@ Values RingLiftedValues(size_t numPoses, double delta, double perturbation) {
   return values;
 }
 
-// Verifies a Rot2 ring graph preserves cost and constraints after D=1 lifting.
+// Verifies a Rot2 ring graph preserves cost and constraints for D=1 variables.
 TEST(QcqpProblem, Rot2RingPgo) {
   constexpr size_t N = 5;
   constexpr double delta = 2.0 * M_PI / static_cast<double>(N);
@@ -399,22 +420,22 @@ TEST(QcqpProblem, Rot2RingPgo) {
   const NonlinearFactorGraph graph = RingGraph(N, delta);
   const Values values = RingValues(N, delta, 0.01);
   const QcqpProblem problem(graph);
-  const Values liftedValues = RingLiftedValues(N, delta, 0.01);
+  const Values qcqpValues = RingQcqpValues(N, delta, 0.01);
 
-  EXPECT_DOUBLES_EQUAL(graph.error(values), problem.costs().error(liftedValues),
+  EXPECT_DOUBLES_EQUAL(graph.error(values), problem.costs().error(qcqpValues),
                        1e-12);
-  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(liftedValues),
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
                        1e-12);
 }
 
-// Verifies the constrained optimizer still reduces a lifted Rot2 ring problem.
+// Verifies the constrained optimizer still reduces a Rot2 QCQP ring problem.
 TEST(QcqpProblem, AugmentedLagrangianOptimizerRot2Ring) {
   constexpr size_t N = 5;
   constexpr double delta = 2.0 * M_PI / static_cast<double>(N);
 
   const NonlinearFactorGraph graph = RingGraph(N, delta);
   const QcqpProblem problem(graph);
-  const Values initialValues = RingLiftedValues(N, delta, 0.03);
+  const Values initialValues = RingQcqpValues(N, delta, 0.03);
   const double initialCost = problem.costs().error(initialValues);
 
   auto params = std::make_shared<AugmentedLagrangianParams>();
@@ -434,30 +455,30 @@ TEST(QcqpProblem, AugmentedLagrangianOptimizerRot2Ring) {
 
 }  // namespace QcqpRingFixture
 /* ************************************************************************* */
-namespace QcqpRot2LiftFixture {
+namespace QcqpRot2VariableFixture {
 
 const Key x0 = Symbol('x', 0);
 const Key x1 = Symbol('x', 1);
 
 template <int D>
-Values LiftedValues(const Rot2& R0, const Rot2& R1) {
+Values QcqpValues(const Rot2& R0, const Rot2& R1) {
   Values values;
-  InsertLiftedValue<Rot2, D>(x0, R0, &values);
-  InsertLiftedValue<Rot2, D>(x1, R1, &values);
+  InsertQcqpValue<Rot2, D>(x0, R0, &values);
+  InsertQcqpValue<Rot2, D>(x1, R1, &values);
   return values;
 }
 
 template <int D>
-double DirectLiftedBetweenCost(const Rot2& R0, const Rot2& R1,
-                               const Rot2& measured) {
+double DirectQcqpBetweenCost(const Rot2& R0, const Rot2& R1,
+                             const Rot2& measured) {
   const Matrix X0 = traits<Rot2>::template QcqpValue<D>(R0);
   const Matrix X1 = traits<Rot2>::template QcqpValue<D>(R1);
   const Matrix residual = X1 - measured.matrix().transpose() * X0;
   return 0.5 * residual.squaredNorm();
 }
 
-// Verifies the D=2 Rot2 lift is row-orthonormal and constraint-feasible.
-TEST(QcqpProblem, Rot2LiftD2Constraints) {
+// Verifies the D=2 Rot2 QCQP variable is row-orthonormal and feasible.
+TEST(QcqpProblem, Rot2D2QcqpValueConstraints) {
   const Rot2 R = Rot2::fromAngle(0.3);
   const Matrix X = traits<Rot2>::QcqpValue<2>(R);
   LONGS_EQUAL(2, X.rows());
@@ -472,8 +493,8 @@ TEST(QcqpProblem, Rot2LiftD2Constraints) {
   EXPECT_DOUBLES_EQUAL(0.0, constraints.violationNorm(values), 1e-12);
 }
 
-// Verifies the D=3 Rot2 Stiefel lift reuses the D=2 row constraints.
-TEST(QcqpProblem, Rot2LiftD3StiefelConstraints) {
+// Verifies the D=3 Rot2 QCQP variable reuses the D=2 row constraints.
+TEST(QcqpProblem, Rot2D3QcqpValueConstraints) {
   const Rot2 R = Rot2::fromAngle(-0.4);
   const Matrix X = traits<Rot2>::QcqpValue<3>(R);
   LONGS_EQUAL(2, X.rows());
@@ -511,15 +532,15 @@ TEST(QcqpProblem, Rot2FrobeniusBetweenFactorD2) {
   manifoldValues.insert(x1, R1);
 
   const QcqpProblem problem(graph, 2);
-  const Values liftedValues = LiftedValues<2>(R0, R1);
+  const Values qcqpValues = QcqpValues<2>(R0, R1);
 
   EXPECT_DOUBLES_EQUAL(graph.error(manifoldValues),
-                       problem.costs().error(liftedValues), 1e-12);
-  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(liftedValues),
+                       problem.costs().error(qcqpValues), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
                        1e-12);
 }
 
-// Verifies D=3 Frobenius conversion matches the direct lifted residual.
+// Verifies D=3 Frobenius conversion matches the manifold factor.
 TEST(QcqpProblem, Rot2FrobeniusBetweenFactorD3) {
   const Rot2 measured = Rot2::fromAngle(0.4);
   const Rot2 R0 = Rot2::fromAngle(0.3);
@@ -529,17 +550,22 @@ TEST(QcqpProblem, Rot2FrobeniusBetweenFactorD3) {
   graph.emplace_shared<FrobeniusBetweenFactor<Rot2>>(x0, x1, measured);
 
   const QcqpProblem problem(graph, 3);
-  const Values liftedValues = LiftedValues<3>(R0, R1);
-  const double liftedCost = problem.costs().error(liftedValues);
+  const Values qcqpValues = QcqpValues<3>(R0, R1);
+  const double qcqpCost = problem.costs().error(qcqpValues);
 
-  EXPECT(std::isfinite(liftedCost));
-  EXPECT_DOUBLES_EQUAL(DirectLiftedBetweenCost<3>(R0, R1, measured), liftedCost,
+  Values manifoldValues;
+  manifoldValues.insert(x0, R0);
+  manifoldValues.insert(x1, R1);
+
+  EXPECT(std::isfinite(qcqpCost));
+  EXPECT_DOUBLES_EQUAL(graph.error(manifoldValues), qcqpCost, 1e-12);
+  EXPECT_DOUBLES_EQUAL(DirectQcqpBetweenCost<3>(R0, R1, measured), qcqpCost,
                        1e-12);
-  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(liftedValues),
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
                        1e-12);
 }
 
-}  // namespace QcqpRot2LiftFixture
+}  // namespace QcqpRot2VariableFixture
 /* ************************************************************************* */
 int main() {
   TestResult tr;

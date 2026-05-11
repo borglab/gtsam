@@ -149,8 +149,8 @@ public:
   linearize(const Values& c) const = 0;
 
   /**
-   * Add this factor's QCQP cost and constraints over lifted matrix
-   * coordinates with the given column dimension. The default implementation
+   * Add this factor's QCQP cost and constraints over matrix-valued QCQP
+   * variables with the given column dimension. The default implementation
    * throws for unsupported factors.
    */
   virtual void qcqpFactors(NonlinearFactorGraph* costs,

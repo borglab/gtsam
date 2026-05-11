@@ -25,32 +25,53 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 #include <stdexcept>
+#include <type_traits>
+#include <utility>
 
 namespace gtsam {
 
+namespace internal {
+
+template <typename T, int D, typename = void>
+struct HasQcqpVariableTraits : std::false_type {};
+
+template <typename T, int D>
+struct HasQcqpVariableTraits<
+    T, D,
+    std::void_t<
+        decltype(traits<T>::template QcqpValue<D>(std::declval<T>())),
+        decltype(traits<T>::template QcqpConstraints<D>())>>
+    : std::true_type {};
+
+}  // namespace internal
+
 /**
- * Insert one lifted matrix value using traits<T>::QcqpValue<D>.
+ * Insert one matrix-valued QCQP variable using traits<T>::QcqpValue<D>.
  *
- * D is the number of columns in the matrix-valued QCQP variable. D=1 covers
- * vector QCQPs as r-by-1 matrices; larger D values cover matrix-valued lifts
- * without changing the row-space cost matrices.
+ * D is the number of columns in the matrix-valued QCQP variable. D=1 stores
+ * vector QCQPs as r-by-1 matrices; larger D values store matrix-valued QCQP
+ * variables without changing the row-space cost matrices.
  */
 template <typename T, int D = 1>
-void InsertLiftedValue(Key key, const T& value, Values* liftedValues) {
-  if (!liftedValues) {
-    throw std::invalid_argument("InsertLiftedValue: liftedValues is null.");
+void InsertQcqpValue(Key key, const T& value, Values* qcqpValues) {
+  static_assert(internal::HasQcqpVariableTraits<T, D>::value,
+                "InsertQcqpValue requires traits<T>::QcqpValue<D> and "
+                "traits<T>::QcqpConstraints<D>.");
+  if (!qcqpValues) {
+    throw std::invalid_argument("InsertQcqpValue: qcqpValues is null.");
   }
 
-  const Matrix lifted = traits<T>::template QcqpValue<D>(value);
-  if (liftedValues->exists(key)) {
-    const Matrix existing = liftedValues->at<Matrix>(key);
-    if (existing.rows() != lifted.rows() || existing.cols() != lifted.cols()) {
+  const Matrix qcqpValue = traits<T>::template QcqpValue<D>(value);
+  if (qcqpValues->exists(key)) {
+    const Matrix existing = qcqpValues->at<Matrix>(key);
+    if (existing.rows() != qcqpValue.rows() ||
+        existing.cols() != qcqpValue.cols()) {
       throw std::invalid_argument(
-          "InsertLiftedValue: inconsistent lifted matrix dimensions.");
+          "InsertQcqpValue: inconsistent QCQP variable dimensions.");
     }
     return;
   }
-  liftedValues->insert(key, lifted);
+  qcqpValues->insert(key, qcqpValue);
 }
 
 /**
@@ -58,6 +79,9 @@ void InsertLiftedValue(Key key, const T& value, Values* liftedValues) {
  */
 template <typename T, int D = 1>
 void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints) {
+  static_assert(internal::HasQcqpVariableTraits<T, D>::value,
+                "InsertQcqpConstraints requires traits<T>::QcqpValue<D> and "
+                "traits<T>::QcqpConstraints<D>.");
   if (!constraints) {
     throw std::invalid_argument("InsertQcqpConstraints: constraints is null.");
   }
