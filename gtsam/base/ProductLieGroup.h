@@ -215,8 +215,8 @@ class ProductLieGroup : public std::pair<G, H> {
   /// The compile-time path avoids GCC -Werror=array-bounds false positives
   /// on Eigen's SSE vectorizer when the source is a fixed-size 1x1 matrix.
   template <typename DstType, typename SrcType>
-  static void assignBlock(DstType& dst, size_t row, size_t col,
-                          const SrcType& src) {
+  static void assignBlock(const SrcType& src, size_t row, size_t col,
+                          DstType& dst) {
     constexpr int R = SrcType::RowsAtCompileTime;
     constexpr int C = SrcType::ColsAtCompileTime;
     if constexpr (R != Eigen::Dynamic && C != Eigen::Dynamic) {
