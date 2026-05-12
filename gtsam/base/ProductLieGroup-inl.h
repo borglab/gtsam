@@ -21,6 +21,20 @@
 namespace gtsam {
 
 template <typename G, typename H>
+template <typename DstType, typename SrcType>
+void ProductLieGroup<G, H>::assignBlock(const SrcType& src, size_t row,
+                                        size_t col, DstType* dst) {
+  constexpr int R = SrcType::RowsAtCompileTime;
+  constexpr int C = SrcType::ColsAtCompileTime;
+  if constexpr (R != Eigen::Dynamic && C != Eigen::Dynamic) {
+    dst->template block<R, C>(static_cast<int>(row),
+                              static_cast<int>(col)) = src;
+  } else {
+    dst->block(row, col, src.rows(), src.cols()) = src;
+  }
+}
+
+template <typename G, typename H>
 ProductLieGroup<G, H> ProductLieGroup<G, H>::operator*(
     const ProductLieGroup& other) const {
   checkMatchingDimensions(other, "operator*");
