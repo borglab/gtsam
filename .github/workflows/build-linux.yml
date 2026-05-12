@@ -60,6 +60,7 @@ jobs:
           
           - name: ubuntu-26.04-gcc-15
             os: ubuntu-24.04
+            image_os: ubuntu-26.04
             compiler: gcc
             version: "15"
 
