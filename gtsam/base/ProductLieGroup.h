@@ -216,14 +216,14 @@ class ProductLieGroup : public std::pair<G, H> {
   /// on Eigen's SSE vectorizer when the source is a fixed-size 1x1 matrix.
   template <typename DstType, typename SrcType>
   static void assignBlock(const SrcType& src, size_t row, size_t col,
-                          DstType& dst) {
+                          DstType* dst) {
     constexpr int R = SrcType::RowsAtCompileTime;
     constexpr int C = SrcType::ColsAtCompileTime;
     if constexpr (R != Eigen::Dynamic && C != Eigen::Dynamic) {
-      dst.template block<R, C>(static_cast<int>(row),
-                               static_cast<int>(col)) = src;
+      dst->template block<R, C>(static_cast<int>(row),
+                                static_cast<int>(col)) = src;
     } else {
-      dst.block(row, col, src.rows(), src.cols()) = src;
+      dst->block(row, col, src.rows(), src.cols()) = src;
     }
   }
 

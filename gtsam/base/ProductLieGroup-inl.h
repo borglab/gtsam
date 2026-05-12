@@ -71,13 +71,13 @@ ProductLieGroup<G, H> ProductLieGroup<G, H>::retract(const TangentVector& v,
       H1 ? &D_h_first : nullptr, H2 ? &D_h_second : nullptr);
   if (H1) {
     *H1 = zeroJacobian(productDimension);
-    assignBlock(D_g_first, 0, 0, *H1);
-    assignBlock(D_h_first, firstDimension, firstDimension, *H1);
+    assignBlock(D_g_first, 0, 0, &*H1);
+    assignBlock(D_h_first, firstDimension, firstDimension, &*H1);
   }
   if (H2) {
     *H2 = zeroJacobian(productDimension);
-    assignBlock(D_g_second, 0, 0, *H2);
-    assignBlock(D_h_second, firstDimension, firstDimension, *H2);
+    assignBlock(D_g_second, 0, 0, &*H2);
+    assignBlock(D_h_second, firstDimension, firstDimension, &*H2);
   }
   return ProductLieGroup(g, h);
 }
@@ -116,13 +116,13 @@ ProductLieGroup<G, H>::localCoordinates(const ProductLieGroup& g,
                        H2 ? &D_h_second : nullptr);
   if (H1) {
     *H1 = zeroJacobian(productDimension);
-    assignBlock(D_g_first, 0, 0, *H1);
-    assignBlock(D_h_first, firstDimension, firstDimension, *H1);
+    assignBlock(D_g_first, 0, 0, &*H1);
+    assignBlock(D_h_first, firstDimension, firstDimension, &*H1);
   }
   if (H2) {
     *H2 = zeroJacobian(productDimension);
-    assignBlock(D_g_second, 0, 0, *H2);
-    assignBlock(D_h_second, firstDimension, firstDimension, *H2);
+    assignBlock(D_g_second, 0, 0, &*H2);
+    assignBlock(D_h_second, firstDimension, firstDimension, &*H2);
   }
   return makeTangentVector(v1, v2, firstDimension, secondDimension);
 }
@@ -148,8 +148,8 @@ ProductLieGroup<G, H> ProductLieGroup<G, H>::compose(
                            H1 ? &D_h_second : nullptr);
   if (H1) {
     *H1 = zeroJacobian(productDimension);
-    assignBlock(D_g_first, 0, 0, *H1);
-    assignBlock(D_h_second, firstDimension, firstDimension, *H1);
+    assignBlock(D_g_first, 0, 0, &*H1);
+    assignBlock(D_h_second, firstDimension, firstDimension, &*H1);
   }
   if (H2) *H2 = identityJacobian(productDimension);
   return ProductLieGroup(g, h);
@@ -176,8 +176,8 @@ ProductLieGroup<G, H> ProductLieGroup<G, H>::between(
                            H1 ? &D_h_second : nullptr);
   if (H1) {
     *H1 = zeroJacobian(productDimension);
-    assignBlock(D_g_first, 0, 0, *H1);
-    assignBlock(D_h_second, firstDimension, firstDimension, *H1);
+    assignBlock(D_g_first, 0, 0, &*H1);
+    assignBlock(D_h_second, firstDimension, firstDimension, &*H1);
   }
   if (H2) *H2 = identityJacobian(productDimension);
   return ProductLieGroup(g, h);
@@ -201,8 +201,8 @@ ProductLieGroup<G, H> ProductLieGroup<G, H>::inverse(ChartJacobian D) const {
   H h = traits<H>::Inverse(this->second, D ? &D_h_second : nullptr);
   if (D) {
     *D = zeroJacobian(productDimension);
-    assignBlock(D_g_first, 0, 0, *D);
-    assignBlock(D_h_second, firstDimension, firstDimension, *D);
+    assignBlock(D_g_first, 0, 0, &*D);
+    assignBlock(D_h_second, firstDimension, firstDimension, &*D);
   }
   return ProductLieGroup(g, h);
 }
@@ -291,11 +291,11 @@ ProductLieGroup<G, H> ProductLieGroup<G, H>::Expmap(
   H h = traits<H>::Expmap(v2, H2 ? &D_h_second : nullptr);
   if (H1) {
     *H1 = Matrix::Zero(productDimension, firstDimension);
-    assignBlock(D_g_first, 0, 0, *H1);
+    assignBlock(D_g_first, 0, 0, &*H1);
   }
   if (H2) {
     *H2 = Matrix::Zero(productDimension, secondDimension);
-    assignBlock(D_h_second, firstDimension, 0, *H2);
+    assignBlock(D_h_second, firstDimension, 0, &*H2);
   }
   return ProductLieGroup(g, h);
 }
@@ -323,8 +323,8 @@ typename ProductLieGroup<G, H>::TangentVector ProductLieGroup<G, H>::Logmap(
       traits<H>::Logmap(p.second, &D_h_second);
   TangentVector v = makeTangentVector(v1, v2, firstDimension, secondDimension);
   *Hp = zeroJacobian(productDimension);
-  assignBlock(D_g_first, 0, 0, *Hp);
-  assignBlock(D_h_second, firstDimension, firstDimension, *Hp);
+  assignBlock(D_g_first, 0, 0, &*Hp);
+  assignBlock(D_h_second, firstDimension, firstDimension, &*Hp);
   return v;
 }
 
@@ -342,8 +342,8 @@ typename ProductLieGroup<G, H>::Jacobian ProductLieGroup<G, H>::AdjointMap()
   const size_t d1 = static_cast<size_t>(adjG.rows());
   const size_t d2 = static_cast<size_t>(adjH.rows());
   Jacobian adj = zeroJacobian(d1 + d2);
-  assignBlock(adjG, 0, 0, adj);
-  assignBlock(adjH, d1, d1, adj);
+  assignBlock(adjG, 0, 0, &adj);
+  assignBlock(adjH, d1, d1, &adj);
   return adj;
 }
 
