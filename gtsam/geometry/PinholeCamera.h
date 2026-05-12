@@ -256,7 +256,7 @@ public:
    */
   double range(const Point3& point, OptionalJacobian<1, dimension> Dcamera =
       {}, OptionalJacobian<1, 3> Dpoint = {}) const {
-    Matrix16 Dpose_;
+    Matrix16 Dpose_ = Matrix16::Zero();
     double result = this->pose().range(point, Dcamera ? &Dpose_ : 0, Dpoint);
     if (Dcamera)
       *Dcamera << Dpose_, Eigen::Matrix<double, 1, DimK>::Zero();
@@ -270,7 +270,7 @@ public:
    */
   double range(const Pose3& pose, OptionalJacobian<1, dimension> Dcamera =
       {}, OptionalJacobian<1, 6> Dpose = {}) const {
-    Matrix16 Dpose_;
+    Matrix16 Dpose_ = Matrix16::Zero();
     double result = this->pose().range(pose, Dcamera ? &Dpose_ : 0, Dpose);
     if (Dcamera)
       *Dcamera << Dpose_, Eigen::Matrix<double, 1, DimK>::Zero();

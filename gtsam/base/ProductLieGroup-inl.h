@@ -71,15 +71,13 @@ ProductLieGroup<G, H> ProductLieGroup<G, H>::retract(const TangentVector& v,
       H1 ? &D_h_first : nullptr, H2 ? &D_h_second : nullptr);
   if (H1) {
     *H1 = zeroJacobian(productDimension);
-    H1->block(0, 0, firstDimension, firstDimension) = D_g_first;
-    H1->block(firstDimension, firstDimension, secondDimension,
-              secondDimension) = D_h_first;
+    assignBlock(*H1, 0, 0, D_g_first);
+    assignBlock(*H1, firstDimension, firstDimension, D_h_first);
   }
   if (H2) {
     *H2 = zeroJacobian(productDimension);
-    H2->block(0, 0, firstDimension, firstDimension) = D_g_second;
-    H2->block(firstDimension, firstDimension, secondDimension,
-              secondDimension) = D_h_second;
+    assignBlock(*H2, 0, 0, D_g_second);
+    assignBlock(*H2, firstDimension, firstDimension, D_h_second);
   }
   return ProductLieGroup(g, h);
 }
@@ -118,15 +116,13 @@ ProductLieGroup<G, H>::localCoordinates(const ProductLieGroup& g,
                        H2 ? &D_h_second : nullptr);
   if (H1) {
     *H1 = zeroJacobian(productDimension);
-    H1->block(0, 0, firstDimension, firstDimension) = D_g_first;
-    H1->block(firstDimension, firstDimension, secondDimension,
-              secondDimension) = D_h_first;
+    assignBlock(*H1, 0, 0, D_g_first);
+    assignBlock(*H1, firstDimension, firstDimension, D_h_first);
   }
   if (H2) {
     *H2 = zeroJacobian(productDimension);
-    H2->block(0, 0, firstDimension, firstDimension) = D_g_second;
-    H2->block(firstDimension, firstDimension, secondDimension,
-              secondDimension) = D_h_second;
+    assignBlock(*H2, 0, 0, D_g_second);
+    assignBlock(*H2, firstDimension, firstDimension, D_h_second);
   }
   return makeTangentVector(v1, v2, firstDimension, secondDimension);
 }
@@ -152,9 +148,8 @@ ProductLieGroup<G, H> ProductLieGroup<G, H>::compose(
                            H1 ? &D_h_second : nullptr);
   if (H1) {
     *H1 = zeroJacobian(productDimension);
-    H1->block(0, 0, firstDimension, firstDimension) = D_g_first;
-    H1->block(firstDimension, firstDimension, secondDimension,
-              secondDimension) = D_h_second;
+    assignBlock(*H1, 0, 0, D_g_first);
+    assignBlock(*H1, firstDimension, firstDimension, D_h_second);
   }
   if (H2) *H2 = identityJacobian(productDimension);
   return ProductLieGroup(g, h);
@@ -181,9 +176,8 @@ ProductLieGroup<G, H> ProductLieGroup<G, H>::between(
                            H1 ? &D_h_second : nullptr);
   if (H1) {
     *H1 = zeroJacobian(productDimension);
-    H1->block(0, 0, firstDimension, firstDimension) = D_g_first;
-    H1->block(firstDimension, firstDimension, secondDimension,
-              secondDimension) = D_h_second;
+    assignBlock(*H1, 0, 0, D_g_first);
+    assignBlock(*H1, firstDimension, firstDimension, D_h_second);
   }
   if (H2) *H2 = identityJacobian(productDimension);
   return ProductLieGroup(g, h);
@@ -207,9 +201,8 @@ ProductLieGroup<G, H> ProductLieGroup<G, H>::inverse(ChartJacobian D) const {
   H h = traits<H>::Inverse(this->second, D ? &D_h_second : nullptr);
   if (D) {
     *D = zeroJacobian(productDimension);
-    D->block(0, 0, firstDimension, firstDimension) = D_g_first;
-    D->block(firstDimension, firstDimension, secondDimension, secondDimension) =
-        D_h_second;
+    assignBlock(*D, 0, 0, D_g_first);
+    assignBlock(*D, firstDimension, firstDimension, D_h_second);
   }
   return ProductLieGroup(g, h);
 }
@@ -298,11 +291,11 @@ ProductLieGroup<G, H> ProductLieGroup<G, H>::Expmap(
   H h = traits<H>::Expmap(v2, H2 ? &D_h_second : nullptr);
   if (H1) {
     *H1 = Matrix::Zero(productDimension, firstDimension);
-    H1->block(0, 0, firstDimension, firstDimension) = D_g_first;
+    assignBlock(*H1, 0, 0, D_g_first);
   }
   if (H2) {
     *H2 = Matrix::Zero(productDimension, secondDimension);
-    H2->block(firstDimension, 0, secondDimension, secondDimension) = D_h_second;
+    assignBlock(*H2, firstDimension, 0, D_h_second);
   }
   return ProductLieGroup(g, h);
 }
@@ -330,9 +323,8 @@ typename ProductLieGroup<G, H>::TangentVector ProductLieGroup<G, H>::Logmap(
       traits<H>::Logmap(p.second, &D_h_second);
   TangentVector v = makeTangentVector(v1, v2, firstDimension, secondDimension);
   *Hp = zeroJacobian(productDimension);
-  Hp->block(0, 0, firstDimension, firstDimension) = D_g_first;
-  Hp->block(firstDimension, firstDimension, secondDimension, secondDimension) =
-      D_h_second;
+  assignBlock(*Hp, 0, 0, D_g_first);
+  assignBlock(*Hp, firstDimension, firstDimension, D_h_second);
   return v;
 }
 
@@ -350,8 +342,8 @@ typename ProductLieGroup<G, H>::Jacobian ProductLieGroup<G, H>::AdjointMap()
   const size_t d1 = static_cast<size_t>(adjG.rows());
   const size_t d2 = static_cast<size_t>(adjH.rows());
   Jacobian adj = zeroJacobian(d1 + d2);
-  adj.block(0, 0, d1, d1) = adjG;
-  adj.block(d1, d1, d2, d2) = adjH;
+  assignBlock(adj, 0, 0, adjG);
+  assignBlock(adj, d1, d1, adjH);
   return adj;
 }
 

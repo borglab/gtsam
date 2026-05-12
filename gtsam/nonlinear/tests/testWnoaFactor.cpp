@@ -169,8 +169,7 @@ TEST(WnoaFactor, EvalErrorP1) {
   // compute error
   Vector actualError(factorP1.evaluateError(p0_p1, v0_p1, p1_p1, v1_p1));
   // expected is zero
-  Vector2 expectedError;
-  expectedError << Vector1(0.0), v0_p1;
+  Vector2 expectedError(0.0, v0_p1(0));
 
   // Actual error depends on the level of accuracy we are using for the expmap
   double tol = 1e-9;
