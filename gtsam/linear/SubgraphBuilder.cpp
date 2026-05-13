@@ -313,31 +313,9 @@ vector<size_t> SubgraphBuilder::kruskal(const GaussianFactorGraph &gfg,
 /****************************************************************/
 vector<size_t> SubgraphBuilder::sample(const vector<double> &weights,
                                        const size_t t) const {
-  // WeightedSampler computes initial keys as k = e/w and is undefined for
-  // w <= 0. Filter out non-positive weights and keep a mapping back to the
-  // original indices.
-  vector<double> positiveWeights;
-  vector<size_t> originalIndices;
-  positiveWeights.reserve(weights.size());
-  originalIndices.reserve(weights.size());
-  for (size_t i = 0; i < weights.size(); ++i) {
-    if (weights[i] > 0.0) {
-      positiveWeights.push_back(weights[i]);
-      originalIndices.push_back(i);
-    }
-  }
-
   std::mt19937 rng(42);  // TODO(frank): allow us to use a different seed
   WeightedSampler<std::mt19937> sampler(&rng);
-  const vector<size_t> sampledFiltered =
-      sampler.sampleWithoutReplacement(t, positiveWeights);
-
-  vector<size_t> result;
-  result.reserve(sampledFiltered.size());
-  for (size_t idx : sampledFiltered) {
-    result.push_back(originalIndices[idx]);
-  }
-  return result;
+  return sampler.sampleWithoutReplacement(t, weights);
 }
 
 /****************************************************************/
