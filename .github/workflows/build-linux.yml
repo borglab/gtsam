@@ -87,7 +87,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set Boost Environment (Conditional)
         if : contains(matrix.name, 'boost') && matrix.build_type == 'Release'

@@ -24,7 +24,7 @@ jobs:
       should_run: ${{ steps.filter.outputs.relevant_changes }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Check modified files
         id: filter
@@ -96,7 +96,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install (Linux)
         if: runner.os == 'Linux'
