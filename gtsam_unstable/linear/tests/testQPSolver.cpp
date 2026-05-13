@@ -18,15 +18,13 @@
  */
 
 #include <gtsam/config.h>
-#if GTSAM_USE_BOOST_FEATURES
-#include <gtsam_unstable/linear/QPSParser.h>
-#endif
+#include <CppUnitLite/TestHarness.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam_unstable/linear/QPSolver.h>
-
-#include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
@@ -70,28 +68,6 @@ TEST(QPSolver, TestCase) {
   DOUBLES_EQUAL(29, qp.cost[0]->error(values), 1e-9);
 }
 
-TEST(QPSolver, constraintsAux) {
-  QP qp = createTestCase();
-
-  QPSolver solver(qp);
-
-  VectorValues lambdas;
-  lambdas.insert(0, (Vector(1) << -0.5).finished());
-  lambdas.insert(1, kZero);
-  lambdas.insert(2, (Vector(1) << 0.3).finished());
-  lambdas.insert(3, (Vector(1) << 0.1).finished());
-  int factorIx = solver.identifyLeavingConstraint(qp.inequalities, lambdas);
-  LONGS_EQUAL(2, factorIx);
-
-  VectorValues lambdas2;
-  lambdas2.insert(0, (Vector(1) << -0.5).finished());
-  lambdas2.insert(1, kZero);
-  lambdas2.insert(2, (Vector(1) << -0.3).finished());
-  lambdas2.insert(3, (Vector(1) << -0.1).finished());
-  int factorIx2 = solver.identifyLeavingConstraint(qp.inequalities, lambdas2);
-  LONGS_EQUAL(-1, factorIx2);
-}
-
 /* ************************************************************************* */
 // Create a simple test graph with one equality constraint
 QP createEqualityConstrainedTest() {
@@ -115,91 +91,21 @@ QP createEqualityConstrainedTest() {
   return qp;
 }
 
-TEST(QPSolver, dual) {
+TEST(QPSolver, equalityConstrainedOptimizeAndDualKey) {
   QP qp = createEqualityConstrainedTest();
 
-  // Initials values
   VectorValues initialValues;
   initialValues.insert(X(1), I_1x1);
   initialValues.insert(X(2), I_1x1);
 
-  QPSolver solver(qp);
-
-  auto dualGraph = solver.buildDualGraph(qp.inequalities, initialValues);
-  VectorValues dual = dualGraph.optimize();
-  VectorValues expectedDual;
-  expectedDual.insert(0, (Vector(1) << 2.0).finished());
-  CHECK(assert_equal(expectedDual, dual, 1e-10));
-}
-
-/* ************************************************************************* */
-TEST(QPSolver, indentifyActiveConstraints) {
-  QP qp = createTestCase();
-  QPSolver solver(qp);
-
-  VectorValues currentSolution;
-  currentSolution.insert(X(1), Z_1x1);
-  currentSolution.insert(X(2), Z_1x1);
-
-  auto workingSet =
-      solver.identifyActiveConstraints(qp.inequalities, currentSolution);
-
-  CHECK(!workingSet.at(0)->active());  // inactive
-  CHECK(workingSet.at(1)->active());   // active
-  CHECK(workingSet.at(2)->active());   // active
-  CHECK(!workingSet.at(3)->active());  // inactive
-
-  VectorValues solution = solver.buildWorkingGraph(workingSet).optimize();
+  const auto [solution, duals] = QPSolver(qp).optimize(initialValues);
   VectorValues expected;
-  expected.insert(X(1), kZero);
-  expected.insert(X(2), kZero);
-  CHECK(assert_equal(expected, solution, 1e-100));
-}
+  expected.insert(X(1), -0.5 * I_1x1);
+  expected.insert(X(2), -0.5 * I_1x1);
 
-/* ************************************************************************* */
-TEST(QPSolver, iterate) {
-  QP qp = createTestCase();
-  QPSolver solver(qp);
-
-  VectorValues currentSolution;
-  currentSolution.insert(X(1), Z_1x1);
-  currentSolution.insert(X(2), Z_1x1);
-
-  std::vector<VectorValues> expected(4), expectedDuals(4);
-  expected[0].insert(X(1), kZero);
-  expected[0].insert(X(2), kZero);
-  expectedDuals[0].insert(1, (Vector(1) << 3).finished());
-  expectedDuals[0].insert(2, kZero);
-
-  expected[1].insert(X(1), (Vector(1) << 1.5).finished());
-  expected[1].insert(X(2), kZero);
-  expectedDuals[1].insert(3, (Vector(1) << 1.5).finished());
-
-  expected[2].insert(X(1), (Vector(1) << 1.5).finished());
-  expected[2].insert(X(2), (Vector(1) << 0.75).finished());
-
-  expected[3].insert(X(1), (Vector(1) << 1.5).finished());
-  expected[3].insert(X(2), (Vector(1) << 0.5).finished());
-
-  auto workingSet =
-      solver.identifyActiveConstraints(qp.inequalities, currentSolution);
-
-  QPSolver::State state(currentSolution, VectorValues(), workingSet, false,
-                        100);
-
-  // int it = 0;
-  while (!state.converged) {
-    state = solver.iterate(state);
-    // These checks will fail because the expected solutions obtained from
-    // Forst10book do not follow exactly what we implemented from Nocedal06book.
-    // Specifically, we do not re-identify active constraints and
-    // do not recompute dual variables after every step!!!
-    //    CHECK(assert_equal(expected[it], state.values, 1e-10));
-    //    CHECK(assert_equal(expectedDuals[it], state.duals, 1e-10));
-    // it++;
-  }
-
-  CHECK(assert_equal(expected[3], state.values, 1e-10));
+  CHECK(assert_equal(expected, solution, 1e-10));
+  CHECK(duals.exists(0));
+  CHECK(assert_equal((Vector(1) << -1.0).finished(), duals.at(0), 1e-7));
 }
 
 /* ************************************************************************* */
@@ -215,109 +121,6 @@ TEST(QPSolver, optimizeForst10book_pg171Ex5) {
   expected.insert(X(2), (Vector(1) << 0.5).finished());
   CHECK(assert_equal(expected, solution, 1e-100));
 }
-
-/* ************************************************************************* */
-#if GTSAM_USE_BOOST_FEATURES
-pair<QP, QP> testParser(QPSParser parser) {
-  QP exampleqp = parser.Parse();
-  QP expected;
-  Key X1(Symbol('X', 1)), X2(Symbol('X', 2));
-  // min f(x,y) = 4 + 1.5x -y + 0.58x^2 + 2xy + 2yx + 10y^2
-  expected.cost.push_back(HessianFactor(X1, X2, 8.0 * I_1x1, 2.0 * I_1x1,
-                                        -1.5 * kOne, 10.0 * I_1x1, 2.0 * kOne,
-                                        8.0));
-
-  expected.inequalities.add(X1, -2.0 * I_1x1, X2, -I_1x1, -2,
-                            0);                                  // 2x + y >= 2
-  expected.inequalities.add(X1, -I_1x1, X2, 2.0 * I_1x1, 6, 1);  // -x + 2y <= 6
-  expected.inequalities.add(X1, I_1x1, 20, 4);                   // x<= 20
-  expected.inequalities.add(X1, -I_1x1, 0, 2);                   // x >= 0
-  expected.inequalities.add(X2, -I_1x1, 0, 3);                   // y > = 0
-  return {expected, exampleqp};
-}
-
-TEST(QPSolver, ParserSyntaticTest) {
-  auto result = testParser(QPSParser("QPExample.QPS"));
-  CHECK(assert_equal(result.first.cost, result.second.cost, 1e-7));
-  CHECK(assert_equal(result.first.inequalities, result.second.inequalities,
-                     1e-7));
-  CHECK(assert_equal(result.first.equalities, result.second.equalities, 1e-7));
-}
-
-TEST(QPSolver, ParserSemanticTest) {
-  auto result = testParser(QPSParser("QPExample.QPS"));
-  VectorValues expected = QPSolver(result.first).optimize().first;
-  VectorValues actual = QPSolver(result.second).optimize().first;
-  CHECK(assert_equal(actual, expected, 1e-7));
-}
-
-TEST(QPSolver, QPExampleTest) {
-  QP problem = QPSParser("QPExample.QPS").Parse();
-  auto solver = QPSolver(problem);
-  VectorValues actual = solver.optimize().first;
-  VectorValues expected;
-  expected.insert(Symbol('X', 1), 0.7625 * I_1x1);
-  expected.insert(Symbol('X', 2), 0.4750 * I_1x1);
-  double error_expected = problem.cost.error(expected);
-  double error_actual = problem.cost.error(actual);
-  CHECK(assert_equal(expected, actual, 1e-7))
-  CHECK(assert_equal(error_expected, error_actual))
-}
-
-TEST(QPSolver, HS21) {
-  QP problem = QPSParser("HS21.QPS").Parse();
-  VectorValues expected;
-  expected.insert(Symbol('X', 1), 2.0 * I_1x1);
-  expected.insert(Symbol('X', 2), 0.0 * I_1x1);
-  VectorValues actual = QPSolver(problem).optimize().first;
-  double error_actual = problem.cost.error(actual);
-  CHECK(assert_equal(-99.9599999, error_actual, 1e-7))
-  CHECK(assert_equal(expected, actual))
-}
-
-TEST(QPSolver, HS35) {
-  QP problem = QPSParser("HS35.QPS").Parse();
-  VectorValues actual = QPSolver(problem).optimize().first;
-  double error_actual = problem.cost.error(actual);
-  CHECK(assert_equal(1.11111111e-01, error_actual, 1e-7))
-}
-
-TEST(QPSolver, HS35MOD) {
-  QP problem = QPSParser("HS35MOD.QPS").Parse();
-  VectorValues actual = QPSolver(problem).optimize().first;
-  double error_actual = problem.cost.error(actual);
-  CHECK(assert_equal(2.50000001e-01, error_actual, 1e-7))
-}
-
-TEST(QPSolver, HS51) {
-  QP problem = QPSParser("HS51.QPS").Parse();
-  VectorValues actual = QPSolver(problem).optimize().first;
-  double error_actual = problem.cost.error(actual);
-  CHECK(assert_equal(8.88178420e-16, error_actual, 1e-7))
-}
-
-TEST(QPSolver, HS52) {
-  QP problem = QPSParser("HS52.QPS").Parse();
-  VectorValues actual = QPSolver(problem).optimize().first;
-  double error_actual = problem.cost.error(actual);
-  CHECK(assert_equal(5.32664756, error_actual, 1e-7))
-}
-
-TEST(QPSolver, HS268) {  // This test needs an extra order of magnitude of
-                         // tolerance than the rest
-  QP problem = QPSParser("HS268.QPS").Parse();
-  VectorValues actual = QPSolver(problem).optimize().first;
-  double error_actual = problem.cost.error(actual);
-  CHECK(assert_equal(5.73107049e-07, error_actual, 1e-6))
-}
-
-TEST(QPSolver, QPTEST) {  // REQUIRES Jacobian Fix
-  QP problem = QPSParser("QPTEST.QPS").Parse();
-  VectorValues actual = QPSolver(problem).optimize().first;
-  double error_actual = problem.cost.error(actual);
-  CHECK(assert_equal(0.437187500e01, error_actual, 1e-7))
-}
-#endif
 
 /* ************************************************************************* */
 // Create Matlab's test graph as in
@@ -356,6 +159,23 @@ TEST(QPSolver, optimizeMatlabEx) {
   expected.insert(X(1), (Vector(1) << 2.0 / 3.0).finished());
   expected.insert(X(2), (Vector(1) << 4.0 / 3.0).finished());
   CHECK(assert_equal(expected, solution, 1e-7));
+}
+
+// Verify returned legacy dual keys can warm-start the wrapper.
+TEST(QPSolver, warmStartFromLegacyDualKeys) {
+  QP qp = createTestMatlabQPEx();
+  QPSolver solver(qp);
+  VectorValues initialValues;
+  initialValues.insert(X(1), Z_1x1);
+  initialValues.insert(X(2), Z_1x1);
+
+  const auto [firstSolution, firstDuals] = solver.optimize(initialValues);
+  const auto [secondSolution, secondDuals] =
+      solver.optimize(firstSolution, firstDuals, true);
+
+  CHECK(assert_equal(firstSolution, secondSolution, 1e-7));
+  CHECK(secondDuals.exists(0));
+  CHECK(secondDuals.exists(1));
 }
 
 ///* *************************************************************************
@@ -438,6 +258,8 @@ TEST(QPSolver, infeasibleInitial) {
   VectorValues solution;
   CHECK_EXCEPTION(solver.optimize(initialValues), InfeasibleInitialValues);
 }
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
 
 /* ************************************************************************* */
 int main() {

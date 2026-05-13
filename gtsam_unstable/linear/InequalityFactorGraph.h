@@ -18,6 +18,10 @@
 
 #pragma once
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam_unstable/linear/LinearInequality.h>
 #include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam/linear/VectorValues.h>
@@ -73,3 +77,4 @@ struct traits<InequalityFactorGraph> : public Testable<InequalityFactorGraph> {
 
 } // \ namespace gtsam
 
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
