@@ -14,7 +14,7 @@ void PlanarGyroMeasurement::print(const std::string& s) const {
 
 bool PlanarGyroMeasurement::equals(const PlanarGyroMeasurement& other,
                                    double tol) const {
-  return std::abs(ARW_ - other.ARW_) < tol &&
+  return p_ == other.p_ &&
          deltaR_.equals(other.deltaR_, tol) &&
          std::abs(deltaT_ - other.deltaT_) < tol;
 }
@@ -56,7 +56,7 @@ double PlanarGyroMeasurement::computeError(const Rot2& Ri, const Rot2& Rj,
 
 PlanarGyroFactor::PlanarGyroFactor(Key pose_i, Key pose_j, Key bias,
                                    const PlanarGyroMeasurement& x)
-    : Base(noiseModel::Constrained::MixedVariances(Vector3(0, 0, x.variance())),
+    : Base(noiseModel::Constrained::MixedSigmas(Vector3(0, 0, x.sigma())),
            pose_i, pose_j, bias),
       measurement_(x) {}
 

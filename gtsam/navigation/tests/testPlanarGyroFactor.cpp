@@ -20,10 +20,14 @@
 namespace gtsam {
 
 TEST(PlanarGyroMeasurement, fromRate) {
-  double arw = 1.0;
+  double arwSigma = 1.0;
   double omega = 0.1;
   double dt = 0.5;
-  PlanarGyroMeasurement x = PlanarGyroMeasurement::fromRate(arw, omega, dt);
+  double biasInstabilitySigma = 3e-4;
+
+  auto p = std::make_shared<PlanarGyroParams>(arwSigma, biasInstabilitySigma);
+
+  PlanarGyroMeasurement x = PlanarGyroMeasurement::fromRate(p, omega, dt);
 
   // Check the effect of bias.
   double bias = 0.05;
@@ -39,10 +43,14 @@ TEST(PlanarGyroMeasurement, fromRate) {
 }
 
 TEST(PlanarGyroMeasurement, fromRotation) {
-  double arw = 1.0;
+  double arwSigma = 1.0;
   Rot2 dr = 0.05;
   double dt = 0.5;
-  PlanarGyroMeasurement x = PlanarGyroMeasurement::fromRotation(arw, dr, dt);
+  double biasInstabilitySigma = 3e-4;
+
+  auto p = std::make_shared<PlanarGyroParams>(arwSigma, biasInstabilitySigma);
+
+  PlanarGyroMeasurement x = PlanarGyroMeasurement::fromRotation(p, dr, dt);
   double bias = 0.05;
   Matrix1 H;
   Rot2 corrected = x.deltaR(bias, H);
@@ -51,20 +59,28 @@ TEST(PlanarGyroMeasurement, fromRotation) {
 }
 
 TEST(PlanarGyroMeasurement, variance) {
-  double arw = 1.0;
+  double arwSigma = 1.0;
   double omega = 0.1;
   double dt = 0.5;
-  PlanarGyroMeasurement x = PlanarGyroMeasurement::fromRate(arw, omega, dt);
+  double biasInstabilitySigma = 3e-4;
+
+  auto p = std::make_shared<PlanarGyroParams>(arwSigma, biasInstabilitySigma);
+
+  PlanarGyroMeasurement x = PlanarGyroMeasurement::fromRate(p, omega, dt);
 
   // 1.0 * 0.5 = 0.5
-  EXPECT(assert_equal(0.5, x.variance(), 1e-9))
+  EXPECT(assert_equal(0.707107, x.sigma(), 1e-6))
 }
 
 TEST(PlanarGyroMeasurement, predict) {
-  double arw = 1.0;
+  double arwSigma = 1.0;
   double omega = 0.1;
   double dt = 0.5;
-  PlanarGyroMeasurement x = PlanarGyroMeasurement::fromRate(arw, omega, dt);
+  double biasInstabilitySigma = 3e-4;
+
+  auto p = std::make_shared<PlanarGyroParams>(arwSigma, biasInstabilitySigma);
+
+  PlanarGyroMeasurement x = PlanarGyroMeasurement::fromRate(p, omega, dt);
 
   // Check prediction.
   Rot2 Ri = Rot2::fromAngle(1);
@@ -90,10 +106,14 @@ TEST(PlanarGyroMeasurement, predict) {
 }
 
 TEST(PlanarGyroMeasurement, computeError) {
-  double arw = 1.0;
+  double arwSigma = 1.0;
   double omega = 0.1;
   double dt = 0.5;
-  PlanarGyroMeasurement x = PlanarGyroMeasurement::fromRate(arw, omega, dt);
+  double biasInstabilitySigma = 3e-4;
+
+  auto p = std::make_shared<PlanarGyroParams>(arwSigma, biasInstabilitySigma);
+
+  PlanarGyroMeasurement x = PlanarGyroMeasurement::fromRate(p, omega, dt);
 
   // Check error.
   Rot2 Ri = Rot2::fromAngle(1);
@@ -126,16 +146,20 @@ TEST(PlanarGyroMeasurement, computeError) {
 TEST(PlanarGyroFactor, evaluateError) {
   using symbol_shorthand::B;
   using symbol_shorthand::P;
-  double arw = 0.01;
+  double arwSigma = 0.1;
   double trueOmega = M_PI / 10.0;
   double B1 = 0.3;
   // Measurement includes bias.
   double measuredOmega = trueOmega + B1;
   double deltaT = 1.0;
+  double biasInstabilitySigma = 3e-4;
+
+  auto p = std::make_shared<PlanarGyroParams>(arwSigma, biasInstabilitySigma);
+
 
   PlanarGyroFactor factor(
       P(1), P(2), B(1),
-      PlanarGyroMeasurement::fromRate(arw, measuredOmega, deltaT));
+      PlanarGyroMeasurement::fromRate(p, measuredOmega, deltaT));
 
   double initialRotation = M_PI / 4.0;
   Pose2 P1(0.0, 0.0, initialRotation);
@@ -185,31 +209,34 @@ TEST(PlanarGyroFactor, optimize) {
   graph.add(PriorFactor<double>(B(0), 1.0, Diagonal::Sigmas(Vector1(1))));
 
   // Bias evolution.  Bias stability is an important parameter.
-  SharedDiagonal biasNoise = Diagonal::Sigmas(Vector1(3e-4));
+  double biasInstabilitySigma = 3e-4;
+  SharedDiagonal biasNoise = Diagonal::Sigmas(Vector1(biasInstabilitySigma));
   graph.add(BetweenFactor<double>(B(0), B(1), 0, biasNoise));
   graph.add(BetweenFactor<double>(B(1), B(2), 0, biasNoise));
   graph.add(BetweenFactor<double>(B(2), B(3), 0, biasNoise));
   graph.add(BetweenFactor<double>(B(3), B(4), 0, biasNoise));
 
   // Gyro measurements affect rotation only.
-  double arw = 1e-8;
+  double arwSigma = 1e-4;
   double trueOmega = 0.1;
   double bias = 1;  // large !
   double measuredOmega = trueOmega + bias;
   double dt = 1.0;
 
+  auto p = std::make_shared<PlanarGyroParams>(arwSigma, biasInstabilitySigma);
+
   graph.add(PlanarGyroFactor(
       P(0), P(1), B(0),
-      PlanarGyroMeasurement::fromRate(arw, measuredOmega, dt)));
+      PlanarGyroMeasurement::fromRate(p, measuredOmega, dt)));
   graph.add(PlanarGyroFactor(
       P(1), P(2), B(1),
-      PlanarGyroMeasurement::fromRate(arw, measuredOmega, dt)));
+      PlanarGyroMeasurement::fromRate(p, measuredOmega, dt)));
   graph.add(PlanarGyroFactor(
       P(2), P(3), B(2),
-      PlanarGyroMeasurement::fromRate(arw, measuredOmega, dt)));
+      PlanarGyroMeasurement::fromRate(p, measuredOmega, dt)));
   graph.add(PlanarGyroFactor(
       P(3), P(4), B(3),
-      PlanarGyroMeasurement::fromRate(arw, measuredOmega, dt)));
+      PlanarGyroMeasurement::fromRate(p, measuredOmega, dt)));
 
   // Initial values should not matter.
   Values values;

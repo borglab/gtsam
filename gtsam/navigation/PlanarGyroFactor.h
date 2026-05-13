@@ -24,53 +24,83 @@
 
 namespace gtsam {
 /**
+ * Modeled parameters of the gyro.
+ *
+ * https://rpg.ifi.uzh.ch/docs/UFFC16_Hidalgo.pdf
+ * https://telesens.co/wp-content/uploads/2017/05/AllanVariance5087-1.pdf
+ */
+struct GTSAM_EXPORT PlanarGyroParams {
+  /**
+   * White noise in omega, which results in "angle random walk" (ARW) in the
+   * integrated rotation measurement.
+   *
+   * Sometimes described as "sigma_n" or using the coefficient, "N"
+   *
+   * The usual published unit is stddev (σ), rad/s/√Hz.
+   */
+  const double arwSigma;
+  /**
+   * Minimum of Allan variance curve, describes variation in the bias.  Also
+   * called "in-run stability" or "flicker noise".
+   *
+   * Sometimes described as "sigma_ug" or using the coefficient, "B".
+   *
+   * The usual published unit is stddev (σ), rad/s.
+   */
+  const double biasInstabilitySigma;
+
+  PlanarGyroParams(double arwSigma, double biasInstabilitySigma)
+      : arwSigma(arwSigma), biasInstabilitySigma(biasInstabilitySigma) {}
+
+  bool operator==(const PlanarGyroParams& other) const {
+    return arwSigma == other.arwSigma &&
+           biasInstabilitySigma == other.biasInstabilitySigma;
+  }
+};
+
+/**
  * Measurement of a one-dimensional gyro, handles bias.
  */
 class GTSAM_EXPORT PlanarGyroMeasurement {
  private:
-  /**
-   * Published or measured variance of gyroscope measurements.
-   * This is white noise in omega, which results in "angle random walk"
-   * (ARW) in the integrated rotation measurement.
-   * The usual published unit is stddev (σ), rad/s/√Hz.
-   * This is variance (σ^2), so the unit is (rad/s)^2/Hz, or rad^2/s.
-   */
-  const double ARW_;
+  const std::shared_ptr<PlanarGyroParams> p_;
   /** Incremental rotation */
   const Rot2 deltaR_;
   /** Measurement time interval (s) */
   const double deltaT_;
 
-  PlanarGyroMeasurement(double ARW, Rot2 dr, double dt)
-      : ARW_(ARW), deltaR_(dr), deltaT_(dt) {}
+  PlanarGyroMeasurement(const std::shared_ptr<PlanarGyroParams>& p, Rot2 dr,
+                        double dt)
+      : p_(p), deltaR_(dr), deltaT_(dt) {}
 
  public:
   /**
-   * @param ARW "angle random walk" instrument variance (rad^2/s)
+   * @param p gyro parameters
    * @param omega average rotation rate during dt (rad/s)
    * @param dt incremental time (s)
    */
-  static inline PlanarGyroMeasurement fromRate(double ARW, double omega,
-                                               double dt) {
-    return PlanarGyroMeasurement(ARW, Rot2::fromAngle(omega * dt), dt);
+  static inline PlanarGyroMeasurement fromRate(
+      const std::shared_ptr<PlanarGyroParams>& p, double omega, double dt) {
+    return PlanarGyroMeasurement(p, Rot2::fromAngle(omega * dt), dt);
   }
 
   /**
-   * @param ARW "angle random walk" instrument variance (rad^2/s)
+   * @param p gyro parameters
    * @param dr incremental rotation during dt
    * @param dt incremental time (s)
    */
-  static inline PlanarGyroMeasurement fromRotation(double ARW, Rot2 dr,
-                                                   double dt) {
-    return PlanarGyroMeasurement(ARW, dr, dt);
+  static inline PlanarGyroMeasurement fromRotation(
+      const std::shared_ptr<PlanarGyroParams>& p, Rot2 dr, double dt) {
+    return PlanarGyroMeasurement(p, dr, dt);
   }
 
   /**
-   * Variance of the measurement (rad^2)
+   * Std dev of the measurement (rad)
    */
-  double variance() const {
+  double sigma() const {
     // Integrated white noise => variance scales linearly with time.
-    return ARW_ * deltaT_;
+    // Std dev scales with sqrt(time).
+    return p_->arwSigma * sqrt(deltaT_);
   }
 
   void print(const std::string& s = "Measurements: ") const;
