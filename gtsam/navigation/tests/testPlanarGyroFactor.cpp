@@ -213,10 +213,10 @@ TEST(PlanarGyroFactor, optimize) {
 
   // Bias evolution.  Bias stability is an important parameter.
   auto p = std::make_shared<PlanarGyroParams>(arwSigma, biasInstabilitySigma);
-  graph.add(PlanarGyroBiasFactor(B(0), B(1), p, dt));
-  graph.add(PlanarGyroBiasFactor(B(1), B(2), p, dt));
-  graph.add(PlanarGyroBiasFactor(B(2), B(3), p, dt));
-  graph.add(PlanarGyroBiasFactor(B(3), B(4), p, dt));
+  graph.add(PlanarGyroBiasFactor(B(0), B(1), p));
+  graph.add(PlanarGyroBiasFactor(B(1), B(2), p));
+  graph.add(PlanarGyroBiasFactor(B(2), B(3), p));
+  graph.add(PlanarGyroBiasFactor(B(3), B(4), p));
 
   graph.add(PlanarGyroFactor::FromRate(P(0), P(1), B(0), p, measuredOmega, dt));
   graph.add(PlanarGyroFactor::FromRate(P(1), P(2), B(1), p, measuredOmega, dt));

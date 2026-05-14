@@ -10,9 +10,7 @@ using noiseModel::Constrained;
 
 double PlanarGyroParams::arwSigma(double deltaT) { return arw * sqrt(deltaT); }
 
-double PlanarGyroParams::biasInstabilitySigma(double deltaT) {
-  return biasInstability * sqrt(deltaT);
-}
+double PlanarGyroParams::biasInstabilitySigma() { return biasInstability; }
 
 bool PlanarGyroParams::operator==(const PlanarGyroParams& other) const {
   return arw == other.arw && biasInstability == other.biasInstability;
@@ -26,10 +24,9 @@ void PlanarGyroParams::print(const std::string& s) const {
 }
 
 PlanarGyroBiasFactor::PlanarGyroBiasFactor(
-    Key bias_i, Key bias_j, const std::shared_ptr<PlanarGyroParams>& p,
-    double dt)
+    Key bias_i, Key bias_j, const std::shared_ptr<PlanarGyroParams>& p)
     : Base(bias_i, bias_j, 0.0,
-           Diagonal::Sigmas(Vector1(p->biasInstabilitySigma(dt)))) {}
+           Diagonal::Sigmas(Vector1(p->biasInstabilitySigma()))) {}
 
 PlanarGyroFactor::PlanarGyroFactor(Key pose_i, Key pose_j, Key bias,
                                    const std::shared_ptr<PlanarGyroParams>& p,

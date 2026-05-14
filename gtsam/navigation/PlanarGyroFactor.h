@@ -1,5 +1,5 @@
 /**
- * Yaw measurement and factor.
+ * One-dimensional ("planar") gyro factors.
  *
  * Useful for high-school robotics competitions,
  * which run robots on the floor.
@@ -30,25 +30,27 @@ using noiseModel::Diagonal;
  *
  * https://rpg.ifi.uzh.ch/docs/UFFC16_Hidalgo.pdf
  * https://telesens.co/wp-content/uploads/2017/05/AllanVariance5087-1.pdf
+ * https://github.com/borglab/gtsam/issues/213
+ * https://github.com/ethz-asl/kalibr/wiki/IMU-Noise-Model
  */
 class GTSAM_EXPORT PlanarGyroParams {
  private:
   /**
-   * White noise in omega, which results in "angle random walk" (ARW) in the
-   * integrated rotation measurement.
+   * White noise in measured omega, which results in "angle random walk" (ARW)
+   * in the integrated rotation measurement.
    *
-   * Sometimes described as "sigma_n" or using the coefficient, "N".
+   * Sometimes described using the coefficient, "N".
    *
-   * The usual published unit is stddev (σ), rad/s/√Hz.
+   * The usual published measurement is stddev (σ), rad/√s.
    */
   const double arw;
   /**
    * Minimum of Allan variance curve, describes variation in the bias.  Also
    * called "in-run stability" or "flicker noise".
    *
-   * Sometimes described as "sigma_ug" or using the coefficient, "B".
+   * Sometimes described using the coefficient, "B".
    *
-   * The usual published unit is stddev (σ), rad/s.
+   * The usual published measurement is stddev (σ), rad/s.
    */
   const double biasInstability;
 
@@ -56,30 +58,32 @@ class GTSAM_EXPORT PlanarGyroParams {
   PlanarGyroParams(double arw, double biasInstability)
       : arw(arw), biasInstability(biasInstability) {}
   /**
-   * Std dev of the integrated measurement, for the specified duration (rad)
+   * Std dev of the integrated measurement (rad), for the specified duration
+   * (sec).
    *
-   * Integrated gaussian white noise is also gaussian, scaled with time. Std dev
-   * scales with sqrt(time).
+   * Integrated gaussian white noise is also gaussian, scaled with duration, so
+   * std dev scales with sqrt(time), so the unit here is rad.
    */
   double arwSigma(double deltaT);
   /**
-   * Std dev of the integrated bias, used between two bias estimates.
+   * Bias instability is the "zero slope" part of the Allan curve, so it is
+   * not dependent on sample rate.  The unit here is rad/s (same as the unit of
+   * bias itself).
    */
-  double biasInstabilitySigma(double deltaT);
+  double biasInstabilitySigma();
   bool operator==(const PlanarGyroParams& other) const;
   void print(const std::string& s) const;
 };
 
 /**
- * The gyro measurement factor is used together with a factor
- * modeling the evolution of the bias itself as a random walk.
+ * Models the evolution of the bias itself as a random walk.
  */
 class GTSAM_EXPORT PlanarGyroBiasFactor : public BetweenFactor<double> {
   typedef BetweenFactor<double> Base;
 
  public:
   PlanarGyroBiasFactor(Key bias_i, Key bias_j,
-                       const std::shared_ptr<PlanarGyroParams>& p, double dt);
+                       const std::shared_ptr<PlanarGyroParams>& p);
   ~PlanarGyroBiasFactor() override {}
 };
 
