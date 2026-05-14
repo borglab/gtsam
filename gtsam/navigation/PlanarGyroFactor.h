@@ -17,28 +17,31 @@
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
 
 #include <optional>
 
 #include "gtsam/dllexport.h"
 
 namespace gtsam {
+using noiseModel::Diagonal;
 /**
  * Modeled parameters of the gyro.
  *
  * https://rpg.ifi.uzh.ch/docs/UFFC16_Hidalgo.pdf
  * https://telesens.co/wp-content/uploads/2017/05/AllanVariance5087-1.pdf
  */
-struct GTSAM_EXPORT PlanarGyroParams {
+class GTSAM_EXPORT PlanarGyroParams {
+ private:
   /**
    * White noise in omega, which results in "angle random walk" (ARW) in the
    * integrated rotation measurement.
    *
-   * Sometimes described as "sigma_n" or using the coefficient, "N"
+   * Sometimes described as "sigma_n" or using the coefficient, "N".
    *
    * The usual published unit is stddev (σ), rad/s/√Hz.
    */
-  const double arwSigma;
+  const double arw;
   /**
    * Minimum of Allan variance curve, describes variation in the bias.  Also
    * called "in-run stability" or "flicker noise".
@@ -47,21 +50,46 @@ struct GTSAM_EXPORT PlanarGyroParams {
    *
    * The usual published unit is stddev (σ), rad/s.
    */
-  const double biasInstabilitySigma;
+  const double biasInstability;
 
-  PlanarGyroParams(double arwSigma, double biasInstabilitySigma)
-      : arwSigma(arwSigma), biasInstabilitySigma(biasInstabilitySigma) {}
-
-  bool operator==(const PlanarGyroParams& other) const {
-    return arwSigma == other.arwSigma &&
-           biasInstabilitySigma == other.biasInstabilitySigma;
-  }
+ public:
+  PlanarGyroParams(double arw, double biasInstability)
+      : arw(arw), biasInstability(biasInstability) {}
+  /**
+   * Std dev of the integrated measurement, for the specified duration (rad)
+   *
+   * Integrated gaussian white noise is also gaussian, scaled with time. Std dev
+   * scales with sqrt(time).
+   */
+  double arwSigma(double deltaT);
+  /**
+   * Std dev of the integrated bias, used between two bias estimates.
+   */
+  double biasInstabilitySigma(double deltaT);
+  bool operator==(const PlanarGyroParams& other) const;
+  void print(const std::string& s) const;
 };
 
 /**
- * Measurement of a one-dimensional gyro, handles bias.
+ * The gyro measurement factor is used together with a factor
+ * modeling the evolution of the bias itself as a random walk.
  */
-class GTSAM_EXPORT PlanarGyroMeasurement {
+class GTSAM_EXPORT PlanarGyroBiasFactor : public BetweenFactor<double> {
+  typedef BetweenFactor<double> Base;
+
+ public:
+  PlanarGyroBiasFactor(Key bias_i, Key bias_j,
+                       const std::shared_ptr<PlanarGyroParams>& p, double dt);
+  ~PlanarGyroBiasFactor() override {}
+};
+
+/**
+ * A "between" factor for Pose2 rotation, with variable bias.
+ */
+class GTSAM_EXPORT PlanarGyroFactor
+    : public NoiseModelFactorN<Pose2, Pose2, double> {
+  typedef NoiseModelFactorN<Pose2, Pose2, double> Base;
+
  private:
   const std::shared_ptr<PlanarGyroParams> p_;
   /** Incremental rotation */
@@ -69,42 +97,55 @@ class GTSAM_EXPORT PlanarGyroMeasurement {
   /** Measurement time interval (s) */
   const double deltaT_;
 
-  PlanarGyroMeasurement(const std::shared_ptr<PlanarGyroParams>& p, Rot2 dr,
-                        double dt)
-      : p_(p), deltaR_(dr), deltaT_(dt) {}
+  PlanarGyroFactor(Key pose_i, Key pose_j, Key bias,
+                   const std::shared_ptr<PlanarGyroParams>& p, Rot2 dr,
+                   double dt);
 
  public:
-  /**
-   * @param p gyro parameters
-   * @param omega average rotation rate during dt (rad/s)
-   * @param dt incremental time (s)
-   */
-  static inline PlanarGyroMeasurement fromRate(
-      const std::shared_ptr<PlanarGyroParams>& p, double omega, double dt) {
-    return PlanarGyroMeasurement(p, Rot2::fromAngle(omega * dt), dt);
-  }
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
+  /** Shorthand for a smart pointer to a factor */
+#if !defined(_MSC_VER) && __GNUC__ == 4 && __GNUC_MINOR__ > 5
+  typedef typename std::shared_ptr<PlanarGyroFactor> shared_ptr;
+#else
+  typedef std::shared_ptr<PlanarGyroFactor> shared_ptr;
+#endif
 
   /**
+   * @param pose_i Pose2 variable at i
+   * @param pose_j Pose2 variable at j
+   * @param bias double variable between i and j
    * @param p gyro parameters
-   * @param dr incremental rotation during dt
-   * @param dt incremental time (s)
+   * @param dr rotation between i and j
+   * @param dt time between i and j (s)
    */
-  static inline PlanarGyroMeasurement fromRotation(
+  static inline PlanarGyroFactor FromRotation(
+      Key pose_i, Key pose_j, Key bias,
       const std::shared_ptr<PlanarGyroParams>& p, Rot2 dr, double dt) {
-    return PlanarGyroMeasurement(p, dr, dt);
+    return PlanarGyroFactor(pose_i, pose_j, bias, p, dr, dt);
   }
-
   /**
-   * Std dev of the measurement (rad)
+   * @param pose_i Pose2 variable at i
+   * @param pose_j Pose2 variable at j
+   * @param bias double variable between i and j
+   * @param p gyro parameters
+   * @param omega average rotation rate between i and j (rad/s)
+   * @param dt time between i and j (s)
    */
-  double sigma() const {
-    // Integrated white noise => variance scales linearly with time.
-    // Std dev scales with sqrt(time).
-    return p_->arwSigma * sqrt(deltaT_);
+  static inline PlanarGyroFactor FromRate(
+      Key pose_i, Key pose_j, Key bias,
+      const std::shared_ptr<PlanarGyroParams>& p, double omega, double dt) {
+    return PlanarGyroFactor(pose_i, pose_j, bias, p,
+                            Rot2::fromAngle(omega * dt), dt);
   }
 
-  void print(const std::string& s = "Measurements: ") const;
-  bool equals(const PlanarGyroMeasurement& expected, double tol = 1e-9) const;
+  ~PlanarGyroFactor() override {}
+
+  gtsam::NonlinearFactor::shared_ptr clone() const override;
+  void print(const std::string& s, const KeyFormatter& keyFormatter =
+                                       DefaultKeyFormatter) const override;
+  bool equals(const NonlinearFactor&, double tol = 1e-9) const override;
 
   /**
    * Bias-corrected rotation.
@@ -139,38 +180,10 @@ class GTSAM_EXPORT PlanarGyroMeasurement {
                       OptionalJacobian<1, 1> H1 = {},
                       OptionalJacobian<1, 1> H2 = {},
                       OptionalJacobian<1, 1> H3 = {}) const;
-};
-
-/**
- * A "between" factor for Pose2 rotation, with variable bias.
- */
-class GTSAM_EXPORT PlanarGyroFactor
-    : public NoiseModelFactorN<Pose2, Pose2, double> {
-  typedef NoiseModelFactorN<Pose2, Pose2, double> Base;
-
-  const PlanarGyroMeasurement measurement_;
-
- public:
-  // Provide access to the Matrix& version of evaluateError:
-  using Base::evaluateError;
-
-  /** Shorthand for a smart pointer to a factor */
-#if !defined(_MSC_VER) && __GNUC__ == 4 && __GNUC_MINOR__ > 5
-  typedef typename std::shared_ptr<PlanarGyroFactor> shared_ptr;
-#else
-  typedef std::shared_ptr<PlanarGyroFactor> shared_ptr;
-#endif
-
-  PlanarGyroFactor(Key pose_i, Key pose_j, Key bias,
-                   const PlanarGyroMeasurement& measurement);
-  ~PlanarGyroFactor() override {}
-
-  gtsam::NonlinearFactor::shared_ptr clone() const override;
-  void print(const std::string& s, const KeyFormatter& keyFormatter =
-                                       DefaultKeyFormatter) const override;
-  bool equals(const NonlinearFactor&, double tol = 1e-9) const override;
 
   /**
+   * The error between the predicted and actual incremental pose (Vector3).
+   *
    * @param Pi pose estimate at i
    * @param Pj pose estimate at j
    * @param bias estimate between i and j

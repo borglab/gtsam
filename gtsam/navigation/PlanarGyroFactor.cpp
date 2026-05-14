@@ -6,36 +6,55 @@
 #include <gtsam/navigation/PlanarGyroFactor.h>
 
 namespace gtsam {
-void PlanarGyroMeasurement::print(const std::string& s) const {
-  std::cout << s;
-  std::cout << " dt [" << deltaT_ << "]" << std::endl;
-  std::cout << " dtheta = (" << deltaR_.theta() << ")" << std::endl;
+using noiseModel::Constrained;
+
+double PlanarGyroParams::arwSigma(double deltaT) { return arw * sqrt(deltaT); }
+
+double PlanarGyroParams::biasInstabilitySigma(double deltaT) {
+  return biasInstability * sqrt(deltaT);
 }
 
-bool PlanarGyroMeasurement::equals(const PlanarGyroMeasurement& other,
-                                   double tol) const {
-  return p_ == other.p_ &&
-         deltaR_.equals(other.deltaR_, tol) &&
-         std::abs(deltaT_ - other.deltaT_) < tol;
+bool PlanarGyroParams::operator==(const PlanarGyroParams& other) const {
+  return arw == other.arw && biasInstability == other.biasInstability;
 }
 
-Rot2 PlanarGyroMeasurement::deltaR(double bias,
-                                   OptionalJacobian<1, 1> H) const {
+void PlanarGyroParams::print(const std::string& s) const {
+  std::cout << s                                               //
+            << " arw [" << arw << "]"                          //
+            << " biasInstability [" << biasInstability << ")"  //
+            << std::endl;
+}
+
+PlanarGyroBiasFactor::PlanarGyroBiasFactor(
+    Key bias_i, Key bias_j, const std::shared_ptr<PlanarGyroParams>& p,
+    double dt)
+    : Base(bias_i, bias_j, 0.0,
+           Diagonal::Sigmas(Vector1(p->biasInstabilitySigma(dt)))) {}
+
+PlanarGyroFactor::PlanarGyroFactor(Key pose_i, Key pose_j, Key bias,
+                                   const std::shared_ptr<PlanarGyroParams>& p,
+                                   Rot2 dr, double dt)
+    : Base(Constrained::MixedSigmas(Vector3(0, 0, p->arwSigma(dt))), pose_i,
+           pose_j, bias),
+      p_(p),
+      deltaR_(dr),
+      deltaT_(dt) {}
+
+Rot2 PlanarGyroFactor::deltaR(double bias, OptionalJacobian<1, 1> H) const {
   if (H) (*H)(0) = -deltaT_;
   return deltaR_.compose(Rot2::fromAngle(-deltaT_ * bias));
 }
 
-Rot2 PlanarGyroMeasurement::predict(const Rot2& Ri, double bias,
-                                    OptionalJacobian<1, 1> H1,
-                                    OptionalJacobian<1, 1> H2) const {
+Rot2 PlanarGyroFactor::predict(const Rot2& Ri, double bias,
+                               OptionalJacobian<1, 1> H1,
+                               OptionalJacobian<1, 1> H2) const {
   return Ri.compose(deltaR(bias, H2), H1);
 }
 
-double PlanarGyroMeasurement::computeError(const Rot2& Ri, const Rot2& Rj,
-                                           double bias,
-                                           OptionalJacobian<1, 1> H1,
-                                           OptionalJacobian<1, 1> H2,
-                                           OptionalJacobian<1, 1> H3) const {
+double PlanarGyroFactor::computeError(const Rot2& Ri, const Rot2& Rj,
+                                      double bias, OptionalJacobian<1, 1> H1,
+                                      OptionalJacobian<1, 1> H2,
+                                      OptionalJacobian<1, 1> H3) const {
   // Predict orientation at time j
   Matrix1 D_predict_Ri, D_predict_bias;
   Rot2 predicted_Rj = predict(Ri, bias, H1 ? &D_predict_Ri : nullptr,
@@ -54,12 +73,6 @@ double PlanarGyroMeasurement::computeError(const Rot2& Ri, const Rot2& Rj,
   return error(0);
 }
 
-PlanarGyroFactor::PlanarGyroFactor(Key pose_i, Key pose_j, Key bias,
-                                   const PlanarGyroMeasurement& x)
-    : Base(noiseModel::Constrained::MixedSigmas(Vector3(0, 0, x.sigma())),
-           pose_i, pose_j, bias),
-      measurement_(x) {}
-
 gtsam::NonlinearFactor::shared_ptr PlanarGyroFactor::clone() const {
   return std::static_pointer_cast<gtsam::NonlinearFactor>(
       gtsam::NonlinearFactor::shared_ptr(new PlanarGyroFactor(*this)));
@@ -67,18 +80,24 @@ gtsam::NonlinearFactor::shared_ptr PlanarGyroFactor::clone() const {
 
 void PlanarGyroFactor::print(const std::string& s,
                              const KeyFormatter& keyFormatter) const {
-  std::cout << s << "PlanarGyroFactor("             //
-            << keyFormatter(this->key<1>()) << ","  //
-            << keyFormatter(this->key<2>()) << ","  //
-            << keyFormatter(this->key<3>()) << ",";
-  measurement_.print(" measurement:");
+  std::cout << s << "PlanarGyroFactor("              //
+            << keyFormatter(this->key<1>()) << ","   //
+            << keyFormatter(this->key<2>()) << ","   //
+            << keyFormatter(this->key<3>()) << ","   //
+            << " dt [" << deltaT_ << "]" << ","      //
+            << " dtheta [" << deltaR_.theta() << ""  //
+            << std::endl;
+  p_->print("params: ");
   noiseModel_->print(" noise model: ");
 }
 
 bool PlanarGyroFactor::equals(const NonlinearFactor& other, double tol) const {
   const PlanarGyroFactor* e = dynamic_cast<const PlanarGyroFactor*>(&other);
-  return e != nullptr && Base::equals(*e, tol) &&
-         measurement_.equals(e->measurement_, tol);
+  return e != nullptr                        //
+         && Base::equals(*e, tol)            //
+         && p_ == e->p_                      //
+         && deltaR_.equals(e->deltaR_, tol)  //
+         && std::abs(deltaT_ - e->deltaT_) < tol;
 }
 
 Vector PlanarGyroFactor::evaluateError(const Pose2& Pi, const Pose2& Pj,
@@ -87,8 +106,8 @@ Vector PlanarGyroFactor::evaluateError(const Pose2& Pi, const Pose2& Pj,
                                        OptionalMatrixType H2,
                                        OptionalMatrixType H3) const {
   Matrix1 rH1, rH2, rH3;
-  double err = measurement_.computeError(Pi.r(), Pj.r(), bias, H1 ? &rH1 : 0,
-                                         H2 ? &rH2 : 0, H3 ? &rH3 : 0);
+  double err = computeError(Pi.r(), Pj.r(), bias, H1 ? &rH1 : 0, H2 ? &rH2 : 0,
+                            H3 ? &rH3 : 0);
   if (H1) {
     *H1 = Z_3x3;
     H1->block<1, 1>(2, 2) = rH1;
