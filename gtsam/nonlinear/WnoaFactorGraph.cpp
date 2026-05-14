@@ -519,7 +519,5 @@ template class GTSAM_EXPORT WnoaFactorGraph<Point1>;
 template class GTSAM_EXPORT WnoaFactorGraph<Point2>;
 template class GTSAM_EXPORT WnoaFactorGraph<Point3>;
 template class GTSAM_EXPORT WnoaFactorGraph<Pose2>;
-#ifdef GTSAM_ROT3_EXPMAP
 template class GTSAM_EXPORT WnoaFactorGraph<Pose3>;
-#endif
 }  // namespace gtsam

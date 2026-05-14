@@ -162,8 +162,7 @@ class GTSAM_EXPORT WnoaFactorGraph : public ExpressionFactorGraph {
    */
   WnoaFactorGraph(
       std::unordered_map<StateData, std::pair<StateData, StateData>> interp_map,
-      const VectorN q_psd_diag,
-      bool fixed_noise_model = false);
+      const VectorN q_psd_diag, bool fixed_noise_model = false);
 };
 
 /// Utility functions for working with Factor Graphs containing interpolated
@@ -303,6 +302,46 @@ FactorGraphType interpolateFactorGraph(
 }
 
 /**
+ * @brief WnoaFactorGraph specialization of `interpolateFactorGraph` for use in
+ * Python bindings. Convert a factor graph by removing interpolated states.
+ *
+ * This helper replaces factors that reference interpolated states with
+ * equivalent wrapper factors that act on the bordering estimated states.
+ * Additionally, WNOA motion prior factors are added between successive
+ * estimated states. Factors that do not reference interpolated states are
+ * copied unchanged into the returned graph. Note that only a single type of
+ * pose is currently supported.
+ *
+ * @tparam PoseType Pose type used in the graph (e.g. `Pose2`, `Pose3`).
+ * @tparam FactorGraphType Type of factor graph to return. Defaults to
+ * `NonlinearFactorGraph`, but can be set to `WnoaFactorGraph` to
+ * NonlinearFactorGraph or WnoaFactorGraph. Note that the user is responsible
+ * for ensuring that the WnoaFactorGraph is defined with the same PoseType as
+ * the template parameter.
+ * @param graph Input factor graph possibly containing factors on interpolated
+ * states.
+ * @param estimated_states Ordered set of estimated `StateData` (main-solve
+ * states).
+ * @param interp_states Ordered set of `StateData` entries to be
+ * interpolated/removed.
+ * @param q_psd_diag Diagonal PSD vector for the WNOA motion prior (dimension
+ * must match PoseType).
+ * @param fixed_noise If true, do not augment measurement noise models for
+ * interpolation.
+ * @return FactorGraphType factor graph with interpolated states removed and
+ * factors updated.
+ */
+template <class PoseType>
+WnoaFactorGraph<PoseType> interpolateWnoaFactorGraph(
+    const NonlinearFactorGraph& graph,
+    const std::set<StateData>& estimated_states,
+    const std::set<StateData>& interp_states, Vector q_psd_diag,
+    bool fixed_noise = false) {
+  return interpolateFactorGraph<PoseType, WnoaFactorGraph<PoseType>>(
+      graph, estimated_states, interp_states, q_psd_diag, fixed_noise);
+}
+
+/**
  * @brief Update a `Values` with interpolated pose and velocity entries.
  *
  * Given an interpolated factor graph and the current estimated `Values`,
@@ -327,8 +366,7 @@ Values updateInterpValues(
     const NonlinearFactorGraph& interp_graph, const Values& values,
     const std::set<StateData>& estim_states,
     const std::set<StateData>& interp_states, const Vector q_psd_diag,
-    std::shared_ptr<typename Interpolator<PoseType>::CovarianceMap>
-        covarianceMapOut = nullptr) {
+    std::shared_ptr<InterpCovarianceMap> covarianceMapOut = nullptr) {
   // assert that the pose is the right kind of variable
   static_assert(
       std::is_same_v<typename traits<PoseType>::structure_category,
@@ -347,6 +385,35 @@ Values updateInterpValues(
   Values values_updated(values);
   values_updated.insert(interp_vals);
   return values_updated;
+}
+
+/**
+ * @brief Update `Values` with interpolated states and return covariances.
+ *
+ * Convenience wrapper around `updateInterpValues` that always computes
+ * interpolation covariances and returns them alongside the updated `Values`.
+ *
+ * @tparam PoseType Pose type used by the interpolator.
+ * @param interp_graph Factor graph containing interpolation metadata
+ * (borders).
+ * @param values Current estimated `Values` (outer states used as borders).
+ * @param estim_states Ordered set of estimated `StateData` used by the main
+ * solve.
+ * @param interp_states Ordered set of `StateData` entries to interpolate.
+ * @param q_psd_diag Diagonal PSD vector for the WNOA motion prior.
+ * @return std::pair<Values, InterpCovarianceMap> Updated values and
+ * per-interpolated-state covariance map keyed by variable `Key`.
+ */
+template <class PoseType>
+std::pair<Values, InterpCovarianceMap> updateInterpValuesWithCovariance(
+    const NonlinearFactorGraph& interp_graph, const Values& values,
+    const std::set<StateData>& estim_states,
+    const std::set<StateData>& interp_states, const Vector q_psd_diag) {
+  auto covariance_map = std::make_shared<InterpCovarianceMap>();
+  Values values_updated =
+      updateInterpValues<PoseType>(interp_graph, values, estim_states,
+                                   interp_states, q_psd_diag, covariance_map);
+  return std::make_pair(values_updated, std::move(*covariance_map));
 }
 
 }  // namespace gtsam

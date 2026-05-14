@@ -466,7 +466,7 @@ template <typename PoseType>
 Values Interpolator<PoseType>::interpolatePosesAndVelocities(
     const NonlinearFactorGraph& mainSolveGraph, const Values& mainSolveSolution,
     const StateDataSet& mainSolveStates, const StateDataSet& interpolatedStates,
-    std::shared_ptr<CovarianceMap> covarianceMapOut) const {
+    std::shared_ptr<InterpCovarianceMap> covarianceMapOut) const {
   // Map from intervals [t1, t2) to query times inside that interval (bucket)
   std::map<StateDataInterval, std::vector<StateData>> queryBuckets;
 
