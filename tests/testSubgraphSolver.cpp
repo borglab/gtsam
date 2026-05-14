@@ -73,6 +73,10 @@ TEST( SubgraphSolver, constructor1 )
   // Build a planar graph
   const auto [Ab, xtrue] = example::planarGraph(N); // A*x-b
 
+  // Set augmentation factor to 0.0, preventing zeroed tree edge landing in 
+  // the first numSamples position of the weight vector
+  kParameters.builderParams.augmentationFactor = 0.0;
+
   // The first constructor just takes a factor graph (and kParameters)
   // and it will split the graph into A1 and A2, where A1 is a spanning tree
   SubgraphSolver solver(Ab, kParameters, kOrdering);
