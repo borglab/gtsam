@@ -197,7 +197,7 @@ def plot_results(
         print("To visualize the results, please install pyvista with `pip install pyvista`.")
         return
 
-    plotter = pv.Plotter()
+    plotter = pv.Plotter(image_scale=3)
     # Plot estimated poses
     plot_poses(plotter, poses, covariances)
     # Plot measurements
