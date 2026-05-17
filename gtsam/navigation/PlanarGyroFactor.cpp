@@ -7,6 +7,7 @@
 
 namespace gtsam {
 using noiseModel::Constrained;
+using noiseModel::Diagonal;
 
 double PlanarGyroParams::arwSigma(double deltaT) { return arw * sqrt(deltaT); }
 
