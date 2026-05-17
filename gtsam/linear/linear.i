@@ -3,6 +3,24 @@
 //*************************************************************************
 namespace gtsam {
 
+#include <gtsam/base/SymmetricBlockMatrix.h>
+class SymmetricBlockMatrix {
+  SymmetricBlockMatrix();
+  SymmetricBlockMatrix(const std::vector<size_t>& dimensions,
+                       bool appendOneDimension = false);
+  SymmetricBlockMatrix(const std::vector<size_t>& dimensions,
+                       const gtsam::Matrix& matrix,
+                       bool appendOneDimension = false);
+
+  size_t rows() const;
+  size_t cols() const;
+  size_t nBlocks() const;
+  size_t getDim(size_t block) const;
+  gtsam::Matrix block(size_t I, size_t J) const;
+  void setZero();
+  void setAllZero();
+};
+
 #include <gtsam/linear/JointMarginal.h>
 class JointMarginal {
   gtsam::Matrix at(size_t iVariable, size_t jVariable) const;

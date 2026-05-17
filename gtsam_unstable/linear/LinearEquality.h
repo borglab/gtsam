@@ -18,6 +18,10 @@
 
 #pragma once
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam/linear/JacobianFactor.h>
 
 namespace gtsam {
@@ -137,3 +141,4 @@ template<> struct traits<LinearEquality> : public Testable<LinearEquality> {
 
 } // \ namespace gtsam
 
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

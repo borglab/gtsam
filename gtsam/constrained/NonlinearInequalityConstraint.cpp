@@ -155,7 +155,7 @@ Vector NonlinearInequalityConstraints::violationVector(const Values& values,
   size_t start_idx = 0;
   for (const auto& constraint : *this) {
     size_t dim = constraint->dim();
-    violation.middleCols(start_idx, dim) =
+    violation.segment(start_idx, dim) =
         whiten ? constraint->whitenedError(values)
                : constraint->unwhitenedError(values);
     start_idx += dim;

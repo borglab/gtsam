@@ -12,6 +12,23 @@ For reviewing PRs:
 * Public fields in structs keep plain names (no trailing underscore).
 * Apart from those naming conventions, we adopt Google C++ style.
 * Prefer concise, elegant examples: use the fewest helpers possible, favor direct construction and small local functors/lambdas over extra adapter functions.
+* In C++ tests, avoid one large anonymous namespace collecting every helper at the top of the file. Prefer small, named fixture-style namespaces that contain both the helper definitions and the tests that use them, so helpers stay local to the relevant test group and the file can evolve toward fixture classes later.
+* In C++ tests, put at least one short `//` comment immediately above each `TEST()` explaining the behavior being verified.
+* When using `/* ************************************************************************* */` dividers in tests, use one divider immediately before each fixture namespace and one divider immediately after it closes. Do not put dividers between tests that belong to the same fixture block. The preferred shape is:
+  ```
+  /* ************************************************************************* */
+  namespace my_fixture {
+
+  // definitions
+
+  // Verifies the expected behavior.
+  TEST(Suite, Case) {}
+  // Verifies another related behavior.
+  TEST(Suite, AnotherCase) {}
+
+  }  // namespace my_fixture
+  /* ************************************************************************* */
+  ```
 * Notebooks in `*/doc/*.ipynb` and `*/examples/*.ipynb` should follow the standard preamble:
   1) title/introduction markdown cell,
   2) copyright markdown cell tagged `remove-cell`,

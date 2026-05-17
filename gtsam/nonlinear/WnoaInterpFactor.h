@@ -92,12 +92,6 @@ namespace gtsam {
 template <class PoseType>
 class WnoaInterpFactor : public NoiseModelFactor {
  private:
-#ifndef GTSAM_ROT3_EXPMAP
-  static_assert(
-      !std::is_same_v<PoseType, Pose3> || std::is_same_v<PoseType, Rot3>,
-      "Interpolation factors are not supported for Pose3/Rot3 when using the "
-      "Cayley chart. Please switch to EXPMAP coordinates mode.");
-#endif
   using Base = NoiseModelFactor;
   using This = WnoaInterpFactor<PoseType>;
   using VelocityType = typename gtsam::traits<PoseType>::TangentVector;

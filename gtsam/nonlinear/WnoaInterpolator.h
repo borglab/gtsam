@@ -94,6 +94,11 @@ struct TimestampedPoseVelocity {
 };
 
 /**
+ * @brief Type alias for a map from variable keys to interpolated state covariances.
+ */
+typedef std::map<Key, Matrix> InterpCovarianceMap;
+
+/**
  * @brief Interpolator for poses and velocities under a motion prior.
  *
  * The `Interpolator` class provides routines to interpolate pose and
@@ -145,8 +150,6 @@ class GTSAM_EXPORT Interpolator {
     MatrixN dxidotkp1_dvarpikp1;
   };
 
-  // Maps a pose or velocity to their covariance matrix
-  using CovarianceMap = std::map<Key, Matrix>;
 
   Interpolator() = delete;
 
@@ -255,7 +258,7 @@ class GTSAM_EXPORT Interpolator {
       const NonlinearFactorGraph& mainSolveGraph,
       const Values& mainSolveSolution, const StateDataSet& mainSolveStates,
       const StateDataSet& interpolatedStates,
-      std::shared_ptr<CovarianceMap> covarianceMapOut = nullptr) const;
+      std::shared_ptr<InterpCovarianceMap> covarianceMapOut = nullptr) const;
 
   /**
    * @brief Compute the conditional covariance of the interpolated state.
