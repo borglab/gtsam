@@ -109,13 +109,6 @@ class GTSAM_EXPORT PlanarGyroFactor
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
-  /** Shorthand for a smart pointer to a factor */
-#if !defined(_MSC_VER) && __GNUC__ == 4 && __GNUC_MINOR__ > 5
-  typedef typename std::shared_ptr<PlanarGyroFactor> shared_ptr;
-#else
-  typedef std::shared_ptr<PlanarGyroFactor> shared_ptr;
-#endif
-
   /**
    * @param pose_i Pose2 variable at i
    * @param pose_j Pose2 variable at j
