@@ -210,14 +210,6 @@ class ProductLieGroup : public std::pair<G, H> {
   /// Create an identity Jacobian with the requested runtime size.
   static Jacobian identityJacobian(size_t productDimension);
 
-  /// Assign a sub-block. Uses compile-time block dimensions when the source
-  /// has fixed-size dimensions; otherwise falls back to runtime dimensions.
-  /// The compile-time path avoids GCC -Werror=array-bounds false positives
-  /// on Eigen's SSE vectorizer when the source is a fixed-size 1x1 matrix.
-  template <typename DstType, typename SrcType>
-  static void assignBlock(const SrcType& src, size_t row, size_t col,
-                          DstType* dst);
-
   /// Check that another product has matching runtime dimensions.
   void checkMatchingDimensions(const ProductLieGroup& other,
                                const char* operation) const;

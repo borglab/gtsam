@@ -18,12 +18,16 @@
 
 #pragma once
 
-namespace gtsam {
-
-template <typename G, typename H>
+// Anonymous namespace for block assignment of Lie Group Blocks
+namespace {
+  
+/// Assign a sub-block. Uses compile-time block dimensions when the source
+/// has fixed-size dimensions; otherwise falls back to runtime dimensions.
+/// The compile-time path avoids GCC -Werror=array-bounds false positives
+/// on Eigen's SSE vectorizer when the source is a fixed-size 1x1 matrix.
 template <typename DstType, typename SrcType>
-void ProductLieGroup<G, H>::assignBlock(const SrcType& src, size_t row,
-                                        size_t col, DstType* dst) {
+void assignBlock(const SrcType& src, size_t row,
+                                      size_t col, DstType* dst) {
   constexpr int R = SrcType::RowsAtCompileTime;
   constexpr int C = SrcType::ColsAtCompileTime;
   if constexpr (R != Eigen::Dynamic && C != Eigen::Dynamic) {
@@ -33,6 +37,9 @@ void ProductLieGroup<G, H>::assignBlock(const SrcType& src, size_t row,
     dst->block(row, col, src.rows(), src.cols()) = src;
   }
 }
+}
+
+namespace gtsam {
 
 template <typename G, typename H>
 ProductLieGroup<G, H> ProductLieGroup<G, H>::operator*(
