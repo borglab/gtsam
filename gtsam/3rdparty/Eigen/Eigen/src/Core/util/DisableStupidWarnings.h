@@ -71,15 +71,6 @@
     // See: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=89325
     #pragma GCC diagnostic ignored "-Wattributes"
   #endif
-
-  #if __GNUC__>=11
-    // GCC 11+ false-positive -Warray-bounds / -Wstringop-overflow from Eigen's
-    // vectorized assignment (2-double packet read from an 8-byte 1x1 temporary).
-    // Backport of Eigen upstream fix (post-3.4.0). Scoped to Eigen headers via
-    // ReenableStupidWarnings.h, so GTSAM keeps full -Werror=array-bounds.
-    #pragma GCC diagnostic ignored "-Warray-bounds"
-    #pragma GCC diagnostic ignored "-Wstringop-overflow"
-  #endif
 #endif
 
 #if defined __NVCC__
