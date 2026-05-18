@@ -8,6 +8,24 @@
 
 #include "WnoaInterpolator.h"
 
+namespace {
+    /** Assign a fixed-size block so Eigen uses compile-time extents. Avoids GCC -Werror=
+        array bounds false positives in the SSE vectorizer when a fixed-size source is assigned
+        to a dynamic destination
+    */
+    template <typename DstType, typename SrcType>
+    void assignBlock(const SrcType& src, DstType* dst) {
+        constexpr int R = SrcType::RowsAtCompileTime;
+        constexpr int C = SrcType::ColsAtCompileTime;
+        if constexpr (R != Eigen::Dynamic && C != Eigen::Dynamic) {
+            dst->resize(R, C);
+            dst->template block<R, C>(0, 0) = src;
+        } else {
+            *dst = src;
+        }
+    }
+}
+
 namespace gtsam {
 
 // ---- Constructors ----
@@ -385,23 +403,27 @@ void Interpolator<PoseType>::computeCompleteJacobians_(
       jacs.dxidotkp1_dvarpikp1;  // dxikp1 does not depend on varpi_kp1
   // Compose final Jacobians using chain rule
   // dTtau_dTk
-  (*H)[0] = dTtau_dTk + dTtau_dxitau * dxitau_dTk;
+  assignBlock(dTtau_dTk + dTtau_dxitau * dxitau_dTk, &(*H)[0]);
   // dTtau_dvarpik
-  (*H)[1] = dTtau_dxitau * dxitau_dvarpik;
+  assignBlock(dTtau_dxitau * dxitau_dvarpik, &(*H)[1]);
   // dTtau_dTkp1
-  (*H)[2] = dTtau_dxitau * dxitau_dTkp1;
+  assignBlock(dTtau_dxitau * dxitau_dTkp1, &(*H)[2]);
   // dTtau_dvarpikp1
-  (*H)[3] = dTtau_dxitau * dxitau_dvarpikp1;
+  assignBlock(dTtau_dxitau * dxitau_dvarpikp1, &(*H)[3]);
   // dvarpitau_dTk
-  (*H)[4] = right_jac_tau * dxidottau_dTk + dvarpitau_dxitau * dxitau_dTk;
+  assignBlock(right_jac_tau * dxidottau_dTk + dvarpitau_dxitau * dxitau_dTk,
+              &(*H)[4]);
   // dvarpitau_dvarpik
-  (*H)[5] =
-      right_jac_tau * dxidottau_dvarpik + dvarpitau_dxitau * dxitau_dvarpik;
+  assignBlock(
+      right_jac_tau * dxidottau_dvarpik + dvarpitau_dxitau * dxitau_dvarpik,
+      &(*H)[5]);
   // dvarpitau_dTkp1
-  (*H)[6] = right_jac_tau * dxidottau_dTkp1 + dvarpitau_dxitau * dxitau_dTkp1;
+  assignBlock(right_jac_tau * dxidottau_dTkp1 + dvarpitau_dxitau * dxitau_dTkp1,
+              &(*H)[6]);
   // dvarpitau_dvarpikp1
-  (*H)[7] =
-      right_jac_tau * dxidottau_dvarpikp1 + dvarpitau_dxitau * dxitau_dvarpikp1;
+  assignBlock(
+      right_jac_tau * dxidottau_dvarpikp1 + dvarpitau_dxitau * dxitau_dvarpikp1,
+      &(*H)[7]);
 }
 
 template <typename PoseType>
