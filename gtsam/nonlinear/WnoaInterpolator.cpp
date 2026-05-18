@@ -8,6 +8,24 @@
 
 #include "WnoaInterpolator.h"
 
+namespace {
+    /** Assign a fixed-size block so Eigen uses compile-time extents. Avoids GCC -Werror=
+        array bounds false positives in the SSE vectorizer when a fixed-size source is assigned
+        to a dynamic destination
+    */
+    template <typename DstType, typename SrcType>
+    void assignBlock(const SrcType& src, DstType* dst) {
+        constexpr int R = SrcType::RowsAtCompileTime;
+        constexpr int C = SrcType::ColsAtCompileTime;
+        if constexpr (R != Eigen::Dynamic && C != Eigen::Dynamic) {
+            dst->resize(R, C);
+            dst->template block<R, C>(0, 0) = src;
+        } else {
+            *dst = src;
+        }
+    }
+}
+
 namespace gtsam {
 
 // ---- Constructors ----
