@@ -67,7 +67,7 @@ Vector9 Pose2::vec(OptionalJacobian<9, 3> H) const {
 
 /* ************************************************************************* */
 void Pose2::print(const string& s) const {
-  std::cout << (s.empty() ? s : s + " ") << *this << std::endl;
+  std::cout << (s.empty() ? s : s + " ") << *this << "\n";
 }
 
 /* ************************************************************************* */

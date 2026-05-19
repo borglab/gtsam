@@ -59,7 +59,7 @@ Pose3 Pose3::FromPose2(const Pose2& p, OptionalJacobian<6, 3> H) {
 
 /* ************************************************************************* */
 void Pose3::print(const std::string& s) const {
-  std::cout << (s.empty() ? s : s + " ") << *this << std::endl;
+  std::cout << (s.empty() ? s : s + " ") << *this << "\n";
 }
 
 /* ************************************************************************* */
