@@ -150,12 +150,18 @@ public:
 
   /**
    * Add this factor's QCQP cost and constraints over matrix-valued QCQP
-   * variables with the given column dimension. The default implementation
-   * throws for unsupported factors.
+   * variables.
+   *
+   * @param K is the column dimension of the matrix-form QCQP variable
+   *   (rows = traits<T>::QcqpIntrinsicDim, cols = K). The Riemannian
+   *   Staircase climbs K starting at the intrinsic row dim. K must be
+   *   >= the intrinsic row dim of every variable type in the graph.
+   *
+   * The default implementation throws for unsupported factors.
    */
   virtual void qcqpFactors(NonlinearFactorGraph* costs,
                            NonlinearEqualityConstraints* constraints,
-                           size_t columnDimension = 1) const;
+                           size_t K) const;
 
   /**
    * Creates a shared_ptr clone of the factor - needs to be specialized to allow

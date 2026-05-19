@@ -253,35 +253,45 @@ namespace gtsam {
 
 template <>
 struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
+  /// Row dimension d of the matrix-form QCQP variable for Rot2 (SO(2)).
+  /// The Riemannian Staircase climbs the column dim D starting at
+  /// D = QcqpIntrinsicDim and grows it level by level via the lift.
+  static constexpr int QcqpIntrinsicDim = 2;
+
   /**
    * Return a matrix-valued QCQP variable for Rot2.
    *
-   * D=1 is vectorized SO(2) as a 4-by-1 matrix.
-   * D=2 returns R' as a 2-by-2 row-orthonormal matrix.
-   * D=3 returns [R', 0] as a 2-by-3 row-orthonormal matrix.
+   * D=1 is vectorized SO(2) as a 4-by-1 matrix (column-major vec of R).
+   * D>=2 returns a 2-by-D matrix where the leftmost two columns hold R^T
+   * (the natural Stiefel embedding of R in St(D, 2)) and any remaining
+   * D-2 columns are zero. D=2 is the natural matrix form (the base of
+   * the Riemannian Staircase ladder); higher D corresponds to the
+   * Burer-Monteiro lift one level up.
    */
   template <int D = 1>
   static Matrix QcqpValue(const Rot2& value) {
     if constexpr (D == 1) {
       const Matrix2 R = value.matrix();
       return Eigen::Map<const Matrix>(R.data(), 4, 1);
-    } else if constexpr (D == 2) {
-      return value.matrix().transpose();
-    } else if constexpr (D == 3) {
-      Matrix X = Matrix::Zero(2, 3);
-      X.leftCols<2>() = value.matrix().transpose();
+    } else if constexpr (D >= 2) {
+      Matrix X = Matrix::Zero(2, D);
+      X.template leftCols<2>() = value.matrix().transpose();
       return X;
     } else {
       throw std::invalid_argument(
-          "traits<Rot2>::QcqpValue only supports D=1, D=2, and D=3.");
+          "traits<Rot2>::QcqpValue<D>: D must be 1 (vec form) or >= 2 "
+          "(matrix form).");
     }
   }
 
   /**
    * Return row-space QCQP equality constraints A, b such that
-   * trace(X' A X) = b. For D=1 these are the vec(R) SO(2) constraints,
-   * including orientation. For D=2 and D=3 the same 2-by-2 constraints
-   * enforce row orthonormality.
+   * trace(X' A X) = b. For D=1 these are the vec(R) SO(2) constraints
+   * including orientation (4 quadratic constraints: 2 column-unit-norm +
+   * 1 column-orthogonality + 1 det=+1). For D>=2 the constraints are the
+   * same 2-by-2 row-orthonormality conditions (3 of them: 2 row-unit-norm
+   * + 1 row-orthogonality) — independent of D, since QpCost handles the
+   * column-dim expansion via its Kronecker product internally.
    */
   template <int D = 1>
   static std::vector<std::pair<Matrix, double>> QcqpConstraints() {
@@ -315,7 +325,7 @@ struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
       constraints.emplace_back(A, 1.0);
 
       return constraints;
-    } else if constexpr (D == 2 || D == 3) {
+    } else if constexpr (D >= 2) {
       std::vector<std::pair<Matrix, double>> constraints;
       constraints.reserve(3);
 
@@ -335,7 +345,7 @@ struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
       return constraints;
     } else {
       throw std::invalid_argument(
-          "traits<Rot2>::QcqpConstraints only supports D=1, D=2, and D=3.");
+          "traits<Rot2>::QcqpConstraints<D>: D must be 1 or >= 2.");
     }
   }
 };

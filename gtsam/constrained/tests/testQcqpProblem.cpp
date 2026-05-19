@@ -22,6 +22,7 @@
 #include <gtsam/constrained/QcqpProblem.h>
 #include <gtsam/constrained/QpCost.h>
 #include <gtsam/constrained/QuadraticConstraint.h>
+#include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/SO3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/LinearContainerFactor.h>
@@ -329,14 +330,14 @@ Values SingleFactorManifoldValues() {
 
 Values SingleFactorQcqpValues() {
   Values values;
-  InsertQcqpValue<Rot2, 1>(x0, Rot2::fromAngle(0.3), &values);
-  InsertQcqpValue<Rot2, 1>(x1, Rot2::fromAngle(-0.2), &values);
+  InsertQcqpValue<Rot2, 2>(x0, Rot2::fromAngle(0.3), &values);
+  InsertQcqpValue<Rot2, 2>(x1, Rot2::fromAngle(-0.2), &values);
   return values;
 }
 
 bool ThrowsMissingQcqpTraits(const NonlinearFactorGraph& graph) {
   try {
-    QcqpProblem problem(graph);
+    QcqpProblem problem(graph, /*K=*/2);
   } catch (const std::runtime_error& exception) {
     return std::string(exception.what()).find("QCQP variable traits") !=
            std::string::npos;
@@ -349,7 +350,7 @@ TEST(QcqpProblem, UnsupportedFactorThrows) {
   NonlinearFactorGraph graph;
   graph.emplace_shared<BetweenFactor<Rot2>>(x0, x1, Rot2::fromAngle(0.1));
 
-  CHECK_EXCEPTION({ QcqpProblem problem(graph); }, std::runtime_error);
+  CHECK_EXCEPTION({ QcqpProblem problem(graph, /*K=*/2); }, std::runtime_error);
 }
 
 // Verifies missing QCQP variable traits produce a generic conversion error.
@@ -361,14 +362,16 @@ TEST(QcqpProblem, MissingQcqpTraitsThrows) {
   EXPECT(ThrowsMissingQcqpTraits(graph));
 }
 
-// Verifies one Rot2 Frobenius factor converts exactly with D=1 QCQP variables.
+// Verifies one Rot2 Frobenius factor converts exactly at the natural matrix
+// form (D=2). The matrix-form Frobenius cost equals the manifold-form
+// Frobenius cost (both are 0.5 ||R1 - R0 R12||_F^2).
 TEST(QcqpProblem, SingleFrobeniusBetweenFactor) {
   NonlinearFactorGraph graph;
   graph.emplace_shared<FrobeniusBetweenFactor<Rot2>>(x0, x1,
                                                      Rot2::fromAngle(0.4));
 
   const Values values = SingleFactorManifoldValues();
-  const QcqpProblem problem(graph);
+  const QcqpProblem problem(graph, /*K=*/2);
   const Values qcqpValues = SingleFactorQcqpValues();
 
   EXPECT_DOUBLES_EQUAL(graph.error(values), problem.costs().error(qcqpValues),
@@ -404,7 +407,7 @@ Values RingValues(size_t numPoses, double delta, double perturbation) {
 Values RingQcqpValues(size_t numPoses, double delta, double perturbation) {
   Values values;
   for (size_t i = 0; i < numPoses; ++i) {
-    InsertQcqpValue<Rot2, 1>(
+    InsertQcqpValue<Rot2, 2>(
         Symbol('x', i),
         Rot2::fromAngle(i * delta + perturbation * static_cast<double>(i)),
         &values);
@@ -412,14 +415,14 @@ Values RingQcqpValues(size_t numPoses, double delta, double perturbation) {
   return values;
 }
 
-// Verifies a Rot2 ring graph preserves cost and constraints for D=1 variables.
+// Verifies a Rot2 ring graph preserves cost and constraints at K=2.
 TEST(QcqpProblem, Rot2RingPgo) {
   constexpr size_t N = 5;
   constexpr double delta = 2.0 * M_PI / static_cast<double>(N);
 
   const NonlinearFactorGraph graph = RingGraph(N, delta);
   const Values values = RingValues(N, delta, 0.01);
-  const QcqpProblem problem(graph);
+  const QcqpProblem problem(graph, /*K=*/2);
   const Values qcqpValues = RingQcqpValues(N, delta, 0.01);
 
   EXPECT_DOUBLES_EQUAL(graph.error(values), problem.costs().error(qcqpValues),
@@ -434,7 +437,7 @@ TEST(QcqpProblem, AugmentedLagrangianOptimizerRot2Ring) {
   constexpr double delta = 2.0 * M_PI / static_cast<double>(N);
 
   const NonlinearFactorGraph graph = RingGraph(N, delta);
-  const QcqpProblem problem(graph);
+  const QcqpProblem problem(graph, /*K=*/2);
   const Values initialValues = RingQcqpValues(N, delta, 0.03);
   const double initialCost = problem.costs().error(initialValues);
 
@@ -480,7 +483,7 @@ double DirectQcqpBetweenCost(const Rot2& R0, const Rot2& R1,
 // Verifies the D=2 Rot2 QCQP variable is row-orthonormal and feasible.
 TEST(QcqpProblem, Rot2D2QcqpValueConstraints) {
   const Rot2 R = Rot2::fromAngle(0.3);
-  const Matrix X = traits<Rot2>::QcqpValue<2>(R);
+  const Matrix X = traits<Rot2>::template QcqpValue<2>(R);
   LONGS_EQUAL(2, X.rows());
   LONGS_EQUAL(2, X.cols());
   EXPECT(assert_equal(Matrix(Matrix2::Identity()), X * X.transpose(), 1e-12));
@@ -493,21 +496,22 @@ TEST(QcqpProblem, Rot2D2QcqpValueConstraints) {
   EXPECT_DOUBLES_EQUAL(0.0, constraints.violationNorm(values), 1e-12);
 }
 
-// Verifies the D=3 Rot2 QCQP variable reuses the D=2 row constraints.
+// Verifies the D=3 Rot2 QCQP variable is 2x3 row-orthonormal, and that the
+// constraint set is D-independent (the same 3 row-ortho 2x2 constraints
+// apply at D=2 and D=3 — only the Kronecker expansion in QpCost changes).
 TEST(QcqpProblem, Rot2D3QcqpValueConstraints) {
   const Rot2 R = Rot2::fromAngle(-0.4);
-  const Matrix X = traits<Rot2>::QcqpValue<3>(R);
+  const Matrix X = traits<Rot2>::template QcqpValue<3>(R);
   LONGS_EQUAL(2, X.rows());
   LONGS_EQUAL(3, X.cols());
   EXPECT(assert_equal(Matrix(Matrix2::Identity()), X * X.transpose(), 1e-12));
 
-  const auto constraintsD2 = traits<Rot2>::QcqpConstraints<2>();
-  const auto constraintsD3 = traits<Rot2>::QcqpConstraints<3>();
-  LONGS_EQUAL(constraintsD2.size(), constraintsD3.size());
-  for (size_t i = 0; i < constraintsD2.size(); ++i) {
-    EXPECT(assert_equal(constraintsD2[i].first, constraintsD3[i].first, 1e-12));
-    EXPECT_DOUBLES_EQUAL(constraintsD2[i].second, constraintsD3[i].second,
-                         1e-12);
+  const auto cs2 = traits<Rot2>::template QcqpConstraints<2>();
+  const auto cs3 = traits<Rot2>::template QcqpConstraints<3>();
+  LONGS_EQUAL(cs2.size(), cs3.size());
+  for (size_t i = 0; i < cs2.size(); ++i) {
+    EXPECT(assert_equal(cs2[i].first, cs3[i].first, 1e-12));
+    EXPECT_DOUBLES_EQUAL(cs2[i].second, cs3[i].second, 1e-12);
   }
 
   NonlinearEqualityConstraints constraints;
@@ -531,7 +535,7 @@ TEST(QcqpProblem, Rot2FrobeniusBetweenFactorD2) {
   manifoldValues.insert(x0, R0);
   manifoldValues.insert(x1, R1);
 
-  const QcqpProblem problem(graph, 2);
+  const QcqpProblem problem(graph, /*K=*/2);
   const Values qcqpValues = QcqpValues<2>(R0, R1);
 
   EXPECT_DOUBLES_EQUAL(graph.error(manifoldValues),
@@ -549,7 +553,7 @@ TEST(QcqpProblem, Rot2FrobeniusBetweenFactorD3) {
   NonlinearFactorGraph graph;
   graph.emplace_shared<FrobeniusBetweenFactor<Rot2>>(x0, x1, measured);
 
-  const QcqpProblem problem(graph, 3);
+  const QcqpProblem problem(graph, /*K=*/3);
   const Values qcqpValues = QcqpValues<3>(R0, R1);
   const double qcqpCost = problem.costs().error(qcqpValues);
 
@@ -566,6 +570,293 @@ TEST(QcqpProblem, Rot2FrobeniusBetweenFactorD3) {
 }
 
 }  // namespace QcqpRot2VariableFixture
+/* ************************************************************************* */
+namespace QcqpRot3VariableFixture {
+
+const Key x0 = Symbol('x', 0);
+const Key x1 = Symbol('x', 1);
+
+template <int D>
+Values Rot3QcqpValues(const Rot3& R0, const Rot3& R1) {
+  Values values;
+  InsertQcqpValue<Rot3, D>(x0, R0, &values);
+  InsertQcqpValue<Rot3, D>(x1, R1, &values);
+  return values;
+}
+
+template <int D>
+double DirectRot3QcqpBetweenCost(const Rot3& R0, const Rot3& R1,
+                                 const Rot3& measured) {
+  const Matrix X0 = traits<Rot3>::template QcqpValue<D>(R0);
+  const Matrix X1 = traits<Rot3>::template QcqpValue<D>(R1);
+  const Matrix residual = X1 - measured.matrix().transpose() * X0;
+  return 0.5 * residual.squaredNorm();
+}
+
+// Verifies the D=3 Rot3 QCQP variable is row-orthonormal and feasible.
+TEST(QcqpProblem, Rot3D3QcqpValueConstraints) {
+  const Rot3 R = Rot3::Expmap((Vector3() << 0.4, -0.1, 0.7).finished());
+  const Matrix X = traits<Rot3>::template QcqpValue<3>(R);
+  LONGS_EQUAL(3, X.rows());
+  LONGS_EQUAL(3, X.cols());
+  // X = R', so X X' = R'R = I.
+  EXPECT(assert_equal(Matrix(Matrix3::Identity()), X * X.transpose(), 1e-12));
+
+  const auto cs = traits<Rot3>::template QcqpConstraints<3>();
+  LONGS_EQUAL(6, cs.size());
+
+  NonlinearEqualityConstraints constraints;
+  InsertQcqpConstraints<Rot3, 3>(x0, &constraints);
+  Values values;
+  values.insert(x0, X);
+  EXPECT_DOUBLES_EQUAL(0.0, constraints.violationNorm(values), 1e-12);
+}
+
+// Verifies D=3 row-space Frobenius conversion matches the manifold factor.
+TEST(QcqpProblem, Rot3FrobeniusBetweenFactorD3) {
+  const Rot3 measured = Rot3::Expmap((Vector3() << 0.2, 0.1, -0.3).finished());
+  const Rot3 R0 = Rot3::Expmap((Vector3() << 0.05, 0.10, 0.15).finished());
+  const Rot3 R1 = Rot3::Expmap((Vector3() << 0.10, 0.20, 0.30).finished());
+
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusBetweenFactor<Rot3>>(x0, x1, measured);
+
+  Values manifoldValues;
+  manifoldValues.insert(x0, R0);
+  manifoldValues.insert(x1, R1);
+
+  const QcqpProblem problem(graph, /*K=*/3);
+  const Values qcqpValues = Rot3QcqpValues<3>(R0, R1);
+  const double qcqpCost = problem.costs().error(qcqpValues);
+
+  EXPECT(std::isfinite(qcqpCost));
+  EXPECT_DOUBLES_EQUAL(graph.error(manifoldValues), qcqpCost, 1e-12);
+  EXPECT_DOUBLES_EQUAL(DirectRot3QcqpBetweenCost<3>(R0, R1, measured), qcqpCost,
+                       1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
+                       1e-12);
+}
+
+// Rot3 rejects matrix-form K=2: a 2-row Stiefel embedding has no meaning for
+// SO(3). The throw originates inside traits<Rot3>::QcqpConstraints<2>().
+TEST(QcqpProblem, Rot3K2Rejected) {
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusBetweenFactor<Rot3>>(
+      x0, x1, Rot3::Expmap(Vector3::Zero()));
+  CHECK_EXCEPTION({ QcqpProblem problem(graph, /*K=*/2); },
+                  std::invalid_argument);
+}
+
+}  // namespace QcqpRot3VariableFixture
+/* ************************************************************************* */
+namespace QcqpDApiFixture {
+
+// Coverage of the D-templated QCQP trait API across both forms:
+//   - Vec form (D=1): 4x1 (Rot2) / 9x1 (Rot3) vectorized R.
+//   - Matrix form (D >= 2 for Rot2, D >= 3 for Rot3): d-by-D Stiefel
+//     embedding; QcqpProblem dispatches the runtime column dim K to a
+//     compile-time D via the switch in FrobeniusBetweenFactor::qcqpFactors.
+
+const Key x0 = Symbol('x', 0);
+
+// QcqpIntrinsicDim is a compile-time constant per type (2 for Rot2, 3 for
+// Rot3). Consumers use it to size the starting rung of the staircase ladder.
+TEST(QcqpProblem, IntrinsicDimConstants) {
+  LONGS_EQUAL(2, traits<Rot2>::QcqpIntrinsicDim);
+  LONGS_EQUAL(3, traits<Rot3>::QcqpIntrinsicDim);
+}
+
+// Higher-D matrix forms zero-pad the columns beyond QcqpIntrinsicDim while
+// preserving row-orthonormality (X X^T = R^T R = I_d, independent of pads).
+TEST(QcqpProblem, Rot2QcqpValueDPaddingD2D3D5) {
+  const Rot2 R = Rot2::fromAngle(0.7);
+  const Matrix2 Rt = R.matrix().transpose();
+
+  const Matrix X2 = traits<Rot2>::template QcqpValue<2>(R);
+  const Matrix X3 = traits<Rot2>::template QcqpValue<3>(R);
+  const Matrix X5 = traits<Rot2>::template QcqpValue<5>(R);
+
+  LONGS_EQUAL(2, X2.rows());
+  LONGS_EQUAL(2, X2.cols());
+  EXPECT(assert_equal(Matrix(Rt), X2, 1e-12));
+
+  LONGS_EQUAL(2, X3.rows());
+  LONGS_EQUAL(3, X3.cols());
+  EXPECT(assert_equal(Matrix(Rt), Matrix(X3.leftCols<2>()), 1e-12));
+  EXPECT(assert_equal(Matrix(Vector2::Zero()), Matrix(X3.col(2)), 1e-12));
+
+  LONGS_EQUAL(2, X5.rows());
+  LONGS_EQUAL(5, X5.cols());
+  EXPECT(assert_equal(Matrix(Rt), Matrix(X5.leftCols<2>()), 1e-12));
+  EXPECT(assert_equal(Matrix(Matrix::Zero(2, 3)), Matrix(X5.rightCols<3>()),
+                      1e-12));
+
+  // Row-orthonormality at every D >= 2.
+  EXPECT(assert_equal(Matrix(Matrix2::Identity()), X2 * X2.transpose(), 1e-12));
+  EXPECT(assert_equal(Matrix(Matrix2::Identity()), X3 * X3.transpose(), 1e-12));
+  EXPECT(assert_equal(Matrix(Matrix2::Identity()), X5 * X5.transpose(), 1e-12));
+}
+
+TEST(QcqpProblem, Rot3QcqpValueDPaddingD3D4D6) {
+  const Rot3 R = Rot3::Expmap((Vector3() << 0.2, -0.1, 0.5).finished());
+  const Matrix3 Rt = R.matrix().transpose();
+
+  const Matrix X3 = traits<Rot3>::template QcqpValue<3>(R);
+  const Matrix X4 = traits<Rot3>::template QcqpValue<4>(R);
+  const Matrix X6 = traits<Rot3>::template QcqpValue<6>(R);
+
+  LONGS_EQUAL(3, X3.rows());
+  LONGS_EQUAL(3, X3.cols());
+  EXPECT(assert_equal(Matrix(Rt), X3, 1e-12));
+
+  LONGS_EQUAL(3, X4.rows());
+  LONGS_EQUAL(4, X4.cols());
+  EXPECT(assert_equal(Matrix(Rt), Matrix(X4.leftCols<3>()), 1e-12));
+  EXPECT(assert_equal(Matrix(Vector3::Zero()), Matrix(X4.col(3)), 1e-12));
+
+  LONGS_EQUAL(3, X6.rows());
+  LONGS_EQUAL(6, X6.cols());
+  EXPECT(assert_equal(Matrix(Rt), Matrix(X6.leftCols<3>()), 1e-12));
+  EXPECT(assert_equal(Matrix(Matrix::Zero(3, 3)), Matrix(X6.rightCols<3>()),
+                      1e-12));
+
+  EXPECT(assert_equal(Matrix(Matrix3::Identity()), X3 * X3.transpose(), 1e-12));
+  EXPECT(assert_equal(Matrix(Matrix3::Identity()), X4 * X4.transpose(), 1e-12));
+  EXPECT(assert_equal(Matrix(Matrix3::Identity()), X6 * X6.transpose(), 1e-12));
+}
+
+// Matrix-form constraints are D-independent in structure (the same 3 row-
+// ortho 2x2 matrices for Rot2; 6 3x3 matrices for Rot3 — only QpCost's
+// Kronecker expansion depends on D).
+TEST(QcqpProblem, Rot2QcqpConstraintsAreDIndependent) {
+  const auto cs2 = traits<Rot2>::template QcqpConstraints<2>();
+  const auto cs3 = traits<Rot2>::template QcqpConstraints<3>();
+  const auto cs5 = traits<Rot2>::template QcqpConstraints<5>();
+  LONGS_EQUAL(3, cs2.size());
+  LONGS_EQUAL(cs2.size(), cs3.size());
+  LONGS_EQUAL(cs2.size(), cs5.size());
+  for (size_t i = 0; i < cs2.size(); ++i) {
+    EXPECT(assert_equal(cs2[i].first, cs3[i].first, 1e-12));
+    EXPECT(assert_equal(cs2[i].first, cs5[i].first, 1e-12));
+    EXPECT_DOUBLES_EQUAL(cs2[i].second, cs3[i].second, 1e-12);
+    EXPECT_DOUBLES_EQUAL(cs2[i].second, cs5[i].second, 1e-12);
+  }
+}
+
+TEST(QcqpProblem, Rot3QcqpConstraintsAreDIndependent) {
+  const auto cs3 = traits<Rot3>::template QcqpConstraints<3>();
+  const auto cs4 = traits<Rot3>::template QcqpConstraints<4>();
+  const auto cs6 = traits<Rot3>::template QcqpConstraints<6>();
+  LONGS_EQUAL(6, cs3.size());
+  LONGS_EQUAL(cs3.size(), cs4.size());
+  LONGS_EQUAL(cs3.size(), cs6.size());
+  for (size_t i = 0; i < cs3.size(); ++i) {
+    EXPECT(assert_equal(cs3[i].first, cs4[i].first, 1e-12));
+    EXPECT(assert_equal(cs3[i].first, cs6[i].first, 1e-12));
+  }
+}
+
+// Vec form (D=1) is preserved and exercises a different polynomial relaxation
+// than the matrix form. Its shape and feasibility constraints are unchanged
+// from the original implementation.
+TEST(QcqpProblem, Rot2VecFormD1) {
+  const Rot2 R = Rot2::fromAngle(0.3);
+  const Matrix X = traits<Rot2>::template QcqpValue<1>(R);
+  LONGS_EQUAL(4, X.rows());
+  LONGS_EQUAL(1, X.cols());
+  // Reshape back to 2x2 (column-major) and verify equality with R.
+  const Matrix Rback = Eigen::Map<const Matrix2>(X.data());
+  EXPECT(assert_equal(Matrix(R.matrix()), Rback, 1e-12));
+
+  const auto cs = traits<Rot2>::template QcqpConstraints<1>();
+  LONGS_EQUAL(4, cs.size());  // 2 col-unit-norm + 1 col-ortho + 1 det=+1
+  for (const auto& [A, b] : cs) {
+    LONGS_EQUAL(4, A.rows());
+    LONGS_EQUAL(4, A.cols());
+    const double xAx = (X.transpose() * A * X)(0, 0);
+    EXPECT_DOUBLES_EQUAL(b, xAx, 1e-12);
+  }
+}
+
+TEST(QcqpProblem, Rot3VecFormD1) {
+  const Rot3 R = Rot3::Expmap((Vector3() << 0.1, 0.2, 0.3).finished());
+  const Matrix X = traits<Rot3>::template QcqpValue<1>(R);
+  LONGS_EQUAL(9, X.rows());
+  LONGS_EQUAL(1, X.cols());
+  const Matrix Rback = Eigen::Map<const Matrix3>(X.data());
+  EXPECT(assert_equal(Matrix(R.matrix()), Rback, 1e-12));
+
+  const auto cs = traits<Rot3>::template QcqpConstraints<1>();
+  LONGS_EQUAL(6, cs.size());  // 3 col-unit-norm + 3 col-ortho (det=1 is cubic)
+  for (const auto& [A, b] : cs) {
+    LONGS_EQUAL(9, A.rows());
+    LONGS_EQUAL(9, A.cols());
+    const double xAx = (X.transpose() * A * X)(0, 0);
+    EXPECT_DOUBLES_EQUAL(b, xAx, 1e-12);
+  }
+}
+
+// Rot3 traits reject D=2 (a 2-row Stiefel embedding has no meaning for SO(3)).
+TEST(QcqpProblem, Rot3D2Throws) {
+  const Rot3 R = Rot3::Expmap(Vector3::Zero());
+  CHECK_EXCEPTION(traits<Rot3>::template QcqpValue<2>(R),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(traits<Rot3>::template QcqpConstraints<2>(),
+                  std::invalid_argument);
+}
+
+// QcqpProblem(graph, K) dispatches runtime K to compile-time D. Test a
+// representative wider K (D=4) end-to-end for both Rot2 and Rot3, verifying
+// the same Frobenius cost equals the manifold-form cost.
+TEST(QcqpProblem, Rot2FrobeniusBetweenFactorD4) {
+  const Rot2 measured = Rot2::fromAngle(0.4);
+  const Rot2 R0 = Rot2::fromAngle(0.3);
+  const Rot2 R1 = Rot2::fromAngle(-0.2);
+
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusBetweenFactor<Rot2>>(Symbol('x', 0),
+                                                     Symbol('x', 1), measured);
+
+  Values manifoldValues;
+  manifoldValues.insert(Symbol('x', 0), R0);
+  manifoldValues.insert(Symbol('x', 1), R1);
+
+  Values qcqpValues;
+  InsertQcqpValue<Rot2, 4>(Symbol('x', 0), R0, &qcqpValues);
+  InsertQcqpValue<Rot2, 4>(Symbol('x', 1), R1, &qcqpValues);
+
+  const QcqpProblem problem(graph, /*K=*/4);
+  EXPECT_DOUBLES_EQUAL(graph.error(manifoldValues),
+                       problem.costs().error(qcqpValues), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
+                       1e-12);
+}
+
+TEST(QcqpProblem, Rot3FrobeniusBetweenFactorD4) {
+  const Rot3 measured = Rot3::Expmap((Vector3() << 0.2, 0.1, -0.3).finished());
+  const Rot3 R0 = Rot3::Expmap((Vector3() << 0.05, 0.10, 0.15).finished());
+  const Rot3 R1 = Rot3::Expmap((Vector3() << 0.10, 0.20, 0.30).finished());
+
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusBetweenFactor<Rot3>>(Symbol('x', 0),
+                                                     Symbol('x', 1), measured);
+
+  Values manifoldValues;
+  manifoldValues.insert(Symbol('x', 0), R0);
+  manifoldValues.insert(Symbol('x', 1), R1);
+
+  Values qcqpValues;
+  InsertQcqpValue<Rot3, 4>(Symbol('x', 0), R0, &qcqpValues);
+  InsertQcqpValue<Rot3, 4>(Symbol('x', 1), R1, &qcqpValues);
+
+  const QcqpProblem problem(graph, /*K=*/4);
+  EXPECT_DOUBLES_EQUAL(graph.error(manifoldValues),
+                       problem.costs().error(qcqpValues), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
+                       1e-12);
+}
+
+}  // namespace QcqpDApiFixture
 /* ************************************************************************* */
 int main() {
   TestResult tr;

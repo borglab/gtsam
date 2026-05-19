@@ -596,9 +596,109 @@ class GTSAM_EXPORT Rot3 : public MatrixLieGroup<Rot3, 3, 3> {
       const Matrix3& A, OptionalJacobian<3, 9> H = {});
 
   template <>
-struct traits<Rot3> : public internal::MatrixLieGroup<Rot3, 3> {};
+struct traits<Rot3> : public internal::MatrixLieGroup<Rot3, 3> {
+  /// Row dimension d of the matrix-form QCQP variable for Rot3 (SO(3)).
+  /// The Riemannian Staircase climbs the column dim D starting at
+  /// D = QcqpIntrinsicDim and grows it level by level via the lift.
+  static constexpr int QcqpIntrinsicDim = 3;
+
+  /**
+   * Return a matrix-valued QCQP variable for Rot3.
+   *
+   * D=1 is vectorized SO(3) as a 9-by-1 matrix (column-major vec of R).
+   * D>=3 returns a 3-by-D matrix where the leftmost three columns hold R^T
+   * (the natural Stiefel embedding of R in St(D, 3)) and any remaining
+   * D-3 columns are zero. D=3 is the natural matrix form (the base of
+   * the Riemannian Staircase ladder); higher D corresponds to the
+   * Burer-Monteiro lift one level up. D=2 is rejected: a 2-row form has
+   * no meaning for SO(3).
+   */
+  template <int D = 1>
+  static Matrix QcqpValue(const Rot3& value) {
+    if constexpr (D == 1) {
+      const Matrix3 R = value.matrix();
+      return Eigen::Map<const Matrix>(R.data(), 9, 1);
+    } else if constexpr (D >= 3) {
+      Matrix X = Matrix::Zero(3, D);
+      X.template leftCols<3>() = value.matrix().transpose();
+      return X;
+    } else {
+      throw std::invalid_argument(
+          "traits<Rot3>::QcqpValue<D>: D must be 1 (vec form) or >= 3 "
+          "(matrix form). D=2 has no meaning for SO(3).");
+    }
+  }
+
+  /**
+   * Return row-space QCQP equality constraints A, b such that
+   * trace(X' A X) = b. For D=1 the constraints encode R'R = I in vec(R)
+   * coordinates: 3 column-unit-norm + 3 column-orthogonality = 6 quadratic
+   * constraints. (det(R)=1 is CUBIC in vec(R) entries and cannot be added
+   * as a QCQP constraint; sign is fixed at rounding, matching SE-Sync's
+   * approach.) For D>=3 the same 6 row-orthonormality constraints on 3x3
+   * row-space matrices A_m enforce that the rows of X = R' are an
+   * orthonormal frame, i.e. R'R = I — independent of D, since QpCost
+   * handles the column-dim expansion via its Kronecker product internally.
+   */
+  template <int D = 1>
+  static std::vector<std::pair<Matrix, double>> QcqpConstraints() {
+    if constexpr (D == 1) {
+      // vec(R) column-major indices: 0..2 = R column 0, 3..5 = column 1,
+      // 6..8 = column 2.
+      std::vector<std::pair<Matrix, double>> constraints;
+      constraints.reserve(6);
+
+      // 3 column-unit-norm constraints.
+      for (int c = 0; c < 3; ++c) {
+        Matrix A = Matrix::Zero(9, 9);
+        for (int i = 0; i < 3; ++i) A(3 * c + i, 3 * c + i) = 1.0;
+        constraints.emplace_back(A, 1.0);
+      }
+
+      // 3 column-orthogonality constraints.
+      for (int c1 = 0; c1 < 3; ++c1) {
+        for (int c2 = c1 + 1; c2 < 3; ++c2) {
+          Matrix A = Matrix::Zero(9, 9);
+          for (int i = 0; i < 3; ++i) {
+            A(3 * c1 + i, 3 * c2 + i) = 0.5;
+            A(3 * c2 + i, 3 * c1 + i) = 0.5;
+          }
+          constraints.emplace_back(A, 0.0);
+        }
+      }
+      return constraints;
+    } else if constexpr (D >= 3) {
+      // X = R' (3xp). Row i of X = column i of R, so row-orthonormality of
+      // X means columns of R are an orthonormal frame: R'R = I.
+      std::vector<std::pair<Matrix, double>> constraints;
+      constraints.reserve(6);
+
+      // 3 row-unit-norm constraints.
+      for (int r = 0; r < 3; ++r) {
+        Matrix A = Matrix::Zero(3, 3);
+        A(r, r) = 1.0;
+        constraints.emplace_back(A, 1.0);
+      }
+
+      // 3 row-orthogonality constraints.
+      for (int r1 = 0; r1 < 3; ++r1) {
+        for (int r2 = r1 + 1; r2 < 3; ++r2) {
+          Matrix A = Matrix::Zero(3, 3);
+          A(r1, r2) = 0.5;
+          A(r2, r1) = 0.5;
+          constraints.emplace_back(A, 0.0);
+        }
+      }
+      return constraints;
+    } else {
+      throw std::invalid_argument(
+          "traits<Rot3>::QcqpConstraints<D>: D must be 1 or >= 3 (D=2 has no "
+          "meaning for SO(3)).");
+    }
+  }
+};
 
 template <>
-struct traits<const Rot3> : public internal::MatrixLieGroup<Rot3, 3> {};
+struct traits<const Rot3> : public traits<Rot3> {};
   
 }  // namespace gtsam

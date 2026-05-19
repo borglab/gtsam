@@ -161,6 +161,20 @@ if (GTSAM_ENABLE_GPERFTOOLS AND GPERFTOOLS_FOUND)
   target_link_libraries(gtsam PRIVATE ${GPERFTOOLS_TCMALLOC} ${GPERFTOOLS_PROFILER})
 endif()
 
+# LOBPCG-based fast verification (David Rosen's Optimization & Preconditioners libs).
+if(GTSAM_USE_LOBPCG_VERIFICATION)
+  find_library(GTSAM_CHOLMOD_LIB cholmod REQUIRED)
+  find_path(GTSAM_CHOLMOD_INCLUDE_DIR cholmod.h
+    PATHS /usr/include/suitesparse /usr/local/include/suitesparse
+    PATH_SUFFIXES suitesparse)
+  if(NOT GTSAM_CHOLMOD_INCLUDE_DIR)
+    message(FATAL_ERROR "GTSAM_USE_LOBPCG_VERIFICATION=ON but cholmod.h not found. Install libsuitesparse-dev.")
+  endif()
+  target_compile_definitions(gtsam PUBLIC GTSAM_USE_LOBPCG_VERIFICATION)
+  target_include_directories(gtsam SYSTEM PRIVATE ${GTSAM_CHOLMOD_INCLUDE_DIR})
+  target_link_libraries(gtsam PRIVATE Optimization ILDL ${GTSAM_CHOLMOD_LIB})
+endif()
+
 # Add includes for source directories 'BEFORE' boost and any system include
 # paths so that the compiler uses GTSAM headers in our source directory instead
 # of any previously installed GTSAM headers.

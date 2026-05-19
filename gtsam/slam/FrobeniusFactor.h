@@ -266,28 +266,39 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
     return error;
   }
 
-  /** Add this Frobenius between factor as a QCQP cost when traits exist. */
+  /**
+   * Add this Frobenius between factor as a QCQP cost when traits exist.
+   *
+   * K is the column dimension of the matrix-form QCQP variable (or 1 for
+   * the vec form). Internally we switch K -> compile-time D and dispatch
+   * to qcqpFactorsForD<D>(). The supported range is D in [1, 10] (matches
+   * the default RiemannianStaircase pMax of 10).
+   */
   void qcqpFactors(NonlinearFactorGraph* costs,
                    NonlinearEqualityConstraints* constraints,
-                   size_t columnDimension = 1) const override {
-    switch (columnDimension) {
-      case 1:
-        qcqpFactorsForDimension<1>(costs, constraints);
-        break;
-      case 2:
-        qcqpFactorsForDimension<2>(costs, constraints);
-        break;
-      case 3:
-        qcqpFactorsForDimension<3>(costs, constraints);
-        break;
+                   size_t K) const override {
+    switch (K) {
+      case 1:  qcqpFactorsForD<1>(costs, constraints);  break;
+      case 2:  qcqpFactorsForD<2>(costs, constraints);  break;
+      case 3:  qcqpFactorsForD<3>(costs, constraints);  break;
+      case 4:  qcqpFactorsForD<4>(costs, constraints);  break;
+      case 5:  qcqpFactorsForD<5>(costs, constraints);  break;
+      case 6:  qcqpFactorsForD<6>(costs, constraints);  break;
+      case 7:  qcqpFactorsForD<7>(costs, constraints);  break;
+      case 8:  qcqpFactorsForD<8>(costs, constraints);  break;
+      case 9:  qcqpFactorsForD<9>(costs, constraints);  break;
+      case 10: qcqpFactorsForD<10>(costs, constraints); break;
       default:
         throw std::runtime_error(
-            "FrobeniusBetweenFactor::qcqpFactors only supports "
-            "column dimensions 1, 2, and 3");
+            "FrobeniusBetweenFactor::qcqpFactors only supports column "
+            "dimensions D in [1, 10]; extend the switch to go higher.");
     }
   }
 
  private:
+  /// Helper used by the D=1 (vec form) branch only: builds the right-product
+  /// matrix R[(c0+0..0+N), (c1+0..1+N)] = R(c1,c0) * I_N so that
+  /// vec(X R) = RightProductMatrix(R) * vec(X) for an Nx N matrix X.
   static Matrix RightProductMatrix(const Matrix& right) {
     constexpr int AmbientDim = N * N;
     const Matrix I = Matrix::Identity(N, N);
@@ -301,13 +312,15 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
     return result;
   }
 
-  template <int QcqpDimension>
-  void qcqpFactorsForDimension(NonlinearFactorGraph* costs,
-                               NonlinearEqualityConstraints* constraints) const {
-    if constexpr (!internal::HasQcqpVariableTraits<T, QcqpDimension>::value) {
+  template <int D>
+  void qcqpFactorsForD(NonlinearFactorGraph* costs,
+                       NonlinearEqualityConstraints* constraints) const {
+    if constexpr (!internal::HasQcqpVariableTraits<T, D>::value) {
+      (void)costs;
+      (void)constraints;
       throw std::runtime_error(
           "FrobeniusBetweenFactor::qcqpFactors requires QCQP variable traits "
-          "for this type and column dimension.");
+          "for this type and column dimension D.");
     } else {
       if (!costs) {
         throw std::invalid_argument(
@@ -316,38 +329,41 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
       if (std::dynamic_pointer_cast<noiseModel::Robust>(this->noiseModel_) ||
           this->noiseModel_->isConstrained()) {
         throw std::runtime_error(
-            "FrobeniusBetweenFactor::qcqpFactors requires a "
-            "non-robust quadratic noise model");
+            "FrobeniusBetweenFactor::qcqpFactors requires a non-robust "
+            "quadratic noise model");
       }
 
-      InsertQcqpConstraints<T, QcqpDimension>(this->key1(), constraints);
-      InsertQcqpConstraints<T, QcqpDimension>(this->key2(), constraints);
+      InsertQcqpConstraints<T, D>(this->key1(), constraints);
+      InsertQcqpConstraints<T, D>(this->key2(), constraints);
 
       const Matrix measurement = this->T12_.matrix();
       const Matrix I = Matrix::Identity(N, N);
 
-      if constexpr (QcqpDimension == 1) {
+      if constexpr (D == 1) {
+        // Vec form: variable is the 4-by-1 (Rot2) or 9-by-1 (Rot3) vec(R).
+        // Cost block uses RightProductMatrix to express vec(X*R) linearly.
         constexpr int AmbientDim = N * N;
         const Matrix A = RightProductMatrix(measurement);
-
         Matrix B = Matrix::Zero(AmbientDim, 2 * AmbientDim);
         B.block(0, 0, AmbientDim, AmbientDim) = -A;
         B.block(0, AmbientDim, AmbientDim, AmbientDim) =
             Matrix::Identity(AmbientDim, AmbientDim);
-
         const Matrix whitenedB = this->noiseModel_->Whiten(B);
         const Matrix Q = whitenedB.transpose() * whitenedB;
         const SymmetricBlockMatrix blockQ(
             std::vector<DenseIndex>{AmbientDim, AmbientDim}, Q);
         costs->push_back(std::make_shared<QpCost>(
-            KeyVector{this->key1(), this->key2()}, blockQ));
+            KeyVector{this->key1(), this->key2()}, blockQ, /*columnDim=*/1));
       } else {
+        // Matrix form: variable is d-by-D, base block Q_ij is the canonical
+        // d-by-d Frobenius Hessian, and QpCost (columnDim = D) handles the
+        // Kronecker expansion to (d*D x d*D) blocks internally.
         const auto isotropic =
             std::dynamic_pointer_cast<noiseModel::Isotropic>(this->noiseModel_);
         if (!isotropic) {
           throw std::runtime_error(
-              "FrobeniusBetweenFactor::qcqpFactors with column dimension > 1 "
-              "requires an isotropic noise model");
+              "FrobeniusBetweenFactor::qcqpFactors requires an isotropic "
+              "noise model in matrix form (D >= 2).");
         }
         const double weight = 1.0 / (isotropic->sigma() * isotropic->sigma());
 
@@ -358,7 +374,7 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
         const Matrix Q = weight * B.transpose() * B;
         const SymmetricBlockMatrix blockQ(std::vector<DenseIndex>{N, N}, Q);
         costs->push_back(std::make_shared<QpCost>(
-            KeyVector{this->key1(), this->key2()}, blockQ, QcqpDimension));
+            KeyVector{this->key1(), this->key2()}, blockQ, /*columnDim=*/D));
       }
     }
   }
