@@ -84,7 +84,7 @@ GTSAM Python wheels are built in CI through two cibuildwheel workflows that shar
 
 1. **Develop wheels** (`.github/workflows/build-cibw.yml`) run on every push to `develop` (and by manual dispatch). The workflow injects `DEVELOP=1` and a timestamp so the generated version string becomes a `gtsam-develop` build, and it continues to publish the built wheels via the publish action at the end of the job. Use this workflow as a staging pipeline for the most recent development snapshots.
 
-2. **Release wheels** (`.github/workflows/prod-cibw.yml`) trigger when a GitHub release is published (and can also be run manually). The job is otherwise identical but omits the `DEVELOP` flag and publishes the wheels to `https://test.pypi.org/legacy/`, making it the production-quality artifact build tied to a release tag.
+2. **Release wheels** (`.github/workflows/prod-cibw.yml`) trigger when a GitHub release is published (and can also be run manually). The job is otherwise identical but omits the `DEVELOP` flag and publishes the wheels to PyPI, making it the production-quality artifact build tied to a release tag.
 
 ### Cleaning develop wheels
 
