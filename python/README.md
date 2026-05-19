@@ -29,7 +29,8 @@ For instructions on updating the version of the [wrap library](https://github.co
 - Build GTSAM and the wrapper with `make` (or `ninja` if you use `-GNinja`).
 
 - To install, simply run `make python-install` (`ninja python-install`).
-  - The same command can be used to install into a virtual environment if it is active.
+  - This installs into the Python interpreter selected by `cmake` when GTSAM was configured, which is the interpreter printed in the cmake configure summary. It does not change based on whichever virtual environment is active when `make python-install` runs.
+  - To install into a virtual environment, activate the environment before running `cmake`, then either let cmake discover that interpreter or pass `-DGTSAM_PYTHON_VERSION=<version>` matching the environment. To verify the target environment, run `<full/path/to/python> -m pip list` with the Python path reported by cmake.
   - **NOTE**: if you don't want GTSAM to install to a system directory such as `/usr/local`, pass `-DCMAKE_INSTALL_PREFIX="./install"` to cmake to install GTSAM to a subdirectory of the build directory.
 
 - You can also directly run `make python-install` without running `make`, and it will compile all the dependencies accordingly.
