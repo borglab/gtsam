@@ -79,10 +79,11 @@ void EqVIOFilter::initializeFromIMU(const IMUInput& imu) {
 
   Vector3 approxGravity = imu.acc;
   if (approxGravity.norm() < 1e-9) approxGravity = Vector3::UnitZ();
-  // Build initial attitude that aligns measured gravity with +Z.
-  Quaternion q;
-  q.setFromTwoVectors(approxGravity.normalized(), Vector3::UnitZ());
-  const Rot3 R0(q);
+
+  /// Sets the rotation from two vectors -> avoids Eigen warning
+  const Unit3 measuredGravity(approxGravity.normalized());
+  const Unit3 worldGravity(Vector3::UnitZ());
+  const Rot3 R0 = Rot3::AlignPair(worldGravity, measuredGravity, worldGravity);
   xi_ref.kinematics = Se23(R0, Vector3::Zero(), Point3::Zero());
   initialized_ = true;
   resetReferenceAndGroup(xi_ref, errorCovariance(), groupEstimate());
