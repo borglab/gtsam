@@ -19,11 +19,9 @@ docutils==0.20.1
     #   sphinx
 furo==2024.1.29
     # via -r requirements.in
-idna==3.7
+idna==3.15
     # via requests
 imagesize==1.4.1
-    # via sphinx
-importlib-metadata==8.7.0
     # via sphinx
 jinja2==3.1.6
     # via
@@ -87,5 +85,3 @@ sphinxcontrib-svg2pdfconverter==1.2.2
     # via -r requirements.in
 urllib3==2.5.0
     # via requests
-zipp==3.23.0
-    # via importlib-metadata
