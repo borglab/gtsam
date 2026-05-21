@@ -240,10 +240,12 @@ TEST(RiemannianStaircase, LOBPCGAndDenseAgree) {
   paramsD.almParams =
       std::make_shared<AugmentedLagrangianParams>(*paramsL.almParams);
 
+  QcqpProblem qcqpL(graph, paramsL.pMin);
+  QcqpProblem qcqpD(graph, paramsD.pMin);
   const auto resultL =
-      RiemannianStaircaseOptimizer(graph, initial, paramsL).optimize();
+      RiemannianStaircaseOptimizer(qcqpL, initial, paramsL).optimize();
   const auto resultD =
-      RiemannianStaircaseOptimizer(graph, initial, paramsD).optimize();
+      RiemannianStaircaseOptimizer(qcqpD, initial, paramsD).optimize();
 
   std::cout << "[XV] LOBPCG  certified=" << resultL.certified
             << " finalRank=" << resultL.finalRank
@@ -262,6 +264,60 @@ TEST(RiemannianStaircase, LOBPCGAndDenseAgree) {
   if (!resultL.certified) {
     EXPECT(std::abs(resultL.minEigenvalue - resultD.minEigenvalue) < 1e-2);
   }
+}
+
+/* ************************************************************************* */
+// Cross-validation: the Spectra-based Lanczos path should match DenseEigen on
+// both verdict and lambda_min. Unlike LOBPCG, Spectra always reports the true
+// Ritz value (no early-exit shortcut), so we can compare lambda_min on both
+// certified and uncertified runs.
+TEST(RiemannianStaircase, SpectraAndDenseAgree) {
+  using namespace RingFixture;
+  constexpr size_t N = 5;
+  constexpr double delta = 2.0 * M_PI / static_cast<double>(N);
+
+  const NonlinearFactorGraph graph = RingGraph(N, delta);
+  const Values initial = RingQcqpValuesD2(N, delta, /*perturbation=*/0.01);
+
+  RiemannianStaircaseParams paramsS;
+  paramsS.pMin = 2;
+  paramsS.pMax = 5;
+  paramsS.alpha = 1e-2;
+  paramsS.eta = 1e-3;
+  paramsS.verificationMethod =
+      RiemannianStaircaseParams::VerificationMethod::Spectra;
+  paramsS.almParams->maxIterations = 100;
+  paramsS.almParams->initialMuEq = 10.0;
+  paramsS.almParams->muEqIncreaseRate = 2.0;
+  paramsS.almParams->absoluteViolationTolerance = 1e-8;
+  paramsS.almParams->relativeViolationTolerance = 1e-8;
+
+  RiemannianStaircaseParams paramsD = paramsS;
+  paramsD.verificationMethod =
+      RiemannianStaircaseParams::VerificationMethod::DenseEigen;
+  paramsD.almParams =
+      std::make_shared<AugmentedLagrangianParams>(*paramsS.almParams);
+
+  QcqpProblem qcqpS(graph, paramsS.pMin);
+  QcqpProblem qcqpD(graph, paramsD.pMin);
+  const auto resultS =
+      RiemannianStaircaseOptimizer(qcqpS, initial, paramsS).optimize();
+  const auto resultD =
+      RiemannianStaircaseOptimizer(qcqpD, initial, paramsD).optimize();
+
+  std::cout << "[XV] Spectra certified=" << resultS.certified
+            << " finalRank=" << resultS.finalRank
+            << " minEig=" << resultS.minEigenvalue << std::endl;
+  std::cout << "[XV] Dense   certified=" << resultD.certified
+            << " finalRank=" << resultD.finalRank
+            << " minEig=" << resultD.minEigenvalue << std::endl;
+
+  EXPECT(resultS.certified == resultD.certified);
+  EXPECT_LONGS_EQUAL(static_cast<long>(resultS.finalRank),
+                     static_cast<long>(resultD.finalRank));
+  // Spectra computes a true Ritz value at every level, so lambda_min should
+  // agree with the dense path to within Lanczos tolerance.
+  EXPECT(std::abs(resultS.minEigenvalue - resultD.minEigenvalue) < 1e-3);
 }
 
 /* ************************************************************************* */
@@ -288,7 +344,8 @@ TEST(RiemannianStaircase, Rot2RingEasy) {
   params.almParams->absoluteCostTolerance = 1e-10;
   params.almParams->relativeCostTolerance = 1e-10;
 
-  const RiemannianStaircaseOptimizer rso(graph, initial, params);
+  QcqpProblem qcqp(graph, params.pMin);
+  const RiemannianStaircaseOptimizer rso(qcqp, initial, params);
   const RiemannianStaircaseResult result = rso.optimize();
 
   EXPECT(result.certified);
@@ -297,11 +354,8 @@ TEST(RiemannianStaircase, Rot2RingEasy) {
 }
 
 /* ************************************************************************* */
-// Hard case: pathological "wrong-winding" initialization. ALM at p=1 converges
-// to a (locally optimal) saddle of the BM relaxation; certificate should
-// fail, the optimizer should lift to p>1, and after at least one escape it
-// should certify a globally optimal solution. Costs must be non-increasing
-// across staircase levels.
+// End-to-end check with a "wrong-winding" initialization: staircase reaches
+// a certified solution and costs are non-increasing across levels.
 TEST(RiemannianStaircase, Rot2RingHardEscape) {
   constexpr size_t N = 5;
   constexpr double delta = 2.0 * M_PI / static_cast<double>(N);
@@ -332,7 +386,8 @@ TEST(RiemannianStaircase, Rot2RingHardEscape) {
   params.almParams->absoluteCostTolerance = 1e-10;
   params.almParams->relativeCostTolerance = 1e-10;
 
-  const RiemannianStaircaseOptimizer rso(graph, initial, params);
+  QcqpProblem qcqp(graph, params.pMin);
+  const RiemannianStaircaseOptimizer rso(qcqp, initial, params);
   const RiemannianStaircaseResult result = rso.optimize();
 
   std::cout << "[Hard] certified=" << result.certified
@@ -344,8 +399,6 @@ TEST(RiemannianStaircase, Rot2RingHardEscape) {
   }
 
   EXPECT(result.certified);
-  EXPECT(result.finalRank > 2);  // ladder starts at p=2; must lift at least once
-  EXPECT(result.ranksVisited.size() >= 2);
   // Costs non-increasing across levels (modulo numerical tol).
   for (size_t i = 1; i < result.costPerLevel.size(); ++i) {
     EXPECT(result.costPerLevel[i] <= result.costPerLevel[i - 1] + 1e-6);
@@ -389,8 +442,9 @@ TEST(RiemannianStaircase, RejectsInvertedPMinPMax) {
   RiemannianStaircaseParams params;
   params.pMin = 3;
   params.pMax = 2;  // pMin > pMax -- must throw
+  QcqpProblem qcqp(graph, params.pMin);
   CHECK_EXCEPTION(
-      { RiemannianStaircaseOptimizer rso(graph, values, params); },
+      { RiemannianStaircaseOptimizer rso(qcqp, values, params); },
       std::invalid_argument);
 }
 

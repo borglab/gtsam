@@ -11,17 +11,20 @@
 
 /**
  * @file    FastVerification.h
- * @brief   LOBPCG + ILDL minimum-eigenpair routine used by
- *          RiemannianStaircaseOptimizer to check positive semidefiniteness
- *          of the dual certificate matrix S.
+ * @brief   LOBPCG + ILDL minimum-eigenpair check for the dual certificate
+ *          matrix S. Implements the accelerated preconditioned-eigensolver
+ *          scheme of Rosen, IEEE RA-L 7(4):12507–12514, 2022.
+ * @author  Zhexin Xu     (xu.zhex@northeastern.edu)
+ * @author  David M. Rosen
  *
- * Implementation uses David Rosen's Optimization and Preconditioners
- * libraries shipped in gtsam/3rdparty/.
+ * Dependencies (configured by HandleLOBPCGVerification.cmake when
+ * GTSAM_USE_LOBPCG_VERIFICATION=ON):
+ *   - Optimization (header-only, gtsam/3rdparty/Optimization).
+ *   - Preconditioners::ILDL (sources compiled into libgtsam; no separate .so).
+ *   - CHOLMOD (system, libsuitesparse-dev) — direct Cholesky PSD test.
+ *   - BLAS — required by ILDL.
  *
- * The body of this header is compiled only when
- * GTSAM_USE_LOBPCG_VERIFICATION is defined; otherwise the header is empty
- * and the LOBPCG verification path in RiemannianStaircaseOptimizer.cpp
- * is unreachable (it throws std::runtime_error).
+ * The header body is empty unless GTSAM_USE_LOBPCG_VERIFICATION is defined.
  */
 
 #pragma once
@@ -44,15 +47,9 @@
 namespace gtsam {
 namespace internal {
 
-/**
- * @brief Test positive-semidefiniteness of `S + eta·I` via direct Cholesky,
- *        falling back to (preconditioned) LOBPCG to find a direction of
- *        sufficiently negative curvature if the PSD test fails.
- *
- * Returns true iff `S + eta·I` is PSD (no negative-curvature direction
- * found). When the function returns false, `x` is the offending eigenvector
- * and `theta = x^T S x` its Rayleigh quotient.
- */
+/// Test PSD of `S + eta·I` via direct Cholesky, falling back to (preconditioned)
+/// LOBPCG. Returns true iff PSD; on false, `x` is the offending eigenvector and
+/// `theta = x^T S x` its Rayleigh quotient.
 inline bool fast_verification(const Eigen::SparseMatrix<double>& S, double eta,
                               std::size_t nx, double& theta, Vector& x,
                               std::size_t& num_iters, std::size_t max_iters,
@@ -63,8 +60,7 @@ inline bool fast_verification(const Eigen::SparseMatrix<double>& S, double eta,
   theta = 0;
   const unsigned int n = static_cast<unsigned int>(S.rows());
 
-  // STEP 1: PSD test on the regularized certificate M := S + eta·I via direct
-  // sparse Cholesky.
+  // STEP 1: direct Cholesky PSD test on M := S + eta·I.
   SparseMat Id(n, n);
   Id.setIdentity();
   const SparseMat M = S + eta * Id;
@@ -113,8 +109,7 @@ inline bool fast_verification(const Eigen::SparseMatrix<double>& S, double eta,
   theta = x.dot(S * x);
   if (theta < -eta / 2) return false;
 
-  // STEP 3: preconditioned LOBPCG for the near-zero negative case. Build an
-  // incomplete symmetric indefinite factorization and use it as preconditioner.
+  // STEP 3: preconditioned LOBPCG (ILDL) for the near-zero negative case.
   Preconditioners::ILDLOpts ildl_opts;
   ildl_opts.max_fill_factor = max_fill_factor;
   ildl_opts.drop_tol = drop_tol;

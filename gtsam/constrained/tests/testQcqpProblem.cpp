@@ -150,10 +150,12 @@ Values VectorValue(const Vector& x) {
   return values;
 }
 
-// Verifies vector-valued quadratic constraints use the usual x' A x form.
+// Verifies vector-valued quadratic constraints use the 0.5 * x' A x form.
+// QuadraticConstraint stores `b` such that h(X) = 0.5*trace(X'AX) - b, so
+// the constraint set ||x||^2 = 5 is encoded with b = 2.5.
 TEST(QuadraticConstraint, VectorFeasible) {
   const Matrix A = Matrix::Identity(2, 2);
-  const QuadraticConstraint constraint = QuadraticConstraint::Equal(x0, A, 5.0);
+  const QuadraticConstraint constraint = QuadraticConstraint::Equal(x0, A, 2.5);
   const auto factor = constraint.createEqualityFactor();
   const Values values = VectorValue((Vector(2) << 1.0, 2.0).finished());
 
@@ -161,10 +163,11 @@ TEST(QuadraticConstraint, VectorFeasible) {
 }
 
 // Verifies a quadratic matrix equality evaluates to zero when satisfied.
+// Constraint: ||row 0 of X||^2 = 1, encoded as 0.5*trace = 0.5.
 TEST(QuadraticConstraint, Feasible) {
   Matrix A = Matrix::Zero(2, 2);
   A(0, 0) = 1.0;
-  const QuadraticConstraint constraint = QuadraticConstraint::Equal(x0, A, 1.0);
+  const QuadraticConstraint constraint = QuadraticConstraint::Equal(x0, A, 0.5);
   const auto factor = constraint.createEqualityFactor();
   const Values values = MatrixValue(Matrix::Identity(2, 3));
 
@@ -172,45 +175,52 @@ TEST(QuadraticConstraint, Feasible) {
 }
 
 // Verifies a quadratic matrix equality reports the expected scalar violation.
+// Constraint ||row 0||^2 = 1, X has ||row 0||^2 = 2, so h = 0.5*(2-1) = 0.5.
 TEST(QuadraticConstraint, Infeasible) {
   Matrix A = Matrix::Zero(2, 2);
   A(0, 0) = 1.0;
-  const QuadraticConstraint constraint = QuadraticConstraint::Equal(x0, A, 1.0);
+  const QuadraticConstraint constraint = QuadraticConstraint::Equal(x0, A, 0.5);
   const auto factor = constraint.createEqualityFactor();
   const Values values =
       MatrixValue((Matrix(2, 2) << 1.0, 1.0, 0.0, 1.0).finished());
 
-  EXPECT_DOUBLES_EQUAL(1.0, factor->unwhitenedError(values)(0), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.5, factor->unwhitenedError(values)(0), 1e-12);
 }
 
 // Verifies <= constraints ramp only positive signed violations.
+// Constraint ||row 0||^2 <= 1, encoded as 0.5*trace - 0.5 <= 0.
 TEST(QuadraticConstraint, LessEqualViolation) {
   Matrix A = Matrix::Zero(2, 2);
   A(0, 0) = 1.0;
   const QuadraticConstraint constraint =
-      QuadraticConstraint::LessEqual(x0, A, 1.0);
+      QuadraticConstraint::LessEqual(x0, A, 0.5);
   const auto factor = constraint.createInequalityFactor();
 
+  // X = 0: h = -0.5 (satisfied), error ramps to 0.
   EXPECT_DOUBLES_EQUAL(
-      -1.0, factor->unwhitenedExpr(MatrixValue(Matrix::Zero(2, 1)))(0), 1e-12);
+      -0.5, factor->unwhitenedExpr(MatrixValue(Matrix::Zero(2, 1)))(0), 1e-12);
   EXPECT_DOUBLES_EQUAL(
       0.0, factor->unwhitenedError(MatrixValue(Matrix::Zero(2, 1)))(0), 1e-12);
-  EXPECT_DOUBLES_EQUAL(3.0,
+  // X = (2, 0): h = 0.5*4 - 0.5 = 1.5.
+  EXPECT_DOUBLES_EQUAL(1.5,
                        factor->unwhitenedError(MatrixValue(
                            (Matrix(2, 1) << 2.0, 0.0).finished()))(0),
                        1e-12);
 }
 
 // Verifies >= constraints are represented by negating the stored expression.
+// Constraint ||row 0||^2 >= 1, encoded with b = 0.5.
 TEST(QuadraticConstraint, GreaterEqualViolation) {
   Matrix A = Matrix::Zero(2, 2);
   A(0, 0) = 1.0;
   const QuadraticConstraint constraint =
-      QuadraticConstraint::GreaterEqual(x0, A, 1.0);
+      QuadraticConstraint::GreaterEqual(x0, A, 0.5);
   const auto factor = constraint.createInequalityFactor();
 
+  // X = 0: 0.5*0 - 0.5 = -0.5; with sign = -1 and ramp this gives 0.5.
   EXPECT_DOUBLES_EQUAL(
-      1.0, factor->unwhitenedError(MatrixValue(Matrix::Zero(2, 1)))(0), 1e-12);
+      0.5, factor->unwhitenedError(MatrixValue(Matrix::Zero(2, 1)))(0), 1e-12);
+  // X = (2, 0): 0.5*4 - 0.5 = 1.5 >= 0, satisfies, ramps to 0.
   EXPECT_DOUBLES_EQUAL(0.0,
                        factor->unwhitenedError(MatrixValue(
                            (Matrix(2, 1) << 2.0, 0.0).finished()))(0),
@@ -237,7 +247,8 @@ TEST(QcqpProblem, EvaluateVectorValues) {
   QcqpProblem problem;
   problem.addCost(QpCost(KeyVector{x0},
                          SymmetricBlockMatrix(std::vector<DenseIndex>{2}, Q)));
-  problem.addConstraint(QuadraticConstraint::Equal(x0, Q, 1.0));
+  // Constraint ||x||^2 = 1, encoded as 0.5*x'Ix = 0.5.
+  problem.addConstraint(QuadraticConstraint::Equal(x0, Q, 0.5));
 
   Values values;
   values.insert(x0, (Vector(2) << 1.0, 0.0).finished());
@@ -260,8 +271,9 @@ TEST(QcqpProblem, Evaluate) {
   costs.emplace_shared<QpCost>(KeyVector{x0, x1}, blockQ, 2);
 
   NonlinearEqualityConstraints constraints;
+  // Constraint trace(X0' I X0) = 2, encoded as 0.5*trace = 1.
   constraints.push_back(
-      QuadraticConstraint::Equal(x0, Matrix::Identity(2, 2), 2.0)
+      QuadraticConstraint::Equal(x0, Matrix::Identity(2, 2), 1.0)
           .createEqualityFactor());
 
   const QcqpProblem problem(costs, constraints);
@@ -288,11 +300,13 @@ TEST(QcqpProblem, OptimizeAugmentedLagrangianMixedConstraints) {
       JacobianFactor(x0, (Matrix(1, 2) << 0.0, 1.0).finished(), Vector1(0.0))));
   problem.addConstraint(LinearConstraint::GreaterEqual(
       JacobianFactor(x0, (Matrix(1, 2) << 1.0, 0.0).finished(), Vector1(0.9))));
-  problem.addConstraint(QuadraticConstraint::Equal(x0, Q, 1.0));
+  // Constraint ||x||^2 = 1, encoded as 0.5*trace = 0.5.
+  problem.addConstraint(QuadraticConstraint::Equal(x0, Q, 0.5));
 
   Matrix yBound = Matrix::Zero(2, 2);
   yBound(1, 1) = 1.0;
-  problem.addConstraint(QuadraticConstraint::LessEqual(x0, yBound, 0.01));
+  // Constraint y^2 <= 0.01, encoded as 0.5*y^2 <= 0.005.
+  problem.addConstraint(QuadraticConstraint::LessEqual(x0, yBound, 0.005));
 
   Values initialValues;
   initialValues.insert(x0, (Matrix(2, 1) << 0.8, 0.4).finished());
@@ -374,8 +388,9 @@ TEST(QcqpProblem, SingleFrobeniusBetweenFactor) {
   const QcqpProblem problem(graph, /*K=*/2);
   const Values qcqpValues = SingleFactorQcqpValues();
 
-  EXPECT_DOUBLES_EQUAL(graph.error(values), problem.costs().error(qcqpValues),
-                       1e-12);
+  // 2 * graph.error: paper convention (no 0.5) vs. graph's 0.5*||r||^2.
+  EXPECT_DOUBLES_EQUAL(2.0 * graph.error(values),
+                       problem.costs().error(qcqpValues), 1e-12);
   EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
                        1e-12);
 }
@@ -425,8 +440,8 @@ TEST(QcqpProblem, Rot2RingPgo) {
   const QcqpProblem problem(graph, /*K=*/2);
   const Values qcqpValues = RingQcqpValues(N, delta, 0.01);
 
-  EXPECT_DOUBLES_EQUAL(graph.error(values), problem.costs().error(qcqpValues),
-                       1e-12);
+  EXPECT_DOUBLES_EQUAL(2.0 * graph.error(values),
+                       problem.costs().error(qcqpValues), 1e-12);
   EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
                        1e-12);
 }
@@ -474,10 +489,11 @@ Values QcqpValues(const Rot2& R0, const Rot2& R1) {
 template <int D>
 double DirectQcqpBetweenCost(const Rot2& R0, const Rot2& R1,
                              const Rot2& measured) {
+  // Paper convention: ||residual||^2 (no 0.5).
   const Matrix X0 = traits<Rot2>::template QcqpValue<D>(R0);
   const Matrix X1 = traits<Rot2>::template QcqpValue<D>(R1);
   const Matrix residual = X1 - measured.matrix().transpose() * X0;
-  return 0.5 * residual.squaredNorm();
+  return residual.squaredNorm();
 }
 
 // Verifies the D=2 Rot2 QCQP variable is row-orthonormal and feasible.
@@ -538,7 +554,7 @@ TEST(QcqpProblem, Rot2FrobeniusBetweenFactorD2) {
   const QcqpProblem problem(graph, /*K=*/2);
   const Values qcqpValues = QcqpValues<2>(R0, R1);
 
-  EXPECT_DOUBLES_EQUAL(graph.error(manifoldValues),
+  EXPECT_DOUBLES_EQUAL(2.0 * graph.error(manifoldValues),
                        problem.costs().error(qcqpValues), 1e-12);
   EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
                        1e-12);
@@ -562,7 +578,7 @@ TEST(QcqpProblem, Rot2FrobeniusBetweenFactorD3) {
   manifoldValues.insert(x1, R1);
 
   EXPECT(std::isfinite(qcqpCost));
-  EXPECT_DOUBLES_EQUAL(graph.error(manifoldValues), qcqpCost, 1e-12);
+  EXPECT_DOUBLES_EQUAL(2.0 * graph.error(manifoldValues), qcqpCost, 1e-12);
   EXPECT_DOUBLES_EQUAL(DirectQcqpBetweenCost<3>(R0, R1, measured), qcqpCost,
                        1e-12);
   EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
@@ -587,10 +603,11 @@ Values Rot3QcqpValues(const Rot3& R0, const Rot3& R1) {
 template <int D>
 double DirectRot3QcqpBetweenCost(const Rot3& R0, const Rot3& R1,
                                  const Rot3& measured) {
+  // Paper convention: ||residual||^2 (see DirectQcqpBetweenCost above).
   const Matrix X0 = traits<Rot3>::template QcqpValue<D>(R0);
   const Matrix X1 = traits<Rot3>::template QcqpValue<D>(R1);
   const Matrix residual = X1 - measured.matrix().transpose() * X0;
-  return 0.5 * residual.squaredNorm();
+  return residual.squaredNorm();
 }
 
 // Verifies the D=3 Rot3 QCQP variable is row-orthonormal and feasible.
@@ -630,7 +647,7 @@ TEST(QcqpProblem, Rot3FrobeniusBetweenFactorD3) {
   const double qcqpCost = problem.costs().error(qcqpValues);
 
   EXPECT(std::isfinite(qcqpCost));
-  EXPECT_DOUBLES_EQUAL(graph.error(manifoldValues), qcqpCost, 1e-12);
+  EXPECT_DOUBLES_EQUAL(2.0 * graph.error(manifoldValues), qcqpCost, 1e-12);
   EXPECT_DOUBLES_EQUAL(DirectRot3QcqpBetweenCost<3>(R0, R1, measured), qcqpCost,
                        1e-12);
   EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
@@ -826,7 +843,7 @@ TEST(QcqpProblem, Rot2FrobeniusBetweenFactorD4) {
   InsertQcqpValue<Rot2, 4>(Symbol('x', 1), R1, &qcqpValues);
 
   const QcqpProblem problem(graph, /*K=*/4);
-  EXPECT_DOUBLES_EQUAL(graph.error(manifoldValues),
+  EXPECT_DOUBLES_EQUAL(2.0 * graph.error(manifoldValues),
                        problem.costs().error(qcqpValues), 1e-12);
   EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
                        1e-12);
@@ -850,7 +867,7 @@ TEST(QcqpProblem, Rot3FrobeniusBetweenFactorD4) {
   InsertQcqpValue<Rot3, 4>(Symbol('x', 1), R1, &qcqpValues);
 
   const QcqpProblem problem(graph, /*K=*/4);
-  EXPECT_DOUBLES_EQUAL(graph.error(manifoldValues),
+  EXPECT_DOUBLES_EQUAL(2.0 * graph.error(manifoldValues),
                        problem.costs().error(qcqpValues), 1e-12);
   EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
                        1e-12);

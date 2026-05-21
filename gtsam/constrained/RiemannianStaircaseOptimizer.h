@@ -11,7 +11,20 @@
 
 /**
  * @file    RiemannianStaircaseOptimizer.h
- * @brief   Riemannian Staircase outer loop wrapping ALM as the inner solver.
+ * @brief   Riemannian Staircase outer loop with ALM as the inner NLP solver
+ *          and a sparse-eigensolver certificate of optimality. A specialized
+ *          Riemannian-manifold solver is planned to replace ALM in a future
+ *          release.
+ * @author  Zhexin Xu     (xu.zhex@northeastern.edu)
+ * @author  David M. Rosen
+ *
+ * References:
+ *   Xu, Sanderson, Zhang, Rosen — "Certifiable Estimation with Factor
+ *     Graphs," arXiv:2603.01267, 2026.
+ *   Rosen — "Accelerating certifiable estimation with preconditioned
+ *     eigensolvers," IEEE RA-L 7(4):12507–12514, 2022.
+ *   Rosen — "Scalable low-rank semidefinite programming for certifiably
+ *     correct machine perception," WAFR 2020.
  */
 
 #pragma once
@@ -23,228 +36,222 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 
+#include <Eigen/SVD>
 #include <Eigen/Sparse>
 
-#include <map>
 #include <tuple>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace gtsam {
 
-/**
- * Parameters for the Riemannian Staircase outer loop.
- */
+/// Hyperparameters for the Riemannian Staircase outer loop.
 struct GTSAM_EXPORT RiemannianStaircaseParams {
-  /**
-   * Which eigenvalue solver to use for the certificate matrix.
-   * - LOBPCG: fast_verification (Optimization + Preconditioners libraries
-   *   + Cholmod). Production path; scales to tens of thousands of poses.
-   *   Requires GTSAM_USE_LOBPCG_VERIFICATION at build time.
-   * - DenseEigen: Eigen::SelfAdjointEigenSolver on Matrix(S). Allocates a
-   *   dense totalDim x totalDim matrix, so memory blows up at scale. Useful
-   *   for small problems and for cross-validating the LOBPCG path.
-   */
-  enum class VerificationMethod { LOBPCG, DenseEigen };
+  /// LOBPCG: sparse, scalable, requires GTSAM_USE_LOBPCG_VERIFICATION.
+  /// Spectra: sparse Lanczos via gtsam/3rdparty, no CHOLMOD dependency.
+  /// DenseEigen: full O(n^3) diagonalization — debugging only, does not scale.
+  enum class VerificationMethod { LOBPCG, DenseEigen, Spectra };
 
-  /**
-   * Starting and maximum column dimension K of the matrix-form QCQP variable.
-   * pMin must be >= the intrinsic row dim of every variable type in the
-   * graph (2 for Rot2, 3 for Rot3); pMax caps how far the staircase climbs
-   * before giving up. The staircase always starts at K = pMin and grows K
-   * by 1 per level via escapeSaddleAndLift.
-   */
-  size_t pMin = 2;            ///< starting K (typical: 2 for Rot2, 3 for Rot3).
-  size_t pMax = 10;           ///< maximum K before giving up.
-  double alpha = 1e-2;        ///< descent-direction step size for the lift.
+  size_t pMin = 2;            ///< starting K; must be >= max intrinsic row dim.
+  size_t pMax = 10;           ///< staircase cap before giving up.
+  double alpha = 1e-2;        ///< descent step size on saddle escape.
 
-  // --- Certificate verification ---
   VerificationMethod verificationMethod = VerificationMethod::LOBPCG;
   double eta = 1e-3;           ///< min-eigenvalue tolerance for certification.
-  size_t nx = 1;               ///< block size for LOBPCG.
-  size_t maxLOBPCGIters = 1000;  ///< max LOBPCG iterations.
-  double maxFillFactor = 3.0;  ///< ILDL incomplete-Cholesky fill factor.
-  double dropTol = 1e-3;       ///< ILDL incomplete-Cholesky drop tolerance.
+  size_t nx = 1;               ///< LOBPCG block size.
+  size_t maxLOBPCGIters = 1000;
+  double maxFillFactor = 3.0;  ///< ILDL fill factor.
+  double dropTol = 1e-3;       ///< ILDL drop tolerance.
+
+  size_t maxSpectraIters = 1000;
+  /// Lanczos subspace size. A generous value (~100) is needed so the
+  /// shifted-Lanczos pass discriminates a tiny negative eigenvalue from a
+  /// near-zero one — they map to nearly-identical magnitudes after the shift.
+  size_t numLanczosVectors = 100;
+  double spectraTol = 1e-4;
 
   AugmentedLagrangianParams::shared_ptr almParams =
       std::make_shared<AugmentedLagrangianParams>();
   bool verbose = false;
 };
 
-/**
- * Result returned by RiemannianStaircaseOptimizer::optimize().
- */
+/// Output of RiemannianStaircaseOptimizer::optimize().
 struct GTSAM_EXPORT RiemannianStaircaseResult {
   Values values;                       ///< final BM solution (Matrix-valued).
-  size_t finalRank = 0;                ///< BM rank of the returned values.
-  bool certified = false;              ///< true if certificate passed.
-  double minEigenvalue = 0.0;          ///< min eig of the final certificate.
+  /// SO(d)-projected rotations, populated by `optimize<RotT>()` only when
+  /// `certified == true`. Empty otherwise.
+  Values rounded;
+  size_t finalRank = 0;
+  bool certified = false;
+  double minEigenvalue = 0.0;
   std::vector<size_t> ranksVisited;
-  std::vector<double> costPerLevel;    ///< inner cost after each ALM solve.
-  /// Per-level certification verdict (true iff that level's certificate
-  /// passed; the staircase stops on the first true entry, so all earlier
-  /// entries are false).
-  std::vector<bool> certifiedPerLevel;
-  /// Per-level minimum eigenvalue of the certificate matrix S (as reported
-  /// by verify()). For LOBPCG, this is 0 when the Cholesky short-circuit
-  /// succeeded (lower bound on lambda_min >= -eta); the dense path always
-  /// returns the actual numeric min eigenvalue.
+  /// Per-level inner cost in paper convention (`||residual||^2 = 2 * graph.error`).
+  std::vector<double> costPerLevel;
   std::vector<double> minEigenvaluePerLevel;
-  /// Per-level wall-clock seconds spent in the inner ALM solve (includes
-  /// the QcqpProblem rebuild at that rank).
-  std::vector<double> almTimePerLevel;
-  /// Per-level wall-clock seconds for certificate construction + verify()
-  /// (Layout::From + assembleCertificate + verify dispatch).
+  /// Per-level wall-clock seconds for the inner NLP solve (ALM today).
+  std::vector<double> nlpTimePerLevel;
+  /// Per-level wall-clock seconds for certificate assembly + verify().
   std::vector<double> verifyTimePerLevel;
-  /// Per-level wall-clock seconds for the saddle-escape lift. The level
-  /// that certifies records 0 here (no lift was performed).
-  std::vector<double> liftTimePerLevel;
-  /// Total wall-clock seconds for optimize() (sum of all phases above plus
-  /// minor bookkeeping).
   double totalTime = 0.0;
 };
 
 /**
- * Riemannian Staircase outer loop with ALM as the inner solver.
+ * Riemannian Staircase outer loop over a Burer–Monteiro low-rank
+ * parametrization of a QCQP. Takes a `QcqpProblem` and an initial value and
+ * returns a certified (or best-effort) low-rank BM solution. Factor-graph →
+ * QCQP conversion lives outside this class.
  *
- *   - Layout::From() and assembleCertificate(): Key -> {offset, rowDim}
- *     mapping and the Lagrangian-Hessian certificate matrix
- *         S = Q + sum_m lambda_m * (A_m + A_m^T),
- *     assembled as a sparse symmetric matrix.
- *   - escapeSaddleAndLift(): lifts Y* at BM rank p to [Y* | alpha*v_min] at
- *     rank p+1; no retraction is needed because the new column is tangent
- *     to the constraint surface at first order.
- *   - optimize(): iterates p in [pMin, pMax], inner ALM solve, build
- *     certificate, verify, return on certification or lift+retry.
+ * Per level: (1) inner NLP solve at rank p yielding (Y*, λ); (2) certificate
+ * `S = Q + Σ_m λ_m A_m`; (3) verify via LOBPCG / Spectra / DenseEigen; on
+ * fail, (4) `escapeSaddleAndLift` appends a descent column at rank p+1.
  *
- * Verification: two paths controlled by RiemannianStaircaseParams::
- * verificationMethod. The production path is LOBPCG via fast_verification
- * (compiled only when GTSAM_USE_LOBPCG_VERIFICATION is ON). A dense
- * Eigen::SelfAdjointEigenSolver fallback is always available for small
- * problems and as a cross-validation reference.
+ * ALM is the inner solver today; a specialized Riemannian-manifold solver is
+ * planned to replace it.
  */
 class GTSAM_EXPORT RiemannianStaircaseOptimizer {
  public:
-  /// Per-variable layout slice: row offset in the ambient ℝ^totalDim space
-  /// and row dimension of the variable's matrix-valued QCQP value.
+  /// Placement of one QCQP variable inside the stacked BM matrix Y:
+  /// `Y_i = Y.block(offset, 0, rowDim, p)`.
   struct LayoutSlice {
     size_t offset;
     size_t rowDim;
   };
 
   /**
-   * Layout maps each Key to its {offset, rowDim} slice for the matrix-form
-   * QCQP variable, in canonical sort-by-Key order, plus
-   * totalDim = sum of row dims.
+   * Maps each Key to its (offset, rowDim) slice in the stacked BM decision
+   * variable Y ∈ ℝ^{totalDim × p}.
    *
-   * Layout is the single source of truth for variable ordering and per-key
-   * row dimension throughout the staircase pipeline: certificate assembly,
-   * the saddle-escape lift, and rounding all consult the layout's slices.
-   * Build it with Layout::From(values).
+   *                  p columns
+   *             ┌────────────────┐
+   *        x0:  │     Y_{x0}     │  rowDim_{x0} rows, offset_{x0} = 0
+   *             ├────────────────┤
+   *        x1:  │     Y_{x1}     │  rowDim_{x1} rows, offset_{x1} = rowDim_{x0}
+   *             ├────────────────┤
+   *        x2:  │     Y_{x2}     │  rowDim_{x2} rows, offset_{x2} = rowDim_{x0}
+   *             └────────────────┘                               + rowDim_{x1}
+   *                ↑
+   *                totalDim = Σ_k rowDim_k rows
+   *
+   * Offsets are assigned in increasing-Key order so the layout is
+   * deterministic across runs and across staircase levels.
    */
   struct GTSAM_EXPORT Layout {
-    std::map<Key, LayoutSlice> slices;
+    std::unordered_map<Key, LayoutSlice> slices;
     size_t totalDim = 0;
 
-    /// Build a Layout from a Values containing only Matrix-valued variables.
-    /// Iteration order is canonical (std::map => sorted by Key), giving the
-    /// same layout for the same Values across runs and across staircase
-    /// levels (the lift grows columns, leaves row counts alone).
     static Layout From(const Values& values);
 
-    /// True iff `key` is in the layout.
     bool contains(Key key) const { return slices.find(key) != slices.end(); }
-
-    /// Number of variables tracked.
     size_t size() const { return slices.size(); }
-
-    /// Row offset of `key` in the ambient ℝ^totalDim space. Throws if
-    /// `key` is not in the layout.
     size_t offsetOf(Key key) const;
-
-    /// Row dimension of `key`'s matrix-form variable. Throws if missing.
     size_t rowDimOf(Key key) const;
-
-    /// {offset, rowDim} for `key`. Throws if missing.
     const LayoutSlice& sliceOf(Key key) const;
 
-    /// True iff `values` has exactly the same Matrix-valued keys as this
-    /// layout and each variable's row count matches the layout's rowDim.
-    /// Useful as a fail-fast precondition check in consumers.
+    /// True iff `values` matches this layout exactly (keys + per-key rowDim).
     bool conformsTo(const Values& values) const;
 
-    /// Stack the Matrix-valued variables in `values` into a single dense
-    /// (totalDim x p) matrix in canonical layout order. All values must
-    /// share the same column count p; throws otherwise.
+    /// Stack the Matrix-valued variables in `values` into one (totalDim × p)
+    /// matrix. All values must share the same column count p.
     Matrix stack(const Values& values) const;
 
-    /// Inverse of stack: split a (totalDim x p) matrix into per-key
-    /// (rowDim x p) Matrix-valued Values.
+    /// Inverse of stack: split a (totalDim × p) matrix into per-key slices.
     Values unstack(const Matrix& Y) const;
   };
 
-  RiemannianStaircaseOptimizer(const NonlinearFactorGraph& graph,
+  /// Construct from a QcqpProblem already built at K = params.pMin. The
+  /// QcqpProblem must come from a NonlinearFactorGraph so the staircase
+  /// can call `qcqp.rebuildAt(p)` when climbing K.
+  RiemannianStaircaseOptimizer(const QcqpProblem& qcqp,
                                const Values& initialValues,
                                const RiemannianStaircaseParams& params = {})
-      : graph_(graph), initialValues_(initialValues), params_(params) {
+      : qcqp_(qcqp), initialValues_(initialValues), params_(params) {
     validateParams(params_);
   }
 
-  /// Run the staircase outer loop. See RiemannianStaircaseResult for outputs.
+  /// Run the staircase. Returns the BM solution in `result.values`;
+  /// `result.rounded` is left empty (use the templated overload below).
   RiemannianStaircaseResult optimize() const;
 
-  /**
-   * Assemble the certificate matrix as a sparse symmetric matrix:
-   *
-   *   S = Q + sum_m lambda_m * (A_m + A_m^T)
-   *
-   * which is the Hessian of the Lagrangian L = f + sum_m lambda_m h_m for
-   * h_m(X) = trace(X' A_m X) - b_m. For symmetric A_m (every currently
-   * supported case, e.g. Rot2 QcqpConstraints) this is Q + 2 * sum_m
-   * lambda_m * A_m. Writing (A + A^T) keeps S manifestly symmetric and
-   * works for non-symmetric A too.
-   *
-   * @param qcqp     the QcqpProblem at the current BM rank.
-   * @param layout   single source of truth for per-key row offset and
-   *                 row dim; built from the current Values via Layout::From.
-   * @param lambdaEq multipliers from AugmentedLagrangianState::lambdaEq;
-   *                 lambdaEq[m] corresponds to qcqp.eConstraints()[m].
-   */
+  /// Run the staircase and, on certified success, also write SO(d)-projected
+  /// rotations of type `RotT` into `result.rounded`. Equivalent to calling
+  /// `optimize()` then `roundToRotation<RotT>` when certified.
+  template <typename RotT>
+  RiemannianStaircaseResult optimize() const {
+    RiemannianStaircaseResult r = optimize();
+    if (r.certified) {
+      const Layout layout = Layout::From(r.values);
+      for (auto& [key, R] : roundToRotation<RotT>(r.values, layout)) {
+        r.rounded.insert(key, R);
+      }
+    }
+    return r;
+  }
+
+  /// Assemble the sparse symmetric certificate `S = Q + Σ_m λ_m A_m`, the
+  /// Hessian of the Lagrangian. Q and A_m are stored as Hessians directly
+  /// (the 0.5 convention is absorbed at QCQP-conversion time), so no
+  /// (A + A^T) symmetrization is needed here. A_m must be symmetric.
   static Eigen::SparseMatrix<double> assembleCertificate(
       const QcqpProblem& qcqp, const Layout& layout,
       const std::vector<Vector>& lambdaEq);
 
-  /**
-   * Lift Y* from BM rank p to rank p+1, injecting a descent direction in the
-   * newly appended column. No retraction/projection is performed: the descent
-   * direction [0 | v_min] is already tangent to the constraint surface at the
-   * lifted point [Y* | 0] (the new column on Y* is zero), so a plain stack is
-   * exact at first order in alpha. Constraint violation is O(alpha^2).
-   *
-   * @param Ystar  Values at rank p, each entry an r_n x p Matrix.
-   * @param vMin   descent direction in ambient form, length = totalDim.
-   * @param layout per-key {offset, rowDim} for Ystar; throws on mismatch.
-   * @param alpha  step size for the descent direction (typical: 1e-2).
-   * @return Values at rank p+1, each entry an r_n x (p+1) Matrix.
-   */
+  /// Lift Y* from rank p to rank p+1 by appending `alpha * vMin` as the new
+  /// column. No retraction: the descent direction `[0 | vMin]` is tangent to
+  /// the constraint surface at `[Y* | 0]`, so the constraint violation is
+  /// O(alpha^2) and the next ALM solve absorbs it.
   static Values escapeSaddleAndLift(const Values& Ystar, const Vector& vMin,
                                     const Layout& layout, double alpha);
 
   /**
-   * Verify whether the certificate matrix S indicates a certifiably PSD point.
+   * Round the BM solution Y back to one `RotT` per variable.
    *
-   * Dispatches on params_.verificationMethod to either LOBPCG (production,
-   * scalable; requires GTSAM_USE_LOBPCG_VERIFICATION at build time) or a
-   * dense Eigen::SelfAdjointEigenSolver (fallback / cross-validation). The
-   * min eigenvector is returned in v_min so it can be used as a saddle-escape
-   * direction when verification fails.
+   * Recipe (d = traits<RotT>::QcqpIntrinsicDim):
+   *   1. Stack into (totalDim × p) and rank-d truncated SVD → Yd.
+   *   2. Global sign-gauge fix: if majority of d×d blocks have det < 0,
+   *      flip the last column of Yd.
+   *   3. Per-block: `R := RotT::ClosestTo(block.transpose())`.
    *
-   * @return (passed, lambda_min, v_min). passed is true iff
-   *         lambda_min >= -params_.eta.
+   * RotT must expose `traits<RotT>::QcqpIntrinsicDim >= 2` and a static
+   * `RotT::ClosestTo`.
    */
+  template <typename RotT>
+  static std::vector<std::pair<Key, RotT>> roundToRotation(
+      const Values& Y, const Layout& layout) {
+    constexpr int d = traits<RotT>::QcqpIntrinsicDim;
+    static_assert(d >= 2,
+                  "RiemannianStaircaseOptimizer::roundToRotation: "
+                  "traits<RotT>::QcqpIntrinsicDim must be >= 2.");
+
+    const Matrix Yglobal = layout.stack(Y);
+    Eigen::JacobiSVD<Matrix> svd(Yglobal,
+                                 Eigen::ComputeFullU | Eigen::ComputeFullV);
+    Matrix Yd = svd.matrixU().leftCols(d) *
+                svd.singularValues().head(d).asDiagonal();
+
+    size_t numNegDet = 0;
+    for (const auto& [_, slice] : layout.slices) {
+      if (Yd.block(slice.offset, 0, d, d).determinant() < 0) ++numNegDet;
+    }
+    if (numNegDet > layout.size() / 2) Yd.col(d - 1) *= -1.0;
+
+    std::vector<std::pair<Key, RotT>> rotations;
+    rotations.reserve(layout.size());
+    for (const auto& [key, slice] : layout.slices) {
+      rotations.emplace_back(
+          key, RotT::ClosestTo(Yd.block(slice.offset, 0, d, d).transpose()));
+    }
+    return rotations;
+  }
+
+  /// Dispatch on `params_.verificationMethod`. Returns
+  /// `(passed, lambda_min, v_min)` where `passed == (lambda_min >= -eta)`.
   std::tuple<bool, double, Vector> verify(
       const Eigen::SparseMatrix<double>& S) const;
 
-  const NonlinearFactorGraph& graph_;
+  /// `mutable` because optimize() calls qcqp_.rebuildAt(p) per level; the
+  /// staircase is a pure function of its constructor args externally.
+  mutable QcqpProblem qcqp_;
   Values initialValues_;
   RiemannianStaircaseParams params_;
 
@@ -253,9 +260,9 @@ class GTSAM_EXPORT RiemannianStaircaseOptimizer {
       const Eigen::SparseMatrix<double>& S) const;
   std::tuple<bool, double, Vector> verifyDenseEigen(
       const Eigen::SparseMatrix<double>& S) const;
+  std::tuple<bool, double, Vector> verifySpectra(
+      const Eigen::SparseMatrix<double>& S) const;
 
-  /// Sanity-check pMin/pMax. The per-type intrinsic-dim check (K >= d) is
-  /// enforced inside each factor's qcqpFactors, so it's not duplicated here.
   static void validateParams(const RiemannianStaircaseParams& params);
 };
 

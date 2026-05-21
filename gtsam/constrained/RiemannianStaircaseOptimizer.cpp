@@ -11,43 +11,19 @@
 
 /**
  * @file    RiemannianStaircaseOptimizer.cpp
- * @brief   Riemannian Staircase outer loop wrapping ALM as the inner solver.
+ * @brief   Riemannian Staircase outer loop wrapping ALM as the inner NLP
+ *          solver (a more efficient Riemannian-manifold-based solver is
+ *          planned for a future release to replace it).
  */
 
-// =============================================================================
-// Dimensional and ordering invariants (keep this section close at hand).
+// Notation used throughout: N variables, each with row dim r_n; p = current
+// BM column dim. Y_i is r_n × p; Y is totalDim × p (stacked in Layout order);
+// S is totalDim × totalDim (p-independent); Q_ij is r_i × r_j; A_m is the
+// m-th equality-constraint matrix; lambdaEq[m] pairs with qcqp.eConstraints()[m].
 //
-// For a problem with N variables, each variable's ambient row dimension r_n,
-// and current BM column dimension p (== K == column count of every variable
-// value; r_n is the per-type intrinsic dim, e.g. 2 for Rot2, 3 for Rot3):
-//
-//   Y_i  : r_n x p       single variable's matrix value
-//   Y    : totalDim x p  global value, stacked in canonical layout order
-//   S    : totalDim x totalDim  sparse symmetric, INDEPENDENT of p
-//   Q_ij : r_i x r_j     cost block between vars i and j (also independent
-//                        of p; the p-dependence lives in QpCost's internal
-//                        HessianFactor, not in S)
-//   A_m  : r_n x r_n     constraint matrix for the m-th equality
-//   lam  : scalar (boxed as Vector1)  ALM multiplier for m-th constraint
-//
-// QpCost stores an internal HessianFactor whose (i,j) block is
-// r_i*p x r_j*p (the "ExpandedBlock" expansion: p block-diagonal copies of
-// Q_ij; this is the Kronecker product I_p ⊗ Q_ij). The underlying Q_ij is
-// the top-left r_i x r_j corner of any one copy. We embed Q_ij ONCE into S
-// at the global offsets (offset[keys[i]], offset[keys[j]]); the
-// ExpandedBlock structure lives only inside the HessianFactor.
-//
-// Ordering invariants — all enforced through the single canonical Layout
-// returned by Layout::From(values):
-//   1. Layout iteration order is canonical (std::map => sorted by Key).
-//   2. lambdaEq[m] corresponds to qcqp.eConstraints()[m].
-//   3. Multiple constraints share a key; we sum lam_m * (A_m + A_m^T) onto
-//      the key's diagonal block (analytic Lagrangian Hessian).
-//   4. qp->keys()[i] indexes into THAT factor; translate to global offset
-//      via layout.offsetOf(qp->keys()[i]).
-//   5. Per-key row dim (r_n) is sourced from the Layout. Cost / constraint
-//      matrices are validated against it.
-// =============================================================================
+// QpCost's internal HessianFactor expands Q_ij to (r_i*p × r_j*p) via
+// I_p ⊗ Q_ij; we recover Q_ij as the top-left r_i × r_j corner and embed it
+// once into S at the global offsets.
 
 #include <gtsam/constrained/QpCost.h>
 #include <gtsam/constrained/QuadraticConstraint.h>
@@ -56,6 +32,10 @@
 #include <gtsam/linear/HessianFactor.h>
 
 #include <Eigen/Eigenvalues>
+
+// gtsam/3rdparty/Spectra is on the include path as -isystem; same style as
+// gtsam/sfm/ShonanAveraging.cpp.
+#include <SymEigsSolver.h>
 
 #include <algorithm>
 #include <chrono>
@@ -128,7 +108,6 @@ Matrix RiemannianStaircaseOptimizer::Layout::stack(const Values& values) const {
         "RiemannianStaircaseOptimizer::Layout::stack: values has a different "
         "key set than the layout.");
   }
-  // Discover the common column count from the first value.
   DenseIndex p = -1;
   for (const auto& [key, mat] : valuesMap) {
     if (p < 0) p = mat.cols();
@@ -175,19 +154,12 @@ Values RiemannianStaircaseOptimizer::Layout::unstack(const Matrix& Y) const {
 Eigen::SparseMatrix<double> RiemannianStaircaseOptimizer::assembleCertificate(
     const QcqpProblem& qcqp, const Layout& layout,
     const std::vector<Vector>& lambdaEq) {
-  // The Layout is the single source of truth for per-key row dim and totalDim;
-  // we validate equality-constraint matrix shapes against it as a sanity check
-  // rather than rebuilding the row-dim map from the constraints.
   const size_t totalDim = layout.totalDim;
 
   std::vector<Eigen::Triplet<double>> triplets;
 
-  // 1. Cost contributions.
-  //    For each QpCost: its internal HessianFactor's (i, j) block is
-  //    r_i*p x r_j*p with p block-diagonal copies of the underlying Q_ij.
-  //    We recover Q_ij as the top-left r_i x r_j corner and embed it into
-  //    S at (offset[keys[i]], offset[keys[j]]). Symmetric: also embed the
-  //    transpose at (offset[keys[j]], offset[keys[i]]) for i != j.
+  // Cost: recover Q_ij as the top-left r_i × r_j corner of QpCost's
+  // I_p ⊗ Q_ij expansion and embed it once into S.
   for (const auto& factor : qcqp.costs()) {
     const auto qp = std::dynamic_pointer_cast<QpCost>(factor);
     if (!qp) {
@@ -235,17 +207,8 @@ Eigen::SparseMatrix<double> RiemannianStaircaseOptimizer::assembleCertificate(
     }
   }
 
-  // 2. lambda * (A + A^T) contributions, block-diagonal by key.
-  //
-  // For h_m(X) = trace(X' A_m X) - b_m, the gradient is grad_X h_m = (A_m +
-  // A_m^T) X. Lagrangian stationarity is grad f + Sum_m lambda_m grad h_m =
-  // 0, so the certificate (Hessian of L wrt X at the optimum) is
-  //   S = Q + Sum_m lambda_m (A_m + A_m^T).
-  //
-  // For symmetric A_m (the case for every type we currently support, e.g.
-  // Rot2's QcqpConstraints) this simplifies to Q + 2 Sum_m lambda_m A_m.
-  // Writing (A + A^T) makes the formula correct for non-symmetric A too and
-  // keeps the certificate manifestly symmetric.
+  // Constraint: A_m is the Hessian of h_m under the 0.5-trace convention,
+  // so the Lagrangian Hessian is simply S = Q + Σ_m λ_m A_m.
   const auto& eqs = qcqp.eConstraints();
   if (lambdaEq.size() != eqs.size()) {
     throw std::invalid_argument(
@@ -282,9 +245,7 @@ Eigen::SparseMatrix<double> RiemannianStaircaseOptimizer::assembleCertificate(
     const size_t base = slice.offset;
     for (int r = 0; r < A.rows(); ++r) {
       for (int c2 = 0; c2 < A.cols(); ++c2) {
-        // Contribution = lambda * (A(r, c2) + A(c2, r)). For symmetric A this
-        // is 2 * lambda * A(r, c2).
-        const double v = lam * (A(r, c2) + A(c2, r));
+        const double v = lam * A(r, c2);
         if (v == 0.0) continue;
         triplets.emplace_back(static_cast<int>(base + r),
                               static_cast<int>(base + c2), v);
@@ -307,6 +268,8 @@ std::tuple<bool, double, Vector> RiemannianStaircaseOptimizer::verify(
       return verifyLOBPCG(S);
     case RiemannianStaircaseParams::VerificationMethod::DenseEigen:
       return verifyDenseEigen(S);
+    case RiemannianStaircaseParams::VerificationMethod::Spectra:
+      return verifySpectra(S);
   }
   throw std::runtime_error(
       "RiemannianStaircaseOptimizer::verify: unknown VerificationMethod.");
@@ -327,8 +290,8 @@ RiemannianStaircaseOptimizer::verifyLOBPCG(
     std::cout << "  [fast_verification] passed=" << (passed ? 1 : 0)
               << " theta=" << theta << " iters=" << numIters << std::endl;
   }
-  // When passed, the Cholesky was successful and `v` was never written; emit
-  // a zero vector to keep the contract that v has the right length.
+  // On Cholesky success, v is never written — pad with zeros so callers can
+  // assume v.size() == S.rows() unconditionally.
   if (passed && v.size() != S.rows()) {
     v = Vector::Zero(S.rows());
   }
@@ -355,7 +318,6 @@ RiemannianStaircaseOptimizer::verifyDenseEigen(
         "RiemannianStaircaseOptimizer::verifyDenseEigen: "
         "SelfAdjointEigenSolver failed.");
   }
-  // Eigenvalues are in ascending order; column 0 is the minimum eigenvector.
   const double lambdaMin = es.eigenvalues()(0);
   const Vector vMin = es.eigenvectors().col(0);
   const bool passed = (lambdaMin >= -params_.eta);
@@ -363,6 +325,82 @@ RiemannianStaircaseOptimizer::verifyDenseEigen(
     std::cout << "  [dense Eigen] passed=" << (passed ? 1 : 0)
               << " lambda_min=" << lambdaMin << " dim=" << S.rows()
               << std::endl;
+  }
+  return {passed, lambdaMin, vMin};
+}
+
+/* ************************************************************************* */
+namespace {
+
+/// Spectra-compatible matvec for (S + sigma*I).
+struct SpectraShiftedOp {
+  using Scalar = double;
+  const Eigen::SparseMatrix<double>& S_;
+  double sigma_;
+  SpectraShiftedOp(const Eigen::SparseMatrix<double>& S, double sigma)
+      : S_(S), sigma_(sigma) {}
+  int rows() const { return static_cast<int>(S_.rows()); }
+  int cols() const { return static_cast<int>(S_.cols()); }
+  void perform_op(const double* x, double* y) const {
+    Eigen::Map<const Vector> X(x, rows());
+    Eigen::Map<Vector> Y(y, rows());
+    Y = S_ * X + sigma_ * X;
+  }
+};
+
+}  // namespace
+
+std::tuple<bool, double, Vector>
+RiemannianStaircaseOptimizer::verifySpectra(
+    const Eigen::SparseMatrix<double>& S) const {
+  // Two-pass Lanczos (mirrors ShonanAveraging::SparseMinimumEigenValue):
+  // find lambda_max, then shift by -2*lambda_max so the LargestMagn pass on
+  // the shifted matrix returns lambda_min - 2*lambda_max.
+  const Eigen::Index n = S.rows();
+  const Eigen::Index ncv = std::min<Eigen::Index>(
+      static_cast<Eigen::Index>(params_.numLanczosVectors), n);
+
+  SpectraShiftedOp lmOp(S, /*sigma=*/0.0);
+  Spectra::SymEigsSolver<SpectraShiftedOp> lmSolver(lmOp, /*nev=*/1, ncv);
+  lmSolver.init();
+  const int lmConverged =
+      lmSolver.compute(Spectra::SortRule::LargestMagn, params_.maxSpectraIters,
+                       params_.spectraTol, Spectra::SortRule::LargestMagn);
+  if (lmConverged != 1) {
+    throw std::runtime_error(
+        "RiemannianStaircaseOptimizer::verifySpectra: failed to compute "
+        "largest-magnitude eigenvalue.");
+  }
+  const double lmEigenValue = lmSolver.eigenvalues()(0);
+
+  double lambdaMin;
+  Vector vMin;
+  if (lmEigenValue < 0) {
+    // lambda_max < 0 implies it is also lambda_min.
+    lambdaMin = lmEigenValue;
+    vMin = lmSolver.eigenvectors(1).col(0);
+  } else {
+    SpectraShiftedOp minOp(S, /*sigma=*/-2.0 * lmEigenValue);
+    Spectra::SymEigsSolver<SpectraShiftedOp> minSolver(minOp, /*nev=*/1, ncv);
+    minSolver.init();
+    const int minConverged = minSolver.compute(
+        Spectra::SortRule::LargestMagn, params_.maxSpectraIters,
+        params_.spectraTol / lmEigenValue, Spectra::SortRule::LargestMagn);
+    if (minConverged != 1) {
+      throw std::runtime_error(
+          "RiemannianStaircaseOptimizer::verifySpectra: failed to compute "
+          "minimum eigenvalue after spectral shift.");
+    }
+    lambdaMin = minSolver.eigenvalues()(0) + 2.0 * lmEigenValue;
+    vMin = minSolver.eigenvectors(1).col(0);
+  }
+  vMin.normalize();
+
+  const bool passed = (lambdaMin >= -params_.eta);
+  if (params_.verbose) {
+    std::cout << "  [Spectra] passed=" << (passed ? 1 : 0)
+              << " lambda_min=" << lambdaMin << " lambda_max=" << lmEigenValue
+              << " dim=" << n << std::endl;
   }
   return {passed, lambdaMin, vMin};
 }
@@ -379,7 +417,6 @@ RiemannianStaircaseResult RiemannianStaircaseOptimizer::optimize() const {
   Values Y = initialValues_;
 
   // ALM must record per-iteration state so we can pull lambdaEq at the end.
-  // shared_ptr-through-const is fine (the pointer is const, not the pointee).
   if (params_.almParams) {
     params_.almParams->storeOptProgress = true;
   }
@@ -390,15 +427,13 @@ RiemannianStaircaseResult RiemannianStaircaseOptimizer::optimize() const {
       std::cout << "[Staircase] rank p = " << p << std::endl;
     }
 
-    // 1. ALM phase: build a fresh QcqpProblem at column dim K = p.
-    const auto almStart = Clock::now();
-    QcqpProblem qcqp_p(graph_, p);
-    AugmentedLagrangianOptimizer alm(qcqp_p, Y, params_.almParams);
+    const auto nlpStart = Clock::now();
+    qcqp_.rebuildAt(p);
+    AugmentedLagrangianOptimizer alm(qcqp_, Y, params_.almParams);
     Y = alm.optimize();
-    result.costPerLevel.push_back(qcqp_p.costs().error(Y));
-    result.almTimePerLevel.push_back(seconds(almStart, Clock::now()));
+    result.costPerLevel.push_back(qcqp_.costs().error(Y));
+    result.nlpTimePerLevel.push_back(seconds(nlpStart, Clock::now()));
 
-    // 2. Verify phase: pull multipliers, assemble certificate, run verify().
     const auto verifyStart = Clock::now();
     if (alm.progress().empty()) {
       throw std::runtime_error(
@@ -410,11 +445,10 @@ RiemannianStaircaseResult RiemannianStaircaseOptimizer::optimize() const {
 
     const Layout layout = Layout::From(Y);
     const Eigen::SparseMatrix<double> S =
-        assembleCertificate(qcqp_p, layout, lambdaEq);
+        assembleCertificate(qcqp_, layout, lambdaEq);
     auto [passed, lambdaMin, vMin] = verify(S);
     result.verifyTimePerLevel.push_back(seconds(verifyStart, Clock::now()));
 
-    result.certifiedPerLevel.push_back(passed);
     result.minEigenvaluePerLevel.push_back(lambdaMin);
     if (params_.verbose) {
       std::cout << "[Staircase] passed=" << (passed ? 1 : 0)
@@ -423,9 +457,6 @@ RiemannianStaircaseResult RiemannianStaircaseOptimizer::optimize() const {
     }
 
     if (passed) {
-      // No lift at the certified level; record 0 to keep all per-level
-      // vectors the same length.
-      result.liftTimePerLevel.push_back(0.0);
       result.values = Y;
       result.finalRank = p;
       result.certified = true;
@@ -434,18 +465,13 @@ RiemannianStaircaseResult RiemannianStaircaseOptimizer::optimize() const {
       return result;
     }
 
-    // 3. Lift phase: saddle escape if we haven't exhausted pMax.
-    const auto liftStart = Clock::now();
     if (p < params_.pMax) {
       Y = escapeSaddleAndLift(Y, vMin, layout, params_.alpha);
     } else {
-      // We were at pMax and failed; surface the last v_min/eig anyway.
       result.minEigenvalue = lambdaMin;
     }
-    result.liftTimePerLevel.push_back(seconds(liftStart, Clock::now()));
   }
 
-  // Hit pMax without certifying.
   result.values = Y;
   result.finalRank = params_.pMax;
   result.certified = false;

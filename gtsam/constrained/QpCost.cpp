@@ -57,6 +57,7 @@ VectorValues DirectVectorValues(const Values& values,
 
 /* ************************************************************************* */
 Matrix ExpandedBlock(const Matrix& block, size_t columns) {
+  if (columns == 1) return block;
   const DenseIndex rows = block.rows();
   const DenseIndex cols = block.cols();
   Matrix expanded = Matrix::Zero(rows * columns, cols * columns);

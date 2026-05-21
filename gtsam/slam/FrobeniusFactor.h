@@ -267,38 +267,27 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
   }
 
   /**
-   * Add this Frobenius between factor as a QCQP cost when traits exist.
-   *
-   * K is the column dimension of the matrix-form QCQP variable (or 1 for
-   * the vec form). Internally we switch K -> compile-time D and dispatch
-   * to qcqpFactorsForD<D>(). The supported range is D in [1, 10] (matches
-   * the default RiemannianStaircase pMax of 10).
+   * Emit QCQP cost + variable constraints for this edge at column dim K.
+   * K == 1 takes the vec(R) form; K >= 2 takes the K-runtime matrix form.
+   * Q is doubled to absorb GTSAM's 0.5 cost convention, so
+   * `qcqp.costs().error(X) == 2 * graph.error(X)`.
    */
   void qcqpFactors(NonlinearFactorGraph* costs,
                    NonlinearEqualityConstraints* constraints,
                    size_t K) const override {
-    switch (K) {
-      case 1:  qcqpFactorsForD<1>(costs, constraints);  break;
-      case 2:  qcqpFactorsForD<2>(costs, constraints);  break;
-      case 3:  qcqpFactorsForD<3>(costs, constraints);  break;
-      case 4:  qcqpFactorsForD<4>(costs, constraints);  break;
-      case 5:  qcqpFactorsForD<5>(costs, constraints);  break;
-      case 6:  qcqpFactorsForD<6>(costs, constraints);  break;
-      case 7:  qcqpFactorsForD<7>(costs, constraints);  break;
-      case 8:  qcqpFactorsForD<8>(costs, constraints);  break;
-      case 9:  qcqpFactorsForD<9>(costs, constraints);  break;
-      case 10: qcqpFactorsForD<10>(costs, constraints); break;
-      default:
-        throw std::runtime_error(
-            "FrobeniusBetweenFactor::qcqpFactors only supports column "
-            "dimensions D in [1, 10]; extend the switch to go higher.");
+    if (K == 0) {
+      throw std::invalid_argument(
+          "FrobeniusBetweenFactor::qcqpFactors: K must be >= 1.");
+    }
+    if (K == 1) {
+      qcqpFactorsForVec(costs, constraints);
+    } else {
+      qcqpFactorsForMatrix(costs, constraints, K);
     }
   }
 
  private:
-  /// Helper used by the D=1 (vec form) branch only: builds the right-product
-  /// matrix R[(c0+0..0+N), (c1+0..1+N)] = R(c1,c0) * I_N so that
-  /// vec(X R) = RightProductMatrix(R) * vec(X) for an Nx N matrix X.
+  /// vec(X R) = RightProductMatrix(R) * vec(X) for N×N matrices X, R.
   static Matrix RightProductMatrix(const Matrix& right) {
     constexpr int AmbientDim = N * N;
     const Matrix I = Matrix::Identity(N, N);
@@ -312,70 +301,112 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
     return result;
   }
 
-  template <int D>
-  void qcqpFactorsForD(NonlinearFactorGraph* costs,
-                       NonlinearEqualityConstraints* constraints) const {
-    if constexpr (!internal::HasQcqpVariableTraits<T, D>::value) {
+  /// Vec(R) form: variable is (N*N)×1, vec(X·R) is linear in vec(X) via
+  /// RightProductMatrix(R). `if constexpr` keeps this compilable for
+  /// T = SO<n> (no QCQP traits) — runtime throw if invoked.
+  void qcqpFactorsForVec(NonlinearFactorGraph* costs,
+                         NonlinearEqualityConstraints* constraints) const {
+    if constexpr (!internal::HasQcqpVariableTraits<T, 1>::value) {
       (void)costs;
       (void)constraints;
       throw std::runtime_error(
           "FrobeniusBetweenFactor::qcqpFactors requires QCQP variable traits "
-          "for this type and column dimension D.");
+          "(traits<T>::QcqpConstraints<1>) for this variable type.");
     } else {
       if (!costs) {
         throw std::invalid_argument(
-            "FrobeniusBetweenFactor::qcqpFactors costs is null");
+            "FrobeniusBetweenFactor::qcqpFactors: costs is null");
       }
       if (std::dynamic_pointer_cast<noiseModel::Robust>(this->noiseModel_) ||
           this->noiseModel_->isConstrained()) {
         throw std::runtime_error(
             "FrobeniusBetweenFactor::qcqpFactors requires a non-robust "
-            "quadratic noise model");
+            "quadratic noise model.");
       }
 
-      InsertQcqpConstraints<T, D>(this->key1(), constraints);
-      InsertQcqpConstraints<T, D>(this->key2(), constraints);
+      InsertQcqpConstraints<T, 1>(this->key1(), constraints);
+      InsertQcqpConstraints<T, 1>(this->key2(), constraints);
+
+      constexpr int AmbientDim = N * N;
+      const Matrix measurement = this->T12_.matrix();
+      const Matrix A = RightProductMatrix(measurement);
+      Matrix B = Matrix::Zero(AmbientDim, 2 * AmbientDim);
+      B.block(0, 0, AmbientDim, AmbientDim) = -A;
+      B.block(0, AmbientDim, AmbientDim, AmbientDim) =
+          Matrix::Identity(AmbientDim, AmbientDim);
+      const Matrix whitenedB = this->noiseModel_->Whiten(B);
+      // 2× absorbs QpCost's 0.5 convention; paper cost is ||residual||^2.
+      const Matrix Q = 2.0 * whitenedB.transpose() * whitenedB;
+      const SymmetricBlockMatrix blockQ(
+          std::vector<DenseIndex>{AmbientDim, AmbientDim}, Q);
+      costs->push_back(std::make_shared<QpCost>(
+          KeyVector{this->key1(), this->key2()}, blockQ, /*columnDim=*/1));
+    }
+  }
+
+  /// Matrix form for K >= 2. K-runtime because the d×d Frobenius Hessian
+  /// Q_ij and the trait's row-orthonormality A_m are both K-invariant;
+  /// QpCost Kronecker-expands them with `columnDim = K`.
+  void qcqpFactorsForMatrix(NonlinearFactorGraph* costs,
+                            NonlinearEqualityConstraints* constraints,
+                            size_t K) const {
+    if constexpr (!internal::HasQcqpIntrinsicDim<T>::value) {
+      (void)costs;
+      (void)constraints;
+      (void)K;
+      throw std::runtime_error(
+          "FrobeniusBetweenFactor::qcqpFactors requires QCQP variable traits "
+          "(traits<T>::QcqpIntrinsicDim) for this variable type.");
+    } else if constexpr (!internal::HasQcqpVariableTraits<
+                             T, traits<T>::QcqpIntrinsicDim>::value) {
+      (void)costs;
+      (void)constraints;
+      (void)K;
+      throw std::runtime_error(
+          "FrobeniusBetweenFactor::qcqpFactors requires QCQP variable traits "
+          "(traits<T>::QcqpConstraints<QcqpIntrinsicDim>) for this variable "
+          "type.");
+    } else {
+      constexpr int RepD = traits<T>::QcqpIntrinsicDim;
+      if (K < static_cast<size_t>(RepD)) {
+        throw std::invalid_argument(
+            "FrobeniusBetweenFactor::qcqpFactorsForMatrix: K must be >= "
+            "traits<T>::QcqpIntrinsicDim (e.g. >= 3 for Rot3).");
+      }
+      if (!costs) {
+        throw std::invalid_argument(
+            "FrobeniusBetweenFactor::qcqpFactorsForMatrix: costs is null");
+      }
+      if (std::dynamic_pointer_cast<noiseModel::Robust>(this->noiseModel_) ||
+          this->noiseModel_->isConstrained()) {
+        throw std::runtime_error(
+            "FrobeniusBetweenFactor::qcqpFactorsForMatrix requires a "
+            "non-robust quadratic noise model.");
+      }
+      const auto isotropic =
+          std::dynamic_pointer_cast<noiseModel::Isotropic>(this->noiseModel_);
+      if (!isotropic) {
+        throw std::runtime_error(
+            "FrobeniusBetweenFactor::qcqpFactorsForMatrix requires an "
+            "isotropic noise model in matrix form (K >= 2).");
+      }
+
+      InsertQcqpConstraints<T, RepD>(this->key1(), constraints);
+      InsertQcqpConstraints<T, RepD>(this->key2(), constraints);
 
       const Matrix measurement = this->T12_.matrix();
       const Matrix I = Matrix::Identity(N, N);
+      const double weight = 1.0 / (isotropic->sigma() * isotropic->sigma());
 
-      if constexpr (D == 1) {
-        // Vec form: variable is the 4-by-1 (Rot2) or 9-by-1 (Rot3) vec(R).
-        // Cost block uses RightProductMatrix to express vec(X*R) linearly.
-        constexpr int AmbientDim = N * N;
-        const Matrix A = RightProductMatrix(measurement);
-        Matrix B = Matrix::Zero(AmbientDim, 2 * AmbientDim);
-        B.block(0, 0, AmbientDim, AmbientDim) = -A;
-        B.block(0, AmbientDim, AmbientDim, AmbientDim) =
-            Matrix::Identity(AmbientDim, AmbientDim);
-        const Matrix whitenedB = this->noiseModel_->Whiten(B);
-        const Matrix Q = whitenedB.transpose() * whitenedB;
-        const SymmetricBlockMatrix blockQ(
-            std::vector<DenseIndex>{AmbientDim, AmbientDim}, Q);
-        costs->push_back(std::make_shared<QpCost>(
-            KeyVector{this->key1(), this->key2()}, blockQ, /*columnDim=*/1));
-      } else {
-        // Matrix form: variable is d-by-D, base block Q_ij is the canonical
-        // d-by-d Frobenius Hessian, and QpCost (columnDim = D) handles the
-        // Kronecker expansion to (d*D x d*D) blocks internally.
-        const auto isotropic =
-            std::dynamic_pointer_cast<noiseModel::Isotropic>(this->noiseModel_);
-        if (!isotropic) {
-          throw std::runtime_error(
-              "FrobeniusBetweenFactor::qcqpFactors requires an isotropic "
-              "noise model in matrix form (D >= 2).");
-        }
-        const double weight = 1.0 / (isotropic->sigma() * isotropic->sigma());
+      Matrix B = Matrix::Zero(N, 2 * N);
+      B.block(0, 0, N, N) = -measurement.transpose();
+      B.block(0, N, N, N) = I;
 
-        Matrix B = Matrix::Zero(N, 2 * N);
-        B.block(0, 0, N, N) = -measurement.transpose();
-        B.block(0, N, N, N) = I;
-
-        const Matrix Q = weight * B.transpose() * B;
-        const SymmetricBlockMatrix blockQ(std::vector<DenseIndex>{N, N}, Q);
-        costs->push_back(std::make_shared<QpCost>(
-            KeyVector{this->key1(), this->key2()}, blockQ, /*columnDim=*/D));
-      }
+      // 2× absorbs QpCost's 0.5 convention; paper cost is ||residual||^2.
+      const Matrix Q = 2.0 * weight * B.transpose() * B;
+      const SymmetricBlockMatrix blockQ(std::vector<DenseIndex>{N, N}, Q);
+      costs->push_back(std::make_shared<QpCost>(
+          KeyVector{this->key1(), this->key2()}, blockQ, /*columnDim=*/K));
     }
   }
 };

@@ -58,11 +58,12 @@ Vector ConstraintError(const QuadraticConstraint& constraint,
   const double sign = SenseSign(constraint.sense());
   if (H) {
     const Matrix gradient =
-        sign * (constraint.A() + constraint.A().transpose()) * X;
+        sign * 0.5 * (constraint.A() + constraint.A().transpose()) * X;
     const Eigen::Map<const Vector> vectorized(gradient.data(), gradient.size());
     (*H)[0] = vectorized.transpose();
   }
-  return Vector1(sign * ((X.transpose() * AX).trace() - constraint.b()));
+  return Vector1(sign *
+                 (0.5 * (X.transpose() * AX).trace() - constraint.b()));
 }
 
 }  // namespace
@@ -73,6 +74,11 @@ QuadraticConstraint::QuadraticConstraint(Key key, const Matrix& A, double b,
     : key_(key), A_(A), b_(b), sense_(sense), sigma_(sigma) {
   if (A_.rows() != A_.cols()) {
     throw std::invalid_argument("QuadraticConstraint: A must be square.");
+  }
+  if (!A_.isApprox(A_.transpose(), 1e-12)) {
+    throw std::invalid_argument(
+        "QuadraticConstraint: A must be symmetric. Pass 0.5*(M + M^T) if "
+        "you have a non-symmetric coefficient matrix.");
   }
   if (sigma_ <= 0.0) {
     throw std::invalid_argument("QuadraticConstraint: sigma must be positive.");

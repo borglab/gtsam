@@ -132,6 +132,15 @@ message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
 # build shared and static versions of the library
 message(STATUS "Building GTSAM - as a ${GTSAM_LIBRARY_TYPE} library")
 
+# LOBPCG verification: compile ILDL sources into libgtsam (cf. ccolamd).
+if(GTSAM_USE_LOBPCG_VERIFICATION)
+  list(APPEND gtsam_srcs ${GTSAM_LOBPCG_SOURCES})
+  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    set_source_files_properties(${GTSAM_LOBPCG_SOURCES}
+      PROPERTIES COMPILE_OPTIONS "${GTSAM_LOBPCG_COMPILE_OPTIONS}")
+  endif()
+endif()
+
 # BUILD_SHARED_LIBS automatically defines static/shared libs
 # Here we ensure we control which type of library gtsam is specifically
 add_library(gtsam ${GTSAM_LIBRARY_TYPE} ${gtsam_srcs})
@@ -161,18 +170,10 @@ if (GTSAM_ENABLE_GPERFTOOLS AND GPERFTOOLS_FOUND)
   target_link_libraries(gtsam PRIVATE ${GPERFTOOLS_TCMALLOC} ${GPERFTOOLS_PROFILER})
 endif()
 
-# LOBPCG-based fast verification (David Rosen's Optimization & Preconditioners libs).
 if(GTSAM_USE_LOBPCG_VERIFICATION)
-  find_library(GTSAM_CHOLMOD_LIB cholmod REQUIRED)
-  find_path(GTSAM_CHOLMOD_INCLUDE_DIR cholmod.h
-    PATHS /usr/include/suitesparse /usr/local/include/suitesparse
-    PATH_SUFFIXES suitesparse)
-  if(NOT GTSAM_CHOLMOD_INCLUDE_DIR)
-    message(FATAL_ERROR "GTSAM_USE_LOBPCG_VERIFICATION=ON but cholmod.h not found. Install libsuitesparse-dev.")
-  endif()
   target_compile_definitions(gtsam PUBLIC GTSAM_USE_LOBPCG_VERIFICATION)
-  target_include_directories(gtsam SYSTEM PRIVATE ${GTSAM_CHOLMOD_INCLUDE_DIR})
-  target_link_libraries(gtsam PRIVATE Optimization ILDL ${GTSAM_CHOLMOD_LIB})
+  target_include_directories(gtsam SYSTEM PRIVATE ${GTSAM_LOBPCG_INCLUDE_DIRS})
+  target_link_libraries(gtsam PRIVATE ${GTSAM_LOBPCG_LINK_LIBRARIES})
 endif()
 
 # Add includes for source directories 'BEFORE' boost and any system include

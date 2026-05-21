@@ -122,6 +122,7 @@ include(cmake/HandleCPack.cmake)            # CPack
 include(cmake/HandleEigen.cmake)            # Eigen3
 include(cmake/HandleMetis.cmake)            # metis
 include(cmake/HandleCephes.cmake)           # cephes
+include(cmake/HandleLOBPCGVerification.cmake)  # Optimization + Preconditioners::ILDL (opt-in)
 include(cmake/HandleMKL.cmake)              # MKL
 include(cmake/HandleOpenMP.cmake)           # OpenMP
 include(cmake/HandlePerfTools.cmake)        # Google perftools

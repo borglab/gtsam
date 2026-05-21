@@ -23,11 +23,14 @@
 namespace gtsam {
 
 /**
- * Scalar quadratic constraint trace(X' A X) - b with a relation sense.
+ * Scalar quadratic constraint `h(X) = 0.5 * trace(X' A X) - b` with a
+ * relation sense. The leading 0.5 makes `A` the Hessian of `h` directly,
+ * so the staircase certificate reads `S = Q + Σ_m λ_m A_m` with no
+ * (A + A^T) symmetrization. `A` must be symmetric.
  *
- * Direct Vector values are treated as one-column matrices. For Matrix values,
- * A is a row-space matrix and the constraint is applied across all columns:
- * trace(X' A X) = <A, X X'>.
+ * Direct Vector values are treated as one-column matrices. For Matrix
+ * values, A is a row-space matrix applied across all columns:
+ * `0.5 * trace(X' A X) = 0.5 * <A, X X'>`.
  */
 class GTSAM_EXPORT QuadraticConstraint {
  public:
@@ -47,34 +50,34 @@ class GTSAM_EXPORT QuadraticConstraint {
   QuadraticConstraint(Key key, const Matrix& A, double b, Sense sense)
       : QuadraticConstraint(key, A, b, sense, 1.0) {}
 
-  /// Create trace(X' A X) - b = 0.
+  /// Create 0.5 * trace(X' A X) - b = 0.
   static QuadraticConstraint Equal(Key key, const Matrix& A, double b) {
     return QuadraticConstraint(key, A, b, Sense::Equal);
   }
 
-  /// Create trace(X' A X) - b = 0 with explicit sigma.
+  /// Create 0.5 * trace(X' A X) - b = 0 with explicit sigma.
   static QuadraticConstraint Equal(Key key, const Matrix& A, double b,
                                    double sigma) {
     return QuadraticConstraint(key, A, b, Sense::Equal, sigma);
   }
 
-  /// Create trace(X' A X) - b <= 0.
+  /// Create 0.5 * trace(X' A X) - b <= 0.
   static QuadraticConstraint LessEqual(Key key, const Matrix& A, double b) {
     return QuadraticConstraint(key, A, b, Sense::LessEqual);
   }
 
-  /// Create trace(X' A X) - b <= 0 with explicit sigma.
+  /// Create 0.5 * trace(X' A X) - b <= 0 with explicit sigma.
   static QuadraticConstraint LessEqual(Key key, const Matrix& A, double b,
                                        double sigma) {
     return QuadraticConstraint(key, A, b, Sense::LessEqual, sigma);
   }
 
-  /// Create trace(X' A X) - b >= 0.
+  /// Create 0.5 * trace(X' A X) - b >= 0.
   static QuadraticConstraint GreaterEqual(Key key, const Matrix& A, double b) {
     return QuadraticConstraint(key, A, b, Sense::GreaterEqual);
   }
 
-  /// Create trace(X' A X) - b >= 0 with explicit sigma.
+  /// Create 0.5 * trace(X' A X) - b >= 0 with explicit sigma.
   static QuadraticConstraint GreaterEqual(Key key, const Matrix& A, double b,
                                           double sigma) {
     return QuadraticConstraint(key, A, b, Sense::GreaterEqual, sigma);
@@ -86,7 +89,7 @@ class GTSAM_EXPORT QuadraticConstraint {
   /// Dense symmetric constraint matrix.
   const Matrix& A() const { return A_; }
 
-  /// Right-hand side of trace(X' A X) = b.
+  /// Right-hand side of 0.5 * trace(X' A X) = b.
   double b() const { return b_; }
 
   /// Return the relation sense.

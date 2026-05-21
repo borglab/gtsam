@@ -13,6 +13,8 @@
  * @file    QcqpProblem.h
  * @brief   QCQP represented as a constrained optimization problem.
  * @author  Frank Dellaert
+ * @author  Zhexin Xu  (xu.zhex@northeastern.edu)
+ * @author  David M. Rosen
  */
 
 #pragma once
@@ -41,6 +43,14 @@ struct HasQcqpVariableTraits<
     std::void_t<
         decltype(traits<T>::template QcqpValue<D>(std::declval<T>())),
         decltype(traits<T>::template QcqpConstraints<D>())>>
+    : std::true_type {};
+
+/// SFINAE probe for traits<T>::QcqpIntrinsicDim.
+template <typename T, typename = void>
+struct HasQcqpIntrinsicDim : std::false_type {};
+
+template <typename T>
+struct HasQcqpIntrinsicDim<T, std::void_t<decltype(traits<T>::QcqpIntrinsicDim)>>
     : std::true_type {};
 
 }  // namespace internal
@@ -98,9 +108,11 @@ void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints) {
     }
   }
 
+  // Halve b: trait emits (A, b) for `trace(X^T A X) = b`, QuadraticConstraint
+  // is `0.5 * trace(X^T A X) - b = 0` — same zero-set with b/2.
   for (const auto& [A, b] : traits<T>::template QcqpConstraints<D>()) {
     constraints->push_back(
-        QuadraticConstraint::Equal(key, A, b).createEqualityFactor());
+        QuadraticConstraint::Equal(key, A, 0.5 * b).createEqualityFactor());
   }
 }
 
@@ -128,24 +140,18 @@ class GTSAM_EXPORT QcqpProblem : public ConstrainedOptProblem {
       : Base(costs, eqConstraints, ineqConstraints) {}
 
   /**
-   * Convert a supported nonlinear factor graph into QCQP costs/constraints
-   * at column dimension K (the matrix-form column count).
-   *
-   * @param K column dimension of every QCQP variable. Each variable has row
-   *   count `traits<T>::QcqpIntrinsicDim` (a per-type constant); K must be
-   *   >= that intrinsic row dim for every variable type in the graph (the
-   *   per-factor `qcqpFactors` enforces this). The Riemannian Staircase
-   *   climbs K starting at the intrinsic row dim.
+   * Convert a supported NonlinearFactorGraph into QCQP costs/constraints at
+   * column dimension K. The QCQP cost matches the paper form
+   * `||residual||^2` — each factor's `qcqpFactors` absorbs GTSAM's 0.5,
+   * giving `problem.costs().error(X) == 2 * graph.error(X)` on feasible X.
+   * K must be >= `traits<T>::QcqpIntrinsicDim` for every variable type.
    */
-  explicit QcqpProblem(const NonlinearFactorGraph& graph, size_t K) {
+  explicit QcqpProblem(const NonlinearFactorGraph& graph, size_t K)
+      : originalGraph_(graph), K_(K) {
     if (K == 0) {
       throw std::invalid_argument("QcqpProblem: K must be >= 1.");
     }
-    for (const auto& factor : graph) {
-      if (factor) {
-        factor->qcqpFactors(&costs_, &eqConstraints_, K);
-      }
-    }
+    rebuildFromOriginalGraph();
   }
 
   /** Add a quadratic cost. */
@@ -156,6 +162,42 @@ class GTSAM_EXPORT QcqpProblem : public ConstrainedOptProblem {
 
   /** Add a quadratic constraint. */
   void addConstraint(const QuadraticConstraint& constraint);
+
+  /// Re-derive costs/constraints from the original graph at a new K. Throws
+  /// if this QcqpProblem was not constructed from a NonlinearFactorGraph.
+  void rebuildAt(size_t K) {
+    if (K == 0) {
+      throw std::invalid_argument("QcqpProblem::rebuildAt: K must be >= 1.");
+    }
+    if (originalGraph_.empty()) {
+      throw std::runtime_error(
+          "QcqpProblem::rebuildAt: no original NonlinearFactorGraph is "
+          "associated with this QcqpProblem. Construct it via "
+          "QcqpProblem(graph, K) to enable staircase rebuilds.");
+    }
+    K_ = K;
+    rebuildFromOriginalGraph();
+  }
+
+  /// Column dimension K the QcqpProblem was last built at; 0 if unknown.
+  size_t K() const { return K_; }
+
+  /// Source graph; empty if assembled via the cost/constraint constructors.
+  const NonlinearFactorGraph& originalGraph() const { return originalGraph_; }
+
+ private:
+  void rebuildFromOriginalGraph() {
+    costs_.resize(0);
+    eqConstraints_.resize(0);
+    for (const auto& factor : originalGraph_) {
+      if (factor) {
+        factor->qcqpFactors(&costs_, &eqConstraints_, K_);
+      }
+    }
+  }
+
+  NonlinearFactorGraph originalGraph_;  ///< source graph; empty if not built from one
+  size_t K_ = 0;                        ///< current column dim
 };
 
 }  // namespace gtsam
