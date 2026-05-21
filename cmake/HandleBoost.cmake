@@ -41,7 +41,7 @@ endif()
 # Set minimum required Boost version and components.
 # Note: Keep this in sync with vcpkg.json.
 # optional, program_options, random, range are all used in tests/examples/Python, but are not library dependencies. timer/chrono is used conditionally.
-# concept_check, fusion, move, phoenix, pool, smart_ptr, spirit, tokenizer, type_traits, optional, range are header only and are not components.
+# concept_check, move, pool, smart_ptr, tokenizer, type_traits, optional, range are header only and are not components.
 set(BOOST_FIND_MINIMUM_VERSION 1.70)
 set(BOOST_FIND_MINIMUM_COMPONENTS graph serialization program_options random timer chrono)
 

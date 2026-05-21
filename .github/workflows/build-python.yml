@@ -4,6 +4,7 @@ name: Python CI
 # instead of under 'pull_request:'. Otherwise, the check is still required but
 # never runs, and a maintainer must bypass the check in order to merge the PR.
 on:
+  workflow_dispatch: 
   pull_request:
     paths-ignore:
       - '**.md'

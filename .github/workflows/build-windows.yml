@@ -1,6 +1,7 @@
 name: Windows CI
 
 on:
+  workflow_dispatch:
   pull_request:
     paths-ignore:
       - '**.md'
