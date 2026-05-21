@@ -80,10 +80,15 @@ void EqVIOFilter::initializeFromIMU(const IMUInput& imu) {
   Vector3 approxGravity = imu.acc;
   if (approxGravity.norm() < 1e-9) approxGravity = Vector3::UnitZ();
 
-  /// Sets the rotation from two vectors -> avoids Eigen warning
   const Unit3 measuredGravity(approxGravity.normalized());
   const Unit3 worldGravity(Vector3::UnitZ());
-  const Rot3 R0 = Rot3::AlignPair(worldGravity, measuredGravity, worldGravity);
+  const double alignment = worldGravity.dot(measuredGravity);
+  /// Setup avoids triggering Eigen uninitialized errors in GCC 13
+  const Rot3 R0 =
+      alignment > 0.999999999
+          ? Rot3()
+          : Rot3::AlignPair(worldGravity.cross(measuredGravity), worldGravity,
+                            measuredGravity);
   xi_ref.kinematics = Se23(R0, Vector3::Zero(), Point3::Zero());
   initialized_ = true;
   resetReferenceAndGroup(xi_ref, errorCovariance(), groupEstimate());
