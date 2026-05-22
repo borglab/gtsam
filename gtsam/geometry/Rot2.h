@@ -253,6 +253,14 @@ namespace gtsam {
 
 template <>
 struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
+  // The three members below extend upstream Rot2's traits with a column-
+  // dimension-parametric QCQP representation. They let QcqpProblem emit the
+  // matrix-form Rot2 variable at any column dim K ≥ 2, where K plays the
+  // role of the rank of whatever low-rank factorization is applied to
+  // Shor's SDP relaxation. The canonical use is Burer-Monteiro inside the
+  // Riemannian Staircase.
+  // Upstream GTSAM's Rot2 traits had no QCQP-related members.
+
   /// Row dimension d of the matrix-form QCQP variable for Rot2 (SO(2)).
   /// The Riemannian Staircase climbs the column dim D starting at
   /// D = QcqpIntrinsicDim and grows it level by level via the lift.
@@ -263,10 +271,10 @@ struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
    *
    * D=1 is vectorized SO(2) as a 4-by-1 matrix (column-major vec of R).
    * D>=2 returns a 2-by-D matrix where the leftmost two columns hold R^T
-   * (the natural Stiefel embedding of R in St(D, 2)) and any remaining
-   * D-2 columns are zero. D=2 is the natural matrix form (the base of
-   * the Riemannian Staircase ladder); higher D corresponds to the
-   * Burer-Monteiro lift one level up.
+   * (the natural row-orthonormal embedding of R into a 2-by-D matrix) and
+   * any remaining D-2 columns are zero. D=2 is the natural matrix form
+   * (the base of the Riemannian Staircase ladder); higher D corresponds
+   * to the Burer-Monteiro lift one level up.
    */
   template <int D = 1>
   static Matrix QcqpValue(const Rot2& value) {

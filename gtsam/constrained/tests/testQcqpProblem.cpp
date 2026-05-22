@@ -11,8 +11,19 @@
 
 /**
  * @file    testQcqpProblem.cpp
- * @brief   Unit tests for QCQP constrained optimization problems.
+ * @brief   Unit tests for QcqpProblem and the QCQP trait API.
+ *
+ * Covers:
+ *  - QpCost row-space trace formula (vector and matrix variants);
+ *  - QuadraticConstraint equality / ≤ / ≥ semantics;
+ *  - QcqpProblem evaluate + ALM on mixed linear / quadratic constraints;
+ *  - FrobeniusBetweenFactor<Rot2|Rot3> → QCQP conversion at multiple K;
+ *  - The D-templated QcqpValue / QcqpConstraints / QcqpIntrinsicDim traits,
+ *    including D-padding, D-independence of constraints, vec form (D=1),
+ *    and rejection of nonsensical D (Rot3 at D=2).
+ *
  * @author  Frank Dellaert
+ * @author  Zhexin Xu
  */
 
 #include <CppUnitLite/TestHarness.h>
@@ -56,7 +67,8 @@ double DirectTraceCost(const SymmetricBlockMatrix& Q, const Matrix& X0,
                 (X1.transpose() * Q.block(1, 1) * X1).trace());
 }
 
-// Verifies vector values match the usual quadratic error.
+// QpCost on a single Vector key reduces to the standard 0.5*x'Qx quadratic
+// — i.e. when K=1 the row-space trace formula collapses to the scalar form.
 TEST(QpCost, RowSpaceVectorError) {
   Matrix Q = Matrix::Zero(8, 8);
   Q.diagonal() << 1.0, 2.0, 3.0, 4.0, 1.5, 2.5, 3.5, 4.5;
@@ -75,7 +87,9 @@ TEST(QpCost, RowSpaceVectorError) {
   EXPECT_DOUBLES_EQUAL(0.5 * x.dot(Q * x), factor.error(values), 1e-12);
 }
 
-// Verifies two-column matrix values use the row-space trace formula.
+// At K=2 the per-key block becomes a 2-column matrix; QpCost must use the
+// row-space trace formula 0.5*Σ trace(X_i' Q_ij X_j), not naively dot the
+// flattened vector against Q. Cross-check against the explicit double-sum.
 TEST(QpCost, RowSpaceMatrixErrorD2) {
   Matrix Q = Matrix::Zero(5, 5);
   Q.diagonal() << 1.0, 2.0, 3.0, 4.0, 5.0;
@@ -92,7 +106,9 @@ TEST(QpCost, RowSpaceMatrixErrorD2) {
                        1e-12);
 }
 
-// Verifies three-column matrix values use the same row-space trace formula.
+// The row-space trace formula is K-independent. A K=3 check guards against
+// a stride bug that would only show up when the column count differs from
+// the K=2 case above (e.g. a Kronecker that wires in K, not the block dim).
 TEST(QpCost, RowSpaceMatrixErrorD3) {
   Matrix Q = Matrix::Zero(4, 4);
   Q.diagonal() << 1.0, 2.0, 3.0, 4.0;
@@ -110,7 +126,9 @@ TEST(QpCost, RowSpaceMatrixErrorD3) {
                        1e-12);
 }
 
-// Verifies matrix-valued QCQP costs linearize to an exact Hessian factor.
+// QpCost is exactly quadratic in X, so linearize() must return a Hessian
+// factor whose error agrees with the original at any perturbation around the
+// linearization point — to machine precision. ALM relies on this exactness.
 TEST(QpCost, RowSpaceLinearizeExact) {
   Matrix Q = Matrix::Zero(4, 4);
   Q.diagonal() << 1.0, 2.0, 3.0, 4.0;
@@ -150,9 +168,10 @@ Values VectorValue(const Vector& x) {
   return values;
 }
 
-// Verifies vector-valued quadratic constraints use the 0.5 * x' A x form.
-// QuadraticConstraint stores `b` such that h(X) = 0.5*trace(X'AX) - b, so
-// the constraint set ||x||^2 = 5 is encoded with b = 2.5.
+// QuadraticConstraint encodes h(X) = 0.5·trace(X'AX) - b. The 0.5 is the
+// Lagrangian convention (h's gradient at X is then A·X, not 2·A·X) — easy to
+// get wrong. Check that ‖x‖² = 5 must be stored as b = 2.5 to evaluate
+// feasible.
 TEST(QuadraticConstraint, VectorFeasible) {
   const Matrix A = Matrix::Identity(2, 2);
   const QuadraticConstraint constraint = QuadraticConstraint::Equal(x0, A, 2.5);
@@ -162,8 +181,9 @@ TEST(QuadraticConstraint, VectorFeasible) {
   EXPECT_DOUBLES_EQUAL(0.0, factor->unwhitenedError(values)(0), 1e-12);
 }
 
-// Verifies a quadratic matrix equality evaluates to zero when satisfied.
-// Constraint: ||row 0 of X||^2 = 1, encoded as 0.5*trace = 0.5.
+// Sparse-A case: A picks out one row. ‖row 0‖² = 1 ⇒ b = 0.5. Catches a
+// regression where the trace formula sums over all rows instead of the
+// row(s) selected by A.
 TEST(QuadraticConstraint, Feasible) {
   Matrix A = Matrix::Zero(2, 2);
   A(0, 0) = 1.0;
@@ -174,8 +194,9 @@ TEST(QuadraticConstraint, Feasible) {
   EXPECT_DOUBLES_EQUAL(0.0, factor->unwhitenedError(values)(0), 1e-12);
 }
 
-// Verifies a quadratic matrix equality reports the expected scalar violation.
-// Constraint ||row 0||^2 = 1, X has ||row 0||^2 = 2, so h = 0.5*(2-1) = 0.5.
+// The signed violation must equal 0.5·(actual − target). ‖row 0‖² = 2 with
+// b = 0.5 ⇒ h = 0.5·(2 − 1) = 0.5. Guards against an off-by-2 from confusing
+// h with the unnormalized residual trace(X'AX) − 2b.
 TEST(QuadraticConstraint, Infeasible) {
   Matrix A = Matrix::Zero(2, 2);
   A(0, 0) = 1.0;
@@ -187,8 +208,9 @@ TEST(QuadraticConstraint, Infeasible) {
   EXPECT_DOUBLES_EQUAL(0.5, factor->unwhitenedError(values)(0), 1e-12);
 }
 
-// Verifies <= constraints ramp only positive signed violations.
-// Constraint ||row 0||^2 <= 1, encoded as 0.5*trace - 0.5 <= 0.
+// Inequality factor ramps only the *signed* expression: satisfied side reads
+// out as the raw value (negative when feasible), but `error()` clips it to 0.
+// Catches a sign flip that would penalize the satisfied side.
 TEST(QuadraticConstraint, LessEqualViolation) {
   Matrix A = Matrix::Zero(2, 2);
   A(0, 0) = 1.0;
@@ -208,8 +230,9 @@ TEST(QuadraticConstraint, LessEqualViolation) {
                        1e-12);
 }
 
-// Verifies >= constraints are represented by negating the stored expression.
-// Constraint ||row 0||^2 >= 1, encoded with b = 0.5.
+// `≥` is represented as the negation of the `≤` expression — so the same
+// b=0.5 constraint flips which side ramps. Mirrors the test above to catch
+// a missing sign on the GreaterEqual factory.
 TEST(QuadraticConstraint, GreaterEqualViolation) {
   Matrix A = Matrix::Zero(2, 2);
   A(0, 0) = 1.0;
@@ -241,7 +264,10 @@ Values ProblemValues() {
   return values;
 }
 
-// Verifies QcqpProblem evaluates direct vector-valued costs and constraints.
+// QcqpProblem.evaluate() must thread through the cost graph and *both*
+// constraint containers (eq + ineq), reporting separate violation norms.
+// Use the trivial unit-vector-on-the-sphere case to keep expected values
+// hand-computable.
 TEST(QcqpProblem, EvaluateVectorValues) {
   const Matrix Q = Matrix::Identity(2, 2);
   QcqpProblem problem;
@@ -259,7 +285,9 @@ TEST(QcqpProblem, EvaluateVectorValues) {
   EXPECT_DOUBLES_EQUAL(0.0, ineqViolation, 1e-12);
 }
 
-// Verifies QcqpProblem evaluates manually assembled costs and constraints.
+// Same as above, but with a manually assembled matrix-form cost and a 2-key
+// trace-1 constraint on x0. Verifies the matrix-form path against the
+// reference DirectTraceCost helper.
 TEST(QcqpProblem, Evaluate) {
   Matrix Q = Matrix::Zero(4, 4);
   Q.diagonal() << 1.0, 2.0, 3.0, 4.0;
@@ -288,7 +316,11 @@ TEST(QcqpProblem, Evaluate) {
   EXPECT_DOUBLES_EQUAL(0.0, ineqViolation, 1e-12);
 }
 
-// Verifies ALM optimizes QCQPs with mixed linear/quadratic constraints.
+// End-to-end ALM smoke test on a small QCQP that mixes both constraint
+// kinds (linear eq / linear ineq / quadratic eq / quadratic ineq). The
+// minimizer is (1, 0). Confirms ALM converges to feasibility on *all four*
+// containers — a regression here usually means a constraint container was
+// missed in the AL gradient assembly.
 TEST(QcqpProblem, OptimizeAugmentedLagrangianMixedConstraints) {
   QcqpProblem problem;
 
@@ -359,7 +391,9 @@ bool ThrowsMissingQcqpTraits(const NonlinearFactorGraph& graph) {
   return false;
 }
 
-// Verifies unsupported factors still reject QCQP conversion.
+// A factor that does not implement `qcqpFactors` (here: stock
+// BetweenFactor<Rot2>) must be rejected at construction — silently dropping
+// it would yield a QCQP missing measurement terms.
 TEST(QcqpProblem, UnsupportedFactorThrows) {
   NonlinearFactorGraph graph;
   graph.emplace_shared<BetweenFactor<Rot2>>(x0, x1, Rot2::fromAngle(0.1));
@@ -367,7 +401,9 @@ TEST(QcqpProblem, UnsupportedFactorThrows) {
   CHECK_EXCEPTION({ QcqpProblem problem(graph, /*K=*/2); }, std::runtime_error);
 }
 
-// Verifies missing QCQP variable traits produce a generic conversion error.
+// FrobeniusBetweenFactor<SO3> defines qcqpFactors() but SO3 has no QCQP
+// trait (we only specialize on Rot2 / Rot3). The conversion must surface a
+// trait-specific error, not a generic linearization failure.
 TEST(QcqpProblem, MissingQcqpTraitsThrows) {
   NonlinearFactorGraph graph;
   graph.emplace_shared<FrobeniusBetweenFactor<SO3>>(
@@ -376,9 +412,9 @@ TEST(QcqpProblem, MissingQcqpTraitsThrows) {
   EXPECT(ThrowsMissingQcqpTraits(graph));
 }
 
-// Verifies one Rot2 Frobenius factor converts exactly at the natural matrix
-// form (D=2). The matrix-form Frobenius cost equals the manifold-form
-// Frobenius cost (both are 0.5 ||R1 - R0 R12||_F^2).
+// QCQP-conversion invariant: at K = d (the manifold's intrinsic dim), the
+// matrix-form cost must equal the manifold-form Frobenius cost. The 2× on
+// `graph.error(values)` recovers the paper convention from GTSAM's ½-NLL.
 TEST(QcqpProblem, SingleFrobeniusBetweenFactor) {
   NonlinearFactorGraph graph;
   graph.emplace_shared<FrobeniusBetweenFactor<Rot2>>(x0, x1,
@@ -430,7 +466,10 @@ Values RingQcqpValues(size_t numPoses, double delta, double perturbation) {
   return values;
 }
 
-// Verifies a Rot2 ring graph preserves cost and constraints at K=2.
+// Multi-key, multi-factor invariant: on a Rot2 ring at K=2, the assembled
+// QCQP cost equals the manifold cost and the row-orthonormality constraints
+// are already feasible at the manifold-form values. Tests the multi-factor
+// assembly path that the single-factor test doesn't exercise.
 TEST(QcqpProblem, Rot2RingPgo) {
   constexpr size_t N = 5;
   constexpr double delta = 2.0 * M_PI / static_cast<double>(N);
@@ -446,7 +485,10 @@ TEST(QcqpProblem, Rot2RingPgo) {
                        1e-12);
 }
 
-// Verifies the constrained optimizer still reduces a Rot2 QCQP ring problem.
+// Cheap ALM smoke on the Rot2 ring: just 5 iterations should already drive
+// the constraint norm down without growing the cost. A regression here
+// usually means the ALM gradient is missing the QcqpProblem's constraint
+// terms entirely.
 TEST(QcqpProblem, AugmentedLagrangianOptimizerRot2Ring) {
   constexpr size_t N = 5;
   constexpr double delta = 2.0 * M_PI / static_cast<double>(N);
@@ -496,7 +538,9 @@ double DirectQcqpBetweenCost(const Rot2& R0, const Rot2& R1,
   return residual.squaredNorm();
 }
 
-// Verifies the D=2 Rot2 QCQP variable is row-orthonormal and feasible.
+// QcqpValue<Rot2,2>(R) returns R^T (row-orthonormal). At this natural rank,
+// the trait's constraints reduce to X X^T = I and must report zero
+// violation. This is the contract every higher-K case extends.
 TEST(QcqpProblem, Rot2D2QcqpValueConstraints) {
   const Rot2 R = Rot2::fromAngle(0.3);
   const Matrix X = traits<Rot2>::template QcqpValue<2>(R);
@@ -512,9 +556,10 @@ TEST(QcqpProblem, Rot2D2QcqpValueConstraints) {
   EXPECT_DOUBLES_EQUAL(0.0, constraints.violationNorm(values), 1e-12);
 }
 
-// Verifies the D=3 Rot2 QCQP variable is 2x3 row-orthonormal, and that the
-// constraint set is D-independent (the same 3 row-ortho 2x2 constraints
-// apply at D=2 and D=3 — only the Kronecker expansion in QpCost changes).
+// Staircase climb invariant: the set of small 2×2 row-ortho constraints
+// returned by QcqpConstraints<Rot2,K> must NOT depend on K. The K
+// dependence belongs in QpCost's Kronecker, not in the constraint set —
+// otherwise the constraint count would grow with the rank.
 TEST(QcqpProblem, Rot2D3QcqpValueConstraints) {
   const Rot2 R = Rot2::fromAngle(-0.4);
   const Matrix X = traits<Rot2>::template QcqpValue<3>(R);
@@ -538,7 +583,10 @@ TEST(QcqpProblem, Rot2D3QcqpValueConstraints) {
   EXPECT_DOUBLES_EQUAL(0.0, constraints.violationNorm(values), 1e-12);
 }
 
-// Verifies D=2 row-space Frobenius conversion matches the manifold factor.
+// Same conversion invariant as SingleFrobeniusBetweenFactor above, but
+// asserted against named R0/R1 and a non-trivial measurement, so the test
+// also doubles as a worked example of how to lift a Rot2 manifold value
+// into the QCQP-form matrix variable.
 TEST(QcqpProblem, Rot2FrobeniusBetweenFactorD2) {
   const Rot2 measured = Rot2::fromAngle(0.4);
   const Rot2 R0 = Rot2::fromAngle(0.3);
@@ -560,7 +608,10 @@ TEST(QcqpProblem, Rot2FrobeniusBetweenFactorD2) {
                        1e-12);
 }
 
-// Verifies D=3 Frobenius conversion matches the manifold factor.
+// K = d + 1 (= 3 here): the staircase has lifted by one. The QCQP cost
+// must still equal the manifold cost because the lift only pads with zeros.
+// Cross-check both against the GTSAM manifold form and against the direct
+// row-space residual formula (catches a wrong-axis Kronecker).
 TEST(QcqpProblem, Rot2FrobeniusBetweenFactorD3) {
   const Rot2 measured = Rot2::fromAngle(0.4);
   const Rot2 R0 = Rot2::fromAngle(0.3);
@@ -610,7 +661,9 @@ double DirectRot3QcqpBetweenCost(const Rot3& R0, const Rot3& R1,
   return residual.squaredNorm();
 }
 
-// Verifies the D=3 Rot3 QCQP variable is row-orthonormal and feasible.
+// Rot3 trait contract at the natural rank d=3: QcqpValue is R^T, the trait
+// emits exactly 6 row-orthonormality constraints (3 unit norms + 3
+// orthogonalities), and the matrix form starts feasible.
 TEST(QcqpProblem, Rot3D3QcqpValueConstraints) {
   const Rot3 R = Rot3::Expmap((Vector3() << 0.4, -0.1, 0.7).finished());
   const Matrix X = traits<Rot3>::template QcqpValue<3>(R);
@@ -629,7 +682,10 @@ TEST(QcqpProblem, Rot3D3QcqpValueConstraints) {
   EXPECT_DOUBLES_EQUAL(0.0, constraints.violationNorm(values), 1e-12);
 }
 
-// Verifies D=3 row-space Frobenius conversion matches the manifold factor.
+// Rot3 conversion at the natural rank. Same contract as the Rot2 D=2 case
+// — the matrix-form Frobenius cost must equal the manifold Frobenius cost
+// (× 2 for paper convention). Cross-check against the direct row-space
+// residual to catch tangent-axis-vs-row-axis swaps.
 TEST(QcqpProblem, Rot3FrobeniusBetweenFactorD3) {
   const Rot3 measured = Rot3::Expmap((Vector3() << 0.2, 0.1, -0.3).finished());
   const Rot3 R0 = Rot3::Expmap((Vector3() << 0.05, 0.10, 0.15).finished());
@@ -654,8 +710,11 @@ TEST(QcqpProblem, Rot3FrobeniusBetweenFactorD3) {
                        1e-12);
 }
 
-// Rot3 rejects matrix-form K=2: a 2-row Stiefel embedding has no meaning for
-// SO(3). The throw originates inside traits<Rot3>::QcqpConstraints<2>().
+// pMin = d for the staircase to even start. For Rot3 that means K ≥ 3 —
+// at K = 2 the matrix form would be 3-by-2, which can't host R^T (3×3)
+// and can't satisfy the row-orthonormality X X^T = I_3 (rank 2 < 3). The
+// trait must surface this at QCQP construction, not later inside ALM
+// where the diagnosis would be obscure.
 TEST(QcqpProblem, Rot3K2Rejected) {
   NonlinearFactorGraph graph;
   graph.emplace_shared<FrobeniusBetweenFactor<Rot3>>(
@@ -668,23 +727,30 @@ TEST(QcqpProblem, Rot3K2Rejected) {
 /* ************************************************************************* */
 namespace QcqpDApiFixture {
 
-// Coverage of the D-templated QCQP trait API across both forms:
-//   - Vec form (D=1): 4x1 (Rot2) / 9x1 (Rot3) vectorized R.
-//   - Matrix form (D >= 2 for Rot2, D >= 3 for Rot3): d-by-D Stiefel
-//     embedding; QcqpProblem dispatches the runtime column dim K to a
-//     compile-time D via the switch in FrobeniusBetweenFactor::qcqpFactors.
+// The QCQP trait API has two distinct branches:
+//   - Vec form (D = 1): vectorize R into a 4×1 (Rot2) or 9×1 (Rot3) variable
+//     with constraints encoded in 4×4 / 9×9 matrices. Older form, kept for
+//     non-Frobenius polynomial relaxations.
+//   - Matrix form (D ≥ d): d×D row-orthonormal representation. The
+//     staircase walks this branch — QcqpProblem dispatches the runtime
+//     column count K onto a compile-time D via the switch in
+//     FrobeniusBetweenFactor::qcqpFactors.
+// The tests below pin both branches' contracts.
 
 const Key x0 = Symbol('x', 0);
 
-// QcqpIntrinsicDim is a compile-time constant per type (2 for Rot2, 3 for
-// Rot3). Consumers use it to size the starting rung of the staircase ladder.
+// Sanity: the trait's compile-time intrinsic dim must match SO(d)'s ambient
+// dimension. The staircase reads this to size pMin and to pick the rounding
+// rank d. A wrong value here silently breaks both.
 TEST(QcqpProblem, IntrinsicDimConstants) {
   LONGS_EQUAL(2, traits<Rot2>::QcqpIntrinsicDim);
   LONGS_EQUAL(3, traits<Rot3>::QcqpIntrinsicDim);
 }
 
-// Higher-D matrix forms zero-pad the columns beyond QcqpIntrinsicDim while
-// preserving row-orthonormality (X X^T = R^T R = I_d, independent of pads).
+// Climbing the staircase lifts X by appending a zero column. Verify across
+// D = 2, 3, 5 that (a) the left d cols equal R^T, (b) the remaining cols are
+// exactly zero, and (c) X X^T = I_d at every D. This is the *only* lift
+// behavior the staircase's escapeSaddleAndLift relies on.
 TEST(QcqpProblem, Rot2QcqpValueDPaddingD2D3D5) {
   const Rot2 R = Rot2::fromAngle(0.7);
   const Matrix2 Rt = R.matrix().transpose();
@@ -742,9 +808,10 @@ TEST(QcqpProblem, Rot3QcqpValueDPaddingD3D4D6) {
   EXPECT(assert_equal(Matrix(Matrix3::Identity()), X6 * X6.transpose(), 1e-12));
 }
 
-// Matrix-form constraints are D-independent in structure (the same 3 row-
-// ortho 2x2 matrices for Rot2; 6 3x3 matrices for Rot3 — only QpCost's
-// Kronecker expansion depends on D).
+// The constraint set in QcqpConstraints<RotT, D> describes X X^T = I_d and
+// is therefore D-independent in *structure* — only QpCost's Kronecker pulls
+// in D. Verify the d×d A blocks and their `b` targets are byte-equal across
+// D for Rot2 (and for Rot3 in the next test).
 TEST(QcqpProblem, Rot2QcqpConstraintsAreDIndependent) {
   const auto cs2 = traits<Rot2>::template QcqpConstraints<2>();
   const auto cs3 = traits<Rot2>::template QcqpConstraints<3>();
@@ -773,9 +840,11 @@ TEST(QcqpProblem, Rot3QcqpConstraintsAreDIndependent) {
   }
 }
 
-// Vec form (D=1) is preserved and exercises a different polynomial relaxation
-// than the matrix form. Its shape and feasibility constraints are unchanged
-// from the original implementation.
+// Vec form (D = 1) is a separate code path from the matrix form. Verify it
+// still produces a 4-vector for Rot2 with the documented constraint count
+// (2 col-unit-norm + 1 col-ortho + 1 det = +1) and that the column-major
+// reshape round-trips back to R. Catches regressions where matrix-form
+// changes accidentally rewire the vec path.
 TEST(QcqpProblem, Rot2VecFormD1) {
   const Rot2 R = Rot2::fromAngle(0.3);
   const Matrix X = traits<Rot2>::template QcqpValue<1>(R);
@@ -813,7 +882,9 @@ TEST(QcqpProblem, Rot3VecFormD1) {
   }
 }
 
-// Rot3 traits reject D=2 (a 2-row Stiefel embedding has no meaning for SO(3)).
+// Direct trait-level rejection of D = 2 for Rot3. Complements Rot3K2Rejected
+// (which tests the same thing one level up at QcqpProblem construction); if
+// only the trait test fails, the higher-level guard is masking the bug.
 TEST(QcqpProblem, Rot3D2Throws) {
   const Rot3 R = Rot3::Expmap(Vector3::Zero());
   CHECK_EXCEPTION(traits<Rot3>::template QcqpValue<2>(R),
@@ -822,9 +893,10 @@ TEST(QcqpProblem, Rot3D2Throws) {
                   std::invalid_argument);
 }
 
-// QcqpProblem(graph, K) dispatches runtime K to compile-time D. Test a
-// representative wider K (D=4) end-to-end for both Rot2 and Rot3, verifying
-// the same Frobenius cost equals the manifold-form cost.
+// Runtime K → compile-time D dispatch lives inside qcqpFactors's switch.
+// We've already tested K = d and K = d + 1; this one pins K = d + 2 (= 4)
+// to make sure the switch covers the wider rungs of the ladder for both
+// rotation types. A typo in one switch case would show up here.
 TEST(QcqpProblem, Rot2FrobeniusBetweenFactorD4) {
   const Rot2 measured = Rot2::fromAngle(0.4);
   const Rot2 R0 = Rot2::fromAngle(0.3);
@@ -874,6 +946,7 @@ TEST(QcqpProblem, Rot3FrobeniusBetweenFactorD4) {
 }
 
 }  // namespace QcqpDApiFixture
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;

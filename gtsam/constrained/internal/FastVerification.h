@@ -13,9 +13,9 @@
  * @file    FastVerification.h
  * @brief   LOBPCG + ILDL minimum-eigenpair check for the dual certificate
  *          matrix S. Implements the accelerated preconditioned-eigensolver
- *          scheme of Rosen, IEEE RA-L 7(4):12507–12514, 2022.
- * @author  Zhexin Xu     (xu.zhex@northeastern.edu)
+ *          scheme of David M. Rosen, IEEE RA-L 7(4):12507–12514, 2022.
  * @author  David M. Rosen
+ * @author  Zhexin Xu
  *
  * Dependencies (configured by HandleLOBPCGVerification.cmake when
  * GTSAM_USE_LOBPCG_VERIFICATION=ON):

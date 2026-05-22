@@ -136,6 +136,12 @@ Matrix RiemannianStaircaseOptimizer::Layout::stack(const Values& values) const {
   return Y;
 }
 
+size_t RiemannianStaircaseOptimizer::Layout::maxRowDim() const {
+  size_t m = 0;
+  for (const auto& [_, slice] : slices) m = std::max(m, slice.rowDim);
+  return m;
+}
+
 Values RiemannianStaircaseOptimizer::Layout::unstack(const Matrix& Y) const {
   if (static_cast<size_t>(Y.rows()) != totalDim) {
     throw std::invalid_argument(
@@ -287,7 +293,7 @@ RiemannianStaircaseOptimizer::verifyLOBPCG(
       S, params_.eta, params_.nx, theta, v, numIters, params_.maxLOBPCGIters,
       params_.maxFillFactor, params_.dropTol);
   if (params_.verbose) {
-    std::cout << "  [fast_verification] passed=" << (passed ? 1 : 0)
+    std::cout << "  [fast_verification] verified=" << (passed ? 1 : 0)
               << " theta=" << theta << " iters=" << numIters << std::endl;
   }
   // On Cholesky success, v is never written — pad with zeros so callers can
@@ -322,7 +328,7 @@ RiemannianStaircaseOptimizer::verifyDenseEigen(
   const Vector vMin = es.eigenvectors().col(0);
   const bool passed = (lambdaMin >= -params_.eta);
   if (params_.verbose) {
-    std::cout << "  [dense Eigen] passed=" << (passed ? 1 : 0)
+    std::cout << "  [dense Eigen] verified=" << (passed ? 1 : 0)
               << " lambda_min=" << lambdaMin << " dim=" << S.rows()
               << std::endl;
   }
@@ -398,7 +404,7 @@ RiemannianStaircaseOptimizer::verifySpectra(
 
   const bool passed = (lambdaMin >= -params_.eta);
   if (params_.verbose) {
-    std::cout << "  [Spectra] passed=" << (passed ? 1 : 0)
+    std::cout << "  [Spectra] verified=" << (passed ? 1 : 0)
               << " lambda_min=" << lambdaMin << " lambda_max=" << lmEigenValue
               << " dim=" << n << std::endl;
   }
@@ -416,6 +422,25 @@ RiemannianStaircaseResult RiemannianStaircaseOptimizer::optimize() const {
   RiemannianStaircaseResult result;
   Values Y = initialValues_;
 
+  // Normalize initial values to pMin columns. Callers can't write
+  // `InsertQcqpValue<RotT, pMin>` because D is compile-time; they typically
+  // supply (rowDim × intrinsicDim) matrices. If pMin > intrinsicDim, the
+  // QCQP cost (built at K = pMin) would otherwise see a value of the wrong
+  // flattened length and QpCost would throw. Zero-pad the right cols here so
+  // any pMin ≥ intrinsicDim "just works".
+  for (const auto& [key, X] : initialValues_.extract<Matrix>()) {
+    const size_t cols = static_cast<size_t>(X.cols());
+    if (cols == params_.pMin) continue;
+    if (cols > params_.pMin) {
+      throw std::invalid_argument(
+          "RiemannianStaircaseOptimizer::optimize: initial value has more "
+          "columns than pMin; either lower pMin or drop the extra columns.");
+    }
+    Matrix padded = Matrix::Zero(X.rows(), params_.pMin);
+    padded.leftCols(static_cast<DenseIndex>(cols)) = X;
+    Y.update(key, padded);
+  }
+
   // ALM must record per-iteration state so we can pull lambdaEq at the end.
   if (params_.almParams) {
     params_.almParams->storeOptProgress = true;
@@ -424,24 +449,34 @@ RiemannianStaircaseResult RiemannianStaircaseOptimizer::optimize() const {
   for (size_t p = params_.pMin; p <= params_.pMax; ++p) {
     result.ranksVisited.push_back(p);
     if (params_.verbose) {
-      std::cout << "[Staircase] rank p = " << p << std::endl;
+      std::cout << "Staircase at rank = " << p << std::endl;
     }
 
+    // ── INNER SOLVER ────────────────────────────────────────────────────────
+    // Solve the BM problem at rank p and return (Y*, λ_KKT). The staircase
+    // contract on the inner solver is:
+    //   1. minimize the QCQP cost subject to the equality constraints, and
+    //   2. produce Lagrange multipliers `lambdaEq` aligned with
+    //      `qcqp.eConstraints()` (one Vector1 per equality factor).
+    // ALM is the current implementation; a Riemannian Trust-Region or other
+    // KKT-converging solver can be swapped in by replacing the next 5 lines
+    // — the rest of the staircase consumes only (Y, lambdaEq).
     const auto nlpStart = Clock::now();
     qcqp_.rebuildAt(p);
     AugmentedLagrangianOptimizer alm(qcqp_, Y, params_.almParams);
     Y = alm.optimize();
-    result.costPerLevel.push_back(qcqp_.costs().error(Y));
-    result.nlpTimePerLevel.push_back(seconds(nlpStart, Clock::now()));
-
-    const auto verifyStart = Clock::now();
     if (alm.progress().empty()) {
       throw std::runtime_error(
           "RiemannianStaircaseOptimizer::optimize: ALM produced no progress; "
           "did you set storeOptProgress on the params?");
     }
-    const auto& finalState = alm.progress().back();
-    const auto& lambdaEq = finalState.lambdaEq;
+    const auto& lambdaEq = alm.progress().back().lambdaEq;
+    // ── END INNER SOLVER ────────────────────────────────────────────────────
+
+    result.costPerLevel.push_back(qcqp_.costs().error(Y));
+    result.nlpTimePerLevel.push_back(seconds(nlpStart, Clock::now()));
+
+    const auto verifyStart = Clock::now();
 
     const Layout layout = Layout::From(Y);
     const Eigen::SparseMatrix<double> S =
@@ -451,16 +486,21 @@ RiemannianStaircaseResult RiemannianStaircaseOptimizer::optimize() const {
 
     result.minEigenvaluePerLevel.push_back(lambdaMin);
     if (params_.verbose) {
-      std::cout << "[Staircase] passed=" << (passed ? 1 : 0)
+      std::cout << "Staircase verified=" << (passed ? 1 : 0)
                 << " lambda_min=" << lambdaMin
                 << " cost=" << result.costPerLevel.back() << std::endl;
     }
 
     if (passed) {
       result.values = Y;
+      result.layout = layout;
       result.finalRank = p;
       result.certified = true;
       result.minEigenvalue = lambdaMin;
+      // Auto-detect rounding dim from the layout — max rowDim is the natural
+      // rotation block size (translations carry rowDim = 1).
+      result.rounded =
+          roundingSolution(Y, layout, static_cast<int>(layout.maxRowDim()));
       result.totalTime = seconds(totalStart, Clock::now());
       return result;
     }
@@ -511,6 +551,47 @@ Values RiemannianStaircaseOptimizer::escapeSaddleAndLift(const Values& Ystar,
     Ynext.insert(key, YiNew);
   }
   return Ynext;
+}
+
+/* ************************************************************************* */
+RiemannianStaircaseOptimizer::RoundedSolution
+RiemannianStaircaseOptimizer::roundingSolution(const Values& Y,
+                                               const Layout& layout, int d) {
+  if (d < 2) {
+    throw std::invalid_argument(
+        "RiemannianStaircaseOptimizer::roundingSolution: d must be >= 2.");
+  }
+  const Matrix Ystacked = layout.stack(Y);
+  Eigen::JacobiSVD<Matrix> svd(Ystacked,
+                               Eigen::ComputeFullU | Eigen::ComputeFullV);
+  Matrix Yd = svd.matrixU().leftCols(d) *
+              svd.singularValues().head(d).asDiagonal();
+
+  // If most rotation-shaped blocks land with det < 0, the rank-d projection
+  // is rotated through a reflection; negating the last column flips them all
+  // back to det ≥ 0 so they round to valid rotations rather than reflections.
+  size_t numNegDet = 0, numRotBlocks = 0;
+  for (const auto& [_, slice] : layout.slices) {
+    if (slice.rowDim != static_cast<size_t>(d)) continue;
+    ++numRotBlocks;
+    if (Yd.block(slice.offset, 0, d, d).determinant() < 0) ++numNegDet;
+  }
+  const bool flipped = numRotBlocks > 0 && numNegDet > numRotBlocks / 2;
+  if (flipped) Yd.col(d - 1) *= -1.0;
+  return {Yd, d, flipped};
+}
+
+/* ************************************************************************* */
+std::vector<std::pair<Key, Vector>>
+RiemannianStaircaseOptimizer::extractRowVectors(const RoundedSolution& r,
+                                                const Layout& layout) {
+  std::vector<std::pair<Key, Vector>> vectors;
+  for (const auto& [key, slice] : layout.slices) {
+    if (slice.rowDim != 1) continue;
+    vectors.emplace_back(
+        key, Vector(r.Yd.block(slice.offset, 0, 1, r.d).transpose()));
+  }
+  return vectors;
 }
 
 }  // namespace gtsam

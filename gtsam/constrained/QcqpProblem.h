@@ -12,8 +12,18 @@
 /**
  * @file    QcqpProblem.h
  * @brief   QCQP represented as a constrained optimization problem.
+ *
+ * Originally implemented for fixed-dimension QCQPs; extended here to a
+ * column-dimension–parametric form. The same QCQP can now be re-emitted at
+ * any column count K via `InsertQcqpValue<T, D>`,
+ * `InsertQcqpConstraints<T, D>`, and the graph-driven constructor /
+ * `rebuildAt(K)`. K = d (the variable's intrinsic dim) is the natural
+ * problem; K > d is the low-rank factorization used by the Riemannian
+ * Staircase, which calls `rebuildAt(K+1)` between levels to climb the
+ * ladder without re-specifying the original factor graph.
+ *
  * @author  Frank Dellaert
- * @author  Zhexin Xu  (xu.zhex@northeastern.edu)
+ * @author  Zhexin Xu
  * @author  David M. Rosen
  */
 
@@ -56,13 +66,17 @@ struct HasQcqpIntrinsicDim<T, std::void_t<decltype(traits<T>::QcqpIntrinsicDim)>
 }  // namespace internal
 
 /**
- * Insert one matrix-valued QCQP variable using traits<T>::QcqpValue<D>.
+ * Insert one matrix-valued QCQP variable using `traits<T>::QcqpValue<D>`.
  *
- * D is the column dimension of the matrix-form QCQP variable (the row count
- * is type-intrinsic, e.g. 2 for Rot2 matrix form, 3 for Rot3 matrix form).
- * D=1 is the vec(R) form; D >= traits<T>::QcqpIntrinsicDim is the matrix
- * form. The Riemannian Staircase climbs D starting at QcqpIntrinsicDim and
- * the lift fills in the extra columns at each level.
+ * D is the column dimension of the matrix-form QCQP variable; the row count
+ * is type-intrinsic (e.g. 2 for Rot2, 3 for Rot3). Three regimes:
+ *  - D = 1: the vec(R) form (legacy polynomial relaxation path).
+ *  - D = `traits<T>::QcqpIntrinsicDim`: the natural matrix form of the
+ *    QCQP.
+ *  - D > `traits<T>::QcqpIntrinsicDim`: the low-rank factorization of the
+ *    matrix form, used by the Riemannian Staircase to lift the SDP
+ *    relaxation rung by rung — the extra columns are what the lift fills
+ *    in at each level.
  */
 template <typename T, int D = 1>
 void InsertQcqpValue(Key key, const T& value, Values* qcqpValues) {
@@ -87,11 +101,15 @@ void InsertQcqpValue(Key key, const T& value, Values* qcqpValues) {
 }
 
 /**
- * Insert QCQP equality constraints for one variable, skipping duplicate keys.
- * Constraints come from traits<T>::QcqpConstraints<D>(). For matrix form
- * (D >= QcqpIntrinsicDim) the constraints are D-independent in structure
- * (only QpCost's Kronecker expansion depends on D); for D=1 they are the
- * polynomial vec-form constraints.
+ * Insert QCQP equality constraints for one variable. Constraints come from
+ * `traits<T>::QcqpConstraints<D>()`.
+ *
+ * For matrix form (D ≥ QcqpIntrinsicDim, including the D > d low-rank
+ * factorization case) the constraint *structure* is D-independent — only
+ * QpCost's Kronecker expansion depends on D — so climbing the Riemannian
+ * Staircase doesn't change the constraint set, only the cost. For D = 1
+ * these are the polynomial vec-form constraints (the original fixed-dim
+ * path).
  */
 template <typename T, int D = 1>
 void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints) {
@@ -140,11 +158,14 @@ class GTSAM_EXPORT QcqpProblem : public ConstrainedOptProblem {
       : Base(costs, eqConstraints, ineqConstraints) {}
 
   /**
-   * Convert a supported NonlinearFactorGraph into QCQP costs/constraints at
-   * column dimension K. The QCQP cost matches the paper form
-   * `||residual||^2` — each factor's `qcqpFactors` absorbs GTSAM's 0.5,
-   * giving `problem.costs().error(X) == 2 * graph.error(X)` on feasible X.
-   * K must be >= `traits<T>::QcqpIntrinsicDim` for every variable type.
+   * Convert a supported `NonlinearFactorGraph` into QCQP costs/constraints
+   * at column dimension K. K must be ≥ `traits<T>::QcqpIntrinsicDim` for
+   * every variable type; K = d gives the natural QCQP and K > d gives the
+   * low-rank-factorized form used by the Riemannian Staircase.
+   *
+   * The QCQP cost matches the paper form `‖residual‖²` — each factor's
+   * `qcqpFactors` absorbs GTSAM's 0.5, so
+   * `problem.costs().error(X) == 2 * graph.error(X)` on feasible X.
    */
   explicit QcqpProblem(const NonlinearFactorGraph& graph, size_t K)
       : originalGraph_(graph), K_(K) {
@@ -163,8 +184,11 @@ class GTSAM_EXPORT QcqpProblem : public ConstrainedOptProblem {
   /** Add a quadratic constraint. */
   void addConstraint(const QuadraticConstraint& constraint);
 
-  /// Re-derive costs/constraints from the original graph at a new K. Throws
-  /// if this QcqpProblem was not constructed from a NonlinearFactorGraph.
+  /// Re-derive costs/constraints from the original graph at a new K. Used
+  /// by the Riemannian Staircase between levels to lift the QCQP into its
+  /// next low-rank-factorized form (rank K+1) without re-specifying the
+  /// source graph. Throws if this QcqpProblem was not constructed from a
+  /// NonlinearFactorGraph.
   void rebuildAt(size_t K) {
     if (K == 0) {
       throw std::invalid_argument("QcqpProblem::rebuildAt: K must be >= 1.");

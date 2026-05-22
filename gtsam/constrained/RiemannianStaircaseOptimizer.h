@@ -11,20 +11,21 @@
 
 /**
  * @file    RiemannianStaircaseOptimizer.h
- * @brief   Riemannian Staircase outer loop with ALM as the inner NLP solver
- *          and a sparse-eigensolver certificate of optimality. A specialized
- *          Riemannian-manifold solver is planned to replace ALM in a future
- *          release.
- * @author  Zhexin Xu     (xu.zhex@northeastern.edu)
+ * @brief   Riemannian Staircase outer loop with a local solver for the
+ *          inner low-rank factorized problem (currently the Augmented
+ *          Lagrangian method) and a sparse-eigensolver certificate of
+ *          optimality. A specialized structure-exploiting Riemannian-manifold
+ *          solver is planned to replace ALM in a future release.
+ * @author  Zhexin Xu
  * @author  David M. Rosen
  *
  * References:
- *   Xu, Sanderson, Zhang, Rosen — "Certifiable Estimation with Factor
- *     Graphs," arXiv:2603.01267, 2026.
- *   Rosen — "Accelerating certifiable estimation with preconditioned
+ *   Zhexin Xu, Nikolas R. Sanderson, Hanna Jiamei Zhang, David M. Rosen —
+ *     "Certifiable Estimation with Factor Graphs," arXiv:2603.01267, 2026.
+ *   David M. Rosen — "Accelerating certifiable estimation with preconditioned
  *     eigensolvers," IEEE RA-L 7(4):12507–12514, 2022.
- *   Rosen — "Scalable low-rank semidefinite programming for certifiably
- *     correct machine perception," WAFR 2020.
+ *   David M. Rosen — "Scalable low-rank semidefinite programming for
+ *     certifiably correct machine perception," WAFR 2020.
  */
 
 #pragma once
@@ -39,6 +40,7 @@
 #include <Eigen/SVD>
 #include <Eigen/Sparse>
 
+#include <optional>
 #include <tuple>
 #include <unordered_map>
 #include <utility>
@@ -46,14 +48,17 @@
 
 namespace gtsam {
 
+struct RiemannianStaircaseResult;
+
 /// Hyperparameters for the Riemannian Staircase outer loop.
 struct GTSAM_EXPORT RiemannianStaircaseParams {
   /// LOBPCG: sparse, scalable, requires GTSAM_USE_LOBPCG_VERIFICATION.
   /// Spectra: sparse Lanczos via gtsam/3rdparty, no CHOLMOD dependency.
   /// DenseEigen: full O(n^3) diagonalization — debugging only, does not scale.
+  /// LOBPCG is recommended, especially for large-scale problems.
   enum class VerificationMethod { LOBPCG, DenseEigen, Spectra };
 
-  size_t pMin = 2;            ///< starting K; must be >= max intrinsic row dim.
+  size_t pMin = 2;            ///< Starting Riemannian Staircase level; must be ≥ the ambient column dimension d.
   size_t pMax = 10;           ///< staircase cap before giving up.
   double alpha = 1e-2;        ///< descent step size on saddle escape.
 
@@ -65,9 +70,6 @@ struct GTSAM_EXPORT RiemannianStaircaseParams {
   double dropTol = 1e-3;       ///< ILDL drop tolerance.
 
   size_t maxSpectraIters = 1000;
-  /// Lanczos subspace size. A generous value (~100) is needed so the
-  /// shifted-Lanczos pass discriminates a tiny negative eigenvalue from a
-  /// near-zero one — they map to nearly-identical magnitudes after the shift.
   size_t numLanczosVectors = 100;
   double spectraTol = 1e-4;
 
@@ -76,42 +78,18 @@ struct GTSAM_EXPORT RiemannianStaircaseParams {
   bool verbose = false;
 };
 
-/// Output of RiemannianStaircaseOptimizer::optimize().
-struct GTSAM_EXPORT RiemannianStaircaseResult {
-  Values values;                       ///< final BM solution (Matrix-valued).
-  /// SO(d)-projected rotations, populated by `optimize<RotT>()` only when
-  /// `certified == true`. Empty otherwise.
-  Values rounded;
-  size_t finalRank = 0;
-  bool certified = false;
-  double minEigenvalue = 0.0;
-  std::vector<size_t> ranksVisited;
-  /// Per-level inner cost in paper convention (`||residual||^2 = 2 * graph.error`).
-  std::vector<double> costPerLevel;
-  std::vector<double> minEigenvaluePerLevel;
-  /// Per-level wall-clock seconds for the inner NLP solve (ALM today).
-  std::vector<double> nlpTimePerLevel;
-  /// Per-level wall-clock seconds for certificate assembly + verify().
-  std::vector<double> verifyTimePerLevel;
-  double totalTime = 0.0;
-};
-
 /**
  * Riemannian Staircase outer loop over a Burer–Monteiro low-rank
  * parametrization of a QCQP. Takes a `QcqpProblem` and an initial value and
- * returns a certified (or best-effort) low-rank BM solution. Factor-graph →
- * QCQP conversion lives outside this class.
+ * returns a certified (or best-effort) low-rank BM solution.
  *
  * Per level: (1) inner NLP solve at rank p yielding (Y*, λ); (2) certificate
- * `S = Q + Σ_m λ_m A_m`; (3) verify via LOBPCG / Spectra / DenseEigen; on
- * fail, (4) `escapeSaddleAndLift` appends a descent column at rank p+1.
- *
- * ALM is the inner solver today; a specialized Riemannian-manifold solver is
- * planned to replace it.
+ * `S = Q + Σ_m λ_m A_m`; (3) verify positive semidefiniteness via an
+ * eigenvalue-optimization method; on fail, (4) `escapeSaddleAndLift` appends
+ * a descent column at rank p+1.
  */
 class GTSAM_EXPORT RiemannianStaircaseOptimizer {
  public:
-  /// Placement of one QCQP variable inside the stacked BM matrix Y:
   /// `Y_i = Y.block(offset, 0, rowDim, p)`.
   struct LayoutSlice {
     size_t offset;
@@ -157,6 +135,21 @@ class GTSAM_EXPORT RiemannianStaircaseOptimizer {
 
     /// Inverse of stack: split a (totalDim × p) matrix into per-key slices.
     Values unstack(const Matrix& Y) const;
+
+    /// Largest `rowDim` across slices. Used as the default rank-d for
+    /// `roundingSolution` since rotation blocks dominate; translations
+    /// (rowDim=1) shouldn't drive the truncation.
+    size_t maxRowDim() const;
+  };
+
+  /// Rank-d SVD truncation of the stacked BM matrix Y, with an optional
+  /// last-column sign flip so the rotation-shaped blocks round to det ≥ 0
+  /// rather than to reflections. `d` is recorded so downstream extractors
+  /// don't need to be told again.
+  struct RoundedSolution {
+    Matrix Yd;     ///< (totalDim × d).
+    int d;         ///< rounding dim used.
+    bool flipped;  ///< whether the last-column sign flip was applied.
   };
 
   /// Construct from a QcqpProblem already built at K = params.pMin. The
@@ -169,24 +162,11 @@ class GTSAM_EXPORT RiemannianStaircaseOptimizer {
     validateParams(params_);
   }
 
-  /// Run the staircase. Returns the BM solution in `result.values`;
-  /// `result.rounded` is left empty (use the templated overload below).
+  /// Run the staircase. On certification, also fills `result.layout` and
+  /// `result.rounded` with the rank-d projection (d = layout.maxRowDim()).
+  /// Type-specific outputs are recovered by calling
+  /// `extractRotations<RotT>` / `extractRowVectors` on `result.rounded`.
   RiemannianStaircaseResult optimize() const;
-
-  /// Run the staircase and, on certified success, also write SO(d)-projected
-  /// rotations of type `RotT` into `result.rounded`. Equivalent to calling
-  /// `optimize()` then `roundToRotation<RotT>` when certified.
-  template <typename RotT>
-  RiemannianStaircaseResult optimize() const {
-    RiemannianStaircaseResult r = optimize();
-    if (r.certified) {
-      const Layout layout = Layout::From(r.values);
-      for (auto& [key, R] : roundToRotation<RotT>(r.values, layout)) {
-        r.rounded.insert(key, R);
-      }
-    }
-    return r;
-  }
 
   /// Assemble the sparse symmetric certificate `S = Q + Σ_m λ_m A_m`, the
   /// Hessian of the Lagrangian. Q and A_m are stored as Hessians directly
@@ -203,54 +183,43 @@ class GTSAM_EXPORT RiemannianStaircaseOptimizer {
   static Values escapeSaddleAndLift(const Values& Ystar, const Vector& vMin,
                                     const Layout& layout, double alpha);
 
-  /**
-   * Round the BM solution Y back to one `RotT` per variable.
-   *
-   * Recipe (d = traits<RotT>::QcqpIntrinsicDim):
-   *   1. Stack into (totalDim × p) and rank-d truncated SVD → Yd.
-   *   2. Global sign-gauge fix: if majority of d×d blocks have det < 0,
-   *      flip the last column of Yd.
-   *   3. Per-block: `R := RotT::ClosestTo(block.transpose())`.
-   *
-   * RotT must expose `traits<RotT>::QcqpIntrinsicDim >= 2` and a static
-   * `RotT::ClosestTo`.
-   */
+  /// SVD-truncate `layout.stack(Y)` to rank `d` and optionally sign-flip the
+  /// last column so rotation-shaped blocks round to det ≥ 0. Caller can
+  /// override `d`; `optimize()` uses `layout.maxRowDim()`. The result is
+  /// consumed by the per-type extractors below.
+  static RoundedSolution roundingSolution(const Values& Y, const Layout& layout,
+                                          int d);
+
+  /// Constrained-variable extractor: each slice with
+  /// `rowDim == traits<RotT>::QcqpIntrinsicDim` is projected onto a `RotT`
+  /// via `RotT::ClosestTo` (rotations live on a manifold and need this
+  /// projection). Slices of other sizes are skipped. More constrained
+  /// variable types can be added by following the same Layout-slice pattern.
   template <typename RotT>
-  static std::vector<std::pair<Key, RotT>> roundToRotation(
-      const Values& Y, const Layout& layout) {
+  static std::vector<std::pair<Key, RotT>> extractRotations(
+      const RoundedSolution& r, const Layout& layout) {
     constexpr int d = traits<RotT>::QcqpIntrinsicDim;
-    static_assert(d >= 2,
-                  "RiemannianStaircaseOptimizer::roundToRotation: "
-                  "traits<RotT>::QcqpIntrinsicDim must be >= 2.");
-
-    const Matrix Yglobal = layout.stack(Y);
-    Eigen::JacobiSVD<Matrix> svd(Yglobal,
-                                 Eigen::ComputeFullU | Eigen::ComputeFullV);
-    Matrix Yd = svd.matrixU().leftCols(d) *
-                svd.singularValues().head(d).asDiagonal();
-
-    size_t numNegDet = 0;
-    for (const auto& [_, slice] : layout.slices) {
-      if (Yd.block(slice.offset, 0, d, d).determinant() < 0) ++numNegDet;
-    }
-    if (numNegDet > layout.size() / 2) Yd.col(d - 1) *= -1.0;
-
     std::vector<std::pair<Key, RotT>> rotations;
-    rotations.reserve(layout.size());
     for (const auto& [key, slice] : layout.slices) {
+      if (slice.rowDim != static_cast<size_t>(d)) continue;
       rotations.emplace_back(
-          key, RotT::ClosestTo(Yd.block(slice.offset, 0, d, d).transpose()));
+          key, RotT::ClosestTo(r.Yd.block(slice.offset, 0, d, d).transpose()));
     }
     return rotations;
   }
 
-  /// Dispatch on `params_.verificationMethod`. Returns
-  /// `(passed, lambda_min, v_min)` where `passed == (lambda_min >= -eta)`.
+  /// Unconstrained-variable extractor: each `rowDim == 1` slice is read off
+  /// as a plain `r.d`-vector (no projection needed; the variable lives in
+  /// Euclidean space). Today this covers translations in PGO; the same
+  /// pattern extends to any future unconstrained 1-row variable.
+  static std::vector<std::pair<Key, Vector>> extractRowVectors(
+      const RoundedSolution& r, const Layout& layout);
+
+  /// Test the PSD of the certificate via minimum-eigenvalue optimization,
+  /// using whichever backend `params_.verificationMethod` selects.
   std::tuple<bool, double, Vector> verify(
       const Eigen::SparseMatrix<double>& S) const;
 
-  /// `mutable` because optimize() calls qcqp_.rebuildAt(p) per level; the
-  /// staircase is a pure function of its constructor args externally.
   mutable QcqpProblem qcqp_;
   Values initialValues_;
   RiemannianStaircaseParams params_;
@@ -264,6 +233,24 @@ class GTSAM_EXPORT RiemannianStaircaseOptimizer {
       const Eigen::SparseMatrix<double>& S) const;
 
   static void validateParams(const RiemannianStaircaseParams& params);
+};
+
+struct GTSAM_EXPORT RiemannianStaircaseResult {
+  Values values;                                  ///< BM solution.
+  RiemannianStaircaseOptimizer::Layout layout;    ///< Per-key slices in Y.
+  /// SVD-rounded BM solution (rank `layout.maxRowDim()`)
+  std::optional<RiemannianStaircaseOptimizer::RoundedSolution> rounded;
+
+  size_t finalRank = 0;
+  bool certified = false;
+  double minEigenvalue = 0.0;
+  /// Per-level diagnostics recorded during the staircase climb.
+  std::vector<size_t> ranksVisited;
+  std::vector<double> costPerLevel;
+  std::vector<double> minEigenvaluePerLevel;
+  std::vector<double> nlpTimePerLevel;
+  std::vector<double> verifyTimePerLevel;
+  double totalTime = 0.0;
 };
 
 }  // namespace gtsam

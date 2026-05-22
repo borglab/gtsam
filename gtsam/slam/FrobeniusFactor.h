@@ -268,8 +268,11 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
 
   /**
    * Emit QCQP cost + variable constraints for this edge at column dim K.
-   * K == 1 takes the vec(R) form; K >= 2 takes the K-runtime matrix form.
-   * Q is doubled to absorb GTSAM's 0.5 cost convention, so
+   * `QcqpProblem::rebuildAt(K)` calls this to re-emit the edge at any K:
+   *   K = 1     vec(R) form (polynomial relaxation).
+   *   K = d     natural matrix form of the QCQP.
+   *   K > d     low-rank factorization used by the Riemannian Staircase.
+   * Q is doubled in the helpers so GTSAM's 0.5 cost convention cancels:
    * `qcqp.costs().error(X) == 2 * graph.error(X)`.
    */
   void qcqpFactors(NonlinearFactorGraph* costs,
@@ -301,9 +304,10 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
     return result;
   }
 
-  /// Vec(R) form: variable is (N*N)×1, vec(X·R) is linear in vec(X) via
-  /// RightProductMatrix(R). `if constexpr` keeps this compilable for
-  /// T = SO<n> (no QCQP traits) — runtime throw if invoked.
+  /// Vec(R) form (K = 1). Variable is (N*N)x1; vec(X*R) is linear in
+  /// vec(X) via RightProductMatrix(R). The `if constexpr` keeps this
+  /// compilable for T = SO<n>, which has no QCQP traits; the runtime
+  /// throw fires if it is actually invoked.
   void qcqpFactorsForVec(NonlinearFactorGraph* costs,
                          NonlinearEqualityConstraints* constraints) const {
     if constexpr (!internal::HasQcqpVariableTraits<T, 1>::value) {
@@ -344,9 +348,11 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
     }
   }
 
-  /// Matrix form for K >= 2. K-runtime because the d×d Frobenius Hessian
-  /// Q_ij and the trait's row-orthonormality A_m are both K-invariant;
-  /// QpCost Kronecker-expands them with `columnDim = K`.
+  /// Matrix form (K >= 2). Builds the d-by-d Frobenius Hessian Q_ij and
+  /// emits the trait's row-orthonormality constraints A_m. Both are
+  /// K-invariant; QpCost Kronecker-expands them with `columnDim = K`, so
+  /// climbing K -> K+1 reuses the same Q_ij and A_m and only changes the
+  /// Kronecker dim.
   void qcqpFactorsForMatrix(NonlinearFactorGraph* costs,
                             NonlinearEqualityConstraints* constraints,
                             size_t K) const {

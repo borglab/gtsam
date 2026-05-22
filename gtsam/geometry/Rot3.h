@@ -597,6 +597,17 @@ class GTSAM_EXPORT Rot3 : public MatrixLieGroup<Rot3, 3, 3> {
 
   template <>
 struct traits<Rot3> : public internal::MatrixLieGroup<Rot3, 3> {
+  // The three members below extend upstream Rot3's traits with a column-
+  // dimension-parametric QCQP representation. They let QcqpProblem emit the
+  // matrix-form Rot3 variable at any column dim K ≥ 3, where K plays the
+  // role of the rank of whatever low-rank factorization is applied to
+  // Shor's SDP relaxation. The canonical use is Burer-Monteiro inside the
+  // Riemannian Staircase.
+  // Upstream GTSAM's Rot3 traits had no QCQP-related members. The vec form
+  // (D = 1) keeps a 9-vector encoding of R for non-Frobenius polynomial
+  // relaxations; the matrix form (D ≥ 3) is the row-orthonormal
+  // representation the staircase actually climbs.
+
   /// Row dimension d of the matrix-form QCQP variable for Rot3 (SO(3)).
   /// The Riemannian Staircase climbs the column dim D starting at
   /// D = QcqpIntrinsicDim and grows it level by level via the lift.
@@ -607,11 +618,12 @@ struct traits<Rot3> : public internal::MatrixLieGroup<Rot3, 3> {
    *
    * D=1 is vectorized SO(3) as a 9-by-1 matrix (column-major vec of R).
    * D>=3 returns a 3-by-D matrix where the leftmost three columns hold R^T
-   * (the natural Stiefel embedding of R in St(D, 3)) and any remaining
-   * D-3 columns are zero. D=3 is the natural matrix form (the base of
-   * the Riemannian Staircase ladder); higher D corresponds to the
-   * Burer-Monteiro lift one level up. D=2 is rejected: a 2-row form has
-   * no meaning for SO(3).
+   * (the natural row-orthonormal embedding of R into a 3-by-D matrix) and
+   * any remaining D-3 columns are zero. D=3 is the natural matrix form
+   * (the base of the Riemannian Staircase ladder); higher D corresponds
+   * to the Burer-Monteiro lift one level up. D=2 is rejected: the matrix
+   * would be 3-by-2, which can't host R^T (3×3) and can't satisfy
+   * X X^T = I_3 (rank 2 < 3).
    */
   template <int D = 1>
   static Matrix QcqpValue(const Rot3& value) {
