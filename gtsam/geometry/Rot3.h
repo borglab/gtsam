@@ -596,9 +596,60 @@ class GTSAM_EXPORT Rot3 : public MatrixLieGroup<Rot3, 3, 3> {
       const Matrix3& A, OptionalJacobian<3, 9> H = {});
 
   template <>
-struct traits<Rot3> : public internal::MatrixLieGroup<Rot3, 3> {};
+struct traits<Rot3> : public internal::MatrixLieGroup<Rot3, 3> {
+  /**
+   * Return a matrix-valued QCQP variable for Rot3.
+   *
+   * D>=3 returns [R', 0] as a 3-by-D row-orthonormal matrix.
+   */
+  template <int D = 1>
+  static Matrix QcqpValue(const Rot3& value) {
+    if constexpr (D >= 3) {
+      Matrix X = Matrix::Zero(3, D);
+      X.template leftCols<3>() = value.matrix().transpose();
+      return X;
+    } else {
+      throw std::invalid_argument(
+          "traits<Rot3>::QcqpValue only supports D>=3.");
+    }
+  }
+
+  /**
+   * Return row-space QCQP equality constraints A, b such that
+   * trace(X' A X) = b. For D>=3 the same 3-by-3 constraints enforce
+   * row orthonormality.
+   */
+  template <int D = 1>
+  static std::vector<std::pair<Matrix, double>> QcqpConstraints() {
+    if constexpr (D >= 3) {
+      std::vector<std::pair<Matrix, double>> constraints;
+      constraints.reserve(6);
+
+      // 3 row-unit-norm: ||row r||^2 = 1.
+      for (int r = 0; r < 3; ++r) {
+        Matrix A = Matrix::Zero(3, 3);
+        A(r, r) = 1.0;
+        constraints.emplace_back(A, 1.0);
+      }
+
+      // 3 row-orthogonality: row r1 . row r2 = 0.
+      for (int r1 = 0; r1 < 3; ++r1) {
+        for (int r2 = r1 + 1; r2 < 3; ++r2) {
+          Matrix A = Matrix::Zero(3, 3);
+          A(r1, r2) = 0.5;
+          A(r2, r1) = 0.5;
+          constraints.emplace_back(A, 0.0);
+        }
+      }
+      return constraints;
+    } else {
+      throw std::invalid_argument(
+          "traits<Rot3>::QcqpConstraints only supports D>=3.");
+    }
+  }
+};
 
 template <>
-struct traits<const Rot3> : public internal::MatrixLieGroup<Rot3, 3> {};
+struct traits<const Rot3> : public traits<Rot3> {};
   
 }  // namespace gtsam

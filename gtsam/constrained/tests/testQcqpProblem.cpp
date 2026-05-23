@@ -22,6 +22,7 @@
 #include <gtsam/constrained/QcqpProblem.h>
 #include <gtsam/constrained/QpCost.h>
 #include <gtsam/constrained/QuadraticConstraint.h>
+#include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/SO3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/LinearContainerFactor.h>
@@ -566,6 +567,132 @@ TEST(QcqpProblem, Rot2FrobeniusBetweenFactorD3) {
 }
 
 }  // namespace QcqpRot2VariableFixture
+/* ************************************************************************* */
+namespace QcqpTraitExtensionsFixture {
+
+const Key x0 = Symbol('x', 0);
+const Key x1 = Symbol('x', 1);
+
+// Verifies Rot2 QcqpValue at D=4 zero-pads beyond the intrinsic dim.
+TEST(QcqpProblem, Rot2QcqpValueD4Padding) {
+  const Rot2 R = Rot2::fromAngle(0.7);
+  const Matrix X4 = traits<Rot2>::template QcqpValue<4>(R);
+  LONGS_EQUAL(2, X4.rows());
+  LONGS_EQUAL(4, X4.cols());
+  EXPECT(assert_equal(Matrix(R.matrix().transpose()),
+                      Matrix(X4.leftCols<2>()), 1e-12));
+  EXPECT(assert_equal(Matrix(Matrix::Zero(2, 2)),
+                      Matrix(X4.rightCols<2>()), 1e-12));
+  EXPECT(assert_equal(Matrix(Matrix2::Identity()), X4 * X4.transpose(), 1e-12));
+}
+
+// Verifies Rot2 matrix-form constraints are equal across D = 2, 3, 5.
+TEST(QcqpProblem, Rot2QcqpConstraintsAreDIndependent) {
+  const auto cs2 = traits<Rot2>::template QcqpConstraints<2>();
+  const auto cs3 = traits<Rot2>::template QcqpConstraints<3>();
+  const auto cs5 = traits<Rot2>::template QcqpConstraints<5>();
+  LONGS_EQUAL(3, cs2.size());
+  LONGS_EQUAL(cs2.size(), cs3.size());
+  LONGS_EQUAL(cs2.size(), cs5.size());
+  for (size_t i = 0; i < cs2.size(); ++i) {
+    EXPECT(assert_equal(cs2[i].first, cs3[i].first, 1e-12));
+    EXPECT(assert_equal(cs2[i].first, cs5[i].first, 1e-12));
+    EXPECT_DOUBLES_EQUAL(cs2[i].second, cs3[i].second, 1e-12);
+    EXPECT_DOUBLES_EQUAL(cs2[i].second, cs5[i].second, 1e-12);
+  }
+}
+
+// Verifies Rot3 QcqpValue and QcqpConstraints at D=3.
+TEST(QcqpProblem, Rot3D3QcqpValueConstraints) {
+  const Rot3 R = Rot3::Expmap((Vector3() << 0.4, -0.1, 0.7).finished());
+  const Matrix X = traits<Rot3>::template QcqpValue<3>(R);
+  LONGS_EQUAL(3, X.rows());
+  LONGS_EQUAL(3, X.cols());
+  EXPECT(assert_equal(Matrix(R.matrix().transpose()), X, 1e-12));
+  EXPECT(assert_equal(Matrix(Matrix3::Identity()), X * X.transpose(), 1e-12));
+
+  const auto cs = traits<Rot3>::template QcqpConstraints<3>();
+  LONGS_EQUAL(6, cs.size());
+
+  NonlinearEqualityConstraints constraints;
+  InsertQcqpConstraints<Rot3, 3>(x0, &constraints);
+  Values values;
+  values.insert(x0, X);
+  EXPECT_DOUBLES_EQUAL(0.0, constraints.violationNorm(values), 1e-12);
+}
+
+// Verifies Rot3 rejects D=2 for QcqpValue and QcqpConstraints.
+TEST(QcqpProblem, Rot3D2Throws) {
+  const Rot3 R = Rot3::Expmap(Vector3::Zero());
+  CHECK_EXCEPTION(traits<Rot3>::template QcqpValue<2>(R),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(traits<Rot3>::template QcqpConstraints<2>(),
+                  std::invalid_argument);
+}
+
+// Verifies FrobeniusBetweenFactor<Rot3> matches the manifold form at K=3.
+TEST(QcqpProblem, Rot3FrobeniusBetweenFactorD3) {
+  const Rot3 measured = Rot3::Expmap((Vector3() << 0.2, 0.1, -0.3).finished());
+  const Rot3 R0 = Rot3::Expmap((Vector3() << 0.05, 0.10, 0.15).finished());
+  const Rot3 R1 = Rot3::Expmap((Vector3() << 0.10, 0.20, 0.30).finished());
+
+  NonlinearFactorGraph graph;
+  auto noise = noiseModel::Isotropic::Sigma(Rot3::dimension, 1.0);
+  graph.emplace_shared<FrobeniusBetweenFactor<Rot3>>(x0, x1, measured, noise);
+
+  Values manifoldValues;
+  manifoldValues.insert(x0, R0);
+  manifoldValues.insert(x1, R1);
+
+  const QcqpProblem problem(graph, 3);
+  Values qcqpValues;
+  InsertQcqpValue<Rot3, 3>(x0, R0, &qcqpValues);
+  InsertQcqpValue<Rot3, 3>(x1, R1, &qcqpValues);
+  const double qcqpCost = problem.costs().error(qcqpValues);
+
+  EXPECT(std::isfinite(qcqpCost));
+  EXPECT_DOUBLES_EQUAL(graph.error(manifoldValues), qcqpCost, 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
+                       1e-12);
+}
+
+// Verifies FrobeniusBetweenFactor<Rot2> matches the manifold form at K=4.
+TEST(QcqpProblem, Rot2FrobeniusBetweenFactorD4) {
+  const Rot2 measured = Rot2::fromAngle(0.4);
+  const Rot2 R0 = Rot2::fromAngle(0.3);
+  const Rot2 R1 = Rot2::fromAngle(-0.2);
+
+  NonlinearFactorGraph graph;
+  auto noise = noiseModel::Isotropic::Sigma(1, 1.0);
+  graph.emplace_shared<FrobeniusBetweenFactor<Rot2>>(x0, x1, measured, noise);
+
+  Values manifoldValues;
+  manifoldValues.insert(x0, R0);
+  manifoldValues.insert(x1, R1);
+
+  const QcqpProblem problem(graph, 4);
+  Values qcqpValues;
+  InsertQcqpValue<Rot2, 4>(x0, R0, &qcqpValues);
+  InsertQcqpValue<Rot2, 4>(x1, R1, &qcqpValues);
+  const double qcqpCost = problem.costs().error(qcqpValues);
+
+  EXPECT(std::isfinite(qcqpCost));
+  EXPECT_DOUBLES_EQUAL(graph.error(manifoldValues), qcqpCost, 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
+                       1e-12);
+}
+
+// Verifies FrobeniusBetweenFactor<Rot3> rejects K=2 at QCQP construction.
+TEST(QcqpProblem, Rot3FrobeniusBetweenFactorK2Rejected) {
+  NonlinearFactorGraph graph;
+  auto noise = noiseModel::Isotropic::Sigma(Rot3::dimension, 1.0);
+  graph.emplace_shared<FrobeniusBetweenFactor<Rot3>>(
+      x0, x1, Rot3::Expmap(Vector3::Zero()), noise);
+  CHECK_EXCEPTION({ QcqpProblem problem(graph, /*K=*/2); },
+                  std::invalid_argument);
+}
+
+}  // namespace QcqpTraitExtensionsFixture
 /* ************************************************************************* */
 int main() {
   TestResult tr;
