@@ -194,7 +194,7 @@ class TestChebyshev2(GtsamTestCase):
     def test_IntegrationMatrix(self):
         """Test integration matrix properties and accuracy on polynomial functions."""
         N = 10
-        a, b = 0.0, 2.0
+        a, b = 1.0, 3.0
         P = Chebyshev2.IntegrationMatrix(N, a, b)
         self.assertEqual(P.shape, (N + 1, N))
 
@@ -214,7 +214,7 @@ class TestChebyshev2(GtsamTestCase):
         input_points = Chebyshev2.Points(N, a, b)
         high_degree_input = input_points ** (N - 1)
         high_degree_integral = P.dot(high_degree_input)
-        expected = output_points**N / N
+        expected = (output_points**N - a**N) / N
         np.testing.assert_allclose(high_degree_integral, expected, rtol=0, atol=1e-8)
 
     def test_IntegrationWeights7(self):

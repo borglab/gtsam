@@ -471,7 +471,7 @@ TEST(Chebyshev2, ComponentDerivativeFunctor) {
 //******************************************************************************
 TEST(Chebyshev2, IntegrationMatrix) {
   const size_t N = 10;
-  const double a = 0, b = 2;
+  const double a = 1, b = 3;
 
   Matrix P = Chebyshev2::IntegrationMatrix(N, a, b);
   LONGS_EQUAL(N + 1, P.rows());
@@ -490,6 +490,9 @@ TEST(Chebyshev2, IntegrationMatrix) {
   Vector F_true = Chebyshev2::vector(f, N + 1, a, b);
   F_est.array() += f(a);
   EXPECT(assert_equal(F_true, F_est, 1e-9));
+  const Matrix D = Chebyshev2::DifferentiationMatrix(N + 1, a, b);
+  const Vector fpOutput = Chebyshev2::vector(fprime, N + 1, a, b);
+  EXPECT(assert_equal(fpOutput, D * F_est, 1e-9));
 
   Vector highDegreeInput(N);
   const Vector inputPoints = Chebyshev2::Points(N, a, b);
@@ -497,7 +500,8 @@ TEST(Chebyshev2, IntegrationMatrix) {
   const Vector highDegreeIntegral = P * highDegreeInput;
 
   Vector expected(N + 1);
-  for (size_t i = 0; i <= N; ++i) expected(i) = pow(outputPoints(i), N) / N;
+  for (size_t i = 0; i <= N; ++i)
+    expected(i) = (pow(outputPoints(i), N) - pow(a, N)) / N;
   EXPECT(assert_equal(expected, highDegreeIntegral, 1e-8));
 }
 

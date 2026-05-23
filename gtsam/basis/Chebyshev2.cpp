@@ -248,13 +248,14 @@ Matrix Chebyshev2::IntegrationMatrix(size_t N) {
 Matrix Chebyshev2::IntegrationMatrix(size_t N, double a, double b) {
   Matrix P = Matrix::Zero(N + 1, N);
   const Vector outputPoints = Points(N + 1, a, b);
+  const Weights baseWeights = IntegrationWeights(N);
 
   for (size_t j = 1; j <= N; ++j) {
     const double upper = outputPoints(j);
     const Vector quadraturePoints = Points(N, a, upper);
     const Matrix evaluation =
         Chebyshev2::WeightMatrix(N, quadraturePoints, a, b);
-    P.row(j) = IntegrationWeights(N, a, upper) * evaluation;
+    P.row(j) = ((upper - a) / 2.0) * baseWeights * evaluation;
   }
   return P;
 }
