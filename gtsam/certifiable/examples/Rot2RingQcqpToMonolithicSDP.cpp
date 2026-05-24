@@ -14,6 +14,7 @@
  * @brief Minimal Rot2 ring SLAM construction ending at a QcqpProblem.
  */
 
+#include <gtsam/certifiable/LiftedSDPProblem.h>
 #include <gtsam/constrained/QcqpProblem.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/inference/Symbol.h>
@@ -74,5 +75,7 @@ int main() {
             << problem.costs().error(qcqpValues) << std::endl;
   std::cout << "equality violation at feasible ring values: "
             << problem.eConstraints().violationNorm(qcqpValues) << std::endl;
+
+  const LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> sdp(problem);
   return 0;
 }
