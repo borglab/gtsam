@@ -73,9 +73,31 @@ RISAM::UpdateResult RISAM::update(
 }
 
 /* ************************************************************************* */
+Values RISAM::calculateEstimate() { return solver_->calculateEstimate(); }
+
+/* ************************************************************************* */
+std::set<size_t> RISAM::getOutliers(double chi2_outlier_thresh) {
+  std::set<size_t> outlier_factors;
+  Values current_est = solver_->calculateEstimate();
+
+  for (size_t i = 0; i < factors_.size(); i++) {
+    NonlinearFactor::shared_ptr nlf_ptr = factors_.at(i);
+    GraduatedFactor::shared_ptr grad_ptr =
+        std::dynamic_pointer_cast<GraduatedFactor>(nlf_ptr);
+    if (grad_ptr) {
+      const double thresh =
+          internal::chiSquaredQuantile(nlf_ptr->dim(), chi2_outlier_thresh);
+      const double residual = grad_ptr->residual(current_est);
+      if (residual > thresh) outlier_factors.insert(i);
+    }
+  }
+  return outlier_factors;
+}
+
+/* ************************************************************************* */
 RISAM::UpdateResult RISAM::updateRobust(
     const NonlinearFactorGraph& new_factors, const Values& new_theta,
-    const std::optional<std::set<Key>> extra_gnc_involved_keys,
+    const std::optional<std::set<Key>>& extra_gnc_involved_keys,
     const ISAM2UpdateParams& update_params) {
   // Setup the result structure
   UpdateResult result;
@@ -163,25 +185,90 @@ FactorIndices RISAM::updateConvexFactors(const FactorIndices& convex_factors) {
 }
 
 /* ************************************************************************* */
-Values RISAM::calculateEstimate() { return solver_->calculateEstimate(); }
+FactorIndices RISAM::convexifyInvolvedFactors(
+    const NonlinearFactorGraph& new_factors, const Values& new_theta,
+    const std::optional<std::set<Key>>& extra_gnc_involved_keys,
+    ISAM2UpdateParams& update_params, UpdateResult& update_result) {
+  // Gather all involved keys - Directly induced by the new factors
+  KeySet involved_keys = accumulateInvolvedKeys(
+      new_factors, extra_gnc_involved_keys, update_params);
 
-/* ************************************************************************* */
-std::set<size_t> RISAM::getOutliers(double chi2_outlier_thresh) {
-  std::set<size_t> outlier_factors;
-  Values current_est = solver_->calculateEstimate();
+  // Gather all affected keys - Super set of involved keys including keys
+  // modified by user params
+  auto [affected_keys, is_batch_update] =
+      solver_->predictUpdateInfo(new_factors, new_theta, update_params);
 
-  for (size_t i = 0; i < factors_.size(); i++) {
-    NonlinearFactor::shared_ptr nlf_ptr = factors_.at(i);
-    GraduatedFactor::shared_ptr grad_ptr =
-        std::dynamic_pointer_cast<GraduatedFactor>(nlf_ptr);
-    if (grad_ptr) {
-      const double thresh =
-          internal::chiSquaredQuantile(nlf_ptr->dim(), chi2_outlier_thresh);
-      const double residual = grad_ptr->residual(current_est);
-      if (residual > thresh) outlier_factors.insert(i);
+  // Convexify update-involved factors
+  std::set<FactorIndex> convex_factors;
+  for (Key affected_key : affected_keys) {
+    for (FactorIndex fidx : variable_index_[affected_key]) {
+      convexifyFactorIfInvolved(fidx, involved_keys, affected_keys,
+                                is_batch_update, convex_factors);
     }
   }
-  return outlier_factors;
+
+  // Fill out the Update Result
+  update_result.involved_variables = involved_keys;
+  update_result.convexified_factors = convex_factors;
+  update_result.affected_variables = affected_keys;
+
+  // Return
+  return FactorIndices(convex_factors.begin(), convex_factors.end());
+}
+
+/* ************************************************************************* */
+KeySet RISAM::accumulateInvolvedKeys(
+    const NonlinearFactorGraph& new_factors,
+    const std::optional<std::set<Key>>& extra_gnc_involved_keys,
+    ISAM2UpdateParams& update_params) {
+  // Gather all involved keys - Directly induced by the new factors
+  KeySet new_factor_keys = new_factors.keys();
+  KeySet involved_keys = solver_->collectAffectedKeys(new_factors.keyVector());
+  involved_keys.insert(new_factor_keys.begin(), new_factor_keys.end());
+
+  // Add to the gathered involved keys, any keys specified by the user
+  if (extra_gnc_involved_keys) {
+    involved_keys.insert(extra_gnc_involved_keys->begin(),
+                         extra_gnc_involved_keys->end());
+    // For any user specified involved keys also add them to the extra-reelim
+    if (!update_params.extraReelimKeys) {
+      // Create container if it does not exist
+      update_params.extraReelimKeys = FastList<Key>();
+    }
+    update_params.extraReelimKeys->insert(update_params.extraReelimKeys->end(),
+                                          extra_gnc_involved_keys->begin(),
+                                          extra_gnc_involved_keys->end());
+  }
+  return involved_keys;
+}
+
+/* ************************************************************************* */
+void RISAM::convexifyFactorIfInvolved(const FactorIndex fidx,
+                                      const KeySet& involved_keys,
+                                      const KeySet& affected_keys,
+                                      const bool is_batch_update,
+                                      std::set<FactorIndex>& convex_factors) {
+  auto grad_factor =
+      std::dynamic_pointer_cast<GraduatedFactor>(factors_.at(fidx));
+  if (grad_factor) {
+    // Indicates that all variables in this factor are in the affected set
+    bool inside = true;
+    // Indicates a factor touches at least one variable in the involved set
+    bool update_involved = false;
+    // Compute inside and update involved
+    for (Key factor_key : factors_.at(fidx)->keys()) {
+      inside = inside && affected_keys.count(factor_key);
+      update_involved = update_involved || involved_keys.count(factor_key);
+    }
+
+    // If the factor is update involved and marked as inside, we need to
+    // convexify Note: everything is inside on a batch update
+    if ((inside || is_batch_update) && update_involved) {
+      convex_factors.insert(fidx);
+      factors_to_check_status_.insert(fidx);
+      *(mu_[fidx]) = *(mu_inits_[fidx]);
+    }
+  }
 }
 
 /* ************************************************************************* */
@@ -274,72 +361,6 @@ void RISAM::incrementMuInits() {
     // Reset accumulator
     factors_to_check_status_.clear();
   }
-}
-
-/* ************************************************************************* */
-FactorIndices RISAM::convexifyInvolvedFactors(
-    const NonlinearFactorGraph& new_factors, const Values& new_theta,
-    const std::optional<std::set<Key>> extra_gnc_involved_keys,
-    ISAM2UpdateParams& update_params, UpdateResult& update_result) {
-  // Gather all involved keys - Directly induced by the new factors
-  KeySet new_factor_keys = new_factors.keys();
-  KeySet involved_keys = solver_->collectAffectedKeys(new_factors.keyVector());
-  involved_keys.insert(new_factor_keys.begin(), new_factor_keys.end());
-
-  // Add to the gathered involved keys, any keys specified by the user
-  if (extra_gnc_involved_keys) {
-    involved_keys.insert(extra_gnc_involved_keys->begin(),
-                         extra_gnc_involved_keys->end());
-    // For any user specified involved keys also add them to the extra-reelim
-    if (!update_params.extraReelimKeys) {
-      // Create container if it does not exist
-      update_params.extraReelimKeys = FastList<Key>();
-    }
-    update_params.extraReelimKeys->insert(update_params.extraReelimKeys->end(),
-                                          extra_gnc_involved_keys->begin(),
-                                          extra_gnc_involved_keys->end());
-  }
-
-  // Gather all affected keys - Super set of involved keys including keys
-  // modified by user params
-  auto [affected_keys, is_batch_update] =
-      solver_->predictUpdateInfo(new_factors, new_theta, update_params);
-
-  // Convexify update-involved factors
-  std::set<FactorIndex> convex_factors;
-  for (Key affected_key : affected_keys) {
-    for (FactorIndex fidx : variable_index_[affected_key]) {
-      auto grad_factor =
-          std::dynamic_pointer_cast<GraduatedFactor>(factors_.at(fidx));
-      if (grad_factor) {
-        // Indicates that all variables in this factor are in the affected set
-        bool inside = true;
-        // Indicates a factor touches at least one variable in the involved set
-        bool update_involved = false;
-        // Compute inside and update involved
-        for (Key factor_key : factors_.at(fidx)->keys()) {
-          inside = inside && affected_keys.count(factor_key);
-          update_involved = update_involved || involved_keys.count(factor_key);
-        }
-
-        // If the factor is update involved and marked as inside, we need to
-        // convexify Note: everything is inside on a batch update
-        if ((inside || is_batch_update) && update_involved) {
-          convex_factors.insert(fidx);
-          factors_to_check_status_.insert(fidx);
-          *(mu_[fidx]) = *(mu_inits_[fidx]);
-        }
-      }
-    }
-  }
-
-  // Fill out the Update Result
-  update_result.involved_variables = involved_keys;
-  update_result.convexified_factors = convex_factors;
-  update_result.affected_variables = affected_keys;
-
-  // Return
-  return FactorIndices(convex_factors.begin(), convex_factors.end());
 }
 
 }  // namespace gtsam
