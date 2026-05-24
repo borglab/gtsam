@@ -6,17 +6,17 @@ target_link_libraries(gtsam_certifiable PUBLIC gtsam)
 gtsam_apply_build_flags(gtsam_certifiable)
 set_property(TARGET gtsam_certifiable PROPERTY FOLDER "certifiable")
 
-add_executable(Rot2RingQcqpExample examples/Rot2RingQcqpExample.cpp)
-target_link_libraries(Rot2RingQcqpExample gtsam)
-gtsam_apply_build_flags(Rot2RingQcqpExample)
-add_dependencies(examples Rot2RingQcqpExample)
-set_property(TARGET Rot2RingQcqpExample PROPERTY FOLDER "examples")
-
-if(NOT GTSAM_BUILD_EXAMPLES_ALWAYS)
-  set_target_properties(Rot2RingQcqpExample PROPERTIES EXCLUDE_FROM_ALL ON)
-endif()
-
 if(GTSAM_USE_MOSEK)
+  add_executable(Rot2RingQcqpToMonolithicSDP examples/Rot2RingQcqpToMonolithicSDP.cpp)
+  target_link_libraries(Rot2RingQcqpToMonolithicSDP gtsam_certifiable)
+  gtsam_apply_build_flags(Rot2RingQcqpToMonolithicSDP)
+  add_dependencies(examples Rot2RingQcqpToMonolithicSDP)
+  set_property(TARGET Rot2RingQcqpToMonolithicSDP PROPERTY FOLDER "examples")
+
+  if(NOT GTSAM_BUILD_EXAMPLES_ALWAYS)
+    set_target_properties(Rot2RingQcqpToMonolithicSDP PROPERTIES EXCLUDE_FROM_ALL ON)
+  endif()
+
   add_executable(SimpleMosekSDPExample tests/SimpleMosekSDPExample.cpp)
   target_link_libraries(SimpleMosekSDPExample gtsam ${MOSEK_LIBRARIES})
   target_include_directories(SimpleMosekSDPExample SYSTEM PRIVATE ${MOSEK_INCLUDE_DIRS})
