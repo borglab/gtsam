@@ -258,7 +258,7 @@ struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
    *
    * D=1 is vectorized SO(2) as a 4-by-1 matrix.
    * D=2 returns R' as a 2-by-2 row-orthonormal matrix.
-   * D=3 returns [R', 0] as a 2-by-3 row-orthonormal matrix.
+   * D>=3 returns [R', 0] as a 2-by-D row-orthonormal matrix.
    */
   template <int D = 1>
   static Matrix QcqpValue(const Rot2& value) {
@@ -267,21 +267,21 @@ struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
       return Eigen::Map<const Matrix>(R.data(), 4, 1);
     } else if constexpr (D == 2) {
       return value.matrix().transpose();
-    } else if constexpr (D == 3) {
-      Matrix X = Matrix::Zero(2, 3);
+    } else if constexpr (D >= 3) {
+      Matrix X = Matrix::Zero(2, D);
       X.leftCols<2>() = value.matrix().transpose();
       return X;
     } else {
       throw std::invalid_argument(
-          "traits<Rot2>::QcqpValue only supports D=1, D=2, and D=3.");
+          "traits<Rot2>::QcqpValue only supports D=1, D=2, and D>=3.");
     }
   }
 
   /**
    * Return row-space QCQP equality constraints A, b such that
    * trace(X' A X) = b. For D=1 these are the vec(R) SO(2) constraints,
-   * including orientation. For D=2 and D=3 the same 2-by-2 constraints
-   * enforce row orthonormality.
+   * including orientation. For D>=2 the same 2-by-2 constraints enforce
+   * row orthonormality.
    */
   template <int D = 1>
   static std::vector<std::pair<Matrix, double>> QcqpConstraints() {
@@ -315,7 +315,7 @@ struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
       constraints.emplace_back(A, 1.0);
 
       return constraints;
-    } else if constexpr (D == 2 || D == 3) {
+    } else if constexpr (D >= 2) {
       std::vector<std::pair<Matrix, double>> constraints;
       constraints.reserve(3);
 
@@ -335,7 +335,7 @@ struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
       return constraints;
     } else {
       throw std::invalid_argument(
-          "traits<Rot2>::QcqpConstraints only supports D=1, D=2, and D=3.");
+          "traits<Rot2>::QcqpConstraints only supports D=1 and D>=2.");
     }
   }
 };
