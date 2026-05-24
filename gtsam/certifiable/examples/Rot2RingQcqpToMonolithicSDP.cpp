@@ -22,6 +22,7 @@
 #include <gtsam/slam/FrobeniusFactor.h>
 
 #include <iostream>
+#include <string>
 
 using namespace gtsam;
 
@@ -56,6 +57,14 @@ Values MakeRot2RingQcqpValues(size_t numPoses, double delta) {
   return values;
 }
 
+void PrintKeys(const std::string& label, const KeySet& keys) {
+  std::cout << label << ":";
+  for (Key key : keys) {
+    std::cout << " " << DefaultKeyFormatter(key);
+  }
+  std::cout << std::endl;
+}
+
 }  // namespace
 
 int main() {
@@ -75,6 +84,9 @@ int main() {
             << problem.costs().error(qcqpValues) << std::endl;
   std::cout << "equality violation at feasible ring values: "
             << problem.eConstraints().violationNorm(qcqpValues) << std::endl;
+  PrintKeys("cost keys", problem.costs().keys());
+  PrintKeys("equality constraint keys", problem.eConstraints().keys());
+  PrintKeys("inequality constraint keys", problem.iConstraints().keys());
 
   const LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> sdp(problem);
   return 0;
