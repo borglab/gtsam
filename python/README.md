@@ -11,12 +11,25 @@ For instructions on updating the version of the [wrap library](https://github.co
 - Cmake >= 3.15
 - If you want to build the GTSAM python library for a specific python version (eg 3.6),
   use the `-DGTSAM_PYTHON_VERSION=3.6` option when running `cmake` otherwise the default interpreter will be used.
-- If the interpreter is inside an environment (such as an anaconda environment or virtualenv environment),
-  then the environment should be active while building GTSAM.
-- This wrapper needs [pyparsing(>=2.4.2)](https://github.com/pyparsing/pyparsing), [pybind-stubgen>=2.5.1](https://github.com/sizmailov/pybind11-stubgen) and [numpy(>=1.11.0)](https://numpy.org/). These can all be installed as follows:
+- This wrapper needs [pyparsing(>=2.4.2)](https://github.com/pyparsing/pyparsing), [pybind11-stubgen>=2.5.1](https://github.com/sizmailov/pybind11-stubgen) and [numpy(>=1.11.0)](https://numpy.org/).
+
+  > **Note:** On systems that enforce [PEP 668](https://peps.python.org/pep-0668/) (Homebrew Python on macOS, and the system Python on Ubuntu 23.04+, Fedora, Arch, and other modern distros), bare `pip install` is blocked. Create and activate a virtual environment first:
+  >
+  > ```bash
+  > python3 -m venv .venv
+  > source .venv/bin/activate   # on Windows: .venv\Scripts\activate
+  > ```
+
+  Then install the requirements:
 
   ```bash
   pip install -r <gtsam_folder>/python/dev_requirements.txt
+  ```
+
+  When configuring cmake, point `PYTHON_EXECUTABLE` at the venv interpreter so the build and install use the same environment:
+
+  ```bash
+  cmake .. -DGTSAM_BUILD_PYTHON=ON -DPYTHON_EXECUTABLE=$(which python3)
   ```
 
 ## Install
