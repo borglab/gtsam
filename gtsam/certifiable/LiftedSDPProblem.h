@@ -4,6 +4,7 @@
 #include <gtsam/constrained/QcqpProblem.h>
 #include <gtsam/inference/Key.h>
 
+#include <map>
 #include <memory>
 
 namespace gtsam {
@@ -23,6 +24,10 @@ class LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
   explicit LiftedSDPProblem(const QcqpProblem& problem);
 
   ~LiftedSDPProblem();
+
+  const KeyVector& orderedKeys() const;
+
+  const std::map<Key, DenseIndex>& orderedKeyDims() const;
 
  private:
   struct Impl;

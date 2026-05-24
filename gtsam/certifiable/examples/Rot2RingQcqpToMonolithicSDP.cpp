@@ -89,5 +89,11 @@ int main() {
   PrintKeys("inequality constraint keys", problem.iConstraints().keys());
 
   const LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> sdp(problem);
+  std::cout << "ordered key dims:";
+  for (Key key : sdp.orderedKeys()) {
+    std::cout << " " << DefaultKeyFormatter(key) << "="
+              << sdp.orderedKeyDims().at(key);
+  }
+  std::cout << std::endl;
   return 0;
 }
