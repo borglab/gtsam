@@ -100,7 +100,7 @@ RISAM::UpdateResult RISAM::updateRobust(
 
   // Orig RISAM preformed 1 extra iteration for better convergence
   for (size_t i = 0; i < params_.number_extra_iters; i++) {
-    solver_->update(NonlinearFactorGraph(), Values(), ISAM2UpdateParams());
+    solver_->update();
     solver_->calculateEstimate();
   }
 

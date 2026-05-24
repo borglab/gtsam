@@ -192,19 +192,30 @@ class GTSAM_EXPORT RISAM {
       const std::optional<std::set<Key>> extra_gnc_involved_keys,
       const ISAM2UpdateParams& update_params);
 
-  /**
-   *
+  /** @brief Performs a inner loop iteration of a robust update.
+   * @param convex_factors The set of factors that are convex for this update
+   * @param mu_update_count The number of updates applied to each convex factor
+   * @returns The set of factors that remain convex after this iteration.
    */
-  FactorIndices runRobustIteration(const FactorIndices& convex_factors,
-                          std::map<FactorIndex, size_t>& mu_update_count);
+  FactorIndices runRobustIteration(
+      const FactorIndices& convex_factors,
+      std::map<FactorIndex, size_t>& mu_update_count);
 
-  /**
-   *
+  /** @brief Compute the new value of $\mu$ for a given graduated factor
+   * @param current_est The current estimated solution
+   * @param fidx The index of the graduated factor to update
+   * @param mu_update_count The number of updates applied to each convex factor
+   * @param convex_keys Accumulator for all keys associated with convex factors
+   * @note INVARIANT: fidx must index a Graduated Factor
    */
   void updateConvexFactorMu(const Values& current_est, const size_t fidx,
                             std::map<FactorIndex, size_t>& mu_update_count,
                             FastList<Key>& convex_keys);
 
+  /** @brief Compute the new set of convex factors
+   * @brief convex_factors The set of convex factors after the previous iteration
+   * @return The set of factors that are still convex after the current iteration
+   */
   FactorIndices updateConvexFactors(const FactorIndices& convex_factors);
 
   /** @brief Update housekeeping information for riSAM this involves:
