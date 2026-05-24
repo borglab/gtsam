@@ -22,7 +22,7 @@
 
 namespace gtsam {
 
-class RISAM {
+class GTSAM_EXPORT RISAM {
   /// @name Types
   /// @{
  public:

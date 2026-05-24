@@ -68,7 +68,7 @@ class GraduationScheduler {
 /* ************************************************************************* */
 /** @brief Scheduler for Geman McClure Loss with Scale Invariant Graduation
  */
-class SIGScheduler : public GraduationScheduler {
+class GTSAM_EXPORT SIGScheduler : public GraduationScheduler {
   /// @name Types
   /// @{
  public:
@@ -131,7 +131,7 @@ class SIGScheduler : public GraduationScheduler {
  * Examples include: Cauchy, TLS, Tukey
  * These losses are Convex at \mu=\infty and Robust at \mu=1.0
  */
-class ScaledScheduler : public GraduationScheduler {
+class GTSAM_EXPORT ScaledScheduler : public GraduationScheduler {
   /// @name Types
   /// @{
  public:
