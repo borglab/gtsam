@@ -315,7 +315,7 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
         COMMAND
         ${CMAKE_COMMAND} -E env
         "PYTHONPATH=${GTSAM_PYTHON_BUILD_DIRECTORY}/$ENV{PYTHONPATH}"
-        pybind11-stubgen -o . --enum-class-locations \"KernelFunctionType|NoiseFormat:gtsam.gtsam\" --enum-class-locations \"OrderingType:gtsam.gtsam.Ordering\" --numpy-array-use-type-var --ignore-all-errors gtsam_unstable
+        ${PYTHON_EXECUTABLE} -m pybind11_stubgen -o . --enum-class-locations \"KernelFunctionType|NoiseFormat:gtsam.gtsam\" --enum-class-locations \"OrderingType:gtsam.gtsam.Ordering\" --numpy-array-use-type-var --ignore-all-errors gtsam_unstable
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES} ${GTSAM_PYTHON_TEST_FILES} ${GTSAM_PYTHON_UNSTABLE_TARGET}
         WORKING_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/"
     )
