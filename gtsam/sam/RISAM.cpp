@@ -90,14 +90,12 @@ RISAM::UpdateResult RISAM::updateRobust(
   result.isam2_result = solver_->update(new_factors, new_theta, init_params);
   solver_->calculateEstimate();
 
-  /// Container to count the times mu is updated for each convex factor
+  // Update count used for some convexity graduation schedules
   std::map<FactorIndex, size_t> mu_update_count;
   for (auto& fidx : convex_factors) mu_update_count[fidx] = 0;
-  // Internal params force update convex factors + ensure better ordering
-  ISAM2UpdateParams params_internal;
-  params_internal.constrainedKeys = FastMap<Key, int>();
+  /// Update until all convex factors have converged
   while (convex_factors.size() > 0) {
-    runRobustIteration(convex_factors, mu_update_count, params_internal);
+    convex_factors = runRobustIteration(convex_factors, mu_update_count);
   }
 
   // Orig RISAM preformed 1 extra iteration for better convergence
@@ -110,9 +108,9 @@ RISAM::UpdateResult RISAM::updateRobust(
 }
 
 /* ************************************************************************* */
-void RISAM::runRobustIteration(FactorIndices& convex_factors,
-                               std::map<FactorIndex, size_t>& mu_update_count,
-                               ISAM2UpdateParams& params_internal) {
+FactorIndices RISAM::runRobustIteration(
+    const FactorIndices& convex_factors,
+    std::map<FactorIndex, size_t>& mu_update_count) {
   // Get the current solution
   Values current_est = solver_->calculateEstimate();
 
@@ -123,12 +121,14 @@ void RISAM::runRobustIteration(FactorIndices& convex_factors,
   }
 
   // Run the Update, re-eliminating the subproblem defined at this time-step
+  ISAM2UpdateParams params_internal;
+  params_internal.constrainedKeys = FastMap<Key, int>();
   params_internal.extraReelimKeys = convex_keys;
   solver_->update({}, {}, params_internal);
   solver_->calculateEstimate();
 
   // Update set of convex Factors
-  updateConvexFactors(convex_factors);
+  return updateConvexFactors(convex_factors);
 }
 
 /* ************************************************************************* */
@@ -142,24 +142,24 @@ void RISAM::updateConvexFactorMu(const Values& current_est, const size_t fidx,
   // Update the mu value using the factor's scheduler
   *(mu_[fidx]) = grad_factor->scheduler()->updateMu(*(mu_[fidx]), residual,
                                                     mu_update_count[fidx]);
+  // Aggregate all convex keys
   convex_keys.insert(convex_keys.end(), factors_.at(fidx)->begin(),
                      factors_.at(fidx)->end());
   mu_update_count[fidx]++;
 }
 
 /* ************************************************************************* */
-void RISAM::updateConvexFactors(FactorIndices& convex_factors) {
+FactorIndices RISAM::updateConvexFactors(const FactorIndices& convex_factors) {
   FactorIndices new_convex_factors;
-
   // For all previously convex factors check \mu convergence
-  for (FactorIndex fidx : new_convex_factors) {
+  for (FactorIndex fidx : convex_factors) {
     auto grad_factor =
         std::dynamic_pointer_cast<GraduatedFactor>(factors_.at(fidx));
     if (!grad_factor->scheduler()->isMuConverged(*(mu_[fidx]))) {
       new_convex_factors.push_back(fidx);
     }
   }
-  convex_factors = new_convex_factors;
+  return new_convex_factors;
 }
 
 /* ************************************************************************* */

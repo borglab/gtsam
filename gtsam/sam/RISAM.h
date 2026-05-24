@@ -195,9 +195,8 @@ class GTSAM_EXPORT RISAM {
   /**
    *
    */
-  void runRobustIteration(FactorIndices& convex_factors,
-                          std::map<FactorIndex, size_t>& mu_update_count,
-                          ISAM2UpdateParams& update_params_internal);
+  FactorIndices runRobustIteration(const FactorIndices& convex_factors,
+                          std::map<FactorIndex, size_t>& mu_update_count);
 
   /**
    *
@@ -206,7 +205,7 @@ class GTSAM_EXPORT RISAM {
                             std::map<FactorIndex, size_t>& mu_update_count,
                             FastList<Key>& convex_keys);
 
-  void updateConvexFactors(FactorIndices& convex_factors);
+  FactorIndices updateConvexFactors(const FactorIndices& convex_factors);
 
   /** @brief Update housekeeping information for riSAM this involves:
    * 1. Determining the indicies for new_factors
