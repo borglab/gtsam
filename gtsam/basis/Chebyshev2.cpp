@@ -119,6 +119,8 @@ namespace {
 }  // namespace
 
 Weights Chebyshev2::CalculateWeights(size_t N, double x, double a, double b) {
+  if (N == 1) return Weights::Ones(1);
+
   // We start by getting distances from x to all Chebyshev points
   const Vector distances = signedDistances(N, x, a, b);
 
@@ -225,24 +227,37 @@ Chebyshev2::DiffMatrix Chebyshev2::DifferentiationMatrix(size_t N, double a, dou
 }
 
 Matrix Chebyshev2::IntegrationMatrix(size_t N) {
-  // Obtain the differentiation matrix.
-  const Matrix D = DifferentiationMatrix(N);
-
-  // Compute the pseudo-inverse of the differentiation matrix.
-  Eigen::JacobiSVD<Matrix> svd(D, Eigen::ComputeThinU | Eigen::ComputeThinV);
-  const auto& S = svd.singularValues();
-  Matrix invS = Matrix::Zero(N, N);
-  for (size_t i = 0; i < N - 1; ++i) invS(i, i) = 1.0 / S(i);
-  Matrix P = svd.matrixV() * invS * svd.matrixU().transpose();
-
-  // Return a version of P that makes sure (P*f)(0) = 0.
-  const Weights row0 = P.row(0);
-  P.rowwise() -= row0;
-  return P;
+  return IntegrationMatrix(N, -1.0, 1.0);
 }
 
+/*
+ * Let y_r be values at the N input CGL nodes t_r on [a,b]. These define the
+ * degree N-1 interpolant p(t) = sum_r y_r l_r(t), where l_r are the Lagrange
+ * basis polynomials for the input nodes. The integrated trajectory lives in a
+ * degree N space, so we return values at N+1 output CGL nodes x_j:
+ *
+ *   F_j = integral_a^{x_j} p(t) dt
+ *       = sum_r y_r integral_a^{x_j} l_r(t) dt.
+ *
+ * For each row j, we compute these integrals by applying Clenshaw-Curtis
+ * weights on the partial interval [a,x_j]. The quadrature nodes on [a,x_j]
+ * are evaluated in the original input-node basis l_r, producing an N x N
+ * matrix E. Thus row j is IntegrationWeights(N,a,x_j) * E. Row 0 is zero,
+ * and row N is exactly IntegrationWeights(N,a,b).
+ */
 Matrix Chebyshev2::IntegrationMatrix(size_t N, double a, double b) {
-  return IntegrationMatrix(N) * (b - a) / 2.0;
+  Matrix P = Matrix::Zero(N + 1, N);
+  const Vector outputPoints = Points(N + 1, a, b);
+  const Weights baseWeights = IntegrationWeights(N);
+
+  for (size_t j = 1; j <= N; ++j) {
+    const double upper = outputPoints(j);
+    const Vector quadraturePoints = Points(N, a, upper);
+    const Matrix evaluation =
+        Chebyshev2::WeightMatrix(N, quadraturePoints, a, b);
+    P.row(j) = ((upper - a) / 2.0) * baseWeights * evaluation;
+  }
+  return P;
 }
 
 /*
@@ -263,6 +278,11 @@ Matrix Chebyshev2::IntegrationMatrix(size_t N, double a, double b) {
 */
 Weights Chebyshev2::IntegrationWeights(size_t N) {
   Weights weights(N);
+  if (N == 1) {
+    weights(0) = 2.0;
+    return weights;
+  }
+
   const size_t K = N - 1,  // number of intervals between N points
     K2 = K * K;
 
@@ -291,13 +311,13 @@ Weights Chebyshev2::IntegrationWeights(size_t N, double a, double b) {
 }
 
 Weights Chebyshev2::DoubleIntegrationWeights(size_t N) {
-  // we have w * P, where w are the Clenshaw-Curtis weights and P is the integration matrix
-  // But P does not by default return a function starting at zero.
-  return Chebyshev2::IntegrationWeights(N) * Chebyshev2::IntegrationMatrix(N);
+  return Chebyshev2::IntegrationWeights(N + 1) *
+         Chebyshev2::IntegrationMatrix(N);
 }
 
 Weights Chebyshev2::DoubleIntegrationWeights(size_t N, double a, double b) {
-  return Chebyshev2::IntegrationWeights(N, a, b) * Chebyshev2::IntegrationMatrix(N, a, b);
+  return Chebyshev2::IntegrationWeights(N + 1, a, b) *
+         Chebyshev2::IntegrationMatrix(N, a, b);
 }
 
 /**
