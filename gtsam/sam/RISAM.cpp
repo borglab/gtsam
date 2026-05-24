@@ -81,68 +81,26 @@ RISAM::UpdateResult RISAM::updateRobust(
     const std::optional<std::set<gtsam::Key>> extra_gnc_involved_keys,
     const gtsam::ISAM2UpdateParams& update_params) {
   // Setup the result structure
-  UpdateResult update_result;
-
-  // Create params for the initial update
-  // NOTE: These may be modified by convexifyInvolvedFactors
-  gtsam::ISAM2UpdateParams initial_update_params = update_params;
+  UpdateResult result;
 
   // Convexify involved factors
-  std::set<gtsam::FactorIndex> convex_factors =
-      convexifyInvolvedFactors(new_factors, new_theta, extra_gnc_involved_keys,
-                               initial_update_params, update_result);
-  /// Setup a container to count the number of times mu is updated for each
-  /// convex factor
-  std::map<gtsam::FactorIndex, size_t> mu_update_count;
-  for (auto& fidx : convex_factors) mu_update_count[fidx] = 0;
+  gtsam::ISAM2UpdateParams init_params = update_params;
+  gtsam::FactorIndices convex_factors = convexifyInvolvedFactors(
+      new_factors, new_theta, extra_gnc_involved_keys, init_params, result);
 
   // Run the initial update to add new factors, after this the iSAM2
   // factors/var_index will match the risam copies
-  update_result.isam2_result =
-      solver_->update(new_factors, new_theta, initial_update_params);
+  result.isam2_result = solver_->update(new_factors, new_theta, init_params);
   solver_->calculateEstimate();
 
-  // Run GNC iterations until all convex factors have converged w.r.t. mu_
-  gtsam::FactorIndices remaining_convex_factors(convex_factors.begin(),
-                                                convex_factors.end());
+  /// Container to count the times mu is updated for each convex factor
+  std::map<gtsam::FactorIndex, size_t> mu_update_count;
+  for (auto& fidx : convex_factors) mu_update_count[fidx] = 0;
   // Internal params force update convex factors + ensure better ordering
-  gtsam::ISAM2UpdateParams update_params_internal;
-  while (remaining_convex_factors.size() > 0) {
-    // Get the current solution
-    gtsam::Values current_est = solver_->calculateEstimate();
-    // Update mu for all convex factors and get the convex keys
-    gtsam::FastList<gtsam::Key> convexKeys;
-    for (gtsam::FactorIndex fidx : remaining_convex_factors) {
-      auto grad_factor =
-          std::dynamic_pointer_cast<GraduatedFactor>(factors_.at(fidx));
-      *(mu_[fidx]) = grad_factor->scheduler()->updateMu(
-          *(mu_[fidx]), grad_factor->residual(current_est),
-          mu_update_count[fidx]);
-      convexKeys.insert(convexKeys.end(), factors_.at(fidx)->begin(),
-                        factors_.at(fidx)->end());
-      mu_update_count[fidx]++;
-    }
-
-    // Setup Internal Update Parameters
-    // Force update to convex factors
-    update_params_internal.extraReelimKeys = convexKeys;
-    // Prevent iSAM2 from ordering convex factors first
-    update_params_internal.constrainedKeys = gtsam::FastMap<gtsam::Key, int>();
-
-    // Run the Update, re-eliminating the subproblem defined at this time-step
-    solver_->update(gtsam::NonlinearFactorGraph(), gtsam::Values(),
-                    update_params_internal);
-    solver_->calculateEstimate();
-
-    // Update set of convex Factors
-    gtsam::FactorIndices new_remaining_convex_factors;
-    for (gtsam::FactorIndex fidx : remaining_convex_factors) {
-      auto grad_factor =
-          std::dynamic_pointer_cast<GraduatedFactor>(factors_.at(fidx));
-      if (!grad_factor->scheduler()->isMuConverged(*(mu_[fidx])))
-        new_remaining_convex_factors.push_back(fidx);
-    }
-    remaining_convex_factors = new_remaining_convex_factors;
+  gtsam::ISAM2UpdateParams params_internal;
+  params_internal.constrainedKeys = gtsam::FastMap<gtsam::Key, int>();
+  while (convex_factors.size() > 0) {
+    runRobustIteration(convex_factors, mu_update_count, params_internal);
   }
 
   // Orig RISAM preformed 1 extra iteration for better convergence
@@ -152,7 +110,62 @@ RISAM::UpdateResult RISAM::updateRobust(
     solver_->calculateEstimate();
   }
 
-  return update_result;
+  return result;
+}
+
+/* ************************************************************************* */
+void RISAM::runRobustIteration(
+    gtsam::FactorIndices& convex_factors,
+    std::map<gtsam::FactorIndex, size_t>& mu_update_count,
+    gtsam::ISAM2UpdateParams& params_internal) {
+  // Get the current solution
+  gtsam::Values current_est = solver_->calculateEstimate();
+
+  // Update mu for all convex factors and get the convex keys
+  gtsam::FastList<gtsam::Key> convex_keys;
+  for (gtsam::FactorIndex fidx : convex_factors) {
+    updateConvexFactorMu(current_est, fidx, mu_update_count, convex_keys);
+  }
+
+  // Run the Update, re-eliminating the subproblem defined at this time-step
+  params_internal.extraReelimKeys = convex_keys;
+  solver_->update({}, {}, params_internal);
+  solver_->calculateEstimate();
+
+  // Update set of convex Factors
+  updateConvexFactors(convex_factors);
+}
+
+/* ************************************************************************* */
+void RISAM::updateConvexFactorMu(
+    const gtsam::Values& current_est, const size_t fidx,
+    std::map<gtsam::FactorIndex, size_t>& mu_update_count,
+    gtsam::FastList<gtsam::Key>& convex_keys) {
+  // Invariant: fidx referrs to a GraduatedFactor
+  auto grad_factor =
+      std::dynamic_pointer_cast<GraduatedFactor>(factors_.at(fidx));
+  const double residual = grad_factor->residual(current_est);
+  // Update the mu value using the factor's scheduler
+  *(mu_[fidx]) = grad_factor->scheduler()->updateMu(*(mu_[fidx]), residual,
+                                                    mu_update_count[fidx]);
+  convex_keys.insert(convex_keys.end(), factors_.at(fidx)->begin(),
+                     factors_.at(fidx)->end());
+  mu_update_count[fidx]++;
+}
+
+/* ************************************************************************* */
+void RISAM::updateConvexFactors(gtsam::FactorIndices& convex_factors) {
+  gtsam::FactorIndices new_convex_factors;
+
+  // For all previously convex factors check \mu convergence
+  for (gtsam::FactorIndex fidx : new_convex_factors) {
+    auto grad_factor =
+        std::dynamic_pointer_cast<GraduatedFactor>(factors_.at(fidx));
+    if (!grad_factor->scheduler()->isMuConverged(*(mu_[fidx]))) {
+      new_convex_factors.push_back(fidx);
+    }
+  }
+  convex_factors = new_convex_factors;
 }
 
 /* ************************************************************************* */
@@ -272,7 +285,7 @@ void RISAM::incrementMuInits() {
 }
 
 /* ************************************************************************* */
-std::set<gtsam::FactorIndex> RISAM::convexifyInvolvedFactors(
+gtsam::FactorIndices RISAM::convexifyInvolvedFactors(
     const gtsam::NonlinearFactorGraph& new_factors,
     const gtsam::Values& new_theta,
     const std::optional<std::set<gtsam::Key>> extra_gnc_involved_keys,
@@ -336,7 +349,7 @@ std::set<gtsam::FactorIndex> RISAM::convexifyInvolvedFactors(
   update_result.affected_variables = affected_keys;
 
   // Return
-  return convex_factors;
+  return gtsam::FactorIndices(convex_factors.begin(), convex_factors.end());
 }
 
 }  // namespace gtsam
