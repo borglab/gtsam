@@ -195,19 +195,18 @@ class GTSAM_EXPORT RISAM {
   /**
    *
    */
-  void runRobustIteration(gtsam::FactorIndices& convex_factors,
-                          std::map<gtsam::FactorIndex, size_t>& mu_update_count,
-                          gtsam::ISAM2UpdateParams& update_params_internal);
+  void runRobustIteration(FactorIndices& convex_factors,
+                          std::map<FactorIndex, size_t>& mu_update_count,
+                          ISAM2UpdateParams& update_params_internal);
 
   /**
    *
    */
-  void updateConvexFactorMu(
-      const gtsam::Values& current_est, const size_t fidx,
-      std::map<gtsam::FactorIndex, size_t>& mu_update_count,
-      gtsam::FastList<gtsam::Key>& convex_keys);
+  void updateConvexFactorMu(const Values& current_est, const size_t fidx,
+                            std::map<FactorIndex, size_t>& mu_update_count,
+                            FastList<Key>& convex_keys);
 
-  void updateConvexFactors(gtsam::FactorIndices& convex_factors);
+  void updateConvexFactors(FactorIndices& convex_factors);
 
   /** @brief Update housekeeping information for riSAM this involves:
    * 1. Determining the indicies for new_factors
@@ -245,7 +244,7 @@ class GTSAM_EXPORT RISAM {
    * @returns The indicies of all factors convexified in the update defined by
    * the given parameters.
    */
-  gtsam::FactorIndices convexifyInvolvedFactors(
+  FactorIndices convexifyInvolvedFactors(
       const NonlinearFactorGraph& new_factors, const Values& new_theta,
       const std::optional<std::set<Key>> extra_gnc_involved_keys,
       ISAM2UpdateParams& internal_update_params, UpdateResult& update_result);
