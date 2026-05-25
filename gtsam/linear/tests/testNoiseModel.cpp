@@ -640,23 +640,6 @@ TEST(NoiseModel, robustFunctionHuber)
   DOUBLES_EQUAL(0.5000, huber->loss(error4), 1e-8);
 }
 
-TEST(NoiseModel, robustFunctionHuberGraduated) {
-  const double k = 5.0, e1 = 1.0, e2 = 10.0;
-  const mEstimator::Huber::shared_ptr huber = mEstimator::Huber::Create(k);
-  // Convex For large \mu
-  DOUBLES_EQUAL(1.0, huber->graduatedWeight(e1, 1e8), 1e-6);
-  DOUBLES_EQUAL(1.0, huber->graduatedWeight(e2, 1e8), 1e-6);
-  // Standard for \mu = 1
-  DOUBLES_EQUAL(huber->weight(e1), huber->graduatedWeight(e1, 1.0), 1e-6);
-  DOUBLES_EQUAL(huber->weight(e2), huber->graduatedWeight(e2, 1.0), 1e-6);
-  // Convex For large \mu
-  DOUBLES_EQUAL(0.5 * e1 * e1, huber->graduatedLoss(e1, 1e8), 1e-6);
-  DOUBLES_EQUAL(0.5 * e2 * e2, huber->graduatedLoss(e2, 1e8), 1e-6);
-  // Standard for \mu = 1
-  DOUBLES_EQUAL(huber->loss(e1), huber->graduatedLoss(e1, 1.0), 1e-6);
-  DOUBLES_EQUAL(huber->loss(e2), huber->graduatedLoss(e2, 1.0), 1e-6);
-}
-
 TEST(NoiseModel, robustFunctionCauchy)
 {
   const double k = 5.0, error1 = 1.0, error2 = 10.0, error3 = -10.0, error4 = -1.0;
@@ -671,23 +654,6 @@ TEST(NoiseModel, robustFunctionCauchy)
   DOUBLES_EQUAL(20.117973905426254, cauchy->loss(error2), 1e-8);
   DOUBLES_EQUAL(20.117973905426254, cauchy->loss(error3), 1e-8);
   DOUBLES_EQUAL(0.490258914416017, cauchy->loss(error4), 1e-8);
-}
-
-TEST(NoiseModel, robustFunctionCauchyGraduated) {
-  const double k = 5.0, e1 = 1.0, e2 = 10.0;
-  const mEstimator::Cauchy::shared_ptr cauchy = mEstimator::Cauchy::Create(k);
-  // Convex For large \mu
-  DOUBLES_EQUAL(1.0, cauchy->graduatedWeight(e1, 1e8), 1e-6);
-  DOUBLES_EQUAL(1.0, cauchy->graduatedWeight(e2, 1e8), 1e-6);
-  // Standard for \mu = 1
-  DOUBLES_EQUAL(cauchy->weight(e1), cauchy->graduatedWeight(e1, 1.0), 1e-6);
-  DOUBLES_EQUAL(cauchy->weight(e2), cauchy->graduatedWeight(e2, 1.0), 1e-6);
-  // Convex For large \mu
-  DOUBLES_EQUAL(0.5 * e1 * e1, cauchy->graduatedLoss(e1, 1e8), 1e-6);
-  DOUBLES_EQUAL(0.5 * e2 * e2, cauchy->graduatedLoss(e2, 1e8), 1e-6);
-  // Standard for \mu = 1
-  DOUBLES_EQUAL(cauchy->loss(e1), cauchy->graduatedLoss(e1, 1.0), 1e-6);
-  DOUBLES_EQUAL(cauchy->loss(e2), cauchy->graduatedLoss(e2, 1.0), 1e-6);
 }
 
 TEST(NoiseModel, robustFunctionAsymmetricCauchy)
@@ -719,24 +685,6 @@ TEST(NoiseModel, robustFunctionGemanMcClure)
   DOUBLES_EQUAL(0.495049504950495, gmc->loss(error2), 1e-8);
   DOUBLES_EQUAL(0.495049504950495, gmc->loss(error3), 1e-8);
   DOUBLES_EQUAL(0.2500, gmc->loss(error4), 1e-8);
-}
-
-TEST(NoiseModel, robustFunctionGemanMcClureGraduatedScaled) {
-  const double k = 1.0, e1 = 1.0, e2 = 10.0;
-  const mEstimator::GemanMcClure::shared_ptr gmc =
-      mEstimator::GemanMcClure::Create(k);
-  // Convex For large \mu
-  DOUBLES_EQUAL(1.0, gmc->graduatedWeight(e1, 1e12), 1e-6);
-  DOUBLES_EQUAL(1.0, gmc->graduatedWeight(e2, 1e12), 1e-6);
-  // Standard for \mu = 1
-  DOUBLES_EQUAL(gmc->weight(e1), gmc->graduatedWeight(e1, 1.0), 1e-6);
-  DOUBLES_EQUAL(gmc->weight(e2), gmc->graduatedWeight(e2, 1.0), 1e-6);
-  // Convex For large \mu
-  DOUBLES_EQUAL(0.5 * e1 * e1, gmc->graduatedLoss(e1, 1e12), 1e-6);
-  DOUBLES_EQUAL(0.5 * e2 * e2, gmc->graduatedLoss(e2, 1e12), 1e-6);
-  // Standard for \mu = 1
-  DOUBLES_EQUAL(gmc->loss(e1), gmc->graduatedLoss(e1, 1.0), 1e-6);
-  DOUBLES_EQUAL(gmc->loss(e2), gmc->graduatedLoss(e2, 1.0), 1e-6);
 }
 
 /* ************************************************************************* */
@@ -797,23 +745,6 @@ TEST(NoiseModel, robustFunctionTLS)
   DOUBLES_EQUAL(0.1250, tls->loss(error4), 1e-8);
 }
 
-TEST(NoiseModel, robustFunctionTruncatedLeastSquaresGraduatedStandard) {
-  const double k = 5.0, e1 = 1.0, e2 = 10.0;
-  const mEstimator::TruncatedLeastSquares::shared_ptr tls =
-      mEstimator::TruncatedLeastSquares::Create(k);
-  // Convex For large \mu
-  DOUBLES_EQUAL(1.0, tls->graduatedWeight(e1, 1e12), 1e-6);
-  DOUBLES_EQUAL(1.0, tls->graduatedWeight(e2, 1e12), 1e-6);
-  // Standard for \mu = 1
-  DOUBLES_EQUAL(tls->weight(e1), tls->graduatedWeight(e1, 1.0), 1e-6);
-  DOUBLES_EQUAL(tls->weight(e2), tls->graduatedWeight(e2, 1.0), 1e-6);
-  // Convex For large \mu
-  DOUBLES_EQUAL(0.5 * e1 * e1, tls->graduatedLoss(e1, 1e12), 1e-6);
-  DOUBLES_EQUAL(0.5 * e2 * e2, tls->graduatedLoss(e2, 1e12), 1e-6);
-  // Standard for \mu = 1
-  DOUBLES_EQUAL(tls->loss(e1), tls->graduatedLoss(e1, 1.0), 1e-6);
-  DOUBLES_EQUAL(tls->loss(e2), tls->graduatedLoss(e2, 1.0), 1e-6);
-}
 
 TEST(NoiseModel, robustFunctionTruncatedLeastSquaresGraduatedLinear) {
   const double k = 5.0, e1 = 1.0, e2 = 10.0;
@@ -863,23 +794,6 @@ TEST(NoiseModel, robustFunctionWelsch)
   DOUBLES_EQUAL(0.490132010595960, welsch->loss(error4), 1e-8);
 }
 
-TEST(NoiseModel, robustFunctionWelshGraduated) {
-  const double k = 5.0, e1 = 1.0, e2 = 10.0;
-  const mEstimator::Welsch::shared_ptr welsch = mEstimator::Welsch::Create(k);
-  // Convex For large \mu
-  DOUBLES_EQUAL(1.0, welsch->graduatedWeight(e1, 1e12), 1e-6);
-  DOUBLES_EQUAL(1.0, welsch->graduatedWeight(e2, 1e12), 1e-6);
-  // Standard for \mu = 1
-  DOUBLES_EQUAL(welsch->weight(e1), welsch->graduatedWeight(e1, 1.0), 1e-6);
-  DOUBLES_EQUAL(welsch->weight(e2), welsch->graduatedWeight(e2, 1.0), 1e-6);
-  // Convex For large \mu
-  DOUBLES_EQUAL(0.5 * e1 * e1, welsch->graduatedLoss(e1, 1e12), 1e-6);
-  DOUBLES_EQUAL(0.5 * e2 * e2, welsch->graduatedLoss(e2, 1e12), 1e-6);
-  // Standard for \mu = 1
-  DOUBLES_EQUAL(welsch->loss(e1), welsch->graduatedLoss(e1, 1.0), 1e-6);
-  DOUBLES_EQUAL(welsch->loss(e2), welsch->graduatedLoss(e2, 1.0), 1e-6);
-}
-
 TEST(NoiseModel, robustFunctionTukey)
 {
   const double k = 5.0, error1 = 1.0, error2 = 10.0, error3 = -10.0, error4 = -1.0;
@@ -896,24 +810,6 @@ TEST(NoiseModel, robustFunctionTukey)
   DOUBLES_EQUAL(0.480266666666667, tukey->loss(error4), 1e-8);
 }
 
-
-TEST(NoiseModel, robustFunctionTukeyGraduated) {
-  const double k = 5.0, e1 = 1.0, e2 = 10.0;
-  const mEstimator::Tukey::shared_ptr tukey = mEstimator::Tukey::Create(k);
-  // Convex For large \mu
-  DOUBLES_EQUAL(1.0, tukey->graduatedWeight(e1, 1e6), 1e-6);
-  DOUBLES_EQUAL(1.0, tukey->graduatedWeight(e2, 1e6), 1e-6);
-  // Standard for \mu = 1
-  DOUBLES_EQUAL(tukey->weight(e1), tukey->graduatedWeight(e1, 1.0), 1e-6);
-  DOUBLES_EQUAL(tukey->weight(e2), tukey->graduatedWeight(e2, 1.0), 1e-6);
-  // Convex For large \mu
-  // Note: Tukey is not numerically stable for very large values of \mu
-  DOUBLES_EQUAL(0.5 * e1 * e1, tukey->graduatedLoss(e1, 1e5), 1e-5);
-  DOUBLES_EQUAL(0.5 * e2 * e2, tukey->graduatedLoss(e2, 1e5), 1e-5);
-  // Standard for \mu = 1
-  DOUBLES_EQUAL(tukey->loss(e1), tukey->graduatedLoss(e1, 1.0), 1e-6);
-  DOUBLES_EQUAL(tukey->loss(e2), tukey->graduatedLoss(e2, 1.0), 1e-6);
-}
 
 TEST(NoiseModel, robustFunctionAsymmetricTukey)
 {
@@ -941,24 +837,6 @@ TEST(NoiseModel, robustFunctionDCS)
 
   DOUBLES_EQUAL(0.5         , dcs->loss(error1), 1e-8);
   DOUBLES_EQUAL(0.9900990099, dcs->loss(error2), 1e-8);
-}
-
-TEST(NoiseModel, robustFunctionDCSGraduated)
-{
-  const double k = 5.0, e1 = 1.0, e2 = 10.0;
-  const mEstimator::DCS::shared_ptr dcs = mEstimator::DCS::Create(k);
-  // Convex For large \mu
-  DOUBLES_EQUAL(1.0, dcs->graduatedWeight(e1, 1e12), 1e-6);
-  DOUBLES_EQUAL(1.0, dcs->graduatedWeight(e2, 1e12), 1e-6);
-  // Standard for \mu = 1
-  DOUBLES_EQUAL(dcs->weight(e1), dcs->graduatedWeight(e1, 1.0), 1e-6);
-  DOUBLES_EQUAL(dcs->weight(e2), dcs->graduatedWeight(e2, 1.0), 1e-6);
-  // Convex For large \mu
-  DOUBLES_EQUAL(e1 * e1, dcs->graduatedLoss(e1, 1e12), 1e-6);
-  DOUBLES_EQUAL(e2 * e2, dcs->graduatedLoss(e2, 1e12), 1e-6);
-  // Standard for \mu = 1
-  DOUBLES_EQUAL(dcs->loss(e1), dcs->graduatedLoss(e1, 1.0), 1e-6);
-  DOUBLES_EQUAL(dcs->loss(e2), dcs->graduatedLoss(e2, 1.0), 1e-6);
 }
 
 TEST(NoiseModel, robustFunctionL2WithDeadZone)
@@ -1094,7 +972,7 @@ TEST(NoiseModel, robustNoiseL2WithDeadZone)
     DOUBLES_EQUAL(std::fmax(0, i - dead_zone_size) * i,
                   robust->squaredMahalanobisDistance(error), 1e-8);
   }
-}
+} 
 
 /* ************************************************************************* */
 TEST(NoiseModel, robustNoiseCustomHuber) {
@@ -1124,6 +1002,37 @@ TEST(NoiseModel, robustNoiseCustomHuber) {
   DOUBLES_EQUAL(10.0, A(0, 1), 1e-8);
   DOUBLES_EQUAL(sqrt(k * 100.0), A(1, 0), 1e-8);
   DOUBLES_EQUAL(sqrt(k / 100.0) * 1000.0, A(1, 1), 1e-8);
+}
+
+TEST(NoiseModel, graduatedWeightLossAll) {
+  const double e1 = 1.0, e2 = 10.0, k = 5.0;
+  auto testFunc = [&](const mEstimator::Base::shared_ptr mest, double infinity, bool is_dcs) -> void {
+    // Convex For large \mu
+    DOUBLES_EQUAL(1.0, mest->graduatedWeight(e1, infinity), 1e-5);
+    DOUBLES_EQUAL(1.0, mest->graduatedWeight(e2, infinity), 1e-5);
+    // Standard for \mu = 1
+    DOUBLES_EQUAL(mest->weight(e1), mest->graduatedWeight(e1, 1.0), 1e-5);
+    DOUBLES_EQUAL(mest->weight(e2), mest->graduatedWeight(e2, 1.0), 1e-5);
+    // Convex For large \mu
+    if (is_dcs) {
+      DOUBLES_EQUAL(e1 * e1, mest->graduatedLoss(e1, infinity), 1e-5);
+      DOUBLES_EQUAL(e2 * e2, mest->graduatedLoss(e2, infinity), 1e-5);
+    } else {
+      DOUBLES_EQUAL(0.5 * e1 * e1, mest->graduatedLoss(e1, infinity), 1e-5);
+      DOUBLES_EQUAL(0.5 * e2 * e2, mest->graduatedLoss(e2, infinity), 1e-5);
+    }
+    // Standard for \mu = 1
+    DOUBLES_EQUAL(mest->loss(e1), mest->graduatedLoss(e1, 1.0), 1e-5);
+    DOUBLES_EQUAL(mest->loss(e2), mest->graduatedLoss(e2, 1.0), 1e-5);
+  };
+
+  testFunc(mEstimator::Huber::Create(k), 1e8, false);
+  testFunc(mEstimator::Cauchy::Create(k), 1e8, false);
+  testFunc(mEstimator::GemanMcClure::Create(k), 1e12, false);
+  testFunc(mEstimator::TruncatedLeastSquares::Create(k), 1e12, false);
+  testFunc(mEstimator::Welsch::Create(k), 1e12, false);
+  testFunc(mEstimator::Tukey::Create(k), 1e5, false);
+  testFunc(mEstimator::DCS::Create(k), 1e12, true);
 }
 
 TEST(NoiseModel, lossFunctionAtZero) {
