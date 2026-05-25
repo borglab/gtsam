@@ -28,9 +28,9 @@ namespace gtsam {
  * reject outliers while maintaining robustness to initialization.
  *
  * Citation:
- * Robust Incremental Smoothing and Mapping (riSAM})
- * D. McGann and J.G. Rogers III and M. Kaess, 2023,
- * Proc. IEEE Intl. Conf. on Robotics and Automation (ICRA)
+ * Robust Incremental Smoothing and Mapping (riSAM)
+ * D. McGann and J.G. Rogers III and M. Kaess,
+ * 2023, Proc. IEEE Intl. Conf. on Robotics and Automation (ICRA)
  */
 class GTSAM_EXPORT RISAM {
   /// @name Types
@@ -54,6 +54,7 @@ class GTSAM_EXPORT RISAM {
           outlier_mu_avg_var_convergence_thresh(
               outlier_mu_avg_var_convergence_thresh),
           number_extra_iters(number_extra_iters) {};
+
     /// @brief The parameters for the encapsulated iSAM2 algorithm @Note some
     /// are overriden in RISAM::RISAM().
     ISAM2Params isam2_params;
@@ -165,8 +166,9 @@ class GTSAM_EXPORT RISAM {
 
   /// @brief Update Interface. See ISAM2 docs for details as parameters match
   /// (almost) exactly.
-  /// @param force_gnc_solve - overrides internal RISAM logic and performs a
-  /// robust update.
+  /// @param extra_gnc_involved_keys - overrides internal RISAM logic and
+  /// performs a robust update. All extra involved keys will be treated as being
+  /// a part of the current update with respect to factor convexification.
   UpdateResult update(
       const NonlinearFactorGraph& new_factors, const Values& new_theta,
       const std::optional<std::set<Key>> extra_gnc_involved_keys,
@@ -183,8 +185,7 @@ class GTSAM_EXPORT RISAM {
    * if its current residual is greater than the chi2_threshold provided.
    * @param chi2_outlier_thresh - The chi2 threshold used to define outliers.
    * WARN: Potentially slow since we iterate over all factors.
-   * @returns The set of factors that are considered outliers by the RISAM
-   * algorithm.
+   * @returns The set of factors that are considered outliers by RISAM.
    */
   std::set<size_t> getOutliers(double chi2_outlier_thresh);
   /// @}
@@ -195,7 +196,7 @@ class GTSAM_EXPORT RISAM {
   /** @brief Preforms a robust update to the system.
    * A robust update is required any time new_factors contains GraduatedFactors
    * (i.e. there are potentially new inlier/outlier measurements).
-   * @see ISAM2::update for details on params.
+   * @see RISAM::update for details on params.
    */
   UpdateResult updateRobust(
       const NonlinearFactorGraph& new_factors, const Values& new_theta,
@@ -203,8 +204,8 @@ class GTSAM_EXPORT RISAM {
       const ISAM2UpdateParams& update_params);
 
   /** @brief Performs a inner loop iteration of a robust update.
-   * @param convex_factors The set of factors that are convex for this update.
-   * @param mu_update_count The number of updates applied to each convex factor.
+   * @param convex_factors: The set of factors that are convex for this update.
+   * @param mu_update_count: Accum. for # of updates applied to convex factors.
    * @returns The set of factors that remain convex after this iteration.
    */
   FactorIndices runRobustIteration(
@@ -212,29 +213,26 @@ class GTSAM_EXPORT RISAM {
       std::map<FactorIndex, size_t>& mu_update_count);
 
   /** @brief Compute the new value of $\mu$ for a given graduated factor.
-   * @param current_est The current estimated solution.
-   * @param fidx The index of the graduated factor to update.
-   * @param mu_update_count The number of updates applied to each convex factor.
-   * @param convex_keys Accumulator for all keys associated with convex factors.
+   * @param current_est: The current estimated solution.
+   * @param fidx: The index of the graduated factor to update.
+   * @param mu_update_count: Accum. for # of updates applied to convex factors.
+   * @param convex_keys: Accum. for all keys associated with convex factors.
    * @note INVARIANT: fidx must index a Graduated Factor.
    */
   void updateConvexFactorMu(const Values& current_est, const size_t fidx,
                             std::map<FactorIndex, size_t>& mu_update_count,
                             FastList<Key>& convex_keys);
 
-  /** @brief Compute the new set of convex factors after a robust update iter.
-   * @brief convex_factors The set of convex factors after the previous
-   * iteration.
-   * @return The set of factors that are still convex after the current
-   * iteration.
+  /** @brief Compute the new set of convex factors after a robust iteration.
+   * @brief convex_factors: The set of convex factors after the prev. iter.
+   * @return The set of factors that are still convex after the current iter.
    */
-  FactorIndices updateConvexFactors(const FactorIndices& convex_factors);
+  FactorIndices updateConvexFactors(const FactorIndices& convex_factors) const;
 
   /** @brief Convexifies factors involved in the update
    * Finds all factors inside the total affected set, and involved in the update
    * defined by new factors. Marks those factors as convex and resets mu_ to the
-   * factors current mu_init_ See RISAM::update for first three parameter
-   * details.
+   * factors current mu_init_. See RISAM::update for adtl. parameter details.
    * @param update_result: structure containing information about this update,
    * modified by this function to fill in info about involved and affected
    * variables as well as convexified factors.
@@ -248,21 +246,21 @@ class GTSAM_EXPORT RISAM {
 
   /** @brief Accumulates the keys of all vars directly invovled in an update.
    * @param new_factors The new factors for hte update.
-   * @param extra_gnc_involved_keys User supplied involved keys.
-   * @param update_params The parameters for the underlying iSAM2 update.
+   * @param extra_gnc_involved_keys: User supplied involved keys.
+   * @param update_params: The parameters for the underlying iSAM2 update.
    * @returns The set of involved factors.
    */
   KeySet accumulateInvolvedKeys(
       const NonlinearFactorGraph& new_factors,
       const std::optional<std::set<Key>>& extra_gnc_involved_keys,
-      ISAM2UpdateParams& update_params);
+      ISAM2UpdateParams& update_params) const;
 
   /** @brief Convexifies a single factor if it is involved with the update.
-   * @param fidx The factor to convexify if involved.
-   * @param involved_keys The set of keys involved with the update.
-   * @param affected_keys The ser of keys affected by the update.
-   * @param is_batch_update Flag indicating all factors are relinearized.
-   * @param convex_factors Accululator for the set of all convex factors.
+   * @param fidx: The factor to convexify if involved.
+   * @param involved_keys: The set of keys involved with the update.
+   * @param affected_keys: The ser of keys affected by the update.
+   * @param is_batch_update: Flag indicating all factors are relinearized.
+   * @param convex_factors: Accumulator for the set of all convex factors.
    */
   void convexifyFactorIfInvolved(const FactorIndex fidx,
                                  const KeySet& involved_keys,

@@ -81,9 +81,8 @@ std::set<size_t> RISAM::getOutliers(double chi2_outlier_thresh) {
   Values current_est = solver_->calculateEstimate();
 
   for (size_t i = 0; i < factors_.size(); i++) {
-    NonlinearFactor::shared_ptr nlf_ptr = factors_.at(i);
-    GraduatedFactor::shared_ptr grad_ptr =
-        std::dynamic_pointer_cast<GraduatedFactor>(nlf_ptr);
+    auto nlf_ptr = factors_.at(i);
+    auto grad_ptr = std::dynamic_pointer_cast<GraduatedFactor>(nlf_ptr);
     if (grad_ptr) {
       const double thresh =
           internal::chiSquaredQuantile(nlf_ptr->dim(), chi2_outlier_thresh);
@@ -160,8 +159,8 @@ void RISAM::updateConvexFactorMu(const Values& current_est, const size_t fidx,
   // Invariant: fidx referrs to a GraduatedFactor
   auto grad_factor =
       std::dynamic_pointer_cast<GraduatedFactor>(factors_.at(fidx));
-  const double residual = grad_factor->residual(current_est);
   // Update the mu value using the factor's scheduler
+  const double residual = grad_factor->residual(current_est);
   *(mu_[fidx]) = grad_factor->scheduler()->updateMu(*(mu_[fidx]), residual,
                                                     mu_update_count[fidx]);
   // Aggregate all convex keys
@@ -171,13 +170,14 @@ void RISAM::updateConvexFactorMu(const Values& current_est, const size_t fidx,
 }
 
 /* ************************************************************************* */
-FactorIndices RISAM::updateConvexFactors(const FactorIndices& convex_factors) {
+FactorIndices RISAM::updateConvexFactors(
+    const FactorIndices& convex_factors) const {
   FactorIndices new_convex_factors;
   // For all previously convex factors check \mu convergence
   for (FactorIndex fidx : convex_factors) {
     auto grad_factor =
         std::dynamic_pointer_cast<GraduatedFactor>(factors_.at(fidx));
-    if (!grad_factor->scheduler()->isMuConverged(*(mu_[fidx]))) {
+    if (!grad_factor->scheduler()->isMuConverged(*(mu_.at(fidx)))) {
       new_convex_factors.push_back(fidx);
     }
   }
@@ -220,7 +220,7 @@ FactorIndices RISAM::convexifyInvolvedFactors(
 KeySet RISAM::accumulateInvolvedKeys(
     const NonlinearFactorGraph& new_factors,
     const std::optional<std::set<Key>>& extra_gnc_involved_keys,
-    ISAM2UpdateParams& update_params) {
+    ISAM2UpdateParams& update_params) const {
   // Gather all involved keys - Directly induced by the new factors
   KeySet new_factor_keys = new_factors.keys();
   KeySet involved_keys = solver_->collectAffectedKeys(new_factors.keyVector());

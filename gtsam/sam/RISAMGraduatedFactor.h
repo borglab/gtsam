@@ -23,7 +23,7 @@
 namespace gtsam {
 
 /// @brief Graduated Factor for riSAM base class
-class GTSAM_EXPORT GraduatedFactor {
+class GraduatedFactor {
   /// @name Types
   /// @{
  public:
@@ -55,10 +55,16 @@ class GTSAM_EXPORT GraduatedFactor {
    * @param scheduler: The control param $\mu$ scheduler for this factor
    */
   GraduatedFactor(RobustLoss::shared_ptr loss,
-                  GraduationScheduler::shared_ptr scheduler);
+                  GraduationScheduler::shared_ptr scheduler)
+      : robust_loss_(loss), scheduler_(scheduler) {
+    mu_ = std::make_shared<double>(scheduler_->muInit());
+  }
 
   /// @brief Copy constructor
-  GraduatedFactor(const GraduatedFactor& other);
+  GraduatedFactor(const GraduatedFactor& other)
+      : robust_loss_(other.robust_loss_), scheduler_(other.scheduler_) {
+    mu_ = std::make_shared<double>(*(other.mu_));
+  }
 
   /** @brief Linearize this factor using the convexification parameter mu
    *  @param current_estimate: the estimate at which to linearize the factor
@@ -74,10 +80,10 @@ class GTSAM_EXPORT GraduatedFactor {
   virtual double robustResidual(const Values& current_estimate) const = 0;
 
   /// @brief Returns the robust loss for this graduated factor
-  const RobustLoss::shared_ptr loss() const;
+  const RobustLoss::shared_ptr loss() const { return robust_loss_; }
 
   /// @brief Returns the graduation scheduler for this factor
-  const GraduationScheduler::shared_ptr scheduler() const;
+  const GraduationScheduler::shared_ptr scheduler() const { return scheduler_; }
 
   /// @brief Copies this factor as an instance of its base type without the
   /// graduated robust loss or scheduler
