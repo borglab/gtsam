@@ -38,6 +38,9 @@ namespace gtsam {
 
 typedef Eigen::MatrixXd Matrix;
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> MatrixRowMajor;
+/// Dynamic-stride const Matrix view for accepting NumPy arrays without copies.
+using ConstMatrixView =
+    Eigen::Ref<const Matrix, 0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>;
 
 // Create handy typedefs and constants for square-size matrices
 // MatrixMN, MatrixN = MatrixNN, I_NxN, and Z_NxN, for M,N=1..9

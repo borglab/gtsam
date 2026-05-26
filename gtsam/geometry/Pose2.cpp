@@ -246,7 +246,7 @@ Point2 Pose2::transformTo(const Point2& point,
   return q;
 }
 
-Matrix Pose2::transformTo(const Matrix& points) const {
+Matrix Pose2::transformTo(ConstMatrixView points) const {
   if (points.rows() != 2) {
     throw std::invalid_argument("Pose2:transformTo expects 2*N matrix.");
   }
@@ -266,7 +266,7 @@ Point2 Pose2::transformFrom(const Point2& point,
 }
 
 
-Matrix Pose2::transformFrom(const Matrix& points) const {
+Matrix Pose2::transformFrom(ConstMatrixView points) const {
   if (points.rows() != 2) {
     throw std::invalid_argument("Pose2:transformFrom expects 2*N matrix.");
   }

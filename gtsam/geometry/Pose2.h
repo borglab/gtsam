@@ -201,7 +201,7 @@ public:
    * @param points 2*N matrix in world coordinates
    * @return points in Pose coordinates, as 2*N Matrix
    */
-  Matrix transformTo(const Matrix& points) const;
+  Matrix transformTo(ConstMatrixView points) const;
 
   /** Return point coordinates in global frame */
   Point2 transformFrom(const Point2& point,
@@ -213,7 +213,7 @@ public:
    * @param points 2*N matrix in Pose coordinates
    * @return points in world coordinates, as 2*N Matrix
    */
-  Matrix transformFrom(const Matrix& points) const;
+  Matrix transformFrom(ConstMatrixView points) const;
 
   /** syntactic sugar for transformFrom */
   inline Point2 operator*(const Point2& point) const { 

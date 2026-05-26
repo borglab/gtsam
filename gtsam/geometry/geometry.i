@@ -584,8 +584,8 @@ class Pose2 {
     Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2) const;
 
   // gtsam::Matrix versions
-  gtsam::Matrix transformFrom(const gtsam::Matrix& points) const;
-  gtsam::Matrix transformTo(const gtsam::Matrix& points) const;
+  gtsam::Matrix transformFrom(gtsam::ConstMatrixView points) const;
+  gtsam::Matrix transformTo(gtsam::ConstMatrixView points) const;
 
   // Standard Interface
   double x() const;
@@ -692,8 +692,8 @@ class Pose3 {
                             Eigen::Ref<Eigen::MatrixXd> Hpoint) const;
 
   // gtsam::Matrix versions
-  gtsam::Matrix transformFrom(const gtsam::Matrix& points) const;
-  gtsam::Matrix transformTo(const gtsam::Matrix& points) const;
+  gtsam::Matrix transformFrom(gtsam::ConstMatrixView points) const;
+  gtsam::Matrix transformTo(gtsam::ConstMatrixView points) const;
 
   // Standard Interface
   gtsam::Rot3 rotation() const;
