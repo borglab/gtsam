@@ -7,6 +7,9 @@ gtsam_apply_build_flags(gtsam_certifiable)
 set_property(TARGET gtsam_certifiable PROPERTY FOLDER "certifiable")
 
 if(GTSAM_USE_MOSEK)
+  target_link_libraries(gtsam_certifiable PRIVATE ${MOSEK_LIBRARIES})
+  target_include_directories(gtsam_certifiable SYSTEM PRIVATE ${MOSEK_INCLUDE_DIRS})
+
   add_executable(Rot2RingQcqpToMonolithicSDP examples/Rot2RingQcqpToMonolithicSDP.cpp)
   target_link_libraries(Rot2RingQcqpToMonolithicSDP gtsam_certifiable)
   gtsam_apply_build_flags(Rot2RingQcqpToMonolithicSDP)
