@@ -256,7 +256,8 @@ struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
   /**
    * Return a matrix-valued QCQP variable for Rot2.
    *
-   * D=1 is vectorized SO(2) as a 4-by-1 matrix.
+   * D=1 prepends a fixed homogenization coordinate to the existing
+   * column-major SO(2) vectorization, yielding a 5-by-1 matrix.
    * D=2 returns R' as a 2-by-2 row-orthonormal matrix.
    * D>=3 returns [R', 0] as a 2-by-D row-orthonormal matrix.
    */
@@ -264,7 +265,10 @@ struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
   static Matrix QcqpValue(const Rot2& value) {
     if constexpr (D == 1) {
       const Matrix2 R = value.matrix();
-      return Eigen::Map<const Matrix>(R.data(), 4, 1);
+      Matrix X(5, 1);
+      X(0, 0) = 1.0; // Homogenization entry
+      X.bottomRows(4) = Eigen::Map<const Matrix>(R.data(), 4, 1);
+      return X;
     } else if constexpr (D == 2) {
       return value.matrix().transpose();
     } else if constexpr (D >= 3) {
