@@ -14,3 +14,8 @@ CHECK('Pose3.transformTo matrix', ...
 actualWorld = pose.transformFrom(localPoints);
 CHECK('Pose3.transformFrom matrix', ...
     max(abs(actualWorld(:) - worldPoints(:))) < tol);
+
+worldSquare = [0 0 1 1; 0 1 1 0; 0 0 0 0];
+localSquare = pose.transformTo(worldSquare);
+alignedPose = Pose3.Align(worldSquare, localSquare);
+CHECK('Pose3.Align matrix', alignedPose.equals(pose, tol));

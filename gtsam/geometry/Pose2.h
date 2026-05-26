@@ -115,7 +115,7 @@ public:
   static std::optional<Pose2> Align(const Point2Pairs& abPointPairs);
 
   // Version of Pose2::Align that takes 2 matrices.
-  static std::optional<Pose2> Align(const Matrix& a, const Matrix& b);
+  static std::optional<Pose2> Align(ConstMatrixView a, ConstMatrixView b);
 
   /// @}
   /// @name Testable

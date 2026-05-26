@@ -396,7 +396,7 @@ std::optional<Pose2> Pose2::Align(const Point2Pairs &ab_pairs) {
   return Pose2(R, t);
 }
 
-std::optional<Pose2> Pose2::Align(const Matrix& a, const Matrix& b) {
+std::optional<Pose2> Pose2::Align(ConstMatrixView a, ConstMatrixView b) {
   if (a.rows() != 2 || b.rows() != 2 || a.cols() != b.cols()) {
     throw std::invalid_argument(
       "Pose2:Align expects 2*N matrices of equal shape.");

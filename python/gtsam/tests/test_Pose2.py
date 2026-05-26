@@ -110,15 +110,20 @@ class TestPose2(GtsamTestCase):
             pt_a_ = aTb.transformFrom(pt_b)
             np.testing.assert_allclose(pt_a, pt_a_)
 
-        # Matrix version
+        # C- and F-contiguous NumPy matrices should map without conversion.
         A = np.array(pts_a).T
         B = np.array(pts_b).T
-        aTb = Pose2.Align(A, B)
-        self.assertIsNotNone(aTb)
+        for order in ("C", "F"):
+            aTb = Pose2.Align(np.array(A, order=order),
+                              np.array(B, order=order))
+            self.assertIsNotNone(aTb)
 
-        for pt_a, pt_b in zip(pts_a, pts_b):
-            pt_a_ = aTb.transformFrom(pt_b)
-            np.testing.assert_allclose(pt_a, pt_a_)
+            for pt_a, pt_b in zip(pts_a, pts_b):
+                pt_a_ = aTb.transformFrom(pt_b)
+                np.testing.assert_allclose(pt_a, pt_a_)
+
+        with self.assertRaises(TypeError):
+            Pose2.Align(A.tolist(), B.tolist())
 
 
 if __name__ == "__main__":

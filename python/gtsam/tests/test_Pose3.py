@@ -253,9 +253,14 @@ class TestPose3(GtsamTestCase):
         estimated_sTt = Pose3.Align(st_pairs)
         self.gtsamAssertEquals(estimated_sTt, sTt, 1e-10)
 
-        # Matrix version
-        estimated_sTt = Pose3.Align(square, transformed)
-        self.gtsamAssertEquals(estimated_sTt, sTt, 1e-10)
+        # C- and F-contiguous NumPy matrices should map without conversion.
+        for order in ("C", "F"):
+            estimated_sTt = Pose3.Align(np.array(square, order=order),
+                                        np.array(transformed, order=order))
+            self.gtsamAssertEquals(estimated_sTt, sTt, 1e-10)
+
+        with self.assertRaises(TypeError):
+            Pose3.Align(square.tolist(), transformed.tolist())
 
 
 if __name__ == "__main__":

@@ -14,3 +14,6 @@ CHECK('Pose2.transformTo matrix', ...
 actualWorld = pose.transformFrom(localPoints);
 CHECK('Pose2.transformFrom matrix', ...
     max(abs(actualWorld(:) - worldPoints(:))) < tol);
+
+alignedPose = Pose2.Align(worldPoints, localPoints);
+CHECK('Pose2.Align matrix', alignedPose.equals(pose, tol));
