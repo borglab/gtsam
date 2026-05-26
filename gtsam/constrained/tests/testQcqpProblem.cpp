@@ -693,6 +693,60 @@ TEST(QcqpProblem, Rot3FrobeniusBetweenFactorK2Rejected) {
 }
 
 }  // namespace QcqpTraitExtensionsFixture
+
+/* ************************************************************************* */
+// Round-trip Rot2 through Insert/ExtractQcqpValues at D=2.
+TEST(QcqpProblem, ExtractQcqpValuesRot2) {
+  Values values;
+  const Rot2 R0 = Rot2::fromAngle(0.25);
+  const Rot2 R1 = Rot2::fromAngle(-1.10);
+  InsertQcqpValue<Rot2, 2>(Symbol('x', 0), R0, &values);
+  InsertQcqpValue<Rot2, 2>(Symbol('x', 1), R1, &values);
+
+  const auto extracted = ExtractQcqpValues<Rot2, 2>(values);
+  LONGS_EQUAL(2, extracted.size());
+
+  Values out;
+  for (auto& [key, R] : extracted) out.insert(key, R);
+  EXPECT(assert_equal(R0, out.at<Rot2>(Symbol('x', 0)), 1e-12));
+  EXPECT(assert_equal(R1, out.at<Rot2>(Symbol('x', 1)), 1e-12));
+}
+
+/* ************************************************************************* */
+// Round-trip Rot3 through Insert/ExtractQcqpValues at D=3.
+TEST(QcqpProblem, ExtractQcqpValuesRot3) {
+  Values values;
+  const Rot3 R0 = Rot3::Rz(0.25);
+  const Rot3 R1 = Rot3::RzRyRx(0.1, -0.4, 0.7);
+  InsertQcqpValue<Rot3, 3>(Symbol('x', 0), R0, &values);
+  InsertQcqpValue<Rot3, 3>(Symbol('x', 1), R1, &values);
+
+  const auto extracted = ExtractQcqpValues<Rot3, 3>(values);
+  LONGS_EQUAL(2, extracted.size());
+
+  Values out;
+  for (auto& [key, R] : extracted) out.insert(key, R);
+  EXPECT(assert_equal(R0, out.at<Rot3>(Symbol('x', 0)), 1e-12));
+  EXPECT(assert_equal(R1, out.at<Rot3>(Symbol('x', 1)), 1e-12));
+}
+
+/* ************************************************************************* */
+// On a mixed Rot2 + Rot3 Values at D=3, ExtractQcqpValues<Rot3, 3> keeps
+// only the row-dim-3 slice.
+TEST(QcqpProblem, ExtractQcqpValuesSkipsForeignSlices) {
+  Values values;
+  const Rot2 R2 = Rot2::fromAngle(0.3);
+  const Rot3 R3 = Rot3::Rz(0.5);
+  InsertQcqpValue<Rot2, 3>(Symbol('a', 0), R2, &values);
+  InsertQcqpValue<Rot2, 3>(Symbol('a', 1), R2, &values);
+  InsertQcqpValue<Rot3, 3>(Symbol('b', 0), R3, &values);
+
+  const auto rot3s = ExtractQcqpValues<Rot3, 3>(values);
+  LONGS_EQUAL(1, rot3s.size());
+  EXPECT(rot3s.front().first == Symbol('b', 0));
+  EXPECT(assert_equal(R3, rot3s.front().second, 1e-12));
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;

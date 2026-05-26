@@ -99,6 +99,27 @@ void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints) {
 }
 
 /**
+ * Project matrix-form QCQP variables back into typed values: scan
+ * `qcqpValues` and apply `traits<T>::FromQcqpValue<D>` to each slice whose
+ * row dim matches `T`. Slices with other row dims are skipped, so
+ * mixed-type graphs are safe.
+ */
+template <typename T, int D>
+std::vector<std::pair<Key, T>> ExtractQcqpValues(const Values& qcqpValues) {
+  static_assert(internal::HasQcqpVariableTraits<T, D>::value,
+                "ExtractQcqpValues requires traits<T>::QcqpValue<D>, "
+                "QcqpConstraints<D>, and FromQcqpValue<D>.");
+  constexpr int expectedRows = T::LieAlgebra::RowsAtCompileTime;
+  std::vector<std::pair<Key, T>> out;
+  for (const auto& [key, M] : qcqpValues.extract<Matrix>()) {
+    if (M.rows() == expectedRows) {
+      out.emplace_back(key, traits<T>::template FromQcqpValue<D>(M));
+    }
+  }
+  return out;
+}
+
+/**
  * Thin constrained optimization problem for QCQPs over Vector or Matrix values.
  */
 class GTSAM_EXPORT QcqpProblem : public ConstrainedOptProblem {

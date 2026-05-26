@@ -338,6 +338,15 @@ struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
           "traits<Rot2>::QcqpConstraints only supports D=1 and D>=2.");
     }
   }
+
+  /// Project a 2-by-D matrix back to Rot2 via Rot2::ClosestTo on the
+  /// leading 2-by-2 block.
+  template <int D>
+  static Rot2 FromQcqpValue(const Matrix& X) {
+    static_assert(D >= 2,
+                  "traits<Rot2>::FromQcqpValue requires D >= 2.");
+    return Rot2::ClosestTo(X.template leftCols<2>().transpose());
+  }
 };
 
 template <>
