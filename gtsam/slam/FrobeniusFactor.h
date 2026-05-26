@@ -334,17 +334,13 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
       const Matrix whitenedB = this->noiseModel_->Whiten(B);
       const Matrix Q = whitenedB.transpose() * whitenedB;
 
-      constexpr int LiftedDim = AmbientDim + 1;
+      // From here on we do homogenization and truncation (which may be Lie-group specific): 
+      constexpr int LiftedDim = AmbientDim + 1; // First entry is homogenization
       Matrix Q_trunc_hom = Matrix::Zero(2 * LiftedDim, 2 * LiftedDim);
-      Q_trunc_hom.block(1, 1, AmbientDim, AmbientDim) =
-          Q.block(0, 0, AmbientDim, AmbientDim);
-      Q_trunc_hom.block(1, LiftedDim + 1, AmbientDim, AmbientDim) =
-          Q.block(0, AmbientDim, AmbientDim, AmbientDim);
-      Q_trunc_hom.block(LiftedDim + 1, 1, AmbientDim, AmbientDim) =
-          Q.block(AmbientDim, 0, AmbientDim, AmbientDim);
-      Q_trunc_hom.block(LiftedDim + 1, LiftedDim + 1, AmbientDim,
-                        AmbientDim) =
-          Q.block(AmbientDim, AmbientDim, AmbientDim, AmbientDim);
+      Q_trunc_hom.block(1, 1, AmbientDim, AmbientDim) = Q.block(0, 0, AmbientDim, AmbientDim);
+      Q_trunc_hom.block(1, LiftedDim + 1, AmbientDim, AmbientDim) = Q.block(0, AmbientDim, AmbientDim, AmbientDim);
+      Q_trunc_hom.block(LiftedDim + 1, 1, AmbientDim, AmbientDim) = Q.block(AmbientDim, 0, AmbientDim, AmbientDim);
+      Q_trunc_hom.block(LiftedDim + 1, LiftedDim + 1, AmbientDim, AmbientDim) = Q.block(AmbientDim, AmbientDim, AmbientDim, AmbientDim);
 
       const SymmetricBlockMatrix blockQ(
           std::vector<DenseIndex>{LiftedDim, LiftedDim}, Q_trunc_hom);
