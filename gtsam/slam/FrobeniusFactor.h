@@ -297,8 +297,9 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
     return result;
   }
 
-  /// Vec(R) form (K=1): variable is (N*N)x1; accepts any non-robust
-  /// Gaussian noise model.
+  /// Vec(R) form (K=1): variable is a homogenized (N*N+1)x1 lift.
+  /// The first N*N residual rows preserve the original Frobenius error and
+  /// the final row ties the fixed homogenization coordinates across the edge.
   void qcqpFactorsForVec(NonlinearFactorGraph* costs,
                          NonlinearEqualityConstraints* constraints) const {
     if constexpr (!internal::HasQcqpVariableTraits<T, 1>::value) {
@@ -323,18 +324,23 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
       InsertQcqpConstraints<T, 1>(this->key2(), constraints);
 
       constexpr int AmbientDim = N * N;
+      constexpr int LiftedDim = AmbientDim + 1; // Add homogenization
       const Matrix measurement = this->T12_.matrix();
       const Matrix A = RightProductMatrix(measurement);
 
-      Matrix B = Matrix::Zero(AmbientDim, 2 * AmbientDim);
-      B.block(0, 0, AmbientDim, AmbientDim) = -A;
-      B.block(0, AmbientDim, AmbientDim, AmbientDim) =
+      Matrix B = Matrix::Zero(LiftedDim, 2 * LiftedDim);
+      B.block(0, 1, AmbientDim, AmbientDim) = -A;
+      B.block(0, LiftedDim + 1, AmbientDim, AmbientDim) =
           Matrix::Identity(AmbientDim, AmbientDim);
+      B(AmbientDim, 0) = -1.0;
+      B(AmbientDim, LiftedDim) = 1.0;
 
-      const Matrix whitenedB = this->noiseModel_->Whiten(B);
+      Matrix whitenedB = B;
+      const Matrix frobeniusRows = B.topRows(AmbientDim);
+      whitenedB.topRows(AmbientDim) = this->noiseModel_->Whiten(frobeniusRows);
       const Matrix Q = whitenedB.transpose() * whitenedB;
       const SymmetricBlockMatrix blockQ(
-          std::vector<DenseIndex>{AmbientDim, AmbientDim}, Q);
+          std::vector<DenseIndex>{LiftedDim, LiftedDim}, Q);
       costs->push_back(std::make_shared<QpCost>(
           KeyVector{this->key1(), this->key2()}, blockQ));
     }
