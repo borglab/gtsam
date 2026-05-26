@@ -51,6 +51,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             'unsigned char': 'unsigned char',
             'Vector': 'double',
             'Matrix': 'double',
+            'ConstMatrixView': 'double',
             'int': 'numeric',
             'size_t': 'numeric',
             'Key': 'numeric',
@@ -69,6 +70,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             'Point3': 'double',
             'Vector': 'double',
             'Matrix': 'double',
+            'ConstMatrixView': 'double',
             'Key': 'numeric',
             'bool': 'bool'
         }
@@ -353,6 +355,11 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             enum_type = f"{arg.ctype.typename}"
             arg_type = f"{enum_type}"
             unwrap = f'unwrap_enum<{enum_type}>(in[{arg_id}]);'
+
+        elif self.is_matrix_view(arg.ctype):
+            arg_type = self._format_type_name(arg.ctype.typename)
+            unwrap = 'unwrapMatrixView< {ctype} >(in[{id}]);'.format(
+                ctype=arg_type, id=arg_id)
 
         elif self.is_ref(arg.ctype):  # and not constructor:
             arg_type = "{ctype}&".format(ctype=ctype_sep)
