@@ -20,6 +20,8 @@ class CheckMixin:
     )
     # Ignore the namespace for these datatypes
     ignore_namespace: Tuple = ('Matrix', 'Vector', 'Point2', 'Point3')
+    # Matrix-like view types that can alias MATLAB double matrix storage.
+    matrix_view_types: Tuple = ('ConstMatrixView', )
     # Methods that should be ignored
     ignore_methods: Tuple = ('pickle', )
     # Methods that should not be wrapped directly
@@ -42,6 +44,7 @@ class CheckMixin:
         """
         return (arg_type.typename.name not in self.not_ptr_type
                 and arg_type.typename.name not in self.ignore_namespace
+                and not self.is_matrix_view(arg_type)
                 and arg_type.typename.name != 'string')
 
     def is_shared_ptr(self, arg_type: parser.Type):
@@ -66,6 +69,10 @@ class CheckMixin:
         return arg_type.typename.name not in self.ignore_namespace and \
                arg_type.typename.name not in self.not_ptr_type and \
                arg_type.is_ref
+
+    def is_matrix_view(self, arg_type: parser.Type):
+        """Check if `arg_type` should be unwrapped as a matrix view."""
+        return arg_type.typename.name in self.matrix_view_types
 
     def is_class_enum(self, arg_type: parser.Type, class_: parser.Class):
         """Check if arg_type is an enum in the class `class_`."""
