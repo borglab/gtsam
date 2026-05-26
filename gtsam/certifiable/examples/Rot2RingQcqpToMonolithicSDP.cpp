@@ -82,8 +82,8 @@ int main() {
             << std::endl;
   std::cout << "cost at feasible ring values: "
             << problem.costs().error(qcqpValues) << std::endl;
-  std::cout << "equality violation at feasible ring values: "
-            << problem.eConstraints().violationNorm(qcqpValues) << std::endl;
+  //std::cout << "equality violation at feasible ring values: "
+   //         << problem.eConstraints().violationNorm(qcqpValues) << std::endl;
   PrintKeys("cost keys", problem.costs().keys());
   PrintKeys("equality constraint keys", problem.eConstraints().keys());
   PrintKeys("inequality constraint keys", problem.iConstraints().keys());
