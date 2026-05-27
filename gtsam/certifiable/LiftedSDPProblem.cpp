@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <vector>
 
 #ifdef GTSAM_USE_MOSEK
 #include <fusion.h>
@@ -81,6 +82,57 @@ mf::Matrix::t convertToMosekDenseMatrix(const Matrix& mat) {
                            convertToMOSEKArray2D(mat));
 }
 
+mf::Expression::t BuildQpCostObjectiveTerm(
+    const QpCost& cost,
+    const LiftedVariableXijToSDPVariableViewMap& xijMap) {
+  const HessianFactor& H = cost.hessianFactor();
+  if (H.linearTerm().norm() > 0.0 || H.constantTerm() != 0.0) {
+    throw std::runtime_error(
+        "BuildQpCostObjectiveTerm: linear/constant QpCost terms are not "
+        "supported yet.");
+  }
+
+  // Assemble the local SDP block matrix X_f in the Hessian factor's key order.
+  std::vector<mf::Expression::t> blockRows;
+  for (Key key_i : H.keys()) {
+    std::vector<mf::Expression::t> rowBlocks;
+    for (Key key_j : H.keys()) {
+      rowBlocks.push_back(xijMap.at({key_i, key_j})->asExpr());
+    }
+    blockRows.push_back(
+        mf::Expr::hstack(monty::new_array_ptr<mf::Expression::t>(rowBlocks)));
+  }
+
+  const auto X_f =
+      mf::Expr::vstack(monty::new_array_ptr<mf::Expression::t>(blockRows));
+  const Matrix Q_f = H.information();
+  return mf::Expr::dot(convertToMosekDenseMatrix(Q_f), X_f);
+}
+
+mf::Expression::t BuildObjective(
+    const QcqpProblem& problem,
+    const LiftedVariableXijToSDPVariableViewMap& xijMap) {
+  std::vector<mf::Expression::t> objectiveTerms;
+
+  for (const auto& factor : problem.costs()) {
+    if (!factor) {
+      continue;
+    }
+
+    const auto* cost = dynamic_cast<const QpCost*>(factor.get());
+    if (!cost) {
+      throw std::runtime_error("BuildObjective: expected QpCost.");
+    }
+
+    objectiveTerms.push_back(BuildQpCostObjectiveTerm(*cost, xijMap));
+  }
+
+  if (objectiveTerms.empty()) {
+    return mf::Expr::constTerm(0.0);
+  }
+  return mf::Expr::add(monty::new_array_ptr<mf::Expression::t>(objectiveTerms));
+}
+
 }  // namespace
 
 struct LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::Impl {
@@ -150,8 +202,8 @@ struct LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::Impl {
 };
 
 LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::LiftedSDPProblem(
-    const QcqpProblem& problem)
-    : impl_(std::make_unique<Impl>()) {
+  const QcqpProblem& problem): impl_(std::make_unique<Impl>()) {
+
   impl_->collectOrderedKeysAndDims(problem);
   impl_->computeMonolithicLayout();
 
@@ -161,6 +213,10 @@ LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::LiftedSDPProblem(
       mf::Domain::inPSDCone(
           static_cast<int>(impl_->totalMonolithicDimension)));
   impl_->populateXijMap(Y);
+
+  const auto objective = BuildObjective(problem, impl_->liftedVariableXijToSDPVariableViewMap);
+  impl_->M->objective(mf::ObjectiveSense::Minimize,
+                      mf::Expr::mul(0.5, objective));
 }
 
 LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::~LiftedSDPProblem() = default;
