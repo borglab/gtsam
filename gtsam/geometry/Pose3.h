@@ -91,7 +91,7 @@ public:
   static std::optional<Pose3> Align(const Point3Pairs& abPointPairs);
 
   // Version of Pose3::Align that takes 2 matrices.
-  static std::optional<Pose3> Align(const Matrix& a, const Matrix& b);
+  static std::optional<Pose3> Align(ConstMatrixView a, ConstMatrixView b);
 
   /// @}
   /// @name Testable
@@ -169,7 +169,7 @@ public:
    * @param points 3*N matrix in Pose coordinates
    * @return points in world coordinates, as 3*N Matrix
    */
-  Matrix transformFrom(const Matrix& points) const;
+  Matrix transformFrom(ConstMatrixView points) const;
 
   /** syntactic sugar for transformFrom */
   inline Point3 operator*(const Point3& point) const {
@@ -191,7 +191,7 @@ public:
    * @param points 3*N matrix in world coordinates
    * @return points in Pose coordinates, as 3*N Matrix
    */
-  Matrix transformTo(const Matrix& points) const;
+  Matrix transformTo(ConstMatrixView points) const;
 
   /// @}
   /// @name Standard Interface

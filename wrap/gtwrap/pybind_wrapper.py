@@ -27,6 +27,26 @@ class PybindWrapper:
     Class to generate binding code for Pybind11 specifically.
     """
 
+    ARG_POLICY_SUPPORT = """
+#include <type_traits>
+
+namespace gtwrap {
+namespace internal {
+
+template <typename T>
+struct PyArgPolicy {
+  static pybind11::arg make(const char* name) { return pybind11::arg(name); }
+};
+
+template <typename T>
+pybind11::arg py_arg(const char* name) {
+  return PyArgPolicy<typename std::decay<T>::type>::make(name);
+}
+
+}  // namespace internal
+}  // namespace gtwrap
+"""
+
     def __init__(self,
                  module_name,
                  top_module_namespaces='',
@@ -70,8 +90,11 @@ class PybindWrapper:
                     default = ' = {arg.default}'.format(arg=arg)
                 else:
                     default = ''
-                argument = 'py::arg("{name}"){default}'.format(
-                    name=arg.name, default='{0}'.format(default))
+                argument = (
+                    'gtwrap::internal::py_arg<{ctype}>("{name}"){default}'
+                ).format(ctype=arg.ctype.to_cpp(),
+                         name=arg.name,
+                         default='{0}'.format(default))
                 py_args.append(argument)
             return ", " + ", ".join(py_args)
         else:
@@ -251,6 +274,18 @@ class PybindWrapper:
             method,
             (parser.StaticMethod, instantiator.InstantiatedStaticMethod))
         return_void = method.return_type.is_void()
+        return_type = getattr(method.return_type, 'type1', None)
+        return_ref = getattr(return_type, 'is_ref', False)
+        return_const = getattr(return_type, 'is_const', False)
+
+        # For methods returning const T&, use reference_internal policy
+        # to avoid unnecessary copies and keep the returned reference alive.
+        if return_ref and return_const and is_method:
+            lambda_ret = ' -> const auto&'
+            ref_policy = ', py::return_value_policy::reference_internal'
+        else:
+            lambda_ret = ''
+            ref_policy = ''
 
         caller = cpp_class + "::" if not is_method else "self->"
         function_call = ('{opt_return} {caller}{method_name}'
@@ -263,10 +298,10 @@ class PybindWrapper:
 
         result = (
             '{prefix}.{cdef}("{py_method}",'
-            '[]({opt_self}{opt_comma}{args_signature_with_names}){{'
+            '[]({opt_self}{opt_comma}{args_signature_with_names}){lambda_ret}{{'
             '{function_call}'
             '}}'
-            '{py_args_names}{docstring}){suffix}'.format(
+            '{ref_policy}{py_args_names}{docstring}){suffix}'.format(
                 prefix=prefix,
                 cdef="def_static" if is_static else "def",
                 py_method=py_method,
@@ -275,7 +310,9 @@ class PybindWrapper:
                 opt_comma=', '
                 if is_method and args_signature_with_names else '',
                 args_signature_with_names=args_signature_with_names,
+                lambda_ret=lambda_ret,
                 function_call=function_call,
+                ref_policy=ref_policy,
                 py_args_names=py_args_names,
                 suffix=suffix,
                 # Try to get the function's docstring from the Doxygen XML.
@@ -738,6 +775,8 @@ class PybindWrapper:
         else:
             module_def = "void {0}(py::module_ &m_)".format(module_name)
             submodules = []
+
+        includes += self.ARG_POLICY_SUPPORT
 
         return self.module_template.format(
             module_def=module_def,

@@ -4,6 +4,12 @@
 display 'Starting: testCal3Unified'
 testCal3Unified
 
+display 'Starting: testPose2'
+testPose2
+
+display 'Starting: testPose3'
+testPose3
+
 %% linear
 display 'Starting: testKalmanFilter'
 testKalmanFilter
