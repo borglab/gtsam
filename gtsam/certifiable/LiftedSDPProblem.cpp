@@ -13,6 +13,8 @@ namespace mf = mosek::fusion;
 namespace gtsam {
 
 #ifdef GTSAM_USE_MOSEK
+
+// Put MOSEK only functions in anonymous namespace.
 namespace {
 
 using LiftedVariableXijToSDPVariableViewMap = std::map<std::pair<Key, Key>, mf::Variable::t>;
@@ -28,7 +30,7 @@ std::map<Key, DenseIndex> CollectQpCostKeyDims(const QcqpProblem& problem,
     const auto* cost = dynamic_cast<const QpCost*>(factor.get());
     if (!cost) {
       throw std::runtime_error(
-          "MonolithicSDP: expected objective factors to be QpCost.");
+          "CollectQpCostKeyDims: expected objective factors to be QpCost.");
     }
 
     const HessianFactor& H = cost->hessianFactor();
@@ -41,7 +43,7 @@ std::map<Key, DenseIndex> CollectQpCostKeyDims(const QcqpProblem& problem,
       const auto [entry, inserted] = keyDims.emplace(key, dim);
       if (!inserted && entry->second != dim) {
         throw std::runtime_error(
-            "MonolithicSDP: inconsistent QpCost dimension for key.");
+            "CollectQpCostKeyDims: inconsistent QpCost dimension for key.");
       }
     }
   }
@@ -52,6 +54,31 @@ void DisposeMosekModel(const mf::Model::t& M) {
   if (M.get() != nullptr) {
     M->dispose();
   }
+}
+
+// Convert Eigen matrix to a Fusion-compatible numeric buffer with one
+// allocation and one pass. The buffer is filled in row-major order.
+// In principle, this is a performant way of doing things. 
+// This returns a 1D array buffer that is the row-major form of mat.
+std::shared_ptr<monty::ndarray<double, 1>> convertToMOSEKArray2D(
+    const Matrix& mat) {
+  const int rows = static_cast<int>(mat.rows());
+  const int cols = static_cast<int>(mat.cols());
+  auto buffer = monty::new_array_ptr<double, 1>(monty::shape(rows * cols));
+
+  // We use Eigen's type conversion which should be performant. 
+  using RowMajorMat = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+  // Eigen overloads the operator= to perform element-wise assignment into the memory referenced by view.
+  Eigen::Map<RowMajorMat> view(buffer->raw(), rows, cols);
+  view = mat;
+
+  return buffer;
+}
+
+mf::Matrix::t convertToMosekDenseMatrix(const Matrix& mat) {
+  return mf::Matrix::dense(static_cast<int>(mat.rows()),
+                           static_cast<int>(mat.cols()),
+                           convertToMOSEKArray2D(mat));
 }
 
 }  // namespace
