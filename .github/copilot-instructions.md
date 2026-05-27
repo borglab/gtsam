@@ -37,3 +37,10 @@ For reviewing PRs:
   5) imports/setup code cell.
   Use the same `remove-cell` tagging convention as existing notebooks so docs build and Colab behavior stay consistent.
 * After any code change, always run relevant tests via `make -j6 testXXX.run` in the build folder $WORKSPACE/build. If in VS code, ask for escalated permissions if needed.
+* Do not edit files under `gtsam/wrap/` directly. This directory is a git 
+  subtree copy of the `borglab/wrap` repository. Any fixes or changes must 
+  be made via a pull request to `borglab/wrap` first, then synced into GTSAM 
+  using `update_wrap.sh`.
+* Do not edit files under `gtsam/3rdparty/`. These are third party libraries 
+  (e.g. Eigen) vendored into the repository. Modifying them directly causes 
+  'hard to find' issues and breaks the ability to update those dependencies.
