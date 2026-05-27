@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file SimpleMosekSDPExample.cpp
- * @brief Minimal native MOSEK Fusion SDP solve for backend smoke testing.
+ * @file testMOSEKInstall.cpp
+ * @brief This tests if MOSEK is installed and running correctly. 
  */
 
 #include <fusion.h>
