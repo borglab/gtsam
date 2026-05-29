@@ -27,6 +27,7 @@
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/base/utilities.h>
+#include <type_traits>
 
 using gtsam::Vector;
 using gtsam::Matrix;
@@ -37,7 +38,6 @@ extern "C" {
 #include <mex.h>
 }
 
-#include <limits>
 #include <list>
 #include <set>
 #include <sstream>
@@ -177,12 +177,12 @@ mxArray* wrap<int>(const int& value) {
 }
 
 // specialization to gtsam::Key which is an alias for uint64_t
-template<>
-mxArray* wrap<uint64_t>(const uint64_t& value) {
-  mxArray *result = scalar(mxUINT32OR64_CLASS);
-  *(uint64_t*)mxGetData(result) = value;
-  return result;
-}
+//template<>
+//mxArray* wrap<uint64_t>(const uint64_t& value) {
+//  mxArray *result = scalar(mxUINT32OR64_CLASS);
+//  *(uint64_t*)mxGetData(result) = value;
+//  return result;
+//}
 
 // specialization to double -> just double
 template<>
@@ -347,11 +347,11 @@ uint64_t unwrap<uint64_t>(const mxArray* array) {
 }
 
 // specialization to size_t
-template<>
-size_t unwrap<size_t>(const mxArray* array) {
-  checkScalar(array, "unwrap<size_t>");
-  return myGetScalar<size_t>(array);
-}
+//template<>
+//size_t unwrap<size_t>(const mxArray* array) {
+//  checkScalar(array, "unwrap<size_t>");
+//  return myGetScalar<size_t>(array);
+//}
 
 // specialization to double
 template<>
@@ -573,3 +573,5 @@ Class* unwrap_ptr(const mxArray* obj, const string& propertyName) {
 //  static_assert(unwrap_shared_ptr_Matrix_attempted, "Matrix cannot be unwrapped as a shared pointer");
 //  return Matrix();
 //}
+
+
