@@ -39,7 +39,9 @@
 
 namespace gtsam {
 
+class BatchJacobianFactorBase;
 class GaussianConditional;
+class JacobianFactor;
 
 /// Map from variable key to dimension.
 using KeyDimMap = std::map<Key, size_t>;
@@ -110,7 +112,8 @@ class GTSAM_EXPORT MultifrontalClique {
    * Load factor values into the pre-allocated Ab matrix.
    * @param graph The factor graph with updated values (structure must match
    *              the graph used to build this clique, apart from updated
-   *              numerical values). Only JacobianFactor inputs are supported.
+   *              numerical values). Only JacobianFactor and BatchJacobianFactor
+   *              inputs are supported.
    */
   void fillAb(const GaussianFactorGraph& graph);
 
@@ -277,6 +280,13 @@ class GTSAM_EXPORT MultifrontalClique {
    */
   size_t addJacobianFactor(const JacobianFactor& factor, size_t rowOffset);
 
+  /**
+   * Add a compact batch Jacobian factor's contributions into the Ab matrix.
+   * @return Number of rows added.
+   */
+  size_t addBatchJacobianFactor(const BatchJacobianFactorBase& factor,
+                                size_t rowOffset);
+
   void setParentIndices(const std::vector<DenseIndex>& indices) {
     parentIndices_ = indices;
   }
@@ -297,7 +307,7 @@ class GTSAM_EXPORT MultifrontalClique {
 
   // Finalize-time allocations.
   VerticalBlockMatrix Ab_;
-  
+
   // mutable as temporarily updateParentInfo
   mutable VerticalBlockMatrix RSd_;  ///< Cached [R S d] from elimination.
   mutable SymmetricBlockMatrix info_;

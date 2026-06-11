@@ -20,6 +20,7 @@
 #pragma once
 
 #include <gtsam/base/Testable.h>
+#include <gtsam/linear/BatchJacobianFactor.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
@@ -133,6 +134,81 @@ class BatchFactor : public NonlinearFactor {
   std::vector<KeyInfo> keyInfo_;
   std::vector<std::array<DenseIndex, FactorType::N>> indices_;
   bool useHessianFactor_{false};
+
+  template <size_t... Is>
+  static constexpr bool hasFixedDimensions(std::index_sequence<Is...>) {
+    return (
+        (traits<typename FactorType::template ValueType<Is + 1>>::dimension !=
+         Eigen::Dynamic) &&
+        ...);
+  }
+
+  bool hasConstrainedNoiseModel() const {
+    for (const auto& factor : factors_) {
+      if (factor.noiseModel() && factor.noiseModel()->isConstrained()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  std::vector<size_t> keyDimensions() const {
+    std::vector<size_t> dims;
+    dims.reserve(keyInfo_.size());
+    for (const auto& info : keyInfo_) dims.push_back(info.dim);
+    return dims;
+  }
+
+  std::shared_ptr<JacobianFactor> linearizeToJacobianFactor(
+      const Values& values) const {
+    const size_t total_rows = factors_.size() * ErrorDim;
+    VerticalBlockMatrix Ab(keyDimensions(), total_rows, true);
+    Ab.matrix().setZero();
+
+    std::vector<Matrix> H(FactorType::N);
+    for (size_t i = 0; i < factors_.size(); ++i) {
+      const auto& factor = factors_[i];
+      const size_t row_start = i * ErrorDim;
+      Vector raw_error = factor.unwhitenedError(values, H);
+
+      if (factor.noiseModel() && !factor.noiseModel()->isUnit()) {
+        factor.noiseModel()->WhitenSystem(H, raw_error);
+      }
+
+      const auto& indices_i = indices_[i];
+      for (size_t k = 0; k < FactorType::N; ++k) {
+        const DenseIndex index = indices_i[k];
+        Ab(index).block(row_start, 0, ErrorDim, H[k].cols()) = H[k];
+      }
+      Ab(keys().size()).block(row_start, 0, ErrorDim, 1) = -raw_error;
+    }
+
+    return std::make_shared<JacobianFactor>(
+        keys(), std::move(Ab), noiseModel::Unit::Create(total_rows));
+  }
+
+  template <size_t... Is>
+  std::shared_ptr<GaussianFactor> linearizeToBatchJacobian(
+      const Values& values, std::index_sequence<Is...>) const {
+    using CompactFactor = BatchJacobianFactor<
+        ErrorDim,
+        traits<typename FactorType::template ValueType<Is + 1>>::dimension...>;
+    auto batch = std::make_shared<CompactFactor>(keys(), keyDimensions());
+    batch->reserve(factors_.size());
+
+    std::vector<Matrix> H(FactorType::N);
+    for (size_t i = 0; i < factors_.size(); ++i) {
+      const auto& factor = factors_[i];
+      Vector raw_error = factor.unwhitenedError(values, H);
+
+      if (factor.noiseModel() && !factor.noiseModel()->isUnit()) {
+        factor.noiseModel()->WhitenSystem(H, raw_error);
+      }
+
+      batch->addRow(indices_[i], H, -raw_error);
+    }
+    return batch;
+  }
 
  public:
   /// @name Constructors
@@ -271,59 +347,18 @@ class BatchFactor : public NonlinearFactor {
       const Values& values) const override {
     if (factors_.empty()) return std::make_shared<JacobianFactor>();
 
-    // 3. Allocate JacobianFactor
-    // We create a VerticalBlockMatrix with the correct dimensions.
-    // The total number of rows is the sum of the error dimensions of all
-    // factors.
-    size_t total_rows = factors_.size() * ErrorDim;
-    std::vector<size_t> dims;
-    dims.reserve(keyInfo_.size());
-    for (const auto& info : keyInfo_) dims.push_back(info.dim);
-    VerticalBlockMatrix Ab(dims, total_rows, true);
-    Ab.matrix().setZero();  // Important: Initialize to zero.
-
-    // 4. Fill the JacobianFactor
-    // We reuse a vector of matrices for the Jacobians to avoid repeated
-    // allocations.
-    std::vector<Matrix> H(FactorType::N);
-    std::vector<const void*> cache(keys().size(), nullptr);
-
-    for (size_t i = 0; i < factors_.size(); ++i) {
-      const auto& factor = factors_[i];
-      size_t row_start = i * ErrorDim;
-
-      // Legacy path (mallocs)
-      // We use the factor's unwhitenedError method which fills H.
-      Vector raw_error = factor.unwhitenedError(values, H);
-
-      // Apply noise model (whitening)
-      // This modifies H and raw_error in place.
-      if (factor.noiseModel()) {
-        factor.noiseModel()->WhitenSystem(H, raw_error);
-      }
-
-      // Place Jacobians into the large matrix
-      const auto& indices_i = indices_[i];
-      for (size_t k = 0; k < FactorType::N; ++k) {
-        const DenseIndex index = indices_i[k];
-        Ab(index).block(row_start, 0, ErrorDim, H[k].cols()) = H[k];
-      }
-
-      // Place the negative error into the RHS (last column)
-      // JacobianFactor stores Ax - b, so b = -error.
-      // Ab(size) gives the last block which is the RHS vector b.
-      // We use block() to access the segment as a matrix block.
-      Ab(keys().size()).block(row_start, 0, ErrorDim, 1) = -raw_error;
-    }
-
-    // 5. Create and return the JacobianFactor
-    // We pass a Unit noise model because we have already whitened the system.
-    auto jacobian = std::make_shared<JacobianFactor>(
-        keys(), std::move(Ab), noiseModel::Unit::Create(total_rows));
     if (useHessianFactor_) {
+      auto jacobian = linearizeToJacobianFactor(values);
       return std::make_shared<HessianFactor>(*jacobian);
     }
-    return jacobian;
+
+    constexpr auto factorSlots = std::make_index_sequence<FactorType::N>{};
+    if constexpr (hasFixedDimensions(factorSlots)) {
+      if (!hasConstrainedNoiseModel()) {
+        return linearizeToBatchJacobian(values, factorSlots);
+      }
+    }
+    return linearizeToJacobianFactor(values);
   }
 
   /// Helper to collect keys and dimensions using fold expression

@@ -22,13 +22,15 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/BatchJacobianFactor.h>
+#include <gtsam/linear/HessianFactor.h>
 #include <gtsam/nonlinear/BatchFactor.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/linear/HessianFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
 
+#include <stdexcept>
 #include <vector>
 
 using namespace gtsam;
@@ -39,7 +41,17 @@ using ProjectionFactor = GenericProjectionFactor<Pose3, Point3, Cal3_S2>;
 
 static std::shared_ptr<Cal3_S2> sharedK = std::make_shared<Cal3_S2>();
 
+static JacobianFactor denseJacobian(
+    const GaussianFactor::shared_ptr& gaussian) {
+  auto compact = std::dynamic_pointer_cast<BatchJacobianFactorBase>(gaussian);
+  if (compact) return compact->toJacobianFactor();
+  auto jacobian = std::dynamic_pointer_cast<JacobianFactor>(gaussian);
+  if (!jacobian) throw std::runtime_error("Expected a Jacobian-like factor.");
+  return *jacobian;
+}
+
 /* ************************************************************************* */
+// Verifies vector construction linearizes to a compact fixed-size batch factor.
 TEST(BatchFactor, ConstructorAndLinearize) {
   // 1. Setup data
   std::vector<Key> poses = {Symbol('x', 0)};
@@ -72,15 +84,17 @@ TEST(BatchFactor, ConstructorAndLinearize) {
   }
 
   auto gaussian = batch->linearize(values);
-  auto jacobian = std::dynamic_pointer_cast<JacobianFactor>(gaussian);
+  auto compact = std::dynamic_pointer_cast<BatchJacobianFactorBase>(gaussian);
+  const JacobianFactor jacobian = denseJacobian(gaussian);
 
   // 5. Verify
-  CHECK(jacobian);
-  LONGS_EQUAL(20, (long)jacobian->rows());
-  LONGS_EQUAL(11, (long)jacobian->size());  // 1 pose + 10 points
+  CHECK(compact);
+  LONGS_EQUAL(20, (long)jacobian.rows());
+  LONGS_EQUAL(11, (long)jacobian.size());  // 1 pose + 10 points
 }
 
 /* ************************************************************************* */
+// Verifies the projection map constructor uses the compact batch linear factor.
 TEST(BatchFactor, Constructor_Projection) {
   // 1. Setup data
   Key poseKey = Symbol('x', 0);
@@ -106,14 +120,16 @@ TEST(BatchFactor, Constructor_Projection) {
   }
 
   auto gaussian = batch->linearize(values);
-  auto jacobian = std::dynamic_pointer_cast<JacobianFactor>(gaussian);
+  auto compact = std::dynamic_pointer_cast<BatchJacobianFactorBase>(gaussian);
+  const JacobianFactor jacobian = denseJacobian(gaussian);
 
-  CHECK(jacobian);
-  LONGS_EQUAL(20, (long)jacobian->rows());
-  LONGS_EQUAL(11, (long)jacobian->size());
+  CHECK(compact);
+  LONGS_EQUAL(20, (long)jacobian.rows());
+  LONGS_EQUAL(11, (long)jacobian.size());
 }
 
 /* ************************************************************************* */
+// Verifies non-SFM fixed-dimension factors also use compact batch storage.
 TEST(BatchFactor, Constructor_Between) {
   // 1. Setup data
   Key key1 = Symbol('x', 0);
@@ -139,14 +155,16 @@ TEST(BatchFactor, Constructor_Between) {
   }
 
   auto gaussian = batch->linearize(values);
-  auto jacobian = std::dynamic_pointer_cast<JacobianFactor>(gaussian);
+  auto compact = std::dynamic_pointer_cast<BatchJacobianFactorBase>(gaussian);
+  const JacobianFactor jacobian = denseJacobian(gaussian);
 
-  CHECK(jacobian);
-  LONGS_EQUAL(30, (long)jacobian->rows());  // 10 factors * 3 dim
-  LONGS_EQUAL(11, (long)jacobian->size());  // 11 poses
+  CHECK(compact);
+  LONGS_EQUAL(30, (long)jacobian.rows());  // 10 factors * 3 dim
+  LONGS_EQUAL(11, (long)jacobian.size());  // 11 poses
 }
 
 /* ************************************************************************* */
+// Verifies dense conversion preserves structural zeros for multi-camera tracks.
 TEST(BatchFactor, MultipleCamerasPerPoint) {
   // Create a batch factor with 2 factors:
   // Factor 1: cam1, point
@@ -176,7 +194,9 @@ TEST(BatchFactor, MultipleCamerasPerPoint) {
   values.insert(p0, Point3(0, 0, 10));
 
   auto gaussian = batch.linearize(values);
-  auto jacobian = std::dynamic_pointer_cast<JacobianFactor>(gaussian);
+  auto compact = std::dynamic_pointer_cast<BatchJacobianFactorBase>(gaussian);
+  const JacobianFactor jacobian = denseJacobian(gaussian);
+  CHECK(compact);
 
   // Verify sparsity
   // keys_ should be {c1, c2, p1} (sorted)
@@ -187,9 +207,9 @@ TEST(BatchFactor, MultipleCamerasPerPoint) {
   // Block 1 (c2): Should be ZERO in rows 0-1, non-zero in rows 2-3
   // Block 2 (p1): Should be non-zero in all rows
 
-  Matrix A_c1 = jacobian->getA(jacobian->begin());
-  Matrix A_c2 = jacobian->getA(jacobian->begin() + 1);
-  Matrix A_p1 = jacobian->getA(jacobian->begin() + 2);
+  Matrix A_c1 = jacobian.getA(jacobian.begin());
+  Matrix A_c2 = jacobian.getA(jacobian.begin() + 1);
+  Matrix A_p1 = jacobian.getA(jacobian.begin() + 2);
 
   // Check dimensions
   EXPECT_LONGS_EQUAL(4, A_c1.rows());
@@ -207,6 +227,7 @@ TEST(BatchFactor, MultipleCamerasPerPoint) {
 }
 
 /* ************************************************************************* */
+// Verifies the explicit Hessian option still returns a HessianFactor.
 TEST(BatchFactor, JacobianVsHessian) {
   std::vector<ProjectionFactor> factors;
   Key poseKey = Symbol('x', 0);
@@ -222,23 +243,21 @@ TEST(BatchFactor, JacobianVsHessian) {
   values.insert(l1, Point3(0, 0, 10));
   values.insert(l2, Point3(0, 0, 10));
 
-  auto jacobian =
-      std::dynamic_pointer_cast<JacobianFactor>(batch.linearize(values));
-  CHECK(jacobian);
+  const JacobianFactor jacobian = denseJacobian(batch.linearize(values));
 
   batch.setUseHessianFactor(true);
   auto hessian =
       std::dynamic_pointer_cast<HessianFactor>(batch.linearize(values));
   CHECK(hessian);
 
-  const size_t n = jacobian->size();
-  const Vector& b = jacobian->getb();
+  const size_t n = jacobian.size();
+  const Vector& b = jacobian.getb();
   double expectedF = b.squaredNorm();
   EXPECT_DOUBLES_EQUAL(expectedF, hessian->constantTerm(), 1e-9);
 
   for (size_t i = 0; i < n; ++i) {
-    auto itI = jacobian->begin() + i;
-    const Matrix& Ai = jacobian->getA(itI);
+    auto itI = jacobian.begin() + i;
+    const Matrix& Ai = jacobian.getA(itI);
     Matrix expectedDiag = Ai.transpose() * Ai;
     EXPECT(assert_equal(expectedDiag, hessian->info().block(i, i), 1e-9));
 
@@ -247,8 +266,8 @@ TEST(BatchFactor, JacobianVsHessian) {
     EXPECT(assert_equal(expectedGi, actualGiMat.col(0), 1e-9));
 
     for (size_t j = i + 1; j < n; ++j) {
-      auto itJ = jacobian->begin() + j;
-      const Matrix& Aj = jacobian->getA(itJ);
+      auto itJ = jacobian.begin() + j;
+      const Matrix& Aj = jacobian.getA(itJ);
       Matrix expectedOff = Ai.transpose() * Aj;
       EXPECT(assert_equal(expectedOff, hessian->info().block(i, j), 1e-9));
     }

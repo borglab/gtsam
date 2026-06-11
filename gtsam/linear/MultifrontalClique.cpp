@@ -18,9 +18,11 @@
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/config.h>
+#include <gtsam/linear/BatchJacobianFactor.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/MultifrontalClique.h>
+#include <gtsam/linear/MultifrontalSolver.h>
 
 #ifdef GTSAM_USE_TBB
 #include <tbb/blocked_range.h>
@@ -242,6 +244,20 @@ size_t MultifrontalClique::addJacobianFactor(
   return rows;
 }
 
+size_t MultifrontalClique::addBatchJacobianFactor(
+    const BatchJacobianFactorBase& batchFactor, size_t rowOffset) {
+  std::vector<DenseIndex> blockIndices;
+  blockIndices.reserve(batchFactor.size());
+  for (Key key : batchFactor.keys()) {
+    if (fixedKeys_ && fixedKeys_->count(key)) {
+      blockIndices.push_back(-1);
+    } else {
+      blockIndices.push_back(blockIndex(key));
+    }
+  }
+  return batchFactor.scatterInto(Ab_, rowOffset, blockIndices);
+}
+
 void MultifrontalClique::fillAb(const GaussianFactorGraph& graph) {
   assert(validateFactorKeys(graph, factorIndices_, orderedKeys_, fixedKeys_));
 
@@ -250,10 +266,18 @@ void MultifrontalClique::fillAb(const GaussianFactorGraph& graph) {
     assert(index < graph.size());
     const GaussianFactor::shared_ptr& gf = graph[index];
     if (!gf) continue;
-    assert(gf->isJacobian() &&
-           "MultifrontalClique::fillAb: inconsistent graph passed.");
-    auto jacobianFactor = std::static_pointer_cast<JacobianFactor>(gf);
-    rowOffset += addJacobianFactor(*jacobianFactor, rowOffset);
+    auto jacobianFactor = std::dynamic_pointer_cast<JacobianFactor>(gf);
+    if (jacobianFactor) {
+      rowOffset += addJacobianFactor(*jacobianFactor, rowOffset);
+      continue;
+    }
+    auto batchFactor = std::dynamic_pointer_cast<BatchJacobianFactorBase>(gf);
+    if (batchFactor) {
+      rowOffset += addBatchJacobianFactor(*batchFactor, rowOffset);
+      continue;
+    }
+    throw MultifrontalSolverNotSupported(
+        "only JacobianFactor or BatchJacobianFactor inputs are supported");
   }
 
   RSdReady_ = false;
