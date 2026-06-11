@@ -23,16 +23,23 @@ from gtwrap.interface_parser import (Argument, ArgumentList, Class,
                                      GlobalFunction, Include, Method,
                                      Namespace, ReturnType, StaticMethod,
                                      Typename)
-from gtwrap.template_instantiator import (
-    InstantiatedClass, InstantiatedConstructor, InstantiatedDeclaration,
-    InstantiatedGlobalFunction, InstantiatedMethod, InstantiatedStaticMethod,
-    InstantiationHelper, instantiate_args_list, instantiate_name,
-    instantiate_namespace, instantiate_return_type, instantiate_type,
-    is_scoped_template)
+from gtwrap.template_instantiator import (InstantiatedClass,
+                                          InstantiatedConstructor,
+                                          InstantiatedDeclaration,
+                                          InstantiatedGlobalFunction,
+                                          InstantiatedMethod,
+                                          InstantiatedStaticMethod,
+                                          InstantiationHelper,
+                                          instantiate_args_list,
+                                          instantiate_name,
+                                          instantiate_namespace,
+                                          instantiate_return_type,
+                                          instantiate_type, is_scoped_template)
 
 
 class TestInstantiationHelper(unittest.TestCase):
     """Tests for the InstantiationHelper class."""
+
     def test_constructor(self):
         """Test constructor."""
         helper = InstantiationHelper(InstantiatedClass)
@@ -65,10 +72,10 @@ class TestInstantiationHelper(unittest.TestCase):
         parent = InstantiatedClass(cls, class_instantiations)
 
         helper = InstantiationHelper(InstantiatedMethod)
-        instantiated_methods = helper.instantiate([], method, typenames,
-                                                  class_instantiations,
-                                                  method_instantiations,
-                                                  parent)
+        instantiated_methods = [
+            helper.instantiate(method, typenames, class_instantiations,
+                               method_instantiations, parent)
+        ]
 
         self.assertEqual(len(instantiated_methods), 1)
         args_list = instantiated_methods[0].args.list()
@@ -115,6 +122,7 @@ class TestInstantiationHelper(unittest.TestCase):
 
 class TestInstantiatedGlobalFunction(unittest.TestCase):
     """Tests for the InstantiatedGlobalFunction class."""
+
     def setUp(self):
         original = GlobalFunction.rule.parseString("""
             template<T={int}, R={double}>
@@ -143,6 +151,7 @@ class TestInstantiatedGlobalFunction(unittest.TestCase):
 
 class TestInstantiatedConstructor(unittest.TestCase):
     """Tests for the InstantiatedConstructor class."""
+
     def setUp(self):
         constructor = Constructor.rule.parseString("""
             template<U={double}>
@@ -197,6 +206,7 @@ class TestInstantiatedConstructor(unittest.TestCase):
 
 class TestInstantiatedMethod(unittest.TestCase):
     """Tests for the InstantiatedMethod class."""
+
     def setUp(self):
         method = Method.rule.parseString("""
             template<U={double}>
@@ -248,6 +258,7 @@ class TestInstantiatedMethod(unittest.TestCase):
 
 class TestInstantiatedStaticMethod(unittest.TestCase):
     """Tests for the InstantiatedStaticMethod class."""
+
     def setUp(self):
         static_method = StaticMethod.rule.parseString("""
             template<U={double}>
@@ -302,6 +313,7 @@ class TestInstantiatedStaticMethod(unittest.TestCase):
 
 class TestInstantiatedClass(unittest.TestCase):
     """Tests for the InstantiatedClass class."""
+
     def setUp(self):
         cl = Class.rule.parseString("""
             template<T={string}>
@@ -391,6 +403,7 @@ class TestInstantiatedClass(unittest.TestCase):
 
 class TestInstantiatedDeclaration(unittest.TestCase):
     """Tests for the InstantiatedDeclaration class."""
+
     def setUp(self):
         #TODO(Varun) Need to support templated class forward declaration.
         forward_declaration = ForwardDeclaration.rule.parseString("""
@@ -416,6 +429,7 @@ class TestTemplateInstantiator(unittest.TestCase):
     """
     Test overall template instantiation and the functions in the module.
     """
+
     def test_scoped_template(self):
         """Test is_scoped_template."""
         # Test if not scoped template.

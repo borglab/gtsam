@@ -198,7 +198,7 @@ TEST_PIM(CombinedImuFactor, PredictRotation) {
 
   // Predict
   const Pose3 x(Rot3::Ypr(0, 0, 0), Point3(0, 0, 0)), x2;
-  const Vector3 v(0, 0, 0), v2;
+  const Vector3 v(0, 0, 0);
   const NavState actual = pim.predict(NavState(x, v), bias);
   const Pose3 expectedPose(Rot3::Ypr(M_PI / 10, 0, 0), Point3(0, 0, 0));
   EXPECT(assert_equal(expectedPose, actual.pose(), tol));

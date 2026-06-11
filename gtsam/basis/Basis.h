@@ -144,7 +144,7 @@ class Basis {
     double apply(const typename DERIVED::Parameters& p,
                  OptionalJacobian<-1, -1> H = {}) const {
       if (H) *H = weights_;
-      return (weights_ * p)(0);
+      return weights_.transpose().dot(p);
     }
 
     /// c++ sugar

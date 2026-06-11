@@ -18,6 +18,7 @@
 
 #include <gtsam/inference/BayesTreeCliqueBase.h>
 #include <gtsam/inference/FactorGraph-inst.h>
+#include <gtsam/inference/Ordering.h>
 #include <gtsam/base/timing.h>
 
 namespace gtsam {
@@ -48,7 +49,7 @@ namespace gtsam {
     KeySet indicesB(B->conditional()->begin(), B->conditional()->end());
     KeyVector S_setminus_B;
     std::set_difference(p_F_S_parents.begin(), p_F_S_parents.end(),
-      indicesB.begin(), indicesB.end(), back_inserter(S_setminus_B));
+      indicesB.begin(), indicesB.end(), std::back_inserter(S_setminus_B));
     return S_setminus_B;
   }
 
@@ -64,10 +65,10 @@ namespace gtsam {
     KeyVector keep;
     // keep = S\B intersect allKeys (S_setminus_B is already sorted)
     std::set_intersection(S_setminus_B.begin(), S_setminus_B.end(), //
-      allKeys.begin(), allKeys.end(), back_inserter(keep));
+      allKeys.begin(), allKeys.end(), std::back_inserter(keep));
     // keep += B intersect allKeys
     std::set_intersection(indicesB.begin(), indicesB.end(), //
-      allKeys.begin(), allKeys.end(), back_inserter(keep));
+      allKeys.begin(), allKeys.end(), std::back_inserter(keep));
     return keep;
   }
 

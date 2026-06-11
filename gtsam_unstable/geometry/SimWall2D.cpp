@@ -163,7 +163,7 @@ std::pair<Pose2, bool> moveWithBounce(const Pose2& cur_pose, double step_size,
     pose = Pose2(closest_wall.reflection(cur_pose.t(), intersection), intersection + inside_bias * norm);
 
     // perturb the rotation for better exploration
-    pose = pose.retract(reflect_noise.sample());
+    pose = reflect_noise.perturb(pose);
   }
 
   return make_pair(pose, collision);

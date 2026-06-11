@@ -499,7 +499,7 @@ TEST(Expression, testMultipleCompositions) {
   //   Leaf, key = 1
   //   Leaf, key = 2
   Expression<double> sum1_(Combine(1, 2), v1_, v2_);
-  EXPECT((sum1_.keys() == std::set<Key>{1, 2}))
+  EXPECT((sum1_.keys() == KeySet{1, 2}))
   EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum1_, values, fd_step, tolerance)
 
   // BinaryExpression(3,4)
@@ -508,7 +508,7 @@ TEST(Expression, testMultipleCompositions) {
   //     Leaf, key = 2
   //   Leaf, key = 1
   Expression<double> sum2_(Combine(3, 4), sum1_, v1_);
-  EXPECT((sum2_.keys() == std::set<Key>{1, 2}))
+  EXPECT((sum2_.keys() == KeySet{1, 2}))
   EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum2_, values, fd_step, tolerance)
 
   // BinaryExpression(5,6)
@@ -521,7 +521,7 @@ TEST(Expression, testMultipleCompositions) {
   //     Leaf, key = 1
   //     Leaf, key = 2
   Expression<double> sum3_(Combine(5, 6), sum1_, sum2_);
-  EXPECT((sum3_.keys() == std::set<Key>{1, 2}))
+  EXPECT((sum3_.keys() == KeySet{1, 2}))
   EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum3_, values, fd_step, tolerance)
 }
 
@@ -550,19 +550,19 @@ TEST(Expression, testMultipleCompositions2) {
   Expression<double> v3_(Key(3));
 
   Expression<double> sum1_(Combine(4,5), v1_, v2_);
-  EXPECT((sum1_.keys() == std::set<Key>{1, 2}))
+  EXPECT((sum1_.keys() == KeySet{1, 2}))
   EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum1_, values, fd_step, tolerance)
 
   Expression<double> sum2_(combine3, v1_, v2_, v3_);
-  EXPECT((sum2_.keys() == std::set<Key>{1, 2, 3}))
+  EXPECT((sum2_.keys() == KeySet{1, 2, 3}))
   EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum2_, values, fd_step, tolerance)
 
   Expression<double> sum3_(combine3, v3_, v2_, v1_);
-  EXPECT((sum3_.keys() == std::set<Key>{1, 2, 3}))
+  EXPECT((sum3_.keys() == KeySet{1, 2, 3}))
   EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum3_, values, fd_step, tolerance)
 
   Expression<double> sum4_(combine3, sum1_, sum2_, sum3_);
-  EXPECT((sum4_.keys() == std::set<Key>{1, 2, 3}))
+  EXPECT((sum4_.keys() == KeySet{1, 2, 3}))
   EXPECT_CORRECT_EXPRESSION_JACOBIANS(sum4_, values, fd_step, tolerance)
 }
 

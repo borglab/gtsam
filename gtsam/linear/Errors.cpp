@@ -27,9 +27,9 @@ namespace gtsam {
 /* ************************************************************************* */
 Errors createErrors(const VectorValues& V) {
   Errors result;
-  for (const auto& [key, e] : V) {
-    result.push_back(e);
-  }
+  // Use a key-sorted view of VectorValues so the resulting Errors
+  // order is deterministic and independent of the underlying map.
+  for (const auto& [key, e] : V.sorted()) result.push_back(e);
   return result;
 }
 

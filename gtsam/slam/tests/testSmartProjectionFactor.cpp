@@ -31,13 +31,22 @@ static const Symbol l1('l', 1), l2('l', 2), l3('l', 3);
 static const Key c1 = 1, c2 = 2, c3 = 3;
 static const Point2 measurement1(323.0, 240.0);
 static const double rankTol = 1.0;
+
+LevenbergMarquardtParams makeLMParams(bool debug = false) {
+  LevenbergMarquardtParams p;
+  p.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
+  if (debug) {
+    p.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
+    p.verbosity = NonlinearOptimizerParams::ERROR;
+  }
+  return p;
 }
 
-template<class CALIBRATION>
+template <class CALIBRATION>
 PinholeCamera<CALIBRATION> perturbCameraPoseAndCalibration(
     const PinholeCamera<CALIBRATION>& camera) {
-  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 10),
-      Point3(0.5, 0.1, 0.3));
+  Pose3 noise_pose =
+      Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 10), Point3(0.5, 0.1, 0.3));
   Pose3 cameraPose = camera.pose();
   Pose3 perturbedCameraPose = cameraPose.compose(noise_pose);
   typename gtsam::traits<CALIBRATION>::TangentVector d;
@@ -46,6 +55,7 @@ PinholeCamera<CALIBRATION> perturbCameraPoseAndCalibration(
   CALIBRATION perturbedCalibration = camera.calibration().retract(d);
   return PinholeCamera<CALIBRATION>(perturbedCameraPose, perturbedCalibration);
 }
+}  // namespace
 
 /* ************************************************************************* */
 TEST(SmartProjectionFactor, perturbCameraPose) {
@@ -242,12 +252,7 @@ TEST(SmartProjectionFactor, perturbPoseAndOptimize ) {
   EXPECT(assert_equal(expected, actual, 1));
 
   // Optimize
-  LevenbergMarquardtParams lmParams;
-  if (isDebugTest) {
-    lmParams.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
-    lmParams.verbosity = NonlinearOptimizerParams::ERROR;
-  }
-  LevenbergMarquardtOptimizer optimizer(graph, initial, lmParams);
+  LevenbergMarquardtOptimizer optimizer(graph, initial, makeLMParams(isDebugTest));
   Values result = optimizer.optimize();
 
   EXPECT(assert_equal(landmark1, *smartFactor1->point(), 1e-5));
@@ -314,14 +319,8 @@ TEST(SmartProjectionFactor, perturbPoseAndOptimizeFromSfM_tracks ) {
   if (isDebugTest)
     values.at<Camera>(c3).print("Smart: Pose3 before optimization: ");
 
-  LevenbergMarquardtParams lmParams;
-  if (isDebugTest)
-    lmParams.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
-  if (isDebugTest)
-    lmParams.verbosity = NonlinearOptimizerParams::ERROR;
-
   Values result;
-  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
+  LevenbergMarquardtOptimizer optimizer(graph, values, makeLMParams(isDebugTest));
   result = optimizer.optimize();
 
   //  GaussianFactorGraph::shared_ptr GFG = graph.linearize(values);
@@ -388,15 +387,11 @@ TEST(SmartProjectionFactor, perturbCamerasAndOptimize ) {
   if (isDebugTest)
     values.at<Camera>(c3).print("Smart: Pose3 before optimization: ");
 
-  LevenbergMarquardtParams lmParams;
+  LevenbergMarquardtParams lmParams = makeLMParams(isDebugTest);
   lmParams.relativeErrorTol = 1e-8;
   lmParams.absoluteErrorTol = 0;
   lmParams.maxIterations = 20;
-  if (isDebugTest)
-    lmParams.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
-  if (isDebugTest)
-    lmParams.verbosity = NonlinearOptimizerParams::ERROR;
-
+  
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
@@ -464,14 +459,10 @@ TEST(SmartProjectionFactor, Cal3Bundler ) {
   if (isDebugTest)
     values.at<Camera>(c3).print("Smart: Pose3 before optimization: ");
 
-  LevenbergMarquardtParams lmParams;
+  LevenbergMarquardtParams lmParams = makeLMParams(isDebugTest);
   lmParams.relativeErrorTol = 1e-8;
   lmParams.absoluteErrorTol = 0;
   lmParams.maxIterations = 20;
-  if (isDebugTest)
-    lmParams.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
-  if (isDebugTest)
-    lmParams.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
@@ -537,14 +528,10 @@ TEST(SmartProjectionFactor, Cal3Bundler2 ) {
   if (isDebugTest)
     values.at<Camera>(c3).print("Smart: Pose3 before optimization: ");
 
-  LevenbergMarquardtParams lmParams;
+  LevenbergMarquardtParams lmParams = makeLMParams(isDebugTest);
   lmParams.relativeErrorTol = 1e-8;
   lmParams.absoluteErrorTol = 0;
   lmParams.maxIterations = 20;
-  if (isDebugTest)
-    lmParams.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
-  if (isDebugTest)
-    lmParams.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);

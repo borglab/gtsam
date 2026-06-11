@@ -15,7 +15,11 @@
  *  @author Duy-Nguyen Ta
  **/
 
+#include <gtsam/config.h>
 #include <CppUnitLite/TestHarness.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/VectorValues.h>
@@ -221,6 +225,8 @@ TEST(LinearEquality, empty) {
   LinearEquality f;
   EXPECT(f.empty());
 }
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
 
 /* ************************************************************************* */
 int main() {

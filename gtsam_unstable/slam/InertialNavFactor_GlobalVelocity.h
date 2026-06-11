@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/base/Matrix.h>

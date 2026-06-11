@@ -62,9 +62,7 @@ class Enum:
         Return a Typename with the namespaces and cpp name of this
         class.
         """
-        namespaces_name = self.namespaces()
-        namespaces_name.append(self.name)
-        return Typename(namespaces_name)
+        return Typename(self.name, self.namespaces())
 
     def __repr__(self):
         return "Enum: {0}".format(self.name)

@@ -35,7 +35,6 @@
 #include <gtsam/symbolic/SymbolicEliminationTree.h>
 #include <gtsam/inference/BayesTree.h>
 #include <gtsam/inference/ClusterTree.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>

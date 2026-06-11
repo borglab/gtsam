@@ -34,14 +34,58 @@
 
 #include <string>
 
-#include "Switching.h"
 #include "DiscreteFixture.h"
+#include "Switching.h"
 
 using namespace std;
 using namespace gtsam;
 
 using symbol_shorthand::X;
 using symbol_shorthand::Z;
+
+/****************************************************************************/
+// Test error computation.
+TEST(HybridSmoother, Error) {
+  using namespace estimation_fixture;
+
+  size_t K = 5;
+
+  // Switching example of robot moving in 1D
+  // with given measurements and equal mode priors.
+  HybridNonlinearFactorGraph graph;
+  Values initial;
+  Switching switching = InitializeEstimationProblem(
+      K, 1.0, 0.1, measurements, "1/1 1/1", &graph, &initial);
+
+  HybridSmoother smoother;
+  constexpr size_t maxNrLeaves = 5;
+
+  // Loop over timesteps from 1...K-1
+  for (size_t k = 1; k < K; k++) {
+    if (k > 1) graph.push_back(switching.modeChain.at(k - 1));  // Mode chain
+    graph.push_back(switching.binaryFactors.at(k - 1));         // Motion Model
+    graph.push_back(switching.unaryFactors.at(k));              // Measurement
+
+    initial.insert(X(k), switching.linearizationPoint.at<double>(X(k)));
+
+    smoother.update(graph, initial, maxNrLeaves);
+
+    // Clear all the factors from the graph
+    graph.resize(0);
+  }
+
+  HybridValues delta = smoother.optimize();
+
+  double expected_error = 1.238331316;
+
+  double hybrid_error = smoother.error(delta);
+  // regression
+  EXPECT_DOUBLES_EQUAL(expected_error, hybrid_error, 1e-8);
+
+  double linear_error = smoother.error(delta.continuous());
+  // regression
+  EXPECT_DOUBLES_EQUAL(expected_error, linear_error, 1e-8);
+}
 
 /****************************************************************************/
 // Test approximate inference with an additional pruning step.

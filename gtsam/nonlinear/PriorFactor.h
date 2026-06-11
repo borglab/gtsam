@@ -49,7 +49,7 @@ class PriorFactor : public ExtendedPriorFactor<VALUE> {
   /// Constructor
   PriorFactor(Key key, const VALUE& prior,
               const SharedNoiseModel& model = nullptr)
-      : Base(key, prior, model) {}
+      : Base(key, prior, noiseModel::validOrDefault(prior, model)) {}
 
   /// Convenience constructor that takes a full covariance argument
   PriorFactor(Key key, const VALUE& prior, const Matrix& covariance)

@@ -108,9 +108,34 @@ TEST(HessianFactor, Constructor1)
   // error 0.5*(f - 2*x'*g + x'*G*x)
   double expected = 80.375;
   double actual = factor.error(dx);
-  double expected_manual = 0.5 * (f - 2.0 * dx[0].dot(g) + dx[0].transpose() * G.selfadjointView<Eigen::Upper>() * dx[0]);
+  const double xGx = dx[0].dot(G * dx[0]);
+  double expected_manual = 0.5 * (f - 2.0 * dx[0].dot(g) + xGx);
   EXPECT_DOUBLES_EQUAL(expected, expected_manual, 1e-10);
   EXPECT_DOUBLES_EQUAL(expected, actual, 1e-10);
+}
+
+/* ************************************************************************* */
+TEST(HessianFactor, deltaError)
+{
+  Matrix G = (Matrix(2,2) << 3.0, 5.0, 5.0, 6.0).finished();
+  Vector g = Vector2(-8.0, -9.0);
+  double f = 10.0;
+  HessianFactor factor(0, G, g, f);
+
+  VectorValues values{{0, Vector2(1.5, 2.5)}};
+  VectorValues zero = VectorValues::Zero(values);
+
+  double expectedOld = factor.error(zero);
+  double expectedNew = factor.error(values);
+  double expectedDelta = expectedOld - expectedNew;
+
+  double oldValue = 0.0;
+  double newValue = 0.0;
+  double delta = factor.deltaError(values, &oldValue, &newValue);
+
+  DOUBLES_EQUAL(expectedOld, oldValue, 1e-10);
+  DOUBLES_EQUAL(expectedNew, newValue, 1e-10);
+  DOUBLES_EQUAL(expectedDelta, delta, 1e-10);
 }
 
 /* ************************************************************************* */
@@ -563,6 +588,73 @@ TEST(HessianFactor, Solve)
   VectorValues expected;
   expected.insert(key, A.inverse() * b);
   EXPECT(assert_equal(expected, factor.solve()));
+}
+
+
+/* ************************************************************************* */
+TEST(HessianFactor, updateHessianWithColumnRangeOnlyUpdatesSpecifiedBlocks) {
+  // Create a simple 2x2 HessianFactor on keys 0 and 1
+  Matrix G00 = (Matrix(2, 2) << 1, 2, 2, 3).finished();
+  Matrix G01 = (Matrix(2, 2) << 4, 5, 6, 7).finished();
+  Matrix G11 = (Matrix(2, 2) << 8, 9, 9, 10).finished();
+  Vector g0 = Vector2(1, 2);
+  Vector g1 = Vector2(3, 4);
+  double f = 5.0;
+
+  HessianFactor factor(0, 1, G00, G01, g0, G11, g1, f);
+
+  // Destination matrix: 3 blocks (key 0: size 2, key 1: size 2, RHS: size 1)
+  KeyVector infoKeys{0, 1};
+  Dims dims{2, 2, 1};
+
+  // Initialize to zero
+  SymmetricBlockMatrix info(dims);
+  info.setZero();
+
+  // Update only block column 0 (first variable)
+  factor.updateHessian(infoKeys, &info, 0, 1);
+
+  // Block 0 (diagonal for key 0) should be updated (non-zero)
+  Matrix block0 = info.diagonalBlock(0);
+  EXPECT(assert_equal(G00, block0, 0));
+
+  // Block 1 (diagonal for key 1) should still be zero
+  Matrix block1 = info.diagonalBlock(1);
+  Matrix expected_zero_2x2 = Matrix::Zero(2, 2);
+  EXPECT(assert_equal(expected_zero_2x2, block1, 0));
+
+  // Block 2 (RHS) should still be zero
+  Matrix block2 = info.diagonalBlock(2);
+  Matrix expected_zero_1x1 = Matrix::Zero(1, 1);
+  EXPECT(assert_equal(expected_zero_1x1, block2, 0));
+
+  // Off-diagonal block (0,1) should still be zero
+  // Note: aboveDiagonalBlock gets the upper triangular part
+  Matrix block01 = info.aboveDiagonalBlock(0, 1);
+  EXPECT(assert_equal(expected_zero_2x2, block01, 0));
+
+  // Now update block column 1
+  factor.updateHessian(infoKeys, &info, 1, 2);
+
+  // Block 1 should now be updated
+  EXPECT(assert_equal(G11, info.diagonalBlock(1), 0));
+
+  // Off-diagonal block (0,1) should now be updated
+  EXPECT(assert_equal(G01, info.aboveDiagonalBlock(0, 1), 0));
+
+  // Block 2 (RHS) should still be zero (not updated yet)
+  EXPECT(assert_equal(expected_zero_1x1, info.diagonalBlock(2), 0));
+
+  // Finally update the RHS column
+  factor.updateHessian(infoKeys, &info, 2, 3);
+
+  // Now verify the full matrix matches what we'd get from a full update
+  SymmetricBlockMatrix infoFull(dims);
+  infoFull.setZero();
+  factor.updateHessian(infoKeys, &infoFull);
+
+  EXPECT(assert_equal(Matrix(infoFull.selfadjointView()),
+                      Matrix(info.selfadjointView()), 0));
 }
 
 /* ************************************************************************* */

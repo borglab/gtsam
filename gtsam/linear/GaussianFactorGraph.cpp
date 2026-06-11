@@ -78,6 +78,35 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  double GaussianFactorGraph::deltaError(const VectorValues& x, double* oldError,
+                                         double* newError) const {
+    double oldTotal = 0.0;
+    double newTotal = 0.0;
+    double deltaTotal = 0.0;
+    for (const sharedFactor& factor : *this) {
+      if (!factor) {
+        continue;
+      }
+      if (oldError || newError) {
+        double factorOld = 0.0;
+        double factorNew = 0.0;
+        deltaTotal += factor->deltaError(x, &factorOld, &factorNew);
+        oldTotal += factorOld;
+        newTotal += factorNew;
+      } else {
+        deltaTotal += factor->deltaError(x, nullptr, nullptr);
+      }
+    }
+    if (oldError) {
+      *oldError = oldTotal;
+    }
+    if (newError) {
+      *newError = newTotal;
+    }
+    return deltaTotal;
+  }
+
+  /* ************************************************************************* */
   double GaussianFactorGraph::probPrime(const VectorValues& c) const {
     // NOTE the 0.5 constant is handled by the factor error.
     return exp(-error(c));

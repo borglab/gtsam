@@ -11,7 +11,6 @@
 
 #include <gtsam/inference/ClusterTree.h>
 #include <gtsam/inference/BayesTree.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/base/treeTraversal-inst.h>
 
@@ -43,6 +42,34 @@ std::vector<size_t> ClusterTree<GRAPH>::Cluster::nrFrontalsOfChildren() const {
 
 /* ************************************************************************* */
 template <class GRAPH>
+KeySet ClusterTree<GRAPH>::Cluster::separatorKeys(KeySetMap* cache) const {
+  if (cache) {
+    auto it = cache->find(this);
+    if (it != cache->end()) return it->second;
+  }
+
+  KeySet keys;
+  for (const auto& factor : factors) {
+    if (!factor) continue;
+    keys.insert(factor->begin(), factor->end());
+  }
+  for (const auto& child : children) {
+    KeySet childSeparators = child->separatorKeys(cache);
+    keys.insert(childSeparators.begin(), childSeparators.end());
+  }
+  for (Key key : orderedFrontalKeys) {
+    keys.erase(key);
+  }
+
+  if (cache) {
+    auto result = cache->emplace(this, std::move(keys));
+    return result.first->second;
+  }
+  return keys;
+}
+
+/* ************************************************************************* */
+template <class GRAPH>
 void ClusterTree<GRAPH>::Cluster::merge(const std::shared_ptr<Cluster>& cluster) {
   // Merge keys. For efficiency, we add keys in reverse order at end, calling reverse after..
   orderedFrontalKeys.insert(orderedFrontalKeys.end(), cluster->orderedFrontalKeys.rbegin(),
@@ -54,27 +81,40 @@ void ClusterTree<GRAPH>::Cluster::merge(const std::shared_ptr<Cluster>& cluster)
 }
 
 /* ************************************************************************* */
-template<class GRAPH>
+template <class GRAPH>
 void ClusterTree<GRAPH>::Cluster::mergeChildren(
     const std::vector<bool>& merge) {
+  mergeChildren(childrenFromMask(merge));
+}
+
+/* ************************************************************************* */
+template <class GRAPH>
+void ClusterTree<GRAPH>::Cluster::mergeChildren(
+    const Children& selected) {
   gttic(Cluster_mergeChildren);
-  assert(merge.size() == this->children.size());
+  // Merge selected children into this node while preserving unselected children.
+  if (selected.empty()) return;
+
+  FastSet<const Cluster*> selectedSet;
+  for (const auto& child : selected) {
+    if (child) {
+      selectedSet.insert(child.get());
+    }
+  }
+  if (selectedSet.empty()) return;
 
   // Count how many keys, factors and children we'll end up with
   size_t nrKeys = orderedFrontalKeys.size();
   size_t nrFactors = factors.size();
   size_t nrNewChildren = 0;
-  // Loop over children
-  size_t i = 0;
-  for(const sharedNode& child: this->children) {
-    if (merge[i]) {
+  for (const sharedNode& child : this->children) {
+    if (child && selectedSet.count(child.get()) != 0) {
       nrKeys += child->orderedFrontalKeys.size();
       nrFactors += child->factors.size();
       nrNewChildren += child->nrChildren();
     } else {
-      nrNewChildren += 1; // we keep the child
+      nrNewChildren += 1;  // we keep the child
     }
-    ++i;
   }
 
   // now reserve space, and really merge
@@ -83,16 +123,82 @@ void ClusterTree<GRAPH>::Cluster::mergeChildren(
   this->children.reserve(nrNewChildren);
   orderedFrontalKeys.reserve(nrKeys);
   factors.reserve(nrFactors);
-  i = 0;
   for (const sharedNode& child : oldChildren) {
-    if (merge[i]) {
+    if (child && selectedSet.count(child.get()) != 0) {
       this->merge(child);
     } else {
       this->addChild(child);  // we keep the child
     }
-    ++i;
   }
+  // merge() appends keys in reverse order to defer a final reverse.
   std::reverse(orderedFrontalKeys.begin(), orderedFrontalKeys.end());
+}
+
+/* ************************************************************************* */
+template <class GRAPH>
+void ClusterTree<GRAPH>::Cluster::mergeChildrenSiblings(
+    const std::vector<bool>& merge) {
+  mergeChildrenSiblings(childrenFromMask(merge));
+}
+
+/* ************************************************************************* */
+template <class GRAPH>
+void ClusterTree<GRAPH>::Cluster::mergeChildrenSiblings(
+    const Children& selected) {
+  gttic(Cluster_mergeChildrenSiblings);
+  // Merge selected siblings into a new child while keeping unselected children.
+  if (selected.empty()) return;
+
+  FastSet<const Cluster*> selectedSet;
+  for (const auto& child : selected) {
+    if (child) {
+      selectedSet.insert(child.get());
+    }
+  }
+  const size_t selectedCount = selectedSet.size();
+  // Nothing to merge (0 or 1 selected), so keep children unchanged.
+  if (selectedCount <= 1) return;
+
+  auto oldChildren = this->children;
+  Children newChildren;
+  newChildren.reserve(oldChildren.size() - selectedCount + 1);
+  auto merged = std::make_shared<Cluster>();
+  bool inserted = false;
+
+  for (const sharedNode& child : oldChildren) {
+    if (child && selectedSet.count(child.get()) != 0) {
+      // Merge selected siblings into a single new cluster.
+      merged->merge(child);
+      if (!inserted) {
+        // Insert merged cluster at the first selected child's position.
+        newChildren.push_back(merged);
+        inserted = true;
+      }
+    } else {
+      newChildren.push_back(child);
+    }
+  }
+
+  // merge() appends keys in reverse order to defer a final reverse.
+  std::reverse(merged->orderedFrontalKeys.begin(),
+               merged->orderedFrontalKeys.end());
+  this->children.swap(newChildren);
+}
+
+/* ************************************************************************* */
+template <class GRAPH>
+typename ClusterTree<GRAPH>::Cluster::Children
+ClusterTree<GRAPH>::Cluster::childrenFromMask(
+    const std::vector<bool>& merge) const {
+  assert(merge.size() == this->children.size());
+  // Translate a boolean mask into the corresponding child pointers.
+  Children selected;
+  for (size_t i = 0; i < children.size(); ++i) {
+    if (merge[i]) {
+      selected.push_back(children[i]);
+    }
+  }
+  return selected;
 }
 
 /* ************************************************************************* */

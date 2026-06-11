@@ -121,8 +121,7 @@ TEST_PIM(ImuFactor, PreintegratedMeasurements) {
   Matrix9 aH1, aH2;
   Matrix96 aH3;
   actual.computeError(x1, x2, bias, aH1, aH2, aH3);
-  std::function<Vector9(const NavState&, const NavState&, const Bias&)> f =
-      std::bind(&PreintegrationBase::computeError, actual,
+  auto f = std::bind(&PreintegrationBase::computeError, actual,
                   std::placeholders::_1, std::placeholders::_2, std::placeholders::_3,
                   nullptr, nullptr, nullptr);
   EXPECT(assert_equal(numericalDerivative31(f, x1, x2, bias), aH1, 1e-9));

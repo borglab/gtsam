@@ -178,11 +178,15 @@ void perturbPoint2(gtsam::Values& values, double sigma, int seed = 42u);
 void perturbPose2(gtsam::Values& values, double sigmaT, double sigmaR,
                   int seed = 42u);
 void perturbPoint3(gtsam::Values& values, double sigma, int seed = 42u);
+void perturbPose3(gtsam::Values& values, double sigmaT, double sigmaR,
+                  int seed = 42u);
 void insertBackprojections(gtsam::Values& values,
-                           const gtsam::PinholeCamera<gtsam::Cal3_S2>& c,
-                           gtsam::Vector J, gtsam::Matrix Z, double depth);
+                           const gtsam::PinholeCamera<gtsam::Cal3_S2>& camera,
+                           const gtsam::Vector& J, gtsam::ConstMatrixView Z,
+                           double depth);
 void insertProjectionFactors(
-    gtsam::NonlinearFactorGraph& graph, size_t i, gtsam::Vector J, gtsam::Matrix Z,
+    gtsam::NonlinearFactorGraph& graph, size_t i, const gtsam::Vector& J,
+    gtsam::ConstMatrixView Z,
     const gtsam::noiseModel::Base* model, const gtsam::Cal3_S2* K,
     const gtsam::Pose3& body_P_sensor = gtsam::Pose3());
 gtsam::Matrix reprojectionErrors(const gtsam::NonlinearFactorGraph& graph,

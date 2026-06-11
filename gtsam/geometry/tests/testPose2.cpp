@@ -76,6 +76,20 @@ TEST(Pose2, retract) {
 }
 
 /* ************************************************************************* */
+TEST(Pose2, retractJacobian) {
+  Pose2 pose(M_PI / 2.0, Point2(1, 2));
+  Vector3 v(0.01, -0.015, 0.99);
+
+  Matrix3 actualH;
+  traits<Pose2>::Retract(pose, v, {}, &actualH);
+
+  auto retract_from_pose = [&](const Vector3& delta) { return pose.retract(delta); };
+  Matrix3 expectedH = numericalDerivative11<Pose2, Vector3, 3>(retract_from_pose, v, 1e-6);
+
+  EXPECT(assert_equal(expectedH, actualH, 1e-5));
+}
+
+/* ************************************************************************* */
 TEST(Pose2, expmap) {
   Pose2 pose(M_PI/2.0, Point2(1, 2));
   Pose2 expected(1.00811, 2.01528, 2.5608);
@@ -503,7 +517,7 @@ TEST( Pose2, translation )  {
   Matrix actualH;
   EXPECT(assert_equal((Vector2() << 3.5, -8.2).finished(), pose.translation(actualH), 1e-8));
 
-  std::function<Point2(const Pose2&)> f = [](const Pose2& T) { return T.translation(); };
+  auto f = [](const Pose2& T) { return T.translation(); };
   Matrix numericalH = numericalDerivative11<Point2, Pose2>(f, pose);
   EXPECT(assert_equal(numericalH, actualH, 1e-6));
 }
@@ -515,7 +529,7 @@ TEST( Pose2, rotation ) {
   Matrix actualH(4, 3);
   EXPECT(assert_equal(Rot2(4.2), pose.rotation(actualH), 1e-8));
 
-  std::function<Rot2(const Pose2&)> f = [](const Pose2& T) { return T.rotation(); };
+  auto f = [](const Pose2& T) { return T.rotation(); };
   Matrix numericalH = numericalDerivative11<Rot2, Pose2>(f, pose);
   EXPECT(assert_equal(numericalH, actualH, 1e-6));
 }
@@ -970,7 +984,7 @@ TEST(Pose2, Vec) {
   EXPECT(assert_equal(expected_vec, actual_vec));
 
   // Verify Jacobian with numerical derivatives
-  std::function<Vector9(const Pose2&)> f = [](const Pose2& p) { return p.vec(); };
+  auto f = [](const Pose2& p) { return p.vec(); };
   Matrix93 numericalH = numericalDerivative11<Vector9, Pose2>(f, pose);
   EXPECT(assert_equal(numericalH, actualH, 1e-9));
 }
@@ -992,9 +1006,40 @@ TEST(Pose2, AdjointMap) {
 }
 
 /* ************************************************************************* */
+TEST(Pose2, AdjointTranspose) {
+  const Pose2 pose(Rot2::fromAngle(0.5), Point2(1.0, 2.0));
+  const Vector3 xi(0.2, -0.4, 0.7);
+
+  EXPECT(assert_equal(Vector(pose.AdjointMap().transpose() * xi),
+                      Vector(pose.AdjointTranspose(xi))));
+
+  Matrix33 actualH1, actualH2;
+  auto proxy = [](const Pose2& g, const Vector3& x) {
+        return Vector3(g.AdjointTranspose(x));
+      };
+  pose.AdjointTranspose(xi, actualH1, actualH2);
+  EXPECT(assert_equal(numericalDerivative21(proxy, pose, xi), actualH1, 1e-8));
+  EXPECT(assert_equal(numericalDerivative22(proxy, pose, xi), actualH2));
+}
+
+/* ************************************************************************* */
+TEST(Pose2, adjointTranspose) {
+  const Vector3 xi(0.2, -0.4, 0.7);
+  const Vector3 y(-0.3, 0.5, 0.9);
+
+  Matrix33 Hxi, Hy;
+  const Vector3 actual = Pose2::adjointTranspose(xi, y, Hxi, Hy);
+  auto f = [](const Vector3& x, const Vector3& v) {
+        return Pose2::adjointTranspose(x, v);
+      };
+  EXPECT(assert_equal(f(xi, y), actual));
+  EXPECT(assert_equal(numericalDerivative21(f, xi, y, 1e-5), Hxi, 1e-5));
+  EXPECT(assert_equal(numericalDerivative22(f, xi, y, 1e-5), Hy, 1e-5));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

@@ -98,7 +98,7 @@ template <size_t d>
 static size_t NrUnknowns(
     const typename ShonanAveraging<d>::Measurements &measurements) {
   Key maxKey = 0;
-  std::set<Key> keys;
+  KeySet keys;
   for (const auto &measurement : measurements) {
     for (const Key &key : measurement.keys()) {
       maxKey = std::max(key, maxKey);
@@ -827,8 +827,8 @@ Values ShonanAveraging<d>::initializeWithDescent(
   double alphaMin = 1e-2;
   double alpha =
       std::max(1024 * alphaMin, 10 * gradienTolerance / fabs(minEigenValue));
-  vector<double> alphas;
-  vector<double> fvals;
+  std::vector<double> alphas;
+  std::vector<double> fvals;
   // line search
   while ((alpha >= alphaMin)) {
     Values Qplus = LiftwithDescent(p, values, alpha * minEigenVector);
@@ -937,7 +937,7 @@ ShonanAveraging2::ShonanAveraging2(const Measurements &measurements,
     : ShonanAveraging<2>(maybeRobust(measurements, parameters.getUseHuber()),
                          parameters) {}
 
-ShonanAveraging2::ShonanAveraging2(string g2oFile, const Parameters &parameters)
+ShonanAveraging2::ShonanAveraging2(std::string g2oFile, const Parameters &parameters)
     : ShonanAveraging<2>(maybeRobust(parseMeasurements<Rot2>(g2oFile),
                                      parameters.getUseHuber()),
                          parameters) {}
@@ -983,7 +983,7 @@ ShonanAveraging3::ShonanAveraging3(const Measurements &measurements,
     : ShonanAveraging<3>(maybeRobust(measurements, parameters.getUseHuber()),
                          parameters) {}
 
-ShonanAveraging3::ShonanAveraging3(string g2oFile, const Parameters &parameters)
+ShonanAveraging3::ShonanAveraging3(std::string g2oFile, const Parameters &parameters)
     : ShonanAveraging<3>(maybeRobust(parseMeasurements<Rot3>(g2oFile),
                                      parameters.getUseHuber()),
                          parameters) {}

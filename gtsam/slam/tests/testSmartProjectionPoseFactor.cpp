@@ -46,9 +46,13 @@ static Symbol x3('X', 3);
 
 static Point2 measurement1(323.0, 240.0);
 
-LevenbergMarquardtParams lmParams;
-// Make more verbose like so (in tests):
-// lmParams.verbosityLM = LevenbergMarquardtParams::SUMMARY;
+LevenbergMarquardtParams makeLMParams(bool verbose = false) {
+  LevenbergMarquardtParams p;
+  p.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
+  if (verbose) p.verbosityLM = LevenbergMarquardtParams::SUMMARY;
+  return p;
+}
+
 }
 
 /* ************************************************************************* */
@@ -264,9 +268,8 @@ TEST(SmartProjectionPoseFactor, smartFactorWithSensorBodyTransform) {
   // original pose3
   values.insert(x3, wTb3 * noise_pose);
 
-  LevenbergMarquardtParams lmParams;
   Values result;
-  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
+  LevenbergMarquardtOptimizer optimizer(graph, values, makeLMParams());
   result = optimizer.optimize();
   EXPECT(assert_equal(wTb3, result.at<Pose3>(x3)));
 }
@@ -327,7 +330,7 @@ TEST( SmartProjectionPoseFactor, 3poses_smart_projection_factor ) {
               Point3(0.1, -0.1, 1.9)), values.at<Pose3>(x3)));
 
   Values result;
-  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
+  LevenbergMarquardtOptimizer optimizer(graph, values, makeLMParams());
   result = optimizer.optimize();
   EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-6));
 }
@@ -545,7 +548,7 @@ TEST( SmartProjectionPoseFactor, 3poses_iterative_smart_projection_factor ) {
           values.at<Pose3>(x3)));
 
   Values result;
-  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
+  LevenbergMarquardtOptimizer optimizer(graph, values, makeLMParams());
   result = optimizer.optimize();
   EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-7));
 }
@@ -601,7 +604,7 @@ TEST( SmartProjectionPoseFactor, jacobianSVD ) {
   values.insert(x3, pose_above * noise_pose);
 
   Values result;
-  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
+  LevenbergMarquardtOptimizer optimizer(graph, values, makeLMParams());
   result = optimizer.optimize();
   EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-6));
 }
@@ -660,7 +663,7 @@ TEST( SmartProjectionPoseFactor, landmarkDistance ) {
 
   // All factors are disabled and pose should remain where it is
   Values result;
-  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
+  LevenbergMarquardtOptimizer optimizer(graph, values, makeLMParams());
   result = optimizer.optimize();
   EXPECT(assert_equal(values.at<Pose3>(x3), result.at<Pose3>(x3)));
 }
@@ -726,7 +729,7 @@ TEST( SmartProjectionPoseFactor, dynamicOutlierRejection ) {
 
   // All factors are disabled and pose should remain where it is
   Values result;
-  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
+  LevenbergMarquardtOptimizer optimizer(graph, values, makeLMParams());
   result = optimizer.optimize();
   EXPECT(assert_equal(cam3.pose(), result.at<Pose3>(x3)));
 }
@@ -777,7 +780,7 @@ TEST( SmartProjectionPoseFactor, jacobianQ ) {
   values.insert(x3, pose_above * noise_pose);
 
   Values result;
-  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
+  LevenbergMarquardtOptimizer optimizer(graph, values, makeLMParams());
   result = optimizer.optimize();
   EXPECT(assert_equal(pose_above, result.at<Pose3>(x3), 1e-6));
 }
@@ -821,7 +824,7 @@ TEST( SmartProjectionPoseFactor, 3poses_projection_factor ) {
 
   DOUBLES_EQUAL(48406055, graph.error(values), 1);
 
-  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
+  LevenbergMarquardtOptimizer optimizer(graph, values, makeLMParams());
   Values result = optimizer.optimize();
 
   DOUBLES_EQUAL(0, graph.error(result), 1e-9);
@@ -960,7 +963,7 @@ TEST( SmartProjectionPoseFactor, 3poses_2land_rotation_only_smart_projection_fac
   values.insert(x3, pose3 * noise_pose);
 
   // params.verbosityLM = LevenbergMarquardtParams::SUMMARY;
-  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
+  LevenbergMarquardtOptimizer optimizer(graph, values, makeLMParams());
   Values result = optimizer.optimize();
   EXPECT(assert_equal(pose3, result.at<Pose3>(x3)));
 }
@@ -1033,7 +1036,7 @@ TEST( SmartProjectionPoseFactor, 3poses_rotation_only_smart_projection_factor ) 
           values.at<Pose3>(x3)));
 
   Values result;
-  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
+  LevenbergMarquardtOptimizer optimizer(graph, values, makeLMParams());
   result = optimizer.optimize();
 
   // Since we do not do anything on degenerate instances (ZERO_ON_DEGENERACY)
@@ -1242,7 +1245,7 @@ TEST( SmartProjectionPoseFactor, Cal3Bundler ) {
               Point3(0.1, -0.1, 1.9)), values.at<Pose3>(x3)));
 
   Values result;
-  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
+  LevenbergMarquardtOptimizer optimizer(graph, values, makeLMParams());
   result = optimizer.optimize();
   EXPECT(assert_equal(cam3.pose(), result.at<Pose3>(x3), 1e-6));
 }
@@ -1318,7 +1321,7 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
           values.at<Pose3>(x3)));
 
   Values result;
-  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
+  LevenbergMarquardtOptimizer optimizer(graph, values, makeLMParams());
   result = optimizer.optimize();
 
   EXPECT(

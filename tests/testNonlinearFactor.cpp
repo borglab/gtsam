@@ -31,6 +31,7 @@
 #include <tests/simulated2D.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/inference/Symbol.h>
 
 using namespace std;
@@ -344,7 +345,7 @@ class TestFactor1 : public NoiseModelFactor1<double> {
   TestFactor1() : Base(noiseModel::Diagonal::Sigmas(Vector1(2.0)), L(1)) {}
 
   // Provide access to the Matrix& version of evaluateError:
-  using Base::NoiseModelFactor1;  // inherit constructors
+  using Base::NoiseModelFactorT;  // inherit constructors
 
   Vector evaluateError(const double& x1, OptionalMatrixType H1) const override {
     if (H1) *H1 = (Matrix(1, 1) << 1.0).finished();
@@ -401,7 +402,7 @@ class TestFactor4 : public NoiseModelFactor4<double, double, double, double> {
   TestFactor4() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4)) {}
 
   // Provide access to the Matrix& version of evaluateError:
-  using Base::NoiseModelFactor4;  // inherit constructors
+  using Base::NoiseModelFactorT;  // inherit constructors
 
   Vector
     evaluateError(const double& x1, const double& x2, const double& x3, const double& x4,

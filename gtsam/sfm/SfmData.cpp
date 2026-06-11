@@ -22,6 +22,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <locale>
 
 namespace gtsam {
 
@@ -106,6 +107,7 @@ SfmData SfmData::FromBundlerFile(const std::string &filename) {
     throw std::runtime_error(
         "Error in FromBundlerFile: can not find the file!!");
   }
+  is.imbue(std::locale::classic());
 
   SfmData sfmData;
 
@@ -115,20 +117,30 @@ SfmData SfmData::FromBundlerFile(const std::string &filename) {
 
   // Get the number of camera poses and 3D points
   size_t nrPoses, nrPoints;
-  is >> nrPoses >> nrPoints;
+  if (!(is >> nrPoses >> nrPoints)) {
+    throw std::runtime_error(
+        "Error in FromBundlerFile: failed to read header from file");
+  }
 
   // Get the information for the camera poses
   for (size_t i = 0; i < nrPoses; i++) {
     // Get the focal length and the radial distortion parameters
-    float f, k1, k2;
-    is >> f >> k1 >> k2;
+    double f = 0.0, k1 = 0.0, k2 = 0.0;
+    if (!(is >> f >> k1 >> k2)) {
+      throw std::runtime_error(
+          "Error in FromBundlerFile: failed to read camera calibration");
+    }
     Cal3Bundler K(f, k1, k2);
 
     // Get the rotation matrix
-    float r11, r12, r13;
-    float r21, r22, r23;
-    float r31, r32, r33;
-    is >> r11 >> r12 >> r13 >> r21 >> r22 >> r23 >> r31 >> r32 >> r33;
+    double r11 = 0.0, r12 = 0.0, r13 = 0.0;
+    double r21 = 0.0, r22 = 0.0, r23 = 0.0;
+    double r31 = 0.0, r32 = 0.0, r33 = 0.0;
+    if (!(is >> r11 >> r12 >> r13 >> r21 >> r22 >> r23 >> r31 >> r32 >>
+          r33)) {
+      throw std::runtime_error(
+          "Error in FromBundlerFile: failed to read camera rotation");
+    }
 
     // Bundler-OpenGL rotation matrix
     Rot3 R(r11, r12, r13, r21, r22, r23, r31, r32, r33);
@@ -140,8 +152,11 @@ SfmData SfmData::FromBundlerFile(const std::string &filename) {
     }
 
     // Get the translation vector
-    float tx, ty, tz;
-    is >> tx >> ty >> tz;
+    double tx = 0.0, ty = 0.0, tz = 0.0;
+    if (!(is >> tx >> ty >> tz)) {
+      throw std::runtime_error(
+          "Error in FromBundlerFile: failed to read camera translation");
+    }
 
     Pose3 pose = openGL2gtsam(R, tx, ty, tz);
 
@@ -154,27 +169,43 @@ SfmData SfmData::FromBundlerFile(const std::string &filename) {
     SfmTrack track;
 
     // Get the 3D position
-    float x, y, z;
-    is >> x >> y >> z;
+    double x = 0.0, y = 0.0, z = 0.0;
+    if (!(is >> x >> y >> z)) {
+      throw std::runtime_error(
+          "Error in FromBundlerFile: failed to read point coordinates");
+    }
     track.p = Point3(x, y, z);
 
     // Get the color information
-    float r, g, b;
-    is >> r >> g >> b;
+    double r = 0.0, g = 0.0, b = 0.0;
+    if (!(is >> r >> g >> b)) {
+      throw std::runtime_error(
+          "Error in FromBundlerFile: failed to read point color");
+    }
     track.r = r / 255.f;
     track.g = g / 255.f;
     track.b = b / 255.f;
 
     // Now get the visibility information
     size_t nvisible = 0;
-    is >> nvisible;
+    if (!(is >> nvisible)) {
+      throw std::runtime_error(
+          "Error in FromBundlerFile: failed to read visibility count");
+    }
 
     track.measurements.reserve(nvisible);
     track.siftIndices.reserve(nvisible);
     for (size_t k = 0; k < nvisible; k++) {
       size_t cam_idx = 0, point_idx = 0;
-      float u, v;
-      is >> cam_idx >> point_idx >> u >> v;
+      double u = 0.0, v = 0.0;
+      if (!(is >> cam_idx >> point_idx >> u >> v)) {
+        throw std::runtime_error(
+            "Error in FromBundlerFile: failed to read measurement data");
+      }
+      if (cam_idx >= nrPoses) {
+        throw std::runtime_error(
+            "Error in FromBundlerFile: measurement camera index out of range");
+      }
       track.measurements.emplace_back(cam_idx, Point2(u, -v));
       track.siftIndices.emplace_back(cam_idx, point_idx);
     }
@@ -192,39 +223,59 @@ SfmData SfmData::FromBalFile(const std::string &filename) {
   if (!is) {
     throw std::runtime_error("Error in FromBalFile: can not find the file!!");
   }
+  is.imbue(std::locale::classic());
 
   SfmData sfmData;
 
   // Get the number of camera poses and 3D points
   size_t nrPoses, nrPoints, nrObservations;
-  is >> nrPoses >> nrPoints >> nrObservations;
+  if (!(is >> nrPoses >> nrPoints >> nrObservations)) {
+    throw std::runtime_error(
+        "Error in FromBalFile: failed to read header from file");
+  }
 
   sfmData.tracks.resize(nrPoints);
 
   // Get the information for the observations
   for (size_t k = 0; k < nrObservations; k++) {
     size_t i = 0, j = 0;
-    float u, v;
-    is >> i >> j >> u >> v;
+    double u = 0.0, v = 0.0;
+    if (!(is >> i >> j >> u >> v)) {
+      throw std::runtime_error(
+          "Error in FromBalFile: failed to read observation data");
+    }
+    if (i >= nrPoses || j >= nrPoints) {
+      throw std::runtime_error(
+          "Error in FromBalFile: observation index out of range");
+    }
     sfmData.tracks[j].measurements.emplace_back(i, Point2(u, -v));
   }
 
   // Get the information for the camera poses
   for (size_t i = 0; i < nrPoses; i++) {
     // Get the Rodrigues vector
-    float wx, wy, wz;
-    is >> wx >> wy >> wz;
+    double wx = 0.0, wy = 0.0, wz = 0.0;
+    if (!(is >> wx >> wy >> wz)) {
+      throw std::runtime_error(
+          "Error in FromBalFile: failed to read camera rotation");
+    }
     Rot3 R = Rot3::Rodrigues(wx, wy, wz);  // BAL-OpenGL rotation matrix
 
     // Get the translation vector
-    float tx, ty, tz;
-    is >> tx >> ty >> tz;
+    double tx = 0.0, ty = 0.0, tz = 0.0;
+    if (!(is >> tx >> ty >> tz)) {
+      throw std::runtime_error(
+          "Error in FromBalFile: failed to read camera translation");
+    }
 
     Pose3 pose = openGL2gtsam(R, tx, ty, tz);
 
     // Get the focal length and the radial distortion parameters
-    float f, k1, k2;
-    is >> f >> k1 >> k2;
+    double f = 0.0, k1 = 0.0, k2 = 0.0;
+    if (!(is >> f >> k1 >> k2)) {
+      throw std::runtime_error(
+          "Error in FromBalFile: failed to read camera calibration");
+    }
     Cal3Bundler K(f, k1, k2);
 
     sfmData.cameras.emplace_back(pose, K);
@@ -233,8 +284,11 @@ SfmData SfmData::FromBalFile(const std::string &filename) {
   // Get the information for the 3D points
   for (size_t j = 0; j < nrPoints; j++) {
     // Get the 3D position
-    float x, y, z;
-    is >> x >> y >> z;
+    double x = 0.0, y = 0.0, z = 0.0;
+    if (!(is >> x >> y >> z)) {
+      throw std::runtime_error(
+          "Error in FromBalFile: failed to read point coordinates");
+    }
     SfmTrack &track = sfmData.tracks[j];
     track.p = Point3(x, y, z);
     track.r = 0.4f;

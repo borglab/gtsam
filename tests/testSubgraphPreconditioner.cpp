@@ -15,10 +15,8 @@
  *  @author Frank Dellaert
  **/
 
-#include <tests/smallExample.h>
-
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianEliminationTree.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
@@ -26,8 +24,7 @@
 #include <gtsam/linear/iterative.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
-
-#include <CppUnitLite/TestHarness.h>
+#include <tests/smallExample.h>
 
 #include <fstream>
 
@@ -99,7 +96,7 @@ TEST(SubgraphPreconditioner, system) {
   // Eliminate the spanning tree to build a prior
   const Ordering ord = planarOrdering(N);
   auto Rc1 = *Ab1.eliminateSequential(ord);  // R1*x-c1
-  VectorValues xbar = Rc1.optimize();       // xbar = inv(R1)*c1
+  VectorValues xbar = Rc1.optimize();        // xbar = inv(R1)*c1
 
   // Create Subgraph-preconditioned system
   const SubgraphPreconditioner system(Ab2, Rc1, xbar);
@@ -189,7 +186,7 @@ TEST(SubgraphPreconditioner, conjugateGradients) {
 
   // Eliminate the spanning tree to build a prior
   GaussianBayesNet Rc1 = *Ab1.eliminateSequential();  // R1*x-c1
-  VectorValues xbar = Rc1.optimize();  // xbar = inv(R1)*c1
+  VectorValues xbar = Rc1.optimize();                 // xbar = inv(R1)*c1
 
   // Create Subgraph-preconditioned system
   SubgraphPreconditioner system(Ab2, Rc1, xbar);
@@ -203,9 +200,11 @@ TEST(SubgraphPreconditioner, conjugateGradients) {
 
   // Solve for the remaining constraints using PCG
   ConjugateGradientParameters parameters;
-  VectorValues actual = conjugateGradients<SubgraphPreconditioner,
-      VectorValues, Errors>(system, y1, parameters);
-  EXPECT(assert_equal(y0,actual));
+  parameters.setVerbosity("ERROR");
+  VectorValues actual =
+      conjugateGradients<SubgraphPreconditioner, VectorValues, Errors>(
+          system, y1, parameters);
+  EXPECT(assert_equal(y0, actual));
 
   // Compare with non preconditioned version:
   VectorValues actual2 = conjugateGradientDescent(Ab, x1, parameters);

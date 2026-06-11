@@ -43,6 +43,11 @@ namespace gtsam {
  * 2. Prediction via tangent control vector: `predict(const TangentVector& u,
  * double dt, const Covariance& Q)`
  *
+ *
+ * Noise convention mirrors LieGroupEKF:
+ * - `predict(U, Q)` expects `Q` to be a discrete covariance.
+ * - `predict(u, dt, Q)` interprets `Q` as continuous-time and scales by `dt`.
+ *
  * The state-dependent prediction methods from LeftLinearEKF are hidden.
  * The update step remains the same as in ManifoldEKF/LeftLinearEKF.
  * For details on how static and dynamic dimensions are handled, please refer to
@@ -107,7 +112,7 @@ class InvariantEKF : public LeftLinearEKF<G> {
    *
    * @param u Tangent space control vector.
    * @param dt Time interval.
-   * @param Q Process noise covariance matrix.
+   * @param Q Continuous-time process noise covariance matrix (scaled by dt).
    */
   void predict(const TangentVector& u, double dt, const Covariance& Q) {
     G U;
@@ -119,7 +124,7 @@ class InvariantEKF : public LeftLinearEKF<G> {
     } else {
       U = traits<G>::Expmap(u * dt);
     }
-    predict(U, Q);  // Call the group composition predict
+    predict(U, Q * dt);  // Q interpreted as continuous-time; discretize with dt
   }
 
   /**

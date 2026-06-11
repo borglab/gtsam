@@ -21,6 +21,8 @@
 
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/JointMarginal.h>
+#include <gtsam/linear/GaussianBayesTreeQueries.h>
 #include <gtsam/inference/BayesTree.h>
 #include <gtsam/inference/BayesTreeCliqueBase.h>
 
@@ -123,9 +125,40 @@ namespace gtsam {
      * because this is more numerically stable. */
     double logDeterminant() const;
 
-    /** Return the marginal on the requested variable as a covariance matrix.  See also
-    *   marginalFactor(). */
+    /// Return the marginal information matrix on the requested variable.
+    Matrix marginalInformation(Key key) const;
+
+    /// Return the marginal covariance matrix on the requested variable.
     Matrix marginalCovariance(Key key) const;
+
+    /// Return the marginal information matrix using a specific elimination rule.
+    Matrix marginalInformation(Key key, const Eliminate& eliminate) const {
+      return internal::marginalInformation(*this, key, eliminate);
+    }
+
+    /// Return the marginal covariance matrix using a specific elimination rule.
+    Matrix marginalCovariance(Key key, const Eliminate& eliminate) const {
+      return internal::jointMarginalCovariance(*this, KeyVector{key}, eliminate)
+          .fullMatrix();
+    }
+
+    /// Return the joint marginal information matrix on the requested keys.
+    JointMarginal jointMarginalInformation(const KeyVector& queryKeys) const;
+
+    /// Return the joint marginal covariance matrix on the requested keys.
+    JointMarginal jointMarginalCovariance(const KeyVector& queryKeys) const;
+
+    /// Return the joint marginal information matrix using a specific elimination rule.
+    JointMarginal jointMarginalInformation(const KeyVector& queryKeys,
+                                          const Eliminate& eliminate) const {
+      return internal::jointMarginalInformation(*this, queryKeys, eliminate);
+    }
+
+    /// Return the joint marginal covariance matrix using a specific elimination rule.
+    JointMarginal jointMarginalCovariance(const KeyVector& queryKeys,
+                                          const Eliminate& eliminate) const {
+      return internal::jointMarginalCovariance(*this, queryKeys, eliminate);
+    }
   };
 
   /// traits

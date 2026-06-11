@@ -66,8 +66,7 @@ TEST(TangentPreintegration, UpdateEstimate2) {
 TEST(ImuFactor, BiasCorrectionJacobians) {
   testing::SomeMeasurements measurements;
 
-  std::function<Vector9(const Vector3&, const Vector3&)> preintegrated =
-      [&](const Vector3& a, const Vector3& w) {
+  auto preintegrated = [&](const Vector3& a, const Vector3& w) {
         TangentPreintegration pim(testing::Params(), Bias(a, w));
         testing::integrateMeasurements(measurements, &pim);
         return pim.preintegrated();
@@ -93,9 +92,7 @@ TEST(TangentPreintegration, computeError) {
   Matrix9 aH1, aH2;
   Matrix96 aH3;
   pim.computeError(x1, x2, bias, aH1, aH2, aH3);
-  std::function<Vector9(const NavState&, const NavState&,
-                        const imuBias::ConstantBias&)>
-      f = std::bind(&TangentPreintegration::computeError, pim,
+  auto f = std::bind(&TangentPreintegration::computeError, pim,
                     std::placeholders::_1, std::placeholders::_2,
                     std::placeholders::_3, nullptr, nullptr,
                     nullptr);
@@ -111,8 +108,7 @@ TEST(TangentPreintegration, Compose) {
   TangentPreintegration pim(testing::Params());
   testing::integrateMeasurements(measurements, &pim);
 
-  std::function<Vector9(const Vector9&, const Vector9&)> f =
-      [pim](const Vector9& zeta01, const Vector9& zeta12) {
+  auto f = [pim](const Vector9& zeta01, const Vector9& zeta12) {
         return TangentPreintegration::Compose(zeta01, zeta12, pim.deltaTij());
       };
 

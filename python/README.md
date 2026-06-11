@@ -11,12 +11,25 @@ For instructions on updating the version of the [wrap library](https://github.co
 - Cmake >= 3.15
 - If you want to build the GTSAM python library for a specific python version (eg 3.6),
   use the `-DGTSAM_PYTHON_VERSION=3.6` option when running `cmake` otherwise the default interpreter will be used.
-- If the interpreter is inside an environment (such as an anaconda environment or virtualenv environment),
-  then the environment should be active while building GTSAM.
-- This wrapper needs [pyparsing(>=2.4.2)](https://github.com/pyparsing/pyparsing), [pybind-stubgen>=2.5.1](https://github.com/sizmailov/pybind11-stubgen) and [numpy(>=1.11.0)](https://numpy.org/). These can all be installed as follows:
+- This wrapper needs [pyparsing(>=2.4.2)](https://github.com/pyparsing/pyparsing), [pybind11-stubgen>=2.5.1](https://github.com/sizmailov/pybind11-stubgen) and [numpy(>=1.11.0)](https://numpy.org/).
+
+  > **Note:** On systems that enforce [PEP 668](https://peps.python.org/pep-0668/) (Homebrew Python on macOS, and the system Python on Ubuntu 23.04+, Fedora, Arch, and other modern distros), bare `pip install` is blocked. Create and activate a virtual environment first:
+  >
+  > ```bash
+  > python3 -m venv .venv
+  > source .venv/bin/activate   # on Windows: .venv\Scripts\activate
+  > ```
+
+  Then install the requirements:
 
   ```bash
   pip install -r <gtsam_folder>/python/dev_requirements.txt
+  ```
+
+  When configuring cmake, point `PYTHON_EXECUTABLE` at the venv interpreter so the build and install use the same environment:
+
+  ```bash
+  cmake .. -DGTSAM_BUILD_PYTHON=ON -DPYTHON_EXECUTABLE=$(which python3)
   ```
 
 ## Install
@@ -29,7 +42,8 @@ For instructions on updating the version of the [wrap library](https://github.co
 - Build GTSAM and the wrapper with `make` (or `ninja` if you use `-GNinja`).
 
 - To install, simply run `make python-install` (`ninja python-install`).
-  - The same command can be used to install into a virtual environment if it is active.
+  - This installs into the Python interpreter selected by `cmake` when GTSAM was configured, which is the interpreter printed in the cmake configure summary. It does not change based on whichever virtual environment is active when `make python-install` runs.
+  - To install into a virtual environment, activate the environment before running `cmake`, then either let cmake discover that interpreter or pass `-DGTSAM_PYTHON_VERSION=<version>` matching the environment. To verify the target environment, run `<full/path/to/python> -m pip list` with the Python path reported by cmake.
   - **NOTE**: if you don't want GTSAM to install to a system directory such as `/usr/local`, pass `-DCMAKE_INSTALL_PREFIX="./install"` to cmake to install GTSAM to a subdirectory of the build directory.
 
 - You can also directly run `make python-install` without running `make`, and it will compile all the dependencies accordingly.
@@ -77,3 +91,15 @@ See the tests for examples.
 ## Wrapping Custom GTSAM-based Project
 
 Please refer to the template project and the corresponding tutorial available [here](https://github.com/borglab/GTSAM-project-python).
+
+## Wheels
+
+GTSAM Python wheels are built in CI through two cibuildwheel workflows that share the same matrix of Python 3.10--3.13 targets on Linux x86_64, Linux aarch64, macOS x86_64, and macOS arm64. Both scripts first configure the wrapper with `cmake -DGTSAM_BUILD_PYTHON=1` so that `setup.py` exists for cibuildwheel, invoke `.github/scripts/python_wheels/cibw_before_all.sh`, then run `.github/scripts/python_wheels/build_wheels.sh` before storing the artifacts and publishing them with `pypa/gh-action-pypi-publish`.
+
+1. **Develop wheels** (`.github/workflows/build-cibw.yml`) run on every push to `develop` (and by manual dispatch). The workflow injects `DEVELOP=1` and a timestamp so the generated version string becomes a `gtsam-develop` build, and it continues to publish the built wheels via the publish action at the end of the job. Use this workflow as a staging pipeline for the most recent development snapshots.
+
+2. **Release wheels** (`.github/workflows/prod-cibw.yml`) trigger when a GitHub release is published (and can also be run manually). The job is otherwise identical but omits the `DEVELOP` flag and publishes the wheels to PyPI, making it the production-quality artifact build tied to a release tag.
+
+### Cleaning develop wheels
+
+If the `gtsam-develop` project on PyPI grows too large (PyPI enforces a 10 GB quota for each package), run `.github/scripts/python_wheels/cleanup_gtsam_develop.sh` to drop every release except the most recent one. You can pass your PyPI username (`bash .github/scripts/python_wheels/cleanup_gtsam_develop.sh <username>`) or let the script prompt for it, but the account must be an owner or maintainer of `gtsam-develop`. The script always confirms before deleting, then calls `python3 -m pypi_cleanup` with `--leave-most-recent-only --do-it`, so treat this as a permanent cleanup that should only be used when you are about to exceed PyPI's size limit.

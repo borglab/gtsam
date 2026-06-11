@@ -70,6 +70,7 @@ TEST( InvDepthFactorVariant3, optimize) {
 
   // Optimize the graph to recover the actual landmark position
   LevenbergMarquardtParams params;
+  params.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
   Values result = LevenbergMarquardtOptimizer(graph, values, params).optimize();
   Vector3 actual = result.at<Vector3>(landmarkKey);
 

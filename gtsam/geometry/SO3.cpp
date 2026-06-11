@@ -110,8 +110,6 @@ ExpmapFunctor::ExpmapFunctor(const Vector3& axis, double angle)
 }
 
 
-Matrix3 ExpmapFunctor::expmap() const { return I_3x3 + A * W + B * WW; }
-
 DexpFunctor::DexpFunctor(const Vector3& omega, double nearZeroThresholdSq, double nearPiThresholdSq)
   : ExpmapFunctor(nearZeroThresholdSq, omega), omega(omega) {
   // General case or nearPi: Use standard stable formulas first

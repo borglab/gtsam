@@ -23,7 +23,6 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/base/timing.h>
 
 #include <vector>

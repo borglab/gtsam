@@ -136,6 +136,7 @@ else()
     -Wall                                          # Enable common warnings
     -Wpedantic                                     # Enable pedantic warnings
     $<$<COMPILE_LANGUAGE:CXX>:-Wextra -Wno-unused-parameter> # Enable extra warnings, but ignore no-unused-parameter (as we ifdef out chunks of code)
+    $<$<CXX_COMPILER_ID:GNU>:-Wno-psabi>                     # GCC 10 emits non-actionable psABI notes for some value-returning wrappers under C++17
     $<$<CXX_COMPILER_ID:GNU>:-Wreturn-local-addr>            # Error: return local address
     $<$<CXX_COMPILER_ID:Clang>:-Wreturn-stack-address>       # Error: return local address
     $<$<CXX_COMPILER_ID:Clang>:-Wno-weak-template-vtables>   # TODO(dellaert): don't know how to resolve

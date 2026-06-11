@@ -2,7 +2,8 @@
 
 import gtwrap.interface_parser as parser
 from gtwrap.template_instantiator.constructor import InstantiatedConstructor
-from gtwrap.template_instantiator.helpers import (InstantiationHelper,
+from gtwrap.template_instantiator.helpers import (InstantiatedMember,
+                                                  InstantiationHelper,
                                                   instantiate_args_list,
                                                   instantiate_name,
                                                   instantiate_return_type,
@@ -57,7 +58,7 @@ class InstantiatedClass(parser.Class):
 
         # Instantiate all instance methods
         self.methods = self.instantiate_methods(typenames)
-        
+
         self.dunder_methods = original.dunder_methods
 
         super().__init__(
@@ -99,9 +100,11 @@ class InstantiatedClass(parser.Class):
         """
 
         if isinstance(self.original.parent_class, parser.type.TemplatedType):
-            return instantiate_type(
-                self.original.parent_class, typenames, self.instantiations,
-                parser.Typename(self.namespaces())).typename
+            namespaces = self.namespaces()
+            typename = parser.Typename(name=namespaces[-1],
+                                       namespaces=namespaces[:-1])
+            return instantiate_type(self.original.parent_class, typenames,
+                                    self.instantiations, typename).typename
         else:
             return self.original.parent_class
 
@@ -140,7 +143,7 @@ class InstantiatedClass(parser.Class):
 
         return instantiated_static_methods
 
-    def instantiate_methods(self, typenames):
+    def instantiate_methods(self, typenames) -> list[InstantiatedMember]:
         """
         Instantiate regular methods in the class.
 
@@ -225,9 +228,8 @@ class InstantiatedClass(parser.Class):
                 ", ".join([inst.to_cpp() for inst in self.instantiations]))
         else:
             name = self.original.name
-        namespaces_name = self.namespaces()
-        namespaces_name.append(name)
-        return parser.Typename(namespaces_name)
+
+        return parser.Typename(name=name, namespaces=self.namespaces())
 
     def to_cpp(self):
         """Generate the C++ code for wrapping."""

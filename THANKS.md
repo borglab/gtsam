@@ -44,6 +44,8 @@ at LAAS-CNRS
 
 * Ellon Paiva
 
+* Sammy Guo
+
 Many thanks for your hard work!!!!
 
 Frank Dellaert

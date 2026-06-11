@@ -21,9 +21,12 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/VariableSlots.h>
 #include <gtsam/inference/VariableIndex.h>
+#include <gtsam/symbolic/IndexedJunctionTree.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/VerticalBlockMatrix.h>
 
@@ -322,6 +325,28 @@ static GaussianFactorGraph createGaussianFactorGraphWithHessianFactor() {
 }
 
 /* ************************************************************************* */
+TEST(GaussianFactorGraph, deltaError) {
+  GaussianFactorGraph gfg = createGaussianFactorGraphWithHessianFactor();
+
+  VectorValues values{{0, Vector2(0.1, -0.2)},
+                      {1, Vector2(1.0, 0.5)},
+                      {2, Vector2(-0.3, 0.8)}};
+  VectorValues zero = VectorValues::Zero(values);
+
+  double expectedOld = gfg.error(zero);
+  double expectedNew = gfg.error(values);
+  double expectedDelta = expectedOld - expectedNew;
+
+  double oldValue = 0.0;
+  double newValue = 0.0;
+  double delta = gfg.deltaError(values, &oldValue, &newValue);
+
+  DOUBLES_EQUAL(expectedOld, oldValue, 1e-10);
+  DOUBLES_EQUAL(expectedNew, newValue, 1e-10);
+  DOUBLES_EQUAL(expectedDelta, delta, 1e-10);
+}
+
+/* ************************************************************************* */
 TEST(GaussianFactorGraph, multiplyHessianAdd2) {
   GaussianFactorGraph gfg = createGaussianFactorGraphWithHessianFactor();
 
@@ -433,6 +458,20 @@ TEST(GaussianFactorGraph, DenseSolve) {
   VectorValues expected = fg.optimize();
   VectorValues actual = fg.optimizeDensely();
   EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST(GaussianFactorGraph, optimizeWithIndexedJunctionTree) {
+  GaussianFactorGraph fg = createSimpleGaussianFactorGraph();
+  Ordering ordering{0, 1, 2};  // x2=0, l1=1, x1=2
+
+  IndexedJunctionTree indexedJunctionTree = fg.buildIndexedJunctionTree(ordering);
+
+  VectorValues expected = fg.optimize(ordering, EliminateQR);
+  VectorValues actual =
+      fg.eliminateMultifrontal(indexedJunctionTree, EliminateQR)->optimize();
+
+  EXPECT(assert_equal(expected, actual, 1e-9));
 }
 
 /* ************************************************************************* */

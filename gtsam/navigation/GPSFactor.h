@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/navigation/NavState.h>
 #include <gtsam/geometry/Pose3.h>
 

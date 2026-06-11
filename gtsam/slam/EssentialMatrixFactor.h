@@ -357,7 +357,8 @@ class EssentialMatrixFactor4
    */
   EssentialMatrixFactor4(Key keyE, Key keyK, const Point2& pA, const Point2& pB,
                          const SharedNoiseModel& model = nullptr)
-      : Base(model, keyE, keyK), pA_(pA), pB_(pB) {}
+      : Base(noiseModel::validOrDefault(0.0, model), keyE, keyK),
+        pA_(pA), pB_(pB) {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -460,7 +461,8 @@ class EssentialMatrixFactor5
   EssentialMatrixFactor5(Key keyE, Key keyKa, Key keyKb, const Point2& pA,
                          const Point2& pB,
                          const SharedNoiseModel& model = nullptr)
-      : Base(model, keyE, keyKa, keyKb), pA_(pA), pB_(pB) {}
+      : Base(noiseModel::validOrDefault(0.0, model), keyE, keyKa, keyKb),
+        pA_(pA), pB_(pB) {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {

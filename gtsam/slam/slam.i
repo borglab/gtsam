@@ -4,23 +4,29 @@
 
 namespace gtsam {
 
-#include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/SO4.h>
 #include <gtsam/geometry/SL4.h>
 #include <gtsam/navigation/ImuBias.h>
+#include <gtsam/navigation/NavState.h>
+#include <gtsam/geometry/ExtendedPose3.h>
 #include <gtsam/geometry/Similarity2.h>
 #include <gtsam/geometry/Similarity3.h>
 #include <gtsam/geometry/Gal3.h>
+#include <gtsam/geometry/SphericalCamera.h>
+// Following header defines PinholeCamera{Cal3_S2|Cal3DS2|Cal3Bundler|Cal3Fisheye|Cal3Unified}
+#include <gtsam/geometry/SimpleCamera.h>
 
 // ######
 
 #include <gtsam/slam/BetweenFactor.h>
 template <T = {double, gtsam::Vector, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::SO3,
                gtsam::SO4, gtsam::SL4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3,
-               gtsam::Similarity2, gtsam::Similarity3, gtsam::imuBias::ConstantBias}>
+               gtsam::Similarity2, gtsam::Similarity3, gtsam::Gal3, gtsam::NavState,
+               gtsam::Se23, gtsam::ExtendedPose3d, gtsam::imuBias::ConstantBias,
+               gtsam::SOn}>
 virtual class BetweenFactor : gtsam::NoiseModelFactor {
   BetweenFactor(gtsam::Key key1, gtsam::Key key2, const T& relativePose,
-                const gtsam::noiseModel::Base* noiseModel);
+                const gtsam::noiseModel::Base* noiseModel = nullptr);
   T measured() const;
 
   // enabling serialization functionality
@@ -105,10 +111,10 @@ typedef gtsam::GenericProjectionFactor<gtsam::Pose3, gtsam::Point3,
 #include <gtsam/slam/GeneralSFMFactor.h>
 template <CAMERA, LANDMARK>
 virtual class GeneralSFMFactor : gtsam::NoiseModelFactor {
-  GeneralSFMFactor(const gtsam::Point2& measured,
+  GeneralSFMFactor(const CAMERA::Measurement& measured,
                    const gtsam::noiseModel::Base* model, gtsam::Key cameraKey,
                    gtsam::Key landmarkKey);
-  gtsam::Point2 measured() const;
+  CAMERA::Measurement measured() const;
 };
 typedef gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3_S2>,
                                 gtsam::Point3>
@@ -141,6 +147,8 @@ typedef gtsam::GeneralSFMFactor<gtsam::PinholePose<gtsam::Cal3Fisheye>,
 typedef gtsam::GeneralSFMFactor<gtsam::PinholePose<gtsam::Cal3Unified>,
                                 gtsam::Point3>
     GeneralSFMFactorPoseCal3Unified;
+typedef gtsam::GeneralSFMFactor<gtsam::SphericalCamera, gtsam::Point3>
+    GeneralSFMFactorSphericalCamera;
 
 template <CALIBRATION = {gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3f, gtsam::Cal3Bundler,
                          gtsam::Cal3Fisheye, gtsam::Cal3Unified}>
@@ -154,24 +162,22 @@ virtual class GeneralSFMFactor2 : gtsam::NoiseModelFactor {
   void serialize() const;
 };
 
-// Following header defines PinholeCamera{Cal3_S2|Cal3DS2|Cal3Bundler|Cal3Fisheye|Cal3Unified}
-#include <gtsam/geometry/SimpleCamera.h>
-
 #include <gtsam/slam/SmartFactorBase.h>
 
-// Currently not wrapping SphericalCamera, since measurement type is not Point2 but Unit3
 template <
     CAMERA = {gtsam::PinholeCameraCal3_S2, gtsam::PinholeCameraCal3DS2,
               gtsam::PinholeCameraCal3Bundler, gtsam::PinholeCameraCal3Fisheye,
               gtsam::PinholeCameraCal3Unified, gtsam::PinholePoseCal3_S2,
               gtsam::PinholePoseCal3DS2, gtsam::PinholePoseCal3Bundler,
-              gtsam::PinholePoseCal3Fisheye, gtsam::PinholePoseCal3Unified}>
+              gtsam::PinholePoseCal3Fisheye, gtsam::PinholePoseCal3Unified,
+              gtsam::SphericalCamera}>
 virtual class SmartFactorBase : gtsam::NonlinearFactor {
-  void add(const gtsam::Point2& measured, gtsam::Key key);
-  void add(const gtsam::Point2Vector& measurements, const gtsam::KeyVector& cameraKeys);
+  void add(const CAMERA::Measurement& measured, gtsam::Key key);
+  void add(const CAMERA::MeasurementVector& measurements,
+           const gtsam::KeyVector& cameraKeys);
   size_t dim() const;
-  const std::vector<gtsam::Point2>& measured() const;
-  std::vector<CAMERA> cameras(const gtsam::Values& values) const;
+  const CAMERA::MeasurementVector& measured() const;
+  gtsam::CameraSet<CAMERA> cameras(const gtsam::Values& values) const;
 
   void print(const std::string& s = "", const gtsam::KeyFormatter& keyFormatter =
     gtsam::DefaultKeyFormatter) const;
@@ -207,7 +213,8 @@ template <
               gtsam::PinholeCameraCal3Bundler, gtsam::PinholeCameraCal3Fisheye,
               gtsam::PinholeCameraCal3Unified, gtsam::PinholePoseCal3_S2,
               gtsam::PinholePoseCal3DS2, gtsam::PinholePoseCal3Bundler,
-              gtsam::PinholePoseCal3Fisheye, gtsam::PinholePoseCal3Unified}>
+              gtsam::PinholePoseCal3Fisheye, gtsam::PinholePoseCal3Unified,
+              gtsam::SphericalCamera}>
 virtual class SmartProjectionFactor : gtsam::SmartFactorBase<CAMERA> {
   SmartProjectionFactor();
 
@@ -219,27 +226,27 @@ virtual class SmartProjectionFactor : gtsam::SmartFactorBase<CAMERA> {
   gtsam::TriangulationResult triangulateSafe(const gtsam::CameraSet<CAMERA>& cameras) const;
   bool triangulateForLinearize(const gtsam::CameraSet<CAMERA>& cameras) const;
 
-  gtsam::HessianFactor createHessianFactor(
-      const gtsam::CameraSet<CAMERA>& cameras, const double lambda = 0.0,
+  gtsam::HessianFactor* createHessianFactor(
+      const gtsam::CameraSet<CAMERA>& cameras, const double _lambda = 0.0,
       bool diagonalDamping = false) const;
-  gtsam::JacobianFactor createJacobianQFactor(
-      const gtsam::CameraSet<CAMERA>& cameras, double lambda) const;
-  gtsam::JacobianFactor createJacobianQFactor(
-      const gtsam::Values& values, double lambda) const;
-  gtsam::JacobianFactor createJacobianSVDFactor(
-      const gtsam::CameraSet<CAMERA>& cameras, double lambda) const;
-  gtsam::HessianFactor linearizeToHessian(
-      const gtsam::Values& values, double lambda = 0.0) const;
-  gtsam::JacobianFactor linearizeToJacobian(
-      const gtsam::Values& values, double lambda = 0.0) const;
+  gtsam::JacobianFactor* createJacobianQFactor(
+      const gtsam::CameraSet<CAMERA>& cameras, double _lambda) const;
+  gtsam::JacobianFactor* createJacobianQFactor(
+      const gtsam::Values& values, double _lambda) const;
+  gtsam::JacobianFactor* createJacobianSVDFactor(
+      const gtsam::CameraSet<CAMERA>& cameras, double _lambda) const;
+  gtsam::HessianFactor* linearizeToHessian(
+      const gtsam::Values& values, double _lambda = 0.0) const;
+  gtsam::JacobianFactor* linearizeToJacobian(
+      const gtsam::Values& values, double _lambda = 0.0) const;
 
-  gtsam::GaussianFactor linearizeDamped(const gtsam::CameraSet<CAMERA>& cameras,
-      const double lambda = 0.0) const;
+  gtsam::GaussianFactor* linearizeDamped(const gtsam::CameraSet<CAMERA>& cameras,
+      const double _lambda = 0.0) const;
 
-  gtsam::GaussianFactor linearizeDamped(const gtsam::Values& values,
-      const double lambda = 0.0) const;
+  gtsam::GaussianFactor* linearizeDamped(const gtsam::Values& values,
+      const double _lambda = 0.0) const;
 
-  gtsam::GaussianFactor linearize(
+  gtsam::GaussianFactor* linearize(
       const gtsam::Values& values) const;
 
   bool triangulateAndComputeE(gtsam::Matrix& E, const gtsam::CameraSet<CAMERA>& cameras) const;
@@ -292,11 +299,12 @@ virtual class SmartProjectionPoseFactor : gtsam::NonlinearFactor {
 };
 
 #include <gtsam/slam/SmartProjectionRigFactor.h>
-// Only for PinholePose cameras -> PinholeCamera is not supported
+// Only for pose-only cameras (e.g., PinholePose or SphericalCamera)
 template <CAMERA = {gtsam::PinholePoseCal3_S2, gtsam::PinholePoseCal3DS2,
   gtsam::PinholePoseCal3Bundler,
   gtsam::PinholePoseCal3Fisheye,
-  gtsam::PinholePoseCal3Unified}>
+  gtsam::PinholePoseCal3Unified,
+  gtsam::SphericalCamera}>
 virtual class SmartProjectionRigFactor : gtsam::SmartProjectionFactor<CAMERA> {
   SmartProjectionRigFactor();
 
@@ -305,14 +313,14 @@ virtual class SmartProjectionRigFactor : gtsam::SmartProjectionFactor<CAMERA> {
       const gtsam::CameraSet<CAMERA>* cameraRig,
       const gtsam::SmartProjectionParams& params = gtsam::SmartProjectionParams());
 
-  void add(const gtsam::Point2& measured, const gtsam::Key& poseKey,
+  void add(const CAMERA::Measurement& measured, const gtsam::Key& poseKey,
            const size_t& cameraId = 0);
 
-  void add(const gtsam::Point2Vector& measurements, const gtsam::KeyVector& poseKeys,
+  void add(const CAMERA::MeasurementVector& measurements, const gtsam::KeyVector& poseKeys,
            const gtsam::FastVector<size_t>& cameraIds = gtsam::FastVector<size_t>());
 
   const gtsam::KeyVector& nonUniqueKeys() const;
-  const gtsam::CameraSet<CAMERA>& cameraRig() const;
+  const gtsam::CameraSet<CAMERA>* cameraRig() const;
   const gtsam::FastVector<size_t>& cameraIds() const;
 };
 
@@ -351,7 +359,7 @@ class ReferenceFrameFactor : gtsam::NoiseModelFactor {
   ReferenceFrameFactor(gtsam::Key globalKey, gtsam::Key transKey, 
                        gtsam::Key localKey, const gtsam::noiseModel::Base* model);
 
-  gtsam::Vector evaluateError(const LANDMARK& global, const POSE& trans, const LANDMARK& local);
+  gtsam::Vector evaluateError(const LANDMARK& _global, const POSE& trans, const LANDMARK& local);
 
   void print(const std::string& s="",
     const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter);
@@ -367,6 +375,7 @@ class RotateFactor : gtsam::NoiseModelFactor {
 
   gtsam::Vector evaluateError(const gtsam::Rot3& R) const;
 };
+
 class RotateDirectionsFactor : gtsam::NoiseModelFactor {
   RotateDirectionsFactor(gtsam::Key key, const gtsam::Unit3& i_p, const gtsam::Unit3& c_z,
     const gtsam::noiseModel::Base* model);
@@ -391,6 +400,7 @@ class OrientedPlane3Factor : gtsam::NoiseModelFactor {
   gtsam::Vector evaluateError(
       const gtsam::Pose3& pose, const gtsam::OrientedPlane3& plane) const;
 };
+
 class OrientedPlane3DirectionPrior : gtsam::NoiseModelFactor {
   OrientedPlane3DirectionPrior();
   OrientedPlane3DirectionPrior(gtsam::Key key, const gtsam::Vector& z,
@@ -582,30 +592,36 @@ class InitializePose3 {
 };
 
 #include <gtsam/slam/KarcherMeanFactor-inl.h>
-template <T = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
-               gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose3, gtsam::Similarity2, gtsam::Similarity3, gtsam::Gal3, gtsam::SL4}>
+template <T = {gtsam::Rot2, gtsam::Pose2, gtsam::SO3, gtsam::SO4, gtsam::Rot3,
+               gtsam::Pose3, gtsam::Similarity2, gtsam::Similarity3,
+               gtsam::Gal3, gtsam::SL4}>
 virtual class KarcherMeanFactor : gtsam::NonlinearFactor {
   KarcherMeanFactor(const gtsam::KeyVector& keys);
   KarcherMeanFactor(const gtsam::KeyVector& keys, int d, double beta);
 };
 
-template <T = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
-  gtsam::SO3, gtsam::SO4, gtsam::Rot3, gtsam::Pose3}>
+template <T = {gtsam::Rot2, gtsam::Pose2, gtsam::SO3, gtsam::SO4, gtsam::Rot3,
+               gtsam::Pose3, gtsam::Similarity2, gtsam::Similarity3,
+               gtsam::Gal3, gtsam::SL4}>
 T FindKarcherMean(const std::vector<T>& elements);
 
 #include <gtsam/slam/FrobeniusFactor.h>
 gtsam::noiseModel::Isotropic* ConvertNoiseModel(gtsam::noiseModel::Base* model,
                                                 size_t d);
 
-template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::SO3, gtsam::SO4, gtsam::Pose2, gtsam::Pose3, gtsam::Similarity2, gtsam::Similarity3, gtsam::Gal3, gtsam::SL4}>
+template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::SO3, gtsam::SO4, gtsam::Pose2,
+               gtsam::Pose3, gtsam::Similarity2, gtsam::Similarity3,
+               gtsam::Gal3, gtsam::SL4}>
 class FrobeniusPrior : gtsam::NoiseModelFactor {
   FrobeniusPrior(gtsam::Key j, const gtsam::Matrix& M,
-    const gtsam::noiseModel::Base* model);
+    const gtsam::noiseModel::Base* model = nullptr);
 
     gtsam::Vector evaluateError(const T& g) const;
 };
 
-template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::SO3, gtsam::SO4, gtsam::Pose2, gtsam::Pose3, gtsam::Similarity2, gtsam::Similarity3, gtsam::Gal3, gtsam::SL4}>
+template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::SO3, gtsam::SO4, gtsam::Pose2,
+               gtsam::Pose3, gtsam::Similarity2, gtsam::Similarity3,
+               gtsam::Gal3, gtsam::SL4}>
 virtual class FrobeniusFactor : gtsam::NoiseModelFactor {
   FrobeniusFactor(gtsam::Key key1, gtsam::Key key2);
   FrobeniusFactor(gtsam::Key j1, gtsam::Key j2, gtsam::noiseModel::Base* model);
@@ -614,7 +630,9 @@ virtual class FrobeniusFactor : gtsam::NoiseModelFactor {
 };
 
 // Available for all Matrix Lie groups
-template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::SO3, gtsam::SO4, gtsam::Pose2, gtsam::Pose3, gtsam::Similarity2, gtsam::Similarity3, gtsam::Gal3, gtsam::SL4}>
+template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::SO3, gtsam::SO4, gtsam::Pose2,
+               gtsam::Pose3, gtsam::Similarity2, gtsam::Similarity3,
+               gtsam::Gal3, gtsam::SL4}>
 virtual class FrobeniusBetweenFactorNL : gtsam::NoiseModelFactor {
   FrobeniusBetweenFactorNL(gtsam::Key j1, gtsam::Key j2, const T& T12);
   FrobeniusBetweenFactorNL(gtsam::Key key1, gtsam::Key key2, const T& T12,

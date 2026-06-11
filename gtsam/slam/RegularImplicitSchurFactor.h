@@ -138,16 +138,24 @@ public:
   void updateHessian(const KeyVector& keys,
                          SymmetricBlockMatrix* info) const override {
     throw std::runtime_error(
-        "RegularImplicitSchurFactor::updateHessian non implemented");
+        "RegularImplicitSchurFactor::updateHessian not implemented");
   }
+
+  void updateHessian(const KeyVector& keys,
+                         SymmetricBlockMatrix* info,
+                         DenseIndex beginCol, DenseIndex endCol) const override {
+    throw std::runtime_error(
+        "RegularImplicitSchurFactor::updateHessian not implemented");
+  }
+
   Matrix augmentedJacobian() const override {
     throw std::runtime_error(
-        "RegularImplicitSchurFactor::augmentedJacobian non implemented");
+        "RegularImplicitSchurFactor::augmentedJacobian not implemented");
     return Matrix();
   }
   std::pair<Matrix, Vector> jacobian() const override {
     throw std::runtime_error(
-        "RegularImplicitSchurFactor::jacobian non implemented");
+        "RegularImplicitSchurFactor::jacobian not implemented");
     return {Matrix(), Vector()};
   }
 
@@ -257,14 +265,14 @@ public:
     return std::make_shared<RegularImplicitSchurFactor<CAMERA> >(keys_,
         FBlocks_, PointCovariance_, E_, b_);
     throw std::runtime_error(
-        "RegularImplicitSchurFactor::clone non implemented");
+        "RegularImplicitSchurFactor::clone not implemented");
   }
 
   GaussianFactor::shared_ptr negate() const override {
     return std::make_shared<RegularImplicitSchurFactor<CAMERA> >(keys_,
         FBlocks_, PointCovariance_, E_, b_);
     throw std::runtime_error(
-        "RegularImplicitSchurFactor::negate non implemented");
+        "RegularImplicitSchurFactor::negate not implemented");
   }
 
   // Raw Vector version of y += F'*alpha*(I - E*P*E')*F*x, for testing

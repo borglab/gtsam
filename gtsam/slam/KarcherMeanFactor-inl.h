@@ -22,18 +22,18 @@
 #include <gtsam/slam/KarcherMeanFactor.h>
 #include <optional>
 
-using namespace std;
-
 namespace gtsam {
 
 template <class T, class ALLOC>
-T FindKarcherMeanImpl(const vector<T, ALLOC>& rotations) {
+T FindKarcherMeanImpl(const std::vector<T, ALLOC>& rotations) {
+  static_assert(T::dimension != Eigen::Dynamic,
+                "FindKarcherMean requires fixed-size manifolds.");
   // Cost function C(R) = \sum PriorFactor(R_i)::error(R)
   // No closed form solution.
   NonlinearFactorGraph graph;
   static const Key kKey(0);
   for (const auto& R : rotations) {
-    graph.addPrior<T>(kKey, R);
+    graph.addPrior<T>(kKey, R, noiseModel::Unit::Create(R));
   }
   Values initial;
   initial.insert<T>(kKey, T());

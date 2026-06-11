@@ -1,0 +1,376 @@
+name: timeSFMBAL Benchmark
+
+on:
+  pull_request:
+    types: [opened]
+    paths-ignore:
+      - 'python/**'
+      - '**.md'
+      - '**.ipynb'
+      - 'myst.yml'
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: PR number to benchmark
+        required: true
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.inputs.pr_number || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  actions: write
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  context:
+    runs-on: ubuntu-latest
+    outputs:
+      pr_number: ${{ steps.resolve.outputs.pr_number }}
+      head_sha: ${{ steps.resolve.outputs.head_sha }}
+      base_sha: ${{ steps.resolve.outputs.base_sha }}
+      head_checkout_ref: ${{ steps.resolve.outputs.head_checkout_ref }}
+      should_comment: ${{ steps.resolve.outputs.should_comment }}
+      group_id: ${{ steps.resolve.outputs.group_id }}
+    steps:
+      - name: Resolve PR context
+        id: resolve
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const eventName = context.eventName;
+            let prNumber = "";
+            let headSha = "";
+            let baseSha = "";
+            let headCheckoutRef = "";
+
+            if (eventName === "pull_request") {
+              const pr = context.payload.pull_request;
+              prNumber = String(pr.number);
+              headSha = pr.head.sha;
+              baseSha = pr.base.sha;
+              headCheckoutRef = `refs/pull/${pr.number}/head`;
+            } else if (eventName === "workflow_dispatch") {
+              prNumber = String((context.payload.inputs?.pr_number || "").trim());
+              if (!prNumber) {
+                core.setFailed("workflow_dispatch requires pr_number.");
+                return;
+              }
+              const pr = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: Number(prNumber),
+              });
+              headSha = pr.data.head.sha;
+              baseSha = pr.data.base.sha;
+              headCheckoutRef = `refs/pull/${pr.data.number}/head`;
+            } else {
+              core.setFailed(`Unsupported event: ${eventName}`);
+              return;
+            }
+
+            const groupId = `${context.runId}-${Date.now()}`;
+
+            core.setOutput("pr_number", prNumber);
+            core.setOutput("head_sha", headSha);
+            core.setOutput("base_sha", baseSha);
+            core.setOutput("head_checkout_ref", headCheckoutRef);
+            core.setOutput("should_comment", "true");
+            core.setOutput("group_id", groupId);
+
+  dispatch_and_wait:
+    needs: context
+    runs-on: ubuntu-latest
+    outputs:
+      run_statuses: ${{ steps.dispatch.outputs.run_statuses }}
+    steps:
+      - name: Dispatch benchmark runner workflows and wait
+        id: dispatch
+        uses: actions/github-script@v7
+        env:
+          WORKFLOW_ID: time-sfmbal-benchmark-runner.yml
+        with:
+          script: |
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+            const workflowId = process.env.WORKFLOW_ID;
+            const groupId = "${{ needs.context.outputs.group_id }}";
+            const headSha = "${{ needs.context.outputs.head_sha }}";
+            const baseSha = "${{ needs.context.outputs.base_sha }}";
+            const headCheckoutRef = "${{ needs.context.outputs.head_checkout_ref }}";
+
+            const runners = [
+              { id: "linux-x64", os_name: "linux", arch: "x64" },
+              { id: "linux-arm64", os_name: "linux", arch: "arm64" },
+              { id: "macos-arm64", os_name: "macos", arch: "arm64" },
+            ];
+
+            const specs = [];
+            for (const runner of runners) {
+              specs.push({
+                role: "head",
+                sha: headSha,
+                checkout_ref: headCheckoutRef,
+                ...runner,
+              });
+              specs.push({
+                role: "base",
+                sha: baseSha,
+                checkout_ref: baseSha,
+                ...runner,
+              });
+            }
+
+            // Dispatch all benchmark worker runs.
+            for (const spec of specs) {
+              spec.group_token = `${groupId}-${spec.role}-${spec.id}`;
+              await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: workflowId,
+                ref: context.payload.repository.default_branch,
+                inputs: {
+                  group_id: spec.group_token,
+                  runner_id: spec.id,
+                  os_name: spec.os_name,
+                  arch: spec.arch,
+                  checkout_ref: spec.checkout_ref,
+                  target_sha: spec.sha,
+                  orchestrator_run_id: String(context.runId),
+                },
+              });
+            }
+
+            const createdAfter = Date.now() - 2 * 60 * 1000;
+            const findMatchingRun = async (token) => {
+              let page = 1;
+              while (page <= 5) {
+                const resp = await github.rest.actions.listWorkflowRuns({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  workflow_id: workflowId,
+                  event: "workflow_dispatch",
+                  per_page: 100,
+                  page,
+                });
+                for (const run of resp.data.workflow_runs) {
+                  const createdAt = Date.parse(run.created_at || "");
+                  if (!Number.isNaN(createdAt) && createdAt < createdAfter) {
+                    continue;
+                  }
+                  const title = run.display_title || "";
+                  if (title.includes(token)) {
+                    return run;
+                  }
+                }
+                if (resp.data.workflow_runs.length < 100) break;
+                page += 1;
+              }
+              return null;
+            };
+
+            // Wait for each dispatched run to appear so we can track by run_id.
+            for (let attempt = 0; attempt < 80; attempt++) {
+              let allResolved = true;
+              for (const spec of specs) {
+                if (spec.run_id || spec.conclusion) continue;
+                const run = await findMatchingRun(spec.group_token);
+                if (run) {
+                  spec.run_id = run.id;
+                  spec.html_url = run.html_url;
+                } else {
+                  allResolved = false;
+                }
+              }
+              if (allResolved) break;
+              await sleep(5000);
+            }
+
+            // Wait for completion (success/failure) of all found runs.
+            for (let attempt = 0; attempt < 240; attempt++) {
+              let allCompleted = true;
+              for (const spec of specs) {
+                if (!spec.run_id || spec.conclusion) continue;
+                const run = await github.rest.actions.getWorkflowRun({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  run_id: spec.run_id,
+                });
+                const status = run.data.status;
+                if (status === "completed") {
+                  spec.conclusion = run.data.conclusion || "unknown";
+                  spec.html_url = run.data.html_url;
+                } else {
+                  allCompleted = false;
+                }
+              }
+              if (allCompleted) break;
+              await sleep(15000);
+            }
+
+            for (const spec of specs) {
+              if (!spec.run_id) spec.conclusion = spec.conclusion || "not_found";
+              if (!spec.conclusion) spec.conclusion = "timed_out";
+            }
+
+            const summary = specs.map((spec) => ({
+              role: spec.role,
+              runner_id: spec.id,
+              sha: spec.sha,
+              conclusion: spec.conclusion,
+              run_id: spec.run_id || null,
+              html_url: spec.html_url || null,
+            }));
+
+            core.setOutput("run_statuses", JSON.stringify(summary));
+
+  collect:
+    needs: [context, dispatch_and_wait]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: linux-x64-tbbON
+            os_name: linux
+            arch: x64
+            tbb: "ON"
+          - id: linux-x64-tbbOFF
+            os_name: linux
+            arch: x64
+            tbb: "OFF"
+          - id: linux-arm64-tbbON
+            os_name: linux
+            arch: arm64
+            tbb: "ON"
+          - id: linux-arm64-tbbOFF
+            os_name: linux
+            arch: arm64
+            tbb: "OFF"
+          - id: macos-arm64-tbbON
+            os_name: macos
+            arch: arm64
+            tbb: "ON"
+          - id: macos-arm64-tbbOFF
+            os_name: macos
+            arch: arm64
+            tbb: "OFF"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restore head benchmark cache
+        id: restore_head
+        uses: actions/cache/restore@v4
+        with:
+          path: benchmark-cache/${{ matrix.os_name }}-${{ matrix.arch }}-tbb${{ matrix.tbb }}-${{ needs.context.outputs.head_sha }}-${{ github.run_id }}.json
+          key: timeSFMBAL-benchmark-v4-${{ matrix.os_name }}-${{ matrix.arch }}-tbb${{ matrix.tbb }}-${{ needs.context.outputs.head_sha }}-${{ github.run_id }}
+
+      - name: Restore base benchmark cache
+        id: restore_base
+        uses: actions/cache/restore@v4
+        with:
+          path: benchmark-cache/${{ matrix.os_name }}-${{ matrix.arch }}-tbb${{ matrix.tbb }}-${{ needs.context.outputs.base_sha }}-${{ github.run_id }}.json
+          key: timeSFMBAL-benchmark-v4-${{ matrix.os_name }}-${{ matrix.arch }}-tbb${{ matrix.tbb }}-${{ needs.context.outputs.base_sha }}-${{ github.run_id }}
+
+      - name: Stage collected files
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifact
+          echo "head cache-hit: ${{ steps.restore_head.outputs.cache-hit }}"
+          echo "base cache-hit: ${{ steps.restore_base.outputs.cache-hit }}"
+          if [[ "${{ steps.restore_head.outputs.cache-hit }}" == "true" ]] && [[ -f "benchmark-cache/${{ matrix.os_name }}-${{ matrix.arch }}-tbb${{ matrix.tbb }}-${{ needs.context.outputs.head_sha }}-${{ github.run_id }}.json" ]]; then
+            cp "benchmark-cache/${{ matrix.os_name }}-${{ matrix.arch }}-tbb${{ matrix.tbb }}-${{ needs.context.outputs.head_sha }}-${{ github.run_id }}.json" "artifact/head-${{ matrix.id }}.json"
+          else
+            : > "artifact/head-miss-${{ matrix.id }}.txt"
+          fi
+          if [[ "${{ steps.restore_base.outputs.cache-hit }}" == "true" ]] && [[ -f "benchmark-cache/${{ matrix.os_name }}-${{ matrix.arch }}-tbb${{ matrix.tbb }}-${{ needs.context.outputs.base_sha }}-${{ github.run_id }}.json" ]]; then
+            cp "benchmark-cache/${{ matrix.os_name }}-${{ matrix.arch }}-tbb${{ matrix.tbb }}-${{ needs.context.outputs.base_sha }}-${{ github.run_id }}.json" "artifact/base-${{ matrix.id }}.json"
+          else
+            : > "artifact/base-miss-${{ matrix.id }}.txt"
+          fi
+
+      - name: Upload collected files
+        uses: actions/upload-artifact@v4
+        with:
+          name: time-sfmbal-collected-${{ matrix.id }}
+          path: artifact/*
+          if-no-files-found: error
+
+  summarize:
+    needs: [context, dispatch_and_wait, collect]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Download collected artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: time-sfmbal-collected-*
+          path: collected
+          merge-multiple: true
+
+      - name: Organize compare input
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p collected/head collected/base
+          shopt -s nullglob
+          for file in collected/head-*.json; do
+            name="$(basename "${file}" .json)"
+            runner_id="${name#head-}"
+            cp "${file}" "collected/head/${runner_id}.json"
+          done
+          for file in collected/base-*.json; do
+            name="$(basename "${file}" .json)"
+            runner_id="${name#base-}"
+            cp "${file}" "collected/base/${runner_id}.json"
+          done
+
+      - name: Generate markdown
+        run: |
+          python3 .github/scripts/compare_time_sfmbal_benchmarks.py \
+            --head-dir collected/head \
+            --base-dir collected/base \
+            --head-sha "${{ needs.context.outputs.head_sha }}" \
+            --base-sha "${{ needs.context.outputs.base_sha }}" \
+            --output benchmark-comment.md
+
+      - name: Append worker status details
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          status_raw = """${{ needs.dispatch_and_wait.outputs.run_statuses }}"""
+          statuses = json.loads(status_raw) if status_raw.strip() else []
+          lines = ["", "### Worker runs", "", "| Role | Runner | SHA | Conclusion |", "| --- | --- | --- | --- |"]
+          for item in statuses:
+            lines.append(
+              f"| {item.get('role','')} | {item.get('runner_id','')} | `{item.get('sha','')}` | {item.get('conclusion','')} |"
+            )
+
+          path = Path("benchmark-comment.md")
+          path.write_text(path.read_text(encoding="utf-8") + "\n".join(lines) + "\n", encoding="utf-8")
+          PY
+          cat benchmark-comment.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Post PR comment
+        if: needs.context.outputs.should_comment == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            const body = fs.readFileSync("benchmark-comment.md", "utf8");
+            const issue_number = Number("${{ needs.context.outputs.pr_number }}");
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number,
+              body,
+            });

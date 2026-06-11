@@ -21,6 +21,18 @@
 # OPEN - Open MPI library
 # SGI - SGI MPT Library
 
+# vcpkg
+if(DEFINED VCPKG_INSTALLED_DIR)
+    find_package(MKL CONFIG)
+    if(MKL_FOUND)
+        add_library(mkl-gtsam-if INTERFACE)
+        target_link_libraries(mkl-gtsam-if INTERFACE MKL::MKL)
+        set(MKL_LIBRARIES mkl-gtsam-if)
+        list(APPEND GTSAM_EXPORTED_TARGETS mkl-gtsam-if)
+        install(TARGETS mkl-gtsam-if EXPORT GTSAM-exports ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    endif()
+else()
+
 # linux
 IF(UNIX AND NOT APPLE)
     IF(${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64")
@@ -266,5 +278,7 @@ find_package_handle_standard_args(MKL DEFAULT_MSG MKL_INCLUDE_DIR MKL_LIBRARIES)
 #if(MKL_FOUND)
 #        LINK_DIRECTORIES(${MKL_ROOT_DIR}/lib/${MKL_ARCH_DIR}) # hack
 #endif()
+
+endif() # end of vcpkg
 
 MARK_AS_ADVANCED(MKL_INCLUDE_DIR MKL_LIBRARIES)

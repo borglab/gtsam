@@ -42,6 +42,7 @@ option(GTSAM_HYBRID_TIMING                  "Enable the timing of hybrid factor 
 option(GTSAM_ENABLE_CONSISTENCY_CHECKS      "Enable/Disable expensive consistency checks" OFF)
 option(GTSAM_ENABLE_MEMORY_SANITIZER        "Enable/Disable memory sanitizer" OFF)
 option(GTSAM_WITH_TBB                       "Use Intel Threaded Building Blocks (TBB) if available" ON)
+option(GTSAM_TBB_BOUNDED_MEMORY_GROWTH      "Avoid large increase in memory usage due to parallel tree traversal" OFF)
 option(GTSAM_WITH_EIGEN_MKL                 "Eigen will use Intel MKL if available" OFF)
 option(GTSAM_WITH_EIGEN_MKL_OPENMP          "Eigen, when using Intel MKL, will also use OpenMP for multithreading if available" OFF)
 option(GTSAM_THROW_CHEIRALITY_EXCEPTION     "Throw exception when a triangulated point is behind a camera" ON)

@@ -36,7 +36,6 @@
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/Key.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/JacobianFactor.h>
 

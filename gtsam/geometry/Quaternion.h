@@ -46,6 +46,7 @@ struct traits<QUATERNION_TYPE> {
   /// @name Basic manifold traits
   /// @{
   inline constexpr static auto dimension = 3;
+  static int GetDimension(const Q& /* g */) { return 3; }
   typedef OptionalJacobian<3, 3> ChartJacobian;
   typedef Eigen::Matrix<_Scalar, 3, 1, _Options, 3, 1> TangentVector;
 

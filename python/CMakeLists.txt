@@ -53,6 +53,9 @@ endif()
 
 # Set the wrapping script variable
 set(PYBIND_WRAP_SCRIPT "${PROJECT_SOURCE_DIR}/wrap/scripts/pybind_wrap.py")
+
+# Disable pybind11's default LTO for wrapper modules to improve link times.
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
 ############################################################
 
 add_custom_target(gtsam_header DEPENDS "${PROJECT_SOURCE_DIR}/gtsam/gtsam.i")
@@ -95,10 +98,12 @@ set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/inference/inference.i
     ${PROJECT_SOURCE_DIR}/gtsam/discrete/discrete.i
     ${PROJECT_SOURCE_DIR}/gtsam/geometry/geometry.i
+    ${PROJECT_SOURCE_DIR}/gtsam/geometry/cameras.i
     ${PROJECT_SOURCE_DIR}/gtsam/linear/linear.i
     ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/nonlinear.i
     ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/values.i
     ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/custom.i
+    ${PROJECT_SOURCE_DIR}/gtsam/constrained/constrained.i
     ${PROJECT_SOURCE_DIR}/gtsam/symbolic/symbolic.i
     ${PROJECT_SOURCE_DIR}/gtsam/sam/sam.i
     ${PROJECT_SOURCE_DIR}/gtsam/slam/slam.i
@@ -133,6 +138,17 @@ pybind_wrap(${GTSAM_PYTHON_TARGET} # target
 
 SET_PYTHON_TARGET_PROPERTIES(${GTSAM_PYTHON_TARGET} ${GTSAM_OUTPUT_NAME} "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam")
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    # Generated pybind wrappers can trigger GCC's non-actionable psABI notes.
+    target_compile_options(${GTSAM_PYTHON_TARGET} PRIVATE -Wno-psabi)
+endif()
+
+if(GTSAM_ENABLE_BOOST_SERIALIZATION)
+    # Boost 1.87 emits deprecated-header pragma messages through serialization
+    # internals; limit suppression to wrapper compilation.
+    target_compile_definitions(${GTSAM_PYTHON_TARGET} PRIVATE BOOST_ALLOW_DEPRECATED_HEADERS)
+endif()
+
 if(WIN32)
     set_target_properties(${GTSAM_PYTHON_TARGET} PROPERTIES
         SUFFIX ".pyd"
@@ -149,6 +165,15 @@ if(WIN32)
         COMMAND_EXPAND_LISTS
         VERBATIM
     )
+    if(GTSAM_USE_EIGEN_MKL AND DEFINED VCPKG_INSTALLED_DIR)
+        ADD_CUSTOM_COMMAND(TARGET ${GTSAM_PYTHON_TARGET} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${MKL_DLLS}"
+            "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam/"
+            COMMAND_EXPAND_LISTS
+            VERBATIM
+        )
+    endif()
 endif()
 
 # Set the path for the GTSAM python module
@@ -233,6 +258,17 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
 
     SET_PYTHON_TARGET_PROPERTIES(${GTSAM_PYTHON_UNSTABLE_TARGET} ${GTSAM_UNSTABLE_OUTPUT_NAME} "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable")
 
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        # Generated pybind wrappers can trigger GCC's non-actionable psABI notes.
+        target_compile_options(${GTSAM_PYTHON_UNSTABLE_TARGET} PRIVATE -Wno-psabi)
+    endif()
+
+    if(GTSAM_ENABLE_BOOST_SERIALIZATION)
+        # Boost 1.87 emits deprecated-header pragma messages through serialization
+        # internals; limit suppression to wrapper compilation.
+        target_compile_definitions(${GTSAM_PYTHON_UNSTABLE_TARGET} PRIVATE BOOST_ALLOW_DEPRECATED_HEADERS)
+    endif()
+
     set(GTSAM_UNSTABLE_MODULE_PATH ${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable)
 
     # Copy all python files to build folder.
@@ -263,6 +299,15 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             COMMAND_EXPAND_LISTS
             VERBATIM
         )
+        if(GTSAM_USE_EIGEN_MKL AND DEFINED VCPKG_INSTALLED_DIR)
+            ADD_CUSTOM_COMMAND(TARGET ${GTSAM_PYTHON_UNSTABLE_TARGET} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${MKL_DLLS}"
+                "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable/"
+                COMMAND_EXPAND_LISTS
+                VERBATIM
+            )
+        endif()
     endif()
 
     add_custom_target(
@@ -270,7 +315,7 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
         COMMAND
         ${CMAKE_COMMAND} -E env
         "PYTHONPATH=${GTSAM_PYTHON_BUILD_DIRECTORY}/$ENV{PYTHONPATH}"
-        pybind11-stubgen -o . --enum-class-locations \"KernelFunctionType|NoiseFormat:gtsam.gtsam\" --enum-class-locations \"OrderingType:gtsam.gtsam.Ordering\" --numpy-array-use-type-var --ignore-all-errors gtsam_unstable
+        ${PYTHON_EXECUTABLE} -m pybind11_stubgen -o . --enum-class-locations \"KernelFunctionType|NoiseFormat:gtsam.gtsam\" --enum-class-locations \"OrderingType:gtsam.gtsam.Ordering\" --numpy-array-use-type-var --ignore-all-errors gtsam_unstable
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES} ${GTSAM_PYTHON_TEST_FILES} ${GTSAM_PYTHON_UNSTABLE_TARGET}
         WORKING_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/"
     )

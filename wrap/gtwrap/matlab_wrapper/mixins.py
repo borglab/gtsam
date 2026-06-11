@@ -9,10 +9,19 @@ import gtwrap.template_instantiator as instantiator
 class CheckMixin:
     """Mixin to provide various checks."""
     # Data types that are primitive types
-    not_ptr_type: Tuple = ('int', 'double', 'bool', 'char', 'unsigned char',
-                           'size_t')
+    not_ptr_type: Tuple = (
+        "int",
+        "double",
+        "bool",
+        "char",
+        "unsigned char",
+        "size_t",
+        "Key",  # This is an alias for a uint64_t
+    )
     # Ignore the namespace for these datatypes
     ignore_namespace: Tuple = ('Matrix', 'Vector', 'Point2', 'Point3')
+    # Matrix-like view types that can alias MATLAB double matrix storage.
+    matrix_view_types: Tuple = ('ConstMatrixView', )
     # Methods that should be ignored
     ignore_methods: Tuple = ('pickle', )
     # Methods that should not be wrapped directly
@@ -35,6 +44,7 @@ class CheckMixin:
         """
         return (arg_type.typename.name not in self.not_ptr_type
                 and arg_type.typename.name not in self.ignore_namespace
+                and not self.is_matrix_view(arg_type)
                 and arg_type.typename.name != 'string')
 
     def is_shared_ptr(self, arg_type: parser.Type):
@@ -59,6 +69,10 @@ class CheckMixin:
         return arg_type.typename.name not in self.ignore_namespace and \
                arg_type.typename.name not in self.not_ptr_type and \
                arg_type.is_ref
+
+    def is_matrix_view(self, arg_type: parser.Type):
+        """Check if `arg_type` should be unwrapped as a matrix view."""
+        return arg_type.typename.name in self.matrix_view_types
 
     def is_class_enum(self, arg_type: parser.Type, class_: parser.Class):
         """Check if arg_type is an enum in the class `class_`."""
@@ -111,6 +125,9 @@ class FormatMixin:
                           is_constructor: bool = False,
                           is_method: bool = False):
         """
+        Helper method to get the string version of `type_name` which can go into the wrapper generated C++ code.
+        This is specific to the semantics of Matlab.
+
         Args:
             type_name: an interface_parser.Typename to reformat
             separator: the statement to add between namespaces and typename
@@ -132,6 +149,9 @@ class FormatMixin:
             for namespace in type_name.namespaces:
                 if name not in self.ignore_namespace and namespace != '':
                     formatted_type_name += namespace + separator
+
+        # Get string representation so we can use as dict key.
+        name = str(name)
 
         if is_constructor:
             formatted_type_name += self.data_type.get(name) or name

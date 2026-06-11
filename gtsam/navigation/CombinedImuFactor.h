@@ -24,6 +24,7 @@
 
 /* GTSAM includes */
 #include <gtsam/navigation/PreintegrationCombinedParams.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 namespace gtsam {
 

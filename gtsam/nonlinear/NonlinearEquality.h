@@ -11,8 +11,10 @@
 
 /*
  * @file NonlinearEquality.h
- * @brief Factor to handle enforced equality between factors
+ * @brief Factor to handle equality constraints
  * @author Alex Cunningham
+ * @author Frank Dellaert
+ * @author Yetong Zhang
  */
 
 #pragma once
@@ -29,24 +31,23 @@
 namespace gtsam {
 
 /**
- * An equality factor that forces either one variable to a constant,
- * or a set of variables to be equal to each other.
+ * Equality constraint that pins a single variable to a constant value.
  *
- * Depending on flag, throws an error at linearization if the constraints are not met.
- *
- * Switchable implementation:
- *   - ALLLOW_ERROR : if we allow that there can be nonzero error, does not throw, and uses gain
- *   - ONLY_EXACT   : throws error at linearization if not at exact feasible point, and infinite error
+ * Behavior is controlled by allow_error_:
+ *   - Exact mode (default): throws at linearization if the current value is not
+ *     equal to the feasible point (within compare_), and returns infinite
+ * error.
+ *   - Allow-error mode: returns a smooth squared error scaled by error_gain_.
  *
  * \nosubgrouping
  */
 template<class VALUE>
 class NonlinearEquality: public NonlinearEqualityConstraint {
 
-public:
-  typedef VALUE T;
+ public:
+  using T = VALUE;
 
-private:
+ private:
 
   // feasible value
   T feasible_;
@@ -63,24 +64,25 @@ private:
   // typedef to base class
   using Base = NonlinearEqualityConstraint;
 
-public:
+  GTSAM_CONCEPT_MANIFOLD_TYPE(T)
+  GTSAM_CONCEPT_TESTABLE_TYPE(T)
+
+ public:
 
   /// Function that compares two values.
   using CompareFunction = std::function<bool(const T&, const T&)>;
   CompareFunction compare_;
 
   /// Default constructor - only for serialization
-  NonlinearEquality() {
-  }
+  NonlinearEquality() {}
 
-  ~NonlinearEquality() override {
-  }
+  ~NonlinearEquality() override {}
 
   /// @name Standard Constructors
   /// @{
 
   /**
-   * Constructor - forces exact evaluation
+   * Constructor - exact equality, throws on infeasible linearization points.
    */
   NonlinearEquality(Key j, const T& feasible,
       const CompareFunction &_compare = std::bind(traits<T>::Equals,
@@ -91,7 +93,7 @@ public:
   }
 
   /**
-   * Constructor - allows inexact evaluation
+   * Constructor - allows inexact evaluation with a smooth penalty.
    */
   NonlinearEquality(Key j, const T& feasible, double error_gain,
       const CompareFunction &_compare = std::bind(traits<T>::Equals,
@@ -101,9 +103,7 @@ public:
       compare_(_compare) {
   }
 
-  Key key() const {
-    return keys().front();
-  }
+  Key key() const { return keys().front(); }
 
   /// @}
   /// @name Testable
@@ -140,23 +140,23 @@ public:
     }
   }
 
+  /// Whether this constraint should be treated as hard.
+  bool isHardConstraint() const override { return !allow_error_; }
+
   /// Error function
   Vector evaluateError(const T& xj, OptionalMatrixType H = nullptr) const {
     const size_t nj = traits<T>::GetDimension(feasible_);
+    if (H) *H = Matrix::Identity(nj, nj);
     if (allow_error_) {
-      if (H)
-        *H = Matrix::Identity(nj,nj); // FIXME: this is not the right linearization for nonlinear compare
-      return traits<T>::Local(xj,feasible_);
+      return traits<T>::Local(xj, feasible_);
     } else if (compare_(feasible_, xj)) {
-      if (H)
-        *H = Matrix::Identity(nj,nj);
-      return Vector::Zero(nj); // set error to zero if equal
+      return Vector::Zero(nj);  // set error to zero if equal
     } else {
       if (H)
-        throw std::invalid_argument(
-            "Linearization point not feasible for "
-                + DefaultKeyFormatter(this->key()) + "!");
-      return Vector::Constant(nj, std::numeric_limits<double>::infinity()); // set error to infinity if not equal
+        throw std::invalid_argument("Linearization point not feasible for " +
+                                    DefaultKeyFormatter(this->key()) + "!");
+      // set error to infinity if not equal
+      return Vector::Constant(nj, std::numeric_limits<double>::infinity());
     }
   }
 
@@ -189,7 +189,7 @@ public:
 
   GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 
-private:
+ private:
 
 #if GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
@@ -214,15 +214,19 @@ struct traits<NonlinearEquality<VALUE>> : Testable<NonlinearEquality<VALUE>> {};
 
 /* ************************************************************************* */
 /**
- * Simple unary equality constraint - fixes a value for a variable
+ * Simple unary equality constraint - fixes a value for a variable.
+ *
+ * @deprecated Use NonlinearEquality (exact or allow-error mode) for
+ * constraints, or use a PriorFactor for a soft constraint with a conventional
+ * noise model.
  */
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 template<class VALUE>
 class NonlinearEquality1: public NonlinearEqualityConstraint {
+ public:
+  typedef VALUE T;
 
-public:
-  typedef VALUE X;
-
-protected:
+ protected:
   typedef NonlinearEqualityConstraint Base;
   typedef NonlinearEquality1<VALUE> This;
 
@@ -230,23 +234,23 @@ protected:
   NonlinearEquality1() {
   }
 
-  X value_; /// fixed value for variable
+  T value_; /// fixed value for variable
 
-  GTSAM_CONCEPT_MANIFOLD_TYPE(X)
-  GTSAM_CONCEPT_TESTABLE_TYPE(X)
+  GTSAM_CONCEPT_MANIFOLD_TYPE(T)
+  GTSAM_CONCEPT_TESTABLE_TYPE(T)
 
-public:
+ public:
 
   typedef std::shared_ptr<NonlinearEquality1<VALUE> > shared_ptr;
 
   /**
    * Constructor
-   * @param value feasible value that values(key) shouild be equal to
+   * @param value feasible value that values(key) should be equal to
    * @param key the key for the unknown variable to be constrained
    * @param mu a parameter which really turns this into a strong prior
    */
-  NonlinearEquality1(const X& value, Key key, double mu = 1000.0)
-      : Base(noiseModel::Constrained::All(traits<X>::GetDimension(value),
+  NonlinearEquality1(const T& value, Key key, double mu = 1000.0)
+      : Base(noiseModel::Constrained::All(traits<T>::GetDimension(value),
                                           std::abs(mu)),
              KeyVector{key}),
         value_(value) {}
@@ -263,15 +267,15 @@ public:
   Key key() const { return keys().front(); }
 
   /// g(x) with optional derivative
-  Vector evaluateError(const X& x1, OptionalMatrixType H = nullptr) const {
+  Vector evaluateError(const T& x1, OptionalMatrixType H = nullptr) const {
     if (H)
-      (*H) = Matrix::Identity(traits<X>::GetDimension(x1),traits<X>::GetDimension(x1));
+      (*H) = Matrix::Identity(traits<T>::GetDimension(x1),traits<T>::GetDimension(x1));
     // manifold equivalent of h(x)-z -> log(z,h(x))
-    return traits<X>::Local(value_,x1);
+    return traits<T>::Local(value_,x1);
   }
 
   Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = nullptr) const override {
-    X x1 = x.at<X>(key());
+    T x1 = x.at<T>(key());
     if (H) {
       return evaluateError(x1, &(H->front()));
     } else {
@@ -283,14 +287,14 @@ public:
   void print(const std::string& s = "",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     std::cout << s << ": NonlinearEquality1(" << keyFormatter(this->key())
-        << ")," << "\n";
+              << ")," << "\n";
     this->noiseModel_->print();
-    traits<X>::Print(value_, "Value");
+    traits<T>::Print(value_, "Value");
   }
 
   GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 
-private:
+ private:
 
 #if GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
@@ -310,6 +314,7 @@ private:
 template <typename VALUE>
 struct traits<NonlinearEquality1<VALUE> >
     : Testable<NonlinearEquality1<VALUE> > {};
+#endif
 
 /* ************************************************************************* */
 /**
@@ -323,13 +328,13 @@ class NonlinearEquality2 : public NonlinearEqualityConstraint {
   typedef NonlinearEquality2<T> This;
 
   GTSAM_CONCEPT_MANIFOLD_TYPE(T)
+  GTSAM_CONCEPT_TESTABLE_TYPE(T)
 
   /// Default constructor to allow for serialization
   NonlinearEquality2() {}
 
  public:
   typedef std::shared_ptr<NonlinearEquality2<T>> shared_ptr;
-
 
   /**
    * Constructor
@@ -340,6 +345,7 @@ class NonlinearEquality2 : public NonlinearEqualityConstraint {
   NonlinearEquality2(Key key1, Key key2, double mu = 1e4)
       : Base(noiseModel::Constrained::All(traits<T>::dimension, std::abs(mu)),
              KeyVector{key1, key2}) {}
+
   ~NonlinearEquality2() override {}
 
   /// @return a deep copy of this factor

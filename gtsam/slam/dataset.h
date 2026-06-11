@@ -20,25 +20,26 @@
 
 #pragma once
 
-#include <gtsam/sfm/BinaryMeasurement.h>
-#include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/sfm/SfmData.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/types.h>
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/SL4.h>
+#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/linear/NoiseModel.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/types.h>
+#include <gtsam/sfm/BinaryMeasurement.h>
+#include <gtsam/sfm/SfmData.h>
+#include <gtsam/slam/BetweenFactor.h>
 
-#include <string>
-#include <utility> // for pair
-#include <vector>
 #include <iosfwd>
 #include <map>
 #include <optional>
+#include <string>
+#include <utility>  // for pair
+#include <vector>
 
 namespace gtsam {
 
@@ -220,6 +221,8 @@ GTSAM_EXPORT BetweenFactorPose3s
 parse3DFactors(const std::string &filename,
                const noiseModel::Diagonal::shared_ptr &model = nullptr,
                size_t maxIndex = 0);
+
+using BetweenFactorSL4s = std::vector<BetweenFactor<SL4>::shared_ptr>;
 
 using BinaryMeasurementsUnit3 = std::vector<BinaryMeasurement<Unit3>>;
 using BinaryMeasurementsPoint3 = std::vector<BinaryMeasurement<Point3>>;

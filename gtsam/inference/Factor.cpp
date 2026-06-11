@@ -44,7 +44,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  double Factor::error(const HybridValues& c) const {
+  double Factor::error(const HybridValues& hybridValues) const {
     throw std::runtime_error("Factor::error is not implemented");
   }
 

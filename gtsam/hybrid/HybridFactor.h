@@ -135,7 +135,7 @@ class GTSAM_EXPORT HybridFactor : public Factor {
 
   /// Compute tree of linear errors.
   virtual AlgebraicDecisionTree<Key> errorTree(
-      const VectorValues &values) const = 0;
+      const VectorValues &continuousValues) const = 0;
 
   /// Restrict the factor to the given discrete values.
   virtual std::shared_ptr<Factor> restrict(

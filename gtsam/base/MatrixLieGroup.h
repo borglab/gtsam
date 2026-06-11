@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/base/Lie.h>
+#include <array>
 #include <type_traits>
 
 namespace gtsam {
@@ -55,6 +56,9 @@ namespace gtsam {
     using ChartJacobian = typename Base::ChartJacobian;
     using Jacobian = typename Base::Jacobian;
     using TangentVector = typename Base::TangentVector;
+
+    /// @name Matrix Lie Group
+    /// @{
 
     /**
      * Vectorize the matrix representation of a Lie group element.
@@ -130,7 +134,149 @@ namespace gtsam {
       return adj;
     }
 
+    /**
+     * Adjoint action on a tangent vector.
+     *
+     * Returns Ad_g * xi with optional Jacobians with respect to g and xi.
+     */
+    TangentVector Adjoint(const TangentVector& xi,
+                          ChartJacobian H_this = {},
+                          ChartJacobian H_xi = {}) const {
+      const auto& m = static_cast<const Class&>(*this);
+      const Jacobian Ad = m.AdjointMap();
+      if (H_this) *H_this = -Ad * Class::adjointMap(xi);
+      if (H_xi) *H_xi = Ad;
+      return Ad * xi;
+    }
+
+    /**
+     * Dual Adjoint action on a tangent covector.
+     *
+     * Returns Ad_g^T * x with optional Jacobians with respect to g and x.
+     */
+    TangentVector AdjointTranspose(const TangentVector& x,
+                                   ChartJacobian H_this = {},
+                                   ChartJacobian H_x = {}) const {
+      const auto& m = static_cast<const Class&>(*this);
+      const Jacobian Ad = m.AdjointMap();
+      const TangentVector AdTx = Ad.transpose() * x;
+
+      if (H_this) {
+        const Eigen::Index d = tangentDim(&m, nullptr);
+        setZeroJacobian(H_this, d);
+        if constexpr (D == Eigen::Dynamic) {
+          for (Eigen::Index i = 0; i < d; ++i) {
+            H_this->col(i) =
+                Class::adjointMap(TangentVector::Unit(d, i)).transpose() * AdTx;
+          }
+        } else {
+          const auto& basis = adjointBasis();
+          for (Eigen::Index i = 0; i < d; ++i) {
+            H_this->col(i) = basis[static_cast<size_t>(i)].transpose() * AdTx;
+          }
+        }
+      }
+
+      if (H_x) *H_x = Ad.transpose();
+      return AdTx;
+    }
+
+    /**
+     * Lie algebra adjoint map ad_xi, with optional specialization in derived
+     * classes.
+     */
+    static Jacobian adjointMap(const TangentVector& xi) {
+      const Eigen::Index d = tangentDim(nullptr, &xi);
+      Jacobian ad;
+      if constexpr (D == Eigen::Dynamic) {
+        ad.setZero(d, d);
+      } else {
+        ad.setZero();
+      }
+      const auto Xi = Class::Hat(xi);
+      for (Eigen::Index i = 0; i < d; ++i) {
+        const auto Ei = Class::Hat(TangentVector::Unit(d, i));
+        ad.col(i) = Class::Vee(Xi * Ei - Ei * Xi);
+      }
+      return ad;
+    }
+
+    /**
+     * Lie algebra action ad_xi(y), with optional Jacobians.
+     */
+    static TangentVector adjoint(const TangentVector& xi,
+                                 const TangentVector& y, ChartJacobian Hxi = {},
+                                 ChartJacobian H_y = {}) {
+      const Jacobian ad_xi = Class::adjointMap(xi);
+      if (Hxi) *Hxi = -Class::adjointMap(y);
+      if (H_y) *H_y = ad_xi;
+      return ad_xi * y;
+    }
+
+    /**
+     * Dual Lie algebra action ad_xi^T(y), with optional Jacobians.
+     */
+    static TangentVector adjointTranspose(const TangentVector& xi,
+                                          const TangentVector& y,
+                                          ChartJacobian Hxi = {},
+                                          ChartJacobian H_y = {}) {
+      const Jacobian adT_xi = Class::adjointMap(xi).transpose();
+      if (Hxi) {
+        const Eigen::Index d = tangentDim(nullptr, &xi);
+        setZeroJacobian(Hxi, d);
+        if constexpr (D == Eigen::Dynamic) {
+          for (Eigen::Index i = 0; i < d; ++i) {
+            Hxi->col(i) =
+                Class::adjointMap(TangentVector::Unit(d, i)).transpose() * y;
+          }
+        } else {
+          const auto& basis = adjointBasis();
+          for (Eigen::Index i = 0; i < d; ++i) {
+            Hxi->col(i) = basis[static_cast<size_t>(i)].transpose() * y;
+          }
+        }
+      }
+      if (H_y) *H_y = adT_xi;
+      return adT_xi * y;
+    }
+
+    /// @}
+
   private:
+    static Eigen::Index tangentDim(const Class* m, const TangentVector* xi) {
+      if constexpr (D == Eigen::Dynamic) {
+        return m ? static_cast<Eigen::Index>(traits<Class>::GetDimension(*m))
+                 : static_cast<Eigen::Index>(xi->size());
+      } else {
+        (void)m;
+        (void)xi;
+        return D;
+      }
+    }
+
+    static void setZeroJacobian(ChartJacobian H, Eigen::Index d) {
+      if constexpr (D == Eigen::Dynamic) {
+        H->setZero(d, d);
+      } else {
+        (void)d;
+        H->setZero();
+      }
+    }
+
+    /// Basis maps ad_{e_i}, cached for fixed-size groups.
+    template <int DD = D, typename std::enable_if_t<DD != Eigen::Dynamic, int> = 0>
+    static const std::array<Jacobian, DD>& adjointBasis() {
+      static const std::array<Jacobian, DD> basis = []() {
+        std::array<Jacobian, DD> B{};
+        for (int i = 0; i < DD; ++i) {
+          B[static_cast<size_t>(i)] =
+              Class::adjointMap(TangentVector::Unit(DD, i));
+        }
+        return B;
+      }();
+      return basis;
+    }
+
     /// Pre-compute and store vectorized generators for fixed-size groups.
     inline static const Eigen::Matrix<double, internal::product(N, N), D>&
       VectorizedGenerators() {
@@ -142,10 +288,12 @@ namespace gtsam {
 
   namespace internal {
 
-    /// Adds LieAlgebra, Hat, Vee, and Vec to LieGroupTraits
+    /// Adds MatrixLieGroup methods to LieGroupTraits
     template <class Class, int N> struct MatrixLieGroupTraits : LieGroupTraits<Class> {
       using LieAlgebra = typename Class::LieAlgebra;
       using TangentVector = typename LieGroupTraits<Class>::TangentVector;
+      using Jacobian = typename LieGroupTraits<Class>::Jacobian;
+      using ChartJacobian = typename LieGroupTraits<Class>::ChartJacobian;
 
       static LieAlgebra Hat(const TangentVector& v) {
         return Class::Hat(v);
@@ -161,6 +309,37 @@ namespace gtsam {
         OptionalJacobian<product(N, N),
         LieGroupTraits<Class>::dimension> H = {}) {
         return m.vec(H);
+      }
+
+      static TangentVector AdjointTranspose(const Class& m,
+                                            const TangentVector& x,
+                                            ChartJacobian Hm = {},
+                                            ChartJacobian Hx = {}) {
+        return m.AdjointTranspose(x, Hm, Hx);
+      }
+
+      static TangentVector Adjoint(const Class& m, const TangentVector& x,
+                                   ChartJacobian Hm = {},
+                                   ChartJacobian Hx = {}) {
+        return m.Adjoint(x, Hm, Hx);
+      }
+
+      static Jacobian adjointMap(const TangentVector& xi) {
+        return Class::adjointMap(xi);
+      }
+
+      static TangentVector adjoint(const TangentVector& xi,
+                                   const TangentVector& y,
+                                   ChartJacobian Hxi = {},
+                                   ChartJacobian H_y = {}) {
+        return Class::adjoint(xi, y, Hxi, H_y);
+      }
+
+      static TangentVector adjointTranspose(const TangentVector& xi,
+                                            const TangentVector& y,
+                                            ChartJacobian Hxi = {},
+                                            ChartJacobian H_y = {}) {
+        return Class::adjointTranspose(xi, y, Hxi, H_y);
       }
     };
 

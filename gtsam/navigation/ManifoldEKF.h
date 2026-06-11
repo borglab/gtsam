@@ -47,21 +47,6 @@ namespace gtsam {
  * Prediction requires providing the predicted next state and the state
  * transition Jacobian F. Updates apply a measurement function h and correct the
  * state using the tangent space error.
- *
- * **Handling Static and Dynamic Dimensions:**
- * The filter supports manifolds M with either a compile-time fixed dimension or
- * a runtime dynamic dimension. This is determined by
- * `gtsam::traits<M>::dimension`.
- * - If `dimension` is an integer (e.g., 3, 6), it's a fixed-size manifold.
- * - If `dimension` is `Eigen::Dynamic`, it's a dynamically-sized manifold. In
- * this case, `gtsam::traits<M>::GetDimension(const M&)` must be available to
- * retrieve the actual dimension at runtime. The internal protected member `n_`
- * stores this runtime dimension. Covariance matrices (e.g., `P_`, method
- * argument `Q`) and Jacobians (e.g., method argument `F`) are typed using
- * `Covariance` and `Jacobian` typedefs, which are specializations of
- * `Eigen::Matrix<double, Dim, Dim>`, where `Dim` is `traits<M>::dimension`.
- * For dynamically-sized manifolds (`Dim == Eigen::Dynamic`), these Eigen types
- * represent dynamically-sized matrices.
  */
 template <typename M>
 class ManifoldEKF {
@@ -85,18 +70,19 @@ class ManifoldEKF {
     static_assert(IsManifold<M>::value,
                   "Template parameter M must be a GTSAM Manifold.");
 
+    n_ = traits<M>::GetDimension(X0);
     if constexpr (Dim == Eigen::Dynamic) {
-      n_ = traits<M>::GetDimension(X0);
       // Validate dimensions of initial covariance P0.
-      if (P0.rows() != n_ || P0.cols() != n_) {
+      if (!isMatrixOfSize(P0, n_, n_)) {
         throw std::invalid_argument(
             "ManifoldEKF: Initial covariance P0 dimensions (" +
             std::to_string(P0.rows()) + "x" + std::to_string(P0.cols()) +
             ") do not match state's tangent space dimension (" +
             std::to_string(n_) + ").");
       }
+      I_ = Jacobian::Identity(n_, n_);
     } else {
-      n_ = Dim;
+      I_ = Jacobian::Identity();
     }
 
     P_ = P0;
@@ -111,11 +97,13 @@ class ManifoldEKF {
   const Covariance& covariance() const { return P_; }
 
   /// @return runtime dimension of the manifold.
-  int dimension() const { return n_; }
+  size_t dimension() const { return n_; }
 
   /**
-   * Basic predict step: Updates state and covariance given the predicted
-   * next state and the state transition Jacobian F.
+   * Basic predict step: Updates state and covariance given the predicted next
+   * state and the state transition Jacobian F.
+   * This overload expects a **discrete-time** process covariance Q already
+   * scaled for the step being applied.
    *   X_{k+1} = X_next
    *   P_{k+1} = F P_k F^T + Q
    * where F = d(local(X_{k+1})) / d(local(X_k)) is the Jacobian of the
@@ -127,8 +115,7 @@ class ManifoldEKF {
    */
   void predict(const M& X_next, const Jacobian& F, const Covariance& Q) {
     if constexpr (Dim == Eigen::Dynamic) {
-      if (F.rows() != n_ || F.cols() != n_ || Q.rows() != n_ ||
-          Q.cols() != n_) {
+      if (!isMatrixOfSize(F, n_, n_) || !isMatrixOfSize(Q, n_, n_)) {
         throw std::invalid_argument(
             "ManifoldEKF::predict: Dynamic F/Q dimensions must match state "
             "dimension " +
@@ -140,17 +127,32 @@ class ManifoldEKF {
     P_ = F * P_ * F.transpose() + Q;
   }
 
+  /// Kalman gain K = P H^T S^-1.
+  template <typename HMatrix, typename RMatrix>
+  auto KalmanGain(const HMatrix& H, const RMatrix& R) const {
+    auto S = H * P_ * H.transpose() + R;  // Innovation covariance
+    return P_ * H.transpose() * S.inverse();
+  }
+
+  /// Joseph-form covariance update in the current tangent space using a
+  /// precomputed gain.
+  template <typename GainMatrix, typename HMatrix, typename RMatrix>
+  void JosephUpdate(const GainMatrix& K, const HMatrix& H, const RMatrix& R) {
+    Jacobian I_KH = I_ - K * H;
+    P_ = I_KH * P_ * I_KH.transpose() + K * R * K.transpose();
+  }
+
   /**
    * Measurement update: Corrects the state and covariance using a
    * pre-calculated predicted measurement and its Jacobian.
    *
-   * @tparam Measurement Type of the measurement vector (e.g., VectorN<m>,
-   * Vector).
+   * @tparam Measurement type of the measurement space.
    * @param prediction Predicted measurement.
-   * @param H Jacobian of the measurement function h w.r.t. local(X), H =
-   * dh/dlocal(X).
+   * @param H Jacobian of the measurement function h.
    * @param z Observed measurement.
    * @param R Measurement noise covariance.
+   * @param performReset If true (default), performs a reset (transport) after
+   * update; otherwise, just retracts the state.
    */
   template <typename Measurement>
   void update(
@@ -158,137 +160,144 @@ class ManifoldEKF {
       const Eigen::Matrix<double, traits<Measurement>::dimension, Dim>& H,
       const Measurement& z,
       const Eigen::Matrix<double, traits<Measurement>::dimension,
-                          traits<Measurement>::dimension>& R) {
-    static_assert(IsManifold<Measurement>::value,
-                  "Template parameter Measurement must be a GTSAM Manifold for "
-                  "LocalCoordinates.");
-
+                          traits<Measurement>::dimension>& R,
+      bool performReset = true) {
     static constexpr int MeasDim = traits<Measurement>::dimension;
 
-    if constexpr (MeasDim == Eigen::Dynamic) {
-      int m_runtime = traits<Measurement>::GetDimension(z);
-      if (traits<Measurement>::GetDimension(prediction) != m_runtime) {
-        throw std::invalid_argument(
-            "ManifoldEKF::update: Dynamic measurement 'prediction' and 'z' "
-            "have different dimensions.");
-      }
-      if (H.rows() != m_runtime || H.cols() != n_ || R.rows() != m_runtime ||
-          R.cols() != m_runtime) {
-        throw std::invalid_argument(
-            "ManifoldEKF::update: Jacobian H or Noise R dimensions mismatch "
-            "for dynamic measurement.");
-      }
-    } else {
-      if constexpr (Dim == Eigen::Dynamic) {
-        if (H.cols() != n_) {
-          throw std::invalid_argument(
-              "ManifoldEKF::update: Jacobian H columns must match state "
-              "dimension " +
-              std::to_string(n_) + ".");
-        }
-      }
-    }
-
-    // Innovation: y = z - h(x_pred). In tangent space: local(h(x_pred), z)
+    // Innovation: y = h(x_pred) - z. In tangent space: local(z, h(x_pred))
+    // NOTE: we use the `z_hat - z` sign convention, NOT `z - z_hat`.
     typename traits<Measurement>::TangentVector innovation =
-        traits<Measurement>::Local(prediction, z);
-
-    // Innovation covariance: S = H P H^T + R
-    // S will be Eigen::Matrix<double, MeasDim, MeasDim>
-    Eigen::Matrix<double, MeasDim, MeasDim> S = H * P_ * H.transpose() + R;
+        traits<Measurement>::Local(z, prediction);
 
     // Kalman Gain: K = P H^T S^-1
     // K will be Eigen::Matrix<double, Dim, MeasDim>
-    Eigen::Matrix<double, Dim, MeasDim> K = P_ * H.transpose() * S.inverse();
+    Eigen::Matrix<double, Dim, MeasDim> K = KalmanGain(H, R);
 
     // Correction vector in tangent space of M: delta_xi = K * innovation
     const TangentVector delta_xi =
-        K * innovation;  // delta_xi is Dim x 1 (or n_ x 1 if dynamic)
+        -K * innovation;  // delta_xi is Dim x 1 (or n_ x 1 if dynamic)
 
-    // Update state using retract: X_new = retract(X_old, delta_xi)
-    X_ = traits<M>::Retract(X_, delta_xi);
+    // --- Update covariance in the tangent space at the current state
+    this->JosephUpdate(K, H, R);
 
-    // Update covariance using Joseph form for numerical stability
-    Jacobian I_n;  // Eigen::Matrix<double, Dim, Dim>
-    if constexpr (Dim == Eigen::Dynamic) {
-      I_n = Jacobian::Identity(n_, n_);
-    } else {
-      I_n = Jacobian::Identity();
-    }
-
-    // I_KH will be Eigen::Matrix<double, Dim, Dim>
-    Jacobian I_KH = I_n - K * H;
-    P_ = I_KH * P_ * I_KH.transpose() + K * R * K.transpose();
+    // Update state using retract/ transport or just retract
+    if (performReset)
+      reset(delta_xi);
+    else
+      X_ = traits<M>::Retract(X_, delta_xi);
   }
 
   /**
    * Measurement update: Corrects the state and covariance using a measurement
    * model function.
    *
-   * @tparam Measurement Type of the measurement vector.
-   * @tparam MeasurementFunction Functor/lambda providing measurement and its
-   * Jacobian. Signature: `Measurement h(const M& x, Jac& H_jacobian)` where H =
-   * d(h)/d(local(X)).
+   * @tparam Measurement type of the measurement space.
+   * @tparam MeasurementFunction Functor/lambda providing measurement+Jacobian.
    * @param h Measurement model function.
    * @param z Observed measurement.
    * @param R Measurement noise covariance.
+   * @param performReset If true (default), transport covariance after retract.
    */
   template <typename Measurement, typename MeasurementFunction>
   void update(MeasurementFunction&& h, const Measurement& z,
               const Eigen::Matrix<double, traits<Measurement>::dimension,
-                                  traits<Measurement>::dimension>& R) {
+                                  traits<Measurement>::dimension>& R,
+              bool performReset = true) {
     static_assert(IsManifold<Measurement>::value,
                   "Template parameter Measurement must be a GTSAM Manifold.");
 
-    static constexpr int MeasDim = traits<Measurement>::dimension;
-
-    int m_runtime;
-    if constexpr (MeasDim == Eigen::Dynamic) {
-      m_runtime = traits<Measurement>::GetDimension(z);
-    } else {
-      m_runtime = MeasDim;
-    }
-
     // Predict measurement and get Jacobian H = dh/dlocal(X)
-    Matrix H(m_runtime, n_);
+    Matrix H(traits<Measurement>::GetDimension(z), n_);
     Measurement prediction = h(X_, H);
 
     // Call the other update function
-    update(prediction, H, z, R);
+    update<Measurement>(prediction, H, z, R, performReset);
   }
 
-  /// Convenience bridge for wrappers: vector measurement update calling
-  /// update<Vector>. This overload exists to avoid templates in wrappers. It
-  /// validates sizes and forwards to the templated update with Measurement =
-  /// gtsam::Vector (dynamic size).
+  /**
+   * Convenience bridge for wrappers: vector measurement update calling
+   * update<Vector>. This overload exists to avoid templates in wrappers. It
+   * validates sizes and forwards to the templated update with Measurement =
+   * gtsam::Vector (dynamic size).
+   * @param prediction Predicted measurement vector.
+   * @param H Measurement Jacobian matrix.
+   * @param z Observed measurement vector.
+   * @param R Measurement noise covariance matrix.
+   * @param performReset If true (default), transport covariance after retract.
+   */
   void updateWithVector(const gtsam::Vector& prediction, const Matrix& H,
-                        const gtsam::Vector& z, const Matrix& R) {
-    // Basic dimension checks for dynamic-sized measurement
-    const int m = static_cast<int>(prediction.size());
-    if (static_cast<int>(z.size()) != m) {
+                        const gtsam::Vector& z, const Matrix& R,
+                        bool performReset = true) {
+    validateInputs(prediction, H, z, R);
+    update<Vector>(prediction, H, z, R, performReset);
+  }
+
+  /**
+   * Reset step: retract the state by a tangent perturbation and, if available,
+   * transport the covariance from the old tangent space to the new tangent
+   * space.
+   *
+   * If the retract supports a Jacobian argument, we compute B and update
+   * P <- B P B^T. Otherwise, we leave the covariance unchanged.
+   */
+  void reset(const TangentVector& eta) {
+    if constexpr (HasRetractJacobian<M>::value) {
+      Jacobian B;
+      if constexpr (Dim == Eigen::Dynamic) B.resize(n_, n_);
+      X_ = traits<M>::Retract(X_, eta, &B);
+      P_ = B * P_ * B.transpose();
+    } else {
+      X_ = traits<M>::Retract(X_, eta);
+      // Covariance unchanged when Jacobian is not available.
+    }
+  }
+
+ protected:
+  /// Validate inputs to update.
+  void validateInputs(const gtsam::Vector& prediction, const Matrix& H,
+                      const gtsam::Vector& z, const Matrix& R) {
+    const size_t m = static_cast<size_t>(prediction.size());
+    if (static_cast<size_t>(z.size()) != m) {
       throw std::invalid_argument(
           "ManifoldEKF::updateWithVector: prediction and z must have same "
           "length.");
     }
-    if (H.rows() != m || H.cols() != n_) {
+    if (!isMatrixOfSize(H, m, n_)) {
       throw std::invalid_argument(
           "ManifoldEKF::updateWithVector: H must be m x n where m = "
           "measurement size and n = state dimension.");
     }
-    if (R.rows() != m || R.cols() != m) {
+    if (!isMatrixOfSize(R, m, m)) {
       throw std::invalid_argument(
           "ManifoldEKF::updateWithVector: R must be m x m where m = "
           "measurement size.");
     }
+  }
 
-    // Forward to templated update with Measurement = Vector
-    this->template update<Vector>(prediction, H, z, R);
+  /// Check whether a matrix has the expected runtime dimensions.
+  template <typename MatrixType>
+  static bool isMatrixOfSize(const MatrixType& matrix, size_t rows,
+                             size_t cols) {
+    return static_cast<size_t>(matrix.rows()) == rows &&
+           static_cast<size_t>(matrix.cols()) == cols;
   }
 
  protected:
   M X_;           ///< Manifold state estimate.
   Covariance P_;  ///< Covariance (Eigen::Matrix<double, Dim, Dim>).
-  int n_;         ///< Runtime tangent space dimension of M.
+  Jacobian I_;    ///< Identity matrix sized to the state dimension.
+  size_t n_;      ///< Runtime tangent space dimension of M.
+
+ private:
+  // Detection helper: check if traits<T>::Retract(x, v, Jacobian*) is valid.
+  template <typename T, typename = void>
+  struct HasRetractJacobian : std::false_type {};
+  template <typename T>
+  struct HasRetractJacobian<
+      T, std::void_t<decltype(traits<T>::Retract(
+             std::declval<const T&>(),
+             std::declval<const typename traits<T>::TangentVector&>(),
+             (Jacobian*)nullptr))>> : std::true_type {};
 };
 
 }  // namespace gtsam

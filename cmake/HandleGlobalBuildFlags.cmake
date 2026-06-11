@@ -19,8 +19,8 @@ if(MSVC AND GTSAM_SHARED_LIB)
 endif()
 
 if (APPLE AND GTSAM_SHARED_LIB)
-    # Set the default install directory on macOS
-    set(CMAKE_INSTALL_NAME_DIR "${CMAKE_INSTALL_PREFIX}/lib")
+    # Setting to @rpath so that dependent executables can find the GTSAM dylib in a portable manner
+    set(CMAKE_INSTALL_NAME_DIR "@rpath")
 endif()
 
 ###############################################################################

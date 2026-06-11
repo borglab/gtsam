@@ -102,6 +102,25 @@ class GTSAM_EXPORT SL4 : public MatrixLieGroup<SL4, 15, 4> {
   /// @{
 
   using LieAlgebra = Matrix44;
+  /**
+   * Lie algebra coordinates for sl(4) using an orthonormal basis.
+   *
+   * We use the orthogonal vector-space decomposition:
+   *   sl(4) = so(4) ⊕ sym_off(4) ⊕ diag_traceless(4)
+   * where so(4) is skew-symmetric rotations, sym_off is symmetric off-diagonal
+   * shears, and diag_traceless is the 3-D traceless diagonal subspace.
+   *
+   * Ordering of xi (15x1):
+   *   [r12 r13 r14 r23 r24 r34 s12 s13 s14 s23 s24 s34 h1 h2 h3]
+   *
+   * Basis:
+   *  - r_ij scale (E_ij - E_ji)/sqrt(2): skew-symmetric rotations.
+   *  - s_ij scale (E_ij + E_ji)/sqrt(2): symmetric off-diagonal shears.
+   *  - h1,h2,h3 scale orthonormal traceless diagonals:
+   *      H1 = (1/sqrt(2))  diag( 1, -1,  0,  0)
+   *      H2 = (1/sqrt(6))  diag( 1,  1, -2,  0)
+   *      H3 = (1/sqrt(12)) diag( 1,  1,  1, -3)
+   */
   static Matrix44 Hat(const Vector& xi);
   static Vector Vee(const Matrix44& X);
 

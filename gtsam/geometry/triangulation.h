@@ -459,9 +459,11 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
   }
 
   // Then refine using non-linear optimization
-  if (optimize)
+  if (optimize) {
+    const auto noiseModel = noiseModel::validOrDefault(Point2(0, 0), model);
     point = triangulateNonlinear<CALIBRATION>  //
-        (poses, sharedCal, measurements, point, model);
+        (poses, sharedCal, measurements, point, noiseModel);
+  }
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   // verify that the triangulated point lies in front of all cameras

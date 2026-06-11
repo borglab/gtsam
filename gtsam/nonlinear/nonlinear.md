@@ -49,5 +49,6 @@ The `nonlinear` module in GTSAM includes a comprehensive set of tools for nonlin
 
 ## Analysis and Visualization
 
-- [Marginals](https://github.com/borglab/gtsam/blob/develop/gtsam/nonlinear/Marginals.h): Computes marginal covariances from optimization results.
+- [Marginals](doc/Marginals.ipynb): Computes marginal covariances and joint marginals from optimization results.
+- [`Marginals.h`](https://github.com/borglab/gtsam/blob/develop/gtsam/nonlinear/Marginals.h): C++ API declaration for `Marginals` and `JointMarginal`.
 - [GraphvizFormatting](https://github.com/borglab/gtsam/blob/develop/gtsam/nonlinear/GraphvizFormatting.h): Provides customization for factor graph visualization.

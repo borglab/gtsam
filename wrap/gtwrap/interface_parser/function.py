@@ -12,8 +12,7 @@ Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellae
 
 from typing import Any, Iterable, List, Union
 
-from pyparsing import (Literal, Optional, ParseResults,  # type: ignore
-                       delimitedList)
+from pyparsing import Literal, Optional, ParseResults, delimitedList
 
 from .template import Template
 from .tokens import (COMMA, DEFAULT_ARG, EQUAL, IDENT, LOPBRACK, LPAREN, PAIR,
@@ -82,7 +81,7 @@ class ArgumentList:
             return ArgumentList([])
 
     def __repr__(self) -> str:
-        return ",".join([repr(x) for x in self.args_list])
+        return ", ".join([repr(x) for x in self.args_list])
 
     def __len__(self) -> int:
         return len(self.args_list)
@@ -182,8 +181,7 @@ class GlobalFunction:
         self.args.parent = self
 
     def __repr__(self) -> str:
-        return "GlobalFunction:  {}{}({})".format(self.return_type, self.name,
-                                                  self.args)
+        return f"GlobalFunction:  {self.name}({self.args}) -> {self.return_type}"
 
     def to_cpp(self) -> str:
         """Generate the C++ code for wrapping."""

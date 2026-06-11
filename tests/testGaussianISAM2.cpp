@@ -18,7 +18,6 @@
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/treeTraversal-inst.h>
@@ -319,6 +318,20 @@ TEST(ISAM2, slamlike_solution_dogleg)
 }
 
 /* ************************************************************************* */
+TEST(ISAM2, SlamlikeSolutionDoglegLineSearch) {
+  // These variables will be reused and accumulate factors and values
+  Values fullinit;
+  NonlinearFactorGraph fullgraph;
+  ISAM2 isam = createSlamlikeISAM2(
+      &fullinit, &fullgraph,
+      ISAM2Params(ISAM2DoglegLineSearchParams(0.1, 1.0, 3, 1e-4, false, 1e-3),
+                  0.0, 0, false));
+
+  // Compare solutions
+  CHECK(isam_check(fullgraph, fullinit, isam, *this, result_));
+}
+
+/* ************************************************************************* */
 TEST(ISAM2, slamlike_solution_gaussnewton_qr)
 {
   // These variables will be reused and accumulate factors and values
@@ -337,6 +350,20 @@ TEST(ISAM2, slamlike_solution_dogleg_qr)
   Values fullinit;
   NonlinearFactorGraph fullgraph;
   ISAM2 isam = createSlamlikeISAM2(&fullinit, &fullgraph, ISAM2Params(ISAM2DoglegParams(1.0), 0.0, 0, false, false, ISAM2Params::QR));
+
+  // Compare solutions
+  CHECK(isam_check(fullgraph, fullinit, isam, *this, result_));
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, SlamlikeSolutionDoglegLineSearchQr) {
+  // These variables will be reused and accumulate factors and values
+  Values fullinit;
+  NonlinearFactorGraph fullgraph;
+  ISAM2 isam = createSlamlikeISAM2(
+      &fullinit, &fullgraph,
+      ISAM2Params(ISAM2DoglegLineSearchParams(0.1, 10.0, 3, 1e-4, false, 1e-3),
+                  0.0, 0, false, false, ISAM2Params::QR));
 
   // Compare solutions
   CHECK(isam_check(fullgraph, fullinit, isam, *this, result_));
@@ -986,6 +1013,30 @@ TEST(ISAM2, marginalCovariance)
 }
 
 /* ************************************************************************* */
+TEST(ISAM2, marginalInformation) {
+  ISAM2 isam = createSlamlikeISAM2();
+
+  Matrix expected = Marginals(isam.getFactorsUnsafe(), isam.getLinearizationPoint(),
+                              Marginals::CHOLESKY)
+                        .marginalInformation(5);
+  Matrix actual = isam.marginalInformation(5);
+  EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, jointMarginals) {
+  ISAM2 isam = createSlamlikeISAM2();
+  const KeyVector query{101, 5, 100};
+  Marginals marginals(isam.getFactorsUnsafe(), isam.getLinearizationPoint(),
+                      Marginals::CHOLESKY);
+
+  EXPECT(assert_equal(marginals.jointMarginalCovariance(query).fullMatrix(),
+                      isam.jointMarginalCovariance(query).fullMatrix(), 1e-9));
+  EXPECT(assert_equal(marginals.jointMarginalInformation(query).fullMatrix(),
+                      isam.jointMarginalInformation(query).fullMatrix(), 1e-9));
+}
+
+/* ************************************************************************* */
 TEST(ISAM2, calculate_nnz)
 {
   ISAM2 isam = createSlamlikeISAM2();
@@ -995,13 +1046,72 @@ TEST(ISAM2, calculate_nnz)
   EXPECT_LONGS_EQUAL(expected, actual);
 }
 
+/* ************************************************************************* */
+TEST(ISAM2, PredictUpdateInfo) {
+  // Setup iSAM2
+  ISAM2Params params;
+  params.findUnusedFactorSlots = true;
+  params.enableDetailedResults = true;
+
+  ISAM2 isam{params};
+
+  // Generate scenario - Straight motion along X w/ loop closures at 3 points
+  for (int i = 0; i < 50; i++) {
+    ISAM2UpdateParams update_params;
+    NonlinearFactorGraph factors;
+    Values values;
+    // Add Values
+    values.insert(i, Pose2(i, 0, 0));
+
+    // Add Odometry
+    if (i == 0) {
+      factors.emplace_shared<PriorFactor<Pose2>>(0, Pose2(), odoNoise);
+    } else {
+      factors.emplace_shared<BetweenFactor<Pose2>>(i - 1, i, Pose2(1, 0, 0),
+                                                   odoNoise);
+    }
+
+    // Add Loop Closures at various points
+    if (i == 10)
+      factors.emplace_shared<BetweenFactor<Pose2>>(10, 0, Pose2(-10, 0, 0),
+                                                   odoNoise);
+    if (i == 20)
+      factors.emplace_shared<BetweenFactor<Pose2>>(20, 5, Pose2(-15, 0, 0),
+                                                   odoNoise);
+    if (i == 40)
+      factors.emplace_shared<BetweenFactor<Pose2>>(40, 35, Pose2(5, 0, 0),
+                                                   odoNoise);
+
+    // Predict the Update
+    std::pair<KeySet, bool> predicted =
+        isam.predictUpdateInfo(factors, values, update_params);
+
+    // Actually perform the update
+    ISAM2Result result = isam.update(factors, values, update_params);
+    isam.calculateEstimate();
+
+    // Validate
+    if (result.details()->variableStatus.size() == size_t(i + 1)) {
+      EXPECT(predicted.second);
+    } else {
+      for (auto kvp : result.details()->variableStatus) {
+        if (kvp.second.isReeliminated) {
+          EXPECT(predicted.first.count(kvp.first) == 1 ||
+                 kvp.second.isAboveRelinThreshold);
+        }
+      }
+    }
+  }
+}
+
+/* ************************************************************************* */
 class FixActiveFactor : public NoiseModelFactorN<Vector2> {
   using Base = NoiseModelFactorN<Vector2>;
   bool is_active_;
 
 public:
   FixActiveFactor(const gtsam::Key& key, const bool active)
-      : Base(nullptr, key), is_active_(active) {}
+      : Base(noiseModel::Unit::Create(2), key), is_active_(active) {}
 
   virtual bool active(const gtsam::Values &values) const override {
     return is_active_;
@@ -1043,6 +1153,107 @@ TEST(ActiveFactorTesting, Issue1596) {
 
   // If the bug is fixed, this line is reached.
   EXPECT(isam.getFactorsUnsafe().size() == 2);
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, AdaptiveReorder_NnzTracking) {
+  // Verify that treeNnz is populated and nnz baseline is set after first update
+  ISAM2Params params;
+  params.enableAdaptiveReorder = true;
+  params.adaptiveReorderThreshold = 2.0;
+  ISAM2 isam(params);
+
+  NonlinearFactorGraph graph;
+  Values init;
+
+  // Add a prior
+  graph.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
+  init.insert(0, Pose2(0.01, 0.01, 0.01));
+  ISAM2Result result = isam.update(graph, init);
+
+  // After first update, nnz should be set
+  EXPECT(result.treeNnz > 0);
+  EXPECT(!result.batchReorderTriggered);
+
+  // Add a chain of poses
+  for (int i = 0; i < 5; ++i) {
+    graph = NonlinearFactorGraph();
+    init = Values();
+    graph.emplace_shared<BetweenFactor<Pose2>>(i, i + 1,
+        Pose2(1.0, 0.0, 0.0), odoNoise);
+    init.insert(i + 1, Pose2(double(i + 1) + 0.1, -0.1, 0.01));
+    result = isam.update(graph, init);
+  }
+
+  // Nnz should be growing but no reorder yet (small problem)
+  EXPECT(result.treeNnz > 0);
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, AdaptiveReorder_Triggered) {
+  // Use a very low threshold to force a reorder
+  ISAM2Params params;
+  params.enableAdaptiveReorder = true;
+  params.adaptiveReorderThreshold = 1.01;  // trigger on any fill-in growth
+  params.relinearizeSkip = 1;
+  ISAM2 isam(params);
+
+  NonlinearFactorGraph graph;
+  Values init;
+
+  graph.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
+  init.insert(0, Pose2(0.01, 0.01, 0.01));
+  isam.update(graph, init);
+
+  // Build a longer chain so there's some structure
+  for (int i = 0; i < 10; ++i) {
+    graph = NonlinearFactorGraph();
+    init = Values();
+    graph.emplace_shared<BetweenFactor<Pose2>>(i, i + 1,
+        Pose2(1.0, 0.0, 0.0), odoNoise);
+    init.insert(i + 1, Pose2(double(i + 1) + 0.1, -0.1, 0.01));
+    isam.update(graph, init);
+  }
+
+  // Add a loop closure that changes the structure
+  graph = NonlinearFactorGraph();
+  init = Values();
+  graph.emplace_shared<BetweenFactor<Pose2>>(0, 10,
+      Pose2(10.0, 0.0, 0.0), odoNoise);
+  ISAM2Result result = isam.update(graph, init);
+
+  // With threshold 1.01, the loop closure fill-in should trigger a reorder
+  // on this or the next update
+  bool triggered = result.batchReorderTriggered;
+  if (!triggered) {
+    // Try one more update to see if fill-in was detected
+    graph = NonlinearFactorGraph();
+    graph.emplace_shared<BetweenFactor<Pose2>>(5, 10,
+        Pose2(5.0, 0.0, 0.0), odoNoise);
+    result = isam.update(graph, init);
+    triggered = result.batchReorderTriggered;
+  }
+
+  // With threshold 1.01, any fill-in growth triggers a batch reorder
+  EXPECT(triggered);
+  EXPECT(result.treeNnz > 0);
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, AdaptiveReorder_DisabledByDefault) {
+  // With default params, adaptive reorder should never trigger
+  ISAM2 isam;
+
+  NonlinearFactorGraph graph;
+  Values init;
+
+  graph.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
+  init.insert(0, Pose2(0.01, 0.01, 0.01));
+  ISAM2Result result = isam.update(graph, init);
+
+  EXPECT(!result.batchReorderTriggered);
+  // treeNnz should still be populated
+  EXPECT(result.treeNnz > 0);
 }
 
 /* ************************************************************************* */

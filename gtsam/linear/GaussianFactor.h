@@ -79,6 +79,13 @@ namespace gtsam {
     virtual double error(const VectorValues& c) const;
 
     /**
+     * Compute the change in error from zero to c. Optionally return the old
+     * and new errors for reuse by callers.
+     */
+    virtual double deltaError(const VectorValues& c, double* oldError = nullptr,
+                              double* newError = nullptr) const;
+
+    /**
      * The Factor::error simply extracts the \class VectorValues from the
      * \class HybridValues and calculates the error.
      */
@@ -150,6 +157,18 @@ namespace gtsam {
     virtual void updateHessian(const KeyVector& keys,
                            SymmetricBlockMatrix* info) const = 0;
 
+    /** Update an information matrix by adding the information corresponding to this factor
+     * (used internally during elimination), restricted to a range of block columns,
+     * useful for parallelization.
+     * @param keys The ordered vector of keys for the information matrix to be updated
+     * @param info The information matrix to be updated
+     * @param beginCol First block column index (inclusive) in the range to update
+     * @param endCol Last block column index (exclusive) in the range to update
+     */
+    virtual void updateHessian(const KeyVector& keys,
+                           SymmetricBlockMatrix* info,
+                           DenseIndex beginCol, DenseIndex endCol) const = 0;
+
     /// @}
     /// @name Operator interface
     /// @{
@@ -169,6 +188,9 @@ namespace gtsam {
     /// @}
     /// @name Advanced Interface
     /// @{
+
+    /// Fast check for JacobianFactor-based types.
+    virtual bool isJacobian() const { return false; }
 
     // Determine position of a given key
     template <typename CONTAINER>

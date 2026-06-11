@@ -51,8 +51,10 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             'unsigned char': 'unsigned char',
             'Vector': 'double',
             'Matrix': 'double',
+            'ConstMatrixView': 'double',
             'int': 'numeric',
             'size_t': 'numeric',
+            'Key': 'numeric',
             'bool': 'logical'
         }
         # Map the data type into the type used in Matlab methods.
@@ -68,6 +70,8 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             'Point3': 'double',
             'Vector': 'double',
             'Matrix': 'double',
+            'ConstMatrixView': 'double',
+            'Key': 'numeric',
             'bool': 'bool'
         }
         # The amount of times the wrapper has created a call to geometry_wrapper
@@ -108,7 +112,8 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
         Args:
             collector_function: tuple storing info about the wrapper function
-                (namespace, class instance, function name, function object)
+                (namespace, class/function instance,
+                type of collector function, method object if class instance)
             id_diff: constant to add to the id in the map
             function_name: Optional custom function_name.
 
@@ -351,6 +356,11 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             arg_type = f"{enum_type}"
             unwrap = f'unwrap_enum<{enum_type}>(in[{arg_id}]);'
 
+        elif self.is_matrix_view(arg.ctype):
+            arg_type = self._format_type_name(arg.ctype.typename)
+            unwrap = 'unwrapMatrixView< {ctype} >(in[{id}]);'.format(
+                ctype=arg_type, id=arg_id)
+
         elif self.is_ref(arg.ctype):  # and not constructor:
             arg_type = "{ctype}&".format(ctype=ctype_sep)
             unwrap = '*unwrap_shared_ptr< {ctype} >(in[{id}], "ptr_{ctype_camel}");'.format(
@@ -372,9 +382,9 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                 ctype_sep=ctype_sep, ctype=ctype_camel, id=arg_id)
 
         else:
-            arg_type = "{ctype}".format(ctype=arg.ctype.typename.name)
+            arg_type = "{ctype}".format(ctype=self._format_type_name(arg.ctype.typename))
             unwrap = 'unwrap< {ctype} >(in[{id}]);'.format(
-                ctype=arg.ctype.typename.name, id=arg_id)
+                ctype=self._format_type_name(arg.ctype.typename), id=arg_id)
 
         return arg_type, unwrap
 
@@ -578,6 +588,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
         # Get all combinations of parameters
         param_wrap = ''
 
+        # Iterate through possible overloads of the function
         for i, overload in enumerate(function):
             param_wrap += '      if' if i == 0 else '      elseif'
             param_wrap += ' length(varargin) == '
@@ -1218,7 +1229,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             if isinstance(func, parser.GlobalFunction)
         ]
 
-        self.wrap_methods(all_funcs, True, global_ns=namespace)
+        self.wrap_methods(all_funcs, global_funcs=True, global_ns=namespace)
 
         return wrapped
 
@@ -1333,7 +1344,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                     prefix='  ')
         else:
             expanded += '  out[0] = wrap< {0} >({1});'.format(
-                ctype.typename.name, obj)
+                self._format_type_name(ctype.typename), obj)
 
         return expanded
 
@@ -1365,8 +1376,8 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             method_name += method.original.name
 
         elif isinstance(method, parser.GlobalFunction):
-            method_name = self._format_global_function(method, '::')
-            method_name += method.name
+            namespace = self._format_global_function(method, '::')
+            method_name = namespace + method.to_cpp()
 
         else:
             if isinstance(method.parent, instantiator.InstantiatedClass):
@@ -1624,7 +1635,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
             body += self._wrapper_unwrap_arguments(collector_func[1].args)[1]
             body += self.wrap_collector_function_return(
-                collector_func[1]) + '\n}\n'
+                collector_func[1]) + "\n}\n"
 
             collector_function += body
 

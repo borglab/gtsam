@@ -31,7 +31,7 @@ class Template:
         """
         Rule to parse the template parameters.
 
-        template<typename POSE>  // POSE is the Instantiation.
+        template<typename POSE = {Pose2, Pose3}>  // Pos2 and Pose3 are the `Instantiation`s.
         """
         rule = (
             IDENT("typename")  #

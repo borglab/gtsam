@@ -22,6 +22,7 @@ class SfmTrack2d {
 virtual class SfmTrack : gtsam::SfmTrack2d {
   SfmTrack();
   SfmTrack(const gtsam::Point3& pt);
+  SfmTrack(const gtsam::Point3& pt, float r, float g, float b);
   const Point3& point3() const;
 
   Point3 p;
@@ -114,6 +115,20 @@ virtual class ShonanFactor3 : gtsam::NoiseModelFactor {
   gtsam::Vector evaluateError(const gtsam::SOn& Q1, const gtsam::SOn& Q2);
 };
 
+#include <gtsam/sfm/UnaryMeasurement.h>
+template <T>
+class UnaryMeasurement {
+  UnaryMeasurement(gtsam::Key key, const T& measured,
+                   const gtsam::noiseModel::Base* model);
+  gtsam::Key key() const;
+  T measured() const;
+  gtsam::noiseModel::Base* noiseModel() const;
+};
+
+typedef gtsam::UnaryMeasurement<gtsam::Pose3> UnaryMeasurementPose3;
+typedef gtsam::UnaryMeasurement<gtsam::Rot3> UnaryMeasurementRot3;
+typedef gtsam::UnaryMeasurement<gtsam::Point3> UnaryMeasurementPoint3;
+
 #include <gtsam/sfm/BinaryMeasurement.h>
 template <T>
 class BinaryMeasurement {
@@ -151,6 +166,41 @@ class BinaryMeasurementsRot3 {
   size_t size() const;
   gtsam::BinaryMeasurement<gtsam::Rot3> at(size_t idx) const;
   void push_back(const gtsam::BinaryMeasurement<gtsam::Rot3>& measurement);
+};
+
+#include <gtsam/sfm/TrajectoryAlignerSim3.h>
+class TrajectoryAlignerSim3 {
+  TrajectoryAlignerSim3(
+      const std::vector<gtsam::UnaryMeasurement<gtsam::Pose3>>& aTi,
+      const std::vector<std::vector<gtsam::UnaryMeasurement<gtsam::Pose3>>>& bTi_all);
+
+  TrajectoryAlignerSim3(
+      const std::vector<gtsam::UnaryMeasurement<gtsam::Pose3>>& aTi,
+      const std::vector<std::vector<gtsam::UnaryMeasurement<gtsam::Pose3>>>& bTi_all,
+      const std::vector<gtsam::Similarity3>& bSa_all);
+
+  TrajectoryAlignerSim3(
+    const std::vector<gtsam::UnaryMeasurement<gtsam::Pose3>>& aTi,
+    const std::vector<std::vector<gtsam::UnaryMeasurement<gtsam::Pose3>>>& bTi_all,
+    const std::vector<gtsam::Similarity3>& bSa_all, const bool use_gnc_optimizer);
+
+  TrajectoryAlignerSim3(    
+    const std::vector<gtsam::UnaryMeasurement<gtsam::Pose3>>& aTi,
+    const std::vector<std::vector<gtsam::UnaryMeasurement<gtsam::Pose3>>>& bTi_all,
+    const std::vector<gtsam::Similarity3>& bSa_all, const bool use_gnc_optimizer,
+    const std::vector<std::vector<std::pair<gtsam::Point3, gtsam::Point3>>> &overlapping_points);
+
+  TrajectoryAlignerSim3(
+    const std::vector<gtsam::UnaryMeasurement<gtsam::Pose3>>& aTi,
+    const std::vector<std::vector<gtsam::UnaryMeasurement<gtsam::Pose3>>>& bTi_all,
+    const std::vector<gtsam::Similarity3>& bSa_all, const bool use_gnc_optimizer,
+    const std::vector<std::vector<std::pair<gtsam::Point3, gtsam::Point3>>> &overlapping_points,
+    const double point3_factor_sigma);
+
+  gtsam::Values solve() const;
+  gtsam::Marginals marginalize(
+    const gtsam::Values& solution, 
+    const gtsam::Ordering::OrderingType ordering_type = gtsam::Ordering::COLAMD) const;
 };
 
 #include <gtsam/slam/dataset.h>
@@ -295,9 +345,31 @@ class MFAS {
   gtsam::KeyVector computeOrdering() const;
 };
 
+#include <gtsam/sfm/LocationRecovery.h>
+
+class LocationRecovery {
+  LocationRecovery(const gtsam::LevenbergMarquardtParams& lmParams);
+  LocationRecovery();
+  gtsam::NonlinearFactorGraph buildGraph(
+      const gtsam::BinaryMeasurementsUnit3& edges,
+      bool bilinear) const;
+  gtsam::NonlinearFactorGraph buildGraph(
+      const gtsam::BinaryMeasurementsUnit3& edges) const;
+  void addAnchorPrior(gtsam::Key anchorKey,
+                      gtsam::NonlinearFactorGraph @graph,
+                      const gtsam::SharedNoiseModel& priorNoiseModel) const;
+  void addAnchorPrior(gtsam::Key anchorKey,
+                      gtsam::NonlinearFactorGraph @graph) const;
+  gtsam::Values initializeRandomly(
+      const gtsam::KeySet& keys, size_t numEdges, bool bilinear,
+      const gtsam::Values& initialValues) const;
+  gtsam::Values initializeRandomly(
+      const gtsam::KeySet& keys, size_t numEdges, bool bilinear) const;
+};
+
 #include <gtsam/sfm/TranslationRecovery.h>
 
-class TranslationRecovery {
+class TranslationRecovery : gtsam::LocationRecovery {
   TranslationRecovery(const gtsam::LevenbergMarquardtParams& lmParams,
                       const bool use_bilinear_translation_factor);
   TranslationRecovery(const gtsam::LevenbergMarquardtParams& lmParams);
@@ -325,6 +397,31 @@ class TranslationRecovery {
   // default scale = 1.0, empty betweenTranslations
   gtsam::Values run(const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
                     const double scale = 1.0) const;
+};
+
+#include <gtsam/sfm/GlobalPositioner.h>
+
+class GlobalPositioner : gtsam::LocationRecovery {
+  GlobalPositioner(const gtsam::LevenbergMarquardtParams& lmParams);
+  GlobalPositioner();
+  gtsam::Values initializeRandomly(
+      const gtsam::KeySet& cameraKeys,
+      const gtsam::KeySet& landmarkKeys,
+      const gtsam::BinaryMeasurementsUnit3& cameraPointDirections,
+      const gtsam::Values& initialValues) const;
+  gtsam::Values initializeRandomly(
+      const gtsam::KeySet& cameraKeys,
+      const gtsam::KeySet& landmarkKeys,
+      const gtsam::BinaryMeasurementsUnit3& cameraPointDirections) const;
+  gtsam::Values run(const gtsam::BinaryMeasurementsUnit3& cameraPointDirections,
+                    const gtsam::KeySet& cameraKeys,
+                    const gtsam::KeySet& landmarkKeys,
+                    gtsam::Key anchorCameraKey,
+                    const gtsam::Values& initialValues) const;
+  gtsam::Values run(const gtsam::BinaryMeasurementsUnit3& cameraPointDirections,
+                    const gtsam::KeySet& cameraKeys,
+                    const gtsam::KeySet& landmarkKeys,
+                    gtsam::Key anchorCameraKey) const;
 };
 
 namespace gtsfm {

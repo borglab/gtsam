@@ -1,0 +1,52 @@
+[project]
+name = "gtwrap"
+version = "2.0.0"
+description = "Library to wrap C++ with Python and Matlab"
+authors = [
+    { name="Frank Dellaert", email="dellaert@gatech.edu" },
+    { name = "Varun Agrawal", email = "varunagrawal@gatech.edu" },
+    { name = "Duy Nguyen Ta", email = "duynguyen@gatech.edu" },
+    { name = "Fan Jiang", email = "i@fanjiang.me" },
+    { name = "Matthew Sklar", email = "matthewsklar227@gmail.com" }
+]
+readme = "README.md"
+license = "BSD-3-Clause"
+keywords=["wrap", "bindings", "cpp", "python", "matlab"]
+
+classifiers = [
+    "Intended Audience :: Education",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.11",
+]
+
+requires-python = ">=3.10"
+dependencies = [
+    "pyparsing>=3.2.5",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.1",
+    "pytest-cov>=7.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/borglab/wrap"
+Documentation = "https://github.com/borglab/wrap"
+Repository = "https://github.com/borglab/wrap"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+addopts = "--cov=gtwrap --cov-report html --cov-report term"
+norecursedirs = []
+
+[tool.uv.build-backend]
+module-name = "gtwrap"

@@ -43,9 +43,6 @@ namespace gtsam {
     // Forward all constructors.
     using std::vector<DiscreteKey>::vector;
 
-    /// Constructor for serialization
-    DiscreteKeys() : std::vector<DiscreteKey>::vector() {}
-
     /// Construct from a key
     explicit DiscreteKeys(const DiscreteKey& key) { push_back(key); }
 

@@ -79,7 +79,7 @@ Values BatchOptimize(const NonlinearFactorGraph& graph, const Values& theta, int
 NonlinearFactorGraph CalculateMarginals(const NonlinearFactorGraph& factorGraph, const Values& linPoint, const FastList<Key>& keysToMarginalize){
 
 
-  std::set<Key> KeysToKeep;
+  KeySet KeysToKeep;
   for(const auto key: linPoint.keys()) { // we cycle over all the keys of factorGraph
     KeysToKeep.insert(key);
   } // so far we are keeping all keys, but we want to delete the ones that we are going to marginalize

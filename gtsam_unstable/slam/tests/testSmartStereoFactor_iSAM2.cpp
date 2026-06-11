@@ -41,6 +41,15 @@
 // Tolerance for ground-truth pose comparison:
 static const double tol = 1e-3;
 
+namespace  {
+gtsam::LevenbergMarquardtParams makeLmParams() {
+  gtsam::LevenbergMarquardtParams params;
+  params.linearSolverType =
+      gtsam::LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
+  return params;
+}
+}  // namespace
+
 // Synthetic dataset generated with rwt
 // (https://github.com/jlblancoc/recursive-world-toolkit)
 // Camera parameters
@@ -204,7 +213,7 @@ TEST(testISAM2SmartFactor, Stereo_Batch) {
     batch_values.insert(X(kf_id), Pose3::Identity());
   }
 
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
 #if TEST_VERBOSE_OUTPUT
   parameters.verbosity = NonlinearOptimizerParams::LINEAR;
   parameters.verbosityLM = LevenbergMarquardtParams::TRYDELTA;

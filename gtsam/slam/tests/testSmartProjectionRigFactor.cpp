@@ -32,27 +32,34 @@
 
 using namespace std::placeholders;
 
-static const double rankTol = 1.0;
+namespace {
+const double rankTol = 1.0;
 // Create a noise model for the pixel error
-static const double sigma = 0.1;
-static SharedIsotropic model(noiseModel::Isotropic::Sigma(2, sigma));
+const double sigma = 0.1;
+SharedIsotropic model(noiseModel::Isotropic::Sigma(2, sigma));
 
 // Convenience for named keys
 using symbol_shorthand::L;
 using symbol_shorthand::X;
 
 // tests data
-static Symbol x1('X', 1);
-static Symbol x2('X', 2);
-static Symbol x3('X', 3);
+Symbol x1('X', 1);
+Symbol x2('X', 2);
+Symbol x3('X', 3);
 
 Key cameraId1 = 0;  // first camera
-Key cameraId2 = 1;
-Key cameraId3 = 2;
 
-static Point2 measurement1(323.0, 240.0);
+Point2 measurement1(323.0, 240.0);
 
-LevenbergMarquardtParams lmParams;
+LevenbergMarquardtParams makeLMParams() {
+  LevenbergMarquardtParams p;
+  p.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
+  return p;
+}
+
+LevenbergMarquardtParams lmParams = makeLMParams();
+
+}  // namespace
 
 /* ************************************************************************* */
 // default Cal3_S2 poses with rolling shutter effect
@@ -305,7 +312,6 @@ TEST(SmartProjectionRigFactor, smartFactorWithSensorBodyTransform) {
   // original pose3
   values.insert(x3, wTb3 * noise_pose);
 
-  LevenbergMarquardtParams lmParams;
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
@@ -392,7 +398,6 @@ TEST(SmartProjectionRigFactor, smartFactorWithMultipleCameras) {
   // original pose3
   values.insert(x3, wTb3 * noise_pose);
 
-  LevenbergMarquardtParams lmParams;
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();

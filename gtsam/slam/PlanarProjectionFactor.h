@@ -14,18 +14,17 @@
  */
 #pragma once
 
-#include <gtsam/base/Testable.h>
 #include <gtsam/base/Lie.h>
-
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Rot3.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/base/numericalDerivative.h>
-
 
 namespace gtsam {
 
@@ -139,7 +138,7 @@ namespace gtsam {
             const Cal3DS2& calib,
             const SharedNoiseModel& model = {})
             : PlanarProjectionFactorBase(measured),
-            NoiseModelFactorN(model, poseKey),
+            NoiseModelFactorN<Pose2>(model, poseKey),
             landmark_(landmark),
             bTc_(bTc),
             calib_(calib) {}
@@ -201,7 +200,7 @@ namespace gtsam {
             const Cal3DS2& calib,
             const SharedNoiseModel& model = {})
             : PlanarProjectionFactorBase(measured),
-            NoiseModelFactorN(model, poseKey, landmarkKey),
+            NoiseModelFactorN<Pose2, Point3>(model, poseKey, landmarkKey),
             bTc_(bTc),
             calib_(calib) {}
 
@@ -258,16 +257,13 @@ namespace gtsam {
          * @param measured corresponding point2 in the camera frame
          * @param model stddev of the measurements, ~one pixel?
          */
-        PlanarProjectionFactor3(
-            Key poseKey,
-            Key offsetKey,
-            Key calibKey,
-            const Point3& landmark,
-            const Point2& measured,
-            const SharedNoiseModel& model = {})
+        PlanarProjectionFactor3(Key poseKey, Key offsetKey, Key calibKey,
+                                const Point3& landmark, const Point2& measured,
+                                const SharedNoiseModel& model = {})
             : PlanarProjectionFactorBase(measured),
-            NoiseModelFactorN(model, poseKey, offsetKey, calibKey),
-            landmark_(landmark) {}
+              NoiseModelFactorN<Pose2, Pose3, Cal3DS2>(model, poseKey,
+                                                       offsetKey, calibKey),
+              landmark_(landmark) {}
 
         /**
          * @param wTb "world to body": estimated pose2

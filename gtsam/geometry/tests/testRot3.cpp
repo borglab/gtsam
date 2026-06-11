@@ -26,6 +26,10 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <array>
+#include <iomanip>
+#include <sstream>
+
 using namespace std;
 using namespace gtsam;
 
@@ -184,11 +188,64 @@ TEST( Rot3, retract)
 {
   Vector v = Z_3x1;
   CHECK(assert_equal(R, R.retract(v)));
+}
 
-//  // test Canonical coordinates
-//  Canonical<Rot3> chart;
-//  Vector v2 = chart.local(R);
-//  CHECK(assert_equal(R, chart.retract(v2)));
+/* ************************************************************************* */
+namespace {
+
+struct RetractNormalizationMetrics {
+  double quaternionNormError;
+  double orthogonalityError;
+  double determinantError;
+};
+
+RetractNormalizationMetrics measureRetractNormalization(
+    const Rot3& base, const Vector3& omega) {
+  const Rot3 retracted = base.retract(omega);
+  const Matrix3 matrix = retracted.matrix();
+  return {std::abs(retracted.toQuaternion().norm() - 1.0),
+          (matrix.transpose() * matrix - I_3x3).norm(),
+          std::abs(matrix.determinant() - 1.0)};
+}
+
+}  // namespace
+
+TEST(Rot3, retractNormalizationAcrossMagnitudes) {
+  const Vector3 direction = Vector3(1.0, -2.0, 3.0).normalized();
+  const std::array<Rot3, 2> bases = {
+      Rot3(),
+      Rot3::RzRyRx(0.3, -0.2, 0.5),
+  };
+  const std::array<double, 17> magnitudes = {
+      0.0, 1e-16, 1e-14, 1e-12, 1e-10, 1e-8, 1e-6, 1e-4, 1e-2,
+      1.0, 1e2,   1e4,   1e6,   1e8,   1e10, 1e12, 1e14,
+  };
+  const double quaternionNormTolerance = 1e-12;
+  const double orthogonalityTolerance = 1e-10;
+  const double determinantTolerance = 1e-10;
+
+  for (size_t baseIndex = 0; baseIndex < bases.size(); ++baseIndex) {
+    for (const double magnitude : magnitudes) {
+      const auto metrics =
+          measureRetractNormalization(bases[baseIndex], direction * magnitude);
+      const bool quaternionOk =
+          metrics.quaternionNormError <= quaternionNormTolerance;
+      const bool orthogonalityOk =
+          metrics.orthogonalityError <= orthogonalityTolerance;
+      const bool determinantOk =
+          metrics.determinantError <= determinantTolerance;
+      if (quaternionOk && orthogonalityOk && determinantOk) continue;
+
+      std::ostringstream os;
+      os << std::scientific << std::setprecision(3)
+         << "Retract normalization broke down for base[" << baseIndex
+         << "] at |omega|=" << magnitude
+         << " with quaternion norm error=" << metrics.quaternionNormError
+         << ", orthogonality error=" << metrics.orthogonalityError
+         << ", determinant error=" << metrics.determinantError;
+      FAIL(os.str());
+    }
+  }
 }
 
 /* ************************************************************************* */
@@ -1030,4 +1087,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

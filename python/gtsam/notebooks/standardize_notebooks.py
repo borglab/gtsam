@@ -13,19 +13,25 @@ Example:
 """
 
 import json
-import os
+import re
 import sys
 from pathlib import Path
 from typing import Dict, List, Any
 
 
-def create_colab_button_cell(notebook_path: str) -> Dict[str, Any]:
-    # Convert absolute path to relative GitHub path
-    github_path = notebook_path.replace('/Users/apollo/dev/research/gtsam/', '')
-    
+def notebook_id_prefix(notebook_path: Path) -> str:
+    """Create a stable, project-wide prefix for notebook cell identifiers."""
+    stem = notebook_path.with_suffix("").as_posix()
+    return re.sub(r"[^A-Za-z0-9]+", "_", stem).strip("_").lower()
+
+
+def create_colab_button_cell(notebook_path: Path) -> Dict[str, Any]:
+    github_path = notebook_path.as_posix()
+    prefix = notebook_id_prefix(notebook_path)
+
     return {
         "cell_type": "markdown",
-        "id": "colab_button",
+        "id": f"{prefix}__colab_button",
         "metadata": {},
         "source": [
             f'<a href="https://colab.research.google.com/github/borglab/gtsam/blob/develop/{github_path}" target="_parent">'
@@ -34,10 +40,11 @@ def create_colab_button_cell(notebook_path: str) -> Dict[str, Any]:
     }
 
 
-def create_license_cell() -> Dict[str, Any]:
+def create_license_cell(notebook_path: Path) -> Dict[str, Any]:
+    prefix = notebook_id_prefix(notebook_path)
     return {
         "cell_type": "markdown",
-        "id": "license_cell",
+        "id": f"{prefix}__license_cell",
         "metadata": {
             "tags": ["remove-cell"]
         },
@@ -53,11 +60,12 @@ def create_license_cell() -> Dict[str, Any]:
     }
 
 
-def create_colab_import_cell() -> Dict[str, Any]:
+def create_colab_import_cell(notebook_path: Path) -> Dict[str, Any]:
+    prefix = notebook_id_prefix(notebook_path)
     return {
         "cell_type": "code",
         "execution_count": None,
-        "id": "colab_import",
+        "id": f"{prefix}__colab_import",
         "metadata": {
             "tags": ["remove-cell"]
         },
@@ -116,15 +124,15 @@ def process_notebook(notebook_path: Path) -> bool:
     cells_to_add = []
     
     if not has_colab_import:
-        cells_to_add.append(create_colab_import_cell())
+        cells_to_add.append(create_colab_import_cell(notebook_path))
         modified = True
-    
+
     if not has_license:
-        cells_to_add.append(create_license_cell())
+        cells_to_add.append(create_license_cell(notebook_path))
         modified = True
-    
+
     if not has_colab_button:
-        cells_to_add.append(create_colab_button_cell(str(notebook_path)))
+        cells_to_add.append(create_colab_button_cell(notebook_path))
         modified = True
     
     for cell in cells_to_add:

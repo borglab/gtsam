@@ -17,11 +17,36 @@
  * @date     6/16/16
  */
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
+#include <gtsam_unstable/linear/InfeasibleOrUnboundedProblem.h>
 #include <gtsam_unstable/linear/LPInitSolver.h>
 #include <gtsam_unstable/linear/LPSolver.h>
-#include <gtsam_unstable/linear/InfeasibleOrUnboundedProblem.h>
+
+#include <algorithm>
 
 namespace gtsam {
+namespace {
+
+/* ************************************************************************* */
+Key MaxKey(const LP& lp) {
+  Key maxKey = 0;
+  bool initialized = false;
+  auto update = [&](const KeySet& keys) {
+    if (!keys.empty()) {
+      maxKey = initialized ? std::max(maxKey, *keys.rbegin()) : *keys.rbegin();
+      initialized = true;
+    }
+  };
+  update(KeySet(lp.cost.keys()));
+  update(lp.equalities.keys());
+  update(lp.inequalities.keys());
+  return maxKey;
+}
+
+}  // namespace
 
 /******************************************************************************/
 VectorValues LPInitSolver::solve() const {
@@ -29,7 +54,7 @@ VectorValues LPInitSolver::solve() const {
   GaussianFactorGraph::shared_ptr initOfInitGraph = buildInitOfInitGraph();
   VectorValues x0 = initOfInitGraph->optimize();
   double y0 = compute_y0(x0);
-  Key yKey = maxKey(lp_) + 1;  // the unique key for y0
+  Key yKey = MaxKey(lp_) + 1;  // the unique key for y0
   VectorValues xy0(x0);
   xy0.insert(yKey, Vector::Constant(1, y0));
 
@@ -105,4 +130,6 @@ InequalityFactorGraph LPInitSolver::addSlackVariableToInequalities(
   return slackInequalities;
 }
 
-}
+}  // namespace gtsam
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

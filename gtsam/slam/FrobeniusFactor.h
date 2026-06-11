@@ -22,6 +22,7 @@
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/SOn.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 namespace gtsam {
 
@@ -62,7 +63,10 @@ GTSAM_EXPORT SharedNoiseModel ConvertNoiseModel(const SharedNoiseModel& model,
  */
 template <class T, size_t Dim>
 inline SharedNoiseModel ConvertModel(const SharedNoiseModel& model) {
-  if (!model || model->dim() == Dim) {
+  if (!model) {
+    return ConvertNoiseModel(noiseModel::Unit::Create(T()), Dim);
+  }
+  if (model->dim() == Dim) {
     return model;
   }
   if (model->dim() != T::dimension) {
@@ -204,7 +208,7 @@ class FrobeniusBetweenFactorNL : public NoiseModelFactorN<T, T> {
     const T hatT21 = traits<T>::Between(T2, T1, H1 ? &H_T21_T2 : nullptr);
 
     // Calculate \hat T21 * T12_, which is predicted to be I_NxN
-    typename T::Jacobian H_pred_hat;
+    typename T::Jacobian H_pred_hat = T::Jacobian::Zero();
     const T pred = traits<T>::Compose(hatT21, T12_, H1 ? &H_pred_hat : nullptr);
 
     // Move to constructor

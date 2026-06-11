@@ -56,6 +56,9 @@
 // Whether we are using a TBB version higher than 2020
 #cmakedefine TBB_GREATER_EQUAL_2020
 
+// Whether to use bounded memory growth for TBB parallel tree traversal
+#cmakedefine GTSAM_TBB_BOUNDED_MEMORY_GROWTH_FLAG
+
 // Whether we are using system-Eigen or our own patched version
 #cmakedefine GTSAM_USE_SYSTEM_EIGEN
 

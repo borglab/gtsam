@@ -16,8 +16,10 @@
  * @author Duy-Nguyen Ta
  */
 
-#include <gtsam_unstable/linear/LPInitSolver.h>
-#include <gtsam_unstable/linear/LPSolver.h>
+#include <gtsam/config.h>
+#include <CppUnitLite/TestHarness.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/FactorGraph-inst.h>
@@ -27,8 +29,8 @@
 #include <gtsam_unstable/linear/EqualityFactorGraph.h>
 #include <gtsam_unstable/linear/InequalityFactorGraph.h>
 #include <gtsam_unstable/linear/InfeasibleInitialValues.h>
-
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam_unstable/linear/LPInitSolver.h>
+#include <gtsam_unstable/linear/LPSolver.h>
 
 using namespace std;
 using namespace gtsam;
@@ -46,12 +48,12 @@ static const Vector kOne = Vector::Ones(1), kZero = Vector::Zero(1);
  */
 LP simpleLP1() {
   LP lp;
-  lp.cost = LinearCost(1, Vector2(-1., -1.));   // min -x1-x2 (max x1+x2)
-  lp.inequalities.add(1, Vector2(-1, 0), 0, 1); // x1 >= 0
-  lp.inequalities.add(1, Vector2(0, -1), 0, 2); //  x2 >= 0
-  lp.inequalities.add(1, Vector2(1, 2), 4, 3);  //  x1 + 2*x2 <= 4
-  lp.inequalities.add(1, Vector2(4, 2), 12, 4); //  4x1 + 2x2 <= 12
-  lp.inequalities.add(1, Vector2(-1, 1), 1, 5); //  -x1 + x2 <= 1
+  lp.cost = LinearCost(1, Vector2(-1., -1.));    // min -x1-x2 (max x1+x2)
+  lp.inequalities.add(1, Vector2(-1, 0), 0, 1);  // x1 >= 0
+  lp.inequalities.add(1, Vector2(0, -1), 0, 2);  //  x2 >= 0
+  lp.inequalities.add(1, Vector2(1, 2), 4, 3);   //  x1 + 2*x2 <= 4
+  lp.inequalities.add(1, Vector2(4, 2), 12, 4);  //  4x1 + 2x2 <= 12
+  lp.inequalities.add(1, Vector2(-1, 1), 1, 5);  //  -x1 + x2 <= 1
   return lp;
 }
 
@@ -60,12 +62,12 @@ namespace gtsam {
 
 TEST(LPInitSolver, InfiniteLoopSingleVar) {
   LP lp;
-  lp.cost = LinearCost(1, Vector3(0, 0, 1));          // min alpha
-  lp.inequalities.add(1, Vector3(-2, -1, -1), -2, 1); //-2x-y-a <= -2
-  lp.inequalities.add(1, Vector3(-1, 2, -1), 6, 2);   // -x+2y-a <= 6
-  lp.inequalities.add(1, Vector3(-1, 0, -1), 0, 3);   // -x - a <= 0
-  lp.inequalities.add(1, Vector3(1, 0, -1), 20, 4);   // x - a <= 20
-  lp.inequalities.add(1, Vector3(0, -1, -1), 0, 5);   // -y - a <= 0
+  lp.cost = LinearCost(1, Vector3(0, 0, 1));           // min alpha
+  lp.inequalities.add(1, Vector3(-2, -1, -1), -2, 1);  //-2x-y-a <= -2
+  lp.inequalities.add(1, Vector3(-1, 2, -1), 6, 2);    // -x+2y-a <= 6
+  lp.inequalities.add(1, Vector3(-1, 0, -1), 0, 3);    // -x - a <= 0
+  lp.inequalities.add(1, Vector3(1, 0, -1), 20, 4);    // x - a <= 20
+  lp.inequalities.add(1, Vector3(0, -1, -1), 0, 5);    // -y - a <= 0
   LPSolver solver(lp);
   VectorValues starter;
   starter.insert(1, Vector3(0, 0, 2));
@@ -80,17 +82,17 @@ TEST(LPInitSolver, InfiniteLoopMultiVar) {
   Key X = symbol('X', 1);
   Key Y = symbol('Y', 1);
   Key Z = symbol('Z', 1);
-  lp.cost = LinearCost(Z, kOne); // min alpha
+  lp.cost = LinearCost(Z, kOne);  // min alpha
   lp.inequalities.add(X, -2.0 * kOne, Y, -1.0 * kOne, Z, -1.0 * kOne, -2,
-                      1); //-2x-y-alpha <= -2
+                      1);  //-2x-y-alpha <= -2
   lp.inequalities.add(X, -1.0 * kOne, Y, 2.0 * kOne, Z, -1.0 * kOne, 6,
-                      2); // -x+2y-alpha <= 6
+                      2);  // -x+2y-alpha <= 6
   lp.inequalities.add(X, -1.0 * kOne, Z, -1.0 * kOne, 0,
-                      3); // -x - alpha <= 0
+                      3);  // -x - alpha <= 0
   lp.inequalities.add(X, 1.0 * kOne, Z, -1.0 * kOne, 20,
-                      4); // x - alpha <= 20
+                      4);  // x - alpha <= 20
   lp.inequalities.add(Y, -1.0 * kOne, Z, -1.0 * kOne, 0,
-                      5); // -y - alpha <= 0
+                      5);  // -y - alpha <= 0
   LPSolver solver(lp);
   VectorValues starter;
   starter.insert(X, kZero);
@@ -124,18 +126,18 @@ TEST(LPInitSolver, Initialization) {
   LP expectedInitLP;
   expectedInitLP.cost = LinearCost(yKey, kOne);
   expectedInitLP.inequalities.add(1, Vector2(-1, 0), 2, Vector::Constant(1, -1),
-                                  0, 1); // -x1 - y <= 0
+                                  0, 1);  // -x1 - y <= 0
   expectedInitLP.inequalities.add(1, Vector2(0, -1), 2, Vector::Constant(1, -1),
-                                  0, 2); // -x2 - y <= 0
+                                  0, 2);  // -x2 - y <= 0
   expectedInitLP.inequalities.add(1, Vector2(1, 2), 2, Vector::Constant(1, -1),
                                   4,
-                                  3); //  x1 + 2*x2 - y <= 4
+                                  3);  //  x1 + 2*x2 - y <= 4
   expectedInitLP.inequalities.add(1, Vector2(4, 2), 2, Vector::Constant(1, -1),
                                   12,
-                                  4); //  4x1 + 2x2 - y <= 12
+                                  4);  //  4x1 + 2x2 - y <= 12
   expectedInitLP.inequalities.add(1, Vector2(-1, 1), 2, Vector::Constant(1, -1),
                                   1,
-                                  5); //  -x1 + x2 - y <= 1
+                                  5);  //  -x1 + x2 - y <= 1
   CHECK(assert_equal(expectedInitLP, *initLP, 1e-10));
   LPSolver lpSolveInit(*initLP);
   VectorValues xy0(x0);
@@ -149,7 +151,7 @@ TEST(LPInitSolver, Initialization) {
   VectorValues x = initSolver.solve();
   CHECK(lp.isFeasible(x));
 }
-} // namespace gtsam
+}  // namespace gtsam
 
 /* ************************************************************************* */
 /**
@@ -189,16 +191,28 @@ TEST(LPSolver, SimpleTest1) {
   VectorValues init;
   init.insert(1, Vector::Zero(2));
 
-  VectorValues x1 =
-      lpSolver.buildWorkingGraph(InequalityFactorGraph(), init).optimize();
-  VectorValues expected_x1;
-  expected_x1.insert(1, Vector::Ones(2));
-  CHECK(assert_equal(expected_x1, x1, 1e-10));
-
   const auto [result, duals] = lpSolver.optimize(init);
   VectorValues expectedResult;
   expectedResult.insert(1, Vector2(8. / 3., 2. / 3.));
   CHECK(assert_equal(expectedResult, result, 1e-10));
+  CHECK(duals.exists(3));
+  CHECK(duals.exists(4));
+}
+
+/* ************************************************************************* */
+TEST(LPSolver, WarmStartFromLegacyDualKeys) {
+  LP lp = simpleLP1();
+  LPSolver lpSolver(lp);
+  VectorValues init;
+  init.insert(1, Vector::Zero(2));
+
+  const auto [firstResult, firstDuals] = lpSolver.optimize(init);
+  const auto [secondResult, secondDuals] =
+      lpSolver.optimize(firstResult, firstDuals, true);
+
+  CHECK(assert_equal(firstResult, secondResult, 1e-10));
+  CHECK(secondDuals.exists(3));
+  CHECK(secondDuals.exists(4));
 }
 
 /* ************************************************************************* */
@@ -226,6 +240,8 @@ TEST(LPSolver, LinearCost) {
   double expectedError = 44.0;
   DOUBLES_EQUAL(expectedError, error, 1e-100);
 }
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
 
 /* ************************************************************************* */
 int main() {

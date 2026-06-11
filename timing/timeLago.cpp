@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
   auto noise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.5, 0.5, 15.0 * M_PI / 180.0).finished());
   Sampler sampler(noise);
   for(const auto& [key,pose]: solution->extract<Pose2>())
-    initial.insert(key, pose.retract(sampler.sample()));
+    initial.insert(key, sampler.perturb(pose));
 
   // Add prior on the pose having index (key) = 0
   noiseModel::Diagonal::shared_ptr priorModel = //

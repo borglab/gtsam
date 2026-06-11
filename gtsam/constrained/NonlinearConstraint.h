@@ -18,8 +18,8 @@
 
 #pragma once
 
-#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/FactorGraph-inst.h>
+#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/base_object.hpp>
@@ -29,8 +29,8 @@ namespace gtsam {
 
 /**
  * Base class for nonlinear constraint.
- * The constraint is represented as a NoiseModelFactor with Constrained noise model.
- * whitenedError() returns The constraint violation vector.
+ * The constraint is represented as a NoiseModelFactor with Constrained noise
+ * model. whitenedError() returns The constraint violation vector.
  * unwhitenedError() returns the sigma-scaled constraint violation vector.
  */
 class GTSAM_EXPORT NonlinearConstraint : public NoiseModelFactor {
@@ -45,8 +45,10 @@ class GTSAM_EXPORT NonlinearConstraint : public NoiseModelFactor {
   /** Destructor. */
   virtual ~NonlinearConstraint() {}
 
-  /** Create a cost factor representing the L2 penalty function with scaling coefficient mu. */
-  virtual NoiseModelFactor::shared_ptr penaltyFactor(const double mu = 1.0) const {
+  /** Create a cost factor representing the L2 penalty function with scaling
+   * coefficient mu. */
+  virtual NoiseModelFactor::shared_ptr penaltyFactor(
+      const double mu = 1.0) const {
     return cloneWithNewNoiseModel(penaltyNoise(mu));
   }
 
@@ -71,7 +73,7 @@ class GTSAM_EXPORT NonlinearConstraint : public NoiseModelFactor {
     return noiseModel::Diagonal::Sigmas(noiseModel()->sigmas() / sqrt(mu));
   }
 
-  /** Default constrained noisemodel used for construction of constraint. */
+  /** Default constrained noise model used for construction of constraint. */
   static SharedNoiseModel constrainedNoise(const Vector& sigmas) {
     return noiseModel::Constrained::MixedSigmas(1.0, sigmas);
   }
@@ -82,8 +84,8 @@ class GTSAM_EXPORT NonlinearConstraint : public NoiseModelFactor {
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& boost::serialization::make_nvp("NonlinearConstraint",
-                                       boost::serialization::base_object<Base>(*this));
+    ar& boost::serialization::make_nvp(
+        "NonlinearConstraint", boost::serialization::base_object<Base>(*this));
   }
 #endif
 };

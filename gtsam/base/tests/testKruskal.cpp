@@ -19,7 +19,6 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/kruskal.h>
 #include <gtsam/geometry/Rot3.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -52,7 +51,7 @@ gtsam::NonlinearFactorGraph makeTestNonlinearFactorGraph() {
   using namespace symbol_shorthand;
 
   NonlinearFactorGraph nfg;
-  const SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector2(0.5, 0.5));
+  const SharedDiagonal model = noiseModel::Isotropic::Sigma(3, 0.5);
   nfg.emplace_shared<BetweenFactor<Rot3>>(X(1), X(2), Rot3(), model);
   nfg.emplace_shared<BetweenFactor<Rot3>>(X(1), X(3), Rot3(), model);
   nfg.emplace_shared<BetweenFactor<Rot3>>(X(1), X(4), Rot3(), model);

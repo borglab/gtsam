@@ -86,7 +86,7 @@ static double A[] = {
 /* 30 Nov 86 -- error in third coefficient fixed */
 
 
-double zeta(double x, double q)
+double gtsam_cephes_zeta(double x, double q)
 {
     int i;
     double a, b, k, s, t, w;
@@ -96,13 +96,13 @@ double zeta(double x, double q)
 
     if (x < 1.0) {
       domerr:
-	sf_error("zeta", SF_ERROR_DOMAIN, NULL);
+	gtsam_cephes_sf_error("zeta", SF_ERROR_DOMAIN, NULL);
 	return (NAN);
     }
 
     if (q <= 0.0) {
 	if (q == floor(q)) {
-	    sf_error("zeta", SF_ERROR_SINGULAR, NULL);
+	    gtsam_cephes_sf_error("zeta", SF_ERROR_SINGULAR, NULL);
 	  retinf:
 	    return (INFINITY);
 	}

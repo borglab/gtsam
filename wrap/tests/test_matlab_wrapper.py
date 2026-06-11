@@ -79,6 +79,46 @@ class TestWrap(unittest.TestCase):
             actual = osp.join(self.MATLAB_ACTUAL_DIR, file)
             self.compare_and_diff(file, actual)
 
+    def test_matrix_view_arguments(self):
+        """Test that matrix view arguments use MATLAB double arrays directly."""
+        file = osp.join(self.INTERFACE_DIR, 'matrix_views.i')
+
+        wrapper = MatlabWrapper(module_name='matrix_views',
+                                top_module_namespace=['gtsam'],
+                                ignore_classes=[''])
+
+        wrapper.wrap([file], path=self.MATLAB_ACTUAL_DIR)
+
+        cpp_file = osp.join(self.MATLAB_ACTUAL_DIR, 'matrix_views_wrapper.cpp')
+        with open(cpp_file, 'r', encoding='UTF-8') as f:
+            cpp_content = f.read()
+
+        self.assertIn(
+            'gtsam::ConstMatrixView points = unwrapMatrixView< gtsam::ConstMatrixView >(in[1]);',
+            cpp_content)
+        self.assertIn('obj->acceptView(points);', cpp_content)
+        self.assertIn('obj->scaleView(points,scale)', cpp_content)
+        self.assertNotIn('unwrap< gtsam::ConstMatrixView >', cpp_content)
+        self.assertNotIn('*points', cpp_content)
+
+        m_file = osp.join(self.MATLAB_ACTUAL_DIR, '+gtsam',
+                          'MatrixViewFixture.m')
+        with open(m_file, 'r', encoding='UTF-8') as f:
+            matlab_content = f.read()
+
+        self.assertIn("isa(varargin{1},'double')", matlab_content)
+
+        matlab_header = osp.join(self.TEST_DIR, '..', 'matlab.h')
+        with open(matlab_header, 'r', encoding='UTF-8') as f:
+            header_content = f.read()
+
+        self.assertIn('unwrapMatrixView', header_content)
+        self.assertIn('mxIsSparse(array)', header_content)
+        self.assertIn('mwSize rows', header_content)
+        self.assertIn('static_cast<unsigned long long>(rows)', header_content)
+        self.assertIn('Eigen::Index m', header_content)
+        self.assertIn('Stride(m, 1)', header_content)
+
     def test_functions(self):
         """Test interface file with function info."""
         file = osp.join(self.INTERFACE_DIR, 'functions.i')
@@ -105,6 +145,12 @@ class TestWrap(unittest.TestCase):
             'DefaultFuncVector.m',
             'DefaultFuncZero.m',
             'setPose.m',
+            'EliminateDiscrete.m',
+            'triangulatePoint3Cal3_S2.m',
+            'FindKarcherMeanPoint3.m',
+            'FindKarcherMeanSO3.m',
+            'FindKarcherMeanSO4.m',
+            'FindKarcherMeanPose3.m',
         ]
 
         for file in files:
@@ -125,16 +171,18 @@ class TestWrap(unittest.TestCase):
 
         files = [
             'class_wrapper.cpp',
+            'ForwardKinematics.m',
             'FunDouble.m',
             'FunRange.m',
+            'HessianFactor.m',
             'MultipleTemplatesIntDouble.m',
             'MultipleTemplatesIntFloat.m',
             'MyFactorPosePoint2.m',
             'MyVector3.m',
             'MyVector12.m',
             'PrimitiveRefDouble.m',
+            'SmartProjectionRigFactorPinholeCameraCal3_S2.m',
             'Test.m',
-            'ForwardKinematics.m',
         ]
 
         for file in files:
@@ -156,6 +204,7 @@ class TestWrap(unittest.TestCase):
         files = [
             'enum_wrapper.cpp',
             'Color.m',
+            'Pet.m',
             '+Pet/Kind.m',
             '+gtsam/VerbosityLM.m',
             '+gtsam/+MCU/Avengers.m',
@@ -202,9 +251,11 @@ class TestWrap(unittest.TestCase):
         files = [
             'inheritance_wrapper.cpp',
             'MyBase.m',
+            'MyTemplateA.m',
             'MyTemplateMatrix.m',
             'MyTemplatePoint2.m',
             'ForwardKinematicsFactor.m',
+            'ParentHasTemplateDouble.m',
         ]
 
         for file in files:

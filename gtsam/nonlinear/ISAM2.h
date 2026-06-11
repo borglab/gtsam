@@ -96,6 +96,9 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
   int update_count_;  ///< Counter incremented every update(), used to determine
                       ///< periodic relinearization
 
+  size_t nnzAfterLastReorder_;  ///< Bayes tree nnz recorded after the most
+                                ///< recent full batch reorder
+
  public:
   using This = ISAM2;                       ///< This class
   using Base = BayesTree<ISAM2Clique>;      ///< The BayesTree base class
@@ -248,8 +251,17 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
    */
   const Value& calculateEstimate(Key key) const;
 
-  /** Return marginal on any variable as a covariance matrix */
+  /// Return the marginal information matrix on any variable.
+  Matrix marginalInformation(Key key) const;
+
+  /// Return the marginal covariance matrix on any variable.
   Matrix marginalCovariance(Key key) const;
+
+  /// Return the joint marginal covariance on a set of variables.
+  JointMarginal jointMarginalCovariance(const KeyVector& queryKeys) const;
+
+  /// Return the joint marginal information on a set of variables.
+  JointMarginal jointMarginalInformation(const KeyVector& queryKeys) const;
 
   /// @name Public members for non-typical usage
   /// @{
@@ -278,6 +290,9 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
 
   const ISAM2Params& params() const { return params_; }
 
+  /** Compute the total number of nonzeros in the Bayes tree. */
+  size_t treeNnz() const;
+
   /** prints out clique statistics */
   void printStats() const { getCliqueData().getStats().print(); }
 
@@ -289,6 +304,19 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
    * @return A VectorValues storing the gradient.
    */
   VectorValues gradientAtZero() const;
+
+  /** @brief Predicts the updated variables for a hypothetical update.
+   * @param newFactors The factors for the hypothetical update
+   * @param newTheta The estimates for new variables in the hypothetical update
+   * @param updateParams The update params for the hypothetical update
+   * @returns The set of all affected keys, and a flag indicating if this would
+   * be a batch update
+   *
+   * NOTE: Update may mutate the mutable field delta_
+   */
+  std::pair<KeySet, bool> predictUpdateInfo(
+      const NonlinearFactorGraph& newFactors, const Values& newTheta,
+      const ISAM2UpdateParams& updateParams) const;
 
   /// @}
 

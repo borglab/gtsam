@@ -1,13 +1,14 @@
 name: Windows CI
 
 on:
+  workflow_dispatch:
   pull_request:
     paths-ignore:
       - '**.md'
-      - '**.ipynb' 
+      - '**.ipynb'
       - 'myst.yml'
   push:
-    # Runs on pushes targeting the develop branch 
+    # Run on pushes to develop branch to cache compilations
     branches: [develop]
 
 # Cancels any in-progress workflow runs for the same PR when a new push is made,
@@ -25,7 +26,6 @@ jobs:
       CTEST_OUTPUT_ON_FAILURE: ON
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
-      GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
       BOOST_VERSION: 1.72.0
       BOOST_EXE: boost_1_72_0-msvc-14.2
       SCCACHE_GHA_ENABLED: ON
@@ -44,7 +44,6 @@ jobs:
             Release
           ]
 
-        build_unstable: [ON]
         include:
           - name: windows-2022-cl
             os: windows-2022
@@ -53,9 +52,9 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - name: Setup msbuild
+      - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x${{ matrix.platform }}
@@ -64,18 +63,6 @@ jobs:
       - name: cl version
         shell: cmd
         run: cl
-
-      - name: Install Dependencies
-        shell: powershell
-        run: |
-          iwr -useb get.scoop.sh -outfile 'install_scoop.ps1'
-          .\install_scoop.ps1 -RunAsAdmin
-
-          scoop install cmake --global  # So we don't get issues with CMP0074 policy
-          scoop install ninja --global
-
-          # Scoop modifies the PATH so we make the modified PATH global.
-          echo "$env:PATH" >> $env:GITHUB_PATH
 
       - name: Install Boost
         if: matrix.build_type == 'Release'
@@ -104,12 +91,11 @@ jobs:
       - name: Configuration
         shell: bash
         run: |
-          export CMAKE_GENERATOR=Ninja
           # Convert Windows backslashes to forward slashes for CMake
           BOOST_ROOT_UNIX=$(echo "$BOOST_ROOT" | sed 's/\\/\//g')
           cmake -E remove_directory build
           if [ "${{ matrix.build_type }}" = "Release" ]; then
-            cmake -B build \
+            cmake -B build -G Ninja \
                   -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
                   -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
                   -DGTSAM_USE_BOOST_FEATURES=ON \
@@ -121,9 +107,10 @@ jobs:
                   -DCMAKE_C_COMPILER_LAUNCHER=sccache \
                   -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           else
-            cmake -B build \
+            cmake -B build -G Ninja \
                   -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
                   -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
+                  -DGTSAM_ENABLE_CONSISTENCY_CHECKS=ON \
                   -DGTSAM_USE_BOOST_FEATURES=OFF \
                   -DGTSAM_ENABLE_BOOST_SERIALIZATION=OFF
           fi

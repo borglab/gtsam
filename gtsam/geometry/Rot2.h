@@ -135,6 +135,14 @@ namespace gtsam {
     /** Calculate Adjoint map */
     Matrix1 AdjointMap() const { return I_1x1; }
 
+    /// Lie-algebra adjoint (zero for abelian SO(2)).
+    static Matrix1 adjointMap(const Vector1&);
+
+    /// Apply Lie-algebra adjoint (always zero).
+    static Vector1 adjoint(const Vector1&, const Vector1&,
+                           OptionalJacobian<1, 1> Hxi = {},
+                           OptionalJacobian<1, 1> Hy = {});
+
     /// Left-trivialized derivative of the exponential map
     static Matrix ExpmapDerivative(const Vector& /*v*/) {
       return I_1x1;

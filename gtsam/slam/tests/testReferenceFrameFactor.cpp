@@ -36,8 +36,17 @@ using namespace gtsam;
 typedef gtsam::ReferenceFrameFactor<gtsam::Point2, gtsam::Pose2> PointReferenceFrameFactor;
 typedef gtsam::ReferenceFrameFactor<gtsam::Pose2, gtsam::Pose2> PoseReferenceFrameFactor;
 
-Key lA1 = symbol_shorthand::L(1), lA2 = symbol_shorthand::L(2), lB1 = symbol_shorthand::L(11), lB2 = symbol_shorthand::L(12);
+namespace {
+Key lA1 = symbol_shorthand::L(1), lA2 = symbol_shorthand::L(2),
+    lB1 = symbol_shorthand::L(11), lB2 = symbol_shorthand::L(12);
 Key tA1 = symbol_shorthand::T(1), tB1 = symbol_shorthand::T(2);
+
+LevenbergMarquardtParams getLMParams() {
+  LevenbergMarquardtParams params;
+  params.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
+  return params;
+}
+}  // namespace
 
 /* ************************************************************************* */
 TEST( ReferenceFrameFactor, equals ) {
@@ -154,7 +163,7 @@ TEST( ReferenceFrameFactor, converge_trans ) {
   init.insert(tA1, trans);
 
   // optimize
-  LevenbergMarquardtOptimizer solver(graph, init);
+  LevenbergMarquardtOptimizer solver(graph, init, getLMParams());
   Values actual = solver.optimize();
 
   Values expected;
@@ -196,7 +205,7 @@ TEST( ReferenceFrameFactor, converge_local ) {
   init.insert(tA1, trans);
 
   // optimize
-  LevenbergMarquardtOptimizer solver(graph, init);
+  LevenbergMarquardtOptimizer solver(graph, init, getLMParams());
   Values actual = solver.optimize();
 
   CHECK(actual.exists(lA1));
@@ -232,7 +241,7 @@ TEST( ReferenceFrameFactor, converge_global ) {
   init.insert(tA1, trans);
 
   // optimize
-  LevenbergMarquardtOptimizer solver(graph, init);
+  LevenbergMarquardtOptimizer solver(graph, init, getLMParams());
   Values actual = solver.optimize();
 
   // verify

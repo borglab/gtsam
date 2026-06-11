@@ -118,6 +118,29 @@ void Similarity3::print(const std::string& s) const {
   std::cout << "t: " << translation().transpose() << " s: " << scale() << std::endl;
 }
 
+Rot3 Similarity3::rotation(OptionalJacobian<3, 7> Hself) const { 
+  if (Hself) {
+    Hself->setZero();
+    Hself->block<3, 3>(0, 0) = I_3x3;
+  }
+  return R_;
+}
+
+Point3 Similarity3::translation(OptionalJacobian<3, 7> Hself) const {
+  if (Hself) {
+    *Hself << Z_3x3, rotation().matrix(), -t_; 
+  }
+  return t_;
+}
+
+double Similarity3::scale(OptionalJacobian<1, 7> Hself) const {
+  if (Hself) {
+    Hself->setZero();
+    (*Hself)(0, 6) = s_; 
+  }
+  return s_;
+}
+
 Similarity3 Similarity3::Identity() {
   return Similarity3();
 }
@@ -145,9 +168,35 @@ Point3 Similarity3::transformFrom(const Point3& p, //
   return s_ * q;
 }
 
-Pose3 Similarity3::transformFrom(const Pose3& T) const {
-  Rot3 R = R_.compose(T.rotation());
-  Point3 t = Point3(s_ * (R_ * T.translation() + t_));
+Pose3 Similarity3::transformFrom(const Pose3& bTi, 
+  OptionalJacobian<6, 7> Hself, OptionalJacobian<6, 6> H_bTi) const {
+  const Rot3& bRi = bTi.rotation();
+  const Point3& bti = bTi.translation();
+  if (!Hself && !H_bTi) {
+    return Pose3(R_ * bRi, transformFrom(bti));
+  }
+
+  const Rot3 R = R_ * bRi;
+
+  // Delegate the translation jacobians to the point3 transformFrom.
+  Matrix37 Dt_dsim;
+  Matrix3 Dt_dp;
+  const Point3 t = transformFrom(bti, Hself ? &Dt_dsim : nullptr, H_bTi ? &Dt_dp : nullptr);
+
+  if (Hself) {
+    Hself->setZero();
+    Hself->block<3, 3>(0, 0) = bRi.transpose(); // DR_dsimR
+    // Chain D_result_t (ie R.T) * D_t_sim (3x7).
+    Hself->block<3, 7>(3, 0) = R.transpose() * Dt_dsim;
+  }
+
+  if (H_bTi) {
+    H_bTi->setIdentity();
+    // DR_dTR = I_3x3
+    // Chain D_result_t (ie R.T) * D_t_p (ie s * R_) * D_p_bTi (ie [Z_3x3, bRi])
+    // bRi.T * R_.T * s * R * bRi => s * I_3x3
+    H_bTi->block<3, 3>(3, 3) *= s_;
+  }
   return Pose3(R, t);
 }
 

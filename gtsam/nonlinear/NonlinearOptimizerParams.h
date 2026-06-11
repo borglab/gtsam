@@ -23,7 +23,9 @@
 
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/SubgraphSolver.h>
+#include <gtsam/linear/MultifrontalParameters.h>
 
+#include <iosfwd>
 #include <string>
 #include <optional>
 
@@ -96,6 +98,7 @@ public:
 
   /** See NonlinearOptimizerParams::linearSolverType */
   enum LinearSolverType {
+    MULTIFRONTAL_SOLVER,
     MULTIFRONTAL_CHOLESKY,
     MULTIFRONTAL_QR,
     SEQUENTIAL_CHOLESKY,
@@ -104,9 +107,14 @@ public:
     CHOLMOD, /* Experimental Flag */
   };
 
-  LinearSolverType linearSolverType = MULTIFRONTAL_CHOLESKY; ///< The type of linear solver to use in the nonlinear optimizer
   std::optional<Ordering> ordering; ///< The optional variable elimination ordering, or empty to use COLAMD (default: empty)
   IterativeOptimizationParameters::shared_ptr iterativeParams; ///< The container for iterativeOptimization parameters. used in CG Solvers.
+  /// Parameters for `gtsam::MultifrontalSolver` when using `MULTIFRONTAL_SOLVER`.
+
+  /// The type of linear solver to use in the nonlinear optimizer
+  LinearSolverType linearSolverType = MULTIFRONTAL_CHOLESKY;
+
+  MultifrontalParameters multifrontalParams;
 
   NonlinearOptimizerParams() = default;
   virtual ~NonlinearOptimizerParams() {
@@ -117,7 +125,8 @@ public:
   bool equals(const NonlinearOptimizerParams& other, double tol = 1e-9) const;
 
   inline bool isMultifrontal() const {
-    return (linearSolverType == MULTIFRONTAL_CHOLESKY)
+    return (linearSolverType == MULTIFRONTAL_SOLVER)
+        || (linearSolverType == MULTIFRONTAL_CHOLESKY)
         || (linearSolverType == MULTIFRONTAL_QR);
   }
 
@@ -136,6 +145,7 @@ public:
 
   GaussianFactorGraph::Eliminate getEliminationFunction() const {
     switch (linearSolverType) {
+    case MULTIFRONTAL_SOLVER:
     case MULTIFRONTAL_CHOLESKY:
     case SEQUENTIAL_CHOLESKY:
       return EliminatePreferCholesky;

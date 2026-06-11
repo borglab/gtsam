@@ -16,6 +16,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/geometry/concepts.h>
 #include <gtsam/base/Testable.h>
 

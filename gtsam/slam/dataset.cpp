@@ -46,6 +46,7 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <locale>
 #include <stdexcept>
 #include <string>
 
@@ -131,6 +132,7 @@ static void parseLines(const std::string &filename, Parser<T> parse) {
   std::ifstream is(filename.c_str());
   if (!is)
     throw std::invalid_argument("parse: can not find file " + filename);
+  is.imbue(std::locale::classic());
   std::string tag;
   while (is >> tag) {
     parse(is, tag); // ignore return value
@@ -368,7 +370,7 @@ template <> struct ParseMeasurement<Pose2> {
     // Get pose and optionally add noise
     Pose2 &pose = edge->second;
     if (sampler)
-      pose = pose.retract(sampler->sample());
+      pose = sampler->perturb(pose);
 
     // emplace measurement
     auto modelFromFile =
@@ -833,7 +835,7 @@ template <> struct ParseMeasurement<Pose3> {
       Pose3 T12(R, {x, y, z});
       //  optionally add noise
       if (sampler)
-        T12 = T12.retract(sampler->sample());
+        T12 = sampler->perturb(T12);
 
       return BinaryMeasurement<Pose3>(id1, id2, T12,
                                       noiseModel::Gaussian::Information(m));
@@ -845,7 +847,7 @@ template <> struct ParseMeasurement<Pose3> {
       Pose3 T12(q, {x, y, z});
       //  optionally add noise
       if (sampler)
-        T12 = T12.retract(sampler->sample());
+        T12 = sampler->perturb(T12);
 
       // g2o's EDGE_SE3:QUAT stores information/precision of Pose3 in t,R order, unlike GTSAM:
       Matrix6 mgtsam;

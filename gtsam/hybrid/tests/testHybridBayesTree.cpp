@@ -21,6 +21,7 @@
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridGaussianISAM.h>
 #include <gtsam/inference/DotWriter.h>
+#include <gtsam/base/TestableAssertions.h>
 
 #include <numeric>
 
@@ -486,6 +487,50 @@ TEST(HybridBayesTree, Choose) {
   auto expected_gbt = bayesTree->choose(assignment);
 
   EXPECT(assert_equal(expected_gbt, gbt));
+}
+
+/* ************************************************************************* */
+TEST(HybridBayesTree, Dot) {
+  // Create a HybridGaussianFactorGraph
+  HybridGaussianFactorGraph hgfg;
+
+  // Gaussian Factor (prior on X0)
+  auto priorModel = noiseModel::Isotropic::Sigma(1, 1.0);
+  Matrix A = -Matrix::Identity(1, 1);
+  Vector b = Vector::Zero(1);
+  hgfg.emplace_shared<JacobianFactor>(X(0), A, b, priorModel);
+
+  // Discrete Factor (prior on D0)
+  DiscreteKey dk0(D(0), 2);
+  hgfg.emplace_shared<DecisionTreeFactor>(dk0, "0.7 0.3");
+
+  // Hybrid Gaussian Factor (measurement on X1 depends on D1)
+  DiscreteKey dk1(D(1), 2);
+  // Measurement model 0: N(X1; 0, 1)
+  auto meas0Model = noiseModel::Isotropic::Sigma(1, 1.0);
+  Matrix A1 = Matrix::Identity(1, 1);
+  Vector b1 = Vector::Zero(1);
+  std::vector<GaussianFactor::shared_ptr> components;
+  components.push_back(std::make_shared<JacobianFactor>(X(1), A1, b1, meas0Model));
+  // Measurement model 1: N(X1; 2, 0.5)
+  auto meas1Model = noiseModel::Isotropic::Sigma(1, 0.5);
+  Vector b2(1); b2 << 2.0;
+  components.push_back(std::make_shared<JacobianFactor>(X(1), A1, b2, meas1Model));
+  hgfg.emplace_shared<HybridGaussianFactor>(dk1, components);
+
+  // Eliminate multifrontal and check number of cliques
+  auto hbt = hgfg.eliminateMultifrontal();
+  EXPECT_LONGS_EQUAL(4, hbt->size());
+
+  std::string expected =
+    R"(digraph G{
+8646911284551352320[label="x0"];
+7205759403792793600[label="d0"];
+7205759403792793601[label="d1"];
+7205759403792793601->8646911284551352321
+8646911284551352321[label="x1 : d1"];
+})";
+  EXPECT(assert_equal(expected, hbt->dot(DefaultKeyFormatter)));
 }
 
 /* ************************************************************************* */

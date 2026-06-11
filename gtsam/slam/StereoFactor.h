@@ -20,6 +20,7 @@
 
 #include <optional>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/geometry/StereoCamera.h>
 
 namespace gtsam {

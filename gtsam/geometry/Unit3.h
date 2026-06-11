@@ -154,14 +154,12 @@ public:
   double distance(const Unit3& q, OptionalJacobian<1, 2> H = {}) const;
 
   /// Cross-product between two Unit3s
-  Unit3 cross(const Unit3& q) const {
-    return Unit3(p_.cross(q.p_));
-  }
+  Unit3 cross(const Unit3& q, OptionalJacobian<2, 2> H_p = {},
+              OptionalJacobian<2, 2> H_q = {}) const;
 
   /// Cross-product w Point3
-  Point3 cross(const Point3& q) const {
-    return point3().cross(q);
-  }
+  Point3 cross(const Point3& q, OptionalJacobian<3, 2> H_p = {},
+               OptionalJacobian<3, 3> H_q = {}) const;
 
   /// @}
   /// @name Manifold
@@ -216,7 +214,22 @@ public:
   GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-// Define GTSAM traits
+/// cross product Unit3 x Unit3
+GTSAM_EXPORT Unit3 cross(const Unit3& p, const Unit3& q,
+                         OptionalJacobian<2, 2> H_p = {},
+                         OptionalJacobian<2, 2> H_q = {});
+
+/// cross product Unit3 x Point3
+GTSAM_EXPORT Point3 cross(const Unit3& p, const Point3& q,
+                          OptionalJacobian<3, 2> H_p = {},
+                          OptionalJacobian<3, 3> H_q = {});
+
+/// cross product Point3 x Unit3
+GTSAM_EXPORT Point3 cross(const Point3& p, const Unit3& q,
+                          OptionalJacobian<3, 3> H_p = {},
+                          OptionalJacobian<3, 2> H_q = {});
+
+/// Define GTSAM traits
 template<> struct traits<Unit3> : public internal::Manifold<Unit3> {
 };
 

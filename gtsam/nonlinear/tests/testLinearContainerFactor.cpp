@@ -219,7 +219,8 @@ TEST(TestLinearContainerFactor, hessian_factor_withlinpoints) {
   // Check linearization with corrections for updated linearization point
   Vector g1_prime = g_prime.head(3);
   Vector g2_prime = g_prime.tail(2);
-  double f_prime = f + dv.transpose() * G.selfadjointView<Eigen::Upper>() * dv - 2.0 * dv.transpose() * g;
+  const auto Gsym = G.selfadjointView<Eigen::Upper>();
+  double f_prime = f + dv.dot(Gsym * dv) - 2.0 * dv.dot(g);
   HessianFactor expNewFactor(x1, l1, G11, G12, g1_prime, G22, g2_prime, f_prime);
   EXPECT(assert_equal(*expNewFactor.clone(), *actFactor.linearize(noisyValues), tol));
 }
@@ -386,6 +387,32 @@ TEST(TestLinearContainerFactor, Rekey2) {
       std::static_pointer_cast<LinearContainerFactor>(
           lcf_factor.rekey(key_map));
   CHECK(lcf_factor_rekey_ptr);
+}
+
+/* ************************************************************************* */
+// Test that rekey works without a linearization point (issue #1904)
+TEST(TestLinearContainerFactor, RekeyWithoutLinearizationPoint) {
+  double mu = 1e10;
+  size_t dim = 3;
+  Key key = 0;
+
+  HessianFactor H(key, mu * Matrix::Identity(dim, dim), Vector::Zero(dim),
+                   0.0);
+  LinearContainerFactor factor(H);
+
+  // Rekey with map
+  Key new_key = 1;
+  std::map<Key, Key> rekey_mapping = {{key, new_key}};
+  auto rekeyed = factor.rekey(rekey_mapping);
+  CHECK(rekeyed);
+  EXPECT(rekeyed->keys()[0] == new_key);
+
+  // Rekey with vector
+  Key new_key2 = 2;
+  KeyVector rekey_vector = {new_key2};
+  auto rekeyed2 = factor.rekey(rekey_vector);
+  CHECK(rekeyed2);
+  EXPECT(rekeyed2->keys()[0] == new_key2);
 }
 
 /* ************************************************************************* */

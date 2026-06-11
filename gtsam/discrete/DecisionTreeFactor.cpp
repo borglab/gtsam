@@ -22,6 +22,7 @@
 #include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/discrete/TableFactor.h>
 #include <gtsam/hybrid/HybridValues.h>
+#include <gtsam/inference/Ordering.h>
 
 #include <utility>
 

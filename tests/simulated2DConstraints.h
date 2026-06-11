@@ -34,8 +34,8 @@ namespace simulated2D {
   namespace equality_constraints {
 
     /** Typedefs for regular use */
-    typedef NonlinearEquality1<Point2> UnaryEqualityConstraint;
-    typedef NonlinearEquality1<Point2> UnaryEqualityPointConstraint;
+    typedef NonlinearEquality<Point2> UnaryEqualityConstraint;
+    typedef NonlinearEquality<Point2> UnaryEqualityPointConstraint;
     typedef BetweenConstraint<Point2> OdoEqualityConstraint;
 
     /** Equality between variables */
