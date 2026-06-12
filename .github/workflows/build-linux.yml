@@ -40,6 +40,11 @@ jobs:
             ubuntu-24.04-clang-16,
             ubuntu-24.04-clang-16-boost,
             ubuntu-24.04-clang-16-geographiclib,
+            # Alpine (musl libc) images; they run on ubuntu runners via image_os
+            alpine-3.22-gcc-14,
+            alpine-3.22-clang-16,
+            alpine-3.23-gcc-15,
+            alpine-3.24-clang-22,
           ]
 
         build_type: [Debug, Release]
@@ -85,6 +90,30 @@ jobs:
             os: ubuntu-24.04
             compiler: clang
             version: "16"
+
+          - name: alpine-3.22-gcc-14
+            os: ubuntu-24.04
+            image_os: alpine-3.22
+            compiler: gcc
+            version: "14"
+
+          - name: alpine-3.22-clang-16
+            os: ubuntu-24.04
+            image_os: alpine-3.22
+            compiler: clang
+            version: "16"
+
+          - name: alpine-3.23-gcc-15
+            os: ubuntu-24.04
+            image_os: alpine-3.23
+            compiler: gcc
+            version: "15"
+
+          - name: alpine-3.24-clang-22
+            os: ubuntu-24.04
+            image_os: alpine-3.24
+            compiler: clang
+            version: "22"
 
         exclude:
           - name: ubuntu-24.04-clang-16-boost

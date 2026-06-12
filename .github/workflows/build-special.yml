@@ -19,7 +19,7 @@ jobs:
     name: ${{ matrix.name }} ${{ matrix.build_type }}
     runs-on: ${{ matrix.os }}
     container:
-      image: borglab/gtsam-ci:${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.version }}
+      image: borglab/gtsam-ci:${{ matrix.image_os || matrix.os }}-${{ matrix.compiler }}-${{ matrix.version }}
       env:
         CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       volumes:
@@ -35,6 +35,7 @@ jobs:
             ubuntu-clang-deprecated,
             ubuntu-clang-quaternions,
             ubuntu-clang-tbb,
+            alpine-gcc-tbb,
             ubuntu-clang-cayleymap,
             ubuntu-clang-system-libs,
             ubuntu-no-unstable,
@@ -59,6 +60,14 @@ jobs:
           - name: ubuntu-clang-tbb
             os: ubuntu-22.04
             compiler: clang
+            version: "14"
+            flag: tbb
+
+          # Alpine (musl libc) image; runs on an ubuntu runner via image_os
+          - name: alpine-gcc-tbb
+            os: ubuntu-24.04
+            image_os: alpine-3.22
+            compiler: gcc
             version: "14"
             flag: tbb
 
