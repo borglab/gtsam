@@ -322,6 +322,13 @@ TEST(Ordering, MetisLoop) {
     Ordering expected{ 4, 3, 1, 0, 5, 2 };
     EXPECT(assert_equal(expected, actual));
   }
+#elif defined(__linux__) && !defined(__GLIBC__)
+  // musl-based Linux (e.g. Alpine)
+  {
+    Ordering actual = Ordering::Create(Ordering::METIS, symbolicGraph);
+    Ordering expected{ 2, 1, 5, 4, 3, 0 };
+    EXPECT(assert_equal(expected, actual));
+  }
 #else
   {
     Ordering actual = Ordering::Create(Ordering::METIS, symbolicGraph);
@@ -405,10 +412,15 @@ TEST(Ordering, Create) {
   // METIS
   {
     Ordering actual = Ordering::Create(Ordering::METIS, symbolicGraph);
+#if defined(__linux__) && !defined(__GLIBC__)
+    // musl-based Linux (e.g. Alpine)
+    Ordering expected{ 2, 0, 1, 5, 4, 3 };
+#else
     //- P( 1 0 2)
     //| - P( 3 4 | 2)
     //| | - P( 5 | 4)
     Ordering expected{ 5, 3, 4, 1, 0, 2 };
+#endif
     EXPECT(assert_equal(expected, actual));
   }
 #endif

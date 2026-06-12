@@ -735,6 +735,9 @@ TEST(SymbolicBayesTree, COLAMDvsMETIS) {
     EXPECT(assert_equal(Ordering{5, 4, 2, 1, 0, 3}, ordering));
 #elif defined(_WIN32)
     EXPECT(assert_equal(Ordering{4, 3, 1, 0, 5, 2}, ordering));
+#elif defined(__linux__) && !defined(__GLIBC__)
+    // musl-based Linux (e.g. Alpine)
+    EXPECT(assert_equal(Ordering{2, 1, 5, 4, 3, 0}, ordering));
 #else
     EXPECT(assert_equal(Ordering{3, 2, 5, 0, 4, 1}, ordering));
 #endif
@@ -758,6 +761,14 @@ TEST(SymbolicBayesTree, COLAMDvsMETIS) {
                        NodeClique(Keys(4)(3)(5), 1,  //
                                   {LeafClique(Keys(0)(2)(5), 1)}))(
                        LeafClique(Keys(1)(0)(2), 1))));
+#elif defined(__linux__) && !defined(__GLIBC__)
+    // musl-based Linux (e.g. Alpine)
+    expected.insertRoot(
+        NodeClique(Keys(1)(3)(0), 3,
+                   Children(                         //
+                       LeafClique(Keys(2)(1)(3), 1))(
+                       NodeClique(Keys(4)(0)(3), 1,  //
+                                  {LeafClique(Keys(5)(0)(4), 1)}))));
 #else
     expected.insertRoot(
         NodeClique(Keys(2)(4)(1), 3,
