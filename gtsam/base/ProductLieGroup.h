@@ -233,6 +233,11 @@ class ProductLieGroup : public std::pair<G, H> {
   /// Adjoint map
   Jacobian AdjointMap() const;
 
+  /// Static algebra adjoint ad_xi (semidirect products only). Recurses through
+  /// the base group's own static adjointMap, enabling tangent groups of
+  /// products (e.g. T(Gal3)).
+  static Jacobian adjointMap(const TangentVector& xi);
+
   /// @}
 
  protected:
