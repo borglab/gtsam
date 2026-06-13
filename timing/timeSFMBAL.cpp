@@ -187,6 +187,11 @@ double runSolver(const NonlinearFactorGraph& graph, const Values& initial,
 
   std::chrono::duration<double> elapsed = end - start;
   std::cout << "  " << label << ": " << elapsed.count() << " s\n";
+  // The SUMMARY table above prints costs with 2 significant digits only;
+  // emit a precise line for external harnesses to parse.
+  std::cout << "Final error: " << std::setprecision(15) << lm.error()
+            << ", iterations: " << lm.iterations() << std::setprecision(6)
+            << "\n";
   return elapsed.count();
 }
 }  // namespace

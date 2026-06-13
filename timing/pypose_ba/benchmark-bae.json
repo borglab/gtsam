@@ -1,0 +1,113 @@
+[
+  {
+    "dataset": "dubrovnik-16-22106-pre.txt",
+    "backend": "bae",
+    "device": "cuda",
+    "n_cameras": 16,
+    "n_points": 22106,
+    "n_observations": 83718,
+    "python_iterations_run": 6,
+    "python_converged": true,
+    "python_final_error": 18034.06485746688,
+    "python_time_min_s": 0.6105354489991441,
+    "python_time_median_s": 0.6181687520002015,
+    "python_times_s": [
+      0.6245561000032467,
+      0.6105354489991441,
+      0.6181687520002015
+    ],
+    "repeats": 3,
+    "gtsam_solvers": [
+      {
+        "solver": "MultifrontalSolver",
+        "elapsed_s": 1.0,
+        "final_error": 18033.9148316245,
+        "iterations": 5,
+        "abs_diff": 0.1500258423802734,
+        "relative_diff": 8.319094538318777e-06
+      },
+      {
+        "solver": "MultifrontalCholesky",
+        "elapsed_s": 2.0,
+        "final_error": 18034.1030543286,
+        "iterations": 5,
+        "abs_diff": 0.03819686171846115,
+        "relative_diff": 2.1180350141834763e-06
+      }
+    ]
+  },
+  {
+    "dataset": "dubrovnik-88-64298-pre.txt",
+    "backend": "bae",
+    "device": "cuda",
+    "n_cameras": 88,
+    "n_points": 64298,
+    "n_observations": 383937,
+    "python_iterations_run": 4,
+    "python_converged": true,
+    "python_final_error": 292440.02234070364,
+    "python_time_min_s": 0.6805327799957013,
+    "python_time_median_s": 0.6838751730028889,
+    "python_times_s": [
+      0.6838751730028889,
+      0.6805327799957013,
+      0.6873750439990545
+    ],
+    "repeats": 3,
+    "gtsam_solvers": [
+      {
+        "solver": "MultifrontalSolver",
+        "elapsed_s": 5.2,
+        "final_error": 291589.010607659,
+        "iterations": 4,
+        "abs_diff": 851.0117330446374,
+        "relative_diff": 0.002918531570415378
+      },
+      {
+        "solver": "MultifrontalCholesky",
+        "elapsed_s": 7.5,
+        "final_error": 291611.296974276,
+        "iterations": 4,
+        "abs_diff": 828.7253664276213,
+        "relative_diff": 0.0028418836136541235
+      }
+    ]
+  },
+  {
+    "dataset": "dubrovnik-135-90642-pre.txt",
+    "backend": "bae",
+    "device": "cuda",
+    "n_cameras": 135,
+    "n_points": 90642,
+    "n_observations": 553336,
+    "python_iterations_run": 3,
+    "python_converged": true,
+    "python_final_error": 383169.17873653944,
+    "python_time_min_s": 0.6714026429981459,
+    "python_time_median_s": 0.6739614710022579,
+    "python_times_s": [
+      0.6714026429981459,
+      0.6739614710022579,
+      0.677012640000612
+    ],
+    "repeats": 3,
+    "gtsam_solvers": [
+      {
+        "solver": "MultifrontalSolver",
+        "elapsed_s": 7.0,
+        "final_error": 377781.590201911,
+        "iterations": 2,
+        "abs_diff": 5387.5885346284485,
+        "relative_diff": 0.01426111984903492
+      },
+      {
+        "solver": "MultifrontalCholesky",
+        "elapsed_s": 7.5,
+        "final_error": 378041.329924078,
+        "iterations": 2,
+        "abs_diff": 5127.848812461423,
+        "relative_diff": 0.013564254504900954
+      }
+    ]
+  }
+]
