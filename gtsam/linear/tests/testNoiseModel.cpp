@@ -950,11 +950,11 @@ TEST(NoiseModel, lossFunctionAtZero)
   DOUBLES_EQUAL(lsdz->loss(0), 0, 1e-8);
   DOUBLES_EQUAL(lsdz->weight(0), 0, 1e-8);
   auto assy_cauchy = mEstimator::AsymmetricCauchy::Create(k);
-  DOUBLES_EQUAL(lsdz->loss(0), 0, 1e-8);
-  DOUBLES_EQUAL(lsdz->weight(0), 0, 1e-8);
+  DOUBLES_EQUAL(assy_cauchy->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(assy_cauchy->weight(0), 1, 1e-8);
   auto assy_tukey = mEstimator::AsymmetricTukey::Create(k);
-  DOUBLES_EQUAL(lsdz->loss(0), 0, 1e-8);
-  DOUBLES_EQUAL(lsdz->weight(0), 0, 1e-8);
+  DOUBLES_EQUAL(assy_tukey->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(assy_tukey->weight(0), 1, 1e-8);
 }
 
 
