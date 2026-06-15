@@ -443,6 +443,7 @@ class Rot3 {
   static gtsam::Rot3 Rodrigues(gtsam::Vector v);
   static gtsam::Rot3 Rodrigues(double wx, double wy, double wz);
   static gtsam::Rot3 ClosestTo(const gtsam::Matrix M);
+  static bool IsValid(const gtsam::Matrix& R, double tol);
 
   // Testable
   void print(string s = "") const;
