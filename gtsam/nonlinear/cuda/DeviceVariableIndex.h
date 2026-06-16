@@ -22,6 +22,12 @@ class DeviceVariableIndex {
     if (entries_.count(key) != 0) {
       throw std::invalid_argument("DeviceVariableIndex duplicate key");
     }
+    if (slot < 0) {
+      throw std::invalid_argument("DeviceVariableIndex invalid slot");
+    }
+    if (tangentDim <= 0) {
+      throw std::invalid_argument("DeviceVariableIndex invalid tangent dim");
+    }
     entries_.emplace(key, DeviceVariableSlot{key, typeId, slot, tangentDim});
   }
 

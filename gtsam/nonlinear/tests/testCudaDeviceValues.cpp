@@ -51,6 +51,16 @@ TEST(DeviceVariableIndex, RejectsWrongType) {
   CHECK_EXCEPTION(index.slot(cameraKey, kPointType), std::invalid_argument);
 }
 
+TEST(DeviceVariableIndex, RejectsInvalidSlotMetadata) {
+  DeviceVariableIndex index;
+  const Key cameraKey = Symbol('c', 1);
+  CHECK_EXCEPTION(index.add(cameraKey, kCameraType, -1, 9),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(index.add(cameraKey, kCameraType, 0, 0),
+                  std::invalid_argument);
+  EXPECT_LONGS_EQUAL(0, index.size());
+}
+
 TEST(DeviceValues, AddsAndDownloadsTypedBlock) {
   CudaContext context;
   DeviceValues values;

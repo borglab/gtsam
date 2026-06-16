@@ -78,10 +78,11 @@ TEST(CudaSfmProjectionBatch, PacksOnlyTracksWithAtLeastTwoMeasurements) {
   EXPECT_LONGS_EQUAL(0, observations[0].cameraSlot);
   EXPECT_LONGS_EQUAL(0, observations[0].pointSlot);
   DOUBLES_EQUAL(10.0, observations[0].measuredU, 1e-12);
+  DOUBLES_EQUAL(-20.0, observations[0].measuredV, 1e-12);
 
   EXPECT_LONGS_EQUAL(1, observations[1].cameraSlot);
   EXPECT_LONGS_EQUAL(0, observations[1].pointSlot);
-  DOUBLES_EQUAL(21.0, observations[1].measuredV, 1e-12);
+  DOUBLES_EQUAL(-21.0, observations[1].measuredV, 1e-12);
 
   std::vector<CudaPoint3> points;
   values.block<CudaPoint3>(kCudaSfmPoint3Type)

@@ -154,6 +154,9 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
   if (profile && benchmarkActionJson) {
     throw runtime_error(usage());
   }
+  if (cudaStructureOnly && benchmarkActionJson) {
+    throw runtime_error(usage());
+  }
 
   if (!filename.empty()) {
     return {profile, cudaStructureOnly, benchmarkActionJson,
