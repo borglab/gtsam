@@ -73,6 +73,10 @@ install(FILES ${gtsam_core_headers} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsa
 foreach(subdir ${gtsam_subdirs})
     # Build convenience libraries
     file(GLOB_RECURSE subdir_srcs "${subdir}/*.cpp" "${subdir}/*.h") # Include header files so they show up in Visual Studio
+    if(GTSAM_ENABLE_CUDA)
+      file(GLOB_RECURSE subdir_cuda_srcs "${subdir}/*.cu")
+      list(APPEND subdir_srcs ${subdir_cuda_srcs})
+    endif()
     list(REMOVE_ITEM subdir_srcs ${excluded_sources})
 	file(GLOB subdir_test_files "${subdir}/tests/*")
 	list(REMOVE_ITEM subdir_srcs ${subdir_test_files}) # Remove test files from sources compiled into library
@@ -137,6 +141,12 @@ message(STATUS "Building GTSAM - as a ${GTSAM_LIBRARY_TYPE} library")
 add_library(gtsam ${GTSAM_LIBRARY_TYPE} ${gtsam_srcs})
 target_link_libraries(gtsam PUBLIC ${GTSAM_BOOST_LIBRARIES})
 target_link_libraries(gtsam PUBLIC ${GTSAM_ADDITIONAL_LIBRARIES})
+if(GTSAM_ENABLE_CUDA)
+  target_link_libraries(gtsam PUBLIC CUDA::cudart)
+  if(GTSAM_ENABLE_CUDSS)
+    target_link_libraries(gtsam PUBLIC cudss::cudss)
+  endif()
+endif()
 
 # Apply build flags:
 gtsam_apply_build_flags(gtsam)

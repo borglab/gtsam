@@ -6,5 +6,8 @@ set (slam_excluded_headers #"")
 file(GLOB slam_headers "*.h")
 install(FILES ${slam_headers} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam/slam)
 
+file(GLOB slam_cuda_headers "cuda/*.h")
+install(FILES ${slam_cuda_headers} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam/slam/cuda)
+
 # Build tests
 add_subdirectory(tests)

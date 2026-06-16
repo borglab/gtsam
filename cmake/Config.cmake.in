@@ -35,6 +35,45 @@ if(@GTSAM_USE_SYSTEM_EIGEN@)
 find_dependency(Eigen3 REQUIRED)
 endif()
 
+if(@GTSAM_ENABLE_CUDA@)
+  if(${CMAKE_VERSION} VERSION_LESS "3.17")
+    message(FATAL_ERROR "GTSAM_ENABLE_CUDA requires CMake 3.17 or newer")
+  endif()
+  find_dependency(CUDAToolkit REQUIRED)
+endif()
+
+if(@GTSAM_ENABLE_CUDSS@)
+  if(NOT TARGET cudss::cudss)
+    find_path(CUDSS_INCLUDE_DIR cudss.h
+      HINTS
+        ${CUDAToolkit_INCLUDE_DIRS}
+        $ENV{CUDA_HOME}/include
+        $ENV{CONDA_PREFIX}/include
+    )
+
+    find_library(CUDSS_LIBRARY cudss
+      HINTS
+        ${CUDAToolkit_LIBRARY_DIR}
+        ${CUDAToolkit_LIBRARY_ROOT}
+        $ENV{CUDA_HOME}/lib64
+        $ENV{CONDA_PREFIX}/lib
+    )
+
+    if(NOT CUDSS_INCLUDE_DIR)
+      message(FATAL_ERROR "GTSAM_ENABLE_CUDSS=ON but cudss.h was not found")
+    endif()
+
+    if(NOT CUDSS_LIBRARY)
+      message(FATAL_ERROR "GTSAM_ENABLE_CUDSS=ON but libcudss was not found")
+    endif()
+
+    add_library(cudss::cudss UNKNOWN IMPORTED)
+    set_target_properties(cudss::cudss PROPERTIES
+      IMPORTED_LOCATION "${CUDSS_LIBRARY}"
+      INTERFACE_INCLUDE_DIRECTORIES "${CUDSS_INCLUDE_DIR};${CUDAToolkit_INCLUDE_DIRS}")
+  endif()
+endif()
+
 # Load exports
 include(${OUR_CMAKE_DIR}/@PACKAGE_NAME@-exports.cmake)
 
