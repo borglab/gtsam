@@ -1,0 +1,132 @@
+#include <gtsam/base/cuda/CudaContext.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/nonlinear/cuda/DeviceSparseNormalEquations.h>
+#include <gtsam/nonlinear/cuda/DeviceValues.h>
+#include <gtsam/nonlinear/cuda/DeviceVariableIndex.h>
+
+#include <CppUnitLite/TestHarness.h>
+
+#include <cstdint>
+#include <stdexcept>
+#include <vector>
+
+using namespace gtsam;
+using namespace gtsam::cuda;
+
+namespace {
+constexpr uint32_t kCameraType = 1;
+constexpr uint32_t kPointType = 2;
+constexpr uint32_t kTinyType = 77;
+
+struct TinyValue {
+  double x;
+  double y;
+};
+}  // namespace
+
+TEST(DeviceVariableIndex, AddsAndFindsSlots) {
+  DeviceVariableIndex index;
+  const Key cameraKey = Symbol('c', 3);
+  const Key pointKey = Symbol('p', 7);
+
+  index.add(cameraKey, kCameraType, 3, 9);
+  index.add(pointKey, kPointType, 7, 3);
+
+  const DeviceVariableSlot camera = index.at(cameraKey);
+  EXPECT_LONGS_EQUAL(kCameraType, camera.typeId);
+  EXPECT_LONGS_EQUAL(3, camera.slot);
+  EXPECT_LONGS_EQUAL(9, camera.tangentDim);
+  EXPECT_LONGS_EQUAL(3, index.slot(cameraKey, kCameraType));
+
+  const DeviceVariableSlot point = index.at(pointKey);
+  EXPECT_LONGS_EQUAL(kPointType, point.typeId);
+  EXPECT_LONGS_EQUAL(7, point.slot);
+  EXPECT_LONGS_EQUAL(3, point.tangentDim);
+}
+
+TEST(DeviceVariableIndex, RejectsWrongType) {
+  DeviceVariableIndex index;
+  const Key cameraKey = Symbol('c', 1);
+  index.add(cameraKey, kCameraType, 0, 9);
+  CHECK_EXCEPTION(index.slot(cameraKey, kPointType), std::invalid_argument);
+}
+
+TEST(DeviceValues, AddsAndDownloadsTypedBlock) {
+  CudaContext context;
+  DeviceValues values;
+
+  std::vector<Key> keys = {Symbol('t', 0), Symbol('t', 1)};
+  std::vector<TinyValue> host = {{1.0, 2.0}, {3.0, 4.0}};
+
+  DeviceValueBlock<TinyValue>& block =
+      values.addBlock<TinyValue>(kTinyType, 2, keys, host, context.stream());
+  context.synchronize();
+
+  EXPECT_LONGS_EQUAL(2, values.index().size());
+  EXPECT_LONGS_EQUAL(2, block.values.size());
+  EXPECT_LONGS_EQUAL(4, block.delta.size());
+  EXPECT_LONGS_EQUAL(2, block.tangentDim);
+  EXPECT_LONGS_EQUAL(1, values.index().slot(Symbol('t', 1), kTinyType));
+
+  std::vector<TinyValue> actual;
+  values.block<TinyValue>(kTinyType).values.download(&actual, context.stream());
+  context.synchronize();
+
+  DOUBLES_EQUAL(1.0, actual[0].x, 1e-12);
+  DOUBLES_EQUAL(4.0, actual[1].y, 1e-12);
+}
+
+TEST(DeviceValues, RejectsInvalidBlockMetadataBeforeUpload) {
+  DeviceValues values;
+
+  std::vector<Key> duplicateKeys = {Symbol('t', 0), Symbol('t', 0)};
+  std::vector<Key> keys = {Symbol('t', 0), Symbol('t', 1)};
+  std::vector<TinyValue> host = {{1.0, 2.0}, {3.0, 4.0}};
+
+  CHECK_EXCEPTION(values.addBlock<TinyValue>(kTinyType, 2, duplicateKeys, host),
+                  std::invalid_argument);
+  EXPECT_LONGS_EQUAL(0, values.index().size());
+
+  CHECK_EXCEPTION(values.addBlock<TinyValue>(kTinyType, 0, keys, host),
+                  std::invalid_argument);
+  EXPECT_LONGS_EQUAL(0, values.index().size());
+}
+
+TEST(DeviceSparseNormalEquations, UploadsCsrPatternAndRhs) {
+  CudaContext context;
+  DeviceSparseNormalEquations system;
+
+  std::vector<int> rowPointers = {0, 2, 3};
+  std::vector<int> colIndices = {0, 1, 1};
+  system.uploadPattern(2, rowPointers, colIndices, context.stream());
+  context.synchronize();
+
+  EXPECT_LONGS_EQUAL(2, system.rows());
+  EXPECT_LONGS_EQUAL(3, system.nonzeros());
+  EXPECT_LONGS_EQUAL(3, system.values().size());
+  EXPECT_LONGS_EQUAL(2, system.rhs().size());
+}
+
+TEST(DeviceSparseNormalEquations, RejectsMalformedCsrBeforeUpload) {
+  DeviceSparseNormalEquations system;
+
+  std::vector<int> badStart = {1, 2, 3};
+  std::vector<int> badStartCols = {0, 1, 1};
+  CHECK_EXCEPTION(system.uploadPattern(2, badStart, badStartCols),
+                  std::invalid_argument);
+
+  std::vector<int> badOrder = {0, 2, 1};
+  std::vector<int> badOrderCols = {0};
+  CHECK_EXCEPTION(system.uploadPattern(2, badOrder, badOrderCols),
+                  std::invalid_argument);
+
+  std::vector<int> badColumn = {0, 1};
+  std::vector<int> badColumnCols = {1};
+  CHECK_EXCEPTION(system.uploadPattern(1, badColumn, badColumnCols),
+                  std::invalid_argument);
+}
+
+int main() {
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
+}
