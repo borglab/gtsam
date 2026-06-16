@@ -66,17 +66,3 @@ Finally, the traits specialization in your header file must be updated to reflec
     // ... your unit tests ...
     ```
 This modular approach ensures that your class provides all the necessary components for full integration into the GTSAM framework.
-
-## Tangent groups (TangentLieGroup<G>)
-
-`TangentLieGroup<G>` is `G ⋉ 𝔤` under the adjoint action `φ(g,ξ)=Ad_g·ξ`
-(generator `ad_u = G::adjointMap(u)`), reusing the semidirect `ProductLieGroup`.
-
-- **Right-Jacobian convention.** GTSAM's `Expmap` derivative is the *right*
-  Jacobian (`D_G = φ₁(−ad)`); the chart math is expressed at the output point.
-- The transport kernel collapses onto the adjoint kernel: `φ₁(ad_u) = J_l^G(u)`,
-  so `Expmap([u;ξ])_H = J_l^G(u)·ξ`.
-- **Frame.** The single `Ad_g` convention corresponds to the spatial-velocity
-  frame; `Ad_{g⁻¹}` (body frame) is intentionally out of scope.
-- Tangent groups compose: `TangentLieGroup<Gal3>` works because a semidirect
-  `ProductLieGroup` exposes a static `adjointMap` (the algebra `ad`).
