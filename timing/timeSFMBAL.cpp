@@ -18,6 +18,13 @@
 
 #include "timeSFMBAL.h"
 
+#if GTSAM_ENABLE_CUDA
+#include <gtsam/base/cuda/CudaContext.h>
+#include <gtsam/slam/cuda/CudaBalCsrStructure.h>
+#include <gtsam/slam/cuda/CudaSfmProjectionBatch.h>
+#include <gtsam/slam/cuda/CudaSfmValues.h>
+#endif
+
 #include <chrono>
 #include <cstring>
 #include <filesystem>
@@ -30,7 +37,7 @@ constexpr const char* kDefaultBenchmarkDataset = "dubrovnik-16-22106-pre";
 constexpr const char* kProfileDataset = "dubrovnik-135-90642-pre";
 
 std::string usage() {
-  return "Usage: timeSFMBAL [--colamd] [--profile] "
+  return "Usage: timeSFMBAL [--colamd] [--profile] [--cuda-structure-only] "
          "[--benchmark-action-json FILE] [BALfile]";
 }
 
@@ -42,6 +49,7 @@ struct TimingRow {
 
 struct RunOptions {
   bool profile = false;
+  bool cudaStructureOnly = false;
   bool benchmarkActionJson = false;
   std::string benchmarkActionJsonPath;
   std::vector<std::string> filenames;
@@ -107,6 +115,7 @@ void writeBenchmarkActionJson(const std::vector<TimingRow>& rows,
 RunOptions parseBalFiles(int argc, char* argv[]) {
   std::string filename;
   bool profile = false;
+  bool cudaStructureOnly = false;
   bool benchmarkActionJson = false;
   std::string benchmarkActionJsonPath;
   for (int i = 1; i < argc; ++i) {
@@ -116,6 +125,10 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
     }
     if (strcmp(argv[i], "--profile") == 0) {
       profile = true;
+      continue;
+    }
+    if (strcmp(argv[i], "--cuda-structure-only") == 0) {
+      cudaStructureOnly = true;
       continue;
     }
     if (strcmp(argv[i], "--benchmark-action-json") == 0) {
@@ -143,20 +156,24 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
   }
 
   if (!filename.empty()) {
-    return {profile, benchmarkActionJson, benchmarkActionJsonPath, {filename}};
+    return {profile, cudaStructureOnly, benchmarkActionJson,
+            benchmarkActionJsonPath, {filename}};
   }
 
   if (profile) {
-    return {profile, benchmarkActionJson, benchmarkActionJsonPath,
+    return {profile, cudaStructureOnly, benchmarkActionJson,
+            benchmarkActionJsonPath,
             {findExampleDataFile(kProfileDataset)}};
   }
 
   if (benchmarkActionJson) {
-    return {profile, benchmarkActionJson, benchmarkActionJsonPath,
+    return {profile, cudaStructureOnly, benchmarkActionJson,
+            benchmarkActionJsonPath,
             {findExampleDataFile(kDefaultBenchmarkDataset)}};
   }
 
-  return {profile, benchmarkActionJson, benchmarkActionJsonPath,
+  return {profile, cudaStructureOnly, benchmarkActionJson,
+          benchmarkActionJsonPath,
           {
               findExampleDataFile("dubrovnik-16-22106-pre"),
               findExampleDataFile("dubrovnik-88-64298-pre"),
@@ -206,6 +223,30 @@ int main(int argc, char* argv[]) {
     std::cout << "\nProcessing BAL file: " << filename << std::endl;
     const SfmData db = SfmData::FromBalFile(filename);
 
+#if GTSAM_ENABLE_CUDA
+    if (options.cudaStructureOnly) {
+      gtsam::cuda::CudaContext context;
+      const auto values = gtsam::cuda::PackSfmValues(db, context.stream());
+      const auto batch =
+          gtsam::cuda::CudaSfmProjectionBatch::FromSfmData(db, context.stream());
+      const auto csr = gtsam::cuda::CudaBalCsrStructure::FromSfmData(db);
+      context.synchronize();
+
+      std::cout << "CUDA BAL structure: cameras=" << batch.numCameras()
+                << " points=" << batch.numPoints()
+                << " observations=" << batch.numObservations()
+                << " packed_values=" << values.index().size()
+                << " dimension=" << csr.dimension()
+                << " csr_nnz=" << csr.colIndices().size() << std::endl;
+      continue;
+    }
+#else
+    if (options.cudaStructureOnly) {
+      throw std::runtime_error(
+          "--cuda-structure-only requires configuring with GTSAM_ENABLE_CUDA=ON");
+    }
+#endif
+
     NonlinearFactorGraph graph = buildGeneralSfmGraph(db);
     Values initial = buildGeneralSfmInitial(db);
 
@@ -228,7 +269,7 @@ int main(int argc, char* argv[]) {
       rows.push_back({dataset, legacyTime, newTime});
     }
   }
-  if (!options.profile) {
+  if (!options.profile && !options.cudaStructureOnly) {
     std::cout
         << "\n| Dataset | Legacy (Cholesky) s | New (Solver) s | Speedup |\n";
     std::cout << "| --- | --- | --- | --- |\n";
@@ -240,7 +281,7 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  if (options.benchmarkActionJson) {
+  if (options.benchmarkActionJson && !options.cudaStructureOnly) {
     if (rows.empty()) {
       throw runtime_error("No benchmark rows found to write.");
     }
