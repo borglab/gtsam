@@ -446,23 +446,28 @@ ProductLieGroup<G, H, Action>::adjointMap(const TangentVector& xi) {
   static_assert(hasGenerator,
                 "ProductLieGroup::adjointMap (algebra ad) is only defined for "
                 "semidirect products with Action::generator.");
-  // ad_(a,b) = [[ ad^G_a,  0           ],
-  //             [ -M(b),   generator(a) ]],  M(b)·c = generator(c)·b.
+  // Semidirect product adjoint:
+  //
+  //    ad_(a,b) = [[ ad^G_a,  0           ],
+  //                [ -M(b),   generator(a) ]]
+  //
+  // where M(b)·c = generator(c)·b.
   constexpr int d1 = dimension1;
   constexpr int d2 = dimension2;
+
   const auto a = xi.template head<d1>();
   const auto b = xi.template tail<d2>();
 
   // Bottom-left -M(b): column j = -generator(e_j)·b.
   Eigen::Matrix<double, d2, d1> negM;
-  for (int j = 0; j < d1; ++j) {
-    const typename traits<G>::TangentVector ej =
-        traits<G>::TangentVector::Unit(j);
-    negM.col(j) = -(Action::generator(ej) * b);
+  for (int i = 0; i < d1; ++i) {
+    const typename traits<G>::TangentVector ei =
+        traits<G>::TangentVector::Unit(i);
+    negM.col(i) = -(Action::generator(ei) * b);
   }
 
   Jacobian ad = Jacobian::Zero();
-  ad.template topLeftCorner<d1, d1>() = G::adjointMap(a);  // base algebra ad
+  ad.template topLeftCorner<d1, d1>() = G::adjointMap(a);
   ad.template bottomRightCorner<d2, d2>() = Action::generator(a);
   ad.template bottomLeftCorner<d2, d1>() = negM;
   return ad;
