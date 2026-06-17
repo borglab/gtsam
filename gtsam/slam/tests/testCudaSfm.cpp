@@ -1,9 +1,12 @@
 #include <gtsam/base/cuda/CudaContext.h>
+#include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/cuda/DeviceGeometryTypes.h>
 #include <gtsam/slam/cuda/CudaBalCsrStructure.h>
+#include <gtsam/slam/cuda/CudaSfmProjectionLinearization.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionBatch.h>
 #include <gtsam/slam/cuda/CudaSfmValues.h>
+#include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/sfm/SfmData.h>
 
 #include <CppUnitLite/TestHarness.h>
@@ -18,6 +21,9 @@ using gtsam::symbol_shorthand::C;
 using gtsam::symbol_shorthand::P;
 
 namespace {
+using BundlerCamera = PinholeCamera<Cal3Bundler>;
+using BundlerProjectionFactor = GeneralSFMFactor<BundlerCamera, Point3>;
+
 SfmData makeTinySfmData() {
   SfmData data;
   data.cameras.emplace_back(Pose3(Rot3(), Point3(1.0, 2.0, 3.0)),
@@ -55,6 +61,126 @@ SfmData makeTinyBalData() {
   return data;
 }
 
+SfmData makeTrueBalLikeData() {
+  SfmData data;
+  data.cameras.emplace_back(
+      Pose3(Rot3::RzRyRx(0.03, -0.02, 0.01), Point3(0.2, -0.1, -0.3)),
+      Cal3Bundler(150.0, 0.01, -0.0005));
+  data.cameras.emplace_back(
+      Pose3(Rot3::RzRyRx(-0.02, 0.015, -0.025), Point3(0.8, 0.1, -0.2)),
+      Cal3Bundler(165.0, -0.008, 0.0007));
+
+  const std::vector<Point3> points = {
+      Point3(-0.8, -0.4, 4.5), Point3(0.6, -0.2, 5.0),
+      Point3(-0.2, 0.7, 5.8), Point3(0.9, 0.5, 6.4)};
+
+  for (const Point3& point : points) {
+    SfmTrack track(point);
+    for (size_t cameraSlot = 0; cameraSlot < data.numberCameras();
+         ++cameraSlot) {
+      track.measurements.emplace_back(cameraSlot,
+                                      data.camera(cameraSlot).project2(point));
+    }
+    data.tracks.push_back(track);
+  }
+  return data;
+}
+
+SfmData makePerturbedBalLikeData(const SfmData& measuredData) {
+  SfmData data = measuredData;
+
+  Vector delta0(9);
+  delta0 << 0.003, -0.002, 0.001, 0.04, -0.03, 0.02, 1.5, 0.0004,
+      -0.00003;
+  Vector delta1(9);
+  delta1 << -0.002, 0.0015, -0.0025, -0.05, 0.02, -0.01, -2.0, -0.0003,
+      0.00004;
+  data.cameras[0] = measuredData.camera(0).retract(delta0);
+  data.cameras[1] = measuredData.camera(1).retract(delta1);
+
+  const std::vector<Point3> pointDeltas = {
+      Point3(0.03, -0.02, 0.04), Point3(-0.025, 0.015, -0.03),
+      Point3(0.02, 0.025, 0.05), Point3(-0.015, -0.02, -0.04)};
+  for (size_t i = 0; i < data.tracks.size(); ++i) {
+    const Point3 p = measuredData.track(i).point3();
+    const Point3 d = pointDeltas[i];
+    data.tracks[i].p = Point3(p.x() + d.x(), p.y() + d.y(), p.z() + d.z());
+  }
+
+  return data;
+}
+
+BundlerCamera hostCameraFromDevice(
+    const DevicePinholeCameraCal3Bundler& deviceCamera) {
+  Matrix3 R;
+  for (int r = 0; r < 3; ++r) {
+    for (int c = 0; c < 3; ++c) {
+      R(r, c) = deviceCamera.R[3 * r + c];
+    }
+  }
+  const Pose3 pose(Rot3(R), Point3(deviceCamera.t[0], deviceCamera.t[1],
+                                   deviceCamera.t[2]));
+  return BundlerCamera(
+      pose, Cal3Bundler(deviceCamera.f, deviceCamera.k1, deviceCamera.k2));
+}
+
+Point3 hostPointFromDevice(const DevicePoint3& devicePoint) {
+  return Point3(devicePoint.x, devicePoint.y, devicePoint.z);
+}
+
+Vector2 hostResidual(const BundlerCamera& camera, const Point3& point,
+                     const CudaSfmObservation& observation) {
+  const BundlerProjectionFactor factor(
+      Point2(observation.measuredU, observation.measuredV),
+      noiseModel::Unit::Create(2), C(observation.cameraSlot),
+      P(observation.pointSlot));
+  return factor.evaluateError(camera, point, {}, {});
+}
+
+struct HostNumericJacobians {
+  double camera[18];
+  double point[6];
+};
+
+HostNumericJacobians hostNumericJacobians(
+    const BundlerCamera& camera, const Point3& point,
+    const CudaSfmObservation& observation) {
+  constexpr double kEps = 1e-6;
+  HostNumericJacobians result{};
+
+  for (int col = 0; col < 9; ++col) {
+    Vector plusDelta = Vector::Zero(9);
+    Vector minusDelta = Vector::Zero(9);
+    plusDelta(col) = kEps;
+    minusDelta(col) = -kEps;
+    const Vector2 plus =
+        hostResidual(camera.retract(plusDelta), point, observation);
+    const Vector2 minus =
+        hostResidual(camera.retract(minusDelta), point, observation);
+    for (int row = 0; row < 2; ++row) {
+      result.camera[row * 9 + col] = (plus(row) - minus(row)) / (2.0 * kEps);
+    }
+  }
+
+  for (int col = 0; col < 3; ++col) {
+    double plusCoords[3] = {point.x(), point.y(), point.z()};
+    double minusCoords[3] = {point.x(), point.y(), point.z()};
+    plusCoords[col] += kEps;
+    minusCoords[col] -= kEps;
+    const Vector2 plus =
+        hostResidual(camera, Point3(plusCoords[0], plusCoords[1], plusCoords[2]),
+                     observation);
+    const Vector2 minus = hostResidual(
+        camera, Point3(minusCoords[0], minusCoords[1], minusCoords[2]),
+        observation);
+    for (int row = 0; row < 2; ++row) {
+      result.point[row * 3 + col] = (plus(row) - minus(row)) / (2.0 * kEps);
+    }
+  }
+
+  return result;
+}
+
 bool Point3Equals(const Point3& expected, const Point3& actual) {
   constexpr double kTolerance = 1e-12;
   return std::abs(expected.x() - actual.x()) <= kTolerance &&
@@ -83,6 +209,76 @@ bool CameraEquals(const SfmCamera& expected, const SfmCamera& actual) {
              kTolerance;
 }
 }  // namespace
+
+TEST(CudaSfmProjectionLinearization,
+     MatchesHostResidualsAndNumericJacobians) {
+  constexpr double kResidualTolerance = 1e-7;
+  constexpr double kJacobianTolerance = 5e-4;
+
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData initialData = makePerturbedBalLikeData(measuredData);
+  CudaContext context;
+
+  DeviceValues values = PackSfmValues(initialData, context.stream());
+  CudaSfmProjectionBatch batch =
+      CudaSfmProjectionBatch::FromSfmData(measuredData, context.stream());
+  CudaSfmProjectionLinearization linearization;
+  LinearizeCudaSfmProjectionBatch(values, batch, &linearization,
+                                  context.stream());
+
+  std::vector<CudaSfmObservation> observations;
+  std::vector<DevicePinholeCameraCal3Bundler> deviceCameras;
+  std::vector<DevicePoint3> devicePoints;
+  std::vector<double> residuals;
+  std::vector<double> cameraJacobians;
+  std::vector<double> pointJacobians;
+  batch.observations().download(&observations, context.stream());
+  values.block<DevicePinholeCameraCal3Bundler>(
+            kDevicePinholeCameraCal3BundlerType)
+      .values.download(&deviceCameras, context.stream());
+  values.block<DevicePoint3>(kDevicePoint3Type)
+      .values.download(&devicePoints, context.stream());
+  linearization.residuals.download(&residuals, context.stream());
+  linearization.cameraJacobians.download(&cameraJacobians, context.stream());
+  linearization.pointJacobians.download(&pointJacobians, context.stream());
+  context.synchronize();
+
+  EXPECT_LONGS_EQUAL(8, observations.size());
+  EXPECT_LONGS_EQUAL(2 * observations.size(), residuals.size());
+  EXPECT_LONGS_EQUAL(18 * observations.size(), cameraJacobians.size());
+  EXPECT_LONGS_EQUAL(6 * observations.size(), pointJacobians.size());
+
+  double expectedError = 0.0;
+  for (size_t i = 0; i < observations.size(); ++i) {
+    const CudaSfmObservation& observation = observations[i];
+    const BundlerCamera camera =
+        hostCameraFromDevice(deviceCameras[observation.cameraSlot]);
+    const Point3 point =
+        hostPointFromDevice(devicePoints[observation.pointSlot]);
+
+    const Vector2 expectedResidual = hostResidual(camera, point, observation);
+    expectedError += 0.5 * expectedResidual.squaredNorm();
+    for (int row = 0; row < 2; ++row) {
+      DOUBLES_EQUAL(expectedResidual(row), residuals[2 * i + row],
+                    kResidualTolerance);
+    }
+
+    const HostNumericJacobians expectedJacobians =
+        hostNumericJacobians(camera, point, observation);
+    for (int k = 0; k < 18; ++k) {
+      DOUBLES_EQUAL(expectedJacobians.camera[k], cameraJacobians[18 * i + k],
+                    kJacobianTolerance);
+    }
+    for (int k = 0; k < 6; ++k) {
+      DOUBLES_EQUAL(expectedJacobians.point[k], pointJacobians[6 * i + k],
+                    kJacobianTolerance);
+    }
+  }
+
+  const double actualError =
+      ComputeCudaSfmProjectionError(values, batch, context.stream());
+  DOUBLES_EQUAL(expectedError, actualError, kResidualTolerance);
+}
 
 TEST(CudaSfmProjectionBatch, PacksOnlyTracksWithAtLeastTwoMeasurements) {
   const SfmData data = makeTinySfmData();
