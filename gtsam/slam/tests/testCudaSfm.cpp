@@ -1,5 +1,6 @@
 #include <gtsam/base/cuda/CudaContext.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/nonlinear/cuda/DeviceGeometryTypes.h>
 #include <gtsam/slam/cuda/CudaBalCsrStructure.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionBatch.h>
 #include <gtsam/slam/cuda/CudaSfmValues.h>
@@ -7,7 +8,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <cmath>
 #include <cstddef>
 #include <vector>
 
@@ -68,8 +68,9 @@ TEST(CudaSfmProjectionBatch, PacksOnlyTracksWithAtLeastTwoMeasurements) {
   EXPECT_LONGS_EQUAL(2, batch.numPoints());
   EXPECT_LONGS_EQUAL(2, batch.numObservations());
   EXPECT_LONGS_EQUAL(4, values.index().size());
-  EXPECT_LONGS_EQUAL(1, values.index().slot(C(1), kCudaSfmCamera9Type));
-  EXPECT_LONGS_EQUAL(1, values.index().slot(P(1), kCudaSfmPoint3Type));
+  EXPECT_LONGS_EQUAL(
+      1, values.index().slot(C(1), kDevicePinholeCameraCal3BundlerType));
+  EXPECT_LONGS_EQUAL(1, values.index().slot(P(1), kDevicePoint3Type));
 
   std::vector<CudaSfmObservation> observations;
   batch.observations().download(&observations, context.stream());
@@ -78,34 +79,49 @@ TEST(CudaSfmProjectionBatch, PacksOnlyTracksWithAtLeastTwoMeasurements) {
   EXPECT_LONGS_EQUAL(0, observations[0].cameraSlot);
   EXPECT_LONGS_EQUAL(0, observations[0].pointSlot);
   DOUBLES_EQUAL(10.0, observations[0].measuredU, 1e-12);
-  DOUBLES_EQUAL(-20.0, observations[0].measuredV, 1e-12);
+  DOUBLES_EQUAL(20.0, observations[0].measuredV, 1e-12);
 
   EXPECT_LONGS_EQUAL(1, observations[1].cameraSlot);
   EXPECT_LONGS_EQUAL(0, observations[1].pointSlot);
-  DOUBLES_EQUAL(-21.0, observations[1].measuredV, 1e-12);
+  DOUBLES_EQUAL(21.0, observations[1].measuredV, 1e-12);
+}
 
-  std::vector<CudaPoint3> points;
-  values.block<CudaPoint3>(kCudaSfmPoint3Type)
+TEST(CudaSfmValues, PacksCamerasInGtsamConvention) {
+  const SfmData data = makeTinySfmData();
+  CudaContext context;
+
+  DeviceValues values = PackSfmValues(data, context.stream());
+  std::vector<DevicePinholeCameraCal3Bundler> cameras;
+  std::vector<DevicePoint3> points;
+  values.block<DevicePinholeCameraCal3Bundler>(
+            kDevicePinholeCameraCal3BundlerType)
+      .values.download(&cameras, context.stream());
+  values.block<DevicePoint3>(kDevicePoint3Type)
       .values.download(&points, context.stream());
   context.synchronize();
-  DOUBLES_EQUAL(1.0, points[1].x, 1e-12);
-  DOUBLES_EQUAL(6.0, points[1].z, 1e-12);
 
-  std::vector<CudaCamera9> cameras;
-  values.block<CudaCamera9>(kCudaSfmCamera9Type)
-      .values.download(&cameras, context.stream());
-  context.synchronize();
+  EXPECT_LONGS_EQUAL(2, cameras.size());
+  EXPECT_LONGS_EQUAL(2, points.size());
 
-  const double pi = std::acos(-1.0);
-  DOUBLES_EQUAL(pi, std::abs(cameras[0].r[0]), 1e-12);
-  DOUBLES_EQUAL(0.0, cameras[0].r[1], 1e-12);
-  DOUBLES_EQUAL(0.0, cameras[0].r[2], 1e-12);
-  DOUBLES_EQUAL(-1.0, cameras[0].t[0], 1e-12);
+  DOUBLES_EQUAL(1.0, cameras[0].R[0], 1e-12);
+  DOUBLES_EQUAL(0.0, cameras[0].R[1], 1e-12);
+  DOUBLES_EQUAL(0.0, cameras[0].R[2], 1e-12);
+  DOUBLES_EQUAL(0.0, cameras[0].R[3], 1e-12);
+  DOUBLES_EQUAL(1.0, cameras[0].R[4], 1e-12);
+  DOUBLES_EQUAL(0.0, cameras[0].R[5], 1e-12);
+  DOUBLES_EQUAL(0.0, cameras[0].R[6], 1e-12);
+  DOUBLES_EQUAL(0.0, cameras[0].R[7], 1e-12);
+  DOUBLES_EQUAL(1.0, cameras[0].R[8], 1e-12);
+  DOUBLES_EQUAL(1.0, cameras[0].t[0], 1e-12);
   DOUBLES_EQUAL(2.0, cameras[0].t[1], 1e-12);
   DOUBLES_EQUAL(3.0, cameras[0].t[2], 1e-12);
   DOUBLES_EQUAL(100.0, cameras[0].f, 1e-12);
   DOUBLES_EQUAL(0.01, cameras[0].k1, 1e-12);
   DOUBLES_EQUAL(0.001, cameras[0].k2, 1e-12);
+
+  DOUBLES_EQUAL(1.0, points[1].x, 1e-12);
+  DOUBLES_EQUAL(0.0, points[1].y, 1e-12);
+  DOUBLES_EQUAL(6.0, points[1].z, 1e-12);
 }
 
 TEST(CudaBalCsrStructure, BuildsUpperTrianglePatternForMeasuredTrack) {

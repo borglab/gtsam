@@ -41,11 +41,9 @@ class CudaSfmProjectionBatch {
               "CudaSfmProjectionBatch camera index out of range");
         }
 
-        // SfmData stores BAL observations in GTSAM image coordinates (u, -v).
-        // The Snavely/OpenGL camera convention consumes the original BAL v.
         observations.push_back(
             {static_cast<int>(measurement.first), static_cast<int>(pointSlot),
-             measurement.second(0), -measurement.second(1)});
+             measurement.second(0), measurement.second(1)});
       }
     }
 

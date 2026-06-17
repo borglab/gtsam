@@ -19,6 +19,7 @@ template <typename T>
 struct DeviceValueBlock {
   CudaDeviceArray<T> values;
   CudaDeviceArray<double> delta;
+  std::vector<Key> keys;
   int tangentDim = 0;
 };
 
@@ -57,6 +58,7 @@ class DeviceValues {
 
     auto storage = std::make_unique<TypedBlock<T>>();
     storage->block.tangentDim = tangentDim;
+    storage->block.keys = keys;
     storage->block.values.upload(hostValues, stream);
     storage->block.delta.resize(hostValues.size() *
                                 static_cast<size_t>(tangentDim));
