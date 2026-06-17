@@ -21,6 +21,7 @@
 #if GTSAM_ENABLE_CUDA
 #include <gtsam/base/cuda/CudaContext.h>
 #include <gtsam/slam/cuda/CudaBalCsrStructure.h>
+#include <gtsam/slam/cuda/CudaSfmLevenbergMarquardt.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionBatch.h>
 #include <gtsam/slam/cuda/CudaSfmValues.h>
 #endif
@@ -38,7 +39,7 @@ constexpr const char* kProfileDataset = "dubrovnik-135-90642-pre";
 
 std::string usage() {
   return "Usage: timeSFMBAL [--colamd] [--profile] [--cuda-structure-only] "
-         "[--benchmark-action-json FILE] [BALfile]";
+         "[--cuda-lm] [--benchmark-action-json FILE] [BALfile]";
 }
 
 struct TimingRow {
@@ -50,6 +51,7 @@ struct TimingRow {
 struct RunOptions {
   bool profile = false;
   bool cudaStructureOnly = false;
+  bool cudaLm = false;
   bool benchmarkActionJson = false;
   std::string benchmarkActionJsonPath;
   std::vector<std::string> filenames;
@@ -116,6 +118,7 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
   std::string filename;
   bool profile = false;
   bool cudaStructureOnly = false;
+  bool cudaLm = false;
   bool benchmarkActionJson = false;
   std::string benchmarkActionJsonPath;
   for (int i = 1; i < argc; ++i) {
@@ -129,6 +132,10 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
     }
     if (strcmp(argv[i], "--cuda-structure-only") == 0) {
       cudaStructureOnly = true;
+      continue;
+    }
+    if (strcmp(argv[i], "--cuda-lm") == 0) {
+      cudaLm = true;
       continue;
     }
     if (strcmp(argv[i], "--benchmark-action-json") == 0) {
@@ -157,25 +164,31 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
   if (cudaStructureOnly && benchmarkActionJson) {
     throw runtime_error(usage());
   }
+  if (cudaLm && benchmarkActionJson) {
+    throw runtime_error(usage());
+  }
+  if (cudaLm && cudaStructureOnly) {
+    throw runtime_error(usage());
+  }
 
   if (!filename.empty()) {
-    return {profile, cudaStructureOnly, benchmarkActionJson,
+    return {profile, cudaStructureOnly, cudaLm, benchmarkActionJson,
             benchmarkActionJsonPath, {filename}};
   }
 
   if (profile) {
-    return {profile, cudaStructureOnly, benchmarkActionJson,
+    return {profile, cudaStructureOnly, cudaLm, benchmarkActionJson,
             benchmarkActionJsonPath,
             {findExampleDataFile(kProfileDataset)}};
   }
 
   if (benchmarkActionJson) {
-    return {profile, cudaStructureOnly, benchmarkActionJson,
+    return {profile, cudaStructureOnly, cudaLm, benchmarkActionJson,
             benchmarkActionJsonPath,
             {findExampleDataFile(kDefaultBenchmarkDataset)}};
   }
 
-  return {profile, cudaStructureOnly, benchmarkActionJson,
+  return {profile, cudaStructureOnly, cudaLm, benchmarkActionJson,
           benchmarkActionJsonPath,
           {
               findExampleDataFile("dubrovnik-16-22106-pre"),
@@ -226,6 +239,40 @@ int main(int argc, char* argv[]) {
     std::cout << "\nProcessing BAL file: " << filename << std::endl;
     const SfmData db = SfmData::FromBalFile(filename);
 
+#if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
+    if (options.cudaLm) {
+      gtsam::cuda::CudaSfmLevenbergMarquardtParams params;
+      params.maxIterations = 20;
+      params.relativeErrorTol = 0.01;
+
+      const auto start = std::chrono::high_resolution_clock::now();
+      const gtsam::cuda::CudaSfmLevenbergMarquardtResult result =
+          gtsam::cuda::OptimizeCudaSfm(db, params);
+      const auto end = std::chrono::high_resolution_clock::now();
+      const std::chrono::duration<double> elapsed = end - start;
+
+      std::cout << "  CUDA LM: " << elapsed.count() << " s\n";
+      std::cout << "Initial error: " << std::setprecision(15)
+                << result.initialError << "\n";
+      std::cout << "Final error: " << result.finalError
+                << ", iterations: " << result.iterations
+                << ", accepted: " << result.acceptedSteps
+                << std::setprecision(6) << "\n";
+      continue;
+    }
+#elif GTSAM_ENABLE_CUDA
+    if (options.cudaLm) {
+      throw std::runtime_error(
+          "--cuda-lm requires configuring with GTSAM_ENABLE_CUDSS=ON");
+    }
+#else
+    if (options.cudaLm) {
+      throw std::runtime_error(
+          "--cuda-lm requires configuring with GTSAM_ENABLE_CUDA=ON and "
+          "GTSAM_ENABLE_CUDSS=ON");
+    }
+#endif
+
 #if GTSAM_ENABLE_CUDA
     if (options.cudaStructureOnly) {
       gtsam::cuda::CudaContext context;
@@ -272,7 +319,7 @@ int main(int argc, char* argv[]) {
       rows.push_back({dataset, legacyTime, newTime});
     }
   }
-  if (!options.profile && !options.cudaStructureOnly) {
+  if (!options.profile && !options.cudaStructureOnly && !options.cudaLm) {
     std::cout
         << "\n| Dataset | Legacy (Cholesky) s | New (Solver) s | Speedup |\n";
     std::cout << "| --- | --- | --- | --- |\n";
@@ -284,7 +331,8 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  if (options.benchmarkActionJson && !options.cudaStructureOnly) {
+  if (options.benchmarkActionJson && !options.cudaStructureOnly &&
+      !options.cudaLm) {
     if (rows.empty()) {
       throw runtime_error("No benchmark rows found to write.");
     }
