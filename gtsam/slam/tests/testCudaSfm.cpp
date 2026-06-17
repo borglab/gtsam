@@ -8,6 +8,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <cmath>
 #include <cstddef>
 #include <vector>
 
@@ -53,6 +54,34 @@ SfmData makeTinyBalData() {
 
   return data;
 }
+
+bool Point3Equals(const Point3& expected, const Point3& actual) {
+  constexpr double kTolerance = 1e-12;
+  return std::abs(expected.x() - actual.x()) <= kTolerance &&
+         std::abs(expected.y() - actual.y()) <= kTolerance &&
+         std::abs(expected.z() - actual.z()) <= kTolerance;
+}
+
+bool CameraEquals(const SfmCamera& expected, const SfmCamera& actual) {
+  constexpr double kTolerance = 1e-12;
+  const Matrix3 expectedR = expected.pose().rotation().matrix();
+  const Matrix3 actualR = actual.pose().rotation().matrix();
+  for (int r = 0; r < 3; ++r) {
+    for (int c = 0; c < 3; ++c) {
+      if (std::abs(expectedR(r, c) - actualR(r, c)) > kTolerance) {
+        return false;
+      }
+    }
+  }
+
+  return Point3Equals(expected.pose().translation(), actual.pose().translation()) &&
+         std::abs(expected.calibration().fx() - actual.calibration().fx()) <=
+             kTolerance &&
+         std::abs(expected.calibration().k1() - actual.calibration().k1()) <=
+             kTolerance &&
+         std::abs(expected.calibration().k2() - actual.calibration().k2()) <=
+             kTolerance;
+}
 }  // namespace
 
 TEST(CudaSfmProjectionBatch, PacksOnlyTracksWithAtLeastTwoMeasurements) {
@@ -61,21 +90,14 @@ TEST(CudaSfmProjectionBatch, PacksOnlyTracksWithAtLeastTwoMeasurements) {
 
   CudaSfmProjectionBatch batch =
       CudaSfmProjectionBatch::FromSfmData(data, context.stream());
-  DeviceValues values = PackSfmValues(data, context.stream());
-  context.synchronize();
 
-  EXPECT_LONGS_EQUAL(2, batch.numCameras());
-  EXPECT_LONGS_EQUAL(2, batch.numPoints());
   EXPECT_LONGS_EQUAL(2, batch.numObservations());
-  EXPECT_LONGS_EQUAL(4, values.index().size());
-  EXPECT_LONGS_EQUAL(
-      1, values.index().slot(C(1), kDevicePinholeCameraCal3BundlerType));
-  EXPECT_LONGS_EQUAL(1, values.index().slot(P(1), kDevicePoint3Type));
 
   std::vector<CudaSfmObservation> observations;
   batch.observations().download(&observations, context.stream());
   context.synchronize();
 
+  EXPECT_LONGS_EQUAL(2, observations.size());
   EXPECT_LONGS_EQUAL(0, observations[0].cameraSlot);
   EXPECT_LONGS_EQUAL(0, observations[0].pointSlot);
   DOUBLES_EQUAL(10.0, observations[0].measuredU, 1e-12);
@@ -93,13 +115,26 @@ TEST(CudaSfmValues, PacksCamerasInGtsamConvention) {
   DeviceValues values = PackSfmValues(data, context.stream());
   std::vector<DevicePinholeCameraCal3Bundler> cameras;
   std::vector<DevicePoint3> points;
-  values.block<DevicePinholeCameraCal3Bundler>(
-            kDevicePinholeCameraCal3BundlerType)
-      .values.download(&cameras, context.stream());
-  values.block<DevicePoint3>(kDevicePoint3Type)
-      .values.download(&points, context.stream());
+  const auto& cameraBlock = values.block<DevicePinholeCameraCal3Bundler>(
+      kDevicePinholeCameraCal3BundlerType);
+  const auto& pointBlock = values.block<DevicePoint3>(kDevicePoint3Type);
+  cameraBlock.values.download(&cameras, context.stream());
+  pointBlock.values.download(&points, context.stream());
   context.synchronize();
 
+  EXPECT_LONGS_EQUAL(4, values.index().size());
+  EXPECT_LONGS_EQUAL(
+      1, values.index().slot(C(1), kDevicePinholeCameraCal3BundlerType));
+  EXPECT_LONGS_EQUAL(1, values.index().slot(P(1), kDevicePoint3Type));
+  EXPECT_LONGS_EQUAL(kDevicePinholeCameraCal3BundlerTangentDim,
+                     cameraBlock.tangentDim);
+  EXPECT_LONGS_EQUAL(kDevicePoint3TangentDim, pointBlock.tangentDim);
+  EXPECT_LONGS_EQUAL(2, cameraBlock.keys.size());
+  EXPECT_LONGS_EQUAL(C(0), cameraBlock.keys[0]);
+  EXPECT_LONGS_EQUAL(C(1), cameraBlock.keys[1]);
+  EXPECT_LONGS_EQUAL(2, pointBlock.keys.size());
+  EXPECT_LONGS_EQUAL(P(0), pointBlock.keys[0]);
+  EXPECT_LONGS_EQUAL(P(1), pointBlock.keys[1]);
   EXPECT_LONGS_EQUAL(2, cameras.size());
   EXPECT_LONGS_EQUAL(2, points.size());
 
@@ -122,6 +157,25 @@ TEST(CudaSfmValues, PacksCamerasInGtsamConvention) {
   DOUBLES_EQUAL(1.0, points[1].x, 1e-12);
   DOUBLES_EQUAL(0.0, points[1].y, 1e-12);
   DOUBLES_EQUAL(6.0, points[1].z, 1e-12);
+}
+
+TEST(CudaSfmValues, DownloadsValuesWithOriginalKeys) {
+  const SfmData data = makeTinySfmData();
+  CudaContext context;
+
+  DeviceValues values = PackSfmValues(data, context.stream());
+  const Values downloaded = DownloadSfmValues(values, context.stream());
+
+  EXPECT_LONGS_EQUAL(4, downloaded.size());
+  CHECK(downloaded.exists(C(0)));
+  CHECK(downloaded.exists(C(1)));
+  CHECK(downloaded.exists(P(0)));
+  CHECK(downloaded.exists(P(1)));
+
+  CHECK(CameraEquals(data.camera(0), downloaded.at<SfmCamera>(C(0))));
+  CHECK(CameraEquals(data.camera(1), downloaded.at<SfmCamera>(C(1))));
+  CHECK(Point3Equals(data.track(0).point3(), downloaded.at<Point3>(P(0))));
+  CHECK(Point3Equals(data.track(1).point3(), downloaded.at<Point3>(P(1))));
 }
 
 TEST(CudaBalCsrStructure, BuildsUpperTrianglePatternForMeasuredTrack) {

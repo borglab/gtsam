@@ -6,6 +6,8 @@ namespace gtsam::cuda {
 
 inline constexpr uint32_t kDevicePinholeCameraCal3BundlerType = 0x50434243u;
 inline constexpr uint32_t kDevicePoint3Type = 0x50544e33u;
+inline constexpr int kDevicePinholeCameraCal3BundlerTangentDim = 9;
+inline constexpr int kDevicePoint3TangentDim = 3;
 
 struct DevicePinholeCameraCal3Bundler {
   double R[9];  // Row-major GTSAM pose rotation matrix.

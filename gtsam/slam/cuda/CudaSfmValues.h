@@ -1,5 +1,6 @@
 #pragma once
 
+#include <gtsam/base/cuda/CudaErrors.h>
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Pose3.h>
@@ -63,9 +64,10 @@ inline DeviceValues PackSfmValues(const SfmData& data,
 
   DeviceValues values;
   values.addBlock<DevicePinholeCameraCal3Bundler>(
-      kDevicePinholeCameraCal3BundlerType, 9, cameraKeys, cameras, stream);
-  values.addBlock<DevicePoint3>(kDevicePoint3Type, 3, pointKeys, points,
-                                stream);
+      kDevicePinholeCameraCal3BundlerType,
+      kDevicePinholeCameraCal3BundlerTangentDim, cameraKeys, cameras, stream);
+  values.addBlock<DevicePoint3>(kDevicePoint3Type, kDevicePoint3TangentDim,
+                                pointKeys, points, stream);
   return values;
 }
 
