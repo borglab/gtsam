@@ -74,7 +74,7 @@ Vector CarrierPhaseFactor::evaluateError(
 }
 
 //***************************************************************************
-UncombinedCarrierPhaseFactor::UncombinedCarrierPhaseFactor(
+UndifferencedCarrierPhaseFactor::UndifferencedCarrierPhaseFactor(
     const Key receiverPositionKey, const Key receiverClockBiasKey,
     const Key tropoZenithWetKey, const Key slantIonoKey, const Key ambiguityKey,
     const double measuredCarrierPhaseMeters, const Point3& satellitePosition,
@@ -90,7 +90,7 @@ UncombinedCarrierPhaseFactor::UncombinedCarrierPhaseFactor(
       lambda_(lambda) {}
 
 //***************************************************************************
-void UncombinedCarrierPhaseFactor::print(
+void UndifferencedCarrierPhaseFactor::print(
     const std::string& s, const KeyFormatter& keyFormatter) const {
   Base::print(s, keyFormatter);
   gtsam::print(measurement_, "carrier phase (m): ");
@@ -102,7 +102,7 @@ void UncombinedCarrierPhaseFactor::print(
 }
 
 //***************************************************************************
-bool UncombinedCarrierPhaseFactor::equals(const NonlinearFactor& expected,
+bool UndifferencedCarrierPhaseFactor::equals(const NonlinearFactor& expected,
                                           double tol) const {
   const This* e = dynamic_cast<const This*>(&expected);
   return e != nullptr && Base::equals(*e, tol) &&
@@ -115,13 +115,13 @@ bool UncombinedCarrierPhaseFactor::equals(const NonlinearFactor& expected,
 }
 
 //***************************************************************************
-Vector UncombinedCarrierPhaseFactor::evaluateError(
+Vector UndifferencedCarrierPhaseFactor::evaluateError(
     const Point3& receiverPosition, const double& receiverClockBias,
     const double& tropoZenithWet, const double& slantIono,
     const double& ambiguity, OptionalMatrixType HreceiverPos,
     OptionalMatrixType HreceiverClockBias, OptionalMatrixType HtropoZenithWet,
     OptionalMatrixType HslantIono, OptionalMatrixType Hambiguity) const {
-  // Uncombined PPP carrier phase model (iono advanced, +lambda*N):
+  // Undifferenced PPP carrier phase model (iono advanced, +lambda*N):
   //   rho = geodist + c*(dt_u - dt_s) + m_w*ZTD - mu_f*I_slant + lambda*N
   Point3 e;
   Matrix13 H_geo;
@@ -142,7 +142,7 @@ Vector UncombinedCarrierPhaseFactor::evaluateError(
 }
 
 //***************************************************************************
-UncombinedCarrierPhaseFactorArm::UncombinedCarrierPhaseFactorArm(
+UndifferencedCarrierPhaseFactorArm::UndifferencedCarrierPhaseFactorArm(
     const Key poseKey, const Key receiverClockBiasKey,
     const Key tropoZenithWetKey, const Key slantIonoKey, const Key ambiguityKey,
     const double measuredCarrierPhaseMeters, const Point3& satellitePosition,
@@ -159,7 +159,7 @@ UncombinedCarrierPhaseFactorArm::UncombinedCarrierPhaseFactorArm(
       lambda_(lambda) {}
 
 //***************************************************************************
-UncombinedCarrierPhaseFactorArm::UncombinedCarrierPhaseFactorArm(
+UndifferencedCarrierPhaseFactorArm::UndifferencedCarrierPhaseFactorArm(
     const Key poseKey, const Key receiverClockBiasKey,
     const Key tropoZenithWetKey, const Key slantIonoKey, const Key ambiguityKey,
     const double measuredCarrierPhaseMeters, const Point3& satellitePosition,
@@ -177,7 +177,7 @@ UncombinedCarrierPhaseFactorArm::UncombinedCarrierPhaseFactorArm(
       lambda_(lambda) {}
 
 //***************************************************************************
-void UncombinedCarrierPhaseFactorArm::print(
+void UndifferencedCarrierPhaseFactorArm::print(
     const std::string& s, const KeyFormatter& keyFormatter) const {
   Base::print(s, keyFormatter);
   gtsam::print(measurement_, "carrier phase (m): ");
@@ -193,7 +193,7 @@ void UncombinedCarrierPhaseFactorArm::print(
 }
 
 //***************************************************************************
-bool UncombinedCarrierPhaseFactorArm::equals(const NonlinearFactor& expected,
+bool UndifferencedCarrierPhaseFactorArm::equals(const NonlinearFactor& expected,
                                              double tol) const {
   const This* e = dynamic_cast<const This*>(&expected);
   return e != nullptr && Base::equals(*e, tol) &&
@@ -207,7 +207,7 @@ bool UncombinedCarrierPhaseFactorArm::equals(const NonlinearFactor& expected,
 }
 
 //***************************************************************************
-Vector UncombinedCarrierPhaseFactorArm::evaluateError(
+Vector UndifferencedCarrierPhaseFactorArm::evaluateError(
     const Pose3& pose, const double& receiverClockBias,
     const double& tropoZenithWet, const double& slantIono,
     const double& ambiguity, OptionalMatrixType H_pose,

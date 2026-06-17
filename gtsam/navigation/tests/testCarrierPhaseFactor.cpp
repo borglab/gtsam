@@ -246,11 +246,11 @@ TEST(TestCarrierPhaseFactorArm, equals) {
 }
 
 // *************************************************************************
-// UncombinedCarrierPhaseFactor (PPP) tests
+// UndifferencedCarrierPhaseFactor (PPP) tests
 // *************************************************************************
-TEST(TestUncombinedCarrierPhaseFactor, Model) {
+TEST(TestUndifferencedCarrierPhaseFactor, Model) {
   const double m_w = 3.0, mu_f = 1.28, lam = kLambdaL1;
-  const auto factor = UncombinedCarrierPhaseFactor(
+  const auto factor = UndifferencedCarrierPhaseFactor(
       Key(0), Key(1), Key(2), Key(3), Key(4), sample::kPseudorange,
       sample::kSatPos, m_w, mu_f, lam, sample::kSatClkBias);
 
@@ -275,10 +275,10 @@ TEST(TestUncombinedCarrierPhaseFactor, Model) {
 }
 
 // *************************************************************************
-TEST(TestUncombinedCarrierPhaseFactorArm, Jacobians) {
+TEST(TestUndifferencedCarrierPhaseFactorArm, Jacobians) {
   const Point3 leverArm(0.31, 0.0, 0.55);
   const double m_w = 2.9, mu_f = 1.0, lam = kLambdaL1;
-  const auto factor = UncombinedCarrierPhaseFactorArm(
+  const auto factor = UndifferencedCarrierPhaseFactorArm(
       Key(0), Key(1), Key(2), Key(3), Key(4), sample::kPseudorange,
       sample::kSatPos, leverArm, m_w, mu_f, lam, sample::kSatClkBias);
 
@@ -294,17 +294,17 @@ TEST(TestUncombinedCarrierPhaseFactorArm, Jacobians) {
 
 // *************************************************************************
 // ecef_T_nav consistency: ECEF pose vs local-nav pose give the same residual.
-TEST(TestUncombinedCarrierPhaseFactorArm, EcefTnavConsistency) {
+TEST(TestUndifferencedCarrierPhaseFactorArm, EcefTnavConsistency) {
   const Pose3 ecef_T_nav = tokyo::ecefTnav();
   const Pose3 nav_T_body(Rot3::RzRyRx(0.05, -0.03, 0.1), Point3(10, 20, 5));
   const Pose3 ecef_T_body = ecef_T_nav.compose(nav_T_body);
   const Point3 leverArm(0.1, 0.0, -0.5);
   const double m_w = 2.7, mu_f = 1.0, lam = kLambdaL1;
 
-  const auto fEcef = UncombinedCarrierPhaseFactorArm(
+  const auto fEcef = UndifferencedCarrierPhaseFactorArm(
       Key(0), Key(1), Key(2), Key(3), Key(4), sample::kPseudorange,
       sample::kSatPos, leverArm, m_w, mu_f, lam, sample::kSatClkBias);
-  const auto fNav = UncombinedCarrierPhaseFactorArm(
+  const auto fNav = UndifferencedCarrierPhaseFactorArm(
       Key(0), Key(1), Key(2), Key(3), Key(4), sample::kPseudorange,
       sample::kSatPos, leverArm, ecef_T_nav, m_w, mu_f, lam,
       sample::kSatClkBias);

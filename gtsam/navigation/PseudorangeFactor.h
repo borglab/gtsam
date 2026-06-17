@@ -125,7 +125,7 @@ template <>
 struct traits<PseudorangeFactor> : public Testable<PseudorangeFactor> {};
 
 /**
- * Uncombined (raw) PPP pseudorange factor.
+ * Undifferenced (raw) PPP pseudorange factor.
  *
  * Models a single raw pseudorange whose satellite-side SSR corrections (orbit,
  * clock, code bias) have already been folded into `measuredPseudorange`.  In
@@ -149,7 +149,7 @@ struct traits<PseudorangeFactor> : public Testable<PseudorangeFactor> {};
  *
  * @ingroup navigation
  */
-class GTSAM_EXPORT UncombinedPseudorangeFactor
+class GTSAM_EXPORT UndifferencedPseudorangeFactor
     : public NoiseModelFactorN<Point3, double, double, double>,
       private PseudorangeBase {
  private:
@@ -159,11 +159,11 @@ class GTSAM_EXPORT UncombinedPseudorangeFactor
 
  public:
   using Base::evaluateError;
-  typedef std::shared_ptr<UncombinedPseudorangeFactor> shared_ptr;
-  typedef UncombinedPseudorangeFactor This;
+  typedef std::shared_ptr<UndifferencedPseudorangeFactor> shared_ptr;
+  typedef UndifferencedPseudorangeFactor This;
 
-  UncombinedPseudorangeFactor() = default;
-  virtual ~UncombinedPseudorangeFactor() = default;
+  UndifferencedPseudorangeFactor() = default;
+  virtual ~UndifferencedPseudorangeFactor() = default;
 
   /**
    * @param receiverPositionKey  Receiver Point3 ECEF position node.
@@ -177,7 +177,7 @@ class GTSAM_EXPORT UncombinedPseudorangeFactor
    * @param satelliteClockBias   Satellite clock bias [s].
    * @param model                1-D pseudorange noise model.
    */
-  UncombinedPseudorangeFactor(
+  UndifferencedPseudorangeFactor(
       Key receiverPositionKey, Key receiverClockBiasKey,
       Key tropoZenithWetKey, Key slantIonoKey,
       double measuredPseudorange, const Point3& satellitePosition,
@@ -212,7 +212,7 @@ class GTSAM_EXPORT UncombinedPseudorangeFactor
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(UncombinedPseudorangeFactor::Base);
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(UndifferencedPseudorangeFactor::Base);
     ar& BOOST_SERIALIZATION_NVP(measurement_);
     ar& BOOST_SERIALIZATION_NVP(satPos_);
     ar& BOOST_SERIALIZATION_NVP(satClkBias_);
@@ -224,20 +224,20 @@ class GTSAM_EXPORT UncombinedPseudorangeFactor
 
 /// traits
 template <>
-struct traits<UncombinedPseudorangeFactor>
-    : public Testable<UncombinedPseudorangeFactor> {};
+struct traits<UndifferencedPseudorangeFactor>
+    : public Testable<UndifferencedPseudorangeFactor> {};
 
 /**
- * Uncombined (raw) PPP pseudorange factor with lever-arm correction.
+ * Undifferenced (raw) PPP pseudorange factor with lever-arm correction.
  *
- * Like UncombinedPseudorangeFactor but uses a Pose3 (position + attitude) as the
+ * Like UndifferencedPseudorangeFactor but uses a Pose3 (position + attitude) as the
  * receiver state with a body-frame lever arm to the antenna.  Optional
  * ecef_T_nav lets the pose be expressed in a local navigation frame (shared with
  * ImuFactor).  Keys: [pose, clock, ztd, slant-iono].
  *
  * @ingroup navigation
  */
-class GTSAM_EXPORT UncombinedPseudorangeFactorArm
+class GTSAM_EXPORT UndifferencedPseudorangeFactorArm
     : public NoiseModelFactorN<Pose3, double, double, double>,
       private PseudorangeBase {
  private:
@@ -248,15 +248,15 @@ class GTSAM_EXPORT UncombinedPseudorangeFactorArm
 
  public:
   using Base::evaluateError;
-  typedef std::shared_ptr<UncombinedPseudorangeFactorArm> shared_ptr;
-  typedef UncombinedPseudorangeFactorArm This;
+  typedef std::shared_ptr<UndifferencedPseudorangeFactorArm> shared_ptr;
+  typedef UndifferencedPseudorangeFactorArm This;
 
-  UncombinedPseudorangeFactorArm()
+  UndifferencedPseudorangeFactorArm()
       : PseudorangeBase{0.0, Point3(0, 0, 0), 0.0} {}
-  virtual ~UncombinedPseudorangeFactorArm() = default;
+  virtual ~UndifferencedPseudorangeFactorArm() = default;
 
   /// Construct with an ECEF pose key.
-  UncombinedPseudorangeFactorArm(
+  UndifferencedPseudorangeFactorArm(
       Key poseKey, Key receiverClockBiasKey, Key tropoZenithWetKey,
       Key slantIonoKey, double measuredPseudorange,
       const Point3& satellitePosition, const Point3& leverArm,
@@ -265,7 +265,7 @@ class GTSAM_EXPORT UncombinedPseudorangeFactorArm
       const SharedNoiseModel& model = noiseModel::Unit::Create(1));
 
   /// Construct with a local nav-frame pose key + ecef_T_nav.
-  UncombinedPseudorangeFactorArm(
+  UndifferencedPseudorangeFactorArm(
       Key poseKey, Key receiverClockBiasKey, Key tropoZenithWetKey,
       Key slantIonoKey, double measuredPseudorange,
       const Point3& satellitePosition, const Point3& leverArm,
@@ -301,7 +301,7 @@ class GTSAM_EXPORT UncombinedPseudorangeFactorArm
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
     ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(
-        UncombinedPseudorangeFactorArm::Base);
+        UndifferencedPseudorangeFactorArm::Base);
     ar& BOOST_SERIALIZATION_NVP(measurement_);
     ar& BOOST_SERIALIZATION_NVP(satPos_);
     ar& BOOST_SERIALIZATION_NVP(satClkBias_);
@@ -315,8 +315,8 @@ class GTSAM_EXPORT UncombinedPseudorangeFactorArm
 
 /// traits
 template <>
-struct traits<UncombinedPseudorangeFactorArm>
-    : public Testable<UncombinedPseudorangeFactorArm> {};
+struct traits<UndifferencedPseudorangeFactorArm>
+    : public Testable<UndifferencedPseudorangeFactorArm> {};
 
 /**
  * Simple differentially-corrected pseudorange factor for precise positioning.

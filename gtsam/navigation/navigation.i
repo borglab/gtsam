@@ -511,8 +511,8 @@ virtual class PseudorangeFactor : gtsam::NonlinearFactor {
   void serialize() const;
 };
 
-virtual class UncombinedPseudorangeFactor : gtsam::NonlinearFactor {
-  UncombinedPseudorangeFactor(gtsam::Key receiverPositionKey,
+virtual class UndifferencedPseudorangeFactor : gtsam::NonlinearFactor {
+  UndifferencedPseudorangeFactor(gtsam::Key receiverPositionKey,
                               gtsam::Key receiverClockBiasKey,
                               gtsam::Key tropoZenithWetKey,
                               gtsam::Key slantIonoKey,
@@ -536,8 +536,8 @@ virtual class UncombinedPseudorangeFactor : gtsam::NonlinearFactor {
   void serialize() const;
 };
 
-virtual class UncombinedPseudorangeFactorArm : gtsam::NonlinearFactor {
-  UncombinedPseudorangeFactorArm(gtsam::Key poseKey,
+virtual class UndifferencedPseudorangeFactorArm : gtsam::NonlinearFactor {
+  UndifferencedPseudorangeFactorArm(gtsam::Key poseKey,
                                  gtsam::Key receiverClockBiasKey,
                                  gtsam::Key tropoZenithWetKey,
                                  gtsam::Key slantIonoKey,
@@ -547,7 +547,7 @@ virtual class UncombinedPseudorangeFactorArm : gtsam::NonlinearFactor {
                                  double tropoWetMapping, double ionoCoefficient,
                                  double satelliteClockBias,
                                  const gtsam::noiseModel::Base* model);
-  UncombinedPseudorangeFactorArm(gtsam::Key poseKey,
+  UndifferencedPseudorangeFactorArm(gtsam::Key poseKey,
                                  gtsam::Key receiverClockBiasKey,
                                  gtsam::Key tropoZenithWetKey,
                                  gtsam::Key slantIonoKey,
@@ -717,8 +717,8 @@ virtual class CarrierPhaseFactor : gtsam::NonlinearFactor {
   void serialize() const;
 };
 
-virtual class UncombinedCarrierPhaseFactor : gtsam::NonlinearFactor {
-  UncombinedCarrierPhaseFactor(gtsam::Key receiverPositionKey,
+virtual class UndifferencedCarrierPhaseFactor : gtsam::NonlinearFactor {
+  UndifferencedCarrierPhaseFactor(gtsam::Key receiverPositionKey,
                                gtsam::Key receiverClockBiasKey,
                                gtsam::Key tropoZenithWetKey,
                                gtsam::Key slantIonoKey, gtsam::Key ambiguityKey,
@@ -744,8 +744,8 @@ virtual class UncombinedCarrierPhaseFactor : gtsam::NonlinearFactor {
   void serialize() const;
 };
 
-virtual class UncombinedCarrierPhaseFactorArm : gtsam::NonlinearFactor {
-  UncombinedCarrierPhaseFactorArm(gtsam::Key poseKey,
+virtual class UndifferencedCarrierPhaseFactorArm : gtsam::NonlinearFactor {
+  UndifferencedCarrierPhaseFactorArm(gtsam::Key poseKey,
                                   gtsam::Key receiverClockBiasKey,
                                   gtsam::Key tropoZenithWetKey,
                                   gtsam::Key slantIonoKey,
@@ -756,7 +756,7 @@ virtual class UncombinedCarrierPhaseFactorArm : gtsam::NonlinearFactor {
                                   double tropoWetMapping, double ionoCoefficient,
                                   double lambda, double satelliteClockBias,
                                   const gtsam::noiseModel::Base* model);
-  UncombinedCarrierPhaseFactorArm(gtsam::Key poseKey,
+  UndifferencedCarrierPhaseFactorArm(gtsam::Key poseKey,
                                   gtsam::Key receiverClockBiasKey,
                                   gtsam::Key tropoZenithWetKey,
                                   gtsam::Key slantIonoKey,

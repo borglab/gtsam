@@ -73,12 +73,12 @@ TEST(TestPseudorangeFactor, Jacobians2) {
 }
 
 // *************************************************************************
-// Uncombined PPP pseudorange factor: residual matches the model and all four
+// Undifferenced PPP pseudorange factor: residual matches the model and all four
 // Jacobians (pose, clock, ZTD, slant-iono) are correct.
-TEST(TestUncombinedPseudorangeFactor, Model) {
+TEST(TestUndifferencedPseudorangeFactor, Model) {
   const double m_w = 3.2;     // tropo wet mapping at the predicted elevation
   const double mu_f = 1.55;   // first-order iono coefficient (e.g. L2)
-  const auto factor = UncombinedPseudorangeFactor(
+  const auto factor = UndifferencedPseudorangeFactor(
       Key(0), Key(1), Key(2), Key(3), sample::kPseudorange, sample::kSatPos,
       m_w, mu_f, sample::kSatClkBias);
 
@@ -103,12 +103,12 @@ TEST(TestUncombinedPseudorangeFactor, Model) {
 }
 
 // *************************************************************************
-// Uncombined PPP pseudorange factor with lever arm: all five Jacobians
+// Undifferenced PPP pseudorange factor with lever arm: all five Jacobians
 // (pose, clock, ZTD, slant-iono) are correct.
-TEST(TestUncombinedPseudorangeFactorArm, Jacobians) {
+TEST(TestUndifferencedPseudorangeFactorArm, Jacobians) {
   const Point3 leverArm(0.31, 0.0, 0.55);
   const double m_w = 2.8, mu_f = 1.0;
-  const auto factor = UncombinedPseudorangeFactorArm(
+  const auto factor = UndifferencedPseudorangeFactorArm(
       Key(0), Key(1), Key(2), Key(3), sample::kPseudorange, sample::kSatPos,
       leverArm, m_w, mu_f, sample::kSatClkBias);
 

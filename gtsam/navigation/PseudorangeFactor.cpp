@@ -71,7 +71,7 @@ Vector PseudorangeFactor::evaluateError(
 }
 
 //***************************************************************************
-UncombinedPseudorangeFactor::UncombinedPseudorangeFactor(
+UndifferencedPseudorangeFactor::UndifferencedPseudorangeFactor(
     const Key receiverPositionKey, const Key receiverClockBiasKey,
     const Key tropoZenithWetKey, const Key slantIonoKey,
     const double measuredPseudorange, const Point3& satellitePosition,
@@ -85,7 +85,7 @@ UncombinedPseudorangeFactor::UncombinedPseudorangeFactor(
       ionoCoeff_(ionoCoefficient) {}
 
 //***************************************************************************
-void UncombinedPseudorangeFactor::print(
+void UndifferencedPseudorangeFactor::print(
     const std::string& s, const KeyFormatter& keyFormatter) const {
   Base::print(s, keyFormatter);
   gtsam::print(measurement_, "pseudorange (m): ");
@@ -96,7 +96,7 @@ void UncombinedPseudorangeFactor::print(
 }
 
 //***************************************************************************
-bool UncombinedPseudorangeFactor::equals(const NonlinearFactor& expected,
+bool UndifferencedPseudorangeFactor::equals(const NonlinearFactor& expected,
                                          double tol) const {
   const This* e = dynamic_cast<const This*>(&expected);
   return e != nullptr && Base::equals(*e, tol) &&
@@ -108,12 +108,12 @@ bool UncombinedPseudorangeFactor::equals(const NonlinearFactor& expected,
 }
 
 //***************************************************************************
-Vector UncombinedPseudorangeFactor::evaluateError(
+Vector UndifferencedPseudorangeFactor::evaluateError(
     const Point3& receiverPosition, const double& receiverClockBias,
     const double& tropoZenithWet, const double& slantIono,
     OptionalMatrixType HreceiverPos, OptionalMatrixType HreceiverClockBias,
     OptionalMatrixType HtropoZenithWet, OptionalMatrixType HslantIono) const {
-  // Uncombined PPP pseudorange model:
+  // Undifferenced PPP pseudorange model:
   //   rho = geodist(sat, rcv) + c*(dt_u - dt_s) + m_w*ZTD + mu_f*I_slant
   Point3 e;
   Matrix13 H_geo;
@@ -154,7 +154,7 @@ PseudorangeFactorArm::PseudorangeFactorArm(
       arm_(leverArm, ecef_T_nav) {}
 
 //***************************************************************************
-UncombinedPseudorangeFactorArm::UncombinedPseudorangeFactorArm(
+UndifferencedPseudorangeFactorArm::UndifferencedPseudorangeFactorArm(
     const Key poseKey, const Key receiverClockBiasKey,
     const Key tropoZenithWetKey, const Key slantIonoKey,
     const double measuredPseudorange, const Point3& satellitePosition,
@@ -170,7 +170,7 @@ UncombinedPseudorangeFactorArm::UncombinedPseudorangeFactorArm(
       ionoCoeff_(ionoCoefficient) {}
 
 //***************************************************************************
-UncombinedPseudorangeFactorArm::UncombinedPseudorangeFactorArm(
+UndifferencedPseudorangeFactorArm::UndifferencedPseudorangeFactorArm(
     const Key poseKey, const Key receiverClockBiasKey,
     const Key tropoZenithWetKey, const Key slantIonoKey,
     const double measuredPseudorange, const Point3& satellitePosition,
@@ -186,7 +186,7 @@ UncombinedPseudorangeFactorArm::UncombinedPseudorangeFactorArm(
       ionoCoeff_(ionoCoefficient) {}
 
 //***************************************************************************
-void UncombinedPseudorangeFactorArm::print(
+void UndifferencedPseudorangeFactorArm::print(
     const std::string& s, const KeyFormatter& keyFormatter) const {
   Base::print(s, keyFormatter);
   gtsam::print(measurement_, "pseudorange (m): ");
@@ -201,7 +201,7 @@ void UncombinedPseudorangeFactorArm::print(
 }
 
 //***************************************************************************
-bool UncombinedPseudorangeFactorArm::equals(const NonlinearFactor& expected,
+bool UndifferencedPseudorangeFactorArm::equals(const NonlinearFactor& expected,
                                             double tol) const {
   const This* e = dynamic_cast<const This*>(&expected);
   return e != nullptr && Base::equals(*e, tol) &&
@@ -214,7 +214,7 @@ bool UncombinedPseudorangeFactorArm::equals(const NonlinearFactor& expected,
 }
 
 //***************************************************************************
-Vector UncombinedPseudorangeFactorArm::evaluateError(
+Vector UndifferencedPseudorangeFactorArm::evaluateError(
     const Pose3& pose, const double& receiverClockBias,
     const double& tropoZenithWet, const double& slantIono,
     OptionalMatrixType H_pose, OptionalMatrixType HreceiverClockBias,

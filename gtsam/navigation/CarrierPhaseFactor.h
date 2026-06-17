@@ -113,7 +113,7 @@ template <>
 struct traits<CarrierPhaseFactor> : public Testable<CarrierPhaseFactor> {};
 
 /**
- * Uncombined (raw) PPP carrier phase factor.
+ * Undifferenced (raw) PPP carrier phase factor.
  *
  * Models a single raw carrier phase (in meters, with the satellite-side SSR
  * corrections including the phase bias already folded into the measurement) and
@@ -132,7 +132,7 @@ struct traits<CarrierPhaseFactor> : public Testable<CarrierPhaseFactor> {};
  *
  * @ingroup navigation
  */
-class GTSAM_EXPORT UncombinedCarrierPhaseFactor
+class GTSAM_EXPORT UndifferencedCarrierPhaseFactor
     : public NoiseModelFactorN<Point3, double, double, double, double>,
       private CarrierPhaseBase {
  private:
@@ -143,11 +143,11 @@ class GTSAM_EXPORT UncombinedCarrierPhaseFactor
 
  public:
   using Base::evaluateError;
-  typedef std::shared_ptr<UncombinedCarrierPhaseFactor> shared_ptr;
-  typedef UncombinedCarrierPhaseFactor This;
+  typedef std::shared_ptr<UndifferencedCarrierPhaseFactor> shared_ptr;
+  typedef UndifferencedCarrierPhaseFactor This;
 
-  UncombinedCarrierPhaseFactor() : CarrierPhaseBase{0.0, Point3(0, 0, 0), 0.0} {}
-  virtual ~UncombinedCarrierPhaseFactor() = default;
+  UndifferencedCarrierPhaseFactor() : CarrierPhaseBase{0.0, Point3(0, 0, 0), 0.0} {}
+  virtual ~UndifferencedCarrierPhaseFactor() = default;
 
   /**
    * @param receiverPositionKey  Receiver Point3 ECEF position node.
@@ -163,7 +163,7 @@ class GTSAM_EXPORT UncombinedCarrierPhaseFactor
    * @param satelliteClockBias   Satellite clock bias [s].
    * @param model                1-D noise model.
    */
-  UncombinedCarrierPhaseFactor(
+  UndifferencedCarrierPhaseFactor(
       Key receiverPositionKey, Key receiverClockBiasKey, Key tropoZenithWetKey,
       Key slantIonoKey, Key ambiguityKey, double measuredCarrierPhaseMeters,
       const Point3& satellitePosition, double tropoWetMapping,
@@ -198,7 +198,7 @@ class GTSAM_EXPORT UncombinedCarrierPhaseFactor
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(UncombinedCarrierPhaseFactor::Base);
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(UndifferencedCarrierPhaseFactor::Base);
     ar& BOOST_SERIALIZATION_NVP(measurement_);
     ar& BOOST_SERIALIZATION_NVP(satPos_);
     ar& BOOST_SERIALIZATION_NVP(satClkBias_);
@@ -211,19 +211,19 @@ class GTSAM_EXPORT UncombinedCarrierPhaseFactor
 
 /// traits
 template <>
-struct traits<UncombinedCarrierPhaseFactor>
-    : public Testable<UncombinedCarrierPhaseFactor> {};
+struct traits<UndifferencedCarrierPhaseFactor>
+    : public Testable<UndifferencedCarrierPhaseFactor> {};
 
 /**
- * Uncombined (raw) PPP carrier phase factor with lever-arm correction.
+ * Undifferenced (raw) PPP carrier phase factor with lever-arm correction.
  *
- * Like UncombinedCarrierPhaseFactor but keys on a body Pose3 with a lever arm to
+ * Like UndifferencedCarrierPhaseFactor but keys on a body Pose3 with a lever arm to
  * the antenna and an optional ecef_T_nav transform.
  * Keys: [pose, clock, ztd, slant-iono, ambiguity].
  *
  * @ingroup navigation
  */
-class GTSAM_EXPORT UncombinedCarrierPhaseFactorArm
+class GTSAM_EXPORT UndifferencedCarrierPhaseFactorArm
     : public NoiseModelFactorN<Pose3, double, double, double, double>,
       private CarrierPhaseBase {
  private:
@@ -235,15 +235,15 @@ class GTSAM_EXPORT UncombinedCarrierPhaseFactorArm
 
  public:
   using Base::evaluateError;
-  typedef std::shared_ptr<UncombinedCarrierPhaseFactorArm> shared_ptr;
-  typedef UncombinedCarrierPhaseFactorArm This;
+  typedef std::shared_ptr<UndifferencedCarrierPhaseFactorArm> shared_ptr;
+  typedef UndifferencedCarrierPhaseFactorArm This;
 
-  UncombinedCarrierPhaseFactorArm()
+  UndifferencedCarrierPhaseFactorArm()
       : CarrierPhaseBase{0.0, Point3(0, 0, 0), 0.0} {}
-  virtual ~UncombinedCarrierPhaseFactorArm() = default;
+  virtual ~UndifferencedCarrierPhaseFactorArm() = default;
 
   /// Construct with an ECEF pose key.
-  UncombinedCarrierPhaseFactorArm(
+  UndifferencedCarrierPhaseFactorArm(
       Key poseKey, Key receiverClockBiasKey, Key tropoZenithWetKey,
       Key slantIonoKey, Key ambiguityKey, double measuredCarrierPhaseMeters,
       const Point3& satellitePosition, const Point3& leverArm,
@@ -252,7 +252,7 @@ class GTSAM_EXPORT UncombinedCarrierPhaseFactorArm
       const SharedNoiseModel& model = noiseModel::Unit::Create(1));
 
   /// Construct with a local nav-frame pose key + ecef_T_nav.
-  UncombinedCarrierPhaseFactorArm(
+  UndifferencedCarrierPhaseFactorArm(
       Key poseKey, Key receiverClockBiasKey, Key tropoZenithWetKey,
       Key slantIonoKey, Key ambiguityKey, double measuredCarrierPhaseMeters,
       const Point3& satellitePosition, const Point3& leverArm,
@@ -290,7 +290,7 @@ class GTSAM_EXPORT UncombinedCarrierPhaseFactorArm
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
     ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(
-        UncombinedCarrierPhaseFactorArm::Base);
+        UndifferencedCarrierPhaseFactorArm::Base);
     ar& BOOST_SERIALIZATION_NVP(measurement_);
     ar& BOOST_SERIALIZATION_NVP(satPos_);
     ar& BOOST_SERIALIZATION_NVP(satClkBias_);
@@ -305,8 +305,8 @@ class GTSAM_EXPORT UncombinedCarrierPhaseFactorArm
 
 /// traits
 template <>
-struct traits<UncombinedCarrierPhaseFactorArm>
-    : public Testable<UncombinedCarrierPhaseFactorArm> {};
+struct traits<UndifferencedCarrierPhaseFactorArm>
+    : public Testable<UndifferencedCarrierPhaseFactorArm> {};
 
 /**
  * Carrier phase factor with lever arm correction.
