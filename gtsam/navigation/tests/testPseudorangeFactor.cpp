@@ -73,6 +73,36 @@ TEST(TestPseudorangeFactor, Jacobians2) {
 }
 
 // *************************************************************************
+// Uncombined PPP pseudorange factor: residual matches the model and all four
+// Jacobians (pose, clock, ZTD, slant-iono) are correct.
+TEST(TestUncombinedPseudorangeFactor, Model) {
+  const double m_w = 3.2;     // tropo wet mapping at the predicted elevation
+  const double mu_f = 1.55;   // first-order iono coefficient (e.g. L2)
+  const auto factor = UncombinedPseudorangeFactor(
+      Key(0), Key(1), Key(2), Key(3), sample::kPseudorange, sample::kSatPos,
+      m_w, mu_f, sample::kSatClkBias);
+
+  const double ztd = 0.12;    // zenith wet delay [m]
+  const double iono = 4.7;    // slant iono [m]
+  const double error = factor.evaluateError(
+      sample::kReceiverPos, sample::kReceiverClock, ztd, iono)[0];
+
+  Point3 e;
+  const double range = gnss::geodist(sample::kSatPos, sample::kReceiverPos, e);
+  const double expected =
+      range + kCLight * (sample::kReceiverClock - sample::kSatClkBias) +
+      m_w * ztd + mu_f * iono - sample::kPseudorange;
+  EXPECT_DOUBLES_EQUAL(expected, error, 1e-6);
+
+  Values values;
+  values.insert(Key(0), sample::kReceiverPos);
+  values.insert(Key(1), sample::kReceiverClock);
+  values.insert(Key(2), ztd);
+  values.insert(Key(3), iono);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-3, 1e-5);
+}
+
+// *************************************************************************
 TEST(TestPseudorangeFactor, print) {
   // Just make sure `print()` doesn't throw errors
   // since there's no elegant way to check stdout.
