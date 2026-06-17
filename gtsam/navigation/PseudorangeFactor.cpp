@@ -7,8 +7,6 @@
 
 #include "PseudorangeFactor.h"
 
-#include <limits>
-
 namespace gtsam {
 
 using gnss::C_LIGHT;
@@ -49,18 +47,17 @@ Vector PseudorangeFactor::evaluateError(
     OptionalMatrixType HreceiverPos,
     OptionalMatrixType HreceiverClockBias) const {
   // Apply pseudorange equation: rho = range + c*[dt_u - dt^s]
-  const Vector3 position_difference = receiverPosition - satPos_;
-  const double range = position_difference.norm();
+  // Sagnac-corrected geodist keeps the geometry consistent with the DD factors.
+  Point3 e;
+  Matrix13 H_geo;
+  const double range =
+      gnss::geodist(satPos_, receiverPosition, e, HreceiverPos ? &H_geo : nullptr);
   const double rho = range + C_LIGHT * (receiverClockBias - satClkBias_);
   const double error = rho - measurement_;
 
   // Compute associated derivatives:
   if (HreceiverPos) {
-    if (range < std::numeric_limits<double>::epsilon()) {
-      *HreceiverPos = Matrix13::Zero();
-    } else {
-      *HreceiverPos = (position_difference / range).transpose();
-    }
+    *HreceiverPos = H_geo;
   }
 
   if (HreceiverClockBias) {
@@ -126,18 +123,16 @@ Vector PseudorangeFactorArm::evaluateError(
       arm_.antennaPosition(pose, H_pose ? &frame : nullptr);
 
   // Apply pseudorange equation: rho = range + c*[dt_u - dt^s]
-  const Vector3 position_difference = antennaPos - satPos_;
-  const double range = position_difference.norm();
+  // Sagnac-corrected geodist keeps the geometry consistent with the DD factors.
+  Point3 e;
+  Matrix13 H_antenna;
+  const double range =
+      gnss::geodist(satPos_, antennaPos, e, H_pose ? &H_antenna : nullptr);
   const double rho = range + C_LIGHT * (receiverClockBias - satClkBias_);
   const double error = rho - measurement_;
 
   if (H_pose) {
-    if (range < std::numeric_limits<double>::epsilon()) {
-      *H_pose = Matrix16::Zero();
-    } else {
-      const Matrix13 H_antenna = (position_difference / range).transpose();
-      *H_pose = arm_.antennaPoseJacobian(H_antenna, frame);
-    }
+    *H_pose = arm_.antennaPoseJacobian(H_antenna, frame);
   }
 
   if (HreceiverClockBias) {
@@ -183,17 +178,16 @@ Vector DifferentialPseudorangeFactor::evaluateError(
     const double& differentialCorrection, OptionalMatrixType HreceiverPos,
     OptionalMatrixType HreceiverClockBias,
     OptionalMatrixType HdifferentialCorrection) const {
-  const Vector3 position_difference = receiverPosition - satPos_;
-  const double range = position_difference.norm();
+  // Sagnac-corrected geodist keeps the geometry consistent with the DD factors.
+  Point3 e;
+  Matrix13 H_geo;
+  const double range =
+      gnss::geodist(satPos_, receiverPosition, e, HreceiverPos ? &H_geo : nullptr);
   const double rho = range + C_LIGHT * (receiverClock_bias - satClkBias_);
   const double error = rho - measurement_ - differentialCorrection;
 
   if (HreceiverPos) {
-    if (range < std::numeric_limits<double>::epsilon()) {
-      *HreceiverPos = Matrix13::Zero();
-    } else {
-      *HreceiverPos = (position_difference / range).transpose();
-    }
+    *HreceiverPos = H_geo;
   }
 
   if (HreceiverClockBias) {
@@ -264,18 +258,16 @@ Vector DifferentialPseudorangeFactorArm::evaluateError(
   const Point3 antennaPos =
       arm_.antennaPosition(pose, H_pose ? &frame : nullptr);
 
-  const Vector3 position_difference = antennaPos - satPos_;
-  const double range = position_difference.norm();
+  // Sagnac-corrected geodist keeps the geometry consistent with the DD factors.
+  Point3 e;
+  Matrix13 H_antenna;
+  const double range =
+      gnss::geodist(satPos_, antennaPos, e, H_pose ? &H_antenna : nullptr);
   const double rho = range + C_LIGHT * (receiverClockBias - satClkBias_);
   const double error = rho - measurement_ - differentialCorrection;
 
   if (H_pose) {
-    if (range < std::numeric_limits<double>::epsilon()) {
-      *H_pose = Matrix16::Zero();
-    } else {
-      const Matrix13 H_antenna = (position_difference / range).transpose();
-      *H_pose = arm_.antennaPoseJacobian(H_antenna, frame);
-    }
+    *H_pose = arm_.antennaPoseJacobian(H_antenna, frame);
   }
 
   if (HreceiverClockBias) {
