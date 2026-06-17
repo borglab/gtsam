@@ -103,6 +103,25 @@ TEST(TestUncombinedPseudorangeFactor, Model) {
 }
 
 // *************************************************************************
+// Uncombined PPP pseudorange factor with lever arm: all five Jacobians
+// (pose, clock, ZTD, slant-iono) are correct.
+TEST(TestUncombinedPseudorangeFactorArm, Jacobians) {
+  const Point3 leverArm(0.31, 0.0, 0.55);
+  const double m_w = 2.8, mu_f = 1.0;
+  const auto factor = UncombinedPseudorangeFactorArm(
+      Key(0), Key(1), Key(2), Key(3), sample::kPseudorange, sample::kSatPos,
+      leverArm, m_w, mu_f, sample::kSatClkBias);
+
+  Values values;
+  values.insert(Key(0),
+                Pose3(Rot3::RzRyRx(0.1, -0.2, 0.3), sample::kReceiverPos));
+  values.insert(Key(1), sample::kReceiverClock);
+  values.insert(Key(2), 0.1);
+  values.insert(Key(3), 3.5);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-3, 1e-5);
+}
+
+// *************************************************************************
 TEST(TestPseudorangeFactor, print) {
   // Just make sure `print()` doesn't throw errors
   // since there's no elegant way to check stdout.

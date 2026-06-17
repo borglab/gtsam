@@ -511,6 +511,69 @@ virtual class PseudorangeFactor : gtsam::NonlinearFactor {
   void serialize() const;
 };
 
+virtual class UncombinedPseudorangeFactor : gtsam::NonlinearFactor {
+  UncombinedPseudorangeFactor(gtsam::Key receiverPositionKey,
+                              gtsam::Key receiverClockBiasKey,
+                              gtsam::Key tropoZenithWetKey,
+                              gtsam::Key slantIonoKey,
+                              double measuredPseudorange,
+                              const gtsam::Point3& satellitePosition,
+                              double tropoWetMapping, double ionoCoefficient,
+                              double satelliteClockBias,
+                              const gtsam::noiseModel::Base* model);
+
+  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
+                                gtsam::DefaultKeyFormatter) const;
+  bool equals(const gtsam::NonlinearFactor& expected, double tol);
+
+  gtsam::Vector evaluateError(const gtsam::Point3& receiverPosition,
+                              const double& receiverClockBias,
+                              const double& tropoZenithWet,
+                              const double& slantIono) const;
+  double tropoMapping() const;
+  double ionoCoefficient() const;
+
+  void serialize() const;
+};
+
+virtual class UncombinedPseudorangeFactorArm : gtsam::NonlinearFactor {
+  UncombinedPseudorangeFactorArm(gtsam::Key poseKey,
+                                 gtsam::Key receiverClockBiasKey,
+                                 gtsam::Key tropoZenithWetKey,
+                                 gtsam::Key slantIonoKey,
+                                 double measuredPseudorange,
+                                 const gtsam::Point3& satellitePosition,
+                                 const gtsam::Point3& leverArm,
+                                 double tropoWetMapping, double ionoCoefficient,
+                                 double satelliteClockBias,
+                                 const gtsam::noiseModel::Base* model);
+  UncombinedPseudorangeFactorArm(gtsam::Key poseKey,
+                                 gtsam::Key receiverClockBiasKey,
+                                 gtsam::Key tropoZenithWetKey,
+                                 gtsam::Key slantIonoKey,
+                                 double measuredPseudorange,
+                                 const gtsam::Point3& satellitePosition,
+                                 const gtsam::Point3& leverArm,
+                                 const gtsam::Pose3& ecef_T_nav,
+                                 double tropoWetMapping, double ionoCoefficient,
+                                 double satelliteClockBias,
+                                 const gtsam::noiseModel::Base* model);
+
+  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
+                                gtsam::DefaultKeyFormatter) const;
+  bool equals(const gtsam::NonlinearFactor& expected, double tol);
+
+  gtsam::Vector evaluateError(const gtsam::Pose3& pose,
+                              const double& receiverClockBias,
+                              const double& tropoZenithWet,
+                              const double& slantIono) const;
+  const gtsam::Point3& leverArm() const;
+  double tropoMapping() const;
+  double ionoCoefficient() const;
+
+  void serialize() const;
+};
+
 virtual class DifferentialPseudorangeFactor : gtsam::NonlinearFactor {
   DifferentialPseudorangeFactor(gtsam::Key receiverPositionKey,
                                 gtsam::Key receiverClockBiasKey,
@@ -651,6 +714,75 @@ virtual class CarrierPhaseFactor : gtsam::NonlinearFactor {
                               const double& ambiguity) const;
 
   // enable serialization functionality
+  void serialize() const;
+};
+
+virtual class UncombinedCarrierPhaseFactor : gtsam::NonlinearFactor {
+  UncombinedCarrierPhaseFactor(gtsam::Key receiverPositionKey,
+                               gtsam::Key receiverClockBiasKey,
+                               gtsam::Key tropoZenithWetKey,
+                               gtsam::Key slantIonoKey, gtsam::Key ambiguityKey,
+                               double measuredCarrierPhaseMeters,
+                               const gtsam::Point3& satellitePosition,
+                               double tropoWetMapping, double ionoCoefficient,
+                               double lambda, double satelliteClockBias,
+                               const gtsam::noiseModel::Base* model);
+
+  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
+                                gtsam::DefaultKeyFormatter) const;
+  bool equals(const gtsam::NonlinearFactor& expected, double tol);
+
+  gtsam::Vector evaluateError(const gtsam::Point3& receiverPosition,
+                              const double& receiverClockBias,
+                              const double& tropoZenithWet,
+                              const double& slantIono,
+                              const double& ambiguity) const;
+  double tropoMapping() const;
+  double ionoCoefficient() const;
+  double wavelength() const;
+
+  void serialize() const;
+};
+
+virtual class UncombinedCarrierPhaseFactorArm : gtsam::NonlinearFactor {
+  UncombinedCarrierPhaseFactorArm(gtsam::Key poseKey,
+                                  gtsam::Key receiverClockBiasKey,
+                                  gtsam::Key tropoZenithWetKey,
+                                  gtsam::Key slantIonoKey,
+                                  gtsam::Key ambiguityKey,
+                                  double measuredCarrierPhaseMeters,
+                                  const gtsam::Point3& satellitePosition,
+                                  const gtsam::Point3& leverArm,
+                                  double tropoWetMapping, double ionoCoefficient,
+                                  double lambda, double satelliteClockBias,
+                                  const gtsam::noiseModel::Base* model);
+  UncombinedCarrierPhaseFactorArm(gtsam::Key poseKey,
+                                  gtsam::Key receiverClockBiasKey,
+                                  gtsam::Key tropoZenithWetKey,
+                                  gtsam::Key slantIonoKey,
+                                  gtsam::Key ambiguityKey,
+                                  double measuredCarrierPhaseMeters,
+                                  const gtsam::Point3& satellitePosition,
+                                  const gtsam::Point3& leverArm,
+                                  const gtsam::Pose3& ecef_T_nav,
+                                  double tropoWetMapping, double ionoCoefficient,
+                                  double lambda, double satelliteClockBias,
+                                  const gtsam::noiseModel::Base* model);
+
+  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
+                                gtsam::DefaultKeyFormatter) const;
+  bool equals(const gtsam::NonlinearFactor& expected, double tol);
+
+  gtsam::Vector evaluateError(const gtsam::Pose3& pose,
+                              const double& receiverClockBias,
+                              const double& tropoZenithWet,
+                              const double& slantIono,
+                              const double& ambiguity) const;
+  const gtsam::Point3& leverArm() const;
+  double tropoMapping() const;
+  double ionoCoefficient() const;
+  double wavelength() const;
+
   void serialize() const;
 };
 

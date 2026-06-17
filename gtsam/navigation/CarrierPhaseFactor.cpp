@@ -74,6 +74,168 @@ Vector CarrierPhaseFactor::evaluateError(
 }
 
 //***************************************************************************
+UncombinedCarrierPhaseFactor::UncombinedCarrierPhaseFactor(
+    const Key receiverPositionKey, const Key receiverClockBiasKey,
+    const Key tropoZenithWetKey, const Key slantIonoKey, const Key ambiguityKey,
+    const double measuredCarrierPhaseMeters, const Point3& satellitePosition,
+    const double tropoWetMapping, const double ionoCoefficient,
+    const double lambda, const double satelliteClockBias,
+    const SharedNoiseModel& model)
+    : Base(model, receiverPositionKey, receiverClockBiasKey, tropoZenithWetKey,
+           slantIonoKey, ambiguityKey),
+      CarrierPhaseBase{measuredCarrierPhaseMeters, satellitePosition,
+                       satelliteClockBias},
+      tropoMap_(tropoWetMapping),
+      ionoCoeff_(ionoCoefficient),
+      lambda_(lambda) {}
+
+//***************************************************************************
+void UncombinedCarrierPhaseFactor::print(
+    const std::string& s, const KeyFormatter& keyFormatter) const {
+  Base::print(s, keyFormatter);
+  gtsam::print(measurement_, "carrier phase (m): ");
+  gtsam::print(Vector(satPos_), "sat position (ECEF meters): ");
+  gtsam::print(satClkBias_, "sat clock bias (s): ");
+  gtsam::print(tropoMap_, "tropo wet mapping: ");
+  gtsam::print(ionoCoeff_, "iono coefficient: ");
+  gtsam::print(lambda_, "wavelength (m): ");
+}
+
+//***************************************************************************
+bool UncombinedCarrierPhaseFactor::equals(const NonlinearFactor& expected,
+                                          double tol) const {
+  const This* e = dynamic_cast<const This*>(&expected);
+  return e != nullptr && Base::equals(*e, tol) &&
+         traits<double>::Equals(measurement_, e->measurement_, tol) &&
+         traits<Point3>::Equals(satPos_, e->satPos_, tol) &&
+         traits<double>::Equals(satClkBias_, e->satClkBias_, tol) &&
+         traits<double>::Equals(tropoMap_, e->tropoMap_, tol) &&
+         traits<double>::Equals(ionoCoeff_, e->ionoCoeff_, tol) &&
+         traits<double>::Equals(lambda_, e->lambda_, tol);
+}
+
+//***************************************************************************
+Vector UncombinedCarrierPhaseFactor::evaluateError(
+    const Point3& receiverPosition, const double& receiverClockBias,
+    const double& tropoZenithWet, const double& slantIono,
+    const double& ambiguity, OptionalMatrixType HreceiverPos,
+    OptionalMatrixType HreceiverClockBias, OptionalMatrixType HtropoZenithWet,
+    OptionalMatrixType HslantIono, OptionalMatrixType Hambiguity) const {
+  // Uncombined PPP carrier phase model (iono advanced, +lambda*N):
+  //   rho = geodist + c*(dt_u - dt_s) + m_w*ZTD - mu_f*I_slant + lambda*N
+  Point3 e;
+  Matrix13 H_geo;
+  const double range = gnss::geodist(satPos_, receiverPosition, e,
+                                     HreceiverPos ? &H_geo : nullptr);
+  const double rho = range + C_LIGHT * (receiverClockBias - satClkBias_) +
+                     tropoMap_ * tropoZenithWet - ionoCoeff_ * slantIono +
+                     lambda_ * ambiguity;
+  const double error = rho - measurement_;
+
+  if (HreceiverPos) *HreceiverPos = H_geo;
+  if (HreceiverClockBias) *HreceiverClockBias = I_1x1 * C_LIGHT;
+  if (HtropoZenithWet) *HtropoZenithWet = I_1x1 * tropoMap_;
+  if (HslantIono) *HslantIono = I_1x1 * (-ionoCoeff_);
+  if (Hambiguity) *Hambiguity = I_1x1 * lambda_;
+
+  return Vector1(error);
+}
+
+//***************************************************************************
+UncombinedCarrierPhaseFactorArm::UncombinedCarrierPhaseFactorArm(
+    const Key poseKey, const Key receiverClockBiasKey,
+    const Key tropoZenithWetKey, const Key slantIonoKey, const Key ambiguityKey,
+    const double measuredCarrierPhaseMeters, const Point3& satellitePosition,
+    const Point3& leverArm, const double tropoWetMapping,
+    const double ionoCoefficient, const double lambda,
+    const double satelliteClockBias, const SharedNoiseModel& model)
+    : Base(model, poseKey, receiverClockBiasKey, tropoZenithWetKey, slantIonoKey,
+           ambiguityKey),
+      CarrierPhaseBase{measuredCarrierPhaseMeters, satellitePosition,
+                       satelliteClockBias},
+      arm_(leverArm),
+      tropoMap_(tropoWetMapping),
+      ionoCoeff_(ionoCoefficient),
+      lambda_(lambda) {}
+
+//***************************************************************************
+UncombinedCarrierPhaseFactorArm::UncombinedCarrierPhaseFactorArm(
+    const Key poseKey, const Key receiverClockBiasKey,
+    const Key tropoZenithWetKey, const Key slantIonoKey, const Key ambiguityKey,
+    const double measuredCarrierPhaseMeters, const Point3& satellitePosition,
+    const Point3& leverArm, const Pose3& ecef_T_nav,
+    const double tropoWetMapping, const double ionoCoefficient,
+    const double lambda, const double satelliteClockBias,
+    const SharedNoiseModel& model)
+    : Base(model, poseKey, receiverClockBiasKey, tropoZenithWetKey, slantIonoKey,
+           ambiguityKey),
+      CarrierPhaseBase{measuredCarrierPhaseMeters, satellitePosition,
+                       satelliteClockBias},
+      arm_(leverArm, ecef_T_nav),
+      tropoMap_(tropoWetMapping),
+      ionoCoeff_(ionoCoefficient),
+      lambda_(lambda) {}
+
+//***************************************************************************
+void UncombinedCarrierPhaseFactorArm::print(
+    const std::string& s, const KeyFormatter& keyFormatter) const {
+  Base::print(s, keyFormatter);
+  gtsam::print(measurement_, "carrier phase (m): ");
+  gtsam::print(Vector(satPos_), "sat position (ECEF meters): ");
+  gtsam::print(satClkBias_, "sat clock bias (s): ");
+  gtsam::print(Vector(arm_.b), "lever arm (body frame meters): ");
+  gtsam::print(tropoMap_, "tropo wet mapping: ");
+  gtsam::print(ionoCoeff_, "iono coefficient: ");
+  gtsam::print(lambda_, "wavelength (m): ");
+  if (arm_.ecef_T_nav) {
+    arm_.ecef_T_nav->print("ecef_T_nav:\n");
+  }
+}
+
+//***************************************************************************
+bool UncombinedCarrierPhaseFactorArm::equals(const NonlinearFactor& expected,
+                                             double tol) const {
+  const This* e = dynamic_cast<const This*>(&expected);
+  return e != nullptr && Base::equals(*e, tol) &&
+         traits<double>::Equals(measurement_, e->measurement_, tol) &&
+         traits<Point3>::Equals(satPos_, e->satPos_, tol) &&
+         traits<double>::Equals(satClkBias_, e->satClkBias_, tol) &&
+         arm_.equals(e->arm_, tol) &&
+         traits<double>::Equals(tropoMap_, e->tropoMap_, tol) &&
+         traits<double>::Equals(ionoCoeff_, e->ionoCoeff_, tol) &&
+         traits<double>::Equals(lambda_, e->lambda_, tol);
+}
+
+//***************************************************************************
+Vector UncombinedCarrierPhaseFactorArm::evaluateError(
+    const Pose3& pose, const double& receiverClockBias,
+    const double& tropoZenithWet, const double& slantIono,
+    const double& ambiguity, OptionalMatrixType H_pose,
+    OptionalMatrixType HreceiverClockBias, OptionalMatrixType HtropoZenithWet,
+    OptionalMatrixType HslantIono, OptionalMatrixType Hambiguity) const {
+  gnss::LeverArm::PoseFrame frame;
+  const Point3 antennaPos =
+      arm_.antennaPosition(pose, H_pose ? &frame : nullptr);
+
+  Point3 e;
+  Matrix13 H_antenna;
+  const double range =
+      gnss::geodist(satPos_, antennaPos, e, H_pose ? &H_antenna : nullptr);
+  const double rho = range + C_LIGHT * (receiverClockBias - satClkBias_) +
+                     tropoMap_ * tropoZenithWet - ionoCoeff_ * slantIono +
+                     lambda_ * ambiguity;
+  const double error = rho - measurement_;
+
+  if (H_pose) *H_pose = arm_.antennaPoseJacobian(H_antenna, frame);
+  if (HreceiverClockBias) *HreceiverClockBias = I_1x1 * C_LIGHT;
+  if (HtropoZenithWet) *HtropoZenithWet = I_1x1 * tropoMap_;
+  if (HslantIono) *HslantIono = I_1x1 * (-ionoCoeff_);
+  if (Hambiguity) *Hambiguity = I_1x1 * lambda_;
+
+  return Vector1(error);
+}
+
+//***************************************************************************
 CarrierPhaseFactorArm::CarrierPhaseFactorArm(
     const Key poseKey, const Key receiverClockBiasKey, const Key ambiguityKey,
     const double measuredCarrierPhaseMeters, const Point3& satellitePosition,
