@@ -181,8 +181,6 @@ void AccumulateCudaSfmNormalEquations(
         "AccumulateCudaSfmNormalEquations requires output system");
   }
 
-  system->zero(stream);
-
   if (numCameras < 0) {
     throw std::invalid_argument(
         "AccumulateCudaSfmNormalEquations requires nonnegative camera count");
@@ -213,19 +211,12 @@ void AccumulateCudaSfmNormalEquations(
   }
   const size_t requiredRows =
       9 * static_cast<size_t>(numCameras) + 3 * batch.numPoints();
-  if (system->rows() < static_cast<int>(requiredRows)) {
+  if (system->rows() != static_cast<int>(requiredRows)) {
     throw std::invalid_argument(
-        "AccumulateCudaSfmNormalEquations system too small");
+        "AccumulateCudaSfmNormalEquations system row count mismatch");
   }
 
   const size_t numObservations = batch.numObservations();
-  if (numObservations == 0) {
-    return;
-  }
-
-  CudaDeviceArray<int> missingEntries(1);
-  missingEntries.zero(stream);
-
   const size_t gridSizeSize =
       (numObservations + kProjectionLinearizationBlockSize - 1) /
       kProjectionLinearizationBlockSize;
@@ -233,6 +224,15 @@ void AccumulateCudaSfmNormalEquations(
     throw std::invalid_argument(
         "AccumulateCudaSfmNormalEquations grid size exceeds CUDA launch limit");
   }
+
+  system->zero(stream);
+  if (numObservations == 0) {
+    return;
+  }
+
+  CudaDeviceArray<int> missingEntries(1);
+  missingEntries.zero(stream);
+
   const int gridSize = static_cast<int>(gridSizeSize);
   AccumulateCudaSfmNormalEquationsKernel<<<
       gridSize, kProjectionLinearizationBlockSize, 0, stream>>>(

@@ -452,6 +452,50 @@ TEST(CudaSfmProjectionLinearization, RejectsIncompleteCsrPattern) {
                   std::runtime_error);
 }
 
+TEST(CudaSfmProjectionLinearization,
+     RejectsInvalidSystemWithoutClearingExistingValues) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData initialData = makePerturbedBalLikeData(measuredData);
+  CudaContext context;
+
+  DeviceValues values = PackSfmValues(initialData, context.stream());
+  CudaSfmProjectionBatch batch =
+      CudaSfmProjectionBatch::FromSfmData(measuredData, context.stream());
+
+  const CudaBalCsrStructure structure =
+      CudaBalCsrStructure::FromSfmData(measuredData);
+  std::vector<int> rowPointers = structure.rowPointers();
+  std::vector<int> colIndices = structure.colIndices();
+  rowPointers.push_back(rowPointers.back() + 1);
+  colIndices.push_back(structure.dimension());
+
+  DeviceSparseNormalEquations system;
+  system.uploadPattern(structure.dimension() + 1, rowPointers, colIndices,
+                       context.stream());
+  system.values().upload(std::vector<double>(colIndices.size(), 7.0),
+                         context.stream());
+  system.rhs().upload(std::vector<double>(structure.dimension() + 1, -8.0),
+                      context.stream());
+
+  CHECK_EXCEPTION(AccumulateCudaSfmNormalEquations(
+                      values, batch, static_cast<int>(structure.numCameras()),
+                      &system, context.stream()),
+                  std::invalid_argument);
+
+  std::vector<double> actualValues;
+  std::vector<double> actualRhs;
+  system.values().download(&actualValues, context.stream());
+  system.rhs().download(&actualRhs, context.stream());
+  context.synchronize();
+
+  for (double value : actualValues) {
+    DOUBLES_EQUAL(7.0, value, 1e-12);
+  }
+  for (double value : actualRhs) {
+    DOUBLES_EQUAL(-8.0, value, 1e-12);
+  }
+}
+
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
 TEST(CudaSfmProjectionLinearization, ReturnsZerosForCheiralityFailures) {
   const SfmData data = makeBehindCameraData();
