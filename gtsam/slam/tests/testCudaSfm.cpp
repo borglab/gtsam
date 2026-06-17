@@ -4,6 +4,7 @@
 #include <gtsam/nonlinear/cuda/DeviceGeometryKernels.h>
 #include <gtsam/nonlinear/cuda/DeviceGeometryTypes.h>
 #include <gtsam/slam/cuda/CudaBalCsrStructure.h>
+#include <gtsam/slam/cuda/CudaSfmLevenbergMarquardt.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionLinearization.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionBatch.h>
 #include <gtsam/slam/cuda/CudaSfmValues.h>
@@ -563,6 +564,33 @@ TEST(CudaSfmProjectionLinearization, RejectsMismatchedValueShapes) {
                       context.stream()),
                   std::invalid_argument);
 }
+
+#if GTSAM_ENABLE_CUDSS
+TEST(CudaSfmLevenbergMarquardt, ReducesTinyBalErrorAndDownloadsValues) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+
+  CudaSfmLevenbergMarquardtParams params;
+  params.maxIterations = 5;
+  params.relativeErrorTol = 1e-12;
+  params.initialLambda = 1e-3;
+
+  const CudaSfmLevenbergMarquardtResult result =
+      OptimizeCudaSfm(data, params);
+
+  CHECK(result.iterations > 0);
+  CHECK(result.acceptedSteps > 0);
+  CHECK(result.finalError < result.initialError);
+  CHECK(result.optimizedValues.exists(C(0)));
+  CHECK(result.optimizedValues.exists(P(0)));
+
+  const auto& camera0 = result.optimizedValues.at<SfmCamera>(C(0));
+  const auto& point0 = result.optimizedValues.at<Point3>(P(0));
+  CHECK(std::isfinite(camera0.calibration().fx()));
+  CHECK(camera0.calibration().fx() > 0.0);
+  CHECK(std::isfinite(point0.x()));
+}
+#endif
 
 TEST(DeviceGeometryKernels, RetractCameraMatchesHostCameraRetract) {
   const SfmData data = makeTrueBalLikeData();
