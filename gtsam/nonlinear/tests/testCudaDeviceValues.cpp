@@ -1,5 +1,6 @@
 #include <gtsam/base/cuda/CudaContext.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/nonlinear/cuda/CudssLinearSolver.h>
 #include <gtsam/nonlinear/cuda/DeviceSparseNormalEquations.h>
 #include <gtsam/nonlinear/cuda/DeviceValues.h>
 #include <gtsam/nonlinear/cuda/DeviceVariableIndex.h>
@@ -8,6 +9,7 @@
 
 #include <cstdint>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 using namespace gtsam;
@@ -143,6 +145,36 @@ TEST(DeviceSparseNormalEquations, ClearsValuesAndRhs) {
   DOUBLES_EQUAL(0.0, rhs[1], 1e-12);
 }
 
+TEST(DeviceSparseNormalEquations, AddsDiagonalDamping) {
+  CudaContext context;
+  DeviceSparseNormalEquations system;
+  system.uploadPattern(2, std::vector<int>{0, 2, 3},
+                       std::vector<int>{0, 1, 1}, context.stream());
+  system.values().upload(std::vector<double>{2.0, 0.5, 3.0},
+                         context.stream());
+
+  system.addDiagonalDamping(0.25, context.stream());
+
+  std::vector<double> values;
+  system.values().download(&values, context.stream());
+  context.synchronize();
+
+  DOUBLES_EQUAL(2.25, values[0], 1e-12);
+  DOUBLES_EQUAL(0.5, values[1], 1e-12);
+  DOUBLES_EQUAL(3.25, values[2], 1e-12);
+}
+
+TEST(DeviceSparseNormalEquations, RejectsDampingWithoutDiagonal) {
+  CudaContext context;
+  DeviceSparseNormalEquations system;
+  system.uploadPattern(2, std::vector<int>{0, 1, 2},
+                       std::vector<int>{1, 1}, context.stream());
+  system.values().upload(std::vector<double>{0.5, 3.0}, context.stream());
+
+  CHECK_EXCEPTION(system.addDiagonalDamping(0.25, context.stream()),
+                  std::runtime_error);
+}
+
 TEST(DeviceSparseNormalEquations, RejectsMalformedCsrBeforeUpload) {
   DeviceSparseNormalEquations system;
 
@@ -161,6 +193,44 @@ TEST(DeviceSparseNormalEquations, RejectsMalformedCsrBeforeUpload) {
   CHECK_EXCEPTION(system.uploadPattern(1, badColumn, badColumnCols),
                   std::invalid_argument);
 }
+
+#if !GTSAM_ENABLE_CUDSS
+TEST(CudssLinearSolver, ThrowsWhenCudssDisabled) {
+  DeviceSparseNormalEquations system;
+  CudaDeviceArray<double> solution;
+  CudssLinearSolver solver;
+
+  try {
+    solver.solveSpd(system, &solution);
+    CHECK(false);
+  } catch (const std::runtime_error& e) {
+    CHECK(std::string(e.what()).find("requires cuDSS") != std::string::npos);
+  }
+}
+#endif
+
+#if GTSAM_ENABLE_CUDSS
+TEST(CudssLinearSolver, SolvesSmallSpdSystem) {
+  CudaContext context;
+  DeviceSparseNormalEquations system;
+  system.uploadPattern(2, std::vector<int>{0, 2, 3},
+                       std::vector<int>{0, 1, 1}, context.stream());
+  system.values().upload(std::vector<double>{4.0, 1.0, 3.0},
+                         context.stream());
+  system.rhs().upload(std::vector<double>{1.0, 2.0}, context.stream());
+
+  CudaDeviceArray<double> solution;
+  CudssLinearSolver solver;
+  solver.solveSpd(system, &solution, context.stream());
+
+  std::vector<double> actual;
+  solution.download(&actual, context.stream());
+  context.synchronize();
+
+  DOUBLES_EQUAL(1.0 / 11.0, actual[0], 1e-10);
+  DOUBLES_EQUAL(7.0 / 11.0, actual[1], 1e-10);
+}
+#endif
 
 int main() {
   TestResult tr;

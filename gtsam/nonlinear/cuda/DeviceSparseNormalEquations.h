@@ -75,6 +75,8 @@ class DeviceSparseNormalEquations {
     rhs_.zero(stream);
   }
 
+  void addDiagonalDamping(double lambda, cudaStream_t stream = nullptr);
+
   const CudaDeviceArray<int>& rowPointers() const { return rowPointers_; }
   const CudaDeviceArray<int>& colIndices() const { return colIndices_; }
   CudaDeviceArray<double>& values() { return values_; }
