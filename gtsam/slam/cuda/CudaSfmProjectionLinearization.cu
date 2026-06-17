@@ -57,7 +57,7 @@ __global__ void AccumulateCudaSfmNormalEquationsKernel(
     const DevicePinholeCameraCal3Bundler* cameras, const DevicePoint3* points,
     const CudaSfmObservation* observations, size_t numObservations,
     int numCameras, const int* rowPointers, const int* colIndices,
-    double* values, double* rhs) {
+    double* values, double* rhs, int* missingEntries) {
   const size_t i = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
   if (i >= numObservations) return;
 
@@ -101,6 +101,8 @@ __global__ void AccumulateCudaSfmNormalEquationsKernel(
       if (entry >= 0) {
         atomicAdd(&values[entry], jacobian0[a] * jacobian0[b] +
                                       jacobian1[a] * jacobian1[b]);
+      } else {
+        atomicAdd(missingEntries, 1);
       }
     }
   }
@@ -221,6 +223,9 @@ void AccumulateCudaSfmNormalEquations(
     return;
   }
 
+  CudaDeviceArray<int> missingEntries(1);
+  missingEntries.zero(stream);
+
   const size_t gridSizeSize =
       (numObservations + kProjectionLinearizationBlockSize - 1) /
       kProjectionLinearizationBlockSize;
@@ -234,8 +239,16 @@ void AccumulateCudaSfmNormalEquations(
       cameraBlock.values.data(), pointBlock.values.data(),
       batch.observations().data(), numObservations, numCameras,
       system->rowPointers().data(), system->colIndices().data(),
-      system->values().data(), system->rhs().data());
+      system->values().data(), system->rhs().data(), missingEntries.data());
   GTSAM_CUDA_CHECK(cudaGetLastError());
+
+  std::vector<int> hostMissingEntries;
+  missingEntries.download(&hostMissingEntries, stream);
+  GTSAM_CUDA_CHECK(cudaStreamSynchronize(stream));
+  if (!hostMissingEntries.empty() && hostMissingEntries[0] != 0) {
+    throw std::runtime_error(
+        "AccumulateCudaSfmNormalEquations missing CSR entries");
+  }
 }
 
 }  // namespace gtsam::cuda

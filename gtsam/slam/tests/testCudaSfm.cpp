@@ -411,6 +411,47 @@ TEST(CudaSfmProjectionLinearization,
   }
 }
 
+TEST(CudaSfmProjectionLinearization, RejectsIncompleteCsrPattern) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData initialData = makePerturbedBalLikeData(measuredData);
+  CudaContext context;
+
+  DeviceValues values = PackSfmValues(initialData, context.stream());
+  CudaSfmProjectionBatch batch =
+      CudaSfmProjectionBatch::FromSfmData(measuredData, context.stream());
+
+  const CudaBalCsrStructure structure =
+      CudaBalCsrStructure::FromSfmData(measuredData);
+  std::vector<int> rowPointers = structure.rowPointers();
+  std::vector<int> colIndices = structure.colIndices();
+
+  const int missingRow = 0;
+  const int missingCol = 9 * static_cast<int>(structure.numCameras());
+  int missingEntry = -1;
+  for (int entry = rowPointers[missingRow]; entry < rowPointers[missingRow + 1];
+       ++entry) {
+    if (colIndices[entry] == missingCol) {
+      missingEntry = entry;
+      break;
+    }
+  }
+  CHECK(missingEntry >= 0);
+  colIndices.erase(colIndices.begin() + missingEntry);
+  for (size_t row = static_cast<size_t>(missingRow) + 1;
+       row < rowPointers.size(); ++row) {
+    --rowPointers[row];
+  }
+
+  DeviceSparseNormalEquations system;
+  system.uploadPattern(structure.dimension(), rowPointers, colIndices,
+                       context.stream());
+
+  CHECK_EXCEPTION(AccumulateCudaSfmNormalEquations(
+                      values, batch, static_cast<int>(structure.numCameras()),
+                      &system, context.stream()),
+                  std::runtime_error);
+}
+
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
 TEST(CudaSfmProjectionLinearization, ReturnsZerosForCheiralityFailures) {
   const SfmData data = makeBehindCameraData();
