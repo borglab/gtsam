@@ -173,6 +173,13 @@ TEST(DeviceSparseNormalEquations, RejectsDampingWithoutDiagonal) {
 
   CHECK_EXCEPTION(system.addDiagonalDamping(0.25, context.stream()),
                   std::runtime_error);
+
+  std::vector<double> values;
+  system.values().download(&values, context.stream());
+  context.synchronize();
+
+  DOUBLES_EQUAL(0.5, values[0], 1e-12);
+  DOUBLES_EQUAL(3.0, values[1], 1e-12);
 }
 
 TEST(DeviceSparseNormalEquations, RejectsMalformedCsrBeforeUpload) {
