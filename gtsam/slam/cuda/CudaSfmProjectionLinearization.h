@@ -1,6 +1,7 @@
 #pragma once
 
 #include <gtsam/base/cuda/CudaDeviceArray.h>
+#include <gtsam/nonlinear/cuda/DeviceSparseNormalEquations.h>
 #include <gtsam/nonlinear/cuda/DeviceValues.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionBatch.h>
 
@@ -22,5 +23,10 @@ void LinearizeCudaSfmProjectionBatch(
 double ComputeCudaSfmProjectionError(const DeviceValues& values,
                                      const CudaSfmProjectionBatch& batch,
                                      cudaStream_t stream = nullptr);
+
+void AccumulateCudaSfmNormalEquations(
+    const DeviceValues& values, const CudaSfmProjectionBatch& batch,
+    int numCameras, DeviceSparseNormalEquations* system,
+    cudaStream_t stream = nullptr);
 
 }  // namespace gtsam::cuda

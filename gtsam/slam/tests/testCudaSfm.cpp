@@ -314,6 +314,103 @@ TEST(CudaSfmProjectionLinearization,
   DOUBLES_EQUAL(expectedError, actualError, kResidualTolerance);
 }
 
+TEST(CudaSfmProjectionLinearization,
+     AccumulatesProjectionNormalEquationsIntoCsr) {
+  constexpr double kTolerance = 1e-6;
+
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData initialData = makePerturbedBalLikeData(measuredData);
+  CudaContext context;
+
+  DeviceValues values = PackSfmValues(initialData, context.stream());
+  CudaSfmProjectionBatch batch =
+      CudaSfmProjectionBatch::FromSfmData(measuredData, context.stream());
+  CudaSfmProjectionLinearization linearization;
+  LinearizeCudaSfmProjectionBatch(values, batch, &linearization,
+                                  context.stream());
+
+  const CudaBalCsrStructure structure =
+      CudaBalCsrStructure::FromSfmData(measuredData);
+  DeviceSparseNormalEquations system;
+  system.uploadPattern(structure.dimension(), structure.rowPointers(),
+                       structure.colIndices(), context.stream());
+  system.values().upload(
+      std::vector<double>(structure.colIndices().size(), 123.0),
+      context.stream());
+  system.rhs().upload(std::vector<double>(structure.dimension(), -456.0),
+                      context.stream());
+
+  AccumulateCudaSfmNormalEquations(
+      values, batch, static_cast<int>(structure.numCameras()), &system,
+      context.stream());
+
+  std::vector<CudaSfmObservation> observations;
+  std::vector<double> residuals;
+  std::vector<double> cameraJacobians;
+  std::vector<double> pointJacobians;
+  std::vector<double> actualValues;
+  std::vector<double> actualRhs;
+  batch.observations().download(&observations, context.stream());
+  linearization.residuals.download(&residuals, context.stream());
+  linearization.cameraJacobians.download(&cameraJacobians, context.stream());
+  linearization.pointJacobians.download(&pointJacobians, context.stream());
+  system.values().download(&actualValues, context.stream());
+  system.rhs().download(&actualRhs, context.stream());
+  context.synchronize();
+
+  const int dimension = structure.dimension();
+  std::vector<double> expectedDense(static_cast<size_t>(dimension) *
+                                    static_cast<size_t>(dimension));
+  std::vector<double> expectedRhs(static_cast<size_t>(dimension));
+
+  for (size_t i = 0; i < observations.size(); ++i) {
+    const CudaSfmObservation& observation = observations[i];
+    const int cameraBase = 9 * observation.cameraSlot;
+    const int pointBase =
+        9 * static_cast<int>(structure.numCameras()) + 3 * observation.pointSlot;
+
+    int global[12];
+    double jacobianRow0[12];
+    double jacobianRow1[12];
+    for (int col = 0; col < 9; ++col) {
+      global[col] = cameraBase + col;
+      jacobianRow0[col] = cameraJacobians[18 * i + col];
+      jacobianRow1[col] = cameraJacobians[18 * i + 9 + col];
+    }
+    for (int col = 0; col < 3; ++col) {
+      global[9 + col] = pointBase + col;
+      jacobianRow0[9 + col] = pointJacobians[6 * i + col];
+      jacobianRow1[9 + col] = pointJacobians[6 * i + 3 + col];
+    }
+
+    const double residual0 = residuals[2 * i];
+    const double residual1 = residuals[2 * i + 1];
+    for (int a = 0; a < 12; ++a) {
+      expectedRhs[global[a]] +=
+          -jacobianRow0[a] * residual0 - jacobianRow1[a] * residual1;
+      for (int b = a; b < 12; ++b) {
+        const int row = std::min(global[a], global[b]);
+        const int col = std::max(global[a], global[b]);
+        expectedDense[static_cast<size_t>(row) * dimension + col] +=
+            jacobianRow0[a] * jacobianRow0[b] +
+            jacobianRow1[a] * jacobianRow1[b];
+      }
+    }
+  }
+
+  EXPECT_LONGS_EQUAL(structure.colIndices().size(), actualValues.size());
+  EXPECT_LONGS_EQUAL(dimension, actualRhs.size());
+  for (int row = 0; row < dimension; ++row) {
+    DOUBLES_EQUAL(expectedRhs[row], actualRhs[row], kTolerance);
+    for (int entry = structure.rowPointers()[row];
+         entry < structure.rowPointers()[row + 1]; ++entry) {
+      const int col = structure.colIndices()[entry];
+      DOUBLES_EQUAL(expectedDense[static_cast<size_t>(row) * dimension + col],
+                    actualValues[entry], kTolerance);
+    }
+  }
+}
+
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
 TEST(CudaSfmProjectionLinearization, ReturnsZerosForCheiralityFailures) {
   const SfmData data = makeBehindCameraData();
