@@ -3,7 +3,31 @@
 #include <gtsam/base/cuda/CudaDeviceArray.h>
 #include <gtsam/nonlinear/cuda/DeviceSparseNormalEquations.h>
 
+#include <memory>
+
 namespace gtsam::cuda {
+
+class CudssSpdSolver {
+ public:
+  CudssSpdSolver();
+  ~CudssSpdSolver();
+
+  CudssSpdSolver(const CudssSpdSolver&) = delete;
+  CudssSpdSolver& operator=(const CudssSpdSolver&) = delete;
+  CudssSpdSolver(CudssSpdSolver&&) noexcept;
+  CudssSpdSolver& operator=(CudssSpdSolver&&) noexcept;
+
+  void analyze(const DeviceSparseNormalEquations& system,
+               CudaDeviceArray<double>* solution,
+               cudaStream_t stream = nullptr);
+  void solve(const DeviceSparseNormalEquations& system,
+             CudaDeviceArray<double>* solution,
+             cudaStream_t stream = nullptr);
+
+ private:
+  struct Impl;
+  std::unique_ptr<Impl> impl_;
+};
 
 class CudssLinearSolver {
  public:

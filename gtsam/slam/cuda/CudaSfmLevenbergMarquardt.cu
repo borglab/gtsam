@@ -108,7 +108,8 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfm(
   system.uploadPattern(structure.dimension(), structure.rowPointers(),
                        structure.colIndices(), context.stream());
   CudaDeviceArray<double> delta;
-  CudssLinearSolver solver;
+  CudssSpdSolver solver;
+  bool solverAnalyzed = false;
 
   double lambda = params.initialLambda;
   const int numCameras = static_cast<int>(structure.numCameras());
@@ -118,7 +119,11 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfm(
     AccumulateCudaSfmNormalEquations(current, batch, numCameras, &system,
                                      context.stream());
     system.addDiagonalDamping(lambda, context.stream());
-    solver.solveSpd(system, &delta, context.stream());
+    if (!solverAnalyzed) {
+      solver.analyze(system, &delta, context.stream());
+      solverAnalyzed = true;
+    }
+    solver.solve(system, &delta, context.stream());
 
     ApplyDelta(current, delta, &trial, numCameras, numPoints,
                context.stream());

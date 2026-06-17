@@ -2,6 +2,7 @@
 
 #include <gtsam/nonlinear/cuda/CudssLinearSolver.h>
 
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 
@@ -162,9 +163,155 @@ void ValidateSystemForSolve(const DeviceSparseNormalEquations& system,
   }
 }
 
+cudssStatus_t CreateSpdCsrMatrix(CudssMatrix* matrix,
+                                 const DeviceSparseNormalEquations& system) {
+  const int rows = system.rows();
+  cudssStatus_t csrStatus = cudssMatrixCreateCsr(
+      &matrix->value, rows, rows, system.nonzeros(),
+      system.rowPointers().data(), system.rowPointers().data() + 1,
+      system.colIndices().data(), system.values().data(), CUDSS_R_32I,
+      CUDSS_R_32I, CUDSS_R_64F, CUDSS_MTYPE_SPD, CUDSS_MVIEW_UPPER,
+      CUDSS_BASE_ZERO);
+  if (csrStatus == CUDSS_STATUS_NOT_SUPPORTED) {
+    matrix->reset();
+    // cuDSS 0.8 accepts standard CSR offsets with rowEnd == nullptr.
+    csrStatus = cudssMatrixCreateCsr(
+        &matrix->value, rows, rows, system.nonzeros(),
+        system.rowPointers().data(), nullptr, system.colIndices().data(),
+        system.values().data(), CUDSS_R_32I, CUDSS_R_32I, CUDSS_R_64F,
+        CUDSS_MTYPE_SPD, CUDSS_MVIEW_UPPER, CUDSS_BASE_ZERO);
+  }
+  return csrStatus;
+}
+
 #endif
 
 }  // namespace
+
+struct CudssSpdSolver::Impl {
+#if GTSAM_ENABLE_CUDSS
+  CudssHandle handle;
+  CudssConfig config;
+  CudssData data;
+  CudssMatrix matrix;
+  CudssMatrix x;
+  CudssMatrix b;
+  int rows = 0;
+  int nonzeros = 0;
+  const int* rowPointers = nullptr;
+  const int* colIndices = nullptr;
+  const double* values = nullptr;
+  const double* rhs = nullptr;
+  double* solution = nullptr;
+  bool analyzed = false;
+
+  Impl() : data(handle.value) {}
+
+  void analyze(const DeviceSparseNormalEquations& system,
+               CudaDeviceArray<double>* solutionArray,
+               cudaStream_t stream) {
+    ValidateSystemForSolve(system, solutionArray);
+
+    rows = system.rows();
+    nonzeros = system.nonzeros();
+    solutionArray->resize(static_cast<size_t>(rows));
+
+    GTSAM_CUDSS_CHECK(cudssSetStream(handle.value, stream));
+
+    matrix.reset();
+    x.reset();
+    b.reset();
+
+    CheckCudss(CreateSpdCsrMatrix(&matrix, system), "cudssMatrixCreateCsr");
+    GTSAM_CUDSS_CHECK(cudssMatrixCreateDn(
+        &x.value, rows, 1, rows, solutionArray->data(), CUDSS_R_64F,
+        CUDSS_LAYOUT_COL_MAJOR));
+    GTSAM_CUDSS_CHECK(cudssMatrixCreateDn(
+        &b.value, rows, 1, rows, system.rhs().data(), CUDSS_R_64F,
+        CUDSS_LAYOUT_COL_MAJOR));
+
+    CheckCudssExecute(cudssExecute(handle.value, CUDSS_PHASE_ANALYSIS,
+                                   config.value, data.value, matrix.value,
+                                   x.value, b.value),
+                      CUDSS_PHASE_ANALYSIS);
+
+    rowPointers = system.rowPointers().data();
+    colIndices = system.colIndices().data();
+    values = system.values().data();
+    rhs = system.rhs().data();
+    solution = solutionArray->data();
+    analyzed = true;
+  }
+
+  void solve(const DeviceSparseNormalEquations& system,
+             CudaDeviceArray<double>* solutionArray,
+             cudaStream_t stream) {
+    ValidateSystemForSolve(system, solutionArray);
+    if (!analyzed) {
+      throw std::logic_error("CudssSpdSolver::solve called before analyze");
+    }
+    if (system.rows() != rows || system.nonzeros() != nonzeros ||
+        system.rowPointers().data() != rowPointers ||
+        system.colIndices().data() != colIndices ||
+        system.values().data() != values || system.rhs().data() != rhs) {
+      throw std::invalid_argument(
+          "CudssSpdSolver::solve requires the analyzed CSR storage");
+    }
+
+    solutionArray->resize(static_cast<size_t>(rows));
+    if (solutionArray->data() != solution) {
+      throw std::invalid_argument(
+          "CudssSpdSolver::solve requires the analyzed solution storage");
+    }
+
+    GTSAM_CUDSS_CHECK(cudssSetStream(handle.value, stream));
+    CheckCudssExecute(cudssExecute(handle.value, CUDSS_PHASE_FACTORIZATION,
+                                   config.value, data.value, matrix.value,
+                                   x.value, b.value),
+                      CUDSS_PHASE_FACTORIZATION);
+    CheckCudssExecute(cudssExecute(handle.value, CUDSS_PHASE_SOLVE,
+                                   config.value, data.value, matrix.value,
+                                   x.value, b.value),
+                      CUDSS_PHASE_SOLVE);
+  }
+#endif
+};
+
+CudssSpdSolver::CudssSpdSolver() : impl_(std::make_unique<Impl>()) {}
+
+CudssSpdSolver::~CudssSpdSolver() = default;
+
+CudssSpdSolver::CudssSpdSolver(CudssSpdSolver&&) noexcept = default;
+
+CudssSpdSolver& CudssSpdSolver::operator=(CudssSpdSolver&&) noexcept =
+    default;
+
+void CudssSpdSolver::analyze(const DeviceSparseNormalEquations& system,
+                             CudaDeviceArray<double>* solution,
+                             cudaStream_t stream) {
+#if !GTSAM_ENABLE_CUDSS
+  (void)system;
+  (void)solution;
+  (void)stream;
+  throw std::runtime_error("CudssSpdSolver::analyze requires cuDSS");
+#else
+  impl_ = std::make_unique<Impl>();
+  impl_->analyze(system, solution, stream);
+#endif
+}
+
+void CudssSpdSolver::solve(const DeviceSparseNormalEquations& system,
+                           CudaDeviceArray<double>* solution,
+                           cudaStream_t stream) {
+#if !GTSAM_ENABLE_CUDSS
+  (void)system;
+  (void)solution;
+  (void)stream;
+  throw std::runtime_error("CudssSpdSolver::solve requires cuDSS");
+#else
+  impl_->solve(system, solution, stream);
+#endif
+}
 
 void CudssLinearSolver::solveSpd(const DeviceSparseNormalEquations& system,
                                  CudaDeviceArray<double>* solution,
@@ -175,54 +322,9 @@ void CudssLinearSolver::solveSpd(const DeviceSparseNormalEquations& system,
   (void)stream;
   throw std::runtime_error("CudssLinearSolver::solveSpd requires cuDSS");
 #else
-  ValidateSystemForSolve(system, solution);
-
-  const int rows = system.rows();
-  solution->resize(static_cast<size_t>(rows));
-
-  CudssHandle handle;
-  GTSAM_CUDSS_CHECK(cudssSetStream(handle.value, stream));
-  CudssConfig config;
-  CudssData data(handle.value);
-
-  CudssMatrix matrix;
-  cudssStatus_t csrStatus = cudssMatrixCreateCsr(
-      &matrix.value, rows, rows, system.nonzeros(), system.rowPointers().data(),
-      system.rowPointers().data() + 1, system.colIndices().data(),
-      system.values().data(), CUDSS_R_32I, CUDSS_R_32I, CUDSS_R_64F,
-      CUDSS_MTYPE_SPD, CUDSS_MVIEW_UPPER, CUDSS_BASE_ZERO);
-  if (csrStatus == CUDSS_STATUS_NOT_SUPPORTED) {
-    matrix.reset();
-    // cuDSS 0.8 accepts standard CSR offsets with rowEnd == nullptr.
-    csrStatus = cudssMatrixCreateCsr(
-        &matrix.value, rows, rows, system.nonzeros(),
-        system.rowPointers().data(), nullptr, system.colIndices().data(),
-        system.values().data(), CUDSS_R_32I, CUDSS_R_32I, CUDSS_R_64F,
-        CUDSS_MTYPE_SPD, CUDSS_MVIEW_UPPER, CUDSS_BASE_ZERO);
-  }
-  CheckCudss(csrStatus, "cudssMatrixCreateCsr");
-
-  CudssMatrix x;
-  GTSAM_CUDSS_CHECK(cudssMatrixCreateDn(&x.value, rows, 1, rows,
-                                        solution->data(), CUDSS_R_64F,
-                                        CUDSS_LAYOUT_COL_MAJOR));
-
-  CudssMatrix b;
-  GTSAM_CUDSS_CHECK(cudssMatrixCreateDn(&b.value, rows, 1, rows,
-                                        system.rhs().data(), CUDSS_R_64F,
-                                        CUDSS_LAYOUT_COL_MAJOR));
-
-  CheckCudssExecute(cudssExecute(handle.value, CUDSS_PHASE_ANALYSIS,
-                                 config.value, data.value, matrix.value,
-                                 x.value, b.value),
-                    CUDSS_PHASE_ANALYSIS);
-  CheckCudssExecute(cudssExecute(handle.value, CUDSS_PHASE_FACTORIZATION,
-                                 config.value, data.value, matrix.value,
-                                 x.value, b.value),
-                    CUDSS_PHASE_FACTORIZATION);
-  CheckCudssExecute(cudssExecute(handle.value, CUDSS_PHASE_SOLVE, config.value,
-                                 data.value, matrix.value, x.value, b.value),
-                    CUDSS_PHASE_SOLVE);
+  CudssSpdSolver solver;
+  solver.analyze(system, solution, stream);
+  solver.solve(system, solution, stream);
 #endif
 }
 

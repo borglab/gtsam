@@ -237,6 +237,37 @@ TEST(CudssLinearSolver, SolvesSmallSpdSystem) {
   DOUBLES_EQUAL(1.0 / 11.0, actual[0], 1e-10);
   DOUBLES_EQUAL(7.0 / 11.0, actual[1], 1e-10);
 }
+
+TEST(CudssSpdSolver, ReusesAnalysisForChangedValues) {
+  CudaContext context;
+  DeviceSparseNormalEquations system;
+  system.uploadPattern(2, std::vector<int>{0, 2, 3},
+                       std::vector<int>{0, 1, 1}, context.stream());
+  system.values().upload(std::vector<double>{4.0, 1.0, 3.0},
+                         context.stream());
+  system.rhs().upload(std::vector<double>{1.0, 2.0}, context.stream());
+
+  CudaDeviceArray<double> solution;
+  CudssSpdSolver solver;
+  solver.analyze(system, &solution, context.stream());
+  solver.solve(system, &solution, context.stream());
+
+  std::vector<double> actual;
+  solution.download(&actual, context.stream());
+  context.synchronize();
+  DOUBLES_EQUAL(1.0 / 11.0, actual[0], 1e-10);
+  DOUBLES_EQUAL(7.0 / 11.0, actual[1], 1e-10);
+
+  system.values().upload(std::vector<double>{2.0, 0.5, 1.5},
+                         context.stream());
+  system.rhs().upload(std::vector<double>{1.0, 0.0}, context.stream());
+  solver.solve(system, &solution, context.stream());
+
+  solution.download(&actual, context.stream());
+  context.synchronize();
+  DOUBLES_EQUAL(6.0 / 11.0, actual[0], 1e-10);
+  DOUBLES_EQUAL(-2.0 / 11.0, actual[1], 1e-10);
+}
 #endif
 
 int main() {
