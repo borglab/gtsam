@@ -27,6 +27,7 @@
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 #include <stdexcept>
+#include <type_traits>
 
 namespace gtsam {
 
@@ -319,9 +320,6 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
             "non-robust quadratic noise model");
       }
 
-      InsertQcqpConstraints<T, 1>(this->key1(), constraints);
-      InsertQcqpConstraints<T, 1>(this->key2(), constraints);
-
       constexpr int AmbientDim = N * N;
       const Matrix measurement = this->T12_.matrix();
       const Matrix A = RightProductMatrix(measurement);
@@ -335,17 +333,29 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
       const Matrix Q = whitenedB.transpose() * whitenedB;
 
       // From here on we do homogenization and truncation (which may be Lie-group specific): 
-      constexpr int LiftedDim = AmbientDim + 1; // First entry is homogenization
-      Matrix Q_trunc_hom = Matrix::Zero(2 * LiftedDim, 2 * LiftedDim);
-      Q_trunc_hom.block(1, 1, AmbientDim, AmbientDim) = Q.block(0, 0, AmbientDim, AmbientDim);
-      Q_trunc_hom.block(1, LiftedDim + 1, AmbientDim, AmbientDim) = Q.block(0, AmbientDim, AmbientDim, AmbientDim);
-      Q_trunc_hom.block(LiftedDim + 1, 1, AmbientDim, AmbientDim) = Q.block(AmbientDim, 0, AmbientDim, AmbientDim);
-      Q_trunc_hom.block(LiftedDim + 1, LiftedDim + 1, AmbientDim, AmbientDim) = Q.block(AmbientDim, AmbientDim, AmbientDim, AmbientDim);
+      if constexpr (std::is_same_v<T, Rot2>) {
+        constexpr int LiftedDim = AmbientDim + 1; // First entry is homogenization
+        Matrix Q_trunc_hom = Matrix::Zero(2 * LiftedDim, 2 * LiftedDim);
+        Q_trunc_hom.block(1, 1, AmbientDim, AmbientDim) = Q.block(0, 0, AmbientDim, AmbientDim);
+        Q_trunc_hom.block(1, LiftedDim + 1, AmbientDim, AmbientDim) = Q.block(0, AmbientDim, AmbientDim, AmbientDim);
+        Q_trunc_hom.block(LiftedDim + 1, 1, AmbientDim, AmbientDim) = Q.block(AmbientDim, 0, AmbientDim, AmbientDim);
+        Q_trunc_hom.block(LiftedDim + 1, LiftedDim + 1, AmbientDim, AmbientDim) = Q.block(AmbientDim, AmbientDim, AmbientDim, AmbientDim);
 
-      const SymmetricBlockMatrix blockQ(
-          std::vector<DenseIndex>{LiftedDim, LiftedDim}, Q_trunc_hom);
-      costs->push_back(std::make_shared<QpCost>(
-          KeyVector{this->key1(), this->key2()}, blockQ));
+        // Keep constraint insertion inside the type-specific branch so
+        // Q_trunc_hom dimensions agree with the lifted vector, e.g. Rot2.h.
+        InsertQcqpConstraints<T, 1>(this->key1(), constraints);
+        InsertQcqpConstraints<T, 1>(this->key2(), constraints);
+
+        const SymmetricBlockMatrix blockQ(
+            std::vector<DenseIndex>{LiftedDim, LiftedDim}, Q_trunc_hom);
+        costs->push_back(std::make_shared<QpCost>(
+            KeyVector{this->key1(), this->key2()}, blockQ));
+      } else {
+        (void)constraints;
+        throw std::runtime_error(
+            "FrobeniusBetweenFactor::qcqpFactors D=1 lifted Q embedding is "
+            "currently implemented only for Rot2.");
+      }
     }
   }
 
