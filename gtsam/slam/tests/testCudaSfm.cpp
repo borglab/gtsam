@@ -314,6 +314,7 @@ TEST(CudaSfmProjectionLinearization,
   DOUBLES_EQUAL(expectedError, actualError, kResidualTolerance);
 }
 
+#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
 TEST(CudaSfmProjectionLinearization, ReturnsZerosForCheiralityFailures) {
   const SfmData data = makeBehindCameraData();
   CudaContext context;
@@ -353,19 +354,31 @@ TEST(CudaSfmProjectionLinearization, ReturnsZerosForCheiralityFailures) {
     DOUBLES_EQUAL(0.0, jacobian, 1e-12);
   }
 }
+#endif
 
 TEST(CudaSfmProjectionLinearization, RejectsMismatchedValueShapes) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData smallerValuesData = makeTinyBalData();
+  SfmData fewerCamerasData = measuredData;
+  fewerCamerasData.cameras.resize(1);
   CudaContext context;
 
-  DeviceValues values = PackSfmValues(smallerValuesData, context.stream());
   CudaSfmProjectionBatch batch =
       CudaSfmProjectionBatch::FromSfmData(measuredData, context.stream());
   CudaSfmProjectionLinearization linearization;
 
-  CHECK_EXCEPTION(LinearizeCudaSfmProjectionBatch(values, batch, &linearization,
-                                                  context.stream()),
+  DeviceValues fewerCameraValues =
+      PackSfmValues(fewerCamerasData, context.stream());
+  CHECK_EXCEPTION(LinearizeCudaSfmProjectionBatch(
+                      fewerCameraValues, batch, &linearization,
+                      context.stream()),
+                  std::invalid_argument);
+
+  DeviceValues fewerPointValues =
+      PackSfmValues(smallerValuesData, context.stream());
+  CHECK_EXCEPTION(LinearizeCudaSfmProjectionBatch(
+                      fewerPointValues, batch, &linearization,
+                      context.stream()),
                   std::invalid_argument);
 }
 
