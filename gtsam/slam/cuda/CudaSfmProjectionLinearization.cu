@@ -2,6 +2,7 @@
 #include <gtsam/nonlinear/cuda/DeviceGeometryKernels.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionLinearization.h>
 
+#include <limits>
 #include <stdexcept>
 #include <vector>
 
@@ -14,7 +15,7 @@ __global__ void LinearizeCudaSfmProjectionKernel(
     const DevicePinholeCameraCal3Bundler* cameras, const DevicePoint3* points,
     const CudaSfmObservation* observations, size_t numObservations,
     double* residuals, double* cameraJacobians, double* pointJacobians) {
-  const size_t i = blockIdx.x * blockDim.x + threadIdx.x;
+  const size_t i = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
   if (i >= numObservations) return;
 
   const CudaSfmObservation observation = observations[i];
@@ -43,6 +44,19 @@ void LinearizeCudaSfmProjectionBatch(
         "LinearizeCudaSfmProjectionBatch requires output storage");
   }
 
+  const auto& cameraBlock = values.block<DevicePinholeCameraCal3Bundler>(
+      kDevicePinholeCameraCal3BundlerType);
+  const auto& pointBlock = values.block<DevicePoint3>(kDevicePoint3Type);
+
+  if (batch.numCameras() > cameraBlock.values.size()) {
+    throw std::invalid_argument(
+        "LinearizeCudaSfmProjectionBatch camera batch/value size mismatch");
+  }
+  if (batch.numPoints() > pointBlock.values.size()) {
+    throw std::invalid_argument(
+        "LinearizeCudaSfmProjectionBatch point batch/value size mismatch");
+  }
+
   const size_t numObservations = batch.numObservations();
   linearization->residuals.resize(2 * numObservations);
   linearization->cameraJacobians.resize(18 * numObservations);
@@ -51,14 +65,14 @@ void LinearizeCudaSfmProjectionBatch(
     return;
   }
 
-  const auto& cameraBlock = values.block<DevicePinholeCameraCal3Bundler>(
-      kDevicePinholeCameraCal3BundlerType);
-  const auto& pointBlock = values.block<DevicePoint3>(kDevicePoint3Type);
-
-  const int gridSize =
-      static_cast<int>((numObservations + kProjectionLinearizationBlockSize -
-                        1) /
-                       kProjectionLinearizationBlockSize);
+  const size_t gridSizeSize =
+      (numObservations + kProjectionLinearizationBlockSize - 1) /
+      kProjectionLinearizationBlockSize;
+  if (gridSizeSize > static_cast<size_t>(std::numeric_limits<int>::max())) {
+    throw std::invalid_argument(
+        "LinearizeCudaSfmProjectionBatch grid size exceeds CUDA launch limit");
+  }
+  const int gridSize = static_cast<int>(gridSizeSize);
   LinearizeCudaSfmProjectionKernel<<<gridSize, kProjectionLinearizationBlockSize,
                                      0, stream>>>(
       cameraBlock.values.data(), pointBlock.values.data(),

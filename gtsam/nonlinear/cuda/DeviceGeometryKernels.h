@@ -152,7 +152,11 @@ __host__ __device__ inline DevicePinholeCameraCal3Bundler RetractCamera(
   double deltaT[3];
   internal::se3Expmap(delta9, deltaR, deltaT);
 #else
+#if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
+  internal::so3Expmap(delta9, deltaR);
+#else
   internal::cayleyRetractRotation(delta9, deltaR);
+#endif
   const double deltaT[3] = {delta9[3], delta9[4], delta9[5]};
 #endif
   double composedR[9];
@@ -191,6 +195,13 @@ EvaluatePinholeBundlerProjection(
                     internal::cameraR(camera, 1, 2) * dy +
                     internal::cameraR(camera, 2, 2) * dz;
 
+  DeviceProjectionResult result{};
+#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
+  if (qz <= 0.0) {
+    return result;
+  }
+#endif
+
   const double d = 1.0 / qz;
   const double x = qx * d;
   const double y = qy * d;
@@ -200,7 +211,6 @@ EvaluatePinholeBundlerProjection(
   const double u = camera.f * g * x;
   const double v = camera.f * g * y;
 
-  DeviceProjectionResult result{};
   result.residual[0] = u - observation.measuredU;
   result.residual[1] = v - observation.measuredV;
 
