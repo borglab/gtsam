@@ -70,6 +70,11 @@ class DeviceSparseNormalEquations {
   int rows() const { return rows_; }
   int nonzeros() const { return static_cast<int>(values_.size()); }
 
+  void zero(cudaStream_t stream = nullptr) {
+    values_.zero(stream);
+    rhs_.zero(stream);
+  }
+
   const CudaDeviceArray<int>& rowPointers() const { return rowPointers_; }
   const CudaDeviceArray<int>& colIndices() const { return colIndices_; }
   CudaDeviceArray<double>& values() { return values_; }

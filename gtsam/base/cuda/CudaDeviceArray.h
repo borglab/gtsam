@@ -61,6 +61,19 @@ class CudaDeviceArray {
                                      cudaMemcpyHostToDevice, stream));
   }
 
+  void zero(cudaStream_t stream = nullptr) {
+    if (size_ == 0) return;
+    GTSAM_CUDA_CHECK(cudaMemsetAsync(data_, 0, sizeof(T) * size_, stream));
+  }
+
+  void copyFrom(const CudaDeviceArray<T>& other,
+                cudaStream_t stream = nullptr) {
+    resize(other.size());
+    if (size_ == 0) return;
+    GTSAM_CUDA_CHECK(cudaMemcpyAsync(data_, other.data(), sizeof(T) * size_,
+                                     cudaMemcpyDeviceToDevice, stream));
+  }
+
   void download(std::vector<T>* host, cudaStream_t stream = nullptr) const {
     host->resize(size_);
     if (size_ == 0) return;

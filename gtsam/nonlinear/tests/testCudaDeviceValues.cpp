@@ -117,6 +117,30 @@ TEST(DeviceSparseNormalEquations, UploadsCsrPatternAndRhs) {
   EXPECT_LONGS_EQUAL(2, system.rhs().size());
 }
 
+TEST(DeviceSparseNormalEquations, ClearsValuesAndRhs) {
+  CudaContext context;
+  DeviceSparseNormalEquations system;
+  system.uploadPattern(2, std::vector<int>{0, 2, 3},
+                       std::vector<int>{0, 1, 1}, context.stream());
+  system.values().upload(std::vector<double>{1.0, 2.0, 3.0},
+                         context.stream());
+  system.rhs().upload(std::vector<double>{4.0, 5.0}, context.stream());
+
+  system.zero(context.stream());
+
+  std::vector<double> values;
+  std::vector<double> rhs;
+  system.values().download(&values, context.stream());
+  system.rhs().download(&rhs, context.stream());
+  context.synchronize();
+
+  DOUBLES_EQUAL(0.0, values[0], 1e-12);
+  DOUBLES_EQUAL(0.0, values[1], 1e-12);
+  DOUBLES_EQUAL(0.0, values[2], 1e-12);
+  DOUBLES_EQUAL(0.0, rhs[0], 1e-12);
+  DOUBLES_EQUAL(0.0, rhs[1], 1e-12);
+}
+
 TEST(DeviceSparseNormalEquations, RejectsMalformedCsrBeforeUpload) {
   DeviceSparseNormalEquations system;
 
