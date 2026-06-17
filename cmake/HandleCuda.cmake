@@ -26,6 +26,9 @@ if(GTSAM_ENABLE_CUDA)
           ${CUDAToolkit_INCLUDE_DIRS}
           $ENV{CUDA_HOME}/include
           $ENV{CONDA_PREFIX}/include
+        PATH_SUFFIXES
+          libcudss/13
+          libcudss/12
       )
 
       find_library(CUDSS_LIBRARY cudss
@@ -34,6 +37,9 @@ if(GTSAM_ENABLE_CUDA)
           ${CUDAToolkit_LIBRARY_ROOT}
           $ENV{CUDA_HOME}/lib64
           $ENV{CONDA_PREFIX}/lib
+        PATH_SUFFIXES
+          libcudss/13
+          libcudss/12
       )
 
       if(NOT CUDSS_INCLUDE_DIR)

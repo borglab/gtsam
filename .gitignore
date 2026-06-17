@@ -1,4 +1,5 @@
 /build
+/build-*/
 /debug*
 .idea
 *.pyc

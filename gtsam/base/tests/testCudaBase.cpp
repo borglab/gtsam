@@ -42,3 +42,8 @@ TEST(CudaDeviceArray, MoveTransfersOwnership) {
   EXPECT_LONGS_EQUAL(5, actual[1]);
   EXPECT_LONGS_EQUAL(6, actual[2]);
 }
+
+int main() {
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
+}
