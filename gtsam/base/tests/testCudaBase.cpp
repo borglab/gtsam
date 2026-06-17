@@ -29,12 +29,20 @@ TEST(CudaDeviceArray, ZeroesAndCopiesDeviceData) {
   CudaContext context;
   CudaDeviceArray<double> source;
   source.upload(std::vector<double>{1.0, 2.0, 3.0}, context.stream());
-  source.zero(context.stream());
 
   CudaDeviceArray<double> target;
   target.copyFrom(source, context.stream());
 
   std::vector<double> actual;
+  target.download(&actual, context.stream());
+  context.synchronize();
+
+  EXPECT_LONGS_EQUAL(3, actual.size());
+  DOUBLES_EQUAL(1.0, actual[0], 1e-12);
+  DOUBLES_EQUAL(2.0, actual[1], 1e-12);
+  DOUBLES_EQUAL(3.0, actual[2], 1e-12);
+
+  target.zero(context.stream());
   target.download(&actual, context.stream());
   context.synchronize();
 

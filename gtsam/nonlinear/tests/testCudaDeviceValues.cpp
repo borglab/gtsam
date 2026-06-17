@@ -134,6 +134,8 @@ TEST(DeviceSparseNormalEquations, ClearsValuesAndRhs) {
   system.rhs().download(&rhs, context.stream());
   context.synchronize();
 
+  EXPECT_LONGS_EQUAL(3, values.size());
+  EXPECT_LONGS_EQUAL(2, rhs.size());
   DOUBLES_EQUAL(0.0, values[0], 1e-12);
   DOUBLES_EQUAL(0.0, values[1], 1e-12);
   DOUBLES_EQUAL(0.0, values[2], 1e-12);

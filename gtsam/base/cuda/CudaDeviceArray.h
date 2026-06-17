@@ -61,6 +61,7 @@ class CudaDeviceArray {
                                      cudaMemcpyHostToDevice, stream));
   }
 
+  // Fills the allocation with bitwise zero.
   void zero(cudaStream_t stream = nullptr) {
     if (size_ == 0) return;
     GTSAM_CUDA_CHECK(cudaMemsetAsync(data_, 0, sizeof(T) * size_, stream));
@@ -68,6 +69,7 @@ class CudaDeviceArray {
 
   void copyFrom(const CudaDeviceArray<T>& other,
                 cudaStream_t stream = nullptr) {
+    if (this == &other) return;
     resize(other.size());
     if (size_ == 0) return;
     GTSAM_CUDA_CHECK(cudaMemcpyAsync(data_, other.data(), sizeof(T) * size_,
