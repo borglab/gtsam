@@ -728,6 +728,41 @@ virtual class DoubleDifferenceCarrierPhaseFactorArm : gtsam::NonlinearFactor {
   void serialize() const;
 };
 
+#include <gtsam/navigation/DopplerFactor.h>
+virtual class DopplerFactor : gtsam::NonlinearFactor {
+  DopplerFactor(gtsam::Key velocityKey, gtsam::Key clockDriftKey,
+                double measuredDoppler, double wavelength,
+                const gtsam::Point3& satellitePosition,
+                const gtsam::Point3& satelliteVelocity,
+                const gtsam::Point3& receiverPosition,
+                double satelliteClockDrift,
+                const gtsam::noiseModel::Base* model);
+
+  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
+                                gtsam::DefaultKeyFormatter) const;
+  bool equals(const gtsam::NonlinearFactor& expected, double tol) const;
+  gtsam::Vector evaluateError(const gtsam::Vector3& velocity,
+                              const double& clockDrift) const;
+  double measuredRangeRate() const;
+  const gtsam::Point3& lineOfSight() const;
+  void serialize() const;
+};
+
+virtual class ClockDriftFactor : gtsam::NonlinearFactor {
+  ClockDriftFactor(gtsam::Key clockBiasPrevKey, gtsam::Key clockBiasCurrKey,
+                   gtsam::Key clockDriftKey, double dt,
+                   const gtsam::noiseModel::Base* model);
+
+  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
+                                gtsam::DefaultKeyFormatter) const;
+  bool equals(const gtsam::NonlinearFactor& expected, double tol) const;
+  gtsam::Vector evaluateError(const double& clockBiasPrev,
+                              const double& clockBiasCurr,
+                              const double& clockDrift) const;
+  double dt() const;
+  void serialize() const;
+};
+
 #include <gtsam/navigation/BarometricFactor.h>
 virtual class BarometricFactor : gtsam::NonlinearFactor {
   BarometricFactor();
