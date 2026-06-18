@@ -84,12 +84,6 @@ protected:
     ar & BOOST_SERIALIZATION_NVP(n_gravity);
   }
 #endif
-
-#ifdef GTSAM_USE_QUATERNIONS
-  // Align if we are using Quaternions
-public:
-	GTSAM_MAKE_ALIGNED_OPERATOR_NEW
-#endif
 };
 
 } // namespace gtsam
