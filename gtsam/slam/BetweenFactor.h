@@ -148,11 +148,6 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(measured_);
     }
 #endif
-
-    // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
-    inline constexpr static auto NeedsToAlign = (sizeof(VALUE) % 16) == 0;
-  public:
-    GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
   }; // \class BetweenFactor
 
   /// traits

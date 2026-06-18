@@ -92,8 +92,6 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
   // Provide access to the Matrix& version of evaluateError:
   using NoiseModelFactor1<T>::evaluateError;
 
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   /// Constructor
   FrobeniusPrior(Key j, const MatrixNN& M,
                  const SharedNoiseModel& model = nullptr)
@@ -162,8 +160,6 @@ class FrobeniusBetweenFactorNL : public NoiseModelFactorN<T, T> {
  public:
   // Provide access to the Matrix& version of evaluateError:
   using NoiseModelFactor2<T, T>::evaluateError;
-
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   /// @name Constructor
   /// @{
@@ -242,8 +238,6 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
  public:
   // Provide access to the Matrix& version of evaluateError:
   using NoiseModelFactor2<T, T>::evaluateError;
-
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   /// Construct from two keys and measured rotation
   FrobeniusBetweenFactor(Key j1, Key j2, const T& T12,

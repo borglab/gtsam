@@ -341,10 +341,6 @@ public:
     ar & BOOST_SERIALIZATION_NVP(r_);
   }
 #endif
-
-public:
-  // Align for Point2, which is either derived from, or is typedef, of Vector2
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 }; // Pose2
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
