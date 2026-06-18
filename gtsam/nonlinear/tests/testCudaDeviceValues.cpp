@@ -88,6 +88,21 @@ TEST(DeviceValues, AddsAndDownloadsTypedBlock) {
   DOUBLES_EQUAL(4.0, actual[1].y, 1e-12);
 }
 
+TEST(DeviceValues, AddsUninitializedTypedBlock) {
+  DeviceValues values;
+
+  std::vector<Key> keys = {Symbol('t', 0), Symbol('t', 1),
+                           Symbol('t', 2)};
+  DeviceValueBlock<TinyValue>& block =
+      values.addUninitializedBlock<TinyValue>(kTinyType, 2, keys);
+
+  EXPECT_LONGS_EQUAL(3, values.index().size());
+  EXPECT_LONGS_EQUAL(3, block.values.size());
+  EXPECT_LONGS_EQUAL(6, block.delta.size());
+  EXPECT_LONGS_EQUAL(2, block.tangentDim);
+  EXPECT_LONGS_EQUAL(2, values.index().slot(Symbol('t', 2), kTinyType));
+}
+
 TEST(DeviceValues, RejectsInvalidBlockMetadataBeforeUpload) {
   DeviceValues values;
 

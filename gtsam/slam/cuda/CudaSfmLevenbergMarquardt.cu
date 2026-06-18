@@ -4,11 +4,13 @@
 #include <gtsam/nonlinear/cuda/CudssLinearSolver.h>
 #include <gtsam/nonlinear/cuda/DeviceGeometryKernels.h>
 #include <gtsam/slam/cuda/CudaBalCsrStructure.h>
+#include <gtsam/slam/cuda/CudaSfmDenseSchurSolver.h>
 #include <gtsam/slam/cuda/CudaSfmLevenbergMarquardt.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionLinearization.h>
 #include <gtsam/slam/cuda/CudaSfmValues.h>
 
 #include <algorithm>
+#include <chrono>
 #include <stdexcept>
 
 namespace gtsam::cuda {
@@ -86,44 +88,56 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfm(
   (void)params;
   throw std::runtime_error("OptimizeCudaSfm requires GTSAM_ENABLE_CUDSS=ON");
 #else
-  CudaContext context;
+  CudaContext context(nullptr);
   DeviceValues current = PackSfmValues(data, context.stream());
-  DeviceValues trial = PackSfmValues(data, context.stream());
+  DeviceValues trial = AllocateSfmValuesLike(current);
   const CudaSfmProjectionBatch batch =
       CudaSfmProjectionBatch::FromSfmData(data, context.stream());
-  const CudaBalCsrStructure structure = CudaBalCsrStructure::FromSfmData(data);
+  const int numCameras = static_cast<int>(data.numberCameras());
+  const int numPoints = static_cast<int>(data.numberTracks());
+  const int totalDimension = 9 * numCameras + 3 * numPoints;
 
   CudaSfmLevenbergMarquardtResult result;
   double currentError =
       ComputeCudaSfmProjectionError(current, batch, context.stream());
   result.initialError = currentError;
 
-  if (params.maxIterations <= 0 || structure.dimension() == 0) {
+  if (params.maxIterations <= 0 || totalDimension == 0) {
     result.finalError = currentError;
-    result.optimizedValues = DownloadSfmValues(current, context.stream());
+    if (params.downloadOptimizedValues) {
+      result.optimizedValues = DownloadSfmValues(current, context.stream());
+    }
     return result;
   }
 
   DeviceSparseNormalEquations system;
-  system.uploadPattern(structure.dimension(), structure.rowPointers(),
-                       structure.colIndices(), context.stream());
   CudaDeviceArray<double> delta;
   CudssSpdSolver solver;
+  CudaSfmDenseSchurSolver denseSchurSolver;
   bool solverAnalyzed = false;
+  if (params.linearSolver == CudaSfmLinearSolverType::CudssFullNormal) {
+    const CudaBalCsrStructure structure = CudaBalCsrStructure::FromSfmData(data);
+    system.uploadPattern(structure.dimension(), structure.rowPointers(),
+                         structure.colIndices(), context.stream());
+  }
 
   double lambda = params.initialLambda;
-  const int numCameras = static_cast<int>(structure.numCameras());
-  const int numPoints = static_cast<int>(structure.numPoints());
 
+  const auto solveLoopStart = std::chrono::steady_clock::now();
   for (int iteration = 0; iteration < params.maxIterations; ++iteration) {
-    AccumulateCudaSfmNormalEquations(current, batch, numCameras, &system,
-                                     context.stream());
-    system.addDiagonalDamping(lambda, context.stream());
-    if (!solverAnalyzed) {
-      solver.analyze(system, &delta, context.stream());
-      solverAnalyzed = true;
+    if (params.linearSolver == CudaSfmLinearSolverType::DenseSchur) {
+      denseSchurSolver.solve(current, batch, numCameras, lambda, &delta,
+                             context.stream());
+    } else {
+      AccumulateCudaSfmNormalEquations(current, batch, numCameras, &system,
+                                       context.stream());
+      system.addDiagonalDamping(lambda, context.stream());
+      if (!solverAnalyzed) {
+        solver.analyze(system, &delta, context.stream());
+        solverAnalyzed = true;
+      }
+      solver.solve(system, &delta, context.stream());
     }
-    solver.solve(system, &delta, context.stream());
 
     ApplyDelta(current, delta, &trial, numCameras, numPoints,
                context.stream());
@@ -145,9 +159,15 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfm(
       lambda *= params.lambdaUpFactor;
     }
   }
+  GTSAM_CUDA_CHECK(cudaStreamSynchronize(context.stream()));
+  const auto solveLoopEnd = std::chrono::steady_clock::now();
+  result.solveLoopElapsed =
+      std::chrono::duration<double>(solveLoopEnd - solveLoopStart).count();
 
   result.finalError = currentError;
-  result.optimizedValues = DownloadSfmValues(current, context.stream());
+  if (params.downloadOptimizedValues) {
+    result.optimizedValues = DownloadSfmValues(current, context.stream());
+  }
   return result;
 #endif
 }

@@ -71,6 +71,21 @@ inline DeviceValues PackSfmValues(const SfmData& data,
   return values;
 }
 
+inline DeviceValues AllocateSfmValuesLike(const DeviceValues& reference) {
+  const auto& cameraBlock =
+      reference.block<DevicePinholeCameraCal3Bundler>(
+          kDevicePinholeCameraCal3BundlerType);
+  const auto& pointBlock = reference.block<DevicePoint3>(kDevicePoint3Type);
+
+  DeviceValues values;
+  values.addUninitializedBlock<DevicePinholeCameraCal3Bundler>(
+      kDevicePinholeCameraCal3BundlerType, cameraBlock.tangentDim,
+      cameraBlock.keys);
+  values.addUninitializedBlock<DevicePoint3>(
+      kDevicePoint3Type, pointBlock.tangentDim, pointBlock.keys);
+  return values;
+}
+
 inline Values DownloadSfmValues(const DeviceValues& deviceValues,
                                 cudaStream_t stream = nullptr) {
   std::vector<DevicePinholeCameraCal3Bundler> cameras;

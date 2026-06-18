@@ -11,6 +11,7 @@ namespace {
 
 constexpr int kProjectionLinearizationBlockSize = 256;
 constexpr int kProjectionTangentDim = 12;
+constexpr int kProjectionErrorBlockSize = 256;
 
 __global__ void LinearizeCudaSfmProjectionKernel(
     const DevicePinholeCameraCal3Bundler* cameras, const DevicePoint3* points,
@@ -108,6 +109,42 @@ __global__ void AccumulateCudaSfmNormalEquationsKernel(
   }
 }
 
+__global__ void ComputeCudaSfmProjectionErrorKernel(
+    const DevicePinholeCameraCal3Bundler* cameras, const DevicePoint3* points,
+    const CudaSfmObservation* observations, size_t numObservations,
+    double* blockSums) {
+  __shared__ double shared[kProjectionErrorBlockSize];
+
+  const int thread = threadIdx.x;
+  const size_t stride = static_cast<size_t>(gridDim.x) * blockDim.x;
+  size_t i = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
+
+  double sum = 0.0;
+  while (i < numObservations) {
+    const CudaSfmObservation observation = observations[i];
+    const DeviceProjectionResult result = EvaluatePinholeBundlerProjection(
+        cameras[observation.cameraSlot], points[observation.pointSlot],
+        observation);
+    sum += 0.5 * (result.residual[0] * result.residual[0] +
+                  result.residual[1] * result.residual[1]);
+    i += stride;
+  }
+
+  shared[thread] = sum;
+  __syncthreads();
+
+  for (int offset = blockDim.x / 2; offset > 0; offset /= 2) {
+    if (thread < offset) {
+      shared[thread] += shared[thread + offset];
+    }
+    __syncthreads();
+  }
+
+  if (thread == 0) {
+    blockSums[blockIdx.x] = shared[0];
+  }
+}
+
 }  // namespace
 
 void LinearizeCudaSfmProjectionBatch(
@@ -159,16 +196,42 @@ void LinearizeCudaSfmProjectionBatch(
 double ComputeCudaSfmProjectionError(const DeviceValues& values,
                                      const CudaSfmProjectionBatch& batch,
                                      cudaStream_t stream) {
-  CudaSfmProjectionLinearization linearization;
-  LinearizeCudaSfmProjectionBatch(values, batch, &linearization, stream);
+  const auto& cameraBlock = values.block<DevicePinholeCameraCal3Bundler>(
+      kDevicePinholeCameraCal3BundlerType);
+  const auto& pointBlock = values.block<DevicePoint3>(kDevicePoint3Type);
 
-  std::vector<double> residuals;
-  linearization.residuals.download(&residuals, stream);
+  if (batch.numCameras() > cameraBlock.values.size()) {
+    throw std::invalid_argument(
+        "ComputeCudaSfmProjectionError camera batch/value size mismatch");
+  }
+  if (batch.numPoints() > pointBlock.values.size()) {
+    throw std::invalid_argument(
+        "ComputeCudaSfmProjectionError point batch/value size mismatch");
+  }
+
+  const size_t numObservations = batch.numObservations();
+  if (numObservations == 0) {
+    return 0.0;
+  }
+
+  const int gridSize = static_cast<int>(std::min<size_t>(
+      (numObservations + kProjectionErrorBlockSize - 1) /
+          kProjectionErrorBlockSize,
+      4096));
+  CudaDeviceArray<double> blockSums(static_cast<size_t>(gridSize));
+  ComputeCudaSfmProjectionErrorKernel<<<gridSize, kProjectionErrorBlockSize, 0,
+                                        stream>>>(
+      cameraBlock.values.data(), pointBlock.values.data(),
+      batch.observations().data(), numObservations, blockSums.data());
+  GTSAM_CUDA_CHECK(cudaGetLastError());
+
+  std::vector<double> hostBlockSums;
+  blockSums.download(&hostBlockSums, stream);
   GTSAM_CUDA_CHECK(cudaStreamSynchronize(stream));
 
   double error = 0.0;
-  for (double residual : residuals) {
-    error += 0.5 * residual * residual;
+  for (double blockSum : hostBlockSums) {
+    error += blockSum;
   }
   return error;
 }

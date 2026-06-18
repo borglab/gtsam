@@ -1,9 +1,11 @@
 #include <gtsam/base/cuda/CudaContext.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/nonlinear/cuda/CudssLinearSolver.h>
 #include <gtsam/nonlinear/cuda/DeviceGeometryKernels.h>
 #include <gtsam/nonlinear/cuda/DeviceGeometryTypes.h>
 #include <gtsam/slam/cuda/CudaBalCsrStructure.h>
+#include <gtsam/slam/cuda/CudaSfmDenseSchurSolver.h>
 #include <gtsam/slam/cuda/CudaSfmLevenbergMarquardt.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionLinearization.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionBatch.h>
@@ -125,6 +127,34 @@ SfmData makeBehindCameraData() {
   track.measurements.emplace_back(1, Point2(5.0, 6.0));
   data.tracks.push_back(track);
   return data;
+}
+
+SfmData makeHighDegreeBalLikeData() {
+  SfmData measured;
+  const Point3 point(0.2, -0.1, 6.0);
+  SfmTrack track(point);
+
+  for (size_t i = 0; i < 18; ++i) {
+    const double x = 0.03 * static_cast<double>(i);
+    const double yaw = 0.001 * static_cast<double>(i);
+    measured.cameras.emplace_back(
+        Pose3(Rot3::RzRyRx(0.0, 0.0, yaw), Point3(x, 0.0, 0.0)),
+        Cal3Bundler(140.0 + static_cast<double>(i), 0.001, -0.00001));
+    track.measurements.emplace_back(i,
+                                    measured.camera(i).project2(point));
+  }
+  measured.tracks.push_back(track);
+
+  SfmData perturbed = measured;
+  for (size_t i = 0; i < perturbed.numberCameras(); ++i) {
+    Vector delta(9);
+    delta << 0.0001 * static_cast<double>(i + 1), -0.0002, 0.00015,
+        0.002, -0.001, 0.0015, 0.03, 0.00001, -0.000001;
+    perturbed.cameras[i] = measured.camera(i).retract(delta);
+  }
+  perturbed.tracks[0].p = Point3(point.x() + 0.01, point.y() - 0.02,
+                                 point.z() + 0.03);
+  return perturbed;
 }
 
 BundlerCamera hostCameraFromDevice(
@@ -580,6 +610,7 @@ TEST(CudaSfmLevenbergMarquardt, ReducesTinyBalErrorAndDownloadsValues) {
 
   CHECK(result.iterations > 0);
   CHECK(result.acceptedSteps > 0);
+  CHECK(result.solveLoopElapsed > 0.0);
   CHECK(result.finalError < result.initialError);
   CHECK(result.optimizedValues.exists(C(0)));
   CHECK(result.optimizedValues.exists(P(0)));
@@ -589,6 +620,103 @@ TEST(CudaSfmLevenbergMarquardt, ReducesTinyBalErrorAndDownloadsValues) {
   CHECK(std::isfinite(camera0.calibration().fx()));
   CHECK(camera0.calibration().fx() > 0.0);
   CHECK(std::isfinite(point0.x()));
+}
+
+TEST(CudaSfmLevenbergMarquardt, CanSkipOptimizedValueDownload) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+
+  CudaSfmLevenbergMarquardtParams params;
+  params.maxIterations = 1;
+  params.relativeErrorTol = 1e-12;
+  params.initialLambda = 1e-3;
+  params.downloadOptimizedValues = false;
+
+  const CudaSfmLevenbergMarquardtResult result =
+      OptimizeCudaSfm(data, params);
+
+  CHECK(result.iterations > 0);
+  CHECK(result.optimizedValues.empty());
+}
+
+TEST(CudaSfmDenseSchurSolver, MatchesFullNormalEquationDeltaOnTinyBal) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+  CudaContext context;
+
+  DeviceValues values = PackSfmValues(data, context.stream());
+  const CudaSfmProjectionBatch batch =
+      CudaSfmProjectionBatch::FromSfmData(data, context.stream());
+  const CudaBalCsrStructure structure = CudaBalCsrStructure::FromSfmData(data);
+  DeviceSparseNormalEquations system;
+  system.uploadPattern(structure.dimension(), structure.rowPointers(),
+                       structure.colIndices(), context.stream());
+
+  constexpr double lambda = 1e-3;
+  AccumulateCudaSfmNormalEquations(values, batch,
+                                   static_cast<int>(structure.numCameras()),
+                                   &system, context.stream());
+  system.addDiagonalDamping(lambda, context.stream());
+
+  CudaDeviceArray<double> fullDelta;
+  CudssSpdSolver fullSolver;
+  fullSolver.analyze(system, &fullDelta, context.stream());
+  fullSolver.solve(system, &fullDelta, context.stream());
+
+  CudaDeviceArray<double> schurDelta;
+  SolveCudaSfmDenseSchur(values, batch, static_cast<int>(data.numberCameras()),
+                         lambda, &schurDelta, context.stream());
+
+  std::vector<double> full;
+  std::vector<double> schur;
+  fullDelta.download(&full, context.stream());
+  schurDelta.download(&schur, context.stream());
+  context.synchronize();
+
+  LONGS_EQUAL(full.size(), schur.size());
+  for (size_t i = 0; i < full.size(); ++i) {
+    DOUBLES_EQUAL(full[i], schur[i], 1e-6);
+  }
+}
+
+TEST(CudaSfmDenseSchurSolver,
+     MatchesFullNormalEquationDeltaOnHighDegreeTrack) {
+  const SfmData data = makeHighDegreeBalLikeData();
+  CudaContext context;
+
+  DeviceValues values = PackSfmValues(data, context.stream());
+  const CudaSfmProjectionBatch batch =
+      CudaSfmProjectionBatch::FromSfmData(data, context.stream());
+  const CudaBalCsrStructure structure = CudaBalCsrStructure::FromSfmData(data);
+  DeviceSparseNormalEquations system;
+  system.uploadPattern(structure.dimension(), structure.rowPointers(),
+                       structure.colIndices(), context.stream());
+
+  constexpr double lambda = 1e-3;
+  AccumulateCudaSfmNormalEquations(values, batch,
+                                   static_cast<int>(structure.numCameras()),
+                                   &system, context.stream());
+  system.addDiagonalDamping(lambda, context.stream());
+
+  CudaDeviceArray<double> fullDelta;
+  CudssSpdSolver fullSolver;
+  fullSolver.analyze(system, &fullDelta, context.stream());
+  fullSolver.solve(system, &fullDelta, context.stream());
+
+  CudaDeviceArray<double> schurDelta;
+  SolveCudaSfmDenseSchur(values, batch, static_cast<int>(data.numberCameras()),
+                         lambda, &schurDelta, context.stream());
+
+  std::vector<double> full;
+  std::vector<double> schur;
+  fullDelta.download(&full, context.stream());
+  schurDelta.download(&schur, context.stream());
+  context.synchronize();
+
+  LONGS_EQUAL(full.size(), schur.size());
+  for (size_t i = 0; i < full.size(); ++i) {
+    DOUBLES_EQUAL(full[i], schur[i], 1e-6);
+  }
 }
 #endif
 
@@ -634,6 +762,22 @@ TEST(CudaSfmProjectionBatch, PacksOnlyTracksWithAtLeastTwoMeasurements) {
   EXPECT_LONGS_EQUAL(1, observations[1].cameraSlot);
   EXPECT_LONGS_EQUAL(0, observations[1].pointSlot);
   DOUBLES_EQUAL(21.0, observations[1].measuredV, 1e-12);
+}
+
+TEST(CudaSfmProjectionBatch, PacksLongTrackPointSlots) {
+  const SfmData data = makeHighDegreeBalLikeData();
+  CudaContext context;
+
+  CudaSfmProjectionBatch batch =
+      CudaSfmProjectionBatch::FromSfmData(data, context.stream());
+
+  std::vector<int> longTrackPointSlots;
+  batch.longTrackPointSlots().download(&longTrackPointSlots,
+                                       context.stream());
+  context.synchronize();
+
+  LONGS_EQUAL(1, longTrackPointSlots.size());
+  LONGS_EQUAL(0, longTrackPointSlots[0]);
 }
 
 TEST(CudaSfmValues, PacksCamerasInGtsamConvention) {

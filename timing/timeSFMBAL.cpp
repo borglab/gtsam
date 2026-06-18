@@ -244,6 +244,7 @@ int main(int argc, char* argv[]) {
       gtsam::cuda::CudaSfmLevenbergMarquardtParams params;
       params.maxIterations = 20;
       params.relativeErrorTol = 0.01;
+      params.downloadOptimizedValues = false;
 
       const auto start = std::chrono::high_resolution_clock::now();
       const gtsam::cuda::CudaSfmLevenbergMarquardtResult result =
@@ -252,6 +253,8 @@ int main(int argc, char* argv[]) {
       const std::chrono::duration<double> elapsed = end - start;
 
       std::cout << "  CUDA LM: " << elapsed.count() << " s\n";
+      std::cout << "  CUDA LM solve loop: " << result.solveLoopElapsed
+                << " s\n";
       std::cout << "Initial error: " << std::setprecision(15)
                 << result.initialError << "\n";
       std::cout << "Final error: " << result.finalError

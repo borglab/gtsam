@@ -15,6 +15,8 @@ namespace gtsam::cuda {
 
 class CudaSfmProjectionBatch {
  public:
+  static constexpr int kLongTrackMeasurementThreshold = 4;
+
   static CudaSfmProjectionBatch FromSfmData(const SfmData& data,
                                             cudaStream_t stream = nullptr) {
     CudaSfmProjectionBatch batch;
@@ -22,6 +24,10 @@ class CudaSfmProjectionBatch {
     batch.numPoints_ = data.numberTracks();
 
     std::vector<CudaSfmObservation> observations;
+    std::vector<int> pointObservationOffsets;
+    std::vector<int> longTrackPointSlots;
+    pointObservationOffsets.reserve(data.numberTracks() + 1);
+    pointObservationOffsets.push_back(0);
     for (size_t pointSlot = 0; pointSlot < data.numberTracks(); ++pointSlot) {
       if (pointSlot > static_cast<size_t>(std::numeric_limits<int>::max())) {
         throw std::invalid_argument(
@@ -30,7 +36,13 @@ class CudaSfmProjectionBatch {
 
       const SfmTrack& track = data.track(pointSlot);
       if (track.numberMeasurements() < 2) {
+        pointObservationOffsets.push_back(
+            static_cast<int>(observations.size()));
         continue;
+      }
+
+      if (track.numberMeasurements() > kLongTrackMeasurementThreshold) {
+        longTrackPointSlots.push_back(static_cast<int>(pointSlot));
       }
 
       for (const SfmMeasurement& measurement : track.measurements) {
@@ -45,14 +57,23 @@ class CudaSfmProjectionBatch {
             {static_cast<int>(measurement.first), static_cast<int>(pointSlot),
              measurement.second(0), measurement.second(1)});
       }
+      pointObservationOffsets.push_back(static_cast<int>(observations.size()));
     }
 
     batch.observations_.upload(observations, stream);
+    batch.pointObservationOffsets_.upload(pointObservationOffsets, stream);
+    batch.longTrackPointSlots_.upload(longTrackPointSlots, stream);
     return batch;
   }
 
   const CudaDeviceArray<CudaSfmObservation>& observations() const {
     return observations_;
+  }
+  const CudaDeviceArray<int>& pointObservationOffsets() const {
+    return pointObservationOffsets_;
+  }
+  const CudaDeviceArray<int>& longTrackPointSlots() const {
+    return longTrackPointSlots_;
   }
 
   size_t numCameras() const { return numCameras_; }
@@ -63,6 +84,8 @@ class CudaSfmProjectionBatch {
   size_t numCameras_ = 0;
   size_t numPoints_ = 0;
   CudaDeviceArray<CudaSfmObservation> observations_;
+  CudaDeviceArray<int> pointObservationOffsets_;
+  CudaDeviceArray<int> longTrackPointSlots_;
 };
 
 }  // namespace gtsam::cuda
