@@ -171,6 +171,26 @@ def loss_to_float(loss: torch.Tensor) -> float:
     return float(loss.detach().cpu())
 
 
+class ColumnPreservingSolver(nn.Module):
+    """Wrap solvers that flatten a column RHS solution.
+
+    BAE passes right-hand sides as ``(n, 1)`` and later uses matrix operations on
+    the returned step. The cuDSS pybind solver returns ``(n,)`` for that input,
+    so this wrapper restores the original column shape without changing values.
+    """
+
+    def __init__(self, solver: Any) -> None:
+        super().__init__()
+        self.solver = solver
+
+    def forward(self, A: torch.Tensor, b: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
+        result = self.solver(A, b, *args, **kwargs)
+        if b.dim() == 2 and b.shape[-1] == 1 and result.dim() == 1:
+            if result.numel() == b.numel():
+                return result.reshape_as(b)
+        return result
+
+
 def run_lm_loop(
     optimizer: Any,
     step_input: Any,
@@ -315,10 +335,14 @@ def run_bae(
     relative_decrease_tol: float | None,
     reject: int,
     record_losses: bool,
+    bae_solver: str,
 ) -> dict[str, Any]:
     import pypose as pp
     from bae.optim import LM
-    from bae.utils.pysolvers import PCG
+    from bae.utils.pysolvers import CuDSS, PCG
+
+    if bae_solver == "cudss" and device.type != "cuda":
+        raise RuntimeError("BAE CuDSS solver requires a CUDA device.")
 
     ReprojectionResidual = make_model_class()
 
@@ -338,7 +362,12 @@ def run_bae(
         model = ReprojectionResidual(
             tensors["camera_params"].clone(), tensors["points_3d"].clone()
         ).to(device)
-        solver = PCG(tol=pcg_tol, maxiter=pcg_maxiter)
+        if bae_solver == "pcg":
+            solver = PCG(tol=pcg_tol, maxiter=pcg_maxiter)
+        elif bae_solver == "cudss":
+            solver = ColumnPreservingSolver(CuDSS())
+        else:
+            raise ValueError(f"Unsupported BAE solver: {bae_solver}")
         strategy = pp.optim.strategy.TrustRegion(
             radius=1.0 / initial_damping, up=2.0, down=0.5**4
         )
@@ -370,6 +399,7 @@ def run_bae(
 
     return {
         "backend": "bae",
+        "linear_solver": bae_solver,
         "device": str(device),
         "steps": steps,
         "iterations_run": loop["iterations_run"],
@@ -455,6 +485,12 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--bal-file", type=Path, required=True)
     parser.add_argument("--backend", choices=("pypose-sparse", "bae"), default="pypose-sparse")
+    parser.add_argument(
+        "--bae-solver",
+        choices=("pcg", "cudss"),
+        default="pcg",
+        help="Linear solver for --backend bae. Ignored by pypose-sparse.",
+    )
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--steps", type=int, default=20)
     parser.add_argument(
@@ -535,6 +571,7 @@ def main() -> int:
             relative_decrease_tol,
             args.reject,
             args.record_losses,
+            args.bae_solver,
         )
 
     result: dict[str, Any] = {

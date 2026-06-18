@@ -35,3 +35,13 @@ conductor/
 .ccache/
 gtsam_unstable/timing/data/
 timing/results/bayes_tree_covariance/
+
+# Local benchmark/deck artifacts
+docs/frank_cuda_ba_benchmark_*
+docs/generate_frank_cuda_ba_deck.js
+timing/pypose_ba/benchmark-bae-cudss.json
+timing/pypose_ba/frank-benchmark-current.json
+timing/pypose_ba/full-ba-benchmark-current.json
+timing/pypose_ba/run_frank_benchmark.py
+timing/pypose_ba/setup-inclusive-benchmark-current.json
+timing/pypose_ba/test_benchmark_cli.py

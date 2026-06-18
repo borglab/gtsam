@@ -23,7 +23,20 @@ struct CudaSfmLevenbergMarquardtParams {
 struct CudaSfmLevenbergMarquardtResult {
   double initialError = 0.0;
   double finalError = 0.0;
+  double totalMeasuredElapsed = 0.0;
+  double setupElapsed = 0.0;
   double solveLoopElapsed = 0.0;
+  double contextElapsed = 0.0;
+  double packValuesElapsed = 0.0;
+  double allocateTrialElapsed = 0.0;
+  double projectionBatchElapsed = 0.0;
+  double initialErrorElapsed = 0.0;
+  double cudssSolverConstructionElapsed = 0.0;
+  double denseSchurSolverConstructionElapsed = 0.0;
+  double csrStructureElapsed = 0.0;
+  double uploadPatternElapsed = 0.0;
+  double firstCudssAnalyzeElapsed = 0.0;
+  double downloadElapsed = 0.0;
   int iterations = 0;
   int acceptedSteps = 0;
   Values optimizedValues;

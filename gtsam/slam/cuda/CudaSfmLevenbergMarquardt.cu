@@ -17,6 +17,20 @@ namespace gtsam::cuda {
 namespace {
 
 constexpr int kApplyDeltaBlockSize = 256;
+using Clock = std::chrono::steady_clock;
+
+double ElapsedSeconds(Clock::time_point start, Clock::time_point end) {
+  return std::chrono::duration<double>(end - start).count();
+}
+
+double ElapsedSince(Clock::time_point start) {
+  return ElapsedSeconds(start, Clock::now());
+}
+
+double ElapsedSinceAfterSync(Clock::time_point start, cudaStream_t stream) {
+  GTSAM_CUDA_CHECK(cudaStreamSynchronize(stream));
+  return ElapsedSince(start);
+}
 
 __global__ void ApplyDeltaKernel(
     const DevicePinholeCameraCal3Bundler* cameras,
@@ -88,41 +102,77 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfm(
   (void)params;
   throw std::runtime_error("OptimizeCudaSfm requires GTSAM_ENABLE_CUDSS=ON");
 #else
+  CudaSfmLevenbergMarquardtResult result;
+  const auto totalStart = Clock::now();
+
+  auto stageStart = Clock::now();
   CudaContext context(nullptr);
+  result.contextElapsed = ElapsedSince(stageStart);
+
+  // TODO(perf): Avoid duplicate host-to-device transfers here. PackSfmValues()
+  // uploads values, and CudaSfmProjectionBatch::FromSfmData() uploads overlapping
+  // SFM data again. Consider constructing the projection batch from existing
+  // device buffers or sharing the packed representation.
+  stageStart = Clock::now();
   DeviceValues current = PackSfmValues(data, context.stream());
+  result.packValuesElapsed =
+      ElapsedSinceAfterSync(stageStart, context.stream());
+
+  stageStart = Clock::now();
   DeviceValues trial = AllocateSfmValuesLike(current);
+  result.allocateTrialElapsed = ElapsedSince(stageStart);
+
+  stageStart = Clock::now();
   const CudaSfmProjectionBatch batch =
       CudaSfmProjectionBatch::FromSfmData(data, context.stream());
+  result.projectionBatchElapsed =
+      ElapsedSinceAfterSync(stageStart, context.stream());
+
   const int numCameras = static_cast<int>(data.numberCameras());
   const int numPoints = static_cast<int>(data.numberTracks());
   const int totalDimension = 9 * numCameras + 3 * numPoints;
 
-  CudaSfmLevenbergMarquardtResult result;
+  stageStart = Clock::now();
   double currentError =
       ComputeCudaSfmProjectionError(current, batch, context.stream());
+  result.initialErrorElapsed = ElapsedSince(stageStart);
   result.initialError = currentError;
 
   if (params.maxIterations <= 0 || totalDimension == 0) {
     result.finalError = currentError;
     if (params.downloadOptimizedValues) {
+      stageStart = Clock::now();
       result.optimizedValues = DownloadSfmValues(current, context.stream());
+      result.downloadElapsed = ElapsedSince(stageStart);
     }
+    result.totalMeasuredElapsed = ElapsedSince(totalStart);
     return result;
   }
 
   DeviceSparseNormalEquations system;
   CudaDeviceArray<double> delta;
+  stageStart = Clock::now();
   CudssSpdSolver solver;
+  result.cudssSolverConstructionElapsed = ElapsedSince(stageStart);
+  stageStart = Clock::now();
   CudaSfmDenseSchurSolver denseSchurSolver;
+  result.denseSchurSolverConstructionElapsed = ElapsedSince(stageStart);
   bool solverAnalyzed = false;
   if (params.linearSolver == CudaSfmLinearSolverType::CudssFullNormal) {
+    stageStart = Clock::now();
     const CudaBalCsrStructure structure = CudaBalCsrStructure::FromSfmData(data);
+    result.csrStructureElapsed = ElapsedSince(stageStart);
+
+    stageStart = Clock::now();
     system.uploadPattern(structure.dimension(), structure.rowPointers(),
                          structure.colIndices(), context.stream());
+    result.uploadPatternElapsed =
+        ElapsedSinceAfterSync(stageStart, context.stream());
   }
 
   double lambda = params.initialLambda;
 
+  result.setupElapsed = ElapsedSince(totalStart);
   const auto solveLoopStart = std::chrono::steady_clock::now();
   for (int iteration = 0; iteration < params.maxIterations; ++iteration) {
     if (params.linearSolver == CudaSfmLinearSolverType::DenseSchur) {
@@ -133,7 +183,10 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfm(
                                        context.stream());
       system.addDiagonalDamping(lambda, context.stream());
       if (!solverAnalyzed) {
+        stageStart = Clock::now();
         solver.analyze(system, &delta, context.stream());
+        result.firstCudssAnalyzeElapsed =
+            ElapsedSinceAfterSync(stageStart, context.stream());
         solverAnalyzed = true;
       }
       solver.solve(system, &delta, context.stream());
@@ -166,8 +219,11 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfm(
 
   result.finalError = currentError;
   if (params.downloadOptimizedValues) {
+    stageStart = Clock::now();
     result.optimizedValues = DownloadSfmValues(current, context.stream());
+    result.downloadElapsed = ElapsedSince(stageStart);
   }
+  result.totalMeasuredElapsed = ElapsedSince(totalStart);
   return result;
 #endif
 }

@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <limits>
-#include <set>
 #include <stdexcept>
 #include <vector>
 
@@ -18,8 +17,6 @@ class CudaBalCsrStructure {
     structure.numCameras_ = data.numberCameras();
     structure.numPoints_ = data.numberTracks();
 
-    constexpr size_t kCameraDim = 9;
-    constexpr size_t kPointDim = 3;
     constexpr size_t kMaxInt =
         static_cast<size_t>(std::numeric_limits<int>::max());
     if (structure.numCameras_ > kMaxInt / kCameraDim ||
@@ -34,49 +31,70 @@ class CudaBalCsrStructure {
 
     const size_t dimension = cameraDimension + pointDimension;
     structure.dimension_ = static_cast<int>(dimension);
-    std::vector<std::set<int>> rows(static_cast<size_t>(structure.dimension_));
 
+    std::vector<std::vector<int>> cameraPoints(structure.numCameras_);
+    structure.collectCameraPointAdjacency(data, &cameraPoints);
+
+    structure.rowPointers_.resize(static_cast<size_t>(structure.dimension_) +
+                                  1);
+    size_t nnz = 0;
+    structure.rowPointers_[0] = 0;
     for (size_t cameraIndex = 0; cameraIndex < structure.numCameras_;
          ++cameraIndex) {
-      addDenseBlock(&rows, cameraBase(cameraIndex), cameraBase(cameraIndex), 9,
-                    9);
+      const size_t cameraPointCount = cameraPoints[cameraIndex].size();
+      for (int row = 0; row < kCameraDim; ++row) {
+        nnz += static_cast<size_t>(kCameraDim - row) +
+               static_cast<size_t>(kPointDim) * cameraPointCount;
+        if (nnz > kMaxInt) {
+          throw std::invalid_argument("CudaBalCsrStructure too many nonzeros");
+        }
+        structure.rowPointers_[static_cast<size_t>(cameraBase(cameraIndex)) +
+                               row + 1] = static_cast<int>(nnz);
+      }
     }
-
     for (size_t pointIndex = 0; pointIndex < structure.numPoints_;
          ++pointIndex) {
-      addDenseBlock(&rows, structure.pointBase(pointIndex),
-                    structure.pointBase(pointIndex), 3, 3);
-    }
-
-    for (size_t pointIndex = 0; pointIndex < data.numberTracks(); ++pointIndex) {
-      const SfmTrack& track = data.track(pointIndex);
-      if (track.numberMeasurements() < 2) {
-        // Keep original point slots and point diagonals, but only tracks in the
-        // projection batch contribute camera-point blocks.
-        continue;
-      }
-
-      for (const SfmMeasurement& measurement : track.measurements) {
-        if (measurement.first >= structure.numCameras_) {
-          throw std::invalid_argument(
-              "CudaBalCsrStructure camera index out of range");
+      for (int row = 0; row < kPointDim; ++row) {
+        nnz += static_cast<size_t>(kPointDim - row);
+        if (nnz > kMaxInt) {
+          throw std::invalid_argument("CudaBalCsrStructure too many nonzeros");
         }
-        addDenseBlock(&rows, cameraBase(measurement.first),
-                      structure.pointBase(pointIndex), 9, 3);
+        structure.rowPointers_[static_cast<size_t>(
+                                   structure.pointBase(pointIndex)) +
+                               row + 1] = static_cast<int>(nnz);
       }
     }
 
-    structure.rowPointers_.reserve(static_cast<size_t>(structure.dimension_) +
-                                   1);
-    structure.rowPointers_.push_back(0);
-    for (const std::set<int>& row : rows) {
-      structure.colIndices_.insert(structure.colIndices_.end(), row.begin(),
-                                   row.end());
-      if (structure.colIndices_.size() > kMaxInt) {
-        throw std::invalid_argument("CudaBalCsrStructure too many nonzeros");
+    structure.colIndices_.resize(nnz);
+    size_t offset = 0;
+    for (size_t cameraIndex = 0; cameraIndex < structure.numCameras_;
+         ++cameraIndex) {
+      const int base = cameraBase(cameraIndex);
+      const std::vector<int>& points = cameraPoints[cameraIndex];
+      for (int row = 0; row < kCameraDim; ++row) {
+        for (int col = row; col < kCameraDim; ++col) {
+          structure.colIndices_[offset++] = base + col;
+        }
+        for (const int pointIndex : points) {
+          const int pointBase =
+              structure.pointBase(static_cast<size_t>(pointIndex));
+          for (int col = 0; col < kPointDim; ++col) {
+            structure.colIndices_[offset++] = pointBase + col;
+          }
+        }
       }
-      structure.rowPointers_.push_back(
-          static_cast<int>(structure.colIndices_.size()));
+    }
+    for (size_t pointIndex = 0; pointIndex < structure.numPoints_;
+         ++pointIndex) {
+      const int base = structure.pointBase(pointIndex);
+      for (int row = 0; row < kPointDim; ++row) {
+        for (int col = row; col < kPointDim; ++col) {
+          structure.colIndices_[offset++] = base + col;
+        }
+      }
+    }
+    if (offset != structure.colIndices_.size()) {
+      throw std::logic_error("CudaBalCsrStructure fill mismatch");
     }
 
     return structure;
@@ -102,6 +120,9 @@ class CudaBalCsrStructure {
   }
 
  private:
+  static constexpr int kCameraDim = 9;
+  static constexpr int kPointDim = 3;
+
   int dimension_ = 0;
   size_t numCameras_ = 0;
   size_t numPoints_ = 0;
@@ -113,23 +134,33 @@ class CudaBalCsrStructure {
   }
 
   int pointBase(size_t pointIndex) const {
-    return static_cast<int>(9 * numCameras_ + 3 * pointIndex);
+    return static_cast<int>(kCameraDim * numCameras_ + kPointDim * pointIndex);
   }
 
-  static void addDenseBlock(std::vector<std::set<int>>* rows, int rowBase,
-                            int colBase, int rowDim, int colDim) {
-    for (int r = 0; r < rowDim; ++r) {
-      for (int c = 0; c < colDim; ++c) {
-        addEntry(rows, rowBase + r, colBase + c);
+  void collectCameraPointAdjacency(
+      const SfmData& data, std::vector<std::vector<int>>* cameraPoints) const {
+    for (size_t pointIndex = 0; pointIndex < data.numberTracks(); ++pointIndex) {
+      const SfmTrack& track = data.track(pointIndex);
+      if (track.numberMeasurements() < 2) {
+        // Keep original point slots and point diagonals, but only tracks in the
+        // projection batch contribute camera-point blocks.
+        continue;
+      }
+
+      for (const SfmMeasurement& measurement : track.measurements) {
+        if (measurement.first >= numCameras_) {
+          throw std::invalid_argument(
+              "CudaBalCsrStructure camera index out of range");
+        }
+        cameraPoints->at(measurement.first)
+            .push_back(static_cast<int>(pointIndex));
       }
     }
-  }
 
-  static void addEntry(std::vector<std::set<int>>* rows, int row, int col) {
-    if (row > col) {
-      std::swap(row, col);
+    for (std::vector<int>& points : *cameraPoints) {
+      std::sort(points.begin(), points.end());
+      points.erase(std::unique(points.begin(), points.end()), points.end());
     }
-    rows->at(static_cast<size_t>(row)).insert(col);
   }
 };
 

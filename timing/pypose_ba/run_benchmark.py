@@ -32,6 +32,7 @@ DEFAULT_DATASETS = [
 def run_once(
     bal_file: Path,
     backend: str,
+    bae_solver: str,
     device: str,
     steps: int,
     warmup_steps: int,
@@ -50,6 +51,8 @@ def run_once(
             str(bal_file),
             "--backend",
             backend,
+            "--bae-solver",
+            bae_solver,
             "--device",
             device,
             "--steps",
@@ -72,6 +75,7 @@ def run_once(
 def benchmark_dataset(
     bal_file: Path,
     backend: str,
+    bae_solver: str,
     device: str,
     steps: int,
     warmup_steps: int,
@@ -83,6 +87,7 @@ def benchmark_dataset(
         run_once(
             bal_file,
             backend,
+            bae_solver,
             device,
             steps,
             warmup_steps,
@@ -98,6 +103,7 @@ def benchmark_dataset(
     summary: dict[str, Any] = {
         "dataset": bal_file.name,
         "backend": backend,
+        "bae_solver": bae_solver if backend == "bae" else None,
         "device": device,
         "n_cameras": first["n_cameras"],
         "n_points": first["n_points"],
@@ -153,6 +159,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--datasets", nargs="*", default=DEFAULT_DATASETS)
     parser.add_argument("--backend", choices=("pypose-sparse", "bae"), default="pypose-sparse")
+    parser.add_argument(
+        "--bae-solver",
+        choices=("pcg", "cudss"),
+        default="pcg",
+        help="Linear solver for --backend bae.",
+    )
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--steps", type=int, default=50, help="LM iteration cap.")
     parser.add_argument("--warmup-steps", type=int, default=1)
@@ -177,10 +189,16 @@ def main() -> int:
         if not bal_file.is_file():
             print(f"WARNING: missing dataset {bal_file}, skipping.")
             continue
-        print(f"\n=== {name} ({args.backend}, {args.repeats} repeats) ===", flush=True)
+        backend_label = (
+            f"{args.backend}/{args.bae_solver}"
+            if args.backend == "bae"
+            else args.backend
+        )
+        print(f"\n=== {name} ({backend_label}, {args.repeats} repeats) ===", flush=True)
         row = benchmark_dataset(
             bal_file,
             args.backend,
+            args.bae_solver,
             args.device,
             args.steps,
             args.warmup_steps,

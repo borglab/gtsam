@@ -39,7 +39,8 @@ constexpr const char* kProfileDataset = "dubrovnik-135-90642-pre";
 
 std::string usage() {
   return "Usage: timeSFMBAL [--colamd] [--profile] [--cuda-structure-only] "
-         "[--cuda-lm] [--benchmark-action-json FILE] [BALfile]";
+         "[--cuda-lm] [--cuda-linear-solver dense-schur|cudss-full-normal] "
+         "[--benchmark-action-json FILE] [BALfile ...]";
 }
 
 struct TimingRow {
@@ -48,14 +49,31 @@ struct TimingRow {
   double newer = 0.0;
 };
 
+enum class CudaLinearSolverOption {
+  DenseSchur,
+  CudssFullNormal,
+};
+
 struct RunOptions {
   bool profile = false;
   bool cudaStructureOnly = false;
   bool cudaLm = false;
+  bool cudaLinearSolverSpecified = false;
+  CudaLinearSolverOption cudaLinearSolver = CudaLinearSolverOption::DenseSchur;
   bool benchmarkActionJson = false;
   std::string benchmarkActionJsonPath;
   std::vector<std::string> filenames;
 };
+
+const char* cudaLinearSolverName(CudaLinearSolverOption solver) {
+  switch (solver) {
+    case CudaLinearSolverOption::DenseSchur:
+      return "dense-schur";
+    case CudaLinearSolverOption::CudssFullNormal:
+      return "cudss-full-normal";
+  }
+  return "unknown";
+}
 
 std::string escapeJson(std::string value) {
   std::string escaped;
@@ -115,10 +133,12 @@ void writeBenchmarkActionJson(const std::vector<TimingRow>& rows,
 }
 
 RunOptions parseBalFiles(int argc, char* argv[]) {
-  std::string filename;
+  std::vector<std::string> filenames;
   bool profile = false;
   bool cudaStructureOnly = false;
   bool cudaLm = false;
+  bool cudaLinearSolverSpecified = false;
+  CudaLinearSolverOption cudaLinearSolver = CudaLinearSolverOption::DenseSchur;
   bool benchmarkActionJson = false;
   std::string benchmarkActionJsonPath;
   for (int i = 1; i < argc; ++i) {
@@ -138,6 +158,20 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
       cudaLm = true;
       continue;
     }
+    if (strcmp(argv[i], "--cuda-linear-solver") == 0) {
+      if (++i >= argc || argv[i][0] == '-') {
+        throw runtime_error(usage());
+      }
+      cudaLinearSolverSpecified = true;
+      if (strcmp(argv[i], "dense-schur") == 0) {
+        cudaLinearSolver = CudaLinearSolverOption::DenseSchur;
+      } else if (strcmp(argv[i], "cudss-full-normal") == 0) {
+        cudaLinearSolver = CudaLinearSolverOption::CudssFullNormal;
+      } else {
+        throw runtime_error(usage());
+      }
+      continue;
+    }
     if (strcmp(argv[i], "--benchmark-action-json") == 0) {
       if (++i >= argc || argv[i][0] == '-') {
         throw runtime_error(usage());
@@ -149,13 +183,10 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
     if (argv[i][0] == '-') {
       throw runtime_error(usage());
     }
-    if (!filename.empty()) {
-      throw runtime_error(usage());
-    }
-    filename = argv[i];
+    filenames.emplace_back(argv[i]);
   }
 
-  if (profile && !filename.empty()) {
+  if (profile && !filenames.empty()) {
     throw runtime_error(usage());
   }
   if (profile && benchmarkActionJson) {
@@ -170,25 +201,49 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
   if (cudaLm && cudaStructureOnly) {
     throw runtime_error(usage());
   }
+  if (cudaLinearSolverSpecified && !cudaLm) {
+    throw runtime_error(usage());
+  }
 
-  if (!filename.empty()) {
-    return {profile, cudaStructureOnly, cudaLm, benchmarkActionJson,
-            benchmarkActionJsonPath, {filename}};
+  if (!filenames.empty()) {
+    return {profile,
+            cudaStructureOnly,
+            cudaLm,
+            cudaLinearSolverSpecified,
+            cudaLinearSolver,
+            benchmarkActionJson,
+            benchmarkActionJsonPath,
+            filenames};
   }
 
   if (profile) {
-    return {profile, cudaStructureOnly, cudaLm, benchmarkActionJson,
+    return {profile,
+            cudaStructureOnly,
+            cudaLm,
+            cudaLinearSolverSpecified,
+            cudaLinearSolver,
+            benchmarkActionJson,
             benchmarkActionJsonPath,
             {findExampleDataFile(kProfileDataset)}};
   }
 
   if (benchmarkActionJson) {
-    return {profile, cudaStructureOnly, cudaLm, benchmarkActionJson,
+    return {profile,
+            cudaStructureOnly,
+            cudaLm,
+            cudaLinearSolverSpecified,
+            cudaLinearSolver,
+            benchmarkActionJson,
             benchmarkActionJsonPath,
             {findExampleDataFile(kDefaultBenchmarkDataset)}};
   }
 
-  return {profile, cudaStructureOnly, cudaLm, benchmarkActionJson,
+  return {profile,
+          cudaStructureOnly,
+          cudaLm,
+          cudaLinearSolverSpecified,
+          cudaLinearSolver,
+          benchmarkActionJson,
           benchmarkActionJsonPath,
           {
               findExampleDataFile("dubrovnik-16-22106-pre"),
@@ -245,6 +300,10 @@ int main(int argc, char* argv[]) {
       params.maxIterations = 20;
       params.relativeErrorTol = 0.01;
       params.downloadOptimizedValues = false;
+      params.linearSolver =
+          options.cudaLinearSolver == CudaLinearSolverOption::DenseSchur
+              ? gtsam::cuda::CudaSfmLinearSolverType::DenseSchur
+              : gtsam::cuda::CudaSfmLinearSolverType::CudssFullNormal;
 
       const auto start = std::chrono::high_resolution_clock::now();
       const gtsam::cuda::CudaSfmLevenbergMarquardtResult result =
@@ -253,7 +312,34 @@ int main(int argc, char* argv[]) {
       const std::chrono::duration<double> elapsed = end - start;
 
       std::cout << "  CUDA LM: " << elapsed.count() << " s\n";
+      std::cout << "  CUDA LM linear solver: "
+                << cudaLinearSolverName(options.cudaLinearSolver) << "\n";
       std::cout << "  CUDA LM solve loop: " << result.solveLoopElapsed
+                << " s\n";
+      std::cout << "  CUDA LM measured total: "
+                << result.totalMeasuredElapsed << " s\n";
+      std::cout << "  CUDA LM setup before solve loop: " << result.setupElapsed
+                << " s\n";
+      std::cout << "  CUDA LM setup breakdown:\n";
+      std::cout << "    context: " << result.contextElapsed << " s\n";
+      std::cout << "    pack values: " << result.packValuesElapsed << " s\n";
+      std::cout << "    allocate trial values: "
+                << result.allocateTrialElapsed << " s\n";
+      std::cout << "    projection batch: " << result.projectionBatchElapsed
+                << " s\n";
+      std::cout << "    initial error: " << result.initialErrorElapsed
+                << " s\n";
+      std::cout << "    cuDSS solver construction: "
+                << result.cudssSolverConstructionElapsed << " s\n";
+      std::cout << "    dense Schur solver construction: "
+                << result.denseSchurSolverConstructionElapsed << " s\n";
+      std::cout << "    CSR structure: " << result.csrStructureElapsed
+                << " s\n";
+      std::cout << "    upload pattern: " << result.uploadPatternElapsed
+                << " s\n";
+      std::cout << "    first cuDSS analyze: "
+                << result.firstCudssAnalyzeElapsed << " s\n";
+      std::cout << "    download values: " << result.downloadElapsed
                 << " s\n";
       std::cout << "Initial error: " << std::setprecision(15)
                 << result.initialError << "\n";
