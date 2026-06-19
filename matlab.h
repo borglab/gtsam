@@ -160,13 +160,15 @@ mxArray* wrap<bool>(const bool& value) {
   return result;
 }
 
-// specialization to size_t
+// specialization to size_t but skip Win64 size check & CUDACC check
+#if !defined(_WIN64) || defined(__CUDACC__)
 template<>
 mxArray* wrap<size_t>(const size_t& value) {
   mxArray *result = scalar(mxUINT32OR64_CLASS);
   *(size_t*)mxGetData(result) = value;
   return result;
 }
+#endif
 
 // specialization to int
 template<>
@@ -346,12 +348,16 @@ uint64_t unwrap<uint64_t>(const mxArray* array) {
   return myGetScalar<uint64_t>(array);
 }
 
-// specialization to size_t
+// specialization to size_t; omit it on Win64 because size_t is uint64_t there
+// and would duplicate unwrap<uint64_t>. The __CUDACC__ case intentionally
+// bypasses the Win64 guard when compiling with CUDA.
+#if !defined(_WIN64) || defined(__CUDACC__)
 template<>
 size_t unwrap<size_t>(const mxArray* array) {
   checkScalar(array, "unwrap<size_t>");
   return myGetScalar<size_t>(array);
 }
+#endif
 
 // specialization to double
 template<>
