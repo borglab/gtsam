@@ -771,13 +771,15 @@ std::vector<TriangulationResult> triangulateSafe(
   std::vector<TriangulationResult> results;
   results.reserve(tracks.size());
   for (const auto& track : tracks) {
-    CameraSet<CAMERA> track_cameras;
+    CameraSet<CAMERA> trackCameras;
     typename CAMERA::MeasurementVector measurements;
-    for (const auto& [key, measurement] : track) {
-      track_cameras.push_back(cameras.at(key));
+    trackCameras.reserve(track.size());
+    measurements.reserve(track.size());
+    for (const auto& [cameraIndex, measurement] : track) {
+      trackCameras.push_back(cameras.at(cameraIndex));
       measurements.push_back(measurement);
     }
-    results.push_back(triangulateSafe(track_cameras, measurements, params));
+    results.push_back(triangulateSafe(trackCameras, measurements, params));
   }
   return results;
 }

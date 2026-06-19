@@ -319,7 +319,7 @@ class TestTriangulationExample(GtsamTestCase):
             {0: camera1.project(self.landmark),
              1: camera2.project(self.landmark),
              2: camera3.project(self.landmark)},
-            # incomplete: camera 2 missing — still valid with 2 cameras
+            # incomplete: camera 3 (index 2) missing — still valid with 2 cameras
             {0: camera1.project(self.landmark),
              1: camera2.project(self.landmark)},
             # degenerate: only 1 camera — cannot triangulate
