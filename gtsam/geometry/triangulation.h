@@ -36,6 +36,7 @@
 
 #include <map>
 #include <optional>
+#include <stdexcept>
 
 namespace gtsam {
 
