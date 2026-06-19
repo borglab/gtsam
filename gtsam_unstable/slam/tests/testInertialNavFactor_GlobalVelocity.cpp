@@ -24,6 +24,7 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/VectorConstants.h>
 
 using namespace std::placeholders;
 using namespace std;

@@ -15,11 +15,11 @@
  * @author Frank Dellaert
  **/
 
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Vector.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/base/testLie.h>
-#include <CppUnitLite/TestHarness.h>
-#include <iostream>
 
 using namespace std;
 using namespace gtsam;

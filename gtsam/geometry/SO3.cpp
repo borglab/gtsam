@@ -19,6 +19,7 @@
  */
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/concepts.h>
 #include <gtsam/geometry/Point3.h>

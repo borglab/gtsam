@@ -25,6 +25,7 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/SymmetricBlockMatrix.h>
 
 using namespace std;

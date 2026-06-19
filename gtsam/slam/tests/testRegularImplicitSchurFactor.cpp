@@ -25,6 +25,7 @@
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/timing.h>
 
 #include <CppUnitLite/TestHarness.h>

@@ -16,17 +16,19 @@
  * @date    August 2022
  */
 
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridGaussianISAM.h>
 #include <gtsam/inference/DotWriter.h>
-#include <gtsam/base/TestableAssertions.h>
 
 #include <numeric>
 
-#include "Switching.h"
 #include "DiscreteFixture.h"
+#include "Switching.h"
 
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>

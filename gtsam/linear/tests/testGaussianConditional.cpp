@@ -19,6 +19,7 @@
 #include <gtsam/base/TestableAssertions.h>
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/VerticalBlockMatrix.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/JacobianFactor.h>

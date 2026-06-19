@@ -22,6 +22,7 @@
 #pragma once
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/std_optional_serialization.h>
 #include <gtsam/geometry/Pose3.h>
 #include "gtsam/dllexport.h"

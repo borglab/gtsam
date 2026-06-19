@@ -20,6 +20,7 @@
 
 #include <gtsam/base/Manifold.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/std_optional_serialization.h>
 #include <gtsam/dllexport.h>

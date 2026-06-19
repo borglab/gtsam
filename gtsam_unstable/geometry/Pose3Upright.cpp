@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <cassert>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/Vector.h>
 

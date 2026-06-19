@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/VectorSpace.h>
 #include <iosfwd>
@@ -177,4 +178,3 @@ struct traits<imuBias::ConstantBias> : public internal::VectorSpace<
 };
 
 } // namespace gtsam
-

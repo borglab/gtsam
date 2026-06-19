@@ -19,6 +19,7 @@
 
 #include <gtsam/linear/KalmanFilter.h>
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
 #include <CppUnitLite/TestHarness.h>
 

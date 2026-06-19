@@ -16,6 +16,7 @@
  * @date    Nov 12, 2014
  */
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/linear/RegularJacobianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianConditional.h>

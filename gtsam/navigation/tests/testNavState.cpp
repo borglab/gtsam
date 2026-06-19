@@ -20,7 +20,9 @@
 
 #include <gtsam/base/lieProxies.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/testLie.h>
 
 #include <CppUnitLite/TestHarness.h>

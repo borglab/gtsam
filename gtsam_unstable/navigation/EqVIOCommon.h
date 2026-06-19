@@ -21,6 +21,7 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/ProductLieGroup.h>
 #include <gtsam/base/Vector.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/ExtendedPose3.h>
 #include <gtsam/geometry/PinholeCamera.h>

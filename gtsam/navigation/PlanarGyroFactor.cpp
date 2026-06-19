@@ -3,6 +3,8 @@
  * @author joel@truher.org
  * @date May 1, 2026
  */
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/navigation/PlanarGyroFactor.h>
 
 namespace gtsam {

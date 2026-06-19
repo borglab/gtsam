@@ -18,6 +18,7 @@
  */
 
 #include <gtsam/base/Manifold.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Cal3_S2.h>

@@ -16,6 +16,7 @@
  * @date Feb 7, 2012
  */
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/HessianFactor.h>

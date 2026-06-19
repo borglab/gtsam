@@ -19,6 +19,7 @@
 #include <gtsam/linear/GaussianDensity.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/inference/Symbol.h>

@@ -23,6 +23,7 @@
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <CppUnitLite/TestHarness.h>
 
 #include <cmath>

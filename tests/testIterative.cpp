@@ -21,6 +21,7 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/iterative.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/base/VectorConstants.h>
 
 #include <CppUnitLite/TestHarness.h>
 

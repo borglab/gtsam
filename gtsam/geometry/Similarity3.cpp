@@ -20,6 +20,7 @@
 
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/Manifold.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/slam/KarcherMeanFactor-inl.h>
 
 namespace gtsam {

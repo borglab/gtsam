@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/base/MatrixLieGroup.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Rot3.h>
 

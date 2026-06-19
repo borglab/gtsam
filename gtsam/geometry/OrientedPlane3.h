@@ -20,6 +20,8 @@
 
 #pragma once
 
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/Pose3.h>
 #include <string>
@@ -144,4 +146,3 @@ OrientedPlane3> {
 };
 
 }  // namespace gtsam
-

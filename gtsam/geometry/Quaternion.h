@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/base/Lie.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/concepts.h>
 #include <gtsam/geometry/SO3.h> // Logmap/Expmap derivatives
 #include <limits>
@@ -199,4 +200,3 @@ struct traits<QUATERNION_TYPE> {
 typedef Eigen::Quaternion<double, Eigen::DontAlign> Quaternion;
 
 } // \namespace gtsam
-

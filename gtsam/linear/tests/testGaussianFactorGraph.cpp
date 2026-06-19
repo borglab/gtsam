@@ -28,6 +28,7 @@
 #include <gtsam/inference/VariableIndex.h>
 #include <gtsam/symbolic/IndexedJunctionTree.h>
 #include <gtsam/base/debug.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/VerticalBlockMatrix.h>
 
 #include <gtsam/base/TestableAssertions.h>

@@ -19,9 +19,11 @@
 
 #include <CppUnitLite/Test.h>
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/Vector.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/discrete/DiscreteValues.h>
@@ -43,9 +45,9 @@
 #include <memory>
 #include <vector>
 
+#include "DiscreteFixture.h"
 #include "Switching.h"
 #include "TinyHybridExample.h"
-#include "DiscreteFixture.h"
 
 using namespace std;
 using namespace gtsam;

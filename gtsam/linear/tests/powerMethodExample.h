@@ -21,6 +21,8 @@
 
 #pragma once
 
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/inference/Symbol.h>
 
 #include <iostream>
@@ -38,9 +40,9 @@ inline GaussianFactorGraph createSparseGraph() {
   GaussianFactorGraph fg;
   auto model = noiseModel::Unit::Create(1);
   for (size_t j = 0; j < 3; j++) {
-    fg.add(X(j), -I_1x1, X(j + 1), I_1x1, Vector1::Zero(), model);
+    fg.add(X(j), -I_1x1, X(j + 1), I_1x1, Z_1x1, model);
   }
-  fg.add(X(3), -I_1x1, X(0), I_1x1, Vector1::Zero(), model);  // extra row
+  fg.add(X(3), -I_1x1, X(0), I_1x1, Z_1x1, model);  // extra row
 
   return fg;
 }
@@ -55,7 +57,7 @@ inline GaussianFactorGraph createDenseGraph() {
   for (size_t j = 0; j < 10; j++) {
     // Each node has an edge with all the others
     for (size_t i = 1; i < 10; i++)
-    fg.add(X(j), -I_1x1, X((j + i) % 10), I_1x1, Vector1::Zero(), model);
+    fg.add(X(j), -I_1x1, X((j + i) % 10), I_1x1, Z_1x1, model);
   }
 
   return fg;

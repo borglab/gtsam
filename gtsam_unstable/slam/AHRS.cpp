@@ -6,11 +6,21 @@
  */
 
 #include "AHRS.h"
+
+#include <gtsam/base/VectorConstants.h>
+
 #include <cmath>
 
 using namespace std;
 
 namespace gtsam {
+// Can't use macros because we need to take a pointer to the matrices
+static const Eigen::MatrixBase<Matrix3>::IdentityReturnType I3x3 =
+    Matrix3::Identity();
+static const Eigen::MatrixBase<Matrix9>::IdentityReturnType I9x9 =
+    Matrix9::Identity();
+static const Eigen::MatrixBase<Matrix3>::ConstantReturnType Z3x3 =
+    Matrix3::Constant(0);
 
 /* ************************************************************************* */
 Matrix3 AHRS::Cov(const Vector3s& m) {
@@ -43,8 +53,8 @@ AHRS::AHRS(const Matrix& stationaryU, const Matrix& stationaryF, double g_e,
   double tau_g = 730; // correlation time for gyroscope
   double tau_a = 730; // correlation time for accelerometer
 
-  F_g_ = -I_3x3 / tau_g;
-  F_a_ = -I_3x3 / tau_a;
+  F_g_ = -I3x3 / tau_g;
+  F_a_ = -I3x3 / tau_a;
   Vector3 var_omega_w = 0 * Vector::Ones(3); // TODO
   Vector3 var_omega_g = (0.0034 * 0.0034) * Vector::Ones(3);
   Vector3 var_omega_a = (0.034 * 0.034) * Vector::Ones(3);
@@ -83,22 +93,22 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::initialize(double g_e) 
       0.0, 0.0, 0.0).finished();                             // we don't know anything on yaw
 
   // Calculate the initial covariance matrix for the error state dx, Farrell08book eq. 10.66
-  Matrix Pa = 0.025 * 0.025 * I_3x3;
+  Matrix Pa = 0.025 * 0.025 * I3x3;
   Matrix P11 = Omega_T * (H_g * (Pa + Pa_) * trans(H_g)) * trans(Omega_T);
   P11(2, 2) = 0.0001;
   Matrix P12 = -Omega_T * H_g * Pa;
 
   Matrix P_plus_k2 = Matrix(9, 9);
   P_plus_k2.block<3,3>(0, 0) = P11;
-  P_plus_k2.block<3,3>(0, 3) = Z_3x3;
+  P_plus_k2.block<3,3>(0, 3) = Z3x3;
   P_plus_k2.block<3,3>(0, 6) = P12;
 
-  P_plus_k2.block<3,3>(3, 0) = Z_3x3;
+  P_plus_k2.block<3,3>(3, 0) = Z3x3;
   P_plus_k2.block<3,3>(3, 3) = Pg_;
-  P_plus_k2.block<3,3>(3, 6) = Z_3x3;
+  P_plus_k2.block<3,3>(3, 6) = Z3x3;
 
   P_plus_k2.block<3,3>(6, 0) = trans(P12);
-  P_plus_k2.block<3,3>(6, 3) = Z_3x3;
+  P_plus_k2.block<3,3>(6, 3) = Z3x3;
   P_plus_k2.block<3,3>(6, 6) = Pa;
 
   Vector dx = Z_9x1;
@@ -128,17 +138,17 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::integrate(
   Matrix9_12 G_k; G_k.setZero();
   G_k.block<3,3>(0, 0) = -bRn;
   G_k.block<3,3>(0, 6) = -bRn;
-  G_k.block<3,3>(3, 3) = I_3x3;
-  G_k.block<3,3>(6, 9) = I_3x3;
+  G_k.block<3,3>(3, 3) = I3x3;
+  G_k.block<3,3>(6, 9) = I3x3;
 
   Matrix9 Q_k = G_k * var_w_.asDiagonal() * G_k.transpose();
-  Matrix9 Psi_k = I_9x9 + dt * F_k; // +dt*dt*F_k*F_k/2; // transition matrix
+  Matrix9 PsIk = I9x9 + dt * F_k; // +dt*dt*F_k*F_k/2; // transition matrix
 
   // This implements update in section 10.6
   Matrix9 B; B.setZero();
   Vector9 u2; u2.setZero();
   // TODO predictQ should be templated to also take fixed size matrices.
-  KalmanFilter::State newState = KF_.predictQ(state, Psi_k,B,u2,dt*Q_k);
+  KalmanFilter::State newState = KF_.predictQ(state, PsIk,B,u2,dt*Q_k);
   return make_pair(newMech, newState);
 }
 
@@ -170,7 +180,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aid(
   if (Farrell) {
     // calculate residual gravity measurement
     z = n_g_ - trans(bRn) * measured_b_g;
-    H = collect(3, &n_g_cross_, &Z_3x3, &bRn);
+    H = collect(3, &n_g_cross_, &Z3x3, &bRn);
     R = trans(bRn) * ((Vector3) sigmas_v_a_.array().square()).asDiagonal() * bRn;
   } else {
     // my measurement prediction (in body frame):
@@ -184,7 +194,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aid(
     z = bRn * n_g_ - measured_b_g;
     // Now the Jacobian H
     Matrix b_g = bRn * n_g_cross_;
-    H = collect(3, &b_g, &Z_3x3, &I_3x3);
+    H = collect(3, &b_g, &Z3x3, &I3x3);
     // And the measurement noise, TODO: should be created once where sigmas_v_a is given
     R = ((Vector3) sigmas_v_a_.array().square()).asDiagonal();
   }
@@ -214,7 +224,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aidGeneral(
   Vector z = f - increment * f_previous;
   //Vector z = increment * f_previous - f;
   Matrix b_g = skewSymmetric(increment* f_previous);
-  Matrix H = collect(3, &b_g, &I_3x3, &Z_3x3);
+  Matrix H = collect(3, &b_g, &I3x3, &Z3x3);
 //  Matrix R = diag(emul(sigmas_v_a_, sigmas_v_a_));
 //  Matrix R = diag(Vector3(1.0, 0.2, 1.0)); // good for L_twice
   Matrix R = Vector3(0.01, 0.0001, 0.01).asDiagonal();

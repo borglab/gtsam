@@ -17,6 +17,7 @@
  * @author Frank Dellaert
  */
 
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/discrete/DiscreteMarginals.h>
 
 #include <CppUnitLite/TestHarness.h>

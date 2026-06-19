@@ -23,6 +23,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/concepts.h>
 #include <gtsam/base/Manifold.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/ThreadsafeException.h>
 #include <gtsam/dllexport.h>
 #if GTSAM_ENABLE_BOOST_SERIALIZATION

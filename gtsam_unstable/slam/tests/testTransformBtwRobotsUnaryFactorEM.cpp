@@ -10,6 +10,7 @@
 #include <gtsam_unstable/slam/TransformBtwRobotsUnaryFactorEM.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
 
 #include <gtsam/slam/BetweenFactor.h>

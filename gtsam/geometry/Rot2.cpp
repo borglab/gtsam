@@ -16,6 +16,7 @@
  * @brief 2D Rotations
  */
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/Rot2.h>
 
 #include <Eigen/SVD>

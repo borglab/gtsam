@@ -20,6 +20,7 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>

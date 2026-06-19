@@ -18,6 +18,7 @@
  */
 
 #include <gtsam/geometry/OrientedPlane3.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
 

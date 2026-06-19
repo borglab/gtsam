@@ -16,6 +16,7 @@
  */
 
 #include <tests/simulated2DConstraints.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>

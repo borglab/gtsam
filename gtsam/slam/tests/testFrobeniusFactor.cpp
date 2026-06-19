@@ -18,6 +18,7 @@
   * @brief  Check evaluateError for various Frobenius norms
   */
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/lieProxies.h>
 #include <gtsam/base/testLie.h>
 #include <gtsam/geometry/Pose2.h>

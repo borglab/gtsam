@@ -15,11 +15,12 @@
  * @author  Richard Roberts
  */
 
-
-#include <gtsam/geometry/Pose2.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/timing.h>
+#include <gtsam/geometry/Pose2.h>
+
 #include <iostream>
-#include "gtsam/base/OptionalJacobian.h"
 
 using namespace std;
 using namespace gtsam;

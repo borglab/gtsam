@@ -4,6 +4,7 @@
  * @author: Hyungtae Lim
  */
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/SL4.h>
 #include <gtsam/geometry/SO4.h>
 

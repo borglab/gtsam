@@ -25,6 +25,8 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/timing.h>
 
 #include <utility>

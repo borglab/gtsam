@@ -9,6 +9,7 @@
 
 #include <gtsam_unstable/slam/RelativeElevationFactor.h>
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/numericalDerivative.h>
 
 using namespace std::placeholders;

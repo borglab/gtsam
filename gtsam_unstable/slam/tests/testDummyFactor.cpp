@@ -13,7 +13,9 @@
 #include <gtsam_unstable/slam/DummyFactor.h>
 
 #include <gtsam/geometry/Point3.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/VectorConstants.h>
 
 using namespace gtsam;
 
@@ -47,7 +49,7 @@ TEST( testDummyFactor, basics ) {
   CHECK(actLinearization);
   noiseModel::Diagonal::shared_ptr model3 = noiseModel::Unit::Create(3);
   GaussianFactor::shared_ptr expLinearization(new JacobianFactor(
-      key1, Matrix::Zero(3,3), key2, Matrix::Zero(3,3), Z_3x1, model3));
+      key1, Z_3x3, key2, Z_3x3, Z_3x1, model3));
   EXPECT(assert_equal(*expLinearization, *actLinearization, tol));
 }
 

@@ -17,6 +17,7 @@
 
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/testLie.h> // For CHECK_LIE_GROUP_DERIVATIVES, etc.
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Point3.h>

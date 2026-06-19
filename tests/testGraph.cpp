@@ -23,6 +23,7 @@
 #include <gtsam/inference/graph.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/base/MatrixConstants.h>
 
 #include <CppUnitLite/TestHarness.h>
 

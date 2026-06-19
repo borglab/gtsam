@@ -37,6 +37,7 @@
 #include <gtsam/base/GenericValue.h>
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Value.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/types.h>

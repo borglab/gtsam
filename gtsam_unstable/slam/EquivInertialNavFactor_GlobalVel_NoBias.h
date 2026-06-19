@@ -23,6 +23,7 @@
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
 
 // Using numerical derivative to calculate d(Pose3::Expmap)/dw
 #include <gtsam/base/numericalDerivative.h>
@@ -369,9 +370,6 @@ public:
     delta_t += msr_dt;
 
     // Update EquivCov_Overall
-    Matrix Z_3x3 = Z_3x3;
-    Matrix I_3x3 = I_3x3;
-
     Matrix H_pos_pos = numericalDerivative11<Vector, Vector>(std::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, _1, delta_vel_in_t0), delta_pos_in_t0);
     Matrix H_pos_vel = numericalDerivative11<Vector, Vector>(std::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, delta_pos_in_t0, _1), delta_vel_in_t0);
     Matrix H_pos_angles = Z_3x3;

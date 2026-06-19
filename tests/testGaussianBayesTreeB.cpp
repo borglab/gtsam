@@ -16,6 +16,8 @@
  */
 
 #include <tests/smallExample.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianBayesNet.h>
