@@ -15,12 +15,11 @@
  * @date    March 4, 2014
  */
 
-#include <gtsam/base/MatrixConstants.h>
-#include <gtsam/linear/RegularHessianFactor.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/VectorValues.h>
-
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/RegularHessianFactor.h>
+#include <gtsam/linear/VectorValues.h>
 
 using namespace std;
 using namespace gtsam;

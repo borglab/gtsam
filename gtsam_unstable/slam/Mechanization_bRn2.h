@@ -7,10 +7,11 @@
 
 #pragma once
 
-#include <gtsam/geometry/Rot3.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/VectorConstants.h>
+#include <gtsam/geometry/Rot3.h>
 #include <gtsam_unstable/dllexport.h>
+
 #include <list>
 
 namespace gtsam {

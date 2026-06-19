@@ -27,8 +27,8 @@
 #include <gtsam/geometry/Kernel.h>
 #include <gtsam/geometry/SOn.h>
 
-#include <vector>
 #include <optional>
+#include <vector>
 
 namespace gtsam {
 

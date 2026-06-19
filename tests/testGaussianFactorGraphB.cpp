@@ -15,19 +15,18 @@
  *  @author Christian Potthast
  **/
 
-#include <tests/smallExample.h>
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/linear/GaussianBayesTree.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/VectorConstants.h>
-
-#include <CppUnitLite/TestHarness.h>
-
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianBayesTree.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <string.h>
+#include <tests/smallExample.h>
+
 #include <iostream>
 
 using namespace std;

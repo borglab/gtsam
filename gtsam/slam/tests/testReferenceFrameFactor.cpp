@@ -14,20 +14,18 @@
  * @author Alex Cunningham
  */
 
-#include <iostream>
-
 #include <CppUnitLite/TestHarness.h>
-
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-
+#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/slam/ReferenceFrameFactor.h>
+
+#include <iostream>
 
 using namespace std;
 using namespace boost;

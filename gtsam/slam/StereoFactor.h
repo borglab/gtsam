@@ -18,11 +18,12 @@
 
 #pragma once
 
-#include <optional>
 #include <gtsam/base/MatrixConstants.h>
-#include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/geometry/StereoCamera.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
+
+#include <optional>
 
 namespace gtsam {
 

@@ -19,8 +19,8 @@
 #pragma once
 
 #include <gtsam/base/MatrixConstants.h>
-#include <gtsam/geometry/PinholePose.h>
 #include <gtsam/geometry/BearingRange.h>
+#include <gtsam/geometry/PinholePose.h>
 
 namespace gtsam {
 

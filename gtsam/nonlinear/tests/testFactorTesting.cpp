@@ -16,13 +16,12 @@
  * @brief unit tests for testFactorJacobians and testExpressionJacobians
  */
 
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/VectorConstants.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/nonlinear/expressions.h>
 #include <gtsam/nonlinear/expressionTesting.h>
+#include <gtsam/nonlinear/expressions.h>
 #include <gtsam/slam/expressions.h>
-
-#include <CppUnitLite/TestHarness.h>
 
 using namespace gtsam;
 

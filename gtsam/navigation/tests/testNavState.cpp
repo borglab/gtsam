@@ -16,16 +16,15 @@
  * @date    July 2015
  */
 
-#include <gtsam/navigation/NavState.h>
-
-#include <gtsam/base/lieProxies.h>
-#include <gtsam/base/numericalDerivative.h>
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/VectorConstants.h>
+#include <gtsam/base/lieProxies.h>
+#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/testLie.h>
+#include <gtsam/navigation/NavState.h>
 
-#include <CppUnitLite/TestHarness.h>
 #include <cmath>
 
 using namespace std::placeholders;

@@ -16,21 +16,20 @@
  *  @date   May 14, 2014
  */
 
-#include <gtsam/slam/lago.h>
-
-#include <gtsam/slam/InitializePose.h>
-#include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/PriorFactor.h>
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/inference/Symbol.h>
 #include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/VectorConstants.h>
-#include <gtsam/base/timing.h>
 #include <gtsam/base/kruskal.h>
+#include <gtsam/base/timing.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/nonlinear/PriorFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/InitializePose.h>
+#include <gtsam/slam/lago.h>
 
+#include <cmath>
 #include <iostream>
 #include <stack>
-#include <cmath>
 
 using namespace std;
 

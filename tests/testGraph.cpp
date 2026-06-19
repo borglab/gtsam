@@ -16,20 +16,18 @@
  * @brief unit test for graph-inl.h
  */
 
-#include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/inference/graph.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/inference/graph.h>
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/base/MatrixConstants.h>
-
-#include <CppUnitLite/TestHarness.h>
-
-#include <memory>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/slam/BetweenFactor.h>
 
 #include <iostream>
+#include <memory>
 
 using namespace std;
 using namespace gtsam;

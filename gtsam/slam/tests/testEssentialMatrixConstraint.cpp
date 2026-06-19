@@ -17,14 +17,13 @@
  *  @date Jan 5, 2014
  */
 
-#include <gtsam/slam/EssentialMatrixConstraint.h>
-#include <gtsam/nonlinear/Symbol.h>
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/base/numericalDerivative.h>
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/VectorConstants.h>
-
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/slam/EssentialMatrixConstraint.h>
 
 using namespace std::placeholders;
 using namespace std;

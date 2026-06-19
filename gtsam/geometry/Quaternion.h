@@ -20,9 +20,10 @@
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/concepts.h>
-#include <gtsam/geometry/SO3.h> // Logmap/Expmap derivatives
-#include <limits>
+#include <gtsam/geometry/SO3.h>  // Logmap/Expmap derivatives
+
 #include <iostream>
+#include <limits>
 
 #define QUATERNION_TYPE Eigen::Quaternion<_Scalar,_Options>
 

@@ -18,22 +18,6 @@
  * @brief utility functions for loading datasets
  */
 
-#include <gtsam/sam/BearingRangeFactor.h>
-#include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/dataset.h>
-
-#include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/Rot3.h>
-
-#include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/nonlinear/Values-inl.h>
-
-#include <gtsam/linear/Sampler.h>
-
-#include <gtsam/inference/FactorGraph.h>
-#include <gtsam/inference/Symbol.h>
-
 #include <gtsam/base/GenericValue.h>
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Matrix.h>
@@ -41,13 +25,23 @@
 #include <gtsam/base/Value.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/types.h>
-
-#include <optional>
+#include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Rot3.h>
+#include <gtsam/inference/FactorGraph.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/Sampler.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/Values-inl.h>
+#include <gtsam/sam/BearingRangeFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/dataset.h>
 
 #include <cmath>
 #include <fstream>
 #include <iostream>
 #include <locale>
+#include <optional>
 #include <stdexcept>
 #include <string>
 

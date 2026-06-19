@@ -19,11 +19,11 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/linear/NoiseModel.h>
-#include <gtsam/geometry/Rot3.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/MatrixConstants.h>
+#include <gtsam/geometry/Rot3.h>
+#include <gtsam/linear/NoiseModel.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
 
 // Using numerical derivative to calculate d(Pose3::Expmap)/dw
 #include <gtsam/base/numericalDerivative.h>

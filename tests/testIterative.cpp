@@ -15,15 +15,14 @@
  *  @author Frank Dellaert
  **/
 
-#include <tests/smallExample.h>
-#include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/iterative.h>
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/base/VectorConstants.h>
-
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <tests/smallExample.h>
 
 using namespace std;
 using namespace gtsam;

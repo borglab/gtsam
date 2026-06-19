@@ -14,17 +14,16 @@
  * @brief  Unit tests for Pose3 class
  */
 
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/base/testLie.h>
-#include <gtsam/base/lieProxies.h>
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/VectorConstants.h>
+#include <gtsam/base/lieProxies.h>
+#include <gtsam/base/testLie.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/slam/expressions.h>
 
-
-#include <CppUnitLite/TestHarness.h>
 #include <cmath>
 #include <functional>
 

@@ -19,14 +19,16 @@
  *  @date   Sept 2013
  */
 
-#include "smartFactorScenarios.h"
-#include <gtsam/slam/ProjectionFactor.h>
-#include <gtsam/slam/PoseTranslationPrior.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/slam/PoseTranslationPrior.h>
+#include <gtsam/slam/ProjectionFactor.h>
+
 #include <iostream>
+
+#include "smartFactorScenarios.h"
 
 using namespace std::placeholders;
 

@@ -25,9 +25,9 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Rot2.h>
 
-#include <optional>
 #include <cmath>
 #include <iostream>
+#include <optional>
 
 using namespace gtsam;
 using namespace std;

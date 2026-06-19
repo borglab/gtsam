@@ -57,7 +57,7 @@ inline GaussianFactorGraph createDenseGraph() {
   for (size_t j = 0; j < 10; j++) {
     // Each node has an edge with all the others
     for (size_t i = 1; i < 10; i++)
-    fg.add(X(j), -I_1x1, X((j + i) % 10), I_1x1, Z_1x1, model);
+      fg.add(X(j), -I_1x1, X((j + i) % 10), I_1x1, Z_1x1, model);
   }
 
   return fg;
