@@ -776,6 +776,10 @@ std::vector<TriangulationResult> triangulateSafe(
     trackCameras.reserve(track.size());
     measurements.reserve(track.size());
     for (const auto& [cameraIndex, measurement] : track) {
+      if (cameraIndex >= cameras.size()) {
+        throw std::out_of_range(
+            "triangulateSafe(batch): cameraIndex out of range for CameraSet");
+      }
       trackCameras.push_back(cameras.at(cameraIndex));
       measurements.push_back(measurement);
     }
