@@ -30,61 +30,8 @@
 #include <tbb/scalable_allocator.h>
 #endif
 
-#if defined(__GNUC__) || defined(__clang__)
-#define GTSAM_DEPRECATED __attribute__((deprecated))
-#elif defined(_MSC_VER)
-#define GTSAM_DEPRECATED __declspec(deprecated)
-#else
-#define GTSAM_DEPRECATED
-#endif
-
 #ifdef GTSAM_USE_EIGEN_MKL_OPENMP
 #include <omp.h>
-#endif
-
-/* Define macros for ignoring compiler warnings.
- * Usage Example:
- * ```
- *  CLANG_DIAGNOSTIC_PUSH_IGNORE("-Wdeprecated-declarations")
- *  GCC_DIAGNOSTIC_PUSH_IGNORE("-Wdeprecated-declarations")
- *  MSVC_DIAGNOSTIC_PUSH_IGNORE(4996)
- *  // ... code you want to suppress deprecation warnings for ...
- *  DIAGNOSTIC_POP()
- * ```
- */
-#define DO_PRAGMA(x) _Pragma (#x)
-#ifdef __clang__
-#  define CLANG_DIAGNOSTIC_PUSH_IGNORE(diag) \
-  _Pragma("clang diagnostic push") \
-  DO_PRAGMA(clang diagnostic ignored diag)
-#else
-#  define CLANG_DIAGNOSTIC_PUSH_IGNORE(diag)
-#endif
-
-#ifdef __GNUC__
-#  define GCC_DIAGNOSTIC_PUSH_IGNORE(diag) \
-  _Pragma("GCC diagnostic push") \
-  DO_PRAGMA(GCC diagnostic ignored diag)
-#else
-#  define GCC_DIAGNOSTIC_PUSH_IGNORE(diag)
-#endif
-
-#ifdef _MSC_VER
-#  define MSVC_DIAGNOSTIC_PUSH_IGNORE(code) \
-  _Pragma("warning ( push )") \
-  DO_PRAGMA(warning ( disable : code ))
-#else
-#  define MSVC_DIAGNOSTIC_PUSH_IGNORE(code)
-#endif
-
-#if defined(__clang__)
-#  define DIAGNOSTIC_POP() _Pragma("clang diagnostic pop")
-#elif defined(__GNUC__)
-#  define DIAGNOSTIC_POP() _Pragma("GCC diagnostic pop")
-#elif defined(_MSC_VER)
-#  define DIAGNOSTIC_POP() _Pragma("warning ( pop )")
-#else
-#  define DIAGNOSTIC_POP()
 #endif
 
 namespace gtsam {
@@ -100,28 +47,6 @@ namespace gtsam {
 
   /// The index type for Eigen objects
   typedef ptrdiff_t DenseIndex;
-
-  /* ************************************************************************* */
-  /**
-   * Helper class that uses templates to select between two types based on
-   * whether TEST_TYPE is const or not.
-   */
-  template<typename TEST_TYPE, typename BASIC_TYPE, typename AS_NON_CONST,
-      typename AS_CONST>
-  struct const_selector {
-  };
-
-  /** Specialization for the non-const version */
-  template<typename BASIC_TYPE, typename AS_NON_CONST, typename AS_CONST>
-  struct const_selector<BASIC_TYPE, BASIC_TYPE, AS_NON_CONST, AS_CONST> {
-    typedef AS_NON_CONST type;
-  };
-
-  /** Specialization for the const version */
-  template<typename BASIC_TYPE, typename AS_NON_CONST, typename AS_CONST>
-  struct const_selector<const BASIC_TYPE, BASIC_TYPE, AS_NON_CONST, AS_CONST> {
-    typedef AS_CONST type;
-  };
 
   /* ************************************************************************* */
   /**
@@ -196,37 +121,6 @@ namespace gtsam {
   if (!(CONDITION)) { \
   throw (EXCEPTION); \
   }
-#endif
-
-#ifdef _MSC_VER
-
-// Define some common g++ functions and macros we use that MSVC does not have
-
-#if (_MSC_VER < 1800)
-
-#include <cmath>
-namespace std {
-  template<typename T> inline int isfinite(T a) {
-    return (int)std::isfinite(a); }
-  template<typename T> inline int isnan(T a) {
-    return (int)std::isnan(a); }
-  template<typename T> inline int isinf(T a) {
-    return (int)std::isinf(a); }
-}
-
-#endif
-
-#include <cmath>
-#ifndef M_PI
-#define M_PI (3.14159265358979323846)
-#endif
-#ifndef M_PI_2
-#define M_PI_2 (M_PI / 2.0)
-#endif
-#ifndef M_PI_4
-#define M_PI_4 (M_PI / 4.0)
-#endif
-
 #endif
 
 #ifdef min
