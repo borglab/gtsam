@@ -23,8 +23,10 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/navigation/AttitudeFactor.h>
+#include <gtsam/navigation/CarrierPhaseFactor.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
 #include <gtsam/navigation/ImuFactor.h>
+#include <gtsam/navigation/PseudorangeFactor.h>
 
 #include <fstream>
 
@@ -178,6 +180,52 @@ TEST(AttitudeFactorExtendedPose3d, Serialization) {
   EXPECT(serializationTestHelpers::equalsObj(factor));
   EXPECT(serializationTestHelpers::equalsXML(factor));
   EXPECT(serializationTestHelpers::equalsBinary(factor));
+}
+
+/* ************************************************************************* */
+// Undifferenced (PPP) GNSS factors: verify the measurement, geometry and
+// tropo/iono coefficients survive an obj/XML/binary serialization round-trip.
+namespace {
+const Point3 kUSat(1.5e7, -1.2e7, 2.0e7);
+const Point3 kULever(0.10, 0.20, 0.30);
+const SharedNoiseModel kUModel = noiseModel::Isotropic::Sigma(1, 0.5);
+const double kUPr = 2.1e7, kUmw = 3.2, kUmu = 1.55, kULam = 0.19;
+}  // namespace
+
+/* ************************************************************************* */
+TEST(UndifferencedPseudorangeFactor, Serialization) {
+  UndifferencedPseudorangeFactor f(0, 1, 2, 3, kUPr, kUSat, kUmw, kUmu, 1e-4,
+                                   kUModel);
+  EXPECT(equalsObj(f));
+  EXPECT(equalsXML(f));
+  EXPECT(equalsBinary(f));
+}
+
+/* ************************************************************************* */
+TEST(UndifferencedPseudorangeFactorArm, Serialization) {
+  UndifferencedPseudorangeFactorArm f(0, 1, 2, 3, kUPr, kUSat, kULever, kUmw,
+                                      kUmu, 1e-4, kUModel);
+  EXPECT(equalsObj(f));
+  EXPECT(equalsXML(f));
+  EXPECT(equalsBinary(f));
+}
+
+/* ************************************************************************* */
+TEST(UndifferencedCarrierPhaseFactor, Serialization) {
+  UndifferencedCarrierPhaseFactor f(0, 1, 2, 3, 4, kUPr, kUSat, kUmw, -kUmu,
+                                    kULam, 1e-4, kUModel);
+  EXPECT(equalsObj(f));
+  EXPECT(equalsXML(f));
+  EXPECT(equalsBinary(f));
+}
+
+/* ************************************************************************* */
+TEST(UndifferencedCarrierPhaseFactorArm, Serialization) {
+  UndifferencedCarrierPhaseFactorArm f(0, 1, 2, 3, 4, kUPr, kUSat, kULever, kUmw,
+                                       -kUmu, kULam, 1e-4, kUModel);
+  EXPECT(equalsObj(f));
+  EXPECT(equalsXML(f));
+  EXPECT(equalsBinary(f));
 }
 
 /* ************************************************************************* */

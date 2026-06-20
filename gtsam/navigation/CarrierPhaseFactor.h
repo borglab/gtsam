@@ -198,7 +198,7 @@ class GTSAM_EXPORT UndifferencedCarrierPhaseFactor
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(UndifferencedCarrierPhaseFactor::Base);
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar& BOOST_SERIALIZATION_NVP(measurement_);
     ar& BOOST_SERIALIZATION_NVP(satPos_);
     ar& BOOST_SERIALIZATION_NVP(satClkBias_);
@@ -289,8 +289,7 @@ class GTSAM_EXPORT UndifferencedCarrierPhaseFactorArm
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(
-        UndifferencedCarrierPhaseFactorArm::Base);
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar& BOOST_SERIALIZATION_NVP(measurement_);
     ar& BOOST_SERIALIZATION_NVP(satPos_);
     ar& BOOST_SERIALIZATION_NVP(satClkBias_);
