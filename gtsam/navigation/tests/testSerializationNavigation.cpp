@@ -24,6 +24,7 @@
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/navigation/AttitudeFactor.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
+#include <gtsam/navigation/GPSFactor.h>
 #include <gtsam/navigation/ImuFactor.h>
 
 #include <fstream>
@@ -178,6 +179,44 @@ TEST(AttitudeFactorExtendedPose3d, Serialization) {
   EXPECT(serializationTestHelpers::equalsObj(factor));
   EXPECT(serializationTestHelpers::equalsXML(factor));
   EXPECT(serializationTestHelpers::equalsBinary(factor));
+}
+
+/* ************************************************************************* */
+// GPS lever-arm factors: verify the measurement (nT_) and lever arm (bL_)
+// survive an obj/XML/binary serialization round-trip.
+TEST(GPSFactorArm, Serialization) {
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.25);
+  GPSFactorArm factor(0, Point3(1.0, 2.0, 3.0), Point3(0.1, 0.2, 0.3), model);
+  EXPECT(equalsObj(factor));
+  EXPECT(equalsXML(factor));
+  EXPECT(equalsBinary(factor));
+}
+
+/* ************************************************************************* */
+TEST(GPSFactorArmCalib, Serialization) {
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.25);
+  GPSFactorArmCalib factor(0, 1, Point3(1.0, 2.0, 3.0), model);
+  EXPECT(equalsObj(factor));
+  EXPECT(equalsXML(factor));
+  EXPECT(equalsBinary(factor));
+}
+
+/* ************************************************************************* */
+TEST(GPSFactor2Arm, Serialization) {
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.25);
+  GPSFactor2Arm factor(0, Point3(1.0, 2.0, 3.0), Point3(0.1, 0.2, 0.3), model);
+  EXPECT(equalsObj(factor));
+  EXPECT(equalsXML(factor));
+  EXPECT(equalsBinary(factor));
+}
+
+/* ************************************************************************* */
+TEST(GPSFactor2ArmCalib, Serialization) {
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.25);
+  GPSFactor2ArmCalib factor(0, 1, Point3(1.0, 2.0, 3.0), model);
+  EXPECT(equalsObj(factor));
+  EXPECT(equalsXML(factor));
+  EXPECT(equalsBinary(factor));
 }
 
 /* ************************************************************************* */
