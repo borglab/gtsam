@@ -243,7 +243,7 @@ std::tuple<FastVector<DenseIndex>, DenseIndex, DenseIndex> _countDims(
   }
 #endif
 
-  return std::make_tuple(varDims, m, n);
+  return std::make_tuple(std::move(varDims), m, n);
 }
 
 /* ************************************************************************* */
