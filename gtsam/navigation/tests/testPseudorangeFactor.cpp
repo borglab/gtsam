@@ -73,6 +73,31 @@ TEST(TestPseudorangeFactor, Jacobians2) {
 }
 
 // *************************************************************************
+// The undifferenced factor must apply the Sagnac correction via
+// gnss::geodist, matching the double-difference factors. With realistic ECEF
+// geometry the Sagnac term is non-zero, so the residual differs from a plain
+// Euclidean range by exactly that term.
+TEST(TestPseudorangeFactor, SagnacCorrection) {
+  const auto factor = PseudorangeFactor(
+      Key(0), Key(1), sample::kPseudorange, sample::kSatPos,
+      sample::kSatClkBias);
+  const double error =
+      factor.evaluateError(sample::kReceiverPos, sample::kReceiverClock)[0];
+
+  // Reference residual built from the Sagnac-corrected geodist.
+  Point3 e;
+  const double range = gnss::geodist(sample::kSatPos, sample::kReceiverPos, e);
+  const double expected =
+      range + kCLight * (sample::kReceiverClock - sample::kSatClkBias) -
+      sample::kPseudorange;
+  EXPECT_DOUBLES_EQUAL(expected, error, 1e-6);
+
+  // A plain-Euclidean model would give a measurably different residual.
+  const double euclid = (sample::kReceiverPos - sample::kSatPos).norm();
+  EXPECT(std::abs(range - euclid) > 1e-3);
+}
+
+// *************************************************************************
 TEST(TestPseudorangeFactor, print) {
   // Just make sure `print()` doesn't throw errors
   // since there's no elegant way to check stdout.

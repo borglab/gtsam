@@ -18,6 +18,8 @@
 
 #include "GPSFactor.h"
 
+#include <stdexcept>
+
 using namespace std;
 
 namespace gtsam {
@@ -47,6 +49,11 @@ pair<Pose3, Vector3> GPSFactor::EstimateState(double t1, const Point3& NED1,
     double t2, const Point3& NED2, double timestamp) {
   // Estimate initial velocity as difference in NED frame
   double dt = t2 - t1;
+  if (dt == 0.0) {
+    throw std::invalid_argument(
+        "GPSFactor::EstimateState: t2 - t1 is zero; cannot estimate "
+        "velocity by dividing by dt.");
+  }
   Point3 nV = (NED2 - NED1) / dt;
 
   // Estimate initial position as linear interpolation
