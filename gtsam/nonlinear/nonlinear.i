@@ -21,6 +21,7 @@ namespace gtsam {
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/SL4.h>
+#include <gtsam/geometry/SL4Aff3.h>
 #include <gtsam/geometry/SO3.h>
 #include <gtsam/geometry/SO4.h>
 #include <gtsam/geometry/SOn.h>
@@ -77,6 +78,7 @@ virtual class NonlinearFactorGraph {
                  gtsam::SO3,
                  gtsam::SO4,
                  gtsam::SL4,
+                 gtsam:SL4Aff3,
                  gtsam::Rot3,
                  gtsam::Pose2,
                  gtsam::Pose3,
@@ -579,6 +581,7 @@ class ISAM2 {
                      gtsam::Rot3,
                      gtsam::Pose3,
                      gtsam::SL4,
+                     gtsam::SL4Aff3,
                      gtsam::Similarity2,
                      gtsam::Similarity3,
                      gtsam::Cal3_S2,
@@ -757,6 +760,7 @@ template <T = {double,
                gtsam::SO4,
                gtsam::SOn,
                gtsam::SL4,
+               gtsam::SL4Aff3,
                gtsam::Rot3,
                gtsam::Pose2,
                gtsam::Pose3,
@@ -797,6 +801,7 @@ template <T = {double,
                gtsam::SO4,
                gtsam::SOn,
                gtsam::SL4,
+               gtsam::SL4Aff3,
                gtsam::Rot3,
                gtsam::Pose2,
                gtsam::Pose3,
@@ -844,7 +849,7 @@ virtual class ExtendedPriorFactor : gtsam::NoiseModelFactor {
 #include <gtsam/nonlinear/ConcentratedGaussian.h>
 template <T = {double, gtsam::Vector, gtsam::Point2, gtsam::StereoPoint2,
                gtsam::Point3, gtsam::Gal3, gtsam::Rot2, gtsam::SO3, gtsam::SO4,
-               gtsam::SOn, gtsam::SL4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3,
+               gtsam::SOn, gtsam::SL4, gtsam::SL4Aff3 gtsam::Rot3, gtsam::Pose2, gtsam::Pose3,
                gtsam::Similarity2, gtsam::Similarity3}>
 virtual class ConcentratedGaussian : gtsam::ExtendedPriorFactor<T> {
   ConcentratedGaussian();
@@ -884,6 +889,7 @@ template <T = {gtsam::Point2,
                gtsam::SO4,
                gtsam::SOn,
                gtsam::SL4,
+               gtsam::SL4Aff3,
                gtsam::Rot3,
                gtsam::Pose2,
                gtsam::Gal3,
@@ -917,6 +923,7 @@ template <T = {gtsam::Point2,
                gtsam::SO4,
                gtsam::SOn,
                gtsam::SL4,
+               gtsam::SL4Aff3,
                gtsam::Rot3,
                gtsam::Pose2,
                gtsam::Pose3,
@@ -997,7 +1004,7 @@ virtual class BatchFixedLagSmoother : gtsam::FixedLagSmoother {
   gtsam::NonlinearFactorGraph getFactors() const;
 
   template <VALUE = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
-                     gtsam::Rot3, gtsam::Pose3, gtsam::SL4, gtsam::Similarity2,
+                     gtsam::Rot3, gtsam::Pose3, gtsam::SL4, gtsam::SL4Aff3, gtsam::Similarity2,
                      gtsam::Similarity3, gtsam::Cal3_S2, gtsam::Cal3DS2,
                      gtsam::Vector, gtsam::Matrix}>
   VALUE calculateEstimate(gtsam::Key key) const;
@@ -1021,7 +1028,7 @@ virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
 
 #include <gtsam/nonlinear/ExtendedKalmanFilter.h>
 template <T = {gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::Rot3,
-               gtsam::Pose2, gtsam::Pose3, gtsam::Gal3, gtsam::SL4,
+               gtsam::Pose2, gtsam::Pose3, gtsam::Gal3, gtsam::SL4, gtsam::SL4Aff3,
                gtsam::Similarity2, gtsam::Similarity3, gtsam::NavState,
                gtsam::imuBias::ConstantBias}>
 virtual class ExtendedKalmanFilter {

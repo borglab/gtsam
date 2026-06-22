@@ -6,6 +6,7 @@ namespace gtsam {
 
 #include <gtsam/geometry/SO4.h>
 #include <gtsam/geometry/SL4.h>
+#include <gtsam/geometry/SL4Aff3.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/navigation/NavState.h>
 #include <gtsam/geometry/ExtendedPose3.h>
@@ -20,7 +21,7 @@ namespace gtsam {
 
 #include <gtsam/slam/BetweenFactor.h>
 template <T = {double, gtsam::Vector, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::SO3,
-               gtsam::SO4, gtsam::SL4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3,
+               gtsam::SO4, gtsam::SL4, gtsam::SL4Aff3, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3,
                gtsam::Similarity2, gtsam::Similarity3, gtsam::Gal3, gtsam::NavState,
                gtsam::Se23, gtsam::ExtendedPose3d, gtsam::imuBias::ConstantBias,
                gtsam::SOn}>
@@ -560,6 +561,13 @@ class BetweenFactorSL4s {
   void push_back(const gtsam::BetweenFactor<gtsam::SL4>* factor);
 };
 
+class BetweenFactorSL4Aff3s {
+  BetweenFactorSL4Aff3s();
+  size_t size() const;
+  gtsam::BetweenFactor<gtsam::SL4Aff3* at(size_t i) const;
+  void push_back(const gtsam::BetweenFactor<gtsam::SL4Aff3* factor);
+};
+
 gtsam::BetweenFactorPose3s parse3DFactors(string filename);
 
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load3D(string filename);
@@ -594,7 +602,7 @@ class InitializePose3 {
 #include <gtsam/slam/KarcherMeanFactor-inl.h>
 template <T = {gtsam::Rot2, gtsam::Pose2, gtsam::SO3, gtsam::SO4, gtsam::Rot3,
                gtsam::Pose3, gtsam::Similarity2, gtsam::Similarity3,
-               gtsam::Gal3, gtsam::SL4}>
+               gtsam::Gal3, gtsam::SL4, gtsam::SL4Aff3}>
 virtual class KarcherMeanFactor : gtsam::NonlinearFactor {
   KarcherMeanFactor(const gtsam::KeyVector& keys);
   KarcherMeanFactor(const gtsam::KeyVector& keys, int d, double beta);
@@ -602,7 +610,7 @@ virtual class KarcherMeanFactor : gtsam::NonlinearFactor {
 
 template <T = {gtsam::Rot2, gtsam::Pose2, gtsam::SO3, gtsam::SO4, gtsam::Rot3,
                gtsam::Pose3, gtsam::Similarity2, gtsam::Similarity3,
-               gtsam::Gal3, gtsam::SL4}>
+               gtsam::Gal3, gtsam::SL4, gtsam::SL4Aff3}>
 T FindKarcherMean(const std::vector<T>& elements);
 
 #include <gtsam/slam/FrobeniusFactor.h>
@@ -611,7 +619,7 @@ gtsam::noiseModel::Isotropic* ConvertNoiseModel(gtsam::noiseModel::Base* model,
 
 template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::SO3, gtsam::SO4, gtsam::Pose2,
                gtsam::Pose3, gtsam::Similarity2, gtsam::Similarity3,
-               gtsam::Gal3, gtsam::SL4}>
+               gtsam::Gal3, gtsam::SL4, gtsam::SL4Aff3>
 class FrobeniusPrior : gtsam::NoiseModelFactor {
   FrobeniusPrior(gtsam::Key j, const gtsam::Matrix& M,
     const gtsam::noiseModel::Base* model = nullptr);
@@ -621,7 +629,7 @@ class FrobeniusPrior : gtsam::NoiseModelFactor {
 
 template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::SO3, gtsam::SO4, gtsam::Pose2,
                gtsam::Pose3, gtsam::Similarity2, gtsam::Similarity3,
-               gtsam::Gal3, gtsam::SL4}>
+               gtsam::Gal3, gtsam::SL4, gtsam::SL4Aff3}>
 virtual class FrobeniusFactor : gtsam::NoiseModelFactor {
   FrobeniusFactor(gtsam::Key key1, gtsam::Key key2);
   FrobeniusFactor(gtsam::Key j1, gtsam::Key j2, gtsam::noiseModel::Base* model);
@@ -632,7 +640,7 @@ virtual class FrobeniusFactor : gtsam::NoiseModelFactor {
 // Available for all Matrix Lie groups
 template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::SO3, gtsam::SO4, gtsam::Pose2,
                gtsam::Pose3, gtsam::Similarity2, gtsam::Similarity3,
-               gtsam::Gal3, gtsam::SL4}>
+               gtsam::Gal3, gtsam::SL4, gtsam::SL4Aff3}>
 virtual class FrobeniusBetweenFactorNL : gtsam::NoiseModelFactor {
   FrobeniusBetweenFactorNL(gtsam::Key j1, gtsam::Key j2, const T& T12);
   FrobeniusBetweenFactorNL(gtsam::Key key1, gtsam::Key key2, const T& T12,

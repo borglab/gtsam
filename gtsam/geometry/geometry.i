@@ -896,6 +896,63 @@ class SL4 {
   void serialize() const;
 };
 
+#include <gtsam/geometry/SL4Aff3.h>
+class Aff3 {
+  // Standard constructors
+  Aff3();
+  Aff3(const gtsam::Matrix4& T);
+
+  // Testable
+  void print(string s = "") const;
+  bool equals(const gtsam::Aff3& aff3, double tol) const;
+
+  // Group
+  static gtsam::Aff3 Identity();
+  gtsam::Aff3 inverse() const;
+  gtsam::Aff3 inverse(Eigen::Ref<Eigen::MatrixXd> H) const;
+  gtsam::Aff3 compose(const gtsam::Aff3& aff3) const;
+  gtsam::Aff3 compose(const gtsam::Aff3& aff3,
+                     Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2) const;
+  gtsam::Aff3 between(const gtsam::Aff3& aff3) const;
+  gtsam::Aff3 between(const gtsam::Aff3& aff3,
+                     Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2) const;
+
+  // Operator overload
+  gtsam::Aff3 operator*(const gtsam::Aff3& aff3) const;
+
+  // Manifold
+  static size_t Dim();
+  size_t dim() const;
+  gtsam::Aff3 retract(gtsam::Vector v,
+                     Eigen::Ref<Eigen::MatrixXd> Horigin,
+                     Eigen::Ref<Eigen::MatrixXd> Hv) const;
+  gtsam::Vector localCoordinates(const gtsam::Aff3& g,
+                                 Eigen::Ref<Eigen::MatrixXd> Horigin,
+                                 Eigen::Ref<Eigen::MatrixXd> Hp2) const;
+
+  // Lie group
+  static gtsam::Aff3 Expmap(gtsam::Vector v);
+  static gtsam::Vector Logmap(const gtsam::Aff3& g);
+  gtsam::Aff3 expmap(gtsam::Vector v);
+  gtsam::Vector logmap(const gtsam::Aff3& g);
+
+  // Matrix Lie Group
+  gtsam::Matrix AdjointMap() const;
+  gtsam::Vector Adjoint(gtsam::Vector xi) const;
+  gtsam::Vector AdjointTranspose(gtsam::Vector x) const;
+  static gtsam::Matrix adjointMap(gtsam::Vector xi);
+  static gtsam::Vector adjoint(gtsam::Vector xi, gtsam::Vector y);
+  static gtsam::Vector adjointTranspose(gtsam::Vector xi, gtsam::Vector y);
+  gtsam::Vector vec() const;
+  gtsam::Matrix matrix() const;
+  static gtsam::Matrix Hat(const gtsam::Vector& xi);
+  static gtsam::Vector Vee(const gtsam::Matrix& X);
+
+  // Serialization
+  void serialize() const;
+};
+
+
 // Used in Matlab wrapper
 class Pose3Pairs {
   Pose3Pairs();

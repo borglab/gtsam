@@ -27,6 +27,7 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/SL4.h>
+#include <gtsam/geometry/SL4Aff3.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
@@ -223,6 +224,8 @@ parse3DFactors(const std::string &filename,
                size_t maxIndex = 0);
 
 using BetweenFactorSL4s = std::vector<BetweenFactor<SL4>::shared_ptr>;
+using BetweenFactorSL4Aff3s = std::vector<BetweenFactor<SL4Aff3>::shared_ptr>;
+
 
 using BinaryMeasurementsUnit3 = std::vector<BinaryMeasurement<Unit3>>;
 using BinaryMeasurementsPoint3 = std::vector<BinaryMeasurement<Point3>>;

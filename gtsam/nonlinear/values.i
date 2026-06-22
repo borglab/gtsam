@@ -25,10 +25,10 @@ namespace gtsam {
 #include <gtsam/geometry/Similarity2.h>
 #include <gtsam/geometry/Similarity3.h>
 #include <gtsam/geometry/SL4.h>
+#include <gtsam/geometry/SL4Aff3.h>
 #include <gtsam/geometry/SO3.h>
 #include <gtsam/geometry/SO4.h>
 #include <gtsam/geometry/SOn.h>
-#include <gtsam/geometry/SL4.h>
 #include <gtsam/geometry/StereoPoint2.h>
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/SphericalCamera.h>
@@ -93,6 +93,7 @@ class Values {
   void insert(gtsam::Key j, const gtsam::Similarity2& similarity2);
   void insert(gtsam::Key j, const gtsam::Similarity3& similarity3);
   void insert(gtsam::Key j, const gtsam::SL4& H);
+  void insert(gtsam::Key j, const gtsam::SL4Aff3& A);
   void insert(gtsam::Key j, const gtsam::SO3& R);
   void insert(gtsam::Key j, const gtsam::SO4& Q);
   void insert(gtsam::Key j, const gtsam::SOn& P);
@@ -141,6 +142,7 @@ class Values {
   void update(gtsam::Key j, const gtsam::Similarity2& similarity2);
   void update(gtsam::Key j, const gtsam::Similarity3& similarity3);
   void update(gtsam::Key j, const gtsam::SL4& H);
+  void update(gtsam::Key j, const gtsam::SL4Aff3& A);
   void update(gtsam::Key j, const gtsam::SO3& R);
   void update(gtsam::Key j, const gtsam::SO4& Q);
   void update(gtsam::Key j, const gtsam::SOn& P);
@@ -189,6 +191,7 @@ class Values {
   void insert_or_assign(gtsam::Key j, const gtsam::Similarity2& similarity2);
   void insert_or_assign(gtsam::Key j, const gtsam::Similarity3& similarity3);
   void insert_or_assign(gtsam::Key j, const gtsam::SL4& H);
+  void insert_or_assign(gtsam::Key j, const gtsam::SL4Aff3& A);
   void insert_or_assign(gtsam::Key j, const gtsam::SO3& R);
   void insert_or_assign(gtsam::Key j, const gtsam::SO4& Q);
   void insert_or_assign(gtsam::Key j, const gtsam::SOn& P);
@@ -235,6 +238,7 @@ class Values {
                  gtsam::Similarity2,
                  gtsam::Similarity3,
                  gtsam::SL4,
+                 gtsam::SL4Aff3,
                  gtsam::SO3,
                  gtsam::SO4,
                  gtsam::SOn,
