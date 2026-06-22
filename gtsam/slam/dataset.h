@@ -224,7 +224,7 @@ parse3DFactors(const std::string &filename,
                size_t maxIndex = 0);
 
 using BetweenFactorSL4s = std::vector<BetweenFactor<SL4>::shared_ptr>;
-using BetweenFactorSL4Aff3s = std::vector<BetweenFactor<SL4Aff3>::shared_ptr>;
+using BetweenFactorAff3s = std::vector<BetweenFactor<Aff3>::shared_ptr>;
 
 
 using BinaryMeasurementsUnit3 = std::vector<BinaryMeasurement<Unit3>>;
