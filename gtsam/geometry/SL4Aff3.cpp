@@ -18,9 +18,6 @@ namespace {
 using gtsam::Matrix44;
 using gtsam::Vector6;
 
-constexpr double kInvSqrt2 = 0.7071067811865475244;
-constexpr double kInvSqrt6 = 0.4082482904638630164;
-constexpr double kInvSqrt12 = 0.2886751345948128823;
 
 Eigen::Matrix<double, 16, 12> setVecToAlgMatrix() {
   Eigen::Matrix<double, 16, 12> alg = Eigen::Matrix<double, 16, 12>::Zero();
@@ -193,7 +190,7 @@ Matrix44 Aff3::Hat(const Vector& xi) {
 
 /* ************************************************************************* */
 // Used consistent notation with Hat()
-Vector Aff3::Vee(const Matrix44& A) {
+Vector Aff3::Vee(const Matrix44& X) {
   Vector vec(12);
   const double x12 = X(0, 0);
   const double x13 = X(1, 1) + x12;
