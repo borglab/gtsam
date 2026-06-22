@@ -24,6 +24,17 @@ double ComputeCudaSfmProjectionError(const DeviceValues& values,
                                      const CudaSfmProjectionBatch& batch,
                                      cudaStream_t stream = nullptr);
 
+void ComputeCudaSfmHessianDiagonal(
+    const DeviceValues& values, const CudaSfmProjectionBatch& batch,
+    int numCameras, double minDiagonal, double maxDiagonal,
+    CudaDeviceArray<double>* diagonal, cudaStream_t stream = nullptr);
+
+double ComputeCudaSfmLinearizedErrorChange(
+    const DeviceValues& values, const CudaSfmProjectionBatch& batch,
+    int numCameras, const CudaDeviceArray<double>& delta,
+    double* oldLinearizedError = nullptr,
+    double* newLinearizedError = nullptr, cudaStream_t stream = nullptr);
+
 void AccumulateCudaSfmNormalEquations(
     const DeviceValues& values, const CudaSfmProjectionBatch& batch,
     int numCameras, DeviceSparseNormalEquations* system,

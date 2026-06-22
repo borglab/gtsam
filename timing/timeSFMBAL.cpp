@@ -39,7 +39,9 @@ constexpr const char* kProfileDataset = "dubrovnik-135-90642-pre";
 
 std::string usage() {
   return "Usage: timeSFMBAL [--colamd] [--profile] [--cuda-structure-only] "
-         "[--cuda-lm] [--cuda-linear-solver dense-schur|cudss-full-normal] "
+         "[--cuda-lm] [--cuda-lm-graph] "
+         "[--cuda-linear-solver dense-schur|cudss-full-normal] "
+         "[--cuda-warmup-file FILE] "
          "[--benchmark-action-json FILE] [BALfile ...]";
 }
 
@@ -58,8 +60,11 @@ struct RunOptions {
   bool profile = false;
   bool cudaStructureOnly = false;
   bool cudaLm = false;
+  bool cudaLmGraph = false;
   bool cudaLinearSolverSpecified = false;
   CudaLinearSolverOption cudaLinearSolver = CudaLinearSolverOption::DenseSchur;
+  bool cudaWarmupFileSpecified = false;
+  std::string cudaWarmupFile;
   bool benchmarkActionJson = false;
   std::string benchmarkActionJsonPath;
   std::vector<std::string> filenames;
@@ -74,6 +79,161 @@ const char* cudaLinearSolverName(CudaLinearSolverOption solver) {
   }
   return "unknown";
 }
+
+LevenbergMarquardtParams makeBalLevenbergMarquardtParams() {
+  LevenbergMarquardtParams params;
+  LevenbergMarquardtParams::SetCeresDefaults(&params);
+  params.setRelativeErrorTol(0.01);
+  return params;
+}
+
+#if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
+gtsam::cuda::CudaSfmLinearSolverType cudaLinearSolverType(
+    CudaLinearSolverOption solver) {
+  switch (solver) {
+    case CudaLinearSolverOption::DenseSchur:
+      return gtsam::cuda::CudaSfmLinearSolverType::DenseSchur;
+    case CudaLinearSolverOption::CudssFullNormal:
+      return gtsam::cuda::CudaSfmLinearSolverType::CudssFullNormal;
+  }
+  return gtsam::cuda::CudaSfmLinearSolverType::DenseSchur;
+}
+
+gtsam::cuda::CudaSfmLevenbergMarquardtParams makeCudaBackendLmParams(
+    CudaLinearSolverOption solverOption) {
+  gtsam::cuda::CudaSfmLevenbergMarquardtParams params;
+  params.maxIterations = 20;
+  params.relativeErrorTol = 0.01;
+  params.downloadOptimizedValues = false;
+  params.linearSolver = cudaLinearSolverType(solverOption);
+  return params;
+}
+
+struct CudaBackendLmRun {
+  double elapsed = 0.0;
+  gtsam::cuda::CudaSfmLevenbergMarquardtResult result;
+};
+
+CudaBackendLmRun runCudaBackendLm(
+    const SfmData& db,
+    const gtsam::cuda::CudaSfmLevenbergMarquardtParams& params) {
+  const auto start = std::chrono::high_resolution_clock::now();
+  const gtsam::cuda::CudaSfmLevenbergMarquardtResult result =
+      gtsam::cuda::OptimizeCudaSfm(db, params);
+  const auto end = std::chrono::high_resolution_clock::now();
+
+  CudaBackendLmRun run;
+  run.elapsed = std::chrono::duration<double>(end - start).count();
+  run.result = result;
+  return run;
+}
+
+void printCudaBackendLmRun(const CudaBackendLmRun& run,
+                           CudaLinearSolverOption solverOption) {
+  const auto& result = run.result;
+  std::cout << "  CUDA LM: " << run.elapsed << " s\n";
+  std::cout << "  CUDA LM linear solver: "
+            << cudaLinearSolverName(solverOption) << "\n";
+  std::cout << "  CUDA LM solve loop: " << result.solveLoopElapsed << " s\n";
+  std::cout << "  CUDA LM measured total: " << result.totalMeasuredElapsed
+            << " s\n";
+  std::cout << "  CUDA LM setup before solve loop: " << result.setupElapsed
+            << " s\n";
+  std::cout << "  CUDA LM setup breakdown:\n";
+  std::cout << "    context: " << result.contextElapsed << " s\n";
+  std::cout << "    pack values: " << result.packValuesElapsed << " s\n";
+  std::cout << "    allocate trial values: " << result.allocateTrialElapsed
+            << " s\n";
+  std::cout << "    projection batch: " << result.projectionBatchElapsed
+            << " s\n";
+  std::cout << "    initial error: " << result.initialErrorElapsed << " s\n";
+  std::cout << "    cuDSS solver construction: "
+            << result.cudssSolverConstructionElapsed << " s\n";
+  std::cout << "    dense Schur solver construction: "
+            << result.denseSchurSolverConstructionElapsed << " s\n";
+  std::cout << "    CSR structure: " << result.csrStructureElapsed << " s\n";
+  std::cout << "    upload pattern: " << result.uploadPatternElapsed << " s\n";
+  std::cout << "    first cuDSS analyze: "
+            << result.firstCudssAnalyzeElapsed << " s\n";
+  std::cout << "    download values: " << result.downloadElapsed << " s\n";
+  std::cout << "Initial error: " << std::setprecision(15)
+            << result.initialError << "\n";
+  std::cout << "Final error: " << result.finalError
+            << ", iterations: " << result.iterations
+            << ", accepted: " << result.acceptedSteps << std::setprecision(6)
+            << "\n";
+}
+
+struct CudaGraphLmRun {
+  double elapsed = 0.0;
+  double initialError = 0.0;
+  double finalError = 0.0;
+  size_t iterations = 0;
+  gtsam::cuda::CudaSfmLevenbergMarquardtResult backend;
+};
+
+CudaGraphLmRun runCudaGraphLm(const NonlinearFactorGraph& graph,
+                              const Values& initial,
+                              CudaLinearSolverOption solverOption) {
+  const LevenbergMarquardtParams params = makeBalLevenbergMarquardtParams();
+  const auto start = std::chrono::high_resolution_clock::now();
+  gtsam::cuda::CudaSfmLevenbergMarquardtOptimizer lm(
+      graph, initial, params, cudaLinearSolverType(solverOption));
+  lm.optimize();
+  const auto end = std::chrono::high_resolution_clock::now();
+
+  CudaGraphLmRun run;
+  run.elapsed = std::chrono::duration<double>(end - start).count();
+  run.initialError = graph.error(initial);
+  run.finalError = lm.error();
+  run.iterations = lm.iterations();
+  run.backend = lm.result();
+  return run;
+}
+
+void printCudaGraphLmRun(const CudaGraphLmRun& run,
+                         CudaLinearSolverOption solverOption) {
+  std::cout << "  CUDA LM graph API: " << run.elapsed << " s\n";
+  std::cout << "  CUDA LM graph linear solver: "
+            << cudaLinearSolverName(solverOption) << "\n";
+  std::cout << "  CUDA LM graph API overhead over backend: "
+            << run.elapsed - run.backend.totalMeasuredElapsed << " s\n";
+  std::cout << "  CUDA LM backend solve loop: " << run.backend.solveLoopElapsed
+            << " s\n";
+  std::cout << "  CUDA LM backend measured total: "
+            << run.backend.totalMeasuredElapsed << " s\n";
+  std::cout << "  CUDA LM backend setup before solve loop: "
+            << run.backend.setupElapsed << " s\n";
+  std::cout << "  CUDA LM backend setup breakdown:\n";
+  std::cout << "    context: " << run.backend.contextElapsed << " s\n";
+  std::cout << "    pack values: " << run.backend.packValuesElapsed << " s\n";
+  std::cout << "    allocate trial values: "
+            << run.backend.allocateTrialElapsed << " s\n";
+  std::cout << "    projection batch: " << run.backend.projectionBatchElapsed
+            << " s\n";
+  std::cout << "    initial error: " << run.backend.initialErrorElapsed
+            << " s\n";
+  std::cout << "    cuDSS solver construction: "
+            << run.backend.cudssSolverConstructionElapsed << " s\n";
+  std::cout << "    dense Schur solver construction: "
+            << run.backend.denseSchurSolverConstructionElapsed << " s\n";
+  std::cout << "    CSR structure: " << run.backend.csrStructureElapsed
+            << " s\n";
+  std::cout << "    upload pattern: " << run.backend.uploadPatternElapsed
+            << " s\n";
+  std::cout << "    first cuDSS analyze: "
+            << run.backend.firstCudssAnalyzeElapsed << " s\n";
+  std::cout << "    download values: " << run.backend.downloadElapsed
+            << " s\n";
+  std::cout << "Initial error: " << std::setprecision(15)
+            << run.initialError << "\n";
+  std::cout << "Final error: " << run.finalError
+            << ", iterations: " << run.iterations
+            << ", accepted: " << run.backend.acceptedSteps
+            << ", inner: " << run.backend.innerIterations
+            << std::setprecision(6) << "\n";
+}
+#endif
 
 std::string escapeJson(std::string value) {
   std::string escaped;
@@ -137,8 +297,11 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
   bool profile = false;
   bool cudaStructureOnly = false;
   bool cudaLm = false;
+  bool cudaLmGraph = false;
   bool cudaLinearSolverSpecified = false;
   CudaLinearSolverOption cudaLinearSolver = CudaLinearSolverOption::DenseSchur;
+  bool cudaWarmupFileSpecified = false;
+  std::string cudaWarmupFile;
   bool benchmarkActionJson = false;
   std::string benchmarkActionJsonPath;
   for (int i = 1; i < argc; ++i) {
@@ -158,6 +321,10 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
       cudaLm = true;
       continue;
     }
+    if (strcmp(argv[i], "--cuda-lm-graph") == 0) {
+      cudaLmGraph = true;
+      continue;
+    }
     if (strcmp(argv[i], "--cuda-linear-solver") == 0) {
       if (++i >= argc || argv[i][0] == '-') {
         throw runtime_error(usage());
@@ -170,6 +337,14 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
       } else {
         throw runtime_error(usage());
       }
+      continue;
+    }
+    if (strcmp(argv[i], "--cuda-warmup-file") == 0) {
+      if (++i >= argc || argv[i][0] == '-') {
+        throw runtime_error(usage());
+      }
+      cudaWarmupFileSpecified = true;
+      cudaWarmupFile = argv[i];
       continue;
     }
     if (strcmp(argv[i], "--benchmark-action-json") == 0) {
@@ -198,10 +373,22 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
   if (cudaLm && benchmarkActionJson) {
     throw runtime_error(usage());
   }
+  if (cudaLmGraph && benchmarkActionJson) {
+    throw runtime_error(usage());
+  }
   if (cudaLm && cudaStructureOnly) {
     throw runtime_error(usage());
   }
-  if (cudaLinearSolverSpecified && !cudaLm) {
+  if (cudaLmGraph && cudaStructureOnly) {
+    throw runtime_error(usage());
+  }
+  if (cudaLm && cudaLmGraph) {
+    throw runtime_error(usage());
+  }
+  if (cudaLinearSolverSpecified && !cudaLm && !cudaLmGraph) {
+    throw runtime_error(usage());
+  }
+  if (cudaWarmupFileSpecified && !cudaLm && !cudaLmGraph) {
     throw runtime_error(usage());
   }
 
@@ -209,8 +396,11 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
     return {profile,
             cudaStructureOnly,
             cudaLm,
+            cudaLmGraph,
             cudaLinearSolverSpecified,
             cudaLinearSolver,
+            cudaWarmupFileSpecified,
+            cudaWarmupFile,
             benchmarkActionJson,
             benchmarkActionJsonPath,
             filenames};
@@ -220,8 +410,11 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
     return {profile,
             cudaStructureOnly,
             cudaLm,
+            cudaLmGraph,
             cudaLinearSolverSpecified,
             cudaLinearSolver,
+            cudaWarmupFileSpecified,
+            cudaWarmupFile,
             benchmarkActionJson,
             benchmarkActionJsonPath,
             {findExampleDataFile(kProfileDataset)}};
@@ -231,8 +424,11 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
     return {profile,
             cudaStructureOnly,
             cudaLm,
+            cudaLmGraph,
             cudaLinearSolverSpecified,
             cudaLinearSolver,
+            cudaWarmupFileSpecified,
+            cudaWarmupFile,
             benchmarkActionJson,
             benchmarkActionJsonPath,
             {findExampleDataFile(kDefaultBenchmarkDataset)}};
@@ -241,8 +437,11 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
   return {profile,
           cudaStructureOnly,
           cudaLm,
+          cudaLmGraph,
           cudaLinearSolverSpecified,
           cudaLinearSolver,
+          cudaWarmupFileSpecified,
+          cudaWarmupFile,
           benchmarkActionJson,
           benchmarkActionJsonPath,
           {
@@ -256,10 +455,8 @@ double runSolver(const NonlinearFactorGraph& graph, const Values& initial,
                  const Ordering& ordering,
                  NonlinearOptimizerParams::LinearSolverType solverType,
                  const std::string& label) {
-  LevenbergMarquardtParams params;
-  LevenbergMarquardtParams::SetCeresDefaults(&params);
+  LevenbergMarquardtParams params = makeBalLevenbergMarquardtParams();
   params.setVerbosityLM("SUMMARY");
-  params.setRelativeErrorTol(0.01);
   params.linearSolverType = solverType;
   if (solverType == NonlinearOptimizerParams::MULTIFRONTAL_SOLVER) {
     params.multifrontalParams.qrMode = MultifrontalParameters::QRMode::Allow;
@@ -287,6 +484,7 @@ double runSolver(const NonlinearFactorGraph& graph, const Values& initial,
 int main(int argc, char* argv[]) {
   const auto options = parseBalFiles(argc, argv);
   std::vector<TimingRow> rows;
+  bool cudaWarmupDone = false;
 
   for (const auto& filename : options.filenames) {
     const std::string dataset =
@@ -296,69 +494,37 @@ int main(int argc, char* argv[]) {
 
 #if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
     if (options.cudaLm) {
-      gtsam::cuda::CudaSfmLevenbergMarquardtParams params;
-      params.maxIterations = 20;
-      params.relativeErrorTol = 0.01;
-      params.downloadOptimizedValues = false;
-      params.linearSolver =
-          options.cudaLinearSolver == CudaLinearSolverOption::DenseSchur
-              ? gtsam::cuda::CudaSfmLinearSolverType::DenseSchur
-              : gtsam::cuda::CudaSfmLinearSolverType::CudssFullNormal;
+      const auto params = makeCudaBackendLmParams(options.cudaLinearSolver);
 
-      const auto start = std::chrono::high_resolution_clock::now();
-      const gtsam::cuda::CudaSfmLevenbergMarquardtResult result =
-          gtsam::cuda::OptimizeCudaSfm(db, params);
-      const auto end = std::chrono::high_resolution_clock::now();
-      const std::chrono::duration<double> elapsed = end - start;
+      if (options.cudaWarmupFileSpecified && !cudaWarmupDone) {
+        std::cout << "  CUDA warmup file: " << options.cudaWarmupFile
+                  << " (timing ignored)\n";
+        const SfmData warmupDb = SfmData::FromBalFile(options.cudaWarmupFile);
+        const CudaBackendLmRun warmupRun =
+            runCudaBackendLm(warmupDb, params);
+        std::cout << "  CUDA warmup: " << warmupRun.elapsed
+                  << " s ignored, final error: " << std::setprecision(15)
+                  << warmupRun.result.finalError
+                  << ", iterations: " << warmupRun.result.iterations
+                  << std::setprecision(6) << "\n";
+        cudaWarmupDone = true;
+      }
 
-      std::cout << "  CUDA LM: " << elapsed.count() << " s\n";
-      std::cout << "  CUDA LM linear solver: "
-                << cudaLinearSolverName(options.cudaLinearSolver) << "\n";
-      std::cout << "  CUDA LM solve loop: " << result.solveLoopElapsed
-                << " s\n";
-      std::cout << "  CUDA LM measured total: "
-                << result.totalMeasuredElapsed << " s\n";
-      std::cout << "  CUDA LM setup before solve loop: " << result.setupElapsed
-                << " s\n";
-      std::cout << "  CUDA LM setup breakdown:\n";
-      std::cout << "    context: " << result.contextElapsed << " s\n";
-      std::cout << "    pack values: " << result.packValuesElapsed << " s\n";
-      std::cout << "    allocate trial values: "
-                << result.allocateTrialElapsed << " s\n";
-      std::cout << "    projection batch: " << result.projectionBatchElapsed
-                << " s\n";
-      std::cout << "    initial error: " << result.initialErrorElapsed
-                << " s\n";
-      std::cout << "    cuDSS solver construction: "
-                << result.cudssSolverConstructionElapsed << " s\n";
-      std::cout << "    dense Schur solver construction: "
-                << result.denseSchurSolverConstructionElapsed << " s\n";
-      std::cout << "    CSR structure: " << result.csrStructureElapsed
-                << " s\n";
-      std::cout << "    upload pattern: " << result.uploadPatternElapsed
-                << " s\n";
-      std::cout << "    first cuDSS analyze: "
-                << result.firstCudssAnalyzeElapsed << " s\n";
-      std::cout << "    download values: " << result.downloadElapsed
-                << " s\n";
-      std::cout << "Initial error: " << std::setprecision(15)
-                << result.initialError << "\n";
-      std::cout << "Final error: " << result.finalError
-                << ", iterations: " << result.iterations
-                << ", accepted: " << result.acceptedSteps
-                << std::setprecision(6) << "\n";
+      const CudaBackendLmRun run = runCudaBackendLm(db, params);
+      printCudaBackendLmRun(run, options.cudaLinearSolver);
       continue;
     }
 #elif GTSAM_ENABLE_CUDA
-    if (options.cudaLm) {
+    if (options.cudaLm || options.cudaLmGraph) {
       throw std::runtime_error(
-          "--cuda-lm requires configuring with GTSAM_ENABLE_CUDSS=ON");
+          "--cuda-lm and --cuda-lm-graph require configuring with "
+          "GTSAM_ENABLE_CUDSS=ON");
     }
 #else
-    if (options.cudaLm) {
+    if (options.cudaLm || options.cudaLmGraph) {
       throw std::runtime_error(
-          "--cuda-lm requires configuring with GTSAM_ENABLE_CUDA=ON and "
-          "GTSAM_ENABLE_CUDSS=ON");
+          "--cuda-lm and --cuda-lm-graph require configuring with "
+          "GTSAM_ENABLE_CUDA=ON and GTSAM_ENABLE_CUDSS=ON");
     }
 #endif
 
@@ -394,6 +560,33 @@ int main(int argc, char* argv[]) {
       ordering = createSchurOrdering(db, false);
     }
 
+#if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
+    if (options.cudaLmGraph) {
+      if (options.cudaWarmupFileSpecified && !cudaWarmupDone) {
+        std::cout << "  CUDA graph warmup file: " << options.cudaWarmupFile
+                  << " (timing ignored)\n";
+        const SfmData warmupDb = SfmData::FromBalFile(options.cudaWarmupFile);
+        const NonlinearFactorGraph warmupGraph =
+            buildGeneralSfmGraph(warmupDb);
+        const Values warmupInitial = buildGeneralSfmInitial(warmupDb);
+        const CudaGraphLmRun warmupRun =
+            runCudaGraphLm(warmupGraph, warmupInitial,
+                           options.cudaLinearSolver);
+        std::cout << "  CUDA graph warmup: " << warmupRun.elapsed
+                  << " s ignored, final error: " << std::setprecision(15)
+                  << warmupRun.finalError
+                  << ", iterations: " << warmupRun.iterations
+                  << std::setprecision(6) << "\n";
+        cudaWarmupDone = true;
+      }
+
+      const CudaGraphLmRun run =
+          runCudaGraphLm(graph, initial, options.cudaLinearSolver);
+      printCudaGraphLmRun(run, options.cudaLinearSolver);
+      continue;
+    }
+#endif
+
     const double newTime = runSolver(
         graph, initial, ordering, NonlinearOptimizerParams::MULTIFRONTAL_SOLVER,
         "MultifrontalSolver");
@@ -408,7 +601,8 @@ int main(int argc, char* argv[]) {
       rows.push_back({dataset, legacyTime, newTime});
     }
   }
-  if (!options.profile && !options.cudaStructureOnly && !options.cudaLm) {
+  if (!options.profile && !options.cudaStructureOnly && !options.cudaLm &&
+      !options.cudaLmGraph) {
     std::cout
         << "\n| Dataset | Legacy (Cholesky) s | New (Solver) s | Speedup |\n";
     std::cout << "| --- | --- | --- | --- |\n";
@@ -421,7 +615,7 @@ int main(int argc, char* argv[]) {
   }
 
   if (options.benchmarkActionJson && !options.cudaStructureOnly &&
-      !options.cudaLm) {
+      !options.cudaLm && !options.cudaLmGraph) {
     if (rows.empty()) {
       throw runtime_error("No benchmark rows found to write.");
     }

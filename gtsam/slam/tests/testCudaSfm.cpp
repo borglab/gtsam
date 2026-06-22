@@ -1,6 +1,7 @@
 #include <gtsam/base/cuda/CudaContext.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/cuda/CudssLinearSolver.h>
 #include <gtsam/nonlinear/cuda/DeviceGeometryKernels.h>
 #include <gtsam/nonlinear/cuda/DeviceGeometryTypes.h>
@@ -442,6 +443,131 @@ TEST(CudaSfmProjectionLinearization,
   }
 }
 
+TEST(CudaSfmProjectionLinearization, ComputesClampedHessianDiagonal) {
+  constexpr double kTolerance = 1e-6;
+
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData initialData = makePerturbedBalLikeData(measuredData);
+  CudaContext context;
+
+  DeviceValues values = PackSfmValues(initialData, context.stream());
+  CudaSfmProjectionBatch batch =
+      CudaSfmProjectionBatch::FromSfmData(measuredData, context.stream());
+  CudaSfmProjectionLinearization linearization;
+  LinearizeCudaSfmProjectionBatch(values, batch, &linearization,
+                                  context.stream());
+
+  CudaDeviceArray<double> actualDeviceDiagonal;
+  ComputeCudaSfmHessianDiagonal(values, batch, 2, 1e-6, 1e32,
+                                &actualDeviceDiagonal, context.stream());
+
+  std::vector<CudaSfmObservation> observations;
+  std::vector<double> cameraJacobians;
+  std::vector<double> pointJacobians;
+  std::vector<double> actualDiagonal;
+  batch.observations().download(&observations, context.stream());
+  linearization.cameraJacobians.download(&cameraJacobians, context.stream());
+  linearization.pointJacobians.download(&pointJacobians, context.stream());
+  actualDeviceDiagonal.download(&actualDiagonal, context.stream());
+  context.synchronize();
+
+  std::vector<double> expectedDiagonal(9 * measuredData.numberCameras() +
+                                           3 * measuredData.numberTracks(),
+                                       0.0);
+  for (size_t i = 0; i < observations.size(); ++i) {
+    const CudaSfmObservation& observation = observations[i];
+    const int cameraBase = 9 * observation.cameraSlot;
+    const int pointBase =
+        9 * static_cast<int>(measuredData.numberCameras()) +
+        3 * observation.pointSlot;
+    for (int col = 0; col < 9; ++col) {
+      const double j0 = cameraJacobians[18 * i + col];
+      const double j1 = cameraJacobians[18 * i + 9 + col];
+      expectedDiagonal[cameraBase + col] += j0 * j0 + j1 * j1;
+    }
+    for (int col = 0; col < 3; ++col) {
+      const double j0 = pointJacobians[6 * i + col];
+      const double j1 = pointJacobians[6 * i + 3 + col];
+      expectedDiagonal[pointBase + col] += j0 * j0 + j1 * j1;
+    }
+  }
+  for (double& value : expectedDiagonal) {
+    value = std::min(1e32, std::max(1e-6, value));
+  }
+
+  LONGS_EQUAL(expectedDiagonal.size(), actualDiagonal.size());
+  for (size_t i = 0; i < expectedDiagonal.size(); ++i) {
+    DOUBLES_EQUAL(expectedDiagonal[i], actualDiagonal[i], kTolerance);
+  }
+}
+
+TEST(CudaSfmProjectionLinearization, ComputesLinearizedErrorChange) {
+  constexpr double kTolerance = 1e-6;
+
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData initialData = makePerturbedBalLikeData(measuredData);
+  CudaContext context;
+
+  DeviceValues values = PackSfmValues(initialData, context.stream());
+  CudaSfmProjectionBatch batch =
+      CudaSfmProjectionBatch::FromSfmData(measuredData, context.stream());
+  CudaDeviceArray<double> delta;
+  SolveCudaSfmDenseSchur(values, batch,
+                         static_cast<int>(measuredData.numberCameras()),
+                         1e-3, &delta, context.stream());
+
+  double oldLinearizedError = 0.0;
+  double newLinearizedError = 0.0;
+  const double actualChange = ComputeCudaSfmLinearizedErrorChange(
+      values, batch, static_cast<int>(measuredData.numberCameras()), delta,
+      &oldLinearizedError, &newLinearizedError, context.stream());
+
+  CudaSfmProjectionLinearization linearization;
+  LinearizeCudaSfmProjectionBatch(values, batch, &linearization,
+                                  context.stream());
+  std::vector<CudaSfmObservation> observations;
+  std::vector<double> residuals;
+  std::vector<double> cameraJacobians;
+  std::vector<double> pointJacobians;
+  std::vector<double> hostDelta;
+  batch.observations().download(&observations, context.stream());
+  linearization.residuals.download(&residuals, context.stream());
+  linearization.cameraJacobians.download(&cameraJacobians, context.stream());
+  linearization.pointJacobians.download(&pointJacobians, context.stream());
+  delta.download(&hostDelta, context.stream());
+  context.synchronize();
+
+  double expectedOld = 0.0;
+  double expectedNew = 0.0;
+  for (size_t i = 0; i < observations.size(); ++i) {
+    const CudaSfmObservation& observation = observations[i];
+    const int cameraBase = 9 * observation.cameraSlot;
+    const int pointBase =
+        9 * static_cast<int>(measuredData.numberCameras()) +
+        3 * observation.pointSlot;
+    double predicted0 = residuals[2 * i];
+    double predicted1 = residuals[2 * i + 1];
+    expectedOld += 0.5 * (predicted0 * predicted0 + predicted1 * predicted1);
+    for (int col = 0; col < 9; ++col) {
+      predicted0 += cameraJacobians[18 * i + col] *
+                    hostDelta[cameraBase + col];
+      predicted1 += cameraJacobians[18 * i + 9 + col] *
+                    hostDelta[cameraBase + col];
+    }
+    for (int col = 0; col < 3; ++col) {
+      predicted0 += pointJacobians[6 * i + col] *
+                    hostDelta[pointBase + col];
+      predicted1 += pointJacobians[6 * i + 3 + col] *
+                    hostDelta[pointBase + col];
+    }
+    expectedNew += 0.5 * (predicted0 * predicted0 + predicted1 * predicted1);
+  }
+
+  DOUBLES_EQUAL(expectedOld, oldLinearizedError, kTolerance);
+  DOUBLES_EQUAL(expectedNew, newLinearizedError, kTolerance);
+  DOUBLES_EQUAL(expectedOld - expectedNew, actualChange, kTolerance);
+}
+
 TEST(CudaSfmProjectionLinearization, RejectsIncompleteCsrPattern) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData initialData = makePerturbedBalLikeData(measuredData);
@@ -596,6 +722,102 @@ TEST(CudaSfmProjectionLinearization, RejectsMismatchedValueShapes) {
 }
 
 #if GTSAM_ENABLE_CUDSS
+TEST(CudaSfmFactorGraphConversion,
+     ConvertsGeneralSfmFactorsWithArbitraryKeys) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData initialData = makePerturbedBalLikeData(measuredData);
+  const std::vector<Key> cameraKeys = {Symbol('x', 10), Symbol('x', 20)};
+  const std::vector<Key> pointKeys = {Symbol('l', 100), Symbol('l', 200),
+                                      Symbol('l', 300), Symbol('l', 400)};
+
+  Values initial;
+  for (size_t i = 0; i < cameraKeys.size(); ++i) {
+    initial.insert(cameraKeys[i], initialData.camera(i));
+  }
+  for (size_t i = 0; i < pointKeys.size(); ++i) {
+    initial.insert(pointKeys[i], initialData.track(i).point3());
+  }
+
+  NonlinearFactorGraph graph;
+  const auto model = noiseModel::Unit::Create(2);
+  for (size_t pointSlot = 0; pointSlot < measuredData.numberTracks();
+       ++pointSlot) {
+    const SfmTrack& track = measuredData.track(pointSlot);
+    for (const SfmMeasurement& measurement : track.measurements) {
+      graph.emplace_shared<BundlerProjectionFactor>(
+          measurement.second, model, cameraKeys[measurement.first],
+          pointKeys[pointSlot]);
+    }
+  }
+
+  const CudaSfmFactorGraphData converted =
+      ConvertGeneralSfmGraphToCudaSfmData(graph, initial);
+
+  EXPECT_LONGS_EQUAL(cameraKeys.size(), converted.cameraKeys.size());
+  EXPECT_LONGS_EQUAL(pointKeys.size(), converted.pointKeys.size());
+  EXPECT_LONGS_EQUAL(cameraKeys[0], converted.cameraKeys[0]);
+  EXPECT_LONGS_EQUAL(cameraKeys[1], converted.cameraKeys[1]);
+  EXPECT_LONGS_EQUAL(pointKeys[0], converted.pointKeys[0]);
+  EXPECT_LONGS_EQUAL(pointKeys[3], converted.pointKeys[3]);
+  EXPECT_LONGS_EQUAL(measuredData.numberCameras(),
+                     converted.data.numberCameras());
+  EXPECT_LONGS_EQUAL(measuredData.numberTracks(),
+                     converted.data.numberTracks());
+  EXPECT_LONGS_EQUAL(2, converted.data.track(0).numberMeasurements());
+  DOUBLES_EQUAL(measuredData.track(0).measurement(0).second(0),
+                converted.data.track(0).measurement(0).second(0), 1e-12);
+  CHECK(CameraEquals(initialData.camera(0), converted.data.camera(0)));
+  CHECK(Point3Equals(initialData.track(3).point3(),
+                     converted.data.track(3).point3()));
+}
+
+TEST(CudaSfmLevenbergMarquardtOptimizer,
+     OptimizesGeneralSfmGraphWithArbitraryKeys) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData initialData = makePerturbedBalLikeData(measuredData);
+  const std::vector<Key> cameraKeys = {Symbol('x', 10), Symbol('x', 20)};
+  const std::vector<Key> pointKeys = {Symbol('l', 100), Symbol('l', 200),
+                                      Symbol('l', 300), Symbol('l', 400)};
+
+  Values initial;
+  for (size_t i = 0; i < cameraKeys.size(); ++i) {
+    initial.insert(cameraKeys[i], initialData.camera(i));
+  }
+  for (size_t i = 0; i < pointKeys.size(); ++i) {
+    initial.insert(pointKeys[i], initialData.track(i).point3());
+  }
+  initial.insert(Symbol('u', 1), Point2(9.0, 8.0));
+
+  NonlinearFactorGraph graph;
+  const auto model = noiseModel::Unit::Create(2);
+  for (size_t pointSlot = 0; pointSlot < measuredData.numberTracks();
+       ++pointSlot) {
+    const SfmTrack& track = measuredData.track(pointSlot);
+    for (const SfmMeasurement& measurement : track.measurements) {
+      graph.emplace_shared<BundlerProjectionFactor>(
+          measurement.second, model, cameraKeys[measurement.first],
+          pointKeys[pointSlot]);
+    }
+  }
+
+  LevenbergMarquardtParams lmParams = LevenbergMarquardtParams::CeresDefaults();
+  lmParams.maxIterations = 5;
+  lmParams.relativeErrorTol = 1e-12;
+  CudaSfmLevenbergMarquardtOptimizer optimizer(graph, initial, lmParams);
+  const Values& result = optimizer.optimize();
+
+  CHECK(graph.error(result) < graph.error(initial));
+  CHECK(optimizer.result().innerIterations >=
+        static_cast<int>(optimizer.iterations()));
+  CHECK(result.exists(cameraKeys[0]));
+  CHECK(result.exists(pointKeys[3]));
+  CHECK(result.exists(Symbol('u', 1)));
+  CHECK(std::isfinite(result.at<SfmCamera>(cameraKeys[0]).calibration().fx()));
+  const Point2& extra = result.at<Point2>(Symbol('u', 1));
+  DOUBLES_EQUAL(9.0, extra.x(), 1e-12);
+  DOUBLES_EQUAL(8.0, extra.y(), 1e-12);
+}
+
 TEST(CudaSfmLevenbergMarquardt, ReducesTinyBalErrorAndDownloadsValues) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
@@ -666,6 +888,83 @@ TEST(CudaSfmDenseSchurSolver, MatchesFullNormalEquationDeltaOnTinyBal) {
   CudaDeviceArray<double> schurDelta;
   SolveCudaSfmDenseSchur(values, batch, static_cast<int>(data.numberCameras()),
                          lambda, &schurDelta, context.stream());
+
+  std::vector<double> full;
+  std::vector<double> schur;
+  fullDelta.download(&full, context.stream());
+  schurDelta.download(&schur, context.stream());
+  context.synchronize();
+
+  LONGS_EQUAL(full.size(), schur.size());
+  for (size_t i = 0; i < full.size(); ++i) {
+    DOUBLES_EQUAL(full[i], schur[i], 1e-6);
+  }
+}
+
+TEST(CudaSfmDenseSchurSolver, MatchesFullNormalEquationDeltaWithDiagonalDamping) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+  CudaContext context;
+
+  DeviceValues values = PackSfmValues(data, context.stream());
+  const CudaSfmProjectionBatch batch =
+      CudaSfmProjectionBatch::FromSfmData(data, context.stream());
+  const CudaBalCsrStructure structure = CudaBalCsrStructure::FromSfmData(data);
+  DeviceSparseNormalEquations system;
+  system.uploadPattern(structure.dimension(), structure.rowPointers(),
+                       structure.colIndices(), context.stream());
+
+  CudaSfmProjectionLinearization linearization;
+  LinearizeCudaSfmProjectionBatch(values, batch, &linearization,
+                                  context.stream());
+
+  std::vector<CudaSfmObservation> observations;
+  std::vector<double> cameraJacobians;
+  std::vector<double> pointJacobians;
+  batch.observations().download(&observations, context.stream());
+  linearization.cameraJacobians.download(&cameraJacobians, context.stream());
+  linearization.pointJacobians.download(&pointJacobians, context.stream());
+  context.synchronize();
+
+  std::vector<double> dampingDiagonal(structure.dimension(), 0.0);
+  for (size_t i = 0; i < observations.size(); ++i) {
+    const CudaSfmObservation& observation = observations[i];
+    const int cameraBase = 9 * observation.cameraSlot;
+    const int pointBase =
+        9 * static_cast<int>(structure.numCameras()) + 3 * observation.pointSlot;
+    for (int col = 0; col < 9; ++col) {
+      const double j0 = cameraJacobians[18 * i + col];
+      const double j1 = cameraJacobians[18 * i + 9 + col];
+      dampingDiagonal[cameraBase + col] += j0 * j0 + j1 * j1;
+    }
+    for (int col = 0; col < 3; ++col) {
+      const double j0 = pointJacobians[6 * i + col];
+      const double j1 = pointJacobians[6 * i + 3 + col];
+      dampingDiagonal[pointBase + col] += j0 * j0 + j1 * j1;
+    }
+  }
+  for (double& value : dampingDiagonal) {
+    value = std::min(1e32, std::max(1e-6, value));
+  }
+
+  CudaDeviceArray<double> deviceDampingDiagonal;
+  deviceDampingDiagonal.upload(dampingDiagonal, context.stream());
+
+  constexpr double lambda = 1e-3;
+  AccumulateCudaSfmNormalEquations(values, batch,
+                                   static_cast<int>(structure.numCameras()),
+                                   &system, context.stream());
+  system.addDiagonalDamping(lambda, deviceDampingDiagonal, context.stream());
+
+  CudaDeviceArray<double> fullDelta;
+  CudssSpdSolver fullSolver;
+  fullSolver.analyze(system, &fullDelta, context.stream());
+  fullSolver.solve(system, &fullDelta, context.stream());
+
+  CudaDeviceArray<double> schurDelta;
+  SolveCudaSfmDenseSchur(values, batch, static_cast<int>(data.numberCameras()),
+                         lambda, deviceDampingDiagonal, &schurDelta,
+                         context.stream());
 
   std::vector<double> full;
   std::vector<double> schur;

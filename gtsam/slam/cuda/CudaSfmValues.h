@@ -13,6 +13,7 @@
 #include <cuda_runtime_api.h>
 
 #include <cstddef>
+#include <stdexcept>
 #include <vector>
 
 namespace gtsam::cuda {
@@ -43,22 +44,27 @@ inline DevicePoint3 PackDevicePoint3(const Point3& point) {
 }
 
 inline DeviceValues PackSfmValues(const SfmData& data,
+                                  const std::vector<Key>& cameraKeys,
+                                  const std::vector<Key>& pointKeys,
                                   cudaStream_t stream = nullptr) {
-  std::vector<Key> cameraKeys;
+  if (cameraKeys.size() != data.numberCameras()) {
+    throw std::invalid_argument(
+        "PackSfmValues camera key count does not match SfmData");
+  }
+  if (pointKeys.size() != data.numberTracks()) {
+    throw std::invalid_argument(
+        "PackSfmValues point key count does not match SfmData");
+  }
+
   std::vector<DevicePinholeCameraCal3Bundler> cameras;
-  cameraKeys.reserve(data.numberCameras());
   cameras.reserve(data.numberCameras());
   for (size_t i = 0; i < data.numberCameras(); ++i) {
-    cameraKeys.push_back(symbol_shorthand::C(i));
     cameras.push_back(PackPinholeCameraCal3Bundler(data.camera(i)));
   }
 
-  std::vector<Key> pointKeys;
   std::vector<DevicePoint3> points;
-  pointKeys.reserve(data.numberTracks());
   points.reserve(data.numberTracks());
   for (size_t i = 0; i < data.numberTracks(); ++i) {
-    pointKeys.push_back(symbol_shorthand::P(i));
     points.push_back(PackDevicePoint3(data.track(i).point3()));
   }
 
@@ -69,6 +75,23 @@ inline DeviceValues PackSfmValues(const SfmData& data,
   values.addBlock<DevicePoint3>(kDevicePoint3Type, kDevicePoint3TangentDim,
                                 pointKeys, points, stream);
   return values;
+}
+
+inline DeviceValues PackSfmValues(const SfmData& data,
+                                  cudaStream_t stream = nullptr) {
+  std::vector<Key> cameraKeys;
+  cameraKeys.reserve(data.numberCameras());
+  for (size_t i = 0; i < data.numberCameras(); ++i) {
+    cameraKeys.push_back(symbol_shorthand::C(i));
+  }
+
+  std::vector<Key> pointKeys;
+  pointKeys.reserve(data.numberTracks());
+  for (size_t i = 0; i < data.numberTracks(); ++i) {
+    pointKeys.push_back(symbol_shorthand::P(i));
+  }
+
+  return PackSfmValues(data, cameraKeys, pointKeys, stream);
 }
 
 inline DeviceValues AllocateSfmValuesLike(const DeviceValues& reference) {

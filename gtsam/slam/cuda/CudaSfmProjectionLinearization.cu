@@ -2,6 +2,7 @@
 #include <gtsam/nonlinear/cuda/DeviceGeometryKernels.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionLinearization.h>
 
+#include <algorithm>
 #include <limits>
 #include <stdexcept>
 #include <vector>
@@ -12,6 +13,7 @@ namespace {
 constexpr int kProjectionLinearizationBlockSize = 256;
 constexpr int kProjectionTangentDim = 12;
 constexpr int kProjectionErrorBlockSize = 256;
+constexpr int kHessianDiagonalBlockSize = 256;
 
 __global__ void LinearizeCudaSfmProjectionKernel(
     const DevicePinholeCameraCal3Bundler* cameras, const DevicePoint3* points,
@@ -145,6 +147,100 @@ __global__ void ComputeCudaSfmProjectionErrorKernel(
   }
 }
 
+__global__ void AccumulateCudaSfmHessianDiagonalKernel(
+    const DevicePinholeCameraCal3Bundler* cameras, const DevicePoint3* points,
+    const CudaSfmObservation* observations, size_t numObservations,
+    int numCameras, double* diagonal) {
+  const size_t i = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
+  if (i >= numObservations) return;
+
+  const CudaSfmObservation observation = observations[i];
+  const DeviceProjectionResult result = EvaluatePinholeBundlerProjection(
+      cameras[observation.cameraSlot], points[observation.pointSlot],
+      observation);
+
+  const int cameraBase = 9 * observation.cameraSlot;
+  const int pointBase = 9 * numCameras + 3 * observation.pointSlot;
+  for (int col = 0; col < 9; ++col) {
+    const double j0 = result.cameraJacobian[col];
+    const double j1 = result.cameraJacobian[9 + col];
+    atomicAdd(&diagonal[cameraBase + col], j0 * j0 + j1 * j1);
+  }
+  for (int col = 0; col < 3; ++col) {
+    const double j0 = result.pointJacobian[col];
+    const double j1 = result.pointJacobian[3 + col];
+    atomicAdd(&diagonal[pointBase + col], j0 * j0 + j1 * j1);
+  }
+}
+
+__global__ void ClampHessianDiagonalKernel(size_t dimension,
+                                           double minDiagonal,
+                                           double maxDiagonal,
+                                           double* diagonal) {
+  const size_t i = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
+  if (i >= dimension) return;
+
+  const double value = diagonal[i];
+  diagonal[i] = fmin(maxDiagonal, fmax(minDiagonal, value));
+}
+
+__global__ void ComputeLinearizedErrorChangeKernel(
+    const double* residuals, const double* cameraJacobians,
+    const double* pointJacobians, const CudaSfmObservation* observations,
+    size_t numObservations, int numCameras, const double* delta,
+    double* oldBlockSums, double* newBlockSums) {
+  __shared__ double sharedOld[kProjectionErrorBlockSize];
+  __shared__ double sharedNew[kProjectionErrorBlockSize];
+
+  const int thread = threadIdx.x;
+  const size_t stride = static_cast<size_t>(gridDim.x) * blockDim.x;
+  size_t i = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
+
+  double oldSum = 0.0;
+  double newSum = 0.0;
+  while (i < numObservations) {
+    const CudaSfmObservation observation = observations[i];
+    const int cameraBase = 9 * observation.cameraSlot;
+    const int pointBase = 9 * numCameras + 3 * observation.pointSlot;
+
+    double r0 = residuals[2 * i];
+    double r1 = residuals[2 * i + 1];
+    oldSum += 0.5 * (r0 * r0 + r1 * r1);
+
+    const double* cameraJacobian = cameraJacobians + 18 * i;
+    const double* pointJacobian = pointJacobians + 6 * i;
+    for (int col = 0; col < 9; ++col) {
+      const double d = delta[cameraBase + col];
+      r0 += cameraJacobian[col] * d;
+      r1 += cameraJacobian[9 + col] * d;
+    }
+    for (int col = 0; col < 3; ++col) {
+      const double d = delta[pointBase + col];
+      r0 += pointJacobian[col] * d;
+      r1 += pointJacobian[3 + col] * d;
+    }
+    newSum += 0.5 * (r0 * r0 + r1 * r1);
+    i += stride;
+  }
+
+  sharedOld[thread] = oldSum;
+  sharedNew[thread] = newSum;
+  __syncthreads();
+
+  for (int offset = blockDim.x / 2; offset > 0; offset /= 2) {
+    if (thread < offset) {
+      sharedOld[thread] += sharedOld[thread + offset];
+      sharedNew[thread] += sharedNew[thread + offset];
+    }
+    __syncthreads();
+  }
+
+  if (thread == 0) {
+    oldBlockSums[blockIdx.x] = sharedOld[0];
+    newBlockSums[blockIdx.x] = sharedNew[0];
+  }
+}
+
 }  // namespace
 
 void LinearizeCudaSfmProjectionBatch(
@@ -234,6 +330,141 @@ double ComputeCudaSfmProjectionError(const DeviceValues& values,
     error += blockSum;
   }
   return error;
+}
+
+void ComputeCudaSfmHessianDiagonal(
+    const DeviceValues& values, const CudaSfmProjectionBatch& batch,
+    int numCameras, double minDiagonal, double maxDiagonal,
+    CudaDeviceArray<double>* diagonal, cudaStream_t stream) {
+  if (!diagonal) {
+    throw std::invalid_argument(
+        "ComputeCudaSfmHessianDiagonal requires output storage");
+  }
+  if (numCameras < 0) {
+    throw std::invalid_argument(
+        "ComputeCudaSfmHessianDiagonal requires nonnegative camera count");
+  }
+  if (minDiagonal < 0.0 || maxDiagonal < minDiagonal) {
+    throw std::invalid_argument(
+        "ComputeCudaSfmHessianDiagonal invalid diagonal clamp bounds");
+  }
+
+  const auto& cameraBlock = values.block<DevicePinholeCameraCal3Bundler>(
+      kDevicePinholeCameraCal3BundlerType);
+  const auto& pointBlock = values.block<DevicePoint3>(kDevicePoint3Type);
+  if (static_cast<size_t>(numCameras) < batch.numCameras() ||
+      batch.numCameras() > cameraBlock.values.size()) {
+    throw std::invalid_argument(
+        "ComputeCudaSfmHessianDiagonal camera batch/value size mismatch");
+  }
+  if (batch.numPoints() > pointBlock.values.size()) {
+    throw std::invalid_argument(
+        "ComputeCudaSfmHessianDiagonal point batch/value size mismatch");
+  }
+
+  const size_t dimension =
+      9 * static_cast<size_t>(numCameras) + 3 * batch.numPoints();
+  diagonal->resize(dimension);
+  diagonal->zero(stream);
+  if (dimension == 0) {
+    return;
+  }
+
+  const size_t numObservations = batch.numObservations();
+  if (numObservations > 0) {
+    const size_t gridSizeSize =
+        (numObservations + kHessianDiagonalBlockSize - 1) /
+        kHessianDiagonalBlockSize;
+    if (gridSizeSize > static_cast<size_t>(std::numeric_limits<int>::max())) {
+      throw std::invalid_argument(
+          "ComputeCudaSfmHessianDiagonal grid size exceeds CUDA launch limit");
+    }
+    AccumulateCudaSfmHessianDiagonalKernel<<<
+        static_cast<int>(gridSizeSize), kHessianDiagonalBlockSize, 0,
+        stream>>>(cameraBlock.values.data(), pointBlock.values.data(),
+                  batch.observations().data(), numObservations, numCameras,
+                  diagonal->data());
+    GTSAM_CUDA_CHECK(cudaGetLastError());
+  }
+
+  const size_t clampGridSize =
+      (dimension + kHessianDiagonalBlockSize - 1) / kHessianDiagonalBlockSize;
+  if (clampGridSize > static_cast<size_t>(std::numeric_limits<int>::max())) {
+    throw std::invalid_argument(
+        "ComputeCudaSfmHessianDiagonal clamp grid size exceeds CUDA launch "
+        "limit");
+  }
+  ClampHessianDiagonalKernel<<<static_cast<int>(clampGridSize),
+                               kHessianDiagonalBlockSize, 0, stream>>>(
+      dimension, minDiagonal, maxDiagonal, diagonal->data());
+  GTSAM_CUDA_CHECK(cudaGetLastError());
+}
+
+double ComputeCudaSfmLinearizedErrorChange(
+    const DeviceValues& values, const CudaSfmProjectionBatch& batch,
+    int numCameras, const CudaDeviceArray<double>& delta,
+    double* oldLinearizedError, double* newLinearizedError,
+    cudaStream_t stream) {
+  if (numCameras < 0) {
+    throw std::invalid_argument(
+        "ComputeCudaSfmLinearizedErrorChange requires nonnegative camera "
+        "count");
+  }
+  const auto& cameraBlock = values.block<DevicePinholeCameraCal3Bundler>(
+      kDevicePinholeCameraCal3BundlerType);
+  const auto& pointBlock = values.block<DevicePoint3>(kDevicePoint3Type);
+  if (static_cast<size_t>(numCameras) < batch.numCameras() ||
+      batch.numCameras() > cameraBlock.values.size()) {
+    throw std::invalid_argument(
+        "ComputeCudaSfmLinearizedErrorChange camera batch/value size mismatch");
+  }
+  if (batch.numPoints() > pointBlock.values.size()) {
+    throw std::invalid_argument(
+        "ComputeCudaSfmLinearizedErrorChange point batch/value size mismatch");
+  }
+  const size_t dimension =
+      9 * static_cast<size_t>(numCameras) + 3 * batch.numPoints();
+  if (delta.size() != dimension) {
+    throw std::invalid_argument(
+        "ComputeCudaSfmLinearizedErrorChange delta size mismatch");
+  }
+
+  if (batch.numObservations() == 0) {
+    if (oldLinearizedError) *oldLinearizedError = 0.0;
+    if (newLinearizedError) *newLinearizedError = 0.0;
+    return 0.0;
+  }
+
+  CudaSfmProjectionLinearization linearization;
+  LinearizeCudaSfmProjectionBatch(values, batch, &linearization, stream);
+
+  const int gridSize = static_cast<int>(std::min<size_t>(
+      (batch.numObservations() + kProjectionErrorBlockSize - 1) /
+          kProjectionErrorBlockSize,
+      4096));
+  CudaDeviceArray<double> oldBlockSums(static_cast<size_t>(gridSize));
+  CudaDeviceArray<double> newBlockSums(static_cast<size_t>(gridSize));
+  ComputeLinearizedErrorChangeKernel<<<gridSize, kProjectionErrorBlockSize, 0,
+                                        stream>>>(
+      linearization.residuals.data(), linearization.cameraJacobians.data(),
+      linearization.pointJacobians.data(), batch.observations().data(),
+      batch.numObservations(), numCameras, delta.data(), oldBlockSums.data(),
+      newBlockSums.data());
+  GTSAM_CUDA_CHECK(cudaGetLastError());
+
+  std::vector<double> hostOldBlockSums;
+  std::vector<double> hostNewBlockSums;
+  oldBlockSums.download(&hostOldBlockSums, stream);
+  newBlockSums.download(&hostNewBlockSums, stream);
+  GTSAM_CUDA_CHECK(cudaStreamSynchronize(stream));
+
+  double oldError = 0.0;
+  double newError = 0.0;
+  for (double blockSum : hostOldBlockSums) oldError += blockSum;
+  for (double blockSum : hostNewBlockSums) newError += blockSum;
+  if (oldLinearizedError) *oldLinearizedError = oldError;
+  if (newLinearizedError) *newLinearizedError = newError;
+  return oldError - newError;
 }
 
 void AccumulateCudaSfmNormalEquations(

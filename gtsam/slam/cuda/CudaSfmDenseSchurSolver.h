@@ -23,6 +23,10 @@ class CudaSfmDenseSchurSolver {
   void solve(const DeviceValues& values, const CudaSfmProjectionBatch& batch,
              int numCameras, double lambda, CudaDeviceArray<double>* delta,
              cudaStream_t stream = nullptr);
+  void solve(const DeviceValues& values, const CudaSfmProjectionBatch& batch,
+             int numCameras, double lambda,
+             const CudaDeviceArray<double>& dampingDiagonal,
+             CudaDeviceArray<double>* delta, cudaStream_t stream = nullptr);
 
  private:
   struct Impl;
@@ -32,6 +36,13 @@ class CudaSfmDenseSchurSolver {
 void SolveCudaSfmDenseSchur(const DeviceValues& values,
                             const CudaSfmProjectionBatch& batch,
                             int numCameras, double lambda,
+                            CudaDeviceArray<double>* delta,
+                            cudaStream_t stream = nullptr);
+
+void SolveCudaSfmDenseSchur(const DeviceValues& values,
+                            const CudaSfmProjectionBatch& batch,
+                            int numCameras, double lambda,
+                            const CudaDeviceArray<double>& dampingDiagonal,
                             CudaDeviceArray<double>* delta,
                             cudaStream_t stream = nullptr);
 

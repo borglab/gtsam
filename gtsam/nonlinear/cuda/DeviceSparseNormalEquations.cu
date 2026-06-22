@@ -45,6 +45,18 @@ __global__ void AddDiagonalDampingKernel(int rows, const int* rowPointers,
   }
 }
 
+__global__ void AddScaledDiagonalDampingKernel(
+    int rows, const int* rowPointers, const int* colIndices, double* values,
+    double lambda, const double* diagonal) {
+  const int row = blockIdx.x * blockDim.x + threadIdx.x;
+  if (row >= rows) return;
+
+  const int diagonalEntry = FindDiagonalEntry(rowPointers, colIndices, row);
+  if (diagonalEntry >= 0) {
+    values[diagonalEntry] += lambda * diagonal[row];
+  }
+}
+
 }  // namespace
 
 void DeviceSparseNormalEquations::addDiagonalDamping(double lambda,
@@ -87,6 +99,55 @@ void DeviceSparseNormalEquations::addDiagonalDamping(double lambda,
   AddDiagonalDampingKernel<<<static_cast<int>(gridSizeSize),
                              kDiagonalDampingBlockSize, 0, stream>>>(
       rows_, rowPointers_.data(), colIndices_.data(), values_.data(), lambda);
+  GTSAM_CUDA_CHECK(cudaGetLastError());
+}
+
+void DeviceSparseNormalEquations::addDiagonalDamping(
+    double lambda, const CudaDeviceArray<double>& diagonal,
+    cudaStream_t stream) {
+  if (rows_ == 0) {
+    return;
+  }
+  if (diagonal.size() != static_cast<size_t>(rows_)) {
+    throw std::invalid_argument(
+        "DeviceSparseNormalEquations damping diagonal size mismatch");
+  }
+  if (rowPointers_.size() != static_cast<size_t>(rows_) + 1 ||
+      colIndices_.size() != values_.size()) {
+    throw std::invalid_argument(
+        "DeviceSparseNormalEquations damping CSR size mismatch");
+  }
+
+  const size_t gridSizeSize =
+      (static_cast<size_t>(rows_) + kDiagonalDampingBlockSize - 1) /
+      kDiagonalDampingBlockSize;
+  if (gridSizeSize > static_cast<size_t>(std::numeric_limits<int>::max())) {
+    throw std::invalid_argument(
+        "DeviceSparseNormalEquations damping grid size exceeds CUDA launch "
+        "limit");
+  }
+
+  CudaDeviceArray<int> missingDiagonals(1);
+  missingDiagonals.zero(stream);
+
+  CountMissingDiagonalsKernel<<<static_cast<int>(gridSizeSize),
+                                kDiagonalDampingBlockSize, 0, stream>>>(
+      rows_, rowPointers_.data(), colIndices_.data(),
+      missingDiagonals.data());
+  GTSAM_CUDA_CHECK(cudaGetLastError());
+
+  std::vector<int> hostMissingDiagonals;
+  missingDiagonals.download(&hostMissingDiagonals, stream);
+  GTSAM_CUDA_CHECK(cudaStreamSynchronize(stream));
+  if (!hostMissingDiagonals.empty() && hostMissingDiagonals[0] != 0) {
+    throw std::runtime_error(
+        "DeviceSparseNormalEquations missing diagonal entries");
+  }
+
+  AddScaledDiagonalDampingKernel<<<static_cast<int>(gridSizeSize),
+                                   kDiagonalDampingBlockSize, 0, stream>>>(
+      rows_, rowPointers_.data(), colIndices_.data(), values_.data(), lambda,
+      diagonal.data());
   GTSAM_CUDA_CHECK(cudaGetLastError());
 }
 
