@@ -78,7 +78,7 @@ virtual class NonlinearFactorGraph {
                  gtsam::SO3,
                  gtsam::SO4,
                  gtsam::SL4,
-                 gtsam:Aff3,
+                 gtsam::Aff3,
                  gtsam::Rot3,
                  gtsam::Pose2,
                  gtsam::Pose3,
