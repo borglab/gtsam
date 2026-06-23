@@ -564,8 +564,8 @@ class BetweenFactorSL4s {
 class BetweenFactorAff3s {
   BetweenFactorAff3s();
   size_t size() const;
-  gtsam::BetweenFactor<gtsam::Aff3* at(size_t i) const;
-  void push_back(const gtsam::BetweenFactor<gtsam::Aff3* factor);
+  gtsam::BetweenFactor<gtsam::Aff3>* at(size_t i) const;
+  void push_back(const gtsam::BetweenFactor<gtsam::Aff3>* factor);
 };
 
 gtsam::BetweenFactorPose3s parse3DFactors(string filename);
