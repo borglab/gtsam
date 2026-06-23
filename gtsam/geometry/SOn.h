@@ -19,7 +19,6 @@
 #pragma once
 
 #include <gtsam/base/MatrixLieGroup.h>
-#include <gtsam/base/make_shared.h>
 #include <gtsam/dllexport.h>
 #include <Eigen/Core>
 
@@ -60,8 +59,6 @@ class SO : public MatrixLieGroup<SO<N>, internal::DimensionSO(N), N> {
 
   /// LieGroup Concept requirements
   using LieAlgebra = MatrixNN;
-
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(true)
 
  protected:
   MatrixNN matrix_;  ///< Rotation matrix

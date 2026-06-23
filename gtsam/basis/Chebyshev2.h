@@ -45,8 +45,6 @@ namespace gtsam {
  */
 class GTSAM_EXPORT Chebyshev2 : public Basis<Chebyshev2> {
  public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   using Base = Basis<Chebyshev2>;
   using Parameters = Eigen::Matrix<double, /*Nx1*/ -1, 1>;
   using DiffMatrix = Eigen::Matrix<double, /*NxN*/ -1, -1>;

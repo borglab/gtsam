@@ -571,12 +571,6 @@ class GTSAM_EXPORT Rot3 : public MatrixLieGroup<Rot3, 3, 3> {
 #endif
     }
 #endif
-
-#ifdef GTSAM_USE_QUATERNIONS
-  // only align if quaternion, Matrix3 has no alignment requirements
-  public:
-    GTSAM_MAKE_ALIGNED_OPERATOR_NEW
-#endif
   };
 
   /// std::vector of Rot3s, used in Matlab wrapper
