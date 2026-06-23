@@ -5,8 +5,10 @@ install(FILES ${nonlinear_headers} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam
 file(GLOB nonlinear_headers_internal "internal/*.h")
 install(FILES ${nonlinear_headers_internal} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam/nonlinear/internal)
 
-file(GLOB nonlinear_cuda_headers "cuda/*.h")
-install(FILES ${nonlinear_cuda_headers} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam/nonlinear/cuda)
+if(GTSAM_ENABLE_CUDA)
+  file(GLOB nonlinear_cuda_headers "cuda/*.h")
+  install(FILES ${nonlinear_cuda_headers} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam/nonlinear/cuda)
+endif()
 
 # Build tests
 add_subdirectory(tests)

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <gtsam/dllexport.h>
 #include <gtsam/base/cuda/CudaDeviceArray.h>
 #include <gtsam/nonlinear/cuda/DeviceValues.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionBatch.h>
@@ -10,7 +11,7 @@
 
 namespace gtsam::cuda {
 
-class CudaSfmDenseSchurSolver {
+class GTSAM_EXPORT CudaSfmDenseSchurSolver {
  public:
   CudaSfmDenseSchurSolver();
   ~CudaSfmDenseSchurSolver();
@@ -33,17 +34,15 @@ class CudaSfmDenseSchurSolver {
   std::unique_ptr<Impl> impl_;
 };
 
-void SolveCudaSfmDenseSchur(const DeviceValues& values,
-                            const CudaSfmProjectionBatch& batch,
-                            int numCameras, double lambda,
-                            CudaDeviceArray<double>* delta,
-                            cudaStream_t stream = nullptr);
+GTSAM_EXPORT void SolveCudaSfmDenseSchur(
+    const DeviceValues& values, const CudaSfmProjectionBatch& batch,
+    int numCameras, double lambda, CudaDeviceArray<double>* delta,
+    cudaStream_t stream = nullptr);
 
-void SolveCudaSfmDenseSchur(const DeviceValues& values,
-                            const CudaSfmProjectionBatch& batch,
-                            int numCameras, double lambda,
-                            const CudaDeviceArray<double>& dampingDiagonal,
-                            CudaDeviceArray<double>* delta,
-                            cudaStream_t stream = nullptr);
+GTSAM_EXPORT void SolveCudaSfmDenseSchur(
+    const DeviceValues& values, const CudaSfmProjectionBatch& batch,
+    int numCameras, double lambda,
+    const CudaDeviceArray<double>& dampingDiagonal,
+    CudaDeviceArray<double>* delta, cudaStream_t stream = nullptr);
 
 }  // namespace gtsam::cuda

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <gtsam/dllexport.h>
 #include <gtsam/base/cuda/CudaDeviceArray.h>
 #include <gtsam/nonlinear/cuda/DeviceSparseNormalEquations.h>
 
@@ -7,7 +8,7 @@
 
 namespace gtsam::cuda {
 
-class CudssSpdSolver {
+class GTSAM_EXPORT CudssSpdSolver {
  public:
   CudssSpdSolver();
   ~CudssSpdSolver();
@@ -29,7 +30,7 @@ class CudssSpdSolver {
   std::unique_ptr<Impl> impl_;
 };
 
-class CudssLinearSolver {
+class GTSAM_EXPORT CudssLinearSolver {
  public:
   void solveSpd(const DeviceSparseNormalEquations& system,
                 CudaDeviceArray<double>* solution,

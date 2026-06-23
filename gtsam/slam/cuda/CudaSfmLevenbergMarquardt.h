@@ -1,5 +1,6 @@
 #pragma once
 
+#include <gtsam/dllexport.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/nonlinear/NonlinearOptimizerParams.h>
 #include <gtsam/nonlinear/Values.h>
@@ -81,28 +82,29 @@ struct CudaSfmFactorGraphData {
   bool hasRobustNoise = false;
 };
 
-CudaSfmFactorGraphData ConvertGeneralSfmGraphToCudaSfmData(
+GTSAM_EXPORT CudaSfmFactorGraphData ConvertGeneralSfmGraphToCudaSfmData(
     const NonlinearFactorGraph& graph, const Values& initialValues);
 
-CudaSfmLevenbergMarquardtResult OptimizeCudaSfm(
+GTSAM_EXPORT CudaSfmLevenbergMarquardtResult OptimizeCudaSfm(
     const SfmData& data,
     const CudaSfmLevenbergMarquardtParams& params);
 
-CudaSfmLevenbergMarquardtResult OptimizeCudaSfmWithoutValueDownload(
+GTSAM_EXPORT CudaSfmLevenbergMarquardtResult OptimizeCudaSfmWithoutValueDownload(
     const SfmData& data,
     const CudaSfmLevenbergMarquardtParams& params);
 
-CudaSfmLevenbergMarquardtResult OptimizeCudaSfm(
+GTSAM_EXPORT CudaSfmLevenbergMarquardtResult OptimizeCudaSfm(
     const SfmData& data, const std::vector<Key>& cameraKeys,
     const std::vector<Key>& pointKeys,
     const CudaSfmLevenbergMarquardtParams& params);
 
-CudaSfmLevenbergMarquardtResult OptimizeCudaSfmWithoutValueDownload(
+GTSAM_EXPORT CudaSfmLevenbergMarquardtResult OptimizeCudaSfmWithoutValueDownload(
     const SfmData& data, const std::vector<Key>& cameraKeys,
     const std::vector<Key>& pointKeys,
     const CudaSfmLevenbergMarquardtParams& params);
 
-class CudaSfmLevenbergMarquardtOptimizer : public NonlinearOptimizer {
+class GTSAM_EXPORT CudaSfmLevenbergMarquardtOptimizer
+    : public NonlinearOptimizer {
  public:
   CudaSfmLevenbergMarquardtOptimizer(
       const NonlinearFactorGraph& graph, const Values& initialValues,
