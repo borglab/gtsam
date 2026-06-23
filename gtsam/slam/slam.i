@@ -619,7 +619,7 @@ gtsam::noiseModel::Isotropic* ConvertNoiseModel(gtsam::noiseModel::Base* model,
 
 template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::SO3, gtsam::SO4, gtsam::Pose2,
                gtsam::Pose3, gtsam::Similarity2, gtsam::Similarity3,
-               gtsam::Gal3, gtsam::SL4, gtsam::Aff3>
+               gtsam::Gal3, gtsam::SL4, gtsam::Aff3}>
 class FrobeniusPrior : gtsam::NoiseModelFactor {
   FrobeniusPrior(gtsam::Key j, const gtsam::Matrix& M,
     const gtsam::noiseModel::Base* model = nullptr);
