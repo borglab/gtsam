@@ -6,6 +6,7 @@
 
 #include <cuda_runtime_api.h>
 
+#include <cmath>
 #include <cstddef>
 #include <limits>
 #include <stdexcept>
@@ -13,17 +14,103 @@
 
 namespace gtsam::cuda {
 
+enum class CudaSfmProjectionNoiseMode {
+  Unit,
+  Whitened,
+  Robust,
+};
+
 class CudaSfmProjectionBatch {
  public:
   static constexpr int kLongTrackMeasurementThreshold = 4;
 
   static CudaSfmProjectionBatch FromSfmData(const SfmData& data,
                                             cudaStream_t stream = nullptr) {
+    return FromSfmDataImpl(data, nullptr, nullptr, stream);
+  }
+
+  static CudaSfmProjectionBatch FromSfmData(
+      const SfmData& data,
+      const std::vector<std::vector<CudaSfmSqrtInfo2>>& sqrtInfoByTrack,
+      cudaStream_t stream = nullptr) {
+    return FromSfmDataImpl(data, &sqrtInfoByTrack, nullptr, stream);
+  }
+
+  static CudaSfmProjectionBatch FromSfmData(
+      const SfmData& data,
+      const std::vector<std::vector<CudaSfmSqrtInfo2>>& sqrtInfoByTrack,
+      const std::vector<std::vector<CudaSfmRobustModel>>& robustModelsByTrack,
+      cudaStream_t stream = nullptr) {
+    return FromSfmDataImpl(data, &sqrtInfoByTrack, &robustModelsByTrack,
+                           stream);
+  }
+
+  static CudaSfmSqrtInfo2 UnitSqrtInfo() {
+    return CudaSfmSqrtInfo2{1.0, 0.0, 1.0};
+  }
+
+  static CudaSfmRobustModel NoRobustModel() {
+    return CudaSfmRobustModel{CudaSfmRobustModelKind::None,
+                              CudaSfmRobustReweightScheme::Block, 0.0};
+  }
+
+  static bool IsUnitSqrtInfo(const CudaSfmSqrtInfo2& sqrtInfo) {
+    return sqrtInfo.r00 == 1.0 && sqrtInfo.r01 == 0.0 &&
+           sqrtInfo.r11 == 1.0;
+  }
+
+  static bool IsUsableSqrtInfo(const CudaSfmSqrtInfo2& sqrtInfo) {
+    return std::isfinite(sqrtInfo.r00) && std::isfinite(sqrtInfo.r01) &&
+           std::isfinite(sqrtInfo.r11) && sqrtInfo.r00 > 0.0 &&
+           sqrtInfo.r11 > 0.0;
+  }
+
+  static bool IsUsableRobustModel(const CudaSfmRobustModel& robustModel) {
+    if (robustModel.kind == CudaSfmRobustModelKind::None) {
+      return robustModel.reweightScheme == CudaSfmRobustReweightScheme::Block;
+    }
+    const bool knownModel =
+        robustModel.kind == CudaSfmRobustModelKind::Huber ||
+        robustModel.kind == CudaSfmRobustModelKind::Tukey;
+    const bool knownReweight =
+        robustModel.reweightScheme == CudaSfmRobustReweightScheme::Scalar ||
+        robustModel.reweightScheme == CudaSfmRobustReweightScheme::Block;
+    return knownModel && knownReweight && std::isfinite(robustModel.parameter) &&
+           robustModel.parameter > 0.0;
+  }
+
+ private:
+  static CudaSfmProjectionBatch FromSfmDataImpl(
+      const SfmData& data,
+      const std::vector<std::vector<CudaSfmSqrtInfo2>>* sqrtInfoByTrack,
+      const std::vector<std::vector<CudaSfmRobustModel>>* robustModelsByTrack,
+      cudaStream_t stream) {
     CudaSfmProjectionBatch batch;
     batch.numCameras_ = data.numberCameras();
     batch.numPoints_ = data.numberTracks();
+    batch.noiseMode_ =
+        robustModelsByTrack ? CudaSfmProjectionNoiseMode::Robust
+        : sqrtInfoByTrack  ? CudaSfmProjectionNoiseMode::Whitened
+                           : CudaSfmProjectionNoiseMode::Unit;
+
+    if (sqrtInfoByTrack && sqrtInfoByTrack->size() != data.numberTracks()) {
+      throw std::invalid_argument(
+          "CudaSfmProjectionBatch sqrt-info track count mismatch");
+    }
+    if (robustModelsByTrack) {
+      if (!sqrtInfoByTrack) {
+        throw std::invalid_argument(
+            "CudaSfmProjectionBatch robust models require sqrt-info");
+      }
+      if (robustModelsByTrack->size() != data.numberTracks()) {
+        throw std::invalid_argument(
+            "CudaSfmProjectionBatch robust model track count mismatch");
+      }
+    }
 
     std::vector<CudaSfmObservation> observations;
+    std::vector<CudaSfmSqrtInfo2> sqrtInfos;
+    std::vector<CudaSfmRobustModel> robustModels;
     std::vector<int> pointObservationOffsets;
     std::vector<int> longTrackPointSlots;
     pointObservationOffsets.reserve(data.numberTracks() + 1);
@@ -35,6 +122,18 @@ class CudaSfmProjectionBatch {
       }
 
       const SfmTrack& track = data.track(pointSlot);
+      if (sqrtInfoByTrack &&
+          (*sqrtInfoByTrack)[pointSlot].size() !=
+              track.numberMeasurements()) {
+        throw std::invalid_argument(
+            "CudaSfmProjectionBatch sqrt-info measurement count mismatch");
+      }
+      if (robustModelsByTrack &&
+          (*robustModelsByTrack)[pointSlot].size() !=
+              track.numberMeasurements()) {
+        throw std::invalid_argument(
+            "CudaSfmProjectionBatch robust model measurement count mismatch");
+      }
       if (track.numberMeasurements() < 2) {
         pointObservationOffsets.push_back(
             static_cast<int>(observations.size()));
@@ -45,7 +144,9 @@ class CudaSfmProjectionBatch {
         longTrackPointSlots.push_back(static_cast<int>(pointSlot));
       }
 
-      for (const SfmMeasurement& measurement : track.measurements) {
+      for (size_t measurementSlot = 0;
+           measurementSlot < track.measurements.size(); ++measurementSlot) {
+        const SfmMeasurement& measurement = track.measurements[measurementSlot];
         if (measurement.first >= data.numberCameras() ||
             measurement.first >
                 static_cast<size_t>(std::numeric_limits<int>::max())) {
@@ -56,6 +157,24 @@ class CudaSfmProjectionBatch {
         observations.push_back(
             {static_cast<int>(measurement.first), static_cast<int>(pointSlot),
              measurement.second(0), measurement.second(1)});
+        if (sqrtInfoByTrack) {
+          const CudaSfmSqrtInfo2 sqrtInfo =
+              (*sqrtInfoByTrack)[pointSlot][measurementSlot];
+          if (!IsUsableSqrtInfo(sqrtInfo)) {
+            throw std::invalid_argument(
+                "CudaSfmProjectionBatch sqrt-info contains invalid values");
+          }
+          sqrtInfos.push_back(sqrtInfo);
+        }
+        if (robustModelsByTrack) {
+          const CudaSfmRobustModel robustModel =
+              (*robustModelsByTrack)[pointSlot][measurementSlot];
+          if (!IsUsableRobustModel(robustModel)) {
+            throw std::invalid_argument(
+                "CudaSfmProjectionBatch robust model contains invalid values");
+          }
+          robustModels.push_back(robustModel);
+        }
       }
       pointObservationOffsets.push_back(static_cast<int>(observations.size()));
     }
@@ -63,11 +182,32 @@ class CudaSfmProjectionBatch {
     batch.observations_.upload(observations, stream);
     batch.pointObservationOffsets_.upload(pointObservationOffsets, stream);
     batch.longTrackPointSlots_.upload(longTrackPointSlots, stream);
+    if (sqrtInfoByTrack) {
+      if (sqrtInfos.size() != observations.size()) {
+        throw std::invalid_argument(
+            "CudaSfmProjectionBatch sqrt-info/observation count mismatch");
+      }
+      batch.sqrtInfos_.upload(sqrtInfos, stream);
+    }
+    if (robustModelsByTrack) {
+      if (robustModels.size() != observations.size()) {
+        throw std::invalid_argument(
+            "CudaSfmProjectionBatch robust model/observation count mismatch");
+      }
+      batch.robustModels_.upload(robustModels, stream);
+    }
     return batch;
   }
 
+ public:
   const CudaDeviceArray<CudaSfmObservation>& observations() const {
     return observations_;
+  }
+  const CudaDeviceArray<CudaSfmSqrtInfo2>& sqrtInfos() const {
+    return sqrtInfos_;
+  }
+  const CudaDeviceArray<CudaSfmRobustModel>& robustModels() const {
+    return robustModels_;
   }
   const CudaDeviceArray<int>& pointObservationOffsets() const {
     return pointObservationOffsets_;
@@ -76,6 +216,13 @@ class CudaSfmProjectionBatch {
     return longTrackPointSlots_;
   }
 
+  CudaSfmProjectionNoiseMode noiseMode() const { return noiseMode_; }
+  bool isWhitened() const {
+    return noiseMode_ != CudaSfmProjectionNoiseMode::Unit;
+  }
+  bool isRobust() const {
+    return noiseMode_ == CudaSfmProjectionNoiseMode::Robust;
+  }
   size_t numCameras() const { return numCameras_; }
   size_t numPoints() const { return numPoints_; }
   size_t numObservations() const { return observations_.size(); }
@@ -83,7 +230,10 @@ class CudaSfmProjectionBatch {
  private:
   size_t numCameras_ = 0;
   size_t numPoints_ = 0;
+  CudaSfmProjectionNoiseMode noiseMode_ = CudaSfmProjectionNoiseMode::Unit;
   CudaDeviceArray<CudaSfmObservation> observations_;
+  CudaDeviceArray<CudaSfmSqrtInfo2> sqrtInfos_;
+  CudaDeviceArray<CudaSfmRobustModel> robustModels_;
   CudaDeviceArray<int> pointObservationOffsets_;
   CudaDeviceArray<int> longTrackPointSlots_;
 };

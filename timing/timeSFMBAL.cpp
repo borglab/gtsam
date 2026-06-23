@@ -42,6 +42,7 @@ std::string usage() {
          "[--cuda-lm] [--cuda-lm-graph] "
          "[--cuda-linear-solver dense-schur|cudss-full-normal] "
          "[--cuda-warmup-file FILE] "
+         "[--projection-noise unit|huber|tukey] "
          "[--benchmark-action-json FILE] [BALfile ...]";
 }
 
@@ -80,14 +81,41 @@ const char* cudaLinearSolverName(CudaLinearSolverOption solver) {
   return "unknown";
 }
 
+void setProjectionNoiseModel(const char* noiseModel) {
+  if (strcmp(noiseModel, "unit") == 0) {
+    gNoiseModel = noiseModel::Unit::Create(2);
+  } else if (strcmp(noiseModel, "huber") == 0) {
+    gNoiseModel = noiseModel::Robust::Create(
+        noiseModel::mEstimator::Huber::Create(1.345),
+        noiseModel::Unit::Create(2));
+  } else if (strcmp(noiseModel, "tukey") == 0) {
+    gNoiseModel = noiseModel::Robust::Create(
+        noiseModel::mEstimator::Tukey::Create(4.6851),
+        noiseModel::Unit::Create(2));
+  } else {
+    throw runtime_error(usage());
+  }
+}
+
+template <typename Params>
+void applyBalBenchmarkLmSettings(Params& params) {
+  params.maxIterations = 20;
+  params.relativeErrorTol = 0.01;
+}
+
 LevenbergMarquardtParams makeBalLevenbergMarquardtParams() {
   LevenbergMarquardtParams params;
   LevenbergMarquardtParams::SetCeresDefaults(&params);
-  params.setRelativeErrorTol(0.01);
+  applyBalBenchmarkLmSettings(params);
   return params;
 }
 
 #if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
+enum class CudaLmDefaults {
+  Backend,
+  Graph,
+};
+
 gtsam::cuda::CudaSfmLinearSolverType cudaLinearSolverType(
     CudaLinearSolverOption solver) {
   switch (solver) {
@@ -99,12 +127,13 @@ gtsam::cuda::CudaSfmLinearSolverType cudaLinearSolverType(
   return gtsam::cuda::CudaSfmLinearSolverType::DenseSchur;
 }
 
-gtsam::cuda::CudaSfmLevenbergMarquardtParams makeCudaBackendLmParams(
-    CudaLinearSolverOption solverOption) {
-  gtsam::cuda::CudaSfmLevenbergMarquardtParams params;
-  params.maxIterations = 20;
-  params.relativeErrorTol = 0.01;
-  params.downloadOptimizedValues = false;
+gtsam::cuda::CudaSfmLevenbergMarquardtParams makeBalCudaLmParams(
+    CudaLinearSolverOption solverOption, CudaLmDefaults defaults) {
+  gtsam::cuda::CudaSfmLevenbergMarquardtParams params =
+      defaults == CudaLmDefaults::Graph
+          ? gtsam::cuda::CudaSfmLevenbergMarquardtParams::CeresDefaults()
+          : gtsam::cuda::CudaSfmLevenbergMarquardtParams();
+  applyBalBenchmarkLmSettings(params);
   params.linearSolver = cudaLinearSolverType(solverOption);
   return params;
 }
@@ -119,7 +148,7 @@ CudaBackendLmRun runCudaBackendLm(
     const gtsam::cuda::CudaSfmLevenbergMarquardtParams& params) {
   const auto start = std::chrono::high_resolution_clock::now();
   const gtsam::cuda::CudaSfmLevenbergMarquardtResult result =
-      gtsam::cuda::OptimizeCudaSfm(db, params);
+      gtsam::cuda::OptimizeCudaSfmWithoutValueDownload(db, params);
   const auto end = std::chrono::high_resolution_clock::now();
 
   CudaBackendLmRun run;
@@ -174,17 +203,16 @@ struct CudaGraphLmRun {
 
 CudaGraphLmRun runCudaGraphLm(const NonlinearFactorGraph& graph,
                               const Values& initial,
-                              CudaLinearSolverOption solverOption) {
-  const LevenbergMarquardtParams params = makeBalLevenbergMarquardtParams();
+                              const gtsam::cuda::CudaSfmLevenbergMarquardtParams&
+                                  params) {
   const auto start = std::chrono::high_resolution_clock::now();
-  gtsam::cuda::CudaSfmLevenbergMarquardtOptimizer lm(
-      graph, initial, params, cudaLinearSolverType(solverOption));
+  gtsam::cuda::CudaSfmLevenbergMarquardtOptimizer lm(graph, initial, params);
   lm.optimize();
   const auto end = std::chrono::high_resolution_clock::now();
 
   CudaGraphLmRun run;
   run.elapsed = std::chrono::duration<double>(end - start).count();
-  run.initialError = graph.error(initial);
+  run.initialError = lm.result().initialError;
   run.finalError = lm.error();
   run.iterations = lm.iterations();
   run.backend = lm.result();
@@ -304,6 +332,7 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
   std::string cudaWarmupFile;
   bool benchmarkActionJson = false;
   std::string benchmarkActionJsonPath;
+  bool projectionNoiseSpecified = false;
   for (int i = 1; i < argc; ++i) {
     if (strcmp(argv[i], "--colamd") == 0) {
       gUseSchur = false;
@@ -347,6 +376,14 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
       cudaWarmupFile = argv[i];
       continue;
     }
+    if (strcmp(argv[i], "--projection-noise") == 0) {
+      if (++i >= argc || argv[i][0] == '-') {
+        throw runtime_error(usage());
+      }
+      projectionNoiseSpecified = true;
+      setProjectionNoiseModel(argv[i]);
+      continue;
+    }
     if (strcmp(argv[i], "--benchmark-action-json") == 0) {
       if (++i >= argc || argv[i][0] == '-') {
         throw runtime_error(usage());
@@ -384,6 +421,11 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
   }
   if (cudaLm && cudaLmGraph) {
     throw runtime_error(usage());
+  }
+  if (projectionNoiseSpecified && cudaLm) {
+    throw runtime_error(
+        "--projection-noise only applies to factor-graph runs; use "
+        "--cuda-lm-graph for CUDA robust-noise benchmarking");
   }
   if (cudaLinearSolverSpecified && !cudaLm && !cudaLmGraph) {
     throw runtime_error(usage());
@@ -494,14 +536,15 @@ int main(int argc, char* argv[]) {
 
 #if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
     if (options.cudaLm) {
-      const auto params = makeCudaBackendLmParams(options.cudaLinearSolver);
+      const auto cudaParams =
+          makeBalCudaLmParams(options.cudaLinearSolver, CudaLmDefaults::Backend);
 
       if (options.cudaWarmupFileSpecified && !cudaWarmupDone) {
         std::cout << "  CUDA warmup file: " << options.cudaWarmupFile
                   << " (timing ignored)\n";
         const SfmData warmupDb = SfmData::FromBalFile(options.cudaWarmupFile);
         const CudaBackendLmRun warmupRun =
-            runCudaBackendLm(warmupDb, params);
+            runCudaBackendLm(warmupDb, cudaParams);
         std::cout << "  CUDA warmup: " << warmupRun.elapsed
                   << " s ignored, final error: " << std::setprecision(15)
                   << warmupRun.result.finalError
@@ -510,7 +553,7 @@ int main(int argc, char* argv[]) {
         cudaWarmupDone = true;
       }
 
-      const CudaBackendLmRun run = runCudaBackendLm(db, params);
+      const CudaBackendLmRun run = runCudaBackendLm(db, cudaParams);
       printCudaBackendLmRun(run, options.cudaLinearSolver);
       continue;
     }
@@ -562,6 +605,9 @@ int main(int argc, char* argv[]) {
 
 #if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
     if (options.cudaLmGraph) {
+      const auto cudaParams =
+          makeBalCudaLmParams(options.cudaLinearSolver, CudaLmDefaults::Graph);
+
       if (options.cudaWarmupFileSpecified && !cudaWarmupDone) {
         std::cout << "  CUDA graph warmup file: " << options.cudaWarmupFile
                   << " (timing ignored)\n";
@@ -570,8 +616,7 @@ int main(int argc, char* argv[]) {
             buildGeneralSfmGraph(warmupDb);
         const Values warmupInitial = buildGeneralSfmInitial(warmupDb);
         const CudaGraphLmRun warmupRun =
-            runCudaGraphLm(warmupGraph, warmupInitial,
-                           options.cudaLinearSolver);
+            runCudaGraphLm(warmupGraph, warmupInitial, cudaParams);
         std::cout << "  CUDA graph warmup: " << warmupRun.elapsed
                   << " s ignored, final error: " << std::setprecision(15)
                   << warmupRun.finalError
@@ -580,8 +625,7 @@ int main(int argc, char* argv[]) {
         cudaWarmupDone = true;
       }
 
-      const CudaGraphLmRun run =
-          runCudaGraphLm(graph, initial, options.cudaLinearSolver);
+      const CudaGraphLmRun run = runCudaGraphLm(graph, initial, cudaParams);
       printCudaGraphLmRun(run, options.cudaLinearSolver);
       continue;
     }

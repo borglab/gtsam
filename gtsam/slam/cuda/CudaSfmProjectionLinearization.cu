@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <limits>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace gtsam::cuda {
@@ -15,9 +16,100 @@ constexpr int kProjectionTangentDim = 12;
 constexpr int kProjectionErrorBlockSize = 256;
 constexpr int kHessianDiagonalBlockSize = 256;
 
+const CudaSfmSqrtInfo2* SqrtInfoDataOrNull(
+    const CudaSfmProjectionBatch& batch, size_t numObservations,
+    const char* caller) {
+  if (batch.noiseMode() == CudaSfmProjectionNoiseMode::Unit) {
+    return nullptr;
+  }
+  if (batch.sqrtInfos().size() != numObservations) {
+    throw std::invalid_argument(std::string(caller) +
+                                " sqrt-info/observation size mismatch");
+  }
+  return batch.sqrtInfos().data();
+}
+
+const CudaSfmRobustModel* RobustModelDataOrNull(
+    const CudaSfmProjectionBatch& batch, size_t numObservations,
+    const char* caller) {
+  if (batch.noiseMode() != CudaSfmProjectionNoiseMode::Robust) {
+    return nullptr;
+  }
+  if (batch.robustModels().size() != numObservations) {
+    throw std::invalid_argument(std::string(caller) +
+                                " robust-model/observation size mismatch");
+  }
+  return batch.robustModels().data();
+}
+
+__device__ double RobustWeight(const CudaSfmRobustModel& model,
+                               double distance) {
+  const double absDistance = fabs(distance);
+  switch (model.kind) {
+    case CudaSfmRobustModelKind::None:
+      return 1.0;
+    case CudaSfmRobustModelKind::Huber:
+      return absDistance <= model.parameter ? 1.0
+                                            : model.parameter / absDistance;
+    case CudaSfmRobustModelKind::Tukey: {
+      if (absDistance > model.parameter) {
+        return 0.0;
+      }
+      const double normalized = distance / model.parameter;
+      const double oneMinusSquared = 1.0 - normalized * normalized;
+      return oneMinusSquared * oneMinusSquared;
+    }
+  }
+  return 1.0;
+}
+
+__device__ double RobustLoss(const CudaSfmRobustModel& model,
+                             double distance) {
+  const double absDistance = fabs(distance);
+  switch (model.kind) {
+    case CudaSfmRobustModelKind::None:
+      return 0.5 * distance * distance;
+    case CudaSfmRobustModelKind::Huber:
+      if (absDistance <= model.parameter) {
+        return 0.5 * distance * distance;
+      }
+      return model.parameter * (absDistance - 0.5 * model.parameter);
+    case CudaSfmRobustModelKind::Tukey: {
+      const double c2 = model.parameter * model.parameter;
+      if (absDistance > model.parameter) {
+        return c2 / 6.0;
+      }
+      const double normalized = distance / model.parameter;
+      const double oneMinusSquared = 1.0 - normalized * normalized;
+      return c2 *
+             (1.0 - oneMinusSquared * oneMinusSquared * oneMinusSquared) /
+             6.0;
+    }
+  }
+  return 0.5 * distance * distance;
+}
+
+__device__ void RobustRowScales(const CudaSfmRobustModel& model,
+                                double residual0, double residual1,
+                                double* row0Scale, double* row1Scale) {
+  if (model.reweightScheme == CudaSfmRobustReweightScheme::Scalar) {
+    *row0Scale = sqrt(RobustWeight(model, residual0));
+    *row1Scale = sqrt(RobustWeight(model, residual1));
+  } else {
+    const double distance =
+        sqrt(residual0 * residual0 + residual1 * residual1);
+    const double scale = sqrt(RobustWeight(model, distance));
+    *row0Scale = scale;
+    *row1Scale = scale;
+  }
+}
+
+template <bool kWhitened, bool kRobust>
 __global__ void LinearizeCudaSfmProjectionKernel(
     const DevicePinholeCameraCal3Bundler* cameras, const DevicePoint3* points,
     const CudaSfmObservation* observations, size_t numObservations,
+    const CudaSfmSqrtInfo2* sqrtInfos,
+    const CudaSfmRobustModel* robustModels,
     double* residuals, double* cameraJacobians, double* pointJacobians) {
   const size_t i = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
   if (i >= numObservations) return;
@@ -27,14 +119,50 @@ __global__ void LinearizeCudaSfmProjectionKernel(
       cameras[observation.cameraSlot], points[observation.pointSlot],
       observation);
 
-  residuals[2 * i] = result.residual[0];
-  residuals[2 * i + 1] = result.residual[1];
-
-  for (int k = 0; k < 18; ++k) {
-    cameraJacobians[18 * i + k] = result.cameraJacobian[k];
+  double r0 = result.residual[0];
+  double r1 = result.residual[1];
+  CudaSfmSqrtInfo2 sqrtInfo{1.0, 0.0, 1.0};
+  if constexpr (kWhitened) {
+    sqrtInfo = sqrtInfos[i];
+    const double rawR0 = r0;
+    const double rawR1 = r1;
+    r0 = sqrtInfo.r00 * rawR0 + sqrtInfo.r01 * rawR1;
+    r1 = sqrtInfo.r11 * rawR1;
   }
-  for (int k = 0; k < 6; ++k) {
-    pointJacobians[6 * i + k] = result.pointJacobian[k];
+  double row0Scale = 1.0;
+  double row1Scale = 1.0;
+  if constexpr (kRobust) {
+    RobustRowScales(robustModels[i], r0, r1, &row0Scale, &row1Scale);
+    r0 *= row0Scale;
+    r1 *= row1Scale;
+  }
+
+  residuals[2 * i] = r0;
+  residuals[2 * i + 1] = r1;
+
+  for (int col = 0; col < 9; ++col) {
+    const double j0 = result.cameraJacobian[col];
+    const double j1 = result.cameraJacobian[9 + col];
+    double row0 = j0;
+    double row1 = j1;
+    if constexpr (kWhitened) {
+      row0 = sqrtInfo.r00 * j0 + sqrtInfo.r01 * j1;
+      row1 = sqrtInfo.r11 * j1;
+    }
+    cameraJacobians[18 * i + col] = row0Scale * row0;
+    cameraJacobians[18 * i + 9 + col] = row1Scale * row1;
+  }
+  for (int col = 0; col < 3; ++col) {
+    const double j0 = result.pointJacobian[col];
+    const double j1 = result.pointJacobian[3 + col];
+    double row0 = j0;
+    double row1 = j1;
+    if constexpr (kWhitened) {
+      row0 = sqrtInfo.r00 * j0 + sqrtInfo.r01 * j1;
+      row1 = sqrtInfo.r11 * j1;
+    }
+    pointJacobians[6 * i + col] = row0Scale * row0;
+    pointJacobians[6 * i + 3 + col] = row1Scale * row1;
   }
 }
 
@@ -56,9 +184,12 @@ __device__ int FindCsrEntry(const int* rowPointers, const int* colIndices,
   return -1;
 }
 
+template <bool kWhitened, bool kRobust>
 __global__ void AccumulateCudaSfmNormalEquationsKernel(
     const DevicePinholeCameraCal3Bundler* cameras, const DevicePoint3* points,
     const CudaSfmObservation* observations, size_t numObservations,
+    const CudaSfmSqrtInfo2* sqrtInfos,
+    const CudaSfmRobustModel* robustModels,
     int numCameras, const int* rowPointers, const int* colIndices,
     double* values, double* rhs, int* missingEntries) {
   const size_t i = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
@@ -68,6 +199,10 @@ __global__ void AccumulateCudaSfmNormalEquationsKernel(
   const DeviceProjectionResult result = EvaluatePinholeBundlerProjection(
       cameras[observation.cameraSlot], points[observation.pointSlot],
       observation);
+  CudaSfmSqrtInfo2 sqrtInfo{1.0, 0.0, 1.0};
+  if constexpr (kWhitened) {
+    sqrtInfo = sqrtInfos[i];
+  }
 
   const int cameraBase = 9 * observation.cameraSlot;
   const int pointBase = 9 * numCameras + 3 * observation.pointSlot;
@@ -75,19 +210,49 @@ __global__ void AccumulateCudaSfmNormalEquationsKernel(
   double jacobian0[kProjectionTangentDim];
   double jacobian1[kProjectionTangentDim];
 
+  double residual0 = result.residual[0];
+  double residual1 = result.residual[1];
+  if constexpr (kWhitened) {
+    const double rawResidual0 = residual0;
+    const double rawResidual1 = residual1;
+    residual0 = sqrtInfo.r00 * rawResidual0 + sqrtInfo.r01 * rawResidual1;
+    residual1 = sqrtInfo.r11 * rawResidual1;
+  }
+  double row0Scale = 1.0;
+  double row1Scale = 1.0;
+  if constexpr (kRobust) {
+    RobustRowScales(robustModels[i], residual0, residual1, &row0Scale,
+                    &row1Scale);
+    residual0 *= row0Scale;
+    residual1 *= row1Scale;
+  }
+
   for (int col = 0; col < 9; ++col) {
     global[col] = cameraBase + col;
-    jacobian0[col] = result.cameraJacobian[col];
-    jacobian1[col] = result.cameraJacobian[9 + col];
+    const double j0 = result.cameraJacobian[col];
+    const double j1 = result.cameraJacobian[9 + col];
+    double row0 = j0;
+    double row1 = j1;
+    if constexpr (kWhitened) {
+      row0 = sqrtInfo.r00 * j0 + sqrtInfo.r01 * j1;
+      row1 = sqrtInfo.r11 * j1;
+    }
+    jacobian0[col] = row0Scale * row0;
+    jacobian1[col] = row1Scale * row1;
   }
   for (int col = 0; col < 3; ++col) {
     global[9 + col] = pointBase + col;
-    jacobian0[9 + col] = result.pointJacobian[col];
-    jacobian1[9 + col] = result.pointJacobian[3 + col];
+    const double j0 = result.pointJacobian[col];
+    const double j1 = result.pointJacobian[3 + col];
+    double row0 = j0;
+    double row1 = j1;
+    if constexpr (kWhitened) {
+      row0 = sqrtInfo.r00 * j0 + sqrtInfo.r01 * j1;
+      row1 = sqrtInfo.r11 * j1;
+    }
+    jacobian0[9 + col] = row0Scale * row0;
+    jacobian1[9 + col] = row1Scale * row1;
   }
-
-  const double residual0 = result.residual[0];
-  const double residual1 = result.residual[1];
   for (int a = 0; a < kProjectionTangentDim; ++a) {
     atomicAdd(&rhs[global[a]],
               -jacobian0[a] * residual0 - jacobian1[a] * residual1);
@@ -111,9 +276,12 @@ __global__ void AccumulateCudaSfmNormalEquationsKernel(
   }
 }
 
+template <bool kWhitened, bool kRobust>
 __global__ void ComputeCudaSfmProjectionErrorKernel(
     const DevicePinholeCameraCal3Bundler* cameras, const DevicePoint3* points,
     const CudaSfmObservation* observations, size_t numObservations,
+    const CudaSfmSqrtInfo2* sqrtInfos,
+    const CudaSfmRobustModel* robustModels,
     double* blockSums) {
   __shared__ double shared[kProjectionErrorBlockSize];
 
@@ -127,8 +295,20 @@ __global__ void ComputeCudaSfmProjectionErrorKernel(
     const DeviceProjectionResult result = EvaluatePinholeBundlerProjection(
         cameras[observation.cameraSlot], points[observation.pointSlot],
         observation);
-    sum += 0.5 * (result.residual[0] * result.residual[0] +
-                  result.residual[1] * result.residual[1]);
+    double r0 = result.residual[0];
+    double r1 = result.residual[1];
+    if constexpr (kWhitened) {
+      const CudaSfmSqrtInfo2 sqrtInfo = sqrtInfos[i];
+      const double rawR0 = r0;
+      const double rawR1 = r1;
+      r0 = sqrtInfo.r00 * rawR0 + sqrtInfo.r01 * rawR1;
+      r1 = sqrtInfo.r11 * rawR1;
+    }
+    if constexpr (kRobust) {
+      sum += RobustLoss(robustModels[i], sqrt(r0 * r0 + r1 * r1));
+    } else {
+      sum += 0.5 * (r0 * r0 + r1 * r1);
+    }
     i += stride;
   }
 
@@ -147,9 +327,12 @@ __global__ void ComputeCudaSfmProjectionErrorKernel(
   }
 }
 
+template <bool kWhitened, bool kRobust>
 __global__ void AccumulateCudaSfmHessianDiagonalKernel(
     const DevicePinholeCameraCal3Bundler* cameras, const DevicePoint3* points,
     const CudaSfmObservation* observations, size_t numObservations,
+    const CudaSfmSqrtInfo2* sqrtInfos,
+    const CudaSfmRobustModel* robustModels,
     int numCameras, double* diagonal) {
   const size_t i = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
   if (i >= numObservations) return;
@@ -158,17 +341,51 @@ __global__ void AccumulateCudaSfmHessianDiagonalKernel(
   const DeviceProjectionResult result = EvaluatePinholeBundlerProjection(
       cameras[observation.cameraSlot], points[observation.pointSlot],
       observation);
+  CudaSfmSqrtInfo2 sqrtInfo{1.0, 0.0, 1.0};
+  if constexpr (kWhitened) {
+    sqrtInfo = sqrtInfos[i];
+  }
+  double residual0 = result.residual[0];
+  double residual1 = result.residual[1];
+  if constexpr (kWhitened) {
+    const double rawResidual0 = residual0;
+    const double rawResidual1 = residual1;
+    residual0 = sqrtInfo.r00 * rawResidual0 + sqrtInfo.r01 * rawResidual1;
+    residual1 = sqrtInfo.r11 * rawResidual1;
+  }
+  double row0Scale = 1.0;
+  double row1Scale = 1.0;
+  if constexpr (kRobust) {
+    RobustRowScales(robustModels[i], residual0, residual1, &row0Scale,
+                    &row1Scale);
+  }
 
   const int cameraBase = 9 * observation.cameraSlot;
   const int pointBase = 9 * numCameras + 3 * observation.pointSlot;
   for (int col = 0; col < 9; ++col) {
-    const double j0 = result.cameraJacobian[col];
-    const double j1 = result.cameraJacobian[9 + col];
+    double j0 = result.cameraJacobian[col];
+    double j1 = result.cameraJacobian[9 + col];
+    if constexpr (kWhitened) {
+      const double rawJ0 = j0;
+      const double rawJ1 = j1;
+      j0 = sqrtInfo.r00 * rawJ0 + sqrtInfo.r01 * rawJ1;
+      j1 = sqrtInfo.r11 * rawJ1;
+    }
+    j0 *= row0Scale;
+    j1 *= row1Scale;
     atomicAdd(&diagonal[cameraBase + col], j0 * j0 + j1 * j1);
   }
   for (int col = 0; col < 3; ++col) {
-    const double j0 = result.pointJacobian[col];
-    const double j1 = result.pointJacobian[3 + col];
+    double j0 = result.pointJacobian[col];
+    double j1 = result.pointJacobian[3 + col];
+    if constexpr (kWhitened) {
+      const double rawJ0 = j0;
+      const double rawJ1 = j1;
+      j0 = sqrtInfo.r00 * rawJ0 + sqrtInfo.r01 * rawJ1;
+      j1 = sqrtInfo.r11 * rawJ1;
+    }
+    j0 *= row0Scale;
+    j1 *= row1Scale;
     atomicAdd(&diagonal[pointBase + col], j0 * j0 + j1 * j1);
   }
 }
@@ -280,12 +497,35 @@ void LinearizeCudaSfmProjectionBatch(
         "LinearizeCudaSfmProjectionBatch grid size exceeds CUDA launch limit");
   }
   const int gridSize = static_cast<int>(gridSizeSize);
-  LinearizeCudaSfmProjectionKernel<<<gridSize, kProjectionLinearizationBlockSize,
-                                     0, stream>>>(
-      cameraBlock.values.data(), pointBlock.values.data(),
-      batch.observations().data(), numObservations,
-      linearization->residuals.data(), linearization->cameraJacobians.data(),
-      linearization->pointJacobians.data());
+  const CudaSfmSqrtInfo2* sqrtInfos = SqrtInfoDataOrNull(
+      batch, numObservations, "LinearizeCudaSfmProjectionBatch");
+  const CudaSfmRobustModel* robustModels = RobustModelDataOrNull(
+      batch, numObservations, "LinearizeCudaSfmProjectionBatch");
+  if (batch.noiseMode() == CudaSfmProjectionNoiseMode::Robust) {
+    LinearizeCudaSfmProjectionKernel<true, true>
+        <<<gridSize, kProjectionLinearizationBlockSize, 0, stream>>>(
+            cameraBlock.values.data(), pointBlock.values.data(),
+            batch.observations().data(), numObservations, sqrtInfos,
+            robustModels, linearization->residuals.data(),
+            linearization->cameraJacobians.data(),
+            linearization->pointJacobians.data());
+  } else if (batch.noiseMode() == CudaSfmProjectionNoiseMode::Whitened) {
+    LinearizeCudaSfmProjectionKernel<true, false>
+        <<<gridSize, kProjectionLinearizationBlockSize, 0, stream>>>(
+            cameraBlock.values.data(), pointBlock.values.data(),
+            batch.observations().data(), numObservations, sqrtInfos,
+            nullptr, linearization->residuals.data(),
+            linearization->cameraJacobians.data(),
+            linearization->pointJacobians.data());
+  } else {
+    LinearizeCudaSfmProjectionKernel<false, false>
+        <<<gridSize, kProjectionLinearizationBlockSize, 0, stream>>>(
+            cameraBlock.values.data(), pointBlock.values.data(),
+            batch.observations().data(), numObservations, nullptr,
+            nullptr, linearization->residuals.data(),
+            linearization->cameraJacobians.data(),
+            linearization->pointJacobians.data());
+  }
   GTSAM_CUDA_CHECK(cudaGetLastError());
 }
 
@@ -315,10 +555,29 @@ double ComputeCudaSfmProjectionError(const DeviceValues& values,
           kProjectionErrorBlockSize,
       4096));
   CudaDeviceArray<double> blockSums(static_cast<size_t>(gridSize));
-  ComputeCudaSfmProjectionErrorKernel<<<gridSize, kProjectionErrorBlockSize, 0,
-                                        stream>>>(
-      cameraBlock.values.data(), pointBlock.values.data(),
-      batch.observations().data(), numObservations, blockSums.data());
+  const CudaSfmSqrtInfo2* sqrtInfos = SqrtInfoDataOrNull(
+      batch, numObservations, "ComputeCudaSfmProjectionError");
+  const CudaSfmRobustModel* robustModels = RobustModelDataOrNull(
+      batch, numObservations, "ComputeCudaSfmProjectionError");
+  if (batch.noiseMode() == CudaSfmProjectionNoiseMode::Robust) {
+    ComputeCudaSfmProjectionErrorKernel<true, true>
+        <<<gridSize, kProjectionErrorBlockSize, 0, stream>>>(
+            cameraBlock.values.data(), pointBlock.values.data(),
+            batch.observations().data(), numObservations, sqrtInfos,
+            robustModels, blockSums.data());
+  } else if (batch.noiseMode() == CudaSfmProjectionNoiseMode::Whitened) {
+    ComputeCudaSfmProjectionErrorKernel<true, false>
+        <<<gridSize, kProjectionErrorBlockSize, 0, stream>>>(
+            cameraBlock.values.data(), pointBlock.values.data(),
+            batch.observations().data(), numObservations, sqrtInfos,
+            nullptr, blockSums.data());
+  } else {
+    ComputeCudaSfmProjectionErrorKernel<false, false>
+        <<<gridSize, kProjectionErrorBlockSize, 0, stream>>>(
+            cameraBlock.values.data(), pointBlock.values.data(),
+            batch.observations().data(), numObservations, nullptr,
+            nullptr, blockSums.data());
+  }
   GTSAM_CUDA_CHECK(cudaGetLastError());
 
   std::vector<double> hostBlockSums;
@@ -379,11 +638,29 @@ void ComputeCudaSfmHessianDiagonal(
       throw std::invalid_argument(
           "ComputeCudaSfmHessianDiagonal grid size exceeds CUDA launch limit");
     }
-    AccumulateCudaSfmHessianDiagonalKernel<<<
-        static_cast<int>(gridSizeSize), kHessianDiagonalBlockSize, 0,
-        stream>>>(cameraBlock.values.data(), pointBlock.values.data(),
-                  batch.observations().data(), numObservations, numCameras,
-                  diagonal->data());
+    const CudaSfmSqrtInfo2* sqrtInfos = SqrtInfoDataOrNull(
+        batch, numObservations, "ComputeCudaSfmHessianDiagonal");
+    const CudaSfmRobustModel* robustModels = RobustModelDataOrNull(
+        batch, numObservations, "ComputeCudaSfmHessianDiagonal");
+    if (batch.noiseMode() == CudaSfmProjectionNoiseMode::Robust) {
+      AccumulateCudaSfmHessianDiagonalKernel<true, true>
+          <<<static_cast<int>(gridSizeSize), kHessianDiagonalBlockSize, 0,
+             stream>>>(cameraBlock.values.data(), pointBlock.values.data(),
+                       batch.observations().data(), numObservations, sqrtInfos,
+                       robustModels, numCameras, diagonal->data());
+    } else if (batch.noiseMode() == CudaSfmProjectionNoiseMode::Whitened) {
+      AccumulateCudaSfmHessianDiagonalKernel<true, false>
+          <<<static_cast<int>(gridSizeSize), kHessianDiagonalBlockSize, 0,
+             stream>>>(cameraBlock.values.data(), pointBlock.values.data(),
+                       batch.observations().data(), numObservations, sqrtInfos,
+                       nullptr, numCameras, diagonal->data());
+    } else {
+      AccumulateCudaSfmHessianDiagonalKernel<false, false>
+          <<<static_cast<int>(gridSizeSize), kHessianDiagonalBlockSize, 0,
+             stream>>>(cameraBlock.values.data(), pointBlock.values.data(),
+                       batch.observations().data(), numObservations, nullptr,
+                       nullptr, numCameras, diagonal->data());
+    }
     GTSAM_CUDA_CHECK(cudaGetLastError());
   }
 
@@ -528,12 +805,35 @@ void AccumulateCudaSfmNormalEquations(
   missingEntries.zero(stream);
 
   const int gridSize = static_cast<int>(gridSizeSize);
-  AccumulateCudaSfmNormalEquationsKernel<<<
-      gridSize, kProjectionLinearizationBlockSize, 0, stream>>>(
-      cameraBlock.values.data(), pointBlock.values.data(),
-      batch.observations().data(), numObservations, numCameras,
-      system->rowPointers().data(), system->colIndices().data(),
-      system->values().data(), system->rhs().data(), missingEntries.data());
+  const CudaSfmSqrtInfo2* sqrtInfos = SqrtInfoDataOrNull(
+      batch, numObservations, "AccumulateCudaSfmNormalEquations");
+  const CudaSfmRobustModel* robustModels = RobustModelDataOrNull(
+      batch, numObservations, "AccumulateCudaSfmNormalEquations");
+  if (batch.noiseMode() == CudaSfmProjectionNoiseMode::Robust) {
+    AccumulateCudaSfmNormalEquationsKernel<true, true>
+        <<<gridSize, kProjectionLinearizationBlockSize, 0, stream>>>(
+            cameraBlock.values.data(), pointBlock.values.data(),
+            batch.observations().data(), numObservations, sqrtInfos,
+            robustModels, numCameras, system->rowPointers().data(),
+            system->colIndices().data(), system->values().data(),
+            system->rhs().data(), missingEntries.data());
+  } else if (batch.noiseMode() == CudaSfmProjectionNoiseMode::Whitened) {
+    AccumulateCudaSfmNormalEquationsKernel<true, false>
+        <<<gridSize, kProjectionLinearizationBlockSize, 0, stream>>>(
+            cameraBlock.values.data(), pointBlock.values.data(),
+            batch.observations().data(), numObservations, sqrtInfos,
+            nullptr, numCameras, system->rowPointers().data(),
+            system->colIndices().data(), system->values().data(),
+            system->rhs().data(), missingEntries.data());
+  } else {
+    AccumulateCudaSfmNormalEquationsKernel<false, false>
+        <<<gridSize, kProjectionLinearizationBlockSize, 0, stream>>>(
+            cameraBlock.values.data(), pointBlock.values.data(),
+            batch.observations().data(), numObservations, nullptr, nullptr,
+            numCameras, system->rowPointers().data(),
+            system->colIndices().data(), system->values().data(),
+            system->rhs().data(), missingEntries.data());
+  }
   GTSAM_CUDA_CHECK(cudaGetLastError());
 
   std::vector<int> hostMissingEntries;

@@ -1,10 +1,12 @@
 #pragma once
 
-#include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/nonlinear/NonlinearOptimizerParams.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/sfm/SfmData.h>
+#include <gtsam/slam/cuda/CudaSfmTypes.h>
 
+#include <string>
 #include <vector>
 
 namespace gtsam::cuda {
@@ -14,23 +16,35 @@ enum class CudaSfmLinearSolverType {
   CudssFullNormal,
 };
 
-struct CudaSfmLevenbergMarquardtParams {
-  int maxIterations = 20;
-  double initialLambda = 1e-3;
-  double lambdaUpFactor = 10.0;
-  double lambdaDownFactor = 0.1;
-  double lambdaUpperBound = 1e5;
-  double lambdaLowerBound = 0.0;
-  double relativeErrorTol = 1e-5;
-  double absoluteErrorTol = 1e-5;
-  double errorTol = 0.0;
-  double minModelFidelity = 1e-3;
-  bool useFixedLambdaFactor = true;
-  bool diagonalDamping = false;
-  double minDiagonal = 1e-6;
-  double maxDiagonal = 1e32;
+class CudaSfmLevenbergMarquardtOptimizer;
+
+class GTSAM_EXPORT CudaSfmLevenbergMarquardtParams {
+ public:
+  using OptimizerType = CudaSfmLevenbergMarquardtOptimizer;
+
+  int maxIterations;
+  double lambdaInitial;
+  double lambdaFactor;
+  double lambdaUpperBound;
+  double lambdaLowerBound;
+  double relativeErrorTol;
+  double absoluteErrorTol;
+  double errorTol;
+  double minModelFidelity;
+  bool useFixedLambdaFactor;
+  bool diagonalDamping;
+  double minDiagonal;
+  double maxDiagonal;
   CudaSfmLinearSolverType linearSolver = CudaSfmLinearSolverType::DenseSchur;
-  bool downloadOptimizedValues = true;
+
+  CudaSfmLevenbergMarquardtParams();
+
+  static CudaSfmLevenbergMarquardtParams LegacyDefaults();
+  static CudaSfmLevenbergMarquardtParams CeresDefaults();
+
+  std::string getLinearSolver() const;
+  void setLinearSolver(const std::string& solver);
+  void print(const std::string& str = "") const;
 };
 
 struct CudaSfmLevenbergMarquardtResult {
@@ -61,15 +75,29 @@ struct CudaSfmFactorGraphData {
   SfmData data;
   std::vector<Key> cameraKeys;
   std::vector<Key> pointKeys;
+  std::vector<std::vector<CudaSfmSqrtInfo2>> sqrtInfoByTrack;
+  std::vector<std::vector<CudaSfmRobustModel>> robustModelsByTrack;
+  bool hasNonUnitNoise = false;
+  bool hasRobustNoise = false;
 };
 
 CudaSfmFactorGraphData ConvertGeneralSfmGraphToCudaSfmData(
     const NonlinearFactorGraph& graph, const Values& initialValues);
 
 CudaSfmLevenbergMarquardtResult OptimizeCudaSfm(
-    const SfmData& data, const CudaSfmLevenbergMarquardtParams& params);
+    const SfmData& data,
+    const CudaSfmLevenbergMarquardtParams& params);
+
+CudaSfmLevenbergMarquardtResult OptimizeCudaSfmWithoutValueDownload(
+    const SfmData& data,
+    const CudaSfmLevenbergMarquardtParams& params);
 
 CudaSfmLevenbergMarquardtResult OptimizeCudaSfm(
+    const SfmData& data, const std::vector<Key>& cameraKeys,
+    const std::vector<Key>& pointKeys,
+    const CudaSfmLevenbergMarquardtParams& params);
+
+CudaSfmLevenbergMarquardtResult OptimizeCudaSfmWithoutValueDownload(
     const SfmData& data, const std::vector<Key>& cameraKeys,
     const std::vector<Key>& pointKeys,
     const CudaSfmLevenbergMarquardtParams& params);
@@ -78,25 +106,24 @@ class CudaSfmLevenbergMarquardtOptimizer : public NonlinearOptimizer {
  public:
   CudaSfmLevenbergMarquardtOptimizer(
       const NonlinearFactorGraph& graph, const Values& initialValues,
-      const LevenbergMarquardtParams& params = LevenbergMarquardtParams());
-  CudaSfmLevenbergMarquardtOptimizer(
-      const NonlinearFactorGraph& graph, const Values& initialValues,
-      const LevenbergMarquardtParams& params,
-      CudaSfmLinearSolverType linearSolver);
+      const CudaSfmLevenbergMarquardtParams& params =
+          CudaSfmLevenbergMarquardtParams());
 
   const Values& optimize() override;
 
   GaussianFactorGraph::shared_ptr iterate() override;
 
-  const LevenbergMarquardtParams& params() const { return params_; }
+  const CudaSfmLevenbergMarquardtParams& params() const { return params_; }
   const CudaSfmLevenbergMarquardtResult& result() const { return result_; }
 
  protected:
-  const NonlinearOptimizerParams& _params() const override { return params_; }
+  const NonlinearOptimizerParams& _params() const override {
+    return baseParams_;
+  }
 
  private:
-  LevenbergMarquardtParams params_;
-  CudaSfmLevenbergMarquardtParams cudaParams_;
+  CudaSfmLevenbergMarquardtParams params_;
+  NonlinearOptimizerParams baseParams_;
   CudaSfmLevenbergMarquardtResult result_;
 };
 

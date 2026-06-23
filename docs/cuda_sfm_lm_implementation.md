@@ -2,7 +2,7 @@
 
 This document explains the current CUDA SFM / bundle-adjustment Levenberg-Marquardt path and the user-facing benchmark modes added around it. The implementation has two related goals:
 
-- expose a CPU-LM-compatible public CUDA BA path for supported `GeneralSFMFactor<SfmCamera, Point3>` graphs, so callers can use a familiar `NonlinearOptimizer` entry point and `LevenbergMarquardtParams`;
+- expose a CPU-LM-like public CUDA BA path for supported `GeneralSFMFactor<SfmCamera, Point3>` graphs, so callers can use a familiar `NonlinearOptimizer` entry point with CUDA-specific LM params;
 - keep the lower-level BAL/SFM CUDA path easy to benchmark, including solver selection, warmup, and timing breakdowns from `timeSFMBAL`.
 
 The CUDA path is still specialized. It is closer to CPU LM behavior than the first CUDA backend, but it is not a general nonlinear optimizer and should not be described as numerically identical to CPU LM.
@@ -11,16 +11,25 @@ The CUDA path is still specialized. It is closer to CPU LM behavior than the fir
 
 The public CUDA SFM LM declarations live in `gtsam/slam/cuda/CudaSfmLevenbergMarquardt.h`.
 
-The low-level API is still `SfmData` based:
+CUDA graph users configure LM behavior and CUDA solver selection with a single public params class:
 
 ```cpp
 using namespace gtsam::cuda;
 
-CudaSfmLevenbergMarquardtParams params;
+CudaSfmLevenbergMarquardtParams params =
+    CudaSfmLevenbergMarquardtParams::CeresDefaults();
 params.maxIterations = 20;
 params.relativeErrorTol = 0.01;
 params.linearSolver = CudaSfmLinearSolverType::DenseSchur;
 
+CudaSfmLevenbergMarquardtOptimizer lm(graph, initial, params);
+const Values& optimized = lm.optimize();
+const CudaSfmLevenbergMarquardtResult& backend = lm.result();
+```
+
+The low-level API is still `SfmData` based and uses the same params class:
+
+```cpp
 CudaSfmLevenbergMarquardtResult result = OptimizeCudaSfm(data, params);
 ```
 
@@ -31,34 +40,20 @@ CudaSfmLevenbergMarquardtResult result =
     OptimizeCudaSfm(data, cameraKeys, pointKeys, params);
 ```
 
-The new graph-facing API is `CudaSfmLevenbergMarquardtOptimizer`, a `NonlinearOptimizer` subclass. It takes a `NonlinearFactorGraph`, initial `Values`, regular `LevenbergMarquardtParams`, and optionally a CUDA linear solver selection:
-
-```cpp
-using namespace gtsam;
-using namespace gtsam::cuda;
-
-LevenbergMarquardtParams params = LevenbergMarquardtParams::CeresDefaults();
-params.maxIterations = 20;
-params.relativeErrorTol = 0.01;
-
-CudaSfmLevenbergMarquardtOptimizer lm(
-    graph, initial, params, CudaSfmLinearSolverType::DenseSchur);
-
-const Values& optimized = lm.optimize();
-const CudaSfmLevenbergMarquardtResult& backend = lm.result();
-```
-
 Important API details:
 
-- `CudaSfmLinearSolverType` currently supports `DenseSchur` and `CudssFullNormal` (`gtsam/slam/cuda/CudaSfmLevenbergMarquardt.h:12`).
-- `CudaSfmLevenbergMarquardtParams` mirrors the LM fields needed by the backend, including lambda bounds, error tolerances, model fidelity, fixed/non-fixed lambda behavior, and diagonal damping controls (`gtsam/slam/cuda/CudaSfmLevenbergMarquardt.h:17`).
-- `CudaSfmLevenbergMarquardtResult` reports objective values, setup/solve/download timings, accepted outer iterations, inner lambda attempts, accepted steps, final lambda, and optional downloaded `Values` (`gtsam/slam/cuda/CudaSfmLevenbergMarquardt.h:36`).
-- `CudaSfmLevenbergMarquardtOptimizer::optimize()` is implemented; `iterate()` intentionally throws and tells callers to use `optimize()` (`gtsam/slam/cuda/CudaSfmLevenbergMarquardt.cu:271`).
-- `OptimizeCudaSfm` requires `GTSAM_ENABLE_CUDSS=ON`; without it the function throws (`gtsam/slam/cuda/CudaSfmLevenbergMarquardt.cu:287`).
+- `CudaSfmLinearSolverType` currently supports `DenseSchur` and `CudssFullNormal` in `gtsam/slam/cuda/CudaSfmLevenbergMarquardt.h`.
+- `CudaSfmLevenbergMarquardtParams` owns the CUDA LM tuning surface: iteration limit, lambda bounds and factor, error tolerances, model fidelity, fixed/non-fixed lambda behavior, diagonal damping controls, and `linearSolver`.
+- `CudaSfmLevenbergMarquardtParams::LegacyDefaults()` and `CudaSfmLevenbergMarquardtParams::CeresDefaults()` mirror the CPU LM values where they apply.
+- `CudaSfmLevenbergMarquardtParams::getLinearSolver()` and `setLinearSolver()` support string names such as `dense-schur`, `cudss-full-normal`, `DENSE_SCHUR`, and `CUDSS_FULL_NORMAL`.
+- `CudaSfmLevenbergMarquardtResult` reports objective values, setup/solve/download timings, accepted outer iterations, inner lambda attempts, accepted steps, final lambda, and optional downloaded `Values`.
+- `CudaSfmLevenbergMarquardtOptimizer::optimize()` is implemented; `iterate()` intentionally throws and tells callers to use `optimize()`.
+- `CudaSfmLevenbergMarquardtOptimizer::params()` returns the CUDA params. Internally the optimizer uses a private `NonlinearOptimizerParams` adapter only to satisfy the base class metadata contract.
+- `OptimizeCudaSfm` requires `GTSAM_ENABLE_CUDSS=ON`; without it the function throws.
 
 ## Graph And Values Conversion
 
-The graph API converts a supported `NonlinearFactorGraph` plus initial `Values` into `SfmData` with sidecar key vectors using `ConvertGeneralSfmGraphToCudaSfmData` (`gtsam/slam/cuda/CudaSfmLevenbergMarquardt.cu:179`).
+The graph API converts a supported `NonlinearFactorGraph` plus initial `Values` into `SfmData` with sidecar key vectors using `ConvertGeneralSfmGraphToCudaSfmData` in `gtsam/slam/cuda/CudaSfmLevenbergMarquardt.cu`.
 
 Conversion behavior:
 
@@ -70,9 +65,9 @@ Conversion behavior:
 - factor `key1()` must map to a converted camera key and `key2()` must map to a converted point key;
 - each supported factor appends one measurement to the corresponding SFM track using the converted camera slot and the factor measurement.
 
-The explicit key vectors matter because `PackSfmValues` now accepts caller-provided camera and point keys and stores those keys in the `DeviceValues` blocks (`gtsam/slam/cuda/CudaSfmValues.h:46`). `DownloadSfmValues` later reconstructs host `SfmCamera` and `Point3` values using the same block keys (`gtsam/slam/cuda/CudaSfmValues.h:112`).
+The explicit key vectors matter because `PackSfmValues` now accepts caller-provided camera and point keys and stores those keys in the `DeviceValues` blocks. `DownloadSfmValues` later reconstructs host `SfmCamera` and `Point3` values using the same block keys.
 
-The graph wrapper preserves unrelated values by merging CUDA results into the original `Values`: it updates only the downloaded optimized SFM keys and leaves other initial keys untouched (`gtsam/slam/cuda/CudaSfmLevenbergMarquardt.cu:254`). The test `OptimizesGeneralSfmGraphWithArbitraryKeys` covers arbitrary camera/point symbols and an unrelated `Point2` value that survives unchanged (`gtsam/slam/tests/testCudaSfm.cpp:774`).
+The graph wrapper preserves unrelated values by merging CUDA results into the original `Values`: it updates only the downloaded optimized SFM keys and leaves other initial keys untouched. The test `OptimizesGeneralSfmGraphWithArbitraryKeys` covers arbitrary camera/point symbols and an unrelated `Point2` value that survives unchanged.
 
 Current conversion limitations:
 
@@ -87,22 +82,22 @@ These restrictions are deliberate: the CUDA kernels operate on a BAL-style packe
 
 ## LM Loop Behavior
 
-The graph optimizer translates `LevenbergMarquardtParams` into backend params in `ConvertLmParams` (`gtsam/slam/cuda/CudaSfmLevenbergMarquardt.cu:121`). The mapping includes:
+The graph optimizer stores `CudaSfmLevenbergMarquardtParams` directly. These fields drive both the graph wrapper and the low-level `SfmData` backend:
 
 - `maxIterations`;
 - `lambdaInitial`;
-- `lambdaFactor` as the lambda-up factor;
-- reciprocal `lambdaFactor` as the fixed lambda-down factor;
+- `lambdaFactor` for rejected-trial lambda increases;
+- reciprocal `lambdaFactor` for fixed accepted-step lambda decreases;
 - lambda upper/lower bounds;
 - relative, absolute, and absolute-error stopping tolerances;
 - `minModelFidelity`;
 - `useFixedLambdaFactor`;
-- diagonal damping flags and clamp bounds from `dampingParams`;
-- `downloadOptimizedValues = true` for the graph-facing optimizer.
+- diagonal damping flag and clamp bounds;
+- `linearSolver`.
 
-The backend starts by packing values, building the projection batch, and computing the initial objective (`gtsam/slam/cuda/CudaSfmLevenbergMarquardt.cu:303`). It returns early for zero requested iterations, zero dimension, or an initial error already below `errorTol` (`gtsam/slam/cuda/CudaSfmLevenbergMarquardt.cu:340`).
+The backend starts by packing values, building the projection batch, and computing the initial objective. It returns early for zero requested iterations, zero dimension, or an initial error already below `errorTol`.
 
-The solve loop now has an outer accepted-step loop and an inner lambda-search loop (`gtsam/slam/cuda/CudaSfmLevenbergMarquardt.cu:380`). `result.iterations` counts accepted nonlinear iterations. `result.innerIterations` counts linear solve attempts, including rejected lambda trials.
+The solve loop now has an outer accepted-step loop and an inner lambda-search loop. `result.iterations` counts accepted nonlinear iterations. `result.innerIterations` counts linear solve attempts, including rejected lambda trials.
 
 Each inner attempt:
 
@@ -118,18 +113,18 @@ This is the main CPU-LM compatibility improvement. The previous simple behavior 
 
 Lambda behavior:
 
-- With `useFixedLambdaFactor = true`, rejected trials multiply lambda by `lambdaUpFactor`, and accepted trials multiply lambda by `lambdaDownFactor`.
+- With `useFixedLambdaFactor = true`, rejected trials multiply lambda by `lambdaFactor`, and accepted trials multiply lambda by `1.0 / lambdaFactor`.
 - With `useFixedLambdaFactor = false`, rejected trials multiply by an adaptive `currentFactor`, and accepted trials use the cubic model-fidelity update `max(1/3, 1 - pow(2 * modelFidelity - 1, 3))`.
 - Lambda is clamped below by `lambdaLowerBound` after successful decreases, and the search terminates when lambda reaches `lambdaUpperBound`.
 
 Stopping behavior:
 
-- accepted steps call `CheckCudaLmConvergence`, which checks `errorTol`, `relativeErrorTol`, and `absoluteErrorTol` (`gtsam/slam/cuda/CudaSfmLevenbergMarquardt.cu:164`);
+- accepted steps call `CheckCudaLmConvergence`, which checks `errorTol`, `relativeErrorTol`, and `absoluteErrorTol`;
 - failed lambda search stops when lambda reaches the upper bound;
-- very small actual cost change, measured against `relativeErrorTol * currentError`, stops the lambda search (`gtsam/slam/cuda/CudaSfmLevenbergMarquardt.cu:444`);
+- very small actual cost change, measured against `relativeErrorTol * currentError`, stops the lambda search;
 - non-finite current error exits the outer solve loop.
 
-The result records `finalError`, `finalLambda`, accepted steps, inner attempts, and timing metadata at the end of the synchronized solve loop (`gtsam/slam/cuda/CudaSfmLevenbergMarquardt.cu:473`).
+The result records `finalError`, `finalLambda`, accepted steps, inner attempts, and timing metadata at the end of the synchronized solve loop.
 
 ## Linear Solver And Damping Plumbing
 
@@ -137,11 +132,11 @@ There are two solver paths behind the same LM loop.
 
 ### Dense Schur
 
-`CudaSfmDenseSchurSolver` eliminates points and solves a dense camera system. The new overload accepts a precomputed damping diagonal (`gtsam/slam/cuda/CudaSfmDenseSchurSolver.h:23`).
+`CudaSfmDenseSchurSolver` eliminates points and solves a dense camera system. The new overload accepts a precomputed damping diagonal.
 
-When diagonal damping is enabled, the point normal blocks, camera diagonal entries, and point-delta recovery all use `lambda * dampingDiagonal[i]` instead of plain `lambda` (`gtsam/slam/cuda/CudaSfmDenseSchurSolver.cu:240`, `gtsam/slam/cuda/CudaSfmDenseSchurSolver.cu:451`, `gtsam/slam/cuda/CudaSfmDenseSchurSolver.cu:464`). Without a damping diagonal, the path keeps the old identity damping behavior.
+When diagonal damping is enabled, the point normal blocks, camera diagonal entries, and point-delta recovery all use `lambda * dampingDiagonal[i]` instead of plain `lambda`. Without a damping diagonal, the path keeps the old identity damping behavior.
 
-Input checking verifies that the damping diagonal length matches `9 * numCameras + 3 * numPoints` (`gtsam/slam/cuda/CudaSfmDenseSchurSolver.cu:536`).
+Input checking verifies that the damping diagonal length matches `9 * numCameras + 3 * numPoints`.
 
 ### Full Normal Equations
 
@@ -153,21 +148,21 @@ void addDiagonalDamping(double lambda,
                         cudaStream_t stream = nullptr);
 ```
 
-The plain overload adds `lambda` to each diagonal. The scaled overload validates the supplied diagonal size, checks that all matrix diagonal entries exist, and adds `lambda * diagonal[row]` on device (`gtsam/nonlinear/cuda/DeviceSparseNormalEquations.h:78`, `gtsam/nonlinear/cuda/DeviceSparseNormalEquations.cu:105`).
+The plain overload adds `lambda` to each diagonal. The scaled overload validates the supplied diagonal size, checks that all matrix diagonal entries exist, and adds `lambda * diagonal[row]` on device.
 
 ### Hessian Diagonal Helper
 
-`ComputeCudaSfmHessianDiagonal` computes the diagonal of `J^T J` for the current projection batch (`gtsam/slam/cuda/CudaSfmProjectionLinearization.h:27`). It launches over observations, atomically accumulates squared camera and point Jacobian columns into a vector with layout:
+`ComputeCudaSfmHessianDiagonal` computes the diagonal of `J^T J` for the current projection batch. It launches over observations, atomically accumulates squared camera and point Jacobian columns into a vector with layout:
 
 ```text
 [9 values per camera][3 values per point]
 ```
 
-It then clamps every entry to `[minDiagonal, maxDiagonal]` (`gtsam/slam/cuda/CudaSfmProjectionLinearization.cu:335`). This diagonal feeds both dense Schur and full-normal damping when `params.diagonalDamping` is true.
+It then clamps every entry to `[minDiagonal, maxDiagonal]`. This diagonal feeds both dense Schur and full-normal damping when `params.diagonalDamping` is true.
 
 ### Linearized Error-Change Helper
 
-`ComputeCudaSfmLinearizedErrorChange` computes the predicted decrease used for model fidelity (`gtsam/slam/cuda/CudaSfmProjectionLinearization.h:32`). It materializes a projection linearization, evaluates:
+`ComputeCudaSfmLinearizedErrorChange` computes the predicted decrease used for model fidelity. It materializes a projection linearization, evaluates:
 
 ```text
 oldLinearizedError = 0.5 * ||r||^2
@@ -175,15 +170,15 @@ newLinearizedError = 0.5 * ||r + J * delta||^2
 return oldLinearizedError - newLinearizedError
 ```
 
-The implementation reduces block sums on device and then downloads those block sums for the final host reduction (`gtsam/slam/cuda/CudaSfmProjectionLinearization.cu:403`). That makes model-fidelity behavior available now, with a performance cost that can be optimized later.
+The implementation reduces block sums on device and then downloads those block sums for the final host reduction. That makes model-fidelity behavior available now, with a performance cost that can be optimized later.
 
 ## Values Writeback
 
-The CUDA value packer stores cameras and points as two `DeviceValues` blocks with tangent dimensions 9 and 3. For low-level `OptimizeCudaSfm(data, params)`, the default key convention is still `C(i)` and `P(j)` (`gtsam/slam/cuda/CudaSfmValues.h:80`).
+The CUDA value packer stores cameras and points as two `DeviceValues` blocks with tangent dimensions 9 and 3. For low-level `OptimizeCudaSfm(data, params)`, the default key convention is still `C(i)` and `P(j)`.
 
-For graph API calls, conversion passes the original camera and point keys to `PackSfmValues`, so `DownloadSfmValues` returns optimized values under the caller's symbols. `CudaSfmLevenbergMarquardtOptimizer::optimize()` merges those values into a copy of the original `Values`, recomputes `graph().error(merged)`, and installs a new `NonlinearOptimizerState` with the optimized values and accepted iteration count (`gtsam/slam/cuda/CudaSfmLevenbergMarquardt.cu:260`).
+For graph API calls, conversion passes the original camera and point keys to `PackSfmValues`, so `DownloadSfmValues` returns optimized values under the caller's symbols. `CudaSfmLevenbergMarquardtOptimizer::optimize()` merges those values into a copy of the original `Values`, recomputes `graph().error(merged)`, and installs a new `NonlinearOptimizerState` with the optimized values and accepted iteration count.
 
-The low-level params still support `downloadOptimizedValues = false`, which is useful for benchmark runs that only need objective/timing metadata. The test `CanSkipOptimizedValueDownload` covers this behavior (`gtsam/slam/tests/testCudaSfm.cpp:847`).
+The low-level `OptimizeCudaSfmWithoutValueDownload(data, params)` helper skips optimized value download for benchmark runs that only need objective/timing metadata. The public graph optimizer always downloads values so it can merge optimized values back into the optimizer state. The test `CanSkipOptimizedValueDownload` covers the low-level metadata-only behavior.
 
 ## Benchmark Modes
 
@@ -197,16 +192,16 @@ Usage: timeSFMBAL [--colamd] [--profile] [--cuda-structure-only]
                   [--benchmark-action-json FILE] [BALfile ...]
 ```
 
-The relevant option parsing is in `timing/timeSFMBAL.cpp:230`.
+The relevant option parsing is in `timing/timeSFMBAL.cpp`.
 
 ### `--cuda-lm`
 
-`--cuda-lm` runs the low-level `SfmData` backend directly (`timing/timeSFMBAL.cpp:432`). It:
+`--cuda-lm` runs the low-level `SfmData` backend directly. It:
 
 - reads the BAL file into `SfmData` before timing;
-- sets backend params to `maxIterations = 20`, `relativeErrorTol = 0.01`, and `downloadOptimizedValues = false`;
+- creates `CudaSfmLevenbergMarquardtParams` from the default CUDA backend settings, then applies BAL benchmark settings `maxIterations = 20`, `relativeErrorTol = 0.01`, and the selected CUDA linear solver;
 - selects `DenseSchur` by default, or `CudssFullNormal` when `--cuda-linear-solver cudss-full-normal` is passed;
-- measures wall time around `OptimizeCudaSfm(db, params)`;
+- measures wall time around `OptimizeCudaSfmWithoutValueDownload(db, params)` so optimized value download is skipped;
 - prints wall time, selected solver, backend solve-loop time, backend measured total, setup breakdown, initial/final error, accepted iterations, and accepted steps.
 
 Example command structure:
@@ -231,11 +226,9 @@ Initial error: <value>
 Final error: <value>, iterations: <accepted>, accepted: <accepted>
 ```
 
-No new benchmark result numbers are embedded in the current diff or comments. An older summary in `docs/frank_cuda_ba_benchmark_update.md` reports previous native CUDA BA timings, but it predates this graph-API benchmark mode.
-
 ### `--cuda-lm-graph`
 
-`--cuda-lm-graph` runs the public graph optimizer wrapper (`timing/timeSFMBAL.cpp:551`). It builds the normal `GeneralSFMFactor` graph and initial `Values`, then times `CudaSfmLevenbergMarquardtOptimizer` construction plus `optimize()` inside `runCudaGraphLm` (`timing/timeSFMBAL.cpp:110`).
+`--cuda-lm-graph` runs the public graph optimizer wrapper in `timing/timeSFMBAL.cpp`. It builds the normal `GeneralSFMFactor` graph and initial `Values`, creates `CudaSfmLevenbergMarquardtParams` from `CudaSfmLevenbergMarquardtParams::CeresDefaults()` plus the selected CUDA linear solver, then times `CudaSfmLevenbergMarquardtOptimizer` construction plus `optimize()` inside `runCudaGraphLm`.
 
 Compared with `--cuda-lm`, this mode includes:
 
@@ -245,7 +238,7 @@ Compared with `--cuda-lm`, this mode includes:
 - final `graph.error()` recomputation for the optimizer state;
 - reporting of graph API overhead over the backend measured total.
 
-It does not include BAL parsing in the timed region. It also does not include the `buildGeneralSfmGraph` and `buildGeneralSfmInitial` calls for the measured dataset, because those happen before `runCudaGraphLm` starts its timer (`timing/timeSFMBAL.cpp:543`).
+It does not include BAL parsing in the timed region. It also does not include the `buildGeneralSfmGraph` and `buildGeneralSfmInitial` calls for the measured dataset, because those happen before `runCudaGraphLm` starts its timer.
 
 Example command structure:
 
@@ -291,25 +284,28 @@ bookkeeping are included around the solve.
 
 ### Warmup Semantics
 
-`--cuda-warmup-file FILE` is accepted only with `--cuda-lm` or `--cuda-lm-graph` (`timing/timeSFMBAL.cpp:326`). Warmup runs once per process, before the first measured dataset, and its timing is explicitly printed as ignored (`timing/timeSFMBAL.cpp:443`, `timing/timeSFMBAL.cpp:553`).
+`--cuda-warmup-file FILE` is accepted only with `--cuda-lm` or `--cuda-lm-graph`. Warmup runs once per process, before the first measured dataset, and its timing is explicitly printed as ignored.
 
 The warmup mode uses the same CUDA solver selection as the measured run. For `--cuda-lm`, the warmup calls the low-level backend on `SfmData`. For `--cuda-lm-graph`, it builds a graph and initial values for the warmup file, then calls the graph optimizer wrapper.
 
 ### Option Restrictions
 
-The CUDA LM modes are mutually exclusive with each other, `--cuda-structure-only`, and `--benchmark-action-json` (`timing/timeSFMBAL.cpp:305`). `--cuda-linear-solver` and `--cuda-warmup-file` are only valid when one CUDA LM mode is active (`timing/timeSFMBAL.cpp:323`). If CUDA or cuDSS support is missing, the binary reports that both CUDA LM modes require `GTSAM_ENABLE_CUDA=ON` and `GTSAM_ENABLE_CUDSS=ON` (`timing/timeSFMBAL.cpp:505`).
+The CUDA LM modes are mutually exclusive with each other, `--cuda-structure-only`, and `--benchmark-action-json`. `--cuda-linear-solver` and `--cuda-warmup-file` are only valid when one CUDA LM mode is active. If CUDA or cuDSS support is missing, the binary reports that both CUDA LM modes require `GTSAM_ENABLE_CUDA=ON` and `GTSAM_ENABLE_CUDSS=ON`.
 
 ## Test Coverage
 
 The CUDA SFM test additions cover the new behavior in `gtsam/slam/tests/testCudaSfm.cpp`:
 
-- `ComputesClampedHessianDiagonal` checks the GPU Hessian diagonal against host accumulation and clamp logic (`gtsam/slam/tests/testCudaSfm.cpp:446`).
-- `ComputesLinearizedErrorChange` verifies old/new linearized errors and predicted decrease (`gtsam/slam/tests/testCudaSfm.cpp:504`).
-- `ConvertsGeneralSfmFactorsWithArbitraryKeys` validates graph conversion, arbitrary camera/point keys, measurements, cameras, and points (`gtsam/slam/tests/testCudaSfm.cpp:725`).
-- `OptimizesGeneralSfmGraphWithArbitraryKeys` exercises the public optimizer wrapper, arbitrary symbols, retained unrelated values, and `innerIterations >= iterations` (`gtsam/slam/tests/testCudaSfm.cpp:774`).
-- `ReducesTinyBalErrorAndDownloadsValues` still verifies that low-level CUDA LM reduces error and returns finite downloaded host values (`gtsam/slam/tests/testCudaSfm.cpp:821`).
-- `CanSkipOptimizedValueDownload` covers benchmark-oriented metadata-only output (`gtsam/slam/tests/testCudaSfm.cpp:847`).
-- `MatchesFullNormalEquationDeltaWithDiagonalDamping` checks that dense Schur and full-normal cuDSS deltas match when using the same clamped damping diagonal (`gtsam/slam/tests/testCudaSfm.cpp:904`).
+- `MapsLinearSolverStringAliases` verifies the public params string setter/getter and uppercase underscore aliases.
+- `ProvidesLmDefaults` verifies CUDA params legacy and Ceres defaults.
+- `ExposesCudaParams` verifies that a graph optimizer constructed with `CudaSfmLevenbergMarquardtParams` exposes those params through `params()`.
+- `ComputesClampedHessianDiagonal` checks the GPU Hessian diagonal against host accumulation and clamp logic.
+- `ComputesLinearizedErrorChange` verifies old/new linearized errors and predicted decrease.
+- `ConvertsGeneralSfmFactorsWithArbitraryKeys` validates graph conversion, arbitrary camera/point keys, measurements, cameras, and points.
+- `OptimizesGeneralSfmGraphWithArbitraryKeys` exercises the public optimizer wrapper, arbitrary symbols, retained unrelated values, and `innerIterations >= iterations`.
+- `ReducesTinyBalErrorAndDownloadsValues` still verifies that low-level CUDA LM reduces error and returns finite downloaded host values.
+- `CanSkipOptimizedValueDownload` covers benchmark-oriented metadata-only output.
+- `MatchesFullNormalEquationDeltaWithDiagonalDamping` checks that dense Schur and full-normal cuDSS deltas match when using the same clamped damping diagonal.
 
 Existing tests continue to cover CSR validation, cheirality behavior when enabled, mismatched value shapes, plain damping, and high-degree tracks.
 
@@ -330,7 +326,7 @@ Likely future work:
 
 - support whitening or weighted residuals so non-unit noise models can enter the CUDA backend;
 - add prior/fixed-variable handling for graph API parity;
-- reduce duplicate host-to-device work noted in `OptimizeCudaSfm`, where values and projection batches upload overlapping data (`gtsam/slam/cuda/CudaSfmLevenbergMarquardt.cu:310`);
+- reduce duplicate host-to-device work noted in `OptimizeCudaSfm`, where values and projection batches upload overlapping data;
 - optimize `ComputeCudaSfmLinearizedErrorChange` to avoid repeated full linearization and host block-sum downloads during lambda retries;
 - add benchmark harness support for repeats/medians for the new CUDA modes, rather than relying on external scripts;
 - audit the adaptive non-fixed lambda path against CPU LM if exact `useFixedLambdaFactor=false` behavior becomes a compatibility requirement;
