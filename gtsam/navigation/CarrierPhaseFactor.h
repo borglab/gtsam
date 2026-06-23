@@ -100,7 +100,7 @@ class GTSAM_EXPORT CarrierPhaseFactor
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(CarrierPhaseFactor::Base);
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar& BOOST_SERIALIZATION_NVP(measurement_);
     ar& BOOST_SERIALIZATION_NVP(satPos_);
     ar& BOOST_SERIALIZATION_NVP(satClkBias_);
@@ -201,7 +201,7 @@ class GTSAM_EXPORT CarrierPhaseFactorArm
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(CarrierPhaseFactorArm::Base);
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar& BOOST_SERIALIZATION_NVP(measurement_);
     ar& BOOST_SERIALIZATION_NVP(satPos_);
     ar& BOOST_SERIALIZATION_NVP(satClkBias_);
@@ -297,8 +297,7 @@ class GTSAM_EXPORT DoubleDifferenceCarrierPhaseFactor
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(
-        DoubleDifferenceCarrierPhaseFactor::Base);
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar& boost::serialization::make_nvp("cpRovRef_", dd_.rovRef);
     ar& boost::serialization::make_nvp("cpBaseRef_", dd_.baseRef);
     ar& boost::serialization::make_nvp("cpRovTarget_", dd_.rovTarget);
@@ -390,8 +389,7 @@ class GTSAM_EXPORT DoubleDifferenceCarrierPhaseFactorArm
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(
-        DoubleDifferenceCarrierPhaseFactorArm::Base);
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar& boost::serialization::make_nvp("cpRovRef_", dd_.rovRef);
     ar& boost::serialization::make_nvp("cpBaseRef_", dd_.baseRef);
     ar& boost::serialization::make_nvp("cpRovTarget_", dd_.rovTarget);

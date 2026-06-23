@@ -184,11 +184,6 @@ public:
       ar & boost::serialization::make_nvp("value", value_);
 	}
 #endif
-
-  // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
-  constexpr static const bool NeedsToAlign = (sizeof(T) % 16) == 0;
-public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
 };
 
 /// use this macro instead of BOOST_CLASS_EXPORT for GenericValues

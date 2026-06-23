@@ -34,7 +34,9 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/slam/TriangulationFactor.h>
 
+#include <map>
 #include <optional>
+#include <stdexcept>
 
 namespace gtsam {
 
@@ -757,6 +759,34 @@ TriangulationResult triangulateSafe(const CameraSet<CAMERA>& cameras,
       // point is behind one of the cameras: can be the case of close-to-parallel cameras or may depend on outliers
       return TriangulationResult::BehindCamera();
     }
+}
+
+/// Batch triangulation: triangulate multiple (possibly incomplete) tracks.
+/// Each track is a map from camera index to 2D measurement. Cameras missing
+/// from a track are simply skipped, supporting incomplete visibility.
+template <class CAMERA>
+std::vector<TriangulationResult> triangulateSafe(
+    const CameraSet<CAMERA>& cameras,
+    const std::vector<std::map<size_t, typename CAMERA::Measurement>>& tracks,
+    const TriangulationParameters& params) {
+  std::vector<TriangulationResult> results;
+  results.reserve(tracks.size());
+  for (const auto& track : tracks) {
+    CameraSet<CAMERA> trackCameras;
+    typename CAMERA::MeasurementVector measurements;
+    trackCameras.reserve(track.size());
+    measurements.reserve(track.size());
+    for (const auto& [cameraIndex, measurement] : track) {
+      if (cameraIndex >= cameras.size()) {
+        throw std::out_of_range(
+            "triangulateSafe(batch): cameraIndex out of range for CameraSet");
+      }
+      trackCameras.push_back(cameras.at(cameraIndex));
+      measurements.push_back(measurement);
+    }
+    results.push_back(triangulateSafe(trackCameras, measurements, params));
+  }
+  return results;
 }
 
 // Vector of Cameras - used by the Python/MATLAB wrapper
