@@ -94,7 +94,7 @@ Please refer to the template project and the corresponding tutorial available [h
 
 ## Wheels
 
-GTSAM Python wheels are built in CI through two cibuildwheel workflows that share the same matrix of Python 3.10--3.13 targets on Linux x86_64, Linux aarch64, macOS x86_64, and macOS arm64. Both scripts first configure the wrapper with `cmake -DGTSAM_BUILD_PYTHON=1` so that `setup.py` exists for cibuildwheel, invoke `.github/scripts/python_wheels/cibw_before_all.sh`, then run `.github/scripts/python_wheels/build_wheels.sh` before storing the artifacts and publishing them with `pypa/gh-action-pypi-publish`.
+GTSAM Python wheels are built in CI through two cibuildwheel workflows that share the same matrix of Python 3.11--3.14 targets on Linux x86_64, Linux aarch64, macOS x86_64, and macOS arm64. Both scripts first configure the wrapper with `cmake -DGTSAM_BUILD_PYTHON=1` so that `setup.py` exists for cibuildwheel, invoke `.github/scripts/python_wheels/cibw_before_all.sh`, then run `.github/scripts/python_wheels/build_wheels.sh` before storing the artifacts and publishing them with `pypa/gh-action-pypi-publish`.
 
 1. **Develop wheels** (`.github/workflows/build-cibw.yml`) run on every push to `develop` (and by manual dispatch). The workflow injects `DEVELOP=1` and a timestamp so the generated version string becomes a `gtsam-develop` build, and it continues to publish the built wheels via the publish action at the end of the job. Use this workflow as a staging pipeline for the most recent development snapshots.
 
@@ -102,4 +102,6 @@ GTSAM Python wheels are built in CI through two cibuildwheel workflows that shar
 
 ### Cleaning develop wheels
 
-If the `gtsam-develop` project on PyPI grows too large (PyPI enforces a 10 GB quota for each package), run `.github/scripts/python_wheels/cleanup_gtsam_develop.sh` to drop every release except the most recent one. You can pass your PyPI username (`bash .github/scripts/python_wheels/cleanup_gtsam_develop.sh <username>`) or let the script prompt for it, but the account must be an owner or maintainer of `gtsam-develop`. The script always confirms before deleting, then calls `python3 -m pypi_cleanup` with `--leave-most-recent-only --do-it`, so treat this as a permanent cleanup that should only be used when you are about to exceed PyPI's size limit.
+After a successful develop-wheel upload, `.github/workflows/build-cibw.yml` can automatically prune `gtsam-develop` on PyPI. Configure the repository secrets `PYPI_CLEANUP_USERNAME` and `PYPI_CLEANUP_PASSWORD` for a PyPI owner account on `gtsam-develop`; if either secret is missing, the workflow skips cleanup. The cleanup keeps the five most recent PyPI releases by upload time and deletes older release versions.
+
+For a manual dry run, install `pypi-cleanup` and run `bash .github/scripts/python_wheels/cleanup_gtsam_develop.sh --dry-run`. To delete manually, run `bash .github/scripts/python_wheels/cleanup_gtsam_develop.sh --keep 5 <username>` and provide the PyPI password when prompted, or set `PYPI_CLEANUP_PASSWORD` in the environment. Treat deletion as permanent cleanup for staying below PyPI's project size limit.
