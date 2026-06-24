@@ -59,7 +59,7 @@ namespace noiseModel {
  * Name                Symbol
  * Graduated Loss      \phi(x,\mu)
  * Graduated Weight    \w(x,\mu)
- * The control parameter \mu transitions the loss from convex to its original robust form.
+ * The control parameter \mu in [0, 1] transitions the loss from convex (\mu=0)to its original robust form (\mu=1).
  * This is used by continuation-style algorithms (GNC, riSAM) to modify the underlying problem structure.
  */
 // clang-format on
@@ -244,8 +244,8 @@ class GTSAM_EXPORT Fair : public Base {
  * - Derivative \phi(x)          = x       if |x|<k, k sgn(x)         otherwise
  * - Weight     w(x) = \phi(x)/x = 1       if |x|<k, k/|x|            otherwise
  * 
- *  Huber loss is graduated from Convex: \infty -> Robust: 1
- * - Loss, Derivative, and Weight computed by scaling k by control parameter mu
+ *  Huber loss is graduated by scaling k by \lambda which is 
+ *  inversely proportional to \mu.
  */
 class GTSAM_EXPORT Huber : public Base {
  protected:
@@ -294,8 +294,8 @@ class GTSAM_EXPORT Huber : public Base {
  * - Derivative \phi(x) = (k²x)/(x²+k²)
  * - Weight     w(x) = \phi(x)/x = k²/(x²+k²)
  *
- *  Cauchy loss is graduated from Convex: \infty -> Robust: 1
- * - Loss, Derivative, and Weight computed by scaling k by control parameter mu
+ *  Cauchy loss is graduated by scaling k by \lambda which is 
+ *  inversely proportional to \mu.
  */
 class GTSAM_EXPORT Cauchy : public Base {
  protected:
@@ -340,8 +340,8 @@ class GTSAM_EXPORT Cauchy : public Base {
  * - Derivative \f$ \phi(x) = x(1-x²/c²)² if |x|<c \f$,  0   otherwise
  * - Weight     \f$ w(x) = \phi(x)/x = (1-x²/c²)² \f$ if |x|<c,  0   otherwise
  * 
- *  Tukey loss is graduated from Convex: \infty -> Robust: 1
- * - Loss, Derivative, and Weight computed by scaling c by control parameter mu
+ *  Tukey loss is graduated by scaling k by \lambda which is 
+ *  inversely proportional to \mu.
  */
 class GTSAM_EXPORT Tukey : public Base {
  protected:
@@ -385,9 +385,9 @@ class GTSAM_EXPORT Tukey : public Base {
  * - Loss       \f$ \rho(x) = -0.5 c² (exp(-x²/c²) - 1) \f$
  * - Derivative \f$ \phi(x) = x exp(-x²/c²) \f$
  * - Weight     \f$ w(x) = \phi(x)/x = exp(-x²/c²) \f$
- * 
- *  Welsch loss is graduated from Convex: \infty -> Robust: 1
- * - Loss, Derivative, and Weight computed by scaling c by control parameter mu
+ *
+ *  Welsch loss is graduated by scaling k by \lambda which is
+ *  inversely proportional to \mu.
  */
 class GTSAM_EXPORT Welsch : public Base {
  protected:
@@ -436,10 +436,10 @@ class GTSAM_EXPORT Welsch : public Base {
  *
  * Geman-McClure loss has two graduated forms
  * 
- * STANDARD [1] is graduated from Convex: \infty -> Robust: 1 
- * - Loss, Derivative, and Weight computed by scaling c² by control parameter mu
+ * STANDARD [1] is graduated by scaling k by \lambda which is
+ * inversely proportional to \mu.
  * 
- * SCALE_INVARIANT [2] is graduated from Convex: 0.0 -> Robust: 1.0
+ * SCALE_INVARIANT [2] is graduated according to the following form.
  * - Loss       \rho(x) = 0.5 (c²x²)/(c²+(x²)^\mu)
  * - Derivative \phi(x) = x(c²(c²+(x²)^\mu * (1-\mu)))/(c²+(x²)^\mu)²
  * - Weight     w(x) = \phi(x)/x = (c²(c²+(x²)^\mu * (1-\mu)))/(c²+(x²)^\mu)²
@@ -511,23 +511,27 @@ class GTSAM_EXPORT GemanMcClure : public Base {
  *
  *  TLS has three graduated forms
  *
- *  STANDARD TLS is graduated from Convex: \infty -> Robust: 1
- * - Loss, Derivative, and Weight computed by scaling c by control parameter mu
+ *  STANDARD TLS loss is graduated by scaling k by \lambda which is
+ *  inversely proportional to \mu.
  *
- *  GNC_LINEAR is graduated from Convex: 0 -> Robust \infty
- *  Let LB = c^2 (\mu / (\mu + 1)) and UB =  c^2 ((\mu + 1) / \mu)
+ *  GNC_LINEAR TLS loss is graduated according to the following forms
+ *  Let \lambda = 1 / \mu
+ *      LB = c^2 (\lambda / (\lambda + 1)) 
+ *      UB =  c^2 ((\lambda + 1) / \lambda)
  * - Loss  \rho(x,\mu) = 0.5 * x^2 if x < LB
- *                     = c|x|\sqrt(\mu(\mu+1))-\mu(c^2 + r^2) if LB < x < UB
+ *                     = c|x|\sqrt(\lambda(\lambda+1))-\lambda(c^2 + r^2) if LB < x < UB
  *                     = c^2 if UB < x
  * - Weight w(x, \mu)  = 1 if x < LB
- *                     = \sqrt(c^2 \mu ((\mu + 1.0) / x^2)) - \mu if LB < x < UB
+ *                     = \sqrt(c^2 \lambda ((\lambda + 1.0) / x^2)) - \lambda if LB < x < UB
  *                     = 0 if UB < x
  *
- * GNC_SUPERLINEAR is graduated from Convex: 0 -> Robust \infty
- *  Let LB = c^2 and UB = c^2 (\mu + 1)^2 / \mu^2
+ * GNC_SUPERLINEAR is graduated according to the following forms
+ *  Let \lambda = 1 / \mu 
+ *      LB = c^2
+ *      UB = c^2\lambda + 1)^2 / \lambda^2
  * - Loss  \rho(x, \mu) = (not formally defined)
  * - Weight w(x, \mu)   = 1 if x < LB
- *                      = sqrt(c^2 / x^2) * (\mu + 1.0) - \mu
+ *                      = sqrt(c^2 / x^2) * (\lambda + 1.0) - \lambda
  */
 class GTSAM_EXPORT TruncatedLeastSquares : public Base {
  public:
@@ -590,8 +594,8 @@ class GTSAM_EXPORT TruncatedLeastSquares : public Base {
  * - Derivative \phi(x) = 2c²x/(x²+c)²
  * - Weight     w(x) = \phi(x)/x = 2c²/(x²+c)²  if x²>c,   1  otherwise
  * 
- *  DCS loss is graduated from Convex: \infty -> Robust: 1
- * - Loss, Derivative, and Weight computed by scaling c by control parameter mu
+ *  DCS loss is graduated by scaling k by \lambda which is 
+ *  inversely proportional to \mu.
  */
 class GTSAM_EXPORT DCS : public Base {
  public:
