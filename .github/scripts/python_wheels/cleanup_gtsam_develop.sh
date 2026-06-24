@@ -29,6 +29,7 @@ Options
 Environment
   PYPI_CLEANUP_USERNAME  PyPI user name used when no positional user is supplied
   PYPI_CLEANUP_PASSWORD  PyPI password read by pypi-cleanup for noninteractive use
+  PYPI_CLEANUP_TOTP_SECRET  Optional base32 TOTP seed for PyPI two-factor login
 
 Examples
   $ $(basename "$0") --dry-run
@@ -40,6 +41,34 @@ EOF
 die() {
   echo "error: $*" >&2
   exit 1
+}
+
+run_pypi_cleanup() {
+  if [[ -z "${PYPI_CLEANUP_TOTP_SECRET:-}" ]]; then
+    python3 -m pypi_cleanup.__init__ "$@"
+    return
+  fi
+
+  local totp_code
+  totp_code=$(python3 - <<'PY'
+import base64
+import hashlib
+import hmac
+import os
+import struct
+import time
+
+secret = os.environ["PYPI_CLEANUP_TOTP_SECRET"].replace(" ", "").upper()
+secret += "=" * ((8 - len(secret) % 8) % 8)
+key = base64.b32decode(secret, casefold=True)
+counter = int(time.time()) // 30
+digest = hmac.new(key, struct.pack(">Q", counter), hashlib.sha1).digest()
+offset = digest[-1] & 0x0F
+code = struct.unpack(">I", digest[offset:offset + 4])[0] & 0x7FFFFFFF
+print(f"{code % 1000000:06d}")
+PY
+)
+  printf '%s\n' "$totp_code" | python3 -m pypi_cleanup.__init__ "$@"
 }
 
 POSITIONAL_USER=""
@@ -198,7 +227,7 @@ fi
 
 if (( DRY_RUN )); then
   echo "Running pypi_cleanup in query-only mode..."
-  python3 -m pypi_cleanup.__init__ "${CLEANUP_ARGS[@]}" --query-only
+  run_pypi_cleanup "${CLEANUP_ARGS[@]}" --query-only
   echo "Dry run complete."
   exit 0
 fi
@@ -232,6 +261,6 @@ if (( ! ASSUME_YES )); then
 fi
 
 echo "Running pypi_cleanup for user '$PYPI_USER'..."
-python3 -m pypi_cleanup.__init__ "${CLEANUP_ARGS[@]}" --do-it --yes -u "$PYPI_USER"
+run_pypi_cleanup "${CLEANUP_ARGS[@]}" --do-it --yes -u "$PYPI_USER"
 
 echo "Done."
