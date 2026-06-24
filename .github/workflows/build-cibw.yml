@@ -187,6 +187,7 @@ jobs:
     needs: build_wheels
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       id-token: write
     steps:
       - name: Download Artifacts
@@ -201,3 +202,24 @@ jobs:
           verbose: true
           packages-dir: dist/
           # repository-url: https://test.pypi.org/legacy/
+
+      - name: Checkout cleanup script
+        uses: actions/checkout@v6
+
+      - name: Set up Python for cleanup
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Clean old develop releases on PyPI
+        env:
+          PYPI_CLEANUP_USERNAME: ${{ secrets.PYPI_CLEANUP_USERNAME }}
+          PYPI_CLEANUP_PASSWORD: ${{ secrets.PYPI_CLEANUP_PASSWORD }}
+        run: |
+          if [ -z "$PYPI_CLEANUP_USERNAME" ] || [ -z "$PYPI_CLEANUP_PASSWORD" ]; then
+            echo "Skipping PyPI cleanup because PYPI_CLEANUP_USERNAME or PYPI_CLEANUP_PASSWORD is not configured."
+            exit 0
+          fi
+
+          python3 -m pip install pypi-cleanup==0.1.10
+          bash .github/scripts/python_wheels/cleanup_gtsam_develop.sh --keep 5 --yes
