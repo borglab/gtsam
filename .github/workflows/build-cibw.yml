@@ -215,6 +215,7 @@ jobs:
         env:
           PYPI_CLEANUP_USERNAME: ${{ secrets.PYPI_CLEANUP_USERNAME }}
           PYPI_CLEANUP_PASSWORD: ${{ secrets.PYPI_CLEANUP_PASSWORD }}
+          PYPI_CLEANUP_TOTP_SECRET: ${{ secrets.PYPI_CLEANUP_TOTP_SECRET }}
         run: |
           if [ -z "$PYPI_CLEANUP_USERNAME" ] || [ -z "$PYPI_CLEANUP_PASSWORD" ]; then
             echo "Skipping PyPI cleanup because PYPI_CLEANUP_USERNAME or PYPI_CLEANUP_PASSWORD is not configured."
