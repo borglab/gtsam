@@ -106,6 +106,13 @@ virtual class EssentialTransferFactorK : gtsam::NoiseModelFactor {
                            const gtsam::noiseModel::Base* model = nullptr);
 };
 
+#include <gtsam/sfm/SelfCalibrationFactor.h>
+virtual class SelfCalibrationFactor : gtsam::NoiseModelFactor {
+  SelfCalibrationFactor(gtsam::Key fi_key, gtsam::Key fj_key, const gtsam::Matrix3& F,
+               const gtsam::Vector2& pp_i, const gtsam::Vector2& pp_j,
+               const gtsam::noiseModel::Base* model = nullptr);
+};
+
 #include <gtsam/sfm/ShonanFactor.h>
 
 virtual class ShonanFactor3 : gtsam::NoiseModelFactor {
