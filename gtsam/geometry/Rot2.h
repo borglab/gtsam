@@ -283,7 +283,7 @@ struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
 
   /**
    * Return row-space QCQP equality constraints A, b such that
-   * trace(X' A X) = b. For D=1 these are the lifted SO(2) constraints in
+   * trace(x_i' A x_i) = b[j]. For D=1 these are the lifted SO(2) constraints in
    * column-major coordinates. For D>=2 the same 2-by-2 constraints enforce
    * row orthonormality.
    */
@@ -291,8 +291,7 @@ struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
   static std::vector<std::pair<Matrix, double>> QcqpConstraints() {
     if constexpr (D == 1) {
       // The homogenized Rot2 lifted vector is
-      // x = [1, r00, r10, r01, r11]. The quadratic form x^T A x therefore
-      // stores the quadratic monomials used by the Julia SO(2) prototype.
+      // x = [1, r00, r10, r01, r11]. 
       std::vector<std::pair<Matrix, double>> constraints;
       constraints.reserve(5);
 
