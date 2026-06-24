@@ -192,7 +192,9 @@ virtual class Welsch: gtsam::noiseModel::mEstimator::Base {
 
 virtual class GemanMcClure: gtsam::noiseModel::mEstimator::Base {
   GemanMcClure(double c);
-  GemanMcClure(double c, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
+  GemanMcClure(double c,
+    gtsam::noiseModel::mEstimator::GemanMcClure::GradScheme graduation,
+    gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
   static gtsam::noiseModel::mEstimator::GemanMcClure* Create(double c);
 
   // enabling serialization functionality
@@ -204,7 +206,10 @@ virtual class GemanMcClure: gtsam::noiseModel::mEstimator::Base {
 
 virtual class TruncatedLeastSquares: gtsam::noiseModel::mEstimator::Base {
   TruncatedLeastSquares(double c);
-  TruncatedLeastSquares(double c, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
+  TruncatedLeastSquares(
+      double c,
+      gtsam::noiseModel::mEstimator::TruncatedLeastSquares::GradScheme graduation,
+      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
   static gtsam::noiseModel::mEstimator::TruncatedLeastSquares* Create(double c);
   static gtsam::noiseModel::mEstimator::TruncatedLeastSquares* Create(
       double c, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
@@ -268,11 +273,15 @@ virtual class AsymmetricCauchy: gtsam::noiseModel::mEstimator::Base {
 virtual class Custom: gtsam::noiseModel::mEstimator::Base {
   Custom(gtsam::noiseModel::mEstimator::CustomWeightFunction weight,
          gtsam::noiseModel::mEstimator::CustomLossFunction loss,
+         gtsam::noiseModel::mEstimator::CustomGraduatedWeightFunction weight,
+         gtsam::noiseModel::mEstimator::CustomGraduatedLossFunction loss,
          gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight,
          std::string name);
   static gtsam::noiseModel::mEstimator::Custom* Create(
       gtsam::noiseModel::mEstimator::CustomWeightFunction weight,
       gtsam::noiseModel::mEstimator::CustomLossFunction loss,
+      gtsam::noiseModel::mEstimator::CustomGraduatedWeightFunction weight,
+      gtsam::noiseModel::mEstimator::CustomGraduatedLossFunction loss,
       gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight,
       std::string name);
 
