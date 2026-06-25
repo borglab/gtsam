@@ -5,7 +5,7 @@
 import sys
 import os
 
-if sys.platform == "win32" and hasattr(os, "add_dll_directory"):
+if sys.platform == "win32":
     os.add_dll_directory(os.path.dirname(os.path.abspath(__file__)))
 
 from gtsam.utils import findExampleDataFile
