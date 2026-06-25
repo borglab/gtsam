@@ -115,9 +115,6 @@ struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
 #endif
   }
 #endif
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 }  // namespace gtsam

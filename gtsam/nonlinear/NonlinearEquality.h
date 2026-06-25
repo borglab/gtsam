@@ -187,8 +187,6 @@ class NonlinearEquality: public NonlinearEqualityConstraint {
 
   /// @}
 
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
-
  private:
 
 #if GTSAM_ENABLE_BOOST_SERIALIZATION  ///
@@ -292,8 +290,6 @@ class NonlinearEquality1: public NonlinearEqualityConstraint {
     traits<T>::Print(value_, "Value");
   }
 
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
-
  private:
 
 #if GTSAM_ENABLE_BOOST_SERIALIZATION  ///
@@ -372,8 +368,6 @@ class NonlinearEquality2 : public NonlinearEqualityConstraint {
       return evaluateError(x1, x2);
     }
   }
-
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION

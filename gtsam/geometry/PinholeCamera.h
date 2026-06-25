@@ -333,9 +333,6 @@ private:
     ar & BOOST_SERIALIZATION_NVP(K_);
   }
 #endif
-
-public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 // manifold traits
