@@ -100,12 +100,6 @@ struct GTSAM_EXPORT PreintegratedRotationParams {
     }
   }
 #endif
-
-#ifdef GTSAM_USE_QUATERNIONS
-  // Align if we are using Quaternions
-public:
-	GTSAM_MAKE_ALIGNED_OPERATOR_NEW
-#endif
 };
 
 /**
@@ -237,12 +231,6 @@ class GTSAM_EXPORT PreintegratedRotation {
     ar& BOOST_SERIALIZATION_NVP(deltaRij_);
     ar& BOOST_SERIALIZATION_NVP(delRdelBiasOmega_);
   }
-#endif
-
-#ifdef GTSAM_USE_QUATERNIONS
-  // Align if we are using Quaternions
-  public:
-	  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 #endif
 };
 

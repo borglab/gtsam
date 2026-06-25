@@ -202,9 +202,6 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
     }
 #endif
-
-  public:
-    GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
   /// traits

@@ -183,9 +183,6 @@ class GTSAM_EXPORT PreintegrationBase {
     ar & BOOST_SERIALIZATION_NVP(deltaTij_);
   }
 #endif
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 }  /// namespace gtsam

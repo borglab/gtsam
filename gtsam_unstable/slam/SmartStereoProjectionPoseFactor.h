@@ -50,8 +50,6 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionPoseFactor
   std::vector<std::shared_ptr<Cal3_S2Stereo>> K_all_;
 
  public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   /// shorthand for base class type
   typedef SmartStereoProjectionFactor Base;
 

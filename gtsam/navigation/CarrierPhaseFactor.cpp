@@ -6,8 +6,6 @@
 
 #include "CarrierPhaseFactor.h"
 
-#include <limits>
-
 namespace gtsam {
 
 using gnss::C_LIGHT;
@@ -48,18 +46,17 @@ Vector CarrierPhaseFactor::evaluateError(
     OptionalMatrixType HreceiverClockBias,
     OptionalMatrixType Hambiguity) const {
   // error = range + c*(dt_u - dt_s) + ambiguity - measurement
-  const Vector3 position_difference = receiverPosition - satPos_;
-  const double range = position_difference.norm();
+  // Sagnac-corrected geodist keeps the geometry consistent with the DD factors.
+  Point3 e;
+  Matrix13 H_geo;
+  const double range =
+      gnss::geodist(satPos_, receiverPosition, e, HreceiverPos ? &H_geo : nullptr);
   const double rho =
       range + C_LIGHT * (receiverClockBias - satClkBias_) + ambiguity;
   const double error = rho - measurement_;
 
   if (HreceiverPos) {
-    if (range < std::numeric_limits<double>::epsilon()) {
-      *HreceiverPos = Matrix13::Zero();
-    } else {
-      *HreceiverPos = (position_difference / range).transpose();
-    }
+    *HreceiverPos = H_geo;
   }
 
   if (HreceiverClockBias) {
@@ -130,19 +127,17 @@ Vector CarrierPhaseFactorArm::evaluateError(
       arm_.antennaPosition(pose, H_pose ? &frame : nullptr);
 
   // error = range + c*(dt_u - dt_s) + ambiguity - measurement
-  const Vector3 position_difference = antennaPos - satPos_;
-  const double range = position_difference.norm();
+  // Sagnac-corrected geodist keeps the geometry consistent with the DD factors.
+  Point3 e;
+  Matrix13 H_antenna;
+  const double range =
+      gnss::geodist(satPos_, antennaPos, e, H_pose ? &H_antenna : nullptr);
   const double rho =
       range + C_LIGHT * (receiverClockBias - satClkBias_) + ambiguity;
   const double error = rho - measurement_;
 
   if (H_pose) {
-    if (range < std::numeric_limits<double>::epsilon()) {
-      *H_pose = Matrix16::Zero();
-    } else {
-      const Matrix13 H_antenna = (position_difference / range).transpose();
-      *H_pose = arm_.antennaPoseJacobian(H_antenna, frame);
-    }
+    *H_pose = arm_.antennaPoseJacobian(H_antenna, frame);
   }
 
   if (HreceiverClockBias) {

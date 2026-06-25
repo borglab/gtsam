@@ -276,7 +276,17 @@
    Point3 expectedT(2.38461, -2.31289, -0.156011);
    EXPECT(assert_equal(expectedT, T.translation(), 1e-5));
  }
- 
+
+ // *************************************************************************
+ // EstimateState divides by dt = t2 - t1; identical timestamps must throw
+ // instead of producing NaN/inf velocity.
+ TEST(GPSData, EstimateStateZeroDt) {
+   Point3 NED1(0, 0, 0);
+   Point3 NED2(1, 2, 3);
+   CHECK_EXCEPTION(GPSFactor::EstimateState(84831.0, NED1, 84831.0, NED2, 84831.0),
+                   std::invalid_argument);
+ }
+
  // *************************************************************************
  int main() {
    TestResult tr;
