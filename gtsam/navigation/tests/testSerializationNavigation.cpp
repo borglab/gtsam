@@ -23,8 +23,11 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/navigation/AttitudeFactor.h>
+#include <gtsam/navigation/CarrierPhaseFactor.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
+#include <gtsam/navigation/GPSFactor.h>
 #include <gtsam/navigation/ImuFactor.h>
+#include <gtsam/navigation/PseudorangeFactor.h>
 
 #include <fstream>
 
@@ -178,6 +181,146 @@ TEST(AttitudeFactorExtendedPose3d, Serialization) {
   EXPECT(serializationTestHelpers::equalsObj(factor));
   EXPECT(serializationTestHelpers::equalsXML(factor));
   EXPECT(serializationTestHelpers::equalsBinary(factor));
+}
+
+/* ************************************************************************* */
+// GPS lever-arm factors: verify the measurement (nT_) and lever arm (bL_)
+// survive an obj/XML/binary serialization round-trip.
+TEST(GPSFactorArm, Serialization) {
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.25);
+  GPSFactorArm factor(0, Point3(1.0, 2.0, 3.0), Point3(0.1, 0.2, 0.3), model);
+  EXPECT(equalsObj(factor));
+  EXPECT(equalsXML(factor));
+  EXPECT(equalsBinary(factor));
+}
+
+/* ************************************************************************* */
+TEST(GPSFactorArmCalib, Serialization) {
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.25);
+  GPSFactorArmCalib factor(0, 1, Point3(1.0, 2.0, 3.0), model);
+  EXPECT(equalsObj(factor));
+  EXPECT(equalsXML(factor));
+  EXPECT(equalsBinary(factor));
+}
+
+/* ************************************************************************* */
+TEST(GPSFactor2Arm, Serialization) {
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.25);
+  GPSFactor2Arm factor(0, Point3(1.0, 2.0, 3.0), Point3(0.1, 0.2, 0.3), model);
+  EXPECT(equalsObj(factor));
+  EXPECT(equalsXML(factor));
+  EXPECT(equalsBinary(factor));
+}
+
+/* ************************************************************************* */
+TEST(GPSFactor2ArmCalib, Serialization) {
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 0.25);
+  GPSFactor2ArmCalib factor(0, 1, Point3(1.0, 2.0, 3.0), model);
+  EXPECT(equalsObj(factor));
+  EXPECT(equalsXML(factor));
+  EXPECT(equalsBinary(factor));
+}
+
+/* ************************************************************************* */
+// GNSS factors: verify the measurement and geometry members survive an
+// obj/XML/binary serialization round-trip. (The base object is serialized with
+// a tag valid for XML archives.)
+namespace {
+const Point3 kSat1(1.5e7, -1.2e7, 2.0e7);
+const Point3 kSat2(1.6e7, -1.1e7, 2.1e7);
+const Point3 kSat3(1.4e7, -1.3e7, 1.9e7);
+const Point3 kSat4(1.7e7, -1.0e7, 2.2e7);
+const Point3 kBase(-2.69e6, -4.29e6, 3.86e6);
+const Point3 kLever(0.10, 0.20, 0.30);
+const SharedNoiseModel kGnss = noiseModel::Isotropic::Sigma(1, 0.5);
+const double kPr = 2.1e7, kLam = 0.19;
+}  // namespace
+
+/* ************************************************************************* */
+TEST(PseudorangeFactor, Serialization) {
+  PseudorangeFactor f(0, 1, kPr, kSat1, 1e-4, kGnss);
+  EXPECT(equalsObj(f));
+  EXPECT(equalsXML(f));
+  EXPECT(equalsBinary(f));
+}
+
+/* ************************************************************************* */
+TEST(PseudorangeFactorArm, Serialization) {
+  PseudorangeFactorArm f(0, 1, kPr, kSat1, kLever, 1e-4, kGnss);
+  EXPECT(equalsObj(f));
+  EXPECT(equalsXML(f));
+  EXPECT(equalsBinary(f));
+}
+
+/* ************************************************************************* */
+TEST(DifferentialPseudorangeFactor, Serialization) {
+  DifferentialPseudorangeFactor f(0, 1, 2, kPr, kSat1, 1e-4, kGnss);
+  EXPECT(equalsObj(f));
+  EXPECT(equalsXML(f));
+  EXPECT(equalsBinary(f));
+}
+
+/* ************************************************************************* */
+TEST(DifferentialPseudorangeFactorArm, Serialization) {
+  DifferentialPseudorangeFactorArm f(0, 1, 2, kPr, kSat1, kLever, 1e-4, kGnss);
+  EXPECT(equalsObj(f));
+  EXPECT(equalsXML(f));
+  EXPECT(equalsBinary(f));
+}
+
+/* ************************************************************************* */
+TEST(DoubleDifferencePseudorangeFactor, Serialization) {
+  DoubleDifferencePseudorangeFactor f(0, kPr, kPr + 1, kPr + 2, kPr + 3, kSat1,
+                                      kSat2, kSat3, kSat4, kBase, kGnss);
+  EXPECT(equalsObj(f));
+  EXPECT(equalsXML(f));
+  EXPECT(equalsBinary(f));
+}
+
+/* ************************************************************************* */
+TEST(DoubleDifferencePseudorangeFactorArm, Serialization) {
+  DoubleDifferencePseudorangeFactorArm f(0, kPr, kPr + 1, kPr + 2, kPr + 3,
+                                         kSat1, kSat2, kSat3, kSat4, kBase,
+                                         kLever, kGnss);
+  EXPECT(equalsObj(f));
+  EXPECT(equalsXML(f));
+  EXPECT(equalsBinary(f));
+}
+
+/* ************************************************************************* */
+TEST(CarrierPhaseFactor, Serialization) {
+  CarrierPhaseFactor f(0, 1, 2, kPr, kSat1, 1e-4, kGnss);
+  EXPECT(equalsObj(f));
+  EXPECT(equalsXML(f));
+  EXPECT(equalsBinary(f));
+}
+
+/* ************************************************************************* */
+TEST(CarrierPhaseFactorArm, Serialization) {
+  CarrierPhaseFactorArm f(0, 1, 2, kPr, kSat1, kLever, 1e-4, kGnss);
+  EXPECT(equalsObj(f));
+  EXPECT(equalsXML(f));
+  EXPECT(equalsBinary(f));
+}
+
+/* ************************************************************************* */
+TEST(DoubleDifferenceCarrierPhaseFactor, Serialization) {
+  DoubleDifferenceCarrierPhaseFactor f(0, 1, 2, kPr, kPr + 1, kPr + 2, kPr + 3,
+                                       kSat1, kSat2, kSat3, kSat4, kBase, kLam,
+                                       kGnss);
+  EXPECT(equalsObj(f));
+  EXPECT(equalsXML(f));
+  EXPECT(equalsBinary(f));
+}
+
+/* ************************************************************************* */
+TEST(DoubleDifferenceCarrierPhaseFactorArm, Serialization) {
+  DoubleDifferenceCarrierPhaseFactorArm f(0, 1, 2, kPr, kPr + 1, kPr + 2,
+                                          kPr + 3, kSat1, kSat2, kSat3, kSat4,
+                                          kBase, kLam, kLever, kGnss);
+  EXPECT(equalsObj(f));
+  EXPECT(equalsXML(f));
+  EXPECT(equalsBinary(f));
 }
 
 /* ************************************************************************* */
