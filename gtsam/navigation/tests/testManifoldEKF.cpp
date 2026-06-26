@@ -22,7 +22,7 @@
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/navigation/ManifoldEKF.h>
 
-#include <iostream>
+#include <Eigen/Cholesky>
 #include <random>
 
 using namespace gtsam;

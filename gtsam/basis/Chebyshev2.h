@@ -33,7 +33,6 @@
 #pragma once
 
 #include <gtsam/base/Manifold.h>
-#include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/basis/Basis.h>
 
 namespace gtsam {

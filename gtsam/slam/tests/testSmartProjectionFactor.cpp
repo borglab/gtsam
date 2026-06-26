@@ -19,11 +19,12 @@
  *  @date   Sept 2013
  */
 
-#include "smartFactorScenarios.h"
-#include <gtsam/slam/SmartProjectionFactor.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <CppUnitLite/TestHarness.h>
-#include <iostream>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/sfm/SfmTrack.h>
+#include <gtsam/slam/SmartProjectionFactor.h>
+
+#include "smartFactorScenarios.h"
 
 namespace {
 static const bool isDebugTest = false;

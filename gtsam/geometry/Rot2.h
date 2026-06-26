@@ -19,8 +19,9 @@
 
 #pragma once
 
-#include <gtsam/geometry/Point2.h>
+#include <gtsam/base/Matrix.h>
 #include <gtsam/base/MatrixLieGroup.h>
+#include <gtsam/geometry/Point2.h>
 
 #include <random>
 

@@ -19,6 +19,8 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Point3.h>
 
+#include <Eigen/Geometry>
+
 using namespace std::placeholders;
 using namespace gtsam;
 

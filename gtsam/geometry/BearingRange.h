@@ -19,8 +19,9 @@
 #pragma once
 
 #include <gtsam/base/Manifold.h>
-#include <gtsam/base/Testable.h>
 #include <gtsam/base/OptionalJacobian.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/types.h>
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
 #endif

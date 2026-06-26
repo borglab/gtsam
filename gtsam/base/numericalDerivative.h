@@ -28,13 +28,10 @@
 #pragma once
 
 #include <gtsam/base/Lie.h>
-#include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/Values.h>
 
 #include <functional>
 #include <type_traits>
-#include <utility>
 
 /**
  * @defgroup numerical_derivatives Numerical Derivative Helpers

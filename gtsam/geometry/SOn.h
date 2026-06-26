@@ -20,7 +20,9 @@
 
 #include <gtsam/base/MatrixLieGroup.h>
 #include <gtsam/dllexport.h>
+
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
