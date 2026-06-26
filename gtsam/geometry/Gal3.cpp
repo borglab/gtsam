@@ -20,12 +20,6 @@
  * refer to the aforementioned paper.
  */
 
-// GCC bug workaround
-#if  defined(__GNUC__) && __GNUC__ == 15
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
-
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Event.h>
@@ -67,8 +61,7 @@ namespace { // Anonymous namespace for internal linkage
 Gal3 Gal3::Create(const Rot3& R, const Point3& r, const Velocity3& v, double t,
                   OptionalJacobian<10, 3> H1, OptionalJacobian<10, 3> H2,
                   OptionalJacobian<10, 3> H3, OptionalJacobian<10, 1> H4) {
-  Matrix3 Rt;
-  if (H2 || H3 || H4) Rt = R.transpose();
+  const Matrix3 Rt = R.transpose();
   if (H1) {
     H1->setZero();
     H1->block<3, 3>(0, 0) = I_3x3;
@@ -96,8 +89,7 @@ Gal3 Gal3::FromPoseVelocityTime(const Pose3& pose, const Velocity3& v, double t,
                                 OptionalJacobian<10, 1> H3) {
   const Rot3& R = pose.rotation();
   const Point3& r = pose.translation();
-  Matrix3 Rt;
-  if (H2 || H3) Rt = R.transpose();
+  const Matrix3 Rt = R.transpose();
   if (H1) {
     H1->setZero();
     H1->block<3, 3>(0, 0) = I_3x3;
@@ -315,8 +307,7 @@ Gal3 Gal3::Expmap(const TangentVector& xi, OptionalJacobian<10, 10> Hxi) {
 #else
   const Rot3 R(local.expmap());
 #endif
-  Matrix3 Rt;
-  if (Hxi) Rt = R.transpose();
+  const Matrix3 Rt = R.transpose();
 
   // Compute velocity: just apply left SO(3) Jacobian,
   Matrix3 H_v_w;
