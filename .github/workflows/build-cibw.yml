@@ -223,4 +223,6 @@ jobs:
           fi
 
           python3 -m pip install pypi-cleanup==0.1.10
-          bash .github/scripts/python_wheels/cleanup_gtsam_develop.sh --keep 5 --yes
+          if ! bash .github/scripts/python_wheels/cleanup_gtsam_develop.sh --keep 5 --yes; then
+            echo "Warning: PyPI cleanup failed; keeping old gtsam-develop releases and continuing."
+          fi
