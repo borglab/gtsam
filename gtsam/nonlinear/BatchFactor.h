@@ -226,9 +226,11 @@ class BatchFactor : public NonlinearFactor {
         }
         for (size_t r = 0; r < ErrorDim; ++r) {
           const size_t row = row_start + r;
-          rowSigmas[row] = constrainedModel->sigmasRef()[r];
           if (constrainedModel->constrained(r)) {
             rowMus[row] = constrainedModel->mu()[r];
+            rowSigmas[row] = 0.0;
+          } else {
+            rowSigmas[row] = 1.0;
           }
         }
       }
@@ -456,7 +458,6 @@ class BatchFactor : public NonlinearFactor {
     auto isDuplicate = [](const KeyInfo& a, const KeyInfo& b) {
       if (a.key != b.key) return false;
       assert(a.dim == b.dim);
-      assert(a.slot == b.slot);
       return true;
     };
     auto last = std::unique(keyInfo_.begin(), keyInfo_.end(), isDuplicate);

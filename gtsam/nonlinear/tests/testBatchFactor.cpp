@@ -42,8 +42,8 @@ using ProjectionFactor = GenericProjectionFactor<Pose3, Point3, Cal3_S2>;
 
 static std::shared_ptr<Cal3_S2> sharedK = std::make_shared<Cal3_S2>();
 
-// Factor with a dynamic dimension (Vector), used to verify dynamic-dimension safety
-// in key bookkeeping and linearization.
+// Factor with a dynamic dimension (Vector), used to verify dynamic-dimension
+// safety in key bookkeeping and linearization.
 class DynamicVectorFactor : public NoiseModelFactor1<Vector> {
  private:
   Vector measurement_;
@@ -126,15 +126,14 @@ TEST(BatchFactor, ConstrainedNoiseModel) {
   factors.emplace_back(key, Pose2(1.0, 2.0, 0.1), constrained);
   factors.emplace_back(key, Pose2(2.0, 3.0, 0.2), constrained);
 
-  auto batch = std::make_shared<BatchFactor<PriorFactor<Pose2>, 3>>(
-      std::move(factors));
+  auto batch =
+      std::make_shared<BatchFactor<PriorFactor<Pose2>, 3>>(std::move(factors));
 
   Values values;
   values.insert(key, Pose2(0.0, 0.0, 0.0));
 
   auto gaussian = batch->linearize(values);
-  auto jacobian =
-      std::dynamic_pointer_cast<JacobianFactor>(gaussian);
+  auto jacobian = std::dynamic_pointer_cast<JacobianFactor>(gaussian);
   CHECK(jacobian);
   CHECK(jacobian->get_model());
   CHECK(jacobian->get_model()->isConstrained());
@@ -148,10 +147,71 @@ TEST(BatchFactor, ConstrainedNoiseModel) {
   constrainedRowMus[0] = 1000.0;
   constrainedRowMus[2] = 1000.0;
   expectedMus << constrainedRowMus, constrainedRowMus;
-  expectedSigmas << constrainedSigmas, constrainedSigmas;
+  Vector expectedRowSigmas(3);
+  expectedRowSigmas << 1.0, 0.0, 1.0;
+  expectedSigmas << expectedRowSigmas, expectedRowSigmas;
   EXPECT(assert_equal(expectedMus, constrainedModel->mu(), 1e-9));
   EXPECT(assert_equal(expectedSigmas, constrainedModel->sigmas(), 1e-9));
   LONGS_EQUAL(6, (long)jacobian->rows());
+}
+
+// Verifies constrained and unconstrained rows in constrained models are
+// preserved correctly after whitening in linearization.
+TEST(BatchFactor, ConstrainedNoiseModelUsesUnitSigmasForUnconstrainedRows) {
+  Key key = Symbol('x', 0);
+  Vector constrainedSigmas(3);
+  constrainedSigmas << 2.0, 0.0, 4.0;
+  Vector constrainedMus(3);
+  constrainedMus << 3.0, 7.0, 5.0;
+  auto constrained =
+      noiseModel::Constrained::MixedSigmas(constrainedMus, constrainedSigmas);
+
+  std::vector<PriorFactor<Pose2>> factors;
+  factors.emplace_back(key, Pose2(2.0, 0.0, 1.0), constrained);
+  BatchFactor<PriorFactor<Pose2>, 3> batch(std::move(factors));
+
+  Values values;
+  values.insert(key, Pose2(0.0, 0.0, 0.0));
+
+  auto gaussian = batch.linearize(values);
+  auto jacobian = std::dynamic_pointer_cast<JacobianFactor>(gaussian);
+  CHECK(jacobian);
+  auto constrainedModel =
+      std::dynamic_pointer_cast<noiseModel::Constrained>(jacobian->get_model());
+  CHECK(constrainedModel);
+
+  Vector expectedSigmas(3);
+  expectedSigmas << 1.0, 0.0, 1.0;
+  Vector expectedMus(3);
+  expectedMus << 1000.0, 7.0, 1000.0;
+
+  EXPECT(assert_equal(expectedSigmas, constrainedModel->sigmas(), 1e-9));
+  EXPECT(assert_equal(expectedMus, constrainedModel->mu(), 1e-9));
+}
+
+// Verifies updateKeys deduplicates by key only for fixed-size batch factors.
+TEST(BatchFactor, UpdateKeysDeduplicatesByKeyOnly) {
+  Key key1 = Symbol('x', 1);
+  Key key2 = Symbol('x', 2);
+  auto noise = noiseModel::Isotropic::Sigma(3, 1.0);
+
+  std::vector<BetweenFactor<Pose2>> factors;
+  factors.emplace_back(key1, key2, Pose2(1.0, 0.0, 0.0), noise);
+  factors.emplace_back(key2, key1, Pose2(1.0, 0.0, 0.0), noise);
+
+  BatchFactor<BetweenFactor<Pose2>, 3> batch(std::move(factors));
+
+  Values values;
+  values.insert(key1, Pose2(0.0, 0.0, 0.0));
+  values.insert(key2, Pose2(0.0, 0.0, 0.0));
+
+  auto gaussian = batch.linearize(values);
+  auto compact = std::dynamic_pointer_cast<BatchJacobianFactorBase>(gaussian);
+  CHECK(compact);
+
+  auto jacobian = compact->toJacobianFactor();
+  EXPECT_LONGS_EQUAL(2, (long)jacobian.size());
+  EXPECT_LONGS_EQUAL(6, (long)jacobian.rows());
 }
 
 /* ************************************************************************* */
@@ -176,8 +236,7 @@ TEST(BatchFactor, DynamicDimensionSupport) {
   values.insert(key, dynamicX);
 
   auto gaussian = batch->linearize(values);
-  auto jacobian =
-      std::dynamic_pointer_cast<JacobianFactor>(gaussian);
+  auto jacobian = std::dynamic_pointer_cast<JacobianFactor>(gaussian);
   CHECK(jacobian);
   CHECK(jacobian->get_model());
   CHECK(jacobian->get_model()->isUnit());

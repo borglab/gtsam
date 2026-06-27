@@ -172,14 +172,14 @@ class GTSAM_EXPORT BatchJacobianFactorBase : public GaussianFactor {
   /**
    * Build a flattened mapped-slot buffer for all row groups.
    *
-   * The output length is `rows() * (keys().size() + 1)` and contains, for each
-   * row group in order, the pre-mapped local keys plus the RHS slot at index
-   * `NumSlots`. The RHS is expected to be `slotIndices.back()`.
+   * The output length is `rowSlots_.size() * (NumSlots + 1)` and contains, for
+   * each row group in order, the pre-mapped local keys plus the RHS slot at
+   * index `NumSlots`. The RHS is expected to be `slotIndices.back()`.
    * See `linear/doc/BatchFactor_Performance_Notes.html` for mapping layout and
    * cache locality guidance.
    */
   virtual void buildMappedSlots(const std::vector<DenseIndex>& slotIndices,
-                                std::vector<DenseIndex>& mappedSlots) const = 0;
+                              std::vector<DenseIndex>& mappedSlots) const = 0;
 
   /// Update this factor using pre-built mapped slots.
   /**
@@ -265,8 +265,6 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
       std::vector<BlockMatrix<BlockDim>,
                   Eigen::aligned_allocator<BlockMatrix<BlockDim>>>;
   using Blocks = std::tuple<BlockVector<BlockDims>...>;
-
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
  private:
   std::vector<size_t> keyDims_;
@@ -854,6 +852,18 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
           "count mismatch.");
     }
 
+    bool allSlotsNonNegative = true;
+    const DenseIndex rhsSlot = static_cast<DenseIndex>(info->nBlocks() - 1);
+    for (const DenseIndex slot : mappedSlots) {
+      if (slot < 0) {
+        allSlotsNonNegative = false;
+      } else if (slot > rhsSlot) {
+        throw std::invalid_argument(
+            "BatchJacobianFactor::updateHessianWithMappedSlots: invalid "
+            "mapped slot index.");
+      }
+    }
+
     RhsVector weights;
     const RhsVector* weightsPtr = nullptr;
     if (model_ && !model_->isUnit()) {
@@ -864,16 +874,28 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
                       .array()
                       .square();
         weightsPtr = &weights;
-        updateMappedHessianRowAllValid(
-            rowIndex, mappedSlots.data() + rowIndex * stride, weightsPtr, info);
+        if (allSlotsNonNegative) {
+          updateMappedHessianRowAllValid(
+              rowIndex, mappedSlots.data() + rowIndex * stride, weightsPtr,
+              info);
+        } else {
+          updateMappedHessianRow(
+              rowIndex, mappedSlots.data() + rowIndex * stride, weightsPtr, info);
+        }
       }
       return;
     }
 
     const DenseIndex* rowSlotsPtr = mappedSlots.data();
     for (size_t rowIndex = 0; rowIndex < rowSlots_.size(); ++rowIndex) {
-      updateMappedHessianRowAllValid(rowIndex, rowSlotsPtr + rowIndex * stride,
-                                     nullptr, info);
+      if (allSlotsNonNegative) {
+        updateMappedHessianRowAllValid(rowIndex,
+                                       rowSlotsPtr + rowIndex * stride, nullptr,
+                                       info);
+      } else {
+        updateMappedHessianRow(rowIndex, rowSlotsPtr + rowIndex * stride, nullptr,
+                               info);
+      }
     }
   }
 

@@ -54,11 +54,13 @@ Matrix assembledHessian(const SymmetricBlockMatrix& info) {
   return Matrix(info.selfadjointView());
 }
 
-// Verifies direct compact Hessian assembly matches dense compatibility assembly.
+// Verifies direct compact Hessian assembly matches dense compatibility
+// assembly.
 TEST(BatchJacobianFactor, UpdateHessian) {
   const Factor factor = createWeightedFactor();
 
-  SymmetricBlockMatrix actual(augmentedDimensions), expected(augmentedDimensions);
+  SymmetricBlockMatrix actual(augmentedDimensions),
+      expected(augmentedDimensions);
   actual.setZero();
   expected.setZero();
 
@@ -69,11 +71,13 @@ TEST(BatchJacobianFactor, UpdateHessian) {
                       1e-12));
 }
 
-// Verifies partial-column Hessian assembly matches dense compatibility assembly.
+// Verifies partial-column Hessian assembly matches dense compatibility
+// assembly.
 TEST(BatchJacobianFactor, UpdateHessianColumnRanges) {
   const Factor factor = createWeightedFactor();
 
-  SymmetricBlockMatrix actual(augmentedDimensions), expected(augmentedDimensions);
+  SymmetricBlockMatrix actual(augmentedDimensions),
+      expected(augmentedDimensions);
   actual.setZero();
   expected.setZero();
 
@@ -84,6 +88,72 @@ TEST(BatchJacobianFactor, UpdateHessianColumnRanges) {
   }
 
   EXPECT(assert_equal(assembledHessian(expected), assembledHessian(actual),
+                      1e-12));
+}
+
+// Verifies mapped-slot buffers are sized per row-group, not per scalar row.
+TEST(BatchJacobianFactor, BuildMappedSlotsUsesRowGroupStride) {
+  const Factor factor = createWeightedFactor();
+
+  std::vector<DenseIndex> slotIndices = {0, 1, 2, 3};
+  std::vector<DenseIndex> mappedSlots;
+  factor.buildMappedSlots(slotIndices, mappedSlots);
+
+  const size_t rowGroupCount = factor.rows() / 2;
+  const size_t expectedSize = rowGroupCount * (2 + 1);
+  EXPECT_LONGS_EQUAL((long)expectedSize, (long)mappedSlots.size());
+
+  // First row maps slots for keys {0,2} and rhs.
+  EXPECT_LONGS_EQUAL(slotIndices[0], mappedSlots[0]);
+  EXPECT_LONGS_EQUAL(slotIndices[2], mappedSlots[1]);
+  EXPECT_LONGS_EQUAL(slotIndices[3], mappedSlots[2]);
+
+  // Second row maps slots for keys {1,2} and rhs.
+  EXPECT_LONGS_EQUAL(slotIndices[1], mappedSlots[3]);
+  EXPECT_LONGS_EQUAL(slotIndices[2], mappedSlots[4]);
+  EXPECT_LONGS_EQUAL(slotIndices[3], mappedSlots[5]);
+}
+
+// Verifies the compact mapped-slot API updates identically to the dense path.
+TEST(BatchJacobianFactor, UpdateHessianWithMappedSlotsMatchesToJacobian) {
+  const Factor factor = createWeightedFactor();
+
+  SymmetricBlockMatrix mapped(augmentedDimensions),
+      expected(augmentedDimensions);
+  mapped.setZero();
+  expected.setZero();
+
+  std::vector<DenseIndex> slotIndices = {0, 1, 2, 3};
+  std::vector<DenseIndex> mappedSlots;
+  factor.buildMappedSlots(slotIndices, mappedSlots);
+  factor.updateHessianWithMappedSlots(mappedSlots, &mapped);
+
+  factor.toJacobianFactor().updateHessian(keys, &expected);
+
+  EXPECT(assert_equal(assembledHessian(expected), assembledHessian(mapped),
+                      1e-12));
+}
+
+// Verifies mapped-slot buffers handle fixed-key slots as -1 and still match the
+// safe dense-mapping path.
+TEST(BatchJacobianFactor, UpdateHessianWithMappedSlotsSkipsNegativeSlots) {
+  const Factor factor = createWeightedFactor();
+
+  std::vector<DenseIndex> slotIndicesWithRhs = {-1, 1, 2, 3};
+  std::vector<DenseIndex> mappedSlots;
+  factor.buildMappedSlots(slotIndicesWithRhs, mappedSlots);
+
+  EXPECT_LONGS_EQUAL(-1, mappedSlots[0]);
+  EXPECT_LONGS_EQUAL(1, mappedSlots[3]);
+
+  SymmetricBlockMatrix mapped(augmentedDimensions), expected(augmentedDimensions);
+  mapped.setZero();
+  expected.setZero();
+
+  factor.updateHessianWithMappedSlots(mappedSlots, &mapped);
+  factor.updateHessian(slotIndicesWithRhs, &expected);
+
+  EXPECT(assert_equal(assembledHessian(expected), assembledHessian(mapped),
                       1e-12));
 }
 
