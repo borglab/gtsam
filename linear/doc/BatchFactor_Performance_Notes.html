@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BatchFactor Performance Notes</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #131a31;
+      --text: #e7ecff;
+      --muted: #9cb0ff;
+      --accent: #7cd6ff;
+      --code-bg: #0c1227;
+      --code-border: #2a3763;
+      --ok: #7dffa1;
+      --warn: #ffd166;
+      --bad: #ff7e7e;
+      --shadow: 0 10px 25px rgba(0,0,0,.25);
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f7f9ff;
+        --panel: #ffffff;
+        --text: #16203a;
+        --muted: #42517a;
+        --accent: #0e70ff;
+        --code-bg: #f1f5ff;
+        --code-border: #c4d0f2;
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Fira Sans', 'Avenir Next', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background:
+        radial-gradient(circle at 20% 0%, #182451 0%, transparent 35%),
+        radial-gradient(circle at 80% 20%, #142240 0%, transparent 30%),
+        linear-gradient(160deg, var(--bg), #070b17);
+      color: var(--text);
+    }
+    body {
+      line-height: 1.45;
+      padding: 28px;
+    }
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      gap: 18px;
+    }
+    .panel {
+      background: color-mix(in srgb, var(--panel) 94%, black 0%);
+      border: 1px solid rgba(124, 214, 255, .12);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      padding: 22px;
+    }
+    h1, h2, h3, h4 { margin-top: 0; font-family: 'Atkinson Hyperlegible', 'Verdana', Arial, sans-serif; }
+    h1 { color: var(--accent); margin-bottom: .2rem; }
+    h2 { color: #d7e2ff; border-left: 4px solid var(--accent); padding-left: 12px; }
+    .lead {
+      color: var(--muted);
+      font-size: 1.02rem;
+      margin-bottom: 1rem;
+    }
+    .pill {
+      display: inline-block;
+      border: 1px solid rgba(124, 214, 255, .35);
+      border-radius: 999px;
+      padding: 3px 10px;
+      font-size: .82rem;
+      margin-right: 8px;
+      margin-bottom: 8px;
+      color: #c8d7ff;
+      background: rgba(124,214,255,0.09);
+    }
+    code, pre {
+      font-family: 'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
+      font-size: 0.92rem;
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--code-border);
+      border-radius: 10px;
+      padding: 14px;
+      overflow: auto;
+    }
+    .grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    }
+    .card {
+      border: 1px solid rgba(156, 176, 255, .2);
+      border-radius: 10px;
+      padding: 12px;
+      background: rgba(255,255,255,0.025);
+    }
+    .card h4 { margin: 0 0 .3rem 0; color: #b8d6ff; }
+    .tag {
+      display: inline-block;
+      margin-left: 8px;
+      font-size: .8rem;
+      border: 1px solid rgba(124,214,255,.35);
+      border-radius: 6px;
+      padding: 1px 7px;
+      color: #8fffb2;
+      background: rgba(125,255,161,0.1);
+    }
+    .kpi {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .kpi div {
+      border: 1px solid rgba(124,214,255,.16);
+      border-radius: 10px;
+      padding: 10px;
+      background: rgba(255,255,255,0.02);
+      color: #d6e0ff;
+    }
+    .kpi span { color: var(--ok); font-weight: 700; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0;
+      font-size: .95rem;
+    }
+    th, td {
+      border: 1px solid rgba(124,214,255,.18);
+      padding: 9px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      color: #d9e2ff;
+      background: rgba(124,214,255,.08);
+    }
+    ul { margin-top: 6px; }
+    li { margin-bottom: .45rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="panel">
+      <h1>BatchFactor Performance Notes</h1>
+      <div class="lead">How the BatchFactor path was reshaped in this workspace to avoid dense materialization and become competitive with the existing Jacobian/QR fast path.</div>
+      <div>
+        <span class="pill">Status: documentation-only request</span>
+        <span class="pill">Scope: <code>BatchJacobianFactor</code>, <code>MultifrontalClique</code></span>
+        <span class="pill">No code execution performed</span>
+      </div>
+    </header>
+
+    <section class="panel">
+      <h2>1) What BatchFactor is in this codebase</h2>
+      <p>
+        In this branch, <strong>BatchJacobianFactor</strong> is a compact row-sparse representation for many small Jacobian blocks (typical of factor batching). It stores only the nonzero variable blocks per row group plus RHS blocks, not a dense Jacobian over every key in the factor.
+      </p>
+      <ul>
+        <li>Core type: <code>BatchJacobianFactor&lt;ErrorDim, BlockDims...&gt;</code> in <code>gtsam/linear/BatchJacobianFactor.h</code>.</li>
+        <li>Base interface: <code>BatchJacobianFactorBase</code> exposes a fast path through <code>scatterInto()</code> and two direct Hessian routines.</li>
+        <li>Compatibility still exists: <code>toJacobianFactor()</code> creates a dense-block factor when needed.</li>
+      </ul>
+      <div class="grid">
+        <div class="card">
+          <h4>Fast path contract</h4>
+          <p>Direct paths write only needed blocks, accept precomputed clique-local block indices, and can update <code>SymmetricBlockMatrix</code> directly.</p>
+        </div>
+        <div class="card">
+          <h4>Why this matters</h4>
+          <p>Many batching workloads had huge overhead from zero-padding and repeated key lookup in hot loops.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>2) Why the original generic path was slow</h2>
+      <p>
+        Legacy processing tends to do this: factor is converted or expanded into a dense-block Jacobian, then written into the clique matrix and multiplied through BLAS/RankUpdate. That path is correct but expensive when factors are sparse in key coverage.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Cost center</th>
+            <th>Impact</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Dense block materialization</td>
+            <td>Alloc/fill overhead plus mostly zero entries for absent keys.</td>
+          </tr>
+          <tr>
+            <td>Repeated key->slot lookup in elimination assembly</td>
+            <td>Linear-time overhead per row group per pass and branchy lookups.</td>
+          </tr>
+          <tr>
+            <td>Extra passes between factor load and Hessian assembly</td>
+            <td>More memory traffic than necessary for already-whitened batch structure.</td>
+          </tr>
+          <tr>
+            <td>Constraint/fixed key edge cases handled late</td>
+            <td>Branches in hot loops and fallback conversion paths.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>For dense and moderately sparse graphs this is acceptable; for batch-heavy structures it becomes a major fraction of total solve time.</p>
+    </section>
+
+    <section class="panel">
+      <h2>3) Optimizations introduced</h2>
+      <h3>3.1 Row-sparse storage + explicit slot mapping</h3>
+      <p>
+        The batch factor keeps per-row-group slot indices into its local key list and fixed-size Jacobian blocks. That avoids storing structural zeros and keeps Hessian updates tied to only active variables.
+      </p>
+      <pre><code>// public API in BatchJacobianFactorBase
+virtual void scatterInto(VerticalBlockMatrix&amp; target,
+                        size_t rowOffset,
+                        const std::vector&lt;DenseIndex&gt;&amp; targetBlockIndices) const = 0;
+virtual void updateHessian(const std::vector&lt;DenseIndex&gt;&amp; slotIndices,
+                          SymmetricBlockMatrix* info) const = 0;
+virtual void updateHessian(const std::vector&lt;DenseIndex&gt;&amp; slotIndices,
+                          SymmetricBlockMatrix* info,
+                          DenseIndex beginCol, DenseIndex endCol) const = 0;
+virtual void buildMappedSlots(const std::vector&lt;DenseIndex&gt;&amp; slotIndices,
+                             std::vector&lt;DenseIndex&gt;&amp; mappedSlots) const = 0;
+virtual void updateHessianWithMappedSlots(
+    const std::vector&lt;DenseIndex&gt;&amp; mappedSlots,
+    SymmetricBlockMatrix* info) const = 0;</code></pre>
+      <p>
+        This API change makes downstream code choose either QR-style scatter or direct Hessian updates without conversion.
+      </p>
+
+      <h3>3.2 Cached load plans in <code>MultifrontalClique</code></h3>
+      <p>
+        Clique loading now builds per-factor metadata once in <code>FactorLoadPlan</code>:
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code>blockIndices</code></td><td>key slot map for each factor key (or -1 if fixed)</td></tr>
+          <tr><td><code>blockIndicesWithRhs</code></td><td>same as above + RHS block index</td></tr>
+          <tr><td><code>mappedSlots</code></td><td>flattened row-group-local mapping reused by direct hessian update</td></tr>
+          <tr><td><code>canDirectUpdate</code></td><td>runtime predicate for the fast path (no fixed-key + unconstrained model + supported type)</td></tr>
+          <tr><td>flags <code>allBatchFactors_</code>, <code>hasDirectBatchFactors_</code></td><td>choose whether to skip Ab fill and call batch-only direct assembly</td></tr>
+        </tbody>
+      </table>
+      <p>
+        The load plan is built once per clique and reused across solve iterations, removing repeated factor-type checks and key mapping in hot paths.
+      </p>
+
+      <h3>3.3 Direct Hessian updates when allowed</h3>
+      <p>
+        In elimination, when non-QR and direct batching is enabled, the clique can skip regular Ab assembly for eligible factors and update information blocks directly.
+      </p>
+      <pre><code>if (allBatchFactors_ &amp;&amp; !useQR() &amp;&amp; kUseDirectBatchHessianUpdate) {
+  fillRows_ = 0;
+  RSdReady_ = false;
+  return;
+}</code></pre>
+      <p>
+        During preparation:
+      </p>
+      <pre><code>if (canUseDirectBatchHessianUpdate &amp;&amp;
+    (allBatchFactors_ || hasDirectBatchFactors_)) {
+  for each plan where plan.canDirectUpdate &amp;&amp; kind==Batch:
+    if (plan.mappedSlots.empty())
+      batchFactor->updateHessian(plan.blockIndicesWithRhs, &amp;info_);
+    else
+      batchFactor->updateHessianWithMappedSlots(plan.mappedSlots, &amp;info_);
+  if (fillRows_ &gt; 0 &amp;&amp; !allBatchFactors_)
+    info_.selfadjointView().rankUpdate(Ab_.matrix().topRows(fillRows_).transpose());
+}</code></pre>
+      <p>
+        For mixed graphs, the matrix first receives direct batch updates for direct-compatible factors and then rank-updates the remaining rows from <code>Ab_</code>.
+      </p>
+
+      <h3>3.4 Mapped-slot buffer and branch elimination</h3>
+      <p>
+        For direct Hessian paths, each row-group slot mapping is pre-expanded to a flat array where every row contributes <code>NumSlots+1</code> entries (all key slots + RHS slot):
+      </p>
+      <pre><code>mappedSlots.resize(rowSlots_.size() * (NumSlots + 1));
+// contiguous: [row0_slot0,row0_slot1,...,row0_rhs,row1_slot0,...]</code></pre>
+      <p>
+        During updates, kernels iterate with compile-time unrolled loops over active variables in a row-group, and work from pre-resolved indices. This reduces per-factor branch checks and random indirections.
+      </p>
+
+      <h3>3.5 Safety & compatibility guardrails</h3>
+      <p>
+        Fast path is selective, not universal.
+      </p>
+      <ul>
+        <li>Constrained noise models are rejected in direct hessian update, matching existing Jacobian behavior.</li>
+        <li>Fixed keys are mapped to <code>-1</code>; if present in a batch factor, <code>canDirectUpdate</code> becomes false and fallback paths are used.</li>
+        <li>Non-batch factors still follow existing JacobianFactor loading and are unchanged.</li>
+        <li>QR mode currently continues through existing QR code path; direct batch hessian update is disabled there.</li>
+      </ul>
+
+      <div class="kpi">
+        <div><span>kUseDirectBatchHessianUpdate</span><br/>compile-time switch in <code>MultifrontalClique.cpp</code> controlling availability of the batch direct path.</div>
+        <div><span>allBatchFactors_ / hasDirectBatchFactors_</span><br/>runtime decisions to skip Ab filling and/or blend direct + fallback assembly.</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>4) Why this should move the needle by ~10%+</h2>
+      <h3>4.1 Reduced memory traffic</h3>
+      <p>
+        Avoiding full dense conversion removes both writes and cache churn for zero blocks in batch factor rows.
+      </p>
+      <h3>4.2 Less control-flow in hot loops</h3>
+      <p>
+        Slot mapping done once, reused over iterations. Hot loops consume mapped indices directly and run the same unrolled templates repeatedly.
+      </p>
+      <h3>4.3 Better elimination locality</h3>
+      <p>
+        With all batch-compatible factors in a clique, elimination can avoid populating <code>Ab_</code> rows at all, and update <code>info_</code> directly.
+      </p>
+      <h3>4.4 Lower allocation pressure</h3>
+      <p>
+        No temporary dense JacobianFactor for the direct path, especially relevant in repeated linearized solves.
+      </p>
+    </section>
+
+    <section class="panel">
+      <h2>5) Current caveats</h2>
+      <h3>5.1 Path coverage</h3>
+      <p>
+        Only the Cholesky-style pipeline gets the full direct-Batch benefit; QR path still uses the existing fast path behavior.
+      </p>
+      <h3>5.2 Model constraints</h3>
+      <p>
+        Constrained models are intentionally excluded from direct hessian updates to remain behavior-compatible.
+      </p>
+      <h3>5.3 Mixed cliques</h3>
+      <p>
+        Mixed factor sets still pay a partial fallback cost, though reduced vs legacy baseline.
+      </p>
+    </section>
+
+    <section class="panel">
+      <h2>6) Biggest next improvements (targeting the next 10%+ gains)</h2>
+      <p>Near-term work with the highest leverage:</p>
+      <ol>
+        <li>Switch <code>kUseDirectBatchHessianUpdate</code> from a compile-time constant to a runtime auto-tuned flag. It is safer to disable direct updates for tiny cliques where setup overhead dominates.</li>
+        <li>Cache contiguous per-row pointer tables for block payloads and per-factor RHS/model weights so the direct update loop is strictly pointer arithmetic (very low-level kernel style).</li>
+        <li>Specialize/update kernels for the most common <code>(ErrorDim, BlockDims...)</code> signatures (e.g., camera/landmark patterns) to remove template-index overhead from indirect accesses.</li>
+        <li>Parallelize direct batch hessian updates at clique level where cliques have enough independent rows and few children, instead of serial in all direct cases.</li>
+        <li>Store plan metadata as POD-friendly fixed-size structures for better locality (avoid scattered vectors inside many plans).</li>
+        <li>Precompute and cache branch masks for fixed/constrained/fallback eligibility in solver warmup to reduce dynamic checks in each iterate.</li>
+        <li>Collect microbenchmarks by factor sparsity and row-group size and split heuristics into three bins: direct all, mixed-direct, and fallback-all.</li>
+      </ol>
+    </section>
+
+    <section class="panel">
+      <h2>7) End-to-end view</h2>
+      <pre><code>For each clique:
+1) Build factor load plans once (kind, slot maps, direct flag, mapped slots)
+2) fillAb():
+   - if all factors direct-compatible and non-QR, skip writing Ab rows
+   - else emit Jacobian rows and/or scatter batch rows as needed
+3) prepareForElimination():
+   - if direct batch mode enabled and applicable:
+       for each direct batch plan -> updateHessian() or updateHessianWithMappedSlots()
+   - then fallback rankUpdate of any remaining non-direct rows (if mixed)
+4) factorize() unchanged (Cholesky or QR)
+5) updateSolution() unchanged, children gather unchanged</code></pre>
+    </section>
+
+    <section class="panel">
+      <h2>8) Quick take</h2>
+      <p>
+        The practical improvement comes from matching representation to algorithm: BatchFactor already has compressed structure, so we now exploit that structure through cached slot mappings and direct information-matrix updates. This is the dominant optimization path for batch-heavy graphs and is the right structural direction for a >10% uplift.
+      </p>
+    </section>
+  </div>
+</body>
+</html>

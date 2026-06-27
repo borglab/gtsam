@@ -258,7 +258,15 @@ class GTSAM_EXPORT MultifrontalClique {
     size_t factorIndex = 0;
     SharedDiagonal model;
     size_t rows = 0;
+    /// Slot indices for factor keys (or -1 for fixed keys). See
+    /// `linear/doc/BatchFactor_Performance_Notes.html` for load-plan usage.
     std::vector<DenseIndex> blockIndices;
+    std::vector<DenseIndex> blockIndicesWithRhs;
+    /// Flattened local key+RHS mapping for each batch row group.
+    /// Built once per clique and reused during direct Hessian updates.
+    /// See `linear/doc/BatchFactor_Performance_Notes.html`.
+    std::vector<DenseIndex> mappedSlots;
+    bool canDirectUpdate = false;
   };
 
   /// Build and cache loading metadata for factors in this clique.
@@ -319,8 +327,10 @@ class GTSAM_EXPORT MultifrontalClique {
   size_t factorRows_ = 0;          ///< Number of rows allocated in Ab.
   mutable const GaussianFactorGraph* activeLoadGraph_ = nullptr;
   mutable bool allBatchFactors_ = false;
+  mutable bool hasDirectBatchFactors_ = false;
   mutable std::vector<FactorLoadPlan> loadPlans_;
   mutable bool loadPlansBuilt_ = false;
+  mutable size_t fillRows_ = 0;
 
   // Finalize-time metadata (set once after children are known).
   std::vector<DenseIndex>
