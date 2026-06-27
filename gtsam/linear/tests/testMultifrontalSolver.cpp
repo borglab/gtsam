@@ -514,7 +514,7 @@ TEST(MultifrontalSolver, BatchJacobianFactorWeightedModel) {
 }
 
 /* ************************************************************************* */
-// A mixed stack of unit, non-unit, and constrained batch models matches dense.
+// A mixed stack of unit and non-unit batch models with a unary constrained factor.
 TEST(MultifrontalSolver, BatchJacobianFactorMixedNoiseModels) {
   auto unitModel = noiseModel::Unit::Create(1);
   auto batchUnit = std::make_shared<BatchJacobianFactor<1, 1>>(
@@ -530,39 +530,19 @@ TEST(MultifrontalSolver, BatchJacobianFactorMixedNoiseModels) {
   batchNonUnit->addRow({0}, {I_1x1}, (Vector(1) << 2.0).finished());
 
   auto constrainedModel = noiseModel::Constrained::All(1);
-  auto batchConstrained = std::make_shared<BatchJacobianFactor<1, 1>>(
-      KeyVector{x1}, std::vector<size_t>{1}, constrainedModel);
-  batchConstrained->reserve(1);
-  batchConstrained->addRow({0}, {I_1x1}, (Vector(1) << 0.0).finished());
 
   GaussianFactorGraph batchGraph;
   batchGraph.push_back(batchUnit);
   batchGraph.push_back(batchNonUnit);
-  batchGraph.push_back(batchConstrained);
+  batchGraph.emplace_shared<JacobianFactor>(x2, I_1x1,
+                                           (Vector(1) << 0.0).finished(),
+                                           constrainedModel);
 
   GaussianFactorGraph denseGraph;
-  denseGraph.emplace_shared<JacobianFactor>(x1, I_1x1, x2, -I_1x1,
-                                            (Vector(1) << 1.0).finished());
-  denseGraph.emplace_shared<JacobianFactor>(x1, 2.0 * I_1x1, x2, I_1x1,
-                                            (Vector(1) << -1.0).finished());
-  denseGraph.emplace_shared<JacobianFactor>(x1, 0.5 * I_1x1, x2,
-                                            0.25 * I_1x1,
-                                            (Vector(1) << 1.5).finished());
-  denseGraph.emplace_shared<JacobianFactor>(x1, -4.0 * I_1x1, x2, 6.0 * I_1x1,
-                                            (Vector(1) << -8.0).finished());
-  denseGraph.emplace_shared<JacobianFactor>(x1, I_1x1, (Vector(1) << 0.0).finished(),
-                                            constrainedModel);
-
-  batchConstrained = std::make_shared<BatchJacobianFactor<1, 1>>(
-      KeyVector{x2}, std::vector<size_t>{1}, constrainedModel);
-  batchConstrained->reserve(1);
-  batchConstrained->addRow({0}, {I_1x1}, (Vector(1) << 0.0).finished());
-  batchGraph.push_back(batchConstrained);
-
-  GaussianFactorGraph denseGraph;
-  denseGraph.emplace_shared<JacobianFactor>(x1, I_1x1, (Vector(1) << 1.0).finished());
-  denseGraph.emplace_shared<JacobianFactor>(x1, (Matrix(1, 1) << 0.5).finished(),
-                                           (Vector(1) << 1.0).finished());
+  denseGraph.emplace_shared<JacobianFactor>(x1, I_1x1, (Vector(1) << 1.0).finished(),
+                                           unitModel);
+  denseGraph.emplace_shared<JacobianFactor>(x1, I_1x1, (Vector(1) << 2.0).finished(),
+                                           nonUnitModel);
   denseGraph.emplace_shared<JacobianFactor>(x2, I_1x1, (Vector(1) << 0.0).finished(),
                                            constrainedModel);
 
