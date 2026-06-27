@@ -250,6 +250,7 @@ class GTSAM_EXPORT Fair : public Base {
 class GTSAM_EXPORT Huber : public Base {
  protected:
   double k_;
+  static constexpr double lambda_max_ = 1e10;
 
  public:
   typedef std::shared_ptr<Huber> shared_ptr;
@@ -300,6 +301,7 @@ class GTSAM_EXPORT Huber : public Base {
 class GTSAM_EXPORT Cauchy : public Base {
  protected:
   double k_, ksquared_;
+  static constexpr double lambda_max_ = 1e10;
 
  public:
   typedef std::shared_ptr<Cauchy> shared_ptr;
@@ -346,6 +348,7 @@ class GTSAM_EXPORT Cauchy : public Base {
 class GTSAM_EXPORT Tukey : public Base {
  protected:
   double c_, csquared_;
+  static constexpr double lambda_max_ = 1e5;
 
  public:
   typedef std::shared_ptr<Tukey> shared_ptr;
@@ -392,6 +395,7 @@ class GTSAM_EXPORT Tukey : public Base {
 class GTSAM_EXPORT Welsch : public Base {
  protected:
   double c_, csquared_;
+  static constexpr double lambda_max_ = 1e10;
 
  public:
   typedef std::shared_ptr<Welsch> shared_ptr;
@@ -487,6 +491,7 @@ class GTSAM_EXPORT GemanMcClure : public Base {
   double c_;
   double csquared_;
   GradScheme graduation_;
+  static constexpr double lambda_max_ = 1e10;
 
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
@@ -568,6 +573,8 @@ class GTSAM_EXPORT TruncatedLeastSquares : public Base {
   double c_;
   double csquared_;
   GradScheme graduation_;
+  static constexpr double lambda_max_ = 1e12;
+  static constexpr double lambda_min_ = 1e-12;
 
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
@@ -619,6 +626,7 @@ class GTSAM_EXPORT DCS : public Base {
 
  protected:
   double c_;
+  static constexpr double lambda_max_ = 1e10;
 
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION

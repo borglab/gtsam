@@ -691,40 +691,40 @@ TEST(NoiseModel, robustFunctionGemanMcClure)
 TEST(NoiseModel, robustFunctionGemanMcClureGraduatedScaleInvariant) {
   mEstimator::GemanMcClure::shared_ptr gmc = mEstimator::GemanMcClure::Create(
       1.0, mEstimator::GemanMcClure::GradScheme::SCALE_INVARIANT);
-  // At zero error is not dependent on mu
+  // At r=zero, error is not dependent on mu
   DOUBLES_EQUAL(0.0, gmc->graduatedLoss(0.0, 0.0), 1e-9);
-  CHECK(assert_equal(0.0, gmc->graduatedLoss(0.0, 0.5), 1e-9));
-  CHECK(assert_equal(0.0, gmc->graduatedLoss(0.0, 1.0), 1e-9));
+  DOUBLES_EQUAL(0.0, gmc->graduatedLoss(0.0, 0.5), 1e-9);
+  DOUBLES_EQUAL(0.0, gmc->graduatedLoss(0.0, 1.0), 1e-9);
 
-  // For Mu = 0.0 error is quadratic
+  // At mu=0.0, error is quadratic
   DOUBLES_EQUAL(0.0025, gmc->graduatedLoss(0.1, 0.0), 1e-9);
   DOUBLES_EQUAL(0.4225, gmc->graduatedLoss(1.3, 0.0), 1e-9);
   DOUBLES_EQUAL(38.750625, gmc->graduatedLoss(12.45, 0.0), 1e-9);
 
-  // For 0.0 < Mu Error depends on shape
+  // At mu>0.0, error depends on shape
   DOUBLES_EQUAL(0.00454545454, gmc->graduatedLoss(0.1, 0.5), 1e-9);
   DOUBLES_EQUAL(0.36739130434, gmc->graduatedLoss(1.3, 0.5), 1e-9);
   DOUBLES_EQUAL(5.76217472119, gmc->graduatedLoss(12.45, 0.5), 1e-9);
 
-  // For Mu == 1.0 error depends is Geman-Mcclure
-  DOUBLES_EQUAL(0.00495049504, gmc->graduatedLoss(0.1, 1.0), 1e-9);
-  DOUBLES_EQUAL(0.31412639405, gmc->graduatedLoss(1.3, 1.0), 1e-9);
-  DOUBLES_EQUAL(0.49679492315, gmc->graduatedLoss(12.45, 1.0), 1e-9);
+  // at mu=1.0, error depends is Geman-Mcclure
+  DOUBLES_EQUAL(gmc->loss(0.1), gmc->graduatedLoss(0.1, 1.0), 1e-9);
+  DOUBLES_EQUAL(gmc->loss(1.3), gmc->graduatedLoss(1.3, 1.0), 1e-9);
+  DOUBLES_EQUAL(gmc->loss(12.45), gmc->graduatedLoss(12.45, 1.0), 1e-9);
 
-  // At Mu = 0 weights are identical at 0.5
+  // At mu=0, weights are identical at 0.5
   DOUBLES_EQUAL(0.5, gmc->graduatedWeight(0.1, 0.0), 1e-9);
   DOUBLES_EQUAL(0.5, gmc->graduatedWeight(1.3, 0.0), 1e-9);
   DOUBLES_EQUAL(0.5, gmc->graduatedWeight(12.45, 0.0), 1e-9);
 
-  // At Mu = 1 weights are higher for low error
+  // At mu=1, weights are higher for low error
   DOUBLES_EQUAL(0.9802960494, gmc->graduatedWeight(0.1, 1.0), 1e-9);
   DOUBLES_EQUAL(0.13819598955, gmc->graduatedWeight(1.3, 1.0), 1e-9);
   DOUBLES_EQUAL(0.00004109007, gmc->graduatedWeight(12.45, 1.0), 1e-9);
 
-  // At Mu = 1 large residuals have ~0 weight
+  // At mu=1, large residuals have ~0 weight
   DOUBLES_EQUAL(0.0, gmc->graduatedWeight(2000.0, 1.0), 1e-9);
 
-  // Across Mu residual of 0 will have weight = 1
+  // Across mu, residual of 0 will have weight = 1
   DOUBLES_EQUAL(1.0, gmc->graduatedWeight(0.0, 0.1), 1e-9);
   DOUBLES_EQUAL(1.0, gmc->graduatedWeight(0.0, 0.5), 1e-9);
   DOUBLES_EQUAL(1.0, gmc->graduatedWeight(0.0, 0.8), 1e-9);
@@ -743,39 +743,6 @@ TEST(NoiseModel, robustFunctionTLS)
   DOUBLES_EQUAL(8.0, tls->loss(error2), 1e-8);
   DOUBLES_EQUAL(8.0, tls->loss(error3), 1e-8);
   DOUBLES_EQUAL(0.1250, tls->loss(error4), 1e-8);
-}
-
-
-TEST(NoiseModel, robustFunctionTruncatedLeastSquaresGraduatedLinear) {
-  const double k = 5.0, e1 = 1.0, e2 = 10.0;
-  const mEstimator::TruncatedLeastSquares::shared_ptr tls =
-      mEstimator::TruncatedLeastSquares::Create(
-          k, mEstimator::TruncatedLeastSquares::GradScheme::GNC_LINEAR);
-  // Convex for \mu = 0
-  DOUBLES_EQUAL(0.005, tls->graduatedWeight(e1, 1e-6), 1e-6);
-  DOUBLES_EQUAL(0.0005, tls->graduatedWeight(e2, 1e-6), 1e-6);
-  // Standard for large \mu
-  DOUBLES_EQUAL(tls->weight(e1), tls->graduatedWeight(e1, 1e8), 1e-6);
-  DOUBLES_EQUAL(tls->weight(e2), tls->graduatedWeight(e2, 1e8), 1e-6);
-  // Convex for \mu = 0
-  DOUBLES_EQUAL(0.0005, tls->graduatedLoss(e1, 1e-8), 1e-4);
-  DOUBLES_EQUAL(0.005, tls->graduatedLoss(e2, 1e-8), 1e-4);
-  // Standard for large \mu
-  DOUBLES_EQUAL(tls->loss(e1), tls->graduatedLoss(e1, 1e8), 1e-6);
-  DOUBLES_EQUAL(tls->loss(e2), tls->graduatedLoss(e2, 1e8), 1e-6);
-}
-
-TEST(NoiseModel, robustFunctionTruncatedLeastSquaresGraduatedSuperLinear) {
-  const double k = 5.0, e1 = 1.0, e2 = 10.0;
-  const mEstimator::TruncatedLeastSquares::shared_ptr tls =
-      mEstimator::TruncatedLeastSquares::Create(
-          k, mEstimator::TruncatedLeastSquares::GradScheme::GNC_SUPERLINEAR);
-  // Convex for \mu = 0
-  DOUBLES_EQUAL(1, tls->graduatedWeight(e1, 1e-6), 1e-6);
-  DOUBLES_EQUAL(0.5, tls->graduatedWeight(e2, 1e-6), 1e-6);
-  // Standard for large \mu
-  DOUBLES_EQUAL(tls->weight(e1), tls->graduatedWeight(e1, 1e8), 1e-6);
-  DOUBLES_EQUAL(tls->weight(e2), tls->graduatedWeight(e2, 1e8), 1e-6);
 }
 
 TEST(NoiseModel, robustFunctionWelsch)
@@ -1006,33 +973,82 @@ TEST(NoiseModel, robustNoiseCustomHuber) {
 
 TEST(NoiseModel, graduatedWeightLossAll) {
   const double e1 = 1.0, e2 = 10.0, k = 5.0;
-  auto testFunc = [&](const mEstimator::Base::shared_ptr mest, double infinity, bool is_dcs) -> void {
-    // Convex For large \mu
-    DOUBLES_EQUAL(1.0, mest->graduatedWeight(e1, infinity), 1e-5);
-    DOUBLES_EQUAL(1.0, mest->graduatedWeight(e2, infinity), 1e-5);
-    // Standard for \mu = 1
+  auto testWeight = [&](const mEstimator::Base::shared_ptr mest) -> void {
+    // Convex \mu = 0.0
+    DOUBLES_EQUAL(1.0, mest->graduatedWeight(e1, 0.0), 1e-5);
+    DOUBLES_EQUAL(1.0, mest->graduatedWeight(e2, 0.0), 1e-5);
+    // Standard for \mu = 1.0
     DOUBLES_EQUAL(mest->weight(e1), mest->graduatedWeight(e1, 1.0), 1e-5);
     DOUBLES_EQUAL(mest->weight(e2), mest->graduatedWeight(e2, 1.0), 1e-5);
-    // Convex For large \mu
+  };
+  auto testLoss = [&](const mEstimator::Base::shared_ptr mest, bool is_dcs) -> void {
+    // Convex for \mu = 0.0
     if (is_dcs) {
-      DOUBLES_EQUAL(e1 * e1, mest->graduatedLoss(e1, infinity), 1e-5);
-      DOUBLES_EQUAL(e2 * e2, mest->graduatedLoss(e2, infinity), 1e-5);
+      DOUBLES_EQUAL(e1 * e1, mest->graduatedLoss(e1, 0.0), 1e-5);
+      DOUBLES_EQUAL(e2 * e2, mest->graduatedLoss(e2, 0.0), 1e-5);
     } else {
-      DOUBLES_EQUAL(0.5 * e1 * e1, mest->graduatedLoss(e1, infinity), 1e-5);
-      DOUBLES_EQUAL(0.5 * e2 * e2, mest->graduatedLoss(e2, infinity), 1e-5);
+      DOUBLES_EQUAL(0.5 * e1 * e1, mest->graduatedLoss(e1, 0.0), 1e-5);
+      DOUBLES_EQUAL(0.5 * e2 * e2, mest->graduatedLoss(e2, 0.0), 1e-5);
     }
-    // Standard for \mu = 1
+    // Standard for \mu = 1.0
     DOUBLES_EQUAL(mest->loss(e1), mest->graduatedLoss(e1, 1.0), 1e-5);
     DOUBLES_EQUAL(mest->loss(e2), mest->graduatedLoss(e2, 1.0), 1e-5);
   };
 
-  testFunc(mEstimator::Huber::Create(k), 1e8, false);
-  testFunc(mEstimator::Cauchy::Create(k), 1e8, false);
-  testFunc(mEstimator::GemanMcClure::Create(k), 1e12, false);
-  testFunc(mEstimator::TruncatedLeastSquares::Create(k), 1e12, false);
-  testFunc(mEstimator::Welsch::Create(k), 1e12, false);
-  testFunc(mEstimator::Tukey::Create(k), 1e5, false);
-  testFunc(mEstimator::DCS::Create(k), 1e12, true);
+  auto huber = mEstimator::Huber::Create(k);
+  testWeight(huber);
+  testLoss(huber, false);
+  auto cauchy = mEstimator::Cauchy::Create(k);
+  testWeight(cauchy);
+  testLoss(cauchy, false);
+  auto gmc = mEstimator::GemanMcClure::Create(k);
+  testWeight(gmc);
+  testLoss(gmc, false);
+  auto welsch = mEstimator::Welsch::Create(k);
+  testWeight(welsch);
+  testLoss(welsch, false);
+  auto tukey = mEstimator::Tukey::Create(k);
+  testWeight(tukey);
+  testLoss(tukey, false);
+  auto dcs = mEstimator::DCS::Create(k);
+  testWeight(dcs);
+  testLoss(dcs, true);
+  auto tls_std = mEstimator::TruncatedLeastSquares::Create(
+      k, mEstimator::TruncatedLeastSquares::GradScheme::STANDARD);
+  testWeight(tls_std);
+  testLoss(tls_std, false);
+}
+
+TEST(NoiseModel, graduatedWeightLossNonStandard) {
+  const double e1 = 1.0, e2 = 10.0, k = 5.0;
+
+  auto tls_lin = mEstimator::TruncatedLeastSquares::Create(
+    k, mEstimator::TruncatedLeastSquares::GradScheme::GNC_LINEAR);
+  // TLS Linear is convex for mu=0 but not quadratic
+  DOUBLES_EQUAL(5e-6, tls_lin->graduatedWeight(e1, 0.0), 1e-8);
+  DOUBLES_EQUAL(5e-7, tls_lin->graduatedWeight(e2, 0.0), 1e-8);
+  DOUBLES_EQUAL(5e-6, tls_lin->graduatedLoss(e1, 0.0), 1e-8);
+  DOUBLES_EQUAL(5e-5, tls_lin->graduatedLoss(e2, 0.0), 1e-8);
+  // TLS Linear matches TLS for mu=1
+  DOUBLES_EQUAL(tls_lin->weight(e1), tls_lin->graduatedWeight(e1, 1.0), 1e-8);
+  DOUBLES_EQUAL(tls_lin->weight(e2), tls_lin->graduatedWeight(e2, 1.0), 1e-8);
+  DOUBLES_EQUAL(tls_lin->loss(e1), tls_lin->graduatedLoss(e1, 1.0), 1e-8);
+  DOUBLES_EQUAL(tls_lin->loss(e2), tls_lin->graduatedLoss(e2, 1.0), 1e-8);
+
+  auto tls_sup = mEstimator::TruncatedLeastSquares::Create(
+    k, mEstimator::TruncatedLeastSquares::GradScheme::GNC_SUPERLINEAR);
+  // TLS Super is never generally convex by construction and has no loss
+  DOUBLES_EQUAL(1.0, tls_sup->graduatedWeight(e1, 0.0), 1e-8);
+  DOUBLES_EQUAL(0.5, tls_sup->graduatedWeight(e2, 0.0), 1e-8);
+  DOUBLES_EQUAL(tls_sup->weight(e1), tls_sup->graduatedWeight(e1, 1.0), 1e-8);
+  DOUBLES_EQUAL(tls_sup->weight(e2), tls_sup->graduatedWeight(e2, 1.0), 1e-8);
+
+  auto gmc_si = mEstimator::GemanMcClure::Create(
+    k, mEstimator::GemanMcClure::GradScheme::SCALE_INVARIANT);
+  // GM Scale Invariant, at mu=0.0 weight depends on shape param
+  DOUBLES_EQUAL(0.961538, gmc_si->graduatedWeight(e1, 0.0), 1e-6);
+  DOUBLES_EQUAL(0.961538, gmc_si->graduatedWeight(e2, 0.0), 1e-6);
+  
 }
 
 TEST(NoiseModel, lossFunctionAtZero) {
