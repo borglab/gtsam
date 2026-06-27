@@ -187,8 +187,16 @@ class LieGroupEKF : public ManifoldEKF<G> {
             typename = enable_if_dynamics<Dynamics>>
   G predictMean(Dynamics&& f, double dt,
                 OptionalJacobian<Dim, Dim> Phi = {}) const {
-    Jacobian Df = Jacobian::Zero();
-    Jacobian Dexp = Jacobian::Zero();
+    Jacobian Df;
+    Jacobian Dexp;
+    if (Phi) {
+      if constexpr (Dim == Eigen::Dynamic) {
+        Df.resize(this->n_, this->n_);
+        Dexp.resize(this->n_, this->n_);
+      }
+      Df.setZero();
+      Dexp.setZero();
+    }
     if constexpr (std::is_same_v<G, Matrix>) {
       TangentVector xi = f(this->X_, Phi ? &Df : nullptr);
       if (Phi) *Phi = expm(Df * dt, K);
