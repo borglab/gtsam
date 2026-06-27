@@ -29,6 +29,7 @@
 #include <Eigen/StdVector>
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <map>
 #include <stdexcept>
 #include <string>
@@ -179,7 +180,7 @@ class GTSAM_EXPORT BatchJacobianFactorBase : public GaussianFactor {
    * cache locality guidance.
    */
   virtual void buildMappedSlots(const std::vector<DenseIndex>& slotIndices,
-                              std::vector<DenseIndex>& mappedSlots) const = 0;
+                                std::vector<DenseIndex>& mappedSlots) const = 0;
 
   /// Update this factor using pre-built mapped slots.
   /**
@@ -376,6 +377,19 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
     }
   }
 
+  template <typename MatrixType>
+  void updateOffDiagonalNormalized(DenseIndex targetI, DenseIndex targetJ,
+                                  const MatrixType& block,
+                                  SymmetricBlockMatrix* info) const {
+    assert((targetI != targetJ) &&
+           "BatchJacobianFactor: duplicate mapped Hessian slots are not supported.");
+    if (targetI < targetJ) {
+      info->updateOffDiagonalBlock(targetI, targetJ, block);
+      return;
+    }
+    info->updateOffDiagonalBlock(targetJ, targetI, block.transpose());
+  }
+
   /**
    * Add one off-diagonal augmented Hessian block from a compact row group.
    *
@@ -392,19 +406,21 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
       const auto& A = std::get<I>(blocks_)[rowIndex];
       const RhsVector& b = rhs_[rowIndex];
       if (weights) {
-        info->updateOffDiagonalBlock(targetI, targetJ,
-                                     A.transpose() * weights->asDiagonal() * b);
+        updateOffDiagonalNormalized(
+            targetI, targetJ, A.transpose() * weights->asDiagonal() * b, info);
       } else {
-        info->updateOffDiagonalBlock(targetI, targetJ, A.transpose() * b);
+        updateOffDiagonalNormalized(targetI, targetJ, A.transpose() * b, info);
       }
     } else {
       const auto& Ai = std::get<I>(blocks_)[rowIndex];
       const auto& Aj = std::get<J>(blocks_)[rowIndex];
       if (weights) {
-        info->updateOffDiagonalBlock(
-            targetI, targetJ, Ai.transpose() * weights->asDiagonal() * Aj);
+        updateOffDiagonalNormalized(targetI, targetJ,
+                                    Ai.transpose() * weights->asDiagonal() * Aj,
+                                    info);
       } else {
-        info->updateOffDiagonalBlock(targetI, targetJ, Ai.transpose() * Aj);
+        updateOffDiagonalNormalized(targetI, targetJ, Ai.transpose() * Aj,
+                                    info);
       }
     }
   }
@@ -857,6 +873,7 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
     for (const DenseIndex slot : mappedSlots) {
       if (slot < 0) {
         allSlotsNonNegative = false;
+        continue;
       } else if (slot > rhsSlot) {
         throw std::invalid_argument(
             "BatchJacobianFactor::updateHessianWithMappedSlots: invalid "
@@ -875,12 +892,13 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
                       .square();
         weightsPtr = &weights;
         if (allSlotsNonNegative) {
-          updateMappedHessianRowAllValid(
-              rowIndex, mappedSlots.data() + rowIndex * stride, weightsPtr,
-              info);
+          updateMappedHessianRowAllValid(rowIndex,
+                                         mappedSlots.data() + rowIndex * stride,
+                                         weightsPtr, info);
         } else {
-          updateMappedHessianRow(
-              rowIndex, mappedSlots.data() + rowIndex * stride, weightsPtr, info);
+          updateMappedHessianRow(rowIndex,
+                                 mappedSlots.data() + rowIndex * stride,
+                                 weightsPtr, info);
         }
       }
       return;
@@ -889,12 +907,11 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
     const DenseIndex* rowSlotsPtr = mappedSlots.data();
     for (size_t rowIndex = 0; rowIndex < rowSlots_.size(); ++rowIndex) {
       if (allSlotsNonNegative) {
-        updateMappedHessianRowAllValid(rowIndex,
-                                       rowSlotsPtr + rowIndex * stride, nullptr,
-                                       info);
+        updateMappedHessianRowAllValid(
+            rowIndex, rowSlotsPtr + rowIndex * stride, nullptr, info);
       } else {
-        updateMappedHessianRow(rowIndex, rowSlotsPtr + rowIndex * stride, nullptr,
-                               info);
+        updateMappedHessianRow(rowIndex, rowSlotsPtr + rowIndex * stride,
+                               nullptr, info);
       }
     }
   }

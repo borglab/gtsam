@@ -134,6 +134,36 @@ TEST(BatchJacobianFactor, UpdateHessianWithMappedSlotsMatchesToJacobian) {
                       1e-12));
 }
 
+// Verifies slot permutation from factor keys to info blocks preserves assembly
+// correctness for mapped and direct full-range paths.
+TEST(BatchJacobianFactor, UpdateHessianWithPermutedSlotOrder) {
+  const Factor factor = createWeightedFactor();
+
+  const KeyVector permutedInfoKeys{1, 2, 0};
+  const std::vector<size_t> permutedAugmentedDimensions{2, 3, 2, 1};
+  std::vector<DenseIndex> slotIndices = {2, 0, 1, 3};
+
+  SymmetricBlockMatrix permutedDirect(permutedAugmentedDimensions),
+                          permutedMapped(permutedAugmentedDimensions),
+                          expected(permutedAugmentedDimensions);
+  permutedDirect.setZero();
+  permutedMapped.setZero();
+  expected.setZero();
+
+  factor.updateHessian(slotIndices, &permutedDirect);
+
+  std::vector<DenseIndex> mappedSlots;
+  factor.buildMappedSlots(slotIndices, mappedSlots);
+  factor.updateHessianWithMappedSlots(mappedSlots, &permutedMapped);
+
+  factor.toJacobianFactor().updateHessian(permutedInfoKeys, &expected);
+
+  EXPECT(assert_equal(assembledHessian(expected), assembledHessian(permutedDirect),
+                      1e-12));
+  EXPECT(assert_equal(assembledHessian(expected), assembledHessian(permutedMapped),
+                      1e-12));
+}
+
 // Verifies mapped-slot buffers handle fixed-key slots as -1 and still match the
 // safe dense-mapping path.
 TEST(BatchJacobianFactor, UpdateHessianWithMappedSlotsSkipsNegativeSlots) {
@@ -155,6 +185,21 @@ TEST(BatchJacobianFactor, UpdateHessianWithMappedSlotsSkipsNegativeSlots) {
 
   EXPECT(assert_equal(assembledHessian(expected), assembledHessian(mapped),
                       1e-12));
+}
+
+// Duplicate mapped slots violate the required slot mapping contract and are
+// treated as an invariant violation in debug assertions.
+TEST(BatchJacobianFactor, DuplicateMappedSlotsAreInvalid) {
+  const Factor factor = createWeightedFactor();
+
+  std::vector<DenseIndex> slotIndicesWithDuplicate = {0, 1, 0, 3};
+  std::vector<DenseIndex> mappedSlots;
+  factor.buildMappedSlots(slotIndicesWithDuplicate, mappedSlots);
+
+  EXPECT_LONGS_EQUAL(0, mappedSlots[0]);
+  EXPECT_LONGS_EQUAL(0, mappedSlots[1]);
+  // Debug builds assert if this duplicate mapping reaches the mapped-slot update
+  // path; we do not have a dedicated death-test helper in this suite.
 }
 
 }  // namespace update_hessian_fixture
