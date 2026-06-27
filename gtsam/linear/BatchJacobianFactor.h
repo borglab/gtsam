@@ -430,6 +430,11 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
       size_t rowIndex, const DenseIndex* mappedSlots, const RhsVector* weights,
       SymmetricBlockMatrix* info, DenseIndex beginCol, DenseIndex endCol,
       std::index_sequence<Is...>) const {
+    (void)rowIndex;
+    (void)weights;
+    (void)info;
+    (void)beginCol;
+    (void)endCol;
     const DenseIndex targetSlot = mappedSlots[J];
     ((mappedSlots[Is] >= 0 && targetSlot >= 0 &&
               slotInRange(std::max(mappedSlots[Is], targetSlot), beginCol,
