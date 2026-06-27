@@ -250,10 +250,10 @@ class GTSAM_EXPORT Fair : public Base {
 class GTSAM_EXPORT Huber : public Base {
  protected:
   double k_;
-  static constexpr double lambda_max_ = 1e10;
 
  public:
   typedef std::shared_ptr<Huber> shared_ptr;
+  static constexpr double LAMBDA_MAX = 1e10;
 
   Huber(double k = 1.345, const ReweightScheme reweight = Block);
   double weight(double distance) const override;
@@ -301,10 +301,11 @@ class GTSAM_EXPORT Huber : public Base {
 class GTSAM_EXPORT Cauchy : public Base {
  protected:
   double k_, ksquared_;
-  static constexpr double lambda_max_ = 1e10;
 
  public:
   typedef std::shared_ptr<Cauchy> shared_ptr;
+  static constexpr double LAMBDA_MAX = 1e10;
+
 
   Cauchy(double k = 0.1, const ReweightScheme reweight = Block);
   double weight(double distance) const override;
@@ -348,10 +349,10 @@ class GTSAM_EXPORT Cauchy : public Base {
 class GTSAM_EXPORT Tukey : public Base {
  protected:
   double c_, csquared_;
-  static constexpr double lambda_max_ = 1e5;
 
  public:
   typedef std::shared_ptr<Tukey> shared_ptr;
+  static constexpr double LAMBDA_MAX = 1e5;
 
   Tukey(double c = 4.6851, const ReweightScheme reweight = Block);
   double weight(double distance) const override;
@@ -395,10 +396,11 @@ class GTSAM_EXPORT Tukey : public Base {
 class GTSAM_EXPORT Welsch : public Base {
  protected:
   double c_, csquared_;
-  static constexpr double lambda_max_ = 1e10;
+
 
  public:
   typedef std::shared_ptr<Welsch> shared_ptr;
+  static constexpr double LAMBDA_MAX = 1e10;
 
   Welsch(double c = 2.9846, const ReweightScheme reweight = Block);
   double weight(double distance) const override;
@@ -452,6 +454,7 @@ class GTSAM_EXPORT GemanMcClure : public Base {
  public:
   typedef std::shared_ptr<GemanMcClure> shared_ptr;
   enum GradScheme { STANDARD, SCALE_INVARIANT };
+  static constexpr double LAMBDA_MAX = 1e10;
 
   GemanMcClure(double c = 1.0,
                const GradScheme graduation = GradScheme::STANDARD,
@@ -490,8 +493,7 @@ class GTSAM_EXPORT GemanMcClure : public Base {
  protected:
   double c_;
   double csquared_;
-  GradScheme graduation_;
-  static constexpr double lambda_max_ = 1e10;
+  GradScheme graduation_;  
 
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
@@ -542,6 +544,8 @@ class GTSAM_EXPORT TruncatedLeastSquares : public Base {
  public:
   typedef std::shared_ptr<TruncatedLeastSquares> shared_ptr;
   enum GradScheme { STANDARD, GNC_LINEAR, GNC_SUPERLINEAR };
+  static constexpr double LAMBDA_MAX = 1e12;
+  static constexpr double LAMBDA_MIN = 1e-12;
 
   TruncatedLeastSquares(double c = 1.0,
                         GradScheme graduation = GradScheme::STANDARD,
@@ -573,8 +577,6 @@ class GTSAM_EXPORT TruncatedLeastSquares : public Base {
   double c_;
   double csquared_;
   GradScheme graduation_;
-  static constexpr double lambda_max_ = 1e12;
-  static constexpr double lambda_min_ = 1e-12;
 
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
@@ -607,6 +609,7 @@ class GTSAM_EXPORT TruncatedLeastSquares : public Base {
 class GTSAM_EXPORT DCS : public Base {
  public:
   typedef std::shared_ptr<DCS> shared_ptr;
+  static constexpr double LAMBDA_MAX = 1e10;
 
   DCS(double c = 1.0, const ReweightScheme reweight = Block);
   ~DCS() override {}
@@ -626,7 +629,6 @@ class GTSAM_EXPORT DCS : public Base {
 
  protected:
   double c_;
-  static constexpr double lambda_max_ = 1e10;
 
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
