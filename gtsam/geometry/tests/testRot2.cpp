@@ -15,10 +15,10 @@
  * @author  Frank Dellaert
  */
 
-#include <gtsam/geometry/Rot2.h>
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/testLie.h>
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/geometry/Rot2.h>
 
 using namespace gtsam;
 

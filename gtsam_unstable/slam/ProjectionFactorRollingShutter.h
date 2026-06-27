@@ -209,9 +209,6 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
     ar& BOOST_SERIALIZATION_NVP(verboseCheirality_);
   }
 #endif
-
- public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /// traits

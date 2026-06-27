@@ -35,7 +35,6 @@
 #include <gtsam/nonlinear/WnoaInterpolator.h>
 #include <gtsam/nonlinear/WnoaStateData.h>
 
-#include <algorithm>
 #include <array>
 #include <stdexcept>
 #include <unordered_set>

@@ -39,16 +39,12 @@
 #include <gtsam/base/MatrixLieGroup.h>
 #include <gtsam/base/ProductLieGroup.h>
 #include <gtsam/base/Vector.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Unit3.h>
 
-#include <array>
-#include <functional>
 #include <iostream>
-#include <stdexcept>
 #include <string>
 #include <vector>
 

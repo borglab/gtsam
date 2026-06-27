@@ -25,17 +25,10 @@
 #include <gtsam/nonlinear/WnoaFactor.h>
 #include <gtsam/nonlinear/WnoaStateData.h>
 
-#include <algorithm>
-#include <fstream>
 #include <functional>
-#include <iostream>
-#include <limits>
 #include <map>
 #include <optional>
-#include <random>
 #include <set>
-#include <string>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 

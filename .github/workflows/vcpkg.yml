@@ -78,13 +78,21 @@ jobs:
         env:
           VCPKG_BINARY_SOURCES: default,rw
 
+      - name: Get compiler hash
+        id: hash-compiler
+        shell: bash
+        run: |
+          ./vcpkg/vcpkg install --dry-run
+          cat vcpkg_installed/vcpkg/compiler-file-hash-cache.json
+          echo hash=$(jq '.[].["hash"]' < vcpkg_installed/vcpkg/compiler-file-hash-cache.json) >> $GITHUB_OUTPUT
+
       - name: Restore cache dependencies
         id: cache-restore
         uses: actions/cache/restore@v3
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: ${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}
-          restore-keys: ${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}
+          key: ${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}-${{ steps.hash-compiler.outputs.hash }}
+          restore-keys: ${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}-${{ steps.hash-compiler.outputs.hash }}
 
       - name: Set Swap Space (Linux)
         if: runner.os == 'Linux'
@@ -131,11 +139,11 @@ jobs:
 
       - name: Cache dependencies
         # Don't save if it's the exact same
-        if: steps.cache-restore.outputs.cache-matched-key != format('{0}-{1}-{2}', matrix.os, hashFiles('vcpkg.json'), hashFiles('vcpkg_installed/**/vcpkg_abi_info.txt'))
+        if: steps.cache-restore.outputs.cache-matched-key != format('{0}-{1}-{2}-{3}', matrix.os, hashFiles('vcpkg.json'), steps.hash-compiler.outputs.hash, hashFiles('vcpkg_installed/**/vcpkg_abi_info.txt'))
         uses: actions/cache/save@v4
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: ${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}-${{ hashFiles('vcpkg_installed/**/vcpkg_abi_info.txt') }}
+          key: ${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}-${{ steps.hash-compiler.outputs.hash }}-${{ hashFiles('vcpkg_installed/**/vcpkg_abi_info.txt') }}
 
       - name: Install python packages
         shell: bash

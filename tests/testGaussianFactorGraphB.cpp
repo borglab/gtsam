@@ -20,7 +20,6 @@
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>
 

@@ -150,8 +150,6 @@ public:
       char* traceStorage) const override {
     return constant_;
   }
-
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 //-----------------------------------------------------------------------------
@@ -498,9 +496,6 @@ public:
 
   // Inner Record Class
   struct Record: public CallRecordImplementor<Record, traits<T>::dimension> {
-
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
     typename Jacobian<T, A1>::type dTdA1;
     typename Jacobian<T, A2>::type dTdA2;
     typename Jacobian<T, A3>::type dTdA3;

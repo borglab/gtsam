@@ -175,7 +175,7 @@ double timeColumn(size_t reps) {
     for (size_t i=0; i<reps; ++i)
       for (size_t j = 0; j<n; ++j)
         //result = ublas::matrix_column<Matrix>(M, j);
-        result = column(M, j);
+        result = M.col(j);
 
     gttoc_(elapsed);
     tictoc_getNode(elapsedNode, elapsed);

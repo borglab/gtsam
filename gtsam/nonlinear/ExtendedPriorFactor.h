@@ -237,13 +237,6 @@ class ExtendedPriorFactor : public NoiseModelFactorN<VALUE> {
     ar& BOOST_SERIALIZATION_NVP(mean_);
   }
 #endif
-
-  /// Alignment, see
-  /// https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
-  inline constexpr static auto NeedsToAlign = (sizeof(T) % 16) == 0;
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
 };
 
 /// traits

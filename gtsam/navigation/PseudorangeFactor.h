@@ -112,7 +112,7 @@ class GTSAM_EXPORT PseudorangeFactor : public NoiseModelFactorN<Point3, double>,
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(PseudorangeFactor::Base);
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar& BOOST_SERIALIZATION_NVP(measurement_);
     ar& BOOST_SERIALIZATION_NVP(satPos_);
     ar& BOOST_SERIALIZATION_NVP(satClkBias_);
@@ -380,8 +380,7 @@ class GTSAM_EXPORT DifferentialPseudorangeFactor
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(
-        DifferentialPseudorangeFactor::Base);
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar& BOOST_SERIALIZATION_NVP(measurement_);
     ar& BOOST_SERIALIZATION_NVP(satPos_);
     ar& BOOST_SERIALIZATION_NVP(satClkBias_);
@@ -506,7 +505,7 @@ class GTSAM_EXPORT PseudorangeFactorArm
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(PseudorangeFactorArm::Base);
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar& BOOST_SERIALIZATION_NVP(measurement_);
     ar& BOOST_SERIALIZATION_NVP(satPos_);
     ar& BOOST_SERIALIZATION_NVP(satClkBias_);
@@ -590,8 +589,7 @@ class GTSAM_EXPORT DifferentialPseudorangeFactorArm
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(
-        DifferentialPseudorangeFactorArm::Base);
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar& BOOST_SERIALIZATION_NVP(measurement_);
     ar& BOOST_SERIALIZATION_NVP(satPos_);
     ar& BOOST_SERIALIZATION_NVP(satClkBias_);
@@ -693,8 +691,7 @@ class GTSAM_EXPORT DoubleDifferencePseudorangeFactor
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(
-        DoubleDifferencePseudorangeFactor::Base);
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar& boost::serialization::make_nvp("prRovRef_", dd_.rovRef);
     ar& boost::serialization::make_nvp("prBaseRef_", dd_.baseRef);
     ar& boost::serialization::make_nvp("prRovTarget_", dd_.rovTarget);
@@ -780,8 +777,7 @@ class GTSAM_EXPORT DoubleDifferencePseudorangeFactorArm
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(
-        DoubleDifferencePseudorangeFactorArm::Base);
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar& boost::serialization::make_nvp("prRovRef_", dd_.rovRef);
     ar& boost::serialization::make_nvp("prBaseRef_", dd_.baseRef);
     ar& boost::serialization::make_nvp("prRovTarget_", dd_.rovTarget);
