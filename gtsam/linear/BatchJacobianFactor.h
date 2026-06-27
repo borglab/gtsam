@@ -162,7 +162,7 @@ class GTSAM_EXPORT BatchJacobianFactorBase : public GaussianFactor {
 
   /// Direct augmented Hessian update over a local column slice.
   /**
-   * Update an inclusive column-range of the augmented Hessian using precomputed
+   * Update a half-open column-range of the augmented Hessian using precomputed
    * clique-local block indices.
    */
   virtual void updateHessian(const std::vector<DenseIndex>& slotIndices,
@@ -344,8 +344,6 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
     return slot >= beginCol && slot < endCol;
   }
 
-  static bool isValidSlot(DenseIndex slot) { return slot >= 0; }
-
   /**
    * Add one diagonal block contribution from a compact row group.
    *
@@ -379,10 +377,11 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
 
   template <typename MatrixType>
   void updateOffDiagonalNormalized(DenseIndex targetI, DenseIndex targetJ,
-                                  const MatrixType& block,
-                                  SymmetricBlockMatrix* info) const {
+                                   const MatrixType& block,
+                                   SymmetricBlockMatrix* info) const {
     assert((targetI != targetJ) &&
-           "BatchJacobianFactor: duplicate mapped Hessian slots are not supported.");
+           "BatchJacobianFactor: duplicate mapped Hessian slots are not "
+           "supported.");
     if (targetI < targetJ) {
       info->updateOffDiagonalBlock(targetI, targetJ, block);
       return;
@@ -427,234 +426,93 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
 
   /// Update all previous slots that contribute to augmented column J.
   template <size_t J, size_t... Is>
-  void updatePreviousAugmentedSlots([[maybe_unused]] size_t rowIndex,
-                                    [[maybe_unused]] const HessianSlots& slots,
-                                    [[maybe_unused]] const RhsVector* weights,
-                                    [[maybe_unused]] SymmetricBlockMatrix* info,
-                                    [[maybe_unused]] DenseIndex beginCol,
-                                    [[maybe_unused]] DenseIndex endCol,
-                                    std::index_sequence<Is...>) const {
-    ((slots[Is] >= 0 && slots[J] >= 0 &&
-              slotInRange(std::max(slots[Is], slots[J]), beginCol, endCol)
-          ? updateAugmentedOffDiagonal<Is, J>(rowIndex, slots[Is], slots[J],
-                                              weights, info)
-          : void()),
-     ...);
-  }
-
-  /// Update previous slots that contribute to augmented column J for full-range
-  /// Hessian assembly.
-  template <size_t J, size_t... Is>
-  void updateFullRangePreviousAugmentedSlots(
-      [[maybe_unused]] size_t rowIndex,
-      [[maybe_unused]] const std::array<DenseIndex, NumSlots + 1>& mappedSlots,
-      [[maybe_unused]] DenseIndex targetJ,
-      [[maybe_unused]] const RhsVector* weights,
-      [[maybe_unused]] SymmetricBlockMatrix* info,
+  void updateMappedPreviousAugmentedSlots(
+      size_t rowIndex, const DenseIndex* mappedSlots, const RhsVector* weights,
+      SymmetricBlockMatrix* info, DenseIndex beginCol, DenseIndex endCol,
       std::index_sequence<Is...>) const {
-    if (!isValidSlot(targetJ)) return;
-    ((isValidSlot(mappedSlots[Is])
+    const DenseIndex targetSlot = mappedSlots[J];
+    ((mappedSlots[Is] >= 0 && targetSlot >= 0 &&
+              slotInRange(std::max(mappedSlots[Is], targetSlot), beginCol,
+                          endCol)
           ? updateAugmentedOffDiagonal<Is, J>(rowIndex, mappedSlots[Is],
-                                              targetJ, weights, info)
+                                              targetSlot, weights, info)
           : void()),
      ...);
   }
 
-  /// Update augmented column J for one compact row group.
+  /// Update all previous slots that contribute to augmented column J (no slot
+  /// validity checks).
+  template <size_t J, size_t... Is>
+  void updateMappedPreviousAugmentedSlotsNoChecks(
+      size_t rowIndex, const DenseIndex* mappedSlots, const RhsVector* weights,
+      SymmetricBlockMatrix* info, DenseIndex beginCol, DenseIndex endCol,
+      std::index_sequence<Is...>) const {
+    const DenseIndex targetSlot = mappedSlots[J];
+    ((slotInRange(std::max(mappedSlots[Is], targetSlot), beginCol, endCol)
+          ? updateAugmentedOffDiagonal<Is, J>(rowIndex, mappedSlots[Is],
+                                              targetSlot, weights, info)
+          : void()),
+     ...);
+  }
+
   template <size_t J>
-  void updateAugmentedColumn(size_t rowIndex, const HessianSlots& slots,
-                             const RhsVector* weights,
-                             SymmetricBlockMatrix* info, DenseIndex beginCol,
-                             DenseIndex endCol) const {
-    const DenseIndex targetSlot = slots[J];
+  void updateMappedAugmentedColumn(size_t rowIndex,
+                                   const DenseIndex* mappedSlots,
+                                   const RhsVector* weights,
+                                   SymmetricBlockMatrix* info,
+                                   DenseIndex beginCol,
+                                   DenseIndex endCol) const {
+    const DenseIndex targetSlot = mappedSlots[J];
     if (slotInRange(targetSlot, beginCol, endCol)) {
       updateAugmentedDiagonal<J>(rowIndex, targetSlot, weights, info);
     }
-    updatePreviousAugmentedSlots<J>(rowIndex, slots, weights, info, beginCol,
-                                    endCol, std::make_index_sequence<J>{});
+    updateMappedPreviousAugmentedSlots<J>(rowIndex, mappedSlots, weights, info,
+                                          beginCol, endCol,
+                                          std::make_index_sequence<J>{});
   }
 
-  /// Unroll all augmented-column updates for one compact row group.
-  template <size_t... Js>
-  void updateAugmentedColumns([[maybe_unused]] size_t rowIndex,
-                              [[maybe_unused]] const HessianSlots& slots,
-                              [[maybe_unused]] const RhsVector* weights,
-                              [[maybe_unused]] SymmetricBlockMatrix* info,
-                              [[maybe_unused]] DenseIndex beginCol,
-                              [[maybe_unused]] DenseIndex endCol,
-                              std::index_sequence<Js...>) const {
-    (updateAugmentedColumn<Js>(rowIndex, slots, weights, info, beginCol,
-                               endCol),
-     ...);
-  }
-
-  /// Update augmented columns for one compact row group (full-range mode).
   template <size_t J>
-  void updateFullRangeAugmentedColumn(
-      size_t rowIndex, const std::array<DenseIndex, NumSlots + 1>& mappedSlots,
-      const RhsVector* weights, SymmetricBlockMatrix* info) const {
+  void updateMappedAugmentedColumnNoChecks(size_t rowIndex,
+                                           const DenseIndex* mappedSlots,
+                                           const RhsVector* weights,
+                                           SymmetricBlockMatrix* info,
+                                           DenseIndex beginCol,
+                                           DenseIndex endCol) const {
     const DenseIndex targetSlot = mappedSlots[J];
-    if (isValidSlot(targetSlot)) {
+    if (slotInRange(targetSlot, beginCol, endCol)) {
       updateAugmentedDiagonal<J>(rowIndex, targetSlot, weights, info);
     }
-    updateFullRangePreviousAugmentedSlots<J>(rowIndex, mappedSlots, targetSlot,
-                                             weights, info,
-                                             std::make_index_sequence<J>{});
+    updateMappedPreviousAugmentedSlotsNoChecks<J>(
+        rowIndex, mappedSlots, weights, info, beginCol, endCol,
+        std::make_index_sequence<J>{});
   }
 
-  /// Unroll all full-range augmented-column updates for one compact row group.
-  template <size_t... Js>
-  void updateFullRangeAugmentedColumns(
-      [[maybe_unused]] size_t rowIndex,
-      [[maybe_unused]] const std::array<DenseIndex, NumSlots + 1>& mappedSlots,
-      [[maybe_unused]] const RhsVector* weights,
-      [[maybe_unused]] SymmetricBlockMatrix* info,
-      std::index_sequence<Js...>) const {
-    (updateFullRangeAugmentedColumn<Js>(rowIndex, mappedSlots, weights, info),
-     ...);
-  }
-
-  template <size_t J, size_t... Is>
-  void updateMappedFullRangePreviousAugmentedSlots(
-      [[maybe_unused]] size_t rowIndex,
-      [[maybe_unused]] const DenseIndex* mappedSlots,
-      [[maybe_unused]] const RhsVector* weights,
-      [[maybe_unused]] SymmetricBlockMatrix* info,
-      std::index_sequence<Is...>) const {
-    ((mappedSlots[Is] >= 0 && mappedSlots[J] >= 0
-          ? updateAugmentedOffDiagonal<Is, J>(rowIndex, mappedSlots[Is],
-                                              mappedSlots[J], weights, info)
-          : void()),
-     ...);
-  }
-
-  template <size_t J, size_t... Is>
-  void updateMappedFullRangePreviousAugmentedSlotsNoChecks(
-      [[maybe_unused]] size_t rowIndex,
-      [[maybe_unused]] const DenseIndex* mappedSlots,
-      [[maybe_unused]] const RhsVector* weights,
-      [[maybe_unused]] SymmetricBlockMatrix* info,
-      std::index_sequence<Is...>) const {
-    ((updateAugmentedOffDiagonal<Is, J>(rowIndex, mappedSlots[Is],
-                                        mappedSlots[J], weights, info)),
-     ...);
-  }
-
-  template <size_t J>
-  void updateMappedFullRangeAugmentedColumn(size_t rowIndex,
-                                            const DenseIndex* mappedSlots,
-                                            const RhsVector* weights,
-                                            SymmetricBlockMatrix* info) const {
-    const DenseIndex targetSlot = mappedSlots[J];
-    if (targetSlot >= 0) {
-      updateAugmentedDiagonal<J>(rowIndex, targetSlot, weights, info);
+  template <bool AllSlotsNonNegative, size_t... Js>
+  void updateMappedAugmentedColumns(size_t rowIndex,
+                                    const DenseIndex* mappedSlots,
+                                    const RhsVector* weights,
+                                    SymmetricBlockMatrix* info,
+                                    DenseIndex beginCol, DenseIndex endCol,
+                                    std::index_sequence<Js...>) const {
+    if constexpr (AllSlotsNonNegative) {
+      (updateMappedAugmentedColumnNoChecks<Js>(rowIndex, mappedSlots, weights,
+                                               info, beginCol, endCol),
+       ...);
+    } else {
+      (updateMappedAugmentedColumn<Js>(rowIndex, mappedSlots, weights, info,
+                                       beginCol, endCol),
+       ...);
     }
-    updateMappedFullRangePreviousAugmentedSlots<J>(
-        rowIndex, mappedSlots, weights, info, std::make_index_sequence<J>{});
   }
 
-  template <size_t J>
-  void updateMappedFullRangeAugmentedColumnNoChecks(
-      size_t rowIndex, const DenseIndex* mappedSlots, const RhsVector* weights,
-      SymmetricBlockMatrix* info) const {
-    const DenseIndex targetSlot = mappedSlots[J];
-    updateAugmentedDiagonal<J>(rowIndex, targetSlot, weights, info);
-    updateMappedFullRangePreviousAugmentedSlotsNoChecks<J>(
-        rowIndex, mappedSlots, weights, info, std::make_index_sequence<J>{});
-  }
-
-  template <size_t... Js>
-  void updateMappedFullRangeAugmentedColumns(
-      [[maybe_unused]] size_t rowIndex,
-      [[maybe_unused]] const DenseIndex* mappedSlots,
-      [[maybe_unused]] const RhsVector* weights,
-      [[maybe_unused]] SymmetricBlockMatrix* info,
-      std::index_sequence<Js...>) const {
-    (updateMappedFullRangeAugmentedColumn<Js>(rowIndex, mappedSlots, weights,
-                                              info),
-     ...);
-  }
-
-  template <size_t... Js>
-  void updateMappedFullRangeAugmentedColumnsNoChecks(
-      [[maybe_unused]] size_t rowIndex,
-      [[maybe_unused]] const DenseIndex* mappedSlots,
-      [[maybe_unused]] const RhsVector* weights,
-      [[maybe_unused]] SymmetricBlockMatrix* info,
-      std::index_sequence<Js...>) const {
-    (updateMappedFullRangeAugmentedColumnNoChecks<Js>(rowIndex, mappedSlots,
-                                                      weights, info),
-     ...);
-  }
-
+  template <bool AllSlotsNonNegative>
   void updateMappedHessianRow(size_t rowIndex, const DenseIndex* mappedSlots,
                               const RhsVector* weights,
-                              SymmetricBlockMatrix* info) const {
-    updateMappedFullRangeAugmentedColumns(
-        rowIndex, mappedSlots, weights, info,
+                              SymmetricBlockMatrix* info, DenseIndex beginCol,
+                              DenseIndex endCol) const {
+    updateMappedAugmentedColumns<AllSlotsNonNegative>(
+        rowIndex, mappedSlots, weights, info, beginCol, endCol,
         std::make_index_sequence<NumSlots + 1>{});
-  }
-
-  void updateMappedHessianRowAllValid(size_t rowIndex,
-                                      const DenseIndex* mappedSlots,
-                                      const RhsVector* weights,
-                                      SymmetricBlockMatrix* info) const {
-    updateMappedFullRangeAugmentedColumnsNoChecks(
-        rowIndex, mappedSlots, weights, info,
-        std::make_index_sequence<NumSlots + 1>{});
-  }
-
-  /**
-   * Add all Hessian contributions for one compact row group.
-   *
-   * The passed slots vector maps this factor's global key slots into the target
-   * SymmetricBlockMatrix. The row's SlotIndices then select the active subset
-   * used by this row group.
-   */
-  void updateHessianRow(size_t rowIndex, const std::vector<DenseIndex>& slots,
-                        SymmetricBlockMatrix* info, DenseIndex beginCol,
-                        DenseIndex endCol) const {
-    HessianSlots rowSlots;
-    for (size_t j = 0; j < NumSlots; ++j) {
-      rowSlots[j] = slots[rowSlots_[rowIndex][j]];
-    }
-    rowSlots[NumSlots] = slots[keys_.size()];
-
-    RhsVector weights;
-    const RhsVector* weightsPtr = nullptr;
-    if (model_ && !model_->isUnit()) {
-      weights = model_->invsigmas()
-                    .template segment<ErrorDim>(
-                        static_cast<DenseIndex>(rowIndex * ErrorDim))
-                    .array()
-                    .square();
-      weightsPtr = &weights;
-    }
-
-    updateAugmentedColumns(rowIndex, rowSlots, weightsPtr, info, beginCol,
-                           endCol, std::make_index_sequence<NumSlots + 1>{});
-  }
-
-  /// Add Hessian contributions for one compact row group over all columns.
-  void updateHessianRow(size_t rowIndex, const std::vector<DenseIndex>& slots,
-                        SymmetricBlockMatrix* info) const {
-    RhsVector weights;
-    const RhsVector* weightsPtr = nullptr;
-    if (model_ && !model_->isUnit()) {
-      weights = model_->invsigmas()
-                    .template segment<ErrorDim>(
-                        static_cast<DenseIndex>(rowIndex * ErrorDim))
-                    .array()
-                    .square();
-      weightsPtr = &weights;
-    }
-    std::array<DenseIndex, NumSlots + 1> mappedSlots;
-    for (size_t j = 0; j < NumSlots; ++j) {
-      mappedSlots[j] = slots[rowSlots_[rowIndex][j]];
-    }
-    mappedSlots[NumSlots] = slots[keys_.size()];
-    updateFullRangeAugmentedColumns(rowIndex, mappedSlots, weightsPtr, info,
-                                    std::make_index_sequence<NumSlots + 1>{});
   }
 
  public:
@@ -772,30 +630,24 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
    */
   void updateHessian(const std::vector<DenseIndex>& slotIndices,
                      SymmetricBlockMatrix* info) const override {
-    gttic(updateHessian_BatchJacobianFactor);
     if (rows() == 0) return;
-    if (model_ && !model_->isUnit() && model_->isConstrained()) {
-      throw std::invalid_argument(
-          "BatchJacobianFactor::updateHessian: cannot update information with "
-          "constrained noise model");
-    }
-
     const DenseIndex rhsSlot = static_cast<DenseIndex>(info->nBlocks() - 1);
-    const bool slotIndicesWithRhs = slotIndices.size() == keys_.size() + 1 &&
-                                    !slotIndices.empty() &&
-                                    slotIndices.back() == rhsSlot;
-    if (slotIndicesWithRhs) {
-      for (size_t rowIndex = 0; rowIndex < rowSlots_.size(); ++rowIndex) {
-        updateHessianRow(rowIndex, slotIndices, info);
-      }
+    std::vector<DenseIndex> mappedSlots;
+    if (slotIndices.size() == keys_.size() + 1 && !slotIndices.empty() &&
+        slotIndices.back() == rhsSlot) {
+      buildMappedSlots(slotIndices, mappedSlots);
+      updateHessianWithMappedSlots(mappedSlots, info, 0, info->nBlocks());
       return;
     }
-
     if (slotIndices.size() != keys_.size()) {
       throw std::invalid_argument(
           "BatchJacobianFactor::updateHessian: slot index count mismatch.");
     }
-    updateHessian(slotIndices, info, 0, info->nBlocks());
+
+    std::vector<DenseIndex> slots = slotIndices;
+    slots.push_back(rhsSlot);
+    buildMappedSlots(slots, mappedSlots);
+    updateHessianWithMappedSlots(mappedSlots, info, 0, info->nBlocks());
   }
 
   /**
@@ -807,16 +659,10 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
   void updateHessian(const std::vector<DenseIndex>& slotIndices,
                      SymmetricBlockMatrix* info, DenseIndex beginCol,
                      DenseIndex endCol) const override {
-    gttic(updateHessian_BatchJacobianFactor);
     if (rows() == 0) return;
     if (slotIndices.size() != keys_.size()) {
       throw std::invalid_argument(
           "BatchJacobianFactor::updateHessian: slot index count mismatch.");
-    }
-    if (model_ && !model_->isUnit() && model_->isConstrained()) {
-      throw std::invalid_argument(
-          "BatchJacobianFactor::updateHessian: cannot update information with "
-          "constrained noise model");
     }
 
     std::vector<DenseIndex> slots;
@@ -830,9 +676,9 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
     if (slotInRange(slots.back(), beginCol, endCol)) foundCol = true;
     if (!foundCol) return;
 
-    for (size_t rowIndex = 0; rowIndex < rowSlots_.size(); ++rowIndex) {
-      updateHessianRow(rowIndex, slots, info, beginCol, endCol);
-    }
+    std::vector<DenseIndex> mappedSlots;
+    buildMappedSlots(slots, mappedSlots);
+    updateHessianWithMappedSlots(mappedSlots, info, beginCol, endCol);
   }
 
   void buildMappedSlots(const std::vector<DenseIndex>& slotIndices,
@@ -854,6 +700,14 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
 
   void updateHessianWithMappedSlots(const std::vector<DenseIndex>& mappedSlots,
                                     SymmetricBlockMatrix* info) const override {
+    updateHessianWithMappedSlots(mappedSlots, info, 0, info->nBlocks());
+  }
+
+ private:
+  void updateHessianWithMappedSlots(const std::vector<DenseIndex>& mappedSlots,
+                                    SymmetricBlockMatrix* info,
+                                    DenseIndex beginCol,
+                                    DenseIndex endCol) const {
     gttic(updateHessian_BatchJacobianFactor);
     if (rows() == 0) return;
     if (model_ && !model_->isUnit() && model_->isConstrained()) {
@@ -892,13 +746,13 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
                       .square();
         weightsPtr = &weights;
         if (allSlotsNonNegative) {
-          updateMappedHessianRowAllValid(rowIndex,
-                                         mappedSlots.data() + rowIndex * stride,
-                                         weightsPtr, info);
+          updateMappedHessianRow<true>(rowIndex,
+                                       mappedSlots.data() + rowIndex * stride,
+                                       weightsPtr, info, beginCol, endCol);
         } else {
-          updateMappedHessianRow(rowIndex,
-                                 mappedSlots.data() + rowIndex * stride,
-                                 weightsPtr, info);
+          updateMappedHessianRow<false>(rowIndex,
+                                        mappedSlots.data() + rowIndex * stride,
+                                        weightsPtr, info, beginCol, endCol);
         }
       }
       return;
@@ -907,15 +761,16 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
     const DenseIndex* rowSlotsPtr = mappedSlots.data();
     for (size_t rowIndex = 0; rowIndex < rowSlots_.size(); ++rowIndex) {
       if (allSlotsNonNegative) {
-        updateMappedHessianRowAllValid(
-            rowIndex, rowSlotsPtr + rowIndex * stride, nullptr, info);
+        updateMappedHessianRow<true>(rowIndex, rowSlotsPtr + rowIndex * stride,
+                                     nullptr, info, beginCol, endCol);
       } else {
-        updateMappedHessianRow(rowIndex, rowSlotsPtr + rowIndex * stride,
-                               nullptr, info);
+        updateMappedHessianRow<false>(rowIndex, rowSlotsPtr + rowIndex * stride,
+                                      nullptr, info, beginCol, endCol);
       }
     }
   }
 
+ public:
   /**
    * Add this factor's augmented information matrix to info.
    *
@@ -925,7 +780,13 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
    */
   void updateHessian(const KeyVector& infoKeys,
                      SymmetricBlockMatrix* info) const override {
-    updateHessian(infoKeys, info, 0, info->nBlocks());
+    std::vector<DenseIndex> slots;
+    slots.reserve(keys_.size() + 1);
+    for (Key key : keys_) {
+      slots.push_back(Slot(infoKeys, key));
+    }
+    slots.push_back(info->nBlocks() - 1);
+    updateHessian(slots, info);
   }
 
   /**
@@ -938,29 +799,12 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
    */
   void updateHessian(const KeyVector& infoKeys, SymmetricBlockMatrix* info,
                      DenseIndex beginCol, DenseIndex endCol) const override {
-    gttic(updateHessian_BatchJacobianFactor);
-    if (rows() == 0) return;
-    if (model_ && !model_->isUnit() && model_->isConstrained()) {
-      throw std::invalid_argument(
-          "BatchJacobianFactor::updateHessian: cannot update information with "
-          "constrained noise model");
-    }
-
     std::vector<DenseIndex> slots;
-    slots.reserve(keys_.size() + 1);
-    bool foundCol = false;
+    slots.reserve(keys_.size());
     for (Key key : keys_) {
-      const DenseIndex slot = Slot(infoKeys, key);
-      slots.push_back(slot);
-      if (slotInRange(slot, beginCol, endCol)) foundCol = true;
+      slots.push_back(Slot(infoKeys, key));
     }
-    slots.push_back(info->nBlocks() - 1);
-    if (slotInRange(slots.back(), beginCol, endCol)) foundCol = true;
-    if (!foundCol) return;
-
-    for (size_t rowIndex = 0; rowIndex < rowSlots_.size(); ++rowIndex) {
-      updateHessianRow(rowIndex, slots, info, beginCol, endCol);
-    }
+    updateHessian(slots, info, beginCol, endCol);
   }
 };
 
