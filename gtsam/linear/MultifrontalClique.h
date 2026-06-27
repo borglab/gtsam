@@ -30,10 +30,12 @@
 #include <gtsam/symbolic/SymbolicFactor.h>
 
 #include <iosfwd>
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -249,6 +251,19 @@ class GTSAM_EXPORT MultifrontalClique {
   /// Linear lookup for block index in small cliques.
   DenseIndex blockIndex(Key key) const;
 
+  enum class FactorLoadKind : uint8_t { Jacobian, Batch };
+
+  struct FactorLoadPlan {
+    FactorLoadKind kind = FactorLoadKind::Jacobian;
+    size_t factorIndex = 0;
+    SharedDiagonal model;
+    size_t rows = 0;
+    std::vector<DenseIndex> blockIndices;
+  };
+
+  /// Build and cache loading metadata for factors in this clique.
+  void buildLoadPlans(const GaussianFactorGraph& graph) const;
+
   /// Update a parent information matrix with this clique's separator
   /// contribution.
   void updateParentInfo(SymmetricBlockMatrix& parentInfo) const;
@@ -278,14 +293,16 @@ class GTSAM_EXPORT MultifrontalClique {
    * Add a Jacobian factor's contributions into the Ab matrix.
    * @return Number of rows added.
    */
-  size_t addJacobianFactor(const JacobianFactor& factor, size_t rowOffset);
+  size_t addJacobianFactor(const JacobianFactor& factor, size_t rowOffset,
+                           const FactorLoadPlan& plan);
 
   /**
    * Add a compact batch Jacobian factor's contributions into the Ab matrix.
    * @return Number of rows added.
    */
   size_t addBatchJacobianFactor(const BatchJacobianFactorBase& factor,
-                                size_t rowOffset);
+                               size_t rowOffset,
+                               const FactorLoadPlan& plan);
 
   void setParentIndices(const std::vector<DenseIndex>& indices) {
     parentIndices_ = indices;
@@ -295,10 +312,15 @@ class GTSAM_EXPORT MultifrontalClique {
   std::vector<size_t> factorIndices_;
   KeyVector orderedKeys_;  ///< Keys ordered by block index (frontals+seps).
   const std::unordered_set<Key>* fixedKeys_ = nullptr;
+  std::unordered_map<Key, DenseIndex> blockIndexCache_;
   std::vector<Vector*> frontalPtrs_;          ///< Solution frontals.
   std::vector<const Vector*> separatorPtrs_;  ///< Solution separator.
   std::vector<size_t> blockDims_;  ///< Cached block dimensions (excluding RHS).
   size_t factorRows_ = 0;          ///< Number of rows allocated in Ab.
+  mutable const GaussianFactorGraph* activeLoadGraph_ = nullptr;
+  mutable bool allBatchFactors_ = false;
+  mutable std::vector<FactorLoadPlan> loadPlans_;
+  mutable bool loadPlansBuilt_ = false;
 
   // Finalize-time metadata (set once after children are known).
   std::vector<DenseIndex>

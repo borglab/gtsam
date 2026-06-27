@@ -25,6 +25,7 @@
 #include <gtsam/linear/BatchJacobianFactor.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/nonlinear/BatchFactor.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
@@ -40,6 +41,23 @@ using namespace std;
 using ProjectionFactor = GenericProjectionFactor<Pose3, Point3, Cal3_S2>;
 
 static std::shared_ptr<Cal3_S2> sharedK = std::make_shared<Cal3_S2>();
+
+// Factor with a dynamic dimension (Vector), used to verify dynamic-dimension safety
+// in key bookkeeping and linearization.
+class DynamicVectorFactor : public NoiseModelFactor1<Vector> {
+ private:
+  Vector measurement_;
+
+ public:
+  DynamicVectorFactor(Key key, const Vector& measurement,
+                      const SharedNoiseModel& model)
+      : NoiseModelFactor1<Vector>(model, key), measurement_(measurement) {}
+
+  Vector evaluateError(const Vector& x, OptionalMatrixType H) const override {
+    if (H) *H = Matrix::Identity(x.size(), x.size());
+    return x - measurement_;
+  }
+};
 
 static JacobianFactor denseJacobian(
     const GaussianFactor::shared_ptr& gaussian) {
@@ -91,6 +109,80 @@ TEST(BatchFactor, ConstructorAndLinearize) {
   CHECK(compact);
   LONGS_EQUAL(20, (long)jacobian.rows());
   LONGS_EQUAL(11, (long)jacobian.size());  // 1 pose + 10 points
+}
+
+/* ************************************************************************* */
+// Verifies constrained row semantics are preserved in the dense Jacobian model.
+TEST(BatchFactor, ConstrainedNoiseModel) {
+  Key key = Symbol('x', 0);
+  Vector constrainedSigmas(3);
+  constrainedSigmas << 1.0, 0.0, 2.0;
+  Vector constrainedMus(3);
+  constrainedMus << 3.0, 4.0, 5.0;
+  auto constrained =
+      noiseModel::Constrained::MixedSigmas(constrainedMus, constrainedSigmas);
+
+  std::vector<PriorFactor<Pose2>> factors;
+  factors.emplace_back(key, Pose2(1.0, 2.0, 0.1), constrained);
+  factors.emplace_back(key, Pose2(2.0, 3.0, 0.2), constrained);
+
+  auto batch = std::make_shared<BatchFactor<PriorFactor<Pose2>, 3>>(
+      std::move(factors));
+
+  Values values;
+  values.insert(key, Pose2(0.0, 0.0, 0.0));
+
+  auto gaussian = batch->linearize(values);
+  auto jacobian =
+      std::dynamic_pointer_cast<JacobianFactor>(gaussian);
+  CHECK(jacobian);
+  CHECK(jacobian->get_model());
+  CHECK(jacobian->get_model()->isConstrained());
+  auto constrainedModel =
+      std::dynamic_pointer_cast<noiseModel::Constrained>(jacobian->get_model());
+  CHECK(constrainedModel);
+  CHECK(jacobian->get_model()->isUnit() == false);
+  Vector expectedMus(6);
+  Vector expectedSigmas(6);
+  Vector constrainedRowMus = constrainedMus;
+  constrainedRowMus[0] = 1000.0;
+  constrainedRowMus[2] = 1000.0;
+  expectedMus << constrainedRowMus, constrainedRowMus;
+  expectedSigmas << constrainedSigmas, constrainedSigmas;
+  EXPECT(assert_equal(expectedMus, constrainedModel->mu(), 1e-9));
+  EXPECT(assert_equal(expectedSigmas, constrainedModel->sigmas(), 1e-9));
+  LONGS_EQUAL(6, (long)jacobian->rows());
+}
+
+/* ************************************************************************* */
+// Verifies dynamic-size variable types do not use stale dimension sentinels.
+TEST(BatchFactor, DynamicDimensionSupport) {
+  Key key = Symbol('x', 0);
+  const SharedDiagonal model = noiseModel::Isotropic::Sigma(2, 1.0);
+  std::vector<DynamicVectorFactor> factors;
+  Vector measurement1(2);
+  measurement1 << 1.0, 2.0;
+  Vector measurement2(2);
+  measurement2 << 2.0, 3.0;
+  factors.emplace_back(key, measurement1, model);
+  factors.emplace_back(key, measurement2, model);
+
+  auto batch =
+      std::make_shared<BatchFactor<DynamicVectorFactor, 2>>(std::move(factors));
+
+  Values values;
+  Vector dynamicX(2);
+  dynamicX << 0.0, 0.0;
+  values.insert(key, dynamicX);
+
+  auto gaussian = batch->linearize(values);
+  auto jacobian =
+      std::dynamic_pointer_cast<JacobianFactor>(gaussian);
+  CHECK(jacobian);
+  CHECK(jacobian->get_model());
+  CHECK(jacobian->get_model()->isUnit());
+  LONGS_EQUAL(4, (long)jacobian->rows());  // 2 factors * 2 error dim
+  LONGS_EQUAL(1, (long)jacobian->size());
 }
 
 /* ************************************************************************* */

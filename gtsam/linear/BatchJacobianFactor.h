@@ -144,6 +144,24 @@ class GTSAM_EXPORT BatchJacobianFactorBase : public GaussianFactor {
     toJacobianFactor().updateHessian(keys, info);
   }
 
+  /**
+   * Update augmented Hessian over all local columns using precomputed
+   * clique-local block indices.
+   *
+   * Callers in `MultifrontalClique` can use this to avoid repeated key lookup
+   * when a precomputed load plan already maps factor slots to clique blocks.
+   */
+  virtual void updateHessian(const std::vector<DenseIndex>& slotIndices,
+                            SymmetricBlockMatrix* info) const = 0;
+
+  /**
+   * Update an inclusive column-range of the augmented Hessian using precomputed
+   * clique-local block indices.
+   */
+  virtual void updateHessian(const std::vector<DenseIndex>& slotIndices,
+                            SymmetricBlockMatrix* info, DenseIndex beginCol,
+                            DenseIndex endCol) const = 0;
+
   void updateHessian(const KeyVector& keys, SymmetricBlockMatrix* info,
                      DenseIndex beginCol, DenseIndex endCol) const override {
     toJacobianFactor().updateHessian(keys, info, beginCol, endCol);
@@ -535,6 +553,54 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
           1) = rhs_[rowIndex];
     }
     return rows();
+  }
+
+  /**
+   * Update this factor's augmented information using precomputed clique-local
+   * block indices.
+   *
+   * This avoids key lookups in repeated precomputed-load passes.
+   */
+  void updateHessian(const std::vector<DenseIndex>& slotIndices,
+                     SymmetricBlockMatrix* info) const override {
+    updateHessian(slotIndices, info, 0, info->nBlocks());
+  }
+
+  /**
+   * Update this factor's augmented information over a column slice.
+   *
+   * The `slotIndices` argument maps each factor key slot to the destination
+   * SymmetricBlockMatrix block, or to -1 when the key is fixed to zero.
+   */
+  void updateHessian(const std::vector<DenseIndex>& slotIndices,
+                     SymmetricBlockMatrix* info, DenseIndex beginCol,
+                     DenseIndex endCol) const override {
+    gttic(updateHessian_BatchJacobianFactor);
+    if (rows() == 0) return;
+    if (slotIndices.size() != keys_.size()) {
+      throw std::invalid_argument(
+          "BatchJacobianFactor::updateHessian: slot index count mismatch.");
+    }
+    if (model_ && !model_->isUnit() && model_->isConstrained()) {
+      throw std::invalid_argument(
+          "BatchJacobianFactor::updateHessian: cannot update information with "
+          "constrained noise model");
+    }
+
+    std::vector<DenseIndex> slots;
+    slots.reserve(slotIndices.size() + 1);
+    bool foundCol = false;
+    for (const DenseIndex slot : slotIndices) {
+      slots.push_back(slot);
+      if (slotInRange(slot, beginCol, endCol)) foundCol = true;
+    }
+    slots.push_back(info->nBlocks() - 1);
+    if (slotInRange(slots.back(), beginCol, endCol)) foundCol = true;
+    if (!foundCol) return;
+
+    for (size_t rowIndex = 0; rowIndex < rowSlots_.size(); ++rowIndex) {
+      updateHessianRow(rowIndex, slots, info, beginCol, endCol);
+    }
   }
 
   /**

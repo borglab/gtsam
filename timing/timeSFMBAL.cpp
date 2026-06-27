@@ -43,6 +43,7 @@ using SfmFactor = GeneralSFMFactor<Camera, Point3>;
 std::string usage() {
   return "Usage: timeSFMBAL [--colamd] [--profile] [--camera-batch] "
          "[--cholesky-only] [--profile-point-cholesky] "
+         "[--batch-chunk-size N] "
          "[--benchmark-action-json FILE] [BALfile]";
 }
 
@@ -68,6 +69,7 @@ struct RunOptions {
   bool cameraBatch = false;
   bool choleskyOnly = false;
   bool profilePointCholesky = false;
+  size_t batchChunkSize = 0;
   std::string benchmarkActionJsonPath;
   std::vector<std::string> filenames;
 };
@@ -256,6 +258,7 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
   bool choleskyOnly = false;
   bool profilePointCholesky = false;
   bool colamd = false;
+  size_t batchChunkSize = 0;
   std::string benchmarkActionJsonPath;
   for (int i = 1; i < argc; ++i) {
     if (strcmp(argv[i], "--colamd") == 0) {
@@ -273,6 +276,13 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
     }
     if (strcmp(argv[i], "--cholesky-only") == 0) {
       choleskyOnly = true;
+      continue;
+    }
+    if (strcmp(argv[i], "--batch-chunk-size") == 0) {
+      if (++i >= argc || argv[i][0] == '-') {
+        throw runtime_error(usage());
+      }
+      batchChunkSize = std::stoul(argv[i]);
       continue;
     }
     if (strcmp(argv[i], "--profile-point-cholesky") == 0) {
@@ -318,6 +328,7 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
             cameraBatch,
             choleskyOnly,
             profilePointCholesky,
+            batchChunkSize,
             benchmarkActionJsonPath,
             {filename}};
   }
@@ -328,6 +339,7 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
             cameraBatch,
             choleskyOnly,
             profilePointCholesky,
+            batchChunkSize,
             benchmarkActionJsonPath,
             {findExampleDataFile(kProfileDataset)}};
   }
@@ -338,6 +350,7 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
             cameraBatch,
             choleskyOnly,
             profilePointCholesky,
+            batchChunkSize,
             benchmarkActionJsonPath,
             {findExampleDataFile(kDefaultBenchmarkDataset)}};
   }
@@ -348,6 +361,7 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
             cameraBatch,
             choleskyOnly,
             profilePointCholesky,
+            batchChunkSize,
             benchmarkActionJsonPath,
             {findExampleDataFile(kDefaultBenchmarkDataset)}};
   }
@@ -357,6 +371,7 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
           cameraBatch,
           choleskyOnly,
           profilePointCholesky,
+          batchChunkSize,
           benchmarkActionJsonPath,
           {
               findExampleDataFile("dubrovnik-16-22106-pre"),
@@ -392,21 +407,46 @@ double runSolver(const NonlinearFactorGraph& graph, const Values& initial,
 }
 
 NonlinearFactorGraph buildBatchSfmGraph(const SfmData& db,
-                                        bool useHessianFactor) {
+                                        bool useHessianFactor,
+                                        size_t chunkSize) {
   NonlinearFactorGraph graph;
   for (size_t j = 0; j < db.numberTracks(); j++) {
     const auto& measurementsForTrack = db.tracks[j].measurements;
     if (measurementsForTrack.size() < 2) continue;
 
-    std::map<Key, Point2> measurements;
-    for (const SfmMeasurement& measurement : measurementsForTrack) {
-      measurements[C(measurement.first)] = measurement.second;
+    const size_t nMeasurements = measurementsForTrack.size();
+    const size_t effectiveChunkSize =
+        (chunkSize == 0) ? nMeasurements : std::min(chunkSize, nMeasurements);
+    if (effectiveChunkSize == 0) continue;
+
+    if (effectiveChunkSize >= nMeasurements) {
+      std::map<Key, Point2> measurements;
+      for (const SfmMeasurement& measurement : measurementsForTrack) {
+        measurements[C(measurement.first)] = measurement.second;
+      }
+
+      auto batch = std::make_shared<BatchFactor<SfmFactor, 2>>(measurements,
+                                                              P(j),
+                                                              gNoiseModel);
+      batch->setUseHessianFactor(useHessianFactor);
+      graph.add(batch);
+      continue;
     }
 
-    auto batch = std::make_shared<BatchFactor<SfmFactor, 2>>(measurements, P(j),
-                                                             gNoiseModel);
-    batch->setUseHessianFactor(useHessianFactor);
-    graph.add(batch);
+    for (size_t start = 0; start < nMeasurements; start += effectiveChunkSize) {
+      const size_t end = std::min(start + effectiveChunkSize, nMeasurements);
+      std::map<Key, Point2> measurements;
+      for (size_t i = start; i < end; ++i) {
+        const SfmMeasurement& measurement = measurementsForTrack[i];
+        measurements[C(measurement.first)] = measurement.second;
+      }
+      if (measurements.size() < 2) continue;
+
+      auto batch = std::make_shared<BatchFactor<SfmFactor, 2>>(measurements, P(j),
+                                                              gNoiseModel);
+      batch->setUseHessianFactor(useHessianFactor);
+      graph.add(batch);
+    }
   }
   return graph;
 }
@@ -627,7 +667,7 @@ PointCholeskyProfileRow profilePointFirstCholeskyVariant(
 }
 
 std::vector<PointCholeskyProfileRow> profilePointFirstCholesky(
-    const std::string& filename) {
+    const std::string& filename, size_t batchChunkSize) {
   const std::string dataset = std::filesystem::path(filename).filename().string();
   std::cout << "\nProfiling point-first Cholesky for BAL file: " << filename
             << std::endl;
@@ -636,7 +676,8 @@ std::vector<PointCholeskyProfileRow> profilePointFirstCholesky(
   const Ordering ordering = createSchurOrdering(db, false);
 
   const NonlinearFactorGraph regularGraph = buildGeneralSfmGraph(db);
-  const NonlinearFactorGraph batchGraph = buildBatchSfmGraph(db, false);
+  const NonlinearFactorGraph batchGraph =
+      buildBatchSfmGraph(db, false, batchChunkSize);
 
   std::vector<PointCholeskyProfileRow> rows;
   rows.push_back(profilePointFirstCholeskyVariant(
@@ -693,7 +734,7 @@ int main(int argc, char* argv[]) {
     std::vector<PointCholeskyProfileRow> profileRows;
     for (const auto& filename : options.filenames) {
       std::vector<PointCholeskyProfileRow> rows =
-          profilePointFirstCholesky(filename);
+          profilePointFirstCholesky(filename, options.batchChunkSize);
       profileRows.insert(profileRows.end(), rows.begin(), rows.end());
     }
     if (options.benchmarkActionJson) {
@@ -751,7 +792,8 @@ int main(int argc, char* argv[]) {
                                  NonlinearOptimizerParams::MULTIFRONTAL_QR,
                                  "MultifrontalQR");
       }
-      const NonlinearFactorGraph batchGraph = buildBatchSfmGraph(db, false);
+      const NonlinearFactorGraph batchGraph =
+          buildBatchSfmGraph(db, false, options.batchChunkSize);
       batchLegacyTime =
           runSolver(batchGraph, initial, ordering,
                     NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY,

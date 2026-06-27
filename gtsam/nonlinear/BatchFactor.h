@@ -127,13 +127,17 @@ class BatchFactor : public NonlinearFactor {
   std::vector<FactorType, Allocator> factors_;  ///< Contiguous storage
   struct KeyInfo {
     Key key;
-    size_t dim;
+    int dim;
     size_t slot;
     DenseIndex offset;
   };
   std::vector<KeyInfo> keyInfo_;
   std::vector<std::array<DenseIndex, FactorType::N>> indices_;
   bool useHessianFactor_{false};
+  bool allDimensionsFixed_{false};
+  bool hasConstrainedNoiseModel_{false};
+  bool allNoiseModelsAreUnit_{true};
+  std::vector<size_t> keyDimensions_;
 
   template <size_t... Is>
   static constexpr bool hasFixedDimensions(std::index_sequence<Is...>) {
@@ -143,36 +147,90 @@ class BatchFactor : public NonlinearFactor {
         ...);
   }
 
-  bool hasConstrainedNoiseModel() const {
-    for (const auto& factor : factors_) {
-      if (factor.noiseModel() && factor.noiseModel()->isConstrained()) {
-        return true;
-      }
+  template <size_t... Is>
+  size_t keyDimensionFromSlot(const Key key, size_t slot, const Values& values,
+                             std::index_sequence<Is...>) const {
+    const std::array<size_t, FactorType::N> dims = {
+        traits<typename FactorType::template ValueType<Is + 1>>::GetDimension(
+            values.at<typename FactorType::template ValueType<Is + 1>>(key))...};
+
+    if (slot >= dims.size()) {
+      throw std::runtime_error(
+          "BatchFactor::keyDimensionFromSlot: slot out of range.");
     }
-    return false;
+    const size_t dimension = dims[slot];
+    return dimension;
   }
 
-  std::vector<size_t> keyDimensions() const {
+  const std::vector<size_t>& keyDimensions() const {
+    if (!allDimensionsFixed_) {
+      throw std::runtime_error(
+          "BatchFactor::keyDimensions: cached dimensions unavailable for dynamic "
+          "key types.");
+    }
+    return keyDimensions_;
+  }
+
+  std::vector<size_t> keyDimensions(const Values& values) const {
     std::vector<size_t> dims;
     dims.reserve(keyInfo_.size());
-    for (const auto& info : keyInfo_) dims.push_back(info.dim);
+    for (const auto& info : keyInfo_) {
+      if (info.dim >= 0) {
+        dims.push_back(static_cast<size_t>(info.dim));
+      } else {
+        constexpr auto slots = std::make_index_sequence<FactorType::N>{};
+        const size_t dim = keyDimensionFromSlot(info.key, info.slot, values, slots);
+        if (dim == 0) {
+          throw std::runtime_error(
+              "BatchFactor::keyDimensions: cannot determine dynamic key "
+              "dimension.");
+        }
+        dims.push_back(dim);
+      }
+    }
     return dims;
   }
 
   std::shared_ptr<JacobianFactor> linearizeToJacobianFactor(
       const Values& values) const {
     const size_t total_rows = factors_.size() * ErrorDim;
-    VerticalBlockMatrix Ab(keyDimensions(), total_rows, true);
+    const std::vector<size_t>& keyDims =
+        allDimensionsFixed_ ? keyDimensions() : keyDimensions(values);
+    VerticalBlockMatrix Ab(keyDims, total_rows, true);
     Ab.matrix().setZero();
 
     std::vector<Matrix> H(FactorType::N);
+    Vector rowSigmas;
+    Vector rowMus;
+    if (hasConstrainedNoiseModel_) {
+      rowSigmas = Vector::Ones(total_rows);
+      rowMus = Vector::Constant(total_rows, 1000.0);
+    }
     for (size_t i = 0; i < factors_.size(); ++i) {
       const auto& factor = factors_[i];
       const size_t row_start = i * ErrorDim;
       Vector raw_error = factor.unwhitenedError(values, H);
 
-      if (factor.noiseModel() && !factor.noiseModel()->isUnit()) {
+      const auto noise = factor.noiseModel();
+      if (!allNoiseModelsAreUnit_ && noise && !noise->isUnit()) {
         factor.noiseModel()->WhitenSystem(H, raw_error);
+      }
+
+      if (hasConstrainedNoiseModel_ && noise && noise->isConstrained()) {
+        auto constrainedModel =
+            std::dynamic_pointer_cast<noiseModel::Constrained>(noise);
+        if (!constrainedModel) {
+          throw std::runtime_error(
+              "BatchFactor::linearizeToJacobianFactor: unsupported constrained "
+              "noise model type.");
+        }
+        for (size_t r = 0; r < ErrorDim; ++r) {
+          const size_t row = row_start + r;
+          rowSigmas[row] = constrainedModel->sigmasRef()[r];
+          if (constrainedModel->constrained(r)) {
+            rowMus[row] = constrainedModel->mu()[r];
+          }
+        }
       }
 
       const auto& indices_i = indices_[i];
@@ -183,13 +241,19 @@ class BatchFactor : public NonlinearFactor {
       Ab(keys().size()).block(row_start, 0, ErrorDim, 1) = -raw_error;
     }
 
+    SharedDiagonal jacobianModel = noiseModel::Unit::Create(total_rows);
+    if (hasConstrainedNoiseModel_) {
+      jacobianModel = std::static_pointer_cast<noiseModel::Diagonal>(
+          noiseModel::Constrained::MixedSigmas(rowMus, rowSigmas));
+    }
     return std::make_shared<JacobianFactor>(
-        keys(), std::move(Ab), noiseModel::Unit::Create(total_rows));
+        keys(), std::move(Ab), jacobianModel);
   }
 
   template <size_t... Is>
   std::shared_ptr<GaussianFactor> linearizeToBatchJacobian(
       const Values& values, std::index_sequence<Is...>) const {
+    (void)values;
     using CompactFactor = BatchJacobianFactor<
         ErrorDim,
         traits<typename FactorType::template ValueType<Is + 1>>::dimension...>;
@@ -354,7 +418,7 @@ class BatchFactor : public NonlinearFactor {
 
     constexpr auto factorSlots = std::make_index_sequence<FactorType::N>{};
     if constexpr (hasFixedDimensions(factorSlots)) {
-      if (!hasConstrainedNoiseModel()) {
+      if (!hasConstrainedNoiseModel_) {
         return linearizeToBatchJacobian(values, factorSlots);
       }
     }
@@ -373,6 +437,11 @@ class BatchFactor : public NonlinearFactor {
 
   /// Update keys_ by collecting unique keys from all factors
   void updateKeys() {
+    constexpr auto factorSlots = std::make_index_sequence<FactorType::N>{};
+    allDimensionsFixed_ = hasFixedDimensions(factorSlots);
+    hasConstrainedNoiseModel_ = false;
+    allNoiseModelsAreUnit_ = true;
+    keyDimensions_.clear();
     // 1. Collect all keys and their dimensions
     keyInfo_.clear();
     keyInfo_.reserve(factors_.size() * FactorType::N);
@@ -400,7 +469,20 @@ class BatchFactor : public NonlinearFactor {
     for (auto& info : keyInfo_) {
       info.offset = offset;
       keys_.push_back(info.key);
-      offset += static_cast<DenseIndex>(info.dim);
+      if (info.dim >= 0) {
+        offset += static_cast<DenseIndex>(info.dim);
+      }
+      if (allDimensionsFixed_ && info.dim >= 0) {
+        keyDimensions_.push_back(static_cast<size_t>(info.dim));
+      }
+    }
+
+    // Track noise-model traits once at construction time.
+    for (const auto& factor : factors_) {
+      const auto& model = factor.noiseModel();
+      if (!model) continue;
+      hasConstrainedNoiseModel_ |= model->isConstrained();
+      allNoiseModelsAreUnit_ &= model->isUnit();
     }
 
     // 4. Cache factor indices

@@ -484,6 +484,36 @@ TEST(MultifrontalSolver, BatchJacobianFactorLegacyQR) {
 }
 
 /* ************************************************************************* */
+// A batch factor with non-unit diagonal weights is equivalent to weighted dense factors.
+TEST(MultifrontalSolver, BatchJacobianFactorWeightedModel) {
+  auto nonUnitModel =
+      noiseModel::Diagonal::Sigmas((Vector(2) << 2.0, 0.5).finished());
+  auto batch = std::make_shared<BatchJacobianFactor<1, 1, 1>>(
+      KeyVector{x1, x2}, std::vector<size_t>{1, 1}, nonUnitModel);
+  batch->reserve(2);
+  std::vector<Matrix> blocks{I_1x1, -I_1x1};
+  batch->addRow({0, 1}, blocks, (Vector(1) << 1.0).finished());
+  blocks = {2.0 * I_1x1, I_1x1};
+  batch->addRow({0, 1}, blocks, (Vector(1) << 3.0).finished());
+
+  GaussianFactorGraph batchGraph;
+  batchGraph.push_back(batch);
+
+  GaussianFactorGraph denseGraph;
+  denseGraph.emplace_shared<JacobianFactor>(x1, (Matrix(1, 1) << 0.5).finished(), x2,
+                                           (Matrix(1, 1) << -0.5).finished(),
+                                           (Vector(1) << 0.5).finished());
+  denseGraph.emplace_shared<JacobianFactor>(x1, (Matrix(1, 1) << 4.0).finished(), x2,
+                                           (Matrix(1, 1) << 2.0).finished(),
+                                           (Vector(1) << 6.0).finished());
+
+  const Ordering ordering{x1, x2};
+  const VectorValues actual = batchGraph.optimize(ordering);
+  const VectorValues expected = denseGraph.optimize(ordering);
+  EXPECT(assert_equal(expected, actual, 1e-9));
+}
+
+/* ************************************************************************* */
 // Hessian factors are rejected by the multifrontal solver.
 TEST(MultifrontalSolver, HessianFactors) {
   GaussianFactorGraph graph;
