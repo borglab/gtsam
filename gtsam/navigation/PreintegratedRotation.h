@@ -100,12 +100,6 @@ struct GTSAM_EXPORT PreintegratedRotationParams {
     }
   }
 #endif
-
-#ifdef GTSAM_USE_QUATERNIONS
-  // Align if we are using Quaternions
-public:
-	GTSAM_MAKE_ALIGNED_OPERATOR_NEW
-#endif
 };
 
 /**
@@ -206,7 +200,8 @@ class GTSAM_EXPORT PreintegratedRotation {
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
   /// @deprecated: use IncrementalRotation functor with sane Jacobian
-  inline Rot3 GTSAM_DEPRECATED incrementalRotation(
+  [[deprecated]]
+  inline Rot3 incrementalRotation(
       const Vector3& measuredOmega, const Vector3& bias, double deltaT,
       OptionalJacobian<3, 3> D_incrR_integratedOmega) const {
     internal::IncrementalRotation f{measuredOmega, deltaT, p_->body_P_sensor};
@@ -218,9 +213,11 @@ class GTSAM_EXPORT PreintegratedRotation {
 
   /// @deprecated: use integrateGyroMeasurement from now on
   /// @note this returned hard-to-understand Jacobian D_incrR_integratedOmega.
-  void GTSAM_DEPRECATED integrateMeasurement(
-      const Vector3& measuredOmega, const Vector3& biasHat, double deltaT,
-      OptionalJacobian<3, 3> D_incrR_integratedOmega, OptionalJacobian<3, 3> F);
+  [[deprecated]]
+  void integrateMeasurement(const Vector3& measuredOmega,
+                            const Vector3& biasHat, double deltaT,
+                            OptionalJacobian<3, 3> D_incrR_integratedOmega,
+                            OptionalJacobian<3, 3> F);
 
 #endif
 
@@ -237,12 +234,6 @@ class GTSAM_EXPORT PreintegratedRotation {
     ar& BOOST_SERIALIZATION_NVP(deltaRij_);
     ar& BOOST_SERIALIZATION_NVP(delRdelBiasOmega_);
   }
-#endif
-
-#ifdef GTSAM_USE_QUATERNIONS
-  // Align if we are using Quaternions
-  public:
-	  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 #endif
 };
 

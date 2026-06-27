@@ -18,8 +18,7 @@
 
 #include <gtsam/basis/Chebyshev2.h>
 
-#include <Eigen/Dense>
-
+#include <Eigen/SVD>
 #include <cassert>
 
 namespace gtsam {

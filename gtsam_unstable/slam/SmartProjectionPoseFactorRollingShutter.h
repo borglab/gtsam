@@ -69,8 +69,6 @@ class SmartProjectionPoseFactorRollingShutter
   FastVector<size_t> cameraIds_;
 
  public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   static const int DimBlock =
       12;  ///< size of the variable stacking 2 poses from which the observation
            ///< pose is interpolated
@@ -278,7 +276,7 @@ class SmartProjectionPoseFactorRollingShutter
       const Pose3& body_P_cam = camera_i.pose();
       const Pose3& w_P_cam = w_P_body.compose(body_P_cam);
       cameras.emplace_back(w_P_cam,
-                           make_shared<typename CAMERA::CalibrationType>(
+                           std::make_shared<typename CAMERA::CalibrationType>(
                                camera_i.calibration()));
     }
     return cameras;
@@ -331,7 +329,7 @@ class SmartProjectionPoseFactorRollingShutter
         auto body_P_cam = camera_i.pose();
         auto w_P_cam = w_P_body.compose(body_P_cam, dPoseCam_dInterpPose);
         typename Base::Camera camera(
-            w_P_cam, make_shared<typename CAMERA::CalibrationType>(
+            w_P_cam, std::make_shared<typename CAMERA::CalibrationType>(
                          camera_i.calibration()));
 
         // get jacobians and error vector for current measurement
@@ -385,8 +383,8 @@ class SmartProjectionPoseFactorRollingShutter
       if (this->params_.degeneracyMode == ZERO_ON_DEGENERACY) {
         for (Matrix& m : Gs) m = Matrix::Zero(DimPose, DimPose);
         for (Vector& v : gs) v = Vector::Zero(DimPose);
-        return std::make_shared<RegularHessianFactor<DimPose>>(this->keys_,
-                                                                 Gs, gs, 0.0);
+        return std::make_shared<RegularHessianFactor<DimPose>>(this->keys_, Gs,
+                                                               gs, 0.0);
       } else {
         throw std::runtime_error(
             "SmartProjectionPoseFactorRollingShutter: "

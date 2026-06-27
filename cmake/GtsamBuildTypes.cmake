@@ -94,6 +94,7 @@ if(MSVC)
   )
   list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC
     _ENABLE_EXTENDED_ALIGNED_STORAGE
+    _USE_MATH_DEFINES # Enables M_PI, etc
   )
   # Avoid literally hundreds to thousands of warnings:
   list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC

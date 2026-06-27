@@ -18,7 +18,6 @@
  */
 
 #include <gtsam/base/Matrix.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/navigation/Gal3ImuEKF.h>
 
 namespace gtsam {
