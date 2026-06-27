@@ -488,6 +488,9 @@ factorize()</code></pre>
       <p>
         For direct-eligible batch factors, the clique updates <code>info_</code> directly using mapped slots and prewhitened rows. This avoids materializing rows into <code>Ab_</code> in full.
       </p>
+      <p>
+        The mapped-slot kernel now intentionally uses the checked update path for all inputs: negative slots are treated as fixed/skip markers, while slots above the RHS block still trigger the same validation error as before. The previous unchecked “all slots non-negative” branch was removed to simplify control flow; numerical behavior and API contracts were kept unchanged.
+      </p>
       <pre><code>if (canUseDirectBatchHessianUpdate && (allBatchFactors_ || hasDirectBatchFactors_)) {
   for each direct Batch plan:
     batchFactor->updateHessianWithMappedSlots(plan.mappedSlots, &amp;info_)

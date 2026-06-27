@@ -440,21 +440,6 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
      ...);
   }
 
-  /// Update all previous slots that contribute to augmented column J (no slot
-  /// validity checks).
-  template <size_t J, size_t... Is>
-  void updateMappedPreviousAugmentedSlotsNoChecks(
-      size_t rowIndex, const DenseIndex* mappedSlots, const RhsVector* weights,
-      SymmetricBlockMatrix* info, DenseIndex beginCol, DenseIndex endCol,
-      std::index_sequence<Is...>) const {
-    const DenseIndex targetSlot = mappedSlots[J];
-    ((slotInRange(std::max(mappedSlots[Is], targetSlot), beginCol, endCol)
-          ? updateAugmentedOffDiagonal<Is, J>(rowIndex, mappedSlots[Is],
-                                              targetSlot, weights, info)
-          : void()),
-     ...);
-  }
-
   template <size_t J>
   void updateMappedAugmentedColumn(size_t rowIndex,
                                    const DenseIndex* mappedSlots,
@@ -471,48 +456,25 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
                                           std::make_index_sequence<J>{});
   }
 
-  template <size_t J>
-  void updateMappedAugmentedColumnNoChecks(size_t rowIndex,
-                                           const DenseIndex* mappedSlots,
-                                           const RhsVector* weights,
-                                           SymmetricBlockMatrix* info,
-                                           DenseIndex beginCol,
-                                           DenseIndex endCol) const {
-    const DenseIndex targetSlot = mappedSlots[J];
-    if (slotInRange(targetSlot, beginCol, endCol)) {
-      updateAugmentedDiagonal<J>(rowIndex, targetSlot, weights, info);
-    }
-    updateMappedPreviousAugmentedSlotsNoChecks<J>(
-        rowIndex, mappedSlots, weights, info, beginCol, endCol,
-        std::make_index_sequence<J>{});
-  }
-
-  template <bool AllSlotsNonNegative, size_t... Js>
+  template <size_t... Js>
   void updateMappedAugmentedColumns(size_t rowIndex,
                                     const DenseIndex* mappedSlots,
                                     const RhsVector* weights,
                                     SymmetricBlockMatrix* info,
                                     DenseIndex beginCol, DenseIndex endCol,
                                     std::index_sequence<Js...>) const {
-    if constexpr (AllSlotsNonNegative) {
-      (updateMappedAugmentedColumnNoChecks<Js>(rowIndex, mappedSlots, weights,
-                                               info, beginCol, endCol),
-       ...);
-    } else {
-      (updateMappedAugmentedColumn<Js>(rowIndex, mappedSlots, weights, info,
-                                       beginCol, endCol),
-       ...);
-    }
+    (updateMappedAugmentedColumn<Js>(rowIndex, mappedSlots, weights, info,
+                                     beginCol, endCol),
+     ...);
   }
 
-  template <bool AllSlotsNonNegative>
   void updateMappedHessianRow(size_t rowIndex, const DenseIndex* mappedSlots,
                               const RhsVector* weights,
                               SymmetricBlockMatrix* info, DenseIndex beginCol,
                               DenseIndex endCol) const {
-    updateMappedAugmentedColumns<AllSlotsNonNegative>(
-        rowIndex, mappedSlots, weights, info, beginCol, endCol,
-        std::make_index_sequence<NumSlots + 1>{});
+    updateMappedAugmentedColumns(rowIndex, mappedSlots, weights, info, beginCol,
+                                 endCol,
+                                 std::make_index_sequence<NumSlots + 1>{});
   }
 
  public:
@@ -722,13 +684,9 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
           "count mismatch.");
     }
 
-    bool allSlotsNonNegative = true;
     const DenseIndex rhsSlot = static_cast<DenseIndex>(info->nBlocks() - 1);
     for (const DenseIndex slot : mappedSlots) {
-      if (slot < 0) {
-        allSlotsNonNegative = false;
-        continue;
-      } else if (slot > rhsSlot) {
+      if (slot > rhsSlot) {
         throw std::invalid_argument(
             "BatchJacobianFactor::updateHessianWithMappedSlots: invalid "
             "mapped slot index.");
@@ -745,28 +703,16 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
                       .array()
                       .square();
         weightsPtr = &weights;
-        if (allSlotsNonNegative) {
-          updateMappedHessianRow<true>(rowIndex,
-                                       mappedSlots.data() + rowIndex * stride,
-                                       weightsPtr, info, beginCol, endCol);
-        } else {
-          updateMappedHessianRow<false>(rowIndex,
-                                        mappedSlots.data() + rowIndex * stride,
-                                        weightsPtr, info, beginCol, endCol);
-        }
+        updateMappedHessianRow(rowIndex, mappedSlots.data() + rowIndex * stride,
+                               weightsPtr, info, beginCol, endCol);
       }
       return;
     }
 
     const DenseIndex* rowSlotsPtr = mappedSlots.data();
     for (size_t rowIndex = 0; rowIndex < rowSlots_.size(); ++rowIndex) {
-      if (allSlotsNonNegative) {
-        updateMappedHessianRow<true>(rowIndex, rowSlotsPtr + rowIndex * stride,
-                                     nullptr, info, beginCol, endCol);
-      } else {
-        updateMappedHessianRow<false>(rowIndex, rowSlotsPtr + rowIndex * stride,
-                                      nullptr, info, beginCol, endCol);
-      }
+      updateMappedHessianRow(rowIndex, rowSlotsPtr + rowIndex * stride, nullptr,
+                             info, beginCol, endCol);
     }
   }
 
