@@ -35,3 +35,4 @@ conductor/
 gtsam_unstable/timing/data/
 timing/results/bayes_tree_covariance/
 artifacts/
+build-tbb/
