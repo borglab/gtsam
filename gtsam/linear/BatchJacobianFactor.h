@@ -362,7 +362,9 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
         info->updateDiagonalBlock(targetSlot,
                                   b.transpose() * weights->asDiagonal() * b);
       } else {
-        info->diagonalBlock(targetSlot).rankUpdate(b.transpose());
+        Eigen::Matrix<double, 1, 1> contribution;
+        contribution(0, 0) = b.squaredNorm();
+        info->updateDiagonalBlock(targetSlot, contribution);
       }
     } else {
       const auto& A = std::get<Slot>(blocks_)[rowIndex];
