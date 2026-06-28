@@ -30,10 +30,11 @@
 using namespace std;
 using namespace gtsam;
 typedef noiseModel::mEstimator::GemanMcClure GMLoss;
+typedef GraduationScheduler GradSch;
 
 /* ************************************************************************* */
-TEST(SIGScheduler, UpdateMuInit) {
-  SIGScheduler scheduler(SIGScheduler::muUpdateStable, 0.1);
+TEST(GraduationScheduler, UpdateMuInit) {
+  GradSch scheduler(GradSch::muUpdateStable, 0.1);
   CHECK(assert_equal(0.1, scheduler.updateMuInit(0.0, false), 1e-9));
   CHECK(assert_equal(1.0, scheduler.updateMuInit(1.0, false), 1e-9));
 
@@ -42,71 +43,42 @@ TEST(SIGScheduler, UpdateMuInit) {
 }
 
 /* ************************************************************************* */
-TEST(SIGScheduler, IsMuConverged) {
-  SIGScheduler scheduler(SIGScheduler::muUpdateStable, 0.1);
+TEST(GraduationScheduler, IsMuConverged) {
+  GradSch scheduler(GradSch::muUpdateStable, 0.1);
   CHECK(!scheduler.isMuConverged(0.5));
   CHECK(scheduler.isMuConverged(1.0));
 }
 
 /* ************************************************************************* */
-TEST(SIGScheduler, MuUpdateMcGann2023) {
+TEST(GraduationScheduler, MuUpdateMcGann2023) {
   // Standard Sequence
-  CHECK(assert_equal(0.12, SIGScheduler::muUpdateMcGann2023(0.0, 0, 0), 1e-9));
-  CHECK(
-      assert_equal(0.384, SIGScheduler::muUpdateMcGann2023(0.12, 0, 1), 1e-9));
-  CHECK(assert_equal(0.9648, SIGScheduler::muUpdateMcGann2023(0.384, 0, 2),
-                     1e-9));
-  CHECK(
-      assert_equal(1.0, SIGScheduler::muUpdateMcGann2023(0.9648, 0, 3), 1e-9));
+  CHECK(assert_equal(0.12, GradSch::muUpdateMcGann2023(0.0, 0, 0), 1e-9));
+  CHECK(assert_equal(0.384, GradSch::muUpdateMcGann2023(0.12, 0, 1), 1e-9));
+  CHECK(assert_equal(0.9648, GradSch::muUpdateMcGann2023(0.384, 0, 2), 1e-9));
+  CHECK(assert_equal(1.0, GradSch::muUpdateMcGann2023(0.9648, 0, 3), 1e-9));
 }
 
 /* ************************************************************************* */
-TEST(SIGScheduler, MuUpdateStable) {
+TEST(GraduationScheduler, MuUpdateStable) {
   // Standard Sequence
-  CHECK(assert_equal(0.5, SIGScheduler::muUpdateStable(0.0, 0.0, 0), 1e-9));
-  CHECK(assert_equal(0.9, SIGScheduler::muUpdateStable(0.5, 0.0, 1), 1e-9));
-  CHECK(assert_equal(0.95, SIGScheduler::muUpdateStable(0.9, 0.0, 2), 1e-9));
-  CHECK(assert_equal(1.0, SIGScheduler::muUpdateStable(0.95, 0.0, 3), 1e-9));
+  CHECK(assert_equal(0.5, GradSch::muUpdateStable(0.0, 0.0, 0), 1e-9));
+  CHECK(assert_equal(0.9, GradSch::muUpdateStable(0.5, 0.0, 1), 1e-9));
+  CHECK(assert_equal(0.95, GradSch::muUpdateStable(0.9, 0.0, 2), 1e-9));
+  CHECK(assert_equal(1.0, GradSch::muUpdateStable(0.95, 0.0, 3), 1e-9));
 
   // Sequence with Non-Zero mu_init
-  CHECK(assert_equal(0.7, SIGScheduler::muUpdateStable(0.2, 0.0, 0), 1e-9));
-  CHECK(assert_equal(1.0, SIGScheduler::muUpdateStable(0.7, 0.0, 1), 1e-9));
+  CHECK(assert_equal(0.7, GradSch::muUpdateStable(0.2, 0.0, 0), 1e-9));
+  CHECK(assert_equal(1.0, GradSch::muUpdateStable(0.7, 0.0, 1), 1e-9));
 
   // Sequence with Large Non-Zero mu_init
-  CHECK(assert_equal(1.0, SIGScheduler::muUpdateStable(0.7, 0.0, 0), 1e-9));
-}
-
-/* ************************************************************************* */
-TEST(ScaledScheduler, UpdateMu) {
-  ScaledScheduler scheduler(1e4, 0.715, 0.9);
-  // Standard Sequence
-  CHECK(assert_equal(71.5, scheduler.updateMu(100.0, 0.0, 0), 1e-9));
-  CHECK(assert_equal(1.0, scheduler.updateMu(1.0, 0.0, 0), 1e-9));
-}
-
-/* ************************************************************************* */
-TEST(ScaledScheduler, UpdateMuInit) {
-  ScaledScheduler scheduler(1e4, 0.715, 0.9);
-  CHECK(assert_equal(90.0, scheduler.updateMuInit(100, false), 1e-9));
-  CHECK(assert_equal(1.0, scheduler.updateMuInit(1.0, false), 1e-9));
-
-  CHECK(assert_equal(1e4, scheduler.updateMuInit(1e4, true), 1e-9));
-  CHECK(assert_equal(111.111, scheduler.updateMuInit(100, true), 1e-3));
-}
-
-/* ************************************************************************* */
-TEST(ScaledScheduler, IsMuConverged) {
-  ScaledScheduler scheduler(1e4, 0.715, 0.9);
-  CHECK(!scheduler.isMuConverged(1e5));
-  CHECK(!scheduler.isMuConverged(1.2));
-  CHECK(scheduler.isMuConverged(1.0));
+  CHECK(assert_equal(1.0, GradSch::muUpdateStable(0.7, 0.0, 0), 1e-9));
 }
 
 /* ************************************************************************* */
 TEST(RISAMGraduatedFactor, Linearize) {
   GMLoss::shared_ptr robust_loss =
       GMLoss::Create(1.0, GMLoss::GradScheme::SCALE_INVARIANT);
-  SIGScheduler::shared_ptr scheduler = std::make_shared<SIGScheduler>();
+  GradSch::shared_ptr scheduler = std::make_shared<GradSch>();
 
   NonlinearFactor::shared_ptr factor =
       RISAM::make_graduated<PriorFactor<double>>(robust_loss, scheduler, 0, 0.0,
@@ -125,7 +97,7 @@ TEST(RISAMGraduatedFactor, Linearize) {
 TEST(RISAMGraduatedFactor, Error) {
   GMLoss::shared_ptr robust_loss =
       GMLoss::Create(1.0, GMLoss::GradScheme::SCALE_INVARIANT);
-  SIGScheduler::shared_ptr scheduler = std::make_shared<SIGScheduler>();
+  GradSch::shared_ptr scheduler = std::make_shared<GradSch>();
 
   NonlinearFactor::shared_ptr factor =
       RISAM::make_graduated<PriorFactor<double>>(robust_loss, scheduler, 0, 0.0,
@@ -151,7 +123,7 @@ TEST(RISAM, RISAMIntegrationTest) {
   GMLoss::shared_ptr robust_loss =
       GMLoss::Create(GMLoss::shapeParamFromInfThresh(0.1, 3, 0.95),
                      GMLoss::GradScheme::SCALE_INVARIANT);
-  SIGScheduler::shared_ptr scheduler = std::make_shared<SIGScheduler>();
+  GradSch::shared_ptr scheduler = std::make_shared<GradSch>();
 
   RISAM::Parameters params;
   params.isam2_params = ISAM2Params(
