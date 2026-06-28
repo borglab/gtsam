@@ -27,7 +27,7 @@ namespace gtsam {
  * schedules.
  *
  */
-class GraduationScheduler {
+class GTSAM_EXPORT GraduationScheduler {
   /// @name Types
   /// @{
  public:
