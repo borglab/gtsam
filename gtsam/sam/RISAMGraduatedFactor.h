@@ -23,7 +23,7 @@
 namespace gtsam {
 
 /// @brief Graduated Factor for riSAM base class
-class GraduatedFactor {
+class GTSAM_EXPORT GraduatedFactor {
   /// @name Types
   /// @{
  public:
