@@ -1,12 +1,13 @@
 """GNSS front-end helpers for the RTK / PPP-RTK GTSAM examples.
 
-This module hides the cssrlib plumbing (RINEX / QZSS-CLAS decoding, satellite
-states, observation extraction) and the LAMBDA covariance bridge, so the example
-notebook can focus on building the GTSAM factor graph.
+Hides the GNSS plumbing (RINEX / QZSS-CLAS decoding, satellite states,
+observation extraction) and the LAMBDA covariance bridge, so the example
+notebook can focus on building the GTSAM factor graph -- the counterpart of
+``gnss_utils.py`` for these examples.
 
-It is the cssrlib-based counterpart of ``gnss_utils.py`` (which wraps RTKLIB).
-Requires the cssrlib fork that ships the ``prepare_*_measurements`` front-end:
-``pip install git+https://github.com/inuex35/cssrlib-numba.git@claude/gtsam-ppprtk-minimal``
+The raw-measurement front-end is installed with::
+
+    pip install git+https://github.com/inuex35/cssrlib-numba.git@claude/gtsam-ppprtk-minimal
 """
 import os
 from copy import deepcopy
