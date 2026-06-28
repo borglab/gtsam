@@ -56,6 +56,7 @@ namespace gtsam {
  */
 class GTSAM_EXPORT BatchJacobianFactorBase : public GaussianFactor {
  public:
+  /// Inherit GaussianFactor constructors.
   using GaussianFactor::GaussianFactor;
 
   /// Number of scalar rows represented by this factor.
@@ -86,12 +87,14 @@ class GTSAM_EXPORT BatchJacobianFactorBase : public GaussianFactor {
       VerticalBlockMatrix& target, size_t rowOffset,
       const std::vector<DenseIndex>& targetBlockIndices) const = 0;
 
+  /// Print this compact factor by converting to a JacobianFactor.
   void print(
       const std::string& s = "",
       const KeyFormatter& formatter = DefaultKeyFormatter) const override {
     toJacobianFactor().print(s, formatter);
   }
 
+  /// Test equality by comparing dense JacobianFactor representations.
   bool equals(const GaussianFactor& factor, double tol = 1e-9) const override {
     if (const auto* batch =
             dynamic_cast<const BatchJacobianFactorBase*>(&factor)) {
@@ -100,54 +103,63 @@ class GTSAM_EXPORT BatchJacobianFactorBase : public GaussianFactor {
     return toJacobianFactor().equals(factor, tol);
   }
 
+  /// Compute the factor error by delegating to the dense compatibility factor.
   double error(const VectorValues& values) const override {
     return toJacobianFactor().error(values);
   }
 
+  /// Compute the error change by delegating to the dense compatibility factor.
   double deltaError(const VectorValues& values, double* oldError = nullptr,
                     double* newError = nullptr) const override {
     return toJacobianFactor().deltaError(values, oldError, newError);
   }
 
+  /// Return the dense augmented Jacobian matrix for compatibility callers.
   Matrix augmentedJacobian() const override {
     return toJacobianFactor().augmentedJacobian();
   }
 
+  /// Return the dense Jacobian matrix and right-hand side vector.
   std::pair<Matrix, Vector> jacobian() const override {
     return toJacobianFactor().jacobian();
   }
 
+  /// Return the dense augmented information matrix for compatibility callers.
   Matrix augmentedInformation() const override {
     return toJacobianFactor().augmentedInformation();
   }
 
+  /// Return the dense information matrix for compatibility callers.
   Matrix information() const override {
     return toJacobianFactor().information();
   }
 
+  /// Add this factor's Hessian diagonal into the given VectorValues.
   void hessianDiagonalAdd(VectorValues& diagonal) const override {
     toJacobianFactor().hessianDiagonalAdd(diagonal);
   }
 
+  /// Add this factor's Hessian diagonal into a raw scalar buffer.
   void hessianDiagonal(double* diagonal) const override {
     toJacobianFactor().hessianDiagonal(diagonal);
   }
 
+  /// Return the Hessian diagonal blocks keyed by variable.
   std::map<Key, Matrix> hessianBlockDiagonal() const override {
     return toJacobianFactor().hessianBlockDiagonal();
   }
 
+  /// Return a factor representing the negated linear system.
   GaussianFactor::shared_ptr negate() const override {
     return toJacobianFactor().negate();
   }
 
+  /// Update the augmented Hessian using key lookup through the dense fallback.
   void updateHessian(const KeyVector& keys,
                      SymmetricBlockMatrix* info) const override {
     toJacobianFactor().updateHessian(keys, info);
   }
 
-  /// Direct augmented Hessian update over all local columns using pre-mapped
-  /// slots.
   /**
    * Update augmented Hessian over all local columns using precomputed
    * clique-local block indices.
@@ -160,7 +172,6 @@ class GTSAM_EXPORT BatchJacobianFactorBase : public GaussianFactor {
   virtual void updateHessian(const std::vector<DenseIndex>& slotIndices,
                              SymmetricBlockMatrix* info) const = 0;
 
-  /// Direct augmented Hessian update over a local column slice.
   /**
    * Update a half-open column-range of the augmented Hessian using precomputed
    * clique-local block indices.
@@ -169,7 +180,6 @@ class GTSAM_EXPORT BatchJacobianFactorBase : public GaussianFactor {
                              SymmetricBlockMatrix* info, DenseIndex beginCol,
                              DenseIndex endCol) const = 0;
 
-  /// Build a compact per-row mapped-slot view for direct batch updates.
   /**
    * Build a flattened mapped-slot buffer for all row groups.
    *
@@ -182,7 +192,6 @@ class GTSAM_EXPORT BatchJacobianFactorBase : public GaussianFactor {
   virtual void buildMappedSlots(const std::vector<DenseIndex>& slotIndices,
                                 std::vector<DenseIndex>& mappedSlots) const = 0;
 
-  /// Update this factor using pre-built mapped slots.
   /**
    * Update the augmented Hessian using pre-mapped row slots.
    *
@@ -195,24 +204,29 @@ class GTSAM_EXPORT BatchJacobianFactorBase : public GaussianFactor {
       const std::vector<DenseIndex>& mappedSlots,
       SymmetricBlockMatrix* info) const = 0;
 
+  /// Update a column range of the augmented Hessian using the dense fallback.
   void updateHessian(const KeyVector& keys, SymmetricBlockMatrix* info,
                      DenseIndex beginCol, DenseIndex endCol) const override {
     toJacobianFactor().updateHessian(keys, info, beginCol, endCol);
   }
 
+  /// Add the Hessian-vector product into y using the dense fallback.
   void multiplyHessianAdd(double alpha, const VectorValues& x,
                           VectorValues& y) const override {
     toJacobianFactor().multiplyHessianAdd(alpha, x, y);
   }
 
+  /// Return the full gradient evaluated at zero.
   VectorValues gradientAtZero() const override {
     return toJacobianFactor().gradientAtZero();
   }
 
+  /// Add the gradient evaluated at zero into a raw scalar buffer.
   void gradientAtZero(double* d) const override {
     toJacobianFactor().gradientAtZero(d);
   }
 
+  /// Return the gradient block for one key at the given linearization point.
   Vector gradient(Key key, const VectorValues& x) const override {
     return toJacobianFactor().gradient(key, x);
   }
@@ -274,11 +288,13 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
   std::vector<RhsVector, Eigen::aligned_allocator<RhsVector>> rhs_;
   SharedDiagonal model_;
 
+  /// Reserve per-slot fixed-size block storage for the requested row count.
   template <size_t... Indices>
   void reserveBlocks(size_t rowCount, std::index_sequence<Indices...>) {
     (std::get<Indices>(blocks_).reserve(rowCount), ...);
   }
 
+  /// Add one fixed-size Jacobian block to the storage for Slot.
   template <size_t Slot>
   void addBlock(const Matrix& block) {
     using BlockVectorType = typename std::tuple_element<Slot, Blocks>::type;
@@ -291,12 +307,14 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
     std::get<Slot>(blocks_).push_back(block);
   }
 
+  /// Add all fixed-size Jacobian blocks for a compact row group.
   template <size_t... Indices>
   void addBlocks(const std::vector<Matrix>& blocks,
                  std::index_sequence<Indices...>) {
     (addBlock<Indices>(blocks[Indices]), ...);
   }
 
+  /// Copy one compact row block into its dense JacobianFactor block.
   template <size_t Slot>
   void copyBlockToDense(size_t rowIndex, VerticalBlockMatrix* dense) const {
     using BlockVectorType = typename std::tuple_element<Slot, Blocks>::type;
@@ -308,12 +326,14 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
         std::get<Slot>(blocks_)[rowIndex];
   }
 
+  /// Copy all compact row blocks into the dense JacobianFactor storage.
   template <size_t... Indices>
   void copyBlocksToDense(size_t rowIndex, VerticalBlockMatrix* dense,
                          std::index_sequence<Indices...>) const {
     (copyBlockToDense<Indices>(rowIndex, dense), ...);
   }
 
+  /// Scatter one compact row block into a preallocated target matrix.
   template <size_t Slot>
   void scatterBlock(size_t rowIndex, size_t rowOffset,
                     VerticalBlockMatrix* target,
@@ -329,6 +349,7 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
                ErrorDim, BlockDim) = std::get<Slot>(blocks_)[rowIndex];
   }
 
+  /// Scatter all compact row blocks into a preallocated target matrix.
   template <size_t... Indices>
   void scatterBlocks(size_t rowIndex, size_t rowOffset,
                      VerticalBlockMatrix* target,
@@ -377,6 +398,7 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
     }
   }
 
+  /// Add an off-diagonal Hessian block, normalizing upper-triangular order.
   template <typename MatrixType>
   void updateOffDiagonalNormalized(DenseIndex targetI, DenseIndex targetJ,
                                    const MatrixType& block,
@@ -447,6 +469,7 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
      ...);
   }
 
+  /// Update one augmented Hessian column for a mapped compact row group.
   template <size_t J>
   void updateMappedAugmentedColumn(size_t rowIndex,
                                    const DenseIndex* mappedSlots,
@@ -463,6 +486,7 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
                                           std::make_index_sequence<J>{});
   }
 
+  /// Update all augmented Hessian columns for a mapped compact row group.
   template <size_t... Js>
   void updateMappedAugmentedColumns(size_t rowIndex,
                                     const DenseIndex* mappedSlots,
@@ -475,6 +499,7 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
      ...);
   }
 
+  /// Update all Hessian contributions from one compact row group.
   void updateMappedHessianRow(size_t rowIndex, const DenseIndex* mappedSlots,
                               const RhsVector* weights,
                               SymmetricBlockMatrix* info, DenseIndex beginCol,
@@ -650,6 +675,7 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
     updateHessianWithMappedSlots(mappedSlots, info, beginCol, endCol);
   }
 
+  /// Build mapped Hessian slots for each compact row group.
   void buildMappedSlots(const std::vector<DenseIndex>& slotIndices,
                         std::vector<DenseIndex>& mappedSlots) const override {
     const size_t stride = NumSlots + 1;
@@ -667,12 +693,14 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
     }
   }
 
+  /// Update the full augmented Hessian from a pre-built mapped-slot buffer.
   void updateHessianWithMappedSlots(const std::vector<DenseIndex>& mappedSlots,
                                     SymmetricBlockMatrix* info) const override {
     updateHessianWithMappedSlots(mappedSlots, info, 0, info->nBlocks());
   }
 
  private:
+  /// Update a block-column range of the Hessian from mapped row-slot data.
   void updateHessianWithMappedSlots(const std::vector<DenseIndex>& mappedSlots,
                                     SymmetricBlockMatrix* info,
                                     DenseIndex beginCol,
