@@ -7,7 +7,7 @@ notebook can focus on building the GTSAM factor graph -- the counterpart of
 
 The raw-measurement front-end is installed with::
 
-    pip install git+https://github.com/inuex35/cssrlib-numba.git@claude/gtsam-ppprtk-minimal
+    pip install git+https://github.com/inuex35/cssrlib-numba.git@gtsam-gnss-frontend
 """
 import os
 from copy import deepcopy
