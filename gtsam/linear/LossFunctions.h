@@ -472,9 +472,15 @@ class GTSAM_EXPORT GemanMcClure : public Base {
   double modelParameter() const { return c_; }
 
   /// @brief Static implementation of GemanMcClure Weight
-  static double Weight(double csquared, double distance);
+  static double Weight(double csquared, double distance2);
   /// @brief Static implementation of GemanMcClure Loss
-  static double Loss(double csquared, double distance);
+  static double Loss(double csquared, double distance2);
+  /// @brief Static implementation of TLS Graduated Weight
+  static double GraduatedWeight(GradScheme graduation, double csquared,
+                                double distance2, double mu);
+  /// @brief Static implementation of TLS Graduated Loss
+  static double GraduatedLoss(GradScheme graduation, double csquared,
+                              double distance2, double mu);
 
   /** @brief Static helper to compute shape param (c) using outlier influence.
    * Computes a shape param such that an outlier (any measurement with

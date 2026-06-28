@@ -505,8 +505,12 @@ class GncOptimizer {
           if (needsWeightUpdate(factorTypes_[k])) {
             // squared (and whitened) residual
             double u2_k = nfg_[k]->error(currentEstimate);
-            weights[k] = noiseModel::mEstimator::GemanMcClure::Weight(
-                lambda * barcSq_[k], u2_k);
+            double lmax = noiseModel::mEstimator::GemanMcClure::LAMBDA_MAX;
+            // NOTE: GNC actually stores lambda^2 according to lambda used in the GM loss
+            double mu = 1.0 - ((std::sqrt(lambda) - 1.0) / lmax);
+            weights[k] = noiseModel::mEstimator::GemanMcClure::GraduatedWeight(
+                noiseModel::mEstimator::GemanMcClure::GradScheme::STANDARD,
+                barcSq_[k], u2_k, mu);
           }
         }
         return weights;

@@ -16,12 +16,19 @@
  * @author  Luca Carlone
  * @author  Frank Dellaert
  *
- * Implementation of the paper: Yang, Antonante, Tzoumas, Carlone, "Graduated Non-Convexity for Robust Spatial Perception:
- * From Non-Minimal Solvers to Global Outlier Rejection", ICRA/RAL, 2020. (arxiv version: https://arxiv.org/pdf/1909.08605.pdf)
+ * Implementation of the paper: Yang, Antonante, Tzoumas, Carlone, "Graduated
+ * Non-Convexity for Robust Spatial Perception: From Non-Minimal Solvers to
+ * Global Outlier Rejection", ICRA/RAL, 2020. (arxiv version:
+ * https://arxiv.org/pdf/1909.08605.pdf)
  *
  * See also:
- * Antonante, Tzoumas, Yang, Carlone, "Outlier-Robust Estimation: Hardness, Minimally-Tuned Algorithms, and Applications",
- * arxiv: https://arxiv.org/pdf/2007.15109.pdf, 2020.
+ * Antonante, Tzoumas, Yang, Carlone, "Outlier-Robust Estimation: Hardness,
+ * Minimally-Tuned Algorithms, and Applications", arxiv:
+ * https://arxiv.org/pdf/2007.15109.pdf, 2020.
+ *
+ * Note: To adhere to GTSAM's definition of the control parameter $\mu$ we
+ * redefine the publications (above) parameter of $\mu$ as $\lambda$ in this
+ * implemenation.
  */
 
 #pragma once

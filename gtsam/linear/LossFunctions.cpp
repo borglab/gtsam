@@ -401,6 +401,28 @@ double GemanMcClure::Loss(double csquared, double distance2) {
   return 0.5 * (csquared * distance2) / (csquared + distance2);
 }
 
+double GemanMcClure::GraduatedWeight(GradScheme graduation, double csquared,
+                                     double distance2, double mu) {
+  if (graduation == GemanMcClure::GradScheme::STANDARD) {
+    const double lambda = 1.0 + ((1.0 - std::clamp(mu, 0.0, 1.0)) * LAMBDA_MAX);
+    return Weight(csquared * (lambda * lambda), distance2);
+  } else {  // GemanMcClure::GradScheme::SCALE_INVARIANT
+    const double sqrt_denom = csquared + std::pow(distance2, mu);
+    return (csquared * (csquared + std::pow(distance2, mu) * (1 - mu))) /
+           (sqrt_denom * sqrt_denom);
+  }
+}
+
+double GemanMcClure::GraduatedLoss(GradScheme graduation, double csquared,
+                                   double distance2, double mu) {
+  if (graduation == GemanMcClure::GradScheme::STANDARD) {
+    const double lambda = 1.0 + ((1.0 - std::clamp(mu, 0.0, 1.0)) * LAMBDA_MAX);
+    return Loss(csquared * (lambda * lambda), distance2);
+  } else {  // GemanMcClure::GradScheme::SCALE_INVARIANT
+    return 0.5 * (csquared * distance2) / (csquared + std::pow(distance2, mu));
+  }
+}
+
 double GemanMcClure::weight(double distance) const {
   return Weight(csquared_, distance * distance);
 }
@@ -410,25 +432,11 @@ double GemanMcClure::loss(double distance) const {
 }
 
 double GemanMcClure::graduatedWeight(double distance, double mu) const {
-  const double d2 = distance * distance;
-  if (graduation_ == GemanMcClure::GradScheme::STANDARD) {
-    const double lambda = 1.0 + ((1.0 - std::clamp(mu, 0.0, 1.0)) * LAMBDA_MAX);
-    return Weight(csquared_ * (lambda * lambda), d2);
-  } else {  // GemanMcClure::GradScheme::SCALE_INVARIANT
-    const double sqrt_denom = csquared_ + std::pow(d2, mu);
-    return (csquared_ * (csquared_ + std::pow(d2, mu) * (1 - mu))) /
-           (sqrt_denom * sqrt_denom);
-  }
+  return GraduatedWeight(graduation_, csquared_, distance * distance, mu);
 }
 
 double GemanMcClure::graduatedLoss(double distance, double mu) const {
-  const double d2 = distance * distance;
-  if (graduation_ == GemanMcClure::GradScheme::STANDARD) {
-    const double lambda = 1.0 + ((1.0 - std::clamp(mu, 0.0, 1.0)) * LAMBDA_MAX);
-    return Loss(csquared_ * (lambda * lambda), d2);
-  } else {  // GemanMcClure::GradScheme::SCALE_INVARIANT
-    return 0.5 * (csquared_ * d2) / (csquared_ + std::pow(d2, mu));
-  }
+  return GraduatedLoss(graduation_, csquared_, distance * distance, mu);
 }
 
 void GemanMcClure::print(const std::string &s="") const {
