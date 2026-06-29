@@ -133,6 +133,28 @@ mf::Expression::t BuildObjective(
   return mf::Expr::add(monty::new_array_ptr<mf::Expression::t>(objectiveTerms));
 }
 
+void AddQuadraticConstraint(
+    const mf::Model::t& M, const QuadraticConstraint& constraint,
+    const LiftedVariableXijToSDPVariableViewMap& xijMap) {
+  const Key key = constraint.key();
+  // Lower trace(X_i' A X_i) ~ b to the affine SDP constraint <A, Y_ii> ~ b.
+  const auto Xii = xijMap.at({key, key})->asExpr();
+  const auto lhs =
+      mf::Expr::dot(convertToMosekDenseMatrix(constraint.A()), Xii);
+
+  switch (constraint.sense()) {
+    case QuadraticConstraint::Sense::Equal:
+      M->constraint(lhs, mf::Domain::equalsTo(constraint.b()));
+      break;
+    case QuadraticConstraint::Sense::LessEqual:
+      M->constraint(lhs, mf::Domain::lessThan(constraint.b()));
+      break;
+    case QuadraticConstraint::Sense::GreaterEqual:
+      M->constraint(lhs, mf::Domain::greaterThan(constraint.b()));
+      break;
+  }
+}
+
 }  // namespace
 
 struct LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::Impl {
@@ -217,6 +239,40 @@ LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::LiftedSDPProblem(
   const auto objective = BuildObjective(problem, impl_->liftedVariableXijToSDPVariableViewMap);
   impl_->M->objective(mf::ObjectiveSense::Minimize,
                       mf::Expr::mul(0.5, objective));
+  
+  // Process QCQP equality constraints: 
+  for (const auto& factor : problem.eConstraints()) {
+    if (!factor) {
+      continue;
+    }
+
+    const auto* quadratic =
+        dynamic_cast<const QuadraticEqualityConstraintFactor*>(factor.get());
+    if (!quadratic) {
+      throw std::runtime_error(
+          "MonolithicSDP: expected quadratic equality constraints.");
+    }
+
+    AddQuadraticConstraint(impl_->M, quadratic->quadraticConstraint(),
+                           impl_->liftedVariableXijToSDPVariableViewMap);
+  }
+
+  // Process QCQP Inequality constraints: 
+  for (const auto& factor : problem.iConstraints()) {
+    if (!factor) {
+      continue;
+    }
+
+    const auto* quadratic =
+        dynamic_cast<const QuadraticInequalityConstraintFactor*>(factor.get());
+    if (!quadratic) {
+      throw std::runtime_error(
+          "MonolithicSDP: expected quadratic inequality constraints.");
+    }
+
+    AddQuadraticConstraint(impl_->M, quadratic->quadraticConstraint(),
+                           impl_->liftedVariableXijToSDPVariableViewMap);
+  }
 }
 
 LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::~LiftedSDPProblem() = default;
