@@ -418,8 +418,8 @@ CudaSfmFactorGraphData ConvertGeneralSfmGraphToCudaSfmData(
                 CudaSfmProjectionBatch::NoRobustModel());
           }
         }
-      robustModel = ExtractProjectionRobustModel(robust->robust());
-      model = robust->noise();
+        robustModel = ExtractProjectionRobustModel(robust->robust());
+        model = robust->noise();
       }
     }
     bool factorHasNonUnitNoise = false;
@@ -536,16 +536,6 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
     const std::vector<std::vector<CudaSfmSqrtInfo2>>* sqrtInfoByTrack,
     const std::vector<std::vector<CudaSfmRobustModel>>* robustModelsByTrack,
     CudaSfmLmExecutionOptions executionOptions) {
-#if !GTSAM_ENABLE_CUDSS
-  (void)data;
-  (void)cameraKeys;
-  (void)pointKeys;
-  (void)params;
-  (void)sqrtInfoByTrack;
-  (void)robustModelsByTrack;
-  (void)executionOptions;
-  throw std::runtime_error("OptimizeCudaSfm requires GTSAM_ENABLE_CUDSS=ON");
-#else
   if (cameraKeys.size() != data.numberCameras()) {
     throw std::invalid_argument(
         "OptimizeCudaSfm camera key count does not match SfmData");
@@ -554,6 +544,12 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
     throw std::invalid_argument(
         "OptimizeCudaSfm point key count does not match SfmData");
   }
+#if !GTSAM_ENABLE_CUDSS
+  if (params.linearSolver == CudaSfmLinearSolverType::CudssFullNormal) {
+    throw std::runtime_error(
+        "OptimizeCudaSfm CudssFullNormal requires GTSAM_ENABLE_CUDSS=ON");
+  }
+#endif
 
   CudaSfmLevenbergMarquardtResult result;
   const auto totalStart = Clock::now();
@@ -750,7 +746,6 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
   }
   result.totalMeasuredElapsed = ElapsedSince(totalStart);
   return result;
-#endif
 }
 
 }  // namespace gtsam::cuda

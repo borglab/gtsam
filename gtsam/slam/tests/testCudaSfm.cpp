@@ -1187,6 +1187,26 @@ TEST(CudaSfmProjectionLinearization, RejectsMismatchedValueShapes) {
                   std::invalid_argument);
 }
 
+#if !GTSAM_ENABLE_CUDSS
+TEST(CudaSfmLevenbergMarquardt, DenseSchurRunsWithoutCudss) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+
+  CudaSfmLevenbergMarquardtParams params;
+  params.linearSolver = CudaSfmLinearSolverType::DenseSchur;
+  params.maxIterations = 1;
+  params.relativeErrorTol = 1e-12;
+  params.lambdaInitial = 1e-3;
+
+  const CudaSfmLevenbergMarquardtResult result =
+      OptimizeCudaSfmWithoutValueDownload(data, params);
+
+  CHECK(result.innerIterations > 0);
+  CHECK(result.finalError < result.initialError);
+  CHECK(result.optimizedValues.empty());
+}
+#endif
+
 #if GTSAM_ENABLE_CUDSS
 TEST(CudaSfmFactorGraphConversion,
      ConvertsGeneralSfmFactorsWithArbitraryKeys) {
