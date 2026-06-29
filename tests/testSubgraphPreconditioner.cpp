@@ -26,8 +26,6 @@
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
 #include <tests/smallExample.h>
 
-#include <fstream>
-
 using namespace std;
 using namespace gtsam;
 using namespace example;

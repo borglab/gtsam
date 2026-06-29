@@ -17,6 +17,8 @@
  */
 
 #include <gtsam/geometry/Rot2.h>
+
+#include <Eigen/SVD>
 #include <iostream>
 
 using namespace std;

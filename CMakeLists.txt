@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9...3.29)
+cmake_minimum_required(VERSION 3.16...3.29)
 if (POLICY CMP0167)
     cmake_policy(SET CMP0167 OLD) # Don't complain about boost
 endif()

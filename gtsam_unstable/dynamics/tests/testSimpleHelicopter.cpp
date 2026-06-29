@@ -4,11 +4,11 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Vector.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam_unstable/dynamics/SimpleHelicopter.h>
-#include "gtsam/base/Vector.h"
-#include "gtsam/geometry/Pose3.h"
 
 /* ************************************************************************* */
 using namespace std::placeholders;

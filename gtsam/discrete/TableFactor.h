@@ -23,10 +23,8 @@
 #include <gtsam/discrete/Ring.h>
 
 #include <Eigen/Sparse>
-#include <algorithm>
 #include <map>
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>

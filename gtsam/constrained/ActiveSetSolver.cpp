@@ -22,6 +22,7 @@
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/linearExceptions.h>
 
+#include <Eigen/Cholesky>
 #include <algorithm>
 #include <cmath>
 #include <limits>

@@ -99,13 +99,6 @@ foreach(subdir ${gtsam_subdirs})
 endforeach(subdir)
 list(APPEND gtsam_srcs ${gtsam_core_headers})
 
-IF(MSVC)
-	# Add precompiled header to sources
-	include(gtsamAddPch)
-	gtsamAddPch("precompiled_header.h" "precompiled_header.cpp" "${gtsam_srcs}")
-	list(INSERT gtsam_srcs 0 "precompiled_header.cpp")
-ENDIF(MSVC)
-
 # Generate and install config and dllexport files
 #For config.in searches
 if(QNX)
@@ -154,6 +147,10 @@ endif()
 
 # Apply build flags:
 gtsam_apply_build_flags(gtsam)
+
+if(GTSAM_BUILD_WITH_PRECOMPILED_HEADERS)
+  target_precompile_headers(gtsam PRIVATE $<$<COMPILE_LANGUAGE:CXX>:<gtsam/precompiled_header.h$<ANGLE-R>>)
+endif()
 
 set_target_properties(gtsam PROPERTIES
     OUTPUT_NAME         gtsam

@@ -23,7 +23,6 @@
 #include <gtsam/base/types.h>
 #include <gtsam/base/Value.h>
 
-#include <cmath>
 #include <iostream>
 #include <typeinfo> // operator typeid
 

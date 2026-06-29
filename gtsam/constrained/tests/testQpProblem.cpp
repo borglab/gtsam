@@ -59,9 +59,9 @@ double DirectTraceCost(const SymmetricBlockMatrix& Q, const Matrix& X0,
 // Verifies affine Hessian factors evaluate direct Vector values.
 TEST(QpCost, HessianVectorError) {
   const Matrix G = (Matrix(2, 2) << 2.0, 0.5, 0.5, 3.0).finished();
-  const Vector g = (Vector(2) << 0.2, -0.3).finished();
+  const Vector2 g{0.2, -0.3};
   const QpCost cost(HessianFactor(x0, G, g, 1.7));
-  const Vector x = (Vector(2) << 1.0, 2.0).finished();
+  const Vector2 x{1.0, 2.0};
   const double expected = 0.5 * (1.7 - 2.0 * x.dot(g) + x.dot(G * x));
 
   EXPECT_DOUBLES_EQUAL(expected, cost.error(VectorValue(x)), 1e-12);
@@ -200,7 +200,7 @@ TEST(QpProblem, Evaluate) {
   QpProblem problem;
 
   const Matrix G = (Matrix(2, 2) << 2.0, 0.5, 0.5, 3.0).finished();
-  const Vector g = (Vector(2) << 0.2, -0.3).finished();
+  const Vector2 g{0.2, -0.3};
   problem.addCost(HessianFactor(x0, G, g, 1.7));
 
   problem.addConstraint(LinearConstraint::Equal(
@@ -210,7 +210,7 @@ TEST(QpProblem, Evaluate) {
 
   const Values values = VectorValue(1.0, 2.0);
   const auto [cost, eqViolation, ineqViolation] = problem.evaluate(values);
-  const Vector x = (Vector(2) << 1.0, 2.0).finished();
+  const Vector2 x{1.0, 2.0};
   const double expectedCost = 0.5 * (1.7 - 2.0 * x.dot(g) + x.dot(G * x));
 
   EXPECT_DOUBLES_EQUAL(expectedCost, cost, 1e-12);

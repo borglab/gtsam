@@ -20,11 +20,9 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/sfm/ShonanAveraging.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/FrobeniusFactor.h>
 
+#include <Eigen/Eigenvalues>
 #include <algorithm>
-#include <iostream>
-#include <map>
 #include <random>
 
 using namespace std;

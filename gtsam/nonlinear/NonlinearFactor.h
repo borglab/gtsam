@@ -26,14 +26,12 @@
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/inference/Factor.h>
-#include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/utilities.h>
 
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/base_object.hpp>
 #endif
 #include <cstddef>
-#include <type_traits>
 
 namespace gtsam {
 

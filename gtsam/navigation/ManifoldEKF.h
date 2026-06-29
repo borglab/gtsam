@@ -26,10 +26,8 @@
 
 #include <gtsam/base/Manifold.h>  // Include for traits and IsManifold
 #include <gtsam/base/Matrix.h>
-#include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/Vector.h>
 
-#include <Eigen/Dense>
 #include <stdexcept>
 #include <string>
 #include <type_traits>

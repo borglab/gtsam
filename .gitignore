@@ -41,3 +41,5 @@ docs/*
 timing/pypose_ba/*.json
 timing/pypose_ba/run_frank_benchmark.py
 timing/pypose_ba/test_benchmark_cli.py
+artifacts/
+build-tbb/

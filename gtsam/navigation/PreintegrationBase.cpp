@@ -21,7 +21,6 @@
  **/
 
 #include <gtsam/navigation/PreintegrationBase.h>
-#include <gtsam/base/numericalDerivative.h>
 
 #include <cassert>
 
