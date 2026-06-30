@@ -26,6 +26,7 @@
 #include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Vector.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/concepts.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/base/types.h>

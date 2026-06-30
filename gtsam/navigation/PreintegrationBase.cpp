@@ -20,6 +20,7 @@
  *  @author Varun Agrawal
  **/
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/navigation/PreintegrationBase.h>
 
 #include <cassert>

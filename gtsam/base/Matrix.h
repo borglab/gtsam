@@ -55,8 +55,6 @@ using Matrix6##N = Eigen::Matrix<double, 6, N>;  \
 using Matrix7##N = Eigen::Matrix<double, 7, N>;  \
 using Matrix8##N = Eigen::Matrix<double, 8, N>;  \
 using Matrix9##N = Eigen::Matrix<double, 9, N>;  \
-static const Eigen::MatrixBase<Matrix##N>::IdentityReturnType I_##N##x##N = Matrix##N::Identity(); \
-static const Eigen::MatrixBase<Matrix##N>::ConstantReturnType Z_##N##x##N = Matrix##N::Constant(0.0);
 
 GTSAM_MAKE_MATRIX_DEFS(1)
 GTSAM_MAKE_MATRIX_DEFS(2)

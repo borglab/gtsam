@@ -20,6 +20,7 @@
 #pragma once
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/MatrixLieGroup.h>
 #include <gtsam/geometry/Point2.h>
 

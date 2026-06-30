@@ -260,9 +260,9 @@ inline VectorValues createZeroDelta() {
   using symbol_shorthand::X;
   using symbol_shorthand::L;
   VectorValues c;
-  c.insert(L(1), Z_2x1);
-  c.insert(X(1), Z_2x1);
-  c.insert(X(2), Z_2x1);
+  c.insert(L(1), Vector2::Zero());
+  c.insert(X(1), Vector2::Zero());
+  c.insert(X(2), Vector2::Zero());
   return c;
 }
 
@@ -274,16 +274,22 @@ inline GaussianFactorGraph createGaussianFactorGraph() {
   GaussianFactorGraph fg;
 
   // linearized prior on x1: c[_x1_]+x1=0 i.e. x1=-c[_x1_]
-  fg.emplace_shared<JacobianFactor>(X(1), 10*I_2x2, -1.0*Vector::Ones(2));
+  fg.emplace_shared<JacobianFactor>(X(1), 10 * Matrix2::Identity(),
+                                    -1.0 * Vector::Ones(2));
 
   // odometry between x1 and x2: x2-x1=[0.2;-0.1]
-  fg.emplace_shared<JacobianFactor>(X(1), -10*I_2x2, X(2), 10*I_2x2, Vector2(2.0, -1.0));
+  fg.emplace_shared<JacobianFactor>(X(1), -10 * Matrix2::Identity(), X(2),
+                                    10 * Matrix2::Identity(),
+                                    Vector2(2.0, -1.0));
 
   // measurement between x1 and l1: l1-x1=[0.0;0.2]
-  fg.emplace_shared<JacobianFactor>(X(1), -5*I_2x2, L(1), 5*I_2x2, Vector2(0.0, 1.0));
+  fg.emplace_shared<JacobianFactor>(X(1), -5 * Matrix2::Identity(), L(1),
+                                    5 * Matrix2::Identity(), Vector2(0.0, 1.0));
 
   // measurement between x2 and l1: l1-x2=[-0.2;0.3]
-  fg.emplace_shared<JacobianFactor>(X(2), -5*I_2x2, L(1), 5*I_2x2, Vector2(-1.0, 1.5));
+  fg.emplace_shared<JacobianFactor>(X(2), -5 * Matrix2::Identity(), L(1),
+                                    5 * Matrix2::Identity(),
+                                    Vector2(-1.0, 1.5));
 
   return fg;
 }
@@ -472,7 +478,7 @@ inline GaussianFactorGraph createSimpleConstraintGraph() {
   using namespace impl;
   // create unary factor
   // prior on _x_, mean = [1,-1], sigma=0.1
-  Matrix Ax = I_2x2;
+  Matrix Ax = Matrix2::Identity();
   Vector b1(2);
   b1(0) = 1.0;
   b1(1) = -1.0;
@@ -482,8 +488,8 @@ inline GaussianFactorGraph createSimpleConstraintGraph() {
   // between _x_ and _y_, that is going to be the only factor on _y_
   // |1 0||x_1| + |-1  0||y_1| = |0|
   // |0 1||x_2|   | 0 -1||y_2|   |0|
-  Matrix Ax1 = I_2x2;
-  Matrix Ay1 = I_2x2 * -1;
+  Matrix Ax1 = Matrix2::Identity();
+  Matrix Ay1 = Matrix2::Identity() * -1;
   Vector b2 = Vector2(0.0, 0.0);
   JacobianFactor::shared_ptr f2(new JacobianFactor(_x_, Ax1, _y_, Ay1, b2,
       kConstrainedModel));
@@ -513,7 +519,7 @@ inline GaussianFactorGraph createSingleConstraintGraph() {
   using namespace impl;
   // create unary factor
   // prior on _x_, mean = [1,-1], sigma=0.1
-  Matrix Ax = I_2x2;
+  Matrix Ax = Matrix2::Identity();
   Vector b1(2);
   b1(0) = 1.0;
   b1(1) = -1.0;
@@ -529,7 +535,7 @@ inline GaussianFactorGraph createSingleConstraintGraph() {
   Ax1(0, 1) = 2.0;
   Ax1(1, 0) = 2.0;
   Ax1(1, 1) = 1.0;
-  Matrix Ay1 = I_2x2 * 10;
+  Matrix Ay1 = Matrix2::Identity() * 10;
   Vector b2 = Vector2(1.0, 2.0);
   JacobianFactor::shared_ptr f2(new JacobianFactor(_x_, Ax1, _y_, Ay1, b2,
       kConstrainedModel));
@@ -553,7 +559,7 @@ inline VectorValues createSingleConstraintValues() {
 inline GaussianFactorGraph createMultiConstraintGraph() {
   using namespace impl;
   // unary factor 1
-  Matrix A = I_2x2;
+  Matrix A = Matrix2::Identity();
   Vector b = Vector2(-2.0, 2.0);
   JacobianFactor::shared_ptr lf1(new JacobianFactor(_x_, A, b, kSigma0_1));
 

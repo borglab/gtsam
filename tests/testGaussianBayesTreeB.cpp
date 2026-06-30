@@ -15,17 +15,18 @@
  * @author  Michael Kaess
  */
 
-#include <tests/smallExample.h>
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/geometry/Rot2.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianDensity.h>
 #include <gtsam/linear/HessianFactor.h>
-#include <gtsam/geometry/Rot2.h>
 #include <gtsam/nonlinear/Marginals.h>
-
-#include <CppUnitLite/TestHarness.h>
+#include <tests/smallExample.h>
 
 using namespace std;
 using namespace gtsam;

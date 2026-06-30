@@ -17,9 +17,12 @@
 
 // #define ENABLE_TIMING // uncomment for timing results
 
-#include <gtsam/navigation/ScenarioRunner.h>
-#include <gtsam/base/timing.h>
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/base/timing.h>
+#include <gtsam/navigation/ScenarioRunner.h>
+
 #include <cmath>
 
 using namespace std;

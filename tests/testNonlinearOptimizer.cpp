@@ -15,25 +15,24 @@
  * @author  Frank Dellaert
  */
 
-#include <tests/smallExample.h>
-#include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/NonlinearConjugateGradientOptimizer.h>
-#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
-#include <gtsam/nonlinear/DoglegOptimizer.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/NoiseModel.h>
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/base/Matrix.h>
+#include <gtsam/nonlinear/DoglegOptimizer.h>
+#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/NonlinearConjugateGradientOptimizer.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <tests/smallExample.h>
 
-#include <CppUnitLite/TestHarness.h>
-
-
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <memory>
 
 using namespace std;

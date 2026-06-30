@@ -17,9 +17,10 @@
  * @brief Tests the OrientedPlane3 class
  */
 
-#include <gtsam/geometry/OrientedPlane3.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/OrientedPlane3.h>
 
 using namespace std::placeholders;
 using namespace gtsam;

@@ -16,6 +16,7 @@
  * @date    Dec 9, 2013
  */
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/linear/NoiseModel.h>
 
 namespace gtsam {

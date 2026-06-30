@@ -463,8 +463,8 @@ public:
     delta_t += msr_dt;
 
     // Update EquivCov_Overall
-    Matrix Z_3x3 = Z_3x3;
-    Matrix I_3x3 = I_3x3;
+    Matrix Z3x3 = Matrix3::Zero();
+    Matrix I3x3 = Matrix3::Identity();
 
     Matrix H_pos_pos = numericalDerivative11<Vector3, Vector3>(
         std::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt,
@@ -475,7 +475,7 @@ public:
                     delta_pos_in_t0, std::placeholders::_1),
         delta_vel_in_t0);
     Matrix H_pos_angles = Z_3x3;
-    Matrix H_pos_bias = collect(2, &Z_3x3, &Z_3x3);
+    Matrix H_pos_bias = collect(2, &Z3x3, &Z3x3);
 
     Matrix H_vel_vel = numericalDerivative11<Vector3, Vector3>(
         std::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t,
@@ -511,8 +511,8 @@ public:
     Matrix F_angles = collect(4, &H_angles_angles, &H_angles_pos, &H_angles_vel, &H_angles_bias);
     Matrix F_pos    = collect(4, &H_pos_angles, &H_pos_pos, &H_pos_vel, &H_pos_bias);
     Matrix F_vel    = collect(4, &H_vel_angles, &H_vel_pos, &H_vel_vel, &H_vel_bias);
-    Matrix F_bias_a = collect(5, &Z_3x3, &Z_3x3, &Z_3x3, &I_3x3, &Z_3x3);
-    Matrix F_bias_g = collect(5, &Z_3x3, &Z_3x3, &Z_3x3, &Z_3x3, &I_3x3);
+    Matrix F_bias_a = collect(5, &Z3x3, &Z3x3, &Z3x3, &I3x3, &Z3x3);
+    Matrix F_bias_g = collect(5, &Z3x3, &Z3x3, &Z3x3, &Z3x3, &I3x3);
     Matrix F = stack(5, &F_angles, &F_pos, &F_vel, &F_bias_a, &F_bias_g);
 
 

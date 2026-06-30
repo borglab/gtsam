@@ -17,6 +17,7 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/BatchJacobianFactor.h>
 #include <gtsam/linear/GaussianBayesTree.h>

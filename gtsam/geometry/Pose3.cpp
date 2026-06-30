@@ -14,6 +14,7 @@
  * @brief 3D Pose manifold SO(3) x R^3 and group SE(3)
  */
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/concepts.h>
 #include <gtsam/geometry/Kernel.h>
 #include <gtsam/geometry/Pose2.h>

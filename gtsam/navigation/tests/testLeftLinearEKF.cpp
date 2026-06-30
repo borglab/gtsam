@@ -15,6 +15,7 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/navigation/LeftLinearEKF.h>

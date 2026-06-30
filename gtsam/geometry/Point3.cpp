@@ -14,7 +14,9 @@
  * @brief 3D Point
  */
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/Point3.h>
+
 #include <cmath>
 #include <iostream>
 #include <vector>

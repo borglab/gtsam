@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/navigation/PreintegratedRotation.h>
 
 namespace gtsam {

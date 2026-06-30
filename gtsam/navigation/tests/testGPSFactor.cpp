@@ -16,40 +16,40 @@
  * @date   January 22, 2014
  */
 
- #include <gtsam/navigation/GPSFactor.h>
- #include <gtsam/base/Testable.h>
- #include <gtsam/base/numericalDerivative.h>
- 
- #include <CppUnitLite/TestHarness.h>
- 
- #include <GeographicLib/Config.h>
- #include <GeographicLib/LocalCartesian.hpp>
- 
- using namespace std;
- using namespace gtsam;
- using namespace GeographicLib;
- 
- #if GEOGRAPHICLIB_VERSION_MAJOR < 2 && GEOGRAPHICLIB_VERSION_MINOR<37
- static const auto& kWGS84 = Geocentric::WGS84;
- #else
- static const auto& kWGS84 = Geocentric::WGS84();
- #endif
- 
- // *************************************************************************
- namespace example {
- // ENU Origin is where the plane was in hold next to runway
- static constexpr double lat0 = 33.86998, lon0 = -84.30626, h0 = 274;
- 
- // Convert from GPS to ENU
- static const LocalCartesian origin_ENU(lat0, lon0, h0, kWGS84);
- 
- // Dekalb-Peachtree Airport runway 2L
- static constexpr double lat = 33.87071, lon = -84.30482, h = 274;
- 
- // Random lever arm
- static const Point3 leverArm(0.1, 0.2, 0.3);
- }  // namespace example
- 
+#include <CppUnitLite/TestHarness.h>
+#include <GeographicLib/Config.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/navigation/GPSFactor.h>
+
+#include <GeographicLib/LocalCartesian.hpp>
+
+using namespace std;
+using namespace gtsam;
+using namespace GeographicLib;
+
+#if GEOGRAPHICLIB_VERSION_MAJOR < 2 && GEOGRAPHICLIB_VERSION_MINOR < 37
+static const auto& kWGS84 = Geocentric::WGS84;
+#else
+static const auto& kWGS84 = Geocentric::WGS84();
+#endif
+
+// *************************************************************************
+namespace example {
+// ENU Origin is where the plane was in hold next to runway
+static constexpr double lat0 = 33.86998, lon0 = -84.30626, h0 = 274;
+
+// Convert from GPS to ENU
+static const LocalCartesian origin_ENU(lat0, lon0, h0, kWGS84);
+
+// Dekalb-Peachtree Airport runway 2L
+static constexpr double lat = 33.87071, lon = -84.30482, h = 274;
+
+// Random lever arm
+static const Point3 leverArm(0.1, 0.2, 0.3);
+}  // namespace example
+
  // *************************************************************************
  TEST( GPSFactor, Constructor ) {
    using namespace example;

@@ -18,6 +18,7 @@
  * @date    December 2021
  */
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/discrete/DiscreteValues.h>

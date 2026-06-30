@@ -19,6 +19,7 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/numericalDerivative.h>

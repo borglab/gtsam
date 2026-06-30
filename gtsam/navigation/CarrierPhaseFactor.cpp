@@ -6,6 +6,8 @@
 
 #include "CarrierPhaseFactor.h"
 
+#include <gtsam/base/MatrixConstants.h>
+
 namespace gtsam {
 
 using gnss::C_LIGHT;

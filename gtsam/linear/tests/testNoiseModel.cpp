@@ -17,13 +17,12 @@
  * @author Fan Jiang
  */
 
-
-#include <gtsam/linear/NoiseModel.h>
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/geometry/Point2.h>
-
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/linear/NoiseModel.h>
 
 #include <cmath>
 #include <iostream>

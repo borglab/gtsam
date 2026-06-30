@@ -15,6 +15,7 @@
  *  @author Adam Bry
  **/
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/navigation/TangentPreintegration.h>
 
 using namespace std;
