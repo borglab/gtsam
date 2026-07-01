@@ -378,6 +378,45 @@ TEST(QcqpProblem, SingleFrobeniusBetweenFactor) {
                        1e-12);
 }
 
+// Verifies hard Rot2 Frobenius priors become D=1 lifted linear equalities.
+TEST(QcqpProblem, HardFrobeniusPriorRot2D1) {
+  const Rot2 measured = Rot2::fromAngle(0.25);
+  const auto hardNoise = noiseModel::Constrained::All(4);
+
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusPrior<Rot2>>(x0, measured.matrix(), hardNoise);
+
+  const QcqpProblem problem(graph);
+
+  bool foundLinearEquality = false;
+  for (const auto& factor : problem.eConstraints()) {
+    if (dynamic_cast<const LinearEqualityConstraintFactor*>(factor.get())) {
+      foundLinearEquality = true;
+      break;
+    }
+  }
+
+  LONGS_EQUAL(0, problem.costs().size());
+  EXPECT(foundLinearEquality);
+
+  Values qcqpValues;
+  InsertQcqpValue<Rot2, 1>(x0, measured, &qcqpValues);
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
+                       1e-12);
+}
+
+// Verifies the deferred non-constrained Frobenius prior cost path rejects.
+TEST(QcqpProblem, FrobeniusPriorRot2D1GaussianRejected) {
+  const Rot2 measured = Rot2::fromAngle(0.25);
+  const auto gaussianNoise = noiseModel::Isotropic::Sigma(4, 0.1);
+
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusPrior<Rot2>>(x0, measured.matrix(),
+                                             gaussianNoise);
+
+  CHECK_EXCEPTION({ QcqpProblem problem(graph); }, std::runtime_error);
+}
+
 }  // namespace QcqpSingleFactorFixture
 /* ************************************************************************* */
 namespace QcqpRingFixture {

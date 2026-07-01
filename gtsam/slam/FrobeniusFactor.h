@@ -111,6 +111,75 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
     return traits<T>::Vec(g, H) -
            vecM_;  // Jacobian is computed only when needed.
   }
+
+  /** Add this Frobenius prior to the QCQP graph.
+   *  D=1 uses the lifted vector form; higher column dimensions are kept as a
+   *  separate dispatch point for the future matrix-form prior path. */
+  void qcqpFactors(NonlinearFactorGraph* costs,
+                   NonlinearEqualityConstraints* constraints,
+                   size_t columnDimension = 1) const override {
+    if (columnDimension == 0) {
+      throw std::invalid_argument(
+          "FrobeniusPrior::qcqpFactors: columnDimension must be >= 1");
+    }
+    if (columnDimension == 1) {
+      qcqpFactorsForVec(costs, constraints);
+    } else {
+      qcqpFactorsForMatrix(costs, constraints, columnDimension);
+    }
+  }
+
+ private:
+  /// D=1 constrained-noise prior in lifted vector form.
+  /// The stored measurement is vecM_ = vec(M), where M is the matrix passed to
+  /// the FrobeniusPrior constructor. The lifted variable for the current value
+  /// is x = [1, vec(R)]^T, where R is the matrix represented by this key. The
+  /// matrix B = [-vecM_, I] therefore gives B*x = vec(R) - vec(M). A hard prior
+  /// asks for that residual to be zero, so we add the linear equality B*x = 0.
+  void qcqpFactorsForVec(NonlinearFactorGraph* costs,
+                         NonlinearEqualityConstraints* constraints) const {
+    if constexpr (!internal::HasQcqpVariableTraits<T, 1>::value) {
+      (void)costs;
+      (void)constraints;
+      throw std::runtime_error(
+          "FrobeniusPrior::qcqpFactors requires QCQP variable traits for this "
+          "type and column dimension 1.");
+    } else {
+      (void)costs;
+      if (this->noiseModel_->isConstrained()) {
+        InsertQcqpConstraints<T, 1>(this->key(), constraints);
+
+        constexpr int AmbientDim = N * N;
+        constexpr int LiftedDim = AmbientDim + 1;
+        Matrix B = Matrix::Zero(AmbientDim, LiftedDim);
+        B.col(0) = -vecM_;
+        B.block(0, 1, AmbientDim, AmbientDim) =
+            Matrix::Identity(AmbientDim, AmbientDim);
+
+        constraints->push_back(LinearConstraint::Equal(
+                                   JacobianFactor(this->key(), B,
+                                                  Vector::Zero(AmbientDim)))
+                                   .createEqualityFactor());
+      } else {
+        throw std::runtime_error(
+            "FrobeniusPrior::qcqpFactors D=1 non-constrained noise is not yet "
+            "implemented.");
+      }
+    }
+  }
+
+  /// Matrix-form Frobenius priors are deliberately separate from the D=1
+  /// vector path; no QCQP lowering is implemented for this branch yet.
+  void qcqpFactorsForMatrix(NonlinearFactorGraph* costs,
+                            NonlinearEqualityConstraints* constraints,
+                            size_t columnDimension) const {
+    (void)costs;
+    (void)constraints;
+    (void)columnDimension;
+    throw std::runtime_error(
+        "FrobeniusPrior::qcqpFactors with column dimension > 1 is not yet "
+        "implemented.");
+  }
 };
 
 /**
