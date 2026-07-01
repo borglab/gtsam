@@ -775,7 +775,8 @@ template <T = {double,
                gtsam::PinholeCamera<gtsam::Cal3Unified>,
                gtsam::SphericalCamera,
                gtsam::NavState,
-               gtsam::imuBias::ConstantBias}>
+               gtsam::imuBias::ConstantBias,
+               gtsam::EssentialMatrix}>
 virtual class PriorFactor : gtsam::NoiseModelFactor {
   PriorFactor(gtsam::Key key, const T& prior,
               const gtsam::noiseModel::Base* noiseModel = nullptr);
