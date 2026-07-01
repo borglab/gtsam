@@ -38,7 +38,8 @@ def load_rtk(n_epochs=60):
     Returns a namespace with: ``frames`` (list of cssrlib DD bundles),
     ``ref_of`` (reference satellite per constellation), ``rb`` (base ECEF),
     ``x0`` (rover seed), ``xyz_ref``/``pos_ref`` (surveyed marker), ``nf``,
-    ``syss`` and ``engine`` (the rtkpos instance, used by :func:`resolve_ar`).
+    ``syss`` and ``engine`` (the rtkpos instance, used by
+    :func:`resolve_integer_ambiguities`).
     """
     bdir = os.path.join(os.path.dirname(gn.__file__), "data") + os.sep
     syss = (uGNSS.GPS, uGNSS.GAL)
@@ -251,16 +252,20 @@ def undiff_observations(frame, data):
 # --------------------------------------------------------------------------- #
 # Integer ambiguity resolution (LAMBDA) on a GTSAM float estimate
 # --------------------------------------------------------------------------- #
-def resolve_ar(engine, isam, res, x_key, amb_key, sats, el, seen_am, nf, syss,
-               conv_sigma=None, elmaskar_deg=15.0):
-    """Resolve integer ambiguities with cssrlib's LAMBDA on the ISAM2 float.
+def resolve_integer_ambiguities(engine, isam, res, x_key, amb_key, sats, el,
+                                seen_am, nf, syss,
+                                conv_sigma=None, elmaskar_deg=15.0):
+    """Fix the integer ambiguities with cssrlib's LAMBDA on the ISAM2 float.
 
-    Writes the float ambiguities and their joint covariance into the cssrlib
-    ``nav`` state, then calls ``resamb_lambda``. The full position+ambiguity
-    joint marginal is ill-conditioned, so the covariance is assembled from the
-    ambiguity-only joint (stable) plus pairwise (position, ambiguity) cross
-    terms, with a non-finite guard. ``conv_sigma`` gates AR until the position
-    1-sigma is small enough (PPP); leave ``None`` for RTK.
+    GTSAM only estimates the *float* (continuous, real-valued) ambiguities; the
+    integer fixing is a separate step performed here, outside the factor graph.
+    This routine writes those float ambiguities and their joint covariance into
+    the cssrlib ``nav`` state, then calls ``resamb_lambda`` (the LAMBDA integer
+    search). The full position+ambiguity joint marginal is ill-conditioned, so
+    the covariance is assembled from the ambiguity-only joint (stable) plus
+    pairwise (position, ambiguity) cross terms, with a non-finite guard.
+    ``conv_sigma`` gates the resolution until the position 1-sigma is small
+    enough (PPP); leave ``None`` for RTK.
 
     Returns ``(nb, fixed_xyz)`` -- number of fixed SD ambiguities and the fixed
     ECEF position, or ``(0, None)`` if AR was skipped / not accepted.

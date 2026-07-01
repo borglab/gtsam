@@ -36,6 +36,11 @@ using CarrierPhaseBase = GnssMeasurementBase;
  *
  * where dt_u, dt_s are in seconds and ambiguity is in meters.
  *
+ * @note The ambiguity is estimated as a *float* (continuous `double`) in the
+ * factor graph; GTSAM never optimizes it as an integer.  This factor yields
+ * the float estimate and covariance; integer ambiguity fixing (e.g. LAMBDA)
+ * is a separate step performed outside the graph.
+ *
  * @ingroup navigation
  */
 class GTSAM_EXPORT CarrierPhaseFactor
@@ -127,6 +132,13 @@ struct traits<CarrierPhaseFactor> : public Testable<CarrierPhaseFactor> {};
  * (negative sign).  The ambiguity N is in cycles and lambda is the wavelength
  * [m/cycle], so the integer structure is preserved for ambiguity resolution.
  * The wet mapping function and iono coefficient are held constant per factor.
+ *
+ * @note The ambiguity N is represented as a continuous `double` (in cycles)
+ * and is estimated as a *float* ambiguity in the factor graph; GTSAM never
+ * optimizes it as an integer.  This factor provides the float estimate and its
+ * covariance.  Integer ambiguity fixing is a separate step performed outside
+ * the graph, e.g. with the LAMBDA method, using the float estimate and
+ * covariance.
  *
  * Keys: [pos, clock, ztd, slant-iono, ambiguity].
  *
