@@ -9,6 +9,7 @@
 namespace gtsam {
 
 using gnss::C_LIGHT;
+using gnss::OMGE;
 
 //***************************************************************************
 DopplerFactor::DopplerFactor(const Key velocityKey, const Key clockDriftKey,
@@ -27,6 +28,14 @@ DopplerFactor::DopplerFactor(const Key velocityKey, const Key clockDriftKey,
   Point3 e;
   gnss::geodist(satellitePosition, receiverPosition, e);
   los_ = e;
+
+  // Earth-rotation (Sagnac) rate term, matching RTKLIB resdop():
+  //   (OMGE/c) * (v_s.y*r_r.x + r_s.y*v_r.x - v_s.x*r_r.y - r_s.x*v_r.y)
+  // Split into the v_r-independent offset and the linear coefficient on v_r.
+  const double k = OMGE / C_LIGHT;
+  sagnacOffset_ = k * (satelliteVelocity.y() * receiverPosition.x() -
+                       satelliteVelocity.x() * receiverPosition.y());
+  velSagnac_ = Point3(k * satellitePosition.y(), -k * satellitePosition.x(), 0.0);
 }
 
 //***************************************************************************
@@ -37,6 +46,7 @@ void DopplerFactor::print(const std::string& s,
   gtsam::print(Vector(satVel_), "sat velocity (ECEF m/s): ");
   gtsam::print(Vector(los_), "line-of-sight (rcv->sat): ");
   gtsam::print(satClkDrift_, "sat clock drift (s/s): ");
+  gtsam::print(sagnacOffset_, "Sagnac rate offset (m/s): ");
 }
 
 //***************************************************************************
@@ -46,7 +56,9 @@ bool DopplerFactor::equals(const NonlinearFactor& expected, double tol) const {
          traits<double>::Equals(measRangeRate_, e->measRangeRate_, tol) &&
          traits<Point3>::Equals(satVel_, e->satVel_, tol) &&
          traits<Point3>::Equals(los_, e->los_, tol) &&
-         traits<double>::Equals(satClkDrift_, e->satClkDrift_, tol);
+         traits<double>::Equals(satClkDrift_, e->satClkDrift_, tol) &&
+         traits<Point3>::Equals(velSagnac_, e->velSagnac_, tol) &&
+         traits<double>::Equals(sagnacOffset_, e->sagnacOffset_, tol);
 }
 
 //***************************************************************************
@@ -54,13 +66,15 @@ Vector DopplerFactor::evaluateError(const Vector3& velocity,
                                     const double& clockDrift,
                                     OptionalMatrixType Hvelocity,
                                     OptionalMatrixType HclockDrift) const {
-  // range rate = e . (v_s - v_r) + c * (ddt_r - ddt_s)
-  const double rangeRate =
-      los_.dot(satVel_ - velocity) + C_LIGHT * (clockDrift - satClkDrift_);
+  // range rate = e . (v_s - v_r) + c * (ddt_r - ddt_s) + sagnac_rate
+  const double rangeRate = los_.dot(satVel_ - velocity) +
+                           C_LIGHT * (clockDrift - satClkDrift_) +
+                           sagnacOffset_ + velSagnac_.dot(velocity);
   const double error = rangeRate - measRangeRate_;
 
   if (Hvelocity) {
-    *Hvelocity = -los_.transpose();  // d/d v_r [ e . (v_s - v_r) ] = -e^T
+    // d/d v_r [ e . (v_s - v_r) + velSagnac . v_r ] = (velSagnac - e)^T
+    *Hvelocity = (velSagnac_ - los_).transpose();
   }
   if (HclockDrift) {
     *HclockDrift = I_1x1 * C_LIGHT;

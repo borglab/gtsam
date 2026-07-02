@@ -21,20 +21,26 @@ namespace gtsam {
  * Relates a measured Doppler observation to the receiver velocity and clock
  * drift, reusing the line-of-sight unit vector from gnss::geodist:
  *
- *   error = e . (v_s - v_r) + c * (ddt_r - ddt_s) - (-lambda * Doppler)
+ *   error = e . (v_s - v_r) + c * (ddt_r - ddt_s) + sagnac_rate
+ *           - (-lambda * Doppler)
  *
  * where
  *   - e        is the unit line-of-sight vector from receiver to satellite,
  *   - v_s, v_r are the satellite and receiver ECEF velocities (m/s),
  *   - ddt_r    is the receiver clock drift (s/s) -- the estimated state,
  *   - ddt_s    is the satellite clock drift (s/s),
+ *   - sagnac_rate = (OMGE/c) * (v_s.y*r_r.x + r_s.y*v_r.x
+ *                               - v_s.x*r_r.y - r_s.x*v_r.y)
+ *     is the earth-rotation (Sagnac) rate correction -- the time derivative of
+ *     the Sagnac range term, matching RTKLIB's resdop(),
  *   - lambda * Doppler is the measured range rate (m/s); a positive Doppler
  *     (approaching satellite) corresponds to a decreasing range, hence the
  *     leading minus sign.
  *
- * The satellite velocity and the line-of-sight are held constant per factor;
- * their (second-order) dependence on the receiver position is neglected, which
- * is standard for Doppler velocity estimation.  Doppler provides receiver
+ * The satellite position/velocity and the line-of-sight are held constant per
+ * factor; only the (second-order) dependence of the line-of-sight on the
+ * receiver position is neglected, which is standard for Doppler velocity
+ * estimation.  Doppler provides receiver
  * velocity and clock-drift observability that is robust through carrier-phase
  * cycle slips and re-convergence.
  *
@@ -50,6 +56,8 @@ class GTSAM_EXPORT DopplerFactor : public NoiseModelFactorN<Vector3, double> {
   Point3 satVel_{0, 0, 0};            ///< Satellite ECEF velocity [m/s].
   Point3 los_{0, 0, 0};              ///< Unit LOS, receiver -> satellite.
   double satClkDrift_ = 0.0;          ///< Satellite clock drift [s/s].
+  Point3 velSagnac_{0, 0, 0};         ///< Sagnac rate coeff, d(rate)/d(v_r).
+  double sagnacOffset_ = 0.0;         ///< v_r-independent Sagnac rate term [m/s].
 
  public:
   using Base::evaluateError;
@@ -106,6 +114,8 @@ class GTSAM_EXPORT DopplerFactor : public NoiseModelFactorN<Vector3, double> {
     ar& BOOST_SERIALIZATION_NVP(satVel_);
     ar& BOOST_SERIALIZATION_NVP(los_);
     ar& BOOST_SERIALIZATION_NVP(satClkDrift_);
+    ar& BOOST_SERIALIZATION_NVP(velSagnac_);
+    ar& BOOST_SERIALIZATION_NVP(sagnacOffset_);
   }
 #endif
 };

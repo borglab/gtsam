@@ -30,11 +30,18 @@ TEST(TestDopplerFactor, Model) {
   const double error =
       factor.evaluateError((Vector3)rcvVel, rcvClkDrift)[0];
 
-  // Reference: range rate via Sagnac-aware LOS minus measured range rate.
+  // Reference: range rate via Sagnac-aware LOS, plus the earth-rotation
+  // (Sagnac) rate term, minus the measured range rate.
   Point3 e;
   gnss::geodist(sample::kSatPos, sample::kReceiverPos, e);
-  const double rangeRate =
-      e.dot(satVel - rcvVel) + kCLight * (rcvClkDrift - satClkDrift);
+  const double kSag = gnss::OMGE / kCLight;
+  const double sagnacRate =
+      kSag * (satVel.y() * sample::kReceiverPos.x() +
+              sample::kSatPos.y() * rcvVel.x() -
+              satVel.x() * sample::kReceiverPos.y() -
+              sample::kSatPos.x() * rcvVel.y());
+  const double rangeRate = e.dot(satVel - rcvVel) +
+                           kCLight * (rcvClkDrift - satClkDrift) + sagnacRate;
   const double expected = rangeRate - (-kLambdaL1 * measDoppler);
   EXPECT_DOUBLES_EQUAL(expected, error, 1e-6);
 
