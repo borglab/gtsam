@@ -125,6 +125,199 @@ template <>
 struct traits<PseudorangeFactor> : public Testable<PseudorangeFactor> {};
 
 /**
+ * Undifferenced (raw) PPP pseudorange factor.
+ *
+ * Models a single raw pseudorange whose satellite-side SSR corrections (orbit,
+ * clock, code bias) have already been folded into `measuredPseudorange`.  In
+ * PPP the receiver clock, tropospheric zenith wet delay and slant ionospheric
+ * delay do not cancel by differencing, so they are carried as state variables:
+ *
+ *   error = geodist(sat, rcv) + c*(dt_u - dt_s)
+ *         + m_w * ZTD_wet + mu_f * I_slant - measuredPseudorange
+ *
+ * where
+ *   - geodist applies the Sagnac correction (see gnss::geodist),
+ *   - m_w is the tropospheric wet mapping function evaluated at the predicted
+ *     elevation,
+ *   - mu_f = (f_1 / f_freq)^2 is the first-order ionospheric coefficient for
+ *     the signal frequency (+1 on L1).  Code is delayed by the ionosphere, so
+ *     the sign is positive.
+ *
+ * The mapping function and ionospheric coefficient are held constant per
+ * factor; their (second-order) dependence on the pose is neglected, which is
+ * standard practice for PPP estimators.
+ *
+ * @ingroup navigation
+ */
+class GTSAM_EXPORT UndifferencedPseudorangeFactor
+    : public NoiseModelFactorN<Point3, double, double, double>,
+      private PseudorangeBase {
+ private:
+  typedef NoiseModelFactorN<Point3, double, double, double> Base;
+  double tropoMap_ = 0.0;   ///< Tropospheric wet mapping function (constant).
+  double ionoCoeff_ = 1.0;  ///< Slant-iono coefficient mu_f (constant).
+
+ public:
+  using Base::evaluateError;
+  typedef std::shared_ptr<UndifferencedPseudorangeFactor> shared_ptr;
+  typedef UndifferencedPseudorangeFactor This;
+
+  UndifferencedPseudorangeFactor() = default;
+  virtual ~UndifferencedPseudorangeFactor() = default;
+
+  /**
+   * @param receiverPositionKey  Receiver Point3 ECEF position node.
+   * @param receiverClockBiasKey Receiver clock bias node [s].
+   * @param tropoZenithWetKey    Tropospheric zenith wet delay node [m].
+   * @param slantIonoKey         Slant ionospheric delay node (this sat) [m].
+   * @param measuredPseudorange  SSR-corrected pseudorange [m].
+   * @param satellitePosition    Satellite ECEF position [m].
+   * @param tropoWetMapping      Wet mapping function m_w at predicted elevation.
+   * @param ionoCoefficient      Ionospheric coefficient mu_f (+1 on L1).
+   * @param satelliteClockBias   Satellite clock bias [s].
+   * @param model                1-D pseudorange noise model.
+   */
+  UndifferencedPseudorangeFactor(
+      Key receiverPositionKey, Key receiverClockBiasKey,
+      Key tropoZenithWetKey, Key slantIonoKey,
+      double measuredPseudorange, const Point3& satellitePosition,
+      double tropoWetMapping, double ionoCoefficient,
+      double satelliteClockBias = 0.0,
+      const SharedNoiseModel& model = noiseModel::Unit::Create(1));
+
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this)));
+  }
+
+  void print(const std::string& s = "", const KeyFormatter& keyFormatter =
+                                            DefaultKeyFormatter) const override;
+  bool equals(const NonlinearFactor& expected,
+              double tol = 1e-9) const override;
+
+  Vector evaluateError(const Point3& receiverPosition,
+                       const double& receiverClockBias,
+                       const double& tropoZenithWet,
+                       const double& slantIono,
+                       OptionalMatrixType HreceiverPos,
+                       OptionalMatrixType HreceiverClockBias,
+                       OptionalMatrixType HtropoZenithWet,
+                       OptionalMatrixType HslantIono) const override;
+
+  inline double tropoMapping() const { return tropoMap_; }
+  inline double ionoCoefficient() const { return ionoCoeff_; }
+
+ private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar& BOOST_SERIALIZATION_NVP(measurement_);
+    ar& BOOST_SERIALIZATION_NVP(satPos_);
+    ar& BOOST_SERIALIZATION_NVP(satClkBias_);
+    ar& BOOST_SERIALIZATION_NVP(tropoMap_);
+    ar& BOOST_SERIALIZATION_NVP(ionoCoeff_);
+  }
+#endif
+};
+
+/// traits
+template <>
+struct traits<UndifferencedPseudorangeFactor>
+    : public Testable<UndifferencedPseudorangeFactor> {};
+
+/**
+ * Undifferenced (raw) PPP pseudorange factor with lever-arm correction.
+ *
+ * Like UndifferencedPseudorangeFactor but uses a Pose3 (position + attitude) as the
+ * receiver state with a body-frame lever arm to the antenna.  Optional
+ * ecef_T_nav lets the pose be expressed in a local navigation frame (shared with
+ * ImuFactor).  Keys: [pose, clock, ztd, slant-iono].
+ *
+ * @ingroup navigation
+ */
+class GTSAM_EXPORT UndifferencedPseudorangeFactorArm
+    : public NoiseModelFactorN<Pose3, double, double, double>,
+      private PseudorangeBase {
+ private:
+  typedef NoiseModelFactorN<Pose3, double, double, double> Base;
+  gnss::LeverArm arm_;
+  double tropoMap_ = 0.0;
+  double ionoCoeff_ = 1.0;
+
+ public:
+  using Base::evaluateError;
+  typedef std::shared_ptr<UndifferencedPseudorangeFactorArm> shared_ptr;
+  typedef UndifferencedPseudorangeFactorArm This;
+
+  UndifferencedPseudorangeFactorArm()
+      : PseudorangeBase{0.0, Point3(0, 0, 0), 0.0} {}
+  virtual ~UndifferencedPseudorangeFactorArm() = default;
+
+  /// Construct with an ECEF pose key.
+  UndifferencedPseudorangeFactorArm(
+      Key poseKey, Key receiverClockBiasKey, Key tropoZenithWetKey,
+      Key slantIonoKey, double measuredPseudorange,
+      const Point3& satellitePosition, const Point3& leverArm,
+      double tropoWetMapping, double ionoCoefficient,
+      double satelliteClockBias = 0.0,
+      const SharedNoiseModel& model = noiseModel::Unit::Create(1));
+
+  /// Construct with a local nav-frame pose key + ecef_T_nav.
+  UndifferencedPseudorangeFactorArm(
+      Key poseKey, Key receiverClockBiasKey, Key tropoZenithWetKey,
+      Key slantIonoKey, double measuredPseudorange,
+      const Point3& satellitePosition, const Point3& leverArm,
+      const Pose3& ecef_T_nav, double tropoWetMapping, double ionoCoefficient,
+      double satelliteClockBias = 0.0,
+      const SharedNoiseModel& model = noiseModel::Unit::Create(1));
+
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this)));
+  }
+
+  void print(const std::string& s = "", const KeyFormatter& keyFormatter =
+                                            DefaultKeyFormatter) const override;
+  bool equals(const NonlinearFactor& expected,
+              double tol = 1e-9) const override;
+
+  Vector evaluateError(const Pose3& pose, const double& receiverClockBias,
+                       const double& tropoZenithWet, const double& slantIono,
+                       OptionalMatrixType H_pose,
+                       OptionalMatrixType HreceiverClockBias,
+                       OptionalMatrixType HtropoZenithWet,
+                       OptionalMatrixType HslantIono) const override;
+
+  inline const Point3& leverArm() const { return arm_.b; }
+  inline const std::optional<Pose3>& ecefTnav() const { return arm_.ecef_T_nav; }
+  inline double tropoMapping() const { return tropoMap_; }
+  inline double ionoCoefficient() const { return ionoCoeff_; }
+
+ private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar& BOOST_SERIALIZATION_NVP(measurement_);
+    ar& BOOST_SERIALIZATION_NVP(satPos_);
+    ar& BOOST_SERIALIZATION_NVP(satClkBias_);
+    ar& boost::serialization::make_nvp("bL_", arm_.b);
+    ar& boost::serialization::make_nvp("ecef_T_nav_", arm_.ecef_T_nav);
+    ar& BOOST_SERIALIZATION_NVP(tropoMap_);
+    ar& BOOST_SERIALIZATION_NVP(ionoCoeff_);
+  }
+#endif
+};
+
+/// traits
+template <>
+struct traits<UndifferencedPseudorangeFactorArm>
+    : public Testable<UndifferencedPseudorangeFactorArm> {};
+
+/**
  * Simple differentially-corrected pseudorange factor for precise positioning.
  *
  * This factor implements the model prescribed by chapter 5.8.2 from [1],
