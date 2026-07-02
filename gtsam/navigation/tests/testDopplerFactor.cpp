@@ -87,6 +87,102 @@ TEST(TestClockDriftFactor, Model) {
 }
 
 // *************************************************************************
+// DopplerFactorArm: with omega = 0 it must reduce to DopplerFactor at the same
+// velocity, independent of the pose attitude (lever velocity omega x b = 0).
+TEST(TestDopplerFactorArm, ReducesToBaseWhenNoRotationRate) {
+  const Point3 satVel(-1200.0, 2400.0, 800.0);
+  const Vector3 rcvVel(0.3, -0.1, 0.05);
+  const double measDoppler = -1500.0, satClkDrift = 1.2e-9, rcvClkDrift = 4.5e-9;
+  const Point3 lever(0.5, -0.3, 1.0), omega(0.0, 0.0, 0.0);
+  const Pose3 pose(Rot3::RzRyRx(0.3, -0.2, 0.5), sample::kReceiverPos);
+
+  const auto arm = DopplerFactorArm(0, 1, 2, measDoppler, kLambdaL1,
+                                    sample::kSatPos, satVel,
+                                    sample::kReceiverPos, lever, omega,
+                                    satClkDrift);
+  const auto base = DopplerFactor(1, 2, measDoppler, kLambdaL1, sample::kSatPos,
+                                  satVel, sample::kReceiverPos, satClkDrift);
+  EXPECT_DOUBLES_EQUAL(base.evaluateError((Vector3)rcvVel, rcvClkDrift)[0],
+                       arm.evaluateError(pose, (Vector3)rcvVel, rcvClkDrift)[0],
+                       1e-9);
+}
+
+// *************************************************************************
+TEST(TestDopplerFactorArm, Model) {
+  const Point3 satVel(-1200.0, 2400.0, 800.0);
+  const Vector3 rcvVel(0.3, -0.1, 0.05);
+  const double measDoppler = -1500.0, satClkDrift = 1.2e-9, rcvClkDrift = 4.5e-9;
+  const Point3 lever(0.5, -0.3, 1.0), omega(0.02, -0.05, 0.1);
+  const Pose3 pose(Rot3::RzRyRx(0.3, -0.2, 0.5), sample::kReceiverPos);
+
+  const auto factor = DopplerFactorArm(0, 1, 2, measDoppler, kLambdaL1,
+                                       sample::kSatPos, satVel,
+                                       sample::kReceiverPos, lever, omega,
+                                       satClkDrift);
+
+  // Independent reference: antenna velocity v_ant = v + R*(omega x lever),
+  // then the same range-rate model (incl. Sagnac) as DopplerFactor at v_ant.
+  Point3 e;
+  gnss::geodist(sample::kSatPos, sample::kReceiverPos, e);
+  const Vector3 vAnt = (Vector3)rcvVel + pose.rotation().rotate(omega.cross(lever));
+  const double kSag = gnss::OMGE / kCLight;
+  const double sagnac =
+      kSag * (satVel.y() * sample::kReceiverPos.x() +
+              sample::kSatPos.y() * vAnt.x() -
+              satVel.x() * sample::kReceiverPos.y() -
+              sample::kSatPos.x() * vAnt.y());
+  const double rangeRate = e.dot(satVel - Point3(vAnt)) +
+                           kCLight * (rcvClkDrift - satClkDrift) + sagnac;
+  const double expected = rangeRate - (-kLambdaL1 * measDoppler);
+  EXPECT_DOUBLES_EQUAL(
+      expected, factor.evaluateError(pose, (Vector3)rcvVel, rcvClkDrift)[0],
+      1e-6);
+
+  Values values;
+  values.insert(0, pose);
+  values.insert(1, (Vector3)rcvVel);
+  values.insert(2, rcvClkDrift);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-6);
+}
+
+// *************************************************************************
+// Local nav-frame pose overload (ecef_T_nav): checks the composed-rotation
+// Jacobian path.
+TEST(TestDopplerFactorArm, NavFrameJacobians) {
+  const Point3 satVel(-1200.0, 2400.0, 800.0);
+  const Vector3 rcvVel(0.3, -0.1, 0.05);
+  const double measDoppler = -1500.0, rcvClkDrift = 4.5e-9;
+  const Point3 lever(0.5, -0.3, 1.0), omega(0.02, -0.05, 0.1);
+  const Pose3 ecef_T_nav(Rot3::RzRyRx(0.1, 0.4, -0.7), sample::kReceiverPos);
+  const Pose3 navPose(Rot3::RzRyRx(0.3, -0.2, 0.5), Point3(0.0, 0.0, 0.0));
+
+  const auto factor = DopplerFactorArm(0, 1, 2, measDoppler, kLambdaL1,
+                                       sample::kSatPos, satVel,
+                                       sample::kReceiverPos, lever, ecef_T_nav,
+                                       omega, 0.0);
+  Values values;
+  values.insert(0, navPose);
+  values.insert(1, (Vector3)rcvVel);
+  values.insert(2, rcvClkDrift);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-6);
+}
+
+// *************************************************************************
+TEST(TestDopplerFactorArm, equals) {
+  const Point3 satVel(100, 200, 300), lever(0.5, -0.3, 1.0), omega(0.02, 0, 0.1);
+  const auto f1 = DopplerFactorArm(0, 1, 2, 10.0, kLambdaL1, sample::kSatPos,
+                                   satVel, sample::kReceiverPos, lever, omega, 0.0);
+  const auto f2 = DopplerFactorArm(0, 1, 2, 10.0, kLambdaL1, sample::kSatPos,
+                                   satVel, sample::kReceiverPos, lever, omega, 0.0);
+  const auto f3 = DopplerFactorArm(0, 1, 2, 10.0, kLambdaL1, sample::kSatPos,
+                                   satVel, sample::kReceiverPos,
+                                   Point3(1.0, 0.0, 0.0), omega, 0.0);
+  CHECK(f1.equals(f2));
+  CHECK(!f1.equals(f3));  // differs only in the lever arm
+  f1.print("dopplerArm ");
+}
+
+// *************************************************************************
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

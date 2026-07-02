@@ -26,6 +26,7 @@
 #include <gtsam/navigation/AttitudeFactor.h>
 #include <gtsam/navigation/CarrierPhaseFactor.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
+#include <gtsam/navigation/DopplerFactor.h>
 #include <gtsam/navigation/GPSFactor.h>
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/navigation/PseudorangeFactor.h>
@@ -319,6 +320,42 @@ TEST(DoubleDifferenceCarrierPhaseFactorArm, Serialization) {
   DoubleDifferenceCarrierPhaseFactorArm f(0, 1, 2, kPr, kPr + 1, kPr + 2,
                                           kPr + 3, kSat1, kSat2, kSat3, kSat4,
                                           kBase, kLam, kLever, kGnss);
+  EXPECT(equalsObj(f));
+  EXPECT(equalsXML(f));
+  EXPECT(equalsBinary(f));
+}
+
+/* ************************************************************************* */
+TEST(DopplerFactor, Serialization) {
+  DopplerFactor f(0, 1, -1500.0, kLam, kSat1, Point3(-1200, 2400, 800), kSat1,
+                  1.2e-9, kGnss);
+  EXPECT(equalsObj(f));
+  EXPECT(equalsXML(f));
+  EXPECT(equalsBinary(f));
+}
+
+/* ************************************************************************* */
+TEST(DopplerFactorArm, Serialization) {
+  DopplerFactorArm f(0, 1, 2, -1500.0, kLam, kSat1, Point3(-1200, 2400, 800),
+                     kSat1, kLever, Point3(0.02, -0.05, 0.1), 1.2e-9, kGnss);
+  EXPECT(equalsObj(f));
+  EXPECT(equalsXML(f));
+  EXPECT(equalsBinary(f));
+}
+
+/* ************************************************************************* */
+TEST(DopplerFactorArm, SerializationNavFrame) {
+  DopplerFactorArm f(0, 1, 2, -1500.0, kLam, kSat1, Point3(-1200, 2400, 800),
+                     kSat1, kLever, Pose3(Rot3::RzRyRx(0.1, 0.4, -0.7), kSat1),
+                     Point3(0.02, -0.05, 0.1), 1.2e-9, kGnss);
+  EXPECT(equalsObj(f));
+  EXPECT(equalsXML(f));
+  EXPECT(equalsBinary(f));
+}
+
+/* ************************************************************************* */
+TEST(ClockDriftFactor, Serialization) {
+  ClockDriftFactor f(0, 1, 2, 0.2, kGnss);
   EXPECT(equalsObj(f));
   EXPECT(equalsXML(f));
   EXPECT(equalsBinary(f));

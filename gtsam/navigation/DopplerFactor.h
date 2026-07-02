@@ -109,7 +109,7 @@ class GTSAM_EXPORT DopplerFactor : public NoiseModelFactorN<Vector3, double> {
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(DopplerFactor::Base);
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar& BOOST_SERIALIZATION_NVP(measRangeRate_);
     ar& BOOST_SERIALIZATION_NVP(satVel_);
     ar& BOOST_SERIALIZATION_NVP(los_);
@@ -123,6 +123,144 @@ class GTSAM_EXPORT DopplerFactor : public NoiseModelFactorN<Vector3, double> {
 /// traits
 template <>
 struct traits<DopplerFactor> : public Testable<DopplerFactor> {};
+
+/**
+ * GNSS Doppler factor with lever-arm correction.
+ *
+ * Like DopplerFactor, but keys on a body Pose3 so the antenna's lever arm can
+ * be accounted for.  Unlike the pseudorange/carrier lever-arm factors (which
+ * correct the antenna *position*), the dominant lever-arm effect on a Doppler
+ * (range-rate) observation is *kinematic*: when the body rotates at angular
+ * rate omega, the antenna moves relative to the body origin, so
+ *
+ *   v_antenna = v_body + ecef_R_body * (omega x leverArm)
+ *
+ * where omega is the (measured) body-frame angular velocity and leverArm is the
+ * body-frame antenna offset.  The range-rate error then uses v_antenna:
+ *
+ *   error = e . (v_s - v_antenna) + c*(ddt_r - ddt_s) + sagnac_rate
+ *         - (-lambda*Doppler)
+ *
+ * The line-of-sight e and the Sagnac terms are evaluated at the provided
+ * (nominal) receiver position, exactly as in DopplerFactor -- the second-order
+ * dependence of the LOS on the pose translation is neglected (standard for
+ * Doppler velocity estimation), so the pose enters only through its attitude.
+ * With omega = 0 the factor reduces to DopplerFactor evaluated at `velocity`.
+ *
+ * When the optional ecef_T_nav transform is provided, the pose key is a local
+ * navigation-frame pose (e.g. ENU) and ecef_R_body = ecef_R_nav * nav_R_body;
+ * `velocity` is still the receiver ECEF velocity.
+ *
+ * Keys: [pose (Pose3), velocity (Vector3, ECEF m/s), clock drift (double, s/s)].
+ *
+ * @ingroup navigation
+ */
+class GTSAM_EXPORT DopplerFactorArm
+    : public NoiseModelFactorN<Pose3, Vector3, double> {
+ private:
+  typedef NoiseModelFactorN<Pose3, Vector3, double> Base;
+
+  double measRangeRate_ = 0.0;  ///< Measured range rate = -lambda*D [m/s].
+  Point3 satVel_{0, 0, 0};      ///< Satellite ECEF velocity [m/s].
+  Point3 los_{0, 0, 0};        ///< Unit LOS, receiver -> satellite.
+  double satClkDrift_ = 0.0;    ///< Satellite clock drift [s/s].
+  Point3 velSagnac_{0, 0, 0};   ///< Sagnac rate coeff, d(rate)/d(v_ant).
+  double sagnacOffset_ = 0.0;   ///< v_ant-independent Sagnac rate term [m/s].
+  gnss::LeverArm arm_;          ///< Lever arm (body frame) + optional ecef_T_nav.
+  Point3 leverVel_{0, 0, 0};    ///< omega x leverArm (body frame) [m/s].
+
+ public:
+  using Base::evaluateError;
+  typedef std::shared_ptr<DopplerFactorArm> shared_ptr;
+  typedef DopplerFactorArm This;
+
+  /** default constructor - only use for serialization */
+  DopplerFactorArm() = default;
+  virtual ~DopplerFactorArm() = default;
+
+  /**
+   * Construct a DopplerFactorArm with an ECEF pose key.
+   *
+   * @param poseKey             Receiver body Pose3 (ECEF) node.
+   * @param velocityKey         Receiver ECEF velocity node (Vector3, m/s).
+   * @param clockDriftKey       Receiver clock drift node (double, s/s).
+   * @param measuredDoppler     Measured Doppler [Hz].
+   * @param wavelength          Carrier wavelength [m/cycle].
+   * @param satellitePosition   Satellite ECEF position [m] (for the LOS).
+   * @param satelliteVelocity   Satellite ECEF velocity [m/s].
+   * @param receiverPosition    Nominal receiver ECEF position [m] (for the LOS).
+   * @param leverArm            Antenna lever arm in the body frame [m].
+   * @param angularVelocity     Body-frame angular velocity omega [rad/s].
+   * @param satelliteClockDrift Satellite clock drift [s/s].
+   * @param model               1-D range-rate noise model.
+   */
+  DopplerFactorArm(Key poseKey, Key velocityKey, Key clockDriftKey,
+                   double measuredDoppler, double wavelength,
+                   const Point3& satellitePosition,
+                   const Point3& satelliteVelocity,
+                   const Point3& receiverPosition, const Point3& leverArm,
+                   const Point3& angularVelocity,
+                   double satelliteClockDrift = 0.0,
+                   const SharedNoiseModel& model = noiseModel::Unit::Create(1));
+
+  /// Construct with a local nav-frame pose key + ecef_T_nav.
+  DopplerFactorArm(Key poseKey, Key velocityKey, Key clockDriftKey,
+                   double measuredDoppler, double wavelength,
+                   const Point3& satellitePosition,
+                   const Point3& satelliteVelocity,
+                   const Point3& receiverPosition, const Point3& leverArm,
+                   const Pose3& ecef_T_nav, const Point3& angularVelocity,
+                   double satelliteClockDrift = 0.0,
+                   const SharedNoiseModel& model = noiseModel::Unit::Create(1));
+
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this)));
+  }
+
+  void print(const std::string& s = "", const KeyFormatter& keyFormatter =
+                                            DefaultKeyFormatter) const override;
+  bool equals(const NonlinearFactor& expected,
+              double tol = 1e-9) const override;
+
+  Vector evaluateError(const Pose3& pose, const Vector3& velocity,
+                       const double& clockDrift, OptionalMatrixType Hpose,
+                       OptionalMatrixType Hvelocity,
+                       OptionalMatrixType HclockDrift) const override;
+
+  /// Measured range rate (= -lambda * Doppler) [m/s].
+  inline double measuredRangeRate() const { return measRangeRate_; }
+  /// Unit line-of-sight vector (receiver -> satellite).
+  inline const Point3& lineOfSight() const { return los_; }
+  /// Lever arm in the body frame [m].
+  inline const Point3& leverArm() const { return arm_.b; }
+  /// Optional ECEF-from-nav transform.
+  inline const std::optional<Pose3>& ecefTnav() const {
+    return arm_.ecef_T_nav;
+  }
+
+ private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar& BOOST_SERIALIZATION_NVP(measRangeRate_);
+    ar& BOOST_SERIALIZATION_NVP(satVel_);
+    ar& BOOST_SERIALIZATION_NVP(los_);
+    ar& BOOST_SERIALIZATION_NVP(satClkDrift_);
+    ar& BOOST_SERIALIZATION_NVP(velSagnac_);
+    ar& BOOST_SERIALIZATION_NVP(sagnacOffset_);
+    ar& boost::serialization::make_nvp("bL_", arm_.b);
+    ar& boost::serialization::make_nvp("ecef_T_nav_", arm_.ecef_T_nav);
+    ar& BOOST_SERIALIZATION_NVP(leverVel_);
+  }
+#endif
+};
+
+/// traits
+template <>
+struct traits<DopplerFactorArm> : public Testable<DopplerFactorArm> {};
 
 /**
  * Constant-drift receiver clock factor.
@@ -189,7 +327,7 @@ class GTSAM_EXPORT ClockDriftFactor
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(ClockDriftFactor::Base);
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar& BOOST_SERIALIZATION_NVP(dt_);
   }
 #endif
