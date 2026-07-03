@@ -1,10 +1,12 @@
 /**
  *  @file   DopplerFactor.cpp
- *  @brief  Implementation of the GNSS Doppler factor and constant-drift clock
+ *  @brief  Implementation of the GNSS Doppler (range-rate) factor
  *  @date   June 17, 2026
  **/
 
 #include "DopplerFactor.h"
+
+#include <stdexcept>
 
 namespace gtsam {
 
@@ -12,18 +14,23 @@ using gnss::C_LIGHT;
 using gnss::OMGE;
 
 //***************************************************************************
-DopplerFactor::DopplerFactor(const Key velocityKey, const Key clockDriftKey,
+DopplerFactor::DopplerFactor(const Key velocityKey, const Key clockBiasPrevKey,
+                             const Key clockBiasCurrKey,
                              const double measuredDoppler,
                              const double wavelength,
                              const Point3& satellitePosition,
                              const Point3& satelliteVelocity,
-                             const Point3& receiverPosition,
+                             const Point3& receiverPosition, const double dt,
                              const double satelliteClockDrift,
                              const SharedNoiseModel& model)
-    : Base(model, velocityKey, clockDriftKey),
+    : Base(model, velocityKey, clockBiasPrevKey, clockBiasCurrKey),
       measRangeRate_(-wavelength * measuredDoppler),
       satVel_(satelliteVelocity),
-      satClkDrift_(satelliteClockDrift) {
+      satClkDrift_(satelliteClockDrift),
+      dt_(dt) {
+  if (!(dt > 0.0))
+    throw std::invalid_argument("DopplerFactor: dt must be positive");
+
   // Line-of-sight unit vector (receiver -> satellite), Sagnac-aware geodist.
   Point3 e;
   gnss::geodist(satellitePosition, receiverPosition, e);
@@ -46,6 +53,7 @@ void DopplerFactor::print(const std::string& s,
   gtsam::print(Vector(satVel_), "sat velocity (ECEF m/s): ");
   gtsam::print(Vector(los_), "line-of-sight (rcv->sat): ");
   gtsam::print(satClkDrift_, "sat clock drift (s/s): ");
+  gtsam::print(dt_, "epoch interval dt (s): ");
   gtsam::print(Vector(velSagnac_), "Sagnac rate coeff (1/s): ");
   gtsam::print(sagnacOffset_, "Sagnac rate offset (m/s): ");
 }
@@ -58,18 +66,23 @@ bool DopplerFactor::equals(const NonlinearFactor& expected, double tol) const {
          traits<Point3>::Equals(satVel_, e->satVel_, tol) &&
          traits<Point3>::Equals(los_, e->los_, tol) &&
          traits<double>::Equals(satClkDrift_, e->satClkDrift_, tol) &&
+         traits<double>::Equals(dt_, e->dt_, tol) &&
          traits<Point3>::Equals(velSagnac_, e->velSagnac_, tol) &&
          traits<double>::Equals(sagnacOffset_, e->sagnacOffset_, tol);
 }
 
 //***************************************************************************
 Vector DopplerFactor::evaluateError(const Vector3& velocity,
-                                    const double& clockDrift,
+                                    const double& clockBiasPrev,
+                                    const double& clockBiasCurr,
                                     OptionalMatrixType Hvelocity,
-                                    OptionalMatrixType HclockDrift) const {
-  // range rate = e . (v_s - v_r) + c * (ddt_r - ddt_s) + sagnac_rate
+                                    OptionalMatrixType HclockBiasPrev,
+                                    OptionalMatrixType HclockBiasCurr) const {
+  // range rate = e . (v_s - v_r)
+  //            + c * ((bias_k - bias_{k-1})/dt - ddt_s) + sagnac_rate
+  const double drift = (clockBiasCurr - clockBiasPrev) / dt_;
   const double rangeRate = los_.dot(satVel_ - velocity) +
-                           C_LIGHT * (clockDrift - satClkDrift_) +
+                           C_LIGHT * (drift - satClkDrift_) +
                            sagnacOffset_ + velSagnac_.dot(velocity);
   const double error = rangeRate - measRangeRate_;
 
@@ -77,8 +90,11 @@ Vector DopplerFactor::evaluateError(const Vector3& velocity,
     // d/d v_r [ e . (v_s - v_r) + velSagnac . v_r ] = (velSagnac - e)^T
     *Hvelocity = (velSagnac_ - los_).transpose();
   }
-  if (HclockDrift) {
-    *HclockDrift = I_1x1 * C_LIGHT;
+  if (HclockBiasPrev) {
+    *HclockBiasPrev = -I_1x1 * (C_LIGHT / dt_);
+  }
+  if (HclockBiasCurr) {
+    *HclockBiasCurr = I_1x1 * (C_LIGHT / dt_);
   }
 
   return Vector1(error);
@@ -107,34 +123,41 @@ void initDopplerArmGeometry(const Point3& satellitePosition,
 }  // namespace
 
 DopplerFactorArm::DopplerFactorArm(
-    const Key poseKey, const Key velocityKey, const Key clockDriftKey,
-    const double measuredDoppler, const double wavelength,
-    const Point3& satellitePosition, const Point3& satelliteVelocity,
-    const Point3& receiverPosition, const Point3& leverArm,
-    const Point3& angularVelocity, const double satelliteClockDrift,
-    const SharedNoiseModel& model)
-    : Base(model, poseKey, velocityKey, clockDriftKey),
+    const Key poseKey, const Key velocityKey, const Key clockBiasPrevKey,
+    const Key clockBiasCurrKey, const double measuredDoppler,
+    const double wavelength, const Point3& satellitePosition,
+    const Point3& satelliteVelocity, const Point3& receiverPosition,
+    const Point3& leverArm, const Point3& angularVelocity, const double dt,
+    const double satelliteClockDrift, const SharedNoiseModel& model)
+    : Base(model, poseKey, velocityKey, clockBiasPrevKey, clockBiasCurrKey),
       measRangeRate_(-wavelength * measuredDoppler),
       satVel_(satelliteVelocity),
       satClkDrift_(satelliteClockDrift),
+      dt_(dt),
       arm_(leverArm) {
+  if (!(dt > 0.0))
+    throw std::invalid_argument("DopplerFactorArm: dt must be positive");
   initDopplerArmGeometry(satellitePosition, receiverPosition, satelliteVelocity,
                          angularVelocity, leverArm, los_, velSagnac_,
                          sagnacOffset_, leverVel_);
 }
 
 DopplerFactorArm::DopplerFactorArm(
-    const Key poseKey, const Key velocityKey, const Key clockDriftKey,
-    const double measuredDoppler, const double wavelength,
-    const Point3& satellitePosition, const Point3& satelliteVelocity,
-    const Point3& receiverPosition, const Point3& leverArm,
-    const Pose3& ecef_T_nav, const Point3& angularVelocity,
+    const Key poseKey, const Key velocityKey, const Key clockBiasPrevKey,
+    const Key clockBiasCurrKey, const double measuredDoppler,
+    const double wavelength, const Point3& satellitePosition,
+    const Point3& satelliteVelocity, const Point3& receiverPosition,
+    const Point3& leverArm, const Pose3& ecef_T_nav,
+    const Point3& angularVelocity, const double dt,
     const double satelliteClockDrift, const SharedNoiseModel& model)
-    : Base(model, poseKey, velocityKey, clockDriftKey),
+    : Base(model, poseKey, velocityKey, clockBiasPrevKey, clockBiasCurrKey),
       measRangeRate_(-wavelength * measuredDoppler),
       satVel_(satelliteVelocity),
       satClkDrift_(satelliteClockDrift),
+      dt_(dt),
       arm_(leverArm, ecef_T_nav) {
+  if (!(dt > 0.0))
+    throw std::invalid_argument("DopplerFactorArm: dt must be positive");
   initDopplerArmGeometry(satellitePosition, receiverPosition, satelliteVelocity,
                          angularVelocity, leverArm, los_, velSagnac_,
                          sagnacOffset_, leverVel_);
@@ -148,6 +171,7 @@ void DopplerFactorArm::print(const std::string& s,
   gtsam::print(Vector(satVel_), "sat velocity (ECEF m/s): ");
   gtsam::print(Vector(los_), "line-of-sight (rcv->sat): ");
   gtsam::print(satClkDrift_, "sat clock drift (s/s): ");
+  gtsam::print(dt_, "epoch interval dt (s): ");
   gtsam::print(sagnacOffset_, "Sagnac rate offset (m/s): ");
   gtsam::print(Vector(arm_.b), "lever arm (body m): ");
   gtsam::print(Vector(leverVel_), "lever velocity omega x b (m/s): ");
@@ -162,6 +186,7 @@ bool DopplerFactorArm::equals(const NonlinearFactor& expected,
          traits<Point3>::Equals(satVel_, e->satVel_, tol) &&
          traits<Point3>::Equals(los_, e->los_, tol) &&
          traits<double>::Equals(satClkDrift_, e->satClkDrift_, tol) &&
+         traits<double>::Equals(dt_, e->dt_, tol) &&
          traits<Point3>::Equals(velSagnac_, e->velSagnac_, tol) &&
          traits<double>::Equals(sagnacOffset_, e->sagnacOffset_, tol) &&
          arm_.equals(e->arm_, tol) &&
@@ -169,12 +194,11 @@ bool DopplerFactorArm::equals(const NonlinearFactor& expected,
 }
 
 //***************************************************************************
-Vector DopplerFactorArm::evaluateError(const Pose3& pose,
-                                       const Vector3& velocity,
-                                       const double& clockDrift,
-                                       OptionalMatrixType Hpose,
-                                       OptionalMatrixType Hvelocity,
-                                       OptionalMatrixType HclockDrift) const {
+Vector DopplerFactorArm::evaluateError(
+    const Pose3& pose, const Vector3& velocity, const double& clockBiasPrev,
+    const double& clockBiasCurr, OptionalMatrixType Hpose,
+    OptionalMatrixType Hvelocity, OptionalMatrixType HclockBiasPrev,
+    OptionalMatrixType HclockBiasCurr) const {
   // Lever-arm velocity in ECEF: v_lever = ecef_R_body * (omega x leverArm).
   // Hrot is d(v_lever)/d(rotation tangent) [3x3].
   Matrix3 Hrot;
@@ -192,8 +216,9 @@ Vector DopplerFactorArm::evaluateError(const Pose3& pose,
 
   // Effective range-rate coefficient on the antenna velocity: (velSagnac - e).
   const Vector3 g = Vector3(velSagnac_) - Vector3(los_);
+  const double drift = (clockBiasCurr - clockBiasPrev) / dt_;
   const double rangeRate = los_.dot(satVel_) +
-                           C_LIGHT * (clockDrift - satClkDrift_) +
+                           C_LIGHT * (drift - satClkDrift_) +
                            sagnacOffset_ + g.dot(vAnt);
   const double error = rangeRate - measRangeRate_;
 
@@ -208,48 +233,12 @@ Vector DopplerFactorArm::evaluateError(const Pose3& pose,
   if (Hvelocity) {
     *Hvelocity = g.transpose();
   }
-  if (HclockDrift) {
-    *HclockDrift = I_1x1 * C_LIGHT;
+  if (HclockBiasPrev) {
+    *HclockBiasPrev = -I_1x1 * (C_LIGHT / dt_);
   }
-
-  return Vector1(error);
-}
-
-//***************************************************************************
-ClockDriftFactor::ClockDriftFactor(const Key clockBiasPrevKey,
-                                   const Key clockBiasCurrKey,
-                                   const Key clockDriftKey, const double dt,
-                                   const SharedNoiseModel& model)
-    : Base(model, clockBiasPrevKey, clockBiasCurrKey, clockDriftKey), dt_(dt) {}
-
-//***************************************************************************
-void ClockDriftFactor::print(const std::string& s,
-                             const KeyFormatter& keyFormatter) const {
-  Base::print(s, keyFormatter);
-  gtsam::print(dt_, "dt (s): ");
-}
-
-//***************************************************************************
-bool ClockDriftFactor::equals(const NonlinearFactor& expected,
-                              double tol) const {
-  const This* e = dynamic_cast<const This*>(&expected);
-  return e != nullptr && Base::equals(*e, tol) &&
-         traits<double>::Equals(dt_, e->dt_, tol);
-}
-
-//***************************************************************************
-Vector ClockDriftFactor::evaluateError(const double& clockBiasPrev,
-                                       const double& clockBiasCurr,
-                                       const double& clockDrift,
-                                       OptionalMatrixType HbiasPrev,
-                                       OptionalMatrixType HbiasCurr,
-                                       OptionalMatrixType Hdrift) const {
-  // Constant-velocity clock: bias(k) - bias(k-1) - drift*dt = 0
-  const double error = clockBiasCurr - clockBiasPrev - clockDrift * dt_;
-
-  if (HbiasPrev) *HbiasPrev = -I_1x1;
-  if (HbiasCurr) *HbiasCurr = I_1x1;
-  if (Hdrift) *Hdrift = -I_1x1 * dt_;
+  if (HclockBiasCurr) {
+    *HclockBiasCurr = I_1x1 * (C_LIGHT / dt_);
+  }
 
   return Vector1(error);
 }
