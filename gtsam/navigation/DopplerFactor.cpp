@@ -36,7 +36,7 @@ DopplerFactor::DopplerFactor(const Key velocityKey, const Key clockBiasPrevKey,
   gnss::geodist(satellitePosition, receiverPosition, e);
   los_ = e;
 
-  // Earth-rotation (Sagnac) rate term, matching RTKLIB resdop():
+  // Earth-rotation (Sagnac) rate term:
   //   (OMGE/c) * (v_s.y*r_r.x + r_s.y*v_r.x - v_s.x*r_r.y - r_s.x*v_r.y)
   // Split into the v_r-independent offset and the linear coefficient on v_r.
   const double k = OMGE / C_LIGHT;

@@ -43,7 +43,7 @@ namespace gtsam {
  *   - sagnac_rate = (OMGE/c) * (v_s.y*r_r.x + r_s.y*v_r.x
  *                               - v_s.x*r_r.y - r_s.x*v_r.y)
  *     is the earth-rotation (Sagnac) rate correction -- the time derivative of
- *     the Sagnac range term, matching RTKLIB's resdop(),
+ *     the Sagnac range term,
  *   - lambda * Doppler is the measured range rate (m/s); a positive Doppler
  *     (approaching satellite) corresponds to a decreasing range, hence the
  *     leading minus sign.
@@ -52,15 +52,11 @@ namespace gtsam {
  * keeps the state vector identical to the pseudorange-only problem and needs
  * no extra between-epoch clock factor: the Doppler measurement itself
  * constrains the clock-bias evolution.  The instantaneous drift is
- * approximated by its average over [t_{k-1}, t_k], which is the standard
- * time-differenced formulation (same structure as TDCP) and is accurate for
- * the ~1 s epoch intervals typical of GNSS receivers.
+ * approximated by its average over [t_{k-1}, t_k].
  *
  * The satellite position/velocity and the line-of-sight are held constant per
  * factor; only the (second-order) dependence of the line-of-sight on the
- * receiver position is neglected, which is standard for Doppler velocity
- * estimation.  Doppler provides receiver velocity and clock observability
- * that is robust through carrier-phase cycle slips and re-convergence.
+ * receiver position is neglected.
  *
  * Keys: [velocity (Vector3, m/s),
  *        receiver clock bias at epoch k-1 (double, s),
@@ -177,9 +173,9 @@ struct traits<DopplerFactor> : public Testable<DopplerFactor> {};
  *
  * The line-of-sight e and the Sagnac terms are evaluated at the provided
  * (nominal) receiver position, exactly as in DopplerFactor -- the second-order
- * dependence of the LOS on the pose translation is neglected (standard for
- * Doppler velocity estimation), so the pose enters only through its attitude.
- * With omega = 0 the factor reduces to DopplerFactor evaluated at `velocity`.
+ * dependence of the LOS on the pose translation is neglected, so the pose
+ * enters only through its attitude.  With omega = 0 the factor reduces to
+ * DopplerFactor evaluated at `velocity`.
  *
  * When the optional ecef_T_nav transform is provided, the pose key is a local
  * navigation-frame pose (e.g. ENU) and ecef_R_body = ecef_R_nav * nav_R_body;
