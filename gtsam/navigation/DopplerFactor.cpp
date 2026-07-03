@@ -1,7 +1,7 @@
 /**
  *  @file   DopplerFactor.cpp
  *  @brief  Implementation of the GNSS Doppler (range-rate) factor
- *  @date   June 17, 2026
+ *  @date   July 2026
  **/
 
 #include "DopplerFactor.h"
@@ -172,9 +172,11 @@ void DopplerFactorArm::print(const std::string& s,
   gtsam::print(Vector(los_), "line-of-sight (rcv->sat): ");
   gtsam::print(satClkDrift_, "sat clock drift (s/s): ");
   gtsam::print(dt_, "epoch interval dt (s): ");
+  gtsam::print(Vector(velSagnac_), "Sagnac rate coeff (1/s): ");
   gtsam::print(sagnacOffset_, "Sagnac rate offset (m/s): ");
   gtsam::print(Vector(arm_.b), "lever arm (body m): ");
   gtsam::print(Vector(leverVel_), "lever velocity omega x b (m/s): ");
+  if (arm_.ecef_T_nav) arm_.ecef_T_nav->print("ecef_T_nav: ");
 }
 
 //***************************************************************************

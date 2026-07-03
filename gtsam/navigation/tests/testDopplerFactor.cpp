@@ -210,6 +210,19 @@ TEST(TestDopplerFactorArm, equals) {
 }
 
 // *************************************************************************
+TEST(TestDopplerFactorArm, InvalidDtThrows) {
+  const Point3 satVel(100, 200, 300), lever(0.5, -0.3, 1.0), omega(0.02, 0, 0.1);
+  CHECK_EXCEPTION(
+      DopplerFactorArm(0, 1, 2, 3, 10.0, kLambdaL1, sample::kSatPos, satVel,
+                       sample::kReceiverPos, lever, omega, 0.0),
+      std::invalid_argument);
+  CHECK_EXCEPTION(
+      DopplerFactorArm(0, 1, 2, 3, 10.0, kLambdaL1, sample::kSatPos, satVel,
+                       sample::kReceiverPos, lever, omega, -1.0),
+      std::invalid_argument);
+}
+
+// *************************************************************************
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

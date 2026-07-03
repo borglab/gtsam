@@ -1,7 +1,7 @@
 /**
  *  @file   DopplerFactor.h
  *  @brief  Header file for the GNSS Doppler (range-rate) factor
- *  @date   June 17, 2026
+ *  @date   July 2026
  **/
 #pragma once
 
@@ -42,8 +42,7 @@ namespace gtsam {
  *   - ddt_s    is the satellite clock drift (s/s),
  *   - sagnac_rate = (OMGE/c) * (v_s.y*r_r.x + r_s.y*v_r.x
  *                               - v_s.x*r_r.y - r_s.x*v_r.y)
- *     is the earth-rotation (Sagnac) rate correction -- the time derivative of
- *     the Sagnac range term,
+ *     is the earth-rotation (Sagnac) correction to the range rate,
  *   - lambda * Doppler is the measured range rate (m/s); a positive Doppler
  *     (approaching satellite) corresponds to a decreasing range, hence the
  *     leading minus sign.
@@ -54,9 +53,16 @@ namespace gtsam {
  * constrains the clock-bias evolution.  The instantaneous drift is
  * approximated by its average over [t_{k-1}, t_k].
  *
- * The satellite position/velocity and the line-of-sight are held constant per
- * factor; only the (second-order) dependence of the line-of-sight on the
- * receiver position is neglected.
+ * The satellite position/velocity and the receiver position are inputs held
+ * constant per factor; the line-of-sight is computed once from them, so it does
+ * not depend on any state and enters no Jacobian.
+ *
+ * The two clock-bias keys must be distinct states at adjacent epochs: passing
+ * the same key for both forces (dt_r(k) - dt_r(k-1)) = 0, i.e. zero drift. The
+ * first epoch has no k-1 bias, so a Doppler factor is added only from the
+ * second epoch on. With per-constellation receiver clock biases the drift is
+ * common to all systems (the inter-system biases are constant), so every
+ * Doppler factor keys on one consistent receiver clock-bias series.
  *
  * Keys: [velocity (Vector3, m/s),
  *        receiver clock bias at epoch k-1 (double, s),
