@@ -1,6 +1,7 @@
 #include <gtsam/base/cuda/CudaContext.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/nonlinear/BatchFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/cuda/CudssLinearSolver.h>
 #include <gtsam/nonlinear/cuda/DeviceGeometryKernels.h>
@@ -19,6 +20,7 @@
 #include <cmath>
 #include <cstddef>
 #include <limits>
+#include <map>
 #include <stdexcept>
 #include <vector>
 
@@ -299,6 +301,84 @@ CudaSfmRobustModel MakeRobustModel(
     CudaSfmRobustReweightScheme reweightScheme =
         CudaSfmRobustReweightScheme::Block) {
   return CudaSfmRobustModel{kind, reweightScheme, parameter};
+}
+
+bool ConvertedSfmDataEquals(const CudaSfmFactorGraphData& expected,
+                            const CudaSfmFactorGraphData& actual) {
+  if (expected.cameraKeys.size() != actual.cameraKeys.size() ||
+      expected.pointKeys.size() != actual.pointKeys.size()) {
+    return false;
+  }
+  for (size_t i = 0; i < expected.cameraKeys.size(); ++i) {
+    if (expected.cameraKeys[i] != actual.cameraKeys[i] ||
+        !CameraEquals(expected.data.camera(i), actual.data.camera(i))) {
+      return false;
+    }
+  }
+  for (size_t i = 0; i < expected.pointKeys.size(); ++i) {
+    if (expected.pointKeys[i] != actual.pointKeys[i] ||
+        !Point3Equals(expected.data.track(i).point3(),
+                      actual.data.track(i).point3()) ||
+        expected.data.track(i).numberMeasurements() !=
+            actual.data.track(i).numberMeasurements()) {
+      return false;
+    }
+    for (size_t j = 0; j < expected.data.track(i).numberMeasurements(); ++j) {
+      const SfmMeasurement& expectedMeasurement =
+          expected.data.track(i).measurement(j);
+      const SfmMeasurement& actualMeasurement =
+          actual.data.track(i).measurement(j);
+      if (expectedMeasurement.first != actualMeasurement.first ||
+          std::abs(expectedMeasurement.second(0) -
+                   actualMeasurement.second(0)) > 1e-12 ||
+          std::abs(expectedMeasurement.second(1) -
+                   actualMeasurement.second(1)) > 1e-12) {
+        return false;
+      }
+    }
+  }
+  if (expected.hasNonUnitNoise != actual.hasNonUnitNoise ||
+      expected.hasRobustNoise != actual.hasRobustNoise ||
+      expected.sqrtInfoByTrack.size() != actual.sqrtInfoByTrack.size()) {
+    return false;
+  }
+  for (size_t i = 0; i < expected.sqrtInfoByTrack.size(); ++i) {
+    if (expected.sqrtInfoByTrack[i].size() !=
+        actual.sqrtInfoByTrack[i].size()) {
+      return false;
+    }
+    for (size_t j = 0; j < expected.sqrtInfoByTrack[i].size(); ++j) {
+      if (std::abs(expected.sqrtInfoByTrack[i][j].r00 -
+                   actual.sqrtInfoByTrack[i][j].r00) > 1e-12 ||
+          std::abs(expected.sqrtInfoByTrack[i][j].r01 -
+                   actual.sqrtInfoByTrack[i][j].r01) > 1e-12 ||
+          std::abs(expected.sqrtInfoByTrack[i][j].r11 -
+                   actual.sqrtInfoByTrack[i][j].r11) > 1e-12) {
+        return false;
+      }
+    }
+  }
+  if (expected.robustModelsByTrack.size() !=
+      actual.robustModelsByTrack.size()) {
+    return false;
+  }
+  for (size_t i = 0; i < expected.robustModelsByTrack.size(); ++i) {
+    if (expected.robustModelsByTrack[i].size() !=
+        actual.robustModelsByTrack[i].size()) {
+      return false;
+    }
+    for (size_t j = 0; j < expected.robustModelsByTrack[i].size(); ++j) {
+      if (expected.robustModelsByTrack[i][j].kind !=
+              actual.robustModelsByTrack[i][j].kind ||
+          expected.robustModelsByTrack[i][j].reweightScheme !=
+              actual.robustModelsByTrack[i][j].reweightScheme ||
+          std::abs(expected.robustModelsByTrack[i][j].parameter -
+                   actual.robustModelsByTrack[i][j].parameter) > 1e-12) {
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 Vector2 WhitenResidual(const CudaSfmSqrtInfo2& sqrtInfo,
@@ -1258,6 +1338,92 @@ TEST(CudaSfmFactorGraphConversion,
 }
 
 TEST(CudaSfmFactorGraphConversion,
+     ConvertsPointBatchedGeneralSfmFactors) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData initialData = makePerturbedBalLikeData(measuredData);
+  const std::vector<Key> cameraKeys = {Symbol('x', 10), Symbol('x', 20)};
+  const std::vector<Key> pointKeys = {Symbol('l', 100), Symbol('l', 200),
+                                      Symbol('l', 300), Symbol('l', 400)};
+
+  Values initial;
+  for (size_t i = 0; i < cameraKeys.size(); ++i) {
+    initial.insert(cameraKeys[i], initialData.camera(i));
+  }
+  for (size_t i = 0; i < pointKeys.size(); ++i) {
+    initial.insert(pointKeys[i], initialData.track(i).point3());
+  }
+
+  NonlinearFactorGraph rawGraph;
+  NonlinearFactorGraph batchGraph;
+  const auto model = noiseModel::Unit::Create(2);
+  for (size_t pointSlot = 0; pointSlot < measuredData.numberTracks();
+       ++pointSlot) {
+    std::map<Key, Point2> measurements;
+    const SfmTrack& track = measuredData.track(pointSlot);
+    for (const SfmMeasurement& measurement : track.measurements) {
+      rawGraph.emplace_shared<BundlerProjectionFactor>(
+          measurement.second, model, cameraKeys[measurement.first],
+          pointKeys[pointSlot]);
+      measurements[cameraKeys[measurement.first]] = measurement.second;
+    }
+    batchGraph.add(
+        std::make_shared<BatchFactor<BundlerProjectionFactor, 2>>(
+            measurements, pointKeys[pointSlot], model));
+  }
+
+  const CudaSfmFactorGraphData raw =
+      ConvertGeneralSfmGraphToCudaSfmData(rawGraph, initial);
+  const CudaSfmFactorGraphData batched =
+      ConvertGeneralSfmGraphToCudaSfmData(batchGraph, initial);
+  CHECK(ConvertedSfmDataEquals(raw, batched));
+}
+
+TEST(CudaSfmFactorGraphConversion,
+     ConvertsCameraBatchedGeneralSfmFactors) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData initialData = makePerturbedBalLikeData(measuredData);
+  const std::vector<Key> cameraKeys = {Symbol('x', 10), Symbol('x', 20)};
+  const std::vector<Key> pointKeys = {Symbol('l', 100), Symbol('l', 200),
+                                      Symbol('l', 300), Symbol('l', 400)};
+
+  Values initial;
+  for (size_t i = 0; i < cameraKeys.size(); ++i) {
+    initial.insert(cameraKeys[i], initialData.camera(i));
+  }
+  for (size_t i = 0; i < pointKeys.size(); ++i) {
+    initial.insert(pointKeys[i], initialData.track(i).point3());
+  }
+
+  NonlinearFactorGraph rawGraph;
+  NonlinearFactorGraph batchGraph;
+  std::vector<std::map<Key, Point2>> measurementsByCamera(cameraKeys.size());
+  const auto model = noiseModel::Unit::Create(2);
+  for (size_t pointSlot = 0; pointSlot < measuredData.numberTracks();
+       ++pointSlot) {
+    const SfmTrack& track = measuredData.track(pointSlot);
+    for (const SfmMeasurement& measurement : track.measurements) {
+      rawGraph.emplace_shared<BundlerProjectionFactor>(
+          measurement.second, model, cameraKeys[measurement.first],
+          pointKeys[pointSlot]);
+      measurementsByCamera[measurement.first][pointKeys[pointSlot]] =
+          measurement.second;
+    }
+  }
+  for (size_t cameraSlot = 0; cameraSlot < measurementsByCamera.size();
+       ++cameraSlot) {
+    batchGraph.add(
+        std::make_shared<BatchFactor<BundlerProjectionFactor, 2>>(
+            cameraKeys[cameraSlot], measurementsByCamera[cameraSlot], model));
+  }
+
+  const CudaSfmFactorGraphData raw =
+      ConvertGeneralSfmGraphToCudaSfmData(rawGraph, initial);
+  const CudaSfmFactorGraphData batched =
+      ConvertGeneralSfmGraphToCudaSfmData(batchGraph, initial);
+  CHECK(ConvertedSfmDataEquals(raw, batched));
+}
+
+TEST(CudaSfmFactorGraphConversion,
      AcceptsFixedGaussianNoiseAndPreservesFlattenedWhiteningOrder) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData initialData = makePerturbedBalLikeData(measuredData);
@@ -1538,6 +1704,11 @@ TEST(CudaSfmLevenbergMarquardtOptimizer,
   CHECK(graph.error(result) < graph.error(initial));
   CHECK(optimizer.result().innerIterations >=
         static_cast<int>(optimizer.iterations()));
+  CHECK(optimizer.result().graphConversionElapsed > 0.0);
+  CHECK(optimizer.result().graphBackendCallElapsed >=
+        optimizer.result().totalMeasuredElapsed);
+  CHECK(optimizer.result().graphConvertedDataDestructionElapsed >= 0.0);
+  CHECK(optimizer.result().graphValueMergeElapsed > 0.0);
   CHECK(result.exists(cameraKeys[0]));
   CHECK(result.exists(pointKeys[3]));
   CHECK(result.exists(Symbol('u', 1)));
@@ -1723,6 +1894,83 @@ TEST(CudaSfmLevenbergMarquardt, CanSkipOptimizedValueDownload) {
 
   CHECK(result.iterations > 0);
   CHECK(result.optimizedValues.empty());
+}
+
+TEST(CudaSfmLevenbergMarquardt, RecordsDetailedTimingBreakdown) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+
+  CudaSfmLevenbergMarquardtParams params =
+      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  params.maxIterations = 5;
+  params.relativeErrorTol = 1e-12;
+  params.lambdaInitial = 1e-3;
+
+  const CudaSfmLevenbergMarquardtResult result =
+      OptimizeCudaSfmWithoutValueDownload(data, params);
+
+  CHECK(result.solveLoopElapsed > 0.0);
+  CHECK(result.dampingDiagonalElapsed > 0.0);
+  CHECK(result.denseSchurSolveElapsed > 0.0);
+  CHECK(result.linearizedErrorElapsed > 0.0);
+  CHECK(result.applyDeltaElapsed > 0.0);
+  CHECK(result.trialErrorElapsed > 0.0);
+  CHECK(result.lambdaUpdateElapsed > 0.0);
+  CHECK(!result.iterationProfiles.empty());
+
+  size_t attempts = 0;
+  for (const auto& iteration : result.iterationProfiles) {
+    CHECK(iteration.totalElapsed > 0.0);
+    CHECK(iteration.dampingDiagonalElapsed >= 0.0);
+    CHECK(!iteration.attemptProfiles.empty());
+    attempts += iteration.attemptProfiles.size();
+    for (const auto& attempt : iteration.attemptProfiles) {
+      CHECK(attempt.totalElapsed > 0.0);
+      CHECK(attempt.lambda > 0.0);
+      CHECK(attempt.linearizedErrorElapsed > 0.0);
+      CHECK(attempt.linearizedCostChange != 0.0);
+      CHECK(attempt.denseSchurSolveElapsed > 0.0);
+    }
+  }
+  EXPECT_LONGS_EQUAL(result.innerIterations, attempts);
+}
+
+TEST(CudaSfmLevenbergMarquardt, RecordsPureTransferTimingBreakdown) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+
+  CudaSfmLevenbergMarquardtParams params =
+      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  params.maxIterations = 1;
+  params.relativeErrorTol = 1e-12;
+  params.lambdaInitial = 1e-3;
+
+  const CudaSfmLevenbergMarquardtResult result =
+      OptimizeCudaSfm(data, params);
+
+  const size_t expectedValueBytes =
+      data.numberCameras() * sizeof(DevicePinholeCameraCal3Bundler) +
+      data.numberTracks() * sizeof(DevicePoint3);
+  const size_t expectedProjectionBytes =
+      8 * sizeof(CudaSfmObservation) +
+      (data.numberTracks() + 1) * sizeof(int);
+
+  EXPECT_LONGS_EQUAL(expectedValueBytes, result.packValuesH2dBytes);
+  EXPECT_LONGS_EQUAL(expectedProjectionBytes, result.projectionBatchH2dBytes);
+  EXPECT_LONGS_EQUAL(expectedValueBytes + expectedProjectionBytes,
+                     result.totalH2dBytes);
+  EXPECT_LONGS_EQUAL(expectedValueBytes, result.downloadD2hBytes);
+  EXPECT_LONGS_EQUAL(expectedValueBytes, result.totalD2hBytes);
+
+  CHECK(result.packValuesHostBuildElapsed >= 0.0);
+  CHECK(result.packValuesDeviceAllocElapsed >= 0.0);
+  CHECK(result.packValuesH2dCopyElapsed >= 0.0);
+  CHECK(result.projectionBatchHostBuildElapsed >= 0.0);
+  CHECK(result.projectionBatchDeviceAllocElapsed >= 0.0);
+  CHECK(result.projectionBatchH2dCopyElapsed >= 0.0);
+  CHECK(result.downloadHostAllocElapsed >= 0.0);
+  CHECK(result.downloadD2hCopyElapsed >= 0.0);
+  CHECK(result.downloadValuesBuildElapsed >= 0.0);
 }
 
 TEST(CudaSfmDenseSchurSolver, MatchesFullNormalEquationDeltaOnTinyBal) {

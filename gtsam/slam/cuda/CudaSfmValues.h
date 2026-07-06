@@ -12,6 +12,7 @@
 
 #include <cuda_runtime_api.h>
 
+#include <chrono>
 #include <cstddef>
 #include <stdexcept>
 #include <vector>
@@ -43,10 +44,38 @@ inline DevicePoint3 PackDevicePoint3(const Point3& point) {
   return {point.x(), point.y(), point.z()};
 }
 
+struct CudaSfmValuesPackProfile {
+  double hostBuildElapsed = 0.0;
+  double deviceAllocElapsed = 0.0;
+  CudaDeviceTransferSummary h2d;
+};
+
+struct CudaSfmValuesDownloadProfile {
+  double hostAllocElapsed = 0.0;
+  double hostBuildElapsed = 0.0;
+  CudaDeviceTransferSummary d2h;
+};
+
+namespace internal {
+
+inline double CudaSfmValuesElapsedSince(
+    std::chrono::steady_clock::time_point start) {
+  return std::chrono::duration<double>(std::chrono::steady_clock::now() -
+                                       start)
+      .count();
+}
+
+}  // namespace internal
+
 inline DeviceValues PackSfmValues(const SfmData& data,
                                   const std::vector<Key>& cameraKeys,
                                   const std::vector<Key>& pointKeys,
-                                  cudaStream_t stream = nullptr) {
+                                  cudaStream_t stream = nullptr,
+                                  CudaSfmValuesPackProfile* profile =
+                                      nullptr) {
+  if (profile) {
+    *profile = CudaSfmValuesPackProfile{};
+  }
   if (cameraKeys.size() != data.numberCameras()) {
     throw std::invalid_argument(
         "PackSfmValues camera key count does not match SfmData");
@@ -56,6 +85,7 @@ inline DeviceValues PackSfmValues(const SfmData& data,
         "PackSfmValues point key count does not match SfmData");
   }
 
+  const auto hostBuildStart = std::chrono::steady_clock::now();
   std::vector<DevicePinholeCameraCal3Bundler> cameras;
   cameras.reserve(data.numberCameras());
   for (size_t i = 0; i < data.numberCameras(); ++i) {
@@ -67,18 +97,39 @@ inline DeviceValues PackSfmValues(const SfmData& data,
   for (size_t i = 0; i < data.numberTracks(); ++i) {
     points.push_back(PackDevicePoint3(data.track(i).point3()));
   }
+  if (profile) {
+    profile->hostBuildElapsed =
+        internal::CudaSfmValuesElapsedSince(hostBuildStart);
+  }
 
   DeviceValues values;
+  CudaDeviceTransferTiming cameraUpload;
+  CudaDeviceTransferTiming pointUpload;
+  double cameraDeltaAllocElapsed = 0.0;
+  double pointDeltaAllocElapsed = 0.0;
   values.addBlock<DevicePinholeCameraCal3Bundler>(
       kDevicePinholeCameraCal3BundlerType,
-      kDevicePinholeCameraCal3BundlerTangentDim, cameraKeys, cameras, stream);
+      kDevicePinholeCameraCal3BundlerTangentDim, cameraKeys, cameras, stream,
+      profile ? &cameraUpload : nullptr,
+      profile ? &cameraDeltaAllocElapsed : nullptr);
   values.addBlock<DevicePoint3>(kDevicePoint3Type, kDevicePoint3TangentDim,
-                                pointKeys, points, stream);
+                                pointKeys, points, stream,
+                                profile ? &pointUpload : nullptr,
+                                profile ? &pointDeltaAllocElapsed : nullptr);
+  if (profile) {
+    profile->h2d.add(cameraUpload);
+    profile->h2d.add(pointUpload);
+    profile->deviceAllocElapsed =
+        profile->h2d.resizeElapsed + cameraDeltaAllocElapsed +
+        pointDeltaAllocElapsed;
+  }
   return values;
 }
 
 inline DeviceValues PackSfmValues(const SfmData& data,
-                                  cudaStream_t stream = nullptr) {
+                                  cudaStream_t stream = nullptr,
+                                  CudaSfmValuesPackProfile* profile =
+                                      nullptr) {
   std::vector<Key> cameraKeys;
   cameraKeys.reserve(data.numberCameras());
   for (size_t i = 0; i < data.numberCameras(); ++i) {
@@ -91,7 +142,7 @@ inline DeviceValues PackSfmValues(const SfmData& data,
     pointKeys.push_back(symbol_shorthand::P(i));
   }
 
-  return PackSfmValues(data, cameraKeys, pointKeys, stream);
+  return PackSfmValues(data, cameraKeys, pointKeys, stream, profile);
 }
 
 inline DeviceValues AllocateSfmValuesLike(const DeviceValues& reference) {
@@ -110,17 +161,33 @@ inline DeviceValues AllocateSfmValuesLike(const DeviceValues& reference) {
 }
 
 inline Values DownloadSfmValues(const DeviceValues& deviceValues,
-                                cudaStream_t stream = nullptr) {
+                                cudaStream_t stream = nullptr,
+                                CudaSfmValuesDownloadProfile* profile =
+                                    nullptr) {
+  if (profile) {
+    *profile = CudaSfmValuesDownloadProfile{};
+  }
   std::vector<DevicePinholeCameraCal3Bundler> cameras;
   std::vector<DevicePoint3> points;
   const auto& cameraBlock =
       deviceValues.block<DevicePinholeCameraCal3Bundler>(
           kDevicePinholeCameraCal3BundlerType);
   const auto& pointBlock = deviceValues.block<DevicePoint3>(kDevicePoint3Type);
-  cameraBlock.values.download(&cameras, stream);
-  pointBlock.values.download(&points, stream);
+  if (profile) {
+    const CudaDeviceTransferTiming cameraDownload =
+        cameraBlock.values.downloadProfiled(&cameras, stream);
+    const CudaDeviceTransferTiming pointDownload =
+        pointBlock.values.downloadProfiled(&points, stream);
+    profile->d2h.add(cameraDownload);
+    profile->d2h.add(pointDownload);
+    profile->hostAllocElapsed = profile->d2h.resizeElapsed;
+  } else {
+    cameraBlock.values.download(&cameras, stream);
+    pointBlock.values.download(&points, stream);
+  }
   GTSAM_CUDA_CHECK(cudaStreamSynchronize(stream));
 
+  const auto hostBuildStart = std::chrono::steady_clock::now();
   Values result;
   for (size_t i = 0; i < cameras.size(); ++i) {
     Matrix3 R;
@@ -138,6 +205,10 @@ inline Values DownloadSfmValues(const DeviceValues& deviceValues,
   for (size_t i = 0; i < points.size(); ++i) {
     result.insert(pointBlock.keys[i],
                   Point3(points[i].x, points[i].y, points[i].z));
+  }
+  if (profile) {
+    profile->hostBuildElapsed =
+        internal::CudaSfmValuesElapsedSince(hostBuildStart);
   }
   return result;
 }

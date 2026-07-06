@@ -18,6 +18,8 @@
 
 #include "../timeSFMBAL.h"
 
+#include <gtsam/nonlinear/BatchFactor.h>
+
 #if GTSAM_ENABLE_CUDA
 #include <gtsam/base/cuda/CudaContext.h>
 #include <gtsam/slam/cuda/CudaBalCsrStructure.h>
@@ -32,15 +34,21 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <map>
 
 namespace {
 constexpr const char* kDefaultBenchmarkDataset = "dubrovnik-16-22106-pre";
 constexpr const char* kProfileDataset = "dubrovnik-135-90642-pre";
 
+using Camera = PinholeCamera<Cal3Bundler>;
+using SfmFactor = GeneralSFMFactor<Camera, Point3>;
+
 std::string usage() {
   return "Usage: timeCudaSFMBAL [--colamd] [--profile] [--cuda-structure-only] "
          "[--cuda-lm] [--cuda-lm-graph] "
          "[--cuda-linear-solver dense-schur|cudss-full-normal] "
+         "[--cuda-lm-graph-kind raw|point-batch|camera-batch] "
+         "[--batch-chunk-size N] "
          "[--cuda-warmup-file FILE] "
          "[--projection-noise unit|huber|tukey] "
          "[--benchmark-action-json FILE] [BALfile ...]";
@@ -57,6 +65,12 @@ enum class CudaLinearSolverOption {
   CudssFullNormal,
 };
 
+enum class CudaGraphKind {
+  Raw,
+  PointBatch,
+  CameraBatch,
+};
+
 struct RunOptions {
   bool profile = false;
   bool cudaStructureOnly = false;
@@ -64,6 +78,10 @@ struct RunOptions {
   bool cudaLmGraph = false;
   bool cudaLinearSolverSpecified = false;
   CudaLinearSolverOption cudaLinearSolver = CudaLinearSolverOption::DenseSchur;
+  bool cudaGraphKindSpecified = false;
+  CudaGraphKind cudaGraphKind = CudaGraphKind::Raw;
+  bool batchChunkSizeSpecified = false;
+  size_t batchChunkSize = 0;
   bool cudaWarmupFileSpecified = false;
   std::string cudaWarmupFile;
   bool benchmarkActionJson = false;
@@ -77,6 +95,18 @@ const char* cudaLinearSolverName(CudaLinearSolverOption solver) {
       return "dense-schur";
     case CudaLinearSolverOption::CudssFullNormal:
       return "cudss-full-normal";
+  }
+  return "unknown";
+}
+
+const char* cudaGraphKindName(CudaGraphKind kind) {
+  switch (kind) {
+    case CudaGraphKind::Raw:
+      return "raw";
+    case CudaGraphKind::PointBatch:
+      return "point-batch";
+    case CudaGraphKind::CameraBatch:
+      return "camera-batch";
   }
   return "unknown";
 }
@@ -157,18 +187,38 @@ CudaBackendLmRun runCudaBackendLm(
   return run;
 }
 
-void printCudaBackendLmRun(const CudaBackendLmRun& run,
-                           CudaLinearSolverOption solverOption) {
-  const auto& result = run.result;
-  std::cout << "  CUDA LM: " << run.elapsed << " s\n";
-  std::cout << "  CUDA LM linear solver: "
-            << cudaLinearSolverName(solverOption) << "\n";
-  std::cout << "  CUDA LM solve loop: " << result.solveLoopElapsed << " s\n";
-  std::cout << "  CUDA LM measured total: " << result.totalMeasuredElapsed
-            << " s\n";
-  std::cout << "  CUDA LM setup before solve loop: " << result.setupElapsed
-            << " s\n";
-  std::cout << "  CUDA LM setup breakdown:\n";
+const char* yesNo(bool value) { return value ? "yes" : "no"; }
+
+void printProfileRow(const std::string& indent, const std::string& label,
+                     double elapsed, double total) {
+  std::cout << indent << std::left << std::setw(30) << label << std::right
+            << elapsed << " s";
+  if (total > 0.0) {
+    std::cout << " (" << (100.0 * elapsed / total) << "%)";
+  }
+  std::cout << "\n";
+}
+
+void printTransferRow(const std::string& indent, const std::string& label,
+                      double elapsed, size_t bytes, double total) {
+  std::cout << indent << std::left << std::setw(30) << label << std::right
+            << elapsed << " s";
+  if (total > 0.0) {
+    std::cout << " (" << (100.0 * elapsed / total) << "%)";
+  }
+  std::cout << " [" << bytes << " B";
+  if (elapsed > 0.0 && bytes > 0) {
+    const double gib =
+        static_cast<double>(bytes) / (1024.0 * 1024.0 * 1024.0);
+    std::cout << ", " << (gib / elapsed) << " GiB/s";
+  }
+  std::cout << "]\n";
+}
+
+void printCudaLmSetupBreakdown(
+    const gtsam::cuda::CudaSfmLevenbergMarquardtResult& result,
+    const std::string& prefix) {
+  std::cout << prefix << "stage breakdown:\n";
   std::cout << "    context: " << result.contextElapsed << " s\n";
   std::cout << "    pack values: " << result.packValuesElapsed << " s\n";
   std::cout << "    allocate trial values: " << result.allocateTrialElapsed
@@ -182,9 +232,160 @@ void printCudaBackendLmRun(const CudaBackendLmRun& run,
             << result.denseSchurSolverConstructionElapsed << " s\n";
   std::cout << "    CSR structure: " << result.csrStructureElapsed << " s\n";
   std::cout << "    upload pattern: " << result.uploadPatternElapsed << " s\n";
-  std::cout << "    first cuDSS analyze: "
+  std::cout << "    first cuDSS analyze (solve loop): "
             << result.firstCudssAnalyzeElapsed << " s\n";
-  std::cout << "    download values: " << result.downloadElapsed << " s\n";
+  std::cout << "    download values (post solve): " << result.downloadElapsed
+            << " s\n";
+}
+
+void printCudaLmTransferBreakdown(
+    const gtsam::cuda::CudaSfmLevenbergMarquardtResult& result,
+    const std::string& prefix) {
+  const double total = result.totalMeasuredElapsed;
+  std::cout << prefix << "pure transfer breakdown:\n";
+  printProfileRow("    ", "pack values host build",
+                  result.packValuesHostBuildElapsed, total);
+  printProfileRow("    ", "pack values device alloc",
+                  result.packValuesDeviceAllocElapsed, total);
+  printTransferRow("    ", "pack values H2D memcpy",
+                   result.packValuesH2dCopyElapsed, result.packValuesH2dBytes,
+                   total);
+  printProfileRow("    ", "projection host build",
+                  result.projectionBatchHostBuildElapsed, total);
+  printProfileRow("    ", "projection device alloc",
+                  result.projectionBatchDeviceAllocElapsed, total);
+  printTransferRow("    ", "projection H2D memcpy",
+                   result.projectionBatchH2dCopyElapsed,
+                   result.projectionBatchH2dBytes, total);
+  printProfileRow("    ", "CSR pattern device alloc",
+                  result.uploadPatternDeviceAllocElapsed, total);
+  printTransferRow("    ", "CSR pattern H2D memcpy",
+                   result.uploadPatternH2dCopyElapsed,
+                   result.uploadPatternH2dBytes, total);
+  printTransferRow("    ", "total H2D memcpy", result.totalH2dCopyElapsed,
+                   result.totalH2dBytes, total);
+  printProfileRow("    ", "download host alloc",
+                  result.downloadHostAllocElapsed, total);
+  printTransferRow("    ", "download D2H memcpy",
+                   result.downloadD2hCopyElapsed, result.downloadD2hBytes,
+                   total);
+  printProfileRow("    ", "download Values rebuild",
+                  result.downloadValuesBuildElapsed, total);
+  printTransferRow("    ", "total D2H memcpy", result.totalD2hCopyElapsed,
+                   result.totalD2hBytes, total);
+}
+
+void printCudaLmDetailedBreakdown(
+    const gtsam::cuda::CudaSfmLevenbergMarquardtResult& result,
+    const std::string& prefix) {
+  const double solveLoop = result.solveLoopElapsed;
+  const double accounted =
+      result.dampingDiagonalElapsed + result.denseSchurSolveElapsed +
+      result.normalEquationsElapsed + result.addDampingElapsed +
+      result.cudssAnalyzeElapsed + result.cudssSolveElapsed +
+      result.linearizedErrorElapsed + result.applyDeltaElapsed +
+      result.trialErrorElapsed + result.acceptTrialElapsed +
+      result.lambdaUpdateElapsed;
+
+  std::cout << prefix << "solve-loop aggregate breakdown:\n";
+  printProfileRow("    ", "damping diagonal", result.dampingDiagonalElapsed,
+                  solveLoop);
+  printProfileRow("    ", "dense Schur solve", result.denseSchurSolveElapsed,
+                  solveLoop);
+  printProfileRow("    ", "normal equations", result.normalEquationsElapsed,
+                  solveLoop);
+  printProfileRow("    ", "add diagonal damping", result.addDampingElapsed,
+                  solveLoop);
+  printProfileRow("    ", "cuDSS analyze", result.cudssAnalyzeElapsed,
+                  solveLoop);
+  printProfileRow("    ", "cuDSS solve", result.cudssSolveElapsed, solveLoop);
+  printProfileRow("    ", "linearized error change",
+                  result.linearizedErrorElapsed, solveLoop);
+  printProfileRow("    ", "apply delta", result.applyDeltaElapsed, solveLoop);
+  printProfileRow("    ", "trial projection error", result.trialErrorElapsed,
+                  solveLoop);
+  printProfileRow("    ", "accept trial copy", result.acceptTrialElapsed,
+                  solveLoop);
+  printProfileRow("    ", "lambda/convergence update",
+                  result.lambdaUpdateElapsed, solveLoop);
+  printProfileRow("    ", "profiled subtotal", accounted, solveLoop);
+  printProfileRow("    ", "unprofiled loop time", solveLoop - accounted,
+                  solveLoop);
+
+  std::cout << prefix << "per-iteration breakdown:\n";
+  if (result.iterationProfiles.empty()) {
+    std::cout << "    no LM iterations recorded\n";
+    return;
+  }
+  for (const auto& iteration : result.iterationProfiles) {
+    std::cout << "    iteration " << iteration.iteration << ": total "
+              << iteration.totalElapsed << " s, attempts "
+              << iteration.attemptProfiles.size()
+              << ", accepted: " << yesNo(iteration.acceptedStep)
+              << ", terminated: " << yesNo(iteration.terminated) << "\n";
+    std::cout << "      error: " << std::setprecision(15)
+              << iteration.startError << " -> " << iteration.endError
+              << std::setprecision(6) << "\n";
+    std::cout << "      lambda: " << iteration.startLambda << " -> "
+              << iteration.endLambda << "\n";
+    printProfileRow("      ", "damping diagonal",
+                    iteration.dampingDiagonalElapsed, iteration.totalElapsed);
+    printProfileRow("      ", "accept trial copy",
+                    iteration.acceptTrialElapsed, iteration.totalElapsed);
+
+    for (const auto& attempt : iteration.attemptProfiles) {
+      std::cout << "      attempt " << attempt.attempt << ": total "
+                << attempt.totalElapsed << " s, lambda " << attempt.lambda
+                << ", accepted: " << yesNo(attempt.accepted)
+                << ", step successful: " << yesNo(attempt.stepSuccessful)
+                << ", attempted trial: " << yesNo(attempt.attemptedTrial)
+                << ", terminated: " << yesNo(attempt.terminated) << "\n";
+      std::cout << "        costs: linearized change "
+                << attempt.linearizedCostChange << ", actual change "
+                << attempt.costChange << ", fidelity "
+                << attempt.modelFidelity << ", trial error "
+                << std::setprecision(15) << attempt.trialError
+                << std::setprecision(6) << "\n";
+      std::cout << "        flags: stop lambda search "
+                << yesNo(attempt.stopSearchingLambda)
+                << ", lambda upper bound "
+                << yesNo(attempt.lambdaUpperBoundReached) << "\n";
+      printProfileRow("        ", "dense Schur solve",
+                      attempt.denseSchurSolveElapsed, attempt.totalElapsed);
+      printProfileRow("        ", "normal equations",
+                      attempt.normalEquationsElapsed, attempt.totalElapsed);
+      printProfileRow("        ", "add diagonal damping",
+                      attempt.addDampingElapsed, attempt.totalElapsed);
+      printProfileRow("        ", "cuDSS analyze",
+                      attempt.cudssAnalyzeElapsed, attempt.totalElapsed);
+      printProfileRow("        ", "cuDSS solve", attempt.cudssSolveElapsed,
+                      attempt.totalElapsed);
+      printProfileRow("        ", "linearized error change",
+                      attempt.linearizedErrorElapsed, attempt.totalElapsed);
+      printProfileRow("        ", "apply delta", attempt.applyDeltaElapsed,
+                      attempt.totalElapsed);
+      printProfileRow("        ", "trial projection error",
+                      attempt.trialErrorElapsed, attempt.totalElapsed);
+      printProfileRow("        ", "lambda/convergence update",
+                      attempt.lambdaUpdateElapsed, attempt.totalElapsed);
+    }
+  }
+}
+
+void printCudaBackendLmRun(const CudaBackendLmRun& run,
+                           CudaLinearSolverOption solverOption) {
+  const auto& result = run.result;
+  std::cout << "  CUDA LM: " << run.elapsed << " s\n";
+  std::cout << "  CUDA LM linear solver: "
+            << cudaLinearSolverName(solverOption) << "\n";
+  std::cout << "  CUDA LM solve loop: " << result.solveLoopElapsed << " s\n";
+  std::cout << "  CUDA LM measured total: " << result.totalMeasuredElapsed
+            << " s\n";
+  std::cout << "  CUDA LM setup before solve loop: " << result.setupElapsed
+            << " s\n";
+  printCudaLmSetupBreakdown(result, "  CUDA LM ");
+  printCudaLmTransferBreakdown(result, "  CUDA LM ");
+  printCudaLmDetailedBreakdown(result, "  CUDA LM ");
   std::cout << "Initial error: " << std::setprecision(15)
             << result.initialError << "\n";
   std::cout << "Final error: " << result.finalError
@@ -195,6 +396,9 @@ void printCudaBackendLmRun(const CudaBackendLmRun& run,
 
 struct CudaGraphLmRun {
   double elapsed = 0.0;
+  double optimizerConstructionElapsed = 0.0;
+  double optimizeElapsed = 0.0;
+  double resultQueryElapsed = 0.0;
   double initialError = 0.0;
   double finalError = 0.0;
   size_t iterations = 0;
@@ -206,53 +410,92 @@ CudaGraphLmRun runCudaGraphLm(const NonlinearFactorGraph& graph,
                               const gtsam::cuda::CudaSfmLevenbergMarquardtParams&
                                   params) {
   const auto start = std::chrono::high_resolution_clock::now();
+
+  const auto constructionStart = std::chrono::high_resolution_clock::now();
   gtsam::cuda::CudaSfmLevenbergMarquardtOptimizer lm(graph, initial, params);
-  lm.optimize();
+  const auto constructionEnd = std::chrono::high_resolution_clock::now();
+
+  const auto optimizeStart = std::chrono::high_resolution_clock::now();
+  const Values& optimized = lm.optimize();
+  (void)optimized;
+  const auto optimizeEnd = std::chrono::high_resolution_clock::now();
+
+  const auto resultQueryStart = std::chrono::high_resolution_clock::now();
+  const double initialError = lm.result().initialError;
+  const double finalError = lm.error();
+  const size_t iterations = lm.iterations();
+  const gtsam::cuda::CudaSfmLevenbergMarquardtResult backend = lm.result();
+  const auto resultQueryEnd = std::chrono::high_resolution_clock::now();
+
   const auto end = std::chrono::high_resolution_clock::now();
 
   CudaGraphLmRun run;
   run.elapsed = std::chrono::duration<double>(end - start).count();
-  run.initialError = lm.result().initialError;
-  run.finalError = lm.error();
-  run.iterations = lm.iterations();
-  run.backend = lm.result();
+  run.optimizerConstructionElapsed =
+      std::chrono::duration<double>(constructionEnd - constructionStart)
+          .count();
+  run.optimizeElapsed =
+      std::chrono::duration<double>(optimizeEnd - optimizeStart).count();
+  run.resultQueryElapsed =
+      std::chrono::duration<double>(resultQueryEnd - resultQueryStart).count();
+  run.initialError = initialError;
+  run.finalError = finalError;
+  run.iterations = iterations;
+  run.backend = backend;
   return run;
 }
 
 void printCudaGraphLmRun(const CudaGraphLmRun& run,
-                         CudaLinearSolverOption solverOption) {
+                         CudaLinearSolverOption solverOption,
+                         CudaGraphKind graphKind) {
+  const double graphBackendCallOverhead =
+      run.backend.graphBackendCallElapsed - run.backend.totalMeasuredElapsed;
+  const double graphApiOtherOverhead =
+      run.optimizeElapsed - run.backend.totalMeasuredElapsed -
+      run.backend.graphConversionElapsed - run.backend.graphValueMergeElapsed;
+  const double graphApiRemainingOptimizeOverhead =
+      run.optimizeElapsed - run.backend.graphConversionElapsed -
+      run.backend.graphBackendCallElapsed -
+      run.backend.graphValueMergeElapsed -
+      run.backend.graphConvertedDataDestructionElapsed;
+
   std::cout << "  CUDA LM graph API: " << run.elapsed << " s\n";
   std::cout << "  CUDA LM graph linear solver: "
             << cudaLinearSolverName(solverOption) << "\n";
+  std::cout << "  CUDA LM graph kind: " << cudaGraphKindName(graphKind)
+            << "\n";
   std::cout << "  CUDA LM graph API overhead over backend: "
             << run.elapsed - run.backend.totalMeasuredElapsed << " s\n";
+  std::cout << "  CUDA LM graph API breakdown:\n";
+  printProfileRow("    ", "optimizer construction",
+                  run.optimizerConstructionElapsed, run.elapsed);
+  printProfileRow("    ", "optimize call", run.optimizeElapsed, run.elapsed);
+  printProfileRow("    ", "result/error queries", run.resultQueryElapsed,
+                  run.elapsed);
+  printProfileRow("    ", "graph conversion",
+                  run.backend.graphConversionElapsed, run.elapsed);
+  printProfileRow("    ", "backend measured total",
+                  run.backend.totalMeasuredElapsed, run.elapsed);
+  printProfileRow("    ", "backend return/assignment",
+                  graphBackendCallOverhead, run.elapsed);
+  printProfileRow("    ", "value merge/state update",
+                  run.backend.graphValueMergeElapsed, run.elapsed);
+  printProfileRow("    ", "converted data destruction",
+                  run.backend.graphConvertedDataDestructionElapsed,
+                  run.elapsed);
+  printProfileRow("    ", "other graph optimize overhead",
+                  graphApiOtherOverhead, run.elapsed);
+  printProfileRow("    ", "remaining optimize overhead",
+                  graphApiRemainingOptimizeOverhead, run.elapsed);
   std::cout << "  CUDA LM backend solve loop: " << run.backend.solveLoopElapsed
             << " s\n";
   std::cout << "  CUDA LM backend measured total: "
             << run.backend.totalMeasuredElapsed << " s\n";
   std::cout << "  CUDA LM backend setup before solve loop: "
             << run.backend.setupElapsed << " s\n";
-  std::cout << "  CUDA LM backend setup breakdown:\n";
-  std::cout << "    context: " << run.backend.contextElapsed << " s\n";
-  std::cout << "    pack values: " << run.backend.packValuesElapsed << " s\n";
-  std::cout << "    allocate trial values: "
-            << run.backend.allocateTrialElapsed << " s\n";
-  std::cout << "    projection batch: " << run.backend.projectionBatchElapsed
-            << " s\n";
-  std::cout << "    initial error: " << run.backend.initialErrorElapsed
-            << " s\n";
-  std::cout << "    cuDSS solver construction: "
-            << run.backend.cudssSolverConstructionElapsed << " s\n";
-  std::cout << "    dense Schur solver construction: "
-            << run.backend.denseSchurSolverConstructionElapsed << " s\n";
-  std::cout << "    CSR structure: " << run.backend.csrStructureElapsed
-            << " s\n";
-  std::cout << "    upload pattern: " << run.backend.uploadPatternElapsed
-            << " s\n";
-  std::cout << "    first cuDSS analyze: "
-            << run.backend.firstCudssAnalyzeElapsed << " s\n";
-  std::cout << "    download values: " << run.backend.downloadElapsed
-            << " s\n";
+  printCudaLmSetupBreakdown(run.backend, "  CUDA LM backend ");
+  printCudaLmTransferBreakdown(run.backend, "  CUDA LM backend ");
+  printCudaLmDetailedBreakdown(run.backend, "  CUDA LM backend ");
   std::cout << "Initial error: " << std::setprecision(15)
             << run.initialError << "\n";
   std::cout << "Final error: " << run.finalError
@@ -328,6 +571,10 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
   bool cudaLmGraph = false;
   bool cudaLinearSolverSpecified = false;
   CudaLinearSolverOption cudaLinearSolver = CudaLinearSolverOption::DenseSchur;
+  bool cudaGraphKindSpecified = false;
+  CudaGraphKind cudaGraphKind = CudaGraphKind::Raw;
+  bool batchChunkSizeSpecified = false;
+  size_t batchChunkSize = 0;
   bool cudaWarmupFileSpecified = false;
   std::string cudaWarmupFile;
   bool benchmarkActionJson = false;
@@ -366,6 +613,30 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
       } else {
         throw runtime_error(usage());
       }
+      continue;
+    }
+    if (strcmp(argv[i], "--cuda-lm-graph-kind") == 0) {
+      if (++i >= argc || argv[i][0] == '-') {
+        throw runtime_error(usage());
+      }
+      cudaGraphKindSpecified = true;
+      if (strcmp(argv[i], "raw") == 0) {
+        cudaGraphKind = CudaGraphKind::Raw;
+      } else if (strcmp(argv[i], "point-batch") == 0) {
+        cudaGraphKind = CudaGraphKind::PointBatch;
+      } else if (strcmp(argv[i], "camera-batch") == 0) {
+        cudaGraphKind = CudaGraphKind::CameraBatch;
+      } else {
+        throw runtime_error(usage());
+      }
+      continue;
+    }
+    if (strcmp(argv[i], "--batch-chunk-size") == 0) {
+      if (++i >= argc || argv[i][0] == '-') {
+        throw runtime_error(usage());
+      }
+      batchChunkSizeSpecified = true;
+      batchChunkSize = std::stoul(argv[i]);
       continue;
     }
     if (strcmp(argv[i], "--cuda-warmup-file") == 0) {
@@ -433,6 +704,14 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
   if (cudaWarmupFileSpecified && !cudaLm && !cudaLmGraph) {
     throw runtime_error(usage());
   }
+  if (cudaGraphKindSpecified && !cudaLmGraph) {
+    throw runtime_error("--cuda-lm-graph-kind requires --cuda-lm-graph");
+  }
+  if (batchChunkSizeSpecified &&
+      (!cudaLmGraph || cudaGraphKind != CudaGraphKind::PointBatch)) {
+    throw runtime_error(
+        "--batch-chunk-size only applies to --cuda-lm-graph-kind point-batch");
+  }
 
   if (!filenames.empty()) {
     return {profile,
@@ -441,6 +720,10 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
             cudaLmGraph,
             cudaLinearSolverSpecified,
             cudaLinearSolver,
+            cudaGraphKindSpecified,
+            cudaGraphKind,
+            batchChunkSizeSpecified,
+            batchChunkSize,
             cudaWarmupFileSpecified,
             cudaWarmupFile,
             benchmarkActionJson,
@@ -455,6 +738,10 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
             cudaLmGraph,
             cudaLinearSolverSpecified,
             cudaLinearSolver,
+            cudaGraphKindSpecified,
+            cudaGraphKind,
+            batchChunkSizeSpecified,
+            batchChunkSize,
             cudaWarmupFileSpecified,
             cudaWarmupFile,
             benchmarkActionJson,
@@ -469,6 +756,10 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
             cudaLmGraph,
             cudaLinearSolverSpecified,
             cudaLinearSolver,
+            cudaGraphKindSpecified,
+            cudaGraphKind,
+            batchChunkSizeSpecified,
+            batchChunkSize,
             cudaWarmupFileSpecified,
             cudaWarmupFile,
             benchmarkActionJson,
@@ -482,6 +773,10 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
           cudaLmGraph,
           cudaLinearSolverSpecified,
           cudaLinearSolver,
+          cudaGraphKindSpecified,
+          cudaGraphKind,
+          batchChunkSizeSpecified,
+          batchChunkSize,
           cudaWarmupFileSpecified,
           cudaWarmupFile,
           benchmarkActionJson,
@@ -520,6 +815,69 @@ double runSolver(const NonlinearFactorGraph& graph, const Values& initial,
             << ", iterations: " << lm.iterations() << std::setprecision(6)
             << "\n";
   return elapsed.count();
+}
+
+NonlinearFactorGraph buildPointBatchSfmGraph(const SfmData& db,
+                                             size_t chunkSize) {
+  NonlinearFactorGraph graph;
+  for (size_t j = 0; j < db.numberTracks(); ++j) {
+    const auto& measurementsForTrack = db.tracks[j].measurements;
+    if (measurementsForTrack.size() < 2) continue;
+
+    const size_t nMeasurements = measurementsForTrack.size();
+    const size_t effectiveChunkSize =
+        (chunkSize == 0) ? nMeasurements : std::min(chunkSize, nMeasurements);
+    if (effectiveChunkSize == 0) continue;
+
+    for (size_t start = 0; start < nMeasurements; start += effectiveChunkSize) {
+      const size_t end = std::min(start + effectiveChunkSize, nMeasurements);
+      std::map<Key, Point2> measurements;
+      for (size_t i = start; i < end; ++i) {
+        const SfmMeasurement& measurement = measurementsForTrack[i];
+        measurements[C(measurement.first)] = measurement.second;
+      }
+      graph.add(std::make_shared<BatchFactor<SfmFactor, 2>>(
+          measurements, P(j), gNoiseModel));
+    }
+  }
+  return graph;
+}
+
+NonlinearFactorGraph buildCameraBatchSfmGraph(const SfmData& db) {
+  NonlinearFactorGraph graph;
+  std::vector<std::map<Key, Point2>> measurementsByCamera(db.numberCameras());
+
+  for (size_t j = 0; j < db.numberTracks(); ++j) {
+    const auto& measurementsForTrack = db.tracks[j].measurements;
+    if (measurementsForTrack.size() < 2) continue;
+
+    for (const SfmMeasurement& measurement : measurementsForTrack) {
+      measurementsByCamera[measurement.first][P(j)] = measurement.second;
+    }
+  }
+
+  for (size_t i = 0; i < measurementsByCamera.size(); ++i) {
+    const auto& measurements = measurementsByCamera[i];
+    if (measurements.empty()) continue;
+
+    graph.add(std::make_shared<BatchFactor<SfmFactor, 2>>(
+        C(i), measurements, gNoiseModel));
+  }
+  return graph;
+}
+
+NonlinearFactorGraph buildCudaGraphSfmGraph(const SfmData& db,
+                                            CudaGraphKind graphKind,
+                                            size_t batchChunkSize) {
+  switch (graphKind) {
+    case CudaGraphKind::Raw:
+      return buildGeneralSfmGraph(db);
+    case CudaGraphKind::PointBatch:
+      return buildPointBatchSfmGraph(db, batchChunkSize);
+    case CudaGraphKind::CameraBatch:
+      return buildCameraBatchSfmGraph(db);
+  }
+  return buildGeneralSfmGraph(db);
 }
 }  // namespace
 
@@ -595,7 +953,8 @@ int main(int argc, char* argv[]) {
     }
 #endif
 
-    NonlinearFactorGraph graph = buildGeneralSfmGraph(db);
+    NonlinearFactorGraph graph = buildCudaGraphSfmGraph(
+        db, options.cudaGraphKind, options.batchChunkSize);
     Values initial = buildGeneralSfmInitial(db);
 
     Ordering ordering;
@@ -612,8 +971,8 @@ int main(int argc, char* argv[]) {
         std::cout << "  CUDA graph warmup file: " << options.cudaWarmupFile
                   << " (timing ignored)\n";
         const SfmData warmupDb = SfmData::FromBalFile(options.cudaWarmupFile);
-        const NonlinearFactorGraph warmupGraph =
-            buildGeneralSfmGraph(warmupDb);
+        const NonlinearFactorGraph warmupGraph = buildCudaGraphSfmGraph(
+            warmupDb, options.cudaGraphKind, options.batchChunkSize);
         const Values warmupInitial = buildGeneralSfmInitial(warmupDb);
         const CudaGraphLmRun warmupRun =
             runCudaGraphLm(warmupGraph, warmupInitial, cudaParams);
@@ -626,7 +985,8 @@ int main(int argc, char* argv[]) {
       }
 
       const CudaGraphLmRun run = runCudaGraphLm(graph, initial, cudaParams);
-      printCudaGraphLmRun(run, options.cudaLinearSolver);
+      printCudaGraphLmRun(run, options.cudaLinearSolver,
+                          options.cudaGraphKind);
       continue;
     }
 #endif

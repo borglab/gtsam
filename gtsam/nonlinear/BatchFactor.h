@@ -121,10 +121,12 @@ class BatchFactor : public NonlinearFactor {
   using Base = NonlinearFactor;
   using This = BatchFactor<FactorType, ErrorDim>;
   using shared_ptr = std::shared_ptr<This>;
+  using FactorVector =
+      std::vector<FactorType, Eigen::aligned_allocator<FactorType>>;
 
  private:
-  using Allocator = Eigen::aligned_allocator<FactorType>;
-  std::vector<FactorType, Allocator> factors_;  ///< Contiguous storage
+  using Allocator = typename FactorVector::allocator_type;
+  FactorVector factors_;  ///< Contiguous storage
   struct KeyInfo {
     Key key;
     int dim;
@@ -282,6 +284,12 @@ class BatchFactor : public NonlinearFactor {
 
   /** Default constructor */
   BatchFactor() = default;
+
+  /// Return the child factors represented by this batch.
+  const FactorVector& factors() const { return factors_; }
+
+  /// Return the number of child factors represented by this batch.
+  size_t numFactors() const { return factors_.size(); }
 
   /** Constructor from a vector of factors (moves the vector) */
   explicit BatchFactor(std::vector<FactorType, Allocator>&& factors)

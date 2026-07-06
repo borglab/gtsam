@@ -3,6 +3,7 @@
 #include <gtsam/base/cuda/CudaDeviceArray.h>
 #include <gtsam/nonlinear/cuda/DeviceVariableIndex.h>
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -31,7 +32,10 @@ class DeviceValues {
   DeviceValueBlock<T>& addBlock(uint32_t typeId, int tangentDim,
                                 const std::vector<Key>& keys,
                                 const std::vector<T>& hostValues,
-                                cudaStream_t stream = nullptr) {
+                                cudaStream_t stream = nullptr,
+                                CudaDeviceTransferTiming* valuesUploadTiming =
+                                    nullptr,
+                                double* deltaResizeElapsed = nullptr) {
     if (keys.size() != hostValues.size()) {
       throw std::invalid_argument("DeviceValues keys and values size mismatch");
     }
@@ -59,9 +63,21 @@ class DeviceValues {
     auto storage = std::make_unique<TypedBlock<T>>();
     storage->block.tangentDim = tangentDim;
     storage->block.keys = keys;
-    storage->block.values.upload(hostValues, stream);
+    if (valuesUploadTiming) {
+      *valuesUploadTiming =
+          storage->block.values.uploadProfiled(hostValues, stream);
+    } else {
+      storage->block.values.upload(hostValues, stream);
+    }
+    const auto deltaResizeStart = std::chrono::steady_clock::now();
     storage->block.delta.resize(hostValues.size() *
                                 static_cast<size_t>(tangentDim));
+    if (deltaResizeElapsed) {
+      *deltaResizeElapsed =
+          std::chrono::duration<double>(std::chrono::steady_clock::now() -
+                                        deltaResizeStart)
+              .count();
+    }
 
     DeviceValueBlock<T>* result = &storage->block;
     std::vector<Key> committedKeys;
