@@ -56,7 +56,7 @@ class GTSAM_EXPORT JointMarginal {
     return blockMatrix_.block(indexI, indexJ);
   }
 
-  /** Synonym for operator() */
+  /** Synonym for operator() See operator() for indexing semantics. */
   Matrix at(Key iVariable, Key jVariable) const { return (*this)(iVariable, jVariable); }
 
   /** The full, dense covariance/information matrix of the joint marginal. */
