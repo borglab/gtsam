@@ -42,7 +42,14 @@ class GTSAM_EXPORT JointMarginal {
   JointMarginal() {}
 
   /** Access a block, corresponding to a pair of variables, of the joint
-   * marginal. */
+   * marginal. Note: iVariable and jVariable are the actual nonlinear Keys
+   * used to construct this JointMarginal (the keys passed to
+   * jointMarginalCovariance()/jointMarginalInformation()), NOT positional
+   * indices into the block matrix. To retrieve the single variable
+   * marginal for `key` (equivalent to Marginals::marginalCovariance(key)),
+   * call at(key, key), not at(0, key) or any other cross covariance
+   * block, which represents the covariance *between* two different
+   * variables and will generally differ. */
   Matrix operator()(Key iVariable, Key jVariable) const {
     const auto indexI = indices_.at(iVariable);
     const auto indexJ = indices_.at(jVariable);
