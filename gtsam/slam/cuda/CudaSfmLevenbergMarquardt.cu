@@ -499,6 +499,24 @@ void CudaSfmLevenbergMarquardtParams::print(const std::string& str) const {
   std::cout << "               linearSolver: " << getLinearSolver() << "\n";
 }
 
+bool CudaSfmLevenbergMarquardtParams::equals(
+    const CudaSfmLevenbergMarquardtParams& other, double tol) const {
+  return maxIterations == other.maxIterations &&
+         std::abs(lambdaInitial - other.lambdaInitial) <= tol &&
+         std::abs(lambdaFactor - other.lambdaFactor) <= tol &&
+         std::abs(lambdaUpperBound - other.lambdaUpperBound) <= tol &&
+         std::abs(lambdaLowerBound - other.lambdaLowerBound) <= tol &&
+         std::abs(relativeErrorTol - other.relativeErrorTol) <= tol &&
+         std::abs(absoluteErrorTol - other.absoluteErrorTol) <= tol &&
+         std::abs(errorTol - other.errorTol) <= tol &&
+         std::abs(minModelFidelity - other.minModelFidelity) <= tol &&
+         useFixedLambdaFactor == other.useFixedLambdaFactor &&
+         diagonalDamping == other.diagonalDamping &&
+         std::abs(minDiagonal - other.minDiagonal) <= tol &&
+         std::abs(maxDiagonal - other.maxDiagonal) <= tol &&
+         linearSolver == other.linearSolver;
+}
+
 CudaSfmFactorGraphData ConvertGeneralSfmGraphToCudaSfmData(
     const NonlinearFactorGraph& graph, const Values& initialValues) {
   CudaSfmFactorGraphData converted;

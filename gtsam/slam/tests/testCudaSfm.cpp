@@ -2,6 +2,7 @@
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/BatchFactor.h>
+#include <gtsam/nonlinear/GncOptimizer.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/cuda/CudssLinearSolver.h>
 #include <gtsam/nonlinear/cuda/DeviceGeometryKernels.h>
@@ -17,11 +18,13 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <limits>
 #include <map>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 using namespace gtsam;
@@ -1656,10 +1659,6 @@ TEST(CudaSfmFactorGraphConversion, RejectsUnsupportedNoiseModels) {
   nonzeroLowerLeftR << 1.0, 0.0, 1e-3, 1.0;
   checkRejectedSqrtInformation(nonzeroLowerLeftR);
 
-  Matrix2 zeroDiagonalR;
-  zeroDiagonalR << 0.0, 0.0, 0.0, 1.0;
-  checkRejectedSqrtInformation(zeroDiagonalR);
-
   Matrix2 negativeDiagonalR;
   negativeDiagonalR << 1.0, 0.0, 0.0, -1.0;
   checkRejectedSqrtInformation(negativeDiagonalR);
@@ -2295,6 +2294,212 @@ TEST(CudaBalCsrStructure, BuildsUpperTrianglePatternForMeasuredTrack) {
       CHECK(colIndices[k - 1] < colIndices[k]);
     }
   }
+}
+
+namespace {
+
+// Synthetic BAL-like problem for GNC: every point is observed by every
+// camera, so a track stays well constrained even after GNC down-weights its
+// corrupted measurements to zero.
+struct GncTestProblem {
+  NonlinearFactorGraph graph;
+  NonlinearFactorGraph inlierGraph;
+  Values initial;
+  std::vector<size_t> outlierFactorSlots;
+
+  bool isOutlierSlot(size_t slot) const {
+    return std::find(outlierFactorSlots.begin(), outlierFactorSlots.end(),
+                     slot) != outlierFactorSlots.end();
+  }
+};
+
+GncTestProblem makeGncBalLikeProblem() {
+  // The geometry must be rigid (diverse viewpoints, many points) and the
+  // corruptions moderate: with a weakly constrained problem or extreme
+  // outliers, plain LM can absorb the corrupted measurements into a
+  // consistent (wrong) solution with near-zero residuals, and GNC has no
+  // signal left to reject them.
+  constexpr size_t kNumCameras = 5;
+  std::vector<Point3> points;
+  for (size_t j = 0; j < 20; ++j) {
+    const double a = 2.399963 * static_cast<double>(j);  // golden angle
+    const double r = 0.3 + 0.08 * static_cast<double>(j % 7);
+    points.emplace_back(r * std::cos(a), r * std::sin(a),
+                        4.0 + 0.37 * static_cast<double>((j * 5) % 9));
+  }
+
+  std::vector<SfmCamera> cameras;
+  const std::vector<Point3> centers = {
+      Point3(-1.5, 0.3, -0.4), Point3(-0.7, -0.9, 0.3), Point3(0.1, 0.8, -0.2),
+      Point3(0.9, -0.4, 0.5), Point3(1.6, 0.6, -0.3)};
+  for (size_t i = 0; i < kNumCameras; ++i) {
+    const double s = static_cast<double>(i);
+    cameras.emplace_back(
+        Pose3(Rot3::RzRyRx(0.15 - 0.08 * s, 0.25 - 0.12 * s, 0.05 * s),
+              centers[i]),
+        Cal3Bundler(160.0 + 4.0 * s, 1e-4, -1e-6));
+  }
+
+  // Corrupted (pointSlot, cameraSlot) pairs; each corrupted track keeps
+  // four clean views.
+  const std::vector<std::pair<size_t, size_t>> corrupted = {
+      {1, 0}, {7, 2}, {14, 4}};
+  const std::vector<Point2> corruptions = {
+      Point2(14.0, -10.0), Point2(-12.0, 9.0), Point2(10.0, 13.0)};
+
+  GncTestProblem problem;
+  const auto model = noiseModel::Unit::Create(2);
+  for (size_t pointSlot = 0; pointSlot < points.size(); ++pointSlot) {
+    for (size_t cameraSlot = 0; cameraSlot < kNumCameras; ++cameraSlot) {
+      Point2 measured = cameras[cameraSlot].project2(points[pointSlot]);
+      const bool isOutlier =
+          std::find(corrupted.begin(), corrupted.end(),
+                    std::make_pair(pointSlot, cameraSlot)) != corrupted.end();
+      if (isOutlier) {
+        measured += corruptions[problem.outlierFactorSlots.size()];
+        problem.outlierFactorSlots.push_back(problem.graph.size());
+      }
+      auto factor = std::make_shared<BundlerProjectionFactor>(
+          measured, model, C(cameraSlot), P(pointSlot));
+      problem.graph.push_back(factor);
+      if (!isOutlier) {
+        problem.inlierGraph.push_back(factor);
+      }
+    }
+  }
+
+  for (size_t i = 0; i < kNumCameras; ++i) {
+    const double sign = (i % 2 == 0) ? 1.0 : -1.0;
+    Vector delta(9);
+    delta << 0.002 * sign, -0.0015, 0.001 * sign, 0.03, -0.02 * sign, 0.025,
+        0.8 * sign, 1e-5, -1e-7;
+    problem.initial.insert(C(i), cameras[i].retract(delta));
+  }
+  for (size_t j = 0; j < points.size(); ++j) {
+    const double sign = (j % 2 == 0) ? 1.0 : -1.0;
+    problem.initial.insert(
+        P(j), Point3(points[j].x() + 0.02 * sign, points[j].y() - 0.015,
+                     points[j].z() + 0.03 * sign));
+  }
+  return problem;
+}
+
+}  // namespace
+
+TEST(CudaSfmLevenbergMarquardtParams, EqualsComparesFields) {
+  const CudaSfmLevenbergMarquardtParams a =
+      CudaSfmLevenbergMarquardtParams::LegacyDefaults();
+  CudaSfmLevenbergMarquardtParams b = a;
+  CHECK(a.equals(b));
+
+  b.lambdaInitial = 2.0 * a.lambdaInitial + 1.0;
+  CHECK(!a.equals(b));
+
+  b = a;
+  b.linearSolver = CudaSfmLinearSolverType::CudssFullNormal;
+  CHECK(!a.equals(b));
+}
+
+TEST(GncCudaSfmOptimizer, TlsClassificationMatchesCpuGnc) {
+  const GncTestProblem problem = makeGncBalLikeProblem();
+
+  GncParams<LevenbergMarquardtParams> cpuGncParams{LevenbergMarquardtParams()};
+  cpuGncParams.setLossType(GncLossType::TLS);
+  GncOptimizer<GncParams<LevenbergMarquardtParams>> cpuGnc(
+      problem.graph, problem.initial, cpuGncParams);
+  const Values cpuResult = cpuGnc.optimize();
+
+  GncParams<CudaSfmLevenbergMarquardtParams> cudaGncParams{
+      CudaSfmLevenbergMarquardtParams::LegacyDefaults()};
+  cudaGncParams.setLossType(GncLossType::TLS);
+  GncOptimizer<GncParams<CudaSfmLevenbergMarquardtParams>> cudaGnc(
+      problem.graph, problem.initial, cudaGncParams);
+  const Values cudaResult = cudaGnc.optimize();
+
+  const Vector& cpuWeights = cpuGnc.getWeights();
+  const Vector& cudaWeights = cudaGnc.getWeights();
+  EXPECT_LONGS_EQUAL(problem.graph.size(), cudaWeights.size());
+  for (size_t slot = 0; slot < problem.graph.size(); ++slot) {
+    if (problem.isOutlierSlot(slot)) {
+      CHECK(cpuWeights[slot] < 0.05);
+      CHECK(cudaWeights[slot] < 0.05);
+    } else {
+      CHECK(cpuWeights[slot] > 0.95);
+      CHECK(cudaWeights[slot] > 0.95);
+    }
+  }
+
+  const double initialInlierError = problem.inlierGraph.error(problem.initial);
+  const double cpuInlierError = problem.inlierGraph.error(cpuResult);
+  const double cudaInlierError = problem.inlierGraph.error(cudaResult);
+  CHECK(cpuInlierError < 1e-3);
+  CHECK(cudaInlierError < 1e-3);
+  CHECK(cudaInlierError < initialInlierError);
+}
+
+TEST(GncCudaSfmOptimizer, GmClassificationMatchesCpuGnc) {
+  const GncTestProblem problem = makeGncBalLikeProblem();
+
+  GncParams<LevenbergMarquardtParams> cpuGncParams{LevenbergMarquardtParams()};
+  cpuGncParams.setLossType(GncLossType::GM);
+  GncOptimizer<GncParams<LevenbergMarquardtParams>> cpuGnc(
+      problem.graph, problem.initial, cpuGncParams);
+  const Values cpuResult = cpuGnc.optimize();
+
+  GncParams<CudaSfmLevenbergMarquardtParams> cudaGncParams{
+      CudaSfmLevenbergMarquardtParams::LegacyDefaults()};
+  cudaGncParams.setLossType(GncLossType::GM);
+  GncOptimizer<GncParams<CudaSfmLevenbergMarquardtParams>> cudaGnc(
+      problem.graph, problem.initial, cudaGncParams);
+  const Values cudaResult = cudaGnc.optimize();
+
+  // GM weights do not converge to exactly {0, 1}; check the separation.
+  const Vector& cpuWeights = cpuGnc.getWeights();
+  const Vector& cudaWeights = cudaGnc.getWeights();
+  for (size_t slot = 0; slot < problem.graph.size(); ++slot) {
+    if (problem.isOutlierSlot(slot)) {
+      CHECK(cpuWeights[slot] < 0.5);
+      CHECK(cudaWeights[slot] < 0.5);
+    } else {
+      CHECK(cpuWeights[slot] > 0.9);
+      CHECK(cudaWeights[slot] > 0.9);
+    }
+  }
+
+  CHECK(problem.inlierGraph.error(cpuResult) < 1e-2);
+  CHECK(problem.inlierGraph.error(cudaResult) < 1e-2);
+}
+
+TEST(GncCudaSfmOptimizer, KnownOutliersProduceZeroInformationGraph) {
+  // GNC weights a known outlier by zero, which reaches the CUDA backend as a
+  // zero-information Gaussian noise model. The corrupted measurement must be
+  // ignored by the optimization.
+  const GncTestProblem problem = makeGncBalLikeProblem();
+
+  NonlinearFactorGraph weightedGraph;
+  for (size_t slot = 0; slot < problem.graph.size(); ++slot) {
+    const auto factor =
+        std::static_pointer_cast<NoiseModelFactor>(problem.graph[slot]);
+    if (problem.isOutlierSlot(slot)) {
+      // Same construction as GncOptimizer::makeWeightedGraph with weight 0.
+      const auto zeroInformation =
+          noiseModel::Gaussian::Information(Matrix2::Zero());
+      weightedGraph.push_back(factor->cloneWithNewNoiseModel(zeroInformation));
+    } else {
+      weightedGraph.push_back(factor);
+    }
+  }
+
+  CudaSfmLevenbergMarquardtParams params =
+      CudaSfmLevenbergMarquardtParams::LegacyDefaults();
+  CudaSfmLevenbergMarquardtOptimizer optimizer(weightedGraph, problem.initial,
+                                               params);
+  const Values& result = optimizer.optimize();
+
+  CHECK(problem.inlierGraph.error(result) < 1e-3);
+  // The zero-information factors contribute exactly zero error.
+  DOUBLES_EQUAL(problem.inlierGraph.error(result),
+                weightedGraph.error(result), 1e-9);
 }
 
 int main() {

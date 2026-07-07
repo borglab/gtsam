@@ -69,10 +69,12 @@ class CudaSfmProjectionBatch {
            sqrtInfo.r11 == 1.0;
   }
 
+  // Zero diagonals are allowed: they encode a zero-information (fully
+  // down-weighted) measurement, as produced by GNC weighted graphs.
   static bool IsUsableSqrtInfo(const CudaSfmSqrtInfo2& sqrtInfo) {
     return std::isfinite(sqrtInfo.r00) && std::isfinite(sqrtInfo.r01) &&
-           std::isfinite(sqrtInfo.r11) && sqrtInfo.r00 > 0.0 &&
-           sqrtInfo.r11 > 0.0;
+           std::isfinite(sqrtInfo.r11) && sqrtInfo.r00 >= 0.0 &&
+           sqrtInfo.r11 >= 0.0;
   }
 
   static bool IsUsableRobustModel(const CudaSfmRobustModel& robustModel) {

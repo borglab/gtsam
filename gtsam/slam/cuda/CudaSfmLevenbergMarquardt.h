@@ -47,6 +47,8 @@ class GTSAM_EXPORT CudaSfmLevenbergMarquardtParams {
   std::string getLinearSolver() const;
   void setLinearSolver(const std::string& solver);
   void print(const std::string& str = "") const;
+  bool equals(const CudaSfmLevenbergMarquardtParams& other,
+              double tol = 1e-9) const;
 };
 
 struct CudaSfmLmAttemptProfile {
