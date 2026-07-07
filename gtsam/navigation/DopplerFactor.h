@@ -18,44 +18,23 @@ namespace gtsam {
 /**
  * GNSS Doppler (range-rate) factor.
  *
- * Relates a measured Doppler observation to the receiver velocity and the
- * receiver clock, reusing the line-of-sight unit vector from gnss::geodist.
- * The receiver clock drift is not a separate state: it is expressed as the
- * time difference of the two adjacent receiver clock-bias states already
- * estimated by the pseudorange / carrier-phase factors,
- *
- *   drift ~= (dt_r(k) - dt_r(k-1)) / dt
- *
- * so the factor reads
+ * Constrains the receiver ECEF velocity and the receiver clock drift, where
+ * the drift is not a separate state but the time difference of the clock-bias
+ * states at adjacent epochs:
  *
  *   error = e . (v_s - v_r)
  *           + c * ((dt_r(k) - dt_r(k-1)) / dt - ddt_s)
  *           + sagnac_rate
  *           - (-lambda * Doppler)
  *
- * where
- *   - e        is the unit line-of-sight vector from receiver to satellite,
- *   - v_s, v_r are the satellite and receiver ECEF velocities (m/s),
- *   - dt_r(k-1), dt_r(k) are the receiver clock biases (s) at the previous
- *     and current epochs -- the estimated states,
- *   - dt       is the epoch interval t_k - t_{k-1} (s),
- *   - ddt_s    is the satellite clock drift (s/s),
- *   - sagnac_rate = (OMGE/c) * (v_s.y*r_r.x + r_s.y*v_r.x
- *                               - v_s.x*r_r.y - r_s.x*v_r.y)
- *     is the earth-rotation (Sagnac) correction to the range rate,
- *   - lambda * Doppler is the measured range rate (m/s); a positive Doppler
- *     (approaching satellite) corresponds to a decreasing range, hence the
- *     leading minus sign.
+ * with e the unit line-of-sight vector (receiver -> satellite), v_s/v_r the
+ * satellite/receiver ECEF velocities (m/s), dt_r the receiver clock biases
+ * (s), dt = t_k - t_{k-1} (s), ddt_s the satellite clock drift (s/s), and
+ * sagnac_rate the earth-rotation correction to the range rate.  The measured
+ * range rate is -lambda * Doppler (positive Doppler = closing range).
  *
- * Keying on the two clock biases (instead of a dedicated clock-drift state)
- * keeps the state vector identical to the pseudorange-only problem and needs
- * no extra between-epoch clock factor: the Doppler measurement itself
- * constrains the clock-bias evolution.  The instantaneous drift is
- * approximated by its average over [t_{k-1}, t_k].
- *
- * The satellite position/velocity and the receiver position are inputs held
- * constant per factor; the line-of-sight is computed once from them, so it does
- * not depend on any state and enters no Jacobian.
+ * Satellite position/velocity and receiver position are constants per factor:
+ * the line-of-sight is computed once from them and enters no Jacobian.
  *
  * The two clock-bias keys must be distinct states at adjacent epochs (the
  * same key twice forces zero drift), so Doppler factors start at the second
@@ -155,35 +134,22 @@ template <>
 struct traits<DopplerFactor> : public Testable<DopplerFactor> {};
 
 /**
- * GNSS Doppler factor with lever-arm correction.
+ * DopplerFactor with a kinematic lever-arm correction, keyed on a body Pose3.
  *
- * Like DopplerFactor, but keys on a body Pose3 so the antenna's lever arm can
- * be accounted for.  Unlike the pseudorange/carrier lever-arm factors (which
- * correct the antenna *position*), the dominant lever-arm effect on a Doppler
- * (range-rate) observation is *kinematic*: when the body rotates at angular
- * rate omega, the antenna moves relative to the body origin, so
+ * When the body rotates at angular rate omega, the antenna moves relative to
+ * the body origin, so the range-rate error uses
  *
  *   v_antenna = v_body + ecef_R_body * (omega x leverArm)
  *
- * where omega is the (measured) body-frame angular velocity and leverArm is the
- * body-frame antenna offset.  The range-rate error then uses v_antenna:
+ * in place of v_r, with omega the measured body-frame angular velocity and
+ * leverArm the body-frame antenna offset.  Everything else (clock-drift term,
+ * line-of-sight and Sagnac terms at the nominal receiver position) matches
+ * DopplerFactor; the pose enters only through its attitude, and with
+ * omega = 0 the factor reduces to DopplerFactor.
  *
- *   error = e . (v_s - v_antenna)
- *         + c * ((dt_r(k) - dt_r(k-1)) / dt - ddt_s)
- *         + sagnac_rate - (-lambda*Doppler)
- *
- * with the receiver clock drift expressed through the two adjacent clock-bias
- * states, exactly as in DopplerFactor.
- *
- * The line-of-sight e and the Sagnac terms are evaluated at the provided
- * (nominal) receiver position, exactly as in DopplerFactor -- the second-order
- * dependence of the LOS on the pose translation is neglected, so the pose
- * enters only through its attitude.  With omega = 0 the factor reduces to
- * DopplerFactor evaluated at `velocity`.
- *
- * When the optional ecef_T_nav transform is provided, the pose key is a local
- * navigation-frame pose (e.g. ENU) and ecef_R_body = ecef_R_nav * nav_R_body;
- * `velocity` is still the receiver ECEF velocity.
+ * With the optional ecef_T_nav transform the pose key is a local nav-frame
+ * pose (e.g. ENU) and ecef_R_body = ecef_R_nav * nav_R_body; `velocity` is
+ * still the receiver ECEF velocity.
  *
  * Keys: [pose (Pose3), velocity (Vector3, ECEF m/s),
  *        clock bias k-1 (double, s), clock bias k (double, s)].
