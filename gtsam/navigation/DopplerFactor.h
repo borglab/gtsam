@@ -57,12 +57,10 @@ namespace gtsam {
  * constant per factor; the line-of-sight is computed once from them, so it does
  * not depend on any state and enters no Jacobian.
  *
- * The two clock-bias keys must be distinct states at adjacent epochs: passing
- * the same key for both forces (dt_r(k) - dt_r(k-1)) = 0, i.e. zero drift. The
- * first epoch has no k-1 bias, so a Doppler factor is added only from the
- * second epoch on. With per-constellation receiver clock biases the drift is
- * common to all systems (the inter-system biases are constant), so every
- * Doppler factor keys on one consistent receiver clock-bias series.
+ * The two clock-bias keys must be distinct states at adjacent epochs (the
+ * same key twice forces zero drift), so Doppler factors start at the second
+ * epoch. With per-constellation clock biases the drift is common to all
+ * systems, so key every Doppler factor on a single clock-bias series.
  *
  * Keys: [velocity (Vector3, m/s),
  *        receiver clock bias at epoch k-1 (double, s),
