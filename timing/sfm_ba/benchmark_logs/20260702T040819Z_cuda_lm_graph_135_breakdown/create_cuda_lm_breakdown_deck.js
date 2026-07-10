@@ -353,7 +353,7 @@ const backendRows = [
   addTitle(slide, "Inside optimize(): 0.376 s", "Measured components. Stacked bar: % of optimize(); table: % of Graph API.");
   addBadge(slide, "Measured", 11.65, 0.48, C.teal);
   const optimizeStack = optimizeRows.map((row) => ({ ...row, pct: (row.value / apiTotal * 100).toFixed(1), short: row.value > 8 ? `${(row.value / 376.192 * 100).toFixed(0)}%` : "" }));
-  addStackedBar(slide, optimizeStack, 0.72, 1.62, 11.9, 0.58, 376.192, 1.25);
+  addStackedBar(slide, optimizeStack, 0.72, 1.62, 11.9, 0.58, 376.192, 0.75);
   addLegend(slide, optimizeRows.map((row) => ({ label: `${row.label} ${row.value.toFixed(3)} ms`, color: row.color })), 0.72, 2.45, 2, 5.65);
   addTable(slide, [
     ["Measured component", "Time", "% of whole API"],
