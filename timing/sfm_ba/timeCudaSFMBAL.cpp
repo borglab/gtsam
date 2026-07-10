@@ -18,13 +18,17 @@
 
 #include "../timeSFMBAL.h"
 
+#include <gtsam/config.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/BatchFactor.h>
 
 #if GTSAM_ENABLE_CUDA
 #include <gtsam/base/cuda/CudaContext.h>
 #include <gtsam/slam/cuda/CudaBalCsrStructure.h>
+#include <gtsam/slam/cuda/CudaSfmDenseSchurSolver.h>
 #include <gtsam/slam/cuda/CudaSfmLevenbergMarquardt.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionBatch.h>
+#include <gtsam/slam/cuda/CudaSfmProjectionLinearization.h>
 #include <gtsam/slam/cuda/CudaSfmValues.h>
 #endif
 
@@ -51,6 +55,7 @@ using SfmFactor = GeneralSFMFactor<Camera, Point3>;
 std::string usage() {
   return "Usage: timeCudaSFMBAL [--colamd] [--profile] [--cuda-structure-only] "
          "[--cuda-lm] [--cuda-lm-graph] "
+         "[--linearization-benchmark] [--linearization-repeats N] "
          "[--cuda-linear-solver dense-schur|cudss-full-normal] "
          "[--cuda-lm-graph-kind raw|point-batch|camera-batch] "
          "[--batch-chunk-size N] "
@@ -99,6 +104,9 @@ struct RunOptions {
   bool cudaStructureOnly = false;
   bool cudaLm = false;
   bool cudaLmGraph = false;
+  bool linearizationBenchmark = false;
+  bool linearizationRepeatsSpecified = false;
+  size_t linearizationRepeats = 10;
   bool cudaLinearSolverSpecified = false;
   CudaLinearSolverOption cudaLinearSolver = CudaLinearSolverOption::DenseSchur;
   bool cudaGraphKindSpecified = false;
@@ -174,6 +182,74 @@ void printProfileRow(const std::string& indent, const std::string& label,
   std::cout << "\n";
 }
 
+bool gtsamBuiltWithTbb() {
+#ifdef GTSAM_USE_TBB
+  return true;
+#else
+  return false;
+#endif
+}
+
+struct TimingSamples {
+  std::vector<double> seconds;
+
+  double mean() const {
+    double total = 0.0;
+    for (const double sample : seconds) total += sample;
+    return total / static_cast<double>(seconds.size());
+  }
+
+  double minimum() const {
+    return *std::min_element(seconds.begin(), seconds.end());
+  }
+
+  double maximum() const {
+    return *std::max_element(seconds.begin(), seconds.end());
+  }
+};
+
+struct CpuLinearizationBenchmark {
+  TimingSamples timing;
+  size_t linearizedFactors = 0;
+};
+
+CpuLinearizationBenchmark benchmarkCpuLinearization(
+    const NonlinearFactorGraph& graph, const Values& initial,
+    size_t repeats) {
+  GaussianFactorGraph::shared_ptr warmup = graph.linearize(initial);
+  warmup.reset();
+
+  CpuLinearizationBenchmark benchmark;
+  benchmark.timing.seconds.reserve(repeats);
+  for (size_t repeat = 0; repeat < repeats; ++repeat) {
+    const auto start = std::chrono::steady_clock::now();
+    GaussianFactorGraph::shared_ptr linear = graph.linearize(initial);
+    const auto end = std::chrono::steady_clock::now();
+    benchmark.timing.seconds.push_back(
+        std::chrono::duration<double>(end - start).count());
+    benchmark.linearizedFactors = linear->size();
+  }
+  return benchmark;
+}
+
+void printTimingSamples(const std::string& label,
+                        const TimingSamples& timing, size_t workItems,
+                        const std::string& workItemLabel) {
+  std::cout << "  " << label << "\n";
+  for (size_t repeat = 0; repeat < timing.seconds.size(); ++repeat) {
+    std::cout << "    repeat " << repeat << ": " << timing.seconds[repeat]
+              << " s\n";
+  }
+  std::cout << "    mean: " << timing.mean() << " s\n";
+  std::cout << "    min:  " << timing.minimum() << " s\n";
+  std::cout << "    max:  " << timing.maximum() << " s\n";
+  if (timing.mean() > 0.0) {
+    std::cout << "    throughput: "
+              << static_cast<double>(workItems) / timing.mean() << " "
+              << workItemLabel << "/s\n";
+  }
+}
+
 #if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
 enum class CudaLmDefaults {
   Backend,
@@ -200,6 +276,91 @@ gtsam::cuda::CudaSfmLevenbergMarquardtParams makeBalCudaLmParams(
   applyBalBenchmarkLmSettings(params);
   params.linearSolver = cudaLinearSolverType(solverOption);
   return params;
+}
+
+struct GpuLinearizationBenchmark {
+  TimingSamples projectionLinearization;
+  TimingSamples hessianDiagonal;
+  TimingSamples denseSchurCombined;
+  size_t observations = 0;
+  size_t deltaDimension = 0;
+};
+
+GpuLinearizationBenchmark benchmarkGpuLinearization(
+    const SfmData& db, size_t repeats) {
+  gtsam::cuda::CudaContext context;
+  const auto values = gtsam::cuda::PackSfmValues(db, context.stream());
+  const auto batch =
+      gtsam::cuda::CudaSfmProjectionBatch::FromSfmData(db, context.stream());
+  context.synchronize();
+
+  GpuLinearizationBenchmark benchmark;
+  benchmark.observations = batch.numObservations();
+  benchmark.projectionLinearization.seconds.reserve(repeats);
+  benchmark.hessianDiagonal.seconds.reserve(repeats);
+  benchmark.denseSchurCombined.seconds.reserve(repeats);
+
+  gtsam::cuda::CudaSfmProjectionLinearization linearization;
+  gtsam::cuda::LinearizeCudaSfmProjectionBatch(
+      values, batch, &linearization, context.stream());
+  context.synchronize();
+  for (size_t repeat = 0; repeat < repeats; ++repeat) {
+    const auto start = std::chrono::steady_clock::now();
+    gtsam::cuda::LinearizeCudaSfmProjectionBatch(
+        values, batch, &linearization, context.stream());
+    context.synchronize();
+    const auto end = std::chrono::steady_clock::now();
+    benchmark.projectionLinearization.seconds.push_back(
+        std::chrono::duration<double>(end - start).count());
+  }
+
+  const auto params = makeBalCudaLmParams(CudaLinearSolverOption::DenseSchur,
+                                          CudaLmDefaults::Graph);
+  gtsam::cuda::CudaDeviceArray<double> dampingDiagonal;
+  if (params.diagonalDamping) {
+    const auto computeHessianDiagonal = [&]() {
+      gtsam::cuda::ComputeCudaSfmHessianDiagonal(
+          values, batch, static_cast<int>(db.numberCameras()),
+          params.minDiagonal, params.maxDiagonal, &dampingDiagonal,
+          context.stream());
+    };
+    computeHessianDiagonal();
+    context.synchronize();
+    for (size_t repeat = 0; repeat < repeats; ++repeat) {
+      const auto start = std::chrono::steady_clock::now();
+      computeHessianDiagonal();
+      context.synchronize();
+      const auto end = std::chrono::steady_clock::now();
+      benchmark.hessianDiagonal.seconds.push_back(
+          std::chrono::duration<double>(end - start).count());
+    }
+  }
+
+  gtsam::cuda::CudaSfmDenseSchurSolver solver;
+  gtsam::cuda::CudaDeviceArray<double> delta;
+  const auto solveOnce = [&]() {
+    if (params.diagonalDamping) {
+      solver.solve(values, batch, static_cast<int>(db.numberCameras()),
+                   params.lambdaInitial, dampingDiagonal, &delta,
+                   context.stream());
+    } else {
+      solver.solve(values, batch, static_cast<int>(db.numberCameras()),
+                   params.lambdaInitial, &delta, context.stream());
+    }
+  };
+
+  solveOnce();
+  context.synchronize();
+  for (size_t repeat = 0; repeat < repeats; ++repeat) {
+    const auto start = std::chrono::steady_clock::now();
+    solveOnce();
+    context.synchronize();
+    const auto end = std::chrono::steady_clock::now();
+    benchmark.denseSchurCombined.seconds.push_back(
+        std::chrono::duration<double>(end - start).count());
+  }
+  benchmark.deltaDimension = delta.size();
+  return benchmark;
 }
 
 struct CudaBackendLmRun {
@@ -618,6 +779,21 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
       options.cudaLmGraph = true;
       continue;
     }
+    if (strcmp(argv[i], "--linearization-benchmark") == 0) {
+      options.linearizationBenchmark = true;
+      continue;
+    }
+    if (strcmp(argv[i], "--linearization-repeats") == 0) {
+      options.linearizationRepeatsSpecified = true;
+      const std::string value = nextArg(i);
+      size_t consumed = 0;
+      options.linearizationRepeats = std::stoul(value, &consumed);
+      if (consumed != value.size()) {
+        throw runtime_error(
+            "--linearization-repeats must be a positive integer");
+      }
+      continue;
+    }
     if (strcmp(argv[i], "--cuda-linear-solver") == 0) {
       const char* value = nextArg(i);
       options.cudaLinearSolverSpecified = true;
@@ -734,6 +910,20 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
   if (options.cudaLmGraph && options.benchmarkActionJson) {
     throw runtime_error(usage());
   }
+  if (options.linearizationBenchmark &&
+      (options.profile || options.cudaStructureOnly || options.cudaLm ||
+       options.cudaLmGraph || options.benchmarkActionJson || gnc)) {
+    throw runtime_error(
+        "--linearization-benchmark cannot be combined with another run mode");
+  }
+  if (options.linearizationRepeatsSpecified &&
+      !options.linearizationBenchmark) {
+    throw runtime_error(
+        "--linearization-repeats requires --linearization-benchmark");
+  }
+  if (options.linearizationBenchmark && options.linearizationRepeats == 0) {
+    throw runtime_error("--linearization-repeats must be positive");
+  }
   if (options.cudaLm && options.cudaStructureOnly) {
     throw runtime_error(usage());
   }
@@ -751,10 +941,9 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
   if (gncOptionSpecified && !gnc) {
     throw runtime_error("--gnc-* options require --gnc cpu|cuda");
   }
-  if (gnc && projectionNoiseSpecified) {
+  if ((gnc || options.linearizationBenchmark) && projectionNoiseSpecified) {
     throw runtime_error(
-        "--projection-noise cannot be combined with --gnc: GNC replaces "
-        "robust noise with its own weighting");
+        "--projection-noise cannot be combined with this run mode");
   }
   if (projectionNoiseSpecified && options.cudaLm) {
     throw runtime_error(
@@ -780,7 +969,7 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
   }
 
   if (options.filenames.empty()) {
-    if (options.profile) {
+    if (options.profile || options.linearizationBenchmark) {
       options.filenames = {findExampleDataFile(kProfileDataset)};
     } else if (options.benchmarkActionJson || gnc) {
       options.filenames = {findExampleDataFile(kDefaultBenchmarkDataset)};
@@ -1253,6 +1442,68 @@ int main(int argc, char* argv[]) {
         db, options.cudaGraphKind, options.batchChunkSize);
     Values initial = buildGeneralSfmInitial(db);
 
+    if (options.linearizationBenchmark) {
+      if (!gtsamBuiltWithTbb()) {
+        throw std::runtime_error(
+            "--linearization-benchmark requires GTSAM_USE_TBB");
+      }
+      std::cout << std::setprecision(9);
+      std::cout << "  SFM linearization feasibility benchmark\n";
+      std::cout << "  graph representation: raw GeneralSFMFactor\n";
+      std::cout << "  GTSAM_USE_TBB: "
+                << (gtsamBuiltWithTbb() ? "yes" : "no") << "\n";
+      std::cout << "  cameras: " << db.numberCameras()
+                << ", points: " << db.numberTracks()
+                << ", observations/factors: " << graph.size()
+                << ", values: " << initial.size() << "\n";
+      std::cout << "  warm-up calls per path: 1 (not timed)\n";
+      std::cout << "  measured repeats: " << options.linearizationRepeats
+                << "\n";
+
+      const CpuLinearizationBenchmark cpu = benchmarkCpuLinearization(
+          graph, initial, options.linearizationRepeats);
+      std::cout << "  CPU output linear factors: " << cpu.linearizedFactors
+                << "\n";
+      printTimingSamples("CPU/TBB graph.linearize()", cpu.timing,
+                         graph.size(), "factors");
+
+#if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
+      const GpuLinearizationBenchmark gpu =
+          benchmarkGpuLinearization(db, options.linearizationRepeats);
+      std::cout << "  GPU output observations: " << gpu.observations
+                << ", delta dimension: " << gpu.deltaDimension << "\n";
+      printTimingSamples("GPU projection residual/Jacobian generation",
+                         gpu.projectionLinearization, gpu.observations,
+                         "observations");
+      if (!gpu.hessianDiagonal.seconds.empty()) {
+        printTimingSamples("GPU Hessian diagonal generation",
+                           gpu.hessianDiagonal, gpu.observations,
+                           "observations");
+      }
+      printTimingSamples(
+          "GPU dense Schur combined (linearize + Schur/Hessian + solve + "
+          "recover; precomputed damping diagonal)",
+          gpu.denseSchurCombined, gpu.observations, "observations");
+      std::cout << "  comparison\n";
+      std::cout << "    CPU linearize / GPU projection linearize: "
+                << cpu.timing.mean() / gpu.projectionLinearization.mean()
+                << "x\n";
+      if (!gpu.hessianDiagonal.seconds.empty()) {
+        std::cout << "    CPU linearize / GPU Hessian diagonal: "
+                  << cpu.timing.mean() / gpu.hessianDiagonal.mean() << "x\n";
+      }
+      std::cout << "    CPU linearize / GPU dense Schur combined: "
+                << cpu.timing.mean() / gpu.denseSchurCombined.mean()
+                << "x\n";
+#else
+      throw std::runtime_error(
+          "--linearization-benchmark requires configuring with "
+          "GTSAM_ENABLE_CUDA=ON and GTSAM_ENABLE_CUDSS=ON");
+#endif
+      std::cout << std::setprecision(6);
+      continue;
+    }
+
     Ordering ordering;
     if (gUseSchur) {
       ordering = createSchurOrdering(db, false);
@@ -1302,7 +1553,8 @@ int main(int argc, char* argv[]) {
     }
   }
   if (!options.profile && !options.cudaStructureOnly && !options.cudaLm &&
-      !options.cudaLmGraph && options.gnc.backend == GncBackend::None) {
+      !options.cudaLmGraph && !options.linearizationBenchmark &&
+      options.gnc.backend == GncBackend::None) {
     std::cout
         << "\n| Dataset | Legacy (Cholesky) s | New (Solver) s | Speedup |\n";
     std::cout << "| --- | --- | --- | --- |\n";
@@ -1315,7 +1567,8 @@ int main(int argc, char* argv[]) {
   }
 
   if (options.benchmarkActionJson && !options.cudaStructureOnly &&
-      !options.cudaLm && !options.cudaLmGraph) {
+      !options.cudaLm && !options.cudaLmGraph &&
+      !options.linearizationBenchmark) {
     if (rows.empty()) {
       throw runtime_error("No benchmark rows found to write.");
     }
