@@ -387,7 +387,7 @@ const backendRows = [
 {
   const slide = pptx.addSlide();
   addBg(slide);
-  addTitle(slide, "Inside CUDA backend: 0.138 s", "Measured hierarchy within the specialized backend.");
+  addTitle(slide, "Inside the CUDA backend: 0.138 s", "Measured hierarchy within the specialized backend.");
   addBadge(slide, "Measured", 11.65, 0.48, C.teal);
   addStackedBar(slide, backendRows.map((row) => ({ ...row, pct: (row.value / 137.542 * 100).toFixed(1), short: `${(row.value / 137.542 * 100).toFixed(0)}%` })), 0.72, 1.52, 11.9, 0.56, 137.542, 1.0);
   addTable(slide, [
