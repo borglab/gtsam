@@ -356,7 +356,7 @@ const backendRows = [
 {
   const slide = pptx.addSlide();
   addBg(slide);
-  addTitle(slide, "Inside optimize(): 0.376 s", "Measured components; percentages below are of the 426.223 ms whole graph API.");
+  addTitle(slide, "Inside optimize(): 0.376 s", "Measured components. Stacked bar: % of optimize(); table: % of Graph API.");
   addBadge(slide, "Measured", 11.65, 0.48, C.teal);
   const optimizeStack = optimizeRows.map((row) => ({ ...row, pct: (row.value / apiTotal * 100).toFixed(1), short: row.value > 8 ? `${(row.value / 376.192 * 100).toFixed(0)}%` : "" }));
   addStackedBar(slide, optimizeStack, 0.72, 1.62, 11.9, 0.58, 376.192, 1.25);
@@ -401,7 +401,7 @@ const backendRows = [
   slide.addText("The largest setup detail is CPU construction of the projection batch.", { x: 8.0, y: 3.16, w: 4.2, h: 0.15, margin: 0, fontSize: 12.5, color: C.ink, fit: "shrink" });
   addPanel(slide, 0.72, 4.75, 5.95, 1.37, C.green, C.paleGreen);
   slide.addText("Solve loop: 29.968 ms", { x: 0.98, y: 5.0, w: 2.7, h: 0.2, margin: 0, fontSize: 15, bold: true, color: C.green });
-  slide.addText("Dense Schur 23.009 ms | damping diagonal 2.979 ms | linearized error change 3.655 ms", {
+  slide.addText("Dense Schur 23.009 ms | Hessian / damping diagonal 2.979 ms | linearized error change 3.655 ms", {
     x: 0.98, y: 5.38, w: 5.2, h: 0.28, margin: 0, fontSize: 13.5, color: C.ink, fit: "shrink",
   });
   addPanel(slide, 6.95, 4.75, 5.55, 1.37, C.amber, C.paleAmber);
@@ -433,7 +433,7 @@ const backendRows = [
     ["Values merge", "67.464 ms", "15.83%"],
     ["Converted-data destruction", "30.247 ms", "7.10%"],
     ["Solve loop", "29.968 ms", "7.03%"],
-    ["Pure H2D + D2H", "1.936 ms", "0.49%"],
+    ["Pure H2D + D2H", "1.936 ms", "0.45%"],
   ], 0.75, 4.1, [4.0, 1.75, 1.75], { rowH: 0.4, fontSize: 12.3, headerFill: C.navy });
   addPanel(slide, 8.9, 1.45, 3.55, 3.35, C.coral, C.paleCoral);
   slide.addText("Core conclusion", { x: 9.2, y: 1.8, w: 2.95, h: 0.22, margin: 0, fontSize: 16, bold: true, color: C.coral, align: "center" });
@@ -520,8 +520,8 @@ const backendRows = [
   addTitle(slide, "Current assessment and next work", "Measured evidence justifies a hybrid baseline experiment, not a performance claim.", true);
   addPanel(slide, 0.72, 1.55, 5.7, 2.7, C.teal, "263956");
   slide.addText("Current assessment", { x: 1.0, y: 1.9, w: 5.1, h: 0.24, margin: 0, fontSize: 19, bold: true, color: C.teal, align: "center" });
-  slide.addText("CPU linearization, retraction, and trial error are small enough to justify implementing a hybrid baseline. Expected benefit: generality and removal of specialized graph conversion, not a proven end-to-end speedup.", {
-    x: 1.03, y: 2.42, w: 5.05, h: 1.07, margin: 0, fontSize: 17, bold: true, color: C.white, align: "center", valign: "mid", fit: "shrink",
+  slide.addText("Separately timed CPU nonlinear subtotal is tens of milliseconds per candidate versus the prior 0.426 s three-iteration API run. Scopes differ, so this supports feasibility, not a speedup claim. Expected benefit: generality and removal of specialized graph conversion.", {
+    x: 1.03, y: 2.32, w: 5.05, h: 1.22, margin: 0, fontSize: 16, bold: true, color: C.white, align: "center", valign: "mid", fit: "shrink",
   });
   slide.addText("Measured conclusion", { x: 1.03, y: 3.75, w: 5.05, h: 0.17, margin: 0, fontSize: 12, color: "D9E5EA", align: "center" });
   slide.addText("Next work", { x: 6.95, y: 1.7, w: 4.8, h: 0.25, margin: 0, fontSize: 19, bold: true, color: C.white });
