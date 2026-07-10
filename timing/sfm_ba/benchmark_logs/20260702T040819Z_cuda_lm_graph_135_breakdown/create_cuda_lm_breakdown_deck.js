@@ -299,13 +299,13 @@ const backendRows = [
   addTitle(slide, "Current implementation", "The public graph API adapts generic GTSAM objects into a specialized CUDA SFM backend.");
   addBadge(slide, "Measured", 11.65, 0.48, C.teal);
   addPipeline(slide, [
-    { title: "NonlinearFactorGraph + Values", note: "Generic graph, current variable state, and factor ownership.", color: C.navy, fill: "F1F4F8" },
+    { title: "NonlinearFactorGraph + Values", note: "Generic factors and current variable estimates.", color: C.navy, fill: "F1F4F8" },
     { title: "Specialized graph conversion", note: "Extract SFM factors, keys, measurements, cameras, and points into host arrays.", color: C.teal },
     { title: "CUDA SFM arrays / backend", note: "Pack, upload, run LM with dense Schur, and retain packed result arrays.", color: C.green, fill: C.paleGreen },
     { title: "Downloaded Values", note: "Rebuild optimized camera and point Values from host-side result arrays.", color: C.amber, fill: C.paleAmber },
     { title: "CPU merge", note: "Merge SFM results into the original Values and update optimizer state.", color: C.coral, fill: C.paleCoral },
   ], 0.6, 1.55, 12.1, 2.15);
-  slide.addText("Boundary responsibilities", {
+  slide.addText("Work performed at each representation boundary", {
     x: 0.72, y: 4.16, w: 4.2, h: 0.23, margin: 0,
     fontSize: 17, bold: true, color: C.ink,
   });
@@ -320,7 +320,7 @@ const backendRows = [
     fontSize: 16, bold: true, color: C.teal, fit: "shrink",
   });
   addFooter(slide, 2);
-  slide.addNotes("About 60 seconds. Start from the left: the user-facing input is a normal GTSAM graph and Values, with generic factor ownership and the current variable state. The specialized path scans that graph, selects the SFM subset, and creates arrays for cameras, points, measurements, and key maps. CUDA operates on those arrays, not on arbitrary GTSAM factors. After the backend returns, optimized arrays must be rebuilt as Values and merged into the original state. I am calling out each boundary because the timing includes this integration work, not only the GPU kernel.");
+  slide.addNotes("About 60 seconds. Start from the left: the user-facing input is a normal GTSAM graph containing generic factors, together with the current variable estimates in Values. The specialized path scans that graph, selects the SFM subset, and creates arrays for cameras, points, measurements, and key maps. CUDA operates on those arrays, not on arbitrary GTSAM factors. After the backend returns, optimized arrays must be rebuilt as Values and merged into the original state. I am calling out each representation boundary because the timing includes this integration work, not only the GPU kernel.");
 }
 
 // Slide 3
