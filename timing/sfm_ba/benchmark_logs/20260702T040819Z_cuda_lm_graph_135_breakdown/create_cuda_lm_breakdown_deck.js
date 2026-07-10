@@ -300,27 +300,21 @@ const backendRows = [
   addBadge(slide, "Measured", 11.65, 0.48, C.teal);
   addPipeline(slide, [
     { title: "NonlinearFactorGraph + Values", note: "Generic factors and current variable estimates.", color: C.navy, fill: "F1F4F8" },
-    { title: "Specialized graph conversion", note: "Extract SFM factors, keys, measurements, cameras, and points into host arrays.", color: C.teal },
-    { title: "CUDA SFM arrays / backend", note: "Pack, upload, run LM with dense Schur, and retain packed result arrays.", color: C.green, fill: C.paleGreen },
-    { title: "Downloaded Values", note: "Rebuild optimized camera and point Values from host-side result arrays.", color: C.amber, fill: C.paleAmber },
+    { title: "SFM host arrays", note: "Extract supported factors, keys, measurements, cameras, and points on the CPU.", color: C.teal },
+    { title: "GPU backend", note: "Allocate and copy arrays, run LM with dense Schur, and retain packed results.", color: C.green, fill: C.paleGreen },
+    { title: "Downloaded result arrays", note: "Copy optimized camera and point arrays back to the CPU and rebuild typed Values.", color: C.amber, fill: C.paleAmber },
     { title: "CPU merge", note: "Merge SFM results into the original Values and update optimizer state.", color: C.coral, fill: C.paleCoral },
   ], 0.6, 1.55, 12.1, 2.15);
-  slide.addText("Work performed at each representation boundary", {
-    x: 0.72, y: 4.16, w: 4.2, h: 0.23, margin: 0,
-    fontSize: 17, bold: true, color: C.ink,
+  slide.addText("What the timing includes", {
+    x: 0.72, y: 4.38, w: 5.0, h: 0.28, margin: 0,
+    fontSize: 18, bold: true, color: C.teal,
   });
-  addTable(slide, [
-    ["Boundary", "What it does", "Why it matters"],
-    ["Generic to SFM", "CPU representation conversion", "The CUDA backend does not consume arbitrary GTSAM factors."],
-    ["SFM to device", "Array packing and backend setup", "Includes host builds as well as GPU work."],
-    ["Result to Values", "CPU reconstruction and merge", "Object/state handling is included in end-to-end time."],
-  ], 0.72, 4.66, [2.15, 3.85, 5.9], { rowH: 0.47, fontSize: 12.2, headerFill: C.navy, alignments: ["left", "left", "left"] });
-  slide.addText("Framing: this profile measures an integration path, not only GPU kernel time.", {
-    x: 0.72, y: 6.72, w: 8.9, h: 0.26, margin: 0,
-    fontSize: 16, bold: true, color: C.teal, fit: "shrink",
+  slide.addText("The measured API includes CPU graph conversion, GPU setup and solving, and reconstruction of the final GTSAM Values.", {
+    x: 0.72, y: 4.88, w: 11.5, h: 0.9, margin: 0,
+    fontSize: 24, bold: true, color: C.ink, breakLine: false, fit: "shrink",
   });
   addFooter(slide, 2);
-  slide.addNotes("About 60 seconds. Start from the left: the user-facing input is a normal GTSAM graph containing generic factors, together with the current variable estimates in Values. The specialized path scans that graph, selects the SFM subset, and creates arrays for cameras, points, measurements, and key maps. CUDA operates on those arrays, not on arbitrary GTSAM factors. After the backend returns, optimized arrays must be rebuilt as Values and merged into the original state. I am calling out each representation boundary because the timing includes this integration work, not only the GPU kernel.");
+  slide.addNotes("About 60 seconds. Start from the left: the user-facing input is a normal GTSAM graph containing generic factors, together with the current variable estimates in Values. The specialized path scans that graph, selects the supported SFM subset, and creates CPU arrays for cameras, points, measurements, and key maps. Those arrays are allocated and copied to the GPU for LM with dense Schur. After the backend returns, the optimized camera and point arrays are copied back, rebuilt as typed GTSAM Values, and merged into the original state. The main point is that the measured API includes this entire integration path, not only GPU kernel time.");
 }
 
 // Slide 3
