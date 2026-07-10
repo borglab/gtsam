@@ -405,7 +405,7 @@ const backendRows = [
     x: 0.98, y: 5.38, w: 5.2, h: 0.28, margin: 0, fontSize: 13.5, color: C.ink, fit: "shrink",
   });
   addPanel(slide, 6.95, 4.75, 5.55, 1.37, C.amber, C.paleAmber);
-  slide.addText("Download Values: 40.030 ms", { x: 7.2, y: 5.0, w: 3.1, h: 0.2, margin: 0, fontSize: 15, bold: true, color: C.amber });
+  slide.addText("Download Values: 40.030 ms", { x: 7.2, y: 5.0, w: 4.9, h: 0.2, margin: 0, fontSize: 15, bold: true, color: C.amber, fit: "shrink" });
   slide.addText("Raw D2H 0.615 ms | Values rebuild 15.537 ms | remaining host allocation, wrapper, destruction, and tail 23.878 ms", {
     x: 7.2, y: 5.35, w: 4.9, h: 0.35, margin: 0, fontSize: 12.6, color: C.ink, fit: "shrink",
   });
@@ -475,11 +475,11 @@ const backendRows = [
   });
   slide.addText([
     { text: "Sources: " },
-    { text: "https://ceres-solver.readthedocs.io/latest/installation.html", options: { hyperlink: { url: "https://ceres-solver.readthedocs.io/latest/installation.html" }, color: C.blue, underline: true } },
+    { text: "Ceres installation", options: { hyperlink: { url: "https://ceres-solver.readthedocs.io/latest/installation.html" }, color: C.blue, underline: true } },
     { text: " | " },
-    { text: "https://ceres-solver.readthedocs.io/latest/nnls_solving.html", options: { hyperlink: { url: "https://ceres-solver.readthedocs.io/latest/nnls_solving.html" }, color: C.blue, underline: true } },
+    { text: "Ceres nonlinear least-squares", options: { hyperlink: { url: "https://ceres-solver.readthedocs.io/latest/nnls_solving.html" }, color: C.blue, underline: true } },
   ], {
-    x: 0.72, y: 6.55, w: 11.8, h: 0.17, margin: 0, fontSize: 9.5, color: C.muted, fit: "shrink",
+    x: 0.72, y: 6.55, w: 11.8, h: 0.17, margin: 0, fontSize: 10.5, color: C.muted, fit: "shrink",
   });
   addFooter(slide, 7);
   slide.addNotes("About 90 seconds. This is a proposed baseline architecture. I call it Ceres-style separation because the useful idea is to separate nonlinear residual and Jacobian evaluation from a selectable linear-algebra backend. I am not claiming that every Ceres path has this exact data flow. In this baseline, arbitrary GTSAM factors stay in the CPU and TBB nonlinear layer. The CPU fills reusable sparse numeric J or H buffers, the GPU receives the generic linear system, and only the solved delta returns. The CPU then performs manifold retraction, trial error, and the trust-region decision. This removes the current SFM-only graph conversion, while leaving the real costs of sparse packing and repeated upload to be measured.");
@@ -499,11 +499,11 @@ const backendRows = [
     ["Trial graph.error", "11.440 ms", "Evaluate trial state"],
     ["CPU subtotal", "54.088 ms", "Illustrative arithmetic, separately timed"],
   ], 0.72, 1.46, [3.7, 1.7, 3.25], { rowH: 0.45, fontSize: 13, headerFill: C.teal, alignments: ["left", "right", "left"] });
-  addPanel(slide, 9.0, 1.46, 3.48, 2.2, C.green, C.paleGreen);
-  slide.addText("Synthetic GPU reference", { x: 9.28, y: 1.78, w: 2.92, h: 0.2, margin: 0, fontSize: 15, bold: true, color: C.green, align: "center" });
-  slide.addText("8.051 ms", { x: 9.28, y: 2.18, w: 2.92, h: 0.34, margin: 0, fontSize: 27, bold: true, color: C.green, align: "center" });
+  addPanel(slide, 9.5, 1.46, 2.98, 2.2, C.green, C.paleGreen);
+  slide.addText("Synthetic GPU reference", { x: 9.75, y: 1.78, w: 2.48, h: 0.2, margin: 0, fontSize: 14, bold: true, color: C.green, align: "center", fit: "shrink" });
+  slide.addText("8.051 ms", { x: 9.75, y: 2.18, w: 2.48, h: 0.34, margin: 0, fontSize: 26, bold: true, color: C.green, align: "center", fit: "shrink" });
   slide.addText("Hessian diagonal + dense Schur combined - projection", {
-    x: 9.28, y: 2.74, w: 2.92, h: 0.4, margin: 0, fontSize: 12.2, color: C.ink, align: "center", fit: "shrink",
+    x: 9.75, y: 2.70, w: 2.48, h: 0.52, margin: 0, fontSize: 12.2, color: C.ink, align: "center", fit: "shrink",
   });
   addCallout(slide, "Synthetic lower bound", "62.139 ms", "54.088 ms CPU + 8.051 ms GPU", 0.72, 4.15, 3.7, C.green);
   addCallout(slide, "Estimated generic transfer", "+11.283 ms", "115.1 MB / 9.50 GiB/s", 4.75, 4.15, 3.55, C.amber);
@@ -520,8 +520,8 @@ const backendRows = [
 {
   const slide = pptx.addSlide();
   addBg(slide, true);
-  addBadge(slide, "Assessment", 11.35, 0.47, C.teal);
-  addBadge(slide, "Proposed", 12.25, 0.47, C.amber);
+  addBadge(slide, "Assessment", 10.65, 0.47, C.teal);
+  addBadge(slide, "Proposed", 12.12, 0.47, C.amber);
   addTitle(slide, "Current assessment and next work", "Measured evidence justifies a hybrid baseline experiment, not a performance claim.", true);
   addPanel(slide, 0.72, 1.55, 5.7, 2.7, C.teal, "263956");
   slide.addText("Current assessment", { x: 1.0, y: 1.9, w: 5.1, h: 0.24, margin: 0, fontSize: 19, bold: true, color: C.teal, align: "center" });
@@ -568,7 +568,7 @@ const backendRows = [
     ["backend", "Setup", "67.544", "15.85%", "49.11%"],
     ["backend", "Solve loop", "29.968", "7.03%", "21.79%"],
     ["backend", "Download Values", "40.030", "9.39%", "29.10%"],
-  ], 0.55, 1.35, [1.25, 4.65, 1.35, 1.55, 1.45], { rowH: 0.315, fontSize: 10.8, headerFill: C.navy });
+  ], 0.55, 1.35, [1.25, 4.65, 1.35, 1.55, 1.45], { rowH: 0.30, fontSize: 10.5, headerFill: C.navy });
   addTable(slide, [
     ["Detail", "Time", "Detail", "Time"],
     ["Setup: projection host build", "38.686 ms", "Solve: dense Schur", "23.009 ms"],
@@ -576,9 +576,9 @@ const backendRows = [
     ["Setup: allocate trial values", "11.769 ms", "Solve: linearized error change", "3.655 ms"],
     ["Transfer: total H2D memcpy", "1.526 ms", "Transfer: total D2H memcpy", "0.615 ms"],
     ["Download: Values rebuild", "15.537 ms", "Pure H2D + D2H", "2.141 ms"],
-  ], 0.55, 5.48, [3.85, 1.55, 3.85, 1.55], { rowH: 0.315, fontSize: 10.6, headerFill: C.teal });
+  ], 0.55, 5.12, [3.85, 1.55, 3.85, 1.55], { rowH: 0.30, fontSize: 10.4, headerFill: C.teal });
   slide.addText("Note: the 1.936 ms specialized pure-copy figure cited in the feasibility summary comes from a separate transfer-focused run; this appendix uses the dense-Schur breakdown above.", {
-    x: 0.55, y: 7.04, w: 11.8, h: 0.12, margin: 0, fontSize: 8.5, color: C.muted, fit: "shrink",
+    x: 0.55, y: 6.98, w: 11.8, h: 0.12, margin: 0, fontSize: 8.5, color: C.muted, fit: "shrink",
   });
   addFooter(slide, "A", "Appendix | dense-Schur breakdown");
   slide.addNotes("Appendix only. Use this table if asked for the timer hierarchy. It retains the top-level graph API, optimize, backend, setup, solve, and transfer rows. The final note distinguishes the dense-Schur run's transfer rows from the separate specialized transfer-focused timing cited in the feasibility summary.");
