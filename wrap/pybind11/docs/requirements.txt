@@ -23,8 +23,6 @@ idna==3.7
     # via requests
 imagesize==1.4.1
     # via sphinx
-importlib-metadata==8.7.0
-    # via sphinx
 jinja2==3.1.6
     # via
     #   myst-parser
@@ -53,7 +51,7 @@ requests==2.32.4
     # via sphinx
 snowballstemmer==2.2.0
     # via sphinx
-soupsieve==2.5
+soupsieve==2.8.4
     # via beautifulsoup4
 sphinx==7.2.6
     # via
@@ -87,5 +85,3 @@ sphinxcontrib-svg2pdfconverter==1.2.2
     # via -r requirements.in
 urllib3==2.5.0
     # via requests
-zipp==3.23.0
-    # via importlib-metadata
