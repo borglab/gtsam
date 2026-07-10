@@ -456,30 +456,20 @@ const backendRows = [
     { title: "GPU linear solve", note: "Normal equations plus cuDSS or dense solver.", color: C.green, fill: C.paleGreen },
     { title: "D2H delta", note: "Return only the solved update.", color: C.amber, fill: C.paleAmber },
     { title: "CPU Values retract + trial decision", note: "Manifold retract, error, and trust-region decision.", color: C.coral, fill: C.paleCoral },
-  ], 0.55, 1.54, 12.23, 2.16);
-  addPanel(slide, 0.72, 4.42, 5.7, 1.45, C.navy, "F1F4F8");
-  slide.addText("Why this is general", { x: 1.0, y: 4.72, w: 5.1, h: 0.22, margin: 0, fontSize: 17, bold: true, color: C.navy, align: "center" });
-  slide.addText("Arbitrary GTSAM factors remain in the CPU nonlinear layer. The GPU receives a generic linear system rather than an SFM-specific graph representation.", {
-    x: 1.0, y: 5.1, w: 5.1, h: 0.48, margin: 0, fontSize: 14.5, color: C.ink, align: "center", valign: "mid", fit: "shrink",
-  });
-  addPanel(slide, 6.75, 4.42, 5.75, 1.45, C.amber, C.paleAmber);
-  slide.addText("What remains a hypothesis", { x: 7.05, y: 4.72, w: 5.15, h: 0.22, margin: 0, fontSize: 17, bold: true, color: C.amber, align: "center" });
-  slide.addText("Sparse packing, repeated numeric upload, delta mapping, and end-to-end convergence must be measured in the actual prototype.", {
-    x: 7.05, y: 5.1, w: 5.15, h: 0.48, margin: 0, fontSize: 14.5, color: C.ink, align: "center", valign: "mid", fit: "shrink",
-  });
+  ], 0.55, 1.72, 12.23, 3.35);
   slide.addText("Sources (official Ceres documentation)", {
-    x: 0.72, y: 6.30, w: 4.0, h: 0.16, margin: 0, fontSize: 10.5, bold: true, color: C.muted,
+    x: 0.72, y: 5.78, w: 4.0, h: 0.16, margin: 0, fontSize: 10.5, bold: true, color: C.muted,
   });
   slide.addText("Ceres installation | ceres-solver.readthedocs.io/latest/installation.html", {
-    x: 0.72, y: 6.50, w: 11.8, h: 0.16, margin: 0, fontSize: 10.6, color: C.blue, underline: true,
+    x: 0.72, y: 6.00, w: 11.8, h: 0.16, margin: 0, fontSize: 10.6, color: C.blue, underline: true,
     hyperlink: { url: "https://ceres-solver.readthedocs.io/latest/installation.html" }, fit: "shrink",
   });
   slide.addText("Ceres nonlinear least-squares | ceres-solver.readthedocs.io/latest/nnls_solving.html", {
-    x: 0.72, y: 6.72, w: 11.8, h: 0.16, margin: 0, fontSize: 10.6, color: C.blue, underline: true,
+    x: 0.72, y: 6.24, w: 11.8, h: 0.16, margin: 0, fontSize: 10.6, color: C.blue, underline: true,
     hyperlink: { url: "https://ceres-solver.readthedocs.io/latest/nnls_solving.html" }, fit: "shrink",
   });
   addFooter(slide, 7);
-  slide.addNotes("About 90 seconds. This is a proposed baseline architecture. I call it Ceres-style separation because the useful idea is to separate nonlinear residual and Jacobian evaluation from a selectable linear-algebra backend. I am not claiming that every Ceres path has this exact data flow. In this baseline, arbitrary GTSAM factors stay in the CPU and TBB nonlinear layer. The CPU fills reusable sparse numeric J or H buffers, the GPU receives the generic linear system, and only the solved delta returns. The CPU then performs manifold retraction, trial error, and the trust-region decision. This removes the current SFM-only graph conversion, while leaving the real costs of sparse packing and repeated upload to be measured.");
+  slide.addNotes("About 90 seconds. This is the proposed baseline architecture. I call it Ceres-style separation because the useful idea is to separate nonlinear residual and Jacobian evaluation from a selectable linear-algebra backend. I am not claiming that every Ceres path has this exact data flow. The CPU and TBB layer evaluates factors and fills reusable sparse numeric J or H buffers. Those numeric values are uploaded for the GPU linear solve, and only the solved delta returns. The CPU then performs manifold retraction, trial error, and the trust-region decision.");
 }
 
 // Slide 8
