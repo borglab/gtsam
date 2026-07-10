@@ -306,7 +306,7 @@ const backendRows = [
     { title: "CPU merge", note: "Merge SFM results into the original Values and update optimizer state.", color: C.coral, fill: C.paleCoral },
   ], 0.6, 1.55, 12.1, 2.15);
   slide.addText("Boundary responsibilities", {
-    x: 0.72, y: 4.25, w: 3.2, h: 0.23, margin: 0,
+    x: 0.72, y: 4.16, w: 4.2, h: 0.23, margin: 0,
     fontSize: 17, bold: true, color: C.ink,
   });
   addTable(slide, [
@@ -314,9 +314,9 @@ const backendRows = [
     ["Generic to SFM", "CPU representation conversion", "The CUDA backend does not consume arbitrary GTSAM factors."],
     ["SFM to device", "Array packing and backend setup", "Includes host builds as well as GPU work."],
     ["Result to Values", "CPU reconstruction and merge", "Object/state handling is included in end-to-end time."],
-  ], 0.72, 4.62, [2.15, 3.85, 5.9], { rowH: 0.47, fontSize: 12.2, headerFill: C.navy, alignments: ["left", "left", "left"] });
+  ], 0.72, 4.66, [2.15, 3.85, 5.9], { rowH: 0.47, fontSize: 12.2, headerFill: C.navy, alignments: ["left", "left", "left"] });
   slide.addText("Framing: this profile measures an integration path, not only GPU kernel time.", {
-    x: 0.72, y: 6.62, w: 8.9, h: 0.26, margin: 0,
+    x: 0.72, y: 6.72, w: 8.9, h: 0.26, margin: 0,
     fontSize: 16, bold: true, color: C.teal, fit: "shrink",
   });
   addFooter(slide, 2);
@@ -473,13 +473,16 @@ const backendRows = [
   slide.addText("Sparse packing, repeated numeric upload, delta mapping, and end-to-end convergence must be measured in the actual prototype.", {
     x: 7.05, y: 5.1, w: 5.15, h: 0.48, margin: 0, fontSize: 14.5, color: C.ink, align: "center", valign: "mid", fit: "shrink",
   });
-  slide.addText([
-    { text: "Sources: " },
-    { text: "Ceres installation", options: { hyperlink: { url: "https://ceres-solver.readthedocs.io/latest/installation.html" }, color: C.blue, underline: true } },
-    { text: " | " },
-    { text: "Ceres nonlinear least-squares", options: { hyperlink: { url: "https://ceres-solver.readthedocs.io/latest/nnls_solving.html" }, color: C.blue, underline: true } },
-  ], {
-    x: 0.72, y: 6.55, w: 11.8, h: 0.17, margin: 0, fontSize: 10.5, color: C.muted, fit: "shrink",
+  slide.addText("Sources (official Ceres documentation)", {
+    x: 0.72, y: 6.30, w: 4.0, h: 0.16, margin: 0, fontSize: 10.5, bold: true, color: C.muted,
+  });
+  slide.addText("Ceres installation | ceres-solver.readthedocs.io/latest/installation.html", {
+    x: 0.72, y: 6.50, w: 11.8, h: 0.16, margin: 0, fontSize: 10.6, color: C.blue, underline: true,
+    hyperlink: { url: "https://ceres-solver.readthedocs.io/latest/installation.html" }, fit: "shrink",
+  });
+  slide.addText("Ceres nonlinear least-squares | ceres-solver.readthedocs.io/latest/nnls_solving.html", {
+    x: 0.72, y: 6.72, w: 11.8, h: 0.16, margin: 0, fontSize: 10.6, color: C.blue, underline: true,
+    hyperlink: { url: "https://ceres-solver.readthedocs.io/latest/nnls_solving.html" }, fit: "shrink",
   });
   addFooter(slide, 7);
   slide.addNotes("About 90 seconds. This is a proposed baseline architecture. I call it Ceres-style separation because the useful idea is to separate nonlinear residual and Jacobian evaluation from a selectable linear-algebra backend. I am not claiming that every Ceres path has this exact data flow. In this baseline, arbitrary GTSAM factors stay in the CPU and TBB nonlinear layer. The CPU fills reusable sparse numeric J or H buffers, the GPU receives the generic linear system, and only the solved delta returns. The CPU then performs manifold retraction, trial error, and the trust-region decision. This removes the current SFM-only graph conversion, while leaving the real costs of sparse packing and repeated upload to be measured.");
@@ -492,25 +495,30 @@ const backendRows = [
   addTitle(slide, "Baseline feasibility timing", "Separately timed, synthetic per-candidate lower-bound arithmetic. Repeat-0-excluded sensitivity view.");
   addBadge(slide, "Measured", 10.35, 0.48, C.teal);
   addBadge(slide, "Estimated", 11.45, 0.48, C.amber);
+  slide.addText("MEASURED CPU OBSERVATIONS", { x: 0.72, y: 1.28, w: 3.5, h: 0.18, margin: 0, fontSize: 12, bold: true, color: C.teal });
   addTable(slide, [
-    ["Measured CPU operation", "Mean", "Role"],
+    ["CPU operation", "Mean", "What was timed"],
     ["CPU / TBB linearize", "28.316 ms", "Factor evaluation and linearization"],
     ["Values retract", "14.332 ms", "Apply a prebuilt compatible delta"],
     ["Trial graph.error", "11.440 ms", "Evaluate trial state"],
-    ["CPU subtotal", "54.088 ms", "Illustrative arithmetic, separately timed"],
-  ], 0.72, 1.46, [3.7, 1.7, 3.25], { rowH: 0.45, fontSize: 13, headerFill: C.teal, alignments: ["left", "right", "left"] });
-  addPanel(slide, 9.5, 1.46, 2.98, 2.2, C.green, C.paleGreen);
-  slide.addText("Synthetic GPU reference", { x: 9.75, y: 1.78, w: 2.48, h: 0.2, margin: 0, fontSize: 14, bold: true, color: C.green, align: "center", fit: "shrink" });
-  slide.addText("8.051 ms", { x: 9.75, y: 2.18, w: 2.48, h: 0.34, margin: 0, fontSize: 26, bold: true, color: C.green, align: "center", fit: "shrink" });
+  ], 0.72, 1.52, [3.45, 1.7, 3.25], { rowH: 0.47, fontSize: 13, headerFill: C.teal, alignments: ["left", "right", "left"] });
+  addPanel(slide, 9.45, 1.52, 3.03, 1.88, C.amber, C.paleAmber);
+  addBadge(slide, "DERIVED COMPONENT", 9.73, 1.76, C.amber);
+  slide.addText("Synthetic GPU component", { x: 9.73, y: 2.18, w: 2.47, h: 0.18, margin: 0, fontSize: 13.5, bold: true, color: C.amber, align: "center", fit: "shrink" });
+  slide.addText("8.051 ms", { x: 9.73, y: 2.44, w: 2.47, h: 0.31, margin: 0, fontSize: 24, bold: true, color: C.amber, align: "center", fit: "shrink" });
   slide.addText("Hessian diagonal + dense Schur combined - projection", {
-    x: 9.75, y: 2.70, w: 2.48, h: 0.52, margin: 0, fontSize: 12.2, color: C.ink, align: "center", fit: "shrink",
+    x: 9.73, y: 2.86, w: 2.47, h: 0.28, margin: 0, fontSize: 11.4, color: C.ink, align: "center", fit: "shrink",
   });
-  addCallout(slide, "Synthetic lower bound", "62.139 ms", "54.088 ms CPU + 8.051 ms GPU", 0.72, 4.15, 3.7, C.green);
-  addCallout(slide, "Estimated generic transfer", "+11.283 ms", "115.1 MB / 9.50 GiB/s", 4.75, 4.15, 3.55, C.amber);
-  addCallout(slide, "Lower bound + estimate", "73.422 ms", "still not end-to-end", 8.63, 4.15, 3.7, C.coral);
-  addPanel(slide, 0.72, 5.63, 11.6, 0.72, C.coral, C.paleCoral);
+  addPanel(slide, 0.72, 3.66, 11.6, 0.48, C.amber, C.paleAmber);
+  slide.addText("DERIVED, NOT END-TO-END | arithmetic combines separately timed components", {
+    x: 0.98, y: 3.82, w: 11.05, h: 0.16, margin: 0, fontSize: 14, bold: true, color: C.amber, align: "center", fit: "shrink",
+  });
+  addCallout(slide, "DERIVED lower bound", "62.139 ms", "54.088 ms CPU + 8.051 ms GPU", 0.72, 4.42, 3.7, C.amber);
+  addCallout(slide, "ESTIMATED generic transfer", "+11.283 ms", "115.1 MB / 9.50 GiB/s", 4.75, 4.42, 3.55, C.blue);
+  addCallout(slide, "DERIVED + estimate", "73.422 ms", "still not end-to-end", 8.63, 4.42, 3.7, C.coral);
+  addPanel(slide, 0.72, 5.88, 11.6, 0.74, C.coral, C.paleCoral);
   slide.addText("Caveat: not end-to-end. Sparse packing/layout, repeated upload, delta mapping, and convergence remain unmeasured. Do not compare these per-candidate synthetic figures directly to the 426.223 ms three-iteration API total.", {
-    x: 0.98, y: 5.86, w: 11.05, h: 0.22, margin: 0, fontSize: 13.2, bold: true, color: C.ink, align: "center", fit: "shrink",
+    x: 0.98, y: 6.09, w: 11.05, h: 0.28, margin: 0, fontSize: 13.8, bold: true, color: C.ink, align: "center", fit: "shrink",
   });
   addFooter(slide, 8, "Hybrid feasibility | Dubrovnik 135");
   slide.addNotes("About 90 seconds. These numbers are deliberately separate from the current API profile. Each CPU operation was timed in its own loop, and the GPU reference is synthetic arithmetic from separately timed components. Excluding repeat zero gives 54.088 milliseconds for the illustrative CPU subtotal and 8.051 milliseconds for the synthetic GPU reference, or 62.139 milliseconds. The 115.1 MB generic Jacobian-transfer estimate is 11.283109 milliseconds before rounding, displayed as 11.283 milliseconds. Adding the unrounded estimate gives the displayed 73.422 millisecond combination. Neither number is an end-to-end runtime, and neither should be visually compared against the three-iteration 426.223 millisecond API total. Sparse packing, repeated upload, delta mapping, and convergence still need the actual prototype measurement.");
@@ -530,6 +538,7 @@ const backendRows = [
   });
   slide.addText("Measured conclusion", { x: 1.03, y: 3.75, w: 5.05, h: 0.17, margin: 0, fontSize: 12, color: "D9E5EA", align: "center" });
   slide.addText("Next work", { x: 6.95, y: 1.7, w: 4.8, h: 0.25, margin: 0, fontSize: 19, bold: true, color: C.white });
+  slide.addText("TEAL: ARCHITECTURE PATH", { x: 7.35, y: 2.08, w: 4.9, h: 0.15, margin: 0, fontSize: 11.5, bold: true, color: C.teal });
   const nextSteps = [
     "Cache sparse structure.",
     "Direct TBB numeric fill.",
@@ -539,12 +548,15 @@ const backendRows = [
     "Measure full LM convergence.",
   ];
   nextSteps.forEach((step, index) => {
-    const y = 2.18 + index * 0.62;
+    const y = index < 3 ? 2.36 + index * 0.55 : 4.22 + (index - 3) * 0.55;
+    if (index === 3) {
+      slide.addText("AMBER: VALIDATION & EVALUATION", { x: 7.35, y: 3.94, w: 4.9, h: 0.15, margin: 0, fontSize: 11.5, bold: true, color: C.amber });
+    }
     slide.addShape(pptx.ShapeType.rect, { x: 6.98, y: y + 0.08, w: 0.17, h: 0.17, fill: { color: index < 3 ? C.teal : C.amber }, line: { color: index < 3 ? C.teal : C.amber } });
-    slide.addText(step, { x: 7.35, y, w: 4.9, h: 0.27, margin: 0, fontSize: 16, bold: true, color: C.white, fit: "shrink" });
+    slide.addText(step, { x: 7.35, y, w: 4.9, h: 0.26, margin: 0, fontSize: 15.5, bold: true, color: C.white, fit: "shrink" });
   });
   slide.addText("Success criterion: a measured end-to-end LM comparison with the same problem, convergence policy, and accounting scope.", {
-    x: 6.98, y: 6.28, w: 5.35, h: 0.3, margin: 0, fontSize: 13, color: "D9E5EA", fit: "shrink",
+    x: 6.98, y: 6.18, w: 5.35, h: 0.3, margin: 0, fontSize: 13, color: "D9E5EA", fit: "shrink",
   });
   slide.addNotes("About 60 seconds. The measured evidence says the CPU nonlinear pieces are sufficiently small to be worth implementing as a hybrid baseline. The separately timed CPU subtotal is on the order of tens of milliseconds per candidate, while the prior graph API measurement is 0.426 seconds for three iterations. Those scopes differ, so this supports feasibility rather than a speedup claim. The expected immediate benefit is generality and removal of specialized graph conversion. The next experiment is concrete: cache sparse structure, fill numeric buffers directly with TBB, upload only numeric values, solve on the GPU, then perform the actual CPU retract and error path in a full converging LM measurement.");
 }
@@ -568,7 +580,7 @@ const backendRows = [
     ["backend", "Setup", "67.544", "15.85%", "49.11%"],
     ["backend", "Solve loop", "29.968", "7.03%", "21.79%"],
     ["backend", "Download Values", "40.030", "9.39%", "29.10%"],
-  ], 0.55, 1.35, [1.25, 4.65, 1.35, 1.55, 1.45], { rowH: 0.30, fontSize: 10.5, headerFill: C.navy });
+  ], 0.55, 1.29, [1.25, 4.65, 1.35, 1.55, 1.45], { rowH: 0.305, fontSize: 11, headerFill: C.navy });
   addTable(slide, [
     ["Detail", "Time", "Detail", "Time"],
     ["Setup: projection host build", "38.686 ms", "Solve: dense Schur", "23.009 ms"],
@@ -576,9 +588,9 @@ const backendRows = [
     ["Setup: allocate trial values", "11.769 ms", "Solve: linearized error change", "3.655 ms"],
     ["Transfer: total H2D memcpy", "1.526 ms", "Transfer: total D2H memcpy", "0.615 ms"],
     ["Download: Values rebuild", "15.537 ms", "Pure H2D + D2H", "2.141 ms"],
-  ], 0.55, 5.12, [3.85, 1.55, 3.85, 1.55], { rowH: 0.30, fontSize: 10.4, headerFill: C.teal });
-  slide.addText("Note: the 1.936 ms specialized pure-copy figure cited in the feasibility summary comes from a separate transfer-focused run; this appendix uses the dense-Schur breakdown above.", {
-    x: 0.55, y: 6.98, w: 11.8, h: 0.12, margin: 0, fontSize: 8.5, color: C.muted, fit: "shrink",
+  ], 0.55, 5.08, [3.85, 1.55, 3.85, 1.55], { rowH: 0.30, fontSize: 11, headerFill: C.teal });
+  slide.addText("Note: the 1.936 ms specialized pure-copy timing is from a separate transfer run; this appendix shows the dense-Schur transfer rows.", {
+    x: 0.55, y: 6.94, w: 11.8, h: 0.12, margin: 0, fontSize: 10.5, color: C.muted, fit: "shrink",
   });
   addFooter(slide, "A", "Appendix | dense-Schur breakdown");
   slide.addNotes("Appendix only. Use this table if asked for the timer hierarchy. It retains the top-level graph API, optimize, backend, setup, solve, and transfer rows. The final note distinguishes the dense-Schur run's transfer rows from the separate specialized transfer-focused timing cited in the feasibility summary.");
@@ -599,19 +611,20 @@ const backendRows = [
     ["GPU projection", "0.384 [0.379, 0.391] / 0.79%", "0.384 [0.379, 0.391] / 0.82%"],
     ["GPU Hessian diagonal", "0.919 [0.909, 0.924] / 0.39%", "0.919 [0.909, 0.924] / 0.41%"],
     ["GPU dense Schur combined", "7.513 [7.468, 7.576] / 0.42%", "7.516 [7.468, 7.576] / 0.43%"],
-  ], 0.5, 1.32, [2.75, 4.65, 4.85], { rowH: 0.38, fontSize: 10.7, headerFill: C.navy, alignments: ["left", "center", "center"] });
-  addPanel(slide, 0.5, 4.55, 5.85, 1.55, C.amber, C.paleAmber);
+  ], 0.5, 1.32, [2.75, 4.65, 4.85], { rowH: 0.40, fontSize: 11.2, headerFill: C.navy, alignments: ["left", "center", "center"] });
+  addPanel(slide, 0.5, 4.46, 5.85, 1.55, C.amber, C.paleAmber);
   slide.addText("First-index sensitivity", { x: 0.8, y: 4.83, w: 5.25, h: 0.2, margin: 0, fontSize: 15, bold: true, color: C.amber, align: "center" });
   slide.addText("Index-aligned CPU subtotal: repeat 0 mean 80.752 ms, repeat 1 mean 56.881 ms, repeat 2 mean 57.024 ms. Repeat 0 is materially slower.", {
-    x: 0.8, y: 5.22, w: 5.25, h: 0.38, margin: 0, fontSize: 12.2, color: C.ink, align: "center", fit: "shrink",
+    x: 0.8, y: 5.13, w: 5.25, h: 0.42, margin: 0, fontSize: 12.5, color: C.ink, align: "center", fit: "shrink",
   });
-  addPanel(slide, 6.65, 4.55, 6.18, 1.55, C.teal, C.paleTeal);
-  slide.addText("Exact transfer formula and provenance", { x: 6.95, y: 4.83, w: 5.58, h: 0.2, margin: 0, fontSize: 15, bold: true, color: C.teal, align: "center" });
-  slide.addText("553,336 x (24 Jacobian + 2 residual) x 8 B = 115,093,888 B = 115.1 MB. / 9.50 GiB/s = 11.283 ms. Dataset: dubrovnik-135-90642-pre.txt; AMD EPYC Milan, NVIDIA A100 80 GB PCIe; CUDA, driver, and TBB thread configuration not recorded.", {
-    x: 6.95, y: 5.16, w: 5.58, h: 0.55, margin: 0, fontSize: 11.2, color: C.ink, align: "center", fit: "shrink",
+  addPanel(slide, 6.65, 4.46, 6.18, 1.55, C.teal, C.paleTeal);
+  slide.addText("Transfer formula + provenance", { x: 6.95, y: 4.74, w: 5.58, h: 0.2, margin: 0, fontSize: 15, bold: true, color: C.teal, align: "center" });
+  slide.addText("553,336 x (24 Jacobian + 2 residual) x 8 B = 115,093,888 B = 115.1 MB. / 9.50 GiB/s = 11.283 ms.\nDataset: dubrovnik-135-90642-pre.txt; AMD EPYC Milan; NVIDIA A100 80 GB PCIe. CUDA, driver, and TBB thread configuration not recorded.", {
+    x: 6.95, y: 5.05, w: 5.58, h: 0.68, margin: 0, fontSize: 11.2, color: C.ink, align: "center", fit: "shrink",
   });
-  slide.addText("Scope caveats: CPU loops and GPU references are independently timed; the synthetic arithmetic does not measure sparse packing/layout, repeated upload, delta download/mapping, or LM convergence. All-sample lower bound: 64.803 ms. Repeat-0-excluded lower bound: 62.139 ms. With estimated transfer: 73.422 ms.", {
-    x: 0.5, y: 6.42, w: 12.2, h: 0.35, margin: 0, fontSize: 10.8, bold: true, color: C.coral, align: "center", fit: "shrink",
+  addPanel(slide, 0.5, 6.23, 12.2, 0.68, C.coral, C.paleCoral);
+  slide.addText("Scope caveat: independent CPU/GPU loops; synthetic arithmetic excludes sparse packing/layout, repeated upload, delta download/mapping, and LM convergence. Lower bounds: all samples 64.803 ms; repeat-0-excluded 62.139 ms; with estimated transfer 73.422 ms.", {
+    x: 0.76, y: 6.44, w: 11.68, h: 0.28, margin: 0, fontSize: 12.2, bold: true, color: C.coral, align: "center", fit: "shrink",
   });
   addFooter(slide, "B", "Appendix | hybrid feasibility provenance");
   slide.addNotes("Appendix only. This provides the complete sensitivity view and provenance. The key observation is the slower first measured index for CPU linearization-related arithmetic. The exact generic-transfer formula is included because it is an estimate, not a measured H2D copy. The remaining caveats explain why the derived lower bounds are not end-to-end candidate timings.");
