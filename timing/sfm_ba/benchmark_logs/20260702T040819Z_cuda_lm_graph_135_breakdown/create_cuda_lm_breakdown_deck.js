@@ -37,7 +37,7 @@ const C = {
 const W = 13.333;
 const H = 7.5;
 const M = 0.58;
-const OUTPUT_DIR = "/home/ubuntu/cu-gtsam/timing/sfm_ba/benchmark_logs/20260710T_cuda_sfm_progress";
+const OUTPUT_DIR = path.resolve(__dirname, "../20260710T_cuda_sfm_progress");
 const OUTPUT_FILE = path.join(OUTPUT_DIR, "cuda_sfm_progress_update.pptx");
 
 function addBg(slide, dark = false) {
@@ -289,7 +289,7 @@ const backendRows = [
       fontSize: 11, color: "D9E5EA", fit: "shrink",
     });
   });
-  slide.addNotes("About 30 seconds. This is a factual progress update. I will first show the measured timing for the current specialized CUDA SFM path on Dubrovnik 135 with dense Schur and three LM iterations. Then I will use separate feasibility measurements to motivate, but not claim success for, a more general hybrid baseline.");
+  slide.addNotes("About 30 seconds. This is a factual progress update. First I will show the measured timing for the current specialized CUDA SFM path on Dubrovnik 135 with dense Schur and three LM iterations. Then I will use separate feasibility measurements to ask whether a more general CPU and GPU separation is worth building. The goal is to identify the next experiment, not to claim a finished faster solver.");
 }
 
 // Slide 2
@@ -320,7 +320,7 @@ const backendRows = [
     fontSize: 16, bold: true, color: C.teal, fit: "shrink",
   });
   addFooter(slide, 2);
-  slide.addNotes("About 50 seconds. Start from the left: the user-facing input is a normal GTSAM graph and Values. The specialized path must scan and convert that representation to SFM arrays before CUDA can act. After the backend returns, the result must be rebuilt as Values and merged back into the original state. These boundaries are important because they are part of the measured time.");
+  slide.addNotes("About 60 seconds. Start from the left: the user-facing input is a normal GTSAM graph and Values, with generic factor ownership and the current variable state. The specialized path scans that graph, selects the SFM subset, and creates arrays for cameras, points, measurements, and key maps. CUDA operates on those arrays, not on arbitrary GTSAM factors. After the backend returns, optimized arrays must be rebuilt as Values and merged into the original state. I am calling out each boundary because the timing includes this integration work, not only the GPU kernel.");
 }
 
 // Slide 3
@@ -349,7 +349,7 @@ const backendRows = [
     fontSize: 15, bold: true, color: C.ink, align: "center", valign: "mid", fit: "shrink",
   });
   addFooter(slide, 3);
-  slide.addNotes("About 45 seconds. This is the complete public API timing. Warm-up on a small problem was excluded and this is the mean of three runs. Nearly eighty-eight percent of the total is optimize, so I now unpack that call. I am keeping construction and result queries visible because they establish the scope and prevent us from silently calling a partial number end-to-end.");
+  slide.addNotes("About 55 seconds. This is the complete public API timing. Warm-up on a small problem was excluded, and the result is the mean of three timed runs. Construction contributes 36.203 milliseconds, optimize contributes 376.192 milliseconds, and final result and error queries contribute 13.828 milliseconds. Nearly eighty-eight percent is optimize, so the next slides unpack that call. I keep the other pieces visible because they define the graph API scope and prevent a partial number from being presented as end-to-end.");
 }
 
 // Slide 4
@@ -380,7 +380,7 @@ const backendRows = [
     x: 0.72, y: 6.52, w: 8.5, h: 0.24, margin: 0, fontSize: 16, bold: true, color: C.coral, fit: "shrink",
   });
   addFooter(slide, 4);
-  slide.addNotes("About 60 seconds. This is the detailed optimize decomposition. Graph conversion is 114.246 milliseconds: it is CPU work creating the specialized representation. The CUDA backend is 137.542 milliseconds. On the way back, Values merge and destruction of converted data add almost 98 milliseconds. That makes conversion and object/state management major optimization targets, rather than an afterthought around the GPU call.");
+  slide.addNotes("About 70 seconds. This is the detailed optimize decomposition. The stacked bar uses percent of optimize, while the table uses percent of the full graph API, so the denominators are explicit. Graph conversion is 114.246 milliseconds of CPU work creating the specialized representation. The CUDA backend is 137.542 milliseconds. On the way back, return and assignment, Values merge, and destruction of converted data are all CPU-side result-management work. Values merge plus destruction alone add almost 98 milliseconds. The main point is that conversion and object/state management are first-order costs beside the backend, not bookkeeping after the GPU call.");
 }
 
 // Slide 5
@@ -410,7 +410,7 @@ const backendRows = [
     x: 7.2, y: 5.35, w: 4.9, h: 0.35, margin: 0, fontSize: 12.6, color: C.ink, fit: "shrink",
   });
   addFooter(slide, 5);
-  slide.addNotes("About 50 seconds. Inside the backend, setup is almost half of the time and download plus Values reconstruction is another twenty-nine percent. The solve loop is only 29.968 milliseconds. Its largest part is dense Schur at 23.009 milliseconds. In contrast, the raw D2H copy is only 0.615 milliseconds: much of download time is host work around the copy.");
+  slide.addNotes("About 60 seconds. Inside the backend, setup is almost half of the time and download plus Values reconstruction is another twenty-nine percent. Setup is led by the 38.686 millisecond projection host build. The solve loop is only 29.968 milliseconds, with dense Schur at 23.009 milliseconds, the Hessian or damping diagonal at 2.979 milliseconds, and linearized error change at 3.655 milliseconds. In contrast, the raw D2H copy is only 0.615 milliseconds. Much of download time is therefore host allocation, wrapping, destruction, and Values rebuilding around the copy.");
 }
 
 // Slide 6
@@ -446,7 +446,7 @@ const backendRows = [
     fontSize: 11.5, color: C.muted, align: "center", fit: "shrink",
   });
   addFooter(slide, 6);
-  slide.addNotes("About 45 seconds. The comparison puts the relative scale in one place. Pure specialized H2D plus D2H is 1.936 milliseconds, under half a percent of the graph API. The dense-Schur solve loop is also smaller than graph conversion and Values merge. The careful conclusion is not that transfer never matters; it is that it is not the dominant cost in this measured specialized path.");
+  slide.addNotes("About 55 seconds. This comparison puts the relative scale in one place. Pure specialized H2D plus D2H is 1.936 milliseconds, or 0.45 percent of the 426.223 millisecond graph API. The dense-Schur solve loop is also smaller than graph conversion and Values merge. The careful conclusion is not that transfer never matters or that the GPU solve is free. It is that PCIe copies and dense Schur are not the dominant costs in this measured specialized representation. That motivates testing a different architecture rather than only tuning the kernel.");
 }
 
 // Slide 7
@@ -473,11 +473,16 @@ const backendRows = [
   slide.addText("Sparse packing, repeated numeric upload, delta mapping, and end-to-end convergence must be measured in the actual prototype.", {
     x: 7.05, y: 5.1, w: 5.15, h: 0.48, margin: 0, fontSize: 14.5, color: C.ink, align: "center", valign: "mid", fit: "shrink",
   });
-  slide.addText("Sources: https://ceres-solver.readthedocs.io/latest/installation.html | https://ceres-solver.readthedocs.io/latest/nnls_solving.html", {
+  slide.addText([
+    { text: "Sources: " },
+    { text: "https://ceres-solver.readthedocs.io/latest/installation.html", options: { hyperlink: { url: "https://ceres-solver.readthedocs.io/latest/installation.html" }, color: C.blue, underline: true } },
+    { text: " | " },
+    { text: "https://ceres-solver.readthedocs.io/latest/nnls_solving.html", options: { hyperlink: { url: "https://ceres-solver.readthedocs.io/latest/nnls_solving.html" }, color: C.blue, underline: true } },
+  ], {
     x: 0.72, y: 6.55, w: 11.8, h: 0.17, margin: 0, fontSize: 9.5, color: C.muted, fit: "shrink",
   });
   addFooter(slide, 7);
-  slide.addNotes("About 90 seconds. This is a proposed baseline architecture. I am calling it Ceres-style separation because it follows the useful conceptual split between nonlinear evaluation and a selectable linear-algebra backend. I am not claiming it exactly describes every Ceres path. The purpose is to keep arbitrary GTSAM factors on CPU while putting a generic linear system on the GPU, which removes the need for the existing SFM-only graph conversion.");
+  slide.addNotes("About 90 seconds. This is a proposed baseline architecture. I call it Ceres-style separation because the useful idea is to separate nonlinear residual and Jacobian evaluation from a selectable linear-algebra backend. I am not claiming that every Ceres path has this exact data flow. In this baseline, arbitrary GTSAM factors stay in the CPU and TBB nonlinear layer. The CPU fills reusable sparse numeric J or H buffers, the GPU receives the generic linear system, and only the solved delta returns. The CPU then performs manifold retraction, trial error, and the trust-region decision. This removes the current SFM-only graph conversion, while leaving the real costs of sparse packing and repeated upload to be measured.");
 }
 
 // Slide 8
@@ -501,14 +506,14 @@ const backendRows = [
     x: 9.28, y: 2.74, w: 2.92, h: 0.4, margin: 0, fontSize: 12.2, color: C.ink, align: "center", fit: "shrink",
   });
   addCallout(slide, "Synthetic lower bound", "62.139 ms", "54.088 ms CPU + 8.051 ms GPU", 0.72, 4.15, 3.7, C.green);
-  addCallout(slide, "Estimated generic transfer", "+11.284 ms", "115.1 MB / 9.50 GiB/s", 4.75, 4.15, 3.55, C.amber);
+  addCallout(slide, "Estimated generic transfer", "+11.283 ms", "115.1 MB / 9.50 GiB/s", 4.75, 4.15, 3.55, C.amber);
   addCallout(slide, "Lower bound + estimate", "73.422 ms", "still not end-to-end", 8.63, 4.15, 3.7, C.coral);
   addPanel(slide, 0.72, 5.63, 11.6, 0.72, C.coral, C.paleCoral);
   slide.addText("Caveat: not end-to-end. Sparse packing/layout, repeated upload, delta mapping, and convergence remain unmeasured. Do not compare these per-candidate synthetic figures directly to the 426.223 ms three-iteration API total.", {
     x: 0.98, y: 5.86, w: 11.05, h: 0.22, margin: 0, fontSize: 13.2, bold: true, color: C.ink, align: "center", fit: "shrink",
   });
   addFooter(slide, 8, "Hybrid feasibility | Dubrovnik 135");
-  slide.addNotes("About 90 seconds. These numbers are deliberately separate from the current API profile. Each CPU operation was timed in its own loop, and the GPU reference is synthetic arithmetic from separately timed components. Excluding repeat zero gives 54.088 milliseconds for the illustrative CPU subtotal and 8.051 milliseconds for the synthetic GPU reference, or 62.139 milliseconds. A 115.1 MB generic Jacobian-transfer estimate adds 11.284 milliseconds. Neither number is an end-to-end runtime, and neither should be visually compared against the three-iteration 426.223 millisecond API total.");
+  slide.addNotes("About 90 seconds. These numbers are deliberately separate from the current API profile. Each CPU operation was timed in its own loop, and the GPU reference is synthetic arithmetic from separately timed components. Excluding repeat zero gives 54.088 milliseconds for the illustrative CPU subtotal and 8.051 milliseconds for the synthetic GPU reference, or 62.139 milliseconds. The 115.1 MB generic Jacobian-transfer estimate is 11.283 milliseconds before display rounding, which gives the displayed 73.422 millisecond combination when added to the unrounded estimate. Neither number is an end-to-end runtime, and neither should be visually compared against the three-iteration 426.223 millisecond API total. Sparse packing, repeated upload, delta mapping, and convergence still need the actual prototype measurement.");
 }
 
 // Slide 9
@@ -541,7 +546,7 @@ const backendRows = [
   slide.addText("Success criterion: a measured end-to-end LM comparison with the same problem, convergence policy, and accounting scope.", {
     x: 6.98, y: 6.28, w: 5.35, h: 0.3, margin: 0, fontSize: 13, color: "D9E5EA", fit: "shrink",
   });
-  slide.addNotes("About one minute. The measured evidence says the CPU nonlinear pieces are sufficiently small to be worth implementing as a hybrid baseline. It does not say the hybrid is faster end-to-end. The expected immediate benefit is generality and removal of the specialized SFM conversion. The next experiment needs cached sparse structure, direct numeric fill, numeric upload, a GPU solve, and then actual CPU retraction and error checks inside a full converging LM run.");
+  slide.addNotes("About 60 seconds. The measured evidence says the CPU nonlinear pieces are sufficiently small to be worth implementing as a hybrid baseline. The separately timed CPU subtotal is on the order of tens of milliseconds per candidate, while the prior graph API measurement is 0.426 seconds for three iterations. Those scopes differ, so this supports feasibility rather than a speedup claim. The expected immediate benefit is generality and removal of specialized graph conversion. The next experiment is concrete: cache sparse structure, fill numeric buffers directly with TBB, upload only numeric values, solve on the GPU, then perform the actual CPU retract and error path in a full converging LM measurement.");
 }
 
 // Slide 10
@@ -602,7 +607,7 @@ const backendRows = [
   });
   addPanel(slide, 6.65, 4.55, 6.18, 1.55, C.teal, C.paleTeal);
   slide.addText("Exact transfer formula and provenance", { x: 6.95, y: 4.83, w: 5.58, h: 0.2, margin: 0, fontSize: 15, bold: true, color: C.teal, align: "center" });
-  slide.addText("553,336 x (24 Jacobian + 2 residual) x 8 B = 115,093,888 B = 115.1 MB. / 9.50 GiB/s = 11.284 ms. Dataset: dubrovnik-135-90642-pre.txt; AMD EPYC Milan, NVIDIA A100 80 GB PCIe; CUDA, driver, and TBB thread configuration not recorded.", {
+  slide.addText("553,336 x (24 Jacobian + 2 residual) x 8 B = 115,093,888 B = 115.1 MB. / 9.50 GiB/s = 11.283 ms. Dataset: dubrovnik-135-90642-pre.txt; AMD EPYC Milan, NVIDIA A100 80 GB PCIe; CUDA, driver, and TBB thread configuration not recorded.", {
     x: 6.95, y: 5.16, w: 5.58, h: 0.55, margin: 0, fontSize: 11.2, color: C.ink, align: "center", fit: "shrink",
   });
   slide.addText("Scope caveats: CPU loops and GPU references are independently timed; the synthetic arithmetic does not measure sparse packing/layout, repeated upload, delta download/mapping, or LM convergence. All-sample lower bound: 64.803 ms. Repeat-0-excluded lower bound: 62.139 ms. With estimated transfer: 73.422 ms.", {
