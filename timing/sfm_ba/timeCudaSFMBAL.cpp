@@ -213,6 +213,22 @@ struct CpuLinearizationBenchmark {
   size_t linearizedFactors = 0;
 };
 
+struct CpuStateBenchmark {
+  TimingSamples retract;
+  TimingSamples trialError;
+  size_t retractedValues = 0;
+  double error = 0.0;
+};
+
+VectorValues makeBenchmarkDelta(const Values& initial) {
+  VectorValues delta = initial.zeroVectors();
+  for (Key key : initial.keys()) {
+    Vector& value = delta.at(key);
+    value.setConstant(1e-6);
+  }
+  return delta;
+}
+
 CpuLinearizationBenchmark benchmarkCpuLinearization(
     const NonlinearFactorGraph& graph, const Values& initial,
     size_t repeats) {
@@ -228,6 +244,41 @@ CpuLinearizationBenchmark benchmarkCpuLinearization(
     benchmark.timing.seconds.push_back(
         std::chrono::duration<double>(end - start).count());
     benchmark.linearizedFactors = linear->size();
+  }
+  return benchmark;
+}
+
+CpuStateBenchmark benchmarkCpuState(const NonlinearFactorGraph& graph,
+                                    const Values& initial,
+                                    const VectorValues& delta,
+                                    size_t repeats) {
+  initial.retract(delta);
+
+  CpuStateBenchmark benchmark;
+  benchmark.retract.seconds.reserve(repeats);
+  benchmark.trialError.seconds.reserve(repeats);
+  for (size_t repeat = 0; repeat < repeats; ++repeat) {
+    const auto start = std::chrono::steady_clock::now();
+    {
+      const Values retracted = initial.retract(delta);
+      const auto end = std::chrono::steady_clock::now();
+      benchmark.retract.seconds.push_back(
+          std::chrono::duration<double>(end - start).count());
+      benchmark.retractedValues = retracted.size();
+    }
+  }
+
+  const Values trial = initial.retract(delta);
+  graph.error(trial);
+  for (size_t repeat = 0; repeat < repeats; ++repeat) {
+    const auto start = std::chrono::steady_clock::now();
+    benchmark.error = graph.error(trial);
+    const auto end = std::chrono::steady_clock::now();
+    benchmark.trialError.seconds.push_back(
+        std::chrono::duration<double>(end - start).count());
+  }
+  if (!std::isfinite(benchmark.error)) {
+    throw std::runtime_error("CPU trial graph.error() is not finite");
   }
   return benchmark;
 }
@@ -1465,6 +1516,16 @@ int main(int argc, char* argv[]) {
       std::cout << "  CPU output linear factors: " << cpu.linearizedFactors
                 << "\n";
       printTimingSamples("CPU/TBB graph.linearize()", cpu.timing,
+                         graph.size(), "factors");
+      const VectorValues delta = makeBenchmarkDelta(initial);
+      const CpuStateBenchmark cpuState = benchmarkCpuState(
+          graph, initial, delta, options.linearizationRepeats);
+      std::cout << "  CPU state validation: retracted values: "
+                << cpuState.retractedValues
+                << ", trial error: " << cpuState.error << "\n";
+      printTimingSamples("CPU Values retract()", cpuState.retract,
+                         initial.size(), "values");
+      printTimingSamples("CPU trial graph.error()", cpuState.trialError,
                          graph.size(), "factors");
 
 #if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
