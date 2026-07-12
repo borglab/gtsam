@@ -18,6 +18,7 @@
 #include <gtsam/constrained/QcqpProblem.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/slam/FrobeniusFactor.h>
 
@@ -36,6 +37,10 @@ constexpr double kPi = 3.141592653589793238462643383279502884;
  */
 NonlinearFactorGraph MakeRot2RingGraph(size_t numPoses, double delta) {
   NonlinearFactorGraph graph;
+  const auto hardPriorNoise = noiseModel::Constrained::All(4);
+  graph.emplace_shared<FrobeniusPrior<Rot2>>(
+      Symbol('x', 0), Rot2::Identity().matrix(), hardPriorNoise);
+
   for (size_t i = 0; i < numPoses; ++i) {
     graph.emplace_shared<FrobeniusBetweenFactor<Rot2>>(
         Symbol('x', i), Symbol('x', (i + 1) % numPoses),
@@ -75,11 +80,26 @@ int main() {
   const QcqpProblem problem(graph);
   const Values qcqpValues = MakeRot2RingQcqpValues(numPoses, delta);
 
-  std::cout << "Constructed Rot2 ring QCQP" << std::endl;
+  size_t quadraticEqualities = 0;
+  size_t linearEqualities = 0;
+  for (const auto& factor : problem.eConstraints()) {
+    if (dynamic_cast<const QuadraticEqualityConstraintFactor*>(factor.get())) {
+      ++quadraticEqualities;
+    } else if (dynamic_cast<const LinearEqualityConstraintFactor*>(
+                   factor.get())) {
+      ++linearEqualities;
+    }
+  }
+
+  std::cout << "Constructed Rot2 ring QCQP with hard Frobenius prior"
+            << std::endl;
   std::cout << "poses: " << numPoses << std::endl;
   std::cout << "cost factors: " << problem.costs().size() << std::endl;
   std::cout << "equality constraints: " << problem.eConstraints().size()
             << std::endl;
+  std::cout << "quadratic equality constraints: " << quadraticEqualities
+            << std::endl;
+  std::cout << "linear equality constraints: " << linearEqualities << std::endl;
   std::cout << "cost at feasible ring values: "
             << problem.costs().error(qcqpValues) << std::endl;
   //std::cout << "equality violation at feasible ring values: "
