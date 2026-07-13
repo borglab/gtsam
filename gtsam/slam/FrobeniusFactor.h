@@ -27,6 +27,7 @@
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 #include <stdexcept>
+#include <type_traits>
 
 namespace gtsam {
 
@@ -109,6 +110,73 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
   Vector evaluateError(const T& g, OptionalMatrixType H) const override {
     return traits<T>::Vec(g, H) -
            vecM_;  // Jacobian is computed only when needed.
+  }
+
+  /** Add this Frobenius prior to the QCQP graph.
+   *  D=1 uses the lifted vector form; higher column dimensions are kept as a
+   *  separate dispatch point for the future matrix-form prior path. */
+  void qcqpFactors(NonlinearFactorGraph* costs,
+                   NonlinearEqualityConstraints* constraints,
+                   size_t columnDimension = 1) const override {
+    if (columnDimension == 0) {
+      throw std::invalid_argument(
+          "FrobeniusPrior::qcqpFactors: columnDimension must be >= 1");
+    }
+    if (columnDimension == 1) {
+      qcqpFactorsForVec(costs, constraints);
+    } else {
+      qcqpFactorsForMatrix(costs, constraints, columnDimension);
+    }
+  }
+
+ private:
+  /// D=1 constrained-noise prior in lifted vector form.
+  /// The stored measurement is vecM_ = vec(M), where M is the matrix passed to
+  /// the FrobeniusPrior constructor. The lifted variable for the current value
+  /// is x = [1, vec(R)]^T, where R is the matrix represented by this key. The
+  /// matrix B = [-vecM_, I] therefore gives B*x = vec(R) - vec(M). A hard prior
+  /// asks for that residual to be zero, so we add the linear equality B*x = 0.
+  void qcqpFactorsForVec(NonlinearFactorGraph* costs,
+                         NonlinearEqualityConstraints* constraints) const {
+    if constexpr (!internal::HasQcqpVariableTraits<T, 1>::value) {
+      (void)costs;
+      (void)constraints;
+      throw std::runtime_error(
+          "FrobeniusPrior::qcqpFactors requires QCQP variable traits for this "
+          "type and column dimension 1.");
+    } else {
+      (void)costs;
+      if (this->noiseModel_->isConstrained()) {
+        InsertQcqpConstraints<T, 1>(this->key(), constraints);
+
+        constexpr int LiftedDim = Dim + 1;
+        Matrix B = Matrix::Zero(Dim, LiftedDim);
+        B.col(0) = -vecM_;
+        B.block(0, 1, Dim, Dim) = Matrix::Identity(Dim, Dim);
+
+        constraints->push_back(LinearConstraint::Equal(
+                                   JacobianFactor(this->key(), B,
+                                                  Vector::Zero(Dim)))
+                                   .createEqualityFactor());
+      } else {
+        throw std::runtime_error(
+            "FrobeniusPrior::qcqpFactors D=1 non-constrained noise is not yet "
+            "implemented.");
+      }
+    }
+  }
+
+  /// Matrix-form Frobenius priors are deliberately separate from the D=1
+  /// vector path; no QCQP lowering is implemented for this branch yet.
+  void qcqpFactorsForMatrix(NonlinearFactorGraph* costs,
+                            NonlinearEqualityConstraints* constraints,
+                            size_t columnDimension) const {
+    (void)costs;
+    (void)constraints;
+    (void)columnDimension;
+    throw std::runtime_error(
+        "FrobeniusPrior::qcqpFactors with column dimension > 1 is not yet "
+        "implemented.");
   }
 };
 
@@ -285,9 +353,8 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
 
  private:
   static Matrix RightProductMatrix(const Matrix& right) {
-    constexpr int AmbientDim = N * N;
     const Matrix I = Matrix::Identity(N, N);
-    Matrix result = Matrix::Zero(AmbientDim, AmbientDim);
+    Matrix result = Matrix::Zero(Dim, Dim);
     for (int column = 0; column < N; ++column) {
       for (int sourceColumn = 0; sourceColumn < N; ++sourceColumn) {
         result.block(column * N, sourceColumn * N, N, N) =
@@ -297,8 +364,8 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
     return result;
   }
 
-  /// Vec(R) form (K=1): variable is (N*N)x1; accepts any non-robust
-  /// Gaussian noise model.
+  /// Vec(R) form (K=1): build the full (N*N)x1 vec(R) cost first, then
+  /// embed its quadratic matrix in the lifted coordinate layout.
   void qcqpFactorsForVec(NonlinearFactorGraph* costs,
                          NonlinearEqualityConstraints* constraints) const {
     if constexpr (!internal::HasQcqpVariableTraits<T, 1>::value) {
@@ -316,27 +383,44 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
           this->noiseModel_->isConstrained()) {
         throw std::runtime_error(
             "FrobeniusBetweenFactor::qcqpFactors requires a "
-            "non-robust quadratic noise model");
+            "non-robust/non-hard quadratic noise model");
       }
 
-      InsertQcqpConstraints<T, 1>(this->key1(), constraints);
-      InsertQcqpConstraints<T, 1>(this->key2(), constraints);
-
-      constexpr int AmbientDim = N * N;
       const Matrix measurement = this->T12_.matrix();
       const Matrix A = RightProductMatrix(measurement);
 
-      Matrix B = Matrix::Zero(AmbientDim, 2 * AmbientDim);
-      B.block(0, 0, AmbientDim, AmbientDim) = -A;
-      B.block(0, AmbientDim, AmbientDim, AmbientDim) =
-          Matrix::Identity(AmbientDim, AmbientDim);
+      Matrix B = Matrix::Zero(Dim, 2 * Dim);
+      B.block(0, 0, Dim, Dim) = -A;
+      B.block(0, Dim, Dim, Dim) =
+          Matrix::Identity(Dim, Dim);
 
       const Matrix whitenedB = this->noiseModel_->Whiten(B);
       const Matrix Q = whitenedB.transpose() * whitenedB;
-      const SymmetricBlockMatrix blockQ(
-          std::vector<DenseIndex>{AmbientDim, AmbientDim}, Q);
-      costs->push_back(std::make_shared<QpCost>(
-          KeyVector{this->key1(), this->key2()}, blockQ));
+
+      // From here on we do homogenization and truncation (which may be Lie-group specific): 
+      if constexpr (std::is_same_v<T, Rot2>) {
+        constexpr int LiftedDim = Dim + 1; // First entry is homogenization
+        Matrix Q_trunc_hom = Matrix::Zero(2 * LiftedDim, 2 * LiftedDim);
+        Q_trunc_hom.block(1, 1, Dim, Dim) = Q.block(0, 0, Dim, Dim);
+        Q_trunc_hom.block(1, LiftedDim + 1, Dim, Dim) = Q.block(0, Dim, Dim, Dim);
+        Q_trunc_hom.block(LiftedDim + 1, 1, Dim, Dim) = Q.block(Dim, 0, Dim, Dim);
+        Q_trunc_hom.block(LiftedDim + 1, LiftedDim + 1, Dim, Dim) = Q.block(Dim, Dim, Dim, Dim);
+
+        // Keep constraint insertion inside the type-specific branch so
+        // Q_trunc_hom dimensions agree with the lifted vector, e.g. Rot2.h.
+        InsertQcqpConstraints<T, 1>(this->key1(), constraints);
+        InsertQcqpConstraints<T, 1>(this->key2(), constraints);
+
+        const SymmetricBlockMatrix blockQ(
+            std::vector<DenseIndex>{LiftedDim, LiftedDim}, Q_trunc_hom);
+        costs->push_back(std::make_shared<QpCost>(
+            KeyVector{this->key1(), this->key2()}, blockQ));
+      } else {
+        (void)constraints;
+        throw std::runtime_error(
+            "FrobeniusBetweenFactor::qcqpFactors D=1 lifted Q embedding is "
+            "currently implemented only for Rot2.");
+      }
     }
   }
 

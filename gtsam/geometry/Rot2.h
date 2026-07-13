@@ -256,7 +256,8 @@ struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
   /**
    * Return a matrix-valued QCQP variable for Rot2.
    *
-   * D=1 is vectorized SO(2) as a 4-by-1 matrix.
+   * D=1 prepends a fixed homogenization coordinate to the existing
+   * column-major SO(2) vectorization, yielding a 5-by-1 matrix.
    * D=2 returns R' as a 2-by-2 row-orthonormal matrix.
    * D>=3 returns [R', 0] as a 2-by-D row-orthonormal matrix.
    */
@@ -264,7 +265,10 @@ struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
   static Matrix QcqpValue(const Rot2& value) {
     if constexpr (D == 1) {
       const Matrix2 R = value.matrix();
-      return Eigen::Map<const Matrix>(R.data(), 4, 1);
+      Vector5 X;
+      X(0, 0) = 1.0; // Homogenization entry
+      X.bottomRows(4) = Eigen::Map<const Matrix>(R.data(), 4, 1);
+      return X;
     } else if constexpr (D == 2) {
       return value.matrix().transpose();
     } else if constexpr (D >= 3) {
@@ -279,39 +283,49 @@ struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
 
   /**
    * Return row-space QCQP equality constraints A, b such that
-   * trace(X' A X) = b. For D=1 these are the vec(R) SO(2) constraints,
-   * including orientation. For D>=2 the same 2-by-2 constraints enforce
+   * trace(x_i' A x_i) = b[j]. For D=1 these are the lifted SO(2) constraints in
+   * column-major coordinates. For D>=2 the same 2-by-2 constraints enforce
    * row orthonormality.
    */
   template <int D = 1>
   static std::vector<std::pair<Matrix, double>> QcqpConstraints() {
     if constexpr (D == 1) {
+      // The homogenized Rot2 lifted vector is
+      // x = [1, r00, r10, r01, r11]. 
       std::vector<std::pair<Matrix, double>> constraints;
-      constraints.reserve(4);
+      constraints.reserve(5);
 
-      Matrix A = Matrix::Zero(4, 4);
+      Matrix A = Matrix::Zero(5, 5);
 
+      // Fix the leading-coordinate convention x(0) = 1.
       A(0, 0) = 1.0;
-      A(1, 1) = 1.0;
       constraints.emplace_back(A, 1.0);
 
+      // det(R) = r00*r11 - r10*r01 = 1.
       A.setZero();
-      A(2, 2) = 1.0;
+      A(1, 4) = 0.5;
+      A(4, 1) = 0.5;
+      A(2, 3) = -0.5;
+      A(3, 2) = -0.5;
+      constraints.emplace_back(A, 1.0);
+
+      // RR^T = I supplies the default, non-redundant row-orthonormality
+      // Note the reuse of the A variable for multiple constraints.
+      A.setZero();
+      A(1, 1) = 1.0;
       A(3, 3) = 1.0;
       constraints.emplace_back(A, 1.0);
 
       A.setZero();
-      A(0, 2) = 0.5;
-      A(2, 0) = 0.5;
-      A(1, 3) = 0.5;
-      A(3, 1) = 0.5;
+      A(1, 2) = 0.5;
+      A(2, 1) = 0.5;
+      A(3, 4) = 0.5;
+      A(4, 3) = 0.5;
       constraints.emplace_back(A, 0.0);
 
       A.setZero();
-      A(0, 3) = 0.5;
-      A(3, 0) = 0.5;
-      A(1, 2) = -0.5;
-      A(2, 1) = -0.5;
+      A(2, 2) = 1.0;
+      A(4, 4) = 1.0;
       constraints.emplace_back(A, 1.0);
 
       return constraints;
