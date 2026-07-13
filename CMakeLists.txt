@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9...3.29)
+cmake_minimum_required(VERSION 3.16...3.29)
 if (POLICY CMP0167)
     cmake_policy(SET CMP0167 OLD) # Don't complain about boost
 endif()
@@ -98,9 +98,16 @@ include(GtsamTesting)
 include(GtsamPrinting)
 
 ############### Decide on BOOST ######################################
-# Enable or disable serialization with GTSAM_ENABLE_BOOST_SERIALIZATION
-option(GTSAM_ENABLE_BOOST_SERIALIZATION "Enable Boost serialization" ON)
-option(GTSAM_USE_BOOST_FEATURES "Enable Features that use Boost" ON)
+# When building inside colcon (ROS 2 build farm or local colcon build),
+# default to no Boost so ROS packages avoid the dependency.
+# Override explicitly with -DGTSAM_USE_BOOST_FEATURES=ON if needed.
+if(DEFINED ENV{COLCON})
+  set(_gtsam_boost_default OFF)
+else()
+  set(_gtsam_boost_default ON)
+endif()
+option(GTSAM_ENABLE_BOOST_SERIALIZATION "Enable Boost serialization" ${_gtsam_boost_default})
+option(GTSAM_USE_BOOST_FEATURES "Enable Features that use Boost" ${_gtsam_boost_default})
 
 if(GTSAM_ENABLE_BOOST_SERIALIZATION OR GTSAM_USE_BOOST_FEATURES)
 include(cmake/HandleBoost.cmake)
@@ -127,6 +134,7 @@ include(cmake/HandleOpenMP.cmake)           # OpenMP
 include(cmake/HandlePerfTools.cmake)        # Google perftools
 include(cmake/HandlePython.cmake)           # Python options and commands
 include(cmake/HandleTBB.cmake)              # TBB
+include(cmake/HandleCuda.cmake)             # CUDA acceleration options
 include(cmake/HandleUninstall.cmake)        # for "make uninstall"
 
 include(cmake/HandleAllocators.cmake)       # Must be after tbb, pertools

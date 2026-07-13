@@ -197,9 +197,6 @@ class GTSAM_EXPORT AttitudeFactor : public NoiseModelFactorN<VALUE> {
     ar& boost::serialization::make_nvp("bMeasured_", bMeasured_);
   }
 #endif
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 template <class VALUE>

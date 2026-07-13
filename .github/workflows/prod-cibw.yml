@@ -1,4 +1,4 @@
-# This workflow builds the Python wheels using cibuildwheel and uploads them to TestPyPI.
+# This workflow builds the Python wheels using cibuildwheel and uploads them to PyPI.
 # It can be triggered on push to the develop branch or manually via Github Actions.
 
 name: Build Python Wheels for Release
@@ -80,7 +80,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: ${{ github.sha }}
@@ -179,4 +179,3 @@ jobs:
         with:
           verbose: true
           packages-dir: dist/
-          repository-url: https://test.pypi.org/legacy/

@@ -21,6 +21,7 @@
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam_unstable/linear/InfeasibleOrUnboundedProblem.h>
 #include <gtsam_unstable/linear/LPInitSolver.h>
 #include <gtsam_unstable/linear/LPSolver.h>

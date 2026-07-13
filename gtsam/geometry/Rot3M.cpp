@@ -22,8 +22,10 @@
 
 #ifndef GTSAM_USE_QUATERNIONS
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/SO3.h>
+
 #include <cassert>
 #include <cmath>
 

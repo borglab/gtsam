@@ -22,12 +22,13 @@
 
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/dllexport.h>
 #include <gtsam/geometry/Kernel.h>
 #include <gtsam/geometry/SOn.h>
 
-#include <vector>
 #include <optional>
+#include <vector>
 
 namespace gtsam {
 

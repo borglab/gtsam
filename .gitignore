@@ -1,4 +1,5 @@
 /build
+/build-*/
 /debug*
 .idea
 *.pyc
@@ -35,3 +36,11 @@ conductor/
 gtsam_unstable/timing/data/
 timing/results/bayes_tree_covariance/
 _agent/docs*
+
+# Local development docs/artifacts
+docs/*
+timing/pypose_ba/*.json
+timing/pypose_ba/run_frank_benchmark.py
+timing/pypose_ba/test_benchmark_cli.py
+artifacts/
+build-tbb/

@@ -19,8 +19,9 @@
 #pragma once
 
 #include <gtsam/base/Manifold.h>
-#include <gtsam/base/Testable.h>
 #include <gtsam/base/OptionalJacobian.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/types.h>
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
 #endif
@@ -162,11 +163,6 @@ private:
 #endif
 
   /// @}
-
-  // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
-  inline constexpr static auto NeedsToAlign = (sizeof(B) % 16) == 0 || (sizeof(R) % 16) == 0;
-public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
 };
 
 // Declare this to be both Testable and a Manifold

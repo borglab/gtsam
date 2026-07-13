@@ -15,8 +15,8 @@
  *  @author Adam Bry
  **/
 
-#include "TangentPreintegration.h"
-#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/navigation/TangentPreintegration.h>
 
 using namespace std;
 

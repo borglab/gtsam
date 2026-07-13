@@ -113,6 +113,12 @@ set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/hybrid/hybrid.i
 )
 
+if(GTSAM_ENABLE_CUDA)
+    list(APPEND interface_headers
+        ${PROJECT_SOURCE_DIR}/gtsam/slam/cuda/cuda_sfm.i
+    )
+endif()
+
 set(GTSAM_PYTHON_TARGET gtsam_py)
 set(GTSAM_PYTHON_UNSTABLE_TARGET gtsam_unstable_py)
 
@@ -155,7 +161,7 @@ if(WIN32)
     )
     ADD_CUSTOM_COMMAND(TARGET ${GTSAM_PYTHON_TARGET} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam/${GTSAM_OUTPUT_NAME}.pyd"
+        "$<TARGET_FILE:${GTSAM_PYTHON_TARGET}>"
         "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam/gtsam.pyd"
     )
     ADD_CUSTOM_COMMAND(TARGET ${GTSAM_PYTHON_TARGET} POST_BUILD
@@ -183,8 +189,15 @@ set(GTSAM_MODULE_PATH ${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam)
 copy_directory("${CMAKE_CURRENT_SOURCE_DIR}/gtsam"
         "${GTSAM_MODULE_PATH}")
 
+if(NOT GTSAM_ENABLE_CUDA)
+    file(REMOVE "${GTSAM_MODULE_PATH}/tests/test_CudaSfm.py")
+endif()
+
 # Hack to get python test and util files copied every time they are modified
 file(GLOB GTSAM_PYTHON_TEST_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/tests/*.py")
+if(NOT GTSAM_ENABLE_CUDA)
+    list(FILTER GTSAM_PYTHON_TEST_FILES EXCLUDE REGEX ".*/test_CudaSfm\\.py$")
+endif()
 foreach(test_file ${GTSAM_PYTHON_TEST_FILES})
         get_filename_component(test_file_name ${test_file} NAME)
         configure_file(${test_file} "${GTSAM_MODULE_PATH}/tests/${test_file_name}" COPYONLY)
@@ -315,7 +328,7 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
         COMMAND
         ${CMAKE_COMMAND} -E env
         "PYTHONPATH=${GTSAM_PYTHON_BUILD_DIRECTORY}/$ENV{PYTHONPATH}"
-        pybind11-stubgen -o . --enum-class-locations \"KernelFunctionType|NoiseFormat:gtsam.gtsam\" --enum-class-locations \"OrderingType:gtsam.gtsam.Ordering\" --numpy-array-use-type-var --ignore-all-errors gtsam_unstable
+        ${PYTHON_EXECUTABLE} -m pybind11_stubgen -o . --enum-class-locations \"KernelFunctionType|NoiseFormat:gtsam.gtsam\" --enum-class-locations \"OrderingType:gtsam.gtsam.Ordering\" --numpy-array-use-type-var --ignore-all-errors gtsam_unstable
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES} ${GTSAM_PYTHON_TEST_FILES} ${GTSAM_PYTHON_UNSTABLE_TARGET}
         WORKING_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/"
     )

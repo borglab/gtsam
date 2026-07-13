@@ -17,14 +17,14 @@
  * @brief unit tests for FunctorizedFactor class
  */
 
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/TestableAssertions.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/FunctorizedFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/factorTesting.h>
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/TestableAssertions.h>
-
-#include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;

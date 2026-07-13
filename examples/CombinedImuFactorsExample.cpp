@@ -36,6 +36,7 @@
 #include <boost/program_options.hpp>
 
 // GTSAM related includes.
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
 #include <gtsam/navigation/GPSFactor.h>

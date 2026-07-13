@@ -18,16 +18,17 @@
  * @author  Frank Dellaert
  */
 
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/GaussianBayesTree.h>
-#include <gtsam/linear/GaussianEliminationTree.h>
-#include <gtsam/linear/GaussianJunctionTree.h>
-#include <gtsam/linear/HessianFactor.h>
-#include <gtsam/inference/FactorGraph-inst.h>
-#include <gtsam/inference/EliminateableFactorGraph-inst.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
-#include <gtsam/base/cholesky.h>
+#include <gtsam/inference/EliminateableFactorGraph-inst.h>
+#include <gtsam/inference/FactorGraph-inst.h>
+#include <gtsam/linear/GaussianBayesTree.h>
+#include <gtsam/linear/GaussianEliminationTree.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/GaussianJunctionTree.h>
+#include <gtsam/linear/HessianFactor.h>
+
+#include <Eigen/Cholesky>
 
 using namespace std;
 using namespace gtsam;

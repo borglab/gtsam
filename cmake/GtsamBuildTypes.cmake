@@ -94,6 +94,7 @@ if(MSVC)
   )
   list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC
     _ENABLE_EXTENDED_ALIGNED_STORAGE
+    _USE_MATH_DEFINES # Enables M_PI, etc
   )
   # Avoid literally hundreds to thousands of warnings:
   list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC
@@ -310,10 +311,18 @@ function(gtsam_apply_build_flags target_name_)
 
   target_compile_definitions(${target_name_} PRIVATE ${GTSAM_COMPILE_DEFINITIONS_PRIVATE})
   target_compile_definitions(${target_name_} PUBLIC ${GTSAM_COMPILE_DEFINITIONS_PUBLIC})
-  if (NOT "${GTSAM_COMPILE_OPTIONS_PUBLIC}" STREQUAL "")
-    target_compile_options(${target_name_} PUBLIC ${GTSAM_COMPILE_OPTIONS_PUBLIC})
+  if(GTSAM_ENABLE_CUDA)
+    set(gtsam_c_cxx_compile_language "$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>")
+    if (NOT "${GTSAM_COMPILE_OPTIONS_PUBLIC}" STREQUAL "")
+      target_compile_options(${target_name_} PUBLIC "$<${gtsam_c_cxx_compile_language}:${GTSAM_COMPILE_OPTIONS_PUBLIC}>")
+    endif()
+    target_compile_options(${target_name_} PRIVATE "$<${gtsam_c_cxx_compile_language}:${GTSAM_COMPILE_OPTIONS_PRIVATE}>")
+  else()
+    if (NOT "${GTSAM_COMPILE_OPTIONS_PUBLIC}" STREQUAL "")
+      target_compile_options(${target_name_} PUBLIC ${GTSAM_COMPILE_OPTIONS_PUBLIC})
+    endif()
+    target_compile_options(${target_name_} PRIVATE ${GTSAM_COMPILE_OPTIONS_PRIVATE})
   endif()
-  target_compile_options(${target_name_} PRIVATE ${GTSAM_COMPILE_OPTIONS_PRIVATE})
 
 endfunction(gtsam_apply_build_flags)
 

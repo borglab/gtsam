@@ -17,7 +17,7 @@ $ cmake --build . --target install
 1. GTSAM requires the following libraries to be installed on your system:
     - BOOST version 1.70 or greater (install through Linux repositories or MacPorts). Please see [Boost Notes](#boost-notes) for version recommendations based on your compiler.
 
-    - CMake version 3.10 or higher
+    - CMake version 3.16 or higher
 
     Optional dependent libraries:
      - If TBB is installed and detectable by CMake GTSAM will use it automatically.

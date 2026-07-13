@@ -4,6 +4,7 @@ name: Python CI
 # instead of under 'pull_request:'. Otherwise, the check is still required but
 # never runs, and a maintainer must bypass the check in order to merge the PR.
 on:
+  workflow_dispatch: 
   pull_request:
     paths-ignore:
       - '**.md'
@@ -24,7 +25,7 @@ jobs:
       should_run: ${{ steps.filter.outputs.relevant_changes }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Check modified files
         id: filter
@@ -51,7 +52,7 @@ jobs:
       PYTHON_VERSION: ${{ matrix.python_version }}
       BOOST_VERSION: 1.72.0
       BOOST_EXE: boost_1_72_0-msvc-14.2
-      GTSAM_ALLOW_DEPRECATED_SINCE_V43: OFF
+      SCCACHE_GHA_ENABLED: ON
 
     strategy:
       fail-fast: true
@@ -96,7 +97,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install (Linux)
         if: runner.os == 'Linux'
@@ -177,6 +178,10 @@ jobs:
           # Set the BOOST_ROOT variable
           echo "BOOST_ROOT=$BOOST_PATH" >> $env:GITHUB_ENV
 
+      - name: Install sccache
+        if: runner.os == 'Windows'
+        uses: mozilla-actions/sccache-action@v0.0.9
+
       - name: Set GTSAM_WITH_TBB Flag
         if: matrix.flag == 'tbb'
         run: |
@@ -208,9 +213,15 @@ jobs:
 
       - name: Build
         shell: bash
-        if: matrix.name != 'ubuntu-22.04-gcc-11-noboost'
+        if: matrix.name != 'ubuntu-22.04-gcc-11-noboost' && matrix.name != 'windows-2022-msvc'
         run: |
           bash .github/scripts/python.sh -b
+
+      - name: Build
+        shell: bash
+        if: matrix.name == 'windows-2022-msvc'
+        run: |
+          bash .github/scripts/python.sh -b --sccache
 
       - name: Build (No Boost Wrapper Check)
         if: matrix.name == 'ubuntu-22.04-gcc-11-noboost'

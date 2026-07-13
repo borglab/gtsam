@@ -40,6 +40,12 @@ State MakeState1() {
 KeyVector Keys1() { return {42}; }
 KeyVector Keys2() { return {10, 20}; }
 
+class TestableEqVIOFilter : public EqVIOFilter {
+ public:
+  using EqVIOFilter::EqVIOFilter;
+  const State& reference() const { return referenceState(); }
+};
+
 State State0() {
   return State(Se23(Rot3::RzRyRx(0.1, -0.05, 0.2), Vector3(0.2, -0.1, 0.05),
                     Point3(0.3, -0.4, 1.2)),
@@ -220,6 +226,45 @@ TEST(EqVIOFilter, InitAndPropagation) {
   auto camera =
       std::make_shared<CameraModel>(Pose3::Identity(), Cal3_S2(1, 1, 0, 0, 0));
   EXPECT(filter.errorCovariance().array().isFinite().all());
+}
+
+// Verifies IMU-based initialization matches Eigen's setFromTwoVectors attitude
+// construction used by testing/gen_init_attitude.cpp.
+// Regression
+TEST(EqVIOFilter, InitializeFromIMUAttitudeRegression) {
+  const std::vector<std::pair<Vector3, Matrix3>> cases = {
+      {Vector3(0.0, 0.0, 9.81),
+       (Matrix3() << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
+           .finished()},
+      {Vector3(1.0, 0.0, 9.81),
+       (Matrix3() << 0.99484458772060658, 0.0, -0.10141127295826777,
+        0.0, 1.0, 0.0, 0.10141127295826777, 0.0, 0.99484458772060658)
+           .finished()},
+      {Vector3(0.5, -0.3, 9.0),
+       (Matrix3() << 0.99846163144506261, 0.00092302113296245279,
+        -0.055439323264738057, 0.00092302113296245279, 0.9994461873202225,
+        0.033263593958842839, 0.055439323264738057, -0.033263593958842839,
+        0.99790781876528512)
+           .finished()}};
+
+  for (const auto& testCase : cases) {
+    TestableEqVIOFilter filter{EqVIOFilterParams()};
+    const Vector3 zero = Vector3::Zero();
+
+    IMUInput imu;
+    imu.stamp = 0.0;
+    imu.acc = testCase.first;
+    imu.gyr = Vector3::Zero();
+    filter.initializeFromIMU(imu);
+
+    const State initialized = filter.reference();
+    EXPECT(filter.isInitialized());
+    EXPECT(assert_equal(testCase.second,
+                        initialized.pose().rotation().matrix(), 1e-12));
+    EXPECT(assert_equal(zero, initialized.velocity(), 1e-12));
+    EXPECT(assert_equal(zero, initialized.bias.accelerometer(), 1e-12));
+    EXPECT(assert_equal(zero, initialized.bias.gyroscope(), 1e-12));
+  }
 }
 
 // Verifies short propagation sequence matches direct system-function

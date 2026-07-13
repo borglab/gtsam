@@ -235,25 +235,33 @@ class WnoaMotionFactor
 
     // Compute error for local state vector (pose, velocity) in tangent space
     Vector2N err;
-    err << xi - deltaT_ * v1, invJr * v2 - v1;
+    err.template head<dim>() = xi - deltaT_ * v1;
+    err.template tail<dim>() = invJr * v2 - v1;
 
     // Compute Final Jacobians
     if (Hp1) {
       // Derivative of error wrt pose p1
-      *Hp1 = (Matrix(2 * dim, dim) << dxi_dT1, dvErr_dxi * dxi_dT1).finished();
+      Hp1->resize(2 * dim, dim);
+      Hp1->template block<dim, dim>(0, 0) = dxi_dT1;
+      Hp1->template block<dim, dim>(dim, 0) = dvErr_dxi * dxi_dT1;
     }
     if (Hv1) {
       // Derivative of error wrt velocity v1
-      *Hv1 =
-          (Matrix(2 * dim, dim) << -deltaT_ * kIdentity, -kIdentity).finished();
+      Hv1->resize(2 * dim, dim);
+      Hv1->template block<dim, dim>(0, 0) = -deltaT_ * kIdentity;
+      Hv1->template block<dim, dim>(dim, 0) = -kIdentity;
     }
     if (Hp2) {
       // Derivative of error wrt pose p2
-      *Hp2 = (Matrix(2 * dim, dim) << dxi_dT2, dvErr_dxi * dxi_dT2).finished();
+      Hp2->resize(2 * dim, dim);
+      Hp2->template block<dim, dim>(0, 0) = dxi_dT2;
+      Hp2->template block<dim, dim>(dim, 0) = dvErr_dxi * dxi_dT2;
     }
     if (Hv2) {
       // Derivative of error wrt velocity v2
-      *Hv2 = (Matrix(2 * dim, dim) << kZero, invJr).finished();
+      Hv2->resize(2 * dim, dim);
+      Hv2->template block<dim, dim>(0, 0) = kZero;
+      Hv2->template block<dim, dim>(dim, 0) = invJr;
     }
 
     return err;
@@ -276,9 +284,13 @@ class WnoaMotionFactor
     //
     Matrix2N covariance;
     const MatrixN Q_diag = q_psd_diag.asDiagonal();
-    covariance << (1.0 / 3.0 * std::pow(timestep, 3)) * Q_diag,
-        (0.5 * std::pow(timestep, 2)) * Q_diag,
-        (0.5 * pow(timestep, 2)) * Q_diag, timestep * Q_diag;
+    covariance.template topLeftCorner<dim, dim>() =
+        (1.0 / 3.0 * std::pow(timestep, 3)) * Q_diag;
+    covariance.template topRightCorner<dim, dim>() =
+        (0.5 * std::pow(timestep, 2)) * Q_diag;
+    covariance.template bottomLeftCorner<dim, dim>() =
+        (0.5 * std::pow(timestep, 2)) * Q_diag;
+    covariance.template bottomRightCorner<dim, dim>() = timestep * Q_diag;
     return covariance;
   }
 
@@ -295,8 +307,14 @@ class WnoaMotionFactor
     Matrix2N inverse_covariance;
     const MatrixN Q_inv_diag = q_psd_diag.cwiseInverse().asDiagonal();
     const double dt2 = dt * dt, dt3 = dt2 * dt;
-    inverse_covariance << (12.0 / dt3) * Q_inv_diag, (-6.0 / dt2) * Q_inv_diag,
-        (-6.0 / dt2) * Q_inv_diag, (4.0 / dt) * Q_inv_diag;
+    inverse_covariance.template topLeftCorner<dim, dim>() =
+        (12.0 / dt3) * Q_inv_diag;
+    inverse_covariance.template topRightCorner<dim, dim>() =
+        (-6.0 / dt2) * Q_inv_diag;
+    inverse_covariance.template bottomLeftCorner<dim, dim>() =
+        (-6.0 / dt2) * Q_inv_diag;
+    inverse_covariance.template bottomRightCorner<dim, dim>() =
+        (4.0 / dt) * Q_inv_diag;
 
     return inverse_covariance;
   }
@@ -329,7 +347,10 @@ class WnoaMotionFactor
   static Matrix2N TransitionFunction(double deltaT) {
     // Construct the transition matrix for the WNOA factor
     Matrix2N F;
-    F << kIdentity, deltaT * kIdentity, kZero, kIdentity;
+    F.template topLeftCorner<dim, dim>() = kIdentity;
+    F.template topRightCorner<dim, dim>() = deltaT * kIdentity;
+    F.template bottomLeftCorner<dim, dim>() = kZero;
+    F.template bottomRightCorner<dim, dim>() = kIdentity;
     return F;
   }
 
@@ -362,7 +383,10 @@ class WnoaMotionFactor
 
     Matrix2N F;
     // first column is pose, second column is velocity
-    F << dxi_dT1, -deltaT * kIdentity, dvErr_dxi * dxi_dT1, -kIdentity;
+    F.template topLeftCorner<dim, dim>() = dxi_dT1;
+    F.template topRightCorner<dim, dim>() = -deltaT * kIdentity;
+    F.template bottomLeftCorner<dim, dim>() = dvErr_dxi * dxi_dT1;
+    F.template bottomRightCorner<dim, dim>() = -kIdentity;
     return F;
   }
 
@@ -395,7 +419,10 @@ class WnoaMotionFactor
 
     Matrix2N E;
     // First column is pose, second column is velocity
-    E << dxi_dT2, kZero, dvErr_dxi * dxi_dT2, invJr;
+    E.template topLeftCorner<dim, dim>() = dxi_dT2;
+    E.template topRightCorner<dim, dim>() = kZero;
+    E.template bottomLeftCorner<dim, dim>() = dvErr_dxi * dxi_dT2;
+    E.template bottomRightCorner<dim, dim>() = invJr;
     return -E;
   }
 };

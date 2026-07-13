@@ -51,6 +51,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             'unsigned char': 'unsigned char',
             'Vector': 'double',
             'Matrix': 'double',
+            'ConstMatrixView': 'double',
             'int': 'numeric',
             'size_t': 'numeric',
             'Key': 'numeric',
@@ -69,6 +70,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             'Point3': 'double',
             'Vector': 'double',
             'Matrix': 'double',
+            'ConstMatrixView': 'double',
             'Key': 'numeric',
             'bool': 'bool'
         }
@@ -353,6 +355,11 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             enum_type = f"{arg.ctype.typename}"
             arg_type = f"{enum_type}"
             unwrap = f'unwrap_enum<{enum_type}>(in[{arg_id}]);'
+
+        elif self.is_matrix_view(arg.ctype):
+            arg_type = self._format_type_name(arg.ctype.typename)
+            unwrap = 'unwrapMatrixView< {ctype} >(in[{id}]);'.format(
+                ctype=arg_type, id=arg_id)
 
         elif self.is_ref(arg.ctype):  # and not constructor:
             arg_type = "{ctype}&".format(ctype=ctype_sep)
@@ -1262,10 +1269,15 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                 return_type_text = self.wrap_collector_function_shared_return(
                     return_type.typename, shared_obj, func_id, func_id == 0)
             else:
-                return_type_text += 'wrap_shared_ptr({0},"{1}", false);{new_line}' \
+                is_virtual = any(
+                    cls.name == return_type.typename.name and cls.is_virtual
+                    for cls in self.classes
+                )
+                return_type_text += 'wrap_shared_ptr({0},"{1}", {2});{new_line}' \
                     .format(shared_obj,
                             self._format_type_name(return_type.typename,
                                                    separator='.'),
+                            'true' if is_virtual else 'false',
                             new_line=new_line)
         else:
             return_type_text += 'wrap< {0} >(pairResult.{1});{2}'.format(
@@ -1332,8 +1344,13 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                             obj=obj)
 
             if ctype.typename.name not in self.ignore_namespace:
+                is_virtual = any(
+                    cls.name == ctype.typename.name and cls.is_virtual
+                    for cls in self.classes
+                )
                 expanded += textwrap.indent(
-                    'out[0] = wrap_shared_ptr({0}, false);'.format(shared_obj),
+                    'out[0] = wrap_shared_ptr({0}, {1});'.format(
+                        shared_obj, 'true' if is_virtual else 'false'),
                     prefix='  ')
         else:
             expanded += '  out[0] = wrap< {0} >({1});'.format(
@@ -1734,8 +1751,9 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
             if cls.is_virtual:
                 class_name, class_name_sep = self.get_class_name(cls)
+                matlab_class_name = self._format_class_name(cls, separator='.')
                 rtti_classes += '    types.insert(std::make_pair(typeid({}).name(), "{}"));\n' \
-                    .format(class_name_sep, class_name)
+                    .format(class_name_sep, matlab_class_name)
 
         # Generate the typedef instances string
         typedef_instances = "\n".join(typedef_instances)

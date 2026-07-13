@@ -16,6 +16,7 @@
  */
 
 #include <gtsam/base/Manifold.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Similarity2.h>

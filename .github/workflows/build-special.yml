@@ -1,6 +1,7 @@
 name: Special Cases CI
 
 on:
+  workflow_dispatch: 
   pull_request:
     paths-ignore:
       - '**.md'
@@ -87,7 +88,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set Allow Deprecated Flag
         if: matrix.flag == 'deprecated'

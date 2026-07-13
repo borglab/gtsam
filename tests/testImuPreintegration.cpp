@@ -16,8 +16,8 @@
  **/
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
 #include <gtsam/slam/dataset.h>
 #include <tests/ImuMeasurement.h>

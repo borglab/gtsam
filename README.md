@@ -66,7 +66,7 @@ Prerequisites:
     - Mac: at least xcode-14.2
     - Linux: at least clang-11 or gcc-9
     - Windows: at least msvc-14.2
-- [CMake](http://www.cmake.org/cmake/resources/software.html) >= 3.9
+- [CMake](http://www.cmake.org/cmake/resources/software.html) >= 3.16
     - Ubuntu: `sudo apt-get install cmake`
 
 Optional Boost prerequisite:

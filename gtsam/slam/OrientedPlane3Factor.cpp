@@ -7,6 +7,8 @@
 
 #include "OrientedPlane3Factor.h"
 
+#include <gtsam/base/VectorConstants.h>
+
 using namespace std;
 
 namespace gtsam {

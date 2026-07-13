@@ -17,11 +17,11 @@
  *  @date December 2014
  */
 
-#include <gtsam/base/numericalDerivative.h>
-#include <gtsam/nonlinear/Expression.h>
-#include <gtsam/geometry/Event.h>
-
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/Event.h>
+#include <gtsam/linear/NoiseModel.h>
+#include <gtsam/nonlinear/Expression.h>
 
 using namespace std::placeholders;
 using namespace std;

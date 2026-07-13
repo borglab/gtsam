@@ -18,11 +18,12 @@
 
 #pragma once
 
+#include <gtsam/base/Manifold.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/Vector.h>
 #include <gtsam/geometry/BearingRange.h>
 #include <gtsam/geometry/ExtendedPose3.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/base/Vector.h>
-#include <gtsam/base/Manifold.h>
 
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/base_object.hpp>

@@ -19,6 +19,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/basis/Chebyshev2.h>
 #include <gtsam/basis/FitBasis.h>
 #include <gtsam/geometry/Pose2.h>
@@ -470,43 +471,39 @@ TEST(Chebyshev2, ComponentDerivativeFunctor) {
 
 //******************************************************************************
 TEST(Chebyshev2, IntegrationMatrix) {
-  const size_t N = 10;  // number of intervals => N+1 nodes
-  const double a = 0, b = 10;
+  const size_t N = 10;
+  const double a = 1, b = 3;
 
-  // Create integration matrix
   Matrix P = Chebyshev2::IntegrationMatrix(N, a, b);
+  LONGS_EQUAL(N + 1, P.rows());
+  LONGS_EQUAL(N, P.cols());
 
-  // Let's check that integrating a constant yields
-  // the sum of the lengths of the intervals:
   Vector F = P * Vector::Ones(N);
-  EXPECT_DOUBLES_EQUAL(0, F(0), 1e-9); // check first value is 0
-  Vector points = Chebyshev2::Points(N, a, b);
-  Vector ramp(N);
-  for (size_t i = 0; i < N; ++i) ramp(i) = points(i) - a;
+  EXPECT_DOUBLES_EQUAL(0, F(0), 1e-9);
+  Vector outputPoints = Chebyshev2::Points(N + 1, a, b);
+  Vector ramp(N + 1);
+  for (size_t i = 0; i <= N; ++i) ramp(i) = outputPoints(i) - a;
   EXPECT(assert_equal(ramp, F, 1e-9));
 
-  // Get values of the derivative (fprime) at the Chebyshev nodes
   Vector fp = Chebyshev2::vector(fprime, N, a, b);
-
-  // Integrate to get back f, using the integration matrix.
-  // Since there is a constant term, we need to add it back.
   Vector F_est = P * fp;
-  EXPECT_DOUBLES_EQUAL(0, F_est(0), 1e-9); // check first value is 0
-
-  // For comparison, get actual function values at the nodes
-  Vector F_true = Chebyshev2::vector(f, N, a, b);
-
-  // Verify the integration matrix worked correctly, after adding back the
-  // constant term
+  EXPECT_DOUBLES_EQUAL(0, F_est(0), 1e-9);
+  Vector F_true = Chebyshev2::vector(f, N + 1, a, b);
   F_est.array() += f(a);
   EXPECT(assert_equal(F_true, F_est, 1e-9));
+  const Matrix D = Chebyshev2::DifferentiationMatrix(N + 1, a, b);
+  const Vector fpOutput = Chebyshev2::vector(fprime, N + 1, a, b);
+  EXPECT(assert_equal(fpOutput, D * F_est, 1e-9));
 
-  // Differentiate the result to get back to our derivative function
-  Matrix D = Chebyshev2::DifferentiationMatrix(N, a, b);
-  Vector ff_est = D * F_est;
+  Vector highDegreeInput(N);
+  const Vector inputPoints = Chebyshev2::Points(N, a, b);
+  for (size_t i = 0; i < N; ++i) highDegreeInput(i) = pow(inputPoints(i), N - 1);
+  const Vector highDegreeIntegral = P * highDegreeInput;
 
-  // Verify the round trip worked
-  EXPECT(assert_equal(fp, ff_est, 1e-9));
+  Vector expected(N + 1);
+  for (size_t i = 0; i <= N; ++i)
+    expected(i) = (pow(outputPoints(i), N) - pow(a, N)) / N;
+  EXPECT(assert_equal(expected, highDegreeIntegral, 1e-8));
 }
 
 //******************************************************************************
@@ -530,9 +527,9 @@ TEST(Chebyshev2, IntegrationWeights7) {
   double actualW = actual * fp;
   EXPECT_DOUBLES_EQUAL(expectedF, actualW, 1e-9);
 
-  // We can calculate an alternate set of weights using the integration matrix:
+  // The final row of the exact integration matrix is the quadrature row.
   Matrix P = Chebyshev2::IntegrationMatrix(N);
-  Weights p7 = P.row(N-1);
+  Weights p7 = P.row(N);
 
   // Check that the two sets of weights give the same results
   EXPECT_DOUBLES_EQUAL(expectedF, p7 * fp, 1e-9);
@@ -540,6 +537,19 @@ TEST(Chebyshev2, IntegrationWeights7) {
   // And same for integrate f itself:
   Vector fvals = Chebyshev2::vector(f, N);
   EXPECT_DOUBLES_EQUAL(p7*fvals, actual * fvals, 1e-9);
+}
+
+// Checks the odd-N case that failed for the old projected integration matrix.
+TEST(Chebyshev2, IntegrationMatrixFinalRowOddN) {
+  const size_t N = 3;
+  const Matrix P = Chebyshev2::IntegrationMatrix(N, -1, 1);
+  const Weights expected =
+      (Weights(N) << 1.0 / 3.0, 4.0 / 3.0, 1.0 / 3.0).finished();
+  LONGS_EQUAL(N + 1, P.rows());
+  LONGS_EQUAL(N, P.cols());
+  EXPECT(assert_equal(expected, Weights(P.row(N)), 1e-12));
+  EXPECT(assert_equal(Chebyshev2::IntegrationWeights(N, -1, 1),
+                      Weights(P.row(N)), 1e-12));
 }
 
 // Check N=8
@@ -558,8 +568,6 @@ TEST(Chebyshev2, IntegrationWeights8) {
 TEST(Chebyshev2, DoubleIntegrationWeights) {
   const size_t N = 7;
   const double a = 0, b = 10;
-  // Let's integrate constant twice get a test case:
-  Matrix P = Chebyshev2::IntegrationMatrix(N, a, b);
   auto ones = Vector::Ones(N);
   
   // Check the sum which should be 0.5*t^2 | [0,b] = b^2/2:
@@ -570,8 +578,6 @@ TEST(Chebyshev2, DoubleIntegrationWeights) {
 TEST(Chebyshev2, DoubleIntegrationWeights2) {
   const size_t N = 8;
   const double a = 0, b = 3;
-  // Let's integrate constant twice get a test case:
-  Matrix P = Chebyshev2::IntegrationMatrix(N, a, b);
   auto ones = Vector::Ones(N);
   
   // Check the sum which should be 0.5*t^2 | [0,b] = b^2/2:

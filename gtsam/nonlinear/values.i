@@ -87,6 +87,7 @@ class Values {
   void insert(gtsam::Key j, const gtsam::ExtendedPose3d& T);
   void insert(gtsam::Key j, const gtsam::Pose2& pose2);
   void insert(gtsam::Key j, const gtsam::Pose3& pose3);
+  void insert(gtsam::Key j, const gtsam::Vector6& pose3tangent);
   void insert(gtsam::Key j, const gtsam::Rot2& rot2);
   void insert(gtsam::Key j, const gtsam::Rot3& rot3);
   void insert(gtsam::Key j, const gtsam::Similarity2& similarity2);
@@ -134,6 +135,7 @@ class Values {
   void update(gtsam::Key j, const gtsam::ExtendedPose3d& T);
   void update(gtsam::Key j, const gtsam::Pose2& pose2);
   void update(gtsam::Key j, const gtsam::Pose3& pose3);
+  void update(gtsam::Key j, const gtsam::Vector6& pose3tangent);
   void update(gtsam::Key j, const gtsam::Rot2& rot2);
   void update(gtsam::Key j, const gtsam::Rot3& rot3);
   void update(gtsam::Key j, const gtsam::Similarity2& similarity2);
@@ -181,6 +183,7 @@ class Values {
   void insert_or_assign(gtsam::Key j, const gtsam::ExtendedPose3d& T);
   void insert_or_assign(gtsam::Key j, const gtsam::Pose2& pose2);
   void insert_or_assign(gtsam::Key j, const gtsam::Pose3& pose3);
+  void insert_or_assign(gtsam::Key j, const gtsam::Vector6& pose3tangent);
   void insert_or_assign(gtsam::Key j, const gtsam::Rot2& rot2);
   void insert_or_assign(gtsam::Key j, const gtsam::Rot3& rot3);
   void insert_or_assign(gtsam::Key j, const gtsam::Similarity2& similarity2);
@@ -226,6 +229,7 @@ class Values {
                  gtsam::ExtendedPose3d,
                  gtsam::Pose2,
                  gtsam::Pose3,
+                 gtsam::Vector6,
                  gtsam::Rot2,
                  gtsam::Rot3,
                  gtsam::Similarity2,

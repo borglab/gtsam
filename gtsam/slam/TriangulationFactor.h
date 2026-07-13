@@ -54,8 +54,6 @@ protected:
   const bool verboseCheirality_; ///< If true, prints text for Cheirality exceptions (default: false)
 
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   /// shorthand for a smart pointer to a factor
   using shared_ptr = std::shared_ptr<This>;
 

@@ -14,6 +14,7 @@
  * @brief 3D Pose manifold SO(3) x R^3 and group SE(3)
  */
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/concepts.h>
 #include <gtsam/geometry/Kernel.h>
 #include <gtsam/geometry/Pose2.h>
@@ -204,7 +205,7 @@ Point3 Pose3::transformFrom(const Point3& point, OptionalJacobian<3, 6> Hself,
   return R_ * point + t_;
 }
 
-Matrix Pose3::transformFrom(const Matrix& points) const {
+Matrix Pose3::transformFrom(ConstMatrixView points) const {
   if (points.rows() != 3) {
     throw std::invalid_argument("Pose3:transformFrom expects 3*N matrix.");
   }
@@ -232,7 +233,7 @@ Point3 Pose3::transformTo(const Point3& point, OptionalJacobian<3, 6> Hself,
   return q;
 }
 
-Matrix Pose3::transformTo(const Matrix& points) const {
+Matrix Pose3::transformTo(ConstMatrixView points) const {
   if (points.rows() != 3) {
     throw std::invalid_argument("Pose3:transformTo expects 3*N matrix.");
   }
@@ -341,7 +342,7 @@ std::optional<Pose3> Pose3::Align(const Point3Pairs &abPointPairs) {
   return Pose3(aRb, aTb);
 }
 
-std::optional<Pose3> Pose3::Align(const Matrix& a, const Matrix& b) {
+std::optional<Pose3> Pose3::Align(ConstMatrixView a, ConstMatrixView b) {
   if (a.rows() != 3 || b.rows() != 3 || a.cols() != b.cols()) {
     throw std::invalid_argument(
         "Pose3:Align expects 3*N matrices of equal shape.");
