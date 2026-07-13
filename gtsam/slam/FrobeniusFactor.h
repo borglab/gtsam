@@ -149,16 +149,14 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
       if (this->noiseModel_->isConstrained()) {
         InsertQcqpConstraints<T, 1>(this->key(), constraints);
 
-        constexpr int AmbientDim = N * N;
-        constexpr int LiftedDim = AmbientDim + 1;
-        Matrix B = Matrix::Zero(AmbientDim, LiftedDim);
+        constexpr int LiftedDim = Dim + 1;
+        Matrix B = Matrix::Zero(Dim, LiftedDim);
         B.col(0) = -vecM_;
-        B.block(0, 1, AmbientDim, AmbientDim) =
-            Matrix::Identity(AmbientDim, AmbientDim);
+        B.block(0, 1, Dim, Dim) = Matrix::Identity(Dim, Dim);
 
         constraints->push_back(LinearConstraint::Equal(
                                    JacobianFactor(this->key(), B,
-                                                  Vector::Zero(AmbientDim)))
+                                                  Vector::Zero(Dim)))
                                    .createEqualityFactor());
       } else {
         throw std::runtime_error(
