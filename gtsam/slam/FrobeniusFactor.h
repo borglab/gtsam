@@ -355,9 +355,8 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
 
  private:
   static Matrix RightProductMatrix(const Matrix& right) {
-    constexpr int AmbientDim = N * N;
     const Matrix I = Matrix::Identity(N, N);
-    Matrix result = Matrix::Zero(AmbientDim, AmbientDim);
+    Matrix result = Matrix::Zero(Dim, Dim);
     for (int column = 0; column < N; ++column) {
       for (int sourceColumn = 0; sourceColumn < N; ++sourceColumn) {
         result.block(column * N, sourceColumn * N, N, N) =
@@ -386,29 +385,28 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
           this->noiseModel_->isConstrained()) {
         throw std::runtime_error(
             "FrobeniusBetweenFactor::qcqpFactors requires a "
-            "non-robust quadratic noise model");
+            "non-robust/non-hard quadratic noise model");
       }
 
-      constexpr int AmbientDim = N * N;
       const Matrix measurement = this->T12_.matrix();
       const Matrix A = RightProductMatrix(measurement);
 
-      Matrix B = Matrix::Zero(AmbientDim, 2 * AmbientDim);
-      B.block(0, 0, AmbientDim, AmbientDim) = -A;
-      B.block(0, AmbientDim, AmbientDim, AmbientDim) =
-          Matrix::Identity(AmbientDim, AmbientDim);
+      Matrix B = Matrix::Zero(Dim, 2 * Dim);
+      B.block(0, 0, Dim, Dim) = -A;
+      B.block(0, Dim, Dim, Dim) =
+          Matrix::Identity(Dim, Dim);
 
       const Matrix whitenedB = this->noiseModel_->Whiten(B);
       const Matrix Q = whitenedB.transpose() * whitenedB;
 
       // From here on we do homogenization and truncation (which may be Lie-group specific): 
       if constexpr (std::is_same_v<T, Rot2>) {
-        constexpr int LiftedDim = AmbientDim + 1; // First entry is homogenization
+        constexpr int LiftedDim = Dim + 1; // First entry is homogenization
         Matrix Q_trunc_hom = Matrix::Zero(2 * LiftedDim, 2 * LiftedDim);
-        Q_trunc_hom.block(1, 1, AmbientDim, AmbientDim) = Q.block(0, 0, AmbientDim, AmbientDim);
-        Q_trunc_hom.block(1, LiftedDim + 1, AmbientDim, AmbientDim) = Q.block(0, AmbientDim, AmbientDim, AmbientDim);
-        Q_trunc_hom.block(LiftedDim + 1, 1, AmbientDim, AmbientDim) = Q.block(AmbientDim, 0, AmbientDim, AmbientDim);
-        Q_trunc_hom.block(LiftedDim + 1, LiftedDim + 1, AmbientDim, AmbientDim) = Q.block(AmbientDim, AmbientDim, AmbientDim, AmbientDim);
+        Q_trunc_hom.block(1, 1, Dim, Dim) = Q.block(0, 0, Dim, Dim);
+        Q_trunc_hom.block(1, LiftedDim + 1, Dim, Dim) = Q.block(0, Dim, Dim, Dim);
+        Q_trunc_hom.block(LiftedDim + 1, 1, Dim, Dim) = Q.block(Dim, 0, Dim, Dim);
+        Q_trunc_hom.block(LiftedDim + 1, LiftedDim + 1, Dim, Dim) = Q.block(Dim, Dim, Dim, Dim);
 
         // Keep constraint insertion inside the type-specific branch so
         // Q_trunc_hom dimensions agree with the lifted vector, e.g. Rot2.h.

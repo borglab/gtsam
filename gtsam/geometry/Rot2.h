@@ -265,7 +265,7 @@ struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
   static Matrix QcqpValue(const Rot2& value) {
     if constexpr (D == 1) {
       const Matrix2 R = value.matrix();
-      Matrix X(5, 1);
+      Vector5 X;
       X(0, 0) = 1.0; // Homogenization entry
       X.bottomRows(4) = Eigen::Map<const Matrix>(R.data(), 4, 1);
       return X;
