@@ -253,18 +253,48 @@ whether Gaussian-object allocation, domain conversion, sparse packing, GPU
 normal-equation formation, or sparse factorization is the limiting general
 path.
 
-## Deliberate follow-up boundary
+## Measured evidence and follow-up boundary
 
-Only after the timing breakdown is trustworthy will the project consider:
+The 2026-07-14 A100 measurements support the cached-layout hypothesis. On
+BAL-16 and BAL-135, streaming each temporary factor directly into its
+preassigned CSR rows was respectively 3.16x and 2.64x faster than constructing
+a complete `GaussianFactorGraph` and then packing the identical CSR layout.
+The generic sparse CUDA optimizer was 3.37x and 2.02x faster than ordinary CPU
+LM while matching its final objective within the benchmark's `1e-8` relative
+tolerance. The domain-specific CUDA SFM optimizer remained 10.35x and 12.01x
+faster than the generic path.
 
-- direct `NoiseModelFactor` emission without temporary `JacobianFactor` objects;
-- compact block-row Jacobian storage;
-- upper-triangle-only normal-equation generation;
+The timing breakdown changes the immediate follow-up priority. One-time cuDSS
+analysis was the largest measured generic stage: 0.289 s of a 0.805 s internal
+BAL-16 run and 1.736 s of a 3.402 s BAL-135 run. Symbolic plan construction and
+persistent sparse setup were also substantial. Complete-run numeric H2D took
+only 0.0063 s and 0.0225 s, and attempt D2H remained below 0.00051 s. Raw
+transfer is therefore not the primary bottleneck.
+
+Direct `NoiseModelFactor` emission is not the recommended immediate milestone.
+It should be reconsidered after repeated solves or incremental updates reuse
+the symbolic plan, GPU structure, and cuDSS analysis enough to make factor
+linearization and packing dominant. The preferred sequence is:
+
+1. cache and reuse structure and cuDSS symbolic analysis across compatible
+   solves;
+2. reduce setup and storage, including evaluating an upper-triangle-only
+   normal system;
+3. reduce `Values` transfer/retract overhead with persistent device state;
+4. add direct writers for the hottest built-in factors while retaining the
+   virtual compatibility path for custom factors.
+
+The implemented milestone deliberately continues to exclude:
+
+- direct nonlinear-factor writers;
+- compact batch-Jacobian support;
+- upper-triangle-only Hessian generation;
 - custom GPU factor emitters;
-- persistent device values;
-- incremental/iSAM2 integration.
+- persistent device `Values`;
+- iSAM2 or incremental Bayes-tree integration.
 
-These are not required to validate the first prototype's hypothesis.
+The full measurements and limitations are recorded in the
+[prototype result report](../results/2026-07-14-direct-sparse-jacobian-gpu-prototype.md).
 
 ## CUDA API references
 
