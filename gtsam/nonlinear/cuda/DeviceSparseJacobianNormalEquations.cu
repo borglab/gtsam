@@ -125,6 +125,7 @@ struct DeviceSparseJacobianNormalEquations::Impl {
   int jacobianRows = 0;
   int jacobianColumns = 0;
   int jacobianNonzeros = 0;
+  uint64_t jacobianStructuralFingerprint = 0;
 
   cusparseHandle_t handle = nullptr;
   cusparseSpMatDescr_t jDescriptor = nullptr;
@@ -247,6 +248,7 @@ struct DeviceSparseJacobianNormalEquations::Impl {
     jacobianRows = plan.rows();
     jacobianColumns = plan.columns();
     jacobianNonzeros = plan.nonzeros();
+    jacobianStructuralFingerprint = plan.structuralFingerprint();
 
     jRowPointers.upload(plan.rowPointers(), stream);
     jColumnIndices.upload(plan.columnIndices(), stream);
@@ -608,6 +610,11 @@ void DeviceSparseJacobianNormalEquations::Impl::upload(
     const HostSparseJacobian& host, cudaStream_t suppliedStream) {
   validateStream(suppliedStream);
   validatePointers();
+  if (host.structuralFingerprint() != jacobianStructuralFingerprint) {
+    throw std::invalid_argument(
+        "DeviceSparseJacobianNormalEquations host structural fingerprint "
+        "does not match the initialized plan");
+  }
   if (host.valuesSize() != static_cast<size_t>(jacobianNonzeros) ||
       host.rhsSize() != static_cast<size_t>(jacobianRows)) {
     throw std::invalid_argument(

@@ -45,6 +45,11 @@ DirectJacobianStatus ValidateOutput(const SparseJacobianPlan& plan,
     return Failure(DirectJacobianFailure::StructuralMismatch,
                    "output is null");
   }
+  if (output->structuralFingerprint() != plan.structuralFingerprint()) {
+    return Failure(
+        DirectJacobianFailure::StructuralMismatch,
+        "output structural fingerprint does not match the sparse plan");
+  }
   if (output->valuesSize() != static_cast<size_t>(plan.nonzeros())) {
     return Failure(DirectJacobianFailure::StructuralMismatch,
                    "output values size does not match the sparse plan");

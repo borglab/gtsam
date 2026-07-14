@@ -360,6 +360,17 @@ NonlinearFactorGraph makeStreamingGraph() {
   return graph;
 }
 
+NonlinearFactorGraph makeFingerprintPlanGraph(bool reverseFactorOrder) {
+  NonlinearFactorGraph graph;
+  const Key firstKey = reverseFactorOrder ? kSecondStreamingKey
+                                          : kFirstStreamingKey;
+  const Key secondKey = reverseFactorOrder ? kFirstStreamingKey
+                                           : kSecondStreamingKey;
+  graph.emplace_shared<RecordingPointFactor>(firstKey, false);
+  graph.emplace_shared<RecordingPointFactor>(secondKey, false);
+  return graph;
+}
+
 void SeedFactorRange(const SparseJacobianPlan& plan, size_t factorIndex,
                      double sentinel, HostSparseJacobian* host) {
   const SparseJacobianFactorWritePlan& factor = plan.factor(factorIndex);
@@ -1312,6 +1323,103 @@ TEST(DeviceSparseJacobianNormalEquations,
     CHECK(downloaded.rowPointers == initialPattern.first);
     CHECK(downloaded.columnIndices == initialPattern.second);
   }
+#endif
+}
+
+TEST(StreamingSparseJacobianLinearizer,
+     RejectsMismatchedHostFingerprintBeforeFactorEvaluation) {
+  const Values values = makeStreamingValues();
+  const SparseJacobianColumnLayout columns(values);
+  const NonlinearFactorGraph firstGraph = makeFingerprintPlanGraph(false);
+  const NonlinearFactorGraph secondGraph = makeFingerprintPlanGraph(true);
+  const SparseJacobianPlan firstPlan(firstGraph, columns);
+  const SparseJacobianPlan secondPlan(secondGraph, columns);
+  constexpr double kSentinel = 97.0;
+  HostSparseJacobian secondHost(secondPlan);
+  SeedFactorRange(firstPlan, 0, kSentinel, &secondHost);
+  SeedFactorRange(firstPlan, 1, kSentinel, &secondHost);
+
+  const auto firstFactor =
+      std::dynamic_pointer_cast<RecordingPointFactor>(firstGraph[0]);
+  const auto secondFactor =
+      std::dynamic_pointer_cast<RecordingPointFactor>(firstGraph[1]);
+  CHECK(firstFactor != nullptr);
+  CHECK(secondFactor != nullptr);
+
+  const StreamingSparseJacobianLinearizer linearizer;
+  const DirectJacobianStatus status = linearizer.linearize(
+      firstGraph, values, columns, firstPlan, &secondHost, nullptr, false);
+  CHECK(status.failure == DirectJacobianFailure::StructuralMismatch);
+  CHECK(status.detail.find("structural fingerprint") != std::string::npos);
+  CHECK(firstFactor->callCount() == 0);
+  CHECK(secondFactor->callCount() == 0);
+  CHECK(FactorRangeEquals(firstPlan, 0, kSentinel, secondHost));
+  CHECK(FactorRangeEquals(firstPlan, 1, kSentinel, secondHost));
+}
+
+TEST(StreamingSparseJacobianLinearizer,
+     PackingRejectsMismatchedHostFingerprintBeforeWrites) {
+  const Values values = makeStreamingValues();
+  const SparseJacobianColumnLayout columns(values);
+  const NonlinearFactorGraph firstGraph = makeFingerprintPlanGraph(false);
+  const NonlinearFactorGraph secondGraph = makeFingerprintPlanGraph(true);
+  const SparseJacobianPlan firstPlan(firstGraph, columns);
+  const SparseJacobianPlan secondPlan(secondGraph, columns);
+  constexpr double kSentinel = 97.0;
+  HostSparseJacobian secondHost(secondPlan);
+  SeedFactorRange(firstPlan, 0, kSentinel, &secondHost);
+  SeedFactorRange(firstPlan, 1, kSentinel, &secondHost);
+
+  const Matrix A = (Matrix(1, 2) << 1.0, 2.0).finished();
+  const Vector b = (Vector(1) << 3.0).finished();
+  GaussianFactorGraph linear;
+  linear.push_back(
+      std::make_shared<JacobianFactor>(kFirstStreamingKey, A, b));
+  linear.push_back(
+      std::make_shared<JacobianFactor>(kSecondStreamingKey, A, b));
+
+  const DirectJacobianStatus status =
+      StreamingSparseJacobianLinearizer().packGaussianFactorGraph(
+          linear, firstPlan, &secondHost);
+  CHECK(status.failure == DirectJacobianFailure::StructuralMismatch);
+  CHECK(status.detail.find("structural fingerprint") != std::string::npos);
+  CHECK(FactorRangeEquals(firstPlan, 0, kSentinel, secondHost));
+  CHECK(FactorRangeEquals(firstPlan, 1, kSentinel, secondHost));
+}
+
+TEST(DeviceSparseJacobianNormalEquations,
+     RejectsEqualSizedHostWithDifferentStructuralFingerprint) {
+  const Values values = makeStreamingValues();
+  const SparseJacobianColumnLayout columns(values);
+  const NonlinearFactorGraph firstGraph = makeFingerprintPlanGraph(false);
+  const NonlinearFactorGraph secondGraph = makeFingerprintPlanGraph(true);
+  const SparseJacobianPlan firstPlan(firstGraph, columns);
+  const SparseJacobianPlan secondPlan(secondGraph, columns);
+
+  CHECK(firstPlan.rows() == secondPlan.rows());
+  CHECK(firstPlan.columns() == secondPlan.columns());
+  CHECK(firstPlan.nonzeros() == secondPlan.nonzeros());
+  CHECK(firstPlan.rowPointers() == secondPlan.rowPointers());
+  CHECK(firstPlan.columnIndices() != secondPlan.columnIndices());
+  CHECK(firstPlan.structuralFingerprint() !=
+        secondPlan.structuralFingerprint());
+
+#if GTSAM_TEST_EXPECT_SPGEMM_REUSE
+  HostSparseJacobian secondHost(secondPlan);
+
+  CudaContext context;
+  DeviceSparseJacobianNormalEquations normalEquations;
+  normalEquations.initialize(firstPlan, context.stream());
+
+  bool detailedInvalidArgument = false;
+  try {
+    normalEquations.uploadNumerics(secondHost, context.stream());
+  } catch (const std::invalid_argument& error) {
+    detailedInvalidArgument =
+        std::string(error.what()).find("structural fingerprint") !=
+        std::string::npos;
+  }
+  CHECK(detailedInvalidArgument);
 #endif
 }
 
