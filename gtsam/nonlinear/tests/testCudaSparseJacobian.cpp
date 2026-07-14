@@ -18,7 +18,11 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <Eigen/Cholesky>
+
+#include <algorithm>
 #include <atomic>
+#include <cmath>
 #include <limits>
 #include <memory>
 #include <mutex>
@@ -462,6 +466,55 @@ NonlinearFactorGraph makeGraph() {
   graph.emplace_shared<PriorFactor<Pose2>>(kPoseKey, Pose2());
   graph.emplace_shared<ReversedPointPoseFactor>(kPointKey, kPoseKey);
   return graph;
+}
+
+struct DeviceSystemAddresses {
+  const int* rowPointers = nullptr;
+  const int* columnIndices = nullptr;
+  const double* values = nullptr;
+  const double* rhs = nullptr;
+};
+
+[[maybe_unused]] DeviceSystemAddresses GetSystemAddresses(
+    const DeviceSparseNormalEquations& system) {
+  return {system.rowPointers().data(), system.colIndices().data(),
+          system.values().data(), system.rhs().data()};
+}
+
+[[maybe_unused]] bool SystemAddressesEqual(
+    const DeviceSparseNormalEquations& system,
+    const DeviceSystemAddresses& expected) {
+  return system.rowPointers().data() == expected.rowPointers &&
+         system.colIndices().data() == expected.columnIndices &&
+         system.values().data() == expected.values &&
+         system.rhs().data() == expected.rhs;
+}
+
+DenseJacobianReference LinearizeSparseJacobian(
+    const NonlinearFactorGraph& graph, const Values& values,
+    const SparseJacobianColumnLayout& columns,
+    const SparseJacobianPlan& plan, HostSparseJacobian* host) {
+  host->clear();
+  const DirectJacobianStatus status =
+      StreamingSparseJacobianLinearizer().linearize(
+          graph, values, columns, plan, host, nullptr, false);
+  if (!status.ok()) {
+    throw std::runtime_error("test sparse Jacobian linearization failed");
+  }
+  return {DenseFromCsr(plan, *host), VectorFromHostRhs(*host)};
+}
+
+struct DenseAttemptReference {
+  Vector delta;
+};
+
+[[maybe_unused]] DenseAttemptReference MakeDenseAttemptReference(
+    const DenseJacobianReference& linearized, const Matrix& dampedHessian) {
+  DenseAttemptReference expected;
+  expected.delta =
+      dampedHessian.llt().solve(linearized.jacobian.transpose() *
+                                linearized.rhs);
+  return expected;
 }
 
 }  // namespace
@@ -1340,6 +1393,379 @@ TEST(DeviceSparseJacobianNormalEquations,
     CHECK(downloaded.rowPointers == initialPattern.first);
     CHECK(downloaded.columnIndices == initialPattern.second);
   }
+#endif
+}
+
+TEST(DeviceSparseJacobianNormalEquations,
+     SolvesIdentityDampedAttemptsWithoutAccumulationAndEvaluatesModel) {
+#if GTSAM_TEST_EXPECT_SPGEMM_REUSE && GTSAM_ENABLE_CUDSS
+  Values values;
+  values.insert(kPoseKey, Pose2(0.25, -0.5, 0.15));
+  values.insert(kPointKey, Point2(4.0, 5.0));
+
+  const NonlinearFactorGraph graph = makeGraph();
+  const SparseJacobianColumnLayout columns(values);
+  const SparseJacobianPlan plan(graph, columns);
+  HostSparseJacobian host(plan);
+  LinearizeSparseJacobian(graph, values, columns, plan, &host);
+  const DenseJacobianReference reference =
+      AssembleDenseReferenceBySlot(graph, values, columns, plan);
+  const GaussianFactorGraph::shared_ptr linearGraph = graph.linearize(values);
+  const Matrix undampedHessian =
+      reference.jacobian.transpose() * reference.jacobian;
+
+  CudaContext context;
+  DeviceSparseJacobianNormalEquations normalEquations;
+  normalEquations.initialize(plan, context.stream());
+  normalEquations.uploadNumerics(host, context.stream());
+  normalEquations.formUndampedSystem(context.stream());
+
+  const DeviceSparseNormalEquations& initialSystem =
+      normalEquations.system();
+  const DeviceSystemAddresses addresses = GetSystemAddresses(initialSystem);
+  const auto pattern =
+      DownloadNormalEquationPattern(initialSystem, context.stream());
+
+  normalEquations.prepareDamping(false, 0.25, 4.0, context.stream());
+  normalEquations.analyze(context.stream());
+  EXPECT_LONGS_EQUAL(1, normalEquations.analysisCount());
+
+  for (const double lambda : {0.0, 0.1, 1.0}) {
+    normalEquations.solveAndEvaluate(lambda, context.stream());
+    const DeviceSparseJacobianAttemptResult attempt =
+        normalEquations.downloadAttemptResult(context.stream());
+    const Matrix expectedHessian =
+        undampedHessian + lambda * Matrix::Identity(plan.columns(),
+                                                     plan.columns());
+    const DenseAttemptReference expected =
+        MakeDenseAttemptReference(reference, expectedHessian);
+    EXPECT(assert_equal(expected.delta, attempt.delta, 1e-9));
+    const double expectedOldError = linearGraph->error(
+        columns.toVectorValues(Vector::Zero(plan.columns())));
+    const double expectedNewError =
+        linearGraph->error(columns.toVectorValues(attempt.delta));
+    DOUBLES_EQUAL(expectedOldError, attempt.model.oldError, 1e-9);
+    DOUBLES_EQUAL(expectedNewError, attempt.model.newError, 1e-9);
+    DOUBLES_EQUAL(expectedOldError - expectedNewError,
+                  attempt.model.change(), 1e-9);
+
+    const DeviceSparseNormalEquations& system = normalEquations.system();
+    const DownloadedSparseNormalEquations downloaded =
+        DownloadNormalEquations(system, context.stream());
+    EXPECT(assert_equal(expectedHessian, downloaded.hessian, 1e-10));
+    EXPECT(assert_equal(downloaded.hessian, downloaded.hessian.transpose(),
+                        1e-12));
+    CHECK(SystemAddressesEqual(system, addresses));
+    CHECK(downloaded.rowPointers == pattern.first);
+    CHECK(downloaded.columnIndices == pattern.second);
+  }
+#endif
+}
+
+TEST(DeviceSparseJacobianNormalEquations,
+     SolvesDiagonalDampedAttemptsWithoutAccumulationAndPreservesStorage) {
+#if GTSAM_TEST_EXPECT_SPGEMM_REUSE && GTSAM_ENABLE_CUDSS
+  Values values;
+  values.insert(kPoseKey, Pose2(-0.75, 1.25, -0.3));
+  values.insert(kPointKey, Point2(-2.5, 3.75));
+
+  const NonlinearFactorGraph graph = makeGraph();
+  const SparseJacobianColumnLayout columns(values);
+  const SparseJacobianPlan plan(graph, columns);
+  HostSparseJacobian host(plan);
+  LinearizeSparseJacobian(graph, values, columns, plan, &host);
+  const DenseJacobianReference reference =
+      AssembleDenseReferenceBySlot(graph, values, columns, plan);
+  const GaussianFactorGraph::shared_ptr linearGraph = graph.linearize(values);
+  const Matrix undampedHessian =
+      reference.jacobian.transpose() * reference.jacobian;
+  constexpr double minDiagonal = 1.25;
+  constexpr double maxDiagonal = 1.75;
+  Vector dampingDiagonal = undampedHessian.diagonal();
+  for (Eigen::Index row = 0; row < dampingDiagonal.size(); ++row) {
+    dampingDiagonal(row) =
+        std::clamp(dampingDiagonal(row), minDiagonal, maxDiagonal);
+  }
+
+  CudaContext context;
+  DeviceSparseJacobianNormalEquations normalEquations;
+  normalEquations.initialize(plan, context.stream());
+  normalEquations.uploadNumerics(host, context.stream());
+  normalEquations.formUndampedSystem(context.stream());
+
+  const DeviceSparseNormalEquations& initialSystem =
+      normalEquations.system();
+  const DeviceSystemAddresses addresses = GetSystemAddresses(initialSystem);
+  const auto pattern =
+      DownloadNormalEquationPattern(initialSystem, context.stream());
+
+  normalEquations.prepareDamping(true, minDiagonal, maxDiagonal,
+                                 context.stream());
+  normalEquations.analyze(context.stream());
+
+  for (const double lambda : {0.2, 1.1}) {
+    normalEquations.solveAndEvaluate(lambda, context.stream());
+    const DeviceSparseJacobianAttemptResult attempt =
+        normalEquations.downloadAttemptResult(context.stream());
+    const Matrix expectedHessian =
+        undampedHessian +
+        (lambda * dampingDiagonal).asDiagonal().toDenseMatrix();
+    const DenseAttemptReference expected =
+        MakeDenseAttemptReference(reference, expectedHessian);
+    EXPECT(assert_equal(expected.delta, attempt.delta, 1e-9));
+    const double expectedOldError = linearGraph->error(
+        columns.toVectorValues(Vector::Zero(plan.columns())));
+    const double expectedNewError =
+        linearGraph->error(columns.toVectorValues(attempt.delta));
+    DOUBLES_EQUAL(expectedOldError, attempt.model.oldError, 1e-9);
+    DOUBLES_EQUAL(expectedNewError, attempt.model.newError, 1e-9);
+    DOUBLES_EQUAL(expectedOldError - expectedNewError,
+                  attempt.model.change(), 1e-9);
+
+    const DeviceSparseNormalEquations& system = normalEquations.system();
+    const DownloadedSparseNormalEquations downloaded =
+        DownloadNormalEquations(system, context.stream());
+    EXPECT(assert_equal(expectedHessian, downloaded.hessian, 1e-10));
+    EXPECT(assert_equal(downloaded.hessian, downloaded.hessian.transpose(),
+                        1e-12));
+    CHECK(SystemAddressesEqual(system, addresses));
+    CHECK(downloaded.rowPointers == pattern.first);
+    CHECK(downloaded.columnIndices == pattern.second);
+  }
+#endif
+}
+
+TEST(DeviceSparseJacobianNormalEquations,
+     CachesAnalysisAcrossNumericalUpdatesAndResetsOnInitialize) {
+#if GTSAM_TEST_EXPECT_SPGEMM_REUSE && GTSAM_ENABLE_CUDSS
+  Values firstValues;
+  firstValues.insert(kPoseKey, Pose2(0.25, -0.5, 0.15));
+  firstValues.insert(kPointKey, Point2(4.0, 5.0));
+  Values secondValues;
+  secondValues.insert(kPoseKey, Pose2(-0.75, 1.25, -0.3));
+  secondValues.insert(kPointKey, Point2(-2.5, 3.75));
+
+  const NonlinearFactorGraph graph = makeGraph();
+  const SparseJacobianColumnLayout columns(firstValues);
+  const SparseJacobianPlan plan(graph, columns);
+  HostSparseJacobian firstHost(plan);
+  HostSparseJacobian secondHost(plan);
+  CudaContext context;
+  DeviceSparseJacobianNormalEquations normalEquations;
+  normalEquations.initialize(plan, context.stream());
+  EXPECT_LONGS_EQUAL(0, normalEquations.analysisCount());
+
+  LinearizeSparseJacobian(graph, firstValues, columns, plan, &firstHost);
+  normalEquations.uploadNumerics(firstHost, context.stream());
+  normalEquations.formUndampedSystem(context.stream());
+  normalEquations.prepareDamping(false, 0.0, 10.0, context.stream());
+  normalEquations.analyze(context.stream());
+  normalEquations.analyze(context.stream());
+  EXPECT_LONGS_EQUAL(1, normalEquations.analysisCount());
+
+  const DeviceSystemAddresses addresses =
+      GetSystemAddresses(normalEquations.system());
+  LinearizeSparseJacobian(graph, secondValues, columns, plan, &secondHost);
+  const DenseJacobianReference secondReference =
+      AssembleDenseReferenceBySlot(graph, secondValues, columns, plan);
+  const GaussianFactorGraph::shared_ptr secondLinearGraph =
+      graph.linearize(secondValues);
+  normalEquations.uploadNumerics(secondHost, context.stream());
+  normalEquations.formUndampedSystem(context.stream());
+  normalEquations.prepareDamping(true, 0.5, 5.0, context.stream());
+  normalEquations.analyze(context.stream());
+  EXPECT_LONGS_EQUAL(1, normalEquations.analysisCount());
+  CHECK(SystemAddressesEqual(normalEquations.system(), addresses));
+
+  constexpr double lambda = 0.4;
+  Vector diagonal =
+      (secondReference.jacobian.transpose() * secondReference.jacobian)
+          .diagonal();
+  for (Eigen::Index row = 0; row < diagonal.size(); ++row) {
+    diagonal(row) = std::clamp(diagonal(row), 0.5, 5.0);
+  }
+  Matrix secondDampedHessian =
+      secondReference.jacobian.transpose() * secondReference.jacobian;
+  secondDampedHessian +=
+      (lambda * diagonal).asDiagonal().toDenseMatrix();
+  normalEquations.solveAndEvaluate(lambda, context.stream());
+  const DeviceSparseJacobianAttemptResult secondAttempt =
+      normalEquations.downloadAttemptResult(context.stream());
+  const DenseAttemptReference secondExpected =
+      MakeDenseAttemptReference(secondReference, secondDampedHessian);
+  EXPECT(assert_equal(secondExpected.delta, secondAttempt.delta, 1e-9));
+  const double expectedOldError = secondLinearGraph->error(
+      columns.toVectorValues(Vector::Zero(plan.columns())));
+  const double expectedNewError =
+      secondLinearGraph->error(columns.toVectorValues(secondAttempt.delta));
+  DOUBLES_EQUAL(expectedOldError, secondAttempt.model.oldError, 1e-9);
+  DOUBLES_EQUAL(expectedNewError, secondAttempt.model.newError, 1e-9);
+  DOUBLES_EQUAL(expectedOldError - expectedNewError,
+                secondAttempt.model.change(), 1e-9);
+
+  normalEquations.initialize(plan, context.stream());
+  EXPECT_LONGS_EQUAL(0, normalEquations.analysisCount());
+  normalEquations.uploadNumerics(secondHost, context.stream());
+  normalEquations.formUndampedSystem(context.stream());
+  normalEquations.prepareDamping(true, 2.0, 2.0, context.stream());
+  normalEquations.analyze(context.stream());
+  EXPECT_LONGS_EQUAL(1, normalEquations.analysisCount());
+  normalEquations.solveAndEvaluate(lambda, context.stream());
+  const DeviceSparseJacobianAttemptResult reinitializedAttempt =
+      normalEquations.downloadAttemptResult(context.stream());
+  const Matrix reinitializedHessian =
+      secondReference.jacobian.transpose() * secondReference.jacobian +
+      (2.0 * lambda) *
+          Matrix::Identity(plan.columns(), plan.columns());
+  const DenseAttemptReference reinitializedExpected =
+      MakeDenseAttemptReference(secondReference, reinitializedHessian);
+  EXPECT(assert_equal(reinitializedExpected.delta,
+                      reinitializedAttempt.delta, 1e-9));
+  const double reinitializedOldError = secondLinearGraph->error(
+      columns.toVectorValues(Vector::Zero(plan.columns())));
+  const double reinitializedNewError = secondLinearGraph->error(
+      columns.toVectorValues(reinitializedAttempt.delta));
+  DOUBLES_EQUAL(reinitializedOldError,
+                reinitializedAttempt.model.oldError, 1e-9);
+  DOUBLES_EQUAL(reinitializedNewError,
+                reinitializedAttempt.model.newError, 1e-9);
+#endif
+}
+
+TEST(DeviceSparseJacobianNormalEquations,
+     RejectsUninitializedOutOfOrderAndInvalidAttemptCalls) {
+  DeviceSparseJacobianNormalEquations uninitialized;
+  EXPECT_LONGS_EQUAL(0, uninitialized.analysisCount());
+  CHECK_EXCEPTION(uninitialized.prepareDamping(false, 0.0, 1.0),
+                  std::logic_error);
+  CHECK_EXCEPTION(uninitialized.analyze(), std::logic_error);
+  CHECK_EXCEPTION(uninitialized.solveAndEvaluate(0.1), std::logic_error);
+  CHECK_EXCEPTION(uninitialized.downloadAttemptResult(), std::logic_error);
+
+#if GTSAM_TEST_EXPECT_SPGEMM_REUSE
+  const Values values = makeValues();
+  const NonlinearFactorGraph graph = makeGraph();
+  const SparseJacobianColumnLayout columns(values);
+  const SparseJacobianPlan plan(graph, columns);
+  HostSparseJacobian host(plan);
+  LinearizeSparseJacobian(graph, values, columns, plan, &host);
+  CudaContext context;
+  DeviceSparseJacobianNormalEquations normalEquations;
+  normalEquations.initialize(plan, context.stream());
+
+  CHECK_EXCEPTION(normalEquations.formUndampedSystem(context.stream()),
+                  std::logic_error);
+  CHECK_EXCEPTION(normalEquations.prepareDamping(false, 0.0, 1.0,
+                                                  context.stream()),
+                  std::logic_error);
+  CHECK_EXCEPTION(normalEquations.analyze(context.stream()),
+                  std::logic_error);
+  CHECK_EXCEPTION(normalEquations.downloadAttemptResult(context.stream()),
+                  std::logic_error);
+
+  normalEquations.uploadNumerics(host, context.stream());
+  CHECK_EXCEPTION(normalEquations.prepareDamping(false, 0.0, 1.0,
+                                                  context.stream()),
+                  std::logic_error);
+  normalEquations.formUndampedSystem(context.stream());
+
+  CHECK_EXCEPTION(normalEquations.prepareDamping(
+                      false, std::numeric_limits<double>::quiet_NaN(), 1.0,
+                      context.stream()),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(normalEquations.prepareDamping(
+                      false, std::numeric_limits<double>::infinity(), 1.0,
+                      context.stream()),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(normalEquations.prepareDamping(
+                      false, -std::numeric_limits<double>::infinity(), 1.0,
+                      context.stream()),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(normalEquations.prepareDamping(
+                      false, 0.0,
+                      std::numeric_limits<double>::quiet_NaN(),
+                      context.stream()),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(normalEquations.prepareDamping(
+                      false, 0.0, std::numeric_limits<double>::infinity(),
+                      context.stream()),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(normalEquations.prepareDamping(
+                      false, 0.0,
+                      -std::numeric_limits<double>::infinity(),
+                      context.stream()),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(normalEquations.prepareDamping(false, 2.0, 1.0,
+                                                  context.stream()),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(normalEquations.prepareDamping(false, -1.0, 1.0,
+                                                  context.stream()),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(normalEquations.prepareDamping(true, -2.0, -1.0,
+                                                  context.stream()),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(normalEquations.solveAndEvaluate(0.1, context.stream()),
+                  std::logic_error);
+
+  normalEquations.prepareDamping(false, 0.0, 1.0, context.stream());
+  CHECK_EXCEPTION(normalEquations.solveAndEvaluate(
+                      -0.1, context.stream()),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(normalEquations.solveAndEvaluate(
+                      std::numeric_limits<double>::quiet_NaN(),
+                      context.stream()),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(normalEquations.solveAndEvaluate(
+                      std::numeric_limits<double>::infinity(),
+                      context.stream()),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(normalEquations.solveAndEvaluate(0.1, context.stream()),
+                  std::logic_error);
+  CHECK_EXCEPTION(normalEquations.downloadAttemptResult(context.stream()),
+                  std::logic_error);
+
+#if GTSAM_ENABLE_CUDSS
+  normalEquations.analyze(context.stream());
+  CHECK_EXCEPTION(normalEquations.downloadAttemptResult(context.stream()),
+                  std::logic_error);
+#else
+  CHECK_EXCEPTION(normalEquations.analyze(context.stream()),
+                  std::runtime_error);
+  EXPECT_LONGS_EQUAL(0, normalEquations.analysisCount());
+#endif
+#endif
+}
+
+TEST(DeviceSparseJacobianNormalEquations,
+     RejectsWrongStreamForAttemptLifecycle) {
+#if GTSAM_TEST_EXPECT_SPGEMM_REUSE
+  const Values values = makeValues();
+  const NonlinearFactorGraph graph = makeGraph();
+  const SparseJacobianColumnLayout columns(values);
+  const SparseJacobianPlan plan(graph, columns);
+  HostSparseJacobian host(plan);
+  LinearizeSparseJacobian(graph, values, columns, plan, &host);
+
+  CudaContext context;
+  cudaStream_t otherStream = nullptr;
+  GTSAM_CUDA_CHECK(cudaStreamCreate(&otherStream));
+  {
+    DeviceSparseJacobianNormalEquations normalEquations;
+    normalEquations.initialize(plan, context.stream());
+    normalEquations.uploadNumerics(host, context.stream());
+    normalEquations.formUndampedSystem(context.stream());
+
+    CHECK_EXCEPTION(normalEquations.prepareDamping(false, 0.0, 1.0,
+                                                    otherStream),
+                    std::invalid_argument);
+    CHECK_EXCEPTION(normalEquations.analyze(otherStream),
+                    std::invalid_argument);
+    CHECK_EXCEPTION(normalEquations.solveAndEvaluate(0.1, otherStream),
+                    std::invalid_argument);
+    CHECK_EXCEPTION(normalEquations.downloadAttemptResult(otherStream),
+                    std::invalid_argument);
+  }
+  GTSAM_CUDA_CHECK(cudaStreamDestroy(otherStream));
 #endif
 }
 
