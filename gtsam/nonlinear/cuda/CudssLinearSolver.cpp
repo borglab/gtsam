@@ -269,6 +269,22 @@ struct CudssSpdSolver::Impl {
                                    config.value, data.value, matrix.value,
                                    x.value, b.value),
                       CUDSS_PHASE_FACTORIZATION);
+
+    int info = 0;
+    size_t bytesWritten = 0;
+    GTSAM_CUDSS_CHECK(cudssDataGet(handle.value, data.value, CUDSS_DATA_INFO,
+                                   &info, sizeof(info), &bytesWritten));
+    if (bytesWritten != sizeof(info)) {
+      throw std::runtime_error(
+          "cuDSS CUDSS_DATA_INFO returned an unexpected byte count");
+    }
+    if (info != 0) {
+      std::ostringstream os;
+      os << "cuDSS factorization CUDSS_DATA_INFO=" << info
+         << " (reordered 1-based first non-positive minor)";
+      throw std::runtime_error(os.str());
+    }
+
     CheckCudssExecute(cudssExecute(handle.value, CUDSS_PHASE_SOLVE,
                                    config.value, data.value, matrix.value,
                                    x.value, b.value),

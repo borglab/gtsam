@@ -283,6 +283,28 @@ TEST(CudssSpdSolver, ReusesAnalysisForChangedValues) {
   DOUBLES_EQUAL(6.0 / 11.0, actual[0], 1e-10);
   DOUBLES_EQUAL(-2.0 / 11.0, actual[1], 1e-10);
 }
+
+TEST(CudssSpdSolver, SurfacesIndefiniteFactorizationInfo) {
+  CudaContext context;
+  DeviceSparseNormalEquations system;
+  system.uploadPattern(2, std::vector<int>{0, 2, 3},
+                       std::vector<int>{0, 1, 1}, context.stream());
+  system.values().upload(std::vector<double>{1.0, 2.0, 1.0},
+                         context.stream());
+  system.rhs().upload(std::vector<double>{1.0, 1.0}, context.stream());
+
+  CudaDeviceArray<double> solution;
+  CudssSpdSolver solver;
+  solver.analyze(system, &solution, context.stream());
+  try {
+    solver.solve(system, &solution, context.stream());
+    CHECK(false);
+  } catch (const std::runtime_error& e) {
+    const std::string message = e.what();
+    CHECK(message.find("CUDSS_DATA_INFO") != std::string::npos);
+    CHECK(message.find("first non-positive minor") != std::string::npos);
+  }
+}
 #endif
 
 int main() {

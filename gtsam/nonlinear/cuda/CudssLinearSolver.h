@@ -21,6 +21,12 @@ class GTSAM_EXPORT CudssSpdSolver {
   void analyze(const DeviceSparseNormalEquations& system,
                CudaDeviceArray<double>* solution,
                cudaStream_t stream = nullptr);
+  /**
+   * Numerically factor and solve the analyzed SPD system.
+   *
+   * Throws std::runtime_error when cuDSS reports a non-positive minor during
+   * numerical factorization.
+   */
   void solve(const DeviceSparseNormalEquations& system,
              CudaDeviceArray<double>* solution,
              cudaStream_t stream = nullptr);
