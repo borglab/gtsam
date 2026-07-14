@@ -41,7 +41,7 @@ class GTSAM_EXPORT StreamingSparseJacobianLinearizer {
    * Linearize and scatter factors into a preplanned host Jacobian. The caller
    * must clear output before every call; null or inactive factors intentionally
    * leave their reserved rows unchanged. A failing factor never partially
-   * writes its own range, although earlier successful factors may already be
+   * writes its own range, although other successful factors may already be
    * present. If stats is non-null, it is reset and receives the number of
    * non-null sendable and non-sendable factors. Setting
    * validateStructure=false skips only the deep Values and graph-topology
@@ -59,7 +59,7 @@ class GTSAM_EXPORT StreamingSparseJacobianLinearizer {
    * Scatter a slot-aligned GaussianFactorGraph into a preplanned host
    * Jacobian. The caller must clear output before every call; null slots leave
    * their reserved rows unchanged. A failing factor never partially writes its
-   * own range, although earlier successful factors may already be present.
+   * own range, although other successful factors may already be present.
    * Output sizes, slot count, and every returned factor's shape and finite
    * coefficients are always validated.
    */
