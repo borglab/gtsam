@@ -35,6 +35,12 @@ struct StreamingLinearizationStats {
   size_t nonSendableFactors = 0;
 };
 
+/** Aggregate worker time, in seconds, summed across all factors. */
+struct StreamingLinearizationProfile {
+  double factorLinearizationCpuSum = 0.0;
+  double csrPackingCpuSum = 0.0;
+};
+
 class GTSAM_EXPORT StreamingSparseJacobianLinearizer {
  public:
   /**
@@ -46,14 +52,18 @@ class GTSAM_EXPORT StreamingSparseJacobianLinearizer {
    * non-null sendable and non-sendable factors. Setting
    * validateStructure=false skips only the deep Values and graph-topology
    * match: output sizes, slot count, sendability/slot safety, and every
-   * returned factor's shape and finite coefficients are still validated.
+   * returned factor's shape and finite coefficients are still validated. If
+   * profile is non-null, it is reset and receives separate sums of per-factor
+   * linearization and CSR-packing elapsed time. These sums can exceed wall
+   * time when sendable factors execute in parallel.
    */
   DirectJacobianStatus linearize(
       const NonlinearFactorGraph& graph, const Values& values,
       const SparseJacobianColumnLayout& columns,
       const SparseJacobianPlan& plan, HostSparseJacobian* output,
       StreamingLinearizationStats* stats = nullptr,
-      bool validateStructure = true) const;
+      bool validateStructure = true,
+      StreamingLinearizationProfile* profile = nullptr) const;
 
   /**
    * Scatter a slot-aligned GaussianFactorGraph into a preplanned host

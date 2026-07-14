@@ -2,6 +2,7 @@
 
 #include <gtsam/nonlinear/cuda/CudssLinearSolver.h>
 
+#include <chrono>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
@@ -245,7 +246,7 @@ struct CudssSpdSolver::Impl {
 
   void solve(const DeviceSparseNormalEquations& system,
              CudaDeviceArray<double>* solutionArray,
-             cudaStream_t stream) {
+             cudaStream_t stream, CudssSpdSolveProfile* profile) {
     ValidateSystemForSolve(system, solutionArray);
     if (!analyzed) {
       throw std::logic_error("CudssSpdSolver::solve called before analyze");
@@ -272,8 +273,22 @@ struct CudssSpdSolver::Impl {
 
     int info = 0;
     size_t bytesWritten = 0;
-    GTSAM_CUDSS_CHECK(cudssDataGet(handle.value, data.value, CUDSS_DATA_INFO,
-                                   &info, sizeof(info), &bytesWritten));
+    cudssStatus_t dataInfoStatus;
+    if (profile) {
+      const auto start = std::chrono::steady_clock::now();
+      dataInfoStatus =
+          cudssDataGet(handle.value, data.value, CUDSS_DATA_INFO, &info,
+                       sizeof(info), &bytesWritten);
+      profile->dataInfoBoundaryWall +=
+          std::chrono::duration<double>(std::chrono::steady_clock::now() -
+                                        start)
+              .count();
+    } else {
+      dataInfoStatus =
+          cudssDataGet(handle.value, data.value, CUDSS_DATA_INFO, &info,
+                       sizeof(info), &bytesWritten);
+    }
+    CheckCudss(dataInfoStatus, "cudssDataGet(CUDSS_DATA_INFO)");
     if (bytesWritten != sizeof(info)) {
       throw std::runtime_error(
           "cuDSS CUDSS_DATA_INFO returned an unexpected byte count");
@@ -318,14 +333,16 @@ void CudssSpdSolver::analyze(const DeviceSparseNormalEquations& system,
 
 void CudssSpdSolver::solve(const DeviceSparseNormalEquations& system,
                            CudaDeviceArray<double>* solution,
-                           cudaStream_t stream) {
+                           cudaStream_t stream,
+                           CudssSpdSolveProfile* profile) {
 #if !GTSAM_ENABLE_CUDSS
   (void)system;
   (void)solution;
   (void)stream;
+  (void)profile;
   throw std::runtime_error("CudssSpdSolver::solve requires cuDSS");
 #else
-  impl_->solve(system, solution, stream);
+  impl_->solve(system, solution, stream, profile);
 #endif
 }
 

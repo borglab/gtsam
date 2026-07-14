@@ -59,6 +59,73 @@ struct Pose2LmProblem {
   Values initial;
 };
 
+bool IsFiniteNonnegativeTiming(double seconds) {
+  return std::isfinite(seconds) && seconds >= 0.0;
+}
+
+bool AllSparseLmTimingsAreFiniteNonnegative(
+    const CudaSparseLmStageTimings& timings) {
+  return IsFiniteNonnegativeTiming(timings.totalWall) &&
+         IsFiniteNonnegativeTiming(timings.initialError) &&
+         IsFiniteNonnegativeTiming(timings.plan) &&
+         IsFiniteNonnegativeTiming(timings.persistentSetupWall) &&
+         IsFiniteNonnegativeTiming(timings.deviceInitializeWall) &&
+         IsFiniteNonnegativeTiming(timings.patternH2d) &&
+         IsFiniteNonnegativeTiming(timings.structureSetup) &&
+         IsFiniteNonnegativeTiming(timings.setupD2h) &&
+         IsFiniteNonnegativeTiming(timings.hostZero) &&
+         IsFiniteNonnegativeTiming(
+             timings.factorLinearizationAndPackingWall) &&
+         IsFiniteNonnegativeTiming(timings.factorLinearizationCpuSum) &&
+         IsFiniteNonnegativeTiming(timings.csrPackingCpuSum) &&
+         IsFiniteNonnegativeTiming(timings.numericH2d) &&
+         IsFiniteNonnegativeTiming(timings.transposeUpdate) &&
+         IsFiniteNonnegativeTiming(timings.normalJtJ) &&
+         IsFiniteNonnegativeTiming(timings.normalJtb) &&
+         IsFiniteNonnegativeTiming(timings.diagonalExtraction) &&
+         IsFiniteNonnegativeTiming(timings.oldModelError) &&
+         IsFiniteNonnegativeTiming(timings.dampingPreparation) &&
+         IsFiniteNonnegativeTiming(timings.dampingApplication) &&
+         IsFiniteNonnegativeTiming(timings.cudssAnalysis) &&
+         IsFiniteNonnegativeTiming(timings.cudssFactorAndSolve) &&
+         IsFiniteNonnegativeTiming(
+             timings.cudssDataInfoBoundaryWall) &&
+         IsFiniteNonnegativeTiming(timings.newModelError) &&
+         IsFiniteNonnegativeTiming(timings.attemptD2h) &&
+         IsFiniteNonnegativeTiming(timings.attemptHostBuild) &&
+         IsFiniteNonnegativeTiming(timings.retract) &&
+         IsFiniteNonnegativeTiming(timings.nonlinearTrialError) &&
+         IsFiniteNonnegativeTiming(timings.upload) &&
+         IsFiniteNonnegativeTiming(timings.normalEquations) &&
+         IsFiniteNonnegativeTiming(timings.damping) &&
+         IsFiniteNonnegativeTiming(timings.modelError) &&
+         IsFiniteNonnegativeTiming(timings.deltaDownload);
+}
+
+bool AllSparseLmTimingsAreZero(const CudaSparseLmStageTimings& timings) {
+  return timings.totalWall == 0.0 && timings.initialError == 0.0 &&
+         timings.plan == 0.0 && timings.persistentSetupWall == 0.0 &&
+         timings.deviceInitializeWall == 0.0 &&
+         timings.patternH2d == 0.0 && timings.structureSetup == 0.0 &&
+         timings.setupD2h == 0.0 && timings.hostZero == 0.0 &&
+         timings.factorLinearizationAndPackingWall == 0.0 &&
+         timings.factorLinearizationCpuSum == 0.0 &&
+         timings.csrPackingCpuSum == 0.0 && timings.numericH2d == 0.0 &&
+         timings.transposeUpdate == 0.0 && timings.normalJtJ == 0.0 &&
+         timings.normalJtb == 0.0 && timings.diagonalExtraction == 0.0 &&
+         timings.oldModelError == 0.0 &&
+         timings.dampingPreparation == 0.0 &&
+         timings.dampingApplication == 0.0 &&
+         timings.cudssAnalysis == 0.0 &&
+         timings.cudssFactorAndSolve == 0.0 &&
+         timings.cudssDataInfoBoundaryWall == 0.0 &&
+         timings.newModelError == 0.0 && timings.attemptD2h == 0.0 &&
+         timings.attemptHostBuild == 0.0 && timings.retract == 0.0 &&
+         timings.nonlinearTrialError == 0.0 && timings.upload == 0.0 &&
+         timings.normalEquations == 0.0 && timings.damping == 0.0 &&
+         timings.modelError == 0.0 && timings.deltaDownload == 0.0;
+}
+
 Pose2LmProblem MakePose2LmProblem() {
   Pose2LmProblem problem;
   const auto priorNoise = noiseModel::Diagonal::Sigmas(
@@ -77,6 +144,74 @@ Pose2LmProblem MakePose2LmProblem() {
   problem.initial.insert(kPose1, Pose2(2.45, -0.35, -0.05));
   problem.initial.insert(kPose2, Pose2(3.15, 0.45, 0.2));
   return problem;
+}
+
+CudaSparseLevenbergMarquardtResult RunTwoOuterProfiledPose2(
+    const Pose2LmProblem& problem, bool collectTiming) {
+  CudaSparseLevenbergMarquardtParams params;
+  LevenbergMarquardtParams::SetCeresDefaults(&params);
+  params.maxIterations = 2;
+  params.relativeErrorTol = 0.0;
+  params.absoluteErrorTol = 0.0;
+  params.errorTol = 0.0;
+  params.useFixedLambdaFactor = true;
+  params.collectTiming = collectTiming;
+
+  CudaSparseLevenbergMarquardtOptimizer optimizer(
+      problem.graph, problem.initial, params);
+  (void)optimizer.optimize();
+  return optimizer.result();
+}
+
+bool SparseLmSizesAndTransfersAreExact(
+    const CudaSparseLevenbergMarquardtResult& result,
+    const NonlinearFactorGraph& graph, const SparseJacobianPlan& plan) {
+  const CudaSparseLmSystemSize& size = result.systemSize;
+  const CudaSparseLmTransferCounts& transfers = result.transfers;
+  if (size.factors != graph.size() ||
+      size.jacobianRows != static_cast<size_t>(plan.rows()) ||
+      size.jacobianColumns != static_cast<size_t>(plan.columns()) ||
+      size.jacobianNonzeros != static_cast<size_t>(plan.nonzeros()) ||
+      size.normalNonzeros == 0) {
+    return false;
+  }
+
+  const size_t expectedPatternH2d =
+      sizeof(int) *
+      (static_cast<size_t>(plan.rows() + 1 + plan.nonzeros()) +
+       static_cast<size_t>(plan.columns() + 1 + size.normalNonzeros +
+                           plan.columns()));
+  const size_t expectedSetupD2h =
+      2 * sizeof(int) *
+      static_cast<size_t>(plan.columns() + 1 + size.normalNonzeros);
+  const size_t expectedNumericH2d =
+      result.outerLinearizations * sizeof(double) *
+      static_cast<size_t>(plan.nonzeros() + plan.rows());
+  const size_t expectedAttemptD2h =
+      result.lambdaAttempts * sizeof(double) *
+      static_cast<size_t>(plan.columns() + 2);
+
+  return transfers.patternH2dBytes == expectedPatternH2d &&
+         transfers.setupD2hBytes == expectedSetupD2h &&
+         transfers.numericH2dBytes == expectedNumericH2d &&
+         transfers.attemptD2hBytes == expectedAttemptD2h &&
+         transfers.totalH2dBytes() ==
+             expectedPatternH2d + expectedNumericH2d &&
+         transfers.totalD2hBytes() ==
+             expectedSetupD2h + expectedAttemptD2h;
+}
+
+bool SparseLmAggregateTimingsAreExact(
+    const CudaSparseLmStageTimings& timings) {
+  return timings.upload == timings.numericH2d &&
+         timings.normalEquations ==
+             timings.normalJtJ + timings.normalJtb +
+                 timings.diagonalExtraction + timings.oldModelError &&
+         timings.damping ==
+             timings.dampingPreparation + timings.dampingApplication &&
+         timings.modelError ==
+             timings.oldModelError + timings.newModelError &&
+         timings.deltaDownload == timings.attemptD2h;
 }
 
 bool HasCudaDevice() {
@@ -531,6 +666,10 @@ void CheckCpuFallback(
   }
   DOUBLES_EQUAL(graph.error(initial), result.initialError, 1e-12);
   DOUBLES_EQUAL(graph.error(actual), result.finalError, 1e-12);
+  if (expectedReason == CudaSparseLmFallbackReason::PlanIncompatible) {
+    CHECK(std::isfinite(result.timings.plan));
+    CHECK(result.timings.plan > 0.0);
+  }
 
   if (expectedFailure != DirectJacobianFailure::None) {
     EXPECT_LONGS_EQUAL(expectedFactorIndex,
@@ -580,6 +719,55 @@ TEST(CudaSparseLevenbergMarquardt, ExposesPrototypeParamsDefaults) {
   CHECK(params.collectTiming);
   CHECK(!params.collectAttemptTrace);
   CHECK(!params.validateStructureEveryIteration);
+}
+
+TEST(CudaSparseLevenbergMarquardt,
+     ProfilesTwoAcceptedOuterIterationsWithExactTransfers) {
+  if (!CanRunCudaSparseLm()) return;
+  const Pose2LmProblem problem = MakePose2LmProblem();
+  const SparseJacobianColumnLayout columns(problem.initial);
+  const SparseJacobianPlan plan(problem.graph, columns);
+  const CudaSparseLevenbergMarquardtResult result =
+      RunTwoOuterProfiledPose2(problem, true);
+
+  CHECK(result.backend == CudaSparseLmBackend::Cuda);
+  EXPECT_LONGS_EQUAL(2, result.outerLinearizations);
+  EXPECT_LONGS_EQUAL(2, result.acceptedSteps);
+  EXPECT_LONGS_EQUAL(1, result.cudssAnalyses);
+  CHECK(result.lambdaAttempts >= result.acceptedSteps);
+  CHECK(SparseLmSizesAndTransfersAreExact(result, problem.graph, plan));
+  CHECK(AllSparseLmTimingsAreFiniteNonnegative(result.timings));
+  CHECK(SparseLmAggregateTimingsAreExact(result.timings));
+  CHECK(result.timings.totalWall > 0.0);
+  CHECK(result.timings.factorLinearizationCpuSum > 0.0);
+  const double mappedDeviceStageTotal =
+      result.timings.patternH2d + result.timings.structureSetup +
+      result.timings.setupD2h + result.timings.numericH2d +
+      result.timings.transposeUpdate + result.timings.normalJtJ +
+      result.timings.normalJtb + result.timings.diagonalExtraction +
+      result.timings.oldModelError + result.timings.dampingPreparation +
+      result.timings.dampingApplication + result.timings.cudssAnalysis +
+      result.timings.cudssFactorAndSolve + result.timings.newModelError +
+      result.timings.attemptD2h;
+  CHECK(mappedDeviceStageTotal > 0.0);
+}
+
+TEST(CudaSparseLevenbergMarquardt,
+     TimingDisabledKeepsTimingsZeroAndExactTransfers) {
+  if (!CanRunCudaSparseLm()) return;
+  const Pose2LmProblem problem = MakePose2LmProblem();
+  const SparseJacobianColumnLayout columns(problem.initial);
+  const SparseJacobianPlan plan(problem.graph, columns);
+  const CudaSparseLevenbergMarquardtResult result =
+      RunTwoOuterProfiledPose2(problem, false);
+
+  CHECK(result.backend == CudaSparseLmBackend::Cuda);
+  EXPECT_LONGS_EQUAL(2, result.outerLinearizations);
+  EXPECT_LONGS_EQUAL(2, result.acceptedSteps);
+  EXPECT_LONGS_EQUAL(1, result.cudssAnalyses);
+  CHECK(SparseLmSizesAndTransfersAreExact(result, problem.graph, plan));
+  CHECK(AllSparseLmTimingsAreZero(result.timings));
+  CHECK(SparseLmAggregateTimingsAreExact(result.timings));
 }
 
 namespace {
@@ -720,6 +908,24 @@ TEST(CudaSparseLevenbergMarquardt,
   EXPECT_LONGS_EQUAL(1, result.acceptedSteps);
   EXPECT_LONGS_EQUAL(1, result.lambdaAttempts);
   EXPECT_LONGS_EQUAL(1, result.cudssAnalyses);
+  const SparseJacobianColumnLayout prefixColumns(initial);
+  const SparseJacobianPlan prefixPlan(graph, prefixColumns);
+  CHECK(result.systemSize.factors == graph.size());
+  CHECK(result.systemSize.jacobianRows ==
+        static_cast<size_t>(prefixPlan.rows()));
+  CHECK(result.systemSize.jacobianColumns ==
+        static_cast<size_t>(prefixPlan.columns()));
+  CHECK(result.systemSize.jacobianNonzeros ==
+        static_cast<size_t>(prefixPlan.nonzeros()));
+  CHECK(result.systemSize.normalNonzeros > 0);
+  CHECK(result.transfers.numericH2dBytes ==
+        sizeof(double) *
+            static_cast<size_t>(prefixPlan.nonzeros() + prefixPlan.rows()));
+  CHECK(result.transfers.attemptD2hBytes ==
+        sizeof(double) * static_cast<size_t>(prefixPlan.columns() + 2));
+  CHECK(result.transfers.patternH2dBytes > 0);
+  CHECK(result.transfers.setupD2hBytes > 0);
+  CHECK(result.timings.totalWall > 0.0);
   DOUBLES_EQUAL(graph.error(initial), result.initialError, 1e-12);
   DOUBLES_EQUAL(graph.error(actual), result.finalError, 1e-12);
 

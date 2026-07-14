@@ -8,6 +8,11 @@
 
 namespace gtsam::cuda {
 
+/** Host wall time spent only in cuDSS's mandatory DATA_INFO boundary. */
+struct CudssSpdSolveProfile {
+  double dataInfoBoundaryWall = 0.0;
+};
+
 class GTSAM_EXPORT CudssSpdSolver {
  public:
   CudssSpdSolver();
@@ -29,7 +34,8 @@ class GTSAM_EXPORT CudssSpdSolver {
    */
   void solve(const DeviceSparseNormalEquations& system,
              CudaDeviceArray<double>* solution,
-             cudaStream_t stream = nullptr);
+             cudaStream_t stream = nullptr,
+             CudssSpdSolveProfile* profile = nullptr);
 
  private:
   struct Impl;

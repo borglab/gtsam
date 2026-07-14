@@ -11,6 +11,7 @@
 #include <tbb/parallel_for.h>
 #endif
 
+#include <chrono>
 #include <cmath>
 #include <memory>
 #include <optional>
@@ -20,6 +21,13 @@
 
 namespace gtsam::cuda {
 namespace {
+
+using ProfileClock = std::chrono::steady_clock;
+
+struct PerFactorTiming {
+  double factorLinearization = 0.0;
+  double csrPacking = 0.0;
+};
 
 DirectJacobianStatus Failure(DirectJacobianFailure failure,
                              std::string detail) {
@@ -177,9 +185,13 @@ DirectJacobianStatus StreamingSparseJacobianLinearizer::linearize(
     const NonlinearFactorGraph& graph, const Values& values,
     const SparseJacobianColumnLayout& columns,
     const SparseJacobianPlan& plan, HostSparseJacobian* output,
-    StreamingLinearizationStats* stats, bool validateStructure) const {
+    StreamingLinearizationStats* stats, bool validateStructure,
+    StreamingLinearizationProfile* profile) const {
   if (stats) {
     *stats = {};
+  }
+  if (profile) {
+    *profile = {};
   }
 
   DirectJacobianStatus status = ValidateOutput(plan, output);
@@ -227,6 +239,36 @@ DirectJacobianStatus StreamingSparseJacobianLinearizer::linearize(
   }
 
   std::vector<DirectJacobianStatus> statuses(graph.size());
+  std::vector<PerFactorTiming> timingSlots;
+  if (profile) {
+    timingSlots.resize(graph.size());
+  }
+
+  const auto linearizeAndScatter = [&](size_t factorIndex) {
+    const NonlinearFactor::shared_ptr& factor = graph[factorIndex];
+    if (!profile) {
+      std::shared_ptr<GaussianFactor> gaussian = factor->linearize(values);
+      statuses[factorIndex] =
+          ScatterOneFactor(gaussian, factorIndex, plan, output);
+      return;
+    }
+
+    PerFactorTiming& timing = timingSlots[factorIndex];
+    const ProfileClock::time_point linearizationBegin = ProfileClock::now();
+    std::shared_ptr<GaussianFactor> gaussian = factor->linearize(values);
+    const ProfileClock::time_point linearizationEnd = ProfileClock::now();
+    timing.factorLinearization =
+        std::chrono::duration<double>(linearizationEnd - linearizationBegin)
+            .count();
+
+    const ProfileClock::time_point packingBegin = ProfileClock::now();
+    DirectJacobianStatus factorStatus =
+        ScatterOneFactor(gaussian, factorIndex, plan, output);
+    const ProfileClock::time_point packingEnd = ProfileClock::now();
+    timing.csrPacking =
+        std::chrono::duration<double>(packingEnd - packingBegin).count();
+    statuses[factorIndex] = std::move(factorStatus);
+  };
 
 #ifdef GTSAM_USE_TBB
   TbbOpenMPMixedScope threadLimiter;
@@ -239,10 +281,7 @@ DirectJacobianStatus StreamingSparseJacobianLinearizer::linearize(
           if (!factor || !plan.factor(factorIndex).sendable) {
             continue;
           }
-          std::shared_ptr<GaussianFactor> gaussian =
-              factor->linearize(values);
-          statuses[factorIndex] =
-              ScatterOneFactor(gaussian, factorIndex, plan, output);
+          linearizeAndScatter(factorIndex);
         }
       });
 
@@ -251,9 +290,7 @@ DirectJacobianStatus StreamingSparseJacobianLinearizer::linearize(
     if (!factor || plan.factor(factorIndex).sendable) {
       continue;
     }
-    std::shared_ptr<GaussianFactor> gaussian = factor->linearize(values);
-    statuses[factorIndex] =
-        ScatterOneFactor(gaussian, factorIndex, plan, output);
+    linearizeAndScatter(factorIndex);
   }
 #else
   for (size_t factorIndex = 0; factorIndex < graph.size(); ++factorIndex) {
@@ -261,11 +298,16 @@ DirectJacobianStatus StreamingSparseJacobianLinearizer::linearize(
     if (!factor) {
       continue;
     }
-    std::shared_ptr<GaussianFactor> gaussian = factor->linearize(values);
-    statuses[factorIndex] =
-        ScatterOneFactor(gaussian, factorIndex, plan, output);
+    linearizeAndScatter(factorIndex);
   }
 #endif
+
+  if (profile) {
+    for (const PerFactorTiming& timing : timingSlots) {
+      profile->factorLinearizationCpuSum += timing.factorLinearization;
+      profile->csrPackingCpuSum += timing.csrPacking;
+    }
+  }
 
   for (size_t factorIndex = 0; factorIndex < statuses.size();
        ++factorIndex) {

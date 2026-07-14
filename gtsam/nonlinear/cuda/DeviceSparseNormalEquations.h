@@ -15,7 +15,9 @@ class DeviceSparseNormalEquations {
   void uploadPattern(int rows, const std::vector<int>& rowPointers,
                      const std::vector<int>& colIndices,
                      cudaStream_t stream = nullptr,
-                     CudaDeviceTransferSummary* transferProfile = nullptr) {
+                     CudaDeviceTransferSummary* transferProfile = nullptr,
+                     cudaEvent_t copyBeginEvent = nullptr,
+                     cudaEvent_t copyEndEvent = nullptr) {
     if (rows < 0) {
       throw std::invalid_argument("DeviceSparseNormalEquations rows < 0");
     }
@@ -50,6 +52,14 @@ class DeviceSparseNormalEquations {
             "DeviceSparseNormalEquations bad column index");
       }
     }
+    if ((copyBeginEvent == nullptr) != (copyEndEvent == nullptr)) {
+      throw std::invalid_argument(
+          "DeviceSparseNormalEquations requires both copy events");
+    }
+    if (transferProfile && copyBeginEvent) {
+      throw std::invalid_argument(
+          "DeviceSparseNormalEquations cannot combine transfer profiles");
+    }
 
     CudaDeviceArray<int> newRowPointers;
     CudaDeviceArray<int> newColIndices;
@@ -57,7 +67,28 @@ class DeviceSparseNormalEquations {
     CudaDeviceArray<double> newRhs;
 
     try {
-      if (transferProfile) {
+      if (copyBeginEvent) {
+        // Allocate every persistent array before recording the event so this
+        // interval measures only the two pattern copies.
+        newRowPointers.resize(rowPointers.size());
+        newColIndices.resize(colIndices.size());
+        newValues.resize(colIndices.size());
+        newRhs.resize(rows);
+        GTSAM_CUDA_CHECK(cudaEventRecord(copyBeginEvent, stream));
+        if (!rowPointers.empty()) {
+          GTSAM_CUDA_CHECK(cudaMemcpyAsync(
+              newRowPointers.data(), rowPointers.data(),
+              sizeof(int) * rowPointers.size(), cudaMemcpyHostToDevice,
+              stream));
+        }
+        if (!colIndices.empty()) {
+          GTSAM_CUDA_CHECK(cudaMemcpyAsync(
+              newColIndices.data(), colIndices.data(),
+              sizeof(int) * colIndices.size(), cudaMemcpyHostToDevice,
+              stream));
+        }
+        GTSAM_CUDA_CHECK(cudaEventRecord(copyEndEvent, stream));
+      } else if (transferProfile) {
         transferProfile->add(
             newRowPointers.uploadProfiled(rowPointers, stream));
         transferProfile->add(
@@ -66,8 +97,10 @@ class DeviceSparseNormalEquations {
         newRowPointers.upload(rowPointers, stream);
         newColIndices.upload(colIndices, stream);
       }
-      newValues.resize(colIndices.size());
-      newRhs.resize(rows);
+      if (!copyBeginEvent) {
+        newValues.resize(colIndices.size());
+        newRhs.resize(rows);
+      }
     } catch (...) {
       // Keep the temporary allocations and pageable upload sources alive until
       // any successfully queued copy has finished. Preserve the original

@@ -22,6 +22,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <chrono>
 #include <cmath>
 #include <limits>
 #include <memory>
@@ -195,6 +196,31 @@ class CountingReturningGaussianFactor : public NonlinearFactor {
   bool isSendable_;
   std::shared_ptr<GaussianFactor> result_;
   mutable std::atomic<size_t> callCount_{0};
+};
+
+class DelayedProfilePointFactor : public NonlinearFactor {
+ public:
+  DelayedProfilePointFactor(Key key, bool isSendable, size_t rowCount)
+      : NonlinearFactor(KeyVector{key}),
+        isSendable_(isSendable),
+        rowCount_(rowCount),
+        result_(std::make_shared<JacobianFactor>(
+            key, Matrix::Ones(static_cast<Eigen::Index>(rowCount), 2),
+            Vector::Ones(static_cast<Eigen::Index>(rowCount)))) {}
+
+  size_t dim() const override { return rowCount_; }
+
+  std::shared_ptr<GaussianFactor> linearize(const Values&) const override {
+    std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    return result_;
+  }
+
+  bool sendable() const override { return isSendable_; }
+
+ private:
+  bool isSendable_;
+  size_t rowCount_;
+  std::shared_ptr<GaussianFactor> result_;
 };
 
 class InactivePointFactor : public NoiseModelFactorN<Point2> {
@@ -1076,6 +1102,77 @@ TEST(StreamingSparseJacobianLinearizer,
   }
   EXPECT_LONGS_EQUAL(1, nonSendableFactor->callCount());
   CHECK(nonSendableFactor->threadId() == callerThread);
+}
+
+TEST(StreamingSparseJacobianLinearizer,
+     ProfilesSendableAndNonSendableFactorsWithoutChangingResults) {
+  constexpr size_t kProfileRows = 2048;
+
+  for (const bool isSendable : {true, false}) {
+    Values values;
+    values.insert(kFirstStreamingKey, Point2(0.0, 0.0));
+    NonlinearFactorGraph graph;
+    graph.push_back(std::make_shared<DelayedProfilePointFactor>(
+        kFirstStreamingKey, isSendable, kProfileRows));
+
+    const SparseJacobianColumnLayout columns(values);
+    const SparseJacobianPlan plan(graph, columns);
+    HostSparseJacobian unprofiledHost(plan);
+    HostSparseJacobian profiledHost(plan);
+    unprofiledHost.clear();
+    profiledHost.clear();
+    StreamingLinearizationStats unprofiledStats{7, 9};
+    StreamingLinearizationStats profiledStats{11, 13};
+    StreamingLinearizationProfile profile{
+        std::numeric_limits<double>::quiet_NaN(), -1.0};
+    const StreamingSparseJacobianLinearizer linearizer;
+
+    const DirectJacobianStatus unprofiledStatus = linearizer.linearize(
+        graph, values, columns, plan, &unprofiledHost, &unprofiledStats);
+    const DirectJacobianStatus profiledStatus = linearizer.linearize(
+        graph, values, columns, plan, &profiledHost, &profiledStats, true,
+        &profile);
+
+    CHECK(unprofiledStatus.failure == profiledStatus.failure);
+    EXPECT_LONGS_EQUAL(unprofiledStatus.factorIndex,
+                       profiledStatus.factorIndex);
+    CHECK(unprofiledStatus.detail == profiledStatus.detail);
+    EXPECT_LONGS_EQUAL(unprofiledStats.sendableFactors,
+                       profiledStats.sendableFactors);
+    EXPECT_LONGS_EQUAL(unprofiledStats.nonSendableFactors,
+                       profiledStats.nonSendableFactors);
+    EXPECT_LONGS_EQUAL(isSendable ? 1 : 0,
+                       profiledStats.sendableFactors);
+    EXPECT_LONGS_EQUAL(isSendable ? 0 : 1,
+                       profiledStats.nonSendableFactors);
+    EXPECT(assert_equal(DenseFromCsr(plan, unprofiledHost),
+                        DenseFromCsr(plan, profiledHost), 0.0));
+    EXPECT(assert_equal(VectorFromHostRhs(unprofiledHost),
+                        VectorFromHostRhs(profiledHost), 0.0));
+    CHECK(std::isfinite(profile.factorLinearizationCpuSum));
+    CHECK(std::isfinite(profile.csrPackingCpuSum));
+    CHECK(profile.factorLinearizationCpuSum > 0.0);
+    CHECK(profile.csrPackingCpuSum > 0.0);
+  }
+}
+
+TEST(StreamingSparseJacobianLinearizer,
+     ResetsProfileBeforeReturningStructuralFailure) {
+  const Values values = makeStreamingValues();
+  const NonlinearFactorGraph graph = makeStreamingGraph();
+  const SparseJacobianColumnLayout columns(values);
+  const SparseJacobianPlan plan(graph, columns);
+  StreamingLinearizationProfile profile{
+      std::numeric_limits<double>::quiet_NaN(), -1.0};
+
+  const DirectJacobianStatus status = StreamingSparseJacobianLinearizer()
+                                          .linearize(graph, values, columns,
+                                                     plan, nullptr, nullptr,
+                                                     true, &profile);
+
+  CHECK(status.failure == DirectJacobianFailure::StructuralMismatch);
+  DOUBLES_EQUAL(0.0, profile.factorLinearizationCpuSum, 0.0);
+  DOUBLES_EQUAL(0.0, profile.csrPackingCpuSum, 0.0);
 }
 
 TEST(StreamingSparseJacobianLinearizer,

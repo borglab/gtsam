@@ -31,6 +31,57 @@ struct DeviceSparseJacobianAttemptResult {
   LinearizedModelErrors model;
 };
 
+/**
+ * Cumulative device-stage profile for one persistent sparse-Jacobian system.
+ *
+ * CUDA durations are measured with events on the fixed stream. The cuDSS
+ * DATA_INFO field is host wall time for the mandatory status boundary and
+ * overlaps the factor-and-solve stage, so timing fields are not intended to
+ * be summed into an exclusive total. Pending iteration/attempt event spans
+ * are harvested by downloadAttemptResult() after its existing stream
+ * synchronization. Transfer counters report logical bytes even when timing
+ * collection is disabled.
+ */
+struct DeviceSparseJacobianProfile {
+  // One-time setup.
+  double initializeWall = 0.0;
+  double patternH2d = 0.0;
+  double structureSetup = 0.0;
+  double setupD2h = 0.0;
+  // Structural analysis is cached, so this records only the effective first
+  // cuDSS analysis rather than every analyze() call.
+  double cudssAnalysis = 0.0;
+
+  // Per outer linearization.
+  double numericH2d = 0.0;
+  double transposeUpdate = 0.0;
+  double normalJtJ = 0.0;
+  double normalJtb = 0.0;
+  double diagonalExtraction = 0.0;
+  double oldModelError = 0.0;
+  double dampingPreparation = 0.0;
+
+  // Per lambda attempt.
+  double dampingApplication = 0.0;
+  double cudssFactorAndSolve = 0.0;
+  double cudssDataInfoBoundaryWall = 0.0;
+  double newModelError = 0.0;
+  double attemptD2h = 0.0;
+  double attemptHostBuild = 0.0;
+
+  size_t patternH2dBytes = 0;
+  size_t numericH2dBytes = 0;
+  size_t setupD2hBytes = 0;
+  size_t attemptD2hBytes = 0;
+
+  size_t totalH2dBytes() const {
+    return patternH2dBytes + numericH2dBytes;
+  }
+  size_t totalD2hBytes() const {
+    return setupD2hBytes + attemptD2hBytes;
+  }
+};
+
 class GTSAM_EXPORT DeviceSparseJacobianNormalEquations {
  public:
   DeviceSparseJacobianNormalEquations();
@@ -50,7 +101,8 @@ class GTSAM_EXPORT DeviceSparseJacobianNormalEquations {
   // The borrowed fixed stream must outlive this object; destruction waits for
   // it before releasing descriptors, workspaces, and device allocations.
   void initialize(const SparseJacobianPlan& plan,
-                  cudaStream_t stream = nullptr);
+                  cudaStream_t stream = nullptr,
+                  bool collectProfile = false);
   // This upload is asynchronous. The pinned host storage must remain alive
   // and unmodified until the fixed stream reaches the queued copies.
   void uploadNumerics(const HostSparseJacobian& host,
@@ -72,6 +124,8 @@ class GTSAM_EXPORT DeviceSparseJacobianNormalEquations {
   size_t analysisCount() const;
   DeviceSparseJacobianAttemptResult downloadAttemptResult(
       cudaStream_t stream = nullptr) const;
+
+  const DeviceSparseJacobianProfile& profile() const;
 
   const DeviceSparseNormalEquations& system() const;
 

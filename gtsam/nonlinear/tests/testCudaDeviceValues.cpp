@@ -1,15 +1,23 @@
 #include <gtsam/base/cuda/CudaContext.h>
+#include <gtsam/geometry/Point2.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/nonlinear/cuda/CudssLinearSolver.h>
+#include <gtsam/nonlinear/cuda/DeviceSparseJacobianNormalEquations.h>
 #include <gtsam/nonlinear/cuda/DeviceSparseNormalEquations.h>
 #include <gtsam/nonlinear/cuda/DeviceValues.h>
 #include <gtsam/nonlinear/cuda/DeviceVariableIndex.h>
+#include <gtsam/nonlinear/cuda/HostSparseJacobian.h>
+#include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
 
 #include <CppUnitLite/TestHarness.h>
 
 #include <cstdint>
+#include <cmath>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 using namespace gtsam;
@@ -19,11 +27,129 @@ namespace {
 constexpr uint32_t kCameraType = 1;
 constexpr uint32_t kPointType = 2;
 constexpr uint32_t kTinyType = 77;
+constexpr Key kProfileKey = 81;
 
 struct TinyValue {
   double x;
   double y;
 };
+
+#if GTSAM_ENABLE_CUDSS
+bool IsFiniteNonnegative(double seconds) {
+  return std::isfinite(seconds) && seconds >= 0.0;
+}
+
+bool AllDeviceProfileTimingsAreFiniteNonnegative(
+    const DeviceSparseJacobianProfile& profile) {
+  return IsFiniteNonnegative(profile.initializeWall) &&
+         IsFiniteNonnegative(profile.patternH2d) &&
+         IsFiniteNonnegative(profile.structureSetup) &&
+         IsFiniteNonnegative(profile.setupD2h) &&
+         IsFiniteNonnegative(profile.numericH2d) &&
+         IsFiniteNonnegative(profile.transposeUpdate) &&
+         IsFiniteNonnegative(profile.normalJtJ) &&
+         IsFiniteNonnegative(profile.normalJtb) &&
+         IsFiniteNonnegative(profile.diagonalExtraction) &&
+         IsFiniteNonnegative(profile.oldModelError) &&
+         IsFiniteNonnegative(profile.dampingPreparation) &&
+         IsFiniteNonnegative(profile.dampingApplication) &&
+         IsFiniteNonnegative(profile.cudssAnalysis) &&
+         IsFiniteNonnegative(profile.cudssFactorAndSolve) &&
+         IsFiniteNonnegative(profile.cudssDataInfoBoundaryWall) &&
+         IsFiniteNonnegative(profile.newModelError) &&
+         IsFiniteNonnegative(profile.attemptD2h) &&
+         IsFiniteNonnegative(profile.attemptHostBuild);
+}
+
+bool AllDeviceProfileTimingsAreZero(
+    const DeviceSparseJacobianProfile& profile) {
+  return profile.initializeWall == 0.0 && profile.patternH2d == 0.0 &&
+         profile.structureSetup == 0.0 && profile.setupD2h == 0.0 &&
+         profile.numericH2d == 0.0 && profile.transposeUpdate == 0.0 &&
+         profile.normalJtJ == 0.0 && profile.normalJtb == 0.0 &&
+         profile.diagonalExtraction == 0.0 &&
+         profile.oldModelError == 0.0 &&
+         profile.dampingPreparation == 0.0 &&
+         profile.dampingApplication == 0.0 &&
+         profile.cudssAnalysis == 0.0 &&
+         profile.cudssFactorAndSolve == 0.0 &&
+         profile.cudssDataInfoBoundaryWall == 0.0 &&
+         profile.newModelError == 0.0 && profile.attemptD2h == 0.0 &&
+         profile.attemptHostBuild == 0.0;
+}
+
+struct ProfiledDeviceRun {
+  DeviceSparseJacobianProfile profile;
+  size_t expectedPatternH2dBytes = 0;
+  size_t expectedNumericH2dBytes = 0;
+  size_t expectedSetupD2hBytes = 0;
+  size_t expectedAttemptD2hBytes = 0;
+  size_t analysisCount = 0;
+};
+
+ProfiledDeviceRun RunProfiledDevicePipeline(bool collectProfile) {
+  CudaContext context;
+  Values values;
+  values.insert(kProfileKey, Point2(0.0, 0.0));
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<PriorFactor<Point2>>(
+      kProfileKey, Point2(0.0, 0.0), noiseModel::Unit::Create(2));
+  const SparseJacobianColumnLayout columns(values);
+  const SparseJacobianPlan plan(graph, columns);
+  HostSparseJacobian host(plan);
+  if (plan.rows() != 2 || plan.columns() != 2 || plan.nonzeros() != 4) {
+    throw std::runtime_error("unexpected profile-test Jacobian shape");
+  }
+  host.valuesData()[0] = 1.0;
+  host.valuesData()[1] = 0.0;
+  host.valuesData()[2] = 0.0;
+  host.valuesData()[3] = 1.0;
+  host.rhsData()[0] = 1.0;
+  host.rhsData()[1] = 2.0;
+
+  DeviceSparseJacobianNormalEquations device;
+  device.initialize(plan, context.stream(), collectProfile);
+  const int hRows = device.system().rows();
+  const int hNonzeros = device.system().nonzeros();
+
+  device.uploadNumerics(host, context.stream());
+  device.formUndampedSystem(context.stream());
+  device.prepareDamping(false, 0.0, 0.0, context.stream());
+  device.analyze(context.stream());
+  device.analyze(context.stream());
+
+  device.solveAndEvaluate(0.1, context.stream());
+  (void)device.downloadAttemptResult(context.stream());
+  device.solveAndEvaluate(1.0, context.stream());
+  (void)device.downloadAttemptResult(context.stream());
+
+  ProfiledDeviceRun run;
+  run.profile = device.profile();
+  run.expectedPatternH2dBytes =
+      sizeof(int) *
+      (static_cast<size_t>(plan.rows() + 1 + plan.nonzeros()) +
+       static_cast<size_t>(hRows + 1 + hNonzeros + hRows));
+  run.expectedNumericH2dBytes =
+      sizeof(double) * static_cast<size_t>(plan.nonzeros() + plan.rows());
+  run.expectedSetupD2hBytes =
+      2 * sizeof(int) * static_cast<size_t>(hRows + 1 + hNonzeros);
+  run.expectedAttemptD2hBytes =
+      2 * sizeof(double) * static_cast<size_t>(plan.columns() + 2);
+  run.analysisCount = device.analysisCount();
+  return run;
+}
+
+bool ProfileBytesAreExact(const ProfiledDeviceRun& run) {
+  return run.profile.patternH2dBytes == run.expectedPatternH2dBytes &&
+         run.profile.numericH2dBytes == run.expectedNumericH2dBytes &&
+         run.profile.setupD2hBytes == run.expectedSetupD2hBytes &&
+         run.profile.attemptD2hBytes == run.expectedAttemptD2hBytes &&
+         run.profile.totalH2dBytes() ==
+             run.expectedPatternH2dBytes + run.expectedNumericH2dBytes &&
+         run.profile.totalD2hBytes() ==
+             run.expectedSetupD2hBytes + run.expectedAttemptD2hBytes;
+}
+#endif
 }  // namespace
 
 TEST(DeviceVariableIndex, AddsAndFindsSlots) {
@@ -229,9 +355,48 @@ TEST(CudssLinearSolver, ThrowsWhenCudssDisabled) {
     CHECK(std::string(e.what()).find("requires cuDSS") != std::string::npos);
   }
 }
+
+TEST(CudssSpdSolver, ProfileArgumentIsSourceCompatibleWhenDisabled) {
+  DeviceSparseNormalEquations system;
+  CudaDeviceArray<double> solution;
+  CudssSpdSolver solver;
+  CudssSpdSolveProfile profile;
+
+  CHECK_EXCEPTION(solver.solve(system, &solution, nullptr, &profile),
+                  std::runtime_error);
+  DOUBLES_EQUAL(0.0, profile.dataInfoBoundaryWall, 0.0);
+}
 #endif
 
 #if GTSAM_ENABLE_CUDSS
+TEST(DeviceSparseJacobianProfile, AccountsExactBytesAndFiniteTimings) {
+  const ProfiledDeviceRun run = RunProfiledDevicePipeline(true);
+
+  CHECK(ProfileBytesAreExact(run));
+  CHECK(AllDeviceProfileTimingsAreFiniteNonnegative(run.profile));
+  CHECK(run.profile.initializeWall > 0.0);
+  const double cudaEventTotal =
+      run.profile.patternH2d + run.profile.structureSetup +
+      run.profile.setupD2h + run.profile.numericH2d +
+      run.profile.transposeUpdate + run.profile.normalJtJ +
+      run.profile.normalJtb + run.profile.diagonalExtraction +
+      run.profile.oldModelError + run.profile.dampingPreparation +
+      run.profile.dampingApplication + run.profile.cudssAnalysis +
+      run.profile.cudssFactorAndSolve + run.profile.newModelError +
+      run.profile.attemptD2h;
+  CHECK(cudaEventTotal > 0.0);
+  CHECK(run.profile.cudssDataInfoBoundaryWall > 0.0);
+  EXPECT_LONGS_EQUAL(1, run.analysisCount);
+}
+
+TEST(DeviceSparseJacobianProfile, DisabledTimingStillAccountsExactBytes) {
+  const ProfiledDeviceRun run = RunProfiledDevicePipeline(false);
+
+  CHECK(ProfileBytesAreExact(run));
+  CHECK(AllDeviceProfileTimingsAreZero(run.profile));
+  EXPECT_LONGS_EQUAL(1, run.analysisCount);
+}
+
 TEST(CudssLinearSolver, SolvesSmallSpdSystem) {
   CudaContext context;
   DeviceSparseNormalEquations system;
