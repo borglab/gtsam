@@ -4,6 +4,7 @@
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
@@ -15,10 +16,13 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <atomic>
 #include <limits>
 #include <memory>
+#include <mutex>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -113,6 +117,74 @@ class ReturningGaussianFactor : public NonlinearFactor {
  private:
   size_t rowCount_;
   std::shared_ptr<GaussianFactor> result_;
+};
+
+class RecordingPointFactor : public NonlinearFactor {
+ public:
+  RecordingPointFactor(Key key, bool isSendable)
+      : NonlinearFactor(KeyVector{key}),
+        key_(key),
+        isSendable_(isSendable) {}
+
+  size_t dim() const override { return 1; }
+
+  std::shared_ptr<GaussianFactor> linearize(const Values&) const override {
+    callCount_.fetch_add(1);
+    {
+      std::lock_guard<std::mutex> lock(threadIdMutex_);
+      threadId_ = std::this_thread::get_id();
+    }
+
+    const Matrix A = (Matrix(1, 2) << 1.0, 2.0).finished();
+    const Vector b = (Vector(1) << 3.0).finished();
+    return std::make_shared<JacobianFactor>(key_, A, b);
+  }
+
+  bool sendable() const override { return isSendable_.load(); }
+
+  void setSendable(bool isSendable) { isSendable_.store(isSendable); }
+
+  size_t callCount() const { return callCount_.load(); }
+
+  std::thread::id threadId() const {
+    std::lock_guard<std::mutex> lock(threadIdMutex_);
+    return threadId_;
+  }
+
+ private:
+  Key key_;
+  std::atomic<bool> isSendable_;
+  mutable std::atomic<size_t> callCount_{0};
+  mutable std::mutex threadIdMutex_;
+  mutable std::thread::id threadId_;
+};
+
+class CountingReturningGaussianFactor : public NonlinearFactor {
+ public:
+  CountingReturningGaussianFactor(
+      const KeyVector& keys, size_t rowCount, bool isSendable,
+      std::shared_ptr<GaussianFactor> result)
+      : NonlinearFactor(keys),
+        rowCount_(rowCount),
+        isSendable_(isSendable),
+        result_(std::move(result)) {}
+
+  size_t dim() const override { return rowCount_; }
+
+  std::shared_ptr<GaussianFactor> linearize(const Values&) const override {
+    callCount_.fetch_add(1);
+    return result_;
+  }
+
+  bool sendable() const override { return isSendable_; }
+
+  size_t callCount() const { return callCount_.load(); }
+
+ private:
+  size_t rowCount_;
+  bool isSendable_;
+  std::shared_ptr<GaussianFactor> result_;
+  mutable std::atomic<size_t> callCount_{0};
 };
 
 class InactivePointFactor : public NoiseModelFactorN<Point2> {
@@ -250,6 +322,54 @@ bool FactorRangeEquals(const SparseJacobianPlan& plan, size_t factorIndex,
     }
   }
   return true;
+}
+
+struct StreamingAndPackingFailureResult {
+  DirectJacobianStatus streamingStatus;
+  bool streamingRangeUnchanged = false;
+  DirectJacobianStatus packingStatus;
+  bool packingRangeUnchanged = false;
+};
+
+StreamingAndPackingFailureResult RunStreamingAndPackingFailure(
+    const std::shared_ptr<GaussianFactor>& returned) {
+  constexpr size_t kFailingFactorIndex = 1;
+  constexpr double kSentinel = 83.0;
+  StreamingAndPackingFailureResult result;
+
+  Values values;
+  values.insert(kFirstStreamingKey, Point2(0.0, 0.0));
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<PriorFactor<Point2>>(
+      kFirstStreamingKey, Point2(0.0, 0.0),
+      noiseModel::Unit::Create(2));
+  graph.push_back(std::make_shared<ReturningGaussianFactor>(
+      KeyVector{kFirstStreamingKey}, 2, returned));
+
+  const SparseJacobianColumnLayout columns(values);
+  const SparseJacobianPlan plan(graph, columns);
+  HostSparseJacobian host(plan);
+  host.clear();
+  SeedFactorRange(plan, kFailingFactorIndex, kSentinel, &host);
+
+  const StreamingSparseJacobianLinearizer linearizer;
+  result.streamingStatus = linearizer.linearize(
+      graph, values, columns, plan, &host, nullptr, false);
+  result.streamingRangeUnchanged =
+      FactorRangeEquals(plan, kFailingFactorIndex, kSentinel, host);
+
+  GaussianFactorGraph linear;
+  linear.push_back(std::make_shared<JacobianFactor>(
+      kFirstStreamingKey, Matrix::Identity(2, 2), Vector::Zero(2)));
+  linear.push_back(returned);
+  host.clear();
+  SeedFactorRange(plan, kFailingFactorIndex, kSentinel, &host);
+
+  result.packingStatus =
+      linearizer.packGaussianFactorGraph(linear, plan, &host);
+  result.packingRangeUnchanged =
+      FactorRangeEquals(plan, kFailingFactorIndex, kSentinel, host);
+  return result;
 }
 
 Values makeValues() {
@@ -780,6 +900,194 @@ TEST(StreamingSparseJacobianLinearizer,
 }
 
 TEST(StreamingSparseJacobianLinearizer,
+     SchedulesSendableFactorsAndReportsStats) {
+  constexpr size_t kSendableFactorCount = 512;
+
+  Values values;
+  values.insert(kFirstStreamingKey, Point2(0.0, 0.0));
+  NonlinearFactorGraph graph;
+  std::vector<std::shared_ptr<RecordingPointFactor>> sendableFactors;
+  sendableFactors.reserve(kSendableFactorCount);
+  for (size_t index = 0; index < kSendableFactorCount; ++index) {
+    auto factor =
+        std::make_shared<RecordingPointFactor>(kFirstStreamingKey, true);
+    sendableFactors.push_back(factor);
+    graph.push_back(factor);
+  }
+  auto nonSendableFactor =
+      std::make_shared<RecordingPointFactor>(kFirstStreamingKey, false);
+  graph.push_back(nonSendableFactor);
+
+  const SparseJacobianColumnLayout columns(values);
+  const SparseJacobianPlan plan(graph, columns);
+  HostSparseJacobian host(plan);
+  host.clear();
+  const std::thread::id callerThread = std::this_thread::get_id();
+  StreamingLinearizationStats stats{7, 9};
+
+  const DirectJacobianStatus status = StreamingSparseJacobianLinearizer()
+                                          .linearize(graph, values, columns,
+                                                     plan, &host, &stats);
+
+  CHECK(status.ok());
+  EXPECT_LONGS_EQUAL(kSendableFactorCount, stats.sendableFactors);
+  EXPECT_LONGS_EQUAL(1, stats.nonSendableFactors);
+  for (const auto& factor : sendableFactors) {
+    EXPECT_LONGS_EQUAL(1, factor->callCount());
+  }
+  EXPECT_LONGS_EQUAL(1, nonSendableFactor->callCount());
+  CHECK(nonSendableFactor->threadId() == callerThread);
+}
+
+TEST(StreamingSparseJacobianLinearizer,
+     ReturnsLowestFactorFailureAfterEvaluatingEveryScheduleClass) {
+  Values values;
+  values.insert(kFirstStreamingKey, Point2(0.0, 0.0));
+
+  auto lowerNonSendable =
+      std::make_shared<CountingReturningGaussianFactor>(
+          KeyVector{kFirstStreamingKey}, 1, false,
+          std::make_shared<JacobianFactor>(
+              kFirstStreamingKey, Matrix::Identity(2, 2),
+              Vector::Zero(2)));
+  auto higherSendable =
+      std::make_shared<CountingReturningGaussianFactor>(
+          KeyVector{kFirstStreamingKey}, 1, true,
+          std::make_shared<HessianFactor>(
+              kFirstStreamingKey, Matrix::Identity(2, 2),
+              Vector::Zero(2), 0.0));
+  NonlinearFactorGraph graph;
+  graph.push_back(lowerNonSendable);
+  graph.push_back(higherSendable);
+
+  const SparseJacobianColumnLayout columns(values);
+  const SparseJacobianPlan plan(graph, columns);
+  HostSparseJacobian host(plan);
+  host.clear();
+  StreamingLinearizationStats stats;
+
+  const DirectJacobianStatus status = StreamingSparseJacobianLinearizer()
+                                          .linearize(graph, values, columns,
+                                                     plan, &host, &stats);
+
+  CHECK(status.failure == DirectJacobianFailure::StructuralMismatch);
+  EXPECT_LONGS_EQUAL(0, status.factorIndex);
+  EXPECT_LONGS_EQUAL(1, lowerNonSendable->callCount());
+  EXPECT_LONGS_EQUAL(1, higherSendable->callCount());
+  EXPECT_LONGS_EQUAL(1, stats.sendableFactors);
+  EXPECT_LONGS_EQUAL(1, stats.nonSendableFactors);
+}
+
+TEST(StreamingSparseJacobianLinearizer,
+     RejectsStaleSendabilityBeforeEvaluatingInShallowMode) {
+  Values values;
+  values.insert(kFirstStreamingKey, Point2(0.0, 0.0));
+  auto factor =
+      std::make_shared<RecordingPointFactor>(kFirstStreamingKey, true);
+  NonlinearFactorGraph graph;
+  graph.push_back(factor);
+
+  const SparseJacobianColumnLayout columns(values);
+  const SparseJacobianPlan plan(graph, columns);
+  HostSparseJacobian host(plan);
+  host.clear();
+  factor->setSendable(false);
+  StreamingLinearizationStats stats{7, 9};
+
+  const DirectJacobianStatus status = StreamingSparseJacobianLinearizer()
+                                          .linearize(graph, values, columns,
+                                                     plan, &host, &stats,
+                                                     false);
+
+  CHECK(status.failure == DirectJacobianFailure::StructuralMismatch);
+  EXPECT_LONGS_EQUAL(0, status.factorIndex);
+  EXPECT(!status.detail.empty());
+  EXPECT_LONGS_EQUAL(0, factor->callCount());
+  EXPECT_LONGS_EQUAL(0, stats.sendableFactors);
+  EXPECT_LONGS_EQUAL(1, stats.nonSendableFactors);
+}
+
+TEST(StreamingSparseJacobianLinearizer,
+     RejectsReturnedHessianFactorsWithoutPartialWrites) {
+  const StreamingAndPackingFailureResult result =
+      RunStreamingAndPackingFailure(
+          std::make_shared<HessianFactor>(
+              kFirstStreamingKey, Matrix::Identity(2, 2), Vector::Zero(2),
+              0.0));
+  EXPECT(result.streamingStatus.failure ==
+         DirectJacobianFailure::UnsupportedGaussianFactor);
+  EXPECT_LONGS_EQUAL(1, result.streamingStatus.factorIndex);
+  EXPECT(!result.streamingStatus.detail.empty());
+  EXPECT(result.streamingRangeUnchanged);
+  EXPECT(result.packingStatus.failure ==
+         DirectJacobianFailure::UnsupportedGaussianFactor);
+  EXPECT_LONGS_EQUAL(1, result.packingStatus.factorIndex);
+  EXPECT(!result.packingStatus.detail.empty());
+  EXPECT(result.packingRangeUnchanged);
+}
+
+TEST(StreamingSparseJacobianLinearizer,
+     RejectsReturnedConstrainedJacobiansWithoutPartialWrites) {
+  const StreamingAndPackingFailureResult result =
+      RunStreamingAndPackingFailure(
+          std::make_shared<JacobianFactor>(
+              kFirstStreamingKey, Matrix::Identity(2, 2), Vector::Zero(2),
+              noiseModel::Constrained::All(2)));
+  EXPECT(result.streamingStatus.failure ==
+         DirectJacobianFailure::ConstrainedFactor);
+  EXPECT_LONGS_EQUAL(1, result.streamingStatus.factorIndex);
+  EXPECT(!result.streamingStatus.detail.empty());
+  EXPECT(result.streamingRangeUnchanged);
+  EXPECT(result.packingStatus.failure ==
+         DirectJacobianFailure::ConstrainedFactor);
+  EXPECT_LONGS_EQUAL(1, result.packingStatus.factorIndex);
+  EXPECT(!result.packingStatus.detail.empty());
+  EXPECT(result.packingRangeUnchanged);
+}
+
+TEST(StreamingSparseJacobianLinearizer,
+     RejectsNonFiniteReturnedJacobiansWithoutPartialWritesInShallowMode) {
+  std::vector<StreamingAndPackingFailureResult> results;
+
+  Matrix nonFiniteA = Matrix::Identity(2, 2);
+  nonFiniteA(0, 1) = std::numeric_limits<double>::quiet_NaN();
+  results.push_back(RunStreamingAndPackingFailure(
+      std::make_shared<JacobianFactor>(
+          kFirstStreamingKey, nonFiniteA, Vector::Zero(2))));
+
+  nonFiniteA = Matrix::Identity(2, 2);
+  nonFiniteA(1, 0) = std::numeric_limits<double>::infinity();
+  results.push_back(RunStreamingAndPackingFailure(
+      std::make_shared<JacobianFactor>(
+          kFirstStreamingKey, nonFiniteA, Vector::Zero(2))));
+
+  Vector nonFiniteB = Vector::Zero(2);
+  nonFiniteB(0) = std::numeric_limits<double>::quiet_NaN();
+  results.push_back(RunStreamingAndPackingFailure(
+      std::make_shared<JacobianFactor>(
+          kFirstStreamingKey, Matrix::Identity(2, 2), nonFiniteB)));
+
+  nonFiniteB = Vector::Zero(2);
+  nonFiniteB(1) = -std::numeric_limits<double>::infinity();
+  results.push_back(RunStreamingAndPackingFailure(
+      std::make_shared<JacobianFactor>(
+          kFirstStreamingKey, Matrix::Identity(2, 2), nonFiniteB)));
+
+  for (const StreamingAndPackingFailureResult& result : results) {
+    EXPECT(result.streamingStatus.failure ==
+           DirectJacobianFailure::NonFiniteValues);
+    EXPECT_LONGS_EQUAL(1, result.streamingStatus.factorIndex);
+    EXPECT(!result.streamingStatus.detail.empty());
+    EXPECT(result.streamingRangeUnchanged);
+    EXPECT(result.packingStatus.failure ==
+           DirectJacobianFailure::NonFiniteValues);
+    EXPECT_LONGS_EQUAL(1, result.packingStatus.factorIndex);
+    EXPECT(!result.packingStatus.detail.empty());
+    EXPECT(result.packingRangeUnchanged);
+  }
+}
+
+TEST(StreamingSparseJacobianLinearizer,
      RejectsInvalidGlobalInputsBeforeLinearizing) {
   const Values values = makeStreamingValues();
   const NonlinearFactorGraph graph = makeStreamingGraph();
@@ -804,14 +1112,14 @@ TEST(StreamingSparseJacobianLinearizer,
   NonlinearFactorGraph shorterGraph = graph;
   shorterGraph.resize(graph.size() - 1);
   status = linearizer.linearize(shorterGraph, values, columns, plan, &host,
-                                false);
+                                nullptr, false);
   CHECK(status.failure == DirectJacobianFailure::StructuralMismatch);
 
   NonlinearFactorGraph longerGraph = graph;
   longerGraph.emplace_shared<PriorFactor<Point2>>(
       kFirstStreamingKey, Point2(0.0, 0.0), noiseModel::Unit::Create(2));
   status = linearizer.linearize(longerGraph, values, columns, plan, &host,
-                                false);
+                                nullptr, false);
   CHECK(status.failure == DirectJacobianFailure::StructuralMismatch);
 
   Values changedDimensions;

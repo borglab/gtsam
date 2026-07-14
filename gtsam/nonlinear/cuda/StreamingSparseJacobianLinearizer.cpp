@@ -1,14 +1,22 @@
 #include <gtsam/nonlinear/cuda/StreamingSparseJacobianLinearizer.h>
 
+#include <gtsam/config.h>
+#include <gtsam/base/types.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
+
+#ifdef GTSAM_USE_TBB
+#include <tbb/blocked_range.h>
+#include <tbb/parallel_for.h>
+#endif
 
 #include <cmath>
 #include <memory>
 #include <optional>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace gtsam::cuda {
 namespace {
@@ -164,7 +172,11 @@ DirectJacobianStatus StreamingSparseJacobianLinearizer::linearize(
     const NonlinearFactorGraph& graph, const Values& values,
     const SparseJacobianColumnLayout& columns,
     const SparseJacobianPlan& plan, HostSparseJacobian* output,
-    bool validateStructure) const {
+    StreamingLinearizationStats* stats, bool validateStructure) const {
+  if (stats) {
+    *stats = {};
+  }
+
   DirectJacobianStatus status = ValidateOutput(plan, output);
   if (!status.ok()) {
     return status;
@@ -177,20 +189,83 @@ DirectJacobianStatus StreamingSparseJacobianLinearizer::linearize(
     return Failure(DirectJacobianFailure::StructuralMismatch,
                    "Values dimensions do not match the column layout");
   }
+
+  DirectJacobianStatus sendabilityStatus;
+  for (size_t factorIndex = 0; factorIndex < graph.size(); ++factorIndex) {
+    const NonlinearFactor::shared_ptr& factor = graph[factorIndex];
+    if (!factor) {
+      continue;
+    }
+
+    const bool isSendable = factor->sendable();
+    if (stats) {
+      if (isSendable) {
+        ++stats->sendableFactors;
+      } else {
+        ++stats->nonSendableFactors;
+      }
+    }
+    if (isSendable != plan.factor(factorIndex).sendable &&
+        sendabilityStatus.ok()) {
+      sendabilityStatus = FactorFailure(
+          DirectJacobianFailure::StructuralMismatch, factorIndex,
+          "factor sendability does not match the sparse plan");
+    }
+  }
+  if (!sendabilityStatus.ok()) {
+    return sendabilityStatus;
+  }
+
   if (validateStructure && !plan.matches(graph, columns)) {
     return Failure(DirectJacobianFailure::StructuralMismatch,
                    "nonlinear graph structure does not match the sparse plan");
   }
 
+  std::vector<DirectJacobianStatus> statuses(graph.size());
+
+#ifdef GTSAM_USE_TBB
+  TbbOpenMPMixedScope threadLimiter;
+  tbb::parallel_for(
+      tbb::blocked_range<size_t>(0, graph.size()),
+      [&](const tbb::blocked_range<size_t>& range) {
+        for (size_t factorIndex = range.begin();
+             factorIndex != range.end(); ++factorIndex) {
+          const NonlinearFactor::shared_ptr& factor = graph[factorIndex];
+          if (!factor || !plan.factor(factorIndex).sendable) {
+            continue;
+          }
+          std::shared_ptr<GaussianFactor> gaussian =
+              factor->linearize(values);
+          statuses[factorIndex] =
+              ScatterOneFactor(gaussian, factorIndex, plan, output);
+        }
+      });
+
   for (size_t factorIndex = 0; factorIndex < graph.size(); ++factorIndex) {
-    if (!graph[factorIndex]) {
+    const NonlinearFactor::shared_ptr& factor = graph[factorIndex];
+    if (!factor || plan.factor(factorIndex).sendable) {
       continue;
     }
-    std::shared_ptr<GaussianFactor> gaussian =
-        graph[factorIndex]->linearize(values);
-    status = ScatterOneFactor(gaussian, factorIndex, plan, output);
-    if (!status.ok()) {
-      return status;
+    std::shared_ptr<GaussianFactor> gaussian = factor->linearize(values);
+    statuses[factorIndex] =
+        ScatterOneFactor(gaussian, factorIndex, plan, output);
+  }
+#else
+  for (size_t factorIndex = 0; factorIndex < graph.size(); ++factorIndex) {
+    const NonlinearFactor::shared_ptr& factor = graph[factorIndex];
+    if (!factor) {
+      continue;
+    }
+    std::shared_ptr<GaussianFactor> gaussian = factor->linearize(values);
+    statuses[factorIndex] =
+        ScatterOneFactor(gaussian, factorIndex, plan, output);
+  }
+#endif
+
+  for (size_t factorIndex = 0; factorIndex < statuses.size();
+       ++factorIndex) {
+    if (!statuses[factorIndex].ok()) {
+      return statuses[factorIndex];
     }
   }
   return {};
