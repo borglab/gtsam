@@ -3,11 +3,15 @@
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/nonlinear/cuda/HostSparseJacobian.h>
 #include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
+#include <gtsam/nonlinear/cuda/StreamingSparseJacobianLinearizer.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -26,6 +30,8 @@ namespace {
 
 constexpr Key kPoseKey = 10;
 constexpr Key kPointKey = 20;
+constexpr Key kFirstStreamingKey = 30;
+constexpr Key kSecondStreamingKey = 40;
 
 static_assert(
     !std::is_copy_constructible_v<CudaPinnedHostArray<double>>);
@@ -89,6 +95,162 @@ class StructuralFactor : public NonlinearFactor {
   size_t rowCount_;
   bool isSendable_;
 };
+
+class ReturningGaussianFactor : public NonlinearFactor {
+ public:
+  ReturningGaussianFactor(const KeyVector& keys, size_t rowCount,
+                          std::shared_ptr<GaussianFactor> result)
+      : NonlinearFactor(keys),
+        rowCount_(rowCount),
+        result_(std::move(result)) {}
+
+  size_t dim() const override { return rowCount_; }
+
+  std::shared_ptr<GaussianFactor> linearize(const Values&) const override {
+    return result_;
+  }
+
+ private:
+  size_t rowCount_;
+  std::shared_ptr<GaussianFactor> result_;
+};
+
+class InactivePointFactor : public NoiseModelFactorN<Point2> {
+ public:
+  using Base = NoiseModelFactorN<Point2>;
+
+  explicit InactivePointFactor(Key key)
+      : Base(noiseModel::Unit::Create(2), key) {}
+
+  bool active(const Values&) const override { return false; }
+
+  Vector evaluateError(const Point2& point,
+                       OptionalMatrixType H = OptionalNone) const override {
+    if (H) {
+      *H = Matrix::Identity(2, 2);
+    }
+    return point;
+  }
+};
+
+struct DenseJacobianReference {
+  Matrix jacobian;
+  Vector rhs;
+};
+
+Matrix DenseFromCsr(const SparseJacobianPlan& plan,
+                    const HostSparseJacobian& host) {
+  Matrix result = Matrix::Zero(plan.rows(), plan.columns());
+  for (int row = 0; row < plan.rows(); ++row) {
+    for (int index = plan.rowPointers()[static_cast<size_t>(row)];
+         index < plan.rowPointers()[static_cast<size_t>(row + 1)]; ++index) {
+      result(row, plan.columnIndices()[static_cast<size_t>(index)]) =
+          host.valuesData()[static_cast<size_t>(index)];
+    }
+  }
+  return result;
+}
+
+Vector VectorFromHostRhs(const HostSparseJacobian& host) {
+  Vector result(static_cast<Eigen::Index>(host.rhsSize()));
+  for (size_t row = 0; row < host.rhsSize(); ++row) {
+    result(static_cast<Eigen::Index>(row)) = host.rhsData()[row];
+  }
+  return result;
+}
+
+DenseJacobianReference AssembleDenseReferenceBySlot(
+    const NonlinearFactorGraph& graph, const Values& values,
+    const SparseJacobianColumnLayout& columns,
+    const SparseJacobianPlan& plan) {
+  DenseJacobianReference reference{Matrix::Zero(plan.rows(), plan.columns()),
+                                   Vector::Zero(plan.rows())};
+  const GaussianFactorGraph::shared_ptr linear = graph.linearize(values);
+  if (linear->size() != graph.size()) {
+    throw std::runtime_error("reference linearization lost graph slots");
+  }
+
+  for (size_t factorIndex = 0; factorIndex < linear->size(); ++factorIndex) {
+    const GaussianFactor::shared_ptr& gaussian = (*linear)[factorIndex];
+    if (!gaussian) {
+      continue;
+    }
+
+    const auto jacobian = std::dynamic_pointer_cast<JacobianFactor>(gaussian);
+    if (!jacobian) {
+      throw std::runtime_error("reference requires JacobianFactor results");
+    }
+
+    const auto [localA, localB] = jacobian->jacobian();
+    const SparseJacobianFactorWritePlan& factorPlan =
+        plan.factor(factorIndex);
+    Eigen::Index localColumn = 0;
+    for (Key key : jacobian->keys()) {
+      const SparseJacobianColumnBlock& column = columns.at(key);
+      reference.jacobian.block(
+          factorPlan.rowBegin, column.columnBegin, factorPlan.rowCount,
+          column.dimension) =
+          localA.middleCols(localColumn, column.dimension);
+      localColumn += column.dimension;
+    }
+    reference.rhs.segment(factorPlan.rowBegin, factorPlan.rowCount) = localB;
+  }
+  return reference;
+}
+
+Values makeStreamingValues() {
+  Values values;
+  values.insert(kFirstStreamingKey, Point2(3.0, -2.0));
+  values.insert(kSecondStreamingKey, Point2(-1.0, 4.0));
+  return values;
+}
+
+NonlinearFactorGraph makeStreamingGraph() {
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<PriorFactor<Point2>>(
+      kFirstStreamingKey, Point2(0.5, -0.25),
+      noiseModel::Unit::Create(2));
+  graph.emplace_shared<PriorFactor<Point2>>(
+      kSecondStreamingKey, Point2(1.0, 1.5),
+      noiseModel::Diagonal::Sigmas(Vector2(2.0, 0.5)));
+  graph.emplace_shared<PriorFactor<Point2>>(
+      kFirstStreamingKey, Point2(-2.0, 3.0),
+      noiseModel::Robust::Create(
+          noiseModel::mEstimator::Huber::Create(1.345),
+          noiseModel::Diagonal::Sigmas(Vector2(0.75, 1.25))));
+  return graph;
+}
+
+void SeedFactorRange(const SparseJacobianPlan& plan, size_t factorIndex,
+                     double sentinel, HostSparseJacobian* host) {
+  const SparseJacobianFactorWritePlan& factor = plan.factor(factorIndex);
+  for (int row = factor.rowBegin; row < factor.rowBegin + factor.rowCount;
+       ++row) {
+    host->rhsData()[static_cast<size_t>(row)] = sentinel;
+    for (int index = plan.rowPointers()[static_cast<size_t>(row)];
+         index < plan.rowPointers()[static_cast<size_t>(row + 1)]; ++index) {
+      host->valuesData()[static_cast<size_t>(index)] = sentinel;
+    }
+  }
+}
+
+bool FactorRangeEquals(const SparseJacobianPlan& plan, size_t factorIndex,
+                       double expected, const HostSparseJacobian& host) {
+  const SparseJacobianFactorWritePlan& factor = plan.factor(factorIndex);
+  for (int row = factor.rowBegin; row < factor.rowBegin + factor.rowCount;
+       ++row) {
+    if (host.rhsData()[static_cast<size_t>(row)] != expected) {
+      return false;
+    }
+    for (int index = plan.rowPointers()[static_cast<size_t>(row)];
+         index < plan.rowPointers()[static_cast<size_t>(row + 1)]; ++index) {
+      if (host.valuesData()[static_cast<size_t>(index)] != expected) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
 
 Values makeValues() {
   Values values;
@@ -482,6 +644,241 @@ TEST(HostSparseJacobian, ClearsInPlaceWithoutChangingBufferAddresses) {
   for (size_t i = 0; i < constHost.rhsSize(); ++i) {
     DOUBLES_EQUAL(0.0, constHost.rhsData()[i], 0.0);
   }
+}
+
+TEST(StreamingSparseJacobianLinearizer,
+     StreamsUnitDiagonalAndRobustFactorsIntoPlannedCsr) {
+  const Values values = makeStreamingValues();
+  const NonlinearFactorGraph graph = makeStreamingGraph();
+  const SparseJacobianColumnLayout columns(values);
+  const SparseJacobianPlan plan(graph, columns);
+  HostSparseJacobian host(plan);
+  host.clear();
+
+  const DenseJacobianReference expected =
+      AssembleDenseReferenceBySlot(graph, values, columns, plan);
+  const DirectJacobianStatus status = StreamingSparseJacobianLinearizer()
+                                          .linearize(graph, values, columns,
+                                                     plan, &host);
+
+  CHECK(status.ok());
+  EXPECT(assert_equal(expected.jacobian, DenseFromCsr(plan, host), 1e-12));
+  EXPECT(assert_equal(expected.rhs, VectorFromHostRhs(host), 1e-12));
+}
+
+TEST(StreamingSparseJacobianLinearizer,
+     WhitensReturnedDiagonalJacobianExactlyOnce) {
+  Values values;
+  values.insert(kFirstStreamingKey, Point2(0.0, 0.0));
+
+  const Matrix rawA =
+      (Matrix(2, 2) << 4.0, 8.0, 6.0, 10.0).finished();
+  const Vector rawB = (Vector(2) << 8.0, 15.0).finished();
+  const auto returned = std::make_shared<JacobianFactor>(
+      kFirstStreamingKey, rawA, rawB,
+      noiseModel::Diagonal::Sigmas(Vector2(2.0, 5.0)));
+
+  NonlinearFactorGraph graph;
+  graph.push_back(std::make_shared<ReturningGaussianFactor>(
+      KeyVector{kFirstStreamingKey}, 2, returned));
+  const SparseJacobianColumnLayout columns(values);
+  const SparseJacobianPlan plan(graph, columns);
+  HostSparseJacobian host(plan);
+  host.clear();
+
+  const DirectJacobianStatus status = StreamingSparseJacobianLinearizer()
+                                          .linearize(graph, values, columns,
+                                                     plan, &host);
+
+  CHECK(status.ok());
+  const Matrix expectedA =
+      (Matrix(2, 2) << 2.0, 4.0, 1.2, 2.0).finished();
+  const Vector expectedB = (Vector(2) << 4.0, 3.0).finished();
+  EXPECT(assert_equal(expectedA, DenseFromCsr(plan, host), 1e-12));
+  EXPECT(assert_equal(expectedB, VectorFromHostRhs(host), 1e-12));
+  CHECK(returned->get_model() != nullptr);
+  EXPECT(assert_equal(rawA, Matrix(returned->getA()), 1e-12));
+  EXPECT(assert_equal(rawB, Vector(returned->getb()), 1e-12));
+}
+
+TEST(StreamingSparseJacobianLinearizer,
+     InactiveFactorLeavesItsReservedRowsCleared) {
+  Values values;
+  values.insert(kFirstStreamingKey, Point2(2.0, 3.0));
+  NonlinearFactorGraph graph;
+  graph.push_back(std::make_shared<InactivePointFactor>(kFirstStreamingKey));
+  const SparseJacobianColumnLayout columns(values);
+  const SparseJacobianPlan plan(graph, columns);
+  HostSparseJacobian host(plan);
+  SeedFactorRange(plan, 0, 19.0, &host);
+  host.clear();
+
+  const DirectJacobianStatus status = StreamingSparseJacobianLinearizer()
+                                          .linearize(graph, values, columns,
+                                                     plan, &host);
+
+  CHECK(status.ok());
+  CHECK(FactorRangeEquals(plan, 0, 0.0, host));
+}
+
+TEST(StreamingSparseJacobianLinearizer,
+     RejectsMalformedReturnedJacobiansWithoutPartialWrites) {
+  constexpr double kSentinel = 73.0;
+  const auto verifyMalformed = [&](const KeyVector& plannedKeys,
+                                   const std::shared_ptr<GaussianFactor>&
+                                       returned) {
+    Values values;
+    for (Key key : plannedKeys) {
+      if (!values.exists(key)) {
+        values.insert(key, Point2(0.0, 0.0));
+      }
+    }
+    NonlinearFactorGraph graph;
+    graph.push_back(std::make_shared<ReturningGaussianFactor>(
+        plannedKeys, 2, returned));
+    const SparseJacobianColumnLayout columns(values);
+    const SparseJacobianPlan plan(graph, columns);
+    HostSparseJacobian host(plan);
+    host.clear();
+    SeedFactorRange(plan, 0, kSentinel, &host);
+
+    const DirectJacobianStatus status = StreamingSparseJacobianLinearizer()
+                                            .linearize(graph, values, columns,
+                                                       plan, &host);
+
+    EXPECT(status.failure == DirectJacobianFailure::StructuralMismatch);
+    EXPECT(status.factorIndex == 0);
+    EXPECT(!status.detail.empty());
+    EXPECT(FactorRangeEquals(plan, 0, kSentinel, host));
+  };
+
+  const Matrix wrongRowA = Matrix::Identity(1, 2);
+  const Vector wrongRowB = Vector::Ones(1);
+  verifyMalformed(
+      KeyVector{kFirstStreamingKey},
+      std::make_shared<JacobianFactor>(kFirstStreamingKey, wrongRowA,
+                                       wrongRowB));
+
+  const Matrix squareA = Matrix::Identity(2, 2);
+  const Vector squareB = Vector::Ones(2);
+  verifyMalformed(
+      KeyVector{kFirstStreamingKey, kSecondStreamingKey},
+      std::make_shared<JacobianFactor>(kFirstStreamingKey, squareA, squareB));
+
+  verifyMalformed(
+      KeyVector{kFirstStreamingKey, kSecondStreamingKey},
+      std::make_shared<JacobianFactor>(
+          kSecondStreamingKey, squareA, kFirstStreamingKey, 2.0 * squareA,
+          squareB));
+
+  const Matrix wrongWidthA = Matrix::Identity(2, 3);
+  verifyMalformed(
+      KeyVector{kFirstStreamingKey, kSecondStreamingKey},
+      std::make_shared<JacobianFactor>(
+          kFirstStreamingKey, squareA, kSecondStreamingKey, wrongWidthA,
+          squareB));
+}
+
+TEST(StreamingSparseJacobianLinearizer,
+     RejectsInvalidGlobalInputsBeforeLinearizing) {
+  const Values values = makeStreamingValues();
+  const NonlinearFactorGraph graph = makeStreamingGraph();
+  const SparseJacobianColumnLayout columns(values);
+  const SparseJacobianPlan plan(graph, columns);
+  HostSparseJacobian host(plan);
+  const StreamingSparseJacobianLinearizer linearizer;
+
+  DirectJacobianStatus status =
+      linearizer.linearize(graph, values, columns, plan, nullptr);
+  CHECK(status.failure == DirectJacobianFailure::StructuralMismatch);
+
+  NonlinearFactorGraph largerPlanGraph = graph;
+  largerPlanGraph.emplace_shared<PriorFactor<Point2>>(
+      kSecondStreamingKey, Point2(0.0, 0.0), noiseModel::Unit::Create(2));
+  const SparseJacobianPlan largerPlan(largerPlanGraph, columns);
+  HostSparseJacobian wrongSizeOutput(largerPlan);
+  status = linearizer.linearize(graph, values, columns, plan,
+                                &wrongSizeOutput);
+  CHECK(status.failure == DirectJacobianFailure::StructuralMismatch);
+
+  NonlinearFactorGraph shorterGraph = graph;
+  shorterGraph.resize(graph.size() - 1);
+  status = linearizer.linearize(shorterGraph, values, columns, plan, &host,
+                                false);
+  CHECK(status.failure == DirectJacobianFailure::StructuralMismatch);
+
+  NonlinearFactorGraph longerGraph = graph;
+  longerGraph.emplace_shared<PriorFactor<Point2>>(
+      kFirstStreamingKey, Point2(0.0, 0.0), noiseModel::Unit::Create(2));
+  status = linearizer.linearize(longerGraph, values, columns, plan, &host,
+                                false);
+  CHECK(status.failure == DirectJacobianFailure::StructuralMismatch);
+
+  Values changedDimensions;
+  changedDimensions.insert(kFirstStreamingKey, Point3(0.0, 0.0, 0.0));
+  changedDimensions.insert(kSecondStreamingKey, Point2(0.0, 0.0));
+  status = linearizer.linearize(graph, changedDimensions, columns, plan, &host);
+  CHECK(status.failure == DirectJacobianFailure::StructuralMismatch);
+
+  NonlinearFactorGraph changedStructure;
+  changedStructure.emplace_shared<PriorFactor<Point2>>(
+      kSecondStreamingKey, Point2(0.0, 0.0),
+      noiseModel::Unit::Create(2));
+  changedStructure.push_back(graph[1]);
+  changedStructure.push_back(graph[2]);
+  status =
+      linearizer.linearize(changedStructure, values, columns, plan, &host);
+  CHECK(status.failure == DirectJacobianFailure::StructuralMismatch);
+}
+
+TEST(StreamingSparseJacobianLinearizer,
+     PacksOnlySlotAlignedGaussianFactorGraphs) {
+  const Values values = makeStreamingValues();
+  const NonlinearFactorGraph graph = makeStreamingGraph();
+  const SparseJacobianColumnLayout columns(values);
+  const SparseJacobianPlan plan(graph, columns);
+  HostSparseJacobian streamed(plan), packed(plan);
+  streamed.clear();
+  packed.clear();
+  const StreamingSparseJacobianLinearizer linearizer;
+
+  CHECK(linearizer.linearize(graph, values, columns, plan, &streamed).ok());
+  const GaussianFactorGraph::shared_ptr linear = graph.linearize(values);
+  CHECK(linearizer.packGaussianFactorGraph(*linear, plan, &packed).ok());
+  EXPECT(assert_equal(DenseFromCsr(plan, streamed),
+                      DenseFromCsr(plan, packed), 1e-12));
+  EXPECT(assert_equal(VectorFromHostRhs(streamed),
+                      VectorFromHostRhs(packed), 1e-12));
+
+  DirectJacobianStatus status =
+      linearizer.packGaussianFactorGraph(*linear, plan, nullptr);
+  CHECK(status.failure == DirectJacobianFailure::StructuralMismatch);
+
+  NonlinearFactorGraph largerPlanGraph = graph;
+  largerPlanGraph.emplace_shared<PriorFactor<Point2>>(
+      kFirstStreamingKey, Point2(0.0, 0.0),
+      noiseModel::Unit::Create(2));
+  const SparseJacobianPlan largerPlan(largerPlanGraph, columns);
+  HostSparseJacobian wrongSizeOutput(largerPlan);
+  status =
+      linearizer.packGaussianFactorGraph(*linear, plan, &wrongSizeOutput);
+  CHECK(status.failure == DirectJacobianFailure::StructuralMismatch);
+
+  GaussianFactorGraph shorter = *linear;
+  shorter.resize(linear->size() - 1);
+  status = linearizer.packGaussianFactorGraph(shorter, plan, &packed);
+  CHECK(status.failure == DirectJacobianFailure::StructuralMismatch);
+
+  GaussianFactorGraph longer = *linear;
+  longer.push_back((*linear)[0]);
+  status = linearizer.packGaussianFactorGraph(longer, plan, &packed);
+  CHECK(status.failure == DirectJacobianFailure::StructuralMismatch);
+
+  GaussianFactorGraph misaligned = *linear;
+  std::swap(misaligned[0], misaligned[1]);
+  status = linearizer.packGaussianFactorGraph(misaligned, plan, &packed);
+  CHECK(status.failure == DirectJacobianFailure::StructuralMismatch);
+  CHECK(status.factorIndex == 0);
 }
 
 int main() {
