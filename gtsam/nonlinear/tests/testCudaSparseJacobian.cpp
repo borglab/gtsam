@@ -987,6 +987,9 @@ TEST(StreamingSparseJacobianLinearizer,
   std::vector<std::shared_ptr<RecordingPointFactor>> sendableFactors;
   sendableFactors.reserve(kSendableFactorCount);
   for (size_t index = 0; index < kSendableFactorCount; ++index) {
+    if (index == kSendableFactorCount / 2) {
+      graph.push_back(NonlinearFactor::shared_ptr{});
+    }
     auto factor =
         std::make_shared<RecordingPointFactor>(kFirstStreamingKey, true);
     sendableFactors.push_back(factor);
@@ -1010,6 +1013,11 @@ TEST(StreamingSparseJacobianLinearizer,
   CHECK(status.ok());
   EXPECT_LONGS_EQUAL(kSendableFactorCount, stats.sendableFactors);
   EXPECT_LONGS_EQUAL(1, stats.nonSendableFactors);
+  Matrix expectedJacobian = Matrix::Ones(plan.rows(), plan.columns());
+  expectedJacobian.col(1).setConstant(2.0);
+  const Vector expectedRhs = Vector::Constant(plan.rows(), 3.0);
+  EXPECT(assert_equal(expectedJacobian, DenseFromCsr(plan, host), 1e-12));
+  EXPECT(assert_equal(expectedRhs, VectorFromHostRhs(host), 1e-12));
   for (const auto& factor : sendableFactors) {
     EXPECT_LONGS_EQUAL(1, factor->callCount());
   }
@@ -1034,15 +1042,19 @@ TEST(StreamingSparseJacobianLinearizer,
           std::make_shared<HessianFactor>(
               kFirstStreamingKey, Matrix::Identity(2, 2),
               Vector::Zero(2), 0.0));
+  auto higherNonSendable =
+      std::make_shared<RecordingPointFactor>(kFirstStreamingKey, false);
   NonlinearFactorGraph graph;
   graph.push_back(lowerNonSendable);
   graph.push_back(higherSendable);
+  graph.push_back(higherNonSendable);
 
   const SparseJacobianColumnLayout columns(values);
   const SparseJacobianPlan plan(graph, columns);
   HostSparseJacobian host(plan);
   host.clear();
   StreamingLinearizationStats stats;
+  const std::thread::id callerThread = std::this_thread::get_id();
 
   const DirectJacobianStatus status = StreamingSparseJacobianLinearizer()
                                           .linearize(graph, values, columns,
@@ -1052,8 +1064,10 @@ TEST(StreamingSparseJacobianLinearizer,
   EXPECT_LONGS_EQUAL(0, status.factorIndex);
   EXPECT_LONGS_EQUAL(1, lowerNonSendable->callCount());
   EXPECT_LONGS_EQUAL(1, higherSendable->callCount());
+  EXPECT_LONGS_EQUAL(1, higherNonSendable->callCount());
+  CHECK(higherNonSendable->threadId() == callerThread);
   EXPECT_LONGS_EQUAL(1, stats.sendableFactors);
-  EXPECT_LONGS_EQUAL(1, stats.nonSendableFactors);
+  EXPECT_LONGS_EQUAL(2, stats.nonSendableFactors);
 }
 
 TEST(StreamingSparseJacobianLinearizer,
@@ -1101,6 +1115,7 @@ TEST(StreamingSparseJacobianLinearizer,
          DirectJacobianFailure::UnsupportedGaussianFactor);
   EXPECT_LONGS_EQUAL(1, result.packingStatus.factorIndex);
   EXPECT(!result.packingStatus.detail.empty());
+  EXPECT(result.streamingStatus.detail == result.packingStatus.detail);
   EXPECT(result.packingRangeUnchanged);
 }
 
@@ -1120,6 +1135,7 @@ TEST(StreamingSparseJacobianLinearizer,
          DirectJacobianFailure::ConstrainedFactor);
   EXPECT_LONGS_EQUAL(1, result.packingStatus.factorIndex);
   EXPECT(!result.packingStatus.detail.empty());
+  EXPECT(result.streamingStatus.detail == result.packingStatus.detail);
   EXPECT(result.packingRangeUnchanged);
 }
 
@@ -1161,6 +1177,7 @@ TEST(StreamingSparseJacobianLinearizer,
            DirectJacobianFailure::NonFiniteValues);
     EXPECT_LONGS_EQUAL(1, result.packingStatus.factorIndex);
     EXPECT(!result.packingStatus.detail.empty());
+    EXPECT(result.streamingStatus.detail == result.packingStatus.detail);
     EXPECT(result.packingRangeUnchanged);
   }
 }
