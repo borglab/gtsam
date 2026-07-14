@@ -796,39 +796,78 @@ git commit -m "feat: parallelize sparse Jacobian streaming"
 - Modify: `gtsam/CMakeLists.txt`
 - Modify: `gtsam/nonlinear/tests/testCudaSparseJacobian.cpp`
 
-- [ ] **Step 1: Write a failing device normal-equation test**
+- [ ] **Step 1: Write all failing device normal-equation behavior tests**
 
-Use `MakeGraph()`, the streaming linearizer, and Eigen to build the reference:
+Before changing CMake or adding the device class, write the complete Task 5 behavior suite. Use `MakeGraph()`, the streaming linearizer, and Eigen for two distinct numerical states with one device initialization:
 
 ```cpp
-TEST(DeviceSparseJacobianNormalEquations, MatchesEigenReference) {
+TEST(DeviceSparseJacobianNormalEquations,
+     RepeatedFormsMatchEigenAndPreserveFinalStorage) {
   CudaContext context;
-  const Values values = MakeValues();
+  const Values first = MakeValues();
+  Values second = first;
+  second.update(kPose, Pose2(1.2, 1.8, -0.2));
+  second.update(kPoint, Point2(4.5, 5.5));
   const NonlinearFactorGraph graph = MakeGraph();
-  const SparseJacobianColumnLayout layout(values);
+  const SparseJacobianColumnLayout layout(first);
   const SparseJacobianPlan plan(graph, layout);
   HostSparseJacobian host(plan);
-  host.clear();
-  CHECK(StreamingSparseJacobianLinearizer()
-            .linearize(graph, values, layout, plan, &host)
-            .ok());
-
-  const Matrix J = DenseFromCsr(plan, host);
-  const Vector b = VectorFromHostRhs(host);
 
   DeviceSparseJacobianNormalEquations device;
   device.initialize(plan, context.stream());
-  device.uploadNumerics(host, context.stream());
-  device.formUndampedSystem(context.stream());
 
-  const auto [actualH, actualG] =
-      DownloadNormalSystem(device.system(), context.stream());
-  EXPECT(assert_equal(J.transpose() * J, actualH, 1e-10));
-  EXPECT(assert_equal(J.transpose() * b, actualG, 1e-10));
+  const int* const rowAddress = device.system().rowPointers().data();
+  const int* const colAddress = device.system().colIndices().data();
+  const double* const valueAddress = device.system().values().data();
+  const double* const rhsAddress = device.system().rhs().data();
+  const auto initialPattern =
+      DownloadCsrPattern(device.system(), context.stream());
+
+  for (const Values* numericalValues : {&first, &second}) {
+    host.clear();
+    CHECK(StreamingSparseJacobianLinearizer()
+              .linearize(graph, *numericalValues, layout, plan, &host)
+              .ok());
+    const Matrix J = DenseFromCsr(plan, host);
+    const Vector b = VectorFromHostRhs(host);
+
+    device.uploadNumerics(host, context.stream());
+    device.formUndampedSystem(context.stream());
+    const auto [actualH, actualG] =
+        DownloadNormalSystem(device.system(), context.stream());
+
+    EXPECT(assert_equal(J.transpose() * J, actualH, 1e-10));
+    EXPECT(assert_equal(J.transpose() * b, actualG, 1e-10));
+    CHECK(rowAddress == device.system().rowPointers().data());
+    CHECK(colAddress == device.system().colIndices().data());
+    CHECK(valueAddress == device.system().values().data());
+    CHECK(rhsAddress == device.system().rhs().data());
+    CHECK(initialPattern ==
+          DownloadCsrPattern(device.system(), context.stream()));
+  }
 }
 ```
 
-- [ ] **Step 2: Verify the missing device class fails the build**
+Define `DownloadCsrPattern()` in the test file to download both row offsets and column indices, synchronize the supplied stream, and return `std::pair<std::vector<int>, std::vector<int>>`. Add `RejectsEmptyRowsColumnsAndNonzeros`, which builds the empty graph/empty-`Values` plan and requires `initialize()` to throw `std::invalid_argument` whose diagnostic identifies that rows, columns, and nnz must all be positive.
+
+Also add `ReportsConfiguredSpGemmCapability` before implementation:
+
+```cpp
+TEST(DeviceSparseJacobianNormalEquations, ReportsConfiguredSpGemmCapability) {
+  const auto capability =
+      DeviceSparseJacobianNormalEquations::preflightCapability();
+#if GTSAM_TEST_EXPECT_SPGEMM_REUSE
+  CHECK(capability.supported);
+#else
+  CHECK(!capability.supported);
+  CHECK(!capability.detail.empty());
+#endif
+}
+```
+
+The normal installed build defines `GTSAM_TEST_EXPECT_SPGEMM_REUSE=1`. A build where symbol detection or the fallback version guard disables reuse defines it as `0`, and this same pre-implementation test source proves capability false without entering setup.
+
+- [ ] **Step 2: Run the complete behavior suite and observe RED**
 
 Run:
 
@@ -836,7 +875,7 @@ Run:
 cmake --build build-cuda-cudss-on --target testCudaSparseJacobian -j2
 ```
 
-Expected: compilation fails because `DeviceSparseJacobianNormalEquations` is undefined.
+Expected: compilation fails because `DeviceSparseJacobianNormalEquations`, `preflightCapability()`, and the device normal-equation API do not exist. This is the RED result for repeated numerical parity, stable final storage/pattern, empty-input rejection, and both configured capability branches.
 
 - [ ] **Step 3: Link cuSPARSE explicitly**
 
@@ -846,7 +885,7 @@ Inside `if(GTSAM_ENABLE_CUDA)` in `gtsam/CMakeLists.txt`, add:
 target_link_libraries(gtsam PUBLIC CUDA::cusparse)
 ```
 
-Keep cuDSS conditional exactly as it is. Prefer a CMake compile/symbol probe that includes `<cusparse.h>` and takes the address of `cusparseSpGEMMreuse_workEstimation`; use its result to define the private implementation capability `GTSAM_CUSPARSE_HAS_SPGEMM_REUSE`. A symbol probe is preferable to a version comparison because SpGEMM-reuse is deprecated and a future cuSPARSE can remove the declarations while retaining a higher version number.
+Keep cuDSS conditional exactly as it is. Prefer a CMake compile/symbol probe that includes `<cusparse.h>` and takes the address of `cusparseSpGEMMreuse_workEstimation`; use its result to define the private implementation capability `GTSAM_CUSPARSE_HAS_SPGEMM_REUSE` and the matching test-target definition `GTSAM_TEST_EXPECT_SPGEMM_REUSE`. A symbol probe is preferable to a version comparison because SpGEMM-reuse is deprecated and a future cuSPARSE can remove the declarations while retaining a higher version number.
 
 If the build cannot use a symbol probe, the `.cu` fallback guard must be based on the cuSPARSE header version, never `CUDA_VERSION`, with this minimum declaration guard:
 
@@ -948,11 +987,9 @@ For every `formUndampedSystem()`:
 
 Thus every repeated form has exactly this operation order: numeric CSR-to-CSC (structure and values), reuse-compute, then SpMV. Do not call ordinary `cusparseSpGEMM_compute/copy` repeatedly, and do not call `cusparseCsrSetPointers()` on the final `H` after its setup copy.
 
-- [ ] **Step 8: Run the device algebra test twice without reinitialization**
+- [ ] **Step 8: Re-run the Task 5 behavior suite**
 
-Use two distinct nonzero host numerical states. For each state, upload without reinitializing, call `formUndampedSystem()`, download `(H,g)`, and compare both against that state's Eigen `J.transpose() * J` and `J.transpose() * b` reference. Immediately after stable setup, record all final `system_` pointers (`rowPointers`, `colIndices`, `values`, and `rhs`) and the exact row/column pattern; after each of the two forms, require every pointer and every pattern entry to be unchanged.
-
-Add explicit tests that initialization rejects empty rows, empty columns, and zero `J.nnz`. Add a compile-capability test that requires `preflightCapability().supported` in the detected/guarded branch and requires the unsupported diagnostic in a build where the probe or fallback guard disables SpGEMM-reuse. If the build system permits forcing the probe result off, configure that variant and verify the device preflight rejects setup; Task 8 later verifies that the optimizer maps this result to `CudaToolkitUnsupported`.
+Do not add or extend behavioral tests here; Step 1 already contains the two-state Eigen parity, final pointer/pattern stability, empty-input rejection, and configured capability cases. Re-run that unchanged suite against the implementation.
 
 Run:
 
@@ -961,7 +998,7 @@ cmake -S . -B build-cuda-cudss-on
 cmake --build build-cuda-cudss-on --target testCudaSparseJacobian.run -j2
 ```
 
-Expected: reconfiguration discovers the new `.cu` source and cuSPARSE link; both repeated normal systems match Eigen within `1e-10`; the final CSR pattern and all final pointers remain stable; capability and empty-input assertions pass for the configured branch.
+Expected: reconfiguration discovers the new `.cu` source and cuSPARSE link; every Step 1 test passes unchanged. Both repeated normal systems match Eigen within `1e-10`, the final CSR pattern and all four final pointers remain stable, empty input is rejected, and the installed capability branch reports supported. When the configured build permits the unsupported variant, the same prewritten capability test reports false.
 
 - [ ] **Step 9: Commit cuSPARSE normal equations**
 
@@ -1205,7 +1242,7 @@ git commit -m "feat: solve damped sparse Jacobian systems on GPU"
 - Create: `gtsam/nonlinear/cuda/CudaSparseLevenbergMarquardt.cpp`
 - Create: `gtsam/nonlinear/tests/testCudaSparseLevenbergMarquardt.cpp`
 
-- [ ] **Step 1: Write a failing public-API and CPU-parity test**
+- [ ] **Step 1: Write failing public-API, parity, preflight, and fallback tests**
 
 Build a well-constrained nonlinear `Pose2` graph with one prior and two between factors. Run CPU and CUDA LM with the same Ceres defaults and assert final errors and values:
 
@@ -1228,6 +1265,50 @@ TEST(CudaSparseLevenbergMarquardt, MatchesCpuPose2Result) {
 }
 ```
 
+In the same pre-implementation step, add a `CheckCpuFallback(graph, initial, expectedReason)` test helper. It runs ordinary CPU LM from the original initial values, runs the CUDA optimizer with fallback enabled, checks value/error parity, `CpuFallback`, and the exact reason, then repeats with `fallbackOnUnsupported = false` and requires a `std::runtime_error` containing the fallback detail (and factor index/type for semantic failures).
+
+Use that helper in tests written now for every fallback path that Task 7 implements:
+
+```cpp
+TEST(CudaSparseLevenbergMarquardt, FallsBackForPlanIncompatible) {
+  auto [graph, initial] = MakePose2LmProblem();
+  initial.insert(Symbol('u', 0), Point2(3.0, -2.0));
+  CheckCpuFallback(graph, initial,
+                   CudaSparseLmFallbackReason::PlanIncompatible);
+}
+
+TEST(CudaSparseLevenbergMarquardt,
+     FallsBackForDirectJacobianSemanticFailure) {
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<PriorFactor<Pose2>>(
+      kPose, Pose2(), noiseModel::Constrained::All(3));
+  Values initial;
+  initial.insert(kPose, Pose2(0.2, -0.1, 0.05));
+  CheckCpuFallback(graph, initial,
+                   CudaSparseLmFallbackReason::DirectJacobianUnsupported);
+}
+
+TEST(CudaSparseLevenbergMarquardt, FallsBackWhenToolkitUnsupported) {
+  if (DeviceSparseJacobianNormalEquations::preflightCapability().supported)
+    return;  // Installed supported build: source exists but branch is skipped.
+  const auto [graph, initial] = MakePose2LmProblem();
+  CheckCpuFallback(graph, initial,
+                   CudaSparseLmFallbackReason::CudaToolkitUnsupported);
+}
+
+#if !GTSAM_ENABLE_CUDSS
+TEST(CudaSparseLevenbergMarquardt, FallsBackWhenCudssUnavailable) {
+  const auto [graph, initial] = MakePose2LmProblem();
+  CheckCpuFallback(graph, initial,
+                   CudaSparseLmFallbackReason::CudssUnavailable);
+}
+#endif
+```
+
+Do not add a production parameter, public test hook, or capability override to force environment-specific branches. The installed supported/cuDSS build conditionally skips those two environment branches; the configured unsupported-capability and no-cuDSS builds execute the same prewritten test source. The `fallbackOnUnsupported = false` half of `CheckCpuFallback` supplies the throw expectation for every branch that executes.
+
+Also write the CPU-side `tryLambda()` reference harness and deterministic trace/termination assertions now, before the state machine exists. Include a multi-linearization case that requires `result().cudssAnalyses == 1`. Compare accepted count, attempt count, lambda before each attempt, acceptance, hook arguments, initial `errorTol` exit, small-cost termination, and lambda-upper-bound termination.
+
 - [ ] **Step 2: Verify the missing optimizer fails the build**
 
 Run:
@@ -1236,7 +1317,7 @@ Run:
 cmake --build build-cuda-cudss-on --target testCudaSparseLevenbergMarquardt -j2
 ```
 
-Expected: compilation fails because the public CUDA sparse LM types do not exist.
+Expected: compilation fails because the optimizer, fallback enums/result, and fallback behavior API do not exist. This is RED for parity plus `CudaToolkitUnsupported`, `CudssUnavailable`, `PlanIncompatible`, `DirectJacobianUnsupported`, and disabled-fallback throwing before any optimizer implementation.
 
 - [ ] **Step 3: Define the minimal public API and profiles**
 
@@ -1339,13 +1420,47 @@ class GTSAM_EXPORT CudaSparseLevenbergMarquardtOptimizer {
 };
 ```
 
-- [ ] **Step 4: Implement lazy setup and preserve original inputs for fallback**
+- [ ] **Step 4: Re-run the prewritten tests after defining the API and observe RED**
+
+Run:
+
+```bash
+cmake --build build-cuda-cudss-on --target testCudaSparseLevenbergMarquardt -j2
+```
+
+Expected: declarations now compile, but linking or execution fails because optimizer construction, lazy preflight, CPU fallback, and LM control flow are not implemented. Do not add new fallback tests after this point in Task 7.
+
+- [ ] **Step 5: Implement lazy setup and centralized fallback from original inputs**
 
 The optimizer owns copies of `graph`, `initialValues`, and `currentValues`. At the start of `optimize()`, evaluate the initial nonlinear error, reject a non-finite value, return immediately with `ErrorThreshold` if it is already at or below `params_.errorTol`, and return with `MaxIterations` when `maxIterations == 0`. Only then check CUDA device availability, `GTSAM_ENABLE_CUDSS`, and `DeviceSparseJacobianNormalEquations::preflightCapability()`. Map an unsupported internal device capability to `CudaToolkitUnsupported` before constructing CUDA state; keep the reuse strategy out of the public optimizer API. Then construct layout, plan, host, context, linearizer, and device state. Do not mutate `currentValues` until a trial step is accepted.
 
 Keep setup objects in `std::unique_ptr` members so plan-construction incompatibility can select CPU fallback without leaving partially constructed CUDA members.
 
-- [ ] **Step 5: Port the CPU LM state machine and inner lambda loop**
+Implement the single path exercised by the Step 1 tests:
+
+```cpp
+const Values& runCpuFallback(CudaSparseLmFallbackReason reason,
+                             const DirectJacobianStatus& status,
+                             const std::string& detail) {
+  if (!params_.fallbackOnUnsupported) {
+    throw std::runtime_error(detail);
+  }
+  LevenbergMarquardtParams cpuParams = params_;
+  currentValues_ =
+      LevenbergMarquardtOptimizer(graph_, initialValues_, cpuParams).optimize();
+  currentError_ = graph_.error(currentValues_);
+  result_.backend = CudaSparseLmBackend::CpuFallback;
+  result_.fallbackReason = reason;
+  result_.fallbackStatus = status;
+  result_.fallbackDetail = detail;
+  result_.finalError = currentError_;
+  return currentValues_;
+}
+```
+
+Use it for unavailable CUDA, internal normal-equation capability false, cuDSS not compiled, symbolic plan incompatibility, and expected direct-Jacobian semantic status. Include factor index and dynamic factor type in semantic `detail`. Never use this path for non-finite data or a CUDA execution failure after device work starts.
+
+- [ ] **Step 6: Port the CPU LM state machine and inner lambda loop**
 
 Use an internal state that mirrors the fields relevant to `internal::LevenbergMarquardtState`:
 
@@ -1374,13 +1489,13 @@ For each outer call equivalent to `LevenbergMarquardtOptimizer::iterate()`:
 
 Increment `result_.outerLinearizations` once before each host clear. Set `result_.iterations` and `acceptedSteps` from `state.acceptedIterations`, `lambdaAttempts` from `state.totalInnerAttempts`, and `finalLambda` from `state.lambda` on every exit. When `collectAttemptTrace` is true, append one `CudaSparseLmAttemptRecord` per solve after its outcome is known. cuDSS execution, factorization-status, and nonzero `CUDSS_DATA_INFO` failures continue to throw with stage context as required by this prototype; unlike CPU LM's `IndeterminantLinearSystemException` handling, they do not merely increase lambda.
 
-Add a CPU-side test harness that uses the ordinary linear graph and copies the current `tryLambda()` formulas. On deterministic graphs, compare the CUDA trace field-by-field for accepted count, attempt count, lambda before each attempt, acceptance, hook arguments, initial `errorTol` exit, small-cost termination, and lambda-upper-bound termination. This tests the control-flow trajectory, not merely the final objective.
+Implement against the CPU-side `tryLambda()` reference harness already written in Step 1. Make its deterministic trace and termination assertions pass without changing their expected trajectories; they test control flow rather than merely final objective.
 
-- [ ] **Step 6: Make cuDSS analysis truly one-time**
+- [ ] **Step 7: Make cuDSS analysis truly one-time**
 
-The optimizer calls `device_->analyze()` every outer iteration for simple control flow, but the device component returns immediately when already analyzed against the same persistent system pointers. Tests must assert the result/profile analysis count is one across multiple numerical linearizations.
+The optimizer calls `device_->analyze()` every outer iteration for simple control flow, but the device component returns immediately when already analyzed against the same persistent system pointers. Make the Step 1 multi-linearization assertion pass with result/profile analysis count exactly one.
 
-- [ ] **Step 7: Run parity tests for identity and diagonal damping**
+- [ ] **Step 8: Re-run all Task 7 tests**
 
 Run:
 
@@ -1389,9 +1504,9 @@ cmake -S . -B build-cuda-cudss-on
 cmake --build build-cuda-cudss-on --target testCudaSparseLevenbergMarquardt.run -j2
 ```
 
-Expected: reconfiguration discovers the new optimizer source and test; CUDA and CPU LM converge to matching `Pose2` solutions for both damping modes, the LM trajectory/termination tests pass, error is finite, and cuDSS analysis occurs once.
+Expected: reconfiguration discovers the new optimizer source and test; every test written in Step 1 passes unchanged for the branches available in this build. CUDA and CPU LM converge to matching `Pose2` solutions for both damping modes, the LM trajectory/termination tests pass, error is finite, and cuDSS analysis occurs once. The no-cuDSS build later executes its already-written `CudssUnavailable` branch.
 
-- [ ] **Step 8: Commit the optimizer**
+- [ ] **Step 9: Commit the optimizer**
 
 ```bash
 git add gtsam/nonlinear/cuda/CudaSparseLevenbergMarquardt.h \
@@ -1409,9 +1524,9 @@ git commit -m "feat: add generic CUDA sparse Jacobian LM"
 - Modify: `gtsam/nonlinear/cuda/CudaSparseLevenbergMarquardt.cpp`
 - Modify: `gtsam/nonlinear/tests/testCudaSparseLevenbergMarquardt.cpp`
 
-- [ ] **Step 1: Write failing complete-solve fallback and fatal-input tests**
+- [ ] **Step 1: Expand the prewritten fallback suite with edge and fatal-input tests**
 
-Add separate tests for a Hessian-only factor, constrained factor, factor whose returned row count changes with `Values`, an initial `Values` entry that is not covered by any graph factor, and a key covered only by a zero-row factor. Both structural-coverage cases must fail during symbolic setup with `PlanIncompatible`; the returned-factor cases must retain their factor index/status. For each CPU-solvable graph, assert fallback restarts CPU LM from the original initial values and records the correct reason:
+Task 7 already writes the first `PlanIncompatible`, `DirectJacobianUnsupported`, toolkit-capability, cuDSS-availability, and disabled-fallback tests before implementing those paths. Extend that existing suite before Task 8 production changes with a Hessian-only factor, a factor whose returned row count changes with `Values`, and a key covered only by a zero-row factor. Require the zero-row structural case to report `PlanIncompatible`; require returned-factor cases to retain their factor index/status. For each CPU-solvable graph, assert fallback still restarts CPU LM from the original initial values and records the exact reason:
 
 ```cpp
 CHECK(optimizer.result().backend == CudaSparseLmBackend::CpuFallback);
@@ -1424,34 +1539,13 @@ EXPECT_LONGS_EQUAL(expectedFactorIndex,
 EXPECT(assert_equal(cpuFromOriginalInitial, actual, 1e-9));
 ```
 
-When `fallbackOnUnsupported == false`, assert the same condition throws `std::runtime_error` containing the factor index and dynamic factor type.
+When `fallbackOnUnsupported == false`, assert each newly added semantic condition throws `std::runtime_error` containing the factor index and dynamic factor type.
 
 Add a separate non-finite factor test that always throws from the optimizer with stage and factor index. Do not run CPU fallback for non-finite residuals/Jacobians because the CPU optimizer would receive the same invalid input and the design requires non-finite systems to be surfaced.
 
-- [ ] **Step 2: Implement one centralized fallback path**
+- [ ] **Step 2: Extend the existing centralized path for the new edge statuses**
 
-Implement:
-
-```cpp
-const Values& runCpuFallback(CudaSparseLmFallbackReason reason,
-                             const DirectJacobianStatus& status,
-                             const std::string& detail) {
-  if (!params_.fallbackOnUnsupported)
-    throw std::runtime_error(FormatUnsupported(status));
-  LevenbergMarquardtParams cpuParams = params_;
-  LevenbergMarquardtOptimizer cpu(graph_, initialValues_, cpuParams);
-  currentValues_ = cpu.optimize();
-  currentError_ = graph_.error(currentValues_);
-  result_.backend = CudaSparseLmBackend::CpuFallback;
-  result_.fallbackReason = reason;
-  result_.fallbackStatus = status;
-  result_.fallbackDetail = detail;
-  result_.finalError = currentError_;
-  return currentValues_;
-}
-```
-
-Use this path with the corresponding distinct reason for preflight CUDA absence, missing required cuSPARSE-reuse API (`CudaToolkitUnsupported`), cuDSS absence, plan incompatibility, and expected semantic-compatibility statuses. Convert `DirectJacobianFailure::NonFiniteValues` into a stage-specific exception instead. Wrap CUDA API errors after device work begins with stage text and rethrow; do not silently fall back after a CUDA execution failure.
+Keep the `runCpuFallback()` implementation introduced and tested in Task 7. Map the new `UnsupportedGaussianFactor`, `ConstrainedFactor`, and `StructuralMismatch` cases to `DirectJacobianUnsupported` with their original factor index/status; map uncovered and zero-row-only layouts to `PlanIncompatible`. Convert `DirectJacobianFailure::NonFiniteValues` into a stage-specific exception instead. Wrap CUDA API errors after device work begins with stage text and rethrow; do not silently fall back after a CUDA execution failure.
 
 - [ ] **Step 3: Add a non-sendable `CustomFactor` optimizer test**
 
