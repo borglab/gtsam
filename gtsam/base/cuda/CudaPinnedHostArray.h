@@ -4,8 +4,8 @@
 
 #include <cuda_runtime_api.h>
 
+#include <algorithm>
 #include <cstddef>
-#include <cstring>
 #include <limits>
 #include <stdexcept>
 #include <type_traits>
@@ -65,10 +65,10 @@ class CudaPinnedHostArray {
     replacement.size_ = 0;
   }
 
-  // Fills the allocation with bitwise zero.
+  // Value-initializes every element in the allocation.
   void clear() {
     if (size_ == 0) return;
-    std::memset(data_, 0, sizeof(T) * size_);
+    std::fill(data_, data_ + size_, T{});
   }
 
   T* data() { return data_; }

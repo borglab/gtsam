@@ -35,6 +35,13 @@ static_assert(
 static_assert(
     std::is_nothrow_move_assignable_v<CudaPinnedHostArray<double>>);
 
+struct NonzeroValueInitialized {
+  int value = 17;
+};
+
+static_assert(std::is_trivially_copyable_v<NonzeroValueInitialized>);
+static_assert(NonzeroValueInitialized{}.value == 17);
+
 bool isPinnedHostAllocation(const void* pointer) {
   cudaPointerAttributes attributes{};
   GTSAM_CUDA_CHECK(cudaPointerGetAttributes(&attributes, pointer));
@@ -347,6 +354,21 @@ TEST(CudaPinnedHostArray, MoveConstructionTransfersOwnership) {
   EXPECT_LONGS_EQUAL(4, destination.data()[0]);
   EXPECT_LONGS_EQUAL(5, destination.data()[1]);
   EXPECT_LONGS_EQUAL(6, destination.data()[2]);
+}
+
+TEST(CudaPinnedHostArray, ClearValueInitializesElements) {
+  CudaPinnedHostArray<NonzeroValueInitialized> array(3);
+  for (size_t i = 0; i < array.size(); ++i) {
+    array.data()[i].value = 0;
+  }
+  NonzeroValueInitialized* address = array.data();
+
+  array.clear();
+
+  CHECK(array.data() == address);
+  for (size_t i = 0; i < array.size(); ++i) {
+    EXPECT_LONGS_EQUAL(17, array.data()[i].value);
+  }
 }
 
 TEST(CudaPinnedHostArray, MoveAssignmentTransfersOwnership) {
