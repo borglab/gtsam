@@ -1,4 +1,5 @@
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/cuda/CudaContext.h>
 #include <gtsam/base/cuda/CudaPinnedHostArray.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
@@ -10,6 +11,7 @@
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>
+#include <gtsam/nonlinear/cuda/DeviceSparseJacobianNormalEquations.h>
 #include <gtsam/nonlinear/cuda/HostSparseJacobian.h>
 #include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
 #include <gtsam/nonlinear/cuda/StreamingSparseJacobianLinearizer.h>
@@ -26,6 +28,10 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+
+#ifndef GTSAM_TEST_EXPECT_SPGEMM_REUSE
+#error "GTSAM_TEST_EXPECT_SPGEMM_REUSE must be configured for this test"
+#endif
 
 using namespace gtsam;
 using namespace gtsam::cuda;
@@ -229,6 +235,67 @@ Vector VectorFromHostRhs(const HostSparseJacobian& host) {
     result(static_cast<Eigen::Index>(row)) = host.rhsData()[row];
   }
   return result;
+}
+
+struct DownloadedSparseNormalEquations {
+  std::vector<int> rowPointers;
+  std::vector<int> columnIndices;
+  Matrix hessian;
+  Vector rhs;
+};
+
+std::pair<std::vector<int>, std::vector<int>> DownloadNormalEquationPattern(
+    const DeviceSparseNormalEquations& system, cudaStream_t stream) {
+  std::vector<int> rowPointers;
+  std::vector<int> columnIndices;
+  system.rowPointers().download(&rowPointers, stream);
+  system.colIndices().download(&columnIndices, stream);
+  GTSAM_CUDA_CHECK(cudaStreamSynchronize(stream));
+  return {std::move(rowPointers), std::move(columnIndices)};
+}
+
+DownloadedSparseNormalEquations DownloadNormalEquations(
+    const DeviceSparseNormalEquations& system, cudaStream_t stream) {
+  DownloadedSparseNormalEquations downloaded;
+  std::vector<double> values;
+  std::vector<double> rhs;
+  system.rowPointers().download(&downloaded.rowPointers, stream);
+  system.colIndices().download(&downloaded.columnIndices, stream);
+  system.values().download(&values, stream);
+  system.rhs().download(&rhs, stream);
+  GTSAM_CUDA_CHECK(cudaStreamSynchronize(stream));
+
+  if (downloaded.rowPointers.size() !=
+          static_cast<size_t>(system.rows()) + 1 ||
+      downloaded.columnIndices.size() != values.size() ||
+      rhs.size() != static_cast<size_t>(system.rows())) {
+    throw std::runtime_error("downloaded normal equations have bad sizes");
+  }
+
+  downloaded.hessian = Matrix::Zero(system.rows(), system.rows());
+  for (int row = 0; row < system.rows(); ++row) {
+    const int begin = downloaded.rowPointers.at(static_cast<size_t>(row));
+    const int end = downloaded.rowPointers.at(static_cast<size_t>(row + 1));
+    if (begin < 0 || end < begin ||
+        end > static_cast<int>(downloaded.columnIndices.size())) {
+      throw std::runtime_error("downloaded normal equations have bad CSR");
+    }
+    for (int index = begin; index < end; ++index) {
+      const int column =
+          downloaded.columnIndices.at(static_cast<size_t>(index));
+      if (column < 0 || column >= system.rows()) {
+        throw std::runtime_error(
+            "downloaded normal equations have a bad column");
+      }
+      downloaded.hessian(row, column) = values.at(static_cast<size_t>(index));
+    }
+  }
+
+  downloaded.rhs = Vector(static_cast<Eigen::Index>(rhs.size()));
+  for (size_t row = 0; row < rhs.size(); ++row) {
+    downloaded.rhs(static_cast<Eigen::Index>(row)) = rhs[row];
+  }
+  return downloaded;
 }
 
 DenseJacobianReference AssembleDenseReferenceBySlot(
@@ -1187,6 +1254,97 @@ TEST(StreamingSparseJacobianLinearizer,
   status = linearizer.packGaussianFactorGraph(misaligned, plan, &packed);
   CHECK(status.failure == DirectJacobianFailure::StructuralMismatch);
   CHECK(status.factorIndex == 0);
+}
+
+TEST(DeviceSparseJacobianNormalEquations,
+     RepeatedFormsMatchEigenAndPreserveFinalStorage) {
+#if GTSAM_TEST_EXPECT_SPGEMM_REUSE
+  Values firstValues;
+  firstValues.insert(kPoseKey, Pose2(0.25, -0.5, 0.15));
+  firstValues.insert(kPointKey, Point2(4.0, 5.0));
+
+  Values secondValues;
+  secondValues.insert(kPoseKey, Pose2(-0.75, 1.25, -0.3));
+  secondValues.insert(kPointKey, Point2(-2.5, 3.75));
+
+  const NonlinearFactorGraph graph = makeGraph();
+  const SparseJacobianColumnLayout columns(firstValues);
+  const SparseJacobianPlan plan(graph, columns);
+  HostSparseJacobian host(plan);
+  const StreamingSparseJacobianLinearizer linearizer;
+  CudaContext context;
+  DeviceSparseJacobianNormalEquations normalEquations;
+  normalEquations.initialize(plan, context.stream());
+
+  const DeviceSparseNormalEquations& initialSystem = normalEquations.system();
+  const int* const initialRowPointersAddress =
+      initialSystem.rowPointers().data();
+  const int* const initialColumnIndicesAddress =
+      initialSystem.colIndices().data();
+  const double* const initialValuesAddress = initialSystem.values().data();
+  const double* const initialRhsAddress = initialSystem.rhs().data();
+  const auto initialPattern =
+      DownloadNormalEquationPattern(initialSystem, context.stream());
+
+  const Values* states[] = {&firstValues, &secondValues};
+  for (const Values* values : states) {
+    host.clear();
+    const DirectJacobianStatus status = linearizer.linearize(
+        graph, *values, columns, plan, &host, nullptr, false);
+    CHECK(status.ok());
+    const Matrix denseJacobian = DenseFromCsr(plan, host);
+    const Vector denseRhs = VectorFromHostRhs(host);
+
+    normalEquations.uploadNumerics(host, context.stream());
+    normalEquations.formUndampedSystem(context.stream());
+    const DeviceSparseNormalEquations& system = normalEquations.system();
+    const DownloadedSparseNormalEquations downloaded =
+        DownloadNormalEquations(system, context.stream());
+
+    EXPECT(assert_equal(denseJacobian.transpose() * denseJacobian,
+                        downloaded.hessian, 1e-10));
+    EXPECT(assert_equal(denseJacobian.transpose() * denseRhs,
+                        downloaded.rhs, 1e-10));
+    CHECK(system.rowPointers().data() == initialRowPointersAddress);
+    CHECK(system.colIndices().data() == initialColumnIndicesAddress);
+    CHECK(system.values().data() == initialValuesAddress);
+    CHECK(system.rhs().data() == initialRhsAddress);
+    CHECK(downloaded.rowPointers == initialPattern.first);
+    CHECK(downloaded.columnIndices == initialPattern.second);
+  }
+#endif
+}
+
+TEST(DeviceSparseJacobianNormalEquations,
+     RejectsEmptyRowsColumnsAndNonzeros) {
+  const Values values;
+  const NonlinearFactorGraph graph;
+  const SparseJacobianColumnLayout columns(values);
+  const SparseJacobianPlan plan(graph, columns);
+  DeviceSparseJacobianNormalEquations normalEquations;
+
+  bool detailedInvalidArgument = false;
+  try {
+    normalEquations.initialize(plan);
+  } catch (const std::invalid_argument& error) {
+    detailedInvalidArgument =
+        std::string(error.what()).find(
+            "positive rows, columns, and nonzeros are required") !=
+        std::string::npos;
+  }
+  CHECK(detailedInvalidArgument);
+}
+
+TEST(DeviceSparseJacobianNormalEquations,
+     ReportsConfiguredSpGemmCapability) {
+  const DeviceSparseNormalEquationCapability capability =
+      DeviceSparseJacobianNormalEquations::preflightCapability();
+#if GTSAM_TEST_EXPECT_SPGEMM_REUSE
+  CHECK(capability.supported);
+#else
+  CHECK(!capability.supported);
+  CHECK(!capability.detail.empty());
+#endif
 }
 
 int main() {

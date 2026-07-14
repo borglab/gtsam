@@ -56,15 +56,25 @@ class DeviceSparseNormalEquations {
     CudaDeviceArray<double> newValues;
     CudaDeviceArray<double> newRhs;
 
-    if (transferProfile) {
-      transferProfile->add(newRowPointers.uploadProfiled(rowPointers, stream));
-      transferProfile->add(newColIndices.uploadProfiled(colIndices, stream));
-    } else {
-      newRowPointers.upload(rowPointers, stream);
-      newColIndices.upload(colIndices, stream);
+    try {
+      if (transferProfile) {
+        transferProfile->add(
+            newRowPointers.uploadProfiled(rowPointers, stream));
+        transferProfile->add(
+            newColIndices.uploadProfiled(colIndices, stream));
+      } else {
+        newRowPointers.upload(rowPointers, stream);
+        newColIndices.upload(colIndices, stream);
+      }
+      newValues.resize(colIndices.size());
+      newRhs.resize(rows);
+    } catch (...) {
+      // Keep the temporary allocations and pageable upload sources alive until
+      // any successfully queued copy has finished. Preserve the original
+      // exception even if synchronization also reports an error.
+      cudaStreamSynchronize(stream);
+      throw;
     }
-    newValues.resize(colIndices.size());
-    newRhs.resize(rows);
 
     rowPointers_ = std::move(newRowPointers);
     colIndices_ = std::move(newColIndices);

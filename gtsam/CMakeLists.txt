@@ -1,5 +1,36 @@
 project(gtsam LANGUAGES CXX)
 
+if(GTSAM_ENABLE_CUDA)
+  include(CheckCXXSourceCompiles)
+  include(CMakePushCheckState)
+  cmake_push_check_state(RESET)
+  set(CMAKE_REQUIRED_INCLUDES ${CUDAToolkit_INCLUDE_DIRS})
+  set(CMAKE_REQUIRED_LIBRARIES CUDA::cusparse)
+  check_cxx_source_compiles([[
+    #include <cusparse.h>
+    int main() {
+      using WorkEstimation =
+          decltype(&cusparseSpGEMMreuse_workEstimation);
+      using Nnz = decltype(&cusparseSpGEMMreuse_nnz);
+      using Copy = decltype(&cusparseSpGEMMreuse_copy);
+      using Compute = decltype(&cusparseSpGEMMreuse_compute);
+      WorkEstimation volatile workEstimation =
+          &cusparseSpGEMMreuse_workEstimation;
+      Nnz volatile nnz = &cusparseSpGEMMreuse_nnz;
+      Copy volatile copy = &cusparseSpGEMMreuse_copy;
+      Compute volatile compute = &cusparseSpGEMMreuse_compute;
+      return workEstimation && nnz && copy && compute ? 0 : 1;
+    }
+  ]] GTSAM_CUSPARSE_HAS_SPGEMM_REUSE)
+  cmake_pop_check_state()
+
+  if(GTSAM_CUSPARSE_HAS_SPGEMM_REUSE)
+    set(GTSAM_CUSPARSE_HAS_SPGEMM_REUSE_VALUE 1)
+  else()
+    set(GTSAM_CUSPARSE_HAS_SPGEMM_REUSE_VALUE 0)
+  endif()
+endif()
+
 # We split the library in to separate subfolders, each containing
 # tests, timing, and an optional convenience library.
 # The following variable is the master list of subdirs to add
@@ -140,6 +171,16 @@ target_link_libraries(gtsam PUBLIC ${GTSAM_ADDITIONAL_LIBRARIES})
 if(GTSAM_ENABLE_CUDA)
   target_link_libraries(gtsam PUBLIC CUDA::cudart)
   target_link_libraries(gtsam PUBLIC CUDA::cusolver)
+  target_link_libraries(gtsam PUBLIC CUDA::cusparse)
+  target_compile_definitions(gtsam PRIVATE
+    GTSAM_CUSPARSE_HAS_SPGEMM_REUSE=${GTSAM_CUSPARSE_HAS_SPGEMM_REUSE_VALUE})
+  if(TARGET testCudaSparseJacobian)
+    target_compile_definitions(testCudaSparseJacobian PRIVATE
+      GTSAM_TEST_EXPECT_SPGEMM_REUSE=${GTSAM_CUSPARSE_HAS_SPGEMM_REUSE_VALUE})
+  elseif(TARGET check_nonlinear_program)
+    target_compile_definitions(check_nonlinear_program PRIVATE
+      GTSAM_TEST_EXPECT_SPGEMM_REUSE=${GTSAM_CUSPARSE_HAS_SPGEMM_REUSE_VALUE})
+  endif()
   if(GTSAM_ENABLE_CUDSS)
     target_link_libraries(gtsam PUBLIC cudss::cudss)
   endif()
