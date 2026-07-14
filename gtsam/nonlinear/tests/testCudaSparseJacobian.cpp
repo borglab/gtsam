@@ -1,10 +1,12 @@
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/cuda/CudaPinnedHostArray.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>
+#include <gtsam/nonlinear/cuda/HostSparseJacobian.h>
 #include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
 
 #include <CppUnitLite/TestHarness.h>
@@ -13,6 +15,8 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 using namespace gtsam;
@@ -22,6 +26,20 @@ namespace {
 
 constexpr Key kPoseKey = 10;
 constexpr Key kPointKey = 20;
+
+static_assert(
+    !std::is_copy_constructible_v<CudaPinnedHostArray<double>>);
+static_assert(!std::is_copy_assignable_v<CudaPinnedHostArray<double>>);
+static_assert(
+    std::is_nothrow_move_constructible_v<CudaPinnedHostArray<double>>);
+static_assert(
+    std::is_nothrow_move_assignable_v<CudaPinnedHostArray<double>>);
+
+bool isPinnedHostAllocation(const void* pointer) {
+  cudaPointerAttributes attributes{};
+  GTSAM_CUDA_CHECK(cudaPointerGetAttributes(&attributes, pointer));
+  return attributes.type == cudaMemoryTypeHost;
+}
 
 class ReversedPointPoseFactor : public NoiseModelFactorN<Point2, Pose2> {
  public:
@@ -310,6 +328,138 @@ TEST(SparseJacobianPlan, FingerprintAndMatchesIncludeNullMarkers) {
   CHECK(!nullPlan.matches(zeroRowGraph, layout));
   CHECK(nullPlan.structuralFingerprint() !=
         zeroRowPlan.structuralFingerprint());
+}
+
+TEST(CudaPinnedHostArray, MoveConstructionTransfersOwnership) {
+  CudaPinnedHostArray<int> source(3);
+  source.data()[0] = 4;
+  source.data()[1] = 5;
+  source.data()[2] = 6;
+  int* sourceAddress = source.data();
+  CHECK(isPinnedHostAllocation(sourceAddress));
+
+  CudaPinnedHostArray<int> destination(std::move(source));
+
+  CHECK(source.data() == nullptr);
+  EXPECT_LONGS_EQUAL(0, source.size());
+  CHECK(destination.data() == sourceAddress);
+  EXPECT_LONGS_EQUAL(3, destination.size());
+  EXPECT_LONGS_EQUAL(4, destination.data()[0]);
+  EXPECT_LONGS_EQUAL(5, destination.data()[1]);
+  EXPECT_LONGS_EQUAL(6, destination.data()[2]);
+}
+
+TEST(CudaPinnedHostArray, MoveAssignmentTransfersOwnership) {
+  CudaPinnedHostArray<int> source(3);
+  source.data()[0] = 7;
+  source.data()[1] = 8;
+  source.data()[2] = 9;
+  int* sourceAddress = source.data();
+
+  CudaPinnedHostArray<int> destination(2);
+  destination.data()[0] = 1;
+  destination.data()[1] = 2;
+  destination = std::move(source);
+
+  CHECK(source.data() == nullptr);
+  EXPECT_LONGS_EQUAL(0, source.size());
+  CHECK(destination.data() == sourceAddress);
+  EXPECT_LONGS_EQUAL(3, destination.size());
+  EXPECT_LONGS_EQUAL(7, destination.data()[0]);
+  EXPECT_LONGS_EQUAL(8, destination.data()[1]);
+  EXPECT_LONGS_EQUAL(9, destination.data()[2]);
+  CHECK(isPinnedHostAllocation(destination.data()));
+}
+
+TEST(CudaPinnedHostArray, HandlesZeroSizeAndResize) {
+  CudaPinnedHostArray<double> array;
+  CHECK(array.data() == nullptr);
+  EXPECT_LONGS_EQUAL(0, array.size());
+  array.clear();
+  array.resize(0);
+  CHECK(array.data() == nullptr);
+  EXPECT_LONGS_EQUAL(0, array.size());
+
+  array.resize(4);
+  CHECK(array.data() != nullptr);
+  EXPECT_LONGS_EQUAL(4, array.size());
+  CHECK(isPinnedHostAllocation(array.data()));
+  for (size_t i = 0; i < array.size(); ++i) {
+    array.data()[i] = static_cast<double>(i + 1);
+  }
+
+  double* sameSizeAddress = array.data();
+  array.resize(4);
+  CHECK(array.data() == sameSizeAddress);
+  DOUBLES_EQUAL(4.0, array.data()[3], 0.0);
+
+  array.resize(7);
+  CHECK(array.data() != nullptr);
+  EXPECT_LONGS_EQUAL(7, array.size());
+  CHECK(isPinnedHostAllocation(array.data()));
+  array.clear();
+  for (size_t i = 0; i < array.size(); ++i) {
+    DOUBLES_EQUAL(0.0, array.data()[i], 0.0);
+  }
+
+  array.resize(0);
+  CHECK(array.data() == nullptr);
+  EXPECT_LONGS_EQUAL(0, array.size());
+
+  const CudaPinnedHostArray<double> zeroSize(0);
+  CHECK(zeroSize.data() == nullptr);
+  EXPECT_LONGS_EQUAL(0, zeroSize.size());
+}
+
+TEST(CudaPinnedHostArray, OverflowLeavesExistingAllocationValid) {
+  CudaPinnedHostArray<double> array(3);
+  array.data()[0] = 2.5;
+  double* address = array.data();
+
+  const size_t overflowingSize =
+      std::numeric_limits<size_t>::max() / sizeof(double) + 1;
+  CHECK_EXCEPTION(array.resize(overflowingSize), std::overflow_error);
+
+  CHECK(array.data() == address);
+  EXPECT_LONGS_EQUAL(3, array.size());
+  DOUBLES_EQUAL(2.5, array.data()[0], 0.0);
+  CHECK(isPinnedHostAllocation(array.data()));
+}
+
+TEST(HostSparseJacobian, ClearsInPlaceWithoutChangingBufferAddresses) {
+  const Values values = makeValues();
+  const SparseJacobianColumnLayout layout(values);
+  const SparseJacobianPlan plan(makeGraph(), layout);
+  HostSparseJacobian host(plan);
+
+  EXPECT_LONGS_EQUAL(plan.nonzeros(), host.valuesSize());
+  EXPECT_LONGS_EQUAL(plan.rows(), host.rhsSize());
+  CHECK(isPinnedHostAllocation(host.valuesData()));
+  CHECK(isPinnedHostAllocation(host.rhsData()));
+  for (size_t i = 0; i < host.valuesSize(); ++i) {
+    DOUBLES_EQUAL(0.0, host.valuesData()[i], 0.0);
+    host.valuesData()[i] = static_cast<double>(i + 1);
+  }
+  for (size_t i = 0; i < host.rhsSize(); ++i) {
+    DOUBLES_EQUAL(0.0, host.rhsData()[i], 0.0);
+    host.rhsData()[i] = -static_cast<double>(i + 1);
+  }
+  double* valuesAddress = host.valuesData();
+  double* rhsAddress = host.rhsData();
+
+  host.clear();
+
+  const HostSparseJacobian& constHost = host;
+  EXPECT_LONGS_EQUAL(plan.nonzeros(), constHost.valuesSize());
+  EXPECT_LONGS_EQUAL(plan.rows(), constHost.rhsSize());
+  CHECK(constHost.valuesData() == valuesAddress);
+  CHECK(constHost.rhsData() == rhsAddress);
+  for (size_t i = 0; i < constHost.valuesSize(); ++i) {
+    DOUBLES_EQUAL(0.0, constHost.valuesData()[i], 0.0);
+  }
+  for (size_t i = 0; i < constHost.rhsSize(); ++i) {
+    DOUBLES_EQUAL(0.0, constHost.rhsData()[i], 0.0);
+  }
 }
 
 int main() {
