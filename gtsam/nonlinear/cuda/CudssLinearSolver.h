@@ -1,7 +1,7 @@
 #pragma once
 
-#include <gtsam/dllexport.h>
 #include <gtsam/base/cuda/CudaDeviceArray.h>
+#include <gtsam/dllexport.h>
 #include <gtsam/nonlinear/cuda/DeviceSparseNormalEquations.h>
 
 #include <memory>
@@ -33,9 +33,10 @@ class GTSAM_EXPORT CudssSpdSolver {
    * numerical factorization.
    */
   void solve(const DeviceSparseNormalEquations& system,
-             CudaDeviceArray<double>* solution,
-             cudaStream_t stream = nullptr,
-             CudssSpdSolveProfile* profile = nullptr);
+             CudaDeviceArray<double>* solution, cudaStream_t stream = nullptr);
+  void solve(const DeviceSparseNormalEquations& system,
+             CudaDeviceArray<double>* solution, cudaStream_t stream,
+             CudssSpdSolveProfile* profile);
 
  private:
   struct Impl;

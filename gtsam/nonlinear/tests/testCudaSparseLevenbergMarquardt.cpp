@@ -1,3 +1,5 @@
+#include <CppUnitLite/TestHarness.h>
+#include <cuda_runtime_api.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/types.h>
 #include <gtsam/geometry/Point2.h>
@@ -20,10 +22,6 @@
 #include <gtsam/sam/RangeFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/ReferenceFrameFactor.h>
-
-#include <CppUnitLite/TestHarness.h>
-
-#include <cuda_runtime_api.h>
 
 #include <algorithm>
 #include <atomic>
@@ -74,8 +72,7 @@ bool AllSparseLmTimingsAreFiniteNonnegative(
          IsFiniteNonnegativeTiming(timings.structureSetup) &&
          IsFiniteNonnegativeTiming(timings.setupD2h) &&
          IsFiniteNonnegativeTiming(timings.hostZero) &&
-         IsFiniteNonnegativeTiming(
-             timings.factorLinearizationAndPackingWall) &&
+         IsFiniteNonnegativeTiming(timings.factorLinearizationAndPackingWall) &&
          IsFiniteNonnegativeTiming(timings.factorLinearizationCpuSum) &&
          IsFiniteNonnegativeTiming(timings.csrPackingCpuSum) &&
          IsFiniteNonnegativeTiming(timings.numericH2d) &&
@@ -88,8 +85,7 @@ bool AllSparseLmTimingsAreFiniteNonnegative(
          IsFiniteNonnegativeTiming(timings.dampingApplication) &&
          IsFiniteNonnegativeTiming(timings.cudssAnalysis) &&
          IsFiniteNonnegativeTiming(timings.cudssFactorAndSolve) &&
-         IsFiniteNonnegativeTiming(
-             timings.cudssDataInfoBoundaryWall) &&
+         IsFiniteNonnegativeTiming(timings.cudssDataInfoBoundaryWall) &&
          IsFiniteNonnegativeTiming(timings.newModelError) &&
          IsFiniteNonnegativeTiming(timings.attemptD2h) &&
          IsFiniteNonnegativeTiming(timings.attemptHostBuild) &&
@@ -105,18 +101,16 @@ bool AllSparseLmTimingsAreFiniteNonnegative(
 bool AllSparseLmTimingsAreZero(const CudaSparseLmStageTimings& timings) {
   return timings.totalWall == 0.0 && timings.initialError == 0.0 &&
          timings.plan == 0.0 && timings.persistentSetupWall == 0.0 &&
-         timings.deviceInitializeWall == 0.0 &&
-         timings.patternH2d == 0.0 && timings.structureSetup == 0.0 &&
-         timings.setupD2h == 0.0 && timings.hostZero == 0.0 &&
+         timings.deviceInitializeWall == 0.0 && timings.patternH2d == 0.0 &&
+         timings.structureSetup == 0.0 && timings.setupD2h == 0.0 &&
+         timings.hostZero == 0.0 &&
          timings.factorLinearizationAndPackingWall == 0.0 &&
          timings.factorLinearizationCpuSum == 0.0 &&
          timings.csrPackingCpuSum == 0.0 && timings.numericH2d == 0.0 &&
          timings.transposeUpdate == 0.0 && timings.normalJtJ == 0.0 &&
          timings.normalJtb == 0.0 && timings.diagonalExtraction == 0.0 &&
-         timings.oldModelError == 0.0 &&
-         timings.dampingPreparation == 0.0 &&
-         timings.dampingApplication == 0.0 &&
-         timings.cudssAnalysis == 0.0 &&
+         timings.oldModelError == 0.0 && timings.dampingPreparation == 0.0 &&
+         timings.dampingApplication == 0.0 && timings.cudssAnalysis == 0.0 &&
          timings.cudssFactorAndSolve == 0.0 &&
          timings.cudssDataInfoBoundaryWall == 0.0 &&
          timings.newModelError == 0.0 && timings.attemptD2h == 0.0 &&
@@ -128,13 +122,13 @@ bool AllSparseLmTimingsAreZero(const CudaSparseLmStageTimings& timings) {
 
 Pose2LmProblem MakePose2LmProblem() {
   Pose2LmProblem problem;
-  const auto priorNoise = noiseModel::Diagonal::Sigmas(
-      (Vector(3) << 0.15, 0.15, 0.1).finished());
-  const auto odometryNoise = noiseModel::Diagonal::Sigmas(
-      (Vector(3) << 0.2, 0.2, 0.15).finished());
+  const auto priorNoise =
+      noiseModel::Diagonal::Sigmas((Vector(3) << 0.15, 0.15, 0.1).finished());
+  const auto odometryNoise =
+      noiseModel::Diagonal::Sigmas((Vector(3) << 0.2, 0.2, 0.15).finished());
 
-  problem.graph.emplace_shared<PriorFactor<Pose2>>(
-      kPose0, Pose2(0.0, 0.0, 0.0), priorNoise);
+  problem.graph.emplace_shared<PriorFactor<Pose2>>(kPose0, Pose2(0.0, 0.0, 0.0),
+                                                   priorNoise);
   problem.graph.emplace_shared<BetweenFactor<Pose2>>(
       kPose0, kPose1, Pose2(2.0, 0.2, 0.1), odometryNoise);
   problem.graph.emplace_shared<BetweenFactor<Pose2>>(
@@ -157,8 +151,8 @@ CudaSparseLevenbergMarquardtResult RunTwoOuterProfiledPose2(
   params.useFixedLambdaFactor = true;
   params.collectTiming = collectTiming;
 
-  CudaSparseLevenbergMarquardtOptimizer optimizer(
-      problem.graph, problem.initial, params);
+  CudaSparseLevenbergMarquardtOptimizer optimizer(problem.graph,
+                                                  problem.initial, params);
   (void)optimizer.optimize();
   return optimizer.result();
 }
@@ -177,40 +171,34 @@ bool SparseLmSizesAndTransfersAreExact(
   }
 
   const size_t expectedPatternH2d =
-      sizeof(int) *
-      (static_cast<size_t>(plan.rows() + 1 + plan.nonzeros()) +
-       static_cast<size_t>(plan.columns() + 1 + size.normalNonzeros +
-                           plan.columns()));
+      sizeof(int) * (static_cast<size_t>(plan.rows() + 1 + plan.nonzeros()) +
+                     static_cast<size_t>(plan.columns() + 1 +
+                                         size.normalNonzeros + plan.columns()));
   const size_t expectedSetupD2h =
       2 * sizeof(int) *
       static_cast<size_t>(plan.columns() + 1 + size.normalNonzeros);
   const size_t expectedNumericH2d =
       result.outerLinearizations * sizeof(double) *
       static_cast<size_t>(plan.nonzeros() + plan.rows());
-  const size_t expectedAttemptD2h =
-      result.lambdaAttempts * sizeof(double) *
-      static_cast<size_t>(plan.columns() + 2);
+  const size_t expectedAttemptD2h = result.lambdaAttempts * sizeof(double) *
+                                    static_cast<size_t>(plan.columns() + 2);
 
   return transfers.patternH2dBytes == expectedPatternH2d &&
          transfers.setupD2hBytes == expectedSetupD2h &&
          transfers.numericH2dBytes == expectedNumericH2d &&
          transfers.attemptD2hBytes == expectedAttemptD2h &&
-         transfers.totalH2dBytes() ==
-             expectedPatternH2d + expectedNumericH2d &&
-         transfers.totalD2hBytes() ==
-             expectedSetupD2h + expectedAttemptD2h;
+         transfers.totalH2dBytes() == expectedPatternH2d + expectedNumericH2d &&
+         transfers.totalD2hBytes() == expectedSetupD2h + expectedAttemptD2h;
 }
 
-bool SparseLmAggregateTimingsAreExact(
-    const CudaSparseLmStageTimings& timings) {
+bool SparseLmAggregateTimingsAreExact(const CudaSparseLmStageTimings& timings) {
   return timings.upload == timings.numericH2d &&
-         timings.normalEquations ==
-             timings.normalJtJ + timings.normalJtb +
-                 timings.diagonalExtraction + timings.oldModelError &&
+         timings.normalEquations == timings.normalJtJ + timings.normalJtb +
+                                        timings.diagonalExtraction +
+                                        timings.oldModelError &&
          timings.damping ==
              timings.dampingPreparation + timings.dampingApplication &&
-         timings.modelError ==
-             timings.oldModelError + timings.newModelError &&
+         timings.modelError == timings.oldModelError + timings.newModelError &&
          timings.deltaDownload == timings.attemptD2h;
 }
 
@@ -250,8 +238,7 @@ class HessianOnlyScalarFactor : public NonlinearFactor {
       const Values& values) const override {
     const double residual = values.at<double>(key_) - target_;
     return std::make_shared<HessianFactor>(
-        key_, Matrix::Identity(1, 1), Vector1(-residual),
-        residual * residual);
+        key_, Matrix::Identity(1, 1), Vector1(-residual), residual * residual);
   }
 
   NonlinearFactor::shared_ptr clone() const override {
@@ -338,8 +325,8 @@ class NonFiniteJacobianScalarFactor : public NonlinearFactor {
       const Values& values) const override {
     Matrix A = Matrix::Identity(1, 1);
     A(0, 0) = std::numeric_limits<double>::quiet_NaN();
-    return std::make_shared<JacobianFactor>(
-        key_, A, Vector1(-values.at<double>(key_)));
+    return std::make_shared<JacobianFactor>(key_, A,
+                                            Vector1(-values.at<double>(key_)));
   }
   NonlinearFactor::shared_ptr clone() const override {
     return std::make_shared<NonFiniteJacobianScalarFactor>(*this);
@@ -368,9 +355,7 @@ class RecordingPoint2PriorFactor : public NoiseModelFactorN<Point2> {
   RecordingPoint2PriorFactor(Key key, const Point2& prior,
                              const SharedNoiseModel& model,
                              std::shared_ptr<SnapshotState> snapshots)
-      : Base(model, key),
-        prior_(prior),
-        snapshots_(std::move(snapshots)) {}
+      : Base(model, key), prior_(prior), snapshots_(std::move(snapshots)) {}
 
   bool sendable() const override { return false; }
 
@@ -426,8 +411,7 @@ Vector RhsFromHost(const HostSparseJacobian& host) {
 
 DenseJacobianReference AssembleDenseReferenceBySlot(
     const NonlinearFactorGraph& graph, const Values& values,
-    const SparseJacobianColumnLayout& columns,
-    const SparseJacobianPlan& plan) {
+    const SparseJacobianColumnLayout& columns, const SparseJacobianPlan& plan) {
   DenseJacobianReference reference{Matrix::Zero(plan.rows(), plan.columns()),
                                    Vector::Zero(plan.rows())};
   const GaussianFactorGraph::shared_ptr linear = graph.linearize(values);
@@ -444,14 +428,12 @@ DenseJacobianReference AssembleDenseReferenceBySlot(
     }
 
     const auto [localA, localB] = jacobian->jacobian();
-    const SparseJacobianFactorWritePlan& factorPlan =
-        plan.factor(factorIndex);
+    const SparseJacobianFactorWritePlan& factorPlan = plan.factor(factorIndex);
     Eigen::Index localColumn = 0;
     for (const Key key : jacobian->keys()) {
       const SparseJacobianColumnBlock& column = columns.at(key);
-      reference.jacobian.block(
-          factorPlan.rowBegin, column.columnBegin, factorPlan.rowCount,
-          column.dimension) =
+      reference.jacobian.block(factorPlan.rowBegin, column.columnBegin,
+                               factorPlan.rowCount, column.dimension) =
           localA.middleCols(localColumn, column.dimension);
       localColumn += column.dimension;
     }
@@ -482,21 +464,20 @@ HeterogeneousProblem MakeHeterogeneousProblem(bool robust) {
   const Pose2 truePose1 = truePose0.compose(odometry);
   const Point2 trueGlobal(2.4, 1.1);
   const Point2 trueLocal = truePose0.transformFrom(trueGlobal);
-  const double trueRange =
-      (trueGlobal - truePose1.translation()).norm();
+  const double trueRange = (trueGlobal - truePose1.translation()).norm();
 
   problem.graph.emplace_shared<PriorFactor<Pose2>>(
       kHeteroPose0, truePose0,
-      MakeHeterogeneousNoise(
-          (Vector(3) << 0.12, 0.18, 0.09).finished(), robust));
+      MakeHeterogeneousNoise((Vector(3) << 0.12, 0.18, 0.09).finished(),
+                             robust));
   problem.graph.push_back(std::make_shared<RecordingPoint2PriorFactor>(
       kGlobalPoint, trueGlobal,
       MakeHeterogeneousNoise((Vector(2) << 0.2, 0.15).finished(), robust),
       problem.snapshots));
   problem.graph.emplace_shared<BetweenFactor<Pose2>>(
       kHeteroPose0, kHeteroPose1, odometry,
-      MakeHeterogeneousNoise(
-          (Vector(3) << 0.16, 0.14, 0.11).finished(), robust));
+      MakeHeterogeneousNoise((Vector(3) << 0.16, 0.14, 0.11).finished(),
+                             robust));
   problem.graph.emplace_shared<RangeFactor<Pose2, Point2>>(
       kHeteroPose1, kGlobalPoint, trueRange,
       MakeHeterogeneousNoise(Vector1(0.12), robust));
@@ -545,8 +526,7 @@ struct ReferenceLmRun {
 };
 
 VectorValues ReferenceSqrtHessianDiagonal(
-    const GaussianFactorGraph& linear,
-    const LevenbergMarquardtParams& params) {
+    const GaussianFactorGraph& linear, const LevenbergMarquardtParams& params) {
   VectorValues result;
   if (!params.dampingParams.diagonalDamping) return result;
 
@@ -602,8 +582,7 @@ ReferenceLmRun RunCpuTryLambdaReference(
 
       ++result.lambdaAttempts;
       result.attempts.push_back(ReferenceAttempt{
-          acceptedBefore, attemptWithinOuter++, lambdaBeforeAttempt,
-          accepted});
+          acceptedBefore, attemptWithinOuter++, lambdaBeforeAttempt, accepted});
       if (stop) break;
     }
 
@@ -611,10 +590,9 @@ ReferenceLmRun RunCpuTryLambdaReference(
         HookRecord{optimizer.iterations(), previousError, optimizer.error()});
 
     if (!accepted) {
-      result.termination =
-          optimizer.lambda() >= cpuParams.lambdaUpperBound
-              ? CudaSparseLmTerminationReason::LambdaUpperBound
-              : CudaSparseLmTerminationReason::SmallCostChange;
+      result.termination = optimizer.lambda() >= cpuParams.lambdaUpperBound
+                               ? CudaSparseLmTerminationReason::LambdaUpperBound
+                               : CudaSparseLmTerminationReason::SmallCostChange;
       break;
     }
     if (optimizer.iterations() >= cpuParams.maxIterations) {
@@ -672,15 +650,13 @@ void CheckCpuFallback(
   }
 
   if (expectedFailure != DirectJacobianFailure::None) {
-    EXPECT_LONGS_EQUAL(expectedFactorIndex,
-                       result.fallbackStatus.factorIndex);
+    EXPECT_LONGS_EQUAL(expectedFactorIndex, result.fallbackStatus.factorIndex);
     CHECK(!result.fallbackStatus.detail.empty());
     CHECK(result.fallbackDetail.find(std::to_string(expectedFactorIndex)) !=
           std::string::npos);
     const std::string dynamicFactorType =
         demangle(typeid(*graph[expectedFactorIndex]).name());
-    CHECK(result.fallbackDetail.find(dynamicFactorType) !=
-          std::string::npos);
+    CHECK(result.fallbackDetail.find(dynamicFactorType) != std::string::npos);
     CHECK(result.fallbackDetail.find(result.fallbackStatus.detail) !=
           std::string::npos);
   }
@@ -785,8 +761,8 @@ void CheckPose2Parity(TestResult& result_, const std::string& name_,
   const Values expected =
       LevenbergMarquardtOptimizer(problem.graph, problem.initial, params)
           .optimize();
-  CudaSparseLevenbergMarquardtOptimizer optimizer(
-      problem.graph, problem.initial, params);
+  CudaSparseLevenbergMarquardtOptimizer optimizer(problem.graph,
+                                                  problem.initial, params);
   const Values actual = optimizer.optimize();
   const CudaSparseLevenbergMarquardtResult& result = optimizer.result();
 
@@ -810,8 +786,7 @@ TEST(CudaSparseLevenbergMarquardt, MatchesCpuPose2Result) {
   CheckPose2Parity(result_, name_, true);
 }
 
-TEST(CudaSparseLevenbergMarquardt,
-     MatchesCpuPose2ResultWithIdentityDamping) {
+TEST(CudaSparseLevenbergMarquardt, MatchesCpuPose2ResultWithIdentityDamping) {
   CheckPose2Parity(result_, name_, false);
 }
 
@@ -823,12 +798,11 @@ TEST(CudaSparseLevenbergMarquardt, FallsBackForPlanIncompatible) {
                    CudaSparseLmFallbackReason::PlanIncompatible);
 }
 
-TEST(CudaSparseLevenbergMarquardt,
-     FallsBackForDirectJacobianSemanticFailure) {
+TEST(CudaSparseLevenbergMarquardt, FallsBackForDirectJacobianSemanticFailure) {
   if (!CanRunCudaSparseLm()) return;
   NonlinearFactorGraph graph;
-  graph.emplace_shared<PriorFactor<Pose2>>(
-      kPose0, Pose2(), noiseModel::Constrained::All(3));
+  graph.emplace_shared<PriorFactor<Pose2>>(kPose0, Pose2(),
+                                           noiseModel::Constrained::All(3));
   Values initial;
   initial.insert(kPose0, Pose2(0.2, -0.1, 0.05));
 
@@ -848,11 +822,10 @@ TEST(CudaSparseLevenbergMarquardt,
   Values initial;
   initial.insert(kScalar0, -3.0);
 
-  CheckCpuFallback(
-      result_, name_, graph, initial,
-      CudaSparseLmFallbackReason::DirectJacobianUnsupported,
-      DirectJacobianFailure::UnsupportedGaussianFactor, 1,
-      "linearization result is not a JacobianFactor");
+  CheckCpuFallback(result_, name_, graph, initial,
+                   CudaSparseLmFallbackReason::DirectJacobianUnsupported,
+                   DirectJacobianFailure::UnsupportedGaussianFactor, 1,
+                   "linearization result is not a JacobianFactor");
 }
 
 TEST(CudaSparseLevenbergMarquardt,
@@ -861,10 +834,10 @@ TEST(CudaSparseLevenbergMarquardt,
 
   const auto changingState = std::make_shared<ChangingRowState>();
   NonlinearFactorGraph graph;
-  graph.emplace_shared<PriorFactor<double>>(
-      kScalar0, 2.0, noiseModel::Unit::Create(1));
-  graph.push_back(std::make_shared<ChangingRowScalarFactor>(
-      kScalar0, 2.0, changingState));
+  graph.emplace_shared<PriorFactor<double>>(kScalar0, 2.0,
+                                            noiseModel::Unit::Create(1));
+  graph.push_back(
+      std::make_shared<ChangingRowScalarFactor>(kScalar0, 2.0, changingState));
   Values initial;
   initial.insert(kScalar0, -2.0);
 
@@ -898,8 +871,8 @@ TEST(CudaSparseLevenbergMarquardt,
   CHECK(result.fallbackStatus.detail ==
         "Jacobian row count does not match the sparse plan");
   CHECK(result.fallbackDetail.find("1") != std::string::npos);
-  CHECK(result.fallbackDetail.find(
-            demangle(typeid(*graph[1]).name())) != std::string::npos);
+  CHECK(result.fallbackDetail.find(demangle(typeid(*graph[1]).name())) !=
+        std::string::npos);
 
   // Result counters intentionally describe only the abandoned CUDA prefix;
   // the final Values/error below describe a fresh CPU solve from `initial`.
@@ -970,8 +943,8 @@ TEST(CudaSparseLevenbergMarquardt,
   if (!CanRunCudaSparseLm()) return;
 
   NonlinearFactorGraph graph;
-  graph.emplace_shared<PriorFactor<double>>(
-      kScalar0, 1.5, noiseModel::Unit::Create(1));
+  graph.emplace_shared<PriorFactor<double>>(kScalar0, 1.5,
+                                            noiseModel::Unit::Create(1));
   graph.push_back(std::make_shared<ZeroRowScalarFactor>(kScalar1));
   Values initial;
   initial.insert(kScalar0, -2.0);
@@ -993,8 +966,7 @@ TEST(CudaSparseLevenbergMarquardt,
   EXPECT(assert_equal(expected, actual, 1e-9));
   DOUBLES_EQUAL(7.0, actual.at<double>(kScalar1), 1e-12);
   CHECK(result.backend == CudaSparseLmBackend::CpuFallback);
-  CHECK(result.fallbackReason ==
-        CudaSparseLmFallbackReason::PlanIncompatible);
+  CHECK(result.fallbackReason == CudaSparseLmFallbackReason::PlanIncompatible);
   CHECK(result.fallbackStatus.failure == DirectJacobianFailure::None);
   EXPECT_LONGS_EQUAL(std::numeric_limits<size_t>::max(),
                      result.fallbackStatus.factorIndex);
@@ -1019,10 +991,9 @@ TEST(CudaSparseLevenbergMarquardt,
   if (!CanRunCudaSparseLm()) return;
 
   NonlinearFactorGraph graph;
-  graph.emplace_shared<PriorFactor<double>>(
-      kScalar0, 0.0, noiseModel::Unit::Create(1));
-  graph.push_back(
-      std::make_shared<NonFiniteJacobianScalarFactor>(kScalar0));
+  graph.emplace_shared<PriorFactor<double>>(kScalar0, 0.0,
+                                            noiseModel::Unit::Create(1));
+  graph.push_back(std::make_shared<NonFiniteJacobianScalarFactor>(kScalar0));
   Values initial;
   initial.insert(kScalar0, 1.0);
 
@@ -1039,8 +1010,7 @@ TEST(CudaSparseLevenbergMarquardt,
 
   CHECK(detail.find("factor linearization") != std::string::npos);
   CHECK(detail.find("factor 1") != std::string::npos);
-  CHECK(detail.find(demangle(typeid(*graph[1]).name())) !=
-        std::string::npos);
+  CHECK(detail.find(demangle(typeid(*graph[1]).name())) != std::string::npos);
   CHECK(detail.find("Jacobian block contains a non-finite coefficient") !=
         std::string::npos);
 }
@@ -1052,24 +1022,23 @@ TEST(CudaSparseLevenbergMarquardt,
   const auto callbackState = std::make_shared<CustomCallbackState>();
   const std::thread::id callerThread = std::this_thread::get_id();
   constexpr double target = 1.25;
-  const CustomErrorFunction callback =
-      [callbackState, target](const CustomFactor&, const Values& values,
-                              const JacobianVector* jacobians) {
-        if (jacobians) {
-          callbackState->jacobianCalls.fetch_add(1);
-          {
-            std::lock_guard<std::mutex> lock(callbackState->mutex);
-            callbackState->jacobianThreads.push_back(
-                std::this_thread::get_id());
-          }
-          auto& mutableJacobians =
-              *const_cast<JacobianVector*>(jacobians);
-          mutableJacobians[0] = Matrix::Identity(1, 1);
-        } else {
-          callbackState->errorCalls.fetch_add(1);
-        }
-        return Vector1(values.at<double>(kScalar0) - target);
-      };
+  const CustomErrorFunction callback = [callbackState, target](
+                                           const CustomFactor&,
+                                           const Values& values,
+                                           const JacobianVector* jacobians) {
+    if (jacobians) {
+      callbackState->jacobianCalls.fetch_add(1);
+      {
+        std::lock_guard<std::mutex> lock(callbackState->mutex);
+        callbackState->jacobianThreads.push_back(std::this_thread::get_id());
+      }
+      auto& mutableJacobians = *const_cast<JacobianVector*>(jacobians);
+      mutableJacobians[0] = Matrix::Identity(1, 1);
+    } else {
+      callbackState->errorCalls.fetch_add(1);
+    }
+    return Vector1(values.at<double>(kScalar0) - target);
+  };
 
   NonlinearFactorGraph graph;
   graph.emplace_shared<CustomFactor>(noiseModel::Unit::Create(1),
@@ -1109,10 +1078,10 @@ TEST(CudaSparseLevenbergMarquardt,
 
 namespace {
 
-void CheckStreamedJacobiansAtSnapshots(
-    TestResult& result_, const std::string& name_,
-    const NonlinearFactorGraph& graph,
-    const std::vector<Values>& snapshots) {
+void CheckStreamedJacobiansAtSnapshots(TestResult& result_,
+                                       const std::string& name_,
+                                       const NonlinearFactorGraph& graph,
+                                       const std::vector<Values>& snapshots) {
   for (const Values& values : snapshots) {
     const SparseJacobianColumnLayout columns(values);
     const SparseJacobianPlan plan(graph, columns);
@@ -1120,13 +1089,12 @@ void CheckStreamedJacobiansAtSnapshots(
     host.clear();
 
     const DirectJacobianStatus status =
-        StreamingSparseJacobianLinearizer().linearize(
-            graph, values, columns, plan, &host);
+        StreamingSparseJacobianLinearizer().linearize(graph, values, columns,
+                                                      plan, &host);
     CHECK(status.ok());
     const DenseJacobianReference reference =
         AssembleDenseReferenceBySlot(graph, values, columns, plan);
-    EXPECT(assert_equal(reference.jacobian, DenseFromCsr(plan, host),
-                        1e-11));
+    EXPECT(assert_equal(reference.jacobian, DenseFromCsr(plan, host), 1e-11));
     EXPECT(assert_equal(reference.rhs, RhsFromHost(host), 1e-11));
   }
 }
@@ -1142,14 +1110,13 @@ void CheckHeterogeneousParity(TestResult& result_, const std::string& name_,
   params.maxIterations = 20;
   params.dampingParams.diagonalDamping = true;
 
-  LevenbergMarquardtOptimizer cpuOptimizer(cpuProblem.graph,
-                                           cpuProblem.initial, params);
+  LevenbergMarquardtOptimizer cpuOptimizer(cpuProblem.graph, cpuProblem.initial,
+                                           params);
   const Values expected = cpuOptimizer.optimize();
   CudaSparseLevenbergMarquardtOptimizer cudaOptimizer(
       cudaProblem.graph, cudaProblem.initial, params);
   const Values actual = cudaOptimizer.optimize();
-  const CudaSparseLevenbergMarquardtResult& cudaResult =
-      cudaOptimizer.result();
+  const CudaSparseLevenbergMarquardtResult& cudaResult = cudaOptimizer.result();
 
   std::vector<Values> snapshots;
   {
@@ -1165,8 +1132,7 @@ void CheckHeterogeneousParity(TestResult& result_, const std::string& name_,
   const double expectedError = cpuProblem.graph.error(expected);
   const double actualError = cudaProblem.graph.error(actual);
   const double errorTolerance =
-      1e-8 * std::max({1.0, std::abs(expectedError),
-                       std::abs(actualError)});
+      1e-8 * std::max({1.0, std::abs(expectedError), std::abs(actualError)});
   DOUBLES_EQUAL(expectedError, actualError, errorTolerance);
   DOUBLES_EQUAL(actualError, cudaResult.finalError, 1e-12);
   CHECK(expected.localCoordinates(actual).norm() <= 1e-6);
@@ -1209,21 +1175,20 @@ TEST(CudaSparseLevenbergMarquardt, FallsBackWhenToolkitUnsupported) {
 TEST(CudaSparseLevenbergMarquardt, FallsBackWhenCudssUnavailable) {
   if (!HasCudaDevice()) return;
   const Pose2LmProblem problem = MakePose2LmProblem();
-  CheckCpuFallback(result_, name_, problem.graph, problem.initial,
-                   CudaSparseLmFallbackReason::CudssUnavailable,
-                   DirectJacobianFailure::None,
-                   std::numeric_limits<size_t>::max(), {},
-                   "cuDSS support is not compiled");
+  CheckCpuFallback(
+      result_, name_, problem.graph, problem.initial,
+      CudaSparseLmFallbackReason::CudssUnavailable, DirectJacobianFailure::None,
+      std::numeric_limits<size_t>::max(), {}, "cuDSS support is not compiled");
 }
 #endif
 
 namespace {
 
-void CheckCudaAgainstReference(
-    TestResult& result_, const std::string& name_,
-    const NonlinearFactorGraph& graph, const Values& initial,
-    CudaSparseLevenbergMarquardtParams params,
-    const ReferenceLmRun& expected) {
+void CheckCudaAgainstReference(TestResult& result_, const std::string& name_,
+                               const NonlinearFactorGraph& graph,
+                               const Values& initial,
+                               CudaSparseLevenbergMarquardtParams params,
+                               const ReferenceLmRun& expected) {
   std::vector<HookRecord> actualHooks;
   params.iterationHook = [&](size_t iteration, double oldError,
                              double newError) {
@@ -1237,8 +1202,7 @@ void CheckCudaAgainstReference(
   CHECK(actual.backend == CudaSparseLmBackend::Cuda);
   CHECK(actual.fallbackReason == CudaSparseLmFallbackReason::None);
   CHECK(actual.termination == expected.termination);
-  EXPECT_LONGS_EQUAL(expected.outerLinearizations,
-                     actual.outerLinearizations);
+  EXPECT_LONGS_EQUAL(expected.outerLinearizations, actual.outerLinearizations);
   EXPECT_LONGS_EQUAL(expected.acceptedSteps, actual.iterations);
   EXPECT_LONGS_EQUAL(expected.acceptedSteps, actual.acceptedSteps);
   EXPECT_LONGS_EQUAL(expected.lambdaAttempts, actual.lambdaAttempts);
@@ -1263,12 +1227,9 @@ void CheckCudaAgainstReference(
 
   EXPECT_LONGS_EQUAL(expected.hooks.size(), actualHooks.size());
   for (size_t i = 0; i < expected.hooks.size(); ++i) {
-    EXPECT_LONGS_EQUAL(expected.hooks[i].iteration,
-                       actualHooks[i].iteration);
-    DOUBLES_EQUAL(expected.hooks[i].oldError, actualHooks[i].oldError,
-                  1e-8);
-    DOUBLES_EQUAL(expected.hooks[i].newError, actualHooks[i].newError,
-                  1e-8);
+    EXPECT_LONGS_EQUAL(expected.hooks[i].iteration, actualHooks[i].iteration);
+    DOUBLES_EQUAL(expected.hooks[i].oldError, actualHooks[i].oldError, 1e-8);
+    DOUBLES_EQUAL(expected.hooks[i].newError, actualHooks[i].newError, 1e-8);
   }
 
   if (expected.outerLinearizations > 0) {
@@ -1319,8 +1280,7 @@ TEST(CudaSparseLevenbergMarquardt,
   CheckAcceptedTraceMode(result_, name_, false);
 }
 
-TEST(CudaSparseLevenbergMarquardt,
-     InitialErrorThresholdExitsBeforeCudaSetup) {
+TEST(CudaSparseLevenbergMarquardt, InitialErrorThresholdExitsBeforeCudaSetup) {
   const Pose2LmProblem problem = MakePose2LmProblem();
   const double initialError = problem.graph.error(problem.initial);
   std::vector<HookRecord> hooks;
@@ -1335,8 +1295,8 @@ TEST(CudaSparseLevenbergMarquardt,
     hooks.push_back(HookRecord{iteration, oldError, newError});
   };
 
-  CudaSparseLevenbergMarquardtOptimizer optimizer(
-      problem.graph, problem.initial, params);
+  CudaSparseLevenbergMarquardtOptimizer optimizer(problem.graph,
+                                                  problem.initial, params);
   const Values actual = optimizer.optimize();
   const CudaSparseLevenbergMarquardtResult& result = optimizer.result();
 
@@ -1356,8 +1316,7 @@ TEST(CudaSparseLevenbergMarquardt,
   DOUBLES_EQUAL(params.lambdaInitial, result.finalLambda, 1e-15);
 }
 
-TEST(CudaSparseLevenbergMarquardt,
-     ZeroMaxIterationsExitsBeforeCudaSetup) {
+TEST(CudaSparseLevenbergMarquardt, ZeroMaxIterationsExitsBeforeCudaSetup) {
   const Pose2LmProblem problem = MakePose2LmProblem();
   CudaSparseLevenbergMarquardtParams params;
   LevenbergMarquardtParams::SetCeresDefaults(&params);
@@ -1365,8 +1324,8 @@ TEST(CudaSparseLevenbergMarquardt,
   params.errorTol = 0.0;
   params.fallbackOnUnsupported = false;
 
-  CudaSparseLevenbergMarquardtOptimizer optimizer(
-      problem.graph, problem.initial, params);
+  CudaSparseLevenbergMarquardtOptimizer optimizer(problem.graph,
+                                                  problem.initial, params);
   const Values actual = optimizer.optimize();
   const CudaSparseLevenbergMarquardtResult& result = optimizer.result();
 
@@ -1398,8 +1357,7 @@ TEST(CudaSparseLevenbergMarquardt,
 
   const ReferenceLmRun expected =
       RunCpuTryLambdaReference(problem.graph, problem.initial, params);
-  CHECK(expected.termination ==
-        CudaSparseLmTerminationReason::SmallCostChange);
+  CHECK(expected.termination == CudaSparseLmTerminationReason::SmallCostChange);
   EXPECT_LONGS_EQUAL(1, expected.outerLinearizations);
   EXPECT_LONGS_EQUAL(1, expected.lambdaAttempts);
   EXPECT_LONGS_EQUAL(0, expected.acceptedSteps);

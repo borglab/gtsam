@@ -1,3 +1,4 @@
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/cuda/CudaContext.h>
 #include <gtsam/base/cuda/CudaPinnedHostArray.h>
@@ -16,10 +17,7 @@
 #include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
 #include <gtsam/nonlinear/cuda/StreamingSparseJacobianLinearizer.h>
 
-#include <CppUnitLite/TestHarness.h>
-
 #include <Eigen/Cholesky>
-
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -48,13 +46,11 @@ constexpr Key kPointKey = 20;
 constexpr Key kFirstStreamingKey = 30;
 constexpr Key kSecondStreamingKey = 40;
 
-static_assert(
-    !std::is_copy_constructible_v<CudaPinnedHostArray<double>>);
+static_assert(!std::is_copy_constructible_v<CudaPinnedHostArray<double>>);
 static_assert(!std::is_copy_assignable_v<CudaPinnedHostArray<double>>);
 static_assert(
     std::is_nothrow_move_constructible_v<CudaPinnedHostArray<double>>);
-static_assert(
-    std::is_nothrow_move_assignable_v<CudaPinnedHostArray<double>>);
+static_assert(std::is_nothrow_move_assignable_v<CudaPinnedHostArray<double>>);
 
 struct NonzeroValueInitialized {
   int value = 17;
@@ -94,9 +90,7 @@ class StructuralFactor : public NonlinearFactor {
  public:
   StructuralFactor(const KeyVector& keys, size_t rowCount,
                    bool isSendable = true)
-      : NonlinearFactor(keys),
-        rowCount_(rowCount),
-        isSendable_(isSendable) {}
+      : NonlinearFactor(keys), rowCount_(rowCount), isSendable_(isSendable) {}
 
   size_t dim() const override { return rowCount_; }
 
@@ -133,9 +127,7 @@ class ReturningGaussianFactor : public NonlinearFactor {
 class RecordingPointFactor : public NonlinearFactor {
  public:
   RecordingPointFactor(Key key, bool isSendable)
-      : NonlinearFactor(KeyVector{key}),
-        key_(key),
-        isSendable_(isSendable) {}
+      : NonlinearFactor(KeyVector{key}), key_(key), isSendable_(isSendable) {}
 
   size_t dim() const override { return 1; }
 
@@ -172,9 +164,9 @@ class RecordingPointFactor : public NonlinearFactor {
 
 class CountingReturningGaussianFactor : public NonlinearFactor {
  public:
-  CountingReturningGaussianFactor(
-      const KeyVector& keys, size_t rowCount, bool isSendable,
-      std::shared_ptr<GaussianFactor> result)
+  CountingReturningGaussianFactor(const KeyVector& keys, size_t rowCount,
+                                  bool isSendable,
+                                  std::shared_ptr<GaussianFactor> result)
       : NonlinearFactor(keys),
         rowCount_(rowCount),
         isSendable_(isSendable),
@@ -295,8 +287,7 @@ DownloadedSparseNormalEquations DownloadNormalEquations(
   system.rhs().download(&rhs, stream);
   GTSAM_CUDA_CHECK(cudaStreamSynchronize(stream));
 
-  if (downloaded.rowPointers.size() !=
-          static_cast<size_t>(system.rows()) + 1 ||
+  if (downloaded.rowPointers.size() != static_cast<size_t>(system.rows()) + 1 ||
       downloaded.columnIndices.size() != values.size() ||
       rhs.size() != static_cast<size_t>(system.rows())) {
     throw std::runtime_error("downloaded normal equations have bad sizes");
@@ -330,8 +321,7 @@ DownloadedSparseNormalEquations DownloadNormalEquations(
 
 DenseJacobianReference AssembleDenseReferenceBySlot(
     const NonlinearFactorGraph& graph, const Values& values,
-    const SparseJacobianColumnLayout& columns,
-    const SparseJacobianPlan& plan) {
+    const SparseJacobianColumnLayout& columns, const SparseJacobianPlan& plan) {
   DenseJacobianReference reference{Matrix::Zero(plan.rows(), plan.columns()),
                                    Vector::Zero(plan.rows())};
   const GaussianFactorGraph::shared_ptr linear = graph.linearize(values);
@@ -351,14 +341,12 @@ DenseJacobianReference AssembleDenseReferenceBySlot(
     }
 
     const auto [localA, localB] = jacobian->jacobian();
-    const SparseJacobianFactorWritePlan& factorPlan =
-        plan.factor(factorIndex);
+    const SparseJacobianFactorWritePlan& factorPlan = plan.factor(factorIndex);
     Eigen::Index localColumn = 0;
     for (Key key : jacobian->keys()) {
       const SparseJacobianColumnBlock& column = columns.at(key);
-      reference.jacobian.block(
-          factorPlan.rowBegin, column.columnBegin, factorPlan.rowCount,
-          column.dimension) =
+      reference.jacobian.block(factorPlan.rowBegin, column.columnBegin,
+                               factorPlan.rowCount, column.dimension) =
           localA.middleCols(localColumn, column.dimension);
       localColumn += column.dimension;
     }
@@ -377,8 +365,7 @@ Values makeStreamingValues() {
 NonlinearFactorGraph makeStreamingGraph() {
   NonlinearFactorGraph graph;
   graph.emplace_shared<PriorFactor<Point2>>(
-      kFirstStreamingKey, Point2(0.5, -0.25),
-      noiseModel::Unit::Create(2));
+      kFirstStreamingKey, Point2(0.5, -0.25), noiseModel::Unit::Create(2));
   graph.emplace_shared<PriorFactor<Point2>>(
       kSecondStreamingKey, Point2(1.0, 1.5),
       noiseModel::Diagonal::Sigmas(Vector2(2.0, 0.5)));
@@ -392,10 +379,10 @@ NonlinearFactorGraph makeStreamingGraph() {
 
 NonlinearFactorGraph makeFingerprintPlanGraph(bool reverseFactorOrder) {
   NonlinearFactorGraph graph;
-  const Key firstKey = reverseFactorOrder ? kSecondStreamingKey
-                                          : kFirstStreamingKey;
-  const Key secondKey = reverseFactorOrder ? kFirstStreamingKey
-                                           : kSecondStreamingKey;
+  const Key firstKey =
+      reverseFactorOrder ? kSecondStreamingKey : kFirstStreamingKey;
+  const Key secondKey =
+      reverseFactorOrder ? kFirstStreamingKey : kSecondStreamingKey;
   graph.emplace_shared<RecordingPointFactor>(firstKey, false);
   graph.emplace_shared<RecordingPointFactor>(secondKey, false);
   return graph;
@@ -449,8 +436,7 @@ StreamingAndPackingFailureResult RunStreamingAndPackingFailure(
   values.insert(kFirstStreamingKey, Point2(0.0, 0.0));
   NonlinearFactorGraph graph;
   graph.emplace_shared<PriorFactor<Point2>>(
-      kFirstStreamingKey, Point2(0.0, 0.0),
-      noiseModel::Unit::Create(2));
+      kFirstStreamingKey, Point2(0.0, 0.0), noiseModel::Unit::Create(2));
   graph.push_back(std::make_shared<ReturningGaussianFactor>(
       KeyVector{kFirstStreamingKey}, 2, returned));
 
@@ -461,8 +447,8 @@ StreamingAndPackingFailureResult RunStreamingAndPackingFailure(
   SeedFactorRange(plan, kFailingFactorIndex, kSentinel, &host);
 
   const StreamingSparseJacobianLinearizer linearizer;
-  result.streamingStatus = linearizer.linearize(
-      graph, values, columns, plan, &host, nullptr, false);
+  result.streamingStatus =
+      linearizer.linearize(graph, values, columns, plan, &host, nullptr, false);
   result.streamingRangeUnchanged =
       FactorRangeEquals(plan, kFailingFactorIndex, kSentinel, host);
 
@@ -518,12 +504,12 @@ struct DeviceSystemAddresses {
 
 DenseJacobianReference LinearizeSparseJacobian(
     const NonlinearFactorGraph& graph, const Values& values,
-    const SparseJacobianColumnLayout& columns,
-    const SparseJacobianPlan& plan, HostSparseJacobian* host) {
+    const SparseJacobianColumnLayout& columns, const SparseJacobianPlan& plan,
+    HostSparseJacobian* host) {
   host->clear();
   const DirectJacobianStatus status =
-      StreamingSparseJacobianLinearizer().linearize(
-          graph, values, columns, plan, host, nullptr, false);
+      StreamingSparseJacobianLinearizer().linearize(graph, values, columns,
+                                                    plan, host, nullptr, false);
   if (!status.ok()) {
     throw std::runtime_error("test sparse Jacobian linearization failed");
   }
@@ -537,9 +523,8 @@ struct DenseAttemptReference {
 [[maybe_unused]] DenseAttemptReference MakeDenseAttemptReference(
     const DenseJacobianReference& linearized, const Matrix& dampedHessian) {
   DenseAttemptReference expected;
-  expected.delta =
-      dampedHessian.llt().solve(linearized.jacobian.transpose() *
-                                linearized.rhs);
+  expected.delta = dampedHessian.llt().solve(linearized.jacobian.transpose() *
+                                             linearized.rhs);
   return expected;
 }
 
@@ -597,8 +582,8 @@ TEST(SparseJacobianPlan, BuildsScalarCsrInGlobalColumnOrder) {
   EXPECT_LONGS_EQUAL(19, plan.nonzeros());
 
   const std::vector<int> expectedRowPointers = {0, 3, 6, 9, 14, 19};
-  const std::vector<int> expectedColumnIndices = {
-      0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4};
+  const std::vector<int> expectedColumnIndices = {0, 1, 2, 0, 1, 2, 0, 1, 2, 0,
+                                                  1, 2, 3, 4, 0, 1, 2, 3, 4};
   CHECK(plan.rowPointers() == expectedRowPointers);
   CHECK(plan.columnIndices() == expectedColumnIndices);
 
@@ -633,8 +618,8 @@ TEST(SparseJacobianPlan, RejectsMissingAndRepeatedFactorKeys) {
 
   NonlinearFactorGraph repeated;
   repeated.emplace_shared<PriorFactor<Pose2>>(kPoseKey, Pose2());
-  repeated.push_back(std::make_shared<StructuralFactor>(
-      KeyVector{kPointKey, kPointKey}, 2));
+  repeated.push_back(
+      std::make_shared<StructuralFactor>(KeyVector{kPointKey, kPointKey}, 2));
   CHECK_EXCEPTION(SparseJacobianPlan(repeated, layout), std::invalid_argument);
 }
 
@@ -661,8 +646,7 @@ TEST(SparseJacobianPlan, ZeroRowFactorDoesNotProvideStructuralCoverage) {
 
   NonlinearFactorGraph graph;
   graph.emplace_shared<PriorFactor<Pose2>>(kPoseKey, Pose2());
-  graph.push_back(
-      std::make_shared<StructuralFactor>(KeyVector{kPointKey}, 0));
+  graph.push_back(std::make_shared<StructuralFactor>(KeyVector{kPointKey}, 0));
   CHECK_EXCEPTION(SparseJacobianPlan(graph, layout), std::invalid_argument);
 }
 
@@ -718,8 +702,7 @@ TEST(SparseJacobianPlan, MatchesOnlyIdenticalStructure) {
   const NonlinearFactorGraph identicalGraph = makeGraph();
   const SparseJacobianPlan identicalPlan(identicalGraph, identicalLayout);
   CHECK(plan.matches(identicalGraph, identicalLayout));
-  CHECK(plan.structuralFingerprint() ==
-        identicalPlan.structuralFingerprint());
+  CHECK(plan.structuralFingerprint() == identicalPlan.structuralFingerprint());
 
   Values changedValues;
   changedValues.insert(kPoseKey, Pose2());
@@ -729,12 +712,11 @@ TEST(SparseJacobianPlan, MatchesOnlyIdenticalStructure) {
 
   NonlinearFactorGraph reorderedGraph;
   reorderedGraph.emplace_shared<PriorFactor<Pose2>>(kPoseKey, Pose2());
-  reorderedGraph.push_back(std::make_shared<StructuralFactor>(
-      KeyVector{kPoseKey, kPointKey}, 2));
+  reorderedGraph.push_back(
+      std::make_shared<StructuralFactor>(KeyVector{kPoseKey, kPointKey}, 2));
   const SparseJacobianPlan reorderedPlan(reorderedGraph, layout);
   CHECK(!plan.matches(reorderedGraph, layout));
-  CHECK(plan.structuralFingerprint() !=
-        reorderedPlan.structuralFingerprint());
+  CHECK(plan.structuralFingerprint() != reorderedPlan.structuralFingerprint());
 
   NonlinearFactorGraph unsendableGraph;
   unsendableGraph.emplace_shared<PriorFactor<Pose2>>(kPoseKey, Pose2());
@@ -742,13 +724,12 @@ TEST(SparseJacobianPlan, MatchesOnlyIdenticalStructure) {
       KeyVector{kPointKey, kPoseKey}, 2, false));
   const SparseJacobianPlan unsendablePlan(unsendableGraph, layout);
   CHECK(!plan.matches(unsendableGraph, layout));
-  CHECK(plan.structuralFingerprint() !=
-        unsendablePlan.structuralFingerprint());
+  CHECK(plan.structuralFingerprint() != unsendablePlan.structuralFingerprint());
 
   NonlinearFactorGraph changedRowsGraph;
   changedRowsGraph.emplace_shared<PriorFactor<Pose2>>(kPoseKey, Pose2());
-  changedRowsGraph.push_back(std::make_shared<StructuralFactor>(
-      KeyVector{kPointKey, kPoseKey}, 3));
+  changedRowsGraph.push_back(
+      std::make_shared<StructuralFactor>(KeyVector{kPointKey, kPoseKey}, 3));
   const SparseJacobianPlan changedRowsPlan(changedRowsGraph, layout);
   CHECK(!plan.matches(changedRowsGraph, layout));
   CHECK(plan.structuralFingerprint() !=
@@ -766,8 +747,7 @@ TEST(SparseJacobianPlan, FingerprintAndMatchesIncludeNullMarkers) {
 
   NonlinearFactorGraph zeroRowGraph;
   zeroRowGraph.emplace_shared<PriorFactor<Pose2>>(kPoseKey, Pose2());
-  zeroRowGraph.push_back(
-      std::make_shared<StructuralFactor>(KeyVector{}, 0));
+  zeroRowGraph.push_back(std::make_shared<StructuralFactor>(KeyVector{}, 0));
   zeroRowGraph.emplace_shared<ReversedPointPoseFactor>(kPointKey, kPoseKey);
   const SparseJacobianPlan zeroRowPlan(zeroRowGraph, layout);
 
@@ -934,9 +914,9 @@ TEST(StreamingSparseJacobianLinearizer,
 
   const DenseJacobianReference expected =
       AssembleDenseReferenceBySlot(graph, values, columns, plan);
-  const DirectJacobianStatus status = StreamingSparseJacobianLinearizer()
-                                          .linearize(graph, values, columns,
-                                                     plan, &host);
+  const DirectJacobianStatus status =
+      StreamingSparseJacobianLinearizer().linearize(graph, values, columns,
+                                                    plan, &host);
 
   CHECK(status.ok());
   EXPECT(assert_equal(expected.jacobian, DenseFromCsr(plan, host), 1e-12));
@@ -948,8 +928,7 @@ TEST(StreamingSparseJacobianLinearizer,
   Values values;
   values.insert(kFirstStreamingKey, Point2(0.0, 0.0));
 
-  const Matrix rawA =
-      (Matrix(2, 2) << 4.0, 8.0, 6.0, 10.0).finished();
+  const Matrix rawA = (Matrix(2, 2) << 4.0, 8.0, 6.0, 10.0).finished();
   const Vector rawB = (Vector(2) << 8.0, 15.0).finished();
   const auto returned = std::make_shared<JacobianFactor>(
       kFirstStreamingKey, rawA, rawB,
@@ -963,13 +942,12 @@ TEST(StreamingSparseJacobianLinearizer,
   HostSparseJacobian host(plan);
   host.clear();
 
-  const DirectJacobianStatus status = StreamingSparseJacobianLinearizer()
-                                          .linearize(graph, values, columns,
-                                                     plan, &host);
+  const DirectJacobianStatus status =
+      StreamingSparseJacobianLinearizer().linearize(graph, values, columns,
+                                                    plan, &host);
 
   CHECK(status.ok());
-  const Matrix expectedA =
-      (Matrix(2, 2) << 2.0, 4.0, 1.2, 2.0).finished();
+  const Matrix expectedA = (Matrix(2, 2) << 2.0, 4.0, 1.2, 2.0).finished();
   const Vector expectedB = (Vector(2) << 4.0, 3.0).finished();
   EXPECT(assert_equal(expectedA, DenseFromCsr(plan, host), 1e-12));
   EXPECT(assert_equal(expectedB, VectorFromHostRhs(host), 1e-12));
@@ -990,9 +968,9 @@ TEST(StreamingSparseJacobianLinearizer,
   SeedFactorRange(plan, 0, 19.0, &host);
   host.clear();
 
-  const DirectJacobianStatus status = StreamingSparseJacobianLinearizer()
-                                          .linearize(graph, values, columns,
-                                                     plan, &host);
+  const DirectJacobianStatus status =
+      StreamingSparseJacobianLinearizer().linearize(graph, values, columns,
+                                                    plan, &host);
 
   CHECK(status.ok());
   CHECK(FactorRangeEquals(plan, 0, 0.0, host));
@@ -1001,40 +979,39 @@ TEST(StreamingSparseJacobianLinearizer,
 TEST(StreamingSparseJacobianLinearizer,
      RejectsMalformedReturnedJacobiansWithoutPartialWrites) {
   constexpr double kSentinel = 73.0;
-  const auto verifyMalformed = [&](const KeyVector& plannedKeys,
-                                   const std::shared_ptr<GaussianFactor>&
-                                       returned) {
-    Values values;
-    for (Key key : plannedKeys) {
-      if (!values.exists(key)) {
-        values.insert(key, Point2(0.0, 0.0));
-      }
-    }
-    NonlinearFactorGraph graph;
-    graph.push_back(std::make_shared<ReturningGaussianFactor>(
-        plannedKeys, 2, returned));
-    const SparseJacobianColumnLayout columns(values);
-    const SparseJacobianPlan plan(graph, columns);
-    HostSparseJacobian host(plan);
-    host.clear();
-    SeedFactorRange(plan, 0, kSentinel, &host);
+  const auto verifyMalformed =
+      [&](const KeyVector& plannedKeys,
+          const std::shared_ptr<GaussianFactor>& returned) {
+        Values values;
+        for (Key key : plannedKeys) {
+          if (!values.exists(key)) {
+            values.insert(key, Point2(0.0, 0.0));
+          }
+        }
+        NonlinearFactorGraph graph;
+        graph.push_back(std::make_shared<ReturningGaussianFactor>(plannedKeys,
+                                                                  2, returned));
+        const SparseJacobianColumnLayout columns(values);
+        const SparseJacobianPlan plan(graph, columns);
+        HostSparseJacobian host(plan);
+        host.clear();
+        SeedFactorRange(plan, 0, kSentinel, &host);
 
-    const DirectJacobianStatus status = StreamingSparseJacobianLinearizer()
-                                            .linearize(graph, values, columns,
-                                                       plan, &host);
+        const DirectJacobianStatus status =
+            StreamingSparseJacobianLinearizer().linearize(graph, values,
+                                                          columns, plan, &host);
 
-    EXPECT(status.failure == DirectJacobianFailure::StructuralMismatch);
-    EXPECT(status.factorIndex == 0);
-    EXPECT(!status.detail.empty());
-    EXPECT(FactorRangeEquals(plan, 0, kSentinel, host));
-  };
+        EXPECT(status.failure == DirectJacobianFailure::StructuralMismatch);
+        EXPECT(status.factorIndex == 0);
+        EXPECT(!status.detail.empty());
+        EXPECT(FactorRangeEquals(plan, 0, kSentinel, host));
+      };
 
   const Matrix wrongRowA = Matrix::Identity(1, 2);
   const Vector wrongRowB = Vector::Ones(1);
-  verifyMalformed(
-      KeyVector{kFirstStreamingKey},
-      std::make_shared<JacobianFactor>(kFirstStreamingKey, wrongRowA,
-                                       wrongRowB));
+  verifyMalformed(KeyVector{kFirstStreamingKey},
+                  std::make_shared<JacobianFactor>(kFirstStreamingKey,
+                                                   wrongRowA, wrongRowB));
 
   const Matrix squareA = Matrix::Identity(2, 2);
   const Vector squareB = Vector::Ones(2);
@@ -1042,18 +1019,16 @@ TEST(StreamingSparseJacobianLinearizer,
       KeyVector{kFirstStreamingKey, kSecondStreamingKey},
       std::make_shared<JacobianFactor>(kFirstStreamingKey, squareA, squareB));
 
-  verifyMalformed(
-      KeyVector{kFirstStreamingKey, kSecondStreamingKey},
-      std::make_shared<JacobianFactor>(
-          kSecondStreamingKey, squareA, kFirstStreamingKey, 2.0 * squareA,
-          squareB));
+  verifyMalformed(KeyVector{kFirstStreamingKey, kSecondStreamingKey},
+                  std::make_shared<JacobianFactor>(kSecondStreamingKey, squareA,
+                                                   kFirstStreamingKey,
+                                                   2.0 * squareA, squareB));
 
   const Matrix wrongWidthA = Matrix::Identity(2, 3);
-  verifyMalformed(
-      KeyVector{kFirstStreamingKey, kSecondStreamingKey},
-      std::make_shared<JacobianFactor>(
-          kFirstStreamingKey, squareA, kSecondStreamingKey, wrongWidthA,
-          squareB));
+  verifyMalformed(KeyVector{kFirstStreamingKey, kSecondStreamingKey},
+                  std::make_shared<JacobianFactor>(kFirstStreamingKey, squareA,
+                                                   kSecondStreamingKey,
+                                                   wrongWidthA, squareB));
 }
 
 TEST(StreamingSparseJacobianLinearizer,
@@ -1085,9 +1060,9 @@ TEST(StreamingSparseJacobianLinearizer,
   const std::thread::id callerThread = std::this_thread::get_id();
   StreamingLinearizationStats stats{7, 9};
 
-  const DirectJacobianStatus status = StreamingSparseJacobianLinearizer()
-                                          .linearize(graph, values, columns,
-                                                     plan, &host, &stats);
+  const DirectJacobianStatus status =
+      StreamingSparseJacobianLinearizer().linearize(graph, values, columns,
+                                                    plan, &host, &stats);
 
   CHECK(status.ok());
   EXPECT_LONGS_EQUAL(kSendableFactorCount, stats.sendableFactors);
@@ -1129,9 +1104,9 @@ TEST(StreamingSparseJacobianLinearizer,
 
     const DirectJacobianStatus unprofiledStatus = linearizer.linearize(
         graph, values, columns, plan, &unprofiledHost, &unprofiledStats);
-    const DirectJacobianStatus profiledStatus = linearizer.linearize(
-        graph, values, columns, plan, &profiledHost, &profiledStats, true,
-        &profile);
+    const DirectJacobianStatus profiledStatus =
+        linearizer.linearize(graph, values, columns, plan, &profiledHost,
+                             &profiledStats, true, &profile);
 
     CHECK(unprofiledStatus.failure == profiledStatus.failure);
     EXPECT_LONGS_EQUAL(unprofiledStatus.factorIndex,
@@ -1141,10 +1116,8 @@ TEST(StreamingSparseJacobianLinearizer,
                        profiledStats.sendableFactors);
     EXPECT_LONGS_EQUAL(unprofiledStats.nonSendableFactors,
                        profiledStats.nonSendableFactors);
-    EXPECT_LONGS_EQUAL(isSendable ? 1 : 0,
-                       profiledStats.sendableFactors);
-    EXPECT_LONGS_EQUAL(isSendable ? 0 : 1,
-                       profiledStats.nonSendableFactors);
+    EXPECT_LONGS_EQUAL(isSendable ? 1 : 0, profiledStats.sendableFactors);
+    EXPECT_LONGS_EQUAL(isSendable ? 0 : 1, profiledStats.nonSendableFactors);
     EXPECT(assert_equal(DenseFromCsr(plan, unprofiledHost),
                         DenseFromCsr(plan, profiledHost), 0.0));
     EXPECT(assert_equal(VectorFromHostRhs(unprofiledHost),
@@ -1165,10 +1138,9 @@ TEST(StreamingSparseJacobianLinearizer,
   StreamingLinearizationProfile profile{
       std::numeric_limits<double>::quiet_NaN(), -1.0};
 
-  const DirectJacobianStatus status = StreamingSparseJacobianLinearizer()
-                                          .linearize(graph, values, columns,
-                                                     plan, nullptr, nullptr,
-                                                     true, &profile);
+  const DirectJacobianStatus status =
+      StreamingSparseJacobianLinearizer().linearize(
+          graph, values, columns, plan, nullptr, nullptr, true, &profile);
 
   CHECK(status.failure == DirectJacobianFailure::StructuralMismatch);
   DOUBLES_EQUAL(0.0, profile.factorLinearizationCpuSum, 0.0);
@@ -1180,18 +1152,14 @@ TEST(StreamingSparseJacobianLinearizer,
   Values values;
   values.insert(kFirstStreamingKey, Point2(0.0, 0.0));
 
-  auto lowerNonSendable =
-      std::make_shared<CountingReturningGaussianFactor>(
-          KeyVector{kFirstStreamingKey}, 1, false,
-          std::make_shared<JacobianFactor>(
-              kFirstStreamingKey, Matrix::Identity(2, 2),
-              Vector::Zero(2)));
-  auto higherSendable =
-      std::make_shared<CountingReturningGaussianFactor>(
-          KeyVector{kFirstStreamingKey}, 1, true,
-          std::make_shared<HessianFactor>(
-              kFirstStreamingKey, Matrix::Identity(2, 2),
-              Vector::Zero(2), 0.0));
+  auto lowerNonSendable = std::make_shared<CountingReturningGaussianFactor>(
+      KeyVector{kFirstStreamingKey}, 1, false,
+      std::make_shared<JacobianFactor>(
+          kFirstStreamingKey, Matrix::Identity(2, 2), Vector::Zero(2)));
+  auto higherSendable = std::make_shared<CountingReturningGaussianFactor>(
+      KeyVector{kFirstStreamingKey}, 1, true,
+      std::make_shared<HessianFactor>(
+          kFirstStreamingKey, Matrix::Identity(2, 2), Vector::Zero(2), 0.0));
   auto higherNonSendable =
       std::make_shared<RecordingPointFactor>(kFirstStreamingKey, false);
   NonlinearFactorGraph graph;
@@ -1206,9 +1174,9 @@ TEST(StreamingSparseJacobianLinearizer,
   StreamingLinearizationStats stats;
   const std::thread::id callerThread = std::this_thread::get_id();
 
-  const DirectJacobianStatus status = StreamingSparseJacobianLinearizer()
-                                          .linearize(graph, values, columns,
-                                                     plan, &host, &stats);
+  const DirectJacobianStatus status =
+      StreamingSparseJacobianLinearizer().linearize(graph, values, columns,
+                                                    plan, &host, &stats);
 
   CHECK(status.failure == DirectJacobianFailure::StructuralMismatch);
   EXPECT_LONGS_EQUAL(0, status.factorIndex);
@@ -1236,10 +1204,9 @@ TEST(StreamingSparseJacobianLinearizer,
   factor->setSendable(false);
   StreamingLinearizationStats stats{7, 9};
 
-  const DirectJacobianStatus status = StreamingSparseJacobianLinearizer()
-                                          .linearize(graph, values, columns,
-                                                     plan, &host, &stats,
-                                                     false);
+  const DirectJacobianStatus status =
+      StreamingSparseJacobianLinearizer().linearize(graph, values, columns,
+                                                    plan, &host, &stats, false);
 
   CHECK(status.failure == DirectJacobianFailure::StructuralMismatch);
   EXPECT_LONGS_EQUAL(0, status.factorIndex);
@@ -1252,10 +1219,8 @@ TEST(StreamingSparseJacobianLinearizer,
 TEST(StreamingSparseJacobianLinearizer,
      RejectsReturnedHessianFactorsWithoutPartialWrites) {
   const StreamingAndPackingFailureResult result =
-      RunStreamingAndPackingFailure(
-          std::make_shared<HessianFactor>(
-              kFirstStreamingKey, Matrix::Identity(2, 2), Vector::Zero(2),
-              0.0));
+      RunStreamingAndPackingFailure(std::make_shared<HessianFactor>(
+          kFirstStreamingKey, Matrix::Identity(2, 2), Vector::Zero(2), 0.0));
   EXPECT(result.streamingStatus.failure ==
          DirectJacobianFailure::UnsupportedGaussianFactor);
   EXPECT_LONGS_EQUAL(1, result.streamingStatus.factorIndex);
@@ -1272,10 +1237,9 @@ TEST(StreamingSparseJacobianLinearizer,
 TEST(StreamingSparseJacobianLinearizer,
      RejectsReturnedConstrainedJacobiansWithoutPartialWrites) {
   const StreamingAndPackingFailureResult result =
-      RunStreamingAndPackingFailure(
-          std::make_shared<JacobianFactor>(
-              kFirstStreamingKey, Matrix::Identity(2, 2), Vector::Zero(2),
-              noiseModel::Constrained::All(2)));
+      RunStreamingAndPackingFailure(std::make_shared<JacobianFactor>(
+          kFirstStreamingKey, Matrix::Identity(2, 2), Vector::Zero(2),
+          noiseModel::Constrained::All(2)));
   EXPECT(result.streamingStatus.failure ==
          DirectJacobianFailure::ConstrainedFactor);
   EXPECT_LONGS_EQUAL(1, result.streamingStatus.factorIndex);
@@ -1295,26 +1259,26 @@ TEST(StreamingSparseJacobianLinearizer,
 
   Matrix nonFiniteA = Matrix::Identity(2, 2);
   nonFiniteA(0, 1) = std::numeric_limits<double>::quiet_NaN();
-  results.push_back(RunStreamingAndPackingFailure(
-      std::make_shared<JacobianFactor>(
+  results.push_back(
+      RunStreamingAndPackingFailure(std::make_shared<JacobianFactor>(
           kFirstStreamingKey, nonFiniteA, Vector::Zero(2))));
 
   nonFiniteA = Matrix::Identity(2, 2);
   nonFiniteA(1, 0) = std::numeric_limits<double>::infinity();
-  results.push_back(RunStreamingAndPackingFailure(
-      std::make_shared<JacobianFactor>(
+  results.push_back(
+      RunStreamingAndPackingFailure(std::make_shared<JacobianFactor>(
           kFirstStreamingKey, nonFiniteA, Vector::Zero(2))));
 
   Vector nonFiniteB = Vector::Zero(2);
   nonFiniteB(0) = std::numeric_limits<double>::quiet_NaN();
-  results.push_back(RunStreamingAndPackingFailure(
-      std::make_shared<JacobianFactor>(
+  results.push_back(
+      RunStreamingAndPackingFailure(std::make_shared<JacobianFactor>(
           kFirstStreamingKey, Matrix::Identity(2, 2), nonFiniteB)));
 
   nonFiniteB = Vector::Zero(2);
   nonFiniteB(1) = -std::numeric_limits<double>::infinity();
-  results.push_back(RunStreamingAndPackingFailure(
-      std::make_shared<JacobianFactor>(
+  results.push_back(
+      RunStreamingAndPackingFailure(std::make_shared<JacobianFactor>(
           kFirstStreamingKey, Matrix::Identity(2, 2), nonFiniteB)));
 
   for (const StreamingAndPackingFailureResult& result : results) {
@@ -1350,8 +1314,7 @@ TEST(StreamingSparseJacobianLinearizer,
       kSecondStreamingKey, Point2(0.0, 0.0), noiseModel::Unit::Create(2));
   const SparseJacobianPlan largerPlan(largerPlanGraph, columns);
   HostSparseJacobian wrongSizeOutput(largerPlan);
-  status = linearizer.linearize(graph, values, columns, plan,
-                                &wrongSizeOutput);
+  status = linearizer.linearize(graph, values, columns, plan, &wrongSizeOutput);
   CHECK(status.failure == DirectJacobianFailure::StructuralMismatch);
 
   NonlinearFactorGraph shorterGraph = graph;
@@ -1375,12 +1338,10 @@ TEST(StreamingSparseJacobianLinearizer,
 
   NonlinearFactorGraph changedStructure;
   changedStructure.emplace_shared<PriorFactor<Point2>>(
-      kSecondStreamingKey, Point2(0.0, 0.0),
-      noiseModel::Unit::Create(2));
+      kSecondStreamingKey, Point2(0.0, 0.0), noiseModel::Unit::Create(2));
   changedStructure.push_back(graph[1]);
   changedStructure.push_back(graph[2]);
-  status =
-      linearizer.linearize(changedStructure, values, columns, plan, &host);
+  status = linearizer.linearize(changedStructure, values, columns, plan, &host);
   CHECK(status.failure == DirectJacobianFailure::StructuralMismatch);
 }
 
@@ -1398,10 +1359,10 @@ TEST(StreamingSparseJacobianLinearizer,
   CHECK(linearizer.linearize(graph, values, columns, plan, &streamed).ok());
   const GaussianFactorGraph::shared_ptr linear = graph.linearize(values);
   CHECK(linearizer.packGaussianFactorGraph(*linear, plan, &packed).ok());
-  EXPECT(assert_equal(DenseFromCsr(plan, streamed),
-                      DenseFromCsr(plan, packed), 1e-12));
-  EXPECT(assert_equal(VectorFromHostRhs(streamed),
-                      VectorFromHostRhs(packed), 1e-12));
+  EXPECT(assert_equal(DenseFromCsr(plan, streamed), DenseFromCsr(plan, packed),
+                      1e-12));
+  EXPECT(assert_equal(VectorFromHostRhs(streamed), VectorFromHostRhs(packed),
+                      1e-12));
 
   DirectJacobianStatus status =
       linearizer.packGaussianFactorGraph(*linear, plan, nullptr);
@@ -1409,12 +1370,10 @@ TEST(StreamingSparseJacobianLinearizer,
 
   NonlinearFactorGraph largerPlanGraph = graph;
   largerPlanGraph.emplace_shared<PriorFactor<Point2>>(
-      kFirstStreamingKey, Point2(0.0, 0.0),
-      noiseModel::Unit::Create(2));
+      kFirstStreamingKey, Point2(0.0, 0.0), noiseModel::Unit::Create(2));
   const SparseJacobianPlan largerPlan(largerPlanGraph, columns);
   HostSparseJacobian wrongSizeOutput(largerPlan);
-  status =
-      linearizer.packGaussianFactorGraph(*linear, plan, &wrongSizeOutput);
+  status = linearizer.packGaussianFactorGraph(*linear, plan, &wrongSizeOutput);
   CHECK(status.failure == DirectJacobianFailure::StructuralMismatch);
 
   GaussianFactorGraph shorter = *linear;
@@ -1481,8 +1440,8 @@ TEST(DeviceSparseJacobianNormalEquations,
 
     EXPECT(assert_equal(denseJacobian.transpose() * denseJacobian,
                         downloaded.hessian, 1e-10));
-    EXPECT(assert_equal(denseJacobian.transpose() * denseRhs,
-                        downloaded.rhs, 1e-10));
+    EXPECT(assert_equal(denseJacobian.transpose() * denseRhs, downloaded.rhs,
+                        1e-10));
     CHECK(system.rowPointers().data() == initialRowPointersAddress);
     CHECK(system.colIndices().data() == initialColumnIndicesAddress);
     CHECK(system.values().data() == initialValuesAddress);
@@ -1517,8 +1476,7 @@ TEST(DeviceSparseJacobianNormalEquations,
   normalEquations.uploadNumerics(host, context.stream());
   normalEquations.formUndampedSystem(context.stream());
 
-  const DeviceSparseNormalEquations& initialSystem =
-      normalEquations.system();
+  const DeviceSparseNormalEquations& initialSystem = normalEquations.system();
   const DeviceSystemAddresses addresses = GetSystemAddresses(initialSystem);
   const auto pattern =
       DownloadNormalEquationPattern(initialSystem, context.stream());
@@ -1532,8 +1490,8 @@ TEST(DeviceSparseJacobianNormalEquations,
     const DeviceSparseJacobianAttemptResult attempt =
         normalEquations.downloadAttemptResult(context.stream());
     const Matrix expectedHessian =
-        undampedHessian + lambda * Matrix::Identity(plan.columns(),
-                                                     plan.columns());
+        undampedHessian +
+        lambda * Matrix::Identity(plan.columns(), plan.columns());
     const DenseAttemptReference expected =
         MakeDenseAttemptReference(reference, expectedHessian);
     EXPECT(assert_equal(expected.delta, attempt.delta, 1e-9));
@@ -1543,8 +1501,8 @@ TEST(DeviceSparseJacobianNormalEquations,
         linearGraph->error(columns.toVectorValues(attempt.delta));
     DOUBLES_EQUAL(expectedOldError, attempt.model.oldError, 1e-9);
     DOUBLES_EQUAL(expectedNewError, attempt.model.newError, 1e-9);
-    DOUBLES_EQUAL(expectedOldError - expectedNewError,
-                  attempt.model.change(), 1e-9);
+    DOUBLES_EQUAL(expectedOldError - expectedNewError, attempt.model.change(),
+                  1e-9);
 
     const DeviceSparseNormalEquations& system = normalEquations.system();
     const DownloadedSparseNormalEquations downloaded =
@@ -1590,8 +1548,7 @@ TEST(DeviceSparseJacobianNormalEquations,
   normalEquations.uploadNumerics(host, context.stream());
   normalEquations.formUndampedSystem(context.stream());
 
-  const DeviceSparseNormalEquations& initialSystem =
-      normalEquations.system();
+  const DeviceSparseNormalEquations& initialSystem = normalEquations.system();
   const DeviceSystemAddresses addresses = GetSystemAddresses(initialSystem);
   const auto pattern =
       DownloadNormalEquationPattern(initialSystem, context.stream());
@@ -1616,8 +1573,8 @@ TEST(DeviceSparseJacobianNormalEquations,
         linearGraph->error(columns.toVectorValues(attempt.delta));
     DOUBLES_EQUAL(expectedOldError, attempt.model.oldError, 1e-9);
     DOUBLES_EQUAL(expectedNewError, attempt.model.newError, 1e-9);
-    DOUBLES_EQUAL(expectedOldError - expectedNewError,
-                  attempt.model.change(), 1e-9);
+    DOUBLES_EQUAL(expectedOldError - expectedNewError, attempt.model.change(),
+                  1e-9);
 
     const DeviceSparseNormalEquations& system = normalEquations.system();
     const DownloadedSparseNormalEquations downloaded =
@@ -1683,8 +1640,7 @@ TEST(DeviceSparseJacobianNormalEquations,
   }
   Matrix secondDampedHessian =
       secondReference.jacobian.transpose() * secondReference.jacobian;
-  secondDampedHessian +=
-      (lambda * diagonal).asDiagonal().toDenseMatrix();
+  secondDampedHessian += (lambda * diagonal).asDiagonal().toDenseMatrix();
   normalEquations.solveAndEvaluate(lambda, context.stream());
   const DeviceSparseJacobianAttemptResult secondAttempt =
       normalEquations.downloadAttemptResult(context.stream());
@@ -1712,20 +1668,19 @@ TEST(DeviceSparseJacobianNormalEquations,
       normalEquations.downloadAttemptResult(context.stream());
   const Matrix reinitializedHessian =
       secondReference.jacobian.transpose() * secondReference.jacobian +
-      (2.0 * lambda) *
-          Matrix::Identity(plan.columns(), plan.columns());
+      (2.0 * lambda) * Matrix::Identity(plan.columns(), plan.columns());
   const DenseAttemptReference reinitializedExpected =
       MakeDenseAttemptReference(secondReference, reinitializedHessian);
-  EXPECT(assert_equal(reinitializedExpected.delta,
-                      reinitializedAttempt.delta, 1e-9));
+  EXPECT(assert_equal(reinitializedExpected.delta, reinitializedAttempt.delta,
+                      1e-9));
   const double reinitializedOldError = secondLinearGraph->error(
       columns.toVectorValues(Vector::Zero(plan.columns())));
   const double reinitializedNewError = secondLinearGraph->error(
       columns.toVectorValues(reinitializedAttempt.delta));
-  DOUBLES_EQUAL(reinitializedOldError,
-                reinitializedAttempt.model.oldError, 1e-9);
-  DOUBLES_EQUAL(reinitializedNewError,
-                reinitializedAttempt.model.newError, 1e-9);
+  DOUBLES_EQUAL(reinitializedOldError, reinitializedAttempt.model.oldError,
+                1e-9);
+  DOUBLES_EQUAL(reinitializedNewError, reinitializedAttempt.model.newError,
+                1e-9);
 #endif
 }
 
@@ -1752,18 +1707,17 @@ TEST(DeviceSparseJacobianNormalEquations,
 
   CHECK_EXCEPTION(normalEquations.formUndampedSystem(context.stream()),
                   std::logic_error);
-  CHECK_EXCEPTION(normalEquations.prepareDamping(false, 0.0, 1.0,
-                                                  context.stream()),
-                  std::logic_error);
-  CHECK_EXCEPTION(normalEquations.analyze(context.stream()),
-                  std::logic_error);
+  CHECK_EXCEPTION(
+      normalEquations.prepareDamping(false, 0.0, 1.0, context.stream()),
+      std::logic_error);
+  CHECK_EXCEPTION(normalEquations.analyze(context.stream()), std::logic_error);
   CHECK_EXCEPTION(normalEquations.downloadAttemptResult(context.stream()),
                   std::logic_error);
 
   normalEquations.uploadNumerics(host, context.stream());
-  CHECK_EXCEPTION(normalEquations.prepareDamping(false, 0.0, 1.0,
-                                                  context.stream()),
-                  std::logic_error);
+  CHECK_EXCEPTION(
+      normalEquations.prepareDamping(false, 0.0, 1.0, context.stream()),
+      std::logic_error);
   normalEquations.formUndampedSystem(context.stream());
 
   CHECK_EXCEPTION(normalEquations.prepareDamping(
@@ -1779,8 +1733,7 @@ TEST(DeviceSparseJacobianNormalEquations,
                       context.stream()),
                   std::invalid_argument);
   CHECK_EXCEPTION(normalEquations.prepareDamping(
-                      false, 0.0,
-                      std::numeric_limits<double>::quiet_NaN(),
+                      false, 0.0, std::numeric_limits<double>::quiet_NaN(),
                       context.stream()),
                   std::invalid_argument);
   CHECK_EXCEPTION(normalEquations.prepareDamping(
@@ -1788,34 +1741,32 @@ TEST(DeviceSparseJacobianNormalEquations,
                       context.stream()),
                   std::invalid_argument);
   CHECK_EXCEPTION(normalEquations.prepareDamping(
-                      false, 0.0,
-                      -std::numeric_limits<double>::infinity(),
+                      false, 0.0, -std::numeric_limits<double>::infinity(),
                       context.stream()),
                   std::invalid_argument);
-  CHECK_EXCEPTION(normalEquations.prepareDamping(false, 2.0, 1.0,
-                                                  context.stream()),
-                  std::invalid_argument);
-  CHECK_EXCEPTION(normalEquations.prepareDamping(false, -1.0, 1.0,
-                                                  context.stream()),
-                  std::invalid_argument);
-  CHECK_EXCEPTION(normalEquations.prepareDamping(true, -2.0, -1.0,
-                                                  context.stream()),
-                  std::invalid_argument);
+  CHECK_EXCEPTION(
+      normalEquations.prepareDamping(false, 2.0, 1.0, context.stream()),
+      std::invalid_argument);
+  CHECK_EXCEPTION(
+      normalEquations.prepareDamping(false, -1.0, 1.0, context.stream()),
+      std::invalid_argument);
+  CHECK_EXCEPTION(
+      normalEquations.prepareDamping(true, -2.0, -1.0, context.stream()),
+      std::invalid_argument);
   CHECK_EXCEPTION(normalEquations.solveAndEvaluate(0.1, context.stream()),
                   std::logic_error);
 
   normalEquations.prepareDamping(false, 0.0, 1.0, context.stream());
-  CHECK_EXCEPTION(normalEquations.solveAndEvaluate(
-                      -0.1, context.stream()),
+  CHECK_EXCEPTION(normalEquations.solveAndEvaluate(-0.1, context.stream()),
                   std::invalid_argument);
-  CHECK_EXCEPTION(normalEquations.solveAndEvaluate(
-                      std::numeric_limits<double>::quiet_NaN(),
-                      context.stream()),
-                  std::invalid_argument);
-  CHECK_EXCEPTION(normalEquations.solveAndEvaluate(
-                      std::numeric_limits<double>::infinity(),
-                      context.stream()),
-                  std::invalid_argument);
+  CHECK_EXCEPTION(
+      normalEquations.solveAndEvaluate(std::numeric_limits<double>::quiet_NaN(),
+                                       context.stream()),
+      std::invalid_argument);
+  CHECK_EXCEPTION(
+      normalEquations.solveAndEvaluate(std::numeric_limits<double>::infinity(),
+                                       context.stream()),
+      std::invalid_argument);
   CHECK_EXCEPTION(normalEquations.solveAndEvaluate(0.1, context.stream()),
                   std::logic_error);
   CHECK_EXCEPTION(normalEquations.downloadAttemptResult(context.stream()),
@@ -1852,9 +1803,9 @@ TEST(DeviceSparseJacobianNormalEquations,
     normalEquations.uploadNumerics(host, context.stream());
     normalEquations.formUndampedSystem(context.stream());
 
-    CHECK_EXCEPTION(normalEquations.prepareDamping(false, 0.0, 1.0,
-                                                    otherStream),
-                    std::invalid_argument);
+    CHECK_EXCEPTION(
+        normalEquations.prepareDamping(false, 0.0, 1.0, otherStream),
+        std::invalid_argument);
     CHECK_EXCEPTION(normalEquations.analyze(otherStream),
                     std::invalid_argument);
     CHECK_EXCEPTION(normalEquations.solveAndEvaluate(0.1, otherStream),
@@ -1913,10 +1864,8 @@ TEST(StreamingSparseJacobianLinearizer,
   const Matrix A = (Matrix(1, 2) << 1.0, 2.0).finished();
   const Vector b = (Vector(1) << 3.0).finished();
   GaussianFactorGraph linear;
-  linear.push_back(
-      std::make_shared<JacobianFactor>(kFirstStreamingKey, A, b));
-  linear.push_back(
-      std::make_shared<JacobianFactor>(kSecondStreamingKey, A, b));
+  linear.push_back(std::make_shared<JacobianFactor>(kFirstStreamingKey, A, b));
+  linear.push_back(std::make_shared<JacobianFactor>(kSecondStreamingKey, A, b));
 
   const DirectJacobianStatus status =
       StreamingSparseJacobianLinearizer().packGaussianFactorGraph(
@@ -1963,8 +1912,7 @@ TEST(DeviceSparseJacobianNormalEquations,
 #endif
 }
 
-TEST(DeviceSparseJacobianNormalEquations,
-     RejectsEmptyRowsColumnsAndNonzeros) {
+TEST(DeviceSparseJacobianNormalEquations, RejectsEmptyRowsColumnsAndNonzeros) {
   const Values values;
   const NonlinearFactorGraph graph;
   const SparseJacobianColumnLayout columns(values);
@@ -1976,15 +1924,14 @@ TEST(DeviceSparseJacobianNormalEquations,
     normalEquations.initialize(plan);
   } catch (const std::invalid_argument& error) {
     detailedInvalidArgument =
-        std::string(error.what()).find(
-            "positive rows, columns, and nonzeros are required") !=
+        std::string(error.what())
+            .find("positive rows, columns, and nonzeros are required") !=
         std::string::npos;
   }
   CHECK(detailedInvalidArgument);
 }
 
-TEST(DeviceSparseJacobianNormalEquations,
-     ReportsConfiguredSpGemmCapability) {
+TEST(DeviceSparseJacobianNormalEquations, ReportsConfiguredSpGemmCapability) {
   const DeviceSparseNormalEquationCapability capability =
       DeviceSparseJacobianNormalEquations::preflightCapability();
 #if GTSAM_TEST_EXPECT_SPGEMM_REUSE

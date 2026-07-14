@@ -1,15 +1,13 @@
-#include <gtsam/nonlinear/cuda/CudaSparseLevenbergMarquardt.h>
-
+#include <cuda_runtime_api.h>
 #include <gtsam/base/cuda/CudaContext.h>
 #include <gtsam/base/types.h>
 #include <gtsam/config.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/cuda/CudaSparseLevenbergMarquardt.h>
 #include <gtsam/nonlinear/cuda/DeviceSparseJacobianNormalEquations.h>
 #include <gtsam/nonlinear/cuda/HostSparseJacobian.h>
 #include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
-
-#include <cuda_runtime_api.h>
 
 #include <algorithm>
 #include <chrono>
@@ -155,11 +153,10 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
   void refreshCompatibilityTimingAggregates() {
     CudaSparseLmStageTimings& timings = optimizationResult.timings;
     timings.upload = timings.numericH2d;
-    timings.normalEquations =
-        timings.normalJtJ + timings.normalJtb +
-        timings.diagonalExtraction + timings.oldModelError;
-    timings.damping =
-        timings.dampingPreparation + timings.dampingApplication;
+    timings.normalEquations = timings.normalJtJ + timings.normalJtb +
+                              timings.diagonalExtraction +
+                              timings.oldModelError;
+    timings.damping = timings.dampingPreparation + timings.dampingApplication;
     timings.modelError = timings.oldModelError + timings.newModelError;
     timings.deltaDownload = timings.attemptD2h;
   }
@@ -177,8 +174,7 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
       return;
     }
 
-    size.normalNonzeros =
-        static_cast<size_t>(device->system().nonzeros());
+    size.normalNonzeros = static_cast<size_t>(device->system().nonzeros());
     const DeviceSparseJacobianProfile& deviceProfile = device->profile();
     CudaSparseLmTransferCounts& transfers = optimizationResult.transfers;
     transfers.patternH2dBytes = deviceProfile.patternH2dBytes;
@@ -201,8 +197,7 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
     timings.dampingApplication = deviceProfile.dampingApplication;
     timings.cudssAnalysis = deviceProfile.cudssAnalysis;
     timings.cudssFactorAndSolve = deviceProfile.cudssFactorAndSolve;
-    timings.cudssDataInfoBoundaryWall =
-        deviceProfile.cudssDataInfoBoundaryWall;
+    timings.cudssDataInfoBoundaryWall = deviceProfile.cudssDataInfoBoundaryWall;
     timings.newModelError = deviceProfile.newModelError;
     timings.attemptD2h = deviceProfile.attemptD2h;
     timings.attemptHostBuild = deviceProfile.attemptHostBuild;
@@ -225,8 +220,7 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
     optimizationResult.lambdaAttempts = state.totalInnerAttempts;
     optimizationResult.finalError = currentError;
     optimizationResult.finalLambda = state.lambda;
-    optimizationResult.cudssAnalyses =
-        device ? device->analysisCount() : 0;
+    optimizationResult.cudssAnalyses = device ? device->analysisCount() : 0;
   }
 
   const Values& finish(CudaSparseLmTerminationReason reason,
@@ -274,8 +268,7 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
     optimizationResult.finalLambda = parameters.lambdaInitial;
     startTotalWallTiming();
 
-    Clock::time_point stageStart =
-        MaybeStartTiming(parameters.collectTiming);
+    Clock::time_point stageStart = MaybeStartTiming(parameters.collectTiming);
     currentError = graph->error(currentValues);
     AccumulateTiming(parameters.collectTiming, stageStart,
                      &optimizationResult.timings.initialError);
@@ -312,30 +305,27 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
     const DeviceSparseNormalEquationCapability capability =
         DeviceSparseJacobianNormalEquations::preflightCapability();
     if (!capability.supported) {
-      return runCpuFallback(
-          CudaSparseLmFallbackReason::CudaToolkitUnsupported, {},
-          capability.detail, state);
+      return runCpuFallback(CudaSparseLmFallbackReason::CudaToolkitUnsupported,
+                            {}, capability.detail, state);
     }
 #endif
 
     const Clock::time_point planStart =
         MaybeStartTiming(parameters.collectTiming);
     try {
-      layout =
-          std::make_unique<SparseJacobianColumnLayout>(initialValues);
+      layout = std::make_unique<SparseJacobianColumnLayout>(initialValues);
       plan = std::make_unique<SparseJacobianPlan>(*graph, *layout);
-      if (plan->rows() <= 0 || plan->columns() <= 0 ||
-          plan->nonzeros() <= 0) {
+      if (plan->rows() <= 0 || plan->columns() <= 0 || plan->nonzeros() <= 0) {
         throw std::invalid_argument(
             "direct sparse Jacobian plan must have positive dimensions");
       }
     } catch (const std::invalid_argument& error) {
       AccumulateTiming(parameters.collectTiming, planStart,
                        &optimizationResult.timings.plan);
-      return runCpuFallback(CudaSparseLmFallbackReason::PlanIncompatible, {},
-                            std::string("sparse Jacobian plan is incompatible: ") +
-                                error.what(),
-                            state);
+      return runCpuFallback(
+          CudaSparseLmFallbackReason::PlanIncompatible, {},
+          std::string("sparse Jacobian plan is incompatible: ") + error.what(),
+          state);
     }
     AccumulateTiming(parameters.collectTiming, planStart,
                      &optimizationResult.timings.plan);
@@ -345,10 +335,8 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
     RunCudaStage("persistent setup", [&] {
       context = std::make_unique<CudaContext>();
       host = std::make_unique<HostSparseJacobian>(*plan);
-      linearizer =
-          std::make_unique<StreamingSparseJacobianLinearizer>();
-      device =
-          std::make_unique<DeviceSparseJacobianNormalEquations>();
+      linearizer = std::make_unique<StreamingSparseJacobianLinearizer>();
+      device = std::make_unique<DeviceSparseJacobianNormalEquations>();
       device->initialize(*plan, context->stream(), parameters.collectTiming);
     });
     AccumulateTiming(parameters.collectTiming, stageStart,
@@ -385,8 +373,7 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
         if (linearizationStatus.failure ==
             DirectJacobianFailure::NonFiniteValues) {
           throw std::runtime_error(
-              "CUDA sparse LM failure during factor linearization: " +
-              detail);
+              "CUDA sparse LM failure during factor linearization: " + detail);
         }
         const bool globalStructuralMismatch =
             linearizationStatus.failure ==
@@ -400,13 +387,11 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
             linearizationStatus, detail, state);
       }
 
-      RunCudaStage("numeric upload", [&] {
-        device->uploadNumerics(*host, context->stream());
-      });
+      RunCudaStage("numeric upload",
+                   [&] { device->uploadNumerics(*host, context->stream()); });
 
-      RunCudaStage("normal-equation formation", [&] {
-        device->formUndampedSystem(context->stream());
-      });
+      RunCudaStage("normal-equation formation",
+                   [&] { device->formUndampedSystem(context->stream()); });
 
       RunCudaStage("damping preparation", [&] {
         device->prepareDamping(parameters.dampingParams.diagonalDamping,
@@ -415,9 +400,8 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
                                context->stream());
       });
 
-      RunCudaStage("cuDSS analysis", [&] {
-        device->analyze(context->stream());
-      });
+      RunCudaStage("cuDSS analysis",
+                   [&] { device->analyze(context->stream()); });
 
       bool accepted = false;
       CudaSparseLmTerminationReason innerTermination =
@@ -433,10 +417,9 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
           device->solveAndEvaluate(state.lambda, context->stream());
         });
 
-        DeviceSparseJacobianAttemptResult deviceAttempt =
-            RunCudaStage("attempt result download", [&] {
-              return device->downloadAttemptResult(context->stream());
-            });
+        DeviceSparseJacobianAttemptResult deviceAttempt = RunCudaStage(
+            "attempt result download",
+            [&] { return device->downloadAttemptResult(context->stream()); });
         ++state.totalInnerAttempts;
         snapshotCudaProfile();
 
@@ -462,9 +445,8 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
 
           stageStart = MaybeStartTiming(parameters.collectTiming);
           trialError = graph->error(trialValues);
-          AccumulateTiming(
-              parameters.collectTiming, stageStart,
-              &optimizationResult.timings.nonlinearTrialError);
+          AccumulateTiming(parameters.collectTiming, stageStart,
+                           &optimizationResult.timings.nonlinearTrialError);
           if (!std::isfinite(trialError)) {
             throw std::runtime_error(
                 "CUDA sparse LM failure during nonlinear trial error: "
@@ -473,15 +455,13 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
 
           costChange = currentError - trialError;
           if (linearizedChange >
-              std::numeric_limits<double>::epsilon() *
-                  oldLinearizedError) {
+              std::numeric_limits<double>::epsilon() * oldLinearizedError) {
             modelFidelity = costChange / linearizedChange;
             if (!std::isfinite(modelFidelity)) {
               throw std::runtime_error(
                   "CUDA sparse LM model fidelity is non-finite");
             }
-            stepSuccessful =
-                modelFidelity > parameters.minModelFidelity;
+            stepSuccessful = modelFidelity > parameters.minModelFidelity;
           }
 
           const double minimumAbsoluteTolerance =
@@ -503,24 +483,20 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
             state.lambda /= state.currentFactor;
           } else {
             state.lambda *= std::max(
-                1.0 / 3.0,
-                1.0 - std::pow(2.0 * modelFidelity - 1.0, 3));
+                1.0 / 3.0, 1.0 - std::pow(2.0 * modelFidelity - 1.0, 3));
             state.currentFactor *= 2.0;
           }
-          state.lambda =
-              std::max(parameters.lambdaLowerBound, state.lambda);
+          state.lambda = std::max(parameters.lambdaLowerBound, state.lambda);
           accepted = true;
         } else if (stopSearchingLambda) {
-          innerTermination =
-              CudaSparseLmTerminationReason::SmallCostChange;
+          innerTermination = CudaSparseLmTerminationReason::SmallCostChange;
         } else {
           state.lambda *= state.currentFactor;
           if (!parameters.useFixedLambdaFactor) {
             state.currentFactor *= 2.0;
           }
           if (state.lambda >= parameters.lambdaUpperBound) {
-            innerTermination =
-                CudaSparseLmTerminationReason::LambdaUpperBound;
+            innerTermination = CudaSparseLmTerminationReason::LambdaUpperBound;
           }
         }
 
@@ -551,10 +527,9 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
   }
 };
 
-CudaSparseLevenbergMarquardtOptimizer::
-    CudaSparseLevenbergMarquardtOptimizer(
-        const NonlinearFactorGraph& graph, const Values& initialValues,
-        const CudaSparseLevenbergMarquardtParams& params)
+CudaSparseLevenbergMarquardtOptimizer::CudaSparseLevenbergMarquardtOptimizer(
+    const NonlinearFactorGraph& graph, const Values& initialValues,
+    const CudaSparseLevenbergMarquardtParams& params)
     : impl_(std::make_unique<Impl>(graph, initialValues, params)) {}
 
 CudaSparseLevenbergMarquardtOptimizer::

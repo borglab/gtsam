@@ -1,8 +1,7 @@
 #pragma once
 
-#include <gtsam/base/cuda/CudaErrors.h>
-
 #include <cuda_runtime_api.h>
+#include <gtsam/base/cuda/CudaErrors.h>
 
 #include <algorithm>
 #include <cstddef>

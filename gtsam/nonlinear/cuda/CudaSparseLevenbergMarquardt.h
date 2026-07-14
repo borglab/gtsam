@@ -20,6 +20,11 @@ class GTSAM_EXPORT CudaSparseLevenbergMarquardtParams
  public:
   using OptimizerType = CudaSparseLevenbergMarquardtOptimizer;
 
+  // The CUDA path honors LM damping, trust-region, termination, error,
+  // iteration-hook, and attempt-trace controls. CPU ordering/linear-solver
+  // selection, verbosity, and CSV logging apply only if execution falls back
+  // to ordinary CPU LM; cuDSS chooses the CUDA sparse ordering internally.
+
   bool fallbackOnUnsupported = true;
   bool collectTiming = true;
   bool collectAttemptTrace = false;
@@ -60,12 +65,8 @@ struct CudaSparseLmTransferCounts {
   size_t setupD2hBytes = 0;
   size_t attemptD2hBytes = 0;
 
-  size_t totalH2dBytes() const {
-    return patternH2dBytes + numericH2dBytes;
-  }
-  size_t totalD2hBytes() const {
-    return setupD2hBytes + attemptD2hBytes;
-  }
+  size_t totalH2dBytes() const { return patternH2dBytes + numericH2dBytes; }
+  size_t totalD2hBytes() const { return setupD2hBytes + attemptD2hBytes; }
 };
 
 /**
@@ -133,8 +134,7 @@ struct CudaSparseLevenbergMarquardtResult {
   // values() and finalError describe the complete CPU solve restarted from
   // the original initial values.
   CudaSparseLmBackend backend = CudaSparseLmBackend::Cuda;
-  CudaSparseLmFallbackReason fallbackReason =
-      CudaSparseLmFallbackReason::None;
+  CudaSparseLmFallbackReason fallbackReason = CudaSparseLmFallbackReason::None;
   DirectJacobianStatus fallbackStatus;
   std::string fallbackDetail;
   CudaSparseLmTerminationReason termination =

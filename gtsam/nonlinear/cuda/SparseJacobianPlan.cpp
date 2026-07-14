@@ -23,8 +23,7 @@ int CheckedSizeToInt(size_t value, const char* description) {
 }
 
 int CheckedAdd(int left, int right, const char* description) {
-  if (left < 0 || right < 0 ||
-      right > std::numeric_limits<int>::max() - left) {
+  if (left < 0 || right < 0 || right > std::numeric_limits<int>::max() - left) {
     throw std::invalid_argument(std::string(description) +
                                 " exceeds signed int capacity");
   }
@@ -116,9 +115,8 @@ uint64_t ComputeStoredFingerprint(
   return hash.value();
 }
 
-uint64_t ComputeGraphFingerprint(
-    const NonlinearFactorGraph& graph,
-    const SparseJacobianColumnLayout& columns) {
+uint64_t ComputeGraphFingerprint(const NonlinearFactorGraph& graph,
+                                 const SparseJacobianColumnLayout& columns) {
   Fnv1a64 hash;
   AppendColumns(&hash, columns.blocks());
   hash.appendSize(graph.size());
@@ -136,8 +134,7 @@ uint64_t ComputeGraphFingerprint(
     hash.appendInt(CheckedSizeToInt(factor->dim(), "factor row count"));
     hash.appendSize(factor->keys().size());
     for (Key key : factor->keys()) {
-      const SparseJacobianColumnBlock& column =
-          FindColumnOrThrow(columns, key);
+      const SparseJacobianColumnBlock& column = FindColumnOrThrow(columns, key);
       hash.appendUint64(static_cast<uint64_t>(key));
       hash.appendInt(column.dimension);
     }
@@ -146,9 +143,8 @@ uint64_t ComputeGraphFingerprint(
   return hash.value();
 }
 
-bool SameColumnBlocks(
-    const std::vector<SparseJacobianColumnBlock>& expected,
-    const std::vector<SparseJacobianColumnBlock>& actual) {
+bool SameColumnBlocks(const std::vector<SparseJacobianColumnBlock>& expected,
+                      const std::vector<SparseJacobianColumnBlock>& actual) {
   if (expected.size() != actual.size()) {
     return false;
   }
@@ -179,9 +175,8 @@ SparseJacobianColumnLayout::SparseJacobianColumnLayout(const Values& values) {
     const size_t blockIndex = blocks_.size();
     const auto insertion = keyToBlock_.emplace(key, blockIndex);
     if (!insertion.second) {
-      throw std::invalid_argument(
-          "SparseJacobianColumnLayout duplicate key " +
-          DefaultKeyFormatter(key));
+      throw std::invalid_argument("SparseJacobianColumnLayout duplicate key " +
+                                  DefaultKeyFormatter(key));
     }
 
     blocks_.push_back({key, dimension, totalColumns_});
@@ -242,9 +237,8 @@ VectorValues SparseJacobianColumnLayout::toVectorValues(
 
   VectorValues result;
   for (const SparseJacobianColumnBlock& block : blocks_) {
-    result.insert(
-        block.key,
-        Vector(flatDelta.segment(block.columnBegin, block.dimension)));
+    result.insert(block.key, Vector(flatDelta.segment(block.columnBegin,
+                                                      block.dimension)));
   }
   return result;
 }
@@ -268,29 +262,27 @@ SparseJacobianPlan::SparseJacobianPlan(
       continue;
     }
 
-    factorPlan.rowCount =
-        CheckedSizeToInt(factor->dim(), "factor row count");
+    factorPlan.rowCount = CheckedSizeToInt(factor->dim(), "factor row count");
     factorPlan.sendable = factor->sendable();
     const int nextRow =
         CheckedAdd(rows_, factorPlan.rowCount, "total row count");
 
     std::set<Key> seenKeys;
     factorPlan.blocks.reserve(factor->keys().size());
-    for (size_t localBlockIndex = 0;
-         localBlockIndex < factor->keys().size(); ++localBlockIndex) {
+    for (size_t localBlockIndex = 0; localBlockIndex < factor->keys().size();
+         ++localBlockIndex) {
       const Key key = factor->keys()[localBlockIndex];
       if (!seenKeys.insert(key).second) {
         throw std::invalid_argument("SparseJacobianPlan repeated factor key " +
                                     DefaultKeyFormatter(key));
       }
 
-      const SparseJacobianColumnBlock& column =
-          FindColumnOrThrow(columns, key);
-      factorPlan.nonzerosPerRow = CheckedAdd(
-          factorPlan.nonzerosPerRow, column.dimension,
-          "factor nonzeros per row");
-      factorPlan.blocks.push_back({key, localBlockIndex, column.dimension,
-                                   column.columnBegin, 0});
+      const SparseJacobianColumnBlock& column = FindColumnOrThrow(columns, key);
+      factorPlan.nonzerosPerRow =
+          CheckedAdd(factorPlan.nonzerosPerRow, column.dimension,
+                     "factor nonzeros per row");
+      factorPlan.blocks.push_back(
+          {key, localBlockIndex, column.dimension, column.columnBegin, 0});
     }
 
     std::vector<size_t> sortedBlockIndices(factorPlan.blocks.size());
@@ -307,18 +299,15 @@ SparseJacobianPlan::SparseJacobianPlan(
     for (size_t blockIndex : sortedBlockIndices) {
       SparseJacobianBlockWritePlan& block = factorPlan.blocks[blockIndex];
       block.valueOffsetWithinRow = valueOffset;
-      valueOffset = CheckedAdd(valueOffset, block.width,
-                               "factor value offset");
+      valueOffset = CheckedAdd(valueOffset, block.width, "factor value offset");
       for (int localColumn = 0; localColumn < block.width; ++localColumn) {
-        scalarColumns.push_back(CheckedAdd(block.globalColumnBegin,
-                                           localColumn,
+        scalarColumns.push_back(CheckedAdd(block.globalColumnBegin, localColumn,
                                            "global scalar column"));
       }
     }
 
-    const int factorNonzeros =
-        CheckedMultiply(factorPlan.rowCount, factorPlan.nonzerosPerRow,
-                        "factor nonzero count");
+    const int factorNonzeros = CheckedMultiply(
+        factorPlan.rowCount, factorPlan.nonzerosPerRow, "factor nonzero count");
     CheckedAdd(rowPointers_.back(), factorNonzeros, "total nonzero count");
     for (int localRow = 0; localRow < factorPlan.rowCount; ++localRow) {
       columnIndices_.insert(columnIndices_.end(), scalarColumns.begin(),
@@ -331,9 +320,8 @@ SparseJacobianPlan::SparseJacobianPlan(
     if (factorPlan.rowCount > 0) {
       for (const SparseJacobianBlockWritePlan& block : factorPlan.blocks) {
         for (int localColumn = 0; localColumn < block.width; ++localColumn) {
-          const int globalColumn =
-              CheckedAdd(block.globalColumnBegin, localColumn,
-                         "covered scalar column");
+          const int globalColumn = CheckedAdd(
+              block.globalColumnBegin, localColumn, "covered scalar column");
           coveredColumns.at(static_cast<size_t>(globalColumn)) = true;
         }
       }
@@ -345,8 +333,8 @@ SparseJacobianPlan::SparseJacobianPlan(
 
   for (const SparseJacobianColumnBlock& block : columnBlocks_) {
     for (int localColumn = 0; localColumn < block.dimension; ++localColumn) {
-      const int globalColumn = CheckedAdd(
-          block.columnBegin, localColumn, "covered scalar column");
+      const int globalColumn =
+          CheckedAdd(block.columnBegin, localColumn, "covered scalar column");
       if (!coveredColumns.at(static_cast<size_t>(globalColumn))) {
         throw std::invalid_argument("SparseJacobianPlan uncovered key " +
                                     DefaultKeyFormatter(block.key));
@@ -418,16 +406,15 @@ bool SparseJacobianPlan::matches(
         continue;
       }
 
-      const int rowCount =
-          CheckedSizeToInt(factor->dim(), "factor row count");
+      const int rowCount = CheckedSizeToInt(factor->dim(), "factor row count");
       if (rowCount != expected.rowCount ||
           factor->sendable() != expected.sendable ||
           factor->keys().size() != expected.blocks.size()) {
         return false;
       }
 
-      for (size_t localBlockIndex = 0;
-           localBlockIndex < factor->keys().size(); ++localBlockIndex) {
+      for (size_t localBlockIndex = 0; localBlockIndex < factor->keys().size();
+           ++localBlockIndex) {
         const Key key = factor->keys()[localBlockIndex];
         const SparseJacobianBlockWritePlan& expectedBlock =
             expected.blocks[localBlockIndex];

@@ -149,8 +149,7 @@ void ValidateSystemForSolve(const DeviceSparseNormalEquations& system,
   if (system.nonzeros() <= 0) {
     throw std::invalid_argument("CudssLinearSolver requires non-empty matrix");
   }
-  if (system.rowPointers().size() !=
-      static_cast<size_t>(system.rows()) + 1) {
+  if (system.rowPointers().size() != static_cast<size_t>(system.rows()) + 1) {
     throw std::invalid_argument("CudssLinearSolver row pointer size mismatch");
   }
   if (system.colIndices().size() != static_cast<size_t>(system.nonzeros())) {
@@ -209,8 +208,7 @@ struct CudssSpdSolver::Impl {
   Impl() : data(handle.value) {}
 
   void analyze(const DeviceSparseNormalEquations& system,
-               CudaDeviceArray<double>* solutionArray,
-               cudaStream_t stream) {
+               CudaDeviceArray<double>* solutionArray, cudaStream_t stream) {
     ValidateSystemForSolve(system, solutionArray);
 
     rows = system.rows();
@@ -224,17 +222,17 @@ struct CudssSpdSolver::Impl {
     b.reset();
 
     CheckCudss(CreateSpdCsrMatrix(&matrix, system), "cudssMatrixCreateCsr");
-    GTSAM_CUDSS_CHECK(cudssMatrixCreateDn(
-        &x.value, rows, 1, rows, solutionArray->data(), CUDSS_R_64F,
-        CUDSS_LAYOUT_COL_MAJOR));
-    GTSAM_CUDSS_CHECK(cudssMatrixCreateDn(
-        &b.value, rows, 1, rows, system.rhs().data(), CUDSS_R_64F,
-        CUDSS_LAYOUT_COL_MAJOR));
+    GTSAM_CUDSS_CHECK(cudssMatrixCreateDn(&x.value, rows, 1, rows,
+                                          solutionArray->data(), CUDSS_R_64F,
+                                          CUDSS_LAYOUT_COL_MAJOR));
+    GTSAM_CUDSS_CHECK(cudssMatrixCreateDn(&b.value, rows, 1, rows,
+                                          system.rhs().data(), CUDSS_R_64F,
+                                          CUDSS_LAYOUT_COL_MAJOR));
 
-    CheckCudssExecute(cudssExecute(handle.value, CUDSS_PHASE_ANALYSIS,
-                                   config.value, data.value, matrix.value,
-                                   x.value, b.value),
-                      CUDSS_PHASE_ANALYSIS);
+    CheckCudssExecute(
+        cudssExecute(handle.value, CUDSS_PHASE_ANALYSIS, config.value,
+                     data.value, matrix.value, x.value, b.value),
+        CUDSS_PHASE_ANALYSIS);
 
     rowPointers = system.rowPointers().data();
     colIndices = system.colIndices().data();
@@ -245,8 +243,8 @@ struct CudssSpdSolver::Impl {
   }
 
   void solve(const DeviceSparseNormalEquations& system,
-             CudaDeviceArray<double>* solutionArray,
-             cudaStream_t stream, CudssSpdSolveProfile* profile) {
+             CudaDeviceArray<double>* solutionArray, cudaStream_t stream,
+             CudssSpdSolveProfile* profile) {
     ValidateSystemForSolve(system, solutionArray);
     if (!analyzed) {
       throw std::logic_error("CudssSpdSolver::solve called before analyze");
@@ -266,27 +264,25 @@ struct CudssSpdSolver::Impl {
     }
 
     GTSAM_CUDSS_CHECK(cudssSetStream(handle.value, stream));
-    CheckCudssExecute(cudssExecute(handle.value, CUDSS_PHASE_FACTORIZATION,
-                                   config.value, data.value, matrix.value,
-                                   x.value, b.value),
-                      CUDSS_PHASE_FACTORIZATION);
+    CheckCudssExecute(
+        cudssExecute(handle.value, CUDSS_PHASE_FACTORIZATION, config.value,
+                     data.value, matrix.value, x.value, b.value),
+        CUDSS_PHASE_FACTORIZATION);
 
     int info = 0;
     size_t bytesWritten = 0;
     cudssStatus_t dataInfoStatus;
     if (profile) {
       const auto start = std::chrono::steady_clock::now();
-      dataInfoStatus =
-          cudssDataGet(handle.value, data.value, CUDSS_DATA_INFO, &info,
-                       sizeof(info), &bytesWritten);
+      dataInfoStatus = cudssDataGet(handle.value, data.value, CUDSS_DATA_INFO,
+                                    &info, sizeof(info), &bytesWritten);
       profile->dataInfoBoundaryWall +=
           std::chrono::duration<double>(std::chrono::steady_clock::now() -
                                         start)
               .count();
     } else {
-      dataInfoStatus =
-          cudssDataGet(handle.value, data.value, CUDSS_DATA_INFO, &info,
-                       sizeof(info), &bytesWritten);
+      dataInfoStatus = cudssDataGet(handle.value, data.value, CUDSS_DATA_INFO,
+                                    &info, sizeof(info), &bytesWritten);
     }
     CheckCudss(dataInfoStatus, "cudssDataGet(CUDSS_DATA_INFO)");
     if (bytesWritten != sizeof(info)) {
@@ -300,10 +296,10 @@ struct CudssSpdSolver::Impl {
       throw std::runtime_error(os.str());
     }
 
-    CheckCudssExecute(cudssExecute(handle.value, CUDSS_PHASE_SOLVE,
-                                   config.value, data.value, matrix.value,
-                                   x.value, b.value),
-                      CUDSS_PHASE_SOLVE);
+    CheckCudssExecute(
+        cudssExecute(handle.value, CUDSS_PHASE_SOLVE, config.value, data.value,
+                     matrix.value, x.value, b.value),
+        CUDSS_PHASE_SOLVE);
   }
 #endif
 };
@@ -314,8 +310,7 @@ CudssSpdSolver::~CudssSpdSolver() = default;
 
 CudssSpdSolver::CudssSpdSolver(CudssSpdSolver&&) noexcept = default;
 
-CudssSpdSolver& CudssSpdSolver::operator=(CudssSpdSolver&&) noexcept =
-    default;
+CudssSpdSolver& CudssSpdSolver::operator=(CudssSpdSolver&&) noexcept = default;
 
 void CudssSpdSolver::analyze(const DeviceSparseNormalEquations& system,
                              CudaDeviceArray<double>* solution,
@@ -333,8 +328,13 @@ void CudssSpdSolver::analyze(const DeviceSparseNormalEquations& system,
 
 void CudssSpdSolver::solve(const DeviceSparseNormalEquations& system,
                            CudaDeviceArray<double>* solution,
-                           cudaStream_t stream,
-                           CudssSpdSolveProfile* profile) {
+                           cudaStream_t stream) {
+  solve(system, solution, stream, nullptr);
+}
+
+void CudssSpdSolver::solve(const DeviceSparseNormalEquations& system,
+                           CudaDeviceArray<double>* solution,
+                           cudaStream_t stream, CudssSpdSolveProfile* profile) {
 #if !GTSAM_ENABLE_CUDSS
   (void)system;
   (void)solution;

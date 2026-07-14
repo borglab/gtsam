@@ -22,14 +22,16 @@ class DeviceSparseNormalEquations {
       throw std::invalid_argument("DeviceSparseNormalEquations rows < 0");
     }
     if (rowPointers.size() != static_cast<size_t>(rows) + 1) {
-      throw std::invalid_argument("DeviceSparseNormalEquations bad rowPointers");
+      throw std::invalid_argument(
+          "DeviceSparseNormalEquations bad rowPointers");
     }
     if (colIndices.size() >
         static_cast<size_t>(std::numeric_limits<int>::max())) {
       throw std::invalid_argument("DeviceSparseNormalEquations too many nnz");
     }
     if (!rowPointers.empty() && rowPointers.front() != 0) {
-      throw std::invalid_argument("DeviceSparseNormalEquations bad rowPointers");
+      throw std::invalid_argument(
+          "DeviceSparseNormalEquations bad rowPointers");
     }
     for (size_t i = 1; i < rowPointers.size(); ++i) {
       if (rowPointers[i] < rowPointers[i - 1]) {
@@ -76,23 +78,21 @@ class DeviceSparseNormalEquations {
         newRhs.resize(rows);
         GTSAM_CUDA_CHECK(cudaEventRecord(copyBeginEvent, stream));
         if (!rowPointers.empty()) {
-          GTSAM_CUDA_CHECK(cudaMemcpyAsync(
-              newRowPointers.data(), rowPointers.data(),
-              sizeof(int) * rowPointers.size(), cudaMemcpyHostToDevice,
-              stream));
+          GTSAM_CUDA_CHECK(cudaMemcpyAsync(newRowPointers.data(),
+                                           rowPointers.data(),
+                                           sizeof(int) * rowPointers.size(),
+                                           cudaMemcpyHostToDevice, stream));
         }
         if (!colIndices.empty()) {
           GTSAM_CUDA_CHECK(cudaMemcpyAsync(
               newColIndices.data(), colIndices.data(),
-              sizeof(int) * colIndices.size(), cudaMemcpyHostToDevice,
-              stream));
+              sizeof(int) * colIndices.size(), cudaMemcpyHostToDevice, stream));
         }
         GTSAM_CUDA_CHECK(cudaEventRecord(copyEndEvent, stream));
       } else if (transferProfile) {
         transferProfile->add(
             newRowPointers.uploadProfiled(rowPointers, stream));
-        transferProfile->add(
-            newColIndices.uploadProfiled(colIndices, stream));
+        transferProfile->add(newColIndices.uploadProfiled(colIndices, stream));
       } else {
         newRowPointers.upload(rowPointers, stream);
         newColIndices.upload(colIndices, stream);

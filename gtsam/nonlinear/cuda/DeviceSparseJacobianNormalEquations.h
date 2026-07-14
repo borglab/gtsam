@@ -1,12 +1,11 @@
 #pragma once
 
+#include <cuda_runtime_api.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/dllexport.h>
 #include <gtsam/nonlinear/cuda/DeviceSparseNormalEquations.h>
 #include <gtsam/nonlinear/cuda/HostSparseJacobian.h>
 #include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
-
-#include <cuda_runtime_api.h>
 
 #include <cstddef>
 #include <memory>
@@ -74,12 +73,8 @@ struct DeviceSparseJacobianProfile {
   size_t setupD2hBytes = 0;
   size_t attemptD2hBytes = 0;
 
-  size_t totalH2dBytes() const {
-    return patternH2dBytes + numericH2dBytes;
-  }
-  size_t totalD2hBytes() const {
-    return setupD2hBytes + attemptD2hBytes;
-  }
+  size_t totalH2dBytes() const { return patternH2dBytes + numericH2dBytes; }
+  size_t totalD2hBytes() const { return setupD2hBytes + attemptD2hBytes; }
 };
 
 class GTSAM_EXPORT DeviceSparseJacobianNormalEquations {
@@ -100,8 +95,7 @@ class GTSAM_EXPORT DeviceSparseJacobianNormalEquations {
 
   // The borrowed fixed stream must outlive this object; destruction waits for
   // it before releasing descriptors, workspaces, and device allocations.
-  void initialize(const SparseJacobianPlan& plan,
-                  cudaStream_t stream = nullptr,
+  void initialize(const SparseJacobianPlan& plan, cudaStream_t stream = nullptr,
                   bool collectProfile = false);
   // This upload is asynchronous. The pinned host storage must remain alive
   // and unmodified until the fixed stream reaches the queued copies.

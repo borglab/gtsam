@@ -1,3 +1,4 @@
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/cuda/CudaContext.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/inference/Symbol.h>
@@ -11,10 +12,8 @@
 #include <gtsam/nonlinear/cuda/HostSparseJacobian.h>
 #include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
 
-#include <CppUnitLite/TestHarness.h>
-
-#include <cstdint>
 #include <cmath>
+#include <cstdint>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -67,11 +66,9 @@ bool AllDeviceProfileTimingsAreZero(
          profile.structureSetup == 0.0 && profile.setupD2h == 0.0 &&
          profile.numericH2d == 0.0 && profile.transposeUpdate == 0.0 &&
          profile.normalJtJ == 0.0 && profile.normalJtb == 0.0 &&
-         profile.diagonalExtraction == 0.0 &&
-         profile.oldModelError == 0.0 &&
+         profile.diagonalExtraction == 0.0 && profile.oldModelError == 0.0 &&
          profile.dampingPreparation == 0.0 &&
-         profile.dampingApplication == 0.0 &&
-         profile.cudssAnalysis == 0.0 &&
+         profile.dampingApplication == 0.0 && profile.cudssAnalysis == 0.0 &&
          profile.cudssFactorAndSolve == 0.0 &&
          profile.cudssDataInfoBoundaryWall == 0.0 &&
          profile.newModelError == 0.0 && profile.attemptD2h == 0.0 &&
@@ -92,8 +89,8 @@ ProfiledDeviceRun RunProfiledDevicePipeline(bool collectProfile) {
   Values values;
   values.insert(kProfileKey, Point2(0.0, 0.0));
   NonlinearFactorGraph graph;
-  graph.emplace_shared<PriorFactor<Point2>>(
-      kProfileKey, Point2(0.0, 0.0), noiseModel::Unit::Create(2));
+  graph.emplace_shared<PriorFactor<Point2>>(kProfileKey, Point2(0.0, 0.0),
+                                            noiseModel::Unit::Create(2));
   const SparseJacobianColumnLayout columns(values);
   const SparseJacobianPlan plan(graph, columns);
   HostSparseJacobian host(plan);
@@ -126,9 +123,8 @@ ProfiledDeviceRun RunProfiledDevicePipeline(bool collectProfile) {
   ProfiledDeviceRun run;
   run.profile = device.profile();
   run.expectedPatternH2dBytes =
-      sizeof(int) *
-      (static_cast<size_t>(plan.rows() + 1 + plan.nonzeros()) +
-       static_cast<size_t>(hRows + 1 + hNonzeros + hRows));
+      sizeof(int) * (static_cast<size_t>(plan.rows() + 1 + plan.nonzeros()) +
+                     static_cast<size_t>(hRows + 1 + hNonzeros + hRows));
   run.expectedNumericH2dBytes =
       sizeof(double) * static_cast<size_t>(plan.nonzeros() + plan.rows());
   run.expectedSetupD2hBytes =
@@ -217,8 +213,7 @@ TEST(DeviceValues, AddsAndDownloadsTypedBlock) {
 TEST(DeviceValues, AddsUninitializedTypedBlock) {
   DeviceValues values;
 
-  std::vector<Key> keys = {Symbol('t', 0), Symbol('t', 1),
-                           Symbol('t', 2)};
+  std::vector<Key> keys = {Symbol('t', 0), Symbol('t', 1), Symbol('t', 2)};
   DeviceValueBlock<TinyValue>& block =
       values.addUninitializedBlock<TinyValue>(kTinyType, 2, keys);
 
@@ -263,10 +258,9 @@ TEST(DeviceSparseNormalEquations, UploadsCsrPatternAndRhs) {
 TEST(DeviceSparseNormalEquations, ClearsValuesAndRhs) {
   CudaContext context;
   DeviceSparseNormalEquations system;
-  system.uploadPattern(2, std::vector<int>{0, 2, 3},
-                       std::vector<int>{0, 1, 1}, context.stream());
-  system.values().upload(std::vector<double>{1.0, 2.0, 3.0},
-                         context.stream());
+  system.uploadPattern(2, std::vector<int>{0, 2, 3}, std::vector<int>{0, 1, 1},
+                       context.stream());
+  system.values().upload(std::vector<double>{1.0, 2.0, 3.0}, context.stream());
   system.rhs().upload(std::vector<double>{4.0, 5.0}, context.stream());
 
   system.zero(context.stream());
@@ -289,10 +283,9 @@ TEST(DeviceSparseNormalEquations, ClearsValuesAndRhs) {
 TEST(DeviceSparseNormalEquations, AddsDiagonalDamping) {
   CudaContext context;
   DeviceSparseNormalEquations system;
-  system.uploadPattern(2, std::vector<int>{0, 2, 3},
-                       std::vector<int>{0, 1, 1}, context.stream());
-  system.values().upload(std::vector<double>{2.0, 0.5, 3.0},
-                         context.stream());
+  system.uploadPattern(2, std::vector<int>{0, 2, 3}, std::vector<int>{0, 1, 1},
+                       context.stream());
+  system.values().upload(std::vector<double>{2.0, 0.5, 3.0}, context.stream());
 
   system.addDiagonalDamping(0.25, context.stream());
 
@@ -308,8 +301,8 @@ TEST(DeviceSparseNormalEquations, AddsDiagonalDamping) {
 TEST(DeviceSparseNormalEquations, RejectsDampingWithoutDiagonal) {
   CudaContext context;
   DeviceSparseNormalEquations system;
-  system.uploadPattern(2, std::vector<int>{0, 1, 2},
-                       std::vector<int>{1, 1}, context.stream());
+  system.uploadPattern(2, std::vector<int>{0, 1, 2}, std::vector<int>{1, 1},
+                       context.stream());
   system.values().upload(std::vector<double>{0.5, 3.0}, context.stream());
 
   CHECK_EXCEPTION(system.addDiagonalDamping(0.25, context.stream()),
@@ -400,10 +393,9 @@ TEST(DeviceSparseJacobianProfile, DisabledTimingStillAccountsExactBytes) {
 TEST(CudssLinearSolver, SolvesSmallSpdSystem) {
   CudaContext context;
   DeviceSparseNormalEquations system;
-  system.uploadPattern(2, std::vector<int>{0, 2, 3},
-                       std::vector<int>{0, 1, 1}, context.stream());
-  system.values().upload(std::vector<double>{4.0, 1.0, 3.0},
-                         context.stream());
+  system.uploadPattern(2, std::vector<int>{0, 2, 3}, std::vector<int>{0, 1, 1},
+                       context.stream());
+  system.values().upload(std::vector<double>{4.0, 1.0, 3.0}, context.stream());
   system.rhs().upload(std::vector<double>{1.0, 2.0}, context.stream());
 
   CudaDeviceArray<double> solution;
@@ -421,10 +413,9 @@ TEST(CudssLinearSolver, SolvesSmallSpdSystem) {
 TEST(CudssSpdSolver, ReusesAnalysisForChangedValues) {
   CudaContext context;
   DeviceSparseNormalEquations system;
-  system.uploadPattern(2, std::vector<int>{0, 2, 3},
-                       std::vector<int>{0, 1, 1}, context.stream());
-  system.values().upload(std::vector<double>{4.0, 1.0, 3.0},
-                         context.stream());
+  system.uploadPattern(2, std::vector<int>{0, 2, 3}, std::vector<int>{0, 1, 1},
+                       context.stream());
+  system.values().upload(std::vector<double>{4.0, 1.0, 3.0}, context.stream());
   system.rhs().upload(std::vector<double>{1.0, 2.0}, context.stream());
 
   CudaDeviceArray<double> solution;
@@ -438,8 +429,7 @@ TEST(CudssSpdSolver, ReusesAnalysisForChangedValues) {
   DOUBLES_EQUAL(1.0 / 11.0, actual[0], 1e-10);
   DOUBLES_EQUAL(7.0 / 11.0, actual[1], 1e-10);
 
-  system.values().upload(std::vector<double>{2.0, 0.5, 1.5},
-                         context.stream());
+  system.values().upload(std::vector<double>{2.0, 0.5, 1.5}, context.stream());
   system.rhs().upload(std::vector<double>{1.0, 0.0}, context.stream());
   solver.solve(system, &solution, context.stream());
 
@@ -452,10 +442,9 @@ TEST(CudssSpdSolver, ReusesAnalysisForChangedValues) {
 TEST(CudssSpdSolver, SurfacesIndefiniteFactorizationInfo) {
   CudaContext context;
   DeviceSparseNormalEquations system;
-  system.uploadPattern(2, std::vector<int>{0, 2, 3},
-                       std::vector<int>{0, 1, 1}, context.stream());
-  system.values().upload(std::vector<double>{1.0, 2.0, 1.0},
-                         context.stream());
+  system.uploadPattern(2, std::vector<int>{0, 2, 3}, std::vector<int>{0, 1, 1},
+                       context.stream());
+  system.values().upload(std::vector<double>{1.0, 2.0, 1.0}, context.stream());
   system.rhs().upload(std::vector<double>{1.0, 1.0}, context.stream());
 
   CudaDeviceArray<double> solution;
