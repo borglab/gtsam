@@ -131,9 +131,7 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
   /// D=1 constrained-noise prior in lifted vector form.
   /// The stored measurement is vecM_ = vec(M), where M is the matrix passed to
   /// the FrobeniusPrior constructor. The lifted variable for the current value
-  /// is x = [1, vec(R)]^T, where R is the matrix represented by this key. The
-  /// matrix B = [-vecM_, I] therefore gives B*x = vec(R) - vec(M). A hard prior
-  /// asks for that residual to be zero, so we add the linear equality B*x = 0.
+  /// is x = [1, vec(R)]^T, where R is the matrix represented by this key.
   void qcqpFactorsForVec(NonlinearFactorGraph* costs,
                          NonlinearEqualityConstraints* constraints) const {
     if constexpr (!internal::HasQcqpVariableTraits<T, 1>::value) {
