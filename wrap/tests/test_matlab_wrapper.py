@@ -256,6 +256,8 @@ class TestWrap(unittest.TestCase):
             'MyTemplatePoint2.m',
             'ForwardKinematicsFactor.m',
             'ParentHasTemplateDouble.m',
+            'Base.m',
+            'Derived.m',
         ]
 
         for file in files:

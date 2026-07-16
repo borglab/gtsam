@@ -27,6 +27,8 @@
 #endif
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Event.h>
 #include <gtsam/geometry/Gal3.h>

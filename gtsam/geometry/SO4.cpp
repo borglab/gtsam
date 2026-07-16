@@ -16,13 +16,14 @@
  * @author  Luca Carlone
  */
 
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/concepts.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/geometry/SO4.h>
 #include <gtsam/geometry/Unit3.h>
 
 #include <Eigen/Eigenvalues>
-
 #include <algorithm>
 #include <cmath>
 #include <iostream>

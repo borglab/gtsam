@@ -272,5 +272,69 @@ class TestTriangulationExample(GtsamTestCase):
         self.assertTrue(actual.outlier())
 
 
+    def test_batch_complete_tracks(self) -> None:
+        """Batch triangulateSafe with all cameras seeing all tracks."""
+        K = Cal3_S2(1500, 1200, 0, 640, 480)
+        camera1 = PinholeCameraCal3_S2(self.poses[0], K)
+        camera2 = PinholeCameraCal3_S2(self.poses[1], K)
+
+        cameras = CameraSetCal3_S2()
+        cameras.append(camera1)
+        cameras.append(camera2)
+
+        landmark2 = Point3(3, -1, 0.8)
+
+        tracks = [
+            {0: camera1.project(self.landmark), 1: camera2.project(self.landmark)},
+            {0: camera1.project(landmark2),     1: camera2.project(landmark2)},
+        ]
+
+        params = TriangulationParameters(1.0, False, 10.0)
+        results = gtsam.triangulateSafe(cameras, tracks, params)
+
+        self.assertEqual(len(results), 2)
+        self.assertTrue(results[0].valid())
+        self.gtsamAssertEquals(results[0].get(), self.landmark, 1e-9)
+        self.assertTrue(results[1].valid())
+        self.gtsamAssertEquals(results[1].get(), landmark2, 1e-9)
+
+    def test_batch_incomplete_tracks(self) -> None:
+        """Batch triangulateSafe with incomplete tracks (not all cameras see every point)."""
+        K = Cal3_S2(1500, 1200, 0, 640, 480)
+        pose3 = self.poses[0].compose(Pose3(Rot3(), Point3(0, 1, 0)))
+
+        camera1 = PinholeCameraCal3_S2(self.poses[0], K)
+        camera2 = PinholeCameraCal3_S2(self.poses[1], K)
+        camera3 = PinholeCameraCal3_S2(pose3, K)
+
+        cameras = CameraSetCal3_S2()
+        cameras.append(camera1)   # index 0
+        cameras.append(camera2)   # index 1
+        cameras.append(camera3)   # index 2
+
+        params = TriangulationParameters(1.0, False, 10.0)
+
+        tracks = [
+            # complete: all 3 cameras
+            {0: camera1.project(self.landmark),
+             1: camera2.project(self.landmark),
+             2: camera3.project(self.landmark)},
+            # incomplete: camera 3 (index 2) missing — still valid with 2 cameras
+            {0: camera1.project(self.landmark),
+             1: camera2.project(self.landmark)},
+            # degenerate: only 1 camera — cannot triangulate
+            {0: camera1.project(self.landmark)},
+        ]
+
+        results = gtsam.triangulateSafe(cameras, tracks, params)
+
+        self.assertEqual(len(results), 3)
+        self.assertTrue(results[0].valid())
+        self.gtsamAssertEquals(results[0].get(), self.landmark, 1e-9)
+        self.assertTrue(results[1].valid())
+        self.gtsamAssertEquals(results[1].get(), self.landmark, 1e-9)
+        self.assertTrue(results[2].degenerate())
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -19,7 +19,6 @@
 #include <gtsam/geometry/CameraSet.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;

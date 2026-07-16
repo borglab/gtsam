@@ -20,7 +20,9 @@
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam_unstable/linear/LinearEquality.h>

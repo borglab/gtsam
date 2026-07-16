@@ -13,19 +13,19 @@
  * @date    April 29, 2025
  */
 
-#include <gtsam/geometry/Gal3.h>
-
-#include <gtsam/base/numericalDerivative.h>
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
-#include <gtsam/base/testLie.h> // For CHECK_LIE_GROUP_DERIVATIVES, etc.
-#include <gtsam/geometry/Rot3.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/base/testLie.h>  // For CHECK_LIE_GROUP_DERIVATIVES, etc.
+#include <gtsam/geometry/Gal3.h>
 #include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/Pose3.h> // Included for kTestPose definition
+#include <gtsam/geometry/Pose3.h>  // Included for kTestPose definition
+#include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Unit3.h>
 
-#include <CppUnitLite/TestHarness.h>
+#include <functional>  // For std::bind if using numerical derivatives
 #include <vector>
-#include <functional> // For std::bind if using numerical derivatives
 
 using namespace std;
 using namespace gtsam;

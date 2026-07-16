@@ -19,6 +19,7 @@
 #include <gtsam/base/FastMap.h>
 #include <gtsam/config.h>
 #include <gtsam/inference/Key.h>
+#include <gtsam/linear/BatchJacobianFactor.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianFactor.h>
@@ -99,11 +100,28 @@ PrecomputeScratch precomputeFromGraph(const GaussianFactorGraph& graph) {
   for (size_t i = 0; i < graph.size(); ++i) {
     const auto& factor = graph[i];
     if (!factor) continue;
-    if (!factor->isJacobian()) {
-      throw MultifrontalSolverNotSupported(
-          "only JacobianFactor inputs are supported");
+
+    auto jacobianFactor = std::dynamic_pointer_cast<JacobianFactor>(factor);
+    if (!jacobianFactor) {
+      auto batchFactor =
+          std::dynamic_pointer_cast<BatchJacobianFactorBase>(factor);
+      if (!batchFactor) {
+        throw MultifrontalSolverNotSupported(
+            "only JacobianFactor or BatchJacobianFactor inputs are supported");
+      }
+      if (auto model = batchFactor->get_model()) {
+        if (model->isConstrained()) {
+          throw MultifrontalSolverNotSupported(
+              "constrained BatchJacobianFactor inputs are not supported");
+        }
+      }
+      out.rowCounts[i] = batchFactor->rows();
+      for (auto it = batchFactor->begin(); it != batchFactor->end(); ++it) {
+        out.dims[*it] = static_cast<size_t>(batchFactor->getDim(it));
+      }
+      continue;
     }
-    auto jacobianFactor = std::static_pointer_cast<JacobianFactor>(factor);
+
     out.rowCounts[i] = jacobianFactor->rows();
     for (auto it = jacobianFactor->begin(); it != jacobianFactor->end(); ++it) {
       out.dims[*it] = jacobianFactor->getDim(it);
@@ -528,13 +546,13 @@ MultifrontalSolver::MultifrontalSolver(PrecomputedData data,
     for (const auto& rootCluster : data.indexedJunctionTree.roots()) {
       mergeSmallClusters(rootCluster, dims_, params_.mergeDimCap);
     }
-    reportStructure(data.indexedJunctionTree, dims_, "Clique structure after merge",
-                    params_.reportStream);
+    reportStructure(data.indexedJunctionTree, dims_,
+                    "Clique structure after merge", params_.reportStream);
   }
 
   // Build the actual MultifrontalClique structure.
-  CliqueBuilder builder{dims_, &solution_, &cliques_, &fixedKeys_, &params_,
-                        &data.rowCounts};
+  CliqueBuilder builder{dims_,       &solution_, &cliques_,
+                        &fixedKeys_, &params_,   &data.rowCounts};
   for (const auto& rootCluster : data.indexedJunctionTree.roots()) {
     if (rootCluster) {
       roots_.push_back(

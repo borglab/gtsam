@@ -22,7 +22,9 @@
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam_unstable/linear/QPSolver.h>
 

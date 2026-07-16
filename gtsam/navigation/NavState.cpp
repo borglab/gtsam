@@ -16,8 +16,9 @@
  * @date    July 2015
  **/
 
-#include <gtsam/navigation/NavState.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/Kernel.h>
+#include <gtsam/navigation/NavState.h>
 
 #include <string>
 

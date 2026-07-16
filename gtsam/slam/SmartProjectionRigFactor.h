@@ -96,8 +96,6 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
   FastVector<size_t> cameraIds_;
 
  public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   typedef CAMERA Camera;
   typedef CameraSet<CAMERA> Cameras;
 
@@ -239,7 +237,7 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
           values.at<Pose3>(nonUniqueKeys_[i])  // = world_P_body
           * camera_i.pose();                   // = body_P_cam_i
       cameras.emplace_back(world_P_sensor_i,
-                           make_shared<typename CAMERA::CalibrationType>(
+                           std::make_shared<typename CAMERA::CalibrationType>(
                                camera_i.calibration()));
     }
     return cameras;
@@ -312,8 +310,8 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
       if (this->params_.degeneracyMode == ZERO_ON_DEGENERACY) {
         for (Matrix& m : Gs) m = Matrix::Zero(DimPose, DimPose);
         for (Vector& v : gs) v = Vector::Zero(DimPose);
-        return std::make_shared<RegularHessianFactor<DimPose> >(this->keys_,
-                                                                  Gs, gs, 0.0);
+        return std::make_shared<RegularHessianFactor<DimPose> >(this->keys_, Gs,
+                                                                gs, 0.0);
       } else {
         throw std::runtime_error(
             "SmartProjectionRigFactor: "

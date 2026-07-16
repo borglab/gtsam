@@ -36,6 +36,11 @@ using CarrierPhaseBase = GnssMeasurementBase;
  *
  * where dt_u, dt_s are in seconds and ambiguity is in meters.
  *
+ * @note The ambiguity is estimated as a *float* (continuous `double`) in the
+ * factor graph; GTSAM never optimizes it as an integer.  This factor yields
+ * the float estimate and covariance; integer ambiguity fixing (e.g. LAMBDA)
+ * is a separate step performed outside the graph.
+ *
  * @ingroup navigation
  */
 class GTSAM_EXPORT CarrierPhaseFactor
@@ -100,7 +105,7 @@ class GTSAM_EXPORT CarrierPhaseFactor
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(CarrierPhaseFactor::Base);
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar& BOOST_SERIALIZATION_NVP(measurement_);
     ar& BOOST_SERIALIZATION_NVP(satPos_);
     ar& BOOST_SERIALIZATION_NVP(satClkBias_);
@@ -111,6 +116,208 @@ class GTSAM_EXPORT CarrierPhaseFactor
 /// traits
 template <>
 struct traits<CarrierPhaseFactor> : public Testable<CarrierPhaseFactor> {};
+
+/**
+ * Undifferenced (raw) PPP carrier phase factor.
+ *
+ * Models a single raw carrier phase (in meters, with the satellite-side SSR
+ * corrections including the phase bias already folded into the measurement) and
+ * carries the receiver clock, zenith wet tropo, slant ionosphere and the
+ * integer ambiguity as state variables:
+ *
+ *   error = geodist(sat, rcv) + c*(dt_u - dt_s)
+ *         + m_w * ZTD_wet - mu_f * I_slant + lambda * N - measuredPhase
+ *
+ * Compared with the pseudorange model, the ionospheric term is *advanced*
+ * (negative sign).  The ambiguity N is in cycles and lambda is the wavelength
+ * [m/cycle], so the integer structure is preserved for ambiguity resolution.
+ * The wet mapping function and iono coefficient are held constant per factor.
+ *
+ * @note The ambiguity N is represented as a continuous `double` (in cycles)
+ * and is estimated as a *float* ambiguity in the factor graph; GTSAM never
+ * optimizes it as an integer.  This factor provides the float estimate and its
+ * covariance.  Integer ambiguity fixing is a separate step performed outside
+ * the graph, e.g. with the LAMBDA method, using the float estimate and
+ * covariance.
+ *
+ * Keys: [pos, clock, ztd, slant-iono, ambiguity].
+ *
+ * @ingroup navigation
+ */
+class GTSAM_EXPORT UndifferencedCarrierPhaseFactor
+    : public NoiseModelFactorN<Point3, double, double, double, double>,
+      private CarrierPhaseBase {
+ private:
+  typedef NoiseModelFactorN<Point3, double, double, double, double> Base;
+  double tropoMap_ = 0.0;   ///< Tropospheric wet mapping function (constant).
+  double ionoCoeff_ = 1.0;  ///< Slant-iono coefficient mu_f (constant).
+  double lambda_ = 1.0;     ///< Wavelength [m/cycle] for the ambiguity term.
+
+ public:
+  using Base::evaluateError;
+  typedef std::shared_ptr<UndifferencedCarrierPhaseFactor> shared_ptr;
+  typedef UndifferencedCarrierPhaseFactor This;
+
+  UndifferencedCarrierPhaseFactor() : CarrierPhaseBase{0.0, Point3(0, 0, 0), 0.0} {}
+  virtual ~UndifferencedCarrierPhaseFactor() = default;
+
+  /**
+   * @param receiverPositionKey  Receiver Point3 ECEF position node.
+   * @param receiverClockBiasKey Receiver clock bias node [s].
+   * @param tropoZenithWetKey    Tropospheric zenith wet delay node [m].
+   * @param slantIonoKey         Slant ionospheric delay node (this sat) [m].
+   * @param ambiguityKey         Ambiguity node [cycles].
+   * @param measuredCarrierPhaseMeters SSR-corrected carrier phase [m].
+   * @param satellitePosition    Satellite ECEF position [m].
+   * @param tropoWetMapping      Wet mapping function m_w at predicted elevation.
+   * @param ionoCoefficient      Ionospheric coefficient mu_f (+1 on L1).
+   * @param lambda               Wavelength [m/cycle].
+   * @param satelliteClockBias   Satellite clock bias [s].
+   * @param model                1-D noise model.
+   */
+  UndifferencedCarrierPhaseFactor(
+      Key receiverPositionKey, Key receiverClockBiasKey, Key tropoZenithWetKey,
+      Key slantIonoKey, Key ambiguityKey, double measuredCarrierPhaseMeters,
+      const Point3& satellitePosition, double tropoWetMapping,
+      double ionoCoefficient, double lambda, double satelliteClockBias = 0.0,
+      const SharedNoiseModel& model = noiseModel::Unit::Create(1));
+
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this)));
+  }
+
+  void print(const std::string& s = "", const KeyFormatter& keyFormatter =
+                                            DefaultKeyFormatter) const override;
+  bool equals(const NonlinearFactor& expected,
+              double tol = 1e-9) const override;
+
+  Vector evaluateError(const Point3& receiverPosition,
+                       const double& receiverClockBias,
+                       const double& tropoZenithWet, const double& slantIono,
+                       const double& ambiguity, OptionalMatrixType HreceiverPos,
+                       OptionalMatrixType HreceiverClockBias,
+                       OptionalMatrixType HtropoZenithWet,
+                       OptionalMatrixType HslantIono,
+                       OptionalMatrixType Hambiguity) const override;
+
+  inline double tropoMapping() const { return tropoMap_; }
+  inline double ionoCoefficient() const { return ionoCoeff_; }
+  inline double wavelength() const { return lambda_; }
+
+ private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar& BOOST_SERIALIZATION_NVP(measurement_);
+    ar& BOOST_SERIALIZATION_NVP(satPos_);
+    ar& BOOST_SERIALIZATION_NVP(satClkBias_);
+    ar& BOOST_SERIALIZATION_NVP(tropoMap_);
+    ar& BOOST_SERIALIZATION_NVP(ionoCoeff_);
+    ar& BOOST_SERIALIZATION_NVP(lambda_);
+  }
+#endif
+};
+
+/// traits
+template <>
+struct traits<UndifferencedCarrierPhaseFactor>
+    : public Testable<UndifferencedCarrierPhaseFactor> {};
+
+/**
+ * Undifferenced (raw) PPP carrier phase factor with lever-arm correction.
+ *
+ * Like UndifferencedCarrierPhaseFactor but keys on a body Pose3 with a lever arm to
+ * the antenna and an optional ecef_T_nav transform.
+ * Keys: [pose, clock, ztd, slant-iono, ambiguity].
+ *
+ * @ingroup navigation
+ */
+class GTSAM_EXPORT UndifferencedCarrierPhaseFactorArm
+    : public NoiseModelFactorN<Pose3, double, double, double, double>,
+      private CarrierPhaseBase {
+ private:
+  typedef NoiseModelFactorN<Pose3, double, double, double, double> Base;
+  gnss::LeverArm arm_;
+  double tropoMap_ = 0.0;
+  double ionoCoeff_ = 1.0;
+  double lambda_ = 1.0;
+
+ public:
+  using Base::evaluateError;
+  typedef std::shared_ptr<UndifferencedCarrierPhaseFactorArm> shared_ptr;
+  typedef UndifferencedCarrierPhaseFactorArm This;
+
+  UndifferencedCarrierPhaseFactorArm()
+      : CarrierPhaseBase{0.0, Point3(0, 0, 0), 0.0} {}
+  virtual ~UndifferencedCarrierPhaseFactorArm() = default;
+
+  /// Construct with an ECEF pose key.
+  UndifferencedCarrierPhaseFactorArm(
+      Key poseKey, Key receiverClockBiasKey, Key tropoZenithWetKey,
+      Key slantIonoKey, Key ambiguityKey, double measuredCarrierPhaseMeters,
+      const Point3& satellitePosition, const Point3& leverArm,
+      double tropoWetMapping, double ionoCoefficient, double lambda,
+      double satelliteClockBias = 0.0,
+      const SharedNoiseModel& model = noiseModel::Unit::Create(1));
+
+  /// Construct with a local nav-frame pose key + ecef_T_nav.
+  UndifferencedCarrierPhaseFactorArm(
+      Key poseKey, Key receiverClockBiasKey, Key tropoZenithWetKey,
+      Key slantIonoKey, Key ambiguityKey, double measuredCarrierPhaseMeters,
+      const Point3& satellitePosition, const Point3& leverArm,
+      const Pose3& ecef_T_nav, double tropoWetMapping, double ionoCoefficient,
+      double lambda, double satelliteClockBias = 0.0,
+      const SharedNoiseModel& model = noiseModel::Unit::Create(1));
+
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this)));
+  }
+
+  void print(const std::string& s = "", const KeyFormatter& keyFormatter =
+                                            DefaultKeyFormatter) const override;
+  bool equals(const NonlinearFactor& expected,
+              double tol = 1e-9) const override;
+
+  Vector evaluateError(const Pose3& pose, const double& receiverClockBias,
+                       const double& tropoZenithWet, const double& slantIono,
+                       const double& ambiguity, OptionalMatrixType H_pose,
+                       OptionalMatrixType HreceiverClockBias,
+                       OptionalMatrixType HtropoZenithWet,
+                       OptionalMatrixType HslantIono,
+                       OptionalMatrixType Hambiguity) const override;
+
+  inline const Point3& leverArm() const { return arm_.b; }
+  inline const std::optional<Pose3>& ecefTnav() const { return arm_.ecef_T_nav; }
+  inline double tropoMapping() const { return tropoMap_; }
+  inline double ionoCoefficient() const { return ionoCoeff_; }
+  inline double wavelength() const { return lambda_; }
+
+ private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar& BOOST_SERIALIZATION_NVP(measurement_);
+    ar& BOOST_SERIALIZATION_NVP(satPos_);
+    ar& BOOST_SERIALIZATION_NVP(satClkBias_);
+    ar& boost::serialization::make_nvp("bL_", arm_.b);
+    ar& boost::serialization::make_nvp("ecef_T_nav_", arm_.ecef_T_nav);
+    ar& BOOST_SERIALIZATION_NVP(tropoMap_);
+    ar& BOOST_SERIALIZATION_NVP(ionoCoeff_);
+    ar& BOOST_SERIALIZATION_NVP(lambda_);
+  }
+#endif
+};
+
+/// traits
+template <>
+struct traits<UndifferencedCarrierPhaseFactorArm>
+    : public Testable<UndifferencedCarrierPhaseFactorArm> {};
 
 /**
  * Carrier phase factor with lever arm correction.
@@ -201,7 +408,7 @@ class GTSAM_EXPORT CarrierPhaseFactorArm
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(CarrierPhaseFactorArm::Base);
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar& BOOST_SERIALIZATION_NVP(measurement_);
     ar& BOOST_SERIALIZATION_NVP(satPos_);
     ar& BOOST_SERIALIZATION_NVP(satClkBias_);
@@ -297,8 +504,7 @@ class GTSAM_EXPORT DoubleDifferenceCarrierPhaseFactor
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(
-        DoubleDifferenceCarrierPhaseFactor::Base);
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar& boost::serialization::make_nvp("cpRovRef_", dd_.rovRef);
     ar& boost::serialization::make_nvp("cpBaseRef_", dd_.baseRef);
     ar& boost::serialization::make_nvp("cpRovTarget_", dd_.rovTarget);
@@ -390,8 +596,7 @@ class GTSAM_EXPORT DoubleDifferenceCarrierPhaseFactorArm
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(
-        DoubleDifferenceCarrierPhaseFactorArm::Base);
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar& boost::serialization::make_nvp("cpRovRef_", dd_.rovRef);
     ar& boost::serialization::make_nvp("cpBaseRef_", dd_.baseRef);
     ar& boost::serialization::make_nvp("cpRovTarget_", dd_.rovTarget);

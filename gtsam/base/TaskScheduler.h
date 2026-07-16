@@ -32,6 +32,8 @@
 
 #include <gtsam/base/Scheduler.h>
 
+#include <deque>
+
 namespace gtsam {
 
 namespace detail {

@@ -20,6 +20,7 @@
  *  @author Varun Agrawal
  **/
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
 #include <gtsam/navigation/ManifoldPreintegration.h>
 #include <gtsam/navigation/TangentPreintegration.h>

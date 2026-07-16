@@ -21,6 +21,7 @@
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam/inference/Symbol.h>

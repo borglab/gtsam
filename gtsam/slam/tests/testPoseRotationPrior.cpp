@@ -8,12 +8,11 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
-
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
-
 #include <gtsam/slam/PoseRotationPrior.h>
 
 using namespace gtsam;

@@ -16,6 +16,7 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/kruskal.h>
 #include <gtsam/geometry/Rot3.h>

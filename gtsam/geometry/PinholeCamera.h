@@ -18,8 +18,9 @@
 
 #pragma once
 
-#include <gtsam/geometry/PinholePose.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/BearingRange.h>
+#include <gtsam/geometry/PinholePose.h>
 
 namespace gtsam {
 
@@ -333,9 +334,6 @@ private:
     ar & BOOST_SERIALIZATION_NVP(K_);
   }
 #endif
-
-public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 // manifold traits

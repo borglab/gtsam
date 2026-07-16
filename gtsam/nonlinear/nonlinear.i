@@ -335,12 +335,12 @@ typedef gtsam::GncParams<gtsam::LevenbergMarquardtParams> GncLMParams;
 
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 virtual class NonlinearOptimizer {
-  gtsam::Values optimize();
-  gtsam::Values optimizeSafely();
+  const gtsam::Values& optimize();
+  const gtsam::Values& optimizeSafely();
   double error() const;
   int iterations() const;
-  gtsam::Values values() const;
-  gtsam::NonlinearFactorGraph graph() const;
+  const gtsam::Values& values() const;
+  const gtsam::NonlinearFactorGraph& graph() const;
   gtsam::GaussianFactorGraph* iterate() const;
 };
 
@@ -779,7 +779,8 @@ template <T = {double,
                gtsam::PinholeCamera<gtsam::Cal3Unified>,
                gtsam::SphericalCamera,
                gtsam::NavState,
-               gtsam::imuBias::ConstantBias}>
+               gtsam::imuBias::ConstantBias,
+               gtsam::EssentialMatrix}>
 virtual class PriorFactor : gtsam::NoiseModelFactor {
   PriorFactor(gtsam::Key key, const T& prior,
               const gtsam::noiseModel::Base* noiseModel = nullptr);

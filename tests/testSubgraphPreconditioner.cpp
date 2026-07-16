@@ -16,6 +16,8 @@
  **/
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianEliminationTree.h>
@@ -25,8 +27,6 @@
 #include <gtsam/slam/dataset.h>
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
 #include <tests/smallExample.h>
-
-#include <fstream>
 
 using namespace std;
 using namespace gtsam;

@@ -7,7 +7,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/navigation/PseudorangeFactor.h>
 #include <gtsam/navigation/tests/gnssTestHelpers.h>
 #include <gtsam/nonlinear/factorTesting.h>
@@ -70,6 +69,80 @@ TEST(TestPseudorangeFactor, Jacobians2) {
   values.insert(Key(0), sample::kReceiverPos);
   values.insert(Key(1), sample::kReceiverClock);
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-3, 1e-5);
+}
+
+// *************************************************************************
+// Undifferenced PPP pseudorange factor: residual matches the model and all four
+// Jacobians (pose, clock, ZTD, slant-iono) are correct.
+TEST(TestUndifferencedPseudorangeFactor, Model) {
+  const double m_w = 3.2;     // tropo wet mapping at the predicted elevation
+  const double mu_f = 1.55;   // first-order iono coefficient (e.g. L2)
+  const auto factor = UndifferencedPseudorangeFactor(
+      Key(0), Key(1), Key(2), Key(3), sample::kPseudorange, sample::kSatPos,
+      m_w, mu_f, sample::kSatClkBias);
+
+  const double ztd = 0.12;    // zenith wet delay [m]
+  const double iono = 4.7;    // slant iono [m]
+  const double error = factor.evaluateError(
+      sample::kReceiverPos, sample::kReceiverClock, ztd, iono)[0];
+
+  Point3 e;
+  const double range = gnss::geodist(sample::kSatPos, sample::kReceiverPos, e);
+  const double expected =
+      range + kCLight * (sample::kReceiverClock - sample::kSatClkBias) +
+      m_w * ztd + mu_f * iono - sample::kPseudorange;
+  EXPECT_DOUBLES_EQUAL(expected, error, 1e-6);
+
+  Values values;
+  values.insert(Key(0), sample::kReceiverPos);
+  values.insert(Key(1), sample::kReceiverClock);
+  values.insert(Key(2), ztd);
+  values.insert(Key(3), iono);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-3, 1e-5);
+}
+
+// *************************************************************************
+// Undifferenced PPP pseudorange factor with lever arm: all five Jacobians
+// (pose, clock, ZTD, slant-iono) are correct.
+TEST(TestUndifferencedPseudorangeFactorArm, Jacobians) {
+  const Point3 leverArm(0.31, 0.0, 0.55);
+  const double m_w = 2.8, mu_f = 1.0;
+  const auto factor = UndifferencedPseudorangeFactorArm(
+      Key(0), Key(1), Key(2), Key(3), sample::kPseudorange, sample::kSatPos,
+      leverArm, m_w, mu_f, sample::kSatClkBias);
+
+  Values values;
+  values.insert(Key(0),
+                Pose3(Rot3::RzRyRx(0.1, -0.2, 0.3), sample::kReceiverPos));
+  values.insert(Key(1), sample::kReceiverClock);
+  values.insert(Key(2), 0.1);
+  values.insert(Key(3), 3.5);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-3, 1e-5);
+}
+
+// *************************************************************************
+// The undifferenced factor must apply the Sagnac correction via
+// gnss::geodist, matching the double-difference factors. With realistic ECEF
+// geometry the Sagnac term is non-zero, so the residual differs from a plain
+// Euclidean range by exactly that term.
+TEST(TestPseudorangeFactor, SagnacCorrection) {
+  const auto factor = PseudorangeFactor(
+      Key(0), Key(1), sample::kPseudorange, sample::kSatPos,
+      sample::kSatClkBias);
+  const double error =
+      factor.evaluateError(sample::kReceiverPos, sample::kReceiverClock)[0];
+
+  // Reference residual built from the Sagnac-corrected geodist.
+  Point3 e;
+  const double range = gnss::geodist(sample::kSatPos, sample::kReceiverPos, e);
+  const double expected =
+      range + kCLight * (sample::kReceiverClock - sample::kSatClkBias) -
+      sample::kPseudorange;
+  EXPECT_DOUBLES_EQUAL(expected, error, 1e-6);
+
+  // A plain-Euclidean model would give a measurably different residual.
+  const double euclid = (sample::kReceiverPos - sample::kSatPos).norm();
+  EXPECT(std::abs(range - euclid) > 1e-3);
 }
 
 // *************************************************************************

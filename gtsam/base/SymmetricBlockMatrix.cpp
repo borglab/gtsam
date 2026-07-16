@@ -17,10 +17,12 @@
  */
 
 #include <gtsam/base/SymmetricBlockMatrix.h>
+#include <gtsam/base/ThreadsafeException.h>
 #include <gtsam/base/VerticalBlockMatrix.h>
 #include <gtsam/base/cholesky.h>
 #include <gtsam/base/timing.h>
-#include <gtsam/base/ThreadsafeException.h>
+
+#include <Eigen/Cholesky>
 
 namespace gtsam {
 

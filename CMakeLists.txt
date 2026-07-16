@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9...3.29)
+cmake_minimum_required(VERSION 3.16...3.29)
 if (POLICY CMP0167)
     cmake_policy(SET CMP0167 OLD) # Don't complain about boost
 endif()
@@ -134,6 +134,7 @@ include(cmake/HandleOpenMP.cmake)           # OpenMP
 include(cmake/HandlePerfTools.cmake)        # Google perftools
 include(cmake/HandlePython.cmake)           # Python options and commands
 include(cmake/HandleTBB.cmake)              # TBB
+include(cmake/HandleCuda.cmake)             # CUDA acceleration options
 include(cmake/HandleUninstall.cmake)        # for "make uninstall"
 
 include(cmake/HandleAllocators.cmake)       # Must be after tbb, pertools

@@ -100,9 +100,6 @@ class EssentialMatrixFactor : public NoiseModelFactorN<EssentialMatrix> {
     error(0) = E.error(vA_, vB_, H);
     return error;
   }
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /**
@@ -223,9 +220,6 @@ class EssentialMatrixFactor2
     Point2 reprojectionError = pn - pn_;
     return f_ * reprojectionError;
   }
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // EssentialMatrixFactor2
 
@@ -311,9 +305,6 @@ class EssentialMatrixFactor3 : public EssentialMatrixFactor2 {
       return e;
     }
   }
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // EssentialMatrixFactor3
 
@@ -415,9 +406,6 @@ class EssentialMatrixFactor4
 
     return error;
   }
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // EssentialMatrixFactor4
 
@@ -522,9 +510,6 @@ class EssentialMatrixFactor5
 
     return error;
   }
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // EssentialMatrixFactor5
 

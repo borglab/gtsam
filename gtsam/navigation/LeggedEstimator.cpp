@@ -16,19 +16,19 @@
  */
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/navigation/LeggedEstimator.h>
 #include <gtsam/navigation/LeggedEstimatorFactors.h>
-#include <gtsam/navigation/NavStateImuEKF.h>
+#include <gtsam/navigation/NavState.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 
+#include <Eigen/Eigenvalues>
 #include <algorithm>
-#include <map>
 #include <set>
-#include <sstream>
 #include <stdexcept>
 
 namespace gtsam {

@@ -23,7 +23,6 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/SubgraphBuilder.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/base/numericalDerivative.h>
 
 #include <CppUnitLite/TestHarness.h>
 

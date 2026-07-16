@@ -21,6 +21,7 @@
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/JointMarginal.h>
 
+#include <Eigen/Cholesky>
 #include <algorithm>
 #include <numeric>
 

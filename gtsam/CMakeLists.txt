@@ -73,6 +73,13 @@ install(FILES ${gtsam_core_headers} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsa
 foreach(subdir ${gtsam_subdirs})
     # Build convenience libraries
     file(GLOB_RECURSE subdir_srcs "${subdir}/*.cpp" "${subdir}/*.h") # Include header files so they show up in Visual Studio
+    if(GTSAM_ENABLE_CUDA)
+      file(GLOB_RECURSE subdir_cuda_srcs "${subdir}/*.cu")
+      list(APPEND subdir_srcs ${subdir_cuda_srcs})
+    else()
+      file(GLOB_RECURSE subdir_cuda_srcs "${subdir}/cuda/*")
+      list(REMOVE_ITEM subdir_srcs ${subdir_cuda_srcs})
+    endif()
     list(REMOVE_ITEM subdir_srcs ${excluded_sources})
 	file(GLOB subdir_test_files "${subdir}/tests/*")
 	list(REMOVE_ITEM subdir_srcs ${subdir_test_files}) # Remove test files from sources compiled into library
@@ -91,13 +98,6 @@ foreach(subdir ${gtsam_subdirs})
 	list(APPEND gtsam_srcs ${${subdir}_srcs})
 endforeach(subdir)
 list(APPEND gtsam_srcs ${gtsam_core_headers})
-
-IF(MSVC)
-	# Add precompiled header to sources
-	include(gtsamAddPch)
-	gtsamAddPch("precompiled_header.h" "precompiled_header.cpp" "${gtsam_srcs}")
-	list(INSERT gtsam_srcs 0 "precompiled_header.cpp")
-ENDIF(MSVC)
 
 # Generate and install config and dllexport files
 #For config.in searches
@@ -137,9 +137,20 @@ message(STATUS "Building GTSAM - as a ${GTSAM_LIBRARY_TYPE} library")
 add_library(gtsam ${GTSAM_LIBRARY_TYPE} ${gtsam_srcs})
 target_link_libraries(gtsam PUBLIC ${GTSAM_BOOST_LIBRARIES})
 target_link_libraries(gtsam PUBLIC ${GTSAM_ADDITIONAL_LIBRARIES})
+if(GTSAM_ENABLE_CUDA)
+  target_link_libraries(gtsam PUBLIC CUDA::cudart)
+  target_link_libraries(gtsam PUBLIC CUDA::cusolver)
+  if(GTSAM_ENABLE_CUDSS)
+    target_link_libraries(gtsam PUBLIC cudss::cudss)
+  endif()
+endif()
 
 # Apply build flags:
 gtsam_apply_build_flags(gtsam)
+
+if(GTSAM_BUILD_WITH_PRECOMPILED_HEADERS)
+  target_precompile_headers(gtsam PRIVATE $<$<COMPILE_LANGUAGE:CXX>:<gtsam/precompiled_header.h$<ANGLE-R>>)
+endif()
 
 set_target_properties(gtsam PROPERTIES
     OUTPUT_NAME         gtsam

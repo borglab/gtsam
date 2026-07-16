@@ -15,6 +15,7 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Point3.h>
@@ -22,7 +23,7 @@
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/navigation/ManifoldEKF.h>
 
-#include <iostream>
+#include <Eigen/Cholesky>
 #include <random>
 
 using namespace gtsam;
@@ -65,7 +66,7 @@ struct Unit3EKFTest {
                      .finished()),  // Rotate towards +Z axis
         dt(0.1),
         Q(I_2x2 * 0.001),
-        R(Matrix1::Identity() * 0.01) {}
+        R(I_1x1 * 0.01) {}
 };
 
 //==============================================================================

@@ -19,6 +19,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/basis/Chebyshev2.h>
 #include <gtsam/basis/FitBasis.h>
 #include <gtsam/geometry/Pose2.h>

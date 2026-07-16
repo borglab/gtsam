@@ -156,22 +156,20 @@ ProductLieGroup<G, H> ProductLieGroup<G, H>::compose(
   const size_t secondDimension = secondDim();
   const size_t productDimension =
       combinedDimension(firstDimension, secondDimension);
-  Jacobian1 D_g_first;
-  Jacobian2 D_h_second;
   if (H1) {
-    D_g_first = Jacobian1::Zero(static_cast<int>(firstDimension),
-                                static_cast<int>(firstDimension));
-    D_h_second = Jacobian2::Zero(static_cast<int>(secondDimension),
-                                 static_cast<int>(secondDimension));
-  }
-  G g = traits<G>::Compose(this->first, other.first, H1 ? &D_g_first : nullptr);
-  H h = traits<H>::Compose(this->second, other.second,
-                           H1 ? &D_h_second : nullptr);
-  if (H1) {
+    Jacobian1 D_g_first;
+    Jacobian2 D_h_second;
+    G g = traits<G>::Compose(this->first, other.first, &D_g_first);
+    H h = traits<H>::Compose(this->second, other.second, &D_h_second);
     *H1 = zeroJacobian(productDimension);
     assignBlock(D_g_first, 0, 0, &*H1);
     assignBlock(D_h_second, firstDimension, firstDimension, &*H1);
+    if (H2) *H2 = identityJacobian(productDimension);
+    return ProductLieGroup(g, h);
   }
+
+  G g = traits<G>::Compose(this->first, other.first);
+  H h = traits<H>::Compose(this->second, other.second);
   if (H2) *H2 = identityJacobian(productDimension);
   return ProductLieGroup(g, h);
 }

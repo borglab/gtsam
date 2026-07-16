@@ -15,7 +15,9 @@
 
 #include <CppUnitLite/Test.h>
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/utilities.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
