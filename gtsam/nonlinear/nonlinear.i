@@ -182,7 +182,8 @@ virtual class LinearContainerFactor : gtsam::NonlinearFactor {
   LinearContainerFactor(gtsam::GaussianFactor* factor);
 
   gtsam::GaussianFactor* factor() const;
-  //  const std::optional<Values>& linearizationPoint() const;
+  const std::optional<Values>& linearizationPoint() const;
+  bool hasLinearizationPoint() const;
 
   bool isJacobian() const;
   gtsam::JacobianFactor* toJacobian() const;
@@ -621,6 +622,9 @@ class ISAM2 {
                  gtsam::DefaultKeyFormatter) const;
   void saveGraph(string s, const gtsam::KeyFormatter& keyFormatter =
                                gtsam::DefaultKeyFormatter) const;
+  void marginalizeLeaves(const gtsam::FastList<gtsam::Key>& leafKeys);
+  std::pair<gtsam::FactorIndices, gtsam::FactorIndices>
+  marginalizeLeavesWithIndices(const gtsam::FastList<gtsam::Key>& leafKeys);
 };
 
 #include <gtsam/nonlinear/NonlinearISAM.h>
@@ -962,6 +966,10 @@ class FixedLagSmootherResult {
   size_t getNonlinearVariables() const;
   size_t getLinearVariables() const;
   double getError() const;
+  FactorIndices getMarginalFactorIndices() const;
+  FactorIndices getDeletedFactorIndices() const;
+  KeySet getKeysOfDeletedNodes() const;
+  void print() const;
 };
 
 virtual class FixedLagSmoother {
@@ -970,6 +978,7 @@ virtual class FixedLagSmoother {
 
   gtsam::FixedLagSmootherKeyTimestampMap timestamps() const;
   double smootherLag() const;
+  void setSmootherLag(double smootherLag);
 
   gtsam::FixedLagSmootherResult update(
       const gtsam::NonlinearFactorGraph& newFactors,
@@ -1017,6 +1026,7 @@ virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
 
   gtsam::NonlinearFactorGraph getFactors() const;
   gtsam::ISAM2 getISAM2() const;
+  ISAM2Result& getISAM2Result() const;
 };
 
 #include <gtsam/nonlinear/ExtendedKalmanFilter.h>
