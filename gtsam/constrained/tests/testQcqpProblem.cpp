@@ -388,21 +388,36 @@ TEST(QcqpProblem, HardFrobeniusPriorRot2D1) {
 
   const QcqpProblem problem(graph);
 
-  bool foundLinearEquality = false;
+  const LinearEqualityConstraintFactor* priorConstraint = nullptr;
   for (const auto& factor : problem.eConstraints()) {
-    if (dynamic_cast<const LinearEqualityConstraintFactor*>(factor.get())) {
-      foundLinearEquality = true;
+    if (const auto* linear =
+            dynamic_cast<const LinearEqualityConstraintFactor*>(factor.get())) {
+      priorConstraint = linear;
       break;
     }
   }
 
   LONGS_EQUAL(0, problem.costs().size());
-  EXPECT(foundLinearEquality);
+  EXPECT(priorConstraint != nullptr);
+  if (!priorConstraint) return;
+
+  const Vector5 expectedTarget =
+      traits<Rot2>::QcqpValue<1>(measured).col(0);
+  const JacobianFactor& priorJacobian =
+      priorConstraint->linearConstraint().factor();
+  EXPECT(assert_equal(Matrix(Matrix5::Identity()),
+                      Matrix(priorJacobian.getA()), 1e-12));
+  EXPECT(assert_equal(Vector(expectedTarget), Vector(priorJacobian.getb()),
+                      1e-12));
 
   Values qcqpValues;
   InsertQcqpValue<Rot2, 1>(x0, measured, &qcqpValues);
   EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
                        1e-12);
+
+  Values negatedQcqpValues;
+  negatedQcqpValues.insert(x0, -traits<Rot2>::QcqpValue<1>(measured));
+  EXPECT(problem.eConstraints().violationNorm(negatedQcqpValues) > 1e-12);
 }
 
 // Verifies the deferred non-constrained Frobenius prior cost path rejects.
