@@ -35,6 +35,16 @@
 
 using namespace gtsam;
 
+// Mathematical reading guide:
+// 1. RowSpaceQpCostFixture and QuadraticConstraintFixture establish the
+//    trace-form primitives used by both tracks.
+// 2. QcqpSingleFactorFixture and QcqpRingFixture cover the exact homogeneous
+//    D=1 Rot2 lift and its global sign ambiguity.
+// 3. QcqpRot2VariableFixture and QcqpTraitExtensionsFixture develop the
+//    D>=N Stiefel track, right-O(D) gauge, and soft gauge anchors.
+// 4. QcqpConstraintInsertionFixture and QcqpExtractionFixture document the
+//    conversion and best-effort recovery contracts.
+
 /* ************************************************************************* */
 namespace RowSpaceQpCostFixture {
 
@@ -362,7 +372,8 @@ TEST(QcqpProblem, MissingQcqpTraitsThrows) {
   EXPECT(ThrowsMissingQcqpTraits(graph));
 }
 
-// Verifies one Rot2 Frobenius factor converts exactly with D=1 QCQP variables.
+// For x_i=[1;vec(R_i)], verifies the lifted quadratic cost equals
+// 0.5*||R_2-R_1*M||_F^2 and all homogeneous SO(2) constraints are feasible.
 TEST(QcqpProblem, SingleFrobeniusBetweenFactor) {
   NonlinearFactorGraph graph;
   graph.emplace_shared<FrobeniusBetweenFactor<Rot2>>(x0, x1,
@@ -378,7 +389,8 @@ TEST(QcqpProblem, SingleFrobeniusBetweenFactor) {
                        1e-12);
 }
 
-// Verifies hard Rot2 Frobenius priors become D=1 lifted linear equalities.
+// A hard prior imposes x=[1;vec(M)], not merely a homogeneous direction.
+// Since ||x||^2=1+||M||_F^2=3, the negated lift has violation 2*sqrt(3).
 TEST(QcqpProblem, HardFrobeniusPriorRot2D1) {
   const Rot2 measured = Rot2::fromAngle(0.25);
   const auto hardNoise = noiseModel::Constrained::All(4);
@@ -417,7 +429,9 @@ TEST(QcqpProblem, HardFrobeniusPriorRot2D1) {
 
   Values negatedQcqpValues;
   negatedQcqpValues.insert(x0, -traits<Rot2>::QcqpValue<1>(measured));
-  EXPECT(problem.eConstraints().violationNorm(negatedQcqpValues) > 1e-12);
+  EXPECT_DOUBLES_EQUAL(2.0 * std::sqrt(3.0),
+                       problem.eConstraints().violationNorm(negatedQcqpValues),
+                       1e-12);
 }
 
 // Verifies the deferred non-constrained Frobenius prior cost path rejects.
@@ -508,6 +522,32 @@ TEST(QcqpProblem, AugmentedLagrangianOptimizerRot2Ring) {
   EXPECT(problem.costs().error(result) <= initialCost + 1e-9);
 }
 
+// Every D=1 between cost and quadratic constraint is invariant under the
+// global sign flip x_i -> -x_i; one hard prior rejects that second solution.
+TEST(QcqpProblem, HardPriorPinsRot2RingSign) {
+  constexpr size_t N = 5;
+  constexpr double delta = 2.0 * M_PI / static_cast<double>(N);
+
+  NonlinearFactorGraph graph = RingGraph(N, delta);
+  graph.emplace_shared<FrobeniusPrior<Rot2>>(
+      Symbol('x', 0), Matrix2::Identity(), noiseModel::Constrained::All(4));
+  const QcqpProblem problem(graph);
+  const Values canonical = RingQcqpValues(N, delta, 0.0);
+
+  Values negated;
+  for (size_t i = 0; i < N; ++i) {
+    const Key key = Symbol('x', i);
+    negated.insert(key, -canonical.at<Matrix>(key));
+  }
+
+  EXPECT_DOUBLES_EQUAL(problem.costs().error(canonical),
+                       problem.costs().error(negated), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(canonical),
+                       1e-12);
+  EXPECT_DOUBLES_EQUAL(2.0 * std::sqrt(3.0),
+                       problem.eConstraints().violationNorm(negated), 1e-12);
+}
+
 }  // namespace QcqpRingFixture
 /* ************************************************************************* */
 namespace QcqpRot2VariableFixture {
@@ -532,7 +572,8 @@ double DirectQcqpBetweenCost(const Rot2& R0, const Rot2& R1,
   return 0.5 * residual.squaredNorm();
 }
 
-// Verifies the D=2 Rot2 QCQP variable is row-orthonormal and feasible.
+// At D=N=2 the canonical lift X=R' satisfies XX'=I, hence X lies in O(2).
+// These quadratic constraints alone do not distinguish rotations/reflections.
 TEST(QcqpProblem, Rot2D2QcqpValueConstraints) {
   const Rot2 R = Rot2::fromAngle(0.3);
   const Matrix X = traits<Rot2>::QcqpValue<2>(R);
@@ -548,7 +589,8 @@ TEST(QcqpProblem, Rot2D2QcqpValueConstraints) {
   EXPECT_DOUBLES_EQUAL(0.0, constraints.violationNorm(values), 1e-12);
 }
 
-// Verifies the D=3 Rot2 QCQP variable reuses the D=2 row constraints.
+// At D=3 the canonical X=[R',0] still satisfies XX'=I; the three row-space
+// equations are independent of D and define the row Stiefel manifold St(2,D).
 TEST(QcqpProblem, Rot2D3QcqpValueConstraints) {
   const Rot2 R = Rot2::fromAngle(-0.4);
   const Matrix X = traits<Rot2>::QcqpValue<3>(R);
@@ -573,7 +615,8 @@ TEST(QcqpProblem, Rot2D3QcqpValueConstraints) {
   EXPECT_DOUBLES_EQUAL(0.0, constraints.violationNorm(values), 1e-12);
 }
 
-// Verifies D=2 row-space Frobenius conversion matches the manifold factor.
+// On canonical D=2 lifts, 0.5*||X_1-M'*X_0||_F^2 equals the original
+// manifold Frobenius between-factor error.
 TEST(QcqpProblem, Rot2FrobeniusBetweenFactorD2) {
   const Rot2 measured = Rot2::fromAngle(0.4);
   const Rot2 R0 = Rot2::fromAngle(0.3);
@@ -595,7 +638,8 @@ TEST(QcqpProblem, Rot2FrobeniusBetweenFactorD2) {
                        1e-12);
 }
 
-// Verifies D=3 Frobenius conversion matches the manifold factor.
+// Zero padding at D=3 leaves 0.5*||X_1-M'*X_0||_F^2 unchanged, so the
+// row-space QCQP and manifold errors agree exactly on canonical lifts.
 TEST(QcqpProblem, Rot2FrobeniusBetweenFactorD3) {
   const Rot2 measured = Rot2::fromAngle(0.4);
   const Rot2 R0 = Rot2::fromAngle(0.3);
@@ -617,6 +661,87 @@ TEST(QcqpProblem, Rot2FrobeniusBetweenFactorD3) {
   EXPECT_DOUBLES_EQUAL(DirectQcqpBetweenCost<3>(R0, R1, measured), qcqpCost,
                        1e-12);
   EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
+                       1e-12);
+}
+
+// With X=[R',0] and Xbar=[M',0], ||X-Xbar||_F=||R-M||_F; this verifies
+// both equality with the manifold prior and zero cost at X=Xbar.
+TEST(QcqpProblem, Rot2SoftFrobeniusPriorD3) {
+  const Rot2 measured = Rot2::fromAngle(0.4);
+  const Rot2 estimate = Rot2::fromAngle(-0.2);
+  const auto noise = noiseModel::Isotropic::Sigma(4, 0.5);
+
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusPrior<Rot2>>(x0, measured.matrix(), noise);
+  const QcqpProblem problem(graph, 3);
+
+  Values manifoldValues;
+  manifoldValues.insert(x0, estimate);
+  Values qcqpValues;
+  InsertQcqpValue<Rot2, 3>(x0, estimate, &qcqpValues);
+  EXPECT_DOUBLES_EQUAL(graph.error(manifoldValues),
+                       problem.costs().error(qcqpValues), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
+                       1e-12);
+
+  Values targetValues;
+  InsertQcqpValue<Rot2, 3>(x0, measured, &targetValues);
+  EXPECT_DOUBLES_EQUAL(0.0, problem.costs().error(targetValues), 1e-12);
+}
+
+// A common G in O(D) preserves ||(X_1-M'*X_0)G||_F and XX', but the
+// absolute soft prior ||X_0-Xbar||_F selects a gauge and penalizes reflection.
+TEST(QcqpProblem, SoftPriorBreaksCommonGaugeAndPenalizesReflection) {
+  const Rot2 R0 = Rot2::fromAngle(0.2);
+  const Rot2 measured = Rot2::fromAngle(0.4);
+  const Rot2 R1 = R0.compose(measured);
+  const auto noise = noiseModel::Isotropic::Sigma(4, 1.0);
+
+  NonlinearFactorGraph betweenGraph;
+  betweenGraph.emplace_shared<FrobeniusBetweenFactor<Rot2>>(x0, x1,
+                                                             measured);
+  NonlinearFactorGraph anchoredGraph = betweenGraph;
+  anchoredGraph.emplace_shared<FrobeniusPrior<Rot2>>(x0, R0.matrix(), noise);
+  const QcqpProblem betweenProblem(betweenGraph, 2);
+  const QcqpProblem anchoredProblem(anchoredGraph, 2);
+  const Values canonical = QcqpValues<2>(R0, R1);
+
+  const Matrix reflection = (Matrix2() << 1.0, 0.0, 0.0, -1.0).finished();
+  Values reflected;
+  reflected.insert(x0, (canonical.at<Matrix>(x0) * reflection).eval());
+  reflected.insert(x1, (canonical.at<Matrix>(x1) * reflection).eval());
+
+  EXPECT_DOUBLES_EQUAL(betweenProblem.costs().error(canonical),
+                       betweenProblem.costs().error(reflected), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, anchoredProblem.costs().error(canonical), 1e-12);
+  EXPECT(anchoredProblem.costs().error(reflected) > 1e-6);
+  EXPECT_DOUBLES_EQUAL(
+      0.0, anchoredProblem.eConstraints().violationNorm(reflected), 1e-12);
+}
+
+// A D=3 right gauge can mix the canonical and padded columns without changing
+// XX'; the affine prior detects the resulting nonzero padded-column energy.
+TEST(QcqpProblem, SoftPriorPenalizesNoncanonicalExtraColumns) {
+  const Rot2 measured = Rot2::fromAngle(0.3);
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusPrior<Rot2>>(
+      x0, measured.matrix(), noiseModel::Isotropic::Sigma(4, 1.0));
+  const QcqpProblem problem(graph, 3);
+
+  Values canonical;
+  InsertQcqpValue<Rot2, 3>(x0, measured, &canonical);
+  Matrix gauge = Matrix::Identity(3, 3);
+  const double angle = 0.4;
+  gauge(0, 0) = gauge(2, 2) = std::cos(angle);
+  gauge(0, 2) = -std::sin(angle);
+  gauge(2, 0) = std::sin(angle);
+  Values gauged;
+  gauged.insert(x0, (canonical.at<Matrix>(x0) * gauge).eval());
+
+  EXPECT_DOUBLES_EQUAL(0.0, problem.costs().error(canonical), 1e-12);
+  EXPECT(problem.costs().error(gauged) > 1e-6);
+  EXPECT(gauged.at<Matrix>(x0).rightCols(1).norm() > 1e-6);
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(gauged),
                        1e-12);
 }
 
@@ -656,7 +781,8 @@ TEST(QcqpProblem, Rot2QcqpConstraintsAreDIndependent) {
   }
 }
 
-// Verifies Rot3 QcqpValue and QcqpConstraints at D=3.
+// For Rot3 at D=N=3, X=R' satisfies the six scalar equations equivalent to
+// XX'=I: three unit-row equations and three row-orthogonality equations.
 TEST(QcqpProblem, Rot3D3QcqpValueConstraints) {
   const Rot3 R = Rot3::Expmap((Vector3() << 0.4, -0.1, 0.7).finished());
   const Matrix X = traits<Rot3>::template QcqpValue<3>(R);
@@ -684,7 +810,8 @@ TEST(QcqpProblem, Rot3D2Throws) {
                   std::invalid_argument);
 }
 
-// Verifies FrobeniusBetweenFactor<Rot3> matches the manifold form at K=3.
+// For Rot3 canonical lifts, the D=3 row-space between cost is exactly the
+// original 0.5*||R_2-R_1*M||_F^2 manifold cost.
 TEST(QcqpProblem, Rot3FrobeniusBetweenFactorD3) {
   const Rot3 measured = Rot3::Expmap((Vector3() << 0.2, 0.1, -0.3).finished());
   const Rot3 R0 = Rot3::Expmap((Vector3() << 0.05, 0.10, 0.15).finished());
@@ -708,6 +835,30 @@ TEST(QcqpProblem, Rot3FrobeniusBetweenFactorD3) {
   EXPECT_DOUBLES_EQUAL(graph.error(manifoldValues), qcqpCost, 1e-12);
   EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
                        1e-12);
+}
+
+// For Rot3, X=R' and Xbar=M' make the D=3 affine prior exactly equal to
+// 0.5/sigma^2*||R-M||_F^2, with zero attained by the measured rotation.
+TEST(QcqpProblem, Rot3SoftFrobeniusPriorD3) {
+  const Rot3 measured = Rot3::RzRyRx(0.2, -0.1, 0.3);
+  const Rot3 estimate = Rot3::RzRyRx(-0.4, 0.2, 0.1);
+  const auto noise = noiseModel::Isotropic::Sigma(9, 0.25);
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusPrior<Rot3>>(x0, measured.matrix(), noise);
+  const QcqpProblem problem(graph, 3);
+
+  Values manifoldValues;
+  manifoldValues.insert(x0, estimate);
+  Values qcqpValues;
+  InsertQcqpValue<Rot3, 3>(x0, estimate, &qcqpValues);
+  EXPECT_DOUBLES_EQUAL(graph.error(manifoldValues),
+                       problem.costs().error(qcqpValues), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
+                       1e-12);
+
+  Values targetValues;
+  InsertQcqpValue<Rot3, 3>(x0, measured, &targetValues);
+  EXPECT_DOUBLES_EQUAL(0.0, problem.costs().error(targetValues), 1e-12);
 }
 
 // Verifies FrobeniusBetweenFactor<Rot2> matches the manifold form at K=4.
@@ -746,10 +897,66 @@ TEST(QcqpProblem, Rot3FrobeniusBetweenFactorK2Rejected) {
                   std::invalid_argument);
 }
 
+// The affine D>1 prior has one scalar weight for all N*D entries, so conversion
+// rejects D<N and hard, robust, or anisotropic noise rather than changing math.
+TEST(QcqpProblem, SoftFrobeniusPriorRejectsUnsupportedInputs) {
+  const Rot2 measured = Rot2::fromAngle(0.2);
+
+  NonlinearFactorGraph hardGraph;
+  hardGraph.emplace_shared<FrobeniusPrior<Rot2>>(
+      x0, measured.matrix(), noiseModel::Constrained::All(4));
+  CHECK_EXCEPTION({ QcqpProblem problem(hardGraph, 2); }, std::runtime_error);
+
+  const auto baseNoise = noiseModel::Isotropic::Sigma(4, 1.0);
+  const auto robustNoise = noiseModel::Robust::Create(
+      noiseModel::mEstimator::Huber::Create(1.345), baseNoise);
+  NonlinearFactorGraph robustGraph;
+  robustGraph.emplace_shared<FrobeniusPrior<Rot2>>(x0, measured.matrix(),
+                                                   robustNoise);
+  CHECK_EXCEPTION({ QcqpProblem problem(robustGraph, 2); },
+                  std::runtime_error);
+
+  const Vector4 sigmas = (Vector4() << 1.0, 2.0, 3.0, 4.0).finished();
+  NonlinearFactorGraph anisotropicGraph;
+  anisotropicGraph.emplace_shared<FrobeniusPrior<Rot2>>(
+      x0, measured.matrix(), noiseModel::Diagonal::Sigmas(sigmas));
+  CHECK_EXCEPTION({ QcqpProblem problem(anisotropicGraph, 2); },
+                  std::runtime_error);
+
+  NonlinearFactorGraph tooSmallGraph;
+  tooSmallGraph.emplace_shared<FrobeniusPrior<Rot3>>(
+      x0, Matrix3::Identity(), noiseModel::Isotropic::Sigma(9, 1.0));
+  CHECK_EXCEPTION({ QcqpProblem problem(tooSmallGraph, 2); },
+                  std::invalid_argument);
+}
+
 }  // namespace QcqpTraitExtensionsFixture
 
 /* ************************************************************************* */
-// Round-trip Rot2 through Insert/ExtractQcqpValues at D=2.
+namespace QcqpConstraintInsertionFixture {
+
+const Key x0 = Symbol('x', 0);
+
+// Deduplication compares the actual trace(X'AX)=b equations: an unrelated
+// unary linear constraint stays, all three St(2,D) equations appear once.
+TEST(QcqpProblem, InsertQcqpConstraintsMatchesExactQuadratics) {
+  NonlinearEqualityConstraints constraints;
+  const Matrix selector = (Matrix(1, 4) << 1.0, 0.0, 0.0, 0.0).finished();
+  constraints.push_back(
+      LinearConstraint::Equal(JacobianFactor(x0, selector, Vector1(1.0)))
+          .createEqualityFactor());
+
+  InsertQcqpConstraints<Rot2, 2>(x0, &constraints);
+  LONGS_EQUAL(4, constraints.size());
+  InsertQcqpConstraints<Rot2, 2>(x0, &constraints);
+  LONGS_EQUAL(4, constraints.size());
+}
+
+}  // namespace QcqpConstraintInsertionFixture
+/* ************************************************************************* */
+namespace QcqpExtractionFixture {
+
+// For canonical X=R', the leading-block projection returns R exactly.
 TEST(QcqpProblem, ExtractQcqpValuesRot2) {
   Values values;
   const Rot2 R0 = Rot2::fromAngle(0.25);
@@ -766,8 +973,7 @@ TEST(QcqpProblem, ExtractQcqpValuesRot2) {
   EXPECT(assert_equal(R1, out.at<Rot2>(Symbol('x', 1)), 1e-12));
 }
 
-/* ************************************************************************* */
-// Round-trip Rot3 through Insert/ExtractQcqpValues at D=3.
+// For canonical Rot3 X=R', the leading-block projection returns R exactly.
 TEST(QcqpProblem, ExtractQcqpValuesRot3) {
   Values values;
   const Rot3 R0 = Rot3::Rz(0.25);
@@ -784,9 +990,8 @@ TEST(QcqpProblem, ExtractQcqpValuesRot3) {
   EXPECT(assert_equal(R1, out.at<Rot3>(Symbol('x', 1)), 1e-12));
 }
 
-/* ************************************************************************* */
-// On a mixed Rot2 + Rot3 Values at D=3, ExtractQcqpValues<Rot3, 3> keeps
-// only the row-dim-3 slice.
+// Extraction scans mixed Values but accepts only exact N-by-D matrix slices;
+// matching row count alone is insufficient because D defines the lift.
 TEST(QcqpProblem, ExtractQcqpValuesSkipsForeignSlices) {
   Values values;
   const Rot2 R2 = Rot2::fromAngle(0.3);
@@ -794,12 +999,52 @@ TEST(QcqpProblem, ExtractQcqpValuesSkipsForeignSlices) {
   InsertQcqpValue<Rot2, 3>(Symbol('a', 0), R2, &values);
   InsertQcqpValue<Rot2, 3>(Symbol('a', 1), R2, &values);
   InsertQcqpValue<Rot3, 3>(Symbol('b', 0), R3, &values);
+  values.insert(Symbol('b', 1), Matrix(Matrix::Identity(3, 4)));
 
   const auto rot3s = ExtractQcqpValues<Rot3, 3>(values);
   LONGS_EQUAL(1, rot3s.size());
   EXPECT(rot3s.front().first == Symbol('b', 0));
   EXPECT(assert_equal(R3, rot3s.front().second, 1e-12));
 }
+
+// For D=2 and G in SO(2), X_iG extracts as G^{-1}R_i: absolute rotations
+// change, while (G^{-1}R_0)^{-1}(G^{-1}R_1)=R_0^{-1}R_1 remains invariant.
+TEST(QcqpProblem, UnanchoredExtractionIsGaugeDependent) {
+  const Rot2 R0 = Rot2::fromAngle(0.25);
+  const Rot2 R1 = Rot2::fromAngle(-0.7);
+  const Rot2 gaugeRotation = Rot2::fromAngle(0.4);
+  const Matrix gauge = gaugeRotation.matrix();
+
+  Values canonical;
+  InsertQcqpValue<Rot2, 2>(Symbol('x', 0), R0, &canonical);
+  InsertQcqpValue<Rot2, 2>(Symbol('x', 1), R1, &canonical);
+  Values gauged;
+  gauged.insert(Symbol('x', 0),
+                (canonical.at<Matrix>(Symbol('x', 0)) * gauge).eval());
+  gauged.insert(Symbol('x', 1),
+                (canonical.at<Matrix>(Symbol('x', 1)) * gauge).eval());
+
+  const auto extracted = ExtractQcqpValues<Rot2, 2>(gauged);
+  LONGS_EQUAL(2, extracted.size());
+  const Rot2 expected0 = gaugeRotation.inverse().compose(R0);
+  const Rot2 expected1 = gaugeRotation.inverse().compose(R1);
+  EXPECT(assert_equal(expected0, extracted[0].second, 1e-12));
+  EXPECT(assert_equal(expected1, extracted[1].second, 1e-12));
+  EXPECT(assert_equal(R0.between(R1),
+                      extracted[0].second.between(extracted[1].second), 1e-12));
+}
+
+// Direct trait projection rejects matrices whose column count differs from D.
+TEST(QcqpProblem, FromQcqpValueRequiresExactDimensions) {
+  CHECK_EXCEPTION(
+      traits<Rot2>::template FromQcqpValue<2>(Matrix::Identity(2, 3)),
+      std::invalid_argument);
+  CHECK_EXCEPTION(
+      traits<Rot3>::template FromQcqpValue<3>(Matrix::Identity(3, 4)),
+      std::invalid_argument);
+}
+
+}  // namespace QcqpExtractionFixture
 
 /* ************************************************************************* */
 int main() {

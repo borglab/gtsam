@@ -260,26 +260,24 @@ struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
    *
    * D=1 prepends a fixed homogenization coordinate to the existing
    * column-major SO(2) vectorization, yielding a 5-by-1 matrix.
-   * D=2 returns R' as a 2-by-2 row-orthonormal matrix.
-   * D>=3 returns [R', 0] as a 2-by-D row-orthonormal matrix.
+   * D>=2 returns [R', 0] as a 2-by-D row-orthonormal matrix. These matrix
+   * variables form a Stiefel relaxation with a common right-O(D) gauge.
    */
   template <int D = 1>
   static Matrix QcqpValue(const Rot2& value) {
     if constexpr (D == 1) {
       const Matrix2 R = value.matrix();
       Vector5 X;
-      X(0, 0) = 1.0; // Homogenization entry
+      X(0, 0) = 1.0;  // Homogenization entry.
       X.bottomRows(4) = Eigen::Map<const Matrix>(R.data(), 4, 1);
       return X;
-    } else if constexpr (D == 2) {
-      return value.matrix().transpose();
-    } else if constexpr (D >= 3) {
+    } else if constexpr (D >= 2) {
       Matrix X = Matrix::Zero(2, D);
       X.leftCols<2>() = value.matrix().transpose();
       return X;
     } else {
       throw std::invalid_argument(
-          "traits<Rot2>::QcqpValue only supports D=1, D=2, and D>=3.");
+          "traits<Rot2>::QcqpValue requires D>=1.");
     }
   }
 
@@ -287,19 +285,20 @@ struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
    * Return row-space QCQP equality constraints A, b such that
    * trace(x_i' A x_i) = b[j]. For D=1 these are the lifted SO(2) constraints in
    * column-major coordinates. For D>=2 the same 2-by-2 constraints enforce
-   * row orthonormality.
+   * row orthonormality. The matrix constraints enforce XX'=I, not determinant
+   * +1; square D=2 variables therefore admit both components of O(2).
    */
   template <int D = 1>
   static std::vector<std::pair<Matrix, double>> QcqpConstraints() {
     if constexpr (D == 1) {
       // The homogenized Rot2 lifted vector is
-      // x = [1, r00, r10, r01, r11]. 
+      // x = [1, r00, r10, r01, r11].
       std::vector<std::pair<Matrix, double>> constraints;
       constraints.reserve(5);
 
       Matrix A = Matrix::Zero(5, 5);
 
-      // Fix the leading-coordinate convention x(0) = 1.
+      // The quadratic lift fixes x(0)^2 = 1; a hard prior pins its sign.
       A(0, 0) = 1.0;
       constraints.emplace_back(A, 1.0);
 
@@ -355,12 +354,20 @@ struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
     }
   }
 
-  /// Project a 2-by-D matrix back to Rot2 via Rot2::ClosestTo on the
-  /// leading 2-by-2 block.
+  /**
+   * Project a canonical or softly anchored 2-by-D lift back to Rot2.
+   *
+   * Unanchored matrix-form QCQP solutions have a right-O(D) gauge, making
+   * this leading-block projection gauge-dependent. X must be exactly 2-by-D.
+   */
   template <int D>
   static Rot2 FromQcqpValue(const Matrix& X) {
     static_assert(D >= 2,
                   "traits<Rot2>::FromQcqpValue requires D >= 2.");
+    if (X.rows() != 2 || X.cols() != D) {
+      throw std::invalid_argument(
+          "traits<Rot2>::FromQcqpValue requires a 2-by-D matrix.");
+    }
     return Rot2::ClosestTo(X.template leftCols<2>().transpose());
   }
 };
@@ -368,4 +375,4 @@ struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
 template <>
 struct traits<const Rot2> : public traits<Rot2> {};
 
-} // gtsam
+}  // namespace gtsam

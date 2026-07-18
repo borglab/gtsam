@@ -35,7 +35,6 @@ conductor/
 .ccache/
 gtsam_unstable/timing/data/
 timing/results/bayes_tree_covariance/
-_agent/docs*
 
 # Local development docs/artifacts
 docs/*

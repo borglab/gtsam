@@ -27,6 +27,7 @@
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace gtsam {
 
@@ -75,7 +76,11 @@ void InsertQcqpValue(Key key, const T& value, Values* qcqpValues) {
 }
 
 /**
- * Insert QCQP equality constraints for one variable, skipping duplicate keys.
+ * Insert the QCQP equality constraints for one variable.
+ *
+ * Only an already-present quadratic equality with the same key, matrix, and
+ * right-hand side is considered a duplicate. Other unary constraints on the
+ * key are preserved and do not suppress the manifold constraints.
  */
 template <typename T, int D = 1>
 void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints) {
@@ -86,23 +91,35 @@ void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints) {
     throw std::invalid_argument("InsertQcqpConstraints: constraints is null.");
   }
 
-  for (const auto& factor : *constraints) {
-    if (factor && factor->size() == 1 && factor->keys().front() == key) {
-      return;
-    }
-  }
-
   for (const auto& [A, b] : traits<T>::template QcqpConstraints<D>()) {
-    constraints->push_back(
-        QuadraticConstraint::Equal(key, A, b).createEqualityFactor());
+    bool alreadyPresent = false;
+    for (const auto& factor : *constraints) {
+      const auto* quadratic =
+          dynamic_cast<const QuadraticEqualityConstraintFactor*>(factor.get());
+      if (!quadratic) continue;
+      const QuadraticConstraint& existing = quadratic->quadraticConstraint();
+      if (existing.key() == key && existing.A().isApprox(A, 0.0) &&
+          existing.b() == b && existing.sigma() == 1.0) {
+        alreadyPresent = true;
+        break;
+      }
+    }
+    if (!alreadyPresent) {
+      constraints->push_back(
+          QuadraticConstraint::Equal(key, A, b).createEqualityFactor());
+    }
   }
 }
 
 /**
- * Project matrix-form QCQP variables back into typed values: scan
- * `qcqpValues` and apply `traits<T>::FromQcqpValue<D>` to each slice whose
- * row dim matches `T`. Slices with other row dims are skipped, so
- * mixed-type graphs are safe.
+ * Project matrix-form QCQP variables back into typed values.
+ *
+ * Only exact N-by-D matrix slices are considered, where N is the intrinsic
+ * matrix row dimension of T. Canonical lifts and solutions whose connected
+ * component is aligned by a nondegenerate soft prior have meaningful absolute
+ * rotations. An unanchored D>1 component has a common right-O(D) gauge, so its
+ * independently extracted absolute rotations are intentionally best-effort
+ * and gauge-dependent.
  */
 template <typename T, int D>
 std::vector<std::pair<Key, T>> ExtractQcqpValues(const Values& qcqpValues) {
@@ -112,7 +129,7 @@ std::vector<std::pair<Key, T>> ExtractQcqpValues(const Values& qcqpValues) {
   constexpr int expectedRows = T::LieAlgebra::RowsAtCompileTime;
   std::vector<std::pair<Key, T>> out;
   for (const auto& [key, M] : qcqpValues.extract<Matrix>()) {
-    if (M.rows() == expectedRows) {
+    if (M.rows() == expectedRows && M.cols() == D) {
       out.emplace_back(key, traits<T>::template FromQcqpValue<D>(M));
     }
   }

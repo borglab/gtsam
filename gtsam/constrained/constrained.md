@@ -41,17 +41,22 @@ It includes classes for representing constraints, building constrained problems,
 - [`QuadraticConstraint`](doc/QcqpProblem.ipynb): Scalar quadratic constraint $\operatorname{tr}(X^\top A X) \sim b$, where $\sim$ is equal, less-equal, or greater-equal.
 - `QcqpProblem(graph, columnDim)`: Opt-in conversion hook for supported nonlinear factors that can populate `QpCost` objectives and `QuadraticConstraint` equalities over matrix-valued QCQP variables.
 - `InsertQcqpValue<T, D>` and `InsertQcqpConstraints<T, D>`: Helpers for inserting supported QCQP variable values and their equality constraints.
+- `ExtractQcqpValues<T, D>`: Best-effort projection of exact-shape matrix
+  slices back to rotations. Absolute results from unanchored matrix components
+  are gauge-dependent.
 
 The leading factor of `1/2` in row-space `QpCost` construction is intentional:
 it follows GTSAM's standard factor-error convention. To represent a QCQP
 objective written without the `1/2`, pass twice the row-space `Q` blocks to
 `QpCost`.
 
-The current factor-graph conversion example is intentionally narrow:
-`FrobeniusBetweenFactor<T>` can form generic Frobenius QCQP costs for supported
-matrix Lie groups, but each variable type must provide its own QCQP value and
-constraint traits. `Rot2` currently provides those traits for `D=1`, `D=2`, and
-`D=3`. Unsupported factors throw from `NonlinearFactor::qcqpFactors`.
+The rotation conversion has two tracks. Rot2 at `D=1` uses an exact homogeneous
+lift and supports a sign-pinning hard prior. At `D>=N`, Rot2 (`D>=2`) and Rot3
+(`D>=3`) use row-Stiefel variables satisfying $XX^\top=I$. Between costs have a
+common right-$O(D)$ gauge; non-robust isotropic soft Frobenius priors break that
+gauge by penalizing $\|X-[M^\top\;0]\|_F^2$. The Stiefel constraints do not
+enforce determinant $+1$, so square variables also admit reflections.
+Unsupported factors throw from `NonlinearFactor::qcqpFactors`.
 
 ## Optimizers
 
