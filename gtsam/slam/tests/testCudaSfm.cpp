@@ -521,6 +521,7 @@ TEST(CudaSfmLevenbergMarquardtParams, ProvidesLmDefaults) {
   DOUBLES_EQUAL(1e-5, legacy.lambdaInitial, 0.0);
   DOUBLES_EQUAL(10.0, legacy.lambdaFactor, 0.0);
   CHECK(!legacy.diagonalDamping);
+  CHECK(!legacy.enableDetailedProfiling);
 
   const CudaSfmLevenbergMarquardtParams ceres =
       CudaSfmLevenbergMarquardtParams::CeresDefaults();
@@ -529,6 +530,7 @@ TEST(CudaSfmLevenbergMarquardtParams, ProvidesLmDefaults) {
   DOUBLES_EQUAL(2.0, ceres.lambdaFactor, 0.0);
   CHECK(ceres.diagonalDamping);
   CHECK(!ceres.useFixedLambdaFactor);
+  CHECK(!ceres.enableDetailedProfiling);
 }
 
 TEST(CudaSfmLevenbergMarquardtOptimizer, ExposesCudaParams) {
@@ -1895,6 +1897,28 @@ TEST(CudaSfmLevenbergMarquardt, CanSkipOptimizedValueDownload) {
   CHECK(result.optimizedValues.empty());
 }
 
+TEST(CudaSfmLevenbergMarquardt, DetailedProfilingIsDisabledByDefault) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+
+  CudaSfmLevenbergMarquardtParams params =
+      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  params.maxIterations = 1;
+  params.relativeErrorTol = 1e-12;
+  params.lambdaInitial = 1e-3;
+
+  CHECK(!params.enableDetailedProfiling);
+  const CudaSfmLevenbergMarquardtResult result =
+      OptimizeCudaSfm(data, params);
+
+  CHECK(result.solveLoopElapsed > 0.0);
+  EXPECT_LONGS_EQUAL(0, result.totalH2dBytes);
+  EXPECT_LONGS_EQUAL(0, result.totalD2hBytes);
+  DOUBLES_EQUAL(0.0, result.denseSchurSolveElapsed, 0.0);
+  DOUBLES_EQUAL(0.0, result.linearizedErrorElapsed, 0.0);
+  CHECK(result.iterationProfiles.empty());
+}
+
 TEST(CudaSfmLevenbergMarquardt, RecordsDetailedTimingBreakdown) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
@@ -1904,6 +1928,7 @@ TEST(CudaSfmLevenbergMarquardt, RecordsDetailedTimingBreakdown) {
   params.maxIterations = 5;
   params.relativeErrorTol = 1e-12;
   params.lambdaInitial = 1e-3;
+  params.enableDetailedProfiling = true;
 
   const CudaSfmLevenbergMarquardtResult result =
       OptimizeCudaSfmWithoutValueDownload(data, params);
@@ -1943,6 +1968,7 @@ TEST(CudaSfmLevenbergMarquardt, RecordsPureTransferTimingBreakdown) {
   params.maxIterations = 1;
   params.relativeErrorTol = 1e-12;
   params.lambdaInitial = 1e-3;
+  params.enableDetailedProfiling = true;
 
   const CudaSfmLevenbergMarquardtResult result =
       OptimizeCudaSfm(data, params);
@@ -2397,6 +2423,10 @@ TEST(CudaSfmLevenbergMarquardtParams, EqualsComparesFields) {
 
   b = a;
   b.linearSolver = CudaSfmLinearSolverType::CudssFullNormal;
+  CHECK(!a.equals(b));
+
+  b = a;
+  b.enableDetailedProfiling = !a.enableDetailedProfiling;
   CHECK(!a.equals(b));
 }
 

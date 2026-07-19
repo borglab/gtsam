@@ -193,13 +193,15 @@ gtsam::cuda::CudaSfmLinearSolverType cudaLinearSolverType(
 }
 
 gtsam::cuda::CudaSfmLevenbergMarquardtParams makeBalCudaLmParams(
-    CudaLinearSolverOption solverOption, CudaLmDefaults defaults) {
+    CudaLinearSolverOption solverOption, CudaLmDefaults defaults,
+    bool enableDetailedProfiling) {
   gtsam::cuda::CudaSfmLevenbergMarquardtParams params =
       defaults == CudaLmDefaults::Graph
           ? gtsam::cuda::CudaSfmLevenbergMarquardtParams::CeresDefaults()
           : gtsam::cuda::CudaSfmLevenbergMarquardtParams();
   applyBalBenchmarkLmSettings(params);
   params.linearSolver = cudaLinearSolverType(solverOption);
+  params.enableDetailedProfiling = enableDetailedProfiling;
   return params;
 }
 
@@ -398,7 +400,8 @@ void printCudaLmDetailedBreakdown(
 }
 
 void printCudaBackendLmRun(const CudaBackendLmRun& run,
-                           CudaLinearSolverOption solverOption) {
+                           CudaLinearSolverOption solverOption,
+                           bool detailedProfiling) {
   const auto& result = run.result;
   std::cout << "  CUDA LM: " << run.elapsed << " s\n";
   std::cout << "  CUDA LM linear solver: "
@@ -409,8 +412,13 @@ void printCudaBackendLmRun(const CudaBackendLmRun& run,
   std::cout << "  CUDA LM setup before solve loop: " << result.setupElapsed
             << " s\n";
   printCudaLmSetupBreakdown(result, "  CUDA LM ");
-  printCudaLmTransferBreakdown(result, "  CUDA LM ");
-  printCudaLmDetailedBreakdown(result, "  CUDA LM ");
+  if (detailedProfiling) {
+    printCudaLmTransferBreakdown(result, "  CUDA LM ");
+    printCudaLmDetailedBreakdown(result, "  CUDA LM ");
+  } else {
+    std::cout << "  CUDA LM detailed profiling: disabled (use --profile to "
+                 "enable)\n";
+  }
   std::cout << "Initial error: " << std::setprecision(15)
             << result.initialError << "\n";
   std::cout << "Final error: " << result.finalError
@@ -472,7 +480,7 @@ CudaGraphLmRun runCudaGraphLm(const NonlinearFactorGraph& graph,
 
 void printCudaGraphLmRun(const CudaGraphLmRun& run,
                          CudaLinearSolverOption solverOption,
-                         CudaGraphKind graphKind) {
+                         CudaGraphKind graphKind, bool detailedProfiling) {
   const double graphBackendCallOverhead =
       run.backend.graphBackendCallElapsed - run.backend.totalMeasuredElapsed;
   const double graphApiOtherOverhead =
@@ -519,8 +527,13 @@ void printCudaGraphLmRun(const CudaGraphLmRun& run,
   std::cout << "  CUDA LM backend setup before solve loop: "
             << run.backend.setupElapsed << " s\n";
   printCudaLmSetupBreakdown(run.backend, "  CUDA LM backend ");
-  printCudaLmTransferBreakdown(run.backend, "  CUDA LM backend ");
-  printCudaLmDetailedBreakdown(run.backend, "  CUDA LM backend ");
+  if (detailedProfiling) {
+    printCudaLmTransferBreakdown(run.backend, "  CUDA LM backend ");
+    printCudaLmDetailedBreakdown(run.backend, "  CUDA LM backend ");
+  } else {
+    std::cout << "  CUDA LM backend detailed profiling: disabled (use "
+                 "--profile to enable)\n";
+  }
   std::cout << "Initial error: " << std::setprecision(15)
             << run.initialError << "\n";
   std::cout << "Final error: " << run.finalError
@@ -1147,7 +1160,8 @@ int main(int argc, char* argv[]) {
 
 #if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
       const auto cudaParams =
-          makeBalCudaLmParams(options.cudaLinearSolver, CudaLmDefaults::Graph);
+          makeBalCudaLmParams(options.cudaLinearSolver, CudaLmDefaults::Graph,
+                              false);
 
       if (options.cudaWarmupFileSpecified && !cudaWarmupDone) {
         std::cout << "  CUDA GNC warmup file: " << options.cudaWarmupFile
@@ -1186,7 +1200,8 @@ int main(int argc, char* argv[]) {
 #if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
     if (options.cudaLm) {
       const auto cudaParams =
-          makeBalCudaLmParams(options.cudaLinearSolver, CudaLmDefaults::Backend);
+          makeBalCudaLmParams(options.cudaLinearSolver,
+                              CudaLmDefaults::Backend, options.profile);
 
       if (options.cudaWarmupFileSpecified && !cudaWarmupDone) {
         std::cout << "  CUDA warmup file: " << options.cudaWarmupFile
@@ -1203,7 +1218,7 @@ int main(int argc, char* argv[]) {
       }
 
       const CudaBackendLmRun run = runCudaBackendLm(db, cudaParams);
-      printCudaBackendLmRun(run, options.cudaLinearSolver);
+      printCudaBackendLmRun(run, options.cudaLinearSolver, options.profile);
       continue;
     }
 #elif GTSAM_ENABLE_CUDA
@@ -1256,7 +1271,8 @@ int main(int argc, char* argv[]) {
 #if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
     if (options.cudaLmGraph) {
       const auto cudaParams =
-          makeBalCudaLmParams(options.cudaLinearSolver, CudaLmDefaults::Graph);
+          makeBalCudaLmParams(options.cudaLinearSolver, CudaLmDefaults::Graph,
+                              options.profile);
 
       if (options.cudaWarmupFileSpecified && !cudaWarmupDone) {
         std::cout << "  CUDA graph warmup file: " << options.cudaWarmupFile
@@ -1277,7 +1293,7 @@ int main(int argc, char* argv[]) {
 
       const CudaGraphLmRun run = runCudaGraphLm(graph, initial, cudaParams);
       printCudaGraphLmRun(run, options.cudaLinearSolver,
-                          options.cudaGraphKind);
+                          options.cudaGraphKind, options.profile);
       continue;
     }
 #endif

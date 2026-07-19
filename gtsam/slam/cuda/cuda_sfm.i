@@ -34,6 +34,7 @@ class CudaSfmLevenbergMarquardtParams {
   double minModelFidelity;
   bool useFixedLambdaFactor;
   bool diagonalDamping;
+  bool enableDetailedProfiling;
   double minDiagonal;
   double maxDiagonal;
   gtsam::cuda::CudaSfmLinearSolverType linearSolver;
