@@ -380,6 +380,12 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
       throw std::runtime_error(
           "FrobeniusBetweenFactor::qcqpFactors requires QCQP variable traits "
           "for this type and column dimension 1.");
+    } else if constexpr (!std::is_same_v<T, Rot2>) {
+      (void)costs;
+      (void)constraints;
+      throw std::runtime_error(
+          "FrobeniusBetweenFactor::qcqpFactors D=1 lifted Q embedding is "
+          "currently implemented only for Rot2.");
     } else {
       if (!costs) {
         throw std::invalid_argument(
@@ -403,33 +409,24 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
       const Matrix whitenedB = this->noiseModel_->Whiten(B);
       const Matrix Q = whitenedB.transpose() * whitenedB;
 
-      // Homogenize and truncate according to the type-specific lift.
-      if constexpr (std::is_same_v<T, Rot2>) {
-        constexpr int LiftedDim = Dim + 1;  // First entry is homogeneous.
-        Matrix Q_trunc_hom = Matrix::Zero(2 * LiftedDim, 2 * LiftedDim);
-        Q_trunc_hom.block(1, 1, Dim, Dim) = Q.block(0, 0, Dim, Dim);
-        Q_trunc_hom.block(1, LiftedDim + 1, Dim, Dim) =
-            Q.block(0, Dim, Dim, Dim);
-        Q_trunc_hom.block(LiftedDim + 1, 1, Dim, Dim) =
-            Q.block(Dim, 0, Dim, Dim);
-        Q_trunc_hom.block(LiftedDim + 1, LiftedDim + 1, Dim, Dim) =
-            Q.block(Dim, Dim, Dim, Dim);
+      // Homogenize and truncate according to the Rot2 lift.
+      constexpr int LiftedDim = Dim + 1;  // First entry is homogeneous.
+      Matrix Q_trunc_hom = Matrix::Zero(2 * LiftedDim, 2 * LiftedDim);
+      Q_trunc_hom.block(1, 1, Dim, Dim) = Q.block(0, 0, Dim, Dim);
+      Q_trunc_hom.block(1, LiftedDim + 1, Dim, Dim) =
+          Q.block(0, Dim, Dim, Dim);
+      Q_trunc_hom.block(LiftedDim + 1, 1, Dim, Dim) =
+          Q.block(Dim, 0, Dim, Dim);
+      Q_trunc_hom.block(LiftedDim + 1, LiftedDim + 1, Dim, Dim) =
+          Q.block(Dim, Dim, Dim, Dim);
 
-        // Keep constraint insertion inside the type-specific branch so
-        // Q_trunc_hom dimensions agree with the lifted vector, e.g. Rot2.h.
-        InsertQcqpConstraints<T, 1>(this->key1(), constraints);
-        InsertQcqpConstraints<T, 1>(this->key2(), constraints);
+      InsertQcqpConstraints<T, 1>(this->key1(), constraints);
+      InsertQcqpConstraints<T, 1>(this->key2(), constraints);
 
-        const SymmetricBlockMatrix blockQ(
-            std::vector<DenseIndex>{LiftedDim, LiftedDim}, Q_trunc_hom);
-        costs->push_back(std::make_shared<QpCost>(
-            KeyVector{this->key1(), this->key2()}, blockQ));
-      } else {
-        (void)constraints;
-        throw std::runtime_error(
-            "FrobeniusBetweenFactor::qcqpFactors D=1 lifted Q embedding is "
-            "currently implemented only for Rot2.");
-      }
+      const SymmetricBlockMatrix blockQ(
+          std::vector<DenseIndex>{LiftedDim, LiftedDim}, Q_trunc_hom);
+      costs->push_back(std::make_shared<QpCost>(
+          KeyVector{this->key1(), this->key2()}, blockQ));
     }
   }
 

@@ -241,6 +241,12 @@ Values ProblemValues() {
   return values;
 }
 
+// A runtime BM column dimension must remain positive even for an empty graph.
+TEST(QcqpProblem, EmptyGraphRejectsZeroColumnDimension) {
+  const NonlinearFactorGraph graph;
+  CHECK_EXCEPTION({ QcqpProblem problem(graph, 0); }, std::invalid_argument);
+}
+
 // Verifies QcqpProblem evaluates direct vector-valued costs and constraints.
 TEST(QcqpProblem, EvaluateVectorValues) {
   const Matrix Q = Matrix::Identity(2, 2);
@@ -727,6 +733,14 @@ TEST(QcqpProblem, Rot3D2Throws) {
                   std::invalid_argument);
   CHECK_EXCEPTION(traits<Rot3>::template QcqpConstraints<2>(),
                   std::invalid_argument);
+}
+
+// Rot3 has no exact D=1 lift, so conversion rejects it before building a cost.
+TEST(QcqpProblem, Rot3FrobeniusBetweenFactorD1Rejected) {
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusBetweenFactor<Rot3>>(x0, x1,
+                                                      Rot3::Identity());
+  CHECK_EXCEPTION({ QcqpProblem problem(graph, 1); }, std::runtime_error);
 }
 
 // For Rot3 canonical lifts, the D=3 row-space between cost is exactly the

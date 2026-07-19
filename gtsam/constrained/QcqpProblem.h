@@ -44,6 +44,15 @@ struct HasQcqpVariableTraits<
         decltype(traits<T>::template QcqpConstraints<D>())>>
     : std::true_type {};
 
+template <typename T, int D, typename = void>
+struct HasQcqpExtractionTraits : std::false_type {};
+
+template <typename T, int D>
+struct HasQcqpExtractionTraits<
+    T, D,
+    std::void_t<decltype(traits<T>::template FromQcqpValue<D>(
+        std::declval<const Matrix&>()))>> : HasQcqpVariableTraits<T, D> {};
+
 }  // namespace internal
 
 /**
@@ -123,7 +132,7 @@ void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints) {
  */
 template <typename T, int D>
 std::vector<std::pair<Key, T>> ExtractQcqpValues(const Values& qcqpValues) {
-  static_assert(internal::HasQcqpVariableTraits<T, D>::value,
+  static_assert(internal::HasQcqpExtractionTraits<T, D>::value,
                 "ExtractQcqpValues requires traits<T>::QcqpValue<D>, "
                 "QcqpConstraints<D>, and FromQcqpValue<D>.");
   constexpr int expectedRows = T::LieAlgebra::RowsAtCompileTime;
@@ -162,6 +171,10 @@ class GTSAM_EXPORT QcqpProblem : public ConstrainedOptProblem {
   /** Convert a supported nonlinear factor graph into QCQP costs/constraints. */
   explicit QcqpProblem(const NonlinearFactorGraph& graph,
                        size_t columnDimension = 1) {
+    if (columnDimension == 0) {
+      throw std::invalid_argument(
+          "QcqpProblem: columnDimension must be positive.");
+    }
     for (const auto& factor : graph) {
       if (factor) {
         factor->qcqpFactors(&costs_, &eqConstraints_, columnDimension);
