@@ -17,6 +17,7 @@
  */
 
 #include "../timeSFMBAL.h"
+#include "GncOutlierSampling.h"
 
 #include <gtsam/nonlinear/BatchFactor.h>
 
@@ -927,36 +928,30 @@ CorruptedBalProblem corruptBalMeasurements(const SfmData& db,
 
   // Global factor slots follow buildGeneralSfmGraph order: tracks with < 2
   // measurements are skipped entirely.
-  std::vector<std::pair<size_t, size_t>> eligible;  // (trackIndex, measIndex)
+  std::vector<size_t> trackSizes(db.numberTracks(), 0);
   size_t numFactors = 0;
   for (size_t j = 0; j < db.numberTracks(); ++j) {
     const size_t n = db.tracks[j].measurements.size();
+    trackSizes[j] = n;
     if (n < 2) continue;
     numFactors += n;
-    if (n <= 2) continue;
-    // Leave at least two clean measurements per track.
-    const size_t maxCorruptible = n - 2;
-    for (size_t m = 0; m < maxCorruptible; ++m) {
-      eligible.emplace_back(j, m);
-    }
   }
   problem.isOutlier.assign(numFactors, false);
 
   const size_t requested = static_cast<size_t>(
       std::llround(outlierFraction * static_cast<double>(numFactors)));
-  const size_t numOutliers = std::min(requested, eligible.size());
+  const auto selected = gtsam::timing::SelectConstrainedOutlierMeasurements(
+      trackSizes, requested, seed);
 
-  std::mt19937 rng(seed);
-  std::shuffle(eligible.begin(), eligible.end(), rng);
+  std::mt19937 angleRng(seed);
   std::uniform_real_distribution<double> angle(0.0, 2.0 * M_PI);
 
   // Corrupt the chosen measurements in the SfmData copy.
   std::vector<std::vector<bool>> corruptByTrack(db.numberTracks());
-  for (size_t k = 0; k < numOutliers; ++k) {
-    const auto [trackIndex, measIndex] = eligible[k];
+  for (const auto& [trackIndex, measIndex] : selected) {
     SfmMeasurement& measurement =
         problem.data.tracks[trackIndex].measurements[measIndex];
-    const double a = angle(rng);
+    const double a = angle(angleRng);
     measurement.second +=
         Point2(outlierPixels * std::cos(a), outlierPixels * std::sin(a));
     if (corruptByTrack[trackIndex].empty()) {
@@ -965,7 +960,7 @@ CorruptedBalProblem corruptBalMeasurements(const SfmData& db,
     }
     corruptByTrack[trackIndex][measIndex] = true;
   }
-  problem.outlierCount = numOutliers;
+  problem.outlierCount = selected.size();
 
   // Map (track, measurement) corruption flags to global factor slots.
   size_t slot = 0;
