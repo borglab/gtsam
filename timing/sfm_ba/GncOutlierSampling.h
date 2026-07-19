@@ -13,6 +13,8 @@ using OutlierMeasurement = std::pair<size_t, size_t>;
 inline std::vector<OutlierMeasurement> SelectConstrainedOutlierMeasurements(
     const std::vector<size_t>& trackSizes, size_t requested,
     unsigned int seed) {
+  if (requested == 0) return {};
+
   std::vector<OutlierMeasurement> candidates;
   size_t totalCapacity = 0;
   for (size_t track = 0; track < trackSizes.size(); ++track) {

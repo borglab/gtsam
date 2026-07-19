@@ -9,6 +9,13 @@
 using gtsam::timing::SelectConstrainedOutlierMeasurements;
 
 /* ************************************************************************* */
+TEST(GncOutlierSampling, ZeroRequestedSelectsNone) {
+  const auto selected =
+      SelectConstrainedOutlierMeasurements(std::vector<size_t>{3, 5}, 0, 42);
+  CHECK(selected.empty());
+}
+
+/* ************************************************************************* */
 TEST(GncOutlierSampling, IsDeterministicAndRespectsTrackCapacity) {
   const std::vector<size_t> trackSizes{2, 3, 5};
   const auto first =
