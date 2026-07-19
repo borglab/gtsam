@@ -41,7 +41,7 @@ using namespace gtsam;
 // 2. QcqpSingleFactorFixture and QcqpRingFixture cover the exact homogeneous
 //    D=1 Rot2 lift and its global sign ambiguity.
 // 3. QcqpRot2VariableFixture and QcqpTraitExtensionsFixture develop the
-//    D>=N Stiefel track, right-O(D) gauge, and soft gauge anchors.
+//    D>=N Stiefel track, right-O(D) gauge, and supported factor boundary.
 // 4. QcqpConstraintInsertionFixture and QcqpExtractionFixture document the
 //    conversion and best-effort recovery contracts.
 
@@ -664,87 +664,6 @@ TEST(QcqpProblem, Rot2FrobeniusBetweenFactorD3) {
                        1e-12);
 }
 
-// With X=[R',0] and Xbar=[M',0], ||X-Xbar||_F=||R-M||_F; this verifies
-// both equality with the manifold prior and zero cost at X=Xbar.
-TEST(QcqpProblem, Rot2SoftFrobeniusPriorD3) {
-  const Rot2 measured = Rot2::fromAngle(0.4);
-  const Rot2 estimate = Rot2::fromAngle(-0.2);
-  const auto noise = noiseModel::Isotropic::Sigma(4, 0.5);
-
-  NonlinearFactorGraph graph;
-  graph.emplace_shared<FrobeniusPrior<Rot2>>(x0, measured.matrix(), noise);
-  const QcqpProblem problem(graph, 3);
-
-  Values manifoldValues;
-  manifoldValues.insert(x0, estimate);
-  Values qcqpValues;
-  InsertQcqpValue<Rot2, 3>(x0, estimate, &qcqpValues);
-  EXPECT_DOUBLES_EQUAL(graph.error(manifoldValues),
-                       problem.costs().error(qcqpValues), 1e-12);
-  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
-                       1e-12);
-
-  Values targetValues;
-  InsertQcqpValue<Rot2, 3>(x0, measured, &targetValues);
-  EXPECT_DOUBLES_EQUAL(0.0, problem.costs().error(targetValues), 1e-12);
-}
-
-// A common G in O(D) preserves ||(X_1-M'*X_0)G||_F and XX', but the
-// absolute soft prior ||X_0-Xbar||_F selects a gauge and penalizes reflection.
-TEST(QcqpProblem, SoftPriorBreaksCommonGaugeAndPenalizesReflection) {
-  const Rot2 R0 = Rot2::fromAngle(0.2);
-  const Rot2 measured = Rot2::fromAngle(0.4);
-  const Rot2 R1 = R0.compose(measured);
-  const auto noise = noiseModel::Isotropic::Sigma(4, 1.0);
-
-  NonlinearFactorGraph betweenGraph;
-  betweenGraph.emplace_shared<FrobeniusBetweenFactor<Rot2>>(x0, x1,
-                                                             measured);
-  NonlinearFactorGraph anchoredGraph = betweenGraph;
-  anchoredGraph.emplace_shared<FrobeniusPrior<Rot2>>(x0, R0.matrix(), noise);
-  const QcqpProblem betweenProblem(betweenGraph, 2);
-  const QcqpProblem anchoredProblem(anchoredGraph, 2);
-  const Values canonical = QcqpValues<2>(R0, R1);
-
-  const Matrix reflection = (Matrix2() << 1.0, 0.0, 0.0, -1.0).finished();
-  Values reflected;
-  reflected.insert(x0, (canonical.at<Matrix>(x0) * reflection).eval());
-  reflected.insert(x1, (canonical.at<Matrix>(x1) * reflection).eval());
-
-  EXPECT_DOUBLES_EQUAL(betweenProblem.costs().error(canonical),
-                       betweenProblem.costs().error(reflected), 1e-12);
-  EXPECT_DOUBLES_EQUAL(0.0, anchoredProblem.costs().error(canonical), 1e-12);
-  EXPECT(anchoredProblem.costs().error(reflected) > 1e-6);
-  EXPECT_DOUBLES_EQUAL(
-      0.0, anchoredProblem.eConstraints().violationNorm(reflected), 1e-12);
-}
-
-// A D=3 right gauge can mix the canonical and padded columns without changing
-// XX'; the affine prior detects the resulting nonzero padded-column energy.
-TEST(QcqpProblem, SoftPriorPenalizesNoncanonicalExtraColumns) {
-  const Rot2 measured = Rot2::fromAngle(0.3);
-  NonlinearFactorGraph graph;
-  graph.emplace_shared<FrobeniusPrior<Rot2>>(
-      x0, measured.matrix(), noiseModel::Isotropic::Sigma(4, 1.0));
-  const QcqpProblem problem(graph, 3);
-
-  Values canonical;
-  InsertQcqpValue<Rot2, 3>(x0, measured, &canonical);
-  Matrix gauge = Matrix::Identity(3, 3);
-  const double angle = 0.4;
-  gauge(0, 0) = gauge(2, 2) = std::cos(angle);
-  gauge(0, 2) = -std::sin(angle);
-  gauge(2, 0) = std::sin(angle);
-  Values gauged;
-  gauged.insert(x0, (canonical.at<Matrix>(x0) * gauge).eval());
-
-  EXPECT_DOUBLES_EQUAL(0.0, problem.costs().error(canonical), 1e-12);
-  EXPECT(problem.costs().error(gauged) > 1e-6);
-  EXPECT(gauged.at<Matrix>(x0).rightCols(1).norm() > 1e-6);
-  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(gauged),
-                       1e-12);
-}
-
 }  // namespace QcqpRot2VariableFixture
 /* ************************************************************************* */
 namespace QcqpTraitExtensionsFixture {
@@ -837,30 +756,6 @@ TEST(QcqpProblem, Rot3FrobeniusBetweenFactorD3) {
                        1e-12);
 }
 
-// For Rot3, X=R' and Xbar=M' make the D=3 affine prior exactly equal to
-// 0.5/sigma^2*||R-M||_F^2, with zero attained by the measured rotation.
-TEST(QcqpProblem, Rot3SoftFrobeniusPriorD3) {
-  const Rot3 measured = Rot3::RzRyRx(0.2, -0.1, 0.3);
-  const Rot3 estimate = Rot3::RzRyRx(-0.4, 0.2, 0.1);
-  const auto noise = noiseModel::Isotropic::Sigma(9, 0.25);
-  NonlinearFactorGraph graph;
-  graph.emplace_shared<FrobeniusPrior<Rot3>>(x0, measured.matrix(), noise);
-  const QcqpProblem problem(graph, 3);
-
-  Values manifoldValues;
-  manifoldValues.insert(x0, estimate);
-  Values qcqpValues;
-  InsertQcqpValue<Rot3, 3>(x0, estimate, &qcqpValues);
-  EXPECT_DOUBLES_EQUAL(graph.error(manifoldValues),
-                       problem.costs().error(qcqpValues), 1e-12);
-  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
-                       1e-12);
-
-  Values targetValues;
-  InsertQcqpValue<Rot3, 3>(x0, measured, &targetValues);
-  EXPECT_DOUBLES_EQUAL(0.0, problem.costs().error(targetValues), 1e-12);
-}
-
 // Verifies FrobeniusBetweenFactor<Rot2> matches the manifold form at K=4.
 TEST(QcqpProblem, Rot2FrobeniusBetweenFactorD4) {
   const Rot2 measured = Rot2::fromAngle(0.4);
@@ -897,37 +792,19 @@ TEST(QcqpProblem, Rot3FrobeniusBetweenFactorK2Rejected) {
                   std::invalid_argument);
 }
 
-// The affine D>1 prior has one scalar weight for all N*D entries, so conversion
-// rejects D<N and hard, robust, or anisotropic noise rather than changing math.
-TEST(QcqpProblem, SoftFrobeniusPriorRejectsUnsupportedInputs) {
-  const Rot2 measured = Rot2::fromAngle(0.2);
+// A fixed target ||X-Xbar|| is not right-O(D)-invariant and cannot be written
+// only in terms of XX'; matrix priors await a BM-compatible anchor block.
+TEST(QcqpProblem, MatrixFrobeniusPriorRejected) {
+  NonlinearFactorGraph rot2Graph;
+  rot2Graph.emplace_shared<FrobeniusPrior<Rot2>>(
+      x0, Rot2::fromAngle(0.2).matrix(),
+      noiseModel::Isotropic::Sigma(4, 1.0));
+  CHECK_EXCEPTION({ QcqpProblem problem(rot2Graph, 2); }, std::runtime_error);
 
-  NonlinearFactorGraph hardGraph;
-  hardGraph.emplace_shared<FrobeniusPrior<Rot2>>(
-      x0, measured.matrix(), noiseModel::Constrained::All(4));
-  CHECK_EXCEPTION({ QcqpProblem problem(hardGraph, 2); }, std::runtime_error);
-
-  const auto baseNoise = noiseModel::Isotropic::Sigma(4, 1.0);
-  const auto robustNoise = noiseModel::Robust::Create(
-      noiseModel::mEstimator::Huber::Create(1.345), baseNoise);
-  NonlinearFactorGraph robustGraph;
-  robustGraph.emplace_shared<FrobeniusPrior<Rot2>>(x0, measured.matrix(),
-                                                   robustNoise);
-  CHECK_EXCEPTION({ QcqpProblem problem(robustGraph, 2); },
-                  std::runtime_error);
-
-  const Vector4 sigmas = (Vector4() << 1.0, 2.0, 3.0, 4.0).finished();
-  NonlinearFactorGraph anisotropicGraph;
-  anisotropicGraph.emplace_shared<FrobeniusPrior<Rot2>>(
-      x0, measured.matrix(), noiseModel::Diagonal::Sigmas(sigmas));
-  CHECK_EXCEPTION({ QcqpProblem problem(anisotropicGraph, 2); },
-                  std::runtime_error);
-
-  NonlinearFactorGraph tooSmallGraph;
-  tooSmallGraph.emplace_shared<FrobeniusPrior<Rot3>>(
-      x0, Matrix3::Identity(), noiseModel::Isotropic::Sigma(9, 1.0));
-  CHECK_EXCEPTION({ QcqpProblem problem(tooSmallGraph, 2); },
-                  std::invalid_argument);
+  NonlinearFactorGraph rot3Graph;
+  rot3Graph.emplace_shared<FrobeniusPrior<Rot3>>(
+      x0, Rot3::Identity().matrix(), noiseModel::Isotropic::Sigma(9, 1.0));
+  CHECK_EXCEPTION({ QcqpProblem problem(rot3Graph, 3); }, std::runtime_error);
 }
 
 }  // namespace QcqpTraitExtensionsFixture

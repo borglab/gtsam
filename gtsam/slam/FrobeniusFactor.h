@@ -116,7 +116,8 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
    * Add this Frobenius prior to the QCQP graph.
    *
    * D=1 supports hard constrained Rot2 priors in the exact homogeneous lift.
-   * D>1 supports non-robust isotropic soft priors on the N-by-D Stiefel lift.
+   * Matrix-form priors are not lowered because a fixed lifted target breaks
+   * the right-orthogonal gauge required by the Burer--Monteiro formulation.
    */
   void qcqpFactors(NonlinearFactorGraph* costs,
                    NonlinearEqualityConstraints* constraints,
@@ -170,64 +171,19 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
   }
 
   /**
-   * Add the matrix-form soft prior
-   * 0.5/sigma^2 * ||X - [M', 0]||_F^2.
-   *
-   * On a canonical lift X=[R',0], this equals the original Frobenius error
-   * 0.5/sigma^2 * ||R-M||_F^2. Away from that embedding it deliberately
-   * breaks the right-O(D) gauge and softly selects the canonical frame.
+   * Reject matrix-form priors until a BM-compatible anchor-block lowering is
+   * available. A future lowering can represent a prior as a gauge-invariant
+   * between cost ||X-M'X_anchor||_F^2.
    */
   void qcqpFactorsForMatrix(NonlinearFactorGraph* costs,
                             NonlinearEqualityConstraints* constraints,
                             size_t columnDimension) const {
-    if constexpr (!internal::HasQcqpVariableTraits<T, N>::value) {
-      (void)costs;
-      (void)constraints;
-      (void)columnDimension;
-      throw std::runtime_error(
-          "FrobeniusPrior::qcqpFactors requires QCQP variable traits for "
-          "this type and matrix-form column dimensions.");
-    } else {
-      if (columnDimension < static_cast<size_t>(N)) {
-        throw std::invalid_argument(
-            "FrobeniusPrior::qcqpFactors: columnDimension must be >= the "
-            "variable's intrinsic row dimension.");
-      }
-      if (!costs) {
-        throw std::invalid_argument(
-            "FrobeniusPrior::qcqpFactors costs is null.");
-      }
-      if (this->noiseModel_->isConstrained()) {
-        throw std::runtime_error(
-            "FrobeniusPrior::qcqpFactors D>1 does not implement hard priors; "
-            "use a non-robust isotropic Gaussian model.");
-      }
-      if (std::dynamic_pointer_cast<noiseModel::Robust>(this->noiseModel_)) {
-        throw std::runtime_error(
-            "FrobeniusPrior::qcqpFactors D>1 does not support robust noise "
-            "models.");
-      }
-      const auto isotropic =
-          std::dynamic_pointer_cast<noiseModel::Isotropic>(this->noiseModel_);
-      if (!isotropic) {
-        throw std::runtime_error(
-            "FrobeniusPrior::qcqpFactors D>1 requires an isotropic noise "
-            "model.");
-      }
-
-      InsertQcqpConstraints<T, N>(this->key(), constraints);
-
-      const Eigen::Map<const MatrixNN> measurement(vecM_.data());
-      Matrix target = Matrix::Zero(N, columnDimension);
-      target.leftCols(N) = measurement.transpose();
-      const Vector targetVector =
-          Eigen::Map<const Vector>(target.data(), target.size());
-      const Matrix identity = Matrix::Identity(target.size(), target.size());
-      const auto liftedNoise = noiseModel::Isotropic::Sigma(
-          target.size(), isotropic->sigma());
-      costs->emplace_shared<QpCost>(
-          JacobianFactor(this->key(), identity, targetVector, liftedNoise));
-    }
+    (void)costs;
+    (void)constraints;
+    (void)columnDimension;
+    throw std::runtime_error(
+        "FrobeniusPrior::qcqpFactors does not support matrix-form priors; "
+        "a Burer--Monteiro-compatible prior requires an anchor block.");
   }
 };
 

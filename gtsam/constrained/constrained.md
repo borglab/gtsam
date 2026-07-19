@@ -53,10 +53,13 @@ objective written without the `1/2`, pass twice the row-space `Q` blocks to
 The rotation conversion has two tracks. Rot2 at `D=1` uses an exact homogeneous
 lift and supports a sign-pinning hard prior. At `D>=N`, Rot2 (`D>=2`) and Rot3
 (`D>=3`) use row-Stiefel variables satisfying $XX^\top=I$. Between costs have a
-common right-$O(D)$ gauge; non-robust isotropic soft Frobenius priors break that
-gauge by penalizing $\|X-[M^\top\;0]\|_F^2$. The Stiefel constraints do not
-enforce determinant $+1$, so square variables also admit reflections.
-Unsupported factors throw from `NonlinearFactor::qcqpFactors`.
+common right-$O(D)$ gauge. Matrix-form priors are intentionally unsupported: a
+fixed target $\|X-[M^\top\;0]\|_F^2$ breaks that gauge and cannot be represented
+by the Burer--Monteiro Gram matrix alone. A future BM-compatible lowering can
+introduce an anchor block and use the invariant cost
+$\|X-M^\top X_{\mathrm{anchor}}\|_F^2$. The Stiefel constraints do not enforce
+determinant $+1$, so square variables also admit reflections. Unsupported
+factors throw from `NonlinearFactor::qcqpFactors`.
 
 ## Optimizers
 

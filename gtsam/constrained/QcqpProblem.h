@@ -116,8 +116,8 @@ void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints) {
  *
  * Only exact N-by-D matrix slices are considered, where N is the intrinsic
  * matrix row dimension of T. Canonical lifts and solutions whose connected
- * component is aligned by a nondegenerate soft prior have meaningful absolute
- * rotations. An unanchored D>1 component has a common right-O(D) gauge, so its
+ * component has been explicitly gauge-aligned have meaningful absolute
+ * rotations. An unaligned D>1 component has a common right-O(D) gauge, so its
  * independently extracted absolute rotations are intentionally best-effort
  * and gauge-dependent.
  */

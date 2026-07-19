@@ -645,10 +645,11 @@ struct traits<Rot3> : public internal::MatrixLieGroup<Rot3, 3> {
   }
 
   /**
-   * Project a canonical or softly anchored 3-by-D lift back to Rot3.
+   * Project a canonical 3-by-D lift back to Rot3.
    *
-   * Unanchored matrix-form QCQP solutions have a right-O(D) gauge, making
-   * this leading-block projection gauge-dependent. X must be exactly 3-by-D.
+   * Matrix-form QCQP solutions have a right-O(D) gauge, making this
+   * leading-block projection gauge-dependent unless the caller has first
+   * chosen a gauge. X must be exactly 3-by-D.
    */
   template <int D>
   static Rot3 FromQcqpValue(const Matrix& X) {
