@@ -733,11 +733,11 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
     AddH2dTransfer(packValuesProfile.h2d, &result);
   }
 
-  stageStart = DetailedProfileStart(detailedProfiling);
+  stageStart = Clock::now();
   DeviceValues trial = AllocateSfmValuesLike(current);
   result.allocateTrialElapsed = ElapsedSince(stageStart);
 
-  stageStart = Clock::now();
+  stageStart = DetailedProfileStart(detailedProfiling);
   if (robustModelsByTrack && !sqrtInfoByTrack) {
     throw std::invalid_argument(
         "OptimizeCudaSfm robust noise requires projection sqrt-info");
@@ -813,11 +813,11 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
   result.denseSchurSolverConstructionElapsed = ElapsedSince(stageStart);
   bool solverAnalyzed = false;
   if (params.linearSolver == CudaSfmLinearSolverType::CudssFullNormal) {
-    stageStart = DetailedProfileStart(detailedProfiling);
+    stageStart = Clock::now();
     const CudaBalCsrStructure structure = CudaBalCsrStructure::FromSfmData(data);
     result.csrStructureElapsed = ElapsedSince(stageStart);
 
-    stageStart = Clock::now();
+    stageStart = DetailedProfileStart(detailedProfiling);
     CudaDeviceTransferSummary uploadPatternProfile;
     system.uploadPattern(structure.dimension(), structure.rowPointers(),
                          structure.colIndices(), context.stream(),

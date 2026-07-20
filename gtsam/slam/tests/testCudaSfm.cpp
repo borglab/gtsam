@@ -1912,6 +1912,8 @@ TEST(CudaSfmLevenbergMarquardt, DetailedProfilingIsDisabledByDefault) {
       OptimizeCudaSfm(data, params);
 
   CHECK(result.solveLoopElapsed > 0.0);
+  CHECK(result.allocateTrialElapsed >= 0.0);
+  CHECK(result.allocateTrialElapsed <= result.totalMeasuredElapsed);
   EXPECT_LONGS_EQUAL(0, result.totalH2dBytes);
   EXPECT_LONGS_EQUAL(0, result.totalD2hBytes);
   DOUBLES_EQUAL(0.0, result.packValuesElapsed, 0.0);
@@ -1938,6 +1940,8 @@ TEST(CudaSfmLevenbergMarquardt,
       OptimizeCudaSfmWithoutValueDownload(data, params);
 
   CHECK(result.solveLoopElapsed > 0.0);
+  CHECK(result.csrStructureElapsed >= 0.0);
+  CHECK(result.csrStructureElapsed <= result.totalMeasuredElapsed);
   DOUBLES_EQUAL(0.0, result.packValuesElapsed, 0.0);
   DOUBLES_EQUAL(0.0, result.projectionBatchElapsed, 0.0);
   DOUBLES_EQUAL(0.0, result.uploadPatternElapsed, 0.0);
