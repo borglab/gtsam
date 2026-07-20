@@ -1711,6 +1711,7 @@ GncBenchmarkRun runGncBenchmark(const NonlinearFactorGraph& graph,
                                 const GncRunOptions& gncOptions) {
   GncParams<BaseParams> gncParams(baseParams);
   gncParams.setLossType(gncOptions.lossType);
+  gncParams.enableTiming = true;
   if (gncOptions.maxOuterIterations != gncParams.maxIterations) {
     gncParams.maxIterations = gncOptions.maxOuterIterations;
   }

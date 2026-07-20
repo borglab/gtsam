@@ -82,6 +82,7 @@ class GncParams {
   double muMax = 1e16;  ///< Maximum value of mu in GNC, acts as a cap (only for TLS)
   Verbosity verbosity = SILENT;  ///< Verbosity level
   bool allowNonNoiseModelFactors = false;  ///< If true, factors without noise model are not reweighted and not not included in mu calculation
+  bool enableTiming = false;  ///< Collect detailed optimize() stage timings
 
   /// Use IndexVector for inliers and outliers since it is fast
   using IndexVector = FastVector<uint64_t>;
@@ -164,7 +165,8 @@ class GncParams {
         && scheduler == other.scheduler
         && verbosity == other.verbosity && knownInliers == other.knownInliers
         && knownOutliers == other.knownOutliers
-        && allowNonNoiseModelFactors == other.allowNonNoiseModelFactors;
+        && allowNonNoiseModelFactors == other.allowNonNoiseModelFactors
+        && enableTiming == other.enableTiming;
   }
 
   /// Print.
@@ -200,6 +202,7 @@ class GncParams {
     for (size_t i = 0; i < knownOutliers.size(); i++)
       std::cout << "knownOutliers: " << knownOutliers[i] << "\n";
     std::cout << "allowNonNoiseModelFactors: " << allowNonNoiseModelFactors << "\n";
+    std::cout << "enableTiming: " << enableTiming << "\n";
     baseOptimizerParams.print("Base optimizer params: ");
   }
 };
