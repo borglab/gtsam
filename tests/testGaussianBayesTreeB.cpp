@@ -408,5 +408,29 @@ TEST(GaussianBayesTree, jointMarginalsAgreeWithMarginals) {
 }
 
 /* ************************************************************************* */
+TEST(GaussianBayesTree, marginalCovarianceHandlesDeepChain) {
+  // This exceeds the default Linux stack when separator marginals recurse.
+  constexpr Key kNumVariables = 30000;
+  const auto model = noiseModel::Unit::Create(1);
+  const Matrix A = I_1x1;
+
+  GaussianFactorGraph graph;
+  graph.add(0, A, Vector1(0.0), model);
+  for (Key key = 1; key < kNumVariables; ++key) {
+    graph.add(key - 1, A, key, -A, Vector1(0.0), model);
+  }
+
+  Ordering ordering;
+  ordering.reserve(kNumVariables);
+  for (Key key = 0; key < kNumVariables; ++key) {
+    ordering.push_back(key);
+  }
+
+  GaussianBayesTree bayesTree = *graph.eliminateMultifrontal(ordering);
+  const Matrix covariance = bayesTree.marginalCovariance(0);
+  EXPECT(assert_equal(A, covariance, 1e-9));
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */
