@@ -623,6 +623,7 @@ void CheckCpuFallback(
   CudaSparseLevenbergMarquardtParams params;
   LevenbergMarquardtParams::SetCeresDefaults(&params);
   params.maxIterations = 20;
+  params.collectTiming = true;
 
   const Values expected =
       LevenbergMarquardtOptimizer(graph, initial, params).optimize();
@@ -692,7 +693,7 @@ static_assert(std::is_base_of_v<LevenbergMarquardtParams,
 TEST(CudaSparseLevenbergMarquardt, ExposesPrototypeParamsDefaults) {
   const CudaSparseLevenbergMarquardtParams params;
   CHECK(params.fallbackOnUnsupported);
-  CHECK(params.collectTiming);
+  CHECK(!params.collectTiming);
   CHECK(!params.collectAttemptTrace);
   CHECK(!params.validateStructureEveryIteration);
 }
@@ -844,6 +845,7 @@ TEST(CudaSparseLevenbergMarquardt,
   CudaSparseLevenbergMarquardtParams params;
   LevenbergMarquardtParams::SetCeresDefaults(&params);
   params.maxIterations = 10;
+  params.collectTiming = true;
   const Values expected =
       LevenbergMarquardtOptimizer(graph, initial, params).optimize();
   {

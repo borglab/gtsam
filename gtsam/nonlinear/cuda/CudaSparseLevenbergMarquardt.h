@@ -26,7 +26,7 @@ class GTSAM_EXPORT CudaSparseLevenbergMarquardtParams
   // to ordinary CPU LM; cuDSS chooses the CUDA sparse ordering internally.
 
   bool fallbackOnUnsupported = true;
-  bool collectTiming = true;
+  bool collectTiming = false;
   bool collectAttemptTrace = false;
   bool validateStructureEveryIteration = false;
 };
