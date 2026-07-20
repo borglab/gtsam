@@ -1,6 +1,10 @@
 #include <gtsam/certifiable/LiftedSDPProblem.h>
 
+#include <Eigen/Eigenvalues>
+
+#include <cmath>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <vector>
 
@@ -18,7 +22,53 @@ namespace gtsam {
 // Put MOSEK only functions in anonymous namespace.
 namespace {
 
+// # copied from gtsam-private
 using LiftedVariableXijToSDPVariableViewMap = std::map<std::pair<Key, Key>, mf::Variable::t>;
+
+// # copied from gtsam-private
+struct MosekSolveSummary {
+  bool solved = false;
+  mf::ProblemStatus problemStatus;
+  double optimizerTimeSeconds;
+};
+
+// # copied from gtsam-private
+std::map<std::string, double> DefaultMosekParams() {
+  return {
+      {"intpntCoTolRelGap", 1e-10},
+      {"intpntCoTolDfeas", 1e-10},
+      {"intpntCoTolPfeas", 1e-10},
+      {"intpntCoTolInfeas", 1e-10},
+  };
+}
+
+// # copied from gtsam-private
+std::map<std::string, double> MergeMosekParams(
+    const std::map<std::string, double>& overrides) {
+  auto merged = DefaultMosekParams();
+  for (const auto& kv : overrides) {
+    merged[kv.first] = kv.second;
+  }
+  return merged;
+}
+
+// # copied from gtsam-private
+MosekSolveSummary SolveMosekModel(
+    const mf::Model::t& M,
+    const std::map<std::string, double>& mosek_params) {
+  const auto mergedParams = MergeMosekParams(mosek_params);
+  for (const auto& kv : mergedParams) {
+    M->setSolverParam(kv.first, kv.second);
+  }
+
+  MosekSolveSummary summary;
+  M->solve();
+  summary.problemStatus = M->getProblemStatus();
+  summary.optimizerTimeSeconds = M->getSolverDoubleInfo("optimizerTime");
+  summary.solved = true;
+
+  return summary;
+}
 
 std::map<Key, DenseIndex> CollectQpCostKeyDims(const QcqpProblem& problem,
                                                KeySet* costKeys) {
@@ -51,12 +101,14 @@ std::map<Key, DenseIndex> CollectQpCostKeyDims(const QcqpProblem& problem,
   return keyDims;
 }
 
+// # copied from gtsam-private
 void DisposeMosekModel(const mf::Model::t& M) {
   if (M.get() != nullptr) {
     M->dispose();
   }
 }
 
+// # copied from gtsam-private
 // Convert Eigen matrix to a Fusion-compatible numeric buffer with one
 // allocation and one pass. The buffer is filled in row-major order.
 // In principle, this is a performant way of doing things. 
@@ -76,6 +128,7 @@ std::shared_ptr<monty::ndarray<double, 1>> convertToMOSEKArray2D(
   return buffer;
 }
 
+// # copied from gtsam-private
 mf::Matrix::t convertToMosekDenseMatrix(const Matrix& mat) {
   return mf::Matrix::dense(static_cast<int>(mat.rows()),
                            static_cast<int>(mat.cols()),
@@ -86,6 +139,90 @@ mf::Matrix::t convertToMosekDenseMatrix(const Vector& vec) {
   Matrix mat(vec.size(), 1);
   mat.col(0) = vec;
   return convertToMosekDenseMatrix(mat);
+}
+
+// # copied from gtsam-private
+Matrix ConvertFromMosekLevelColMajor(
+    const std::shared_ptr<monty::ndarray<double, 1>>& level, int rows,
+    int cols) {
+  using ColMajorMat =
+      Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>;
+  Eigen::Map<const ColMajorMat> view(level->raw(), rows, cols);
+  return Matrix(view);
+}
+
+// # copied from gtsam-private
+Matrix ExtractSolvedMatrixBlock(const mf::Variable::t& blockView,
+                                DenseIndex expectedDim) {
+  const auto level = blockView->level();
+  const size_t numel = static_cast<size_t>(level->size(0));
+  const size_t expectedSize = static_cast<size_t>(expectedDim);
+  if (numel != expectedSize * expectedSize) {
+    throw std::runtime_error(
+        "ExtractSolvedMatrixBlock: solved block size does not match the QCQP "
+        "variable dimension.");
+  }
+
+  return ConvertFromMosekLevelColMajor(
+      level, static_cast<int>(expectedDim), static_cast<int>(expectedDim));
+}
+
+// # copied from gtsam-private
+double ComputeBlockRankOneRatio(const Matrix& Xii) {
+  Eigen::SelfAdjointEigenSolver<Matrix> solver;
+  solver.compute(Xii.template selfadjointView<Eigen::Lower>(),
+                 Eigen::EigenvaluesOnly);
+  if (solver.info() != Eigen::Success) {
+    throw std::runtime_error(
+        "ComputeBlockRankOneRatio: eigen decomposition failed.");
+  }
+
+  const auto eigs = solver.eigenvalues();
+  if (eigs.size() < 2) {
+    throw std::runtime_error(
+        "ComputeBlockRankOneRatio: Xii block too small for rank-one check.");
+  }
+
+  const double lambdaMax = eigs(eigs.size() - 1);
+  const double lambdaSecond = eigs(eigs.size() - 2);
+  return lambdaMax / lambdaSecond;
+}
+
+// # copied from gtsam-private
+constexpr double kRecoveredBlockRankOneWarningThreshold = 1e5;
+
+// # copied from gtsam-private
+Vector RecoverLiftedVector(const Matrix& Xii) {
+  if (Xii.rows() == 0 || Xii.cols() == 0 || std::abs(Xii(0, 0)) < 1e-9) {
+    throw std::runtime_error(
+        "RecoverLiftedVector: homogenization entry is near zero.");
+  }
+  return Xii.col(0);
+}
+
+// # copied from gtsam-private
+void RecoverLiftedVectors(
+    const LiftedVariableXijToSDPVariableViewMap& XijMap,
+    const KeyVector& orderedKeys,
+    const std::map<Key, DenseIndex>& orderedKeyDims,
+    std::vector<Vector>& recoveredLiftedVectors,
+    std::vector<double>& recoveredVariableEVRs) {
+  const size_t variableCount = orderedKeys.size();
+  recoveredLiftedVectors.resize(variableCount);
+  recoveredVariableEVRs.resize(variableCount);
+
+  for (size_t index = 0; index < variableCount; ++index) {
+    const Key key = orderedKeys[index];
+    const Matrix Xii = ExtractSolvedMatrixBlock(
+        XijMap.at({key, key}), orderedKeyDims.at(key));
+    recoveredVariableEVRs[index] = ComputeBlockRankOneRatio(Xii);
+    if (recoveredVariableEVRs[index] < kRecoveredBlockRankOneWarningThreshold) {
+      std::cerr << "WARNING: recovered lifted block for key "
+                << DefaultKeyFormatter(key) << " failed rank-1 check with EVR "
+                << recoveredVariableEVRs[index] << std::endl;
+    }
+    recoveredLiftedVectors[index] = RecoverLiftedVector(Xii);
+  }
 }
 
 mf::Expression::t BuildQpCostObjectiveTerm(
@@ -186,17 +323,39 @@ void AddLinearEqualityConstraint(
   }
 }
 
+// The current D=1 QCQP uses one homogenization entry per key. These equalities
+// keep all lifted copies of the fixed value one in the same Gram direction.
+void AddHomogenizationConsistencyConstraints(
+    const mf::Model::t& M, const KeyVector& orderedKeys,
+    const LiftedVariableXijToSDPVariableViewMap& xijMap) {
+  if (orderedKeys.empty()) {
+    return;
+  }
+
+  const Key referenceKey = orderedKeys.front();
+  for (size_t index = 1; index < orderedKeys.size(); ++index) {
+    const Key key = orderedKeys[index];
+    M->constraint(xijMap.at({referenceKey, key})->index(0, 0),
+                  mf::Domain::equalsTo(1.0));
+  }
+}
+
 }  // namespace
 
 struct LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::Impl {
   mf::Model::t M;
+  MosekSolveSummary lastSolveSummary;
   KeyVector orderedKeys;
   std::map<Key, DenseIndex> orderedKeyDims;
   std::map<Key, std::pair<DenseIndex, DenseIndex>> orderedKeyToYSlice;
   DenseIndex totalMonolithicDimension;
   LiftedVariableXijToSDPVariableViewMap liftedVariableXijToSDPVariableViewMap;
+  std::vector<Vector> recoveredLiftedVectors;
+  std::vector<double> recoveredVariableEVRs;
 
   ~Impl() {
+    recoveredLiftedVectors.clear();
+    recoveredVariableEVRs.clear();
     liftedVariableXijToSDPVariableViewMap.clear();
     DisposeMosekModel(M);
   }
@@ -227,13 +386,12 @@ struct LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::Impl {
       const DenseIndex start = cumulativeIndex;
       const DenseIndex end = start + orderedKeyDims.at(key);
       orderedKeyToYSlice[key] = {start, end};
-      std::cout << DefaultKeyFormatter(key) << " Y slice [" << start << ", "
-                << end << ")" << std::endl;
       cumulativeIndex = end;
     }
     totalMonolithicDimension = cumulativeIndex;
   }
 
+  // # copied from gtsam-private
   void populateXijMap(const mf::Variable::t& Y) {
     liftedVariableXijToSDPVariableViewMap.clear();
 
@@ -260,12 +418,17 @@ LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::LiftedSDPProblem(
   impl_->collectOrderedKeysAndDims(problem);
   impl_->computeMonolithicLayout();
 
+  // # copied from gtsam-private
   impl_->M = new mf::Model("MonolithicSDP_MosekSDPSolver");
   auto Y = impl_->M->variable(
       "Y",
       mf::Domain::inPSDCone(
           static_cast<int>(impl_->totalMonolithicDimension)));
   impl_->populateXijMap(Y);
+
+  AddHomogenizationConsistencyConstraints(
+      impl_->M, impl_->orderedKeys,
+      impl_->liftedVariableXijToSDPVariableViewMap);
 
   const auto objective = BuildObjective(problem, impl_->liftedVariableXijToSDPVariableViewMap);
   impl_->M->objective(mf::ObjectiveSense::Minimize,
@@ -322,6 +485,68 @@ LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::LiftedSDPProblem(
 }
 
 LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::~LiftedSDPProblem() = default;
+
+// # copied from gtsam-private
+bool LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::solve(
+    const std::map<std::string, double>& mosek_params) {
+  impl_->lastSolveSummary = SolveMosekModel(impl_->M, mosek_params);
+  return impl_->lastSolveSummary.solved;
+}
+
+// # copied from gtsam-private
+double LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::objectiveValue() const {
+  impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
+  return impl_->M->primalObjValue();
+}
+
+// # copied from gtsam-private
+std::string LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::problemStatus()
+    const {
+  if (!impl_->lastSolveSummary.solved) {
+    throw std::runtime_error("problemStatus: solve() has not been called.");
+  }
+  std::ostringstream out;
+  out << impl_->lastSolveSummary.problemStatus;
+  return out.str();
+}
+
+// # copied from gtsam-private
+double LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::solveTimeSeconds()
+    const {
+  if (!impl_->lastSolveSummary.solved) {
+    throw std::runtime_error("solveTimeSeconds: solve() has not been called.");
+  }
+  return impl_->lastSolveSummary.optimizerTimeSeconds;
+}
+
+void LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::recoverLiftedVectors() {
+  impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
+  RecoverLiftedVectors(impl_->liftedVariableXijToSDPVariableViewMap,
+                       impl_->orderedKeys, impl_->orderedKeyDims,
+                       impl_->recoveredLiftedVectors,
+                       impl_->recoveredVariableEVRs);
+}
+
+const std::vector<Vector>& LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::
+    getRecoveredLiftedVectors() const {
+  if (impl_->recoveredLiftedVectors.empty()) {
+    throw std::runtime_error(
+        "getRecoveredLiftedVectors: recoverLiftedVectors() must be called "
+        "first.");
+  }
+  return impl_->recoveredLiftedVectors;
+}
+
+const std::vector<double>&
+LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::getRecoveredVariableEVRs()
+    const {
+  if (impl_->recoveredVariableEVRs.empty()) {
+    throw std::runtime_error(
+        "getRecoveredVariableEVRs: recoverLiftedVectors() must be called "
+        "first.");
+  }
+  return impl_->recoveredVariableEVRs;
+}
 
 const KeyVector&
 LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::orderedKeys() const {
