@@ -101,7 +101,9 @@ class CudaSfmProjectionBatch {
     if (profile) {
       *profile = CudaSfmProjectionBatchTransferProfile{};
     }
-    const auto hostBuildStart = std::chrono::steady_clock::now();
+    const auto hostBuildStart =
+        profile ? std::chrono::steady_clock::now()
+                : std::chrono::steady_clock::time_point{};
     CudaSfmProjectionBatch batch;
     batch.numCameras_ = data.numberCameras();
     batch.numPoints_ = data.numberTracks();

@@ -69,7 +69,9 @@ class DeviceValues {
     } else {
       storage->block.values.upload(hostValues, stream);
     }
-    const auto deltaResizeStart = std::chrono::steady_clock::now();
+    const auto deltaResizeStart =
+        deltaResizeElapsed ? std::chrono::steady_clock::now()
+                           : std::chrono::steady_clock::time_point{};
     storage->block.delta.resize(hostValues.size() *
                                 static_cast<size_t>(tangentDim));
     if (deltaResizeElapsed) {

@@ -16,11 +16,12 @@
  * @date    June 6, 2015
  */
 
+#include "../timeSFMBAL.h"
+#include "GncOutlierSampling.h"
+
 #include <gtsam/config.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/BatchFactor.h>
-
-#include "../timeSFMBAL.h"
 
 #if GTSAM_ENABLE_CUDA
 #include <gtsam/base/cuda/CudaContext.h>
@@ -496,13 +497,15 @@ gtsam::cuda::CudaSfmLinearSolverType cudaLinearSolverType(
 }
 
 gtsam::cuda::CudaSfmLevenbergMarquardtParams makeBalCudaLmParams(
-    CudaLinearSolverOption solverOption, CudaLmDefaults defaults) {
+    CudaLinearSolverOption solverOption, CudaLmDefaults defaults,
+    bool enableDetailedProfiling) {
   gtsam::cuda::CudaSfmLevenbergMarquardtParams params =
       defaults == CudaLmDefaults::Graph
           ? gtsam::cuda::CudaSfmLevenbergMarquardtParams::CeresDefaults()
           : gtsam::cuda::CudaSfmLevenbergMarquardtParams();
   applyBalBenchmarkLmSettings(params);
   params.linearSolver = cudaLinearSolverType(solverOption);
+  params.enableDetailedProfiling = enableDetailedProfiling;
   return params;
 }
 
@@ -543,7 +546,7 @@ GpuLinearizationBenchmark benchmarkGpuLinearization(const SfmData& db,
   }
 
   const auto params = makeBalCudaLmParams(CudaLinearSolverOption::DenseSchur,
-                                          CudaLmDefaults::Graph);
+                                          CudaLmDefaults::Graph, false);
   gtsam::cuda::CudaDeviceArray<double> dampingDiagonal;
   if (params.diagonalDamping) {
     const auto computeHessianDiagonal = [&]() {
@@ -782,7 +785,8 @@ void printCudaLmDetailedBreakdown(
 }
 
 void printCudaBackendLmRun(const CudaBackendLmRun& run,
-                           CudaLinearSolverOption solverOption) {
+                           CudaLinearSolverOption solverOption,
+                           bool detailedProfiling) {
   const auto& result = run.result;
   std::cout << "  CUDA LM: " << run.elapsed << " s\n";
   std::cout << "  CUDA LM linear solver: " << cudaLinearSolverName(solverOption)
@@ -793,10 +797,15 @@ void printCudaBackendLmRun(const CudaBackendLmRun& run,
   std::cout << "  CUDA LM setup before solve loop: " << result.setupElapsed
             << " s\n";
   printCudaLmSetupBreakdown(result, "  CUDA LM ");
-  printCudaLmTransferBreakdown(result, "  CUDA LM ");
-  printCudaLmDetailedBreakdown(result, "  CUDA LM ");
-  std::cout << "Initial error: " << std::setprecision(15) << result.initialError
-            << "\n";
+  if (detailedProfiling) {
+    printCudaLmTransferBreakdown(result, "  CUDA LM ");
+    printCudaLmDetailedBreakdown(result, "  CUDA LM ");
+  } else {
+    std::cout << "  CUDA LM detailed profiling: disabled (use --profile to "
+                 "enable)\n";
+  }
+  std::cout << "Initial error: " << std::setprecision(15)
+            << result.initialError << "\n";
   std::cout << "Final error: " << result.finalError
             << ", iterations: " << result.iterations
             << ", accepted: " << result.acceptedSteps << std::setprecision(6)
@@ -855,7 +864,7 @@ CudaGraphLmRun runCudaGraphLm(
 
 void printCudaGraphLmRun(const CudaGraphLmRun& run,
                          CudaLinearSolverOption solverOption,
-                         CudaGraphKind graphKind) {
+                         CudaGraphKind graphKind, bool detailedProfiling) {
   const double graphBackendCallOverhead =
       run.backend.graphBackendCallElapsed - run.backend.totalMeasuredElapsed;
   const double graphApiOtherOverhead =
@@ -900,10 +909,15 @@ void printCudaGraphLmRun(const CudaGraphLmRun& run,
   std::cout << "  CUDA LM backend setup before solve loop: "
             << run.backend.setupElapsed << " s\n";
   printCudaLmSetupBreakdown(run.backend, "  CUDA LM backend ");
-  printCudaLmTransferBreakdown(run.backend, "  CUDA LM backend ");
-  printCudaLmDetailedBreakdown(run.backend, "  CUDA LM backend ");
-  std::cout << "Initial error: " << std::setprecision(15) << run.initialError
-            << "\n";
+  if (detailedProfiling) {
+    printCudaLmTransferBreakdown(run.backend, "  CUDA LM backend ");
+    printCudaLmDetailedBreakdown(run.backend, "  CUDA LM backend ");
+  } else {
+    std::cout << "  CUDA LM backend detailed profiling: disabled (use "
+                 "--profile to enable)\n";
+  }
+  std::cout << "Initial error: " << std::setprecision(15)
+            << run.initialError << "\n";
   std::cout << "Final error: " << run.finalError
             << ", iterations: " << run.iterations
             << ", accepted: " << run.backend.acceptedSteps
@@ -1577,36 +1591,30 @@ CorruptedBalProblem corruptBalMeasurements(const SfmData& db,
 
   // Global factor slots follow buildGeneralSfmGraph order: tracks with < 2
   // measurements are skipped entirely.
-  std::vector<std::pair<size_t, size_t>> eligible;  // (trackIndex, measIndex)
+  std::vector<size_t> trackSizes(db.numberTracks(), 0);
   size_t numFactors = 0;
   for (size_t j = 0; j < db.numberTracks(); ++j) {
     const size_t n = db.tracks[j].measurements.size();
+    trackSizes[j] = n;
     if (n < 2) continue;
     numFactors += n;
-    if (n <= 2) continue;
-    // Leave at least two clean measurements per track.
-    const size_t maxCorruptible = n - 2;
-    for (size_t m = 0; m < maxCorruptible; ++m) {
-      eligible.emplace_back(j, m);
-    }
   }
   problem.isOutlier.assign(numFactors, false);
 
   const size_t requested = static_cast<size_t>(
       std::llround(outlierFraction * static_cast<double>(numFactors)));
-  const size_t numOutliers = std::min(requested, eligible.size());
+  const auto selected = gtsam::timing::SelectConstrainedOutlierMeasurements(
+      trackSizes, requested, seed);
 
-  std::mt19937 rng(seed);
-  std::shuffle(eligible.begin(), eligible.end(), rng);
+  std::mt19937 angleRng(seed);
   std::uniform_real_distribution<double> angle(0.0, 2.0 * M_PI);
 
   // Corrupt the chosen measurements in the SfmData copy.
   std::vector<std::vector<bool>> corruptByTrack(db.numberTracks());
-  for (size_t k = 0; k < numOutliers; ++k) {
-    const auto [trackIndex, measIndex] = eligible[k];
+  for (const auto& [trackIndex, measIndex] : selected) {
     SfmMeasurement& measurement =
         problem.data.tracks[trackIndex].measurements[measIndex];
-    const double a = angle(rng);
+    const double a = angle(angleRng);
     measurement.second +=
         Point2(outlierPixels * std::cos(a), outlierPixels * std::sin(a));
     if (corruptByTrack[trackIndex].empty()) {
@@ -1615,7 +1623,7 @@ CorruptedBalProblem corruptBalMeasurements(const SfmData& db,
     }
     corruptByTrack[trackIndex][measIndex] = true;
   }
-  problem.outlierCount = numOutliers;
+  problem.outlierCount = selected.size();
 
   // Map (track, measurement) corruption flags to global factor slots.
   size_t slot = 0;
@@ -1798,7 +1806,8 @@ int main(int argc, char* argv[]) {
 
 #if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
       const auto cudaParams =
-          makeBalCudaLmParams(options.cudaLinearSolver, CudaLmDefaults::Graph);
+          makeBalCudaLmParams(options.cudaLinearSolver, CudaLmDefaults::Graph,
+                              false);
 
       if (options.cudaWarmupFileSpecified && !cudaWarmupDone) {
         std::cout << "  CUDA GNC warmup file: " << options.cudaWarmupFile
@@ -1835,8 +1844,9 @@ int main(int argc, char* argv[]) {
 
 #if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
     if (options.cudaLm) {
-      const auto cudaParams = makeBalCudaLmParams(options.cudaLinearSolver,
-                                                  CudaLmDefaults::Backend);
+      const auto cudaParams =
+          makeBalCudaLmParams(options.cudaLinearSolver,
+                              CudaLmDefaults::Backend, options.profile);
 
       if (options.cudaWarmupFileSpecified && !cudaWarmupDone) {
         std::cout << "  CUDA warmup file: " << options.cudaWarmupFile
@@ -1853,7 +1863,7 @@ int main(int argc, char* argv[]) {
       }
 
       const CudaBackendLmRun run = runCudaBackendLm(db, cudaParams);
-      printCudaBackendLmRun(run, options.cudaLinearSolver);
+      printCudaBackendLmRun(run, options.cudaLinearSolver, options.profile);
       continue;
     }
 #elif GTSAM_ENABLE_CUDA
@@ -2006,7 +2016,7 @@ int main(int argc, char* argv[]) {
 
       const LevenbergMarquardtParams ordinaryParams = sparseParams;
       const auto specializedParams = makeBalCudaLmParams(
-          CudaLinearSolverOption::DenseSchur, CudaLmDefaults::Graph);
+          CudaLinearSolverOption::DenseSchur, CudaLmDefaults::Graph, true);
 
       // Warm every implementation once before measuring so library, allocator,
       // and GPU first-use costs do not land asymmetrically in one CUDA row.
@@ -2026,7 +2036,8 @@ int main(int argc, char* argv[]) {
 
     if (options.cudaLmGraph) {
       const auto cudaParams =
-          makeBalCudaLmParams(options.cudaLinearSolver, CudaLmDefaults::Graph);
+          makeBalCudaLmParams(options.cudaLinearSolver, CudaLmDefaults::Graph,
+                              options.profile);
 
       if (options.cudaWarmupFileSpecified && !cudaWarmupDone) {
         std::cout << "  CUDA graph warmup file: " << options.cudaWarmupFile
@@ -2046,7 +2057,8 @@ int main(int argc, char* argv[]) {
       }
 
       const CudaGraphLmRun run = runCudaGraphLm(graph, initial, cudaParams);
-      printCudaGraphLmRun(run, options.cudaLinearSolver, options.cudaGraphKind);
+      printCudaGraphLmRun(run, options.cudaLinearSolver,
+                          options.cudaGraphKind, options.profile);
       continue;
     }
 #else

@@ -85,7 +85,9 @@ inline DeviceValues PackSfmValues(const SfmData& data,
         "PackSfmValues point key count does not match SfmData");
   }
 
-  const auto hostBuildStart = std::chrono::steady_clock::now();
+  const auto hostBuildStart =
+      profile ? std::chrono::steady_clock::now()
+              : std::chrono::steady_clock::time_point{};
   std::vector<DevicePinholeCameraCal3Bundler> cameras;
   cameras.reserve(data.numberCameras());
   for (size_t i = 0; i < data.numberCameras(); ++i) {
@@ -187,7 +189,9 @@ inline Values DownloadSfmValues(const DeviceValues& deviceValues,
   }
   GTSAM_CUDA_CHECK(cudaStreamSynchronize(stream));
 
-  const auto hostBuildStart = std::chrono::steady_clock::now();
+  const auto hostBuildStart =
+      profile ? std::chrono::steady_clock::now()
+              : std::chrono::steady_clock::time_point{};
   Values result;
   for (size_t i = 0; i < cameras.size(); ++i) {
     Matrix3 R;

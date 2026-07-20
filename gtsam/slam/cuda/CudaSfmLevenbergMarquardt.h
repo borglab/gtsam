@@ -35,6 +35,7 @@ class GTSAM_EXPORT CudaSfmLevenbergMarquardtParams {
   double minModelFidelity;
   bool useFixedLambdaFactor;
   bool diagonalDamping;
+  bool enableDetailedProfiling;
   double minDiagonal;
   double maxDiagonal;
   CudaSfmLinearSolverType linearSolver = CudaSfmLinearSolverType::DenseSchur;

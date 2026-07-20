@@ -48,6 +48,19 @@ double ElapsedSinceAfterSync(Clock::time_point start, cudaStream_t stream) {
   return ElapsedSince(start);
 }
 
+double DetailedElapsedSince(bool enabled, Clock::time_point start) {
+  return enabled ? ElapsedSince(start) : 0.0;
+}
+
+double DetailedElapsedSinceAfterSync(bool enabled, Clock::time_point start,
+                                     cudaStream_t stream) {
+  return enabled ? ElapsedSinceAfterSync(start, stream) : 0.0;
+}
+
+Clock::time_point DetailedProfileStart(bool enabled) {
+  return enabled ? Clock::now() : Clock::time_point{};
+}
+
 void AddH2dTransfer(const CudaDeviceTransferSummary& transfer,
                     CudaSfmLevenbergMarquardtResult* result) {
   result->totalH2dBytes += transfer.bytes;
@@ -427,6 +440,7 @@ CudaSfmLevenbergMarquardtParams::CudaSfmLevenbergMarquardtParams()
       minModelFidelity(1e-3),
       useFixedLambdaFactor(true),
       diagonalDamping(false),
+      enableDetailedProfiling(false),
       minDiagonal(1e-6),
       maxDiagonal(1e32),
       linearSolver(CudaSfmLinearSolverType::DenseSchur) {}
@@ -494,6 +508,8 @@ void CudaSfmLevenbergMarquardtParams::print(const std::string& str) const {
   std::cout << "           minModelFidelity: " << minModelFidelity << "\n";
   std::cout << "       useFixedLambdaFactor: " << useFixedLambdaFactor << "\n";
   std::cout << "            diagonalDamping: " << diagonalDamping << "\n";
+  std::cout << "     enableDetailedProfiling: " << enableDetailedProfiling
+            << "\n";
   std::cout << "                minDiagonal: " << minDiagonal << "\n";
   std::cout << "                maxDiagonal: " << maxDiagonal << "\n";
   std::cout << "               linearSolver: " << getLinearSolver() << "\n";
@@ -512,6 +528,7 @@ bool CudaSfmLevenbergMarquardtParams::equals(
          std::abs(minModelFidelity - other.minModelFidelity) <= tol &&
          useFixedLambdaFactor == other.useFixedLambdaFactor &&
          diagonalDamping == other.diagonalDamping &&
+         enableDetailedProfiling == other.enableDetailedProfiling &&
          std::abs(minDiagonal - other.minDiagonal) <= tol &&
          std::abs(maxDiagonal - other.maxDiagonal) <= tol &&
          linearSolver == other.linearSolver;
@@ -688,6 +705,7 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
 #endif
 
   CudaSfmLevenbergMarquardtResult result;
+  const bool detailedProfiling = params.enableDetailedProfiling;
   const auto totalStart = Clock::now();
 
   auto stageStart = Clock::now();
@@ -702,15 +720,17 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
   CudaSfmValuesPackProfile packValuesProfile;
   DeviceValues current =
       PackSfmValues(data, cameraKeys, pointKeys, context.stream(),
-                    &packValuesProfile);
+                    detailedProfiling ? &packValuesProfile : nullptr);
   result.packValuesElapsed =
       ElapsedSinceAfterSync(stageStart, context.stream());
-  result.packValuesHostBuildElapsed = packValuesProfile.hostBuildElapsed;
-  result.packValuesDeviceAllocElapsed =
-      packValuesProfile.deviceAllocElapsed;
-  result.packValuesH2dCopyElapsed = packValuesProfile.h2d.copyElapsed;
-  result.packValuesH2dBytes = packValuesProfile.h2d.bytes;
-  AddH2dTransfer(packValuesProfile.h2d, &result);
+  if (detailedProfiling) {
+    result.packValuesHostBuildElapsed = packValuesProfile.hostBuildElapsed;
+    result.packValuesDeviceAllocElapsed =
+        packValuesProfile.deviceAllocElapsed;
+    result.packValuesH2dCopyElapsed = packValuesProfile.h2d.copyElapsed;
+    result.packValuesH2dBytes = packValuesProfile.h2d.bytes;
+    AddH2dTransfer(packValuesProfile.h2d, &result);
+  }
 
   stageStart = Clock::now();
   DeviceValues trial = AllocateSfmValuesLike(current);
@@ -727,23 +747,30 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
           ? CudaSfmProjectionBatch::FromSfmData(data, *sqrtInfoByTrack,
                                                *robustModelsByTrack,
                                                context.stream(),
-                                               &projectionBatchProfile)
+                                               detailedProfiling
+                                                   ? &projectionBatchProfile
+                                                   : nullptr)
       : sqrtInfoByTrack
           ? CudaSfmProjectionBatch::FromSfmData(data, *sqrtInfoByTrack,
                                                context.stream(),
-                                               &projectionBatchProfile)
+                                               detailedProfiling
+                                                   ? &projectionBatchProfile
+                                                   : nullptr)
           : CudaSfmProjectionBatch::FromSfmData(
-                data, context.stream(), &projectionBatchProfile);
+                data, context.stream(),
+                detailedProfiling ? &projectionBatchProfile : nullptr);
   result.projectionBatchElapsed =
       ElapsedSinceAfterSync(stageStart, context.stream());
-  result.projectionBatchHostBuildElapsed =
-      projectionBatchProfile.hostBuildElapsed;
-  result.projectionBatchDeviceAllocElapsed =
-      projectionBatchProfile.deviceAllocElapsed;
-  result.projectionBatchH2dCopyElapsed =
-      projectionBatchProfile.h2d.copyElapsed;
-  result.projectionBatchH2dBytes = projectionBatchProfile.h2d.bytes;
-  AddH2dTransfer(projectionBatchProfile.h2d, &result);
+  if (detailedProfiling) {
+    result.projectionBatchHostBuildElapsed =
+        projectionBatchProfile.hostBuildElapsed;
+    result.projectionBatchDeviceAllocElapsed =
+        projectionBatchProfile.deviceAllocElapsed;
+    result.projectionBatchH2dCopyElapsed =
+        projectionBatchProfile.h2d.copyElapsed;
+    result.projectionBatchH2dBytes = projectionBatchProfile.h2d.bytes;
+    AddH2dTransfer(projectionBatchProfile.h2d, &result);
+  }
 
   const int numCameras = static_cast<int>(data.numberCameras());
   const int numPoints = static_cast<int>(data.numberTracks());
@@ -763,9 +790,12 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
       stageStart = Clock::now();
       CudaSfmValuesDownloadProfile downloadProfile;
       result.optimizedValues =
-          DownloadSfmValues(current, context.stream(), &downloadProfile);
+          DownloadSfmValues(current, context.stream(),
+                            detailedProfiling ? &downloadProfile : nullptr);
       result.downloadElapsed = ElapsedSince(stageStart);
-      SetDownloadTransferProfile(downloadProfile, &result);
+      if (detailedProfiling) {
+        SetDownloadTransferProfile(downloadProfile, &result);
+      }
     }
     result.totalMeasuredElapsed = ElapsedSince(totalStart);
     return result;
@@ -789,14 +819,16 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
     CudaDeviceTransferSummary uploadPatternProfile;
     system.uploadPattern(structure.dimension(), structure.rowPointers(),
                          structure.colIndices(), context.stream(),
-                         &uploadPatternProfile);
+                         detailedProfiling ? &uploadPatternProfile : nullptr);
     result.uploadPatternElapsed =
         ElapsedSinceAfterSync(stageStart, context.stream());
-    result.uploadPatternDeviceAllocElapsed =
-        uploadPatternProfile.resizeElapsed;
-    result.uploadPatternH2dCopyElapsed = uploadPatternProfile.copyElapsed;
-    result.uploadPatternH2dBytes = uploadPatternProfile.bytes;
-    AddH2dTransfer(uploadPatternProfile, &result);
+    if (detailedProfiling) {
+      result.uploadPatternDeviceAllocElapsed =
+          uploadPatternProfile.resizeElapsed;
+      result.uploadPatternH2dCopyElapsed = uploadPatternProfile.copyElapsed;
+      result.uploadPatternH2dBytes = uploadPatternProfile.bytes;
+      AddH2dTransfer(uploadPatternProfile, &result);
+    }
   }
 
   double lambda = params.lambdaInitial;
@@ -808,7 +840,7 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
   bool terminate = false;
   while (result.iterations < params.maxIterations && std::isfinite(currentError) &&
          !terminate) {
-    const auto iterationStart = Clock::now();
+    const auto iterationStart = DetailedProfileStart(detailedProfiling);
     CudaSfmLmIterationProfile iterationProfile;
     iterationProfile.iteration =
         static_cast<int>(result.iterationProfiles.size());
@@ -816,12 +848,13 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
     iterationProfile.startLambda = lambda;
 
     if (params.diagonalDamping) {
-      stageStart = Clock::now();
+      stageStart = DetailedProfileStart(detailedProfiling);
       ComputeCudaSfmHessianDiagonal(current, batch, numCameras,
                                     params.minDiagonal, params.maxDiagonal,
                                     &dampingDiagonal, context.stream());
       iterationProfile.dampingDiagonalElapsed =
-          ElapsedSinceAfterSync(stageStart, context.stream());
+          DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
+                                        context.stream());
       result.dampingDiagonalElapsed +=
           iterationProfile.dampingDiagonalElapsed;
     }
@@ -829,14 +862,14 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
     bool acceptedOrDone = false;
     int attemptIndex = 0;
     while (!acceptedOrDone) {
-      const auto attemptStart = Clock::now();
+      const auto attemptStart = DetailedProfileStart(detailedProfiling);
       CudaSfmLmAttemptProfile attemptProfile;
       attemptProfile.iteration = iterationProfile.iteration;
       attemptProfile.attempt = attemptIndex++;
       attemptProfile.lambda = lambda;
 
       if (params.linearSolver == CudaSfmLinearSolverType::DenseSchur) {
-        stageStart = Clock::now();
+        stageStart = DetailedProfileStart(detailedProfiling);
         if (params.diagonalDamping) {
           denseSchurSolver.solve(current, batch, numCameras, lambda,
                                  dampingDiagonal, &delta, context.stream());
@@ -845,55 +878,62 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
                                  context.stream());
         }
         attemptProfile.denseSchurSolveElapsed =
-            ElapsedSinceAfterSync(stageStart, context.stream());
+            DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
+                                          context.stream());
         result.denseSchurSolveElapsed +=
             attemptProfile.denseSchurSolveElapsed;
       } else {
-        stageStart = Clock::now();
+        stageStart = DetailedProfileStart(detailedProfiling);
         AccumulateCudaSfmNormalEquations(current, batch, numCameras, &system,
                                          context.stream());
         attemptProfile.normalEquationsElapsed =
-            ElapsedSinceAfterSync(stageStart, context.stream());
+            DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
+                                          context.stream());
         result.normalEquationsElapsed +=
             attemptProfile.normalEquationsElapsed;
 
-        stageStart = Clock::now();
+        stageStart = DetailedProfileStart(detailedProfiling);
         if (params.diagonalDamping) {
           system.addDiagonalDamping(lambda, dampingDiagonal, context.stream());
         } else {
           system.addDiagonalDamping(lambda, context.stream());
         }
         attemptProfile.addDampingElapsed =
-            ElapsedSinceAfterSync(stageStart, context.stream());
+            DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
+                                          context.stream());
         result.addDampingElapsed += attemptProfile.addDampingElapsed;
 
         if (!solverAnalyzed) {
           stageStart = Clock::now();
           solver.analyze(system, &delta, context.stream());
-          attemptProfile.cudssAnalyzeElapsed =
+          const double analyzeElapsed =
               ElapsedSinceAfterSync(stageStart, context.stream());
-          result.firstCudssAnalyzeElapsed =
-              attemptProfile.cudssAnalyzeElapsed;
-          result.cudssAnalyzeElapsed += attemptProfile.cudssAnalyzeElapsed;
+          result.firstCudssAnalyzeElapsed = analyzeElapsed;
+          if (detailedProfiling) {
+            attemptProfile.cudssAnalyzeElapsed = analyzeElapsed;
+            result.cudssAnalyzeElapsed += analyzeElapsed;
+          }
           solverAnalyzed = true;
         }
-        stageStart = Clock::now();
+        stageStart = DetailedProfileStart(detailedProfiling);
         solver.solve(system, &delta, context.stream());
         attemptProfile.cudssSolveElapsed =
-            ElapsedSinceAfterSync(stageStart, context.stream());
+            DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
+                                          context.stream());
         result.cudssSolveElapsed += attemptProfile.cudssSolveElapsed;
       }
       ++result.innerIterations;
 
       double oldLinearizedError = 0.0;
       double newLinearizedError = 0.0;
-      stageStart = Clock::now();
+      stageStart = DetailedProfileStart(detailedProfiling);
       const double linearizedCostChange =
           ComputeCudaSfmLinearizedErrorChange(
               current, batch, numCameras, delta, &oldLinearizedError,
               &newLinearizedError, context.stream());
       attemptProfile.linearizedErrorElapsed =
-          ElapsedSinceAfterSync(stageStart, context.stream());
+          DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
+                                        context.stream());
       result.linearizedErrorElapsed +=
           attemptProfile.linearizedErrorElapsed;
       attemptProfile.oldLinearizedError = oldLinearizedError;
@@ -908,18 +948,20 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
 
       if (linearizedCostChange >= 0.0) {
         attemptProfile.attemptedTrial = true;
-        stageStart = Clock::now();
+        stageStart = DetailedProfileStart(detailedProfiling);
         ApplyDelta(current, delta, &trial, numCameras, numPoints,
                    context.stream());
         attemptProfile.applyDeltaElapsed =
-            ElapsedSinceAfterSync(stageStart, context.stream());
+            DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
+                                          context.stream());
         result.applyDeltaElapsed += attemptProfile.applyDeltaElapsed;
 
-        stageStart = Clock::now();
+        stageStart = DetailedProfileStart(detailedProfiling);
         trialError =
             ComputeCudaSfmProjectionError(trial, batch, context.stream());
         attemptProfile.trialErrorElapsed =
-            ElapsedSinceAfterSync(stageStart, context.stream());
+            DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
+                                          context.stream());
         result.trialErrorElapsed += attemptProfile.trialErrorElapsed;
         costChange = currentError - trialError;
 
@@ -943,33 +985,36 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
 
       if (stepSuccessful) {
         const double previousError = currentError;
-        stageStart = Clock::now();
+        stageStart = DetailedProfileStart(detailedProfiling);
         AcceptTrial(trial, &current, context.stream());
         iterationProfile.acceptTrialElapsed =
-            ElapsedSinceAfterSync(stageStart, context.stream());
+            DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
+                                          context.stream());
         result.acceptTrialElapsed += iterationProfile.acceptTrialElapsed;
         currentError = trialError;
         ++result.iterations;
         ++result.acceptedSteps;
-        stageStart = Clock::now();
+        stageStart = DetailedProfileStart(detailedProfiling);
         DecreaseLambda(params, modelFidelity, &lambda, &currentFactor);
         acceptedOrDone = true;
         terminate =
             CheckCudaLmConvergence(params, previousError, currentError);
-        attemptProfile.lambdaUpdateElapsed = ElapsedSince(stageStart);
+        attemptProfile.lambdaUpdateElapsed =
+            DetailedElapsedSince(detailedProfiling, stageStart);
         result.lambdaUpdateElapsed += attemptProfile.lambdaUpdateElapsed;
         iterationProfile.acceptedStep = true;
         attemptProfile.accepted = true;
         attemptProfile.terminated = terminate;
       } else if (!stopSearchingLambda) {
-        stageStart = Clock::now();
+        stageStart = DetailedProfileStart(detailedProfiling);
         IncreaseLambda(params, &lambda, &currentFactor);
         if (lambda >= params.lambdaUpperBound) {
           acceptedOrDone = true;
           terminate = true;
           attemptProfile.lambdaUpperBoundReached = true;
         }
-        attemptProfile.lambdaUpdateElapsed = ElapsedSince(stageStart);
+        attemptProfile.lambdaUpdateElapsed =
+            DetailedElapsedSince(detailedProfiling, stageStart);
         result.lambdaUpdateElapsed += attemptProfile.lambdaUpdateElapsed;
         attemptProfile.terminated = terminate;
       } else {
@@ -977,14 +1022,20 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
         terminate = true;
         attemptProfile.terminated = true;
       }
-      attemptProfile.totalElapsed = ElapsedSince(attemptStart);
-      iterationProfile.attemptProfiles.push_back(attemptProfile);
+      attemptProfile.totalElapsed =
+          DetailedElapsedSince(detailedProfiling, attemptStart);
+      if (detailedProfiling) {
+        iterationProfile.attemptProfiles.push_back(attemptProfile);
+      }
     }
     iterationProfile.endError = currentError;
     iterationProfile.endLambda = lambda;
     iterationProfile.terminated = terminate;
-    iterationProfile.totalElapsed = ElapsedSince(iterationStart);
-    result.iterationProfiles.push_back(iterationProfile);
+    iterationProfile.totalElapsed =
+        DetailedElapsedSince(detailedProfiling, iterationStart);
+    if (detailedProfiling) {
+      result.iterationProfiles.push_back(iterationProfile);
+    }
   }
   GTSAM_CUDA_CHECK(cudaStreamSynchronize(context.stream()));
   const auto solveLoopEnd = std::chrono::steady_clock::now();
@@ -997,9 +1048,12 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
     stageStart = Clock::now();
     CudaSfmValuesDownloadProfile downloadProfile;
     result.optimizedValues =
-        DownloadSfmValues(current, context.stream(), &downloadProfile);
+        DownloadSfmValues(current, context.stream(),
+                          detailedProfiling ? &downloadProfile : nullptr);
     result.downloadElapsed = ElapsedSince(stageStart);
-    SetDownloadTransferProfile(downloadProfile, &result);
+    if (detailedProfiling) {
+      SetDownloadTransferProfile(downloadProfile, &result);
+    }
   }
   result.totalMeasuredElapsed = ElapsedSince(totalStart);
   return result;
