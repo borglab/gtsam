@@ -796,8 +796,8 @@ void printCudaBackendLmRun(const CudaBackendLmRun& run,
             << " s\n";
   std::cout << "  CUDA LM setup before solve loop: " << result.setupElapsed
             << " s\n";
-  printCudaLmSetupBreakdown(result, "  CUDA LM ");
   if (detailedProfiling) {
+    printCudaLmSetupBreakdown(result, "  CUDA LM ");
     printCudaLmTransferBreakdown(result, "  CUDA LM ");
     printCudaLmDetailedBreakdown(result, "  CUDA LM ");
   } else {
@@ -908,8 +908,8 @@ void printCudaGraphLmRun(const CudaGraphLmRun& run,
             << run.backend.totalMeasuredElapsed << " s\n";
   std::cout << "  CUDA LM backend setup before solve loop: "
             << run.backend.setupElapsed << " s\n";
-  printCudaLmSetupBreakdown(run.backend, "  CUDA LM backend ");
   if (detailedProfiling) {
+    printCudaLmSetupBreakdown(run.backend, "  CUDA LM backend ");
     printCudaLmTransferBreakdown(run.backend, "  CUDA LM backend ");
     printCudaLmDetailedBreakdown(run.backend, "  CUDA LM backend ");
   } else {

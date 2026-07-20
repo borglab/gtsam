@@ -1914,9 +1914,65 @@ TEST(CudaSfmLevenbergMarquardt, DetailedProfilingIsDisabledByDefault) {
   CHECK(result.solveLoopElapsed > 0.0);
   EXPECT_LONGS_EQUAL(0, result.totalH2dBytes);
   EXPECT_LONGS_EQUAL(0, result.totalD2hBytes);
+  DOUBLES_EQUAL(0.0, result.packValuesElapsed, 0.0);
+  DOUBLES_EQUAL(0.0, result.projectionBatchElapsed, 0.0);
   DOUBLES_EQUAL(0.0, result.denseSchurSolveElapsed, 0.0);
   DOUBLES_EQUAL(0.0, result.linearizedErrorElapsed, 0.0);
   CHECK(result.iterationProfiles.empty());
+}
+
+TEST(CudaSfmLevenbergMarquardt,
+     DetailedProfilingIsDisabledByDefaultForCudss) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+
+  CudaSfmLevenbergMarquardtParams params =
+      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  params.linearSolver = CudaSfmLinearSolverType::CudssFullNormal;
+  params.maxIterations = 1;
+  params.relativeErrorTol = 1e-12;
+  params.lambdaInitial = 1e-3;
+
+  CHECK(!params.enableDetailedProfiling);
+  const CudaSfmLevenbergMarquardtResult result =
+      OptimizeCudaSfmWithoutValueDownload(data, params);
+
+  CHECK(result.solveLoopElapsed > 0.0);
+  DOUBLES_EQUAL(0.0, result.packValuesElapsed, 0.0);
+  DOUBLES_EQUAL(0.0, result.projectionBatchElapsed, 0.0);
+  DOUBLES_EQUAL(0.0, result.uploadPatternElapsed, 0.0);
+  DOUBLES_EQUAL(0.0, result.firstCudssAnalyzeElapsed, 0.0);
+  DOUBLES_EQUAL(0.0, result.normalEquationsElapsed, 0.0);
+  DOUBLES_EQUAL(0.0, result.addDampingElapsed, 0.0);
+  DOUBLES_EQUAL(0.0, result.cudssAnalyzeElapsed, 0.0);
+  DOUBLES_EQUAL(0.0, result.cudssSolveElapsed, 0.0);
+  CHECK(result.iterationProfiles.empty());
+}
+
+TEST(CudaSfmLevenbergMarquardt, RecordsDetailedTimingBreakdownForCudss) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+
+  CudaSfmLevenbergMarquardtParams params =
+      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  params.linearSolver = CudaSfmLinearSolverType::CudssFullNormal;
+  params.enableDetailedProfiling = true;
+  params.maxIterations = 1;
+  params.relativeErrorTol = 1e-12;
+  params.lambdaInitial = 1e-3;
+
+  const CudaSfmLevenbergMarquardtResult result =
+      OptimizeCudaSfmWithoutValueDownload(data, params);
+
+  CHECK(result.packValuesElapsed > 0.0);
+  CHECK(result.projectionBatchElapsed > 0.0);
+  CHECK(result.uploadPatternElapsed > 0.0);
+  CHECK(result.firstCudssAnalyzeElapsed > 0.0);
+  CHECK(result.normalEquationsElapsed > 0.0);
+  CHECK(result.addDampingElapsed > 0.0);
+  CHECK(result.cudssAnalyzeElapsed > 0.0);
+  CHECK(result.cudssSolveElapsed > 0.0);
+  CHECK(!result.iterationProfiles.empty());
 }
 
 TEST(CudaSfmLevenbergMarquardt, RecordsDetailedTimingBreakdown) {
@@ -1934,6 +1990,8 @@ TEST(CudaSfmLevenbergMarquardt, RecordsDetailedTimingBreakdown) {
       OptimizeCudaSfmWithoutValueDownload(data, params);
 
   CHECK(result.solveLoopElapsed > 0.0);
+  CHECK(result.packValuesElapsed > 0.0);
+  CHECK(result.projectionBatchElapsed > 0.0);
   CHECK(result.dampingDiagonalElapsed > 0.0);
   CHECK(result.denseSchurSolveElapsed > 0.0);
   CHECK(result.linearizedErrorElapsed > 0.0);
