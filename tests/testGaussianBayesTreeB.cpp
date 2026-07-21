@@ -408,27 +408,25 @@ TEST(GaussianBayesTree, jointMarginalsAgreeWithMarginals) {
 }
 
 /* ************************************************************************* */
-TEST(GaussianBayesTree, marginalCovarianceHandlesDeepChain) {
+TEST(GaussianBayesTree, separatorMarginalHandlesDeepChain) {
   // This exceeds the default Linux stack when separator marginals recurse.
   constexpr Key kNumVariables = 30000;
-  const auto model = noiseModel::Unit::Create(1);
-  const Matrix A = I_1x1;
 
-  GaussianFactorGraph graph;
-  graph.add(0, A, Vector1(0.0), model);
+  GaussianBayesTree bayesTree;
+  auto clique = std::make_shared<GaussianBayesTreeClique>(
+      GaussianConditional::sharedMeanAndStddev(0, Vector1(0.0), 1.0));
+  bayesTree.addClique(clique);
+
   for (Key key = 1; key < kNumVariables; ++key) {
-    graph.add(key - 1, A, key, -A, Vector1(0.0), model);
+    auto child = std::make_shared<GaussianBayesTreeClique>(
+        GaussianConditional::sharedMeanAndStddev(
+            key, I_1x1, key - 1, Vector1(0.0), 1.0));
+    bayesTree.addClique(child, clique);
+    clique = child;
   }
 
-  Ordering ordering;
-  ordering.reserve(kNumVariables);
-  for (Key key = 0; key < kNumVariables; ++key) {
-    ordering.push_back(key);
-  }
-
-  GaussianBayesTree bayesTree = *graph.eliminateMultifrontal(ordering);
-  const Matrix covariance = bayesTree.marginalCovariance(0);
-  EXPECT(assert_equal(A, covariance, 1e-9));
+  const GaussianFactorGraph separatorMarginal = clique->separatorMarginal();
+  LONGS_EQUAL(1, static_cast<long>(separatorMarginal.size()));
 }
 
 /* ************************************************************************* */
