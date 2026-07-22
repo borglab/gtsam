@@ -55,7 +55,7 @@
 | UGM_chain                                             | discrete functionality not yet exposed |
 | UGM_small                                             | discrete functionality not yet exposed |
 | VisualISAM2Example                                    | :heavy_check_mark: |
-| VisualISAMExample                                     | :heavy_check_mark: |
+| [VisualISAMExample](VisualISAMExample.ipynb) | :heavy_check_mark: |
 
 Extra Examples (with no C++ equivalent)
 - [FitBasisExample](FitBasisExample.ipynb)
