@@ -46,7 +46,7 @@
 | SFMExample_SmartFactor                                |        |
 | SFMExample_SmartFactorPCG                             |        |
 | ShonanAveragingCLI                                    | :heavy_check_mark: |
-| SimpleRotation                                        | :heavy_check_mark: |
+| [SimpleRotation](SimpleRotation.ipynb) | :heavy_check_mark: |
 | SolverComparer                                        |        |
 | [StereoVOExample](StereoVOExample.ipynb) | :heavy_check_mark: |
 | [StereoVOExample_large](StereoVOExample_large.ipynb) | :heavy_check_mark: |
