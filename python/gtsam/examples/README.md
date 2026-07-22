@@ -10,6 +10,7 @@
 | [easyPoint2KalmanFilter](easyPoint2KalmanFilter.ipynb) | ExtendedKalmanFilter not yet exposed through Python |
 | [elaboratePoint2KalmanFilter](elaboratePoint2KalmanFilter.ipynb) | GaussianSequentialSolver not yet exposed through Python |
 | [FisheyeExample](FisheyeExample.ipynb) | :heavy_check_mark: |
+| [FixedLagSmootherExample](FixedLagSmootherExample.ipynb) | :heavy_check_mark: |
 | [HMMExample](HMMExample.ipynb) | :heavy_check_mark: |
 | ImuFactorsExample2                                    | :heavy_check_mark: |
 | ImuFactorsExample                                     |        |
