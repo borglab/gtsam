@@ -19,7 +19,7 @@
 | ISAM2_SmartFactorStereo_IMU                           |        |
 | LocalizationExample                                   | :heavy_check_mark: |
 | METISOrderingExample                                  |        |
-| OdometryExample                                       | :heavy_check_mark: |
+| [OdometryExample](OdometryExample.ipynb) | :heavy_check_mark: |
 | [PlanarSLAMExample](PlanarSLAMExample.ipynb) | :heavy_check_mark: |
 | [Pose2SLAMExample](Pose2SLAMExample.ipynb) | :heavy_check_mark: |
 | Pose2SLAMExampleExpressions                           | ExpressionFactorGraph not yet exposed through Python |
