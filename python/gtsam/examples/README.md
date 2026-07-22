@@ -59,7 +59,7 @@
 Extra Examples (with no C++ equivalent)
 - [FitBasisExample](FitBasisExample.ipynb)
 - DogLegOptimizerExample
-- GPSFactorExample
+- [GPSFactorExample](GPSFactorExample.ipynb)
 - PlanarManipulatorExample
 - PreintegrationExample
 - SFMData
