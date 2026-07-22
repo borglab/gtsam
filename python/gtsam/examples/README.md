@@ -41,7 +41,7 @@
 | SFMdata                                               | :heavy_check_mark: |     
 | SFMExample_bal_COLAMD_METIS                           |        |
 | SFMExample_bal                                        | :heavy_check_mark: |
-| SFMExample                                            | :heavy_check_mark: |
+| [SFMExample](SFMExample.ipynb) | :heavy_check_mark: |
 | SFMExampleExpressions_bal                             |        |
 | SFMExampleExpressions                                 |        |
 | SFMExample_SmartFactor                                |        |
