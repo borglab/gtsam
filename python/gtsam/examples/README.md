@@ -37,7 +37,7 @@
 | Pose3SLAMExample_initializePose3Chordal               | :heavy_check_mark: |
 | Pose3SLAMExample_initializePose3Gradient              |        |
 | [RangeISAMExample_plaza2](RangeISAMExample_plaza2.ipynb) | :heavy_check_mark: |
-| SelfCalibrationExample                                | :heavy_check_mark: |
+| [SelfCalibrationExample](SelfCalibrationExample.ipynb) | :heavy_check_mark: |
 | SFMdata                                               | :heavy_check_mark: |     
 | SFMExample_bal_COLAMD_METIS                           |        |
 | SFMExample_bal                                        | :heavy_check_mark: |
