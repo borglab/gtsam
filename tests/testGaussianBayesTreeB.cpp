@@ -408,5 +408,27 @@ TEST(GaussianBayesTree, jointMarginalsAgreeWithMarginals) {
 }
 
 /* ************************************************************************* */
+TEST(GaussianBayesTree, separatorMarginalHandlesDeepChain) {
+  // This exceeds the default Linux stack when separator marginals recurse.
+  constexpr Key kNumVariables = 30000;
+
+  GaussianBayesTree bayesTree;
+  auto clique = std::make_shared<GaussianBayesTreeClique>(
+      GaussianConditional::sharedMeanAndStddev(0, Vector1(0.0), 1.0));
+  bayesTree.addClique(clique);
+
+  for (Key key = 1; key < kNumVariables; ++key) {
+    auto child = std::make_shared<GaussianBayesTreeClique>(
+        GaussianConditional::sharedMeanAndStddev(
+            key, I_1x1, key - 1, Vector1(0.0), 1.0));
+    bayesTree.addClique(child, clique);
+    clique = child;
+  }
+
+  const GaussianFactorGraph separatorMarginal = clique->separatorMarginal();
+  LONGS_EQUAL(1, static_cast<long>(separatorMarginal.size()));
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */
