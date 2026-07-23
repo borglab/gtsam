@@ -201,20 +201,25 @@ Vector DopplerFactorArm::evaluateError(
     const double& clockBiasCurr, OptionalMatrixType Hpose,
     OptionalMatrixType Hvelocity, OptionalMatrixType HclockBiasPrev,
     OptionalMatrixType HclockBiasCurr) const {
-  // Lever-arm velocity in ECEF: v_lever = ecef_R_body * (omega x leverArm).
-  // Hrot is d(v_lever)/d(rotation tangent) [3x3].
+  // Antenna velocity in ECEF: v_ant = Rvel*velocity + ecef_R_body*(omega x b).
+  // With ecef_T_nav the pose and velocity are nav-frame, so Rvel = ecef_R_nav
+  // rotates them to ECEF; otherwise both are already ECEF (Rvel = I).
   Matrix3 Hrot;
+  Matrix3 Rvel = I_3x3;
   Point3 leverVelEcef;
+  Vector3 velEcef;
   if (arm_.ecef_T_nav) {
     Matrix3 Hinner;
     const Point3 vNav = pose.rotation().rotate(leverVel_, Hinner);
-    const Matrix3 Recn = arm_.ecef_T_nav->rotation().matrix();
+    Rvel = arm_.ecef_T_nav->rotation().matrix();
     leverVelEcef = arm_.ecef_T_nav->rotation().rotate(vNav);
-    Hrot = Recn * Hinner;
+    Hrot = Rvel * Hinner;
+    velEcef = Rvel * velocity;
   } else {
     leverVelEcef = pose.rotation().rotate(leverVel_, Hrot);
+    velEcef = velocity;
   }
-  const Vector3 vAnt = velocity + Vector3(leverVelEcef);
+  const Vector3 vAnt = velEcef + Vector3(leverVelEcef);
 
   // Effective range-rate coefficient on the antenna velocity: (velSagnac - e).
   const Vector3 g = Vector3(velSagnac_) - Vector3(los_);
@@ -233,7 +238,8 @@ Vector DopplerFactorArm::evaluateError(
     *Hpose = H;
   }
   if (Hvelocity) {
-    *Hvelocity = g.transpose();
+    // d(error)/d(velocity) = g^T * d(v_ant)/d(velocity) = g^T * R_vel.
+    *Hvelocity = g.transpose() * Rvel;
   }
   if (HclockBiasPrev) {
     *HclockBiasPrev = -I_1x1 * (C_LIGHT / dt_);

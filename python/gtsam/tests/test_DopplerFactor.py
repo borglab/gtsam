@@ -186,22 +186,33 @@ class TestDopplerFactorArm(GtsamTestCase):
         np.testing.assert_allclose(factor.leverArm(), lever, atol=1e-12)
 
     def test_nav_frame_overload(self):
-        """The ecef_T_nav overload takes a local-frame pose and must construct
-        and evaluate without error."""
+        """The ecef_T_nav overload takes a local nav-frame pose, and the
+        velocity is then a nav-frame velocity rotated to ECEF by ecef_R_nav."""
         sat_vel = np.array([-1200.0, 2400.0, 800.0])
-        rcv_vel = np.array([0.3, -0.1, 0.05])
-        dt, bias_prev, bias_curr = 1.0, 1.0e-6, 1.0045e-6
+        nav_vel = np.array([0.3, -0.1, 0.05])  # receiver velocity in nav frame
+        meas_doppler, sat_clk_drift, rcv_clk_drift = -1500.0, 1.2e-9, 4.5e-9
+        dt, bias_prev = 0.2, 1.0e-6
+        bias_curr = bias_prev + rcv_clk_drift * dt
         lever = np.array([0.5, -0.3, 1.0])
         omega = np.array([0.02, -0.05, 0.1])
         ecef_T_nav = gtsam.Pose3(gtsam.Rot3.RzRyRx(0.1, 0.4, -0.7), RCV_POS)
-        nav_pose = gtsam.Pose3(gtsam.Rot3.RzRyRx(0.3, -0.2, 0.5),
-                               np.zeros(3))
+        nav_pose = gtsam.Pose3(gtsam.Rot3.RzRyRx(0.3, -0.2, 0.5), np.zeros(3))
 
-        factor = gtsam.DopplerFactorArm(0, 1, 2, 3, -1500.0, LAMBDA_L1, SAT_POS,
-                                        sat_vel, RCV_POS, lever, ecef_T_nav,
-                                        omega, dt, 0.0, self.model)
-        error = factor.evaluateError(nav_pose, rcv_vel, bias_prev, bias_curr)
-        self.assertEqual(error.shape, (1,))
+        factor = gtsam.DopplerFactorArm(0, 1, 2, 3, meas_doppler, LAMBDA_L1,
+                                        SAT_POS, sat_vel, RCV_POS, lever,
+                                        ecef_T_nav, omega, dt, sat_clk_drift,
+                                        self.model)
+
+        # Antenna velocity in the nav frame, rotated to ECEF by ecef_R_nav.
+        v_ant_nav = nav_vel + nav_pose.rotation().rotate(np.cross(omega, lever))
+        v_ant = ecef_T_nav.rotation().rotate(v_ant_nav)
+        e = line_of_sight(SAT_POS, RCV_POS)
+        range_rate = (e.dot(sat_vel - v_ant) +
+                      C_LIGHT * (rcv_clk_drift - sat_clk_drift) +
+                      sagnac_rate(SAT_POS, sat_vel, RCV_POS, v_ant))
+        expected = range_rate - (-LAMBDA_L1 * meas_doppler)
+        error = factor.evaluateError(nav_pose, nav_vel, bias_prev, bias_curr)
+        self.assertAlmostEqual(error[0], expected, places=6)
 
     def test_invalid_dt_throws(self):
         sat_vel = np.array([100.0, 200.0, 300.0])

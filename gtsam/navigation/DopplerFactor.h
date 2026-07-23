@@ -148,10 +148,10 @@ struct traits<DopplerFactor> : public Testable<DopplerFactor> {};
  * omega = 0 the factor reduces to DopplerFactor.
  *
  * With the optional ecef_T_nav transform the pose key is a local nav-frame
- * pose (e.g. ENU) and ecef_R_body = ecef_R_nav * nav_R_body; `velocity` is
- * still the receiver ECEF velocity.
+ * pose (e.g. ENU); `velocity` is then also nav-frame and rotated to ECEF by
+ * ecef_R_nav, like the other lever-arm factors.  Without it, both are ECEF.
  *
- * Keys: [pose (Pose3), velocity (Vector3, ECEF m/s),
+ * Keys: [pose (Pose3), velocity (Vector3, ECEF m/s; nav-frame with ecef_T_nav),
  *        clock bias k-1 (double, s), clock bias k (double, s)].
  *
  * @ingroup navigation
@@ -207,7 +207,8 @@ class GTSAM_EXPORT DopplerFactorArm
                    double satelliteClockDrift = 0.0,
                    const SharedNoiseModel& model = noiseModel::Unit::Create(1));
 
-  /// Construct with a local nav-frame pose key + ecef_T_nav.
+  /// Construct with a local nav-frame pose key + ecef_T_nav; `velocity` is then
+  /// a nav-frame velocity (rotated to ECEF by ecef_R_nav).
   DopplerFactorArm(Key poseKey, Key velocityKey, Key clockBiasPrevKey,
                    Key clockBiasCurrKey, double measuredDoppler,
                    double wavelength, const Point3& satellitePosition,

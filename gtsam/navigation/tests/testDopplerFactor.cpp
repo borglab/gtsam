@@ -169,13 +169,13 @@ TEST(TestDopplerFactorArm, Model) {
 }
 
 // *************************************************************************
-// Local nav-frame pose overload (ecef_T_nav): checks the composed-rotation
-// Jacobian path.
-TEST(TestDopplerFactorArm, NavFrameJacobians) {
+// Nav-frame overload (ecef_T_nav): value + Jacobians, with a nav-frame velocity.
+TEST(TestDopplerFactorArm, NavFrame) {
   const Point3 satVel(-1200.0, 2400.0, 800.0);
-  const Vector3 rcvVel(0.3, -0.1, 0.05);
-  const double measDoppler = -1500.0;
-  const double dt = 1.0, biasPrev = 1.0e-6, biasCurr = 1.0045e-6;
+  const Vector3 navVel(0.3, -0.1, 0.05);  // receiver velocity in the nav frame
+  const double measDoppler = -1500.0, satClkDrift = 1.2e-9, rcvClkDrift = 4.5e-9;
+  const double dt = 0.2, biasPrev = 1.0e-6;
+  const double biasCurr = biasPrev + rcvClkDrift * dt;
   const Point3 lever(0.5, -0.3, 1.0), omega(0.02, -0.05, 0.1);
   const Pose3 ecef_T_nav(Rot3::RzRyRx(0.1, 0.4, -0.7), sample::kReceiverPos);
   const Pose3 navPose(Rot3::RzRyRx(0.3, -0.2, 0.5), Point3(0.0, 0.0, 0.0));
@@ -183,10 +183,30 @@ TEST(TestDopplerFactorArm, NavFrameJacobians) {
   const auto factor = DopplerFactorArm(0, 1, 2, 3, measDoppler, kLambdaL1,
                                        sample::kSatPos, satVel,
                                        sample::kReceiverPos, lever, ecef_T_nav,
-                                       omega, dt, 0.0);
+                                       omega, dt, satClkDrift);
+
+  // Antenna velocity: (nav vel + nav_R_body*(omega x lever)) rotated to ECEF.
+  Point3 e;
+  gnss::geodist(sample::kSatPos, sample::kReceiverPos, e);
+  const Vector3 vAntNav =
+      navVel + Vector3(navPose.rotation().rotate(omega.cross(lever)));
+  const Vector3 vAnt = ecef_T_nav.rotation().rotate(Point3(vAntNav));
+  const double kSag = gnss::OMGE / kCLight;
+  const double sagnac =
+      kSag * (satVel.y() * sample::kReceiverPos.x() +
+              sample::kSatPos.y() * vAnt.x() -
+              satVel.x() * sample::kReceiverPos.y() -
+              sample::kSatPos.x() * vAnt.y());
+  const double rangeRate = e.dot(satVel - Point3(vAnt)) +
+                           kCLight * (rcvClkDrift - satClkDrift) + sagnac;
+  const double expected = rangeRate - (-kLambdaL1 * measDoppler);
+  EXPECT_DOUBLES_EQUAL(
+      expected,
+      factor.evaluateError(navPose, navVel, biasPrev, biasCurr)[0], 1e-6);
+
   Values values;
   values.insert(0, navPose);
-  values.insert(1, (Vector3)rcvVel);
+  values.insert(1, navVel);
   values.insert(2, biasPrev);
   values.insert(3, biasCurr);
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-6);
