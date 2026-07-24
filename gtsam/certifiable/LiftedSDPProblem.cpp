@@ -298,6 +298,7 @@ void AddQuadraticConstraint(
   }
 }
 
+// TODO: This is extremely convoluted and we should change it. 
 void AddLinearEqualityConstraint(
     const mf::Model::t& M, const LinearConstraint& constraint,
     const LiftedVariableXijToSDPVariableViewMap& xijMap) {
@@ -426,6 +427,7 @@ LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::LiftedSDPProblem(
           static_cast<int>(impl_->totalMonolithicDimension)));
   impl_->populateXijMap(Y);
 
+  // QN: Should this be moved to the QCQP
   AddHomogenizationConsistencyConstraints(
       impl_->M, impl_->orderedKeys,
       impl_->liftedVariableXijToSDPVariableViewMap);
