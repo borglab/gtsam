@@ -17,7 +17,6 @@
 
 // GCC bug workaround
 #if  defined(__GNUC__) && __GNUC__ == 16
-#pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
 
