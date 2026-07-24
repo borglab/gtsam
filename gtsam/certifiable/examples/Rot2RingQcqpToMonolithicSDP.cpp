@@ -131,9 +131,61 @@ bool SolveRot2Ring(size_t numPoses) {
   return true;
 }
 
+bool SolveChordalRot2Ring(size_t numPoses) {
+  const double delta = 2.0 * kPi / static_cast<double>(numPoses);
+  const NonlinearFactorGraph graph = MakeRot2RingGraph(numPoses, delta);
+  const QcqpProblem problem(graph);
+  LiftedSDPProblem<ChordalSDP, MosekSDPSolver> sdp(
+      problem, ChordalOrderingType::Colamd);
+
+  // # modified from gtsam-private
+  if (!sdp.solve()) {
+    std::cerr << "Chordal MOSEK solve did not produce a readable primal "
+              << "solution." << std::endl;
+    return false;
+  }
+
+  sdp.recoverLiftedVectors();
+  const std::vector<Rot2> groundTruth =
+      MakeRot2RingGroundTruth(numPoses, delta);
+  const auto recoveredPoses = sdp.getRecoveredPoses<Rot2>();
+  const auto poseErrors = sdp.getRecoveredPoseErrorNorms(groundTruth);
+  const auto& poseEVRs = sdp.getRecoveredVariableEVRs();
+  const double averagePoseError =
+      std::accumulate(poseErrors.begin(), poseErrors.end(), 0.0) /
+      static_cast<double>(poseErrors.size());
+  const double maximumPoseError =
+      *std::max_element(poseErrors.begin(), poseErrors.end());
+  const double minimumEVR = *std::min_element(poseEVRs.begin(), poseEVRs.end());
+  const bool allRankOne = std::all_of(
+      poseEVRs.begin(), poseEVRs.end(),
+      [](double evr) { return evr >= 1e5; });
+
+  std::cout << "Chordal N=" << numPoses
+            << "\tsolver time (s)=" << sdp.solveTimeSeconds()
+            << "\taverage pose error=" << averagePoseError
+            << "\tmaximum pose error=" << maximumPoseError
+            << "\tminimum EVR=" << minimumEVR
+            << "\trank-1=" << (allRankOne ? "yes" : "no")
+            << "\tobjective=" << sdp.objectiveValue() << std::endl;
+
+  std::cout << "pose\texpected angle\trecovered angle\terror" << std::endl;
+  for (size_t index = 0; index < numPoses; ++index) {
+    std::cout << index << "\t" << groundTruth[index].theta() << "\t"
+              << recoveredPoses[index].theta() << "\t" << poseErrors[index]
+              << std::endl;
+  }
+
+  return allRankOne;
+}
+
 }  // namespace
 
 int main() {
+  if (!SolveChordalRot2Ring(5)) {
+    return 1;
+  }
+
   std::cout << "N\tsolver time (s)\taverage pose error\tmaximum pose error\tminimum EVR\trank-1\tobjective"
             << std::endl;
   for (size_t numPoses : std::vector<size_t>{5, 25, 50, 100}) {

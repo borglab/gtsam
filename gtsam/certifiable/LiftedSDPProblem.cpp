@@ -2,11 +2,15 @@
 
 #include <Eigen/Eigenvalues>
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <vector>
+
+#include <gtsam/symbolic/SymbolicFactorGraph.h>
 
 #ifdef GTSAM_USE_MOSEK
 #include <fusion.h>
@@ -99,6 +103,84 @@ std::map<Key, DenseIndex> CollectQpCostKeyDims(const QcqpProblem& problem,
     }
   }
   return keyDims;
+}
+
+void CollectOrderedKeysAndDims(
+    const QcqpProblem& problem, KeyVector* orderedKeys,
+    std::map<Key, DenseIndex>* orderedKeyDims) {
+  KeySet costKeys;
+  *orderedKeyDims = CollectQpCostKeyDims(problem, &costKeys);
+
+  const KeySet eqKeys = problem.eConstraints().keys();
+  const KeySet ineqKeys = problem.iConstraints().keys();
+
+  KeySet constraintKeys = eqKeys;
+  constraintKeys.merge(ineqKeys);
+
+  // TODO: Does this always hold?
+  if (costKeys != constraintKeys) {
+    throw std::runtime_error(
+        "LiftedSDPProblem: QCQP constraint keys do not match objective cost "
+        "keys.");
+  }
+
+  orderedKeys->assign(costKeys.begin(), costKeys.end());
+}
+
+// # modified from gtsam-private
+SymbolicFactorGraph BuildQpCostSymbolicFactorGraph(
+    const QcqpProblem& problem) {
+  SymbolicFactorGraph sfg;
+
+  for (const auto& factor : problem.costs()) {
+    if (!factor) {
+      continue;
+    }
+
+    const auto* cost = dynamic_cast<const QpCost*>(factor.get());
+    if (!cost) {
+      throw std::runtime_error(
+          "BuildQpCostSymbolicFactorGraph: expected QpCost.");
+    }
+
+    sfg.push_back(SymbolicFactor(*cost));
+  }
+
+  if (sfg.empty()) {
+    throw std::runtime_error(
+        "BuildQpCostSymbolicFactorGraph: QCQP has no objective costs.");
+  }
+
+  return sfg;
+}
+
+// # modified from gtsam-private
+SymbolicBayesTree BuildSymbolicBayesTree(
+    const QcqpProblem& problem, ChordalOrderingType orderingType) {
+  const SymbolicFactorGraph sfg = BuildQpCostSymbolicFactorGraph(problem);
+  Ordering ordering;
+
+  switch (orderingType) {
+    case ChordalOrderingType::Metis:
+#ifdef GTSAM_SUPPORT_NESTED_DISSECTION
+      ordering = Ordering::Metis(sfg);
+      break;
+#else
+      throw std::runtime_error(
+          "BuildSymbolicBayesTree: METIS ordering requested but GTSAM was "
+          "built without nested dissection support.");
+#endif
+    case ChordalOrderingType::Colamd:
+      ordering = Ordering::Colamd(sfg);
+      break;
+  }
+
+  auto bayesTree = sfg.eliminateMultifrontal(ordering);
+  if (!bayesTree) {
+    throw std::runtime_error(
+        "BuildSymbolicBayesTree: symbolic elimination returned null.");
+  }
+  return *bayesTree;
 }
 
 // # copied from gtsam-private
@@ -341,6 +423,87 @@ void AddHomogenizationConsistencyConstraints(
   }
 }
 
+void AddChordalHomogenizationConsistencyConstraints(
+    const mf::Model::t& M, const QcqpProblem& problem,
+    const LiftedVariableXijToSDPVariableViewMap& xijMap) {
+  std::set<std::pair<Key, Key>> constrainedPairs;
+  for (const auto& factor : problem.costs()) {
+    if (!factor) {
+      continue;
+    }
+
+    const auto* cost = dynamic_cast<const QpCost*>(factor.get());
+    if (!cost) {
+      throw std::runtime_error(
+          "AddChordalHomogenizationConsistencyConstraints: expected QpCost.");
+    }
+
+    const KeyVector& keys = cost->keys();
+    for (size_t i = 0; i < keys.size(); ++i) {
+      for (size_t j = i + 1; j < keys.size(); ++j) {
+        const std::pair<Key, Key> keyPair =
+            std::minmax(keys[i], keys[j]);
+        if (constrainedPairs.insert(keyPair).second) {
+          M->constraint(xijMap.at(keyPair)->index(0, 0),
+                        mf::Domain::equalsTo(1.0));
+        }
+      }
+    }
+  }
+}
+
+void AddQcqpConstraints(
+    const mf::Model::t& M, const QcqpProblem& problem,
+    const LiftedVariableXijToSDPVariableViewMap& xijMap) {
+  // Process QCQP equality constraints:
+  for (const auto& factor : problem.eConstraints()) {
+    if (!factor) {
+      continue;
+    }
+
+    const auto* quadratic =
+        dynamic_cast<const QuadraticEqualityConstraintFactor*>(factor.get());
+    if (quadratic) {
+      AddQuadraticConstraint(M, quadratic->quadraticConstraint(), xijMap);
+      continue;
+    }
+
+    const auto* linear =
+        dynamic_cast<const LinearEqualityConstraintFactor*>(factor.get());
+    if (linear) {
+      AddLinearEqualityConstraint(M, linear->linearConstraint(), xijMap);
+      continue;
+    }
+
+    throw std::runtime_error(
+        "LiftedSDPProblem: expected quadratic or linear equality "
+        "constraints.");
+  }
+
+  // Process QCQP Inequality constraints:
+  for (const auto& factor : problem.iConstraints()) {
+    if (!factor) {
+      continue;
+    }
+
+    const auto* quadratic =
+        dynamic_cast<const QuadraticInequalityConstraintFactor*>(factor.get());
+    if (quadratic) {
+      AddQuadraticConstraint(M, quadratic->quadraticConstraint(), xijMap);
+      continue;
+    }
+
+    if (dynamic_cast<const LinearInequalityConstraintFactor*>(factor.get())) {
+      throw std::runtime_error(
+          "LiftedSDPProblem: linear inequality constraints are not "
+          "supported.");
+    }
+
+    throw std::runtime_error(
+        "LiftedSDPProblem: expected quadratic inequality constraints.");
+  }
+}
+
 }  // namespace
 
 struct LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::Impl {
@@ -359,25 +522,6 @@ struct LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::Impl {
     recoveredVariableEVRs.clear();
     liftedVariableXijToSDPVariableViewMap.clear();
     DisposeMosekModel(M);
-  }
-
-  void collectOrderedKeysAndDims(const QcqpProblem& problem) {
-    KeySet costKeys;
-    orderedKeyDims = CollectQpCostKeyDims(problem, &costKeys);
-
-    const KeySet eqKeys = problem.eConstraints().keys();
-    const KeySet ineqKeys = problem.iConstraints().keys();
-
-    KeySet constraintKeys = eqKeys;
-    constraintKeys.merge(ineqKeys);
-
-    // TODO: Does this always hold? 
-    if (costKeys != constraintKeys) {
-      throw std::runtime_error(
-          "MonolithicSDP: QCQP constraint keys do not match objective cost keys.");
-    }
-
-    orderedKeys.assign(costKeys.begin(), costKeys.end());
   }
 
   void computeMonolithicLayout() {
@@ -413,10 +557,122 @@ struct LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::Impl {
   }
 };
 
+struct LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::Impl {
+  mf::Model::t M;
+  MosekSolveSummary lastSolveSummary;
+  KeyVector orderedKeys;
+  std::map<Key, DenseIndex> orderedKeyDims;
+  SymbolicBayesTree bayesTree_;
+  LiftedVariableXijToSDPVariableViewMap liftedVariableXijToSDPVariableViewMap;
+  std::vector<Vector> recoveredLiftedVectors;
+  std::vector<double> recoveredVariableEVRs;
+
+  // # modified from gtsam-private
+  ~Impl() {
+    recoveredLiftedVectors.clear();
+    recoveredVariableEVRs.clear();
+    liftedVariableXijToSDPVariableViewMap.clear();
+    DisposeMosekModel(M);
+  }
+
+  // # copied from gtsam-private
+  static std::string makeCliqueVariableName(const KeyVector& keys) {
+    std::ostringstream out;
+    out << "Y_C";
+    for (Key key : keys) {
+      out << "_" << key;
+    }
+    return out.str();
+  }
+
+  // # modified from gtsam-private
+  void addChordalOverlapEquality(const std::pair<Key, Key>& key,
+                                 const mf::Variable::t& owner,
+                                 const mf::Variable::t& duplicate) {
+    if (key.first < key.second) {
+      M->constraint(mf::Expr::sub(owner, duplicate),
+                    mf::Domain::equalsTo(0.0));
+      return;
+    }
+
+    if (key.first == key.second) {
+      const DenseIndex dim = orderedKeyDims.at(key.first);
+      for (DenseIndex r = 0; r < dim; ++r) {
+        for (DenseIndex c = 0; c <= r; ++c) {
+          M->constraint(
+              mf::Expr::sub(owner->index(static_cast<int>(r),
+                                         static_cast<int>(c)),
+                            duplicate->index(static_cast<int>(r),
+                                             static_cast<int>(c))),
+              mf::Domain::equalsTo(0.0));
+        }
+      }
+      return;
+    }
+  }
+
+  // # modified from gtsam-private
+  void populateXijMapRecursive(
+      const SymbolicBayesTree::sharedClique& clique) {
+    if (!clique) {
+      return;
+    }
+
+    KeyVector indices = clique->conditional()->keys();
+    std::sort(indices.begin(), indices.end());
+
+    DenseIndex cliqueDimension = 0;
+    std::map<Key, std::pair<DenseIndex, DenseIndex>> keyToCliqueSlice;
+    for (Key key : indices) {
+      const DenseIndex start = cliqueDimension;
+      const DenseIndex end = start + orderedKeyDims.at(key);
+      keyToCliqueSlice[key] = {start, end};
+      cliqueDimension = end;
+    }
+
+    if (!indices.empty()) {
+      auto cliqueY = M->variable(
+          makeCliqueVariableName(indices),
+          mf::Domain::inPSDCone(static_cast<int>(cliqueDimension)));
+
+      for (Key key_i : indices) {
+        for (Key key_j : indices) {
+          const auto [i_start, i_end] = keyToCliqueSlice.at(key_i);
+          const auto [j_start, j_end] = keyToCliqueSlice.at(key_j);
+          auto blockView = cliqueY->slice(
+              monty::new_array_ptr<int, 1>(
+                  {static_cast<int>(i_start), static_cast<int>(j_start)}),
+              monty::new_array_ptr<int, 1>(
+                  {static_cast<int>(i_end), static_cast<int>(j_end)}));
+
+          const std::pair<Key, Key> key(key_i, key_j);
+          auto [it, inserted] =
+              liftedVariableXijToSDPVariableViewMap.emplace(key, blockView);
+          if (!inserted) {
+            addChordalOverlapEquality(key, it->second, blockView);
+          }
+        }
+      }
+    }
+
+    for (const auto& childClique : clique->children) {
+      populateXijMapRecursive(childClique);
+    }
+  }
+
+  // # copied from gtsam-private
+  void populateXijMap() {
+    for (const auto& rootClique : bayesTree_.roots()) {
+      populateXijMapRecursive(rootClique);
+    }
+  }
+};
+
 LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::LiftedSDPProblem(
   const QcqpProblem& problem): impl_(std::make_unique<Impl>()) {
 
-  impl_->collectOrderedKeysAndDims(problem);
+  CollectOrderedKeysAndDims(problem, &impl_->orderedKeys,
+                            &impl_->orderedKeyDims);
   impl_->computeMonolithicLayout();
 
   // # copied from gtsam-private
@@ -436,54 +692,8 @@ LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::LiftedSDPProblem(
   impl_->M->objective(mf::ObjectiveSense::Minimize,
                       mf::Expr::mul(0.5, objective));
   
-  // Process QCQP equality constraints: 
-  for (const auto& factor : problem.eConstraints()) {
-    if (!factor) {
-      continue;
-    }
-
-    const auto* quadratic =
-        dynamic_cast<const QuadraticEqualityConstraintFactor*>(factor.get());
-    if (quadratic) {
-      AddQuadraticConstraint(impl_->M, quadratic->quadraticConstraint(),
-                             impl_->liftedVariableXijToSDPVariableViewMap);
-      continue;
-    }
-
-    const auto* linear =
-        dynamic_cast<const LinearEqualityConstraintFactor*>(factor.get());
-    if (linear) {
-      AddLinearEqualityConstraint(impl_->M, linear->linearConstraint(),
-                                  impl_->liftedVariableXijToSDPVariableViewMap);
-      continue;
-    }
-
-    throw std::runtime_error(
-        "MonolithicSDP: expected quadratic or linear equality constraints.");
-  }
-
-  // Process QCQP Inequality constraints: 
-  for (const auto& factor : problem.iConstraints()) {
-    if (!factor) {
-      continue;
-    }
-
-    const auto* quadratic =
-        dynamic_cast<const QuadraticInequalityConstraintFactor*>(factor.get());
-    if (quadratic) {
-      AddQuadraticConstraint(impl_->M, quadratic->quadraticConstraint(),
-                             impl_->liftedVariableXijToSDPVariableViewMap);
-      continue;
-    }
-
-    if (dynamic_cast<const LinearInequalityConstraintFactor*>(factor.get())) {
-      throw std::runtime_error(
-          "MonolithicSDP: linear inequality constraints are not supported.");
-    }
-
-    throw std::runtime_error(
-        "MonolithicSDP: expected quadratic inequality constraints.");
-  }
+  AddQcqpConstraints(impl_->M, problem,
+                     impl_->liftedVariableXijToSDPVariableViewMap);
 }
 
 LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::~LiftedSDPProblem() = default;
@@ -558,6 +768,114 @@ LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::orderedKeys() const {
 const std::map<Key, DenseIndex>&
 LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::orderedKeyDims() const {
   return impl_->orderedKeyDims;
+}
+
+// # modified from gtsam-private
+LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::LiftedSDPProblem(
+    const QcqpProblem& problem, ChordalOrderingType orderingType)
+    : impl_(std::make_unique<Impl>()) {
+  CollectOrderedKeysAndDims(problem, &impl_->orderedKeys,
+                            &impl_->orderedKeyDims);
+  impl_->M = new mf::Model("ChordalSDP_MosekSDPSolver");
+  impl_->bayesTree_ = BuildSymbolicBayesTree(problem, orderingType);
+  impl_->populateXijMap();
+
+  AddChordalHomogenizationConsistencyConstraints(
+      impl_->M, problem, impl_->liftedVariableXijToSDPVariableViewMap);
+
+  const auto objective =
+      BuildObjective(problem, impl_->liftedVariableXijToSDPVariableViewMap);
+  impl_->M->objective(mf::ObjectiveSense::Minimize,
+                      mf::Expr::mul(0.5, objective));
+
+  AddQcqpConstraints(impl_->M, problem,
+                     impl_->liftedVariableXijToSDPVariableViewMap);
+}
+
+// # modified from gtsam-private
+LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::~LiftedSDPProblem() = default;
+
+// # modified from gtsam-private
+bool LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::solve(
+    const std::map<std::string, double>& mosek_params) {
+  impl_->lastSolveSummary = SolveMosekModel(impl_->M, mosek_params);
+  return impl_->lastSolveSummary.solved;
+}
+
+// # modified from gtsam-private
+double LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::objectiveValue() const {
+  impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
+  return impl_->M->primalObjValue();
+}
+
+// # modified from gtsam-private
+std::string LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::problemStatus()
+    const {
+  if (!impl_->lastSolveSummary.solved) {
+    throw std::runtime_error("problemStatus: solve() has not been called.");
+  }
+  std::ostringstream out;
+  out << impl_->lastSolveSummary.problemStatus;
+  return out.str();
+}
+
+// # modified from gtsam-private
+double LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::solveTimeSeconds() const {
+  if (!impl_->lastSolveSummary.solved) {
+    throw std::runtime_error("solveTimeSeconds: solve() has not been called.");
+  }
+  return impl_->lastSolveSummary.optimizerTimeSeconds;
+}
+
+// # modified from gtsam-private
+void LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::recoverLiftedVectors() {
+  impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
+  RecoverLiftedVectors(impl_->liftedVariableXijToSDPVariableViewMap,
+                       impl_->orderedKeys, impl_->orderedKeyDims,
+                       impl_->recoveredLiftedVectors,
+                       impl_->recoveredVariableEVRs);
+}
+
+// # modified from gtsam-private
+const std::vector<Vector>&
+LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::getRecoveredLiftedVectors()
+    const {
+  if (impl_->recoveredLiftedVectors.empty()) {
+    throw std::runtime_error(
+        "getRecoveredLiftedVectors: recoverLiftedVectors() must be called "
+        "first.");
+  }
+  return impl_->recoveredLiftedVectors;
+}
+
+// # modified from gtsam-private
+const std::vector<double>&
+LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::getRecoveredVariableEVRs()
+    const {
+  if (impl_->recoveredVariableEVRs.empty()) {
+    throw std::runtime_error(
+        "getRecoveredVariableEVRs: recoverLiftedVectors() must be called "
+        "first.");
+  }
+  return impl_->recoveredVariableEVRs;
+}
+
+// # modified from gtsam-private
+const KeyVector&
+LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::orderedKeys() const {
+  return impl_->orderedKeys;
+}
+
+// # modified from gtsam-private
+const std::map<Key, DenseIndex>&
+LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::orderedKeyDims() const {
+  return impl_->orderedKeyDims;
+}
+
+// # modified from gtsam-private
+const SymbolicBayesTree&
+LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::bayesTree() const {
+  return impl_->bayesTree_;
 }
 #endif
 
