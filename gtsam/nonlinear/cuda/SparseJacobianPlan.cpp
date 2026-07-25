@@ -1,9 +1,14 @@
+#include <gtsam/base/types.h>
 #include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
+
+#ifdef GTSAM_USE_TBB
+#include <tbb/blocked_range.h>
+#include <tbb/parallel_for.h>
+#endif
 
 #include <algorithm>
 #include <limits>
 #include <numeric>
-#include <set>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -247,34 +252,36 @@ SparseJacobianPlan::SparseJacobianPlan(
     const NonlinearFactorGraph& graph,
     const SparseJacobianColumnLayout& columns)
     : columns_(columns.totalColumns()), columnBlocks_(columns.blocks()) {
-  std::vector<bool> coveredColumns(static_cast<size_t>(columns_), false);
-  factors_.reserve(graph.size());
-  factorIsNull_.reserve(graph.size());
+  const size_t factorCount = graph.size();
+  factors_.resize(factorCount);
+  factorIsNull_.resize(factorCount);
 
-  for (const NonlinearFactor::shared_ptr& factor : graph) {
-    SparseJacobianFactorWritePlan factorPlan;
-    factorPlan.rowBegin = rows_;
-
+  // Phase A (parallel over factors): build each factor's write plan.
+  // Everything here depends only on that factor and the read-only column
+  // layout; rowBegin and valueOffsetWithinRow are per-factor-local. Overflow
+  // of per-factor quantities is checked here; graph-cumulative overflow is
+  // checked in the serial prefix phase.
+  const auto buildFactorPlan = [&](size_t index) {
+    const NonlinearFactor::shared_ptr& factor = graph[index];
     const bool isNull = !factor;
-    factorIsNull_.push_back(isNull);
-    if (isNull) {
-      factors_.push_back(std::move(factorPlan));
-      continue;
-    }
+    factorIsNull_[index] = isNull;
+    if (isNull) return;
 
+    SparseJacobianFactorWritePlan& factorPlan = factors_[index];
     factorPlan.rowCount = CheckedSizeToInt(factor->dim(), "factor row count");
     factorPlan.sendable = factor->sendable();
-    const int nextRow =
-        CheckedAdd(rows_, factorPlan.rowCount, "total row count");
 
-    std::set<Key> seenKeys;
-    factorPlan.blocks.reserve(factor->keys().size());
-    for (size_t localBlockIndex = 0; localBlockIndex < factor->keys().size();
+    const KeyVector& keys = factor->keys();
+    factorPlan.blocks.reserve(keys.size());
+    for (size_t localBlockIndex = 0; localBlockIndex < keys.size();
          ++localBlockIndex) {
-      const Key key = factor->keys()[localBlockIndex];
-      if (!seenKeys.insert(key).second) {
-        throw std::invalid_argument("SparseJacobianPlan repeated factor key " +
-                                    DefaultKeyFormatter(key));
+      const Key key = keys[localBlockIndex];
+      for (size_t earlier = 0; earlier < localBlockIndex; ++earlier) {
+        if (keys[earlier] == key) {
+          throw std::invalid_argument(
+              "SparseJacobianPlan repeated factor key " +
+              DefaultKeyFormatter(key));
+        }
       }
 
       const SparseJacobianColumnBlock& column = FindColumnOrThrow(columns, key);
@@ -293,44 +300,116 @@ SparseJacobianPlan::SparseJacobianPlan(
                        factorPlan.blocks[right].globalColumnBegin;
               });
 
-    std::vector<int> scalarColumns;
-    scalarColumns.reserve(static_cast<size_t>(factorPlan.nonzerosPerRow));
     int valueOffset = 0;
     for (size_t blockIndex : sortedBlockIndices) {
       SparseJacobianBlockWritePlan& block = factorPlan.blocks[blockIndex];
       block.valueOffsetWithinRow = valueOffset;
       valueOffset = CheckedAdd(valueOffset, block.width, "factor value offset");
-      for (int localColumn = 0; localColumn < block.width; ++localColumn) {
-        scalarColumns.push_back(CheckedAdd(block.globalColumnBegin, localColumn,
-                                           "global scalar column"));
-      }
+      CheckedAdd(block.globalColumnBegin, block.width - 1,
+                 "global scalar column");
     }
+    CheckedMultiply(factorPlan.rowCount, factorPlan.nonzerosPerRow,
+                    "factor nonzero count");
+  };
 
+#ifdef GTSAM_USE_TBB
+  TbbOpenMPMixedScope threadLimiter;
+  tbb::parallel_for(tbb::blocked_range<size_t>(0, factorCount),
+                    [&](const tbb::blocked_range<size_t>& range) {
+                      for (size_t index = range.begin(); index != range.end();
+                           ++index) {
+                        buildFactorPlan(index);
+                      }
+                    });
+#else
+  for (size_t index = 0; index < factorCount; ++index) {
+    buildFactorPlan(index);
+  }
+#endif
+
+  // Phase B (serial): prefix sums for row offsets and nonzero counts, with
+  // cumulative overflow checks matching the original serial construction.
+  int totalNonzeros = 0;
+  for (size_t index = 0; index < factorCount; ++index) {
+    SparseJacobianFactorWritePlan& factorPlan = factors_[index];
+    factorPlan.rowBegin = rows_;
+    if (factorIsNull_[index]) continue;
     const int factorNonzeros = CheckedMultiply(
         factorPlan.rowCount, factorPlan.nonzerosPerRow, "factor nonzero count");
-    CheckedAdd(rowPointers_.back(), factorNonzeros, "total nonzero count");
-    for (int localRow = 0; localRow < factorPlan.rowCount; ++localRow) {
-      columnIndices_.insert(columnIndices_.end(), scalarColumns.begin(),
-                            scalarColumns.end());
-      rowPointers_.push_back(CheckedAdd(rowPointers_.back(),
-                                        factorPlan.nonzerosPerRow,
-                                        "total nonzero count"));
-    }
+    totalNonzeros =
+        CheckedAdd(totalNonzeros, factorNonzeros, "total nonzero count");
+    rows_ = CheckedAdd(rows_, factorPlan.rowCount, "total row count");
+  }
 
-    if (factorPlan.rowCount > 0) {
-      for (const SparseJacobianBlockWritePlan& block : factorPlan.blocks) {
+  // Phase C (parallel over factors): fill row pointers and column indices;
+  // each factor writes only its own row range.
+  rowPointers_.assign(static_cast<size_t>(rows_) + 1, 0);
+  columnIndices_.resize(static_cast<size_t>(totalNonzeros));
+  // Nonzero prefix per factor, derived serially (cheap) so phase C is
+  // write-disjoint.
+  std::vector<size_t> nonzeroBegin(factorCount + 1, 0);
+  for (size_t index = 0; index < factorCount; ++index) {
+    const SparseJacobianFactorWritePlan& factorPlan = factors_[index];
+    nonzeroBegin[index + 1] =
+        nonzeroBegin[index] +
+        (factorIsNull_[index]
+             ? 0
+             : static_cast<size_t>(factorPlan.rowCount) *
+                   static_cast<size_t>(factorPlan.nonzerosPerRow));
+  }
+
+  const auto fillFactorCsr = [&](size_t index) {
+    if (factorIsNull_[index]) return;
+    const SparseJacobianFactorWritePlan& factorPlan = factors_[index];
+    const size_t valueBase = nonzeroBegin[index];
+
+    for (int localRow = 0; localRow < factorPlan.rowCount; ++localRow) {
+      rowPointers_[static_cast<size_t>(factorPlan.rowBegin + localRow) + 1] =
+          static_cast<int>(valueBase) +
+          (localRow + 1) * factorPlan.nonzerosPerRow;
+    }
+    for (const SparseJacobianBlockWritePlan& block : factorPlan.blocks) {
+      for (int localRow = 0; localRow < factorPlan.rowCount; ++localRow) {
+        int* rowColumns =
+            columnIndices_.data() + valueBase +
+            static_cast<size_t>(localRow) *
+                static_cast<size_t>(factorPlan.nonzerosPerRow) +
+            block.valueOffsetWithinRow;
         for (int localColumn = 0; localColumn < block.width; ++localColumn) {
-          const int globalColumn = CheckedAdd(
-              block.globalColumnBegin, localColumn, "covered scalar column");
-          coveredColumns.at(static_cast<size_t>(globalColumn)) = true;
+          rowColumns[localColumn] = block.globalColumnBegin + localColumn;
         }
       }
     }
+  };
 
-    factors_.push_back(std::move(factorPlan));
-    rows_ = nextRow;
+#ifdef GTSAM_USE_TBB
+  tbb::parallel_for(tbb::blocked_range<size_t>(0, factorCount),
+                    [&](const tbb::blocked_range<size_t>& range) {
+                      for (size_t index = range.begin(); index != range.end();
+                           ++index) {
+                        fillFactorCsr(index);
+                      }
+                    });
+#else
+  for (size_t index = 0; index < factorCount; ++index) {
+    fillFactorCsr(index);
   }
+#endif
 
+  // Coverage check (serial; a handful of milliseconds even on the largest
+  // graphs). Zero-row factors intentionally provide no coverage.
+  std::vector<uint8_t> coveredColumns(static_cast<size_t>(columns_), 0);
+  for (size_t index = 0; index < factorCount; ++index) {
+    if (factorIsNull_[index]) continue;
+    const SparseJacobianFactorWritePlan& factorPlan = factors_[index];
+    if (factorPlan.rowCount <= 0) continue;
+    for (const SparseJacobianBlockWritePlan& block : factorPlan.blocks) {
+      for (int localColumn = 0; localColumn < block.width; ++localColumn) {
+        coveredColumns.at(
+            static_cast<size_t>(block.globalColumnBegin + localColumn)) = 1;
+      }
+    }
+  }
   for (const SparseJacobianColumnBlock& block : columnBlocks_) {
     for (int localColumn = 0; localColumn < block.dimension; ++localColumn) {
       const int globalColumn =
