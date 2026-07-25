@@ -3,6 +3,7 @@
 #include <cuda_runtime_api.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/dllexport.h>
+#include <gtsam/nonlinear/cuda/DevicePcgSolver.h>
 #include <gtsam/nonlinear/cuda/DeviceSparseNormalEquations.h>
 #include <gtsam/nonlinear/cuda/HostSparseJacobian.h>
 #include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
@@ -10,12 +11,28 @@
 #include <cstddef>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace gtsam::cuda {
 
 struct DeviceSparseNormalEquationCapability {
   bool supported = false;
   std::string detail;
+};
+
+enum class DeviceNormalSolverBackend { Cudss, Pcg };
+
+/**
+ * Linear-solver selection for the persistent device pipeline. In Pcg mode
+ * the normal matrix H is never formed: SpGEMM pattern discovery, stable-H
+ * storage, and cuDSS are all skipped, and columnBlockOffsets must hold the
+ * variable-block boundaries (numBlocks+1 ascending scalar-column offsets
+ * ending at the plan's column count) for the block-Jacobi preconditioner.
+ */
+struct DeviceNormalSolverOptions {
+  DeviceNormalSolverBackend backend = DeviceNormalSolverBackend::Cudss;
+  DevicePcgOptions pcg;
+  std::vector<int> columnBlockOffsets;
 };
 
 struct LinearizedModelErrors {
@@ -28,6 +45,8 @@ struct LinearizedModelErrors {
 struct DeviceSparseJacobianAttemptResult {
   Vector delta;
   LinearizedModelErrors model;
+  int pcgIterations = 0;
+  bool pcgConverged = true;
 };
 
 /**
@@ -68,6 +87,14 @@ struct DeviceSparseJacobianProfile {
   double attemptD2h = 0.0;
   double attemptHostBuild = 0.0;
 
+  // PCG backend only; zero in cuDSS mode. Wall times measured on the host
+  // around the internally synchronizing solve.
+  double pcgPreconditionerBuild = 0.0;
+  double pcgSolve = 0.0;
+  size_t pcgIterationsTotal = 0;
+  size_t pcgSolveCount = 0;
+  size_t pcgMaxIterationHits = 0;
+
   size_t patternH2dBytes = 0;
   size_t numericH2dBytes = 0;
   size_t setupD2hBytes = 0;
@@ -92,11 +119,14 @@ class GTSAM_EXPORT DeviceSparseJacobianNormalEquations {
       DeviceSparseJacobianNormalEquations&&) noexcept;
 
   static DeviceSparseNormalEquationCapability preflightCapability();
+  static DeviceSparseNormalEquationCapability preflightCapability(
+      DeviceNormalSolverBackend backend);
 
   // The borrowed fixed stream must outlive this object; destruction waits for
   // it before releasing descriptors, workspaces, and device allocations.
   void initialize(const SparseJacobianPlan& plan, cudaStream_t stream = nullptr,
-                  bool collectProfile = false);
+                  bool collectProfile = false,
+                  const DeviceNormalSolverOptions& solverOptions = {});
   // This upload is asynchronous. The pinned host storage must remain alive
   // and unmodified until the fixed stream reaches the queued copies.
   void uploadNumerics(const HostSparseJacobian& host,
@@ -121,6 +151,9 @@ class GTSAM_EXPORT DeviceSparseJacobianNormalEquations {
 
   const DeviceSparseJacobianProfile& profile() const;
 
+  // True only in cuDSS mode, where the normal matrix H is materialized;
+  // system() throws std::logic_error otherwise.
+  bool hasNormalMatrix() const;
   const DeviceSparseNormalEquations& system() const;
 
  private:

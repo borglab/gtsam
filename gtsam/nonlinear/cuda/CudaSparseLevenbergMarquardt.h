@@ -15,6 +15,8 @@ namespace gtsam::cuda {
 
 class CudaSparseLevenbergMarquardtOptimizer;
 
+enum class CudaSparseLmLinearSolver { Cudss, Pcg };
+
 class GTSAM_EXPORT CudaSparseLevenbergMarquardtParams
     : public LevenbergMarquardtParams {
  public:
@@ -29,6 +31,20 @@ class GTSAM_EXPORT CudaSparseLevenbergMarquardtParams
   bool collectTiming = false;
   bool collectAttemptTrace = false;
   bool validateStructureEveryIteration = false;
+
+  // Cudss factorizes the assembled normal equations (default). Pcg solves
+  // them matrix-free with block-Jacobi-preconditioned conjugate gradients:
+  // the normal matrix is never formed, no cuDSS analysis runs, and the
+  // backend works even in builds without cuDSS.
+  CudaSparseLmLinearSolver linearSolver = CudaSparseLmLinearSolver::Cudss;
+
+  struct PcgParams {
+    // 0 selects min(columns, 250).
+    int maxIterations = 0;
+    double relativeTolerance = 1e-6;
+    bool warmStart = true;
+  };
+  PcgParams pcg;
 };
 
 enum class CudaSparseLmBackend { Cuda, CpuFallback };
@@ -104,6 +120,8 @@ struct CudaSparseLmStageTimings {
   double cudssAnalysis = 0.0;
   double cudssFactorAndSolve = 0.0;
   double cudssDataInfoBoundaryWall = 0.0;
+  double pcgPreconditionerBuild = 0.0;
+  double pcgSolve = 0.0;
   double newModelError = 0.0;
   double attemptD2h = 0.0;
   double attemptHostBuild = 0.0;
@@ -144,6 +162,9 @@ struct CudaSparseLevenbergMarquardtResult {
   size_t lambdaAttempts = 0;
   size_t acceptedSteps = 0;
   size_t cudssAnalyses = 0;
+  size_t pcgIterationsTotal = 0;
+  size_t pcgSolves = 0;
+  size_t pcgMaxIterationHits = 0;
   double initialError = 0.0;
   double finalError = 0.0;
   double finalLambda = 0.0;

@@ -19,3 +19,4 @@ gtsamAddTimingGlob("*.cpp" "${excluded_scripts}" "gtsam" ${GTSAM_BUILD_TIMING_AL
 target_link_libraries(timeGaussianFactorGraph CppUnitLite)
 
 add_subdirectory(sfm_ba)
+add_subdirectory(cuda_sparse)

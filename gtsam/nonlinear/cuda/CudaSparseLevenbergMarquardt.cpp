@@ -174,7 +174,10 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
       return;
     }
 
-    size.normalNonzeros = static_cast<size_t>(device->system().nonzeros());
+    size.normalNonzeros =
+        device->hasNormalMatrix()
+            ? static_cast<size_t>(device->system().nonzeros())
+            : 0;
     const DeviceSparseJacobianProfile& deviceProfile = device->profile();
     CudaSparseLmTransferCounts& transfers = optimizationResult.transfers;
     transfers.patternH2dBytes = deviceProfile.patternH2dBytes;
@@ -198,6 +201,11 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
     timings.cudssAnalysis = deviceProfile.cudssAnalysis;
     timings.cudssFactorAndSolve = deviceProfile.cudssFactorAndSolve;
     timings.cudssDataInfoBoundaryWall = deviceProfile.cudssDataInfoBoundaryWall;
+    timings.pcgPreconditionerBuild = deviceProfile.pcgPreconditionerBuild;
+    timings.pcgSolve = deviceProfile.pcgSolve;
+    optimizationResult.pcgIterationsTotal = deviceProfile.pcgIterationsTotal;
+    optimizationResult.pcgSolves = deviceProfile.pcgSolveCount;
+    optimizationResult.pcgMaxIterationHits = deviceProfile.pcgMaxIterationHits;
     timings.newModelError = deviceProfile.newModelError;
     timings.attemptD2h = deviceProfile.attemptD2h;
     timings.attemptHostBuild = deviceProfile.attemptHostBuild;
@@ -298,17 +306,22 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
                             "no CUDA device is available", state);
     }
 
+    const DeviceNormalSolverBackend deviceBackend =
+        parameters.linearSolver == CudaSparseLmLinearSolver::Pcg
+            ? DeviceNormalSolverBackend::Pcg
+            : DeviceNormalSolverBackend::Cudss;
 #if !GTSAM_ENABLE_CUDSS
-    return runCpuFallback(CudaSparseLmFallbackReason::CudssUnavailable, {},
-                          "cuDSS support is not compiled", state);
-#else
+    if (deviceBackend == DeviceNormalSolverBackend::Cudss) {
+      return runCpuFallback(CudaSparseLmFallbackReason::CudssUnavailable, {},
+                            "cuDSS support is not compiled", state);
+    }
+#endif
     const DeviceSparseNormalEquationCapability capability =
-        DeviceSparseJacobianNormalEquations::preflightCapability();
+        DeviceSparseJacobianNormalEquations::preflightCapability(deviceBackend);
     if (!capability.supported) {
       return runCpuFallback(CudaSparseLmFallbackReason::CudaToolkitUnsupported,
                             {}, capability.detail, state);
     }
-#endif
 
     const Clock::time_point planStart =
         MaybeStartTiming(parameters.collectTiming);
@@ -331,13 +344,28 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
                      &optimizationResult.timings.plan);
     snapshotCudaProfile();
 
+    DeviceNormalSolverOptions solverOptions;
+    solverOptions.backend = deviceBackend;
+    if (deviceBackend == DeviceNormalSolverBackend::Pcg) {
+      solverOptions.pcg.maxIterations = parameters.pcg.maxIterations;
+      solverOptions.pcg.relativeTolerance = parameters.pcg.relativeTolerance;
+      solverOptions.pcg.warmStart = parameters.pcg.warmStart;
+      solverOptions.columnBlockOffsets.reserve(layout->blocks().size() + 1);
+      solverOptions.columnBlockOffsets.push_back(0);
+      for (const SparseJacobianColumnBlock& block : layout->blocks()) {
+        solverOptions.columnBlockOffsets.push_back(block.columnBegin +
+                                                   block.dimension);
+      }
+    }
+
     stageStart = MaybeStartTiming(parameters.collectTiming);
     RunCudaStage("persistent setup", [&] {
       context = std::make_unique<CudaContext>();
       host = std::make_unique<HostSparseJacobian>(*plan);
       linearizer = std::make_unique<StreamingSparseJacobianLinearizer>();
       device = std::make_unique<DeviceSparseJacobianNormalEquations>();
-      device->initialize(*plan, context->stream(), parameters.collectTiming);
+      device->initialize(*plan, context->stream(), parameters.collectTiming,
+                         solverOptions);
     });
     AccumulateTiming(parameters.collectTiming, stageStart,
                      &optimizationResult.timings.persistentSetupWall);
