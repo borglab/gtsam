@@ -8,9 +8,11 @@
 #include <chrono>
 #include <cmath>
 #include <cstddef>
+#include <cstdlib>
 #include <map>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace gtsam::cuda {
@@ -435,7 +437,11 @@ struct DevicePcgSolver::Impl {
   cusparseDnVecDescr_t pDescriptor = nullptr;
   cusparseDnVecDescr_t tDescriptor = nullptr;
   cusparseDnVecDescr_t qDescriptor = nullptr;
-  CudaDeviceArray<unsigned char> spmvBuffer;
+  // Per-multiply workspaces: cusparseSpMV_preprocess stores its analysis in
+  // the external buffer, so J·p and Jᵀ·t must not share one.
+  CudaDeviceArray<unsigned char> spmvBufferJ;
+  CudaDeviceArray<unsigned char> spmvBufferJt;
+  cusparseSpMVAlg_t spmvAlgorithm = CUSPARSE_SPMV_ALG_DEFAULT;
 
   bool warmStartValid = false;
   DevicePcgSolveStats stats;
@@ -454,13 +460,13 @@ struct DevicePcgSolver::Impl {
     // t = J·p; q = Jᵀ·t; q += lambda·D∘p with pᵀq accumulated into kPAp.
     CheckCusparse(cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
                                &kAlphaOne, j, pDescriptor, &kBetaZero,
-                               tDescriptor, CUDA_R_64F,
-                               CUSPARSE_SPMV_ALG_DEFAULT, spmvBuffer.data()),
+                               tDescriptor, CUDA_R_64F, spmvAlgorithm,
+                               spmvBufferJ.data()),
                   "PCG J*p SpMV");
     CheckCusparse(cusparseSpMV(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
                                &kAlphaOne, jt, tDescriptor, &kBetaZero,
-                               qDescriptor, CUDA_R_64F,
-                               CUSPARSE_SPMV_ALG_DEFAULT, spmvBuffer.data()),
+                               qDescriptor, CUDA_R_64F, spmvAlgorithm,
+                               spmvBufferJt.data()),
                   "PCG JT*t SpMV");
   }
 
@@ -676,12 +682,21 @@ void DevicePcgSolver::initialize(cusparseHandle_t handle, int rows,
                                       replacement->q.data(), CUDA_R_64F),
                   "PCG q descriptor creation");
 
+    // Experiment switch: GTSAM_PCG_SPMV_ALG=alg1|alg2 overrides the default.
+    if (const char* algName = std::getenv("GTSAM_PCG_SPMV_ALG")) {
+      if (std::string(algName) == "alg1") {
+        replacement->spmvAlgorithm = CUSPARSE_SPMV_CSR_ALG1;
+      } else if (std::string(algName) == "alg2") {
+        replacement->spmvAlgorithm = CUSPARSE_SPMV_CSR_ALG2;
+      }
+    }
+
     size_t forwardBytes = 0;
     CheckCusparse(
         cusparseSpMV_bufferSize(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
                                 &kAlphaOne, j, replacement->pDescriptor,
                                 &kBetaZero, replacement->tDescriptor,
-                                CUDA_R_64F, CUSPARSE_SPMV_ALG_DEFAULT,
+                                CUDA_R_64F, replacement->spmvAlgorithm,
                                 &forwardBytes),
         "PCG J*p SpMV workspace query");
     size_t transposeBytes = 0;
@@ -689,10 +704,29 @@ void DevicePcgSolver::initialize(cusparseHandle_t handle, int rows,
         cusparseSpMV_bufferSize(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
                                 &kAlphaOne, jt, replacement->tDescriptor,
                                 &kBetaZero, replacement->qDescriptor,
-                                CUDA_R_64F, CUSPARSE_SPMV_ALG_DEFAULT,
+                                CUDA_R_64F, replacement->spmvAlgorithm,
                                 &transposeBytes),
         "PCG JT*t SpMV workspace query");
-    replacement->spmvBuffer.resize(std::max(forwardBytes, transposeBytes));
+    replacement->spmvBufferJ.resize(forwardBytes);
+    replacement->spmvBufferJt.resize(transposeBytes);
+
+    // One-time structure analysis amortized over the hundreds of SpMVs per
+    // solve. Values change every linearization, but preprocess results are
+    // structure-only and remain valid.
+    CheckCusparse(
+        cusparseSpMV_preprocess(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
+                                &kAlphaOne, j, replacement->pDescriptor,
+                                &kBetaZero, replacement->tDescriptor,
+                                CUDA_R_64F, replacement->spmvAlgorithm,
+                                replacement->spmvBufferJ.data()),
+        "PCG J*p SpMV preprocess");
+    CheckCusparse(
+        cusparseSpMV_preprocess(handle, CUSPARSE_OPERATION_NON_TRANSPOSE,
+                                &kAlphaOne, jt, replacement->tDescriptor,
+                                &kBetaZero, replacement->qDescriptor,
+                                CUDA_R_64F, replacement->spmvAlgorithm,
+                                replacement->spmvBufferJt.data()),
+        "PCG JT*t SpMV preprocess");
 
     CheckCuda(cudaStreamSynchronize(stream), "PCG setup synchronization");
   } catch (...) {
