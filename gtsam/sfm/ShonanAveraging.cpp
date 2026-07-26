@@ -16,6 +16,11 @@
  * @brief  Shonan Averaging algorithm
  */
 
+// GCC bug workaround
+#if  defined(__GNUC__) && __GNUC__ == 16
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
 #include <SymEigsSolver.h>
 #include <gtsam/linear/AcceleratedPowerMethod.h>
 #include <gtsam/linear/PCGSolver.h>
