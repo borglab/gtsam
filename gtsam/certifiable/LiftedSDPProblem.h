@@ -1,3 +1,20 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file    LiftedSDPProblem.h
+ * @brief   Lifted SDP formulations and MOSEK-backed solvers for QCQP problems.
+ * @author  Avinash Subramanian
+ */
+
 #pragma once
 
 #include <gtsam/config.h>
@@ -17,42 +34,75 @@
 
 namespace gtsam {
 
+/** Formulation tag for a single monolithic positive semidefinite variable. */
 struct MonolithicSDP {};
 
+/** Formulation tag for a chordally decomposed positive semidefinite variable. */
 struct ChordalSDP {};
 
-enum class ChordalOrderingType { Metis, Colamd };
+/** Variable ordering strategy used to construct the chordal decomposition. */
+enum class ChordalOrderingType {
+  Metis,  ///< Nested-dissection ordering computed with METIS.
+  Colamd  ///< Column approximate minimum-degree ordering.
+};
 
+/** Solver tag for the optional MOSEK Fusion backend. */
 struct MosekSDPSolver {};
 
+/**
+ * Lifted SDP problem selected by a formulation tag and solver tag.
+ *
+ * @tparam SDPFormulation Lifted SDP formulation.
+ * @tparam SDPSolver SDP solver backend.
+ */
 template <typename SDPFormulation, typename SDPSolver>
 class LiftedSDPProblem;
 
 #ifdef GTSAM_USE_MOSEK
+/** Monolithic lifted SDP backed by MOSEK Fusion. */
 template <>
 class LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
  public:
-
+  /** Construct the monolithic SDP relaxation of a QCQP problem. */
   explicit LiftedSDPProblem(const QcqpProblem& problem);
 
+  /** Dispose of the MOSEK model owned by this problem. */
   ~LiftedSDPProblem();
 
   // # copied from gtsam-private
+  /**
+   * Solve the SDP with MOSEK.
+   *
+   * @param mosek_params MOSEK solver parameter overrides.
+   * @return True after MOSEK completes the solve.
+   */
   bool solve(const std::map<std::string, double>& mosek_params = {});
 
+  /** Return the primal objective value after solve(). */
   double objectiveValue() const;
 
+  /** Return the MOSEK problem status after solve(). */
   std::string problemStatus() const;
 
+  /** Return MOSEK's optimizer time in seconds after solve(). */
   double solveTimeSeconds() const;
 
+  /** Recover one lifted vector from each diagonal SDP block. */
   void recoverLiftedVectors();
 
+  /** Return recovered lifted vectors in orderedKeys() order. */
   const std::vector<Vector>& getRecoveredLiftedVectors() const;
 
+  /** Return the rank-one eigenvalue ratio for each recovered variable. */
   const std::vector<double>& getRecoveredVariableEVRs() const;
 
   // # copied from gtsam-private
+  /**
+   * Decode the recovered lifted vectors as manifold values.
+   *
+   * @tparam T Manifold type with a supported lifted-vector decoder.
+   * @return Recovered values in orderedKeys() order.
+   */
   template <typename T>
   std::vector<T> getRecoveredPoses() const {
     const auto& liftedVectors = getRecoveredLiftedVectors();
@@ -79,6 +129,13 @@ class LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
   }
 
   // # copied from gtsam-private
+  /**
+   * Compute local-coordinate errors between recovered and reference values.
+   *
+   * @tparam T Manifold type with a supported lifted-vector decoder.
+   * @param groundTruth Reference values in orderedKeys() order.
+   * @return One local-coordinate error norm per recovered value.
+   */
   template <typename T>
   std::vector<double> getRecoveredPoseErrorNorms(
       const std::vector<T>& groundTruth) const {
@@ -97,8 +154,10 @@ class LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
     return errors;
   }
 
+  /** Return QCQP variable keys in the SDP block ordering. */
   const KeyVector& orderedKeys() const;
 
+  /** Return the QCQP dimension associated with each ordered key. */
   const std::map<Key, DenseIndex>& orderedKeyDims() const;
 
  private:
@@ -106,30 +165,56 @@ class LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
   std::unique_ptr<Impl> impl_;
 };
 
+/** Chordally decomposed lifted SDP backed by MOSEK Fusion. */
 template <>
 class LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
  public:
+  /**
+   * Construct the chordal SDP relaxation of a QCQP problem.
+   *
+   * @param problem QCQP to relax.
+   * @param orderingType Ordering used for symbolic elimination.
+   */
   LiftedSDPProblem(const QcqpProblem& problem,
                    ChordalOrderingType orderingType);
 
+  /** Dispose of the MOSEK model owned by this problem. */
   ~LiftedSDPProblem();
 
   // # modified from gtsam-private
+  /**
+   * Solve the SDP with MOSEK.
+   *
+   * @param mosek_params MOSEK solver parameter overrides.
+   * @return True after MOSEK completes the solve.
+   */
   bool solve(const std::map<std::string, double>& mosek_params = {});
 
+  /** Return the primal objective value after solve(). */
   double objectiveValue() const;
 
+  /** Return the MOSEK problem status after solve(). */
   std::string problemStatus() const;
 
+  /** Return MOSEK's optimizer time in seconds after solve(). */
   double solveTimeSeconds() const;
 
+  /** Recover one lifted vector from each diagonal SDP block. */
   void recoverLiftedVectors();
 
+  /** Return recovered lifted vectors in orderedKeys() order. */
   const std::vector<Vector>& getRecoveredLiftedVectors() const;
 
+  /** Return the rank-one eigenvalue ratio for each recovered variable. */
   const std::vector<double>& getRecoveredVariableEVRs() const;
 
   // # modified from gtsam-private
+  /**
+   * Decode the recovered lifted vectors as manifold values.
+   *
+   * @tparam T Manifold type with a supported lifted-vector decoder.
+   * @return Recovered values in orderedKeys() order.
+   */
   template <typename T>
   std::vector<T> getRecoveredPoses() const {
     const auto& liftedVectors = getRecoveredLiftedVectors();
@@ -156,6 +241,13 @@ class LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
   }
 
   // # modified from gtsam-private
+  /**
+   * Compute local-coordinate errors between recovered and reference values.
+   *
+   * @tparam T Manifold type with a supported lifted-vector decoder.
+   * @param groundTruth Reference values in orderedKeys() order.
+   * @return One local-coordinate error norm per recovered value.
+   */
   template <typename T>
   std::vector<double> getRecoveredPoseErrorNorms(
       const std::vector<T>& groundTruth) const {
@@ -174,10 +266,13 @@ class LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
     return errors;
   }
 
+  /** Return QCQP variable keys in the SDP block ordering. */
   const KeyVector& orderedKeys() const;
 
+  /** Return the QCQP dimension associated with each ordered key. */
   const std::map<Key, DenseIndex>& orderedKeyDims() const;
 
+  /** Return the symbolic Bayes tree defining the chordal decomposition. */
   const SymbolicBayesTree& bayesTree() const;
 
  private:

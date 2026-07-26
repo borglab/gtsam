@@ -11,13 +11,11 @@
 
 /**
  * @file testMOSEKInstall.cpp
- * @brief This tests if MOSEK is installed and running correctly. 
+ * @brief Test that MOSEK Fusion is installed and can solve an SDP.
  */
 
+#include <CppUnitLite/TestHarness.h>
 #include <fusion.h>
-
-#include <cmath>
-#include <iostream>
 
 using namespace mosek::fusion;
 using namespace monty;
@@ -51,20 +49,21 @@ SimpleSdpSolution SolveSimpleSdp() {
 
 }  // namespace
 
-int main() {
+/* ************************************************************************* */
+TEST(MOSEKInstall, SimpleSDP) {
   const SimpleSdpSolution solution = SolveSimpleSdp();
   const double trace = solution.x00 + solution.x11;
 
-  std::cout << "Simple MOSEK SDP solution" << std::endl;
-  std::cout << "X = [[" << solution.x00 << ", " << solution.x01 << "], ["
-            << solution.x10 << ", " << solution.x11 << "]]" << std::endl;
-  std::cout << "trace(X) = " << trace << std::endl;
-
   constexpr double tol = 1e-6;
-  if (std::fabs(solution.x00 - 1.0) > tol ||
-      std::fabs(solution.x10) > tol || std::fabs(solution.x01) > tol ||
-      std::fabs(solution.x11) > tol || std::fabs(trace - 1.0) > tol) {
-    return 1;
-  }
-  return 0;
+  EXPECT_DOUBLES_EQUAL(1.0, solution.x00, tol);
+  EXPECT_DOUBLES_EQUAL(0.0, solution.x10, tol);
+  EXPECT_DOUBLES_EQUAL(0.0, solution.x01, tol);
+  EXPECT_DOUBLES_EQUAL(0.0, solution.x11, tol);
+  EXPECT_DOUBLES_EQUAL(1.0, trace, tol);
+}
+
+/* ************************************************************************* */
+int main() {
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
 }

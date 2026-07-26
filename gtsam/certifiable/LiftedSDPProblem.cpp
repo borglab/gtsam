@@ -1,3 +1,20 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file    LiftedSDPProblem.cpp
+ * @brief   Implementations of QCQP-backed lifted SDP formulations.
+ * @author  Avinash Subramanian
+ */
+
 #include <gtsam/certifiable/LiftedSDPProblem.h>
 
 #include <Eigen/Eigenvalues>

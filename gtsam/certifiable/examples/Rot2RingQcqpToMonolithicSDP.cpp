@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file Rot2RingQcqpExample.cpp
+ * @file Rot2RingQcqpToMonolithicSDP.cpp
  * @brief Minimal Rot2 ring SLAM construction ending at a QcqpProblem.
  */
 
