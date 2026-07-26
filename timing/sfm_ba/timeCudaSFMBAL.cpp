@@ -19,13 +19,21 @@
 #include "../timeSFMBAL.h"
 #include "GncOutlierSampling.h"
 
+#include <gtsam/config.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/BatchFactor.h>
 
 #if GTSAM_ENABLE_CUDA
 #include <gtsam/base/cuda/CudaContext.h>
+#include <gtsam/nonlinear/cuda/CudaSparseLevenbergMarquardt.h>
+#include <gtsam/nonlinear/cuda/HostSparseJacobian.h>
+#include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
+#include <gtsam/nonlinear/cuda/StreamingSparseJacobianLinearizer.h>
 #include <gtsam/slam/cuda/CudaBalCsrStructure.h>
+#include <gtsam/slam/cuda/CudaSfmDenseSchurSolver.h>
 #include <gtsam/slam/cuda/CudaSfmLevenbergMarquardt.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionBatch.h>
+#include <gtsam/slam/cuda/CudaSfmProjectionLinearization.h>
 #include <gtsam/slam/cuda/CudaSfmValues.h>
 #endif
 
@@ -39,6 +47,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <map>
 #include <random>
 
@@ -52,6 +61,9 @@ using SfmFactor = GeneralSFMFactor<Camera, Point3>;
 std::string usage() {
   return "Usage: timeCudaSFMBAL [--colamd] [--profile] [--cuda-structure-only] "
          "[--cuda-lm] [--cuda-lm-graph] "
+         "[--cuda-sparse-lm] [--cuda-sparse-pack-only] "
+         "[--gaussian-graph-pack-diagnostic] "
+         "[--linearization-benchmark] [--linearization-repeats N] "
          "[--cuda-linear-solver dense-schur|cudss-full-normal] "
          "[--cuda-lm-graph-kind raw|point-batch|camera-batch] "
          "[--batch-chunk-size N] "
@@ -100,6 +112,12 @@ struct RunOptions {
   bool cudaStructureOnly = false;
   bool cudaLm = false;
   bool cudaLmGraph = false;
+  bool cudaSparseLm = false;
+  bool cudaSparsePackOnly = false;
+  bool gaussianGraphPackDiagnostic = false;
+  bool linearizationBenchmark = false;
+  bool linearizationRepeatsSpecified = false;
+  size_t linearizationRepeats = 10;
   bool cudaLinearSolverSpecified = false;
   CudaLinearSolverOption cudaLinearSolver = CudaLinearSolverOption::DenseSchur;
   bool cudaGraphKindSpecified = false;
@@ -140,9 +158,9 @@ void setProjectionNoiseModel(const char* noiseModel) {
   if (strcmp(noiseModel, "unit") == 0) {
     gNoiseModel = noiseModel::Unit::Create(2);
   } else if (strcmp(noiseModel, "huber") == 0) {
-    gNoiseModel = noiseModel::Robust::Create(
-        noiseModel::mEstimator::Huber::Create(1.345),
-        noiseModel::Unit::Create(2));
+    gNoiseModel =
+        noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(1.345),
+                                   noiseModel::Unit::Create(2));
   } else if (strcmp(noiseModel, "tukey") == 0) {
     gNoiseModel = noiseModel::Robust::Create(
         noiseModel::mEstimator::Tukey::Create(4.6851),
@@ -175,6 +193,292 @@ void printProfileRow(const std::string& indent, const std::string& label,
   std::cout << "\n";
 }
 
+bool gtsamBuiltWithTbb() {
+#ifdef GTSAM_USE_TBB
+  return true;
+#else
+  return false;
+#endif
+}
+
+struct TimingSamples {
+  std::vector<double> seconds;
+
+  double mean() const {
+    double total = 0.0;
+    for (const double sample : seconds) total += sample;
+    return total / static_cast<double>(seconds.size());
+  }
+
+  double minimum() const {
+    return *std::min_element(seconds.begin(), seconds.end());
+  }
+
+  double maximum() const {
+    return *std::max_element(seconds.begin(), seconds.end());
+  }
+};
+
+struct CpuLinearizationBenchmark {
+  TimingSamples timing;
+  size_t linearizedFactors = 0;
+};
+
+struct CpuStateBenchmark {
+  TimingSamples retract;
+  TimingSamples trialError;
+  size_t retractedValues = 0;
+  double error = 0.0;
+};
+
+VectorValues makeBenchmarkDelta(const Values& initial) {
+  VectorValues delta = initial.zeroVectors();
+  for (Key key : initial.keys()) {
+    Vector& value = delta.at(key);
+    value.setConstant(1e-6);
+  }
+  return delta;
+}
+
+CpuLinearizationBenchmark benchmarkCpuLinearization(
+    const NonlinearFactorGraph& graph, const Values& initial, size_t repeats) {
+  GaussianFactorGraph::shared_ptr warmup = graph.linearize(initial);
+  warmup.reset();
+
+  CpuLinearizationBenchmark benchmark;
+  benchmark.timing.seconds.reserve(repeats);
+  for (size_t repeat = 0; repeat < repeats; ++repeat) {
+    const auto start = std::chrono::steady_clock::now();
+    GaussianFactorGraph::shared_ptr linear = graph.linearize(initial);
+    const auto end = std::chrono::steady_clock::now();
+    benchmark.timing.seconds.push_back(
+        std::chrono::duration<double>(end - start).count());
+    benchmark.linearizedFactors = linear->size();
+  }
+  return benchmark;
+}
+
+CpuStateBenchmark benchmarkCpuState(const NonlinearFactorGraph& graph,
+                                    const Values& initial,
+                                    const VectorValues& delta, size_t repeats) {
+  initial.retract(delta);
+
+  CpuStateBenchmark benchmark;
+  benchmark.retract.seconds.reserve(repeats);
+  benchmark.trialError.seconds.reserve(repeats);
+  for (size_t repeat = 0; repeat < repeats; ++repeat) {
+    const auto start = std::chrono::steady_clock::now();
+    {
+      const Values retracted = initial.retract(delta);
+      const auto end = std::chrono::steady_clock::now();
+      benchmark.retract.seconds.push_back(
+          std::chrono::duration<double>(end - start).count());
+      benchmark.retractedValues = retracted.size();
+    }
+  }
+
+  const Values trial = initial.retract(delta);
+  graph.error(trial);
+  for (size_t repeat = 0; repeat < repeats; ++repeat) {
+    const auto start = std::chrono::steady_clock::now();
+    benchmark.error = graph.error(trial);
+    const auto end = std::chrono::steady_clock::now();
+    benchmark.trialError.seconds.push_back(
+        std::chrono::duration<double>(end - start).count());
+  }
+  if (!std::isfinite(benchmark.error)) {
+    throw std::runtime_error("CPU trial graph.error() is not finite");
+  }
+  return benchmark;
+}
+
+void printTimingSamples(const std::string& label, const TimingSamples& timing,
+                        size_t workItems, const std::string& workItemLabel) {
+  std::cout << "  " << label << "\n";
+  for (size_t repeat = 0; repeat < timing.seconds.size(); ++repeat) {
+    std::cout << "    repeat " << repeat << ": " << timing.seconds[repeat]
+              << " s\n";
+  }
+  std::cout << "    mean: " << timing.mean() << " s\n";
+  std::cout << "    min:  " << timing.minimum() << " s\n";
+  std::cout << "    max:  " << timing.maximum() << " s\n";
+  if (timing.mean() > 0.0) {
+    std::cout << "    throughput: "
+              << static_cast<double>(workItems) / timing.mean() << " "
+              << workItemLabel << "/s\n";
+  }
+}
+
+#if GTSAM_ENABLE_CUDA
+enum class SparsePackingPath { Streaming, GaussianGraph };
+
+struct SparsePackingContext {
+  gtsam::cuda::SparseJacobianColumnLayout columns;
+  gtsam::cuda::SparseJacobianPlan plan;
+  gtsam::cuda::HostSparseJacobian host;
+  gtsam::cuda::StreamingSparseJacobianLinearizer linearizer;
+
+  SparsePackingContext(const NonlinearFactorGraph& graph, const Values& values)
+      : columns(values), plan(graph, columns), host(plan) {}
+};
+
+struct SparsePackingBenchmark {
+  TimingSamples hostClear;
+  TimingSamples combinedWall;
+  TimingSamples streamingWall;
+  TimingSamples factorLinearizationCpuSum;
+  TimingSamples csrPackingCpuSum;
+  TimingSamples gaussianGraphLinearization;
+  TimingSamples gaussianGraphPacking;
+  size_t factors = 0;
+  int residualRows = 0;
+  int scalarColumns = 0;
+  int jacobianNonzeros = 0;
+  gtsam::cuda::StreamingLinearizationStats streamingStats;
+};
+
+void requireDirectJacobianSuccess(
+    const char* operation, const gtsam::cuda::DirectJacobianStatus& status) {
+  if (status.ok()) return;
+
+  std::string detail = std::string(operation) + " failed";
+  if (status.factorIndex != std::numeric_limits<size_t>::max()) {
+    detail += " at factor " + std::to_string(status.factorIndex);
+  }
+  if (!status.detail.empty()) detail += ": " + status.detail;
+  throw std::runtime_error(detail);
+}
+
+SparsePackingBenchmark benchmarkSparsePacking(const NonlinearFactorGraph& graph,
+                                              const Values& values,
+                                              size_t repeats,
+                                              SparsePackingPath path) {
+  SparsePackingContext context(graph, values);
+  SparsePackingBenchmark benchmark;
+  benchmark.factors = graph.size();
+  benchmark.residualRows = context.plan.rows();
+  benchmark.scalarColumns = context.plan.columns();
+  benchmark.jacobianNonzeros = context.plan.nonzeros();
+  benchmark.hostClear.seconds.reserve(repeats);
+  benchmark.combinedWall.seconds.reserve(repeats);
+  if (path == SparsePackingPath::Streaming) {
+    benchmark.streamingWall.seconds.reserve(repeats);
+    benchmark.factorLinearizationCpuSum.seconds.reserve(repeats);
+    benchmark.csrPackingCpuSum.seconds.reserve(repeats);
+  } else {
+    benchmark.gaussianGraphLinearization.seconds.reserve(repeats);
+    benchmark.gaussianGraphPacking.seconds.reserve(repeats);
+  }
+
+  const auto runOnce = [&](bool measured) {
+    const auto clearStart = std::chrono::steady_clock::now();
+    context.host.clear();
+    const auto clearEnd = std::chrono::steady_clock::now();
+    if (measured) {
+      benchmark.hostClear.seconds.push_back(
+          std::chrono::duration<double>(clearEnd - clearStart).count());
+    }
+
+    const auto combinedStart = std::chrono::steady_clock::now();
+    if (path == SparsePackingPath::Streaming) {
+      gtsam::cuda::StreamingLinearizationStats stats;
+      gtsam::cuda::StreamingLinearizationProfile profile;
+      const auto streamingStart = std::chrono::steady_clock::now();
+      const gtsam::cuda::DirectJacobianStatus status =
+          context.linearizer.linearize(graph, values, context.columns,
+                                       context.plan, &context.host, &stats,
+                                       false, &profile);
+      const auto streamingEnd = std::chrono::steady_clock::now();
+      requireDirectJacobianSuccess("streaming sparse Jacobian", status);
+      if (measured) {
+        benchmark.streamingStats = stats;
+        benchmark.streamingWall.seconds.push_back(
+            std::chrono::duration<double>(streamingEnd - streamingStart)
+                .count());
+        benchmark.combinedWall.seconds.push_back(
+            std::chrono::duration<double>(streamingEnd - combinedStart)
+                .count());
+        benchmark.factorLinearizationCpuSum.seconds.push_back(
+            profile.factorLinearizationCpuSum);
+        benchmark.csrPackingCpuSum.seconds.push_back(profile.csrPackingCpuSum);
+      }
+    } else {
+      // Keep each temporary Gaussian graph alive through its corresponding
+      // pack, then destroy it before the next repeat.
+      const auto linearizationStart = std::chrono::steady_clock::now();
+      GaussianFactorGraph::shared_ptr linear = graph.linearize(values);
+      const auto linearizationEnd = std::chrono::steady_clock::now();
+      const auto packingStart = std::chrono::steady_clock::now();
+      const gtsam::cuda::DirectJacobianStatus status =
+          context.linearizer.packGaussianFactorGraph(*linear, context.plan,
+                                                     &context.host);
+      const auto packingEnd = std::chrono::steady_clock::now();
+      requireDirectJacobianSuccess("GaussianFactorGraph CSR packing", status);
+      if (measured) {
+        benchmark.gaussianGraphLinearization.seconds.push_back(
+            std::chrono::duration<double>(linearizationEnd - linearizationStart)
+                .count());
+        benchmark.gaussianGraphPacking.seconds.push_back(
+            std::chrono::duration<double>(packingEnd - packingStart).count());
+        benchmark.combinedWall.seconds.push_back(
+            std::chrono::duration<double>(packingEnd - combinedStart).count());
+      }
+    }
+  };
+
+  runOnce(false);  // Untimed warm-up using the same plan and host storage.
+  for (size_t repeat = 0; repeat < repeats; ++repeat) runOnce(true);
+  return benchmark;
+}
+
+void printSparsePackingBenchmark(const SparsePackingBenchmark& benchmark,
+                                 SparsePackingPath path, size_t repeats) {
+  std::cout << std::setprecision(9);
+  std::cout << "  generic sparse-Jacobian packing benchmark\n";
+  std::cout << "  path: "
+            << (path == SparsePackingPath::Streaming
+                    ? "streaming temporary-factor pack"
+                    : "GaussianFactorGraph construction plus identical CSR "
+                      "pack")
+            << "\n";
+  std::cout << "  GTSAM_USE_TBB: " << (gtsamBuiltWithTbb() ? "yes" : "no")
+            << "\n";
+  std::cout << "  factors: " << benchmark.factors
+            << ", residual rows: " << benchmark.residualRows
+            << ", scalar columns: " << benchmark.scalarColumns
+            << ", J.nnz: " << benchmark.jacobianNonzeros << "\n";
+  std::cout << "  warm-up calls: 1 (not timed)\n";
+  std::cout << "  measured repeats: " << repeats << "\n";
+  printTimingSamples("host buffer clear", benchmark.hostClear,
+                     static_cast<size_t>(benchmark.jacobianNonzeros) +
+                         static_cast<size_t>(benchmark.residualRows),
+                     "scalars");
+  if (path == SparsePackingPath::Streaming) {
+    std::cout << "  scheduling: " << benchmark.streamingStats.sendableFactors
+              << " sendable, " << benchmark.streamingStats.nonSendableFactors
+              << " non-sendable factors\n";
+    printTimingSamples("streaming factor linearization + CSR pack wall",
+                       benchmark.streamingWall, benchmark.factors, "factors");
+    printTimingSamples("sum of per-factor linearize CPU time",
+                       benchmark.factorLinearizationCpuSum, benchmark.factors,
+                       "factors");
+    printTimingSamples("sum of per-factor CSR scatter CPU time",
+                       benchmark.csrPackingCpuSum, benchmark.factors,
+                       "factors");
+  } else {
+    printTimingSamples("GaussianFactorGraph graph.linearize() wall",
+                       benchmark.gaussianGraphLinearization, benchmark.factors,
+                       "factors");
+    printTimingSamples("GaussianFactorGraph-to-CSR pack wall",
+                       benchmark.gaussianGraphPacking, benchmark.factors,
+                       "factors");
+  }
+  printTimingSamples("combined path wall (excluding host clear)",
+                     benchmark.combinedWall, benchmark.factors, "factors");
+  std::cout << std::setprecision(6);
+}
+#endif
+
 #if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
 enum class CudaLmDefaults {
   Backend,
@@ -203,6 +507,91 @@ gtsam::cuda::CudaSfmLevenbergMarquardtParams makeBalCudaLmParams(
   params.linearSolver = cudaLinearSolverType(solverOption);
   params.enableDetailedProfiling = enableDetailedProfiling;
   return params;
+}
+
+struct GpuLinearizationBenchmark {
+  TimingSamples projectionLinearization;
+  TimingSamples hessianDiagonal;
+  TimingSamples denseSchurCombined;
+  size_t observations = 0;
+  size_t deltaDimension = 0;
+};
+
+GpuLinearizationBenchmark benchmarkGpuLinearization(const SfmData& db,
+                                                    size_t repeats) {
+  gtsam::cuda::CudaContext context;
+  const auto values = gtsam::cuda::PackSfmValues(db, context.stream());
+  const auto batch =
+      gtsam::cuda::CudaSfmProjectionBatch::FromSfmData(db, context.stream());
+  context.synchronize();
+
+  GpuLinearizationBenchmark benchmark;
+  benchmark.observations = batch.numObservations();
+  benchmark.projectionLinearization.seconds.reserve(repeats);
+  benchmark.hessianDiagonal.seconds.reserve(repeats);
+  benchmark.denseSchurCombined.seconds.reserve(repeats);
+
+  gtsam::cuda::CudaSfmProjectionLinearization linearization;
+  gtsam::cuda::LinearizeCudaSfmProjectionBatch(values, batch, &linearization,
+                                               context.stream());
+  context.synchronize();
+  for (size_t repeat = 0; repeat < repeats; ++repeat) {
+    const auto start = std::chrono::steady_clock::now();
+    gtsam::cuda::LinearizeCudaSfmProjectionBatch(values, batch, &linearization,
+                                                 context.stream());
+    context.synchronize();
+    const auto end = std::chrono::steady_clock::now();
+    benchmark.projectionLinearization.seconds.push_back(
+        std::chrono::duration<double>(end - start).count());
+  }
+
+  const auto params = makeBalCudaLmParams(CudaLinearSolverOption::DenseSchur,
+                                          CudaLmDefaults::Graph, false);
+  gtsam::cuda::CudaDeviceArray<double> dampingDiagonal;
+  if (params.diagonalDamping) {
+    const auto computeHessianDiagonal = [&]() {
+      gtsam::cuda::ComputeCudaSfmHessianDiagonal(
+          values, batch, static_cast<int>(db.numberCameras()),
+          params.minDiagonal, params.maxDiagonal, &dampingDiagonal,
+          context.stream());
+    };
+    computeHessianDiagonal();
+    context.synchronize();
+    for (size_t repeat = 0; repeat < repeats; ++repeat) {
+      const auto start = std::chrono::steady_clock::now();
+      computeHessianDiagonal();
+      context.synchronize();
+      const auto end = std::chrono::steady_clock::now();
+      benchmark.hessianDiagonal.seconds.push_back(
+          std::chrono::duration<double>(end - start).count());
+    }
+  }
+
+  gtsam::cuda::CudaSfmDenseSchurSolver solver;
+  gtsam::cuda::CudaDeviceArray<double> delta;
+  const auto solveOnce = [&]() {
+    if (params.diagonalDamping) {
+      solver.solve(values, batch, static_cast<int>(db.numberCameras()),
+                   params.lambdaInitial, dampingDiagonal, &delta,
+                   context.stream());
+    } else {
+      solver.solve(values, batch, static_cast<int>(db.numberCameras()),
+                   params.lambdaInitial, &delta, context.stream());
+    }
+  };
+
+  solveOnce();
+  context.synchronize();
+  for (size_t repeat = 0; repeat < repeats; ++repeat) {
+    const auto start = std::chrono::steady_clock::now();
+    solveOnce();
+    context.synchronize();
+    const auto end = std::chrono::steady_clock::now();
+    benchmark.denseSchurCombined.seconds.push_back(
+        std::chrono::duration<double>(end - start).count());
+  }
+  benchmark.deltaDimension = delta.size();
+  return benchmark;
 }
 
 struct CudaBackendLmRun {
@@ -235,8 +624,7 @@ void printTransferRow(const std::string& indent, const std::string& label,
   }
   std::cout << " [" << bytes << " B";
   if (elapsed > 0.0 && bytes > 0) {
-    const double gib =
-        static_cast<double>(bytes) / (1024.0 * 1024.0 * 1024.0);
+    const double gib = static_cast<double>(bytes) / (1024.0 * 1024.0 * 1024.0);
     std::cout << ", " << (gib / elapsed) << " GiB/s";
   }
   std::cout << "]\n";
@@ -293,9 +681,8 @@ void printCudaLmTransferBreakdown(
                    result.totalH2dBytes, total);
   printProfileRow("    ", "download host alloc",
                   result.downloadHostAllocElapsed, total);
-  printTransferRow("    ", "download D2H memcpy",
-                   result.downloadD2hCopyElapsed, result.downloadD2hBytes,
-                   total);
+  printTransferRow("    ", "download D2H memcpy", result.downloadD2hCopyElapsed,
+                   result.downloadD2hBytes, total);
   printProfileRow("    ", "download Values rebuild",
                   result.downloadValuesBuildElapsed, total);
   printTransferRow("    ", "total D2H memcpy", result.totalD2hCopyElapsed,
@@ -357,8 +744,8 @@ void printCudaLmDetailedBreakdown(
               << iteration.endLambda << "\n";
     printProfileRow("      ", "damping diagonal",
                     iteration.dampingDiagonalElapsed, iteration.totalElapsed);
-    printProfileRow("      ", "accept trial copy",
-                    iteration.acceptTrialElapsed, iteration.totalElapsed);
+    printProfileRow("      ", "accept trial copy", iteration.acceptTrialElapsed,
+                    iteration.totalElapsed);
 
     for (const auto& attempt : iteration.attemptProfiles) {
       std::cout << "      attempt " << attempt.attempt << ": total "
@@ -369,13 +756,11 @@ void printCudaLmDetailedBreakdown(
                 << ", terminated: " << yesNo(attempt.terminated) << "\n";
       std::cout << "        costs: linearized change "
                 << attempt.linearizedCostChange << ", actual change "
-                << attempt.costChange << ", fidelity "
-                << attempt.modelFidelity << ", trial error "
-                << std::setprecision(15) << attempt.trialError
-                << std::setprecision(6) << "\n";
+                << attempt.costChange << ", fidelity " << attempt.modelFidelity
+                << ", trial error " << std::setprecision(15)
+                << attempt.trialError << std::setprecision(6) << "\n";
       std::cout << "        flags: stop lambda search "
-                << yesNo(attempt.stopSearchingLambda)
-                << ", lambda upper bound "
+                << yesNo(attempt.stopSearchingLambda) << ", lambda upper bound "
                 << yesNo(attempt.lambdaUpperBoundReached) << "\n";
       printProfileRow("        ", "dense Schur solve",
                       attempt.denseSchurSolveElapsed, attempt.totalElapsed);
@@ -383,8 +768,8 @@ void printCudaLmDetailedBreakdown(
                       attempt.normalEquationsElapsed, attempt.totalElapsed);
       printProfileRow("        ", "add diagonal damping",
                       attempt.addDampingElapsed, attempt.totalElapsed);
-      printProfileRow("        ", "cuDSS analyze",
-                      attempt.cudssAnalyzeElapsed, attempt.totalElapsed);
+      printProfileRow("        ", "cuDSS analyze", attempt.cudssAnalyzeElapsed,
+                      attempt.totalElapsed);
       printProfileRow("        ", "cuDSS solve", attempt.cudssSolveElapsed,
                       attempt.totalElapsed);
       printProfileRow("        ", "linearized error change",
@@ -404,15 +789,15 @@ void printCudaBackendLmRun(const CudaBackendLmRun& run,
                            bool detailedProfiling) {
   const auto& result = run.result;
   std::cout << "  CUDA LM: " << run.elapsed << " s\n";
-  std::cout << "  CUDA LM linear solver: "
-            << cudaLinearSolverName(solverOption) << "\n";
+  std::cout << "  CUDA LM linear solver: " << cudaLinearSolverName(solverOption)
+            << "\n";
   std::cout << "  CUDA LM solve loop: " << result.solveLoopElapsed << " s\n";
   std::cout << "  CUDA LM measured total: " << result.totalMeasuredElapsed
             << " s\n";
   std::cout << "  CUDA LM setup before solve loop: " << result.setupElapsed
             << " s\n";
-  printCudaLmSetupBreakdown(result, "  CUDA LM ");
   if (detailedProfiling) {
+    printCudaLmSetupBreakdown(result, "  CUDA LM ");
     printCudaLmTransferBreakdown(result, "  CUDA LM ");
     printCudaLmDetailedBreakdown(result, "  CUDA LM ");
   } else {
@@ -438,32 +823,31 @@ struct CudaGraphLmRun {
   gtsam::cuda::CudaSfmLevenbergMarquardtResult backend;
 };
 
-CudaGraphLmRun runCudaGraphLm(const NonlinearFactorGraph& graph,
-                              const Values& initial,
-                              const gtsam::cuda::CudaSfmLevenbergMarquardtParams&
-                                  params) {
-  const auto start = std::chrono::high_resolution_clock::now();
+CudaGraphLmRun runCudaGraphLm(
+    const NonlinearFactorGraph& graph, const Values& initial,
+    const gtsam::cuda::CudaSfmLevenbergMarquardtParams& params) {
+  const auto start = std::chrono::steady_clock::now();
 
-  const auto constructionStart = std::chrono::high_resolution_clock::now();
+  const auto constructionStart = std::chrono::steady_clock::now();
   gtsam::cuda::CudaSfmLevenbergMarquardtOptimizer lm(graph, initial, params);
-  const auto constructionEnd = std::chrono::high_resolution_clock::now();
+  const auto constructionEnd = std::chrono::steady_clock::now();
 
-  const auto optimizeStart = std::chrono::high_resolution_clock::now();
+  const auto optimizeStart = std::chrono::steady_clock::now();
   const Values& optimized = lm.optimize();
   (void)optimized;
-  const auto optimizeEnd = std::chrono::high_resolution_clock::now();
+  const auto optimizeEnd = std::chrono::steady_clock::now();
 
-  const auto resultQueryStart = std::chrono::high_resolution_clock::now();
+  const auto resultQueryStart = std::chrono::steady_clock::now();
   const double initialError = lm.result().initialError;
   const double finalError = lm.error();
   const size_t iterations = lm.iterations();
   const gtsam::cuda::CudaSfmLevenbergMarquardtResult backend = lm.result();
-  const auto resultQueryEnd = std::chrono::high_resolution_clock::now();
-
-  const auto end = std::chrono::high_resolution_clock::now();
+  const auto resultQueryEnd = std::chrono::steady_clock::now();
 
   CudaGraphLmRun run;
-  run.elapsed = std::chrono::duration<double>(end - start).count();
+  // Keep the reported total comparable with the CPU and generic sparse rows:
+  // optimizer construction plus optimize(), with result extraction excluded.
+  run.elapsed = std::chrono::duration<double>(optimizeEnd - start).count();
   run.optimizerConstructionElapsed =
       std::chrono::duration<double>(constructionEnd - constructionStart)
           .count();
@@ -488,29 +872,27 @@ void printCudaGraphLmRun(const CudaGraphLmRun& run,
       run.backend.graphConversionElapsed - run.backend.graphValueMergeElapsed;
   const double graphApiRemainingOptimizeOverhead =
       run.optimizeElapsed - run.backend.graphConversionElapsed -
-      run.backend.graphBackendCallElapsed -
-      run.backend.graphValueMergeElapsed -
+      run.backend.graphBackendCallElapsed - run.backend.graphValueMergeElapsed -
       run.backend.graphConvertedDataDestructionElapsed;
 
   std::cout << "  CUDA LM graph API: " << run.elapsed << " s\n";
   std::cout << "  CUDA LM graph linear solver: "
             << cudaLinearSolverName(solverOption) << "\n";
-  std::cout << "  CUDA LM graph kind: " << cudaGraphKindName(graphKind)
-            << "\n";
+  std::cout << "  CUDA LM graph kind: " << cudaGraphKindName(graphKind) << "\n";
   std::cout << "  CUDA LM graph API overhead over backend: "
             << run.elapsed - run.backend.totalMeasuredElapsed << " s\n";
   std::cout << "  CUDA LM graph API breakdown:\n";
   printProfileRow("    ", "optimizer construction",
                   run.optimizerConstructionElapsed, run.elapsed);
   printProfileRow("    ", "optimize call", run.optimizeElapsed, run.elapsed);
-  printProfileRow("    ", "result/error queries", run.resultQueryElapsed,
-                  run.elapsed);
+  std::cout << "    result/error queries (excluded from measured total): "
+            << run.resultQueryElapsed << " s\n";
   printProfileRow("    ", "graph conversion",
                   run.backend.graphConversionElapsed, run.elapsed);
   printProfileRow("    ", "backend measured total",
                   run.backend.totalMeasuredElapsed, run.elapsed);
-  printProfileRow("    ", "backend return/assignment",
-                  graphBackendCallOverhead, run.elapsed);
+  printProfileRow("    ", "backend return/assignment", graphBackendCallOverhead,
+                  run.elapsed);
   printProfileRow("    ", "value merge/state update",
                   run.backend.graphValueMergeElapsed, run.elapsed);
   printProfileRow("    ", "converted data destruction",
@@ -526,8 +908,8 @@ void printCudaGraphLmRun(const CudaGraphLmRun& run,
             << run.backend.totalMeasuredElapsed << " s\n";
   std::cout << "  CUDA LM backend setup before solve loop: "
             << run.backend.setupElapsed << " s\n";
-  printCudaLmSetupBreakdown(run.backend, "  CUDA LM backend ");
   if (detailedProfiling) {
+    printCudaLmSetupBreakdown(run.backend, "  CUDA LM backend ");
     printCudaLmTransferBreakdown(run.backend, "  CUDA LM backend ");
     printCudaLmDetailedBreakdown(run.backend, "  CUDA LM backend ");
   } else {
@@ -541,6 +923,214 @@ void printCudaGraphLmRun(const CudaGraphLmRun& run,
             << ", accepted: " << run.backend.acceptedSteps
             << ", inner: " << run.backend.innerIterations
             << std::setprecision(6) << "\n";
+}
+
+struct OrdinaryLmComparisonRun {
+  double elapsed = 0.0;
+  double initialError = 0.0;
+  double finalError = 0.0;
+  size_t iterations = 0;
+};
+
+OrdinaryLmComparisonRun runOrdinaryLmComparison(
+    const NonlinearFactorGraph& graph, const Values& initial,
+    const LevenbergMarquardtParams& params) {
+  const auto start = std::chrono::steady_clock::now();
+  LevenbergMarquardtOptimizer optimizer(graph, initial, params);
+  (void)optimizer.optimize();
+  const auto end = std::chrono::steady_clock::now();
+
+  OrdinaryLmComparisonRun run;
+  run.elapsed = std::chrono::duration<double>(end - start).count();
+  run.initialError = graph.error(initial);
+  run.finalError = optimizer.error();
+  run.iterations = optimizer.iterations();
+  return run;
+}
+
+struct GenericSparseLmRun {
+  double elapsed = 0.0;
+  gtsam::cuda::CudaSparseLevenbergMarquardtResult result;
+};
+
+GenericSparseLmRun runGenericSparseLm(
+    const NonlinearFactorGraph& graph, const Values& initial,
+    const gtsam::cuda::CudaSparseLevenbergMarquardtParams& params) {
+  const auto start = std::chrono::steady_clock::now();
+  gtsam::cuda::CudaSparseLevenbergMarquardtOptimizer optimizer(graph, initial,
+                                                               params);
+  (void)optimizer.optimize();
+  const auto end = std::chrono::steady_clock::now();
+
+  GenericSparseLmRun run;
+  run.elapsed = std::chrono::duration<double>(end - start).count();
+  run.result = optimizer.result();
+  if (run.result.backend != gtsam::cuda::CudaSparseLmBackend::Cuda) {
+    throw std::runtime_error(
+        "generic sparse-Jacobian LM did not use the CUDA backend: " +
+        run.result.fallbackDetail);
+  }
+  return run;
+}
+
+const char* sparseTerminationName(
+    gtsam::cuda::CudaSparseLmTerminationReason reason) {
+  using Reason = gtsam::cuda::CudaSparseLmTerminationReason;
+  switch (reason) {
+    case Reason::None:
+      return "none";
+    case Reason::ErrorThreshold:
+      return "error-threshold";
+    case Reason::Converged:
+      return "converged";
+    case Reason::MaxIterations:
+      return "max-iterations";
+    case Reason::SmallCostChange:
+      return "small-cost-change";
+    case Reason::LambdaUpperBound:
+      return "lambda-upper-bound";
+  }
+  return "unknown";
+}
+
+// Keep generic optimizer profile formatting isolated here so newly exposed
+// device counters can be added without changing benchmark control flow.
+void printGenericSparseLmProfile(const GenericSparseLmRun& run) {
+  const auto& result = run.result;
+  const auto& timing = result.timings;
+  const auto& transfers = result.transfers;
+  const double total = timing.totalWall;
+  std::cout << "  generic sparse-Jacobian CUDA LM result:\n";
+  std::cout << "    termination: " << sparseTerminationName(result.termination)
+            << "\n";
+  std::cout << "    outer linearizations: " << result.outerLinearizations
+            << ", iterations: " << result.iterations
+            << ", accepted steps: " << result.acceptedSteps
+            << ", lambda attempts: " << result.lambdaAttempts
+            << ", cuDSS analyses: " << result.cudssAnalyses << "\n";
+  std::cout << "    final lambda: " << result.finalLambda << "\n";
+  std::cout
+      << "    timing note: total wall contains the CUDA prefix; persistent "
+         "setup contains device initialization; cuDSS DATA_INFO overlaps "
+         "factor + solve; worker CPU sums can exceed wall time. Compatibility "
+         "aggregates are omitted below.\n";
+  std::cout << "    stage breakdown:\n";
+  printProfileRow("      ", "optimizer internal total wall", timing.totalWall,
+                  total);
+  printProfileRow("      ", "initial nonlinear error", timing.initialError,
+                  total);
+  printProfileRow("      ", "symbolic plan", timing.plan, total);
+  printProfileRow("      ", "persistent setup wall", timing.persistentSetupWall,
+                  total);
+  printProfileRow("      ", "device initialize wall",
+                  timing.deviceInitializeWall, total);
+  printProfileRow("      ", "pattern H2D", timing.patternH2d, total);
+  printProfileRow("      ", "transpose/H structure setup",
+                  timing.structureSetup, total);
+  printProfileRow("      ", "setup D2H", timing.setupD2h, total);
+  printProfileRow("      ", "host zero", timing.hostZero, total);
+  printProfileRow("      ", "factor linearize + pack wall",
+                  timing.factorLinearizationAndPackingWall, total);
+  printProfileRow("      ", "factor linearize CPU sum",
+                  timing.factorLinearizationCpuSum, total);
+  printProfileRow("      ", "CSR packing CPU sum", timing.csrPackingCpuSum,
+                  total);
+  printProfileRow("      ", "numeric H2D", timing.numericH2d, total);
+  printProfileRow("      ", "transpose update", timing.transposeUpdate, total);
+  printProfileRow("      ", "J^T J", timing.normalJtJ, total);
+  printProfileRow("      ", "J^T b", timing.normalJtb, total);
+  printProfileRow("      ", "diagonal extraction", timing.diagonalExtraction,
+                  total);
+  printProfileRow("      ", "old model error", timing.oldModelError, total);
+  printProfileRow("      ", "damping preparation", timing.dampingPreparation,
+                  total);
+  printProfileRow("      ", "cuDSS analysis", timing.cudssAnalysis, total);
+  printProfileRow("      ", "damping application", timing.dampingApplication,
+                  total);
+  printProfileRow("      ", "cuDSS factor + solve", timing.cudssFactorAndSolve,
+                  total);
+  printProfileRow("      ", "cuDSS DATA_INFO boundary",
+                  timing.cudssDataInfoBoundaryWall, total);
+  printProfileRow("      ", "new model error", timing.newModelError, total);
+  printProfileRow("      ", "attempt D2H", timing.attemptD2h, total);
+  printProfileRow("      ", "attempt host result build",
+                  timing.attemptHostBuild, total);
+  printProfileRow("      ", "Values retract", timing.retract, total);
+  printProfileRow("      ", "nonlinear trial error", timing.nonlinearTrialError,
+                  total);
+  std::cout << "    transfer breakdown:\n";
+  printTransferRow("      ", "pattern H2D", timing.patternH2d,
+                   transfers.patternH2dBytes, total);
+  printTransferRow("      ", "numeric H2D", timing.numericH2d,
+                   transfers.numericH2dBytes, total);
+  printTransferRow("      ", "setup D2H", timing.setupD2h,
+                   transfers.setupD2hBytes, total);
+  printTransferRow("      ", "attempt D2H", timing.attemptD2h,
+                   transfers.attemptD2hBytes, total);
+  std::cout << "      total H2D: " << transfers.totalH2dBytes() << " B\n";
+  std::cout << "      total D2H: " << transfers.totalD2hBytes() << " B\n";
+}
+
+void printSparseLmComparison(const OrdinaryLmComparisonRun& ordinary,
+                             const CudaGraphLmRun& specialized,
+                             const GenericSparseLmRun& generic) {
+  const double genericObjective = generic.result.finalError;
+  const double specializedObjective = specialized.finalError;
+  if (!std::isfinite(ordinary.finalError) ||
+      !std::isfinite(specializedObjective) ||
+      !std::isfinite(genericObjective)) {
+    throw std::runtime_error("LM comparison produced a non-finite objective");
+  }
+
+  const double objectiveTolerance =
+      1e-8 *
+      std::max({1.0, std::abs(ordinary.finalError),
+                std::abs(specializedObjective), std::abs(genericObjective)});
+  const double genericObjectiveDifference =
+      std::abs(ordinary.finalError - genericObjective);
+  const double specializedObjectiveDifference =
+      std::abs(ordinary.finalError - specializedObjective);
+  if (genericObjectiveDifference > objectiveTolerance) {
+    throw std::runtime_error(
+        "generic sparse-Jacobian LM final objective differs from ordinary "
+        "GTSAM LM");
+  }
+  if (specializedObjectiveDifference > objectiveTolerance) {
+    throw std::runtime_error(
+        "specialized CUDA SFM LM final objective differs from ordinary "
+        "GTSAM LM");
+  }
+
+  const auto& size = generic.result.systemSize;
+  std::cout << std::setprecision(9);
+  std::cout << "  sparse-Jacobian CUDA LM comparison\n";
+  std::cout
+      << "  untimed warm-ups: 1 ordinary CPU, 1 specialized CUDA, 1 generic "
+         "sparse CUDA\n";
+  std::cout << "  GTSAM_USE_TBB: " << (gtsamBuiltWithTbb() ? "yes" : "no")
+            << "\n";
+  std::cout << "  factors: " << size.factors
+            << ", residual rows: " << size.jacobianRows
+            << ", scalar columns: " << size.jacobianColumns
+            << ", J.nnz: " << size.jacobianNonzeros
+            << ", H.nnz: " << size.normalNonzeros << "\n";
+  std::cout << "  ordinary GTSAM LM total: " << ordinary.elapsed << " s"
+            << " (error " << ordinary.finalError << ", iterations "
+            << ordinary.iterations << ")\n";
+  std::cout << "  existing CUDA SFM specialized LM total: "
+            << specialized.elapsed << " s (error " << specialized.finalError
+            << ", iterations " << specialized.iterations << ")\n";
+  std::cout << "  generic sparse-Jacobian CUDA LM total: " << generic.elapsed
+            << " s (error " << genericObjective << ", accepted "
+            << generic.result.acceptedSteps << ", attempts "
+            << generic.result.lambdaAttempts << ")\n";
+  std::cout << "  specialized/ordinary objective difference: "
+            << specializedObjectiveDifference << "\n";
+  std::cout << "  generic/ordinary objective difference: "
+            << genericObjectiveDifference << " (shared tolerance "
+            << objectiveTolerance << ")\n";
+  printGenericSparseLmProfile(generic);
+  std::cout << std::setprecision(6);
 }
 #endif
 
@@ -632,6 +1222,33 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
       options.cudaLmGraph = true;
       continue;
     }
+    if (strcmp(argv[i], "--cuda-sparse-lm") == 0) {
+      options.cudaSparseLm = true;
+      continue;
+    }
+    if (strcmp(argv[i], "--cuda-sparse-pack-only") == 0) {
+      options.cudaSparsePackOnly = true;
+      continue;
+    }
+    if (strcmp(argv[i], "--gaussian-graph-pack-diagnostic") == 0) {
+      options.gaussianGraphPackDiagnostic = true;
+      continue;
+    }
+    if (strcmp(argv[i], "--linearization-benchmark") == 0) {
+      options.linearizationBenchmark = true;
+      continue;
+    }
+    if (strcmp(argv[i], "--linearization-repeats") == 0) {
+      options.linearizationRepeatsSpecified = true;
+      const std::string value = nextArg(i);
+      size_t consumed = 0;
+      options.linearizationRepeats = std::stoul(value, &consumed);
+      if (consumed != value.size()) {
+        throw runtime_error(
+            "--linearization-repeats must be a positive integer");
+      }
+      continue;
+    }
     if (strcmp(argv[i], "--cuda-linear-solver") == 0) {
       const char* value = nextArg(i);
       options.cudaLinearSolverSpecified = true;
@@ -712,8 +1329,7 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
     }
     if (strcmp(argv[i], "--gnc-seed") == 0) {
       gncOptionSpecified = true;
-      options.gnc.seed =
-          static_cast<unsigned int>(std::stoul(nextArg(i)));
+      options.gnc.seed = static_cast<unsigned int>(std::stoul(nextArg(i)));
       continue;
     }
     if (strcmp(argv[i], "--gnc-max-outer") == 0) {
@@ -733,6 +1349,23 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
   }
 
   const bool gnc = options.gnc.backend != GncBackend::None;
+  const size_t sparseModeCount =
+      static_cast<size_t>(options.cudaSparseLm) +
+      static_cast<size_t>(options.cudaSparsePackOnly) +
+      static_cast<size_t>(options.gaussianGraphPackDiagnostic);
+  const bool sparseMode = sparseModeCount != 0;
+  if (sparseModeCount > 1) {
+    throw runtime_error(
+        "--cuda-sparse-lm, --cuda-sparse-pack-only, and "
+        "--gaussian-graph-pack-diagnostic are mutually exclusive");
+  }
+  if (sparseMode &&
+      (options.profile || options.cudaStructureOnly || options.cudaLm ||
+       options.cudaLmGraph || options.linearizationBenchmark ||
+       options.benchmarkActionJson || gnc)) {
+    throw runtime_error(
+        "sparse-Jacobian modes cannot be combined with another run mode");
+  }
   if (options.profile && !options.filenames.empty()) {
     throw runtime_error(usage());
   }
@@ -748,6 +1381,23 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
   if (options.cudaLmGraph && options.benchmarkActionJson) {
     throw runtime_error(usage());
   }
+  if (options.linearizationBenchmark &&
+      (options.profile || options.cudaStructureOnly || options.cudaLm ||
+       options.cudaLmGraph || options.benchmarkActionJson || gnc)) {
+    throw runtime_error(
+        "--linearization-benchmark cannot be combined with another run mode");
+  }
+  const bool repeatedLinearizationMode = options.linearizationBenchmark ||
+                                         options.cudaSparsePackOnly ||
+                                         options.gaussianGraphPackDiagnostic;
+  if (options.linearizationRepeatsSpecified && !repeatedLinearizationMode) {
+    throw runtime_error(
+        "--linearization-repeats requires --linearization-benchmark, "
+        "--cuda-sparse-pack-only, or --gaussian-graph-pack-diagnostic");
+  }
+  if (repeatedLinearizationMode && options.linearizationRepeats == 0) {
+    throw runtime_error("--linearization-repeats must be positive");
+  }
   if (options.cudaLm && options.cudaStructureOnly) {
     throw runtime_error(usage());
   }
@@ -757,18 +1407,17 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
   if (options.cudaLm && options.cudaLmGraph) {
     throw runtime_error(usage());
   }
-  if (gnc && (options.cudaLm || options.cudaLmGraph ||
-              options.cudaStructureOnly || options.profile ||
-              options.benchmarkActionJson)) {
+  if (gnc &&
+      (options.cudaLm || options.cudaLmGraph || options.cudaStructureOnly ||
+       options.profile || options.benchmarkActionJson)) {
     throw runtime_error("--gnc cannot be combined with other run modes");
   }
   if (gncOptionSpecified && !gnc) {
     throw runtime_error("--gnc-* options require --gnc cpu|cuda");
   }
-  if (gnc && projectionNoiseSpecified) {
+  if ((gnc || options.linearizationBenchmark) && projectionNoiseSpecified) {
     throw runtime_error(
-        "--projection-noise cannot be combined with --gnc: GNC replaces "
-        "robust noise with its own weighting");
+        "--projection-noise cannot be combined with this run mode");
   }
   if (projectionNoiseSpecified && options.cudaLm) {
     throw runtime_error(
@@ -794,7 +1443,8 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
   }
 
   if (options.filenames.empty()) {
-    if (options.profile) {
+    if (options.profile || options.linearizationBenchmark ||
+        options.cudaSparsePackOnly || options.gaussianGraphPackDiagnostic) {
       options.filenames = {findExampleDataFile(kProfileDataset)};
     } else if (options.benchmarkActionJson || gnc) {
       options.filenames = {findExampleDataFile(kDefaultBenchmarkDataset)};
@@ -857,8 +1507,8 @@ NonlinearFactorGraph buildPointBatchSfmGraph(const SfmData& db,
         const SfmMeasurement& measurement = measurementsForTrack[i];
         measurements[C(measurement.first)] = measurement.second;
       }
-      graph.add(std::make_shared<BatchFactor<SfmFactor, 2>>(
-          measurements, P(j), gNoiseModel));
+      graph.add(std::make_shared<BatchFactor<SfmFactor, 2>>(measurements, P(j),
+                                                            gNoiseModel));
     }
   }
   return graph;
@@ -881,8 +1531,8 @@ NonlinearFactorGraph buildCameraBatchSfmGraph(const SfmData& db) {
     const auto& measurements = measurementsByCamera[i];
     if (measurements.empty()) continue;
 
-    graph.add(std::make_shared<BatchFactor<SfmFactor, 2>>(
-        C(i), measurements, gNoiseModel));
+    graph.add(std::make_shared<BatchFactor<SfmFactor, 2>>(C(i), measurements,
+                                                          gNoiseModel));
   }
   return graph;
 }
@@ -998,15 +1648,13 @@ struct GncClassificationMetrics {
 
   double precision() const {
     const size_t denominator = truePositives + falsePositives;
-    return denominator == 0
-               ? 1.0
-               : static_cast<double>(truePositives) / denominator;
+    return denominator == 0 ? 1.0
+                            : static_cast<double>(truePositives) / denominator;
   }
   double recall() const {
     const size_t denominator = truePositives + falseNegatives;
-    return denominator == 0
-               ? 1.0
-               : static_cast<double>(truePositives) / denominator;
+    return denominator == 0 ? 1.0
+                            : static_cast<double>(truePositives) / denominator;
   }
 };
 
@@ -1063,6 +1711,7 @@ GncBenchmarkRun runGncBenchmark(const NonlinearFactorGraph& graph,
                                 const GncRunOptions& gncOptions) {
   GncParams<BaseParams> gncParams(baseParams);
   gncParams.setLossType(gncOptions.lossType);
+  gncParams.enableTiming = true;
   if (gncOptions.maxOuterIterations != gncParams.maxIterations) {
     gncParams.maxIterations = gncOptions.maxOuterIterations;
   }
@@ -1080,14 +1729,13 @@ GncBenchmarkRun runGncBenchmark(const NonlinearFactorGraph& graph,
   return run;
 }
 
-void printGncRun(const GncBenchmarkRun& run,
-                 const CorruptedBalProblem& problem,
+void printGncRun(const GncBenchmarkRun& run, const CorruptedBalProblem& problem,
                  const NonlinearFactorGraph& graph,
                  const GncRunOptions& gncOptions) {
   const GncTiming& timing = run.timing;
-  std::cout << "  GNC (" << gncBackendName(gncOptions.backend)
-            << ", " << gncLossName(gncOptions.lossType)
-            << "): " << run.elapsed << " s\n";
+  std::cout << "  GNC (" << gncBackendName(gncOptions.backend) << ", "
+            << gncLossName(gncOptions.lossType) << "): " << run.elapsed
+            << " s\n";
   std::cout << "  GNC outer iterations: " << run.outerIterations
             << " (+1 initial optimize)\n";
   std::cout << "  GNC timing breakdown:\n";
@@ -1106,9 +1754,8 @@ void printGncRun(const GncBenchmarkRun& run,
     const GncIterationTiming& it = timing.iterations[i];
     std::cout << "    outer " << i << ": total " << it.totalElapsed
               << " s (weights " << it.weightsUpdateElapsed << ", graph "
-              << it.makeGraphElapsed << ", optimize "
-              << it.baseOptimizeElapsed << ", cost "
-              << it.costEvaluationElapsed << ")\n";
+              << it.makeGraphElapsed << ", optimize " << it.baseOptimizeElapsed
+              << ", cost " << it.costEvaluationElapsed << ")\n";
   }
 
   const GncClassificationMetrics metrics =
@@ -1143,9 +1790,9 @@ int main(int argc, char* argv[]) {
     const SfmData db = SfmData::FromBalFile(filename);
 
     if (options.gnc.backend != GncBackend::None) {
-      const CorruptedBalProblem problem = corruptBalMeasurements(
-          db, options.gnc.outlierFraction, options.gnc.outlierPixels,
-          options.gnc.seed);
+      const CorruptedBalProblem problem =
+          corruptBalMeasurements(db, options.gnc.outlierFraction,
+                                 options.gnc.outlierPixels, options.gnc.seed);
       const NonlinearFactorGraph graph = buildGeneralSfmGraph(problem.data);
       const Values initial = buildGeneralSfmInitial(problem.data);
       std::cout << "  GNC problem: " << graph.size() << " factors, "
@@ -1179,11 +1826,10 @@ int main(int argc, char* argv[]) {
       // re-conversion/re-upload overhead that a device-resident GNC removes.
       const CudaGraphLmRun referenceLm =
           runCudaGraphLm(graph, initial, cudaParams);
-      std::cout << "  CUDA LM single solve (reference): "
-                << referenceLm.elapsed << " s (backend measured "
-                << referenceLm.backend.totalMeasuredElapsed
-                << " s, setup " << referenceLm.backend.setupElapsed
-                << " s, solve loop "
+      std::cout << "  CUDA LM single solve (reference): " << referenceLm.elapsed
+                << " s (backend measured "
+                << referenceLm.backend.totalMeasuredElapsed << " s, setup "
+                << referenceLm.backend.setupElapsed << " s, solve loop "
                 << referenceLm.backend.solveLoopElapsed << " s)\n";
 
       const GncBenchmarkRun run =
@@ -1239,8 +1885,8 @@ int main(int argc, char* argv[]) {
     if (options.cudaStructureOnly) {
       gtsam::cuda::CudaContext context;
       const auto values = gtsam::cuda::PackSfmValues(db, context.stream());
-      const auto batch =
-          gtsam::cuda::CudaSfmProjectionBatch::FromSfmData(db, context.stream());
+      const auto batch = gtsam::cuda::CudaSfmProjectionBatch::FromSfmData(
+          db, context.stream());
       const auto csr = gtsam::cuda::CudaBalCsrStructure::FromSfmData(db);
       context.synchronize();
 
@@ -1255,7 +1901,8 @@ int main(int argc, char* argv[]) {
 #else
     if (options.cudaStructureOnly) {
       throw std::runtime_error(
-          "--cuda-structure-only requires configuring with GTSAM_ENABLE_CUDA=ON");
+          "--cuda-structure-only requires configuring with "
+          "GTSAM_ENABLE_CUDA=ON");
     }
 #endif
 
@@ -1263,12 +1910,131 @@ int main(int argc, char* argv[]) {
         db, options.cudaGraphKind, options.batchChunkSize);
     Values initial = buildGeneralSfmInitial(db);
 
+#if GTSAM_ENABLE_CUDA
+    if (options.cudaSparsePackOnly || options.gaussianGraphPackDiagnostic) {
+      const SparsePackingPath path = options.cudaSparsePackOnly
+                                         ? SparsePackingPath::Streaming
+                                         : SparsePackingPath::GaussianGraph;
+      const SparsePackingBenchmark benchmark = benchmarkSparsePacking(
+          graph, initial, options.linearizationRepeats, path);
+      printSparsePackingBenchmark(benchmark, path,
+                                  options.linearizationRepeats);
+      continue;
+    }
+#else
+    if (options.cudaSparsePackOnly || options.gaussianGraphPackDiagnostic) {
+      throw std::runtime_error(
+          "sparse-Jacobian packing modes require configuring with "
+          "GTSAM_ENABLE_CUDA=ON");
+    }
+#endif
+
+    if (options.linearizationBenchmark) {
+      if (!gtsamBuiltWithTbb()) {
+        throw std::runtime_error(
+            "--linearization-benchmark requires GTSAM_USE_TBB");
+      }
+      std::cout << std::setprecision(9);
+      std::cout << "  SFM linearization feasibility benchmark\n";
+      std::cout << "  graph representation: raw GeneralSFMFactor\n";
+      std::cout << "  GTSAM_USE_TBB: " << (gtsamBuiltWithTbb() ? "yes" : "no")
+                << "\n";
+      std::cout << "  cameras: " << db.numberCameras()
+                << ", points: " << db.numberTracks()
+                << ", observations/factors: " << graph.size()
+                << ", values: " << initial.size() << "\n";
+      std::cout << "  warm-up calls per path: 1 (not timed)\n";
+      std::cout << "  measured repeats: " << options.linearizationRepeats
+                << "\n";
+
+      const CpuLinearizationBenchmark cpu = benchmarkCpuLinearization(
+          graph, initial, options.linearizationRepeats);
+      std::cout << "  CPU output linear factors: " << cpu.linearizedFactors
+                << "\n";
+      printTimingSamples("CPU/TBB graph.linearize()", cpu.timing, graph.size(),
+                         "factors");
+      const VectorValues delta = makeBenchmarkDelta(initial);
+      const CpuStateBenchmark cpuState = benchmarkCpuState(
+          graph, initial, delta, options.linearizationRepeats);
+      std::cout << "  CPU state validation: retracted values: "
+                << cpuState.retractedValues
+                << ", trial error: " << cpuState.error << "\n";
+      printTimingSamples("CPU Values retract()", cpuState.retract,
+                         initial.size(), "values");
+      printTimingSamples("CPU trial graph.error()", cpuState.trialError,
+                         graph.size(), "factors");
+
+#if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
+      const GpuLinearizationBenchmark gpu =
+          benchmarkGpuLinearization(db, options.linearizationRepeats);
+      std::cout << "  GPU output observations: " << gpu.observations
+                << ", delta dimension: " << gpu.deltaDimension << "\n";
+      printTimingSamples("GPU projection residual/Jacobian generation",
+                         gpu.projectionLinearization, gpu.observations,
+                         "observations");
+      if (!gpu.hessianDiagonal.seconds.empty()) {
+        printTimingSamples("GPU Hessian diagonal generation",
+                           gpu.hessianDiagonal, gpu.observations,
+                           "observations");
+      }
+      printTimingSamples(
+          "GPU dense Schur combined (linearize + Schur/Hessian + solve + "
+          "recover; precomputed damping diagonal)",
+          gpu.denseSchurCombined, gpu.observations, "observations");
+      std::cout << "  comparison\n";
+      std::cout << "    CPU linearize / GPU projection linearize: "
+                << cpu.timing.mean() / gpu.projectionLinearization.mean()
+                << "x\n";
+      if (!gpu.hessianDiagonal.seconds.empty()) {
+        std::cout << "    CPU linearize / GPU Hessian diagonal: "
+                  << cpu.timing.mean() / gpu.hessianDiagonal.mean() << "x\n";
+      }
+      std::cout << "    CPU linearize / GPU dense Schur combined: "
+                << cpu.timing.mean() / gpu.denseSchurCombined.mean() << "x\n";
+#else
+      throw std::runtime_error(
+          "--linearization-benchmark requires configuring with "
+          "GTSAM_ENABLE_CUDA=ON and GTSAM_ENABLE_CUDSS=ON");
+#endif
+      std::cout << std::setprecision(6);
+      continue;
+    }
+
     Ordering ordering;
     if (gUseSchur) {
       ordering = createSchurOrdering(db, false);
     }
 
 #if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
+    if (options.cudaSparseLm) {
+      gtsam::cuda::CudaSparseLevenbergMarquardtParams sparseParams;
+      LevenbergMarquardtParams::SetCeresDefaults(&sparseParams);
+      applyBalBenchmarkLmSettings(sparseParams);
+      sparseParams.fallbackOnUnsupported = false;
+      sparseParams.collectTiming = true;
+      sparseParams.setVerbosityLM("SILENT");
+      if (gUseSchur) sparseParams.setOrdering(ordering);
+
+      const LevenbergMarquardtParams ordinaryParams = sparseParams;
+      const auto specializedParams = makeBalCudaLmParams(
+          CudaLinearSolverOption::DenseSchur, CudaLmDefaults::Graph, true);
+
+      // Warm every implementation once before measuring so library, allocator,
+      // and GPU first-use costs do not land asymmetrically in one CUDA row.
+      (void)runOrdinaryLmComparison(graph, initial, ordinaryParams);
+      (void)runCudaGraphLm(graph, initial, specializedParams);
+      (void)runGenericSparseLm(graph, initial, sparseParams);
+
+      const OrdinaryLmComparisonRun ordinary =
+          runOrdinaryLmComparison(graph, initial, ordinaryParams);
+      const CudaGraphLmRun specialized =
+          runCudaGraphLm(graph, initial, specializedParams);
+      const GenericSparseLmRun generic =
+          runGenericSparseLm(graph, initial, sparseParams);
+      printSparseLmComparison(ordinary, specialized, generic);
+      continue;
+    }
+
     if (options.cudaLmGraph) {
       const auto cudaParams =
           makeBalCudaLmParams(options.cudaLinearSolver, CudaLmDefaults::Graph,
@@ -1296,6 +2062,12 @@ int main(int argc, char* argv[]) {
                           options.cudaGraphKind, options.profile);
       continue;
     }
+#else
+    if (options.cudaSparseLm) {
+      throw std::runtime_error(
+          "--cuda-sparse-lm requires configuring with GTSAM_ENABLE_CUDA=ON "
+          "and GTSAM_ENABLE_CUDSS=ON");
+    }
 #endif
 
     const double newTime = runSolver(
@@ -1313,7 +2085,10 @@ int main(int argc, char* argv[]) {
     }
   }
   if (!options.profile && !options.cudaStructureOnly && !options.cudaLm &&
-      !options.cudaLmGraph && options.gnc.backend == GncBackend::None) {
+      !options.cudaLmGraph && !options.cudaSparseLm &&
+      !options.cudaSparsePackOnly && !options.gaussianGraphPackDiagnostic &&
+      !options.linearizationBenchmark &&
+      options.gnc.backend == GncBackend::None) {
     std::cout
         << "\n| Dataset | Legacy (Cholesky) s | New (Solver) s | Speedup |\n";
     std::cout << "| --- | --- | --- | --- |\n";
@@ -1326,7 +2101,9 @@ int main(int argc, char* argv[]) {
   }
 
   if (options.benchmarkActionJson && !options.cudaStructureOnly &&
-      !options.cudaLm && !options.cudaLmGraph) {
+      !options.cudaLm && !options.cudaLmGraph && !options.cudaSparseLm &&
+      !options.cudaSparsePackOnly && !options.gaussianGraphPackDiagnostic &&
+      !options.linearizationBenchmark) {
     if (rows.empty()) {
       throw runtime_error("No benchmark rows found to write.");
     }

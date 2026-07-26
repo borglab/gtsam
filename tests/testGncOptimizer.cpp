@@ -74,6 +74,7 @@ TEST(GncOptimizer, gncParamsConstructor) {
   // check also default constructor
   GncParams<LevenbergMarquardtParams> gncParams1b;
   CHECK(lmParams.equals(gncParams1b.baseOptimizerParams));
+  CHECK(!gncParams1b.enableTiming);
 
   // and check params become different if we change lmParams
   lmParams.setVerbosity("DELTA");
@@ -665,6 +666,32 @@ TEST(GncOptimizer, optimizeSimple) {
 
   Values actual = gnc.optimize();
   DOUBLES_EQUAL(0, fg.error(actual), tol);
+}
+
+/* ************************************************************************* */
+TEST(GncOptimizer, TimingIsOptIn) {
+  const auto fg = example::sharedNonRobustFactorGraphWithOutliers();
+  Values initial;
+  initial.insert(X(1), Point2(1, 0));
+
+  GncParams<GaussNewtonParams> defaultParams;
+  GncOptimizer<GncParams<GaussNewtonParams>> defaultOptimizer(
+      fg, initial, defaultParams);
+  (void)defaultOptimizer.optimize();
+  const GncTiming& defaultTiming = defaultOptimizer.getTiming();
+  DOUBLES_EQUAL(0.0, defaultTiming.initialOptimizeElapsed, 0.0);
+  DOUBLES_EQUAL(0.0, defaultTiming.totalElapsed, 0.0);
+  CHECK(defaultTiming.iterations.empty());
+
+  GncParams<GaussNewtonParams> timedParams;
+  timedParams.enableTiming = true;
+  GncOptimizer<GncParams<GaussNewtonParams>> timedOptimizer(fg, initial,
+                                                            timedParams);
+  (void)timedOptimizer.optimize();
+  const GncTiming& timed = timedOptimizer.getTiming();
+  CHECK(timed.initialOptimizeElapsed > 0.0);
+  CHECK(timed.totalElapsed >= timed.initialOptimizeElapsed);
+  CHECK(!timed.iterations.empty());
 }
 
 /* ************************************************************************* */

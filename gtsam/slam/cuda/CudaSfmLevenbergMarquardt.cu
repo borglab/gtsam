@@ -716,13 +716,14 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
   // uploads values, and CudaSfmProjectionBatch::FromSfmData() uploads overlapping
   // SFM data again. Consider constructing the projection batch from existing
   // device buffers or sharing the packed representation.
-  stageStart = Clock::now();
+  stageStart = DetailedProfileStart(detailedProfiling);
   CudaSfmValuesPackProfile packValuesProfile;
   DeviceValues current =
       PackSfmValues(data, cameraKeys, pointKeys, context.stream(),
                     detailedProfiling ? &packValuesProfile : nullptr);
   result.packValuesElapsed =
-      ElapsedSinceAfterSync(stageStart, context.stream());
+      DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
+                                    context.stream());
   if (detailedProfiling) {
     result.packValuesHostBuildElapsed = packValuesProfile.hostBuildElapsed;
     result.packValuesDeviceAllocElapsed =
@@ -736,7 +737,7 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
   DeviceValues trial = AllocateSfmValuesLike(current);
   result.allocateTrialElapsed = ElapsedSince(stageStart);
 
-  stageStart = Clock::now();
+  stageStart = DetailedProfileStart(detailedProfiling);
   if (robustModelsByTrack && !sqrtInfoByTrack) {
     throw std::invalid_argument(
         "OptimizeCudaSfm robust noise requires projection sqrt-info");
@@ -760,7 +761,8 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
                 data, context.stream(),
                 detailedProfiling ? &projectionBatchProfile : nullptr);
   result.projectionBatchElapsed =
-      ElapsedSinceAfterSync(stageStart, context.stream());
+      DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
+                                    context.stream());
   if (detailedProfiling) {
     result.projectionBatchHostBuildElapsed =
         projectionBatchProfile.hostBuildElapsed;
@@ -815,13 +817,14 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
     const CudaBalCsrStructure structure = CudaBalCsrStructure::FromSfmData(data);
     result.csrStructureElapsed = ElapsedSince(stageStart);
 
-    stageStart = Clock::now();
+    stageStart = DetailedProfileStart(detailedProfiling);
     CudaDeviceTransferSummary uploadPatternProfile;
     system.uploadPattern(structure.dimension(), structure.rowPointers(),
                          structure.colIndices(), context.stream(),
                          detailedProfiling ? &uploadPatternProfile : nullptr);
     result.uploadPatternElapsed =
-        ElapsedSinceAfterSync(stageStart, context.stream());
+        DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
+                                      context.stream());
     if (detailedProfiling) {
       result.uploadPatternDeviceAllocElapsed =
           uploadPatternProfile.resizeElapsed;
@@ -904,10 +907,11 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
         result.addDampingElapsed += attemptProfile.addDampingElapsed;
 
         if (!solverAnalyzed) {
-          stageStart = Clock::now();
+          stageStart = DetailedProfileStart(detailedProfiling);
           solver.analyze(system, &delta, context.stream());
           const double analyzeElapsed =
-              ElapsedSinceAfterSync(stageStart, context.stream());
+              DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
+                                            context.stream());
           result.firstCudssAnalyzeElapsed = analyzeElapsed;
           if (detailedProfiling) {
             attemptProfile.cudssAnalyzeElapsed = analyzeElapsed;

@@ -1,12 +1,17 @@
 #pragma once
 
-#include <gtsam/dllexport.h>
 #include <gtsam/base/cuda/CudaDeviceArray.h>
+#include <gtsam/dllexport.h>
 #include <gtsam/nonlinear/cuda/DeviceSparseNormalEquations.h>
 
 #include <memory>
 
 namespace gtsam::cuda {
+
+/** Host wall time spent only in cuDSS's mandatory DATA_INFO boundary. */
+struct CudssSpdSolveProfile {
+  double dataInfoBoundaryWall = 0.0;
+};
 
 class GTSAM_EXPORT CudssSpdSolver {
  public:
@@ -21,9 +26,17 @@ class GTSAM_EXPORT CudssSpdSolver {
   void analyze(const DeviceSparseNormalEquations& system,
                CudaDeviceArray<double>* solution,
                cudaStream_t stream = nullptr);
+  /**
+   * Numerically factor and solve the analyzed SPD system.
+   *
+   * Throws std::runtime_error when cuDSS reports a non-positive minor during
+   * numerical factorization.
+   */
   void solve(const DeviceSparseNormalEquations& system,
-             CudaDeviceArray<double>* solution,
-             cudaStream_t stream = nullptr);
+             CudaDeviceArray<double>* solution, cudaStream_t stream = nullptr);
+  void solve(const DeviceSparseNormalEquations& system,
+             CudaDeviceArray<double>* solution, cudaStream_t stream,
+             CudssSpdSolveProfile* profile);
 
  private:
   struct Impl;
