@@ -30,6 +30,7 @@
 #include <algorithm>
 #include <chrono>
 #include <iostream>
+#include <limits>
 #include <set>
 #include <stdexcept>
 
@@ -158,6 +159,13 @@ size_t RiemannianStaircaseOptimizer::Layout::maxRowDim() const {
 /* ************************************************************************* */
 void RiemannianStaircaseOptimizer::validateParams(
     const RiemannianStaircaseParams& params) {
+  const size_t maxEigenIndex =
+      static_cast<size_t>(std::numeric_limits<Eigen::Index>::max());
+  if (params.pMin > maxEigenIndex || params.pMax > maxEigenIndex) {
+    throw std::invalid_argument(
+        "RiemannianStaircaseOptimizer: pMin and pMax must fit in "
+        "Eigen::Index.");
+  }
   if (params.pMin > params.pMax) {
     throw std::invalid_argument(
         "RiemannianStaircaseOptimizer: pMin must be <= pMax.");
@@ -171,18 +179,26 @@ void RiemannianStaircaseOptimizer::validateParams(
 /* ************************************************************************* */
 Values RiemannianStaircaseOptimizer::padInitialValues(const Values& Y,
                                                      size_t pMin) {
+  if (pMin >
+      static_cast<size_t>(std::numeric_limits<Eigen::Index>::max())) {
+    throw std::invalid_argument(
+        "RiemannianStaircaseOptimizer::padInitialValues: pMin must fit in "
+        "Eigen::Index.");
+  }
+  const Eigen::Index targetCols = static_cast<Eigen::Index>(pMin);
+
   Values padded = Y;
   for (const auto& [key, X] : Y.extract<Matrix>()) {
-    const size_t cols = static_cast<size_t>(X.cols());
-    if (cols == pMin) continue;
-    if (cols > pMin) {
+    const Eigen::Index cols = X.cols();
+    if (cols == targetCols) continue;
+    if (cols > targetCols) {
       throw std::invalid_argument(
           "RiemannianStaircaseOptimizer::padInitialValues: initial value has "
           "more columns than pMin; either lower pMin or drop the extra "
           "columns.");
     }
-    Matrix pad = Matrix::Zero(X.rows(), static_cast<int>(pMin));
-    pad.leftCols(static_cast<int>(cols)) = X;
+    Matrix pad = Matrix::Zero(X.rows(), targetCols);
+    pad.leftCols(cols) = X;
     padded.update(key, pad);
   }
   return padded;
@@ -258,6 +274,12 @@ Eigen::SparseMatrix<double> RiemannianStaircaseOptimizer::buildDataMatrix(
 Eigen::SparseMatrix<double> RiemannianStaircaseOptimizer::buildMultiplierMatrix(
     const QcqpProblem& qcqp, const Layout& layout,
     const std::vector<Vector>& lambdaEq) {
+  if (lambdaEq.size() != qcqp.eConstraints().size()) {
+    throw std::runtime_error(
+        "buildMultiplierMatrix: lambdaEq size must match equality constraint "
+        "count.");
+  }
+
   const size_t n = layout.totalDim;
   std::vector<Eigen::Triplet<double>> triplets;
 
@@ -272,15 +294,11 @@ Eigen::SparseMatrix<double> RiemannianStaircaseOptimizer::buildMultiplierMatrix(
         std::dynamic_pointer_cast<const QuadraticEqualityConstraintFactor>(
             factor);
     if (!qcFactor) {
-      ++m;
-      continue;
+      throw std::runtime_error(
+          "buildMultiplierMatrix: every equality constraint must be a "
+          "QuadraticEqualityConstraintFactor.");
     }
     const QuadraticConstraint& qc = qcFactor->quadraticConstraint();
-    if (m >= lambdaEq.size()) {
-      throw std::runtime_error(
-          "buildMultiplierMatrix: lambdaEq shorter than equality constraint "
-          "count.");
-    }
     if (lambdaEq[m].size() != 1) {
       throw std::runtime_error(
           "buildMultiplierMatrix: QuadraticEqualityConstraintFactor expects a "
@@ -354,9 +372,9 @@ Values RiemannianStaircaseOptimizer::escapeSaddleAndLift(
 RiemannianStaircaseOptimizer::RoundedSolution
 RiemannianStaircaseOptimizer::truncateToRankD(const Values& Y,
                                               const Layout& layout, int d) {
-  if (d < 2) {
+  if (d < 1) {
     throw std::invalid_argument(
-        "RiemannianStaircaseOptimizer::truncateToRankD: d must be >= 2.");
+        "RiemannianStaircaseOptimizer::truncateToRankD: d must be >= 1.");
   }
   const Matrix Ystacked = layout.stack(Y);
   if (d > Ystacked.cols()) {

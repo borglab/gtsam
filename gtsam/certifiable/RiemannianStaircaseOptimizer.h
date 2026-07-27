@@ -268,7 +268,8 @@ class GTSAM_EXPORT RiemannianStaircaseOptimizer {
   static Values escapeSaddleAndLift(const Values& Ystar, const Vector& vMin,
                                     const Layout& layout, double alpha);
 
-  /// SVD-based rank-d projection: round the stacked BM matrix from rank p down to rank d.
+  /// SVD-based rank-d projection for d >= 1: round the stacked BM matrix from
+  /// rank p down to rank d.
   static RoundedSolution truncateToRankD(const Values& Y, const Layout& layout,
                                          int d);
 

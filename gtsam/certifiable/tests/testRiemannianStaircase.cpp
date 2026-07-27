@@ -17,9 +17,10 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
-#include <gtsam/constrained/AugmentedLagrangianOptimizer.h>
-#include <gtsam/constrained/QcqpProblem.h>
 #include <gtsam/certifiable/RiemannianStaircaseOptimizer.h>
+#include <gtsam/constrained/AugmentedLagrangianOptimizer.h>
+#include <gtsam/constrained/LinearConstraint.h>
+#include <gtsam/constrained/QcqpProblem.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/Rot3.h>
@@ -30,12 +31,14 @@
 #include <Eigen/Eigenvalues>
 
 #include <cmath>
+#include <limits>
 
 using namespace gtsam;
 
 // MSVC doesn't define M_PI by default; use a local constant for portability.
 constexpr double kPi = 3.14159265358979323846;
 
+/* ************************************************************************* */
 namespace RingFixture {
 
 NonlinearFactorGraph RingGraph(size_t numPoses, double delta) {
@@ -371,7 +374,7 @@ TEST(RiemannianStaircase, RejectsInvertedPMinPMax) {
 }
 
 /* ************************************************************************* */
-// truncateToRankD rejects d < 2 and d > stacked-matrix column count.
+// truncateToRankD rejects d < 1 and d > stacked-matrix column count.
 TEST(RiemannianStaircase, TruncateToRankDRejectsBadD) {
   Values values;
   values.insert(Symbol('x', 0), Matrix(Matrix::Zero(2, 4)));
@@ -379,11 +382,24 @@ TEST(RiemannianStaircase, TruncateToRankDRejectsBadD) {
   const auto layout = RiemannianStaircaseOptimizer::Layout::From(values);
 
   CHECK_EXCEPTION(
-      RiemannianStaircaseOptimizer::truncateToRankD(values, layout, /*d=*/1),
+      RiemannianStaircaseOptimizer::truncateToRankD(values, layout, /*d=*/0),
       std::invalid_argument);
   CHECK_EXCEPTION(
       RiemannianStaircaseOptimizer::truncateToRankD(values, layout, /*d=*/5),
       std::invalid_argument);
+}
+
+// truncateToRankD supports rank-one generic QCQPs.
+TEST(RiemannianStaircase, TruncateToRankDAllowsRankOne) {
+  Values values;
+  values.insert(Symbol('x', 0), (Matrix(1, 2) << 3.0, 4.0).finished());
+  values.insert(Symbol('x', 1), (Matrix(1, 2) << 0.0, 5.0).finished());
+  const auto layout = RiemannianStaircaseOptimizer::Layout::From(values);
+
+  const auto rounded =
+      RiemannianStaircaseOptimizer::truncateToRankD(values, layout, /*d=*/1);
+  EXPECT_LONGS_EQUAL(2, rounded.Yd.rows());
+  EXPECT_LONGS_EQUAL(1, rounded.Yd.cols());
 }
 
 /* ************************************************************************* */
@@ -450,6 +466,16 @@ TEST(RiemannianStaircase, PadInitialValuesRejectsTooWide) {
       std::invalid_argument);
 }
 
+// Rejects wrapper-style negative ranks converted to an unsigned size_t.
+TEST(RiemannianStaircase, PadInitialValuesRejectsUnrepresentableRank) {
+  Values Y;
+  Y.insert(Symbol('x', 0), Matrix(Matrix::Identity(2, 2)));
+  CHECK_EXCEPTION(
+      RiemannianStaircaseOptimizer::padInitialValues(
+          Y, std::numeric_limits<size_t>::max()),
+      std::invalid_argument);
+}
+
 /* ************************************************************************* */
 // runLocalSolver returns lambdaEq aligned 1:1 with qcqp.eConstraints()
 // and a Y conforming to the input layout.
@@ -507,6 +533,25 @@ TEST(RiemannianStaircase, BuildCertificateShortLambdaEqThrows) {
   const std::vector<Vector> empty;
   CHECK_EXCEPTION(
       RiemannianStaircaseOptimizer::buildCertificate(qcqp, layout, empty),
+      std::runtime_error);
+}
+
+// Certificate construction rejects equality constraints that do not have a
+// quadratic matrix representation.
+TEST(RiemannianStaircase, BuildMultiplierMatrixRejectsLinearEquality) {
+  const Key x0 = Symbol('x', 0);
+  QcqpProblem qcqp;
+  qcqp.addConstraint(LinearConstraint::Equal(
+      JacobianFactor(x0, Matrix::Identity(1, 1), Vector1(0.0))));
+
+  Values values;
+  values.insert(x0, Matrix(Matrix::Zero(1, 1)));
+  const auto layout = RiemannianStaircaseOptimizer::Layout::From(values);
+  const std::vector<Vector> lambdaEq{Vector1(0.0)};
+
+  CHECK_EXCEPTION(
+      RiemannianStaircaseOptimizer::buildMultiplierMatrix(qcqp, layout,
+                                                          lambdaEq),
       std::runtime_error);
 }
 

@@ -40,6 +40,17 @@ def staircase_params(initial_rank):
 class TestCertifiableWrappers(unittest.TestCase):
     """Exercise the high-level certifiable wrapper surface."""
 
+    def test_negative_rank_is_rejected(self):
+        """Reject negative wrapper ranks before they reach Eigen allocation."""
+        values = gtsam.Values()
+        values.insert(X(0), np.eye(2))
+        with self.assertRaises(ValueError):
+            gtsam.RiemannianStaircaseOptimizer.padInitialValues(values, -1)
+
+        params = gtsam.RiemannianStaircaseParams()
+        with self.assertRaises(TypeError):
+            params.pMin = -1
+
     def test_params_and_rot2_staircase(self):
         """Configure nested ALM parameters and certify a small Rot2 ring."""
         num_rotations = 5
