@@ -564,4 +564,47 @@ RiemannianStaircaseResult RiemannianStaircaseOptimizer::optimize() const {
   return result;
 }
 
+/* ************************************************************************* */
+Values RiemannianStaircaseResult::roundedValues() const {
+  if (!rounded) {
+    throw std::runtime_error(
+        "RiemannianStaircaseResult::roundedValues: no rounded solution is "
+        "available.");
+  }
+  return layout.unstack(rounded->Yd);
+}
+
+namespace {
+
+template <typename T>
+Vector ToVector(const std::vector<T>& values) {
+  Vector result(values.size());
+  for (size_t i = 0; i < values.size(); ++i) {
+    result(static_cast<Eigen::Index>(i)) = static_cast<double>(values[i]);
+  }
+  return result;
+}
+
+}  // namespace
+
+Vector RiemannianStaircaseResult::getRanksVisited() const {
+  return ToVector(ranksVisited);
+}
+
+Vector RiemannianStaircaseResult::getCostPerLevel() const {
+  return ToVector(costPerLevel);
+}
+
+Vector RiemannianStaircaseResult::getMinEigenvaluePerLevel() const {
+  return ToVector(minEigenvaluePerLevel);
+}
+
+Vector RiemannianStaircaseResult::getNlpTimePerLevel() const {
+  return ToVector(nlpTimePerLevel);
+}
+
+Vector RiemannianStaircaseResult::getVerifyTimePerLevel() const {
+  return ToVector(verifyTimePerLevel);
+}
+
 }  // namespace gtsam

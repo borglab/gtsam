@@ -80,6 +80,8 @@ set(interface_files
     ${GTSAM_SOURCE_DIR}/gtsam/nonlinear/nonlinear.i
     ${GTSAM_SOURCE_DIR}/gtsam/nonlinear/values.i
     ${GTSAM_SOURCE_DIR}/gtsam/nonlinear/custom.i
+    ${GTSAM_SOURCE_DIR}/gtsam/constrained/constrained.i
+    ${GTSAM_SOURCE_DIR}/gtsam/certifiable/certifiable.i
     ${GTSAM_SOURCE_DIR}/gtsam/symbolic/symbolic.i
     ${GTSAM_SOURCE_DIR}/gtsam/sam/sam.i
     ${GTSAM_SOURCE_DIR}/gtsam/slam/slam.i

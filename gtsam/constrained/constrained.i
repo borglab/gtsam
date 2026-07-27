@@ -151,7 +151,9 @@ class QcqpProblem : gtsam::ConstrainedOptProblem {
 class ConstrainedOptimizerParams {
   ConstrainedOptimizerParams();
 
-  size_t maxIterations;
+  // The wrapper generator marshals int as a scalar on every supported target;
+  // the underlying C++ field remains size_t.
+  int maxIterations;
   double absoluteViolationTolerance;
   double relativeViolationTolerance;
   double absoluteCostTolerance;

@@ -265,6 +265,16 @@ TEST(RiemannianStaircase, Rot2RingEasy) {
   EXPECT(result.certified);
   EXPECT(result.finalRank <= 3);
   EXPECT(result.minEigenvalue >= -params.eta);
+  EXPECT(result.hasRoundedSolution());
+
+  const Values roundedValues = result.roundedValues();
+  EXPECT_LONGS_EQUAL(static_cast<long>(N),
+                     static_cast<long>(roundedValues.size()));
+  for (const auto& [key, roundedMatrix] :
+       roundedValues.extract<Matrix>()) {
+    EXPECT_LONGS_EQUAL(2, roundedMatrix.rows());
+    EXPECT_LONGS_EQUAL(2, roundedMatrix.cols());
+  }
 }
 
 /* ************************************************************************* */
@@ -653,6 +663,8 @@ TEST(RiemannianStaircase, UncertifiedReturnWhenPMaxTooLow) {
   EXPECT(!result.certified);
   EXPECT_LONGS_EQUAL(2, static_cast<long>(result.finalRank));
   EXPECT(!result.rounded.has_value());
+  EXPECT(!result.hasRoundedSolution());
+  CHECK_EXCEPTION(result.roundedValues(), std::runtime_error);
   EXPECT_LONGS_EQUAL(1, static_cast<long>(result.ranksVisited.size()));
 }
 

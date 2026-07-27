@@ -72,6 +72,24 @@ struct GTSAM_EXPORT RiemannianStaircaseParams {
   AugmentedLagrangianParams::shared_ptr almParams =
       std::make_shared<AugmentedLagrangianParams>();
   bool verbose = false;
+
+  /**
+   * Return a copy of the inner ALM parameters.
+   *
+   * This accessor gives language wrappers a concrete parameter object instead
+   * of exposing the nested shared pointer directly.
+   */
+  AugmentedLagrangianParams getAlmParams() const { return *almParams; }
+
+  /**
+   * Replace the inner ALM parameters with a copy of @p parameters.
+   *
+   * Copying keeps the staircase parameters independent of subsequent changes
+   * to the caller's parameter object.
+   */
+  void setAlmParams(const AugmentedLagrangianParams& parameters) {
+    almParams = std::make_shared<AugmentedLagrangianParams>(parameters);
+  }
 };
 
 /**
@@ -305,6 +323,32 @@ struct GTSAM_EXPORT RiemannianStaircaseResult {
   std::vector<double> nlpTimePerLevel;
   std::vector<double> verifyTimePerLevel;
   double totalTime = 0.0;
+
+  /// Return true if certification produced a rounded rank-d solution.
+  bool hasRoundedSolution() const { return rounded.has_value(); }
+
+  /**
+   * Return the rounded rank-d solution as matrix-valued variables.
+   *
+   * @throws std::runtime_error if the staircase did not certify and no rounded
+   * solution is available.
+   */
+  Values roundedValues() const;
+
+  /// Return the staircase ranks as a wrapper-friendly numeric vector.
+  Vector getRanksVisited() const;
+
+  /// Return the objective value recorded at each staircase level.
+  Vector getCostPerLevel() const;
+
+  /// Return the minimum certificate eigenvalue at each staircase level.
+  Vector getMinEigenvaluePerLevel() const;
+
+  /// Return the nonlinear-solver time at each staircase level, in seconds.
+  Vector getNlpTimePerLevel() const;
+
+  /// Return the certificate-verification time at each level, in seconds.
+  Vector getVerifyTimePerLevel() const;
 };
 
 }  // namespace gtsam
