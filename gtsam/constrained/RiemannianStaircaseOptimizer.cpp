@@ -20,6 +20,7 @@
 #include <gtsam/constrained/QuadraticConstraint.h>
 #include <gtsam/linear/HessianFactor.h>
 
+#include <Eigen/Eigenvalues>
 #include <Eigen/SVD>
 #include <Eigen/SparseCholesky>
 

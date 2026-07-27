@@ -27,6 +27,8 @@
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/FrobeniusFactor.h>
 
+#include <Eigen/Eigenvalues>
+
 #include <cmath>
 
 using namespace gtsam;
