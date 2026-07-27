@@ -19,7 +19,7 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/constrained/AugmentedLagrangianOptimizer.h>
 #include <gtsam/constrained/QcqpProblem.h>
-#include <gtsam/constrained/RiemannianStaircaseOptimizer.h>
+#include <gtsam/certifiable/RiemannianStaircaseOptimizer.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/Rot3.h>
@@ -431,6 +431,7 @@ TEST(RiemannianStaircase, PadInitialValuesWidens) {
                       Matrix(M1.rightCols<1>()), 1e-15));
 }
 
+// Rejects initial values that are already wider than the requested rank.
 TEST(RiemannianStaircase, PadInitialValuesRejectsTooWide) {
   Values Y;
   Y.insert(Symbol('x', 0), Matrix(Matrix::Zero(2, 5)));

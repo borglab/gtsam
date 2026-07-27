@@ -14,7 +14,7 @@
  * @brief   Implementation of the Burer-Monteiro staircase.
  */
 
-#include <gtsam/constrained/RiemannianStaircaseOptimizer.h>
+#include <gtsam/certifiable/RiemannianStaircaseOptimizer.h>
 
 #include <gtsam/constrained/QpCost.h>
 #include <gtsam/constrained/QuadraticConstraint.h>

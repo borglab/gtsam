@@ -29,6 +29,7 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/constrained/AugmentedLagrangianOptimizer.h>
 #include <gtsam/constrained/QcqpProblem.h>
+#include <gtsam/dllexport.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>

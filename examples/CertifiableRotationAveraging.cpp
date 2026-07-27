@@ -21,8 +21,8 @@
  *   ./CertifiableRotationAveraging --data=<g2o file> --dim=<2|3>
  */
 
+#include <gtsam/certifiable/RiemannianStaircaseOptimizer.h>
 #include <gtsam/constrained/QcqpProblem.h>
-#include <gtsam/constrained/RiemannianStaircaseOptimizer.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Rot2.h>

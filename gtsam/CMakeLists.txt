@@ -7,6 +7,7 @@ set (gtsam_subdirs
     base
     basis
     constrained
+    certifiable
     geometry
     inference
     symbolic
