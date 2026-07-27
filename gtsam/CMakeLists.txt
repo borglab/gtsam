@@ -99,15 +99,6 @@ foreach(subdir ${gtsam_subdirs})
 	list(APPEND gtsam_srcs ${${subdir}_srcs})
 endforeach(subdir)
 list(APPEND gtsam_srcs ${gtsam_core_headers})
-if(GTSAM_ADDITIONAL_SOURCES)
-  list(APPEND gtsam_srcs ${GTSAM_ADDITIONAL_SOURCES})
-  gtsam_assign_source_folders("${GTSAM_ADDITIONAL_SOURCES}")
-  if(MSVC)
-    set_source_files_properties(${GTSAM_ADDITIONAL_SOURCES} PROPERTIES COMPILE_FLAGS "/w")
-  else()
-    set_source_files_properties(${GTSAM_ADDITIONAL_SOURCES} PROPERTIES COMPILE_FLAGS "-w")
-  endif()
-endif()
 
 # Generate and install config and dllexport files
 #For config.in searches
@@ -154,8 +145,10 @@ if(GTSAM_ENABLE_CUDA)
     target_link_libraries(gtsam PUBLIC cudss::cudss)
   endif()
 endif()
-if(GTSAM_ADDITIONAL_INCLUDE_DIRS)
-  target_include_directories(gtsam SYSTEM PRIVATE ${GTSAM_ADDITIONAL_INCLUDE_DIRS})
+if(GTSAM_USE_MOSEK)
+  target_link_libraries(gtsam PRIVATE gtsam_mosek_backend)
+  set_property(TARGET gtsam APPEND PROPERTY BUILD_RPATH "${MOSEK_LIBRARY_DIR}")
+  set_property(TARGET gtsam APPEND PROPERTY INSTALL_RPATH "${MOSEK_LIBRARY_DIR}")
 endif()
 
 # Apply build flags:

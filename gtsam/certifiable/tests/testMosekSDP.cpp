@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file testMOSEKInstall.cpp
+ * @file testMosekSDP.cpp
  * @brief Test that MOSEK Fusion is installed and can solve an SDP.
  */
 
@@ -50,7 +50,7 @@ SimpleSdpSolution SolveSimpleSdp() {
 }  // namespace
 
 /* ************************************************************************* */
-TEST(MOSEKInstall, SimpleSDP) {
+TEST(MosekSDP, SimplePSD) {
   const SimpleSdpSolution solution = SolveSimpleSdp();
   const double trace = solution.x00 + solution.x11;
 

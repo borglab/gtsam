@@ -61,7 +61,7 @@ class LiftedSDPProblem;
 #ifdef GTSAM_USE_MOSEK
 /** Monolithic lifted SDP backed by MOSEK Fusion. */
 template <>
-class LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
+class GTSAM_EXPORT LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
  public:
   /** Construct the monolithic SDP relaxation of a QCQP problem. */
   explicit LiftedSDPProblem(const QcqpProblem& problem);
@@ -167,7 +167,7 @@ class LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
 
 /** Chordally decomposed lifted SDP backed by MOSEK Fusion. */
 template <>
-class LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
+class GTSAM_EXPORT LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
  public:
   /**
    * Construct the chordal SDP relaxation of a QCQP problem.
