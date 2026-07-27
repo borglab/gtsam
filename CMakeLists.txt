@@ -151,9 +151,6 @@ add_subdirectory(CppUnitLite)
 # Build GTSAM library
 add_subdirectory(gtsam)
 
-# Build certifiable examples
-add_subdirectory(gtsam/certifiable)
-
 # Build Tests
 add_subdirectory(tests)
 
