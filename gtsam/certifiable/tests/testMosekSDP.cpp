@@ -20,7 +20,8 @@
 using namespace mosek::fusion;
 using namespace monty;
 
-namespace {
+/* ************************************************************************* */
+namespace mosek_sdp_tests {
 
 struct SimpleSdpSolution {
   double x00 = 0.0;
@@ -29,10 +30,7 @@ struct SimpleSdpSolution {
   double x11 = 0.0;
 };
 
-/**
- * Solve minimize trace(X) subject to X in S_+^2 and X(0,0)=1. The optimum is
- * X = [1 0; 0 0], which is enough to verify MOSEK Fusion links and runs.
- */
+// Solve a two-dimensional SDP whose unique optimum is diag(1, 0).
 SimpleSdpSolution SolveSimpleSdp() {
   Model::t model = new Model("SimpleSDP");
   auto cleanup = finally([&]() { model->dispose(); });
@@ -47,9 +45,7 @@ SimpleSdpSolution SolveSimpleSdp() {
   return {(*level)[0], (*level)[1], (*level)[2], (*level)[3]};
 }
 
-}  // namespace
-
-/* ************************************************************************* */
+// Verifies that MOSEK Fusion links and solves a positive semidefinite program.
 TEST(MosekSDP, SimplePSD) {
   const SimpleSdpSolution solution = SolveSimpleSdp();
   const double trace = solution.x00 + solution.x11;
@@ -62,7 +58,9 @@ TEST(MosekSDP, SimplePSD) {
   EXPECT_DOUBLES_EQUAL(1.0, trace, tol);
 }
 
+}  // namespace mosek_sdp_tests
 /* ************************************************************************* */
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

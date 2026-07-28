@@ -29,10 +29,12 @@
 
 using namespace gtsam;
 
-namespace {
+/* ************************************************************************* */
+namespace lifted_sdp_tests {
 
 constexpr double kPi = 3.141592653589793238462643383279502884;
 
+// Build a cycle of relative Rot2 measurements.
 NonlinearFactorGraph Rot2RingGraph(size_t numPoses, double delta) {
   NonlinearFactorGraph graph;
   for (size_t i = 0; i < numPoses; ++i) {
@@ -43,6 +45,7 @@ NonlinearFactorGraph Rot2RingGraph(size_t numPoses, double delta) {
   return graph;
 }
 
+// Create lifted QCQP values with a controlled angular perturbation.
 Values Rot2RingQcqpValues(size_t numPoses, double delta, double perturbation) {
   Values values;
   for (size_t i = 0; i < numPoses; ++i) {
@@ -54,14 +57,14 @@ Values Rot2RingQcqpValues(size_t numPoses, double delta, double perturbation) {
   return values;
 }
 
+// Assemble the local rank-one matrix in a Hessian factor's key order.
 Matrix BuildLocalX(const HessianFactor& H, const Values& values) {
   std::vector<Vector> localValues;
   DenseIndex totalDim = 0;
   for (auto it = H.begin(); it != H.end(); ++it) {
     Vector x = values.at<Matrix>(*it).col(0);
     if (x.size() != H.getDim(it)) {
-      throw std::runtime_error(
-          "BuildLocalX: QCQP value dimension mismatch.");
+      throw std::runtime_error("BuildLocalX: QCQP value dimension mismatch.");
     }
     totalDim += x.size();
     localValues.push_back(std::move(x));
@@ -81,7 +84,9 @@ Matrix BuildLocalX(const HessianFactor& H, const Values& values) {
   return X_f;
 }
 
-double ComputeLiftedObjective(const QcqpProblem& problem, const Values& values) {
+// Evaluate the lifted trace objective directly from rank-one matrices.
+double ComputeLiftedObjective(const QcqpProblem& problem,
+                              const Values& values) {
   double objective = 0.0;
   for (const auto& factor : problem.costs()) {
     if (!factor) {
@@ -106,9 +111,7 @@ double ComputeLiftedObjective(const QcqpProblem& problem, const Values& values) 
   return objective;
 }
 
-}  // namespace
-
-/* ************************************************************************* */
+// Verifies that lifting preserves the QCQP objective at a feasible assignment.
 TEST(LiftedSDPs, Rot2_QcqpObjectiveMatchesLiftedObjective) {
   constexpr size_t N = 5;
   const double delta = 2.0 * kPi / static_cast<double>(N);
@@ -127,7 +130,9 @@ TEST(LiftedSDPs, Rot2_QcqpObjectiveMatchesLiftedObjective) {
   EXPECT_DOUBLES_EQUAL(qcqpObjective, sdpObjective, 1e-12);
 }
 
+}  // namespace lifted_sdp_tests
 /* ************************************************************************* */
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
