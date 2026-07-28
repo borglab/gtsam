@@ -20,6 +20,8 @@
 
 #include <gtsam/constrained/QcqpProblem.h>
 #include <gtsam/constrained/QpCost.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/SOn.h>
@@ -115,9 +117,10 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
   /**
    * Add this Frobenius prior to the QCQP graph.
    *
-   * D=1 supports hard constrained Rot2 priors in the exact homogeneous lift.
-   * Matrix-form priors are not lowered because a fixed lifted target breaks
-   * the right-orthogonal gauge required by the Burer--Monteiro formulation.
+   * D=1 supports hard constrained Rot2, Rot3, Pose2, and Pose3 priors in their
+   * exact homogeneous lifts. Matrix-form priors are not lowered because a
+   * fixed lifted target breaks the right-orthogonal gauge required by the
+   * Burer--Monteiro formulation.
    */
   void qcqpFactors(NonlinearFactorGraph* costs,
                    NonlinearEqualityConstraints* constraints,
@@ -136,8 +139,8 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
  private:
   /// D=1 constrained-noise prior in lifted vector form.
   /// The stored measurement is vecM_ = vec(M), where M is the matrix passed to
-  /// the FrobeniusPrior constructor. The lifted variable for the current value
-  /// is x = [1, vec(R)]^T, where R is the matrix represented by this key.
+  /// the FrobeniusPrior constructor. Pose lifts retain only the variable top
+  /// rows of M; rotation lifts retain the full matrix.
   void qcqpFactorsForVec(NonlinearFactorGraph* costs,
                          NonlinearEqualityConstraints* constraints) const {
     if constexpr (!internal::HasQcqpVariableTraits<T, 1>::value) {
@@ -146,15 +149,30 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
       throw std::runtime_error(
           "FrobeniusPrior::qcqpFactors requires QCQP variable traits for this "
           "type and column dimension 1.");
+    } else if constexpr (!(std::is_same_v<T, Rot2> ||
+                           std::is_same_v<T, Rot3> ||
+                           std::is_same_v<T, Pose2> ||
+                           std::is_same_v<T, Pose3>)) {
+      (void)costs;
+      (void)constraints;
+      throw std::runtime_error(
+          "FrobeniusPrior::qcqpFactors D=1 is implemented only for Rot2, "
+          "Rot3, Pose2, and Pose3.");
     } else {
       (void)costs;
       if (this->noiseModel_->isConstrained()) {
         InsertQcqpConstraints<T, 1>(this->key(), constraints);
 
-        constexpr int LiftedDim = Dim + 1;
+        constexpr int K =
+            std::is_same_v<T, Pose2> || std::is_same_v<T, Pose3> ? N - 1 : N;
+        constexpr int ActiveDim = K * N;
+        constexpr int LiftedDim = ActiveDim + 1;
         Vector target = Vector::Zero(LiftedDim);
         target(0) = 1.0;
-        target.tail(Dim) = vecM_;
+        for (int column = 0; column < N; ++column) {
+          target.segment(1 + column * K, K) =
+              vecM_.segment(column * N, K);
+        }
 
         constraints->push_back(LinearConstraint::Equal(
                                    JacobianFactor(
@@ -340,8 +358,9 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
   /**
    * Add this Frobenius between factor as a QCQP cost when traits exist.
    *
-   * D=1 takes the exact homogeneous Rot2 form. D>=N takes the N-by-D
-   * row-Stiefel form, where N is the intrinsic rotation-matrix dimension.
+   * D=1 takes the exact homogeneous Rot2, Rot3, Pose2, or Pose3 form. D>=N
+   * takes the N-by-D row-Stiefel form, where N is the intrinsic
+   * rotation-matrix dimension.
    */
   void qcqpFactors(NonlinearFactorGraph* costs,
                    NonlinearEqualityConstraints* constraints,
@@ -358,20 +377,25 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
   }
 
  private:
-  static Matrix RightProductMatrix(const Matrix& right) {
-    const Matrix I = Matrix::Identity(N, N);
-    Matrix result = Matrix::Zero(Dim, Dim);
-    for (int column = 0; column < N; ++column) {
-      for (int sourceColumn = 0; sourceColumn < N; ++sourceColumn) {
-        result.block(column * N, sourceColumn * N, N, N) =
-            right(sourceColumn, column) * I;
+  static Matrix RightProductMatrix(const Matrix& right,
+                                   DenseIndex retainedRows) {
+    const DenseIndex activeDim = retainedRows * N;
+    Matrix result = Matrix::Zero(activeDim, activeDim);
+    // result = right.transpose() kron Identity(retainedRows).
+    for (int blockRow = 0; blockRow < N; ++blockRow) {
+      for (int blockColumn = 0; blockColumn < N; ++blockColumn) {
+        result
+            .block(blockRow * retainedRows, blockColumn * retainedRows,
+                   retainedRows, retainedRows)
+            .diagonal()
+            .setConstant(right(blockColumn, blockRow));
       }
     }
     return result;
   }
 
-  /// Vec(R) form (D=1): build the full (N*N)x1 vec(R) cost first, then
-  /// embed its quadratic matrix in the lifted coordinate layout.
+  /// D=1 retained-row vector form: build the full Frobenius residual for
+  /// whitening, then embed its quadratic matrix in the lifted coordinates.
   void qcqpFactorsForVec(NonlinearFactorGraph* costs,
                          NonlinearEqualityConstraints* constraints) const {
     if constexpr (!internal::HasQcqpVariableTraits<T, 1>::value) {
@@ -380,12 +404,15 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
       throw std::runtime_error(
           "FrobeniusBetweenFactor::qcqpFactors requires QCQP variable traits "
           "for this type and column dimension 1.");
-    } else if constexpr (!std::is_same_v<T, Rot2>) {
+    } else if constexpr (!(std::is_same_v<T, Rot2> ||
+                           std::is_same_v<T, Rot3> ||
+                           std::is_same_v<T, Pose2> ||
+                           std::is_same_v<T, Pose3>)) {
       (void)costs;
       (void)constraints;
       throw std::runtime_error(
-          "FrobeniusBetweenFactor::qcqpFactors D=1 lifted Q embedding is "
-          "currently implemented only for Rot2.");
+          "FrobeniusBetweenFactor::qcqpFactors D=1 is implemented only for "
+          "Rot2, Rot3, Pose2, and Pose3.");
     } else {
       if (!costs) {
         throw std::invalid_argument(
@@ -398,27 +425,34 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
             "non-robust/non-hard quadratic noise model");
       }
 
-      const Matrix measurement = this->T12_.matrix();
-      const Matrix A = RightProductMatrix(measurement);
+      constexpr int K =
+          std::is_same_v<T, Pose2> || std::is_same_v<T, Pose3> ? N - 1 : N;
+      constexpr int ActiveDim = K * N;
+      constexpr int LiftedDim = ActiveDim + 1;
 
-      Matrix B = Matrix::Zero(Dim, 2 * Dim);
-      B.block(0, 0, Dim, Dim) = -A;
-      B.block(0, Dim, Dim, Dim) =
-          Matrix::Identity(Dim, Dim);
+      const Matrix A = RightProductMatrix(this->T12_.matrix(), K);
+      Matrix B = Matrix::Zero(ActiveDim, 2 * ActiveDim);
+      B.block(0, 0, ActiveDim, ActiveDim) = -A;
+      B.block(0, ActiveDim, ActiveDim, ActiveDim).setIdentity();
 
-      const Matrix whitenedB = this->noiseModel_->Whiten(B);
+      Matrix fullB = Matrix::Zero(Dim, 2 * ActiveDim);
+      for (int column = 0; column < N; ++column) {
+        fullB.block(column * N, 0, K, 2 * ActiveDim) =
+            B.block(column * K, 0, K, 2 * ActiveDim);
+      }
+
+      const Matrix whitenedB = this->noiseModel_->Whiten(fullB);
       const Matrix Q = whitenedB.transpose() * whitenedB;
 
-      // Homogenize and truncate according to the Rot2 lift.
-      constexpr int LiftedDim = Dim + 1;  // First entry is homogeneous.
       Matrix Q_trunc_hom = Matrix::Zero(2 * LiftedDim, 2 * LiftedDim);
-      Q_trunc_hom.block(1, 1, Dim, Dim) = Q.block(0, 0, Dim, Dim);
-      Q_trunc_hom.block(1, LiftedDim + 1, Dim, Dim) =
-          Q.block(0, Dim, Dim, Dim);
-      Q_trunc_hom.block(LiftedDim + 1, 1, Dim, Dim) =
-          Q.block(Dim, 0, Dim, Dim);
-      Q_trunc_hom.block(LiftedDim + 1, LiftedDim + 1, Dim, Dim) =
-          Q.block(Dim, Dim, Dim, Dim);
+      Q_trunc_hom.block(1, 1, ActiveDim, ActiveDim) =
+          Q.block(0, 0, ActiveDim, ActiveDim);
+      Q_trunc_hom.block(1, LiftedDim + 1, ActiveDim, ActiveDim) =
+          Q.block(0, ActiveDim, ActiveDim, ActiveDim);
+      Q_trunc_hom.block(LiftedDim + 1, 1, ActiveDim, ActiveDim) =
+          Q.block(ActiveDim, 0, ActiveDim, ActiveDim);
+      Q_trunc_hom.block(LiftedDim + 1, LiftedDim + 1, ActiveDim, ActiveDim) =
+          Q.block(ActiveDim, ActiveDim, ActiveDim, ActiveDim);
 
       InsertQcqpConstraints<T, 1>(this->key1(), constraints);
       InsertQcqpConstraints<T, 1>(this->key2(), constraints);

@@ -398,6 +398,83 @@ TEST(QcqpProblem, SingleFrobeniusBetweenFactor) {
                        1e-12);
 }
 
+template <typename T>
+std::array<double, 4> D1FrobeniusBetweenFactorErrors(
+    const T& value1, const T& value2, const T& measurement,
+    const Vector& sigmas) {
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusBetweenFactor<T>>(
+      x0, x1, measurement, noiseModel::Diagonal::Sigmas(sigmas));
+
+  Values values;
+  values.insert(x0, value1);
+  values.insert(x1, value2);
+
+  Values qcqpValues;
+  InsertQcqpValue<T, 1>(x0, value1, &qcqpValues);
+  InsertQcqpValue<T, 1>(x1, value2, &qcqpValues);
+
+  const QcqpProblem problem(graph);
+
+  const T predicted = traits<T>::Compose(value1, measurement);
+  Values predictedQcqpValues;
+  InsertQcqpValue<T, 1>(x0, value1, &predictedQcqpValues);
+  InsertQcqpValue<T, 1>(x1, predicted, &predictedQcqpValues);
+
+  return {graph.error(values), problem.costs().error(qcqpValues),
+          problem.eConstraints().violationNorm(qcqpValues),
+          problem.costs().error(predictedQcqpValues)};
+}
+
+TEST(QcqpProblem, FrobeniusBetweenFactorRot3D1) {
+  const Rot3 value1 =
+      Rot3::Expmap((Vector3() << 0.2, -0.3, 0.4).finished());
+  const Rot3 value2 =
+      Rot3::Expmap((Vector3() << -0.1, 0.5, 0.2).finished());
+  const Rot3 measurement =
+      Rot3::Expmap((Vector3() << 0.3, 0.1, -0.2).finished());
+  const auto errors = D1FrobeniusBetweenFactorErrors(
+      value1, value2, measurement,
+      (Vector9() << 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2)
+          .finished());
+  EXPECT_DOUBLES_EQUAL(errors[0], errors[1], 1e-10);
+  EXPECT_DOUBLES_EQUAL(0.0, errors[2], 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, errors[3], 1e-12);
+}
+
+TEST(QcqpProblem, FrobeniusBetweenFactorPose2D1) {
+  const Pose2 value1(Rot2::fromAngle(0.2), Point2(1.0, -2.0));
+  const Pose2 value2(Rot2::fromAngle(-0.4), Point2(-3.0, 0.5));
+  const Pose2 measurement(Rot2::fromAngle(0.3), Point2(2.0, -1.0));
+  const auto errors = D1FrobeniusBetweenFactorErrors(
+      value1, value2, measurement,
+      (Vector9() << 0.4, 1.7, 0.5, 0.6, 1.8, 0.7, 0.8, 1.9, 0.9)
+          .finished());
+  EXPECT_DOUBLES_EQUAL(errors[0], errors[1], 1e-10);
+  EXPECT_DOUBLES_EQUAL(0.0, errors[2], 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, errors[3], 1e-12);
+}
+
+TEST(QcqpProblem, FrobeniusBetweenFactorPose3D1) {
+  const Pose3 value1(
+      Rot3::Expmap((Vector3() << 0.2, -0.3, 0.4).finished()),
+      Point3(1.0, -2.0, 0.5));
+  const Pose3 value2(
+      Rot3::Expmap((Vector3() << -0.1, 0.5, 0.2).finished()),
+      Point3(-3.0, 0.5, 2.0));
+  const Pose3 measurement(
+      Rot3::Expmap((Vector3() << 0.3, 0.1, -0.2).finished()),
+      Point3(2.0, -1.0, 3.0));
+  const auto errors = D1FrobeniusBetweenFactorErrors(
+      value1, value2, measurement,
+      (Eigen::Matrix<double, 16, 1>() << 0.4, 0.5, 0.6, 1.7, 0.7, 0.8,
+       0.9, 1.8, 1.0, 1.1, 1.2, 1.9, 1.3, 1.4, 1.5, 2.0)
+          .finished());
+  EXPECT_DOUBLES_EQUAL(errors[0], errors[1], 1e-10);
+  EXPECT_DOUBLES_EQUAL(0.0, errors[2], 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, errors[3], 1e-12);
+}
+
 // A hard prior imposes x=[1;vec(M)], not merely a homogeneous direction.
 // Since ||x||^2=1+||M||_F^2=3, the negated lift has violation 2*sqrt(3).
 TEST(QcqpProblem, HardFrobeniusPriorRot2D1) {
@@ -441,6 +518,84 @@ TEST(QcqpProblem, HardFrobeniusPriorRot2D1) {
   EXPECT_DOUBLES_EQUAL(2.0 * std::sqrt(3.0),
                        problem.eConstraints().violationNorm(negatedQcqpValues),
                        1e-12);
+}
+
+template <typename T>
+struct HardFrobeniusPriorD1Result {
+  size_t costCount;
+  bool foundPrior;
+  Matrix A;
+  Vector b;
+  Matrix expectedTarget;
+  double violation;
+};
+
+template <typename T>
+HardFrobeniusPriorD1Result<T> HardFrobeniusPriorD1(const T& measured) {
+  const auto hardNoise =
+      noiseModel::Constrained::All(measured.matrix().size());
+
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusPrior<T>>(x0, measured.matrix(), hardNoise);
+  const QcqpProblem problem(graph);
+
+  const LinearEqualityConstraintFactor* priorConstraint = nullptr;
+  for (const auto& factor : problem.eConstraints()) {
+    if (const auto* linear =
+            dynamic_cast<const LinearEqualityConstraintFactor*>(factor.get())) {
+      priorConstraint = linear;
+      break;
+    }
+  }
+
+  const Matrix expectedTarget = traits<T>::template QcqpValue<1>(measured);
+
+  Values qcqpValues;
+  InsertQcqpValue<T, 1>(x0, measured, &qcqpValues);
+  if (!priorConstraint) {
+    return {problem.costs().size(), false, Matrix(), Vector(), expectedTarget,
+            problem.eConstraints().violationNorm(qcqpValues)};
+  }
+
+  const JacobianFactor& priorJacobian =
+      priorConstraint->linearConstraint().factor();
+  return {problem.costs().size(),
+          true,
+          Matrix(priorJacobian.getA()),
+          Vector(priorJacobian.getb()),
+          expectedTarget,
+          problem.eConstraints().violationNorm(qcqpValues)};
+}
+
+TEST(QcqpProblem, HardFrobeniusPriorRot3D1) {
+  const auto result = HardFrobeniusPriorD1(
+      Rot3::Expmap((Vector3() << 0.2, -0.3, 0.4).finished()));
+  LONGS_EQUAL(0, result.costCount);
+  EXPECT(result.foundPrior);
+  EXPECT(assert_equal(Matrix::Identity(10, 10), result.A, 1e-12));
+  EXPECT(assert_equal(Vector(result.expectedTarget.col(0)), result.b, 1e-12));
+  EXPECT_DOUBLES_EQUAL(0.0, result.violation, 1e-12);
+}
+
+TEST(QcqpProblem, HardFrobeniusPriorPose2D1) {
+  const auto result = HardFrobeniusPriorD1(
+      Pose2(Rot2::fromAngle(0.2), Point2(1.0, -2.0)));
+  LONGS_EQUAL(0, result.costCount);
+  EXPECT(result.foundPrior);
+  EXPECT(assert_equal(Matrix::Identity(7, 7), result.A, 1e-12));
+  EXPECT(assert_equal(Vector(result.expectedTarget.col(0)), result.b, 1e-12));
+  EXPECT_DOUBLES_EQUAL(0.0, result.violation, 1e-12);
+}
+
+TEST(QcqpProblem, HardFrobeniusPriorPose3D1) {
+  const auto result = HardFrobeniusPriorD1(Pose3(
+      Rot3::Expmap((Vector3() << 0.2, -0.3, 0.4).finished()),
+      Point3(1.0, -2.0, 0.5)));
+  LONGS_EQUAL(0, result.costCount);
+  EXPECT(result.foundPrior);
+  EXPECT(assert_equal(Matrix::Identity(13, 13), result.A, 1e-12));
+  EXPECT(assert_equal(Vector(result.expectedTarget.col(0)), result.b, 1e-12));
+  EXPECT_DOUBLES_EQUAL(0.0, result.violation, 1e-12);
 }
 
 // Verifies the deferred non-constrained Frobenius prior cost path rejects.
@@ -976,12 +1131,13 @@ TEST(QcqpProblem, Rot3D2Throws) {
                   std::invalid_argument);
 }
 
-// Rot3 has an exact D=1 variable, but its D=1 between-cost lowering is absent.
-TEST(QcqpProblem, Rot3FrobeniusBetweenFactorD1Rejected) {
+// Rot3 uses its exact D=1 variable for the D=1 between-cost lowering.
+TEST(QcqpProblem, Rot3FrobeniusBetweenFactorD1Accepted) {
   NonlinearFactorGraph graph;
   graph.emplace_shared<FrobeniusBetweenFactor<Rot3>>(x0, x1,
                                                       Rot3::Identity());
-  CHECK_EXCEPTION({ QcqpProblem problem(graph, 1); }, std::runtime_error);
+  const QcqpProblem problem(graph, 1);
+  LONGS_EQUAL(1, problem.costs().size());
 }
 
 // For Rot3 canonical lifts, the D=3 row-space between cost is exactly the

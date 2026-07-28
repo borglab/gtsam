@@ -15,8 +15,10 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/certifiable/LiftedSDPProblem.h>
 #include <gtsam/constrained/QcqpProblem.h>
 #include <gtsam/constrained/QpCost.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>

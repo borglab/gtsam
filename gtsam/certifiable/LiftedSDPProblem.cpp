@@ -407,8 +407,20 @@ void AddLinearEqualityConstraint(
     const auto xi = Xii->slice(first, last)->asExpr();
     const Matrix A = J.getA(it);
     const Vector b = J.getb();
-    const auto lhs = mf::Expr::mul(convertToMosekDenseMatrix(A), xi);
-    M->constraint(lhs, mf::Domain::equalsTo(convertToMosekDenseMatrix(b)));
+
+    // Ax=b implies the reformulation-linearization equality
+    // AX=b*x' = b*X(0,:), since x is the first column of X and x(0)=1.
+    // Enforcing only A*X(:,0)=b leaves unconstrained PSD slack in X.
+    const auto xTranspose =
+        Xii->slice(monty::new_array_ptr<int, 1>({0, 0}),
+                   monty::new_array_ptr<int, 1>(
+                       {1, static_cast<int>(dim)}))
+            ->asExpr();
+    const auto lhs =
+        mf::Expr::mul(convertToMosekDenseMatrix(A), Xii->asExpr());
+    const auto rhs =
+        mf::Expr::mul(convertToMosekDenseMatrix(b), xTranspose);
+    M->constraint(mf::Expr::sub(lhs, rhs), mf::Domain::equalsTo(0.0));
   } else {
     throw std::runtime_error(
         "MonolithicSDP: only unary linear equality QCQP constraints are "
