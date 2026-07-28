@@ -52,3 +52,10 @@ Helper functions and classes for SLAM tasks.
 -   [InitializePose3](doc/InitializePose3.ipynb) : Methods for initializing `Pose3` graphs by first solving for rotations, then translations.
 -   [dataset](doc/dataset.ipynb) : Utility functions for loading/saving common SLAM dataset formats (g2o, TORO).
 -   [expressions](https://github.com/borglab/gtsam/blob/develop/gtsam/slam/expressions.h) : Pre-defined Expression trees for common SLAM factor types (internal use for Expression-based factors).
+
+## CUDA Acceleration
+
+GPU-accelerated optimization for bundle adjustment (requires a CUDA build; see `gtsam/slam/cuda/`).
+
+-   [CudaSfmLevenbergMarquardtOptimizer](doc/CudaSfmLevenbergMarquardtOptimizer.ipynb) : Fully GPU-resident Levenberg-Marquardt for BAL-style bundle adjustment (`GeneralSFMFactor<PinholeCamera<Cal3Bundler>, Point3>` graphs); dense-Schur or cuDSS linear solvers.
+-   [GNC with the CUDA SFM optimizer](doc/CudaSfmGncOptimizer.ipynb) : Robust (outlier-rejecting) bundle adjustment using `GncOptimizer` with the CUDA optimizer as inner solver.
