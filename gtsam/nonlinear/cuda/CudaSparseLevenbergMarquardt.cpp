@@ -350,6 +350,18 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
       solverOptions.pcg.maxIterations = parameters.pcg.maxIterations;
       solverOptions.pcg.relativeTolerance = parameters.pcg.relativeTolerance;
       solverOptions.pcg.warmStart = parameters.pcg.warmStart;
+      if (parameters.pcg.preconditioner == "block-jacobi") {
+        solverOptions.pcg.preconditioner =
+            DevicePcgPreconditioner::BlockJacobi;
+      } else if (parameters.pcg.preconditioner == "jacobi") {
+        solverOptions.pcg.preconditioner = DevicePcgPreconditioner::Jacobi;
+      } else if (parameters.pcg.preconditioner == "none") {
+        solverOptions.pcg.preconditioner = DevicePcgPreconditioner::None;
+      } else {
+        throw std::invalid_argument(
+            "CudaSparseLevenbergMarquardtParams pcg.preconditioner must be "
+            "block-jacobi, jacobi, or none");
+      }
       solverOptions.columnBlockOffsets.reserve(layout->blocks().size() + 1);
       solverOptions.columnBlockOffsets.push_back(0);
       for (const SparseJacobianColumnBlock& block : layout->blocks()) {

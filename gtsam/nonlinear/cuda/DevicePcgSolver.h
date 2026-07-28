@@ -11,11 +11,18 @@
 
 namespace gtsam::cuda {
 
+enum class DevicePcgPreconditioner {
+  BlockJacobi,  // per-variable Gram-block inverses (default)
+  Jacobi,       // scalar 1/diag(JtJ + lambda*D), PyPose/BAE-style
+  None,         // unpreconditioned CG (ablation baseline)
+};
+
 struct DevicePcgOptions {
   int maxIterations = 250;
   double relativeTolerance = 1e-6;
   bool warmStart = true;
   int convergenceCheckInterval = 10;
+  DevicePcgPreconditioner preconditioner = DevicePcgPreconditioner::BlockJacobi;
 };
 
 struct DevicePcgSolveStats {

@@ -249,6 +249,38 @@ __global__ void DampInvertBlocksKernel(const double* gramBlocks,
   }
 }
 
+/** Ablation modes: scalar Jacobi z = r/(diag + lambda*D) and identity. */
+__global__ void JacobiApplyDotKernel(const double* undampedDiagonal,
+                                     const double* dampingDiagonal,
+                                     const double* slots, const double* r,
+                                     double* z, int n, double* rzSlot) {
+  const double lambda = slots[kLambda];
+  double local = 0.0;
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += gridDim.x * blockDim.x) {
+    const double denom =
+        fmax(undampedDiagonal[i] + lambda * dampingDiagonal[i], kTinyDiagonal);
+    const double value = r[i] / denom;
+    z[i] = value;
+    local += r[i] * value;
+  }
+  const double total = BlockReduceSum(local);
+  if (threadIdx.x == 0) atomicAdd(rzSlot, total);
+}
+
+__global__ void IdentityApplyDotKernel(const double* r, double* z, int n,
+                                       double* rzSlot) {
+  double local = 0.0;
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < n;
+       i += gridDim.x * blockDim.x) {
+    const double value = r[i];
+    z[i] = value;
+    local += value * value;
+  }
+  const double total = BlockReduceSum(local);
+  if (threadIdx.x == 0) atomicAdd(rzSlot, total);
+}
+
 /** z_v = Minv_v · r_v per variable block, accumulating rᵀz into a slot. */
 __global__ void PrecondApplyDotKernel(const double* inverseBlocks,
                                       const int* columnBegins, int count,
@@ -424,6 +456,10 @@ struct DevicePcgSolver::Impl {
   bool collectProfile = false;
 
   std::vector<WidthClass> widthClasses;
+  // Scalar-Jacobi ablation mode: diag(JtJ) built per linearization; the
+  // damping vector is borrowed from the current solve() call.
+  CudaDeviceArray<double> undampedDiagonal;
+  const double* currentDampingDiagonal = nullptr;
   CudaDeviceArray<double> r;
   CudaDeviceArray<double> z;
   CudaDeviceArray<double> p;
@@ -480,13 +516,29 @@ struct DevicePcgSolver::Impl {
 
   void applyPreconditioner(const double* residual, double* preconditioned,
                            double* rzSlot, cudaStream_t stream) {
-    for (const WidthClass& widthClass : widthClasses) {
-      PrecondApplyDotKernel<<<GridSize(widthClass.count), kPcgBlockSize, 0,
-                              stream>>>(
-          widthClass.inverseBlocks.data(), widthClass.columnBegins.data(),
-          widthClass.count, widthClass.width, residual, preconditioned,
-          rzSlot);
-      CheckCuda(cudaGetLastError(), "PCG preconditioner apply launch");
+    switch (options.preconditioner) {
+      case DevicePcgPreconditioner::BlockJacobi:
+        for (const WidthClass& widthClass : widthClasses) {
+          PrecondApplyDotKernel<<<GridSize(widthClass.count), kPcgBlockSize,
+                                  0, stream>>>(
+              widthClass.inverseBlocks.data(), widthClass.columnBegins.data(),
+              widthClass.count, widthClass.width, residual, preconditioned,
+              rzSlot);
+          CheckCuda(cudaGetLastError(), "PCG preconditioner apply launch");
+        }
+        break;
+      case DevicePcgPreconditioner::Jacobi:
+        JacobiApplyDotKernel<<<GridSize(columns), kPcgBlockSize, 0, stream>>>(
+            undampedDiagonal.data(), currentDampingDiagonal, slots.data(),
+            residual, preconditioned, columns, rzSlot);
+        CheckCuda(cudaGetLastError(), "PCG scalar-Jacobi apply launch");
+        break;
+      case DevicePcgPreconditioner::None:
+        IdentityApplyDotKernel<<<GridSize(columns), kPcgBlockSize, 0,
+                                 stream>>>(residual, preconditioned, columns,
+                                           rzSlot);
+        CheckCuda(cudaGetLastError(), "PCG identity apply launch");
+        break;
     }
   }
 
@@ -641,18 +693,23 @@ void DevicePcgSolver::initialize(cusparseHandle_t handle, int rows,
   }
 
   try {
-    for (auto& [width, begins] : beginsByWidth) {
-      WidthClass widthClass;
-      widthClass.width = width;
-      widthClass.count = static_cast<int>(begins.size());
-      widthClass.columnBegins.upload(begins, stream);
-      const size_t packedSize = static_cast<size_t>(width) * (width + 1) / 2 *
-                                begins.size();
-      widthClass.gramBlocks.resize(packedSize);
-      widthClass.gramBlocks.zero(stream);
-      widthClass.inverseBlocks.resize(packedSize);
-      widthClass.inverseBlocks.zero(stream);
-      replacement->widthClasses.push_back(std::move(widthClass));
+    if (options.preconditioner == DevicePcgPreconditioner::BlockJacobi) {
+      for (auto& [width, begins] : beginsByWidth) {
+        WidthClass widthClass;
+        widthClass.width = width;
+        widthClass.count = static_cast<int>(begins.size());
+        widthClass.columnBegins.upload(begins, stream);
+        const size_t packedSize = static_cast<size_t>(width) * (width + 1) /
+                                  2 * begins.size();
+        widthClass.gramBlocks.resize(packedSize);
+        widthClass.gramBlocks.zero(stream);
+        widthClass.inverseBlocks.resize(packedSize);
+        widthClass.inverseBlocks.zero(stream);
+        replacement->widthClasses.push_back(std::move(widthClass));
+      }
+    } else if (options.preconditioner == DevicePcgPreconditioner::Jacobi) {
+      replacement->undampedDiagonal.resize(static_cast<size_t>(columns));
+      replacement->undampedDiagonal.zero(stream);
     }
 
     replacement->r.resize(static_cast<size_t>(columns));
@@ -745,15 +802,28 @@ void DevicePcgSolver::buildPreconditioner(
   std::chrono::steady_clock::time_point start;
   if (impl_->collectProfile) start = std::chrono::steady_clock::now();
 
-  for (const WidthClass& widthClass : impl_->widthClasses) {
-    const int warpsPerBlock = kPcgBlockSize / 32;
-    const int grid = widthClass.count / warpsPerBlock +
-                     (widthClass.count % warpsPerBlock != 0);
-    BuildGramBlocksKernel<<<grid, kPcgBlockSize, 0, stream>>>(
-        widthClass.columnBegins.data(), widthClass.count, widthClass.width,
-        impl_->jtRowPointers, jtValues.data(),
-        const_cast<double*>(widthClass.gramBlocks.data()));
-    CheckCuda(cudaGetLastError(), "PCG Gram-block build launch");
+  switch (impl_->options.preconditioner) {
+    case DevicePcgPreconditioner::BlockJacobi:
+      for (const WidthClass& widthClass : impl_->widthClasses) {
+        const int warpsPerBlock = kPcgBlockSize / 32;
+        const int grid = widthClass.count / warpsPerBlock +
+                         (widthClass.count % warpsPerBlock != 0);
+        BuildGramBlocksKernel<<<grid, kPcgBlockSize, 0, stream>>>(
+            widthClass.columnBegins.data(), widthClass.count,
+            widthClass.width, impl_->jtRowPointers, jtValues.data(),
+            const_cast<double*>(widthClass.gramBlocks.data()));
+        CheckCuda(cudaGetLastError(), "PCG Gram-block build launch");
+      }
+      break;
+    case DevicePcgPreconditioner::Jacobi:
+      ColumnSquaredNormsKernel<<<GridSize(impl_->columns), kPcgBlockSize, 0,
+                                 stream>>>(impl_->jtRowPointers,
+                                           jtValues.data(), impl_->columns,
+                                           impl_->undampedDiagonal.data());
+      CheckCuda(cudaGetLastError(), "PCG scalar-diagonal build launch");
+      break;
+    case DevicePcgPreconditioner::None:
+      break;
   }
   impl_->warmStartValid = false;
 
@@ -792,6 +862,7 @@ void DevicePcgSolver::solve(double lambda,
   if (state.collectProfile) solveStart = std::chrono::steady_clock::now();
 
   state.stats = {};
+  state.currentDampingDiagonal = dampingDiagonal.data();
 
   try {
     state.slots.zero(stream);
@@ -803,14 +874,18 @@ void DevicePcgSolver::solve(double lambda,
               "PCG lambda upload");
 
     // Damp, factor, and invert the preconditioner blocks for this lambda.
-    for (const WidthClass& widthClass : state.widthClasses) {
-      DampInvertBlocksKernel<<<GridSize(widthClass.count), kPcgBlockSize, 0,
-                               stream>>>(
-          widthClass.gramBlocks.data(), widthClass.columnBegins.data(),
-          widthClass.count, widthClass.width, dampingDiagonal.data(),
-          state.slots.data(),
-          const_cast<double*>(widthClass.inverseBlocks.data()));
-      CheckCuda(cudaGetLastError(), "PCG damped block factorization launch");
+    // (Block-Jacobi only; the scalar-Jacobi ablation mode damps inline in
+    // its apply kernel, and identity needs nothing.)
+    if (options.preconditioner == DevicePcgPreconditioner::BlockJacobi) {
+      for (const WidthClass& widthClass : state.widthClasses) {
+        DampInvertBlocksKernel<<<GridSize(widthClass.count), kPcgBlockSize, 0,
+                                 stream>>>(
+            widthClass.gramBlocks.data(), widthClass.columnBegins.data(),
+            widthClass.count, widthClass.width, dampingDiagonal.data(),
+            state.slots.data(),
+            const_cast<double*>(widthClass.inverseBlocks.data()));
+        CheckCuda(cudaGetLastError(), "PCG damped block factorization launch");
+      }
     }
 
     DotKernel<<<GridSize(n), kPcgBlockSize, 0, stream>>>(

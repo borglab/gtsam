@@ -43,6 +43,9 @@ class GTSAM_EXPORT CudaSparseLevenbergMarquardtParams
     int maxIterations = 0;
     double relativeTolerance = 1e-6;
     bool warmStart = true;
+    // "block-jacobi" (default), "jacobi" (scalar), or "none"; the scalar and
+    // identity modes exist for ablation studies.
+    std::string preconditioner = "block-jacobi";
   };
   PcgParams pcg;
 };

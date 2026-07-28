@@ -98,6 +98,8 @@ struct RunOptions {
   std::string gpuSolver = "cudss";
   double pcgTolerance = 0.0;   // 0 keeps the library default
   size_t pcgMaxIterations = 0; // 0 keeps the library default
+  std::string pcgPreconditioner = "block-jacobi";
+  bool pcgWarmStart = true;
   // Relative CPU/GPU final-objective tolerance. The strict default assumes a
   // direct solver; inexact PCG takes a different LM trajectory and needs an
   // explicit, recorded loosening.
@@ -206,6 +208,7 @@ std::string Usage() {
       "  [--datasets bal16,bal135,pose2,pose3] [--data-dir DIR]\n"
       "  [--json FILE] [--csv FILE]\n"
       "  [--gpu-solver cudss|pcg] [--pcg-tol X] [--pcg-max-iters N]\n"
+      "  [--pcg-preconditioner block-jacobi|jacobi|none] [--pcg-no-warm-start]\n"
       "  [--objective-tol X] [--self-test] [--help]";
 }
 
@@ -311,6 +314,17 @@ RunOptions ParseOptions(int argc, char** argv) {
     } else if (argument == "--pcg-max-iters") {
       options.pcgMaxIterations = ParseSize(
           requireValue(&index, "--pcg-max-iters"), "--pcg-max-iters", true);
+    } else if (argument == "--pcg-preconditioner") {
+      options.pcgPreconditioner =
+          requireValue(&index, "--pcg-preconditioner");
+      if (options.pcgPreconditioner != "block-jacobi" &&
+          options.pcgPreconditioner != "jacobi" &&
+          options.pcgPreconditioner != "none") {
+        throw std::invalid_argument(
+            "--pcg-preconditioner requires block-jacobi, jacobi, or none");
+      }
+    } else if (argument == "--pcg-no-warm-start") {
+      options.pcgWarmStart = false;
     } else if (argument == "--objective-tol") {
       const std::string value = requireValue(&index, "--objective-tol");
       size_t parsedCharacters = 0;
@@ -673,6 +687,8 @@ CudaSparseLevenbergMarquardtParams MakeGpuParams(
     if (options.pcgMaxIterations > 0) {
       params.pcg.maxIterations = static_cast<int>(options.pcgMaxIterations);
     }
+    params.pcg.preconditioner = options.pcgPreconditioner;
+    params.pcg.warmStart = options.pcgWarmStart;
   }
   return params;
 }
@@ -1080,6 +1096,8 @@ std::string MakeJson(const RunOptions& options,
          << ",\"gpu_solver\":\"" << options.gpuSolver << "\""
          << ",\"pcg_tolerance\":" << options.pcgTolerance
          << ",\"pcg_max_iterations\":" << options.pcgMaxIterations
+         << ",\"pcg_preconditioner\":\"" << options.pcgPreconditioner << "\""
+         << ",\"pcg_warm_start\":" << (options.pcgWarmStart ? "true" : "false")
          << ",\"objective_relative_tolerance\":" << kObjectiveTolerance
          << ",\"gpu_objective_relative_tolerance\":"
          << options.objectiveTolerance
