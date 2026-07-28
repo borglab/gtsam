@@ -22,6 +22,8 @@
 #include <gtsam/constrained/QcqpProblem.h>
 #include <gtsam/constrained/QpCost.h>
 #include <gtsam/constrained/QuadraticConstraint.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/SO3.h>
 #include <gtsam/inference/Symbol.h>
@@ -29,6 +31,7 @@
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/FrobeniusFactor.h>
 
+#include <array>
 #include <cmath>
 #include <string>
 #include <vector>
@@ -706,6 +709,244 @@ TEST(QcqpProblem, Rot2QcqpConstraintsAreDIndependent) {
   }
 }
 
+// For Rot3 at D=1, x=[1; vec(R)] uses column-major matrix coordinates and
+// satisfies the ten homogeneous SO(3) constraints.
+TEST(QcqpProblem, Rot3D1QcqpValueConstraints) {
+  const Rot3 R = Rot3::Expmap((Vector3() << 0.4, -0.1, 0.7).finished());
+  const Matrix3 rotation = R.matrix();
+  const Matrix X = traits<Rot3>::template QcqpValue<1>(R);
+  LONGS_EQUAL(10, X.rows());
+  LONGS_EQUAL(1, X.cols());
+
+  Vector10 expected;
+  expected(0) = 1.0;
+  expected.tail<9>() = Eigen::Map<const Vector9>(rotation.data());
+  EXPECT(assert_equal(Vector(expected), Vector(X.col(0)), 1e-12));
+
+  const auto constraints = traits<Rot3>::template QcqpConstraints<1>();
+  LONGS_EQUAL(10, constraints.size());
+  for (const auto& [A, b] : constraints) {
+    LONGS_EQUAL(10, A.rows());
+    LONGS_EQUAL(10, A.cols());
+    EXPECT(assert_equal(A, Matrix(A.transpose()), 1e-12));
+    EXPECT_DOUBLES_EQUAL(b, (X.transpose() * A * X).trace(), 1e-12);
+  }
+
+  Matrix3 raw;
+  raw << 1.0, 2.0, 3.0, 4.0, 5.0, 7.0, 8.0, 9.0, 11.0;
+  Vector10 rawX;
+  rawX(0) = 1.0;
+  rawX.tail<9>() = Eigen::Map<const Vector9>(raw.data());
+  const Vector3 expectedOrientation =
+      raw.col(1).cross(raw.col(2)) - raw.col(0);
+  for (int k = 0; k < 3; ++k) {
+    EXPECT_DOUBLES_EQUAL(
+        expectedOrientation(k),
+        (rawX.transpose() * constraints[k + 1].first * rawX)(0, 0), 1e-12);
+  }
+
+  const Matrix3 RRt = raw * raw.transpose();
+  const std::array<std::pair<int, int>, 6> upperTriangle = {
+      std::pair<int, int>{0, 0}, {0, 1}, {0, 2},
+      {1, 1},                {1, 2}, {2, 2}};
+  for (size_t k = 0; k < upperTriangle.size(); ++k) {
+    const auto [row, col] = upperTriangle[k];
+    EXPECT_DOUBLES_EQUAL(
+        RRt(row, col),
+        (rawX.transpose() * constraints[k + 4].first * rawX)(0, 0), 1e-12);
+  }
+
+  NonlinearEqualityConstraints insertedConstraints;
+  InsertQcqpConstraints<Rot3, 1>(x0, &insertedConstraints);
+  Values values;
+  values.insert(x0, X);
+  EXPECT_DOUBLES_EQUAL(0.0, insertedConstraints.violationNorm(values), 1e-12);
+
+  Values negatedValues;
+  negatedValues.insert(x0, -X);
+  EXPECT_DOUBLES_EQUAL(0.0, insertedConstraints.violationNorm(negatedValues),
+                       1e-12);
+
+  Matrix3 reflection = Matrix3::Identity();
+  reflection(2, 2) = -1.0;
+  Vector10 reflectedX;
+  reflectedX(0) = 1.0;
+  reflectedX.tail<9>() = Eigen::Map<const Vector9>(reflection.data());
+  EXPECT(std::abs((reflectedX.transpose() * constraints[1].first *
+                   reflectedX)(0, 0) -
+                  constraints[1].second) >
+         1e-12);
+  for (size_t k = 4; k < constraints.size(); ++k) {
+    EXPECT_DOUBLES_EQUAL(
+        constraints[k].second,
+        (reflectedX.transpose() * constraints[k].first * reflectedX)(0, 0),
+        1e-12);
+  }
+}
+
+// Pose2 D=1 retains the first two homogeneous rows in column-major order and
+// embeds the five SO(2) constraints without constraining translation.
+TEST(QcqpProblem, Pose2D1QcqpValueConstraints) {
+  const Pose2 pose(Rot2::fromAngle(0.4), Point2(2.0, -3.0));
+  const Matrix3 T = pose.matrix();
+  const Matrix X = traits<Pose2>::template QcqpValue<1>(pose);
+  LONGS_EQUAL(7, X.rows());
+  LONGS_EQUAL(1, X.cols());
+
+  Vector7 expected;
+  expected << 1.0, T(0, 0), T(1, 0), T(0, 1), T(1, 1), T(0, 2),
+      T(1, 2);
+  EXPECT(assert_equal(Vector(expected), Vector(X.col(0)), 1e-12));
+
+  const auto constraints = traits<Pose2>::template QcqpConstraints<1>();
+  LONGS_EQUAL(5, constraints.size());
+  for (const auto& [A, b] : constraints) {
+    LONGS_EQUAL(7, A.rows());
+    LONGS_EQUAL(7, A.cols());
+    EXPECT(assert_equal(A, Matrix(A.transpose()), 1e-12));
+    EXPECT(A.bottomRows(2).isZero(0.0));
+    EXPECT(A.rightCols(2).isZero(0.0));
+    EXPECT_DOUBLES_EQUAL(b, (X.transpose() * A * X).trace(), 1e-12);
+  }
+
+  Matrix2 rawR;
+  rawR << 1.0, 2.0, 3.0, 5.0;
+  Vector7 rawX;
+  rawX << 1.0, rawR(0, 0), rawR(1, 0), rawR(0, 1), rawR(1, 1),
+      7.0, 11.0;
+  const Matrix2 RRt = rawR * rawR.transpose();
+  const std::array<double, 5> expectedForms = {
+      1.0, rawR.determinant(), RRt(0, 0), RRt(0, 1), RRt(1, 1)};
+  for (size_t k = 0; k < constraints.size(); ++k) {
+    EXPECT_DOUBLES_EQUAL(
+        expectedForms[k],
+        (rawX.transpose() * constraints[k].first * rawX)(0, 0), 1e-12);
+  }
+
+  Vector7 translatedX = rawX;
+  translatedX.tail<2>() << -13.0, 17.0;
+  for (const auto& [A, b] : constraints) {
+    (void)b;
+    EXPECT_DOUBLES_EQUAL((rawX.transpose() * A * rawX)(0, 0),
+                         (translatedX.transpose() * A * translatedX)(0, 0),
+                         1e-12);
+  }
+
+  NonlinearEqualityConstraints insertedConstraints;
+  InsertQcqpConstraints<Pose2, 1>(x0, &insertedConstraints);
+  Values values;
+  values.insert(x0, X);
+  EXPECT_DOUBLES_EQUAL(0.0, insertedConstraints.violationNorm(values), 1e-12);
+
+  Values negatedValues;
+  negatedValues.insert(x0, -X);
+  EXPECT_DOUBLES_EQUAL(0.0, insertedConstraints.violationNorm(negatedValues),
+                       1e-12);
+
+  Vector7 reflectedX;
+  reflectedX << 1.0, 1.0, 0.0, 0.0, -1.0, 2.0, -3.0;
+  EXPECT(std::abs((reflectedX.transpose() * constraints[1].first *
+                   reflectedX)(0, 0) -
+                  constraints[1].second) >
+         1e-12);
+  for (size_t k = 2; k < constraints.size(); ++k) {
+    EXPECT_DOUBLES_EQUAL(
+        constraints[k].second,
+        (reflectedX.transpose() * constraints[k].first * reflectedX)(0, 0),
+        1e-12);
+  }
+}
+
+// Pose3 D=1 retains the first three homogeneous rows in column-major order and
+// embeds the ten SO(3) constraints without constraining translation.
+TEST(QcqpProblem, Pose3D1QcqpValueConstraints) {
+  const Pose3 pose(
+      Rot3::Expmap((Vector3() << 0.4, -0.1, 0.7).finished()),
+      Point3(2.0, -3.0, 4.0));
+  const Matrix4 T = pose.matrix();
+  const Matrix X = traits<Pose3>::template QcqpValue<1>(pose);
+  LONGS_EQUAL(13, X.rows());
+  LONGS_EQUAL(1, X.cols());
+
+  Eigen::Matrix<double, 13, 1> expected;
+  expected(0) = 1.0;
+  expected.segment<3>(1) = T.col(0).head<3>();
+  expected.segment<3>(4) = T.col(1).head<3>();
+  expected.segment<3>(7) = T.col(2).head<3>();
+  expected.segment<3>(10) = T.col(3).head<3>();
+  EXPECT(assert_equal(Vector(expected), Vector(X.col(0)), 1e-12));
+
+  const auto constraints = traits<Pose3>::template QcqpConstraints<1>();
+  LONGS_EQUAL(10, constraints.size());
+  for (const auto& [A, b] : constraints) {
+    LONGS_EQUAL(13, A.rows());
+    LONGS_EQUAL(13, A.cols());
+    EXPECT(assert_equal(A, Matrix(A.transpose()), 1e-12));
+    EXPECT(A.bottomRows(3).isZero(0.0));
+    EXPECT(A.rightCols(3).isZero(0.0));
+    EXPECT_DOUBLES_EQUAL(b, (X.transpose() * A * X).trace(), 1e-12);
+  }
+
+  Matrix3 rawR;
+  rawR << 1.0, 2.0, 3.0, 4.0, 5.0, 7.0, 8.0, 9.0, 11.0;
+  Eigen::Matrix<double, 13, 1> rawX;
+  rawX(0) = 1.0;
+  rawX.segment<9>(1) = Eigen::Map<const Vector9>(rawR.data());
+  rawX.tail<3>() << 12.0, 13.0, 14.0;
+  const Vector3 expectedOrientation =
+      rawR.col(1).cross(rawR.col(2)) - rawR.col(0);
+  for (int k = 0; k < 3; ++k) {
+    EXPECT_DOUBLES_EQUAL(
+        expectedOrientation(k),
+        (rawX.transpose() * constraints[k + 1].first * rawX)(0, 0), 1e-12);
+  }
+
+  const Matrix3 RRt = rawR * rawR.transpose();
+  const std::array<std::pair<int, int>, 6> upperTriangle = {
+      std::pair<int, int>{0, 0}, {0, 1}, {0, 2},
+      {1, 1},                {1, 2}, {2, 2}};
+  for (size_t k = 0; k < upperTriangle.size(); ++k) {
+    const auto [row, col] = upperTriangle[k];
+    EXPECT_DOUBLES_EQUAL(
+        RRt(row, col),
+        (rawX.transpose() * constraints[k + 4].first * rawX)(0, 0), 1e-12);
+  }
+
+  Eigen::Matrix<double, 13, 1> translatedX = rawX;
+  translatedX.tail<3>() << -17.0, 19.0, -23.0;
+  for (const auto& [A, b] : constraints) {
+    (void)b;
+    EXPECT_DOUBLES_EQUAL((rawX.transpose() * A * rawX)(0, 0),
+                         (translatedX.transpose() * A * translatedX)(0, 0),
+                         1e-12);
+  }
+
+  NonlinearEqualityConstraints insertedConstraints;
+  InsertQcqpConstraints<Pose3, 1>(x0, &insertedConstraints);
+  Values values;
+  values.insert(x0, X);
+  EXPECT_DOUBLES_EQUAL(0.0, insertedConstraints.violationNorm(values), 1e-12);
+
+  Values negatedValues;
+  negatedValues.insert(x0, -X);
+  EXPECT_DOUBLES_EQUAL(0.0, insertedConstraints.violationNorm(negatedValues),
+                       1e-12);
+
+  Eigen::Matrix<double, 13, 1> reflectedX;
+  reflectedX << 1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, -1.0,
+      2.0, -3.0, 4.0;
+  EXPECT(std::abs((reflectedX.transpose() * constraints[1].first *
+                   reflectedX)(0, 0) -
+                  constraints[1].second) >
+         1e-12);
+  for (size_t k = 4; k < constraints.size(); ++k) {
+    EXPECT_DOUBLES_EQUAL(
+        constraints[k].second,
+        (reflectedX.transpose() * constraints[k].first * reflectedX)(0, 0),
+        1e-12);
+  }
+}
+
 // For Rot3 at D=N=3, X=R' satisfies the six scalar equations equivalent to
 // XX'=I: three unit-row equations and three row-orthogonality equations.
 TEST(QcqpProblem, Rot3D3QcqpValueConstraints) {
@@ -735,7 +976,7 @@ TEST(QcqpProblem, Rot3D2Throws) {
                   std::invalid_argument);
 }
 
-// Rot3 has no exact D=1 lift, so conversion rejects it before building a cost.
+// Rot3 has an exact D=1 variable, but its D=1 between-cost lowering is absent.
 TEST(QcqpProblem, Rot3FrobeniusBetweenFactorD1Rejected) {
   NonlinearFactorGraph graph;
   graph.emplace_shared<FrobeniusBetweenFactor<Rot3>>(x0, x1,
