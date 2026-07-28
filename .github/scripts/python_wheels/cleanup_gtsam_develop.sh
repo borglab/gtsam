@@ -71,10 +71,18 @@ PY
   printf '%s\n' "$totp_code" | python3 -m pypi_cleanup.__init__ "$@"
 }
 
-diagnose_pypi_cleanup_failure() {
-  local version="$1"
+delete_pypi_releases() {
+  local candidates_file="$1"
+  local cleanup_password="${PYPI_CLEANUP_PASSWORD:-}"
 
-  python3 - "$PACKAGE" "$PYPI_USER" "$version" <<'PY'
+  if [[ -z "$cleanup_password" ]]; then
+    [[ -t 0 ]] || die "PYPI_CLEANUP_PASSWORD must be set for noninteractive cleanup"
+    read -rsp "Password: " cleanup_password
+    echo
+  fi
+
+  PYPI_CLEANUP_PASSWORD="$cleanup_password" \
+    python3 - "$PACKAGE" "$PYPI_USER" "$candidates_file" 3<&0 <<'PY'
 import base64
 import hashlib
 import hmac
@@ -84,14 +92,24 @@ import struct
 import sys
 import time
 from html.parser import HTMLParser
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 import requests
 
-package, username, version = sys.argv[1:4]
-password = os.environ.get("PYPI_CLEANUP_PASSWORD")
+package, username, candidates_file = sys.argv[1:4]
+password = os.environ["PYPI_CLEANUP_PASSWORD"]
 totp_secret = os.environ.get("PYPI_CLEANUP_TOTP_SECRET", "")
 base_url = "https://pypi.org"
+
+with open(candidates_file, encoding="utf-8") as candidates:
+    versions = [line.split("\t", 1)[0] for line in candidates if line.strip()]
+
+if not versions:
+    raise SystemExit("No releases were selected for deletion.")
+
+for version in versions:
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._+-]*", version):
+        raise SystemExit(f"Refusing unsafe release version {version!r}.")
 
 
 class FormParser(HTMLParser):
@@ -131,14 +149,28 @@ class FormParser(HTMLParser):
             self.title += data
 
 
-def csrf_for(response_text, action_pattern=None):
+def csrf_for(response_text, action_pattern=None, required_input=None):
     parser = FormParser(action_pattern)
     parser.feed(response_text)
     for form in parser.forms:
         token = form["inputs"].get("csrf_token")
-        if token:
+        if token and (required_input is None or required_input in form["inputs"]):
             return token, form
     return None, None
+
+
+def describe_forms(response):
+    parser = FormParser()
+    parser.feed(response.text)
+    title = " ".join(parser.title.split()) or "(no title)"
+    forms = [
+        {
+            "action": form["action"],
+            "fields": sorted(form["inputs"]),
+        }
+        for form in parser.forms
+    ]
+    return f"url={response.url!r}, title={title!r}, forms={forms!r}"
 
 
 def totp_code(secret):
@@ -152,39 +184,38 @@ def totp_code(secret):
     return f"{code % 1000000:06d}"
 
 
-def describe_page(response, reauth_was_required):
-    parser = FormParser()
-    parser.feed(response.text)
-    title = " ".join(parser.title.split()) or "(no title)"
-    print(f"PyPI cleanup diagnostic: GET {response.url} returned HTTP {response.status_code}, title {title!r}.")
-    if reauth_was_required and "confirm_delete_version" in response.text:
-        print("PyPI cleanup diagnostic: PyPI required password reauthentication before exposing the release delete form; pypi-cleanup 0.1.10 does not handle that flow.")
-    elif "confirm_delete_version" in response.text:
-        print("PyPI cleanup diagnostic: the release delete form is present; pypi-cleanup likely failed to parse PyPI's current HTML.")
-    elif "Confirm password to continue" in response.text or "account/reauthenticate" in response.text:
-        print("PyPI cleanup diagnostic: PyPI is requesting password reauthentication before showing the release delete form.")
-    elif "/account/login/" in response.url:
-        print("PyPI cleanup diagnostic: the session was redirected to login, so CI did not stay authenticated.")
-    elif "Delete release" not in response.text:
-        print("PyPI cleanup diagnostic: PyPI did not render release delete controls. Check that PYPI_CLEANUP_USERNAME is an Owner of the project, not only a Maintainer.")
-    else:
-        print("PyPI cleanup diagnostic: PyPI rendered the release page but not the expected confirm_delete_version input.")
+def prompt_for_authentication_code():
+    print("Authentication code: ", end="", flush=True)
+    with os.fdopen(os.dup(3), encoding="utf-8") as terminal_input:
+        authentication_code = terminal_input.readline().strip()
+    if not authentication_code:
+        raise RuntimeError(
+            "PyPI requires two-factor authentication, but no code was supplied."
+        )
+    return authentication_code
 
 
-if not username or not password:
-    print("PyPI cleanup diagnostic skipped: username or password is missing.")
-    raise SystemExit(0)
+def same_path(url, expected_path):
+    return urlparse(url).path.rstrip("/") == expected_path.rstrip("/")
+
+
+def safe_form_url(action):
+    url = urljoin(base_url, action)
+    parsed = urlparse(url)
+    if parsed.scheme != "https" or parsed.netloc != "pypi.org":
+        raise RuntimeError(f"Refusing unexpected PyPI form action {action!r}.")
+    return url
+
 
 session = requests.Session()
-session.headers.update({"User-Agent": "gtsam-pypi-cleanup-diagnostic"})
+session.headers.update({"User-Agent": "gtsam-pypi-cleanup"})
 
 login_url = f"{base_url}/account/login/"
 login_page = session.get(login_url, timeout=30)
 login_page.raise_for_status()
-csrf, _ = csrf_for(login_page.text, r"/account/login/?$")
+csrf, _ = csrf_for(login_page.text, r"^/account/login/?(?:\?|$)")
 if not csrf:
-    print("PyPI cleanup diagnostic: could not find the login CSRF token.")
-    raise SystemExit(0)
+    raise RuntimeError("Could not find the PyPI login CSRF token.")
 
 login_response = session.post(
     login_url,
@@ -193,53 +224,154 @@ login_response = session.post(
     timeout=30,
 )
 login_response.raise_for_status()
-if login_response.url.rstrip("/") == login_url.rstrip("/"):
-    print("PyPI cleanup diagnostic: PyPI rejected the username or password during login.")
-    raise SystemExit(0)
+if same_path(login_response.url, "/account/login/"):
+    raise RuntimeError("PyPI rejected the username or password.")
 
 if login_response.url.startswith(f"{base_url}/account/two-factor/"):
-    if not totp_secret:
-        print("PyPI cleanup diagnostic: PyPI requires two-factor auth, but PYPI_CLEANUP_TOTP_SECRET is not set.")
-        raise SystemExit(0)
-    csrf, _ = csrf_for(login_response.text, r"/account/two-factor/")
+    csrf, _ = csrf_for(login_response.text, r"^/account/two-factor/")
     if not csrf:
-        print("PyPI cleanup diagnostic: could not find the two-factor CSRF token.")
-        raise SystemExit(0)
+        raise RuntimeError("Could not find the PyPI two-factor CSRF token.")
+    authentication_code = (
+        totp_code(totp_secret)
+        if totp_secret
+        else prompt_for_authentication_code()
+    )
     login_response = session.post(
         login_response.url,
-        data={"csrf_token": csrf, "method": "totp", "totp_value": totp_code(totp_secret)},
+        data={
+            "csrf_token": csrf,
+            "method": "totp",
+            "totp_value": authentication_code,
+        },
         headers={"referer": login_response.url},
         timeout=30,
     )
     login_response.raise_for_status()
-    if login_response.url.startswith(f"{base_url}/account/two-factor/"):
-        print("PyPI cleanup diagnostic: PyPI rejected the generated TOTP code.")
-        raise SystemExit(0)
-
-release_url = f"{base_url}/manage/project/{package}/release/{version}/"
-release_page = session.get(release_url, timeout=30)
-release_page.raise_for_status()
-
-reauth_was_required = False
-if "Confirm password to continue" in release_page.text or "account/reauthenticate" in release_page.text:
-    reauth_was_required = True
-    csrf, form = csrf_for(release_page.text, r"/account/reauthenticate/?$")
-    if csrf and form:
-        reauth_url = urljoin(base_url, form["action"])
-        inputs = dict(form["inputs"])
-        inputs["csrf_token"] = csrf
-        inputs["password"] = password
-        reauth_response = session.post(
-            reauth_url,
-            data=inputs,
-            headers={"referer": release_page.url},
-            timeout=30,
+    if same_path(login_response.url, "/account/confirm-login/"):
+        raise RuntimeError(
+            "PyPI requires email confirmation for this public IP. Open the "
+            "newest unrecognized-login link from the same computer and network, "
+            "then rerun this script. GitHub-hosted CI cannot complete this "
+            "out-of-band confirmation with password and TOTP secrets alone."
         )
-        reauth_response.raise_for_status()
-        release_page = session.get(release_url, timeout=30)
-        release_page.raise_for_status()
+    if same_path(login_response.url, "/account/login/"):
+        raise RuntimeError(
+            "PyPI returned to the login page after two-factor authentication."
+        )
+    if login_response.url.startswith(f"{base_url}/account/two-factor/"):
+        raise RuntimeError("PyPI rejected the authentication code.")
 
-describe_page(release_page, reauth_was_required)
+
+def release_page_after_reauthentication(version):
+    release_path = f"/manage/project/{package}/release/{version}/"
+    release_url = f"{base_url}{release_path}"
+    release_page = session.get(release_url, timeout=30)
+    release_page.raise_for_status()
+
+    if (
+        "Confirm password to continue" not in release_page.text
+        and "account/reauthenticate" not in release_page.text
+    ):
+        return release_path, release_url, release_page
+
+    csrf, form = csrf_for(release_page.text, required_input="password")
+    if not csrf or not form:
+        raise RuntimeError(
+            "Could not find the PyPI reauthentication form: "
+            + describe_forms(release_page)
+        )
+
+    reauth_url = safe_form_url(form["action"])
+    if not same_path(reauth_url, "/account/reauthenticate/"):
+        raise RuntimeError(
+            f"Refusing unexpected reauthentication form action {form['action']!r}."
+        )
+    inputs = dict(form["inputs"])
+    inputs["csrf_token"] = csrf
+    inputs["password"] = password
+    reauth_response = session.post(
+        reauth_url,
+        data=inputs,
+        headers={"referer": release_page.url},
+        timeout=30,
+    )
+    reauth_response.raise_for_status()
+    if same_path(reauth_response.url, "/account/reauthenticate/"):
+        raise RuntimeError("PyPI password reauthentication failed.")
+
+    release_page = session.get(release_url, timeout=30)
+    release_page.raise_for_status()
+    if (
+        "Confirm password to continue" in release_page.text
+        or "account/reauthenticate" in release_page.text
+    ):
+        raise RuntimeError(
+            "PyPI did not accept password reauthentication: "
+            + describe_forms(release_page)
+        )
+    return release_path, release_url, release_page
+
+
+delete_requests = []
+for version in versions:
+    release_path, release_url, release_page = release_page_after_reauthentication(
+        version
+    )
+    csrf, form = csrf_for(
+        release_page.text, required_input="confirm_delete_version"
+    )
+    if not csrf or not form:
+        raise RuntimeError(
+            f"PyPI did not expose a deletion form for {package!r} {version!r}: "
+            + describe_forms(release_page)
+        )
+
+    form_url = safe_form_url(form["action"])
+    if not same_path(form_url, release_path):
+        raise RuntimeError(
+            f"Refusing unexpected deletion form action {form['action']!r}."
+        )
+    delete_requests.append((version, release_path, release_url, form_url, csrf))
+
+print(f"Validated deletion forms for all {len(delete_requests)} release(s).")
+print("Deletion starts in 5 seconds; press Ctrl-C now to abort.", flush=True)
+time.sleep(5)
+
+for version, release_path, release_url, form_url, csrf in delete_requests:
+    print(f"Deleting {package!r} version {version}...", flush=True)
+    delete_response = session.post(
+        form_url,
+        data={
+            "csrf_token": csrf,
+            "confirm_delete_version": version,
+        },
+        headers={"referer": release_url},
+        timeout=30,
+    )
+    delete_response.raise_for_status()
+    if (
+        same_path(delete_response.url, "/account/login/")
+        or same_path(delete_response.url, "/account/reauthenticate/")
+        or delete_response.url.startswith(f"{base_url}/account/two-factor/")
+    ):
+        raise RuntimeError(
+            f"PyPI requested authentication again while deleting {version!r}."
+        )
+
+    verification = session.get(release_url, allow_redirects=False, timeout=30)
+    if verification.status_code != 404:
+        release_list_path = f"/manage/project/{package}/releases/"
+        redirect_url = urljoin(
+            base_url, verification.headers.get("location", "")
+        )
+        if not verification.is_redirect or not same_path(
+            redirect_url, release_list_path
+        ):
+            raise RuntimeError(
+                f"PyPI did not confirm removal of {version!r}; "
+                "stopping before deleting another release."
+            )
+    print(f"Deleted {package!r} version {version}.", flush=True)
 PY
 }
 
@@ -432,12 +564,6 @@ if (( ! ASSUME_YES )); then
   [[ "$REPLY" == "y" || "$REPLY" == "yes" ]] || { echo "Aborted."; exit 0; }
 fi
 
-echo "Running pypi_cleanup for user '$PYPI_USER'..."
-if run_pypi_cleanup "${CLEANUP_ARGS[@]}" --do-it --yes -u "$PYPI_USER"; then
-  echo "Done."
-else
-  cleanup_status=$?
-  echo "pypi_cleanup failed; running a PyPI access diagnostic for '${DELETE_VERSIONS[0]}'..." >&2
-  diagnose_pypi_cleanup_failure "${DELETE_VERSIONS[0]}" || true
-  exit "$cleanup_status"
-fi
+echo "Authenticating with PyPI as '$PYPI_USER'..."
+delete_pypi_releases "$CANDIDATES_FILE"
+echo "Done."
