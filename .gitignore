@@ -27,7 +27,6 @@ xcode/
 
 # MyST build outputs
 _build
-GEMINI.md
 doc/#*.lyx#
 /cmake-build-debug/
 .venv/
