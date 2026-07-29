@@ -13,7 +13,7 @@ WHEEL_BUILD_JOBS=2
 export PYTHON="python${PYTHON_VERSION}"
 
 if [ "$(uname)" == "Linux" ]; then
-    # manylinux2014 is based on CentOS 7, so use yum to install dependencies
+    # Supported manylinux images use a yum-compatible package manager.
     yum install -y wget doxygen
 elif [ "$(uname)" == "Darwin" ]; then
     brew install doxygen
