@@ -7,6 +7,7 @@ set (gtsam_subdirs
     base
     basis
     constrained
+    certifiable
     geometry
     inference
     symbolic
@@ -143,6 +144,11 @@ if(GTSAM_ENABLE_CUDA)
   if(GTSAM_ENABLE_CUDSS)
     target_link_libraries(gtsam PUBLIC cudss::cudss)
   endif()
+endif()
+if(GTSAM_USE_MOSEK)
+  target_link_libraries(gtsam PRIVATE gtsam_mosek_backend)
+  set_property(TARGET gtsam APPEND PROPERTY BUILD_RPATH "${MOSEK_LIBRARY_DIR}")
+  set_property(TARGET gtsam APPEND PROPERTY INSTALL_RPATH "${MOSEK_LIBRARY_DIR}")
 endif()
 
 # Apply build flags:

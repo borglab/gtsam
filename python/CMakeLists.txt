@@ -104,6 +104,7 @@ set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/values.i
     ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/custom.i
     ${PROJECT_SOURCE_DIR}/gtsam/constrained/constrained.i
+    ${PROJECT_SOURCE_DIR}/gtsam/certifiable/certifiable.i
     ${PROJECT_SOURCE_DIR}/gtsam/symbolic/symbolic.i
     ${PROJECT_SOURCE_DIR}/gtsam/sam/sam.i
     ${PROJECT_SOURCE_DIR}/gtsam/slam/slam.i
@@ -209,15 +210,21 @@ foreach(test_file ${GTSAM_PYTHON_TEST_FILES})
 endforeach()
 file(GLOB GTSAM_PYTHON_UTIL_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/utils/*.py")
 foreach(util_file ${GTSAM_PYTHON_UTIL_FILES})
-        configure_file(${util_file} "${GTSAM_MODULE_PATH}/utils/${test_file}" COPYONLY)
+        get_filename_component(util_file_name ${util_file} NAME)
+        configure_file(${util_file}
+                "${GTSAM_MODULE_PATH}/utils/${util_file_name}" COPYONLY)
 endforeach()
 file(GLOB GTSAM_PYTHON_PREAMBLE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/preamble/*.h")
-foreach(util_file ${GTSAM_PYTHON_PREAMBLE_FILES})
-        configure_file(${util_file} "${GTSAM_MODULE_PATH}/preamble/${test_file}" COPYONLY)
+foreach(preamble_file ${GTSAM_PYTHON_PREAMBLE_FILES})
+        get_filename_component(preamble_file_name ${preamble_file} NAME)
+        configure_file(${preamble_file}
+                "${GTSAM_MODULE_PATH}/preamble/${preamble_file_name}" COPYONLY)
 endforeach()
 file(GLOB GTSAM_PYTHON_SPECIALIZATION_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/specializations/*.h")
-foreach(util_file ${GTSAM_PYTHON_SPECIALIZATION_FILES})
-        configure_file(${util_file} "${GTSAM_MODULE_PATH}/specializations/${test_file}" COPYONLY)
+foreach(specialization_file ${GTSAM_PYTHON_SPECIALIZATION_FILES})
+        get_filename_component(specialization_file_name ${specialization_file} NAME)
+        configure_file(${specialization_file}
+                "${GTSAM_MODULE_PATH}/specializations/${specialization_file_name}" COPYONLY)
 endforeach()
 
 # Common directory for data/datasets stored with the package.

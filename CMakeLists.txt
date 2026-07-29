@@ -130,6 +130,7 @@ include(cmake/HandleEigen.cmake)            # Eigen3
 include(cmake/HandleMetis.cmake)            # metis
 include(cmake/HandleCephes.cmake)           # cephes
 include(cmake/HandleMKL.cmake)              # MKL
+include(cmake/HandleMOSEK.cmake)            # MOSEK SDP solver, optional
 include(cmake/HandleOpenMP.cmake)           # OpenMP
 include(cmake/HandlePerfTools.cmake)        # Google perftools
 include(cmake/HandlePython.cmake)           # Python options and commands
