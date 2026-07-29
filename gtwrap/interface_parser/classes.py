@@ -23,6 +23,7 @@ from .tokens import (CLASS, COLON, CONST, DUNDER, IDENT, LBRACE, LPAREN,
 from .type import TemplatedType, Typename
 from .utils import collect_namespaces
 from .variable import Variable
+from .diagnostics import semantic_error
 
 
 class Method:
@@ -133,18 +134,23 @@ class Constructor:
         + ArgumentList.rule("args_list")  #
         + RPAREN  #
         + SEMI_COLON  # BR
-    ).setParseAction(lambda t: Constructor(t.name, t.args_list, t.template))
+    ).setParseAction(lambda s, loc, t: Constructor(
+        t.name, t.args_list, t.template, source=s, location=loc))
 
     def __init__(self,
                  name: str,
                  args: ArgumentList,
                  template: Union[Template, Any],
-                 parent: Union["Class", Any] = ''):
+                 parent: Union["Class", Any] = '',
+                 source: str = '',
+                 location: int = 0):
         self.name = name
         self.args = args
         self.template = template
 
         self.parent = parent
+        self.source = source
+        self.location = location
 
     def __repr__(self) -> str:
         return "Constructor: {}{}".format(self.name, self.args)
@@ -169,8 +175,15 @@ class Operator:
         + RPAREN  #
         + CONST("is_const")  #
         + SEMI_COLON  # BR
-    ).setParseAction(lambda t: Operator(t.name, t.operator, t.return_type, t.
-                                        args_list, t.is_const))
+    ).setParseAction(lambda s, loc, t: Operator(
+        t.name,
+        t.operator,
+        t.return_type,
+        t.args_list,
+        t.is_const,
+        source=s,
+        location=loc,
+    ))
 
     def __init__(self,
                  name: str,
@@ -178,7 +191,9 @@ class Operator:
                  return_type: ReturnType,
                  args: ArgumentList,
                  is_const: str,
-                 parent: Union["Class", Any] = ''):
+                 parent: Union["Class", Any] = '',
+                 source: str = '',
+                 location: int = 0):
         self.name = name
         self.operator = operator
         self.return_type = return_type
@@ -187,21 +202,41 @@ class Operator:
         self.is_unary = len(args) == 0
 
         self.parent = parent
+        self.source = source
+        self.location = location
 
         # Check for valid unary operators
         if self.is_unary and self.operator not in ('+', '-'):
-            raise ValueError("Invalid unary operator {} used for {}".format(
-                self.operator, self))
+            raise semantic_error(
+                source,
+                location,
+                "operator declaration",
+                f"unsupported unary operator '{self.operator}'",
+            )
 
         # Check that number of arguments are either 0 or 1
-        assert 0 <= len(args) < 2, \
-            "Operator overload should be at most 1 argument, " \
-                "{} arguments provided".format(len(args))
+        if not 0 <= len(args) < 2:
+            raise semantic_error(
+                source,
+                location,
+                "operator declaration",
+                "operator overload must have at most one argument; "
+                f"found {len(args)}",
+            )
 
         # Check to ensure arg and return type are the same.
         if len(args) == 1 and self.operator not in ("()", "[]"):
-            assert args.list()[0].ctype.typename.name == return_type.type1.typename.name, \
-                "Mixed type overloading not supported. Both arg and return type must be the same."
+            argument_type = args.list()[0].ctype.typename.name
+            return_type_name = return_type.type1.typename.name
+            if argument_type != return_type_name:
+                raise semantic_error(
+                    source,
+                    location,
+                    "operator declaration",
+                    "mixed-type operator overloads are unsupported; "
+                    f"argument type '{argument_type}' does not match return "
+                    f"type '{return_type_name}'",
+                )
 
     def __repr__(self) -> str:
         return "Operator: {}{}{}({}) {}".format(
@@ -345,8 +380,13 @@ class Class:
         # Make sure ctors' names and class name are the same.
         for ctor in self.ctors:
             if ctor.name != self.name:
-                raise ValueError("Error in constructor name! {} != {}".format(
-                    ctor.name, self.name))
+                raise semantic_error(
+                    ctor.source,
+                    ctor.location,
+                    "constructor declaration",
+                    f"constructor name '{ctor.name}' must match class "
+                    f"name '{self.name}'",
+                )
 
         for ctor in self.ctors:
             ctor.parent = self
