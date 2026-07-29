@@ -440,8 +440,6 @@ NonlinearFactorGraph buildBatchSfmGraph(const SfmData& db,
         const SfmMeasurement& measurement = measurementsForTrack[i];
         measurements[C(measurement.first)] = measurement.second;
       }
-      if (measurements.size() < 2) continue;
-
       auto batch = std::make_shared<BatchFactor<SfmFactor, 2>>(measurements, P(j),
                                                               gNoiseModel);
       batch->setUseHessianFactor(useHessianFactor);

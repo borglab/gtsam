@@ -4,12 +4,42 @@
 
 #include <cuda_runtime_api.h>
 
+#include <chrono>
 #include <cstddef>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
 namespace gtsam::cuda {
+
+struct CudaDeviceTransferTiming {
+  size_t bytes = 0;
+  double resizeElapsed = 0.0;
+  double copyElapsed = 0.0;
+};
+
+struct CudaDeviceTransferSummary {
+  size_t bytes = 0;
+  double resizeElapsed = 0.0;
+  double copyElapsed = 0.0;
+
+  void add(const CudaDeviceTransferTiming& timing) {
+    bytes += timing.bytes;
+    resizeElapsed += timing.resizeElapsed;
+    copyElapsed += timing.copyElapsed;
+  }
+};
+
+namespace internal {
+
+inline double CudaTransferElapsedSince(
+    std::chrono::steady_clock::time_point start) {
+  return std::chrono::duration<double>(std::chrono::steady_clock::now() -
+                                       start)
+      .count();
+}
+
+}  // namespace internal
 
 template <typename T>
 class CudaDeviceArray {
@@ -61,6 +91,24 @@ class CudaDeviceArray {
                                      cudaMemcpyHostToDevice, stream));
   }
 
+  CudaDeviceTransferTiming uploadProfiled(
+      const std::vector<T>& host, cudaStream_t stream = nullptr) {
+    CudaDeviceTransferTiming timing;
+    timing.bytes = sizeof(T) * host.size();
+
+    const auto resizeStart = std::chrono::steady_clock::now();
+    resize(host.size());
+    timing.resizeElapsed = internal::CudaTransferElapsedSince(resizeStart);
+
+    if (host.empty()) return timing;
+    const auto copyStart = std::chrono::steady_clock::now();
+    GTSAM_CUDA_CHECK(cudaMemcpyAsync(data_, host.data(), sizeof(T) * size_,
+                                     cudaMemcpyHostToDevice, stream));
+    GTSAM_CUDA_CHECK(cudaStreamSynchronize(stream));
+    timing.copyElapsed = internal::CudaTransferElapsedSince(copyStart);
+    return timing;
+  }
+
   // Fills the allocation with bitwise zero.
   void zero(cudaStream_t stream = nullptr) {
     if (size_ == 0) return;
@@ -81,6 +129,24 @@ class CudaDeviceArray {
     if (size_ == 0) return;
     GTSAM_CUDA_CHECK(cudaMemcpyAsync(host->data(), data_, sizeof(T) * size_,
                                      cudaMemcpyDeviceToHost, stream));
+  }
+
+  CudaDeviceTransferTiming downloadProfiled(
+      std::vector<T>* host, cudaStream_t stream = nullptr) const {
+    CudaDeviceTransferTiming timing;
+    timing.bytes = sizeof(T) * size_;
+
+    const auto resizeStart = std::chrono::steady_clock::now();
+    host->resize(size_);
+    timing.resizeElapsed = internal::CudaTransferElapsedSince(resizeStart);
+
+    if (size_ == 0) return timing;
+    const auto copyStart = std::chrono::steady_clock::now();
+    GTSAM_CUDA_CHECK(cudaMemcpyAsync(host->data(), data_, sizeof(T) * size_,
+                                     cudaMemcpyDeviceToHost, stream));
+    GTSAM_CUDA_CHECK(cudaStreamSynchronize(stream));
+    timing.copyElapsed = internal::CudaTransferElapsedSince(copyStart);
+    return timing;
   }
 
   void reset() {

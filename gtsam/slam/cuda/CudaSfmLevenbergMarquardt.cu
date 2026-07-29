@@ -2,6 +2,7 @@
 #include <gtsam/base/cuda/CudaDeviceArray.h>
 #include <gtsam/base/cuda/CudaErrors.h>
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/nonlinear/BatchFactor.h>
 #include <gtsam/nonlinear/internal/NonlinearOptimizerState.h>
 #include <gtsam/nonlinear/cuda/CudssLinearSolver.h>
 #include <gtsam/nonlinear/cuda/DeviceGeometryKernels.h>
@@ -28,6 +29,7 @@ namespace {
 constexpr int kApplyDeltaBlockSize = 256;
 using Clock = std::chrono::steady_clock;
 using BundlerProjectionFactor = GeneralSFMFactor<SfmCamera, Point3>;
+using BundlerProjectionBatchFactor = BatchFactor<BundlerProjectionFactor, 2>;
 
 struct CudaSfmLmExecutionOptions {
   bool downloadOptimizedValues = true;
@@ -44,6 +46,36 @@ double ElapsedSince(Clock::time_point start) {
 double ElapsedSinceAfterSync(Clock::time_point start, cudaStream_t stream) {
   GTSAM_CUDA_CHECK(cudaStreamSynchronize(stream));
   return ElapsedSince(start);
+}
+
+double DetailedElapsedSince(bool enabled, Clock::time_point start) {
+  return enabled ? ElapsedSince(start) : 0.0;
+}
+
+double DetailedElapsedSinceAfterSync(bool enabled, Clock::time_point start,
+                                     cudaStream_t stream) {
+  return enabled ? ElapsedSinceAfterSync(start, stream) : 0.0;
+}
+
+Clock::time_point DetailedProfileStart(bool enabled) {
+  return enabled ? Clock::now() : Clock::time_point{};
+}
+
+void AddH2dTransfer(const CudaDeviceTransferSummary& transfer,
+                    CudaSfmLevenbergMarquardtResult* result) {
+  result->totalH2dBytes += transfer.bytes;
+  result->totalH2dCopyElapsed += transfer.copyElapsed;
+}
+
+void SetDownloadTransferProfile(
+    const CudaSfmValuesDownloadProfile& profile,
+    CudaSfmLevenbergMarquardtResult* result) {
+  result->downloadHostAllocElapsed = profile.hostAllocElapsed;
+  result->downloadD2hCopyElapsed = profile.d2h.copyElapsed;
+  result->downloadValuesBuildElapsed = profile.hostBuildElapsed;
+  result->downloadD2hBytes = profile.d2h.bytes;
+  result->totalD2hCopyElapsed = profile.d2h.copyElapsed;
+  result->totalD2hBytes = profile.d2h.bytes;
 }
 
 __global__ void ApplyDeltaKernel(
@@ -240,6 +272,125 @@ CudaSfmRobustModel ExtractProjectionRobustModel(
       "noise models");
 }
 
+void EnsureRobustModelStorage(CudaSfmFactorGraphData* converted) {
+  if (converted->hasRobustNoise) {
+    return;
+  }
+  converted->hasRobustNoise = true;
+  converted->robustModelsByTrack.resize(converted->data.numberTracks());
+  for (size_t trackIndex = 0; trackIndex < converted->data.numberTracks();
+       ++trackIndex) {
+    converted->robustModelsByTrack[trackIndex].assign(
+        converted->data.track(trackIndex).numberMeasurements(),
+        CudaSfmProjectionBatch::NoRobustModel());
+  }
+}
+
+void AppendProjectionFactorWithSlotsToCudaSfmData(
+    const BundlerProjectionFactor& sfmFactor, size_t cameraSlot,
+    size_t pointSlot, CudaSfmFactorGraphData* converted) {
+  SharedNoiseModel model = sfmFactor.noiseModel();
+  CudaSfmRobustModel robustModel =
+      CudaSfmProjectionBatch::NoRobustModel();
+  if (model && !model->isUnit()) {
+    if (const auto robust =
+            std::dynamic_pointer_cast<noiseModel::Robust>(model)) {
+      EnsureRobustModelStorage(converted);
+      robustModel = ExtractProjectionRobustModel(robust->robust());
+      model = robust->noise();
+    }
+  }
+  bool factorHasNonUnitNoise = false;
+  const CudaSfmSqrtInfo2 sqrtInfo =
+      ExtractProjectionSqrtInfo(model, &factorHasNonUnitNoise);
+  converted->hasNonUnitNoise =
+      converted->hasNonUnitNoise || factorHasNonUnitNoise;
+
+  converted->data.tracks[pointSlot].measurements.emplace_back(
+      cameraSlot, sfmFactor.measured());
+  converted->sqrtInfoByTrack[pointSlot].push_back(sqrtInfo);
+  if (converted->hasRobustNoise) {
+    converted->robustModelsByTrack[pointSlot].push_back(robustModel);
+  }
+}
+
+size_t FindRequiredSlot(const std::unordered_map<Key, size_t>& slots, Key key,
+                        const char* description) {
+  const auto slot = slots.find(key);
+  if (slot == slots.end()) {
+    throw std::invalid_argument(description);
+  }
+  return slot->second;
+}
+
+void AppendProjectionFactorToCudaSfmData(
+    const BundlerProjectionFactor& sfmFactor,
+    const std::unordered_map<Key, size_t>& cameraSlots,
+    const std::unordered_map<Key, size_t>& pointSlots,
+    CudaSfmFactorGraphData* converted) {
+  const size_t cameraSlot = FindRequiredSlot(
+      cameraSlots, sfmFactor.key1(),
+      "CUDA SFM conversion found a factor camera key missing from Values");
+  const size_t pointSlot = FindRequiredSlot(
+      pointSlots, sfmFactor.key2(),
+      "CUDA SFM conversion found a factor point key missing from Values");
+  AppendProjectionFactorWithSlotsToCudaSfmData(sfmFactor, cameraSlot, pointSlot,
+                                               converted);
+}
+
+void AppendProjectionBatchFactorToCudaSfmData(
+    const BundlerProjectionBatchFactor& batchFactor,
+    const std::unordered_map<Key, size_t>& cameraSlots,
+    const std::unordered_map<Key, size_t>& pointSlots,
+    CudaSfmFactorGraphData* converted) {
+  const auto& factors = batchFactor.factors();
+  if (factors.empty()) {
+    return;
+  }
+
+  const Key firstCameraKey = factors.front().key1();
+  const Key firstPointKey = factors.front().key2();
+  bool fixedCamera = true;
+  bool fixedPoint = true;
+  for (const BundlerProjectionFactor& sfmFactor : factors) {
+    fixedCamera = fixedCamera && sfmFactor.key1() == firstCameraKey;
+    fixedPoint = fixedPoint && sfmFactor.key2() == firstPointKey;
+  }
+
+  if (fixedPoint) {
+    const size_t pointSlot = FindRequiredSlot(
+        pointSlots, firstPointKey,
+        "CUDA SFM conversion found a batch factor point key missing from Values");
+    for (const BundlerProjectionFactor& sfmFactor : factors) {
+      const size_t cameraSlot = FindRequiredSlot(
+          cameraSlots, sfmFactor.key1(),
+          "CUDA SFM conversion found a factor camera key missing from Values");
+      AppendProjectionFactorWithSlotsToCudaSfmData(
+          sfmFactor, cameraSlot, pointSlot, converted);
+    }
+    return;
+  }
+
+  if (fixedCamera) {
+    const size_t cameraSlot = FindRequiredSlot(
+        cameraSlots, firstCameraKey,
+        "CUDA SFM conversion found a batch factor camera key missing from Values");
+    for (const BundlerProjectionFactor& sfmFactor : factors) {
+      const size_t pointSlot = FindRequiredSlot(
+          pointSlots, sfmFactor.key2(),
+          "CUDA SFM conversion found a factor point key missing from Values");
+      AppendProjectionFactorWithSlotsToCudaSfmData(
+          sfmFactor, cameraSlot, pointSlot, converted);
+    }
+    return;
+  }
+
+  for (const BundlerProjectionFactor& sfmFactor : factors) {
+    AppendProjectionFactorToCudaSfmData(sfmFactor, cameraSlots, pointSlots,
+                                        converted);
+  }
+}
+
 void IncreaseLambda(const CudaSfmLevenbergMarquardtParams& params,
                     double* lambda, double* currentFactor) {
   *lambda *= *currentFactor;
@@ -289,6 +440,7 @@ CudaSfmLevenbergMarquardtParams::CudaSfmLevenbergMarquardtParams()
       minModelFidelity(1e-3),
       useFixedLambdaFactor(true),
       diagonalDamping(false),
+      enableDetailedProfiling(false),
       minDiagonal(1e-6),
       maxDiagonal(1e32),
       linearSolver(CudaSfmLinearSolverType::DenseSchur) {}
@@ -356,9 +508,30 @@ void CudaSfmLevenbergMarquardtParams::print(const std::string& str) const {
   std::cout << "           minModelFidelity: " << minModelFidelity << "\n";
   std::cout << "       useFixedLambdaFactor: " << useFixedLambdaFactor << "\n";
   std::cout << "            diagonalDamping: " << diagonalDamping << "\n";
+  std::cout << "     enableDetailedProfiling: " << enableDetailedProfiling
+            << "\n";
   std::cout << "                minDiagonal: " << minDiagonal << "\n";
   std::cout << "                maxDiagonal: " << maxDiagonal << "\n";
   std::cout << "               linearSolver: " << getLinearSolver() << "\n";
+}
+
+bool CudaSfmLevenbergMarquardtParams::equals(
+    const CudaSfmLevenbergMarquardtParams& other, double tol) const {
+  return maxIterations == other.maxIterations &&
+         std::abs(lambdaInitial - other.lambdaInitial) <= tol &&
+         std::abs(lambdaFactor - other.lambdaFactor) <= tol &&
+         std::abs(lambdaUpperBound - other.lambdaUpperBound) <= tol &&
+         std::abs(lambdaLowerBound - other.lambdaLowerBound) <= tol &&
+         std::abs(relativeErrorTol - other.relativeErrorTol) <= tol &&
+         std::abs(absoluteErrorTol - other.absoluteErrorTol) <= tol &&
+         std::abs(errorTol - other.errorTol) <= tol &&
+         std::abs(minModelFidelity - other.minModelFidelity) <= tol &&
+         useFixedLambdaFactor == other.useFixedLambdaFactor &&
+         diagonalDamping == other.diagonalDamping &&
+         enableDetailedProfiling == other.enableDetailedProfiling &&
+         std::abs(minDiagonal - other.minDiagonal) <= tol &&
+         std::abs(maxDiagonal - other.maxDiagonal) <= tol &&
+         linearSolver == other.linearSolver;
 }
 
 CudaSfmFactorGraphData ConvertGeneralSfmGraphToCudaSfmData(
@@ -394,58 +567,23 @@ CudaSfmFactorGraphData ConvertGeneralSfmGraphToCudaSfmData(
       continue;
     }
 
-    const auto sfmFactor =
-        std::dynamic_pointer_cast<BundlerProjectionFactor>(factor);
-    if (!sfmFactor) {
-      throw std::invalid_argument(
-          "CUDA SFM conversion only supports GeneralSFMFactor<SfmCamera, "
-          "Point3>");
+    if (const auto sfmFactor =
+            std::dynamic_pointer_cast<BundlerProjectionFactor>(factor)) {
+      AppendProjectionFactorToCudaSfmData(*sfmFactor, cameraSlots, pointSlots,
+                                          &converted);
+      continue;
     }
 
-    SharedNoiseModel model = sfmFactor->noiseModel();
-    CudaSfmRobustModel robustModel =
-        CudaSfmProjectionBatch::NoRobustModel();
-    if (model && !model->isUnit()) {
-      if (const auto robust =
-              std::dynamic_pointer_cast<noiseModel::Robust>(model)) {
-        if (!converted.hasRobustNoise) {
-          converted.hasRobustNoise = true;
-          converted.robustModelsByTrack.resize(converted.data.numberTracks());
-          for (size_t trackIndex = 0; trackIndex < converted.data.numberTracks();
-               ++trackIndex) {
-            converted.robustModelsByTrack[trackIndex].assign(
-                converted.data.track(trackIndex).numberMeasurements(),
-                CudaSfmProjectionBatch::NoRobustModel());
-          }
-        }
-        robustModel = ExtractProjectionRobustModel(robust->robust());
-        model = robust->noise();
-      }
-    }
-    bool factorHasNonUnitNoise = false;
-    const CudaSfmSqrtInfo2 sqrtInfo =
-        ExtractProjectionSqrtInfo(model, &factorHasNonUnitNoise);
-    converted.hasNonUnitNoise =
-        converted.hasNonUnitNoise || factorHasNonUnitNoise;
-
-    const auto cameraSlot = cameraSlots.find(sfmFactor->key1());
-    if (cameraSlot == cameraSlots.end()) {
-      throw std::invalid_argument(
-          "CUDA SFM conversion found a factor camera key missing from Values");
+    if (const auto batchFactor =
+            std::dynamic_pointer_cast<BundlerProjectionBatchFactor>(factor)) {
+      AppendProjectionBatchFactorToCudaSfmData(*batchFactor, cameraSlots,
+                                               pointSlots, &converted);
+      continue;
     }
 
-    const auto pointSlot = pointSlots.find(sfmFactor->key2());
-    if (pointSlot == pointSlots.end()) {
-      throw std::invalid_argument(
-          "CUDA SFM conversion found a factor point key missing from Values");
-    }
-
-    converted.data.tracks[pointSlot->second].measurements.emplace_back(
-        cameraSlot->second, sfmFactor->measured());
-    converted.sqrtInfoByTrack[pointSlot->second].push_back(sqrtInfo);
-    if (converted.hasRobustNoise) {
-      converted.robustModelsByTrack[pointSlot->second].push_back(robustModel);
-    }
+    throw std::invalid_argument(
+        "CUDA SFM conversion only supports GeneralSFMFactor<SfmCamera, "
+        "Point3> or BatchFactor<GeneralSFMFactor<SfmCamera, Point3>, 2>");
   }
 
   return converted;
@@ -471,23 +609,38 @@ CudaSfmLevenbergMarquardtOptimizer::CudaSfmLevenbergMarquardtOptimizer(
       baseParams_(BaseParamsAdapter(params)) {}
 
 const Values& CudaSfmLevenbergMarquardtOptimizer::optimize() {
-  const CudaSfmFactorGraphData converted =
-      ConvertGeneralSfmGraphToCudaSfmData(graph(), values());
-  result_ = OptimizeCudaSfmImpl(
-      converted.data, converted.cameraKeys, converted.pointKeys, params_,
-      (converted.hasNonUnitNoise || converted.hasRobustNoise)
-          ? &converted.sqrtInfoByTrack
-          : nullptr,
-      converted.hasRobustNoise ? &converted.robustModelsByTrack : nullptr,
-      CudaSfmLmExecutionOptions{true});
+  auto stageStart = Clock::now();
+  auto convertedDestructionStart = Clock::now();
+  {
+    const CudaSfmFactorGraphData converted =
+        ConvertGeneralSfmGraphToCudaSfmData(graph(), values());
+    const double graphConversionElapsed = ElapsedSince(stageStart);
 
-  Values merged(values());
-  for (Key key : result_.optimizedValues.keys()) {
-    merged.update(key, result_.optimizedValues.at(key));
+    stageStart = Clock::now();
+    result_ = OptimizeCudaSfmImpl(
+        converted.data, converted.cameraKeys, converted.pointKeys, params_,
+        (converted.hasNonUnitNoise || converted.hasRobustNoise)
+            ? &converted.sqrtInfoByTrack
+            : nullptr,
+        converted.hasRobustNoise ? &converted.robustModelsByTrack : nullptr,
+        CudaSfmLmExecutionOptions{true});
+    result_.graphBackendCallElapsed = ElapsedSince(stageStart);
+    result_.graphConversionElapsed = graphConversionElapsed;
+
+    stageStart = Clock::now();
+    Values merged(values());
+    for (Key key : result_.optimizedValues.keys()) {
+      merged.update(key, result_.optimizedValues.at(key));
+    }
+    state_ = std::unique_ptr<gtsam::internal::NonlinearOptimizerState>(
+        new gtsam::internal::NonlinearOptimizerState(
+            std::move(merged), result_.finalError, result_.iterations));
+    result_.graphValueMergeElapsed = ElapsedSince(stageStart);
+
+    convertedDestructionStart = Clock::now();
   }
-  state_ = std::unique_ptr<gtsam::internal::NonlinearOptimizerState>(
-      new gtsam::internal::NonlinearOptimizerState(
-          std::move(merged), result_.finalError, result_.iterations));
+  result_.graphConvertedDataDestructionElapsed =
+      ElapsedSince(convertedDestructionStart);
   return values();
 }
 
@@ -552,6 +705,7 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
 #endif
 
   CudaSfmLevenbergMarquardtResult result;
+  const bool detailedProfiling = params.enableDetailedProfiling;
   const auto totalStart = Clock::now();
 
   auto stageStart = Clock::now();
@@ -563,10 +717,20 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
   // SFM data again. Consider constructing the projection batch from existing
   // device buffers or sharing the packed representation.
   stageStart = Clock::now();
+  CudaSfmValuesPackProfile packValuesProfile;
   DeviceValues current =
-      PackSfmValues(data, cameraKeys, pointKeys, context.stream());
+      PackSfmValues(data, cameraKeys, pointKeys, context.stream(),
+                    detailedProfiling ? &packValuesProfile : nullptr);
   result.packValuesElapsed =
       ElapsedSinceAfterSync(stageStart, context.stream());
+  if (detailedProfiling) {
+    result.packValuesHostBuildElapsed = packValuesProfile.hostBuildElapsed;
+    result.packValuesDeviceAllocElapsed =
+        packValuesProfile.deviceAllocElapsed;
+    result.packValuesH2dCopyElapsed = packValuesProfile.h2d.copyElapsed;
+    result.packValuesH2dBytes = packValuesProfile.h2d.bytes;
+    AddH2dTransfer(packValuesProfile.h2d, &result);
+  }
 
   stageStart = Clock::now();
   DeviceValues trial = AllocateSfmValuesLike(current);
@@ -577,17 +741,36 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
     throw std::invalid_argument(
         "OptimizeCudaSfm robust noise requires projection sqrt-info");
   }
+  CudaSfmProjectionBatchTransferProfile projectionBatchProfile;
   const CudaSfmProjectionBatch batch =
       robustModelsByTrack
           ? CudaSfmProjectionBatch::FromSfmData(data, *sqrtInfoByTrack,
                                                *robustModelsByTrack,
-                                               context.stream())
+                                               context.stream(),
+                                               detailedProfiling
+                                                   ? &projectionBatchProfile
+                                                   : nullptr)
       : sqrtInfoByTrack
           ? CudaSfmProjectionBatch::FromSfmData(data, *sqrtInfoByTrack,
-                                               context.stream())
-          : CudaSfmProjectionBatch::FromSfmData(data, context.stream());
+                                               context.stream(),
+                                               detailedProfiling
+                                                   ? &projectionBatchProfile
+                                                   : nullptr)
+          : CudaSfmProjectionBatch::FromSfmData(
+                data, context.stream(),
+                detailedProfiling ? &projectionBatchProfile : nullptr);
   result.projectionBatchElapsed =
       ElapsedSinceAfterSync(stageStart, context.stream());
+  if (detailedProfiling) {
+    result.projectionBatchHostBuildElapsed =
+        projectionBatchProfile.hostBuildElapsed;
+    result.projectionBatchDeviceAllocElapsed =
+        projectionBatchProfile.deviceAllocElapsed;
+    result.projectionBatchH2dCopyElapsed =
+        projectionBatchProfile.h2d.copyElapsed;
+    result.projectionBatchH2dBytes = projectionBatchProfile.h2d.bytes;
+    AddH2dTransfer(projectionBatchProfile.h2d, &result);
+  }
 
   const int numCameras = static_cast<int>(data.numberCameras());
   const int numPoints = static_cast<int>(data.numberTracks());
@@ -605,8 +788,14 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
     result.finalLambda = params.lambdaInitial;
     if (executionOptions.downloadOptimizedValues) {
       stageStart = Clock::now();
-      result.optimizedValues = DownloadSfmValues(current, context.stream());
+      CudaSfmValuesDownloadProfile downloadProfile;
+      result.optimizedValues =
+          DownloadSfmValues(current, context.stream(),
+                            detailedProfiling ? &downloadProfile : nullptr);
       result.downloadElapsed = ElapsedSince(stageStart);
+      if (detailedProfiling) {
+        SetDownloadTransferProfile(downloadProfile, &result);
+      }
     }
     result.totalMeasuredElapsed = ElapsedSince(totalStart);
     return result;
@@ -627,10 +816,19 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
     result.csrStructureElapsed = ElapsedSince(stageStart);
 
     stageStart = Clock::now();
+    CudaDeviceTransferSummary uploadPatternProfile;
     system.uploadPattern(structure.dimension(), structure.rowPointers(),
-                         structure.colIndices(), context.stream());
+                         structure.colIndices(), context.stream(),
+                         detailedProfiling ? &uploadPatternProfile : nullptr);
     result.uploadPatternElapsed =
         ElapsedSinceAfterSync(stageStart, context.stream());
+    if (detailedProfiling) {
+      result.uploadPatternDeviceAllocElapsed =
+          uploadPatternProfile.resizeElapsed;
+      result.uploadPatternH2dCopyElapsed = uploadPatternProfile.copyElapsed;
+      result.uploadPatternH2dBytes = uploadPatternProfile.bytes;
+      AddH2dTransfer(uploadPatternProfile, &result);
+    }
   }
 
   double lambda = params.lambdaInitial;
@@ -642,15 +840,36 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
   bool terminate = false;
   while (result.iterations < params.maxIterations && std::isfinite(currentError) &&
          !terminate) {
+    const auto iterationStart = DetailedProfileStart(detailedProfiling);
+    CudaSfmLmIterationProfile iterationProfile;
+    iterationProfile.iteration =
+        static_cast<int>(result.iterationProfiles.size());
+    iterationProfile.startError = currentError;
+    iterationProfile.startLambda = lambda;
+
     if (params.diagonalDamping) {
+      stageStart = DetailedProfileStart(detailedProfiling);
       ComputeCudaSfmHessianDiagonal(current, batch, numCameras,
                                     params.minDiagonal, params.maxDiagonal,
                                     &dampingDiagonal, context.stream());
+      iterationProfile.dampingDiagonalElapsed =
+          DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
+                                        context.stream());
+      result.dampingDiagonalElapsed +=
+          iterationProfile.dampingDiagonalElapsed;
     }
 
     bool acceptedOrDone = false;
+    int attemptIndex = 0;
     while (!acceptedOrDone) {
+      const auto attemptStart = DetailedProfileStart(detailedProfiling);
+      CudaSfmLmAttemptProfile attemptProfile;
+      attemptProfile.iteration = iterationProfile.iteration;
+      attemptProfile.attempt = attemptIndex++;
+      attemptProfile.lambda = lambda;
+
       if (params.linearSolver == CudaSfmLinearSolverType::DenseSchur) {
+        stageStart = DetailedProfileStart(detailedProfiling);
         if (params.diagonalDamping) {
           denseSchurSolver.solve(current, batch, numCameras, lambda,
                                  dampingDiagonal, &delta, context.stream());
@@ -658,31 +877,68 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
           denseSchurSolver.solve(current, batch, numCameras, lambda, &delta,
                                  context.stream());
         }
+        attemptProfile.denseSchurSolveElapsed =
+            DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
+                                          context.stream());
+        result.denseSchurSolveElapsed +=
+            attemptProfile.denseSchurSolveElapsed;
       } else {
+        stageStart = DetailedProfileStart(detailedProfiling);
         AccumulateCudaSfmNormalEquations(current, batch, numCameras, &system,
                                          context.stream());
+        attemptProfile.normalEquationsElapsed =
+            DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
+                                          context.stream());
+        result.normalEquationsElapsed +=
+            attemptProfile.normalEquationsElapsed;
+
+        stageStart = DetailedProfileStart(detailedProfiling);
         if (params.diagonalDamping) {
           system.addDiagonalDamping(lambda, dampingDiagonal, context.stream());
         } else {
           system.addDiagonalDamping(lambda, context.stream());
         }
+        attemptProfile.addDampingElapsed =
+            DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
+                                          context.stream());
+        result.addDampingElapsed += attemptProfile.addDampingElapsed;
+
         if (!solverAnalyzed) {
           stageStart = Clock::now();
           solver.analyze(system, &delta, context.stream());
-          result.firstCudssAnalyzeElapsed =
+          const double analyzeElapsed =
               ElapsedSinceAfterSync(stageStart, context.stream());
+          result.firstCudssAnalyzeElapsed = analyzeElapsed;
+          if (detailedProfiling) {
+            attemptProfile.cudssAnalyzeElapsed = analyzeElapsed;
+            result.cudssAnalyzeElapsed += analyzeElapsed;
+          }
           solverAnalyzed = true;
         }
+        stageStart = DetailedProfileStart(detailedProfiling);
         solver.solve(system, &delta, context.stream());
+        attemptProfile.cudssSolveElapsed =
+            DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
+                                          context.stream());
+        result.cudssSolveElapsed += attemptProfile.cudssSolveElapsed;
       }
       ++result.innerIterations;
 
       double oldLinearizedError = 0.0;
       double newLinearizedError = 0.0;
+      stageStart = DetailedProfileStart(detailedProfiling);
       const double linearizedCostChange =
           ComputeCudaSfmLinearizedErrorChange(
               current, batch, numCameras, delta, &oldLinearizedError,
               &newLinearizedError, context.stream());
+      attemptProfile.linearizedErrorElapsed =
+          DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
+                                        context.stream());
+      result.linearizedErrorElapsed +=
+          attemptProfile.linearizedErrorElapsed;
+      attemptProfile.oldLinearizedError = oldLinearizedError;
+      attemptProfile.newLinearizedError = newLinearizedError;
+      attemptProfile.linearizedCostChange = linearizedCostChange;
 
       double trialError = std::numeric_limits<double>::infinity();
       double costChange = 0.0;
@@ -691,10 +947,22 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
       bool stopSearchingLambda = false;
 
       if (linearizedCostChange >= 0.0) {
+        attemptProfile.attemptedTrial = true;
+        stageStart = DetailedProfileStart(detailedProfiling);
         ApplyDelta(current, delta, &trial, numCameras, numPoints,
                    context.stream());
+        attemptProfile.applyDeltaElapsed =
+            DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
+                                          context.stream());
+        result.applyDeltaElapsed += attemptProfile.applyDeltaElapsed;
+
+        stageStart = DetailedProfileStart(detailedProfiling);
         trialError =
             ComputeCudaSfmProjectionError(trial, batch, context.stream());
+        attemptProfile.trialErrorElapsed =
+            DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
+                                          context.stream());
+        result.trialErrorElapsed += attemptProfile.trialErrorElapsed;
         costChange = currentError - trialError;
 
         if (linearizedCostChange >
@@ -709,27 +977,64 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
           stopSearchingLambda = true;
         }
       }
+      attemptProfile.trialError = trialError;
+      attemptProfile.costChange = costChange;
+      attemptProfile.modelFidelity = modelFidelity;
+      attemptProfile.stepSuccessful = stepSuccessful;
+      attemptProfile.stopSearchingLambda = stopSearchingLambda;
 
       if (stepSuccessful) {
         const double previousError = currentError;
+        stageStart = DetailedProfileStart(detailedProfiling);
         AcceptTrial(trial, &current, context.stream());
+        iterationProfile.acceptTrialElapsed =
+            DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
+                                          context.stream());
+        result.acceptTrialElapsed += iterationProfile.acceptTrialElapsed;
         currentError = trialError;
         ++result.iterations;
         ++result.acceptedSteps;
+        stageStart = DetailedProfileStart(detailedProfiling);
         DecreaseLambda(params, modelFidelity, &lambda, &currentFactor);
         acceptedOrDone = true;
         terminate =
             CheckCudaLmConvergence(params, previousError, currentError);
+        attemptProfile.lambdaUpdateElapsed =
+            DetailedElapsedSince(detailedProfiling, stageStart);
+        result.lambdaUpdateElapsed += attemptProfile.lambdaUpdateElapsed;
+        iterationProfile.acceptedStep = true;
+        attemptProfile.accepted = true;
+        attemptProfile.terminated = terminate;
       } else if (!stopSearchingLambda) {
+        stageStart = DetailedProfileStart(detailedProfiling);
         IncreaseLambda(params, &lambda, &currentFactor);
         if (lambda >= params.lambdaUpperBound) {
           acceptedOrDone = true;
           terminate = true;
+          attemptProfile.lambdaUpperBoundReached = true;
         }
+        attemptProfile.lambdaUpdateElapsed =
+            DetailedElapsedSince(detailedProfiling, stageStart);
+        result.lambdaUpdateElapsed += attemptProfile.lambdaUpdateElapsed;
+        attemptProfile.terminated = terminate;
       } else {
         acceptedOrDone = true;
         terminate = true;
+        attemptProfile.terminated = true;
       }
+      attemptProfile.totalElapsed =
+          DetailedElapsedSince(detailedProfiling, attemptStart);
+      if (detailedProfiling) {
+        iterationProfile.attemptProfiles.push_back(attemptProfile);
+      }
+    }
+    iterationProfile.endError = currentError;
+    iterationProfile.endLambda = lambda;
+    iterationProfile.terminated = terminate;
+    iterationProfile.totalElapsed =
+        DetailedElapsedSince(detailedProfiling, iterationStart);
+    if (detailedProfiling) {
+      result.iterationProfiles.push_back(iterationProfile);
     }
   }
   GTSAM_CUDA_CHECK(cudaStreamSynchronize(context.stream()));
@@ -741,8 +1046,14 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
   result.finalLambda = lambda;
   if (executionOptions.downloadOptimizedValues) {
     stageStart = Clock::now();
-    result.optimizedValues = DownloadSfmValues(current, context.stream());
+    CudaSfmValuesDownloadProfile downloadProfile;
+    result.optimizedValues =
+        DownloadSfmValues(current, context.stream(),
+                          detailedProfiling ? &downloadProfile : nullptr);
     result.downloadElapsed = ElapsedSince(stageStart);
+    if (detailedProfiling) {
+      SetDownloadTransferProfile(downloadProfile, &result);
+    }
   }
   result.totalMeasuredElapsed = ElapsedSince(totalStart);
   return result;
