@@ -21,8 +21,8 @@ class Enumerator:
     """
     Rule to parse an enumerator inside an enum.
     """
-    rule = (
-        IDENT("enumerator")).setParseAction(lambda t: Enumerator(t.enumerator))
+    rule = (IDENT.copy().set_name("enumerator name")("enumerator")
+            ).setParseAction(lambda t: Enumerator(t.enumerator))
 
     def __init__(self, name):
         self.name = name

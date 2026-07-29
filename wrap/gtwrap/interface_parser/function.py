@@ -30,7 +30,7 @@ class Argument:
     ```
     """
     rule = ((Type.rule ^ TemplatedType.rule)("ctype")  #
-            + IDENT("name")  #
+            + IDENT.copy().set_name("argument name")("name")  #
             + Optional(EQUAL + DEFAULT_ARG)("default")
             ).setParseAction(lambda t: Argument(
                 t.ctype,  #
