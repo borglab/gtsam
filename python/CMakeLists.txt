@@ -114,6 +114,12 @@ set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/hybrid/hybrid.i
 )
 
+if(GTSAM_USE_MOSEK)
+    list(APPEND interface_headers
+        ${PROJECT_SOURCE_DIR}/gtsam/certifiable/certifiable_mosek.i
+    )
+endif()
+
 if(GTSAM_ENABLE_CUDA)
     list(APPEND interface_headers
         ${PROJECT_SOURCE_DIR}/gtsam/slam/cuda/cuda_sfm.i

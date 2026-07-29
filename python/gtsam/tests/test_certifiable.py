@@ -16,6 +16,20 @@ import numpy as np
 import gtsam
 from gtsam.symbol_shorthand import X
 
+try:
+    from gtsam import (
+        ChordalOrderingType,
+        MosekChordalSDP,
+        MosekMonolithicSDP,
+    )
+
+    HAS_MOSEK_SDP = True
+except ImportError:
+    ChordalOrderingType = None
+    MosekChordalSDP = None
+    MosekMonolithicSDP = None
+    HAS_MOSEK_SDP = False
+
 
 def staircase_params(initial_rank):
     """Return deterministic parameters for the small wrapper test problems."""
@@ -35,6 +49,34 @@ def staircase_params(initial_rank):
     params.eta = 1e-3
     params.setAlmParams(alm_params)
     return params
+
+
+def rot2_ring_qcqp(num_rotations=5):
+    """Build a gauge-fixed Rot2 ring and its exact ground-truth poses."""
+    delta = 2.0 * np.pi / num_rotations
+    ground_truth = [
+        gtsam.Rot2.fromAngle(index * delta) for index in range(num_rotations)
+    ]
+
+    graph = gtsam.NonlinearFactorGraph()
+    graph.add(
+        gtsam.FrobeniusPriorRot2(
+            X(0),
+            gtsam.Rot2.Identity().matrix(),
+            gtsam.noiseModel.Constrained.All(4),
+        )
+    )
+    for index in range(num_rotations):
+        next_index = (index + 1) % num_rotations
+        graph.add(
+            gtsam.FrobeniusBetweenFactorRot2(
+                X(index),
+                X(next_index),
+                ground_truth[index].between(ground_truth[next_index]),
+            )
+        )
+
+    return gtsam.QcqpProblem(graph), ground_truth
 
 
 class TestCertifiableWrappers(unittest.TestCase):
@@ -142,6 +184,50 @@ class TestCertifiableWrappers(unittest.TestCase):
         self.assertEqual(rounded.size(), len(ground_truth))
         for key in rounded.keys():
             self.assertEqual(rounded.atMatrix(key).shape, (3, 3))
+
+
+@unittest.skipUnless(HAS_MOSEK_SDP, "GTSAM was built without MOSEK support")
+class TestMosekCertifiableWrappers(unittest.TestCase):
+    """Exercise both optional MOSEK-backed SDP formulations."""
+
+    def assert_solver_solution(self, solver, ground_truth):
+        """Check the common solve, metadata, and Rot2 recovery surface."""
+        self.assertTrue(solver.solve())
+        self.assertTrue(solver.problemStatus())
+        self.assertTrue(np.isfinite(solver.objectiveValue()))
+        self.assertGreaterEqual(solver.solveTimeSeconds(), 0.0)
+
+        expected_keys = [X(index) for index in range(len(ground_truth))]
+        self.assertEqual(list(solver.orderedKeys()), expected_keys)
+        ordered_key_dims = solver.orderedKeyDims()
+        self.assertEqual(set(ordered_key_dims), set(expected_keys))
+        self.assertTrue(all(dimension == 5 for dimension in ordered_key_dims.values()))
+
+        solver.recoverLiftedVectors()
+        lifted_vectors = solver.getRecoveredLiftedVectors()
+        variable_evrs = solver.getRecoveredVariableEVRs()
+        self.assertEqual(len(lifted_vectors), len(ground_truth))
+        self.assertEqual(len(variable_evrs), len(ground_truth))
+        self.assertTrue(all(np.isfinite(evr) for evr in variable_evrs))
+
+        recovered_poses = solver.getRecoveredPosesRot2()
+        pose_errors = solver.getRecoveredPoseErrorNormsRot2(ground_truth)
+        self.assertEqual(len(recovered_poses), len(ground_truth))
+        self.assertEqual(len(pose_errors), len(ground_truth))
+        self.assertLess(max(pose_errors), 1e-5)
+
+    def test_monolithic_rot2_ring(self):
+        """Solve and recover a small Rot2 ring with the monolithic SDP."""
+        problem, ground_truth = rot2_ring_qcqp()
+        solver = MosekMonolithicSDP(problem)
+        self.assert_solver_solution(solver, ground_truth)
+
+    def test_chordal_rot2_ring(self):
+        """Solve and recover a small Rot2 ring with the chordal SDP."""
+        problem, ground_truth = rot2_ring_qcqp()
+        solver = MosekChordalSDP(problem, ChordalOrderingType.Colamd)
+        self.assertGreater(solver.bayesTree().size(), 0)
+        self.assert_solver_solution(solver, ground_truth)
 
 
 if __name__ == "__main__":

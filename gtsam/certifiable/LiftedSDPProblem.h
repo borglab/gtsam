@@ -287,6 +287,9 @@ class GTSAM_EXPORT LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
   struct Impl;
   std::unique_ptr<Impl> impl_;
 };
+
+typedef LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> MosekMonolithicSDP;
+typedef LiftedSDPProblem<ChordalSDP, MosekSDPSolver> MosekChordalSDP;
 #endif
 
 }  // namespace gtsam
