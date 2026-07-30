@@ -741,7 +741,7 @@ pybind11::arg py_arg(const char* name) {
             source_name: Name of the interface file for parser diagnostics.
         """
         # Parse the contents of the interface file
-        module = parser.Module.parseString(content, source_name=source_name)
+        module = parser.Module.parse_string(content, source_name=source_name)
         # Instantiate all templates
         module = instantiator.instantiate_namespace(module)
 
