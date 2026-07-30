@@ -94,11 +94,14 @@ class GTSAM_EXPORT DopplerFactor
         gtsam::NonlinearFactor::shared_ptr(new This(*this)));
   }
 
+  /// print
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
                                             DefaultKeyFormatter) const override;
+  /// equals
   bool equals(const NonlinearFactor& expected,
               double tol = 1e-9) const override;
 
+  /// vector of errors
   Vector evaluateError(const Vector3& velocity, const double& clockBiasPrev,
                        const double& clockBiasCurr,
                        OptionalMatrixType Hvelocity,
