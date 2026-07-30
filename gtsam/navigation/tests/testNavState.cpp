@@ -444,12 +444,31 @@ TEST(NavState, CorrectPIM) {
   Vector9 xi{0.1, 0.1, 0.1, 0.2, 0.3, 0.4, -0.1, -0.2, -0.3};
   double dt = 0.5;
   Matrix9 aH1, aH2;
+  Matrix93 aH3;
   auto correctPIM = std::bind(&NavState::correctPIM, std::placeholders::_1,
                 std::placeholders::_2, dt, kGravity, kOmegaCoriolis, false,
-                nullptr, nullptr);
-  kState1.correctPIM(xi, dt, kGravity, kOmegaCoriolis, false, aH1, aH2);
+                nullptr, nullptr, nullptr);
+  kState1.correctPIM(xi, dt, kGravity, kOmegaCoriolis, false, aH1, aH2, aH3);
   EXPECT(assert_equal(numericalDerivative21(correctPIM, kState1, xi), aH1));
   EXPECT(assert_equal(numericalDerivative22(correctPIM, kState1, xi), aH2));
+
+  // Check the Jacobian wrt the gravity vector:
+  auto correctPIMGravity = [&](const Vector3& gravity) {
+    return kState1.correctPIM(xi, dt, gravity, kOmegaCoriolis, false);
+  };
+  EXPECT(assert_equal(
+      numericalDerivative11<Vector9, Vector3>(correctPIMGravity, kGravity),
+      Matrix(aH3)));
+
+  // The gravity Jacobian must also be correct with coriolis disabled:
+  Matrix93 aH3NoCoriolis;
+  kState1.correctPIM(xi, dt, kGravity, {}, false, {}, {}, aH3NoCoriolis);
+  auto correctPIMNoCoriolis = [&](const Vector3& gravity) {
+    return kState1.correctPIM(xi, dt, gravity, {}, false);
+  };
+  EXPECT(assert_equal(
+      numericalDerivative11<Vector9, Vector3>(correctPIMNoCoriolis, kGravity),
+      Matrix(aH3NoCoriolis)));
 }
 
 /* ************************************************************************* */

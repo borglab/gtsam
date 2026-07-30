@@ -298,35 +298,45 @@ Vector9 NavState::coriolis(double dt, const Vector3& omega, bool secondOrder,
 Vector9 NavState::correctPIM(const Vector9& pim, double dt,
     const Vector3& n_gravity, const std::optional<Vector3>& omegaCoriolis,
     bool use2ndOrderCoriolis, OptionalJacobian<9, 9> H1,
-    OptionalJacobian<9, 9> H2) const {
+    OptionalJacobian<9, 9> H2, OptionalJacobian<9, 3> H3) const {
   const Rot3& nRb = R_;
   const Velocity3 n_v = t_.col(1); // derivative is Ri !
   const double dt22 = 0.5 * dt * dt;
 
   Vector9 xi;
-  Matrix3 D_dP_Ri1, D_dP_Ri2, D_dP_nv, D_dV_Ri;
+  Matrix3 D_dP_Ri1, D_dP_Ri2, D_dP_nv;
+  // The gravity contributions to the position and velocity rows share both
+  // the unrotated vector and the Jacobians wrt rotation and wrt gravity.
+  Matrix3 D_bGravity_nGravity;
+  const Vector3 b_gravity = nRb.unrotate(n_gravity, H1 ? &D_dP_Ri2 : 0,
+                                         H3 ? &D_bGravity_nGravity : 0);
   dR(xi) = dR(pim);
   dP(xi) = dP(pim)
       + dt * nRb.unrotate(n_v, H1 ? &D_dP_Ri1 : 0, H2 ? &D_dP_nv : 0)
-      + dt22 * nRb.unrotate(n_gravity, H1 ? &D_dP_Ri2 : 0);
-  dV(xi) = dV(pim) + dt * nRb.unrotate(n_gravity, H1 ? &D_dV_Ri : 0);
+      + dt22 * b_gravity;
+  dV(xi) = dV(pim) + dt * b_gravity;
 
   if (omegaCoriolis) {
     xi += coriolis(dt, *omegaCoriolis, use2ndOrderCoriolis, H1);
   }
 
-  if (H1 || H2) {
-    Matrix3 Ri = nRb.matrix();
-
+  if (H1 || H2 || H3) {
     if (H1) {
+      const Matrix3 Ri = nRb.matrix();
       if (!omegaCoriolis)
         H1->setZero(); // if coriolis H1 is already initialized
       D_t_R(H1) += dt * D_dP_Ri1 + dt22 * D_dP_Ri2;
       D_t_v(H1) += dt * D_dP_nv * Ri;
-      D_v_R(H1) += dt * D_dV_Ri;
+      D_v_R(H1) += dt * D_dP_Ri2;
     }
     if (H2) {
       H2->setIdentity();
+    }
+    if (H3) {
+      // The rotation rows do not depend on gravity:
+      H3->block<3, 3>(0, 0).setZero();
+      H3->block<3, 3>(3, 0) = dt22 * D_bGravity_nGravity;
+      H3->block<3, 3>(6, 0) = dt * D_bGravity_nGravity;
     }
   }
 
