@@ -726,7 +726,11 @@ pybind11::arg py_arg(const char* name) {
 
         return wrapped, includes
 
-    def wrap_file(self, content, module_name=None, submodules=None):
+    def wrap_file(self,
+                  content,
+                  module_name=None,
+                  submodules=None,
+                  source_name="<string>"):
         """
         Wrap the code in the interface file.
 
@@ -734,9 +738,10 @@ pybind11::arg py_arg(const char* name) {
             content: The contents of the interface file.
             module_name: The name of the module.
             submodules: List of other interface file names that should be linked to.
+            source_name: Name of the interface file for parser diagnostics.
         """
         # Parse the contents of the interface file
-        module = parser.Module.parseString(content)
+        module = parser.Module.parse_string(content, source_name=source_name)
         # Instantiate all templates
         module = instantiator.instantiate_namespace(module)
 
@@ -807,7 +812,9 @@ pybind11::arg py_arg(const char* name) {
         with open(source, "r", encoding="UTF-8") as f:
             content = f.read()
         # Wrap the read-in content
-        cc_content = self.wrap_file(content, module_name=module_name)
+        cc_content = self.wrap_file(content,
+                                    module_name=module_name,
+                                    source_name=source)
 
         # Generate the C++ code which Pybind11 will use.
         with open(filename.replace(".i", ".cpp"), "w", encoding="UTF-8") as f:
@@ -834,7 +841,8 @@ pybind11::arg py_arg(const char* name) {
             content = f.read()
         cc_content = self.wrap_file(content,
                                     module_name=self.module_name,
-                                    submodules=submodules)
+                                    submodules=submodules,
+                                    source_name=main_module)
 
         # Generate the C++ code which Pybind11 will use.
         with open(main_module_name, "w", encoding="UTF-8") as f:

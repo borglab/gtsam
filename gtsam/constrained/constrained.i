@@ -137,6 +137,8 @@ class QpProblem : gtsam::ConstrainedOptProblem {
 #include <gtsam/constrained/QcqpProblem.h>
 class QcqpProblem : gtsam::ConstrainedOptProblem {
   QcqpProblem();
+  QcqpProblem(const gtsam::NonlinearFactorGraph& graph,
+               size_t columnDimension = 1);
 
   void addCost(const gtsam::QpCost& cost);
   void addConstraint(const gtsam::LinearConstraint& constraint);
