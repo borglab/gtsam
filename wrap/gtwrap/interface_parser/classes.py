@@ -46,7 +46,7 @@ class Method:
         + RPAREN  #
         + Optional(CONST("is_const"))  #
         + SEMI_COLON  # BR
-    ).setParseAction(lambda t: Method(t.template, t.name, t.return_type, t.
+    ).set_parse_action(lambda t: Method(t.template, t.name, t.return_type, t.
                                       args_list, t.is_const))
 
     def __init__(self,
@@ -98,7 +98,7 @@ class StaticMethod:
         + ArgumentList.rule("args_list")  #
         + RPAREN  #
         + SEMI_COLON  # BR
-    ).setParseAction(
+    ).set_parse_action(
         lambda t: StaticMethod(t.name, t.return_type, t.args_list, t.template))
 
     def __init__(self,
@@ -134,7 +134,7 @@ class Constructor:
         + ArgumentList.rule("args_list")  #
         + RPAREN  #
         + SEMI_COLON  # BR
-    ).setParseAction(lambda s, loc, t: Constructor(
+    ).set_parse_action(lambda s, loc, t: Constructor(
         t.name, t.args_list, t.template, source=s, location=loc))
 
     def __init__(self,
@@ -175,7 +175,7 @@ class Operator:
         + RPAREN  #
         + CONST("is_const")  #
         + SEMI_COLON  # BR
-    ).setParseAction(lambda s, loc, t: Operator(
+    ).set_parse_action(lambda s, loc, t: Operator(
         t.name,
         t.operator,
         t.return_type,
@@ -258,7 +258,7 @@ class DunderMethod:
         + ArgumentList.rule("args_list")  #
         + RPAREN  #
         + SEMI_COLON  # BR
-    ).setParseAction(lambda t: DunderMethod(t.name, t.args_list))
+    ).set_parse_action(lambda t: DunderMethod(t.name, t.args_list))
 
     def __init__(self, name: str, args: ArgumentList):
         self.name = name
@@ -291,7 +291,7 @@ class Class:
                           ^ Variable.rule  #
                           ^ Operator.rule  #
                           ^ Enum.rule  #
-                          ).setParseAction(lambda t: Class.Members(t.asList()))
+                          ).set_parse_action(lambda t: Class.Members(t.as_list()))
 
         def __init__(self, members: List[Union[Constructor, Method,
                                                StaticMethod, Variable,
@@ -330,7 +330,7 @@ class Class:
         + Members.rule("members")  #
         + RBRACE  #
         + SEMI_COLON  # BR
-    ).setParseAction(lambda t: Class(
+    ).set_parse_action(lambda t: Class(
         t.template, t.is_virtual, t.name, t.parent_class, t.members.ctors, t.
         members.methods, t.members.static_methods, t.members.dunder_methods, t.
         members.properties, t.members.operators, t.members.enums))

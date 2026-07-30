@@ -70,4 +70,4 @@ _DIAGNOSTIC_RULES = (
 for _rule, _context, _priority in _DIAGNOSTIC_RULES:
     _track_rule(_rule, _context, _priority)
 
-pyparsing.ParserElement.enablePackrat()
+pyparsing.ParserElement.enable_packrat()

@@ -1965,7 +1965,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
         # Parse the contents of the interface file
         source_name = files[0] if len(files) == 1 else ";".join(files)
-        parsed_result = parser.Module.parseString(
+        parsed_result = parser.Module.parse_string(
             content, source_name=source_name)
 
         # Instantiate the module

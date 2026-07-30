@@ -23,7 +23,7 @@ class TestParserDiagnostics(unittest.TestCase):
                            source_name="example.i"):
         """Parse source and assert the structured diagnostic fields."""
         with self.assertRaises(InterfaceParseError) as raised:
-            Module.parseString(source, source_name=source_name)
+            Module.parse_string(source, source_name=source_name)
 
         error = raised.exception
         self.assertEqual(error.source_name, source_name)
@@ -130,10 +130,10 @@ class Foo {
 
     def test_diagnostic_state_does_not_leak(self):
         with self.assertRaises(InterfaceParseError):
-            Module.parseString("class Broken { void method(???); };",
+            Module.parse_string("class Broken { void method(???); };",
                                source_name="broken.i")
 
-        module = Module.parseString("class Valid { Valid(); };")
+        module = Module.parse_string("class Valid { Valid(); };")
         self.assertEqual(module.content[0].name, "Valid")
 
     def test_pybind_cli_prints_clean_diagnostic(self):
@@ -183,7 +183,7 @@ class Foo {
         code = """
 from gtwrap.interface_parser import InterfaceParseError, Module
 try:
-    Module.parseString(
+    Module.parse_string(
         "class Foo { Foo operator*(Foo x, Foo y) const; };")
 except InterfaceParseError:
     raise SystemExit(0)
