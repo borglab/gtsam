@@ -24,5 +24,5 @@
 #define Z_5x1 Vector5::Constant(0.0)
 #define Z_6x1 Vector6::Constant(0.0)
 #define Z_7x1 Vector7::Constant(0.0)
-#define Z_8x1 Vector7::Constant(0.0)
+#define Z_8x1 Vector8::Constant(0.0)
 #define Z_9x1 Vector9::Constant(0.0)

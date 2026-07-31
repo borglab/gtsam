@@ -39,8 +39,8 @@
 #define I_7x7 Matrix7::Identity()
 #define Z_7x7 Matrix7::Constant(0.0)
 
-#define I_8x8 Matrix9::Identity()
-#define Z_8x8 Matrix9::Constant(0.0)
+#define I_8x8 Matrix8::Identity()
+#define Z_8x8 Matrix8::Constant(0.0)
 
 #define I_9x9 Matrix9::Identity()
 #define Z_9x9 Matrix9::Constant(0.0)
