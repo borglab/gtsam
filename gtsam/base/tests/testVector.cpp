@@ -41,8 +41,6 @@ namespace {
 }
 
 /* ************************************************************************* */
-namespace vector_constants {
-
 // Verifies the 8x1 zero macro has the correct type and value.
 TEST(VectorConstants, EightByOne) {
   const Vector8 zero = Z_8x1;
@@ -50,9 +48,6 @@ TEST(VectorConstants, EightByOne) {
 
   EXPECT(assert_equal(expected, zero));
 }
-
-}  // namespace vector_constants
-/* ************************************************************************* */
 
 /* ************************************************************************* */
 TEST(Vector, special_comma_initializer)

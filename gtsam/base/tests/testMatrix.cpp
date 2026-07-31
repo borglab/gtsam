@@ -34,8 +34,6 @@ static double inf = std::numeric_limits<double>::infinity();
 static const double tol = 1e-9;
 
 /* ************************************************************************* */
-namespace matrix_constants {
-
 // Verifies the 8x8 constant macros have the correct type and value.
 TEST(MatrixConstants, EightByEight) {
   const Matrix8 identity = I_8x8;
@@ -46,9 +44,6 @@ TEST(MatrixConstants, EightByEight) {
   EXPECT(assert_equal(expectedIdentity, identity));
   EXPECT(assert_equal(expectedZero, zero));
 }
-
-}  // namespace matrix_constants
-/* ************************************************************************* */
 
 /* ************************************************************************* */
 TEST(Matrix, constructor_data )
