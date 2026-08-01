@@ -325,6 +325,200 @@ Since the Combined IMU Factor has a larger state variable due to the inclusion
 \end_layout
 
 \begin_layout Subsubsection*
+Gravity as an Optimized Variable
+\end_layout
+
+\begin_layout Standard
+Both factors above treat the gravity vector 
+\begin_inset Formula $g\in\Rthree$
+\end_inset
+
+, expressed in the navigation frame, as a known constant taken from the
+ preintegration parameters.
+ Because both preintegration variants accumulate the IMU measurements 
+\emph on
+without
+\emph default
+ gravity
+\begin_inset space ~
+\end_inset
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Lupton12tro"
+literal "false"
+
+\end_inset
+
+, gravity enters only when the preintegrated measurements are corrected
+ to predict 
+\begin_inset Formula $\widehat{X_{j}}$
+\end_inset
+
+, and can therefore be changed, or estimated, at correction time without
+ re-integrating.
+ The ImuFactorWithGravity and CombinedImuFactorWithGravity families exploit
+ this to make gravity an additional optimized variable, for navigation frames
+ that are not gravity-aligned (e.g.
+ LiDAR-odometry map frames), for initialization-free operation, or for online
+ gravity refinement.
+\end_layout
+
+\begin_layout Standard
+With 
+\begin_inset Formula $R_{i}$
+\end_inset
+
+ the attitude at 
+\begin_inset Formula $t_{i}$
+\end_inset
+
+ and 
+\begin_inset Formula $\Delta t_{ij}$
+\end_inset
+
+ the preintegration interval, the gravity-dependent part of the correction
+ adds 
+\begin_inset Formula $\frac{1}{2}\Delta t_{ij}^{2}R_{i}^{T}g$
+\end_inset
+
+ to the position rows and 
+\begin_inset Formula $\Delta t_{ij}R_{i}^{T}g$
+\end_inset
+
+ to the velocity rows of the corrected tangent vector 
+\begin_inset Formula $\xi\in\Rnine$
+\end_inset
+
+, so the Jacobian of 
+\begin_inset Formula $\xi$
+\end_inset
+
+ with respect to the gravity vector is simply
+\begin_inset Formula 
+\begin{equation}
+\frac{\partial\xi}{\partial g}=\begin{bmatrix}0_{3\times3}\\
+\frac{1}{2}\Delta t_{ij}^{2}R_{i}^{T}\\
+\Delta t_{ij}R_{i}^{T}
+\end{bmatrix}\in\Rninethree\label{eq:gravity-jacobian}
+\end{equation}
+
+\end_inset
+
+where the three block rows correspond to the rotation, position, and velocity
+ components of the tangent vector.
+ Two parametrizations of the gravity variable chain onto this matrix:
+\end_layout
+
+\begin_layout Enumerate
+ImuFactorWithGravityDirection optimizes a direction 
+\begin_inset Formula $d\in S^{2}$
+\end_inset
+
+ (a Unit3, 2
+\begin_inset space ~
+\end_inset
+
+DOF) with a fixed magnitude 
+\begin_inset Formula $m$
+\end_inset
+
+ given at construction, i.e.
+ 
+\begin_inset Formula $g=m\,d$
+\end_inset
+
+ and 
+\begin_inset Formula $\partial g/\partial\delta d=m\,B$
+\end_inset
+
+ with 
+\begin_inset Formula $B\in\mathbb{R}^{3\times2}$
+\end_inset
+
+ the tangent basis of 
+\begin_inset Formula $d$
+\end_inset
+
+.
+ On Earth, standard gravity is accurate to about 
+\begin_inset Formula $0.3\%$
+\end_inset
+
+ everywhere
+\begin_inset space ~
+\end_inset
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Nemiroff23arxiv"
+literal "false"
+
+\end_inset
+
+, so fixing the magnitude removes a weakly observable degree of freedom
+ by construction.
+\end_layout
+
+\begin_layout Enumerate
+ImuFactorWithGravityVector optimizes the free vector 
+\begin_inset Formula $g\in\Rthree$
+\end_inset
+
+, following 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Lupton12tro"
+literal "false"
+
+\end_inset
+
+.
+ When the magnitude is approximately known it should be paired with a norm
+ pseudo-observation 
+\begin_inset Formula $e=\left\Vert g\right\Vert -g_{0}$
+\end_inset
+
+, 
+\begin_inset Formula $\partial e/\partial g=g^{T}/\left\Vert g\right\Vert $
+\end_inset
+
+ (a VectorNormFactor), added 
+\emph on
+once
+\emph default
+ per gravity variable (never per IMU factor, which would count the same
+ prior information multiple times).
+\end_layout
+
+\begin_layout Standard
+Since only the combination 
+\begin_inset Formula $R_{i}^{T}g$
+\end_inset
+
+ is observed by the accelerometer, gravity and initial attitude are entangled:
+ a graph should anchor exactly one of the two, either prior knowledge of
+ roll and pitch or a prior on the gravity variable, but not both tightly.
+ Gravity magnitude and the accelerometer bias component along gravity are
+ only jointly observable under rotation excitation whose axis changes over
+ time
+\begin_inset space ~
+\end_inset
+
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Nemiroff23arxiv"
+literal "false"
+
+\end_inset
+
+.
+ In the CombinedImuFactorWithGravity variants only the nine preintegration
+ rows of the error depend on gravity; the bias random-walk rows have a zero
+ gravity Jacobian.
+\end_layout
+
+\begin_layout Subsubsection*
 Covariance Matrices
 \end_layout
 
