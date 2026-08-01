@@ -54,7 +54,7 @@ void DopplerFactor::print(const std::string& s,
   gtsam::print(Vector(los_), "line-of-sight (rcv->sat): ");
   gtsam::print(satClkDrift_, "sat clock drift (s/s): ");
   gtsam::print(dt_, "epoch interval dt (s): ");
-  gtsam::print(Vector(velSagnac_), "Sagnac rate coeff (1/s): ");
+  gtsam::print(Vector(velSagnac_), "Sagnac rate coeff (unitless): ");
   gtsam::print(sagnacOffset_, "Sagnac rate offset (m/s): ");
 }
 
@@ -172,7 +172,7 @@ void DopplerFactorArm::print(const std::string& s,
   gtsam::print(Vector(los_), "line-of-sight (rcv->sat): ");
   gtsam::print(satClkDrift_, "sat clock drift (s/s): ");
   gtsam::print(dt_, "epoch interval dt (s): ");
-  gtsam::print(Vector(velSagnac_), "Sagnac rate coeff (1/s): ");
+  gtsam::print(Vector(velSagnac_), "Sagnac rate coeff (unitless): ");
   gtsam::print(sagnacOffset_, "Sagnac rate offset (m/s): ");
   gtsam::print(Vector(arm_.b), "lever arm (body m): ");
   gtsam::print(Vector(leverVel_), "lever velocity omega x b (m/s): ");
