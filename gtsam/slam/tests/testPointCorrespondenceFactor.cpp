@@ -15,9 +15,13 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/constrained/QcqpProblem.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/factorTesting.h>
+#include <gtsam/slam/FrobeniusFactor.h>
 #include <gtsam/slam/PointCorrespondenceFactor.h>
+
+#include <vector>
 
 using namespace gtsam;
 
@@ -169,6 +173,74 @@ TEST(PointCorrespondenceFactor, FullInformationMatrix) {
 }
 
 }  // namespace pose3_fixture
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace matrix_weighted_localization_fixture {
+
+// Verifies that the complete localization graph and its D=1 QCQP have the
+// same nonzero objective at a common Pose3 assignment.
+TEST(PointCorrespondenceFactor, MatrixWeightedLocalizationQcqpError) {
+  constexpr size_t kNumPoses = 3;
+  constexpr double kRadialSigma = 0.1;
+  constexpr double kLateralSigma = 0.01;
+  constexpr double kOdometrySigma = 0.1;
+
+  const Pose3 step(Rot3::RzRyRx(0.03, -0.05, 0.08),
+                   Point3(0.3, -0.1, 0.2));
+  std::vector<Pose3> groundTruth{Pose3()};
+  for (size_t i = 1; i < kNumPoses; ++i) {
+    groundTruth.push_back(groundTruth.back().compose(step));
+  }
+
+  const std::vector<Point3> landmarks{
+      Point3(4.0, 1.0, 2.0), Point3(-1.0, 3.0, 5.0),
+      Point3(2.0, -4.0, 3.0), Point3(5.0, 2.0, -1.0)};
+
+  NonlinearFactorGraph graph;
+  const double radialPrecision = 1.0 / (kRadialSigma * kRadialSigma);
+  const double lateralPrecision = 1.0 / (kLateralSigma * kLateralSigma);
+  for (size_t k = 0; k < groundTruth.size(); ++k) {
+    for (const Point3& landmark : landmarks) {
+      const Point3 measurement = groundTruth[k].transformFrom(landmark);
+      const Vector3 ray = measurement.normalized();
+      const Matrix3 information =
+          lateralPrecision * Matrix3::Identity() +
+          (radialPrecision - lateralPrecision) * ray * ray.transpose();
+      graph.emplace_shared<PointCorrespondenceFactor<Pose3>>(
+          k, landmark, measurement,
+          noiseModel::Gaussian::Information(information));
+    }
+  }
+
+  const auto odometryNoiseModel =
+      noiseModel::Isotropic::Sigma(Pose3::dimension, kOdometrySigma);
+  for (size_t i = 0; i + 1 < groundTruth.size(); ++i) {
+    graph.emplace_shared<FrobeniusBetweenFactor<Pose3>>(
+        i, i + 1, groundTruth[i].between(groundTruth[i + 1]),
+        odometryNoiseModel);
+  }
+
+  Values values;
+  Vector6 perturbation;
+  perturbation << 0.02, -0.015, 0.01, 0.08, -0.05, 0.06;
+  for (size_t k = 0; k < groundTruth.size(); ++k) {
+    values.insert(
+        k, groundTruth[k].retract(static_cast<double>(k + 1) * perturbation));
+  }
+
+  const QcqpProblem qcqp(graph, 1);
+  Values qcqpValues;
+  for (size_t k = 0; k < groundTruth.size(); ++k) {
+    InsertQcqpValue<Pose3, 1>(k, values.at<Pose3>(k), &qcqpValues);
+  }
+
+  const double nonlinearError = graph.error(values);
+  EXPECT(nonlinearError > 0.0);
+  EXPECT_DOUBLES_EQUAL(nonlinearError, qcqp.costs().error(qcqpValues), 1e-9);
+}
+
+}  // namespace matrix_weighted_localization_fixture
 /* ************************************************************************* */
 
 /* ************************************************************************* */

@@ -16,11 +16,17 @@
 
 #pragma once
 
+#include <gtsam/constrained/QcqpProblem.h>
+#include <gtsam/constrained/QpCost.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
+
+#include <memory>
+#include <stdexcept>
+#include <vector>
 
 namespace gtsam {
 
@@ -120,6 +126,53 @@ class PointCorrespondenceFactor : public NoiseModelFactorN<T> {
     const Point predictedPoint =
         internal::TransformPoint<T>::apply(transform, sourcePoint_, H);
     return predictedPoint - measuredPoint_;
+  }
+
+  /** Add the exact D=1 homogeneous point-correspondence cost to a QCQP. */
+  void qcqpFactors(NonlinearFactorGraph* costs,
+                   NonlinearEqualityConstraints* constraints,
+                   size_t columnDimension = 1) const override {
+    if (columnDimension != 1) {
+      throw std::invalid_argument(
+          "PointCorrespondenceFactor::qcqpFactors only supports column "
+          "dimension 1");
+    }
+    if (!costs) {
+      throw std::invalid_argument(
+          "PointCorrespondenceFactor::qcqpFactors costs is null");
+    }
+    if (!this->noiseModel_ ||
+        std::dynamic_pointer_cast<noiseModel::Robust>(this->noiseModel_) ||
+        this->noiseModel_->isConstrained()) {
+      throw std::runtime_error(
+          "PointCorrespondenceFactor::qcqpFactors requires a non-null, "
+          "non-robust/non-hard quadratic noise model");
+    }
+
+    constexpr int PointDim = Point::RowsAtCompileTime;
+    constexpr int N = T::LieAlgebra::RowsAtCompileTime;
+    constexpr int ActiveDim = PointDim * N;
+    constexpr int LiftedDim = ActiveDim + 1;
+    static_assert(N == PointDim || N == PointDim + 1,
+                  "Unsupported transform and point dimensions");
+
+    Matrix B = Matrix::Zero(PointDim, LiftedDim);
+    B.col(0) = -measuredPoint_;
+    for (int column = 0; column < N; ++column) {
+      const double coefficient =
+          column < PointDim ? sourcePoint_(column) : 1.0;
+      B.block(0, 1 + column * PointDim, PointDim, PointDim)
+          .diagonal()
+          .setConstant(coefficient);
+    }
+
+    const Matrix whitenedB = this->noiseModel_->Whiten(B);
+    const Matrix Q = whitenedB.transpose() * whitenedB;
+
+    InsertQcqpConstraints<T, 1>(this->key(), constraints);
+    const SymmetricBlockMatrix blockQ(std::vector<DenseIndex>{LiftedDim}, Q);
+    costs->push_back(
+        std::make_shared<QpCost>(KeyVector{this->key()}, blockQ));
   }
 };
 
