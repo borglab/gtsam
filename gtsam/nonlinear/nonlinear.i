@@ -879,6 +879,22 @@ virtual class ConcentratedGaussian : gtsam::ExtendedPriorFactor<T> {
   This operator*(const This& other) const;
 };
 
+#include <gtsam/nonlinear/VectorNormFactor.h>
+// Wrapped by hand: the wrapper template mechanism cannot instantiate the
+// non-type template parameter of VectorNormFactor<int N>, so this wraps the
+// C++ alias VectorNormFactor3 = VectorNormFactor<3> directly.
+virtual class VectorNormFactor3 : gtsam::NoiseModelFactor {
+  VectorNormFactor3(gtsam::Key key, double norm,
+                    const gtsam::noiseModel::Base* model);
+
+  // Standard Interface
+  double norm() const;
+  gtsam::Vector evaluateError(const gtsam::Point3& v);
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+
 #include <gtsam/nonlinear/NonlinearEquality.h>
 template <T = {gtsam::Point2,
                gtsam::StereoPoint2,
