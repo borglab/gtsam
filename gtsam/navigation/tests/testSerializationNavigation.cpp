@@ -105,6 +105,21 @@ TEST(ImuFactor2, serialization) {
 }
 
 /* ************************************************************************* */
+TEST(ImuFactorWithGravity, serialization) {
+  auto pim = getPreintegratedMeasurements<PreintegratedImuMeasurements>();
+
+  ImuFactorWithGravityDirection direction(1, 2, 3, 4, 5, 6, pim, 9.81);
+  EXPECT(equalsObj<ImuFactorWithGravityDirection>(direction));
+  EXPECT(equalsXML<ImuFactorWithGravityDirection>(direction));
+  EXPECT(equalsBinary<ImuFactorWithGravityDirection>(direction));
+
+  ImuFactorWithGravityVector vector(1, 2, 3, 4, 5, 6, pim);
+  EXPECT(equalsObj<ImuFactorWithGravityVector>(vector));
+  EXPECT(equalsXML<ImuFactorWithGravityVector>(vector));
+  EXPECT(equalsBinary<ImuFactorWithGravityVector>(vector));
+}
+
+/* ************************************************************************* */
 TEST(CombinedImuFactor, Serialization) {
   auto pim = getPreintegratedMeasurements<PreintegratedCombinedMeasurements>();
 

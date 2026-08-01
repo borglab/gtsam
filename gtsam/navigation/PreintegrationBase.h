@@ -24,6 +24,7 @@
 #include <gtsam/navigation/PreintegrationParams.h>
 #include <gtsam/navigation/NavState.h>
 #include <gtsam/navigation/ImuBias.h>
+#include <gtsam/geometry/Unit3.h>
 #include <gtsam/linear/NoiseModel.h>
 
 #include <iosfwd>
@@ -215,5 +216,41 @@ class GTSAM_EXPORT PreintegrationBase {
   }
 #endif
 };
+
+namespace internal {
+
+/**
+ * Adapter mapping a gravity parametrization GRAVITY to the nav-frame gravity
+ * vector expected by PreintegrationBase, with the chain-rule Jacobian block.
+ * Two parametrizations are provided:
+ * - Unit3: an optimized direction scaled by a fixed, known magnitude
+ * - Point3: a free vector entangling direction and magnitude
+ * See ImuFactorWithGravityDirection and ImuFactorWithGravityVector.
+ */
+template <class GRAVITY>
+struct GravityParametrization;
+
+template <>
+struct GravityParametrization<Unit3> {
+  constexpr static int dimension = 2;
+  constexpr static bool usesMagnitude = true;
+  static Vector3 vector(const Unit3& gravity, double magnitude,
+                        OptionalJacobian<3, 2> H = {}) {
+    return gravity.scaled(magnitude, H);
+  }
+};
+
+template <>
+struct GravityParametrization<Point3> {
+  constexpr static int dimension = 3;
+  constexpr static bool usesMagnitude = false;
+  static Vector3 vector(const Point3& gravity, double /*magnitude*/,
+                        OptionalJacobian<3, 3> H = {}) {
+    if (H) H->setIdentity();
+    return gravity;
+  }
+};
+
+}  // namespace internal
 
 }  /// namespace gtsam

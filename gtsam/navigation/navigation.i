@@ -241,6 +241,35 @@ virtual class ImuFactor2: gtsam::NonlinearFactor {
   void serialize() const;
 };
 
+template <PIM, GRAVITY>
+virtual class ImuFactorWithGravityT : gtsam::NonlinearFactor {
+  ImuFactorWithGravityT(gtsam::Key pose_i, gtsam::Key vel_i,
+      gtsam::Key pose_j, gtsam::Key vel_j, gtsam::Key bias, gtsam::Key gravity,
+      const PIM& preintegratedMeasurements);
+  ImuFactorWithGravityT(gtsam::Key pose_i, gtsam::Key vel_i,
+      gtsam::Key pose_j, gtsam::Key vel_j, gtsam::Key bias, gtsam::Key gravity,
+      const PIM& preintegratedMeasurements, double gravityMagnitude);
+
+  // Standard Interface
+  PIM preintegratedMeasurements() const;
+  double gravityMagnitude() const;
+  gtsam::Vector evaluateError(const gtsam::Pose3& pose_i, gtsam::Vector vel_i,
+      const gtsam::Pose3& pose_j, gtsam::Vector vel_j,
+      const gtsam::imuBias::ConstantBias& bias_i, const GRAVITY& gravity);
+
+  // enable serialization functionality
+  void serialize() const;
+};
+
+// Gravity direction as an optimized Unit3 with fixed magnitude:
+typedef gtsam::ImuFactorWithGravityT<gtsam::PreintegratedImuMeasurements,
+                                     gtsam::Unit3>
+    ImuFactorWithGravityDirection;
+// Gravity as a free Point3 vector, direction and magnitude both optimized:
+typedef gtsam::ImuFactorWithGravityT<gtsam::PreintegratedImuMeasurements,
+                                     gtsam::Point3>
+    ImuFactorWithGravityVector;
+
 #include <gtsam/navigation/CombinedImuFactor.h>
 virtual class PreintegrationCombinedParams : gtsam::PreintegrationParams {
   PreintegrationCombinedParams(gtsam::Vector n_gravity);
