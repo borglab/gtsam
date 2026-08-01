@@ -341,6 +341,37 @@ virtual class CombinedImuFactor: gtsam::NoiseModelFactor {
   void serialize() const;
 };
 
+template <PIM, GRAVITY>
+virtual class CombinedImuFactorWithGravityT : gtsam::NoiseModelFactor {
+  CombinedImuFactorWithGravityT(gtsam::Key pose_i, gtsam::Key vel_i,
+      gtsam::Key pose_j, gtsam::Key vel_j, gtsam::Key bias_i, gtsam::Key bias_j,
+      gtsam::Key gravity, const PIM& preintegratedMeasurements);
+  CombinedImuFactorWithGravityT(gtsam::Key pose_i, gtsam::Key vel_i,
+      gtsam::Key pose_j, gtsam::Key vel_j, gtsam::Key bias_i, gtsam::Key bias_j,
+      gtsam::Key gravity, const PIM& preintegratedMeasurements,
+      double gravityMagnitude);
+
+  // Standard Interface
+  PIM preintegratedMeasurements() const;
+  double gravityMagnitude() const;
+  gtsam::Vector evaluateError(const gtsam::Pose3& pose_i, gtsam::Vector vel_i,
+      const gtsam::Pose3& pose_j, gtsam::Vector vel_j,
+      const gtsam::imuBias::ConstantBias& bias_i,
+      const gtsam::imuBias::ConstantBias& bias_j, const GRAVITY& gravity);
+
+  // enable serialization functionality
+  void serialize() const;
+};
+
+// Gravity direction as an optimized Unit3 with fixed magnitude:
+typedef gtsam::CombinedImuFactorWithGravityT<
+    gtsam::PreintegratedCombinedMeasurements, gtsam::Unit3>
+    CombinedImuFactorWithGravityDirection;
+// Gravity as a free Point3 vector, direction and magnitude both optimized:
+typedef gtsam::CombinedImuFactorWithGravityT<
+    gtsam::PreintegratedCombinedMeasurements, gtsam::Point3>
+    CombinedImuFactorWithGravityVector;
+
 #include <gtsam/navigation/AHRSFactor.h>
 class PreintegratedAhrsMeasurements {
   // Standard Constructor

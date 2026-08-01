@@ -135,6 +135,21 @@ TEST(CombinedImuFactor, Serialization) {
 }
 
 /* ************************************************************************* */
+TEST(CombinedImuFactorWithGravity, Serialization) {
+  auto pim = getPreintegratedMeasurements<PreintegratedCombinedMeasurements>();
+
+  CombinedImuFactorWithGravityDirection direction(1, 2, 3, 4, 5, 6, 7, pim, 9.81);
+  EXPECT(equalsObj<CombinedImuFactorWithGravityDirection>(direction));
+  EXPECT(equalsXML<CombinedImuFactorWithGravityDirection>(direction));
+  EXPECT(equalsBinary<CombinedImuFactorWithGravityDirection>(direction));
+
+  CombinedImuFactorWithGravityVector vector(1, 2, 3, 4, 5, 6, 7, pim);
+  EXPECT(equalsObj<CombinedImuFactorWithGravityVector>(vector));
+  EXPECT(equalsXML<CombinedImuFactorWithGravityVector>(vector));
+  EXPECT(equalsBinary<CombinedImuFactorWithGravityVector>(vector));
+}
+
+/* ************************************************************************* */
 TEST(AttitudeFactorRot3, Serialization) {
   Unit3 nDown(0, 0, -1);
   SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.25);
