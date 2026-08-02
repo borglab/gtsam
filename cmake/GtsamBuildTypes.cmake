@@ -166,17 +166,9 @@ else()
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_TIMING          -g -O3  CACHE STRING "(User editable) Private compiler flags for Timing configuration.")
 endif()
 
-if(DEFINED GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON)
-  set(gtsam_compile_options_private_common_cache "${GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON}")
-  list(REMOVE_ITEM gtsam_compile_options_private_common_cache -Werror /WX)
-  set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON
-    "${gtsam_compile_options_private_common_cache}"
-    CACHE STRING "(User editable) Private compiler flags for all configurations." FORCE)
-else()
-  set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON
-    ${gtsam_compile_options_private_common}
-    CACHE STRING "(User editable) Private compiler flags for all configurations.")
-endif()
+set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON
+  ${gtsam_compile_options_private_common}
+  CACHE STRING "(User editable) Private compiler flags for all configurations.")
 
 mark_as_advanced(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON)
 mark_as_advanced(GTSAM_COMPILE_OPTIONS_PRIVATE_DEBUG)
