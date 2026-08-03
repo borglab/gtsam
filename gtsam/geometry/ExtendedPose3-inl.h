@@ -180,26 +180,28 @@ typename ExtendedPose3<K, Derived>::This ExtendedPose3<K, Derived>::Expmap(
   Matrix3K x;
   if constexpr (K == Eigen::Dynamic) x.resize(3, k);
 
+  const auto J = local.Jacobian();
   if (Hxi) {
     ZeroJacobian(Hxi, 3 + 3 * k);
-    const Matrix3 Jr = local.Jacobian().right();
+    const Matrix3 Jr = J.right();
     Hxi->block(0, 0, 3, 3) = Jr;  // Jr here *is* the Jacobian of expmap
     const Matrix3 Rt = R.transpose();
     for (Eigen::Index i = 0; i < k; ++i) {
       Matrix3 H_xi_w;
       const Eigen::Index idx = 3 + 3 * i;
       const Vector3 rho = xi.template segment<3>(idx);
-      x.col(i) = local.Jacobian().applyLeft(rho, &H_xi_w);
+      x.col(i) = J.applyLeft(rho, &H_xi_w);
       Hxi->block(idx, 0, 3, 3) = Rt * H_xi_w;
       Hxi->block(idx, idx, 3, 3) = Jr;
       // In the last row, Jr = R^T * Jl, see Barfoot eq. (8.83).
       // Jl is the left Jacobian of SO(3) at w.
     }
   } else {
+    const Matrix3 Jl = J.left();
     for (Eigen::Index i = 0; i < k; ++i) {
       const Eigen::Index idx = 3 + 3 * i;
       const Vector3 rho = xi.template segment<3>(idx);
-      x.col(i) = local.Jacobian().applyLeft(rho);
+      x.col(i) = Jl * rho;
     }
   }
 
@@ -292,25 +294,26 @@ ExtendedPose3<K, Derived>::LogmapDerivative(const TangentVector& xi) {
 
   const Eigen::Index k = static_cast<Eigen::Index>(RuntimeK(xi));
   const Matrix3 Rt = local.expmap().transpose();
-  const Matrix3 Jw = Rot3::LogmapDerivative(w);
+  const Matrix3 Jw = local.InvJacobian().right();  // Rot3::LogmapDerivative(w);
 
-  Jacobian J;
+  Jacobian H;
   if constexpr (dimension == Eigen::Dynamic) {
-    J.setZero(3 + 3 * k, 3 + 3 * k);
+    H.setZero(3 + 3 * k, 3 + 3 * k);
   } else {
-    J.setZero();
+    H.setZero();
   }
 
-  J.block(0, 0, 3, 3) = Jw;
+  H.block(0, 0, 3, 3) = Jw;
+  const auto J = local.Jacobian();
   for (Eigen::Index i = 0; i < k; ++i) {
     Matrix3 H_xi_w;
     const Eigen::Index idx = 3 + 3 * i;
-    local.Jacobian().applyLeft(xi.template segment<3>(idx), H_xi_w);
+    J.applyLeft(xi.template segment<3>(idx), H_xi_w);
     const Matrix3 Q = Rt * H_xi_w;
-    J.block(idx, 0, 3, 3) = -Jw * Q * Jw;
-    J.block(idx, idx, 3, 3) = Jw;
+    H.block(idx, 0, 3, 3) = -Jw * Q * Jw;
+    H.block(idx, idx, 3, 3) = Jw;
   }
-  return J;
+  return H;
 }
 
 template <int K, class Derived>
