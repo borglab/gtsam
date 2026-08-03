@@ -167,6 +167,8 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
         constexpr int LiftedDim = TruncatedVecDim + 1;
         Vector target = Vector::Zero(LiftedDim);
         target(0) = 1.0;
+        // vecM_ is the full column-major vec(M). For pose lifts, copy only the
+        // variable prefix of each column, dropping its fixed last-row entry.
         for (int column = 0; column < N; ++column) {
           target.segment(1 + column * traits<T>::TruncatedVecRows,
                          traits<T>::TruncatedVecRows) =
