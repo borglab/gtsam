@@ -164,11 +164,29 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
           choco install boost-msvc-14.2 --yes --no-progress
-          $boostRoot = "C:\local\boost_1_72_0"
-          if (!(Test-Path $boostRoot)) {
-            throw "Expected Boost path not found: $boostRoot"
+
+          # Try common Chocolatey install roots for Boost
+          $candidates = @(
+            "C:\local\boost_*",
+            "C:\ProgramData\chocolatey\lib\boost-msvc-14.2\tools\boost_*",
+            "C:\ProgramData\chocolatey\lib\boost-msvc-14.2\**\boost_*"
+          )
+
+          $boostRoot = $null
+          foreach ($pattern in $candidates) {
+            $match = Get-ChildItem -Path $pattern -Directory -ErrorAction SilentlyContinue |
+              Sort-Object FullName -Descending |
+              Select-Object -First 1
+            if ($match) { $boostRoot = $match.FullName; break }
           }
+
+          if (-not $boostRoot) {
+            throw "Boost installed but root directory was not found in expected locations."
+          }
+
           "BOOST_ROOT=$boostRoot" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host "Using BOOST_ROOT=$boostRoot"
+    
       - name: Install sccache
         if: runner.os == 'Windows'
         uses: mozilla-actions/sccache-action@v0.0.9
