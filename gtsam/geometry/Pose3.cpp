@@ -121,11 +121,12 @@ Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> Hxi) {
   // but Local does not need R, deals automatically with the case where theta2
   // is near zero, and also gives us the machinery for the Jacobians.
   Matrix3 H;
-  const Vector3 t = local.Jacobian().applyLeft(v, Hxi ? &H : nullptr);
+  const so3::Kernel jacobian = local.Jacobian();
+  const Vector3 t = jacobian.applyLeft(v, Hxi ? &H : nullptr);
 
   if (Hxi) {
     // The Jacobian of expmap is given by the right Jacobian of SO(3):
-    const Matrix3 Jr = local.Jacobian().right();
+    const Matrix3 Jr = jacobian.right();
     // Chain H with R^T, the Jacobian of Pose3::Create with respect to t.
     const Matrix3 Rt = R.transpose();
     *Hxi << Jr, Z_3x3,  // Jr here *is* the Jacobian of expmap
