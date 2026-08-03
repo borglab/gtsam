@@ -157,7 +157,7 @@ typename ExtendedPose3<K, Derived>::This ExtendedPose3<K, Derived>::Expmap(
   // Instantiate functor for Dexp-related operations:
   const so3::DexpFunctor local(w);
 
-  // Compute rotation using Expmap
+// Compute rotation using Expmap
 #ifdef GTSAM_USE_QUATERNIONS
   // Reuse any quaternion-specific validation inside Rot3::Expmap.
   const Rot3 R = Rot3::Expmap(w);
@@ -167,9 +167,7 @@ typename ExtendedPose3<K, Derived>::This ExtendedPose3<K, Derived>::Expmap(
 
   const Eigen::Index k = static_cast<Eigen::Index>(RuntimeK(xi));
 
-  // The translation t = local.Jacobian().left() * v.
-  // Below we call local.Jacobian().applyLeft, which is faster if you don't need
-  // Jacobians, and returns Jacobian of t with respect to w if asked.
+  // The translation block is x = Jl(w) * rho.
   // NOTE(Frank): this does the same as the intuitive formulas:
   //   t_parallel = w * w.dot(v);  // translation parallel to axis
   //   w_cross_v = w.cross(v);     // translation orthogonal to axis
@@ -180,28 +178,27 @@ typename ExtendedPose3<K, Derived>::This ExtendedPose3<K, Derived>::Expmap(
   Matrix3K x;
   if constexpr (K == Eigen::Dynamic) x.resize(3, k);
 
-  const auto J = local.Jacobian();
   if (Hxi) {
     ZeroJacobian(Hxi, 3 + 3 * k);
-    const Matrix3 Jr = J.right();
-    Hxi->block(0, 0, 3, 3) = Jr;  // Jr here *is* the Jacobian of expmap
+    const so3::Kernel jacobian = local.Jacobian();
+    const Matrix3 Jr = jacobian.right();
+    // Jr here is the Jacobian of the rotation exponential map.
+    Hxi->template block<3, 3>(0, 0) = Jr;
     const Matrix3 Rt = R.transpose();
     for (Eigen::Index i = 0; i < k; ++i) {
       Matrix3 H_xi_w;
       const Eigen::Index idx = 3 + 3 * i;
       const Vector3 rho = xi.template segment<3>(idx);
-      x.col(i) = J.applyLeft(rho, &H_xi_w);
-      Hxi->block(idx, 0, 3, 3) = Rt * H_xi_w;
-      Hxi->block(idx, idx, 3, 3) = Jr;
+      x.col(i) = jacobian.applyLeft(rho, &H_xi_w);
+      Hxi->template block<3, 3>(idx, 0) = Rt * H_xi_w;
+      Hxi->template block<3, 3>(idx, idx) = Jr;
       // In the last row, Jr = R^T * Jl, see Barfoot eq. (8.83).
       // Jl is the left Jacobian of SO(3) at w.
     }
-  } else {
-    const Matrix3 Jl = J.left();
+  } else if (k > 0) {
+    const Matrix3 Jl = local.leftJacobian();
     for (Eigen::Index i = 0; i < k; ++i) {
-      const Eigen::Index idx = 3 + 3 * i;
-      const Vector3 rho = xi.template segment<3>(idx);
-      x.col(i) = Jl * rho;
+      x.col(i).noalias() = Jl * xi.template segment<3>(3 + 3 * i);
     }
   }
 
