@@ -378,18 +378,18 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
   }
 
  private:
-  static Matrix RightProductMatrix(const Matrix& right,
-                                   DenseIndex retainedRows) {
-    const DenseIndex truncatedVecDim = retainedRows * N;
-    Matrix result = Matrix::Zero(truncatedVecDim, truncatedVecDim);
-    // result = right.transpose() kron Identity(retainedRows).
-    for (int blockRow = 0; blockRow < N; ++blockRow) {
-      for (int blockColumn = 0; blockColumn < N; ++blockColumn) {
-        result
-            .block(blockRow * retainedRows, blockColumn * retainedRows,
-                   retainedRows, retainedRows)
-            .diagonal()
-            .setConstant(right(blockColumn, blockRow));
+  /// Compute a Kronecker product without depending on unsupported Eigen
+  /// modules.
+  static Matrix internalKroneckerProduct(const Matrix& left,
+                                         const Matrix& right) {
+    const DenseIndex resultRows = left.rows() * right.rows();
+    const DenseIndex resultColumns = left.cols() * right.cols();
+    Matrix result = Matrix::Zero(resultRows, resultColumns);
+
+    for (DenseIndex row = 0; row < left.rows(); ++row) {
+      for (DenseIndex column = 0; column < left.cols(); ++column) {
+        result.block(row * right.rows(), column * right.cols(), right.rows(),
+                     right.cols()) = left(row, column) * right;
       }
     }
     return result;
@@ -429,8 +429,12 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
       constexpr int TruncatedVecDim = traits<T>::TruncatedVecRows * N;
       constexpr int LiftedDim = TruncatedVecDim + 1;
 
-      const Matrix A = RightProductMatrix(this->T12_.matrix(),
-                                          traits<T>::TruncatedVecRows);
+      const Matrix measurement = this->T12_.matrix();
+      const Matrix identity = Matrix::Identity(traits<T>::TruncatedVecRows,
+                                               traits<T>::TruncatedVecRows);
+      // Column-major vec(XM) = (M.transpose() kron I) vec(X).
+      const Matrix A =
+          internalKroneckerProduct(measurement.transpose(), identity);
       Matrix B = Matrix::Zero(TruncatedVecDim, 2 * TruncatedVecDim);
       B.block(0, 0, TruncatedVecDim, TruncatedVecDim) = -A;
       B.block(0, TruncatedVecDim, TruncatedVecDim, TruncatedVecDim)
