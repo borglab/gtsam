@@ -163,15 +163,14 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
       if (this->noiseModel_->isConstrained()) {
         InsertQcqpConstraints<T, 1>(this->key(), constraints);
 
-        constexpr int K =
-            std::is_same_v<T, Pose2> || std::is_same_v<T, Pose3> ? N - 1 : N;
-        constexpr int ActiveDim = K * N;
-        constexpr int LiftedDim = ActiveDim + 1;
+        constexpr int TruncatedVecDim = traits<T>::TruncatedVecRows * N;
+        constexpr int LiftedDim = TruncatedVecDim + 1;
         Vector target = Vector::Zero(LiftedDim);
         target(0) = 1.0;
         for (int column = 0; column < N; ++column) {
-          target.segment(1 + column * K, K) =
-              vecM_.segment(column * N, K);
+          target.segment(1 + column * traits<T>::TruncatedVecRows,
+                         traits<T>::TruncatedVecRows) =
+              vecM_.segment(column * N, traits<T>::TruncatedVecRows);
         }
 
         constraints->push_back(LinearConstraint::Equal(
@@ -379,8 +378,8 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
  private:
   static Matrix RightProductMatrix(const Matrix& right,
                                    DenseIndex retainedRows) {
-    const DenseIndex activeDim = retainedRows * N;
-    Matrix result = Matrix::Zero(activeDim, activeDim);
+    const DenseIndex truncatedVecDim = retainedRows * N;
+    Matrix result = Matrix::Zero(truncatedVecDim, truncatedVecDim);
     // result = right.transpose() kron Identity(retainedRows).
     for (int blockRow = 0; blockRow < N; ++blockRow) {
       for (int blockColumn = 0; blockColumn < N; ++blockColumn) {
@@ -425,34 +424,38 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
             "non-robust/non-hard quadratic noise model");
       }
 
-      constexpr int K =
-          std::is_same_v<T, Pose2> || std::is_same_v<T, Pose3> ? N - 1 : N;
-      constexpr int ActiveDim = K * N;
-      constexpr int LiftedDim = ActiveDim + 1;
+      constexpr int TruncatedVecDim = traits<T>::TruncatedVecRows * N;
+      constexpr int LiftedDim = TruncatedVecDim + 1;
 
-      const Matrix A = RightProductMatrix(this->T12_.matrix(), K);
-      Matrix B = Matrix::Zero(ActiveDim, 2 * ActiveDim);
-      B.block(0, 0, ActiveDim, ActiveDim) = -A;
-      B.block(0, ActiveDim, ActiveDim, ActiveDim).setIdentity();
+      const Matrix A = RightProductMatrix(this->T12_.matrix(),
+                                          traits<T>::TruncatedVecRows);
+      Matrix B = Matrix::Zero(TruncatedVecDim, 2 * TruncatedVecDim);
+      B.block(0, 0, TruncatedVecDim, TruncatedVecDim) = -A;
+      B.block(0, TruncatedVecDim, TruncatedVecDim, TruncatedVecDim)
+          .setIdentity();
 
-      Matrix fullB = Matrix::Zero(Dim, 2 * ActiveDim);
+      Matrix fullB = Matrix::Zero(Dim, 2 * TruncatedVecDim);
       for (int column = 0; column < N; ++column) {
-        fullB.block(column * N, 0, K, 2 * ActiveDim) =
-            B.block(column * K, 0, K, 2 * ActiveDim);
+        fullB.block(column * N, 0, traits<T>::TruncatedVecRows,
+                    2 * TruncatedVecDim) =
+            B.block(column * traits<T>::TruncatedVecRows, 0,
+                    traits<T>::TruncatedVecRows, 2 * TruncatedVecDim);
       }
 
       const Matrix whitenedB = this->noiseModel_->Whiten(fullB);
       const Matrix Q = whitenedB.transpose() * whitenedB;
 
       Matrix Q_trunc_hom = Matrix::Zero(2 * LiftedDim, 2 * LiftedDim);
-      Q_trunc_hom.block(1, 1, ActiveDim, ActiveDim) =
-          Q.block(0, 0, ActiveDim, ActiveDim);
-      Q_trunc_hom.block(1, LiftedDim + 1, ActiveDim, ActiveDim) =
-          Q.block(0, ActiveDim, ActiveDim, ActiveDim);
-      Q_trunc_hom.block(LiftedDim + 1, 1, ActiveDim, ActiveDim) =
-          Q.block(ActiveDim, 0, ActiveDim, ActiveDim);
-      Q_trunc_hom.block(LiftedDim + 1, LiftedDim + 1, ActiveDim, ActiveDim) =
-          Q.block(ActiveDim, ActiveDim, ActiveDim, ActiveDim);
+      Q_trunc_hom.block(1, 1, TruncatedVecDim, TruncatedVecDim) =
+          Q.block(0, 0, TruncatedVecDim, TruncatedVecDim);
+      Q_trunc_hom.block(1, LiftedDim + 1, TruncatedVecDim, TruncatedVecDim) =
+          Q.block(0, TruncatedVecDim, TruncatedVecDim, TruncatedVecDim);
+      Q_trunc_hom.block(LiftedDim + 1, 1, TruncatedVecDim, TruncatedVecDim) =
+          Q.block(TruncatedVecDim, 0, TruncatedVecDim, TruncatedVecDim);
+      Q_trunc_hom.block(LiftedDim + 1, LiftedDim + 1, TruncatedVecDim,
+                        TruncatedVecDim) =
+          Q.block(TruncatedVecDim, TruncatedVecDim, TruncatedVecDim,
+                  TruncatedVecDim);
 
       InsertQcqpConstraints<T, 1>(this->key1(), constraints);
       InsertQcqpConstraints<T, 1>(this->key2(), constraints);
