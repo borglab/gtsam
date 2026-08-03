@@ -80,7 +80,7 @@ const Rot3& ExtendedPose3<K, Derived>::rotation(ComponentJacobian H) const {
     } else {
       H->setZero();
     }
-    H->block(0, 0, 3, 3) = I_3x3;
+    H->template block<3, 3>(0, 0) = I_3x3;
   }
   return R_;
 }
@@ -95,7 +95,7 @@ Point3 ExtendedPose3<K, Derived>::x(size_t i, ComponentJacobian H) const {
       H->setZero();
     }
     const Eigen::Index idx = 3 + 3 * static_cast<Eigen::Index>(i);
-    H->block(0, idx, 3, 3) = R_.matrix();
+    H->template block<3, 3>(0, idx) = R_.matrix();
   }
   return t_.col(static_cast<Eigen::Index>(i));
 }
@@ -217,10 +217,12 @@ ExtendedPose3<K, Derived>::Logmap(const This& pose, ChartJacobian H) {
     xi.resize(static_cast<Eigen::Index>(poseBase.dim()));
   xi.template head<3>() = w;
   const Eigen::Index k = static_cast<Eigen::Index>(poseBase.k());
-  for (Eigen::Index i = 0; i < k; ++i) {
-    const Eigen::Index idx = 3 + 3 * i;
-    xi.template segment<3>(idx) =
-        local.InvJacobian().applyLeft(poseBase.t_.col(i));
+  if (k > 0) {
+    const Matrix3 JlInv = local.InvJacobian().left();
+    for (Eigen::Index i = 0; i < k; ++i) {
+      const Eigen::Index idx = 3 + 3 * i;
+      xi.template segment<3>(idx).noalias() = JlInv * poseBase.t_.col(i);
+    }
   }
 
   if (H) *H = LogmapDerivative(xi);
@@ -239,12 +241,12 @@ ExtendedPose3<K, Derived>::AdjointMap() const {
     adj.setZero();
   }
 
-  adj.block(0, 0, 3, 3) = R;
+  adj.template block<3, 3>(0, 0) = R;
   const Eigen::Index k = static_cast<Eigen::Index>(this->k());
   for (Eigen::Index i = 0; i < k; ++i) {
     const Eigen::Index idx = 3 + 3 * i;
-    adj.block(idx, 0, 3, 3) = skewSymmetric(t_.col(i)) * R;
-    adj.block(idx, idx, 3, 3) = R;
+    adj.template block<3, 3>(idx, 0) = skewSymmetric(t_.col(i)) * R;
+    adj.template block<3, 3>(idx, idx) = R;
   }
   return adj;
 }
@@ -263,12 +265,12 @@ ExtendedPose3<K, Derived>::adjointMap(const TangentVector& xi) {
     adj.setZero();
   }
 
-  adj.block(0, 0, 3, 3) = w_hat;
+  adj.template block<3, 3>(0, 0) = w_hat;
   for (Eigen::Index i = 0; i < k; ++i) {
     const Eigen::Index idx = 3 + 3 * i;
-    adj.block(idx, 0, 3, 3) =
+    adj.template block<3, 3>(idx, 0) =
         skewSymmetric(xi(idx + 0), xi(idx + 1), xi(idx + 2));
-    adj.block(idx, idx, 3, 3) = w_hat;
+    adj.template block<3, 3>(idx, idx) = w_hat;
   }
   return adj;
 }
@@ -290,8 +292,9 @@ ExtendedPose3<K, Derived>::LogmapDerivative(const TangentVector& xi) {
   const so3::DexpFunctor local(w);
 
   const Eigen::Index k = static_cast<Eigen::Index>(RuntimeK(xi));
-  const Matrix3 Rt = local.expmap().transpose();
-  const Matrix3 Jw = local.InvJacobian().right();  // Rot3::LogmapDerivative(w);
+  const so3::InvJKernel inverseJacobian = local.InvJacobian();
+  const Matrix3 JrInv = inverseJacobian.right();
+  const Matrix3 JlInv = inverseJacobian.left();
 
   Jacobian H;
   if constexpr (dimension == Eigen::Dynamic) {
@@ -300,15 +303,14 @@ ExtendedPose3<K, Derived>::LogmapDerivative(const TangentVector& xi) {
     H.setZero();
   }
 
-  H.block(0, 0, 3, 3) = Jw;
-  const auto J = local.Jacobian();
+  H.template block<3, 3>(0, 0) = JrInv;
+  const so3::Kernel& jacobian = inverseJacobian.J;
   for (Eigen::Index i = 0; i < k; ++i) {
     Matrix3 H_xi_w;
     const Eigen::Index idx = 3 + 3 * i;
-    J.applyLeft(xi.template segment<3>(idx), H_xi_w);
-    const Matrix3 Q = Rt * H_xi_w;
-    H.block(idx, 0, 3, 3) = -Jw * Q * Jw;
-    H.block(idx, idx, 3, 3) = Jw;
+    jacobian.applyLeft(xi.template segment<3>(idx), H_xi_w);
+    H.template block<3, 3>(idx, 0) = -JlInv * H_xi_w * JrInv;
+    H.template block<3, 3>(idx, idx) = JrInv;
   }
   return H;
 }
@@ -359,10 +361,11 @@ typename ExtendedPose3<K, Derived>::LieAlgebra ExtendedPose3<K, Derived>::Hat(
   } else {
     X.setZero();
   }
-  X.block(0, 0, 3, 3) = skewSymmetric(xi(0), xi(1), xi(2));
+  X.template block<3, 3>(0, 0) =
+      skewSymmetric(xi(0), xi(1), xi(2));
   for (Eigen::Index i = 0; i < k; ++i) {
     const Eigen::Index idx = 3 + 3 * i;
-    X.block(0, 3 + i, 3, 1) = xi.template segment<3>(idx);
+    X.template block<3, 1>(0, 3 + i) = xi.template segment<3>(idx);
   }
   return X;
 }
