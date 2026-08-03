@@ -65,7 +65,7 @@ public:
     FactorIndices getMarginalFactorIndices() const { return marginalFactorIndices; }
     FactorIndices getDeletedFactorIndices() const { return deletedFactorIndices; }
     KeySet getKeysOfDeletedNodes() const { return keysOfDeletedNodes; }
-    void print() const;
+    GTSAM_EXPORT void print() const;
   };
 
   /** default constructor */
