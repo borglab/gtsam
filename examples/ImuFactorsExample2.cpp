@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file ImuFactorExample2
+ * @file ImuFactorsExample2.cpp
  * @brief Test example for using GTSAM ImuFactor and ImuCombinedFactor with ISAM2.
  * @author Robert Truax
  */

@@ -98,8 +98,8 @@ cmake $PROJECT_DIR \
     -DGTSAM_GENERATE_DOC_XML=1 \
     -DGTWRAP_ADD_DOCSTRINGS=ON
 
-# Generate Doxygen XML documentation
-doxygen build/doc/Doxyfile
+# Generate Doxygen XML documentation with the legacy-compatible configuration.
+doxygen build/doc/Doxyfile.xml
 
 # Install the Python wrapper module and generate Python stubs
 cd $PROJECT_DIR/build/python

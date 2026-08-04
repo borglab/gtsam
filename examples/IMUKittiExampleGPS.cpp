@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file IMUKittiExampleGPS
+ * @file IMUKittiExampleGPS.cpp
  * @brief Example of application of ISAM2 for GPS-aided navigation on the KITTI
  * VISION BENCHMARK SUITE
  * @author Ported by Thomas Jespersen (thomasj@tkjelectronics.dk), TKJ

@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    utilities.h
+ * @file    gtsam/nonlinear/utilities.h
  * @brief   Contains *generic* global functions designed particularly for the matlab interface
  * @author  Stephen Williams
  */

@@ -1,5 +1,5 @@
 /**
- * @file expressions.h
+ * @file gtsam/nonlinear/expressions.h
  * @brief Common expressions, both linear and non-linear
  * @date Nov 23, 2014
  * @author Frank Dellaert

@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file METISOrdering.cpp
+ * @file METISOrderingExample.cpp
  * @brief Simple robot motion example, with prior and two odometry measurements,
  * using a METIS ordering
  * @author Frank Dellaert
