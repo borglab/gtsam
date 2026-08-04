@@ -4,12 +4,12 @@ name: Python CI
 # instead of under 'pull_request:'. Otherwise, the check is still required but
 # never runs, and a maintainer must bypass the check in order to merge the PR.
 on:
-  workflow_dispatch: 
+  workflow_dispatch:
   pull_request:
     paths-ignore:
-      - '**.md'
-      - '**.ipynb'
-      - 'myst.yml'
+      - "**.md"
+      - "**.ipynb"
+      - "myst.yml"
 
 # Every time you make a push to your PR, it cancel immediately the previous checks,
 # and start a new one. The other runner will be available more quickly to your PR.
@@ -162,22 +162,31 @@ jobs:
         if: runner.os == 'Windows'
         shell: powershell
         run: |
-          # Snippet from: https://github.com/actions/virtual-environments/issues/2667
-          $BOOST_PATH = "C:\hostedtoolcache\windows\Boost\$env:BOOST_VERSION\x86_64"
+          $ErrorActionPreference = "Stop"
+          choco install boost-msvc-14.2 --yes --no-progress
 
-          # Use the prebuilt binary for Windows
-          $Url = "https://sourceforge.net/projects/boost/files/boost-binaries/$env:BOOST_VERSION/$env:BOOST_EXE-${{matrix.platform}}.exe"
+          # Try common Chocolatey install roots for Boost
+          $candidates = @(
+            "C:\local\boost_*",
+            "C:\ProgramData\chocolatey\lib\boost-msvc-14.2\tools\boost_*",
+            "C:\ProgramData\chocolatey\lib\boost-msvc-14.2\**\boost_*"
+          )
 
-          # Create WebClient with appropriate settings and download Boost exe
-          $wc = New-Object System.Net.Webclient
-          $wc.Headers.Add("User-Agent: Other");
-          $wc.DownloadFile($Url, "$env:TEMP\boost.exe")
+          $boostRoot = $null
+          foreach ($pattern in $candidates) {
+            $match = Get-ChildItem -Path $pattern -Directory -ErrorAction SilentlyContinue |
+              Sort-Object FullName -Descending |
+              Select-Object -First 1
+            if ($match) { $boostRoot = $match.FullName; break }
+          }
 
-          Start-Process -Wait -FilePath "$env:TEMP\boost.exe" "/SILENT","/SP-","/SUPPRESSMSGBOXES","/DIR=$BOOST_PATH"
+          if (-not $boostRoot) {
+            throw "Boost installed but root directory was not found in expected locations."
+          }
 
-          # Set the BOOST_ROOT variable
-          echo "BOOST_ROOT=$BOOST_PATH" >> $env:GITHUB_ENV
-
+          "BOOST_ROOT=$boostRoot" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host "Using BOOST_ROOT=$boostRoot"
+    
       - name: Install sccache
         if: runner.os == 'Windows'
         uses: mozilla-actions/sccache-action@v0.0.9

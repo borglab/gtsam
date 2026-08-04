@@ -134,19 +134,22 @@ NavState NavState::retract(const Vector9& xi, //
   const Rot3 nRc = nRb.compose(bRc, H1 ? &D_R_nRb : 0);
   const Point3 t = n_t + nRb.rotate(dP(xi), H1 ? &D_t_nRb : 0);
   const Point3 v = n_v + nRb.rotate(dV(xi), H1 ? &D_v_nRb : 0);
+  Matrix3 bRcTranspose;
+  if (H1 || H2) bRcTranspose = bRc.transpose();
   if (H1) {
-    *H1 << D_R_nRb, Z_3x3, Z_3x3, //
-    // Note(frank): the derivative of n_t with respect to xi is nRb
-    // We pre-multiply with nRc' to account for NavState::Create
-    // Then we make use of the identity nRc' * nRb = bRc'
-    nRc.transpose() * D_t_nRb, bRc.transpose(), Z_3x3,
-    // Similar reasoning for v:
-    nRc.transpose() * D_v_nRb, Z_3x3, bRc.transpose();
+    const Matrix3 nRcTranspose = nRc.transpose();
+    *H1 << D_R_nRb, Z_3x3, Z_3x3,  //
+        // Note(frank): the derivative of n_t with respect to xi is nRb
+        // We pre-multiply with nRc' to account for NavState::Create
+        // Then we make use of the identity nRc' * nRb = bRc'
+        nRcTranspose * D_t_nRb, bRcTranspose, Z_3x3,
+        // Similar reasoning for v:
+        nRcTranspose * D_v_nRb, Z_3x3, bRcTranspose;
   }
   if (H2) {
-    *H2 << D_bRc_xi, Z_3x3, Z_3x3, //
-    Z_3x3, bRc.transpose(), Z_3x3, //
-    Z_3x3, Z_3x3, bRc.transpose();
+    *H2 << D_bRc_xi, Z_3x3, Z_3x3,   //
+        Z_3x3, bRcTranspose, Z_3x3,  //
+        Z_3x3, Z_3x3, bRcTranspose;
   }
   return NavState(nRc, t, v);
 }
@@ -169,9 +172,10 @@ Vector9 NavState::localCoordinates(const NavState& g, //
         D_dv_R, Z_3x3, -I_3x3;
   }
   if (H2) {
-    *H2 << D_xi_R, Z_3x3, Z_3x3,    //
-        Z_3x3, dR.matrix(), Z_3x3,  //
-        Z_3x3, Z_3x3, dR.matrix();
+    const Matrix3 dRMatrix = dR.matrix();
+    *H2 << D_xi_R, Z_3x3, Z_3x3,  //
+        Z_3x3, dRMatrix, Z_3x3,   //
+        Z_3x3, Z_3x3, dRMatrix;
   }
 
   return xi;

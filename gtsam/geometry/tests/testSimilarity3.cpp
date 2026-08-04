@@ -648,6 +648,11 @@ TEST(Similarity3, AdjointMap) {
 
   // Assert that they are equal
   EXPECT(assert_equal(specialized_Adj, generic_Adj, 1e-9));
+
+  const Vector7 xi(0.2, -0.4, 0.7, -0.1, 0.3, -0.6, 0.5);
+  const Matrix7 specialized_ad = Similarity3::adjointMap(xi);
+  const Matrix7 generic_ad = MatrixLieGroup<Similarity3, 7, 4>::adjointMap(xi);
+  EXPECT(assert_equal(specialized_ad, generic_ad, 1e-9));
 }
 
 //******************************************************************************
