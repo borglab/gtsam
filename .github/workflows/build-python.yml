@@ -201,7 +201,6 @@ jobs:
           "BOOST_ROOT=$boostRoot" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "BOOST_INCLUDEDIR=$boostIncludeDir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "BOOST_LIBRARYDIR=$boostLibraryDir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-          "LIB=$boostLibraryDir;$env:LIB" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           Write-Host "Using BOOST_ROOT=$boostRoot"
           Write-Host "Using BOOST_INCLUDEDIR=$boostIncludeDir"
           Write-Host "Using BOOST_LIBRARYDIR=$boostLibraryDir"
