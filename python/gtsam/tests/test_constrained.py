@@ -96,18 +96,27 @@ class TestConstrainedWrappers(unittest.TestCase):
             (
                 X(0),
                 gtsam.Rot2.fromAngle(0.3),
+                gtsam.qcqpValueRot2,
+                gtsam.insertQcqpValueRot2,
+                gtsam.fromQcqpValueRot2,
                 gtsam.extractQcqpValuesRot2,
                 "atRot2",
             ),
             (
                 X(1),
                 gtsam.Rot3.RzRyRx(0.1, -0.2, 0.3),
+                gtsam.qcqpValueRot3,
+                gtsam.insertQcqpValueRot3,
+                gtsam.fromQcqpValueRot3,
                 gtsam.extractQcqpValuesRot3,
                 "atRot3",
             ),
             (
                 X(2),
                 gtsam.Pose2(1.0, -2.0, 0.3),
+                gtsam.qcqpValuePose2,
+                gtsam.insertQcqpValuePose2,
+                gtsam.fromQcqpValuePose2,
                 gtsam.extractQcqpValuesPose2,
                 "atPose2",
             ),
@@ -117,16 +126,22 @@ class TestConstrainedWrappers(unittest.TestCase):
                     gtsam.Rot3.RzRyRx(0.1, -0.2, 0.3),
                     np.array([1.0, -2.0, 3.0]),
                 ),
+                gtsam.qcqpValuePose3,
+                gtsam.insertQcqpValuePose3,
+                gtsam.fromQcqpValuePose3,
                 gtsam.extractQcqpValuesPose3,
                 "atPose3",
             ),
         ]
 
         qcqp_values = gtsam.Values()
-        for key, value, _, _ in typed_values:
-            gtsam.insertQcqpValue(key, value, qcqp_values)
+        for key, value, to_qcqp, insert, from_qcqp, _, _ in typed_values:
+            recovered = from_qcqp(to_qcqp(value))
+            error = value.localCoordinates(recovered)
+            np.testing.assert_allclose(error, np.zeros_like(error), atol=1e-12)
+            insert(key, value, qcqp_values)
 
-        for key, expected, extract, accessor in typed_values:
+        for key, expected, _, _, _, extract, accessor in typed_values:
             recovered = getattr(extract(qcqp_values), accessor)(key)
             error = expected.localCoordinates(recovered)
             np.testing.assert_allclose(error, np.zeros_like(error), atol=1e-12)
