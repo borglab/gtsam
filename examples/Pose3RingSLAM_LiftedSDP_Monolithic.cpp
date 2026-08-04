@@ -106,13 +106,21 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  monolithicSdp.recoverLiftedVectors();
-  const std::vector<Pose3> recoveredPoses =
-      monolithicSdp.getRecoveredPoses<Pose3>();
+  monolithicSdp.recoverQcqpValues();
+  const auto recoveredPoses =
+      ExtractQcqpValues<Pose3, 1>(monolithicSdp.getRecoveredQcqpValues());
+  if (recoveredPoses.size() != gt.size()) {
+    std::cerr << "Recovered QCQP value count does not match ground truth."
+              << std::endl;
+    return 1;
+  }
   const std::vector<double>& recoveredPoseEVRs =
       monolithicSdp.getRecoveredVariableEVRs();
-  const std::vector<double> recoveredPoseErrorNorms =
-      monolithicSdp.getRecoveredPoseErrorNorms(gt);
+  std::vector<double> recoveredPoseErrorNorms(recoveredPoses.size());
+  for (size_t i = 0; i < recoveredPoses.size(); ++i) {
+    recoveredPoseErrorNorms[i] =
+        gt[i].localCoordinates(recoveredPoses[i].second).norm();
+  }
 
   double totalPoseErrorNorm = 0.0;
   for (double errorNorm : recoveredPoseErrorNorms) {
@@ -140,7 +148,8 @@ int main(int argc, char** argv) {
     gt[i].print("Monolithic ground-truth pose " + std::to_string(i));
   }
   for (size_t i = 0; i < recoveredPoses.size(); ++i) {
-    recoveredPoses[i].print("Monolithic recovered pose " + std::to_string(i));
+    recoveredPoses[i].second.print("Monolithic recovered pose " +
+                                   std::to_string(i));
   }
 #else
   std::cerr << "This example requires GTSAM_USE_MOSEK." << std::endl;

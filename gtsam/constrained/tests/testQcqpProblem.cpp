@@ -1244,6 +1244,110 @@ TEST(QcqpProblem, InsertQcqpConstraintsMatchesExactQuadratics) {
 /* ************************************************************************* */
 namespace QcqpExtractionFixture {
 
+// Verify that a D=1 QCQP value remains recoverable after homogeneous scaling.
+template <typename T>
+T ScaledD1RoundTrip(const T& value) {
+  const Matrix X = -2.5 * traits<T>::template QcqpValue<1>(value);
+  return traits<T>::template FromQcqpValue<1>(X);
+}
+
+// Rot2 D=1 conversion and recovery use the same column-major coordinates.
+TEST(QcqpProblem, Rot2D1QcqpValueRoundTrip) {
+  const Rot2 value = Rot2::fromAngle(0.4);
+  EXPECT(assert_equal(value, ScaledD1RoundTrip(value), 1e-12));
+}
+
+// Rot3 D=1 conversion and recovery use the same column-major coordinates.
+TEST(QcqpProblem, Rot3D1QcqpValueRoundTrip) {
+  const Rot3 value = Rot3::RzRyRx(0.2, -0.3, 0.5);
+  EXPECT(assert_equal(value, ScaledD1RoundTrip(value), 1e-12));
+}
+
+// Pose2 D=1 recovery preserves both rotation and translation.
+TEST(QcqpProblem, Pose2D1QcqpValueRoundTrip) {
+  const Pose2 value(Rot2::fromAngle(0.4), Point2(2.0, -3.0));
+  EXPECT(assert_equal(value, ScaledD1RoundTrip(value), 1e-12));
+}
+
+// Pose3 D=1 recovery preserves both rotation and translation.
+TEST(QcqpProblem, Pose3D1QcqpValueRoundTrip) {
+  const Pose3 value(Rot3::RzRyRx(0.2, -0.3, 0.5),
+                    Point3(2.0, -3.0, 4.0));
+  EXPECT(assert_equal(value, ScaledD1RoundTrip(value), 1e-12));
+}
+
+// D=1 recovery rejects incorrect dimensions and zero homogenization entries.
+TEST(QcqpProblem, D1QcqpValueRecoveryRejectsInvalidVectors) {
+  CHECK_EXCEPTION(
+      traits<Rot2>::template FromQcqpValue<1>(Matrix::Zero(4, 1)),
+      std::invalid_argument);
+  CHECK_EXCEPTION(
+      traits<Rot3>::template FromQcqpValue<1>(Matrix::Zero(9, 1)),
+      std::invalid_argument);
+  CHECK_EXCEPTION(
+      traits<Pose2>::template FromQcqpValue<1>(Matrix::Zero(6, 1)),
+      std::invalid_argument);
+  CHECK_EXCEPTION(
+      traits<Pose3>::template FromQcqpValue<1>(Matrix::Zero(12, 1)),
+      std::invalid_argument);
+
+  Matrix rot2 = traits<Rot2>::template QcqpValue<1>(Rot2());
+  Matrix rot3 = traits<Rot3>::template QcqpValue<1>(Rot3());
+  Matrix pose2 = traits<Pose2>::template QcqpValue<1>(Pose2());
+  Matrix pose3 = traits<Pose3>::template QcqpValue<1>(Pose3());
+  rot2(0, 0) = 0.0;
+  rot3(0, 0) = 0.0;
+  pose2(0, 0) = 0.0;
+  pose3(0, 0) = 0.0;
+  CHECK_EXCEPTION(traits<Rot2>::template FromQcqpValue<1>(rot2),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(traits<Rot3>::template FromQcqpValue<1>(rot3),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(traits<Pose2>::template FromQcqpValue<1>(pose2),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(traits<Pose3>::template FromQcqpValue<1>(pose3),
+                  std::invalid_argument);
+}
+
+// Pose recovery is implemented only for the D=1 homogenized representation.
+TEST(QcqpProblem, PoseQcqpValueRecoveryRejectsUnsupportedD) {
+  CHECK_EXCEPTION(
+      traits<Pose2>::template FromQcqpValue<2>(Matrix::Zero(3, 2)),
+      std::invalid_argument);
+  CHECK_EXCEPTION(
+      traits<Pose3>::template FromQcqpValue<2>(Matrix::Zero(4, 2)),
+      std::invalid_argument);
+}
+
+// D=1 extraction selects each group's exact homogenized vector dimension.
+TEST(QcqpProblem, ExtractD1QcqpValues) {
+  Values values;
+  const Rot2 rot2 = Rot2::fromAngle(0.4);
+  const Rot3 rot3 = Rot3::RzRyRx(0.2, -0.3, 0.5);
+  const Pose2 pose2(Rot2::fromAngle(-0.2), Point2(1.0, -2.0));
+  const Pose3 pose3(Rot3::RzRyRx(-0.1, 0.3, -0.4),
+                    Point3(1.0, -2.0, 3.0));
+  InsertQcqpValue<Rot2, 1>(Symbol('r', 2), rot2, &values);
+  InsertQcqpValue<Rot3, 1>(Symbol('r', 3), rot3, &values);
+  InsertQcqpValue<Pose2, 1>(Symbol('p', 2), pose2, &values);
+  InsertQcqpValue<Pose3, 1>(Symbol('p', 3), pose3, &values);
+  const Matrix foreignValue = Matrix::Zero(6, 1);
+  values.insert(Symbol('z', 0), foreignValue);
+
+  const auto rot2Values = ExtractQcqpValues<Rot2, 1>(values);
+  const auto rot3Values = ExtractQcqpValues<Rot3, 1>(values);
+  const auto pose2Values = ExtractQcqpValues<Pose2, 1>(values);
+  const auto pose3Values = ExtractQcqpValues<Pose3, 1>(values);
+  LONGS_EQUAL(1, rot2Values.size());
+  LONGS_EQUAL(1, rot3Values.size());
+  LONGS_EQUAL(1, pose2Values.size());
+  LONGS_EQUAL(1, pose3Values.size());
+  EXPECT(assert_equal(rot2, rot2Values.front().second, 1e-12));
+  EXPECT(assert_equal(rot3, rot3Values.front().second, 1e-12));
+  EXPECT(assert_equal(pose2, pose2Values.front().second, 1e-12));
+  EXPECT(assert_equal(pose3, pose3Values.front().second, 1e-12));
+}
+
 // For canonical X=R', the leading-block projection returns R exactly.
 TEST(QcqpProblem, ExtractQcqpValuesRot2) {
   Values values;

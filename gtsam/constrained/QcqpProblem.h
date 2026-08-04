@@ -121,21 +121,28 @@ void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints) {
 }
 
 /**
- * Project matrix-form QCQP variables back into typed values.
+ * Project QCQP variables back into typed values.
  *
- * Only exact N-by-D matrix slices are considered, where N is the intrinsic
- * matrix row dimension of T. Canonical lifts and solutions whose connected
- * component has been explicitly gauge-aligned have meaningful absolute
- * rotations. An unaligned D>1 component has a common right-O(D) gauge, so its
- * independently extracted absolute rotations are intentionally best-effort
- * and gauge-dependent.
+ * D=1 accepts the exact homogenized vector dimension defined by T. D>1 accepts
+ * exact N-by-D matrix slices, where N is the intrinsic matrix row dimension
+ * of T. Canonical lifts and solutions whose connected component has been
+ * explicitly gauge-aligned have meaningful absolute rotations. An unaligned
+ * D>1 component has a common right-O(D) gauge, so its independently extracted
+ * absolute rotations are intentionally best-effort and gauge-dependent.
  */
 template <typename T, int D>
 std::vector<std::pair<Key, T>> ExtractQcqpValues(const Values& qcqpValues) {
   static_assert(internal::HasQcqpExtractionTraits<T, D>::value,
                 "ExtractQcqpValues requires traits<T>::QcqpValue<D>, "
                 "QcqpConstraints<D>, and FromQcqpValue<D>.");
-  constexpr int expectedRows = T::LieAlgebra::RowsAtCompileTime;
+  constexpr int expectedRows = [] {
+    if constexpr (D == 1) {
+      return 1 + traits<T>::TruncatedVecRows *
+                     T::LieAlgebra::RowsAtCompileTime;
+    } else {
+      return T::LieAlgebra::RowsAtCompileTime;
+    }
+  }();
   std::vector<std::pair<Key, T>> out;
   for (const auto& [key, M] : qcqpValues.extract<Matrix>()) {
     if (M.rows() == expectedRows && M.cols() == D) {

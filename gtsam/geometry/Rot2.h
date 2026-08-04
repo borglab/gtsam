@@ -358,21 +358,34 @@ struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
   }
 
   /**
-   * Project a canonical 2-by-D lift back to Rot2.
+   * Project a D=1 vector or canonical 2-by-D lift back to Rot2.
    *
    * Matrix-form QCQP solutions have a right-O(D) gauge, making this
    * leading-block projection gauge-dependent unless the caller has first
-   * chosen a gauge. X must be exactly 2-by-D.
+   * chosen a gauge. Matrix-form X must be exactly 2-by-D.
    */
   template <int D>
   static Rot2 FromQcqpValue(const Matrix& X) {
-    static_assert(D >= 2,
-                  "traits<Rot2>::FromQcqpValue requires D >= 2.");
-    if (X.rows() != 2 || X.cols() != D) {
-      throw std::invalid_argument(
-          "traits<Rot2>::FromQcqpValue requires a 2-by-D matrix.");
+    if constexpr (D == 1) {
+      if (X.rows() != 5 || X.cols() != 1 || std::abs(X(0, 0)) < 1e-9) {
+        throw std::invalid_argument(
+            "traits<Rot2>::FromQcqpValue requires a 5-by-1 vector with a "
+            "nonzero homogenization entry.");
+      }
+      const Vector x = X.col(0) / X(0, 0);
+      Matrix2 R;
+      R.col(0) = x.segment<2>(1);
+      R.col(1) = x.segment<2>(3);
+      return Rot2::ClosestTo(R);
+    } else {
+      static_assert(D >= 2,
+                    "traits<Rot2>::FromQcqpValue requires D >= 2.");
+      if (X.rows() != 2 || X.cols() != D) {
+        throw std::invalid_argument(
+            "traits<Rot2>::FromQcqpValue requires a 2-by-D matrix.");
+      }
+      return Rot2::ClosestTo(X.template leftCols<2>().transpose());
     }
-    return Rot2::ClosestTo(X.template leftCols<2>().transpose());
   }
 };
 

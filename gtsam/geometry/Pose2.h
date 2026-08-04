@@ -449,6 +449,26 @@ struct traits<Pose2> : public internal::MatrixLieGroup<Pose2, 3> {
           "traits<Pose2>::QcqpConstraints only supports D=1.");
     }
   }
+
+  /** Project a D=1 homogenized QCQP vector back to Pose2. */
+  template <int D>
+  static Pose2 FromQcqpValue(const Matrix& X) {
+    if constexpr (D == 1) {
+      if (X.rows() != 7 || X.cols() != 1 || std::abs(X(0, 0)) < 1e-9) {
+        throw std::invalid_argument(
+            "traits<Pose2>::FromQcqpValue requires a 7-by-1 vector with a "
+            "nonzero homogenization entry.");
+      }
+      const Vector x = X.col(0) / X(0, 0);
+      Matrix2 R;
+      R.col(0) = x.segment<2>(1);
+      R.col(1) = x.segment<2>(3);
+      return Pose2(Rot2::ClosestTo(R), x.segment<2>(5));
+    } else {
+      throw std::invalid_argument(
+          "traits<Pose2>::FromQcqpValue only supports D=1.");
+    }
+  }
 };
 
 template <>

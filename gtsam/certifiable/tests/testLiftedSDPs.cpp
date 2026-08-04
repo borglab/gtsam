@@ -280,11 +280,20 @@ SdpSolutionSummary SolveAndSummarize(SdpProblem* sdp,
     throw std::runtime_error("MOSEK did not return a readable solution.");
   }
 
-  sdp->recoverLiftedVectors();
+  sdp->recoverQcqpValues();
   const std::vector<double>& eigenvalueRatios =
       sdp->getRecoveredVariableEVRs();
-  const std::vector<double> poseErrors =
-      sdp->getRecoveredPoseErrorNorms(groundTruth);
+  const auto recovered =
+      ExtractQcqpValues<T, 1>(sdp->getRecoveredQcqpValues());
+  if (recovered.size() != groundTruth.size()) {
+    throw std::runtime_error(
+        "Recovered QCQP value count does not match ground truth.");
+  }
+  std::vector<double> poseErrors(recovered.size());
+  for (size_t index = 0; index < recovered.size(); ++index) {
+    poseErrors[index] =
+        groundTruth[index].localCoordinates(recovered[index].second).norm();
+  }
 
   return {sdp->objectiveValue(),
           *std::min_element(eigenvalueRatios.begin(), eigenvalueRatios.end()),

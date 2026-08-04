@@ -745,21 +745,35 @@ struct traits<Rot3> : public internal::MatrixLieGroup<Rot3, 3> {
   }
 
   /**
-   * Project a canonical 3-by-D lift back to Rot3.
+   * Project a D=1 vector or canonical 3-by-D lift back to Rot3.
    *
    * Matrix-form QCQP solutions have a right-O(D) gauge, making this
    * leading-block projection gauge-dependent unless the caller has first
-   * chosen a gauge. X must be exactly 3-by-D.
+   * chosen a gauge. Matrix-form X must be exactly 3-by-D.
    */
   template <int D>
   static Rot3 FromQcqpValue(const Matrix& X) {
-    static_assert(D >= 3,
-                  "traits<Rot3>::FromQcqpValue requires D >= 3.");
-    if (X.rows() != 3 || X.cols() != D) {
-      throw std::invalid_argument(
-          "traits<Rot3>::FromQcqpValue requires a 3-by-D matrix.");
+    if constexpr (D == 1) {
+      if (X.rows() != 10 || X.cols() != 1 || std::abs(X(0, 0)) < 1e-9) {
+        throw std::invalid_argument(
+            "traits<Rot3>::FromQcqpValue requires a 10-by-1 vector with a "
+            "nonzero homogenization entry.");
+      }
+      const Vector x = X.col(0) / X(0, 0);
+      Matrix3 R;
+      R.col(0) = x.segment<3>(1);
+      R.col(1) = x.segment<3>(4);
+      R.col(2) = x.segment<3>(7);
+      return Rot3::ClosestTo(R);
+    } else {
+      static_assert(D >= 3,
+                    "traits<Rot3>::FromQcqpValue requires D >= 3.");
+      if (X.rows() != 3 || X.cols() != D) {
+        throw std::invalid_argument(
+            "traits<Rot3>::FromQcqpValue requires a 3-by-D matrix.");
+      }
+      return Rot3::ClosestTo(X.template leftCols<3>().transpose());
     }
-    return Rot3::ClosestTo(X.template leftCols<3>().transpose());
   }
 };
 
