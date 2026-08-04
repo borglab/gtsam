@@ -255,9 +255,6 @@ namespace gtsam {
 
 template <>
 struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
-  /// Number of matrix rows retained by the truncated vectorization.
-  inline constexpr static int TruncatedVecRows = 2;
-
   /// Dimension of the D=1 homogenized QCQP vector.
   inline constexpr static int QcqpVectorDim = 5;
 

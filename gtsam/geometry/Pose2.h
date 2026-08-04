@@ -378,9 +378,6 @@ using Pose2Pairs = std::vector<Pose2Pair>;
  */
 template <>
 struct traits<Pose2> : public internal::MatrixLieGroup<Pose2, 3> {
-  /// Number of matrix rows retained by the truncated vectorization.
-  inline constexpr static int TruncatedVecRows = 2;
-
   /// Dimension of the D=1 homogenized QCQP vector.
   inline constexpr static int QcqpVectorDim = 7;
 

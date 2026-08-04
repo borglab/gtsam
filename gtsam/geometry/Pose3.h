@@ -363,9 +363,6 @@ typedef std::vector<Pose3> Pose3Vector;
  */
 template <>
 struct traits<Pose3> : public internal::MatrixLieGroup<Pose3, 4> {
-  /// Number of matrix rows retained by the truncated vectorization.
-  inline constexpr static int TruncatedVecRows = 3;
-
   /// Dimension of the D=1 homogenized QCQP vector.
   inline constexpr static int QcqpVectorDim = 13;
 

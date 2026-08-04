@@ -162,9 +162,9 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
       if (this->noiseModel_->isConstrained()) {
         InsertQcqpConstraints<T, 1>(this->key(), constraints);
 
-        constexpr int M = traits<T>::TruncatedVecRows;
         constexpr int LiftedDim = traits<T>::QcqpVectorDim;
-        static_assert(LiftedDim == M * N + 1);
+        static_assert((LiftedDim - 1) % N == 0);
+        constexpr int M = (LiftedDim - 1) / N;
         Vector target = Vector::Zero(LiftedDim);
         target(0) = 1.0;
         // vecM_ is the full column-major vec(M). For pose lifts, copy only the
@@ -422,10 +422,10 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
             "non-robust/non-hard quadratic noise model");
       }
 
-      constexpr int M = traits<T>::TruncatedVecRows;
-      constexpr int MN = M * N;
       constexpr int LiftedDim = traits<T>::QcqpVectorDim;
-      static_assert(LiftedDim == MN + 1);  // The lifted vector has a leading 1
+      constexpr int MN = LiftedDim - 1;  // The lifted vector has a leading 1
+      static_assert(MN % N == 0);
+      constexpr int M = MN / N;
 
       const Matrix measurement = this->T12_.matrix();
       const Matrix I_M = Matrix::Identity(M, M);

@@ -592,9 +592,6 @@ class GTSAM_EXPORT Rot3 : public MatrixLieGroup<Rot3, 3, 3> {
 
 template <>
 struct traits<Rot3> : public internal::MatrixLieGroup<Rot3, 3> {
-  /// Number of matrix rows retained by the truncated vectorization.
-  inline constexpr static int TruncatedVecRows = 3;
-
   /// Dimension of the D=1 homogenized QCQP vector.
   inline constexpr static int QcqpVectorDim = 10;
 
