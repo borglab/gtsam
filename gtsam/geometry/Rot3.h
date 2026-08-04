@@ -30,6 +30,7 @@
 #include <gtsam/config.h> // Get GTSAM_USE_QUATERNIONS macro
 
 #include <random>
+#include <stdexcept>
 
 // You can override the default coordinate mode using this flag
 #ifndef ROT3_DEFAULT_COORDINATES_MODE
@@ -55,7 +56,7 @@ namespace gtsam {
  * if it is defined.
  * @ingroup geometry
  */
-class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
+class GTSAM_EXPORT Rot3 : public MatrixLieGroup<Rot3, 3, 3> {
  public:
   static constexpr size_t MatrixM = 3;
  private:
@@ -182,7 +183,7 @@ class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
     /// Positive pitch is up (increasing aircraft altitude).See ypr
     static Rot3 Pitch(double t) { return Ry(t); }
 
-    //// Positive roll is to right (increasing yaw in aircraft).
+    /// Positive roll is to right (increasing yaw in aircraft).
     static Rot3 Roll (double t) { return Rx(t); }
 
     /**
@@ -352,7 +353,7 @@ class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
 #ifndef GTSAM_USE_QUATERNIONS
 
     // Cayley chart around origin
-    struct CayleyChart {
+    struct GTSAM_EXPORT CayleyChart {
     static Rot3 Retract(const Vector3& v, OptionalJacobian<3, 3> H = {});
     static Vector3 Local(const Rot3& r, OptionalJacobian<3, 3> H = {});
     };
@@ -395,6 +396,9 @@ class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
 
     /** Calculate Adjoint map */
     Matrix3 AdjointMap() const { return matrix(); }
+
+    /// Matrix representation of the Lie-algebra adjoint operator ad_xi on so(3).
+    static Matrix3 adjointMap(const Vector3& xi) { return Hat(xi); }
 
     // Chart at origin, depends on compile-time flag ROT3_DEFAULT_COORDINATES_MODE
     struct GTSAM_EXPORT ChartAtOrigin {
@@ -568,12 +572,6 @@ class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
 #endif
     }
 #endif
-
-#ifdef GTSAM_USE_QUATERNIONS
-  // only align if quaternion, Matrix3 has no alignment requirements
-  public:
-    GTSAM_MAKE_ALIGNED_OPERATOR_NEW
-#endif
   };
 
   /// std::vector of Rot3s, used in Matlab wrapper
@@ -592,11 +590,81 @@ class GTSAM_EXPORT Rot3 : public LieGroup<Rot3, 3> {
   GTSAM_EXPORT std::pair<Matrix3, Vector3> RQ(
       const Matrix3& A, OptionalJacobian<3, 9> H = {});
 
-  template <>
-struct traits<Rot3> : public internal::MatrixLieGroup<Rot3, 3> {};
+template <>
+struct traits<Rot3> : public internal::MatrixLieGroup<Rot3, 3> {
+  /**
+   * Return a matrix-valued QCQP variable for Rot3.
+   *
+   * D>=3 returns [R', 0] as a 3-by-D row-orthonormal matrix. These variables
+   * form a Stiefel relaxation with a common right-O(D) gauge.
+   */
+  template <int D = 1>
+  static Matrix QcqpValue(const Rot3& value) {
+    if constexpr (D >= 3) {
+      Matrix X = Matrix::Zero(3, D);
+      X.template leftCols<3>() = value.matrix().transpose();
+      return X;
+    } else {
+      throw std::invalid_argument(
+          "traits<Rot3>::QcqpValue only supports D>=3.");
+    }
+  }
+
+  /**
+   * Return row-space QCQP equality constraints A, b such that
+   * trace(X' A X) = b. For D>=3 the same 3-by-3 constraints enforce
+   * XX'=I. For square D=3 this permits both determinant signs; it does not
+   * distinguish SO(3) from the reflected component of O(3).
+   */
+  template <int D = 1>
+  static std::vector<std::pair<Matrix, double>> QcqpConstraints() {
+    if constexpr (D >= 3) {
+      std::vector<std::pair<Matrix, double>> constraints;
+      constraints.reserve(6);
+
+      // 3 row-unit-norm: ||row r||^2 = 1.
+      for (int r = 0; r < 3; ++r) {
+        Matrix A = Matrix::Zero(3, 3);
+        A(r, r) = 1.0;
+        constraints.emplace_back(A, 1.0);
+      }
+
+      // 3 row-orthogonality: row r1 . row r2 = 0.
+      for (int r1 = 0; r1 < 3; ++r1) {
+        for (int r2 = r1 + 1; r2 < 3; ++r2) {
+          Matrix A = Matrix::Zero(3, 3);
+          A(r1, r2) = 0.5;
+          A(r2, r1) = 0.5;
+          constraints.emplace_back(A, 0.0);
+        }
+      }
+      return constraints;
+    } else {
+      throw std::invalid_argument(
+          "traits<Rot3>::QcqpConstraints only supports D>=3.");
+    }
+  }
+
+  /**
+   * Project a canonical 3-by-D lift back to Rot3.
+   *
+   * Matrix-form QCQP solutions have a right-O(D) gauge, making this
+   * leading-block projection gauge-dependent unless the caller has first
+   * chosen a gauge. X must be exactly 3-by-D.
+   */
+  template <int D>
+  static Rot3 FromQcqpValue(const Matrix& X) {
+    static_assert(D >= 3,
+                  "traits<Rot3>::FromQcqpValue requires D >= 3.");
+    if (X.rows() != 3 || X.cols() != D) {
+      throw std::invalid_argument(
+          "traits<Rot3>::FromQcqpValue requires a 3-by-D matrix.");
+    }
+    return Rot3::ClosestTo(X.template leftCols<3>().transpose());
+  }
+};
 
 template <>
-struct traits<const Rot3> : public internal::MatrixLieGroup<Rot3, 3> {};
-  
-}  // namespace gtsam
+struct traits<const Rot3> : public traits<Rot3> {};
 
+}  // namespace gtsam

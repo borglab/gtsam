@@ -29,7 +29,7 @@ namespace gtsam {
  * This factor is used in augmented Lagrangian optimizer to create biased cost
  * functions.
  * Note that the noise model is stored twice (both in original factor and the
- * noisemodel of substitute factor. The noisemodel in the original factor will
+ * noise model of substitute factor. The noise model in the original factor will
  * be ignored. */
 class GTSAM_EXPORT BiasedFactor : public NoiseModelFactor {
  protected:
@@ -117,7 +117,7 @@ AugmentedLagrangianOptimizer::iterate(const State& state, const double muEq,
   auto optimizer =
       createUnconstrainedOptimizer(augmentedLagrangian, state.values);
   newState.setValues(optimizer->optimize(), problem_);
-  newState.unconstrainedIterationss = optimizer->iterations();
+  newState.unconstrainedIterations = optimizer->iterations();
 
   // Update penalty parameters for next iteration.
   double next_muEq, next_muIneq;
@@ -159,7 +159,8 @@ NonlinearFactorGraph AugmentedLagrangianOptimizer::augmentedLagrangianFunction(
   const double& muEq = state.muEq;
   for (size_t i = 0; i < eqConstraints.size(); i++) {
     const auto& constraint = eqConstraints.at(i);
-    Vector bias = state.lambdaEq[i] / muEq * constraint->sigmas();
+    Vector bias = state.lambdaEq[i] / muEq;
+    bias = bias.cwiseProduct(constraint->sigmas());
     auto penalty_l2 = constraint->penaltyFactor(muEq);
     graph.emplace_shared<BiasedFactor>(penalty_l2, bias);
   }
@@ -186,7 +187,7 @@ NonlinearFactorGraph AugmentedLagrangianOptimizer::augmentedLagrangianFunction(
 /* ************************************************************************* */
 void AugmentedLagrangianOptimizer::updateLagrangeMultiplier(
     const State& previousState, State* state) const {
-  // Perform dual ascent on Lagrange multipliers for e-constriants.
+  // Perform dual ascent on Lagrange multipliers for e-constraints.
   const NonlinearEqualityConstraints& eqConstraints = problem_.eConstraints();
   state->lambdaEq.resize(eqConstraints.size());
   for (size_t i = 0; i < eqConstraints.size(); i++) {
@@ -198,7 +199,7 @@ void AugmentedLagrangianOptimizer::updateLagrangeMultiplier(
     state->lambdaEq[i] = previousState.lambdaEq[i] + step_size * violation;
   }
 
-  // Perform dual ascent on Lagrange multipliers for i-constriants.
+  // Perform dual ascent on Lagrange multipliers for i-constraints.
   const NonlinearInequalityConstraints& ineqConstraints =
       problem_.iConstraints();
   state->lambdaIneq.resize(ineqConstraints.size());
@@ -239,7 +240,7 @@ AugmentedLagrangianOptimizer::createUnconstrainedOptimizer(
     const NonlinearFactorGraph& graph, const Values& values) const {
   // TODO(yetong): make compatible with all NonlinearOptimizers.
   return std::make_shared<LevenbergMarquardtOptimizer>(graph, values,
-                                                       p_->lm_params);
+                                                       p_->lmParams);
 }
 
 /* ************************************************************************* */
@@ -283,7 +284,7 @@ void AugmentedLagrangianOptimizer::logIteration(const State& state) const {
     cout << "|" << setw(10) << setprecision(4) << state.cost;
     cout << "|" << setw(10) << setprecision(4) << state.eqConstraintViolation;
     cout << "|" << setw(10) << setprecision(4) << state.ineqConstraintViolation;
-    cout << "|" << setw(10) << state.unconstrainedIterationss;
+    cout << "|" << setw(10) << state.unconstrainedIterations;
     cout << "|" << setw(10) << state.time;
     cout << "|" << endl;
   }

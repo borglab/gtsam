@@ -21,11 +21,11 @@
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LinearContainerFactor.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/JunctionTree.h>
 #include <gtsam/geometry/Pose3.h>
@@ -47,11 +47,17 @@ const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
 const SharedDiagonal noiseOdometery = noiseModel::Diagonal::Sigmas((Vector(6) << 0.1, 0.1, 0.1, 0.5, 0.5, 0.5).finished());
 const SharedDiagonal noiseLoop = noiseModel::Diagonal::Sigmas((Vector(6) << 0.25, 0.25, 0.25, 1.0, 1.0, 1.0).finished());
 
+LevenbergMarquardtParams makeLmParams() {
+  LevenbergMarquardtParams params;
+  params.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
+  return params;
+}
+
 /* ************************************************************************* */
 Values BatchOptimize(const NonlinearFactorGraph& graph, const Values& theta, int maxIter = 100) {
 
   // Create an L-M optimizer
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   parameters.maxIterations = maxIter;
 
   LevenbergMarquardtOptimizer optimizer(graph, theta, parameters);
@@ -71,15 +77,15 @@ TEST( ConcurrentBatchSmoother, equals )
   // TODO: Test 'equals' more vigorously
 
   // Create a Concurrent Batch Smoother
-  LevenbergMarquardtParams parameters1;
+  LevenbergMarquardtParams parameters1 = makeLmParams();
   ConcurrentBatchSmoother smoother1(parameters1);
 
   // Create an identical Concurrent Batch Smoother
-  LevenbergMarquardtParams parameters2;
+  LevenbergMarquardtParams parameters2 = makeLmParams();
   ConcurrentBatchSmoother smoother2(parameters2);
 
   // Create a different Concurrent Batch Smoother
-  LevenbergMarquardtParams parameters3;
+  LevenbergMarquardtParams parameters3 = makeLmParams();
   parameters3.maxIterations = 1;
   ConcurrentBatchSmoother smoother3(parameters3);
 
@@ -92,7 +98,7 @@ TEST( ConcurrentBatchSmoother, equals )
 TEST( ConcurrentBatchSmoother, getFactors )
 {
   // Create a Concurrent Batch Smoother
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   ConcurrentBatchSmoother smoother(parameters);
 
   // Expected graph is empty
@@ -142,7 +148,7 @@ TEST( ConcurrentBatchSmoother, getFactors )
 TEST( ConcurrentBatchSmoother, getLinearizationPoint )
 {
   // Create a Concurrent Batch Smoother
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   ConcurrentBatchSmoother smoother(parameters);
 
   // Expected values is empty
@@ -204,7 +210,7 @@ TEST( ConcurrentBatchSmoother, getDelta )
 TEST( ConcurrentBatchSmoother, calculateEstimate )
 {
   // Create a Concurrent Batch Smoother
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   ConcurrentBatchSmoother smoother(parameters);
 
   // Expected values is empty
@@ -277,7 +283,7 @@ TEST( ConcurrentBatchSmoother, calculateEstimate )
 TEST( ConcurrentBatchSmoother, update_empty )
 {
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
 
   // Create a Concurrent Batch Smoother
   ConcurrentBatchSmoother smoother(parameters);
@@ -290,7 +296,7 @@ TEST( ConcurrentBatchSmoother, update_empty )
 TEST( ConcurrentBatchSmoother, update_multiple )
 {
   // Create a Concurrent Batch Smoother
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   ConcurrentBatchSmoother smoother(parameters);
 
   // Expected values is empty
@@ -347,7 +353,7 @@ TEST( ConcurrentBatchSmoother, update_multiple )
 TEST( ConcurrentBatchSmoother, synchronize_empty )
 {
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
 
   // Create a Concurrent Batch Smoother
   ConcurrentBatchSmoother smoother(parameters);
@@ -377,7 +383,7 @@ TEST( ConcurrentBatchSmoother, synchronize_empty )
 TEST( ConcurrentBatchSmoother, synchronize_1 )
 {
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   parameters.maxIterations = 1;
 
   // Create a Concurrent Batch Smoother
@@ -438,7 +444,7 @@ TEST( ConcurrentBatchSmoother, synchronize_1 )
 TEST( ConcurrentBatchSmoother, synchronize_2 )
 {
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   parameters.maxIterations = 1;
 
   // Create a Concurrent Batch Smoother
@@ -509,7 +515,7 @@ TEST( ConcurrentBatchSmoother, synchronize_2 )
 TEST( ConcurrentBatchSmoother, synchronize_3 )
 {
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   parameters.maxIterations = 1;
 
   // Create a Concurrent Batch Smoother
@@ -581,7 +587,7 @@ TEST( ConcurrentBatchSmoother, removeFactors_topology_1 )
   std::cout << "*********************** removeFactors_topology_1 ************************" << std::endl;
 
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
 
   // Create a Concurrent Batch Smoother
   ConcurrentBatchSmoother smoother(parameters);
@@ -635,7 +641,7 @@ TEST( ConcurrentBatchSmoother, removeFactors_topology_2 )
   // we try removing the last factor
 
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
 
   // Create a Concurrent Batch Smoother
   ConcurrentBatchSmoother smoother(parameters);
@@ -689,7 +695,7 @@ TEST( ConcurrentBatchSmoother, removeFactors_topology_3 )
   // we try removing the first factor
 
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   ConcurrentBatchSmoother Smoother(parameters);
 
   // Add some factors to the Smoother
@@ -739,7 +745,7 @@ TEST( ConcurrentBatchSmoother, removeFactors_values )
   // we try removing the last factor
 
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   ConcurrentBatchSmoother Smoother(parameters);
 
   // Add some factors to the Smoother

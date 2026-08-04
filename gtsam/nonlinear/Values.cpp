@@ -24,6 +24,7 @@
 
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/base/timing.h>
 
 #include <list>
 #include <memory>
@@ -106,14 +107,8 @@ namespace gtsam {
     assert(this->size() == delta.size());
     auto key_value = values_.begin();
     VectorValues::const_iterator key_delta;
-#ifdef GTSAM_USE_TBB
     for (; key_value != values_.end(); ++key_value) {
       key_delta = delta.find(key_value->first);
-#else
-    for (key_delta = delta.begin(); key_value != values_.end();
-         ++key_value, ++key_delta) {
-      assert(key_value->first == key_delta->first);
-#endif
       Key var = key_value->first;
       assert(static_cast<size_t>(delta[var].size()) == key_value->second->dim());
       assert(delta[var].allFinite());

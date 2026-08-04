@@ -139,8 +139,9 @@ Errors SubgraphPreconditioner::operator*(const VectorValues &y) const {
 void SubgraphPreconditioner::multiplyInPlace(const VectorValues& y, Errors& e) const {
 
   Errors::iterator ei = e.begin();
-  for(const auto& key_value: y) {
-    *ei = key_value.second;
+  // Fill the identity-part errors in key-sorted order, to match createErrors.
+  for (const auto& [key, value] : y.sorted()) {
+    *ei = value;
     ++ei;
   }
 
@@ -155,8 +156,9 @@ VectorValues SubgraphPreconditioner::operator^(const Errors& e) const {
 
   Errors::const_iterator it = e.begin();
   VectorValues y = zero();
-  for(auto& key_value: y) {
-    key_value.second = *it;
+  // Map the identity-part errors back into y using key-sorted order.
+  for (const auto& [key, value] : y.sorted()) {
+    y.at(key) = *it;
     ++it;
   }
   transposeMultiplyAdd2(1.0, it, e.end(), y);
@@ -169,9 +171,11 @@ void SubgraphPreconditioner::transposeMultiplyAdd
 (double alpha, const Errors& e, VectorValues& y) const {
 
   Errors::const_iterator it = e.begin();
-  for(auto& key_value: y) {
+  // Add the identity-part contribution in key-sorted order so it
+  // matches the layout produced by createErrors().
+  for (const auto& [key, value] : y.sorted()) {
     const Vector& ei = *it;
-    key_value.second += alpha * ei;
+    y.at(key) += alpha * ei;
     ++it;
   }
   transposeMultiplyAdd2(alpha, it, e.end(), y);

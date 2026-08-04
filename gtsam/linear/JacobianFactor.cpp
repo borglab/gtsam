@@ -20,17 +20,18 @@
 #include <gtsam/linear/linearExceptions.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/BatchJacobianFactor.h>
 #include <gtsam/linear/Scatter.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/inference/VariableSlots.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/FastMap.h>
 #include <gtsam/base/cholesky.h>
 
+#include <array>
 #include <cmath>
 #include <cassert>
 #include <sstream>
@@ -42,7 +43,6 @@ namespace gtsam {
 
 // Typedefs used in constructors below.
 using Dims = std::vector<Key>;
-using Pairs = std::vector<std::pair<Key, Matrix>>;
 
 /* ************************************************************************* */
 JacobianFactor::JacobianFactor() :
@@ -57,9 +57,12 @@ JacobianFactor::JacobianFactor(const GaussianFactor& gf) {
     *this = JacobianFactor(*asJacobian);
   else if (const HessianFactor* asHessian = dynamic_cast<const HessianFactor*>(&gf))
     *this = JacobianFactor(*asHessian);
+  else if (const BatchJacobianFactorBase* asBatch =
+               dynamic_cast<const BatchJacobianFactorBase*>(&gf))
+    *this = asBatch->toJacobianFactor();
   else
     throw std::invalid_argument(
-        "In JacobianFactor(const GaussianFactor& rhs), rhs is neither a JacobianFactor nor a HessianFactor");
+        "In JacobianFactor(const GaussianFactor& rhs), rhs is not a supported Jacobian-compatible factor");
 }
 
 /* ************************************************************************* */
@@ -70,21 +73,58 @@ JacobianFactor::JacobianFactor(const Vector& b_in) :
 
 /* ************************************************************************* */
 JacobianFactor::JacobianFactor(Key i1, const Matrix& A1, const Vector& b,
-    const SharedDiagonal& model) {
-  fillTerms(Pairs{{i1, A1}}, b, model);
+                               const SharedDiagonal& model)
+    : Base(std::array<Key, 1>{{i1}}) {
+  if (model && (DenseIndex)model->dim() != b.size())
+    throw InvalidNoiseModel(b.size(), model->dim());
+  if (A1.rows() != b.size()) throw InvalidMatrixBlock(b.size(), A1.rows());
+
+  const std::array<size_t, 1> dims = {static_cast<size_t>(A1.cols())};
+  Ab_ = VerticalBlockMatrix(dims, b.size(), true);
+  Ab_(0) = A1;
+  getb() = b;
+  model_ = model;
 }
 
 /* ************************************************************************* */
 JacobianFactor::JacobianFactor(const Key i1, const Matrix& A1, Key i2,
-    const Matrix& A2, const Vector& b, const SharedDiagonal& model) {
-  fillTerms(Pairs{{i1, A1}, {i2, A2}}, b, model);
+                               const Matrix& A2, const Vector& b,
+                               const SharedDiagonal& model)
+    : Base(std::array<Key, 2>{{i1, i2}}) {
+  if (model && (DenseIndex)model->dim() != b.size())
+    throw InvalidNoiseModel(b.size(), model->dim());
+  if (A1.rows() != b.size()) throw InvalidMatrixBlock(b.size(), A1.rows());
+  if (A2.rows() != b.size()) throw InvalidMatrixBlock(b.size(), A2.rows());
+
+  const std::array<size_t, 2> dims = {static_cast<size_t>(A1.cols()),
+                                      static_cast<size_t>(A2.cols())};
+  Ab_ = VerticalBlockMatrix(dims, b.size(), true);
+  Ab_(0) = A1;
+  Ab_(1) = A2;
+  getb() = b;
+  model_ = model;
 }
 
 /* ************************************************************************* */
 JacobianFactor::JacobianFactor(const Key i1, const Matrix& A1, Key i2,
-    const Matrix& A2, Key i3, const Matrix& A3, const Vector& b,
-    const SharedDiagonal& model) {
-  fillTerms(Pairs{{i1, A1}, {i2, A2}, {i3, A3}}, b, model);
+                               const Matrix& A2, Key i3, const Matrix& A3,
+                               const Vector& b, const SharedDiagonal& model)
+    : Base(std::array<Key, 3>{{i1, i2, i3}}) {
+  if (model && (DenseIndex)model->dim() != b.size())
+    throw InvalidNoiseModel(b.size(), model->dim());
+  if (A1.rows() != b.size()) throw InvalidMatrixBlock(b.size(), A1.rows());
+  if (A2.rows() != b.size()) throw InvalidMatrixBlock(b.size(), A2.rows());
+  if (A3.rows() != b.size()) throw InvalidMatrixBlock(b.size(), A3.rows());
+
+  const std::array<size_t, 3> dims = {static_cast<size_t>(A1.cols()),
+                                      static_cast<size_t>(A2.cols()),
+                                      static_cast<size_t>(A3.cols())};
+  Ab_ = VerticalBlockMatrix(dims, b.size(), true);
+  Ab_(0) = A1;
+  Ab_(1) = A2;
+  Ab_(2) = A3;
+  getb() = b;
+  model_ = model;
 }
 
 /* ************************************************************************* */
@@ -203,7 +243,7 @@ std::tuple<FastVector<DenseIndex>, DenseIndex, DenseIndex> _countDims(
   }
 #endif
 
-  return std::make_tuple(varDims, m, n);
+  return std::make_tuple(std::move(varDims), m, n);
 }
 
 /* ************************************************************************* */
@@ -226,6 +266,21 @@ FastVector<JacobianFactor::shared_ptr> _convertOrCastToJacobians(
 }
 
 /* ************************************************************************* */
+static std::vector<DenseIndex> _computeRowOffsets(
+    const FastVector<JacobianFactor::shared_ptr>& jacobians) {
+  std::vector<DenseIndex> rowOffsets;
+  rowOffsets.reserve(jacobians.size());
+  DenseIndex nextRow = 0;
+  for (const auto& jacobian : jacobians) {
+    rowOffsets.push_back(nextRow);
+    const DenseIndex rows = jacobian->rows();
+    if (rows > 0) {
+      nextRow += rows;
+    }
+  }
+  return rowOffsets;
+}
+
 void JacobianFactor::JacobianFactorHelper(const GaussianFactorGraph& graph,
     const FastVector<VariableSlots::const_iterator>& orderedSlots) {
 
@@ -235,6 +290,9 @@ void JacobianFactor::JacobianFactorHelper(const GaussianFactorGraph& graph,
 
   // Count dimensions
   const auto [varDims, m, n] = _countDims(jacobians, orderedSlots);
+
+  // Precompute row offsets once to avoid recomputing row starts per slot.
+  std::vector<DenseIndex> rowOffsets = _computeRowOffsets(jacobians);
 
   // Allocate matrix and copy keys in order
   gttic(allocate);
@@ -252,12 +310,12 @@ void JacobianFactor::JacobianFactorHelper(const GaussianFactorGraph& graph,
   for(VariableSlots::const_iterator varslot: orderedSlots) {
     JacobianFactor::ABlock destSlot(this->getA(this->begin() + combinedSlot));
     // Loop over source jacobians
-    DenseIndex nextRow = 0;
     for (size_t factorI = 0; factorI < jacobians.size(); ++factorI) {
       // Slot in source factor
       const size_t sourceSlot = varslot->second[factorI];
       const DenseIndex sourceRows = jacobians[factorI]->rows();
       if (sourceRows > 0) {
+        DenseIndex nextRow = rowOffsets[factorI];
         JacobianFactor::ABlock::RowsBlockXpr destBlock(
             destSlot.middleRows(nextRow, sourceRows));
         // Copy if exists in source factor, otherwise set zero
@@ -266,7 +324,6 @@ void JacobianFactor::JacobianFactorHelper(const GaussianFactorGraph& graph,
               jacobians[factorI]->begin() + sourceSlot);
         else
           destBlock.setZero();
-        nextRow += sourceRows;
       }
     }
     ++combinedSlot;
@@ -278,21 +335,20 @@ void JacobianFactor::JacobianFactorHelper(const GaussianFactorGraph& graph,
   bool anyConstrained = false;
   std::optional<Vector> sigmas;
   // Loop over source jacobians
-  DenseIndex nextRow = 0;
   for (size_t factorI = 0; factorI < jacobians.size(); ++factorI) {
     const DenseIndex sourceRows = jacobians[factorI]->rows();
     if (sourceRows > 0) {
+      DenseIndex nextRow = rowOffsets[factorI];
       this->getb().segment(nextRow, sourceRows) = jacobians[factorI]->getb();
       if (jacobians[factorI]->get_model()) {
         // If the factor has a noise model and we haven't yet allocated sigmas, allocate it.
         if (!sigmas)
           sigmas = Vector::Constant(m, 1.0);
         sigmas->segment(nextRow, sourceRows) =
-            jacobians[factorI]->get_model()->sigmas();
+            jacobians[factorI]->get_model()->sigmasRef();
         if (jacobians[factorI]->isConstrained())
           anyConstrained = true;
       }
-      nextRow += sourceRows;
     }
   }
   gttoc(copy_vectors);
@@ -492,10 +548,17 @@ bool JacobianFactor::equals(const GaussianFactor& f_, double tol) const {
 
 /* ************************************************************************* */
 Vector JacobianFactor::unweighted_error(const VectorValues& c) const {
-  Vector e = -getb();
-  for (size_t pos = 0; pos < size(); ++pos)
-    e += Ab_(pos) * c[keys_[pos]];
-  return e;
+  const DenseIndex totalDim = c.totalDim(keys_);
+  Vector w(totalDim + 1);
+  c.fillVector(keys_, w);
+  w(totalDim) = -1.0;
+  // Fast path when the active view is the full matrix (no row/column offsets).
+  if (Ab_.firstBlock() == 0 && Ab_.rowStart() == 0 &&
+      Ab_.rowEnd() == Ab_.matrix().rows()) {
+    return Ab_.matrix() * w;
+  }
+  // Fallback that respects firstBlock/rowStart/rowEnd for subviews.
+  return Ab_.full() * w;
 }
 
 /* ************************************************************************* */
@@ -514,11 +577,29 @@ double JacobianFactor::error(const VectorValues& c) const {
 }
 
 /* ************************************************************************* */
+double JacobianFactor::deltaError(const VectorValues& c, double* oldError,
+                                  double* newError) const {
+  const Vector e = unweighted_error(c);
+  const Vector b = getb();
+  double oldValue =
+      model_ ? 0.5 * model_->squaredMahalanobisDistance(b) : 0.5 * b.dot(b);
+  double newValue =
+      model_ ? 0.5 * model_->squaredMahalanobisDistance(e) : 0.5 * e.dot(e);
+  if (oldError) *oldError = oldValue;
+  if (newError) *newError = newValue;
+  return oldValue - newValue;
+}
+
+/* ************************************************************************* */
 Matrix JacobianFactor::augmentedInformation() const {
   if (model_) {
-    Matrix AbWhitened = Ab_.full();
-    model_->WhitenInPlace(AbWhitened);
-    return AbWhitened.transpose() * AbWhitened;
+    Matrix Ab = Ab_.full();
+    if (model_->isConstrained()) {
+      auto constrained = std::static_pointer_cast<noiseModel::Constrained>(model_);
+      return constrained->informationFromA(Ab);
+    }
+    model_->WhitenInPlace(Ab);
+    return Ab.transpose() * Ab;
   } else {
     return Ab_.full().transpose() * Ab_.full();
   }
@@ -527,9 +608,13 @@ Matrix JacobianFactor::augmentedInformation() const {
 /* ************************************************************************* */
 Matrix JacobianFactor::information() const {
   if (model_) {
-    Matrix AWhitened = this->getA();
-    model_->WhitenInPlace(AWhitened);
-    return AWhitened.transpose() * AWhitened;
+    Matrix A = this->getA();
+    if (model_->isConstrained()) {
+      auto constrained = std::static_pointer_cast<noiseModel::Constrained>(model_);
+      return constrained->informationFromA(A);
+    }
+    model_->WhitenInPlace(A);
+    return A.transpose() * A;
   } else {
     return this->getA().transpose() * this->getA();
   }
@@ -620,6 +705,72 @@ void JacobianFactor::updateHessian(const KeyVector& infoKeys,
       // Fill diagonal block with Aj'*Aj
       info->diagonalBlock(J).rankUpdate(Ab_j.transpose());
     }
+  }
+}
+
+/* ************************************************************************* */
+static void whitenedUpdateHessian(SymmetricBlockMatrix* info, std::vector<DenseIndex> slots, 
+  const VerticalBlockMatrix& Ab_, DenseIndex beginCol, DenseIndex endCol) {
+  const DenseIndex n = Ab_.nBlocks() - 1;
+
+  for (DenseIndex j = 0; j <= n; ++j) {
+    const DenseIndex J = slots[j];
+    Eigen::Block<const Matrix> Ab_j = Ab_(j);
+    
+    // Update diagonal block if J is in range
+    if (J >= beginCol && J < endCol) {
+      info->diagonalBlock(J).rankUpdate(Ab_j.transpose());
+    }
+    
+    // Fill off-diagonal blocks with Ai'*Aj where column max(I, J) is in range
+    for (DenseIndex i = 0; i < j; ++i) {
+      const DenseIndex I = slots[i];
+      
+      // The physical column index in the symmetric matrix is max(I, J)
+      const DenseIndex maxCol = std::max(I, J);
+      if (maxCol >= beginCol && maxCol < endCol) {
+        // Pass original indices - updateOffDiagonalBlock handles swapping internally
+        info->updateOffDiagonalBlock(I, J, Ab_(i).transpose() * Ab_j);
+      }
+    }
+  }
+}
+
+void JacobianFactor::updateHessian(const KeyVector& infoKeys,
+                                   SymmetricBlockMatrix* info,
+                                   DenseIndex beginCol, DenseIndex endCol) const {
+  if (rows() == 0) return;
+
+  // Ab_ is the augmented Jacobian matrix A, and we perform I += A'*A below.
+  DenseIndex n = Ab_.nBlocks() - 1;
+
+  // Pre-calculate slots
+  vector<DenseIndex> slots;
+  slots.reserve(n + 1);
+  bool foundCol = false;
+  for (DenseIndex j = 0; j < n; ++j) {
+    slots.push_back(Slot(infoKeys, keys_[j]));
+    if (slots[j] >= beginCol && slots[j] < endCol) {
+      foundCol = true;
+    }
+  }
+  slots.push_back(info->nBlocks() - 1);
+  if (slots[n] >= beginCol && slots[n] < endCol) {
+    foundCol = true;
+  }
+  if (!foundCol) return;
+
+  // Whiten the factor if it has a noise model
+  const SharedDiagonal& model = get_model();
+  if (model && !model->isUnit()) {
+    if (model->isConstrained())
+      throw invalid_argument(
+          "JacobianFactor::updateHessian: cannot update information with "
+          "constrained noise model");
+    JacobianFactor whitenedFactor = whiten();
+    whitenedUpdateHessian(info, std::move(slots), whitenedFactor.Ab_, beginCol, endCol);
+  } else {
+    whitenedUpdateHessian(info, std::move(slots), Ab_, beginCol, endCol);
   }
 }
 
@@ -731,9 +882,23 @@ void JacobianFactor::gradientAtZero(double* d) const {
 
 /* ************************************************************************* */
 Vector JacobianFactor::gradient(Key key, const VectorValues& x) const {
-  // TODO: optimize it for JacobianFactor without converting to a HessianFactor
-  HessianFactor hessian(*this);
-  return hessian.gradient(key, x);
+  const Factor::const_iterator it = find(key);
+  if (it == end())
+    throw std::invalid_argument("JacobianFactor::gradient: key not found");
+
+  // Compute A*x - b (unwhitened residual)
+  Vector e = -getb();
+  for (size_t pos = 0; pos < size(); ++pos)
+    e.noalias() += Ab_(pos) * x.at(keys_[pos]);
+
+  // gradient_k = A_k^T * Sigma^{-1} * e = (R*A_k)^T * (R*e)
+  if (model_) {
+    model_->whitenInPlace(e);
+    Matrix Ak = Ab_(it - begin());
+    model_->WhitenInPlace(Ak);
+    return Ak.transpose() * e;
+  }
+  return Ab_(it - begin()).transpose() * e;
 }
 
 /* ************************************************************************* */
@@ -866,13 +1031,15 @@ GaussianConditional::shared_ptr JacobianFactor::splitConditional(size_t nrFronta
   Ab_.rowEnd() = Ab_.rowStart() + frontalDim;
   SharedDiagonal conditionalNoiseModel;
   conditionalNoiseModel =
-      noiseModel::Diagonal::Sigmas(model_->sigmas().segment(Ab_.rowStart(), Ab_.rows()));
+      noiseModel::Diagonal::Sigmas(
+          model_->sigmasRef().segment(Ab_.rowStart(), Ab_.rows()));
   GaussianConditional::shared_ptr conditional =
       std::make_shared<GaussianConditional>(Base::keys_, nrFrontals, Ab_, conditionalNoiseModel);
 
   const DenseIndex maxRemainingRows =
       std::min(Ab_.cols(), originalRowEnd) - Ab_.rowStart() - frontalDim;
-  const DenseIndex remainingRows = std::min(model_->sigmas().size() - frontalDim, maxRemainingRows);
+  const DenseIndex remainingRows =
+      std::min(model_->sigmasRef().size() - frontalDim, maxRemainingRows);
   Ab_.rowStart() += frontalDim;
   Ab_.rowEnd() = Ab_.rowStart() + remainingRows;
   Ab_.firstBlock() += nrFrontals;
@@ -881,9 +1048,11 @@ GaussianConditional::shared_ptr JacobianFactor::splitConditional(size_t nrFronta
   keys_.erase(begin(), begin() + nrFrontals);
   // Set sigmas with the right model
   if (model_->isConstrained())
-    model_ = noiseModel::Constrained::MixedSigmas(model_->sigmas().tail(remainingRows));
+    model_ = noiseModel::Constrained::MixedSigmas(
+        model_->sigmasRef().tail(remainingRows));
   else
-    model_ = noiseModel::Diagonal::Sigmas(model_->sigmas().tail(remainingRows));
+    model_ = noiseModel::Diagonal::Sigmas(
+        model_->sigmasRef().tail(remainingRows));
   assert(model_->dim() == (size_t)Ab_.rows());
 
   return conditional;

@@ -167,6 +167,13 @@ namespace gtsam {
     /** unnormalized error */
     double error(const VectorValues& x) const;
 
+    /**
+     * Compute the change in error from zero to x, using a single pass
+     * over the factors. Optionally returns the old and new errors.
+     */
+    double deltaError(const VectorValues& x, double* oldError = nullptr,
+                      double* newError = nullptr) const;
+
     /** Unnormalized probability. O(n) */
     double probPrime(const VectorValues& c) const;
 

@@ -86,6 +86,13 @@ mark_as_advanced(GTSAM_COMPILE_DEFINITIONS_PRIVATE_RELEASE)
 mark_as_advanced(GTSAM_COMPILE_DEFINITIONS_PRIVATE_PROFILING)
 mark_as_advanced(GTSAM_COMPILE_DEFINITIONS_PRIVATE_TIMING)
 
+if("${CMAKE_PROJECT_NAME}" STREQUAL "GTSAM")
+  set(GTSAM_BUILD_WITH_WERROR_DEFAULT ON)
+else()
+  set(GTSAM_BUILD_WITH_WERROR_DEFAULT OFF)
+endif()
+option(GTSAM_BUILD_WITH_WERROR "Enable warnings as errors when building GTSAM." ${GTSAM_BUILD_WITH_WERROR_DEFAULT})
+
 if(MSVC)
   # Common to all configurations:
   list_append_cache(GTSAM_COMPILE_DEFINITIONS_PRIVATE
@@ -94,6 +101,7 @@ if(MSVC)
   )
   list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC
     _ENABLE_EXTENDED_ALIGNED_STORAGE
+    _USE_MATH_DEFINES # Enables M_PI, etc
   )
   # Avoid literally hundreds to thousands of warnings:
   list_append_cache(GTSAM_COMPILE_OPTIONS_PUBLIC
@@ -108,11 +116,15 @@ if(MSVC)
 endif()
 
 # Other (non-preprocessor macros) compiler flags:
+set(gtsam_compile_options_private_werror)
 if(MSVC)
   set(CMAKE_3_15 $<VERSION_LESS:${CMAKE_VERSION},3.15>)
   set(CMAKE_3_25 $<VERSION_LESS:${CMAKE_VERSION},3.25>)
   # Common to all configurations, next for each configuration:
-  set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON          /W3 /WX /GR /EHsc /MP  CACHE STRING "(User editable) Private compiler flags for all configurations.")
+  set(gtsam_compile_options_private_common /W3 /GR /EHsc /MP)
+  if(GTSAM_BUILD_WITH_WERROR)
+    set(gtsam_compile_options_private_werror /WX)
+  endif()
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_DEBUG           $<${CMAKE_3_15}:/MDd> $<${CMAKE_3_25}:/Zi> /Ob0 /Od /RTC1  CACHE STRING "(User editable) Private compiler flags for Debug configuration.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELWITHDEBINFO  $<${CMAKE_3_15}:/MD> /O2  $<${CMAKE_3_25}:/Zi>  CACHE STRING "(User editable) Private compiler flags for RelWithDebInfo configuration.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELEASE         $<${CMAKE_3_15}:/MD> /O2  CACHE STRING "(User editable) Private compiler flags for Release configuration.")
@@ -131,11 +143,11 @@ else()
     endif()
   endif()
 
-  set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON
-    -Werror                                        # Enable warnings as errors
+  set(gtsam_compile_options_private_common
     -Wall                                          # Enable common warnings
     -Wpedantic                                     # Enable pedantic warnings
     $<$<COMPILE_LANGUAGE:CXX>:-Wextra -Wno-unused-parameter> # Enable extra warnings, but ignore no-unused-parameter (as we ifdef out chunks of code)
+    $<$<CXX_COMPILER_ID:GNU>:-Wno-psabi>                     # GCC 10 emits non-actionable psABI notes for some value-returning wrappers under C++17
     $<$<CXX_COMPILER_ID:GNU>:-Wreturn-local-addr>            # Error: return local address
     $<$<CXX_COMPILER_ID:Clang>:-Wreturn-stack-address>       # Error: return local address
     $<$<CXX_COMPILER_ID:Clang>:-Wno-weak-template-vtables>   # TODO(dellaert): don't know how to resolve
@@ -144,13 +156,20 @@ else()
     -Wformat -Werror=format-security               # Error on wrong printf() arguments
     $<$<COMPILE_LANGUAGE:CXX>:${flag_override_}>   # Enforce the use of the override keyword
     #
-    CACHE STRING "(User editable) Private compiler flags for all configurations.")
+  )
+  if(GTSAM_BUILD_WITH_WERROR)
+    set(gtsam_compile_options_private_werror -Werror) # Enable warnings as errors
+  endif()
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_DEBUG           -g -fno-inline  CACHE STRING "(User editable) Private compiler flags for Debug configuration.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELWITHDEBINFO  -g -O3  CACHE STRING "(User editable) Private compiler flags for RelWithDebInfo configuration.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_RELEASE         -O3  CACHE STRING "(User editable) Private compiler flags for Release configuration.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_PROFILING       -O3  CACHE STRING "(User editable) Private compiler flags for Profiling configuration.")
   set(GTSAM_COMPILE_OPTIONS_PRIVATE_TIMING          -g -O3  CACHE STRING "(User editable) Private compiler flags for Timing configuration.")
 endif()
+
+set(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON
+  ${gtsam_compile_options_private_common}
+  CACHE STRING "(User editable) Private compiler flags for all configurations.")
 
 mark_as_advanced(GTSAM_COMPILE_OPTIONS_PRIVATE_COMMON)
 mark_as_advanced(GTSAM_COMPILE_OPTIONS_PRIVATE_DEBUG)
@@ -165,6 +184,9 @@ set(GTSAM_COMPILE_FEATURES_PUBLIC "cxx_std_17" CACHE STRING "CMake compile featu
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Merge all user-defined flags into the variables that are to be actually used by CMake:
+if(NOT "${gtsam_compile_options_private_werror}" STREQUAL "")
+  list_append_cache(GTSAM_COMPILE_OPTIONS_PRIVATE ${gtsam_compile_options_private_werror})
+endif()
 foreach(build_type "common" ${GTSAM_CMAKE_CONFIGURATION_TYPES})
   append_config_if_not_empty(GTSAM_COMPILE_OPTIONS_PRIVATE ${build_type})
   append_config_if_not_empty(GTSAM_COMPILE_OPTIONS_PUBLIC  ${build_type})
@@ -309,10 +331,18 @@ function(gtsam_apply_build_flags target_name_)
 
   target_compile_definitions(${target_name_} PRIVATE ${GTSAM_COMPILE_DEFINITIONS_PRIVATE})
   target_compile_definitions(${target_name_} PUBLIC ${GTSAM_COMPILE_DEFINITIONS_PUBLIC})
-  if (NOT "${GTSAM_COMPILE_OPTIONS_PUBLIC}" STREQUAL "")
-    target_compile_options(${target_name_} PUBLIC ${GTSAM_COMPILE_OPTIONS_PUBLIC})
+  if(GTSAM_ENABLE_CUDA)
+    set(gtsam_c_cxx_compile_language "$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>")
+    if (NOT "${GTSAM_COMPILE_OPTIONS_PUBLIC}" STREQUAL "")
+      target_compile_options(${target_name_} PUBLIC "$<${gtsam_c_cxx_compile_language}:${GTSAM_COMPILE_OPTIONS_PUBLIC}>")
+    endif()
+    target_compile_options(${target_name_} PRIVATE "$<${gtsam_c_cxx_compile_language}:${GTSAM_COMPILE_OPTIONS_PRIVATE}>")
+  else()
+    if (NOT "${GTSAM_COMPILE_OPTIONS_PUBLIC}" STREQUAL "")
+      target_compile_options(${target_name_} PUBLIC ${GTSAM_COMPILE_OPTIONS_PUBLIC})
+    endif()
+    target_compile_options(${target_name_} PRIVATE ${GTSAM_COMPILE_OPTIONS_PRIVATE})
   endif()
-  target_compile_options(${target_name_} PRIVATE ${GTSAM_COMPILE_OPTIONS_PRIVATE})
 
 endfunction(gtsam_apply_build_flags)
 

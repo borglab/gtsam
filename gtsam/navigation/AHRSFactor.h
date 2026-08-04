@@ -23,6 +23,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/navigation/PreintegratedRotation.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 #include <optional>
 

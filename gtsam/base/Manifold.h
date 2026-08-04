@@ -74,11 +74,11 @@ template<class Class, int N>
 struct GetDimensionImpl {
   // Get dimension at compile-time for fixed-size manifolds, and at
   // run-time for dynamic-size manifolds.
-  static int GetDimension(const Class& m) {
+  static size_t GetDimension(const Class& m) {
     if constexpr (N == Eigen::Dynamic) {
       return m.dim();
     } else {
-      return N;
+      return static_cast<size_t>(N);
     }
   }
 };

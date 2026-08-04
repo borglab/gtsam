@@ -27,6 +27,7 @@
 #include <gtsam/basis/Basis.h>
 #include <gtsam/basis/BasisFactors.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
@@ -62,9 +63,10 @@ class FitBasis {
                                              const SharedNoiseModel& model,
                                              size_t N) {
     NonlinearFactorGraph graph;
+    const auto noiseModel = noiseModel::validOrDefault(0.0, model);
     for (const Sample sample : sequence) {
-      graph.emplace_shared<EvaluationFactor<Basis>>(0, sample.second, model, N,
-                                                    sample.first);
+      graph.emplace_shared<EvaluationFactor<Basis>>(
+          0, sample.second, noiseModel, N, sample.first);
     }
     return graph;
   }

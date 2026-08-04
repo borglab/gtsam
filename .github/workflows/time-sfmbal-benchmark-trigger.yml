@@ -1,0 +1,37 @@
+name: Trigger timeSFMBAL Benchmark
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  actions: write
+  contents: read
+  pull-requests: read
+
+jobs:
+  dispatch:
+    if: github.event.issue.pull_request != null
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch benchmark workflow for /bench
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const body = context.payload.comment.body.trim();
+            if (body !== "/bench") {
+              core.info("Skipping dispatch: comment is not /bench.");
+              return;
+            }
+
+            const prNumber = context.payload.issue.number;
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: "time-sfmbal-benchmark.yml",
+              ref: context.payload.repository.default_branch,
+              inputs: {
+                pr_number: String(prNumber),
+              },
+            });
+            core.info(`Dispatched time-sfmbal-benchmark.yml for PR #${prNumber}.`);

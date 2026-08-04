@@ -17,12 +17,14 @@
  * @author Fan Jiang
  */
 
-
-#include <gtsam/linear/NoiseModel.h>
-#include <gtsam/base/TestableAssertions.h>
-
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/TestableAssertions.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/linear/NoiseModel.h>
 
+#include <cmath>
 #include <iostream>
 #include <limits>
 
@@ -106,6 +108,37 @@ TEST(NoiseModel, Unit)
 }
 
 /* ************************************************************************* */
+TEST(NoiseModel, UnitCreateMeasured)
+{
+  Matrix22 fixed = Matrix22::Identity();
+  auto fixedModel = Unit::Create(fixed);
+  EXPECT_LONGS_EQUAL(4, fixedModel->dim());
+  EXPECT(fixedModel == Unit::Create(fixed));
+
+  Matrix dynamic(2, 3);
+  dynamic.setZero();
+  EXPECT_LONGS_EQUAL(6, Unit::Create(dynamic)->dim());
+
+  EXPECT_LONGS_EQUAL(2, Unit::Create(Point2(1.0, 2.0))->dim());
+  EXPECT_LONGS_EQUAL(1, Unit::Create(1.0)->dim());
+}
+
+/* ************************************************************************* */
+TEST(NoiseModel, MatchesDimension)
+{
+  Matrix22 fixed = Matrix22::Identity();
+  EXPECT(matchesDimension(*Unit::Create(4), fixed));
+  EXPECT(!matchesDimension(*Unit::Create(3), fixed));
+
+  Matrix dynamic(2, 3);
+  dynamic.setZero();
+  EXPECT(matchesDimension(*Unit::Create(6), dynamic));
+
+  EXPECT(matchesDimension(*Unit::Create(2), Point2(1.0, 2.0)));
+  EXPECT(matchesDimension(*Unit::Create(1), 1.0));
+}
+
+/* ************************************************************************* */
 TEST(NoiseModel, equals)
 {
   Gaussian::shared_ptr g1 = Gaussian::SqrtInformation(R),
@@ -129,9 +162,9 @@ TEST(NoiseModel, equals)
 ///* ************************************************************************* */
 //TEST(NoiseModel, ConstrainedSmart )
 //{
-//  Gaussian::shared_ptr nonconstrained = Constrained::MixedSigmas((Vector3(sigma, 0.0, sigma), true);
-//  Diagonal::shared_ptr n1 = std::dynamic_pointer_cast<Diagonal>(nonconstrained);
-//  Constrained::shared_ptr n2 = std::dynamic_pointer_cast<Constrained>(nonconstrained);
+//  Gaussian::shared_ptr unconstrained = Constrained::MixedSigmas((Vector3(sigma, 0.0, sigma), true);
+//  Diagonal::shared_ptr n1 = std::dynamic_pointer_cast<Diagonal>(unconstrained);
+//  Constrained::shared_ptr n2 = std::dynamic_pointer_cast<Constrained>(unconstrained);
 //  EXPECT(n1);
 //  EXPECT(!n2);
 //
@@ -148,6 +181,7 @@ TEST(NoiseModel, ConstrainedConstructors )
   Constrained::shared_ptr actual;
   size_t d = 3;
   double m = 100.0;
+  const double kInfinity = std::numeric_limits<double>::infinity();
   Vector3 sigmas(kSigma, 0.0, 0.0);
   Vector3 mu(200.0, 300.0, 400.0);
   actual = Constrained::All(d);
@@ -155,7 +189,7 @@ TEST(NoiseModel, ConstrainedConstructors )
   EXPECT(assert_equal(Vector::Constant(d, 1000.0), actual->mu()));
   EXPECT(assert_equal(Vector::Constant(d, 0), actual->sigmas()));
   EXPECT(assert_equal(Vector::Constant(d, 0), actual->invsigmas())); // Actually zero as dummy value
-  EXPECT(assert_equal(Vector::Constant(d, 0), actual->precisions())); // Actually zero as dummy value
+  EXPECT(assert_equal(Vector::Constant(d, kInfinity), actual->precisions())); // Infinite precision for hard constraints
 
   actual = Constrained::All(d, m);
   EXPECT(assert_equal(Vector::Constant(d, m), actual->mu()));
@@ -199,6 +233,34 @@ TEST(NoiseModel, ConstrainedAll )
   DOUBLES_EQUAL(0.5 * 1000.0 * 3.0,i->loss(i->squaredMahalanobisDistance(infeasible)),1e-9);
   DOUBLES_EQUAL(0.0, i->squaredMahalanobisDistance(feasible), 1e-9);
   DOUBLES_EQUAL(0.0, i->loss(0.0),1e-9);
+}
+
+/* ************************************************************************* */
+TEST(NoiseModel, ConstrainedInformationFromA) {
+  // Use one constrained row and one finite-precision row.
+  Vector2 sigmas(0.0, 2.0);
+  Constrained::shared_ptr model = Constrained::MixedSigmas(sigmas);
+
+  Matrix A(2, 2);
+  A << 1.0, 0.0, 0.0, 2.0;
+
+  Matrix info = model->informationFromA(A);
+
+  EXPECT(std::isinf(info(0, 0)));
+  DOUBLES_EQUAL(0.0, info(0, 1), 1e-12);
+  DOUBLES_EQUAL(0.0, info(1, 0), 1e-12);
+  DOUBLES_EQUAL(1.0, info(1, 1), 1e-12);
+
+  // Constrained row with support in multiple columns should mark cross-terms.
+  Matrix A_dense(2, 2);
+  A_dense << 1.0, 1.0, 0.0, 2.0;
+
+  Matrix info_dense = model->informationFromA(A_dense);
+
+  EXPECT(std::isinf(info_dense(0, 0)));
+  EXPECT(std::isinf(info_dense(0, 1)));
+  EXPECT(std::isinf(info_dense(1, 0)));
+  EXPECT(std::isinf(info_dense(1, 1)));
 }
 
 /* ************************************************************************* */
@@ -448,6 +510,94 @@ TEST(NoiseModel, WhitenInPlace)
 }
 
 /* ************************************************************************* */
+TEST(NoiseModel, InPlaceVectorOperations)
+{
+  SharedGaussian gaussian = Gaussian::SqrtInformation(R, false);
+  Vector v = Vector3(5.0, 10.0, 15.0);
+  Vector expected = gaussian->unwhiten(v);
+  Vector actual = v;
+  gaussian->unwhitenInPlace(actual);
+  EXPECT(assert_equal(expected, actual));
+
+  SharedDiagonal diagonal = Diagonal::Sigmas(kSigmas, false);
+  v = Vector3(10.0, 20.0, 30.0);
+  expected = diagonal->whiten(v);
+  actual = v;
+  diagonal->whitenInPlace(actual);
+  EXPECT(assert_equal(expected, actual));
+
+  v = Vector3(1.0, 2.0, 3.0);
+  expected = diagonal->unwhiten(v);
+  actual = v;
+  diagonal->unwhitenInPlace(actual);
+  EXPECT(assert_equal(expected, actual));
+
+  SharedIsotropic isotropic = Isotropic::Sigma(3, kSigma, false);
+  v = Vector3(1.0, 2.0, 3.0);
+  expected = isotropic->unwhiten(v);
+  actual = v;
+  isotropic->unwhitenInPlace(actual);
+  EXPECT(assert_equal(expected, actual));
+
+  SharedConstrained constrained =
+      Constrained::MixedSigmas(Vector3(kSigma, 0.0, kSigma));
+  v = Vector3(2.0, 3.0, 4.0);
+  expected = constrained->whiten(v);
+  actual = v;
+  constrained->whitenInPlace(actual);
+  EXPECT(assert_equal(expected, actual));
+  EXPECT_DOUBLES_EQUAL(v(1), actual(1), 1e-12);
+
+  SharedNoiseModel robust = Robust::Create(mEstimator::Huber::Create(1.345),
+                                           diagonal);
+  v = Vector3(1.0, 2.0, 3.0);
+  expected = robust->whiten(v);
+  actual = v;
+  robust->whitenInPlace(actual);
+  EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST(NoiseModel, InPlaceVectorBlockOperations)
+{
+  SharedGaussian gaussian = Gaussian::SqrtInformation(R, false);
+  SharedDiagonal diagonal = Diagonal::Sigmas(kSigmas, false);
+  SharedIsotropic isotropic = Isotropic::Sigma(3, kSigma, false);
+  SharedConstrained constrained =
+      Constrained::MixedSigmas(Vector3(kSigma, 0.0, kSigma));
+
+  Vector v = Vector::LinSpaced(5, 1.0, 5.0);
+  Eigen::Block<Vector> block(v, 1, 0, 3, 1);
+  Vector expected = diagonal->whiten(Vector(block));
+  diagonal->whitenInPlace(block);
+  EXPECT(assert_equal(expected, Vector(block)));
+
+  v = Vector::LinSpaced(5, 1.0, 5.0);
+  Eigen::Block<Vector> block_unwhiten(v, 1, 0, 3, 1);
+  expected = diagonal->unwhiten(Vector(block_unwhiten));
+  diagonal->unwhitenInPlace(block_unwhiten);
+  EXPECT(assert_equal(expected, Vector(block_unwhiten)));
+
+  v = Vector::LinSpaced(5, 1.0, 5.0);
+  Eigen::Block<Vector> block_constrained(v, 1, 0, 3, 1);
+  expected = constrained->whiten(Vector(block_constrained));
+  constrained->whitenInPlace(block_constrained);
+  EXPECT(assert_equal(expected, Vector(block_constrained)));
+
+  v = Vector::LinSpaced(5, 1.0, 5.0);
+  Eigen::Block<Vector> block_iso(v, 1, 0, 3, 1);
+  expected = isotropic->unwhiten(Vector(block_iso));
+  isotropic->unwhitenInPlace(block_iso);
+  EXPECT(assert_equal(expected, Vector(block_iso)));
+
+  v = Vector::LinSpaced(5, 1.0, 5.0);
+  Eigen::Block<Vector> block_gauss(v, 1, 0, 3, 1);
+  expected = gaussian->unwhiten(Vector(block_gauss));
+  gaussian->unwhitenInPlace(block_gauss);
+  EXPECT(assert_equal(expected, Vector(block_gauss)));
+}
+
+/* ************************************************************************* */
 
 /*
  * These tests are responsible for testing the weight functions for the m-estimators in GTSAM.
@@ -534,6 +684,21 @@ TEST(NoiseModel, robustFunctionGemanMcClure)
   DOUBLES_EQUAL(0.495049504950495, gmc->loss(error2), 1e-8);
   DOUBLES_EQUAL(0.495049504950495, gmc->loss(error3), 1e-8);
   DOUBLES_EQUAL(0.2500, gmc->loss(error4), 1e-8);
+}
+
+TEST(NoiseModel, robustFunctionTLS)
+{
+  const double k = 4.0, error1 = 0.5, error2 = 10.0, error3 = -10.0, error4 = -0.5;
+  const mEstimator::TruncatedLeastSquares::shared_ptr tls = mEstimator::TruncatedLeastSquares::Create(k);
+  DOUBLES_EQUAL(1.0, tls->weight(error1), 1e-8);
+  DOUBLES_EQUAL(0.0, tls->weight(error2), 1e-8);
+  DOUBLES_EQUAL(0.0, tls->weight(error3), 1e-8);
+  DOUBLES_EQUAL(1.0, tls->weight(error4), 1e-8);
+
+  DOUBLES_EQUAL(0.1250, tls->loss(error1), 1e-8);
+  DOUBLES_EQUAL(8.0, tls->loss(error2), 1e-8);
+  DOUBLES_EQUAL(8.0, tls->loss(error3), 1e-8);
+  DOUBLES_EQUAL(0.1250, tls->loss(error4), 1e-8);
 }
 
 TEST(NoiseModel, robustFunctionWelsch)
@@ -665,6 +830,30 @@ TEST(NoiseModel, robustNoiseGemanMcClure)
   DOUBLES_EQUAL(sqrt_weight_error2*a11, A(1,1), 1e-8);
 }
 
+TEST(NoiseModel, robustNoiseTLS)
+{
+  const double k = 1.0, error1 = 1.0, error2 = 100.0;
+  const double a00 = 1.0, a01 = 10.0, a10 = 100.0, a11 = 1000.0;
+  Matrix A = (Matrix(2, 2) << a00, a01, a10, a11).finished();
+  Vector b = Vector2(error1, error2);
+  const Robust::shared_ptr robust = Robust::Create(
+    mEstimator::TruncatedLeastSquares::Create(k, mEstimator::TruncatedLeastSquares::Scalar),
+    Unit::Create(2));
+
+  robust->WhitenSystem(A, b);
+
+  const double sqrt_weight_error1 = 1.0;
+  const double sqrt_weight_error2 = 0.0;
+
+  DOUBLES_EQUAL(sqrt_weight_error1*error1, b(0), 1e-8);
+  DOUBLES_EQUAL(sqrt_weight_error2*error2, b(1), 1e-8);
+
+  DOUBLES_EQUAL(sqrt_weight_error1*a00, A(0,0), 1e-8);
+  DOUBLES_EQUAL(sqrt_weight_error1*a01, A(0,1), 1e-8);
+  DOUBLES_EQUAL(sqrt_weight_error2*a10, A(1,0), 1e-8);
+  DOUBLES_EQUAL(sqrt_weight_error2*a11, A(1,1), 1e-8);
+}
+
 TEST(NoiseModel, robustNoiseDCS)
 {
   const double k = 1.0, error1 = 1.0, error2 = 100.0;
@@ -760,11 +949,11 @@ TEST(NoiseModel, lossFunctionAtZero)
   DOUBLES_EQUAL(lsdz->loss(0), 0, 1e-8);
   DOUBLES_EQUAL(lsdz->weight(0), 0, 1e-8);
   auto assy_cauchy = mEstimator::AsymmetricCauchy::Create(k);
-  DOUBLES_EQUAL(lsdz->loss(0), 0, 1e-8);
-  DOUBLES_EQUAL(lsdz->weight(0), 0, 1e-8);
+  DOUBLES_EQUAL(assy_cauchy->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(assy_cauchy->weight(0), 1, 1e-8);
   auto assy_tukey = mEstimator::AsymmetricTukey::Create(k);
-  DOUBLES_EQUAL(lsdz->loss(0), 0, 1e-8);
-  DOUBLES_EQUAL(lsdz->weight(0), 0, 1e-8);
+  DOUBLES_EQUAL(assy_tukey->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(assy_tukey->weight(0), 1, 1e-8);
 }
 
 
@@ -882,6 +1071,14 @@ TEST(NoiseModel, NegLogNormalizationConstant3D) {
     expected_value = 0.5 * n * log(2 * M_PI * sigma * sigma);
     EXPECT_DOUBLES_EQUAL(expected_value, actual_value, 1e-9);
   }
+}
+
+/* ************************************************************************* */
+// Negative sigma values should throw (#695)
+TEST(NoiseModel, NegativeSigmaThrows) {
+  CHECK_EXCEPTION(noiseModel::Isotropic::Sigma(2, -2.0), std::invalid_argument);
+  CHECK_EXCEPTION(noiseModel::Isotropic::Variance(2, -1.0), std::invalid_argument);
+  CHECK_EXCEPTION(noiseModel::Diagonal::Sigmas(Vector3(-1.0, 2.0, 3.0)), std::invalid_argument);
 }
 
 /* ************************************************************************* */

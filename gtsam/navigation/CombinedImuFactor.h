@@ -24,6 +24,7 @@
 
 /* GTSAM includes */
 #include <gtsam/navigation/PreintegrationCombinedParams.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 namespace gtsam {
 
@@ -184,9 +185,6 @@ class GTSAM_EXPORT PreintegratedCombinedMeasurementsT : public PreintegrationTyp
     ar& BOOST_SERIALIZATION_NVP(preintMeasCov_);
   }
 #endif
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 // For backward compatibility:
@@ -300,9 +298,6 @@ class GTSAM_EXPORT CombinedImuFactorT
     ar& BOOST_SERIALIZATION_NVP(pim_);
   }
 #endif
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // class CombinedImuFactorT
 

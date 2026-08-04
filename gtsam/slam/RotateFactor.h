@@ -8,6 +8,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/geometry/Rot3.h>
 
 namespace gtsam {
@@ -117,8 +118,6 @@ public:
     }
     return error;
   }
-
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 }  // namespace gtsam
 

@@ -40,25 +40,30 @@ class GTSAM_EXPORT NonlinearInequalityConstraint : public NonlinearConstraint {
   virtual ~NonlinearInequalityConstraint() {}
 
   /** Return g(x). */
-  virtual Vector unwhitenedExpr(const Values& x, OptionalMatrixVecType H = nullptr) const = 0;
+  virtual Vector unwhitenedExpr(const Values& x,
+                                OptionalMatrixVecType H = nullptr) const = 0;
 
   virtual Vector whitenedExpr(const Values& x) const;
 
   /** Return ramp(g(x)). */
-  virtual Vector unwhitenedError(const Values& x, OptionalMatrixVecType H = nullptr) const override;
+  virtual Vector unwhitenedError(
+      const Values& x, OptionalMatrixVecType H = nullptr) const override;
 
   /** Return true if g(x)>=0 in any dimension. */
   virtual bool active(const Values& x) const override;
 
   /** Return an equality constraint corresponding to g(x)=0. */
-  virtual NonlinearEqualityConstraint::shared_ptr createEqualityConstraint() const;
+  virtual NonlinearEqualityConstraint::shared_ptr createEqualityConstraint()
+      const;
 
   /** Cost factor using a customized penalty function. */
   virtual NoiseModelFactor::shared_ptr penaltyFactorCustom(
       InequalityPenaltyFunction::shared_ptr func, const double mu = 1.0) const;
 
-  /** penalty function as if the constraint is equality, 0.5 * mu * ||g(x)||^2 */
-  virtual NoiseModelFactor::shared_ptr penaltyFactorEquality(const double mu = 1.0) const;
+  /** penalty function as if the constraint is equality, 0.5 * mu * ||g(x)||^2
+   */
+  virtual NoiseModelFactor::shared_ptr penaltyFactorEquality(
+      const double mu = 1.0) const;
 
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
@@ -66,8 +71,9 @@ class GTSAM_EXPORT NonlinearInequalityConstraint : public NonlinearConstraint {
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& boost::serialization::make_nvp("NonlinearInequalityConstraint",
-                                       boost::serialization::base_object<Base>(*this));
+    ar& boost::serialization::make_nvp(
+        "NonlinearInequalityConstraint",
+        boost::serialization::base_object<Base>(*this));
   }
 #endif
 };
@@ -75,7 +81,8 @@ class GTSAM_EXPORT NonlinearInequalityConstraint : public NonlinearConstraint {
 /** Inequality constraint that force g(x) <= 0, where g(x) is a scalar-valued
  * nonlinear function.
  */
-class GTSAM_EXPORT ScalarExpressionInequalityConstraint : public NonlinearInequalityConstraint {
+class GTSAM_EXPORT ScalarExpressionInequalityConstraint
+    : public NonlinearInequalityConstraint {
  public:
   using Base = NonlinearInequalityConstraint;
   using This = ScalarExpressionInequalityConstraint;
@@ -92,32 +99,40 @@ class GTSAM_EXPORT ScalarExpressionInequalityConstraint : public NonlinearInequa
    * @param expression  expression representing g(x) (or -g(x) for GeqZero).
    * @param sigma   scalar representing sigma.
    */
-  ScalarExpressionInequalityConstraint(const Double_& expression, const double& sigma);
+  ScalarExpressionInequalityConstraint(const Double_& expression,
+                                       const double& sigma);
 
-  /** Create an inequality constraint g(x)/sigma >= 0, internally represented as -g(x)/sigma <= 0.
+  /** Create an inequality constraint g(x)/sigma >= 0, internally represented as
+   * -g(x)/sigma <= 0.
    */
-  static ScalarExpressionInequalityConstraint::shared_ptr GeqZero(const Double_& expression,
-                                                                  const double& sigma);
+  static ScalarExpressionInequalityConstraint::shared_ptr GeqZero(
+      const Double_& expression, const double& sigma);
 
   /** Create an inequality constraint g(x)/sigma <= 0. */
-  static ScalarExpressionInequalityConstraint::shared_ptr LeqZero(const Double_& expression,
-                                                                  const double& sigma);
+  static ScalarExpressionInequalityConstraint::shared_ptr LeqZero(
+      const Double_& expression, const double& sigma);
 
   /** Compute g(x), or -g(x) for objects constructed from GeqZero. */
-  virtual Vector unwhitenedExpr(const Values& x, OptionalMatrixVecType H = nullptr) const override;
+  virtual Vector unwhitenedExpr(
+      const Values& x, OptionalMatrixVecType H = nullptr) const override;
 
   /** Equality constraint representing g(x)/sigma = 0. */
-  NonlinearEqualityConstraint::shared_ptr createEqualityConstraint() const override;
+  NonlinearEqualityConstraint::shared_ptr createEqualityConstraint()
+      const override;
 
   /** Penalty function 0.5*mu*||ramp(g(x)/sigma||^2. */
-  NoiseModelFactor::shared_ptr penaltyFactor(const double mu = 1.0) const override;
+  NoiseModelFactor::shared_ptr penaltyFactor(
+      const double mu = 1.0) const override;
 
-  /** Penalty function using a smooth approxiamtion of the ramp funciton. */
-  NoiseModelFactor::shared_ptr penaltyFactorCustom(InequalityPenaltyFunction::shared_ptr func,
-                                                   const double mu = 1.0) const override;
+  /** Penalty function using a smooth approximation of the ramp function. */
+  NoiseModelFactor::shared_ptr penaltyFactorCustom(
+      InequalityPenaltyFunction::shared_ptr func,
+      const double mu = 1.0) const override;
 
-  /** Penalty function as if the constraint is equality, 0.5 * mu * ||g(x)/sigma||^2. */
-  virtual NoiseModelFactor::shared_ptr penaltyFactorEquality(const double mu = 1.0) const override;
+  /** Penalty function as if the constraint is equality, 0.5 * mu *
+   * ||g(x)/sigma||^2. */
+  virtual NoiseModelFactor::shared_ptr penaltyFactorEquality(
+      const double mu = 1.0) const override;
 
   /** Return expression g(x), or -g(x) for objects constructed from GeqZero. */
   const Double_& expression() const { return expression_; }
@@ -134,8 +149,9 @@ class GTSAM_EXPORT ScalarExpressionInequalityConstraint : public NonlinearInequa
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& boost::serialization::make_nvp("ExpressionEqualityConstraint",
-                                       boost::serialization::base_object<Base>(*this));
+    ar& boost::serialization::make_nvp(
+        "ExpressionEqualityConstraint",
+        boost::serialization::base_object<Base>(*this));
     ar& BOOST_SERIALIZATION_NVP(expression_);
     ar& BOOST_SERIALIZATION_NVP(dims_);
   }
@@ -165,8 +181,8 @@ class GTSAM_EXPORT NonlinearInequalityConstraints
   NonlinearFactorGraph penaltyGraph(const double mu = 1.0) const;
 
   /** Return the cost graph constructed using a customized penalty function. */
-  NonlinearFactorGraph penaltyGraphCustom(InequalityPenaltyFunction::shared_ptr func,
-                                          const double mu = 1.0) const;
+  NonlinearFactorGraph penaltyGraphCustom(
+      InequalityPenaltyFunction::shared_ptr func, const double mu = 1.0) const;
 
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
@@ -174,8 +190,9 @@ class GTSAM_EXPORT NonlinearInequalityConstraints
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar& boost::serialization::make_nvp("NonlinearInequalityConstraints",
-                                       boost::serialization::base_object<Base>(*this));
+    ar& boost::serialization::make_nvp(
+        "NonlinearInequalityConstraints",
+        boost::serialization::base_object<Base>(*this));
   }
 #endif
 };

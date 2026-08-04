@@ -35,6 +35,7 @@ using namespace gtsam;
 
 static Symbol x0('x', 0), x1('x', 1), x2('x', 2), x3('x', 3);
 static SharedNoiseModel model(noiseModel::Isotropic::Sigma(3, 0.1));
+static SharedNoiseModel rotModel(noiseModel::Isotropic::Sigma(1, 0.1));
 
 namespace simpleLago {
 // We consider a small graph:
@@ -224,7 +225,7 @@ TEST( Lago, multiplePosePriorsSP ) {
 TEST( Lago, multiplePoseAndRotPriors ) {
   bool useOdometricPath = false;
   NonlinearFactorGraph g = simpleLago::graph();
-  g.addPrior(x1, simpleLago::pose1.theta(), model);
+  g.addPrior(x1, simpleLago::pose1.theta(), rotModel);
   VectorValues initial = lago::initializeOrientations(g, useOdometricPath);
   
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
@@ -237,7 +238,7 @@ TEST( Lago, multiplePoseAndRotPriors ) {
 /* *************************************************************************** */
 TEST( Lago, multiplePoseAndRotPriorsSP ) {
   NonlinearFactorGraph g = simpleLago::graph();
-  g.addPrior(x1, simpleLago::pose1.theta(), model);
+  g.addPrior(x1, simpleLago::pose1.theta(), rotModel);
   VectorValues initial = lago::initializeOrientations(g);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
@@ -348,4 +349,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

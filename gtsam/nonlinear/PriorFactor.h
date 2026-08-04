@@ -49,7 +49,7 @@ class PriorFactor : public ExtendedPriorFactor<VALUE> {
   /// Constructor
   PriorFactor(Key key, const VALUE& prior,
               const SharedNoiseModel& model = nullptr)
-      : Base(key, prior, model) {}
+      : Base(key, prior, noiseModel::validOrDefault(prior, model)) {}
 
   /// Convenience constructor that takes a full covariance argument
   PriorFactor(Key key, const VALUE& prior, const Matrix& covariance)
@@ -111,13 +111,6 @@ class PriorFactor : public ExtendedPriorFactor<VALUE> {
     ar& boost::serialization::make_nvp("prior_", this->origin_);
   }
 #endif
-
-  // Alignment, see
-  // https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
-  inline constexpr static auto NeedsToAlign = (sizeof(T) % 16) == 0;
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
 };
 
 /// traits

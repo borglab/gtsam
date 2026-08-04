@@ -25,8 +25,10 @@
 #include <boost/serialization/nvp.hpp>
 #endif
 #include <cassert>
+#include <cstring>
 #include <stdexcept>
 #include <array>
+#include <vector>
 
 namespace boost {
 namespace serialization {
@@ -133,6 +135,15 @@ namespace gtsam {
     /// This method makes a copy - use the methods below if performance is critical.
     Matrix block(DenseIndex I, DenseIndex J) const;
 
+    /// Get a block view (anywhere in the matrix) without allocating a copy.
+    /// This method returns a const reference to the block for efficient read access.
+    /// @param I The row block index.
+    /// @param J The column block index.
+    /// @return A const block view into the matrix.
+    constBlock blockView(DenseIndex I, DenseIndex J) const {
+      return block_(I, J);
+    }
+
     /// Return the J'th diagonal block as a self adjoint view.
     Eigen::SelfAdjointView<Block, Eigen::Upper> diagonalBlock(DenseIndex J) {
       return block_(J, J).selfadjointView<Eigen::Upper>();
@@ -224,6 +235,19 @@ namespace gtsam {
       }
     }
 
+    /// Add a vector to the diagonal entries of block I.
+    void addToDiagonalBlock(DenseIndex I, const Vector& deltaDiag) {
+      auto dest = block_(I, I);
+      assert(dest.rows() == deltaDiag.size());
+      dest.diagonal().array() += deltaDiag.array();
+    }
+
+    /// Add lambda * I to the diagonal block I.
+    void addScaledIdentity(DenseIndex I, double lambda) {
+      auto dest = block_(I, I);
+      dest.diagonal().array() += lambda;
+    }
+
     /// Update an off diagonal block.
     /// NOTE(emmett): This assumes noalias().
     template <typename XprType>
@@ -234,6 +258,23 @@ namespace gtsam {
       } else {
         block_(J, I).noalias() += xpr.transpose();
       }
+    }
+
+    /// Update this matrix with blocks from another block matrix using a mapping.
+    /// Entries with index -1 are skipped.
+    void updateFromMappedBlocks(const SymmetricBlockMatrix& other,
+                                const std::vector<DenseIndex>& blockIndices);
+
+    /// Update this matrix with blockwise outer products from a vertical block matrix.
+    /// Adds S_i^T S_j into block (I,J), using a block mapping; entries with index -1 are skipped.
+    /// The range to use is controlled by other.firstBlock().
+    void updateFromOuterProductBlocks(const VerticalBlockMatrix& other,
+                                      const std::vector<DenseIndex>& blockIndices);
+
+    /// Add the upper-triangular part of another symmetric block matrix.
+    void addUpperTriangular(const SymmetricBlockMatrix& other) {
+      assert(nBlocks() == other.nBlocks());
+      full().triangularView<Eigen::Upper>() += other.full();
     }
 
     /// @}
@@ -264,6 +305,25 @@ namespace gtsam {
     /// Set entire matrix zero.
     void setAllZero() {
       matrix_.setZero();
+    }
+
+    /// Set the block columns between beginCol (inclusive) and endCol (exclusive) to zero. 
+    void setZeroColumns(DenseIndex beginCol, DenseIndex endCol) {
+      assert(beginCol < endCol);
+      assert(beginCol >= 0);
+      assert(endCol >= 0);
+      assert(beginCol < nBlocks());
+      assert(endCol <= nBlocks());
+      static_assert(Matrix::IsRowMajor == 0, "setZeroColumns requires column-major storage.");
+
+      const DenseIndex denseBeginCol = offset(beginCol);
+      const DenseIndex denseEndCol = offset(endCol);
+
+      double *begin = matrix_.data() + denseBeginCol * matrix_.rows();
+      double *end = matrix_.data() + denseEndCol * matrix_.rows();
+
+      // Using memset for maximal compiler optimization.
+      memset(begin, 0, (end - begin) * sizeof(*begin));
     }
 
     /// Negate the entire active matrix.
@@ -301,6 +361,9 @@ namespace gtsam {
      * and adjust block_start so now *this refers to it.
      */
     VerticalBlockMatrix split(DenseIndex nFrontals);
+
+    /// I n-place version of split.
+    void split(DenseIndex nFrontals, VerticalBlockMatrix* RSd);
 
   protected:
 

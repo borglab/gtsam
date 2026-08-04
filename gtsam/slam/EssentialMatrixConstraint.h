@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/geometry/EssentialMatrix.h>
 
 namespace gtsam {
@@ -103,9 +104,6 @@ private:
     ar & BOOST_SERIALIZATION_NVP(measuredE_);
   }
 #endif
-
-public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // \class EssentialMatrixConstraint
 

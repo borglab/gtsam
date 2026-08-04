@@ -13,17 +13,31 @@
  * @file Marginals.cpp
  * @brief
  * @author Richard Roberts
+ * @author Frank Dellaert
  * @date May 14, 2012
  */
 
 #include <gtsam/base/timing.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/HessianFactor.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianBayesTreeQueries.h>
 #include <gtsam/nonlinear/Marginals.h>
 
 using namespace std;
 
 namespace gtsam {
+
+/* ************************************************************************* */
+GaussianFactorGraph::Eliminate Marginals::eliminationFunction() const {
+  if (factorization_ == CHOLESKY) {
+    return EliminatePreferCholesky;
+  } else if (factorization_ == QR) {
+    return EliminateQR;
+  }
+  throw std::runtime_error(
+      "Marginals::eliminationFunction: Unknown factorization");
+}
 
 /* ************************************************************************* */
 Marginals::Marginals(const NonlinearFactorGraph& graph, const Values& solution, Factorization factorization)
@@ -79,6 +93,18 @@ Marginals::Marginals(const GaussianFactorGraph& graph, const VectorValues& solut
 }
 
 /* ************************************************************************* */
+Marginals::Marginals(GaussianBayesTree&& bayesTree,
+                     const VectorValues& solution,
+                     Factorization factorization)
+    : factorization_(factorization), bayesTree_(std::move(bayesTree)) {
+  gttic(MarginalsConstructor);
+  for (const auto& keyValue: solution) {
+    values_.insert(keyValue.first, keyValue.second);
+  }
+  bayesTree_.addFactorsToGraph(&graph_);
+}
+
+/* ************************************************************************* */
 void Marginals::computeBayesTree() {
   // The default ordering to use.
   const Ordering::OrderingType defaultOrderingType = Ordering::COLAMD;
@@ -123,69 +149,25 @@ GaussianFactor::shared_ptr Marginals::marginalFactor(Key variable) const {
 
 /* ************************************************************************* */
 Matrix Marginals::marginalInformation(Key variable) const {
-
-  // Get information matrix (only store upper-right triangle)
   gttic(marginalInformation);
-  return marginalFactor(variable)->information();
+  return bayesTree_.marginalInformation(variable, eliminationFunction());
 }
 
 /* ************************************************************************* */
 Matrix Marginals::marginalCovariance(Key variable) const {
-  return marginalInformation(variable).inverse();
+  return bayesTree_.marginalCovariance(variable, eliminationFunction());
 }
 
 /* ************************************************************************* */
-JointMarginal Marginals::jointMarginalCovariance(const KeyVector& variables) const {
-  JointMarginal info = jointMarginalInformation(variables);
-  info.blockMatrix_.invertInPlace();
-  return info;
+JointMarginal Marginals::jointMarginalCovariance(
+    const KeyVector& variables) const {
+  return bayesTree_.jointMarginalCovariance(variables, eliminationFunction());
 }
 
 /* ************************************************************************* */
-JointMarginal Marginals::jointMarginalInformation(const KeyVector& variables) const {
-
-  // If 2 variables, we can use the BayesTree::joint function, otherwise we
-  // have to use sequential elimination.
-  if(variables.size() == 1)
-  {
-    Matrix info = marginalInformation(variables.front());
-    std::vector<size_t> dims;
-    dims.push_back(info.rows());
-    return JointMarginal(info, dims, variables);
-  }
-  else
-  {
-    // Compute joint marginal factor graph.
-    GaussianFactorGraph jointFG;
-    if(variables.size() == 2) {
-      if(factorization_ == CHOLESKY)
-        jointFG = *bayesTree_.joint(variables[0], variables[1], EliminatePreferCholesky);
-      else if(factorization_ == QR)
-        jointFG = *bayesTree_.joint(variables[0], variables[1], EliminateQR);
-    } else {
-      if(factorization_ == CHOLESKY)
-        jointFG = GaussianFactorGraph(*graph_.marginalMultifrontalBayesTree(variables, EliminatePreferCholesky));
-      else if(factorization_ == QR)
-        jointFG = GaussianFactorGraph(*graph_.marginalMultifrontalBayesTree(variables, EliminateQR));
-    }
-
-    // Get information matrix
-    Matrix augmentedInfo = jointFG.augmentedHessian();
-    Matrix info = augmentedInfo.topLeftCorner(augmentedInfo.rows()-1, augmentedInfo.cols()-1);
-
-    // Information matrix will be returned with sorted keys
-    KeyVector variablesSorted = variables;
-    std::sort(variablesSorted.begin(), variablesSorted.end());
-
-    // Get dimensions from factor graph
-    std::vector<size_t> dims;
-    dims.reserve(variablesSorted.size());
-    for(const auto& key: variablesSorted) {
-      dims.push_back(values_.at(key).dim());
-    }
-
-    return JointMarginal(info, dims, variablesSorted);
-  }
+JointMarginal Marginals::jointMarginalInformation(
+    const KeyVector& variables) const {
+  return bayesTree_.jointMarginalInformation(variables, eliminationFunction());
 }
 
 /* ************************************************************************* */
@@ -194,17 +176,8 @@ VectorValues Marginals::optimize() const {
 }
 
 /* ************************************************************************* */
-void JointMarginal::print(const std::string& s, const KeyFormatter& formatter) const {
-  cout << s << "Joint marginal on keys ";
-  bool first = true;
-  for(const auto& key: keys_) {
-    if(!first)
-      cout << ", ";
-    else
-      first = false;
-    cout << formatter(key);
-  }
-  cout << ".  Use 'at' or 'operator()' to query matrix blocks." << endl;
+void Marginals::deleteCachedShortcuts() {
+  bayesTree_.deleteCachedShortcuts();
 }
 
 } /* namespace gtsam */

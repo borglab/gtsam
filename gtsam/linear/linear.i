@@ -3,6 +3,32 @@
 //*************************************************************************
 namespace gtsam {
 
+#include <gtsam/base/SymmetricBlockMatrix.h>
+class SymmetricBlockMatrix {
+  SymmetricBlockMatrix();
+  SymmetricBlockMatrix(const std::vector<size_t>& dimensions,
+                       bool appendOneDimension = false);
+  SymmetricBlockMatrix(const std::vector<size_t>& dimensions,
+                       const gtsam::Matrix& matrix,
+                       bool appendOneDimension = false);
+
+  size_t rows() const;
+  size_t cols() const;
+  size_t nBlocks() const;
+  size_t getDim(size_t block) const;
+  gtsam::Matrix block(size_t I, size_t J) const;
+  void setZero();
+  void setAllZero();
+};
+
+#include <gtsam/linear/JointMarginal.h>
+class JointMarginal {
+  gtsam::Matrix at(size_t iVariable, size_t jVariable) const;
+  gtsam::Matrix fullMatrix() const;
+  void print(string s = "", gtsam::KeyFormatter keyFormatter =
+                                gtsam::DefaultKeyFormatter) const;
+};
+
 namespace noiseModel {
 #include <gtsam/linear/NoiseModel.h>
 virtual class Base {
@@ -175,6 +201,21 @@ virtual class GemanMcClure: gtsam::noiseModel::mEstimator::Base {
   double weight(double error) const;
   double loss(double error) const;
 };
+
+virtual class TruncatedLeastSquares: gtsam::noiseModel::mEstimator::Base {
+  TruncatedLeastSquares(double c);
+  TruncatedLeastSquares(double c, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
+  static gtsam::noiseModel::mEstimator::TruncatedLeastSquares* Create(double c);
+  static gtsam::noiseModel::mEstimator::TruncatedLeastSquares* Create(
+      double c, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
+
+  // enabling serialization functionality
+  void serializable() const;
+
+  double weight(double error) const;
+  double loss(double error) const;
+};
+
 
 virtual class DCS: gtsam::noiseModel::mEstimator::Base {
   DCS(double c);
@@ -684,7 +725,7 @@ virtual class GaussianBayesTree {
                                 gtsam::DefaultKeyFormatter);
   size_t size() const;
   bool empty() const;
-  const GaussianBayesTree::Roots& roots() const;
+  const gtsam::GaussianBayesTree::Roots& roots() const;
   const gtsam::GaussianBayesTreeClique* operator[](size_t j) const;
   size_t numCachedSeparatorMarginals() const;
 
@@ -701,10 +742,18 @@ virtual class GaussianBayesTree {
   double error(const gtsam::VectorValues& x) const;
   double determinant() const;
   double logDeterminant() const;
+  gtsam::Matrix marginalInformation(gtsam::Key key) const;
   gtsam::Matrix marginalCovariance(gtsam::Key key) const;
+  gtsam::JointMarginal jointMarginalCovariance(
+      const gtsam::KeyVector& queryKeys) const;
+  gtsam::JointMarginal jointMarginalInformation(
+      const gtsam::KeyVector& queryKeys) const;
   gtsam::GaussianConditional* marginalFactor(gtsam::Key key) const;
   gtsam::GaussianFactorGraph* joint(gtsam::Key key1, gtsam::Key key2) const;
+  gtsam::GaussianFactorGraph* joint(const gtsam::KeyVector& queryKeys) const;
   gtsam::GaussianBayesNet* jointBayesNet(gtsam::Key key1, gtsam::Key key2) const;
+  gtsam::GaussianBayesNet* jointBayesNet(const gtsam::KeyVector& queryKeys) const;
+  void deleteCachedShortcuts();
 };
 
 #include <gtsam/linear/GaussianEliminationTree.h>

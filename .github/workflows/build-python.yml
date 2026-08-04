@@ -4,18 +4,12 @@ name: Python CI
 # instead of under 'pull_request:'. Otherwise, the check is still required but
 # never runs, and a maintainer must bypass the check in order to merge the PR.
 on:
-  push:
-    branches:
-      - develop
-    paths-ignore:
-      - '**.md'
-      - '**.ipynb'
-      - 'myst.yml'
+  workflow_dispatch:
   pull_request:
     paths-ignore:
-      - '**.md'
-      - '**.ipynb'
-      - 'myst.yml'
+      - "**.md"
+      - "**.ipynb"
+      - "myst.yml"
 
 # Every time you make a push to your PR, it cancel immediately the previous checks,
 # and start a new one. The other runner will be available more quickly to your PR.
@@ -24,14 +18,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Check paths to changed files to see if any are non-ignored.
+  # Check paths of changed files to see if any are non-ignored.
   check-paths:
     runs-on: ubuntu-latest
     outputs:
       should_run: ${{ steps.filter.outputs.relevant_changes }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Check modified files
         id: filter
@@ -58,7 +52,7 @@ jobs:
       PYTHON_VERSION: ${{ matrix.python_version }}
       BOOST_VERSION: 1.72.0
       BOOST_EXE: boost_1_72_0-msvc-14.2
-      GTSAM_ALLOW_DEPRECATED_SINCE_V43: OFF
+      SCCACHE_GHA_ENABLED: ON
 
     strategy:
       fail-fast: true
@@ -67,43 +61,43 @@ jobs:
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name:
           [
-            ubuntu-22.04-gcc-9,
+            ubuntu-22.04-gcc-11,
+            ubuntu-22.04-gcc-11-noboost,
             ubuntu-22.04-clang-11,
-            macos-13-xcode-14.2,
-            macos-14-xcode-15.4,
-            windows-2022-msbuild,
+            macos-15-xcode-16,
+            windows-2022-msvc,
           ]
 
         build_type: [Release]
         python_version: [3]
         include:
-          - name: ubuntu-22.04-gcc-9
+          - name: ubuntu-22.04-gcc-11
             os: ubuntu-22.04
             compiler: gcc
-            version: "9"
+            version: "11"
+
+          - name: ubuntu-22.04-gcc-11-noboost
+            os: ubuntu-22.04
+            compiler: gcc
+            version: "11"
 
           - name: ubuntu-22.04-clang-11
             os: ubuntu-22.04
             compiler: clang
             version: "11"
 
-          - name: macos-13-xcode-14.2
-            os: macos-13
+          - name: macos-15-xcode-16
+            os: macos-15
             compiler: xcode
-            version: "14.2"
+            version: "16"
 
-          - name: macos-14-xcode-15.4
-            os: macos-14
-            compiler: xcode
-            version: "15.4"
-
-          - name: windows-2022-msbuild
+          - name: windows-2022-msvc
             os: windows-2022
             platform: 64
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install (Linux)
         if: runner.os == 'Linux'
@@ -120,7 +114,11 @@ jobs:
           fi
 
           sudo apt-get -y update
-          sudo apt-get -y install cmake build-essential pkg-config libpython3-dev python3-numpy libboost-all-dev ninja-build
+          if [ "${{ matrix.name }}" = "ubuntu-22.04-gcc-11-noboost" ]; then
+            sudo apt-get -y install build-essential pkg-config libpython3-dev python3-numpy
+          else
+            sudo apt-get -y install build-essential pkg-config libpython3-dev python3-numpy libboost-all-dev
+          fi
 
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
@@ -136,21 +134,13 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           brew update
-          # Avoid reinstalling cmake when a pinned/local tap version is preinstalled on the runner.
-          if brew list cmake >/dev/null 2>&1; then
-            echo "cmake already installed"
-            cmake --version
-          else
-            brew install cmake
-          fi
-          # Install ninja and boost only if missing
-          brew list ninja >/dev/null 2>&1 || brew install ninja
+          # Install boost only if missing
           brew list boost >/dev/null 2>&1 || brew install boost
           sudo xcode-select -switch /Applications/Xcode.app
           echo "CC=clang" >> $GITHUB_ENV
           echo "CXX=clang++" >> $GITHUB_ENV
 
-      - name: Setup msbuild (Windows)
+      - name: Setup MSVC (Windows)
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
         with:
@@ -168,33 +158,38 @@ jobs:
         with:
           python-version: ${{ matrix.python_version }}
 
-      - name: Install ninja (Windows)
-        if: runner.os == 'Windows'
-        shell: bash
-        run: |
-          choco install ninja
-          ninja --version
-          where ninja
-
       - name: Install Boost (Windows)
         if: runner.os == 'Windows'
         shell: powershell
         run: |
-          # Snippet from: https://github.com/actions/virtual-environments/issues/2667
-          $BOOST_PATH = "C:\hostedtoolcache\windows\Boost\$env:BOOST_VERSION\x86_64"
+          $ErrorActionPreference = "Stop"
+          choco install boost-msvc-14.2 --yes --no-progress
 
-          # Use the prebuilt binary for Windows
-          $Url = "https://sourceforge.net/projects/boost/files/boost-binaries/$env:BOOST_VERSION/$env:BOOST_EXE-${{matrix.platform}}.exe"
+          # Try common Chocolatey install roots for Boost
+          $candidates = @(
+            "C:\local\boost_*",
+            "C:\ProgramData\chocolatey\lib\boost-msvc-14.2\tools\boost_*",
+            "C:\ProgramData\chocolatey\lib\boost-msvc-14.2\**\boost_*"
+          )
 
-          # Create WebClient with appropriate settings and download Boost exe
-          $wc = New-Object System.Net.Webclient
-          $wc.Headers.Add("User-Agent: Other");
-          $wc.DownloadFile($Url, "$env:TEMP\boost.exe")
+          $boostRoot = $null
+          foreach ($pattern in $candidates) {
+            $match = Get-ChildItem -Path $pattern -Directory -ErrorAction SilentlyContinue |
+              Sort-Object FullName -Descending |
+              Select-Object -First 1
+            if ($match) { $boostRoot = $match.FullName; break }
+          }
 
-          Start-Process -Wait -FilePath "$env:TEMP\boost.exe" "/SILENT","/SP-","/SUPPRESSMSGBOXES","/DIR=$BOOST_PATH"
+          if (-not $boostRoot) {
+            throw "Boost installed but root directory was not found in expected locations."
+          }
 
-          # Set the BOOST_ROOT variable
-          echo "BOOST_ROOT=$BOOST_PATH" >> $env:GITHUB_ENV
+          "BOOST_ROOT=$boostRoot" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host "Using BOOST_ROOT=$boostRoot"
+    
+      - name: Install sccache
+        if: runner.os == 'Windows'
+        uses: mozilla-actions/sccache-action@v0.0.9
 
       - name: Set GTSAM_WITH_TBB Flag
         if: matrix.flag == 'tbb'
@@ -227,10 +222,30 @@ jobs:
 
       - name: Build
         shell: bash
+        if: matrix.name != 'ubuntu-22.04-gcc-11-noboost' && matrix.name != 'windows-2022-msvc'
         run: |
           bash .github/scripts/python.sh -b
 
-      - name: Test
+      - name: Build
+        shell: bash
+        if: matrix.name == 'windows-2022-msvc'
+        run: |
+          bash .github/scripts/python.sh -b --sccache
+
+      - name: Build (No Boost Wrapper Check)
+        if: matrix.name == 'ubuntu-22.04-gcc-11-noboost'
         shell: bash
         run: |
+          bash .github/scripts/python.sh -b --no-boost
+
+      - name: Test
+        shell: bash
+        if: matrix.name != 'ubuntu-22.04-gcc-11-noboost'
+        run: |
           bash .github/scripts/python.sh -t
+
+      - name: Test (No Boost Wrapper Check)
+        if: matrix.name == 'ubuntu-22.04-gcc-11-noboost'
+        shell: bash
+        run: |
+          bash .github/scripts/python.sh -t --no-boost

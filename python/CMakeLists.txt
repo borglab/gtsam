@@ -53,6 +53,9 @@ endif()
 
 # Set the wrapping script variable
 set(PYBIND_WRAP_SCRIPT "${PROJECT_SOURCE_DIR}/wrap/scripts/pybind_wrap.py")
+
+# Disable pybind11's default LTO for wrapper modules to improve link times.
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
 ############################################################
 
 add_custom_target(gtsam_header DEPENDS "${PROJECT_SOURCE_DIR}/gtsam/gtsam.i")
@@ -95,10 +98,13 @@ set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/inference/inference.i
     ${PROJECT_SOURCE_DIR}/gtsam/discrete/discrete.i
     ${PROJECT_SOURCE_DIR}/gtsam/geometry/geometry.i
+    ${PROJECT_SOURCE_DIR}/gtsam/geometry/cameras.i
     ${PROJECT_SOURCE_DIR}/gtsam/linear/linear.i
     ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/nonlinear.i
     ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/values.i
     ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/custom.i
+    ${PROJECT_SOURCE_DIR}/gtsam/constrained/constrained.i
+    ${PROJECT_SOURCE_DIR}/gtsam/certifiable/certifiable.i
     ${PROJECT_SOURCE_DIR}/gtsam/symbolic/symbolic.i
     ${PROJECT_SOURCE_DIR}/gtsam/sam/sam.i
     ${PROJECT_SOURCE_DIR}/gtsam/slam/slam.i
@@ -107,6 +113,18 @@ set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/basis/basis.i
     ${PROJECT_SOURCE_DIR}/gtsam/hybrid/hybrid.i
 )
+
+if(GTSAM_USE_MOSEK)
+    list(APPEND interface_headers
+        ${PROJECT_SOURCE_DIR}/gtsam/certifiable/certifiable_mosek.i
+    )
+endif()
+
+if(GTSAM_ENABLE_CUDA)
+    list(APPEND interface_headers
+        ${PROJECT_SOURCE_DIR}/gtsam/slam/cuda/cuda_sfm.i
+    )
+endif()
 
 set(GTSAM_PYTHON_TARGET gtsam_py)
 set(GTSAM_PYTHON_UNSTABLE_TARGET gtsam_unstable_py)
@@ -133,13 +151,24 @@ pybind_wrap(${GTSAM_PYTHON_TARGET} # target
 
 SET_PYTHON_TARGET_PROPERTIES(${GTSAM_PYTHON_TARGET} ${GTSAM_OUTPUT_NAME} "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam")
 
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    # Generated pybind wrappers can trigger GCC's non-actionable psABI notes.
+    target_compile_options(${GTSAM_PYTHON_TARGET} PRIVATE -Wno-psabi)
+endif()
+
+if(GTSAM_ENABLE_BOOST_SERIALIZATION)
+    # Boost 1.87 emits deprecated-header pragma messages through serialization
+    # internals; limit suppression to wrapper compilation.
+    target_compile_definitions(${GTSAM_PYTHON_TARGET} PRIVATE BOOST_ALLOW_DEPRECATED_HEADERS)
+endif()
+
 if(WIN32)
     set_target_properties(${GTSAM_PYTHON_TARGET} PROPERTIES
         SUFFIX ".pyd"
     )
     ADD_CUSTOM_COMMAND(TARGET ${GTSAM_PYTHON_TARGET} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam/${GTSAM_OUTPUT_NAME}.pyd"
+        "$<TARGET_FILE:${GTSAM_PYTHON_TARGET}>"
         "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam/gtsam.pyd"
     )
     ADD_CUSTOM_COMMAND(TARGET ${GTSAM_PYTHON_TARGET} POST_BUILD
@@ -149,6 +178,15 @@ if(WIN32)
         COMMAND_EXPAND_LISTS
         VERBATIM
     )
+    if(GTSAM_USE_EIGEN_MKL AND DEFINED VCPKG_INSTALLED_DIR)
+        ADD_CUSTOM_COMMAND(TARGET ${GTSAM_PYTHON_TARGET} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${MKL_DLLS}"
+            "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam/"
+            COMMAND_EXPAND_LISTS
+            VERBATIM
+        )
+    endif()
 endif()
 
 # Set the path for the GTSAM python module
@@ -158,8 +196,15 @@ set(GTSAM_MODULE_PATH ${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam)
 copy_directory("${CMAKE_CURRENT_SOURCE_DIR}/gtsam"
         "${GTSAM_MODULE_PATH}")
 
+if(NOT GTSAM_ENABLE_CUDA)
+    file(REMOVE "${GTSAM_MODULE_PATH}/tests/test_CudaSfm.py")
+endif()
+
 # Hack to get python test and util files copied every time they are modified
 file(GLOB GTSAM_PYTHON_TEST_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/tests/*.py")
+if(NOT GTSAM_ENABLE_CUDA)
+    list(FILTER GTSAM_PYTHON_TEST_FILES EXCLUDE REGEX ".*/test_CudaSfm\\.py$")
+endif()
 foreach(test_file ${GTSAM_PYTHON_TEST_FILES})
         get_filename_component(test_file_name ${test_file} NAME)
         configure_file(${test_file} "${GTSAM_MODULE_PATH}/tests/${test_file_name}" COPYONLY)
@@ -171,15 +216,21 @@ foreach(test_file ${GTSAM_PYTHON_TEST_FILES})
 endforeach()
 file(GLOB GTSAM_PYTHON_UTIL_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/utils/*.py")
 foreach(util_file ${GTSAM_PYTHON_UTIL_FILES})
-        configure_file(${util_file} "${GTSAM_MODULE_PATH}/utils/${test_file}" COPYONLY)
+        get_filename_component(util_file_name ${util_file} NAME)
+        configure_file(${util_file}
+                "${GTSAM_MODULE_PATH}/utils/${util_file_name}" COPYONLY)
 endforeach()
 file(GLOB GTSAM_PYTHON_PREAMBLE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/preamble/*.h")
-foreach(util_file ${GTSAM_PYTHON_PREAMBLE_FILES})
-        configure_file(${util_file} "${GTSAM_MODULE_PATH}/preamble/${test_file}" COPYONLY)
+foreach(preamble_file ${GTSAM_PYTHON_PREAMBLE_FILES})
+        get_filename_component(preamble_file_name ${preamble_file} NAME)
+        configure_file(${preamble_file}
+                "${GTSAM_MODULE_PATH}/preamble/${preamble_file_name}" COPYONLY)
 endforeach()
 file(GLOB GTSAM_PYTHON_SPECIALIZATION_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/specializations/*.h")
-foreach(util_file ${GTSAM_PYTHON_SPECIALIZATION_FILES})
-        configure_file(${util_file} "${GTSAM_MODULE_PATH}/specializations/${test_file}" COPYONLY)
+foreach(specialization_file ${GTSAM_PYTHON_SPECIALIZATION_FILES})
+        get_filename_component(specialization_file_name ${specialization_file} NAME)
+        configure_file(${specialization_file}
+                "${GTSAM_MODULE_PATH}/specializations/${specialization_file_name}" COPYONLY)
 endforeach()
 
 # Common directory for data/datasets stored with the package.
@@ -233,6 +284,17 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
 
     SET_PYTHON_TARGET_PROPERTIES(${GTSAM_PYTHON_UNSTABLE_TARGET} ${GTSAM_UNSTABLE_OUTPUT_NAME} "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable")
 
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        # Generated pybind wrappers can trigger GCC's non-actionable psABI notes.
+        target_compile_options(${GTSAM_PYTHON_UNSTABLE_TARGET} PRIVATE -Wno-psabi)
+    endif()
+
+    if(GTSAM_ENABLE_BOOST_SERIALIZATION)
+        # Boost 1.87 emits deprecated-header pragma messages through serialization
+        # internals; limit suppression to wrapper compilation.
+        target_compile_definitions(${GTSAM_PYTHON_UNSTABLE_TARGET} PRIVATE BOOST_ALLOW_DEPRECATED_HEADERS)
+    endif()
+
     set(GTSAM_UNSTABLE_MODULE_PATH ${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable)
 
     # Copy all python files to build folder.
@@ -263,6 +325,15 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             COMMAND_EXPAND_LISTS
             VERBATIM
         )
+        if(GTSAM_USE_EIGEN_MKL AND DEFINED VCPKG_INSTALLED_DIR)
+            ADD_CUSTOM_COMMAND(TARGET ${GTSAM_PYTHON_UNSTABLE_TARGET} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${MKL_DLLS}"
+                "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable/"
+                COMMAND_EXPAND_LISTS
+                VERBATIM
+            )
+        endif()
     endif()
 
     add_custom_target(
@@ -270,7 +341,7 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
         COMMAND
         ${CMAKE_COMMAND} -E env
         "PYTHONPATH=${GTSAM_PYTHON_BUILD_DIRECTORY}/$ENV{PYTHONPATH}"
-        pybind11-stubgen -o . --enum-class-locations \"KernelFunctionType|NoiseFormat:gtsam.gtsam\" --enum-class-locations \"OrderingType:gtsam.gtsam.Ordering\" --numpy-array-use-type-var --ignore-all-errors gtsam_unstable
+        ${PYTHON_EXECUTABLE} -m pybind11_stubgen -o . --enum-class-locations \"KernelFunctionType|NoiseFormat:gtsam.gtsam\" --enum-class-locations \"OrderingType:gtsam.gtsam.Ordering\" --numpy-array-use-type-var --ignore-all-errors gtsam_unstable
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES} ${GTSAM_PYTHON_TEST_FILES} ${GTSAM_PYTHON_UNSTABLE_TARGET}
         WORKING_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/"
     )

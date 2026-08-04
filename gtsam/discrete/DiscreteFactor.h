@@ -22,7 +22,6 @@
 #include <gtsam/discrete/AlgebraicDecisionTree.h>
 #include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/inference/Factor.h>
-#include <gtsam/inference/Ordering.h>
 
 #include <string>
 namespace gtsam {
@@ -30,6 +29,7 @@ namespace gtsam {
 class DecisionTreeFactor;
 class DiscreteConditional;
 class HybridValues;
+class Ordering;
 
 /**
  * Base class for discrete probabilistic factors

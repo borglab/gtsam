@@ -164,6 +164,39 @@ TEST(DoglegOptimizer, Iterate) {
 }
 
 /* ************************************************************************* */
+TEST(DoglegOptimizer, IterateLineSearch) {
+  // really non-linear factor graph
+  NonlinearFactorGraph fg = example::createReallyNonlinearFactorGraph();
+
+  // config far from minimum
+  Point2 x0(3, 0);
+  Values config;
+  config.insert(X(1), x0);
+
+  for (size_t it = 0; it < 10; ++it) {
+    auto linearized = fg.linearize(config);
+
+    // Iterate assumes that linear error = nonlinear error at the linearization
+    // point, and this should be true
+    double nonlinearError = fg.error(config);
+    double linearError = linearized->error(config.zeroVectors());
+    DOUBLES_EQUAL(nonlinearError, linearError, 1e-5);
+
+    auto gbn = linearized->eliminateSequential();
+    VectorValues dx_u = gbn->optimizeGradientSearch();
+    VectorValues dx_n = gbn->optimize();
+    DoglegOptimizerImpl::IterationResult result = DoglegLineSearchImpl::Iterate(
+        {0.02, 0.5, 1.5, 1e-3, false}, dx_u, dx_n, *gbn, fg, config);
+    EXPECT(result.f_error < fg.error(config));  // Check that error decreases
+
+    Values newConfig(config.retract(result.dx_d));
+    config = newConfig;
+    DOUBLES_EQUAL(fg.error(config), result.f_error,
+                  1e-5);  // Check that error is correctly filled in
+  }
+}
+
+/* ************************************************************************* */
 TEST(DoglegOptimizer, Constraint) {
   // Create a pose-graph graph with a constraint on the first pose
   NonlinearFactorGraph graph;
@@ -322,6 +355,52 @@ TEST(DogLegOptimizer, VariableUpdate) {
   auto resultKeys = result.keys();
   EXPECT(std::find(resultKeys.begin(), resultKeys.end(), pose_idx) !=
          resultKeys.end());
+}
+
+/* ************************************************************************* */
+/**
+ * Validate computeblend when Newton delta is mis-matched with gradient delta
+ *
+ * To enable variable changes to smart factors, ISAM2 was updated to add
+ * variables before updating the delta. This however can cause a structural
+ * miss-match between dx_n and dx_u during ComputeBlend causing this test to
+ * crash with an error before the fix.
+ * ref: https://github.com/borglab/gtsam/issues/301
+ */
+TEST(DogLegOptimizer, ComputeBlend) {
+  auto model = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));
+  ISAM2DoglegParams doglegparams = ISAM2DoglegParams();
+  doglegparams.initialDelta = 1e-2;
+  doglegparams.verbose = false;
+  ISAM2Params isam2_params;
+  isam2_params.evaluateNonlinearError = true;
+  isam2_params.relinearizeThreshold = 0.0;
+  isam2_params.enableRelinearization = true;
+  isam2_params.optimizationParams = doglegparams;
+  isam2_params.relinearizeSkip = 1;
+  ISAM2 isam2(isam2_params);
+
+  ISAM2UpdateParams update_params;
+  update_params.force_relinearize = true;
+
+  {
+    NonlinearFactorGraph graph;
+    graph.emplace_shared<PriorFactor<Pose2>>(0, Pose2(), model);
+    Values values;
+    values.insert(0, Pose2(5, 5, 3));
+    isam2.update(graph, values, update_params);
+  }
+  for (size_t i = 0; i < 3; i++) {
+    NonlinearFactorGraph graph;
+    graph.emplace_shared<BetweenFactor<Pose2>>(i, i + 1, Pose2(1, 0, 0), model);
+    Values values;
+    values.insert(i + 1, Pose2(i + 5, i + 5, 3));
+    isam2.update(graph, values, update_params);
+  }
+
+  // Check is trivial as test validates no runtime error
+  Values computed = isam2.calculateEstimate();
+  CHECK(computed.size() == 4);
 }
 
 /* ************************************************************************* */

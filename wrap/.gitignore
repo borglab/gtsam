@@ -11,3 +11,5 @@ __pycache__/
 **/.coverage
 
 gtwrap/matlab_wrapper/matlab_wrapper.tpl
+
+.python-version

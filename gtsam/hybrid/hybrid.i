@@ -39,6 +39,7 @@ class HybridValues {
   HybridValues();
   HybridValues(const gtsam::VectorValues& cv, const gtsam::DiscreteValues& dv);
   HybridValues(const gtsam::VectorValues& cv, const gtsam::DiscreteValues& dv, const gtsam::Values& v);
+  HybridValues(const gtsam::DiscreteValues& dv, const gtsam::Values& v);
 
   void print(string s = "HybridValues",
              const gtsam::KeyFormatter& keyFormatter =
@@ -95,6 +96,7 @@ class HybridValues {
   void insert(const gtsam::DiscreteValues& values);
   void insert(const gtsam::Values& values);
   void insert(const gtsam::HybridValues& values);
+  void insert(const gtsam::Values& values);
 
 
   void update(const gtsam::VectorValues& values);
@@ -147,9 +149,9 @@ virtual class HybridConditional : gtsam::HybridFactor {
                     const gtsam::DiscreteKeys& discreteFrontals,
                     const gtsam::KeyVector& continuousParents,
                     const gtsam::DiscreteKeys& discreteParents);
-  HybridConditional(const gtsam::GaussianConditional::shared_ptr& continuousConditional);
-  HybridConditional(const gtsam::DiscreteConditional::shared_ptr& discreteConditional);
-  HybridConditional(const gtsam::HybridGaussianConditional::shared_ptr& hybridGaussianCond);
+  HybridConditional(const gtsam::GaussianConditional* continuousConditional);
+  HybridConditional(const gtsam::DiscreteConditional* discreteConditional);
+  HybridConditional(const gtsam::HybridGaussianConditional* hybridGaussianCond);
 
   void print(string s = "Hybrid Conditional\n",
              const gtsam::KeyFormatter& keyFormatter =
@@ -162,7 +164,7 @@ virtual class HybridConditional : gtsam::HybridFactor {
   double negLogConstant() const;
   double logProbability(const gtsam::HybridValues& values) const;
   double evaluate(const gtsam::HybridValues& values) const;
-  double operator()(const gtsam::HybridValues& values) const;
+//   double operator()(const gtsam::HybridValues& values) const;
 
   bool isDiscrete() const;
   bool isContinuous() const;
@@ -183,6 +185,8 @@ class HybridGaussianFactor : gtsam::HybridFactor {
       const gtsam::DiscreteKey& discreteKey,
       const std::vector<std::pair<gtsam::GaussianFactor::shared_ptr, double>>&
           factorPairs);
+  std::pair<gtsam::GaussianFactor::shared_ptr, double> operator()(
+      const gtsam::DiscreteValues& assignment) const;
 
   void print(string s = "HybridGaussianFactor\n",
              const gtsam::KeyFormatter& keyFormatter =
@@ -197,10 +201,20 @@ class HybridGaussianConditional : gtsam::HybridGaussianFactor {
   HybridGaussianConditional(
       const gtsam::DiscreteKey& discreteParent,
       const std::vector<gtsam::GaussianConditional::shared_ptr>& conditionals);
+  HybridGaussianConditional(
+      const gtsam::DiscreteKey& discreteParent, size_t key,
+      const gtsam::Matrix& A, size_t parent,
+      const std::vector<std::pair<gtsam::Vector, double>>& parameters);
+  HybridGaussianConditional(
+      const gtsam::DiscreteKey& discreteParent, size_t key,  //
+      const gtsam::Matrix& A1, size_t parent1, const gtsam::Matrix& A2,
+      size_t parent2,
+      const std::vector<std::pair<gtsam::Vector, double>>& parameters);
+
   // Standard API
-  gtsam::GaussianConditional::shared_ptr choose(
+  gtsam::GaussianConditional* choose(
       const gtsam::DiscreteValues &discreteValues) const;
-//   gtsam::GaussianConditional::shared_ptr operator()(
+//   gtsam::GaussianConditional* operator()(
 //       const gtsam::DiscreteValues &discreteValues) const;
   size_t nrComponents() const;
   gtsam::KeyVector continuousParents() const;
@@ -210,8 +224,9 @@ class HybridGaussianConditional : gtsam::HybridGaussianFactor {
       const gtsam::VectorValues& frontals) const;
   double logProbability(const gtsam::HybridValues& values) const;
   double evaluate(const gtsam::HybridValues& values) const;
+//   double operator()(const gtsam::HybridValues &values) const;
 
-  HybridGaussianConditional::shared_ptr prune(
+  HybridGaussianConditional* prune(
       const gtsam::DiscreteConditional &discreteProbs) const;
   bool pruned() const;
 
@@ -229,7 +244,7 @@ class HybridBayesTreeClique {
   // double evaluate(const gtsam::HybridValues& values) const;
 };
 
-class HybridBayesTree {
+virtual class HybridBayesTree {
   HybridBayesTree();
   void print(string s = "HybridBayesTree\n",
              const gtsam::KeyFormatter& keyFormatter =
@@ -241,6 +256,11 @@ class HybridBayesTree {
   const HybridBayesTreeClique* operator[](size_t j) const;
 
   gtsam::HybridValues optimize() const;
+  gtsam::VectorValues optimize(const gtsam::DiscreteValues& assignment) const;
+
+  gtsam::GaussianBayesTree choose(const gtsam::DiscreteValues& assignment) const;
+  double error(const gtsam::HybridValues& values) const;
+  gtsam::DiscreteValues mpe() const;
 
   string dot(const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
@@ -305,10 +325,12 @@ class HybridBayesNet {
       const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
 };
 
-#include <gtsam/hybrid/HybridGaussianFactorGraph.h>
-class HybridGaussianFactorGraph {
-  HybridGaussianFactorGraph();
-  HybridGaussianFactorGraph(const gtsam::HybridBayesNet& bayesNet);
+#include <gtsam/hybrid/HybridFactorGraph.h>
+virtual class HybridFactorGraph {
+  HybridFactorGraph();
+  gtsam::KeySet keys() const;
+  gtsam::KeySet discreteKeySet() const;
+  gtsam::KeySet continuousKeySet() const;
 
   // Building the graph
   void push_back(const gtsam::HybridFactor* factor);
@@ -320,21 +342,60 @@ class HybridGaussianFactorGraph {
   void push_back(gtsam::DecisionTreeFactor* factor);
   void push_back(gtsam::TableFactor* factor);
   void push_back(gtsam::JacobianFactor* factor);
-
+  void push_back(gtsam::NonlinearFactor* factor);
+  void push_back(gtsam::DiscreteFactor* factor);
+  void push_back(const gtsam::HybridNonlinearFactorGraph& graph);
+  
+  void add(const gtsam::HybridFactor* factor);
+  void add(const gtsam::HybridConditional* conditional);
+  void add(const gtsam::HybridGaussianFactorGraph& graph);
+  void add(const gtsam::HybridBayesNet& bayesNet);
+  void add(const gtsam::HybridBayesTree& bayesTree);
+  void add(const gtsam::HybridGaussianFactor* gmm);
+  void add(gtsam::DecisionTreeFactor* factor);
+  void add(gtsam::TableFactor* factor);
+  void add(gtsam::JacobianFactor* factor);
+  void add(gtsam::NonlinearFactor* factor);
+  void add(gtsam::DiscreteFactor* factor);
+  void add(const gtsam::HybridNonlinearFactorGraph& graph);
+  
   bool empty() const;
   void remove(size_t i);
   size_t size() const;
-  gtsam::KeySet keys() const;
+  void resize(size_t size);
   const gtsam::HybridFactor* at(size_t i) const;
-
-  void print(string s = "") const;
-  bool equals(const gtsam::HybridGaussianFactorGraph& fg,
-              double tol = 1e-9) const;
 
   // evaluation
   double error(const gtsam::HybridValues& values) const;
-  double probPrime(const gtsam::HybridValues& values) const;
 
+  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
+                                gtsam::DefaultKeyFormatter) const;
+  string dot(
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
+};
+
+#include <gtsam/hybrid/HybridGaussianFactorGraph.h>
+virtual class HybridGaussianFactorGraph : gtsam::HybridFactorGraph {
+  HybridGaussianFactorGraph();
+  HybridGaussianFactorGraph(const gtsam::HybridBayesNet& bayesNet);
+
+  // print added in base class
+  bool equals(const gtsam::HybridGaussianFactorGraph& fg,
+              double tol = 1e-9) const;
+
+  void printErrors(const gtsam::HybridValues& values,
+                   string s = "HybridGaussianFactorGraph: ",
+                   const gtsam::KeyFormatter& keyFormatter =
+                       gtsam::DefaultKeyFormatter) const;
+
+  gtsam::AlgebraicDecisionTreeKey errorTree(
+      const gtsam::VectorValues& continuousValues) const;
+  double probPrime(const gtsam::HybridValues& values) const;
+  gtsam::AlgebraicDecisionTreeKey discretePosterior(
+      const gtsam::VectorValues& continuousValues) const;
+
+  // Sequential Elimination
   gtsam::HybridBayesNet* eliminateSequential();
   gtsam::HybridBayesNet* eliminateSequential(
       gtsam::Ordering::OrderingType type);
@@ -342,6 +403,7 @@ class HybridGaussianFactorGraph {
   pair<gtsam::HybridBayesNet*, gtsam::HybridGaussianFactorGraph*>
   eliminatePartialSequential(const gtsam::Ordering& ordering);
 
+  // Multifrontal Elimination
   gtsam::HybridBayesTree* eliminateMultifrontal();
   gtsam::HybridBayesTree* eliminateMultifrontal(
       gtsam::Ordering::OrderingType type);
@@ -350,31 +412,31 @@ class HybridGaussianFactorGraph {
   pair<gtsam::HybridBayesTree*, gtsam::HybridGaussianFactorGraph*>
   eliminatePartialMultifrontal(const gtsam::Ordering& ordering);
 
-  string dot(
-      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
-      const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
+  gtsam::GaussianFactorGraph choose(const gtsam::DiscreteValues& assignment) const;
+  gtsam::GaussianFactorGraph operator()(const gtsam::DiscreteValues& assignment) const;
+
+  gtsam::DiscreteFactorGraph discreteFactors() const;
 };
 const gtsam::Ordering HybridOrdering(const gtsam::HybridGaussianFactorGraph& graph);
 
 #include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
-class HybridNonlinearFactorGraph {
+virtual class HybridNonlinearFactorGraph : gtsam::HybridFactorGraph {
   HybridNonlinearFactorGraph();
   HybridNonlinearFactorGraph(const gtsam::HybridNonlinearFactorGraph& graph);
-  void push_back(gtsam::HybridFactor* factor);
-  void push_back(gtsam::NonlinearFactor* factor);
-  void push_back(gtsam::DiscreteFactor* factor);
-  void push_back(const gtsam::HybridNonlinearFactorGraph& graph);
-  // TODO(Varun) Wrap add() methods
+
+  void printErrors(const gtsam::HybridValues& values,
+                   string s = "HybridNonlinearFactorGraph: ",
+                   const gtsam::KeyFormatter& keyFormatter =
+                       gtsam::DefaultKeyFormatter) const;
+
+  gtsam::AlgebraicDecisionTreeKey errorTree(const gtsam::Values& continuousValues) const;
 
   gtsam::HybridGaussianFactorGraph linearize(
       const gtsam::Values& continuousValues) const;
 
-  bool empty() const;
-  void remove(size_t i);
-  size_t size() const;
-  void resize(size_t size);
-  gtsam::KeySet keys() const;
-  const gtsam::HybridFactor* at(size_t i) const;
+  gtsam::AlgebraicDecisionTreeKey discretePosterior(
+      const gtsam::Values& continuousValues) const;
+
   gtsam::HybridNonlinearFactorGraph restrict(
       const gtsam::DiscreteValues& assignment) const;
 
@@ -397,8 +459,10 @@ class HybridNonlinearFactor : gtsam::HybridFactor {
       const gtsam::DecisionTree<
           gtsam::Key, std::pair<gtsam::NoiseModelFactor*, double>>& factors);
 
+  double error(const gtsam::HybridValues& hybridValues) const;
   double error(const gtsam::Values& continuousValues,
-               const gtsam::DiscreteValues& discreteValues) const;
+               const gtsam::DiscreteValues& assignment) const;
+  gtsam::AlgebraicDecisionTreeKey errorTree(const gtsam::Values &continuousValues);
 
   HybridGaussianFactor* linearize(const gtsam::Values& continuousValues) const;
 
@@ -437,6 +501,80 @@ class HybridSmoother {
 
   const gtsam::HybridBayesNet& hybridBayesNet() const;
   gtsam::HybridValues optimize() const;
+};
+
+#include <gtsam/hybrid/HybridGaussianISAM.h>
+virtual class HybridGaussianISAM : gtsam::HybridBayesTree {
+  HybridGaussianISAM();
+  HybridGaussianISAM(const gtsam::HybridBayesTree& bayesTree);
+  void update(const gtsam::HybridGaussianFactorGraph& newFactors);
+  static gtsam::Ordering GetOrdering(gtsam::HybridGaussianFactorGraph& factors,
+                              const gtsam::HybridGaussianFactorGraph& newFactors);
+};
+
+#include <gtsam/hybrid/HybridNonlinearISAM.h>
+class HybridNonlinearISAM {
+  HybridNonlinearISAM(int reorderInterval = 1);
+
+  // Standard Interface
+  gtsam::Values estimate();
+  const gtsam::HybridGaussianISAM& bayesTree() const;
+  void prune(const size_t maxNumberLeaves);
+  const gtsam::Values& getLinearizationPoint() const;
+  const gtsam::DiscreteValues& assignment() const;
+  int reorderInterval() const;
+  int reorderCounter() const;
+  void print(const std::string& s = "",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+  void printStats() const;
+  void saveGraph(const std::string& s,
+                 const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+  void update(const gtsam::HybridNonlinearFactorGraph& newFactors,
+              const gtsam::Values& initialValues);
+  void reorderRelinearize();
+};
+
+#include <gtsam/hybrid/HybridEliminationTree.h>
+class HybridEliminationTree {
+  HybridEliminationTree(const gtsam::HybridGaussianFactorGraph& factorGraph,
+                        const gtsam::VariableIndex& structure, const gtsam::Ordering& order);
+  HybridEliminationTree(const gtsam::HybridGaussianFactorGraph& factorGraph,
+                        const gtsam::Ordering& order);
+  void print(const std::string& s = "",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+  bool equals(const gtsam::HybridEliminationTree& other, double tol = 1e-9) const;
+};
+
+#include <gtsam/hybrid/HybridJunctionTree.h>
+class HybridJunctionTree {
+  HybridJunctionTree(const gtsam::HybridEliminationTree& eliminationTree);
+  void print(const std::string& s = "",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+};
+
+#include <gtsam/hybrid/DCSAM.h>
+class DCSAM {
+  DCSAM();
+  DCSAM(const gtsam::ISAM2Params& isam_params);
+
+  void update();
+  void update(const gtsam::HybridNonlinearFactorGraph& graph,
+              const gtsam::HybridValues& initialGuess = gtsam::HybridValues());
+  void update(const gtsam::HybridNonlinearFactorGraph& graph,
+              const gtsam::DiscreteValues& initialGuessDiscrete);
+
+  gtsam::HybridValues calculateEstimate() const;
+
+  const gtsam::DiscreteFactorGraph& getDiscreteFactorGraph() const;
+  const gtsam::NonlinearFactorGraph& getNonlinearFactorGraph() const;
+
+  const gtsam::VectorValues& getDelta() const;
+  double error(const gtsam::VectorValues& x) const;
+
 };
 
 }  // namespace gtsam

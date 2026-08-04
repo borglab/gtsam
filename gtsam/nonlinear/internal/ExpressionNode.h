@@ -92,8 +92,8 @@ public:
   }
 
   /// Return keys that play in this expression as a set
-  virtual std::set<Key> keys() const {
-    std::set<Key> keys;
+  virtual KeySet keys() const {
+    KeySet keys;
     return keys;
   }
 
@@ -150,8 +150,6 @@ public:
       char* traceStorage) const override {
     return constant_;
   }
-
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 //-----------------------------------------------------------------------------
@@ -182,8 +180,8 @@ public:
   }
 
   /// Return keys that play in this expression
-  std::set<Key> keys() const override {
-    std::set<Key> keys;
+  KeySet keys() const override {
+    KeySet keys;
     keys.insert(key_);
     return keys;
   }
@@ -260,7 +258,7 @@ public:
   }
 
   /// Return keys that play in this expression
-  std::set<Key> keys() const override {
+  KeySet keys() const override {
     return expression1_->keys();
   }
 
@@ -372,9 +370,9 @@ public:
   }
 
   /// Return keys that play in this expression
-  std::set<Key> keys() const override {
-    std::set<Key> keys = expression1_->keys();
-    std::set<Key> myKeys = expression2_->keys();
+  KeySet keys() const override {
+    KeySet keys = expression1_->keys();
+    KeySet myKeys = expression2_->keys();
     keys.insert(myKeys.begin(), myKeys.end());
     return keys;
   }
@@ -480,9 +478,9 @@ public:
   }
 
   /// Return keys that play in this expression
-  std::set<Key> keys() const override {
-    std::set<Key> keys = expression1_->keys();
-    std::set<Key> myKeys = expression2_->keys();
+  KeySet keys() const override {
+    KeySet keys = expression1_->keys();
+    KeySet myKeys = expression2_->keys();
     keys.insert(myKeys.begin(), myKeys.end());
     myKeys = expression3_->keys();
     keys.insert(myKeys.begin(), myKeys.end());
@@ -498,9 +496,6 @@ public:
 
   // Inner Record Class
   struct Record: public CallRecordImplementor<Record, traits<T>::dimension> {
-
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
     typename Jacobian<T, A1>::type dTdA1;
     typename Jacobian<T, A2>::type dTdA2;
     typename Jacobian<T, A3>::type dTdA3;
@@ -588,7 +583,7 @@ class ScalarMultiplyNode : public ExpressionNode<T> {
   }
 
   /// Return keys that play in this expression
-  std::set<Key> keys() const override {
+  KeySet keys() const override {
     return expression_->keys();
   }
 
@@ -677,9 +672,9 @@ class BinarySumNode : public ExpressionNode<T> {
   }
 
   /// Return keys that play in this expression
-  std::set<Key> keys() const override {
-    std::set<Key> keys = expression1_->keys();
-    std::set<Key> myKeys = expression2_->keys();
+  KeySet keys() const override {
+    KeySet keys = expression1_->keys();
+    KeySet myKeys = expression2_->keys();
     keys.insert(myKeys.begin(), myKeys.end());
     return keys;
   }

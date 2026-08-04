@@ -22,12 +22,13 @@
 
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/dllexport.h>
 #include <gtsam/geometry/Kernel.h>
 #include <gtsam/geometry/SOn.h>
 
-#include <vector>
 #include <optional>
+#include <vector>
 
 namespace gtsam {
 
@@ -143,7 +144,7 @@ struct GTSAM_EXPORT ExpmapFunctor {
 
   // Ethan Eade's constants:
   double A;  // A = sin(theta) / theta
-  double B;  // B = (1 - cos(theta))
+  double B;  // B = (1 - cos(theta)) / theta^2
 
   /// Constructor with element of Lie algebra so(3)
   explicit ExpmapFunctor(const Vector3& omega);
@@ -155,7 +156,7 @@ struct GTSAM_EXPORT ExpmapFunctor {
   ExpmapFunctor(const Vector3& axis, double angle);
 
   /// Rodrigues formula
-  Matrix3 expmap() const;
+  inline Matrix3 expmap() const { return I_3x3 + A * W + B * WW; }
 
 protected:
   void init(double nearZeroThresholdSq);
@@ -165,8 +166,8 @@ protected:
 /// Math extends Ethan theme of elegant I + aW + bWW expressions.
 /// See https://www.ethaneade.org/lie.pdf expmap (82) and left Jacobian (83).
 struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
-  const Vector3 omega;  ///< The rotation vector.
-  bool nearPi{false};   ///< Flag indicating if theta is near pi.
+  Vector3 omega;       ///< The rotation vector.
+  bool nearPi{false};  ///< Flag indicating if theta is near pi.
 
   /// Constructor with element of Lie algebra so(3)
   explicit DexpFunctor(const Vector3& omega);

@@ -21,16 +21,12 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/linear/NoiseModel.h>
-#include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/sfm/TranslationFactor.h>
 #include <gtsam/sfm/TranslationRecovery.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/PriorFactor.h>
-#include <gtsam/slam/expressions.h>
 
 #include <set>
 #include <utility>
@@ -38,8 +34,9 @@
 using namespace gtsam;
 using namespace std;
 
+namespace {
 // In Wrappers we have no access to this so have a default ready.
-static std::mt19937 kPRNG(42);
+std::mt19937 kPRNG(42);
 
 // Some relative translations may be zero. We treat nodes that have a zero
 // relativeTranslation as a single node.
@@ -95,25 +92,12 @@ Values addSameTranslationNodes(const Values &result,
   }
   return final_result;
 }
+}  // namespace
 
 NonlinearFactorGraph TranslationRecovery::buildGraph(
     const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations) const {
-  NonlinearFactorGraph graph;
-
-  // Add translation factors for input translation directions.
-  uint64_t i = 0;
-  for (auto edge : relativeTranslations) {
-    if (use_bilinear_translation_factor_) {
-      graph.emplace_shared<BilinearAngleTranslationFactor>(
-          edge.key1(), edge.key2(), Symbol('S', i), edge.measured(),
-          edge.noiseModel());
-    } else {
-      graph.emplace_shared<TranslationFactor>(
-          edge.key1(), edge.key2(), edge.measured(), edge.noiseModel());
-    }
-    i++;
-  }
-  return graph;
+  return LocationRecovery::buildGraph(relativeTranslations,
+                                     use_bilinear_translation_factor_);
 }
 
 void TranslationRecovery::addPrior(
@@ -124,13 +108,12 @@ void TranslationRecovery::addPrior(
     const SharedNoiseModel &priorNoiseModel) const {
   auto edge = relativeTranslations.begin();
   if (edge == relativeTranslations.end()) return;
-  graph->emplace_shared<PriorFactor<Point3>>(edge->key1(), Point3(0, 0, 0),
-                                             priorNoiseModel);
+  graph->addPrior<Point3>(edge->key1(), Point3(0, 0, 0), priorNoiseModel);
 
   // Add a scale prior only if no other between factors were added.
   if (betweenTranslations.empty()) {
-    graph->emplace_shared<PriorFactor<Point3>>(
-        edge->key2(), scale * edge->measured().point3(), edge->noiseModel());
+    auto model = convertNoiseModel(edge->noiseModel());
+    graph->addPrior<Point3>(edge->key2(), scale * edge->measured(), model);
     return;
   }
 
@@ -146,46 +129,28 @@ Values TranslationRecovery::initializeRandomly(
     const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations,
     const std::vector<BinaryMeasurement<Point3>> &betweenTranslations,
     std::mt19937 *rng, const Values &initialValues) const {
-  uniform_real_distribution<double> randomVal(-1, 1);
-  // Create a lambda expression that checks whether value exists and randomly
-  // initializes if not.
-  Values initial;
-  auto insert = [&](Key j) {
-    if (initial.exists(j)) return;
-    if (initialValues.exists(j)) {
-      initial.insert<Point3>(j, initialValues.at<Point3>(j));
-    } else {
-      initial.insert<Point3>(
-          j, Point3(randomVal(*rng), randomVal(*rng), randomVal(*rng)));
-    }
-    // Assumes all nodes connected by zero-edges have the same initialization.
-  };
-
-  // Loop over measurements and add a random translation
-  for (auto edge : relativeTranslations) {
-    insert(edge.key1());
-    insert(edge.key2());
+  // Collect all keys from edges.
+  std::set<Key> keys;
+  for (const auto &edge : relativeTranslations) {
+    keys.insert(edge.key1());
+    keys.insert(edge.key2());
   }
-  // There may be nodes in betweenTranslations that do not have a measurement.
-  for (auto edge : betweenTranslations) {
-    insert(edge.key1());
-    insert(edge.key2());
+  for (const auto &edge : betweenTranslations) {
+    keys.insert(edge.key1());
+    keys.insert(edge.key2());
   }
 
-  if (use_bilinear_translation_factor_) {
-    for (uint64_t i = 0; i < relativeTranslations.size(); i++) {
-      initial.insert<Vector1>(Symbol('S', i), Vector1(1.0));
-    }
-  }
-  return initial;
+  return LocationRecovery::initializeRandomly(
+      keys, relativeTranslations.size(), use_bilinear_translation_factor_, rng,
+      initialValues);
 }
 
 Values TranslationRecovery::initializeRandomly(
     const std::vector<BinaryMeasurement<Unit3>> &relativeTranslations,
     const std::vector<BinaryMeasurement<Point3>> &betweenTranslations,
     const Values &initialValues) const {
-  return initializeRandomly(relativeTranslations, betweenTranslations,
-                            &kPRNG, initialValues);
+  return initializeRandomly(relativeTranslations, betweenTranslations, &kPRNG,
+                            initialValues);
 }
 
 Values TranslationRecovery::run(
@@ -229,11 +194,9 @@ Values TranslationRecovery::run(
 
 TranslationRecovery::TranslationEdges TranslationRecovery::SimulateMeasurements(
     const Values &poses, const vector<KeyPair> &edges) {
-  auto edgeNoiseModel = noiseModel::Isotropic::Sigma(3, 0.01);
+  auto edgeNoiseModel = noiseModel::Isotropic::Sigma(2, 0.01);
   TranslationEdges relativeTranslations;
-  for (auto edge : edges) {
-    Key a, b;
-    tie(a, b) = edge;
+  for (const auto& [a, b] : edges) {
     const Pose3 wTa = poses.at<Pose3>(a), wTb = poses.at<Pose3>(b);
     const Point3 Ta = wTa.translation(), Tb = wTb.translation();
     const Unit3 w_aZb(Tb - Ta);

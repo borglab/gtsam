@@ -18,7 +18,9 @@
 
 // These are the included headers listed in `gtsam_unstable.i`
 {includes}
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/export.hpp>
+#endif
 
 {boost_class_export}
 
@@ -39,4 +41,3 @@ PYBIND11_MODULE({module_name}, m_) {{
 #include "python/gtsam_unstable/specializations/gtsam_unstable.h"
 
 }}
-

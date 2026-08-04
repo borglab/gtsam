@@ -17,7 +17,6 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-
 #include <gtsam/linear/Sampler.h>
 
 using namespace gtsam;
@@ -38,6 +37,18 @@ TEST(testSampler, basic) {
   Vector actual1 = sampler1.sample();
   EXPECT_DOUBLES_EQUAL(0.0, actual1(2), tol);
   EXPECT(assert_equal(sampler2.sample(), sampler3.sample(), tol));
+
+  // RNG-based constructor should be stateful and match the same sequence as a
+  // seeded sampler.
+  std::mt19937_64 rng(1);
+  Sampler sampler_rng(model, rng);
+  Sampler sampler_seed(model, 1);
+  Vector s1 = sampler_rng.sample();
+  Vector s1_ref = sampler_seed.sample();
+  EXPECT(assert_equal(s1, s1_ref, tol));
+  Vector s2 = sampler_rng.sample();
+  Vector s2_ref = sampler_seed.sample();
+  EXPECT(assert_equal(s2, s2_ref, tol));
 }
 
 /* ************************************************************************* */

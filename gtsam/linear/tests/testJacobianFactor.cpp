@@ -16,13 +16,15 @@
  *  @author Frank Dellaert
  **/
 
-#include <gtsam/base/TestableAssertions.h>
 #include <CppUnitLite/TestHarness.h>
-
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/SymmetricBlockMatrix.h>
+#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/inference/VariableSlots.h>
-#include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/HessianFactor.h>
+#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/VectorValues.h>
 
 using namespace std;
@@ -233,6 +235,110 @@ TEST( JacobianFactor, construct_from_graph)
 }
 
 /* ************************************************************************* */
+TEST(JacobianFactor, construct_from_graph_no_model)
+{
+  const Key keyX = 1, keyY = 2;
+  Matrix A11 = I_2x2;
+  Matrix A22 = 2 * I_2x2;
+  Vector2 b1(1.0, 2.0);
+  Vector2 b2(3.0, 4.0);
+
+  auto factor1 = std::make_shared<JacobianFactor>(keyX, A11, b1);
+  auto factor2 = std::make_shared<JacobianFactor>(keyY, A22, b2);
+
+  GaussianFactorGraph factors{factor1, factor2};
+  Ordering ordering{keyX, keyY};
+
+  Matrix A1(4, 2);
+  A1.setZero();
+  A1.block(0, 0, 2, 2) = A11;
+  Matrix A2(4, 2);
+  A2.setZero();
+  A2.block(2, 0, 2, 2) = A22;
+  Vector b(4);
+  b << b1, b2;
+
+  JacobianFactor expected(keyX, A1, keyY, A2, b);
+  JacobianFactor actual(factors, ordering);
+
+  EXPECT(assert_equal(expected, actual));
+  EXPECT(!actual.get_model());
+}
+
+/* ************************************************************************* */
+TEST(JacobianFactor, construct_from_graph_mixed_models)
+{
+  const Key keyX = 1, keyY = 2;
+  Matrix A11 = I_2x2;
+  Matrix A22 = 2 * I_2x2;
+  Vector2 b1(1.0, 2.0);
+  Vector2 b2(3.0, 4.0);
+  Vector2 sigmas1(0.2, 0.3);
+
+  auto factor1 = std::make_shared<JacobianFactor>(
+      keyX, A11, b1, noiseModel::Diagonal::Sigmas(sigmas1));
+  auto factor2 = std::make_shared<JacobianFactor>(keyY, A22, b2);
+
+  GaussianFactorGraph factors{factor1, factor2};
+  Ordering ordering{keyX, keyY};
+
+  Matrix A1(4, 2);
+  A1.setZero();
+  A1.block(0, 0, 2, 2) = A11;
+  Matrix A2(4, 2);
+  A2.setZero();
+  A2.block(2, 0, 2, 2) = A22;
+  Vector b(4);
+  b << b1, b2;
+  Vector sigmas(4);
+  sigmas << sigmas1, Vector2(1.0, 1.0);
+
+  JacobianFactor expected(keyX, A1, keyY, A2, b,
+                          noiseModel::Diagonal::Sigmas(sigmas));
+  JacobianFactor actual(factors, ordering);
+
+  EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST(JacobianFactor, construct_from_graph_constrained)
+{
+  const Key keyX = 1, keyY = 2;
+  Matrix A11 = I_2x2;
+  Matrix A22 = 2 * I_2x2;
+  Vector2 b1(1.0, 2.0);
+  Vector2 b2(3.0, 4.0);
+  Vector2 sigmas1(0.0, 1.0);
+  Vector2 sigmas2(2.0, 3.0);
+
+  auto factor1 = std::make_shared<JacobianFactor>(
+      keyX, A11, b1, noiseModel::Constrained::MixedSigmas(sigmas1));
+  auto factor2 = std::make_shared<JacobianFactor>(
+      keyY, A22, b2, noiseModel::Diagonal::Sigmas(sigmas2));
+
+  GaussianFactorGraph factors{factor1, factor2};
+  Ordering ordering{keyX, keyY};
+
+  Matrix A1(4, 2);
+  A1.setZero();
+  A1.block(0, 0, 2, 2) = A11;
+  Matrix A2(4, 2);
+  A2.setZero();
+  A2.block(2, 0, 2, 2) = A22;
+  Vector b(4);
+  b << b1, b2;
+  Vector sigmas(4);
+  sigmas << sigmas1, sigmas2;
+
+  JacobianFactor expected(keyX, A1, keyY, A2, b,
+                          noiseModel::Constrained::MixedSigmas(sigmas));
+  JacobianFactor actual(factors, ordering);
+
+  EXPECT(actual.isConstrained());
+  EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
 TEST(JacobianFactor, error)
 {
   JacobianFactor factor(simple::terms, simple::b, simple::noise);
@@ -253,6 +359,30 @@ TEST(JacobianFactor, error)
   double expected_error = 0.5 * expected_whitened.squaredNorm();
   double actual_error = factor.error(values);
   DOUBLES_EQUAL(expected_error, actual_error, 1e-10);
+}
+
+/* ************************************************************************* */
+TEST(JacobianFactor, deltaError)
+{
+  JacobianFactor factor(simple::terms, simple::b, simple::noise);
+
+  VectorValues values;
+  values.insert(5, Vector::Constant(3, 1.0));
+  values.insert(10, Vector::Constant(3, 0.5));
+  values.insert(15, Vector::Constant(3, 1.0/3.0));
+
+  VectorValues zero = VectorValues::Zero(values);
+  double expectedOld = factor.error(zero);
+  double expectedNew = factor.error(values);
+  double expectedDelta = expectedOld - expectedNew;
+
+  double oldValue = 0.0;
+  double newValue = 0.0;
+  double delta = factor.deltaError(values, &oldValue, &newValue);
+
+  DOUBLES_EQUAL(expectedOld, oldValue, 1e-10);
+  DOUBLES_EQUAL(expectedNew, newValue, 1e-10);
+  DOUBLES_EQUAL(expectedDelta, delta, 1e-10);
 }
 
 /* ************************************************************************* */
@@ -383,6 +513,69 @@ TEST(JacobianFactor, operators )
   EXPECT(assert_equal(-A.transpose()*b2, expectedG.vector(keys)));
   VectorValues actualG = lf.gradientAtZero();
   EXPECT(assert_equal(expectedG, actualG));
+}
+
+/* ************************************************************************* */
+TEST(JacobianFactor, gradient)
+{
+  // Build a factor: || [-I; I] [x1; x2] - b ||^2 with isotropic noise
+  const double sigma = 0.1;
+  SharedDiagonal noise = noiseModel::Isotropic::Sigma(2, sigma);
+  Matrix I = I_2x2;
+  Vector b = Vector2(0.2, -0.1);
+  JacobianFactor lf(1, -I, 2, I, b, noise);
+
+  VectorValues x;
+  x.insert(1, Vector2(10, 20));
+  x.insert(2, Vector2(30, 60));
+
+  // Gradient via direct computation should match HessianFactor-based gradient
+  HessianFactor hf(lf);
+  Vector expected1 = hf.gradient(1, x);
+  Vector expected2 = hf.gradient(2, x);
+
+  Vector actual1 = lf.gradient(1, x);
+  Vector actual2 = lf.gradient(2, x);
+
+  EXPECT(assert_equal(expected1, actual1, 1e-9));
+  EXPECT(assert_equal(expected2, actual2, 1e-9));
+}
+
+/* ************************************************************************* */
+TEST(JacobianFactor, gradient_no_noise)
+{
+  // Test gradient without noise model (unit covariance)
+  Matrix A1 = (Matrix(2, 2) << 1, 2, 3, 4).finished();
+  Matrix A2 = (Matrix(2, 2) << 5, 6, 7, 8).finished();
+  Vector b = Vector2(1, 2);
+  JacobianFactor lf(1, A1, 2, A2, b);
+
+  VectorValues x;
+  x.insert(1, Vector2(0.5, 1.0));
+  x.insert(2, Vector2(1.5, 2.0));
+
+  HessianFactor hf(lf);
+  EXPECT(assert_equal(hf.gradient(1, x), lf.gradient(1, x), 1e-9));
+  EXPECT(assert_equal(hf.gradient(2, x), lf.gradient(2, x), 1e-9));
+}
+
+/* ************************************************************************* */
+TEST(JacobianFactor, gradient_general_noise)
+{
+  // Non-isotropic noise to verify whitening in gradient computation
+  SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.5, 2.0));
+  Matrix A1 = (Matrix(2, 2) << 1, 2, 3, 4).finished();
+  Matrix A2 = (Matrix(2, 2) << 5, 6, 7, 8).finished();
+  Vector b = Vector2(1, 2);
+  JacobianFactor lf(1, A1, 2, A2, b, noise);
+
+  VectorValues x;
+  x.insert(1, Vector2(0.5, 1.0));
+  x.insert(2, Vector2(1.5, 2.0));
+
+  HessianFactor hf(lf);
+  EXPECT(assert_equal(hf.gradient(1, x), lf.gradient(1, x), 1e-9));
+  EXPECT(assert_equal(hf.gradient(2, x), lf.gradient(2, x), 1e-9));
 }
 
 /* ************************************************************************* */
@@ -663,6 +856,76 @@ TEST(JacobianFactor, OverdeterminedEliminate) {
                                           noiseModel::Unit::Create(3));
   EXPECT(assert_equal(expectedConditional, *actual.first, 1e-4));
   EXPECT(actual.second->empty());
+}
+
+/* ************************************************************************* */
+TEST(JacobianFactor, updateHessianWithColumnRangeOnlyUpdatesSpecifiedBlocks) {
+  const double tol = 0;
+
+  // Create a simple 2x2 JacobianFactor on keys 0 and 1
+  // A0 is 2x2 matrix for key 0, A1 is 2x2 matrix for key 1, b is 2x1 vector
+  Matrix A0 = (Matrix(2, 2) << 1, 2, 3, 4).finished();
+  Matrix A1 = (Matrix(2, 2) << 5, 6, 7, 8).finished();
+  Vector b = Vector2(1, 2);
+
+  JacobianFactor factor(0, A0, 1, A1, b);
+
+  // Destination matrix: 3 blocks (key 0: size 2, key 1: size 2, RHS: size 1)
+  KeyVector infoKeys{0, 1};
+  Dims dims{2, 2, 1};
+
+  // Initialize to zero
+  SymmetricBlockMatrix info(dims);
+  info.setZero();
+
+  // Update only block column 0 (first variable)
+  factor.updateHessian(infoKeys, &info, 0, 1);
+
+  // Block 0 (diagonal for key 0) should be updated (non-zero)
+  // The diagonal block should be A0'*A0
+  Matrix expected_G00 = A0.transpose() * A0;
+  Matrix block0 = info.diagonalBlock(0);
+  EXPECT(assert_equal(expected_G00, block0, tol));
+
+  // Block 1 (diagonal for key 1) should still be zero
+  Matrix block1 = info.diagonalBlock(1);
+  Matrix expected_zero_2x2 = Matrix::Zero(2, 2);
+  EXPECT(assert_equal(expected_zero_2x2, block1, tol));
+
+  // Block 2 (RHS) should still be zero
+  Matrix block2 = info.diagonalBlock(2);
+  Matrix expected_zero_1x1 = Matrix::Zero(1, 1);
+  EXPECT(assert_equal(expected_zero_1x1, block2, tol));
+
+  // Off-diagonal block (0,1) should still be zero
+  // Note: aboveDiagonalBlock gets the upper triangular part
+  Matrix block01 = info.aboveDiagonalBlock(0, 1);
+  EXPECT(assert_equal(expected_zero_2x2, block01, tol));
+
+  // Now update block column 1
+  factor.updateHessian(infoKeys, &info, 1, 2);
+
+  // Block 1 should now be updated (A1'*A1)
+  Matrix expected_G11 = A1.transpose() * A1;
+  EXPECT(assert_equal(expected_G11, info.diagonalBlock(1), tol));
+
+  // Off-diagonal block (0,1) should now be updated (A0'*A1)
+  Matrix expected_G01 = A0.transpose() * A1;
+  EXPECT(assert_equal(expected_G01, info.aboveDiagonalBlock(0, 1), tol));
+
+  // Block 2 (RHS) should still be zero (not updated yet)
+  EXPECT(assert_equal(expected_zero_1x1, info.diagonalBlock(2), tol));
+
+  // Finally update the RHS column
+  factor.updateHessian(infoKeys, &info, 2, 3);
+
+  // Now verify the full matrix matches what we'd get from a full update
+  SymmetricBlockMatrix infoFull(dims);
+  infoFull.setZero();
+  factor.updateHessian(infoKeys, &infoFull);
+
+  EXPECT(assert_equal(Matrix(infoFull.selfadjointView()),
+                      Matrix(info.selfadjointView()), tol));
 }
 
 /* ************************************************************************* */

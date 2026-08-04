@@ -15,9 +15,22 @@ $ cmake --build . --target install
 ## Important Installation Notes
 
 1. GTSAM requires the following libraries to be installed on your system:
-    - BOOST version 1.70 or greater (install through Linux repositories or MacPorts). Please see [Boost Notes](#boost-notes) for version recommendations based on your compiler.
+    - CMake version 3.16 or higher
+    - A compiler with C++17 support:
+      - Linux: GCC 9 or Clang 11
+      - macOS: Xcode 14.2
+      - Windows: MSVC 14.2
 
-    - CMake version 3.10 or higher
+    Boost version 1.70 or greater is required when either
+    `GTSAM_USE_BOOST_FEATURES` or `GTSAM_ENABLE_BOOST_SERIALIZATION` is
+    enabled. Both options are enabled by default outside ROS 2 `colcon` builds.
+    To build without Boost, disable both:
+
+    ```sh
+    $ cmake .. \
+        -DGTSAM_USE_BOOST_FEATURES=OFF \
+        -DGTSAM_ENABLE_BOOST_SERIALIZATION=OFF
+    ```
 
     Optional dependent libraries:
      - If TBB is installed and detectable by CMake GTSAM will use it automatically.
@@ -31,19 +44,6 @@ $ cmake --build . --target install
        achieved with MKL disabled. We therefore advise you to benchmark your problem
        before using MKL.
 
-    Tested compilers:
-
-    - GCC 4.2-7.3
-    - OS X Clang 2.9-10.0
-    - OS X GCC 4.2
-    - MSVC 2010, 2012, 2017
-
-    Tested systems:
-
-    - Ubuntu 16.04 - 18.04
-    - MacOS 10.6 - 10.14
-    - Windows 7, 8, 8.1, 10
-
 2. GTSAM makes extensive use of debug assertions, and we highly recommend you work
 in Debug mode while developing (enabled by default). Likewise, it is imperative
 that you switch to release mode when running finished code and for timing. GTSAM
@@ -51,7 +51,8 @@ will run up to 10x faster in Release mode! See the end of this document for
 additional debugging tips.
 
 3. GTSAM has Doxygen documentation. To generate, run 'make doc' from your
-build directory after setting the `GTSAM_BUILD_DOCS` and `GTSAM_BUILD_[HTML|LATEX]` cmake flags.
+build directory after setting the `GTSAM_BUILD_DOCS` and
+`GTSAM_BUILD_DOC_[HTML|LATEX]` cmake flags.
 
 4. The instructions below install the library to the default system install path and
 build all components. From a terminal, starting in the root library folder,
@@ -73,11 +74,78 @@ execute commands as follows for an out-of-source build:
 Versions of Boost prior to 1.65 have a known bug that prevents proper "deep" serialization of objects, which means that objects encapsulated inside other objects don't get serialized.
 This is particularly seen when using `clang` as the C++ compiler.
 
-For this reason we recommend Boost>=1.65, and recommend installing it through alternative channels when it is not available through your operating system's primary package manager.
+GTSAM's minimum supported Boost version, 1.70, already includes the fix. We
+recommend installing it through alternative channels when it is not available
+through your operating system's primary package manager.
 
-## Known Issues
+## Installing prebuilt packages
 
-- MSVC 2013 is not yet supported because it cannot build the serialization module of Boost 1.55 (or earlier).
+### Ubuntu PPA
+
+GTSAM can also be installed on Ubuntu using the
+[BorgLab PPA repositories](https://launchpad.net/~borglab).
+
+For the current GTSAM 4.2 release:
+
+```sh
+sudo add-apt-repository ppa:borglab/gtsam-release-4.2
+sudo apt update
+sudo apt install libgtsam-dev libgtsam-unstable-dev
+```
+
+For nightly builds from the `develop` branch:
+
+```sh
+sudo add-apt-repository ppa:borglab/gtsam-develop
+sudo apt update
+sudo apt install libgtsam-dev libgtsam-unstable-dev
+```
+
+Package availability depends on the Ubuntu release. Consult the linked PPA
+pages for the currently published packages.
+
+### Arch Linux AUR
+
+GTSAM is available in the Arch User Repository as
+[`gtsam`](https://aur.archlinux.org/packages/gtsam/). Installing GTSAM on
+Arch Linux is not tested by the GTSAM developers.
+
+Install it manually by following the
+[Arch Wiki instructions](https://wiki.archlinux.org/title/Arch_User_Repository)
+or use an AUR helper such as `yay`:
+
+```sh
+yay -S gtsam
+```
+
+An Intel MKL-enabled package is also available:
+
+```sh
+yay -S gtsam-mkl
+```
+
+## Using GTSAM from a CMake project
+
+After installing GTSAM, downstream CMake projects can use its exported target:
+
+```cmake
+find_package(GTSAM REQUIRED)
+
+add_executable(my_program main.cpp)
+target_link_libraries(my_program PRIVATE gtsam)
+```
+
+Linking the `gtsam` target supplies the required include directories and
+transitive build requirements. If GTSAM was installed to a nonstandard prefix,
+point CMake at it when configuring the downstream project:
+
+```sh
+cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/gtsam
+```
+
+See the complete
+[`cmake/example_cmake_find_gtsam`](cmake/example_cmake_find_gtsam)
+consumer example.
 
 # Windows Installation
 
@@ -239,6 +307,10 @@ Here are some tips to get the best possible performance out of GTSAM.
     optimization by 30-50%. Please note that this may not be true for very small
     problems where the overhead of dispatching work to multiple threads outweighs
     the benefit. We recommend that you benchmark your problem with/without TBB.
+    Note: TBB's parallel tree traversal can significantly increase memory usage
+    (e.g., from ~4GB to ~12GB in tested scenarios). If memory is a concern, you
+    can set `-DGTSAM_TBB_BOUNDED_MEMORY_GROWTH=ON` to disable parallel tree
+    traversal while keeping other TBB benefits.
 3. Use `GTSAM_BUILD_WITH_MARCH_NATIVE`. A performance gain of
     25-30% can be expected on modern processors. Note that this affects the portability
     of your executable. It may not run when copied to another system with older/different
@@ -285,58 +357,50 @@ or
 when importing GTSAM using the python wrapper.
 
 
-## Compile gtsam with vcpkg. (For linux/wsl)
-Install python dependencies + ninja + build essential in linux:   
-```
+## Compile gtsam with vcpkg
+
+vcpkg is an easy, cross-platform way to install all the dependencies gtsam uses, including Boost, MKL, and pybind11. It will calculate the proper [triplet for your system](https://learn.microsoft.com/en-us/vcpkg/concepts/triplets), like x64-linux, x64-windows, or arm64-osx, and install dependencies accordingly. That triplet will be referred to as `<triplet>` in this guide.
+
+To get started, install some base dependencies.
+
+On Linux, install Python dependencies + ninja + build-essential:
+
+```bash
 sudo apt update
 sudo apt-get install autoconf automake autoconf-archive ninja-build build-essential -y
 ```
 
-On your home dir near gtsam dir:   
-Setup vcpkg   
+On Windows, see [the Prerequisites section earlier](#Prerequisites).
+
+On Mac, install Python dependencies + ninja:
+
+```bash
+brew install autoconf autoconf-archive automake libtool
+```
+
+Go to your gtsam folder `cd gtsam`, and set up vcpkg:
+
 ```bash
 git clone https://github.com/microsoft/vcpkg
-cd vcpkg
-./bootstrap-vcpkg.sh
+./vcpkg/bootstrap-vcpkg.sh # or ./vcpkg/bootstrap-vcpkg.bat on Windows
 ```
 
-vcpkg install dependencies   
-on vcpkg dir:   
+Setup vcpkg and Python dependencies
+
 ```bash
-./vcpkg x-set-installed         \
-          boost-assign          \
-          boost-bimap           \
-          boost-chrono          \
-          boost-date-time       \
-          boost-filesystem      \
-          boost-format          \
-          boost-graph           \
-          boost-math            \
-          boost-program-options \
-          boost-regex           \
-          boost-serialization   \
-          boost-system          \
-          boost-thread          \
-          boost-timer           \
-          tbb                   \
-          pybind11
+./vcpkg/vcpkg install
+# The Python executable is called python, not python3 on Windows
+./vcpkg_installed/<triplet>/tools/python3/python3 -m ensurepip --upgrade
+./vcpkg_installed/<triplet>/tools/python3/python3 -m pip install -r python/dev_requirements.txt
 ```
 
-Setup python dependencies   
-Go to your gtsam folder `cd gtsam`:   
+Configure CMake build:
 ```bash
-../vcpkg/installed/x64-linux/tools/python3/python3 -m ensurepip --upgrade
-../vcpkg/installed/x64-linux/tools/python3/python3 -m pip install -r python/dev_requirements.txt
-```
-
-Cmake config:   
-In gtsam folder   
-```bash
-cmake . -B build -G Ninja \
-    -DCMAKE_TOOLCHAIN_FILE=../scripts/buildsystems/vcpkg.cmake \
-    -DVCPKG_INSTALLED_DIR=../installed \
-    -DVCPKG_TARGET_TRIPLET=x64-linux \
-    -DVCPKG_HOST_TRIPLET=x64-linux \
+cmake -B build -G Ninja \
+    -DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake \
+    -DVCPKG_INSTALLED_DIR=vcpkg_installed \
+    -DVCPKG_TARGET_TRIPLET=<triplet> \
+    -DVCPKG_HOST_TRIPLET=<triplet> \
     -DCMAKE_BUILD_TYPE=Release \
     -DGTSAM_BUILD_EXAMPLES_ALWAYS=ON \
     -DGTSAM_ROT3_EXPMAP=ON \
@@ -351,22 +415,32 @@ cmake . -B build -G Ninja \
     -DGTSAM_SUPPORT_NESTED_DISSECTION=ON
 ```
 
-cmake compile:   
-In gtsam folder:   
+Build gtsam:
+
 ```bash
 cmake --build build
 ```
 
-Run python tests:   
+Add vcpkg libraries to PATH:
+
+Linux/Mac:
+```bash
+export PATH="$PATH:/path/to/gtsam/vcpkg_installed/<triplet>/bin"
 ```
-VCPKG_INSTALLATION_ROOT=<abs path to vcpkg root dir>
-export PATH="$PATH:$VCPKG_INSTALLATION_ROOT/installed/x64-linux/bin"
+
+Windows (PowerShell):
+```pwsh
+$env:Path = "$env:Path;\path\to\gtsam\vcpkg_installed\<triplet>\bin"
+```
+
+Run Python tests:
+```bash
 cmake --build build --target python-install
 cmake --build build --target python-test
 cmake --build build --target python-test-unstable
 ```
 
-Run gtsam tests:   
+Run gtsam tests:
 ```bash
 cmake --build build --target check
 ```

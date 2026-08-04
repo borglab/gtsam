@@ -194,7 +194,7 @@ double LinearizedHessianFactor::error(const Values& c) const {
   // error 0.5*(f - 2*x'*g + x'*G*x)
   double f = constantTerm();
   double xtg = dx.dot(linearTerm());
-  double xGx = dx.transpose() * squaredTerm() * dx;
+  double xGx = dx.dot(squaredTerm() * dx);
 
   return 0.5 * (f - 2.0 * xtg +  xGx);
 }
@@ -216,7 +216,7 @@ LinearizedHessianFactor::linearize(const Values& c) const {
 
   // f2 = f1 - 2*dx'*g1 + dx'*G1*dx
   //newInfo(this->size(), this->size())(0,0) += -2*dx.dot(linearTerm()) + dx.transpose() * squaredTerm().selfadjointView<Eigen::Upper>() * dx;
-  double f = constantTerm() - 2*dx.dot(linearTerm()) + dx.transpose() * squaredTerm() * dx;
+  double f = constantTerm() - 2*dx.dot(linearTerm()) + dx.dot(squaredTerm() * dx);
 
   // g2 = g1 - G1*dx
   //newInfo.rangeColumn(0, this->size(), this->size(), 0) -= squaredTerm().selfadjointView<Eigen::Upper>() * dx;

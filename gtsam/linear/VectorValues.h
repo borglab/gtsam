@@ -18,7 +18,6 @@
 #pragma once
 
 #include <gtsam/linear/Scatter.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/ConcurrentMap.h>
 #include <gtsam/base/FastVector.h>
@@ -76,9 +75,6 @@ namespace gtsam {
     typedef VectorValues This;
     typedef ConcurrentMap<Key, Vector> Values;  ///< Collection of Vectors making up a VectorValues
     Values values_;                             ///< Vectors making up this VectorValues
-
-    /** Sort by key (primarily for use with TBB, which uses an unordered map)*/
-    std::map<Key, Vector> sorted() const;
 
    public:
     typedef Values::iterator iterator;              ///< Iterator over vector values
@@ -208,6 +204,17 @@ namespace gtsam {
      *  inserted are already used. */
     VectorValues& insert(const VectorValues& values);
 
+    /** Insert values from a concatenated vector using an explicit key order and dims.
+     * This method splits the concatenated vector according to the dimensions
+     * specified in dims and inserts each segment with the corresponding key from keys.
+     * @param values The concatenated vector to insert.
+     * @param keys The keys in order corresponding to segments in values.
+     * @param dims The dimensions map specifying the size of each key's vector.
+     * @return Reference to this VectorValues for chaining.
+     * @throws invalid_argument if any key already exists or if dimensions don't match. */
+    VectorValues& insert(const Vector& values, const KeyVector& keys,
+                         const Dims& dims);
+
     /** insert that mimics the STL map insert - if the value already exists, the map is not modified
      *  and an iterator to the existing value is returned, along with 'false'.  If the value did not
      *  exist, it is inserted and an iterator pointing to the new element, along with 'true', is
@@ -273,16 +280,39 @@ namespace gtsam {
     /** Retrieve the entire solution as a single vector */
     Vector vector() const;
 
+    /** Compute the total dimension of a subset of relevant keys. */
+    template <typename CONTAINER>
+    DenseIndex totalDim(const CONTAINER& keys) const {
+      DenseIndex totalDim = 0;
+      for (Key key : keys) {
+        totalDim += static_cast<DenseIndex>(at(key).size());
+      }
+      return totalDim;
+    }
+
+    /** Fill a preallocated Eigen vector expression with a subset of relevant keys. */
+    template <typename CONTAINER, typename Derived>
+    void fillVector(const CONTAINER& keys,
+                    const Eigen::MatrixBase<Derived>& result) const {
+      auto& writable = const_cast<Eigen::MatrixBase<Derived>&>(result);
+      DenseIndex pos = 0;
+      for (Key key : keys) {
+        const Vector& v = at(key);
+        writable.segment(pos, v.size()) = v;
+        pos += v.size();
+      }
+    }
+
     /** Access a vector that is a subset of relevant keys. */
     template <typename CONTAINER>
     Vector vector(const CONTAINER& keys) const {
       DenseIndex totalDim = 0;
       FastVector<const Vector*> items;
-      items.reserve(keys.end() - keys.begin());
+      items.reserve(keys.size());
       for (Key key : keys) {
         const Vector* v = &at(key);
         totalDim += v->size();
-        items.push_back(v);
+        items.emplace_back(v);
       }
 
       Vector result(totalDim);
@@ -357,6 +387,9 @@ namespace gtsam {
 
     /** Element-wise scaling by a constant in-place. */
     VectorValues& scaleInPlace(double alpha);
+
+    /** Sort by key (primarily for use with TBB, which uses an unordered map)*/
+    std::map<Key, const Vector&> sorted() const;
 
     /// @}
 

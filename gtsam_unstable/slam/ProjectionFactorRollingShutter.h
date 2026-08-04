@@ -21,6 +21,7 @@
 #include <gtsam/geometry/CalibratedCamera.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam_unstable/dllexport.h>
 
 
@@ -208,9 +209,6 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
     ar& BOOST_SERIALIZATION_NVP(verboseCheirality_);
   }
 #endif
-
- public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /// traits

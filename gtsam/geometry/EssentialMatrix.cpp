@@ -5,7 +5,9 @@
  * @date December 5, 2014
  */
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/EssentialMatrix.h>
+
 #include <iostream>
 
 using namespace std;

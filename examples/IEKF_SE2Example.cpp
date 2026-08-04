@@ -31,6 +31,7 @@
  * @date Apr 25, 2025
  * @authors Scott Baker, Matt Kielo, Frank Dellaert
  */
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/navigation/InvariantEKF.h>
 

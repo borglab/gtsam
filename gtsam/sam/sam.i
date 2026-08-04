@@ -70,6 +70,25 @@ typedef gtsam::RangeFactorWithTransform<gtsam::Pose2, gtsam::Pose2>
 typedef gtsam::RangeFactorWithTransform<gtsam::Pose3, gtsam::Pose3>
     RangeFactorWithTransformPose3;
 
+#include <gtsam/sam/RangeFactor.h>
+template <POSE, POINT>
+virtual class RangeFactorWithTransformBias : gtsam::NoiseModelFactor {
+  RangeFactorWithTransformBias(gtsam::Key key1, gtsam::Key key2,
+                               gtsam::Key key3, double measured,
+                               const gtsam::noiseModel::Base* noiseModel,
+                               const POSE& body_T_sensor);
+
+  // enabling serialization functionality
+  void serialize() const;
+
+  const double measured() const;
+};
+
+typedef gtsam::RangeFactorWithTransformBias<gtsam::Pose2, gtsam::Point2>
+    RangeFactorWithTransformBias2D;
+typedef gtsam::RangeFactorWithTransformBias<gtsam::Pose3, gtsam::Point3>
+    RangeFactorWithTransformBias3D;
+
 #include <gtsam/sam/BearingFactor.h>
 template <POSE, POINT, BEARING>
 virtual class BearingFactor : gtsam::NoiseModelFactor {

@@ -20,6 +20,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Lie.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 #ifdef _WIN32
 #define BETWEENFACTOR_VISIBILITY
@@ -71,7 +72,8 @@ namespace gtsam {
     /** Constructor */
     BetweenFactor(Key key1, Key key2, const VALUE& measured,
         const SharedNoiseModel& model = nullptr) :
-      Base(model, key1, key2), measured_(measured) {
+      Base(noiseModel::validOrDefault(measured, model), key1, key2),
+      measured_(measured) {
     }
 
     /// @}
@@ -146,11 +148,6 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(measured_);
     }
 #endif
-
-    // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
-    inline constexpr static auto NeedsToAlign = (sizeof(VALUE) % 16) == 0;
-  public:
-    GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
   }; // \class BetweenFactor
 
   /// traits

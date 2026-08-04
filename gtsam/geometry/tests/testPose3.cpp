@@ -14,15 +14,16 @@
  * @brief  Unit tests for Pose3 class
  */
 
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/base/testLie.h>
-#include <gtsam/base/lieProxies.h>
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/base/lieProxies.h>
+#include <gtsam/base/testLie.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/slam/expressions.h>
 
-
-#include <CppUnitLite/TestHarness.h>
 #include <cmath>
 #include <functional>
 
@@ -165,24 +166,23 @@ TEST(Pose3, Adjoint_jacobians)
 
   // Check jacobians
   Matrix6 actualH1, actualH2, expectedH1, expectedH2;
-  std::function<Vector6(const Pose3&, const Vector6&)> Adjoint_proxy =
-      [&](const Pose3& T, const Vector6& xi) { return T.Adjoint(xi); };
+  auto Ad = [&](const Pose3& T, const Vector6& xi) { return T.Adjoint(xi); };
 
   T.Adjoint(xi, actualH1, actualH2);
-  expectedH1 = numericalDerivative21(Adjoint_proxy, T, xi);
-  expectedH2 = numericalDerivative22(Adjoint_proxy, T, xi);
+  expectedH1 = numericalDerivative21(Ad, T, xi);
+  expectedH2 = numericalDerivative22(Ad, T, xi);
   EXPECT(assert_equal(expectedH1, actualH1));
   EXPECT(assert_equal(expectedH2, actualH2));
 
   T2.Adjoint(xi, actualH1, actualH2);
-  expectedH1 = numericalDerivative21(Adjoint_proxy, T2, xi);
-  expectedH2 = numericalDerivative22(Adjoint_proxy, T2, xi);
+  expectedH1 = numericalDerivative21(Ad, T2, xi);
+  expectedH2 = numericalDerivative22(Ad, T2, xi);
   EXPECT(assert_equal(expectedH1, actualH1));
   EXPECT(assert_equal(expectedH2, actualH2));
 
   T3.Adjoint(xi, actualH1, actualH2);
-  expectedH1 = numericalDerivative21(Adjoint_proxy, T3, xi);
-  expectedH2 = numericalDerivative22(Adjoint_proxy, T3, xi);
+  expectedH1 = numericalDerivative21(Ad, T3, xi);
+  expectedH2 = numericalDerivative22(Ad, T3, xi);
   EXPECT(assert_equal(expectedH1, actualH1));
   EXPECT(assert_equal(expectedH2, actualH2));
 }
@@ -203,26 +203,25 @@ TEST(Pose3, AdjointTranspose)
 
   // Check jacobians
   Matrix6 actualH1, actualH2, expectedH1, expectedH2;
-  std::function<Vector6(const Pose3&, const Vector6&)> AdjointTranspose_proxy =
-      [&](const Pose3& T, const Vector6& xi) {
-        return T.AdjointTranspose(xi);
-      };
+  auto AdT = [&](const Pose3& T, const Vector6& xi) {
+    return T.AdjointTranspose(xi);
+  };
 
   T.AdjointTranspose(xi, actualH1, actualH2);
-  expectedH1 = numericalDerivative21(AdjointTranspose_proxy, T, xi);
-  expectedH2 = numericalDerivative22(AdjointTranspose_proxy, T, xi);
+  expectedH1 = numericalDerivative21(AdT, T, xi);
+  expectedH2 = numericalDerivative22(AdT, T, xi);
   EXPECT(assert_equal(expectedH1, actualH1, 1e-8));
   EXPECT(assert_equal(expectedH2, actualH2));
 
   T2.AdjointTranspose(xi, actualH1, actualH2);
-  expectedH1 = numericalDerivative21(AdjointTranspose_proxy, T2, xi);
-  expectedH2 = numericalDerivative22(AdjointTranspose_proxy, T2, xi);
+  expectedH1 = numericalDerivative21(AdT, T2, xi);
+  expectedH2 = numericalDerivative22(AdT, T2, xi);
   EXPECT(assert_equal(expectedH1, actualH1, 1e-8));
   EXPECT(assert_equal(expectedH2, actualH2));
 
   T3.AdjointTranspose(xi, actualH1, actualH2);
-  expectedH1 = numericalDerivative21(AdjointTranspose_proxy, T3, xi);
-  expectedH2 = numericalDerivative22(AdjointTranspose_proxy, T3, xi);
+  expectedH1 = numericalDerivative21(AdT, T3, xi);
+  expectedH2 = numericalDerivative22(AdT, T3, xi);
   EXPECT(assert_equal(expectedH1, actualH1, 1e-8));
   EXPECT(assert_equal(expectedH2, actualH2));
 }
@@ -316,7 +315,7 @@ TEST(Pose3, translation) {
   Matrix actualH;
   EXPECT(assert_equal(Point3(3.5, -8.2, 4.2), T.translation(actualH), 1e-8));
 
-  std::function<Point3(const Pose3&)> f = [](const Pose3& T) { return T.translation(); };
+  auto f = [](const Pose3& T) { return T.translation(); };
   Matrix numericalH = numericalDerivative11<Point3, Pose3>(f, T);
   EXPECT(assert_equal(numericalH, actualH, 1e-6));
 }
@@ -327,7 +326,7 @@ TEST(Pose3, rotation) {
   Matrix actualH;
   EXPECT(assert_equal(R, T.rotation(actualH), 1e-8));
 
-  std::function<Rot3(const Pose3&)> f = [](const Pose3& T) { return T.rotation(); };
+  auto f = [](const Pose3& T) { return T.rotation(); };
   Matrix numericalH = numericalDerivative11<Rot3, Pose3>(f, T);
   EXPECT(assert_equal(numericalH, actualH, 1e-6));
 }
@@ -424,6 +423,7 @@ TEST( Pose3, compose_inverse)
 Point3 transformFrom_(const Pose3& pose, const Point3& point) {
   return pose.transformFrom(point);
 }
+
 TEST(Pose3, Dtransform_from1_a) {
   Matrix actualDtransform_from1;
   T.transformFrom(P, actualDtransform_from1, {});
@@ -797,7 +797,7 @@ TEST(Pose3, PoseToPoseBearing) {
   EXPECT(assert_equal(Unit3(0,1,0), xl1.bearing(xl2, actualH1, actualH2), 1e-9));
 
   // Check numerical derivatives
-  std::function<Unit3(const Pose3&, const Pose3&)> f = [](const Pose3& a, const Pose3& b) { return a.bearing(b); };
+  auto f = [](const Pose3& a, const Pose3& b) { return a.bearing(b); };
   expectedH1 = numericalDerivative21(f, xl1, xl2);
   expectedH2 = numericalDerivative22(f, xl1, xl2);
   EXPECT(assert_equal(expectedH1, actualH1, 1e-5));
@@ -890,7 +890,7 @@ TEST(Pose3, ExpmapDerivative) {
 }
 
 //******************************************************************************
-namespace test_cases {
+namespace pose3_test_cases {
   static const std::vector<Vector3> small{ {0, 0, 0},                                 //
                              {1e-5, 0, 0}, {0, 1e-5, 0}, {0, 0, 1e-5},  //,
                              {1e-4, 0, 0}, {0, 1e-4, 0}, {0, 0, 1e-4} };
@@ -899,13 +899,13 @@ namespace test_cases {
   auto omegas = [](bool nearZero) -> const std::vector<Vector3>&{ return nearZero ? small : large; };
   static const std::vector<Vector3> vs{ {1, 0, 0},    {0, 1, 0}, {0, 0, 1},
                           {.4, .3, .2}, {4, 5, 6}, {-10, -20, 30} };
-}  // namespace test_cases
+}  // namespace pose3_test_cases
 
 //******************************************************************************
 TEST(Pose3, ExpmapDerivatives) {
   for (bool nearZero : {true, false}) {
-    for (const Vector3& w : test_cases::omegas(nearZero)) {
-      for (Vector3 v : test_cases::vs) {
+    for (const Vector3& w : pose3_test_cases::omegas(nearZero)) {
+      for (Vector3 v : pose3_test_cases::vs) {
         const Vector6 xi = (Vector6() << w, v).finished();
         const Matrix6 expectedH =
             numericalDerivative21<Pose3, Vector6, OptionalJacobian<6, 6> >(
@@ -922,8 +922,8 @@ TEST(Pose3, ExpmapDerivatives) {
 // Check logmap for all small values, as we don't want wrapping.
 TEST(Pose3, Logmap) {
   static constexpr bool nearZero = true;
-  for (const Vector3& w : test_cases::omegas(nearZero)) {
-    for (Vector3 v : test_cases::vs) {
+  for (const Vector3& w : pose3_test_cases::omegas(nearZero)) {
+    for (Vector3 v : pose3_test_cases::vs) {
       const Vector6 xi = (Vector6() << w, v).finished();
       Pose3 pose = Pose3::Expmap(xi);
       EXPECT(assert_equal(xi, Pose3::Logmap(pose)));
@@ -935,8 +935,8 @@ TEST(Pose3, Logmap) {
 // Check logmap derivatives for all values
 TEST(Pose3, LogmapDerivatives) {
   for (bool nearZero : {true, false}) {
-    for (const Vector3& w : test_cases::omegas(nearZero)) {
-      for (Vector3 v : test_cases::vs) {
+    for (const Vector3& w : pose3_test_cases::omegas(nearZero)) {
+      for (Vector3 v : pose3_test_cases::vs) {
         const Vector6 xi = (Vector6() << w, v).finished();
         Pose3 pose = Pose3::Expmap(xi);
         const Matrix6 expectedH =
@@ -1412,9 +1412,7 @@ TEST(Pose3, Create) {
   Matrix63 actualH1, actualH2;
   Pose3 actual = Pose3::Create(R, P2, actualH1, actualH2);
   EXPECT(assert_equal(T, actual));
-  std::function<Pose3(Rot3, Point3)> create = [](Rot3 R, Point3 t) {
-    return Pose3::Create(R, t);
-  };
+  auto create = [](Rot3 R, Point3 t) { return Pose3::Create(R, t); };
   EXPECT(assert_equal(numericalDerivative21<Pose3,Rot3,Point3>(create, R, P2), actualH1, 1e-9));
   EXPECT(assert_equal(numericalDerivative22<Pose3,Rot3,Point3>(create, R, P2), actualH2, 1e-9));
 }
@@ -1464,24 +1462,9 @@ TEST(Pose3, Vec) {
   EXPECT(assert_equal(expected_vec, actual_vec));
 
   // Verify Jacobian with numerical derivatives
-  std::function<Vector16(const Pose3&)> f = [](const Pose3& p) { return p.vec(); };
+  auto f = [](const Pose3& p) { return p.vec(); };
   Matrix numericalH = numericalDerivative11<Vector16, Pose3>(f, T);
   EXPECT(assert_equal(numericalH, actualH, 1e-9));
-}
-
-/* ************************************************************************* */
-TEST(Pose3, AdjointMap) {
-  // Create a non-trivial Pose3 object
-  const Pose3 pose(Rot3::Rodrigues(0.1, 0.2, 0.3), Point3(1.0, 2.0, 3.0));
-
-  // Call the specialized AdjointMap
-  Matrix6 specialized_Adj = pose.AdjointMap();
-
-  // Call the generic AdjointMap from the base class
-  Matrix6 generic_Adj = static_cast<const MatrixLieGroup<Pose3, 6, 4>*>(&pose)->AdjointMap();
-
-  // Assert that they are equal
-  EXPECT(assert_equal(specialized_Adj, generic_Adj, 1e-9));
 }
 
 /* ************************************************************************* */

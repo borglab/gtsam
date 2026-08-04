@@ -17,7 +17,6 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/slam/PoseTranslationPrior.h>
@@ -78,7 +77,13 @@ SmartProjectionParams params(
     gtsam::ZERO_ON_DEGENERACY);  // only config that works with RS factors
 }  // namespace vanillaPoseRS
 
-LevenbergMarquardtParams lmParams;
+LevenbergMarquardtParams makeLmParams() {
+  LevenbergMarquardtParams params;
+  params.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
+  return params;
+}
+
+LevenbergMarquardtParams lmParams = makeLmParams();
 typedef SmartProjectionPoseFactorRollingShutter<PinholePose<Cal3_S2>>
     SmartFactorRS;
 

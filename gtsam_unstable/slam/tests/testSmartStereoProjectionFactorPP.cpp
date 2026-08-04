@@ -83,7 +83,13 @@ vector<StereoPoint2> stereo_projectToMultipleCameras(const StereoCamera& cam1,
   return measurements_cam;
 }
 
-LevenbergMarquardtParams lm_params;
+LevenbergMarquardtParams makeLmParams() {
+  LevenbergMarquardtParams params;
+  params.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
+  return params;
+}
+
+LevenbergMarquardtParams lmParams = makeLmParams();
 }  // namespace
 
 /* ************************************************************************* */
@@ -470,7 +476,7 @@ TEST( SmartStereoProjectionFactorPP, 3poses_optimization_multipleExtrinsics ) {
 
   Values result;
   gttic_(SmartStereoProjectionFactorPP);
-  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
   gttoc_(SmartStereoProjectionFactorPP);
   tictoc_finishedIteration_();
@@ -526,7 +532,7 @@ TEST( SmartStereoProjectionFactorPP, 3poses_optimization_multipleExtrinsics ) {
   EXPECT_DOUBLES_EQUAL(833953.92789459578, graph2.error(values2), 1e-7);
   EXPECT_DOUBLES_EQUAL(initialErrorSmart, graph2.error(values2), 1e-7); // identical to previous case!
 
-  LevenbergMarquardtOptimizer optimizer2(graph2, values2, lm_params);
+  LevenbergMarquardtOptimizer optimizer2(graph2, values2, lmParams);
   Values result2 = optimizer2.optimize();
   EXPECT_DOUBLES_EQUAL(0, graph2.error(result2), 1e-5);
 }
@@ -850,7 +856,7 @@ TEST( SmartStereoProjectionFactorPP, 3poses_optimization_sameExtrinsicKey ) {
 
   Values result;
   gttic_(SmartStereoProjectionFactorPP);
-  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
   gttoc_(SmartStereoProjectionFactorPP);
   tictoc_finishedIteration_();
@@ -951,7 +957,7 @@ TEST( SmartStereoProjectionFactorPP, 3poses_optimization_2ExtrinsicKeys ) {
 
   Values result;
   gttic_(SmartStereoProjectionFactorPP);
-  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
   gttoc_(SmartStereoProjectionFactorPP);
   tictoc_finishedIteration_();
@@ -1076,7 +1082,7 @@ TEST( SmartStereoProjectionFactorPP, monocular_multipleExtrinsicKeys ){
 
   Values result;
   gttic_(SmartStereoProjectionFactorPP);
-  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
   gttoc_(SmartStereoProjectionFactorPP);
   tictoc_finishedIteration_();
@@ -1156,7 +1162,7 @@ TEST( SmartStereoProjectionFactorPP, landmarkDistance ) {
 
   // All smart factors are disabled and pose should remain where it is
   Values result;
-  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
   EXPECT(assert_equal(values.at<Pose3>(x3), result.at<Pose3>(x3), 1e-5));
   EXPECT_DOUBLES_EQUAL(graph.error(values), graph.error(result), 1e-5);
@@ -1261,7 +1267,7 @@ TEST( SmartStereoProjectionFactorPP, dynamicOutlierRejection ) {
 
   // Factor 4 is disabled, pose 3 stays put
   Values result;
-  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
   EXPECT(assert_equal(Pose3::Identity(), result.at<Pose3>(body_P_cam_key)));
 }
@@ -1272,4 +1278,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

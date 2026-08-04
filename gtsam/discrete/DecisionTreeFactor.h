@@ -22,12 +22,8 @@
 #include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/discrete/Ring.h>
-#include <gtsam/inference/Ordering.h>
 
-#include <algorithm>
-#include <map>
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>

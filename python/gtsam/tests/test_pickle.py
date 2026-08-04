@@ -9,12 +9,23 @@ Unit tests to check pickling.
 
 Author: Ayush Baid
 """
+
+import unittest
 from gtsam.utils.test_case import GtsamTestCase
 
-from gtsam import (Cal3Bundler, PinholeCameraCal3Bundler, Point2, Point3,
-                   Pose3, Rot3, SfmTrack, Unit3)
+from gtsam import (
+    Cal3Bundler,
+    PinholeCameraCal3Bundler,
+    Point2,
+    Point3,
+    Pose3,
+    Rot3,
+    SfmTrack,
+    Unit3,
+)
 
 
+@unittest.skipUnless(hasattr(Pose3, "serialize"), "Serialization not enabled")
 class TestPickle(GtsamTestCase):
     """Tests pickling on some of the classes."""
 
@@ -46,3 +57,7 @@ class TestPickle(GtsamTestCase):
     def test_unit3_roundtrip(self):
         obj = Unit3(Point3(1, 1, 0))
         self.assertEqualityOnPickleRoundtrip(obj)
+
+
+if __name__ == "__main__":
+    unittest.main()

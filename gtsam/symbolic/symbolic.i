@@ -206,7 +206,7 @@ class SymbolicBayesTree {
   // Standard Interface
   bool empty() const;
   size_t size() const;
-  const SymbolicBayesTree::Roots& roots() const;
+  const gtsam::SymbolicBayesTree::Roots& roots() const;
   const gtsam::SymbolicBayesTreeClique* operator[](size_t j) const;
 
   void saveGraph(string s,

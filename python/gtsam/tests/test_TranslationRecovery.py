@@ -25,7 +25,7 @@ def SimulateMeasurements(gt_poses, graph_edges):
         Tb = gt_poses.atPose3(edge[1]).translation()
         measurements.append(gtsam.BinaryMeasurementUnit3( \
             edge[0], edge[1], gtsam.Unit3(Tb - Ta), \
-            gtsam.noiseModel.Isotropic.Sigma(3, 0.01)))
+            gtsam.noiseModel.Isotropic.Sigma(2, 0.01)))
     return measurements
 
 

@@ -6,10 +6,9 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
-
 #include <gtsam_unstable/geometry/Pose3Upright.h>
 
 using namespace gtsam;

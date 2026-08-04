@@ -100,9 +100,6 @@ class EssentialMatrixFactor : public NoiseModelFactorN<EssentialMatrix> {
     error(0) = E.error(vA_, vB_, H);
     return error;
   }
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /**
@@ -223,9 +220,6 @@ class EssentialMatrixFactor2
     Point2 reprojectionError = pn - pn_;
     return f_ * reprojectionError;
   }
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // EssentialMatrixFactor2
 
@@ -311,9 +305,6 @@ class EssentialMatrixFactor3 : public EssentialMatrixFactor2 {
       return e;
     }
   }
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // EssentialMatrixFactor3
 
@@ -357,7 +348,8 @@ class EssentialMatrixFactor4
    */
   EssentialMatrixFactor4(Key keyE, Key keyK, const Point2& pA, const Point2& pB,
                          const SharedNoiseModel& model = nullptr)
-      : Base(model, keyE, keyK), pA_(pA), pB_(pB) {}
+      : Base(noiseModel::validOrDefault(0.0, model), keyE, keyK),
+        pA_(pA), pB_(pB) {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -414,9 +406,6 @@ class EssentialMatrixFactor4
 
     return error;
   }
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // EssentialMatrixFactor4
 
@@ -460,7 +449,8 @@ class EssentialMatrixFactor5
   EssentialMatrixFactor5(Key keyE, Key keyKa, Key keyKb, const Point2& pA,
                          const Point2& pB,
                          const SharedNoiseModel& model = nullptr)
-      : Base(model, keyE, keyKa, keyKb), pA_(pA), pB_(pB) {}
+      : Base(noiseModel::validOrDefault(0.0, model), keyE, keyKa, keyKb),
+        pA_(pA), pB_(pB) {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -520,9 +510,6 @@ class EssentialMatrixFactor5
 
     return error;
   }
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // EssentialMatrixFactor5
 

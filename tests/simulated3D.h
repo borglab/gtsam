@@ -23,7 +23,8 @@
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include "gtsam/base/OptionalJacobian.h"
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
+#include <gtsam/base/OptionalJacobian.h>
 
 // \namespace
 
@@ -40,7 +41,7 @@ namespace simulated3D {
  * Prior on a single pose
  */
 Point3 prior(const Point3& x, OptionalJacobian<3,3> H = OptionalNone) {
-  if (H) *H = I_3x3;
+  if (H) *H = Matrix3::Identity();
   return x;
 }
 
@@ -50,8 +51,8 @@ Point3 prior(const Point3& x, OptionalJacobian<3,3> H = OptionalNone) {
 Point3 odo(const Point3& x1, const Point3& x2,
     OptionalJacobian<3,3> H1 = OptionalNone,
     OptionalJacobian<3,3> H2 = OptionalNone) {
-  if (H1) *H1 = -1 * I_3x3;
-  if (H2) *H2 = I_3x3;
+  if (H1) *H1 = -1 * Matrix3::Identity();
+  if (H2) *H2 = Matrix3::Identity();
   return x2 - x1;
 }
 
@@ -61,8 +62,8 @@ Point3 odo(const Point3& x1, const Point3& x2,
 Point3 mea(const Point3& x, const Point3& l,
     OptionalJacobian<3,3> H1 = OptionalNone,
     OptionalJacobian<3,3> H2 = OptionalNone) {
-  if (H1) *H1 = -1 * I_3x3;
-  if (H2) *H2 = I_3x3;
+  if (H1) *H1 = -1 * Matrix3::Identity();
+  if (H2) *H2 = Matrix3::Identity();
   return l - x;
 }
 

@@ -20,6 +20,7 @@
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 using namespace gtsam;
 using namespace gtsam::noiseModel;

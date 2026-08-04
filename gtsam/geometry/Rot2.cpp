@@ -16,7 +16,10 @@
  * @brief 2D Rotations
  */
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/Rot2.h>
+
+#include <Eigen/SVD>
 #include <iostream>
 
 using namespace std;
@@ -81,6 +84,23 @@ Vector1 Rot2::Logmap(const Rot2& r, OptionalJacobian<1, 1> H) {
   v << r.theta();
   return v;
 }
+
+/* ************************************************************************* */
+Matrix1 Rot2::adjointMap(const Vector1&) {
+  Matrix1 ad;
+  ad << 0.0;
+  return ad;
+}
+
+/* ************************************************************************* */
+Vector1 Rot2::adjoint(const Vector1&, const Vector1&,
+                      OptionalJacobian<1, 1> Hxi,
+                      OptionalJacobian<1, 1> Hy) {
+  if (Hxi) *Hxi = Matrix1::Zero();
+  if (Hy) *Hy = Matrix1::Zero();
+  return Vector1::Zero();
+}
+
 /* ************************************************************************* */
 Matrix2 Rot2::Hat(const Vector1& xi) {
   Matrix2 X;

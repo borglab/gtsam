@@ -15,11 +15,12 @@
  * @author Frank Dellaert
  **/
 
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/numericalDerivative.h>
-#include <gtsam/base/lieProxies.h>
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/lieProxies.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/Point2.h>
 
 using namespace std;
 using namespace gtsam;
@@ -30,6 +31,7 @@ GTSAM_CONCEPT_LIE_INST(Point2)
 //******************************************************************************
 TEST(Point2 , Constructor) {
   Point2 p;
+  (void)p;
 }
 
 //******************************************************************************

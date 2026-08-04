@@ -115,7 +115,7 @@ public:
   static std::optional<Pose2> Align(const Point2Pairs& abPointPairs);
 
   // Version of Pose2::Align that takes 2 matrices.
-  static std::optional<Pose2> Align(const Matrix& a, const Matrix& b);
+  static std::optional<Pose2> Align(ConstMatrixView a, ConstMatrixView b);
 
   /// @}
   /// @name Testable
@@ -158,29 +158,10 @@ public:
    */
   Matrix3 AdjointMap() const;
 
-  /// Apply AdjointMap to twist xi
-  inline Vector3 Adjoint(const Vector3& xi) const {
-    return AdjointMap()*xi;
-  }
-
   /**
    * Compute the [ad(w,v)] operator for SE2 as in [Kobilarov09siggraph], pg 19
    */
   static Matrix3 adjointMap(const Vector3& v);
-
-  /**
-   * Action of the adjointMap on a Lie-algebra vector y, with optional derivatives
-   */
-  static Vector3 adjoint(const Vector3& xi, const Vector3& y) {
-    return adjointMap(xi) * y;
-  }
-
-  /**
-   * The dual version of adjoint action, acting on the dual space of the Lie-algebra vector space.
-   */
-  static Vector3 adjointTranspose(const Vector3& xi, const Vector3& y) {
-    return adjointMap(xi).transpose() * y;
-  }
 
   // temporary fix for wrappers until case issue is resolved
   static Matrix3 adjointMap_(const Vector3 &xi) { return adjointMap(xi);}
@@ -220,7 +201,7 @@ public:
    * @param points 2*N matrix in world coordinates
    * @return points in Pose coordinates, as 2*N Matrix
    */
-  Matrix transformTo(const Matrix& points) const;
+  Matrix transformTo(ConstMatrixView points) const;
 
   /** Return point coordinates in global frame */
   Point2 transformFrom(const Point2& point,
@@ -232,7 +213,7 @@ public:
    * @param points 2*N matrix in Pose coordinates
    * @return points in world coordinates, as 2*N Matrix
    */
-  Matrix transformFrom(const Matrix& points) const;
+  Matrix transformFrom(ConstMatrixView points) const;
 
   /** syntactic sugar for transformFrom */
   inline Point2 operator*(const Point2& point) const { 
@@ -360,10 +341,6 @@ public:
     ar & BOOST_SERIALIZATION_NVP(r_);
   }
 #endif
-
-public:
-  // Align for Point2, which is either derived from, or is typedef, of Vector2
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 }; // Pose2
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
@@ -393,4 +370,3 @@ template <typename T>
 struct Range<Pose2, T> : HasRange<Pose2, T, double> {};
 
 } // namespace gtsam
-

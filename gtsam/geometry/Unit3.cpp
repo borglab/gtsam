@@ -166,8 +166,41 @@ void Unit3::print(const std::string& s) const {
 }
 
 /* ************************************************************************* */
-Matrix3 Unit3::skew() const {
-  return skewSymmetric(p_.x(), p_.y(), p_.z());
+Matrix3 Unit3::skew() const { return skewSymmetric(p_.x(), p_.y(), p_.z()); }
+
+/* ************************************************************************* */
+Unit3 Unit3::cross(const Unit3& q, OptionalJacobian<2, 2> H1,
+                   OptionalJacobian<2, 2> H2) const {
+  Matrix23 H;
+  const auto result = Unit3::FromPoint3(gtsam::cross(p_, q.p_), H);
+  if (H1) *H1 << -H * q.skew() * basis();
+  if (H2) *H2 << H * skew() * q.basis();
+  return result;
+}
+
+Point3 Unit3::cross(const Point3& q, OptionalJacobian<3, 2> H1,
+                    OptionalJacobian<3, 3> H2) const {
+  if (H1) *H1 = -skewSymmetric(q) * basis();
+  if (H2) *H2 = skew();
+  return gtsam::cross(p_, q);
+}
+
+/* ************************************************************************* */
+Unit3 cross(const Unit3& p, const Unit3& q, OptionalJacobian<2, 2> H1,
+            OptionalJacobian<2, 2> H2) {
+  return p.cross(q, H1, H2);
+}
+
+Point3 cross(const Unit3& p, const Point3& q, OptionalJacobian<3, 2> H1,
+             OptionalJacobian<3, 3> H2) {
+  return p.cross(q, H1, H2);
+}
+
+Point3 cross(const Point3& p, const Unit3& q, OptionalJacobian<3, 3> H1,
+             OptionalJacobian<3, 2> H2) {
+  if (H1) *H1 = -q.skew();
+  if (H2) *H2 = skewSymmetric(p) * q.basis();
+  return cross(p, q.point3());
 }
 
 /* ************************************************************************* */

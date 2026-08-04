@@ -46,20 +46,11 @@ using symbol_shorthand::L;
 using symbol_shorthand::X;
 
 /*
- * Test full DCSAM solve on DCMixtureFactor for 1D case.
- *
- * This is essentially identical to the `DCContinuousFactor` test above,
- but the
- * solution is obtained by calling the `DCSAM::update` functions (rather
- than
- * implemented manually as above).
+ * Test full DCSAM solve on a mixture factor
+ * (as a HybridNonlinearFactor) for 1D case.
  */
 TEST(DCSAM, SimpleMixtureFactor) {
   using namespace discrete_mixture_fixture;
-
-  // Make a symbol for a single continuous variable and add to KeyVector
-  KeyVector keys;
-  keys.push_back(x1);
 
   std::vector<NonlinearFactorValuePair> factorComponents{
       {f1(), priorNoise1()->negLogConstant()},
@@ -160,6 +151,13 @@ TEST(DCSAM, SimpleSlamBatch) {
   HybridValues initialGuess(DiscreteValues(), initialGuessContinuous);
   dcsam.update(graph, initialGuess);
   HybridValues dcvals = dcsam.calculateEstimate();
+
+  VectorValues vvalues;
+  for (size_t i = 0; i <= 7; i++) {
+    vvalues.insert(X(i), Vector3::Zero());
+  }
+  // regression check
+  EXPECT_DOUBLES_EQUAL(0.0, dcsam.error(vvalues), 1e-8);
 
   // Values from the DCSAM repo
   Values expectedContinuous;

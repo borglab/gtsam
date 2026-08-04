@@ -144,7 +144,7 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
    * @brief Compute the log-likelihood, including the log-normalizing constant.
    * @return double
    */
-  double error(const HybridValues &values) const override;
+  double error(const HybridValues &hybridValues) const override;
 
   /// Getter for GaussianFactor decision tree
   const FactorValuePairs &factors() const { return factors_; }

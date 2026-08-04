@@ -77,7 +77,13 @@ vector<StereoPoint2> stereo_projectToMultipleCameras(const StereoCamera& cam1,
   return measurements_cam;
 }
 
-LevenbergMarquardtParams lm_params;
+LevenbergMarquardtParams makeLmParams() {
+  LevenbergMarquardtParams params;
+  params.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
+  return params;
+}
+
+LevenbergMarquardtParams lmParams = makeLmParams();
 }  // namespace
 
 /* ************************************************************************* */
@@ -362,7 +368,7 @@ TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ) {
 
   Values result;
   gttic_(SmartStereoProjectionPoseFactor);
-  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
   gttoc_(SmartStereoProjectionPoseFactor);
   tictoc_finishedIteration_();
@@ -417,7 +423,7 @@ TEST( SmartStereoProjectionPoseFactor, 3poses_smart_projection_factor ) {
 //  cout << std::setprecision(10) << "\n----StereoFactor graph initial error: " << graph2.error(values) << endl;
   EXPECT_DOUBLES_EQUAL(833953.92789459578, graph2.error(values), 1e-7);
 
-  LevenbergMarquardtOptimizer optimizer2(graph2, values, lm_params);
+  LevenbergMarquardtOptimizer optimizer2(graph2, values, lmParams);
   Values result2 = optimizer2.optimize();
   EXPECT_DOUBLES_EQUAL(0, graph2.error(result2), 1e-5);
 
@@ -499,7 +505,7 @@ TEST( SmartStereoProjectionPoseFactor, body_P_sensor ) {
 
   Values result;
   gttic_(SmartStereoProjectionPoseFactor);
-  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
   gttoc_(SmartStereoProjectionPoseFactor);
   tictoc_finishedIteration_();
@@ -604,7 +610,7 @@ TEST( SmartStereoProjectionPoseFactor, body_P_sensor_monocular ){
   // initialize third pose with some noise, we expect it to move back to original pose3
   values.insert(x3, bodyPose3*noise_pose);
 
-  LevenbergMarquardtParams lmParams;
+  LevenbergMarquardtParams lmParams = makeLmParams();
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
@@ -671,7 +677,7 @@ TEST( SmartStereoProjectionPoseFactor, jacobianSVD ) {
   values.insert(x3, pose3 * noise_pose);
 
   Values result;
-  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
   EXPECT(assert_equal(pose3, result.at<Pose3>(x3)));
 }
@@ -743,7 +749,7 @@ TEST( SmartStereoProjectionPoseFactor, jacobianSVDwithMissingValues ) {
   values.insert(x3, pose3 * noise_pose);
 
   Values result;
-  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
   EXPECT(assert_equal(pose3, result.at<Pose3>(x3),1e-7));
 }
@@ -813,7 +819,7 @@ TEST( SmartStereoProjectionPoseFactor, landmarkDistance ) {
 
   // All factors are disabled and pose should remain where it is
   Values result;
-  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
   EXPECT(assert_equal(values.at<Pose3>(x3), result.at<Pose3>(x3)));
 }
@@ -910,7 +916,7 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
 
   // Factor 4 is disabled, pose 3 stays put
   Values result;
-  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
   EXPECT(assert_equal(pose3, result.at<Pose3>(x3)));
 }
@@ -971,7 +977,7 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
 //  values.insert(x3, pose3*noise_pose);
 //
 ////  Values result;
-//  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
+//  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
 //  result = optimizer.optimize();
 //  EXPECT(assert_equal(pose3,result.at<Pose3>(x3)));
 //}
@@ -1030,7 +1036,7 @@ TEST( SmartStereoProjectionPoseFactor, dynamicOutlierRejection ) {
 //  values.insert(L(2), landmark2);
 //  values.insert(L(3), landmark3);
 //
-//  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
+//  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
 //  Values result = optimizer.optimize();
 //
 //  EXPECT(assert_equal(pose3,result.at<Pose3>(x3)));
@@ -1181,7 +1187,7 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 //
 //  Values result;
 //  gttic_(SmartStereoProjectionPoseFactor);
-//  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
+//  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
 //  result = optimizer.optimize();
 //  gttoc_(SmartStereoProjectionPoseFactor);
 //  tictoc_finishedIteration_();
@@ -1255,7 +1261,7 @@ TEST( SmartStereoProjectionPoseFactor, CheckHessian) {
 //
 //  Values result;
 //  gttic_(SmartStereoProjectionPoseFactor);
-//  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
+//  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
 //  result = optimizer.optimize();
 //  gttoc_(SmartStereoProjectionPoseFactor);
 //  tictoc_finishedIteration_();
@@ -1457,4 +1463,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

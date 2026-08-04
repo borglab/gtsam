@@ -88,6 +88,15 @@ struct ISAM2Result {
   /** The number of cliques in the Bayes' Tree */
   size_t cliques;
 
+  /** Total number of nonzero entries in the Bayes tree (upper-triangular R and
+   *  rectangular S blocks of every clique conditional).  Useful for monitoring
+   *  fill-in growth over long incremental sessions. */
+  size_t treeNnz;
+
+  /** Whether a full batch reorder was triggered during this update, either by
+   *  the adaptive reorder heuristic or by the existing batch threshold. */
+  bool batchReorderTriggered;
+
   /** The indices of the newly-added factors, in 1-to-1 correspondence with the
    * factors passed as \c newFactors to ISAM2::update().  These indices may be
    * used later to refer to the factors in order to remove them.
@@ -155,7 +164,13 @@ struct ISAM2Result {
    * Detail for information about the results data stored here. */
   std::optional<DetailedResults> detail;
 
-  explicit ISAM2Result(bool enableDetailedResults = false) {
+  explicit ISAM2Result(bool enableDetailedResults = false)
+      : variablesRelinearized(0),
+        variablesReeliminated(0),
+        factorsRecalculated(0),
+        cliques(0),
+        treeNnz(0),
+        batchReorderTriggered(false) {
     if (enableDetailedResults) detail = DetailedResults();
   }
 
@@ -173,7 +188,10 @@ struct ISAM2Result {
     using std::cout;
     cout << str << "  Reelimintated: " << variablesReeliminated
          << "  Relinearized: " << variablesRelinearized
-         << "  Cliques: " << cliques << std::endl;
+         << "  Cliques: " << cliques
+         << "  Nnz: " << treeNnz;
+    if (batchReorderTriggered) cout << "  [REORDERED]";
+    cout << std::endl;
   }
 
   /** Getters and Setters */
@@ -181,6 +199,8 @@ struct ISAM2Result {
   size_t getVariablesReeliminated() const { return variablesReeliminated; }
   FactorIndices getNewFactorsIndices() const { return newFactorsIndices; }
   size_t getCliques() const { return cliques; }
+  size_t getTreeNnz() const { return treeNnz; }
+  bool getBatchReorderTriggered() const { return batchReorderTriggered; }
   double getErrorBefore() const { return errorBefore ? *errorBefore : std::nan(""); }
   double getErrorAfter() const { return errorAfter ? *errorAfter : std::nan(""); }
 };

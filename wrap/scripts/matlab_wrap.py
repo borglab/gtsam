@@ -8,6 +8,7 @@ and invoked during the wrapping by CMake.
 import argparse
 import sys
 
+from gtwrap.interface_parser import InterfaceParseError
 from gtwrap.matlab_wrapper import MatlabWrapper
 
 if __name__ == "__main__":
@@ -63,4 +64,8 @@ if __name__ == "__main__":
         use_boost_serialization=args.use_boost_serialization)
 
     sources = args.src.split(';')
-    cc_content = wrapper.wrap(sources, path=args.out)
+    try:
+        cc_content = wrapper.wrap(sources, path=args.out)
+    except InterfaceParseError as error:
+        print(error, file=sys.stderr)
+        sys.exit(1)

@@ -16,8 +16,9 @@
  * @author Frank Dellaert
  */
 
-#include <gtsam/geometry/Pose2.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/CalibratedCamera.h>
+#include <gtsam/geometry/Pose2.h>
 
 using namespace std;
 

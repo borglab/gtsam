@@ -6,10 +6,9 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-
-#include <gtsam_unstable/slam/RelativeElevationFactor.h>
-
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam_unstable/slam/RelativeElevationFactor.h>
 
 using namespace std::placeholders;
 using namespace gtsam;

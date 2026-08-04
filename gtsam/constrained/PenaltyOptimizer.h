@@ -35,10 +35,12 @@ class GTSAM_EXPORT PenaltyOptimizerParams : public ConstrainedOptimizerParams {
   double muEqIncreaseRate = 2;  // increase rate of penalty parameter
   double muIneqIncreaseRate = 2;
   InequalityPenaltyFunction::shared_ptr ineqConstraintPenaltyFunction = nullptr;
-  LevenbergMarquardtParams lm_params;
+  LevenbergMarquardtParams lmParams;
 
   /** Constructor. */
-  PenaltyOptimizerParams() : Base() {}
+  PenaltyOptimizerParams() : Base() {
+    lmParams.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
+  }
 };
 
 /// Details for each iteration.
@@ -50,7 +52,7 @@ class GTSAM_EXPORT PenaltyOptimizerState : public ConstrainedOptimizerState {
 
   double muEq = 0.0;
   double muIneq = 0.0;
-  size_t unconstrainedIterationss = 0;
+  size_t unconstrainedIterations = 0;
 
   using Base::Base;
 };
@@ -60,8 +62,8 @@ class GTSAM_EXPORT PenaltyOptimizerState : public ConstrainedOptimizerState {
  * optimization problem that minimize a merit function. The merit function is
  * constructed as the sum of the cost function and penalty functions for
  * constraints.
- * Example problem: 
- * argmin_x  0.5 * ||x1-1||^2 + 0.5 * ||x2-1||^2 
+ * Example problem:
+ * argmin_x  0.5 * ||x1-1||^2 + 0.5 * ||x2-1||^2
  *      s.t.  x1^2 + x2^2 - 1 = 0
  *      s.t.  4*x1^2 + 0.25*x2^2 - 1 <= 0
  */
@@ -103,7 +105,8 @@ class GTSAM_EXPORT PenaltyOptimizer : public ConstrainedOptimizer {
  protected:
   /// Merit function in the form
   ///  m(x) = f(x) + 0.5 muEq * ||h(x)||^2 + 0.5 * muIneq * ||g(x)_+||^2
-  NonlinearFactorGraph meritFunction(const double muEq, const double muIneq) const;
+  NonlinearFactorGraph meritFunction(const double muEq,
+                                     const double muIneq) const;
 
   /// Create an unconstrained optimizer that solves the merit function (cost +
   /// penalty functions).

@@ -21,20 +21,19 @@
 
 namespace gtsam {
 
-/* ********************************************************************************************* */
+/* ************************************************************************* */
 template <typename T>
-ExpressionEqualityConstraint<T>::ExpressionEqualityConstraint(const Expression<T>& expression,
-                                                              const T& rhs,
-                                                              const Vector& sigmas)
+ExpressionEqualityConstraint<T>::ExpressionEqualityConstraint(
+    const Expression<T>& expression, const T& rhs, const Vector& sigmas)
     : Base(constrainedNoise(sigmas), expression.keysAndDims().first),
       expression_(expression),
       rhs_(rhs),
       dims_(expression.keysAndDims().second) {}
 
-/* ********************************************************************************************* */
+/* ************************************************************************* */
 template <typename T>
-Vector ExpressionEqualityConstraint<T>::unwhitenedError(const Values& x,
-                                                        OptionalMatrixVecType H) const {
+Vector ExpressionEqualityConstraint<T>::unwhitenedError(
+    const Values& x, OptionalMatrixVecType H) const {
   // Copy-paste from ExpressionFactor.
   if (H) {
     const T value = expression_.valueAndDerivatives(x, keys_, dims_, *H);
@@ -45,10 +44,12 @@ Vector ExpressionEqualityConstraint<T>::unwhitenedError(const Values& x,
   }
 }
 
-/* ********************************************************************************************* */
+/* ************************************************************************* */
 template <typename T>
-NoiseModelFactor::shared_ptr ExpressionEqualityConstraint<T>::penaltyFactor(const double mu) const {
-  return std::make_shared<ExpressionFactor<T>>(penaltyNoise(mu), rhs_, expression_);
+NoiseModelFactor::shared_ptr ExpressionEqualityConstraint<T>::penaltyFactor(
+    const double mu) const {
+  return std::make_shared<ExpressionFactor<T>>(penaltyNoise(mu), rhs_,
+                                               expression_);
 }
 
 }  // namespace gtsam
