@@ -50,8 +50,6 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       PYTHON_VERSION: ${{ matrix.python_version }}
-      BOOST_VERSION: 1.72.0
-      BOOST_EXE: boost_1_72_0-msvc-14.2
       SCCACHE_GHA_ENABLED: ON
 
     strategy:
@@ -184,8 +182,36 @@ jobs:
             throw "Boost installed but root directory was not found in expected locations."
           }
 
+          $versionHeader = Get-ChildItem -Path $boostRoot -Filter version.hpp -File -Recurse |
+            Where-Object { $_.FullName -match '[\\/]boost[\\/]version\.hpp$' } |
+            Select-Object -First 1
+          if (-not $versionHeader) {
+            throw "Boost version header was not found under $boostRoot."
+          }
+          $boostIncludeDir = Split-Path -Parent (Split-Path -Parent $versionHeader.FullName)
+
+          $timerLibrary = Get-ChildItem -Path $boostRoot -Filter "libboost_timer-*.lib" -File -Recurse |
+            Select-Object -First 1
+          if (-not $timerLibrary) {
+            throw "Boost timer library was not found under $boostRoot."
+          }
+          $boostLibraryDir = $timerLibrary.DirectoryName
+
+          $requiredComponents = @("chrono", "graph", "program_options", "random", "serialization", "timer")
+          foreach ($component in $requiredComponents) {
+            $componentLibrary = Get-ChildItem -Path $boostLibraryDir -Filter "libboost_$component-*.lib" -File |
+              Select-Object -First 1
+            if (-not $componentLibrary) {
+              throw "Boost $component library was not found in $boostLibraryDir."
+            }
+          }
+
           "BOOST_ROOT=$boostRoot" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "BOOST_INCLUDEDIR=$boostIncludeDir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "BOOST_LIBRARYDIR=$boostLibraryDir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           Write-Host "Using BOOST_ROOT=$boostRoot"
+          Write-Host "Using BOOST_INCLUDEDIR=$boostIncludeDir"
+          Write-Host "Using BOOST_LIBRARYDIR=$boostLibraryDir"
     
       - name: Install sccache
         if: runner.os == 'Windows'
