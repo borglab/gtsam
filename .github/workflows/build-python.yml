@@ -5,6 +5,15 @@ name: Python CI
 # never runs, and a maintainer must bypass the check in order to merge the PR.
 on:
   workflow_dispatch:
+    inputs:
+      runner:
+        description: Runner selection
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - windows-2022-msvc
   pull_request:
     paths-ignore:
       - "**.md"
@@ -40,7 +49,7 @@ jobs:
   build:
     # Only run build if relevant files have been modified in this PR.
     needs: check-paths
-    if: needs.check-paths.outputs.should_run == 'true'
+    if: github.event_name == 'workflow_dispatch' || needs.check-paths.outputs.should_run == 'true'
 
     name: ${{ matrix.name }} ${{ matrix.build_type }} Python ${{ matrix.python_version }}
     runs-on: ${{ matrix.os }}
@@ -65,6 +74,9 @@ jobs:
             macos-15-xcode-16,
             windows-2022-msvc,
           ]
+
+        runner_selection:
+          - ${{ github.event_name == 'workflow_dispatch' && inputs.runner || 'all' }}
 
         build_type: [Release]
         python_version: [3]
@@ -92,6 +104,16 @@ jobs:
           - name: windows-2022-msvc
             os: windows-2022
             platform: 64
+
+        exclude:
+          - runner_selection: windows-2022-msvc
+            name: ubuntu-22.04-gcc-11
+          - runner_selection: windows-2022-msvc
+            name: ubuntu-22.04-gcc-11-noboost
+          - runner_selection: windows-2022-msvc
+            name: ubuntu-22.04-clang-11
+          - runner_selection: windows-2022-msvc
+            name: macos-15-xcode-16
 
     steps:
       - name: Checkout
@@ -182,33 +204,41 @@ jobs:
             throw "Boost installed but root directory was not found in expected locations."
           }
 
-          $versionHeader = Get-ChildItem -Path $boostRoot -Filter version.hpp -File -Recurse |
-            Where-Object { $_.FullName -match '[\\/]boost[\\/]version\.hpp$' } |
-            Select-Object -First 1
-          if (-not $versionHeader) {
-            throw "Boost version header was not found under $boostRoot."
+          $versionHeaderPath = Join-Path $boostRoot "boost\version.hpp"
+          if (Test-Path $versionHeaderPath -PathType Leaf) {
+            $versionHeader = Get-Item $versionHeaderPath
+          } else {
+            $versionHeaders = @(Get-ChildItem -Path $boostRoot -Filter version.hpp -File -Recurse |
+              Where-Object { $_.FullName -match '[\\/]boost[\\/]version\.hpp$' })
+            if ($versionHeaders.Count -ne 1) {
+              throw "Expected one Boost version header under $boostRoot; found $($versionHeaders.Count)."
+            }
+            $versionHeader = $versionHeaders[0]
           }
           $boostIncludeDir = Split-Path -Parent (Split-Path -Parent $versionHeader.FullName)
 
-          $timerLibrary = Get-ChildItem -Path $boostRoot -Filter "libboost_timer-*.lib" -File -Recurse |
-            Select-Object -First 1
-          if (-not $timerLibrary) {
-            throw "Boost timer library was not found under $boostRoot."
+          $boostLibraryDir = Join-Path $boostRoot "lib64-msvc-14.2"
+          if (-not (Test-Path $boostLibraryDir -PathType Container)) {
+            $libraryDirs = @(Get-ChildItem -Path $boostRoot -Filter "lib64-msvc-*" -Directory)
+            if ($libraryDirs.Count -ne 1) {
+              throw "Expected one x64 MSVC Boost library directory under $boostRoot; found $($libraryDirs.Count)."
+            }
+            $boostLibraryDir = $libraryDirs[0].FullName
           }
-          $boostLibraryDir = $timerLibrary.DirectoryName
 
           $requiredComponents = @("chrono", "graph", "program_options", "random", "serialization", "timer")
           foreach ($component in $requiredComponents) {
-            $componentLibrary = Get-ChildItem -Path $boostLibraryDir -Filter "libboost_$component-*.lib" -File |
+            $componentLibrary = Get-ChildItem -Path $boostLibraryDir -Filter "libboost_$component-*-x64-*.lib" -File |
               Select-Object -First 1
             if (-not $componentLibrary) {
-              throw "Boost $component library was not found in $boostLibraryDir."
+              throw "Boost $component x64 library was not found in $boostLibraryDir."
             }
           }
 
           "BOOST_ROOT=$boostRoot" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "BOOST_INCLUDEDIR=$boostIncludeDir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           "BOOST_LIBRARYDIR=$boostLibraryDir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "LIB=$boostLibraryDir;$env:LIB" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           Write-Host "Using BOOST_ROOT=$boostRoot"
           Write-Host "Using BOOST_INCLUDEDIR=$boostIncludeDir"
           Write-Host "Using BOOST_LIBRARYDIR=$boostLibraryDir"
