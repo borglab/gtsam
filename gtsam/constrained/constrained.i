@@ -149,6 +149,35 @@ class QcqpProblem : gtsam::ConstrainedOptProblem {
   std::tuple<size_t, size_t, size_t> dim() const;
 };
 
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Rot2.h>
+#include <gtsam/geometry/Rot3.h>
+
+gtsam::Matrix qcqpValue(const gtsam::Rot2& value);
+gtsam::Matrix qcqpValue(const gtsam::Rot3& value);
+gtsam::Matrix qcqpValue(const gtsam::Pose2& value);
+gtsam::Matrix qcqpValue(const gtsam::Pose3& value);
+
+void insertQcqpValue(gtsam::Key key, const gtsam::Rot2& value,
+                     gtsam::Values& qcqpValues);
+void insertQcqpValue(gtsam::Key key, const gtsam::Rot3& value,
+                     gtsam::Values& qcqpValues);
+void insertQcqpValue(gtsam::Key key, const gtsam::Pose2& value,
+                     gtsam::Values& qcqpValues);
+void insertQcqpValue(gtsam::Key key, const gtsam::Pose3& value,
+                     gtsam::Values& qcqpValues);
+
+gtsam::Rot2 rot2FromQcqpValue(const gtsam::Matrix& value);
+gtsam::Rot3 rot3FromQcqpValue(const gtsam::Matrix& value);
+gtsam::Pose2 pose2FromQcqpValue(const gtsam::Matrix& value);
+gtsam::Pose3 pose3FromQcqpValue(const gtsam::Matrix& value);
+
+gtsam::Values extractQcqpValuesRot2(const gtsam::Values& qcqpValues);
+gtsam::Values extractQcqpValuesRot3(const gtsam::Values& qcqpValues);
+gtsam::Values extractQcqpValuesPose2(const gtsam::Values& qcqpValues);
+gtsam::Values extractQcqpValuesPose3(const gtsam::Values& qcqpValues);
+
 #include <gtsam/constrained/ConstrainedOptimizer.h>
 class ConstrainedOptimizerParams {
   ConstrainedOptimizerParams();

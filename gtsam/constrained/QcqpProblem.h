@@ -31,6 +31,11 @@
 
 namespace gtsam {
 
+class Pose2;
+class Pose3;
+class Rot2;
+class Rot3;
+
 namespace internal {
 
 template <typename T, int D, typename = void>
@@ -164,6 +169,58 @@ std::vector<std::pair<Key, T>> ExtractQcqpValues(const Values& qcqpValues) {
   }
   return out;
 }
+
+/// Return the exact D=1 QCQP vector for a Rot2 value.
+GTSAM_EXPORT Matrix qcqpValue(const Rot2& value);
+
+/// Return the exact D=1 QCQP vector for a Rot3 value.
+GTSAM_EXPORT Matrix qcqpValue(const Rot3& value);
+
+/// Return the exact D=1 QCQP vector for a Pose2 value.
+GTSAM_EXPORT Matrix qcqpValue(const Pose2& value);
+
+/// Return the exact D=1 QCQP vector for a Pose3 value.
+GTSAM_EXPORT Matrix qcqpValue(const Pose3& value);
+
+/// Insert the exact D=1 QCQP vector for a Rot2 value.
+GTSAM_EXPORT void insertQcqpValue(Key key, const Rot2& value,
+                                  Values& qcqpValues);
+
+/// Insert the exact D=1 QCQP vector for a Rot3 value.
+GTSAM_EXPORT void insertQcqpValue(Key key, const Rot3& value,
+                                  Values& qcqpValues);
+
+/// Insert the exact D=1 QCQP vector for a Pose2 value.
+GTSAM_EXPORT void insertQcqpValue(Key key, const Pose2& value,
+                                  Values& qcqpValues);
+
+/// Insert the exact D=1 QCQP vector for a Pose3 value.
+GTSAM_EXPORT void insertQcqpValue(Key key, const Pose3& value,
+                                  Values& qcqpValues);
+
+/// Recover a Rot2 value from an exact D=1 QCQP vector.
+GTSAM_EXPORT Rot2 rot2FromQcqpValue(const Matrix& value);
+
+/// Recover a Rot3 value from an exact D=1 QCQP vector.
+GTSAM_EXPORT Rot3 rot3FromQcqpValue(const Matrix& value);
+
+/// Recover a Pose2 value from an exact D=1 QCQP vector.
+GTSAM_EXPORT Pose2 pose2FromQcqpValue(const Matrix& value);
+
+/// Recover a Pose3 value from an exact D=1 QCQP vector.
+GTSAM_EXPORT Pose3 pose3FromQcqpValue(const Matrix& value);
+
+/// Extract all exact D=1 Rot2 QCQP vectors as typed values.
+GTSAM_EXPORT Values extractQcqpValuesRot2(const Values& qcqpValues);
+
+/// Extract all exact D=1 Rot3 QCQP vectors as typed values.
+GTSAM_EXPORT Values extractQcqpValuesRot3(const Values& qcqpValues);
+
+/// Extract all exact D=1 Pose2 QCQP vectors as typed values.
+GTSAM_EXPORT Values extractQcqpValuesPose2(const Values& qcqpValues);
+
+/// Extract all exact D=1 Pose3 QCQP vectors as typed values.
+GTSAM_EXPORT Values extractQcqpValuesPose3(const Values& qcqpValues);
 
 /**
  * Thin constrained optimization problem for QCQPs over Vector or Matrix values.
