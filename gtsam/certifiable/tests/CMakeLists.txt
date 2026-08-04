@@ -15,7 +15,7 @@ if(GTSAM_USE_MOSEK AND MOSEK_LICENSE_FILE)
     set_tests_properties(check_certifiable_program PROPERTIES
         ENVIRONMENT "MOSEKLM_LICENSE_FILE=${MOSEK_LICENSE_FILE}")
   else()
-    set_tests_properties(testMosekSDP PROPERTIES
+    set_tests_properties(testMosekSDP testLiftedSDPs PROPERTIES
         ENVIRONMENT "MOSEKLM_LICENSE_FILE=${MOSEK_LICENSE_FILE}")
   endif()
 endif()

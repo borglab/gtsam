@@ -408,8 +408,8 @@ void AddLinearEqualityConstraint(
     const Matrix A = J.getA(it);
     const Vector b = J.getb();
 
-    // Ax=b implies the reformulation-linearization equality
-    // AX=b*x' = b*X(0,:), since x is the first column of X and x(0)=1.
+    // Ax=b implies A*x*x'=b*x', hence A*X=b*x' after lifting X=x*x'.
+    // Since x is the first column of X and x(0)=1, x'=X(0,:).
     // Enforcing only A*X(:,0)=b leaves unconstrained PSD slack in X.
     const auto xTranspose =
         Xii->slice(monty::new_array_ptr<int, 1>({0, 0}),
