@@ -58,8 +58,16 @@ function build()
   BOOST_CMAKE_ARGS=""
   if [ "${NO_BOOST_BUILD}" != "ON" ] && [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" || "$OSTYPE" == "cygwin" ]]; then
     if [ -n "${BOOST_ROOT}" ]; then
-     BOOST_ROOT_UNIX=$(echo "$BOOST_ROOT" | sed 's/\\/\//g')
-     BOOST_CMAKE_ARGS="-DBOOST_ROOT=${BOOST_ROOT_UNIX} -DBOOST_INCLUDEDIR=${BOOST_ROOT_UNIX}/include -DBOOST_LIBRARYDIR=${BOOST_ROOT_UNIX}/lib"
+      BOOST_ROOT_UNIX=$(echo "$BOOST_ROOT" | sed 's/\\/\//g')
+      BOOST_CMAKE_ARGS="-DBOOST_ROOT=${BOOST_ROOT_UNIX}"
+      if [ -n "${BOOST_INCLUDEDIR}" ]; then
+        BOOST_INCLUDEDIR_UNIX=$(echo "$BOOST_INCLUDEDIR" | sed 's/\\/\//g')
+        BOOST_CMAKE_ARGS="${BOOST_CMAKE_ARGS} -DBOOST_INCLUDEDIR=${BOOST_INCLUDEDIR_UNIX}"
+      fi
+      if [ -n "${BOOST_LIBRARYDIR}" ]; then
+        BOOST_LIBRARYDIR_UNIX=$(echo "$BOOST_LIBRARYDIR" | sed 's/\\/\//g')
+        BOOST_CMAKE_ARGS="${BOOST_CMAKE_ARGS} -DBOOST_LIBRARYDIR=${BOOST_LIBRARYDIR_UNIX}"
+      fi
     fi
   fi
 

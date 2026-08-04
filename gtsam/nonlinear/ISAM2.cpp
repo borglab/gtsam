@@ -768,6 +768,22 @@ void ISAM2::marginalizeLeaves(
   }
 }
 
+/** An added function specifically to return the marginalFactorIndices
+ * and deletedFactorIndices. Made for the python wrapping
+ * of marginalizeLeaves
+ */
+std::pair<FactorIndices, FactorIndices> ISAM2::marginalizeLeavesWithIndices(const FastList<Key>& leafKeys) {
+  FactorIndices marginal;
+  FactorIndices deleted;
+
+  marginalizeLeaves(
+      leafKeys,
+      &marginal,
+      &deleted);
+
+  return {marginal, deleted};
+}
+
 /* ************************************************************************* */
 // Marked const but actually changes mutable delta
 void ISAM2::updateDelta(bool forceFullSolve) const {
