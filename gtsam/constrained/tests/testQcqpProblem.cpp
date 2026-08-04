@@ -1244,6 +1244,14 @@ TEST(QcqpProblem, InsertQcqpConstraintsMatchesExactQuadratics) {
 /* ************************************************************************* */
 namespace QcqpExtractionFixture {
 
+// Verify the published D=1 QCQP vector dimensions for each supported group.
+TEST(QcqpProblem, QcqpVectorDimensions) {
+  LONGS_EQUAL(5, traits<Rot2>::QcqpVectorDim);
+  LONGS_EQUAL(10, traits<Rot3>::QcqpVectorDim);
+  LONGS_EQUAL(7, traits<Pose2>::QcqpVectorDim);
+  LONGS_EQUAL(13, traits<Pose3>::QcqpVectorDim);
+}
+
 // Verify that a D=1 QCQP value remains recoverable after homogeneous scaling.
 template <typename T>
 T ScaledD1RoundTrip(const T& value) {

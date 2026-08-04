@@ -381,6 +381,9 @@ struct traits<Pose2> : public internal::MatrixLieGroup<Pose2, 3> {
   /// Number of matrix rows retained by the truncated vectorization.
   inline constexpr static int TruncatedVecRows = 2;
 
+  /// Dimension of the D=1 homogenized QCQP vector.
+  inline constexpr static int QcqpVectorDim = 7;
+
   /**
    * Return the D=1 homogenized QCQP variable
    * x = [1, r00, r10, r01, r11, tx, ty].
@@ -454,7 +457,8 @@ struct traits<Pose2> : public internal::MatrixLieGroup<Pose2, 3> {
   template <int D>
   static Pose2 FromQcqpValue(const Matrix& X) {
     if constexpr (D == 1) {
-      if (X.rows() != 7 || X.cols() != 1 || std::abs(X(0, 0)) < 1e-9) {
+      if (X.rows() != QcqpVectorDim || X.cols() != 1 ||
+          std::abs(X(0, 0)) < 1e-9) {
         throw std::invalid_argument(
             "traits<Pose2>::FromQcqpValue requires a 7-by-1 vector with a "
             "nonzero homogenization entry.");

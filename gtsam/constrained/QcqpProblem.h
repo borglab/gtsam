@@ -53,6 +53,13 @@ struct HasQcqpExtractionTraits<
     std::void_t<decltype(traits<T>::template FromQcqpValue<D>(
         std::declval<const Matrix&>()))>> : HasQcqpVariableTraits<T, D> {};
 
+template <typename T, typename = void>
+struct HasQcqpVectorDim : std::false_type {};
+
+template <typename T>
+struct HasQcqpVectorDim<T, std::void_t<decltype(traits<T>::QcqpVectorDim)>>
+    : std::true_type {};
+
 }  // namespace internal
 
 /**
@@ -135,10 +142,16 @@ std::vector<std::pair<Key, T>> ExtractQcqpValues(const Values& qcqpValues) {
   static_assert(internal::HasQcqpExtractionTraits<T, D>::value,
                 "ExtractQcqpValues requires traits<T>::QcqpValue<D>, "
                 "QcqpConstraints<D>, and FromQcqpValue<D>.");
+  static_assert(D != 1 || internal::HasQcqpVectorDim<T>::value,
+                "ExtractQcqpValues<T, 1> requires "
+                "traits<T>::QcqpVectorDim.");
   constexpr int expectedRows = [] {
     if constexpr (D == 1) {
-      return 1 + traits<T>::TruncatedVecRows *
-                     T::LieAlgebra::RowsAtCompileTime;
+      if constexpr (internal::HasQcqpVectorDim<T>::value) {
+        return traits<T>::QcqpVectorDim;
+      } else {
+        return Eigen::Dynamic;
+      }
     } else {
       return T::LieAlgebra::RowsAtCompileTime;
     }
