@@ -31,12 +31,12 @@ jobs:
             python_version: "3.12"
             cibw_python_version: 312
             platform_id: manylinux_x86_64
-            manylinux_image: manylinux2014
+            manylinux_image: manylinux_2_28
           - os: ubuntu-latest
             python_version: "3.13"
             cibw_python_version: 313
             platform_id: manylinux_x86_64
-            manylinux_image: manylinux2014
+            manylinux_image: manylinux_2_28
 
           # Linux aarch64
           - os: ubuntu-24.04-arm
@@ -53,27 +53,27 @@ jobs:
             python_version: "3.12"
             cibw_python_version: 312
             platform_id: manylinux_aarch64
-            manylinux_image: manylinux2014
+            manylinux_image: manylinux_2_28
           - os: ubuntu-24.04-arm
             python_version: "3.13"
             cibw_python_version: 313
             platform_id: manylinux_aarch64
-            manylinux_image: manylinux2014
+            manylinux_image: manylinux_2_28
 
           # MacOS x86_64
-          - os: macos-13
+          - os: macos-15-intel
             python_version: "3.10"
             cibw_python_version: 310
             platform_id: macosx_x86_64
-          - os: macos-13
+          - os: macos-15-intel
             python_version: "3.11"
             cibw_python_version: 311
             platform_id: macosx_x86_64
-          - os: macos-13
+          - os: macos-15-intel
             python_version: "3.12"
             cibw_python_version: 312
             platform_id: macosx_x86_64
-          - os: macos-13
+          - os: macos-15-intel
             python_version: "3.13"
             cibw_python_version: 313
             platform_id: macosx_x86_64
@@ -98,7 +98,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: ${{ github.sha }}
