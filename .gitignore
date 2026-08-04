@@ -19,3 +19,9 @@ CMakeLists.txt.user*
 xcode/
 /Dockerfile
 /python/gtsam/notebooks/.ipynb_checkpoints/ellipses-checkpoint.ipynb
+_build
+.cache
+artifacts
+conductor
+gtsam_unstable/timing/data/
+timing/results/
