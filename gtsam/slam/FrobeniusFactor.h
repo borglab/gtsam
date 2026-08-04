@@ -48,7 +48,7 @@ namespace gtsam {
  * is false, an exception is thrown.
  *
  * @param model The input noise model (possibly robust).
- * @param dimension The desired dimension for the isotropic model.
+ * @param n The desired dimension for the isotropic model.
  * @param defaultToUnit If true, fallback to unit if conversion is not possible.
  * @throws std::runtime_error if model not isotropic and defaultToUnit =false.
  * @return An isotropic (possibly robust) noise model.
@@ -62,8 +62,8 @@ GTSAM_EXPORT SharedNoiseModel ConvertNoiseModel(const SharedNoiseModel& model,
  *
  * If the model is already of dimension Dim, it is returned as-is.
  * Otherwise, ConvertNoiseModel is called to convert it.
- * Asserts that the model's dimension matches T's expected dimension before
- * conversion.
+ * Throws if the model's dimension does not match T's expected dimension
+ * before conversion.
  *
  * @tparam T The type whose dimension is checked.
  * @tparam Dim The required dimension.
@@ -86,8 +86,8 @@ inline SharedNoiseModel ConvertModel(const SharedNoiseModel& model) {
 }
 
 /**
- * FrobeniusPrior calculates the Frobenius norm between a given matrix and an
- * element of SO(3) or SO(4).
+ * FrobeniusPrior calculates the Frobenius norm between a given matrix and a
+ * fixed-size matrix Lie group element.
  */
 template <class T>
 class FrobeniusPrior : public NoiseModelFactorN<T> {
@@ -165,10 +165,10 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
         constexpr int LiftedDim = traits<T>::QcqpVectorDim;
         static_assert((LiftedDim - 1) % N == 0);
         constexpr int M = (LiftedDim - 1) / N;
+
+        // Build the homogeneous target while omitting fixed pose-matrix rows.
         Vector target = Vector::Zero(LiftedDim);
         target(0) = 1.0;
-        // vecM_ is the full column-major vec(M). For pose lifts, copy only the
-        // variable prefix of each column, dropping its fixed last-row entry.
         for (int column = 0; column < N; ++column) {
           target.segment<M>(1 + column * M) =
               vecM_.template segment<M>(column * N);
@@ -205,8 +205,8 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
 };
 
 /**
- * FrobeniusFactor calculates the Frobenius norm between rotation matrices.
- * The template argument can be any fixed-size SO<N>.
+ * FrobeniusFactor calculates the Frobenius norm between matrix Lie group
+ * elements.
  */
 template <class T>
 class FrobeniusFactor : public NoiseModelFactorN<T, T> {
@@ -222,7 +222,7 @@ class FrobeniusFactor : public NoiseModelFactorN<T, T> {
   FrobeniusFactor(Key j1, Key j2, const SharedNoiseModel& model = nullptr)
       : NoiseModelFactorN<T, T>(ConvertModel<T, Dim>(model), j1, j2) {}
 
-  /// Error is just Frobenius norm between rotation matrices.
+  /// Error is the vectorized matrix difference between the two group elements.
   Vector evaluateError(const T& T1, const T& T2, OptionalMatrixType H1,
                        OptionalMatrixType H2) const override {
     Vector error = traits<T>::Vec(T2, H2) - traits<T>::Vec(T1, H1);
@@ -233,9 +233,9 @@ class FrobeniusFactor : public NoiseModelFactorN<T, T> {
 
 /**
  * FrobeniusBetweenFactorNL is a BetweenFactor that evaluates the Frobenius
- * norm of the rotation error between measured and predicted (rather than the
+ * norm of the matrix error between measured and predicted (rather than the
  * Logmap of the error). This factor is only defined for fixed-dimension
- * types, that are matrix Lie groups.
+ * matrix Lie groups.
  *
  * This version is called NL, because it minimizes |inv(T2)*T1*T12_ - I|_F
  * as opposed to the (historically older) FrobeniusBetweenFactor, that
@@ -250,7 +250,7 @@ class FrobeniusBetweenFactorNL : public NoiseModelFactorN<T, T> {
   static_assert(N > 0, "The Lie algebra dimension N must be greater than 0.");
 
  protected:
-  T T12_;  ///< measured rotation between T1 and T2
+  T T12_;  ///< measured transformation between T1 and T2
 
   using MatrixN = Eigen::Matrix<double, N, N>;
   using VectorD = Eigen::Matrix<double, Dim, 1>;
@@ -262,7 +262,7 @@ class FrobeniusBetweenFactorNL : public NoiseModelFactorN<T, T> {
   /// @name Constructor
   /// @{
 
-  /// Construct from two keys and measured rotation
+  /// Construct from two keys and a measured transformation.
   FrobeniusBetweenFactorNL(Key j1, Key j2, const T& T12,
                            const SharedNoiseModel& model = nullptr)
       : NoiseModelFactorN<T, T>(ConvertModel<T, Dim>(model), j1, j2),
@@ -285,7 +285,7 @@ class FrobeniusBetweenFactorNL : public NoiseModelFactorN<T, T> {
   /// assert equality up to a tolerance
   bool equals(const NonlinearFactor& expected,
               double tol = 1e-9) const override {
-    auto e = dynamic_cast<const FrobeniusBetweenFactorNL*>(&expected);
+    const auto* e = dynamic_cast<const FrobeniusBetweenFactorNL*>(&expected);
     return e != nullptr && NoiseModelFactorN<T, T>::equals(*e, tol) &&
            traits<T>::Equals(this->T12_, e->T12_, tol);
   }
@@ -297,26 +297,35 @@ class FrobeniusBetweenFactorNL : public NoiseModelFactorN<T, T> {
   /// Error is |inv(T2)*T1*T12_ - I|_F.
   Vector evaluateError(const T& T1, const T& T2, OptionalMatrixType H1,
                        OptionalMatrixType H2) const override {
-    // predict T2*T1
+    const bool computeJacobians = H1 || H2;
+
+    // Compute the predicted inverse-relative transform inv(T2) * T1.
     typename T::Jacobian H_T21_T2;
-    const T hatT21 = traits<T>::Between(T2, T1, H1 ? &H_T21_T2 : nullptr);
+    const T hatT21 =
+        traits<T>::Between(T2, T1, computeJacobians ? &H_T21_T2 : nullptr);
 
-    // Calculate \hat T21 * T12_, which is predicted to be I_NxN
+    // Compose with the measurement; the result should be identity.
     typename T::Jacobian H_pred_hat = T::Jacobian::Zero();
-    const T pred = traits<T>::Compose(hatT21, T12_, H1 ? &H_pred_hat : nullptr);
+    const T pred = traits<T>::Compose(hatT21, T12_,
+                                      computeJacobians ? &H_pred_hat : nullptr);
 
-    // Move to constructor
-    const MatrixN I = MatrixN::Identity();
-    const VectorD vecI = Eigen::Map<const VectorD>(I.data());
+    // Cache the fixed-size vectorization of the identity matrix.
+    static const VectorD vecI = [] {
+      const MatrixN I = MatrixN::Identity();
+      return VectorD(Eigen::Map<const VectorD>(I.data()));
+    }();
 
-    // Calculate error
+    // Vectorize the residual and retain its derivative for the chain rule.
     Eigen::Matrix<double, Dim, T::dimension> H_vec_pred;
-    Vector error = traits<T>::Vec(pred, H1 ? &H_vec_pred : nullptr) - vecI;
+    Vector error =
+        traits<T>::Vec(pred, computeJacobians ? &H_vec_pred : nullptr) - vecI;
 
-    // Do chain rule
-    const auto H_error_hat21 = H_vec_pred * H_pred_hat;
-    if (H1) *H1 = H_error_hat21;  // H_pred_T1 is identity
-    if (H2) *H2 = H_error_hat21 * H_T21_T2;
+    // Propagate derivatives through Between and Compose.
+    if (computeJacobians) {
+      const auto H_error_hat21 = H_vec_pred * H_pred_hat;
+      if (H1) *H1 = H_error_hat21;  // H_pred_T1 is identity
+      if (H2) *H2 = H_error_hat21 * H_T21_T2;
+    }
     return error;
   }
   /// @}
@@ -337,7 +346,7 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
   // Provide access to the Matrix& version of evaluateError:
   using NoiseModelFactor2<T, T>::evaluateError;
 
-  /// Construct from two keys and measured rotation
+  /// Construct from two keys and a measured transformation.
   FrobeniusBetweenFactor(Key j1, Key j2, const T& T12,
                          const SharedNoiseModel& model = nullptr)
       : FrobeniusBetweenFactorNL<T>(j1, j2, T12, model),
@@ -357,8 +366,8 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
   /**
    * Add this Frobenius between factor as a QCQP cost when traits exist.
    *
-   * D=1 takes the exact homogeneous Rot2, Rot3, Pose2, or Pose3 form. D>=N
-   * takes the N-by-D row-Stiefel form, where N is the intrinsic
+   * D=1 takes the exact homogeneous Rot2, Rot3, Pose2, or Pose3 form. For Rot2
+   * and Rot3, D>=N takes the N-by-D row-Stiefel form, where N is the intrinsic
    * rotation-matrix dimension.
    */
   void qcqpFactors(NonlinearFactorGraph* costs,
@@ -432,10 +441,13 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
       const Matrix I_M = Matrix::Identity(M, M);
       // Column-major vec(XM) = (M.transpose() kron I) vec(X).
       const Matrix A = internalKroneckerProduct(measurement.transpose(), I_M);
+
+      // Build the retained-coordinate residual B = [-A I].
       Matrix B = Matrix::Zero(MN, 2 * MN);
       B.block<MN, MN>(0, 0) = -A;
       B.block<MN, MN>(0, MN).setIdentity();
 
+      // Restore omitted pose-matrix rows before applying the noise model.
       Matrix fullB = Matrix::Zero(Dim, 2 * MN);
       for (int column = 0; column < N; ++column) {
         fullB.block<M, 2 * MN>(column * N, 0) =
@@ -445,6 +457,7 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
       const Matrix whitenedB = this->noiseModel_->Whiten(fullB);
       const Matrix Q = whitenedB.transpose() * whitenedB;
 
+      // Embed both Hessian blocks into homogeneous QCQP coordinates.
       Matrix Q_trunc_hom = Matrix::Zero(2 * LiftedDim, 2 * LiftedDim);
       Q_trunc_hom.block<MN, MN>(1, 1) = Q.block<MN, MN>(0, 0);
       Q_trunc_hom.block<MN, MN>(1, LiftedDim + 1) = Q.block<MN, MN>(0, MN);
@@ -504,9 +517,10 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
       const Matrix I = Matrix::Identity(N, N);
       const double weight = 1.0 / (isotropic->sigma() * isotropic->sigma());
 
+      // Build B = [-M' I] and its isotropically weighted Hessian.
       Matrix B = Matrix::Zero(N, 2 * N);
-      B.block(0, 0, N, N) = -measurement.transpose();
-      B.block(0, N, N, N) = I;
+      B.block<N, N>(0, 0) = -measurement.transpose();
+      B.block<N, N>(0, N) = I;
 
       const Matrix Q = weight * B.transpose() * B;
       const SymmetricBlockMatrix blockQ(std::vector<DenseIndex>{N, N}, Q);

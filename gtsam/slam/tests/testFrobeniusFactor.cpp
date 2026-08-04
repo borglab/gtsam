@@ -297,6 +297,11 @@ TEST(FrobeniusBetweenFactorNLSimilarity2, EvaluateError) {
   expected.setZero();
   EXPECT(assert_equal(expected, actual, 1e-9));
 
+  // Verify that requesting only the second Jacobian initializes its chain.
+  Matrix H2Only;
+  factor.evaluateError(P1, P2, nullptr, &H2Only);
+  EXPECT(assert_equal(H2, H2Only, 1e-9));
+
   Values values;
   values.insert(1, P1);
   values.insert(2, P2);
