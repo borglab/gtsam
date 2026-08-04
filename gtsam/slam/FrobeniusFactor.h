@@ -170,7 +170,8 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
         // vecM_ is the full column-major vec(M). For pose lifts, copy only the
         // variable prefix of each column, dropping its fixed last-row entry.
         for (int column = 0; column < N; ++column) {
-          target.segment(1 + column * M, M) = vecM_.segment(column * N, M);
+          target.segment<M>(1 + column * M) =
+              vecM_.template segment<M>(column * N);
         }
 
         constraints->push_back(
@@ -432,24 +433,24 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
       // Column-major vec(XM) = (M.transpose() kron I) vec(X).
       const Matrix A = internalKroneckerProduct(measurement.transpose(), I_M);
       Matrix B = Matrix::Zero(MN, 2 * MN);
-      B.block(0, 0, MN, MN) = -A;
-      B.block(0, MN, MN, MN).setIdentity();
+      B.block<MN, MN>(0, 0) = -A;
+      B.block<MN, MN>(0, MN).setIdentity();
 
       Matrix fullB = Matrix::Zero(Dim, 2 * MN);
       for (int column = 0; column < N; ++column) {
-        fullB.block(column * N, 0, M, 2 * MN) =
-            B.block(column * M, 0, M, 2 * MN);
+        fullB.block<M, 2 * MN>(column * N, 0) =
+            B.block<M, 2 * MN>(column * M, 0);
       }
 
       const Matrix whitenedB = this->noiseModel_->Whiten(fullB);
       const Matrix Q = whitenedB.transpose() * whitenedB;
 
       Matrix Q_trunc_hom = Matrix::Zero(2 * LiftedDim, 2 * LiftedDim);
-      Q_trunc_hom.block(1, 1, MN, MN) = Q.block(0, 0, MN, MN);
-      Q_trunc_hom.block(1, LiftedDim + 1, MN, MN) = Q.block(0, MN, MN, MN);
-      Q_trunc_hom.block(LiftedDim + 1, 1, MN, MN) = Q.block(MN, 0, MN, MN);
-      Q_trunc_hom.block(LiftedDim + 1, LiftedDim + 1, MN, MN) =
-          Q.block(MN, MN, MN, MN);
+      Q_trunc_hom.block<MN, MN>(1, 1) = Q.block<MN, MN>(0, 0);
+      Q_trunc_hom.block<MN, MN>(1, LiftedDim + 1) = Q.block<MN, MN>(0, MN);
+      Q_trunc_hom.block<MN, MN>(LiftedDim + 1, 1) = Q.block<MN, MN>(MN, 0);
+      Q_trunc_hom.block<MN, MN>(LiftedDim + 1, LiftedDim + 1) =
+          Q.block<MN, MN>(MN, MN);
 
       InsertQcqpConstraints<T, 1>(this->key1(), constraints);
       InsertQcqpConstraints<T, 1>(this->key2(), constraints);
