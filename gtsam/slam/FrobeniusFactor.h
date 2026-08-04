@@ -430,11 +430,12 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
       constexpr int LiftedDim = TruncatedVecDim + 1;
 
       const Matrix measurement = this->T12_.matrix();
-      const Matrix identity = Matrix::Identity(traits<T>::TruncatedVecRows,
-                                               traits<T>::TruncatedVecRows);
+      const Matrix identityTrunc =
+          Matrix::Identity(traits<T>::TruncatedVecRows,
+                           traits<T>::TruncatedVecRows);
       // Column-major vec(XM) = (M.transpose() kron I) vec(X).
       const Matrix A =
-          internalKroneckerProduct(measurement.transpose(), identity);
+          internalKroneckerProduct(measurement.transpose(), identityTrunc);
       Matrix B = Matrix::Zero(TruncatedVecDim, 2 * TruncatedVecDim);
       B.block(0, 0, TruncatedVecDim, TruncatedVecDim) = -A;
       B.block(0, TruncatedVecDim, TruncatedVecDim, TruncatedVecDim)

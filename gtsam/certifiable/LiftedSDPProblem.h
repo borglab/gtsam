@@ -19,6 +19,7 @@
 
 #include <gtsam/config.h>
 #include <gtsam/constrained/QcqpProblem.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/inference/Key.h>
@@ -128,6 +129,18 @@ class GTSAM_EXPORT LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
         // QcqpValue<Rot2, 1> stores vec(R) in column-major order.
         Rraw << xCanonical(1), xCanonical(3), xCanonical(2), xCanonical(4);
         recoveredPoses.push_back(Rot2::ClosestTo(Rraw));
+      } else if constexpr (std::is_same_v<T, Pose2>) {
+        if (x.size() != 7 || std::abs(x(0)) < 1e-9) {
+          throw std::runtime_error(
+              "getRecoveredPoses<Pose2>: invalid lifted vector.");
+        }
+
+        const Vector xCanonical = x / x(0);
+        Matrix2 Rraw;
+        Rraw.col(0) = xCanonical.segment<2>(1);
+        Rraw.col(1) = xCanonical.segment<2>(3);
+        recoveredPoses.emplace_back(Rot2::ClosestTo(Rraw),
+                                    xCanonical.segment<2>(5));
       } else if constexpr (std::is_same_v<T, Pose3>) {
         if (x.size() != 13 || std::abs(x(0)) < 1e-9) {
           throw std::runtime_error(
@@ -142,7 +155,8 @@ class GTSAM_EXPORT LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
         recoveredPoses.emplace_back(Rot3::ClosestTo(Rraw),
                                     xCanonical.segment<3>(10));
       } else {
-        static_assert(std::is_same_v<T, Rot2> || std::is_same_v<T, Pose3>,
+        static_assert(std::is_same_v<T, Rot2> || std::is_same_v<T, Pose2> ||
+                          std::is_same_v<T, Pose3>,
                       "No lifted-vector decoder exists for this type.");
       }
     }
@@ -255,6 +269,18 @@ class GTSAM_EXPORT LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
         // QcqpValue<Rot2, 1> stores vec(R) in column-major order.
         Rraw << xCanonical(1), xCanonical(3), xCanonical(2), xCanonical(4);
         recoveredPoses.push_back(Rot2::ClosestTo(Rraw));
+      } else if constexpr (std::is_same_v<T, Pose2>) {
+        if (x.size() != 7 || std::abs(x(0)) < 1e-9) {
+          throw std::runtime_error(
+              "getRecoveredPoses<Pose2>: invalid lifted vector.");
+        }
+
+        const Vector xCanonical = x / x(0);
+        Matrix2 Rraw;
+        Rraw.col(0) = xCanonical.segment<2>(1);
+        Rraw.col(1) = xCanonical.segment<2>(3);
+        recoveredPoses.emplace_back(Rot2::ClosestTo(Rraw),
+                                    xCanonical.segment<2>(5));
       } else if constexpr (std::is_same_v<T, Pose3>) {
         if (x.size() != 13 || std::abs(x(0)) < 1e-9) {
           throw std::runtime_error(
@@ -269,7 +295,8 @@ class GTSAM_EXPORT LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
         recoveredPoses.emplace_back(Rot3::ClosestTo(Rraw),
                                     xCanonical.segment<3>(10));
       } else {
-        static_assert(std::is_same_v<T, Rot2> || std::is_same_v<T, Pose3>,
+        static_assert(std::is_same_v<T, Rot2> || std::is_same_v<T, Pose2> ||
+                          std::is_same_v<T, Pose3>,
                       "No lifted-vector decoder exists for this type.");
       }
     }
