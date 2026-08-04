@@ -33,6 +33,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+// #include <algorithm>
 #include <iostream>
 #include <string>
 
@@ -85,6 +86,86 @@ void PrintSymbolicTree(const ISAM2& isam, const std::string& label) {
     }
   } else
     std::cout << "{Empty Tree}" << std::endl;
+}
+
+/* ************************************************************************* */
+bool FactorInvolvesKey(const NonlinearFactor::shared_ptr& factor, Key key) {
+  if (!factor) return false;
+  const KeyVector& keys = factor->keys();
+  return std::find(keys.begin(), keys.end(), key) != keys.end();
+}
+
+/* ************************************************************************* */
+TEST(IncrementalFixedLagSmoother, UpdateResultMarginalizationMetadata) {
+  // With smootherLag=2, keys with timestamp < (currentTime - lag) are
+  // marginalized. Adding X(3) at t=3 marginalizes X(0) at t=0.
+  SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
+  typedef IncrementalFixedLagSmoother::KeyTimestampMap Timestamps;
+  IncrementalFixedLagSmoother smoother(2.0, ISAM2Params());
+
+  auto addOdometry = [&](size_t from, size_t to, double timestamp) {
+    NonlinearFactorGraph newFactors;
+    Values newValues;
+    Timestamps newTimestamps;
+    if (from == to) {
+      newFactors.addPrior(X(to), Point2(0.0, 0.0), noise);
+    } else {
+      newFactors.emplace_shared<BetweenPoint2>(X(from), X(to), Point2(1.0, 0.0),
+                                               noise);
+    }
+    newValues.insert(X(to), Point2(double(to), 0.0));
+    newTimestamps[X(to)] = timestamp;
+    return smoother.update(newFactors, newValues, newTimestamps);
+  };
+
+  FixedLagSmoother::Result result = addOdometry(0, 0, 0.0);
+  EXPECT(result.keysOfDeletedNodes.empty());
+  EXPECT(result.marginalFactorIndices.empty());
+  EXPECT(result.deletedFactorIndices.empty());
+
+  result = addOdometry(0, 1, 1.0);
+  EXPECT(result.keysOfDeletedNodes.empty());
+  EXPECT(result.marginalFactorIndices.empty());
+  EXPECT(result.deletedFactorIndices.empty());
+
+  result = addOdometry(1, 2, 2.0);
+  EXPECT(result.keysOfDeletedNodes.empty());
+  EXPECT(result.marginalFactorIndices.empty());
+  EXPECT(result.deletedFactorIndices.empty());
+
+  const NonlinearFactorGraph factorsBeforeMarginalization = smoother.getFactors();
+  result = addOdometry(2, 3, 3.0);
+
+  // keysOfDeletedNodes
+  LONGS_EQUAL(1, result.keysOfDeletedNodes.size());
+  EXPECT(result.keysOfDeletedNodes.exists(X(0)));
+  EXPECT(result.getKeysOfDeletedNodes().exists(X(0)));
+
+  // Marginalized key removed from the smoother state
+  EXPECT(!smoother.getLinearizationPoint().exists(X(0)));
+  EXPECT(smoother.timestamps().find(X(0)) == smoother.timestamps().end());
+
+  // deletedFactorIndices: slots cleared and referred to factors on X(0)
+  CHECK(result.deletedFactorIndices.size() > 0);
+  for (size_t index : result.deletedFactorIndices) {
+    EXPECT(!smoother.getFactors()[index]);
+    EXPECT(FactorInvolvesKey(factorsBeforeMarginalization[index], X(0)));
+  }
+  EXPECT(result.getDeletedFactorIndices() == result.deletedFactorIndices);
+
+  // marginalFactorIndices: new summary factors added, not involving X(0)
+  CHECK(result.marginalFactorIndices.size() > 0);
+  for (size_t index : result.marginalFactorIndices) {
+    const auto& factor = smoother.getFactors()[index];
+    EXPECT(factor);
+    EXPECT(!FactorInvolvesKey(factor, X(0)));
+  }
+  EXPECT(result.getMarginalFactorIndices() == result.marginalFactorIndices);
+
+  // Remaining keys still estimated
+  EXPECT(smoother.getLinearizationPoint().exists(X(1)));
+  EXPECT(smoother.getLinearizationPoint().exists(X(2)));
+  EXPECT(smoother.getLinearizationPoint().exists(X(3)));
 }
 
 /* ************************************************************************* */

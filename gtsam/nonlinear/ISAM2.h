@@ -216,6 +216,12 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
           marginalizeLeaves(leafKeys, (&optArgs)...);
       }
 
+  /** An added function specifically to return the marginalFactorIndices
+   * and deletedFactorIndices. Made for the python wrapping
+   * of marginalizeLeaves
+   */
+  std::pair<FactorIndices, FactorIndices> marginalizeLeavesWithIndices(const FastList<Key>& leafKeys);
+
   /// Access the current linearization point
   const Values& getLinearizationPoint() const { return theta_; }
 
