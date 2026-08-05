@@ -33,7 +33,16 @@
 
 namespace gtsam {
 
+template <typename G>
+struct AdjointAction;
+
 namespace internal {
+
+/// Identifies the adjoint action used to construct TangentLieGroup<G>.
+template <typename T>
+struct ProductLieGroupIsAdjointAction : std::false_type {};
+template <typename G>
+struct ProductLieGroupIsAdjointAction<AdjointAction<G>> : std::true_type {};
 
 /// Detects whether Action has a static generator() method.
 /// Used to enable the generic semidirect Expmap/Logmap via the φ₁ kernel.
@@ -314,6 +323,9 @@ class ProductLieGroup : public std::pair<G, H> {
 
   /// Compute the product's right Jacobian as φ₁(-ad_xi).
   static Jacobian rightJacobian(const TangentVector& xi);
+
+  /// Exploit the repeated triangular blocks in a tangent-group right Jacobian.
+  static Jacobian adjointActionRightJacobian(const TangentVector& xi);
 
   /// Result of the analytic Fréchet derivative helper for φ₁.
   struct Phi1FrechetResult {
