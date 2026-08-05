@@ -670,10 +670,10 @@ ProductLieGroup<G, H, Action>::adjointMap(const TangentVector& xi) {
   const auto b = tangentSegment<H>(xi, d1, d2);
 
   Jacobian ad = zeroJacobian(d);
-  ad.topLeftCorner(d1, d1) = componentAdjointMap<G>(a);
+  assignBlock(componentAdjointMap<G>(a), 0, 0, &ad);
   if constexpr (isDirectProduct) {
     // Direct product: ad_(a,b) = diag(ad^G_a, ad^H_b).
-    ad.bottomRightCorner(d2, d2) = componentAdjointMap<H>(b);
+    assignBlock(componentAdjointMap<H>(b), d1, d1, &ad);
     return ad;
   } else {
     // Semidirect product:
@@ -684,18 +684,18 @@ ProductLieGroup<G, H, Action>::adjointMap(const TangentVector& xi) {
     // where M(b)·c = generator(c)·b.
 
     // Bottom-left -M(b): column j = -generator(e_j)·b.
-    Eigen::Matrix<double, dimension2, Eigen::Dynamic> negM(d2, d1);
     typename traits<G>::TangentVector ei;
     if constexpr (firstDynamic) ei.resize(static_cast<Eigen::Index>(d1));
     ei.setZero();
     for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(d1); ++i) {
       ei(i) = 1.0;
-      negM.col(i) = -(Action::generator(ei) * b);
+      const typename traits<H>::TangentVector column =
+          -(Action::generator(ei) * b);
+      assignBlock(column, d1, static_cast<size_t>(i), &ad);
       ei(i) = 0.0;
     }
 
-    ad.bottomRightCorner(d2, d2) = Action::generator(a);
-    ad.bottomLeftCorner(d2, d1) = negM;
+    assignBlock(Action::generator(a), d1, d1, &ad);
     return ad;
   }
 }
