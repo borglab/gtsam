@@ -88,10 +88,9 @@ if (GTSAM_BUILD_DOCS)
         gtsam_unstable/nonlinear/FixedLagSmoother.h
         gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h
     )
-    set(GTSAM_DOXYGEN_EXCLUDE_PATHS "")
-    foreach(header ${gtsam_doxygen_forwarding_headers})
-        set(GTSAM_DOXYGEN_EXCLUDE_PATHS "${GTSAM_DOXYGEN_EXCLUDE_PATHS} ${PROJECT_SOURCE_DIR}/${header}")
-    endforeach()
+    set(gtsam_doxygen_exclude_paths ${gtsam_doxygen_forwarding_headers})
+    list(TRANSFORM gtsam_doxygen_exclude_paths PREPEND "${PROJECT_SOURCE_DIR}/")
+    string(JOIN " " GTSAM_DOXYGEN_EXCLUDE_PATHS ${gtsam_doxygen_exclude_paths})
 
     # Generate the full documentation configuration and a minimal XML-only
     # configuration compatible with the older Doxygen versions in manylinux.

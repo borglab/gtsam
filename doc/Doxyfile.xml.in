@@ -21,15 +21,14 @@ WARN_FORMAT            = "$file:$line: $text"
 INPUT                  = @GTSAM_DOXYGEN_INPUT_PATHS@
 EXCLUDE                = @GTSAM_DOXYGEN_EXCLUDE_PATHS@
 FILE_PATTERNS          = *.h \
-                         *.cpp \
-                         *.md
+                         *.cpp
 RECURSIVE              = NO
 
 GENERATE_HTML          = NO
 GENERATE_LATEX         = NO
 GENERATE_XML           = YES
 XML_OUTPUT             = xml
-XML_PROGRAMLISTING     = YES
+XML_PROGRAMLISTING     = NO
 
 ENABLE_PREPROCESSING   = YES
 MACRO_EXPANSION        = YES

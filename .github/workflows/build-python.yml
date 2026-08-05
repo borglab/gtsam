@@ -4,6 +4,13 @@ name: Python CI
 # instead of under 'pull_request:'. Otherwise, the check is still required but
 # never runs, and a maintainer must bypass the check in order to merge the PR.
 on:
+  push:
+    branches:
+      - develop
+    paths-ignore:
+      - "**.md"
+      - "**.ipynb"
+      - "myst.yml"
   workflow_dispatch:
     inputs:
       runner:
@@ -51,9 +58,10 @@ jobs:
         id: matrix
         shell: bash
         env:
+          EVENT_NAME: ${{ github.event_name }}
           RUNNER_SELECTION: ${{ inputs.runner || 'all' }}
         run: |
-          if [ "$RUNNER_SELECTION" = "windows-2022-msvc" ]; then
+          if [ "$EVENT_NAME" = "push" ] || [ "$RUNNER_SELECTION" = "windows-2022-msvc" ]; then
             echo 'build_matrix={"include":[{"name":"windows-2022-msvc","build_type":"Release","python_version":3,"os":"windows-2022","platform":64}]}' >> "$GITHUB_OUTPUT"
           else
             echo 'build_matrix={"include":[{"name":"ubuntu-22.04-gcc-11","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"gcc","version":"11"},{"name":"ubuntu-22.04-gcc-11-noboost","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"gcc","version":"11"},{"name":"ubuntu-22.04-clang-11","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"clang","version":"11"},{"name":"macos-15-xcode-16","build_type":"Release","python_version":3,"os":"macos-15","compiler":"xcode","version":"16"},{"name":"windows-2022-msvc","build_type":"Release","python_version":3,"os":"windows-2022","platform":64}]}' >> "$GITHUB_OUTPUT"
@@ -247,6 +255,8 @@ jobs:
       - name: Build
         shell: bash
         if: matrix.name == 'windows-2022-msvc'
+        env:
+          BUILD_JOBS: 3
         run: |
           bash .github/scripts/python.sh -b --sccache
 

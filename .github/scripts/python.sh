@@ -26,6 +26,7 @@ fi
 export PYTHON="python${PYTHON_VERSION}"
 NO_BOOST_BUILD=OFF
 SCCACHE=OFF
+BUILD_JOBS=${BUILD_JOBS:-2}
 
 function install_dependencies()
 {
@@ -102,10 +103,10 @@ function build()
   unset PYTHON_VERSION
   if [ "${NO_BOOST_BUILD}" == "ON" ]; then
     # Build only wrapper targets for the no-Boost verification lane.
-    cmake --build build -j2 --target gtsam_py gtsam_unstable_py
+    cmake --build build -j"${BUILD_JOBS}" --target gtsam_py gtsam_unstable_py
   else
-    # Set to 2 cores so that Actions does not error out during resource provisioning.
-    cmake --build build -j2
+    # Limit parallelism so that Actions does not run out of resources.
+    cmake --build build -j"${BUILD_JOBS}"
     cmake --build build --target python-install
   fi
 }
