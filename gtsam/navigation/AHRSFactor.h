@@ -168,7 +168,7 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements
  * An AHRSFactor is a three-way factor that is based on the preintegrated
  * gyroscope measurements.
  *
- * @section math_notes Mathematical Formulation
+ * @section ahrs_factor_math_notes Mathematical Formulation
  *
  * The factor relates the orientation at two time steps, \f$ R_i \f$ and \f$ R_j \f$,
  * and the gyroscope bias \f$ b_g \f$. The error function is given by:

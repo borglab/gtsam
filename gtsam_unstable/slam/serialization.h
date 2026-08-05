@@ -1,5 +1,5 @@
 /**
- * @file serialization.h
+ * @file gtsam_unstable/slam/serialization.h
  *
  * @brief Global functions for performing serialization, designed for use with matlab
  *

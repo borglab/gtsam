@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file CombinedImuFactorsExample
+ * @file CombinedImuFactorsExample.cpp
  * @brief Test example for using GTSAM ImuCombinedFactor
  * navigation code.
  * @author Varun Agrawal
