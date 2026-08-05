@@ -44,6 +44,19 @@ struct ProductLieGroupIsAdjointAction : std::false_type {};
 template <typename G>
 struct ProductLieGroupIsAdjointAction<AdjointAction<G>> : std::true_type {};
 
+/**
+ * Optional closed-form right Jacobian for TangentLieGroup<G>.
+ *
+ * Geometry types may specialize this trait and provide
+ * `rightJacobian(u, v)`. ProductLieGroup otherwise uses the general
+ * lower-triangular Frechet construction, so a specialization changes only
+ * performance, not the tangent-group API.
+ */
+template <typename G>
+struct TangentLieGroupJacobian {
+  static constexpr bool available = false;
+};
+
 /// Detects whether Action has a static generator() method.
 /// Used to enable the generic semidirect Expmap/Logmap via the φ₁ kernel.
 template <typename T, typename G_TanVec, typename = void>

@@ -148,6 +148,20 @@ TEST(TangentLieGroup, TransportBlockIsLeftJacobian) {
   EXPECT(assert_equal(Vector(Jl * xi), Vector(x.second), kTol));
 }
 
+// TSO(3) is SE(3) with its algebra component as translation, so their
+// closed-form exponential values and right Jacobians must agree exactly.
+TEST(TangentLieGroup, TSO3UsesSE3ClosedForm) {
+  const Vector6 xi = tgso3Xi();
+  Matrix6 tangentH, poseH;
+  const TGSO3 tangent = TGSO3::Expmap(xi, tangentH);
+  const Pose3 pose = Pose3::Expmap(xi, poseH);
+
+  EXPECT(assert_equal(pose.rotation(), tangent.first, kTol));
+  EXPECT(
+      assert_equal(Vector(pose.translation()), Vector(tangent.second), kTol));
+  EXPECT(assert_equal(poseH, tangentH, kTol));
+}
+
 // Checks Expmap and Logmap Jacobians against numerical derivatives.
 TEST(TangentLieGroup, ExpmapLogmapJacobians) {
   const Vector12 xi = tgse3Xi();

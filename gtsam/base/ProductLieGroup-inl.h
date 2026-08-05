@@ -113,6 +113,14 @@ ProductLieGroup<G, H, Action>::adjointActionRightJacobian(
   constexpr size_t n = static_cast<size_t>(dimension1);
   const typename traits<G>::TangentVector u = tangentSegment<G>(xi, 0, n);
   const typename traits<G>::TangentVector v = tangentSegment<G>(xi, n, n);
+
+  if constexpr (internal::TangentLieGroupJacobian<G>::available) {
+    // A geometry type may replace the matrix exponential below with an exact
+    // closed form. The specialization sees the same (u,v) coordinates and
+    // must return the complete right-trivialized 2n-by-2n Jacobian.
+    return internal::TangentLieGroupJacobian<G>::rightJacobian(u, v);
+  }
+
   const Jacobian2 negativeAdU = -Action::generator(u);
   const Jacobian2 negativeAdV = -Action::generator(v);
   const Phi1FrechetResult kernels = phi1FrechetBlock(negativeAdU, negativeAdV);
