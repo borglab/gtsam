@@ -37,6 +37,7 @@ struct AdjointAction : public GroupAction<AdjointAction<G>, G,
   using TangentVector = typename traits<G>::TangentVector;
   static constexpr int n = traits<G>::dimension;
 
+  /** Apply the adjoint action and optionally compute its two Jacobians. */
   TangentVector operator()(const G& g, const TangentVector& xi,
                            OptionalJacobian<n, n> Hg = {},
                            OptionalJacobian<n, n> Hxi = {}) const {
@@ -57,6 +58,7 @@ struct AdjointAction : public GroupAction<AdjointAction<G>, G,
  *
  * Element is a pair: .first ∈ G, .second ∈ 𝔤 ≅ ℝⁿ.
  * Group law: (g₁,ξ₁)·(g₂,ξ₂) = (g₁g₂, ξ₁ + Ad_{g₁}ξ₂).
+ * G must have a fixed-dimensional tangent space and provide adjointMap().
  *
  * Example: using TGSE3 = TangentLieGroup<Pose3>;  // dimension 12
  */

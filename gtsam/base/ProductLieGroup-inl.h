@@ -587,7 +587,7 @@ ProductLieGroup<G, H, Action>::AdjointMap() const {
 template <typename G, typename H, typename Action>
 typename ProductLieGroup<G, H, Action>::Jacobian
 ProductLieGroup<G, H, Action>::adjointMap(const TangentVector& xi) {
-  static_assert(hasGenerator,
+  static_assert(!isDirectProduct,
                 "ProductLieGroup::adjointMap (algebra ad) is only defined for "
                 "semidirect products with Action::generator.");
   // Semidirect product adjoint:
@@ -596,24 +596,32 @@ ProductLieGroup<G, H, Action>::adjointMap(const TangentVector& xi) {
   //                [ -M(b),   generator(a) ]]
   //
   // where M(b)·c = generator(c)·b.
-  constexpr int d1 = dimension1;
-  constexpr int d2 = dimension2;
-
-  const auto a = xi.template head<d1>();
-  const auto b = xi.template tail<d2>();
+  constexpr size_t d2 = dimension2;
+  const size_t d = static_cast<size_t>(xi.size());
+  if (d < d2) {
+    throw std::invalid_argument(
+        "ProductLieGroup::adjointMap tangent dimension is smaller than the "
+        "second-factor dimension");
+  }
+  const size_t d1 = d - d2;
+  const auto a = tangentSegment<G>(xi, 0, d1);
+  const auto b = tangentSegment<H>(xi, d1, d2);
 
   // Bottom-left -M(b): column j = -generator(e_j)·b.
-  Eigen::Matrix<double, d2, d1> negM;
-  for (int i = 0; i < d1; ++i) {
-    const typename traits<G>::TangentVector ei =
-        traits<G>::TangentVector::Unit(i);
+  Eigen::Matrix<double, dimension2, Eigen::Dynamic> negM(d2, d1);
+  typename traits<G>::TangentVector ei;
+  if constexpr (firstDynamic) ei.resize(static_cast<Eigen::Index>(d1));
+  ei.setZero();
+  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(d1); ++i) {
+    ei(i) = 1.0;
     negM.col(i) = -(Action::generator(ei) * b);
+    ei(i) = 0.0;
   }
 
-  Jacobian ad = Jacobian::Zero();
-  ad.template topLeftCorner<d1, d1>() = G::adjointMap(a);
-  ad.template bottomRightCorner<d2, d2>() = Action::generator(a);
-  ad.template bottomLeftCorner<d2, d1>() = negM;
+  Jacobian ad = zeroJacobian(d);
+  ad.topLeftCorner(d1, d1) = G::adjointMap(a);
+  ad.bottomRightCorner(d2, d2) = Action::generator(a);
+  ad.bottomLeftCorner(d2, d1) = negM;
   return ad;
 }
 

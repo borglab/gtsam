@@ -23,6 +23,9 @@
 
 using namespace gtsam;
 
+/* ************************************************************************* */
+namespace tangent_lie_group_fixture {
+
 constexpr double kTol = 1e-9;
 constexpr double kNumTol = 1e-6;
 
@@ -33,16 +36,15 @@ using Vector20 = Eigen::Matrix<double, 20, 1>;
 using TGSO3 = TangentLieGroup<Rot3>;
 using TGSE3 = TangentLieGroup<Pose3>;
 using TGGal3 = TangentLieGroup<Gal3>;
-
-namespace {
+using TGTGSE3 = TangentLieGroup<TGSE3>;
 
 TGSE3 tgse3State() {
   return TGSE3(Pose3(Rot3::RzRyRx(0.1, 0.2, 0.3), Point3(1.0, 2.0, 3.0)),
-              (Vector6() << 0.4, 0.5, 0.6, 0.7, 0.8, 0.9).finished());
+               (Vector6() << 0.4, 0.5, 0.6, 0.7, 0.8, 0.9).finished());
 }
 TGSE3 tgse3State2() {
   return TGSE3(Pose3(Rot3::RzRyRx(-0.2, 0.1, 0.15), Point3(-0.75, 0.4, 1.2)),
-              (Vector6() << -0.3, 0.2, 0.1, 0.5, -0.4, 0.25).finished());
+               (Vector6() << -0.3, 0.2, 0.1, 0.5, -0.4, 0.25).finished());
 }
 Vector6 tgso3Xi() {
   return (Vector6() << 0.1, -0.2, 0.3, 0.4, -0.5, 0.6).finished();
@@ -60,41 +62,40 @@ TGSE3 inverseTGSE3(const TGSE3& a) { return a.inverse(); }
 
 Vector20 tggal3Xi() {
   Vector20 v;
-  v << 0.1, -0.2, 0.3, 0.4, -0.1, 0.2, 0.15, -0.25, 0.3, 0.2,    // base (gal3)
+  v << 0.1, -0.2, 0.3, 0.4, -0.1, 0.2, 0.15, -0.25, 0.3, 0.2,  // base (gal3)
       0.05, 0.1, -0.15, 0.2, -0.05, 0.1, 0.12, -0.08, 0.18, -0.1;  // algebra
   return v;
 }
 TGGal3 expmapTGGal3(const Vector20& v) { return TGGal3::Expmap(v); }
 Vector20 logmapTGGal3(const TGGal3& x) { return TGGal3::Logmap(x); }
 
-}  // namespace
-
-/* ************************************************************************* */
+// Verifies Lie-group concepts and dimensions for representative tangent groups.
 TEST(TangentLieGroup, Concepts) {
   GTSAM_CONCEPT_ASSERT(IsGroup<TGSE3>);
   GTSAM_CONCEPT_ASSERT(IsManifold<TGSE3>);
   GTSAM_CONCEPT_ASSERT(IsLieGroup<TGSE3>);
+  GTSAM_CONCEPT_ASSERT(IsLieGroup<TGTGSE3>);
   EXPECT_LONGS_EQUAL(12, TGSE3::dimension);
   EXPECT_LONGS_EQUAL(6, TGSO3::dimension);
+  EXPECT_LONGS_EQUAL(24, TGTGSE3::dimension);
 }
 
-/* ************************************************************************* */
+// Verifies identity, inverse, and the tangent-group multiplication law.
 TEST(TangentLieGroup, IdentityComposeInverse) {
   const TGSE3 x = tgse3State();
   EXPECT(assert_equal(TGSE3::Identity(), x * x.inverse(), kTol));
   EXPECT(assert_equal(TGSE3::Identity(), x.inverse() * x, kTol));
   // group law: (g1,v1)*(g2,v2) = (g1 g2, v1 + Ad_{g1} v2)
   const TGSE3 a(Pose3(Rot3::Rz(0.2), Point3(1, 0, 0)),
-               (Vector6() << 0, 0, 0.1, 0.2, 0, 0).finished());
+                (Vector6() << 0, 0, 0.1, 0.2, 0, 0).finished());
   const TGSE3 b(Pose3(Rot3::Ry(0.1), Point3(0, 1, 0)),
-               (Vector6() << 0.05, 0, 0, 0, 0.3, 0).finished());
+                (Vector6() << 0.05, 0, 0, 0, 0.3, 0).finished());
   const TGSE3 ab = a * b;
   EXPECT(assert_equal(a.first * b.first, ab.first, kTol));
   EXPECT(assert_equal(Vector(a.second + a.first.AdjointMap() * b.second),
                       Vector(ab.second), kTol));
 }
 
-/* ************************************************************************* */
 // AdjointAction obeys the left-action law and its generator matches a finite
 // difference of Ad_{Exp(εu)}·ξ.
 TEST(TangentLieGroup, AdjointActionLawAndGenerator) {
@@ -111,7 +112,7 @@ TEST(TangentLieGroup, AdjointActionLawAndGenerator) {
                       Vector(genFd), 1e-6));
 }
 
-/* ************************************************************************* */
+// Verifies Expmap and Logmap are mutual inverses for SO(3) and SE(3) bases.
 TEST(TangentLieGroup, ExpLogRoundTrip) {
   const Vector6 xi = tgso3Xi();
   EXPECT(assert_equal(xi, TGSO3::Logmap(TGSO3::Expmap(xi)), kTol));
@@ -119,7 +120,6 @@ TEST(TangentLieGroup, ExpLogRoundTrip) {
   EXPECT(assert_equal(x, TGSE3::Expmap(TGSE3::Logmap(x)), kTol));
 }
 
-/* ************************************************************************* */
 // Expmap([u; xi]).second == J_l^G(u) * xi, with J_l(u) = Ad_{Exp(u)} * J_r(u)
 // and J_r(u) = the Jacobian returned by Expmap.
 TEST(TangentLieGroup, TransportBlockIsLeftJacobian) {
@@ -135,7 +135,7 @@ TEST(TangentLieGroup, TransportBlockIsLeftJacobian) {
   EXPECT(assert_equal(Vector(Jl * xi), Vector(x.second), kTol));
 }
 
-/* ************************************************************************* */
+// Checks Expmap and Logmap Jacobians against numerical derivatives.
 TEST(TangentLieGroup, ExpmapLogmapJacobians) {
   const Vector12 xi = tgse3Xi();
   Matrix expH;
@@ -145,10 +145,11 @@ TEST(TangentLieGroup, ExpmapLogmapJacobians) {
   const TGSE3 state = tgse3State2();
   Matrix logH;
   TGSE3::Logmap(state, logH);
-  EXPECT(assert_equal(numericalDerivative11(logmapTGSE3, state), logH, kNumTol));
+  EXPECT(
+      assert_equal(numericalDerivative11(logmapTGSE3, state), logH, kNumTol));
 }
 
-/* ************************************************************************* */
+// Checks compose, between, and inverse Jacobians numerically.
 TEST(TangentLieGroup, ComposeBetweenInverseJacobians) {
   const TGSE3 a = tgse3State(), b = tgse3State2();
   Matrix H1, H2;
@@ -166,26 +167,42 @@ TEST(TangentLieGroup, ComposeBetweenInverseJacobians) {
   EXPECT(assert_equal(numericalDerivative11(inverseTGSE3, a), H, kNumTol));
 }
 
-/* ************************************************************************* */
 // Ad_{(g,ξ)} = [[Ad_g, 0], [ad_ξ·Ad_g, Ad_g]].
 TEST(TangentLieGroup, AdjointMap) {
   const TGSE3 x = tgse3State();
   const Matrix6 Ad = x.first.AdjointMap();
   const Matrix6 adXi = Pose3::adjointMap(x.second);
-  Eigen::Matrix<double, 12, 12> expected = Eigen::Matrix<double, 12, 12>::Zero();
+  Eigen::Matrix<double, 12, 12> expected =
+      Eigen::Matrix<double, 12, 12>::Zero();
   expected.topLeftCorner<6, 6>() = Ad;
   expected.bottomRightCorner<6, 6>() = Ad;
   expected.bottomLeftCorner<6, 6>() = adXi * Ad;
   EXPECT(assert_equal(Matrix(expected), Matrix(x.AdjointMap()), kTol));
 }
 
-/* ************************************************************************* */
+// Checks ad_(u,v) and the recursive generator used by T(T(SE(3))).
+TEST(TangentLieGroup, AlgebraAdjoint) {
+  const Vector12 xi = tgse3Xi();
+  const Matrix6 adU = Pose3::adjointMap(xi.head<6>());
+  const Matrix6 adV = Pose3::adjointMap(xi.tail<6>());
+  Eigen::Matrix<double, 12, 12> expected =
+      Eigen::Matrix<double, 12, 12>::Zero();
+  expected.topLeftCorner<6, 6>() = adU;
+  expected.bottomLeftCorner<6, 6>() = adV;
+  expected.bottomRightCorner<6, 6>() = adU;
+
+  EXPECT(assert_equal(Matrix(expected), Matrix(TGSE3::adjointMap(xi)), kTol));
+  EXPECT(assert_equal(Matrix(expected),
+                      Matrix(AdjointAction<TGSE3>::generator(xi)), kTol));
+}
+
+// Verifies the tangent group of Gal(3) satisfies the Lie-group concept.
 TEST(TangentLieGroup, TGGal3Concepts) {
   GTSAM_CONCEPT_ASSERT(IsLieGroup<TGGal3>);
   EXPECT_LONGS_EQUAL(20, TGGal3::dimension);
 }
 
-/* ************************************************************************* */
+// Checks the Gal(3) tangent group's round trip and inverse axiom.
 TEST(TangentLieGroup, TGGal3RoundTripAndAxioms) {
   const Vector20 xi = tggal3Xi();
   const TGGal3 x = TGGal3::Expmap(xi);
@@ -193,7 +210,7 @@ TEST(TangentLieGroup, TGGal3RoundTripAndAxioms) {
   EXPECT(assert_equal(TGGal3::Identity(), x * x.inverse(), kTol));
 }
 
-/* ************************************************************************* */
+// Checks Gal(3) tangent-group Expmap and Logmap Jacobians numerically.
 TEST(TangentLieGroup, TGGal3Jacobians) {
   const Vector20 xi = tggal3Xi();
   Matrix expH;
@@ -203,10 +220,13 @@ TEST(TangentLieGroup, TGGal3Jacobians) {
   const TGGal3 state = TGGal3::Expmap(tggal3Xi() * 0.5);
   Matrix logH;
   TGGal3::Logmap(state, logH);
-  EXPECT(assert_equal(numericalDerivative11(logmapTGGal3, state), logH, kNumTol));
+  EXPECT(
+      assert_equal(numericalDerivative11(logmapTGGal3, state), logH, kNumTol));
 }
 
+}  // namespace tangent_lie_group_fixture
 /* ************************************************************************* */
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

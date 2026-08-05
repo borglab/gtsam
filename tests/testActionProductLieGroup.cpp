@@ -89,7 +89,8 @@ struct SE3Vector4Action : public GroupAction<SE3Vector4Action, Pose3, Vector4> {
     out << (Rp + s * nu), s;
 
     if (Hg) {
-      // g·Exp([ω;ρ]) ≈ (R·Exp(ω^), ν + R·ρ): ∂/∂ω = -R·p^ (=D_Rp_R), ∂/∂ρ = s·R.
+      // g·Exp([ω;ρ]) ≈ (R·Exp(ω^), ν + R·ρ): ∂/∂ω = -R·p^ (=D_Rp_R), ∂/∂ρ =
+      // s·R.
       Hg->setZero();
       Hg->topLeftCorner<3, 3>() = D_Rp_R;
       Hg->block<3, 3>(0, 3) = s * R.matrix();
@@ -483,7 +484,6 @@ TEST(testActionProduct, retractAndLocalCoordinates) {
   EXPECT(assert_equal(numericLocalH2, localH2, 1e-6));
 }
 
-/* ************************************************************************* */
 // A third semidirect instance, SE(3) ⋉ ℝ⁴, reconstructs Gal(3) and exercises a
 // non-trivial (Pose3) base with a 4-D action, using the native Gal3 as oracle.
 TEST(Lie, ProductLieGroupSemidirectActionGal3) {
@@ -519,7 +519,6 @@ TEST(Lie, ProductLieGroupSemidirectActionGal3) {
   EXPECT(assert_equal(asGal3(a * b), asGal3(a) * asGal3(b), kTol));
 }
 
-/* ************************************************************************* */
 // Check Gal(3) compose values and Jacobians against native Gal3 and numerical
 // derivatives.
 TEST(testActionProduct, composeGal3) {
@@ -536,7 +535,6 @@ TEST(testActionProduct, composeGal3) {
   EXPECT(assert_equal(numericH2, actH2, 1e-6));
 }
 
-/* ************************************************************************* */
 // Check Gal(3) between values and Jacobians against native Gal3 and numerical
 // derivatives.
 TEST(testActionProduct, betweenGal3) {
@@ -554,7 +552,6 @@ TEST(testActionProduct, betweenGal3) {
   EXPECT(assert_equal(numericH2, actH2, 1e-6));
 }
 
-/* ************************************************************************* */
 // Check the Gal(3) inverse and its Jacobian against native Gal3 and numerical
 // derivatives.
 TEST(testActionProduct, inverseGal3) {
@@ -568,7 +565,6 @@ TEST(testActionProduct, inverseGal3) {
   EXPECT(assert_equal(numericH, actH, 1e-6));
 }
 
-/* ************************************************************************* */
 // Check the Gal(3) Expmap and its Jacobian against native Gal3 and numerical
 // derivatives.
 TEST(testActionProduct, ExpmapGal3) {
@@ -582,7 +578,6 @@ TEST(testActionProduct, ExpmapGal3) {
   EXPECT(assert_equal(numericH, actH, 1e-6));
 }
 
-/* ************************************************************************* */
 // Check the Gal(3) Logmap and its Jacobian against native Gal3 and numerical
 // derivatives.
 TEST(testActionProduct, LogmapGal3) {
@@ -596,7 +591,6 @@ TEST(testActionProduct, LogmapGal3) {
   EXPECT(assert_equal(numericH, actH, 1e-6));
 }
 
-/* ************************************************************************* */
 // Check that the Gal(3) adjoint matches the native Gal3 adjoint.
 TEST(testActionProduct, AdjointMapGal3) {
   const SemidirectGal3 state = gal3State4();
@@ -605,7 +599,6 @@ TEST(testActionProduct, AdjointMapGal3) {
                       Matrix(state.AdjointMap()), kTol));
 }
 
-/* ************************************************************************* */
 // Static algebra adjoint of the semidirect product matches native Gal3::ad.
 TEST(testActionProduct, AlgebraAdjointGal3) {
   const Vector10 xi = gal3Xi();
@@ -613,7 +606,6 @@ TEST(testActionProduct, AlgebraAdjointGal3) {
                       Matrix(SemidirectGal3::adjointMap(xi)), kTol));
 }
 
-/* ************************************************************************* */
 // Check Expmap-based retract/localCoordinates consistency and both Jacobians
 // against numerical derivatives.
 TEST(testActionProduct, retractAndLocalCoordinatesGal3) {
