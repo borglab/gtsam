@@ -33,6 +33,8 @@
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/slam/dataset.h>
 
+#include <cstring>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -135,7 +137,8 @@ inline std::vector<std::pair<string, Ordering>> createOrderings(
 
 // Create ordering and optimize
 int optimize(const SfmData& db, const NonlinearFactorGraph& graph,
-             const Values& initial, bool separateCalibration = false) {
+             const Values& initial, bool separateCalibration = false,
+             bool useMetisOrdering = false) {
   using symbol_shorthand::P;
 
   // Set parameters to be similar to ceres
@@ -145,7 +148,9 @@ int optimize(const SfmData& db, const NonlinearFactorGraph& graph,
   params.setVerbosityLM("SUMMARY");
   params.setRelativeErrorTol(0.01);  // 1% relative error tol
 
-  if (gUseSchur) {
+  if (useMetisOrdering) {
+    params.setOrderingType("METIS");
+  } else if (gUseSchur) {
     // Create Schur-complement ordering
     params.setOrdering(createSchurOrdering(db, separateCalibration));
   }

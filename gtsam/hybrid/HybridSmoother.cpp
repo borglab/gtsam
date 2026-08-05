@@ -25,18 +25,18 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-void HybridSmoother::reInitialize(HybridBayesNet &&hybridBayesNet) {
+void HybridSmoother::reInitialize(HybridBayesNet&& hybridBayesNet) {
   hybridBayesNet_ = std::move(hybridBayesNet);
 }
 
 /* ************************************************************************* */
-void HybridSmoother::reInitialize(HybridBayesNet &hybridBayesNet) {
+void HybridSmoother::reInitialize(HybridBayesNet& hybridBayesNet) {
   this->reInitialize(std::move(hybridBayesNet));
 }
 
 /* ************************************************************************* */
-Ordering HybridSmoother::getOrdering(const HybridGaussianFactorGraph &factors,
-                                     const KeySet &lastKeysToEliminate) {
+Ordering HybridSmoother::getOrdering(const HybridGaussianFactorGraph& factors,
+                                     const KeySet& lastKeysToEliminate) {
   // Get all the discrete keys from the factors
   KeySet allDiscrete = factors.discreteKeySet();
 
@@ -44,7 +44,7 @@ Ordering HybridSmoother::getOrdering(const HybridGaussianFactorGraph &factors,
   KeyVector lastKeys;
 
   // Insert continuous keys first.
-  for (auto &k : lastKeysToEliminate) {
+  for (auto& k : lastKeysToEliminate) {
     if (!allDiscrete.exists(k)) {
       lastKeys.push_back(k);
     }
@@ -63,7 +63,7 @@ Ordering HybridSmoother::getOrdering(const HybridGaussianFactorGraph &factors,
 
 /* ************************************************************************* */
 Ordering HybridSmoother::maybeComputeOrdering(
-    const HybridGaussianFactorGraph &updatedGraph,
+    const HybridGaussianFactorGraph& updatedGraph,
     const std::optional<Ordering> givenOrdering) {
   Ordering ordering;
   // If no ordering provided, then we compute one
@@ -87,8 +87,8 @@ Ordering HybridSmoother::maybeComputeOrdering(
 
 /* ************************************************************************* */
 HybridGaussianFactorGraph HybridSmoother::removeFixedValues(
-    const HybridGaussianFactorGraph &graph,
-    const HybridGaussianFactorGraph &newFactors) {
+    const HybridGaussianFactorGraph& graph,
+    const HybridGaussianFactorGraph& newFactors) {
   // Initialize graph
   HybridGaussianFactorGraph updatedGraph(graph);
 
@@ -111,8 +111,8 @@ HybridGaussianFactorGraph HybridSmoother::removeFixedValues(
 }
 
 /* ************************************************************************* */
-void HybridSmoother::update(const HybridNonlinearFactorGraph &newFactors,
-                            const Values &initial,
+void HybridSmoother::update(const HybridNonlinearFactorGraph& newFactors,
+                            const Values& initial,
                             std::optional<size_t> maxNrLeaves,
                             const std::optional<Ordering> given_ordering) {
   HybridGaussianFactorGraph linearizedFactors = *newFactors.linearize(initial);
@@ -168,7 +168,7 @@ void HybridSmoother::update(const HybridNonlinearFactorGraph &newFactors,
 #ifdef DEBUG_SMOOTHER
   // Print discrete keys in the bayesNetFragment:
   std::cout << "Discrete keys in bayesNetFragment: ";
-  for (auto &key : HybridFactorGraph(bayesNetFragment).discreteKeySet()) {
+  for (auto& key : HybridFactorGraph(bayesNetFragment).discreteKeySet()) {
     std::cout << DefaultKeyFormatter(key) << " ";
   }
 #endif
@@ -194,7 +194,7 @@ void HybridSmoother::update(const HybridNonlinearFactorGraph &newFactors,
 #ifdef DEBUG_SMOOTHER
   // Print discrete keys in the bayesNetFragment:
   std::cout << "\nAfter pruning: ";
-  for (auto &key : HybridFactorGraph(bayesNetFragment).discreteKeySet()) {
+  for (auto& key : HybridFactorGraph(bayesNetFragment).discreteKeySet()) {
     std::cout << DefaultKeyFormatter(key) << " ";
   }
   std::cout << std::endl << std::endl;
@@ -214,13 +214,13 @@ void HybridSmoother::update(const HybridNonlinearFactorGraph &newFactors,
 
 /* ************************************************************************* */
 std::pair<HybridGaussianFactorGraph, HybridBayesNet>
-HybridSmoother::addConditionals(const HybridGaussianFactorGraph &newFactors,
-                                const HybridBayesNet &hybridBayesNet) const {
+HybridSmoother::addConditionals(const HybridGaussianFactorGraph& newFactors,
+                                const HybridBayesNet& hybridBayesNet) const {
   HybridGaussianFactorGraph graph(newFactors);
   HybridBayesNet updatedHybridBayesNet(hybridBayesNet);
 
   KeySet involvedKeys = newFactors.keys();
-  auto involved = [](const KeySet &involvedKeys, const Key &key) {
+  auto involved = [](const KeySet& involvedKeys, const Key& key) {
     return involvedKeys.find(key) != involvedKeys.end();
   };
 
@@ -243,11 +243,11 @@ HybridSmoother::addConditionals(const HybridGaussianFactorGraph &newFactors,
     for (size_t i = 0; i < hybridBayesNet.size(); i++) {
       auto conditional = hybridBayesNet.at(i);
 
-      for (auto &key : conditional->frontals()) {
+      for (auto& key : conditional->frontals()) {
         if (involved(involvedKeys, key)) {
           // Add the conditional parents to involvedKeys
           // so we add those conditionals too.
-          for (auto &&parentKey : conditional->parents()) {
+          for (auto&& parentKey : conditional->parents()) {
             involvedKeys.insert(parentKey);
           }
           // Break so we don't add parents twice.
@@ -262,7 +262,7 @@ HybridSmoother::addConditionals(const HybridGaussianFactorGraph &newFactors,
     for (size_t i = 0; i < hybridBayesNet.size(); i++) {
       auto conditional = hybridBayesNet.at(i);
 
-      for (auto &key : conditional->frontals()) {
+      for (auto& key : conditional->frontals()) {
         if (involved(involvedKeys, key)) {
           newConditionals.push_back(conditional);
 
@@ -289,7 +289,7 @@ HybridGaussianConditional::shared_ptr HybridSmoother::gaussianMixture(
 }
 
 /* ************************************************************************* */
-const HybridBayesNet &HybridSmoother::hybridBayesNet() const {
+const HybridBayesNet& HybridSmoother::hybridBayesNet() const {
   return hybridBayesNet_;
 }
 
@@ -335,6 +335,18 @@ Values HybridSmoother::linearizationPoint() const {
 /* ************************************************************************* */
 HybridNonlinearFactorGraph HybridSmoother::allFactors() const {
   return allFactors_;
+}
+
+/* ************************************************************************* */
+double HybridSmoother::error(const HybridValues& x) const {
+  return hybridBayesNet_.error(x);
+}
+
+/* ************************************************************************* */
+double HybridSmoother::error(const VectorValues& x) const {
+  DiscreteValues discreteAssignment = hybridBayesNet_.mpe();
+  discreteAssignment.insert(fixedValues_);
+  return hybridBayesNet_.error(HybridValues{x, discreteAssignment});
 }
 
 }  // namespace gtsam

@@ -12,7 +12,7 @@ Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellae
 
 from typing import List
 
-from pyparsing import Optional, ParseResults, delimitedList  # type: ignore
+from pyparsing import Optional, ParseResults, DelimitedList  # type: ignore
 
 from .tokens import (EQUAL, IDENT, LBRACE, LOPBRACK, RBRACE, ROPBRACK,
                      SEMI_COLON, TEMPLATE, TYPEDEF)
@@ -38,10 +38,10 @@ class Template:
             + Optional(  #
                 EQUAL  #
                 + LBRACE  #
-                + ((delimitedList(TemplatedType.rule ^ Typename.rule)
+                + ((DelimitedList(TemplatedType.rule ^ Typename.rule)
                     ("instantiations")))  #
                 + RBRACE  #
-            )).setParseAction(lambda t: Template.TypenameAndInstantiations(
+            )).set_parse_action(lambda t: Template.TypenameAndInstantiations(
                 t.typename, t.instantiations))
 
         def __init__(self, typename: str, instantiations: ParseResults):
@@ -57,11 +57,11 @@ class Template:
     rule = (  # BR
         TEMPLATE  #
         + LOPBRACK  #
-        + delimitedList(TypenameAndInstantiations.rule)(
+        + DelimitedList(TypenameAndInstantiations.rule)(
             "typename_and_instantiations_list")  #
         + ROPBRACK  # BR
-    ).setParseAction(
-        lambda t: Template(t.typename_and_instantiations_list.asList()))
+    ).set_parse_action(
+        lambda t: Template(t.typename_and_instantiations_list.as_list()))
 
     def __init__(
             self,
@@ -85,7 +85,7 @@ class TypedefTemplateInstantiation:
     """
     rule = (TYPEDEF + TemplatedType.rule("templated_type") +
             IDENT("new_name") +
-            SEMI_COLON).setParseAction(lambda t: TypedefTemplateInstantiation(
+            SEMI_COLON).set_parse_action(lambda t: TypedefTemplateInstantiation(
                 t.templated_type[0], t.new_name))
 
     def __init__(self,

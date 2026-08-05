@@ -125,6 +125,7 @@ protected:
 
   /** Internal function for computing a COLAMD ordering if no ordering is specified */
   DoglegParams ensureHasOrdering(DoglegParams params, const NonlinearFactorGraph& graph) const;
+
 };
 
 }

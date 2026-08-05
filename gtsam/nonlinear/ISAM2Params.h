@@ -289,6 +289,20 @@ struct GTSAM_EXPORT ISAM2Params {
   /// cost of having to search for slots every time a factor is added.
   bool findUnusedFactorSlots;
 
+  /** When enabled, ISAM2 tracks the total number of nonzero entries (nnz) in
+   * the Bayes tree after every batch reorder.  If the current nnz exceeds
+   * `adaptiveReorderThreshold` times the nnz recorded after the last batch
+   * reorder, a full batch re-elimination with COLAMD reordering is triggered
+   * automatically.  This prevents fill-in from accumulating over long sessions
+   * (e.g. thousands of incremental SLAM updates).  Default: disabled.
+   */
+  bool enableAdaptiveReorder;
+
+  /** The fill-in growth ratio that triggers a batch reorder when
+   * enableAdaptiveReorder is true (default: 2.0, i.e. reorder when nnz
+   * doubles relative to the last fresh ordering). */
+  double adaptiveReorderThreshold;
+
   /**
    * Specify parameters as constructor arguments
    * See the documentation of member variables above.
@@ -312,7 +326,9 @@ struct GTSAM_EXPORT ISAM2Params {
         keyFormatter(_keyFormatter),
         enableDetailedResults(_enableDetailedResults),
         enablePartialRelinearizationCheck(false),
-        findUnusedFactorSlots(false) {}
+        findUnusedFactorSlots(false),
+        enableAdaptiveReorder(false),
+        adaptiveReorderThreshold(2.0) {}
 
   /// print iSAM2 parameters
   void print(const std::string& str = "") const {
@@ -355,6 +371,11 @@ struct GTSAM_EXPORT ISAM2Params {
          << enablePartialRelinearizationCheck << "\n";
     cout << "findUnusedFactorSlots:             " << findUnusedFactorSlots
          << "\n";
+    cout << "enableAdaptiveReorder:             " << enableAdaptiveReorder
+         << "\n";
+    if (enableAdaptiveReorder)
+      cout << "adaptiveReorderThreshold:          " << adaptiveReorderThreshold
+           << "\n";
     cout.flush();
   }
 

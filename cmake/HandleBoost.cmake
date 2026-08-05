@@ -13,8 +13,11 @@
 if(MSVC)
     # By default, Boost pre-compiled binaries for Windows are static libraries.
     set(Boost_USE_STATIC_LIBS ON)
+    # GTSAM links Boost through imported CMake targets, so disable Boost's
+    # pragma-based auto-linking to avoid bare library names on the link line.
+    list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC BOOST_ALL_NO_LIB)
     if(NOT Boost_USE_STATIC_LIBS)
-        list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC BOOST_ALL_NO_LIB BOOST_ALL_DYN_LINK)
+        list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC BOOST_ALL_DYN_LINK)
     endif()
     if(MSVC_VERSION LESS 1910) # older than VS2017
       list_append_cache(GTSAM_COMPILE_OPTIONS_PRIVATE -Zm295)
@@ -41,7 +44,7 @@ endif()
 # Set minimum required Boost version and components.
 # Note: Keep this in sync with vcpkg.json.
 # optional, program_options, random, range are all used in tests/examples/Python, but are not library dependencies. timer/chrono is used conditionally.
-# concept_check, fusion, move, phoenix, pool, smart_ptr, spirit, tokenizer, type_traits, optional, range are header only and are not components.
+# concept_check, move, pool, smart_ptr, tokenizer, type_traits, optional, range are header only and are not components.
 set(BOOST_FIND_MINIMUM_VERSION 1.70)
 set(BOOST_FIND_MINIMUM_COMPONENTS graph serialization program_options random timer chrono)
 

@@ -72,12 +72,12 @@ void testChartDerivativesN(TestResult& result_, const std::string& name_,
   OJ none;
   const V w12 = T::Local(t1, t2);
   EXPECT(assert_equal<G>(t2, T::Retract(t1, w12, H1, H2)));
-  EXPECT(assert_equal(
-      numericalDerivative41<G, G, V, OJ, OJ, N>(T::Retract, t1, w12, none, none),
-      H1));
-  EXPECT(assert_equal(
-      numericalDerivative42<G, G, V, OJ, OJ, N>(T::Retract, t1, w12, none, none),
-      H2));
+  EXPECT(assert_equal(numericalDerivative41<G, G, V, OJ, OJ, N>(
+                          T::Retract, t1, w12, none, none),
+                      H1));
+  EXPECT(assert_equal(numericalDerivative42<G, G, V, OJ, OJ, N>(
+                          T::Retract, t1, w12, none, none),
+                      H2));
 
   EXPECT(assert_equal(w12, T::Local(t1, t2, H1, H2)));
   EXPECT(assert_equal(
@@ -137,9 +137,9 @@ VioGroup MakeG3() { return makeVioGroup(kA1, kBeta1, kB1, MakeQ3A()); }
 VioGroup MakeG3b() { return makeVioGroup(kA2, kBeta2, kB2, MakeQ3B()); }
 
 Vector Xi0() {
-  return (Vector(21) << 0.05, -0.04, 0.03, 0.2, -0.1, 0.15, -0.05, 0.07,
-          -0.09, 0.1, -0.08, 0.06, -0.04, 0.02, 0.03, 0.01, -0.02, 0.04,
-          -0.03, 0.05, -0.01)
+  return (Vector(21) << 0.05, -0.04, 0.03, 0.2, -0.1, 0.15, -0.05, 0.07, -0.09,
+          0.1, -0.08, 0.06, -0.04, 0.02, 0.03, 0.01, -0.02, 0.04, -0.03, 0.05,
+          -0.01)
       .finished();
 }
 
@@ -151,8 +151,8 @@ Vector Xi1() {
 
 Vector Xi3() {
   Vector xi(33);
-  xi << Xi0(), 0.03, -0.02, 0.01, 0.04, -0.01, 0.05, -0.03, 0.02, 0.02,
-      0.01, -0.04, 0.03;
+  xi << Xi0(), 0.03, -0.02, 0.01, 0.04, -0.01, 0.05, -0.03, 0.02, 0.02, 0.01,
+      -0.04, 0.03;
   return xi;
 }
 
@@ -195,8 +195,9 @@ TEST(VIOGroup, GroupOperations) {
                       Beta_biasOffset(composed).vector()));
   EXPECT(assert_equal(B_cameraExtrinsics(g1).compose(B_cameraExtrinsics(g2)),
                       B_cameraExtrinsics(composed)));
-  EXPECT(assert_equal(Q_landmarkTransforms(g1).compose(Q_landmarkTransforms(g2)),
-                      Q_landmarkTransforms(composed)));
+  EXPECT(
+      assert_equal(Q_landmarkTransforms(g1).compose(Q_landmarkTransforms(g2)),
+                   Q_landmarkTransforms(composed)));
 
   const VioGroup between = g1.between(g2);
   EXPECT(assert_equal(g1.inverse() * g2, between));
@@ -218,8 +219,7 @@ TEST(VIOGroup, ExpmapLogmapAndAdjoint) {
   EXPECT(assert_equal(xi3, VioGroup::Logmap(g3), 1e-9));
 
   VioGroup core(SensorCore(A_sensorKinematics(g3), Beta_biasOffset(g3)),
-                LandmarkCore(B_cameraExtrinsics(g3),
-                             Q_landmarkTransforms(g3)));
+                LandmarkCore(B_cameraExtrinsics(g3), Q_landmarkTransforms(g3)));
   EXPECT(assert_equal(core.AdjointMap(), g3.AdjointMap(), 1e-9));
 }
 

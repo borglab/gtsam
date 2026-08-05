@@ -24,68 +24,14 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <exception>
 #include <string>
 
 #ifdef GTSAM_USE_TBB
 #include <tbb/scalable_allocator.h>
 #endif
 
-#if defined(__GNUC__) || defined(__clang__)
-#define GTSAM_DEPRECATED __attribute__((deprecated))
-#elif defined(_MSC_VER)
-#define GTSAM_DEPRECATED __declspec(deprecated)
-#else
-#define GTSAM_DEPRECATED
-#endif
-
 #ifdef GTSAM_USE_EIGEN_MKL_OPENMP
 #include <omp.h>
-#endif
-
-/* Define macros for ignoring compiler warnings.
- * Usage Example:
- * ```
- *  CLANG_DIAGNOSTIC_PUSH_IGNORE("-Wdeprecated-declarations")
- *  GCC_DIAGNOSTIC_PUSH_IGNORE("-Wdeprecated-declarations")
- *  MSVC_DIAGNOSTIC_PUSH_IGNORE(4996)
- *  // ... code you want to suppress deprecation warnings for ...
- *  DIAGNOSTIC_POP()
- * ```
- */
-#define DO_PRAGMA(x) _Pragma (#x)
-#ifdef __clang__
-#  define CLANG_DIAGNOSTIC_PUSH_IGNORE(diag) \
-  _Pragma("clang diagnostic push") \
-  DO_PRAGMA(clang diagnostic ignored diag)
-#else
-#  define CLANG_DIAGNOSTIC_PUSH_IGNORE(diag)
-#endif
-
-#ifdef __GNUC__
-#  define GCC_DIAGNOSTIC_PUSH_IGNORE(diag) \
-  _Pragma("GCC diagnostic push") \
-  DO_PRAGMA(GCC diagnostic ignored diag)
-#else
-#  define GCC_DIAGNOSTIC_PUSH_IGNORE(diag)
-#endif
-
-#ifdef _MSC_VER
-#  define MSVC_DIAGNOSTIC_PUSH_IGNORE(code) \
-  _Pragma("warning ( push )") \
-  DO_PRAGMA(warning ( disable : code ))
-#else
-#  define MSVC_DIAGNOSTIC_PUSH_IGNORE(code)
-#endif
-
-#if defined(__clang__)
-#  define DIAGNOSTIC_POP() _Pragma("clang diagnostic pop")
-#elif defined(__GNUC__)
-#  define DIAGNOSTIC_POP() _Pragma("GCC diagnostic pop")
-#elif defined(_MSC_VER)
-#  define DIAGNOSTIC_POP() _Pragma("warning ( pop )")
-#else
-#  define DIAGNOSTIC_POP()
 #endif
 
 namespace gtsam {
@@ -101,28 +47,6 @@ namespace gtsam {
 
   /// The index type for Eigen objects
   typedef ptrdiff_t DenseIndex;
-
-  /* ************************************************************************* */
-  /**
-   * Helper class that uses templates to select between two types based on
-   * whether TEST_TYPE is const or not.
-   */
-  template<typename TEST_TYPE, typename BASIC_TYPE, typename AS_NON_CONST,
-      typename AS_CONST>
-  struct const_selector {
-  };
-
-  /** Specialization for the non-const version */
-  template<typename BASIC_TYPE, typename AS_NON_CONST, typename AS_CONST>
-  struct const_selector<BASIC_TYPE, BASIC_TYPE, AS_NON_CONST, AS_CONST> {
-    typedef AS_NON_CONST type;
-  };
-
-  /** Specialization for the const version */
-  template<typename BASIC_TYPE, typename AS_NON_CONST, typename AS_CONST>
-  struct const_selector<const BASIC_TYPE, BASIC_TYPE, AS_NON_CONST, AS_CONST> {
-    typedef AS_CONST type;
-  };
 
   /* ************************************************************************* */
   /**
@@ -199,37 +123,6 @@ namespace gtsam {
   }
 #endif
 
-#ifdef _MSC_VER
-
-// Define some common g++ functions and macros we use that MSVC does not have
-
-#if (_MSC_VER < 1800)
-
-#include <cmath>
-namespace std {
-  template<typename T> inline int isfinite(T a) {
-    return (int)std::isfinite(a); }
-  template<typename T> inline int isnan(T a) {
-    return (int)std::isnan(a); }
-  template<typename T> inline int isinf(T a) {
-    return (int)std::isinf(a); }
-}
-
-#endif
-
-#include <cmath>
-#ifndef M_PI
-#define M_PI (3.14159265358979323846)
-#endif
-#ifndef M_PI_2
-#define M_PI_2 (M_PI / 2.0)
-#endif
-#ifndef M_PI_4
-#define M_PI_4 (M_PI / 4.0)
-#endif
-
-#endif
-
 #ifdef min
 #undef min
 #endif
@@ -241,50 +134,3 @@ namespace std {
 #ifdef ERROR
 #undef ERROR
 #endif
-
-namespace gtsam {
-
-  /// Convenience void_t as we assume C++11, it will not conflict the std one in C++17 as this is in `gtsam::`
-  template<typename ...> using void_t = void;
-
-  /**
-   * A SFINAE trait to mark classes that need special alignment.
-   *
-   * This is required to make std::make_shared and etc respect alignment, which is essential for the Python
-   * wrappers to work properly.
-   *
-   * Explanation
-   * =============
-   * When a GTSAM type is not declared with the type alias `_eigen_aligned_allocator_trait = void`, the first template
-   * will be taken so `needs_eigen_aligned_allocator` will be resolved to `std::false_type`.
-   *
-   * Otherwise, it will resolve to the second template, which will be resolved to `std::true_type`.
-   *
-   * Please refer to `gtsam/base/make_shared.h` for an example.
-   */
-  template<typename, typename = void_t<>>
-  struct needs_eigen_aligned_allocator : std::false_type {
-  };
-  template<typename T>
-  struct needs_eigen_aligned_allocator<T, void_t<typename T::_eigen_aligned_allocator_trait>> : std::true_type {
-  };
-
-}
-
-/**
- * This marks a GTSAM object to require alignment. With this macro an object will automatically be allocated in aligned
- * memory when one uses `gtsam::make_shared`. It reduces future misalignment problems that is hard to debug.
- * See https://eigen.tuxfamily.org/dox/group__DenseMatrixManipulation__Alignement.html for detailed explanation.
- */
-#define GTSAM_MAKE_ALIGNED_OPERATOR_NEW \
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW \
-  using _eigen_aligned_allocator_trait = void;
-
-/**
- * This marks a GTSAM object to require alignment. With this macro an object will automatically be allocated in aligned
- * memory when one uses `gtsam::make_shared`. It reduces future misalignment problems that is hard to debug.
- * See https://eigen.tuxfamily.org/dox/group__DenseMatrixManipulation__Alignement.html for detailed explanation.
- */
-#define GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign) \
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign) \
-  using _eigen_aligned_allocator_trait = void;

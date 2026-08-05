@@ -3,6 +3,10 @@
 # pylint: disable=import-outside-toplevel, global-variable-not-assigned, possibly-unused-variable, import-error, import-self
 
 import sys
+import os
+
+if sys.platform == "win32":
+    os.add_dll_directory(os.path.dirname(os.path.abspath(__file__)))
 
 from gtsam.utils import findExampleDataFile
 
@@ -24,6 +28,7 @@ Point2Pairs = list
 Point3Pairs = list
 Pose2Pairs = list
 Pose3Pairs = list
+Se23 = ExtendedPose32
 # sfm
 BinaryMeasurementsPoint3 = list
 BinaryMeasurementsUnit3 = list

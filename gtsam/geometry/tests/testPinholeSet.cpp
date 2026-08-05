@@ -18,7 +18,6 @@
 
 #include <gtsam/geometry/PinholeSet.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;

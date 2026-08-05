@@ -2,6 +2,46 @@
 
 This directory contains timing executables and helper scripts for GTSAM.
 
+## RangeFactor Plaza2 Benchmark
+
+This benchmark isolates the current range-only Plaza2 incremental SLAM workload
+used by `RangeFactor<Pose2, Point2>`. It exists to support before/after
+performance comparisons when changing the `RangeFactor` implementation.
+
+### Build
+
+From the build directory:
+
+```bash
+make -j6 timeRangeFactorPlaza2
+```
+
+### Run the benchmark executable
+
+Run from `build/`:
+
+```bash
+./timing/timeRangeFactorPlaza2 --warmup 1 --repeats 5 \
+  --output ../timing/results/range_factor_plaza2.csv
+```
+
+This prints aggregate timing statistics and writes one CSV row per measured run.
+
+### Run the helper script
+
+Run from the repository root with the `py312` conda environment:
+
+```bash
+conda run -n py312 python timing/benchmark_range_factor_plaza2.py \
+  --build-dir build \
+  --warmup 1 \
+  --repeats 5 \
+  --output timing/results/range_factor_plaza2.csv
+```
+
+The helper script runs the benchmark executable, preserves the CSV, and prints a
+short summary that can be copied into a PR description.
+
 ## Bayes-Tree Covariance Results
 
 The Bayes-tree covariance paper uses generated benchmark output rather than

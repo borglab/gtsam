@@ -102,7 +102,7 @@ namespace gtsam {
     /// @{
 
     /** unnormalized error, \f$ \sum_i 0.5 (h_i(X_i)-z)^2 / \sigma^2 \f$ in the most common case */
-    double error(const Values& values) const;
+    virtual double error(const Values& values) const;
 
     /** Unnormalized probability. O(n) */
     double probPrime(const Values& values) const;
@@ -128,7 +128,12 @@ namespace gtsam {
     Ordering orderingCOLAMDConstrained(const FastMap<Key, int>& constraints) const;
 
     /// Linearize a nonlinear factor graph
-    std::shared_ptr<GaussianFactorGraph> linearize(const Values& linearizationPoint) const;
+    virtual std::shared_ptr<GaussianFactorGraph> linearize(const Values& linearizationPoint) const;
+
+    /// Clone into a shared pointer while preserving derived graph behavior.
+    virtual std::shared_ptr<const NonlinearFactorGraph> cloneShared() const {
+      return std::make_shared<NonlinearFactorGraph>(*this);
+    }
 
     /// typdef for dampen functions used below
     typedef std::function<void(const std::shared_ptr<HessianFactor>& hessianFactor)> Dampen;
@@ -268,4 +273,3 @@ struct traits<NonlinearFactorGraph> : public Testable<NonlinearFactorGraph> {
 };
 
 } //\ namespace gtsam
-

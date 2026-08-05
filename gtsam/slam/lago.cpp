@@ -16,19 +16,20 @@
  *  @date   May 14, 2014
  */
 
-#include <gtsam/slam/lago.h>
-
-#include <gtsam/slam/InitializePose.h>
-#include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/PriorFactor.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/base/kruskal.h>
+#include <gtsam/base/timing.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/base/timing.h>
-#include <gtsam/base/kruskal.h>
+#include <gtsam/nonlinear/PriorFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/InitializePose.h>
+#include <gtsam/slam/lago.h>
 
+#include <cmath>
 #include <iostream>
 #include <stack>
-#include <cmath>
 
 using namespace std;
 
@@ -191,7 +192,7 @@ GaussianFactorGraph buildLinearOrientationGraph(
     lagoGraph.add(key1, -I_1x1, key2, I_1x1, deltaThetaRegularized, model_deltaTheta);
   }
   // prior on the anchor orientation
-  lagoGraph.add(kAnchorKey, I_1x1, (Vector(1) << 0.0).finished(), priorOrientationNoise);
+  lagoGraph.add(kAnchorKey, I_1x1, Z_1x1, priorOrientationNoise);
   return lagoGraph;
 }
 
@@ -349,7 +350,7 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
     }
   }
   // add prior
-  linearPose2graph.add(kAnchorKey, I_3x3, Vector3(0.0, 0.0, 0.0), priorPose2Noise);
+  linearPose2graph.add(kAnchorKey, I_3x3, Z_3x1, priorPose2Noise);
 
   // optimize
   VectorValues posesLago = linearPose2graph.optimize();

@@ -18,6 +18,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/testLie.h>
 #include <gtsam/geometry/Pose3.h>
@@ -86,7 +87,7 @@ TEST(Similarity3, translation) {
   Matrix37 actualH;
   EXPECT(assert_equal(Point3(3.5, -8.2, 4.2), T1.translation(&actualH), 1e-8));
 
-  std::function<Point3(const Similarity3&)> f = [](const Similarity3& T) { return T.translation(); };
+  auto f = [](const Similarity3& T) { return T.translation(); };
   Matrix37 numericalH = numericalDerivative11<Point3, Similarity3>(f, T1);
   EXPECT(assert_equal(numericalH, actualH, 1e-6));
 }
@@ -97,7 +98,7 @@ TEST(Similarity3, scale) {
   Matrix17 actualH;
   EXPECT_DOUBLES_EQUAL(10.0, T5.scale(&actualH), 1e-8);
 
-  std::function<double(const Similarity3&)> f = [](const Similarity3& T) { return T.scale(); };
+  auto f = [](const Similarity3& T) { return T.scale(); };
   Matrix17 numericalH = numericalDerivative11<double, Similarity3>(f, T5);
   EXPECT(assert_equal(numericalH, actualH, 1e-6));
 }
@@ -108,7 +109,7 @@ TEST(Similarity3, rotation) {
   Matrix37 actualH;
   EXPECT(assert_equal(Rot3::Rodrigues(0.3, 0.2, 0.1), T2.rotation(&actualH), 1e-8));
 
-  std::function<Rot3(const Similarity3&)> f = [](const Similarity3& T) { return T.rotation(); };
+  auto f = [](const Similarity3& T) { return T.rotation(); };
   Matrix37 numericalH = numericalDerivative11<Rot3, Similarity3>(f, T2);
   EXPECT(assert_equal(numericalH, actualH, 1e-6));
 }
@@ -302,8 +303,7 @@ TEST(Similarity3, GroupAction) {
 
   // Test derivative
   // Use lambda to resolve overloaded method
-  std::function<Point3(const Similarity3&, const Point3&)>
-      f = [](const Similarity3& S, const Point3& p){ return S.transformFrom(p); };
+  auto f = [](const Similarity3& S, const Point3& p){ return S.transformFrom(p); };
 
   Point3 q(1, 2, 3);
   for (const auto& T : { T1, T2, T3, T4, T5, T6 }) {
@@ -342,8 +342,7 @@ TEST(Similarity3, GroupActionPose3) {
   EXPECT(assert_equal(expected_wTo2, wSe.transformFrom(eTo2)));
 
   Similarity3 wSe2(Rot3::RzRyRx(60 * degree, 50 * degree, 30 * degree), Point3(2, 3, 5), 2.0);
-  std::function<Pose3(const Similarity3&, const Pose3&)>
-      f = [](const Similarity3& S, const Pose3& T){ return S.transformFrom(T); };
+  auto f = [](const Similarity3& S, const Pose3& T){ return S.transformFrom(T); };
 
   {
     Matrix H1 = numericalDerivative21<Pose3, Similarity3, Pose3>(f, wSe2, eTo1);
@@ -628,10 +627,8 @@ TEST(Similarity3, Vec) {
   // 2. Test the Jacobian
   Matrix H_actual(16, 7);
   sim.vec(H_actual);
-  auto vec_fun = [](const Similarity3& sim_arg) -> Similarity3::Vector16 {
-    return sim_arg.vec();
-    };
-  Matrix H_numerical = numericalDerivative11<Similarity3::Vector16, Similarity3, 7>(vec_fun, sim);
+  auto f = [](const Similarity3& g) -> Similarity3::Vector16 { return g.vec(); };
+  Matrix H_numerical = numericalDerivative11(f, sim);
   EXPECT(assert_equal(H_numerical, H_actual, 1e-7));
 }
 
@@ -651,6 +648,11 @@ TEST(Similarity3, AdjointMap) {
 
   // Assert that they are equal
   EXPECT(assert_equal(specialized_Adj, generic_Adj, 1e-9));
+
+  const Vector7 xi(0.2, -0.4, 0.7, -0.1, 0.3, -0.6, 0.5);
+  const Matrix7 specialized_ad = Similarity3::adjointMap(xi);
+  const Matrix7 generic_ad = MatrixLieGroup<Similarity3, 7, 4>::adjointMap(xi);
+  EXPECT(assert_equal(specialized_ad, generic_ad, 1e-9));
 }
 
 //******************************************************************************
@@ -663,13 +665,12 @@ TEST(Similarity3, AdjointTranspose) {
                       Vector(sim.AdjointTranspose(xi))));
 
   Matrix77 actualH1, actualH2;
-  std::function<Vector7(const Similarity3&, const Vector7&)> proxy =
-      [](const Similarity3& g, const Vector7& x) {
-        return Vector7(g.AdjointTranspose(x));
-      };
+  auto f = [](const Similarity3& g, const Vector7& x) {
+    return Vector7(g.AdjointTranspose(x));
+  };
   sim.AdjointTranspose(xi, actualH1, actualH2);
-  EXPECT(assert_equal(numericalDerivative21(proxy, sim, xi), actualH1, 1e-8));
-  EXPECT(assert_equal(numericalDerivative22(proxy, sim, xi), actualH2));
+  EXPECT(assert_equal(numericalDerivative21(f, sim, xi), actualH1, 1e-8));
+  EXPECT(assert_equal(numericalDerivative22(f, sim, xi), actualH2));
 }
 
 //******************************************************************************
@@ -677,10 +678,9 @@ TEST(Similarity3, adjointTranspose) {
   const Vector7 xi(0.2, -0.4, 0.7, -0.1, 0.3, -0.6, 0.5);
   const Vector7 y(-0.3, 0.5, 0.9, -0.2, 0.4, -0.8, 0.1);
 
-  std::function<Vector7(const Vector7&, const Vector7&)> f =
-      [](const Vector7& x, const Vector7& v) {
-        return Vector7(Similarity3::adjointTranspose(x, v));
-      };
+  auto f = [](const Vector7& x, const Vector7& v) {
+    return Vector7(Similarity3::adjointTranspose(x, v));
+  };
 
   Matrix77 Hxi, Hy;
   const Vector7 actual = Similarity3::adjointTranspose(xi, y, Hxi, Hy);
@@ -694,10 +694,9 @@ TEST(Similarity3, adjoint) {
   const Vector7 xi(0.2, -0.4, 0.7, -0.1, 0.3, -0.6, 0.5);
   const Vector7 y(-0.3, 0.5, 0.9, -0.2, 0.4, -0.8, 0.1);
 
-  std::function<Vector7(const Vector7&, const Vector7&)> f =
-      [](const Vector7& x, const Vector7& v) {
-        return Vector7(Similarity3::adjoint(x, v));
-      };
+  auto f = [](const Vector7& x, const Vector7& v) {
+    return Vector7(Similarity3::adjoint(x, v));
+  };
 
   Matrix77 Hxi, Hy;
   const Vector7 actual = Similarity3::adjoint(xi, y, Hxi, Hy);

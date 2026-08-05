@@ -18,23 +18,23 @@
   * @brief  Check evaluateError for various Frobenius norms
   */
 
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/lieProxies.h>
 #include <gtsam/base/testLie.h>
+#include <gtsam/geometry/Gal3.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Rot3.h>
-#include <gtsam/geometry/Similarity2.h>
-#include <gtsam/geometry/Similarity3.h>
+#include <gtsam/geometry/SL4.h>
 #include <gtsam/geometry/SO3.h>
 #include <gtsam/geometry/SO4.h>
-#include <gtsam/geometry/Gal3.h>
-#include <gtsam/geometry/SL4.h>
-#include <gtsam/nonlinear/factorTesting.h>
+#include <gtsam/geometry/Similarity2.h>
+#include <gtsam/geometry/Similarity3.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/slam/FrobeniusFactor.h>
-
-#include <CppUnitLite/TestHarness.h>
 
 using namespace gtsam;
 

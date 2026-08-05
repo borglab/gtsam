@@ -22,8 +22,6 @@
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/dllexport.h>
 
-#include <cmath>
-#include <iosfwd>
 #include <string>
 
 namespace gtsam {

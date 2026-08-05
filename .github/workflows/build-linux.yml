@@ -1,6 +1,7 @@
 name: Linux CI
 
 on:
+  workflow_dispatch: 
   pull_request:
     paths-ignore:
       - '**.md'
@@ -18,7 +19,7 @@ jobs:
     name: ${{ matrix.name }} ${{ matrix.build_type }}
     runs-on: ${{ matrix.os }}
     container:
-      image: borglab/gtsam-ci:${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.version }}
+      image: borglab/gtsam-ci:${{ matrix.image_os || matrix.os }}-${{ matrix.compiler }}-${{ matrix.version }}
       env:
         CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
         GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
@@ -30,10 +31,12 @@ jobs:
         # Github Actions requires a single row to be added to the build matrix.
         # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
         name: [
-            # "Bracket" the versions from GCC [11-14] and Clang [11-16]
+            # "Bracket" the versions from GCC [11-12, 13,14, 15] and Clang [11-16]
             ubuntu-22.04-gcc-11,
             ubuntu-22.04-clang-11,
+            ubuntu-24.04-gcc-13,
             ubuntu-24.04-gcc-14,
+            ubuntu-26.04-gcc-15,
             ubuntu-24.04-clang-16,
             ubuntu-24.04-clang-16-boost,
             ubuntu-24.04-clang-16-geographiclib,
@@ -52,10 +55,21 @@ jobs:
             compiler: clang
             version: "11"
 
+          - name: ubuntu-24.04-gcc-13
+            os: ubuntu-24.04
+            compiler: gcc
+            version: "13"
+
           - name: ubuntu-24.04-gcc-14
             os: ubuntu-24.04
             compiler: gcc
             version: "14"
+          
+          - name: ubuntu-26.04-gcc-15
+            os: ubuntu-24.04
+            image_os: ubuntu-26.04
+            compiler: gcc
+            version: "15"
 
           - name: ubuntu-24.04-clang-16
             os: ubuntu-24.04
@@ -80,7 +94,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set Boost Environment (Conditional)
         if : contains(matrix.name, 'boost') && matrix.build_type == 'Release'

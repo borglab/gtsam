@@ -24,6 +24,7 @@
 
 /* GTSAM includes */
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/navigation/ManifoldPreintegration.h>
 #include <gtsam/navigation/TangentPreintegration.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
@@ -115,9 +116,6 @@ struct GTSAM_EXPORT PreintegrationCombinedParams : PreintegrationParams {
 #endif
   }
 #endif
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 }  // namespace gtsam

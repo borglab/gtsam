@@ -19,6 +19,7 @@
  */
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/concepts.h>
 #include <gtsam/geometry/Point3.h>
@@ -109,8 +110,6 @@ ExpmapFunctor::ExpmapFunctor(const Vector3& axis, double angle)
   init(kNearZeroThresholdSq);
 }
 
-
-Matrix3 ExpmapFunctor::expmap() const { return I_3x3 + A * W + B * WW; }
 
 DexpFunctor::DexpFunctor(const Vector3& omega, double nearZeroThresholdSq, double nearPiThresholdSq)
   : ExpmapFunctor(nearZeroThresholdSq, omega), omega(omega) {

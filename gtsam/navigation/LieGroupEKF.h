@@ -26,9 +26,9 @@
 #pragma once
 
 #include <gtsam/base/Lie.h>  // Include for Lie group traits and operations
+#include <gtsam/base/VectorSpace.h>
 #include <gtsam/navigation/ManifoldEKF.h>  // Include the base class
 
-#include <Eigen/Dense>
 #include <functional>  // For std::function
 #include <type_traits>
 #include <utility>
@@ -187,17 +187,26 @@ class LieGroupEKF : public ManifoldEKF<G> {
             typename = enable_if_dynamics<Dynamics>>
   G predictMean(Dynamics&& f, double dt,
                 OptionalJacobian<Dim, Dim> Phi = {}) const {
-    Jacobian Df, Dexp;
-
-    if constexpr (std::is_same_v<G, Matrix>) {
-      TangentVector xi = f(this->X_, Phi ? &Df : nullptr);
-      if (Phi) *Phi = expm(Df * dt, K);
-      return traits<G>::Retract(this->X_, xi * dt);
+    if (Phi) {
+      Jacobian Df;
+      TangentVector xi = f(this->X_, &Df);
+      if constexpr (std::is_same_v<G, Matrix>) {
+        *Phi = expm(Df * dt, K);
+        return traits<G>::Retract(this->X_, xi * dt);
+      } else {
+        Jacobian Dexp;
+        G U = traits<G>::Expmap(xi * dt, &Dexp);
+        *Phi = transitionMatrix<K>(xi, Df, dt, U, Dexp);
+        return traits<G>::Compose(this->X_, U);
+      }
     } else {
-      TangentVector xi = f(this->X_, Phi ? &Df : nullptr);
-      G U = traits<G>::Expmap(xi * dt, Phi ? &Dexp : nullptr);
-      if (Phi) *Phi = transitionMatrix<K>(xi, Df, dt, U, Dexp);
-      return traits<G>::Compose(this->X_, U);
+      TangentVector xi = f(this->X_, nullptr);
+      if constexpr (std::is_same_v<G, Matrix>) {
+        return traits<G>::Retract(this->X_, xi * dt);
+      } else {
+        G U = traits<G>::Expmap(xi * dt);
+        return traits<G>::Compose(this->X_, U);
+      }
     }
   }
 

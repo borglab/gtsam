@@ -96,6 +96,9 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
   int update_count_;  ///< Counter incremented every update(), used to determine
                       ///< periodic relinearization
 
+  size_t nnzAfterLastReorder_;  ///< Bayes tree nnz recorded after the most
+                                ///< recent full batch reorder
+
  public:
   using This = ISAM2;                       ///< This class
   using Base = BayesTree<ISAM2Clique>;      ///< The BayesTree base class
@@ -213,6 +216,12 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
           marginalizeLeaves(leafKeys, (&optArgs)...);
       }
 
+  /** An added function specifically to return the marginalFactorIndices
+   * and deletedFactorIndices. Made for the python wrapping
+   * of marginalizeLeaves
+   */
+  std::pair<FactorIndices, FactorIndices> marginalizeLeavesWithIndices(const FastList<Key>& leafKeys);
+
   /// Access the current linearization point
   const Values& getLinearizationPoint() const { return theta_; }
 
@@ -286,6 +295,9 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
   const KeySet& getFixedVariables() const { return fixedVariables_; }
 
   const ISAM2Params& params() const { return params_; }
+
+  /** Compute the total number of nonzeros in the Bayes tree. */
+  size_t treeNnz() const;
 
   /** prints out clique statistics */
   void printStats() const { getCliqueData().getStats().print(); }

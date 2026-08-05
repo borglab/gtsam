@@ -36,7 +36,9 @@ If you are using the factor, please cite:
 
 ## The Attitude Factor
 
-The `AttitudeFactor` in GTSAM is a factor that constrains the orientation (attitude) of a robot or sensor platform based on directional measurements. Both `Rot3` and `Pose3` versions are available. 
+The `AttitudeFactor` in GTSAM is a factor that constrains the orientation
+(attitude) of a robot or sensor platform based on directional measurements.
+Both `Rot3` and `Pose3` versions are available.
 
-Written up in detail with the help of ChatGPT [here](AttitudeFactor.md).
-
+Written up in detail in the
+[AttitudeFactor notebook](doc/AttitudeFactor.ipynb).

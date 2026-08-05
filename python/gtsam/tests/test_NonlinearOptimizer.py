@@ -145,9 +145,9 @@ class TestScenario(GtsamTestCase):
             optimizer.setWeights(new_weights)
             self.assertAlmostEqual(optimizer.getWeights(), new_weights)
         optimizer.setInlierCostThresholdsAtProbability(0.9)
-        w1 = optimizer.getInlierCostThresholds()
+        w1 = optimizer.getInlierCostThresholds().item()
         optimizer.setInlierCostThresholdsAtProbability(0.8)
-        w2 = optimizer.getInlierCostThresholds()
+        w2 = optimizer.getInlierCostThresholds().item()
         self.assertLess(w2, w1)
 
     def test_iteration_hook(self):

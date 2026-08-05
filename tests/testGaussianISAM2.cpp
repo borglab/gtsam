@@ -1156,5 +1156,106 @@ TEST(ActiveFactorTesting, Issue1596) {
 }
 
 /* ************************************************************************* */
+TEST(ISAM2, AdaptiveReorder_NnzTracking) {
+  // Verify that treeNnz is populated and nnz baseline is set after first update
+  ISAM2Params params;
+  params.enableAdaptiveReorder = true;
+  params.adaptiveReorderThreshold = 2.0;
+  ISAM2 isam(params);
+
+  NonlinearFactorGraph graph;
+  Values init;
+
+  // Add a prior
+  graph.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
+  init.insert(0, Pose2(0.01, 0.01, 0.01));
+  ISAM2Result result = isam.update(graph, init);
+
+  // After first update, nnz should be set
+  EXPECT(result.treeNnz > 0);
+  EXPECT(!result.batchReorderTriggered);
+
+  // Add a chain of poses
+  for (int i = 0; i < 5; ++i) {
+    graph = NonlinearFactorGraph();
+    init = Values();
+    graph.emplace_shared<BetweenFactor<Pose2>>(i, i + 1,
+        Pose2(1.0, 0.0, 0.0), odoNoise);
+    init.insert(i + 1, Pose2(double(i + 1) + 0.1, -0.1, 0.01));
+    result = isam.update(graph, init);
+  }
+
+  // Nnz should be growing but no reorder yet (small problem)
+  EXPECT(result.treeNnz > 0);
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, AdaptiveReorder_Triggered) {
+  // Use a very low threshold to force a reorder
+  ISAM2Params params;
+  params.enableAdaptiveReorder = true;
+  params.adaptiveReorderThreshold = 1.01;  // trigger on any fill-in growth
+  params.relinearizeSkip = 1;
+  ISAM2 isam(params);
+
+  NonlinearFactorGraph graph;
+  Values init;
+
+  graph.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
+  init.insert(0, Pose2(0.01, 0.01, 0.01));
+  isam.update(graph, init);
+
+  // Build a longer chain so there's some structure
+  for (int i = 0; i < 10; ++i) {
+    graph = NonlinearFactorGraph();
+    init = Values();
+    graph.emplace_shared<BetweenFactor<Pose2>>(i, i + 1,
+        Pose2(1.0, 0.0, 0.0), odoNoise);
+    init.insert(i + 1, Pose2(double(i + 1) + 0.1, -0.1, 0.01));
+    isam.update(graph, init);
+  }
+
+  // Add a loop closure that changes the structure
+  graph = NonlinearFactorGraph();
+  init = Values();
+  graph.emplace_shared<BetweenFactor<Pose2>>(0, 10,
+      Pose2(10.0, 0.0, 0.0), odoNoise);
+  ISAM2Result result = isam.update(graph, init);
+
+  // With threshold 1.01, the loop closure fill-in should trigger a reorder
+  // on this or the next update
+  bool triggered = result.batchReorderTriggered;
+  if (!triggered) {
+    // Try one more update to see if fill-in was detected
+    graph = NonlinearFactorGraph();
+    graph.emplace_shared<BetweenFactor<Pose2>>(5, 10,
+        Pose2(5.0, 0.0, 0.0), odoNoise);
+    result = isam.update(graph, init);
+    triggered = result.batchReorderTriggered;
+  }
+
+  // With threshold 1.01, any fill-in growth triggers a batch reorder
+  EXPECT(triggered);
+  EXPECT(result.treeNnz > 0);
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, AdaptiveReorder_DisabledByDefault) {
+  // With default params, adaptive reorder should never trigger
+  ISAM2 isam;
+
+  NonlinearFactorGraph graph;
+  Values init;
+
+  graph.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
+  init.insert(0, Pose2(0.01, 0.01, 0.01));
+  ISAM2Result result = isam.update(graph, init);
+
+  EXPECT(!result.batchReorderTriggered);
+  // treeNnz should still be populated
+  EXPECT(result.treeNnz > 0);
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */

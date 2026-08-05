@@ -75,18 +75,24 @@ TEST(ExtendedPose3, Dimensions) {
 //******************************************************************************
 TEST(ExtendedPose3, ConstructorsAndAccess) {
   const ExtendedPose33 fixed(kR1, kX1);
+  const ExtendedPose33 fixedVariadic(kR1, Point3(kX1.col(0)),
+                                     Point3(kX1.col(1)), Point3(kX1.col(2)));
   const ExtendedPose3d dynamic(kR1, ExtendedPose3d::Matrix3K(kX1));
 
   EXPECT(assert_equal(kR1, fixed.rotation()));
+  EXPECT(assert_equal(kR1, fixedVariadic.rotation()));
   EXPECT(assert_equal(kR1, dynamic.rotation()));
 
   for (size_t i = 0; i < 3; ++i) {
     EXPECT(assert_equal(Point3(kX1.col(static_cast<Eigen::Index>(i))),
                         fixed.x(i)));
     EXPECT(assert_equal(Point3(kX1.col(static_cast<Eigen::Index>(i))),
+                        fixedVariadic.x(i)));
+    EXPECT(assert_equal(Point3(kX1.col(static_cast<Eigen::Index>(i))),
                         dynamic.x(i)));
   }
 
+  EXPECT(assert_equal(fixed.matrix(), fixedVariadic.matrix()));
   EXPECT(assert_equal(fixed.matrix(), dynamic.matrix()));
 }
 
@@ -171,10 +177,9 @@ TEST(ExtendedPose3, AdjointTranspose) {
   EXPECT(assert_equal(d.AdjointMap().transpose() * x_dynamic,
                       d.AdjointTranspose(x_dynamic)));
 
-  std::function<Vector12(const ExtendedPose33&, const Vector12&)>
-      f_adjoint_transpose = [](const ExtendedPose33& g, const Vector12& v) {
-        return Vector12(g.AdjointTranspose(v));
-      };
+  auto f_adjoint_transpose = [](const ExtendedPose33& g, const Vector12& v) {
+    return Vector12(g.AdjointTranspose(v));
+  };
   Matrix Hf_state, Hf_x;
   f.AdjointTranspose(x, Hf_state, Hf_x);
   EXPECT(assert_equal(numericalDerivative21(f_adjoint_transpose, f, x), Hf_state,
@@ -182,10 +187,9 @@ TEST(ExtendedPose3, AdjointTranspose) {
   EXPECT(
       assert_equal(numericalDerivative22(f_adjoint_transpose, f, x), Hf_x));
 
-  std::function<Vector(const ExtendedPose3d&, const Vector&)>
-      d_adjoint_transpose = [](const ExtendedPose3d& g, const Vector& v) {
-        return g.AdjointTranspose(v);
-      };
+  auto d_adjoint_transpose = [](const ExtendedPose3d& g, const Vector& v) {
+    return g.AdjointTranspose(v);
+  };
   Matrix Hd_state, Hd_x;
   d.AdjointTranspose(x_dynamic, Hd_state, Hd_x);
   EXPECT(assert_equal(
@@ -214,10 +218,9 @@ TEST(ExtendedPose3, adjointTranspose) {
                           y_dynamic,
                       ExtendedPose3d::adjointTranspose(xi_dynamic, y_dynamic)));
 
-  std::function<Vector12(const Vector12&, const Vector12&)>
-      f_adjoint_transpose = [](const Vector12& x, const Vector12& v) {
-        return Vector12(ExtendedPose33::adjointTranspose(x, v));
-      };
+  auto f_adjoint_transpose = [](const Vector12& x, const Vector12& v) {
+    return Vector12(ExtendedPose33::adjointTranspose(x, v));
+  };
   Matrix Hf_xi, Hf_y;
   EXPECT(assert_equal(Vector(ExtendedPose33::adjointTranspose(xi, y, Hf_xi, Hf_y)),
                       Vector(f_adjoint_transpose(xi, y))));
@@ -228,10 +231,9 @@ TEST(ExtendedPose3, adjointTranspose) {
       assert_equal(numericalDerivative22(f_adjoint_transpose, xi, y, 1e-5), Hf_y,
                    1e-5));
 
-  std::function<Vector(const Vector&, const Vector&)> d_adjoint_transpose =
-      [](const Vector& x, const Vector& v) {
-        return ExtendedPose3d::adjointTranspose(x, v);
-      };
+  auto d_adjoint_transpose = [](const Vector& x, const Vector& v) {
+    return ExtendedPose3d::adjointTranspose(x, v);
+  };
   Matrix Hd_xi, Hd_y;
   EXPECT(assert_equal(ExtendedPose3d::adjointTranspose(xi_dynamic, y_dynamic,
                                                        Hd_xi, Hd_y),

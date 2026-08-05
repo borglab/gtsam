@@ -19,11 +19,12 @@
  * @author  Varun Agrawal
  */
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/SO3.h>
 
-#include <cmath>
 #include <cassert>
+#include <cmath>
 #include <random>
 
 using namespace std;

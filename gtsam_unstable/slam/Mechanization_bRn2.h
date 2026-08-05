@@ -7,9 +7,11 @@
 
 #pragma once
 
-#include <gtsam/geometry/Rot3.h>
 #include <gtsam/base/Vector.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/geometry/Rot3.h>
 #include <gtsam_unstable/dllexport.h>
+
 #include <list>
 
 namespace gtsam {
@@ -85,7 +87,6 @@ public:
     std::cout << s + ".x_g" << x_g_ << std::endl;
     std::cout << s + ".x_a" << x_a_ << std::endl;
   }
-
 };
 
 } // namespace gtsam

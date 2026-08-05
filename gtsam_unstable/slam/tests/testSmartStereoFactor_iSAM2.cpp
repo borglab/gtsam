@@ -22,10 +22,7 @@
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam_unstable/slam/SmartStereoProjectionPoseFactor.h>
 
-#include <array>
-#include <fstream>
 #include <iostream>
-#include <sstream>
 #include <string>
 #include <vector>
 

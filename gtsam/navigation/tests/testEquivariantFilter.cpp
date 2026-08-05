@@ -20,8 +20,8 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/GroupAction.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Vector.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/navigation/EquivariantFilter.h>

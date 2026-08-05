@@ -45,6 +45,16 @@ ExtendedPose3<K, Derived>::ExtendedPose3(const Rot3& R, const Matrix3K& x)
     : R_(R), t_(x) {}
 
 template <int K, class Derived>
+template <int FixedK, typename, typename... Vecs, typename>
+ExtendedPose3<K, Derived>::ExtendedPose3(const Rot3& R, const Vecs&... xs)
+    : R_(R), t_(Matrix3K::Zero()) {
+  const Point3 columns[] = {Point3(xs)...};
+  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(FixedK); ++i) {
+    t_.col(i) = columns[i];
+  }
+}
+
+template <int K, class Derived>
 ExtendedPose3<K, Derived>::ExtendedPose3(const MatrixRep& T) {
   const Eigen::Index n = T.rows();
   if constexpr (K == Eigen::Dynamic) {
@@ -70,7 +80,7 @@ const Rot3& ExtendedPose3<K, Derived>::rotation(ComponentJacobian H) const {
     } else {
       H->setZero();
     }
-    H->block(0, 0, 3, 3) = I_3x3;
+    H->template block<3, 3>(0, 0) = I_3x3;
   }
   return R_;
 }
@@ -85,7 +95,7 @@ Point3 ExtendedPose3<K, Derived>::x(size_t i, ComponentJacobian H) const {
       H->setZero();
     }
     const Eigen::Index idx = 3 + 3 * static_cast<Eigen::Index>(i);
-    H->block(0, idx, 3, 3) = R_.matrix();
+    H->template block<3, 3>(0, idx) = R_.matrix();
   }
   return t_.col(static_cast<Eigen::Index>(i));
 }
@@ -127,7 +137,8 @@ typename ExtendedPose3<K, Derived>::This ExtendedPose3<K, Derived>::operator*(
   const ExtendedPose3& otherBase = AsBase(other);
   if constexpr (K == Eigen::Dynamic) {
     if (k() != otherBase.k()) {
-      throw std::invalid_argument("ExtendedPose3: compose requires matching k.");
+      throw std::invalid_argument(
+          "ExtendedPose3: compose requires matching k.");
     }
   }
   Matrix3K x = t_ + R_.matrix() * otherBase.t_;
@@ -146,7 +157,7 @@ typename ExtendedPose3<K, Derived>::This ExtendedPose3<K, Derived>::Expmap(
   // Instantiate functor for Dexp-related operations:
   const so3::DexpFunctor local(w);
 
-  // Compute rotation using Expmap
+// Compute rotation using Expmap
 #ifdef GTSAM_USE_QUATERNIONS
   // Reuse any quaternion-specific validation inside Rot3::Expmap.
   const Rot3 R = Rot3::Expmap(w);
@@ -156,9 +167,7 @@ typename ExtendedPose3<K, Derived>::This ExtendedPose3<K, Derived>::Expmap(
 
   const Eigen::Index k = static_cast<Eigen::Index>(RuntimeK(xi));
 
-  // The translation t = local.Jacobian().left() * v.
-  // Below we call local.Jacobian().applyLeft, which is faster if you don't need
-  // Jacobians, and returns Jacobian of t with respect to w if asked.
+  // The translation block is x = Jl(w) * rho.
   // NOTE(Frank): this does the same as the intuitive formulas:
   //   t_parallel = w * w.dot(v);  // translation parallel to axis
   //   w_cross_v = w.cross(v);     // translation orthogonal to axis
@@ -171,24 +180,25 @@ typename ExtendedPose3<K, Derived>::This ExtendedPose3<K, Derived>::Expmap(
 
   if (Hxi) {
     ZeroJacobian(Hxi, 3 + 3 * k);
-    const Matrix3 Jr = local.Jacobian().right();
-    Hxi->block(0, 0, 3, 3) = Jr;  // Jr here *is* the Jacobian of expmap
+    const so3::Kernel jacobian = local.Jacobian();
+    const Matrix3 Jr = jacobian.right();
+    // Jr here is the Jacobian of the rotation exponential map.
+    Hxi->template block<3, 3>(0, 0) = Jr;
     const Matrix3 Rt = R.transpose();
     for (Eigen::Index i = 0; i < k; ++i) {
       Matrix3 H_xi_w;
       const Eigen::Index idx = 3 + 3 * i;
       const Vector3 rho = xi.template segment<3>(idx);
-      x.col(i) = local.Jacobian().applyLeft(rho, &H_xi_w);
-      Hxi->block(idx, 0, 3, 3) = Rt * H_xi_w;
-      Hxi->block(idx, idx, 3, 3) = Jr;
+      x.col(i) = jacobian.applyLeft(rho, &H_xi_w);
+      Hxi->template block<3, 3>(idx, 0) = Rt * H_xi_w;
+      Hxi->template block<3, 3>(idx, idx) = Jr;
       // In the last row, Jr = R^T * Jl, see Barfoot eq. (8.83).
       // Jl is the left Jacobian of SO(3) at w.
     }
-  } else {
+  } else if (k > 0) {
+    const Matrix3 Jl = local.leftJacobian();
     for (Eigen::Index i = 0; i < k; ++i) {
-      const Eigen::Index idx = 3 + 3 * i;
-      const Vector3 rho = xi.template segment<3>(idx);
-      x.col(i) = local.Jacobian().applyLeft(rho);
+      x.col(i).noalias() = Jl * xi.template segment<3>(3 + 3 * i);
     }
   }
 
@@ -207,10 +217,12 @@ ExtendedPose3<K, Derived>::Logmap(const This& pose, ChartJacobian H) {
     xi.resize(static_cast<Eigen::Index>(poseBase.dim()));
   xi.template head<3>() = w;
   const Eigen::Index k = static_cast<Eigen::Index>(poseBase.k());
-  for (Eigen::Index i = 0; i < k; ++i) {
-    const Eigen::Index idx = 3 + 3 * i;
-    xi.template segment<3>(idx) =
-        local.InvJacobian().applyLeft(poseBase.t_.col(i));
+  if (k > 0) {
+    const Matrix3 JlInv = local.InvJacobian().left();
+    for (Eigen::Index i = 0; i < k; ++i) {
+      const Eigen::Index idx = 3 + 3 * i;
+      xi.template segment<3>(idx).noalias() = JlInv * poseBase.t_.col(i);
+    }
   }
 
   if (H) *H = LogmapDerivative(xi);
@@ -229,12 +241,12 @@ ExtendedPose3<K, Derived>::AdjointMap() const {
     adj.setZero();
   }
 
-  adj.block(0, 0, 3, 3) = R;
+  adj.template block<3, 3>(0, 0) = R;
   const Eigen::Index k = static_cast<Eigen::Index>(this->k());
   for (Eigen::Index i = 0; i < k; ++i) {
     const Eigen::Index idx = 3 + 3 * i;
-    adj.block(idx, 0, 3, 3) = skewSymmetric(t_.col(i)) * R;
-    adj.block(idx, idx, 3, 3) = R;
+    adj.template block<3, 3>(idx, 0) = skewSymmetric(t_.col(i)) * R;
+    adj.template block<3, 3>(idx, idx) = R;
   }
   return adj;
 }
@@ -253,12 +265,12 @@ ExtendedPose3<K, Derived>::adjointMap(const TangentVector& xi) {
     adj.setZero();
   }
 
-  adj.block(0, 0, 3, 3) = w_hat;
+  adj.template block<3, 3>(0, 0) = w_hat;
   for (Eigen::Index i = 0; i < k; ++i) {
     const Eigen::Index idx = 3 + 3 * i;
-    adj.block(idx, 0, 3, 3) =
+    adj.template block<3, 3>(idx, 0) =
         skewSymmetric(xi(idx + 0), xi(idx + 1), xi(idx + 2));
-    adj.block(idx, idx, 3, 3) = w_hat;
+    adj.template block<3, 3>(idx, idx) = w_hat;
   }
   return adj;
 }
@@ -280,26 +292,27 @@ ExtendedPose3<K, Derived>::LogmapDerivative(const TangentVector& xi) {
   const so3::DexpFunctor local(w);
 
   const Eigen::Index k = static_cast<Eigen::Index>(RuntimeK(xi));
-  const Matrix3 Rt = local.expmap().transpose();
-  const Matrix3 Jw = Rot3::LogmapDerivative(w);
+  const so3::InvJKernel inverseJacobian = local.InvJacobian();
+  const Matrix3 JrInv = inverseJacobian.right();
+  const Matrix3 JlInv = inverseJacobian.left();
 
-  Jacobian J;
+  Jacobian H;
   if constexpr (dimension == Eigen::Dynamic) {
-    J.setZero(3 + 3 * k, 3 + 3 * k);
+    H.setZero(3 + 3 * k, 3 + 3 * k);
   } else {
-    J.setZero();
+    H.setZero();
   }
 
-  J.block(0, 0, 3, 3) = Jw;
+  H.template block<3, 3>(0, 0) = JrInv;
+  const so3::Kernel& jacobian = inverseJacobian.J;
   for (Eigen::Index i = 0; i < k; ++i) {
     Matrix3 H_xi_w;
     const Eigen::Index idx = 3 + 3 * i;
-    local.Jacobian().applyLeft(xi.template segment<3>(idx), H_xi_w);
-    const Matrix3 Q = Rt * H_xi_w;
-    J.block(idx, 0, 3, 3) = -Jw * Q * Jw;
-    J.block(idx, idx, 3, 3) = Jw;
+    jacobian.applyLeft(xi.template segment<3>(idx), H_xi_w);
+    H.template block<3, 3>(idx, 0) = -JlInv * H_xi_w * JrInv;
+    H.template block<3, 3>(idx, idx) = JrInv;
   }
-  return J;
+  return H;
 }
 
 template <int K, class Derived>
@@ -348,10 +361,11 @@ typename ExtendedPose3<K, Derived>::LieAlgebra ExtendedPose3<K, Derived>::Hat(
   } else {
     X.setZero();
   }
-  X.block(0, 0, 3, 3) = skewSymmetric(xi(0), xi(1), xi(2));
+  X.template block<3, 3>(0, 0) =
+      skewSymmetric(xi(0), xi(1), xi(2));
   for (Eigen::Index i = 0; i < k; ++i) {
     const Eigen::Index idx = 3 + 3 * i;
-    X.block(0, 3 + i, 3, 1) = xi.template segment<3>(idx);
+    X.template block<3, 1>(0, 3 + i) = xi.template segment<3>(idx);
   }
   return X;
 }

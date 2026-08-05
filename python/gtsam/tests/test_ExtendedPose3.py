@@ -24,6 +24,10 @@ class TestExtendedPose3(GtsamTestCase):
     def class_for_k(k: int):
         return getattr(gtsam, f"ExtendedPose3{k}")
 
+    @staticmethod
+    def make_dynamic_state(xi):
+        return gtsam.ExtendedPose3d.Expmap(np.array(xi))
+
     def test_constructors_static_k(self):
         """All requested static-K classes are wrapped and default-constructible."""
         for k in (2, 3, 4, 6):
@@ -103,6 +107,38 @@ class TestExtendedPose3(GtsamTestCase):
         expected = cls(Rot3(), x)
         np.testing.assert_allclose(expected.xMatrix(), x, atol=1e-12)
         self.gtsamAssertEquals(expected, cls(expected.matrix()), 1e-12)
+
+    def test_dynamic_prior_and_between_factors(self):
+        """Dynamic-k type supports wrapped PriorFactor and BetweenFactor."""
+        state1 = self.make_dynamic_state([
+            0.1, -0.2, 0.3,
+            1.0, 2.0, 3.0,
+            -0.4, 0.5, -0.6,
+            0.7, -0.8, 0.9,
+        ])
+        state2 = self.make_dynamic_state([
+            -0.3, 0.1, 0.2,
+            1.5, 1.0, 2.5,
+            0.2, -0.1, 0.7,
+            -0.6, 0.4, 0.3,
+        ])
+        model = gtsam.noiseModel.Unit.Create(12)
+
+        prior_factor = gtsam.PriorFactorExtendedPose3d(0, state1, model)
+        self.gtsamAssertEquals(prior_factor.prior(), state1, 1e-9)
+
+        between_measurement = state1.between(state2)
+        between_factor = gtsam.BetweenFactorExtendedPose3d(
+            0, 1, between_measurement, model
+        )
+        self.gtsamAssertEquals(between_factor.measured(), between_measurement, 1e-9)
+
+        values = gtsam.Values()
+        values.insert(0, state1)
+        values.insert(1, state2)
+
+        self.assertAlmostEqual(prior_factor.error(values), 0.0, places=9)
+        self.assertAlmostEqual(between_factor.error(values), 0.0, places=9)
 
     @unittest.skipUnless(hasattr(gtsam.ExtendedPose36, "serialize"), "Serialization not enabled")
     def test_serialization_k6(self):

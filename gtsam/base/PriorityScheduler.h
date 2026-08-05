@@ -33,6 +33,8 @@
 
 #include <gtsam/base/Scheduler.h>
 
+#include <queue>
+
 namespace gtsam {
 
 namespace detail {

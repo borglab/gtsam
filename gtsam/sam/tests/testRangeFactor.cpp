@@ -21,12 +21,11 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Cal3_S2.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/nonlinear/factorTesting.h>
 
 #include <CppUnitLite/TestHarness.h>
 
-using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
@@ -34,6 +33,8 @@ typedef RangeFactor<Pose2, Point2> RangeFactor2D;
 typedef RangeFactor<Pose3, Point3> RangeFactor3D;
 typedef RangeFactorWithTransform<Pose2, Point2> RangeFactorWithTransform2D;
 typedef RangeFactorWithTransform<Pose3, Point3> RangeFactorWithTransform3D;
+typedef RangeFactorWithTransformBias<Pose2, Point2>
+    RangeFactorWithTransformBias2D;
 
 // Keys are deliberately *not* in sorted order to test that case.
 namespace {
@@ -42,27 +43,8 @@ static SharedNoiseModel model(noiseModel::Unit::Create(1));
 
 constexpr Key poseKey(2);
 constexpr Key pointKey(1);
+constexpr Key biasKey(3);
 constexpr double measurement(10.0);
-
-Vector factorError2D(const Pose2& pose, const Point2& point,
-                     const RangeFactor2D& factor) {
-  return factor.evaluateError(pose, point);
-}
-
-Vector factorError3D(const Pose3& pose, const Point3& point,
-                     const RangeFactor3D& factor) {
-  return factor.evaluateError(pose, point);
-}
-
-Vector factorErrorWithTransform2D(const Pose2& pose, const Point2& point,
-                                  const RangeFactorWithTransform2D& factor) {
-  return factor.evaluateError(pose, point);
-}
-
-Vector factorErrorWithTransform3D(const Pose3& pose, const Point3& point,
-                                  const RangeFactorWithTransform3D& factor) {
-  return factor.evaluateError(pose, point);
-}
 }  // namespace
 
 /* ************************************************************************* */
@@ -208,23 +190,11 @@ TEST( RangeFactor, Jacobian2D ) {
   RangeFactor2D factor(poseKey, pointKey, measurement, model);
 
   // Set the linearization point
-  Pose2 pose(1.0, 2.0, 0.57);
-  Point2 point(-4.0, 11.0);
+  Values values;
+  values.insert(poseKey, Pose2(1.0, 2.0, 0.57));
+  values.insert(pointKey, Point2(-4.0, 11.0));
 
-  // Use the factor to calculate the Jacobians
-  Matrix H1Actual, H2Actual;
-  factor.evaluateError(pose, point, &H1Actual, &H2Actual);
-
-  // Use numerical derivatives to calculate the Jacobians
-  Matrix H1Expected, H2Expected;
-  H1Expected = numericalDerivative11<Vector, Pose2>(
-      std::bind(&factorError2D, std::placeholders::_1, point, factor), pose);
-  H2Expected = numericalDerivative11<Vector, Point2>(
-      std::bind(&factorError2D, pose, std::placeholders::_1, factor), point);
-
-  // Verify the Jacobians are correct
-  CHECK(assert_equal(H1Expected, H1Actual, 1e-9));
-  CHECK(assert_equal(H2Expected, H2Actual, 1e-9));
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
 }
 
 /* ************************************************************************* */
@@ -237,25 +207,11 @@ TEST( RangeFactor, Jacobian2DWithTransform ) {
   // Set the linearization point
   Rot2 R(0.57);
   Point2 t = Point2(1.0, 2.0) - R.rotate(body_P_sensor.translation());
-  Pose2 pose(R, t);
-  Point2 point(-4.0, 11.0);
+  Values values;
+  values.insert(poseKey, Pose2(R, t));
+  values.insert(pointKey, Point2(-4.0, 11.0));
 
-  // Use the factor to calculate the Jacobians
-  std::vector<Matrix> actualHs(2);
-  factor.unwhitenedError({{poseKey, genericValue(pose)}, {pointKey, genericValue(point)}}, actualHs); 
-  const Matrix& H1Actual = actualHs.at(0);
-  const Matrix& H2Actual = actualHs.at(1);
-
-  // Use numerical derivatives to calculate the Jacobians
-  Matrix H1Expected, H2Expected;
-  H1Expected = numericalDerivative11<Vector, Pose2>(
-      std::bind(&factorErrorWithTransform2D, std::placeholders::_1, point, factor), pose);
-  H2Expected = numericalDerivative11<Vector, Point2>(
-      std::bind(&factorErrorWithTransform2D, pose, std::placeholders::_1, factor), point);
-
-  // Verify the Jacobians are correct
-  CHECK(assert_equal(H1Expected, H1Actual, 1e-9));
-  CHECK(assert_equal(H2Expected, H2Actual, 1e-9));
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
 }
 
 /* ************************************************************************* */
@@ -264,25 +220,12 @@ TEST( RangeFactor, Jacobian3D ) {
   RangeFactor3D factor(poseKey, pointKey, measurement, model);
 
   // Set the linearization point
-  Pose3 pose(Rot3::RzRyRx(0.2, -0.3, 1.75), Point3(1.0, 2.0, -3.0));
-  Point3 point(-2.0, 11.0, 1.0);
+  Values values;
+  values.insert(poseKey,
+                Pose3(Rot3::RzRyRx(0.2, -0.3, 1.75), Point3(1.0, 2.0, -3.0)));
+  values.insert(pointKey, Point3(-2.0, 11.0, 1.0));
 
-  // Use the factor to calculate the Jacobians
-  std::vector<Matrix> actualHs(2);
-  factor.unwhitenedError({{poseKey, genericValue(pose)}, {pointKey, genericValue(point)}}, actualHs); 
-  const Matrix& H1Actual = actualHs.at(0);
-  const Matrix& H2Actual = actualHs.at(1);
-
-  // Use numerical derivatives to calculate the Jacobians
-  Matrix H1Expected, H2Expected;
-  H1Expected = numericalDerivative11<Vector, Pose3>(
-      std::bind(&factorError3D, std::placeholders::_1, point, factor), pose);
-  H2Expected = numericalDerivative11<Vector, Point3>(
-      std::bind(&factorError3D, pose, std::placeholders::_1, factor), point);
-
-  // Verify the Jacobians are correct
-  CHECK(assert_equal(H1Expected, H1Actual, 1e-9));
-  CHECK(assert_equal(H2Expected, H2Actual, 1e-9));
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
 }
 
 /* ************************************************************************* */
@@ -296,25 +239,38 @@ TEST( RangeFactor, Jacobian3DWithTransform ) {
   // Set the linearization point
   Rot3 R = Rot3::RzRyRx(0.2, -0.3, 1.75);
   Point3 t = Point3(1.0, 2.0, -3.0) - R.rotate(body_P_sensor.translation());
-  Pose3 pose(R, t);
-  Point3 point(-2.0, 11.0, 1.0);
+  Values values;
+  values.insert(poseKey, Pose3(R, t));
+  values.insert(pointKey, Point3(-2.0, 11.0, 1.0));
 
-  // Use the factor to calculate the Jacobians
-  std::vector<Matrix> actualHs(2);
-  factor.unwhitenedError({{poseKey, genericValue(pose)}, {pointKey, genericValue(point)}}, actualHs); 
-  const Matrix& H1Actual = actualHs.at(0);
-  const Matrix& H2Actual = actualHs.at(1);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
+}
 
-  // Use numerical derivatives to calculate the Jacobians
-  Matrix H1Expected, H2Expected;
-  H1Expected = numericalDerivative11<Vector, Pose3>(
-      std::bind(&factorErrorWithTransform3D, std::placeholders::_1, point, factor), pose);
-  H2Expected = numericalDerivative11<Vector, Point3>(
-      std::bind(&factorErrorWithTransform3D, pose, std::placeholders::_1, factor), point);
+/* ************************************************************************* */
+TEST(RangeFactor, ErrorAndJacobian2DWithTransformBias) {
+  Pose2 body_P_sensor(0.25, -0.10, -M_PI_2);
+  RangeFactorWithTransformBias2D factor(poseKey, pointKey, biasKey, measurement,
+                                        model, body_P_sensor);
 
-  // Verify the Jacobians are correct
-  CHECK(assert_equal(H1Expected, H1Actual, 1e-9));
-  CHECK(assert_equal(H2Expected, H2Actual, 1e-9));
+  KeyVector expectedKeys{poseKey, pointKey, biasKey};
+  CHECK(factor.keys() == expectedKeys);
+
+  Rot2 R(0.57);
+  Point2 t = Point2(1.0, 2.0) - R.rotate(body_P_sensor.translation());
+  Pose2 pose(R, t);
+  Point2 point(-4.0, 11.0);
+  const double bias = 0.5;
+
+  Values values;
+  values.insert(poseKey, pose);
+  values.insert(pointKey, point);
+  values.insert(biasKey, bias);
+
+  Vector actualError = factor.unwhitenedError(values);
+  Vector expectedError = (Vector(1) << 0.795630141).finished();
+  CHECK(assert_equal(expectedError, actualError, 1e-9));
+
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
 }
 
 /* ************************************************************************* */

@@ -17,3 +17,5 @@ endif()
 gtsamAddTimingGlob("*.cpp" "${excluded_scripts}" "gtsam" ${GTSAM_BUILD_TIMING_ALWAYS})
 
 target_link_libraries(timeGaussianFactorGraph CppUnitLite)
+
+add_subdirectory(sfm_ba)

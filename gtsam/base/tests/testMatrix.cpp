@@ -16,20 +16,34 @@
  * @author Carlos Nieto
  **/
 
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/base/testLie.h>
-#include <CppUnitLite/TestHarness.h>
+
+#include <Eigen/QR>
+#include <functional>
 #include <iostream>
 #include <sstream>
-#include <optional>
-#include <functional>
 
 using namespace std;
 using namespace gtsam;
 
 static double inf = std::numeric_limits<double>::infinity();
 static const double tol = 1e-9;
+
+/* ************************************************************************* */
+// Verifies the 8x8 constant macros have the correct type and value.
+TEST(MatrixConstants, EightByEight) {
+  const Matrix8 identity = I_8x8;
+  const Matrix8 zero = Z_8x8;
+  const Matrix expectedIdentity = Matrix8::Identity();
+  const Matrix expectedZero = Matrix8::Zero();
+
+  EXPECT(assert_equal(expectedIdentity, identity));
+  EXPECT(assert_equal(expectedZero, zero));
+}
 
 /* ************************************************************************* */
 TEST(Matrix, constructor_data )
@@ -190,44 +204,6 @@ TEST(Matrix, stack )
   matrices.push_back(B);
   Matrix AB2 = gtsam::stack(matrices);
   EQUALITY(C,AB2);
-}
-
-/* ************************************************************************* */
-TEST(Matrix, column )
-{
-  Matrix A = (Matrix(4, 7) << -1., 0., 1., 0., 0., 0., -0.2, 0., -1., 0., 1.,
-      0., 0., 0.3, 1., 0., 0., 0., -1., 0., 0.2, 0., 1., 0., 0., 0., -1.,
-      -0.1).finished();
-  Vector a1 = column(A, 0);
-  Vector exp1 = (Vector(4) << -1., 0., 1., 0.).finished();
-  EXPECT(assert_equal(a1, exp1));
-
-  Vector a2 = column(A, 3);
-  Vector exp2 = (Vector(4) << 0., 1., 0., 0.).finished();
-  EXPECT(assert_equal(a2, exp2));
-
-  Vector a3 = column(A, 6);
-  Vector exp3 = (Vector(4) << -0.2, 0.3, 0.2, -0.1).finished();
-  EXPECT(assert_equal(a3, exp3));
-}
-
-/* ************************************************************************* */
-TEST(Matrix, row )
-{
-  Matrix A = (Matrix(4, 7) << -1., 0., 1., 0., 0., 0., -0.2, 0., -1., 0., 1.,
-      0., 0., 0.3, 1., 0., 0., 0., -1., 0., 0.2, 0., 1., 0., 0., 0., -1.,
-      -0.1).finished();
-  Vector a1 = row(A, 0);
-  Vector exp1 = (Vector(7) << -1., 0., 1., 0., 0., 0., -0.2).finished();
-  EXPECT(assert_equal(a1, exp1));
-
-  Vector a2 = row(A, 2);
-  Vector exp2 = (Vector(7) << 1., 0., 0., 0., -1., 0., 0.2).finished();
-  EXPECT(assert_equal(a2, exp2));
-
-  Vector a3 = row(A, 3);
-  Vector exp3 = (Vector(7) << 0., 1., 0., 0., 0., -1., -0.1).finished();
-  EXPECT(assert_equal(a3, exp3));
 }
 
 /* ************************************************************************* */
@@ -809,18 +785,6 @@ TEST(Matrix, qr )
 }
 
 /* ************************************************************************* */
-TEST(Matrix, sub )
-{
-  Matrix A = (Matrix(4, 6) << -5, 0, 5, 0, 0, 0, 00, -5, 0, 5, 0, 0, 10, 0, 0, 0, -10,
-      0, 00, 10, 0, 0, 0, -10).finished();
-  Matrix actual = sub(A, 1, 3, 1, 5);
-
-  Matrix expected = (Matrix(2, 4) << -5, 0, 5, 0, 00, 0, 0, -10).finished();
-
-  EQUALITY(actual,expected);
-}
-
-/* ************************************************************************* */
 TEST(Matrix, trans )
 {
   Matrix A = (Matrix(2, 2) << 1.0, 3.0, 2.0, 4.0).finished();
@@ -1022,7 +986,7 @@ TEST(Matrix, svd3 )
   Matrix t = U * S;
   Matrix Vt = trans(V);
 
-  EXPECT(assert_equal(sampleAt, prod(t, Vt)));
+  EXPECT(assert_equal(sampleAt, t * Vt));
   EXPECT(assert_equal(expectedU,U));
   EXPECT(assert_equal(expected_s,s,1e-9));
   EXPECT(assert_equal(expectedV,V));

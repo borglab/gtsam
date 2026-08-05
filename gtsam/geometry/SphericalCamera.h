@@ -230,9 +230,6 @@ class GTSAM_EXPORT SphericalCamera {
     ar& BOOST_SERIALIZATION_NVP(pose_);
   }
 #endif
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // end of class SphericalCamera
 

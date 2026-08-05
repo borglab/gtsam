@@ -64,6 +64,7 @@ public:
    */
   GaussNewtonOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues,
                        const Ordering& ordering);
+
   /// @}
 
   /// @name Advanced interface

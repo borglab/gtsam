@@ -16,9 +16,15 @@
  * @brief  Shonan Averaging algorithm
  */
 
+// GCC bug workaround
+#if  defined(__GNUC__) && __GNUC__ == 16
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
 #include <SymEigsSolver.h>
-#include <cmath>
+#include <gtsam/linear/AcceleratedPowerMethod.h>
 #include <gtsam/linear/PCGSolver.h>
+#include <gtsam/linear/PowerMethod.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
@@ -31,13 +37,11 @@
 
 #include <Eigen/Eigenvalues>
 #include <algorithm>
-#include <complex>
-#include <iostream>
-#include <map>
+#include <cassert>
+#include <cmath>
 #include <random>
 #include <set>
 #include <vector>
-#include <cassert>
 
 namespace gtsam {
 

@@ -20,6 +20,7 @@
 #include <gtsam/linear/linearExceptions.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/BatchJacobianFactor.h>
 #include <gtsam/linear/Scatter.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
@@ -56,9 +57,12 @@ JacobianFactor::JacobianFactor(const GaussianFactor& gf) {
     *this = JacobianFactor(*asJacobian);
   else if (const HessianFactor* asHessian = dynamic_cast<const HessianFactor*>(&gf))
     *this = JacobianFactor(*asHessian);
+  else if (const BatchJacobianFactorBase* asBatch =
+               dynamic_cast<const BatchJacobianFactorBase*>(&gf))
+    *this = asBatch->toJacobianFactor();
   else
     throw std::invalid_argument(
-        "In JacobianFactor(const GaussianFactor& rhs), rhs is neither a JacobianFactor nor a HessianFactor");
+        "In JacobianFactor(const GaussianFactor& rhs), rhs is not a supported Jacobian-compatible factor");
 }
 
 /* ************************************************************************* */
@@ -239,7 +243,7 @@ std::tuple<FastVector<DenseIndex>, DenseIndex, DenseIndex> _countDims(
   }
 #endif
 
-  return std::make_tuple(varDims, m, n);
+  return std::make_tuple(std::move(varDims), m, n);
 }
 
 /* ************************************************************************* */
@@ -878,9 +882,23 @@ void JacobianFactor::gradientAtZero(double* d) const {
 
 /* ************************************************************************* */
 Vector JacobianFactor::gradient(Key key, const VectorValues& x) const {
-  // TODO: optimize it for JacobianFactor without converting to a HessianFactor
-  HessianFactor hessian(*this);
-  return hessian.gradient(key, x);
+  const Factor::const_iterator it = find(key);
+  if (it == end())
+    throw std::invalid_argument("JacobianFactor::gradient: key not found");
+
+  // Compute A*x - b (unwhitened residual)
+  Vector e = -getb();
+  for (size_t pos = 0; pos < size(); ++pos)
+    e.noalias() += Ab_(pos) * x.at(keys_[pos]);
+
+  // gradient_k = A_k^T * Sigma^{-1} * e = (R*A_k)^T * (R*e)
+  if (model_) {
+    model_->whitenInPlace(e);
+    Matrix Ak = Ab_(it - begin());
+    model_->WhitenInPlace(Ak);
+    return Ak.transpose() * e;
+  }
+  return Ab_(it - begin()).transpose() * e;
 }
 
 /* ************************************************************************* */

@@ -82,7 +82,8 @@ class.
  */
 class GTSAM_EXPORT NonlinearOptimizer {
  protected:
-  NonlinearFactorGraph graph_;  ///< The graph with nonlinear factors
+  std::shared_ptr<const NonlinearFactorGraph>
+      graph_;  ///< The graph with nonlinear factors
 
   std::unique_ptr<internal::NonlinearOptimizerState> state_;  ///< PIMPL'd state
 
@@ -134,7 +135,7 @@ class GTSAM_EXPORT NonlinearOptimizer {
   const Values& values() const;
 
   /// return the graph with nonlinear factors
-  const NonlinearFactorGraph& graph() const { return graph_; }
+  const NonlinearFactorGraph& graph() const { return *graph_; }
 
   /// @}
 

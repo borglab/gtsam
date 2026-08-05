@@ -15,6 +15,8 @@
  * @author  Varun Agrawal
  */
 
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteMarginals.h>
 #include <gtsam/discrete/TableDistribution.h>

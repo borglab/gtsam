@@ -15,10 +15,11 @@
  * @author  Frank Dellaert
  */
 
-#include <gtsam/geometry/Rot2.h>
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/testLie.h>
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/geometry/Rot2.h>
 
 using namespace gtsam;
 
@@ -183,7 +184,7 @@ TEST(Rot2, vec) {
   EXPECT(assert_equal(expected_vec, actual_vec));
 
   // Verify Jacobian with numerical derivatives
-  std::function<Vector4(const Rot2&)> f = [](const Rot2& p) { return p.vec(); };
+  auto f = [](const Rot2& p) { return p.vec(); };
   Matrix41 numericalH = numericalDerivative11<Vector4, Rot2>(f, R);
   EXPECT(assert_equal(numericalH, actualH, 1e-9));
 }

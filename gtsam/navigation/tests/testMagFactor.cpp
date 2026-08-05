@@ -16,11 +16,11 @@
  * @date   January 29, 2014
  */
 
-#include <gtsam/navigation/MagFactor.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/numericalDerivative.h>
-
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/navigation/MagFactor.h>
 
 #include <GeographicLib/LocalCartesian.hpp>
 

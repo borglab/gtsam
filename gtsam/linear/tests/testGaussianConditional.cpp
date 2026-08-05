@@ -16,17 +16,16 @@
  **/
 
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/TestableAssertions.h>
-
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/VerticalBlockMatrix.h>
+#include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianDensity.h>
-#include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/hybrid/HybridValues.h>
-
+#include <gtsam/linear/JacobianFactor.h>
 
 #include <iostream>
 #include <sstream>
