@@ -15,6 +15,7 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/certifiable/LiftedSDPProblem.h>
 #include <gtsam/constrained/QcqpProblem.h>
 #include <gtsam/constrained/QpCost.h>
@@ -27,6 +28,7 @@
 #include <gtsam/slam/FrobeniusFactor.h>
 
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <map>
 #include <stdexcept>
@@ -122,8 +124,8 @@ std::vector<Pose3> PerturbedPose3Values(const std::vector<Pose3>& poses) {
   for (size_t i = 0; i < perturbed.size(); ++i) {
     const double scale = static_cast<double>(i);
     Vector6 delta;
-    delta << 0.002 * scale, -0.001 * scale, 0.0015 * scale,
-        0.01 * scale, -0.005 * scale, 0.004 * scale;
+    delta << 0.002 * scale, -0.001 * scale, 0.0015 * scale, 0.01 * scale,
+        -0.005 * scale, 0.004 * scale;
     perturbed[i] = poses[i].retract(delta);
   }
   return perturbed;
@@ -248,6 +250,8 @@ struct SdpSolutionSummary {
   double objective = 0.0;
   double minimumEigenvalueRatio = 0.0;
   double maximumPoseError = 0.0;
+  bool finiteEigenvalueRatios = false;
+  bool repeatedQueriesMatch = false;
 };
 
 // Build an exactly consistent ring with a hard Frobenius prior on the first
@@ -256,8 +260,7 @@ template <typename T>
 NonlinearFactorGraph ExactPoseRingGraph(const std::vector<T>& poses,
                                         size_t frobeniusDimension) {
   NonlinearFactorGraph graph;
-  const auto priorNoise =
-      noiseModel::Constrained::All(frobeniusDimension);
+  const auto priorNoise = noiseModel::Constrained::All(frobeniusDimension);
   const auto betweenNoise = noiseModel::Isotropic::Sigma(T::dimension, 0.01);
   graph.emplace_shared<FrobeniusPrior<T>>(0, poses[0].matrix(), priorNoise);
   for (size_t i = 0; i < poses.size(); ++i) {
@@ -280,11 +283,25 @@ SdpSolutionSummary SolveAndSummarize(SdpProblem* sdp,
     throw std::runtime_error("MOSEK did not return a readable solution.");
   }
 
-  sdp->recoverQcqpValues();
-  const std::vector<double>& eigenvalueRatios =
-      sdp->getRecoveredVariableEVRs();
-  const auto recovered =
-      ExtractQcqpValues<T, 1>(sdp->getRecoveredQcqpValues());
+  const std::vector<double> eigenvalueRatios = sdp->variableEVRs();
+  const Values qcqpValues = sdp->qcqpValues();
+  const Values repeatedQcqpValues = sdp->qcqpValues();
+  const std::vector<double> repeatedEigenvalueRatios = sdp->variableEVRs();
+  const bool finiteEigenvalueRatios =
+      std::all_of(eigenvalueRatios.begin(), eigenvalueRatios.end(),
+                  [](double ratio) { return std::isfinite(ratio); });
+  const bool repeatedRatiosMatch =
+      eigenvalueRatios.size() == repeatedEigenvalueRatios.size() &&
+      std::equal(eigenvalueRatios.begin(), eigenvalueRatios.end(),
+                 repeatedEigenvalueRatios.begin(),
+                 [](double first, double second) {
+                   return std::abs(first - second) <= 1e-12;
+                 });
+  const bool repeatedQueriesMatch =
+      repeatedRatiosMatch &&
+      assert_equal(qcqpValues, repeatedQcqpValues, 1e-12);
+
+  const auto recovered = ExtractQcqpValues<T, 1>(qcqpValues);
   if (recovered.size() != groundTruth.size()) {
     throw std::runtime_error(
         "Recovered QCQP value count does not match ground truth.");
@@ -297,7 +314,23 @@ SdpSolutionSummary SolveAndSummarize(SdpProblem* sdp,
 
   return {sdp->objectiveValue(),
           *std::min_element(eigenvalueRatios.begin(), eigenvalueRatios.end()),
-          *std::max_element(poseErrors.begin(), poseErrors.end())};
+          *std::max_element(poseErrors.begin(), poseErrors.end()),
+          finiteEigenvalueRatios, repeatedQueriesMatch};
+}
+
+// Recovery queries reject access before either SDP formulation has been solved.
+TEST(LiftedSDPs, RecoveryQueriesRequireSolve) {
+  const std::vector<Pose2> groundTruth =
+      lifted_sdp_tests::Pose2RingPoses(kNumPoses);
+  const QcqpProblem problem(ExactPoseRingGraph(groundTruth, 9));
+  LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> monolithic(problem);
+  LiftedSDPProblem<ChordalSDP, MosekSDPSolver> chordal(
+      problem, ChordalOrderingType::Metis);
+
+  CHECK_EXCEPTION(monolithic.qcqpValues(), std::runtime_error);
+  CHECK_EXCEPTION(monolithic.variableEVRs(), std::runtime_error);
+  CHECK_EXCEPTION(chordal.qcqpValues(), std::runtime_error);
+  CHECK_EXCEPTION(chordal.variableEVRs(), std::runtime_error);
 }
 
 // Verifies rank-one Pose2 slices and matching monolithic/chordal solutions.
@@ -314,9 +347,12 @@ TEST(LiftedSDPs, Pose2_MonolithicAndChordal) {
   const SdpSolutionSummary chordalResult =
       SolveAndSummarize(&chordal, groundTruth);
 
-  EXPECT(monolithicResult.minimumEigenvalueRatio >
-         kRankOneEigenRatioThreshold);
+  EXPECT(monolithicResult.minimumEigenvalueRatio > kRankOneEigenRatioThreshold);
   EXPECT(chordalResult.minimumEigenvalueRatio > kRankOneEigenRatioThreshold);
+  EXPECT(monolithicResult.finiteEigenvalueRatios);
+  EXPECT(chordalResult.finiteEigenvalueRatios);
+  EXPECT(monolithicResult.repeatedQueriesMatch);
+  EXPECT(chordalResult.repeatedQueriesMatch);
   EXPECT(monolithicResult.maximumPoseError < kPoseErrorTolerance);
   EXPECT(chordalResult.maximumPoseError < kPoseErrorTolerance);
   EXPECT(monolithicResult.objective < kObjectiveTolerance);
@@ -339,9 +375,12 @@ TEST(LiftedSDPs, Pose3_MonolithicAndChordal) {
   const SdpSolutionSummary chordalResult =
       SolveAndSummarize(&chordal, groundTruth);
 
-  EXPECT(monolithicResult.minimumEigenvalueRatio >
-         kRankOneEigenRatioThreshold);
+  EXPECT(monolithicResult.minimumEigenvalueRatio > kRankOneEigenRatioThreshold);
   EXPECT(chordalResult.minimumEigenvalueRatio > kRankOneEigenRatioThreshold);
+  EXPECT(monolithicResult.finiteEigenvalueRatios);
+  EXPECT(chordalResult.finiteEigenvalueRatios);
+  EXPECT(monolithicResult.repeatedQueriesMatch);
+  EXPECT(chordalResult.repeatedQueriesMatch);
   EXPECT(monolithicResult.maximumPoseError < kPoseErrorTolerance);
   EXPECT(chordalResult.maximumPoseError < kPoseErrorTolerance);
   EXPECT(monolithicResult.objective < kObjectiveTolerance);

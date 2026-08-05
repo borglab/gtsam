@@ -54,9 +54,7 @@ bool solveAndReport(const std::string& name, SdpProblem* sdp,
     return false;
   }
 
-  sdp->recoverQcqpValues();
-  const auto recoveredPoses =
-      ExtractQcqpValues<T, 1>(sdp->getRecoveredQcqpValues());
+  const auto recoveredPoses = ExtractQcqpValues<T, 1>(sdp->qcqpValues());
   if (recoveredPoses.size() != gt.size()) {
     std::cerr << "Recovered QCQP value count does not match ground truth."
               << std::endl;
@@ -72,7 +70,7 @@ bool solveAndReport(const std::string& name, SdpProblem* sdp,
       totalPoseErrorNorm / static_cast<double>(recoveredPoses.size());
 
   bool allRankOne = true;
-  for (double evr : sdp->getRecoveredVariableEVRs()) {
+  for (double evr : sdp->variableEVRs()) {
     if (evr < kRankOneEigenRatioThreshold) {
       allRankOne = false;
       break;

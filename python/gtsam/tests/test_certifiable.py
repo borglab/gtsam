@@ -192,6 +192,11 @@ class TestMosekCertifiableWrappers(unittest.TestCase):
 
     def assert_solver_solution(self, solver, ground_truth):
         """Check the common solve, metadata, and Rot2 recovery surface."""
+        with self.assertRaises(RuntimeError):
+            solver.qcqpValues()
+        with self.assertRaises(RuntimeError):
+            solver.variableEVRs()
+
         self.assertTrue(solver.solve())
         self.assertTrue(solver.problemStatus())
         self.assertTrue(np.isfinite(solver.objectiveValue()))
@@ -203,14 +208,19 @@ class TestMosekCertifiableWrappers(unittest.TestCase):
         self.assertEqual(set(ordered_key_dims), set(expected_keys))
         self.assertTrue(all(dimension == 5 for dimension in ordered_key_dims.values()))
 
-        solver.recoverQcqpValues()
-        qcqp_values = solver.getRecoveredQcqpValues()
-        variable_evrs = solver.getRecoveredVariableEVRs()
+        variable_evrs = solver.variableEVRs()
+        qcqp_values = solver.qcqpValues()
+        repeated_qcqp_values = solver.qcqpValues()
+        repeated_variable_evrs = solver.variableEVRs()
         self.assertEqual(qcqp_values.size(), len(ground_truth))
         self.assertEqual(len(variable_evrs), len(ground_truth))
         self.assertTrue(all(np.isfinite(evr) for evr in variable_evrs))
+        np.testing.assert_allclose(variable_evrs, repeated_variable_evrs)
         for key in expected_keys:
             self.assertEqual(qcqp_values.atMatrix(key).shape, (5, 1))
+            np.testing.assert_allclose(
+                qcqp_values.atMatrix(key), repeated_qcqp_values.atMatrix(key)
+            )
 
         recovered_poses = gtsam.extractQcqpValuesRot2(qcqp_values)
         pose_errors = [
