@@ -158,7 +158,9 @@ jobs:
       - name: cmake build
         shell: bash
         run: |
-          cmake --build build
+          cmake --build build --target examples
+          cmake --build build -j 2 --target gtsam_py
+          cmake --build build -j 2 --target gtsam_unstable_py
 
       - name: Run Python tests
         shell: bash
