@@ -54,6 +54,10 @@ jobs:
       - name: Install sccache
         uses: mozilla-actions/sccache-action@v0.0.9
 
+      - name: Install mold
+        uses: rui314/setup-mold@v1
+        if: runner.os == 'Linux'
+
       - name: cl version
         if: runner.os == 'Windows'
         shell: cmd
