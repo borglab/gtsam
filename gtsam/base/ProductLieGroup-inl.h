@@ -64,6 +64,28 @@ ProductLieGroup<G, H, Action>::phi1Kernel(const Jacobian2& A, Jacobian2* phi0) {
 }
 
 // ---------------------------------------------------------------------------
+// rightJacobian: compute J_r(xi)=φ₁(-ad_xi) from one block exponential.
+// ---------------------------------------------------------------------------
+template <typename G, typename H, typename Action>
+typename ProductLieGroup<G, H, Action>::Jacobian
+ProductLieGroup<G, H, Action>::rightJacobian(const TangentVector& xi) {
+  constexpr int blockDimension =
+      dimension == Eigen::Dynamic ? Eigen::Dynamic : 2 * dimension;
+  using BlockMatrix = Eigen::Matrix<double, blockDimension, blockDimension>;
+
+  const int d = static_cast<int>(xi.size());
+  BlockMatrix block = BlockMatrix::Zero(2 * d, 2 * d);
+  block.topLeftCorner(d, d) = -adjointMap(xi);
+  block.topRightCorner(d, d).setIdentity();
+  const BlockMatrix expBlock = block.exp();
+
+  Jacobian result;
+  if constexpr (dimension == Eigen::Dynamic) result.resize(d, d);
+  result = expBlock.topRightCorner(d, d);
+  return result;
+}
+
+// ---------------------------------------------------------------------------
 // phi1FrechetBlock: compute φ₀(A), φ₁(A), and L_{φ₁}(A, B) from one block
 // matrix exponential.
 //
@@ -408,40 +430,52 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::Expmap(
     const size_t d = combinedDimension(d1, d2);
 
     const Jacobian2 A = Action::generator(v1);
+    constexpr bool hasStaticAdjointMap =
+        internal::ProductLieGroupHasAdjointMap<G>::value;
     Jacobian1 D_G;
-    const G g = traits<G>::Expmap(v1, H1 ? &D_G : nullptr);
+    const G g =
+        traits<G>::Expmap(v1, H1 && !hasStaticAdjointMap ? &D_G : nullptr);
 
     if (H1) {
-      Jacobian2 zeroB = A;
-      zeroB.setZero();
-      const auto kernels = phi1FrechetBlock(A, zeroB);
-      const auto phi0Solver = kernels.phi0.lu();
-      const H h = kernels.phi1 * v2;
+      if constexpr (hasStaticAdjointMap) {
+        // The complete derivative of a Lie-group exponential is its right
+        // Jacobian J_r(xi)=φ₁(-ad_xi). Computing it once avoids evaluating one
+        // Fréchet derivative per basis direction.
+        const Jacobian2 phi1 = phi1Kernel(A);
+        const H h = phi1 * v2;
+        const TangentVector xi = makeTangentVector(v1, v2, d1, d2);
+        const Jacobian derivative = rightJacobian(xi);
+        *H1 = derivative.leftCols(d1);
+        if (H2) *H2 = derivative.rightCols(d2);
+        return ProductLieGroup(g, h);
+      } else {
+        // Preserve support for base groups that do not expose static
+        // adjointMap(), using directional Fréchet derivatives as a fallback.
+        Jacobian2 zeroB = A;
+        zeroB.setZero();
+        const auto kernels = phi1FrechetBlock(A, zeroB);
+        const auto phi0Solver = kernels.phi0.lu();
+        const H h = kernels.phi1 * v2;
 
-      // Top rows: D Exp_G(u) in the output chart (from traits::Expmap).
-      // Bottom rows: D(φ₁(Aφ(u))·v) pulled back by φ₀(A)⁻¹, because
-      // Expmap Jacobians are expressed in local coordinates at Expmap(u,v).
-      // Here dφ₁(A) is evaluated analytically via its Fréchet derivative.
-      *H1 = Matrix::Zero(d, d1);
-      H1->topRows(d1) = D_G;
-      typename traits<G>::TangentVector ej;
-      if constexpr (firstDynamic) ej.resize(static_cast<Eigen::Index>(d1));
-      ej.setZero();
-      for (Eigen::Index j = 0; j < static_cast<Eigen::Index>(d1); ++j) {
-        ej(j) = 1.0;
-        const Jacobian2 Bj = Action::generator(ej);
-        const typename traits<H>::TangentVector dh =
-            phi1FrechetBlock(A, Bj).Lphi1 * v2;
-        H1->col(j).tail(d2) = phi0Solver.solve(dh);
-        ej(j) = 0.0;
+        *H1 = Matrix::Zero(d, d1);
+        H1->topRows(d1) = D_G;
+        typename traits<G>::TangentVector ej;
+        if constexpr (firstDynamic) ej.resize(static_cast<Eigen::Index>(d1));
+        ej.setZero();
+        for (Eigen::Index j = 0; j < static_cast<Eigen::Index>(d1); ++j) {
+          ej(j) = 1.0;
+          const Jacobian2 Bj = Action::generator(ej);
+          const typename traits<H>::TangentVector dh =
+              phi1FrechetBlock(A, Bj).Lphi1 * v2;
+          H1->col(j).tail(d2) = phi0Solver.solve(dh);
+          ej(j) = 0.0;
+        }
+        if (H2) {
+          *H2 = Matrix::Zero(d, d2);
+          H2->bottomRows(d2) = phi0Solver.solve(kernels.phi1);
+        }
+        return ProductLieGroup(g, h);
       }
-      if (H2) {
-        // ∂(φ₁(A)·v)/∂v = φ₁(A) in coordinates, then pulled back by φ₀(A)⁻¹
-        // to match the output chart. For SO(3) this is Rᵀ J_l = J_r.
-        *H2 = Matrix::Zero(d, d2);
-        H2->bottomRows(d2) = phi0Solver.solve(kernels.phi1);
-      }
-      return ProductLieGroup(g, h);
     }
 
     Jacobian2 phi0;
@@ -493,36 +527,40 @@ ProductLieGroup<G, H, Action>::Logmap(const ProductLieGroup& p,
     const size_t d2 = p.secondDim();
     const size_t d = combinedDimension(d1, d2);
 
+    constexpr bool hasStaticAdjointMap =
+        internal::ProductLieGroupHasAdjointMap<G>::value;
     Jacobian1 D_G;
-    const auto v1 = traits<G>::Logmap(p.first, Hp ? &D_G : nullptr);
+    const auto v1 =
+        traits<G>::Logmap(p.first, Hp && !hasStaticAdjointMap ? &D_G : nullptr);
     const Jacobian2 A = Action::generator(v1);
 
     if (Hp) {
-      Jacobian2 zeroB = A;
-      zeroB.setZero();
-      const auto kernels = phi1FrechetBlock(A, zeroB);
-      const auto phi1Solver = kernels.phi1.lu();
-      const typename traits<H>::TangentVector v2 = phi1Solver.solve(p.second);
-      TangentVector v = makeTangentVector(v1, v2, d1, d2);
+      if constexpr (hasStaticAdjointMap) {
+        const auto phi1Solver = phi1Kernel(A).lu();
+        const typename traits<H>::TangentVector v2 = phi1Solver.solve(p.second);
+        const TangentVector v = makeTangentVector(v1, v2, d1, d2);
+        const Jacobian derivative = rightJacobian(v);
+        *Hp = derivative.inverse();
+        return v;
+      } else {
+        Jacobian2 zeroB = A;
+        zeroB.setZero();
+        const auto kernels = phi1FrechetBlock(A, zeroB);
+        const auto phi1Solver = kernels.phi1.lu();
+        const typename traits<H>::TangentVector v2 = phi1Solver.solve(p.second);
+        TangentVector v = makeTangentVector(v1, v2, d1, d2);
 
-      *Hp = zeroJacobian(d);
-      // Top-left: ∂logG(g)/∂g — analytic.
-      Hp->topLeftCorner(d1, d1) = D_G;
-      // Top-right: 0 — logG doesn't depend on h (already zeroed).
-      // Bottom-right: ∂v₂/∂(δh) = φ₁(A)⁻¹ · φ₀(A).
-      // Perturbing h by δh in the semidirect frame moves h by φ₀(A)·δh
-      // (because Expmap(0, δh) = (I, δh) and (g,h)*(I,δh) → h + φ₀(A)·δh),
-      // so ∂v₂/∂(δh) = φ₁⁻¹ · φ₀.
-      Hp->bottomRightCorner(d2, d2) = phi1Solver.solve(kernels.phi0);
-      // Bottom-left: ∂v₂/∂(δg) follows from dφ₁(A) = L_{φ₁}(A, dA)
-      // with dA = generator(du) and du = D Log_G(g) · δg.
-      for (Eigen::Index j = 0; j < static_cast<Eigen::Index>(d1); ++j) {
-        const typename traits<G>::TangentVector du = D_G.col(j);
-        const Jacobian2 Bj = Action::generator(du);
-        Hp->col(j).tail(d2) =
-            -phi1Solver.solve(phi1FrechetBlock(A, Bj).Lphi1 * v2);
+        *Hp = zeroJacobian(d);
+        Hp->topLeftCorner(d1, d1) = D_G;
+        Hp->bottomRightCorner(d2, d2) = phi1Solver.solve(kernels.phi0);
+        for (Eigen::Index j = 0; j < static_cast<Eigen::Index>(d1); ++j) {
+          const typename traits<G>::TangentVector du = D_G.col(j);
+          const Jacobian2 Bj = Action::generator(du);
+          Hp->col(j).tail(d2) =
+              -phi1Solver.solve(phi1FrechetBlock(A, Bj).Lphi1 * v2);
+        }
+        return v;
       }
-      return v;
     }
 
     const auto phi1Solver = phi1Kernel(A).lu();

@@ -44,6 +44,15 @@ struct ProductLieGroupHasGenerator<
     T, G_TanVec, std::void_t<decltype(T::generator(std::declval<G_TanVec>()))>>
     : std::true_type {};
 
+/// Detects whether a Lie group exposes its static Lie-algebra adjoint.
+template <typename T, typename = void>
+struct ProductLieGroupHasAdjointMap : std::false_type {};
+template <typename T>
+struct ProductLieGroupHasAdjointMap<
+    T, std::void_t<decltype(T::adjointMap(
+           std::declval<typename traits<T>::TangentVector>()))>>
+    : std::true_type {};
+
 /// Detects vector-space Lie groups (Eigen column vectors, group law =
 /// addition).
 template <typename T>
@@ -302,6 +311,9 @@ class ProductLieGroup : public std::pair<G, H> {
   /// Compute φ₁(A) and optionally return the exp(A) block produced alongside
   /// it.
   static Jacobian2 phi1Kernel(const Jacobian2& A, Jacobian2* phi0 = nullptr);
+
+  /// Compute the product's right Jacobian as φ₁(-ad_xi).
+  static Jacobian rightJacobian(const TangentVector& xi);
 
   /// Result of the analytic Fréchet derivative helper for φ₁.
   struct Phi1FrechetResult {

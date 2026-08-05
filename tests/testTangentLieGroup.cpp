@@ -209,6 +209,26 @@ TEST(TangentLieGroup, AlgebraAdjoint) {
                       Matrix(AdjointAction<TGSE3>::generator(xi)), kTol));
 }
 
+// Checks that Expmap and Logmap use the right Jacobian derived from the full
+// tangent-group algebra adjoint.
+TEST(TangentLieGroup, RightJacobianFromAlgebraAdjoint) {
+  const Vector12 xi = tgse3Xi();
+  Matrix expH;
+  const TGSE3 state = TGSE3::Expmap(xi, expH);
+
+  Eigen::Matrix<double, 24, 24> block = Eigen::Matrix<double, 24, 24>::Zero();
+  block.topLeftCorner<12, 12>() = -TGSE3::adjointMap(xi);
+  block.topRightCorner<12, 12>().setIdentity();
+  const Eigen::Matrix<double, 24, 24> expBlock = block.exp();
+  const Eigen::Matrix<double, 12, 12> expectedExpH =
+      expBlock.topRightCorner<12, 12>();
+  EXPECT(assert_equal(Matrix(expectedExpH), expH, kTol));
+
+  Matrix logH;
+  TGSE3::Logmap(state, logH);
+  EXPECT(assert_equal(Matrix(expectedExpH.inverse()), logH, kTol));
+}
+
 // Verifies the tangent group of Gal(3) satisfies the Lie-group concept.
 TEST(TangentLieGroup, TGGal3Concepts) {
   GTSAM_CONCEPT_ASSERT(IsLieGroup<TGGal3>);
