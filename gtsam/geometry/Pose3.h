@@ -363,8 +363,8 @@ typedef std::vector<Pose3> Pose3Vector;
  */
 template <>
 struct traits<Pose3> : public internal::MatrixLieGroup<Pose3, 4> {
-  /// Number of matrix rows retained by the truncated vectorization.
-  inline constexpr static int TruncatedVecRows = 3;
+  /// Dimension of the D=1 homogenized QCQP vector.
+  inline constexpr static int QcqpVectorDim = 13;
 
   /**
    * Return the D=1 homogenized QCQP variable
@@ -488,7 +488,8 @@ struct traits<Pose3> : public internal::MatrixLieGroup<Pose3, 4> {
   template <int D>
   static Pose3 FromQcqpValue(const Matrix& X) {
     if constexpr (D == 1) {
-      if (X.rows() != 13 || X.cols() != 1 || std::abs(X(0, 0)) < 1e-9) {
+      if (X.rows() != QcqpVectorDim || X.cols() != 1 ||
+          std::abs(X(0, 0)) < 1e-9) {
         throw std::invalid_argument(
             "traits<Pose3>::FromQcqpValue requires a 13-by-1 vector with a "
             "nonzero homogenization entry.");

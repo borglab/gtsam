@@ -255,8 +255,8 @@ namespace gtsam {
 
 template <>
 struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
-  /// Number of matrix rows retained by the truncated vectorization.
-  inline constexpr static int TruncatedVecRows = 2;
+  /// Dimension of the D=1 homogenized QCQP vector.
+  inline constexpr static int QcqpVectorDim = 5;
 
   /**
    * Return a matrix-valued QCQP variable for Rot2.
@@ -367,7 +367,8 @@ struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
   template <int D>
   static Rot2 FromQcqpValue(const Matrix& X) {
     if constexpr (D == 1) {
-      if (X.rows() != 5 || X.cols() != 1 || std::abs(X(0, 0)) < 1e-9) {
+      if (X.rows() != QcqpVectorDim || X.cols() != 1 ||
+          std::abs(X(0, 0)) < 1e-9) {
         throw std::invalid_argument(
             "traits<Rot2>::FromQcqpValue requires a 5-by-1 vector with a "
             "nonzero homogenization entry.");

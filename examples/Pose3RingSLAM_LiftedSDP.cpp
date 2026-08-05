@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file Pose3RingSLAM_LiftedSDP_Chordal.cpp
- * @brief A Pose3 ring SLAM example solved with the chordal lifted SDP.
+ * @file Pose3RingSLAM_LiftedSDP.cpp
+ * @brief A Pose3 ring SLAM example solved with monolithic and chordal SDPs.
  */
 
 #include <gtsam/certifiable/LiftedSDPProblem.h>
@@ -41,6 +41,57 @@ std::vector<T> createPoses(const T& initialPose, size_t N, const T& step) {
   return poses;
 }
 
+template <typename T, typename SdpProblem>
+bool solveAndReport(const std::string& name, SdpProblem* sdp,
+                    const std::vector<T>& gt,
+                    const std::map<std::string, double>& mosekParams) {
+  constexpr double kRankOneEigenRatioThreshold = 1e5;
+
+  if (!sdp->solve(mosekParams)) {
+    std::cerr << name
+              << " MOSEK solve did not produce a readable primal solution."
+              << std::endl;
+    return false;
+  }
+
+  const auto recoveredPoses = ExtractQcqpValues<T, 1>(sdp->qcqpValues());
+  if (recoveredPoses.size() != gt.size()) {
+    std::cerr << "Recovered QCQP value count does not match ground truth."
+              << std::endl;
+    return false;
+  }
+
+  double totalPoseErrorNorm = 0.0;
+  for (size_t i = 0; i < recoveredPoses.size(); ++i) {
+    totalPoseErrorNorm +=
+        gt[i].localCoordinates(recoveredPoses[i].second).norm();
+  }
+  const double averagePoseErrorNorm =
+      totalPoseErrorNorm / static_cast<double>(recoveredPoses.size());
+
+  bool allRankOne = true;
+  for (double evr : sdp->variableEVRs()) {
+    if (evr < kRankOneEigenRatioThreshold) {
+      allRankOne = false;
+      break;
+    }
+  }
+
+  std::cout << "\n=== " << name << " SDP ===" << std::endl;
+  std::cout << name << " objective: " << sdp->objectiveValue() << std::endl;
+  std::cout << name << " average pose error norm: " << averagePoseErrorNorm
+            << std::endl;
+  std::cout << name
+            << " all recovered blocks rank-1: " << (allRankOne ? "yes" : "no")
+            << std::endl;
+  for (size_t i = 0; i < gt.size(); ++i) {
+    gt[i].print(name + " ground-truth pose " + std::to_string(i));
+    recoveredPoses[i].second.print(name + " recovered pose " +
+                                   std::to_string(i));
+  }
+  return true;
+}
+
 int main(int argc, char** argv) {
   size_t N = 20;
   for (int i = 1; i < argc; ++i) {
@@ -61,7 +112,6 @@ int main(int argc, char** argv) {
   constexpr uint32_t kNoiseSeed = 42u;
   constexpr double kOdometryIsotropicNoise = 0.01;
   constexpr double kSampledOdometryNoise = 0.01;
-  constexpr double kRankOneEigenRatioThreshold = 1e5;
   constexpr double kMaxOptimizerTimeSeconds = 1500.0;
   constexpr size_t kPose3FrobeniusDimension = 16;
 
@@ -81,81 +131,32 @@ int main(int argc, char** argv) {
 
   auto exactPriorNoiseModel =
       noiseModel::Constrained::All(kPose3FrobeniusDimension);
-  graph.emplace_shared<FrobeniusPrior<Pose3>>(
-      0, gt[0].matrix(), exactPriorNoiseModel);
+  graph.emplace_shared<FrobeniusPrior<Pose3>>(0, gt[0].matrix(),
+                                              exactPriorNoiseModel);
 
   for (size_t i = 0; i < N; ++i) {
     const size_t j = (i + 1) % N;
     const Pose3 T_ij = gt[i].between(gt[j]);
     const Pose3 T_ij_noisy = T_ij.retract(odometrySampler.sample());
-    graph.emplace_shared<FrobeniusBetweenFactor<Pose3>>(
-        i, j, T_ij_noisy, odometryNoiseModel);
+    graph.emplace_shared<FrobeniusBetweenFactor<Pose3>>(i, j, T_ij_noisy,
+                                                        odometryNoiseModel);
   }
 
-#ifdef GTSAM_USE_MOSEK
   const std::map<std::string, double> mosekParams{
       {"intpntCoTolRelGap", 1e-10},
       {"optimizerMaxTime", kMaxOptimizerTimeSeconds},
   };
 
   const QcqpProblem problem(graph);
-  LiftedSDPProblem<ChordalSDP, MosekSDPSolver> chordalSdp(
-      problem, ChordalOrderingType::Metis);
-  if (!chordalSdp.solve(mosekParams)) {
-    std::cerr << "Chordal MOSEK solve did not produce a readable primal "
-              << "solution." << std::endl;
+  MosekMonolithicSDP monolithicSdp(problem);
+  if (!solveAndReport("Monolithic", &monolithicSdp, gt, mosekParams)) {
     return 1;
   }
 
-  chordalSdp.recoverQcqpValues();
-  const auto recoveredPoses =
-      ExtractQcqpValues<Pose3, 1>(chordalSdp.getRecoveredQcqpValues());
-  if (recoveredPoses.size() != gt.size()) {
-    std::cerr << "Recovered QCQP value count does not match ground truth."
-              << std::endl;
+  MosekChordalSDP chordalSdp(problem, ChordalOrderingType::Metis);
+  if (!solveAndReport("Chordal", &chordalSdp, gt, mosekParams)) {
     return 1;
   }
-  const std::vector<double>& recoveredPoseEVRs =
-      chordalSdp.getRecoveredVariableEVRs();
-  std::vector<double> recoveredPoseErrorNorms(recoveredPoses.size());
-  for (size_t i = 0; i < recoveredPoses.size(); ++i) {
-    recoveredPoseErrorNorms[i] =
-        gt[i].localCoordinates(recoveredPoses[i].second).norm();
-  }
-
-  double totalPoseErrorNorm = 0.0;
-  for (double errorNorm : recoveredPoseErrorNorms) {
-    totalPoseErrorNorm += errorNorm;
-  }
-  const double averagePoseErrorNorm =
-      totalPoseErrorNorm / static_cast<double>(recoveredPoseErrorNorms.size());
-
-  bool allRankOne = true;
-  for (double evr : recoveredPoseEVRs) {
-    if (evr < kRankOneEigenRatioThreshold) {
-      allRankOne = false;
-      break;
-    }
-  }
-
-  std::cout << "\n=== Chordal SDP ===" << std::endl;
-  std::cout << "Chordal objective: " << chordalSdp.objectiveValue()
-            << std::endl;
-  std::cout << "Chordal average pose error norm: " << averagePoseErrorNorm
-            << std::endl;
-  std::cout << "Chordal all recovered blocks rank-1: "
-            << (allRankOne ? "yes" : "no") << std::endl;
-  for (size_t i = 0; i < gt.size(); ++i) {
-    gt[i].print("Chordal ground-truth pose " + std::to_string(i));
-  }
-  for (size_t i = 0; i < recoveredPoses.size(); ++i) {
-    recoveredPoses[i].second.print("Chordal recovered pose " +
-                                   std::to_string(i));
-  }
-#else
-  std::cerr << "This example requires GTSAM_USE_MOSEK." << std::endl;
-  return 1;
-#endif
 
   return 0;
 }

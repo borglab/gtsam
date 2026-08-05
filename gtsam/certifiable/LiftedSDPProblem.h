@@ -62,7 +62,7 @@ class LiftedSDPProblem;
  * Monolithic lifted SDP relaxation backed by MOSEK Fusion.
  *
  * The problem owns its MOSEK model. Call solve() before querying solver
- * results, and recoverQcqpValues() before querying recovered variables.
+ * results or recovered variables.
  */
 template <>
 class GTSAM_EXPORT LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
@@ -94,14 +94,11 @@ class GTSAM_EXPORT LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
   /// Return MOSEK's optimizer time in seconds after solve().
   double solveTimeSeconds() const;
 
-  /// Recover one D=1 QCQP vector from each diagonal SDP block after solve().
-  void recoverQcqpValues();
-
-  /// Return keyed D=1 QCQP vectors recovered by recoverQcqpValues().
-  const Values& getRecoveredQcqpValues() const;
+  /// Return one keyed D=1 QCQP vector per diagonal SDP block after solve().
+  Values qcqpValues() const;
 
   /// Return largest-to-second-largest eigenvalue ratios for recovered blocks.
-  const std::vector<double>& getRecoveredVariableEVRs() const;
+  std::vector<double> variableEVRs() const;
 
   /// Return QCQP variable keys in SDP block order.
   const KeyVector& orderedKeys() const;
@@ -118,7 +115,7 @@ class GTSAM_EXPORT LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
  * Chordally decomposed lifted SDP relaxation backed by MOSEK Fusion.
  *
  * The problem owns its MOSEK model. Call solve() before querying solver
- * results, and recoverQcqpValues() before querying recovered variables.
+ * results or recovered variables.
  */
 template <>
 class GTSAM_EXPORT LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
@@ -152,14 +149,11 @@ class GTSAM_EXPORT LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
   /// Return MOSEK's optimizer time in seconds after solve().
   double solveTimeSeconds() const;
 
-  /// Recover one D=1 QCQP vector from each diagonal SDP block after solve().
-  void recoverQcqpValues();
-
-  /// Return keyed D=1 QCQP vectors recovered by recoverQcqpValues().
-  const Values& getRecoveredQcqpValues() const;
+  /// Return one keyed D=1 QCQP vector per diagonal SDP block after solve().
+  Values qcqpValues() const;
 
   /// Return largest-to-second-largest eigenvalue ratios for recovered blocks.
-  const std::vector<double>& getRecoveredVariableEVRs() const;
+  std::vector<double> variableEVRs() const;
 
   /// Return QCQP variable keys in SDP block order.
   const KeyVector& orderedKeys() const;

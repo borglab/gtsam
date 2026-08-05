@@ -399,9 +399,10 @@ TEST(QcqpProblem, SingleFrobeniusBetweenFactor) {
 }
 
 template <typename T>
-std::array<double, 4> D1FrobeniusBetweenFactorErrors(
-    const T& value1, const T& value2, const T& measurement,
-    const Vector& sigmas) {
+std::array<double, 4> D1FrobeniusBetweenFactorErrors(const T& value1,
+                                                     const T& value2,
+                                                     const T& measurement,
+                                                     const Vector& sigmas) {
   NonlinearFactorGraph graph;
   graph.emplace_shared<FrobeniusBetweenFactor<T>>(
       x0, x1, measurement, noiseModel::Diagonal::Sigmas(sigmas));
@@ -427,16 +428,13 @@ std::array<double, 4> D1FrobeniusBetweenFactorErrors(
 }
 
 TEST(QcqpProblem, FrobeniusBetweenFactorRot3D1) {
-  const Rot3 value1 =
-      Rot3::Expmap((Vector3() << 0.2, -0.3, 0.4).finished());
-  const Rot3 value2 =
-      Rot3::Expmap((Vector3() << -0.1, 0.5, 0.2).finished());
+  const Rot3 value1 = Rot3::Expmap((Vector3() << 0.2, -0.3, 0.4).finished());
+  const Rot3 value2 = Rot3::Expmap((Vector3() << -0.1, 0.5, 0.2).finished());
   const Rot3 measurement =
       Rot3::Expmap((Vector3() << 0.3, 0.1, -0.2).finished());
   const auto errors = D1FrobeniusBetweenFactorErrors(
       value1, value2, measurement,
-      (Vector9() << 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2)
-          .finished());
+      (Vector9() << 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2).finished());
   EXPECT_DOUBLES_EQUAL(errors[0], errors[1], 1e-10);
   EXPECT_DOUBLES_EQUAL(0.0, errors[2], 1e-12);
   EXPECT_DOUBLES_EQUAL(0.0, errors[3], 1e-12);
@@ -448,27 +446,24 @@ TEST(QcqpProblem, FrobeniusBetweenFactorPose2D1) {
   const Pose2 measurement(Rot2::fromAngle(0.3), Point2(2.0, -1.0));
   const auto errors = D1FrobeniusBetweenFactorErrors(
       value1, value2, measurement,
-      (Vector9() << 0.4, 1.7, 0.5, 0.6, 1.8, 0.7, 0.8, 1.9, 0.9)
-          .finished());
+      (Vector9() << 0.4, 1.7, 0.5, 0.6, 1.8, 0.7, 0.8, 1.9, 0.9).finished());
   EXPECT_DOUBLES_EQUAL(errors[0], errors[1], 1e-10);
   EXPECT_DOUBLES_EQUAL(0.0, errors[2], 1e-12);
   EXPECT_DOUBLES_EQUAL(0.0, errors[3], 1e-12);
 }
 
 TEST(QcqpProblem, FrobeniusBetweenFactorPose3D1) {
-  const Pose3 value1(
-      Rot3::Expmap((Vector3() << 0.2, -0.3, 0.4).finished()),
-      Point3(1.0, -2.0, 0.5));
-  const Pose3 value2(
-      Rot3::Expmap((Vector3() << -0.1, 0.5, 0.2).finished()),
-      Point3(-3.0, 0.5, 2.0));
+  const Pose3 value1(Rot3::Expmap((Vector3() << 0.2, -0.3, 0.4).finished()),
+                     Point3(1.0, -2.0, 0.5));
+  const Pose3 value2(Rot3::Expmap((Vector3() << -0.1, 0.5, 0.2).finished()),
+                     Point3(-3.0, 0.5, 2.0));
   const Pose3 measurement(
       Rot3::Expmap((Vector3() << 0.3, 0.1, -0.2).finished()),
       Point3(2.0, -1.0, 3.0));
   const auto errors = D1FrobeniusBetweenFactorErrors(
       value1, value2, measurement,
-      (Eigen::Matrix<double, 16, 1>() << 0.4, 0.5, 0.6, 1.7, 0.7, 0.8,
-       0.9, 1.8, 1.0, 1.1, 1.2, 1.9, 1.3, 1.4, 1.5, 2.0)
+      (Eigen::Matrix<double, 16, 1>() << 0.4, 0.5, 0.6, 1.7, 0.7, 0.8, 0.9, 1.8,
+       1.0, 1.1, 1.2, 1.9, 1.3, 1.4, 1.5, 2.0)
           .finished());
   EXPECT_DOUBLES_EQUAL(errors[0], errors[1], 1e-10);
   EXPECT_DOUBLES_EQUAL(0.0, errors[2], 1e-12);
@@ -499,12 +494,11 @@ TEST(QcqpProblem, HardFrobeniusPriorRot2D1) {
   EXPECT(priorConstraint != nullptr);
   if (!priorConstraint) return;
 
-  const Vector5 expectedTarget =
-      traits<Rot2>::QcqpValue<1>(measured).col(0);
+  const Vector5 expectedTarget = traits<Rot2>::QcqpValue<1>(measured).col(0);
   const JacobianFactor& priorJacobian =
       priorConstraint->linearConstraint().factor();
-  EXPECT(assert_equal(Matrix(Matrix5::Identity()),
-                      Matrix(priorJacobian.getA()), 1e-12));
+  EXPECT(assert_equal(Matrix(Matrix5::Identity()), Matrix(priorJacobian.getA()),
+                      1e-12));
   EXPECT(assert_equal(Vector(expectedTarget), Vector(priorJacobian.getb()),
                       1e-12));
 
@@ -532,8 +526,7 @@ struct HardFrobeniusPriorD1Result {
 
 template <typename T>
 HardFrobeniusPriorD1Result<T> HardFrobeniusPriorD1(const T& measured) {
-  const auto hardNoise =
-      noiseModel::Constrained::All(measured.matrix().size());
+  const auto hardNoise = noiseModel::Constrained::All(measured.matrix().size());
 
   NonlinearFactorGraph graph;
   graph.emplace_shared<FrobeniusPrior<T>>(x0, measured.matrix(), hardNoise);
@@ -553,7 +546,11 @@ HardFrobeniusPriorD1Result<T> HardFrobeniusPriorD1(const T& measured) {
   Values qcqpValues;
   InsertQcqpValue<T, 1>(x0, measured, &qcqpValues);
   if (!priorConstraint) {
-    return {problem.costs().size(), false, Matrix(), Vector(), expectedTarget,
+    return {problem.costs().size(),
+            false,
+            Matrix(),
+            Vector(),
+            expectedTarget,
             problem.eConstraints().violationNorm(qcqpValues)};
   }
 
@@ -578,8 +575,8 @@ TEST(QcqpProblem, HardFrobeniusPriorRot3D1) {
 }
 
 TEST(QcqpProblem, HardFrobeniusPriorPose2D1) {
-  const auto result = HardFrobeniusPriorD1(
-      Pose2(Rot2::fromAngle(0.2), Point2(1.0, -2.0)));
+  const auto result =
+      HardFrobeniusPriorD1(Pose2(Rot2::fromAngle(0.2), Point2(1.0, -2.0)));
   LONGS_EQUAL(0, result.costCount);
   EXPECT(result.foundPrior);
   EXPECT(assert_equal(Matrix::Identity(7, 7), result.A, 1e-12));
@@ -588,9 +585,9 @@ TEST(QcqpProblem, HardFrobeniusPriorPose2D1) {
 }
 
 TEST(QcqpProblem, HardFrobeniusPriorPose3D1) {
-  const auto result = HardFrobeniusPriorD1(Pose3(
-      Rot3::Expmap((Vector3() << 0.2, -0.3, 0.4).finished()),
-      Point3(1.0, -2.0, 0.5)));
+  const auto result = HardFrobeniusPriorD1(
+      Pose3(Rot3::Expmap((Vector3() << 0.2, -0.3, 0.4).finished()),
+            Point3(1.0, -2.0, 0.5)));
   LONGS_EQUAL(0, result.costCount);
   EXPECT(result.foundPrior);
   EXPECT(assert_equal(Matrix::Identity(13, 13), result.A, 1e-12));
@@ -645,6 +642,60 @@ Values RingQcqpValues(size_t numPoses, double delta, double perturbation) {
   return values;
 }
 
+template <typename T>
+NonlinearFactorGraph AnchoredPoseRingGraph(const std::vector<T>& poses) {
+  constexpr size_t matrixDimension = T::LieAlgebra::RowsAtCompileTime;
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusPrior<T>>(
+      Symbol('x', 0), poses[0].matrix(),
+      noiseModel::Constrained::All(matrixDimension * matrixDimension));
+  for (size_t i = 0; i < poses.size(); ++i) {
+    const size_t j = (i + 1) % poses.size();
+    graph.emplace_shared<FrobeniusBetweenFactor<T>>(
+        Symbol('x', i), Symbol('x', j), poses[i].between(poses[j]));
+  }
+  return graph;
+}
+
+template <typename T>
+Values PoseRingQcqpValues(const std::vector<T>& poses) {
+  Values values;
+  for (size_t i = 0; i < poses.size(); ++i) {
+    InsertQcqpValue<T, 1>(Symbol('x', i), poses[i], &values);
+  }
+  return values;
+}
+
+template <typename T>
+struct PoseRingOptimizationResult {
+  double violation;
+  double initialCost;
+  double finalCost;
+  std::vector<std::pair<Key, T>> recovered;
+};
+
+template <typename T>
+PoseRingOptimizationResult<T> OptimizePoseRing(
+    const std::vector<T>& groundTruth, const std::vector<T>& initialPoses) {
+  const QcqpProblem problem(AnchoredPoseRingGraph(groundTruth));
+  const Values initialValues = PoseRingQcqpValues(initialPoses);
+  const double initialCost = problem.costs().error(initialValues);
+
+  auto params = std::make_shared<AugmentedLagrangianParams>();
+  params->maxIterations = 10;
+  params->initialMuEq = 10.0;
+  params->muEqIncreaseRate = 5.0;
+  params->absoluteViolationTolerance = 1e-6;
+  params->absoluteCostTolerance = 1e-12;
+  params->verbose = false;
+
+  const Values result =
+      AugmentedLagrangianOptimizer(problem, initialValues, params).optimize();
+  const auto recovered = ExtractQcqpValues<T, 1>(result);
+  return {problem.eConstraints().violationNorm(result), initialCost,
+          problem.costs().error(result), recovered};
+}
+
 // Verifies a Rot2 ring graph preserves cost and constraints for D=1 variables.
 TEST(QcqpProblem, Rot2RingPgo) {
   constexpr size_t N = 5;
@@ -684,6 +735,61 @@ TEST(QcqpProblem, AugmentedLagrangianOptimizerRot2Ring) {
 
   EXPECT(problem.eConstraints().violationNorm(result) < 1e-5);
   EXPECT(problem.costs().error(result) <= initialCost + 1e-9);
+}
+
+// Verifies direct Pose2 QCQP optimization and conversion back to poses.
+TEST(QcqpProblem, AugmentedLagrangianOptimizerPose2Ring) {
+  constexpr size_t N = 3;
+  const Pose2 step(2.0, 0.0, 2.0 * M_PI / static_cast<double>(N));
+  std::vector<Pose2> groundTruth(N), initialPoses(N);
+  for (size_t i = 1; i < N; ++i) {
+    groundTruth[i] = groundTruth[i - 1].compose(step);
+  }
+  initialPoses = groundTruth;
+  for (size_t i = 1; i < N; ++i) {
+    const double scale = static_cast<double>(i);
+    initialPoses[i] = groundTruth[i].retract(
+        Vector3(0.02 * scale, -0.01 * scale, 0.015 * scale));
+  }
+
+  const auto result = OptimizePoseRing(groundTruth, initialPoses);
+  EXPECT(result.violation < 1e-5);
+  EXPECT(result.finalCost <= result.initialCost + 1e-9);
+  LONGS_EQUAL(groundTruth.size(), result.recovered.size());
+  for (size_t i = 0; i < result.recovered.size(); ++i) {
+    LONGS_EQUAL(Symbol('x', i), result.recovered[i].first);
+    EXPECT(groundTruth[i].localCoordinates(result.recovered[i].second).norm() <
+           1e-4);
+  }
+}
+
+// Verifies direct Pose3 QCQP optimization and conversion back to poses.
+TEST(QcqpProblem, AugmentedLagrangianOptimizerPose3Ring) {
+  constexpr size_t N = 3;
+  const Pose3 step(Rot3::Rz(2.0 * M_PI / static_cast<double>(N)),
+                   Point3(2.0, 0.0, 0.0));
+  std::vector<Pose3> groundTruth(N), initialPoses(N);
+  for (size_t i = 1; i < N; ++i) {
+    groundTruth[i] = groundTruth[i - 1].compose(step);
+  }
+  initialPoses = groundTruth;
+  for (size_t i = 1; i < N; ++i) {
+    const double scale = static_cast<double>(i);
+    Vector6 perturbation;
+    perturbation << 0.004 * scale, -0.002 * scale, 0.003 * scale, 0.02 * scale,
+        -0.01 * scale, 0.008 * scale;
+    initialPoses[i] = groundTruth[i].retract(perturbation);
+  }
+
+  const auto result = OptimizePoseRing(groundTruth, initialPoses);
+  EXPECT(result.violation < 1e-5);
+  EXPECT(result.finalCost <= result.initialCost + 1e-9);
+  LONGS_EQUAL(groundTruth.size(), result.recovered.size());
+  for (size_t i = 0; i < result.recovered.size(); ++i) {
+    LONGS_EQUAL(Symbol('x', i), result.recovered[i].first);
+    EXPECT(groundTruth[i].localCoordinates(result.recovered[i].second).norm() <
+           1e-4);
+  }
 }
 
 // Every D=1 between cost and quadratic constraint is invariant under the
@@ -841,10 +947,10 @@ TEST(QcqpProblem, Rot2QcqpValueD4Padding) {
   const Matrix X4 = traits<Rot2>::template QcqpValue<4>(R);
   LONGS_EQUAL(2, X4.rows());
   LONGS_EQUAL(4, X4.cols());
-  EXPECT(assert_equal(Matrix(R.matrix().transpose()),
-                      Matrix(X4.leftCols<2>()), 1e-12));
-  EXPECT(assert_equal(Matrix(Matrix::Zero(2, 2)),
-                      Matrix(X4.rightCols<2>()), 1e-12));
+  EXPECT(assert_equal(Matrix(R.matrix().transpose()), Matrix(X4.leftCols<2>()),
+                      1e-12));
+  EXPECT(assert_equal(Matrix(Matrix::Zero(2, 2)), Matrix(X4.rightCols<2>()),
+                      1e-12));
   EXPECT(assert_equal(Matrix(Matrix2::Identity()), X4 * X4.transpose(), 1e-12));
 }
 
@@ -892,8 +998,7 @@ TEST(QcqpProblem, Rot3D1QcqpValueConstraints) {
   Vector10 rawX;
   rawX(0) = 1.0;
   rawX.tail<9>() = Eigen::Map<const Vector9>(raw.data());
-  const Vector3 expectedOrientation =
-      raw.col(1).cross(raw.col(2)) - raw.col(0);
+  const Vector3 expectedOrientation = raw.col(1).cross(raw.col(2)) - raw.col(0);
   for (int k = 0; k < 3; ++k) {
     EXPECT_DOUBLES_EQUAL(
         expectedOrientation(k),
@@ -902,8 +1007,7 @@ TEST(QcqpProblem, Rot3D1QcqpValueConstraints) {
 
   const Matrix3 RRt = raw * raw.transpose();
   const std::array<std::pair<int, int>, 6> upperTriangle = {
-      std::pair<int, int>{0, 0}, {0, 1}, {0, 2},
-      {1, 1},                {1, 2}, {2, 2}};
+      std::pair<int, int>{0, 0}, {0, 1}, {0, 2}, {1, 1}, {1, 2}, {2, 2}};
   for (size_t k = 0; k < upperTriangle.size(); ++k) {
     const auto [row, col] = upperTriangle[k];
     EXPECT_DOUBLES_EQUAL(
@@ -927,10 +1031,9 @@ TEST(QcqpProblem, Rot3D1QcqpValueConstraints) {
   Vector10 reflectedX;
   reflectedX(0) = 1.0;
   reflectedX.tail<9>() = Eigen::Map<const Vector9>(reflection.data());
-  EXPECT(std::abs((reflectedX.transpose() * constraints[1].first *
-                   reflectedX)(0, 0) -
-                  constraints[1].second) >
-         1e-12);
+  EXPECT(std::abs((reflectedX.transpose() * constraints[1].first * reflectedX)(
+                      0, 0) -
+                  constraints[1].second) > 1e-12);
   for (size_t k = 4; k < constraints.size(); ++k) {
     EXPECT_DOUBLES_EQUAL(
         constraints[k].second,
@@ -949,8 +1052,7 @@ TEST(QcqpProblem, Pose2D1QcqpValueConstraints) {
   LONGS_EQUAL(1, X.cols());
 
   Vector7 expected;
-  expected << 1.0, T(0, 0), T(1, 0), T(0, 1), T(1, 1), T(0, 2),
-      T(1, 2);
+  expected << 1.0, T(0, 0), T(1, 0), T(0, 1), T(1, 1), T(0, 2), T(1, 2);
   EXPECT(assert_equal(Vector(expected), Vector(X.col(0)), 1e-12));
 
   const auto constraints = traits<Pose2>::template QcqpConstraints<1>();
@@ -967,15 +1069,14 @@ TEST(QcqpProblem, Pose2D1QcqpValueConstraints) {
   Matrix2 rawR;
   rawR << 1.0, 2.0, 3.0, 5.0;
   Vector7 rawX;
-  rawX << 1.0, rawR(0, 0), rawR(1, 0), rawR(0, 1), rawR(1, 1),
-      7.0, 11.0;
+  rawX << 1.0, rawR(0, 0), rawR(1, 0), rawR(0, 1), rawR(1, 1), 7.0, 11.0;
   const Matrix2 RRt = rawR * rawR.transpose();
-  const std::array<double, 5> expectedForms = {
-      1.0, rawR.determinant(), RRt(0, 0), RRt(0, 1), RRt(1, 1)};
+  const std::array<double, 5> expectedForms = {1.0, rawR.determinant(),
+                                               RRt(0, 0), RRt(0, 1), RRt(1, 1)};
   for (size_t k = 0; k < constraints.size(); ++k) {
-    EXPECT_DOUBLES_EQUAL(
-        expectedForms[k],
-        (rawX.transpose() * constraints[k].first * rawX)(0, 0), 1e-12);
+    EXPECT_DOUBLES_EQUAL(expectedForms[k],
+                         (rawX.transpose() * constraints[k].first * rawX)(0, 0),
+                         1e-12);
   }
 
   Vector7 translatedX = rawX;
@@ -1000,10 +1101,9 @@ TEST(QcqpProblem, Pose2D1QcqpValueConstraints) {
 
   Vector7 reflectedX;
   reflectedX << 1.0, 1.0, 0.0, 0.0, -1.0, 2.0, -3.0;
-  EXPECT(std::abs((reflectedX.transpose() * constraints[1].first *
-                   reflectedX)(0, 0) -
-                  constraints[1].second) >
-         1e-12);
+  EXPECT(std::abs((reflectedX.transpose() * constraints[1].first * reflectedX)(
+                      0, 0) -
+                  constraints[1].second) > 1e-12);
   for (size_t k = 2; k < constraints.size(); ++k) {
     EXPECT_DOUBLES_EQUAL(
         constraints[k].second,
@@ -1015,9 +1115,8 @@ TEST(QcqpProblem, Pose2D1QcqpValueConstraints) {
 // Pose3 D=1 retains the first three homogeneous rows in column-major order and
 // embeds the ten SO(3) constraints without constraining translation.
 TEST(QcqpProblem, Pose3D1QcqpValueConstraints) {
-  const Pose3 pose(
-      Rot3::Expmap((Vector3() << 0.4, -0.1, 0.7).finished()),
-      Point3(2.0, -3.0, 4.0));
+  const Pose3 pose(Rot3::Expmap((Vector3() << 0.4, -0.1, 0.7).finished()),
+                   Point3(2.0, -3.0, 4.0));
   const Matrix4 T = pose.matrix();
   const Matrix X = traits<Pose3>::template QcqpValue<1>(pose);
   LONGS_EQUAL(13, X.rows());
@@ -1058,8 +1157,7 @@ TEST(QcqpProblem, Pose3D1QcqpValueConstraints) {
 
   const Matrix3 RRt = rawR * rawR.transpose();
   const std::array<std::pair<int, int>, 6> upperTriangle = {
-      std::pair<int, int>{0, 0}, {0, 1}, {0, 2},
-      {1, 1},                {1, 2}, {2, 2}};
+      std::pair<int, int>{0, 0}, {0, 1}, {0, 2}, {1, 1}, {1, 2}, {2, 2}};
   for (size_t k = 0; k < upperTriangle.size(); ++k) {
     const auto [row, col] = upperTriangle[k];
     EXPECT_DOUBLES_EQUAL(
@@ -1088,12 +1186,11 @@ TEST(QcqpProblem, Pose3D1QcqpValueConstraints) {
                        1e-12);
 
   Eigen::Matrix<double, 13, 1> reflectedX;
-  reflectedX << 1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, -1.0,
-      2.0, -3.0, 4.0;
-  EXPECT(std::abs((reflectedX.transpose() * constraints[1].first *
-                   reflectedX)(0, 0) -
-                  constraints[1].second) >
-         1e-12);
+  reflectedX << 1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, -1.0, 2.0, -3.0,
+      4.0;
+  EXPECT(std::abs((reflectedX.transpose() * constraints[1].first * reflectedX)(
+                      0, 0) -
+                  constraints[1].second) > 1e-12);
   for (size_t k = 4; k < constraints.size(); ++k) {
     EXPECT_DOUBLES_EQUAL(
         constraints[k].second,
@@ -1134,8 +1231,7 @@ TEST(QcqpProblem, Rot3D2Throws) {
 // Rot3 uses its exact D=1 variable for the D=1 between-cost lowering.
 TEST(QcqpProblem, Rot3FrobeniusBetweenFactorD1Accepted) {
   NonlinearFactorGraph graph;
-  graph.emplace_shared<FrobeniusBetweenFactor<Rot3>>(x0, x1,
-                                                      Rot3::Identity());
+  graph.emplace_shared<FrobeniusBetweenFactor<Rot3>>(x0, x1, Rot3::Identity());
   const QcqpProblem problem(graph, 1);
   LONGS_EQUAL(1, problem.costs().size());
 }
@@ -1199,8 +1295,8 @@ TEST(QcqpProblem, Rot3FrobeniusBetweenFactorK2Rejected) {
   auto noise = noiseModel::Isotropic::Sigma(Rot3::dimension, 1.0);
   graph.emplace_shared<FrobeniusBetweenFactor<Rot3>>(
       x0, x1, Rot3::Expmap(Vector3::Zero()), noise);
-  CHECK_EXCEPTION({ QcqpProblem problem(graph, /*K=*/2); },
-                  std::invalid_argument);
+  CHECK_EXCEPTION(
+      { QcqpProblem problem(graph, /*K=*/2); }, std::invalid_argument);
 }
 
 // A fixed target ||X-Xbar|| is not right-O(D)-invariant and cannot be written
@@ -1208,8 +1304,7 @@ TEST(QcqpProblem, Rot3FrobeniusBetweenFactorK2Rejected) {
 TEST(QcqpProblem, MatrixFrobeniusPriorRejected) {
   NonlinearFactorGraph rot2Graph;
   rot2Graph.emplace_shared<FrobeniusPrior<Rot2>>(
-      x0, Rot2::fromAngle(0.2).matrix(),
-      noiseModel::Isotropic::Sigma(4, 1.0));
+      x0, Rot2::fromAngle(0.2).matrix(), noiseModel::Isotropic::Sigma(4, 1.0));
   CHECK_EXCEPTION({ QcqpProblem problem(rot2Graph, 2); }, std::runtime_error);
 
   NonlinearFactorGraph rot3Graph;
@@ -1244,6 +1339,14 @@ TEST(QcqpProblem, InsertQcqpConstraintsMatchesExactQuadratics) {
 /* ************************************************************************* */
 namespace QcqpExtractionFixture {
 
+// Verify the published D=1 QCQP vector dimensions for each supported group.
+TEST(QcqpProblem, QcqpVectorDimensions) {
+  LONGS_EQUAL(5, traits<Rot2>::QcqpVectorDim);
+  LONGS_EQUAL(10, traits<Rot3>::QcqpVectorDim);
+  LONGS_EQUAL(7, traits<Pose2>::QcqpVectorDim);
+  LONGS_EQUAL(13, traits<Pose3>::QcqpVectorDim);
+}
+
 // Verify that a D=1 QCQP value remains recoverable after homogeneous scaling.
 template <typename T>
 T ScaledD1RoundTrip(const T& value) {
@@ -1271,25 +1374,20 @@ TEST(QcqpProblem, Pose2D1QcqpValueRoundTrip) {
 
 // Pose3 D=1 recovery preserves both rotation and translation.
 TEST(QcqpProblem, Pose3D1QcqpValueRoundTrip) {
-  const Pose3 value(Rot3::RzRyRx(0.2, -0.3, 0.5),
-                    Point3(2.0, -3.0, 4.0));
+  const Pose3 value(Rot3::RzRyRx(0.2, -0.3, 0.5), Point3(2.0, -3.0, 4.0));
   EXPECT(assert_equal(value, ScaledD1RoundTrip(value), 1e-12));
 }
 
 // D=1 recovery rejects incorrect dimensions and zero homogenization entries.
 TEST(QcqpProblem, D1QcqpValueRecoveryRejectsInvalidVectors) {
-  CHECK_EXCEPTION(
-      traits<Rot2>::template FromQcqpValue<1>(Matrix::Zero(4, 1)),
-      std::invalid_argument);
-  CHECK_EXCEPTION(
-      traits<Rot3>::template FromQcqpValue<1>(Matrix::Zero(9, 1)),
-      std::invalid_argument);
-  CHECK_EXCEPTION(
-      traits<Pose2>::template FromQcqpValue<1>(Matrix::Zero(6, 1)),
-      std::invalid_argument);
-  CHECK_EXCEPTION(
-      traits<Pose3>::template FromQcqpValue<1>(Matrix::Zero(12, 1)),
-      std::invalid_argument);
+  CHECK_EXCEPTION(traits<Rot2>::template FromQcqpValue<1>(Matrix::Zero(4, 1)),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(traits<Rot3>::template FromQcqpValue<1>(Matrix::Zero(9, 1)),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(traits<Pose2>::template FromQcqpValue<1>(Matrix::Zero(6, 1)),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(traits<Pose3>::template FromQcqpValue<1>(Matrix::Zero(12, 1)),
+                  std::invalid_argument);
 
   Matrix rot2 = traits<Rot2>::template QcqpValue<1>(Rot2());
   Matrix rot3 = traits<Rot3>::template QcqpValue<1>(Rot3());
@@ -1311,12 +1409,10 @@ TEST(QcqpProblem, D1QcqpValueRecoveryRejectsInvalidVectors) {
 
 // Pose recovery is implemented only for the D=1 homogenized representation.
 TEST(QcqpProblem, PoseQcqpValueRecoveryRejectsUnsupportedD) {
-  CHECK_EXCEPTION(
-      traits<Pose2>::template FromQcqpValue<2>(Matrix::Zero(3, 2)),
-      std::invalid_argument);
-  CHECK_EXCEPTION(
-      traits<Pose3>::template FromQcqpValue<2>(Matrix::Zero(4, 2)),
-      std::invalid_argument);
+  CHECK_EXCEPTION(traits<Pose2>::template FromQcqpValue<2>(Matrix::Zero(3, 2)),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(traits<Pose3>::template FromQcqpValue<2>(Matrix::Zero(4, 2)),
+                  std::invalid_argument);
 }
 
 // D=1 extraction selects each group's exact homogenized vector dimension.
@@ -1325,8 +1421,7 @@ TEST(QcqpProblem, ExtractD1QcqpValues) {
   const Rot2 rot2 = Rot2::fromAngle(0.4);
   const Rot3 rot3 = Rot3::RzRyRx(0.2, -0.3, 0.5);
   const Pose2 pose2(Rot2::fromAngle(-0.2), Point2(1.0, -2.0));
-  const Pose3 pose3(Rot3::RzRyRx(-0.1, 0.3, -0.4),
-                    Point3(1.0, -2.0, 3.0));
+  const Pose3 pose3(Rot3::RzRyRx(-0.1, 0.3, -0.4), Point3(1.0, -2.0, 3.0));
   InsertQcqpValue<Rot2, 1>(Symbol('r', 2), rot2, &values);
   InsertQcqpValue<Rot3, 1>(Symbol('r', 3), rot3, &values);
   InsertQcqpValue<Pose2, 1>(Symbol('p', 2), pose2, &values);

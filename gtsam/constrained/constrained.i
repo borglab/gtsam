@@ -149,6 +149,24 @@ class QcqpProblem : gtsam::ConstrainedOptProblem {
   std::tuple<size_t, size_t, size_t> dim() const;
 };
 
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Rot2.h>
+#include <gtsam/geometry/Rot3.h>
+
+template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
+gtsam::Matrix qcqpValue(const T& typedValue);
+
+template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
+void insertQcqpValue(gtsam::Key key, const T& typedValue,
+                     gtsam::Values& qcqpValues);
+
+template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
+T fromQcqpValue(const gtsam::Matrix& qcqpValue);
+
+template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
+gtsam::Values extractQcqpValues(const gtsam::Values& qcqpValues);
+
 #include <gtsam/constrained/ConstrainedOptimizer.h>
 class ConstrainedOptimizerParams {
   ConstrainedOptimizerParams();

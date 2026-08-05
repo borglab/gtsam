@@ -71,11 +71,9 @@ bool SolveRot2Ring(size_t numPoses) {
     return false;
   }
 
-  sdp.recoverQcqpValues();
   const std::vector<Rot2> groundTruth =
       MakeRot2RingGroundTruth(numPoses, delta);
-  const auto recoveredPoses =
-      ExtractQcqpValues<Rot2, 1>(sdp.getRecoveredQcqpValues());
+  const auto recoveredPoses = ExtractQcqpValues<Rot2, 1>(sdp.qcqpValues());
   if (recoveredPoses.size() != groundTruth.size()) {
     std::cerr << "Recovered QCQP value count does not match ground truth."
               << std::endl;
@@ -87,7 +85,7 @@ bool SolveRot2Ring(size_t numPoses) {
                             .localCoordinates(recoveredPoses[index].second)
                             .norm();
   }
-  const auto& poseEVRs = sdp.getRecoveredVariableEVRs();
+  const std::vector<double> poseEVRs = sdp.variableEVRs();
   const double averagePoseError =
       std::accumulate(poseErrors.begin(), poseErrors.end(), 0.0) /
       static_cast<double>(poseErrors.size());
@@ -127,11 +125,9 @@ bool SolveChordalRot2Ring(size_t numPoses) {
     return false;
   }
 
-  sdp.recoverQcqpValues();
   const std::vector<Rot2> groundTruth =
       MakeRot2RingGroundTruth(numPoses, delta);
-  const auto recoveredPoses =
-      ExtractQcqpValues<Rot2, 1>(sdp.getRecoveredQcqpValues());
+  const auto recoveredPoses = ExtractQcqpValues<Rot2, 1>(sdp.qcqpValues());
   if (recoveredPoses.size() != groundTruth.size()) {
     std::cerr << "Recovered QCQP value count does not match ground truth."
               << std::endl;
@@ -143,7 +139,7 @@ bool SolveChordalRot2Ring(size_t numPoses) {
                             .localCoordinates(recoveredPoses[index].second)
                             .norm();
   }
-  const auto& poseEVRs = sdp.getRecoveredVariableEVRs();
+  const std::vector<double> poseEVRs = sdp.variableEVRs();
   const double averagePoseError =
       std::accumulate(poseErrors.begin(), poseErrors.end(), 0.0) /
       static_cast<double>(poseErrors.size());

@@ -14,9 +14,8 @@ class MosekMonolithicSDP {
   std::string problemStatus() const;
   double solveTimeSeconds() const;
 
-  void recoverQcqpValues();
-  const gtsam::Values& getRecoveredQcqpValues() const;
-  const std::vector<double>& getRecoveredVariableEVRs() const;
+  gtsam::Values qcqpValues() const;
+  std::vector<double> variableEVRs() const;
 
   const gtsam::KeyVector& orderedKeys() const;
   const std::map<gtsam::Key, gtsam::DenseIndex>& orderedKeyDims() const;
@@ -35,9 +34,8 @@ class MosekChordalSDP {
   std::string problemStatus() const;
   double solveTimeSeconds() const;
 
-  void recoverQcqpValues();
-  const gtsam::Values& getRecoveredQcqpValues() const;
-  const std::vector<double>& getRecoveredVariableEVRs() const;
+  gtsam::Values qcqpValues() const;
+  std::vector<double> variableEVRs() const;
 
   const gtsam::KeyVector& orderedKeys() const;
   const std::map<gtsam::Key, gtsam::DenseIndex>& orderedKeyDims() const;
