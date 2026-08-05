@@ -142,10 +142,12 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::retract(
         "dimension");
   }
   if constexpr (isDirectProduct) {
-    Jacobian1 D_g_first;
-    Jacobian1 D_g_second;
-    Jacobian2 D_h_first;
-    Jacobian2 D_h_second;
+    // Initialize these defensively: optimized GCC builds cannot always prove
+    // that the optional Jacobian callbacks below assign every coefficient.
+    Jacobian1 D_g_first = Jacobian1::Zero(d1, d1);
+    Jacobian1 D_g_second = Jacobian1::Zero(d1, d1);
+    Jacobian2 D_h_first = Jacobian2::Zero(d2, d2);
+    Jacobian2 D_h_second = Jacobian2::Zero(d2, d2);
     G g = traits<G>::Retract(this->first, tangentSegment<G>(v, 0, d1),
                              H1 ? &D_g_first : nullptr,
                              H2 ? &D_g_second : nullptr);
