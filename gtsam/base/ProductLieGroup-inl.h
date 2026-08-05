@@ -585,11 +585,9 @@ ProductLieGroup<G, H, Action>::AdjointMap() const {
 }
 
 template <typename G, typename H, typename Action>
+template <typename A, std::enable_if_t<!std::is_void_v<A>, int>>
 typename ProductLieGroup<G, H, Action>::Jacobian
 ProductLieGroup<G, H, Action>::adjointMap(const TangentVector& xi) {
-  static_assert(!isDirectProduct,
-                "ProductLieGroup::adjointMap (algebra ad) is only defined for "
-                "semidirect products with Action::generator.");
   // Semidirect product adjoint:
   //
   //    ad_(a,b) = [[ ad^G_a,  0           ],
@@ -614,13 +612,13 @@ ProductLieGroup<G, H, Action>::adjointMap(const TangentVector& xi) {
   ei.setZero();
   for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(d1); ++i) {
     ei(i) = 1.0;
-    negM.col(i) = -(Action::generator(ei) * b);
+    negM.col(i) = -(A::generator(ei) * b);
     ei(i) = 0.0;
   }
 
   Jacobian ad = zeroJacobian(d);
   ad.topLeftCorner(d1, d1) = G::adjointMap(a);
-  ad.bottomRightCorner(d2, d2) = Action::generator(a);
+  ad.bottomRightCorner(d2, d2) = A::generator(a);
   ad.bottomLeftCorner(d2, d1) = negM;
   return ad;
 }
