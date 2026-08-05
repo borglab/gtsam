@@ -41,9 +41,9 @@ It includes classes for representing constraints, building constrained problems,
 - [`QuadraticConstraint`](doc/QcqpProblem.ipynb): Scalar quadratic constraint $\operatorname{tr}(X^\top A X) \sim b$, where $\sim$ is equal, less-equal, or greater-equal.
 - `QcqpProblem(graph, columnDim)`: Opt-in conversion hook for supported nonlinear factors that can populate `QpCost` objectives and `QuadraticConstraint` equalities over matrix-valued QCQP variables.
 - `InsertQcqpValue<T, D>` and `InsertQcqpConstraints<T, D>`: Helpers for inserting supported QCQP variable values and their equality constraints.
-- `ExtractQcqpValues<T, D>`: Best-effort projection of exact-shape matrix
-  slices back to rotations. Absolute results from unanchored matrix components
-  are gauge-dependent.
+- `ExtractQcqpValues<T, D>`: Projection of exact-shape D=1 homogeneous vectors
+  or matrix slices back to manifold values. Absolute results from unanchored
+  matrix components are gauge-dependent.
 
 The leading factor of `1/2` in row-space `QpCost` construction is intentional:
 it follows GTSAM's standard factor-error convention. To represent a QCQP

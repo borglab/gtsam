@@ -19,7 +19,6 @@
 
 #include <gtsam/config.h>
 #include <gtsam/constrained/QcqpProblem.h>
-#include <gtsam/geometry/Rot2.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/symbolic/SymbolicBayesTree.h>
@@ -63,7 +62,7 @@ class LiftedSDPProblem;
  * Monolithic lifted SDP relaxation backed by MOSEK Fusion.
  *
  * The problem owns its MOSEK model. Call solve() before querying solver
- * results, and recoverLiftedVectors() before querying recovered variables.
+ * results, and recoverQcqpValues() before querying recovered variables.
  */
 template <>
 class GTSAM_EXPORT LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
@@ -95,70 +94,14 @@ class GTSAM_EXPORT LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
   /// Return MOSEK's optimizer time in seconds after solve().
   double solveTimeSeconds() const;
 
-  /// Recover one lifted vector from each diagonal SDP block after solve().
-  void recoverLiftedVectors();
+  /// Recover one D=1 QCQP vector from each diagonal SDP block after solve().
+  void recoverQcqpValues();
 
-  /// Return lifted vectors recovered by recoverLiftedVectors().
-  const std::vector<Vector>& getRecoveredLiftedVectors() const;
+  /// Return keyed D=1 QCQP vectors recovered by recoverQcqpValues().
+  const Values& getRecoveredQcqpValues() const;
 
   /// Return largest-to-second-largest eigenvalue ratios for recovered blocks.
   const std::vector<double>& getRecoveredVariableEVRs() const;
-
-  /**
-   * Decode the recovered lifted vectors as manifold values.
-   *
-   * @tparam T Manifold type with a supported lifted-vector decoder.
-   * @return Recovered values in orderedKeys() order.
-   */
-  template <typename T>
-  std::vector<T> getRecoveredPoses() const {
-    const auto& liftedVectors = getRecoveredLiftedVectors();
-    std::vector<T> recoveredPoses;
-    recoveredPoses.reserve(liftedVectors.size());
-    for (const Vector& x : liftedVectors) {
-      if constexpr (std::is_same_v<T, Rot2>) {
-        if (x.size() != 5 || std::abs(x(0)) < 1e-9) {
-          throw std::runtime_error(
-              "getRecoveredPoses<Rot2>: invalid lifted vector.");
-        }
-
-        const Vector xCanonical = x / x(0);
-        Matrix2 Rraw;
-        // QcqpValue<Rot2, 1> stores vec(R) in column-major order.
-        Rraw << xCanonical(1), xCanonical(3), xCanonical(2), xCanonical(4);
-        recoveredPoses.push_back(Rot2::ClosestTo(Rraw));
-      } else {
-        static_assert(std::is_same_v<T, Rot2>,
-                      "No lifted-vector decoder exists for this type.");
-      }
-    }
-    return recoveredPoses;
-  }
-
-  /**
-   * Compute local-coordinate errors between recovered and reference values.
-   *
-   * @tparam T Manifold type with a supported lifted-vector decoder.
-   * @param groundTruth Reference values in orderedKeys() order.
-   * @return One local-coordinate error norm per recovered value.
-   */
-  template <typename T>
-  std::vector<double> getRecoveredPoseErrorNorms(
-      const std::vector<T>& groundTruth) const {
-    const std::vector<T> recoveredPoses = getRecoveredPoses<T>();
-    if (groundTruth.size() != recoveredPoses.size()) {
-      throw std::runtime_error(
-          "getRecoveredPoseErrorNorms: ground-truth size does not match key "
-          "count.");
-    }
-
-    std::vector<double> errors(recoveredPoses.size());
-    for (size_t index = 0; index < recoveredPoses.size(); ++index) {
-      errors[index] =
-          groundTruth[index].localCoordinates(recoveredPoses[index]).norm();
-    }
-    return errors;
-  }
 
   /// Return QCQP variable keys in SDP block order.
   const KeyVector& orderedKeys() const;
@@ -175,7 +118,7 @@ class GTSAM_EXPORT LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
  * Chordally decomposed lifted SDP relaxation backed by MOSEK Fusion.
  *
  * The problem owns its MOSEK model. Call solve() before querying solver
- * results, and recoverLiftedVectors() before querying recovered variables.
+ * results, and recoverQcqpValues() before querying recovered variables.
  */
 template <>
 class GTSAM_EXPORT LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
@@ -209,70 +152,14 @@ class GTSAM_EXPORT LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
   /// Return MOSEK's optimizer time in seconds after solve().
   double solveTimeSeconds() const;
 
-  /// Recover one lifted vector from each diagonal SDP block after solve().
-  void recoverLiftedVectors();
+  /// Recover one D=1 QCQP vector from each diagonal SDP block after solve().
+  void recoverQcqpValues();
 
-  /// Return lifted vectors recovered by recoverLiftedVectors().
-  const std::vector<Vector>& getRecoveredLiftedVectors() const;
+  /// Return keyed D=1 QCQP vectors recovered by recoverQcqpValues().
+  const Values& getRecoveredQcqpValues() const;
 
   /// Return largest-to-second-largest eigenvalue ratios for recovered blocks.
   const std::vector<double>& getRecoveredVariableEVRs() const;
-
-  /**
-   * Decode the recovered lifted vectors as manifold values.
-   *
-   * @tparam T Manifold type with a supported lifted-vector decoder.
-   * @return Recovered values in orderedKeys() order.
-   */
-  template <typename T>
-  std::vector<T> getRecoveredPoses() const {
-    const auto& liftedVectors = getRecoveredLiftedVectors();
-    std::vector<T> recoveredPoses;
-    recoveredPoses.reserve(liftedVectors.size());
-    for (const Vector& x : liftedVectors) {
-      if constexpr (std::is_same_v<T, Rot2>) {
-        if (x.size() != 5 || std::abs(x(0)) < 1e-9) {
-          throw std::runtime_error(
-              "getRecoveredPoses<Rot2>: invalid lifted vector.");
-        }
-
-        const Vector xCanonical = x / x(0);
-        Matrix2 Rraw;
-        // QcqpValue<Rot2, 1> stores vec(R) in column-major order.
-        Rraw << xCanonical(1), xCanonical(3), xCanonical(2), xCanonical(4);
-        recoveredPoses.push_back(Rot2::ClosestTo(Rraw));
-      } else {
-        static_assert(std::is_same_v<T, Rot2>,
-                      "No lifted-vector decoder exists for this type.");
-      }
-    }
-    return recoveredPoses;
-  }
-
-  /**
-   * Compute local-coordinate errors between recovered and reference values.
-   *
-   * @tparam T Manifold type with a supported lifted-vector decoder.
-   * @param groundTruth Reference values in orderedKeys() order.
-   * @return One local-coordinate error norm per recovered value.
-   */
-  template <typename T>
-  std::vector<double> getRecoveredPoseErrorNorms(
-      const std::vector<T>& groundTruth) const {
-    const std::vector<T> recoveredPoses = getRecoveredPoses<T>();
-    if (groundTruth.size() != recoveredPoses.size()) {
-      throw std::runtime_error(
-          "getRecoveredPoseErrorNorms: ground-truth size does not match key "
-          "count.");
-    }
-
-    std::vector<double> errors(recoveredPoses.size());
-    for (size_t index = 0; index < recoveredPoses.size(); ++index) {
-      errors[index] =
-          groundTruth[index].localCoordinates(recoveredPoses[index]).norm();
-    }
-    return errors;
-  }
 
   /// Return QCQP variable keys in SDP block order.
   const KeyVector& orderedKeys() const;

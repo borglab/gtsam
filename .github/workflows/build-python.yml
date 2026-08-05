@@ -5,6 +5,15 @@ name: Python CI
 # never runs, and a maintainer must bypass the check in order to merge the PR.
 on:
   workflow_dispatch:
+    inputs:
+      runner:
+        description: Runner selection
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - windows-2022-msvc
   pull_request:
     paths-ignore:
       - "**.md"
@@ -23,6 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       should_run: ${{ steps.filter.outputs.relevant_changes }}
+      build_matrix: ${{ steps.matrix.outputs.build_matrix }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -37,10 +47,22 @@ jobs:
               - '!**.ipynb' 
               - '!myst.yml'
 
+      - name: Configure build matrix
+        id: matrix
+        shell: bash
+        env:
+          RUNNER_SELECTION: ${{ inputs.runner || 'all' }}
+        run: |
+          if [ "$RUNNER_SELECTION" = "windows-2022-msvc" ]; then
+            echo 'build_matrix={"include":[{"name":"windows-2022-msvc","build_type":"Release","python_version":3,"os":"windows-2022","platform":64}]}' >> "$GITHUB_OUTPUT"
+          else
+            echo 'build_matrix={"include":[{"name":"ubuntu-22.04-gcc-11","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"gcc","version":"11"},{"name":"ubuntu-22.04-gcc-11-noboost","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"gcc","version":"11"},{"name":"ubuntu-22.04-clang-11","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"clang","version":"11"},{"name":"macos-15-xcode-16","build_type":"Release","python_version":3,"os":"macos-15","compiler":"xcode","version":"16"},{"name":"windows-2022-msvc","build_type":"Release","python_version":3,"os":"windows-2022","platform":64}]}' >> "$GITHUB_OUTPUT"
+          fi
+
   build:
     # Only run build if relevant files have been modified in this PR.
     needs: check-paths
-    if: needs.check-paths.outputs.should_run == 'true'
+    if: github.event_name == 'workflow_dispatch' || needs.check-paths.outputs.should_run == 'true'
 
     name: ${{ matrix.name }} ${{ matrix.build_type }} Python ${{ matrix.python_version }}
     runs-on: ${{ matrix.os }}
@@ -50,50 +72,11 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       PYTHON_VERSION: ${{ matrix.python_version }}
-      BOOST_VERSION: 1.72.0
-      BOOST_EXE: boost_1_72_0-msvc-14.2
       SCCACHE_GHA_ENABLED: ON
 
     strategy:
       fail-fast: true
-      matrix:
-        # Github Actions requires a single row to be added to the build matrix.
-        # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
-        name:
-          [
-            ubuntu-22.04-gcc-11,
-            ubuntu-22.04-gcc-11-noboost,
-            ubuntu-22.04-clang-11,
-            macos-15-xcode-16,
-            windows-2022-msvc,
-          ]
-
-        build_type: [Release]
-        python_version: [3]
-        include:
-          - name: ubuntu-22.04-gcc-11
-            os: ubuntu-22.04
-            compiler: gcc
-            version: "11"
-
-          - name: ubuntu-22.04-gcc-11-noboost
-            os: ubuntu-22.04
-            compiler: gcc
-            version: "11"
-
-          - name: ubuntu-22.04-clang-11
-            os: ubuntu-22.04
-            compiler: clang
-            version: "11"
-
-          - name: macos-15-xcode-16
-            os: macos-15
-            compiler: xcode
-            version: "16"
-
-          - name: windows-2022-msvc
-            os: windows-2022
-            platform: 64
+      matrix: ${{ fromJSON(needs.check-paths.outputs.build_matrix) }}
 
     steps:
       - name: Checkout
@@ -184,8 +167,43 @@ jobs:
             throw "Boost installed but root directory was not found in expected locations."
           }
 
+          $versionHeaderPath = Join-Path $boostRoot "boost\version.hpp"
+          if (Test-Path $versionHeaderPath -PathType Leaf) {
+            $versionHeader = Get-Item $versionHeaderPath
+          } else {
+            $versionHeaders = @(Get-ChildItem -Path $boostRoot -Filter version.hpp -File -Recurse |
+              Where-Object { $_.FullName -match '[\\/]boost[\\/]version\.hpp$' })
+            if ($versionHeaders.Count -ne 1) {
+              throw "Expected one Boost version header under $boostRoot; found $($versionHeaders.Count)."
+            }
+            $versionHeader = $versionHeaders[0]
+          }
+          $boostIncludeDir = Split-Path -Parent (Split-Path -Parent $versionHeader.FullName)
+
+          $boostLibraryDir = Join-Path $boostRoot "lib64-msvc-14.2"
+          if (-not (Test-Path $boostLibraryDir -PathType Container)) {
+            $libraryDirs = @(Get-ChildItem -Path $boostRoot -Filter "lib64-msvc-*" -Directory)
+            if ($libraryDirs.Count -ne 1) {
+              throw "Expected one x64 MSVC Boost library directory under $boostRoot; found $($libraryDirs.Count)."
+            }
+            $boostLibraryDir = $libraryDirs[0].FullName
+          }
+
+          $requiredComponents = @("chrono", "graph", "program_options", "random", "serialization", "timer")
+          foreach ($component in $requiredComponents) {
+            $componentLibrary = Get-ChildItem -Path $boostLibraryDir -Filter "libboost_$component-*-x64-*.lib" -File |
+              Select-Object -First 1
+            if (-not $componentLibrary) {
+              throw "Boost $component x64 library was not found in $boostLibraryDir."
+            }
+          }
+
           "BOOST_ROOT=$boostRoot" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "BOOST_INCLUDEDIR=$boostIncludeDir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "BOOST_LIBRARYDIR=$boostLibraryDir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
           Write-Host "Using BOOST_ROOT=$boostRoot"
+          Write-Host "Using BOOST_INCLUDEDIR=$boostIncludeDir"
+          Write-Host "Using BOOST_LIBRARYDIR=$boostLibraryDir"
     
       - name: Install sccache
         if: runner.os == 'Windows'
