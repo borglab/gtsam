@@ -50,6 +50,11 @@
 
 namespace gtsam {
 
+namespace internal {
+template <typename G>
+struct TangentLieGroupJacobian;
+}  // namespace internal
+
 /**
  * @brief Rot3 is a 3D rotation represented as a rotation matrix if the
  * preprocessor symbol GTSAM_USE_QUATERNIONS is not defined, or as a quaternion
@@ -783,5 +788,29 @@ struct traits<Rot3> : public internal::MatrixLieGroup<Rot3, 3> {
 
 template <>
 struct traits<const Rot3> : public traits<Rot3> {};
+
+namespace internal {
+
+/**
+ * Closed-form right Jacobian for TSO(3) = SO(3) semidirect-product so(3).
+ *
+ * Under the standard [omega; v] coordinates, TSO(3) is isomorphic to SE(3):
+ * the algebra component v is exactly the translational component. Reusing the
+ * SO(3) dexp kernel therefore produces the same block Jacobian as
+ * Pose3::Expmap, without evaluating the generic 9-by-9 Frechet exponential.
+ */
+template <>
+struct TangentLieGroupJacobian<Rot3> {
+  static constexpr bool available = true;
+
+  static Matrix6 rightJacobian(const Vector3& omega, const Vector3& v) {
+    const so3::DexpFunctor local(omega);
+    Matrix6 derivative;
+    local.tangentExpmap(v, derivative);
+    return derivative;
+  }
+};
+
+}  // namespace internal
 
 }  // namespace gtsam

@@ -195,6 +195,15 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   // Compute the left Jacobian for Exponential map in SO(3)
   Matrix3 leftJacobian() const;
 
+  /**
+   * Apply the SO(3) left Jacobian to a tangent vector and optionally compute
+   * the complete right-trivialized Jacobian of the lifted [omega; v]
+   * exponential. This is the shared exponential kernel for both SE(3) and
+   * TSO(3), whose translational/algebra component is J_l(omega) * v.
+   */
+  Vector3 tangentExpmap(const Vector3& v,
+                        OptionalJacobian<6, 6> H = {}) const;
+
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
   /// @deprecated: use InvJacobian().right()
   Matrix3 rightJacobianInverse() const;

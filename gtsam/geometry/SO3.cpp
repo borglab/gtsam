@@ -188,6 +188,27 @@ Kernel DexpFunctor::Gamma() const& { return Kernel{this, 0.5, C(), E(), dC(), dE
 Matrix3 DexpFunctor::rightJacobian() const { return I_3x3 - B * W + C() * WW; }
 Matrix3 DexpFunctor::leftJacobian() const { return I_3x3 + B * W + C() * WW; }
 
+Vector3 DexpFunctor::tangentExpmap(const Vector3& v,
+                                  OptionalJacobian<6, 6> H) const {
+  const Kernel jacobian = Jacobian();
+  Matrix3 D_transport_omega;
+  const Vector3 transported =
+      jacobian.applyLeft(v, H ? &D_transport_omega : nullptr);
+
+  if (H) {
+    // For [omega; v], both SE(3) and TSO(3) have the right Jacobian
+    //
+    //   [[J_r, 0], [Q_r, J_r]],
+    //
+    // where Q_r is the derivative of J_l(omega)*v pulled from the world frame
+    // back to the right-trivialized frame by R^T.
+    const Matrix3 Jr = jacobian.right();
+    const Matrix3 Qr = expmap().transpose() * D_transport_omega;
+    *H << Jr, Z_3x3, Qr, Jr;
+  }
+  return transported;
+}
+
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 Matrix3 DexpFunctor::rightJacobianInverse() const {
   return InvJacobian().right();
