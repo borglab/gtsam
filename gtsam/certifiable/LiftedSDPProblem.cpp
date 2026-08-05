@@ -283,23 +283,23 @@ double ComputeBlockRankOneRatio(const Matrix& Xii) {
 
 constexpr double kRecoveredBlockRankOneWarningThreshold = 1e5;
 
-// Recover the homogeneous lifted vector represented by the first Gram column.
-Vector RecoverLiftedVector(const Matrix& Xii) {
+// Recover the D=1 QCQP vector represented by the first Gram column.
+Vector RecoverQcqpVector(const Matrix& Xii) {
   if (Xii.rows() == 0 || Xii.cols() == 0 || std::abs(Xii(0, 0)) < 1e-9) {
     throw std::runtime_error(
-        "RecoverLiftedVector: homogenization entry is near zero.");
+        "RecoverQcqpVector: homogenization entry is near zero.");
   }
   return Xii.col(0);
 }
 
 // Recover every diagonal SDP block and record its rank-one metric.
-void RecoverLiftedVectors(const LiftedVariableXijToSDPVariableViewMap& XijMap,
-                          const KeyVector& orderedKeys,
-                          const std::map<Key, DenseIndex>& orderedKeyDims,
-                          std::vector<Vector>& recoveredLiftedVectors,
-                          std::vector<double>& recoveredVariableEVRs) {
+void RecoverQcqpValues(const LiftedVariableXijToSDPVariableViewMap& XijMap,
+                       const KeyVector& orderedKeys,
+                       const std::map<Key, DenseIndex>& orderedKeyDims,
+                       Values& recoveredQcqpValues,
+                       std::vector<double>& recoveredVariableEVRs) {
   const size_t variableCount = orderedKeys.size();
-  recoveredLiftedVectors.resize(variableCount);
+  recoveredQcqpValues.clear();
   recoveredVariableEVRs.resize(variableCount);
 
   for (size_t index = 0; index < variableCount; ++index) {
@@ -312,7 +312,7 @@ void RecoverLiftedVectors(const LiftedVariableXijToSDPVariableViewMap& XijMap,
                 << DefaultKeyFormatter(key) << " failed rank-1 check with EVR "
                 << recoveredVariableEVRs[index] << std::endl;
     }
-    recoveredLiftedVectors[index] = RecoverLiftedVector(Xii);
+    recoveredQcqpValues.insert(key, Matrix(RecoverQcqpVector(Xii)));
   }
 }
 
@@ -407,8 +407,20 @@ void AddLinearEqualityConstraint(
     const auto xi = Xii->slice(first, last)->asExpr();
     const Matrix A = J.getA(it);
     const Vector b = J.getb();
-    const auto lhs = mf::Expr::mul(convertToMosekDenseMatrix(A), xi);
-    M->constraint(lhs, mf::Domain::equalsTo(convertToMosekDenseMatrix(b)));
+
+    // Ax=b implies A*x*x'=b*x', hence A*X=b*x' after lifting X=x*x'.
+    // Since x is the first column of X and x(0)=1, x'=X(0,:).
+    // Enforcing only A*X(:,0)=b leaves unconstrained PSD slack in X.
+    const auto xTranspose =
+        Xii->slice(monty::new_array_ptr<int, 1>({0, 0}),
+                   monty::new_array_ptr<int, 1>(
+                       {1, static_cast<int>(dim)}))
+            ->asExpr();
+    const auto lhs =
+        mf::Expr::mul(convertToMosekDenseMatrix(A), Xii->asExpr());
+    const auto rhs =
+        mf::Expr::mul(convertToMosekDenseMatrix(b), xTranspose);
+    M->constraint(mf::Expr::sub(lhs, rhs), mf::Domain::equalsTo(0.0));
   } else {
     throw std::runtime_error(
         "MonolithicSDP: only unary linear equality QCQP constraints are "
@@ -523,11 +535,11 @@ struct LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::Impl {
   std::map<Key, std::pair<DenseIndex, DenseIndex>> orderedKeyToYSlice;
   DenseIndex totalMonolithicDimension;
   LiftedVariableXijToSDPVariableViewMap liftedVariableXijToSDPVariableViewMap;
-  std::vector<Vector> recoveredLiftedVectors;
+  Values recoveredQcqpValues;
   std::vector<double> recoveredVariableEVRs;
 
   ~Impl() {
-    recoveredLiftedVectors.clear();
+    recoveredQcqpValues.clear();
     recoveredVariableEVRs.clear();
     liftedVariableXijToSDPVariableViewMap.clear();
     DisposeMosekModel(M);
@@ -574,11 +586,11 @@ struct LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::Impl {
   std::map<Key, DenseIndex> orderedKeyDims;
   SymbolicBayesTree bayesTree_;
   LiftedVariableXijToSDPVariableViewMap liftedVariableXijToSDPVariableViewMap;
-  std::vector<Vector> recoveredLiftedVectors;
+  Values recoveredQcqpValues;
   std::vector<double> recoveredVariableEVRs;
 
   ~Impl() {
-    recoveredLiftedVectors.clear();
+    recoveredQcqpValues.clear();
     recoveredVariableEVRs.clear();
     liftedVariableXijToSDPVariableViewMap.clear();
     DisposeMosekModel(M);
@@ -732,29 +744,29 @@ double LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::solveTimeSeconds()
   return impl_->lastSolveSummary.optimizerTimeSeconds;
 }
 
-void LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::recoverLiftedVectors() {
+void LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::recoverQcqpValues() {
   impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
-  RecoverLiftedVectors(impl_->liftedVariableXijToSDPVariableViewMap,
-                       impl_->orderedKeys, impl_->orderedKeyDims,
-                       impl_->recoveredLiftedVectors,
-                       impl_->recoveredVariableEVRs);
+  RecoverQcqpValues(impl_->liftedVariableXijToSDPVariableViewMap,
+                    impl_->orderedKeys, impl_->orderedKeyDims,
+                    impl_->recoveredQcqpValues,
+                    impl_->recoveredVariableEVRs);
 }
 
-const std::vector<Vector>& LiftedSDPProblem<
-    MonolithicSDP, MosekSDPSolver>::getRecoveredLiftedVectors() const {
-  if (impl_->recoveredLiftedVectors.empty()) {
+const Values& LiftedSDPProblem<
+    MonolithicSDP, MosekSDPSolver>::getRecoveredQcqpValues() const {
+  if (impl_->recoveredQcqpValues.empty()) {
     throw std::runtime_error(
-        "getRecoveredLiftedVectors: recoverLiftedVectors() must be called "
+        "getRecoveredQcqpValues: recoverQcqpValues() must be called "
         "first.");
   }
-  return impl_->recoveredLiftedVectors;
+  return impl_->recoveredQcqpValues;
 }
 
 const std::vector<double>& LiftedSDPProblem<
     MonolithicSDP, MosekSDPSolver>::getRecoveredVariableEVRs() const {
   if (impl_->recoveredVariableEVRs.empty()) {
     throw std::runtime_error(
-        "getRecoveredVariableEVRs: recoverLiftedVectors() must be called "
+        "getRecoveredVariableEVRs: recoverQcqpValues() must be called "
         "first.");
   }
   return impl_->recoveredVariableEVRs;
@@ -823,29 +835,29 @@ double LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::solveTimeSeconds() const {
   return impl_->lastSolveSummary.optimizerTimeSeconds;
 }
 
-void LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::recoverLiftedVectors() {
+void LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::recoverQcqpValues() {
   impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
-  RecoverLiftedVectors(impl_->liftedVariableXijToSDPVariableViewMap,
-                       impl_->orderedKeys, impl_->orderedKeyDims,
-                       impl_->recoveredLiftedVectors,
-                       impl_->recoveredVariableEVRs);
+  RecoverQcqpValues(impl_->liftedVariableXijToSDPVariableViewMap,
+                    impl_->orderedKeys, impl_->orderedKeyDims,
+                    impl_->recoveredQcqpValues,
+                    impl_->recoveredVariableEVRs);
 }
 
-const std::vector<Vector>& LiftedSDPProblem<
-    ChordalSDP, MosekSDPSolver>::getRecoveredLiftedVectors() const {
-  if (impl_->recoveredLiftedVectors.empty()) {
+const Values& LiftedSDPProblem<
+    ChordalSDP, MosekSDPSolver>::getRecoveredQcqpValues() const {
+  if (impl_->recoveredQcqpValues.empty()) {
     throw std::runtime_error(
-        "getRecoveredLiftedVectors: recoverLiftedVectors() must be called "
+        "getRecoveredQcqpValues: recoverQcqpValues() must be called "
         "first.");
   }
-  return impl_->recoveredLiftedVectors;
+  return impl_->recoveredQcqpValues;
 }
 
 const std::vector<double>&
 LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::getRecoveredVariableEVRs() const {
   if (impl_->recoveredVariableEVRs.empty()) {
     throw std::runtime_error(
-        "getRecoveredVariableEVRs: recoverLiftedVectors() must be called "
+        "getRecoveredVariableEVRs: recoverQcqpValues() must be called "
         "first.");
   }
   return impl_->recoveredVariableEVRs;
