@@ -253,6 +253,16 @@ class ProductLieGroup : public std::pair<G, H> {
   /// Adjoint map
   Jacobian AdjointMap() const;
 
+  /**
+   * Static Lie-algebra adjoint ad_xi for a semidirect product.
+   * The first factor must provide a static adjointMap().
+   * Only available for semidirect products (Action != void).
+   */
+  template <typename A = Action>
+  static std::enable_if_t<!std::is_void_v<A> && std::is_same_v<A, Action>,
+                          Jacobian>
+  adjointMap(const TangentVector& xi);
+
   /// @}
 
  protected:
