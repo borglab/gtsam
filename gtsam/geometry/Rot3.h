@@ -142,6 +142,9 @@ class GTSAM_EXPORT Rot3 : public MatrixLieGroup<Rot3, 3, 3> {
     /** Virtual destructor */
     virtual ~Rot3() {}
 
+    /// Check if a 3x3 matrix is a valid rotation (orthonormal with det +1).
+    static bool IsValid(const Matrix3& R, double tol = 1e-9);
+
     /* Static member function to generate some well known rotations */
 
     /// Rotation around X axis as in http://en.wikipedia.org/wiki/Rotation_matrix, counterclockwise when looking from unchanging axis.

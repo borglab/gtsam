@@ -1083,6 +1083,26 @@ TEST(Rot3, expmapChainRule) {
 }
 
 /* ************************************************************************* */
+TEST(Rot3, IsValid) {
+  // Valid rotation
+  EXPECT(Rot3::IsValid(I_3x3, 1e-9));
+  EXPECT(Rot3::IsValid(Rot3::Rz(0.5).matrix(), 1e-9));
+
+  // Not orthonormal
+  Matrix3 bad = I_3x3;
+  bad(0, 0) = 2.0;
+  EXPECT(!Rot3::IsValid(bad, 1e-9));
+
+  // Reflection (det = -1)
+  Matrix3 reflect = I_3x3;
+  reflect(2, 2) = -1.0;
+  EXPECT(!Rot3::IsValid(reflect, 1e-9));
+
+  // Zero matrix
+  EXPECT(!Rot3::IsValid(Z_3x3, 1e-9));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

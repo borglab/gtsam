@@ -32,6 +32,12 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
+bool Rot3::IsValid(const Matrix3& R, double tol) {
+  return (R.transpose() * R - Matrix3::Identity()).norm() <= tol &&
+         R.determinant() > 0;
+}
+
+/* ************************************************************************* */
 void Rot3::print(const std::string& s) const {
   cout << (s.empty() ? "R: " : s + " ");
   gtsam::print(static_cast<Matrix>(matrix()));
