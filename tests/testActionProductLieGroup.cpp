@@ -303,8 +303,16 @@ TEST(testActionProduct, Expmap) {
   const Semidirect actual = Semidirect::Expmap(xi, actH);
   const Matrix numericH = numericalDerivative11(expmapSemidirectProxy, xi);
 
+  const Vector3 omega = xi.head<3>();
+  const Vector3 velocity = xi.tail<3>();
+  Matrix H2Only;
+  const Semidirect splitActual =
+      Semidirect::Expmap(omega, velocity, {}, H2Only);
+
   EXPECT(assert_equal(Pose3::Expmap(xi), asPose3(actual), kTol));
   EXPECT(assert_equal(numericH, actH, 1e-6));
+  EXPECT(assert_equal(actual, splitActual, kTol));
+  EXPECT(assert_equal(actH.rightCols<3>(), H2Only, 1e-6));
 }
 
 // Check the semidirect Logmap and its Jacobian against Pose3 and numerical

@@ -41,30 +41,22 @@ void assignBlock(const SrcType& source, size_t row, size_t column,
 namespace gtsam {
 
 // ---------------------------------------------------------------------------
-// phi0Kernel: compute φ₀(A)=exp(A) directly.
-// ---------------------------------------------------------------------------
-template <typename G, typename H, typename Action>
-typename ProductLieGroup<G, H, Action>::Jacobian2
-ProductLieGroup<G, H, Action>::phi0Kernel(const Jacobian2& A) {
-  Jacobian2 phi0;
-  if constexpr (secondDynamic) phi0.resize(A.rows(), A.cols());
-  phi0 = A.exp();
-  return phi0;
-}
-
-// ---------------------------------------------------------------------------
 // phi1Kernel: compute φ₁(A)=Σ Aᵏ/(k+1)! from one block matrix exponential.
 //
 // Identity: exp([[A, I], [0, 0]]) = [[exp(A), φ₁(A)], [0, I]].
 // ---------------------------------------------------------------------------
 template <typename G, typename H, typename Action>
 typename ProductLieGroup<G, H, Action>::Jacobian2
-ProductLieGroup<G, H, Action>::phi1Kernel(const Jacobian2& A) {
+ProductLieGroup<G, H, Action>::phi1Kernel(const Jacobian2& A, Jacobian2* phi0) {
   const int r = static_cast<int>(A.rows());
   Eigen::MatrixXd M = Eigen::MatrixXd::Zero(2 * r, 2 * r);
   M.topLeftCorner(r, r) = A;
   M.topRightCorner(r, r) = Eigen::MatrixXd::Identity(r, r);
   const Eigen::MatrixXd expM = M.exp();
+  if (phi0) {
+    if constexpr (secondDynamic) phi0->resize(r, r);
+    *phi0 = expM.topLeftCorner(r, r);
+  }
   Jacobian2 phi1;
   if constexpr (secondDynamic) phi1.resize(r, r);
   phi1 = expM.topRightCorner(r, r);
@@ -450,10 +442,11 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::Expmap(
       return ProductLieGroup(g, h);
     }
 
-    const Jacobian2 phi1 = phi1Kernel(A);
+    Jacobian2 phi0;
+    const Jacobian2 phi1 = phi1Kernel(A, H2 ? &phi0 : nullptr);
     const H h = phi1 * v2;
     if (H2) {
-      const auto phi0Solver = phi0Kernel(A).lu();
+      const auto phi0Solver = phi0.lu();
       *H2 = Matrix::Zero(d, d2);
       H2->bottomRows(d2) = phi0Solver.solve(phi1);
     }

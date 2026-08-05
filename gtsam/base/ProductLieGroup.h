@@ -289,11 +289,9 @@ class ProductLieGroup : public std::pair<G, H> {
   void checkMatchingDimensions(const ProductLieGroup& other,
                                const char* operation) const;
 
-  /// Compute φ₀(A) = exp(A).
-  static Jacobian2 phi0Kernel(const Jacobian2& A);
-
-  /// Compute φ₁(A) = Σ Aᵏ/(k+1)! from a block matrix exponential.
-  static Jacobian2 phi1Kernel(const Jacobian2& A);
+  /// Compute φ₁(A) and optionally return the exp(A) block produced alongside
+  /// it.
+  static Jacobian2 phi1Kernel(const Jacobian2& A, Jacobian2* phi0 = nullptr);
 
   /// Result of the analytic Fréchet derivative helper for φ₁.
   struct Phi1FrechetResult {
