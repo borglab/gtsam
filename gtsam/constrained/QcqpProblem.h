@@ -168,24 +168,40 @@ std::vector<std::pair<Key, T>> ExtractQcqpValues(const Values& qcqpValues) {
 /** Return the exact D=1 QCQP vector for a typed value. */
 template <typename T>
 Matrix qcqpValue(const T& typedValue) {
+  static_assert(internal::HasQcqpVariableTraits<T, 1>::value,
+                "qcqpValue requires traits<T>::QcqpValue<1> and "
+                "traits<T>::QcqpConstraints<1>.");
   return traits<T>::template QcqpValue<1>(typedValue);
 }
 
 /** Insert a typed value as an exact D=1 QCQP matrix. */
 template <typename T>
 void insertQcqpValue(Key key, const T& typedValue, Values& qcqpValues) {
+  static_assert(internal::HasQcqpVariableTraits<T, 1>::value,
+                "insertQcqpValue requires traits<T>::QcqpValue<1> and "
+                "traits<T>::QcqpConstraints<1>.");
   InsertQcqpValue<T, 1>(key, typedValue, &qcqpValues);
 }
 
 /** Recover a typed value from an exact D=1 QCQP vector. */
 template <typename T>
 T fromQcqpValue(const Matrix& qcqpValue) {
+  static_assert(internal::HasQcqpExtractionTraits<T, 1>::value,
+                "fromQcqpValue requires traits<T>::QcqpValue<1>, "
+                "QcqpConstraints<1>, and FromQcqpValue<1>.");
+  static_assert(internal::HasQcqpVectorDim<T>::value,
+                "fromQcqpValue requires traits<T>::QcqpVectorDim.");
   return traits<T>::template FromQcqpValue<1>(qcqpValue);
 }
 
 /** Extract all matching exact D=1 QCQP vectors as typed Values. */
 template <typename T>
 Values extractQcqpValues(const Values& qcqpValues) {
+  static_assert(internal::HasQcqpExtractionTraits<T, 1>::value,
+                "extractQcqpValues requires traits<T>::QcqpValue<1>, "
+                "QcqpConstraints<1>, and FromQcqpValue<1>.");
+  static_assert(internal::HasQcqpVectorDim<T>::value,
+                "extractQcqpValues requires traits<T>::QcqpVectorDim.");
   Values typedValues;
   for (const auto& [key, typedValue] : ExtractQcqpValues<T, 1>(qcqpValues)) {
     typedValues.insert(key, typedValue);
