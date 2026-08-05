@@ -33,20 +33,35 @@
 
 namespace gtsam {
 
+namespace internal {
+
 /// Detects whether Action has a static generator() method.
 /// Used to enable the generic semidirect Expmap/Logmap via the φ₁ kernel.
 template <typename T, typename G_TanVec, typename = void>
-struct HasGenerator : std::false_type {};
+struct ProductLieGroupHasGenerator : std::false_type {};
 template <typename T, typename G_TanVec>
-struct HasGenerator<T, G_TanVec,
-                    std::void_t<decltype(T::generator(std::declval<G_TanVec>()))>>
+struct ProductLieGroupHasGenerator<
+    T, G_TanVec, std::void_t<decltype(T::generator(std::declval<G_TanVec>()))>>
     : std::true_type {};
 
-/// Detects vector-space Lie groups (Eigen column vectors, group law = addition).
+/// Detects vector-space Lie groups (Eigen column vectors, group law =
+/// addition).
 template <typename T>
-struct IsVectorGroup : std::false_type {};
+struct ProductLieGroupIsVector : std::false_type {};
 template <int N>
-struct IsVectorGroup<Eigen::Matrix<double, N, 1>> : std::true_type {};
+struct ProductLieGroupIsVector<Eigen::Matrix<double, N, 1>> : std::true_type {};
+
+/// Checks the structural requirements imposed by the semidirect group law.
+template <typename Action, typename G, typename H, typename = void>
+struct IsCompatibleSemidirectAction : std::false_type {};
+template <typename Action, typename G, typename H>
+struct IsCompatibleSemidirectAction<Action, G, H,
+                                    std::void_t<decltype(Action::type)>>
+    : std::bool_constant<std::is_base_of_v<GroupAction<Action, G, H>, Action> &&
+                         std::is_default_constructible_v<Action> &&
+                         Action::type == ActionType::Left> {};
+
+}  // namespace internal
 
 /**
  * @brief Product Lie group of G and H, optionally with a semidirect structure.
@@ -60,7 +75,8 @@ struct IsVectorGroup<Eigen::Matrix<double, N, 1>> : std::true_type {};
  *   (g₁, h₁) · (g₂, h₂) = (g₁g₂,  h₁ · φ(g₁, h₂))
  *   (g, h)⁻¹             = (g⁻¹,   φ(g⁻¹, h⁻¹))
  *
- * Action must derive from GroupAction<Action, G, H> and implement:
+ * Action must be stateless/default-constructible, derive from
+ * GroupAction<Action, G, H>, declare ActionType::Left, and implement:
  *   - operator()(g, h, Hg={}, Hh={}): the group action with optional
  *     Jacobians w.r.t. g (DimH×DimG) and h (DimH×DimH). These Jacobians are
  *     used to automatically derive the AdjointMap.
@@ -93,13 +109,19 @@ class ProductLieGroup : public std::pair<G, H> {
   inline constexpr static bool firstDynamic = dimension1 == Eigen::Dynamic;
   inline constexpr static bool secondDynamic = dimension2 == Eigen::Dynamic;
   inline constexpr static bool isDirectProduct = std::is_void_v<Action>;
+  inline constexpr static bool hasCompatibleAction =
+      internal::IsCompatibleSemidirectAction<Action, G, H>::value;
   /// True when the semidirect product has the required generator support.
   inline constexpr static bool hasGenerator =
-      !isDirectProduct && IsVectorGroup<H>::value && !secondDynamic &&
-      HasGenerator<Action, typename traits<G>::TangentVector>::value;
-  static_assert(isDirectProduct || hasGenerator,
-                "ProductLieGroup semidirect products require H to be a "
-                "fixed-size Eigen column vector and Action::generator(u).");
+      !isDirectProduct && internal::ProductLieGroupIsVector<H>::value &&
+      !secondDynamic &&
+      internal::ProductLieGroupHasGenerator<
+          Action, typename traits<G>::TangentVector>::value;
+  static_assert(
+      isDirectProduct || (hasCompatibleAction && hasGenerator),
+      "ProductLieGroup semidirect products require a default-constructible "
+      "left GroupAction, a fixed-size Eigen column vector H, and "
+      "Action::generator(u).");
 
  public:
   /// Manifold dimension

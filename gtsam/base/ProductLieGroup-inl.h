@@ -29,9 +29,8 @@ void assignBlock(const SrcType& source, size_t row, size_t column,
   constexpr int rows = SrcType::RowsAtCompileTime;
   constexpr int columns = SrcType::ColsAtCompileTime;
   if constexpr (rows != Eigen::Dynamic && columns != Eigen::Dynamic) {
-    destination->template block<rows, columns>(static_cast<int>(row),
-                                               static_cast<int>(column)) =
-        source;
+    destination->template block<rows, columns>(
+        static_cast<int>(row), static_cast<int>(column)) = source;
   } else {
     destination->block(row, column, source.rows(), source.cols()) = source;
   }
@@ -76,8 +75,6 @@ ProductLieGroup<G, H, Action>::phi1FrechetBlock(const Jacobian2& A,
   result.phi0 = expM.block(r, r, r, r);
   return result;
 }
-
-
 
 template <typename G, typename H, typename Action>
 ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::operator*(
@@ -126,12 +123,12 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::retract(
     Jacobian1 D_g_second;
     Jacobian2 D_h_first;
     Jacobian2 D_h_second;
-    G g = traits<G>::Retract(
-        this->first, tangentSegment<G>(v, 0, d1),
-        H1 ? &D_g_first : nullptr, H2 ? &D_g_second : nullptr);
-    H h = traits<H>::Retract(
-        this->second, tangentSegment<H>(v, d1, d2),
-        H1 ? &D_h_first : nullptr, H2 ? &D_h_second : nullptr);
+    G g = traits<G>::Retract(this->first, tangentSegment<G>(v, 0, d1),
+                             H1 ? &D_g_first : nullptr,
+                             H2 ? &D_g_second : nullptr);
+    H h = traits<H>::Retract(this->second, tangentSegment<H>(v, d1, d2),
+                             H1 ? &D_h_first : nullptr,
+                             H2 ? &D_h_second : nullptr);
     if (H1) {
       *H1 = zeroJacobian(d);
       assignBlock(D_g_first, 0, 0, &*H1);
@@ -180,12 +177,12 @@ ProductLieGroup<G, H, Action>::localCoordinates(const ProductLieGroup& g,
     Jacobian1 D_g_second;
     Jacobian2 D_h_first;
     Jacobian2 D_h_second;
-    const auto v1 = traits<G>::Local(this->first, g.first,
-                                     H1 ? &D_g_first : nullptr,
-                                     H2 ? &D_g_second : nullptr);
-    const auto v2 = traits<H>::Local(this->second, g.second,
-                                     H1 ? &D_h_first : nullptr,
-                                     H2 ? &D_h_second : nullptr);
+    const auto v1 =
+        traits<G>::Local(this->first, g.first, H1 ? &D_g_first : nullptr,
+                         H2 ? &D_g_second : nullptr);
+    const auto v2 =
+        traits<H>::Local(this->second, g.second, H1 ? &D_h_first : nullptr,
+                         H2 ? &D_h_second : nullptr);
     if (H1) {
       *H1 = zeroJacobian(d);
       assignBlock(D_g_first, 0, 0, &*H1);
@@ -221,8 +218,8 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::compose(
     const size_t d = combinedDimension(d1, secondDim());
     Jacobian1 D_g_first;
     Jacobian2 D_h_second;
-    G g = traits<G>::Compose(this->first, other.first,
-                             H1 ? &D_g_first : nullptr);
+    G g =
+        traits<G>::Compose(this->first, other.first, H1 ? &D_g_first : nullptr);
     H h = traits<H>::Compose(this->second, other.second,
                              H1 ? &D_h_second : nullptr);
     if (H1) {
@@ -249,8 +246,8 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::between(
     const size_t d = combinedDimension(d1, secondDim());
     Jacobian1 D_g_first;
     Jacobian2 D_h_second;
-    G g = traits<G>::Between(this->first, other.first,
-                             H1 ? &D_g_first : nullptr);
+    G g =
+        traits<G>::Between(this->first, other.first, H1 ? &D_g_first : nullptr);
     H h = traits<H>::Between(this->second, other.second,
                              H1 ? &D_h_second : nullptr);
     if (H1) {

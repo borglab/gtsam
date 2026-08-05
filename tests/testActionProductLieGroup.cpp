@@ -7,7 +7,7 @@
 
  * See LICENSE for the license information
 
- * -------------------------------1-------------------------------------------
+ * --------------------------------------------------------------------------
  */
 
 /**
@@ -28,6 +28,9 @@
 #include <gtsam/geometry/Rot3.h>
 
 using namespace gtsam;
+
+/* ************************************************************************* */
+namespace semidirect_product_fixture {
 
 constexpr double kTol = 1e-9;
 
@@ -63,8 +66,6 @@ struct Rot3VectorAction : public GroupAction<Rot3VectorAction, Rot3, Vector3> {
 
 using Semidirect2 = ProductLieGroup<Rot2, Point2, Rot2PointAction>;
 using Semidirect = ProductLieGroup<Rot3, Vector3, Rot3VectorAction>;
-
-namespace {
 
 Semidirect2 semidirect2State() {
   return Semidirect2(Rot2::fromAngle(0.35), Point2(0.4, -0.6));
@@ -159,9 +160,6 @@ Pose3 asPose3(const Semidirect& state) {
   return Pose3(state.first, state.second);
 }
 
-}  // namespace
-
-/* ************************************************************************* */
 // A second semidirect instance, Rot2 ⋉ R², checks the generic kernel path in
 // a different dimension with Pose2 as the oracle.
 TEST(Lie, ProductLieGroupSemidirectAction2D) {
@@ -185,13 +183,12 @@ TEST(Lie, ProductLieGroupSemidirectAction2D) {
 
   const Vector3 xi = semidirect2Xi();
   const Semidirect2 actual = Semidirect2::Expmap(xi);
-  EXPECT(assert_equal(Pose2::Expmap(pose2XiFromSemidirect2(xi)), asPose2(actual),
-                      kTol));
+  EXPECT(assert_equal(Pose2::Expmap(pose2XiFromSemidirect2(xi)),
+                      asPose2(actual), kTol));
   EXPECT(assert_equal(
       xi, semidirect2XiFromPose2(Pose2::Logmap(asPose2(actual))), kTol));
 }
 
-/* ************************************************************************* */
 // Check Expmap/Logmap values and Jacobians for a second semidirect product,
 // independent of the Pose3-specific ordering conventions.
 TEST(testActionProduct, ExpmapLogmap2D) {
@@ -201,21 +198,21 @@ TEST(testActionProduct, ExpmapLogmap2D) {
   const Semidirect2 actual = Semidirect2::Expmap(xi, expH);
   const Matrix numericExpH = numericalDerivative11(expmapSemidirect2Proxy, xi);
 
-  EXPECT(assert_equal(Pose2::Expmap(pose2XiFromSemidirect2(xi)), asPose2(actual),
-                      kTol));
+  EXPECT(assert_equal(Pose2::Expmap(pose2XiFromSemidirect2(xi)),
+                      asPose2(actual), kTol));
   EXPECT(assert_equal(numericExpH, expH, 1e-6));
 
   const Semidirect2 state = semidirect2State();
   Matrix logH;
   const Vector3 actualLog = Semidirect2::Logmap(state, logH);
-  const Matrix numericLogH = numericalDerivative11(logmapSemidirect2Proxy, state);
+  const Matrix numericLogH =
+      numericalDerivative11(logmapSemidirect2Proxy, state);
 
-  EXPECT(assert_equal(
-      semidirect2XiFromPose2(Pose2::Logmap(asPose2(state))), actualLog, kTol));
+  EXPECT(assert_equal(semidirect2XiFromPose2(Pose2::Logmap(asPose2(state))),
+                      actualLog, kTol));
   EXPECT(assert_equal(numericLogH, logH, 1e-6));
 }
 
-/* ************************************************************************* */
 // Verify the semidirect product obeys the left action law and matches Pose3
 // behavior.
 TEST(Lie, ProductLieGroupSemidirectAction) {
@@ -245,7 +242,6 @@ TEST(Lie, ProductLieGroupSemidirectAction) {
   EXPECT(assert_equal(asPose3(a * b), asPose3(a) * asPose3(b), kTol));
 }
 
-/* ************************************************************************* */
 // Check semidirect compose values and Jacobians against Pose3 and numerical
 // derivatives.
 TEST(testActionProduct, compose) {
@@ -265,7 +261,6 @@ TEST(testActionProduct, compose) {
   EXPECT(assert_equal(numericH2, actH2, 1e-6));
 }
 
-/* ************************************************************************* */
 // Check semidirect between values and Jacobians against Pose3 and numerical
 // derivatives.
 TEST(testActionProduct, between) {
@@ -285,7 +280,6 @@ TEST(testActionProduct, between) {
   EXPECT(assert_equal(numericH2, actH2, 1e-6));
 }
 
-/* ************************************************************************* */
 // Check the semidirect inverse and its Jacobian against Pose3 and numerical
 // derivatives.
 TEST(testActionProduct, inverse) {
@@ -300,7 +294,6 @@ TEST(testActionProduct, inverse) {
   EXPECT(assert_equal(numericH, actH, 1e-6));
 }
 
-/* ************************************************************************* */
 // Check the semidirect Expmap and its Jacobian against Pose3 and numerical
 // derivatives.
 TEST(testActionProduct, Expmap) {
@@ -314,7 +307,6 @@ TEST(testActionProduct, Expmap) {
   EXPECT(assert_equal(numericH, actH, 1e-6));
 }
 
-/* ************************************************************************* */
 // Check the semidirect Logmap and its Jacobian against Pose3 and numerical
 // derivatives.
 TEST(testActionProduct, Logmap) {
@@ -328,7 +320,6 @@ TEST(testActionProduct, Logmap) {
   EXPECT(assert_equal(numericH, actH, 1e-6));
 }
 
-/* ************************************************************************* */
 // Check that the semidirect adjoint matches the Pose3 adjoint.
 TEST(testActionProduct, AdjointMap) {
   const Semidirect state = semidirectState4();
@@ -336,7 +327,6 @@ TEST(testActionProduct, AdjointMap) {
   EXPECT(assert_equal(asPose3(state).AdjointMap(), state.AdjointMap(), kTol));
 }
 
-/* ************************************************************************* */
 // Check Expmap-based retract/localCoordinates consistency and both Jacobians
 // against numerical derivatives.
 TEST(testActionProduct, retractAndLocalCoordinates) {
@@ -365,6 +355,9 @@ TEST(testActionProduct, retractAndLocalCoordinates) {
   EXPECT(assert_equal(numericLocalH1, localH1, 1e-6));
   EXPECT(assert_equal(numericLocalH2, localH2, 1e-6));
 }
+
+}  // namespace semidirect_product_fixture
+/* ************************************************************************* */
 
 //******************************************************************************
 int main() {
