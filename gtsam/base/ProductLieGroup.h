@@ -254,10 +254,10 @@ class ProductLieGroup : public std::pair<G, H> {
   Jacobian AdjointMap() const;
 
   /**
-   * Static Lie-algebra adjoint ad_xi for a semidirect product.
-   * The first factor must provide a static adjointMap().
+   * Static Lie-algebra adjoint ad_xi.
+   * Vector-space factors are treated as abelian; other factors must provide a
+   * static adjointMap().
    */
-  template <typename A = Action, std::enable_if_t<!std::is_void_v<A>, int> = 0>
   static Jacobian adjointMap(const TangentVector& xi);
 
   /// @}
@@ -277,6 +277,11 @@ class ProductLieGroup : public std::pair<G, H> {
   template <typename T, int Dim = traits<T>::dimension>
   static typename traits<T>::TangentVector tangentSegment(
       const TangentVector& v, size_t start, size_t runtimeDimension);
+
+  /// Compute one factor's static algebra adjoint, including vector spaces.
+  template <typename T>
+  static typename traits<T>::Jacobian componentAdjointMap(
+      const typename traits<T>::TangentVector& xi);
 
   /// Concatenate subgroup tangent vectors into the product tangent.
   static TangentVector makeTangentVector(

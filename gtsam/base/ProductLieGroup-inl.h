@@ -587,42 +587,79 @@ ProductLieGroup<G, H, Action>::AdjointMap() const {
 }
 
 template <typename G, typename H, typename Action>
-template <typename A, std::enable_if_t<!std::is_void_v<A>, int>>
 typename ProductLieGroup<G, H, Action>::Jacobian
 ProductLieGroup<G, H, Action>::adjointMap(const TangentVector& xi) {
-  // Semidirect product adjoint:
-  //
-  //    ad_(a,b) = [[ ad^G_a,  0           ],
-  //                [ -M(b),   generator(a) ]]
-  //
-  // where M(b)·c = generator(c)·b.
-  constexpr size_t d2 = dimension2;
   const size_t d = static_cast<size_t>(xi.size());
-  if (d < d2) {
+  size_t d1 = 0, d2 = 0;
+  if constexpr (firstDynamic && secondDynamic) {
+    if constexpr (isDirectProduct &&
+                  internal::ProductLieGroupIsVector<G>::value &&
+                  internal::ProductLieGroupIsVector<H>::value) {
+      // Both factors are abelian, so the result is zero regardless of where
+      // the concatenated tangent is split.
+      return zeroJacobian(d);
+    }
     throw std::invalid_argument(
-        "ProductLieGroup::adjointMap tangent dimension is smaller than the "
-        "second-factor dimension");
+        "ProductLieGroup::adjointMap cannot infer the tangent split when both "
+        "factors are dynamic");
+  } else if constexpr (firstDynamic) {
+    if (xi.size() < dimension2) {
+      throw std::invalid_argument(
+          "ProductLieGroup::adjointMap tangent dimension is too small for the "
+          "fixed second factor");
+    }
+    d1 = static_cast<size_t>(xi.size() - dimension2);
+    d2 = static_cast<size_t>(dimension2);
+  } else if constexpr (secondDynamic) {
+    if (xi.size() < dimension1) {
+      throw std::invalid_argument(
+          "ProductLieGroup::adjointMap tangent dimension is too small for the "
+          "fixed first factor");
+    }
+    d1 = static_cast<size_t>(dimension1);
+    d2 = static_cast<size_t>(xi.size() - dimension1);
+  } else {
+    d1 = static_cast<size_t>(dimension1);
+    d2 = static_cast<size_t>(dimension2);
   }
-  const size_t d1 = d - d2;
+  if (d != combinedDimension(d1, d2)) {
+    throw std::invalid_argument(
+        "ProductLieGroup::adjointMap tangent dimension does not match product "
+        "dimension");
+  }
+
   const auto a = tangentSegment<G>(xi, 0, d1);
   const auto b = tangentSegment<H>(xi, d1, d2);
 
-  // Bottom-left -M(b): column j = -generator(e_j)·b.
-  Eigen::Matrix<double, dimension2, Eigen::Dynamic> negM(d2, d1);
-  typename traits<G>::TangentVector ei;
-  if constexpr (firstDynamic) ei.resize(static_cast<Eigen::Index>(d1));
-  ei.setZero();
-  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(d1); ++i) {
-    ei(i) = 1.0;
-    negM.col(i) = -(A::generator(ei) * b);
-    ei(i) = 0.0;
-  }
-
   Jacobian ad = zeroJacobian(d);
-  ad.topLeftCorner(d1, d1) = G::adjointMap(a);
-  ad.bottomRightCorner(d2, d2) = A::generator(a);
-  ad.bottomLeftCorner(d2, d1) = negM;
-  return ad;
+  ad.topLeftCorner(d1, d1) = componentAdjointMap<G>(a);
+  if constexpr (isDirectProduct) {
+    // Direct product: ad_(a,b) = diag(ad^G_a, ad^H_b).
+    ad.bottomRightCorner(d2, d2) = componentAdjointMap<H>(b);
+    return ad;
+  } else {
+    // Semidirect product:
+    //
+    //    ad_(a,b) = [[ ad^G_a,  0           ],
+    //                [ -M(b),   generator(a) ]]
+    //
+    // where M(b)·c = generator(c)·b.
+
+    // Bottom-left -M(b): column j = -generator(e_j)·b.
+    Eigen::Matrix<double, dimension2, Eigen::Dynamic> negM(d2, d1);
+    typename traits<G>::TangentVector ei;
+    if constexpr (firstDynamic) ei.resize(static_cast<Eigen::Index>(d1));
+    ei.setZero();
+    for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(d1); ++i) {
+      ei(i) = 1.0;
+      negM.col(i) = -(Action::generator(ei) * b);
+      ei(i) = 0.0;
+    }
+
+    ad.bottomRightCorner(d2, d2) = Action::generator(a);
+    ad.bottomLeftCorner(d2, d1) = negM;
+    return ad;
+  }
 }
 
 template <typename G, typename H, typename Action>
@@ -646,6 +683,22 @@ typename traits<T>::TangentVector ProductLieGroup<G, H, Action>::tangentSegment(
   } else {
     static_cast<void>(runtimeDimension);
     return v.template segment<Dim>(startIndex);
+  }
+}
+
+template <typename G, typename H, typename Action>
+template <typename T>
+typename traits<T>::Jacobian ProductLieGroup<G, H, Action>::componentAdjointMap(
+    const typename traits<T>::TangentVector& xi) {
+  using ComponentJacobian = typename traits<T>::Jacobian;
+  if constexpr (internal::ProductLieGroupIsVector<T>::value) {
+    if constexpr (traits<T>::dimension == Eigen::Dynamic) {
+      return ComponentJacobian::Zero(xi.size(), xi.size());
+    } else {
+      return ComponentJacobian::Zero();
+    }
+  } else {
+    return T::adjointMap(xi);
   }
 }
 

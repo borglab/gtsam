@@ -252,6 +252,7 @@ TEST(testProduct, Logmap) {
 }
 
 /* ************************************************************************* */
+// Checks the group and algebra adjoints for a fixed-size direct product.
 TEST(testProduct, AdjointMap) {
   Product state(Point2(1, 2), Pose2(3, 4, 5));
   const Matrix actual = state.AdjointMap();
@@ -261,6 +262,12 @@ TEST(testProduct, AdjointMap) {
   expected.bottomRightCorner<3, 3>() = state.second.AdjointMap();
 
   EXPECT(assert_equal(expected, actual, kTol));
+
+  Vector5 xi;
+  xi << 1.0, 2.0, 0.1, 0.2, 0.3;
+  Matrix expectedAlgebra = Matrix::Zero(5, 5);
+  expectedAlgebra.bottomRightCorner<3, 3>() = Pose2::adjointMap(xi.tail<3>());
+  EXPECT(assert_equal(expectedAlgebra, Product::adjointMap(xi), kTol));
 }
 
 /* ************************************************************************* */
@@ -349,6 +356,7 @@ TEST(testProductDynamicVR, Logmap) {
 }
 
 /* ************************************************************************* */
+// Checks group and algebra adjoints with a dynamic vector first factor.
 TEST(testProductDynamicVR, AdjointMap) {
   ProductVR state(makeVector({1.0, 2.0}), Rot3::RzRyRx(0.1, 0.2, 0.3));
   const Matrix actual = state.AdjointMap();
@@ -358,6 +366,11 @@ TEST(testProductDynamicVR, AdjointMap) {
   expected.bottomRightCorner(3, 3) = state.second.AdjointMap();
 
   EXPECT(assert_equal(expected, actual, kTol));
+
+  const Vector xi = makeVector({1.0, 2.0, 0.1, 0.2, 0.3});
+  Matrix expectedAlgebra = Matrix::Zero(5, 5);
+  expectedAlgebra.bottomRightCorner(3, 3) = Rot3::adjointMap(xi.tail<3>());
+  EXPECT(assert_equal(expectedAlgebra, ProductVR::adjointMap(xi), kTol));
 }
 
 /* ************************************************************************* */
@@ -461,12 +474,17 @@ TEST(testProductDynamicVV, Logmap) {
 }
 
 /* ************************************************************************* */
+// Checks that a direct product of two dynamic vector spaces has zero algebra
+// ad.
 TEST(testProductDynamicVV, AdjointMap) {
   ProductVV state(makeVector({1.0, 2.0}), makeVector({3.0, 4.0, 5.0}));
   const Matrix actual = state.AdjointMap();
   const Matrix expected = Matrix::Identity(5, 5);
 
   EXPECT(assert_equal(expected, actual, kTol));
+
+  const Vector xi = makeVector({1.0, 2.0, 3.0, 4.0, 5.0});
+  EXPECT(assert_equal(Matrix::Zero(5, 5), ProductVV::adjointMap(xi), kTol));
 }
 
 /* ************************************************************************* */

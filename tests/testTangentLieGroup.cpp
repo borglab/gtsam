@@ -18,6 +18,7 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/testLie.h>
 #include <gtsam/geometry/Gal3.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Rot3.h>
 
@@ -37,6 +38,8 @@ using TGSO3 = TangentLieGroup<Rot3>;
 using TGSE3 = TangentLieGroup<Pose3>;
 using TGGal3 = TangentLieGroup<Gal3>;
 using TGTGSE3 = TangentLieGroup<TGSE3>;
+using DirectProduct = ProductLieGroup<Rot3, Pose2>;
+using TGDirectProduct = TangentLieGroup<DirectProduct>;
 
 TGSE3 tgse3State() {
   return TGSE3(Pose3(Rot3::RzRyRx(0.1, 0.2, 0.3), Point3(1.0, 2.0, 3.0)),
@@ -75,9 +78,11 @@ TEST(TangentLieGroup, Concepts) {
   GTSAM_CONCEPT_ASSERT(IsManifold<TGSE3>);
   GTSAM_CONCEPT_ASSERT(IsLieGroup<TGSE3>);
   GTSAM_CONCEPT_ASSERT(IsLieGroup<TGTGSE3>);
+  GTSAM_CONCEPT_ASSERT(IsLieGroup<TGDirectProduct>);
   EXPECT_LONGS_EQUAL(12, TGSE3::dimension);
   EXPECT_LONGS_EQUAL(6, TGSO3::dimension);
   EXPECT_LONGS_EQUAL(24, TGTGSE3::dimension);
+  EXPECT_LONGS_EQUAL(12, TGDirectProduct::dimension);
 }
 
 // Verifies identity, inverse, and the tangent-group multiplication law.
@@ -118,6 +123,14 @@ TEST(TangentLieGroup, ExpLogRoundTrip) {
   EXPECT(assert_equal(xi, TGSO3::Logmap(TGSO3::Expmap(xi)), kTol));
   const TGSE3 x = tgse3State();
   EXPECT(assert_equal(x, TGSE3::Expmap(TGSE3::Logmap(x)), kTol));
+}
+
+// Verifies a tangent group can use a direct ProductLieGroup as its base.
+TEST(TangentLieGroup, DirectProductBaseRoundTrip) {
+  Vector12 xi;
+  xi << 0.1, -0.2, 0.3, 0.4, -0.1, 0.2, 0.05, 0.15, -0.25, 0.3, -0.35, 0.1;
+  EXPECT(assert_equal(xi, TGDirectProduct::Logmap(TGDirectProduct::Expmap(xi)),
+                      kTol));
 }
 
 // Expmap([u; xi]).second == J_l^G(u) * xi, with J_l(u) = Ad_{Exp(u)} * J_r(u)
