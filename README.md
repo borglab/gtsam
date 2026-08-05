@@ -1,6 +1,15 @@
+
 # GTSAM: Georgia Tech Smoothing and Mapping Library
 [![C++ API](https://img.shields.io/badge/API-C%2B%2B-blue.svg)](https://gtsam.org/doxygen/)
 [![Docs](https://img.shields.io/badge/Docs-Python%20%7C%20C%2B%2B-green.svg)](https://borglab.github.io/gtsam/)
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="doc/images/gtsam-manifold-optimization-dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="doc/images/gtsam-manifold-optimization-light.png">
+    <img alt="GTSAM is a manifold optimization library" src="doc/images/gtsam-manifold-optimization-light.png" width="100%">
+  </picture>
+</p>
 
 **Important Note**
 
@@ -57,7 +66,7 @@ Prerequisites:
     - Mac: at least xcode-14.2
     - Linux: at least clang-11 or gcc-9
     - Windows: at least msvc-14.2
-- [CMake](http://www.cmake.org/cmake/resources/software.html) >= 3.9
+- [CMake](http://www.cmake.org/cmake/resources/software.html) >= 3.16
     - Ubuntu: `sudo apt-get install cmake`
 
 Optional Boost prerequisite:

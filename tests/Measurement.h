@@ -10,7 +10,6 @@ namespace gtsam {
  */
 class Measurement {
  public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   size_t dt;    ///< Time since the last message of this type (nanoseconds).
   size_t time;  ///< ROS time message recieved (nanoseconds).
   ///< The type of message (to enable dynamic/static casting).

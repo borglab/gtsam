@@ -19,7 +19,6 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/nonlinear/expressionTesting.h>
 #include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/sam/BearingRangeFactor.h>
 
@@ -42,8 +41,6 @@ TEST(BearingRangeFactor, 2D) {
   values.insert(poseKey, Pose2(1.0, 2.0, 0.57));
   values.insert(pointKey, Point2(-4.0, 11.0));
 
-  EXPECT_CORRECT_EXPRESSION_JACOBIANS(factor2D.expression({poseKey, pointKey}),
-                                      values, 1e-7, 1e-5);
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor2D, values, 1e-7, 1e-5);
 }
 
@@ -55,7 +52,7 @@ TEST(BearingRangeFactor, 3D) {
   const Unit3 bearing = Pose3().bearing(Point3(1, 0, 0));
   const double range = 1.0;
   BearingRangeFactor3D factor3D(poseKey, pointKey, bearing, range, model3D);
-  
+
   // Set the linearization point
   Values values;
   values.insert(poseKey, Pose3());
@@ -67,8 +64,6 @@ TEST(BearingRangeFactor, 3D) {
 
   // TODO(frank): this test is disabled (for now) because the macros below are
   // incompatible with the Unit3 localCoordinates. See testBearingFactor...
-  // EXPECT_CORRECT_EXPRESSION_JACOBIANS(factor3D.expression({poseKey, pointKey}),
-  //                                     values, 1e-7, 1e-5);
   // EXPECT_CORRECT_FACTOR_JACOBIANS(factor3D, values, 1e-7, 1e-5);
 }  // namespace
 

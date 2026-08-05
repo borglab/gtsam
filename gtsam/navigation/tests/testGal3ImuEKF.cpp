@@ -15,7 +15,9 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Gal3.h>
 #include <gtsam/inference/Symbol.h>
@@ -87,7 +89,7 @@ TEST(Gal3ImuEKF, DynamicsJacobian) {
   for (auto mode :
        {Gal3ImuEKF::NO_TIME, Gal3ImuEKF::TRACK_TIME_WITH_COVARIANCE}) {
     (void)Gal3ImuEKF::Dynamics(n_g, X0, omega_b, f_b, dt, mode, A);
-    std::function<Gal3(const Gal3&)> f = [&](const Gal3& Xq) -> Gal3 {
+    auto f = [&](const Gal3& Xq) -> Gal3 {
       return Gal3ImuEKF::Dynamics(n_g, Xq, omega_b, f_b, dt, mode);
     };
     Matrix10 expected = numericalDerivative11(f, X0);
@@ -185,9 +187,7 @@ TEST(Gal3ImuEKF, PositionMeasurementJacobian) {
   H.block<3, 1>(0, 9) = X.velocity();
 
   // Numerical Jacobian via central differencing
-  std::function<Point3(const Gal3&)> h = [](const Gal3& Xq) {
-    return Xq.position();
-  };
+  auto h = [](const Gal3& Xq) { return Xq.position(); };
   Matrix310 expected = numericalDerivative11<Point3, Gal3>(h, X);
 
   EXPECT(assert_equal(expected, H, 1e-6));

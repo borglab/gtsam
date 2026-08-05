@@ -20,16 +20,18 @@
 
 // #define ENABLE_TIMING // uncomment for timing results
 
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/linear/Sampler.h>
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/navigation/ScenarioRunner.h>
-#include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/factorTesting.h>
-#include <gtsam/linear/Sampler.h>
-#include <gtsam/base/TestableAssertions.h>
-#include <gtsam/base/numericalDerivative.h>
 
-#include <CppUnitLite/TestHarness.h>
 #include <list>
 
 #include "imuFactorTesting.h"
@@ -121,8 +123,7 @@ TEST_PIM(ImuFactor, PreintegratedMeasurements) {
   Matrix9 aH1, aH2;
   Matrix96 aH3;
   actual.computeError(x1, x2, bias, aH1, aH2, aH3);
-  std::function<Vector9(const NavState&, const NavState&, const Bias&)> f =
-      std::bind(&PreintegrationBase::computeError, actual,
+  auto f = std::bind(&PreintegrationBase::computeError, actual,
                   std::placeholders::_1, std::placeholders::_2, std::placeholders::_3,
                   nullptr, nullptr, nullptr);
   EXPECT(assert_equal(numericalDerivative31(f, x1, x2, bias), aH1, 1e-9));

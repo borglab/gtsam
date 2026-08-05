@@ -1,19 +1,99 @@
-For reviewing PRs:
-* All functions in header files should have doxygen-style API docs, /** */ style, except small functions like getters which can have single line /// comments, no need for @brief, @params etc
-* Use /// for single-line comments rather than /** */
-* Use meaningful variable names, e.g. `measurement` not `msm`, avoid abbreviations.
-* Flag overly complex or long/functions: break up in smaller functions
-* On Windows it is necessary to explicitly export all functions from the library which should be externally accessible. To do this, include the macro `GTSAM_EXPORT` in your class or function definition.
-* When adding or modifying public classes/methods, always review and follow `Using-GTSAM-EXPORT.md` before finalizing changes, including template specialization/export rules.
-* If we add a C++ function to a `.i` file to expose it to the wrapper, we must ensure that the parameter names match exactly between the declaration in the header file and the declaration in the `.i`. Similarly, if we change any parameter names in a wrapped function in a header file, or change any parameter names in a `.i` file, we must change the corresponding function in the other file to reflect those changes.
-* Classes are Uppercase, methods and functions lowerMixedCase.
-* Public fields in structs keep plain names (no trailing underscore).
-* Apart from those naming conventions, we adopt Google C++ style.
-* Notebooks in `*/doc/*.ipynb` and `*/examples/*.ipynb` should follow the standard preamble:
-  1) title/introduction markdown cell,
-  2) copyright markdown cell tagged `remove-cell`,
-  3) Colab badge markdown cell,
-  4) Colab install code cell tagged `remove-cell`,
-  5) imports/setup code cell.
-  Use the same `remove-cell` tagging convention as existing notebooks so docs build and Colab behavior stay consistent.
-* After any code change, always run relevant tests via `make -j6 testXXX.run` in the build folder $WORKSPACE/build. If in VS code, ask for escalated permissions if needed.
+# GTSAM repository guidance
+
+GTSAM is a C++17 library for factor graphs and sensor fusion, with Python and
+MATLAB wrappers. Follow the existing code near your change and keep changes
+focused.
+
+## Public C++ APIs
+
+* All functions in header files should have Doxygen-style API documentation
+  using `/** */`, except small functions such as getters, which can use a
+  single-line `///` comment. There is no need for `@brief`, `@param`, or similar
+  tags when the prose is already clear.
+* Use `///` for single-line documentation comments rather than `/** */`.
+* Use meaningful variable names, for example `measurement` rather than `msm`;
+  avoid abbreviations.
+* On Windows, externally accessible library APIs must be explicitly exported.
+  When adding or modifying public classes or functions, review and follow
+  [`Using-GTSAM-EXPORT.md`](../Using-GTSAM-EXPORT.md), including its template
+  specialization and header-only rules.
+
+## C++ style
+
+* Classes and types are `UpperCamelCase`; methods and functions are
+  `lowerCamelCase`.
+* Public fields in structs use plain names without a trailing underscore.
+* Apart from those naming conventions, follow Google C++ style.
+* Prefer concise, elegant examples. Use the fewest helpers needed and favor
+  direct construction and small local functors or lambdas over adapter
+  functions.
+* When reviewing changes, flag overly complex or long functions and recommend
+  breaking them into smaller functions.
+
+## Wrappers and vendored code
+
+* When a C++ function is exposed in a wrapper `.i` file, parameter names must
+  match exactly between the header declaration and the `.i` declaration.
+  Update both whenever a wrapped parameter name changes.
+* For templated classes and factors in wrappers, prefer the normal `.i`
+  template mechanism over one handwritten wrapper class per instantiation.
+  Let the wrapper generate names such as `AttitudeFactorRot3` from
+  `template<...> class AttitudeFactor`.
+* Do not add or retain C++ `using` or `typedef` aliases solely to manufacture
+  wrapper names. Keep aliases only when they are useful in the C++ API.
+* The top-level `wrap/` directory is a git subtree of `borglab/wrap`, not a
+  submodule. Make wrapper-generator contributions in `borglab/wrap`, then sync
+  them into GTSAM with `./update_wrap.sh [branch-or-tag]`, which defaults to
+  `master`. Run the sync on a feature branch because it creates GTSAM commits,
+  typically a squash followed by a merge commit. Do not edit `wrap/` directly
+  for changes that belong upstream.
+* Do not edit files under `gtsam/3rdparty/`. These are vendored third-party
+  libraries, including Eigen; direct changes make upstream updates difficult.
+
+## Tests
+
+* Run validation relevant to the files changed.
+* Run C++ tests from `build/` with `make -j6 testXXX.run`, replacing `testXXX`
+  with the relevant test target.
+* For Python commands in the standard local development environment, use the
+  `py312` conda environment. Run wrapper tests with
+  `cmake --build build --target python-test` or
+  `cmake --build build --target python-test-unstable`, as appropriate.
+* Documentation-only changes do not require unrelated C++ tests, but should
+  still pass applicable documentation checks and `git diff --check`.
+
+## C++ test organization
+
+* Avoid one large anonymous namespace collecting every helper at the top of a
+  test file. Prefer small, named fixture-style namespaces containing both the
+  helpers and tests that use them.
+* Put at least one short `//` comment immediately above every `TEST()` explaining
+  the behavior being verified.
+* When using `/* ************************************************************************* */`
+  dividers, put one immediately before each fixture namespace and one
+  immediately after it closes. Do not put dividers between tests in the same
+  fixture namespace:
+
+  ```cpp
+  /* ************************************************************************* */
+  namespace my_fixture {
+
+  // Verifies the expected behavior.
+  TEST(Suite, Case) {}
+
+  }  // namespace my_fixture
+  /* ************************************************************************* */
+  ```
+
+## Notebooks
+
+Notebooks in `*/doc/*.ipynb` and `*/examples/*.ipynb` should use this preamble:
+
+1. Title and introductory Markdown cell.
+2. Copyright Markdown cell tagged `remove-cell`.
+3. Colab badge Markdown cell.
+4. Colab installation code cell tagged `remove-cell`.
+5. Imports and setup code cell.
+
+Use the existing `remove-cell` metadata convention so documentation builds and
+Colab behavior stay consistent.

@@ -17,14 +17,15 @@
  * @author  Varun Agrawal
  */
 
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/base/lieProxies.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/base/testLie.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Rot3.h>
-#include <gtsam/base/testLie.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/numericalDerivative.h>
-#include <gtsam/base/lieProxies.h>
-
-#include <CppUnitLite/TestHarness.h>
 
 #include <array>
 #include <iomanip>
@@ -1079,6 +1080,26 @@ TEST(Rot3, expmapChainRule) {
   const Vector3 delta{0.1,0.2,0.3};
   const Matrix3 expected2 = numericalDerivative11<Rot3, Vector3>(g, delta);
   EXPECT(assert_equal<Matrix3>(expected2, SO3::ExpmapDerivative(M*delta) * M, 1e-5));
+}
+
+/* ************************************************************************* */
+TEST(Rot3, IsValid) {
+  // Valid rotation
+  EXPECT(Rot3::IsValid(I_3x3, 1e-9));
+  EXPECT(Rot3::IsValid(Rot3::Rz(0.5).matrix(), 1e-9));
+
+  // Not orthonormal
+  Matrix3 bad = I_3x3;
+  bad(0, 0) = 2.0;
+  EXPECT(!Rot3::IsValid(bad, 1e-9));
+
+  // Reflection (det = -1)
+  Matrix3 reflect = I_3x3;
+  reflect(2, 2) = -1.0;
+  EXPECT(!Rot3::IsValid(reflect, 1e-9));
+
+  // Zero matrix
+  EXPECT(!Rot3::IsValid(Z_3x3, 1e-9));
 }
 
 /* ************************************************************************* */

@@ -106,6 +106,13 @@ virtual class EssentialTransferFactorK : gtsam::NoiseModelFactor {
                            const gtsam::noiseModel::Base* model = nullptr);
 };
 
+#include <gtsam/sfm/SelfCalibrationFactor.h>
+virtual class SelfCalibrationFactor : gtsam::NoiseModelFactor {
+  SelfCalibrationFactor(gtsam::Key fi_key, gtsam::Key fj_key, const gtsam::Matrix3& F,
+               const gtsam::Vector2& pp_i, const gtsam::Vector2& pp_j,
+               const gtsam::noiseModel::Base* model = nullptr);
+};
+
 #include <gtsam/sfm/ShonanFactor.h>
 
 virtual class ShonanFactor3 : gtsam::NoiseModelFactor {
@@ -345,9 +352,31 @@ class MFAS {
   gtsam::KeyVector computeOrdering() const;
 };
 
+#include <gtsam/sfm/LocationRecovery.h>
+
+class LocationRecovery {
+  LocationRecovery(const gtsam::LevenbergMarquardtParams& lmParams);
+  LocationRecovery();
+  gtsam::NonlinearFactorGraph buildGraph(
+      const gtsam::BinaryMeasurementsUnit3& edges,
+      bool bilinear) const;
+  gtsam::NonlinearFactorGraph buildGraph(
+      const gtsam::BinaryMeasurementsUnit3& edges) const;
+  void addAnchorPrior(gtsam::Key anchorKey,
+                      gtsam::NonlinearFactorGraph @graph,
+                      const gtsam::SharedNoiseModel& priorNoiseModel) const;
+  void addAnchorPrior(gtsam::Key anchorKey,
+                      gtsam::NonlinearFactorGraph @graph) const;
+  gtsam::Values initializeRandomly(
+      const gtsam::KeySet& keys, size_t numEdges, bool bilinear,
+      const gtsam::Values& initialValues) const;
+  gtsam::Values initializeRandomly(
+      const gtsam::KeySet& keys, size_t numEdges, bool bilinear) const;
+};
+
 #include <gtsam/sfm/TranslationRecovery.h>
 
-class TranslationRecovery {
+class TranslationRecovery : gtsam::LocationRecovery {
   TranslationRecovery(const gtsam::LevenbergMarquardtParams& lmParams,
                       const bool use_bilinear_translation_factor);
   TranslationRecovery(const gtsam::LevenbergMarquardtParams& lmParams);
@@ -375,6 +404,31 @@ class TranslationRecovery {
   // default scale = 1.0, empty betweenTranslations
   gtsam::Values run(const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
                     const double scale = 1.0) const;
+};
+
+#include <gtsam/sfm/GlobalPositioner.h>
+
+class GlobalPositioner : gtsam::LocationRecovery {
+  GlobalPositioner(const gtsam::LevenbergMarquardtParams& lmParams);
+  GlobalPositioner();
+  gtsam::Values initializeRandomly(
+      const gtsam::KeySet& cameraKeys,
+      const gtsam::KeySet& landmarkKeys,
+      const gtsam::BinaryMeasurementsUnit3& cameraPointDirections,
+      const gtsam::Values& initialValues) const;
+  gtsam::Values initializeRandomly(
+      const gtsam::KeySet& cameraKeys,
+      const gtsam::KeySet& landmarkKeys,
+      const gtsam::BinaryMeasurementsUnit3& cameraPointDirections) const;
+  gtsam::Values run(const gtsam::BinaryMeasurementsUnit3& cameraPointDirections,
+                    const gtsam::KeySet& cameraKeys,
+                    const gtsam::KeySet& landmarkKeys,
+                    gtsam::Key anchorCameraKey,
+                    const gtsam::Values& initialValues) const;
+  gtsam::Values run(const gtsam::BinaryMeasurementsUnit3& cameraPointDirections,
+                    const gtsam::KeySet& cameraKeys,
+                    const gtsam::KeySet& landmarkKeys,
+                    gtsam::Key anchorCameraKey) const;
 };
 
 namespace gtsfm {

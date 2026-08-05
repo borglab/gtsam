@@ -39,70 +39,85 @@ void testChartDerivativesN(TestResult& result_, const std::string& name_,
   OJ none;
   const V w12 = T::Local(t1, t2);
   EXPECT(assert_equal<State>(t2, T::Retract(t1, w12, H1, H2)));
-  EXPECT(assert_equal(
-      numericalDerivative41<State, State, V, OJ, OJ, N>(T::Retract, t1, w12,
-                                                         none, none),
-      H1, 1e-5));
-  EXPECT(assert_equal(
-      numericalDerivative42<State, State, V, OJ, OJ, N>(T::Retract, t1, w12,
-                                                         none, none),
-      H2, 1e-5));
+  EXPECT(assert_equal(numericalDerivative41<State, State, V, OJ, OJ, N>(
+                          T::Retract, t1, w12, none, none),
+                      H1, 1e-5));
+  EXPECT(assert_equal(numericalDerivative42<State, State, V, OJ, OJ, N>(
+                          T::Retract, t1, w12, none, none),
+                      H2, 1e-5));
 
   EXPECT(assert_equal(w12, T::Local(t1, t2, H1, H2), 1e-9));
-  EXPECT(assert_equal(
-      numericalDerivative41<V, State, State, OJ, OJ, N>(T::Local, t1, t2, none,
-                                                         none),
-      H1, 1e-5));
-  EXPECT(assert_equal(
-      numericalDerivative42<V, State, State, OJ, OJ, N>(T::Local, t1, t2, none,
-                                                         none),
-      H2, 1e-5));
+  EXPECT(assert_equal(numericalDerivative41<V, State, State, OJ, OJ, N>(
+                          T::Local, t1, t2, none, none),
+                      H1, 1e-5));
+  EXPECT(assert_equal(numericalDerivative42<V, State, State, OJ, OJ, N>(
+                          T::Local, t1, t2, none, none),
+                      H2, 1e-5));
 }
 
-SensorState MakeSensor1() {
-  SensorState s;
-  s.inputBias = Bias(Vector3(0.03, -0.01, 0.02), Vector3(0.1, -0.2, 0.05));
-  s.pose = Pose3(Rot3::RzRyRx(0.2, -0.1, 0.15), Point3(0.4, -0.2, 1.0));
-  s.velocity = Vector3(0.5, -0.3, 0.2);
-  s.cameraOffset =
-      Pose3(Rot3::RzRyRx(-0.08, 0.04, -0.03), Point3(0.1, 0.0, 0.05));
-  return s;
+std::vector<Point3> Lms0() { return {}; }
+
+std::vector<Point3> Lms1A() { return {{Point3(1.0, -0.5, 4.0)}}; }
+
+std::vector<Point3> Lms1B() { return {{Point3(0.8, -0.3, 3.7)}}; }
+
+std::vector<Point3> Lms3A() {
+  return {{Point3(1.0, -0.5, 4.0)},
+          {Point3(-0.6, 0.4, 3.2)},
+          {Point3(0.2, 0.7, 5.1)}};
 }
 
-SensorState MakeSensor2() {
-  SensorState s;
-  s.inputBias = Bias(Vector3(0.02, 0.05, -0.06), Vector3(-0.04, 0.07, -0.03));
-  s.pose = Pose3(Rot3::RzRyRx(-0.1, 0.2, -0.25), Point3(-0.3, 0.5, 0.8));
-  s.velocity = Vector3(-0.2, 0.4, -0.1);
-  s.cameraOffset =
-      Pose3(Rot3::RzRyRx(0.06, -0.03, 0.02), Point3(-0.05, 0.02, 0.09));
-  return s;
+std::vector<Point3> Lms3B() {
+  return {{Point3(0.9, -0.45, 3.8)},
+          {Point3(-0.5, 0.35, 3.4)},
+          {Point3(0.1, 0.65, 4.9)}};
 }
 
-std::vector<Landmark> Lms0() { return {}; }
-
-std::vector<Landmark> Lms1A() { return {{Point3(1.0, -0.5, 4.0), 11}}; }
-
-std::vector<Landmark> Lms1B() { return {{Point3(0.8, -0.3, 3.7), 11}}; }
-
-std::vector<Landmark> Lms3A() {
-  return {{Point3(1.0, -0.5, 4.0), 11},
-          {Point3(-0.6, 0.4, 3.2), 22},
-          {Point3(0.2, 0.7, 5.1), 33}};
+State MakeState0A() {
+  return State(Se23(Rot3::RzRyRx(0.2, -0.1, 0.15), Vector3(0.5, -0.3, 0.2),
+                    Point3(0.4, -0.2, 1.0)),
+               Bias(Vector3(0.03, -0.01, 0.02), Vector3(0.1, -0.2, 0.05)),
+               Pose3(Rot3::RzRyRx(-0.08, 0.04, -0.03), Point3(0.1, 0.0, 0.05)),
+               Lms0());
 }
-
-std::vector<Landmark> Lms3B() {
-  return {{Point3(0.9, -0.45, 3.8), 11},
-          {Point3(-0.5, 0.35, 3.4), 22},
-          {Point3(0.1, 0.65, 4.9), 33}};
+State MakeState0B() {
+  return State(
+      Se23(Rot3::RzRyRx(-0.1, 0.2, -0.25), Vector3(-0.2, 0.4, -0.1),
+           Point3(-0.3, 0.5, 0.8)),
+      Bias(Vector3(0.02, 0.05, -0.06), Vector3(-0.04, 0.07, -0.03)),
+      Pose3(Rot3::RzRyRx(0.06, -0.03, 0.02), Point3(-0.05, 0.02, 0.09)),
+      Lms0());
 }
-
-State MakeState0A() { return State(MakeSensor1(), Lms0()); }
-State MakeState0B() { return State(MakeSensor2(), Lms0()); }
-State MakeState1A() { return State(MakeSensor1(), Lms1A()); }
-State MakeState1B() { return State(MakeSensor2(), Lms1B()); }
-State MakeState3A() { return State(MakeSensor1(), Lms3A()); }
-State MakeState3B() { return State(MakeSensor2(), Lms3B()); }
+State MakeState1A() {
+  return State(Se23(Rot3::RzRyRx(0.2, -0.1, 0.15), Vector3(0.5, -0.3, 0.2),
+                    Point3(0.4, -0.2, 1.0)),
+               Bias(Vector3(0.03, -0.01, 0.02), Vector3(0.1, -0.2, 0.05)),
+               Pose3(Rot3::RzRyRx(-0.08, 0.04, -0.03), Point3(0.1, 0.0, 0.05)),
+               Lms1A());
+}
+State MakeState1B() {
+  return State(
+      Se23(Rot3::RzRyRx(-0.1, 0.2, -0.25), Vector3(-0.2, 0.4, -0.1),
+           Point3(-0.3, 0.5, 0.8)),
+      Bias(Vector3(0.02, 0.05, -0.06), Vector3(-0.04, 0.07, -0.03)),
+      Pose3(Rot3::RzRyRx(0.06, -0.03, 0.02), Point3(-0.05, 0.02, 0.09)),
+      Lms1B());
+}
+State MakeState3A() {
+  return State(Se23(Rot3::RzRyRx(0.2, -0.1, 0.15), Vector3(0.5, -0.3, 0.2),
+                    Point3(0.4, -0.2, 1.0)),
+               Bias(Vector3(0.03, -0.01, 0.02), Vector3(0.1, -0.2, 0.05)),
+               Pose3(Rot3::RzRyRx(-0.08, 0.04, -0.03), Point3(0.1, 0.0, 0.05)),
+               Lms3A());
+}
+State MakeState3B() {
+  return State(
+      Se23(Rot3::RzRyRx(-0.1, 0.2, -0.25), Vector3(-0.2, 0.4, -0.1),
+           Point3(-0.3, 0.5, 0.8)),
+      Bias(Vector3(0.02, 0.05, -0.06), Vector3(-0.04, 0.07, -0.03)),
+      Pose3(Rot3::RzRyRx(0.06, -0.03, 0.02), Point3(-0.05, 0.02, 0.09)),
+      Lms3B());
+}
 
 }  // namespace
 
@@ -114,7 +129,7 @@ TEST(VIOState, Concept) {
 }
 
 //******************************************************************************
-// Verifies dynamic dimensions and landmark id accessors.
+// Verifies dynamic dimensions for variable landmark counts.
 TEST(VIOState, DimensionsAndAccessors) {
   const State s0 = MakeState0A();
   const State s1 = MakeState1A();
@@ -125,11 +140,8 @@ TEST(VIOState, DimensionsAndAccessors) {
 
   EXPECT_LONGS_EQUAL(1, s1.n());
   EXPECT_LONGS_EQUAL(24, s1.dim());
-  EXPECT((s1.ids() == std::vector<int>{11}));
-
   EXPECT_LONGS_EQUAL(3, s3.n());
   EXPECT_LONGS_EQUAL(30, s3.dim());
-  EXPECT((s3.ids() == std::vector<int>{11, 22, 33}));
 }
 
 //******************************************************************************

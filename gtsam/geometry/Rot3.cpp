@@ -19,16 +19,23 @@
  * @author  Varun Agrawal
  */
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/SO3.h>
 
-#include <cmath>
 #include <cassert>
+#include <cmath>
 #include <random>
 
 using namespace std;
 
 namespace gtsam {
+
+/* ************************************************************************* */
+bool Rot3::IsValid(const Matrix3& R, double tol) {
+  return (R.transpose() * R - Matrix3::Identity()).norm() <= tol &&
+         R.determinant() > 0;
+}
 
 /* ************************************************************************* */
 void Rot3::print(const std::string& s) const {

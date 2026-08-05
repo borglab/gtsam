@@ -17,7 +17,6 @@
  *  @date December 2014
  */
 
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/expressions.h>

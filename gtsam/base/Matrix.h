@@ -38,6 +38,9 @@ namespace gtsam {
 
 typedef Eigen::MatrixXd Matrix;
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> MatrixRowMajor;
+/// Dynamic-stride const Matrix view for accepting NumPy arrays without copies.
+using ConstMatrixView =
+    Eigen::Ref<const Matrix, 0, Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>>;
 
 // Create handy typedefs and constants for square-size matrices
 // MatrixMN, MatrixN = MatrixNN, I_NxN, and Z_NxN, for M,N=1..9
@@ -52,8 +55,6 @@ using Matrix6##N = Eigen::Matrix<double, 6, N>;  \
 using Matrix7##N = Eigen::Matrix<double, 7, N>;  \
 using Matrix8##N = Eigen::Matrix<double, 8, N>;  \
 using Matrix9##N = Eigen::Matrix<double, 9, N>;  \
-static const Eigen::MatrixBase<Matrix##N>::IdentityReturnType I_##N##x##N = Matrix##N::Identity(); \
-static const Eigen::MatrixBase<Matrix##N>::ConstantReturnType Z_##N##x##N = Matrix##N::Constant(0.0);
 
 GTSAM_MAKE_MATRIX_DEFS(1)
 GTSAM_MAKE_MATRIX_DEFS(2)
@@ -132,13 +133,6 @@ GTSAM_EXPORT bool linear_independent(const Matrix& A, const Matrix& B, double to
  */
 GTSAM_EXPORT bool linear_dependent(const Matrix& A, const Matrix& B, double tol = 1e-9);
 
-/** products using old-style format to improve compatibility */
-template<class MATRIX>
-inline MATRIX prod(const MATRIX& A, const MATRIX&B) {
-  MATRIX result = A * B;
-  return result;
-}
-
 /**
  * print without optional string, must specify cout yourself
  */
@@ -162,21 +156,6 @@ GTSAM_EXPORT void save(const Matrix& A, const std::string &s, const std::string&
 GTSAM_EXPORT std::istream& operator>>(std::istream& inputStream, Matrix& destinationMatrix);
 
 /**
- * extract submatrix, slice semantics, i.e. range = [i1,i2[ excluding i2
- * @param A matrix
- * @param i1 first row index
- * @param i2 last  row index + 1
- * @param j1 first col index
- * @param j2 last  col index + 1
- * @return submatrix A(i1:i2-1,j1:j2-1)
- */
-template<class MATRIX>
-Eigen::Block<const MATRIX> sub(const MATRIX& A, size_t i1, size_t i2, size_t j1, size_t j2) {
-  size_t m=i2-i1, n=j2-j1;
-  return A.block(i1,j1,m,n);
-}
-
-/**
  * insert a submatrix IN PLACE at a specified location in a larger matrix
  * NOTE: there is no size checking
  * @param fullMatrix matrix to be updated
@@ -195,74 +174,9 @@ void insertSub(Eigen::MatrixBase<Derived1>& fullMatrix, const Eigen::MatrixBase<
 GTSAM_EXPORT Matrix diag(const std::vector<Matrix>& Hs);
 
 /**
- * Extracts a column view from a matrix that avoids a copy
- * @param A matrix to extract column from
- * @param j index of the column
- * @return a const view of the matrix
- */
-template<class MATRIX>
-const typename MATRIX::ConstColXpr column(const MATRIX& A, size_t j) {
-  return A.col(j);
-}
-
-/**
- * Extracts a row view from a matrix that avoids a copy
- * @param A matrix to extract row from
- * @param j index of the row
- * @return a const view of the matrix
- */
-template<class MATRIX>
-const typename MATRIX::ConstRowXpr row(const MATRIX& A, size_t j) {
-  return A.row(j);
-}
-
-/**
  * static transpose function, just calls Eigen transpose member function
  */
 inline Matrix trans(const Matrix& A) { return A.transpose(); }
-
-/// Reshape functor
-template <int OutM, int OutN, int OutOptions, int InM, int InN, int InOptions>
-struct Reshape {
-  //TODO replace this with Eigen's reshape function as soon as available. (There is a PR already pending : https://bitbucket.org/eigen/eigen/pull-request/41/reshape/diff)
-  typedef Eigen::Map<const Eigen::Matrix<double, OutM, OutN, OutOptions> > ReshapedType;
-  static inline ReshapedType reshape(const Eigen::Matrix<double, InM, InN, InOptions> & in) {
-    return in.data();
-  }
-};
-
-/// Reshape specialization that does nothing as shape stays the same (needed to not be ambiguous for square input equals square output)
-template <int M, int InOptions>
-struct Reshape<M, M, InOptions, M, M, InOptions> {
-  typedef const Eigen::Matrix<double, M, M, InOptions> & ReshapedType;
-  static inline ReshapedType reshape(const Eigen::Matrix<double, M, M, InOptions> & in) {
-    return in;
-  }
-};
-
-/// Reshape specialization that does nothing as shape stays the same
-template <int M, int N, int InOptions>
-struct Reshape<M, N, InOptions, M, N, InOptions> {
-  typedef const Eigen::Matrix<double, M, N, InOptions> & ReshapedType;
-  static inline ReshapedType reshape(const Eigen::Matrix<double, M, N, InOptions> & in) {
-    return in;
-  }
-};
-
-/// Reshape specialization that does transpose
-template <int M, int N, int InOptions>
-struct Reshape<N, M, InOptions, M, N, InOptions> {
-  typedef typename Eigen::Matrix<double, M, N, InOptions>::ConstTransposeReturnType ReshapedType;
-  static inline ReshapedType reshape(const Eigen::Matrix<double, M, N, InOptions> & in) {
-    return in.transpose();
-  }
-};
-
-template <int OutM, int OutN, int OutOptions, int InM, int InN, int InOptions>
-inline typename Reshape<OutM, OutN, OutOptions, InM, InN, InOptions>::ReshapedType reshape(const Eigen::Matrix<double, InM, InN, InOptions> & m){
-  static_assert(InM * InN == OutM * OutN);
-  return Reshape<OutM, OutN, OutOptions, InM, InN, InOptions>::reshape(m);
-}
 
 /**
  * QR factorization, inefficient, best use imperative householder below

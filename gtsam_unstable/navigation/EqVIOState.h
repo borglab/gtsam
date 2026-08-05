@@ -22,8 +22,8 @@
 #include <gtsam/base/Vector.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam_unstable/navigation/EqVIOCommon.h>
 #include <gtsam_unstable/dllexport.h>
+#include <gtsam_unstable/navigation/EqVIOCommon.h>
 
 #include <string>
 #include <vector>
@@ -31,47 +31,10 @@
 namespace gtsam {
 namespace eqvio {
 
-/**
- * @brief One visual landmark state block.
- *
- * Stores a 3D landmark position plus its integer id. The Lie/chart dimension
- * contribution is 3.
- */
-struct GTSAM_UNSTABLE_EXPORT Landmark {
-  static constexpr int CompDim = 3;
-
-  /// Landmark position in world coordinates.
-  Point3 p = Z_3x1;
-  /// Stable landmark identifier used for ordering/alignment.
-  int id = -1;
-
-  void print(const std::string& s = "") const;
-  bool equals(const Landmark& other, double tol = 1e-9) const;
-};
-
-/**
- * @brief Sensor-side EqVIO state block (bias, body pose, velocity, extrinsics).
- *
- * This is the 21D sensor component of the full EqVIO state manifold.
- */
-struct GTSAM_UNSTABLE_EXPORT SensorState {
-  static constexpr int CompDim = 21;
-
-  /// IMU bias state.
-  Bias inputBias = Bias::Identity();
-  /// Body/IMU pose in world frame.
-  Pose3 pose = Pose3::Identity();
-  /// Body/IMU translational velocity in world frame.
-  Vector3 velocity = Vector3::Zero();
-  /// Camera pose relative to IMU/body frame.
-  Pose3 cameraOffset = Pose3::Identity();
-
-  /// Unit gravity direction expressed in the body frame.
-  Vector3 gravityDir() const;
-
-  void print(const std::string& s = "") const;
-  bool equals(const SensorState& other, double tol = 1e-9) const;
-};
+/// Dimension of the dynamic EqVIO state with `landmarkCount` landmarks.
+inline int stateDim(size_t landmarkCount) {
+  return 21 + 3 * static_cast<int>(landmarkCount);
+}
 
 /// Dynamic VIO state manifold with dimension 21 + 3n.
 class GTSAM_UNSTABLE_EXPORT State {
@@ -82,18 +45,30 @@ class GTSAM_UNSTABLE_EXPORT State {
   using Jacobian = Matrix;
   using ChartJacobian = OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>;
 
-  SensorState sensor;
-  std::vector<Landmark> cameraLandmarks;
+  /// Body kinematics block stored as SE_2(3) in EqVIO `(R, v, p)` order.
+  Se23 kinematics = Se23::Identity();
+  /// IMU bias state.
+  Bias bias = Bias::Identity();
+  /// Camera pose relative to IMU/body frame.
+  Pose3 cameraOffset = Pose3::Identity();
+  /// Landmark states in euclidean coordinates. Inverse-depth is used for the error chart / linearization rather than the stored state.
+  std::vector<Point3> cameraLandmarks;
 
   /// Construct default-initialized state.
   State() = default;
-  /// Construct from explicit sensor and landmark blocks.
-  State(const SensorState& sensor_, const std::vector<Landmark>& lms);
+  /// Construct from explicit kinematics, bias, extrinsics, and landmarks.
+  State(const Se23& kinematics_, const Bias& bias_, const Pose3& cameraOffset_,
+        const std::vector<Point3>& lms);
 
   /// Number of landmarks.
   size_t n() const;
   int dim() const;
-  std::vector<int> ids() const;
+  /// Body/IMU pose in world frame.
+  Pose3 pose() const;
+  /// Body/IMU translational velocity in world frame.
+  Vector3 velocity() const;
+  /// Unit gravity direction expressed in the body frame.
+  Vector3 gravityDir() const;
 
   /// Retract in the state chart.
   State retract(const TangentVector& v, ChartJacobian H1 = {},

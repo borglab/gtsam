@@ -26,16 +26,17 @@
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/inference/Factor.h>
-#include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/utilities.h>
 
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/base_object.hpp>
 #endif
 #include <cstddef>
-#include <type_traits>
 
 namespace gtsam {
+
+class NonlinearEqualityConstraints;
+class NonlinearFactorGraph;
 
 /* ************************************************************************* */
 
@@ -144,6 +145,15 @@ public:
   /** linearize to a GaussianFactor */
   virtual std::shared_ptr<GaussianFactor>
   linearize(const Values& c) const = 0;
+
+  /**
+   * Add this factor's QCQP cost and constraints over matrix-valued QCQP
+   * variables with the given column dimension. The default implementation
+   * throws for unsupported factors.
+   */
+  virtual void qcqpFactors(NonlinearFactorGraph* costs,
+                           NonlinearEqualityConstraints* constraints,
+                           size_t columnDimension = 1) const;
 
   /**
    * Creates a shared_ptr clone of the factor - needs to be specialized to allow

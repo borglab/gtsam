@@ -12,8 +12,8 @@ Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellae
 
 # pylint: disable=unnecessary-lambda, unused-import, expression-not-assigned, no-else-return, protected-access, too-few-public-methods, too-many-arguments
 
-from pyparsing import (ParseResults, ZeroOrMore,  # type: ignore
-                       cppStyleComment, stringEnd)
+from pyparsing import (ParseBaseException, ZeroOrMore, cpp_style_comment,  # type: ignore
+                       string_end)
 
 from .classes import Class
 from .declaration import ForwardDeclaration, Include
@@ -45,12 +45,26 @@ class Module:
                    ^ Enum.rule  #
                    ^ Variable.rule  #
                    ^ Namespace.rule  #
-                   ).setParseAction(lambda t: Namespace('', t.asList())) +
-        stringEnd)
+                   ).set_parse_action(lambda t: Namespace('', t.as_list())) +
+        string_end)
 
-    rule.ignore(cppStyleComment)
+    rule.ignore(cpp_style_comment)
 
     @staticmethod
-    def parseString(s: str) -> ParseResults:
-        """Parse the source string and apply the rules."""
-        return Module.rule.parseString(s)[0]
+    def parse_string(s: str, source_name: str = "<string>") -> Namespace:
+        """Parse source text and report any failure at its best known location."""
+        # Imported here to avoid adding the diagnostic machinery to the grammar's
+        # import cycle.
+        from .diagnostics import (InterfaceParseError, begin_diagnostics,
+                                  end_diagnostics)
+
+        context, token = begin_diagnostics(s, source_name)
+        try:
+            return Module.rule.parse_string(s)[0]
+        except InterfaceParseError:
+            raise
+        except ParseBaseException as error:
+            diagnostic = InterfaceParseError.from_failure(context, error)
+            raise diagnostic from error
+        finally:
+            end_diagnostics(token)

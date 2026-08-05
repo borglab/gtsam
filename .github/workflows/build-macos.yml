@@ -1,6 +1,7 @@
 name: macOS CI
 
 on:
+  workflow_dispatch: 
   pull_request:
     paths-ignore:
       - '**.md'
@@ -62,7 +63,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         
       - name: Prepare Homebrew (robust)
         shell: bash

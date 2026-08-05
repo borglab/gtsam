@@ -18,7 +18,10 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>

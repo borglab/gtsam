@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/navigation/LeggedEstimator.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 

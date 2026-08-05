@@ -15,6 +15,11 @@
  * @author Frank Dellaert
  */
 
+// GCC bug workaround
+#if  defined(__GNUC__) && __GNUC__ == 16
+#pragma GCC diagnostic ignored "-Wmismatched-new-delete"
+#endif
+
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/navigation/PreintegratedRotation.h>

@@ -15,17 +15,18 @@
  * @author  Michael Kaess
  */
 
-#include <tests/smallExample.h>
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/geometry/Rot2.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianDensity.h>
 #include <gtsam/linear/HessianFactor.h>
-#include <gtsam/geometry/Rot2.h>
 #include <gtsam/nonlinear/Marginals.h>
-
-#include <CppUnitLite/TestHarness.h>
+#include <tests/smallExample.h>
 
 using namespace std;
 using namespace gtsam;
@@ -404,6 +405,28 @@ TEST(GaussianBayesTree, jointMarginalsAgreeWithMarginals) {
   EXPECT(assert_equal(marginals.jointMarginalCovariance(query).fullMatrix(),
                       bayesTree.jointMarginalCovariance(query).fullMatrix(),
                       1e-9));
+}
+
+/* ************************************************************************* */
+TEST(GaussianBayesTree, separatorMarginalHandlesDeepChain) {
+  // This exceeds the default Linux stack when separator marginals recurse.
+  constexpr Key kNumVariables = 30000;
+
+  GaussianBayesTree bayesTree;
+  auto clique = std::make_shared<GaussianBayesTreeClique>(
+      GaussianConditional::sharedMeanAndStddev(0, Vector1(0.0), 1.0));
+  bayesTree.addClique(clique);
+
+  for (Key key = 1; key < kNumVariables; ++key) {
+    auto child = std::make_shared<GaussianBayesTreeClique>(
+        GaussianConditional::sharedMeanAndStddev(
+            key, I_1x1, key - 1, Vector1(0.0), 1.0));
+    bayesTree.addClique(child, clique);
+    clique = child;
+  }
+
+  const GaussianFactorGraph separatorMarginal = clique->separatorMarginal();
+  LONGS_EQUAL(1, static_cast<long>(separatorMarginal.size()));
 }
 
 /* ************************************************************************* */

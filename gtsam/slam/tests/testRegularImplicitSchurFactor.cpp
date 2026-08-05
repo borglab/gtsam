@@ -16,18 +16,17 @@
  * @date    Oct 20, 2013
  */
 
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/timing.h>
+#include <gtsam/geometry/CalibratedCamera.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/linear/NoiseModel.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/slam/JacobianFactorQ.h>
 #include <gtsam/slam/JacobianFactorQR.h>
 #include <gtsam/slam/RegularImplicitSchurFactor.h>
-#include <gtsam/geometry/CalibratedCamera.h>
-#include <gtsam/geometry/Point2.h>
-
-#include <gtsam/linear/VectorValues.h>
-#include <gtsam/linear/NoiseModel.h>
-#include <gtsam/linear/GaussianFactor.h>
-#include <gtsam/base/timing.h>
-
-#include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;

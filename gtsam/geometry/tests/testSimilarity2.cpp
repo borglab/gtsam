@@ -215,10 +215,8 @@ TEST(Similarity2, Vec) {
   // 2. Test the Jacobian
   Matrix94 H_actual;
   sim.vec(H_actual);
-  auto vec_fun = [](const Similarity2& sim_arg) -> Vector9 {
-    return sim_arg.vec();
-    };
-  Matrix H_numerical = numericalDerivative11<Vector9, Similarity2, 4>(vec_fun, sim);
+  auto f = [](const Similarity2& g) -> Vector9 { return g.vec(); };
+  Matrix H_numerical = numericalDerivative11(f, sim);
   EXPECT(assert_equal(H_numerical, H_actual, 1e-7));
 }
 
@@ -249,15 +247,13 @@ TEST(Similarity2, AdjointTranspose) {
                       Vector(sim.AdjointTranspose(xi))));
 
   Matrix44 actualH1, actualH2;
-  std::function<Vector4(const Similarity2&, const Vector4&)>
-      adjointTransposeProxy = [](const Similarity2& g, const Vector4& x) {
-        return Vector4(g.AdjointTranspose(x));
-      };
+  auto adjointT = [](const Similarity2& g, const Vector4& x) {
+    return Vector4(g.AdjointTranspose(x));
+  };
   sim.AdjointTranspose(xi, actualH1, actualH2);
-  EXPECT(assert_equal(numericalDerivative21(adjointTransposeProxy, sim, xi),
-                      actualH1, 1e-8));
-  EXPECT(assert_equal(numericalDerivative22(adjointTransposeProxy, sim, xi),
-                      actualH2));
+  EXPECT(
+      assert_equal(numericalDerivative21(adjointT, sim, xi), actualH1, 1e-8));
+  EXPECT(assert_equal(numericalDerivative22(adjointT, sim, xi), actualH2));
 }
 
 //******************************************************************************
@@ -265,10 +261,9 @@ TEST(Similarity2, adjointTranspose) {
   const Vector4 xi(0.2, -0.4, 0.7, -0.1);
   const Vector4 y(-0.3, 0.5, 0.9, -0.2);
 
-  std::function<Vector4(const Vector4&, const Vector4&)> f =
-      [](const Vector4& x, const Vector4& v) {
-        return Vector4(Similarity2::adjointTranspose(x, v));
-      };
+  auto f = [](const Vector4& x, const Vector4& v) {
+    return Vector4(Similarity2::adjointTranspose(x, v));
+  };
 
   Matrix44 Hxi, Hy;
   const Vector4 actual = Similarity2::adjointTranspose(xi, y, Hxi, Hy);
@@ -282,10 +277,9 @@ TEST(Similarity2, adjoint) {
   const Vector4 xi(0.2, -0.4, 0.7, -0.1);
   const Vector4 y(-0.3, 0.5, 0.9, -0.2);
 
-  std::function<Vector4(const Vector4&, const Vector4&)> f =
-      [](const Vector4& x, const Vector4& v) {
-        return Vector4(Similarity2::adjoint(x, v));
-      };
+  auto f = [](const Vector4& x, const Vector4& v) {
+    return Vector4(Similarity2::adjoint(x, v));
+  };
 
   Matrix44 Hxi, Hy;
   const Vector4 actual = Similarity2::adjoint(xi, y, Hxi, Hy);

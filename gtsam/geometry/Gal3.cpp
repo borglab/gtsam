@@ -21,12 +21,13 @@
  */
 
 // GCC bug workaround
-#if  defined(__GNUC__) && __GNUC__ == 15
-#pragma GCC diagnostic push
+#if  defined(__GNUC__) && (__GNUC__ == 15 || __GNUC__ == 16)
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Event.h>
 #include <gtsam/geometry/Gal3.h>
@@ -315,35 +316,37 @@ Gal3 Gal3::Expmap(const TangentVector& xi, OptionalJacobian<10, 10> Hxi) {
 #else
   const Rot3 R(local.expmap());
 #endif
-  Matrix3 Rt;
-  if (Hxi) Rt = R.transpose();
 
-  // Compute velocity: just apply left SO(3) Jacobian,
-  Matrix3 H_v_w;
-  const Velocity3 v = local.Jacobian().applyLeft(nu, Hxi ? &H_v_w : nullptr);
-
-  // Compute position: apply left Jacobian and compute time-dependent part
-  Matrix3 H_p_w, H_delta_w;
-  Point3 p = local.Jacobian().applyLeft(rho, Hxi ? &H_p_w : nullptr);
-  const Point3 delta = local.Gamma().applyLeft(nu, Hxi ? &H_delta_w : nullptr);
-
-  // (*) means: different from Arxiv paper!
+  Velocity3 v;
+  Point3 p;
   if (Hxi) {
-    const Matrix3 Jr = local.Jacobian().right();
-    const Matrix3 Gr = local.Gamma().right();
+    const Matrix3 Rt = R.transpose();
+    const so3::Kernel jacobian = local.Jacobian();
+    Matrix3 H_v_w, H_p_w;
+    v = jacobian.applyLeft(nu, &H_v_w);
+    p = jacobian.applyLeft(rho, &H_p_w);
+
+    const so3::Kernel gamma = local.Gamma();
+    const Matrix3 Jr = jacobian.right();
+    const Matrix3 Gr = gamma.right();
     *Hxi << Jr, Z_3x3, Z_3x3, Z_3x1,      //
         Rt * H_v_w, Jr, Z_3x3, Z_3x1,     //
         Rt * H_p_w, Z_3x3, Jr, -Gr * nu,  // (*)
         Z_9x1.transpose(), 1.0;
-  }
 
-  // if alpha!=0, augment position with time-dependent bit.
-  if (std::abs(alpha) > kSmallTimeThreshold) {
-    p += alpha * delta;
-    if (Hxi) {
-      // Derivative of time-dependent part
+    if (std::abs(alpha) > kSmallTimeThreshold) {
+      Matrix3 H_delta_w;
+      const Point3 delta = gamma.applyLeft(nu, &H_delta_w);
+      p += alpha * delta;
       Hxi->block<3, 3>(6, 0) += alpha * Rt * H_delta_w;
-      Hxi->block<3, 3>(6, 3) = alpha * Rt * local.Gamma().left();  // (*)
+      Hxi->block<3, 3>(6, 3) = alpha * Rt * gamma.left();  // (*)
+    }
+  } else {
+    const Matrix3 Jl = local.leftJacobian();
+    v.noalias() = Jl * nu;
+    p.noalias() = Jl * rho;
+    if (std::abs(alpha) > kSmallTimeThreshold) {
+      p += alpha * local.Gamma().applyLeft(nu);
     }
   }
   return Gal3(R, p, v, alpha);
@@ -367,9 +370,7 @@ Gal3::TangentVector Gal3::Logmap(const Gal3& g, OptionalJacobian<10, 10> Hg) {
     xi_rho(xi) = rho;
     xi_t(xi)(0) = g.t_;
 
-    if (Hg) {
-        *Hg = Gal3::LogmapDerivative(g);
-    }
+    if (Hg) *Hg = Gal3::LogmapDerivative(xi);
 
     return xi;
 }
@@ -413,16 +414,48 @@ Gal3::Jacobian Gal3::ExpmapDerivative(const TangentVector& xi) {
 }
 
 //------------------------------------------------------------------------------
+Gal3::Jacobian Gal3::LogmapDerivative(const TangentVector& xi) {
+  // Analytical implementation via the chain rule identity
+  //   Logmap(Expmap(xi)) = xi
+  //   => dLogmap/dg |_{g=Expmap(xi)} * dExpmap/dxi = I
+  //   => LogmapDerivative(xi) = ExpmapDerivative(xi)^{-1}
+  //
+  // Use the known SO(3) top-left block analytically and treat the remaining
+  // 7x7 block of ExpmapDerivative as opaque. Since the Jacobian is block lower
+  // triangular,
+  //
+  //   J = [Jr  0]
+  //       [L   B]
+  //
+  // with Jr the SO(3) right Jacobian, we can invert it as
+  //
+  //   J^{-1} = [Jr^{-1}                  0]
+  //            [-B^{-1} L Jr^{-1}   B^{-1}]
+  //
+  // This avoids a dense 10x10 inverse while preserving the exact SO(3) block.
+  if (xi.norm() < kSmallAngleThreshold) return Jacobian::Identity();
+
+  const Vector3 w = xi_w(xi);
+  const so3::DexpFunctor local(w);
+  const Matrix3 Jr_inv = local.InvJacobian().right();
+
+  const Jacobian J = ExpmapDerivative(xi);
+  const auto L = J.block<7, 3>(3, 0);
+  const Matrix7 B = J.block<7, 7>(3, 3);
+
+  Eigen::PartialPivLU<Matrix7> lu(B);
+
+  Jacobian H = Jacobian::Zero();
+  H.block<3, 3>(0, 0) = Jr_inv;
+  H.block<7, 7>(3, 3) = lu.solve(Matrix7::Identity());
+  H.block<7, 3>(3, 0) = -lu.solve(L * Jr_inv);
+  return H;
+}
+
+//------------------------------------------------------------------------------
 Gal3::Jacobian Gal3::LogmapDerivative(const Gal3& g) {
-    // Related to the inverse of left Jacobian in Equations 31-36, Pages 10-11
-    // NOTE: Using numerical approximation instead of implementing the analytical
-    // expression for the inverse Jacobian. Future work to replace this
-    // with analytical derivative.
-    TangentVector xi = Gal3::Logmap(g);
-    if (xi.norm() < kSmallAngleThreshold) return Jacobian::Identity();
-    std::function<TangentVector(const Gal3&)> fn =
-        [](const Gal3& g_in) { return Gal3::Logmap(g_in); };
-    return numericalDerivative11<TangentVector, Gal3>(fn, g, 1e-5);
+  TangentVector xi = Gal3::Logmap(g);
+  return LogmapDerivative(xi);
 }
 
 //------------------------------------------------------------------------------

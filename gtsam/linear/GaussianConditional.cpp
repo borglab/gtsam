@@ -148,8 +148,8 @@ namespace gtsam {
           const_iterator it2 = c->beginParents() + (it - beginParents());
           if (*it != *(it2))
             return false;
-          rows1.push_back(row(getA(it), i));
-          rows2.push_back(row(c->getA(it2), i));
+          rows1.push_back(getA(it).row(i));
+          rows2.push_back(c->getA(it2).row(i));
         }
 
         Vector row1 = concatVectors(rows1);

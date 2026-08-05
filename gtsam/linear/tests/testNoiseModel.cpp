@@ -17,13 +17,12 @@
  * @author Fan Jiang
  */
 
-
-#include <gtsam/linear/NoiseModel.h>
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/geometry/Point2.h>
-
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/linear/NoiseModel.h>
 
 #include <cmath>
 #include <iostream>
@@ -950,11 +949,11 @@ TEST(NoiseModel, lossFunctionAtZero)
   DOUBLES_EQUAL(lsdz->loss(0), 0, 1e-8);
   DOUBLES_EQUAL(lsdz->weight(0), 0, 1e-8);
   auto assy_cauchy = mEstimator::AsymmetricCauchy::Create(k);
-  DOUBLES_EQUAL(lsdz->loss(0), 0, 1e-8);
-  DOUBLES_EQUAL(lsdz->weight(0), 0, 1e-8);
+  DOUBLES_EQUAL(assy_cauchy->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(assy_cauchy->weight(0), 1, 1e-8);
   auto assy_tukey = mEstimator::AsymmetricTukey::Create(k);
-  DOUBLES_EQUAL(lsdz->loss(0), 0, 1e-8);
-  DOUBLES_EQUAL(lsdz->weight(0), 0, 1e-8);
+  DOUBLES_EQUAL(assy_tukey->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(assy_tukey->weight(0), 1, 1e-8);
 }
 
 

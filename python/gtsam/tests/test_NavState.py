@@ -11,6 +11,7 @@ NavState unit tests.
 import unittest
 
 import numpy as np
+import gtsam
 from gtsam.utils.test_case import GtsamTestCase
 from gtsam.utils.numerical_derivative import (
     numericalDerivative21,
@@ -22,6 +23,10 @@ from gtsam import NavState, Point3, Rot3, Unit3
 
 class TestNavState(GtsamTestCase):
     """Test selected NavState methods."""
+
+    @staticmethod
+    def make_state(yaw: float, position, velocity) -> NavState:
+        return NavState(Rot3.Rz(yaw), Point3(*position), np.array(velocity))
 
     def test_range_point_derivatives(self):
         """Test NavState range to Point3 Jacobians."""
@@ -62,6 +67,26 @@ class TestNavState(GtsamTestCase):
         jacobian_numerical_point = numericalDerivative22(NavState.bearing, state, point)
         self.gtsamAssertEquals(jacobian_state, jacobian_numerical_state)
         self.gtsamAssertEquals(jacobian_point, jacobian_numerical_point)
+
+    def test_prior_and_between_factors(self):
+        """Test wrapped PriorFactorNavState and BetweenFactorNavState."""
+        state1 = self.make_state(0.1, (1.0, 2.0, 3.0), (0.4, 0.5, 0.6))
+        state2 = self.make_state(-0.2, (1.5, 2.5, 4.0), (0.1, 0.3, 0.7))
+        model = gtsam.noiseModel.Unit.Create(9)
+
+        prior_factor = gtsam.PriorFactorNavState(0, state1, model)
+        self.gtsamAssertEquals(prior_factor.prior(), state1, 1e-9)
+
+        between_measurement = state1.between(state2)
+        between_factor = gtsam.BetweenFactorNavState(0, 1, between_measurement, model)
+        self.gtsamAssertEquals(between_factor.measured(), between_measurement, 1e-9)
+
+        values = gtsam.Values()
+        values.insert(0, state1)
+        values.insert(1, state2)
+
+        self.assertAlmostEqual(prior_factor.error(values), 0.0, places=9)
+        self.assertAlmostEqual(between_factor.error(values), 0.0, places=9)
 
 
 if __name__ == "__main__":

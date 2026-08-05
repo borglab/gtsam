@@ -15,11 +15,11 @@
  * @author Frank Dellaert
  **/
 
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Vector.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/base/testLie.h>
-#include <CppUnitLite/TestHarness.h>
-#include <iostream>
 
 using namespace std;
 using namespace gtsam;
@@ -38,6 +38,15 @@ namespace {
   {
     return in;
   }
+}
+
+/* ************************************************************************* */
+// Verifies the 8x1 zero macro has the correct type and value.
+TEST(VectorConstants, EightByOne) {
+  const Vector8 zero = Z_8x1;
+  const Vector expected = Vector8::Zero();
+
+  EXPECT(assert_equal(expected, zero));
 }
 
 /* ************************************************************************* */

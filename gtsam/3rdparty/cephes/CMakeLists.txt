@@ -30,6 +30,20 @@ set(CEPHES_SOURCES
 # Add library source files
 add_library(cephes-gtsam ${GTSAM_LIBRARY_TYPE} ${CEPHES_SOURCES})
 
+# cephes/gamma.c, igam.c, etc. call libm functions (e.g. sin) directly, but
+# nothing here previously linked cephes-gtsam against libm, leaving it to be
+# resolved transitively through whatever else the final binary happens to
+# link. That can crash the dynamic linker while relinking an IFUNC-resolved
+# symbol (e.g. sin) depending on load order; see e.g.
+# https://bugzilla.redhat.com/show_bug.cgi?id=1883501 for the same failure
+# mode in an unrelated project. find_library naturally no-ops on platforms
+# without a separate libm (Windows, and effectively macOS where it's part of
+# libSystem already).
+find_library(MATH_LIBRARY m)
+if(MATH_LIBRARY)
+  target_link_libraries(cephes-gtsam PUBLIC ${MATH_LIBRARY})
+endif()
+
 # Add include directory (aka headers)
 target_include_directories(
   cephes-gtsam BEFORE PUBLIC $<INSTALL_INTERFACE:include/gtsam/3rdparty/cephes/>

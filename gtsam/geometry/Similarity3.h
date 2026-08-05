@@ -176,6 +176,9 @@ class GTSAM_EXPORT Similarity3 : public MatrixLieGroup<Similarity3, 7, 4> {
   /// Project from one tangent space to another
   Matrix7 AdjointMap() const;
 
+  /// Compute the Lie algebra adjoint map associated with a tangent vector.
+  static Matrix7 adjointMap(const Vector7& xi);
+
   /**
    * Hat for Similarity3:
    * @param xi 7-dim twist (w,u,lambda) where

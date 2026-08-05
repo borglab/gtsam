@@ -31,7 +31,7 @@ class TestPose3SLAMExample(GtsamTestCase):
         fg.add(gtsam.NonlinearEqualityPose3(0, p0))
         delta = p0.between(p1)
         covariance = gtsam.noiseModel.Diagonal.Sigmas(
-            np.array([0.05, 0.05, 0.05, np.deg2rad(5.), np.deg2rad(5.), np.deg2rad(5.)]))
+            np.array([np.deg2rad(5.), np.deg2rad(5.), np.deg2rad(5.), 0.05, 0.05, 0.05]))
         fg.add(gtsam.BetweenFactorPose3(0, 1, delta, covariance))
         fg.add(gtsam.BetweenFactorPose3(1, 2, delta, covariance))
         fg.add(gtsam.BetweenFactorPose3(2, 3, delta, covariance))

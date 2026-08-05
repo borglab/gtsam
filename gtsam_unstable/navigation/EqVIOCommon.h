@@ -19,36 +19,36 @@
 
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Matrix.h>
-#include <gtsam/base/Vector.h>
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/geometry/Point3.h>
-#include <gtsam_unstable/dllexport.h>
-
 #include <gtsam/base/ProductLieGroup.h>
+#include <gtsam/base/Vector.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/ExtendedPose3.h>
 #include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/SO3.h>
+#include <gtsam/inference/Key.h>
 #include <gtsam/navigation/ImuBias.h>
+#include <gtsam_unstable/dllexport.h>
 
+#include <cmath>
 #include <map>
 #include <memory>
-#include <string>
-#include <cassert>
-#include <cmath>
 #include <stdexcept>
 #include <tuple>
-#include <type_traits>
 #include <vector>
 
 namespace gtsam {
 namespace eqvio {
 
+/// Similarity transform group element represented as `(SO3, log_scale)`.
 using SOT3 = ProductLieGroup<SO3, double>;
 
 using Se23 = ExtendedPose3<2>;
 using Bias = imuBias::ConstantBias;
+/// See eq. (22) in arXiv:2205.01980v3 for VI-SLAM Group defn.
 using LandmarkGroup = PowerLieGroup<SOT3, Eigen::Dynamic>;
 using SensorCore = ProductLieGroup<Se23, Bias>;
 using LandmarkCore = ProductLieGroup<Pose3, LandmarkGroup>;
@@ -83,38 +83,13 @@ inline SOT3 MakeSOT3(const SO3& R, double scale) {
 
 /// IMU input bundle used by EqVIO propagation.
 struct GTSAM_UNSTABLE_EXPORT IMUInput {
-  static constexpr int CompDim = 12;
-  using Vector12 = Eigen::Matrix<double, 12, 1>;
-
   double stamp = -1.0;
   Vector3 gyr = Z_3x1;
   Vector3 acc = Z_3x1;
   Vector3 gyrBiasVel = Z_3x1;
   Vector3 accBiasVel = Z_3x1;
 
-  /// Return a zero-initialized input with invalid timestamp.
-  static IMUInput Zero() { return IMUInput(); }
-
   IMUInput() = default;
-
-  /// Construct from stacked [gyr, acc, gyrBiasVel, accBiasVel].
-  explicit IMUInput(const Vector12& vec) {
-    gyr = vec.segment<3>(0);
-    acc = vec.segment<3>(3);
-    gyrBiasVel = vec.segment<3>(6);
-    accBiasVel = vec.segment<3>(9);
-  }
-
-  /// Component-wise addition.
-  IMUInput operator+(const IMUInput& other) const {
-    IMUInput out;
-    out.stamp = stamp >= 0.0 ? stamp : other.stamp;
-    out.gyr = gyr + other.gyr;
-    out.acc = acc + other.acc;
-    out.gyrBiasVel = gyrBiasVel + other.gyrBiasVel;
-    out.accBiasVel = accBiasVel + other.accBiasVel;
-    return out;
-  }
 
   /// Subtract a ConstantBias from [gyr, acc].
   IMUInput operator-(const Bias& bias) const {
@@ -123,17 +98,14 @@ struct GTSAM_UNSTABLE_EXPORT IMUInput {
     out.acc -= bias.accelerometer();
     return out;
   }
-
-  /// Scale all components.
-  IMUInput operator*(double c) const {
-    IMUInput out(*this);
-    out.gyr *= c;
-    out.acc *= c;
-    out.gyrBiasVel *= c;
-    out.accBiasVel *= c;
-    return out;
-  }
 };
+
+class State;
+
+/// Discrete lift map used by EqVIO propagation helpers.
+GTSAM_UNSTABLE_EXPORT VioGroup liftVelocityDiscrete(const State& state,
+                                                    const IMUInput& velocity,
+                                                    double dt);
 
 /**
  * @brief Camera model used by EqVIO measurement functions.
@@ -170,29 +142,24 @@ inline Vector3 undistortPoint(const CameraModel& camera, const Point2& y) {
  *
  * @throws std::invalid_argument if `y.z()` is numerically near zero.
  */
-inline Matrix23 projectionJacobian(const CameraModel& camera, const Vector3& y) {
+inline Matrix23 projectionJacobian(const CameraModel& camera,
+                                   const Vector3& y) {
   if (std::abs(y.z()) < 1e-12) {
     throw std::invalid_argument("projectionJacobian: z is near zero");
   }
-
-  const double invz = 1.0 / y.z();
-  const double invz2 = invz * invz;
-  const double fx = camera.calibration().fx();
-  const double fy = camera.calibration().fy();
-  const double s = camera.calibration().skew();
-
-  Matrix23 J;
-  J << fx * invz, s * invz, -(fx * y.x() + s * y.y()) * invz2, 0.0, fy * invz,
-      -fy * y.y() * invz2;
-  return J;
+  Matrix23 Dpn_dy;
+  Matrix22 Dpi_dpn;
+  const Point2 pn = PinholeBase::Project(Point3(y), Dpn_dy);
+  camera.calibration().uncalibrate(pn, {}, Dpi_dpn);
+  return Dpi_dpn * Dpn_dy;
 }
 
 /// Vision measurement keyed by landmark id.
-using VisionMeasurement = std::map<int, Point2>;
+using VisionMeasurement = std::map<Key, Point2>;
 
 /// Ordered landmark ids matching map iteration order.
-inline std::vector<int> measurementIds(const VisionMeasurement& measurement) {
-  std::vector<int> ids;
+inline KeyVector measurementIds(const VisionMeasurement& measurement) {
+  KeyVector ids;
   ids.reserve(measurement.size());
   for (const auto& item : measurement) {
     ids.push_back(item.first);
@@ -200,34 +167,41 @@ inline std::vector<int> measurementIds(const VisionMeasurement& measurement) {
   return ids;
 }
 
-/// Remove a contiguous row block from a matrix.
-inline void removeRows(Matrix& mat, int startRow, int numRows) {
-  const int rows = mat.rows();
-  const int cols = mat.cols();
-  assert(startRow >= 0 && numRows >= 0 && startRow + numRows <= rows);
-  mat.block(startRow, 0, rows - numRows - startRow, cols) =
-      mat.block(startRow + numRows, 0, rows - numRows - startRow, cols);
-  mat.conservativeResize(rows - numRows, Eigen::NoChange);
+/// Stack a landmark-id-ordered measurement map into a dense vector.
+inline Vector measurementVector(const VisionMeasurement& measurement) {
+  Vector v = Vector::Zero(static_cast<int>(2 * measurement.size()));
+  int i = 0;
+  for (const auto& item : measurement) {
+    v.segment<2>(2 * i) = item.second;
+    ++i;
+  }
+  return v;
 }
 
-/// Remove a contiguous column block from a matrix.
-inline void removeCols(Matrix& mat, int startCol, int numCols) {
-  const int rows = mat.rows();
-  const int cols = mat.cols();
-  assert(startCol >= 0 && numCols >= 0 && startCol + numCols <= cols);
-  mat.block(0, startCol, rows, cols - numCols - startCol) =
-      mat.block(0, startCol + numCols, rows, cols - numCols - startCol);
-  mat.conservativeResize(Eigen::NoChange, cols - numCols);
-}
+/// Discrete propagation lift functor for the explicit EqVIO predict path.
+struct Lift {
+  Lift(const IMUInput& imu, double dt) : imu_(imu), dt_(dt) {}
+
+  Vector operator()(
+      const State& xi,
+      OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H = {}) const {
+    const Vector y0 =
+        (VioGroup::Logmap(liftVelocityDiscrete(xi, imu_, dt_)) / dt_).eval();
+    if (H) *H = Matrix();
+    return y0;
+  }
+
+ private:
+  IMUInput imu_;
+  double dt_;
+};
 
 /// Readable accessors for the composed ProductLieGroup VioGroup.
 inline const Se23& A_sensorKinematics(const VioGroup& X) {
   return X.first.first;
 }
 
-inline const Bias& Beta_biasOffset(const VioGroup& X) {
-  return X.first.second;
-}
+inline const Bias& Beta_biasOffset(const VioGroup& X) { return X.first.second; }
 
 inline const Pose3& B_cameraExtrinsics(const VioGroup& X) {
   return X.second.first;

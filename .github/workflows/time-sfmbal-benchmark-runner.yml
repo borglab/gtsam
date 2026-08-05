@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout target ref
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.checkout_ref }}
           fetch-depth: 0
@@ -156,7 +156,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
       - name: Checkout target ref
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.checkout_ref }}
           fetch-depth: 0
@@ -270,7 +270,7 @@ jobs:
     runs-on: macos-15
     steps:
       - name: Checkout target ref
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.checkout_ref }}
           fetch-depth: 0

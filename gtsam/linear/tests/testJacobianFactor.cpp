@@ -16,15 +16,16 @@
  *  @author Frank Dellaert
  **/
 
-#include <gtsam/base/TestableAssertions.h>
 #include <CppUnitLite/TestHarness.h>
-
-#include <gtsam/inference/VariableSlots.h>
-#include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/GaussianConditional.h>
-#include <gtsam/linear/VectorValues.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/SymmetricBlockMatrix.h>
+#include <gtsam/base/TestableAssertions.h>
+#include <gtsam/inference/VariableSlots.h>
+#include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/HessianFactor.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/VectorValues.h>
 
 using namespace std;
 using namespace gtsam;
@@ -512,6 +513,69 @@ TEST(JacobianFactor, operators )
   EXPECT(assert_equal(-A.transpose()*b2, expectedG.vector(keys)));
   VectorValues actualG = lf.gradientAtZero();
   EXPECT(assert_equal(expectedG, actualG));
+}
+
+/* ************************************************************************* */
+TEST(JacobianFactor, gradient)
+{
+  // Build a factor: || [-I; I] [x1; x2] - b ||^2 with isotropic noise
+  const double sigma = 0.1;
+  SharedDiagonal noise = noiseModel::Isotropic::Sigma(2, sigma);
+  Matrix I = I_2x2;
+  Vector b = Vector2(0.2, -0.1);
+  JacobianFactor lf(1, -I, 2, I, b, noise);
+
+  VectorValues x;
+  x.insert(1, Vector2(10, 20));
+  x.insert(2, Vector2(30, 60));
+
+  // Gradient via direct computation should match HessianFactor-based gradient
+  HessianFactor hf(lf);
+  Vector expected1 = hf.gradient(1, x);
+  Vector expected2 = hf.gradient(2, x);
+
+  Vector actual1 = lf.gradient(1, x);
+  Vector actual2 = lf.gradient(2, x);
+
+  EXPECT(assert_equal(expected1, actual1, 1e-9));
+  EXPECT(assert_equal(expected2, actual2, 1e-9));
+}
+
+/* ************************************************************************* */
+TEST(JacobianFactor, gradient_no_noise)
+{
+  // Test gradient without noise model (unit covariance)
+  Matrix A1 = (Matrix(2, 2) << 1, 2, 3, 4).finished();
+  Matrix A2 = (Matrix(2, 2) << 5, 6, 7, 8).finished();
+  Vector b = Vector2(1, 2);
+  JacobianFactor lf(1, A1, 2, A2, b);
+
+  VectorValues x;
+  x.insert(1, Vector2(0.5, 1.0));
+  x.insert(2, Vector2(1.5, 2.0));
+
+  HessianFactor hf(lf);
+  EXPECT(assert_equal(hf.gradient(1, x), lf.gradient(1, x), 1e-9));
+  EXPECT(assert_equal(hf.gradient(2, x), lf.gradient(2, x), 1e-9));
+}
+
+/* ************************************************************************* */
+TEST(JacobianFactor, gradient_general_noise)
+{
+  // Non-isotropic noise to verify whitening in gradient computation
+  SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.5, 2.0));
+  Matrix A1 = (Matrix(2, 2) << 1, 2, 3, 4).finished();
+  Matrix A2 = (Matrix(2, 2) << 5, 6, 7, 8).finished();
+  Vector b = Vector2(1, 2);
+  JacobianFactor lf(1, A1, 2, A2, b, noise);
+
+  VectorValues x;
+  x.insert(1, Vector2(0.5, 1.0));
+  x.insert(2, Vector2(1.5, 2.0));
+
+  HessianFactor hf(lf);
+  EXPECT(assert_equal(hf.gradient(1, x), lf.gradient(1, x), 1e-9));
+  EXPECT(assert_equal(hf.gradient(2, x), lf.gradient(2, x), 1e-9));
 }
 
 /* ************************************************************************* */

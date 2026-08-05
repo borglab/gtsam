@@ -16,19 +16,19 @@
  */
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/navigation/LeggedEstimator.h>
 #include <gtsam/navigation/LeggedEstimatorFactors.h>
-#include <gtsam/navigation/NavStateImuEKF.h>
+#include <gtsam/navigation/NavState.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 
+#include <Eigen/Eigenvalues>
 #include <algorithm>
-#include <map>
 #include <set>
-#include <sstream>
 #include <stdexcept>
 
 namespace gtsam {
@@ -724,13 +724,14 @@ LeggedFixedLagSmoother::LeggedFixedLagSmoother(
       initialFootholds_(footholds0),
       baseCovariance0_(baseCovariance0),
       smoother_(lagSeconds, leggedLmParams()),
-      pim_(params.preintegrationParams, imuBias::ConstantBias()),
+      pim_(params.preintegrationParams, params.imuBias),
       inContact_(numFeet_, false),
       initialized_(numFeet_, false),
       footEpisodes_(numFeet_, 0),
       activeFootKeys_(numFeet_),
       optimizedBaseState_(navState0),
-      deadReckonedState_(navState0) {
+      deadReckonedState_(navState0),
+      biasEstimate_(params.imuBias) {
   throwIfInvalidParams(params_);
   if (footNames_.size() != numFeet_) {
     throw std::invalid_argument(
@@ -947,7 +948,7 @@ bool LeggedFixedLagSmoother::maybeInitializeFromFullContact(
 
   smoother_ =
       BatchFixedLagSmoother(smoother_.smootherLag(), smoother_.params());
-  pim_.resetIntegrationAndSetBias(imuBias::ConstantBias());
+  pim_.resetIntegrationAndSetBias(params_.imuBias);
   step_ = 0;
   currentTime_ = 0.0;
   footEpisodes_.assign(numFeet_, 0);

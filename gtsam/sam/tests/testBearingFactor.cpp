@@ -16,13 +16,11 @@
  *  @date July 2015
  */
 
-#include <gtsam/sam/BearingFactor.h>
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/factorTesting.h>
-#include <gtsam/nonlinear/expressionTesting.h>
-
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/sam/BearingFactor.h>
 
 using namespace std;
 using namespace gtsam;
@@ -40,7 +38,7 @@ typedef BearingFactor<Pose3, Point3> BearingFactor3D;
 Unit3 measurement3D = Pose3().bearing(Point3(1, 0, 0));  // has to match values!
 static SharedNoiseModel model3D(noiseModel::Isotropic::Sigma(2, 0.5));
 BearingFactor3D factor3D(poseKey, pointKey, measurement3D, model3D);
-}
+}  // namespace
 
 /* ************************************************************************* */
 TEST(BearingFactor, 2D) {
@@ -49,8 +47,6 @@ TEST(BearingFactor, 2D) {
   values.insert(poseKey, Pose2(1.0, 2.0, 0.57));
   values.insert(pointKey, Point2(-4.0, 11.0));
 
-  EXPECT_CORRECT_EXPRESSION_JACOBIANS(factor2D.expression({poseKey, pointKey}),
-                                      values, 1e-7, 1e-5);
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor2D, values, 1e-7, 1e-5);
 }
 
@@ -59,7 +55,7 @@ TEST(BearingFactor, 2D) {
 // incompatible with the Unit3 localCoordinates. The issue is the following:
 // For factors, we want to use Local(value, measured), because we need the error
 // to be expressed in the tangent space of value. This surfaced in the Unit3 case
-// where the tangent space can be radically didfferent from one value to the next.
+// where the tangent space can be radically different from one value to the next.
 // For derivatives, we want Local(constant, varying), because we need a derivative
 // in a constant tangent space. But since the macros below call whitenedError
 // which calls Local(value,measured), we actually call the reverse. This does not
@@ -78,8 +74,6 @@ TEST(BearingFactor, 2D) {
 //  values.insert(poseKey, Pose3());
 //  values.insert(pointKey, Point3(1, 0, 0));
 //
-//  EXPECT_CORRECT_EXPRESSION_JACOBIANS(factor.expression({poseKey, pointKey}),
-//                                      values, 1e-7, 1e-5);
 //  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
 //}
 

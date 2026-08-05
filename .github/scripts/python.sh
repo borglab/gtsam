@@ -25,6 +25,7 @@ fi
 
 export PYTHON="python${PYTHON_VERSION}"
 NO_BOOST_BUILD=OFF
+SCCACHE=OFF
 
 function install_dependencies()
 {
@@ -57,9 +58,22 @@ function build()
   BOOST_CMAKE_ARGS=""
   if [ "${NO_BOOST_BUILD}" != "ON" ] && [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" || "$OSTYPE" == "cygwin" ]]; then
     if [ -n "${BOOST_ROOT}" ]; then
-     BOOST_ROOT_UNIX=$(echo "$BOOST_ROOT" | sed 's/\\/\//g')
-     BOOST_CMAKE_ARGS="-DBOOST_ROOT=${BOOST_ROOT_UNIX} -DBOOST_INCLUDEDIR=${BOOST_ROOT_UNIX}/include -DBOOST_LIBRARYDIR=${BOOST_ROOT_UNIX}/lib"
+      BOOST_ROOT_UNIX=$(echo "$BOOST_ROOT" | sed 's/\\/\//g')
+      BOOST_CMAKE_ARGS="-DBOOST_ROOT=${BOOST_ROOT_UNIX}"
+      if [ -n "${BOOST_INCLUDEDIR}" ]; then
+        BOOST_INCLUDEDIR_UNIX=$(echo "$BOOST_INCLUDEDIR" | sed 's/\\/\//g')
+        BOOST_CMAKE_ARGS="${BOOST_CMAKE_ARGS} -DBOOST_INCLUDEDIR=${BOOST_INCLUDEDIR_UNIX}"
+      fi
+      if [ -n "${BOOST_LIBRARYDIR}" ]; then
+        BOOST_LIBRARYDIR_UNIX=$(echo "$BOOST_LIBRARYDIR" | sed 's/\\/\//g')
+        BOOST_CMAKE_ARGS="${BOOST_CMAKE_ARGS} -DBOOST_LIBRARYDIR=${BOOST_LIBRARYDIR_UNIX}"
+      fi
     fi
+  fi
+
+  SCCACHE_CMAKE_ARGS=""
+  if [ "${SCCACHE}" == "ON" ]; then
+    SCCACHE_CMAKE_ARGS="-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache"
   fi
 
   cmake $GITHUB_WORKSPACE \
@@ -71,6 +85,7 @@ function build()
       -DGTSAM_WITH_TBB=${GTSAM_WITH_TBB:-OFF} \
       -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
       -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
+      -DGTSAM_BUILD_WITH_PRECOMPILED_HEADERS=OFF \
       -DGTSAM_BUILD_PYTHON=${BUILD_PYBIND} \
       -DGTSAM_UNSTABLE_BUILD_PYTHON=${GTSAM_BUILD_UNSTABLE:-ON} \
       -DGTSAM_PYTHON_VERSION=$PYTHON_VERSION \
@@ -79,8 +94,12 @@ function build()
       -DGTSAM_ENABLE_BOOST_SERIALIZATION=${ENABLE_BOOST_SERIALIZATION} \
       -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
       -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/gtsam_install \
-      $BOOST_CMAKE_ARGS
+      $BOOST_CMAKE_ARGS \
+      $SCCACHE_CMAKE_ARGS
 
+  # Unset environment variables so sccache can reuse caches.
+  unset PYTHON
+  unset PYTHON_VERSION
   if [ "${NO_BOOST_BUILD}" == "ON" ]; then
     # Build only wrapper targets for the no-Boost verification lane.
     cmake --build build -j2 --target gtsam_py gtsam_unstable_py
@@ -122,6 +141,9 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --no-boost)
       NO_BOOST_BUILD=ON
+      ;;
+    --sccache)
+      SCCACHE=ON
       ;;
     *)
       echo "Unknown option: $1"
