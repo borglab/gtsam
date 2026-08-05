@@ -397,7 +397,7 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::Expmap(
       assignBlock(D_h_second, d1, 0, &*H2);
     }
     return ProductLieGroup(g, h);
-  } else if constexpr (hasGenerator) {
+  } else {
     // Generic semidirect Expmap for vector-space H via the φ₁ kernel:
     //   Expmap(u, v) = (expG(u),  φ₁(Aφ(u)) · v)
     // where Aφ(u) = Action::generator(u) is the infinitesimal generator.
@@ -451,10 +451,6 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::Expmap(
       H2->bottomRows(d2) = phi0Solver.solve(phi1);
     }
     return ProductLieGroup(g, h);
-  } else {
-    static_assert(hasGenerator,
-                  "ProductLieGroup semidirect Expmap requires H to be a "
-                  "fixed-size Eigen column vector and Action::generator(u).");
   }
 }
 
@@ -487,7 +483,7 @@ ProductLieGroup<G, H, Action>::Logmap(const ProductLieGroup& p,
     assignBlock(D_g_first, 0, 0, &*Hp);
     assignBlock(D_h_second, firstDimension, firstDimension, &*Hp);
     return v;
-  } else if constexpr (hasGenerator) {
+  } else {
     // Generic semidirect Logmap for vector-space H via the φ₁ kernel:
     //   Logmap(g, h) = (logG(g),  φ₁(Aφ(logG(g)))⁻¹ · h)
     // This is the exact inverse of the Expmap formula above.
@@ -530,10 +526,6 @@ ProductLieGroup<G, H, Action>::Logmap(const ProductLieGroup& p,
     const auto phi1Solver = phi1Kernel(A).lu();
     const typename traits<H>::TangentVector v2 = phi1Solver.solve(p.second);
     return makeTangentVector(v1, v2, d1, d2);
-  } else {
-    static_assert(hasGenerator,
-                  "ProductLieGroup semidirect Logmap requires H to be a "
-                  "fixed-size Eigen column vector and Action::generator(u).");
   }
 }
 

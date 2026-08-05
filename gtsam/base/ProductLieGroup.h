@@ -111,14 +111,12 @@ class ProductLieGroup : public std::pair<G, H> {
   inline constexpr static bool isDirectProduct = std::is_void_v<Action>;
   inline constexpr static bool hasCompatibleAction =
       internal::IsCompatibleSemidirectAction<Action, G, H>::value;
-  /// True when the semidirect product has the required generator support.
-  inline constexpr static bool hasGenerator =
-      !isDirectProduct && internal::ProductLieGroupIsVector<H>::value &&
-      !secondDynamic &&
-      internal::ProductLieGroupHasGenerator<
-          Action, typename traits<G>::TangentVector>::value;
   static_assert(
-      isDirectProduct || (hasCompatibleAction && hasGenerator),
+      isDirectProduct ||
+          (hasCompatibleAction && internal::ProductLieGroupIsVector<H>::value &&
+           !secondDynamic &&
+           internal::ProductLieGroupHasGenerator<
+               Action, typename traits<G>::TangentVector>::value),
       "ProductLieGroup semidirect products require a default-constructible "
       "left GroupAction, a fixed-size Eigen column vector H, and "
       "Action::generator(u).");
@@ -301,7 +299,7 @@ class ProductLieGroup : public std::pair<G, H> {
   };
 
   /// Compute exp(A), φ₁(A), and the Fréchet derivative L_{φ₁}(A, B) from a
-  /// single block exponential. Only valid/called when hasGenerator is true.
+  /// single block exponential for a semidirect product.
   static Phi1FrechetResult phi1FrechetBlock(const Jacobian2& A,
                                             const Jacobian2& B);
 
