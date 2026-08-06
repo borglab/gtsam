@@ -28,6 +28,7 @@
 
 using namespace std;
 using namespace gtsam;
+namespace bal = gtsam::timing::bal;
 
 namespace {
 constexpr size_t kIterations = 2;
@@ -39,18 +40,19 @@ constexpr double kMaxDiagonal = 1e32;
 }  // namespace
 
 int main() {
-  const string bal16 = findExampleDataFile("dubrovnik-16-22106-pre");
+  const string bal16 = bal::defaultDataset();
   // const string bal88 = findExampleDataFile("dubrovnik-88-64298-pre");
   // const string bal135 = findExampleDataFile("dubrovnik-135-90642-pre");
   for (const auto& filename : {bal16} /*, bal88, bal135*/) {
     cout << "\nProcessing BAL file: " << filename << std::endl;
-    const SfmData db = SfmData::FromBalFile(filename);
+    const SfmData db = bal::loadDataset(filename);
 
-    NonlinearFactorGraph graph = buildGeneralSfmGraph(db);
-    Values values = buildGeneralSfmInitial(db);
+    const bal::BalBenchmarkConfig config;
+    NonlinearFactorGraph graph = bal::buildGeneralSfmGraph(db, config);
+    Values values = bal::buildGeneralSfmInitial(db);
     auto linear = *graph.linearize(values);
 
-    auto orderings = createOrderings(db, linear);
+    auto orderings = bal::createOrderings(db, linear);
     for (const auto& [label, ordering] : orderings) {
       const Ordering& currentOrdering = ordering;
       cout << "\nBAL Benchmark (" << label << ", iterations=" << kIterations

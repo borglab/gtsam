@@ -29,6 +29,7 @@
 using namespace std;
 using namespace gtsam;
 using namespace example;
+namespace bal = gtsam::timing::bal;
 
 namespace {
 // Thresholds chosen empirically for these timing experiments: merging small
@@ -65,9 +66,10 @@ static void runMultifrontalSolver(MultifrontalSolver& solver,
 }
 
 namespace {
-const std::string bal135 = findExampleDataFile("dubrovnik-135-90642-pre.txt");
-const string bal16 = findExampleDataFile("dubrovnik-16-22106-pre");
-const string bal88 = findExampleDataFile("dubrovnik-88-64298-pre");
+const std::vector<std::string> balDatasets = bal::standardDatasets();
+const string& bal16 = balDatasets[0];
+const string& bal88 = balDatasets[1];
+const string& bal135 = balDatasets[2];
 }  // namespace
 
 void runBAL135Benchmark(MultifrontalSolver::Parameters params) {
@@ -75,11 +77,12 @@ void runBAL135Benchmark(MultifrontalSolver::Parameters params) {
   cout << "\nSingle MFS test: " << bal135 << " (iterations=" << iterations
        << ")" << std::endl;
 
-  const SfmData db = SfmData::FromBalFile(bal135);
-  const NonlinearFactorGraph graph = buildGeneralSfmGraph(db, 0.1);
-  const Values initial = buildGeneralSfmInitial(db);
+  const SfmData db = bal::loadDataset(bal135);
+  const bal::BalBenchmarkConfig config;
+  const NonlinearFactorGraph graph = bal::buildGeneralSfmGraph(db, config, 0.1);
+  const Values initial = bal::buildGeneralSfmInitial(db);
   const GaussianFactorGraph linear = *graph.linearize(initial);
-  const Ordering ordering = createSchurOrdering(db, false);
+  const Ordering ordering = bal::createSchurOrdering(db, false);
 
   MultifrontalSolver solver(linear, ordering, params);
   const double imperativeSeconds = gtsam::timing::measureSeconds(
@@ -92,12 +95,14 @@ void runBALBenchmark(MultifrontalSolver::Parameters params) {
   const size_t bal_iterations = 2;
   for (const auto& filename : {bal16, bal88, bal135}) {
     cout << "\nProcessing BAL file: " << filename << std::endl;
-    const SfmData db = SfmData::FromBalFile(filename);
-    const NonlinearFactorGraph graph = buildGeneralSfmGraph(db, 0.1);
-    const Values initial = buildGeneralSfmInitial(db);
+    const SfmData db = bal::loadDataset(filename);
+    const bal::BalBenchmarkConfig config;
+    const NonlinearFactorGraph graph =
+        bal::buildGeneralSfmGraph(db, config, 0.1);
+    const Values initial = bal::buildGeneralSfmInitial(db);
     const GaussianFactorGraph linear = *graph.linearize(initial);
 
-    const Ordering ordering = createSchurOrdering(db, false);
+    const Ordering ordering = bal::createSchurOrdering(db, false);
     cout << "\nBAL Benchmark (" << filename << ", iterations=" << bal_iterations
          << "):" << std::endl;
 
@@ -173,11 +178,13 @@ void tuneMergingBAL(MultifrontalSolver::Parameters params) {
   for (size_t fileIndex = 0; fileIndex < balFiles.size(); ++fileIndex) {
     const std::string& filename = balFiles[fileIndex];
     cout << "\n  BAL file: " << filename << std::endl;
-    const SfmData db = SfmData::FromBalFile(filename);
-    const NonlinearFactorGraph graph = buildGeneralSfmGraph(db, 0.1);
-    const Values initial = buildGeneralSfmInitial(db);
+    const SfmData db = bal::loadDataset(filename);
+    const bal::BalBenchmarkConfig config;
+    const NonlinearFactorGraph graph =
+        bal::buildGeneralSfmGraph(db, config, 0.1);
+    const Values initial = bal::buildGeneralSfmInitial(db);
     const GaussianFactorGraph linear = *graph.linearize(initial);
-    const Ordering ordering = createSchurOrdering(db, false);
+    const Ordering ordering = bal::createSchurOrdering(db, false);
 
     for (size_t i = 0; i < sweep.size(); ++i) {
       const size_t parameter = sweep[i];
