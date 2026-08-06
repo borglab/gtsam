@@ -149,11 +149,13 @@ class GTSAM_EXPORT GaussianFactorGraphSystem {
 /// @{
 
 /// Create VectorValues from a Vector
-VectorValues buildVectorValues(const Vector& v, const Ordering& ordering,
-                               const std::map<Key, size_t>& dimensions);
+GTSAM_EXPORT VectorValues
+buildVectorValues(const Vector& v, const Ordering& ordering,
+                  const std::map<Key, size_t>& dimensions);
 
 /// Create VectorValues from a Vector and a KeyInfo class
-VectorValues buildVectorValues(const Vector& v, const KeyInfo& keyInfo);
+GTSAM_EXPORT VectorValues buildVectorValues(const Vector& v,
+                                            const KeyInfo& keyInfo);
 
 /// @}
 
