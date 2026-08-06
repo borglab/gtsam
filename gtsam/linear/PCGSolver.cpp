@@ -18,6 +18,7 @@
  * @author Fan Jiang
  */
 
+#include <gtsam/base/TaskScheduler.h>
 #include <gtsam/linear/BatchJacobianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/PCGSolver.h>
@@ -27,11 +28,15 @@
 #include <Eigen/Sparse>
 #include <algorithm>
 #include <chrono>
+#include <functional>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <stdexcept>
+#include <thread>
 #include <utility>
+#include <vector>
 
 using namespace std;
 
@@ -40,7 +45,9 @@ namespace gtsam {
 /*****************************************************************************/
 void PCGSolverParameters::print(ostream& os) const {
   Base::print(os);
-  os << "PCGSolverParameters:" << endl;
+  os << "PCGSolverParameters:" << endl
+     << "parallel: " << parallel << endl
+     << "numThreads: " << numThreads << endl;
   preconditioner->print(os);
 }
 
@@ -67,7 +74,9 @@ void PCGSolverParameters::print(const std::string& s) const {
  *
  * - Jacobian factors are whitened once and packed into a compressed sparse
  *   Jacobian. Multiplication evaluates `J.transpose() * (J * x)` without
- *   assembling the normal-equation Hessian.
+ *   assembling the normal-equation Hessian. Large Jacobians also retain a
+ *   row-compressed view so both sparse products can be statically partitioned
+ *   across a TaskScheduler.
  * - Hessian factors use precomputed scalar offsets and direct symmetric block
  *   products.
  * - BatchJacobianFactorBase factors use their compact flat-vector kernels.
@@ -76,11 +85,16 @@ void PCGSolverParameters::print(const std::string& s) const {
  * The block diagonal used by BlockJacobiPreconditioner is assembled lazily and
  * cached in KeyInfo ordering.
  *
- * @note This implementation reuses mutable multiplication workspace and lazily
- * caches the block diagonal. Concurrent calls on the same instance therefore
- * require external synchronization.
+ * @note This implementation reuses mutable multiplication workspace, owns a
+ * scheduler, and lazily caches the block diagonal. Concurrent calls on the same
+ * instance therefore require external synchronization.
  */
 class GaussianFactorGraphSystem::Impl {
+  struct OuterRange {
+    size_t begin;
+    size_t end;
+  };
+
   /** Precomputed storage and key mappings for one Jacobian factor. */
   struct JacobianPlan {
     std::shared_ptr<const JacobianFactor> factor;
@@ -105,14 +119,121 @@ class GaussianFactorGraphSystem::Impl {
   KeyInfo keyInfo_;  ///< Flat ordering, dimensions, and offsets for all keys.
   Vector rhs_;       ///< Cached normal-equation right-hand side, `-g(0)`.
   Eigen::SparseMatrix<double, Eigen::ColMajor, int>
-      jacobian_;                    ///< Compiled whitened Jacobian.
+      jacobian_;  ///< Compiled whitened Jacobian.
+  Eigen::SparseMatrix<double, Eigen::RowMajor, int>
+      rowJacobian_;                 ///< Row view used by parallel `J * x`.
   mutable Vector jacobianProduct_;  ///< Reusable workspace for `J * x`.
   std::vector<JacobianPlan> jacobianPlans_;  ///< Plans retained for diagonals.
   std::vector<HessianPlan> hessianPlans_;    ///< Direct Hessian-factor plans.
   std::vector<BatchPlan> batchPlans_;        ///< Direct compact-factor plans.
   GaussianFactorGraph fallbackFactors_;      ///< Unsupported factor types.
   mutable std::optional<std::vector<Matrix>>
-      blockDiagonal_;  ///< Lazily assembled diagonal in KeyInfo ordering.
+      blockDiagonal_;      ///< Lazily assembled diagonal in KeyInfo ordering.
+  size_t numThreads_ = 1;  ///< Effective TaskScheduler worker count.
+  std::unique_ptr<TaskScheduler<void>> scheduler_;  ///< Reused worker pool.
+  std::vector<OuterRange> jacobianRowRanges_;  ///< Parallel `J * x` ranges.
+  std::vector<OuterRange>
+      jacobianColumnRanges_;             ///< Parallel `J^T * x` ranges.
+  std::vector<OuterRange> blockRanges_;  ///< Independent variable blocks.
+
+  static constexpr size_t kMinimumParallelNonzeros = 65536;
+  static constexpr size_t kMinimumParallelBlocks = 256;
+  static constexpr size_t kMaximumAutomaticThreads = 8;
+
+  /** Resolve a requested worker count, with zero selecting an automatic cap. */
+  static size_t resolveThreadCount(size_t requested) {
+    if (requested != 0) return requested;
+    const size_t hardware = std::thread::hardware_concurrency();
+    return hardware == 0 ? 1 : std::min(hardware, kMaximumAutomaticThreads);
+  }
+
+  /** Partition an outer sparse dimension into contiguous ranges. */
+  static std::vector<OuterRange> makeOuterRanges(size_t count,
+                                                 size_t requestedTasks) {
+    const size_t taskCount = std::min(count, requestedTasks);
+    std::vector<OuterRange> ranges;
+    ranges.reserve(taskCount);
+    for (size_t task = 0; task < taskCount; ++task) {
+      const size_t begin = count * task / taskCount;
+      const size_t end = count * (task + 1) / taskCount;
+      if (begin != end) ranges.push_back({begin, end});
+    }
+    return ranges;
+  }
+
+  /** Run independent ranges on the reusable scheduler and wait for completion.
+   */
+  template <class FUNCTION>
+  void runRanges(const std::vector<OuterRange>& ranges,
+                 const FUNCTION& function) const {
+    for (const OuterRange range : ranges) {
+      scheduler_->enqueue(
+          [range, &function] { function(range.begin, range.end); });
+    }
+    scheduler_->waitForAllTasks();
+  }
+
+  /** Enable parallel sparse products when the compiled Jacobian is large. */
+  void configureParallelism(bool parallel, size_t requestedThreads) {
+    const size_t resolvedThreads = resolveThreadCount(requestedThreads);
+    const bool parallelJacobian =
+        static_cast<size_t>(jacobian_.nonZeros()) >= kMinimumParallelNonzeros;
+    const bool parallelBlocks = keyInfo_.size() >= kMinimumParallelBlocks;
+    if (!parallel || resolvedThreads <= 1 ||
+        (!parallelJacobian && !parallelBlocks)) {
+      return;
+    }
+
+    numThreads_ = std::min(resolvedThreads, keyInfo_.size());
+    if (numThreads_ <= 1) {
+      numThreads_ = 1;
+      return;
+    }
+
+    if (parallelJacobian) {
+      rowJacobian_ = jacobian_;
+      rowJacobian_.makeCompressed();
+      jacobianRowRanges_ = makeOuterRanges(
+          static_cast<size_t>(rowJacobian_.outerSize()), numThreads_);
+      jacobianColumnRanges_ = makeOuterRanges(
+          static_cast<size_t>(jacobian_.outerSize()), numThreads_);
+    }
+    blockRanges_ = makeOuterRanges(keyInfo_.size(), numThreads_);
+    scheduler_ = std::make_unique<TaskScheduler<void>>(numThreads_);
+  }
+
+  /** Evaluate `J * x` and `J.transpose() * (J * x)` in parallel. */
+  void multiplyJacobianParallel(const Vector& x, Vector* y) const {
+    const int* rowStarts = rowJacobian_.outerIndexPtr();
+    const int* rowColumns = rowJacobian_.innerIndexPtr();
+    const double* rowValues = rowJacobian_.valuePtr();
+    const double* input = x.data();
+    double* intermediate = jacobianProduct_.data();
+    runRanges(jacobianRowRanges_, [&](size_t begin, size_t end) {
+      for (size_t row = begin; row < end; ++row) {
+        double value = 0.0;
+        for (int entry = rowStarts[row]; entry < rowStarts[row + 1]; ++entry) {
+          value += rowValues[entry] * input[rowColumns[entry]];
+        }
+        intermediate[row] = value;
+      }
+    });
+
+    const int* columnStarts = jacobian_.outerIndexPtr();
+    const int* columnRows = jacobian_.innerIndexPtr();
+    const double* columnValues = jacobian_.valuePtr();
+    double* output = y->data();
+    runRanges(jacobianColumnRanges_, [&](size_t begin, size_t end) {
+      for (size_t column = begin; column < end; ++column) {
+        double value = 0.0;
+        for (int entry = columnStarts[column]; entry < columnStarts[column + 1];
+             ++entry) {
+          value += columnValues[entry] * intermediate[columnRows[entry]];
+        }
+        output[column] = value;
+      }
+    });
+  }
 
   /** Map factor-local key positions to flat scalar and ordered block slots. */
   template <class FACTOR>
@@ -232,7 +353,8 @@ class GaussianFactorGraphSystem::Impl {
    * @param graph Gaussian factors to compile and retain.
    * @param keyInfo Ordering, dimensions, and flat offsets for graph keys.
    */
-  Impl(const GaussianFactorGraph& graph, const KeyInfo& keyInfo)
+  Impl(const GaussianFactorGraph& graph, const KeyInfo& keyInfo, bool parallel,
+       size_t numThreads)
       : keyInfo_(keyInfo), rhs_(Vector::Zero(keyInfo.numCols())) {
     Vector gradient = Vector::Zero(keyInfo.numCols());
 
@@ -289,6 +411,7 @@ class GaussianFactorGraphSystem::Impl {
     addFallbackGradient(&gradient);
     rhs_ = -gradient;
     buildSparseJacobian();
+    configureParallelism(parallel, numThreads);
   }
 
   /**
@@ -309,7 +432,9 @@ class GaussianFactorGraphSystem::Impl {
     }
     y->setZero(static_cast<DenseIndex>(keyInfo_.numCols()));
 
-    if (jacobian_.rows() != 0) {
+    if (!jacobianRowRanges_.empty()) {
+      multiplyJacobianParallel(x, y);
+    } else if (jacobian_.rows() != 0) {
       jacobianProduct_.noalias() = jacobian_ * x;
       y->noalias() += jacobian_.transpose() * jacobianProduct_;
     }
@@ -355,6 +480,20 @@ class GaussianFactorGraphSystem::Impl {
 
   /** Return the cached normal-equation right-hand side. */
   const Vector& rhs() const { return rhs_; }
+
+  /** Return the effective scheduler worker count. */
+  size_t numThreads() const { return numThreads_; }
+
+  /** Apply independent work to variable-block ranges when profitable. */
+  template <class FUNCTION>
+  bool runBlockRanges(size_t blockCount, const FUNCTION& function) const {
+    if (!scheduler_ || blockCount < kMinimumParallelBlocks ||
+        blockCount != keyInfo_.size()) {
+      return false;
+    }
+    runRanges(blockRanges_, function);
+    return true;
+  }
 
   /**
    * Return the lazily assembled Hessian diagonal blocks in KeyInfo ordering.
@@ -429,7 +568,9 @@ PCGSolverResult PCGSolver::optimizeDetailed(const GaussianFactorGraph& gfg,
   using Clock = std::chrono::steady_clock;
 
   const auto operatorStart = Clock::now();
-  GaussianFactorGraphSystem system(gfg, *preconditioner_, keyInfo, lambda);
+  GaussianFactorGraphSystem system(gfg, *preconditioner_, keyInfo, lambda,
+                                   parameters_.parallel,
+                                   parameters_.numThreads);
   const auto operatorEnd = Clock::now();
 
   const auto preconditionerStart = Clock::now();
@@ -464,9 +605,10 @@ PCGSolverResult PCGSolver::optimizeDetailed(const GaussianFactorGraph& gfg,
 /*****************************************************************************/
 GaussianFactorGraphSystem::GaussianFactorGraphSystem(
     const GaussianFactorGraph& gfg, const Preconditioner& preconditioner,
-    const KeyInfo& keyInfo, const std::map<Key, Vector>& lambda)
+    const KeyInfo& keyInfo, const std::map<Key, Vector>& lambda, bool parallel,
+    size_t numThreads)
     : preconditioner_(preconditioner),
-      impl_(std::make_shared<Impl>(gfg, keyInfo)) {
+      impl_(std::make_shared<Impl>(gfg, keyInfo, parallel, numThreads)) {
   (void)lambda;
 }
 
@@ -486,6 +628,11 @@ void GaussianFactorGraphSystem::multiply(const Vector& x, Vector& AtAx) const {
 void GaussianFactorGraphSystem::getb(Vector& b) const { b = impl_->rhs(); }
 
 /*****************************************************************************/
+size_t GaussianFactorGraphSystem::numThreads() const {
+  return impl_->numThreads();
+}
+
+/*****************************************************************************/
 const std::vector<Matrix>& GaussianFactorGraphSystem::hessianBlockDiagonal()
     const {
   return impl_->hessianBlockDiagonal();
@@ -496,6 +643,18 @@ void GaussianFactorGraphSystem::leftPrecondition(const Vector& x,
                                                  Vector& y) const {
   // For a preconditioner M = L*L^T
   // Calculate y = L^{-1} x
+  if (const auto* blockJacobi =
+          dynamic_cast<const BlockJacobiPreconditioner*>(&preconditioner_)) {
+    y = x;
+    if (impl_->runBlockRanges(
+            blockJacobi->dims_.size(), [&](size_t begin, size_t end) {
+              blockJacobi->solveInPlaceRange(y, begin, end, false);
+            })) {
+      return;
+    }
+    blockJacobi->solveInPlaceRange(y, 0, blockJacobi->dims_.size(), false);
+    return;
+  }
   preconditioner_.solve(x, y);
 }
 
@@ -504,6 +663,18 @@ void GaussianFactorGraphSystem::rightPrecondition(const Vector& x,
                                                   Vector& y) const {
   // For a preconditioner M = L*L^T
   // Calculate y = L^{-T} x
+  if (const auto* blockJacobi =
+          dynamic_cast<const BlockJacobiPreconditioner*>(&preconditioner_)) {
+    y = x;
+    if (impl_->runBlockRanges(
+            blockJacobi->dims_.size(), [&](size_t begin, size_t end) {
+              blockJacobi->solveInPlaceRange(y, begin, end, true);
+            })) {
+      return;
+    }
+    blockJacobi->solveInPlaceRange(y, 0, blockJacobi->dims_.size(), true);
+    return;
+  }
   preconditioner_.transposeSolve(x, y);
 }
 

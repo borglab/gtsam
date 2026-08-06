@@ -19,6 +19,7 @@
 namespace gtsam {
 
 class GaussianFactorGraph;
+class GaussianFactorGraphSystem;
 class KeyInfo;
 class VectorValues;
 
@@ -131,6 +132,8 @@ struct GTSAM_EXPORT BlockJacobiPreconditionerParameters : public PreconditionerP
 
 /*******************************************************************************************/
 class GTSAM_EXPORT BlockJacobiPreconditioner : public Preconditioner {
+  friend class GaussianFactorGraphSystem;
+
 public:
   typedef Preconditioner Base;
   BlockJacobiPreconditioner() ;
@@ -155,7 +158,13 @@ protected:
 
   void clean() ;
 
+  /** Apply a triangular solve to a contiguous range of independent blocks. */
+  void solveInPlaceRange(Vector& x, size_t begin, size_t end,
+                         bool transpose) const;
+
   std::vector<size_t> dims_;
+  std::vector<size_t> scalarOffsets_;
+  std::vector<size_t> bufferOffsets_;
   double *buffer_;
   size_t bufferSize_;
   size_t nnz_;

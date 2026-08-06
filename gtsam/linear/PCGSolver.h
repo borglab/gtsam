@@ -41,6 +41,8 @@ struct GTSAM_EXPORT PCGSolverParameters : public ConjugateGradientParameters {
   typedef std::shared_ptr<PCGSolverParameters> shared_ptr;
 
   std::shared_ptr<PreconditionerParameters> preconditioner;
+  bool parallel = true;   ///< Enable scheduler-backed parallel kernels.
+  size_t numThreads = 0;  ///< Worker count (0 selects an automatic count).
 
   PCGSolverParameters() {}
 
@@ -116,10 +118,18 @@ class GTSAM_EXPORT GaussianFactorGraphSystem {
   friend class PCGSolver;
 
  public:
+  /**
+   * Compile a Gaussian factor graph into a flat-vector PCG system.
+   *
+   * Parallel execution is enabled by default for sufficiently large systems.
+   * Set @p parallel to false or @p numThreads to one for serial execution.
+   * A zero @p numThreads selects an automatically capped worker count.
+   */
   GaussianFactorGraphSystem(const GaussianFactorGraph& gfg,
                             const Preconditioner& preconditioner,
                             const KeyInfo& info,
-                            const std::map<Key, Vector>& lambda);
+                            const std::map<Key, Vector>& lambda,
+                            bool parallel = true, size_t numThreads = 0);
 
   void residual(const Vector& x, Vector& r) const;
   void multiply(const Vector& x, Vector& y) const;
@@ -130,6 +140,9 @@ class GTSAM_EXPORT GaussianFactorGraphSystem {
   void axpy(const double alpha, const Vector& x, Vector& y) const;
 
   void getb(Vector& b) const;
+
+  /// Return the effective worker count, or one for serial execution.
+  size_t numThreads() const;
 };
 
 /// @name utility functions

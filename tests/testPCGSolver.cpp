@@ -334,6 +334,83 @@ TEST(GaussianFactorGraphSystem, MixedFactorTypes) {
 }
 
 /* ************************************************************************* */
+namespace parallel_pcg_fixture {
+
+GaussianFactorGraph createDenseChain(size_t variableCount) {
+  const Matrix3 firstBlock =
+      (Matrix3() << 1.0, 0.2, -0.1, -0.3, 0.9, 0.4, 0.15, -0.25, 1.1)
+          .finished();
+  const Matrix3 secondBlock =
+      (Matrix3() << -0.8, 0.1, 0.3, 0.2, -1.2, 0.15, -0.1, 0.35, -0.7)
+          .finished();
+  const auto model = noiseModel::Unit::Create(3);
+
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(0, Matrix3::Identity(), Vector3::Zero(),
+                                       model);
+  for (size_t key = 1; key < variableCount; ++key) {
+    const Vector3 rhs(0.01 * static_cast<double>(key % 7), -0.02, 0.03);
+    graph.emplace_shared<JacobianFactor>(key - 1, firstBlock, key, secondBlock,
+                                         rhs, model);
+  }
+  return graph;
+}
+
+// Verifies scheduler execution is enabled by default but remains configurable.
+TEST(PCGSolver, ParallelParametersDefaultOn) {
+  const PCGSolverParameters parameters(
+      std::make_shared<DummyPreconditionerParameters>());
+  CHECK(parameters.parallel);
+  LONGS_EQUAL(0, static_cast<long>(parameters.numThreads));
+}
+
+// Verifies parallel products, preconditioning, and PCG match the serial path.
+TEST(PCGSolver, ParallelMatchesSerial) {
+  const GaussianFactorGraph graph = createDenseChain(4096);
+  const KeyInfo keyInfo(graph);
+  BlockJacobiPreconditioner preconditioner;
+  preconditioner.build(graph, keyInfo, {});
+
+  const GaussianFactorGraphSystem serial(graph, preconditioner, keyInfo, {},
+                                         false, 1);
+  const GaussianFactorGraphSystem parallel(graph, preconditioner, keyInfo, {},
+                                           true, 2);
+  LONGS_EQUAL(1, static_cast<long>(serial.numThreads()));
+  LONGS_EQUAL(2, static_cast<long>(parallel.numThreads()));
+
+  const Vector input =
+      Vector::LinSpaced(static_cast<DenseIndex>(keyInfo.numCols()), -0.5, 0.5);
+  Vector serialProduct, parallelProduct;
+  serial.multiply(input, serialProduct);
+  parallel.multiply(input, parallelProduct);
+  EXPECT(assert_equal(serialProduct, parallelProduct, 1e-12));
+
+  Vector serialLeft, parallelLeft, serialRight, parallelRight;
+  serial.leftPrecondition(input, serialLeft);
+  parallel.leftPrecondition(input, parallelLeft);
+  serial.rightPrecondition(input, serialRight);
+  parallel.rightPrecondition(input, parallelRight);
+  EXPECT(assert_equal(serialLeft, parallelLeft, 1e-12));
+  EXPECT(assert_equal(serialRight, parallelRight, 1e-12));
+
+  ConjugateGradientParameters parameters;
+  parameters.minIterations = 5;
+  parameters.maxIterations = 5;
+  parameters.reset = 6;
+  parameters.epsilon_abs = 0.0;
+  parameters.epsilon_rel = 0.0;
+  const Vector zero = Vector::Zero(input.size());
+  const Vector serialSolution =
+      preconditionedConjugateGradient(serial, zero, parameters);
+  const Vector parallelSolution =
+      preconditionedConjugateGradient(parallel, zero, parameters);
+  EXPECT(assert_equal(serialSolution, parallelSolution, 1e-12));
+}
+
+}  // namespace parallel_pcg_fixture
+/* ************************************************************************* */
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

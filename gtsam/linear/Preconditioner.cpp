@@ -87,44 +87,39 @@ BlockJacobiPreconditioner::BlockJacobiPreconditioner()
 BlockJacobiPreconditioner::~BlockJacobiPreconditioner() { clean(); }
 
 /***************************************************************************************/
-void BlockJacobiPreconditioner::solve(const Vector& y, Vector &x) const {
-
-  const size_t n = dims_.size();
-  double *ptr = buffer_, *dst = x.data();
-
-  std::copy(y.data(), y.data() + y.rows(), x.data());
-
-  for ( size_t i = 0 ; i < n ; ++i ) {
+void BlockJacobiPreconditioner::solveInPlaceRange(Vector& x, size_t begin,
+                                                  size_t end,
+                                                  bool transpose) const {
+  if (begin == end) return;
+  const double* ptr = buffer_ + bufferOffsets_[begin];
+  double* dst = x.data() + scalarOffsets_[begin];
+  for (size_t i = begin; i < end; ++i) {
     const size_t d = dims_[i];
-    const size_t sz = d*d;
+    const size_t size = d * d;
 
     const Eigen::Map<const Eigen::MatrixXd> R(ptr, d, d);
     Eigen::Map<Eigen::VectorXd> b(dst, d, 1);
-    R.triangularView<Eigen::Lower>().solveInPlace(b);
+    if (transpose) {
+      R.transpose().triangularView<Eigen::Upper>().solveInPlace(b);
+    } else {
+      R.triangularView<Eigen::Lower>().solveInPlace(b);
+    }
 
     dst += d;
-    ptr += sz;
+    ptr += size;
   }
 }
 
 /***************************************************************************************/
+void BlockJacobiPreconditioner::solve(const Vector& y, Vector &x) const {
+  x = y;
+  solveInPlaceRange(x, 0, dims_.size(), false);
+}
+
+/***************************************************************************************/
 void BlockJacobiPreconditioner::transposeSolve(const Vector& y, Vector& x) const {
-  const size_t n = dims_.size();
-  double *ptr = buffer_, *dst = x.data();
-
-  std::copy(y.data(), y.data() + y.rows(), x.data());
-
-  for ( size_t i = 0 ; i < n ; ++i ) {
-    const size_t d = dims_[i];
-    const size_t sz = d*d;
-
-    const Eigen::Map<const Eigen::MatrixXd> R(ptr, d, d);
-    Eigen::Map<Eigen::VectorXd> b(dst, d, 1);
-    R.transpose().triangularView<Eigen::Upper>().solveInPlace(b);
-
-    dst += d;
-    ptr += sz;
-  }
+  x = y;
+  solveInPlaceRange(x, 0, dims_.size(), true);
 }
 
 /***************************************************************************************/
@@ -151,9 +146,14 @@ void BlockJacobiPreconditioner::build(const std::vector<Matrix>& blocks,
   }
 
   dims_ = keyInfo.colSpec();
+  scalarOffsets_.resize(n + 1);
+  bufferOffsets_.resize(n + 1);
 
   size_t nnz = 0;
+  size_t scalarOffset = 0;
   for (size_t i = 0; i < n; ++i) {
+    scalarOffsets_[i] = scalarOffset;
+    bufferOffsets_[i] = nnz;
     const size_t dim = dims_[i];
     if (blocks[i].rows() != static_cast<DenseIndex>(dim) ||
         blocks[i].cols() != static_cast<DenseIndex>(dim)) {
@@ -161,7 +161,10 @@ void BlockJacobiPreconditioner::build(const std::vector<Matrix>& blocks,
           "BlockJacobiPreconditioner::build: block dimension mismatch");
     }
     nnz += dim * dim;
+    scalarOffset += dim;
   }
+  scalarOffsets_[n] = scalarOffset;
+  bufferOffsets_[n] = nnz;
 
   /* if necessary, allocating the memory for cacheing the factorization results */
   if (nnz > bufferSize_) {

@@ -43,6 +43,7 @@ struct Options {
   size_t repeats = 30;
   size_t iterations = 20;
   size_t eigenThreads = 1;
+  size_t gtsamThreads = 0;
   size_t profileIterations = 0;
   bool check = false;
 };
@@ -61,6 +62,8 @@ Options parseOptions(int argc, char** argv) {
       options.iterations = std::stoul(argv[++i]);
     } else if (argument == "--eigen-threads" && i + 1 < argc) {
       options.eigenThreads = std::stoul(argv[++i]);
+    } else if (argument == "--gtsam-threads" && i + 1 < argc) {
+      options.gtsamThreads = std::stoul(argv[++i]);
     } else if (argument == "--profile" && i + 1 < argc) {
       options.profileIterations = std::stoul(argv[++i]);
     } else if (argument == "--check") {
@@ -315,22 +318,26 @@ int main(int argc, char** argv) {
     DummyPreconditioner dummy;
     dummy.build(graph, keyInfo, {});
     const LegacyGaussianFactorGraphSystem legacy(graph, dummy, keyInfo);
-    const GaussianFactorGraphSystem contiguous(graph, dummy, keyInfo, {});
+    const GaussianFactorGraphSystem contiguous(graph, dummy, keyInfo, {}, false,
+                                               1);
+    const GaussianFactorGraphSystem parallel(graph, dummy, keyInfo, {}, true,
+                                             options.gtsamThreads);
 
     if (options.profileIterations != 0) {
       Vector product;
       for (size_t iteration = 0; iteration < options.profileIterations;
            ++iteration) {
-        contiguous.multiply(x, product);
+        parallel.multiply(x, product);
       }
       std::cout << "profile_checksum," << std::setprecision(17)
                 << product.squaredNorm() << '\n';
       return 0;
     }
 
-    Vector legacyProduct, contiguousProduct;
+    Vector legacyProduct, contiguousProduct, parallelProduct;
     legacy.multiply(x, legacyProduct);
     contiguous.multiply(x, contiguousProduct);
+    parallel.multiply(x, parallelProduct);
 
     EigenLinearSystem eigenLinearSystem;
     const TimingStats eigenSystemSetup = timeMilliseconds(
@@ -346,6 +353,9 @@ int main(int argc, char** argv) {
                          options.warmups, options.repeats);
     const TimingStats contiguousMultiply =
         timeMilliseconds([&] { contiguous.multiply(x, contiguousProduct); },
+                         options.warmups, options.repeats);
+    const TimingStats parallelMultiply =
+        timeMilliseconds([&] { parallel.multiply(x, parallelProduct); },
                          options.warmups, options.repeats);
     Vector timedSparseProduct;
     const TimingStats sparseMultiply =
@@ -364,7 +374,7 @@ int main(int argc, char** argv) {
     parameters.epsilon_rel = 0.0;
     const Vector zero =
         Vector::Zero(static_cast<DenseIndex>(keyInfo.numCols()));
-    Vector legacySolution, contiguousSolution;
+    Vector legacySolution, contiguousSolution, parallelSolution;
     const TimingStats legacyPcg = timeMilliseconds(
         [&] {
           legacySolution =
@@ -375,6 +385,12 @@ int main(int argc, char** argv) {
         [&] {
           contiguousSolution =
               preconditionedConjugateGradient(contiguous, zero, parameters);
+        },
+        options.warmups, options.repeats);
+    const TimingStats parallelPcg = timeMilliseconds(
+        [&] {
+          parallelSolution =
+              preconditionedConjugateGradient(parallel, zero, parameters);
         },
         options.warmups, options.repeats);
     Vector sparseSolution;
@@ -436,8 +452,11 @@ int main(int argc, char** argv) {
     const LegacyGaussianFactorGraphSystem legacyBlock(
         graph, legacyBlockPreconditioner, keyInfo);
     const GaussianFactorGraphSystem contiguousBlock(
-        graph, contiguousBlockPreconditioner, keyInfo, {});
-    Vector legacyBlockSolution, contiguousBlockSolution;
+        graph, contiguousBlockPreconditioner, keyInfo, {}, false, 1);
+    const GaussianFactorGraphSystem parallelBlock(
+        graph, contiguousBlockPreconditioner, keyInfo, {}, true,
+        options.gtsamThreads);
+    Vector legacyBlockSolution, contiguousBlockSolution, parallelBlockSolution;
     const TimingStats legacyBlockPcg = timeMilliseconds(
         [&] {
           legacyBlockSolution =
@@ -448,6 +467,12 @@ int main(int argc, char** argv) {
         [&] {
           contiguousBlockSolution = preconditionedConjugateGradient(
               contiguousBlock, zero, parameters);
+        },
+        options.warmups, options.repeats);
+    const TimingStats parallelBlockPcg = timeMilliseconds(
+        [&] {
+          parallelBlockSolution =
+              preconditionedConjugateGradient(parallelBlock, zero, parameters);
         },
         options.warmups, options.repeats);
 
@@ -465,6 +490,10 @@ int main(int argc, char** argv) {
     const auto contiguousConvergence = preconditionedConjugateGradientDetailed(
         contiguousBlock, zero, convergenceParameters, false);
     const auto contiguousConvergenceEnd = std::chrono::steady_clock::now();
+    const auto parallelConvergenceStart = std::chrono::steady_clock::now();
+    const auto parallelConvergence = preconditionedConjugateGradientDetailed(
+        parallelBlock, zero, convergenceParameters, false);
+    const auto parallelConvergenceEnd = std::chrono::steady_clock::now();
 
     EigenDiagonalPcg eigenConvergencePcg;
     eigenConvergencePcg.setMaxIterations(
@@ -486,16 +515,24 @@ int main(int argc, char** argv) {
     detailedParameters.reset = options.iterations + 1;
     detailedParameters.epsilon_abs = 0.0;
     detailedParameters.epsilon_rel = 0.0;
+    detailedParameters.parallel = true;
+    detailedParameters.numThreads = options.gtsamThreads;
     const PCGSolverResult detailed =
         PCGSolver(detailedParameters).optimizeDetailed(graph, false);
 
     const double multiplyError =
         std::max(relativeError(legacyProduct, contiguousProduct),
                  relativeError(sparseProduct, contiguousProduct));
+    const double parallelMultiplyError =
+        relativeError(contiguousProduct, parallelProduct);
     const double solutionError =
         relativeError(legacySolution, contiguousSolution);
+    const double parallelSolutionError =
+        relativeError(contiguousSolution, parallelSolution);
     const double blockSolutionError =
         relativeError(legacyBlockSolution, contiguousBlockSolution);
+    const double parallelBlockSolutionError =
+        relativeError(contiguousBlockSolution, parallelBlockSolution);
     const double eigenIdentitySolutionError =
         relativeError(sparseSolution, eigenIdentitySolution);
     const double eigenDiagonalSolutionError =
@@ -512,8 +549,11 @@ int main(int argc, char** argv) {
     const double multiplySpeedup =
         legacyMultiply.median / contiguousMultiply.median;
     const double pcgSpeedup = legacyPcg.median / contiguousPcg.median;
+    const double parallelPcgSpeedup = contiguousPcg.median / parallelPcg.median;
     const double blockPcgSpeedup =
         legacyBlockPcg.median / contiguousBlockPcg.median;
+    const double parallelBlockPcgSpeedup =
+        contiguousBlockPcg.median / parallelBlockPcg.median;
 
     const GaussianFactorGraph batchGraph = createBatchGraph();
     const KeyInfo batchKeyInfo(batchGraph);
@@ -549,11 +589,15 @@ int main(int argc, char** argv) {
               << "eigen_openmp,0\n"
 #endif
               << "eigen_threads," << Eigen::nbThreads() << '\n'
+              << "gtsam_threads," << parallel.numThreads() << '\n'
               << "metric,implementation,median_ms,p10_ms,p90_ms,speedup,"
                  "relative_error\n";
     printRow("multiply", "legacy", legacyMultiply, 1.0, 0.0);
     printRow("multiply", "contiguous", contiguousMultiply, multiplySpeedup,
              multiplyError);
+    printRow("multiply", "task_scheduler", parallelMultiply,
+             contiguousMultiply.median / parallelMultiply.median,
+             parallelMultiplyError);
     printRow("multiply", "eigen_sparse", sparseMultiply,
              legacyMultiply.median / sparseMultiply.median,
              relativeError(sparseProduct, timedSparseProduct));
@@ -563,6 +607,8 @@ int main(int argc, char** argv) {
     printRow("pcg_fixed_dummy", "legacy", legacyPcg, 1.0, 0.0);
     printRow("pcg_fixed_dummy", "contiguous", contiguousPcg, pcgSpeedup,
              solutionError);
+    printRow("pcg_fixed_dummy", "task_scheduler", parallelPcg,
+             parallelPcgSpeedup, parallelSolutionError);
     printRow("pcg_fixed_dummy", "eigen_sparse", sparsePcg,
              legacyPcg.median / sparsePcg.median,
              relativeError(sparseSolution, contiguousSolution));
@@ -577,6 +623,8 @@ int main(int argc, char** argv) {
     printRow("pcg_fixed_block_jacobi", "legacy", legacyBlockPcg, 1.0, 0.0);
     printRow("pcg_fixed_block_jacobi", "contiguous", contiguousBlockPcg,
              blockPcgSpeedup, blockSolutionError);
+    printRow("pcg_fixed_block_jacobi", "task_scheduler", parallelBlockPcg,
+             parallelBlockPcgSpeedup, parallelBlockSolutionError);
     printRow("batch_multiply", "legacy_dense_fallback", legacyBatchMultiply,
              1.0, 0.0);
     printRow("batch_multiply", "contiguous_compact", contiguousBatchMultiply,
@@ -601,8 +649,12 @@ int main(int argc, char** argv) {
                  "true_relative_residual\n"
               << "contiguous,dummy," << options.iterations << ','
               << relativeResidual(hessian, rhs, contiguousSolution) << '\n'
+              << "task_scheduler,dummy," << options.iterations << ','
+              << relativeResidual(hessian, rhs, parallelSolution) << '\n'
               << "contiguous,block_jacobi," << options.iterations << ','
               << relativeResidual(hessian, rhs, contiguousBlockSolution) << '\n'
+              << "task_scheduler,block_jacobi," << options.iterations << ','
+              << relativeResidual(hessian, rhs, parallelBlockSolution) << '\n'
               << "gtsam_cg_eigen_sparse,diagonal," << options.iterations << ','
               << relativeResidual(hessian, rhs, sparseDiagonalSolution) << '\n'
               << "eigen,identity," << eigenIdentityCg.iterations() << ','
@@ -629,6 +681,15 @@ int main(int argc, char** argv) {
         << relativeResidual(hessian, rhs, contiguousConvergence.solution) << ','
         << terminationReason(contiguousConvergence.stats.terminationReason)
         << '\n'
+        << "task_scheduler,block_jacobi,"
+        << std::chrono::duration<double, std::milli>(parallelConvergenceEnd -
+                                                     parallelConvergenceStart)
+               .count()
+        << ',' << parallelConvergence.stats.iterations << ','
+        << parallelConvergence.stats.finalPreconditionedResidualNorm << ','
+        << relativeResidual(hessian, rhs, parallelConvergence.solution) << ','
+        << terminationReason(parallelConvergence.stats.terminationReason)
+        << '\n'
         << "eigen,eigen_diagonal,"
         << std::chrono::duration<double, std::milli>(eigenConvergenceEnd -
                                                      eigenConvergenceStart)
@@ -641,7 +702,9 @@ int main(int argc, char** argv) {
         (multiplySpeedup < 8.0 || pcgSpeedup < 5.0 || blockPcgSpeedup < 5.0 ||
          multiplyError > 1e-10 || solutionError > 1e-9 ||
          blockSolutionError > 1e-9 || batchMultiplyError > 1e-10 ||
-         eigenCgMultiplyError > 1e-10 || eigenIdentitySolutionError > 1e-9 ||
+         parallelMultiplyError > 1e-10 || parallelSolutionError > 1e-9 ||
+         parallelBlockSolutionError > 1e-9 || eigenCgMultiplyError > 1e-10 ||
+         eigenIdentitySolutionError > 1e-9 ||
          eigenDiagonalSolutionError > 1e-9 || !eigenFixedIterationCountsMatch ||
          eigenConvergenceResidual > 1e-3)) {
       std::cerr << "PCG performance or correctness gate failed\n";
