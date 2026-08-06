@@ -27,6 +27,7 @@
 #include <cmath>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <map>
 #include <stdexcept>
 #include <string>
@@ -41,6 +42,7 @@ struct Options {
   size_t warmups = 5;
   size_t repeats = 30;
   size_t iterations = 20;
+  size_t eigenThreads = 1;
   size_t profileIterations = 0;
   bool check = false;
 };
@@ -57,6 +59,8 @@ Options parseOptions(int argc, char** argv) {
       options.repeats = std::stoul(argv[++i]);
     } else if (argument == "--iterations" && i + 1 < argc) {
       options.iterations = std::stoul(argv[++i]);
+    } else if (argument == "--eigen-threads" && i + 1 < argc) {
+      options.eigenThreads = std::stoul(argv[++i]);
     } else if (argument == "--profile" && i + 1 < argc) {
       options.profileIterations = std::stoul(argv[++i]);
     } else if (argument == "--check") {
@@ -67,6 +71,11 @@ Options parseOptions(int argc, char** argv) {
   }
   if (options.repeats == 0) {
     throw std::invalid_argument("--repeats must be positive");
+  }
+  if (options.eigenThreads == 0 ||
+      options.eigenThreads >
+          static_cast<size_t>(std::numeric_limits<int>::max())) {
+    throw std::invalid_argument("--eigen-threads must be a positive int");
   }
   return options;
 }
@@ -289,6 +298,11 @@ GaussianFactorGraph createBatchGraph() {
 int main(int argc, char** argv) {
   try {
     const Options options = parseOptions(argc, argv);
+    Eigen::setNbThreads(static_cast<int>(options.eigenThreads));
+    if (Eigen::nbThreads() != static_cast<int>(options.eigenThreads)) {
+      throw std::runtime_error(
+          "Requested Eigen thread count requires an OpenMP-enabled build");
+    }
     const auto [nonlinearGraph, initial] =
         load2D(findExampleDataFile(options.dataset));
     nonlinearGraph->addPrior(0, initial->at<Pose2>(0),
@@ -336,6 +350,10 @@ int main(int argc, char** argv) {
     Vector timedSparseProduct;
     const TimingStats sparseMultiply =
         timeMilliseconds([&] { timedSparseProduct = hessian * x; },
+                         options.warmups, options.repeats);
+    Vector timedEigenCgProduct;
+    const TimingStats eigenCgSparseMultiply =
+        timeMilliseconds([&] { timedEigenCgProduct = hessian.transpose() * x; },
                          options.warmups, options.repeats);
 
     ConjugateGradientParameters parameters;
@@ -482,6 +500,8 @@ int main(int argc, char** argv) {
         relativeError(sparseSolution, eigenIdentitySolution);
     const double eigenDiagonalSolutionError =
         relativeError(sparseDiagonalSolution, eigenDiagonalSolution);
+    const double eigenCgMultiplyError =
+        relativeError(sparseProduct, timedEigenCgProduct);
     const bool eigenFixedIterationCountsMatch =
         eigenIdentityCg.iterations() ==
             static_cast<Eigen::Index>(options.iterations) &&
@@ -523,6 +543,11 @@ int main(int argc, char** argv) {
               << "scalars," << keyInfo.numCols() << '\n'
               << "eigen_version," << EIGEN_WORLD_VERSION << '.'
               << EIGEN_MAJOR_VERSION << '.' << EIGEN_MINOR_VERSION << '\n'
+#ifdef EIGEN_HAS_OPENMP
+              << "eigen_openmp,1\n"
+#else
+              << "eigen_openmp,0\n"
+#endif
               << "eigen_threads," << Eigen::nbThreads() << '\n'
               << "metric,implementation,median_ms,p10_ms,p90_ms,speedup,"
                  "relative_error\n";
@@ -532,6 +557,9 @@ int main(int argc, char** argv) {
     printRow("multiply", "eigen_sparse", sparseMultiply,
              legacyMultiply.median / sparseMultiply.median,
              relativeError(sparseProduct, timedSparseProduct));
+    printRow("multiply", "eigen_cg_sparse", eigenCgSparseMultiply,
+             legacyMultiply.median / eigenCgSparseMultiply.median,
+             eigenCgMultiplyError);
     printRow("pcg_fixed_dummy", "legacy", legacyPcg, 1.0, 0.0);
     printRow("pcg_fixed_dummy", "contiguous", contiguousPcg, pcgSpeedup,
              solutionError);
@@ -613,7 +641,7 @@ int main(int argc, char** argv) {
         (multiplySpeedup < 8.0 || pcgSpeedup < 5.0 || blockPcgSpeedup < 5.0 ||
          multiplyError > 1e-10 || solutionError > 1e-9 ||
          blockSolutionError > 1e-9 || batchMultiplyError > 1e-10 ||
-         eigenIdentitySolutionError > 1e-9 ||
+         eigenCgMultiplyError > 1e-10 || eigenIdentitySolutionError > 1e-9 ||
          eigenDiagonalSolutionError > 1e-9 || !eigenFixedIterationCountsMatch ||
          eigenConvergenceResidual > 1e-3)) {
       std::cerr << "PCG performance or correctness gate failed\n";

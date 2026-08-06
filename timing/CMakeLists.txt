@@ -18,4 +18,8 @@ gtsamAddTimingGlob("*.cpp" "${excluded_scripts}" "gtsam" ${GTSAM_BUILD_TIMING_AL
 
 target_link_libraries(timeGaussianFactorGraph CppUnitLite)
 
+if(OpenMP_CXX_FOUND)
+  target_link_libraries(timePCGSolver OpenMP::OpenMP_CXX)
+endif()
+
 add_subdirectory(sfm_ba)
