@@ -145,7 +145,7 @@ ProductLieGroup<G, H, Action>::adjointActionRightJacobian(
   if constexpr (internal::TangentLieGroupJacobian<G>::available) {
     // A geometry type may replace the matrix exponential below with an exact
     // closed form. The specialization sees the same (u,v) coordinates and
-    // must return the complete right-trivialized 2n-by-2n Jacobian.
+    // must return the complete 2n-by-2n right Jacobian.
     return internal::TangentLieGroupJacobian<G>::rightJacobian(u, v);
   }
 
@@ -860,14 +860,12 @@ ProductLieGroup<G, H, Action>::adjointMap(const TangentVector& xi) {
       }
       throw std::invalid_argument(
           "ProductLieGroup::adjointMap cannot infer the tangent split when "
-          "both "
-          "factors are dynamic");
+          "both factors are dynamic");
     } else if constexpr (firstDynamic) {
       if (xi.size() < dimension2) {
         throw std::invalid_argument(
             "ProductLieGroup::adjointMap tangent dimension is too small for "
-            "the "
-            "fixed second factor");
+            "the fixed second factor");
       }
       d1 = static_cast<size_t>(xi.size() - dimension2);
       d2 = static_cast<size_t>(dimension2);
@@ -875,8 +873,7 @@ ProductLieGroup<G, H, Action>::adjointMap(const TangentVector& xi) {
       if (xi.size() < dimension1) {
         throw std::invalid_argument(
             "ProductLieGroup::adjointMap tangent dimension is too small for "
-            "the "
-            "fixed first factor");
+            "the fixed first factor");
       }
       d1 = static_cast<size_t>(dimension1);
       d2 = static_cast<size_t>(xi.size() - dimension1);
@@ -1030,9 +1027,9 @@ void PowerLieGroupBase<G, N, Derived>::checkDynamicTangentSize(
     const TangentVector& v, size_t count, const char* operation) {
   if constexpr (isDynamic) {
     if (static_cast<size_t>(v.size()) != totalDimension(count)) {
-      throw std::invalid_argument(std::string("PowerLieGroup::") + operation +
-                                  " tangent dimension does not match group "
-                                  "dimension");
+      throw std::invalid_argument(
+          std::string("PowerLieGroup::") + operation +
+          " tangent dimension does not match group dimension");
     }
   } else {
     static_cast<void>(v);
@@ -1232,7 +1229,7 @@ Derived PowerLieGroupBase<G, N, Derived>::Expmap(const TangentVector& v,
   if constexpr (isDynamic) {
     if (v.size() % baseDimension != 0) {
       throw std::invalid_argument(
-          "PowerLieGroup::Expmap tangent dimension must be divisible by base "
+          "PowerLieGroup::Expmap tangent dimension must be divisible by base  "
           "group dimension");
     }
     count = static_cast<size_t>(v.size() /

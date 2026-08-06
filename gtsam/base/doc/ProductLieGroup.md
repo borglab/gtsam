@@ -109,8 +109,8 @@ avoiding formulas that become unstable when `A` is singular or close to zero.
 
 ## Jacobians and adjoints
 
-All optional Jacobians use GTSAM's right-trivialized chart convention. Direct
-products assemble the component Jacobians into independent blocks.
+All optional Jacobians use GTSAM's right-Jacobian convention, with local
+perturbations applied on the right. Direct products assemble the component Jacobians into independent blocks.
 Semidirect-product Jacobians include the coupling induced by the action.
 
 When the base group exposes a static `G::adjointMap(u)`, the complete Expmap

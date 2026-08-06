@@ -208,8 +208,8 @@ Vector3 DexpFunctor::tangentExpmap(const Vector3& v, const Matrix3& rotation,
     //
     //   [[J_r, 0], [Q_r, J_r]],
     //
-    // where Q_r is the derivative of J_l(omega)*v pulled from the world frame
-    // back to the right-trivialized frame by R^T.
+    // where Q_r is the derivative of J_l(omega)*v pulled from world to body
+    // coordinates by R^T.
     const Matrix3 Jr = jacobian.right();
     const Matrix3 Qr = rotation.transpose() * D_transport_omega;
     *H << Jr, Z_3x3, Qr, Jr;

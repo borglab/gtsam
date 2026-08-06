@@ -212,7 +212,7 @@ public:
   struct AutonomousFlow {
     double dt;
 
-    // Differential at identity (right-trivialized): Φ = I with ∂p/∂v = dt·I.
+    // Differential at identity: Φ = I with ∂p/∂v = dt·I.
     Jacobian dIdentity() const {
       Jacobian Phi = I_9x9;
       Phi.template block<3, 3>(3, 6) = I_3x3 * dt;

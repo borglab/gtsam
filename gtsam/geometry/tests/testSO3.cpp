@@ -179,24 +179,22 @@ TEST(SO3, Local2) {
 namespace exmap_derivative {
   static const Vector3 w(0.1, 0.27, -0.2);
 }
-// Left trivialized Derivative of exp(w) wrpt w:
-// How does exp(w) change when w changes?
-// We find a y such that: exp(w) exp(y) = exp(w + dw) for dw --> 0
-// => y = log (exp(-w) * exp(w+dw))
-Vector3 testDexpL(const Vector3& dw) {
+// The right Jacobian describes exp(w+dw) = exp(w)*exp(J_r(w)*dw) to first
+// order, so J_r(w)*dw = Log(exp(-w)*exp(w+dw)).
+Vector3 testRightJacobian(const Vector3& dw) {
   using exmap_derivative::w;
   return SO3::Logmap(SO3::Expmap(-w) * SO3::Expmap(w + dw));
 }
 
 TEST(SO3, ExpmapDerivative) {
   using exmap_derivative::w;
-  const Matrix actualDexpL = SO3::ExpmapDerivative(w);
-  const Matrix expectedDexpL =
-    numericalDerivative11<Vector3, Vector3>(testDexpL, Vector3::Zero(), 1e-2);
-  EXPECT(assert_equal(expectedDexpL, actualDexpL, 1e-7));
+  const Matrix actualJr = SO3::ExpmapDerivative(w);
+  const Matrix expectedJr = numericalDerivative11<Vector3, Vector3>(
+      testRightJacobian, Vector3::Zero(), 1e-2);
+  EXPECT(assert_equal(expectedJr, actualJr, 1e-7));
 
-  const Matrix actualDexpInvL = SO3::LogmapDerivative(w);
-  EXPECT(assert_equal(expectedDexpL.inverse(), actualDexpInvL, 1e-7));
+  const Matrix actualJrInverse = SO3::LogmapDerivative(w);
+  EXPECT(assert_equal(expectedJr.inverse(), actualJrInverse, 1e-7));
 }
 
 //******************************************************************************
