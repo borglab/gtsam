@@ -23,6 +23,7 @@
 #endif
 
 #include <SymEigsSolver.h>
+#include <Util/SimpleRandom.h>
 #include <gtsam/linear/AcceleratedPowerMethod.h>
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/PowerMethod.h>
@@ -688,8 +689,8 @@ static bool SparseMinimumEigenValue(
   // simultaneously allowing the iterations to escape from this fixed point in
   // the case that the relaxation is not exact.
   Vector v0 = S.row(0).transpose();
-  Vector perturbation(v0.size());
-  perturbation.setRandom();
+  Spectra::SimpleRandom<double> rng(0);
+  Vector perturbation = rng.random_vec(v0.size());
   perturbation.normalize();
   Vector xinit = v0 + (.03 * v0.norm()) * perturbation;  // Perturb v0 by ~3%
 

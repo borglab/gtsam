@@ -27,7 +27,6 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
-#include <cstdlib>
 #include <random>
 #include <stdexcept>
 
@@ -512,7 +511,6 @@ bool HasFalseCertificate(uint32_t seed) {
   std::mt19937 initialRng(42);
   Values initial = ShonanAveraging3::LiftTo<Rot3>(
       kMinRank, shonan.initializeRandomly(initialRng));
-  std::srand(0);
 
   for (size_t rank = kMinRank; rank <= kMaxRank; ++rank) {
     const Values optimum = shonan.tryOptimizingAt(rank, initial);
