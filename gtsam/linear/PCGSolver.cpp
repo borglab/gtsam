@@ -296,6 +296,7 @@ class GaussianFactorGraphSystem::Impl {
 
   /** Pack all ordinary Jacobian plans into the compressed sparse Jacobian. */
   void buildSparseJacobian() {
+    // Size the sparse storage and reject dimensions that exceed Eigen indices.
     size_t rowCount = 0;
     size_t scalarEntryCount = 0;
     for (const JacobianPlan& plan : jacobianPlans_) {
@@ -317,6 +318,8 @@ class GaussianFactorGraphSystem::Impl {
 
     std::vector<Eigen::Triplet<double, int>> entries;
     entries.reserve(scalarEntryCount);
+
+    // Copy each whitened dense block into the global flat Jacobian.
     size_t rowOffset = 0;
     for (const JacobianPlan& plan : jacobianPlans_) {
       const auto& factor = *plan.factor;
@@ -346,12 +349,96 @@ class GaussianFactorGraphSystem::Impl {
     jacobianProduct_.resize(static_cast<DenseIndex>(rowCount));
   }
 
+  /** Compile one factor into its specialized plan or the fallback graph. */
+  void compileFactor(const GaussianFactor::shared_ptr& factor,
+                     Vector* gradient) {
+    if (auto batch =
+            std::dynamic_pointer_cast<BatchJacobianFactorBase>(factor)) {
+      BatchPlan plan;
+      plan.factor = std::move(batch);
+      mapFactorKeys(*plan.factor, &plan.scalarOffsets, &plan.blockSlots);
+      plan.factor->gradientAtZeroAdd(plan.scalarOffsets, gradient->data());
+      batchPlans_.push_back(std::move(plan));
+      return;
+    }
+
+    if (auto hessian = std::dynamic_pointer_cast<HessianFactor>(factor)) {
+      HessianPlan plan;
+      plan.factor = std::move(hessian);
+      mapFactorKeys(*plan.factor, &plan.scalarOffsets, &plan.blockSlots);
+      for (size_t position = 0; position < plan.factor->size(); ++position) {
+        const size_t dimension = static_cast<size_t>(plan.factor->getDim(
+            plan.factor->begin() + static_cast<DenseIndex>(position)));
+        gradient
+            ->segment(static_cast<DenseIndex>(plan.scalarOffsets[position]),
+                      static_cast<DenseIndex>(dimension))
+            .noalias() -= plan.factor->linearTerm(
+            plan.factor->begin() + static_cast<DenseIndex>(position));
+      }
+      hessianPlans_.push_back(std::move(plan));
+      return;
+    }
+
+    if (auto jacobian = std::dynamic_pointer_cast<JacobianFactor>(factor)) {
+      JacobianPlan plan;
+      plan.factor = jacobian->get_model() && !jacobian->get_model()->isUnit()
+                        ? std::make_shared<JacobianFactor>(jacobian->whiten())
+                        : std::move(jacobian);
+      mapFactorKeys(*plan.factor, &plan.scalarOffsets, &plan.blockSlots);
+      addJacobianGradient(plan, gradient);
+      jacobianPlans_.push_back(std::move(plan));
+      return;
+    }
+
+    fallbackFactors_.push_back(factor);
+  }
+
+  /** Add products for explicit symmetric Hessian factor plans. */
+  void addHessianProducts(const Vector& x, Vector* y) const {
+    for (const HessianPlan& plan : hessianPlans_) {
+      const auto& factor = *plan.factor;
+      for (DenseIndex i = 0; i < static_cast<DenseIndex>(factor.size()); ++i) {
+        const DenseIndex dimensionI = factor.getDim(factor.begin() + i);
+        const DenseIndex offsetI =
+            static_cast<DenseIndex>(plan.scalarOffsets[i]);
+        const auto xI = x.segment(offsetI, dimensionI);
+        y->segment(offsetI, dimensionI).noalias() +=
+            factor.info().diagonalBlock(i) * xI;
+        for (DenseIndex j = i + 1; j < static_cast<DenseIndex>(factor.size());
+             ++j) {
+          const DenseIndex dimensionJ = factor.getDim(factor.begin() + j);
+          const DenseIndex offsetJ =
+              static_cast<DenseIndex>(plan.scalarOffsets[j]);
+          const auto block = factor.info().aboveDiagonalBlock(i, j);
+          y->segment(offsetI, dimensionI).noalias() +=
+              block * x.segment(offsetJ, dimensionJ);
+          y->segment(offsetJ, dimensionJ).noalias() += block.transpose() * xI;
+        }
+      }
+    }
+  }
+
+  /** Add products from GaussianFactor implementations on the fallback path. */
+  void addFallbackProduct(const Vector& x, Vector* y) const {
+    if (fallbackFactors_.empty()) return;
+    const VectorValues vectorValuesX = buildVectorValues(x, keyInfo_);
+    VectorValues vectorValuesY = keyInfo_.x0();
+    fallbackFactors_.multiplyHessianAdd(1.0, vectorValuesX, vectorValuesY);
+    for (const auto& [key, value] : vectorValuesY) {
+      const auto entry = keyInfo_.find(key);
+      y->segment(static_cast<DenseIndex>(entry->second.start),
+                 static_cast<DenseIndex>(entry->second.dim)) += value;
+    }
+  }
+
  public:
   /**
    * Compile a factor graph for the supplied flat key layout.
    *
    * @param graph Gaussian factors to compile and retain.
    * @param keyInfo Ordering, dimensions, and flat offsets for graph keys.
+   * @param parallel Whether sufficiently large kernels may run concurrently.
+   * @param numThreads Requested worker count; zero selects automatically.
    */
   Impl(const GaussianFactorGraph& graph, const KeyInfo& keyInfo, bool parallel,
        size_t numThreads)
@@ -362,52 +449,13 @@ class GaussianFactorGraphSystem::Impl {
     hessianPlans_.reserve(graph.size());
     batchPlans_.reserve(graph.size());
 
+    // Dispatch supported factors into specialized plans and retain the rest.
     for (const auto& factor : graph) {
       if (!factor) continue;
-
-      if (auto batch =
-              std::dynamic_pointer_cast<BatchJacobianFactorBase>(factor)) {
-        BatchPlan plan;
-        plan.factor = std::move(batch);
-        mapFactorKeys(*plan.factor, &plan.scalarOffsets, &plan.blockSlots);
-        plan.factor->gradientAtZeroAdd(plan.scalarOffsets, gradient.data());
-        batchPlans_.push_back(std::move(plan));
-        continue;
-      }
-
-      if (auto hessian = std::dynamic_pointer_cast<HessianFactor>(factor)) {
-        HessianPlan plan;
-        plan.factor = std::move(hessian);
-        mapFactorKeys(*plan.factor, &plan.scalarOffsets, &plan.blockSlots);
-        for (size_t position = 0; position < plan.factor->size(); ++position) {
-          const size_t dimension = static_cast<size_t>(plan.factor->getDim(
-              plan.factor->begin() + static_cast<DenseIndex>(position)));
-          gradient
-              .segment(static_cast<DenseIndex>(plan.scalarOffsets[position]),
-                       static_cast<DenseIndex>(dimension))
-              .noalias() -= plan.factor->linearTerm(
-              plan.factor->begin() + static_cast<DenseIndex>(position));
-        }
-        hessianPlans_.push_back(std::move(plan));
-        continue;
-      }
-
-      if (auto jacobian = std::dynamic_pointer_cast<JacobianFactor>(factor)) {
-        JacobianPlan plan;
-        if (jacobian->get_model() && !jacobian->get_model()->isUnit()) {
-          plan.factor = std::make_shared<JacobianFactor>(jacobian->whiten());
-        } else {
-          plan.factor = std::move(jacobian);
-        }
-        mapFactorKeys(*plan.factor, &plan.scalarOffsets, &plan.blockSlots);
-        addJacobianGradient(plan, &gradient);
-        jacobianPlans_.push_back(std::move(plan));
-        continue;
-      }
-
-      fallbackFactors_.push_back(factor);
+      compileFactor(factor, &gradient);
     }
 
+    // Finalize the right-hand side and sparse execution infrastructure.
     addFallbackGradient(&gradient);
     rhs_ = -gradient;
     buildSparseJacobian();
@@ -432,6 +480,7 @@ class GaussianFactorGraphSystem::Impl {
     }
     y->setZero(static_cast<DenseIndex>(keyInfo_.numCols()));
 
+    // Apply the compiled sparse Jacobian contribution J.transpose()*J*x.
     if (!jacobianRowRanges_.empty()) {
       multiplyJacobianParallel(x, y);
     } else if (jacobian_.rows() != 0) {
@@ -439,43 +488,17 @@ class GaussianFactorGraphSystem::Impl {
       y->noalias() += jacobian_.transpose() * jacobianProduct_;
     }
 
-    for (const HessianPlan& plan : hessianPlans_) {
-      const auto& factor = *plan.factor;
-      for (DenseIndex i = 0; i < static_cast<DenseIndex>(factor.size()); ++i) {
-        const DenseIndex dimensionI = factor.getDim(factor.begin() + i);
-        const DenseIndex offsetI =
-            static_cast<DenseIndex>(plan.scalarOffsets[i]);
-        const auto xI = x.segment(offsetI, dimensionI);
-        y->segment(offsetI, dimensionI).noalias() +=
-            factor.info().diagonalBlock(i) * xI;
-        for (DenseIndex j = i + 1; j < static_cast<DenseIndex>(factor.size());
-             ++j) {
-          const DenseIndex dimensionJ = factor.getDim(factor.begin() + j);
-          const DenseIndex offsetJ =
-              static_cast<DenseIndex>(plan.scalarOffsets[j]);
-          const auto block = factor.info().aboveDiagonalBlock(i, j);
-          y->segment(offsetI, dimensionI).noalias() +=
-              block * x.segment(offsetJ, dimensionJ);
-          y->segment(offsetJ, dimensionJ).noalias() += block.transpose() * xI;
-        }
-      }
-    }
+    // Apply explicit symmetric Hessian blocks without materializing H.
+    addHessianProducts(x, y);
 
+    // Apply compact batch factors through their flat-vector kernels.
     for (const BatchPlan& plan : batchPlans_) {
       plan.factor->multiplyHessianAdd(1.0, plan.scalarOffsets, x.data(),
                                       y->data());
     }
 
-    if (!fallbackFactors_.empty()) {
-      const VectorValues vectorValuesX = buildVectorValues(x, keyInfo_);
-      VectorValues vectorValuesY = keyInfo_.x0();
-      fallbackFactors_.multiplyHessianAdd(1.0, vectorValuesX, vectorValuesY);
-      for (const auto& [key, value] : vectorValuesY) {
-        const auto entry = keyInfo_.find(key);
-        y->segment(static_cast<DenseIndex>(entry->second.start),
-                   static_cast<DenseIndex>(entry->second.dim)) += value;
-      }
-    }
+    // Preserve compatibility for all remaining GaussianFactor subclasses.
+    addFallbackProduct(x, y);
   }
 
   /** Return the cached normal-equation right-hand side. */
@@ -501,6 +524,7 @@ class GaussianFactorGraphSystem::Impl {
   const std::vector<Matrix>& hessianBlockDiagonal() const {
     if (blockDiagonal_) return *blockDiagonal_;
 
+    // Allocate one zero block per key in KeyInfo ordering.
     const std::vector<size_t> dimensions = keyInfo_.colSpec();
     blockDiagonal_.emplace(dimensions.size());
     for (size_t slot = 0; slot < dimensions.size(); ++slot) {
@@ -509,6 +533,7 @@ class GaussianFactorGraphSystem::Impl {
                        static_cast<DenseIndex>(dimensions[slot]));
     }
 
+    // Accumulate diagonal contributions from each specialized factor plan.
     for (const JacobianPlan& plan : jacobianPlans_) {
       const auto& factor = *plan.factor;
       for (size_t position = 0; position < factor.size(); ++position) {
@@ -532,6 +557,7 @@ class GaussianFactorGraphSystem::Impl {
       plan.factor->hessianBlockDiagonalAdd(plan.blockSlots, &*blockDiagonal_);
     }
 
+    // Complete the diagonal through the general compatibility graph.
     if (!fallbackFactors_.empty()) {
       const std::map<Key, Matrix> fallbackDiagonal =
           fallbackFactors_.hessianBlockDiagonal();
@@ -567,12 +593,14 @@ PCGSolverResult PCGSolver::optimizeDetailed(const GaussianFactorGraph& gfg,
                                             bool collectResidualHistory) {
   using Clock = std::chrono::steady_clock;
 
+  // Compile the graph into its flat matrix-free operator.
   const auto operatorStart = Clock::now();
   GaussianFactorGraphSystem system(gfg, *preconditioner_, keyInfo, lambda,
                                    parameters_.parallel,
                                    parameters_.numThreads);
   const auto operatorEnd = Clock::now();
 
+  // Build block Jacobi directly from compiled blocks when available.
   const auto preconditionerStart = Clock::now();
   if (auto blockJacobi = std::dynamic_pointer_cast<BlockJacobiPreconditioner>(
           preconditioner_)) {
@@ -582,6 +610,7 @@ PCGSolverResult PCGSolver::optimizeDetailed(const GaussianFactorGraph& gfg,
   }
   const auto preconditionerEnd = Clock::now();
 
+  // Run PCG in flat storage and restore the keyed public representation.
   const auto solveStart = Clock::now();
   const Vector x0 = initial.vector(keyInfo.ordering());
   auto cgResult = preconditionedConjugateGradientDetailed(

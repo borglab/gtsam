@@ -103,17 +103,21 @@ struct GTSAM_EXPORT ConjugateGradientParameters
 
 /// Reason a conjugate-gradient solve stopped.
 enum class ConjugateGradientTerminationReason {
-  kConverged,
-  kMaxIterations,
-  kNumericalBreakdown,
+  kConverged,           ///< The requested residual tolerance was reached.
+  kMaxIterations,       ///< The iteration limit was reached first.
+  kNumericalBreakdown,  ///< The recurrence encountered invalid numerics.
 };
 
 /** Diagnostics collected during a conjugate-gradient solve. */
 struct ConjugateGradientStats {
-  size_t iterations = 0;
-  double initialPreconditionedResidualNorm = 0.0;
-  double finalPreconditionedResidualNorm = 0.0;
+  size_t iterations = 0;  ///< Number of completed PCG updates.
+  double initialPreconditionedResidualNorm =
+      0.0;  ///< Norm of the initial split-preconditioned residual.
+  double finalPreconditionedResidualNorm =
+      0.0;  ///< Norm of the final split-preconditioned residual.
+  /// Initial norm followed by one entry per completed PCG update, when enabled.
   std::vector<double> preconditionedResidualNormHistory;
+  /// Reason the solve stopped.
   ConjugateGradientTerminationReason terminationReason =
       ConjugateGradientTerminationReason::kMaxIterations;
 
@@ -126,18 +130,28 @@ struct ConjugateGradientStats {
 /** Solution and diagnostics returned by the detailed CG interface. */
 template <class V>
 struct ConjugateGradientResult {
-  V solution;
-  ConjugateGradientStats stats;
+  V solution;  ///< Final estimate in the caller's vector type.
+  ConjugateGradientStats stats;  ///< Convergence diagnostics for the solve.
 };
 
-/*
- * A template for the linear preconditioned conjugate gradient method.
- * System class should support residual(v, g), multiply(v,Av), scal(alpha,v),
- * dot(v,v), axpy(alpha,x,y) leftPrecondition(v, L^{-1}v, rightPrecondition(v,
- * L^{-T}v) where preconditioner M = L*L^T Note that the residual is in the
- * preconditioned domain. Refer to Section 9.2 of Saad's book.
+/**
+ * Solve a linear system with split-preconditioned conjugate gradients.
  *
- ** REFERENCES:
+ * The system must provide `residual`, `multiply`, `leftPrecondition`,
+ * `rightPrecondition`, `scal`, `dot`, and `axpy`. For a preconditioner
+ * `M = L*L.transpose()`, the recurrence operates on the residual
+ * `L.inverse() * (b - A*x)` and search direction `L.transpose().inverse() * r`.
+ *
+ * @tparam S Linear-system type providing the required vector operations.
+ * @tparam V Vector type accepted by the system.
+ * @param system Linear system and split preconditioner operations.
+ * @param initial Initial estimate.
+ * @param parameters Iteration limits, reset interval, and residual tolerances.
+ * @param collectResidualHistory Whether to retain the initial and per-iteration
+ * residual norms in the returned statistics.
+ * @return Final estimate together with convergence diagnostics.
+ *
+ * REFERENCES:
  * [1] Y. Saad, "Preconditioned Iterations," in Iterative Methods for Sparse
  * Linear Systems, 2nd ed. SIAM, 2003, ch. 9, sec. 2, pp.276-281.
  */
@@ -149,6 +163,7 @@ ConjugateGradientResult<V> preconditionedConjugateGradientDetailed(
   V estimate, residual, direction, q1, q2;
   estimate = residual = direction = q1 = q2 = initial;
 
+  // Initialize the split-preconditioned residual and search direction.
   system.residual(estimate, q1);                 /* q1 = b-Ax */
   system.leftPrecondition(q1, residual);         /* r = L^{-1} (b-Ax) */
   system.rightPrecondition(residual, direction); /* p = L^{-T} r */
@@ -183,6 +198,7 @@ ConjugateGradientResult<V> preconditionedConjugateGradientDetailed(
               << ", ||r0||^2 = " << currentGamma
               << ", threshold = " << threshold << std::endl;
 
+  // Classify invalid and already-converged initial states before iterating.
   if (!std::isfinite(currentGamma) || currentGamma < 0.0) {
     stats.terminationReason =
         ConjugateGradientTerminationReason::kNumericalBreakdown;
@@ -194,6 +210,7 @@ ConjugateGradientResult<V> preconditionedConjugateGradientDetailed(
            (currentGamma > threshold || stats.iterations < iMinIterations)) {
       const size_t iteration = stats.iterations + 1;
 
+      // Periodically replace the recursive residual with the exact residual.
       if (iReset != 0 && iteration % iReset == 0) {
         system.residual(estimate, q1);                 /* q1 = b-Ax */
         system.leftPrecondition(q1, residual);         /* r = L^{-1} (b-Ax) */
@@ -223,6 +240,7 @@ ConjugateGradientResult<V> preconditionedConjugateGradientDetailed(
         }
       }
 
+      // Apply one PCG step, rejecting invalid or non-positive curvature.
       system.multiply(direction, q1); /* q1 = A p */
       const double directionCurvature = system.dot(direction, q1);
       if (!std::isfinite(directionCurvature) || directionCurvature <= 0.0) {
@@ -279,6 +297,7 @@ ConjugateGradientResult<V> preconditionedConjugateGradientDetailed(
         break;
       }
 
+      // Update the conjugate search direction for the next iteration.
       const double beta = currentGamma / previousGamma;
       if (!std::isfinite(beta)) {
         stats.terminationReason =
@@ -317,6 +336,13 @@ ConjugateGradientResult<V> preconditionedConjugateGradientDetailed(
  *
  * Use preconditionedConjugateGradientDetailed() when convergence diagnostics
  * are required.
+ *
+ * @tparam S Linear-system type providing the PCG vector operations.
+ * @tparam V Vector type accepted by the system.
+ * @param system Linear system and split preconditioner operations.
+ * @param initial Initial estimate.
+ * @param parameters Iteration limits, reset interval, and residual tolerances.
+ * @return Final estimate.
  */
 template <class S, class V>
 V preconditionedConjugateGradient(

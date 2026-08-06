@@ -149,6 +149,7 @@ void BlockJacobiPreconditioner::build(const std::vector<Matrix>& blocks,
   scalarOffsets_.resize(n + 1);
   bufferOffsets_.resize(n + 1);
 
+  // Validate every block while constructing packed-buffer offsets.
   size_t nnz = 0;
   size_t scalarOffset = 0;
   for (size_t i = 0; i < n; ++i) {
@@ -166,7 +167,7 @@ void BlockJacobiPreconditioner::build(const std::vector<Matrix>& blocks,
   scalarOffsets_[n] = scalarOffset;
   bufferOffsets_[n] = nnz;
 
-  /* if necessary, allocating the memory for cacheing the factorization results */
+  // Grow the reusable buffer when the packed Cholesky factors do not fit.
   if (nnz > bufferSize_) {
     clean();
     buffer_ = new double[nnz];
@@ -174,18 +175,15 @@ void BlockJacobiPreconditioner::build(const std::vector<Matrix>& blocks,
   }
   nnz_ = nnz;
 
-  /* factorizing the blocks respectively */
+  // Factorize each diagonal block into the contiguous solve buffer.
   double* ptr = buffer_;
   for (size_t i = 0; i < n; ++i) {
-    /* use eigen to decompose Di */
-    /* It is same as L = chol(M,'lower') in MATLAB where M is full preconditioner */
+    // Equivalent to L = chol(M, 'lower') for the full preconditioner.
     const Matrix L = blocks[i].llt().matrixL();
 
-    /* store the data in the buffer */
+    // Store and advance to the next packed block.
     size_t sz = dims_[i] * dims_[i];
     std::copy(L.data(), L.data() + sz, ptr);
-
-    /* advance the pointer */
     ptr += sz;
   }
 }

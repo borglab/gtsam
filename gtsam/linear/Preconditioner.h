@@ -149,8 +149,14 @@ public:
     ) override;
 
   /**
-   * Build from block diagonals already arranged in KeyInfo ordering.
-   * This avoids keyed maps when a compiled linear operator has the blocks.
+   * Build and factorize block diagonals already arranged in KeyInfo ordering.
+   *
+   * This avoids keyed maps when a compiled linear operator has already
+   * accumulated the blocks.
+   *
+   * @param blocks Square Hessian diagonal blocks in `info.ordering()` order.
+   * @param info Expected block ordering and dimensions.
+   * @throws std::invalid_argument if block count or dimensions do not match.
    */
   void build(const std::vector<Matrix>& blocks, const KeyInfo& info);
 

@@ -208,6 +208,12 @@ class GTSAM_EXPORT BatchJacobianFactorBase : public GaussianFactor {
   /**
    * Add this factor's Hessian-vector product using scalar offsets for keys().
    * This flat-vector interface avoids materializing a dense JacobianFactor.
+   *
+   * @param alpha Scale applied to this factor's contribution.
+   * @param scalarOffsets Flat-vector offset for each entry in keys().
+   * @param x Input vector containing every referenced key block.
+   * @param y Output vector to which the scaled product is added.
+   * @throws std::invalid_argument if the offset count differs from size().
    */
   virtual void multiplyHessianAdd(double alpha,
                                   const std::vector<size_t>& scalarOffsets,
@@ -236,7 +242,13 @@ class GTSAM_EXPORT BatchJacobianFactorBase : public GaussianFactor {
     }
   }
 
-  /** Add this factor's gradient at zero using scalar offsets for keys(). */
+  /**
+   * Add this factor's gradient at zero to a flat vector.
+   *
+   * @param scalarOffsets Flat-vector offset for each entry in keys().
+   * @param gradient Output vector to which the gradient is added.
+   * @throws std::invalid_argument if the offset count differs from size().
+   */
   virtual void gradientAtZeroAdd(const std::vector<size_t>& scalarOffsets,
                                  double* gradient) const {
     if (scalarOffsets.size() != size()) {
@@ -253,7 +265,13 @@ class GTSAM_EXPORT BatchJacobianFactorBase : public GaussianFactor {
     }
   }
 
-  /** Add this factor's Hessian diagonal using ordered slots for keys(). */
+  /**
+   * Add this factor's Hessian diagonal to ordered blocks.
+   *
+   * @param blockSlots Output block slot for each entry in keys().
+   * @param diagonalBlocks Blocks to which diagonal contributions are added.
+   * @throws std::invalid_argument if the slot count differs from size().
+   */
   virtual void hessianBlockDiagonalAdd(
       const std::vector<size_t>& blockSlots,
       std::vector<Matrix>* diagonalBlocks) const {
@@ -731,7 +749,7 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
   /// Return the compact key slot used by each row group and factor slot.
   const std::vector<SlotIndices>& rowSlots() const { return rowSlots_; }
 
-  /** Add A'WAx directly to a flat output vector. */
+  /** Add `alpha*A.transpose()*W*A*x` directly to a flat output vector. */
   void multiplyHessianAdd(double alpha,
                           const std::vector<size_t>& scalarOffsets,
                           const double* x, double* y) const override {
@@ -749,7 +767,7 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
     }
   }
 
-  /** Add -A'Wb directly to a flat gradient vector. */
+  /** Add `-A.transpose()*W*b` directly to a flat gradient vector. */
   void gradientAtZeroAdd(const std::vector<size_t>& scalarOffsets,
                          double* gradient) const override {
     if (scalarOffsets.size() != keys_.size()) {
@@ -764,7 +782,7 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
     }
   }
 
-  /** Add compact A'WA diagonal blocks without building keyed maps. */
+  /** Add compact `A.transpose()*W*A` diagonal blocks without keyed maps. */
   void hessianBlockDiagonalAdd(
       const std::vector<size_t>& blockSlots,
       std::vector<Matrix>* diagonalBlocks) const override {

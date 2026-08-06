@@ -56,21 +56,21 @@ TEST(PCGSolver, llt) {
   Vector x = Vector3(6.5, 2.5, 3.);
 
   /* test cholesky */
-  Matrix Rhat = AtA.llt().matrixL().transpose();
-  EXPECT(assert_equal(R, Rhat, 1e-5));
+  Matrix R_hat = AtA.llt().matrixL().transpose();
+  EXPECT(assert_equal(R, R_hat, 1e-5));
 
   /* test backward substitution */
-  Vector xhat = Rhat.triangularView<Eigen::Upper>().solve(b);
+  Vector xhat = R_hat.triangularView<Eigen::Upper>().solve(b);
   EXPECT(assert_equal(x, xhat, 1e-5));
 
   /* test in-place back substitution */
   xhat = b;
-  Rhat.triangularView<Eigen::Upper>().solveInPlace(xhat);
+  R_hat.triangularView<Eigen::Upper>().solveInPlace(xhat);
   EXPECT(assert_equal(x, xhat, 1e-5));
 
   /* test triangular matrix map */
-  Eigen::Map<Eigen::MatrixXd> Radapter(Rvector.data(), 3, 3);
-  xhat = Radapter.transpose().triangularView<Eigen::Upper>().solve(b);
+  Eigen::Map<Eigen::MatrixXd> R_adapter(Rvector.data(), 3, 3);
+  xhat = R_adapter.transpose().triangularView<Eigen::Upper>().solve(b);
   EXPECT(assert_equal(x, xhat, 1e-5));
 }
 
@@ -110,8 +110,8 @@ TEST(GaussianFactorGraphSystem, multiply_getb) {
   KeyInfo keyInfo(simpleGFG);
   std::map<Key, Vector> lambda;
   dummyPreconditioner.build(simpleGFG, keyInfo, lambda);
-  GaussianFactorGraphSystem gfgs(simpleGFG, dummyPreconditioner, keyInfo,
-                                 lambda);
+  GaussianFactorGraphSystem system(simpleGFG, dummyPreconditioner, keyInfo,
+                                   lambda);
 
   // Prepare container for each variable
   Vector initial, residual, preconditionedResidual, p, actualAp;
@@ -119,11 +119,11 @@ TEST(GaussianFactorGraphSystem, multiply_getb) {
 
   // Calculate values using GaussianFactorGraphSystem same as inside of
   // PCGSolver
-  gfgs.residual(initial, residual); /* r = b-Ax */
-  gfgs.leftPrecondition(residual,
-                        preconditionedResidual);     /* pr = L^{-1} (b-Ax) */
-  gfgs.rightPrecondition(preconditionedResidual, p); /* p = L^{-T} pr */
-  gfgs.multiply(p, actualAp);                        /* A p */
+  system.residual(initial, residual); /* r = b-Ax */
+  system.leftPrecondition(residual,
+                          preconditionedResidual);     /* pr = L^{-1} (b-Ax) */
+  system.rightPrecondition(preconditionedResidual, p); /* p = L^{-T} pr */
+  system.multiply(p, actualAp);                        /* A p */
 
   // Expected value of Ap for the first iteration of this example problem
   Vector expectedAp =
@@ -136,7 +136,7 @@ TEST(GaussianFactorGraphSystem, multiply_getb) {
       (Vector(6) << 100.0, -194.444, -20.0, 138.889, -120.0, -55.556)
           .finished();
   Vector actualb;
-  gfgs.getb(actualb);
+  system.getb(actualb);
   EXPECT(assert_equal(expectedb, actualb, 1e-3));
 }
 
@@ -346,6 +346,7 @@ GaussianFactorGraph createMixedFallbackGraph() {
   GaussianFactorGraph graph;
 
   const auto unit6 = noiseModel::Unit::Create(6);
+  // Add ordinary Jacobian factors handled by the compiled sparse path.
   graph.emplace_shared<JacobianFactor>(
       firstKey, Matrix6::Identity(),
       (Vector6() << 0.2, -0.1, 0.4, 0.3, -0.2, 0.1).finished(), unit6);
@@ -366,6 +367,7 @@ GaussianFactorGraph createMixedFallbackGraph() {
                        .finished();
   const Matrix3 pointCovariance = 0.05 * Matrix3::Identity();
   const Vector b = (Vector(4) << 0.4, -0.2, 0.1, 0.3).finished();
+  // Add an implicit Schur factor handled by the compatibility path.
   graph.emplace_shared<ImplicitFactor>(KeyVector{firstKey, secondKey}, blocks,
                                        E, pointCovariance, b);
   return graph;
