@@ -508,6 +508,15 @@ ProductLieGroup<G, H, Action>::adjointActionExpmap(
   constexpr size_t d = 2 * n;
   const auto [u, v] = splitAdjointActionTangent<A>(xi);
 
+  if constexpr (internal::TangentLieGroupJacobian<G>::expmapAvailable) {
+    Jacobian derivative;
+    const auto [g, h] = internal::TangentLieGroupJacobian<G>::expmap(
+        u, v, H1 || H2 ? &derivative : nullptr);
+    if (H1) *H1 = derivative.leftCols(n);
+    if (H2) *H2 = derivative.rightCols(n);
+    return ProductLieGroup(g, h);
+  }
+
   Jacobian1 D_G;
   const G g = traits<G>::Expmap(u, &D_G);
   const H h = traits<G>::AdjointMap(g) * D_G * v;

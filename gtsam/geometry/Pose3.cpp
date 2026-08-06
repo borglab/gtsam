@@ -118,7 +118,7 @@ Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> Hxi) {
   //   w_cross_v = w.cross(v);     // translation orthogonal to axis
   //   t = (w_cross_v - Rot3::Expmap(w) * w_cross_v + t_parallel) / theta2;
   // but the kernel handles the zero-angle case and analytic derivatives.
-  const Vector3 t = local.tangentExpmap(v, Hxi);
+  const Vector3 t = local.tangentExpmap(v, R.matrix(), Hxi);
 
   return Pose3(R, t);
 }

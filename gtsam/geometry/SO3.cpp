@@ -190,6 +190,14 @@ Matrix3 DexpFunctor::leftJacobian() const { return I_3x3 + B * W + C() * WW; }
 
 Vector3 DexpFunctor::tangentExpmap(const Vector3& v,
                                   OptionalJacobian<6, 6> H) const {
+  // The rotation participates only in Q_r, so preserve the value-only fast
+  // path while keeping this overload a compatibility wrapper.
+  if (!H) return tangentExpmap(v, I_3x3);
+  return tangentExpmap(v, expmap(), H);
+}
+
+Vector3 DexpFunctor::tangentExpmap(const Vector3& v, const Matrix3& rotation,
+                                   OptionalJacobian<6, 6> H) const {
   const Kernel jacobian = Jacobian();
   Matrix3 D_transport_omega;
   const Vector3 transported =
@@ -203,7 +211,7 @@ Vector3 DexpFunctor::tangentExpmap(const Vector3& v,
     // where Q_r is the derivative of J_l(omega)*v pulled from the world frame
     // back to the right-trivialized frame by R^T.
     const Matrix3 Jr = jacobian.right();
-    const Matrix3 Qr = expmap().transpose() * D_transport_omega;
+    const Matrix3 Qr = rotation.transpose() * D_transport_omega;
     *H << Jr, Z_3x3, Qr, Jr;
   }
   return transported;

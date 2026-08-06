@@ -23,14 +23,15 @@
 
 #pragma once
 
-#include <gtsam/geometry/Unit3.h>
+#include <gtsam/base/concepts.h>
+#include <gtsam/config.h>  // Get GTSAM_USE_QUATERNIONS macro
 #include <gtsam/geometry/Quaternion.h>
 #include <gtsam/geometry/SO3.h>
-#include <gtsam/base/concepts.h>
-#include <gtsam/config.h> // Get GTSAM_USE_QUATERNIONS macro
+#include <gtsam/geometry/Unit3.h>
 
 #include <random>
 #include <stdexcept>
+#include <utility>
 
 // You can override the default coordinate mode using this flag
 #ifndef ROT3_DEFAULT_COORDINATES_MODE
@@ -802,11 +803,32 @@ namespace internal {
 template <>
 struct TangentLieGroupJacobian<Rot3> {
   static constexpr bool available = true;
+  static constexpr bool expmapAvailable = true;
+
+  /**
+   * Evaluate the complete TSO(3) exponential from one SO(3) kernel.
+   *
+   * The precomputed rotation is passed back into tangentExpmap so evaluating
+   * Q_r never repeats Rodrigues' formula. The returned pair is exactly the
+   * rotation and translation of Pose3::Expmap under the TSO(3) isomorphism.
+   */
+  static std::pair<Rot3, Vector3> expmap(
+      const Vector3& omega, const Vector3& v,
+      OptionalJacobian<6, 6> derivative = {}) {
+    const so3::DexpFunctor local(omega);
+#ifdef GTSAM_USE_QUATERNIONS
+    const Rot3 rotation = traits<gtsam::Quaternion>::Expmap(omega);
+#else
+    const Rot3 rotation(local.expmap());
+#endif
+    const Vector3 transported =
+        local.tangentExpmap(v, rotation.matrix(), derivative);
+    return {rotation, transported};
+  }
 
   static Matrix6 rightJacobian(const Vector3& omega, const Vector3& v) {
-    const so3::DexpFunctor local(omega);
     Matrix6 derivative;
-    local.tangentExpmap(v, derivative);
+    expmap(omega, v, derivative);
     return derivative;
   }
 };

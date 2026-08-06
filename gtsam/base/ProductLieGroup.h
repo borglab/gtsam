@@ -55,6 +55,7 @@ struct ProductLieGroupIsAdjointAction<AdjointAction<G>> : std::true_type {};
 template <typename G>
 struct TangentLieGroupJacobian {
   static constexpr bool available = false;
+  static constexpr bool expmapAvailable = false;
 };
 
 /// Detects whether Action has a static generator() method.

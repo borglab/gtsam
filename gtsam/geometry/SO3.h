@@ -204,6 +204,14 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
   Vector3 tangentExpmap(const Vector3& v,
                         OptionalJacobian<6, 6> H = {}) const;
 
+  /**
+   * Apply the lifted exponential using a rotation matrix already evaluated
+   * from this functor's omega. This avoids recomputing Expmap when the caller
+   * needs both the group value and the complete tangent Jacobian.
+   */
+  Vector3 tangentExpmap(const Vector3& v, const Matrix3& rotation,
+                        OptionalJacobian<6, 6> H = {}) const;
+
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
   /// @deprecated: use InvJacobian().right()
   Matrix3 rightJacobianInverse() const;

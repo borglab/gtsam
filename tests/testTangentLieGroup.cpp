@@ -153,6 +153,8 @@ TEST(TangentLieGroup, TransportBlockIsLeftJacobian) {
 // closed-form exponential values and right Jacobians must agree exactly.
 TEST(TangentLieGroup, TSO3UsesSE3ClosedForm) {
   const Vector6 xi = tgso3Xi();
+  const Vector3 omega = xi.head<3>();
+  const Vector3 v = xi.tail<3>();
   Matrix6 tangentH, poseH;
   const TGSO3 tangent = TGSO3::Expmap(xi, tangentH);
   const Pose3 pose = Pose3::Expmap(xi, poseH);
@@ -161,6 +163,20 @@ TEST(TangentLieGroup, TSO3UsesSE3ClosedForm) {
   EXPECT(
       assert_equal(Vector(pose.translation()), Vector(tangent.second), kTol));
   EXPECT(assert_equal(poseH, tangentH, kTol));
+
+  Matrix splitH1, splitH2, H1Only, H2Only;
+  const TGSO3 split = TGSO3::Expmap(omega, v, splitH1, splitH2);
+  const TGSO3 splitFirst = TGSO3::Expmap(omega, v, H1Only, {});
+  const TGSO3 splitSecond = TGSO3::Expmap(omega, v, {}, H2Only);
+  const TGSO3 noJacobian = TGSO3::Expmap(omega, v);
+  EXPECT(assert_equal(tangent, split, kTol));
+  EXPECT(assert_equal(tangent, splitFirst, kTol));
+  EXPECT(assert_equal(tangent, splitSecond, kTol));
+  EXPECT(assert_equal(tangent, noJacobian, kTol));
+  EXPECT(assert_equal(Matrix(poseH.leftCols<3>()), splitH1, kTol));
+  EXPECT(assert_equal(Matrix(poseH.rightCols<3>()), splitH2, kTol));
+  EXPECT(assert_equal(splitH1, H1Only, kTol));
+  EXPECT(assert_equal(splitH2, H2Only, kTol));
 }
 
 // Checks Expmap and Logmap Jacobians against numerical derivatives.
