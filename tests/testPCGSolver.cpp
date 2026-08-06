@@ -14,6 +14,7 @@
  * @brief   Unit tests for PCGSolver class
  * @author  Yong-Dian Jian
  * @date    Aug 06, 2014
+ * @author Fan Jiang
  */
 
 #include <CppUnitLite/TestHarness.h>
@@ -179,8 +180,37 @@ TEST(PCGSolver, subgraph) {
 }
 
 /* ************************************************************************* */
+struct NegativeCurvatureSystem {
+  void residual(const Vector& x, Vector& residual) const {
+    residual = Vector1(1.0 + x(0));
+  }
+  void multiply(const Vector& x, Vector& product) const { product = -x; }
+  void leftPrecondition(const Vector& x, Vector& y) const { y = x; }
+  void rightPrecondition(const Vector& x, Vector& y) const { y = x; }
+  void scal(double alpha, Vector& x) const { x *= alpha; }
+  double dot(const Vector& x, const Vector& y) const { return x.dot(y); }
+  void axpy(double alpha, const Vector& x, Vector& y) const { y += alpha * x; }
+};
+
+// Verifies non-positive curvature is reported before an invalid division.
+TEST(PCGSolver, DetailedNumericalBreakdown) {
+  ConjugateGradientParameters parameters;
+  parameters.minIterations = 0;
+  parameters.maxIterations = 5;
+  parameters.epsilon_abs = 0.0;
+  parameters.epsilon_rel = 0.0;
+  const Vector initial = Vector1::Zero();
+  const auto result = preconditionedConjugateGradientDetailed(
+      NegativeCurvatureSystem(), initial, parameters);
+
+  LONGS_EQUAL(0, static_cast<long>(result.stats.iterations));
+  CHECK(result.stats.terminationReason ==
+        ConjugateGradientTerminationReason::kNumericalBreakdown);
+  EXPECT(assert_equal(Vector1::Zero(), result.solution));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
 }
-
