@@ -20,6 +20,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/BatchJacobianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
@@ -33,28 +34,24 @@ using namespace gtsam;
 
 const double tol = 1e-3;
 
-using symbol_shorthand::X;
 using symbol_shorthand::L;
+using symbol_shorthand::X;
 
 /* ************************************************************************* */
 // Test cholesky decomposition
-TEST( PCGSolver, llt ) {
-  Matrix R = (Matrix(3,3) <<
-                1., -1., -1.,
-                0.,  2., -1.,
-                0.,  0.,  1.).finished();
+TEST(PCGSolver, llt) {
+  Matrix R = (Matrix(3, 3) << 1., -1., -1., 0., 2., -1., 0., 0., 1.).finished();
   Matrix AtA = R.transpose() * R;
 
-  Vector Rvector = (Vector(9) << 1., -1., -1.,
-                                 0.,  2., -1.,
-                                 0.,  0.,  1.).finished();
-//  Vector Rvector = (Vector(6) << 1., -1., -1.,
-//                                      2., -1.,
-//                                           1.).finished();
+  Vector Rvector =
+      (Vector(9) << 1., -1., -1., 0., 2., -1., 0., 0., 1.).finished();
+  //  Vector Rvector = (Vector(6) << 1., -1., -1.,
+  //                                      2., -1.,
+  //                                           1.).finished();
 
   Vector b = Vector3(1., 2., 3.);
 
-  Vector x = Vector3(6.5, 2.5, 3.) ;
+  Vector x = Vector3(6.5, 2.5, 3.);
 
   /* test cholesky */
   Matrix Rhat = AtA.llt().matrixL().transpose();
@@ -73,47 +70,69 @@ TEST( PCGSolver, llt ) {
   Eigen::Map<Eigen::MatrixXd> Radapter(Rvector.data(), 3, 3);
   xhat = Radapter.transpose().triangularView<Eigen::Upper>().solve(b);
   EXPECT(assert_equal(x, xhat, 1e-5));
-
 }
 
 /* ************************************************************************* */
 // Test GaussianFactorGraphSystem::multiply and getb
-TEST( GaussianFactorGraphSystem, multiply_getb)
-{
+TEST(GaussianFactorGraphSystem, multiply_getb) {
   // Create a Gaussian Factor Graph
   GaussianFactorGraph simpleGFG;
   SharedDiagonal unit2 = noiseModel::Diagonal::Sigmas(Vector2(0.5, 0.3));
-  simpleGFG.emplace_shared<JacobianFactor>(2, (Matrix(2,2)<< 10, 0, 0, 10).finished(), (Vector(2) << -1, -1).finished(), unit2);
-  simpleGFG.emplace_shared<JacobianFactor>(2, (Matrix(2,2)<< -10, 0, 0, -10).finished(), 0, (Matrix(2,2)<< 10, 0, 0, 10).finished(), (Vector(2) << 2, -1).finished(), unit2);
-  simpleGFG.emplace_shared<JacobianFactor>(2, (Matrix(2,2)<< -5, 0, 0, -5).finished(), 1, (Matrix(2,2)<< 5, 0, 0, 5).finished(), (Vector(2) << 0, 1).finished(), unit2);
-  simpleGFG.emplace_shared<JacobianFactor>(0, (Matrix(2,2)<< -5, 0, 0, -5).finished(), 1, (Matrix(2,2)<< 5, 0, 0, 5).finished(), (Vector(2) << -1, 1.5).finished(), unit2);
-  simpleGFG.emplace_shared<JacobianFactor>(0, (Matrix(2,2)<< 1, 0, 0, 1).finished(), (Vector(2) << 0, 0).finished(), unit2);
-  simpleGFG.emplace_shared<JacobianFactor>(1, (Matrix(2,2)<< 1, 0, 0, 1).finished(), (Vector(2) << 0, 0).finished(), unit2);
-  simpleGFG.emplace_shared<JacobianFactor>(2, (Matrix(2,2)<< 1, 0, 0, 1).finished(), (Vector(2) << 0, 0).finished(), unit2);
+  simpleGFG.emplace_shared<JacobianFactor>(
+      2, (Matrix(2, 2) << 10, 0, 0, 10).finished(),
+      (Vector(2) << -1, -1).finished(), unit2);
+  simpleGFG.emplace_shared<JacobianFactor>(
+      2, (Matrix(2, 2) << -10, 0, 0, -10).finished(), 0,
+      (Matrix(2, 2) << 10, 0, 0, 10).finished(),
+      (Vector(2) << 2, -1).finished(), unit2);
+  simpleGFG.emplace_shared<JacobianFactor>(
+      2, (Matrix(2, 2) << -5, 0, 0, -5).finished(), 1,
+      (Matrix(2, 2) << 5, 0, 0, 5).finished(), (Vector(2) << 0, 1).finished(),
+      unit2);
+  simpleGFG.emplace_shared<JacobianFactor>(
+      0, (Matrix(2, 2) << -5, 0, 0, -5).finished(), 1,
+      (Matrix(2, 2) << 5, 0, 0, 5).finished(),
+      (Vector(2) << -1, 1.5).finished(), unit2);
+  simpleGFG.emplace_shared<JacobianFactor>(
+      0, (Matrix(2, 2) << 1, 0, 0, 1).finished(),
+      (Vector(2) << 0, 0).finished(), unit2);
+  simpleGFG.emplace_shared<JacobianFactor>(
+      1, (Matrix(2, 2) << 1, 0, 0, 1).finished(),
+      (Vector(2) << 0, 0).finished(), unit2);
+  simpleGFG.emplace_shared<JacobianFactor>(
+      2, (Matrix(2, 2) << 1, 0, 0, 1).finished(),
+      (Vector(2) << 0, 0).finished(), unit2);
 
   // Create a dummy-preconditioner and a GaussianFactorGraphSystem
   DummyPreconditioner dummyPreconditioner;
   KeyInfo keyInfo(simpleGFG);
-  std::map<Key,Vector> lambda;
+  std::map<Key, Vector> lambda;
   dummyPreconditioner.build(simpleGFG, keyInfo, lambda);
-  GaussianFactorGraphSystem gfgs(simpleGFG, dummyPreconditioner, keyInfo, lambda);
+  GaussianFactorGraphSystem gfgs(simpleGFG, dummyPreconditioner, keyInfo,
+                                 lambda);
 
   // Prepare container for each variable
   Vector initial, residual, preconditionedResidual, p, actualAp;
   initial = (Vector(6) << 0., 0., 0., 0., 0., 0.).finished();
 
-  // Calculate values using GaussianFactorGraphSystem same as inside of PCGSolver
-  gfgs.residual(initial, residual);                         /* r = b-Ax */
-  gfgs.leftPrecondition(residual, preconditionedResidual);  /* pr = L^{-1} (b-Ax) */
-  gfgs.rightPrecondition(preconditionedResidual, p);        /* p = L^{-T} pr */
-  gfgs.multiply(p, actualAp);                                     /* A p */
+  // Calculate values using GaussianFactorGraphSystem same as inside of
+  // PCGSolver
+  gfgs.residual(initial, residual); /* r = b-Ax */
+  gfgs.leftPrecondition(residual,
+                        preconditionedResidual);     /* pr = L^{-1} (b-Ax) */
+  gfgs.rightPrecondition(preconditionedResidual, p); /* p = L^{-T} pr */
+  gfgs.multiply(p, actualAp);                        /* A p */
 
   // Expected value of Ap for the first iteration of this example problem
-  Vector expectedAp = (Vector(6) << 100400, -249074.074, -2080, 148148.148, -146480, 37962.963).finished();
+  Vector expectedAp =
+      (Vector(6) << 100400, -249074.074, -2080, 148148.148, -146480, 37962.963)
+          .finished();
   EXPECT(assert_equal(expectedAp, actualAp, 1e-3));
 
   // Expected value of getb
-  Vector expectedb = (Vector(6) << 100.0, -194.444, -20.0, 138.889, -120.0, -55.556).finished();
+  Vector expectedb =
+      (Vector(6) << 100.0, -194.444, -20.0, 138.889, -120.0, -55.556)
+          .finished();
   Vector actualb;
   gfgs.getb(actualb);
   EXPECT(assert_equal(expectedb, actualb, 1e-3));
@@ -180,6 +199,25 @@ TEST(PCGSolver, subgraph) {
 }
 
 /* ************************************************************************* */
+GaussianFactorGraph createTwoDimensionalGraph() {
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(
+      0, (Matrix(2, 2) << 2.0, 0.5, 0.0, 3.0).finished(),
+      (Vector(2) << 1.0, 2.0).finished(), noiseModel::Unit::Create(2));
+  return graph;
+}
+
+PCGSolverParameters createParameters() {
+  PCGSolverParameters parameters(
+      std::make_shared<DummyPreconditionerParameters>());
+  parameters.minIterations = 0;
+  parameters.maxIterations = 10;
+  parameters.reset = 11;
+  parameters.epsilon_abs = 0.0;
+  parameters.epsilon_rel = 1e-12;
+  return parameters;
+}
+
 struct NegativeCurvatureSystem {
   void residual(const Vector& x, Vector& residual) const {
     residual = Vector1(1.0 + x(0));
@@ -191,6 +229,39 @@ struct NegativeCurvatureSystem {
   double dot(const Vector& x, const Vector& y) const { return x.dot(y); }
   void axpy(double alpha, const Vector& x, Vector& y) const { y += alpha * x; }
 };
+
+// Verifies the detailed API reports convergence and an aligned residual trace.
+TEST(PCGSolver, DetailedResult) {
+  const GaussianFactorGraph graph = createTwoDimensionalGraph();
+  const PCGSolverResult result =
+      PCGSolver(createParameters()).optimizeDetailed(graph);
+  const VectorValues expected = graph.optimize();
+
+  EXPECT(assert_equal(expected, result.solution, 1e-10));
+  CHECK(result.stats.converged());
+  LONGS_EQUAL(
+      static_cast<long>(result.stats.iterations + 1),
+      static_cast<long>(result.stats.preconditionedResidualNormHistory.size()));
+  DOUBLES_EQUAL(result.stats.finalPreconditionedResidualNorm,
+                result.stats.preconditionedResidualNormHistory.back(), 1e-15);
+  CHECK(result.operatorSetupSeconds >= 0.0);
+  CHECK(result.preconditionerSetupSeconds >= 0.0);
+  CHECK(result.solveSeconds >= 0.0);
+}
+
+// Verifies a fixed one-iteration solve reports the iteration limit.
+TEST(PCGSolver, DetailedMaxIterations) {
+  const GaussianFactorGraph graph = createTwoDimensionalGraph();
+  PCGSolverParameters parameters = createParameters();
+  parameters.minIterations = 1;
+  parameters.maxIterations = 1;
+  parameters.epsilon_rel = 0.0;
+  const PCGSolverResult result = PCGSolver(parameters).optimizeDetailed(graph);
+
+  LONGS_EQUAL(1, static_cast<long>(result.stats.iterations));
+  CHECK(result.stats.terminationReason ==
+        ConjugateGradientTerminationReason::kMaxIterations);
+}
 
 // Verifies non-positive curvature is reported before an invalid division.
 TEST(PCGSolver, DetailedNumericalBreakdown) {
@@ -207,6 +278,59 @@ TEST(PCGSolver, DetailedNumericalBreakdown) {
   CHECK(result.stats.terminationReason ==
         ConjugateGradientTerminationReason::kNumericalBreakdown);
   EXPECT(assert_equal(Vector1::Zero(), result.solution));
+}
+
+// Verifies flat Jacobian, Hessian, and compact-Batch plans compose correctly.
+TEST(GaussianFactorGraphSystem, MixedFactorTypes) {
+  const Key firstKey = 10;
+  const Key secondKey = 2;
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(
+      firstKey, (Matrix(2, 2) << 1.0, 0.2, -0.3, 2.0).finished(),
+      (Vector(2) << 0.5, -1.0).finished(),
+      noiseModel::Diagonal::Sigmas(Vector2(2.0, 3.0)));
+  const JacobianFactor hessianSource(
+      secondKey, (Matrix(2, 2) << 0.7, -0.1, 0.4, 1.3).finished(),
+      (Vector(2) << -0.2, 0.8).finished());
+  graph.emplace_shared<HessianFactor>(hessianSource);
+
+  using Batch = BatchJacobianFactor<1, 2, 2>;
+  auto batch = std::make_shared<Batch>(
+      KeyVector{firstKey, secondKey}, std::vector<size_t>{2, 2},
+      noiseModel::Diagonal::Sigmas(Vector2(1.5, 2.5)));
+  batch->addRow({0, 1},
+                {(Matrix(1, 2) << 0.5, -0.25).finished(),
+                 (Matrix(1, 2) << 1.0, 0.75).finished()},
+                Vector1(0.3));
+  batch->addRow({0, 1},
+                {(Matrix(1, 2) << -0.1, 0.8).finished(),
+                 (Matrix(1, 2) << 0.4, -0.6).finished()},
+                Vector1(-0.7));
+  graph.push_back(batch);
+
+  const Ordering ordering{firstKey, secondKey};
+  const KeyInfo keyInfo(graph, ordering);
+  DummyPreconditioner preconditioner;
+  preconditioner.build(graph, keyInfo, {});
+  const GaussianFactorGraphSystem system(graph, preconditioner, keyInfo, {});
+  const Vector x = (Vector(4) << 0.2, -0.4, 1.1, 0.3).finished();
+
+  const VectorValues vectorValuesX = buildVectorValues(x, keyInfo);
+  VectorValues expectedValues = keyInfo.x0();
+  graph.multiplyHessianAdd(1.0, vectorValuesX, expectedValues);
+  const Vector expected = expectedValues.vector(ordering);
+  Vector actual;
+  system.multiply(x, actual);
+  EXPECT(assert_equal(expected, actual, 1e-12));
+
+  Vector inPlace = x;
+  system.multiply(inPlace, inPlace);
+  EXPECT(assert_equal(expected, inPlace, 1e-12));
+
+  Vector expectedRhs = -graph.gradientAtZero().vector(ordering);
+  Vector actualRhs;
+  system.getb(actualRhs);
+  EXPECT(assert_equal(expectedRhs, actualRhs, 1e-12));
 }
 
 /* ************************************************************************* */
