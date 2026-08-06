@@ -22,6 +22,16 @@
 
 namespace {
 
+/// Compile-time storage for block augmentations, with a dynamic fallback.
+template <int Dimension, int Blocks, int Extra = 0>
+inline constexpr int augmentedDimension =
+    Dimension == Eigen::Dynamic ? Eigen::Dynamic : Blocks * Dimension + Extra;
+
+template <int Dimension, int Blocks, int Extra = 0>
+using AugmentedMatrix =
+    Eigen::Matrix<double, augmentedDimension<Dimension, Blocks, Extra>,
+                  augmentedDimension<Dimension, Blocks, Extra>>;
+
 /// Assign a sub-block using compile-time dimensions when available.
 template <typename DstType, typename SrcType>
 void assignBlock(const SrcType& source, size_t row, size_t column,
@@ -46,21 +56,19 @@ namespace gtsam {
 // Identity: exp([[A, I], [0, 0]]) = [[exp(A), φ₁(A)], [0, I]].
 // ---------------------------------------------------------------------------
 template <typename G, typename H, typename Action>
-typename ProductLieGroup<G, H, Action>::Jacobian2
-ProductLieGroup<G, H, Action>::phi1Kernel(const Jacobian2& A, Jacobian2* phi0) {
+typename ProductLieGroup<G, H, Action>::Phi1KernelResult
+ProductLieGroup<G, H, Action>::phi1Kernel(const Jacobian2& A) {
   const int r = static_cast<int>(A.rows());
-  Eigen::MatrixXd M = Eigen::MatrixXd::Zero(2 * r, 2 * r);
+  using BlockMatrix = AugmentedMatrix<dimension2, 2>;
+  BlockMatrix M = BlockMatrix::Zero(2 * r, 2 * r);
   M.topLeftCorner(r, r) = A;
-  M.topRightCorner(r, r) = Eigen::MatrixXd::Identity(r, r);
-  const Eigen::MatrixXd expM = M.exp();
-  if (phi0) {
-    if constexpr (secondDynamic) phi0->resize(r, r);
-    *phi0 = expM.topLeftCorner(r, r);
-  }
-  Jacobian2 phi1;
-  if constexpr (secondDynamic) phi1.resize(r, r);
-  phi1 = expM.topRightCorner(r, r);
-  return phi1;
+  M.topRightCorner(r, r).setIdentity();
+  const BlockMatrix expM = M.exp();
+
+  Phi1KernelResult result;
+  result.phi0 = expM.topLeftCorner(r, r);
+  result.phi1 = expM.topRightCorner(r, r);
+  return result;
 }
 
 // ---------------------------------------------------------------------------
@@ -73,9 +81,7 @@ ProductLieGroup<G, H, Action>::rightJacobian(const TangentVector& xi) {
     return adjointActionRightJacobian(xi);
   }
 
-  constexpr int blockDimension =
-      dimension == Eigen::Dynamic ? Eigen::Dynamic : 2 * dimension;
-  using BlockMatrix = Eigen::Matrix<double, blockDimension, blockDimension>;
+  using BlockMatrix = AugmentedMatrix<dimension, 2>;
 
   const int d = static_cast<int>(xi.size());
   BlockMatrix block = BlockMatrix::Zero(2 * d, 2 * d);
@@ -83,10 +89,7 @@ ProductLieGroup<G, H, Action>::rightJacobian(const TangentVector& xi) {
   block.topRightCorner(d, d).setIdentity();
   const BlockMatrix expBlock = block.exp();
 
-  Jacobian result;
-  if constexpr (dimension == Eigen::Dynamic) result.resize(d, d);
-  result = expBlock.topRightCorner(d, d);
-  return result;
+  return expBlock.topRightCorner(d, d);
 }
 
 // ---------------------------------------------------------------------------
@@ -136,7 +139,7 @@ ProductLieGroup<G, H, Action>::adjointActionRightJacobian(
 }
 
 // ---------------------------------------------------------------------------
-// phi1FrechetBlock: compute φ₀(A), φ₁(A), and L_{φ₁}(A, B) from one block
+// phi1FrechetBlock: compute φ₁(A) and L_{φ₁}(A, B) from one block
 // matrix exponential.
 //
 // Identity:
@@ -152,9 +155,7 @@ typename ProductLieGroup<G, H, Action>::Phi1FrechetResult
 ProductLieGroup<G, H, Action>::phi1FrechetBlock(const Jacobian2& A,
                                                 const Jacobian2& B) {
   const int r = static_cast<int>(A.rows());
-  constexpr int blockDimension =
-      secondDynamic ? Eigen::Dynamic : 3 * dimension2;
-  using BlockMatrix = Eigen::Matrix<double, blockDimension, blockDimension>;
+  using BlockMatrix = AugmentedMatrix<dimension2, 3>;
   BlockMatrix M = BlockMatrix::Zero(3 * r, 3 * r);
   M.block(0, r, r, r).setIdentity();
   M.block(r, r, r, r) = A;
@@ -163,15 +164,37 @@ ProductLieGroup<G, H, Action>::phi1FrechetBlock(const Jacobian2& A,
   const BlockMatrix expM = M.exp();
 
   Phi1FrechetResult result;
-  if constexpr (secondDynamic) {
-    result.phi0.resize(r, r);
-    result.phi1.resize(r, r);
-    result.Lphi1.resize(r, r);
-  }
   result.phi1 = expM.block(0, r, r, r);
   result.Lphi1 = expM.block(0, 2 * r, r, r);
-  result.phi0 = expM.block(r, r, r, r);
   return result;
+}
+
+// ---------------------------------------------------------------------------
+// phi1FrechetAction: compute L_{φ₁}(A, B)v without forming the full
+// Fréchet-derivative matrix.
+//
+// Identity:
+//   exp([[A, B, 0],
+//        [0, A, v],
+//        [0, 0, 0]])_(1,3) = L_{φ₁}(A, B)v.
+//
+// The block sizes are (r, r, 1), so this requires a (2r+1)-square
+// exponential instead of the 3r-square full-matrix construction above.
+// ---------------------------------------------------------------------------
+template <typename G, typename H, typename Action>
+typename traits<H>::TangentVector
+ProductLieGroup<G, H, Action>::phi1FrechetAction(
+    const Jacobian2& A, const Jacobian2& B,
+    const typename traits<H>::TangentVector& v) {
+  const int r = static_cast<int>(A.rows());
+  using BlockMatrix = AugmentedMatrix<dimension2, 2, 1>;
+  BlockMatrix M = BlockMatrix::Zero(2 * r + 1, 2 * r + 1);
+  M.block(0, 0, r, r) = A;
+  M.block(0, r, r, r) = B;
+  M.block(r, r, r, r) = A;
+  M.block(r, 2 * r, r, 1) = v;
+  const BlockMatrix expM = M.exp();
+  return expM.block(0, 2 * r, r, 1);
 }
 
 template <typename G, typename H, typename Action>
@@ -514,26 +537,26 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::Expmap(
       return ProductLieGroup(g, h);
     }
 
-    const Jacobian2 A = Action::generator(v1);
-
     if (H1) {
       if constexpr (hasStaticAdjointMap) {
         // The complete derivative of a Lie-group exponential is its right
         // Jacobian J_r(xi)=φ₁(-ad_xi). Computing it once avoids evaluating one
-        // Fréchet derivative per basis direction.
-        const Jacobian2 phi1 = phi1Kernel(A);
-        const H h = phi1 * v2;
+        // Fréchet derivative per basis direction. Its lower-right block is the
+        // action Jacobian φ₁(-A), so φ₁(A)v = φ(g)φ₁(-A)v also reuses it for
+        // the transported value.
         const TangentVector xi = makeTangentVector(v1, v2, d1, d2);
         const Jacobian derivative = rightJacobian(xi);
+        const Jacobian2 actionRightJacobian =
+            derivative.bottomRightCorner(d2, d2);
+        const H h = Action{}(g, actionRightJacobian * v2);
         *H1 = derivative.leftCols(d1);
         if (H2) *H2 = derivative.rightCols(d2);
         return ProductLieGroup(g, h);
       } else {
         // Preserve support for base groups that do not expose static
         // adjointMap(), using directional Fréchet derivatives as a fallback.
-        Jacobian2 zeroB = A;
-        zeroB.setZero();
-        const auto kernels = phi1FrechetBlock(A, zeroB);
+        const Jacobian2 A = Action::generator(v1);
+        const Phi1KernelResult kernels = phi1Kernel(A);
         const auto phi0Solver = kernels.phi0.lu();
         const H h = kernels.phi1 * v2;
 
@@ -546,7 +569,7 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::Expmap(
           ej(j) = 1.0;
           const Jacobian2 Bj = Action::generator(ej);
           const typename traits<H>::TangentVector dh =
-              phi1FrechetBlock(A, Bj).Lphi1 * v2;
+              phi1FrechetAction(A, Bj, v2);
           H1->col(j).tail(d2) = phi0Solver.solve(dh);
           ej(j) = 0.0;
         }
@@ -558,14 +581,15 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::Expmap(
       }
     }
 
-    Jacobian2 phi0;
-    const Jacobian2 phi1 = phi1Kernel(A, H2 ? &phi0 : nullptr);
-    const H h = phi1 * v2;
+    const Jacobian2 A = Action::generator(v1);
     if (H2) {
-      const auto phi0Solver = phi0.lu();
+      const Jacobian2 actionRightJacobian = phi1Kernel(-A).phi1;
+      const H h = Action{}(g, actionRightJacobian * v2);
       *H2 = Matrix::Zero(d, d2);
-      H2->bottomRows(d2) = phi0Solver.solve(phi1);
+      H2->bottomRows(d2) = actionRightJacobian;
+      return ProductLieGroup(g, h);
     }
+    const H h = phi1Kernel(A).phi1 * v2;
     return ProductLieGroup(g, h);
   }
 }
@@ -643,16 +667,15 @@ ProductLieGroup<G, H, Action>::Logmap(const ProductLieGroup& p,
 
     if (Hp) {
       if constexpr (hasStaticAdjointMap) {
-        const auto phi1Solver = phi1Kernel(A).lu();
+        const Jacobian2 phi1 = phi1Kernel(A).phi1;
+        const auto phi1Solver = phi1.lu();
         const typename traits<H>::TangentVector v2 = phi1Solver.solve(p.second);
         const TangentVector v = makeTangentVector(v1, v2, d1, d2);
         const Jacobian derivative = rightJacobian(v);
         *Hp = derivative.partialPivLu().solve(identityJacobian(d));
         return v;
       } else {
-        Jacobian2 zeroB = A;
-        zeroB.setZero();
-        const auto kernels = phi1FrechetBlock(A, zeroB);
+        const Phi1KernelResult kernels = phi1Kernel(A);
         const auto phi1Solver = kernels.phi1.lu();
         const typename traits<H>::TangentVector v2 = phi1Solver.solve(p.second);
         TangentVector v = makeTangentVector(v1, v2, d1, d2);
@@ -663,14 +686,14 @@ ProductLieGroup<G, H, Action>::Logmap(const ProductLieGroup& p,
         for (Eigen::Index j = 0; j < static_cast<Eigen::Index>(d1); ++j) {
           const typename traits<G>::TangentVector du = D_G.col(j);
           const Jacobian2 Bj = Action::generator(du);
-          Hp->col(j).tail(d2) =
-              -phi1Solver.solve(phi1FrechetBlock(A, Bj).Lphi1 * v2);
+          Hp->col(j).tail(d2) = -phi1Solver.solve(phi1FrechetAction(A, Bj, v2));
         }
         return v;
       }
     }
 
-    const auto phi1Solver = phi1Kernel(A).lu();
+    const Jacobian2 phi1 = phi1Kernel(A).phi1;
+    const auto phi1Solver = phi1.lu();
     const typename traits<H>::TangentVector v2 = phi1Solver.solve(p.second);
     return makeTangentVector(v1, v2, d1, d2);
   }

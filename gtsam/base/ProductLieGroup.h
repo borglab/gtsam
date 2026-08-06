@@ -330,9 +330,14 @@ class ProductLieGroup : public std::pair<G, H> {
   void checkMatchingDimensions(const ProductLieGroup& other,
                                const char* operation) const;
 
-  /// Compute φ₁(A) and optionally return the exp(A) block produced alongside
-  /// it.
-  static Jacobian2 phi1Kernel(const Jacobian2& A, Jacobian2* phi0 = nullptr);
+  /// Result of the augmented exponential that evaluates φ₀ and φ₁ together.
+  struct Phi1KernelResult {
+    Jacobian2 phi0;  ///< exp(A)
+    Jacobian2 phi1;  ///< φ₁(A)
+  };
+
+  /// Compute φ₀(A) and φ₁(A) from one augmented matrix exponential.
+  static Phi1KernelResult phi1Kernel(const Jacobian2& A);
 
   /// Compute the product's right Jacobian as φ₁(-ad_xi).
   static Jacobian rightJacobian(const TangentVector& xi);
@@ -345,15 +350,18 @@ class ProductLieGroup : public std::pair<G, H> {
 
   /// Result of the analytic Fréchet derivative helper for φ₁.
   struct Phi1FrechetResult {
-    Jacobian2 phi0;   ///< exp(A)
     Jacobian2 phi1;   ///< φ₁(A)
     Jacobian2 Lphi1;  ///< Fréchet derivative L_{φ₁}(A, B)
   };
 
-  /// Compute exp(A), φ₁(A), and the Fréchet derivative L_{φ₁}(A, B) from a
-  /// single block exponential for a semidirect product.
+  /// Compute φ₁(A) and L_{φ₁}(A, B) from one block exponential.
   static Phi1FrechetResult phi1FrechetBlock(const Jacobian2& A,
                                             const Jacobian2& B);
+
+  /// Apply L_{φ₁}(A, B) to v using a reduced vector-valued augmentation.
+  static typename traits<H>::TangentVector phi1FrechetAction(
+      const Jacobian2& A, const Jacobian2& B,
+      const typename traits<H>::TangentVector& v);
 
  public:
   /// @name Testable interface

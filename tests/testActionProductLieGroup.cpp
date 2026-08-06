@@ -118,6 +118,25 @@ using Semidirect2 = ProductLieGroup<Rot2, Point2, Rot2PointAction>;
 using Semidirect = ProductLieGroup<Rot3, Vector3, Rot3VectorAction>;
 using SemidirectGal3 = ProductLieGroup<Pose3, Vector4, SE3Vector4Action>;
 
+template <typename Product, typename BaseTangent, typename ActionTangent>
+bool expmapRequestCombinationsAreConsistent(
+    const BaseTangent& baseTangent, const ActionTangent& actionTangent) {
+  Matrix bothH1, bothH2, onlyH1, onlyH2;
+  const Product both =
+      Product::Expmap(baseTangent, actionTangent, bothH1, bothH2);
+  const Product firstOnly =
+      Product::Expmap(baseTangent, actionTangent, onlyH1, {});
+  const Product secondOnly =
+      Product::Expmap(baseTangent, actionTangent, {}, onlyH2);
+  const Product neither = Product::Expmap(baseTangent, actionTangent);
+
+  return assert_equal(both, firstOnly, kTol) &&
+         assert_equal(both, secondOnly, kTol) &&
+         assert_equal(both, neither, kTol) &&
+         assert_equal(bothH1, onlyH1, kTol) &&
+         assert_equal(bothH2, onlyH2, kTol);
+}
+
 Semidirect2 semidirect2State() {
   return Semidirect2(Rot2::fromAngle(0.35), Point2(0.4, -0.6));
 }
@@ -435,6 +454,22 @@ TEST(testActionProduct, Expmap) {
   EXPECT(assert_equal(actH.rightCols<3>(), H2Only, 1e-6));
 }
 
+// Every optional-Jacobian combination returns the same value and matching
+// requested columns for representative semidirect actions.
+TEST(testActionProduct, ExpmapRequestCombinations) {
+  const Vector3 xi2 = semidirect2Xi();
+  EXPECT(expmapRequestCombinationsAreConsistent<Semidirect2>(xi2.head<1>(),
+                                                             xi2.tail<2>()));
+
+  const Vector6 xi3 = semidirectXi();
+  EXPECT(expmapRequestCombinationsAreConsistent<Semidirect>(xi3.head<3>(),
+                                                            xi3.tail<3>()));
+
+  const Vector10 xiGal3 = gal3Xi();
+  EXPECT(expmapRequestCombinationsAreConsistent<SemidirectGal3>(
+      xiGal3.head<6>(), xiGal3.tail<4>()));
+}
+
 // Check the semidirect Logmap and its Jacobian against Pose3 and numerical
 // derivatives.
 TEST(testActionProduct, Logmap) {
@@ -636,6 +671,136 @@ TEST(testActionProduct, retractAndLocalCoordinatesGal3) {
 }
 
 }  // namespace semidirect_product_fixture
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace frechet_fallback_fixture {
+
+constexpr double kTol = 1e-9;
+constexpr double kNumericalTolerance = 1e-6;
+
+/** SO(2) wrapper intentionally omitting static adjointMap(). */
+class Rot2WithoutAlgebraAdjoint
+    : public LieGroup<Rot2WithoutAlgebraAdjoint, 1> {
+  Rot2 rotation_;
+
+ public:
+  Rot2WithoutAlgebraAdjoint() = default;
+  explicit Rot2WithoutAlgebraAdjoint(const Rot2& rotation)
+      : rotation_(rotation) {}
+
+  static Rot2WithoutAlgebraAdjoint Identity() {
+    return Rot2WithoutAlgebraAdjoint();
+  }
+
+  Rot2WithoutAlgebraAdjoint operator*(
+      const Rot2WithoutAlgebraAdjoint& other) const {
+    return Rot2WithoutAlgebraAdjoint(rotation_ * other.rotation_);
+  }
+
+  Rot2WithoutAlgebraAdjoint inverse() const {
+    return Rot2WithoutAlgebraAdjoint(rotation_.inverse());
+  }
+
+  using LieGroup<Rot2WithoutAlgebraAdjoint, 1>::inverse;
+
+  static Rot2WithoutAlgebraAdjoint Expmap(const Vector1& tangent,
+                                          ChartJacobian H = {}) {
+    return Rot2WithoutAlgebraAdjoint(Rot2::Expmap(tangent, H));
+  }
+
+  static Vector1 Logmap(const Rot2WithoutAlgebraAdjoint& rotation,
+                        ChartJacobian H = {}) {
+    return Rot2::Logmap(rotation.rotation_, H);
+  }
+
+  Matrix1 AdjointMap() const { return I_1x1; }
+
+  struct ChartAtOrigin {
+    static Rot2WithoutAlgebraAdjoint Retract(const Vector1& tangent,
+                                             ChartJacobian H = {}) {
+      return Expmap(tangent, H);
+    }
+
+    static Vector1 Local(const Rot2WithoutAlgebraAdjoint& rotation,
+                         ChartJacobian H = {}) {
+      return Logmap(rotation, H);
+    }
+  };
+
+  const Rot2& rotation() const { return rotation_; }
+
+  void print(const std::string& label = "") const { rotation_.print(label); }
+
+  bool equals(const Rot2WithoutAlgebraAdjoint& other,
+              double tolerance = 1e-9) const {
+    return rotation_.equals(other.rotation_, tolerance);
+  }
+};
+
+}  // namespace frechet_fallback_fixture
+/* ************************************************************************* */
+
+namespace gtsam {
+
+template <>
+struct traits<frechet_fallback_fixture::Rot2WithoutAlgebraAdjoint>
+    : internal::LieGroup<frechet_fallback_fixture::Rot2WithoutAlgebraAdjoint> {
+};
+
+template <>
+struct traits<const frechet_fallback_fixture::Rot2WithoutAlgebraAdjoint>
+    : traits<frechet_fallback_fixture::Rot2WithoutAlgebraAdjoint> {};
+
+}  // namespace gtsam
+
+/* ************************************************************************* */
+namespace frechet_fallback_fixture {
+
+struct RotationAction
+    : public GroupAction<RotationAction, Rot2WithoutAlgebraAdjoint, Point2> {
+  static constexpr ActionType type = ActionType::Left;
+
+  Point2 operator()(const Rot2WithoutAlgebraAdjoint& rotation,
+                    const Point2& point, OptionalJacobian<2, 1> Hrotation = {},
+                    OptionalJacobian<2, 2> Hpoint = {}) const {
+    return rotation.rotation().rotate(point, Hrotation, Hpoint);
+  }
+
+  static Matrix2 generator(const Vector1& tangent) {
+    return Rot2::Hat(tangent);
+  }
+};
+
+using FallbackProduct =
+    ProductLieGroup<Rot2WithoutAlgebraAdjoint, Point2, RotationAction>;
+
+FallbackProduct expmapProxy(const Vector3& tangent) {
+  return FallbackProduct::Expmap(tangent);
+}
+
+Vector3 logmapProxy(const FallbackProduct& product) {
+  return FallbackProduct::Logmap(product);
+}
+
+// A base without static adjointMap exercises the reduced vector-valued
+// Fréchet fallback for both Expmap and Logmap Jacobians.
+TEST(testActionProduct, ReducedFrechetFallback) {
+  const Vector3 tangent = (Vector3() << 0.25, 0.3, -0.2).finished();
+  Matrix expmapJacobian;
+  const FallbackProduct product =
+      FallbackProduct::Expmap(tangent, expmapJacobian);
+  EXPECT(assert_equal(numericalDerivative11(expmapProxy, tangent),
+                      expmapJacobian, kNumericalTolerance));
+
+  Matrix logmapJacobian;
+  const Vector3 recovered = FallbackProduct::Logmap(product, logmapJacobian);
+  EXPECT(assert_equal(tangent, recovered, kTol));
+  EXPECT(assert_equal(numericalDerivative11(logmapProxy, product),
+                      logmapJacobian, kNumericalTolerance));
+}
+
+}  // namespace frechet_fallback_fixture
 /* ************************************************************************* */
 
 //******************************************************************************
