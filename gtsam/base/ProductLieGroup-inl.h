@@ -142,10 +142,12 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::retract(
         "dimension");
   }
   if constexpr (isDirectProduct) {
-    Jacobian1 D_g_first;
-    Jacobian1 D_g_second;
-    Jacobian2 D_h_first;
-    Jacobian2 D_h_second;
+    // Initialize these defensively: optimized GCC builds cannot always prove
+    // that the optional Jacobian callbacks below assign every coefficient.
+    Jacobian1 D_g_first = Jacobian1::Zero(d1, d1);
+    Jacobian1 D_g_second = Jacobian1::Zero(d1, d1);
+    Jacobian2 D_h_first = Jacobian2::Zero(d2, d2);
+    Jacobian2 D_h_second = Jacobian2::Zero(d2, d2);
     G g = traits<G>::Retract(this->first, tangentSegment<G>(v, 0, d1),
                              H1 ? &D_g_first : nullptr,
                              H2 ? &D_g_second : nullptr);
@@ -582,6 +584,45 @@ ProductLieGroup<G, H, Action>::AdjointMap() const {
     adj.block(d1, 0, d2, d1) = -Jg * adjG;
     return adj;
   }
+}
+
+template <typename G, typename H, typename Action>
+template <typename A, std::enable_if_t<!std::is_void_v<A>, int>>
+typename ProductLieGroup<G, H, Action>::Jacobian
+ProductLieGroup<G, H, Action>::adjointMap(const TangentVector& xi) {
+  // Semidirect product adjoint:
+  //
+  //    ad_(a,b) = [[ ad^G_a,  0           ],
+  //                [ -M(b),   generator(a) ]]
+  //
+  // where M(b)·c = generator(c)·b.
+  constexpr size_t d2 = dimension2;
+  const size_t d = static_cast<size_t>(xi.size());
+  if (d < d2) {
+    throw std::invalid_argument(
+        "ProductLieGroup::adjointMap tangent dimension is smaller than the "
+        "second-factor dimension");
+  }
+  const size_t d1 = d - d2;
+  const auto a = tangentSegment<G>(xi, 0, d1);
+  const auto b = tangentSegment<H>(xi, d1, d2);
+
+  // Bottom-left -M(b): column j = -generator(e_j)·b.
+  Eigen::Matrix<double, dimension2, Eigen::Dynamic> negM(d2, d1);
+  typename traits<G>::TangentVector ei;
+  if constexpr (firstDynamic) ei.resize(static_cast<Eigen::Index>(d1));
+  ei.setZero();
+  for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(d1); ++i) {
+    ei(i) = 1.0;
+    negM.col(i) = -(A::generator(ei) * b);
+    ei(i) = 0.0;
+  }
+
+  Jacobian ad = zeroJacobian(d);
+  ad.topLeftCorner(d1, d1) = G::adjointMap(a);
+  ad.bottomRightCorner(d2, d2) = A::generator(a);
+  ad.bottomLeftCorner(d2, d1) = negM;
+  return ad;
 }
 
 template <typename G, typename H, typename Action>
