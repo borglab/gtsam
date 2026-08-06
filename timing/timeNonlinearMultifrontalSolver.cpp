@@ -19,11 +19,11 @@
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearMultifrontalSolver.h>
 
-#include <chrono>
 #include <iomanip>
 #include <iostream>
 #include <optional>
 
+#include "internal/TimingUtils.h"
 #include "timeSFMBAL.h"
 
 using namespace std;
@@ -52,29 +52,28 @@ int main() {
 
     auto orderings = createOrderings(db, linear);
     for (const auto& [label, ordering] : orderings) {
+      const Ordering& currentOrdering = ordering;
       cout << "\nBAL Benchmark (" << label << ", iterations=" << kIterations
            << "):" << std::endl;
 
-      auto start = std::chrono::high_resolution_clock::now();
-      NonlinearMultifrontalSolver::DampingParams dampingParams;
-      dampingParams.diagonalDamping = kDiagonalDamping;
-      dampingParams.minDiagonal = kMinDiagonal;
-      dampingParams.maxDiagonal = kMaxDiagonal;
-      MultifrontalSolver::Parameters mfParams;
-      mfParams.mergeDimCap = kMergeDimCap;
-      mfParams.qrMode = MultifrontalParameters::QRMode::Allow;
-      NonlinearMultifrontalSolver solver(graph, values, ordering, mfParams,
-                                         dampingParams);
-      for (size_t i = 0; i < kIterations; ++i) {
-        if (i > 0) linear = *graph.linearize(values);
-        solver.eliminateInPlace(linear, kLambda);
-        VectorValues delta = solver.updateSolution();
-        values = values.retract(delta);
-      }
-      auto end = std::chrono::high_resolution_clock::now();
-
-      std::chrono::duration<double> elapsed = end - start;
-      cout << "Elapsed: " << elapsed.count() << " s" << std::endl;
+      const double elapsed = gtsam::timing::measureSeconds([&] {
+        NonlinearMultifrontalSolver::DampingParams dampingParams;
+        dampingParams.diagonalDamping = kDiagonalDamping;
+        dampingParams.minDiagonal = kMinDiagonal;
+        dampingParams.maxDiagonal = kMaxDiagonal;
+        MultifrontalSolver::Parameters mfParams;
+        mfParams.mergeDimCap = kMergeDimCap;
+        mfParams.qrMode = MultifrontalParameters::QRMode::Allow;
+        NonlinearMultifrontalSolver solver(graph, values, currentOrdering,
+                                           mfParams, dampingParams);
+        for (size_t i = 0; i < kIterations; ++i) {
+          if (i > 0) linear = *graph.linearize(values);
+          solver.eliminateInPlace(linear, kLambda);
+          VectorValues delta = solver.updateSolution();
+          values = values.retract(delta);
+        }
+      });
+      cout << "Elapsed: " << elapsed << " s" << std::endl;
     }
   }
   return 0;

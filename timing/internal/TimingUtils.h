@@ -51,6 +51,9 @@ class Arguments {
   /** Return and consume tokens that do not begin with a dash. */
   std::vector<std::string> positionals();
 
+  /** Return and consume positional tokens as non-negative integers. */
+  std::vector<size_t> sizePositionals();
+
   /** Throw when any command-line tokens have not been consumed. */
   void validateAllConsumed() const;
 

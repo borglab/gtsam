@@ -21,9 +21,9 @@
 #include <gtsam/linear/MultifrontalSolver.h>
 #include <tests/smallExample.h>
 
-#include <chrono>
 #include <iostream>
 
+#include "internal/TimingUtils.h"
 #include "timeSFMBAL.h"
 
 using namespace std;
@@ -82,11 +82,9 @@ void runBAL135Benchmark(MultifrontalSolver::Parameters params) {
   const Ordering ordering = createSchurOrdering(db, false);
 
   MultifrontalSolver solver(linear, ordering, params);
-  auto start = std::chrono::high_resolution_clock::now();
-  runMultifrontalSolver(solver, linear, iterations);
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> t_imperative = end - start;
-  cout << "  MultifrontalSolver: " << t_imperative.count() << " s" << std::endl;
+  const double imperativeSeconds = gtsam::timing::measureSeconds(
+      [&] { runMultifrontalSolver(solver, linear, iterations); });
+  cout << "  MultifrontalSolver: " << imperativeSeconds << " s" << std::endl;
   tictoc_print();
 }
 
@@ -105,21 +103,16 @@ void runBALBenchmark(MultifrontalSolver::Parameters params) {
 
     MultifrontalSolver solver(linear, ordering, params);
     solver.eliminateInPlace(linear);  // Warm up cache.
-    auto start = std::chrono::high_resolution_clock::now();
-    runMultifrontalSolver(solver, linear, bal_iterations);
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> t_imperative = end - start;
-    cout << "  MultifrontalSolver: " << t_imperative.count() << " s"
-         << std::endl;
+    const double imperativeSeconds = gtsam::timing::measureSeconds(
+        [&] { runMultifrontalSolver(solver, linear, bal_iterations); });
+    cout << "  MultifrontalSolver: " << imperativeSeconds << " s" << std::endl;
 
-    start = std::chrono::high_resolution_clock::now();
-    runStandardSolver(linear, ordering, bal_iterations);
-    end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> t_standard = end - start;
-    cout << "  Standard GTSAM:     " << t_standard.count() << " s" << std::endl;
+    const double standardSeconds = gtsam::timing::measureSeconds(
+        [&] { runStandardSolver(linear, ordering, bal_iterations); });
+    cout << "  Standard GTSAM:     " << standardSeconds << " s" << std::endl;
 
-    cout << "  Speedup:            "
-         << t_standard.count() / t_imperative.count() << "x" << std::endl;
+    cout << "  Speedup:            " << standardSeconds / imperativeSeconds
+         << "x" << std::endl;
   }
 }
 
@@ -133,23 +126,20 @@ void runChainBenchmark(MultifrontalSolver::Parameters params) {
     GaussianFactorGraph smoother = createSmoother(T);
     const Ordering ordering = Ordering::Metis(smoother);
 
-    auto start = std::chrono::high_resolution_clock::now();
-    MultifrontalSolver solver(smoother, ordering, params);
-    runMultifrontalSolver(solver, smoother, iterations);
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> t_imperative = end - start;
+    double imperativeSeconds = 0.0;
+    imperativeSeconds = gtsam::timing::measureSeconds([&] {
+      MultifrontalSolver solver(smoother, ordering, params);
+      runMultifrontalSolver(solver, smoother, iterations);
+    });
     cout << "\nTiming results:\n";
-    cout << "  MultifrontalSolver: " << t_imperative.count() << " s"
-         << std::endl;
+    cout << "  MultifrontalSolver: " << imperativeSeconds << " s" << std::endl;
 
-    start = std::chrono::high_resolution_clock::now();
-    runStandardSolver(smoother, ordering, iterations);
-    end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> t_standard = end - start;
-    cout << "  Standard GTSAM:     " << t_standard.count() << " s" << std::endl;
+    const double standardSeconds = gtsam::timing::measureSeconds(
+        [&] { runStandardSolver(smoother, ordering, iterations); });
+    cout << "  Standard GTSAM:     " << standardSeconds << " s" << std::endl;
 
-    cout << "  Speedup:            "
-         << t_standard.count() / t_imperative.count() << "x" << std::endl;
+    cout << "  Speedup:            " << standardSeconds / imperativeSeconds
+         << "x" << std::endl;
   }
 }
 
@@ -162,13 +152,12 @@ void runChain5000(MultifrontalSolver::Parameters params) {
   GaussianFactorGraph smoother = createSmoother(T);
   const Ordering ordering = Ordering::Metis(smoother);
 
-  auto start = std::chrono::high_resolution_clock::now();
-  MultifrontalSolver solver(smoother, ordering, params);
-  runMultifrontalSolver(solver, smoother, iterations);
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> t_imperative = end - start;
+  const double imperativeSeconds = gtsam::timing::measureSeconds([&] {
+    MultifrontalSolver solver(smoother, ordering, params);
+    runMultifrontalSolver(solver, smoother, iterations);
+  });
   cout << "\nTiming results:\n";
-  cout << "  MultifrontalSolver: " << t_imperative.count() << " s" << std::endl;
+  cout << "  MultifrontalSolver: " << imperativeSeconds << " s" << std::endl;
 }
 
 void tuneMergingBAL(MultifrontalSolver::Parameters params) {
@@ -196,13 +185,11 @@ void tuneMergingBAL(MultifrontalSolver::Parameters params) {
 
       MultifrontalSolver solver(linear, ordering, params);
       solver.eliminateInPlace(linear);  // Warm up cache.
-      auto start = std::chrono::high_resolution_clock::now();
-      runMultifrontalSolver(solver, linear, iterations);
-      auto end = std::chrono::high_resolution_clock::now();
-      std::chrono::duration<double> t_imperative = end - start;
-      results[i][fileIndex] = t_imperative.count();
-      cout << "  leafMergeDimCap=" << parameter << " -> "
-           << t_imperative.count() << " s\n"
+      const double imperativeSeconds = gtsam::timing::measureSeconds(
+          [&] { runMultifrontalSolver(solver, linear, iterations); });
+      results[i][fileIndex] = imperativeSeconds;
+      cout << "  leafMergeDimCap=" << parameter << " -> " << imperativeSeconds
+           << " s\n"
            << std::endl;
     }
   }
@@ -233,12 +220,10 @@ void tuneMergeChain(MultifrontalSolver::Parameters params) {
     params.mergeDimCap = parameter;
     MultifrontalSolver solver(smoother, ordering, params);
 
-    auto start = std::chrono::high_resolution_clock::now();
-    runMultifrontalSolver(solver, smoother, iterations);
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> t_imperative = end - start;
-    results.emplace_back(parameter, t_imperative.count());
-    cout << "  mergeDimCap=" << parameter << " -> " << t_imperative.count()
+    const double imperativeSeconds = gtsam::timing::measureSeconds(
+        [&] { runMultifrontalSolver(solver, smoother, iterations); });
+    results.emplace_back(parameter, imperativeSeconds);
+    cout << "  mergeDimCap=" << parameter << " -> " << imperativeSeconds
          << " s\n"
          << std::endl;
   }

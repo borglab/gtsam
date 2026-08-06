@@ -85,8 +85,8 @@ size_t Arguments::sizeValue(const std::string& name, size_t defaultValue) {
   const auto text = optionalString(name);
   if (!text) return defaultValue;
   if (!text->empty() && text->front() == '-') {
-    throw argumentError("value for " + name + " must be non-negative: " +
-                        *text);
+    throw argumentError("value for " + name +
+                        " must be non-negative: " + *text);
   }
   return parseNumber<size_t>(
       name, *text, [](const std::string& value, size_t* parsedCharacters) {
@@ -99,8 +99,8 @@ uint64_t Arguments::uint64Value(const std::string& name,
   const auto text = optionalString(name);
   if (!text) return defaultValue;
   if (!text->empty() && text->front() == '-') {
-    throw argumentError("value for " + name + " must be non-negative: " +
-                        *text);
+    throw argumentError("value for " + name +
+                        " must be non-negative: " + *text);
   }
   return parseNumber<uint64_t>(
       name, *text, [](const std::string& value, size_t* parsedCharacters) {
@@ -128,6 +128,23 @@ std::vector<std::string> Arguments::positionals() {
       result.push_back(tokens_[i]);
       consumed_[i] = true;
     }
+  }
+  return result;
+}
+
+std::vector<size_t> Arguments::sizePositionals() {
+  const std::vector<std::string> values = positionals();
+  std::vector<size_t> result;
+  result.reserve(values.size());
+  for (const std::string& value : values) {
+    if (!value.empty() && value.front() == '-') {
+      throw argumentError("positional value must be non-negative: " + value);
+    }
+    result.push_back(parseNumber<size_t>(
+        "positional argument", value,
+        [](const std::string& input, size_t* parsedCharacters) {
+          return static_cast<size_t>(std::stoull(input, parsedCharacters));
+        }));
   }
   return result;
 }
@@ -249,8 +266,8 @@ std::string serializeBenchmarkActionMetrics(
   return output.str();
 }
 
-void writeBenchmarkActionMetrics(
-    const std::string& path, const std::vector<BenchmarkMetric>& metrics) {
+void writeBenchmarkActionMetrics(const std::string& path,
+                                 const std::vector<BenchmarkMetric>& metrics) {
   std::ofstream output = openOutputFile(path);
   output << serializeBenchmarkActionMetrics(metrics);
   if (!output) {

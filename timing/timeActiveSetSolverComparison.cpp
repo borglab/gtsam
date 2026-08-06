@@ -17,13 +17,14 @@
 
 #include <gtsam/constrained/ActiveSetSolver.h>
 
-#include <chrono>
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
+
+#include "internal/TimingUtils.h"
 
 using namespace gtsam;
 
@@ -119,12 +120,9 @@ BenchmarkProblem BuildQuadrotorAllocationQp() {
 /* ************************************************************************* */
 template <typename FUNCTION>
 double TimeSeconds(FUNCTION&& function, size_t repeats) {
-  const auto start = std::chrono::steady_clock::now();
-  for (size_t i = 0; i < repeats; ++i) {
-    function();
-  }
-  const auto end = std::chrono::steady_clock::now();
-  return std::chrono::duration<double>(end - start).count() /
+  return gtsam::timing::measureSeconds([&] {
+           for (size_t i = 0; i < repeats; ++i) function();
+         }) /
          static_cast<double>(repeats);
 }
 
@@ -231,16 +229,10 @@ void PrintTimingResult(const std::string& scenario, size_t variables,
 
 /* ************************************************************************* */
 std::vector<size_t> ParseSizes(int argc, char** argv) {
-  if (argc <= 1) {
-    return {32, 64, 128, 256, 512};
-  }
-
-  std::vector<size_t> sizes;
-  sizes.reserve(static_cast<size_t>(argc - 1));
-  for (int i = 1; i < argc; ++i) {
-    sizes.push_back(static_cast<size_t>(std::stoul(argv[i])));
-  }
-  return sizes;
+  gtsam::timing::Arguments arguments(argc, argv);
+  std::vector<size_t> sizes = arguments.sizePositionals();
+  arguments.validateAllConsumed();
+  return sizes.empty() ? std::vector<size_t>{32, 64, 128, 256, 512} : sizes;
 }
 
 /* ************************************************************************* */

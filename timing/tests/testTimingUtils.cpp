@@ -37,8 +37,8 @@ namespace argument_tests {
 
 // Verifies typed flags, values, repeated values, and positional parsing.
 TEST(TimingArguments, ParsesTypedValues) {
-  Arguments arguments({"--verbose", "--count", "3", "--ratio", "2.5",
-                       "--name", "first", "--name", "last", "input.txt"});
+  Arguments arguments({"--verbose", "--count", "3", "--ratio", "2.5", "--name",
+                       "first", "--name", "last", "input.txt"});
   CHECK(arguments.flag("--verbose"));
   LONGS_EQUAL(3, arguments.sizeValue("--count", 1));
   DOUBLES_EQUAL(2.5, arguments.doubleValue("--ratio", 0.0), 1e-12);
@@ -55,6 +55,16 @@ TEST(TimingArguments, ParsesDefaultsAndHelp) {
   CHECK(arguments.helpRequested());
   CHECK(arguments.stringValue("--name", "default") == "default");
   LONGS_EQUAL(7, arguments.sizeValue("--count", 7));
+  arguments.validateAllConsumed();
+}
+
+// Verifies positional integers use the same checked numeric conversion.
+TEST(TimingArguments, ParsesSizePositionals) {
+  Arguments arguments({"32", "64"});
+  const auto sizes = arguments.sizePositionals();
+  LONGS_EQUAL(2, sizes.size());
+  LONGS_EQUAL(32, sizes[0]);
+  LONGS_EQUAL(64, sizes[1]);
   arguments.validateAllConsumed();
 }
 
@@ -101,8 +111,8 @@ TEST(TimingSummary, PreservesMedianPoliciesAndPercentiles) {
 // Verifies warmups run untimed and only repetitions produce samples.
 TEST(TimingMeasurement, SeparatesWarmupsFromRepetitions) {
   size_t callCount = 0;
-  const auto samples = gtsam::timing::measureMilliseconds(
-      [&callCount] { ++callCount; }, 3, 5);
+  const auto samples =
+      gtsam::timing::measureMilliseconds([&callCount] { ++callCount; }, 3, 5);
   LONGS_EQUAL(8, callCount);
   LONGS_EQUAL(5, samples.size());
 }
@@ -115,8 +125,8 @@ namespace output_tests {
 
 // Verifies checked output creation makes missing parent directories.
 TEST(TimingOutput, CreatesOutputDirectory) {
-  const auto base = std::filesystem::temp_directory_path() /
-                    "gtsam_timing_utils_test";
+  const auto base =
+      std::filesystem::temp_directory_path() / "gtsam_timing_utils_test";
   const auto outputPath = base / "nested" / "result.txt";
   std::filesystem::remove_all(base);
   {
@@ -136,7 +146,7 @@ TEST(TimingOutput, EscapesJson) {
 // Verifies Benchmark Action JSON formatting remains byte-for-byte stable.
 TEST(TimingOutput, SerializesBenchmarkActionExactly) {
   const std::vector<BenchmarkMetric> metrics{{"suite/one", "s", 1.25},
-                                              {"quoted\"name", "ms", 2.0}};
+                                             {"quoted\"name", "ms", 2.0}};
   const std::string expected =
       "[\n"
       "  {\n"
