@@ -33,6 +33,7 @@ constexpr double kNumTol = 1e-6;
 // GTSAM provides Vector4/Vector6 but not these fixed sizes; define locally.
 using Vector12 = Eigen::Matrix<double, 12, 1>;
 using Vector20 = Eigen::Matrix<double, 20, 1>;
+using Vector24 = Eigen::Matrix<double, 24, 1>;
 
 using TGSO3 = TangentLieGroup<Rot3>;
 using TGSE3 = TangentLieGroup<Pose3>;
@@ -205,6 +206,19 @@ TEST(TangentLieGroup, AdjointMap) {
   expected.bottomRightCorner<6, 6>() = Ad;
   expected.bottomLeftCorner<6, 6>() = adXi * Ad;
   EXPECT(assert_equal(Matrix(expected), Matrix(x.AdjointMap()), kTol));
+
+  const Vector12 nestedFiber = tgse3Xi();
+  const TGTGSE3 nested(x, nestedFiber);
+  const Eigen::Matrix<double, 12, 12> nestedAd = x.AdjointMap();
+  const Eigen::Matrix<double, 12, 12> nestedAdXi =
+      TGSE3::adjointMap(nestedFiber);
+  Eigen::Matrix<double, 24, 24> nestedExpected =
+      Eigen::Matrix<double, 24, 24>::Zero();
+  nestedExpected.topLeftCorner<12, 12>() = nestedAd;
+  nestedExpected.bottomRightCorner<12, 12>() = nestedAd;
+  nestedExpected.bottomLeftCorner<12, 12>() = nestedAdXi * nestedAd;
+  EXPECT(
+      assert_equal(Matrix(nestedExpected), Matrix(nested.AdjointMap()), kTol));
 }
 
 // Checks ad_(u,v) and the recursive generator used by T(T(SE(3))).
@@ -221,6 +235,18 @@ TEST(TangentLieGroup, AlgebraAdjoint) {
   EXPECT(assert_equal(Matrix(expected), Matrix(TGSE3::adjointMap(xi)), kTol));
   EXPECT(assert_equal(Matrix(expected),
                       Matrix(AdjointAction<TGSE3>::generator(xi)), kTol));
+
+  Vector24 nestedXi;
+  nestedXi << xi, -0.5 * xi;
+  const Eigen::Matrix<double, 12, 12> nestedAdU = TGSE3::adjointMap(xi);
+  const Eigen::Matrix<double, 12, 12> nestedAdV = TGSE3::adjointMap(-0.5 * xi);
+  Eigen::Matrix<double, 24, 24> nestedExpected =
+      Eigen::Matrix<double, 24, 24>::Zero();
+  nestedExpected.topLeftCorner<12, 12>() = nestedAdU;
+  nestedExpected.bottomRightCorner<12, 12>() = nestedAdU;
+  nestedExpected.bottomLeftCorner<12, 12>() = nestedAdV;
+  EXPECT(assert_equal(Matrix(nestedExpected),
+                      Matrix(TGTGSE3::adjointMap(nestedXi)), kTol));
 }
 
 // Checks that Expmap and Logmap use the right Jacobian derived from the full

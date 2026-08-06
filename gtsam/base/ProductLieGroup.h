@@ -342,6 +342,50 @@ class ProductLieGroup : public std::pair<G, H> {
   /// Compute the product's right Jacobian as φ₁(-ad_xi).
   static Jacobian rightJacobian(const TangentVector& xi);
 
+  using AdjointActionTangentPair = std::pair<typename traits<G>::TangentVector,
+                                             typename traits<H>::TangentVector>;
+
+  /// Validate the fixed tangent-group layout and return its half dimension.
+  template <typename A = Action,
+            std::enable_if_t<internal::ProductLieGroupIsAdjointAction<A>::value,
+                             int> = 0>
+  static constexpr size_t adjointActionDimension();
+
+  /// Split [u;v] according to the fixed tangent-group layout.
+  template <typename A = Action,
+            std::enable_if_t<internal::ProductLieGroupIsAdjointAction<A>::value,
+                             int> = 0>
+  static AdjointActionTangentPair splitAdjointActionTangent(
+      const TangentVector& xi);
+
+  /// Evaluate the tangent-group exponential and its split Jacobians.
+  template <typename A = Action,
+            std::enable_if_t<internal::ProductLieGroupIsAdjointAction<A>::value,
+                             int> = 0>
+  static ProductLieGroup adjointActionExpmap(
+      const TangentVector& xi,
+      OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H1,
+      OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H2);
+
+  /// Evaluate the tangent-group logarithm and its Jacobian.
+  template <typename A = Action,
+            std::enable_if_t<internal::ProductLieGroupIsAdjointAction<A>::value,
+                             int> = 0>
+  static TangentVector adjointActionLogmap(const ProductLieGroup& p,
+                                           ChartJacobian Hp);
+
+  /// Assemble the tangent-group adjoint directly from its base blocks.
+  template <typename A = Action,
+            std::enable_if_t<internal::ProductLieGroupIsAdjointAction<A>::value,
+                             int> = 0>
+  Jacobian adjointActionGroupAdjoint() const;
+
+  /// Assemble the tangent algebra adjoint directly from ad_u and ad_v.
+  template <typename A = Action,
+            std::enable_if_t<internal::ProductLieGroupIsAdjointAction<A>::value,
+                             int> = 0>
+  static Jacobian adjointActionAlgebraAdjoint(const TangentVector& xi);
+
   /// Exploit the repeated triangular blocks in a tangent-group right Jacobian.
   template <typename A = Action,
             std::enable_if_t<internal::ProductLieGroupIsAdjointAction<A>::value,
