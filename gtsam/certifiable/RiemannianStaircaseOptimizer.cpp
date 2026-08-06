@@ -24,8 +24,8 @@
 #include <Eigen/SVD>
 #include <Eigen/SparseCholesky>
 
-#include <MatOp/SparseSymMatProd.h>
-#include <SymEigsSolver.h>
+#include <Spectra/MatOp/SparseSymMatProd.h>
+#include <Spectra/SymEigsSolver.h>
 
 #include <algorithm>
 #include <chrono>

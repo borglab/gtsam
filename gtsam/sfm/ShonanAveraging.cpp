@@ -21,7 +21,7 @@
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
 
-#include <SymEigsSolver.h>
+#include <Spectra/SymEigsSolver.h>
 #include <gtsam/linear/AcceleratedPowerMethod.h>
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/PowerMethod.h>
