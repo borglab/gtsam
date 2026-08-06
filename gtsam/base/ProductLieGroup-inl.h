@@ -105,6 +105,9 @@ ProductLieGroup<G, H, Action>::rightJacobian(const TangentVector& xi) {
 // of the generic 4n-by-4n exponential for the full 2n-dimensional algebra.
 // ---------------------------------------------------------------------------
 template <typename G, typename H, typename Action>
+template <
+    typename A,
+    std::enable_if_t<internal::ProductLieGroupIsAdjointAction<A>::value, int>>
 typename ProductLieGroup<G, H, Action>::Jacobian
 ProductLieGroup<G, H, Action>::adjointActionRightJacobian(
     const TangentVector& xi) {
@@ -121,8 +124,8 @@ ProductLieGroup<G, H, Action>::adjointActionRightJacobian(
     return internal::TangentLieGroupJacobian<G>::rightJacobian(u, v);
   }
 
-  const Jacobian2 negativeAdU = -Action::generator(u);
-  const Jacobian2 negativeAdV = -Action::generator(v);
+  const Jacobian2 negativeAdU = -A::generator(u);
+  const Jacobian2 negativeAdV = -A::generator(v);
   const Phi1FrechetResult kernels = phi1FrechetBlock(negativeAdU, negativeAdV);
 
   Jacobian derivative = zeroJacobian(2 * n);
@@ -644,7 +647,7 @@ ProductLieGroup<G, H, Action>::Logmap(const ProductLieGroup& p,
         const typename traits<H>::TangentVector v2 = phi1Solver.solve(p.second);
         const TangentVector v = makeTangentVector(v1, v2, d1, d2);
         const Jacobian derivative = rightJacobian(v);
-        *Hp = derivative.inverse();
+        *Hp = derivative.partialPivLu().solve(identityJacobian(d));
         return v;
       } else {
         Jacobian2 zeroB = A;

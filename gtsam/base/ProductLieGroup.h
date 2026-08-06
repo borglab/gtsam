@@ -72,7 +72,7 @@ struct ProductLieGroupHasAdjointMap : std::false_type {};
 template <typename T>
 struct ProductLieGroupHasAdjointMap<
     T, std::void_t<decltype(T::adjointMap(
-           std::declval<typename traits<T>::TangentVector>()))>>
+           std::declval<const typename traits<T>::TangentVector&>()))>>
     : std::true_type {};
 
 /// Detects vector-space Lie groups (Eigen column vectors, group law =
@@ -338,6 +338,9 @@ class ProductLieGroup : public std::pair<G, H> {
   static Jacobian rightJacobian(const TangentVector& xi);
 
   /// Exploit the repeated triangular blocks in a tangent-group right Jacobian.
+  template <typename A = Action,
+            std::enable_if_t<internal::ProductLieGroupIsAdjointAction<A>::value,
+                             int> = 0>
   static Jacobian adjointActionRightJacobian(const TangentVector& xi);
 
   /// Result of the analytic Fréchet derivative helper for φ₁.
