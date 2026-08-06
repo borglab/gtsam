@@ -19,12 +19,14 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/geometry/CalibratedCamera.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/BatchJacobianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/slam/RegularImplicitSchurFactor.h>
 #include <tests/smallExample.h>
 
 #include <Eigen/Cholesky>
@@ -332,6 +334,104 @@ TEST(GaussianFactorGraphSystem, MixedFactorTypes) {
   system.getb(actualRhs);
   EXPECT(assert_equal(expectedRhs, actualRhs, 1e-12));
 }
+
+/* ************************************************************************* */
+namespace fallback_factor_fixture {
+
+using ImplicitFactor = RegularImplicitSchurFactor<CalibratedCamera>;
+
+GaussianFactorGraph createMixedFallbackGraph() {
+  const Key firstKey = 10;
+  const Key secondKey = 2;
+  GaussianFactorGraph graph;
+
+  const auto unit6 = noiseModel::Unit::Create(6);
+  graph.emplace_shared<JacobianFactor>(
+      firstKey, Matrix6::Identity(),
+      (Vector6() << 0.2, -0.1, 0.4, 0.3, -0.2, 0.1).finished(), unit6);
+  graph.emplace_shared<JacobianFactor>(
+      secondKey, 1.5 * Matrix6::Identity(),
+      (Vector6() << -0.3, 0.5, -0.2, 0.1, 0.4, -0.1).finished(), unit6);
+
+  const Matrix26 firstBlock = (Matrix26() << 1.0, 0.2, -0.1, 0.3, 0.5, -0.4,
+                               -0.2, 0.8, 0.4, -0.3, 0.1, 0.6)
+                                  .finished();
+  const Matrix26 secondBlock = (Matrix26() << -0.5, 0.3, 0.7, -0.2, 0.4, 0.1,
+                                0.6, -0.4, 0.2, 0.9, -0.1, 0.5)
+                                   .finished();
+  const std::vector<Matrix26, Eigen::aligned_allocator<Matrix26>> blocks{
+      firstBlock, secondBlock};
+  const Matrix E = (Matrix(4, 3) << 0.2, -0.1, 0.3, 0.4, 0.2, -0.2, -0.3, 0.5,
+                    0.1, 0.1, -0.4, 0.6)
+                       .finished();
+  const Matrix3 pointCovariance = 0.05 * Matrix3::Identity();
+  const Vector b = (Vector(4) << 0.4, -0.2, 0.1, 0.3).finished();
+  graph.emplace_shared<ImplicitFactor>(KeyVector{firstKey, secondKey}, blocks,
+                                       E, pointCovariance, b);
+  return graph;
+}
+
+Vector legacyProduct(const GaussianFactorGraph& graph, const KeyInfo& keyInfo,
+                     const Vector& x) {
+  const VectorValues valuesX = buildVectorValues(x, keyInfo);
+  VectorValues valuesY = keyInfo.x0();
+  graph.multiplyHessianAdd(1.0, valuesX, valuesY);
+  return valuesY.vector(keyInfo.ordering());
+}
+
+Matrix legacyHessian(const GaussianFactorGraph& graph, const KeyInfo& keyInfo) {
+  const DenseIndex dimension = static_cast<DenseIndex>(keyInfo.numCols());
+  Matrix hessian(dimension, dimension);
+  for (DenseIndex column = 0; column < dimension; ++column) {
+    Vector basis = Vector::Zero(dimension);
+    basis(column) = 1.0;
+    hessian.col(column) = legacyProduct(graph, keyInfo, basis);
+  }
+  return hessian;
+}
+
+// Verifies compiled and fallback factor contributions compose in products, the
+// right-hand side, and a complete block-Jacobi PCG solve.
+TEST(GaussianFactorGraphSystem, MixedSupportedAndFallbackFactors) {
+  const GaussianFactorGraph graph = createMixedFallbackGraph();
+  const Ordering ordering{10, 2};
+  const KeyInfo keyInfo(graph, ordering);
+  DummyPreconditioner dummy;
+  dummy.build(graph, keyInfo, {});
+  const GaussianFactorGraphSystem system(graph, dummy, keyInfo, {}, false, 1);
+
+  const Vector x =
+      Vector::LinSpaced(static_cast<DenseIndex>(keyInfo.numCols()), -0.6, 0.7);
+  Vector actualProduct;
+  system.multiply(x, actualProduct);
+  EXPECT(assert_equal(legacyProduct(graph, keyInfo, x), actualProduct, 1e-12));
+
+  const Vector expectedRhs = -graph.gradientAtZero().vector(ordering);
+  Vector actualRhs;
+  system.getb(actualRhs);
+  EXPECT(assert_equal(expectedRhs, actualRhs, 1e-12));
+
+  PCGSolverParameters parameters(
+      std::make_shared<BlockJacobiPreconditionerParameters>());
+  parameters.minIterations = 0;
+  parameters.maxIterations = 100;
+  parameters.reset = 101;
+  parameters.epsilon_abs = 0.0;
+  parameters.epsilon_rel = 1e-12;
+  parameters.parallel = false;
+  const PCGSolverResult result =
+      PCGSolver(parameters)
+          .optimizeDetailed(graph, keyInfo, {}, keyInfo.x0(), false);
+  const Vector expectedSolution =
+      legacyHessian(graph, keyInfo).ldlt().solve(expectedRhs);
+
+  CHECK(result.stats.converged());
+  EXPECT(
+      assert_equal(expectedSolution, result.solution.vector(ordering), 1e-10));
+}
+
+}  // namespace fallback_factor_fixture
+/* ************************************************************************* */
 
 /* ************************************************************************* */
 namespace parallel_pcg_fixture {
