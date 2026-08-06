@@ -1,13 +1,15 @@
-/*
- * Preconditioner.h
+/**
+ * @file Preconditioner.h
  *
- *  Created on: Jun 2, 2014
- *      Author: Yong-Dian Jian
- *      Author: Sungtae An
+ * Created on: Jun 2, 2014
+ * @author Yong-Dian Jian
+ * @author Sungtae An
+ * @author Fan Jiang
  */
 
 #pragma once
 
+#include <gtsam/base/Matrix.h>
 #include <gtsam/base/Vector.h>
 #include <memory>
 #include <iosfwd>
@@ -143,6 +145,12 @@ public:
     const std::map<Key,Vector> &lambda
     ) override;
 
+  /**
+   * Build from block diagonals already arranged in KeyInfo ordering.
+   * This avoids keyed maps when a compiled linear operator has the blocks.
+   */
+  void build(const std::vector<Matrix>& blocks, const KeyInfo& info);
+
 protected:
 
   void clean() ;
@@ -158,5 +166,3 @@ protected:
 std::shared_ptr<Preconditioner> createPreconditioner(const std::shared_ptr<PreconditionerParameters> parameters);
 
 }
-
-

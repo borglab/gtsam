@@ -1,9 +1,10 @@
-/*
- * Preconditioner.cpp
+/**
+ * @file Preconditioner.cpp
  *
- *  Created on: Jun 2, 2014
- *      Author: Yong-Dian Jian
- *      Author: Sungtae An
+ * Created on: Jun 2, 2014
+ * @author Yong-Dian Jian
+ * @author Sungtae An
+ * @author Fan Jiang
  */
 
 #include <gtsam/inference/FactorGraph-inst.h>
@@ -130,46 +131,55 @@ void BlockJacobiPreconditioner::transposeSolve(const Vector& y, Vector& x) const
 void BlockJacobiPreconditioner::build(
   const GaussianFactorGraph &gfg, const KeyInfo &keyInfo, const std::map<Key,Vector> &lambda)
 {
-  // n is the number of keys
-  const size_t n = keyInfo.size();
-  // dims_ is a vector that contains the dimension of keys
-  dims_ = keyInfo.colSpec();
-
-  /* prepare the buffer of block diagonals */
-  std::vector<Matrix> blocks; blocks.reserve(n);
-
-  /* allocate memory for the factorization of block diagonals */
-  size_t nnz = 0;
-  for ( size_t i = 0 ; i < n ; ++i ) {
-    const size_t dim = dims_[i];
-    // blocks.push_back(Matrix::Zero(dim, dim));
-    // nnz += (((dim)*(dim+1)) >> 1); // d*(d+1) / 2  ;
-    nnz += dim*dim;
+  /* getting the block diagonals over the factors */
+  const std::map<Key, Matrix> hessianMap = gfg.hessianBlockDiagonal();
+  std::vector<Matrix> blocks(keyInfo.size());
+  for (const auto& [key, entry] : keyInfo) {
+    blocks[entry.index] = hessianMap.at(key);
   }
 
-  /* getting the block diagonals over the factors */
-  std::map<Key, Matrix> hessianMap =gfg.hessianBlockDiagonal();
-  for (const auto& [key, hessian]: hessianMap) {
-    blocks.push_back(hessian);
+  build(blocks, keyInfo);
+}
+
+/*****************************************************************************/
+void BlockJacobiPreconditioner::build(const std::vector<Matrix>& blocks,
+                                      const KeyInfo& keyInfo) {
+  const size_t n = keyInfo.size();
+  if (blocks.size() != n) {
+    throw std::invalid_argument(
+        "BlockJacobiPreconditioner::build: block count mismatch");
+  }
+
+  dims_ = keyInfo.colSpec();
+
+  size_t nnz = 0;
+  for (size_t i = 0; i < n; ++i) {
+    const size_t dim = dims_[i];
+    if (blocks[i].rows() != static_cast<DenseIndex>(dim) ||
+        blocks[i].cols() != static_cast<DenseIndex>(dim)) {
+      throw std::invalid_argument(
+          "BlockJacobiPreconditioner::build: block dimension mismatch");
+    }
+    nnz += dim * dim;
   }
 
   /* if necessary, allocating the memory for cacheing the factorization results */
-  if ( nnz > bufferSize_ ) {
+  if (nnz > bufferSize_) {
     clean();
-    buffer_ = new double [nnz];
+    buffer_ = new double[nnz];
     bufferSize_ = nnz;
   }
   nnz_ = nnz;
 
   /* factorizing the blocks respectively */
-  double *ptr = buffer_;
-  for ( size_t i = 0 ; i < n ; ++i ) {
+  double* ptr = buffer_;
+  for (size_t i = 0; i < n; ++i) {
     /* use eigen to decompose Di */
     /* It is same as L = chol(M,'lower') in MATLAB where M is full preconditioner */
     const Matrix L = blocks[i].llt().matrixL();
 
     /* store the data in the buffer */
-    size_t sz = dims_[i]*dims_[i] ;
+    size_t sz = dims_[i] * dims_[i];
     std::copy(L.data(), L.data() + sz, ptr);
 
     /* advance the pointer */
