@@ -11,7 +11,7 @@
 
 /**
  * @file timePCGSolver.cpp
- * @brief Compare legacy and contiguous PCG operator performance.
+ * @brief Compare legacy, contiguous, and Eigen PCG performance.
  * @author Fan Jiang
  */
 
@@ -21,11 +21,14 @@
 #include <gtsam/linear/SparseEigen.h>
 #include <gtsam/slam/dataset.h>
 
+#include <Eigen/IterativeLinearSolvers>
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <map>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -72,6 +75,11 @@ struct TimingStats {
   double median = 0.0;
   double p10 = 0.0;
   double p90 = 0.0;
+};
+
+struct EigenLinearSystem {
+  SparseEigen hessian;
+  Vector rhs;
 };
 
 template <class FUNCTION>
@@ -136,10 +144,14 @@ class LegacyGaussianFactorGraphSystem {
 class EigenSparseSystem {
   const SparseEigen& hessian_;
   Vector rhs_;
+  Vector splitPreconditionerScale_;
 
  public:
-  EigenSparseSystem(const SparseEigen& hessian, Vector rhs)
-      : hessian_(hessian), rhs_(std::move(rhs)) {}
+  EigenSparseSystem(const SparseEigen& hessian, Vector rhs,
+                    Vector splitPreconditionerScale = Vector())
+      : hessian_(hessian),
+        rhs_(std::move(rhs)),
+        splitPreconditionerScale_(std::move(splitPreconditionerScale)) {}
 
   void residual(const Vector& x, Vector& residual) const {
     residual.noalias() = rhs_ - hessian_ * x;
@@ -147,15 +159,61 @@ class EigenSparseSystem {
   void multiply(const Vector& x, Vector& product) const {
     product.noalias() = hessian_ * x;
   }
-  void leftPrecondition(const Vector& x, Vector& y) const { y = x; }
-  void rightPrecondition(const Vector& x, Vector& y) const { y = x; }
+  void leftPrecondition(const Vector& x, Vector& y) const {
+    if (splitPreconditionerScale_.size() == 0) {
+      y = x;
+    } else {
+      y = (splitPreconditionerScale_.array() * x.array()).matrix();
+    }
+  }
+  void rightPrecondition(const Vector& x, Vector& y) const {
+    leftPrecondition(x, y);
+  }
   void scal(double alpha, Vector& x) const { x *= alpha; }
   double dot(const Vector& x, const Vector& y) const { return x.dot(y); }
   void axpy(double alpha, const Vector& x, Vector& y) const { y += alpha * x; }
 };
 
+using EigenIdentityCg =
+    Eigen::ConjugateGradient<SparseEigen, Eigen::Lower | Eigen::Upper,
+                             Eigen::IdentityPreconditioner>;
+using EigenDiagonalPcg =
+    Eigen::ConjugateGradient<SparseEigen, Eigen::Lower | Eigen::Upper,
+                             Eigen::DiagonalPreconditioner<double>>;
+
+EigenLinearSystem buildEigenLinearSystem(const GaussianFactorGraph& graph,
+                                         const KeyInfo& keyInfo) {
+  const SparseEigen augmented = sparseJacobianEigen(graph, keyInfo.ordering());
+  const DenseIndex columns = static_cast<DenseIndex>(keyInfo.numCols());
+  const SparseEigen jacobian = augmented.leftCols(columns);
+
+  Vector rowRhs = Vector::Zero(augmented.rows());
+  for (SparseEigen::InnerIterator entry(augmented, columns); entry; ++entry) {
+    rowRhs(entry.row()) = entry.value();
+  }
+  return {jacobian.transpose() * jacobian, jacobian.transpose() * rowRhs};
+}
+
+Vector diagonalSplitPreconditioner(const SparseEigen& hessian) {
+  Vector scale(hessian.rows());
+  for (DenseIndex index = 0; index < hessian.rows(); ++index) {
+    const double diagonal = hessian.coeff(index, index);
+    if (diagonal < 0.0) {
+      throw std::runtime_error(
+          "Eigen PCG comparison requires a non-negative diagonal");
+    }
+    scale(index) = diagonal == 0.0 ? 1.0 : 1.0 / std::sqrt(diagonal);
+  }
+  return scale;
+}
+
 double relativeError(const Vector& expected, const Vector& actual) {
   return (expected - actual).norm() / std::max(1.0, expected.norm());
+}
+
+double relativeResidual(const SparseEigen& hessian, const Vector& rhs,
+                        const Vector& solution) {
+  return (rhs - hessian * solution).norm() / std::max(1.0, rhs.norm());
 }
 
 const char* terminationReason(ConjugateGradientTerminationReason reason) {
@@ -166,6 +224,20 @@ const char* terminationReason(ConjugateGradientTerminationReason reason) {
       return "max_iterations";
     case ConjugateGradientTerminationReason::kNumericalBreakdown:
       return "numerical_breakdown";
+  }
+  return "unknown";
+}
+
+const char* eigenTerminationReason(Eigen::ComputationInfo info) {
+  switch (info) {
+    case Eigen::Success:
+      return "converged";
+    case Eigen::NoConvergence:
+      return "max_iterations";
+    case Eigen::NumericalIssue:
+      return "numerical_issue";
+    case Eigen::InvalidInput:
+      return "invalid_input";
   }
   return "unknown";
 }
@@ -246,18 +318,14 @@ int main(int argc, char** argv) {
     legacy.multiply(x, legacyProduct);
     contiguous.multiply(x, contiguousProduct);
 
-    const SparseEigen augmented =
-        sparseJacobianEigen(graph, keyInfo.ordering());
-    const DenseIndex columns = static_cast<DenseIndex>(keyInfo.numCols());
-    const SparseEigen jacobian = augmented.leftCols(columns);
-    const SparseEigen hessian = jacobian.transpose() * jacobian;
+    EigenLinearSystem eigenLinearSystem;
+    const TimingStats eigenSystemSetup = timeMilliseconds(
+        [&] { eigenLinearSystem = buildEigenLinearSystem(graph, keyInfo); },
+        options.warmups, options.repeats);
+    const SparseEigen& hessian = eigenLinearSystem.hessian;
+    const Vector& rhs = eigenLinearSystem.rhs;
     const Vector sparseProduct = hessian * x;
-    Vector sparseRowRhs = Vector::Zero(augmented.rows());
-    for (SparseEigen::InnerIterator entry(augmented, columns); entry; ++entry) {
-      sparseRowRhs(entry.row()) = entry.value();
-    }
-    const EigenSparseSystem sparseSystem(hessian,
-                                         jacobian.transpose() * sparseRowRhs);
+    const EigenSparseSystem sparseSystem(hessian, rhs);
 
     const TimingStats legacyMultiply =
         timeMilliseconds([&] { legacy.multiply(x, legacyProduct); },
@@ -299,6 +367,50 @@ int main(int argc, char** argv) {
         },
         options.warmups, options.repeats);
 
+    const EigenSparseSystem sparseDiagonalSystem(
+        hessian, rhs, diagonalSplitPreconditioner(hessian));
+    Vector sparseDiagonalSolution;
+    const TimingStats sparseDiagonalPcg = timeMilliseconds(
+        [&] {
+          sparseDiagonalSolution = preconditionedConjugateGradient(
+              sparseDiagonalSystem, zero, parameters);
+        },
+        options.warmups, options.repeats);
+
+    EigenIdentityCg eigenIdentityCg;
+    eigenIdentityCg.setMaxIterations(
+        static_cast<Eigen::Index>(options.iterations));
+    eigenIdentityCg.setTolerance(0.0);
+    const TimingStats eigenIdentitySetup =
+        timeMilliseconds([&] { eigenIdentityCg.compute(hessian); },
+                         options.warmups, options.repeats);
+    if (eigenIdentityCg.info() != Eigen::Success) {
+      throw std::runtime_error("Eigen identity CG setup failed");
+    }
+    Vector eigenIdentitySolution;
+    const TimingStats eigenIdentityPcg = timeMilliseconds(
+        [&] {
+          eigenIdentitySolution = eigenIdentityCg.solveWithGuess(rhs, zero);
+        },
+        options.warmups, options.repeats);
+
+    EigenDiagonalPcg eigenDiagonalPcg;
+    eigenDiagonalPcg.setMaxIterations(
+        static_cast<Eigen::Index>(options.iterations));
+    eigenDiagonalPcg.setTolerance(0.0);
+    const TimingStats eigenDiagonalSetup =
+        timeMilliseconds([&] { eigenDiagonalPcg.compute(hessian); },
+                         options.warmups, options.repeats);
+    if (eigenDiagonalPcg.info() != Eigen::Success) {
+      throw std::runtime_error("Eigen diagonal PCG setup failed");
+    }
+    Vector eigenDiagonalSolution;
+    const TimingStats eigenDiagonalPcgTiming = timeMilliseconds(
+        [&] {
+          eigenDiagonalSolution = eigenDiagonalPcg.solveWithGuess(rhs, zero);
+        },
+        options.warmups, options.repeats);
+
     BlockJacobiPreconditioner legacyBlockPreconditioner,
         contiguousBlockPreconditioner;
     legacyBlockPreconditioner.build(graph, keyInfo, {});
@@ -336,6 +448,19 @@ int main(int argc, char** argv) {
         contiguousBlock, zero, convergenceParameters, false);
     const auto contiguousConvergenceEnd = std::chrono::steady_clock::now();
 
+    EigenDiagonalPcg eigenConvergencePcg;
+    eigenConvergencePcg.setMaxIterations(
+        static_cast<Eigen::Index>(convergenceParameters.maxIterations));
+    eigenConvergencePcg.setTolerance(convergenceParameters.epsilon_rel);
+    eigenConvergencePcg.compute(hessian);
+    if (eigenConvergencePcg.info() != Eigen::Success) {
+      throw std::runtime_error("Eigen convergence PCG setup failed");
+    }
+    const auto eigenConvergenceStart = std::chrono::steady_clock::now();
+    const Vector eigenConvergenceSolution =
+        eigenConvergencePcg.solveWithGuess(rhs, zero);
+    const auto eigenConvergenceEnd = std::chrono::steady_clock::now();
+
     PCGSolverParameters detailedParameters(
         std::make_shared<BlockJacobiPreconditionerParameters>());
     detailedParameters.minIterations = options.iterations;
@@ -353,6 +478,17 @@ int main(int argc, char** argv) {
         relativeError(legacySolution, contiguousSolution);
     const double blockSolutionError =
         relativeError(legacyBlockSolution, contiguousBlockSolution);
+    const double eigenIdentitySolutionError =
+        relativeError(sparseSolution, eigenIdentitySolution);
+    const double eigenDiagonalSolutionError =
+        relativeError(sparseDiagonalSolution, eigenDiagonalSolution);
+    const bool eigenFixedIterationCountsMatch =
+        eigenIdentityCg.iterations() ==
+            static_cast<Eigen::Index>(options.iterations) &&
+        eigenDiagonalPcg.iterations() ==
+            static_cast<Eigen::Index>(options.iterations);
+    const double eigenConvergenceResidual =
+        relativeResidual(hessian, rhs, eigenConvergenceSolution);
     const double multiplySpeedup =
         legacyMultiply.median / contiguousMultiply.median;
     const double pcgSpeedup = legacyPcg.median / contiguousPcg.median;
@@ -385,6 +521,9 @@ int main(int argc, char** argv) {
               << "factors," << graph.size() << '\n'
               << "variables," << keyInfo.size() << '\n'
               << "scalars," << keyInfo.numCols() << '\n'
+              << "eigen_version," << EIGEN_WORLD_VERSION << '.'
+              << EIGEN_MAJOR_VERSION << '.' << EIGEN_MINOR_VERSION << '\n'
+              << "eigen_threads," << Eigen::nbThreads() << '\n'
               << "metric,implementation,median_ms,p10_ms,p90_ms,speedup,"
                  "relative_error\n";
     printRow("multiply", "legacy", legacyMultiply, 1.0, 0.0);
@@ -399,6 +538,14 @@ int main(int argc, char** argv) {
     printRow("pcg_fixed_dummy", "eigen_sparse", sparsePcg,
              legacyPcg.median / sparsePcg.median,
              relativeError(sparseSolution, contiguousSolution));
+    printRow("pcg_fixed_dummy", "eigen_cg_identity", eigenIdentityPcg,
+             legacyPcg.median / eigenIdentityPcg.median,
+             eigenIdentitySolutionError);
+    printRow("pcg_fixed_diagonal", "gtsam_cg_eigen_sparse", sparseDiagonalPcg,
+             1.0, 0.0);
+    printRow("pcg_fixed_diagonal", "eigen_pcg", eigenDiagonalPcgTiming,
+             sparseDiagonalPcg.median / eigenDiagonalPcgTiming.median,
+             eigenDiagonalSolutionError);
     printRow("pcg_fixed_block_jacobi", "legacy", legacyBlockPcg, 1.0, 0.0);
     printRow("pcg_fixed_block_jacobi", "contiguous", contiguousBlockPcg,
              blockPcgSpeedup, blockSolutionError);
@@ -418,32 +565,57 @@ int main(int argc, char** argv) {
                                     1000.0 * detailed.solveSeconds};
     printRow("setup", "operator", operatorSetup, 0.0, 0.0);
     printRow("setup", "block_jacobi", preconditionerSetup, 0.0, 0.0);
+    printRow("setup", "eigen_normal_equations", eigenSystemSetup, 0.0, 0.0);
+    printRow("setup", "eigen_identity", eigenIdentitySetup, 0.0, 0.0);
+    printRow("setup", "eigen_diagonal", eigenDiagonalSetup, 0.0, 0.0);
     printRow("solve", "detailed_block_jacobi", detailedSolve, 0.0, 0.0);
-    std::cout << "convergence_implementation,elapsed_ms,iterations,"
-                 "preconditioned_residual,reason\n"
-              << "legacy,"
-              << std::chrono::duration<double, std::milli>(
-                     legacyConvergenceEnd - legacyConvergenceStart)
-                     .count()
-              << ',' << legacyConvergence.stats.iterations << ','
-              << legacyConvergence.stats.finalPreconditionedResidualNorm << ','
-              << terminationReason(legacyConvergence.stats.terminationReason)
-              << '\n'
-              << "contiguous,"
-              << std::chrono::duration<double, std::milli>(
-                     contiguousConvergenceEnd - contiguousConvergenceStart)
-                     .count()
-              << ',' << contiguousConvergence.stats.iterations << ','
-              << contiguousConvergence.stats.finalPreconditionedResidualNorm
-              << ','
-              << terminationReason(
-                     contiguousConvergence.stats.terminationReason)
-              << '\n';
+    std::cout << "fixed_implementation,preconditioner,iterations,"
+                 "true_relative_residual\n"
+              << "contiguous,dummy," << options.iterations << ','
+              << relativeResidual(hessian, rhs, contiguousSolution) << '\n'
+              << "contiguous,block_jacobi," << options.iterations << ','
+              << relativeResidual(hessian, rhs, contiguousBlockSolution) << '\n'
+              << "gtsam_cg_eigen_sparse,diagonal," << options.iterations << ','
+              << relativeResidual(hessian, rhs, sparseDiagonalSolution) << '\n'
+              << "eigen,identity," << eigenIdentityCg.iterations() << ','
+              << relativeResidual(hessian, rhs, eigenIdentitySolution) << '\n'
+              << "eigen,diagonal," << eigenDiagonalPcg.iterations() << ','
+              << relativeResidual(hessian, rhs, eigenDiagonalSolution) << '\n';
+    std::cout
+        << "convergence_implementation,preconditioner,elapsed_ms,"
+           "iterations,reported_residual,true_relative_residual,reason\n"
+        << "legacy,block_jacobi,"
+        << std::chrono::duration<double, std::milli>(legacyConvergenceEnd -
+                                                     legacyConvergenceStart)
+               .count()
+        << ',' << legacyConvergence.stats.iterations << ','
+        << legacyConvergence.stats.finalPreconditionedResidualNorm << ','
+        << relativeResidual(hessian, rhs, legacyConvergence.solution) << ','
+        << terminationReason(legacyConvergence.stats.terminationReason) << '\n'
+        << "contiguous,block_jacobi,"
+        << std::chrono::duration<double, std::milli>(contiguousConvergenceEnd -
+                                                     contiguousConvergenceStart)
+               .count()
+        << ',' << contiguousConvergence.stats.iterations << ','
+        << contiguousConvergence.stats.finalPreconditionedResidualNorm << ','
+        << relativeResidual(hessian, rhs, contiguousConvergence.solution) << ','
+        << terminationReason(contiguousConvergence.stats.terminationReason)
+        << '\n'
+        << "eigen,eigen_diagonal,"
+        << std::chrono::duration<double, std::milli>(eigenConvergenceEnd -
+                                                     eigenConvergenceStart)
+               .count()
+        << ',' << eigenConvergencePcg.iterations() << ','
+        << eigenConvergencePcg.error() << ',' << eigenConvergenceResidual << ','
+        << eigenTerminationReason(eigenConvergencePcg.info()) << '\n';
 
     if (options.check &&
         (multiplySpeedup < 8.0 || pcgSpeedup < 5.0 || blockPcgSpeedup < 5.0 ||
          multiplyError > 1e-10 || solutionError > 1e-9 ||
-         blockSolutionError > 1e-9 || batchMultiplyError > 1e-10)) {
+         blockSolutionError > 1e-9 || batchMultiplyError > 1e-10 ||
+         eigenIdentitySolutionError > 1e-9 ||
+         eigenDiagonalSolutionError > 1e-9 || !eigenFixedIterationCountsMatch ||
+         eigenConvergenceResidual > 1e-3)) {
       std::cerr << "PCG performance or correctness gate failed\n";
       return 2;
     }
