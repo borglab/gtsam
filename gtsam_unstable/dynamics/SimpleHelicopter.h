@@ -124,8 +124,8 @@ public:
     Vector muk = Inertia_*xik;
     Vector muk_1 = Inertia_*xik_1;
 
-    // Apply the inverse right-trivialized tangent (derivative) map of the exponential map,
-    // using the trapezoidal Lie-Newmark (TLN) scheme, to a vector.
+    // Apply the transpose of a first-order inverse left Jacobian using the
+    // trapezoidal Lie-Newmark (TLN) scheme.
     // TLN is just a first order approximation of the dExpInv_exp above, detailed in [Kobilarov09siggraph]
     // C_TLN formula: I6 - 1/2 ad[xi].
     Matrix D_adjThxik_muk, D_adjThxik1_muk1;

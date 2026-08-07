@@ -11,15 +11,15 @@
  */
 
 /**
- * @file testActionProductLieGroup.cpp
+ * @file testSemidirectLieGroup.cpp
  * @date April, 2026
  * @author Rohan Bansal
  * @author Jennifer Oum
- * @brief unit tests for action-parameterized product Lie groups
+ * @brief unit tests for semidirect Lie groups
  */
 
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/ProductLieGroup.h>
+#include <gtsam/base/SemidirectLieGroup.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/testLie.h>
 #include <gtsam/geometry/Gal3.h>
@@ -53,7 +53,7 @@ struct Rot2PointAction : public GroupAction<Rot2PointAction, Rot2, Point2> {
 
 // Rot3 acting on Vector3 by rotation: φ(R, t) = R·t.
 // The infinitesimal generator Aφ(u)·t = d/dt(exp(tu∧)·t)|₀ = u∧·t,
-// so generator(u) = u∧ (skew-symmetric matrix). ProductLieGroup derives
+// so generator(u) = u∧ (skew-symmetric matrix). SemidirectLieGroup derives
 // Expmap and Logmap automatically via φ₁(u∧) = SO(3) left Jacobian.
 struct Rot3VectorAction : public GroupAction<Rot3VectorAction, Rot3, Vector3> {
   static constexpr ActionType type = ActionType::Left;
@@ -114,9 +114,28 @@ struct SE3Vector4Action : public GroupAction<SE3Vector4Action, Pose3, Vector4> {
   }
 };
 
-using Semidirect2 = ProductLieGroup<Rot2, Point2, Rot2PointAction>;
-using Semidirect = ProductLieGroup<Rot3, Vector3, Rot3VectorAction>;
-using SemidirectGal3 = ProductLieGroup<Pose3, Vector4, SE3Vector4Action>;
+using Semidirect2 = SemidirectLieGroup<Rot2, Point2, Rot2PointAction>;
+using Semidirect = SemidirectLieGroup<Rot3, Vector3, Rot3VectorAction>;
+using SemidirectGal3 = SemidirectLieGroup<Pose3, Vector4, SE3Vector4Action>;
+
+template <typename Product, typename BaseTangent, typename ActionTangent>
+bool expmapRequestCombinationsAreConsistent(
+    const BaseTangent& baseTangent, const ActionTangent& actionTangent) {
+  Matrix bothH1, bothH2, onlyH1, onlyH2;
+  const Product both =
+      Product::Expmap(baseTangent, actionTangent, bothH1, bothH2);
+  const Product firstOnly =
+      Product::Expmap(baseTangent, actionTangent, onlyH1, {});
+  const Product secondOnly =
+      Product::Expmap(baseTangent, actionTangent, {}, onlyH2);
+  const Product neither = Product::Expmap(baseTangent, actionTangent);
+
+  return assert_equal(both, firstOnly, kTol) &&
+         assert_equal(both, secondOnly, kTol) &&
+         assert_equal(both, neither, kTol) &&
+         assert_equal(bothH1, onlyH1, kTol) &&
+         assert_equal(bothH2, onlyH2, kTol);
+}
 
 Semidirect2 semidirect2State() {
   return Semidirect2(Rot2::fromAngle(0.35), Point2(0.4, -0.6));
@@ -130,14 +149,6 @@ Vector3 pose2XiFromSemidirect2(const Vector3& xi) {
 
 Vector3 semidirect2XiFromPose2(const Vector3& xi) {
   return Vector3{xi(2), xi(0), xi(1)};
-}
-
-Semidirect2 expmapSemidirect2Proxy(const Vector3& vec) {
-  return Semidirect2::Expmap(vec);
-}
-
-Vector3 logmapSemidirect2Proxy(const Semidirect2& p) {
-  return Semidirect2::Logmap(p);
 }
 
 Pose2 asPose2(const Semidirect2& state) {
@@ -164,33 +175,6 @@ Vector6 semidirectXi() { return Vector6{0.1, -0.2, 0.3, 0.4, -0.1, 0.2}; }
 
 Vector6 retractDelta() { return Vector6{0.05, -0.04, 0.03, 0.1, -0.2, 0.05}; }
 
-Semidirect composeSemidirectProxy(const Semidirect& A, const Semidirect& B) {
-  return A.compose(B);
-}
-
-Semidirect betweenSemidirectProxy(const Semidirect& A, const Semidirect& B) {
-  return A.between(B);
-}
-
-Semidirect inverseSemidirectProxy(const Semidirect& A) { return A.inverse(); }
-
-Semidirect expmapSemidirectProxy(const Vector6& vec) {
-  return Semidirect::Expmap(vec);
-}
-
-Vector6 logmapSemidirectProxy(const Semidirect& p) {
-  return Semidirect::Logmap(p);
-}
-
-Semidirect retractSemidirectProxy(const Semidirect& X, const Vector6& v) {
-  return X.retract(v);
-}
-
-Vector6 localCoordinatesSemidirectProxy(const Semidirect& X,
-                                        const Semidirect& Y) {
-  return X.localCoordinates(Y);
-}
-
 Pose3 asPose3(const Semidirect& state) {
   return Pose3(state.first, state.second);
 }
@@ -205,14 +189,6 @@ Vector10 gal3Xi() {
   Vector10 xi;
   xi << 0.1, -0.2, 0.3, 0.4, -0.1, 0.2, 0.15, -0.25, 0.3, 0.2;
   return xi;
-}
-
-SemidirectGal3 expmapSGal3(const Vector10& v) {
-  return SemidirectGal3::Expmap(v);
-}
-
-Vector10 logmapSGal3(const SemidirectGal3& s) {
-  return SemidirectGal3::Logmap(s);
 }
 
 SemidirectGal3 gal3State1() {
@@ -245,28 +221,9 @@ Vector10 gal3RetractDelta() {
   return delta;
 }
 
-SemidirectGal3 composeSGal3(const SemidirectGal3& A, const SemidirectGal3& B) {
-  return A.compose(B);
-}
-
-SemidirectGal3 betweenSGal3(const SemidirectGal3& A, const SemidirectGal3& B) {
-  return A.between(B);
-}
-
-SemidirectGal3 inverseSGal3(const SemidirectGal3& A) { return A.inverse(); }
-
-SemidirectGal3 retractSGal3(const SemidirectGal3& X, const Vector10& v) {
-  return X.retract(v);
-}
-
-Vector10 localCoordinatesSGal3(const SemidirectGal3& X,
-                               const SemidirectGal3& Y) {
-  return X.localCoordinates(Y);
-}
-
 // A second semidirect instance, Rot2 ⋉ R², checks the generic kernel path in
 // a different dimension with Pose2 as the oracle.
-TEST(Lie, ProductLieGroupSemidirectAction2D) {
+TEST(Lie, SemidirectLieGroupAction2D) {
   GTSAM_CONCEPT_ASSERT(IsGroup<Semidirect2>);
   GTSAM_CONCEPT_ASSERT(IsManifold<Semidirect2>);
   GTSAM_CONCEPT_ASSERT(IsLieGroup<Semidirect2>);
@@ -300,7 +257,8 @@ TEST(testActionProduct, ExpmapLogmap2D) {
 
   Matrix expH;
   const Semidirect2 actual = Semidirect2::Expmap(xi, expH);
-  const Matrix numericExpH = numericalDerivative11(expmapSemidirect2Proxy, xi);
+  const auto expmap = [](const Vector3& v) { return Semidirect2::Expmap(v); };
+  const Matrix numericExpH = numericalDerivative11(expmap, xi);
 
   EXPECT(assert_equal(Pose2::Expmap(pose2XiFromSemidirect2(xi)),
                       asPose2(actual), kTol));
@@ -309,8 +267,10 @@ TEST(testActionProduct, ExpmapLogmap2D) {
   const Semidirect2 state = semidirect2State();
   Matrix logH;
   const Vector3 actualLog = Semidirect2::Logmap(state, logH);
-  const Matrix numericLogH =
-      numericalDerivative11(logmapSemidirect2Proxy, state);
+  const auto logmap = [](const Semidirect2& value) {
+    return Semidirect2::Logmap(value);
+  };
+  const Matrix numericLogH = numericalDerivative11(logmap, state);
 
   EXPECT(assert_equal(semidirect2XiFromPose2(Pose2::Logmap(asPose2(state))),
                       actualLog, kTol));
@@ -319,7 +279,7 @@ TEST(testActionProduct, ExpmapLogmap2D) {
 
 // Verify the semidirect product obeys the left action law and matches Pose3
 // behavior.
-TEST(Lie, ProductLieGroupSemidirectAction) {
+TEST(Lie, SemidirectLieGroupAction) {
   GTSAM_CONCEPT_ASSERT(IsGroup<Semidirect>);
   GTSAM_CONCEPT_ASSERT(IsManifold<Semidirect>);
   GTSAM_CONCEPT_ASSERT(IsLieGroup<Semidirect>);
@@ -355,9 +315,9 @@ TEST(testActionProduct, compose) {
   Matrix actH1, actH2;
   const Semidirect actual = state1.compose(state2, actH1, actH2);
   const Matrix numericH1 =
-      numericalDerivative21(composeSemidirectProxy, state1, state2);
+      numericalDerivative21(&Semidirect::operator*, state1, state2);
   const Matrix numericH2 =
-      numericalDerivative22(composeSemidirectProxy, state1, state2);
+      numericalDerivative22(&Semidirect::operator*, state1, state2);
 
   EXPECT(
       assert_equal(asPose3(actual), asPose3(state1) * asPose3(state2), kTol));
@@ -373,10 +333,11 @@ TEST(testActionProduct, between) {
 
   Matrix actH1, actH2;
   const Semidirect actual = state1.between(state2, actH1, actH2);
-  const Matrix numericH1 =
-      numericalDerivative21(betweenSemidirectProxy, state1, state2);
-  const Matrix numericH2 =
-      numericalDerivative22(betweenSemidirectProxy, state1, state2);
+  const auto between = [](const Semidirect& a, const Semidirect& b) {
+    return a.between(b);
+  };
+  const Matrix numericH1 = numericalDerivative21(between, state1, state2);
+  const Matrix numericH2 = numericalDerivative22(between, state1, state2);
 
   EXPECT(assert_equal(asPose3(actual), asPose3(state1).between(asPose3(state2)),
                       kTol));
@@ -392,7 +353,8 @@ TEST(testActionProduct, inverse) {
 
   Matrix actH;
   const Semidirect actual = state.inverse(actH);
-  const Matrix numericH = numericalDerivative11(inverseSemidirectProxy, state);
+  const auto inverse = [](const Semidirect& value) { return value.inverse(); };
+  const Matrix numericH = numericalDerivative11(inverse, state);
 
   EXPECT(assert_equal(asPose3(actual), asPose3(state).inverse(), kTol));
   EXPECT(assert_equal(numericH, actH, 1e-6));
@@ -405,7 +367,8 @@ TEST(testActionProduct, Expmap) {
 
   Matrix actH;
   const Semidirect actual = Semidirect::Expmap(xi, actH);
-  const Matrix numericH = numericalDerivative11(expmapSemidirectProxy, xi);
+  const auto expmap = [](const Vector6& v) { return Semidirect::Expmap(v); };
+  const Matrix numericH = numericalDerivative11(expmap, xi);
 
   const Vector3 omega = xi.head<3>();
   const Vector3 velocity = xi.tail<3>();
@@ -419,6 +382,22 @@ TEST(testActionProduct, Expmap) {
   EXPECT(assert_equal(actH.rightCols<3>(), H2Only, 1e-6));
 }
 
+// Every optional-Jacobian combination returns the same value and matching
+// requested columns for representative semidirect actions.
+TEST(testActionProduct, ExpmapRequestCombinations) {
+  const Vector3 xi2 = semidirect2Xi();
+  EXPECT(expmapRequestCombinationsAreConsistent<Semidirect2>(xi2.head<1>(),
+                                                             xi2.tail<2>()));
+
+  const Vector6 xi3 = semidirectXi();
+  EXPECT(expmapRequestCombinationsAreConsistent<Semidirect>(xi3.head<3>(),
+                                                            xi3.tail<3>()));
+
+  const Vector10 xiGal3 = gal3Xi();
+  EXPECT(expmapRequestCombinationsAreConsistent<SemidirectGal3>(
+      xiGal3.head<6>(), xiGal3.tail<4>()));
+}
+
 // Check the semidirect Logmap and its Jacobian against Pose3 and numerical
 // derivatives.
 TEST(testActionProduct, Logmap) {
@@ -426,10 +405,44 @@ TEST(testActionProduct, Logmap) {
 
   Matrix actH;
   const Vector6 actual = Semidirect::Logmap(state, actH);
-  const Matrix numericH = numericalDerivative11(logmapSemidirectProxy, state);
+  const auto logmap = [](const Semidirect& value) {
+    return Semidirect::Logmap(value);
+  };
+  const Matrix numericH = numericalDerivative11(logmap, state);
 
   EXPECT(assert_equal(Pose3::Logmap(asPose3(state)), actual, kTol));
   EXPECT(assert_equal(numericH, actH, 1e-6));
+}
+
+/* ************************************************************************* */
+// Exercises the centered operations and origin retract inherited from LieGroup.
+TEST(testActionProduct, InheritedLieGroupOperations) {
+  const Semidirect state = semidirectState1();
+  const Vector6 delta = retractDelta();
+
+  Matrix H1, H2;
+  const Semidirect updated = state.expmap(delta, H1, H2);
+  EXPECT(assert_equal(state.expmap(delta), updated, kTol));
+  const auto expmap = [](const Semidirect& value, const Vector6& v) {
+    return value.expmap(v);
+  };
+  EXPECT(assert_equal(numericalDerivative21(expmap, state, delta), H1, kTol));
+  EXPECT(assert_equal(numericalDerivative22(expmap, state, delta), H2, kTol));
+
+  Matrix L1, L2;
+  EXPECT(assert_equal(delta, state.logmap(updated, L1, L2), kTol));
+  const auto logmap = [](const Semidirect& value, const Semidirect& other) {
+    return value.logmap(other);
+  };
+  EXPECT(assert_equal(numericalDerivative21(logmap, state, updated), L1, kTol));
+  EXPECT(assert_equal(numericalDerivative22(logmap, state, updated), L2, kTol));
+
+  Matrix actualH, expectedH;
+  const Semidirect actual = Semidirect::Retract(delta, actualH);
+  const Semidirect expected =
+      Semidirect::Identity().retract(delta, {}, expectedH);
+  EXPECT(assert_equal(expected, actual, kTol));
+  EXPECT(assert_equal(expectedH, actualH, kTol));
 }
 
 // Check that the semidirect adjoint matches the Pose3 adjoint.
@@ -453,14 +466,16 @@ TEST(testActionProduct, retractAndLocalCoordinates) {
                       asPose3(state).compose(Pose3::Expmap(delta)), kTol));
   EXPECT(assert_equal(delta, recovered, kTol));
 
-  const Matrix numericRetractH1 =
-      numericalDerivative21(retractSemidirectProxy, state, delta);
-  const Matrix numericRetractH2 =
-      numericalDerivative22(retractSemidirectProxy, state, delta);
-  const Matrix numericLocalH1 =
-      numericalDerivative21(localCoordinatesSemidirectProxy, state, updated);
-  const Matrix numericLocalH2 =
-      numericalDerivative22(localCoordinatesSemidirectProxy, state, updated);
+  const auto retract = [](const Semidirect& value, const Vector6& v) {
+    return value.retract(v);
+  };
+  const auto local = [](const Semidirect& value, const Semidirect& other) {
+    return value.localCoordinates(other);
+  };
+  const Matrix numericRetractH1 = numericalDerivative21(retract, state, delta);
+  const Matrix numericRetractH2 = numericalDerivative22(retract, state, delta);
+  const Matrix numericLocalH1 = numericalDerivative21(local, state, updated);
+  const Matrix numericLocalH2 = numericalDerivative22(local, state, updated);
 
   EXPECT(assert_equal(numericRetractH1, retractH1, 1e-6));
   EXPECT(assert_equal(numericRetractH2, retractH2, 1e-6));
@@ -470,7 +485,7 @@ TEST(testActionProduct, retractAndLocalCoordinates) {
 
 // A third semidirect instance, SE(3) ⋉ ℝ⁴, reconstructs Gal(3) and exercises a
 // non-trivial (Pose3) base with a 4-D action, using the native Gal3 as oracle.
-TEST(Lie, ProductLieGroupSemidirectActionGal3) {
+TEST(Lie, SemidirectLieGroupActionGal3) {
   GTSAM_CONCEPT_ASSERT(IsGroup<SemidirectGal3>);
   GTSAM_CONCEPT_ASSERT(IsManifold<SemidirectGal3>);
   GTSAM_CONCEPT_ASSERT(IsLieGroup<SemidirectGal3>);
@@ -511,8 +526,10 @@ TEST(testActionProduct, composeGal3) {
 
   Matrix actH1, actH2;
   const SemidirectGal3 actual = state1.compose(state2, actH1, actH2);
-  const Matrix numericH1 = numericalDerivative21(composeSGal3, state1, state2);
-  const Matrix numericH2 = numericalDerivative22(composeSGal3, state1, state2);
+  const Matrix numericH1 =
+      numericalDerivative21(&SemidirectGal3::operator*, state1, state2);
+  const Matrix numericH2 =
+      numericalDerivative22(&SemidirectGal3::operator*, state1, state2);
 
   EXPECT(assert_equal(asGal3(actual), asGal3(state1) * asGal3(state2), kTol));
   EXPECT(assert_equal(numericH1, actH1, 1e-6));
@@ -527,8 +544,11 @@ TEST(testActionProduct, betweenGal3) {
 
   Matrix actH1, actH2;
   const SemidirectGal3 actual = state1.between(state2, actH1, actH2);
-  const Matrix numericH1 = numericalDerivative21(betweenSGal3, state1, state2);
-  const Matrix numericH2 = numericalDerivative22(betweenSGal3, state1, state2);
+  const auto between = [](const SemidirectGal3& a, const SemidirectGal3& b) {
+    return a.between(b);
+  };
+  const Matrix numericH1 = numericalDerivative21(between, state1, state2);
+  const Matrix numericH2 = numericalDerivative22(between, state1, state2);
 
   EXPECT(assert_equal(asGal3(actual), asGal3(state1).between(asGal3(state2)),
                       kTol));
@@ -543,7 +563,10 @@ TEST(testActionProduct, inverseGal3) {
 
   Matrix actH;
   const SemidirectGal3 actual = state.inverse(actH);
-  const Matrix numericH = numericalDerivative11(inverseSGal3, state);
+  const auto inverse = [](const SemidirectGal3& value) {
+    return value.inverse();
+  };
+  const Matrix numericH = numericalDerivative11(inverse, state);
 
   EXPECT(assert_equal(asGal3(actual), asGal3(state).inverse(), kTol));
   EXPECT(assert_equal(numericH, actH, 1e-6));
@@ -556,7 +579,10 @@ TEST(testActionProduct, ExpmapGal3) {
 
   Matrix actH;
   const SemidirectGal3 actual = SemidirectGal3::Expmap(xi, actH);
-  const Matrix numericH = numericalDerivative11(expmapSGal3, xi);
+  const auto expmap = [](const Vector10& v) {
+    return SemidirectGal3::Expmap(v);
+  };
+  const Matrix numericH = numericalDerivative11(expmap, xi);
 
   EXPECT(assert_equal(Gal3::Expmap(xi), asGal3(actual), kTol));
   EXPECT(assert_equal(numericH, actH, 1e-6));
@@ -569,7 +595,10 @@ TEST(testActionProduct, LogmapGal3) {
 
   Matrix actH;
   const Vector10 actual = SemidirectGal3::Logmap(state, actH);
-  const Matrix numericH = numericalDerivative11(logmapSGal3, state);
+  const auto logmap = [](const SemidirectGal3& value) {
+    return SemidirectGal3::Logmap(value);
+  };
+  const Matrix numericH = numericalDerivative11(logmap, state);
 
   EXPECT(assert_equal(Gal3::Logmap(asGal3(state)), actual, kTol));
   EXPECT(assert_equal(numericH, actH, 1e-6));
@@ -604,14 +633,17 @@ TEST(testActionProduct, retractAndLocalCoordinatesGal3) {
                       asGal3(state).compose(Gal3::Expmap(delta)), kTol));
   EXPECT(assert_equal(delta, recovered, kTol));
 
-  const Matrix numericRetractH1 =
-      numericalDerivative21(retractSGal3, state, delta);
-  const Matrix numericRetractH2 =
-      numericalDerivative22(retractSGal3, state, delta);
-  const Matrix numericLocalH1 =
-      numericalDerivative21(localCoordinatesSGal3, state, updated);
-  const Matrix numericLocalH2 =
-      numericalDerivative22(localCoordinatesSGal3, state, updated);
+  const auto retract = [](const SemidirectGal3& value, const Vector10& v) {
+    return value.retract(v);
+  };
+  const auto local = [](const SemidirectGal3& value,
+                        const SemidirectGal3& other) {
+    return value.localCoordinates(other);
+  };
+  const Matrix numericRetractH1 = numericalDerivative21(retract, state, delta);
+  const Matrix numericRetractH2 = numericalDerivative22(retract, state, delta);
+  const Matrix numericLocalH1 = numericalDerivative21(local, state, updated);
+  const Matrix numericLocalH2 = numericalDerivative22(local, state, updated);
 
   EXPECT(assert_equal(numericRetractH1, retractH1, 1e-6));
   EXPECT(assert_equal(numericRetractH2, retractH2, 1e-6));
@@ -620,6 +652,134 @@ TEST(testActionProduct, retractAndLocalCoordinatesGal3) {
 }
 
 }  // namespace semidirect_product_fixture
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace frechet_fallback_fixture {
+
+constexpr double kTol = 1e-9;
+constexpr double kNumericalTolerance = 1e-6;
+
+/** SO(2) wrapper intentionally omitting static adjointMap(). */
+class Rot2WithoutAlgebraAdjoint
+    : public LieGroup<Rot2WithoutAlgebraAdjoint, 1> {
+  Rot2 rotation_;
+
+ public:
+  Rot2WithoutAlgebraAdjoint() = default;
+  explicit Rot2WithoutAlgebraAdjoint(const Rot2& rotation)
+      : rotation_(rotation) {}
+
+  static Rot2WithoutAlgebraAdjoint Identity() {
+    return Rot2WithoutAlgebraAdjoint();
+  }
+
+  Rot2WithoutAlgebraAdjoint operator*(
+      const Rot2WithoutAlgebraAdjoint& other) const {
+    return Rot2WithoutAlgebraAdjoint(rotation_ * other.rotation_);
+  }
+
+  Rot2WithoutAlgebraAdjoint inverse() const {
+    return Rot2WithoutAlgebraAdjoint(rotation_.inverse());
+  }
+
+  using LieGroup<Rot2WithoutAlgebraAdjoint, 1>::inverse;
+
+  static Rot2WithoutAlgebraAdjoint Expmap(const Vector1& tangent,
+                                          ChartJacobian H = {}) {
+    return Rot2WithoutAlgebraAdjoint(Rot2::Expmap(tangent, H));
+  }
+
+  static Vector1 Logmap(const Rot2WithoutAlgebraAdjoint& rotation,
+                        ChartJacobian H = {}) {
+    return Rot2::Logmap(rotation.rotation_, H);
+  }
+
+  Matrix1 AdjointMap() const { return I_1x1; }
+
+  struct ChartAtOrigin {
+    static Rot2WithoutAlgebraAdjoint Retract(const Vector1& tangent,
+                                             ChartJacobian H = {}) {
+      return Expmap(tangent, H);
+    }
+
+    static Vector1 Local(const Rot2WithoutAlgebraAdjoint& rotation,
+                         ChartJacobian H = {}) {
+      return Logmap(rotation, H);
+    }
+  };
+
+  const Rot2& rotation() const { return rotation_; }
+
+  void print(const std::string& label = "") const { rotation_.print(label); }
+
+  bool equals(const Rot2WithoutAlgebraAdjoint& other,
+              double tolerance = 1e-9) const {
+    return rotation_.equals(other.rotation_, tolerance);
+  }
+};
+
+}  // namespace frechet_fallback_fixture
+/* ************************************************************************* */
+
+namespace gtsam {
+
+template <>
+struct traits<frechet_fallback_fixture::Rot2WithoutAlgebraAdjoint>
+    : internal::LieGroup<frechet_fallback_fixture::Rot2WithoutAlgebraAdjoint> {
+};
+
+template <>
+struct traits<const frechet_fallback_fixture::Rot2WithoutAlgebraAdjoint>
+    : traits<frechet_fallback_fixture::Rot2WithoutAlgebraAdjoint> {};
+
+}  // namespace gtsam
+
+/* ************************************************************************* */
+namespace frechet_fallback_fixture {
+
+struct RotationAction
+    : public GroupAction<RotationAction, Rot2WithoutAlgebraAdjoint, Point2> {
+  static constexpr ActionType type = ActionType::Left;
+
+  Point2 operator()(const Rot2WithoutAlgebraAdjoint& rotation,
+                    const Point2& point, OptionalJacobian<2, 1> Hrotation = {},
+                    OptionalJacobian<2, 2> Hpoint = {}) const {
+    return rotation.rotation().rotate(point, Hrotation, Hpoint);
+  }
+
+  static Matrix2 generator(const Vector1& tangent) {
+    return Rot2::Hat(tangent);
+  }
+};
+
+using FallbackProduct =
+    SemidirectLieGroup<Rot2WithoutAlgebraAdjoint, Point2, RotationAction>;
+
+// A base without static adjointMap exercises the reduced vector-valued
+// Fréchet fallback for both Expmap and Logmap Jacobians.
+TEST(testActionProduct, ReducedFrechetFallback) {
+  const Vector3 tangent = (Vector3() << 0.25, 0.3, -0.2).finished();
+  Matrix expmapJacobian;
+  const FallbackProduct product =
+      FallbackProduct::Expmap(tangent, expmapJacobian);
+  const auto expmap = [](const Vector3& v) {
+    return FallbackProduct::Expmap(v);
+  };
+  EXPECT(assert_equal(numericalDerivative11(expmap, tangent), expmapJacobian,
+                      kNumericalTolerance));
+
+  Matrix logmapJacobian;
+  const Vector3 recovered = FallbackProduct::Logmap(product, logmapJacobian);
+  EXPECT(assert_equal(tangent, recovered, kTol));
+  const auto logmap = [](const FallbackProduct& value) {
+    return FallbackProduct::Logmap(value);
+  };
+  EXPECT(assert_equal(numericalDerivative11(logmap, product), logmapJacobian,
+                      kNumericalTolerance));
+}
+
+}  // namespace frechet_fallback_fixture
 /* ************************************************************************* */
 
 //******************************************************************************
