@@ -199,10 +199,6 @@ Vector6 retractDelta() {
   return delta;
 }
 
-Semidirect composeSemidirectProxy(const Semidirect& A, const Semidirect& B) {
-  return A.compose(B);
-}
-
 Semidirect betweenSemidirectProxy(const Semidirect& A, const Semidirect& B) {
   return A.between(B);
 }
@@ -288,10 +284,6 @@ Vector10 gal3RetractDelta() {
   Vector10 delta;
   delta << 0.05, -0.04, 0.03, 0.1, -0.2, 0.05, 0.02, -0.03, 0.04, 0.01;
   return delta;
-}
-
-SemidirectGal3 composeSGal3(const SemidirectGal3& A, const SemidirectGal3& B) {
-  return A.compose(B);
 }
 
 SemidirectGal3 betweenSGal3(const SemidirectGal3& A, const SemidirectGal3& B) {
@@ -400,9 +392,9 @@ TEST(testActionProduct, compose) {
   Matrix actH1, actH2;
   const Semidirect actual = state1.compose(state2, actH1, actH2);
   const Matrix numericH1 =
-      numericalDerivative21(composeSemidirectProxy, state1, state2);
+      numericalDerivative21(&Semidirect::operator*, state1, state2);
   const Matrix numericH2 =
-      numericalDerivative22(composeSemidirectProxy, state1, state2);
+      numericalDerivative22(&Semidirect::operator*, state1, state2);
 
   EXPECT(
       assert_equal(asPose3(actual), asPose3(state1) * asPose3(state2), kTol));
@@ -605,8 +597,10 @@ TEST(testActionProduct, composeGal3) {
 
   Matrix actH1, actH2;
   const SemidirectGal3 actual = state1.compose(state2, actH1, actH2);
-  const Matrix numericH1 = numericalDerivative21(composeSGal3, state1, state2);
-  const Matrix numericH2 = numericalDerivative22(composeSGal3, state1, state2);
+  const Matrix numericH1 =
+      numericalDerivative21(&SemidirectGal3::operator*, state1, state2);
+  const Matrix numericH2 =
+      numericalDerivative22(&SemidirectGal3::operator*, state1, state2);
 
   EXPECT(assert_equal(asGal3(actual), asGal3(state1) * asGal3(state2), kTol));
   EXPECT(assert_equal(numericH1, actH1, 1e-6));

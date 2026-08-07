@@ -104,10 +104,6 @@ Vector makeVector(std::initializer_list<double> values) {
   return vector;
 }
 
-Product composeProductProxy(const Product& A, const Product& B) {
-  return A.compose(B);
-}
-
 Product betweenProductProxy(const Product& A, const Product& B) {
   return A.between(B);
 }
@@ -126,10 +122,6 @@ Vector5 centeredLogmapProductProxy(const Product& p, const Product& q) {
   return p.logmap(q);
 }
 
-ProductVR composeProductVRProxy(const ProductVR& A, const ProductVR& B) {
-  return A.compose(B);
-}
-
 ProductVR betweenProductVRProxy(const ProductVR& A, const ProductVR& B) {
   return A.between(B);
 }
@@ -142,10 +134,6 @@ ProductVR expmapProductVRProxy(const Vector& vec) {
 
 Vector logmapProductVRProxy(const ProductVR& p) { return ProductVR::Logmap(p); }
 
-ProductVV composeProductVVProxy(const ProductVV& A, const ProductVV& B) {
-  return A.compose(B);
-}
-
 ProductVV betweenProductVVProxy(const ProductVV& A, const ProductVV& B) {
   return A.between(B);
 }
@@ -153,8 +141,6 @@ ProductVV betweenProductVVProxy(const ProductVV& A, const ProductVV& B) {
 ProductVV inverseProductVVProxy(const ProductVV& A) { return A.inverse(); }
 
 Vector logmapProductVVProxy(const ProductVV& p) { return ProductVV::Logmap(p); }
-
-Power composePowerProxy(const Power& A, const Power& B) { return A.compose(B); }
 
 Power betweenPowerProxy(const Power& A, const Power& B) { return A.between(B); }
 
@@ -170,11 +156,6 @@ Power centeredExpmapPowerProxy(const Power& p, const PowerTangent& v) {
 
 PowerTangent centeredLogmapPowerProxy(const Power& p, const Power& q) {
   return p.logmap(q);
-}
-
-DynamicPower composeDynamicPowerProxy(const DynamicPower& A,
-                                      const DynamicPower& B) {
-  return A.compose(B);
 }
 
 DynamicPower betweenDynamicPowerProxy(const DynamicPower& A,
@@ -228,8 +209,8 @@ TEST(testProduct, compose) {
 
   Matrix actH1, actH2;
   state1.compose(state2, actH1, actH2);
-  Matrix numericH1 = numericalDerivative21(composeProductProxy, state1, state2);
-  Matrix numericH2 = numericalDerivative22(composeProductProxy, state1, state2);
+  Matrix numericH1 = numericalDerivative21(&Product::operator*, state1, state2);
+  Matrix numericH2 = numericalDerivative22(&Product::operator*, state1, state2);
   EXPECT(assert_equal(numericH1, actH1, kTol));
   EXPECT(assert_equal(numericH2, actH2, kTol));
 }
@@ -359,9 +340,9 @@ TEST(testProductDynamicVR, compose) {
   Matrix actH1, actH2;
   state1.compose(state2, actH1, actH2);
   Matrix numericH1 = numericalDerivative21<ProductVR, ProductVR, ProductVR, 5>(
-      composeProductVRProxy, state1, state2);
+      &ProductVR::operator*, state1, state2);
   Matrix numericH2 = numericalDerivative22<ProductVR, ProductVR, ProductVR, 5>(
-      composeProductVRProxy, state1, state2);
+      &ProductVR::operator*, state1, state2);
   EXPECT(assert_equal(numericH1, actH1, kTol));
   EXPECT(assert_equal(numericH2, actH2, kTol));
 }
@@ -470,9 +451,9 @@ TEST(testProductDynamicVV, compose) {
   Matrix actH1, actH2;
   state1.compose(state2, actH1, actH2);
   Matrix numericH1 = numericalDerivative21<ProductVV, ProductVV, ProductVV, 5>(
-      composeProductVVProxy, state1, state2);
+      &ProductVV::operator*, state1, state2);
   Matrix numericH2 = numericalDerivative22<ProductVV, ProductVV, ProductVV, 5>(
-      composeProductVVProxy, state1, state2);
+      &ProductVV::operator*, state1, state2);
   EXPECT(assert_equal(numericH1, actH1, kTol));
   EXPECT(assert_equal(numericH2, actH2, kTol));
 }
@@ -645,8 +626,8 @@ TEST(testPower, compose) {
 
   Matrix actH1, actH2;
   state1.compose(state2, actH1, actH2);
-  Matrix numericH1 = numericalDerivative21(composePowerProxy, state1, state2);
-  Matrix numericH2 = numericalDerivative22(composePowerProxy, state1, state2);
+  Matrix numericH1 = numericalDerivative21(&Power::operator*, state1, state2);
+  Matrix numericH2 = numericalDerivative22(&Power::operator*, state1, state2);
   EXPECT(assert_equal(numericH1, actH1, kTol));
   EXPECT(assert_equal(numericH2, actH2, kTol));
 }
@@ -776,10 +757,10 @@ TEST(testPowerDynamic, compose) {
   state1.compose(state2, actH1, actH2);
   Matrix numericH1 =
       numericalDerivative21<DynamicPower, DynamicPower, DynamicPower, 6>(
-          composeDynamicPowerProxy, state1, state2);
+          &DynamicPower::operator*, state1, state2);
   Matrix numericH2 =
       numericalDerivative22<DynamicPower, DynamicPower, DynamicPower, 6>(
-          composeDynamicPowerProxy, state1, state2);
+          &DynamicPower::operator*, state1, state2);
   EXPECT(assert_equal(numericH1, actH1, kTol));
   EXPECT(assert_equal(numericH2, actH2, kTol));
 }

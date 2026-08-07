@@ -61,7 +61,6 @@ Vector12 tgse3Xi() {
 }
 TGSE3 expmapTGSE3(const Vector12& v) { return TGSE3::Expmap(v); }
 Vector12 logmapTGSE3(const TGSE3& x) { return TGSE3::Logmap(x); }
-TGSE3 composeTGSE3(const TGSE3& a, const TGSE3& b) { return a.compose(b); }
 TGSE3 betweenTGSE3(const TGSE3& a, const TGSE3& b) { return a.between(b); }
 TGSE3 inverseTGSE3(const TGSE3& a) { return a.inverse(); }
 TGSE3 centeredExpmapTGSE3(const TGSE3& a, const Vector12& v) {
@@ -206,8 +205,10 @@ TEST(TangentLieGroup, ComposeBetweenInverseJacobians) {
   Matrix H1, H2;
 
   a.compose(b, H1, H2);
-  EXPECT(assert_equal(numericalDerivative21(composeTGSE3, a, b), H1, kNumTol));
-  EXPECT(assert_equal(numericalDerivative22(composeTGSE3, a, b), H2, kNumTol));
+  EXPECT(assert_equal(numericalDerivative21(&TGSE3::operator*, a, b), H1,
+                      kNumTol));
+  EXPECT(assert_equal(numericalDerivative22(&TGSE3::operator*, a, b), H2,
+                      kNumTol));
 
   a.between(b, H1, H2);
   EXPECT(assert_equal(numericalDerivative21(betweenTGSE3, a, b), H1, kNumTol));
