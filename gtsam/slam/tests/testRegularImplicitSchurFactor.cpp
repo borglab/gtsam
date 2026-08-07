@@ -211,7 +211,7 @@ TEST(regularImplicitSchurFactor, hessianDiagonal)
       diag(H)
    */
   Matrix63 E{{1, 2, 3}, {4, 5, 6}, {1, 2, 3},
-             {4, 5, 6}, {0.5, 1},  {2, 3, 4, 5}};
+             {4, 5, 6}, {0.5, 1, 2}, {3, 4, 5}};
   Matrix3 P = (E.transpose() * E).inverse();
   RegularImplicitSchurFactor<CalibratedCamera> factor(keys, FBlocks, E, P, b);
 
