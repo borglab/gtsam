@@ -92,9 +92,43 @@ class ProductLieGroup
   using TangentVector = typename LieBase::TangentVector;
   using ChartJacobian = typename LieBase::ChartJacobian;
   using Jacobian = typename LieBase::Jacobian;
-  using ChartAtOrigin = internal::ChartAtIdentity<This, dimension>;
   using Jacobian1 = typename traits<G>::Jacobian;
   using Jacobian2 = typename traits<H>::Jacobian;
+
+  /**
+   * Component-wise chart at the product identity.
+   *
+   * For a dynamic product, `Identity()` cannot retain the runtime dimension of
+   * a dynamic factor. `Retract` therefore obtains a correctly sized identity
+   * by exponentiating a zero tangent before applying the component charts.
+   * This is deliberately not the same as returning `Expmap(v)`: a component's
+   * retract chart may differ from its exponential map (for example, Rot3 when
+   * configured to use the Cayley chart).
+   *
+   * If both factors are dynamic, a single concatenated tangent does not reveal
+   * their split; `Expmap` supplies the existing diagnostic for that case.
+   * `Local` can always recover both dimensions from the supplied value.
+   */
+  struct ChartAtOrigin {
+    static This Retract(const TangentVector& v, ChartJacobian Hv = {}) {
+      if constexpr (dimension == Eigen::Dynamic) {
+        const This identity = This::Expmap(TangentVector::Zero(v.size()));
+        return identity.retract(v, {}, Hv);
+      } else {
+        return This::Identity().retract(v, {}, Hv);
+      }
+    }
+
+    static TangentVector Local(const This& value, ChartJacobian Hv = {}) {
+      if constexpr (dimension == Eigen::Dynamic) {
+        const This identity(traits<G>::Between(value.first, value.first),
+                            traits<H>::Between(value.second, value.second));
+        return identity.localCoordinates(value, {}, Hv);
+      } else {
+        return This::Identity().localCoordinates(value, {}, Hv);
+      }
+    }
+  };
 
  public:
   /// @name Standard Constructors
