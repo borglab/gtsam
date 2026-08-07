@@ -84,16 +84,26 @@ struct IsCompatibleSemidirectAction<
  *   (g1,h1)(g2,h2) = (g1 g2, h1 Action(g1,h2)).
  * H must be a fixed-size Eigen vector, and Action must be a default-
  * constructible left GroupAction with an infinitesimal generator.
+ * Standard Lie-group operations and their Jacobians are inherited from
+ * `LieGroup`; this class supplies the semidirect law, action-specific charts,
+ * adjoints, and augmented-matrix exponential/logarithmic kernels.
  */
 template <typename G, typename H, typename Action>
-class SemidirectLieGroup : public std::pair<G, H> {
+class SemidirectLieGroup
+    : public std::pair<G, H>,
+      public LieGroup<SemidirectLieGroup<G, H, Action>,
+                      internal::dimensionSum(traits<G>::dimension,
+                                             traits<H>::dimension)> {
   GTSAM_CONCEPT_ASSERT(IsLieGroup<G>);
   GTSAM_CONCEPT_ASSERT(IsLieGroup<H>);
   GTSAM_CONCEPT_ASSERT(IsTestable<G>);
   GTSAM_CONCEPT_ASSERT(IsTestable<H>);
 
  public:
+  using This = SemidirectLieGroup<G, H, Action>;
   using Base = std::pair<G, H>;
+  using LieBase = LieGroup<This, internal::dimensionSum(traits<G>::dimension,
+                                                        traits<H>::dimension)>;
 
  protected:
   inline constexpr static int n = traits<G>::dimension;
@@ -107,16 +117,12 @@ class SemidirectLieGroup : public std::pair<G, H> {
                 "Action::generator(u)");
 
  public:
-  inline constexpr static int dimension = firstDynamic ? Eigen::Dynamic : n + m;
-  using TangentVector = std::conditional_t<dimension == Eigen::Dynamic, Vector,
-                                           Eigen::Matrix<double, dimension, 1>>;
-  using ChartJacobian =
-      std::conditional_t<dimension == Eigen::Dynamic,
-                         OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>,
-                         OptionalJacobian<dimension, dimension>>;
-  using Jacobian =
-      std::conditional_t<dimension == Eigen::Dynamic, Matrix,
-                         Eigen::Matrix<double, dimension, dimension>>;
+  using LieBase::Dim;
+  using LieBase::dimension;
+  using TangentVector = typename LieBase::TangentVector;
+  using ChartJacobian = typename LieBase::ChartJacobian;
+  using Jacobian = typename LieBase::Jacobian;
+  using ChartAtOrigin = internal::ChartAtIdentity<This, dimension>;
   using Jacobian1 = typename traits<G>::Jacobian;
   using Jacobian2 = typename traits<H>::Jacobian;
   using ActionJacobianG =
@@ -129,29 +135,21 @@ class SemidirectLieGroup : public std::pair<G, H> {
   SemidirectLieGroup(const Base& base) : Base(base) {}
 
   static SemidirectLieGroup Identity() { return SemidirectLieGroup(); }
-  static constexpr int Dim() { return dimension; }
   size_t dim() const { return firstDim() + secondDim(); }
 
   SemidirectLieGroup operator*(const SemidirectLieGroup& other) const;
   SemidirectLieGroup inverse() const;
-  SemidirectLieGroup compose(const SemidirectLieGroup& other) const {
-    return (*this) * other;
-  }
-  SemidirectLieGroup between(const SemidirectLieGroup& other) const {
-    return inverse() * other;
-  }
+  using LieBase::between;
+  using LieBase::compose;
+  using LieBase::expmap;
+  using LieBase::inverse;
+  using LieBase::logmap;
 
   SemidirectLieGroup retract(const TangentVector& v, ChartJacobian H1 = {},
                              ChartJacobian H2 = {}) const;
   TangentVector localCoordinates(const SemidirectLieGroup& other,
                                  ChartJacobian H1 = {},
                                  ChartJacobian H2 = {}) const;
-  SemidirectLieGroup compose(const SemidirectLieGroup& other, ChartJacobian H1,
-                             ChartJacobian H2 = {}) const;
-  SemidirectLieGroup between(const SemidirectLieGroup& other, ChartJacobian H1,
-                             ChartJacobian H2 = {}) const;
-  SemidirectLieGroup inverse(ChartJacobian D) const;
-
   static SemidirectLieGroup Expmap(const TangentVector& xi,
                                    ChartJacobian D = {});
   static SemidirectLieGroup Expmap(
@@ -165,13 +163,6 @@ class SemidirectLieGroup : public std::pair<G, H> {
                                         ChartJacobian D = {}) {
     return Logmap(p, D);
   }
-  SemidirectLieGroup expmap(const TangentVector& xi) const {
-    return compose(Expmap(xi));
-  }
-  TangentVector logmap(const SemidirectLieGroup& other) const {
-    return Logmap(between(other));
-  }
-
   Jacobian AdjointMap() const;
   static Jacobian adjointMap(const TangentVector& xi);
 

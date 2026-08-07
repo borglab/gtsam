@@ -118,6 +118,14 @@ Product expmapProductProxy(const Vector5& vec) { return Product::Expmap(vec); }
 
 Vector5 logmapProductProxy(const Product& p) { return Product::Logmap(p); }
 
+Product centeredExpmapProductProxy(const Product& p, const Vector5& v) {
+  return p.expmap(v);
+}
+
+Vector5 centeredLogmapProductProxy(const Product& p, const Product& q) {
+  return p.logmap(q);
+}
+
 ProductVR composeProductVRProxy(const ProductVR& A, const ProductVR& B) {
   return A.compose(B);
 }
@@ -252,6 +260,39 @@ TEST(testProduct, Logmap) {
 }
 
 /* ************************************************************************* */
+// Exercises the centered operations and origin retract inherited from LieGroup.
+TEST(testProduct, InheritedLieGroupOperations) {
+  const Product state(Point2(1, 2), Pose2(3, 4, 0.5));
+  Vector5 delta;
+  delta << 0.1, -0.2, 0.03, -0.04, 0.05;
+
+  Matrix H1, H2;
+  const Product updated = state.expmap(delta, H1, H2);
+  EXPECT(assert_equal(state.expmap(delta), updated, kTol));
+  EXPECT(assert_equal(
+      numericalDerivative21(centeredExpmapProductProxy, state, delta), H1,
+      kTol));
+  EXPECT(assert_equal(
+      numericalDerivative22(centeredExpmapProductProxy, state, delta), H2,
+      kTol));
+
+  Matrix L1, L2;
+  EXPECT(assert_equal(delta, state.logmap(updated, L1, L2), kTol));
+  EXPECT(assert_equal(
+      numericalDerivative21(centeredLogmapProductProxy, state, updated), L1,
+      kTol));
+  EXPECT(assert_equal(
+      numericalDerivative22(centeredLogmapProductProxy, state, updated), L2,
+      kTol));
+
+  Matrix actualH, expectedH;
+  const Product actual = Product::Retract(delta, actualH);
+  const Product expected = Product::Identity().retract(delta, {}, expectedH);
+  EXPECT(assert_equal(expected, actual, kTol));
+  EXPECT(assert_equal(expectedH, actualH, kTol));
+}
+
+/* ************************************************************************* */
 // Checks the group and algebra adjoints for a fixed-size direct product.
 TEST(testProduct, AdjointMap) {
   Product state(Point2(1, 2), Pose2(3, 4, 5));
@@ -353,6 +394,19 @@ TEST(testProductDynamicVR, Logmap) {
   Matrix numericH =
       numericalDerivative11<Vector, ProductVR, 5>(logmapProductVRProxy, state);
   EXPECT(assert_equal(numericH, actH, kTol));
+}
+
+/* ************************************************************************* */
+// A dynamic product with one fixed factor has an unambiguous origin tangent
+// split, so the inherited static Retract can infer the dynamic factor size.
+TEST(testProductDynamicVR, InheritedStaticRetract) {
+  const Vector delta = makeVector({1.0, 2.0, 0.1, 0.2, 0.3});
+  Matrix actualH, expectedH;
+  const ProductVR actual = ProductVR::Retract(delta, actualH);
+  const ProductVR identity(Vector::Zero(2), Rot3::Identity());
+  const ProductVR expected = identity.retract(delta, {}, expectedH);
+  EXPECT(assert_equal(expected, actual, kTol));
+  EXPECT(assert_equal(expectedH, actualH, kTol));
 }
 
 /* ************************************************************************* */

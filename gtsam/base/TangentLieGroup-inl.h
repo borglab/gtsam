@@ -59,32 +59,6 @@ typename TangentLieGroup<G>::TangentVector TangentLieGroup<G>::localCoordinates(
 }
 
 template <typename G>
-TangentLieGroup<G> TangentLieGroup<G>::compose(const TangentLieGroup& other,
-                                               ChartJacobian H1,
-                                               ChartJacobian H2) const {
-  const TangentLieGroup result = (*this) * other;
-  if (H1) *H1 = other.inverse().AdjointMap();
-  if (H2) *H2 = Jacobian::Identity();
-  return result;
-}
-
-template <typename G>
-TangentLieGroup<G> TangentLieGroup<G>::between(const TangentLieGroup& other,
-                                               ChartJacobian H1,
-                                               ChartJacobian H2) const {
-  const TangentLieGroup result = inverse() * other;
-  if (H1) *H1 = -result.inverse().AdjointMap();
-  if (H2) *H2 = Jacobian::Identity();
-  return result;
-}
-
-template <typename G>
-TangentLieGroup<G> TangentLieGroup<G>::inverse(ChartJacobian H) const {
-  if (H) *H = -AdjointMap();
-  return inverse();
-}
-
-template <typename G>
 TangentLieGroup<G> TangentLieGroup<G>::Expmap(const TangentVector& xi,
                                               ChartJacobian H) {
   const auto [u, v] = split(xi);

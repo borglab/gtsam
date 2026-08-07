@@ -57,17 +57,27 @@ struct ProductLieGroupIsVector<Eigen::Matrix<double, N, 1>> : std::true_type {};
  * Operations are componentwise and tangent vectors concatenate the G and H
  * coordinates. Use `SemidirectLieGroup` when the first factor acts on the
  * second, and `TangentLieGroup` for the adjoint-action tangent construction.
+ * Standard Lie-group operations and their Jacobians are inherited from
+ * `LieGroup`; this class supplies the direct-product law, component charts,
+ * adjoints, and exponential/logarithmic kernels.
  */
 template <typename G, typename H>
-class ProductLieGroup : public std::pair<G, H> {
+class ProductLieGroup
+    : public std::pair<G, H>,
+      public LieGroup<ProductLieGroup<G, H>,
+                      internal::dimensionSum(traits<G>::dimension,
+                                             traits<H>::dimension)> {
   GTSAM_CONCEPT_ASSERT(IsLieGroup<G>);
   GTSAM_CONCEPT_ASSERT(IsLieGroup<H>);
   GTSAM_CONCEPT_ASSERT(IsTestable<G>);
   GTSAM_CONCEPT_ASSERT(IsTestable<H>);
 
  public:
+  using This = ProductLieGroup<G, H>;
   /// Base pair type
-  typedef std::pair<G, H> Base;
+  using Base = std::pair<G, H>;
+  using LieBase = LieGroup<This, internal::dimensionSum(traits<G>::dimension,
+                                                        traits<H>::dimension)>;
 
  protected:
   /// Dimensions of the two subgroups
@@ -77,24 +87,12 @@ class ProductLieGroup : public std::pair<G, H> {
   inline constexpr static bool secondDynamic = m == Eigen::Dynamic;
 
  public:
-  /// Manifold dimension
-  inline constexpr static int dimension =
-      firstDynamic || secondDynamic ? Eigen::Dynamic : n + m;
-
-  /// Tangent vector type
-  using TangentVector = std::conditional_t<dimension == Eigen::Dynamic, Vector,
-                                           Eigen::Matrix<double, dimension, 1>>;
-
-  /// Chart Jacobian type
-  using ChartJacobian =
-      std::conditional_t<dimension == Eigen::Dynamic,
-                         OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>,
-                         OptionalJacobian<dimension, dimension>>;
-
-  /// Jacobian types for internal use
-  using Jacobian =
-      std::conditional_t<dimension == Eigen::Dynamic, Matrix,
-                         Eigen::Matrix<double, dimension, dimension>>;
+  using LieBase::Dim;
+  using LieBase::dimension;
+  using TangentVector = typename LieBase::TangentVector;
+  using ChartJacobian = typename LieBase::ChartJacobian;
+  using Jacobian = typename LieBase::Jacobian;
+  using ChartAtOrigin = internal::ChartAtIdentity<This, dimension>;
   using Jacobian1 = typename traits<G>::Jacobian;
   using Jacobian2 = typename traits<H>::Jacobian;
 
@@ -126,25 +124,15 @@ class ProductLieGroup : public std::pair<G, H> {
   /// Group inverse
   ProductLieGroup inverse() const;
 
-  /// Compose with another element (same as operator*)
-  ProductLieGroup compose(const ProductLieGroup& g) const {
-    return (*this) * g;
-  }
-
-  /// Calculate relative transformation
-  ProductLieGroup between(const ProductLieGroup& g) const {
-    return this->inverse() * g;
-  }
+  using LieBase::between;
+  using LieBase::compose;
+  using LieBase::expmap;
+  using LieBase::inverse;
+  using LieBase::logmap;
 
   /// @}
   /// @name Manifold Operations
   /// @{
-
-  /// Manifold dimension
-  inline constexpr static int manifoldDimension = dimension;
-
-  /// Return manifold dimension
-  static constexpr int Dim() { return manifoldDimension; }
 
   /// Return manifold dimension
   size_t dim() const { return firstDim() + secondDim(); }
@@ -161,17 +149,6 @@ class ProductLieGroup : public std::pair<G, H> {
   /// @}
   /// @name Lie Group Operations
   /// @{
-
-  /// Compose with Jacobians
-  ProductLieGroup compose(const ProductLieGroup& other, ChartJacobian H1,
-                          ChartJacobian H2 = {}) const;
-
-  /// Between with Jacobians
-  ProductLieGroup between(const ProductLieGroup& other, ChartJacobian H1,
-                          ChartJacobian H2 = {}) const;
-
-  /// Inverse with Jacobian
-  ProductLieGroup inverse(ChartJacobian D) const;
 
   /// Exponential map
   static ProductLieGroup Expmap(const TangentVector& v, ChartJacobian Hv = {});
@@ -190,14 +167,6 @@ class ProductLieGroup : public std::pair<G, H> {
   static TangentVector LocalCoordinates(const ProductLieGroup& p,
                                         ChartJacobian Hp = {}) {
     return Logmap(p, Hp);
-  }
-
-  /// Right multiplication by exponential map
-  ProductLieGroup expmap(const TangentVector& v) const;
-
-  /// Logarithmic map for relative transformation
-  TangentVector logmap(const ProductLieGroup& g) const {
-    return ProductLieGroup::Logmap(between(g));
   }
 
   /// Adjoint map
@@ -238,9 +207,6 @@ class ProductLieGroup : public std::pair<G, H> {
 
   /// Create a zero Jacobian with the requested runtime size.
   static Jacobian zeroJacobian(size_t d);
-
-  /// Create an identity Jacobian with the requested runtime size.
-  static Jacobian identityJacobian(size_t d);
 
   /// Check that another product has matching runtime dimensions.
   void checkMatchingDimensions(const ProductLieGroup& other,

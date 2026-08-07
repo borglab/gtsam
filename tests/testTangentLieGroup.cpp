@@ -64,6 +64,12 @@ Vector12 logmapTGSE3(const TGSE3& x) { return TGSE3::Logmap(x); }
 TGSE3 composeTGSE3(const TGSE3& a, const TGSE3& b) { return a.compose(b); }
 TGSE3 betweenTGSE3(const TGSE3& a, const TGSE3& b) { return a.between(b); }
 TGSE3 inverseTGSE3(const TGSE3& a) { return a.inverse(); }
+TGSE3 centeredExpmapTGSE3(const TGSE3& a, const Vector12& v) {
+  return a.expmap(v);
+}
+Vector12 centeredLogmapTGSE3(const TGSE3& a, const TGSE3& b) {
+  return a.logmap(b);
+}
 
 Vector20 tggal3Xi() {
   Vector20 v;
@@ -210,6 +216,39 @@ TEST(TangentLieGroup, ComposeBetweenInverseJacobians) {
   Matrix H;
   a.inverse(H);
   EXPECT(assert_equal(numericalDerivative11(inverseTGSE3, a), H, kNumTol));
+}
+
+// Exercises the centered operations and origin retract inherited from LieGroup,
+// including static Retract on a recursively nested tangent group.
+TEST(TangentLieGroup, InheritedLieGroupOperations) {
+  const TGSE3 state = tgse3State();
+  const Vector12 delta = 0.25 * tgse3Xi();
+
+  Matrix H1, H2;
+  const TGSE3 updated = state.expmap(delta, H1, H2);
+  EXPECT(assert_equal(state.expmap(delta), updated, kTol));
+  EXPECT(assert_equal(numericalDerivative21(centeredExpmapTGSE3, state, delta),
+                      H1, kNumTol));
+  EXPECT(assert_equal(numericalDerivative22(centeredExpmapTGSE3, state, delta),
+                      H2, kNumTol));
+
+  Matrix L1, L2;
+  EXPECT(assert_equal(delta, state.logmap(updated, L1, L2), kTol));
+  EXPECT(assert_equal(
+      numericalDerivative21(centeredLogmapTGSE3, state, updated), L1, kNumTol));
+  EXPECT(assert_equal(
+      numericalDerivative22(centeredLogmapTGSE3, state, updated), L2, kNumTol));
+
+  Matrix actualH, expectedH;
+  const TGSE3 actual = TGSE3::Retract(delta, actualH);
+  const TGSE3 expected = TGSE3::Identity().retract(delta, {}, expectedH);
+  EXPECT(assert_equal(expected, actual, kTol));
+  EXPECT(assert_equal(expectedH, actualH, kTol));
+
+  Vector24 nestedDelta;
+  nestedDelta << delta, -0.5 * delta;
+  const TGTGSE3 nested = TGTGSE3::Retract(nestedDelta);
+  EXPECT(assert_equal(nestedDelta, TGTGSE3::Logmap(nested), kTol));
 }
 
 // Ad_{(g,ξ)} = [[Ad_g, 0], [ad_ξ·Ad_g, Ad_g]].

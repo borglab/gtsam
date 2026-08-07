@@ -86,10 +86,15 @@ struct AdjointAction : public GroupAction<AdjointAction<G>, G,
  *   (g1,v1)(g2,v2) = (g1 g2, v1 + Ad_g1 v2).
  * This dedicated class exposes the tangent structure directly, allowing its
  * repeated-block Jacobians and adjoints to be assembled without a generic
- * semidirect-action layer.
+ * semidirect-action layer. Standard Lie-group operations and their Jacobians
+ * are inherited from `LieGroup`; this class supplies the tangent-group law,
+ * charts, adjoints, and specialized kernels.
  */
 template <typename G>
-class TangentLieGroup : public std::pair<G, typename traits<G>::TangentVector> {
+class TangentLieGroup
+    : public std::pair<G, typename traits<G>::TangentVector>,
+      public LieGroup<TangentLieGroup<G>,
+                      internal::dimensionProduct(2, traits<G>::dimension)> {
   GTSAM_CONCEPT_ASSERT(IsLieGroup<G>);
   GTSAM_CONCEPT_ASSERT(IsTestable<G>);
   static_assert(traits<G>::dimension != Eigen::Dynamic,
@@ -101,42 +106,40 @@ class TangentLieGroup : public std::pair<G, typename traits<G>::TangentVector> {
   inline constexpr static int n = traits<G>::dimension;
 
  public:
-  inline constexpr static int dimension = 2 * n;
+  using This = TangentLieGroup<G>;
   using Base = std::pair<G, typename traits<G>::TangentVector>;
+  using LieBase = LieGroup<This, internal::dimensionProduct(2, n)>;
+  using LieBase::Dim;
+  using LieBase::dimension;
   using BaseTangent = typename traits<G>::TangentVector;
   using BaseJacobian = typename traits<G>::Jacobian;
-  using TangentVector = Eigen::Matrix<double, dimension, 1>;
-  using Jacobian = Eigen::Matrix<double, dimension, dimension>;
-  using ChartJacobian = OptionalJacobian<dimension, dimension>;
+  using TangentVector = typename LieBase::TangentVector;
+  using Jacobian = typename LieBase::Jacobian;
+  using ChartJacobian = typename LieBase::ChartJacobian;
+  using ChartAtOrigin = internal::ChartAtIdentity<This, dimension>;
   using SplitJacobian = OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>;
   using group_flavor = multiplicative_group_tag;
+
+  using LieBase::between;
+  using LieBase::compose;
+  using LieBase::expmap;
+  using LieBase::inverse;
+  using LieBase::logmap;
 
   TangentLieGroup() : Base(traits<G>::Identity(), BaseTangent::Zero()) {}
   TangentLieGroup(const G& g, const BaseTangent& v) : Base(g, v) {}
   TangentLieGroup(const Base& base) : Base(base) {}
 
   static TangentLieGroup Identity() { return TangentLieGroup(); }
-  static constexpr int Dim() { return dimension; }
   constexpr size_t dim() const { return dimension; }
 
   TangentLieGroup operator*(const TangentLieGroup& other) const;
   TangentLieGroup inverse() const;
-  TangentLieGroup compose(const TangentLieGroup& other) const {
-    return (*this) * other;
-  }
-  TangentLieGroup between(const TangentLieGroup& other) const {
-    return inverse() * other;
-  }
   TangentLieGroup retract(const TangentVector& xi, ChartJacobian H1 = {},
                           ChartJacobian H2 = {}) const;
   TangentVector localCoordinates(const TangentLieGroup& other,
                                  ChartJacobian H1 = {},
                                  ChartJacobian H2 = {}) const;
-  TangentLieGroup compose(const TangentLieGroup& other, ChartJacobian H1,
-                          ChartJacobian H2 = {}) const;
-  TangentLieGroup between(const TangentLieGroup& other, ChartJacobian H1,
-                          ChartJacobian H2 = {}) const;
-  TangentLieGroup inverse(ChartJacobian H) const;
 
   static TangentLieGroup Expmap(const TangentVector& xi, ChartJacobian H = {});
   static TangentLieGroup Expmap(const Eigen::Ref<const BaseTangent>& u,
@@ -146,12 +149,6 @@ class TangentLieGroup : public std::pair<G, typename traits<G>::TangentVector> {
   static TangentVector LocalCoordinates(const TangentLieGroup& p,
                                         ChartJacobian H = {}) {
     return Logmap(p, H);
-  }
-  TangentLieGroup expmap(const TangentVector& xi) const {
-    return compose(Expmap(xi));
-  }
-  TangentVector logmap(const TangentLieGroup& other) const {
-    return Logmap(between(other));
   }
 
   Jacobian AdjointMap() const;

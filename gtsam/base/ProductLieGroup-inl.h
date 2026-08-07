@@ -127,62 +127,6 @@ ProductLieGroup<G, H>::localCoordinates(const ProductLieGroup& g,
 }
 
 template <typename G, typename H>
-ProductLieGroup<G, H> ProductLieGroup<G, H>::compose(
-    const ProductLieGroup& other, ChartJacobian H1, ChartJacobian H2) const {
-  checkMatchingDimensions(other, "compose");
-  const size_t d1 = firstDim();
-  const size_t d = d1 + secondDim();
-  Jacobian1 D_g_first;
-  Jacobian2 D_h_second;
-  G g = traits<G>::Compose(this->first, other.first, H1 ? &D_g_first : nullptr);
-  H h = traits<H>::Compose(this->second, other.second,
-                           H1 ? &D_h_second : nullptr);
-  if (H1) {
-    *H1 = zeroJacobian(d);
-    assignBlock(D_g_first, 0, 0, &*H1);
-    assignBlock(D_h_second, d1, d1, &*H1);
-  }
-  if (H2) *H2 = identityJacobian(d);
-  return ProductLieGroup(g, h);
-}
-
-template <typename G, typename H>
-ProductLieGroup<G, H> ProductLieGroup<G, H>::between(
-    const ProductLieGroup& other, ChartJacobian H1, ChartJacobian H2) const {
-  checkMatchingDimensions(other, "between");
-  const size_t d1 = firstDim();
-  const size_t d = d1 + secondDim();
-  Jacobian1 D_g_first;
-  Jacobian2 D_h_second;
-  G g = traits<G>::Between(this->first, other.first, H1 ? &D_g_first : nullptr);
-  H h = traits<H>::Between(this->second, other.second,
-                           H1 ? &D_h_second : nullptr);
-  if (H1) {
-    *H1 = zeroJacobian(d);
-    assignBlock(D_g_first, 0, 0, &*H1);
-    assignBlock(D_h_second, d1, d1, &*H1);
-  }
-  if (H2) *H2 = identityJacobian(d);
-  return ProductLieGroup(g, h);
-}
-
-template <typename G, typename H>
-ProductLieGroup<G, H> ProductLieGroup<G, H>::inverse(ChartJacobian D) const {
-  const size_t d1 = firstDim();
-  const size_t d = d1 + secondDim();
-  Jacobian1 D_g_first;
-  Jacobian2 D_h_second;
-  G g = traits<G>::Inverse(this->first, D ? &D_g_first : nullptr);
-  H h = traits<H>::Inverse(this->second, D ? &D_h_second : nullptr);
-  if (D) {
-    *D = zeroJacobian(d);
-    assignBlock(D_g_first, 0, 0, &*D);
-    assignBlock(D_h_second, d1, d1, &*D);
-  }
-  return ProductLieGroup(g, h);
-}
-
-template <typename G, typename H>
 ProductLieGroup<G, H> ProductLieGroup<G, H>::Expmap(const TangentVector& v,
                                                     ChartJacobian Hv) {
   size_t d1 = 0;
@@ -286,12 +230,6 @@ typename ProductLieGroup<G, H>::TangentVector ProductLieGroup<G, H>::Logmap(
   assignBlock(D_g_first, 0, 0, &*Hp);
   assignBlock(D_h_second, d1, d1, &*Hp);
   return v;
-}
-
-template <typename G, typename H>
-ProductLieGroup<G, H> ProductLieGroup<G, H>::expmap(
-    const TangentVector& v) const {
-  return compose(ProductLieGroup::Expmap(v));
 }
 
 template <typename G, typename H>
@@ -428,17 +366,6 @@ typename ProductLieGroup<G, H>::Jacobian ProductLieGroup<G, H>::zeroJacobian(
   } else {
     static_cast<void>(d);
     return Jacobian::Zero();
-  }
-}
-
-template <typename G, typename H>
-typename ProductLieGroup<G, H>::Jacobian
-ProductLieGroup<G, H>::identityJacobian(size_t d) {
-  if constexpr (dimension == Eigen::Dynamic) {
-    return Jacobian::Identity(d, d);
-  } else {
-    static_cast<void>(d);
-    return Jacobian::Identity();
   }
 }
 

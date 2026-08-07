@@ -217,6 +217,16 @@ Vector6 logmapSemidirectProxy(const Semidirect& p) {
   return Semidirect::Logmap(p);
 }
 
+Semidirect centeredExpmapSemidirectProxy(const Semidirect& p,
+                                         const Vector6& v) {
+  return p.expmap(v);
+}
+
+Vector6 centeredLogmapSemidirectProxy(const Semidirect& p,
+                                      const Semidirect& q) {
+  return p.logmap(q);
+}
+
 Semidirect retractSemidirectProxy(const Semidirect& X, const Vector6& v) {
   return X.retract(v);
 }
@@ -481,6 +491,39 @@ TEST(testActionProduct, Logmap) {
 
   EXPECT(assert_equal(Pose3::Logmap(asPose3(state)), actual, kTol));
   EXPECT(assert_equal(numericH, actH, 1e-6));
+}
+
+/* ************************************************************************* */
+// Exercises the centered operations and origin retract inherited from LieGroup.
+TEST(testActionProduct, InheritedLieGroupOperations) {
+  const Semidirect state = semidirectState1();
+  const Vector6 delta = retractDelta();
+
+  Matrix H1, H2;
+  const Semidirect updated = state.expmap(delta, H1, H2);
+  EXPECT(assert_equal(state.expmap(delta), updated, kTol));
+  EXPECT(assert_equal(
+      numericalDerivative21(centeredExpmapSemidirectProxy, state, delta), H1,
+      kTol));
+  EXPECT(assert_equal(
+      numericalDerivative22(centeredExpmapSemidirectProxy, state, delta), H2,
+      kTol));
+
+  Matrix L1, L2;
+  EXPECT(assert_equal(delta, state.logmap(updated, L1, L2), kTol));
+  EXPECT(assert_equal(
+      numericalDerivative21(centeredLogmapSemidirectProxy, state, updated), L1,
+      kTol));
+  EXPECT(assert_equal(
+      numericalDerivative22(centeredLogmapSemidirectProxy, state, updated), L2,
+      kTol));
+
+  Matrix actualH, expectedH;
+  const Semidirect actual = Semidirect::Retract(delta, actualH);
+  const Semidirect expected =
+      Semidirect::Identity().retract(delta, {}, expectedH);
+  EXPECT(assert_equal(expected, actual, kTol));
+  EXPECT(assert_equal(expectedH, actualH, kTol));
 }
 
 // Check that the semidirect adjoint matches the Pose3 adjoint.

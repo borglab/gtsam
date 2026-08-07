@@ -142,33 +142,6 @@ SemidirectLieGroup<G, H, Action>::localCoordinates(
 }
 
 template <typename G, typename H, typename Action>
-SemidirectLieGroup<G, H, Action> SemidirectLieGroup<G, H, Action>::compose(
-    const SemidirectLieGroup& other, ChartJacobian H1, ChartJacobian H2) const {
-  checkMatchingDimensions(other, "compose");
-  const SemidirectLieGroup result = (*this) * other;
-  if (H1) *H1 = other.inverse().AdjointMap();
-  if (H2) *H2 = identityJacobian(dim());
-  return result;
-}
-
-template <typename G, typename H, typename Action>
-SemidirectLieGroup<G, H, Action> SemidirectLieGroup<G, H, Action>::between(
-    const SemidirectLieGroup& other, ChartJacobian H1, ChartJacobian H2) const {
-  checkMatchingDimensions(other, "between");
-  const SemidirectLieGroup result = inverse() * other;
-  if (H1) *H1 = -result.inverse().AdjointMap();
-  if (H2) *H2 = identityJacobian(dim());
-  return result;
-}
-
-template <typename G, typename H, typename Action>
-SemidirectLieGroup<G, H, Action> SemidirectLieGroup<G, H, Action>::inverse(
-    ChartJacobian D) const {
-  if (D) *D = -AdjointMap();
-  return inverse();
-}
-
-template <typename G, typename H, typename Action>
 SemidirectLieGroup<G, H, Action> SemidirectLieGroup<G, H, Action>::Expmap(
     const TangentVector& xi, ChartJacobian D) {
   size_t d1;
