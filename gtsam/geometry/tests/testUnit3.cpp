@@ -317,9 +317,9 @@ Vector6 BasisTest(const Unit3& p, OptionalJacobian<6, 2> H) {
 TEST(Unit3, basis) {
   Unit3 p(0.1, -0.2, 0.9);
 
-  Matrix expected(3, 2);
-  expected << 0.0, -0.994169047, 0.97618706, -0.0233922129, 0.216930458,
-      0.105264958;
+  Matrix32 expected{{0.0, -0.994169047},
+                    {0.97618706, -0.0233922129},
+                    {0.216930458, 0.105264958}};
 
   Matrix62 actualH;
   Matrix62 expectedH = numericalDerivative11<Vector6, Unit3>(

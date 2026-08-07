@@ -46,9 +46,9 @@ Vector BarometricFactor::evaluateError(const Pose3& p, const double& bias,
                                        OptionalMatrixType H,
                                        OptionalMatrixType H2) const {
     Matrix tH;
-    Vector ret = (Vector(1) << (p.translation(tH).z() + bias - nT_)).finished();
+    Vector ret{{p.translation(tH).z() + bias - nT_}};
     if (H) (*H) = tH.block<1, 6>(2, 0);
-    if (H2) (*H2) = (Matrix(1, 1) << 1.0).finished();
+    if (H2) (*H2) = Matrix{{1.0}};
     return ret;
 }
 

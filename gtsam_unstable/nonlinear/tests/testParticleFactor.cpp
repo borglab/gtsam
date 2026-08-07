@@ -90,9 +90,7 @@ TEST( particleFactor, eliminate) {
 
 /** Small 2D point class implemented as a Vector */
 struct State: Vector {
-  State(double x, double y) :
-      Vector((Vector(2) << x, y).finished()) {
-  }
+  State(double x, double y) : Vector{{x, y}} {}
 };
 
 //******************************************************************************

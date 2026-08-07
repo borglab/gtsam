@@ -358,8 +358,8 @@ Vector DoubleDifferenceCarrierPhaseFactor::evaluateError(
       ddModel + lam_ * (ambRef - ambTarget) - dd_.observed();
 
   if (Hpos) *Hpos = H_pos;
-  if (HambRef) *HambRef = (Matrix(1, 1) << lam_).finished();
-  if (HambTarget) *HambTarget = (Matrix(1, 1) << -lam_).finished();
+  if (HambRef) *HambRef = Matrix{{lam_}};
+  if (HambTarget) *HambTarget = Matrix{{-lam_}};
 
   return Vector1(error);
 }
@@ -429,8 +429,8 @@ Vector DoubleDifferenceCarrierPhaseFactorArm::evaluateError(
       ddModel + lam_ * (ambRef - ambTarget) - dd_.observed();
 
   if (H_pose) *H_pose = arm_.antennaPoseJacobian(H_antenna, frame);
-  if (HambRef) *HambRef = (Matrix(1, 1) << lam_).finished();
-  if (HambTarget) *HambTarget = (Matrix(1, 1) << -lam_).finished();
+  if (HambRef) *HambRef = Matrix{{lam_}};
+  if (HambTarget) *HambTarget = Matrix{{-lam_}};
 
   return Vector1(error);
 }

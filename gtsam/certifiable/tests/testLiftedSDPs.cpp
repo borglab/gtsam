@@ -123,9 +123,8 @@ std::vector<Pose3> PerturbedPose3Values(const std::vector<Pose3>& poses) {
   std::vector<Pose3> perturbed = poses;
   for (size_t i = 0; i < perturbed.size(); ++i) {
     const double scale = static_cast<double>(i);
-    Vector6 delta;
-    delta << 0.002 * scale, -0.001 * scale, 0.0015 * scale, 0.01 * scale,
-        -0.005 * scale, 0.004 * scale;
+    Vector6 delta{0.002 * scale, -0.001 * scale, 0.0015 * scale,
+                  0.01 * scale,  -0.005 * scale, 0.004 * scale};
     perturbed[i] = poses[i].retract(delta);
   }
   return perturbed;

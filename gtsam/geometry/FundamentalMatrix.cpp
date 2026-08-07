@@ -120,15 +120,11 @@ FundamentalMatrix FundamentalMatrix::retract(const Vector& delta) const {
 
 //*************************************************************************
 Matrix3 SimpleFundamentalMatrix::Ka() const {
-  Matrix3 K;
-  K << fa_, 0, ca_.x(), 0, fa_, ca_.y(), 0, 0, 1;
-  return K;
+  return Matrix3{{fa_, 0, ca_.x()}, {0, fa_, ca_.y()}, {0, 0, 1}};
 }
 
 Matrix3 SimpleFundamentalMatrix::Kb() const {
-  Matrix3 K;
-  K << fb_, 0, cb_.x(), 0, fb_, cb_.y(), 0, 0, 1;
-  return K;
+  return Matrix3{{fb_, 0, cb_.x()}, {0, fb_, cb_.y()}, {0, 0, 1}};
 }
 
 Matrix3 SimpleFundamentalMatrix::matrix() const {

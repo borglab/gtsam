@@ -228,7 +228,7 @@ class PointHeightFactor : public NoiseModelFactorN<Point3> {
                        OptionalMatrixType H) const override {
     if (H) {
       H->resize(1, 3);
-      *H << 0.0, 0.0, 1.0;
+      *H = Matrix13{{0.0, 0.0, 1.0}};
     }
     return Vector1(foothold.z() - terrainHeight_);
   }

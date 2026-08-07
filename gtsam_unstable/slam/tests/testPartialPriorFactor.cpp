@@ -247,7 +247,8 @@ TEST(PartialPriorFactor, JacobianTxTz3) {
 
   std::vector<size_t> translationIndices = { kIndexTx, kIndexTz };
   TestPartialPriorFactor3 factor(poseKey, translationIndices,
-      (Vector(2) << measurement.x(), measurement.z()).finished(), model);
+                                 Vector{{measurement.x(), measurement.z()}},
+                                 model);
 
   Pose3 pose = measurement; // Zero-error linearization point.
 

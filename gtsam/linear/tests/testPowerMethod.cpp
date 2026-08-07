@@ -44,8 +44,8 @@ TEST(PowerMethod, powerIteration) {
   A.coeffRef(3, 3) = 3;
   A.coeffRef(4, 4) = 2;
   A.coeffRef(5, 5) = 1;
-  Vector initial = (Vector(6) << 0.24434602, 0.22829942, 0.70094486, 0.15463092, 0.55871359,
-       0.2465342).finished();
+  Vector initial{
+      {0.24434602, 0.22829942, 0.70094486, 0.15463092, 0.55871359, 0.2465342}};
   PowerMethod<Sparse> pf(A, initial);
   pf.compute(100, 1e-5);
   EXPECT_LONGS_EQUAL(6, pf.eigenvector().rows());

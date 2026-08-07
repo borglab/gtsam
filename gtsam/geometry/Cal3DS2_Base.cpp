@@ -26,9 +26,7 @@ namespace gtsam {
 
 /* ************************************************************************* */
 Vector9 Cal3DS2_Base::vector() const {
-  Vector9 v;
-  v << fx_, fy_, s_, u0_, v0_, k1_, k2_, p1_, p2_;
-  return v;
+  return Vector9{fx_, fy_, s_, u0_, v0_, k1_, k2_, p1_, p2_};
 }
 
 /* ************************************************************************* */
@@ -57,11 +55,9 @@ bool Cal3DS2_Base::equals(const Cal3DS2_Base& K, double tol) const {
 static Matrix29 D2dcalibration(double x, double y, double xx, double yy,
                                double xy, double rr, double r4, double pnx,
                                double pny, const Matrix2& DK) {
-  Matrix25 DR1;
-  DR1 << pnx, 0.0, pny, 1.0, 0.0, 0.0, pny, 0.0, 0.0, 1.0;
-  Matrix24 DR2;
-  DR2 << x * rr, x * r4, 2 * xy, rr + 2 * xx,  //
-      y * rr, y * r4, rr + 2 * yy, 2 * xy;
+  Matrix25 DR1{{pnx, 0.0, pny, 1.0, 0.0}, {0.0, pny, 0.0, 0.0, 1.0}};
+  Matrix24 DR2{{x * rr, x * r4, 2 * xy, rr + 2 * xx},
+               {y * rr, y * r4, rr + 2 * yy, 2 * xy}};
   Matrix29 D;
   D << DR1, DK * DR2;
   return D;
@@ -83,9 +79,8 @@ static Matrix2 D2dintrinsic(double x, double y, double rr, double g, double k1,
   const double dDydx = 2. * p2 * y + p1 * drdx;
   const double dDydy = 2. * p2 * x + p1 * (drdy + 4. * y);
 
-  Matrix2 DR;
-  DR << g + x * dgdx + dDxdx, x * dgdy + dDxdy,  //
-      y * dgdx + dDydx, g + y * dgdy + dDydy;
+  Matrix2 DR{{g + x * dgdx + dDxdx, x * dgdy + dDxdy},
+             {y * dgdx + dDydx, g + y * dgdy + dDydy}};
 
   return DK * DR;
 }
@@ -171,8 +166,7 @@ Matrix2 Cal3DS2_Base::D2d_intrinsic(const Point2& p) const {
   const double rr = xx + yy;
   const double r4 = rr * rr;
   const double g = (1 + k1_ * rr + k2_ * r4);
-  Matrix2 DK;
-  DK << fx_, s_, 0.0, fy_;
+  Matrix2 DK{{fx_, s_}, {0.0, fy_}};
   return D2dintrinsic(x, y, rr, g, k1_, k2_, p1_, p2_, DK);
 }
 
@@ -186,8 +180,7 @@ Matrix29 Cal3DS2_Base::D2d_calibration(const Point2& p) const {
   const double dy = 2 * p2_ * xy + p1_ * (rr + 2 * yy);
   const double pnx = g * x + dx;
   const double pny = g * y + dy;
-  Matrix2 DK;
-  DK << fx_, s_, 0.0, fy_;
+  Matrix2 DK{{fx_, s_}, {0.0, fy_}};
   return D2dcalibration(x, y, xx, yy, xy, rr, r4, pnx, pny, DK);
 }
 }

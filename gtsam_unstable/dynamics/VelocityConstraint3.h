@@ -47,7 +47,7 @@ public:
     if (H1) *H1 = Matrix::Identity(p,p);
     if (H2) *H2 = -Matrix::Identity(p,p);
     if (H3) *H3 = Matrix::Identity(p,p)*dt_;
-    return (Vector(1) << x1+v*dt_-x2).finished();
+    return Vector{{x1 + v * dt_ - x2}};
   }
 
 private:

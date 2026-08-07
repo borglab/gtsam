@@ -439,8 +439,8 @@ int main(int argc, char** argv) {
   ISAM2 isam2(parameters);
 
   const Key firstKey = allPoseKeys.front();
-  const auto priorNoise = noiseModel::Diagonal::Sigmas(
-      (Vector(3) << 1e-6, 1e-6, 1e-6).finished());
+  const auto priorNoise =
+      noiseModel::Diagonal::Sigmas(Vector{{1e-6, 1e-6, 1e-6}});
 
   vector<StepResult> results;
   results.reserve(allPoseKeys.size());

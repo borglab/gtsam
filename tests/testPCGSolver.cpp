@@ -38,18 +38,13 @@ using symbol_shorthand::L;
 /* ************************************************************************* */
 // Test cholesky decomposition
 TEST( PCGSolver, llt ) {
-  Matrix R = (Matrix(3,3) <<
-                1., -1., -1.,
-                0.,  2., -1.,
-                0.,  0.,  1.).finished();
+  Matrix R{//
+           {1., -1., -1.},
+           {0., 2., -1.},
+           {0., 0., 1.}};
   Matrix AtA = R.transpose() * R;
 
-  Vector Rvector = (Vector(9) << 1., -1., -1.,
-                                 0.,  2., -1.,
-                                 0.,  0.,  1.).finished();
-//  Vector Rvector = (Vector(6) << 1., -1., -1.,
-//                                      2., -1.,
-//                                           1.).finished();
+  Vector Rvector{{1., -1., -1., 0., 2., -1., 0., 0., 1.}};
 
   Vector b = Vector3(1., 2., 3.);
 
@@ -82,13 +77,23 @@ TEST( GaussianFactorGraphSystem, multiply_getb)
   // Create a Gaussian Factor Graph
   GaussianFactorGraph simpleGFG;
   SharedDiagonal unit2 = noiseModel::Diagonal::Sigmas(Vector2(0.5, 0.3));
-  simpleGFG.emplace_shared<JacobianFactor>(2, (Matrix(2,2)<< 10, 0, 0, 10).finished(), (Vector(2) << -1, -1).finished(), unit2);
-  simpleGFG.emplace_shared<JacobianFactor>(2, (Matrix(2,2)<< -10, 0, 0, -10).finished(), 0, (Matrix(2,2)<< 10, 0, 0, 10).finished(), (Vector(2) << 2, -1).finished(), unit2);
-  simpleGFG.emplace_shared<JacobianFactor>(2, (Matrix(2,2)<< -5, 0, 0, -5).finished(), 1, (Matrix(2,2)<< 5, 0, 0, 5).finished(), (Vector(2) << 0, 1).finished(), unit2);
-  simpleGFG.emplace_shared<JacobianFactor>(0, (Matrix(2,2)<< -5, 0, 0, -5).finished(), 1, (Matrix(2,2)<< 5, 0, 0, 5).finished(), (Vector(2) << -1, 1.5).finished(), unit2);
-  simpleGFG.emplace_shared<JacobianFactor>(0, (Matrix(2,2)<< 1, 0, 0, 1).finished(), (Vector(2) << 0, 0).finished(), unit2);
-  simpleGFG.emplace_shared<JacobianFactor>(1, (Matrix(2,2)<< 1, 0, 0, 1).finished(), (Vector(2) << 0, 0).finished(), unit2);
-  simpleGFG.emplace_shared<JacobianFactor>(2, (Matrix(2,2)<< 1, 0, 0, 1).finished(), (Vector(2) << 0, 0).finished(), unit2);
+  simpleGFG.emplace_shared<JacobianFactor>(2, Matrix{{10, 0}, {0, 10}},
+                                           Vector{{-1, -1}}, unit2);
+  simpleGFG.emplace_shared<JacobianFactor>(2, Matrix{{-10, 0}, {0, -10}}, 0,
+                                           Matrix{{10, 0}, {0, 10}},
+                                           Vector{{2, -1}}, unit2);
+  simpleGFG.emplace_shared<JacobianFactor>(2, Matrix{{-5, 0}, {0, -5}}, 1,
+                                           Matrix{{5, 0}, {0, 5}},
+                                           Vector{{0, 1}}, unit2);
+  simpleGFG.emplace_shared<JacobianFactor>(0, Matrix{{-5, 0}, {0, -5}}, 1,
+                                           Matrix{{5, 0}, {0, 5}},
+                                           Vector{{-1, 1.5}}, unit2);
+  simpleGFG.emplace_shared<JacobianFactor>(0, Matrix{{1, 0}, {0, 1}},
+                                           Vector{{0, 0}}, unit2);
+  simpleGFG.emplace_shared<JacobianFactor>(1, Matrix{{1, 0}, {0, 1}},
+                                           Vector{{0, 0}}, unit2);
+  simpleGFG.emplace_shared<JacobianFactor>(2, Matrix{{1, 0}, {0, 1}},
+                                           Vector{{0, 0}}, unit2);
 
   // Create a dummy-preconditioner and a GaussianFactorGraphSystem
   DummyPreconditioner dummyPreconditioner;
@@ -99,7 +104,7 @@ TEST( GaussianFactorGraphSystem, multiply_getb)
 
   // Prepare container for each variable
   Vector initial, residual, preconditionedResidual, p, actualAp;
-  initial = (Vector(6) << 0., 0., 0., 0., 0., 0.).finished();
+  initial = Vector{{0., 0., 0., 0., 0., 0.}};
 
   // Calculate values using GaussianFactorGraphSystem same as inside of PCGSolver
   gfgs.residual(initial, residual);                         /* r = b-Ax */
@@ -108,11 +113,12 @@ TEST( GaussianFactorGraphSystem, multiply_getb)
   gfgs.multiply(p, actualAp);                                     /* A p */
 
   // Expected value of Ap for the first iteration of this example problem
-  Vector expectedAp = (Vector(6) << 100400, -249074.074, -2080, 148148.148, -146480, 37962.963).finished();
+  Vector expectedAp{
+      {100400, -249074.074, -2080, 148148.148, -146480, 37962.963}};
   EXPECT(assert_equal(expectedAp, actualAp, 1e-3));
 
   // Expected value of getb
-  Vector expectedb = (Vector(6) << 100.0, -194.444, -20.0, 138.889, -120.0, -55.556).finished();
+  Vector expectedb{{100.0, -194.444, -20.0, 138.889, -120.0, -55.556}};
   Vector actualb;
   gfgs.getb(actualb);
   EXPECT(assert_equal(expectedb, actualb, 1e-3));

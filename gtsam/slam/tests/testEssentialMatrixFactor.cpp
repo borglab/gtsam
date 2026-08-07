@@ -54,8 +54,7 @@ Vector vB(size_t i) { return EssentialMatrix::Homogeneous(pB(i)); }
 //*************************************************************************
 TEST(EssentialMatrixFactor, testData) {
   // Check E matrix
-  Matrix expected(3, 3);
-  expected << 0, 0, 0, 0, 0, -0.1, 0.1, 0, 0;
+  Matrix expected{{0, 0, 0}, {0, 0, -0.1}, {0.1, 0, 0}};
   Matrix aEb_matrix =
       skewSymmetric(c1Tc2.x(), c1Tc2.y(), c1Tc2.z()) * c1Rc2.matrix();
   EXPECT(assert_equal(expected, aEb_matrix, 1e-8));
@@ -85,8 +84,7 @@ TEST(EssentialMatrixFactor, factor) {
     EssentialMatrixFactor factor(key, pA(i), pB(i), model1);
 
     // Check evaluation
-    Vector expected(1);
-    expected << 0;
+    Vector expected{{0}};
     Vector actual = factor.evaluateError(trueE);
     EXPECT(assert_equal(expected, actual, 1e-7));
 
@@ -115,8 +113,7 @@ TEST(EssentialMatrixFactor, ExpressionFactor) {
     ExpressionFactor<double> factor(model1, 0, expr);
 
     // Check evaluation
-    Vector expected(1);
-    expected << 0;
+    Vector expected{{0}};
     vector<Matrix> actualH(1);
     Vector actual = factor.unwhitenedError(values, actualH);
     EXPECT(assert_equal(expected, actual, 1e-7));
@@ -149,8 +146,7 @@ TEST(EssentialMatrixFactor, ExpressionFactorRotationOnly) {
     ExpressionFactor<double> factor(model1, 0, expr);
 
     // Check evaluation
-    Vector expected(1);
-    expected << 0;
+    Vector expected{{0}};
     vector<Matrix> actualH(1);
     Vector actual = factor.unwhitenedError(values, actualH);
     EXPECT(assert_equal(expected, actual, 1e-7));
@@ -177,8 +173,7 @@ TEST(EssentialMatrixFactor, minimization) {
 
   // Check error at initial estimate
   Values initial;
-  EssentialMatrix initialE =
-      trueE.retract((Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1).finished());
+  EssentialMatrix initialE = trueE.retract(Vector{{0.1, -0.1, 0.1, 0.1, -0.1}});
   initial.insert(1, initialE);
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
   EXPECT_DOUBLES_EQUAL(643.26, graph.error(initial), 1e-2);
@@ -332,8 +327,7 @@ TEST(EssentialMatrixFactor4, factor) {
     EssentialMatrixFactor4<Cal3_S2> factor(keyE, keyK, pA(i), pB(i), model1);
 
     // Check evaluation
-    Vector1 expected;
-    expected << 0;
+    Vector1 expected{0};
     Vector actual = factor.evaluateError(trueE, trueK);
     EXPECT(assert_equal(expected, actual, 1e-7));
 
@@ -399,14 +393,12 @@ TEST(EssentialMatrixFactor4, minimizationWithStrongCal3S2Prior) {
 
   // Initialization
   Values initial;
-  EssentialMatrix initialE =
-      trueE.retract((Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1).finished());
+  EssentialMatrix initialE = trueE.retract(Vector{{0.1, -0.1, 0.1, 0.1, -0.1}});
   initial.insert(1, initialE);
   initial.insert(2, trueK);
 
   // add prior factor for calibration
-  Vector5 priorNoiseModelSigma;
-  priorNoiseModelSigma << 10, 10, 10, 10, 10;
+  Vector5 priorNoiseModelSigma{10, 10, 10, 10, 10};
   graph.emplace_shared<PriorFactor<Cal3_S2>>(
       2, trueK, noiseModel::Diagonal::Sigmas(priorNoiseModelSigma));
 
@@ -449,16 +441,13 @@ TEST(EssentialMatrixFactor4, minimizationWithWeakCal3S2Prior) {
 
   // Initialization
   Values initial;
-  EssentialMatrix initialE =
-      trueE.retract((Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1).finished());
-  Cal3_S2 initialK =
-      trueK.retract((Vector(5) << 0.1, -0.1, 0.0, -0.0, 0.0).finished());
+  EssentialMatrix initialE = trueE.retract(Vector{{0.1, -0.1, 0.1, 0.1, -0.1}});
+  Cal3_S2 initialK = trueK.retract(Vector{{0.1, -0.1, 0.0, -0.0, 0.0}});
   initial.insert(1, initialE);
   initial.insert(2, initialK);
 
   // add prior factor for calibration
-  Vector5 priorNoiseModelSigma;
-  priorNoiseModelSigma << 20, 20, 1, 1, 1;
+  Vector5 priorNoiseModelSigma{20, 20, 1, 1, 1};
   graph.emplace_shared<PriorFactor<Cal3_S2>>(
       2, initialK, noiseModel::Diagonal::Sigmas(priorNoiseModelSigma));
 
@@ -498,15 +487,13 @@ TEST(EssentialMatrixFactor4, minimizationWithStrongCal3BundlerPrior) {
 
   // Check error at initial estimate
   Values initial;
-  EssentialMatrix initialE =
-      trueE.retract((Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1).finished());
+  EssentialMatrix initialE = trueE.retract(Vector{{0.1, -0.1, 0.1, 0.1, -0.1}});
   Cal3Bundler initialK = trueK;
   initial.insert(1, initialE);
   initial.insert(2, initialK);
 
   // add prior factor for calibration
-  Vector3 priorNoiseModelSigma;
-  priorNoiseModelSigma << 0.1, 0.1, 0.1;
+  Vector3 priorNoiseModelSigma{0.1, 0.1, 0.1};
   graph.emplace_shared<PriorFactor<Cal3Bundler>>(
       2, trueK, noiseModel::Diagonal::Sigmas(priorNoiseModelSigma));
 
@@ -539,8 +526,7 @@ TEST(EssentialMatrixFactor5, factor) {
                                            model1);
 
     // Check evaluation
-    Vector1 expected;
-    expected << 0;
+    Vector1 expected{0};
     Vector actual = factor.evaluateError(trueE, trueK, trueK);
     EXPECT(assert_equal(expected, actual, 1e-7));
 
@@ -618,8 +604,7 @@ TEST(EssentialMatrixFactor, extraMinimization) {
 
   // Check error at initial estimate
   Values initial;
-  EssentialMatrix initialE =
-      trueE.retract((Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1).finished());
+  EssentialMatrix initialE = trueE.retract(Vector{{0.1, -0.1, 0.1, 0.1, -0.1}});
   initial.insert(1, initialE);
 
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)

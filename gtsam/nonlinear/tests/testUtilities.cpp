@@ -61,7 +61,7 @@ TEST(Utilities, ExtractPoint3) {
 TEST(Utilities, PerturbPoint2) {
   Values base;
   base.insert<Point2>(L(0), Point2(1.0, 2.0));
-  base.insert<Vector>(L(1), (Vector(2) << 3.0, 4.0).finished());
+  base.insert<Vector>(L(1), Vector{{3.0, 4.0}});
 
   Values v1 = base, v2 = base;
   utilities::perturbPoint2(v1, /*sigma=*/0.1, /*seed=*/42u);
@@ -85,7 +85,7 @@ TEST(Utilities, PerturbPoint2) {
 TEST(Utilities, PerturbPoint3) {
   Values base;
   base.insert<Point3>(L(0), Point3(1.0, 2.0, 3.0));
-  base.insert<Vector>(L(1), (Vector(3) << 4.0, 5.0, 6.0).finished());
+  base.insert<Vector>(L(1), Vector{{4.0, 5.0, 6.0}});
 
   Values v1 = base, v2 = base;
   utilities::perturbPoint3(v1, /*sigma=*/0.1, /*seed=*/42u);
@@ -147,19 +147,18 @@ TEST(Utilities, PerturbPose3) {
 TEST(Utilities, ExtractVector) {
   // Test normal case with 3 vectors and 1 non-vector (ignore non-vector)
   auto values = Values();
-  values.insert(X(0), (Vector(4) << 1, 2, 3, 4).finished());
-  values.insert(X(2), (Vector(4) << 13, 14, 15, 16).finished());
-  values.insert(X(1), (Vector(4) << 6, 7, 8, 9).finished());
+  values.insert(X(0), Vector{{1, 2, 3, 4}});
+  values.insert(X(2), Vector{{13, 14, 15, 16}});
+  values.insert(X(1), Vector{{6, 7, 8, 9}});
   values.insert(X(3), Pose3());
   auto actual = utilities::extractVectors(values, 'x');
-  auto expected =
-      (Matrix(3, 4) << 1, 2, 3, 4, 6, 7, 8, 9, 13, 14, 15, 16).finished();
+  auto expected = Matrix{{1, 2, 3, 4}, {6, 7, 8, 9}, {13, 14, 15, 16}};
   EXPECT(assert_equal(expected, actual));
 
   // Check that mis-sized vectors fail
-  values.insert(X(4), (Vector(2) << 1, 2).finished());
+  values.insert(X(4), Vector{{1, 2}});
   THROWS_EXCEPTION(utilities::extractVectors(values, 'x'));
-  values.update(X(4), (Vector(6) << 1, 2, 3, 4, 5, 6).finished());
+  values.update(X(4), Vector{{1, 2, 3, 4, 5, 6}});
   THROWS_EXCEPTION(utilities::extractVectors(values, 'x'));
 }
 
