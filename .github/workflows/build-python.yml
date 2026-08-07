@@ -1,4 +1,4 @@
-name: Python CI
+name: PR CI
 
 # Documentation-only changes are excluded at the trigger level, so neither the
 # fast compilation gate nor the Python matrix consumes a runner for those PRs.

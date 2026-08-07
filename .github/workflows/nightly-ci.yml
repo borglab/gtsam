@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: read
-  issues: write
 
 jobs:
   linux:
@@ -31,6 +30,9 @@ jobs:
     needs: [linux, macos, windows, vcpkg, special]
     if: always()
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     env:
       LINUX_RESULT: ${{ needs.linux.result }}
       MACOS_RESULT: ${{ needs.macos.result }}
