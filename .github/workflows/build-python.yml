@@ -1,8 +1,7 @@
 name: Python CI
 
-# Since this is a required check, specify paths-ignore in the check-paths job
-# instead of under 'pull_request:'. Otherwise, the check is still required but
-# never runs, and a maintainer must bypass the check in order to merge the PR.
+# Documentation-only changes are excluded at the trigger level, so neither the
+# fast compilation gate nor the Python matrix consumes a runner for those PRs.
 on:
   push:
     branches:
@@ -67,10 +66,62 @@ jobs:
             echo 'build_matrix={"include":[{"name":"ubuntu-22.04-gcc-11","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"gcc","version":"11"},{"name":"ubuntu-22.04-gcc-11-noboost","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"gcc","version":"11"},{"name":"ubuntu-22.04-clang-11","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"clang","version":"11"},{"name":"macos-15-xcode-16","build_type":"Release","python_version":3,"os":"macos-15","compiler":"xcode","version":"16"},{"name":"windows-2022-msvc","build_type":"Release","python_version":3,"os":"windows-2022","platform":64}]}' >> "$GITHUB_OUTPUT"
           fi
 
-  build:
-    # Only run build if relevant files have been modified in this PR.
+  fast-compile:
+    name: Fast compile (${{ matrix.name }})
     needs: check-paths
-    if: github.event_name == 'workflow_dispatch' || needs.check-paths.outputs.should_run == 'true'
+    if: github.event_name == 'pull_request' && needs.check-paths.outputs.should_run == 'true'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-latest
+          - name: Windows
+            os: windows-latest
+          - name: macOS
+            os: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Configure
+        shell: bash
+        run: >-
+          cmake -S . -B build-fast -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DGTSAM_BUILD_TESTS=OFF
+          -DGTSAM_BUILD_UNSTABLE=OFF
+          -DGTSAM_UNSTABLE_BUILD_PYTHON=OFF
+          -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF
+          -DGTSAM_BUILD_TIMING_ALWAYS=OFF
+          -DGTSAM_BUILD_DOCS=OFF
+          -DGTSAM_BUILD_PYTHON=OFF
+          -DGTSAM_INSTALL_MATLAB_TOOLBOX=OFF
+          -DGTSAM_WITH_TBB=OFF
+          -DGTSAM_USE_BOOST_FEATURES=OFF
+          -DGTSAM_ENABLE_BOOST_SERIALIZATION=OFF
+          -DGTSAM_ENABLE_GEOGRAPHICLIB=OFF
+          -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF
+
+      - name: Compile gtsam
+        run: cmake --build build-fast --target gtsam --parallel 4
+
+  build:
+    # On PRs, create all existing required contexts even if the fast gate fails.
+    # Their first step reports the gate failure; expensive setup never starts.
+    needs: [check-paths, fast-compile]
+    if: >-
+      always() &&
+      (github.event_name == 'workflow_dispatch' ||
+       github.event_name == 'push' ||
+       needs.check-paths.outputs.should_run == 'true')
 
     name: ${{ matrix.name }} ${{ matrix.build_type }} Python ${{ matrix.python_version }}
     runs-on: ${{ matrix.os }}
@@ -83,10 +134,21 @@ jobs:
       SCCACHE_GHA_ENABLED: ON
 
     strategy:
-      fail-fast: true
+      # Preserve fail-fast for normal Python CI, but let every required context
+      # report a failed fast gate instead of being cancelled by a sibling.
+      fail-fast: >-
+        ${{ github.event_name != 'pull_request' ||
+            needs.fast-compile.result == 'success' }}
       matrix: ${{ fromJSON(needs.check-paths.outputs.build_matrix) }}
 
     steps:
+      - name: Require successful fast compilation
+        if: github.event_name == 'pull_request' && needs.fast-compile.result != 'success'
+        shell: bash
+        run: |
+          echo "Fast compilation did not succeed (result: ${{ needs.fast-compile.result }})."
+          exit 1
+
       - name: Checkout
         uses: actions/checkout@v6
 
