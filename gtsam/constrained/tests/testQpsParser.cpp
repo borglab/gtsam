@@ -34,9 +34,9 @@ namespace qps_parser_fixture {
 const Key x1 = Symbol('X', 1);
 const Key x2 = Symbol('X', 2);
 
-Matrix Matrix1(double value) { return (Matrix(1, 1) << value).finished(); }
+Matrix Matrix1(double value) { return Matrix{{value}}; }
 
-Vector Vector1D(double value) { return (Vector(1) << value).finished(); }
+Vector Vector1D(double value) { return Vector{{value}}; }
 
 QpsParserResult ParseExample(const std::string& name) {
   return QpsParser::parseFile(findExampleDataFile(name));

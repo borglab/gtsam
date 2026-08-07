@@ -490,8 +490,8 @@ template <> struct ParseMeasurement<BearingRange2D> {
       return std::nullopt;
 
     // Create noise model
-    auto measurementNoise = noiseModel::Diagonal::Sigmas(
-        (Vector(2) << bearing_std, range_std).finished());
+    auto measurementNoise =
+        noiseModel::Diagonal::Sigmas(Vector{{bearing_std, range_std}});
 
     return BinaryMeasurement<BearingRange2D>(
         id1, L(id2), BearingRange2D(bearing, range), measurementNoise);

@@ -251,9 +251,7 @@ Pose2 U1(1.0, 1.0, 0.5), U2(1.0, 1.0, 0.0);
 ```
 Two GPS measurements are also created; 
 ```cpp
-  Vector2 z1, z2;
-  z1 << 1.0, 0.0;
-  z2 << 1.0, 1.0;
+  Vector2 z1{1.0, 0.0}, z2{1.0, 1.0};
 ```
 
 #### Running the EKF
@@ -312,17 +310,13 @@ For this example, assume constant process and observation covariances. Then,
 #### Defining IMU and GPS measurements
 Two IMU measurements and two GPS measurements are defined in this problem. The IMU measurements are given by
 ```cpp
-  Vector6 imu1;
-  imu1 << 0.1, 0, 0, 0, 0.2, 0;
-  Vector6 imu2;
-  imu2 << 0, 0.3, 0, 0.4, 0, 0;
+  Vector6 imu1{0.1, 0, 0, 0, 0.2, 0};
+  Vector6 imu2{0, 0.3, 0, 0.4, 0, 0};
 ```
 and the GPS measurements are given by
 ```cpp
-  Vector3 z1;
-  z1 << 0.3, 0, 0;
-  Vector3 z2;
-  z2 << 0.6, 0, 0;
+  Vector3 z1{0.3, 0, 0};
+  Vector3 z2{0.6, 0, 0};
 ```
 Since control vector inputs $u$ are used, a time interval $\Delta t$ is also needed. This is defined as 
 ```cpp
@@ -435,7 +429,7 @@ The right group action $\phi_\eta(Q) = Q^T \eta$ is used to relate the group ele
 The predicted measurement is a scaled version of the estimated direction:
 ```cpp
 Vector3 h(const Unit3& eta_hat, OptionalJacobian<3, 2> H = {}) {
-  if (H) *H = c_m * eta_hat.basis();
+  if (H) *H = c_m * etaf_hat.basis();
   return c_m * eta_hat.point3();
 }
 ```

@@ -59,9 +59,7 @@ public:
 
   /// Construct from attitude, position, velocity
   NavState(const Rot3& R, const Point3& t, const Velocity3& v)
-      : Base(R, (Eigen::Matrix<double, 3, 2>() << t.x(), v.x(), t.y(), v.y(),
-                 t.z(), v.z())
-                    .finished()) {}
+      : Base(R, Matrix32{{t.x(), v.x()}, {t.y(), v.y()}, {t.z(), v.z()}}) {}
 
   /// Construct from pose and velocity
   NavState(const Pose3& pose, const Velocity3& v)

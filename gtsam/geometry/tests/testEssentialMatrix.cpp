@@ -83,8 +83,7 @@ TEST (EssentialMatrix, localCoordinates) {
   Vector actual = hx.localCoordinates(EssentialMatrix::FromPose3(pose));
   EXPECT(assert_equal(Z_5x1, actual, 1e-8));
 
-  Vector6 d;
-  d << 0.1, 0.2, 0.3, 0, 0, 0;
+  Vector6 d{0.1, 0.2, 0.3, 0, 0, 0};
   Vector actual2 = hx.localCoordinates(
       EssentialMatrix::FromPose3(pose.retract(d)));
   EXPECT(assert_equal(d.head(5), actual2, 1e-8));
@@ -99,7 +98,7 @@ TEST (EssentialMatrix, retract0) {
 //*************************************************************************
 TEST (EssentialMatrix, retract1) {
   EssentialMatrix expected(trueRotation.retract(Vector3(0.1, 0, 0)), trueDirection);
-  EssentialMatrix actual = trueE.retract((Vector(5) << 0.1, 0, 0, 0, 0).finished());
+  EssentialMatrix actual = trueE.retract(Vector{{0.1, 0, 0, 0, 0}});
   EXPECT(assert_equal(expected, actual));
 }
 
@@ -107,14 +106,13 @@ TEST (EssentialMatrix, retract1) {
 TEST (EssentialMatrix, retract2) {
   EssentialMatrix expected(trueRotation,
       trueDirection.retract(Vector2(0.1, 0)));
-  EssentialMatrix actual = trueE.retract((Vector(5) << 0, 0, 0, 0.1, 0).finished());
+  EssentialMatrix actual = trueE.retract(Vector{{0, 0, 0, 0.1, 0}});
   EXPECT(assert_equal(expected, actual));
 }
 
 //*************************************************************************
 TEST (EssentialMatrix, RoundTrip) {
-  Vector5 d;
-  d << 0.1, 0.2, 0.3, 0.4, 0.5;
+  Vector5 d{0.1, 0.2, 0.3, 0.4, 0.5};
   EssentialMatrix e, hx = e.retract(d);
   Vector actual = e.localCoordinates(hx);
   EXPECT(assert_equal(d, actual, 1e-8));
@@ -258,4 +256,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

@@ -27,10 +27,10 @@ TEST(cholesky, choleskyPartial0) {
 
   // choleskyPartial should only use the upper triangle, so this represents a
   // symmetric matrix.
-  Matrix ABC(3,3);
-  ABC <<  4.0375,   3.4584,   3.5735,
-          0.,       4.7267,   3.8423,
-          0.,       0.,       5.1600;
+  Matrix ABC{//
+             {4.0375, 3.4584, 3.5735},
+             {0., 4.7267, 3.8423},
+             {0., 0., 5.1600}};
 
   // Test passing 0 frontals to partialCholesky
   Matrix RSL(ABC);
@@ -40,14 +40,15 @@ TEST(cholesky, choleskyPartial0) {
 
 /* ************************************************************************* */
 TEST(cholesky, choleskyPartial) {
-  Matrix ABC = (Matrix(7,7) <<
-                      4.0375,   3.4584,   3.5735,   2.4815,   2.1471,   2.7400,   2.2063,
-                          0.,   4.7267,   3.8423,   2.3624,   2.8091,   2.9579,   2.5914,
-                          0.,       0.,   5.1600,   2.0797,   3.4690,   3.2419,   2.9992,
-                          0.,       0.,       0.,   1.8786,   1.0535,   1.4250,   1.3347,
-                          0.,       0.,       0.,       0.,   3.0788,   2.6283,   2.3791,
-                          0.,       0.,       0.,       0.,       0.,   2.9227,   2.4056,
-                          0.,       0.,       0.,       0.,       0.,       0.,   2.5776).finished();
+  // clang-format off
+  Matrix ABC{{4.0375,   3.4584,   3.5735,   2.4815,   2.1471,   2.7400,   2.2063},
+                 {0.,   4.7267,   3.8423,   2.3624,   2.8091,   2.9579,   2.5914},
+                 {0.,       0.,   5.1600,   2.0797,   3.4690,   3.2419,   2.9992},
+                 {0.,       0.,       0.,   1.8786,   1.0535,   1.4250,   1.3347},
+                 {0.,       0.,       0.,       0.,   3.0788,   2.6283,   2.3791},
+                 {0.,       0.,       0.,       0.,       0.,   2.9227,   2.4056},
+                 {0.,       0.,       0.,       0.,       0.,       0.,   2.5776}};
+  // clang-format on
 
   // Do partial Cholesky on 3 frontal scalar variables
   Matrix RSL(ABC);
@@ -68,9 +69,7 @@ TEST(cholesky, choleskyPartial) {
 
 /* ************************************************************************* */
 TEST(cholesky, BadScalingCholesky) {
-  Matrix A = (Matrix(2,2) <<
-      1e-40, 0.0,
-      0.0, 1.0).finished();
+  Matrix A{{1e-40, 0.0}, {0.0, 1.0}};
 
   Matrix R(A.transpose() * A);
   choleskyPartial(R, 2);
@@ -83,9 +82,7 @@ TEST(cholesky, BadScalingCholesky) {
 
 /* ************************************************************************* */
 TEST(cholesky, BadScalingSVD) {
-  Matrix A = (Matrix(2,2) <<
-      1.0, 0.0,
-      0.0, 1e-40).finished();
+  Matrix A{{1.0, 0.0}, {0.0, 1e-40}};
 
   Matrix U, V;
   Vector S;

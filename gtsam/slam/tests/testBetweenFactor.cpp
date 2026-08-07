@@ -66,7 +66,7 @@ TEST(BetweenFactor, ConstructorVector3) {
 // Constructor dynamic sized vector
 TEST(BetweenFactor, ConstructorDynamicSizeVector) {
   SharedNoiseModel model = noiseModel::Isotropic::Sigma(5, 1.0);
-  Vector measured(5); measured << 1, 2, 3, 4, 5;
+  Vector measured{{1, 2, 3, 4, 5}};
   BetweenFactor<Vector> factor(1, 2, measured, model);
 }
 

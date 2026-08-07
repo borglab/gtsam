@@ -53,11 +53,7 @@ bool Cal3f::equals(const Cal3f& K, double tol) const {
 }
 
 /* ************************************************************************* */
-Vector1 Cal3f::vector() const {
-  Vector1 v;
-  v << fx_;
-  return v;
-}
+Vector1 Cal3f::vector() const { return Vector1{fx_}; }
 
 /* ************************************************************************* */
 Point2 Cal3f::uncalibrate(const Point2& p, OptionalJacobian<2, 1> Dcal,
@@ -68,14 +64,12 @@ Point2 Cal3f::uncalibrate(const Point2& p, OptionalJacobian<2, 1> Dcal,
   const double v = fx_ * y + v0_;
 
   if (Dcal) {
-    Dcal->resize(2, 1);
-    (*Dcal) << x, y;
+    *Dcal = Matrix21{{x}, {y}};
   }
 
   if (Dp) {
-    Dp->resize(2, 2);
-    (*Dp) << fx_, 0.0,  //
-        0.0, fx_;
+    *Dp = Matrix2{{fx_, 0.0},  //
+                  {0.0, fx_}};
   }
 
   return Point2(u, v);
@@ -91,14 +85,12 @@ Point2 Cal3f::calibrate(const Point2& pi, OptionalJacobian<2, 1> Dcal,
   Point2 point(inv_f * delta_u, inv_f * delta_v);
 
   if (Dcal) {
-    Dcal->resize(2, 1);
-    (*Dcal) << -inv_f * point.x(), -inv_f * point.y();
+    *Dcal = Matrix21{{-inv_f * point.x()}, {-inv_f * point.y()}};
   }
 
   if (Dp) {
-    Dp->resize(2, 2);
-    (*Dp) << inv_f, 0.0,  //
-        0.0, inv_f;
+    *Dp = Matrix2{{inv_f, 0.0},  //
+                  {0.0, inv_f}};
   }
 
   return point;

@@ -61,9 +61,9 @@ TEST(Gal3ImuEKF, DefaultProcessNoiseFromParams) {
 
   // GIVEN params with specific covariances
   auto params = PreintegrationParams::MakeSharedU(9.81);
-  Matrix3 Cg = (Matrix3() << 0.01, 0, 0, 0, 0.02, 0, 0, 0, 0.03).finished();
-  Matrix3 Ci = (Matrix3() << 0.001, 0, 0, 0, 0.002, 0, 0, 0, 0.003).finished();
-  Matrix3 Ca = (Matrix3() << 0.1, 0, 0, 0, 0.2, 0, 0, 0, 0.3).finished();
+  Matrix3 Cg{{0.01, 0, 0}, {0, 0.02, 0}, {0, 0, 0.03}};
+  Matrix3 Ci{{0.001, 0, 0}, {0, 0.002, 0}, {0, 0, 0.003}};
+  Matrix3 Ca{{0.1, 0, 0}, {0, 0.2, 0}, {0, 0, 0.3}};
   params->setGyroscopeCovariance(Cg);
   params->setIntegrationCovariance(Ci);
   params->setAccelerometerCovariance(Ca);

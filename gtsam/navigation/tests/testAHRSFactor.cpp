@@ -367,8 +367,7 @@ TEST(AHRSFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
   Rot3 Rj(Rot3::Expmap(Vector3(0, 0, M_PI / 4.0 + M_PI / 10.0)));
 
   // Measurements
-  Vector3 omegaCoriolis;
-  omegaCoriolis << 0, 0.1, 0.1;
+  Vector3 omegaCoriolis(0, 0.1, 0.1);
   Vector3 measuredOmega(0, 0, M_PI / 10.0 + 0.3);
   double deltaT = 1.0;
 

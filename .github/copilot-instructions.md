@@ -30,6 +30,36 @@ focused.
 * When reviewing changes, flag overly complex or long functions and recommend
   breaking them into smaller functions.
 
+### Eigen Fixed-Size and Dynamic Storage
+
+Use fixed-size types such as `Matrix3`, `Matrix23`, and `Vector6` when
+dimensions are known at compile time, especially for `OptionalJacobian`
+outputs. Fixed-size types store their coefficients inline and avoid unnecessary
+dynamic allocation and fixed/dynamic conversions.
+
+Use `Matrix` and `Vector` when dimensions are determined at runtime or when an
+existing API explicitly requires a dynamic type.
+
+When assigning to a fixed-size Jacobian, prefer writing directly to it or using
+a fixed-size temporary:
+
+```cpp
+if (H) {
+  *H = Matrix3{{1.0, 0.0, 0.0},
+               {0.0, 1.0, 0.0},
+               {0.0, 0.0, 1.0}};
+}
+```
+
+Use flat initializer lists for vectors and nested initializer lists for
+matrices:
+
+```cpp
+Vector3 vector{1.0, 2.0, 3.0};
+Matrix23 matrix{{1.0, 2.0, 3.0},
+                {4.0, 5.0, 6.0}};
+```
+
 ## Wrappers and vendored code
 
 * When a C++ function is exposed in a wrapper `.i` file, parameter names must

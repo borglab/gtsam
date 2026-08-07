@@ -42,7 +42,7 @@ std::ostream& operator<<(std::ostream& os, const Cal3Unified& cal) {
 /* ************************************************************************* */
 void Cal3Unified::print(const std::string& s) const {
   Base::print(s);
-  gtsam::print((Vector)(Vector(1) << xi_).finished(), s + ".xi");
+  gtsam::print(Vector{{xi_}}, s + ".xi");
 }
 
 /* ************************************************************************* */
@@ -78,9 +78,8 @@ Point2 Cal3Unified::uncalibrate(const Point2& p, OptionalJacobian<2, 10> Dcal,
   // Inlined derivative for calibration
   if (Dcal) {
     // part1
-    Vector2 DU;
-    DU << -xs * sqrt_nx * xi_sqrt_nx2,  //
-        -ys * sqrt_nx * xi_sqrt_nx2;
+    Vector2 DU{-xs * sqrt_nx * xi_sqrt_nx2,  //
+               -ys * sqrt_nx * xi_sqrt_nx2};
     *Dcal << H1base, H2base * DU;
   }
 
@@ -89,11 +88,10 @@ Point2 Cal3Unified::uncalibrate(const Point2& p, OptionalJacobian<2, 10> Dcal,
     // part1
     const double denom = 1.0 * xi_sqrt_nx2 / sqrt_nx;
     const double mid = -(xi * xs * ys) * denom;
-    Matrix2 DU;
-    DU << (sqrt_nx + xi * (ys * ys + 1)) * denom, mid,  //
-        mid, (sqrt_nx + xi * (xs * xs + 1)) * denom;
+    Matrix2 DU{{(sqrt_nx + xi * (ys * ys + 1)) * denom, mid},
+               {mid, (sqrt_nx + xi * (xs * xs + 1)) * denom}};
 
-    *Dp << H2base * DU;
+    *Dp = H2base * DU;
   }
 
   return puncalib;

@@ -22,6 +22,7 @@
 #include <gtsam/base/ProductLieGroup.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/testLie.h>
+#include <gtsam/geometry/Gal3.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Rot2.h>
@@ -33,6 +34,8 @@ using namespace gtsam;
 namespace semidirect_product_fixture {
 
 constexpr double kTol = 1e-9;
+
+using Vector10 = Eigen::Matrix<double, 10, 1>;
 
 // Rot2 acting on Point2 by rotation: φ(R, t) = R·t.
 // The infinitesimal generator is Aφ(u) = Hat(u), a 2x2 skew matrix.
@@ -64,29 +67,69 @@ struct Rot3VectorAction : public GroupAction<Rot3VectorAction, Rot3, Vector3> {
   static Matrix3 generator(const Vector3& u) { return skewSymmetric(u); }
 };
 
+// SE(3) acting on ℝ⁴=(position p, time s): φ((R,ν),[p;s]) = [R·p+ν·s; s], the
+// 4×4 homogeneous matrix M(g)=[[R,ν],[0,1]] times [p;s]. The Pose3 translation
+// slot holds the velocity-boost ν. Reconstructs Gal(3) = SE(3) ⋉ ℝ⁴.
+struct SE3Vector4Action : public GroupAction<SE3Vector4Action, Pose3, Vector4> {
+  static constexpr ActionType type = ActionType::Left;
+
+  Vector4 operator()(const Pose3& g, const Vector4& h,
+                     OptionalJacobian<4, 6> Hg = {},
+                     OptionalJacobian<4, 4> Hh = {}) const {
+    const Rot3& R = g.rotation();
+    const Point3 nu = g.translation();  // velocity-boost
+    const Vector3 p = h.head<3>();
+    const double s = h(3);
+
+    Matrix3 D_Rp_R, D_Rp_p;
+    const Point3 Rp =
+        R.rotate(p, Hg ? &D_Rp_R : nullptr, Hh ? &D_Rp_p : nullptr);
+
+    Vector4 out;
+    out << (Rp + s * nu), s;
+
+    if (Hg) {
+      // g·Exp([ω;ρ]) ≈ (R·Exp(ω^), ν + R·ρ): ∂/∂ω = -R·p^ (=D_Rp_R), ∂/∂ρ =
+      // s·R.
+      Hg->setZero();
+      Hg->topLeftCorner<3, 3>() = D_Rp_R;
+      Hg->block<3, 3>(0, 3) = s * R.matrix();
+    }
+    if (Hh) {
+      // ∂φ/∂h = M(g) = [[R, ν],[0,1]].
+      Hh->setZero();
+      Hh->topLeftCorner<3, 3>() = D_Rp_p;  // ∂/∂p = R
+      Hh->block<3, 1>(0, 3) = nu;          // ∂/∂s = ν
+      (*Hh)(3, 3) = 1.0;
+    }
+    return out;
+  }
+
+  /// Generator Aφ([ω;ρ]) = 4×4 se(3) hat = [[ω^, ρ],[0,0]].
+  static Matrix4 generator(const Vector6& u) {
+    Matrix4 A = Matrix4::Zero();
+    A.topLeftCorner<3, 3>() = skewSymmetric(u.head<3>());
+    A.block<3, 1>(0, 3) = u.tail<3>();
+    return A;
+  }
+};
+
 using Semidirect2 = ProductLieGroup<Rot2, Point2, Rot2PointAction>;
 using Semidirect = ProductLieGroup<Rot3, Vector3, Rot3VectorAction>;
+using SemidirectGal3 = ProductLieGroup<Pose3, Vector4, SE3Vector4Action>;
 
 Semidirect2 semidirect2State() {
   return Semidirect2(Rot2::fromAngle(0.35), Point2(0.4, -0.6));
 }
 
-Vector3 semidirect2Xi() {
-  Vector3 xi;
-  xi << 0.25, 0.3, -0.2;
-  return xi;
-}
+Vector3 semidirect2Xi() { return Vector3{0.25, 0.3, -0.2}; }
 
 Vector3 pose2XiFromSemidirect2(const Vector3& xi) {
-  Vector3 pose2Xi;
-  pose2Xi << xi(1), xi(2), xi(0);
-  return pose2Xi;
+  return Vector3{xi(1), xi(2), xi(0)};
 }
 
 Vector3 semidirect2XiFromPose2(const Vector3& xi) {
-  Vector3 semidirectXi;
-  semidirectXi << xi(2), xi(0), xi(1);
-  return semidirectXi;
+  return Vector3{xi(2), xi(0), xi(1)};
 }
 
 Semidirect2 expmapSemidirect2Proxy(const Vector3& vec) {
@@ -117,17 +160,9 @@ Semidirect semidirectState4() {
   return Semidirect(Rot3::RzRyRx(0.1, -0.2, 0.3), Vector3(0.4, -0.1, 0.2));
 }
 
-Vector6 semidirectXi() {
-  Vector6 xi;
-  xi << 0.1, -0.2, 0.3, 0.4, -0.1, 0.2;
-  return xi;
-}
+Vector6 semidirectXi() { return Vector6{0.1, -0.2, 0.3, 0.4, -0.1, 0.2}; }
 
-Vector6 retractDelta() {
-  Vector6 delta;
-  delta << 0.05, -0.04, 0.03, 0.1, -0.2, 0.05;
-  return delta;
-}
+Vector6 retractDelta() { return Vector6{0.05, -0.04, 0.03, 0.1, -0.2, 0.05}; }
 
 Semidirect composeSemidirectProxy(const Semidirect& A, const Semidirect& B) {
   return A.compose(B);
@@ -160,6 +195,75 @@ Pose3 asPose3(const Semidirect& state) {
   return Pose3(state.first, state.second);
 }
 
+Gal3 asGal3(const SemidirectGal3& s) {
+  // Pose3.translation() holds the velocity-boost; H.head<3>() is the position.
+  return Gal3(s.first.rotation(), s.second.head<3>(), s.first.translation(),
+              s.second(3));
+}
+
+Vector10 gal3Xi() {
+  Vector10 xi;
+  xi << 0.1, -0.2, 0.3, 0.4, -0.1, 0.2, 0.15, -0.25, 0.3, 0.2;
+  return xi;
+}
+
+SemidirectGal3 expmapSGal3(const Vector10& v) {
+  return SemidirectGal3::Expmap(v);
+}
+
+Vector10 logmapSGal3(const SemidirectGal3& s) {
+  return SemidirectGal3::Logmap(s);
+}
+
+SemidirectGal3 gal3State1() {
+  return SemidirectGal3(
+      Pose3(Rot3::RzRyRx(0.1, 0.2, -0.3), Point3(1.0, -0.5, 0.25)),
+      (Vector4() << 0.4, -0.2, 0.7, 0.3).finished());
+}
+
+SemidirectGal3 gal3State2() {
+  return SemidirectGal3(
+      Pose3(Rot3::RzRyRx(-0.2, 0.1, 0.15), Point3(-0.75, 0.4, 1.2)),
+      (Vector4() << -0.3, 0.5, -0.1, 0.6).finished());
+}
+
+SemidirectGal3 gal3State3() {
+  return SemidirectGal3(
+      Pose3(Rot3::RzRyRx(0.2, -0.1, 0.05), Point3(0.3, -0.6, 0.8)),
+      (Vector4() << 0.2, 0.1, -0.4, 0.2).finished());
+}
+
+SemidirectGal3 gal3State4() {
+  return SemidirectGal3(
+      Pose3(Rot3::RzRyRx(0.1, -0.2, 0.3), Point3(0.4, -0.1, 0.2)),
+      (Vector4() << 0.15, -0.25, 0.3, 0.2).finished());
+}
+
+Vector10 gal3RetractDelta() {
+  Vector10 delta;
+  delta << 0.05, -0.04, 0.03, 0.1, -0.2, 0.05, 0.02, -0.03, 0.04, 0.01;
+  return delta;
+}
+
+SemidirectGal3 composeSGal3(const SemidirectGal3& A, const SemidirectGal3& B) {
+  return A.compose(B);
+}
+
+SemidirectGal3 betweenSGal3(const SemidirectGal3& A, const SemidirectGal3& B) {
+  return A.between(B);
+}
+
+SemidirectGal3 inverseSGal3(const SemidirectGal3& A) { return A.inverse(); }
+
+SemidirectGal3 retractSGal3(const SemidirectGal3& X, const Vector10& v) {
+  return X.retract(v);
+}
+
+Vector10 localCoordinatesSGal3(const SemidirectGal3& X,
+                               const SemidirectGal3& Y) {
+  return X.localCoordinates(Y);
+}
+
 // A second semidirect instance, Rot2 ⋉ R², checks the generic kernel path in
 // a different dimension with Pose2 as the oracle.
 TEST(Lie, ProductLieGroupSemidirectAction2D) {
@@ -173,7 +277,7 @@ TEST(Lie, ProductLieGroupSemidirectAction2D) {
   const Point2 t(0.4, -0.5);
   EXPECT_LEFT_ACTION(action, R1, R2, t);
 
-  const Vector1 u = (Vector1() << 0.35).finished();
+  const Vector1 u{0.35};
   const Point2 p(0.2, -0.7);
   const double eps = 1e-7;
   const Point2 generatorAction = Rot2PointAction::generator(u) * p;
@@ -357,6 +461,157 @@ TEST(testActionProduct, retractAndLocalCoordinates) {
       numericalDerivative21(localCoordinatesSemidirectProxy, state, updated);
   const Matrix numericLocalH2 =
       numericalDerivative22(localCoordinatesSemidirectProxy, state, updated);
+
+  EXPECT(assert_equal(numericRetractH1, retractH1, 1e-6));
+  EXPECT(assert_equal(numericRetractH2, retractH2, 1e-6));
+  EXPECT(assert_equal(numericLocalH1, localH1, 1e-6));
+  EXPECT(assert_equal(numericLocalH2, localH2, 1e-6));
+}
+
+// A third semidirect instance, SE(3) ⋉ ℝ⁴, reconstructs Gal(3) and exercises a
+// non-trivial (Pose3) base with a 4-D action, using the native Gal3 as oracle.
+TEST(Lie, ProductLieGroupSemidirectActionGal3) {
+  GTSAM_CONCEPT_ASSERT(IsGroup<SemidirectGal3>);
+  GTSAM_CONCEPT_ASSERT(IsManifold<SemidirectGal3>);
+  GTSAM_CONCEPT_ASSERT(IsLieGroup<SemidirectGal3>);
+  EXPECT_LONGS_EQUAL(10, SemidirectGal3::dimension);
+
+  const SE3Vector4Action action;
+  const Pose3 g1 = Pose3(Rot3::RzRyRx(0.1, -0.2, 0.3), Point3(0.4, -0.5, 0.6));
+  const Pose3 g2 = Pose3(Rot3::RzRyRx(-0.2, 0.05, 0.1), Point3(-0.3, 0.2, 0.1));
+  const Vector4 h = (Vector4() << 0.4, -0.5, 0.6, 0.3).finished();
+  EXPECT_LEFT_ACTION(action, g1, g2, h);
+
+  const Vector6 u = (Vector6() << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6).finished();
+  const Vector4 p = (Vector4() << 0.2, -0.7, 0.5, 0.4).finished();
+  const double eps = 1e-7;
+  const Vector4 generatorAction = SE3Vector4Action::generator(u) * p;
+  const Vector4 generatorFiniteDifference =
+      (action(Pose3::Expmap(eps * u), p) - p) / eps;
+  EXPECT(assert_equal(generatorAction, generatorFiniteDifference, 1e-6));
+
+  const Vector10 xi = gal3Xi();
+  const SemidirectGal3 actual = SemidirectGal3::Expmap(xi);
+  EXPECT(assert_equal(Gal3::Expmap(xi), asGal3(actual), kTol));
+  EXPECT(assert_equal(xi, SemidirectGal3::Logmap(actual), kTol));
+
+  const SemidirectGal3 a = gal3State1();
+  const SemidirectGal3 b = gal3State2();
+  const SemidirectGal3 c = gal3State3();
+  EXPECT(assert_equal(asGal3((a * b) * c), asGal3(a * (b * c)), kTol));
+  EXPECT(assert_equal(asGal3(a * a.inverse()), Gal3(), kTol));
+  EXPECT(assert_equal(asGal3(a * b), asGal3(a) * asGal3(b), kTol));
+}
+
+// Check Gal(3) compose values and Jacobians against native Gal3 and numerical
+// derivatives.
+TEST(testActionProduct, composeGal3) {
+  const SemidirectGal3 state1 = gal3State1();
+  const SemidirectGal3 state2 = gal3State2();
+
+  Matrix actH1, actH2;
+  const SemidirectGal3 actual = state1.compose(state2, actH1, actH2);
+  const Matrix numericH1 = numericalDerivative21(composeSGal3, state1, state2);
+  const Matrix numericH2 = numericalDerivative22(composeSGal3, state1, state2);
+
+  EXPECT(assert_equal(asGal3(actual), asGal3(state1) * asGal3(state2), kTol));
+  EXPECT(assert_equal(numericH1, actH1, 1e-6));
+  EXPECT(assert_equal(numericH2, actH2, 1e-6));
+}
+
+// Check Gal(3) between values and Jacobians against native Gal3 and numerical
+// derivatives.
+TEST(testActionProduct, betweenGal3) {
+  const SemidirectGal3 state1 = gal3State1();
+  const SemidirectGal3 state2 = gal3State2();
+
+  Matrix actH1, actH2;
+  const SemidirectGal3 actual = state1.between(state2, actH1, actH2);
+  const Matrix numericH1 = numericalDerivative21(betweenSGal3, state1, state2);
+  const Matrix numericH2 = numericalDerivative22(betweenSGal3, state1, state2);
+
+  EXPECT(assert_equal(asGal3(actual), asGal3(state1).between(asGal3(state2)),
+                      kTol));
+  EXPECT(assert_equal(numericH1, actH1, 1e-6));
+  EXPECT(assert_equal(numericH2, actH2, 1e-6));
+}
+
+// Check the Gal(3) inverse and its Jacobian against native Gal3 and numerical
+// derivatives.
+TEST(testActionProduct, inverseGal3) {
+  const SemidirectGal3 state = gal3State4();
+
+  Matrix actH;
+  const SemidirectGal3 actual = state.inverse(actH);
+  const Matrix numericH = numericalDerivative11(inverseSGal3, state);
+
+  EXPECT(assert_equal(asGal3(actual), asGal3(state).inverse(), kTol));
+  EXPECT(assert_equal(numericH, actH, 1e-6));
+}
+
+// Check the Gal(3) Expmap and its Jacobian against native Gal3 and numerical
+// derivatives.
+TEST(testActionProduct, ExpmapGal3) {
+  const Vector10 xi = gal3Xi();
+
+  Matrix actH;
+  const SemidirectGal3 actual = SemidirectGal3::Expmap(xi, actH);
+  const Matrix numericH = numericalDerivative11(expmapSGal3, xi);
+
+  EXPECT(assert_equal(Gal3::Expmap(xi), asGal3(actual), kTol));
+  EXPECT(assert_equal(numericH, actH, 1e-6));
+}
+
+// Check the Gal(3) Logmap and its Jacobian against native Gal3 and numerical
+// derivatives.
+TEST(testActionProduct, LogmapGal3) {
+  const SemidirectGal3 state = gal3State4();
+
+  Matrix actH;
+  const Vector10 actual = SemidirectGal3::Logmap(state, actH);
+  const Matrix numericH = numericalDerivative11(logmapSGal3, state);
+
+  EXPECT(assert_equal(Gal3::Logmap(asGal3(state)), actual, kTol));
+  EXPECT(assert_equal(numericH, actH, 1e-6));
+}
+
+// Check that the Gal(3) adjoint matches the native Gal3 adjoint.
+TEST(testActionProduct, AdjointMapGal3) {
+  const SemidirectGal3 state = gal3State4();
+
+  EXPECT(assert_equal(Matrix(asGal3(state).AdjointMap()),
+                      Matrix(state.AdjointMap()), kTol));
+}
+
+// Static algebra adjoint of the semidirect product matches native Gal3::ad.
+TEST(testActionProduct, AlgebraAdjointGal3) {
+  const Vector10 xi = gal3Xi();
+  EXPECT(assert_equal(Matrix(Gal3::adjointMap(xi)),
+                      Matrix(SemidirectGal3::adjointMap(xi)), kTol));
+}
+
+// Check Expmap-based retract/localCoordinates consistency and both Jacobians
+// against numerical derivatives.
+TEST(testActionProduct, retractAndLocalCoordinatesGal3) {
+  const SemidirectGal3 state = gal3State4();
+  const Vector10 delta = gal3RetractDelta();
+
+  Matrix retractH1, retractH2, localH1, localH2;
+  const SemidirectGal3 updated = state.retract(delta, retractH1, retractH2);
+  const Vector10 recovered = state.localCoordinates(updated, localH1, localH2);
+
+  EXPECT(assert_equal(asGal3(updated),
+                      asGal3(state).compose(Gal3::Expmap(delta)), kTol));
+  EXPECT(assert_equal(delta, recovered, kTol));
+
+  const Matrix numericRetractH1 =
+      numericalDerivative21(retractSGal3, state, delta);
+  const Matrix numericRetractH2 =
+      numericalDerivative22(retractSGal3, state, delta);
+  const Matrix numericLocalH1 =
+      numericalDerivative21(localCoordinatesSGal3, state, updated);
+  const Matrix numericLocalH2 =
+      numericalDerivative22(localCoordinatesSGal3, state, updated);
 
   EXPECT(assert_equal(numericRetractH1, retractH1, 1e-6));
   EXPECT(assert_equal(numericRetractH2, retractH2, 1e-6));

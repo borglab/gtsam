@@ -87,8 +87,8 @@ TEST(RegularHessianFactor, Constructors)
   Matrix AtA = factor.information();
   HessianFactor::const_iterator i1 = factor.begin();
   HessianFactor::const_iterator i2 = i1 + 1;
-  Vector X(6); X << 1,2,3,4,5,6;
-  Vector Y(6); Y << 9, 12, 9, 12, 9, 12;
+  Vector X{{1, 2, 3, 4, 5, 6}};
+  Vector Y{{9, 12, 9, 12, 9, 12}};
   EXPECT(assert_equal(Y,AtA*X));
 
   VectorValues x{{0, Vector2(1, 2)}, {1, Vector2(3, 4)}, {3, Vector2(5, 6)}};
@@ -108,7 +108,7 @@ TEST(RegularHessianFactor, Constructors)
   EXPECT(assert_equal(expected, actualVV));
 
   // RAW ACCESS
-  Vector expected_y(8); expected_y << 9, 12, 9, 12, 0, 0, 9, 12;
+  Vector expected_y{{9, 12, 9, 12, 0, 0, 9, 12}};
   Vector fast_y = Vector8::Zero();
   double xvalues[8] = {1,2,3,4,0,0,5,6};
   factor.multiplyHessianAdd(alpha, xvalues, fast_y.data());
@@ -116,7 +116,7 @@ TEST(RegularHessianFactor, Constructors)
 
   // now, do it with non-zero y
   factor.multiplyHessianAdd(alpha, xvalues, fast_y.data());
-  EXPECT(assert_equal(2*expected_y, fast_y));
+  EXPECT(assert_equal((2 * expected_y).eval(), fast_y));
 
   // check some expressions
   EXPECT(assert_equal(G12,factor.info().aboveDiagonalBlock(i1 - factor.begin(), i2 - factor.begin())));

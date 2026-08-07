@@ -115,12 +115,10 @@ SfmData makeTrueBalLikeData() {
 SfmData makePerturbedBalLikeData(const SfmData& measuredData) {
   SfmData data = measuredData;
 
-  Vector delta0(9);
-  delta0 << 0.003, -0.002, 0.001, 0.04, -0.03, 0.02, 1.5, 0.0004,
-      -0.00003;
-  Vector delta1(9);
-  delta1 << -0.002, 0.0015, -0.0025, -0.05, 0.02, -0.01, -2.0, -0.0003,
-      0.00004;
+  Vector9 delta0{0.003, -0.002, 0.001,  0.04,    -0.03,
+                 0.02,  1.5,    0.0004, -0.00003};
+  Vector9 delta1{-0.002, 0.0015, -0.0025, -0.05,  0.02,
+                 -0.01,  -2.0,   -0.0003, 0.00004};
   data.cameras[0] = measuredData.camera(0).retract(delta0);
   data.cameras[1] = measuredData.camera(1).retract(delta1);
 
@@ -168,9 +166,15 @@ SfmData makeHighDegreeBalLikeData() {
 
   SfmData perturbed = measured;
   for (size_t i = 0; i < perturbed.numberCameras(); ++i) {
-    Vector delta(9);
-    delta << 0.0001 * static_cast<double>(i + 1), -0.0002, 0.00015,
-        0.002, -0.001, 0.0015, 0.03, 0.00001, -0.000001;
+    Vector9 delta{0.0001 * static_cast<double>(i + 1),
+                  -0.0002,
+                  0.00015,
+                  0.002,
+                  -0.001,
+                  0.0015,
+                  0.03,
+                  0.00001,
+                  -0.000001};
     perturbed.cameras[i] = measured.camera(i).retract(delta);
   }
   perturbed.tracks[0].p = Point3(point.x() + 0.01, point.y() - 0.02,
@@ -1444,8 +1448,7 @@ TEST(CudaSfmFactorGraphConversion,
     initial.insert(pointKeys[i], initialData.track(i).point3());
   }
 
-  Matrix2 fullR;
-  fullR << 3.0, 0.25, 0.0, 4.0;
+  Matrix2 fullR{{3.0, 0.25}, {0.0, 4.0}};
   const SharedNoiseModel full = noiseModel::Gaussian::SqrtInformation(
       fullR, false);
   const SharedNoiseModel diagonal =
@@ -1530,8 +1533,7 @@ TEST(CudaSfmFactorGraphConversion,
     initial.insert(pointKeys[i], initialData.track(i).point3());
   }
 
-  Matrix2 fullR;
-  fullR << 3.0, 0.25, 0.0, 4.0;
+  Matrix2 fullR{{3.0, 0.25}, {0.0, 4.0}};
   const SharedNoiseModel huber = noiseModel::Robust::Create(
       noiseModel::mEstimator::Huber::Create(
           0.25, noiseModel::mEstimator::Huber::Block),
@@ -1649,20 +1651,18 @@ TEST(CudaSfmFactorGraphConversion, RejectsUnsupportedNoiseModels) {
                     std::invalid_argument);
   };
 
-  Matrix2 nonfiniteStoredR;
-  nonfiniteStoredR << 1.0, std::numeric_limits<double>::infinity(), 0.0, 1.0;
+  Matrix2 nonfiniteStoredR{{1.0, std::numeric_limits<double>::infinity()},
+                           {0.0, 1.0}};
   checkRejectedSqrtInformation(nonfiniteStoredR);
 
-  Matrix2 nanLowerLeftR;
-  nanLowerLeftR << 1.0, 0.0, std::numeric_limits<double>::quiet_NaN(), 1.0;
+  Matrix2 nanLowerLeftR{{1.0, 0.0},
+                        {std::numeric_limits<double>::quiet_NaN(), 1.0}};
   checkRejectedSqrtInformation(nanLowerLeftR);
 
-  Matrix2 nonzeroLowerLeftR;
-  nonzeroLowerLeftR << 1.0, 0.0, 1e-3, 1.0;
+  Matrix2 nonzeroLowerLeftR{{1.0, 0.0}, {1e-3, 1.0}};
   checkRejectedSqrtInformation(nonzeroLowerLeftR);
 
-  Matrix2 negativeDiagonalR;
-  negativeDiagonalR << 1.0, 0.0, 0.0, -1.0;
+  Matrix2 negativeDiagonalR{{1.0, 0.0}, {0.0, -1.0}};
   checkRejectedSqrtInformation(negativeDiagonalR);
 }
 
@@ -1735,8 +1735,7 @@ TEST(CudaSfmLevenbergMarquardtOptimizer,
     initial.insert(pointKeys[i], initialData.track(i).point3());
   }
 
-  Matrix2 fullR;
-  fullR << 3.0, 0.25, 0.0, 4.0;
+  Matrix2 fullR{{3.0, 0.25}, {0.0, 4.0}};
   const std::vector<SharedNoiseModel> models = {
       noiseModel::Isotropic::Sigma(2, 0.5),
       noiseModel::Diagonal::Sigmas(Vector2(0.25, 0.5)),
@@ -1822,8 +1821,7 @@ TEST(CudaSfmLevenbergMarquardtOptimizer,
     initial.insert(pointKeys[i], initialData.track(i).point3());
   }
 
-  Matrix2 fullR;
-  fullR << 1.5, 0.1, 0.0, 2.0;
+  Matrix2 fullR{{1.5, 0.1}, {0.0, 2.0}};
   const std::vector<SharedNoiseModel> models = {
       noiseModel::Robust::Create(
           noiseModel::mEstimator::Huber::Create(0.25),
@@ -2396,9 +2394,8 @@ GncTestProblem makeGncBalLikeProblem() {
 
   for (size_t i = 0; i < kNumCameras; ++i) {
     const double sign = (i % 2 == 0) ? 1.0 : -1.0;
-    Vector delta(9);
-    delta << 0.002 * sign, -0.0015, 0.001 * sign, 0.03, -0.02 * sign, 0.025,
-        0.8 * sign, 1e-5, -1e-7;
+    Vector9 delta{0.002 * sign, -0.0015,    0.001 * sign, 0.03, -0.02 * sign,
+                  0.025,        0.8 * sign, 1e-5,         -1e-7};
     problem.initial.insert(C(i), cameras[i].retract(delta));
   }
   for (size_t j = 0; j < points.size(); ++j) {

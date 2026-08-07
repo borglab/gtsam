@@ -274,8 +274,7 @@ public:
   // Create CalibratedCamera, with derivatives
   static CalibratedCamera Create(const Pose3& pose,
                                  OptionalJacobian<dimension, 6> H1 = {}) {
-    if (H1)
-      *H1 << I_6x6;
+    if (H1) *H1 = I_6x6;
     return CalibratedCamera(pose);
   }
 

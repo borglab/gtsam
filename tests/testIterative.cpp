@@ -61,7 +61,7 @@ TEST( Iterative, conjugateGradientDescent )
   // get matrices
   Vector x0 = Z_6x1;
   const auto [A, b] = fg.jacobian();
-  Vector expectedX = (Vector(6) << -0.1, 0.1, -0.1, -0.1, 0.1, -0.2).finished();
+  Vector expectedX{{-0.1, 0.1, -0.1, -0.1, 0.1, -0.2}};
 
   // Do conjugate gradient descent, System version
   System Ab(A, b);

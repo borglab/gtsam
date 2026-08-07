@@ -65,7 +65,7 @@ AHRS::AHRS(const Matrix& stationaryU, const Matrix& stationaryF, double g_e,
   sigmas_v_a_ = (T * Pa_.diagonal()).cwiseSqrt();
 
   // gravity in nav frame
-  n_g_ = (Vector(3) << 0.0, 0.0, g_e).finished();
+  n_g_ = Vector{{0.0, 0.0, g_e}};
   n_g_cross_ = skewSymmetric(n_g_);  // nav frame has Z down !!!
 }
 
@@ -77,7 +77,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::initialize(double g_e) 
   double sp = sin(mech0_.bRn().inverse().pitch());
   double cy = cos(0.0);
   double sy = sin(0.0);
-  Matrix Omega_T = (Matrix(3, 3) << cy * cp, -sy, 0.0, sy * cp, cy, 0.0, -sp, 0.0, 1.0).finished();
+  Matrix Omega_T{{cy * cp, -sy, 0.0}, {sy * cp, cy, 0.0}, {-sp, 0.0, 1.0}};
 
   // Calculate Jacobian of roll/pitch/yaw wrpt (g1,g2,g3), see doc/ypr.nb
   Vector b_g = mech0_.b_g(g_e);
@@ -87,10 +87,9 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::initialize(double g_e) 
   double g23 = g2 * g2 + g3 * g3;
   double g123 = g1 * g1 + g23;
   double f = 1 / (std::sqrt(g23) * g123);
-  Matrix H_g = (Matrix(3, 3) <<
-      0.0, g3 / g23, -(g2 / g23),                            // roll
-      std::sqrt(g23) / g123, -f * (g1 * g2), -f * (g1 * g3), // pitch
-      0.0, 0.0, 0.0).finished();                             // we don't know anything on yaw
+  Matrix H_g{{0.0, g3 / g23, -(g2 / g23)},                             // roll
+             {std::sqrt(g23) / g123, -f * (g1 * g2), -f * (g1 * g3)},  // pitch
+             {0.0, 0.0, 0.0}};  // we don't know anything on yaw
 
   // Calculate the initial covariance matrix for the error state dx, Farrell08book eq. 10.66
   Matrix Pa = 0.025 * 0.025 * I3x3;

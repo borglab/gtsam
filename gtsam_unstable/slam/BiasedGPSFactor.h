@@ -84,7 +84,7 @@ namespace gtsam {
         H1->resize(3,6); // jacobian wrt pose
         (*H1) << Z_3x3,  pose.rotation().matrix();
         H2->resize(3,3); // jacobian wrt bias
-        (*H2) << I_3x3;
+        *H2 = I_3x3;
       }
       return pose.translation() + bias - measured_;
     }

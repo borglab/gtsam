@@ -51,20 +51,18 @@ void assertRot3Invariant(const Rot3&) {}
   Rot3::Rot3() : quaternion_(Quaternion::Identity()) {}
 
   /* ************************************************************************* */
-  Rot3::Rot3(const Point3& col1, const Point3& col2, const Point3& col3) :
-      quaternion_((Matrix3() <<
-          col1.x(), col2.x(), col3.x(),
-          col1.y(), col2.y(), col3.y(),
-          col1.z(), col2.z(), col3.z()).finished()) {}
+  Rot3::Rot3(const Point3& col1, const Point3& col2, const Point3& col3)
+      : quaternion_(Matrix3{{col1.x(), col2.x(), col3.x()},
+                            {col1.y(), col2.y(), col3.y()},
+                            {col1.z(), col2.z(), col3.z()}}) {}
 
   /* ************************************************************************* */
-  Rot3::Rot3(double R11, double R12, double R13,
-      double R21, double R22, double R23,
-      double R31, double R32, double R33) :
-        quaternion_((Matrix3() <<
-            R11, R12, R13,
-            R21, R22, R23,
-            R31, R32, R33).finished()) {}
+  Rot3::Rot3(double R11, double R12, double R13, double R21, double R22,
+             double R23, double R31, double R32, double R33)
+      : quaternion_(Matrix3{//
+                            {R11, R12, R13},
+                            {R21, R22, R23},
+                            {R31, R32, R33}}) {}
 
   /* ************************************************************************* */
   Rot3::Rot3(const gtsam::Quaternion& q) :
@@ -89,14 +87,14 @@ void assertRot3Invariant(const Rot3&) {}
   /* ************************************************************************* */
   Rot3 Rot3::RzRyRx(double x, double y, double z, OptionalJacobian<3, 1> Hx,
                     OptionalJacobian<3, 1> Hy, OptionalJacobian<3, 1> Hz) {
-    if (Hx) (*Hx) << 1, 0, 0;
+    if (Hx) *Hx = Matrix31{{1}, {0}, {0}};
 
     if (Hy or Hz) {
       const auto cx = cos(x), sx = sin(x);
-      if (Hy) (*Hy) << 0, cx, -sx;
+      if (Hy) *Hy = Matrix31{{0}, {cx}, {-sx}};
       if (Hz) {
         const auto cy = cos(y), sy = sin(y);
-        (*Hz) << -sy, sx * cy, cx * cy;
+        *Hz = Matrix31{{-sy}, {sx * cy}, {cx * cy}};
       }
     }
 

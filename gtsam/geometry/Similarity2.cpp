@@ -210,10 +210,7 @@ Matrix2 Similarity2::GetV(double theta, double lambda) {
       A = 1.0 - theta2 / 6.0;
       B = 0.5 - theta2 / 24.0;
     }
-    Matrix2 V;
-    V << A, -theta * B,
-      theta* B, A;
-    return V;
+    return Matrix2{{A, -theta * B}, {theta * B, A}};
   }
 
   // general Sim(2) case
@@ -238,9 +235,7 @@ Matrix2 Similarity2::GetV(double theta, double lambda) {
   const double X = alpha * (1 - s_inv) / lambda + (1 - alpha) * (A - lambda * B);
   const double Y = alpha * (s_inv - 1 + lambda) / lambda2 + (1 - alpha) * (B - lambda * C);
 
-  Matrix2 V;
-  V << X, -theta * Y, theta* Y, X;
-  return V;
+  return Matrix2{{X, -theta * Y}, {theta * Y, X}};
 }
 
 Vector4 Similarity2::Logmap(const Similarity2& S,  //
@@ -294,11 +289,9 @@ Matrix3 Similarity2::Hat(const Vector4 &xi) {
   const auto w = xi[2];
   const auto u = xi.head<2>();
   const double lambda = xi[3];
-  Matrix3 W;
-  W << 0, -w, u[0],
-       w,  0, u[1],
-       0,  0, -lambda;
-  return W;
+  return Matrix3{{0, -w, u[0]},  //
+                 {w, 0, u[1]},
+                 {0, 0, -lambda}};
 }
 
 Vector4 Similarity2::Vee(const Matrix3 &Xi) {
