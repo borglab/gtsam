@@ -25,22 +25,16 @@ jobs:
             build_type: Release
             test_target: RUN_TESTS
             python: python
-            ctest_extra_flags: ''
-            pytest_extra_flags: ''
           - os: ubuntu-latest
             triplet: x64-linux-release
             build_type: Release
             test_target: test
             python: python3
-            ctest_extra_flags: ''
-            pytest_extra_flags: ''
           - os: macos-latest
             triplet: arm64-osx-release
             build_type: Release
             test_target: test
             python: python3
-            ctest_extra_flags: ''
-            pytest_extra_flags: ''
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -131,9 +125,7 @@ jobs:
               -DGTSAM_ENABLE_GEOGRAPHICLIB=ON \
               -DGTSAM_SUPPORT_NESTED_DISSECTION=ON \
               -DGTSAM_WITH_EIGEN_MKL=ON \
-              -DGTSAM_WITH_EIGEN_MKL_OPENMP=ON \
-              -DCTEST_EXTRA_ARGS='${{ matrix.ctest_extra_flags }}' \
-              -DPYTEST_EXTRA_ARGS='${{ matrix.pytest_extra_flags }}'
+              -DGTSAM_WITH_EIGEN_MKL_OPENMP=ON
 
       - name: On Failure, upload vcpkg logs
         if: failure()
