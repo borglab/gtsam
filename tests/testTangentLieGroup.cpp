@@ -59,26 +59,12 @@ Vector12 tgse3Xi() {
   v << 0.1, -0.2, 0.3, 0.4, -0.1, 0.2, 0.05, 0.15, -0.25, 0.3, -0.35, 0.1;
   return v;
 }
-TGSE3 expmapTGSE3(const Vector12& v) { return TGSE3::Expmap(v); }
-Vector12 logmapTGSE3(const TGSE3& x) { return TGSE3::Logmap(x); }
-TGSE3 betweenTGSE3(const TGSE3& a, const TGSE3& b) { return a.between(b); }
-TGSE3 inverseTGSE3(const TGSE3& a) { return a.inverse(); }
-TGSE3 centeredExpmapTGSE3(const TGSE3& a, const Vector12& v) {
-  return a.expmap(v);
-}
-Vector12 centeredLogmapTGSE3(const TGSE3& a, const TGSE3& b) {
-  return a.logmap(b);
-}
-
 Vector20 tggal3Xi() {
   Vector20 v;
   v << 0.1, -0.2, 0.3, 0.4, -0.1, 0.2, 0.15, -0.25, 0.3, 0.2,  // base (gal3)
       0.05, 0.1, -0.15, 0.2, -0.05, 0.1, 0.12, -0.08, 0.18, -0.1;  // algebra
   return v;
 }
-TGGal3 expmapTGGal3(const Vector20& v) { return TGGal3::Expmap(v); }
-Vector20 logmapTGGal3(const TGGal3& x) { return TGGal3::Logmap(x); }
-
 // Verifies Lie-group concepts and dimensions for representative tangent groups.
 TEST(TangentLieGroup, Concepts) {
   GTSAM_CONCEPT_ASSERT(IsGroup<TGSE3>);
@@ -190,13 +176,14 @@ TEST(TangentLieGroup, ExpmapLogmapJacobians) {
   const Vector12 xi = tgse3Xi();
   Matrix expH;
   TGSE3::Expmap(xi, expH);
-  EXPECT(assert_equal(numericalDerivative11(expmapTGSE3, xi), expH, kNumTol));
+  const auto expmap = [](const Vector12& v) { return TGSE3::Expmap(v); };
+  EXPECT(assert_equal(numericalDerivative11(expmap, xi), expH, kNumTol));
 
   const TGSE3 state = tgse3State2();
   Matrix logH;
   TGSE3::Logmap(state, logH);
-  EXPECT(
-      assert_equal(numericalDerivative11(logmapTGSE3, state), logH, kNumTol));
+  const auto logmap = [](const TGSE3& value) { return TGSE3::Logmap(value); };
+  EXPECT(assert_equal(numericalDerivative11(logmap, state), logH, kNumTol));
 }
 
 // Checks compose, between, and inverse Jacobians numerically.
@@ -211,12 +198,16 @@ TEST(TangentLieGroup, ComposeBetweenInverseJacobians) {
                       kNumTol));
 
   a.between(b, H1, H2);
-  EXPECT(assert_equal(numericalDerivative21(betweenTGSE3, a, b), H1, kNumTol));
-  EXPECT(assert_equal(numericalDerivative22(betweenTGSE3, a, b), H2, kNumTol));
+  const auto between = [](const TGSE3& x, const TGSE3& y) {
+    return x.between(y);
+  };
+  EXPECT(assert_equal(numericalDerivative21(between, a, b), H1, kNumTol));
+  EXPECT(assert_equal(numericalDerivative22(between, a, b), H2, kNumTol));
 
   Matrix H;
   a.inverse(H);
-  EXPECT(assert_equal(numericalDerivative11(inverseTGSE3, a), H, kNumTol));
+  const auto inverse = [](const TGSE3& value) { return value.inverse(); };
+  EXPECT(assert_equal(numericalDerivative11(inverse, a), H, kNumTol));
 }
 
 // Exercises the centered operations and origin retract inherited from LieGroup,
@@ -228,17 +219,23 @@ TEST(TangentLieGroup, InheritedLieGroupOperations) {
   Matrix H1, H2;
   const TGSE3 updated = state.expmap(delta, H1, H2);
   EXPECT(assert_equal(state.expmap(delta), updated, kTol));
-  EXPECT(assert_equal(numericalDerivative21(centeredExpmapTGSE3, state, delta),
-                      H1, kNumTol));
-  EXPECT(assert_equal(numericalDerivative22(centeredExpmapTGSE3, state, delta),
-                      H2, kNumTol));
+  const auto expmap = [](const TGSE3& value, const Vector12& v) {
+    return value.expmap(v);
+  };
+  EXPECT(
+      assert_equal(numericalDerivative21(expmap, state, delta), H1, kNumTol));
+  EXPECT(
+      assert_equal(numericalDerivative22(expmap, state, delta), H2, kNumTol));
 
   Matrix L1, L2;
   EXPECT(assert_equal(delta, state.logmap(updated, L1, L2), kTol));
-  EXPECT(assert_equal(
-      numericalDerivative21(centeredLogmapTGSE3, state, updated), L1, kNumTol));
-  EXPECT(assert_equal(
-      numericalDerivative22(centeredLogmapTGSE3, state, updated), L2, kNumTol));
+  const auto logmap = [](const TGSE3& value, const TGSE3& other) {
+    return value.logmap(other);
+  };
+  EXPECT(
+      assert_equal(numericalDerivative21(logmap, state, updated), L1, kNumTol));
+  EXPECT(
+      assert_equal(numericalDerivative22(logmap, state, updated), L2, kNumTol));
 
   Matrix actualH, expectedH;
   const TGSE3 actual = TGSE3::Retract(delta, actualH);
@@ -345,13 +342,14 @@ TEST(TangentLieGroup, TGGal3Jacobians) {
   const Vector20 xi = tggal3Xi();
   Matrix expH;
   TGGal3::Expmap(xi, expH);
-  EXPECT(assert_equal(numericalDerivative11(expmapTGGal3, xi), expH, kNumTol));
+  const auto expmap = [](const Vector20& v) { return TGGal3::Expmap(v); };
+  EXPECT(assert_equal(numericalDerivative11(expmap, xi), expH, kNumTol));
 
   const TGGal3 state = TGGal3::Expmap(tggal3Xi() * 0.5);
   Matrix logH;
   TGGal3::Logmap(state, logH);
-  EXPECT(
-      assert_equal(numericalDerivative11(logmapTGGal3, state), logH, kNumTol));
+  const auto logmap = [](const TGGal3& value) { return TGGal3::Logmap(value); };
+  EXPECT(assert_equal(numericalDerivative11(logmap, state), logH, kNumTol));
 }
 
 }  // namespace tangent_lie_group_fixture

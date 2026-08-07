@@ -159,14 +159,6 @@ Vector3 semidirect2XiFromPose2(const Vector3& xi) {
   return semidirectXi;
 }
 
-Semidirect2 expmapSemidirect2Proxy(const Vector3& vec) {
-  return Semidirect2::Expmap(vec);
-}
-
-Vector3 logmapSemidirect2Proxy(const Semidirect2& p) {
-  return Semidirect2::Logmap(p);
-}
-
 Pose2 asPose2(const Semidirect2& state) {
   return Pose2(state.first, state.second);
 }
@@ -199,39 +191,6 @@ Vector6 retractDelta() {
   return delta;
 }
 
-Semidirect betweenSemidirectProxy(const Semidirect& A, const Semidirect& B) {
-  return A.between(B);
-}
-
-Semidirect inverseSemidirectProxy(const Semidirect& A) { return A.inverse(); }
-
-Semidirect expmapSemidirectProxy(const Vector6& vec) {
-  return Semidirect::Expmap(vec);
-}
-
-Vector6 logmapSemidirectProxy(const Semidirect& p) {
-  return Semidirect::Logmap(p);
-}
-
-Semidirect centeredExpmapSemidirectProxy(const Semidirect& p,
-                                         const Vector6& v) {
-  return p.expmap(v);
-}
-
-Vector6 centeredLogmapSemidirectProxy(const Semidirect& p,
-                                      const Semidirect& q) {
-  return p.logmap(q);
-}
-
-Semidirect retractSemidirectProxy(const Semidirect& X, const Vector6& v) {
-  return X.retract(v);
-}
-
-Vector6 localCoordinatesSemidirectProxy(const Semidirect& X,
-                                        const Semidirect& Y) {
-  return X.localCoordinates(Y);
-}
-
 Pose3 asPose3(const Semidirect& state) {
   return Pose3(state.first, state.second);
 }
@@ -246,14 +205,6 @@ Vector10 gal3Xi() {
   Vector10 xi;
   xi << 0.1, -0.2, 0.3, 0.4, -0.1, 0.2, 0.15, -0.25, 0.3, 0.2;
   return xi;
-}
-
-SemidirectGal3 expmapSGal3(const Vector10& v) {
-  return SemidirectGal3::Expmap(v);
-}
-
-Vector10 logmapSGal3(const SemidirectGal3& s) {
-  return SemidirectGal3::Logmap(s);
 }
 
 SemidirectGal3 gal3State1() {
@@ -284,21 +235,6 @@ Vector10 gal3RetractDelta() {
   Vector10 delta;
   delta << 0.05, -0.04, 0.03, 0.1, -0.2, 0.05, 0.02, -0.03, 0.04, 0.01;
   return delta;
-}
-
-SemidirectGal3 betweenSGal3(const SemidirectGal3& A, const SemidirectGal3& B) {
-  return A.between(B);
-}
-
-SemidirectGal3 inverseSGal3(const SemidirectGal3& A) { return A.inverse(); }
-
-SemidirectGal3 retractSGal3(const SemidirectGal3& X, const Vector10& v) {
-  return X.retract(v);
-}
-
-Vector10 localCoordinatesSGal3(const SemidirectGal3& X,
-                               const SemidirectGal3& Y) {
-  return X.localCoordinates(Y);
 }
 
 // A second semidirect instance, Rot2 ⋉ R², checks the generic kernel path in
@@ -337,7 +273,8 @@ TEST(testActionProduct, ExpmapLogmap2D) {
 
   Matrix expH;
   const Semidirect2 actual = Semidirect2::Expmap(xi, expH);
-  const Matrix numericExpH = numericalDerivative11(expmapSemidirect2Proxy, xi);
+  const auto expmap = [](const Vector3& v) { return Semidirect2::Expmap(v); };
+  const Matrix numericExpH = numericalDerivative11(expmap, xi);
 
   EXPECT(assert_equal(Pose2::Expmap(pose2XiFromSemidirect2(xi)),
                       asPose2(actual), kTol));
@@ -346,8 +283,10 @@ TEST(testActionProduct, ExpmapLogmap2D) {
   const Semidirect2 state = semidirect2State();
   Matrix logH;
   const Vector3 actualLog = Semidirect2::Logmap(state, logH);
-  const Matrix numericLogH =
-      numericalDerivative11(logmapSemidirect2Proxy, state);
+  const auto logmap = [](const Semidirect2& value) {
+    return Semidirect2::Logmap(value);
+  };
+  const Matrix numericLogH = numericalDerivative11(logmap, state);
 
   EXPECT(assert_equal(semidirect2XiFromPose2(Pose2::Logmap(asPose2(state))),
                       actualLog, kTol));
@@ -410,10 +349,11 @@ TEST(testActionProduct, between) {
 
   Matrix actH1, actH2;
   const Semidirect actual = state1.between(state2, actH1, actH2);
-  const Matrix numericH1 =
-      numericalDerivative21(betweenSemidirectProxy, state1, state2);
-  const Matrix numericH2 =
-      numericalDerivative22(betweenSemidirectProxy, state1, state2);
+  const auto between = [](const Semidirect& a, const Semidirect& b) {
+    return a.between(b);
+  };
+  const Matrix numericH1 = numericalDerivative21(between, state1, state2);
+  const Matrix numericH2 = numericalDerivative22(between, state1, state2);
 
   EXPECT(assert_equal(asPose3(actual), asPose3(state1).between(asPose3(state2)),
                       kTol));
@@ -429,7 +369,8 @@ TEST(testActionProduct, inverse) {
 
   Matrix actH;
   const Semidirect actual = state.inverse(actH);
-  const Matrix numericH = numericalDerivative11(inverseSemidirectProxy, state);
+  const auto inverse = [](const Semidirect& value) { return value.inverse(); };
+  const Matrix numericH = numericalDerivative11(inverse, state);
 
   EXPECT(assert_equal(asPose3(actual), asPose3(state).inverse(), kTol));
   EXPECT(assert_equal(numericH, actH, 1e-6));
@@ -442,7 +383,8 @@ TEST(testActionProduct, Expmap) {
 
   Matrix actH;
   const Semidirect actual = Semidirect::Expmap(xi, actH);
-  const Matrix numericH = numericalDerivative11(expmapSemidirectProxy, xi);
+  const auto expmap = [](const Vector6& v) { return Semidirect::Expmap(v); };
+  const Matrix numericH = numericalDerivative11(expmap, xi);
 
   const Vector3 omega = xi.head<3>();
   const Vector3 velocity = xi.tail<3>();
@@ -479,7 +421,10 @@ TEST(testActionProduct, Logmap) {
 
   Matrix actH;
   const Vector6 actual = Semidirect::Logmap(state, actH);
-  const Matrix numericH = numericalDerivative11(logmapSemidirectProxy, state);
+  const auto logmap = [](const Semidirect& value) {
+    return Semidirect::Logmap(value);
+  };
+  const Matrix numericH = numericalDerivative11(logmap, state);
 
   EXPECT(assert_equal(Pose3::Logmap(asPose3(state)), actual, kTol));
   EXPECT(assert_equal(numericH, actH, 1e-6));
@@ -494,21 +439,19 @@ TEST(testActionProduct, InheritedLieGroupOperations) {
   Matrix H1, H2;
   const Semidirect updated = state.expmap(delta, H1, H2);
   EXPECT(assert_equal(state.expmap(delta), updated, kTol));
-  EXPECT(assert_equal(
-      numericalDerivative21(centeredExpmapSemidirectProxy, state, delta), H1,
-      kTol));
-  EXPECT(assert_equal(
-      numericalDerivative22(centeredExpmapSemidirectProxy, state, delta), H2,
-      kTol));
+  const auto expmap = [](const Semidirect& value, const Vector6& v) {
+    return value.expmap(v);
+  };
+  EXPECT(assert_equal(numericalDerivative21(expmap, state, delta), H1, kTol));
+  EXPECT(assert_equal(numericalDerivative22(expmap, state, delta), H2, kTol));
 
   Matrix L1, L2;
   EXPECT(assert_equal(delta, state.logmap(updated, L1, L2), kTol));
-  EXPECT(assert_equal(
-      numericalDerivative21(centeredLogmapSemidirectProxy, state, updated), L1,
-      kTol));
-  EXPECT(assert_equal(
-      numericalDerivative22(centeredLogmapSemidirectProxy, state, updated), L2,
-      kTol));
+  const auto logmap = [](const Semidirect& value, const Semidirect& other) {
+    return value.logmap(other);
+  };
+  EXPECT(assert_equal(numericalDerivative21(logmap, state, updated), L1, kTol));
+  EXPECT(assert_equal(numericalDerivative22(logmap, state, updated), L2, kTol));
 
   Matrix actualH, expectedH;
   const Semidirect actual = Semidirect::Retract(delta, actualH);
@@ -539,14 +482,16 @@ TEST(testActionProduct, retractAndLocalCoordinates) {
                       asPose3(state).compose(Pose3::Expmap(delta)), kTol));
   EXPECT(assert_equal(delta, recovered, kTol));
 
-  const Matrix numericRetractH1 =
-      numericalDerivative21(retractSemidirectProxy, state, delta);
-  const Matrix numericRetractH2 =
-      numericalDerivative22(retractSemidirectProxy, state, delta);
-  const Matrix numericLocalH1 =
-      numericalDerivative21(localCoordinatesSemidirectProxy, state, updated);
-  const Matrix numericLocalH2 =
-      numericalDerivative22(localCoordinatesSemidirectProxy, state, updated);
+  const auto retract = [](const Semidirect& value, const Vector6& v) {
+    return value.retract(v);
+  };
+  const auto local = [](const Semidirect& value, const Semidirect& other) {
+    return value.localCoordinates(other);
+  };
+  const Matrix numericRetractH1 = numericalDerivative21(retract, state, delta);
+  const Matrix numericRetractH2 = numericalDerivative22(retract, state, delta);
+  const Matrix numericLocalH1 = numericalDerivative21(local, state, updated);
+  const Matrix numericLocalH2 = numericalDerivative22(local, state, updated);
 
   EXPECT(assert_equal(numericRetractH1, retractH1, 1e-6));
   EXPECT(assert_equal(numericRetractH2, retractH2, 1e-6));
@@ -615,8 +560,11 @@ TEST(testActionProduct, betweenGal3) {
 
   Matrix actH1, actH2;
   const SemidirectGal3 actual = state1.between(state2, actH1, actH2);
-  const Matrix numericH1 = numericalDerivative21(betweenSGal3, state1, state2);
-  const Matrix numericH2 = numericalDerivative22(betweenSGal3, state1, state2);
+  const auto between = [](const SemidirectGal3& a, const SemidirectGal3& b) {
+    return a.between(b);
+  };
+  const Matrix numericH1 = numericalDerivative21(between, state1, state2);
+  const Matrix numericH2 = numericalDerivative22(between, state1, state2);
 
   EXPECT(assert_equal(asGal3(actual), asGal3(state1).between(asGal3(state2)),
                       kTol));
@@ -631,7 +579,10 @@ TEST(testActionProduct, inverseGal3) {
 
   Matrix actH;
   const SemidirectGal3 actual = state.inverse(actH);
-  const Matrix numericH = numericalDerivative11(inverseSGal3, state);
+  const auto inverse = [](const SemidirectGal3& value) {
+    return value.inverse();
+  };
+  const Matrix numericH = numericalDerivative11(inverse, state);
 
   EXPECT(assert_equal(asGal3(actual), asGal3(state).inverse(), kTol));
   EXPECT(assert_equal(numericH, actH, 1e-6));
@@ -644,7 +595,10 @@ TEST(testActionProduct, ExpmapGal3) {
 
   Matrix actH;
   const SemidirectGal3 actual = SemidirectGal3::Expmap(xi, actH);
-  const Matrix numericH = numericalDerivative11(expmapSGal3, xi);
+  const auto expmap = [](const Vector10& v) {
+    return SemidirectGal3::Expmap(v);
+  };
+  const Matrix numericH = numericalDerivative11(expmap, xi);
 
   EXPECT(assert_equal(Gal3::Expmap(xi), asGal3(actual), kTol));
   EXPECT(assert_equal(numericH, actH, 1e-6));
@@ -657,7 +611,10 @@ TEST(testActionProduct, LogmapGal3) {
 
   Matrix actH;
   const Vector10 actual = SemidirectGal3::Logmap(state, actH);
-  const Matrix numericH = numericalDerivative11(logmapSGal3, state);
+  const auto logmap = [](const SemidirectGal3& value) {
+    return SemidirectGal3::Logmap(value);
+  };
+  const Matrix numericH = numericalDerivative11(logmap, state);
 
   EXPECT(assert_equal(Gal3::Logmap(asGal3(state)), actual, kTol));
   EXPECT(assert_equal(numericH, actH, 1e-6));
@@ -692,14 +649,17 @@ TEST(testActionProduct, retractAndLocalCoordinatesGal3) {
                       asGal3(state).compose(Gal3::Expmap(delta)), kTol));
   EXPECT(assert_equal(delta, recovered, kTol));
 
-  const Matrix numericRetractH1 =
-      numericalDerivative21(retractSGal3, state, delta);
-  const Matrix numericRetractH2 =
-      numericalDerivative22(retractSGal3, state, delta);
-  const Matrix numericLocalH1 =
-      numericalDerivative21(localCoordinatesSGal3, state, updated);
-  const Matrix numericLocalH2 =
-      numericalDerivative22(localCoordinatesSGal3, state, updated);
+  const auto retract = [](const SemidirectGal3& value, const Vector10& v) {
+    return value.retract(v);
+  };
+  const auto local = [](const SemidirectGal3& value,
+                        const SemidirectGal3& other) {
+    return value.localCoordinates(other);
+  };
+  const Matrix numericRetractH1 = numericalDerivative21(retract, state, delta);
+  const Matrix numericRetractH2 = numericalDerivative22(retract, state, delta);
+  const Matrix numericLocalH1 = numericalDerivative21(local, state, updated);
+  const Matrix numericLocalH2 = numericalDerivative22(local, state, updated);
 
   EXPECT(assert_equal(numericRetractH1, retractH1, 1e-6));
   EXPECT(assert_equal(numericRetractH2, retractH2, 1e-6));
@@ -812,14 +772,6 @@ struct RotationAction
 using FallbackProduct =
     SemidirectLieGroup<Rot2WithoutAlgebraAdjoint, Point2, RotationAction>;
 
-FallbackProduct expmapProxy(const Vector3& tangent) {
-  return FallbackProduct::Expmap(tangent);
-}
-
-Vector3 logmapProxy(const FallbackProduct& product) {
-  return FallbackProduct::Logmap(product);
-}
-
 // A base without static adjointMap exercises the reduced vector-valued
 // Fréchet fallback for both Expmap and Logmap Jacobians.
 TEST(testActionProduct, ReducedFrechetFallback) {
@@ -827,14 +779,20 @@ TEST(testActionProduct, ReducedFrechetFallback) {
   Matrix expmapJacobian;
   const FallbackProduct product =
       FallbackProduct::Expmap(tangent, expmapJacobian);
-  EXPECT(assert_equal(numericalDerivative11(expmapProxy, tangent),
-                      expmapJacobian, kNumericalTolerance));
+  const auto expmap = [](const Vector3& v) {
+    return FallbackProduct::Expmap(v);
+  };
+  EXPECT(assert_equal(numericalDerivative11(expmap, tangent), expmapJacobian,
+                      kNumericalTolerance));
 
   Matrix logmapJacobian;
   const Vector3 recovered = FallbackProduct::Logmap(product, logmapJacobian);
   EXPECT(assert_equal(tangent, recovered, kTol));
-  EXPECT(assert_equal(numericalDerivative11(logmapProxy, product),
-                      logmapJacobian, kNumericalTolerance));
+  const auto logmap = [](const FallbackProduct& value) {
+    return FallbackProduct::Logmap(value);
+  };
+  EXPECT(assert_equal(numericalDerivative11(logmap, product), logmapJacobian,
+                      kNumericalTolerance));
 }
 
 }  // namespace frechet_fallback_fixture
