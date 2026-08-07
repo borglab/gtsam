@@ -14,6 +14,7 @@
  * @date   March 2019 - August 2020
  * @author Frank Dellaert, David Rosen, and Jing Wu
  * @brief  Shonan Averaging algorithm
+ * @author Fan Jiang
  */
 
 // GCC bug workaround
@@ -22,6 +23,7 @@
 #endif
 
 #include <Spectra/SymEigsSolver.h>
+#include <Spectra/Util/SimpleRandom.h>
 #include <gtsam/linear/AcceleratedPowerMethod.h>
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/PowerMethod.h>
@@ -632,7 +634,7 @@ static bool SparseMinimumEigenValue(
     const Sparse &A, const Matrix &S, double *minEigenValue,
     Vector *minEigenVector = 0, size_t *numIterations = 0,
     size_t maxIterations = 1000,
-    double minEigenvalueNonnegativityTolerance = 10e-4,
+    double minEigenvalueNonnegativityTolerance = 1e-4,
     Eigen::Index numLanczosVectors = 20) {
   // a. Estimate the largest-magnitude eigenvalue of this matrix using Lanczos
   MatrixProdFunctor lmOperator(A);
@@ -687,8 +689,8 @@ static bool SparseMinimumEigenValue(
   // simultaneously allowing the iterations to escape from this fixed point in
   // the case that the relaxation is not exact.
   Vector v0 = S.row(0).transpose();
-  Vector perturbation(v0.size());
-  perturbation.setRandom();
+  Spectra::SimpleRandom<double> rng(0);
+  Vector perturbation = rng.random_vec(v0.size());
   perturbation.normalize();
   Vector xinit = v0 + (.03 * v0.norm()) * perturbation;  // Perturb v0 by ~3%
 

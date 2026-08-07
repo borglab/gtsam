@@ -14,6 +14,7 @@
  * @date   March 2019
  * @author Frank Dellaert
  * @brief  Unit tests for Shonan Averaging algorithm
+ * @author Fan Jiang
  */
 
 #include <CppUnitLite/TestHarness.h>
@@ -23,7 +24,11 @@
 
 #include <Eigen/Eigenvalues>
 #include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdint>
 #include <random>
+#include <stdexcept>
 
 using namespace std;
 using namespace gtsam;
@@ -437,6 +442,109 @@ TEST(ShonanAveraging3, BinaryMeasurements) {
   Values initial = shonan.initializeRandomly();
   auto result = shonan.run(initial, 3, 5);
   EXPECT_DOUBLES_EQUAL(0.0, shonan.cost(result.first), 1e-4);
+}
+
+/* ************************************************************************* */
+namespace false_certificate_fixture {
+
+constexpr size_t kNumNodes = 15;
+constexpr size_t kMinRank = 3;
+constexpr size_t kMaxRank = 8;
+constexpr double kOptimalityThreshold = -1e-4;
+
+std::array<double, 4> StandardNormalSamples(std::mt19937 &rng) {
+  std::array<double, 4> samples;
+  for (size_t i = 0; i < samples.size(); i += 2) {
+    double x, y, squaredNorm;
+    do {
+      const uint64_t xBits = static_cast<uint64_t>(rng()) |
+                             (static_cast<uint64_t>(rng()) << 32);
+      const uint64_t yBits = static_cast<uint64_t>(rng()) |
+                             (static_cast<uint64_t>(rng()) << 32);
+      x = 2.0 * static_cast<double>(xBits) * 0x1p-64 - 1.0;
+      y = 2.0 * static_cast<double>(yBits) * 0x1p-64 - 1.0;
+      squaredNorm = x * x + y * y;
+    } while (squaredNorm > 1.0 || squaredNorm == 0.0);
+
+    const double scale = std::sqrt(-2.0 * std::log(squaredNorm) / squaredNorm);
+    samples[i] = y * scale;
+    samples[i + 1] = x * scale;
+  }
+  return samples;
+}
+
+Rot3 RandomHaarRotation(std::mt19937 &rng) {
+  // Use a specified polar transform instead of implementation-defined
+  // std::normal_distribution output so these regressions are portable.
+  const auto samples = StandardNormalSamples(rng);
+  Eigen::Quaterniond quaternion(samples[0], samples[1], samples[2], samples[3]);
+  quaternion.normalize();
+  return Rot3(quaternion.toRotationMatrix());
+}
+
+ShonanAveraging3::Measurements MakeMeasurements(uint32_t seed) {
+  std::mt19937 rng(seed);
+  std::vector<Rot3> rotations;
+  rotations.reserve(kNumNodes);
+  for (size_t i = 0; i < kNumNodes; ++i) {
+    rotations.push_back(RandomHaarRotation(rng));
+  }
+
+  ShonanAveraging3::Measurements measurements;
+  measurements.reserve(kNumNodes * (kNumNodes - 1));
+  const auto unit3 = noiseModel::Unit::Create(3);
+  for (size_t i = 0; i < kNumNodes; ++i) {
+    for (size_t j = 0; j < kNumNodes; ++j) {
+      if (i == j) continue;
+      const Matrix3 measured =
+          rotations[j].matrix() * rotations[i].matrix().transpose();
+      measurements.emplace_back(i, j, Rot3(measured), unit3);
+    }
+  }
+  return measurements;
+}
+
+bool HasFalseCertificate(uint32_t seed) {
+  const ShonanAveraging3 shonan(MakeMeasurements(seed));
+  std::mt19937 initialRng(42);
+  Values initial = ShonanAveraging3::LiftTo<Rot3>(
+      kMinRank, shonan.initializeRandomly(initialRng));
+
+  for (size_t rank = kMinRank; rank <= kMaxRank; ++rank) {
+    const Values optimum = shonan.tryOptimizingAt(rank, initial);
+    Vector minEigenVector;
+    const double reportedMinimum =
+        shonan.computeMinEigenValue(optimum, &minEigenVector);
+
+    const Matrix certificate(shonan.computeA(optimum));
+    const Eigen::SelfAdjointEigenSolver<Matrix> referenceSolver(certificate);
+    if (referenceSolver.info() != Eigen::Success) {
+      throw std::runtime_error("Dense reference eigensolve failed");
+    }
+    const double referenceMinimum = referenceSolver.eigenvalues()(0);
+    if (reportedMinimum > kOptimalityThreshold) {
+      return referenceMinimum <= kOptimalityThreshold;
+    }
+
+    if (rank != kMaxRank) {
+      initial = shonan.initializeWithDescent(
+          rank + 1, optimum, minEigenVector, reportedMinimum);
+    }
+  }
+  return false;
+}
+
+}  // namespace false_certificate_fixture
+/* ************************************************************************* */
+
+// Verify randomized case 26 is never certified against a negative eigenvalue.
+TEST(ShonanCertificate, RandomizedCase26) {
+  EXPECT(!false_certificate_fixture::HasFalseCertificate(26));
+}
+
+// Verify randomized case 54 is never certified against a negative eigenvalue.
+TEST(ShonanCertificate, RandomizedCase54) {
+  EXPECT(!false_certificate_fixture::HasFalseCertificate(54));
 }
 
 /* ************************************************************************* */
