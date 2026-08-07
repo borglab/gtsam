@@ -20,7 +20,8 @@ And, less common:
 
 These templates build larger Lie groups from existing group types while preserving GTSAM's traits, tangent-vector ordering, and optional-Jacobian conventions:
 
-- [ProductLieGroup.h](ProductLieGroup.h) constructs independent direct products `G × H` and action-coupled semidirect products `G ⋉ H`. See the [ProductLieGroup guide](doc/ProductLieGroup.md) for the action requirements, Expmap/Logmap formulas, adjoints, and dynamic-dimension behavior.
+- [ProductLieGroup.h](ProductLieGroup.h) constructs independent direct products `G × H`. See the [ProductLieGroup guide](doc/ProductLieGroup.md) for its componentwise operations, adjoints, and dynamic-dimension behavior.
+- [SemidirectLieGroup.h](SemidirectLieGroup.h) constructs action-coupled products `G ⋉ H`. See the [SemidirectLieGroup guide](doc/SemidirectLieGroup.md) for action requirements, matrix-function kernels, and coupled Jacobians.
 - [TangentLieGroup.h](TangentLieGroup.h) constructs the tangent group `TG = G ⋉ 𝔤`, where `G` acts on its algebra through the adjoint action. See the [TangentLieGroup guide](doc/TangentLieGroup.md) for its structured Jacobians, recursive use, and optimized SO(3) specialization.
 
 ## Linear Algebra

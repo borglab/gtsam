@@ -15,11 +15,11 @@
  * @date April, 2026
  * @author Rohan Bansal
  * @author Jennifer Oum
- * @brief unit tests for action-parameterized product Lie groups
+ * @brief unit tests for semidirect Lie groups
  */
 
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/ProductLieGroup.h>
+#include <gtsam/base/SemidirectLieGroup.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/testLie.h>
 #include <gtsam/geometry/Gal3.h>
@@ -53,7 +53,7 @@ struct Rot2PointAction : public GroupAction<Rot2PointAction, Rot2, Point2> {
 
 // Rot3 acting on Vector3 by rotation: φ(R, t) = R·t.
 // The infinitesimal generator Aφ(u)·t = d/dt(exp(tu∧)·t)|₀ = u∧·t,
-// so generator(u) = u∧ (skew-symmetric matrix). ProductLieGroup derives
+// so generator(u) = u∧ (skew-symmetric matrix). SemidirectLieGroup derives
 // Expmap and Logmap automatically via φ₁(u∧) = SO(3) left Jacobian.
 struct Rot3VectorAction : public GroupAction<Rot3VectorAction, Rot3, Vector3> {
   static constexpr ActionType type = ActionType::Left;
@@ -114,9 +114,9 @@ struct SE3Vector4Action : public GroupAction<SE3Vector4Action, Pose3, Vector4> {
   }
 };
 
-using Semidirect2 = ProductLieGroup<Rot2, Point2, Rot2PointAction>;
-using Semidirect = ProductLieGroup<Rot3, Vector3, Rot3VectorAction>;
-using SemidirectGal3 = ProductLieGroup<Pose3, Vector4, SE3Vector4Action>;
+using Semidirect2 = SemidirectLieGroup<Rot2, Point2, Rot2PointAction>;
+using Semidirect = SemidirectLieGroup<Rot3, Vector3, Rot3VectorAction>;
+using SemidirectGal3 = SemidirectLieGroup<Pose3, Vector4, SE3Vector4Action>;
 
 template <typename Product, typename BaseTangent, typename ActionTangent>
 bool expmapRequestCombinationsAreConsistent(
@@ -301,7 +301,7 @@ Vector10 localCoordinatesSGal3(const SemidirectGal3& X,
 
 // A second semidirect instance, Rot2 ⋉ R², checks the generic kernel path in
 // a different dimension with Pose2 as the oracle.
-TEST(Lie, ProductLieGroupSemidirectAction2D) {
+TEST(Lie, SemidirectLieGroupAction2D) {
   GTSAM_CONCEPT_ASSERT(IsGroup<Semidirect2>);
   GTSAM_CONCEPT_ASSERT(IsManifold<Semidirect2>);
   GTSAM_CONCEPT_ASSERT(IsLieGroup<Semidirect2>);
@@ -354,7 +354,7 @@ TEST(testActionProduct, ExpmapLogmap2D) {
 
 // Verify the semidirect product obeys the left action law and matches Pose3
 // behavior.
-TEST(Lie, ProductLieGroupSemidirectAction) {
+TEST(Lie, SemidirectLieGroupAction) {
   GTSAM_CONCEPT_ASSERT(IsGroup<Semidirect>);
   GTSAM_CONCEPT_ASSERT(IsManifold<Semidirect>);
   GTSAM_CONCEPT_ASSERT(IsLieGroup<Semidirect>);
@@ -521,7 +521,7 @@ TEST(testActionProduct, retractAndLocalCoordinates) {
 
 // A third semidirect instance, SE(3) ⋉ ℝ⁴, reconstructs Gal(3) and exercises a
 // non-trivial (Pose3) base with a 4-D action, using the native Gal3 as oracle.
-TEST(Lie, ProductLieGroupSemidirectActionGal3) {
+TEST(Lie, SemidirectLieGroupActionGal3) {
   GTSAM_CONCEPT_ASSERT(IsGroup<SemidirectGal3>);
   GTSAM_CONCEPT_ASSERT(IsManifold<SemidirectGal3>);
   GTSAM_CONCEPT_ASSERT(IsLieGroup<SemidirectGal3>);
@@ -773,7 +773,7 @@ struct RotationAction
 };
 
 using FallbackProduct =
-    ProductLieGroup<Rot2WithoutAlgebraAdjoint, Point2, RotationAction>;
+    SemidirectLieGroup<Rot2WithoutAlgebraAdjoint, Point2, RotationAction>;
 
 FallbackProduct expmapProxy(const Vector3& tangent) {
   return FallbackProduct::Expmap(tangent);

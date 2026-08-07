@@ -1,24 +1,13 @@
 # `TangentLieGroup`: A Lie Group Acting on Its Algebra
 
 `TangentLieGroup<G>` constructs the tangent group `TG = G ⋉ 𝔤`, where a Lie
-group acts on its own Lie algebra through the adjoint action. It is a convenient
-alias for an adjoint-action `ProductLieGroup`, with all standard GTSAM
-Lie-group operations and optional Jacobians.
+group acts on its own Lie algebra through the adjoint action. It is a dedicated
+class with all standard GTSAM Lie-group operations and optional Jacobians.
 
 Include it with:
 
 ```cpp
 #include <gtsam/base/TangentLieGroup.h>
-```
-
-## Definition
-
-The alias is defined as:
-
-```cpp
-template <typename G>
-using TangentLieGroup =
-    ProductLieGroup<G, typename traits<G>::TangentVector, AdjointAction<G>>;
 ```
 
 An element `(g,xi)` stores `g` in `.first` and the algebra vector `xi` in
@@ -121,15 +110,14 @@ conventions are identical to the generic tangent-group path.
 
 ## API and usage
 
-Because `TangentLieGroup` is an alias for a `ProductLieGroup` instantiation, it
-exposes the complete product interface, including `Identity`, composition,
+`TangentLieGroup` exposes the complete Lie-group interface, including
+`Identity`, composition,
 inverse, `between`, `retract`, `localCoordinates`, `Expmap`, `Logmap`,
 `AdjointMap`, and static `adjointMap`. The concatenated tangent ordering is
 always the base tangent followed by the transported algebra component.
 
 Use a tangent group when a state contains a Lie-group element together with an
 algebra-valued quantity that transforms through the group's adjoint action. See
-[`ProductLieGroup`](ProductLieGroup.md) for the underlying direct and
-semidirect construction. The implementation and its analytic Jacobians are
-exercised by
+[`SemidirectLieGroup`](SemidirectLieGroup.md) for general action-coupled
+products. The implementation and its analytic Jacobians are exercised by
 [`testTangentLieGroup.cpp`](../../../tests/testTangentLieGroup.cpp).

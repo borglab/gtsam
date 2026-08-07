@@ -10,10 +10,11 @@
  * @file testTangentLieGroup.cpp
  * @date June, 2026
  * @author Alessandro Fornasier
- * @brief Tangent Lie group TG = G ⋉ 𝔤 via the semidirect ProductLieGroup.
+ * @brief Tangent Lie group TG = G ⋉ 𝔤 under the adjoint action.
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/ProductLieGroup.h>
 #include <gtsam/base/TangentLieGroup.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/testLie.h>

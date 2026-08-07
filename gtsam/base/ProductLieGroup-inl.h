@@ -13,26 +13,21 @@
  * @file ProductLieGroup-inl.h
  * @date March, 2026
  * @author Frank Dellaert
+ * @author Rohan Bansal
+ * @author Alessandro Fornasier
  * @brief Internals for ProductLieGroup.h, not for general consumption
  */
 
 #pragma once
 
-#include <unsupported/Eigen/MatrixFunctions>
-
 namespace {
 
-/// Compile-time storage for block augmentations, with a dynamic fallback.
-template <int Dimension, int Blocks, int Extra = 0>
-inline constexpr int augmentedDimension =
-    Dimension == Eigen::Dynamic ? Eigen::Dynamic : Blocks * Dimension + Extra;
-
-template <int Dimension, int Blocks, int Extra = 0>
-using AugmentedMatrix =
-    Eigen::Matrix<double, augmentedDimension<Dimension, Blocks, Extra>,
-                  augmentedDimension<Dimension, Blocks, Extra>>;
-
-/// Assign a sub-block using compile-time dimensions when available.
+/**
+ * Assign a sub-block using compile-time dimensions when available.
+ *
+ * Used by `ProductLieGroup`'s Jacobian and adjoint assembly paths below.
+ * `PowerLieGroup` uses its separate `assignJacobianBlock()` helper.
+ */
 template <typename DstType, typename SrcType>
 void assignBlock(const SrcType& source, size_t row, size_t column,
                  DstType* destination) {
@@ -50,209 +45,24 @@ void assignBlock(const SrcType& source, size_t row, size_t column,
 
 namespace gtsam {
 
-// ---------------------------------------------------------------------------
-// phi1Kernel: compute φ₁(A)=Σ Aᵏ/(k+1)! from one block matrix exponential.
-//
-// Identity: exp([[A, I], [0, 0]]) = [[exp(A), φ₁(A)], [0, I]].
-// ---------------------------------------------------------------------------
-template <typename G, typename H, typename Action>
-typename ProductLieGroup<G, H, Action>::Phi1KernelResult
-ProductLieGroup<G, H, Action>::phi1Kernel(const Jacobian2& A) {
-  const int r = static_cast<int>(A.rows());
-  using BlockMatrix = AugmentedMatrix<dimension2, 2>;
-  BlockMatrix M = BlockMatrix::Zero(2 * r, 2 * r);
-  M.topLeftCorner(r, r) = A;
-  M.topRightCorner(r, r).setIdentity();
-  const BlockMatrix expM = M.exp();
-
-  Phi1KernelResult result;
-  result.phi0 = expM.topLeftCorner(r, r);
-  result.phi1 = expM.topRightCorner(r, r);
-  return result;
-}
-
-// ---------------------------------------------------------------------------
-// Tangent-group layout helpers. Keeping the fixed-dimension contract here
-// lets the kernels below read directly as their block-matrix identities.
-// ---------------------------------------------------------------------------
-template <typename G, typename H, typename Action>
-template <
-    typename A,
-    std::enable_if_t<internal::ProductLieGroupIsAdjointAction<A>::value, int>>
-constexpr size_t ProductLieGroup<G, H, Action>::adjointActionDimension() {
-  static_assert(!firstDynamic && !secondDynamic && dimension1 == dimension2,
-                "AdjointAction requires equal fixed tangent dimensions");
-  return static_cast<size_t>(dimension1);
-}
-
-template <typename G, typename H, typename Action>
-template <
-    typename A,
-    std::enable_if_t<internal::ProductLieGroupIsAdjointAction<A>::value, int>>
-typename ProductLieGroup<G, H, Action>::AdjointActionTangentPair
-ProductLieGroup<G, H, Action>::splitAdjointActionTangent(
-    const TangentVector& xi) {
-  constexpr size_t n = adjointActionDimension<A>();
-  return {tangentSegment<G>(xi, 0, n), tangentSegment<H>(xi, n, n)};
-}
-
-// ---------------------------------------------------------------------------
-// rightJacobian: compute J_r(xi)=φ₁(-ad_xi) from one block exponential.
-// ---------------------------------------------------------------------------
-template <typename G, typename H, typename Action>
-typename ProductLieGroup<G, H, Action>::Jacobian
-ProductLieGroup<G, H, Action>::rightJacobian(const TangentVector& xi) {
-  if constexpr (internal::ProductLieGroupIsAdjointAction<Action>::value) {
-    return adjointActionRightJacobian(xi);
-  }
-
-  using BlockMatrix = AugmentedMatrix<dimension, 2>;
-
-  const int d = static_cast<int>(xi.size());
-  BlockMatrix block = BlockMatrix::Zero(2 * d, 2 * d);
-  block.topLeftCorner(d, d) = -adjointMap(xi);
-  block.topRightCorner(d, d).setIdentity();
-  const BlockMatrix expBlock = block.exp();
-
-  return expBlock.topRightCorner(d, d);
-}
-
-// ---------------------------------------------------------------------------
-// The tangent-group algebra adjoint has repeated triangular blocks:
-//
-//   ad_(u,v) = [[ad_u,  0  ],
-//               [ad_v, ad_u]].
-//
-// Applying phi_1 to -ad_(u,v) therefore yields
-//
-//   J_r^(TG)(u,v) = [[J, 0], [Q, J]],
-//
-// where J=phi_1(-ad_u) is the base-group right Jacobian and
-// Q=L_phi1(-ad_u,-ad_v) is one directional Frechet derivative.  Computing
-// this n-dimensional Frechet block requires one 3n-by-3n exponential, instead
-// of the generic 4n-by-4n exponential for the full 2n-dimensional algebra.
-// ---------------------------------------------------------------------------
-template <typename G, typename H, typename Action>
-template <
-    typename A,
-    std::enable_if_t<internal::ProductLieGroupIsAdjointAction<A>::value, int>>
-typename ProductLieGroup<G, H, Action>::Jacobian
-ProductLieGroup<G, H, Action>::adjointActionRightJacobian(
-    const TangentVector& xi) {
-  constexpr size_t n = adjointActionDimension<A>();
-  const auto [u, v] = splitAdjointActionTangent<A>(xi);
-
-  if constexpr (internal::TangentLieGroupJacobian<G>::available) {
-    // A geometry type may replace the matrix exponential below with an exact
-    // closed form. The specialization sees the same (u,v) coordinates and
-    // must return the complete 2n-by-2n right Jacobian.
-    return internal::TangentLieGroupJacobian<G>::rightJacobian(u, v);
-  }
-
-  const Jacobian2 negativeAdU = -A::generator(u);
-  const Jacobian2 negativeAdV = -A::generator(v);
-  const Phi1FrechetResult kernels = phi1FrechetBlock(negativeAdU, negativeAdV);
-
-  Jacobian derivative = zeroJacobian(2 * n);
-  assignBlock(kernels.phi1, 0, 0, &derivative);
-  assignBlock(kernels.phi1, n, n, &derivative);
-  assignBlock(kernels.Lphi1, n, 0, &derivative);
-  return derivative;
-}
-
-// ---------------------------------------------------------------------------
-// phi1FrechetBlock: compute φ₁(A) and L_{φ₁}(A, B) from one block
-// matrix exponential.
-//
-// Identity:
-//   exp([[0, I, 0],
-//        [0, A, B],
-//        [0, 0, A]])
-//     = [[I,      φ₁(A),         L_{φ₁}(A, B)],
-//        [0,      exp(A),        L_exp(A, B) ],
-//        [0,      0,             exp(A)      ]]
-// ---------------------------------------------------------------------------
-template <typename G, typename H, typename Action>
-typename ProductLieGroup<G, H, Action>::Phi1FrechetResult
-ProductLieGroup<G, H, Action>::phi1FrechetBlock(const Jacobian2& A,
-                                                const Jacobian2& B) {
-  const int r = static_cast<int>(A.rows());
-  using BlockMatrix = AugmentedMatrix<dimension2, 3>;
-  BlockMatrix M = BlockMatrix::Zero(3 * r, 3 * r);
-  M.block(0, r, r, r).setIdentity();
-  M.block(r, r, r, r) = A;
-  M.block(r, 2 * r, r, r) = B;
-  M.block(2 * r, 2 * r, r, r) = A;
-  const BlockMatrix expM = M.exp();
-
-  Phi1FrechetResult result;
-  result.phi1 = expM.block(0, r, r, r);
-  result.Lphi1 = expM.block(0, 2 * r, r, r);
-  return result;
-}
-
-// ---------------------------------------------------------------------------
-// phi1FrechetAction: compute L_{φ₁}(A, B)v without forming the full
-// Fréchet-derivative matrix.
-//
-// Identity:
-//   exp([[A, B, 0],
-//        [0, A, v],
-//        [0, 0, 0]])_(1,3) = L_{φ₁}(A, B)v.
-//
-// The block sizes are (r, r, 1), so this requires a (2r+1)-square
-// exponential instead of the 3r-square full-matrix construction above.
-// ---------------------------------------------------------------------------
-template <typename G, typename H, typename Action>
-typename traits<H>::TangentVector
-ProductLieGroup<G, H, Action>::phi1FrechetAction(
-    const Jacobian2& A, const Jacobian2& B,
-    const typename traits<H>::TangentVector& v) {
-  const int r = static_cast<int>(A.rows());
-  using BlockMatrix = AugmentedMatrix<dimension2, 2, 1>;
-  BlockMatrix M = BlockMatrix::Zero(2 * r + 1, 2 * r + 1);
-  M.block(0, 0, r, r) = A;
-  M.block(0, r, r, r) = B;
-  M.block(r, r, r, r) = A;
-  M.block(r, 2 * r, r, 1) = v;
-  const BlockMatrix expM = M.exp();
-  return expM.block(0, 2 * r, r, 1);
-}
-
-template <typename G, typename H, typename Action>
-ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::operator*(
+template <typename G, typename H>
+ProductLieGroup<G, H> ProductLieGroup<G, H>::operator*(
     const ProductLieGroup& other) const {
   checkMatchingDimensions(other, "operator*");
-  if constexpr (isDirectProduct) {
-    // Direct product: (g₁,h₁)·(g₂,h₂) = (g₁g₂, h₁h₂)
-    return ProductLieGroup(traits<G>::Compose(this->first, other.first),
-                           traits<H>::Compose(this->second, other.second));
-  } else {
-    // Semidirect product: (g₁,h₁)·(g₂,h₂) = (g₁g₂, h₁·φ(g₁,h₂)).
-    // The LHS G-component acts on the RHS H-component before composing in H.
-    const H actedSecond = Action{}(this->first, other.second);
-    return ProductLieGroup(traits<G>::Compose(this->first, other.first),
-                           traits<H>::Compose(this->second, actedSecond));
-  }
+  return ProductLieGroup(traits<G>::Compose(this->first, other.first),
+                         traits<H>::Compose(this->second, other.second));
 }
 
-template <typename G, typename H, typename Action>
-ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::inverse() const {
-  const G gInv = traits<G>::Inverse(this->first);
-  const H hInv = traits<H>::Inverse(this->second);
-  if constexpr (isDirectProduct) {
-    // Direct product: (g,h)⁻¹ = (g⁻¹, h⁻¹)
-    return ProductLieGroup(gInv, hInv);
-  } else {
-    // Semidirect product: (g,h)⁻¹ = (g⁻¹, φ(g⁻¹, h⁻¹)).
-    // g⁻¹ must also un-rotate h⁻¹ to undo the action baked into the group law.
-    return ProductLieGroup(gInv, Action{}(gInv, hInv));
-  }
+template <typename G, typename H>
+ProductLieGroup<G, H> ProductLieGroup<G, H>::inverse() const {
+  return ProductLieGroup(traits<G>::Inverse(this->first),
+                         traits<H>::Inverse(this->second));
 }
 
-template <typename G, typename H, typename Action>
-ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::retract(
-    const TangentVector& v, ChartJacobian H1, ChartJacobian H2) const {
+template <typename G, typename H>
+ProductLieGroup<G, H> ProductLieGroup<G, H>::retract(const TangentVector& v,
+                                                     ChartJacobian H1,
+                                                     ChartJacobian H2) const {
   const size_t d1 = firstDim();
   const size_t d2 = secondDim();
   const size_t d = combinedDimension(d1, d2);
@@ -261,180 +71,120 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::retract(
         "ProductLieGroup::retract tangent dimension does not match product "
         "dimension");
   }
-  if constexpr (isDirectProduct) {
-    // Initialize these defensively: optimized GCC builds cannot always prove
-    // that the optional Jacobian callbacks below assign every coefficient.
-    Jacobian1 D_g_first = Jacobian1::Zero(d1, d1);
-    Jacobian1 D_g_second = Jacobian1::Zero(d1, d1);
-    Jacobian2 D_h_first = Jacobian2::Zero(d2, d2);
-    Jacobian2 D_h_second = Jacobian2::Zero(d2, d2);
-    G g = traits<G>::Retract(this->first, tangentSegment<G>(v, 0, d1),
-                             H1 ? &D_g_first : nullptr,
-                             H2 ? &D_g_second : nullptr);
-    H h = traits<H>::Retract(this->second, tangentSegment<H>(v, d1, d2),
-                             H1 ? &D_h_first : nullptr,
-                             H2 ? &D_h_second : nullptr);
-    if (H1) {
-      *H1 = zeroJacobian(d);
-      assignBlock(D_g_first, 0, 0, &*H1);
-      assignBlock(D_h_first, d1, d1, &*H1);
-    }
-    if (H2) {
-      *H2 = zeroJacobian(d);
-      assignBlock(D_g_second, 0, 0, &*H2);
-      assignBlock(D_h_second, d1, d1, &*H2);
-    }
-    return ProductLieGroup(g, h);
+  Jacobian1 D_g_first = Jacobian1::Zero(d1, d1);
+  Jacobian1 D_g_second = Jacobian1::Zero(d1, d1);
+  Jacobian2 D_h_first = Jacobian2::Zero(d2, d2);
+  Jacobian2 D_h_second = Jacobian2::Zero(d2, d2);
+  G g =
+      traits<G>::Retract(this->first, tangentSegment<G>(v, 0, d1),
+                         H1 ? &D_g_first : nullptr, H2 ? &D_g_second : nullptr);
+  H h =
+      traits<H>::Retract(this->second, tangentSegment<H>(v, d1, d2),
+                         H1 ? &D_h_first : nullptr, H2 ? &D_h_second : nullptr);
+  if (H1) {
+    *H1 = zeroJacobian(d);
+    assignBlock(D_g_first, 0, 0, &*H1);
+    assignBlock(D_h_first, d1, d1, &*H1);
   }
-
-  // Expmap-based retract carries the semidirect product coupling:
-  //   retract(p, v) = p · Expmap(v)
-  // The chart Jacobians are H1 = Ad(Expmap(v)⁻¹) and H2 = D_Expmap(v).
-  // We pre-split v here so the 2-arg Expmap overload is used, which handles
-  // the dynamic-dynamic case correctly (the 1-arg form can't infer the split
-  // without an instance to query d1 and d2 from).
-  Matrix D_v1, D_v2;
-  using DynJ = OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>;
-  const ProductLieGroup delta =
-      Expmap(tangentSegment<G>(v, 0, d1), tangentSegment<H>(v, d1, d2),
-             H2 ? DynJ(D_v1) : DynJ(), H2 ? DynJ(D_v2) : DynJ());
-  const ProductLieGroup result = compose(delta);
-  if (H1) *H1 = delta.inverse().AdjointMap();
   if (H2) {
     *H2 = zeroJacobian(d);
-    H2->leftCols(d1) = D_v1;
-    H2->rightCols(d2) = D_v2;
+    assignBlock(D_g_second, 0, 0, &*H2);
+    assignBlock(D_h_second, d1, d1, &*H2);
   }
-  return result;
+  return ProductLieGroup(g, h);
 }
 
-template <typename G, typename H, typename Action>
-typename ProductLieGroup<G, H, Action>::TangentVector
-ProductLieGroup<G, H, Action>::localCoordinates(const ProductLieGroup& g,
-                                                ChartJacobian H1,
-                                                ChartJacobian H2) const {
+template <typename G, typename H>
+typename ProductLieGroup<G, H>::TangentVector
+ProductLieGroup<G, H>::localCoordinates(const ProductLieGroup& g,
+                                        ChartJacobian H1,
+                                        ChartJacobian H2) const {
   checkMatchingDimensions(g, "localCoordinates");
-  if constexpr (isDirectProduct) {
-    const size_t d1 = firstDim();
-    const size_t d2 = secondDim();
-    const size_t d = combinedDimension(d1, d2);
-    Jacobian1 D_g_first;
-    Jacobian1 D_g_second;
-    Jacobian2 D_h_first;
-    Jacobian2 D_h_second;
-    const auto v1 =
-        traits<G>::Local(this->first, g.first, H1 ? &D_g_first : nullptr,
-                         H2 ? &D_g_second : nullptr);
-    const auto v2 =
-        traits<H>::Local(this->second, g.second, H1 ? &D_h_first : nullptr,
-                         H2 ? &D_h_second : nullptr);
-    if (H1) {
-      *H1 = zeroJacobian(d);
-      assignBlock(D_g_first, 0, 0, &*H1);
-      assignBlock(D_h_first, d1, d1, &*H1);
-    }
-    if (H2) {
-      *H2 = zeroJacobian(d);
-      assignBlock(D_g_second, 0, 0, &*H2);
-      assignBlock(D_h_second, d1, d1, &*H2);
-    }
-    return makeTangentVector(v1, v2, d1, d2);
+  const size_t d1 = firstDim();
+  const size_t d2 = secondDim();
+  const size_t d = combinedDimension(d1, d2);
+  Jacobian1 D_g_first;
+  Jacobian1 D_g_second;
+  Jacobian2 D_h_first;
+  Jacobian2 D_h_second;
+  const auto v1 =
+      traits<G>::Local(this->first, g.first, H1 ? &D_g_first : nullptr,
+                       H2 ? &D_g_second : nullptr);
+  const auto v2 =
+      traits<H>::Local(this->second, g.second, H1 ? &D_h_first : nullptr,
+                       H2 ? &D_h_second : nullptr);
+  if (H1) {
+    *H1 = zeroJacobian(d);
+    assignBlock(D_g_first, 0, 0, &*H1);
+    assignBlock(D_h_first, d1, d1, &*H1);
   }
-
-  // Logmap-based local coordinates carry the semidirect product coupling:
-  //   localCoordinates(p, q) = Logmap(p⁻¹·q)
-  // For a direct product Logmap is componentwise; for a semidirect product it
-  // carries the full coupled Lie algebra structure from Action::Logmap.
-  const ProductLieGroup relative = between(g);
-  Jacobian D_logmap;
-  TangentVector v =
-      Logmap(relative, H1 || H2 ? ChartJacobian(&D_logmap) : ChartJacobian());
-  if (H1) *H1 = -D_logmap * relative.inverse().AdjointMap();
-  if (H2) *H2 = D_logmap;
-  return v;
+  if (H2) {
+    *H2 = zeroJacobian(d);
+    assignBlock(D_g_second, 0, 0, &*H2);
+    assignBlock(D_h_second, d1, d1, &*H2);
+  }
+  return makeTangentVector(v1, v2, d1, d2);
 }
 
-template <typename G, typename H, typename Action>
-ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::compose(
+template <typename G, typename H>
+ProductLieGroup<G, H> ProductLieGroup<G, H>::compose(
     const ProductLieGroup& other, ChartJacobian H1, ChartJacobian H2) const {
   checkMatchingDimensions(other, "compose");
-  if constexpr (isDirectProduct) {
-    const size_t d1 = firstDim();
-    const size_t d = combinedDimension(d1, secondDim());
-    Jacobian1 D_g_first;
-    Jacobian2 D_h_second;
-    G g =
-        traits<G>::Compose(this->first, other.first, H1 ? &D_g_first : nullptr);
-    H h = traits<H>::Compose(this->second, other.second,
-                             H1 ? &D_h_second : nullptr);
-    if (H1) {
-      *H1 = zeroJacobian(d);
-      assignBlock(D_g_first, 0, 0, &*H1);
-      assignBlock(D_h_second, d1, d1, &*H1);
-    }
-    if (H2) *H2 = identityJacobian(d);
-    return ProductLieGroup(g, h);
+  const size_t d1 = firstDim();
+  const size_t d = combinedDimension(d1, secondDim());
+  Jacobian1 D_g_first;
+  Jacobian2 D_h_second;
+  G g = traits<G>::Compose(this->first, other.first, H1 ? &D_g_first : nullptr);
+  H h = traits<H>::Compose(this->second, other.second,
+                           H1 ? &D_h_second : nullptr);
+  if (H1) {
+    *H1 = zeroJacobian(d);
+    assignBlock(D_g_first, 0, 0, &*H1);
+    assignBlock(D_h_second, d1, d1, &*H1);
   }
-
-  const ProductLieGroup result = (*this) * other;
-  if (H1) *H1 = other.inverse().AdjointMap();
-  if (H2) *H2 = identityJacobian(dim());
-  return result;
+  if (H2) *H2 = identityJacobian(d);
+  return ProductLieGroup(g, h);
 }
 
-template <typename G, typename H, typename Action>
-ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::between(
+template <typename G, typename H>
+ProductLieGroup<G, H> ProductLieGroup<G, H>::between(
     const ProductLieGroup& other, ChartJacobian H1, ChartJacobian H2) const {
   checkMatchingDimensions(other, "between");
-  if constexpr (isDirectProduct) {
-    const size_t d1 = firstDim();
-    const size_t d = combinedDimension(d1, secondDim());
-    Jacobian1 D_g_first;
-    Jacobian2 D_h_second;
-    G g =
-        traits<G>::Between(this->first, other.first, H1 ? &D_g_first : nullptr);
-    H h = traits<H>::Between(this->second, other.second,
-                             H1 ? &D_h_second : nullptr);
-    if (H1) {
-      *H1 = zeroJacobian(d);
-      assignBlock(D_g_first, 0, 0, &*H1);
-      assignBlock(D_h_second, d1, d1, &*H1);
-    }
-    if (H2) *H2 = identityJacobian(d);
-    return ProductLieGroup(g, h);
+  const size_t d1 = firstDim();
+  const size_t d = combinedDimension(d1, secondDim());
+  Jacobian1 D_g_first;
+  Jacobian2 D_h_second;
+  G g = traits<G>::Between(this->first, other.first, H1 ? &D_g_first : nullptr);
+  H h = traits<H>::Between(this->second, other.second,
+                           H1 ? &D_h_second : nullptr);
+  if (H1) {
+    *H1 = zeroJacobian(d);
+    assignBlock(D_g_first, 0, 0, &*H1);
+    assignBlock(D_h_second, d1, d1, &*H1);
   }
-
-  const ProductLieGroup result = this->inverse() * other;
-  if (H1) *H1 = -result.inverse().AdjointMap();
-  if (H2) *H2 = identityJacobian(dim());
-  return result;
+  if (H2) *H2 = identityJacobian(d);
+  return ProductLieGroup(g, h);
 }
 
-template <typename G, typename H, typename Action>
-ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::inverse(
-    ChartJacobian D) const {
-  if constexpr (isDirectProduct) {
-    const size_t d1 = firstDim();
-    const size_t d = combinedDimension(d1, secondDim());
-    Jacobian1 D_g_first;
-    Jacobian2 D_h_second;
-    G g = traits<G>::Inverse(this->first, D ? &D_g_first : nullptr);
-    H h = traits<H>::Inverse(this->second, D ? &D_h_second : nullptr);
-    if (D) {
-      *D = zeroJacobian(d);
-      assignBlock(D_g_first, 0, 0, &*D);
-      assignBlock(D_h_second, d1, d1, &*D);
-    }
-    return ProductLieGroup(g, h);
+template <typename G, typename H>
+ProductLieGroup<G, H> ProductLieGroup<G, H>::inverse(ChartJacobian D) const {
+  const size_t d1 = firstDim();
+  const size_t d = combinedDimension(d1, secondDim());
+  Jacobian1 D_g_first;
+  Jacobian2 D_h_second;
+  G g = traits<G>::Inverse(this->first, D ? &D_g_first : nullptr);
+  H h = traits<H>::Inverse(this->second, D ? &D_h_second : nullptr);
+  if (D) {
+    *D = zeroJacobian(d);
+    assignBlock(D_g_first, 0, 0, &*D);
+    assignBlock(D_h_second, d1, d1, &*D);
   }
-
-  if (D) *D = -AdjointMap();
-  return inverse();
+  return ProductLieGroup(g, h);
 }
 
-template <typename G, typename H, typename Action>
-ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::Expmap(
-    const TangentVector& v, ChartJacobian Hv) {
+template <typename G, typename H>
+ProductLieGroup<G, H> ProductLieGroup<G, H>::Expmap(const TangentVector& v,
+                                                    ChartJacobian Hv) {
   size_t firstDimension = 0;
   size_t secondDimension = 0;
   if constexpr (firstDynamic && secondDynamic) {
@@ -493,438 +243,129 @@ ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::Expmap(
   return result;
 }
 
-// Tangent-group exponential:
-//   Exp_(TG)(u,v) = (Exp_G(u), Ad_Exp(u) J_r^G(u) v).
-template <typename G, typename H, typename Action>
-template <
-    typename A,
-    std::enable_if_t<internal::ProductLieGroupIsAdjointAction<A>::value, int>>
-ProductLieGroup<G, H, Action>
-ProductLieGroup<G, H, Action>::adjointActionExpmap(
-    const TangentVector& xi,
-    OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H1,
-    OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H2) {
-  constexpr size_t n = adjointActionDimension<A>();
-  constexpr size_t d = 2 * n;
-  const auto [u, v] = splitAdjointActionTangent<A>(xi);
-
-  if constexpr (internal::TangentLieGroupJacobian<G>::expmapAvailable) {
-    Jacobian derivative;
-    const auto [g, h] = internal::TangentLieGroupJacobian<G>::expmap(
-        u, v, H1 || H2 ? &derivative : nullptr);
-    if (H1) *H1 = derivative.leftCols(n);
-    if (H2) *H2 = derivative.rightCols(n);
-    return ProductLieGroup(g, h);
-  }
-
-  Jacobian1 D_G;
-  const G g = traits<G>::Expmap(u, &D_G);
-  const H h = traits<G>::AdjointMap(g) * D_G * v;
-  if (H1) {
-    const Jacobian derivative = adjointActionRightJacobian<A>(xi);
-    *H1 = derivative.leftCols(n);
-    if (H2) *H2 = derivative.rightCols(n);
-  } else if (H2) {
-    *H2 = Matrix::Zero(d, n);
-    H2->bottomRows(n) = D_G;
-  }
-  return ProductLieGroup(g, h);
-}
-
-template <typename G, typename H, typename Action>
-ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::Expmap(
+template <typename G, typename H>
+ProductLieGroup<G, H> ProductLieGroup<G, H>::Expmap(
     const Eigen::Ref<const typename traits<G>::TangentVector>& v1,
     const Eigen::Ref<const typename traits<H>::TangentVector>& v2,
     OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H1,
     OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H2) {
-  if constexpr (isDirectProduct) {
-    // Direct product: the two Lie algebras are independent, so the exponential
-    // is componentwise: exp(v₁,v₂) = (exp_G(v₁), exp_H(v₂)).
-    // The Jacobian columns split cleanly between the G and H blocks.
-    const size_t d1 = static_cast<size_t>(v1.size());
-    const size_t d2 = static_cast<size_t>(v2.size());
-    const size_t d = combinedDimension(d1, d2);
-    Jacobian1 D_g_first;
-    Jacobian2 D_h_second;
-    G g = traits<G>::Expmap(v1, H1 ? &D_g_first : nullptr);
-    H h = traits<H>::Expmap(v2, H2 ? &D_h_second : nullptr);
-    if (H1) {
-      *H1 = Matrix::Zero(d, d1);
-      assignBlock(D_g_first, 0, 0, &*H1);
-    }
-    if (H2) {
-      *H2 = Matrix::Zero(d, d2);
-      assignBlock(D_h_second, d1, 0, &*H2);
-    }
-    return ProductLieGroup(g, h);
-  } else if constexpr (internal::ProductLieGroupIsAdjointAction<
-                           Action>::value) {
-    const size_t d1 = static_cast<size_t>(v1.size());
-    const size_t d2 = static_cast<size_t>(v2.size());
-    return adjointActionExpmap(makeTangentVector(v1, v2, d1, d2), H1, H2);
-  } else {
-    // Generic semidirect Expmap for vector-space H via the φ₁ kernel:
-    //   Expmap(u, v) = (expG(u),  φ₁(Aφ(u)) · v)
-    // where Aφ(u) = Action::generator(u) is the infinitesimal generator.
-    const size_t d1 = static_cast<size_t>(v1.size());
-    const size_t d2 = static_cast<size_t>(v2.size());
-    const size_t d = combinedDimension(d1, d2);
-
-    constexpr bool hasStaticAdjointMap =
-        internal::ProductLieGroupHasAdjointMap<G>::value;
-    Jacobian1 D_G;
-    const G g =
-        traits<G>::Expmap(v1, H1 && !hasStaticAdjointMap ? &D_G : nullptr);
-
-    if (H1) {
-      if constexpr (hasStaticAdjointMap) {
-        // The complete derivative of a Lie-group exponential is its right
-        // Jacobian J_r(xi)=φ₁(-ad_xi). Computing it once avoids evaluating one
-        // Fréchet derivative per basis direction. Its lower-right block is the
-        // action Jacobian φ₁(-A), so φ₁(A)v = φ(g)φ₁(-A)v also reuses it for
-        // the transported value.
-        const TangentVector xi = makeTangentVector(v1, v2, d1, d2);
-        const Jacobian derivative = rightJacobian(xi);
-        const Jacobian2 actionRightJacobian =
-            derivative.bottomRightCorner(d2, d2);
-        const H h = Action{}(g, actionRightJacobian * v2);
-        *H1 = derivative.leftCols(d1);
-        if (H2) *H2 = derivative.rightCols(d2);
-        return ProductLieGroup(g, h);
-      } else {
-        // Preserve support for base groups that do not expose static
-        // adjointMap(), using directional Fréchet derivatives as a fallback.
-        const Jacobian2 A = Action::generator(v1);
-        const Phi1KernelResult kernels = phi1Kernel(A);
-        const auto phi0Solver = kernels.phi0.lu();
-        const H h = kernels.phi1 * v2;
-
-        *H1 = Matrix::Zero(d, d1);
-        H1->topRows(d1) = D_G;
-        typename traits<G>::TangentVector ej;
-        if constexpr (firstDynamic) ej.resize(static_cast<Eigen::Index>(d1));
-        ej.setZero();
-        for (Eigen::Index j = 0; j < static_cast<Eigen::Index>(d1); ++j) {
-          ej(j) = 1.0;
-          const Jacobian2 Bj = Action::generator(ej);
-          const typename traits<H>::TangentVector dh =
-              phi1FrechetAction(A, Bj, v2);
-          H1->col(j).tail(d2) = phi0Solver.solve(dh);
-          ej(j) = 0.0;
-        }
-        if (H2) {
-          *H2 = Matrix::Zero(d, d2);
-          H2->bottomRows(d2) = phi0Solver.solve(kernels.phi1);
-        }
-        return ProductLieGroup(g, h);
-      }
-    }
-
-    const Jacobian2 A = Action::generator(v1);
-    if (H2) {
-      const Jacobian2 actionRightJacobian = phi1Kernel(-A).phi1;
-      const H h = Action{}(g, actionRightJacobian * v2);
-      *H2 = Matrix::Zero(d, d2);
-      H2->bottomRows(d2) = actionRightJacobian;
-      return ProductLieGroup(g, h);
-    }
-    const H h = phi1Kernel(A).phi1 * v2;
-    return ProductLieGroup(g, h);
+  const size_t d1 = static_cast<size_t>(v1.size());
+  const size_t d2 = static_cast<size_t>(v2.size());
+  const size_t d = combinedDimension(d1, d2);
+  Jacobian1 D_g_first;
+  Jacobian2 D_h_second;
+  G g = traits<G>::Expmap(v1, H1 ? &D_g_first : nullptr);
+  H h = traits<H>::Expmap(v2, H2 ? &D_h_second : nullptr);
+  if (H1) {
+    *H1 = Matrix::Zero(d, d1);
+    assignBlock(D_g_first, 0, 0, &*H1);
   }
+  if (H2) {
+    *H2 = Matrix::Zero(d, d2);
+    assignBlock(D_h_second, d1, 0, &*H2);
+  }
+  return ProductLieGroup(g, h);
 }
 
-// Tangent-group logarithm obtained by inverting
-// Ad_Exp(u) J_r^G(u) blockwise.
-template <typename G, typename H, typename Action>
-template <
-    typename A,
-    std::enable_if_t<internal::ProductLieGroupIsAdjointAction<A>::value, int>>
-typename ProductLieGroup<G, H, Action>::TangentVector
-ProductLieGroup<G, H, Action>::adjointActionLogmap(const ProductLieGroup& p,
-                                                   ChartJacobian Hp) {
-  constexpr size_t n = adjointActionDimension<A>();
-  constexpr size_t d = 2 * n;
-
-  Jacobian1 D_G;
-  const typename traits<G>::TangentVector u = traits<G>::Logmap(p.first, &D_G);
-  const Jacobian1 AdInverse =
-      traits<G>::AdjointMap(traits<G>::Inverse(p.first));
-  const H v = D_G * AdInverse * p.second;
-  const TangentVector xi = makeTangentVector(u, v, n, n);
-  if (Hp) {
-    // Invert [[J,0],[Q,J]] using J^{-1}=D_G.
-    const Jacobian derivative = adjointActionRightJacobian<A>(xi);
-    const Jacobian2 Q = derivative.bottomLeftCorner(n, n);
-    *Hp = zeroJacobian(d);
-    assignBlock(D_G, 0, 0, &*Hp);
-    assignBlock(D_G, n, n, &*Hp);
-    assignBlock(-D_G * Q * D_G, n, 0, &*Hp);
+template <typename G, typename H>
+typename ProductLieGroup<G, H>::TangentVector ProductLieGroup<G, H>::Logmap(
+    const ProductLieGroup& p, ChartJacobian Hp) {
+  const size_t firstDimension = p.firstDim();
+  const size_t secondDimension = p.secondDim();
+  const size_t productDimension =
+      combinedDimension(firstDimension, secondDimension);
+  if (!Hp) {
+    const auto v1 = traits<G>::Logmap(p.first);
+    const auto v2 = traits<H>::Logmap(p.second);
+    return makeTangentVector(v1, v2, firstDimension, secondDimension);
   }
-  return xi;
+
+  Jacobian1 D_g_first;
+  Jacobian2 D_h_second;
+  typename traits<G>::TangentVector v1 = traits<G>::Logmap(p.first, &D_g_first);
+  typename traits<H>::TangentVector v2 =
+      traits<H>::Logmap(p.second, &D_h_second);
+  TangentVector v = makeTangentVector(v1, v2, firstDimension, secondDimension);
+  *Hp = zeroJacobian(productDimension);
+  assignBlock(D_g_first, 0, 0, &*Hp);
+  assignBlock(D_h_second, firstDimension, firstDimension, &*Hp);
+  return v;
 }
 
-template <typename G, typename H, typename Action>
-typename ProductLieGroup<G, H, Action>::TangentVector
-ProductLieGroup<G, H, Action>::Logmap(const ProductLieGroup& p,
-                                      ChartJacobian Hp) {
-  if constexpr (isDirectProduct) {
-    // Direct product: the inverse of a componentwise Expmap is componentwise,
-    // so log(g,h) = (log_G(g), log_H(h)) with a block-diagonal Jacobian.
-    const size_t firstDimension = p.firstDim();
-    const size_t secondDimension = p.secondDim();
-    const size_t productDimension =
-        combinedDimension(firstDimension, secondDimension);
-    if (!Hp) {
-      const auto v1 = traits<G>::Logmap(p.first);
-      const auto v2 = traits<H>::Logmap(p.second);
-      return makeTangentVector(v1, v2, firstDimension, secondDimension);
-    }
-
-    Jacobian1 D_g_first;
-    Jacobian2 D_h_second;
-    typename traits<G>::TangentVector v1 =
-        traits<G>::Logmap(p.first, &D_g_first);
-    typename traits<H>::TangentVector v2 =
-        traits<H>::Logmap(p.second, &D_h_second);
-    TangentVector v =
-        makeTangentVector(v1, v2, firstDimension, secondDimension);
-    *Hp = zeroJacobian(productDimension);
-    assignBlock(D_g_first, 0, 0, &*Hp);
-    assignBlock(D_h_second, firstDimension, firstDimension, &*Hp);
-    return v;
-  } else if constexpr (internal::ProductLieGroupIsAdjointAction<
-                           Action>::value) {
-    return adjointActionLogmap(p, Hp);
-  } else {
-    // Generic semidirect Logmap for vector-space H via the φ₁ kernel:
-    //   Logmap(g, h) = (logG(g),  φ₁(Aφ(logG(g)))⁻¹ · h)
-    // This is the exact inverse of the Expmap formula above.
-    const size_t d1 = p.firstDim();
-    const size_t d2 = p.secondDim();
-    const size_t d = combinedDimension(d1, d2);
-
-    constexpr bool hasStaticAdjointMap =
-        internal::ProductLieGroupHasAdjointMap<G>::value;
-    Jacobian1 D_G;
-    const auto v1 =
-        traits<G>::Logmap(p.first, Hp && !hasStaticAdjointMap ? &D_G : nullptr);
-
-    const Jacobian2 A = Action::generator(v1);
-
-    if (Hp) {
-      if constexpr (hasStaticAdjointMap) {
-        const Jacobian2 phi1 = phi1Kernel(A).phi1;
-        const auto phi1Solver = phi1.lu();
-        const typename traits<H>::TangentVector v2 = phi1Solver.solve(p.second);
-        const TangentVector v = makeTangentVector(v1, v2, d1, d2);
-        const Jacobian derivative = rightJacobian(v);
-        *Hp = derivative.partialPivLu().solve(identityJacobian(d));
-        return v;
-      } else {
-        const Phi1KernelResult kernels = phi1Kernel(A);
-        const auto phi1Solver = kernels.phi1.lu();
-        const typename traits<H>::TangentVector v2 = phi1Solver.solve(p.second);
-        TangentVector v = makeTangentVector(v1, v2, d1, d2);
-
-        *Hp = zeroJacobian(d);
-        Hp->topLeftCorner(d1, d1) = D_G;
-        Hp->bottomRightCorner(d2, d2) = phi1Solver.solve(kernels.phi0);
-        for (Eigen::Index j = 0; j < static_cast<Eigen::Index>(d1); ++j) {
-          const typename traits<G>::TangentVector du = D_G.col(j);
-          const Jacobian2 Bj = Action::generator(du);
-          Hp->col(j).tail(d2) = -phi1Solver.solve(phi1FrechetAction(A, Bj, v2));
-        }
-        return v;
-      }
-    }
-
-    const Jacobian2 phi1 = phi1Kernel(A).phi1;
-    const auto phi1Solver = phi1.lu();
-    const typename traits<H>::TangentVector v2 = phi1Solver.solve(p.second);
-    return makeTangentVector(v1, v2, d1, d2);
-  }
-}
-
-template <typename G, typename H, typename Action>
-ProductLieGroup<G, H, Action> ProductLieGroup<G, H, Action>::expmap(
+template <typename G, typename H>
+ProductLieGroup<G, H> ProductLieGroup<G, H>::expmap(
     const TangentVector& v) const {
   return compose(ProductLieGroup::Expmap(v));
 }
 
-// Tangent-group adjoint:
-//   Ad_(g,v) = [[Ad_g, 0], [ad_v Ad_g, Ad_g]].
-template <typename G, typename H, typename Action>
-template <
-    typename A,
-    std::enable_if_t<internal::ProductLieGroupIsAdjointAction<A>::value, int>>
-typename ProductLieGroup<G, H, Action>::Jacobian
-ProductLieGroup<G, H, Action>::adjointActionGroupAdjoint() const {
-  constexpr size_t n = adjointActionDimension<A>();
-  const Jacobian1 Ad = traits<G>::AdjointMap(this->first);
-  const Jacobian1 adV = A::generator(this->second);
-
-  Jacobian result = zeroJacobian(2 * n);
-  assignBlock(Ad, 0, 0, &result);
-  assignBlock(Ad, n, n, &result);
-  assignBlock(adV * Ad, n, 0, &result);
-  return result;
+template <typename G, typename H>
+typename ProductLieGroup<G, H>::Jacobian ProductLieGroup<G, H>::AdjointMap()
+    const {
+  // The two algebras are independent:
+  //   Ad_(g,h) = diag(Ad_G(g), Ad_H(h)).
+  const auto adjG = traits<G>::AdjointMap(this->first);
+  const auto adjH = traits<H>::AdjointMap(this->second);
+  const size_t d1 = static_cast<size_t>(adjG.rows());
+  const size_t d2 = static_cast<size_t>(adjH.rows());
+  Jacobian adj = zeroJacobian(d1 + d2);
+  assignBlock(adjG, 0, 0, &adj);
+  assignBlock(adjH, d1, d1, &adj);
+  return adj;
 }
 
-template <typename G, typename H, typename Action>
-typename ProductLieGroup<G, H, Action>::Jacobian
-ProductLieGroup<G, H, Action>::AdjointMap() const {
-  if constexpr (internal::ProductLieGroupIsAdjointAction<Action>::value) {
-    return adjointActionGroupAdjoint();
-  } else if constexpr (isDirectProduct) {
-    // Direct product: the two algebras are independent, so the adjoint is
-    // block-diagonal: Ad_(g,h) = diag(Ad_G(g), Ad_H(h)).
-    const auto adjG = traits<G>::AdjointMap(this->first);
-    const auto adjH = traits<H>::AdjointMap(this->second);
-    const size_t d1 = static_cast<size_t>(adjG.rows());
-    const size_t d2 = static_cast<size_t>(adjH.rows());
-    Jacobian adj = zeroJacobian(d1 + d2);
-    assignBlock(adjG, 0, 0, &adj);
-    assignBlock(adjH, d1, d1, &adj);
-    return adj;
-  } else {
-    // Semidirect product: the action couples the algebra blocks, producing an
-    // off-diagonal term. The formula is assembled from the action's Jacobians:
-    //
-    //   Ad_(g,h) = [[ Ad_G(g),              0   ],
-    //               [ -Jg * Ad_G(g),        Jh  ]]
-    //
-    // where Jg = D_g φ(e_G, h)  (action Jacobian w.r.t. G at identity)
-    //       Jh = D_h φ(g, e_H)  (action Jacobian w.r.t. H at identity)
-    //
-    // Both come directly from the action's operator() Jacobian arguments.
-    const size_t d1 = firstDim();
-    const size_t d2 = secondDim();
-    const size_t d = combinedDimension(d1, d2);
-
-    const Action action{};
-
-    // Jg: DimH × DimG — evaluated at (e_G, h)
-    ActionJacobianG Jg;
-    action(defaultIdentity<G>(), this->second, &Jg, {});
-
-    // Jh: DimH × DimH — evaluated at (g, e_H)
-    Jacobian2 Jh;
-    action(this->first, defaultIdentity<H>(), {}, &Jh);
-
-    const auto adjG = traits<G>::AdjointMap(this->first);
-
-    Jacobian adj = zeroJacobian(d);
-    adj.block(0, 0, d1, d1) = adjG;
-    adj.block(d1, d1, d2, d2) = Jh;
-    adj.block(d1, 0, d2, d1) = -Jg * adjG;
-    return adj;
-  }
-}
-
-// Tangent algebra adjoint:
-//   ad_(u,v) = [[ad_u, 0], [ad_v, ad_u]].
-template <typename G, typename H, typename Action>
-template <
-    typename A,
-    std::enable_if_t<internal::ProductLieGroupIsAdjointAction<A>::value, int>>
-typename ProductLieGroup<G, H, Action>::Jacobian
-ProductLieGroup<G, H, Action>::adjointActionAlgebraAdjoint(
+template <typename G, typename H>
+typename ProductLieGroup<G, H>::Jacobian ProductLieGroup<G, H>::adjointMap(
     const TangentVector& xi) {
-  constexpr size_t n = adjointActionDimension<A>();
-  const auto [u, v] = splitAdjointActionTangent<A>(xi);
-  const Jacobian1 adU = A::generator(u);
-  const Jacobian1 adV = A::generator(v);
-
-  Jacobian result = zeroJacobian(2 * n);
-  assignBlock(adU, 0, 0, &result);
-  assignBlock(adU, n, n, &result);
-  assignBlock(adV, n, 0, &result);
-  return result;
-}
-
-template <typename G, typename H, typename Action>
-typename ProductLieGroup<G, H, Action>::Jacobian
-ProductLieGroup<G, H, Action>::adjointMap(const TangentVector& xi) {
-  if constexpr (internal::ProductLieGroupIsAdjointAction<Action>::value) {
-    return adjointActionAlgebraAdjoint(xi);
+  const size_t d = static_cast<size_t>(xi.size());
+  size_t d1 = 0, d2 = 0;
+  if constexpr (firstDynamic && secondDynamic) {
+    if constexpr (internal::ProductLieGroupIsVector<G>::value &&
+                  internal::ProductLieGroupIsVector<H>::value) {
+      // Both factors are abelian, so the result is zero regardless of where
+      // the concatenated tangent is split.
+      return zeroJacobian(d);
+    }
+    throw std::invalid_argument(
+        "ProductLieGroup::adjointMap cannot infer the tangent split when "
+        "both factors are dynamic");
+  } else if constexpr (firstDynamic) {
+    if (xi.size() < dimension2) {
+      throw std::invalid_argument(
+          "ProductLieGroup::adjointMap tangent dimension is too small for "
+          "the fixed second factor");
+    }
+    d1 = static_cast<size_t>(xi.size() - dimension2);
+    d2 = static_cast<size_t>(dimension2);
+  } else if constexpr (secondDynamic) {
+    if (xi.size() < dimension1) {
+      throw std::invalid_argument(
+          "ProductLieGroup::adjointMap tangent dimension is too small for "
+          "the fixed first factor");
+    }
+    d1 = static_cast<size_t>(dimension1);
+    d2 = static_cast<size_t>(xi.size() - dimension1);
   } else {
-    const size_t d = static_cast<size_t>(xi.size());
-    size_t d1 = 0, d2 = 0;
-    if constexpr (firstDynamic && secondDynamic) {
-      if constexpr (isDirectProduct &&
-                    internal::ProductLieGroupIsVector<G>::value &&
-                    internal::ProductLieGroupIsVector<H>::value) {
-        // Both factors are abelian, so the result is zero regardless of where
-        // the concatenated tangent is split.
-        return zeroJacobian(d);
-      }
-      throw std::invalid_argument(
-          "ProductLieGroup::adjointMap cannot infer the tangent split when "
-          "both factors are dynamic");
-    } else if constexpr (firstDynamic) {
-      if (xi.size() < dimension2) {
-        throw std::invalid_argument(
-            "ProductLieGroup::adjointMap tangent dimension is too small for "
-            "the fixed second factor");
-      }
-      d1 = static_cast<size_t>(xi.size() - dimension2);
-      d2 = static_cast<size_t>(dimension2);
-    } else if constexpr (secondDynamic) {
-      if (xi.size() < dimension1) {
-        throw std::invalid_argument(
-            "ProductLieGroup::adjointMap tangent dimension is too small for "
-            "the fixed first factor");
-      }
-      d1 = static_cast<size_t>(dimension1);
-      d2 = static_cast<size_t>(xi.size() - dimension1);
-    } else {
-      d1 = static_cast<size_t>(dimension1);
-      d2 = static_cast<size_t>(dimension2);
-    }
-    if (d != combinedDimension(d1, d2)) {
-      throw std::invalid_argument(
-          "ProductLieGroup::adjointMap tangent dimension does not match "
-          "product dimension");
-    }
-
-    const auto a = tangentSegment<G>(xi, 0, d1);
-    const auto b = tangentSegment<H>(xi, d1, d2);
-
-    Jacobian ad = zeroJacobian(d);
-    assignBlock(componentAdjointMap<G>(a), 0, 0, &ad);
-    if constexpr (isDirectProduct) {
-      // Direct product: ad_(a,b) = diag(ad^G_a, ad^H_b).
-      assignBlock(componentAdjointMap<H>(b), d1, d1, &ad);
-      return ad;
-    } else {
-      // Semidirect product:
-      //
-      //    ad_(a,b) = [[ ad^G_a,  0           ],
-      //                [ -M(b),   generator(a) ]]
-      //
-      // where M(b)·c = generator(c)·b.
-
-      // Bottom-left -M(b): column j = -generator(e_j)·b.
-      typename traits<G>::TangentVector ei;
-      if constexpr (firstDynamic) ei.resize(static_cast<Eigen::Index>(d1));
-      ei.setZero();
-      for (Eigen::Index i = 0; i < static_cast<Eigen::Index>(d1); ++i) {
-        ei(i) = 1.0;
-        const typename traits<H>::TangentVector column =
-            -(Action::generator(ei) * b);
-        assignBlock(column, d1, static_cast<size_t>(i), &ad);
-        ei(i) = 0.0;
-      }
-
-      assignBlock(Action::generator(a), d1, d1, &ad);
-      return ad;
-    }
+    d1 = static_cast<size_t>(dimension1);
+    d2 = static_cast<size_t>(dimension2);
   }
+  if (d != combinedDimension(d1, d2)) {
+    throw std::invalid_argument(
+        "ProductLieGroup::adjointMap tangent dimension does not match "
+        "product dimension");
+  }
+
+  const auto a = tangentSegment<G>(xi, 0, d1);
+  const auto b = tangentSegment<H>(xi, d1, d2);
+
+  Jacobian ad = zeroJacobian(d);
+  assignBlock(componentAdjointMap<G>(a), 0, 0, &ad);
+  assignBlock(componentAdjointMap<H>(b), d1, d1, &ad);
+  return ad;
 }
 
-template <typename G, typename H, typename Action>
+template <typename G, typename H>
 template <typename T>
-T ProductLieGroup<G, H, Action>::defaultIdentity() {
+T ProductLieGroup<G, H>::defaultIdentity() {
   if constexpr (traits<T>::dimension == Eigen::Dynamic) {
     return T();
   } else {
@@ -932,9 +373,9 @@ T ProductLieGroup<G, H, Action>::defaultIdentity() {
   }
 }
 
-template <typename G, typename H, typename Action>
+template <typename G, typename H>
 template <typename T, int Dim>
-typename traits<T>::TangentVector ProductLieGroup<G, H, Action>::tangentSegment(
+typename traits<T>::TangentVector ProductLieGroup<G, H>::tangentSegment(
     const TangentVector& v, size_t start, size_t runtimeDimension) {
   const int startIndex = static_cast<int>(start);
   const int runtimeIndex = static_cast<int>(runtimeDimension);
@@ -946,9 +387,9 @@ typename traits<T>::TangentVector ProductLieGroup<G, H, Action>::tangentSegment(
   }
 }
 
-template <typename G, typename H, typename Action>
+template <typename G, typename H>
 template <typename T>
-typename traits<T>::Jacobian ProductLieGroup<G, H, Action>::componentAdjointMap(
+typename traits<T>::Jacobian ProductLieGroup<G, H>::componentAdjointMap(
     const typename traits<T>::TangentVector& xi) {
   using ComponentJacobian = typename traits<T>::Jacobian;
   if constexpr (internal::ProductLieGroupIsVector<T>::value) {
@@ -962,9 +403,9 @@ typename traits<T>::Jacobian ProductLieGroup<G, H, Action>::componentAdjointMap(
   }
 }
 
-template <typename G, typename H, typename Action>
-typename ProductLieGroup<G, H, Action>::TangentVector
-ProductLieGroup<G, H, Action>::makeTangentVector(
+template <typename G, typename H>
+typename ProductLieGroup<G, H>::TangentVector
+ProductLieGroup<G, H>::makeTangentVector(
     const typename traits<G>::TangentVector& v1,
     const typename traits<H>::TangentVector& v2, size_t firstDimension,
     size_t secondDimension) {
@@ -984,9 +425,9 @@ ProductLieGroup<G, H, Action>::makeTangentVector(
   }
 }
 
-template <typename G, typename H, typename Action>
-typename ProductLieGroup<G, H, Action>::Jacobian
-ProductLieGroup<G, H, Action>::zeroJacobian(size_t productDimension) {
+template <typename G, typename H>
+typename ProductLieGroup<G, H>::Jacobian ProductLieGroup<G, H>::zeroJacobian(
+    size_t productDimension) {
   if constexpr (dimension == Eigen::Dynamic) {
     return Jacobian::Zero(productDimension, productDimension);
   } else {
@@ -995,9 +436,9 @@ ProductLieGroup<G, H, Action>::zeroJacobian(size_t productDimension) {
   }
 }
 
-template <typename G, typename H, typename Action>
-typename ProductLieGroup<G, H, Action>::Jacobian
-ProductLieGroup<G, H, Action>::identityJacobian(size_t productDimension) {
+template <typename G, typename H>
+typename ProductLieGroup<G, H>::Jacobian
+ProductLieGroup<G, H>::identityJacobian(size_t productDimension) {
   if constexpr (dimension == Eigen::Dynamic) {
     return Jacobian::Identity(productDimension, productDimension);
   } else {
@@ -1006,8 +447,8 @@ ProductLieGroup<G, H, Action>::identityJacobian(size_t productDimension) {
   }
 }
 
-template <typename G, typename H, typename Action>
-void ProductLieGroup<G, H, Action>::checkMatchingDimensions(
+template <typename G, typename H>
+void ProductLieGroup<G, H>::checkMatchingDimensions(
     const ProductLieGroup& other, const char* operation) const {
   if (firstDim() != other.firstDim() || secondDim() != other.secondDim()) {
     throw std::invalid_argument(std::string("ProductLieGroup::") + operation +
@@ -1015,8 +456,8 @@ void ProductLieGroup<G, H, Action>::checkMatchingDimensions(
   }
 }
 
-template <typename G, typename H, typename Action>
-void ProductLieGroup<G, H, Action>::print(const std::string& s) const {
+template <typename G, typename H>
+void ProductLieGroup<G, H>::print(const std::string& s) const {
   std::cout << s << "ProductLieGroup" << std::endl;
   traits<G>::Print(this->first, "  first");
   traits<H>::Print(this->second, "  second");
