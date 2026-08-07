@@ -24,34 +24,24 @@ GTSAM_CONCEPT_TESTABLE_INST(SL4)
 GTSAM_CONCEPT_MATRIX_LIE_GROUP_INST(SL4)
 
 // Common static variables for tests
-static const Vector15 xi0 =
-    (Vector15() << 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10,
-     0.11, 0.12, 0.13, 0.14, 0.15)
-        .finished();
+static const Vector15 xi0{0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08,
+                          0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15};
 
-static const Vector15 xi1 =
-    (Vector15() << 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10,
-     0.11, 0.12, 0.13, 0.14, 0.15)
-        .finished();
+static const Vector15 xi1{0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08,
+                          0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15};
 
-static const Vector15 xi2 =
-    (Vector15() << 0.05, 0.04, 0.09, 0.02, 0.03, 0.08, 0.07, 0.06, 0.01, 0.10,
-     0.12, 0.11, 0.15, 0.13, 0.14)
-        .finished();
+static const Vector15 xi2{0.05, 0.04, 0.09, 0.02, 0.03, 0.08, 0.07, 0.06,
+                          0.01, 0.10, 0.12, 0.11, 0.15, 0.13, 0.14};
 
 // define xi_large - moderately large values to test numerical stability
 // while remaining within the feasible range for matrix exponential
-static const Vector15 xi_large =
-    (Vector15() << 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4,
-     1.5, 1.6, 1.7, 1.8, 1.9)
-        .finished();
+static const Vector15 xi_large{0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2,
+                               1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9};
 // Create a SL4
-const Matrix4 T_matrix =
-    (Matrix4() << 1, 0, 0, 1, 0, 1, 0, 2, 0, 0, 1, 3, 0, 0, 0, 1).finished();
+const Matrix4 T_matrix{{1, 0, 0, 1}, {0, 1, 0, 2}, {0, 0, 1, 3}, {0, 0, 0, 1}};
 const SL4 T1(T_matrix);
 
-const Matrix4 T_matrix2 =
-    (Matrix4() << 1, 0, 0, 4, 0, 1, 0, 5, 0, 0, 1, 6, 0, 0, 0, 1).finished();
+const Matrix4 T_matrix2{{1, 0, 0, 4}, {0, 1, 0, 5}, {0, 0, 1, 6}, {0, 0, 0, 1}};
 const SL4 T2(T_matrix2);
 
 /* ************************************************************************* */
@@ -177,20 +167,16 @@ TEST(SL4, HatVeeAreInverses) {
 
 /* ************************************************************************* */
 TEST(SL4, HatTraceIsZero) {
-  Vector15 eta =
-      (Vector15() << 0.31, -0.22, 0.14, -0.09, 0.27, -0.18, 0.05, -0.12, 0.08,
-       0.11, -0.06, 0.02, 0.07, -0.04, 0.13)
-          .finished();
+  Vector15 eta{0.31, -0.22, 0.14,  -0.09, 0.27, -0.18, 0.05, -0.12,
+               0.08, 0.11,  -0.06, 0.02,  0.07, -0.04, 0.13};
   Matrix4 A = SL4::Hat(eta);
   EXPECT_DOUBLES_EQUAL(0.0, A.trace(), 1e-12);
 }
 
 /* ************************************************************************* */
 TEST(SL4, HatVeeRoundTrip) {
-  Vector15 eta =
-      (Vector15() << -0.25, 0.19, -0.11, 0.07, -0.03, 0.29, -0.17, 0.09, 0.21,
-       -0.13, 0.04, -0.06, 0.15, -0.08, 0.02)
-          .finished();
+  Vector15 eta{-0.25, 0.19,  -0.11, 0.07,  -0.03, 0.29,  -0.17, 0.09,
+               0.21,  -0.13, 0.04,  -0.06, 0.15,  -0.08, 0.02};
   Vector eta_recovered = SL4::Vee(SL4::Hat(eta));
   EXPECT(assert_equal(eta, eta_recovered, 1e-12));
 }

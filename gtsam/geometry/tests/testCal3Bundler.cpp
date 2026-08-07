@@ -31,8 +31,7 @@ static Point2 p(2, 3);
 /* ************************************************************************* */
 TEST(Cal3Bundler, Vector) {
   Cal3Bundler K;
-  Vector expected(3);
-  expected << 1, 0, 0;
+  Vector3 expected{1, 0, 0};
   CHECK(assert_equal(expected, K.vector()));
 }
 
@@ -162,8 +161,7 @@ TEST(Cal3Bundler, Retract) {
   EXPECT_LONGS_EQUAL(Cal3Bundler::Dim(), 3);
   EXPECT_LONGS_EQUAL(expected.dim(), 3);
 
-  Vector3 d;
-  d << 10, 1e-3, 1e-3;
+  Vector3 d{10, 1e-3, 1e-3};
   Cal3Bundler actual = K.retract(d);
   CHECK(assert_equal(expected, actual, 1e-7));
   CHECK(assert_equal(d, K.localCoordinates(actual), 1e-7));

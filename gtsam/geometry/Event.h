@@ -54,7 +54,7 @@ class GTSAM_EXPORT Event {
 
   // TODO(frank) we really have to think of a better way to do linear arguments
   double height(OptionalJacobian<1, 4> H = {}) const {
-    static const Matrix14 JacobianZ = (Matrix14() << 0, 0, 0, 1).finished();
+    static const Matrix14 JacobianZ{{0, 0, 0, 1}};
     if (H) *H = JacobianZ;
     return location_.z();
   }
@@ -108,7 +108,7 @@ class GTSAM_EXPORT TimeOfArrival {
       *H1 << 1.0, D1 / speed_;
     if (H2)
       // derivative of toa with respect to sensor location
-      *H2 << D2 / speed_;
+      *H2 = D2 / speed_;
     return event.time() + distance / speed_;
   }
 };

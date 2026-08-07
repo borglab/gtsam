@@ -49,9 +49,11 @@ TEST(PlanarProjectionFactor1, Error1) {
     Pose2 pose(0, 0, 0);
     Matrix H;
     CHECK(assert_equal(Vector2(0, 0), factor.evaluateError(pose, H), 1e-6));
-    CHECK(assert_equal((Matrix23() << //
-        0, 200, 200, //
-        0, 0, 0).finished(), H, 1e-6));
+    CHECK(assert_equal(
+        Matrix23{//
+                 {0, 200, 200},
+                 {0, 0, 0}},
+        H, 1e-6));
 }
 
 /* ************************************************************************* */
@@ -71,9 +73,11 @@ TEST(PlanarProjectionFactor1, Error2) {
     Pose2 pose(0, 0, 0);
     Matrix H;
     CHECK(assert_equal(Vector2(0, 0), factor.evaluateError(pose, H), 1e-6));
-    CHECK(assert_equal((Matrix23() << //
-        -200, 200, 400, //
-        -200, 0, 200).finished(), H, 1e-6));
+    CHECK(assert_equal(
+        Matrix23{//
+                 {-200, 200, 400},
+                 {-200, 0, 200}},
+        H, 1e-6));
 }
 
 /* ************************************************************************* */
@@ -93,9 +97,11 @@ TEST(PlanarProjectionFactor1, Error3) {
     Pose2 pose(0, 0, 0);
     Matrix H;
     CHECK(assert_equal(Vector2(0, 0), factor.evaluateError(pose, H), 1e-6));
-    CHECK(assert_equal((Matrix23() << //
-        -360, 280, 640, //
-        -360, 80, 440).finished(), H, 1e-6));
+    CHECK(assert_equal(
+        Matrix23{//
+                 {-360, 280, 640},
+                 {-360, 80, 440}},
+        H, 1e-6));
 }
 
 /* ************************************************************************* */
@@ -177,19 +183,16 @@ TEST(PlanarProjectionFactor1, Solve) {
     // covariance
     Marginals marginals(graph, result);
     Matrix cov = marginals.marginalCovariance(X(0));
-    CHECK(assert_equal((Matrix33() << //
-        0.000012, 0.000000, 0.000000, //
-        0.000000, 0.001287, -.001262, //
-        0.000000, -.001262, 0.001250).finished(), cov, 3e-6));
+    CHECK(assert_equal(
+        Matrix33{//
+                 {0.000012, 0.000000, 0.000000},
+                 {0.000000, 0.001287, -.001262},
+                 {0.000000, -.001262, 0.001250}},
+        cov, 3e-6));
 
     // pose stddev
     Vector3 sigma = cov.diagonal().cwiseSqrt();
-    CHECK(assert_equal((Vector3() << //
-        0.0035,
-        0.0359,
-        0.0354
-        ).finished(), sigma, 1e-4));
-
+    CHECK(assert_equal(Vector3{0.0035, 0.0359, 0.0354}, sigma, 1e-4));
 }
 
 /* ************************************************************************* */
@@ -211,15 +214,21 @@ TEST(PlanarProjectionFactor3, Error1) {
     Matrix H2;
     Matrix H3;
     CHECK(assert_equal(Vector2(0, 0), factor.evaluateError(pose, offset, calib, H1, H2, H3), 1e-6));
-    CHECK(assert_equal((Matrix23() <<//
-        0, 200, 200,//
-        0, 0, 0).finished(), H1, 1e-6));
-    CHECK(assert_equal((Matrix26() <<//
-        0, -200, 0, -200, 0, 0,//
-        200, -0, 0, 0, -200, 0).finished(), H2, 1e-6));
-    CHECK(assert_equal((Matrix29() <<//
-        0, 0, 0, 1, 0, 0, 0, 0, 0,//
-        0, 0, 0, 0, 1, 0, 0, 0, 0).finished(), H3, 1e-6));
+    CHECK(assert_equal(
+        Matrix23{//
+                 {0, 200, 200},
+                 {0, 0, 0}},
+        H1, 1e-6));
+    CHECK(assert_equal(
+        Matrix26{//
+                 {0, -200, 0, -200, 0, 0},
+                 {200, -0, 0, 0, -200, 0}},
+        H2, 1e-6));
+    CHECK(assert_equal(
+        Matrix29{//
+                 {0, 0, 0, 1, 0, 0, 0, 0, 0},
+                 {0, 0, 0, 0, 1, 0, 0, 0, 0}},
+        H3, 1e-6));
 }
 
 /* ************************************************************************* */
@@ -241,15 +250,21 @@ TEST(PlanarProjectionFactor3, Error2) {
     Matrix H3;
     gtsam::Vector actual = factor.evaluateError(pose, offset, calib, H1, H2, H3);
     CHECK(assert_equal(Vector2(0, 0), actual));
-    CHECK(assert_equal((Matrix23() <<//
-        -200, 200, 400,//
-        -200, 0, 200).finished(), H1, 1e-6));
-    CHECK(assert_equal((Matrix26() <<//
-        200, -400, -200, -200, 0, -200,//
-        400, -200, 200, 0, -200, -200).finished(), H2, 1e-6));
-    CHECK(assert_equal((Matrix29() <<//
-        -1, 0, -1, 1, 0, -400, -800, 400, 800,//
-        0, -1, 0, 0, 1, -400, -800, 800, 400).finished(), H3, 1e-6));
+    CHECK(assert_equal(
+        Matrix23{//
+                 {-200, 200, 400},
+                 {-200, 0, 200}},
+        H1, 1e-6));
+    CHECK(assert_equal(
+        Matrix26{//
+                 {200, -400, -200, -200, 0, -200},
+                 {400, -200, 200, 0, -200, -200}},
+        H2, 1e-6));
+    CHECK(assert_equal(
+        Matrix29{//
+                 {-1, 0, -1, 1, 0, -400, -800, 400, 800},
+                 {0, -1, 0, 0, 1, -400, -800, 800, 400}},
+        H3, 1e-6));
 }
 
 /* ************************************************************************* */
@@ -270,15 +285,21 @@ TEST(PlanarProjectionFactor3, Error3) {
     Matrix H2;
     Matrix H3;
     CHECK(assert_equal(Vector2(0, 0), factor.evaluateError(pose, offset, calib, H1, H2, H3), 1e-6));
-    CHECK(assert_equal((Matrix23() <<//
-        -360, 280, 640,//
-        -360, 80, 440).finished(), H1, 1e-6));
-    CHECK(assert_equal((Matrix26() <<//
-        440, -640, -200, -280, -80, -360,//
-        640, -440, 200, -80, -280, -360).finished(), H2, 1e-6));
-    CHECK(assert_equal((Matrix29() <<//
-        -1, 0, -1, 1, 0, -400, -800, 400, 800,//
-        0, -1, 0, 0, 1, -400, -800, 800, 400).finished(), H3, 1e-6));
+    CHECK(assert_equal(
+        Matrix23{//
+                 {-360, 280, 640},
+                 {-360, 80, 440}},
+        H1, 1e-6));
+    CHECK(assert_equal(
+        Matrix26{//
+                 {440, -640, -200, -280, -80, -360},
+                 {640, -440, 200, -80, -280, -360}},
+        H2, 1e-6));
+    CHECK(assert_equal(
+        Matrix29{//
+                 {-1, 0, -1, 1, 0, -400, -800, 400, 800},
+                 {0, -1, 0, 0, 1, -400, -800, 800, 400}},
+        H3, 1e-6));
 }
 
 /* ************************************************************************* */
@@ -405,25 +426,13 @@ TEST(PlanarProjectionFactor3, SolveOffset) {
 
     // camera-frame stddev
     Vector6 c0sigma = c0cov.diagonal().cwiseSqrt();
-    CHECK(assert_equal((Vector6() << //
-        0.009,
-        0.011,
-        0.004,
-        0.012,
-        0.012,
-        0.011
-        ).finished(), c0sigma, 1e-3));
+    CHECK(assert_equal(Vector6{0.009, 0.011, 0.004, 0.012, 0.012, 0.011},
+                       c0sigma, 1e-3));
 
     // body frame stddev
     Vector6 bTcSigma = c0cov2.diagonal().cwiseSqrt();
-    CHECK(assert_equal((Vector6() << //
-        0.004,
-        0.009,
-        0.011,
-        0.012,
-        0.012,
-        0.012
-        ).finished(), bTcSigma, 1e-3));
+    CHECK(assert_equal(Vector6{0.004, 0.009, 0.011, 0.012, 0.012, 0.012},
+                       bTcSigma, 1e-3));
 
     // narrow prior => ~zero cov
     CHECK(assert_equal(Matrix99::Zero(), marginals.marginalCovariance(K(0)), 3e-3));

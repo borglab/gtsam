@@ -77,8 +77,8 @@ Values solveSequentiallyWithISAM2(const NonlinearFactorGraph& graph,
   parameters.relinearizeThreshold = 0.01;
   ISAM2 isam2(parameters);
 
-  const auto priorNoise = noiseModel::Diagonal::Sigmas(
-      (Vector(3) << 1e-6, 1e-6, 1e-6).finished());
+  const auto priorNoise =
+      noiseModel::Diagonal::Sigmas(Vector{{1e-6, 1e-6, 1e-6}});
   size_t nextFactor = 0;
 
   for (size_t stepIndex = 0; stepIndex < allPoseKeys.size(); ++stepIndex) {
@@ -255,9 +255,9 @@ OptimizedBayesTreeResult optimizeWithBayesTree(const string& datasetName) {
   Values result = solveSequentiallyWithISAM2(*graphPtr, *initialPtr);
   const KeyVector poseKeyList = poseKeys(result);
   if (!poseKeyList.empty()) {
-    graphPtr->addPrior(poseKeyList.front(), result.at<Pose2>(poseKeyList.front()),
-                       noiseModel::Diagonal::Sigmas(
-                           (Vector(3) << 1e-6, 1e-6, 1e-6).finished()));
+    graphPtr->addPrior(
+        poseKeyList.front(), result.at<Pose2>(poseKeyList.front()),
+        noiseModel::Diagonal::Sigmas(Vector{{1e-6, 1e-6, 1e-6}}));
   }
   GaussianFactorGraph linearGraph = *graphPtr->linearize(result);
   const Ordering ordering = Ordering::Create(Ordering::COLAMD, linearGraph);

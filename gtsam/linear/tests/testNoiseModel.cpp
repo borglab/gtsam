@@ -86,10 +86,10 @@ TEST(NoiseModel, constructors)
     EXPECT(assert_equal(kCovariance.inverse(),mi->information()));
 
   // test Whiten operator
-  Matrix H((Matrix(3, 4) <<
-      0.0, 0.0, 1.0, 1.0,
-      0.0, 1.0, 0.0, 1.0,
-      1.0, 0.0, 0.0, 1.0).finished());
+  Matrix H{//
+           {0.0, 0.0, 1.0, 1.0},
+           {0.0, 1.0, 0.0, 1.0},
+           {1.0, 0.0, 0.0, 1.0}};
   Matrix expected = kInverseSigma * H;
   for(Gaussian::shared_ptr mi: m)
     EXPECT(assert_equal(expected,mi->Whiten(H)));
@@ -241,8 +241,7 @@ TEST(NoiseModel, ConstrainedInformationFromA) {
   Vector2 sigmas(0.0, 2.0);
   Constrained::shared_ptr model = Constrained::MixedSigmas(sigmas);
 
-  Matrix A(2, 2);
-  A << 1.0, 0.0, 0.0, 2.0;
+  Matrix A{{1.0, 0.0}, {0.0, 2.0}};
 
   Matrix info = model->informationFromA(A);
 
@@ -252,8 +251,7 @@ TEST(NoiseModel, ConstrainedInformationFromA) {
   DOUBLES_EQUAL(1.0, info(1, 1), 1e-12);
 
   // Constrained row with support in multiple columns should mark cross-terms.
-  Matrix A_dense(2, 2);
-  A_dense << 1.0, 1.0, 0.0, 2.0;
+  Matrix A_dense{{1.0, 1.0}, {0.0, 2.0}};
 
   Matrix info_dense = model->informationFromA(A_dense);
 
@@ -266,21 +264,19 @@ TEST(NoiseModel, ConstrainedInformationFromA) {
 /* ************************************************************************* */
 namespace exampleQR {
   // create a matrix to eliminate
-  Matrix Ab = (Matrix(4, 7) <<
-      -1.,  0.,  1.,  0.,  0.,  0., -0.2,
-      0., -1.,  0.,  1.,  0.,  0.,  0.3,
-      1.,  0.,  0.,  0., -1.,  0.,  0.2,
-      0.,  1.,  0.,  0.,  0., -1., -0.1).finished();
-  Vector sigmas = (Vector(4) << 0.2, 0.2, 0.1, 0.1).finished();
+Matrix Ab{{-1., 0., 1., 0., 0., 0., -0.2},
+          {0., -1., 0., 1., 0., 0., 0.3},
+          {1., 0., 0., 0., -1., 0., 0.2},
+          {0., 1., 0., 0., 0., -1., -0.1}};
+Vector sigmas{{0.2, 0.2, 0.1, 0.1}};
 
-  // the matrix AB yields the following factorized version:
-  Matrix Rd = (Matrix(4, 7) <<
-      11.1803,   0.0,   -2.23607, 0.0,    -8.94427, 0.0,     2.23607,
-      0.0,   11.1803,    0.0,    -2.23607, 0.0,    -8.94427,-1.56525,
-      0.0,       0.0,    4.47214, 0.0,    -4.47214, 0.0,     0.0,
-      0.0,       0.0,   0.0,     4.47214, 0.0,    -4.47214, 0.894427).finished();
+// the matrix AB yields the following factorized version:
+Matrix Rd{{11.1803, 0.0, -2.23607, 0.0, -8.94427, 0.0, 2.23607},
+          {0.0, 11.1803, 0.0, -2.23607, 0.0, -8.94427, -1.56525},
+          {0.0, 0.0, 4.47214, 0.0, -4.47214, 0.0, 0.0},
+          {0.0, 0.0, 0.0, 4.47214, 0.0, -4.47214, 0.894427}};
 
-  SharedDiagonal diagonal = noiseModel::Diagonal::Sigmas(sigmas);
+SharedDiagonal diagonal = noiseModel::Diagonal::Sigmas(sigmas);
 }
 
 /* ************************************************************************* */
@@ -295,13 +291,12 @@ TEST( NoiseModel, QR )
   EXPECT(linear_dependent(exampleQR::Rd,Ab1,1e-4)); // Ab was modified in place !!!
 
   // Expected result for constrained version
-  Vector expectedSigmas = (Vector(4) << 0.0894427, 0.0894427, 0.223607, 0.223607).finished();
+  Vector expectedSigmas{{0.0894427, 0.0894427, 0.223607, 0.223607}};
   SharedDiagonal expectedModel = noiseModel::Diagonal::Sigmas(expectedSigmas);
-  Matrix expectedRd2 = (Matrix(4, 7) <<
-      1.,  0., -0.2,  0., -0.8, 0.,  0.2,
-      0.,  1.,  0.,-0.2,   0., -0.8,-0.14,
-      0.,  0.,  1.,   0., -1.,  0.,  0.0,
-      0.,  0.,  0.,   1.,  0., -1.,  0.2).finished();
+  Matrix expectedRd2{{1., 0., -0.2, 0., -0.8, 0., 0.2},
+                     {0., 1., 0., -0.2, 0., -0.8, -0.14},
+                     {0., 0., 1., 0., -1., 0., 0.0},
+                     {0., 0., 0., 1., 0., -1., 0.2}};
 
   // Call Constrained version
   SharedDiagonal constrained = noiseModel::Constrained::MixedSigmas(exampleQR::sigmas);
@@ -357,11 +352,11 @@ TEST( NoiseModel, MixedQR )
       0,0,1,1,0,0,  0, // w+x = 0
       0,1,0,0,0,0,  0, // v^2
       0,0,0,0,0,1,  0; // z^2
-  Vector mixed_sigmas = (Vector(5) << 0, 1, 0, 1, 1).finished();
+  Vector mixed_sigmas{{0, 1, 0, 1, 1}};
   SharedDiagonal constrained = noiseModel::Constrained::MixedSigmas(mixed_sigmas);
 
   // Expected result
-  Vector expectedSigmas = (Vector(5) << 0, 1, 0, 1, 1).finished();
+  Vector expectedSigmas{{0, 1, 0, 1, 1}};
   SharedDiagonal expectedModel = noiseModel::Diagonal::Sigmas(expectedSigmas);
   Matrix expectedRd(5, 6+1);
   expectedRd << 1, 0, 0, 0, 0, 1, 0,  //
@@ -426,10 +421,9 @@ TEST( NoiseModel, FullyConstrained )
 
   // Expected result
   SharedDiagonal expectedModel = noiseModel::Diagonal::Sigmas(Vector3 (0,0,0));
-  Matrix expectedRd(3, 7);
-  expectedRd << 1, 0, 0, 0, 0, 1, 2,  //
-                0, 1, 0, 1, 1, 1, 8,  //
-                0, 0, 1, 1, 0, 0, 4;  //
+  Matrix expectedRd{{1, 0, 0, 0, 0, 1, 2},   //
+                    {0, 1, 0, 1, 1, 1, 8},   //
+                    {0, 0, 1, 1, 0, 0, 4}};  //
 
   SharedDiagonal actual = constrained->QR(Ab);
   EXPECT(assert_equal(*expectedModel,*actual,1e-6));
@@ -441,10 +435,10 @@ TEST( NoiseModel, FullyConstrained )
 TEST(NoiseModel, QRNan )
 {
   SharedDiagonal constrained = noiseModel::Constrained::All(2);
-  Matrix Ab = (Matrix25() << 2, 4, 2, 4, 6,   2, 1, 2, 4, 4).finished();
+  Matrix Ab = Matrix25{{2, 4, 2, 4, 6}, {2, 1, 2, 4, 4}};
 
   SharedDiagonal expected = noiseModel::Constrained::All(2);
-  Matrix expectedAb = (Matrix25() << 1, 2, 1, 2, 3, 0, 1, 0, 0, 2.0/3).finished();
+  Matrix expectedAb = Matrix25{{1, 2, 1, 2, 3}, {0, 1, 0, 0, 2.0 / 3}};
 
   SharedDiagonal actual = constrained->QR(Ab);
   EXPECT(assert_equal(*expected,*actual));
@@ -785,7 +779,7 @@ TEST(NoiseModel, robustFunctionL2WithDeadZone)
 TEST(NoiseModel, robustNoiseHuber)
 {
   const double k = 10.0, error1 = 1.0, error2 = 100.0;
-  Matrix A = (Matrix(2, 2) << 1.0, 10.0, 100.0, 1000.0).finished();
+  Matrix A{{1.0, 10.0}, {100.0, 1000.0}};
   Vector b = Vector2(error1, error2);
   const Robust::shared_ptr robust = Robust::Create(
     mEstimator::Huber::Create(k, mEstimator::Huber::Scalar),
@@ -806,7 +800,7 @@ TEST(NoiseModel, robustNoiseGemanMcClure)
 {
   const double k = 1.0, error1 = 1.0, error2 = 100.0;
   const double a00 = 1.0, a01 = 10.0, a10 = 100.0, a11 = 1000.0;
-  Matrix A = (Matrix(2, 2) << a00, a01, a10, a11).finished();
+  Matrix A{{a00, a01}, {a10, a11}};
   Vector b = Vector2(error1, error2);
   const Robust::shared_ptr robust = Robust::Create(
     mEstimator::GemanMcClure::Create(k, mEstimator::GemanMcClure::Scalar),
@@ -834,7 +828,7 @@ TEST(NoiseModel, robustNoiseTLS)
 {
   const double k = 1.0, error1 = 1.0, error2 = 100.0;
   const double a00 = 1.0, a01 = 10.0, a10 = 100.0, a11 = 1000.0;
-  Matrix A = (Matrix(2, 2) << a00, a01, a10, a11).finished();
+  Matrix A{{a00, a01}, {a10, a11}};
   Vector b = Vector2(error1, error2);
   const Robust::shared_ptr robust = Robust::Create(
     mEstimator::TruncatedLeastSquares::Create(k, mEstimator::TruncatedLeastSquares::Scalar),
@@ -858,7 +852,7 @@ TEST(NoiseModel, robustNoiseDCS)
 {
   const double k = 1.0, error1 = 1.0, error2 = 100.0;
   const double a00 = 1.0, a01 = 10.0, a10 = 100.0, a11 = 1000.0;
-  Matrix A = (Matrix(2, 2) << a00, a01, a10, a11).finished();
+  Matrix A{{a00, a01}, {a10, a11}};
   Vector b = Vector2(error1, error2);
   const Robust::shared_ptr robust = Robust::Create(
     mEstimator::DCS::Create(k, mEstimator::DCS::Scalar),
@@ -895,7 +889,7 @@ TEST(NoiseModel, robustNoiseL2WithDeadZone)
 /* ************************************************************************* */
 TEST(NoiseModel, robustNoiseCustomHuber) {
   const double k = 10.0, error1 = 1.0, error2 = 100.0;
-  Matrix A = (Matrix(2, 2) << 1.0, 10.0, 100.0, 1000.0).finished();
+  Matrix A{{1.0, 10.0}, {100.0, 1000.0}};
   Vector b = Vector2(error1, error2);
   const Robust::shared_ptr robust =
       Robust::Create(mEstimator::Custom::Create(
@@ -972,8 +966,7 @@ TEST(NoiseModel, lossFunctionAtZero)
 
 TEST(NoiseModel, NonDiagonalGaussian)
 {
-  Matrix3 R;
-  R << 6, 5, 4, 0, 3, 2, 0, 0, 1;
+  Matrix3 R{{6, 5, 4}, {0, 3, 2}, {0, 0, 1}};
   const Matrix3 info = R.transpose() * R;
   const Matrix3 cov = info.inverse();
   const Vector3 e(1, 1, 1), white = R * e;
@@ -1005,8 +998,7 @@ TEST(NoiseModel, NegLogNormalizationConstant1D) {
 
   // Gaussian
   {
-    Matrix11 R;
-    R << 1 / sigma;
+    Matrix11 R{{1 / sigma}};
     auto noise_model = Gaussian::SqrtInformation(R);
     double actual_value = noise_model->negLogConstant();
     EXPECT_DOUBLES_EQUAL(expected_value, actual_value, 1e-9);
@@ -1043,10 +1035,9 @@ TEST(NoiseModel, NegLogNormalizationConstant3D) {
 
   // Gaussian
   {
-    Matrix33 R;
-    R << 1 / sigma, 2, 3,  //
-        0, 1 / sigma, 4,   //
-        0, 0, 1 / sigma;
+    Matrix33 R{{1 / sigma, 2, 3},  //
+               {0, 1 / sigma, 4},  //
+               {0, 0, 1 / sigma}};
     auto noise_model = Gaussian::SqrtInformation(R);
     double actual_value = noise_model->negLogConstant();
     EXPECT_DOUBLES_EQUAL(expected_value, actual_value, 1e-9);

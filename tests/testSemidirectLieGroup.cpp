@@ -141,22 +141,14 @@ Semidirect2 semidirect2State() {
   return Semidirect2(Rot2::fromAngle(0.35), Point2(0.4, -0.6));
 }
 
-Vector3 semidirect2Xi() {
-  Vector3 xi;
-  xi << 0.25, 0.3, -0.2;
-  return xi;
-}
+Vector3 semidirect2Xi() { return Vector3{0.25, 0.3, -0.2}; }
 
 Vector3 pose2XiFromSemidirect2(const Vector3& xi) {
-  Vector3 pose2Xi;
-  pose2Xi << xi(1), xi(2), xi(0);
-  return pose2Xi;
+  return Vector3{xi(1), xi(2), xi(0)};
 }
 
 Vector3 semidirect2XiFromPose2(const Vector3& xi) {
-  Vector3 semidirectXi;
-  semidirectXi << xi(2), xi(0), xi(1);
-  return semidirectXi;
+  return Vector3{xi(2), xi(0), xi(1)};
 }
 
 Pose2 asPose2(const Semidirect2& state) {
@@ -179,17 +171,9 @@ Semidirect semidirectState4() {
   return Semidirect(Rot3::RzRyRx(0.1, -0.2, 0.3), Vector3(0.4, -0.1, 0.2));
 }
 
-Vector6 semidirectXi() {
-  Vector6 xi;
-  xi << 0.1, -0.2, 0.3, 0.4, -0.1, 0.2;
-  return xi;
-}
+Vector6 semidirectXi() { return Vector6{0.1, -0.2, 0.3, 0.4, -0.1, 0.2}; }
 
-Vector6 retractDelta() {
-  Vector6 delta;
-  delta << 0.05, -0.04, 0.03, 0.1, -0.2, 0.05;
-  return delta;
-}
+Vector6 retractDelta() { return Vector6{0.05, -0.04, 0.03, 0.1, -0.2, 0.05}; }
 
 Pose3 asPose3(const Semidirect& state) {
   return Pose3(state.first, state.second);
@@ -250,7 +234,7 @@ TEST(Lie, SemidirectLieGroupAction2D) {
   const Point2 t(0.4, -0.5);
   EXPECT_LEFT_ACTION(action, R1, R2, t);
 
-  const Vector1 u = (Vector1() << 0.35).finished();
+  const Vector1 u{0.35};
   const Point2 p(0.2, -0.7);
   const double eps = 1e-7;
   const Point2 generatorAction = Rot2PointAction::generator(u) * p;

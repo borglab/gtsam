@@ -30,10 +30,10 @@ using namespace gtsam;
 namespace {
 
 /* ************************************************************************* */
-Matrix Matrix1D(double value) { return (Matrix(1, 1) << value).finished(); }
+Matrix Matrix1D(double value) { return Matrix{{value}}; }
 
 /* ************************************************************************* */
-Vector Vector1D(double value) { return (Vector(1) << value).finished(); }
+Vector Vector1D(double value) { return Vector{{value}}; }
 
 /* ************************************************************************* */
 struct BenchmarkProblem {
@@ -92,12 +92,12 @@ BenchmarkProblem BuildQuadrotorAllocationQp() {
   constexpr double armLength = 0.25;
   constexpr double yawMomentScale = 0.05;
 
-  const Matrix allocation =
-      (Matrix(4, 4) << 1.0, 1.0, 1.0, 1.0, armLength, -armLength, armLength,
-       -armLength, armLength, armLength, -armLength, -armLength, yawMomentScale,
-       -yawMomentScale, -yawMomentScale, yawMomentScale)
-          .finished();
-  const Vector desiredWrench = (Vector(4) << 3.4, 0.15, 0.10, 0.0).finished();
+  const Matrix allocation{
+      {1.0, 1.0, 1.0, 1.0},
+      {armLength, -armLength, armLength, -armLength},
+      {armLength, armLength, -armLength, -armLength},
+      {yawMomentScale, -yawMomentScale, -yawMomentScale, yawMomentScale}};
+  const Vector desiredWrench{{3.4, 0.15, 0.10, 0.0}};
   problem.constrained.addCost(
       JacobianFactor(rotorThrustKey, allocation, desiredWrench));
 

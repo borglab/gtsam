@@ -134,7 +134,8 @@ public:
 
     Matrix D_gravityBody_gk;
     Point3 gravityBody = gk.rotation().unrotate(Point3(0.0, 0.0, -9.81*m_), D_gravityBody_gk, {});
-    Vector f_ext = (Vector(6) << 0.0, 0.0, 0.0, gravityBody.x(), gravityBody.y(), gravityBody.z()).finished();
+    Vector f_ext{
+        {0.0, 0.0, 0.0, gravityBody.x(), gravityBody.y(), gravityBody.z()}};
 
     Vector hx = pk - pk_1 - h_*Fu_ - h_*f_ext;
 

@@ -64,12 +64,12 @@ TEST(GaussianFactorGraph, initialization) {
 
   // Test sparse, which takes a vector and returns a matrix, used in MATLAB
   // Note that this the augmented vector and the RHS is in column 7
-  Matrix expectedIJS =
-      (Matrix(3, 21) <<
-      1., 2., 1., 2., 3., 4., 3., 4., 3., 4., 5., 6., 5., 6., 6., 7., 8., 7., 8., 7., 8.,
-      1., 2., 7., 7., 1., 2., 3., 4., 7., 7., 1., 2., 5., 6., 7., 3., 4., 5., 6., 7., 7.,
-      10., 10., -1., -1., -10., -10., 10., 10., 2., -1., -5., -5., 5., 5.,
-        1., -5., -5., 5., 5., -1., 1.5).finished();
+  Matrix expectedIJS{{1., 2., 1., 2., 3., 4., 3., 4., 3., 4., 5.,
+                      6., 5., 6., 6., 7., 8., 7., 8., 7., 8.},
+                     {1., 2., 7., 7., 1., 2., 3., 4., 7., 7., 1.,
+                      2., 5., 6., 7., 3., 4., 5., 6., 7., 7.},
+                     {10., 10., -1., -1., -10., -10., 10., 10., 2.,  -1., -5.,
+                      -5., 5.,  5.,  1.,  -5.,  -5.,  5.,  5.,  -1., 1.5}};
   Matrix actualIJS = fg.sparseJacobian_();
   EQUALITY(expectedIJS, actualIJS);
 }
@@ -106,23 +106,25 @@ TEST(GaussianFactorGraph, sparseJacobian) {
   //  0  0  0 14 15 16
 
   // Expected
-  Matrix expected = (Matrix(16, 3) <<
-      1., 1., 2.,
-      1., 2., 4.,
-      1., 3., 6.,
-      2., 1.,10.,
-      2., 2.,12.,
-      2., 3.,14.,
-      1., 6., 8.,
-      2., 6.,16.,
-      3., 1.,18.,
-      3., 2.,20.,
-      3., 4.,22.,
-      3., 5.,24.,
-      4., 4.,28.,
-      4., 5.,30.,
-      3., 6.,26.,
-      4., 6.,32.).finished();
+  // clang-format off
+  Matrix expected{
+      {1., 1.,  2.},
+      {1., 2.,  4.},
+      {1., 3.,  6.},
+      {2., 1., 10.},
+      {2., 2., 12.},
+      {2., 3., 14.},
+      {1., 6.,  8.},
+      {2., 6., 16.},
+      {3., 1., 18.},
+      {3., 2., 20.},
+      {3., 4., 22.},
+      {3., 5., 24.},
+      {4., 4., 28.},
+      {4., 5., 30.},
+      {3., 6., 26.},
+      {4., 6., 32.}};
+  // clang-format on
 
   // expected: in matlab format - NOTE the transpose!)
   Matrix expectedMatlab = expected.transpose();
@@ -130,10 +132,8 @@ TEST(GaussianFactorGraph, sparseJacobian) {
   GaussianFactorGraph gfg;
   SharedDiagonal model = noiseModel::Isotropic::Sigma(2, 0.5);
   const Key x123 = 0, x45 = 1;
-  gfg.add(x123, (Matrix(2, 3) << 1, 2, 3, 5, 6, 7).finished(),
-          Vector2(4, 8), model);
-  gfg.add(x123, (Matrix(2, 3) << 9, 10, 0, 0, 0, 0).finished(),
-          x45,  (Matrix(2, 2) << 11, 12, 14, 15.).finished(),
+  gfg.add(x123, Matrix{{1, 2, 3}, {5, 6, 7}}, Vector2(4, 8), model);
+  gfg.add(x123, Matrix{{9, 10, 0}, {0, 0, 0}}, x45, Matrix{{11, 12}, {14, 15.}},
           Vector2(13, 16), model);
 
   Matrix actual = gfg.sparseJacobian_();
@@ -161,17 +161,19 @@ TEST(GaussianFactorGraph, matrices) {
   //  9 10  0 11 12 13
   //  0  0  0 14 15 16
 
-  Matrix A00 = (Matrix(2, 3) << 1, 2, 3, 5, 6, 7).finished();
-  Matrix A10 = (Matrix(2, 3) << 9, 10, 0, 0, 0, 0).finished();
-  Matrix A11 = (Matrix(2, 2) << 11, 12, 14, 15).finished();
+  Matrix A00{{1, 2, 3}, {5, 6, 7}};
+  Matrix A10{{9, 10, 0}, {0, 0, 0}};
+  Matrix A11{{11, 12}, {14, 15}};
 
   GaussianFactorGraph gfg;
   SharedDiagonal model = noiseModel::Unit::Create(2);
   gfg.add(0, A00, Vector2(4., 8.), model);
   gfg.add(0, A10, 1, A11, Vector2(13., 16.), model);
 
-  Matrix Ab(4, 6);
-  Ab << 1, 2, 3, 0, 0, 4, 5, 6, 7, 0, 0, 8, 9, 10, 0, 11, 12, 13, 0, 0, 0, 14, 15, 16;
+  Matrix Ab{{1, 2, 3, 0, 0, 4},
+            {5, 6, 7, 0, 0, 8},
+            {9, 10, 0, 11, 12, 13},
+            {0, 0, 0, 14, 15, 16}};
 
   // augmented versions
   EXPECT(assert_equal(Ab, gfg.augmentedJacobian()));
@@ -286,13 +288,12 @@ TEST(GaussianFactorGraph, matrices2) {
   const auto [AtA, eta] = gfg.hessian();
   EXPECT(assert_equal(A.transpose() * A, AtA));
   EXPECT(assert_equal(A.transpose() * b, eta));
-  Matrix expectedAtA(6, 6);
-  expectedAtA << 125, 0, -25, 0, -100, 0,  //
-      0, 125, 0, -25, 0, -100,             //
-      -25, 0, 50, 0, -25, 0,               //
-      0, -25, 0, 50, 0, -25,               //
-      -100, 0, -25, 0, 225, 0,             //
-      0, -100, 0, -25, 0, 225;
+  Matrix expectedAtA{{125, 0, -25, 0, -100, 0},  //
+                     {0, 125, 0, -25, 0, -100},  //
+                     {-25, 0, 50, 0, -25, 0},    //
+                     {0, -25, 0, 50, 0, -25},    //
+                     {-100, 0, -25, 0, 225, 0},  //
+                     {0, -100, 0, -25, 0, 225}};
   EXPECT(assert_equal(expectedAtA, AtA));
 }
 
@@ -352,10 +353,8 @@ TEST(GaussianFactorGraph, multiplyHessianAdd2) {
 
   // brute force
   const auto [AtA, eta] = gfg.hessian();
-  Vector X(6);
-  X << 1, 2, 3, 4, 5, 6;
-  Vector Y(6);
-  Y << -450, -450, 300, 400, 2950, 3450;
+  Vector X{{1, 2, 3, 4, 5, 6}};
+  Vector Y{{-450, -450, 300, 400, 2950, 3450}};
   EXPECT(assert_equal(Y, AtA * X));
 
   const VectorValues x {{0, Vector2(1, 2)}, {1, Vector2(3, 4)}, {2, Vector2(5, 6)}};
@@ -379,7 +378,7 @@ TEST(GaussianFactorGraph, matricesMixed) {
   const auto [A, b] = gfg.jacobian();  // incorrect !
   const auto [AtA, eta] = gfg.hessian();  // correct
   EXPECT(assert_equal(A.transpose() * A, AtA));
-  Vector expected = -(Vector(6) << -25, 17.5, 5, -13.5, 29, 4).finished();
+  Vector expected = -Vector{{-25, 17.5, 5, -13.5, 29, 4}};
   EXPECT(assert_equal(expected, eta));
   EXPECT(assert_equal(A.transpose() * b, eta));
 }

@@ -71,9 +71,8 @@ struct ReplayConfig : public LeggedEstimatorParams {
   Vector3 gravity = Vector3(0.0, 0.0, -9.81);
   Point3 initialPosition = Point3(0.0, 0.0, 0.76);
   Vector3 initialVelocity = Vector3::Zero();
-  Vector initialBaseCovarianceDiagonal =
-      (Vector(9) << 1e-2, 1e-2, 1e-6, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05)
-          .finished();
+  Vector initialBaseCovarianceDiagonal{
+      {1e-2, 1e-2, 1e-6, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05}};
   double sigmaGyro = 8e-4;
   double sigmaIntegration = 1e-3;
   double sigmaAcc = 2e-2;

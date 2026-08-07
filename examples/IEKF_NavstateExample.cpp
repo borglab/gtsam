@@ -63,16 +63,12 @@ int main() {
   Matrix3 R = Matrix3::Identity() * 0.5;
 
   // Two IMU samples [a; ω]
-  Vector6 imu1;
-  imu1 << 0.1, 0, 0, 0, 0.2, 0;
-  Vector6 imu2;
-  imu2 << 0, 0.3, 0, 0.4, 0, 0;
+  Vector6 imu1{0.1, 0, 0, 0, 0.2, 0};
+  Vector6 imu2{0, 0.3, 0, 0.4, 0, 0};
 
   // Two GPS fixes
-  Vector3 z1;
-  z1 << 0.3, 0, 0;
-  Vector3 z2;
-  z2 << 0.6, 0, 0;
+  Vector3 z1{0.3, 0, 0};
+  Vector3 z2{0.6, 0, 0};
 
   cout << "=== Init ===\nX: " << ekf.state() << "\nP: " << ekf.covariance()
     << "\n\n";

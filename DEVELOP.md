@@ -6,6 +6,36 @@
 * Apart from those naming conventions, we adopt Google C++ style.
 * Use meaningful variable names, e.g. `measurement` not `msm`, avoid abbreviations.
 
+### Eigen Fixed-Size and Dynamic Storage
+
+Use fixed-size types such as `Matrix3`, `Matrix23`, and `Vector6` when
+dimensions are known at compile time, especially for `OptionalJacobian`
+outputs. Fixed-size types store their coefficients inline and avoid unnecessary
+dynamic allocation and fixed/dynamic conversions.
+
+Use `Matrix` and `Vector` when dimensions are determined at runtime or when an
+existing API explicitly requires a dynamic type.
+
+When assigning to a fixed-size Jacobian, prefer writing directly to it or using
+a fixed-size temporary:
+
+```cpp
+if (H) {
+  *H = Matrix3{{1.0, 0.0, 0.0},
+               {0.0, 1.0, 0.0},
+               {0.0, 0.0, 1.0}};
+}
+```
+
+Use flat initializer lists for vectors and nested initializer lists for
+matrices:
+
+```cpp
+Vector3 vector{1.0, 2.0, 3.0};
+Matrix23 matrix{{1.0, 2.0, 3.0},
+                {4.0, 5.0, 6.0}};
+```
+
 ### Header-Wrapper Parameter Name Matching
 
 If you add a C++ function to a `.i` file to expose it to the wrapper, you must ensure that the parameter names match exactly between the declaration in the header file and the declaration in the `.i`. Similarly, if you change any parameter names in a wrapped function in a header file, or change any parameter names in a `.i` file, you must change the corresponding function in the other file to reflect those changes. 

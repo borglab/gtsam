@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
   ExpressionFactorGraph graph;
 
   // Specify uncertainty on first pose prior
-  Vector6 sigmas; sigmas << Vector3(0.3,0.3,0.3), Vector3(0.1,0.1,0.1);
+  Vector6 sigmas{0.3, 0.3, 0.3, 0.1, 0.1, 0.1};
   Diagonal::shared_ptr poseNoise = Diagonal::Sigmas(sigmas);
 
   // Here we don't use a PriorFactor but directly the ExpressionFactor class
@@ -98,4 +98,3 @@ int main(int argc, char* argv[]) {
   return 0;
 }
 /* ************************************************************************* */
-

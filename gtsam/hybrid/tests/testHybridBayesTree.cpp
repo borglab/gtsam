@@ -516,7 +516,7 @@ TEST(HybridBayesTree, Dot) {
   components.push_back(std::make_shared<JacobianFactor>(X(1), A1, b1, meas0Model));
   // Measurement model 1: N(X1; 2, 0.5)
   auto meas1Model = noiseModel::Isotropic::Sigma(1, 0.5);
-  Vector b2(1); b2 << 2.0;
+  Vector b2{{2.0}};
   components.push_back(std::make_shared<JacobianFactor>(X(1), A1, b2, meas1Model));
   hgfg.emplace_shared<HybridGaussianFactor>(dk1, components);
 
