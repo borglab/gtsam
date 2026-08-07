@@ -226,6 +226,10 @@ class ProductLieGroup
 
 /**
  * @brief Shared implementation for fixed-size and dynamic-count PowerLieGroup
+ *
+ * Standard Lie-group operations and their Jacobians are inherited from
+ * `LieGroup`; this helper supplies the repeated-component storage traversal,
+ * charts, exponential/logarithmic kernels, and adjoint assembly.
  */
 template <typename T, int N>
 struct PowerLieGroupJacobianStorage {
@@ -240,28 +244,55 @@ struct PowerLieGroupJacobianStorage<T, Eigen::Dynamic> {
 };
 
 template <typename G, int N, typename Derived>
-class PowerLieGroupBase {
+class PowerLieGroupBase
+    : public LieGroup<Derived,
+                      internal::dimensionProduct(N, traits<G>::dimension)> {
  protected:
   static constexpr bool isDynamic = (N == Eigen::Dynamic);
   static constexpr int n = traits<G>::dimension;
 
  public:
+  using LieBase =
+      LieGroup<Derived, internal::dimensionProduct(N, traits<G>::dimension)>;
   typedef multiplicative_group_tag group_flavor;
+  using LieBase::Dim;
+  using LieBase::dimension;
+  using TangentVector = typename LieBase::TangentVector;
+  using ChartJacobian = typename LieBase::ChartJacobian;
+  using Jacobian = typename LieBase::Jacobian;
 
-  static constexpr int dimension = isDynamic ? Eigen::Dynamic : N * n;
+  /**
+   * Component-wise chart at the identity.
+   *
+   * The dynamic specialization infers its component count from the tangent
+   * length before constructing a correctly sized identity. This deliberately
+   * uses each component's retract/local chart, which need not equal its
+   * Lie-group Expmap/Logmap chart (Pose2 is one such example).
+   */
+  struct ChartAtOrigin {
+    static Derived Retract(const TangentVector& v, ChartJacobian H = {}) {
+      if constexpr (isDynamic) {
+        if (v.size() % n != 0) {
+          throw std::invalid_argument(
+              "PowerLieGroup::Retract tangent dimension must be divisible by "
+              "base group dimension");
+        }
+        const size_t count =
+            static_cast<size_t>(v.size() / static_cast<Eigen::Index>(n));
+        return Derived(count).retract(v, {}, H);
+      } else {
+        return Derived::Identity().retract(v, {}, H);
+      }
+    }
 
-  typedef std::conditional_t<isDynamic, Vector,
-                             Eigen::Matrix<double, dimension, 1>>
-      TangentVector;
-
-  typedef std::conditional_t<isDynamic,
-                             OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>,
-                             OptionalJacobian<dimension, dimension>>
-      ChartJacobian;
-
-  typedef std::conditional_t<isDynamic, Matrix,
-                             Eigen::Matrix<double, dimension, dimension>>
-      Jacobian;
+    static TangentVector Local(const Derived& value, ChartJacobian H = {}) {
+      if constexpr (isDynamic) {
+        return Derived(value.size()).localCoordinates(value, {}, H);
+      } else {
+        return Derived::Identity().localCoordinates(value, {}, H);
+      }
+    }
+  };
 
   using BaseJacobian = typename traits<G>::Jacobian;
   using JacobianStorage =
@@ -326,9 +357,6 @@ class PowerLieGroupBase {
 
  public:
   /// Return manifold dimension
-  static constexpr int Dim() { return dimension; }
-
-  /// Return manifold dimension
   size_t dim() const { return totalDimension(componentCount()); }
 
   /// Group multiplication
@@ -337,11 +365,11 @@ class PowerLieGroupBase {
   /// Group inverse
   Derived inverse() const;
 
-  /// Compose with another element (same as operator*)
-  Derived compose(const Derived& g) const { return (*this) * g; }
-
-  /// Calculate relative transformation
-  Derived between(const Derived& g) const { return this->inverse() * g; }
+  using LieBase::between;
+  using LieBase::compose;
+  using LieBase::expmap;
+  using LieBase::inverse;
+  using LieBase::logmap;
 
   /// Retract to manifold
   Derived retract(const TangentVector& v, ChartJacobian H1 = {},
@@ -350,17 +378,6 @@ class PowerLieGroupBase {
   /// Local coordinates on manifold
   TangentVector localCoordinates(const Derived& g, ChartJacobian H1 = {},
                                  ChartJacobian H2 = {}) const;
-
-  /// Compose with Jacobians
-  Derived compose(const Derived& other, ChartJacobian H1,
-                  ChartJacobian H2 = {}) const;
-
-  /// Between with Jacobians
-  Derived between(const Derived& other, ChartJacobian H1,
-                  ChartJacobian H2 = {}) const;
-
-  /// Inverse with Jacobian
-  Derived inverse(ChartJacobian D) const;
 
   /// Exponential map
   static Derived Expmap(const TangentVector& v, ChartJacobian Hv = {});
@@ -373,12 +390,6 @@ class PowerLieGroupBase {
                                         ChartJacobian Hp = {}) {
     return Logmap(p, Hp);
   }
-
-  /// Right multiplication by exponential map
-  Derived expmap(const TangentVector& v) const { return compose(Expmap(v)); }
-
-  /// Logarithmic map for relative transformation
-  TangentVector logmap(const Derived& g) const { return Logmap(between(g)); }
 
   /// Adjoint map
   Jacobian AdjointMap() const;
@@ -395,9 +406,6 @@ class PowerLieGroupBase {
 
   /// Create a zero Jacobian with the requested runtime size.
   static Jacobian zeroJacobian(size_t count);
-
-  /// Create an identity Jacobian with the requested runtime size.
-  static Jacobian identityJacobian(size_t count);
 };
 
 /**
@@ -418,11 +426,12 @@ class PowerLieGroup : public std::array<G, N>,
   /// Base array type
   typedef std::array<G, N> Base;
   typedef PowerLieGroupBase<G, N, PowerLieGroup> Helper;
+  using Helper::Dim;
+  using Helper::dimension;
   using typename Helper::BaseJacobian;
   using typename Helper::ChartJacobian;
   using typename Helper::Jacobian;
   using typename Helper::TangentVector;
-  static constexpr int dimension = Helper::dimension;
 
  public:
   /// @name Standard Constructors
@@ -445,17 +454,6 @@ class PowerLieGroup : public std::array<G, N>,
   static PowerLieGroup Identity() { return PowerLieGroup(); }
 
   /// @}
-  /// @name Manifold Operations
-  /// @{
-
-  /// Return manifold dimension
-  static constexpr int Dim() { return dimension; }
-
-  /// @}
-  /// @name Lie Group Operations
-  /// @{
-
-  /// @}
 };
 
 /**
@@ -476,11 +474,12 @@ class PowerLieGroup<G, Eigen::Dynamic>
   /// Base vector type
   typedef std::vector<G> Base;
   typedef PowerLieGroupBase<G, Eigen::Dynamic, PowerLieGroup> Helper;
+  using Helper::Dim;
+  using Helper::dimension;
   using typename Helper::BaseJacobian;
   using typename Helper::ChartJacobian;
   using typename Helper::Jacobian;
   using typename Helper::TangentVector;
-  static constexpr int dimension = Helper::dimension;
 
  public:
   /// @name Standard Constructors
@@ -504,17 +503,6 @@ class PowerLieGroup<G, Eigen::Dynamic>
 
   /// Identity element
   static PowerLieGroup Identity() { return PowerLieGroup(); }
-
-  /// @}
-  /// @name Manifold Operations
-  /// @{
-
-  /// Return manifold dimension
-  static constexpr int Dim() { return dimension; }
-
-  /// @}
-  /// @name Lie Group Operations
-  /// @{
 
   /// @}
 };

@@ -539,52 +539,6 @@ PowerLieGroupBase<G, N, Derived>::localCoordinates(const Derived& g,
 }
 
 template <typename G, int N, typename Derived>
-Derived PowerLieGroupBase<G, N, Derived>::compose(const Derived& other,
-                                                  ChartJacobian H1,
-                                                  ChartJacobian H2) const {
-  checkMatchingCounts(other, "compose");
-  const size_t count = componentCount();
-  JacobianStorage jacobians = makeJacobianStorage(count);
-  Derived result = makeResult(count);
-  for (size_t i = 0; i < count; ++i) {
-    result[i] = traits<G>::Compose(derived()[i], other[i],
-                                   H1 ? &jacobians[i] : nullptr);
-  }
-  fillJacobianBlocks(H1, jacobians, count);
-  if (H2) *H2 = identityJacobian(count);
-  return result;
-}
-
-template <typename G, int N, typename Derived>
-Derived PowerLieGroupBase<G, N, Derived>::between(const Derived& other,
-                                                  ChartJacobian H1,
-                                                  ChartJacobian H2) const {
-  checkMatchingCounts(other, "between");
-  const size_t count = componentCount();
-  JacobianStorage jacobians = makeJacobianStorage(count);
-  Derived result = makeResult(count);
-  for (size_t i = 0; i < count; ++i) {
-    result[i] = traits<G>::Between(derived()[i], other[i],
-                                   H1 ? &jacobians[i] : nullptr);
-  }
-  fillJacobianBlocks(H1, jacobians, count);
-  if (H2) *H2 = identityJacobian(count);
-  return result;
-}
-
-template <typename G, int N, typename Derived>
-Derived PowerLieGroupBase<G, N, Derived>::inverse(ChartJacobian D) const {
-  const size_t count = componentCount();
-  JacobianStorage jacobians = makeJacobianStorage(count);
-  Derived result = makeResult(count);
-  for (size_t i = 0; i < count; ++i) {
-    result[i] = traits<G>::Inverse(derived()[i], D ? &jacobians[i] : nullptr);
-  }
-  fillJacobianBlocks(D, jacobians, count);
-  return result;
-}
-
-template <typename G, int N, typename Derived>
 Derived PowerLieGroupBase<G, N, Derived>::Expmap(const TangentVector& v,
                                                  ChartJacobian Hv) {
   size_t count = 0;
@@ -675,17 +629,6 @@ PowerLieGroupBase<G, N, Derived>::zeroJacobian(size_t count) {
   } else {
     static_cast<void>(count);
     return Jacobian::Zero();
-  }
-}
-
-template <typename G, int N, typename Derived>
-typename PowerLieGroupBase<G, N, Derived>::Jacobian
-PowerLieGroupBase<G, N, Derived>::identityJacobian(size_t count) {
-  if constexpr (isDynamic) {
-    return Jacobian::Identity(totalDimension(count), totalDimension(count));
-  } else {
-    static_cast<void>(count);
-    return Jacobian::Identity();
   }
 }
 

@@ -164,6 +164,14 @@ Power powerExpmapProxy(const PowerTangent& vec) { return Power::Expmap(vec); }
 
 PowerTangent powerLogmapProxy(const Power& p) { return Power::Logmap(p); }
 
+Power centeredExpmapPowerProxy(const Power& p, const PowerTangent& v) {
+  return p.expmap(v);
+}
+
+PowerTangent centeredLogmapPowerProxy(const Power& p, const Power& q) {
+  return p.logmap(q);
+}
+
 DynamicPower composeDynamicPowerProxy(const DynamicPower& A,
                                       const DynamicPower& B) {
   return A.compose(B);
@@ -184,6 +192,16 @@ DynamicPower dynamicPowerExpmapProxy(const DynamicPowerTangent& vec) {
 
 DynamicPowerTangent dynamicPowerLogmapProxy(const DynamicPower& p) {
   return DynamicPower::Logmap(p);
+}
+
+DynamicPower centeredExpmapDynamicPowerProxy(const DynamicPower& p,
+                                             const DynamicPowerTangent& v) {
+  return p.expmap(v);
+}
+
+DynamicPowerTangent centeredLogmapDynamicPowerProxy(const DynamicPower& p,
+                                                    const DynamicPower& q) {
+  return p.logmap(q);
 }
 }  // namespace
 
@@ -677,6 +695,37 @@ TEST(testPower, Logmap) {
 }
 
 /* ************************************************************************* */
+// Exercises the centered operations and origin retract inherited from LieGroup.
+TEST(testPower, InheritedLieGroupOperations) {
+  const Power state({Pose2(1, 2, 0.3), Pose2(4, 5, -0.2)});
+  PowerTangent delta;
+  delta << 0.1, -0.2, 0.03, -0.04, 0.05, -0.06;
+
+  Matrix H1, H2;
+  const Power updated = state.expmap(delta, H1, H2);
+  EXPECT(assert_equal(state.expmap(delta), updated, kTol));
+  EXPECT(assert_equal(
+      numericalDerivative21(centeredExpmapPowerProxy, state, delta), H1, kTol));
+  EXPECT(assert_equal(
+      numericalDerivative22(centeredExpmapPowerProxy, state, delta), H2, kTol));
+
+  Matrix L1, L2;
+  EXPECT(assert_equal(delta, state.logmap(updated, L1, L2), kTol));
+  EXPECT(assert_equal(
+      numericalDerivative21(centeredLogmapPowerProxy, state, updated), L1,
+      kTol));
+  EXPECT(assert_equal(
+      numericalDerivative22(centeredLogmapPowerProxy, state, updated), L2,
+      kTol));
+
+  Matrix actualH, expectedH;
+  const Power actual = Power::Retract(delta, actualH);
+  const Power expected = Power::Identity().retract(delta, {}, expectedH);
+  EXPECT(assert_equal(expected, actual, kTol));
+  EXPECT(assert_equal(expectedH, actualH, kTol));
+}
+
+/* ************************************************************************* */
 TEST(testPower, AdjointMap) {
   Power state({Pose2(1, 2, 3), Pose2(4, 5, 6)});
   const Matrix actual = state.AdjointMap();
@@ -787,6 +836,43 @@ TEST(testPowerDynamic, Expmap) {
       dynamicPowerExpmapProxy, vec);
   EXPECT(assert_equal(expected, actual, kTol));
   EXPECT(assert_equal(numericH, actH, kTol));
+}
+
+/* ************************************************************************* */
+// Exercises the inherited operations for a runtime component count.
+TEST(testPowerDynamic, InheritedLieGroupOperations) {
+  const DynamicPower state({Pose2(1, 2, 0.3), Pose2(4, 5, -0.2)});
+  const DynamicPowerTangent delta =
+      makeVector({0.1, -0.2, 0.03, -0.04, 0.05, -0.06});
+
+  Matrix H1, H2;
+  const DynamicPower updated = state.expmap(delta, H1, H2);
+  EXPECT(assert_equal(state.expmap(delta), updated, kTol));
+  EXPECT(assert_equal(
+      numericalDerivative21<DynamicPower, DynamicPower, DynamicPowerTangent, 6>(
+          centeredExpmapDynamicPowerProxy, state, delta),
+      H1, kTol));
+  EXPECT(assert_equal(
+      numericalDerivative22<DynamicPower, DynamicPower, DynamicPowerTangent, 6>(
+          centeredExpmapDynamicPowerProxy, state, delta),
+      H2, kTol));
+
+  Matrix L1, L2;
+  EXPECT(assert_equal(delta, state.logmap(updated, L1, L2), kTol));
+  EXPECT(assert_equal(
+      numericalDerivative21<DynamicPowerTangent, DynamicPower, DynamicPower, 6>(
+          centeredLogmapDynamicPowerProxy, state, updated),
+      L1, kTol));
+  EXPECT(assert_equal(
+      numericalDerivative22<DynamicPowerTangent, DynamicPower, DynamicPower, 6>(
+          centeredLogmapDynamicPowerProxy, state, updated),
+      L2, kTol));
+
+  Matrix actualH, expectedH;
+  const DynamicPower actual = DynamicPower::Retract(delta, actualH);
+  const DynamicPower expected = DynamicPower(2).retract(delta, {}, expectedH);
+  EXPECT(assert_equal(expected, actual, kTol));
+  EXPECT(assert_equal(expectedH, actualH, kTol));
 }
 
 /* ************************************************************************* */
