@@ -11,7 +11,7 @@
  */
 
 /**
- * @file testActionProductLieGroup.cpp
+ * @file testSemidirectLieGroup.cpp
  * @date April, 2026
  * @author Rohan Bansal
  * @author Jennifer Oum

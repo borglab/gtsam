@@ -74,4 +74,4 @@ For the special adjoint action of a group on its own algebra, prefer
 faster kernels and simpler direct formulas.
 
 The implementation is exercised by
-[`testActionProductLieGroup.cpp`](../../../tests/testActionProductLieGroup.cpp).
+[`testSemidirectLieGroup.cpp`](../../../tests/testSemidirectLieGroup.cpp).
