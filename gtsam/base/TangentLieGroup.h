@@ -97,9 +97,11 @@ class TangentLieGroup : public std::pair<G, typename traits<G>::TangentVector> {
   static_assert(internal::TangentLieGroupHasAdjointMap<G>::value,
                 "TangentLieGroup requires G::adjointMap(TangentVector)");
 
+ private:
+  inline constexpr static int n = traits<G>::dimension;
+
  public:
-  inline constexpr static int baseDimension = traits<G>::dimension;
-  inline constexpr static int dimension = 2 * baseDimension;
+  inline constexpr static int dimension = 2 * n;
   using Base = std::pair<G, typename traits<G>::TangentVector>;
   using BaseTangent = typename traits<G>::TangentVector;
   using BaseJacobian = typename traits<G>::Jacobian;

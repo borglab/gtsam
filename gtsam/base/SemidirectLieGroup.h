@@ -96,19 +96,18 @@ class SemidirectLieGroup : public std::pair<G, H> {
   using Base = std::pair<G, H>;
 
  protected:
-  inline constexpr static int dimension1 = traits<G>::dimension;
-  inline constexpr static int dimension2 = traits<H>::dimension;
-  inline constexpr static bool firstDynamic = dimension1 == Eigen::Dynamic;
+  inline constexpr static int n = traits<G>::dimension;
+  inline constexpr static int m = traits<H>::dimension;
+  inline constexpr static bool firstDynamic = n == Eigen::Dynamic;
   static_assert(internal::IsCompatibleSemidirectAction<Action, G, H>::value &&
                     internal::SemidirectLieGroupIsVector<H>::value &&
-                    dimension2 != Eigen::Dynamic,
+                    m != Eigen::Dynamic,
                 "SemidirectLieGroup requires a default-constructible left "
                 "GroupAction, a fixed-size Eigen vector H, and "
                 "Action::generator(u)");
 
  public:
-  inline constexpr static int dimension =
-      firstDynamic ? Eigen::Dynamic : dimension1 + dimension2;
+  inline constexpr static int dimension = firstDynamic ? Eigen::Dynamic : n + m;
   using TangentVector = std::conditional_t<dimension == Eigen::Dynamic, Vector,
                                            Eigen::Matrix<double, dimension, 1>>;
   using ChartJacobian =
@@ -121,8 +120,7 @@ class SemidirectLieGroup : public std::pair<G, H> {
   using Jacobian1 = typename traits<G>::Jacobian;
   using Jacobian2 = typename traits<H>::Jacobian;
   using ActionJacobianG =
-      std::conditional_t<firstDynamic, Matrix,
-                         Eigen::Matrix<double, dimension2, dimension1>>;
+      std::conditional_t<firstDynamic, Matrix, Eigen::Matrix<double, m, n>>;
 
   using group_flavor = multiplicative_group_tag;
 
@@ -193,7 +191,7 @@ class SemidirectLieGroup : public std::pair<G, H> {
 
   template <typename T, int D = traits<T>::dimension>
   static typename traits<T>::TangentVector tangentSegment(
-      const TangentVector& xi, size_t start, size_t runtimeDimension);
+      const TangentVector& xi, size_t start, size_t d);
   static TangentVector makeTangentVector(
       const typename traits<G>::TangentVector& u,
       const typename traits<H>::TangentVector& v, size_t d1, size_t d2);

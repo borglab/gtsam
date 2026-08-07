@@ -93,8 +93,8 @@ TangentLieGroup<G> TangentLieGroup<G>::Expmap(const TangentVector& xi,
       Expmap(u, v, H ? SplitJacobian(D1) : SplitJacobian(),
              H ? SplitJacobian(D2) : SplitJacobian());
   if (H) {
-    H->leftCols(baseDimension) = D1;
-    H->rightCols(baseDimension) = D2;
+    H->leftCols(n) = D1;
+    H->rightCols(n) = D2;
   }
   return result;
 }
@@ -108,8 +108,8 @@ TangentLieGroup<G> TangentLieGroup<G>::Expmap(
     Jacobian derivative;
     const auto [g, transported] = internal::TangentLieGroupJacobian<G>::expmap(
         u, v, H1 || H2 ? &derivative : nullptr);
-    if (H1) *H1 = derivative.leftCols(baseDimension);
-    if (H2) *H2 = derivative.rightCols(baseDimension);
+    if (H1) *H1 = derivative.leftCols(n);
+    if (H2) *H2 = derivative.rightCols(n);
     return {g, transported};
   }
 
@@ -118,11 +118,11 @@ TangentLieGroup<G> TangentLieGroup<G>::Expmap(
   const BaseTangent transported = traits<G>::AdjointMap(g) * Dg * v;
   if (H1) {
     const Jacobian derivative = rightJacobian(join(u, v));
-    *H1 = derivative.leftCols(baseDimension);
-    if (H2) *H2 = derivative.rightCols(baseDimension);
+    *H1 = derivative.leftCols(n);
+    if (H2) *H2 = derivative.rightCols(n);
   } else if (H2) {
-    *H2 = Matrix::Zero(dimension, baseDimension);
-    H2->bottomRows(baseDimension) = Dg;
+    *H2 = Matrix::Zero(dimension, n);
+    H2->bottomRows(n) = Dg;
   }
   return {g, transported};
 }
@@ -138,12 +138,11 @@ typename TangentLieGroup<G>::TangentVector TangentLieGroup<G>::Logmap(
   const TangentVector xi = join(u, v);
   if (H) {
     const Jacobian derivative = rightJacobian(xi);
-    const BaseJacobian Q =
-        derivative.template bottomLeftCorner<baseDimension, baseDimension>();
+    const BaseJacobian Q = derivative.template bottomLeftCorner<n, n>();
     H->setZero();
-    H->template topLeftCorner<baseDimension, baseDimension>() = Dg;
-    H->template bottomRightCorner<baseDimension, baseDimension>() = Dg;
-    H->template bottomLeftCorner<baseDimension, baseDimension>() = -Dg * Q * Dg;
+    H->template topLeftCorner<n, n>() = Dg;
+    H->template bottomRightCorner<n, n>() = Dg;
+    H->template bottomLeftCorner<n, n>() = -Dg * Q * Dg;
   }
   return xi;
 }
@@ -158,25 +157,19 @@ typename TangentLieGroup<G>::Jacobian TangentLieGroup<G>::rightJacobian(
 
   const BaseJacobian A = -G::adjointMap(u);
   const BaseJacobian B = -G::adjointMap(v);
-  using Augmented = Eigen::Matrix<double, 3 * baseDimension, 3 * baseDimension>;
+  using Augmented = Eigen::Matrix<double, 3 * n, 3 * n>;
   Augmented M = Augmented::Zero();
-  M.template block<baseDimension, baseDimension>(0, baseDimension)
-      .setIdentity();
-  M.template block<baseDimension, baseDimension>(baseDimension, baseDimension) =
-      A;
-  M.template block<baseDimension, baseDimension>(baseDimension,
-                                                 2 * baseDimension) = B;
-  M.template block<baseDimension, baseDimension>(2 * baseDimension,
-                                                 2 * baseDimension) = A;
+  M.template block<n, n>(0, n).setIdentity();
+  M.template block<n, n>(n, n) = A;
+  M.template block<n, n>(n, 2 * n) = B;
+  M.template block<n, n>(2 * n, 2 * n) = A;
   const Augmented expM = M.exp();
-  const BaseJacobian J =
-      expM.template block<baseDimension, baseDimension>(0, baseDimension);
-  const BaseJacobian Q =
-      expM.template block<baseDimension, baseDimension>(0, 2 * baseDimension);
+  const BaseJacobian J = expM.template block<n, n>(0, n);
+  const BaseJacobian Q = expM.template block<n, n>(0, 2 * n);
   Jacobian result = Jacobian::Zero();
-  result.template topLeftCorner<baseDimension, baseDimension>() = J;
-  result.template bottomRightCorner<baseDimension, baseDimension>() = J;
-  result.template bottomLeftCorner<baseDimension, baseDimension>() = Q;
+  result.template topLeftCorner<n, n>() = J;
+  result.template bottomRightCorner<n, n>() = J;
+  result.template bottomLeftCorner<n, n>() = Q;
   return result;
 }
 
@@ -185,9 +178,9 @@ typename TangentLieGroup<G>::Jacobian TangentLieGroup<G>::AdjointMap() const {
   const BaseJacobian Ad = traits<G>::AdjointMap(this->first);
   const BaseJacobian adV = G::adjointMap(this->second);
   Jacobian result = Jacobian::Zero();
-  result.template topLeftCorner<baseDimension, baseDimension>() = Ad;
-  result.template bottomRightCorner<baseDimension, baseDimension>() = Ad;
-  result.template bottomLeftCorner<baseDimension, baseDimension>() = adV * Ad;
+  result.template topLeftCorner<n, n>() = Ad;
+  result.template bottomRightCorner<n, n>() = Ad;
+  result.template bottomLeftCorner<n, n>() = adV * Ad;
   return result;
 }
 
@@ -197,10 +190,9 @@ typename TangentLieGroup<G>::Jacobian TangentLieGroup<G>::adjointMap(
   const auto [u, v] = split(xi);
   const BaseJacobian adU = G::adjointMap(u);
   Jacobian result = Jacobian::Zero();
-  result.template topLeftCorner<baseDimension, baseDimension>() = adU;
-  result.template bottomRightCorner<baseDimension, baseDimension>() = adU;
-  result.template bottomLeftCorner<baseDimension, baseDimension>() =
-      G::adjointMap(v);
+  result.template topLeftCorner<n, n>() = adU;
+  result.template bottomRightCorner<n, n>() = adU;
+  result.template bottomLeftCorner<n, n>() = G::adjointMap(v);
   return result;
 }
 
@@ -208,7 +200,7 @@ template <typename G>
 std::pair<typename TangentLieGroup<G>::BaseTangent,
           typename TangentLieGroup<G>::BaseTangent>
 TangentLieGroup<G>::split(const TangentVector& xi) {
-  return {xi.template head<baseDimension>(), xi.template tail<baseDimension>()};
+  return {xi.template head<n>(), xi.template tail<n>()};
 }
 
 template <typename G>

@@ -52,13 +52,13 @@ namespace gtsam {
 template <typename G, typename H, typename Action>
 typename SemidirectLieGroup<G, H, Action>::Phi1KernelResult
 SemidirectLieGroup<G, H, Action>::phi1Kernel(const Jacobian2& A) {
-  const int m = A.rows();
-  using Augmented = SemidirectAugmentedMatrix<dimension2, 2>;
-  Augmented M = Augmented::Zero(2 * m, 2 * m);
-  M.topLeftCorner(m, m) = A;
-  M.topRightCorner(m, m).setIdentity();
+  const int r = A.rows();
+  using Augmented = SemidirectAugmentedMatrix<m, 2>;
+  Augmented M = Augmented::Zero(2 * r, 2 * r);
+  M.topLeftCorner(r, r) = A;
+  M.topRightCorner(r, r).setIdentity();
   const Augmented expM = M.exp();
-  return {expM.topLeftCorner(m, m), expM.topRightCorner(m, m)};
+  return {expM.topLeftCorner(r, r), expM.topRightCorner(r, r)};
 }
 
 template <typename G, typename H, typename Action>
@@ -66,14 +66,14 @@ typename traits<H>::TangentVector
 SemidirectLieGroup<G, H, Action>::phi1FrechetAction(
     const Jacobian2& A, const Jacobian2& B,
     const typename traits<H>::TangentVector& v) {
-  const int m = A.rows();
-  using Augmented = SemidirectAugmentedMatrix<dimension2, 2, 1>;
-  Augmented M = Augmented::Zero(2 * m + 1, 2 * m + 1);
-  M.block(0, 0, m, m) = A;
-  M.block(0, m, m, m) = B;
-  M.block(m, m, m, m) = A;
-  M.block(m, 2 * m, m, 1) = v;
-  return M.exp().block(0, 2 * m, m, 1);
+  const int r = A.rows();
+  using Augmented = SemidirectAugmentedMatrix<m, 2, 1>;
+  Augmented M = Augmented::Zero(2 * r + 1, 2 * r + 1);
+  M.block(0, 0, r, r) = A;
+  M.block(0, r, r, r) = B;
+  M.block(r, r, r, r) = A;
+  M.block(r, 2 * r, r, 1) = v;
+  return M.exp().block(0, 2 * r, r, 1);
 }
 
 template <typename G, typename H, typename Action>
@@ -173,15 +173,15 @@ SemidirectLieGroup<G, H, Action> SemidirectLieGroup<G, H, Action>::Expmap(
     const TangentVector& xi, ChartJacobian D) {
   size_t d1;
   if constexpr (firstDynamic) {
-    if (xi.size() < dimension2) {
+    if (xi.size() < m) {
       throw std::invalid_argument(
           "SemidirectLieGroup::Expmap tangent dimension is too small");
     }
-    d1 = static_cast<size_t>(xi.size() - dimension2);
+    d1 = static_cast<size_t>(xi.size() - m);
   } else {
-    d1 = dimension1;
+    d1 = n;
   }
-  constexpr size_t d2 = dimension2;
+  constexpr size_t d2 = m;
   if (static_cast<size_t>(xi.size()) != d1 + d2) {
     throw std::invalid_argument(
         "SemidirectLieGroup::Expmap tangent dimension mismatch");
@@ -314,7 +314,7 @@ template <typename G, typename H, typename Action>
 typename SemidirectLieGroup<G, H, Action>::Jacobian
 SemidirectLieGroup<G, H, Action>::adjointMap(const TangentVector& xi) {
   const size_t d = xi.size();
-  const size_t d2 = dimension2;
+  const size_t d2 = m;
   if (d < d2) {
     throw std::invalid_argument(
         "SemidirectLieGroup::adjointMap tangent dimension is too small");
@@ -351,10 +351,9 @@ template <typename G, typename H, typename Action>
 template <typename T, int D>
 typename traits<T>::TangentVector
 SemidirectLieGroup<G, H, Action>::tangentSegment(const TangentVector& xi,
-                                                 size_t start,
-                                                 size_t runtimeDimension) {
+                                                 size_t start, size_t d) {
   if constexpr (D == Eigen::Dynamic) {
-    return xi.segment(start, runtimeDimension);
+    return xi.segment(start, d);
   } else {
     return xi.template segment<D>(start);
   }

@@ -65,7 +65,7 @@ ProductLieGroup<G, H> ProductLieGroup<G, H>::retract(const TangentVector& v,
                                                      ChartJacobian H2) const {
   const size_t d1 = firstDim();
   const size_t d2 = secondDim();
-  const size_t d = combinedDimension(d1, d2);
+  const size_t d = d1 + d2;
   if (static_cast<size_t>(v.size()) != d) {
     throw std::invalid_argument(
         "ProductLieGroup::retract tangent dimension does not match product "
@@ -102,7 +102,7 @@ ProductLieGroup<G, H>::localCoordinates(const ProductLieGroup& g,
   checkMatchingDimensions(g, "localCoordinates");
   const size_t d1 = firstDim();
   const size_t d2 = secondDim();
-  const size_t d = combinedDimension(d1, d2);
+  const size_t d = d1 + d2;
   Jacobian1 D_g_first;
   Jacobian1 D_g_second;
   Jacobian2 D_h_first;
@@ -131,7 +131,7 @@ ProductLieGroup<G, H> ProductLieGroup<G, H>::compose(
     const ProductLieGroup& other, ChartJacobian H1, ChartJacobian H2) const {
   checkMatchingDimensions(other, "compose");
   const size_t d1 = firstDim();
-  const size_t d = combinedDimension(d1, secondDim());
+  const size_t d = d1 + secondDim();
   Jacobian1 D_g_first;
   Jacobian2 D_h_second;
   G g = traits<G>::Compose(this->first, other.first, H1 ? &D_g_first : nullptr);
@@ -151,7 +151,7 @@ ProductLieGroup<G, H> ProductLieGroup<G, H>::between(
     const ProductLieGroup& other, ChartJacobian H1, ChartJacobian H2) const {
   checkMatchingDimensions(other, "between");
   const size_t d1 = firstDim();
-  const size_t d = combinedDimension(d1, secondDim());
+  const size_t d = d1 + secondDim();
   Jacobian1 D_g_first;
   Jacobian2 D_h_second;
   G g = traits<G>::Between(this->first, other.first, H1 ? &D_g_first : nullptr);
@@ -169,7 +169,7 @@ ProductLieGroup<G, H> ProductLieGroup<G, H>::between(
 template <typename G, typename H>
 ProductLieGroup<G, H> ProductLieGroup<G, H>::inverse(ChartJacobian D) const {
   const size_t d1 = firstDim();
-  const size_t d = combinedDimension(d1, secondDim());
+  const size_t d = d1 + secondDim();
   Jacobian1 D_g_first;
   Jacobian2 D_h_second;
   G g = traits<G>::Inverse(this->first, D ? &D_g_first : nullptr);
@@ -185,8 +185,8 @@ ProductLieGroup<G, H> ProductLieGroup<G, H>::inverse(ChartJacobian D) const {
 template <typename G, typename H>
 ProductLieGroup<G, H> ProductLieGroup<G, H>::Expmap(const TangentVector& v,
                                                     ChartJacobian Hv) {
-  size_t firstDimension = 0;
-  size_t secondDimension = 0;
+  size_t d1 = 0;
+  size_t d2 = 0;
   if constexpr (firstDynamic && secondDynamic) {
     if (v.size() == 0) {
       if (Hv) *Hv = Matrix::Zero(0, 0);
@@ -196,27 +196,26 @@ ProductLieGroup<G, H> ProductLieGroup<G, H>::Expmap(const TangentVector& v,
         "ProductLieGroup::Expmap requires split tangent vectors when both "
         "factors are dynamic");
   } else if constexpr (firstDynamic) {
-    if (v.size() < dimension2) {
+    if (v.size() < m) {
       throw std::invalid_argument(
           "ProductLieGroup::Expmap tangent dimension is too small for the "
           "fixed second factor");
     }
-    firstDimension = static_cast<size_t>(v.size() - dimension2);
-    secondDimension = static_cast<size_t>(dimension2);
+    d1 = static_cast<size_t>(v.size() - m);
+    d2 = static_cast<size_t>(m);
   } else if constexpr (secondDynamic) {
-    if (v.size() < dimension1) {
+    if (v.size() < n) {
       throw std::invalid_argument(
           "ProductLieGroup::Expmap tangent dimension is too small for the "
           "fixed first factor");
     }
-    firstDimension = static_cast<size_t>(dimension1);
-    secondDimension = static_cast<size_t>(v.size() - dimension1);
+    d1 = static_cast<size_t>(n);
+    d2 = static_cast<size_t>(v.size() - n);
   } else {
-    firstDimension = static_cast<size_t>(dimension1);
-    secondDimension = static_cast<size_t>(dimension2);
+    d1 = static_cast<size_t>(n);
+    d2 = static_cast<size_t>(m);
   }
-  if (static_cast<size_t>(v.size()) !=
-      combinedDimension(firstDimension, secondDimension)) {
+  if (static_cast<size_t>(v.size()) != d1 + d2) {
     throw std::invalid_argument(
         "ProductLieGroup::Expmap tangent dimension does not match product "
         "dimension");
@@ -224,8 +223,8 @@ ProductLieGroup<G, H> ProductLieGroup<G, H>::Expmap(const TangentVector& v,
 
   Matrix D_g_first;
   Matrix D_h_second;
-  const auto v1 = tangentSegment<G>(v, 0, firstDimension);
-  const auto v2 = tangentSegment<H>(v, firstDimension, secondDimension);
+  const auto v1 = tangentSegment<G>(v, 0, d1);
+  const auto v2 = tangentSegment<H>(v, d1, d2);
   ProductLieGroup result =
       Expmap(v1, v2,
              Hv ? OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>(D_g_first)
@@ -233,12 +232,10 @@ ProductLieGroup<G, H> ProductLieGroup<G, H>::Expmap(const TangentVector& v,
              Hv ? OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>(D_h_second)
                 : OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic>());
   if (Hv) {
-    const size_t productDimension =
-        combinedDimension(firstDimension, secondDimension);
-    *Hv = zeroJacobian(productDimension);
-    Hv->block(0, 0, productDimension, firstDimension) = D_g_first;
-    Hv->block(0, firstDimension, productDimension, secondDimension) =
-        D_h_second;
+    const size_t d = d1 + d2;
+    *Hv = zeroJacobian(d);
+    Hv->block(0, 0, d, d1) = D_g_first;
+    Hv->block(0, d1, d, d2) = D_h_second;
   }
   return result;
 }
@@ -251,7 +248,7 @@ ProductLieGroup<G, H> ProductLieGroup<G, H>::Expmap(
     OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H2) {
   const size_t d1 = static_cast<size_t>(v1.size());
   const size_t d2 = static_cast<size_t>(v2.size());
-  const size_t d = combinedDimension(d1, d2);
+  const size_t d = d1 + d2;
   Jacobian1 D_g_first;
   Jacobian2 D_h_second;
   G g = traits<G>::Expmap(v1, H1 ? &D_g_first : nullptr);
@@ -270,14 +267,13 @@ ProductLieGroup<G, H> ProductLieGroup<G, H>::Expmap(
 template <typename G, typename H>
 typename ProductLieGroup<G, H>::TangentVector ProductLieGroup<G, H>::Logmap(
     const ProductLieGroup& p, ChartJacobian Hp) {
-  const size_t firstDimension = p.firstDim();
-  const size_t secondDimension = p.secondDim();
-  const size_t productDimension =
-      combinedDimension(firstDimension, secondDimension);
+  const size_t d1 = p.firstDim();
+  const size_t d2 = p.secondDim();
+  const size_t d = d1 + d2;
   if (!Hp) {
     const auto v1 = traits<G>::Logmap(p.first);
     const auto v2 = traits<H>::Logmap(p.second);
-    return makeTangentVector(v1, v2, firstDimension, secondDimension);
+    return makeTangentVector(v1, v2, d1, d2);
   }
 
   Jacobian1 D_g_first;
@@ -285,10 +281,10 @@ typename ProductLieGroup<G, H>::TangentVector ProductLieGroup<G, H>::Logmap(
   typename traits<G>::TangentVector v1 = traits<G>::Logmap(p.first, &D_g_first);
   typename traits<H>::TangentVector v2 =
       traits<H>::Logmap(p.second, &D_h_second);
-  TangentVector v = makeTangentVector(v1, v2, firstDimension, secondDimension);
-  *Hp = zeroJacobian(productDimension);
+  TangentVector v = makeTangentVector(v1, v2, d1, d2);
+  *Hp = zeroJacobian(d);
   assignBlock(D_g_first, 0, 0, &*Hp);
-  assignBlock(D_h_second, firstDimension, firstDimension, &*Hp);
+  assignBlock(D_h_second, d1, d1, &*Hp);
   return v;
 }
 
@@ -329,26 +325,26 @@ typename ProductLieGroup<G, H>::Jacobian ProductLieGroup<G, H>::adjointMap(
         "ProductLieGroup::adjointMap cannot infer the tangent split when "
         "both factors are dynamic");
   } else if constexpr (firstDynamic) {
-    if (xi.size() < dimension2) {
+    if (xi.size() < m) {
       throw std::invalid_argument(
           "ProductLieGroup::adjointMap tangent dimension is too small for "
           "the fixed second factor");
     }
-    d1 = static_cast<size_t>(xi.size() - dimension2);
-    d2 = static_cast<size_t>(dimension2);
+    d1 = static_cast<size_t>(xi.size() - m);
+    d2 = static_cast<size_t>(m);
   } else if constexpr (secondDynamic) {
-    if (xi.size() < dimension1) {
+    if (xi.size() < n) {
       throw std::invalid_argument(
           "ProductLieGroup::adjointMap tangent dimension is too small for "
           "the fixed first factor");
     }
-    d1 = static_cast<size_t>(dimension1);
-    d2 = static_cast<size_t>(xi.size() - dimension1);
+    d1 = static_cast<size_t>(n);
+    d2 = static_cast<size_t>(xi.size() - n);
   } else {
-    d1 = static_cast<size_t>(dimension1);
-    d2 = static_cast<size_t>(dimension2);
+    d1 = static_cast<size_t>(n);
+    d2 = static_cast<size_t>(m);
   }
-  if (d != combinedDimension(d1, d2)) {
+  if (d != d1 + d2) {
     throw std::invalid_argument(
         "ProductLieGroup::adjointMap tangent dimension does not match "
         "product dimension");
@@ -376,13 +372,13 @@ T ProductLieGroup<G, H>::defaultIdentity() {
 template <typename G, typename H>
 template <typename T, int Dim>
 typename traits<T>::TangentVector ProductLieGroup<G, H>::tangentSegment(
-    const TangentVector& v, size_t start, size_t runtimeDimension) {
+    const TangentVector& v, size_t start, size_t d) {
   const int startIndex = static_cast<int>(start);
-  const int runtimeIndex = static_cast<int>(runtimeDimension);
+  const int runtimeIndex = static_cast<int>(d);
   if constexpr (Dim == Eigen::Dynamic) {
     return v.segment(startIndex, runtimeIndex);
   } else {
-    static_cast<void>(runtimeDimension);
+    static_cast<void>(d);
     return v.template segment<Dim>(startIndex);
   }
 }
@@ -407,18 +403,17 @@ template <typename G, typename H>
 typename ProductLieGroup<G, H>::TangentVector
 ProductLieGroup<G, H>::makeTangentVector(
     const typename traits<G>::TangentVector& v1,
-    const typename traits<H>::TangentVector& v2, size_t firstDimension,
-    size_t secondDimension) {
-  const int firstIndex = static_cast<int>(firstDimension);
-  const int secondIndex = static_cast<int>(secondDimension);
+    const typename traits<H>::TangentVector& v2, size_t d1, size_t d2) {
+  const int firstIndex = static_cast<int>(d1);
+  const int secondIndex = static_cast<int>(d2);
   if constexpr (dimension == Eigen::Dynamic) {
-    TangentVector v(combinedDimension(firstDimension, secondDimension));
+    TangentVector v(d1 + d2);
     v.segment(0, firstIndex) = v1;
     v.segment(firstIndex, secondIndex) = v2;
     return v;
   } else {
-    static_cast<void>(firstDimension);
-    static_cast<void>(secondDimension);
+    static_cast<void>(d1);
+    static_cast<void>(d2);
     TangentVector v;
     v << v1, v2;
     return v;
@@ -427,22 +422,22 @@ ProductLieGroup<G, H>::makeTangentVector(
 
 template <typename G, typename H>
 typename ProductLieGroup<G, H>::Jacobian ProductLieGroup<G, H>::zeroJacobian(
-    size_t productDimension) {
+    size_t d) {
   if constexpr (dimension == Eigen::Dynamic) {
-    return Jacobian::Zero(productDimension, productDimension);
+    return Jacobian::Zero(d, d);
   } else {
-    static_cast<void>(productDimension);
+    static_cast<void>(d);
     return Jacobian::Zero();
   }
 }
 
 template <typename G, typename H>
 typename ProductLieGroup<G, H>::Jacobian
-ProductLieGroup<G, H>::identityJacobian(size_t productDimension) {
+ProductLieGroup<G, H>::identityJacobian(size_t d) {
   if constexpr (dimension == Eigen::Dynamic) {
-    return Jacobian::Identity(productDimension, productDimension);
+    return Jacobian::Identity(d, d);
   } else {
-    static_cast<void>(productDimension);
+    static_cast<void>(d);
     return Jacobian::Identity();
   }
 }
@@ -498,9 +493,9 @@ typename traits<G>::TangentVector
 PowerLieGroupBase<G, N, Derived>::tangentSegment(const TangentVector& v,
                                                  size_t i) {
   if constexpr (isDynamic) {
-    return v.segment(offset(i), baseDimension);
+    return v.segment(offset(i), n);
   } else {
-    return v.template segment<baseDimension>(i * baseDimension);
+    return v.template segment<n>(i * n);
   }
 }
 
@@ -529,9 +524,9 @@ template <typename G, int N, typename Derived>
 void PowerLieGroupBase<G, N, Derived>::assignTangentSegment(
     TangentVector& v, size_t i, const typename traits<G>::TangentVector& vi) {
   if constexpr (isDynamic) {
-    v.segment(offset(i), baseDimension) = vi;
+    v.segment(offset(i), n) = vi;
   } else {
-    v.template segment<baseDimension>(i * baseDimension) = vi;
+    v.template segment<n>(i * n) = vi;
   }
 }
 
@@ -540,10 +535,9 @@ template <typename MatrixType>
 void PowerLieGroupBase<G, N, Derived>::assignJacobianBlock(
     MatrixType& H, size_t i, const BaseJacobian& block) {
   if constexpr (isDynamic) {
-    H.block(offset(i), offset(i), baseDimension, baseDimension) = block;
+    H.block(offset(i), offset(i), n, n) = block;
   } else {
-    H.template block<baseDimension, baseDimension>(i * baseDimension,
-                                                   i * baseDimension) = block;
+    H.template block<n, n>(i * n, i * n) = block;
   }
 }
 
@@ -668,13 +662,12 @@ Derived PowerLieGroupBase<G, N, Derived>::Expmap(const TangentVector& v,
                                                  ChartJacobian Hv) {
   size_t count = 0;
   if constexpr (isDynamic) {
-    if (v.size() % baseDimension != 0) {
+    if (v.size() % n != 0) {
       throw std::invalid_argument(
           "PowerLieGroup::Expmap tangent dimension must be divisible by base  "
           "group dimension");
     }
-    count = static_cast<size_t>(v.size() /
-                                static_cast<Eigen::Index>(baseDimension));
+    count = static_cast<size_t>(v.size() / static_cast<Eigen::Index>(n));
   } else {
     count = N;
   }

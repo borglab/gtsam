@@ -71,15 +71,15 @@ class ProductLieGroup : public std::pair<G, H> {
 
  protected:
   /// Dimensions of the two subgroups
-  inline constexpr static int dimension1 = traits<G>::dimension;
-  inline constexpr static int dimension2 = traits<H>::dimension;
-  inline constexpr static bool firstDynamic = dimension1 == Eigen::Dynamic;
-  inline constexpr static bool secondDynamic = dimension2 == Eigen::Dynamic;
+  inline constexpr static int n = traits<G>::dimension;
+  inline constexpr static int m = traits<H>::dimension;
+  inline constexpr static bool firstDynamic = n == Eigen::Dynamic;
+  inline constexpr static bool secondDynamic = m == Eigen::Dynamic;
 
  public:
   /// Manifold dimension
   inline constexpr static int dimension =
-      firstDynamic || secondDynamic ? Eigen::Dynamic : dimension1 + dimension2;
+      firstDynamic || secondDynamic ? Eigen::Dynamic : n + m;
 
   /// Tangent vector type
   using TangentVector = std::conditional_t<dimension == Eigen::Dynamic, Vector,
@@ -147,7 +147,7 @@ class ProductLieGroup : public std::pair<G, H> {
   static constexpr int Dim() { return manifoldDimension; }
 
   /// Return manifold dimension
-  size_t dim() const { return combinedDimension(firstDim(), secondDim()); }
+  size_t dim() const { return firstDim() + secondDim(); }
 
   /// Retract to manifold
   ProductLieGroup retract(const TangentVector& v, ChartJacobian H1 = {},
@@ -221,12 +221,10 @@ class ProductLieGroup : public std::pair<G, H> {
   size_t firstDim() const { return traits<G>::GetDimension(this->first); }
   size_t secondDim() const { return traits<H>::GetDimension(this->second); }
 
-  static size_t combinedDimension(size_t d1, size_t d2) { return d1 + d2; }
-
   /// Extract a tangent segment for one factor.
   template <typename T, int Dim = traits<T>::dimension>
   static typename traits<T>::TangentVector tangentSegment(
-      const TangentVector& v, size_t start, size_t runtimeDimension);
+      const TangentVector& v, size_t start, size_t d);
 
   /// Compute one factor's static algebra adjoint, including vector spaces.
   template <typename T>
@@ -236,14 +234,13 @@ class ProductLieGroup : public std::pair<G, H> {
   /// Concatenate subgroup tangent vectors into the product tangent.
   static TangentVector makeTangentVector(
       const typename traits<G>::TangentVector& v1,
-      const typename traits<H>::TangentVector& v2, size_t firstDimension,
-      size_t secondDimension);
+      const typename traits<H>::TangentVector& v2, size_t d1, size_t d2);
 
   /// Create a zero Jacobian with the requested runtime size.
-  static Jacobian zeroJacobian(size_t productDimension);
+  static Jacobian zeroJacobian(size_t d);
 
   /// Create an identity Jacobian with the requested runtime size.
-  static Jacobian identityJacobian(size_t productDimension);
+  static Jacobian identityJacobian(size_t d);
 
   /// Check that another product has matching runtime dimensions.
   void checkMatchingDimensions(const ProductLieGroup& other,
@@ -280,13 +277,12 @@ template <typename G, int N, typename Derived>
 class PowerLieGroupBase {
  protected:
   static constexpr bool isDynamic = (N == Eigen::Dynamic);
-  static constexpr int baseDimension = traits<G>::dimension;
+  static constexpr int n = traits<G>::dimension;
 
  public:
   typedef multiplicative_group_tag group_flavor;
 
-  static constexpr int dimension =
-      isDynamic ? Eigen::Dynamic : N * baseDimension;
+  static constexpr int dimension = isDynamic ? Eigen::Dynamic : N * n;
 
   typedef std::conditional_t<isDynamic, Vector,
                              Eigen::Matrix<double, dimension, 1>>
@@ -314,12 +310,12 @@ class PowerLieGroupBase {
 
   /// Total tangent dimension for a given component count.
   static size_t totalDimension(size_t count) {
-    return count * static_cast<size_t>(baseDimension);
+    return count * static_cast<size_t>(n);
   }
 
   /// Starting offset of one component inside the concatenated tangent.
   static Eigen::Index offset(size_t i) {
-    return static_cast<Eigen::Index>(i * static_cast<size_t>(baseDimension));
+    return static_cast<Eigen::Index>(i * static_cast<size_t>(n));
   }
 
   /// Runtime component count.
