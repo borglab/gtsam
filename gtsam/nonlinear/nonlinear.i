@@ -966,9 +966,9 @@ class FixedLagSmootherResult {
   size_t getNonlinearVariables() const;
   size_t getLinearVariables() const;
   double getError() const;
-  FactorIndices getMarginalFactorIndices() const;
-  FactorIndices getDeletedFactorIndices() const;
-  KeySet getKeysOfDeletedNodes() const;
+  gtsam::FactorIndices getMarginalFactorIndices() const;
+  gtsam::FactorIndices getDeletedFactorIndices() const;
+  gtsam::KeySet getKeysOfDeletedNodes() const;
   void print() const;
 };
 
@@ -1026,7 +1026,7 @@ virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
 
   gtsam::NonlinearFactorGraph getFactors() const;
   gtsam::ISAM2 getISAM2() const;
-  ISAM2Result& getISAM2Result() const;
+  gtsam::ISAM2Result& getISAM2Result() const;
 };
 
 #include <gtsam/nonlinear/ExtendedKalmanFilter.h>

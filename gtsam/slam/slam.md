@@ -50,8 +50,15 @@ Helper functions and classes for SLAM tasks.
 
 -   [lago](doc/lago.ipynb) : Linear Approximation for Graph Optimization (LAGO) for initializing `Pose2` graphs.
 -   [InitializePose3](doc/InitializePose3.ipynb) : Methods for initializing `Pose3` graphs by first solving for rotations, then translations.
+-   [FAST-Sync](doc/FastSync.ipynb) : A sparse chordal initializer for matrix Lie-group synchronization. In C++, call `fastSync<T>(graph)` for `Rot2`, `Rot3`, `Pose2`, `Pose3`, `Similarity2`, `Similarity3`, or `SL4`. Generated Python and MATLAB entry points are `fastSyncRot2`, `fastSyncRot3`, `fastSyncPose2`, `fastSyncPose3`, `fastSyncSimilarity2`, `fastSyncSimilarity3`, and `fastSyncSL4`; see the [runnable example](../../python/gtsam/examples/FastSyncExample.ipynb).
 -   [dataset](doc/dataset.ipynb) : Utility functions for loading/saving common SLAM dataset formats (g2o, TORO).
 -   [expressions](https://github.com/borglab/gtsam/blob/develop/gtsam/slam/expressions.h) : Pre-defined Expression trees for common SLAM factor types (internal use for Expression-based factors).
+
+### FAST-Sync input and gauge behavior
+
+`fastSync<T>` reads matching `BetweenFactor<T>` measurements and accepts only finite, positive, isotropic Gaussian noise. Anisotropic, constrained, and robust between-factor models are rejected. The measurement graph must be non-empty and connected, and may contain at most one matching `PriorFactor<T>`.
+
+The relaxed matrix problem is solved with a METIS nested-dissection ordering and an exact identity gauge at the ordering's final key. Projection to the target group occurs only after the complete ambient-space solve. If a matching prior is present, the rounded solution is subsequently left-aligned to that prior; without a prior, the METIS gauge is retained. Builds without METIS report the nested-dissection error. New fixed-size matrix Lie groups can opt in by specializing `FastSyncProjection<T>`.
 
 ## CUDA Acceleration
 
