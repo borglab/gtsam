@@ -97,7 +97,7 @@ class UnaryFactor: public NoiseModelFactorN<Pose2> {
     // H =  [ cos(q.theta)  -sin(q.theta) 0 ]
     //      [ sin(q.theta)   cos(q.theta) 0 ]
     const Rot2& R = q.rotation();
-    if (H) (*H) = gtsam::Matrix{{R.c(), -R.s(), 0.0}, {R.s(), R.c(), 0.0}};
+    if (H) *H = gtsam::Matrix{{R.c(), -R.s(), 0.0}, {R.s(), R.c(), 0.0}};
     return Vector{{q.x() - mx_, q.y() - my_}};
   }
 

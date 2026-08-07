@@ -69,14 +69,13 @@ Point2 Cal3Bundler::uncalibrate(const Point2& p, OptionalJacobian<2, 3> Dcal,
   // Derivatives make use of intermediate variables above
   if (Dcal) {
     double rx = r * x, ry = r * y;
-    *Dcal << u, f_ * rx, f_ * r * rx, v, f_ * ry, f_ * r * ry;
+    *Dcal = Matrix23{{u, f_ * rx, f_ * r * rx}, {v, f_ * ry, f_ * r * ry}};
   }
 
   if (Dp) {
     const double a = 2. * (k1_ + 2. * k2_ * r);
     const double axx = a * x * x, axy = a * x * y, ayy = a * y * y;
-    *Dp << g + axx, axy, axy, g + ayy;
-    *Dp *= f_;
+    *Dp = Matrix2{{g + axx, axy}, {axy, g + ayy}} * f_;
   }
 
   return Point2(u0_ + f_ * u, v0_ + f_ * v);

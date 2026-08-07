@@ -53,7 +53,7 @@ static const Matrix63 Hpose2 = Matrix63{{0., 0., 0.},  //
                                         {0., 0., 0.}};
 
 Pose3 Pose3::FromPose2(const Pose2& p, OptionalJacobian<6, 3> H) {
-  if (H) *H << Hpose2;
+  if (H) *H = Hpose2;
   return Pose3(p);
 }
 

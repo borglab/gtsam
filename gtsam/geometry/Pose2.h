@@ -250,7 +250,7 @@ public:
 
   /// rotation
   inline const Rot2&   rotation(OptionalJacobian<1, 3> Hself={}) const {
-    if (Hself) *Hself << 0, 0, 1;
+    if (Hself) *Hself = Matrix13{{0, 0, 1}};
     return r_;
   }
 

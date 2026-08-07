@@ -89,8 +89,7 @@ const Pose3& PinholeBase::getPose(OptionalJacobian<6, 6> H) const {
 Point2 PinholeBase::Project(const Point3& pc, OptionalJacobian<2, 3> Dpoint) {
   double d = 1.0 / pc.z();
   const double u = pc.x() * d, v = pc.y() * d;
-  if (Dpoint)
-    *Dpoint << d, 0.0, -u * d, 0.0, d, -v * d;
+  if (Dpoint) *Dpoint = Matrix23{{d, 0.0, -u * d}, {0.0, d, -v * d}};
   return Point2(u, v);
 }
 
@@ -167,10 +166,8 @@ Point2 PinholeBase::project2(const Unit3& pw, OptionalJacobian<2, 6> Dpose,
 /* ************************************************************************* */
 Point3 PinholeBase::BackprojectFromCamera(const Point2& p,
     const double depth, OptionalJacobian<3, 2> Dpoint, OptionalJacobian<3, 1> Ddepth) {
-  if (Dpoint)
-    *Dpoint << depth, 0, 0, depth, 0, 0;
-  if (Ddepth)
-    *Ddepth << p.x(), p.y(), 1;
+  if (Dpoint) *Dpoint = Matrix32{{depth, 0}, {0, depth}, {0, 0}};
+  if (Ddepth) *Ddepth = Matrix31{{p.x()}, {p.y()}, {1}};
   return Point3(p.x() * depth, p.y() * depth, depth);
 }
 

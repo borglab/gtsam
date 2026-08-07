@@ -91,7 +91,7 @@ Point2 Cal3Unified::uncalibrate(const Point2& p, OptionalJacobian<2, 10> Dcal,
     Matrix2 DU{{(sqrt_nx + xi * (ys * ys + 1)) * denom, mid},
                {mid, (sqrt_nx + xi * (xs * xs + 1)) * denom}};
 
-    *Dp << H2base * DU;
+    *Dp = H2base * DU;
   }
 
   return puncalib;

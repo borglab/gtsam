@@ -476,8 +476,8 @@ struct Combine {
   Combine(double a, double b) : a(a), b(b) {}
   double operator()(const double& x, const double& y, OptionalJacobian<1, 1> H1,
                     OptionalJacobian<1, 1> H2) {
-    if (H1) (*H1) << a;
-    if (H2) (*H2) << b;
+    if (H1) *H1 = Matrix1{{a}};
+    if (H2) *H2 = Matrix1{{b}};
     return a * x + b * y;
   }
 };
@@ -528,9 +528,9 @@ TEST(Expression, testMultipleCompositions) {
 static double combine3(const double& x, const double& y, const double& z,
                         OptionalJacobian<1, 1> H1, OptionalJacobian<1, 1> H2,
                         OptionalJacobian<1, 1> H3) {
-  if (H1) (*H1) << 1.0;
-  if (H2) (*H2) << 2.0;
-  if (H3) (*H3) << 3.0;
+  if (H1) *H1 = Matrix1{{1.0}};
+  if (H2) *H2 = Matrix1{{2.0}};
+  if (H3) *H3 = Matrix1{{3.0}};
   return x + 2.0 * y + 3.0 * z;
 }
 
@@ -593,7 +593,7 @@ Vector3 f(const Point2& a, const Vector3& b, OptionalJacobian<3, 2> H1,
   A(0, 1) = a.x();
   A(0, 2) = a.y();
   A(1, 0) = a.x();
-  if (H1) *H1 << b.y(), b.z(), b.x(), 0, 0, 0;
+  if (H1) *H1 = Matrix32{{b.y(), b.z()}, {b.x(), 0}, {0, 0}};
   if (H2) *H2 = A;
   return A * b;
 }

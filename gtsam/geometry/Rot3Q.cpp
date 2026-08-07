@@ -87,14 +87,14 @@ void assertRot3Invariant(const Rot3&) {}
   /* ************************************************************************* */
   Rot3 Rot3::RzRyRx(double x, double y, double z, OptionalJacobian<3, 1> Hx,
                     OptionalJacobian<3, 1> Hy, OptionalJacobian<3, 1> Hz) {
-    if (Hx) (*Hx) << 1, 0, 0;
+    if (Hx) *Hx = Matrix31{{1}, {0}, {0}};
 
     if (Hy or Hz) {
       const auto cx = cos(x), sx = sin(x);
-      if (Hy) (*Hy) << 0, cx, -sx;
+      if (Hy) *Hy = Matrix31{{0}, {cx}, {-sx}};
       if (Hz) {
         const auto cy = cos(y), sy = sin(y);
-        (*Hz) << -sy, sx * cy, cx * cy;
+        *Hz = Matrix31{{-sy}, {sx * cy}, {cx * cy}};
       }
     }
 

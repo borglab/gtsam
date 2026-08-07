@@ -180,7 +180,7 @@ int main() {
 
   // Create initial trajectory estimate using constant velocity assumption.
   // This provides a reasonable starting point for the optimizer.
-  const Velocity initial_twist{{0.0}, {0.0}, {0.0}, {-1.0}, {0.0}, {0.0}};
+  const Velocity initial_twist{0.0, 0.0, 0.0, -1.0, 0.0, 0.0};
   gtsam::Values values_init;
   Pose running_pose = values_gt.at<Pose>(estimated_states_vec.front().pose);
   values_init.insert(estimated_states_vec.front().pose, running_pose);

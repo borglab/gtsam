@@ -114,7 +114,7 @@ Matrix2 Rot2::transpose() const { return Matrix2{{c_, s_}, {-s_, c_}}; }
 Point2 Rot2::rotate(const Point2& p, OptionalJacobian<2, 1> H1,
     OptionalJacobian<2, 2> H2) const {
   const Point2 q = Point2(c_ * p.x() + -s_ * p.y(), s_ * p.x() + c_ * p.y());
-  if (H1) *H1 << -q.y(), q.x();
+  if (H1) *H1 = Matrix21{{-q.y()}, {q.x()}};
   if (H2) *H2 = matrix();
   return q;
 }
@@ -124,7 +124,7 @@ Point2 Rot2::rotate(const Point2& p, OptionalJacobian<2, 1> H1,
 Point2 Rot2::unrotate(const Point2& p,
     OptionalJacobian<2, 1> H1, OptionalJacobian<2, 2> H2) const {
   const Point2 q = Point2(c_ * p.x() + s_ * p.y(), -s_ * p.x() + c_ * p.y());
-  if (H1) *H1 << q.y(), -q.x();
+  if (H1) *H1 = Matrix21{{q.y()}, {-q.x()}};
   if (H2) *H2 = transpose();
   return q;
 }
@@ -134,11 +134,11 @@ Rot2 Rot2::relativeBearing(const Point2& d, OptionalJacobian<1, 2> H) {
   double x = d.x(), y = d.y(), d2 = x * x + y * y, n = sqrt(d2);
   if(std::abs(n) > 1e-5) {
     if (H) {
-      *H << -y / d2, x / d2;
+      *H = Matrix12{{-y / d2, x / d2}};
     }
     return Rot2::fromCosSin(x / n, y / n);
   } else {
-    if (H) *H << 0.0, 0.0;
+    if (H) *H = Matrix12{{0.0, 0.0}};
     return Rot2();
   }
 }

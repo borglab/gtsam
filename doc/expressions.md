@@ -45,7 +45,7 @@ An example of a simple unary function is `gtsam::norm3` in [Point3.cpp](https://
 ```c++
 double norm3(const Point3 & p, OptionalJacobian<1, 3> H = {}) {
   double r = sqrt(p.x() * p.x() + p.y() * p.y() + p.z() * p.z());
-  if (H) *H << p.x() / r, p.y() / r, p.z() / r;
+  if (H) *H = Matrix13{{p.x() / r, p.y() / r, p.z() / r}};
   return r;
 }
 ```

@@ -114,9 +114,9 @@ Rot3 Rot3::RzRyRx(double x, double y, double z, OptionalJacobian<3, 1> Hx,
   double s_c = sx * cz;
   double c_c = cx * cz;
   double ssc = ss_ * cz, csc = cs_ * cz, sss = ss_ * sz, css = cs_ * sz;
-  if (Hx) (*Hx) << 1, 0, 0;
-  if (Hy) (*Hy) << 0, cx, -sx;
-  if (Hz) (*Hz) << -sy, sc_, cc_;
+  if (Hx) (*Hx) = Matrix31{{1}, {0}, {0}};
+  if (Hy) (*Hy) = Matrix31{{0}, {cx}, {-sx}};
+  if (Hz) (*Hz) = Matrix31{{-sy}, {sc_}, {cc_}};
   return Rot3(
       _cc,- c_s + ssc,  s_s + csc,
       _cs,  c_c + sss, -s_c + css,

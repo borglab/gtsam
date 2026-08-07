@@ -61,16 +61,18 @@ namespace gtsam {
       // optimized version, see StereoCamera.nb
       if (H1) {
         const double v1 = v/fy, v2 = fx*v1, dx=d*x;
-        *H1  << uL*v1, -fx-dx*uL,     v2, -dfx,  0.0, d*uL,
-                uR*v1, -fx-dx*uR,     v2, -dfx,  0.0, d*uR,
-                fy + v*v1,    -dx*v , -x*dfy,  0.0, -dfy, d*v;
+        *H1 = Matrix36{{uL * v1, -fx - dx * uL, v2, -dfx, 0.0, d * uL},
+                       {uR * v1, -fx - dx * uR, v2, -dfx, 0.0, d * uR},
+                       {fy + v * v1, -dx * v, -x * dfy, 0.0, -dfy, d * v}};
       }
       if (H2) {
         const Matrix3 R(leftCamPose_.rotation().matrix());
-        *H2  << fx*R(0, 0) - R(0, 2)*uL, fx*R(1, 0) - R(1, 2)*uL, fx*R(2, 0) - R(2, 2)*uL,
-                fx*R(0, 0) - R(0, 2)*uR, fx*R(1, 0) - R(1, 2)*uR, fx*R(2, 0) - R(2, 2)*uR,
-                fy*R(0, 1) - R(0, 2)*v , fy*R(1, 1) - R(1, 2)*v , fy*R(2, 1) - R(2, 2)*v;
-        *H2 << d * (*H2);
+        *H2 = d *
+              // clang-format off
+              Matrix3{{fx * R(0, 0) - R(0, 2) * uL, fx * R(1, 0) - R(1, 2) * uL, fx * R(2, 0) - R(2, 2) * uL},
+                      {fx * R(0, 0) - R(0, 2) * uR, fx * R(1, 0) - R(1, 2) * uR, fx * R(2, 0) - R(2, 2) * uR},
+                      {fy * R(0, 1) - R(0, 2) * v, fy * R(1, 1) - R(1, 2) * v, fy * R(2, 1) - R(2, 2) * v}};
+        // clang-format on
       }
     }
 

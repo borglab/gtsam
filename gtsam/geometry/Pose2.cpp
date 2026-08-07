@@ -242,7 +242,7 @@ Point2 Pose2::transformTo(const Point2& point,
   OptionalJacobian<2, 2> Htranslation = Hpose.cols<2>(0);
   OptionalJacobian<2, 1> Hrotation = Hpose.cols<1>(2);
   const Point2 q = r_.unrotate(point - t_, Hrotation, Hpoint);
-  if (Htranslation) *Htranslation << -1.0, 0.0, 0.0, -1.0;
+  if (Htranslation) *Htranslation = Matrix2{{-1.0, 0.0}, {0.0, -1.0}};
   return q;
 }
 

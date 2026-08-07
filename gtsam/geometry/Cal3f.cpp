@@ -64,8 +64,7 @@ Point2 Cal3f::uncalibrate(const Point2& p, OptionalJacobian<2, 1> Dcal,
   const double v = fx_ * y + v0_;
 
   if (Dcal) {
-    Dcal->resize(2, 1);
-    (*Dcal) << x, y;
+    *Dcal = Matrix21{{x}, {y}};
   }
 
   if (Dp) {
@@ -86,8 +85,7 @@ Point2 Cal3f::calibrate(const Point2& pi, OptionalJacobian<2, 1> Dcal,
   Point2 point(inv_f * delta_u, inv_f * delta_v);
 
   if (Dcal) {
-    Dcal->resize(2, 1);
-    (*Dcal) << -inv_f * point.x(), -inv_f * point.y();
+    *Dcal = Matrix21{{-inv_f * point.x()}, {-inv_f * point.y()}};
   }
 
   if (Dp) {
