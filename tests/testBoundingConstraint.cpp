@@ -136,8 +136,10 @@ TEST( testBoundingConstraint, unary_linearization_active) {
   config2.insert(key, pt2);
   GaussianFactor::shared_ptr actual1 = constraint1.linearize(config2);
   GaussianFactor::shared_ptr actual2 = constraint2.linearize(config2);
-  JacobianFactor expected1(key, (Matrix(1, 2) << 1.0, 0.0).finished(), Vector::Constant(1, 3.0), hard_model1);
-  JacobianFactor expected2(key, (Matrix(1, 2) << 0.0, 1.0).finished(), Vector::Constant(1, 5.0), hard_model1);
+  JacobianFactor expected1(key, Matrix{{1.0, 0.0}}, Vector::Constant(1, 3.0),
+                           hard_model1);
+  JacobianFactor expected2(key, Matrix{{0.0, 1.0}}, Vector::Constant(1, 5.0),
+                           hard_model1);
   EXPECT(assert_equal((const GaussianFactor&)expected1, *actual1, tol));
   EXPECT(assert_equal((const GaussianFactor&)expected2, *actual2, tol));
 }
@@ -198,7 +200,7 @@ TEST( testBoundingConstraint, MaxDistance_basics) {
   EXPECT(!rangeBound.isGreaterThan());
   EXPECT(rangeBound.dim() == 1);
 
-  EXPECT(assert_equal((Vector(1) << 2.0).finished(), rangeBound.evaluateError(pt1, pt1)));
+  EXPECT(assert_equal(Vector{{2.0}}, rangeBound.evaluateError(pt1, pt1)));
   EXPECT(assert_equal(I_1x1, rangeBound.evaluateError(pt1, pt2)));
   EXPECT(assert_equal(Z_1x1, rangeBound.evaluateError(pt1, pt3)));
   EXPECT(assert_equal(-1.0*I_1x1, rangeBound.evaluateError(pt1, pt4)));

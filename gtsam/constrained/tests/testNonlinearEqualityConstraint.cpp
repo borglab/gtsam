@@ -126,10 +126,10 @@ TEST(ExpressionEqualityConstraint, Vector2) {
   EXPECT(constraint.feasible(values1));
 
   // Check that violation evaluates as 0 at values1.
-  auto expected_violation1 = (Vector(2) << 0, 0).finished();
+  Vector expected_violation1{{0, 0}};
   EXPECT(
       assert_equal(expected_violation1, constraint.unwhitenedError(values1)));
-  auto expected_scaled_violation1 = (Vector(2) << 0, 0).finished();
+  Vector expected_scaled_violation1{{0, 0}};
   EXPECT(assert_equal(expected_scaled_violation1,
                       constraint.whitenedError(values1)));
 
@@ -137,12 +137,12 @@ TEST(ExpressionEqualityConstraint, Vector2) {
   EXPECT(!constraint.feasible(values2));
 
   // Check constraint violation is indeed g(x) at values2.
-  auto expected_violation2 = (Vector(2) << 2, 2).finished();
+  Vector expected_violation2{{2, 2}};
   EXPECT(
       assert_equal(expected_violation2, constraint.unwhitenedError(values2)));
 
   // Check scaled violation is indeed g(x)/sigmas at values2.
-  auto expected_scaled_violation2 = (Vector(2) << 20, 4).finished();
+  Vector expected_scaled_violation2{{20, 4}};
   EXPECT(assert_equal(expected_scaled_violation2,
                       constraint.whitenedError(values2)));
 
@@ -194,10 +194,10 @@ TEST(ZeroCostConstraint, BetweenFactor) {
   EXPECT(constraint.feasible(values1));
 
   // Check that violation evaluates as 0 at values1.
-  auto expected_violation1 = (Vector(2) << 0, 0).finished();
+  Vector expected_violation1{{0, 0}};
   EXPECT(
       assert_equal(expected_violation1, constraint.unwhitenedError(values1)));
-  auto expected_scaled_violation1 = (Vector(2) << 0, 0).finished();
+  Vector expected_scaled_violation1{{0, 0}};
   EXPECT(assert_equal(expected_scaled_violation1,
                       constraint.whitenedError(values1)));
 
@@ -205,12 +205,12 @@ TEST(ZeroCostConstraint, BetweenFactor) {
   EXPECT(!constraint.feasible(values2));
 
   // Check constraint violation is indeed g(x) at values2.
-  auto expected_violation2 = (Vector(2) << 1, 2).finished();
+  Vector expected_violation2{{1, 2}};
   EXPECT(
       assert_equal(expected_violation2, constraint.unwhitenedError(values2)));
 
   // Check scaled violation is indeed g(x)/sigmas at values2.
-  auto expected_scaled_violation2 = (Vector(2) << 2, 20).finished();
+  Vector expected_scaled_violation2{{2, 20}};
   EXPECT(assert_equal(expected_scaled_violation2,
                       constraint.whitenedError(values2)));
 

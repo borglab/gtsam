@@ -43,8 +43,8 @@ TEST(AcceleratedPowerMethod, acceleratedPowerIteration) {
   A.coeffRef(3, 3) = 3;
   A.coeffRef(4, 4) = 2;
   A.coeffRef(5, 5) = 1;
-  Vector initial = (Vector(6) << 0.24434602, 0.22829942, 0.70094486, 0.15463092, 0.55871359,
-       0.2465342).finished();
+  Vector initial{
+      {0.24434602, 0.22829942, 0.70094486, 0.15463092, 0.55871359, 0.2465342}};
   const double ev1 = 6.0;
 
   // test accelerated power iteration

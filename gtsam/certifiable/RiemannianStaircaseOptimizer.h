@@ -48,7 +48,7 @@ struct RiemannianStaircaseResult;
 
 /// Parameters for the Riemannian Staircase solver.
 struct GTSAM_EXPORT RiemannianStaircaseParams {
-  /// Spectra: sparse Lanczos via gtsam/3rdparty/Spectra.
+  /// Spectra: sparse Lanczos eigensolver.
   /// DenseEigen: full O(n^3) self-adjoint eigensolver, not recommended for large problems.
   enum class VerificationMethod { Spectra, DenseEigen };
 

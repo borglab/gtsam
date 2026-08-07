@@ -54,6 +54,10 @@ jobs:
       - name: Install sccache
         uses: mozilla-actions/sccache-action@v0.0.9
 
+      - name: Install mold
+        uses: rui314/setup-mold@v1
+        if: runner.os == 'Linux'
+
       - name: cl version
         if: runner.os == 'Windows'
         shell: cmd
@@ -154,7 +158,9 @@ jobs:
       - name: cmake build
         shell: bash
         run: |
-          cmake --build build
+          cmake --build build --target examples
+          cmake --build build -j 2 --target gtsam_py
+          cmake --build build -j 2 --target gtsam_unstable_py
 
       - name: Run Python tests
         shell: bash

@@ -51,10 +51,9 @@ TEST( GaussianBayesNet, Matrix )
 {
   const auto [R, d] = smallBayesNet.matrix(); // find matrix and RHS
 
-  Matrix R1 = (Matrix2() <<
-          1.0, 1.0,
-          0.0, 1.0
-    ).finished();
+  Matrix R1{//
+            {1.0, 1.0},
+            {0.0, 1.0}};
   Vector d1 = Vector2(9.0, 5.0);
 
   EXPECT(assert_equal(R,R1));
@@ -101,10 +100,9 @@ TEST( GaussianBayesNet, NoisyMatrix )
 {
   const auto [R, d] = noisyBayesNet.matrix(); // find matrix and RHS
 
-  Matrix R1 = (Matrix2() <<
-          0.5, 0.5,
-          0.0, 1./3.
-    ).finished();
+  Matrix R1{//
+            {0.5, 0.5},
+            {0.0, 1. / 3.}};
   Vector d1 = Vector2(9./2., 5./3.);
 
   EXPECT(assert_equal(R,R1));
@@ -165,7 +163,7 @@ TEST( GaussianBayesNet, optimize3 )
 
 /* ************************************************************************* */
 namespace sampling {
-static Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
+static Matrix A1{{1., 2.}, {3., 4.}};
 static const Vector2 mean(20, 40), b(10, 10);
 static const double sigma = 0.01;
 static const GaussianBayesNet gbn = {
@@ -285,15 +283,16 @@ TEST( GaussianBayesNet, DeterminantTest )
 {
   GaussianBayesNet cbn;
   cbn.emplace_shared<GaussianConditional>(
-          0, Vector2(3.0, 4.0), (Matrix2() << 1.0, 3.0, 0.0, 4.0).finished(),
-          1, (Matrix2() << 2.0, 1.0, 2.0, 3.0).finished(), noiseModel::Isotropic::Sigma(2, 2.0));
+      0, Vector2(3.0, 4.0), Matrix2{{1.0, 3.0}, {0.0, 4.0}}, 1,
+      Matrix2{{2.0, 1.0}, {2.0, 3.0}}, noiseModel::Isotropic::Sigma(2, 2.0));
 
   cbn.emplace_shared<GaussianConditional>(
-          1, Vector2(5.0, 6.0), (Matrix2() << 1.0, 1.0, 0.0, 3.0).finished(),
-          2, (Matrix2() << 1.0, 0.0, 5.0, 2.0).finished(), noiseModel::Isotropic::Sigma(2, 2.0));
+      1, Vector2(5.0, 6.0), Matrix2{{1.0, 1.0}, {0.0, 3.0}}, 2,
+      Matrix2{{1.0, 0.0}, {5.0, 2.0}}, noiseModel::Isotropic::Sigma(2, 2.0));
 
-  cbn.emplace_shared<GaussianConditional>(
-      3, Vector2(7.0, 8.0), (Matrix2() << 1.0, 1.0, 0.0, 5.0).finished(), noiseModel::Isotropic::Sigma(2, 2.0));
+  cbn.emplace_shared<GaussianConditional>(3, Vector2(7.0, 8.0),
+                                          Matrix2{{1.0, 1.0}, {0.0, 5.0}},
+                                          noiseModel::Isotropic::Sigma(2, 2.0));
 
   double expectedDeterminant = 60.0 / 64.0;
   double actualDeterminant = cbn.determinant();
@@ -316,21 +315,20 @@ TEST(GaussianBayesNet, ComputeSteepestDescentPoint) {
   // Create an arbitrary Bayes Net
   GaussianBayesNet gbn;
   gbn.emplace_shared<GaussianConditional>(
-    0, Vector2(1.0,2.0), (Matrix2() << 3.0,4.0,0.0,6.0).finished(),
-    3, (Matrix2() << 7.0,8.0,9.0,10.0).finished(),
-    4, (Matrix2() << 11.0,12.0,13.0,14.0).finished());
+      0, Vector2(1.0, 2.0), Matrix2{{3.0, 4.0}, {0.0, 6.0}}, 3,
+      Matrix2{{7.0, 8.0}, {9.0, 10.0}}, 4, Matrix2{{11.0, 12.0}, {13.0, 14.0}});
   gbn.emplace_shared<GaussianConditional>(
-    1, Vector2(15.0,16.0), (Matrix2() << 17.0,18.0,0.0,20.0).finished(),
-    2, (Matrix2() << 21.0,22.0,23.0,24.0).finished(),
-    4, (Matrix2() << 25.0,26.0,27.0,28.0).finished());
-  gbn.emplace_shared<GaussianConditional>(
-    2, Vector2(29.0,30.0), (Matrix2() << 31.0,32.0,0.0,34.0).finished(),
-    3, (Matrix2() << 35.0,36.0,37.0,38.0).finished());
-  gbn.emplace_shared<GaussianConditional>(
-    3, Vector2(39.0,40.0), (Matrix2() << 41.0,42.0,0.0,44.0).finished(),
-    4, (Matrix2() << 45.0,46.0,47.0,48.0).finished());
-  gbn.emplace_shared<GaussianConditional>(
-    4, Vector2(49.0,50.0), (Matrix2() << 51.0,52.0,0.0,54.0).finished());
+      1, Vector2(15.0, 16.0), Matrix2{{17.0, 18.0}, {0.0, 20.0}}, 2,
+      Matrix2{{21.0, 22.0}, {23.0, 24.0}}, 4,
+      Matrix2{{25.0, 26.0}, {27.0, 28.0}});
+  gbn.emplace_shared<GaussianConditional>(2, Vector2(29.0, 30.0),
+                                          Matrix2{{31.0, 32.0}, {0.0, 34.0}}, 3,
+                                          Matrix2{{35.0, 36.0}, {37.0, 38.0}});
+  gbn.emplace_shared<GaussianConditional>(3, Vector2(39.0, 40.0),
+                                          Matrix2{{41.0, 42.0}, {0.0, 44.0}}, 4,
+                                          Matrix2{{45.0, 46.0}, {47.0, 48.0}});
+  gbn.emplace_shared<GaussianConditional>(4, Vector2(49.0, 50.0),
+                                          Matrix2{{51.0, 52.0}, {0.0, 54.0}});
 
   // Compute the Hessian numerically
   Matrix hessian = numericalHessian<Vector10>(

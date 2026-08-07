@@ -163,8 +163,7 @@ TEST(AugmentedLagrangian, VectorBiasUsesElementwiseSigmas) {
   const Vector3_ x(x_key);
 
   // Non-uniform sigmas are essential to detect the bug in Release.
-  Vector sigmas(3);
-  sigmas << 1.0, 2.0, 4.0;
+  Vector sigmas{{1.0, 2.0, 4.0}};
 
   NonlinearEqualityConstraints eq;
   eq.emplace_shared<ExpressionEqualityConstraint<Vector3>>(x, Vector3::Zero(),
@@ -185,7 +184,7 @@ TEST(AugmentedLagrangian, VectorBiasUsesElementwiseSigmas) {
 
   AugmentedLagrangianState state;
   state.muEq = 0.2;
-  state.lambdaEq.emplace_back((Vector(3) << 0.3, -0.5, 1.2).finished());
+  state.lambdaEq.emplace_back(Vector{{0.3, -0.5, 1.2}});
 
   // Buggy code aborts here in Debug (Eigen assert) and gives wrong bias in
   // Release.

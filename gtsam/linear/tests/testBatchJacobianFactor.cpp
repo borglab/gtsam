@@ -35,16 +35,15 @@ const std::vector<size_t> keyDimensions{2, 2, 3};
 const std::vector<size_t> augmentedDimensions{2, 2, 3, 1};
 
 Factor createWeightedFactor() {
-  auto model = noiseModel::Diagonal::Sigmas(
-      (Vector(4) << 2.0, 3.0, 4.0, 5.0).finished());
+  auto model = noiseModel::Diagonal::Sigmas(Vector{{2.0, 3.0, 4.0, 5.0}});
   Factor factor(keys, keyDimensions, model);
 
-  Matrix A0 = (Matrix(2, 2) << 1.0, 2.0, 3.0, 4.0).finished();
-  Matrix A1 = (Matrix(2, 2) << -1.0, 0.5, 2.0, -0.25).finished();
-  Matrix B0 = (Matrix(2, 3) << 0.5, 1.0, -1.5, 2.0, -0.5, 0.25).finished();
-  Matrix B1 = (Matrix(2, 3) << 1.5, -2.0, 0.75, -1.0, 0.25, 2.5).finished();
-  Vector b0 = (Vector(2) << 0.25, -0.75).finished();
-  Vector b1 = (Vector(2) << 1.25, 0.5).finished();
+  Matrix A0{{1.0, 2.0}, {3.0, 4.0}};
+  Matrix A1{{-1.0, 0.5}, {2.0, -0.25}};
+  Matrix B0{{0.5, 1.0, -1.5}, {2.0, -0.5, 0.25}};
+  Matrix B1{{1.5, -2.0, 0.75}, {-1.0, 0.25, 2.5}};
+  Vector b0{{0.25, -0.75}};
+  Vector b1{{1.25, 0.5}};
 
   factor.addRow({0, 2}, {A0, B0}, b0);
   factor.addRow({1, 2}, {A1, B1}, b1);
@@ -54,12 +53,12 @@ Factor createWeightedFactor() {
 Factor createUnweightedFactor() {
   Factor factor(keys, keyDimensions);
 
-  Matrix A0 = (Matrix(2, 2) << 1.0, 2.0, 3.0, 4.0).finished();
-  Matrix A1 = (Matrix(2, 2) << -1.0, 0.5, 2.0, -0.25).finished();
-  Matrix B0 = (Matrix(2, 3) << 0.5, 1.0, -1.5, 2.0, -0.5, 0.25).finished();
-  Matrix B1 = (Matrix(2, 3) << 1.5, -2.0, 0.75, -1.0, 0.25, 2.5).finished();
-  Vector b0 = (Vector(2) << 0.25, -0.75).finished();
-  Vector b1 = (Vector(2) << 1.25, 0.5).finished();
+  Matrix A0{{1.0, 2.0}, {3.0, 4.0}};
+  Matrix A1{{-1.0, 0.5}, {2.0, -0.25}};
+  Matrix B0{{0.5, 1.0, -1.5}, {2.0, -0.5, 0.25}};
+  Matrix B1{{1.5, -2.0, 0.75}, {-1.0, 0.25, 2.5}};
+  Vector b0{{0.25, -0.75}};
+  Vector b1{{1.25, 0.5}};
 
   factor.addRow({0, 2}, {A0, B0}, b0);
   factor.addRow({1, 2}, {A1, B1}, b1);

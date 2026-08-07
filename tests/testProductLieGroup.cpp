@@ -185,8 +185,7 @@ TEST(Lie, ProductLieGroup) {
   GTSAM_CONCEPT_ASSERT(IsManifold<Product>);
   GTSAM_CONCEPT_ASSERT(IsLieGroup<Product>);
   Product pair1;
-  Vector5 d;
-  d << 1, 2, 0.1, 0.2, 0.3;
+  Vector5 d{1, 2, 0.1, 0.2, 0.3};
   Product expected(Point2(1, 2), Pose2::Expmap(Vector3(0.1, 0.2, 0.3)));
   Product pair2 = pair1.expmap(d);
   EXPECT(assert_equal(expected, pair2, kTol));
@@ -232,8 +231,7 @@ TEST(testProduct, inverse) {
 
 /* ************************************************************************* */
 TEST(testProduct, Expmap) {
-  Vector5 vec;
-  vec << 1, 2, 0.1, 0.2, 0.3;
+  Vector5 vec{1, 2, 0.1, 0.2, 0.3};
 
   Matrix actH;
   Product::Expmap(vec, actH);
@@ -537,8 +535,7 @@ TEST(Lie, PowerLieGroup) {
   GTSAM_CONCEPT_ASSERT(IsLieGroup<Power>);
 
   Power identity;
-  PowerTangent xi;
-  xi << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6;
+  PowerTangent xi{0.1, 0.2, 0.3, 0.4, 0.5, 0.6};
   Power expected({Pose2::Expmap(xi.head<3>()), Pose2::Expmap(xi.tail<3>())});
 
   Power actual = identity.expmap(xi);
@@ -585,8 +582,7 @@ TEST(testPower, inverse) {
 
 /* ************************************************************************* */
 TEST(testPower, Expmap) {
-  PowerTangent vec;
-  vec << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6;
+  PowerTangent vec{0.1, 0.2, 0.3, 0.4, 0.5, 0.6};
 
   Matrix actH;
   Power::Expmap(vec, actH);

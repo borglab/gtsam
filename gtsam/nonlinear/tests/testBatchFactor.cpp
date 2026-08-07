@@ -115,10 +115,8 @@ TEST(BatchFactor, ConstructorAndLinearize) {
 // Verifies constrained row semantics are preserved in the dense Jacobian model.
 TEST(BatchFactor, ConstrainedNoiseModel) {
   Key key = Symbol('x', 0);
-  Vector constrainedSigmas(3);
-  constrainedSigmas << 1.0, 0.0, 2.0;
-  Vector constrainedMus(3);
-  constrainedMus << 3.0, 4.0, 5.0;
+  Vector constrainedSigmas{{1.0, 0.0, 2.0}};
+  Vector constrainedMus{{3.0, 4.0, 5.0}};
   auto constrained =
       noiseModel::Constrained::MixedSigmas(constrainedMus, constrainedSigmas);
 
@@ -147,8 +145,7 @@ TEST(BatchFactor, ConstrainedNoiseModel) {
   constrainedRowMus[0] = 1000.0;
   constrainedRowMus[2] = 1000.0;
   expectedMus << constrainedRowMus, constrainedRowMus;
-  Vector expectedRowSigmas(3);
-  expectedRowSigmas << 1.0, 0.0, 1.0;
+  Vector expectedRowSigmas{{1.0, 0.0, 1.0}};
   expectedSigmas << expectedRowSigmas, expectedRowSigmas;
   EXPECT(assert_equal(expectedMus, constrainedModel->mu(), 1e-9));
   EXPECT(assert_equal(expectedSigmas, constrainedModel->sigmas(), 1e-9));
@@ -159,10 +156,8 @@ TEST(BatchFactor, ConstrainedNoiseModel) {
 // preserved correctly after whitening in linearization.
 TEST(BatchFactor, ConstrainedNoiseModelUsesUnitSigmasForUnconstrainedRows) {
   Key key = Symbol('x', 0);
-  Vector constrainedSigmas(3);
-  constrainedSigmas << 2.0, 0.0, 4.0;
-  Vector constrainedMus(3);
-  constrainedMus << 3.0, 7.0, 5.0;
+  Vector constrainedSigmas{{2.0, 0.0, 4.0}};
+  Vector constrainedMus{{3.0, 7.0, 5.0}};
   auto constrained =
       noiseModel::Constrained::MixedSigmas(constrainedMus, constrainedSigmas);
 
@@ -180,10 +175,8 @@ TEST(BatchFactor, ConstrainedNoiseModelUsesUnitSigmasForUnconstrainedRows) {
       std::dynamic_pointer_cast<noiseModel::Constrained>(jacobian->get_model());
   CHECK(constrainedModel);
 
-  Vector expectedSigmas(3);
-  expectedSigmas << 1.0, 0.0, 1.0;
-  Vector expectedMus(3);
-  expectedMus << 1000.0, 7.0, 1000.0;
+  Vector expectedSigmas{{1.0, 0.0, 1.0}};
+  Vector expectedMus{{1000.0, 7.0, 1000.0}};
 
   EXPECT(assert_equal(expectedSigmas, constrainedModel->sigmas(), 1e-9));
   EXPECT(assert_equal(expectedMus, constrainedModel->mu(), 1e-9));
@@ -220,10 +213,8 @@ TEST(BatchFactor, DynamicDimensionSupport) {
   Key key = Symbol('x', 0);
   const SharedDiagonal model = noiseModel::Isotropic::Sigma(2, 1.0);
   std::vector<DynamicVectorFactor> factors;
-  Vector measurement1(2);
-  measurement1 << 1.0, 2.0;
-  Vector measurement2(2);
-  measurement2 << 2.0, 3.0;
+  Vector measurement1{{1.0, 2.0}};
+  Vector measurement2{{2.0, 3.0}};
   factors.emplace_back(key, measurement1, model);
   factors.emplace_back(key, measurement2, model);
 
@@ -231,8 +222,7 @@ TEST(BatchFactor, DynamicDimensionSupport) {
       std::make_shared<BatchFactor<DynamicVectorFactor, 2>>(std::move(factors));
 
   Values values;
-  Vector dynamicX(2);
-  dynamicX << 0.0, 0.0;
+  Vector dynamicX{{0.0, 0.0}};
   values.insert(key, dynamicX);
 
   auto gaussian = batch->linearize(values);

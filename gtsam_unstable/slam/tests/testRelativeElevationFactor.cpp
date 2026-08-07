@@ -53,7 +53,8 @@ TEST( testRelativeElevationFactor, level_positive ) {
   double measured = 0.0;
   RelativeElevationFactor factor(poseKey, pointKey, measured, model1);
   Matrix actH1, actH2;
-  EXPECT(assert_equal((Vector(1) << 2.0).finished(), factor.evaluateError(pose1, point1, actH1, actH2)));
+  EXPECT(assert_equal(Vector{{2.0}},
+                      factor.evaluateError(pose1, point1, actH1, actH2)));
   Matrix expH1 = numericalDerivative21<Vector, Pose3, Point3>(
       std::bind(evalFactorError, factor, std::placeholders::_1,
                 std::placeholders::_2),
@@ -72,7 +73,8 @@ TEST( testRelativeElevationFactor, level_negative ) {
   double measured = -1.0;
   RelativeElevationFactor factor(poseKey, pointKey, measured, model1);
   Matrix actH1, actH2;
-  EXPECT(assert_equal((Vector(1) << 3.0).finished(), factor.evaluateError(pose1, point1, actH1, actH2)));
+  EXPECT(assert_equal(Vector{{3.0}},
+                      factor.evaluateError(pose1, point1, actH1, actH2)));
   Matrix expH1 = numericalDerivative21<Vector, Pose3, Point3>(
       std::bind(evalFactorError, factor, std::placeholders::_1,
                 std::placeholders::_2),
@@ -110,7 +112,8 @@ TEST( testRelativeElevationFactor, rotated_positive ) {
   double measured = 0.0;
   RelativeElevationFactor factor(poseKey, pointKey, measured, model1);
   Matrix actH1, actH2;
-  EXPECT(assert_equal((Vector(1) << 2.0).finished(), factor.evaluateError(pose2, point1, actH1, actH2)));
+  EXPECT(assert_equal(Vector{{2.0}},
+                      factor.evaluateError(pose2, point1, actH1, actH2)));
   Matrix expH1 = numericalDerivative21<Vector, Pose3, Point3>(
       std::bind(evalFactorError, factor, std::placeholders::_1,
                 std::placeholders::_2),
@@ -129,7 +132,8 @@ TEST( testRelativeElevationFactor, rotated_negative1 ) {
   double measured = -1.0;
   RelativeElevationFactor factor(poseKey, pointKey, measured, model1);
   Matrix actH1, actH2;
-  EXPECT(assert_equal((Vector(1) << 3.0).finished(), factor.evaluateError(pose2, point1, actH1, actH2)));
+  EXPECT(assert_equal(Vector{{3.0}},
+                      factor.evaluateError(pose2, point1, actH1, actH2)));
   Matrix expH1 = numericalDerivative21<Vector, Pose3, Point3>(
       std::bind(evalFactorError, factor, std::placeholders::_1,
                 std::placeholders::_2),
@@ -148,7 +152,8 @@ TEST( testRelativeElevationFactor, rotated_negative2 ) {
   double measured = -1.0;
   RelativeElevationFactor factor(poseKey, pointKey, measured, model1);
   Matrix actH1, actH2;
-  EXPECT(assert_equal((Vector(1) << 3.0).finished(), factor.evaluateError(pose3, point1, actH1, actH2)));
+  EXPECT(assert_equal(Vector{{3.0}},
+                      factor.evaluateError(pose3, point1, actH1, actH2)));
   Matrix expH1 = numericalDerivative21<Vector, Pose3, Point3>(
       std::bind(evalFactorError, factor, std::placeholders::_1,
                 std::placeholders::_2),

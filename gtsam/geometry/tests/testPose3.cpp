@@ -113,7 +113,7 @@ TEST( Pose3, expmap_a_full2)
 TEST(Pose3, expmap_b)
 {
   Pose3 p1(Rot3(), Point3(100, 0, 0));
-  Pose3 p2 = p1.retract((Vector(6) << 0.0, 0.0, 0.1, 0.0, 0.0, 0.0).finished());
+  Pose3 p2 = p1.retract(Vector{{0.0, 0.0, 0.1, 0.0, 0.0, 0.0}});
   Pose3 expected(Rot3::Rodrigues(0.0, 0.0, 0.1), Point3(100.0, 0.0, 0.0));
   EXPECT(assert_equal(expected, p2,1e-2));
 }
@@ -122,7 +122,7 @@ TEST(Pose3, expmap_b)
 // test case for screw motion in the plane
 namespace screwPose3 {
   double a=0.3, c=cos(a), s=sin(a), w=0.3;
-  Vector xi = (Vector(6) << 0.0, 0.0, w, w, 0.0, 1.0).finished();
+  Vector xi{{0.0, 0.0, w, w, 0.0, 1.0}};
   Rot3 expectedR(c, -s, 0, s, c, 0, 0, 0, 1);
   Point3 expectedT(0.29552, 0.0446635, 1);
   Pose3 expected(expectedR, expectedT);
@@ -157,7 +157,7 @@ TEST(Pose3, Adjoint_full)
 // Check Adjoint numerical derivatives
 TEST(Pose3, Adjoint_jacobians)
 {
-  Vector6 xi = (Vector6() << 0.1, 1.2, 2.3, 3.1, 1.4, 4.5).finished();
+  Vector6 xi{0.1, 1.2, 2.3, 3.1, 1.4, 4.5};
 
   // Check evaluation sanity check
   EQUALITY(static_cast<gtsam::Vector>(T.AdjointMap() * xi), T.Adjoint(xi));
@@ -191,7 +191,7 @@ TEST(Pose3, Adjoint_jacobians)
 // Check AdjointTranspose and jacobians
 TEST(Pose3, AdjointTranspose)
 {
-  Vector6 xi = (Vector6() << 0.1, 1.2, 2.3, 3.1, 1.4, 4.5).finished();
+  Vector6 xi{0.1, 1.2, 2.3, 3.1, 1.4, 4.5};
 
   // Check evaluation
   EQUALITY(static_cast<Vector>(T.AdjointMap().transpose() * xi),
@@ -239,11 +239,10 @@ TEST(Pose3, HatAndVee) {
   EXPECT(assert_equal(v3, Pose3::Vee(Pose3::Hat(v3))));
 
   // Check the structure of the Lie Algebra element
-  Matrix4 expected;
-  expected << 0, -3, 2, 4,
-    3, 0, -1, 5,
-    -2, 1, 0, 6,
-    0, 0, 0, 0;
+  Matrix4 expected{{0, -3, 2, 4},  //
+                   {3, 0, -1, 5},
+                   {-2, 1, 0, 6},
+                   {0, 0, 0, 0}};
 
   EXPECT(assert_equal(expected, Pose3::Hat(v1)));
 }
@@ -284,13 +283,13 @@ Pose3 Agrawal06iros(const Vector& xi) {
 TEST(Pose3, expmaps_galore_full)
 {
   Vector xi; Pose3 actual;
-  xi = (Vector(6) << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6).finished();
+  xi = Vector{{0.1, 0.2, 0.3, 0.4, 0.5, 0.6}};
   actual = Pose3::Expmap(xi);
   EXPECT(assert_equal(expm<Pose3>(xi), actual,1e-6));
   EXPECT(assert_equal(Agrawal06iros(xi), actual,1e-6));
   EXPECT(assert_equal(xi, Pose3::Logmap(actual),1e-6));
 
-  xi = (Vector(6) << 0.1, -0.2, 0.3, -0.4, 0.5, -0.6).finished();
+  xi = Vector{{0.1, -0.2, 0.3, -0.4, 0.5, -0.6}};
   for (double theta=1.0;0.3*theta<=M_PI;theta*=2) {
     Vector txi = xi*theta;
     actual = Pose3::Expmap(txi);
@@ -302,7 +301,7 @@ TEST(Pose3, expmaps_galore_full)
   }
 
   // Works with large v as well, but expm needs 10 iterations!
-  xi = (Vector(6) << 0.2, 0.3, -0.8, 100.0, 120.0, -60.0).finished();
+  xi = Vector{{0.2, 0.3, -0.8, 100.0, 120.0, -60.0}};
   actual = Pose3::Expmap(xi);
   EXPECT(assert_equal(expm<Pose3>(xi,10), actual,1e-5));
   EXPECT(assert_equal(Agrawal06iros(xi), actual,1e-9));
@@ -337,7 +336,7 @@ TEST(Pose3, Adjoint_compose_full)
   // To debug derivatives of compose, assert that
   // T1*T2*exp(Adjoint(inv(T2),x) = T1*exp(x)*T2
   const Pose3& T1 = T;
-  Vector x = (Vector(6) << 0.1, 0.1, 0.1, 0.4, 0.2, 0.8).finished();
+  Vector x = Vector{{0.1, 0.1, 0.1, 0.4, 0.2, 0.8}};
   Pose3 expected = T1 * Pose3::Expmap(x) * T2;
   Vector y = T2.inverse().Adjoint(x);
   Pose3 actual = T1 * T2 * Pose3::Expmap(y);
@@ -605,8 +604,8 @@ TEST(Pose3, transform_roundtrip) {
 /* ************************************************************************* */
 TEST(Pose3, Retract_LocalCoordinates)
 {
-  Vector6 d;
-  d << 1,2,3,4,5,6; d/=10;
+  Vector6 d{1, 2, 3, 4, 5, 6};
+  d /= 10;
   const Rot3 R = Rot3::Retract(d.head<3>());
   Pose3 t = Pose3::Retract(d);
   EXPECT(assert_equal(d, Pose3::LocalCoordinates(t)));
@@ -614,8 +613,8 @@ TEST(Pose3, Retract_LocalCoordinates)
 /* ************************************************************************* */
 TEST(Pose3, retract_localCoordinates)
 {
-  Vector6 d12;
-  d12 << 1,2,3,4,5,6; d12/=10;
+  Vector6 d12{1, 2, 3, 4, 5, 6};
+  d12 /= 10;
   Pose3 t1 = T, t2 = t1.retract(d12);
   EXPECT(assert_equal(d12, t1.localCoordinates(t2)));
 }
@@ -660,7 +659,7 @@ TEST(Pose3, subgroups)
 {
   // Frank - Below only works for correct "Agrawal06iros style expmap
   // lines in canonical coordinates correspond to Abelian subgroups in SE(3)
-   Vector d = (Vector(6) << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6).finished();
+  Vector d{{0.1, 0.2, 0.3, 0.4, 0.5, 0.6}};
   // exp(-d)=inverse(exp(d))
    EXPECT(assert_equal(Pose3::Expmap(-d),Pose3::Expmap(d).inverse()));
   // exp(5d)=exp(2*d+3*d)=exp(2*d)exp(3*d)=exp(3*d)exp(2*d)
@@ -869,14 +868,10 @@ TEST(Pose3, ExpmapDerivative) {
   // Let's verify the above formula.
 
   auto xi = [](double t) {
-    Vector6 v;
-    v << 2 * t, sin(t), 4 * t * t, 2 * t, sin(t), 4 * t * t;
-    return v;
+    return Vector6{2 * t, sin(t), 4 * t * t, 2 * t, sin(t), 4 * t * t};
   };
   auto xi_dot = [](double t) {
-    Vector6 v;
-    v << 2, cos(t), 8 * t, 2, cos(t), 8 * t;
-    return v;
+    return Vector6{2, cos(t), 8 * t, 2, cos(t), 8 * t};
   };
 
   // We define a function T
@@ -959,18 +954,18 @@ TEST(Pose3, LogmapDerivatives) {
 //******************************************************************************
 TEST(Pose3, LogmapDerivative) {
   // Copied from testSO3.cpp
-  const Rot3 R2((Matrix3() <<            // Near pi
-    -0.750767, -0.0285082, -0.659952,
-    -0.0102558, -0.998445, 0.0547974,
-    -0.660487, 0.0479084, 0.749307).finished());
-  const Rot3 R3((Matrix3() <<            // Near pi
-    -0.747473, -0.00190019, -0.664289,
-    -0.0385114, -0.99819, 0.0461892,
-    -0.663175, 0.060108, 0.746047).finished());
-  const Rot3 R4((Matrix3() <<            // Final pose in a drone experiment
-    0.324237, 0.902975, 0.281968,
-    -0.674322, 0.429668, -0.600562,
-    -0.663445, 0.00458662, 0.748211).finished());
+  const Rot3 R2((Matrix3{// Near pi
+                         {-0.750767, -0.0285082, -0.659952},
+                         {-0.0102558, -0.998445, 0.0547974},
+                         {-0.660487, 0.0479084, 0.749307}}));
+  const Rot3 R3((Matrix3{// Near pi
+                         {-0.747473, -0.00190019, -0.664289},
+                         {-0.0385114, -0.99819, 0.0461892},
+                         {-0.663175, 0.060108, 0.746047}}));
+  const Rot3 R4((Matrix3{// Final pose in a drone experiment
+                         {0.324237, 0.902975, 0.281968},
+                         {-0.674322, 0.429668, -0.600562},
+                         {-0.663445, 0.00458662, 0.748211}}));
 
   // Now creates poses
   const Pose3 T0; // Identity
@@ -1015,7 +1010,7 @@ Vector6 testDerivAdjoint(const Vector6& xi, const Vector6& v) {
 }
 
 TEST( Pose3, adjoint) {
-  Vector6 v = (Vector6() << 1, 2, 3, 4, 5, 6).finished();
+  Vector6 v = Vector6{1, 2, 3, 4, 5, 6};
   Vector expected = testDerivAdjoint(screwPose3::xi, v);
 
   Matrix actualH1, actualH2;
@@ -1037,8 +1032,8 @@ Vector6 testDerivAdjointTranspose(const Vector6& xi, const Vector6& v) {
 }
 
 TEST( Pose3, adjointTranspose) {
-  Vector xi = (Vector(6) << 0.01, 0.02, 0.03, 1.0, 2.0, 3.0).finished();
-  Vector v = (Vector(6) << 0.04, 0.05, 0.06, 4.0, 5.0, 6.0).finished();
+  Vector xi = Vector{{0.01, 0.02, 0.03, 1.0, 2.0, 3.0}};
+  Vector v = Vector{{0.04, 0.05, 0.06, 4.0, 5.0, 6.0}};
   Vector expected = testDerivAdjointTranspose(xi, v);
 
   Matrix actualH1, actualH2;
@@ -1124,21 +1119,24 @@ TEST(Pose3, TransformCovariance6MapTo2d) {
 
   // rotate around x axis
   {
-    auto cov3 = FullCovarianceFromSigmas<Pose3>((Vector6{} << s2(2), 0., 0., 0., s2(0), s2(1)).finished());
+    auto cov3 = FullCovarianceFromSigmas<Pose3>(
+        Vector6{s2(2), 0., 0., 0., s2(0), s2(1)});
     auto transformed3 = TransformCovariance<Pose3>{{Rot3::RzRyRx(p2.theta(), 0., 0.), {0., p2.x(), p2.y()}}}(cov3);
     match_cov3_to_cov2(4, 5, 0, transformed2, transformed3);
   }
 
   // rotate around y axis
   {
-    auto cov3 = FullCovarianceFromSigmas<Pose3>((Vector6{} << 0., s2(2), 0., s2(1), 0., s2(0)).finished());
+    auto cov3 = FullCovarianceFromSigmas<Pose3>(
+        Vector6{0., s2(2), 0., s2(1), 0., s2(0)});
     auto transformed3 = TransformCovariance<Pose3>{{Rot3::RzRyRx(0., p2.theta(), 0.), {p2.y(), 0., p2.x()}}}(cov3);
     match_cov3_to_cov2(5, 3, 1, transformed2, transformed3);
   }
 
   // rotate around z axis
   {
-    auto cov3 = FullCovarianceFromSigmas<Pose3>((Vector6{} << 0., 0., s2(2), s2(0), s2(1), 0.).finished());
+    auto cov3 = FullCovarianceFromSigmas<Pose3>(
+        Vector6{0., 0., s2(2), s2(0), s2(1), 0.});
     auto transformed3 = TransformCovariance<Pose3>{{Rot3::RzRyRx(0., 0., p2.theta()), {p2.x(), p2.y(), 0.}}}(cov3);
     match_cov3_to_cov2(3, 4, 2, transformed2, transformed3);
   }
@@ -1152,17 +1150,18 @@ TEST(Pose3, TransformCovariance6) {
 
   // rotate 90 around z axis and then 90 around y axis
   {
-    auto cov = FullCovarianceFromSigmas<Pose3>((Vector6{} << 0.1, 0.2, 0.3, 0.5, 0.7, 1.1).finished());
+    auto cov =
+        FullCovarianceFromSigmas<Pose3>(Vector6{0.1, 0.2, 0.3, 0.5, 0.7, 1.1});
     auto transformed = TransformCovariance<Pose3>{{Rot3::RzRyRx(0., 90 * degree, 90 * degree), {0., 0., 0.}}}(cov);
     // x from y, y from z, z from x
-    EXPECT(assert_equal(
-      (Vector6{} << cov(1, 1), cov(2, 2), cov(0, 0), cov(4, 4), cov(5, 5), cov(3, 3)).finished(),
-      Vector6{transformed.diagonal()}));
+    EXPECT(assert_equal(Vector6{cov(1, 1), cov(2, 2), cov(0, 0), cov(4, 4),
+                                cov(5, 5), cov(3, 3)},
+                        Vector6{transformed.diagonal()}));
     // Both the x and z axes are pointing in the negative direction.
     EXPECT(assert_equal(
-      (Vector5{} << -cov(2, 1), cov(0, 1), cov(4, 1), -cov(5, 1), cov(3, 1)).finished(),
-      (Vector5{} << transformed(1, 0), transformed(2, 0), transformed(3, 0),
-        transformed(4, 0), transformed(5, 0)).finished()));
+        Vector5{-cov(2, 1), cov(0, 1), cov(4, 1), -cov(5, 1), cov(3, 1)},
+        Vector5{transformed(1, 0), transformed(2, 0), transformed(3, 0),
+                transformed(4, 0), transformed(5, 0)}));
   }
 
   // translate along the x axis with uncertainty in roty and rotz
@@ -1192,9 +1191,9 @@ TEST(Pose3, TransformCovariance6) {
     auto cov = SingleVariableCovarianceFromSigma<Pose3>(1, 0.1);
     auto transformed = TransformCovariance<Pose3>{{Rot3::RzRyRx(90 * degree, 0., 0.), {20., 0., 0.}}}(cov);
     // Uncertainty is spread to other dimensions.
-    EXPECT(assert_equal(
-      (Vector6{} << 0., 0., 0.1 * 0.1, 0., 0.1 * 0.1 * 20. * 20., 0.).finished(),
-      Vector6{transformed.diagonal()}));
+    EXPECT(
+        assert_equal(Vector6{0., 0., 0.1 * 0.1, 0., 0.1 * 0.1 * 20. * 20., 0.},
+                     Vector6{transformed.diagonal()}));
   }
 }
 
@@ -1430,13 +1429,12 @@ TEST(Pose3, Print) {
 /* ************************************************************************* */
 TEST(Pose3, ExpmapChainRule) {
   // Muliply with an arbitrary matrix and exponentiate
-  Matrix6 M;
-  M << 1, 2, 3, 4, 5, 6, //
-       7, 8, 9, 1, 2, 3, //
-       4, 5, 6, 7, 8, 9, //
-       1, 2, 3, 4, 5, 6, //
-       7, 8, 9, 1, 2, 3, //
-       4, 5, 6, 7, 8, 9;
+  Matrix6 M{{1, 2, 3, 4, 5, 6},  //
+            {7, 8, 9, 1, 2, 3},  //
+            {4, 5, 6, 7, 8, 9},  //
+            {1, 2, 3, 4, 5, 6},  //
+            {7, 8, 9, 1, 2, 3},  //
+            {4, 5, 6, 7, 8, 9}};
   auto g = [&](const Vector6& omega) {
     return Pose3::Expmap(M*omega);
   };

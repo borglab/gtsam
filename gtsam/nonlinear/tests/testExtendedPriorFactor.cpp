@@ -36,7 +36,7 @@ TEST(ExtendedPriorFactor, ConstructorWithMean) {
   Key key(1);
   Pose2 origin(1, 2, 0.3);
   auto model = noiseModel::Isotropic::Sigma(3, 0.5);
-  Vector mean = (Vector(3) << 0.1, 0.2, 0.3).finished();
+  Vector mean{{0.1, 0.2, 0.3}};
   ExtendedPriorFactor<Pose2> factor(key, origin, mean, model);
 }
 
@@ -48,8 +48,7 @@ TEST(ExtendedPriorFactor, Error) {
   ExtendedPriorFactor<Pose2> factor(key, origin, model);
 
   Pose2 x(1.1, 2.2, 0.3);
-  Vector expected_error =
-      (Vector(3) << 0.15463769, 0.161515277, 0.0).finished();
+  Vector expected_error{{0.15463769, 0.161515277, 0.0}};
   Vector actual_error = factor.evaluateError(x);
   EXPECT(assert_equal(expected_error, actual_error, 1e-8));
 }
@@ -59,12 +58,11 @@ TEST(ExtendedPriorFactor, ErrorWithMean) {
   Key key(1);
   Pose2 origin(1, 2, 0.3);
   auto model = noiseModel::Isotropic::Sigma(3, 0.5);
-  Vector mean = (Vector(3) << 0.1, 0.2, 0.05).finished();
+  Vector mean{{0.1, 0.2, 0.05}};
   ExtendedPriorFactor<Pose2> factor(key, origin, mean, model);
 
   Pose2 x(1.1, 2.2, 0.3);
-  Vector expected_error =
-      (Vector(3) << 0.05463769, -0.038484723, -0.05).finished();
+  Vector expected_error{{0.05463769, -0.038484723, -0.05}};
   Vector actual_error = factor.evaluateError(x);
   EXPECT(assert_equal(expected_error, actual_error, 1e-8));
 }
@@ -74,7 +72,7 @@ TEST(ExtendedPriorFactor, Likelihood) {
   Key key(1);
   Pose2 origin(1, 2, 0.3);
   auto model = noiseModel::Isotropic::Sigma(3, 1.0);
-  Vector mean = (Vector(3) << 0.1, 0.2, 0.05).finished();
+  Vector mean{{0.1, 0.2, 0.05}};
   ExtendedPriorFactor<Pose2> factor(key, origin, mean, model);
 
   Pose2 x = origin.retract(mean);

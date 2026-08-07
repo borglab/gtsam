@@ -109,7 +109,7 @@ enum class ConjugateGradientTerminationReason {
 };
 
 /** Diagnostics collected during a conjugate-gradient solve. */
-struct ConjugateGradientStats {
+struct GTSAM_EXPORT ConjugateGradientStats {
   size_t iterations = 0;  ///< Number of completed PCG updates.
   double initialPreconditionedResidualNorm =
       0.0;  ///< Norm of the initial split-preconditioned residual.

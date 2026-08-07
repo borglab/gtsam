@@ -145,8 +145,7 @@ Point3 Rot3::unrotate(const Point3& p, OptionalJacobian<3,3> H1,
   const Matrix3& Rt = transpose();
   Point3 q(Rt * p); // q = Rt*p
   const double wx = q.x(), wy = q.y(), wz = q.z();
-  if (H1)
-    *H1 << 0.0, -wz, +wy, +wz, 0.0, -wx, -wy, +wx, 0.0;
+  if (H1) *H1 = Matrix3{{0.0, -wz, +wy}, {+wz, 0.0, -wx}, {-wy, +wx, 0.0}};
   if (H2)
     *H2 = Rt;
   return q;

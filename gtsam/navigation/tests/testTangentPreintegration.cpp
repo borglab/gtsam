@@ -51,8 +51,7 @@ TEST(TangentPreintegration, UpdateEstimate1) {
 TEST(TangentPreintegration, UpdateEstimate2) {
   TangentPreintegration pim(testing::Params());
   const Vector3 acc(0.1, 0.2, 10), omega(0.1, 0.2, 0.3);
-  Vector9 zeta;
-  zeta << 0.01, 0.02, 0.03, 100, 200, 300, 10, 5, 3;
+  Vector9 zeta{0.01, 0.02, 0.03, 100, 200, 300, 10, 5, 3};
   Matrix9 aH1;
   Matrix93 aH2, aH3;
   pim.UpdatePreintegrated(acc, omega, kDt, zeta, aH1, aH2, aH3);

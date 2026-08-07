@@ -98,8 +98,7 @@ int main(int argc, char* argv[]) {
   graph.print("Factor Graph:\n", formatter);
 
   // Create a delta vector to perturb the ground truth (small perturbation)
-  Vector5 delta;
-  delta << 1, 1, 1, 1, 1;
+  Vector5 delta{1, 1, 1, 1, 1};
   delta *= 1e-2;
 
   // Create the initial estimate for essential matrices

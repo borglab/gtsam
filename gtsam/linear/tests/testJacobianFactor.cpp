@@ -150,17 +150,16 @@ TEST(JacobianFactor, constructors_and_accessors)
 
 /* ************************************************************************* */
 TEST(JabobianFactor, Hessian_conversion) {
-  HessianFactor hessian(0, (Matrix(4, 4) <<
-        1.57,        2.695,         -1.1,        -2.35,
-       2.695,      11.3125,        -0.65,      -10.225,
-        -1.1,        -0.65,            1,          0.5,
-       -2.35,      -10.225,          0.5,         9.25).finished(),
-      (Vector(4) << -7.885, -28.5175, 2.75, 25.675).finished(),
-      73.1725);
+  HessianFactor hessian(0,
+                        Matrix{{1.57, 2.695, -1.1, -2.35},
+                               {2.695, 11.3125, -0.65, -10.225},
+                               {-1.1, -0.65, 1, 0.5},
+                               {-2.35, -10.225, 0.5, 9.25}},
+                        Vector{{-7.885, -28.5175, 2.75, 25.675}}, 73.1725);
 
-  JacobianFactor expected(0, (Matrix(2, 4) <<
-      1.2530,   2.1508,   -0.8779,  -1.8755,
-           0,   2.5858,    0.4789,  -2.3943).finished(),
+  JacobianFactor expected(
+      0,
+      Matrix{{1.2530, 2.1508, -0.8779, -1.8755}, {0, 2.5858, 0.4789, -2.3943}},
       Vector2(-6.2929, -5.7941));
 
   EXPECT(assert_equal(expected, JacobianFactor(hessian), 1e-3));
@@ -168,21 +167,15 @@ TEST(JabobianFactor, Hessian_conversion) {
 
 /* ************************************************************************* */
 TEST(JabobianFactor, Hessian_conversion2) {
-  JacobianFactor jf(0, (Matrix(3, 3) <<
-      1, 2, 3,
-      0, 2, 3,
-      0, 0, 3).finished(),
-    Vector3(1, 2, 2));
+  JacobianFactor jf(0, Matrix{{1, 2, 3}, {0, 2, 3}, {0, 0, 3}},
+                    Vector3(1, 2, 2));
   HessianFactor hessian(jf);
   EXPECT(assert_equal(jf, JacobianFactor(hessian), 1e-9));
 }
 
 /* ************************************************************************* */
 TEST(JabobianFactor, Hessian_conversion3) {
-  JacobianFactor jf(0, (Matrix(2, 4) <<
-      1, 2, 3, 0,
-      0, 3, 2, 1).finished(),
-    Vector2(1, 2));
+  JacobianFactor jf(0, Matrix{{1, 2, 3, 0}, {0, 3, 2, 1}}, Vector2(1, 2));
   HessianFactor hessian(jf);
   EXPECT(assert_equal(jf, JacobianFactor(hessian), 1e-9));
 }
@@ -225,7 +218,7 @@ TEST( JacobianFactor, construct_from_graph)
   Matrix A2(6,2); A2 << Z_2x2, A22, A32;
   Matrix A3(6,2); A3 << Matrix::Zero(4,2), A33;
   Vector b(6); b << b1, b2, b3;
-  Vector sigmas(6); sigmas << sigma1, sigma1, sigma2, sigma2, sigma3, sigma3;
+  Vector sigmas{{sigma1, sigma1, sigma2, sigma2, sigma3, sigma3}};
   JacobianFactor expected(keyX, A1, keyY, A2, keyZ, A3, b, noiseModel::Diagonal::Sigmas(sigmas));
 
   // The ordering here specifies the order in which the variables will appear in the combined factor
@@ -348,11 +341,11 @@ TEST(JacobianFactor, error)
   values.insert(10, Vector::Constant(3, 0.5));
   values.insert(15, Vector::Constant(3, 1.0/3.0));
 
-  Vector expected_unwhitened(3); expected_unwhitened << 2.0, 1.0, 0.0;
+  Vector expected_unwhitened{{2.0, 1.0, 0.0}};
   Vector actual_unwhitened = factor.unweighted_error(values);
   EXPECT(assert_equal(expected_unwhitened, actual_unwhitened));
 
-  Vector expected_whitened(3); expected_whitened << 4.0, 2.0, 0.0;
+  Vector expected_whitened{{4.0, 2.0, 0.0}};
   Vector actual_whitened = factor.error_vector(values);
   EXPECT(assert_equal(expected_whitened, actual_whitened));
 
@@ -545,8 +538,8 @@ TEST(JacobianFactor, gradient)
 TEST(JacobianFactor, gradient_no_noise)
 {
   // Test gradient without noise model (unit covariance)
-  Matrix A1 = (Matrix(2, 2) << 1, 2, 3, 4).finished();
-  Matrix A2 = (Matrix(2, 2) << 5, 6, 7, 8).finished();
+  Matrix A1{{1, 2}, {3, 4}};
+  Matrix A2{{5, 6}, {7, 8}};
   Vector b = Vector2(1, 2);
   JacobianFactor lf(1, A1, 2, A2, b);
 
@@ -564,8 +557,8 @@ TEST(JacobianFactor, gradient_general_noise)
 {
   // Non-isotropic noise to verify whitening in gradient computation
   SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.5, 2.0));
-  Matrix A1 = (Matrix(2, 2) << 1, 2, 3, 4).finished();
-  Matrix A2 = (Matrix(2, 2) << 5, 6, 7, 8).finished();
+  Matrix A1{{1, 2}, {3, 4}};
+  Matrix A2{{5, 6}, {7, 8}};
   Vector b = Vector2(1, 2);
   JacobianFactor lf(1, A1, 2, A2, b, noise);
 
@@ -597,28 +590,28 @@ TEST(JacobianFactor, empty )
 /* ************************************************************************* */
 TEST(JacobianFactor, eliminate)
 {
-  Matrix A01 = (Matrix(3, 3) <<
-    1.0, 0.0, 0.0,
-    0.0, 1.0, 0.0,
-    0.0, 0.0, 1.0).finished();
+  Matrix A01{//
+             {1.0, 0.0, 0.0},
+             {0.0, 1.0, 0.0},
+             {0.0, 0.0, 1.0}};
   Vector3 b0(1.5, 1.5, 1.5);
   Vector3 s0(1.6, 1.6, 1.6);
 
-  Matrix A10 = (Matrix(3, 3) <<
-    2.0, 0.0, 0.0,
-    0.0, 2.0, 0.0,
-    0.0, 0.0, 2.0).finished();
-  Matrix A11 = (Matrix(3, 3) <<
-    -2.0, 0.0, 0.0,
-    0.0, -2.0, 0.0,
-    0.0, 0.0, -2.0).finished();
+  Matrix A10{//
+             {2.0, 0.0, 0.0},
+             {0.0, 2.0, 0.0},
+             {0.0, 0.0, 2.0}};
+  Matrix A11{//
+             {-2.0, 0.0, 0.0},
+             {0.0, -2.0, 0.0},
+             {0.0, 0.0, -2.0}};
   Vector3 b1(2.5, 2.5, 2.5);
   Vector3 s1(2.6, 2.6, 2.6);
 
-  Matrix A21 = (Matrix(3, 3) <<
-    3.0, 0.0, 0.0,
-    0.0, 3.0, 0.0,
-    0.0, 0.0, 3.0).finished();
+  Matrix A21{//
+             {3.0, 0.0, 0.0},
+             {0.0, 3.0, 0.0},
+             {0.0, 0.0, 3.0}};
   Vector3 b2(3.5, 3.5, 3.5);
   Vector3 s2(3.6, 3.6, 3.6);
 
@@ -652,24 +645,22 @@ TEST(JacobianFactor, eliminate2 )
   // sigmas
   double sigma1 = 0.2;
   double sigma2 = 0.1;
-  Vector sigmas = (Vector(4) << sigma1, sigma1, sigma2, sigma2).finished();
+  Vector sigmas{{sigma1, sigma1, sigma2, sigma2}};
 
   // the combined linear factor
-  Matrix Ax2 = (Matrix(4, 2) <<
-    // x2
-    -1., 0.,
-    +0.,-1.,
-    1., 0.,
-    +0.,1.
-    ).finished();
+  Matrix Ax2{// x2
+             {-1., 0.},
+             {+0., -1.},
+             {1., 0.},
+             {+0., 1.}};
 
-  Matrix Al1x1 = (Matrix(4, 4) <<
-    // l1   x1
-    1., 0., 0.00,  0., // f4
-    0., 1., 0.00,  0., // f4
-    0., 0., -1.,  0., // f2
-    0., 0., 0.00,-1.  // f2
-    ).finished();
+  // clang-format off
+  Matrix Al1x1{//  l1   x1
+               {1., 0., 0.00, 0.},    // f4
+               {0., 1., 0.00, 0.},    // f4
+               {0., 0., -1., 0.},     // f2
+               {0., 0., 0.00, -1.}};  // f2
+  // clang-format on
 
   // the RHS
   Vector b2(4);
@@ -689,14 +680,16 @@ TEST(JacobianFactor, eliminate2 )
 
   // create expected Conditional Gaussian
   double oldSigma = 0.0894427; // from when R was made unit
-  Matrix R11 = (Matrix(2, 2) <<
-    1.00,  0.00,
-    0.00,  1.00
-    ).finished()/oldSigma;
-  Matrix S12 = (Matrix(2, 4) <<
-    -0.20, 0.00,-0.80, 0.00,
-    +0.00,-0.20,+0.00,-0.80
-    ).finished()/oldSigma;
+  Matrix R11 =
+      Matrix{//
+             {1.00, 0.00},
+             {0.00, 1.00}} /
+      oldSigma;
+  Matrix S12 =
+      Matrix{//
+             {-0.20, 0.00, -0.80, 0.00},
+             {+0.00, -0.20, +0.00, -0.80}} /
+      oldSigma;
   Vector d = Vector2(0.2,-0.14)/oldSigma;
   GaussianConditional expectedCG(2, d, R11, 11, S12, noiseModel::Unit::Create(2));
 
@@ -704,11 +697,11 @@ TEST(JacobianFactor, eliminate2 )
 
   // the expected linear factor
   double sigma = 0.2236;
-  Matrix Bl1x1 = (Matrix(2, 4) <<
-    // l1          x1
-    1.00, 0.00, -1.00,  0.00,
-    0.00, 1.00, +0.00, -1.00
-    ).finished()/sigma;
+  Matrix Bl1x1 =
+      Matrix{// l1          x1
+             {1.00, 0.00, -1.00, 0.00},
+             {0.00, 1.00, +0.00, -1.00}} /
+      sigma;
   Vector b1 = Vector2(0.0, 0.894427);
   JacobianFactor expectedLF(11, Bl1x1, b1, noiseModel::Unit::Create(2));
   EXPECT(assert_equal(expectedLF, *actual.second,1e-3));
@@ -718,21 +711,21 @@ TEST(JacobianFactor, eliminate2 )
 TEST(JacobianFactor, EliminateQR)
 {
   // Augmented Ab test case for whole factor graph
-  Matrix Ab = (Matrix(14, 11) <<
-    4.,     0.,     1.,     4.,     1.,     0.,     3.,     6.,     8.,     8.,     1.,
-    9.,     2.,     0.,     1.,     6.,     3.,     9.,     6.,     6.,     9.,     4.,
-    5.,     3.,     7.,     9.,     5.,     5.,     9.,     1.,     3.,     7.,     0.,
-    5.,     6.,     5.,     7.,     9.,     4.,     0.,     1.,     1.,     3.,     5.,
-    0.,     0.,     4.,     5.,     6.,     6.,     7.,     9.,     4.,     5.,     4.,
-    0.,     0.,     9.,     4.,     8.,     6.,     2.,     1.,     4.,     1.,     6.,
-    0.,     0.,     6.,     0.,     4.,     2.,     4.,     0.,     1.,     9.,     6.,
-    0.,     0.,     6.,     6.,     4.,     4.,     5.,     5.,     5.,     8.,     6.,
-    0.,     0.,     0.,     0.,     8.,     0.,     9.,     8.,     2.,     8.,     0.,
-    0.,     0.,     0.,     0.,     0.,     9.,     4.,     6.,     3.,     2.,     0.,
-    0.,     0.,     0.,     0.,     1.,     1.,     9.,     1.,     5.,     5.,     3.,
-    0.,     0.,     0.,     0.,     1.,     1.,     3.,     3.,     2.,     0.,     5.,
-    0.,     0.,     0.,     0.,     0.,     0.,     0.,     0.,     2.,     4.,     6.,
-    0.,     0.,     0.,     0.,     0.,     0.,     0.,     0.,     6.,     3.,     4.).finished();
+  Eigen::Matrix<double, 14, 11> Ab{
+      {4., 0., 1., 4., 1., 0., 3., 6., 8., 8., 1.},
+      {9., 2., 0., 1., 6., 3., 9., 6., 6., 9., 4.},
+      {5., 3., 7., 9., 5., 5., 9., 1., 3., 7., 0.},
+      {5., 6., 5., 7., 9., 4., 0., 1., 1., 3., 5.},
+      {0., 0., 4., 5., 6., 6., 7., 9., 4., 5., 4.},
+      {0., 0., 9., 4., 8., 6., 2., 1., 4., 1., 6.},
+      {0., 0., 6., 0., 4., 2., 4., 0., 1., 9., 6.},
+      {0., 0., 6., 6., 4., 4., 5., 5., 5., 8., 6.},
+      {0., 0., 0., 0., 8., 0., 9., 8., 2., 8., 0.},
+      {0., 0., 0., 0., 0., 9., 4., 6., 3., 2., 0.},
+      {0., 0., 0., 0., 1., 1., 9., 1., 5., 5., 3.},
+      {0., 0., 0., 0., 1., 1., 3., 3., 2., 0., 5.},
+      {0., 0., 0., 0., 0., 0., 0., 0., 2., 4., 6.},
+      {0., 0., 0., 0., 0., 0., 0., 0., 6., 3., 4.}};
 
   // Create factor graph
   const SharedDiagonal sig_4D = noiseModel::Isotropic::Sigma(4, 0.5);
@@ -748,17 +741,19 @@ TEST(JacobianFactor, EliminateQR)
   EXPECT(assert_equal(2.0 * Ab, actualDense));
 
   // Expected augmented matrix, both GaussianConditional (first 6 rows) and remaining factor (next 4 rows)
-  Matrix R = 2.0 * (Matrix(10, 11) <<
-    -12.1244,  -5.1962,  -5.2786,  -8.6603, -10.5573,  -5.9385, -11.3820,  -7.2581,  -8.7427, -13.4440,  -5.3611,
-    0.,   4.6904,   5.0254,   5.5432,   5.5737,   3.0153,  -3.0153,  -3.5635,  -3.9290,  -2.7412,   2.1625,
-    0.,       0., -13.8160,  -8.7166, -10.2245,  -8.8666,  -8.7632,  -5.2544,  -6.9192, -10.5537,  -9.3250,
-    0.,       0.,       0.,   6.5033,  -1.1453,   1.3179,   2.5768,   5.5503,   3.6524,   1.3491,  -2.5676,
-    0.,       0.,       0.,       0.,  -9.6242,  -2.1148,  -9.3509, -10.5846,  -3.5366,  -6.8561,  -3.2277,
-    0.,       0.,       0.,       0.,       0.,   9.7887,   4.3551,   5.7572,   2.7876,   0.1611,   1.1769,
-    0.,       0.,       0.,       0.,       0.,       0., -11.1139,  -0.6521,  -2.1943,  -7.5529,  -0.9081,
-    0.,       0.,       0.,       0.,       0.,       0.,       0.,  -4.6479,  -1.9367,  -6.5170,  -3.7685,
-    0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,   8.2503,   3.3757,   6.8476,
-    0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,  -5.7095,  -0.0090).finished();
+  // clang-format off
+  Eigen::Matrix<double, 10, 11> R = 2.0 * Eigen::Matrix<double, 10, 11>{
+    {-12.1244,  -5.1962,  -5.2786,  -8.6603, -10.5573,  -5.9385, -11.3820,  -7.2581,  -8.7427, -13.4440,  -5.3611},
+    {0.,   4.6904,   5.0254,   5.5432,   5.5737,   3.0153,  -3.0153,  -3.5635,  -3.9290,  -2.7412,   2.1625},
+    {0.,       0., -13.8160,  -8.7166, -10.2245,  -8.8666,  -8.7632,  -5.2544,  -6.9192, -10.5537,  -9.3250},
+    {0.,       0.,       0.,   6.5033,  -1.1453,   1.3179,   2.5768,   5.5503,   3.6524,   1.3491,  -2.5676},
+    {0.,       0.,       0.,       0.,  -9.6242,  -2.1148,  -9.3509, -10.5846,  -3.5366,  -6.8561,  -3.2277},
+    {0.,       0.,       0.,       0.,       0.,   9.7887,   4.3551,   5.7572,   2.7876,   0.1611,   1.1769},
+    {0.,       0.,       0.,       0.,       0.,       0., -11.1139,  -0.6521,  -2.1943,  -7.5529,  -0.9081},
+    {0.,       0.,       0.,       0.,       0.,       0.,       0.,  -4.6479,  -1.9367,  -6.5170,  -3.7685},
+    {0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,   8.2503,   3.3757,   6.8476},
+    {0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,  -5.7095,  -0.0090}};
+  // clang-format on
 
   GaussianConditional expectedFragment(KeyVector{3,5,7,9,11}, 3,
                                        VerticalBlockMatrix(Dims{2, 2, 2, 2, 2, 1}, R.topRows(6)),
@@ -806,10 +801,10 @@ TEST ( JacobianFactor, constraint_eliminate2 )
   Vector b(2); b(0)=3.0; b(1)=4.0;
 
   // A1 - invertible
-  Matrix2 A1;  A1 << 2,4, 2,1;
+  Matrix2 A1{{2, 4}, {2, 1}};
 
   // A2 - not invertible
-  Matrix2 A2;  A2 << 2,4, 2,4;
+  Matrix2 A2{{2, 4}, {2, 4}};
 
   JacobianFactor lc(1, A1, 2, A2, b, noiseModel::Constrained::All(2));
 
@@ -826,8 +821,8 @@ TEST ( JacobianFactor, constraint_eliminate2 )
   EXPECT(assert_equal(expectedLF, *actual.second));
 
   // verify CG
-  Matrix2 R; R << 1,2, 0,1;
-  Matrix2 S; S << 1,2, 0,0;
+  Matrix2 R{{1, 2}, {0, 1}};
+  Matrix2 S{{1, 2}, {0, 0}};
   Vector d = Vector2(3.0, 0.6666);
   Vector sigmas = Vector2(0.0, 0.0);
   GaussianConditional expectedCG(1, d, R, 2, S, noiseModel::Diagonal::Sigmas(sigmas));
@@ -848,10 +843,9 @@ TEST(JacobianFactor, OverdeterminedEliminate) {
   JacobianFactor factor(0, Ab.leftCols(3), Ab.col(3), diagonal);
   GaussianFactorGraph::EliminationResult actual = factor.eliminate(Ordering{0});
 
-  Matrix expectedRd(3, 4);
-  expectedRd << -2.64575131, -2.64575131, -2.64575131, -2.64575131,  //
-      0.0, -1, 0, 0,                                                 //
-      0.0, 0.0, -1, 0;
+  Matrix34 expectedRd{{-2.64575131, -2.64575131, -2.64575131, -2.64575131},
+                      {0.0, -1, 0, 0},
+                      {0.0, 0.0, -1, 0}};
   GaussianConditional expectedConditional(0, expectedRd.col(3), expectedRd.leftCols(3),
                                           noiseModel::Unit::Create(3));
   EXPECT(assert_equal(expectedConditional, *actual.first, 1e-4));
@@ -864,8 +858,8 @@ TEST(JacobianFactor, updateHessianWithColumnRangeOnlyUpdatesSpecifiedBlocks) {
 
   // Create a simple 2x2 JacobianFactor on keys 0 and 1
   // A0 is 2x2 matrix for key 0, A1 is 2x2 matrix for key 1, b is 2x1 vector
-  Matrix A0 = (Matrix(2, 2) << 1, 2, 3, 4).finished();
-  Matrix A1 = (Matrix(2, 2) << 5, 6, 7, 8).finished();
+  Matrix A0{{1, 2}, {3, 4}};
+  Matrix A1{{5, 6}, {7, 8}};
   Vector b = Vector2(1, 2);
 
   JacobianFactor factor(0, A0, 1, A1, b);

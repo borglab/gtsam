@@ -56,7 +56,7 @@ struct GTSAM_EXPORT PCGSolverParameters : public ConjugateGradientParameters {
 };
 
 /** Solution, convergence diagnostics, and phase timings from PCGSolver. */
-struct PCGSolverResult {
+struct GTSAM_EXPORT PCGSolverResult {
   VectorValues solution;         ///< Final solution in keyed form.
   ConjugateGradientStats stats;  ///< Convergence diagnostics for the PCG loop.
   double operatorSetupSeconds =
