@@ -107,13 +107,20 @@ TEST(ShonanAveraging3, checkSubgraph) {
   // which can build a connected graph
   auto subgraphShonan = fromExampleName("toyExample.g2o", params);
 
-  // Create initial random estimation
-  Values initial;
-  initial = subgraphShonan.initializeRandomly(kPRNG);
-
-  // Run Shonan with SUBGRAPH solver
-  auto result = subgraphShonan.run(initial, 3, 3);
+  // Run Shonan with FAST-Sync initialization and the SUBGRAPH solver.
+  auto result = subgraphShonan.run(3, 3);
   EXPECT_DOUBLES_EQUAL(1e-11, subgraphShonan.cost(result.first), 1e-4);
+}
+
+/* ************************************************************************* */
+// Verifies direct LM reuses the FAST-Sync ordering at the initial rank.
+TEST(ShonanAveraging3, DefaultInitializationCholesky) {
+  const auto params = ShonanAveragingParameters3(
+      LevenbergMarquardtParams::CeresDefaults(), "CHOLESKY");
+  const auto shonan = fromExampleName("toyExample.g2o", params);
+
+  const auto result = shonan.run(3, 3);
+  EXPECT_DOUBLES_EQUAL(0.0, shonan.cost(result.first), 1e-4);
 }
 
 /* ************************************************************************* */
@@ -242,8 +249,7 @@ TEST(ShonanAveraging3, initializeWithDescent) {
 
 /* ************************************************************************* */
 TEST(ShonanAveraging3, run) {
-  auto initial = kShonan.initializeRandomly(kPRNG); 
-  auto result = kShonan.run(initial, 5);
+  auto result = kShonan.run(5);
   EXPECT_DOUBLES_EQUAL(0, kShonan.cost(result.first), 1e-3);
   EXPECT_DOUBLES_EQUAL(-5.427688831332745e-07, result.second,
                        1e-4); // Regression test
@@ -355,8 +361,7 @@ TEST(ShonanAveraging2, noisyToyGraph) {
   // Check graph building
   NonlinearFactorGraph graph = shonan.buildGraphAt(2);
   EXPECT_LONGS_EQUAL(6, graph.size());
-  auto initial = shonan.initializeRandomly(kPRNG); 
-  auto result = shonan.run(initial, 2);
+  auto result = shonan.run(2);
   EXPECT_DOUBLES_EQUAL(0.0008211, shonan.cost(result.first), 1e-6);
   EXPECT_DOUBLES_EQUAL(0, result.second, 1e-10); // certificate!
 }
@@ -393,8 +398,7 @@ TEST(ShonanAveraging2, noisyToyGraphWithHuber) {
   }
 
   // test result
-  auto initial = shonan.initializeRandomly(kPRNG);
-  auto result = shonan.run(initial, 2,2);
+  auto result = shonan.run(2, 2);
   EXPECT_DOUBLES_EQUAL(0.0008211, shonan.cost(result.first), 1e-6);
   EXPECT_DOUBLES_EQUAL(0, result.second, 1e-10); // certificate!
 }
@@ -427,7 +431,7 @@ TEST(ShonanAveraging3, PriorWeights) {
   auto I = genericValue(Rot3());
   Values initial{{0, I}, {1, I}, {2, I}};
   EXPECT_DOUBLES_EQUAL(3.0756, shonan.cost(initial), 1e-4);
-  auto result = shonan.run(initial, 3, 3);
+  auto result = shonan.run(3, 3);
   EXPECT_DOUBLES_EQUAL(0.0015, shonan.cost(result.first), 1e-4);
 }
 
@@ -439,8 +443,7 @@ TEST(ShonanAveraging3, BinaryMeasurements) {
   measurements.emplace_back(0, 1, Rot3::Yaw(M_PI_2), unit3);
   measurements.emplace_back(1, 2, Rot3::Yaw(M_PI_2), unit3);
   ShonanAveraging3 shonan(measurements);
-  Values initial = shonan.initializeRandomly();
-  auto result = shonan.run(initial, 3, 5);
+  auto result = shonan.run(3, 5);
   EXPECT_DOUBLES_EQUAL(0.0, shonan.cost(result.first), 1e-4);
 }
 

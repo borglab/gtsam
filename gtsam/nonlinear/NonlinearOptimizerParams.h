@@ -143,6 +143,13 @@ public:
     return (linearSolverType == Iterative);
   }
 
+  /// Return whether this solver needs a variable-elimination ordering.
+  bool requiresOrdering() const {
+    if (!isIterative()) return true;
+    return std::dynamic_pointer_cast<SubgraphSolverParameters>(
+               iterativeParams) != nullptr;
+  }
+
   GaussianFactorGraph::Eliminate getEliminationFunction() const {
     switch (linearSolverType) {
     case MULTIFRONTAL_SOLVER:
