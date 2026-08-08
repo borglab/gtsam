@@ -129,7 +129,7 @@ TEST(FastSync, DenseQrAgreement) {
       7, 9, Rot2::fromAngle(-0.2), noiseModel::Isotropic::Sigma(1, 1.2));
   graph.emplace_shared<BetweenFactor<Rot2>>(
       9, 2, Rot2::fromAngle(-0.1), noiseModel::Isotropic::Sigma(1, 0.9));
-  const FastSyncSolver<Rot2> solver(graph);
+  const FastSync<Rot2> solver(graph);
   const auto actual = solver.solve();
   // Local measurement record for the independent dense QR reference.
   struct M {
@@ -201,7 +201,7 @@ TEST(FastSync, PythonReferenceGoldenRot2) {
       1, 2, Rot2::fromAngle(-0.35), noiseModel::Isotropic::Sigma(1, 0.5));
   graph.emplace_shared<BetweenFactor<Rot2>>(
       2, 0, Rot2::fromAngle(0.1), noiseModel::Isotropic::Sigma(1, 2.0));
-  const auto actual = FastSyncSolver<Rot2>(graph).solve();
+  const auto actual = FastSync<Rot2>(graph).solve();
 
   const Rot2 rounded0 = Rot2::ClosestTo(actual.at<Matrix2>(0));
   const Rot2 rounded1 = Rot2::ClosestTo(actual.at<Matrix2>(1));
@@ -272,7 +272,7 @@ TEST(FastSync, InvalidGraphStructure) {
   const auto model = noiseModel::Unit::Create(1);
   disconnected.emplace_shared<BetweenFactor<Rot2>>(0, 1, Rot2(), model);
   disconnected.emplace_shared<BetweenFactor<Rot2>>(2, 3, Rot2(), model);
-  const FastSyncSolver<Rot2> solver(disconnected);
+  const FastSync<Rot2> solver(disconnected);
   try {
     solver.solve();
     CHECK(false);

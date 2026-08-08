@@ -26,6 +26,7 @@
 #include <gtsam/geometry/SL4.h>
 #include <gtsam/geometry/Similarity2.h>
 #include <gtsam/geometry/Similarity3.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>
@@ -39,6 +40,8 @@
 #include <vector>
 
 namespace gtsam {
+
+class GaussianConditional;
 
 /**
  * Projection customization point used by fastSync().
@@ -180,6 +183,66 @@ struct FastSyncProjection<SL4> {
     }
     return SL4(matrix);
   }
+};
+
+/**
+ * Solver for the fixed-size ambient linear problem underlying FAST-Sync.
+ *
+ * The constructor extracts matching between factors and builds the reduced
+ * Gaussian graph. `solve()` performs the METIS-gauged QR solve and returns
+ * ambient matrix estimates; `projectAndAlign()` rounds those estimates to T
+ * and applies an optional matching prior.
+ */
+template <class T>
+struct FastSync {
+  using LieAlgebra = typename T::LieAlgebra;
+  static constexpr int N = LieAlgebra::RowsAtCompileTime;
+  static_assert(N != Eigen::Dynamic && N > 0,
+                "FastSync requires a positive compile-time matrix dimension");
+  static_assert(LieAlgebra::ColsAtCompileTime == N,
+                "FastSync requires a square matrix representation");
+
+  using MatrixN = Eigen::Matrix<double, N, N>;
+  using VectorN = Eigen::Matrix<double, N, 1>;
+
+  /**
+   * Extract matching factors, validate their noise models, and build the
+   * reduced Gaussian graph. Factors for other types are ignored.
+   */
+  explicit FastSync(const NonlinearFactorGraph& graph);
+
+  /**
+   * Solve the relaxed ambient matrix problem and return one matrix per key.
+   *
+   * METIS selects the final ordering key as the identity gauge. QR
+   * elimination and reverse block back-substitution then recover all ambient
+   * N-by-N estimates. Projection to T is intentionally deferred to
+   * `projectAndAlign()`.
+   */
+  Values solve() const;
+
+  /**
+   * Project relaxed matrices to T and align them to the optional matching
+   * prior stored by the constructor.
+   *
+   * The alignment is a single common left transformation, so all relative
+   * estimates are preserved. The input must be the complete result of
+   * `solve()`.
+   */
+  Values projectAndAlign(const Values& relaxed) const;
+
+ private:
+  size_t priorCount_ = 0;
+  Key priorKey_ = 0;
+  T priorValue_ = traits<T>::Identity();
+  GaussianFactorGraph reducedGraph_;
+
+  /// Extract the isotropic sigma from a noise model, or throw if not isotropic.
+  static double isotropicSigma(const SharedNoiseModel& model);
+
+  /// Back-substitute one conditional, skipping the identity gauge variable.
+  static void backSubstituteConditional(const GaussianConditional& conditional,
+                                        const Key& gaugeKey, Values& solution);
 };
 
 /**
