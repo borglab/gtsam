@@ -55,6 +55,10 @@ using std::size_t;
 using std::string;
 using std::vector;
 
+const string kChordal = "Chordal";
+const string kFastMetis = "FAST-Sync/METIS";
+const string kFastColamd = "FAST-Sync/COLAMD";
+
 struct Options {
   string dataset = "pose3example-grid.txt";
   string optimizerMethod = "JACOBI";
@@ -229,11 +233,15 @@ TrialResult runTrial(const string& initializer, size_t runIndex,
 
   Values initial;
   result.initializationSeconds = gtsam::timing::measureSeconds([&] {
-    if (initializer == "Chordal") {
+    if (initializer == kChordal) {
       initial =
           gtsam::InitializePose3::initializeOrientations(context.chordalGraph);
+    } else if (initializer == kFastMetis) {
+      initial =
+          gtsam::fastSync<Rot3>(context.fastSyncGraph, gtsam::Ordering::METIS);
     } else {
-      initial = gtsam::fastSync<Rot3>(context.fastSyncGraph);
+      initial =
+          gtsam::fastSync<Rot3>(context.fastSyncGraph, gtsam::Ordering::COLAMD);
     }
   });
   result.initialCost = context.shonan->cost(initial);
@@ -248,12 +256,14 @@ TrialResult runTrial(const string& initializer, size_t runIndex,
   return result;
 }
 
-void runPair(size_t runIndex, bool fastSyncFirst, const Options& options,
-             const BenchmarkContext& context, vector<TrialResult>* results) {
-  const string first = fastSyncFirst ? "FAST-Sync" : "Chordal";
-  const string second = fastSyncFirst ? "Chordal" : "FAST-Sync";
-  results->push_back(runTrial(first, runIndex, options, context));
-  results->push_back(runTrial(second, runIndex, options, context));
+void runMethods(size_t runIndex, const Options& options,
+                const BenchmarkContext& context, vector<TrialResult>* results) {
+  const vector<string> initializers{kChordal, kFastMetis, kFastColamd};
+  for (size_t offset = 0; offset < initializers.size(); ++offset) {
+    const string& initializer =
+        initializers[(runIndex + offset) % initializers.size()];
+    results->push_back(runTrial(initializer, runIndex, options, context));
+  }
 }
 
 MethodSummary summarizeMethod(const vector<TrialResult>& results,
@@ -293,7 +303,8 @@ void writeCsv(const vector<TrialResult>& results, const string& path) {
 }
 
 void writeBenchmarkActionJson(const MethodSummary& chordal,
-                              const MethodSummary& fastSync,
+                              const MethodSummary& fastMetis,
+                              const MethodSummary& fastColamd,
                               const string& dataset, const string& path) {
   const string prefix = "timeShonanInitialization/" +
                         std::filesystem::path(dataset).filename().string() +
@@ -302,15 +313,21 @@ void writeBenchmarkActionJson(const MethodSummary& chordal,
       {prefix + "Chordal/initialization", "s", chordal.initialization.mean},
       {prefix + "Chordal/solve", "s", chordal.solve.mean},
       {prefix + "Chordal/total", "s", chordal.total.mean},
-      {prefix + "FAST-Sync/initialization", "s", fastSync.initialization.mean},
-      {prefix + "FAST-Sync/solve", "s", fastSync.solve.mean},
-      {prefix + "FAST-Sync/total", "s", fastSync.total.mean},
+      {prefix + "FAST-Sync/METIS/initialization", "s",
+       fastMetis.initialization.mean},
+      {prefix + "FAST-Sync/METIS/solve", "s", fastMetis.solve.mean},
+      {prefix + "FAST-Sync/METIS/total", "s", fastMetis.total.mean},
+      {prefix + "FAST-Sync/COLAMD/initialization", "s",
+       fastColamd.initialization.mean},
+      {prefix + "FAST-Sync/COLAMD/solve", "s", fastColamd.solve.mean},
+      {prefix + "FAST-Sync/COLAMD/total", "s", fastColamd.total.mean},
   };
   gtsam::timing::writeBenchmarkActionMetrics(path, metrics);
 }
 
 void printSummary(const Options& options, const BenchmarkContext& context,
-                  const MethodSummary& chordal, const MethodSummary& fastSync) {
+                  const MethodSummary& chordal, const MethodSummary& fastMetis,
+                  const MethodSummary& fastColamd) {
   std::cout << "Shonan initialization benchmark\n";
   std::cout << "dataset=" << context.datasetPath
             << " rotations=" << context.shonan->nrUnknowns()
@@ -326,10 +343,10 @@ void printSummary(const Options& options, const BenchmarkContext& context,
   std::cout << '\n';
 
   std::cout << std::fixed << std::setprecision(6);
-  std::cout << "initializer  init_mean_s  init_median_s  solve_mean_s  "
+  std::cout << "initializer        init_mean_s  init_median_s  solve_mean_s  "
                "solve_median_s  total_mean_s  initial_cost  final_cost\n";
   const auto printRow = [](const string& name, const MethodSummary& summary) {
-    std::cout << std::left << std::setw(12) << name << std::right
+    std::cout << std::left << std::setw(18) << name << std::right
               << std::setw(13) << summary.initialization.mean << std::setw(15)
               << summary.initialization.median << std::setw(14)
               << summary.solve.mean << std::setw(16) << summary.solve.median
@@ -337,12 +354,19 @@ void printSummary(const Options& options, const BenchmarkContext& context,
               << summary.initialCost.mean << std::setw(12)
               << summary.finalCost.mean << '\n';
   };
-  printRow("Chordal", chordal);
-  printRow("FAST-Sync", fastSync);
-  std::cout << "speedup_chordal_over_fastsync init="
-            << chordal.initialization.mean / fastSync.initialization.mean
-            << " solve=" << chordal.solve.mean / fastSync.solve.mean
-            << " total=" << chordal.total.mean / fastSync.total.mean << '\n';
+  printRow(kChordal, chordal);
+  printRow(kFastMetis, fastMetis);
+  printRow(kFastColamd, fastColamd);
+  const auto printSpeedup = [&](const string& name,
+                                const MethodSummary& fastSummary) {
+    std::cout << "speedup_chordal_over_" << name << " init="
+              << chordal.initialization.mean / fastSummary.initialization.mean
+              << " solve=" << chordal.solve.mean / fastSummary.solve.mean
+              << " total=" << chordal.total.mean / fastSummary.total.mean
+              << '\n';
+  };
+  printSpeedup("fast_metis", fastMetis);
+  printSpeedup("fast_colamd", fastColamd);
 }
 
 }  // namespace
@@ -357,22 +381,24 @@ int main(int argc, char** argv) {
   const BenchmarkContext context = buildContext(options);
   vector<TrialResult> discardedWarmups;
   for (size_t runIndex = 0; runIndex < options.warmups; ++runIndex) {
-    runPair(runIndex, runIndex % 2 == 1, options, context, &discardedWarmups);
+    runMethods(runIndex, options, context, &discardedWarmups);
   }
 
   vector<TrialResult> results;
-  results.reserve(2 * options.repetitions);
+  results.reserve(3 * options.repetitions);
   for (size_t runIndex = 0; runIndex < options.repetitions; ++runIndex) {
-    runPair(runIndex, runIndex % 2 == 1, options, context, &results);
+    runMethods(runIndex, options, context, &results);
   }
 
-  const MethodSummary chordal = summarizeMethod(results, "Chordal");
-  const MethodSummary fastSync = summarizeMethod(results, "FAST-Sync");
+  const MethodSummary chordal = summarizeMethod(results, kChordal);
+  const MethodSummary fastMetis = summarizeMethod(results, kFastMetis);
+  const MethodSummary fastColamd = summarizeMethod(results, kFastColamd);
   if (options.csvPath) writeCsv(results, *options.csvPath);
   if (options.benchmarkActionJsonPath) {
-    writeBenchmarkActionJson(chordal, fastSync, context.datasetPath,
+    writeBenchmarkActionJson(chordal, fastMetis, fastColamd,
+                             context.datasetPath,
                              *options.benchmarkActionJsonPath);
   }
-  printSummary(options, context, chordal, fastSync);
+  printSummary(options, context, chordal, fastMetis, fastColamd);
   return 0;
 }

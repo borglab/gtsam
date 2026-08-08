@@ -189,9 +189,9 @@ struct FastSyncProjection<SL4> {
  * Solver for the fixed-size ambient linear problem underlying FAST-Sync.
  *
  * The constructor extracts matching between factors and builds the reduced
- * Gaussian graph. `solve()` performs the METIS-gauged Cholesky solve and
- * returns ambient matrix estimates; `projectAndAlign()` rounds those estimates
- * to T and applies an optional matching prior.
+ * Gaussian graph. `solve()` performs the ordered Cholesky solve and returns
+ * ambient matrix estimates; `projectAndAlign()` rounds those estimates to T
+ * and applies an optional matching prior.
  */
 template <class T>
 struct FastSync {
@@ -214,12 +214,24 @@ struct FastSync {
   /**
    * Solve the relaxed ambient matrix problem and return one matrix per key.
    *
-   * METIS selects the final ordering key as the identity gauge. Cholesky
+   * The selected ordering's final key is used as the identity gauge. Cholesky
    * elimination and reverse block back-substitution then recover all ambient
    * N-by-N estimates. Projection to T is intentionally deferred to
    * `projectAndAlign()`.
+   *
+   * @param orderingType Fill-reducing ordering, defaulting to METIS.
    */
-  Values solve() const;
+  Values solve(Ordering::OrderingType orderingType = Ordering::METIS) const;
+
+  /**
+   * Solve using a caller-supplied complete ordering.
+   *
+   * The ordering must contain every measurement-graph key exactly once. Its
+   * final key is used as the identity gauge.
+   *
+   * @param ordering Complete variable elimination ordering.
+   */
+  Values solve(const Ordering& ordering) const;
 
   /**
    * Project relaxed matrices to T and align them to the optional matching
@@ -243,6 +255,9 @@ struct FastSync {
   /// Back-substitute one conditional, skipping the identity gauge variable.
   static void backSubstituteConditional(const GaussianConditional& conditional,
                                         const Key& gaugeKey, Values& solution);
+
+  /// Solve with an already validated ordering.
+  Values solveOrdered(const Ordering& ordering) const;
 };
 
 /**
@@ -257,14 +272,28 @@ struct FastSync {
  * T must be a fixed-size square matrix Lie group with a
  * FastSyncProjection<T> specialization.
  *
+ * @param graph Synchronization factor graph.
+ * @param orderingType Fill-reducing ordering used by sequential elimination.
+ *
  * @throws std::invalid_argument for invalid noise models, an empty measurement
  * graph, a prior outside the measurement graph, or multiple matching priors.
  * @throws IndeterminateSystemException when the measurement graph is
  * disconnected or otherwise underconstrained.
- * @throws std::runtime_error if GTSAM was built without METIS support.
+ * @throws std::runtime_error for an unsupported ordering type, or when METIS
+ * is selected but unavailable in the current build.
  */
 template <class T>
-Values fastSync(const NonlinearFactorGraph& graph);
+Values fastSync(const NonlinearFactorGraph& graph,
+                Ordering::OrderingType orderingType = Ordering::METIS);
+
+/**
+ * Initialize a synchronization graph using a caller-supplied ordering.
+ *
+ * @param graph Synchronization factor graph.
+ * @param ordering Complete variable elimination ordering.
+ */
+template <class T>
+Values fastSync(const NonlinearFactorGraph& graph, const Ordering& ordering);
 
 }  // namespace gtsam
 
