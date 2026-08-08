@@ -152,7 +152,7 @@ jobs:
     if: >-
       always() &&
       (github.event_name == 'workflow_dispatch' ||
-       github.event_name == 'workflow_call' ||
+       inputs.runner == 'nightly-extra' ||
        github.event_name == 'push' ||
        needs.check-paths.outputs.should_run == 'true')
 
