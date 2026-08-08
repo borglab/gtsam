@@ -189,9 +189,9 @@ struct FastSyncProjection<SL4> {
  * Solver for the fixed-size ambient linear problem underlying FAST-Sync.
  *
  * The constructor extracts matching between factors and builds the reduced
- * Gaussian graph. `solve()` performs the METIS-gauged QR solve and returns
- * ambient matrix estimates; `projectAndAlign()` rounds those estimates to T
- * and applies an optional matching prior.
+ * Gaussian graph. `solve()` performs the METIS-gauged Cholesky solve and
+ * returns ambient matrix estimates; `projectAndAlign()` rounds those estimates
+ * to T and applies an optional matching prior.
  */
 template <class T>
 struct FastSync {
@@ -214,7 +214,7 @@ struct FastSync {
   /**
    * Solve the relaxed ambient matrix problem and return one matrix per key.
    *
-   * METIS selects the final ordering key as the identity gauge. QR
+   * METIS selects the final ordering key as the identity gauge. Cholesky
    * elimination and reverse block back-substitution then recover all ambient
    * N-by-N estimates. Projection to T is intentionally deferred to
    * `projectAndAlign()`.

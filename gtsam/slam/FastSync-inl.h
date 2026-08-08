@@ -120,9 +120,10 @@ Values FastSync<T>::solve() const {
   graph.emplace_shared<JacobianFactor>(gaugeKey, identity, zero,
                                        noiseModel::Unit::Create(N));
 
-  const auto bayesNet = graph.eliminateSequential(ordering, EliminateQR);
+  const auto bayesNet =
+      graph.eliminateSequential(ordering, EliminatePreferCholesky);
   if (!bayesNet || bayesNet->size() != ordering.size()) {
-    throw std::runtime_error("FastSync sequential QR elimination failed");
+    throw std::runtime_error("FastSync sequential Cholesky elimination failed");
   }
 
   Values solution;
