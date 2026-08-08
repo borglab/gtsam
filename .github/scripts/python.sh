@@ -114,7 +114,12 @@ function build()
 function test()
 {
   if [ "${NO_BOOST_BUILD}" == "ON" ]; then
-    export PYTHONPATH="$GITHUB_WORKSPACE/build/python:$PYTHONPATH"
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" || "$OSTYPE" == "cygwin" ]]; then
+      PYTHON_BUILD_DIRECTORY=$(cygpath -w "$GITHUB_WORKSPACE/build/python")
+      export PYTHONPATH="${PYTHON_BUILD_DIRECTORY}${PYTHONPATH:+;$PYTHONPATH}"
+    else
+      export PYTHONPATH="$GITHUB_WORKSPACE/build/python${PYTHONPATH:+:$PYTHONPATH}"
+    fi
   fi
 
   cd $GITHUB_WORKSPACE/python/gtsam/tests
