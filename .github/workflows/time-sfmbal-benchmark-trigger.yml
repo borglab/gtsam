@@ -14,13 +14,13 @@ jobs:
     if: github.event.issue.pull_request != null
     runs-on: ubuntu-latest
     steps:
-      - name: Dispatch benchmark workflow for /bench
+      - name: Dispatch benchmark workflow for /benchmark
         uses: actions/github-script@v7
         with:
           script: |
             const body = context.payload.comment.body.trim();
-            if (body !== "/bench") {
-              core.info("Skipping dispatch: comment is not /bench.");
+            if (body !== "/benchmark" && body !== "/bench") {
+              core.info("Skipping dispatch: comment is not /benchmark.");
               return;
             }
 
