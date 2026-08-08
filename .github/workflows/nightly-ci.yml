@@ -25,9 +25,14 @@ jobs:
   special:
     uses: ./.github/workflows/build-special.yml
 
+  python-extra:
+    uses: ./.github/workflows/build-python.yml
+    with:
+      runner: nightly-extra
+
   report:
     name: Report nightly status
-    needs: [linux, macos, windows, vcpkg, special]
+    needs: [linux, macos, windows, vcpkg, special, python-extra]
     if: always()
     runs-on: ubuntu-latest
     permissions:
@@ -39,6 +44,7 @@ jobs:
       WINDOWS_RESULT: ${{ needs.windows.result }}
       VCPKG_RESULT: ${{ needs.vcpkg.result }}
       SPECIAL_RESULT: ${{ needs.special.result }}
+      PYTHON_EXTRA_RESULT: ${{ needs.python-extra.result }}
       DEVELOP_SHA: ${{ github.sha }}
       RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
     steps:
@@ -52,6 +58,7 @@ jobs:
               Windows: process.env.WINDOWS_RESULT,
               vcpkg: process.env.VCPKG_RESULT,
               "Special cases": process.env.SPECIAL_RESULT,
+              "Python extras": process.env.PYTHON_EXTRA_RESULT,
             };
             const failures = Object.entries(results)
               .filter(([, result]) => result !== "success");
