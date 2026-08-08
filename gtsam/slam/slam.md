@@ -50,7 +50,7 @@ Helper functions and classes for SLAM tasks.
 
 -   [lago](doc/lago.ipynb) : Linear Approximation for Graph Optimization (LAGO) for initializing `Pose2` graphs.
 -   [InitializePose3](doc/InitializePose3.ipynb) : Methods for initializing `Pose3` graphs by first solving for rotations, then translations.
--   [FAST-Sync](doc/FastSync.ipynb) : A sparse chordal initializer for matrix Lie-group synchronization. In C++, call `fastSync<T>(graph)` for `Rot2`, `Rot3`, `Pose2`, `Pose3`, `Similarity2`, `Similarity3`, or `SL4`. Generated Python and MATLAB entry points are `fastSyncRot2`, `fastSyncRot3`, `fastSyncPose2`, `fastSyncPose3`, `fastSyncSimilarity2`, `fastSyncSimilarity3`, and `fastSyncSL4`; see the [runnable example](../../python/gtsam/examples/FastSyncExample.ipynb).
+-   [FAST-Sync](doc/FastSync.ipynb) : A sparse chordal initializer for matrix Lie-group synchronization. In C++, call `fastSync<T>(graph)` for `Rot2`, `Rot3`, `Pose2`, `Pose3`, `Similarity2`, `Similarity3`, or `SL4`. Generated Python and MATLAB entry points are `fastSyncRot2`, `fastSyncRot3`, `fastSyncPose2`, `fastSyncPose3`, `fastSyncSimilarity2`, `fastSyncSimilarity3`, and `fastSyncSL4`; see the runnable [Python](../../python/gtsam/examples/FastSyncExample.ipynb) and [MATLAB](../../matlab/gtsam_examples/FastSyncExample.m) examples.
 -   [dataset](doc/dataset.ipynb) : Utility functions for loading/saving common SLAM dataset formats (g2o, TORO).
 -   [expressions](https://github.com/borglab/gtsam/blob/develop/gtsam/slam/expressions.h) : Pre-defined Expression trees for common SLAM factor types (internal use for Expression-based factors).
 
