@@ -361,6 +361,7 @@ TEST(Marginals, jointMarginalFullMatrixOrdering) {
   EXPECT(assert_equal(reversedJoint(2, 2), reversedMatrix.block(3, 3, 3, 3),
                       1e-9));
 }
+
 /* ************************************************************************* */
 
 #ifdef GTSAM_SUPPORT_NESTED_DISSECTION
