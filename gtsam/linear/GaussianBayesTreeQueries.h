@@ -22,10 +22,23 @@
 #include <gtsam/linear/JointMarginal.h>
 
 #include <Eigen/Cholesky>
-#include <numeric>
 
 namespace gtsam {
 namespace internal {
+
+/* ************************************************************************* */
+/** Return unique keys in their first-occurrence order. */
+inline KeyVector uniqueKeys(const KeyVector& keys) {
+  KeyVector unique;
+  unique.reserve(keys.size());
+  KeySet seen;
+  for (Key key : keys) {
+    if (seen.insert(key).second) {
+      unique.push_back(key);
+    }
+  }
+  return unique;
+}
 
 /* ************************************************************************* */
 /** Return the scalar offsets corresponding to a sequence of block dimensions.
@@ -86,37 +99,58 @@ inline Scatter scatterFromKeysAndDims(const KeyVector& orderedKeys,
 }
 
 /* ************************************************************************* */
-/**
- * Compute selected block columns of covariance from an ordered Bayes net using
- * triangular solves.
+/** Compute covariance blocks in the requested key order using triangular solves
+ * in the Bayes net's elimination order.
  */
 inline Matrix covarianceColumns(const GaussianBayesNet& bayesNet,
                                 const KeyVector& orderedKeys,
-                                const std::vector<size_t>& dims,
-                                const std::vector<size_t>& selectedBlocks) {
-  const auto [R, rhs] = bayesNet.matrix(Ordering(orderedKeys));
+                                const std::vector<size_t>& dims) {
+  const KeyVector factorKeys = bayesNet.ordering();
+  const std::vector<size_t> factorDims = dimsFromBayesNet(bayesNet, factorKeys);
+  const auto [R, rhs] = bayesNet.matrix(Ordering(factorKeys));
   (void)rhs;
 
-  const std::vector<size_t> offsets = blockOffsets(dims);
-  const size_t totalDim = offsets.back();
+  const std::vector<size_t> factorOffsets = blockOffsets(factorDims);
+  const std::vector<size_t> outputOffsets = blockOffsets(dims);
+  const size_t totalDim = factorOffsets.back();
 
-  size_t selectedDim = 0;
-  for (size_t blockIndex : selectedBlocks) {
-    selectedDim += dims.at(blockIndex);
+  FastMap<Key, size_t> factorIndex;
+  for (size_t index = 0; index < factorKeys.size(); ++index) {
+    factorIndex[factorKeys[index]] = index;
   }
 
-  Matrix selectors = Matrix::Zero(totalDim, selectedDim);
-  size_t selectedOffset = 0;
-  for (size_t blockIndex : selectedBlocks) {
-    const size_t begin = offsets[blockIndex];
-    const size_t dim = dims[blockIndex];
-    selectors.block(begin, selectedOffset, dim, dim).setIdentity();
-    selectedOffset += dim;
+  // Solve for covariance columns in elimination order, with output columns
+  // laid out in the requested order.
+  Matrix selectors = Matrix::Zero(totalDim, totalDim);
+  for (size_t outputIndex = 0; outputIndex < orderedKeys.size();
+       ++outputIndex) {
+    const size_t factorIndexForKey = factorIndex.at(orderedKeys[outputIndex]);
+    const size_t dim = dims.at(outputIndex);
+    selectors
+        .block(factorOffsets[factorIndexForKey], outputOffsets[outputIndex],
+               dim, dim)
+        .setIdentity();
   }
 
   R.transpose().triangularView<Eigen::Lower>().solveInPlace(selectors);
   R.triangularView<Eigen::Upper>().solveInPlace(selectors);
-  return selectors;
+
+  // Gather rows in the requested order without changing the factorization
+  // ordering used by the triangular solves above.
+  Matrix covariance = Matrix::Zero(totalDim, totalDim);
+  for (size_t outputRow = 0; outputRow < orderedKeys.size(); ++outputRow) {
+    const size_t factorRow = factorIndex.at(orderedKeys[outputRow]);
+    const size_t rowDim = dims.at(outputRow);
+    for (size_t outputColumn = 0; outputColumn < orderedKeys.size();
+         ++outputColumn) {
+      const size_t columnDim = dims.at(outputColumn);
+      covariance.block(outputOffsets[outputRow], outputOffsets[outputColumn],
+                       rowDim, columnDim) =
+          selectors.block(factorOffsets[factorRow], outputOffsets[outputColumn],
+                          rowDim, columnDim);
+    }
+  }
+  return covariance;
 }
 
 /* ************************************************************************* */
@@ -144,24 +178,19 @@ JointMarginal buildJointMarginal(
     const BAYESTREE& bayesTree, const KeyVector& queryKeys,
     const typename BAYESTREE::FactorGraphType::Eliminate& eliminate,
     const SINGLE_BUILDER& singleBuilder, const MULTI_BUILDER& multiBuilder) {
-  if (queryKeys.empty()) {
+  const KeyVector orderedKeys = uniqueKeys(queryKeys);
+  if (orderedKeys.empty()) {
     return emptyJointMarginal();
   }
 
-  if (queryKeys.size() == 1) {
-    const Matrix matrix = singleBuilder(queryKeys.front());
-    return jointMarginalFromMatrix(matrix, queryKeys,
-                                   {static_cast<size_t>(matrix.rows())});
-  }
-
-  const GaussianBayesNet bayesNet =
-      *bayesTree.jointBayesNet(queryKeys, eliminate);
-  const KeyVector orderedKeys = bayesNet.ordering();
   if (orderedKeys.size() == 1) {
     const Matrix matrix = singleBuilder(orderedKeys.front());
     return jointMarginalFromMatrix(matrix, orderedKeys,
                                    {static_cast<size_t>(matrix.rows())});
   }
+
+  const GaussianBayesNet bayesNet =
+      *bayesTree.jointBayesNet(orderedKeys, eliminate);
   return multiBuilder(bayesNet, orderedKeys);
 }
 
@@ -208,11 +237,8 @@ JointMarginal jointMarginalCovariance(
       [](const GaussianBayesNet& bayesNet, const KeyVector& orderedKeys) {
         const std::vector<size_t> dims =
             dimsFromBayesNet(bayesNet, orderedKeys);
-        std::vector<size_t> allBlocks(orderedKeys.size());
-        std::iota(allBlocks.begin(), allBlocks.end(), 0);
         return jointMarginalFromMatrix(
-            covarianceColumns(bayesNet, orderedKeys, dims, allBlocks),
-            orderedKeys, dims);
+            covarianceColumns(bayesNet, orderedKeys, dims), orderedKeys, dims);
       });
 }
 
