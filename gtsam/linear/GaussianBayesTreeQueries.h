@@ -12,7 +12,7 @@
 /**
  * @file    GaussianBayesTreeQueries.h
  * @brief   Internal helpers for Gaussian Bayes-tree covariance queries
- * @author  Codex
+ * @author  Frank Dellaert
  */
 
 #pragma once
@@ -22,34 +22,14 @@
 #include <gtsam/linear/JointMarginal.h>
 
 #include <Eigen/Cholesky>
-#include <algorithm>
 #include <numeric>
 
 namespace gtsam {
 namespace internal {
 
 /* ************************************************************************* */
-inline KeyVector uniqueSortedKeys(const KeyVector& keys) {
-  KeyVector result = keys;
-  std::sort(result.begin(), result.end());
-  result.erase(std::unique(result.begin(), result.end()), result.end());
-  return result;
-}
-
-/* ************************************************************************* */
-inline KeyVector uniqueKeysInOrder(const KeyVector& keys) {
-  KeyVector result;
-  result.reserve(keys.size());
-  KeySet seen;
-  for (Key key : keys) {
-    if (seen.insert(key).second) {
-      result.push_back(key);
-    }
-  }
-  return result;
-}
-
-/* ************************************************************************* */
+/** Return the scalar offsets corresponding to a sequence of block dimensions.
+ */
 inline std::vector<size_t> blockOffsets(const std::vector<size_t>& dims) {
   std::vector<size_t> offsets(dims.size() + 1, 0);
   for (size_t i = 0; i < dims.size(); ++i) {
@@ -59,6 +39,10 @@ inline std::vector<size_t> blockOffsets(const std::vector<size_t>& dims) {
 }
 
 /* ************************************************************************* */
+/**
+ * Convert information to covariance using Cholesky solves, returning zeros
+ * when the information contains non-finite entries.
+ */
 inline Matrix informationToCovariance(const Matrix& information) {
   if (!information.allFinite()) {
     return Matrix::Zero(information.rows(), information.cols());
@@ -71,6 +55,7 @@ inline Matrix informationToCovariance(const Matrix& information) {
 }
 
 /* ************************************************************************* */
+/** Return variable dimensions from a Bayes net in the requested key order. */
 inline std::vector<size_t> dimsFromBayesNet(const GaussianBayesNet& bayesNet,
                                             const KeyVector& orderedKeys) {
   FastMap<Key, size_t> dimsByKey;
@@ -90,6 +75,7 @@ inline std::vector<size_t> dimsFromBayesNet(const GaussianBayesNet& bayesNet,
 }
 
 /* ************************************************************************* */
+/** Construct a scatter with entries in the supplied key and dimension order. */
 inline Scatter scatterFromKeysAndDims(const KeyVector& orderedKeys,
                                       const std::vector<size_t>& dims) {
   Scatter scatter;
@@ -100,6 +86,10 @@ inline Scatter scatterFromKeysAndDims(const KeyVector& orderedKeys,
 }
 
 /* ************************************************************************* */
+/**
+ * Compute selected block columns of covariance from an ordered Bayes net using
+ * triangular solves.
+ */
 inline Matrix covarianceColumns(const GaussianBayesNet& bayesNet,
                                 const KeyVector& orderedKeys,
                                 const std::vector<size_t>& dims,
@@ -130,6 +120,8 @@ inline Matrix covarianceColumns(const GaussianBayesNet& bayesNet,
 }
 
 /* ************************************************************************* */
+/** Construct a joint marginal from a dense matrix and ordered block metadata.
+ */
 inline JointMarginal jointMarginalFromMatrix(const Matrix& matrix,
                                              const KeyVector& orderedKeys,
                                              const std::vector<size_t>& dims) {
@@ -137,58 +129,44 @@ inline JointMarginal jointMarginalFromMatrix(const Matrix& matrix,
 }
 
 /* ************************************************************************* */
-inline JointMarginal reorderJointMarginal(const JointMarginal& jointMarginal,
-                                          const KeyVector& requestedKeys) {
-  std::vector<size_t> dims;
-  dims.reserve(requestedKeys.size());
-  for (Key key : requestedKeys) {
-    dims.push_back(static_cast<size_t>(jointMarginal(key, key).rows()));
-  }
-
-  const std::vector<size_t> offsets = blockOffsets(dims);
-  Matrix matrix = Matrix::Zero(offsets.back(), offsets.back());
-  for (size_t row = 0; row < requestedKeys.size(); ++row) {
-    for (size_t column = 0; column < requestedKeys.size(); ++column) {
-      matrix.block(offsets[row], offsets[column], dims[row], dims[column]) =
-          jointMarginal(requestedKeys[row], requestedKeys[column]);
-    }
-  }
-  return jointMarginalFromMatrix(matrix, requestedKeys, dims);
-}
-
-/* ************************************************************************* */
+/** Construct an empty joint marginal. */
 inline JointMarginal emptyJointMarginal() {
   return JointMarginal(Matrix(), Scatter());
 }
 
 /* ************************************************************************* */
+/**
+ * Build a joint marginal while sharing empty, single-key, and multi-key query
+ * handling between information and covariance calculations.
+ */
 template <class BAYESTREE, class SINGLE_BUILDER, class MULTI_BUILDER>
 JointMarginal buildJointMarginal(
     const BAYESTREE& bayesTree, const KeyVector& queryKeys,
     const typename BAYESTREE::FactorGraphType::Eliminate& eliminate,
     const SINGLE_BUILDER& singleBuilder, const MULTI_BUILDER& multiBuilder) {
-  const KeyVector requestedKeys = uniqueKeysInOrder(queryKeys);
-  if (requestedKeys.empty()) {
+  if (queryKeys.empty()) {
     return emptyJointMarginal();
   }
 
-  if (requestedKeys.size() == 1) {
-    const Matrix matrix = singleBuilder(requestedKeys.front());
-    return jointMarginalFromMatrix(matrix, requestedKeys,
+  if (queryKeys.size() == 1) {
+    const Matrix matrix = singleBuilder(queryKeys.front());
+    return jointMarginalFromMatrix(matrix, queryKeys,
                                    {static_cast<size_t>(matrix.rows())});
   }
 
-  const KeyVector sortedKeys = uniqueSortedKeys(requestedKeys);
   const GaussianBayesNet bayesNet =
-      *bayesTree.jointBayesNet(sortedKeys, eliminate);
-  JointMarginal jointMarginal = multiBuilder(bayesNet, sortedKeys);
-  if (requestedKeys == sortedKeys) {
-    return jointMarginal;
+      *bayesTree.jointBayesNet(queryKeys, eliminate);
+  const KeyVector orderedKeys = bayesNet.ordering();
+  if (orderedKeys.size() == 1) {
+    const Matrix matrix = singleBuilder(orderedKeys.front());
+    return jointMarginalFromMatrix(matrix, orderedKeys,
+                                   {static_cast<size_t>(matrix.rows())});
   }
-  return reorderJointMarginal(jointMarginal, requestedKeys);
+  return multiBuilder(bayesNet, orderedKeys);
 }
 
 /* ************************************************************************* */
+/** Return marginal information for one key using the requested elimination. */
 template <class BAYESTREE>
 Matrix marginalInformation(
     const BAYESTREE& bayesTree, Key key,
@@ -197,6 +175,7 @@ Matrix marginalInformation(
 }
 
 /* ************************************************************************* */
+/** Return joint marginal information with blocks in query-key order. */
 template <class BAYESTREE>
 JointMarginal jointMarginalInformation(
     const BAYESTREE& bayesTree, const KeyVector& queryKeys,
@@ -215,6 +194,7 @@ JointMarginal jointMarginalInformation(
 }
 
 /* ************************************************************************* */
+/** Return joint marginal covariance with blocks in query-key order. */
 template <class BAYESTREE>
 JointMarginal jointMarginalCovariance(
     const BAYESTREE& bayesTree, const KeyVector& queryKeys,

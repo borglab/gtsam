@@ -321,6 +321,7 @@ TEST(GaussianBayesTree, shortcut_overlapping_separator)
 }
 
 /* ************************************************************************* */
+// Verifies multi-key joint queries agree with pairwise queries.
 TEST(GaussianBayesTree, multiKeyJointMatchesPairwise) {
   GaussianFactorGraph fg;
   noiseModel::Diagonal::shared_ptr model = noiseModel::Unit::Create(1);
@@ -344,6 +345,7 @@ TEST(GaussianBayesTree, multiKeyJointMatchesPairwise) {
 }
 
 /* ************************************************************************* */
+// Verifies multi-key joints preserve query order and match marginalization.
 TEST(GaussianBayesTree, multiKeyJointMatchesLegacyMarginalization) {
   GaussianFactorGraph fg;
   noiseModel::Diagonal::shared_ptr model = noiseModel::Unit::Create(1);
@@ -360,8 +362,11 @@ TEST(GaussianBayesTree, multiKeyJointMatchesLegacyMarginalization) {
   Ordering ordering(fg.keys());
   GaussianBayesTree bt = *fg.eliminateMultifrontal(ordering);
 
-  const KeyVector query{7, 2, 1};
-  const GaussianFactorGraph actualJoint = *bt.joint(query, EliminateQR);
+  const KeyVector query{7, 2, 1, 2};
+  const GaussianBayesNet actualBayesNet = *bt.jointBayesNet(query, EliminateQR);
+  EXPECT(assert_equal(Ordering{7, 2, 1}, actualBayesNet.ordering()));
+
+  const GaussianFactorGraph actualJoint(actualBayesNet);
   const GaussianFactorGraph legacyJoint =
       GaussianFactorGraph(*fg.marginalMultifrontalBayesTree(KeyVector{1, 2, 7},
                                                             EliminateQR));
