@@ -56,9 +56,9 @@ Helper functions and classes for SLAM tasks.
 
 ### FAST-Sync input and gauge behavior
 
-`fastSync<T>` reads matching `BetweenFactor<T>` measurements and accepts only finite, positive, isotropic Gaussian noise. Anisotropic, constrained, and robust between-factor models are rejected. The measurement graph must be non-empty and connected, and may contain at most one matching `PriorFactor<T>`.
+`fastSync<T>` reads matching `BetweenFactor<T>` measurements and accepts only finite, positive, isotropic Gaussian noise. Anisotropic, constrained, and robust between-factor models are rejected. The measurement graph must be non-empty and connected; disconnected graphs are detected during QR elimination and raise `IndeterminantLinearSystemException`. The graph may contain at most one matching `PriorFactor<T>`.
 
-The relaxed matrix problem is solved with a METIS nested-dissection ordering and an exact identity gauge at the ordering's final key. Projection to the target group occurs only after the complete ambient-space solve. If a matching prior is present, the rounded solution is subsequently left-aligned to that prior; without a prior, the METIS gauge is retained. Builds without METIS report the nested-dissection error. New fixed-size matrix Lie groups can opt in by specializing `FastSyncProjection<T>`.
+The relaxed problem uses fixed-size `N`-by-`N` matrices for measurements, reduced-system blocks, back-substitution, and projection, where `N` is obtained from the matrix representation returned by `T::matrix()`. The complete Gaussian graph retains dynamic sparse storage because its topology is only known at runtime. FAST-Sync uses a METIS nested-dissection ordering and an exact identity gauge at the ordering's final key. Projection to the target group occurs only after the complete ambient-space solve. If a matching prior is present, the rounded solution is subsequently left-aligned to that prior; without a prior, the METIS gauge is retained. Builds without METIS report the nested-dissection error. New fixed-size matrix Lie groups can opt in by specializing `FastSyncProjection<T>`.
 
 ## CUDA Acceleration
 

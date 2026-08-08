@@ -26,6 +26,7 @@
 #include <gtsam/geometry/SL4.h>
 #include <gtsam/geometry/Similarity2.h>
 #include <gtsam/geometry/Similarity3.h>
+#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/nonlinear/Values.h>
@@ -39,30 +40,12 @@
 
 namespace gtsam {
 
-namespace internal {
-
-/** A group-independent measurement used by the reduced FAST-Sync solver. */
-struct FastSyncMeasurement {
-  Key key1;
-  Key key2;
-  Matrix measured;
-  double sigma;
-};
-
-/** Extract the common finite, positive sigma from an isotropic noise model. */
-GTSAM_EXPORT double fastSyncIsotropicSigma(const SharedNoiseModel& model);
-
-/** Solve the reduced linear problem and return unprojected matrix estimates. */
-GTSAM_EXPORT FastMap<Key, Matrix> fastSyncSolveMatrices(
-    const std::vector<FastSyncMeasurement>& measurements, size_t d);
-
-}  // namespace internal
-
 /**
  * Projection customization point used by fastSync().
  *
  * Specialize this trait for an additional fixed-size matrix Lie group and
- * provide `static T project(const Matrix&)` to enable fastSync<T>().
+ * provide a `project` function accepting its fixed-size square matrix
+ * representation to enable fastSync<T>().
  */
 template <class T>
 struct FastSyncProjection;
@@ -77,9 +60,7 @@ struct FastSyncProjection;
 template <>
 struct FastSyncProjection<Rot2> {
   /// Return the closest proper planar rotation to `matrix`.
-  static Rot2 project(const Matrix& matrix) {
-    return Rot2::ClosestTo(Matrix2(matrix));
-  }
+  static Rot2 project(const Matrix2& matrix) { return Rot2::ClosestTo(matrix); }
 };
 
 /**
@@ -93,9 +74,7 @@ struct FastSyncProjection<Rot2> {
 template <>
 struct FastSyncProjection<Rot3> {
   /// Return the closest proper three-dimensional rotation to `matrix`.
-  static Rot3 project(const Matrix& matrix) {
-    return Rot3::ClosestTo(Matrix3(matrix));
-  }
+  static Rot3 project(const Matrix3& matrix) { return Rot3::ClosestTo(matrix); }
 };
 
 /**
@@ -108,9 +87,9 @@ struct FastSyncProjection<Rot3> {
 template <>
 struct FastSyncProjection<Pose2> {
   /// Round the rotation block and retain the recovered planar translation.
-  static Pose2 project(const Matrix& matrix) {
-    return Pose2(Rot2::ClosestTo(Matrix2(matrix.topLeftCorner(2, 2))),
-                 Vector2(matrix.topRightCorner(2, 1)));
+  static Pose2 project(const Matrix3& matrix) {
+    return Pose2(Rot2::ClosestTo(matrix.topLeftCorner<2, 2>()),
+                 matrix.topRightCorner<2, 1>());
   }
 };
 
@@ -124,9 +103,9 @@ struct FastSyncProjection<Pose2> {
 template <>
 struct FastSyncProjection<Pose3> {
   /// Round the rotation block and retain the recovered 3D translation.
-  static Pose3 project(const Matrix& matrix) {
-    return Pose3(Rot3::ClosestTo(Matrix3(matrix.topLeftCorner(3, 3))),
-                 Vector3(matrix.topRightCorner(3, 1)));
+  static Pose3 project(const Matrix4& matrix) {
+    return Pose3(Rot3::ClosestTo(matrix.topLeftCorner<3, 3>()),
+                 matrix.topRightCorner<3, 1>());
   }
 };
 
@@ -143,16 +122,15 @@ struct FastSyncProjection<Pose3> {
 template <>
 struct FastSyncProjection<Similarity2> {
   /// Round rotation and recover translation and positive planar scale.
-  static Similarity2 project(const Matrix& matrix) {
+  static Similarity2 project(const Matrix3& matrix) {
     double inverseScale = matrix(2, 2);
     if (!std::isfinite(inverseScale)) inverseScale = 1.0;
     inverseScale = std::abs(inverseScale);
     if (inverseScale <= std::numeric_limits<double>::epsilon()) {
       inverseScale = 1.0;
     }
-    return Similarity2(Rot2::ClosestTo(Matrix2(matrix.topLeftCorner(2, 2))),
-                       Vector2(matrix.topRightCorner(2, 1)),
-                       1.0 / inverseScale);
+    return Similarity2(Rot2::ClosestTo(matrix.topLeftCorner<2, 2>()),
+                       matrix.topRightCorner<2, 1>(), 1.0 / inverseScale);
   }
 };
 
@@ -169,16 +147,15 @@ struct FastSyncProjection<Similarity2> {
 template <>
 struct FastSyncProjection<Similarity3> {
   /// Round rotation and recover translation and positive 3D scale.
-  static Similarity3 project(const Matrix& matrix) {
+  static Similarity3 project(const Matrix4& matrix) {
     double inverseScale = matrix(3, 3);
     if (!std::isfinite(inverseScale)) inverseScale = 1.0;
     inverseScale = std::abs(inverseScale);
     if (inverseScale <= std::numeric_limits<double>::epsilon()) {
       inverseScale = 1.0;
     }
-    return Similarity3(Rot3::ClosestTo(Matrix3(matrix.topLeftCorner(3, 3))),
-                       Vector3(matrix.topRightCorner(3, 1)),
-                       1.0 / inverseScale);
+    return Similarity3(Rot3::ClosestTo(matrix.topLeftCorner<3, 3>()),
+                       matrix.topRightCorner<3, 1>(), 1.0 / inverseScale);
   }
 };
 
@@ -193,21 +170,20 @@ struct FastSyncProjection<Similarity3> {
 template <>
 struct FastSyncProjection<SL4> {
   /// Normalize a nonsingular ambient matrix to SL(4), or return identity.
-  static SL4 project(const Matrix& matrix) {
-    const Matrix4 input(matrix);
+  static SL4 project(const Matrix4& matrix) {
     const Eigen::JacobiSVD<Matrix4> svd(
-        input, Eigen::ComputeFullU | Eigen::ComputeFullV);
+        matrix, Eigen::ComputeFullU | Eigen::ComputeFullV);
     const auto singularValues = svd.singularValues();
     const double determinantMagnitude = singularValues.prod();
     if (!std::isfinite(determinantMagnitude) || determinantMagnitude <= 1e-12) {
       return SL4::Identity();
     }
-    return SL4(input);
+    return SL4(matrix);
   }
 };
 
 /**
- * Initialize a connected synchronization graph using FAST-Sync.
+ * Initialize a synchronization graph using FAST-Sync.
  *
  * The graph may contain BetweenFactor<T> measurements and at most one matching
  * PriorFactor<T>; factors of other types are ignored. Between-factor noise
@@ -218,83 +194,15 @@ struct FastSyncProjection<SL4> {
  * T must be a fixed-size square matrix Lie group with a
  * FastSyncProjection<T> specialization.
  *
- * @throws std::invalid_argument for invalid noise models, an empty or
- * disconnected measurement graph, a prior outside the measurement graph, or
- * multiple matching priors.
+ * @throws std::invalid_argument for invalid noise models, an empty measurement
+ * graph, a prior outside the measurement graph, or multiple matching priors.
+ * @throws IndeterminantLinearSystemException when the measurement graph is
+ * disconnected or otherwise underconstrained.
  * @throws std::runtime_error if GTSAM was built without METIS support.
  */
 template <class T>
-Values fastSync(const NonlinearFactorGraph& graph) {
-  // Enforce the fixed-size square matrix representation required by the
-  // reduced block system and the type-specific projection trait.
-  GTSAM_CONCEPT_ASSERT(IsMatrixLieGroup<T>);
-  constexpr int d = T::LieAlgebra::RowsAtCompileTime;
-  static_assert(d != Eigen::Dynamic && d > 0,
-                "fastSync requires a fixed-size matrix Lie group");
-  static_assert(T::LieAlgebra::ColsAtCompileTime == d,
-                "fastSync requires a square matrix representation");
-
-  std::vector<internal::FastSyncMeasurement> measurements;
-  measurements.reserve(graph.size());
-  size_t priorCount = 0;
-  Key priorKey = 0;
-  T priorValue = traits<T>::Identity();
-
-  // Extract only factors matching T. The optional prior is saved for final
-  // alignment and deliberately does not influence the ambient-space solve.
-  for (const auto& factor : graph) {
-    if (const auto between =
-            std::dynamic_pointer_cast<BetweenFactor<T>>(factor)) {
-      if (between->noiseModel()->dim() != T::dimension) {
-        throw std::invalid_argument(
-            "fastSync noise dimension must match the group dimension");
-      }
-      measurements.push_back(
-          {between->key1(), between->key2(), between->measured().matrix(),
-           internal::fastSyncIsotropicSigma(between->noiseModel())});
-    } else if (const auto prior =
-                   std::dynamic_pointer_cast<PriorFactor<T>>(factor)) {
-      ++priorCount;
-      if (priorCount > 1) {
-        throw std::invalid_argument(
-            "fastSync supports at most one matching prior");
-      }
-      priorKey = prior->key();
-      priorValue = prior->prior();
-    }
-  }
-
-  // Solve the reduced ambient least-squares problem. Each measurement produces
-  // [-Z.transpose(), I]; METIS chooses the identity gauge, then explicit QR
-  // elimination and reverse block back-substitution recover all matrices.
-  FastMap<Key, Matrix> relaxed =
-      internal::fastSyncSolveMatrices(measurements, d);
-
-  // Round through the type-specific projection only after all ambient matrices
-  // have been recovered, preserving the global linear coupling during solve.
-  Values projected;
-  for (const auto& keyMatrix : relaxed) {
-    projected.insert(keyMatrix.first,
-                     FastSyncProjection<T>::project(keyMatrix.second));
-  }
-
-  if (priorCount == 0) return projected;
-  if (!projected.exists(priorKey)) {
-    throw std::invalid_argument(
-        "fastSync prior key is not in the measurement graph");
-  }
-
-  // Align to the prior with one common left transformation. Applying the same
-  // transformation to every rounded value preserves all relative estimates.
-  const T estimatedPrior = projected.at<T>(priorKey);
-  const T alignment =
-      traits<T>::Compose(priorValue, traits<T>::Inverse(estimatedPrior));
-  Values aligned;
-  for (const auto& keyValue : projected.extract<T>()) {
-    aligned.insert(keyValue.first,
-                   traits<T>::Compose(alignment, keyValue.second));
-  }
-  return aligned;
-}
+Values fastSync(const NonlinearFactorGraph& graph);
 
 }  // namespace gtsam
+
+#include <gtsam/slam/FastSync-inl.h>

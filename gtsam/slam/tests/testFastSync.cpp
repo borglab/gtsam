@@ -20,6 +20,7 @@
 #include <gtsam/geometry/SL4.h>
 #include <gtsam/geometry/Similarity2.h>
 #include <gtsam/geometry/Similarity3.h>
+#include <gtsam/linear/linearExceptions.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/FastSync.h>
@@ -29,6 +30,8 @@
 #include <limits>
 #include <map>
 #include <set>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 using namespace gtsam;
@@ -113,26 +116,41 @@ TEST(FastSync, SL4Noiseless) {
 }
 
 }  // namespace noiseless_fixture
-/* ************************************************************************* */
 
 /* ************************************************************************* */
 namespace linear_fixture {
 
 // Verifies structured back-substitution against an independent dense QR solve.
 TEST(FastSync, DenseQrAgreement) {
-  const std::vector<internal::FastSyncMeasurement> measurements{
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<BetweenFactor<Rot2>>(
+      2, 7, Rot2::fromAngle(0.4), noiseModel::Isotropic::Sigma(1, 0.7));
+  graph.emplace_shared<BetweenFactor<Rot2>>(
+      7, 9, Rot2::fromAngle(-0.2), noiseModel::Isotropic::Sigma(1, 1.2));
+  graph.emplace_shared<BetweenFactor<Rot2>>(
+      9, 2, Rot2::fromAngle(-0.1), noiseModel::Isotropic::Sigma(1, 0.9));
+  const FastSyncSolver<Rot2> solver(graph);
+  const auto actual = solver.solve();
+  // Local measurement record for the independent dense QR reference.
+  struct M {
+    Key key1;
+    Key key2;
+    Matrix2 measured;
+    double sigma;
+  };
+  const std::vector<M> measurements{
       {2, 7, Rot2::fromAngle(0.4).matrix(), 0.7},
       {7, 9, Rot2::fromAngle(-0.2).matrix(), 1.2},
       {9, 2, Rot2::fromAngle(-0.1).matrix(), 0.9}};
-  const auto actual = internal::fastSyncSolveMatrices(measurements, 2);
 
   Key gaugeKey = 0;
   double smallestIdentityError = std::numeric_limits<double>::infinity();
-  for (const auto& keyMatrix : actual) {
-    const double error = (keyMatrix.second - Matrix2::Identity()).norm();
+  for (const Key key : actual.keys()) {
+    const Matrix2 matrix = actual.at<Matrix2>(key);
+    const double error = (matrix - Matrix2::Identity()).norm();
     if (error < smallestIdentityError) {
       smallestIdentityError = error;
-      gaugeKey = keyMatrix.first;
+      gaugeKey = key;
     }
   }
   EXPECT_DOUBLES_EQUAL(0.0, smallestIdentityError, 1e-12);
@@ -165,27 +183,32 @@ TEST(FastSync, DenseQrAgreement) {
   const Matrix dense = A.colPivHouseholderQr().solve(B);
 
   for (const Key key : keys) {
-    const Matrix expected =
+    const Matrix2 expected =
         key == gaugeKey
-            ? Matrix(Matrix2::Identity())
-            : Matrix(dense.block<2, 2>(2 * positions.at(key), 0).transpose());
-    EXPECT(assert_equal(expected, actual.at(key), 1e-9));
+            ? Matrix2::Identity()
+            : Matrix2(dense.block<2, 2>(2 * positions.at(key), 0).transpose());
+    EXPECT_DOUBLES_EQUAL(0.0, (expected - actual.at<Matrix2>(key)).norm(),
+                         1e-9);
   }
 }
 
 // Matches a selected rounded SO(2) result from the Python I_Fast_SCG reference.
 TEST(FastSync, PythonReferenceGoldenRot2) {
-  const std::vector<internal::FastSyncMeasurement> measurements{
-      {0, 1, Rot2::fromAngle(0.2).matrix(), 1.0},
-      {1, 2, Rot2::fromAngle(-0.35).matrix(), 0.5},
-      {2, 0, Rot2::fromAngle(0.1).matrix(), 2.0}};
-  const auto actual = internal::fastSyncSolveMatrices(measurements, 2);
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<BetweenFactor<Rot2>>(
+      0, 1, Rot2::fromAngle(0.2), noiseModel::Isotropic::Sigma(1, 1.0));
+  graph.emplace_shared<BetweenFactor<Rot2>>(
+      1, 2, Rot2::fromAngle(-0.35), noiseModel::Isotropic::Sigma(1, 0.5));
+  graph.emplace_shared<BetweenFactor<Rot2>>(
+      2, 0, Rot2::fromAngle(0.1), noiseModel::Isotropic::Sigma(1, 2.0));
+  const auto actual = FastSyncSolver<Rot2>(graph).solve();
 
-  const Rot2 rounded0 = Rot2::ClosestTo(Matrix2(actual.at(0)));
-  const Rot2 rounded1 = Rot2::ClosestTo(Matrix2(actual.at(1)));
+  const Rot2 rounded0 = Rot2::ClosestTo(actual.at<Matrix2>(0));
+  const Rot2 rounded1 = Rot2::ClosestTo(actual.at<Matrix2>(1));
   EXPECT_DOUBLES_EQUAL(0.138097218014, rounded0.theta(), 1e-10);
   EXPECT_DOUBLES_EQUAL(0.347619902410, rounded1.theta(), 1e-10);
-  EXPECT(assert_equal(Matrix2::Identity(), actual.at(2), 1e-12));
+  EXPECT_DOUBLES_EQUAL(
+      0.0, (Matrix2::Identity() - actual.at<Matrix2>(2)).norm(), 1e-12);
 }
 
 // Verifies that a high-confidence edge dominates a conflicting weak edge.
@@ -202,7 +225,6 @@ TEST(FastSync, WeightedMeasurements) {
 }
 
 }  // namespace linear_fixture
-/* ************************************************************************* */
 
 /* ************************************************************************* */
 namespace projection_fixture {
@@ -237,12 +259,11 @@ TEST(FastSync, BuiltInProjections) {
 }
 
 }  // namespace projection_fixture
-/* ************************************************************************* */
 
 /* ************************************************************************* */
 namespace validation_fixture {
 
-// Verifies empty and disconnected graphs are rejected.
+// Verifies empty graphs fail early and disconnected graphs fail in elimination.
 TEST(FastSync, InvalidGraphStructure) {
   CHECK_EXCEPTION(fastSync<Rot2>(NonlinearFactorGraph()),
                   std::invalid_argument);
@@ -251,7 +272,16 @@ TEST(FastSync, InvalidGraphStructure) {
   const auto model = noiseModel::Unit::Create(1);
   disconnected.emplace_shared<BetweenFactor<Rot2>>(0, 1, Rot2(), model);
   disconnected.emplace_shared<BetweenFactor<Rot2>>(2, 3, Rot2(), model);
-  CHECK_EXCEPTION(fastSync<Rot2>(disconnected), std::invalid_argument);
+  const FastSyncSolver<Rot2> solver(disconnected);
+  try {
+    solver.solve();
+    CHECK(false);
+  } catch (const IndeterminantLinearSystemException&) {
+    // The nearby variable is ordering-dependent, but the failure occurs in
+    // the linear solve after the constructor accepts both components.
+  } catch (...) {
+    CHECK(false);
+  }
 }
 
 // Verifies anisotropic, constrained, and robust models are rejected.
