@@ -264,9 +264,13 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
   Matrix marginalCovariance(Key key) const;
 
   /// Return the joint marginal covariance on a set of variables.
+  /// The returned JointMarginal is keyed by unique keys in increasing key
+  /// order, independent of the order provided in `queryKeys`.
   JointMarginal jointMarginalCovariance(const KeyVector& queryKeys) const;
 
   /// Return the joint marginal information on a set of variables.
+  /// The returned JointMarginal is keyed by unique keys in increasing key
+  /// order, independent of the order provided in `queryKeys`.
   JointMarginal jointMarginalInformation(const KeyVector& queryKeys) const;
 
   /// @name Public members for non-typical usage

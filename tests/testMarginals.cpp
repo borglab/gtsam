@@ -333,6 +333,35 @@ TEST(Marginals, order) {
   testMarginals(marginals, set);
 }
 
+/* ************************************************************************* */
+// Verifies fullMatrix() uses increasing key order, not the query order.
+TEST(Marginals, jointMarginalFullMatrixOrdering) {
+  NonlinearFactorGraph graph;
+  graph.addPrior(1, Pose2(), noiseModel::Unit::Create(3));
+  graph.emplace_shared<BetweenFactor<Pose2>>(1, 2, Pose2(1, 0, 0),
+                                             noiseModel::Unit::Create(3));
+
+  Values values;
+  values.insert(1, Pose2());
+  values.insert(2, Pose2(1, 0, 0));
+
+  const Marginals marginals(graph, values);
+  const KeyVector sortedQuery{1, 2};
+  const KeyVector reversedQuery{2, 1};
+
+  const JointMarginal reversedJoint =
+      marginals.jointMarginalCovariance(reversedQuery);
+  const Matrix sortedMatrix = marginals.jointMarginalCovariance(sortedQuery)
+                                  .fullMatrix();
+  const Matrix reversedMatrix = reversedJoint.fullMatrix();
+
+  EXPECT(assert_equal(sortedMatrix, reversedMatrix, 1e-9));
+  EXPECT(assert_equal(reversedJoint(1, 1), reversedMatrix.block(0, 0, 3, 3),
+                      1e-9));
+  EXPECT(assert_equal(reversedJoint(2, 2), reversedMatrix.block(3, 3, 3, 3),
+                      1e-9));
+}
+
 #ifdef GTSAM_SUPPORT_NESTED_DISSECTION
 /* ************************************************************************* */
 TEST(Marginals, orderingEquivalence) {

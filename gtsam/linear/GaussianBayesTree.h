@@ -143,9 +143,13 @@ namespace gtsam {
     }
 
     /// Return the joint marginal information matrix on the requested keys.
+    /// The returned JointMarginal is keyed by unique keys in increasing key
+    /// order, independent of the order provided in `queryKeys`.
     JointMarginal jointMarginalInformation(const KeyVector& queryKeys) const;
 
     /// Return the joint marginal covariance matrix on the requested keys.
+    /// The returned JointMarginal is keyed by unique keys in increasing key
+    /// order, independent of the order provided in `queryKeys`.
     JointMarginal jointMarginalCovariance(const KeyVector& queryKeys) const;
 
     /// Return the joint marginal information matrix using a specific elimination rule.
