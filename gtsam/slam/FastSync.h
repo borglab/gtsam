@@ -50,12 +50,11 @@ struct FastSyncMeasurement {
 };
 
 /** Extract the common finite, positive sigma from an isotropic noise model. */
-GTSAM_EXPORT double FastSyncIsotropicSigma(const SharedNoiseModel& model);
+GTSAM_EXPORT double fastSyncIsotropicSigma(const SharedNoiseModel& model);
 
 /** Solve the reduced linear problem and return unprojected matrix estimates. */
-GTSAM_EXPORT FastMap<Key, Matrix> FastSyncSolveMatrices(
-    const std::vector<FastSyncMeasurement>& measurements,
-    size_t matrixDimension);
+GTSAM_EXPORT FastMap<Key, Matrix> fastSyncSolveMatrices(
+    const std::vector<FastSyncMeasurement>& measurements, size_t d);
 
 }  // namespace internal
 
@@ -216,23 +215,6 @@ struct FastSyncProjection<SL4> {
  * non-robust, unconstrained, diagonal, and isotropic. Arbitrary keys are
  * preserved in the returned Values.
  *
- * The implementation proceeds in four stages:
- *
- * 1. Extract matching between measurements as group matrix representations
- *    and validate their noise models. Record one optional prior for later frame
- *    alignment rather than adding it to the relaxed objective.
- * 2. Solve the reduced ambient-space least-squares problem. Each measurement
- *    contributes the block factor `[-Z.transpose(), I]`; METIS nested
- *    dissection chooses an ordering, its final key is the identity gauge, and
- *    explicit QR elimination is followed by reverse block back-substitution.
- * 3. After every ambient matrix has been recovered, independently round it
- *    through FastSyncProjection<T>. Delaying projection preserves the linear
- *    coupling used by the global chordal solve.
- * 4. If a prior was supplied, compute the one global left transformation that
- *    maps the rounded value at the prior key onto the prior, and apply that
- *    transformation to every result. Relative estimates therefore do not
- *    depend on the prior.
- *
  * T must be a fixed-size square matrix Lie group with a
  * FastSyncProjection<T> specialization.
  *
@@ -246,10 +228,10 @@ Values fastSync(const NonlinearFactorGraph& graph) {
   // Enforce the fixed-size square matrix representation required by the
   // reduced block system and the type-specific projection trait.
   GTSAM_CONCEPT_ASSERT(IsMatrixLieGroup<T>);
-  constexpr int N = T::LieAlgebra::RowsAtCompileTime;
-  static_assert(N != Eigen::Dynamic && N > 0,
+  constexpr int d = T::LieAlgebra::RowsAtCompileTime;
+  static_assert(d != Eigen::Dynamic && d > 0,
                 "fastSync requires a fixed-size matrix Lie group");
-  static_assert(T::LieAlgebra::ColsAtCompileTime == N,
+  static_assert(T::LieAlgebra::ColsAtCompileTime == d,
                 "fastSync requires a square matrix representation");
 
   std::vector<internal::FastSyncMeasurement> measurements;
@@ -269,7 +251,7 @@ Values fastSync(const NonlinearFactorGraph& graph) {
       }
       measurements.push_back(
           {between->key1(), between->key2(), between->measured().matrix(),
-           internal::FastSyncIsotropicSigma(between->noiseModel())});
+           internal::fastSyncIsotropicSigma(between->noiseModel())});
     } else if (const auto prior =
                    std::dynamic_pointer_cast<PriorFactor<T>>(factor)) {
       ++priorCount;
@@ -282,10 +264,14 @@ Values fastSync(const NonlinearFactorGraph& graph) {
     }
   }
 
+  // Solve the reduced ambient least-squares problem. Each measurement produces
+  // [-Z.transpose(), I]; METIS chooses the identity gauge, then explicit QR
+  // elimination and reverse block back-substitution recover all matrices.
   FastMap<Key, Matrix> relaxed =
-      internal::FastSyncSolveMatrices(measurements, N);
+      internal::fastSyncSolveMatrices(measurements, d);
 
-  // Round only after all ambient matrices have been jointly recovered.
+  // Round through the type-specific projection only after all ambient matrices
+  // have been recovered, preserving the global linear coupling during solve.
   Values projected;
   for (const auto& keyMatrix : relaxed) {
     projected.insert(keyMatrix.first,
@@ -298,8 +284,8 @@ Values fastSync(const NonlinearFactorGraph& graph) {
         "fastSync prior key is not in the measurement graph");
   }
 
-  // Select the prior's global frame with one common left transformation,
-  // preserving every relative estimate from the rounded solution.
+  // Align to the prior with one common left transformation. Applying the same
+  // transformation to every rounded value preserves all relative estimates.
   const T estimatedPrior = projected.at<T>(priorKey);
   const T alignment =
       traits<T>::Compose(priorValue, traits<T>::Inverse(estimatedPrior));

@@ -28,7 +28,7 @@ namespace gtsam {
 namespace internal {
 
 /* ************************************************************************* */
-double FastSyncIsotropicSigma(const SharedNoiseModel& model) {
+double fastSyncIsotropicSigma(const SharedNoiseModel& model) {
   if (!model) {
     throw std::invalid_argument("fastSync requires a noise model");
   }
@@ -66,7 +66,7 @@ double FastSyncIsotropicSigma(const SharedNoiseModel& model) {
 }
 
 /* ************************************************************************* */
-static void CheckConnected(
+static void checkConnected(
     const std::vector<FastSyncMeasurement>& measurements) {
   if (measurements.empty()) {
     throw std::invalid_argument(
@@ -97,33 +97,29 @@ static void CheckConnected(
 }
 
 /* ************************************************************************* */
-FastMap<Key, Matrix> FastSyncSolveMatrices(
-    const std::vector<FastSyncMeasurement>& measurements,
-    const size_t matrixDimension) {
-  CheckConnected(measurements);
-  if (matrixDimension == 0) {
+FastMap<Key, Matrix> fastSyncSolveMatrices(
+    const std::vector<FastSyncMeasurement>& measurements, const size_t d) {
+  checkConnected(measurements);
+  if (d == 0) {
     throw std::invalid_argument("fastSync matrix dimension must be positive");
   }
 
-  const Matrix identity = Matrix::Identity(matrixDimension, matrixDimension);
-  const Vector zero = Vector::Zero(matrixDimension);
+  const Matrix identity = Matrix::Identity(d, d);
+  const Vector zero = Vector::Zero(d);
   GaussianFactorGraph reducedGraph;
   for (const auto& measurement : measurements) {
     if (!std::isfinite(measurement.sigma) || measurement.sigma <= 0.0) {
       throw std::invalid_argument(
           "fastSync requires finite, positive measurement sigmas");
     }
-    if (measurement.measured.rows() !=
-            static_cast<Eigen::Index>(matrixDimension) ||
-        measurement.measured.cols() !=
-            static_cast<Eigen::Index>(matrixDimension)) {
+    if (measurement.measured.rows() != static_cast<Eigen::Index>(d) ||
+        measurement.measured.cols() != static_cast<Eigen::Index>(d)) {
       throw std::invalid_argument(
           "fastSync measurement matrix has the wrong dimension");
     }
-    reducedGraph.add(
-        measurement.key1, -measurement.measured.transpose(), measurement.key2,
-        identity, zero,
-        noiseModel::Isotropic::Sigma(matrixDimension, measurement.sigma));
+    reducedGraph.add(measurement.key1, -measurement.measured.transpose(),
+                     measurement.key2, identity, zero,
+                     noiseModel::Isotropic::Sigma(d, measurement.sigma));
   }
 
   const Ordering ordering = Ordering::Metis(reducedGraph);
@@ -131,8 +127,7 @@ FastMap<Key, Matrix> FastSyncSolveMatrices(
     throw std::runtime_error("fastSync METIS ordering failed");
   }
   const Key gaugeKey = ordering.back();
-  reducedGraph.add(gaugeKey, identity, zero,
-                   noiseModel::Unit::Create(matrixDimension));
+  reducedGraph.add(gaugeKey, identity, zero, noiseModel::Unit::Create(d));
 
   const auto bayesNet = reducedGraph.eliminateSequential(ordering, EliminateQR);
   if (!bayesNet || bayesNet->size() != ordering.size()) {
@@ -151,7 +146,7 @@ FastMap<Key, Matrix> FastSyncSolveMatrices(
           "fastSync expected one frontal variable per conditional");
     }
 
-    Matrix sum = Matrix::Zero(matrixDimension, matrixDimension);
+    Matrix sum = Matrix::Zero(d, d);
     size_t parentIndex = 0;
     for (const Key parentKey : conditional->parents()) {
       const auto parent = solution.find(parentKey);
@@ -159,8 +154,8 @@ FastMap<Key, Matrix> FastSyncSolveMatrices(
         throw std::runtime_error(
             "fastSync encountered an unsolved separator variable");
       }
-      const Matrix parentBlock = conditional->S().block(
-          0, parentIndex * matrixDimension, matrixDimension, matrixDimension);
+      const Matrix parentBlock =
+          conditional->S().block(0, parentIndex * d, d, d);
       sum.noalias() += parent->second * parentBlock.transpose();
       ++parentIndex;
     }

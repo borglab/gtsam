@@ -124,7 +124,7 @@ TEST(FastSync, DenseQrAgreement) {
       {2, 7, Rot2::fromAngle(0.4).matrix(), 0.7},
       {7, 9, Rot2::fromAngle(-0.2).matrix(), 1.2},
       {9, 2, Rot2::fromAngle(-0.1).matrix(), 0.9}};
-  const auto actual = internal::FastSyncSolveMatrices(measurements, 2);
+  const auto actual = internal::fastSyncSolveMatrices(measurements, 2);
 
   Key gaugeKey = 0;
   double smallestIdentityError = std::numeric_limits<double>::infinity();
@@ -179,7 +179,7 @@ TEST(FastSync, PythonReferenceGoldenRot2) {
       {0, 1, Rot2::fromAngle(0.2).matrix(), 1.0},
       {1, 2, Rot2::fromAngle(-0.35).matrix(), 0.5},
       {2, 0, Rot2::fromAngle(0.1).matrix(), 2.0}};
-  const auto actual = internal::FastSyncSolveMatrices(measurements, 2);
+  const auto actual = internal::fastSyncSolveMatrices(measurements, 2);
 
   const Rot2 rounded0 = Rot2::ClosestTo(Matrix2(actual.at(0)));
   const Rot2 rounded1 = Rot2::ClosestTo(Matrix2(actual.at(1)));
