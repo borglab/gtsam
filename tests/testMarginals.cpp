@@ -362,8 +362,6 @@ TEST(Marginals, jointMarginalFullMatrixOrdering) {
                       1e-9));
 }
 
-/* ************************************************************************* */
-
 #ifdef GTSAM_SUPPORT_NESTED_DISSECTION
 /* ************************************************************************* */
 TEST(Marginals, orderingEquivalence) {
