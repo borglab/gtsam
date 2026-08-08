@@ -127,3 +127,6 @@ Notebooks in `*/doc/*.ipynb` and `*/examples/*.ipynb` should use this preamble:
 
 Use the existing `remove-cell` metadata convention so documentation builds and
 Colab behavior stay consistent.
+
+For graphs and other notebook visualizations, always prefer Plotly when
+possible so figures are interactive.
