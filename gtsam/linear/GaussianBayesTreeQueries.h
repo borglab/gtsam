@@ -37,6 +37,19 @@ inline KeyVector uniqueSortedKeys(const KeyVector& keys) {
 }
 
 /* ************************************************************************* */
+inline KeyVector uniqueKeysInOrder(const KeyVector& keys) {
+  KeyVector result;
+  result.reserve(keys.size());
+  KeySet seen;
+  for (Key key : keys) {
+    if (seen.insert(key).second) {
+      result.push_back(key);
+    }
+  }
+  return result;
+}
+
+/* ************************************************************************* */
 inline std::vector<size_t> blockOffsets(const std::vector<size_t>& dims) {
   std::vector<size_t> offsets(dims.size() + 1, 0);
   for (size_t i = 0; i < dims.size(); ++i) {
@@ -124,6 +137,26 @@ inline JointMarginal jointMarginalFromMatrix(const Matrix& matrix,
 }
 
 /* ************************************************************************* */
+inline JointMarginal reorderJointMarginal(const JointMarginal& jointMarginal,
+                                          const KeyVector& requestedKeys) {
+  std::vector<size_t> dims;
+  dims.reserve(requestedKeys.size());
+  for (Key key : requestedKeys) {
+    dims.push_back(static_cast<size_t>(jointMarginal(key, key).rows()));
+  }
+
+  const std::vector<size_t> offsets = blockOffsets(dims);
+  Matrix matrix = Matrix::Zero(offsets.back(), offsets.back());
+  for (size_t row = 0; row < requestedKeys.size(); ++row) {
+    for (size_t column = 0; column < requestedKeys.size(); ++column) {
+      matrix.block(offsets[row], offsets[column], dims[row], dims[column]) =
+          jointMarginal(requestedKeys[row], requestedKeys[column]);
+    }
+  }
+  return jointMarginalFromMatrix(matrix, requestedKeys, dims);
+}
+
+/* ************************************************************************* */
 inline JointMarginal emptyJointMarginal() {
   return JointMarginal(Matrix(), Scatter());
 }
@@ -134,20 +167,25 @@ JointMarginal buildJointMarginal(
     const BAYESTREE& bayesTree, const KeyVector& queryKeys,
     const typename BAYESTREE::FactorGraphType::Eliminate& eliminate,
     const SINGLE_BUILDER& singleBuilder, const MULTI_BUILDER& multiBuilder) {
-  const KeyVector orderedKeys = uniqueSortedKeys(queryKeys);
-  if (orderedKeys.empty()) {
+  const KeyVector requestedKeys = uniqueKeysInOrder(queryKeys);
+  if (requestedKeys.empty()) {
     return emptyJointMarginal();
   }
 
-  if (orderedKeys.size() == 1) {
-    const Matrix matrix = singleBuilder(orderedKeys.front());
-    return jointMarginalFromMatrix(matrix, orderedKeys,
+  if (requestedKeys.size() == 1) {
+    const Matrix matrix = singleBuilder(requestedKeys.front());
+    return jointMarginalFromMatrix(matrix, requestedKeys,
                                    {static_cast<size_t>(matrix.rows())});
   }
 
+  const KeyVector sortedKeys = uniqueSortedKeys(requestedKeys);
   const GaussianBayesNet bayesNet =
-      *bayesTree.jointBayesNet(orderedKeys, eliminate);
-  return multiBuilder(bayesNet, orderedKeys);
+      *bayesTree.jointBayesNet(sortedKeys, eliminate);
+  JointMarginal jointMarginal = multiBuilder(bayesNet, sortedKeys);
+  if (requestedKeys == sortedKeys) {
+    return jointMarginal;
+  }
+  return reorderJointMarginal(jointMarginal, requestedKeys);
 }
 
 /* ************************************************************************* */

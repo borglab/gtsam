@@ -142,19 +142,21 @@ namespace gtsam {
           .fullMatrix();
     }
 
-    /// Return the joint marginal information matrix on the requested keys.
+    /// Return the joint marginal information matrix in `queryKeys` order.
     JointMarginal jointMarginalInformation(const KeyVector& queryKeys) const;
 
-    /// Return the joint marginal covariance matrix on the requested keys.
+    /// Return the joint marginal covariance matrix in `queryKeys` order.
     JointMarginal jointMarginalCovariance(const KeyVector& queryKeys) const;
 
-    /// Return the joint marginal information matrix using a specific elimination rule.
+    /// Return joint marginal information in `queryKeys` order using an
+    /// elimination rule.
     JointMarginal jointMarginalInformation(const KeyVector& queryKeys,
                                           const Eliminate& eliminate) const {
       return internal::jointMarginalInformation(*this, queryKeys, eliminate);
     }
 
-    /// Return the joint marginal covariance matrix using a specific elimination rule.
+    /// Return joint marginal covariance in `queryKeys` order using an
+    /// elimination rule.
     JointMarginal jointMarginalCovariance(const KeyVector& queryKeys,
                                           const Eliminate& eliminate) const {
       return internal::jointMarginalCovariance(*this, queryKeys, eliminate);
