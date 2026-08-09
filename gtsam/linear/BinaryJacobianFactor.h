@@ -21,6 +21,7 @@
 #pragma once
 
 #include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/timing.h>
 
@@ -45,6 +46,58 @@ struct BinaryJacobianFactor: JacobianFactor {
   }
   inline Key key2() const {
     return keys_[1];
+  }
+
+  /** Add the Hessian diagonal using fixed-size matrix operations. */
+  void hessianDiagonalAdd(VectorValues& diagonal) const override {
+    const SharedDiagonal& model = get_model();
+    if (model && !model->isUnit()) {
+      JacobianFactor::hessianDiagonalAdd(diagonal);
+      return;
+    }
+
+    const Matrix& Ab = Ab_.matrix();
+    const Eigen::Block<const Matrix, M, N1> A1(Ab, 0, 0);
+    const Eigen::Block<const Matrix, M, N2> A2(Ab, 0, N1);
+    const Eigen::Matrix<double, N1, 1> diagonal1 =
+        A1.colwise().squaredNorm().transpose();
+    const Eigen::Matrix<double, N2, 1> diagonal2 =
+        A2.colwise().squaredNorm().transpose();
+
+    const auto addDiagonal = [&diagonal](Key key, const auto& contribution) {
+      auto result = diagonal.emplace(key, contribution.rows());
+      if (result.second) {
+        result.first->second = contribution;
+      } else {
+        result.first->second += contribution;
+      }
+    };
+    addDiagonal(key1(), diagonal1);
+    addDiagonal(key2(), diagonal2);
+  }
+
+  /** Compute the error change using a fixed-size residual. */
+  double deltaError(const VectorValues& values, double* oldError = nullptr,
+                    double* newError = nullptr) const override {
+    const SharedDiagonal& model = get_model();
+    if (model && !model->isUnit()) {
+      return JacobianFactor::deltaError(values, oldError, newError);
+    }
+
+    const Matrix& Ab = Ab_.matrix();
+    const Eigen::Block<const Matrix, M, N1> A1(Ab, 0, 0);
+    const Eigen::Block<const Matrix, M, N2> A2(Ab, 0, N1);
+    const Eigen::Block<const Matrix, M, 1> b(Ab, 0, N1 + N2);
+
+    Eigen::Matrix<double, M, 1> error = -b;
+    error.noalias() += A1 * values.at(key1());
+    error.noalias() += A2 * values.at(key2());
+
+    const double oldValue = 0.5 * b.squaredNorm();
+    const double newValue = 0.5 * error.squaredNorm();
+    if (oldError) *oldError = oldValue;
+    if (newError) *newError = newValue;
+    return oldValue - newValue;
   }
 
   // Fixed-size matrix update
