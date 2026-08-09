@@ -19,7 +19,7 @@
 /* -- start version constants -- */
 #define PYBIND11_VERSION_MAJOR 3
 #define PYBIND11_VERSION_MINOR 0
-#define PYBIND11_VERSION_MICRO 1
+#define PYBIND11_VERSION_MICRO 4
 // ALPHA = 0xA, BETA = 0xB, GAMMA = 0xC (release candidate), FINAL = 0xF (stable release)
 // - The release level is set to "alpha" for development versions.
 //   Use 0xA0 (LEVEL=0xA, SERIAL=0) for development versions.
@@ -27,7 +27,7 @@
 #define PYBIND11_VERSION_RELEASE_LEVEL PY_RELEASE_LEVEL_FINAL
 #define PYBIND11_VERSION_RELEASE_SERIAL 0
 // String version of (micro, release level, release serial), e.g.: 0a0, 0b1, 0rc1, 0
-#define PYBIND11_VERSION_PATCH 1
+#define PYBIND11_VERSION_PATCH 4
 /* -- end version constants -- */
 
 #if !defined(Py_PACK_FULL_VERSION)
@@ -87,7 +87,7 @@
 #    endif
 #endif
 
-#if defined(__cpp_lib_launder) && !(defined(_MSC_VER) && (_MSC_VER < 1914))
+#if defined(__cpp_lib_launder) && !(defined(_MSC_VER) && (_MSC_VER < 1920)) // See PR #5968
 #    define PYBIND11_STD_LAUNDER std::launder
 #    define PYBIND11_HAS_STD_LAUNDER 1
 #else
@@ -101,6 +101,10 @@
 #else
 #    define PYBIND11_CONSTINIT
 #    define PYBIND11_DTOR_CONSTEXPR
+#endif
+
+#if defined(PYBIND11_CPP20) && defined(__has_include) && __has_include(<barrier>)
+#    define PYBIND11_HAS_STD_BARRIER 1
 #endif
 
 // Compiler version assertions
@@ -161,6 +165,14 @@
 #    define PYBIND11_NOINLINE __declspec(noinline) inline
 #else
 #    define PYBIND11_NOINLINE __attribute__((noinline)) inline
+#endif
+
+#if defined(_MSC_VER)
+#    define PYBIND11_ALWAYS_INLINE __forceinline
+#elif defined(__GNUC__)
+#    define PYBIND11_ALWAYS_INLINE __attribute__((__always_inline__)) inline
+#else
+#    define PYBIND11_ALWAYS_INLINE inline
 #endif
 
 #if defined(__MINGW32__)
@@ -248,6 +260,10 @@
 #    define PYBIND11_HAS_U8STRING 1
 #endif
 
+#if defined(PYBIND11_CPP20) && defined(__cpp_lib_span) && __cpp_lib_span >= 202002L
+#    define PYBIND11_HAS_SPAN 1
+#endif
+
 // See description of PR #4246:
 #if !defined(PYBIND11_NO_ASSERT_GIL_HELD_INCREF_DECREF) && !defined(NDEBUG)                       \
     && !defined(PYPY_VERSION) && !defined(PYBIND11_ASSERT_GIL_HELD_INCREF_DECREF)
@@ -322,6 +338,13 @@
 #define PYBIND11_BYTES_AS_STRING PyBytes_AsString
 #define PYBIND11_BYTES_SIZE PyBytes_Size
 #define PYBIND11_LONG_CHECK(o) PyLong_Check(o)
+// In PyPy 7.3.3, `PyIndex_Check` is implemented by calling `__index__`,
+// while CPython only considers the existence of `nb_index`/`__index__`.
+#if !defined(PYPY_VERSION)
+#    define PYBIND11_INDEX_CHECK(o) PyIndex_Check(o)
+#else
+#    define PYBIND11_INDEX_CHECK(o) hasattr(o, "__index__")
+#endif
 #define PYBIND11_LONG_AS_LONGLONG(o) PyLong_AsLongLong(o)
 #define PYBIND11_LONG_FROM_SIGNED(o) PyLong_FromSsize_t((ssize_t) (o))
 #define PYBIND11_LONG_FROM_UNSIGNED(o) PyLong_FromSize_t((size_t) (o))
@@ -430,30 +453,35 @@ Note that this is run once for each (sub-)interpreter the module is imported int
 possibly concurrently.  The PyModuleDef is allowed to be static, but the PyObject* resulting from
 PyModuleDef_Init should be treated like any other PyObject (so not shared across interpreters).
  */
-#define PYBIND11_MODULE_PYINIT(name, pre_init, ...)                                               \
+#define PYBIND11_MODULE_PYINIT(name, ...)                                                         \
     static int PYBIND11_CONCAT(pybind11_exec_, name)(PyObject *);                                 \
     PYBIND11_PLUGIN_IMPL(name) {                                                                  \
         PYBIND11_CHECK_PYTHON_VERSION                                                             \
-        pre_init;                                                                                 \
-        PYBIND11_ENSURE_INTERNALS_READY                                                           \
-        static ::pybind11::detail::slots_array mod_def_slots = ::pybind11::detail::init_slots(    \
-            &PYBIND11_CONCAT(pybind11_exec_, name), ##__VA_ARGS__);                               \
-        static PyModuleDef def{/* m_base */ PyModuleDef_HEAD_INIT,                                \
-                               /* m_name */ PYBIND11_TOSTRING(name),                              \
-                               /* m_doc */ nullptr,                                               \
-                               /* m_size */ 0,                                                    \
-                               /* m_methods */ nullptr,                                           \
-                               /* m_slots */ mod_def_slots.data(),                                \
-                               /* m_traverse */ nullptr,                                          \
-                               /* m_clear */ nullptr,                                             \
-                               /* m_free */ nullptr};                                             \
-        return PyModuleDef_Init(&def);                                                            \
+        try {                                                                                     \
+            pybind11::detail::ensure_internals();                                                 \
+            static ::pybind11::detail::slots_array mod_def_slots                                  \
+                = ::pybind11::detail::init_slots(&PYBIND11_CONCAT(pybind11_exec_, name),          \
+                                                 ##__VA_ARGS__);                                  \
+            static PyModuleDef def{/* m_base */ PyModuleDef_HEAD_INIT,                            \
+                                   /* m_name */ PYBIND11_TOSTRING(name),                          \
+                                   /* m_doc */ nullptr,                                           \
+                                   /* m_size */ 0,                                                \
+                                   /* m_methods */ nullptr,                                       \
+                                   /* m_slots */ mod_def_slots.data(),                            \
+                                   /* m_traverse */ nullptr,                                      \
+                                   /* m_clear */ nullptr,                                         \
+                                   /* m_free */ nullptr};                                         \
+            return PyModuleDef_Init(&def);                                                        \
+        }                                                                                         \
+        PYBIND11_CATCH_INIT_EXCEPTIONS                                                            \
+        return nullptr;                                                                           \
     }
 
 #define PYBIND11_MODULE_EXEC(name, variable)                                                      \
     static void PYBIND11_CONCAT(pybind11_init_, name)(::pybind11::module_ &);                     \
     int PYBIND11_CONCAT(pybind11_exec_, name)(PyObject * pm) {                                    \
         try {                                                                                     \
+            pybind11::detail::ensure_internals();                                                 \
             auto m = pybind11::reinterpret_borrow<::pybind11::module_>(pm);                       \
             if (!pybind11::detail::get_cached_module(m.attr("__spec__").attr("name"))) {          \
                 PYBIND11_CONCAT(pybind11_init_, name)(m);                                         \
@@ -507,8 +535,7 @@ PyModuleDef_Init should be treated like any other PyObject (so not shared across
 
 \endrst */
 #define PYBIND11_MODULE(name, variable, ...)                                                      \
-    PYBIND11_MODULE_PYINIT(                                                                       \
-        name, (pybind11::detail::get_num_interpreters_seen() += 1), ##__VA_ARGS__)                \
+    PYBIND11_MODULE_PYINIT(name, ##__VA_ARGS__)                                                   \
     PYBIND11_MODULE_EXEC(name, variable)
 
 // pop gnu-zero-variadic-macro-arguments
@@ -579,14 +606,10 @@ enum class return_value_policy : uint8_t {
 
 PYBIND11_NAMESPACE_BEGIN(detail)
 
-inline static constexpr int log2(size_t n, int k = 0) {
-    return (n <= 1) ? k : log2(n >> 1, k + 1);
-}
+static constexpr int log2(size_t n, int k = 0) { return (n <= 1) ? k : log2(n >> 1, k + 1); }
 
 // Returns the size as a multiple of sizeof(void *), rounded up.
-inline static constexpr size_t size_in_ptrs(size_t s) {
-    return 1 + ((s - 1) >> log2(sizeof(void *)));
-}
+static constexpr size_t size_in_ptrs(size_t s) { return 1 + ((s - 1) >> log2(sizeof(void *))); }
 
 /**
  * The space to allocate for simple layout instance holders (see below) in multiple of the size of
@@ -1016,6 +1039,17 @@ struct is_instantiation<Class, Class<Us...>> : std::true_type {};
 template <typename T>
 using is_shared_ptr = is_instantiation<std::shared_ptr, T>;
 
+/// Detects whether static_cast<Derived*>(Base*) is valid, i.e. the inheritance is non-virtual.
+/// Used to detect virtual bases: if this is false, pointer adjustments require the implicit_casts
+/// chain rather than reinterpret_cast.
+template <typename Base, typename Derived, typename = void>
+struct is_static_downcastable : std::false_type {};
+template <typename Base, typename Derived>
+struct is_static_downcastable<Base,
+                              Derived,
+                              void_t<decltype(static_cast<Derived *>(std::declval<Base *>()))>>
+    : std::true_type {};
+
 /// Check if T looks like an input iterator
 template <typename T, typename = void>
 struct is_input_iterator : std::false_type {};
@@ -1038,14 +1072,30 @@ struct strip_function_object {
     using type = typename remove_class<decltype(&F::operator())>::type;
 };
 
+// Strip noexcept from a free function type (C++17: noexcept is part of the type).
+template <typename T>
+struct remove_noexcept {
+    using type = T;
+};
+#ifdef __cpp_noexcept_function_type
+template <typename R, typename... A>
+struct remove_noexcept<R(A...) noexcept> {
+    using type = R(A...);
+};
+#endif
+template <typename T>
+using remove_noexcept_t = typename remove_noexcept<T>::type;
+
 // Extracts the function signature from a function, function pointer or lambda.
+// Strips noexcept from the result so that factory/pickle_factory partial specializations
+// (which match plain Return(Args...)) work correctly with noexcept callables (issue #2234).
 template <typename Function, typename F = remove_reference_t<Function>>
-using function_signature_t = conditional_t<
+using function_signature_t = remove_noexcept_t<conditional_t<
     std::is_function<F>::value,
     F,
     typename conditional_t<std::is_pointer<F>::value || std::is_member_pointer<F>::value,
                            std::remove_pointer<F>,
-                           strip_function_object<F>>::type>;
+                           strip_function_object<F>>::type>>;
 
 /// Returns true if the type looks like a lambda: that is, isn't a function, pointer or member
 /// pointer.  Note that this can catch all sorts of other things, too; this is intended to be used
@@ -1194,6 +1244,36 @@ struct overload_cast_impl {
         -> decltype(pmf) {
         return pmf;
     }
+
+    // Define const/non-const member-pointer selector pairs for qualifier combinations.
+    // The `qualifiers` parameter is used in type position, where extra parentheses are invalid.
+    // NOLINTBEGIN(bugprone-macro-parentheses)
+#define PYBIND11_OVERLOAD_CAST_MEMBER_PTR(qualifiers)                                             \
+    template <typename Return, typename Class>                                                    \
+    constexpr auto operator()(Return (Class::*pmf)(Args...) qualifiers, std::false_type = {})     \
+        const noexcept -> decltype(pmf) {                                                         \
+        return pmf;                                                                               \
+    }                                                                                             \
+    template <typename Return, typename Class>                                                    \
+    constexpr auto operator()(Return (Class::*pmf)(Args...) const qualifiers, std::true_type)     \
+        const noexcept -> decltype(pmf) {                                                         \
+        return pmf;                                                                               \
+    }
+    PYBIND11_OVERLOAD_CAST_MEMBER_PTR(&)
+    PYBIND11_OVERLOAD_CAST_MEMBER_PTR(&&)
+
+#ifdef __cpp_noexcept_function_type
+    template <typename Return>
+    constexpr auto operator()(Return (*pf)(Args...) noexcept) const noexcept -> decltype(pf) {
+        return pf;
+    }
+
+    PYBIND11_OVERLOAD_CAST_MEMBER_PTR(noexcept)
+    PYBIND11_OVERLOAD_CAST_MEMBER_PTR(& noexcept)
+    PYBIND11_OVERLOAD_CAST_MEMBER_PTR(&& noexcept)
+#endif
+#undef PYBIND11_OVERLOAD_CAST_MEMBER_PTR
+    // NOLINTEND(bugprone-macro-parentheses)
 };
 PYBIND11_NAMESPACE_END(detail)
 
@@ -1293,8 +1373,7 @@ template <typename... Args>
 #if defined(_MSC_VER) && _MSC_VER < 1920 // MSVC 2017
 constexpr
 #endif
-    inline void
-    silence_unused_warnings(Args &&...) {
+    inline void silence_unused_warnings(Args &&...) {
 }
 
 // MSVC warning C4100: Unreferenced formal parameter
