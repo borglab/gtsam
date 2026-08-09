@@ -307,6 +307,9 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
    * about zero is \f$ -R^T d \f$.  See also gradient(const GaussianBayesNet&,
    * const VectorValues&).
    *
+   * Components associated with hard constraints are undefined and are
+   * represented as zero in the returned gradient.
+   *
    * @return A VectorValues storing the gradient.
    */
   VectorValues gradientAtZero() const;
