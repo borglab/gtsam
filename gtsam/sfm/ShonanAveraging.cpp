@@ -932,10 +932,10 @@ std::pair<Values, double> ShonanAveraging<d>::run(const Values &initial,
                                                   size_t min_p,
                                                   size_t max_p) const {
   if (min_p < d) {
-    throw std::runtime_error("pMin is smaller than the base dimension d");
+    throw std::runtime_error("min_p is smaller than the base dimension d");
   }
   if (max_p < min_p) {
-    throw std::runtime_error("pMax is smaller than pMin");
+    throw std::runtime_error("max_p is smaller than min_p");
   }
 
   std::optional<Ordering> ordering = parameters_.lm.ordering;
@@ -951,10 +951,10 @@ template <size_t d>
 std::pair<Values, double> ShonanAveraging<d>::run(
     size_t min_p, size_t max_p) const {
   if (min_p < d) {
-    throw std::runtime_error("pMin is smaller than the base dimension d");
+    throw std::runtime_error("min_p is smaller than the base dimension d");
   }
   if (max_p < min_p) {
-    throw std::runtime_error("pMax is smaller than pMin");
+    throw std::runtime_error("max_p is smaller than min_p");
   }
 
   const NonlinearFactorGraph graph = buildFastSyncGraph();
@@ -974,7 +974,7 @@ std::pair<Values, double> ShonanAveraging<d>::run(
     const Values &initial, size_t min_p, size_t max_p,
     const std::optional<Ordering> &ordering) const {
   if (min_p < d) {
-    throw std::runtime_error("pMin is smaller than the base dimension d");
+    throw std::runtime_error("min_p is smaller than the base dimension d");
   }
   Values Qstar;
   Values initialSOp = LiftTo<Rot>(min_p, initial);  // lift to min_p!
@@ -985,7 +985,7 @@ std::pair<Values, double> ShonanAveraging<d>::run(
       // in this case, there is no optimality certification
       if (min_p != max_p) {
         throw std::runtime_error(
-            "When using robust norm, Shonan only tests a single rank. Set pMin = pMax");
+            "When using robust norm, Shonan only tests a single rank. Set min_p = max_p");
       }
       const Values SO3Values = roundSolution(Qstar);
       return {SO3Values, 0};
@@ -999,7 +999,7 @@ std::pair<Values, double> ShonanAveraging<d>::run(
         return {SO3Values, minEigenValue};
       }
 
-      // Not at global optimimum yet, so check whether we will go to next level
+      // Not at global optimum yet, so check whether we will go to next level
       if (p != max_p) {
         // Calculate initial estimate for next level by following minEigenVector
         initialSOp =
@@ -1007,7 +1007,7 @@ std::pair<Values, double> ShonanAveraging<d>::run(
       }
     }
   }
-  throw std::runtime_error("Shonan::run did not converge for given pMax");
+  throw std::runtime_error("Shonan::run did not converge for given max_p");
 }
 
 /* ************************************************************************* */

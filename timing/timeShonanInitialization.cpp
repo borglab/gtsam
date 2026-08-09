@@ -94,6 +94,7 @@ struct BenchmarkContext {
   ShonanAveraging3::Measurements measurements;
   NonlinearFactorGraph chordalGraph;
   NonlinearFactorGraph fastSyncGraph;
+  gtsam::Ordering fastSyncOrdering;
   std::unique_ptr<ShonanAveraging3> beforeShonan;
   std::unique_ptr<ShonanAveraging3> afterShonan;
 };
@@ -354,9 +355,10 @@ BenchmarkContext buildContext(const Options& options,
   const ShonanAveraging3::Parameters beforeParameters(
       lmParameters, options.optimizerMethod, kOptimalityThreshold);
   ShonanAveraging3::Parameters afterParameters = beforeParameters;
+  context.fastSyncOrdering =
+      gtsam::Ordering::Create(gtsam::Ordering::METIS, context.fastSyncGraph);
   if (afterParameters.lm.requiresOrdering()) {
-    afterParameters.lm.setOrdering(
-        gtsam::Ordering::Create(gtsam::Ordering::METIS, context.fastSyncGraph));
+    afterParameters.lm.setOrdering(context.fastSyncOrdering);
   }
   context.beforeShonan = std::make_unique<ShonanAveraging3>(
       context.measurements, beforeParameters);
@@ -407,7 +409,8 @@ TrialResult runTrial(const string& initializer, size_t runIndex,
           gtsam::InitializePose3::initializeOrientations(context.chordalGraph);
     } else {
       initial =
-          gtsam::fastSync<Rot3>(context.fastSyncGraph, gtsam::Ordering::METIS);
+          gtsam::fastSync<Rot3>(context.fastSyncGraph,
+                                context.fastSyncOrdering);
     }
   } catch (const std::exception& exception) {
     result.initializationSeconds = elapsedSeconds(start);
