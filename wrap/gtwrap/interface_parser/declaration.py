@@ -23,7 +23,7 @@ class Include:
     Rule to parse #include directives.
     """
     rule = (INCLUDE + LOPBRACK + CharsNotIn('>')("header") +
-            ROPBRACK).setParseAction(lambda t: Include(t.header))
+            ROPBRACK).set_parse_action(lambda t: Include(t.header))
 
     def __init__(self, header: CharsNotIn, parent: str = ''):
         self.header = header
@@ -39,7 +39,7 @@ class ForwardDeclaration:
     """
     rule = (Optional(VIRTUAL("is_virtual")) + CLASS + Typename.rule("name") +
             Optional(COLON + Typename.rule("parent_type")) +
-            SEMI_COLON).setParseAction(lambda t: ForwardDeclaration(
+            SEMI_COLON).set_parse_action(lambda t: ForwardDeclaration(
                 t.name, t.parent_type, t.is_virtual))
 
     def __init__(self,

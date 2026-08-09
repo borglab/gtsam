@@ -26,17 +26,11 @@ namespace gtsam {
 /* ************************************************************************* */
 Matrix3 Cal3Bundler::K() const {
   // This function is needed to ensure skew = 0;
-  Matrix3 K;
-  K << fx_, 0, u0_, 0, fy_, v0_, 0, 0, 1.0;
-  return K;
+  return Matrix3{{fx_, 0, u0_}, {0, fy_, v0_}, {0, 0, 1.0}};
 }
 
 /* ************************************************************************* */
-Vector4 Cal3Bundler::k() const {
-  Vector4 rvalue_;
-  rvalue_ << k1_, k2_, 0, 0;
-  return rvalue_;
-}
+Vector4 Cal3Bundler::k() const { return Vector4{k1_, k2_, 0, 0}; }
 
 /* ************************************************************************* */
 Vector3 Cal3Bundler::vector() const { return Vector3(fx_, k1_, k2_); }
@@ -50,8 +44,7 @@ std::ostream& operator<<(std::ostream& os, const Cal3Bundler& cal) {
 
 /* ************************************************************************* */
 void Cal3Bundler::print(const std::string& s) const {
-  gtsam::print((Vector)(Vector(5) << fx_, k1_, k2_, u0_, v0_).finished(),
-               s + ".K");
+  gtsam::print(Vector{{fx_, k1_, k2_, u0_, v0_}}, s + ".K");
 }
 
 /* ************************************************************************* */
@@ -76,14 +69,13 @@ Point2 Cal3Bundler::uncalibrate(const Point2& p, OptionalJacobian<2, 3> Dcal,
   // Derivatives make use of intermediate variables above
   if (Dcal) {
     double rx = r * x, ry = r * y;
-    *Dcal << u, f_ * rx, f_ * r * rx, v, f_ * ry, f_ * r * ry;
+    *Dcal = Matrix23{{u, f_ * rx, f_ * r * rx}, {v, f_ * ry, f_ * r * ry}};
   }
 
   if (Dp) {
     const double a = 2. * (k1_ + 2. * k2_ * r);
     const double axx = a * x * x, axy = a * x * y, ayy = a * y * y;
-    *Dp << g + axx, axy, axy, g + ayy;
-    *Dp *= f_;
+    *Dp = Matrix2{{g + axx, axy}, {axy, g + ayy}} * f_;
   }
 
   return Point2(u0_ + f_ * u, v0_ + f_ * v);

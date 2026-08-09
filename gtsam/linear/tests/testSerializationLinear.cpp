@@ -133,7 +133,7 @@ BOOST_CLASS_EXPORT_GUID(gtsam::GaussianConditional , "gtsam::GaussianConditional
 /* ************************************************************************* */
 TEST (Serialization, linear_factors) {
   VectorValues values;
-  values.insert(0, (Vector(1) << 1.0).finished());
+  values.insert(0, Vector{{1.0}});
   values.insert(1, Vector2(2.0,3.0));
   values.insert(2, Vector2(4.0,5.0));
   EXPECT(equalsObj<VectorValues>(values));
@@ -157,10 +157,10 @@ TEST (Serialization, linear_factors) {
 
 /* ************************************************************************* */
 TEST (Serialization, gaussian_conditional) {
-  Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
-  Matrix A2 = (Matrix(2, 2) << 6., 0.2, 8., 0.4).finished();
-  Matrix R = (Matrix(2, 2) << 0.1, 0.3, 0.0, 0.34).finished();
-  Vector d(2); d << 0.2, 0.5;
+  Matrix A1{{1., 2.}, {3., 4.}};
+  Matrix A2{{6., 0.2}, {8., 0.4}};
+  Matrix R{{0.1, 0.3}, {0.0, 0.34}};
+  Vector d{{0.2, 0.5}};
   GaussianConditional cg(0, d, R, 1, A1, 2, A2);
 
   EXPECT(equalsObj(cg));
@@ -172,10 +172,10 @@ TEST (Serialization, gaussian_conditional) {
 TEST (Serialization, gaussian_factor_graph) {
   GaussianFactorGraph graph;
   {
-    Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
-    Matrix A2 = (Matrix(2, 2) << 6., 0.2, 8., 0.4).finished();
-    Matrix R = (Matrix(2, 2) << 0.1, 0.3, 0.0, 0.34).finished();
-    Vector d(2); d << 0.2, 0.5;
+    Matrix A1{{1., 2.}, {3., 4.}};
+    Matrix A2{{6., 0.2}, {8., 0.4}};
+    Matrix R{{0.1, 0.3}, {0.0, 0.34}};
+    Vector d{{0.2, 0.5}};
     GaussianConditional cg(0, d, R, 1, A1, 2, A2);
     graph.push_back(cg);
   }
@@ -200,21 +200,21 @@ TEST(Serialization, gaussian_bayes_net) {
   // Create an arbitrary Bayes Net
   GaussianBayesNet gbn;
   gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-      0, Vector2(1.0, 2.0), (Matrix2() << 3.0, 4.0, 0.0, 6.0).finished(), 3,
-      (Matrix2() << 7.0, 8.0, 9.0, 10.0).finished(), 4,
-      (Matrix2() << 11.0, 12.0, 13.0, 14.0).finished()));
+      0, Vector2(1.0, 2.0), Matrix2{{3.0, 4.0}, {0.0, 6.0}}, 3,
+      Matrix2{{7.0, 8.0}, {9.0, 10.0}}, 4,
+      Matrix2{{11.0, 12.0}, {13.0, 14.0}}));
   gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-      1, Vector2(15.0, 16.0), (Matrix2() << 17.0, 18.0, 0.0, 20.0).finished(),
-      2, (Matrix2() << 21.0, 22.0, 23.0, 24.0).finished(), 4,
-      (Matrix2() << 25.0, 26.0, 27.0, 28.0).finished()));
+      1, Vector2(15.0, 16.0), Matrix2{{17.0, 18.0}, {0.0, 20.0}}, 2,
+      Matrix2{{21.0, 22.0}, {23.0, 24.0}}, 4,
+      Matrix2{{25.0, 26.0}, {27.0, 28.0}}));
   gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-      2, Vector2(29.0, 30.0), (Matrix2() << 31.0, 32.0, 0.0, 34.0).finished(),
-      3, (Matrix2() << 35.0, 36.0, 37.0, 38.0).finished()));
+      2, Vector2(29.0, 30.0), Matrix2{{31.0, 32.0}, {0.0, 34.0}}, 3,
+      Matrix2{{35.0, 36.0}, {37.0, 38.0}}));
   gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-      3, Vector2(39.0, 40.0), (Matrix2() << 41.0, 42.0, 0.0, 44.0).finished(),
-      4, (Matrix2() << 45.0, 46.0, 47.0, 48.0).finished()));
+      3, Vector2(39.0, 40.0), Matrix2{{41.0, 42.0}, {0.0, 44.0}}, 4,
+      Matrix2{{45.0, 46.0}, {47.0, 48.0}}));
   gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-      4, Vector2(49.0, 50.0), (Matrix2() << 51.0, 52.0, 0.0, 54.0).finished()));
+      4, Vector2(49.0, 50.0), Matrix2{{51.0, 52.0}, {0.0, 54.0}}));
 
   std::string serialized = serialize(gbn);
   GaussianBayesNet actual;
@@ -228,10 +228,14 @@ TEST (Serialization, gaussian_bayes_tree) {
   const Ordering chainOrdering {x2, x1, x3, x4};
   const SharedDiagonal chainNoise = noiseModel::Isotropic::Sigma(1, 0.5);
   const GaussianFactorGraph chain = {
-    std::make_shared<JacobianFactor>(x2, (Matrix(1, 1) << 1.).finished(), x1, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise),
-    std::make_shared<JacobianFactor>(x2, (Matrix(1, 1) << 1.).finished(), x3, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise),
-    std::make_shared<JacobianFactor>(x3, (Matrix(1, 1) << 1.).finished(), x4, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise),
-    std::make_shared<JacobianFactor>(x4, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise)};
+      std::make_shared<JacobianFactor>(x2, Matrix{{1.}}, x1, Matrix{{1.}},
+                                       Vector{{1.}}, chainNoise),
+      std::make_shared<JacobianFactor>(x2, Matrix{{1.}}, x3, Matrix{{1.}},
+                                       Vector{{1.}}, chainNoise),
+      std::make_shared<JacobianFactor>(x3, Matrix{{1.}}, x4, Matrix{{1.}},
+                                       Vector{{1.}}, chainNoise),
+      std::make_shared<JacobianFactor>(x4, Matrix{{1.}}, Vector{{1.}},
+                                       chainNoise)};
 
   GaussianBayesTree init = *chain.eliminateMultifrontal(chainOrdering);
   GaussianBayesTree expected = *chain.eliminateMultifrontal(chainOrdering);

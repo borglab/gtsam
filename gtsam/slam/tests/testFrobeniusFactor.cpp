@@ -41,9 +41,9 @@ using namespace gtsam;
 /* ************************************************************************* */
 namespace so3 {
   SO3 id;
-  Vector3 v1 = (Vector(3) << 0.1, 0, 0).finished();
+  Vector3 v1{0.1, 0, 0};
   SO3 R1 = SO3::Expmap(v1);
-  Vector3 v2 = (Vector(3) << 0.01, 0.02, 0.03).finished();
+  Vector3 v2{0.01, 0.02, 0.03};
   SO3 R2 = SO3::Expmap(v2);
   SO3 R12 = R1.between(R2);
 }  // namespace so3
@@ -64,10 +64,9 @@ TEST(FrobeniusPriorSO3, EvaluateError) {
 /* ************************************************************************* */
 TEST(FrobeniusPriorSO3, ClosestTo) {
   // Example top-left of SO(4) matrix not quite on SO(3) manifold
-  Matrix3 M;
-  M << 0.79067393, 0.6051136, -0.0930814,   //
-    0.4155925, -0.64214347, -0.64324489,  //
-    -0.44948549, 0.47046326, -0.75917576;
+  Matrix3 M{{0.79067393, 0.6051136, -0.0930814},
+            {0.4155925, -0.64214347, -0.64324489},
+            {-0.44948549, 0.47046326, -0.75917576}};
 
   SO3 expected = SO3::ClosestTo(M);
 
@@ -156,9 +155,9 @@ TEST(FrobeniusBetweenFactorSO3, EvaluateError) {
 /* ************************************************************************* */
 namespace so4 {
   SO4 id;
-  Vector6 v1 = (Vector(6) << 0.1, 0, 0, 0, 0, 0).finished();
+  Vector6 v1{0.1, 0, 0, 0, 0, 0};
   SO4 Q1 = SO4::Expmap(v1);
-  Vector6 v2 = (Vector(6) << 0.01, 0.02, 0.03, 0.04, 0.05, 0.06).finished();
+  Vector6 v2{0.01, 0.02, 0.03, 0.04, 0.05, 0.06};
   SO4 Q2 = SO4::Expmap(v2);
 }  // namespace so4
 
@@ -297,6 +296,11 @@ TEST(FrobeniusBetweenFactorNLSimilarity2, EvaluateError) {
   expected.setZero();
   EXPECT(assert_equal(expected, actual, 1e-9));
 
+  // Verify that requesting only the second Jacobian initializes its chain.
+  Matrix H2Only;
+  factor.evaluateError(P1, P2, nullptr, &H2Only);
+  EXPECT(assert_equal(H2, H2Only, 1e-9));
+
   Values values;
   values.insert(1, P1);
   values.insert(2, P2);
@@ -405,11 +409,9 @@ TEST(FrobeniusBetweenFactorGal3, EvaluateError) {
 /* ************************************************************************* */
 namespace sl4 {
 SL4 id;
-const Matrix4 T_matrix =
-    (Matrix4() << 1, 0, 0, 1, 0, 1, 0, 2, 0, 0, 1, 3, 0, 0, 0, 1).finished();
+const Matrix4 T_matrix{{1, 0, 0, 1}, {0, 1, 0, 2}, {0, 0, 1, 3}, {0, 0, 0, 1}};
 const SL4 T1(T_matrix);
-const Matrix4 T_matrix2 =
-    (Matrix4() << 1, 0, 0, 4, 0, 1, 0, 5, 0, 0, 1, 6, 0, 0, 0, 1).finished();
+const Matrix4 T_matrix2{{1, 0, 0, 4}, {0, 1, 0, 5}, {0, 0, 1, 6}, {0, 0, 0, 1}};
 const SL4 T2(T_matrix2);
 }  // namespace sl4
 

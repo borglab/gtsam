@@ -7,6 +7,7 @@ set (gtsam_subdirs
     base
     basis
     constrained
+    certifiable
     geometry
     inference
     symbolic
@@ -144,6 +145,11 @@ if(GTSAM_ENABLE_CUDA)
     target_link_libraries(gtsam PUBLIC cudss::cudss)
   endif()
 endif()
+if(GTSAM_USE_MOSEK)
+  target_link_libraries(gtsam PRIVATE gtsam_mosek_backend)
+  set_property(TARGET gtsam APPEND PROPERTY BUILD_RPATH "${MOSEK_LIBRARY_DIR}")
+  set_property(TARGET gtsam APPEND PROPERTY INSTALL_RPATH "${MOSEK_LIBRARY_DIR}")
+endif()
 
 # Apply build flags:
 gtsam_apply_build_flags(gtsam)
@@ -162,6 +168,10 @@ set_target_properties(gtsam PROPERTIES
 # Append Eigen include path to either
 # system-eigen, or GTSAM eigen path
 target_link_libraries(gtsam PUBLIC Eigen3::Eigen)
+
+if(GTSAM_USE_SYSTEM_SPECTRA)
+  target_link_libraries(gtsam PRIVATE $<BUILD_INTERFACE:Spectra::Spectra>)
+endif()
 
 # MKL include dir:
 if (GTSAM_USE_EIGEN_MKL)
@@ -187,12 +197,17 @@ target_include_directories(gtsam BEFORE PUBLIC
 # 3rdparty libraries: use the "system" flag so they are included via "-isystem"
 # and warnings (and warnings-considered-errors) in those headers are not
 # reported as warnings/errors in our targets:
+set(gtsam_spectra_include)
+if(NOT GTSAM_USE_SYSTEM_SPECTRA)
+  set(gtsam_spectra_include
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty>)
+endif()
 target_include_directories(gtsam SYSTEM BEFORE PUBLIC
   # SuiteSparse_config
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/SuiteSparse_config>
   $<INSTALL_INTERFACE:include/gtsam/3rdparty/SuiteSparse_config>
   # Spectra
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/Spectra>
+  ${gtsam_spectra_include}
   # CCOLAMD
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CCOLAMD/Include>
   $<INSTALL_INTERFACE:include/gtsam/3rdparty/CCOLAMD>

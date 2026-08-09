@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
-*  @file   IncrementalFixedLagExample.cpp
+*  @file   IncrementalFixedLagSmootherExample.cpp
 *  @brief  Example of incremental fixed-lag smoother using real-world data.
 *  @author Xiangcheng Hu (xhubd@connect.ust.hk), Frank Dellaert, Kevin Doherty
 *  @date   Janaury 15, 2025

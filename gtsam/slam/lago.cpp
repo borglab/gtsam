@@ -146,7 +146,7 @@ static void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
   if (!pose2Between)
     throw invalid_argument(
         "buildLinearOrientationGraph: invalid between factor!");
-  deltaTheta = (Vector(1) << pose2Between->measured().theta()).finished();
+  deltaTheta = Vector{{pose2Between->measured().theta()}};
 
   // Retrieve the noise model for the relative rotation
   SharedNoiseModel model = pose2Between->noiseModel();
@@ -155,7 +155,8 @@ static void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
   if (!diagonalModel)
     throw invalid_argument("buildLinearOrientationGraph: invalid noise model "
         "(current version assumes diagonal noise model)!");
-  Vector std_deltaTheta = (Vector(1) << diagonalModel->sigma(2)).finished(); // std on the angular measurement
+  Vector std_deltaTheta{
+      {diagonalModel->sigma(2)}};  // std on the angular measurement
   model_deltaTheta = noiseModel::Diagonal::Sigmas(std_deltaTheta);
 }
 
@@ -187,8 +188,7 @@ GaussianFactorGraph buildLinearOrientationGraph(
         - orientationsToRoot.at(key2); // this coincides to summing up measurements along the cycle induced by the chord
     double k = std::round(k2pi_noise / (2 * M_PI));
     //if (k2pi_noise - 2*k*M_PI > 1e-5) cout << k2pi_noise - 2*k*M_PI << endl; // for debug
-    Vector deltaThetaRegularized = (Vector(1)
-        << key1_DeltaTheta_key2 - 2 * k * M_PI).finished();
+    Vector deltaThetaRegularized{{key1_DeltaTheta_key2 - 2 * k * M_PI}};
     lagoGraph.add(key1, -I_1x1, key2, I_1x1, deltaThetaRegularized, model_deltaTheta);
   }
   // prior on the anchor orientation
@@ -332,8 +332,7 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
       double dx = pose2Between->measured().x();
       double dy = pose2Between->measured().y();
 
-      Vector globalDeltaCart = //
-          (Vector(2) << c1 * dx - s1 * dy, s1 * dx + c1 * dy).finished();
+      Vector globalDeltaCart{{c1 * dx - s1 * dy, s1 * dx + c1 * dy}};
       Vector b = (Vector(3) << globalDeltaCart, linearDeltaRot).finished(); // rhs
       Matrix J1 = -I_3x3;
       J1(0, 2) = s1 * dx + c1 * dy;

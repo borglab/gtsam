@@ -27,7 +27,6 @@ xcode/
 
 # MyST build outputs
 _build
-GEMINI.md
 doc/#*.lyx#
 /cmake-build-debug/
 .venv/
@@ -35,6 +34,7 @@ conductor/
 .ccache/
 gtsam_unstable/timing/data/
 timing/results/bayes_tree_covariance/
+timing/**/benchmark_logs/
 
 # Local development docs/artifacts
 docs/*

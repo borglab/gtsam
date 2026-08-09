@@ -133,7 +133,7 @@ public:
 
   /// Return the perpendicular distance to the origin
   inline double distance(OptionalJacobian<1, 3> H = {}) const {
-    if (H) *H << 0,0,1;
+    if (H) *H = Matrix13{{0, 0, 1}};
     return d_;
   }
 };

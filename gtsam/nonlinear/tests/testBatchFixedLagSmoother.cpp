@@ -305,8 +305,8 @@ TEST( BatchFixedLagSmoother, NEES )
 
   const double transSigma = 0.5;
   const double rotSigma = 0.3;  // radians (~17 degrees)
-  auto noise = noiseModel::Diagonal::Sigmas(
-      (Vector(3) << rotSigma, transSigma, transSigma).finished());
+  auto noise =
+      noiseModel::Diagonal::Sigmas(Vector{{rotSigma, transSigma, transSigma}});
 
   const size_t numTrials = 100;
   const size_t numSteps = 30;

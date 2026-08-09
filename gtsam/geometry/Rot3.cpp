@@ -32,6 +32,12 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
+bool Rot3::IsValid(const Matrix3& R, double tol) {
+  return (R.transpose() * R - Matrix3::Identity()).norm() <= tol &&
+         R.determinant() > 0;
+}
+
+/* ************************************************************************* */
 void Rot3::print(const std::string& s) const {
   cout << (s.empty() ? "R: " : s + " ");
   gtsam::print(static_cast<Matrix>(matrix()));
@@ -139,8 +145,7 @@ Point3 Rot3::unrotate(const Point3& p, OptionalJacobian<3,3> H1,
   const Matrix3& Rt = transpose();
   Point3 q(Rt * p); // q = Rt*p
   const double wx = q.x(), wy = q.y(), wz = q.z();
-  if (H1)
-    *H1 << 0.0, -wz, +wy, +wz, 0.0, -wx, -wy, +wx, 0.0;
+  if (H1) *H1 = Matrix3{{0.0, -wz, +wy}, {+wz, 0.0, -wx}, {-wy, +wx, 0.0}};
   if (H2)
     *H2 = Rt;
   return q;

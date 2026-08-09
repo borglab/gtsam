@@ -1,5 +1,5 @@
 /**
- * @file expressions.h
+ * @file gtsam/slam/expressions.h
  * @brief Common expressions for solving geometry/slam/sfm problems
  * @date Oct 1, 2014
  * @author Frank Dellaert

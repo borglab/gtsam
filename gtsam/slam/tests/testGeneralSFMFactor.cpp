@@ -84,19 +84,13 @@ static const double baseline = 5.;
 /* ************************************************************************* */
 static vector<Point3> genPoint3() {
   const double z = 5;
-  vector<Point3> landmarks;
-  landmarks.push_back(Point3(-1., -1., z));
-  landmarks.push_back(Point3(-1., 1., z));
-  landmarks.push_back(Point3(1., 1., z));
-  landmarks.push_back(Point3(1., -1., z));
-  landmarks.push_back(Point3(-1.5, -1.5, 1.5 * z));
-  landmarks.push_back(Point3(-1.5, 1.5, 1.5 * z));
-  landmarks.push_back(Point3(1.5, 1.5, 1.5 * z));
-  landmarks.push_back(Point3(1.5, -1.5, 1.5 * z));
-  landmarks.push_back(Point3(-2., -2., 2 * z));
-  landmarks.push_back(Point3(-2., 2., 2 * z));
-  landmarks.push_back(Point3(2., 2., 2 * z));
-  landmarks.push_back(Point3(2., -2., 2 * z));
+  vector<Point3> landmarks{
+      Point3(-1., -1., z),         Point3(-1., 1., z),
+      Point3(1., 1., z),           Point3(1., -1., z),
+      Point3(-1.5, -1.5, 1.5 * z), Point3(-1.5, 1.5, 1.5 * z),
+      Point3(1.5, 1.5, 1.5 * z),   Point3(1.5, -1.5, 1.5 * z),
+      Point3(-2., -2., 2 * z),     Point3(-2., 2., 2 * z),
+      Point3(2., 2., 2 * z),       Point3(2., -2., 2 * z)};
   return landmarks;
 }
 
@@ -303,13 +297,13 @@ TEST( GeneralSFMFactor, optimize_varK_FixLandmarks ) {
     if (i == 0) {
       values.insert(X(i), cameras[i]);
     } else {
-
-      Vector delta = (Vector(11) << rot_noise, rot_noise, rot_noise, // rotation
-      trans_noise, trans_noise, trans_noise, // translation
-      focal_noise, focal_noise, // f_x, f_y
-      skew_noise, // s
-      trans_noise, trans_noise // ux, uy
-          ).finished();
+      Vector delta{{
+          rot_noise, rot_noise, rot_noise,        // rotation
+          trans_noise, trans_noise, trans_noise,  // translation
+          focal_noise, focal_noise,               // f_x, f_y
+          skew_noise,                             // s
+          trans_noise, trans_noise                // ux, uy
+      }};
       values.insert(X(i), cameras[i].retract(delta));
     }
   }

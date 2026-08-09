@@ -8,12 +8,21 @@ set -x
 
 PYTHON_VERSION="$1"
 PROJECT_DIR="$2"
-WHEEL_BUILD_JOBS=2
+BOOST_BUILD_JOBS=2
+GTSAM_BUILD_JOBS=2
+
+# The generated Python wrapper translation units require substantial memory.
+# Compile them serially on Linux ARM runners to avoid the OOM killer.
+if [ "$(uname)" == "Linux" ] && [ "$(uname -m)" == "aarch64" ]; then
+    GTSAM_BUILD_JOBS=1
+fi
+
+echo "Build parallelism: Boost=${BOOST_BUILD_JOBS}, GTSAM=${GTSAM_BUILD_JOBS}"
 
 export PYTHON="python${PYTHON_VERSION}"
 
 if [ "$(uname)" == "Linux" ]; then
-    # manylinux2014 is based on CentOS 7, so use yum to install dependencies
+    # Supported manylinux images use a yum-compatible package manager.
     yum install -y wget doxygen
 elif [ "$(uname)" == "Darwin" ]; then
     brew install doxygen
@@ -33,17 +42,17 @@ BOOST_PREFIX="$HOME/opt/boost"
 ./bootstrap.sh --prefix=${BOOST_PREFIX}
 
 if [ "$(uname)" == "Linux" ]; then
-    ./b2 -j${WHEEL_BUILD_JOBS} install --prefix=${BOOST_PREFIX} -d0 --with-graph \
+    ./b2 -j${BOOST_BUILD_JOBS} install --prefix=${BOOST_PREFIX} -d0 --with-graph \
         --with-move --with-optional --with-program_options --with-random \
         --with-serialization --with-smart_ptr --with-timer --with-chrono
 elif [ "$(uname)" == "Darwin" ]; then
-    ./b2 -j${WHEEL_BUILD_JOBS} install --prefix=${BOOST_PREFIX} -d0 --with-graph \
+    ./b2 -j${BOOST_BUILD_JOBS} install --prefix=${BOOST_PREFIX} -d0 --with-graph \
         --with-move --with-optional --with-program_options --with-random \
         --with-serialization --with-smart_ptr --with-timer --with-chrono \
         architecture=arm \
         cxxflags="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
         linkflags="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}"
-    ./b2 -j${WHEEL_BUILD_JOBS} install --prefix=${BOOST_PREFIX}/x86 -d0 --with-graph \
+    ./b2 -j${BOOST_BUILD_JOBS} install --prefix=${BOOST_PREFIX}/x86 -d0 --with-graph \
         --with-move --with-optional --with-program_options --with-random \
         --with-serialization --with-smart_ptr --with-timer --with-chrono \
         architecture=x86 \
@@ -98,10 +107,10 @@ cmake $PROJECT_DIR \
     -DGTSAM_GENERATE_DOC_XML=1 \
     -DGTWRAP_ADD_DOCSTRINGS=ON
 
-# Generate Doxygen XML documentation
-doxygen build/doc/Doxyfile
+# Generate Doxygen XML documentation with the legacy-compatible configuration.
+doxygen build/doc/Doxyfile.xml
 
 # Install the Python wrapper module and generate Python stubs
 cd $PROJECT_DIR/build/python
-make -j${WHEEL_BUILD_JOBS} install
-make -j${WHEEL_BUILD_JOBS} python-stubs
+make -j${GTSAM_BUILD_JOBS} install
+make -j${GTSAM_BUILD_JOBS} python-stubs

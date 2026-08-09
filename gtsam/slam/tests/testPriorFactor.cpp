@@ -32,8 +32,7 @@ TEST(PriorFactor, ConstructorVector3) {
 
 // Constructor dynamic sized vector
 TEST(PriorFactor, ConstructorDynamicSizeVector) {
-  Vector v(5);
-  v << 1, 2, 3, 4, 5;
+  Vector v{{1, 2, 3, 4, 5}};
   SharedNoiseModel model = noiseModel::Isotropic::Sigma(5, 1.0);
   PriorFactor<Vector> factor(1, v, model);
 }
@@ -57,8 +56,7 @@ TEST(PriorFactor, ConstantBias) {
   EXPECT_DOUBLES_EQUAL(0.0, factor.error(values), 1e-8);
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
 
-  ConstantBias incorrectBias(
-      (Vector6() << 1.1, 2.1, 3.1, 0.2, 0.3, 0.4).finished());
+  ConstantBias incorrectBias(Vector6{1.1, 2.1, 3.1, 0.2, 0.3, 0.4});
   values.clear();
   values.insert(1, incorrectBias);
   EXPECT_DOUBLES_EQUAL(3.0, factor.error(values), 1e-8);

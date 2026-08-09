@@ -13,6 +13,7 @@
  * @file BatchJacobianFactor.h
  * @brief Row-sparse fixed-dimension batch Jacobian factor.
  * @author Frank Dellaert
+ * @author Fan Jiang
  */
 
 #pragma once
@@ -203,6 +204,89 @@ class GTSAM_EXPORT BatchJacobianFactorBase : public GaussianFactor {
   virtual void updateHessianWithMappedSlots(
       const std::vector<DenseIndex>& mappedSlots,
       SymmetricBlockMatrix* info) const = 0;
+
+  /**
+   * Add this factor's Hessian-vector product using scalar offsets for keys().
+   * This flat-vector interface avoids materializing a dense JacobianFactor.
+   *
+   * @param alpha Scale applied to this factor's contribution.
+   * @param scalarOffsets Flat-vector offset for each entry in keys().
+   * @param x Input vector containing every referenced key block.
+   * @param y Output vector to which the scaled product is added.
+   * @throws std::invalid_argument if the offset count differs from size().
+   */
+  virtual void multiplyHessianAdd(double alpha,
+                                  const std::vector<size_t>& scalarOffsets,
+                                  const double* x, double* y) const {
+    if (scalarOffsets.size() != size()) {
+      throw std::invalid_argument(
+          "BatchJacobianFactorBase::multiplyHessianAdd: offset count "
+          "mismatch.");
+    }
+    VectorValues valuesX, valuesY;
+    for (size_t position = 0; position < size(); ++position) {
+      const Key key = keys()[position];
+      const DenseIndex dimension =
+          getDim(begin() + static_cast<DenseIndex>(position));
+      valuesX.emplace(key, Eigen::Map<const Vector>(x + scalarOffsets[position],
+                                                    dimension));
+      valuesY.emplace(key, Vector::Zero(dimension));
+    }
+    toJacobianFactor().multiplyHessianAdd(alpha, valuesX, valuesY);
+    for (size_t position = 0; position < size(); ++position) {
+      const Key key = keys()[position];
+      Eigen::Map<Vector> output(
+          y + scalarOffsets[position],
+          getDim(begin() + static_cast<DenseIndex>(position)));
+      output += valuesY.at(key);
+    }
+  }
+
+  /**
+   * Add this factor's gradient at zero to a flat vector.
+   *
+   * @param scalarOffsets Flat-vector offset for each entry in keys().
+   * @param gradient Output vector to which the gradient is added.
+   * @throws std::invalid_argument if the offset count differs from size().
+   */
+  virtual void gradientAtZeroAdd(const std::vector<size_t>& scalarOffsets,
+                                 double* gradient) const {
+    if (scalarOffsets.size() != size()) {
+      throw std::invalid_argument(
+          "BatchJacobianFactorBase::gradientAtZeroAdd: offset count "
+          "mismatch.");
+    }
+    const VectorValues factorGradient = toJacobianFactor().gradientAtZero();
+    for (size_t position = 0; position < size(); ++position) {
+      Eigen::Map<Vector> output(
+          gradient + scalarOffsets[position],
+          getDim(begin() + static_cast<DenseIndex>(position)));
+      output += factorGradient.at(keys()[position]);
+    }
+  }
+
+  /**
+   * Add this factor's Hessian diagonal to ordered blocks.
+   *
+   * @param blockSlots Output block slot for each entry in keys().
+   * @param diagonalBlocks Blocks to which diagonal contributions are added.
+   * @throws std::invalid_argument if the slot count differs from size().
+   */
+  virtual void hessianBlockDiagonalAdd(
+      const std::vector<size_t>& blockSlots,
+      std::vector<Matrix>* diagonalBlocks) const {
+    if (blockSlots.size() != size()) {
+      throw std::invalid_argument(
+          "BatchJacobianFactorBase::hessianBlockDiagonalAdd: slot count "
+          "mismatch.");
+    }
+    const std::map<Key, Matrix> factorDiagonal =
+        toJacobianFactor().hessianBlockDiagonal();
+    for (size_t position = 0; position < size(); ++position) {
+      diagonalBlocks->at(blockSlots[position]) +=
+          factorDiagonal.at(keys()[position]);
+    }
+  }
 
   /// Update a column range of the augmented Hessian using the dense fallback.
   void updateHessian(const KeyVector& keys, SymmetricBlockMatrix* info,
@@ -509,6 +593,98 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
                                  std::make_index_sequence<NumSlots + 1>{});
   }
 
+  /// Return the squared whitening scale for one compact row group.
+  RhsVector rowWeights(size_t rowIndex) const {
+    RhsVector weights = RhsVector::Ones();
+    if (!model_ || model_->isUnit()) return weights;
+
+    const auto constrained =
+        model_->isConstrained()
+            ? std::dynamic_pointer_cast<noiseModel::Constrained>(model_)
+            : nullptr;
+    const size_t rowOffset = rowIndex * ErrorDim;
+    for (size_t row = 0; row < ErrorDim; ++row) {
+      const size_t modelRow = rowOffset + row;
+      if (!constrained || !constrained->constrained(modelRow)) {
+        weights(static_cast<DenseIndex>(row)) = model_->precision(modelRow);
+      }
+    }
+    return weights;
+  }
+
+  /// Add one compact block's product to a row residual.
+  template <size_t Slot>
+  void multiplyRowBlock(size_t rowIndex,
+                        const std::vector<size_t>& scalarOffsets,
+                        const double* x, RhsVector* residual) const {
+    using BlockType =
+        typename std::tuple_element<Slot, Blocks>::type::value_type;
+    constexpr int BlockDim = BlockType::ColsAtCompileTime;
+    const size_t keySlot = static_cast<size_t>(rowSlots_[rowIndex][Slot]);
+    const Eigen::Map<const Eigen::Matrix<double, BlockDim, 1>> xBlock(
+        x + scalarOffsets[keySlot]);
+    residual->noalias() += std::get<Slot>(blocks_)[rowIndex] * xBlock;
+  }
+
+  /// Add all compact blocks' products to a row residual.
+  template <size_t... Slots>
+  void multiplyRowBlocks(size_t rowIndex,
+                         const std::vector<size_t>& scalarOffsets,
+                         const double* x, RhsVector* residual,
+                         std::index_sequence<Slots...>) const {
+    (multiplyRowBlock<Slots>(rowIndex, scalarOffsets, x, residual), ...);
+  }
+
+  /// Scatter one transposed compact block product into a flat vector.
+  template <size_t Slot>
+  void transposeRowBlockAdd(size_t rowIndex,
+                            const std::vector<size_t>& scalarOffsets,
+                            double alpha, const RhsVector& residual,
+                            double* y) const {
+    using BlockType =
+        typename std::tuple_element<Slot, Blocks>::type::value_type;
+    constexpr int BlockDim = BlockType::ColsAtCompileTime;
+    const size_t keySlot = static_cast<size_t>(rowSlots_[rowIndex][Slot]);
+    Eigen::Map<Eigen::Matrix<double, BlockDim, 1>> yBlock(
+        y + scalarOffsets[keySlot]);
+    yBlock.noalias() +=
+        alpha * std::get<Slot>(blocks_)[rowIndex].transpose() * residual;
+  }
+
+  /// Scatter all transposed compact block products into a flat vector.
+  template <size_t... Slots>
+  void transposeRowBlocksAdd(size_t rowIndex,
+                             const std::vector<size_t>& scalarOffsets,
+                             double alpha, const RhsVector& residual, double* y,
+                             std::index_sequence<Slots...>) const {
+    (transposeRowBlockAdd<Slots>(rowIndex, scalarOffsets, alpha, residual, y),
+     ...);
+  }
+
+  /// Add one compact block's diagonal Hessian contribution.
+  template <size_t Slot>
+  void hessianBlockDiagonalRowAdd(size_t rowIndex,
+                                  const std::vector<size_t>& blockSlots,
+                                  const RhsVector& weights,
+                                  std::vector<Matrix>* diagonalBlocks) const {
+    const size_t keySlot = static_cast<size_t>(rowSlots_[rowIndex][Slot]);
+    const auto& block = std::get<Slot>(blocks_)[rowIndex];
+    (*diagonalBlocks)[blockSlots[keySlot]].noalias() +=
+        block.transpose() * weights.asDiagonal() * block;
+  }
+
+  /// Add all compact blocks' diagonal Hessian contributions.
+  template <size_t... Slots>
+  void hessianBlockDiagonalRowAdds(size_t rowIndex,
+                                   const std::vector<size_t>& blockSlots,
+                                   const RhsVector& weights,
+                                   std::vector<Matrix>* diagonalBlocks,
+                                   std::index_sequence<Slots...>) const {
+    (hessianBlockDiagonalRowAdd<Slots>(rowIndex, blockSlots, weights,
+                                       diagonalBlocks),
+     ...);
+  }
+
  public:
   /**
    * Construct an empty compact batch factor with known key dimensions.
@@ -572,6 +748,55 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
 
   /// Return the compact key slot used by each row group and factor slot.
   const std::vector<SlotIndices>& rowSlots() const { return rowSlots_; }
+
+  /** Add `alpha*A.transpose()*W*A*x` directly to a flat output vector. */
+  void multiplyHessianAdd(double alpha,
+                          const std::vector<size_t>& scalarOffsets,
+                          const double* x, double* y) const override {
+    if (scalarOffsets.size() != keys_.size()) {
+      throw std::invalid_argument(
+          "BatchJacobianFactor::multiplyHessianAdd: offset count mismatch.");
+    }
+    for (size_t rowIndex = 0; rowIndex < rowSlots_.size(); ++rowIndex) {
+      RhsVector residual = RhsVector::Zero();
+      multiplyRowBlocks(rowIndex, scalarOffsets, x, &residual,
+                        std::make_index_sequence<NumSlots>{});
+      residual.array() *= rowWeights(rowIndex).array();
+      transposeRowBlocksAdd(rowIndex, scalarOffsets, alpha, residual, y,
+                            std::make_index_sequence<NumSlots>{});
+    }
+  }
+
+  /** Add `-A.transpose()*W*b` directly to a flat gradient vector. */
+  void gradientAtZeroAdd(const std::vector<size_t>& scalarOffsets,
+                         double* gradient) const override {
+    if (scalarOffsets.size() != keys_.size()) {
+      throw std::invalid_argument(
+          "BatchJacobianFactor::gradientAtZeroAdd: offset count mismatch.");
+    }
+    for (size_t rowIndex = 0; rowIndex < rowSlots_.size(); ++rowIndex) {
+      RhsVector weightedRhs = rhs_[rowIndex];
+      weightedRhs.array() *= rowWeights(rowIndex).array();
+      transposeRowBlocksAdd(rowIndex, scalarOffsets, -1.0, weightedRhs,
+                            gradient, std::make_index_sequence<NumSlots>{});
+    }
+  }
+
+  /** Add compact `A.transpose()*W*A` diagonal blocks without keyed maps. */
+  void hessianBlockDiagonalAdd(
+      const std::vector<size_t>& blockSlots,
+      std::vector<Matrix>* diagonalBlocks) const override {
+    if (blockSlots.size() != keys_.size()) {
+      throw std::invalid_argument(
+          "BatchJacobianFactor::hessianBlockDiagonalAdd: slot count "
+          "mismatch.");
+    }
+    for (size_t rowIndex = 0; rowIndex < rowSlots_.size(); ++rowIndex) {
+      hessianBlockDiagonalRowAdds(rowIndex, blockSlots, rowWeights(rowIndex),
+                                  diagonalBlocks,
+                                  std::make_index_sequence<NumSlots>{});
+    }
+  }
 
   /**
    * Convert compact row-block storage into a conventional JacobianFactor.

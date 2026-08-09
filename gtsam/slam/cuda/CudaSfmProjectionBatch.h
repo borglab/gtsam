@@ -6,6 +6,7 @@
 
 #include <cuda_runtime_api.h>
 
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <limits>
@@ -20,29 +21,38 @@ enum class CudaSfmProjectionNoiseMode {
   Robust,
 };
 
+struct CudaSfmProjectionBatchTransferProfile {
+  double hostBuildElapsed = 0.0;
+  double deviceAllocElapsed = 0.0;
+  CudaDeviceTransferSummary h2d;
+};
+
 class CudaSfmProjectionBatch {
  public:
   static constexpr int kLongTrackMeasurementThreshold = 4;
 
-  static CudaSfmProjectionBatch FromSfmData(const SfmData& data,
-                                            cudaStream_t stream = nullptr) {
-    return FromSfmDataImpl(data, nullptr, nullptr, stream);
+  static CudaSfmProjectionBatch FromSfmData(
+      const SfmData& data, cudaStream_t stream = nullptr,
+      CudaSfmProjectionBatchTransferProfile* profile = nullptr) {
+    return FromSfmDataImpl(data, nullptr, nullptr, stream, profile);
   }
 
   static CudaSfmProjectionBatch FromSfmData(
       const SfmData& data,
       const std::vector<std::vector<CudaSfmSqrtInfo2>>& sqrtInfoByTrack,
-      cudaStream_t stream = nullptr) {
-    return FromSfmDataImpl(data, &sqrtInfoByTrack, nullptr, stream);
+      cudaStream_t stream = nullptr,
+      CudaSfmProjectionBatchTransferProfile* profile = nullptr) {
+    return FromSfmDataImpl(data, &sqrtInfoByTrack, nullptr, stream, profile);
   }
 
   static CudaSfmProjectionBatch FromSfmData(
       const SfmData& data,
       const std::vector<std::vector<CudaSfmSqrtInfo2>>& sqrtInfoByTrack,
       const std::vector<std::vector<CudaSfmRobustModel>>& robustModelsByTrack,
-      cudaStream_t stream = nullptr) {
+      cudaStream_t stream = nullptr,
+      CudaSfmProjectionBatchTransferProfile* profile = nullptr) {
     return FromSfmDataImpl(data, &sqrtInfoByTrack, &robustModelsByTrack,
-                           stream);
+                           stream, profile);
   }
 
   static CudaSfmSqrtInfo2 UnitSqrtInfo() {
@@ -59,10 +69,12 @@ class CudaSfmProjectionBatch {
            sqrtInfo.r11 == 1.0;
   }
 
+  // Zero diagonals are allowed: they encode a zero-information (fully
+  // down-weighted) measurement, as produced by GNC weighted graphs.
   static bool IsUsableSqrtInfo(const CudaSfmSqrtInfo2& sqrtInfo) {
     return std::isfinite(sqrtInfo.r00) && std::isfinite(sqrtInfo.r01) &&
-           std::isfinite(sqrtInfo.r11) && sqrtInfo.r00 > 0.0 &&
-           sqrtInfo.r11 > 0.0;
+           std::isfinite(sqrtInfo.r11) && sqrtInfo.r00 >= 0.0 &&
+           sqrtInfo.r11 >= 0.0;
   }
 
   static bool IsUsableRobustModel(const CudaSfmRobustModel& robustModel) {
@@ -84,7 +96,14 @@ class CudaSfmProjectionBatch {
       const SfmData& data,
       const std::vector<std::vector<CudaSfmSqrtInfo2>>* sqrtInfoByTrack,
       const std::vector<std::vector<CudaSfmRobustModel>>* robustModelsByTrack,
-      cudaStream_t stream) {
+      cudaStream_t stream,
+      CudaSfmProjectionBatchTransferProfile* profile) {
+    if (profile) {
+      *profile = CudaSfmProjectionBatchTransferProfile{};
+    }
+    const auto hostBuildStart =
+        profile ? std::chrono::steady_clock::now()
+                : std::chrono::steady_clock::time_point{};
     CudaSfmProjectionBatch batch;
     batch.numCameras_ = data.numberCameras();
     batch.numPoints_ = data.numberTracks();
@@ -179,22 +198,47 @@ class CudaSfmProjectionBatch {
       pointObservationOffsets.push_back(static_cast<int>(observations.size()));
     }
 
-    batch.observations_.upload(observations, stream);
-    batch.pointObservationOffsets_.upload(pointObservationOffsets, stream);
-    batch.longTrackPointSlots_.upload(longTrackPointSlots, stream);
+    if (profile) {
+      profile->hostBuildElapsed =
+          std::chrono::duration<double>(std::chrono::steady_clock::now() -
+                                        hostBuildStart)
+              .count();
+      profile->h2d.add(batch.observations_.uploadProfiled(observations,
+                                                          stream));
+      profile->h2d.add(batch.pointObservationOffsets_.uploadProfiled(
+          pointObservationOffsets, stream));
+      profile->h2d.add(batch.longTrackPointSlots_.uploadProfiled(
+          longTrackPointSlots, stream));
+    } else {
+      batch.observations_.upload(observations, stream);
+      batch.pointObservationOffsets_.upload(pointObservationOffsets, stream);
+      batch.longTrackPointSlots_.upload(longTrackPointSlots, stream);
+    }
     if (sqrtInfoByTrack) {
       if (sqrtInfos.size() != observations.size()) {
         throw std::invalid_argument(
             "CudaSfmProjectionBatch sqrt-info/observation count mismatch");
       }
-      batch.sqrtInfos_.upload(sqrtInfos, stream);
+      if (profile) {
+        profile->h2d.add(batch.sqrtInfos_.uploadProfiled(sqrtInfos, stream));
+      } else {
+        batch.sqrtInfos_.upload(sqrtInfos, stream);
+      }
     }
     if (robustModelsByTrack) {
       if (robustModels.size() != observations.size()) {
         throw std::invalid_argument(
             "CudaSfmProjectionBatch robust model/observation count mismatch");
       }
-      batch.robustModels_.upload(robustModels, stream);
+      if (profile) {
+        profile->h2d.add(
+            batch.robustModels_.uploadProfiled(robustModels, stream));
+      } else {
+        batch.robustModels_.upload(robustModels, stream);
+      }
+    }
+    if (profile) {
+      profile->deviceAllocElapsed = profile->h2d.resizeElapsed;
     }
     return batch;
   }

@@ -1,9 +1,10 @@
-/*
- * Preconditioner.cpp
+/**
+ * @file Preconditioner.cpp
  *
- *  Created on: Jun 2, 2014
- *      Author: Yong-Dian Jian
- *      Author: Sungtae An
+ * Created on: Jun 2, 2014
+ * @author Yong-Dian Jian
+ * @author Sungtae An
+ * @author Fan Jiang
  */
 
 #include <gtsam/inference/FactorGraph-inst.h>
@@ -86,93 +87,103 @@ BlockJacobiPreconditioner::BlockJacobiPreconditioner()
 BlockJacobiPreconditioner::~BlockJacobiPreconditioner() { clean(); }
 
 /***************************************************************************************/
-void BlockJacobiPreconditioner::solve(const Vector& y, Vector &x) const {
-
-  const size_t n = dims_.size();
-  double *ptr = buffer_, *dst = x.data();
-
-  std::copy(y.data(), y.data() + y.rows(), x.data());
-
-  for ( size_t i = 0 ; i < n ; ++i ) {
+void BlockJacobiPreconditioner::solveInPlaceRange(Vector& x, size_t begin,
+                                                  size_t end,
+                                                  bool transpose) const {
+  if (begin == end) return;
+  const double* ptr = buffer_ + bufferOffsets_[begin];
+  double* dst = x.data() + scalarOffsets_[begin];
+  for (size_t i = begin; i < end; ++i) {
     const size_t d = dims_[i];
-    const size_t sz = d*d;
+    const size_t size = d * d;
 
     const Eigen::Map<const Eigen::MatrixXd> R(ptr, d, d);
     Eigen::Map<Eigen::VectorXd> b(dst, d, 1);
-    R.triangularView<Eigen::Lower>().solveInPlace(b);
+    if (transpose) {
+      R.transpose().triangularView<Eigen::Upper>().solveInPlace(b);
+    } else {
+      R.triangularView<Eigen::Lower>().solveInPlace(b);
+    }
 
     dst += d;
-    ptr += sz;
+    ptr += size;
   }
 }
 
 /***************************************************************************************/
+void BlockJacobiPreconditioner::solve(const Vector& y, Vector &x) const {
+  x = y;
+  solveInPlaceRange(x, 0, dims_.size(), false);
+}
+
+/***************************************************************************************/
 void BlockJacobiPreconditioner::transposeSolve(const Vector& y, Vector& x) const {
-  const size_t n = dims_.size();
-  double *ptr = buffer_, *dst = x.data();
-
-  std::copy(y.data(), y.data() + y.rows(), x.data());
-
-  for ( size_t i = 0 ; i < n ; ++i ) {
-    const size_t d = dims_[i];
-    const size_t sz = d*d;
-
-    const Eigen::Map<const Eigen::MatrixXd> R(ptr, d, d);
-    Eigen::Map<Eigen::VectorXd> b(dst, d, 1);
-    R.transpose().triangularView<Eigen::Upper>().solveInPlace(b);
-
-    dst += d;
-    ptr += sz;
-  }
+  x = y;
+  solveInPlaceRange(x, 0, dims_.size(), true);
 }
 
 /***************************************************************************************/
 void BlockJacobiPreconditioner::build(
   const GaussianFactorGraph &gfg, const KeyInfo &keyInfo, const std::map<Key,Vector> &lambda)
 {
-  // n is the number of keys
-  const size_t n = keyInfo.size();
-  // dims_ is a vector that contains the dimension of keys
-  dims_ = keyInfo.colSpec();
-
-  /* prepare the buffer of block diagonals */
-  std::vector<Matrix> blocks; blocks.reserve(n);
-
-  /* allocate memory for the factorization of block diagonals */
-  size_t nnz = 0;
-  for ( size_t i = 0 ; i < n ; ++i ) {
-    const size_t dim = dims_[i];
-    // blocks.push_back(Matrix::Zero(dim, dim));
-    // nnz += (((dim)*(dim+1)) >> 1); // d*(d+1) / 2  ;
-    nnz += dim*dim;
-  }
-
   /* getting the block diagonals over the factors */
-  std::map<Key, Matrix> hessianMap =gfg.hessianBlockDiagonal();
-  for (const auto& [key, hessian]: hessianMap) {
-    blocks.push_back(hessian);
+  const std::map<Key, Matrix> hessianMap = gfg.hessianBlockDiagonal();
+  std::vector<Matrix> blocks(keyInfo.size());
+  for (const auto& [key, entry] : keyInfo) {
+    blocks[entry.index] = hessianMap.at(key);
   }
 
-  /* if necessary, allocating the memory for cacheing the factorization results */
-  if ( nnz > bufferSize_ ) {
+  build(blocks, keyInfo);
+}
+
+/*****************************************************************************/
+void BlockJacobiPreconditioner::build(const std::vector<Matrix>& blocks,
+                                      const KeyInfo& keyInfo) {
+  const size_t n = keyInfo.size();
+  if (blocks.size() != n) {
+    throw std::invalid_argument(
+        "BlockJacobiPreconditioner::build: block count mismatch");
+  }
+
+  dims_ = keyInfo.colSpec();
+  scalarOffsets_.resize(n + 1);
+  bufferOffsets_.resize(n + 1);
+
+  // Validate every block while constructing packed-buffer offsets.
+  size_t nnz = 0;
+  size_t scalarOffset = 0;
+  for (size_t i = 0; i < n; ++i) {
+    scalarOffsets_[i] = scalarOffset;
+    bufferOffsets_[i] = nnz;
+    const size_t dim = dims_[i];
+    if (blocks[i].rows() != static_cast<DenseIndex>(dim) ||
+        blocks[i].cols() != static_cast<DenseIndex>(dim)) {
+      throw std::invalid_argument(
+          "BlockJacobiPreconditioner::build: block dimension mismatch");
+    }
+    nnz += dim * dim;
+    scalarOffset += dim;
+  }
+  scalarOffsets_[n] = scalarOffset;
+  bufferOffsets_[n] = nnz;
+
+  // Grow the reusable buffer when the packed Cholesky factors do not fit.
+  if (nnz > bufferSize_) {
     clean();
-    buffer_ = new double [nnz];
+    buffer_ = new double[nnz];
     bufferSize_ = nnz;
   }
   nnz_ = nnz;
 
-  /* factorizing the blocks respectively */
-  double *ptr = buffer_;
-  for ( size_t i = 0 ; i < n ; ++i ) {
-    /* use eigen to decompose Di */
-    /* It is same as L = chol(M,'lower') in MATLAB where M is full preconditioner */
+  // Factorize each diagonal block into the contiguous solve buffer.
+  double* ptr = buffer_;
+  for (size_t i = 0; i < n; ++i) {
+    // Equivalent to L = chol(M, 'lower') for the full preconditioner.
     const Matrix L = blocks[i].llt().matrixL();
 
-    /* store the data in the buffer */
-    size_t sz = dims_[i]*dims_[i] ;
+    // Store and advance to the next packed block.
+    size_t sz = dims_[i] * dims_[i];
     std::copy(L.data(), L.data() + sz, ptr);
-
-    /* advance the pointer */
     ptr += sz;
   }
 }

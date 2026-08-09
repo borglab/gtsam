@@ -687,9 +687,7 @@ TEST(SmartProjectionPoseFactorRollingShutter, hessian_simple_2poses) {
 
   // After eliminating the point, A1 and A2 contain 2-rank information on
   // cameras:
-  Matrix16 A1, A2;
-  A1 << -10, 0, 0, 0, 1, 0;
-  A2 << 10, 0, 1, 0, -1, 0;
+  Matrix16 A1{{-10, 0, 0, 0, 1, 0}}, A2{{10, 0, 1, 0, -1, 0}};
   A1 *= 10. / sigma;
   A2 *= 10. / sigma;
   Matrix expectedInformation;  // filled below

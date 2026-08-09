@@ -14,8 +14,22 @@ if (NOT GTSAM_USE_BOOST_FEATURES)
       )
 endif()
 
-gtsamAddTimingGlob("*.cpp" "${excluded_scripts}" "gtsam" ${GTSAM_BUILD_TIMING_ALWAYS})
+add_library(gtsam_timing_utils STATIC internal/TimingUtils.cpp
+                                      internal/SfmBalBenchmark.cpp
+                                      internal/SfmPcgBenchmark.cpp)
+target_include_directories(gtsam_timing_utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(gtsam_timing_utils PUBLIC gtsam)
+gtsam_apply_build_flags(gtsam_timing_utils)
+set_property(TARGET gtsam_timing_utils PROPERTY FOLDER "Timing")
+
+gtsamAddTestsGlob(timing_utils "tests/test*.cpp" "" "gtsam_timing_utils")
+
+gtsamAddTimingGlob("*.cpp" "${excluded_scripts}" "gtsam;gtsam_timing_utils" ${GTSAM_BUILD_TIMING_ALWAYS})
 
 target_link_libraries(timeGaussianFactorGraph CppUnitLite)
+
+if(OpenMP_CXX_FOUND)
+  target_link_libraries(timePCGSolver OpenMP::OpenMP_CXX)
+endif()
 
 add_subdirectory(sfm_ba)

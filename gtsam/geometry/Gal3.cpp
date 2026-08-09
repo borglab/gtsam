@@ -21,8 +21,7 @@
  */
 
 // GCC bug workaround
-#if  defined(__GNUC__) && __GNUC__ == 15
-#pragma GCC diagnostic push
+#if  defined(__GNUC__) && (__GNUC__ == 15 || __GNUC__ == 16)
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
 
@@ -317,35 +316,37 @@ Gal3 Gal3::Expmap(const TangentVector& xi, OptionalJacobian<10, 10> Hxi) {
 #else
   const Rot3 R(local.expmap());
 #endif
-  Matrix3 Rt;
-  if (Hxi) Rt = R.transpose();
 
-  // Compute velocity: just apply left SO(3) Jacobian,
-  Matrix3 H_v_w;
-  const Velocity3 v = local.Jacobian().applyLeft(nu, Hxi ? &H_v_w : nullptr);
-
-  // Compute position: apply left Jacobian and compute time-dependent part
-  Matrix3 H_p_w, H_delta_w;
-  Point3 p = local.Jacobian().applyLeft(rho, Hxi ? &H_p_w : nullptr);
-  const Point3 delta = local.Gamma().applyLeft(nu, Hxi ? &H_delta_w : nullptr);
-
-  // (*) means: different from Arxiv paper!
+  Velocity3 v;
+  Point3 p;
   if (Hxi) {
-    const Matrix3 Jr = local.Jacobian().right();
-    const Matrix3 Gr = local.Gamma().right();
+    const Matrix3 Rt = R.transpose();
+    const so3::Kernel jacobian = local.Jacobian();
+    Matrix3 H_v_w, H_p_w;
+    v = jacobian.applyLeft(nu, &H_v_w);
+    p = jacobian.applyLeft(rho, &H_p_w);
+
+    const so3::Kernel gamma = local.Gamma();
+    const Matrix3 Jr = jacobian.right();
+    const Matrix3 Gr = gamma.right();
     *Hxi << Jr, Z_3x3, Z_3x3, Z_3x1,      //
         Rt * H_v_w, Jr, Z_3x3, Z_3x1,     //
         Rt * H_p_w, Z_3x3, Jr, -Gr * nu,  // (*)
         Z_9x1.transpose(), 1.0;
-  }
 
-  // if alpha!=0, augment position with time-dependent bit.
-  if (std::abs(alpha) > kSmallTimeThreshold) {
-    p += alpha * delta;
-    if (Hxi) {
-      // Derivative of time-dependent part
+    if (std::abs(alpha) > kSmallTimeThreshold) {
+      Matrix3 H_delta_w;
+      const Point3 delta = gamma.applyLeft(nu, &H_delta_w);
+      p += alpha * delta;
       Hxi->block<3, 3>(6, 0) += alpha * Rt * H_delta_w;
-      Hxi->block<3, 3>(6, 3) = alpha * Rt * local.Gamma().left();  // (*)
+      Hxi->block<3, 3>(6, 3) = alpha * Rt * gamma.left();  // (*)
+    }
+  } else {
+    const Matrix3 Jl = local.leftJacobian();
+    v.noalias() = Jl * nu;
+    p.noalias() = Jl * rho;
+    if (std::abs(alpha) > kSmallTimeThreshold) {
+      p += alpha * local.Gamma().applyLeft(nu);
     }
   }
   return Gal3(R, p, v, alpha);
@@ -369,9 +370,7 @@ Gal3::TangentVector Gal3::Logmap(const Gal3& g, OptionalJacobian<10, 10> Hg) {
     xi_rho(xi) = rho;
     xi_t(xi)(0) = g.t_;
 
-    if (Hg) {
-        *Hg = Gal3::LogmapDerivative(g);
-    }
+    if (Hg) *Hg = Gal3::LogmapDerivative(xi);
 
     return xi;
 }
@@ -440,7 +439,7 @@ Gal3::Jacobian Gal3::LogmapDerivative(const TangentVector& xi) {
   const so3::DexpFunctor local(w);
   const Matrix3 Jr_inv = local.InvJacobian().right();
 
-  const Jacobian J = ExpmapDerivative(xi);  
+  const Jacobian J = ExpmapDerivative(xi);
   const auto L = J.block<7, 3>(3, 0);
   const Matrix7 B = J.block<7, 7>(3, 3);
 

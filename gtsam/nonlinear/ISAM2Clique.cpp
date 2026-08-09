@@ -326,6 +326,17 @@ void ISAM2Clique::findAll(const KeySet& markedMask, KeySet* keys) const {
 
 /* ************************************************************************* */
 void ISAM2Clique::addGradientAtZero(VectorValues* g) const {
+  addGradientAtZero(g, nullptr);
+}
+
+/* ************************************************************************* */
+void ISAM2Clique::addGradientAtZero(
+    VectorValues* g, bool* hasConstrainedConditional) const {
+  if (hasConstrainedConditional && conditional_->get_model() &&
+      conditional_->get_model()->isConstrained()) {
+    *hasConstrainedConditional = true;
+  }
+
   // Loop through variables in each clique, adding contributions
   DenseIndex position = 0;
   for (auto it = conditional_->begin(); it != conditional_->end(); ++it) {
@@ -338,7 +349,7 @@ void ISAM2Clique::addGradientAtZero(VectorValues* g) const {
 
   // Recursively add contributions from children
   for (const auto& child : children) {
-    child->addGradientAtZero(g);
+    child->addGradientAtZero(g, hasConstrainedConditional);
   }
 }
 

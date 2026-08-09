@@ -118,11 +118,9 @@ TEST(GaussianFactorGraph, eliminateOne_x1_fast) {
 
   // Create expected remaining new factor
   JacobianFactor expectedFactor(
-      L(1), (Matrix(4, 2) << 6.87184, 0, 0, 6.87184, 0, 0, 0, 0).finished(),
-      X(2),
-      (Matrix(4, 2) << -5.25494, 0, 0, -5.25494, -7.27607, 0, 0, -7.27607)
-          .finished(),
-      (Vector(4) << -1.21268, 1.73817, -0.727607, 1.45521).finished(),
+      L(1), Matrix{{6.87184, 0}, {0, 6.87184}, {0, 0}, {0, 0}}, X(2),
+      Matrix{{-5.25494, 0}, {0, -5.25494}, {-7.27607, 0}, {0, -7.27607}},
+      Vector{{-1.21268, 1.73817, -0.727607, 1.45521}},
       noiseModel::Unit::Create(4));
 
   EXPECT(assert_equal(expected, *conditional, tol));
@@ -273,7 +271,7 @@ TEST(GaussianFactorGraph, elimination) {
   // Create Gaussian Factor Graph
   GaussianFactorGraph fg;
   Matrix Ap = I_1x1, An = I_1x1 * -1;
-  Vector b = (Vector(1) << 0.0).finished();
+  Vector b{{0.0}};
   SharedDiagonal sigma = noiseModel::Isotropic::Sigma(1, 2.0);
   fg.emplace_shared<JacobianFactor>(X(1), An, X(2), Ap, b, sigma);
   fg.emplace_shared<JacobianFactor>(X(1), Ap, b, sigma);
@@ -285,10 +283,8 @@ TEST(GaussianFactorGraph, elimination) {
 
   // Check matrix
   const auto [R, d] = bayesNet.matrix();
-  Matrix expected =
-      (Matrix(2, 2) << 0.707107, -0.353553, 0.0, 0.612372).finished();
-  Matrix expected2 =
-      (Matrix(2, 2) << 0.707107, -0.353553, 0.0, -0.612372).finished();
+  Matrix expected{{0.707107, -0.353553}, {0.0, 0.612372}};
+  Matrix expected2{{0.707107, -0.353553}, {0.0, -0.612372}};
   EXPECT(assert_equal(expected, R, 1e-6));
   EXPECT(equal_with_abs_tol(expected, R, 1e-6) ||
          equal_with_abs_tol(expected2, R, 1e-6));
@@ -397,7 +393,8 @@ TEST( GaussianFactorGraph, conditional_sigma_failure) {
   gtsam::Key xC1 = 0, l32 = 1, l41 = 2;
 
   // noisemodels at nonlinear level
-  gtsam::SharedNoiseModel priorModel = noiseModel::Diagonal::Sigmas((Vector(6) << 0.05, 0.05, 3.0, 0.2, 0.2, 0.2).finished());
+  gtsam::SharedNoiseModel priorModel =
+      noiseModel::Diagonal::Sigmas(Vector{{0.05, 0.05, 3.0, 0.2, 0.2, 0.2}});
   gtsam::SharedNoiseModel measModel = kUnit2;
   gtsam::SharedNoiseModel elevationModel = noiseModel::Isotropic::Sigma(1, 3.0);
 

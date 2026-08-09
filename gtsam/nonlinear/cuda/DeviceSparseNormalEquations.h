@@ -14,7 +14,8 @@ class DeviceSparseNormalEquations {
  public:
   void uploadPattern(int rows, const std::vector<int>& rowPointers,
                      const std::vector<int>& colIndices,
-                     cudaStream_t stream = nullptr) {
+                     cudaStream_t stream = nullptr,
+                     CudaDeviceTransferSummary* transferProfile = nullptr) {
     if (rows < 0) {
       throw std::invalid_argument("DeviceSparseNormalEquations rows < 0");
     }
@@ -55,8 +56,13 @@ class DeviceSparseNormalEquations {
     CudaDeviceArray<double> newValues;
     CudaDeviceArray<double> newRhs;
 
-    newRowPointers.upload(rowPointers, stream);
-    newColIndices.upload(colIndices, stream);
+    if (transferProfile) {
+      transferProfile->add(newRowPointers.uploadProfiled(rowPointers, stream));
+      transferProfile->add(newColIndices.uploadProfiled(colIndices, stream));
+    } else {
+      newRowPointers.upload(rowPointers, stream);
+      newColIndices.upload(colIndices, stream);
+    }
     newValues.resize(colIndices.size());
     newRhs.resize(rows);
 

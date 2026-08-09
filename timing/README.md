@@ -2,6 +2,35 @@
 
 This directory contains timing executables and helper scripts for GTSAM.
 
+## Shared timing conventions
+
+Modern benchmarks share the private support library in `timing/internal`.
+`Arguments` provides consistent typed command-line parsing, timing helpers use
+`std::chrono::steady_clock`, and `TimingSummary` records the statistical
+definitions already used by the individual programs. In particular, callers
+must select either the averaged-middle or upper-middle median policy so that a
+migration does not silently change historical results.
+
+Warmups execute before the measured repetitions, and harness work such as
+argument parsing, sample aggregation, formatting, and file creation remains
+outside the timed callable. Output files are checked when opened and missing
+parent directories are created. Benchmark Action JSON uses the shared
+`BenchmarkMetric` writer to keep names, units, numeric precision, and escaping
+consistent.
+
+These helpers are private to the timing targets and do not add public GTSAM
+API. Legacy `gttic_` microbenchmarks continue to use `gtsam/base/timing` and are
+not candidates for migration to this harness.
+
+BAL benchmarks additionally share `BalBenchmarkConfig` and the builders in
+`timing/internal/SfmBalBenchmark`. The configuration carries ordering and
+projection-noise choices explicitly; timing headers no longer define mutable
+globals or inject the `std` and `gtsam` namespaces. Dataset selection, initial
+values, point- and camera-batch graph variants, orderings, and LM defaults live
+in that component. The end-to-end full-system and reduced-camera PCG comparison
+is isolated in `SfmPcgBenchmark` so `timeSFMBAL.cpp` remains focused on selecting
+and reporting benchmark modes.
+
 ## RangeFactor Plaza2 Benchmark
 
 This benchmark isolates the current range-only Plaza2 incremental SLAM workload

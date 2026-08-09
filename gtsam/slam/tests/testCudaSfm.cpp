@@ -1,6 +1,8 @@
 #include <gtsam/base/cuda/CudaContext.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/nonlinear/BatchFactor.h>
+#include <gtsam/nonlinear/GncOptimizer.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/cuda/CudssLinearSolver.h>
 #include <gtsam/nonlinear/cuda/DeviceGeometryKernels.h>
@@ -16,10 +18,13 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <limits>
+#include <map>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 using namespace gtsam;
@@ -110,12 +115,10 @@ SfmData makeTrueBalLikeData() {
 SfmData makePerturbedBalLikeData(const SfmData& measuredData) {
   SfmData data = measuredData;
 
-  Vector delta0(9);
-  delta0 << 0.003, -0.002, 0.001, 0.04, -0.03, 0.02, 1.5, 0.0004,
-      -0.00003;
-  Vector delta1(9);
-  delta1 << -0.002, 0.0015, -0.0025, -0.05, 0.02, -0.01, -2.0, -0.0003,
-      0.00004;
+  Vector9 delta0{0.003, -0.002, 0.001,  0.04,    -0.03,
+                 0.02,  1.5,    0.0004, -0.00003};
+  Vector9 delta1{-0.002, 0.0015, -0.0025, -0.05,  0.02,
+                 -0.01,  -2.0,   -0.0003, 0.00004};
   data.cameras[0] = measuredData.camera(0).retract(delta0);
   data.cameras[1] = measuredData.camera(1).retract(delta1);
 
@@ -163,9 +166,15 @@ SfmData makeHighDegreeBalLikeData() {
 
   SfmData perturbed = measured;
   for (size_t i = 0; i < perturbed.numberCameras(); ++i) {
-    Vector delta(9);
-    delta << 0.0001 * static_cast<double>(i + 1), -0.0002, 0.00015,
-        0.002, -0.001, 0.0015, 0.03, 0.00001, -0.000001;
+    Vector9 delta{0.0001 * static_cast<double>(i + 1),
+                  -0.0002,
+                  0.00015,
+                  0.002,
+                  -0.001,
+                  0.0015,
+                  0.03,
+                  0.00001,
+                  -0.000001};
     perturbed.cameras[i] = measured.camera(i).retract(delta);
   }
   perturbed.tracks[0].p = Point3(point.x() + 0.01, point.y() - 0.02,
@@ -299,6 +308,84 @@ CudaSfmRobustModel MakeRobustModel(
     CudaSfmRobustReweightScheme reweightScheme =
         CudaSfmRobustReweightScheme::Block) {
   return CudaSfmRobustModel{kind, reweightScheme, parameter};
+}
+
+bool ConvertedSfmDataEquals(const CudaSfmFactorGraphData& expected,
+                            const CudaSfmFactorGraphData& actual) {
+  if (expected.cameraKeys.size() != actual.cameraKeys.size() ||
+      expected.pointKeys.size() != actual.pointKeys.size()) {
+    return false;
+  }
+  for (size_t i = 0; i < expected.cameraKeys.size(); ++i) {
+    if (expected.cameraKeys[i] != actual.cameraKeys[i] ||
+        !CameraEquals(expected.data.camera(i), actual.data.camera(i))) {
+      return false;
+    }
+  }
+  for (size_t i = 0; i < expected.pointKeys.size(); ++i) {
+    if (expected.pointKeys[i] != actual.pointKeys[i] ||
+        !Point3Equals(expected.data.track(i).point3(),
+                      actual.data.track(i).point3()) ||
+        expected.data.track(i).numberMeasurements() !=
+            actual.data.track(i).numberMeasurements()) {
+      return false;
+    }
+    for (size_t j = 0; j < expected.data.track(i).numberMeasurements(); ++j) {
+      const SfmMeasurement& expectedMeasurement =
+          expected.data.track(i).measurement(j);
+      const SfmMeasurement& actualMeasurement =
+          actual.data.track(i).measurement(j);
+      if (expectedMeasurement.first != actualMeasurement.first ||
+          std::abs(expectedMeasurement.second(0) -
+                   actualMeasurement.second(0)) > 1e-12 ||
+          std::abs(expectedMeasurement.second(1) -
+                   actualMeasurement.second(1)) > 1e-12) {
+        return false;
+      }
+    }
+  }
+  if (expected.hasNonUnitNoise != actual.hasNonUnitNoise ||
+      expected.hasRobustNoise != actual.hasRobustNoise ||
+      expected.sqrtInfoByTrack.size() != actual.sqrtInfoByTrack.size()) {
+    return false;
+  }
+  for (size_t i = 0; i < expected.sqrtInfoByTrack.size(); ++i) {
+    if (expected.sqrtInfoByTrack[i].size() !=
+        actual.sqrtInfoByTrack[i].size()) {
+      return false;
+    }
+    for (size_t j = 0; j < expected.sqrtInfoByTrack[i].size(); ++j) {
+      if (std::abs(expected.sqrtInfoByTrack[i][j].r00 -
+                   actual.sqrtInfoByTrack[i][j].r00) > 1e-12 ||
+          std::abs(expected.sqrtInfoByTrack[i][j].r01 -
+                   actual.sqrtInfoByTrack[i][j].r01) > 1e-12 ||
+          std::abs(expected.sqrtInfoByTrack[i][j].r11 -
+                   actual.sqrtInfoByTrack[i][j].r11) > 1e-12) {
+        return false;
+      }
+    }
+  }
+  if (expected.robustModelsByTrack.size() !=
+      actual.robustModelsByTrack.size()) {
+    return false;
+  }
+  for (size_t i = 0; i < expected.robustModelsByTrack.size(); ++i) {
+    if (expected.robustModelsByTrack[i].size() !=
+        actual.robustModelsByTrack[i].size()) {
+      return false;
+    }
+    for (size_t j = 0; j < expected.robustModelsByTrack[i].size(); ++j) {
+      if (expected.robustModelsByTrack[i][j].kind !=
+              actual.robustModelsByTrack[i][j].kind ||
+          expected.robustModelsByTrack[i][j].reweightScheme !=
+              actual.robustModelsByTrack[i][j].reweightScheme ||
+          std::abs(expected.robustModelsByTrack[i][j].parameter -
+                   actual.robustModelsByTrack[i][j].parameter) > 1e-12) {
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 Vector2 WhitenResidual(const CudaSfmSqrtInfo2& sqrtInfo,
@@ -438,6 +525,7 @@ TEST(CudaSfmLevenbergMarquardtParams, ProvidesLmDefaults) {
   DOUBLES_EQUAL(1e-5, legacy.lambdaInitial, 0.0);
   DOUBLES_EQUAL(10.0, legacy.lambdaFactor, 0.0);
   CHECK(!legacy.diagonalDamping);
+  CHECK(!legacy.enableDetailedProfiling);
 
   const CudaSfmLevenbergMarquardtParams ceres =
       CudaSfmLevenbergMarquardtParams::CeresDefaults();
@@ -446,6 +534,7 @@ TEST(CudaSfmLevenbergMarquardtParams, ProvidesLmDefaults) {
   DOUBLES_EQUAL(2.0, ceres.lambdaFactor, 0.0);
   CHECK(ceres.diagonalDamping);
   CHECK(!ceres.useFixedLambdaFactor);
+  CHECK(!ceres.enableDetailedProfiling);
 }
 
 TEST(CudaSfmLevenbergMarquardtOptimizer, ExposesCudaParams) {
@@ -1258,6 +1347,92 @@ TEST(CudaSfmFactorGraphConversion,
 }
 
 TEST(CudaSfmFactorGraphConversion,
+     ConvertsPointBatchedGeneralSfmFactors) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData initialData = makePerturbedBalLikeData(measuredData);
+  const std::vector<Key> cameraKeys = {Symbol('x', 10), Symbol('x', 20)};
+  const std::vector<Key> pointKeys = {Symbol('l', 100), Symbol('l', 200),
+                                      Symbol('l', 300), Symbol('l', 400)};
+
+  Values initial;
+  for (size_t i = 0; i < cameraKeys.size(); ++i) {
+    initial.insert(cameraKeys[i], initialData.camera(i));
+  }
+  for (size_t i = 0; i < pointKeys.size(); ++i) {
+    initial.insert(pointKeys[i], initialData.track(i).point3());
+  }
+
+  NonlinearFactorGraph rawGraph;
+  NonlinearFactorGraph batchGraph;
+  const auto model = noiseModel::Unit::Create(2);
+  for (size_t pointSlot = 0; pointSlot < measuredData.numberTracks();
+       ++pointSlot) {
+    std::map<Key, Point2> measurements;
+    const SfmTrack& track = measuredData.track(pointSlot);
+    for (const SfmMeasurement& measurement : track.measurements) {
+      rawGraph.emplace_shared<BundlerProjectionFactor>(
+          measurement.second, model, cameraKeys[measurement.first],
+          pointKeys[pointSlot]);
+      measurements[cameraKeys[measurement.first]] = measurement.second;
+    }
+    batchGraph.add(
+        std::make_shared<BatchFactor<BundlerProjectionFactor, 2>>(
+            measurements, pointKeys[pointSlot], model));
+  }
+
+  const CudaSfmFactorGraphData raw =
+      ConvertGeneralSfmGraphToCudaSfmData(rawGraph, initial);
+  const CudaSfmFactorGraphData batched =
+      ConvertGeneralSfmGraphToCudaSfmData(batchGraph, initial);
+  CHECK(ConvertedSfmDataEquals(raw, batched));
+}
+
+TEST(CudaSfmFactorGraphConversion,
+     ConvertsCameraBatchedGeneralSfmFactors) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData initialData = makePerturbedBalLikeData(measuredData);
+  const std::vector<Key> cameraKeys = {Symbol('x', 10), Symbol('x', 20)};
+  const std::vector<Key> pointKeys = {Symbol('l', 100), Symbol('l', 200),
+                                      Symbol('l', 300), Symbol('l', 400)};
+
+  Values initial;
+  for (size_t i = 0; i < cameraKeys.size(); ++i) {
+    initial.insert(cameraKeys[i], initialData.camera(i));
+  }
+  for (size_t i = 0; i < pointKeys.size(); ++i) {
+    initial.insert(pointKeys[i], initialData.track(i).point3());
+  }
+
+  NonlinearFactorGraph rawGraph;
+  NonlinearFactorGraph batchGraph;
+  std::vector<std::map<Key, Point2>> measurementsByCamera(cameraKeys.size());
+  const auto model = noiseModel::Unit::Create(2);
+  for (size_t pointSlot = 0; pointSlot < measuredData.numberTracks();
+       ++pointSlot) {
+    const SfmTrack& track = measuredData.track(pointSlot);
+    for (const SfmMeasurement& measurement : track.measurements) {
+      rawGraph.emplace_shared<BundlerProjectionFactor>(
+          measurement.second, model, cameraKeys[measurement.first],
+          pointKeys[pointSlot]);
+      measurementsByCamera[measurement.first][pointKeys[pointSlot]] =
+          measurement.second;
+    }
+  }
+  for (size_t cameraSlot = 0; cameraSlot < measurementsByCamera.size();
+       ++cameraSlot) {
+    batchGraph.add(
+        std::make_shared<BatchFactor<BundlerProjectionFactor, 2>>(
+            cameraKeys[cameraSlot], measurementsByCamera[cameraSlot], model));
+  }
+
+  const CudaSfmFactorGraphData raw =
+      ConvertGeneralSfmGraphToCudaSfmData(rawGraph, initial);
+  const CudaSfmFactorGraphData batched =
+      ConvertGeneralSfmGraphToCudaSfmData(batchGraph, initial);
+  CHECK(ConvertedSfmDataEquals(raw, batched));
+}
+
+TEST(CudaSfmFactorGraphConversion,
      AcceptsFixedGaussianNoiseAndPreservesFlattenedWhiteningOrder) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData initialData = makePerturbedBalLikeData(measuredData);
@@ -1273,8 +1448,7 @@ TEST(CudaSfmFactorGraphConversion,
     initial.insert(pointKeys[i], initialData.track(i).point3());
   }
 
-  Matrix2 fullR;
-  fullR << 3.0, 0.25, 0.0, 4.0;
+  Matrix2 fullR{{3.0, 0.25}, {0.0, 4.0}};
   const SharedNoiseModel full = noiseModel::Gaussian::SqrtInformation(
       fullR, false);
   const SharedNoiseModel diagonal =
@@ -1359,8 +1533,7 @@ TEST(CudaSfmFactorGraphConversion,
     initial.insert(pointKeys[i], initialData.track(i).point3());
   }
 
-  Matrix2 fullR;
-  fullR << 3.0, 0.25, 0.0, 4.0;
+  Matrix2 fullR{{3.0, 0.25}, {0.0, 4.0}};
   const SharedNoiseModel huber = noiseModel::Robust::Create(
       noiseModel::mEstimator::Huber::Create(
           0.25, noiseModel::mEstimator::Huber::Block),
@@ -1478,24 +1651,18 @@ TEST(CudaSfmFactorGraphConversion, RejectsUnsupportedNoiseModels) {
                     std::invalid_argument);
   };
 
-  Matrix2 nonfiniteStoredR;
-  nonfiniteStoredR << 1.0, std::numeric_limits<double>::infinity(), 0.0, 1.0;
+  Matrix2 nonfiniteStoredR{{1.0, std::numeric_limits<double>::infinity()},
+                           {0.0, 1.0}};
   checkRejectedSqrtInformation(nonfiniteStoredR);
 
-  Matrix2 nanLowerLeftR;
-  nanLowerLeftR << 1.0, 0.0, std::numeric_limits<double>::quiet_NaN(), 1.0;
+  Matrix2 nanLowerLeftR{{1.0, 0.0},
+                        {std::numeric_limits<double>::quiet_NaN(), 1.0}};
   checkRejectedSqrtInformation(nanLowerLeftR);
 
-  Matrix2 nonzeroLowerLeftR;
-  nonzeroLowerLeftR << 1.0, 0.0, 1e-3, 1.0;
+  Matrix2 nonzeroLowerLeftR{{1.0, 0.0}, {1e-3, 1.0}};
   checkRejectedSqrtInformation(nonzeroLowerLeftR);
 
-  Matrix2 zeroDiagonalR;
-  zeroDiagonalR << 0.0, 0.0, 0.0, 1.0;
-  checkRejectedSqrtInformation(zeroDiagonalR);
-
-  Matrix2 negativeDiagonalR;
-  negativeDiagonalR << 1.0, 0.0, 0.0, -1.0;
+  Matrix2 negativeDiagonalR{{1.0, 0.0}, {0.0, -1.0}};
   checkRejectedSqrtInformation(negativeDiagonalR);
 }
 
@@ -1538,6 +1705,11 @@ TEST(CudaSfmLevenbergMarquardtOptimizer,
   CHECK(graph.error(result) < graph.error(initial));
   CHECK(optimizer.result().innerIterations >=
         static_cast<int>(optimizer.iterations()));
+  CHECK(optimizer.result().graphConversionElapsed > 0.0);
+  CHECK(optimizer.result().graphBackendCallElapsed >=
+        optimizer.result().totalMeasuredElapsed);
+  CHECK(optimizer.result().graphConvertedDataDestructionElapsed >= 0.0);
+  CHECK(optimizer.result().graphValueMergeElapsed > 0.0);
   CHECK(result.exists(cameraKeys[0]));
   CHECK(result.exists(pointKeys[3]));
   CHECK(result.exists(Symbol('u', 1)));
@@ -1563,8 +1735,7 @@ TEST(CudaSfmLevenbergMarquardtOptimizer,
     initial.insert(pointKeys[i], initialData.track(i).point3());
   }
 
-  Matrix2 fullR;
-  fullR << 3.0, 0.25, 0.0, 4.0;
+  Matrix2 fullR{{3.0, 0.25}, {0.0, 4.0}};
   const std::vector<SharedNoiseModel> models = {
       noiseModel::Isotropic::Sigma(2, 0.5),
       noiseModel::Diagonal::Sigmas(Vector2(0.25, 0.5)),
@@ -1650,8 +1821,7 @@ TEST(CudaSfmLevenbergMarquardtOptimizer,
     initial.insert(pointKeys[i], initialData.track(i).point3());
   }
 
-  Matrix2 fullR;
-  fullR << 1.5, 0.1, 0.0, 2.0;
+  Matrix2 fullR{{1.5, 0.1}, {0.0, 2.0}};
   const std::vector<SharedNoiseModel> models = {
       noiseModel::Robust::Create(
           noiseModel::mEstimator::Huber::Create(0.25),
@@ -1723,6 +1893,107 @@ TEST(CudaSfmLevenbergMarquardt, CanSkipOptimizedValueDownload) {
 
   CHECK(result.iterations > 0);
   CHECK(result.optimizedValues.empty());
+}
+
+TEST(CudaSfmLevenbergMarquardt, DetailedProfilingIsDisabledByDefault) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+
+  CudaSfmLevenbergMarquardtParams params =
+      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  params.maxIterations = 1;
+  params.relativeErrorTol = 1e-12;
+  params.lambdaInitial = 1e-3;
+
+  CHECK(!params.enableDetailedProfiling);
+  const CudaSfmLevenbergMarquardtResult result =
+      OptimizeCudaSfm(data, params);
+
+  CHECK(result.solveLoopElapsed > 0.0);
+  EXPECT_LONGS_EQUAL(0, result.totalH2dBytes);
+  EXPECT_LONGS_EQUAL(0, result.totalD2hBytes);
+  DOUBLES_EQUAL(0.0, result.denseSchurSolveElapsed, 0.0);
+  DOUBLES_EQUAL(0.0, result.linearizedErrorElapsed, 0.0);
+  CHECK(result.iterationProfiles.empty());
+}
+
+TEST(CudaSfmLevenbergMarquardt, RecordsDetailedTimingBreakdown) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+
+  CudaSfmLevenbergMarquardtParams params =
+      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  params.maxIterations = 5;
+  params.relativeErrorTol = 1e-12;
+  params.lambdaInitial = 1e-3;
+  params.enableDetailedProfiling = true;
+
+  const CudaSfmLevenbergMarquardtResult result =
+      OptimizeCudaSfmWithoutValueDownload(data, params);
+
+  CHECK(result.solveLoopElapsed > 0.0);
+  CHECK(result.dampingDiagonalElapsed > 0.0);
+  CHECK(result.denseSchurSolveElapsed > 0.0);
+  CHECK(result.linearizedErrorElapsed > 0.0);
+  CHECK(result.applyDeltaElapsed > 0.0);
+  CHECK(result.trialErrorElapsed > 0.0);
+  CHECK(result.lambdaUpdateElapsed > 0.0);
+  CHECK(!result.iterationProfiles.empty());
+
+  size_t attempts = 0;
+  for (const auto& iteration : result.iterationProfiles) {
+    CHECK(iteration.totalElapsed > 0.0);
+    CHECK(iteration.dampingDiagonalElapsed >= 0.0);
+    CHECK(!iteration.attemptProfiles.empty());
+    attempts += iteration.attemptProfiles.size();
+    for (const auto& attempt : iteration.attemptProfiles) {
+      CHECK(attempt.totalElapsed > 0.0);
+      CHECK(attempt.lambda > 0.0);
+      CHECK(attempt.linearizedErrorElapsed > 0.0);
+      CHECK(attempt.linearizedCostChange != 0.0);
+      CHECK(attempt.denseSchurSolveElapsed > 0.0);
+    }
+  }
+  EXPECT_LONGS_EQUAL(result.innerIterations, attempts);
+}
+
+TEST(CudaSfmLevenbergMarquardt, RecordsPureTransferTimingBreakdown) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+
+  CudaSfmLevenbergMarquardtParams params =
+      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  params.maxIterations = 1;
+  params.relativeErrorTol = 1e-12;
+  params.lambdaInitial = 1e-3;
+  params.enableDetailedProfiling = true;
+
+  const CudaSfmLevenbergMarquardtResult result =
+      OptimizeCudaSfm(data, params);
+
+  const size_t expectedValueBytes =
+      data.numberCameras() * sizeof(DevicePinholeCameraCal3Bundler) +
+      data.numberTracks() * sizeof(DevicePoint3);
+  const size_t expectedProjectionBytes =
+      8 * sizeof(CudaSfmObservation) +
+      (data.numberTracks() + 1) * sizeof(int);
+
+  EXPECT_LONGS_EQUAL(expectedValueBytes, result.packValuesH2dBytes);
+  EXPECT_LONGS_EQUAL(expectedProjectionBytes, result.projectionBatchH2dBytes);
+  EXPECT_LONGS_EQUAL(expectedValueBytes + expectedProjectionBytes,
+                     result.totalH2dBytes);
+  EXPECT_LONGS_EQUAL(expectedValueBytes, result.downloadD2hBytes);
+  EXPECT_LONGS_EQUAL(expectedValueBytes, result.totalD2hBytes);
+
+  CHECK(result.packValuesHostBuildElapsed >= 0.0);
+  CHECK(result.packValuesDeviceAllocElapsed >= 0.0);
+  CHECK(result.packValuesH2dCopyElapsed >= 0.0);
+  CHECK(result.projectionBatchHostBuildElapsed >= 0.0);
+  CHECK(result.projectionBatchDeviceAllocElapsed >= 0.0);
+  CHECK(result.projectionBatchH2dCopyElapsed >= 0.0);
+  CHECK(result.downloadHostAllocElapsed >= 0.0);
+  CHECK(result.downloadD2hCopyElapsed >= 0.0);
+  CHECK(result.downloadValuesBuildElapsed >= 0.0);
 }
 
 TEST(CudaSfmDenseSchurSolver, MatchesFullNormalEquationDeltaOnTinyBal) {
@@ -2047,6 +2318,215 @@ TEST(CudaBalCsrStructure, BuildsUpperTrianglePatternForMeasuredTrack) {
       CHECK(colIndices[k - 1] < colIndices[k]);
     }
   }
+}
+
+namespace {
+
+// Synthetic BAL-like problem for GNC: every point is observed by every
+// camera, so a track stays well constrained even after GNC down-weights its
+// corrupted measurements to zero.
+struct GncTestProblem {
+  NonlinearFactorGraph graph;
+  NonlinearFactorGraph inlierGraph;
+  Values initial;
+  std::vector<size_t> outlierFactorSlots;
+
+  bool isOutlierSlot(size_t slot) const {
+    return std::find(outlierFactorSlots.begin(), outlierFactorSlots.end(),
+                     slot) != outlierFactorSlots.end();
+  }
+};
+
+GncTestProblem makeGncBalLikeProblem() {
+  // The geometry must be rigid (diverse viewpoints, many points) and the
+  // corruptions moderate: with a weakly constrained problem or extreme
+  // outliers, plain LM can absorb the corrupted measurements into a
+  // consistent (wrong) solution with near-zero residuals, and GNC has no
+  // signal left to reject them.
+  constexpr size_t kNumCameras = 5;
+  std::vector<Point3> points;
+  for (size_t j = 0; j < 20; ++j) {
+    const double a = 2.399963 * static_cast<double>(j);  // golden angle
+    const double r = 0.3 + 0.08 * static_cast<double>(j % 7);
+    points.emplace_back(r * std::cos(a), r * std::sin(a),
+                        4.0 + 0.37 * static_cast<double>((j * 5) % 9));
+  }
+
+  std::vector<SfmCamera> cameras;
+  const std::vector<Point3> centers = {
+      Point3(-1.5, 0.3, -0.4), Point3(-0.7, -0.9, 0.3), Point3(0.1, 0.8, -0.2),
+      Point3(0.9, -0.4, 0.5), Point3(1.6, 0.6, -0.3)};
+  for (size_t i = 0; i < kNumCameras; ++i) {
+    const double s = static_cast<double>(i);
+    cameras.emplace_back(
+        Pose3(Rot3::RzRyRx(0.15 - 0.08 * s, 0.25 - 0.12 * s, 0.05 * s),
+              centers[i]),
+        Cal3Bundler(160.0 + 4.0 * s, 1e-4, -1e-6));
+  }
+
+  // Corrupted (pointSlot, cameraSlot) pairs; each corrupted track keeps
+  // four clean views.
+  const std::vector<std::pair<size_t, size_t>> corrupted = {
+      {1, 0}, {7, 2}, {14, 4}};
+  const std::vector<Point2> corruptions = {
+      Point2(14.0, -10.0), Point2(-12.0, 9.0), Point2(10.0, 13.0)};
+
+  GncTestProblem problem;
+  const auto model = noiseModel::Unit::Create(2);
+  for (size_t pointSlot = 0; pointSlot < points.size(); ++pointSlot) {
+    for (size_t cameraSlot = 0; cameraSlot < kNumCameras; ++cameraSlot) {
+      Point2 measured = cameras[cameraSlot].project2(points[pointSlot]);
+      const bool isOutlier =
+          std::find(corrupted.begin(), corrupted.end(),
+                    std::make_pair(pointSlot, cameraSlot)) != corrupted.end();
+      if (isOutlier) {
+        measured += corruptions[problem.outlierFactorSlots.size()];
+        problem.outlierFactorSlots.push_back(problem.graph.size());
+      }
+      auto factor = std::make_shared<BundlerProjectionFactor>(
+          measured, model, C(cameraSlot), P(pointSlot));
+      problem.graph.push_back(factor);
+      if (!isOutlier) {
+        problem.inlierGraph.push_back(factor);
+      }
+    }
+  }
+
+  for (size_t i = 0; i < kNumCameras; ++i) {
+    const double sign = (i % 2 == 0) ? 1.0 : -1.0;
+    Vector9 delta{0.002 * sign, -0.0015,    0.001 * sign, 0.03, -0.02 * sign,
+                  0.025,        0.8 * sign, 1e-5,         -1e-7};
+    problem.initial.insert(C(i), cameras[i].retract(delta));
+  }
+  for (size_t j = 0; j < points.size(); ++j) {
+    const double sign = (j % 2 == 0) ? 1.0 : -1.0;
+    problem.initial.insert(
+        P(j), Point3(points[j].x() + 0.02 * sign, points[j].y() - 0.015,
+                     points[j].z() + 0.03 * sign));
+  }
+  return problem;
+}
+
+}  // namespace
+
+TEST(CudaSfmLevenbergMarquardtParams, EqualsComparesFields) {
+  const CudaSfmLevenbergMarquardtParams a =
+      CudaSfmLevenbergMarquardtParams::LegacyDefaults();
+  CudaSfmLevenbergMarquardtParams b = a;
+  CHECK(a.equals(b));
+
+  b.lambdaInitial = 2.0 * a.lambdaInitial + 1.0;
+  CHECK(!a.equals(b));
+
+  b = a;
+  b.linearSolver = CudaSfmLinearSolverType::CudssFullNormal;
+  CHECK(!a.equals(b));
+
+  b = a;
+  b.enableDetailedProfiling = !a.enableDetailedProfiling;
+  CHECK(!a.equals(b));
+}
+
+TEST(GncCudaSfmOptimizer, TlsClassificationMatchesCpuGnc) {
+  const GncTestProblem problem = makeGncBalLikeProblem();
+
+  GncParams<LevenbergMarquardtParams> cpuGncParams{LevenbergMarquardtParams()};
+  cpuGncParams.setLossType(GncLossType::TLS);
+  GncOptimizer<GncParams<LevenbergMarquardtParams>> cpuGnc(
+      problem.graph, problem.initial, cpuGncParams);
+  const Values cpuResult = cpuGnc.optimize();
+
+  GncParams<CudaSfmLevenbergMarquardtParams> cudaGncParams{
+      CudaSfmLevenbergMarquardtParams::LegacyDefaults()};
+  cudaGncParams.setLossType(GncLossType::TLS);
+  GncOptimizer<GncParams<CudaSfmLevenbergMarquardtParams>> cudaGnc(
+      problem.graph, problem.initial, cudaGncParams);
+  const Values cudaResult = cudaGnc.optimize();
+
+  const Vector& cpuWeights = cpuGnc.getWeights();
+  const Vector& cudaWeights = cudaGnc.getWeights();
+  EXPECT_LONGS_EQUAL(problem.graph.size(), cudaWeights.size());
+  for (size_t slot = 0; slot < problem.graph.size(); ++slot) {
+    if (problem.isOutlierSlot(slot)) {
+      CHECK(cpuWeights[slot] < 0.05);
+      CHECK(cudaWeights[slot] < 0.05);
+    } else {
+      CHECK(cpuWeights[slot] > 0.95);
+      CHECK(cudaWeights[slot] > 0.95);
+    }
+  }
+
+  const double initialInlierError = problem.inlierGraph.error(problem.initial);
+  const double cpuInlierError = problem.inlierGraph.error(cpuResult);
+  const double cudaInlierError = problem.inlierGraph.error(cudaResult);
+  CHECK(cpuInlierError < 1e-3);
+  CHECK(cudaInlierError < 1e-3);
+  CHECK(cudaInlierError < initialInlierError);
+}
+
+TEST(GncCudaSfmOptimizer, GmClassificationMatchesCpuGnc) {
+  const GncTestProblem problem = makeGncBalLikeProblem();
+
+  GncParams<LevenbergMarquardtParams> cpuGncParams{LevenbergMarquardtParams()};
+  cpuGncParams.setLossType(GncLossType::GM);
+  GncOptimizer<GncParams<LevenbergMarquardtParams>> cpuGnc(
+      problem.graph, problem.initial, cpuGncParams);
+  const Values cpuResult = cpuGnc.optimize();
+
+  GncParams<CudaSfmLevenbergMarquardtParams> cudaGncParams{
+      CudaSfmLevenbergMarquardtParams::LegacyDefaults()};
+  cudaGncParams.setLossType(GncLossType::GM);
+  GncOptimizer<GncParams<CudaSfmLevenbergMarquardtParams>> cudaGnc(
+      problem.graph, problem.initial, cudaGncParams);
+  const Values cudaResult = cudaGnc.optimize();
+
+  // GM weights do not converge to exactly {0, 1}; check the separation.
+  const Vector& cpuWeights = cpuGnc.getWeights();
+  const Vector& cudaWeights = cudaGnc.getWeights();
+  for (size_t slot = 0; slot < problem.graph.size(); ++slot) {
+    if (problem.isOutlierSlot(slot)) {
+      CHECK(cpuWeights[slot] < 0.5);
+      CHECK(cudaWeights[slot] < 0.5);
+    } else {
+      CHECK(cpuWeights[slot] > 0.9);
+      CHECK(cudaWeights[slot] > 0.9);
+    }
+  }
+
+  CHECK(problem.inlierGraph.error(cpuResult) < 1e-2);
+  CHECK(problem.inlierGraph.error(cudaResult) < 1e-2);
+}
+
+TEST(GncCudaSfmOptimizer, KnownOutliersProduceZeroInformationGraph) {
+  // GNC weights a known outlier by zero, which reaches the CUDA backend as a
+  // zero-information Gaussian noise model. The corrupted measurement must be
+  // ignored by the optimization.
+  const GncTestProblem problem = makeGncBalLikeProblem();
+
+  NonlinearFactorGraph weightedGraph;
+  for (size_t slot = 0; slot < problem.graph.size(); ++slot) {
+    const auto factor =
+        std::static_pointer_cast<NoiseModelFactor>(problem.graph[slot]);
+    if (problem.isOutlierSlot(slot)) {
+      // Same construction as GncOptimizer::makeWeightedGraph with weight 0.
+      const auto zeroInformation =
+          noiseModel::Gaussian::Information(Matrix2::Zero());
+      weightedGraph.push_back(factor->cloneWithNewNoiseModel(zeroInformation));
+    } else {
+      weightedGraph.push_back(factor);
+    }
+  }
+
+  CudaSfmLevenbergMarquardtParams params =
+      CudaSfmLevenbergMarquardtParams::LegacyDefaults();
+  CudaSfmLevenbergMarquardtOptimizer optimizer(weightedGraph, problem.initial,
+                                               params);
+  const Values& result = optimizer.optimize();
+
+  CHECK(problem.inlierGraph.error(result) < 1e-3);
+  // The zero-information factors contribute exactly zero error.
+  DOUBLES_EQUAL(problem.inlierGraph.error(result),
+                weightedGraph.error(result), 1e-9);
 }
 
 int main() {

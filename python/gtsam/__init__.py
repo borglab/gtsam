@@ -77,6 +77,29 @@ def _init():
             return x  # "copy constructor"
         return np.array([x, y, z], dtype=float)
 
+    # Validate rotation matrix input from Python (zero overhead in C++).
+    # The tolerance is deliberately loose (1e-3): the goal is to reject the
+    # degenerate inputs that previously crashed the wrapper (zero, scaled, or
+    # reflected matrices, see issue #2300) while still accepting real-world
+    # rotation matrices rounded to a few decimals. Use Rot3.IsValid(R, tol)
+    # for strict checking, or Rot3.ClosestTo(R) to project onto SO(3).
+    global Rot3
+    _Rot3_orig = gtsam.Rot3
+
+    class Rot3(_Rot3_orig):
+        def __init__(self, *args, **kwargs):
+            if len(args) == 1 and not kwargs:
+                try:
+                    arr = np.asarray(args[0], dtype=float)
+                except (TypeError, ValueError):
+                    arr = None
+                if arr is not None and arr.shape == (3, 3) and not _Rot3_orig.IsValid(arr, 1e-3):
+                    raise ValueError(
+                        "Rot3: matrix is not a valid rotation "
+                        "(must be orthonormal with det +1). "
+                        "Use Rot3.ClosestTo() to project to the nearest rotation.")
+            super().__init__(*args, **kwargs)
+
     # for interactive debugging
     if __name__ == "__main__":
         # we want all definitions accessible

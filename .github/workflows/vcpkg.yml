@@ -1,15 +1,10 @@
 name: vcpkg
 on:
-  workflow_dispatch: 
-  pull_request:
-  push:
-    # Runs on pushes targeting the develop branch
-    branches: [develop]
+  workflow_call:
+  workflow_dispatch:
 
-# Cancels any in-progress workflow runs for the same PR when a new push is made,
-# allowing the runner to become available more quickly for the latest changes.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  group: vcpkg-ci-${{ github.run_id }}
   cancel-in-progress: true
 
 jobs:
@@ -53,6 +48,10 @@ jobs:
 
       - name: Install sccache
         uses: mozilla-actions/sccache-action@v0.0.9
+
+      - name: Install mold
+        uses: rui314/setup-mold@v1
+        if: runner.os == 'Linux'
 
       - name: cl version
         if: runner.os == 'Windows'
@@ -126,9 +125,7 @@ jobs:
               -DGTSAM_ENABLE_GEOGRAPHICLIB=ON \
               -DGTSAM_SUPPORT_NESTED_DISSECTION=ON \
               -DGTSAM_WITH_EIGEN_MKL=ON \
-              -DGTSAM_WITH_EIGEN_MKL_OPENMP=ON \
-              -DCTEST_EXTRA_ARGS='${{ matrix.ctest_extra_flags }}' \
-              -DPYTEST_EXTRA_ARGS='${{ matrix.pytest_extra_flags }}'
+              -DGTSAM_WITH_EIGEN_MKL_OPENMP=ON
 
       - name: On Failure, upload vcpkg logs
         if: failure()
@@ -154,7 +151,9 @@ jobs:
       - name: cmake build
         shell: bash
         run: |
-          cmake --build build
+          cmake --build build --target examples
+          cmake --build build -j 2 --target gtsam_py
+          cmake --build build -j 2 --target gtsam_unstable_py
 
       - name: Run Python tests
         shell: bash

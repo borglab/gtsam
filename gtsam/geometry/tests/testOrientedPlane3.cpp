@@ -30,8 +30,7 @@ GTSAM_CONCEPT_MANIFOLD_INST(OrientedPlane3)
 
 //*******************************************************************************
 TEST(OrientedPlane3, getMethods) {
-  Vector4 c;
-  c << -1, 0, 0, 5;
+  Vector4 c{-1, 0, 0, 5};
   OrientedPlane3 plane1(c);
   OrientedPlane3 plane2(c[0], c[1], c[2], c[3]);
   Vector4 coefficient1 = plane1.planeCoefficients();
@@ -91,13 +90,9 @@ inline static Vector randomVector(const Vector& minLimits,
 //*******************************************************************************
 TEST(OrientedPlane3, localCoordinates_retract) {
   size_t numIterations = 10000;
-  Vector4 minPlaneLimit, maxPlaneLimit;
-  minPlaneLimit << -1.0, -1.0, -1.0, 0.01;
-  maxPlaneLimit << 1.0, 1.0, 1.0, 10.0;
+  Vector4 minPlaneLimit{-1.0, -1.0, -1.0, 0.01}, maxPlaneLimit{1.0, 1.0, 1.0, 10.0};
 
-  Vector3 minXiLimit, maxXiLimit;
-  minXiLimit << -M_PI, -M_PI, -10.0;
-  maxXiLimit << M_PI, M_PI, 10.0;
+  Vector3 minXiLimit{-M_PI, -M_PI, -10.0}, maxXiLimit{M_PI, M_PI, 10.0};
   for (size_t i = 0; i < numIterations; i++) {
     // Create a Plane
     OrientedPlane3 p1(randomVector(minPlaneLimit, maxPlaneLimit));

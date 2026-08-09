@@ -112,7 +112,7 @@ TEST( RangeFactor, Error2D ) {
   Vector actualError(factor.unwhitenedError({{poseKey, genericValue(pose)}, {pointKey, genericValue(point)}}));
 
   // The expected error is ||(5.0, 9.0)|| - 10.0 = 0.295630141 meter / UnitCovariance
-  Vector expectedError = (Vector(1) << 0.295630141).finished();
+  Vector expectedError{{0.295630141}};
 
   // Verify we get the expected error
   CHECK(assert_equal(expectedError, actualError, 1e-9));
@@ -135,7 +135,7 @@ TEST( RangeFactor, Error2DWithTransform ) {
   Vector actualError(factor.unwhitenedError({{poseKey, genericValue(pose)}, {pointKey, genericValue(point)}}));
 
   // The expected error is ||(5.0, 9.0)|| - 10.0 = 0.295630141 meter / UnitCovariance
-  Vector expectedError = (Vector(1) << 0.295630141).finished();
+  Vector expectedError{{0.295630141}};
 
   // Verify we get the expected error
   CHECK(assert_equal(expectedError, actualError, 1e-9));
@@ -154,7 +154,7 @@ TEST( RangeFactor, Error3D ) {
   Vector actualError(factor.unwhitenedError({{poseKey, genericValue(pose)}, {pointKey, genericValue(point)}}));
 
   // The expected error is ||(3.0, 9.0, 4.0)|| - 10.0 = 0.295630141 meter / UnitCovariance
-  Vector expectedError = (Vector(1) << 0.295630141).finished();
+  Vector expectedError{{0.295630141}};
 
   // Verify we get the expected error
   CHECK(assert_equal(expectedError, actualError, 1e-9));
@@ -178,7 +178,7 @@ TEST( RangeFactor, Error3DWithTransform ) {
   Vector actualError(factor.unwhitenedError({{poseKey, genericValue(pose)}, {pointKey, genericValue(point)}}));
 
   // The expected error is ||(3.0, 9.0, 4.0)|| - 10.0 = 0.295630141 meter / UnitCovariance
-  Vector expectedError = (Vector(1) << 0.295630141).finished();
+  Vector expectedError{{0.295630141}};
 
   // Verify we get the expected error
   CHECK(assert_equal(expectedError, actualError, 1e-9));
@@ -267,7 +267,7 @@ TEST(RangeFactor, ErrorAndJacobian2DWithTransformBias) {
   values.insert(biasKey, bias);
 
   Vector actualError = factor.unwhitenedError(values);
-  Vector expectedError = (Vector(1) << 0.795630141).finished();
+  Vector expectedError{{0.795630141}};
   CHECK(assert_equal(expectedError, actualError, 1e-9));
 
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
@@ -283,7 +283,7 @@ TEST(RangeFactor, Point2) {
   Point2 p11(1.0, 2.0), p22(-4.0, 11.0);
 
   // The expected error is ||(5.0, 9.0)|| - 10.0 = 0.295630141 meter
-  Vector expectedError = (Vector(1) << 0.295630141).finished();
+  Vector expectedError{{0.295630141}};
 
   // Verify we get the expected error
   Values values {{11, genericValue(p11)}, {22, genericValue(p22)}};
@@ -300,7 +300,7 @@ TEST(RangeFactor, Point3) {
   Point3 p11(1.0, 2.0, 0.0), p22(-4.0, 11.0, 0);
 
   // The expected error is ||(5.0, 9.0)|| - 10.0 = 0.295630141 meter
-  Vector expectedError = (Vector(1) << 0.295630141).finished();
+  Vector expectedError{{0.295630141}};
 
   // Verify we get the expected error
   Values values {{11, genericValue(p11)}, {22, genericValue(p22)}};
@@ -344,7 +344,7 @@ TEST(RangeFactor, NonGTSAM) {
   Vector4 point(-4.0, 11.0, 0, 0);
 
   // The expected error is ||(5.0, 9.0)|| - 10.0 = 0.295630141 meter / UnitCovariance
-  Vector expectedError = (Vector(1) << 0.295630141).finished();
+  Vector expectedError{{0.295630141}};
 
   // Verify we get the expected error
   CHECK(assert_equal(expectedError, factor.unwhitenedError({{poseKey, genericValue(pose)}, {pointKey, genericValue(point)}}), 1e-9));

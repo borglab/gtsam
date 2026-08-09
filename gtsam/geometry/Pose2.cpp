@@ -170,14 +170,8 @@ Matrix3 Pose2::ExpmapDerivative(const Vector3& v) {
   Matrix3 J;
   if (std::abs(alpha) > 1e-5) {
     // Chirikjian11book2, pg. 36
-    /* !!!Warning!!! Compare Iserles05an, formula 2.42 and Chirikjian11book2 pg.26
-     * Iserles' right-trivialization dexpR is actually the left Jacobian J_l in Chirikjian's notation
-     * In fact, Iserles 2.42 can be written as:
-     *    \dot{g} g^{-1} = dexpR_{q}\dot{q}
-     * where q = A, and g = exp(A)
-     * and the LHS is in the definition of J_l in Chirikjian11book2, pg. 26.
-     * Hence, to compute ExpmapDerivative, we have to use the formula of J_r Chirikjian11book2, pg.36
-     */
+    // ExpmapDerivative is the right Jacobian J_r: exp(v+dv) is approximated
+    // by exp(v)*exp(J_r(v)*dv). See Chirikjian11book2, pg. 36.
     double sZalpha = sin(alpha)/alpha, c_1Zalpha = (cos(alpha)-1)/alpha;
     double v1Zalpha = v[0]/alpha, v2Zalpha = v[1]/alpha;
     J << sZalpha, -c_1Zalpha, v1Zalpha + v2Zalpha*c_1Zalpha - v1Zalpha*sZalpha,
@@ -224,10 +218,9 @@ Pose2 Pose2::inverse() const {
 
 /* ************************************************************************* */
 Matrix3 Pose2::Hat(const Pose2::TangentVector& xi) {
-  Matrix3 X;
-  X << 0., -xi.z(), xi.x(),
-    xi.z(), 0., xi.y(),
-    0., 0., 0.;
+  Matrix3 X{{0., -xi.z(), xi.x()},  //
+            {xi.z(), 0., xi.y()},
+            {0., 0., 0.}};
   return X;
 }
 
@@ -243,7 +236,7 @@ Point2 Pose2::transformTo(const Point2& point,
   OptionalJacobian<2, 2> Htranslation = Hpose.cols<2>(0);
   OptionalJacobian<2, 1> Hrotation = Hpose.cols<1>(2);
   const Point2 q = r_.unrotate(point - t_, Hrotation, Hpoint);
-  if (Htranslation) *Htranslation << -1.0, 0.0, 0.0, -1.0;
+  if (Htranslation) *Htranslation = Matrix2{{-1.0, 0.0}, {0.0, -1.0}};
   return q;
 }
 
@@ -308,10 +301,9 @@ double Pose2::range(const Point2& point,
   Matrix12 D_r_d;
   double r = norm2(d, D_r_d);
   if (Hpose) {
-      Matrix23 D_d_pose;
-      D_d_pose << -r_.c(),  r_.s(),  0.0,
-                  -r_.s(), -r_.c(),  0.0;
-      *Hpose = D_r_d * D_d_pose;
+    Matrix23 D_d_pose{{-r_.c(), r_.s(), 0.0},  //
+                      {-r_.s(), -r_.c(), 0.0}};
+    *Hpose = D_r_d * D_d_pose;
   }
   if (Hpoint) *Hpoint = D_r_d;
   return r;
