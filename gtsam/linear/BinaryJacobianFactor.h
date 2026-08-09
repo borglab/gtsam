@@ -25,6 +25,8 @@
 #include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/timing.h>
 
+#include <algorithm>
+
 namespace gtsam {
 
 /**
@@ -111,8 +113,9 @@ struct BinaryJacobianFactor: JacobianFactor {
         throw std::invalid_argument(
             "BinaryJacobianFactor::updateHessian: cannot update information with "
                 "constrained noise model");
-      BinaryJacobianFactor whitenedFactor(key1(), model->Whiten(getA(begin())),
-          key2(), model->Whiten(getA(end())), model->whiten(getb()));
+      BinaryJacobianFactor whitenedFactor(
+          key1(), model->Whiten(getA(begin())), key2(),
+          model->Whiten(getA(begin() + 1)), model->whiten(getb()));
       whitenedFactor.updateHessian(infoKeys, info);
     } else {
       // First build an array of slots
@@ -131,6 +134,48 @@ struct BinaryJacobianFactor: JacobianFactor {
       info->updateOffDiagonalBlock(slot1, slotB, A1.transpose() * b);
       info->diagonalBlock(slot2).rankUpdate(A2.transpose());
       info->updateOffDiagonalBlock(slot2, slotB, A2.transpose() * b);
+      info->updateDiagonalBlock(slotB, b.transpose() * b);
+    }
+  }
+
+  /** Update a range of Hessian block columns using fixed-size operations. */
+  void updateHessian(const KeyVector& infoKeys, SymmetricBlockMatrix* info,
+                     DenseIndex beginCol, DenseIndex endCol) const override {
+    gttic(updateHessianRange_BinaryJacobianFactor);
+    const SharedDiagonal& model = get_model();
+    if (model && !model->isUnit()) {
+      JacobianFactor::updateHessian(infoKeys, info, beginCol, endCol);
+      return;
+    }
+
+    const DenseIndex slot1 = Slot(infoKeys, key1());
+    const DenseIndex slot2 = Slot(infoKeys, key2());
+    const DenseIndex slotB = info->nBlocks() - 1;
+    const auto ownsColumn = [beginCol, endCol](DenseIndex column) {
+      return column >= beginCol && column < endCol;
+    };
+
+    const Matrix& Ab = Ab_.matrix();
+    const Eigen::Block<const Matrix, M, N1> A1(Ab, 0, 0);
+    const Eigen::Block<const Matrix, M, N2> A2(Ab, 0, N1);
+    const Eigen::Block<const Matrix, M, 1> b(Ab, 0, N1 + N2);
+
+    if (ownsColumn(slot1)) {
+      info->diagonalBlock(slot1).rankUpdate(A1.transpose());
+    }
+    if (ownsColumn(std::max(slot1, slot2))) {
+      info->updateOffDiagonalBlock(slot1, slot2, A1.transpose() * A2);
+    }
+    if (ownsColumn(std::max(slot1, slotB))) {
+      info->updateOffDiagonalBlock(slot1, slotB, A1.transpose() * b);
+    }
+    if (ownsColumn(slot2)) {
+      info->diagonalBlock(slot2).rankUpdate(A2.transpose());
+    }
+    if (ownsColumn(std::max(slot2, slotB))) {
+      info->updateOffDiagonalBlock(slot2, slotB, A2.transpose() * b);
+    }
+    if (ownsColumn(slotB)) {
       info->updateDiagonalBlock(slotB, b.transpose() * b);
     }
   }

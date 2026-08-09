@@ -104,6 +104,53 @@ TEST(BinaryJacobianFactor, HessianDiagonalAccumulates) {
   }
 }
 
+// Verifies ranged updates reproduce whole updates for either key ordering.
+TEST(BinaryJacobianFactor, RangedUpdateMatchesWholeAndGeneric) {
+  for (const SharedDiagonal& model : noiseModels()) {
+    if (model && model->isConstrained()) continue;
+
+    const Factor actual(kKey1, kA1, kKey2, kA2, kB, model);
+    const JacobianFactor expected(kKey1, kA1, kKey2, kA2, kB, model);
+    const GaussianFactor& actualBase = actual;
+    for (const bool reverse : {false, true}) {
+      const KeyVector infoKeys =
+          reverse ? KeyVector{kKey2, kKey1} : KeyVector{kKey1, kKey2};
+      const std::vector<size_t> dimensions =
+          reverse ? std::vector<size_t>{2, 3, 1}
+                  : std::vector<size_t>{3, 2, 1};
+      SymmetricBlockMatrix expectedInfo(dimensions), wholeInfo(dimensions),
+          rangedInfo(dimensions);
+      expectedInfo.setZero();
+      wholeInfo.setZero();
+      rangedInfo.setZero();
+
+      expected.updateHessian(infoKeys, &expectedInfo);
+      actualBase.updateHessian(infoKeys, &wholeInfo);
+      for (DenseIndex column = 0; column < rangedInfo.nBlocks(); ++column) {
+        actualBase.updateHessian(infoKeys, &rangedInfo, column, column + 1);
+      }
+
+      EXPECT(assert_equal(Matrix(expectedInfo.selfadjointView()),
+                          Matrix(wholeInfo.selfadjointView()), 1e-12));
+      EXPECT(assert_equal(Matrix(expectedInfo.selfadjointView()),
+                          Matrix(rangedInfo.selfadjointView()), 1e-12));
+    }
+  }
+}
+
+// Verifies constrained ranged updates retain the generic exception behavior.
+TEST(BinaryJacobianFactor, ConstrainedRangedUpdateThrows) {
+  const SharedDiagonal model = noiseModel::Constrained::All(2);
+  const Factor factor(kKey1, kA1, kKey2, kA2, kB, model);
+  const GaussianFactor& factorBase = factor;
+  const KeyVector infoKeys{kKey1, kKey2};
+  SymmetricBlockMatrix info(std::vector<size_t>{3, 2, 1});
+  info.setZero();
+
+  CHECK_EXCEPTION(factorBase.updateHessian(infoKeys, &info, 0, 1),
+                  std::invalid_argument);
+}
+
 }  // namespace binary_jacobian_factor
 /* ************************************************************************* */
 
