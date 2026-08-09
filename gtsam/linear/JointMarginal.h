@@ -59,7 +59,9 @@ class GTSAM_EXPORT JointMarginal {
   /** Synonym for operator() See operator() for indexing semantics. */
   Matrix at(Key iVariable, Key jVariable) const { return (*this)(iVariable, jVariable); }
 
-  /** The full, dense covariance/information matrix of the joint marginal. */
+  /** The full, dense covariance/information matrix of the joint marginal.
+   * Blocks follow the order of the keys in the query that created this object.
+   */
   Matrix fullMatrix() const { return blockMatrix_.selfadjointView(); }
 
   /** Print */
