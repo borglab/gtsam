@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -23,7 +23,6 @@
 
 #include <Eigen/IterativeLinearSolvers>
 #include <algorithm>
-#include <chrono>
 #include <cmath>
 #include <iomanip>
 #include <iostream>
@@ -32,6 +31,8 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+
+#include "internal/TimingUtils.h"
 
 using namespace gtsam;
 
@@ -49,29 +50,20 @@ struct Options {
 };
 
 Options parseOptions(int argc, char** argv) {
+  gtsam::timing::Arguments arguments(argc, argv);
   Options options;
-  for (int i = 1; i < argc; ++i) {
-    const std::string argument = argv[i];
-    if (argument == "--dataset" && i + 1 < argc) {
-      options.dataset = argv[++i];
-    } else if (argument == "--warmup" && i + 1 < argc) {
-      options.warmups = std::stoul(argv[++i]);
-    } else if (argument == "--repeats" && i + 1 < argc) {
-      options.repeats = std::stoul(argv[++i]);
-    } else if (argument == "--iterations" && i + 1 < argc) {
-      options.iterations = std::stoul(argv[++i]);
-    } else if (argument == "--eigen-threads" && i + 1 < argc) {
-      options.eigenThreads = std::stoul(argv[++i]);
-    } else if (argument == "--gtsam-threads" && i + 1 < argc) {
-      options.gtsamThreads = std::stoul(argv[++i]);
-    } else if (argument == "--profile" && i + 1 < argc) {
-      options.profileIterations = std::stoul(argv[++i]);
-    } else if (argument == "--check") {
-      options.check = true;
-    } else {
-      throw std::invalid_argument("Unknown or incomplete option: " + argument);
-    }
-  }
+  options.dataset = arguments.stringValue("--dataset", options.dataset);
+  options.warmups = arguments.sizeValue("--warmup", options.warmups);
+  options.repeats = arguments.sizeValue("--repeats", options.repeats);
+  options.iterations = arguments.sizeValue("--iterations", options.iterations);
+  options.eigenThreads =
+      arguments.sizeValue("--eigen-threads", options.eigenThreads);
+  options.gtsamThreads =
+      arguments.sizeValue("--gtsam-threads", options.gtsamThreads);
+  options.profileIterations =
+      arguments.sizeValue("--profile", options.profileIterations);
+  options.check = arguments.flag("--check");
+  arguments.validateAllConsumed();
   if (options.repeats == 0) {
     throw std::invalid_argument("--repeats must be positive");
   }
@@ -97,20 +89,11 @@ struct EigenLinearSystem {
 template <class FUNCTION>
 TimingStats timeMilliseconds(FUNCTION&& function, size_t warmups,
                              size_t repeats) {
-  for (size_t i = 0; i < warmups; ++i) function();
-  std::vector<double> samples;
-  samples.reserve(repeats);
-  for (size_t i = 0; i < repeats; ++i) {
-    const auto start = std::chrono::steady_clock::now();
-    function();
-    const auto end = std::chrono::steady_clock::now();
-    samples.push_back(
-        std::chrono::duration<double, std::milli>(end - start).count());
-  }
-  std::sort(samples.begin(), samples.end());
-  const size_t last = samples.size() - 1;
-  return {samples[samples.size() / 2], samples[last / 10],
-          samples[(9 * last) / 10]};
+  const auto samples = gtsam::timing::measureMilliseconds(
+      std::forward<FUNCTION>(function), warmups, repeats);
+  const auto summary = gtsam::timing::summarizeSamples(
+      samples, gtsam::timing::MedianPolicy::kUpperMiddle);
+  return {summary.median, summary.p10, summary.p90};
 }
 
 class LegacyGaussianFactorGraphSystem {
@@ -622,12 +605,14 @@ ConvergenceMeasurement measureGtsamConvergence(
     const SYSTEM& system, const Vector& zero,
     const ConjugateGradientParameters& parameters, const SparseEigen& hessian,
     const Vector& rhs) {
-  const auto start = std::chrono::steady_clock::now();
-  const auto result =
-      preconditionedConjugateGradientDetailed(system, zero, parameters, false);
-  const auto end = std::chrono::steady_clock::now();
-  return {std::chrono::duration<double, std::milli>(end - start).count(),
-          result.stats.iterations, result.stats.finalPreconditionedResidualNorm,
+  ConjugateGradientResult<Vector> result;
+  const double elapsedMilliseconds =
+      1000.0 * gtsam::timing::measureSeconds([&] {
+        result = preconditionedConjugateGradientDetailed(system, zero,
+                                                         parameters, false);
+      });
+  return {elapsedMilliseconds, result.stats.iterations,
+          result.stats.finalPreconditionedResidualNorm,
           relativeResidual(hessian, rhs, result.solution),
           terminationReason(result.stats.terminationReason)};
 }
@@ -672,13 +657,13 @@ void measureConvergence(const Options& options,
   if (eigenPcg.info() != Eigen::Success) {
     throw std::runtime_error("Eigen convergence PCG setup failed");
   }
-  const auto start = std::chrono::steady_clock::now();
-  const Vector solution = eigenPcg.solveWithGuess(rhs, zero);
-  const auto end = std::chrono::steady_clock::now();
+  Vector solution;
+  const double elapsedMilliseconds =
+      1000.0 * gtsam::timing::measureSeconds(
+                   [&] { solution = eigenPcg.solveWithGuess(rhs, zero); });
   report->eigenConvergence = {
-      std::chrono::duration<double, std::milli>(end - start).count(),
-      static_cast<size_t>(eigenPcg.iterations()), eigenPcg.error(),
-      relativeResidual(hessian, rhs, solution),
+      elapsedMilliseconds, static_cast<size_t>(eigenPcg.iterations()),
+      eigenPcg.error(), relativeResidual(hessian, rhs, solution),
       eigenTerminationReason(eigenPcg.info())};
 }
 
