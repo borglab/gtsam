@@ -117,13 +117,13 @@ jobs:
       - name: Install sccache
         uses: mozilla-actions/sccache-action@v0.0.9
 
+      # Keep the Windows PR fast-compile gate focused on the stable library.
       - name: Configure
         shell: bash
         run: >-
           cmake -S . -B build -G Ninja
           -DCMAKE_BUILD_TYPE=Release
           -DGTSAM_BUILD_TESTS=OFF
-          # Keep the Windows PR fast-compile gate focused on the stable library.
           -DGTSAM_BUILD_UNSTABLE=${{ runner.os == 'Windows' && 'OFF' || 'ON' }}
           -DGTSAM_USE_QUATERNIONS=OFF
           -DGTSAM_WITH_TBB=OFF
