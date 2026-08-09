@@ -45,7 +45,7 @@ const char* InconsistentEliminationRequested::what() const noexcept {
   std::string keys = sstr.str();
 
   message_ =
-      "An inference algorithm was called with inconsistent arguments. The\n"
+      "An inference algorithm was called with inconsistent arguments.  The\n"
       "factor graph, ordering, or variable index were inconsistent with each\n"
       "other, or a full elimination routine was called with an ordering that\n"
       "does not include all of the variables.\n";
