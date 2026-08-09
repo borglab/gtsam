@@ -13,10 +13,16 @@
  *  @file   InertialNavFactor_GlobalVelocity.h
  *  @author Vadim Indelman, Stephen Williams
  *  @brief  Inertial navigation factor (velocity in the global frame)
+ *  @deprecated This legacy unstable inertial-navigation factor is no longer
+ *  maintained. Use the stable navigation factors where applicable.
  *  @date   Sept 13, 2012
  **/
 
 #pragma once
+
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
@@ -429,3 +435,5 @@ struct traits<InertialNavFactor_GlobalVelocity<POSE, VELOCITY, IMUBIAS> > :
 };
 
 } /// namespace aspn
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

@@ -3,6 +3,10 @@
  * @author Alex Cunningham
  */
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam_unstable/dynamics/PoseRTV.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/Vector.h>
@@ -243,3 +247,5 @@ Matrix PoseRTV::RRTMnb(const Rot3& att) {
 
 /* ************************************************************************* */
 } // \namespace gtsam
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

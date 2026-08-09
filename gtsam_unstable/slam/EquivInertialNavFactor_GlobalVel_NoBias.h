@@ -14,10 +14,16 @@
  *  @file   EquivInertialNavFactor_GlobalVel_NoBias.h
  *  @author Vadim Indelman, Stephen Williams
  *  @brief  Equivalent inertial navigation factor (velocity in the global frame), without bias state.
+ *  @deprecated This legacy unstable inertial-navigation factor is no longer
+ *  maintained. Use the stable navigation factors where applicable.
  *  @date   May 9, 2013
  **/
 
 #pragma once
+
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/MatrixConstants.h>
@@ -584,3 +590,5 @@ private:
 }; // \class EquivInertialNavFactor_GlobalVel_NoBias
 
 } /// namespace gtsam
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
