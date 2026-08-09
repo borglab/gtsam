@@ -76,15 +76,20 @@ function test ()
 
   configure
 
+  build_targets=(check)
+  if [ "${GTSAM_BUILD_EXAMPLES_ALWAYS:-OFF}" == "ON" ]; then
+    build_targets+=(examples)
+  fi
+
   # Actual testing
   if [ "$(uname)" == "Linux" ]; then
     if (($(nproc) > 2)); then
-      cmake --build build -j$(nproc) --target check
+      cmake --build build -j$(nproc) --target "${build_targets[@]}"
     else
-      cmake --build build -j2 --target check
+      cmake --build build -j2 --target "${build_targets[@]}"
     fi
   elif [ "$(uname)" == "Darwin" ]; then
-    cmake --build build -j$(sysctl -n hw.physicalcpu) --target check
+    cmake --build build -j$(sysctl -n hw.physicalcpu) --target "${build_targets[@]}"
   fi
 
   finish

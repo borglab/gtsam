@@ -17,6 +17,7 @@ jobs:
       env:
         CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
         GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
+        GTSAM_BUILD_EXAMPLES_ALWAYS: ON
       volumes:
         - ${{ github.workspace }}:/gtsam
     strategy:
