@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
+#include <gtsam/nonlinear/internal/LinearizeBinaryFactor.h>
 
 #include <type_traits>
 
@@ -64,6 +65,14 @@ class RangeFactor : public NoiseModelFactorN<A1, A2> {
                        OptionalMatrixType H2 = OptionalNone) const override {
     const T predicted = Range<A1, A2>()(a1, a2, H1, H2);
     return -traits<T>::Local(predicted, measured_);
+  }
+
+  /// Linearize to a fixed-size binary factor when dimensions are static.
+  std::shared_ptr<GaussianFactor> linearize(
+      const Values& values) const override {
+    return internal::linearizeBinaryFactor<
+        traits<T>::dimension, traits<A1>::dimension, traits<A2>::dimension>(
+        *this, values);
   }
 
   /// print

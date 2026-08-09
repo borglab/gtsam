@@ -21,6 +21,7 @@
 
 #include <gtsam/geometry/BearingRange.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
+#include <gtsam/nonlinear/internal/LinearizeBinaryFactor.h>
 
 namespace gtsam {
 
@@ -112,6 +113,14 @@ class BearingRangeFactor : public NoiseModelFactorN<A1, A2> {
       H2->bottomRows(dimR) = HR2;
     }
     return error;
+  }
+
+  /// Linearize to a fixed-size binary factor when dimensions are static.
+  std::shared_ptr<GaussianFactor> linearize(
+      const Values& values) const override {
+    return internal::linearizeBinaryFactor<
+        BearingRange<A1, A2, B, R>::dimension, traits<A1>::dimension,
+        traits<A2>::dimension>(*this, values);
   }
 
   /// print

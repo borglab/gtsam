@@ -19,6 +19,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/linear/BinaryJacobianFactor.h>
 #include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/sam/BearingRangeFactor.h>
 
@@ -66,6 +67,39 @@ TEST(BearingRangeFactor, 3D) {
   // incompatible with the Unit3 localCoordinates. See testBearingFactor...
   // EXPECT_CORRECT_FACTOR_JACOBIANS(factor3D, values, 1e-7, 1e-5);
 }  // namespace
+
+/* ************************************************************************* */
+namespace binary_linearization {
+
+// Verifies 2D and 3D bearing-range factors produce equivalent binary factors.
+TEST(BearingRangeFactor, BinaryLinearization) {
+  const Values values2D{{poseKey, genericValue(Pose2(1.0, 2.0, 0.57))},
+                        {pointKey, genericValue(Point2(-4.0, 11.0))}};
+  const BearingRangeFactor<Pose2, Point2> factor2D(
+      poseKey, pointKey, Rot2::fromAngle(0.2), 3.0,
+      noiseModel::Diagonal::Sigmas(Vector2{0.5, 0.8}));
+  const auto expected2D = factor2D.NoiseModelFactor::linearize(values2D);
+  const auto actual2D = factor2D.linearize(values2D);
+  const bool isBinary2D = static_cast<bool>(
+      std::dynamic_pointer_cast<BinaryJacobianFactor<2, 3, 2>>(actual2D));
+  CHECK(isBinary2D);
+  EXPECT(assert_equal(*expected2D, *actual2D, 1e-9));
+
+  const Values values3D{{poseKey, genericValue(Pose3())},
+                        {pointKey, genericValue(Point3(1.0, 0.0, 0.0))}};
+  const BearingRangeFactor<Pose3, Point3> factor3D(
+      poseKey, pointKey, Pose3().bearing(Point3(1.0, 0.0, 0.0)), 1.0,
+      noiseModel::Isotropic::Sigma(3, 0.5));
+  const auto expected3D = factor3D.NoiseModelFactor::linearize(values3D);
+  const auto actual3D = factor3D.linearize(values3D);
+  const bool isBinary3D = static_cast<bool>(
+      std::dynamic_pointer_cast<BinaryJacobianFactor<3, 6, 3>>(actual3D));
+  CHECK(isBinary3D);
+  EXPECT(assert_equal(*expected3D, *actual3D, 1e-9));
+}
+
+}  // namespace binary_linearization
+/* ************************************************************************* */
 
 /* ************************************************************************* */
 int main() {

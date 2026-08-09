@@ -23,6 +23,7 @@
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/nonlinear/factorTesting.h>
+#include <gtsam/linear/BinaryJacobianFactor.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -349,6 +350,37 @@ TEST(RangeFactor, NonGTSAM) {
   // Verify we get the expected error
   CHECK(assert_equal(expectedError, factor.unwhitenedError({{poseKey, genericValue(pose)}, {pointKey, genericValue(point)}}), 1e-9));
 }
+
+/* ************************************************************************* */
+namespace binary_linearization {
+
+// Verifies Point2 and Point3 range factors produce equivalent binary factors.
+TEST(RangeFactor, BinaryLinearization) {
+  const Point2 point2A(1.0, 2.0), point2B(-4.0, 11.0);
+  const Values values2D{{11, genericValue(point2A)},
+                        {22, genericValue(point2B)}};
+  const RangeFactor<Point2> factor2D(11, 22, measurement, model);
+  const auto expected2D = factor2D.NoiseModelFactor::linearize(values2D);
+  const auto actual2D = factor2D.linearize(values2D);
+  const bool isBinary2D = static_cast<bool>(
+      std::dynamic_pointer_cast<BinaryJacobianFactor<1, 2, 2>>(actual2D));
+  CHECK(isBinary2D);
+  EXPECT(assert_equal(*expected2D, *actual2D, 1e-9));
+
+  const Point3 point3A(1.0, 2.0, 0.0), point3B(-4.0, 11.0, 0.0);
+  const Values values3D{{11, genericValue(point3A)},
+                        {22, genericValue(point3B)}};
+  const RangeFactor<Point3> factor3D(11, 22, measurement, model);
+  const auto expected3D = factor3D.NoiseModelFactor::linearize(values3D);
+  const auto actual3D = factor3D.linearize(values3D);
+  const bool isBinary3D = static_cast<bool>(
+      std::dynamic_pointer_cast<BinaryJacobianFactor<1, 3, 3>>(actual3D));
+  CHECK(isBinary3D);
+  EXPECT(assert_equal(*expected3D, *actual3D, 1e-9));
+}
+
+}  // namespace binary_linearization
+/* ************************************************************************* */
 
 /* ************************************************************************* */
 int main() {

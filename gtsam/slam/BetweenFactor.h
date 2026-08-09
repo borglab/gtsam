@@ -21,6 +21,7 @@
 #include <gtsam/base/Lie.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
+#include <gtsam/nonlinear/internal/LinearizeBinaryFactor.h>
 
 #ifdef _WIN32
 #define BETWEENFACTOR_VISIBILITY
@@ -123,6 +124,14 @@ namespace gtsam {
 #else
       return traits<T>::Local(measured_, hx);
 #endif
+    }
+
+    /// Linearize to a fixed-size binary factor when dimensions are static.
+    std::shared_ptr<GaussianFactor> linearize(
+        const Values& values) const override {
+      constexpr int dimension = traits<T>::dimension;
+      return internal::linearizeBinaryFactor<dimension, dimension, dimension>(
+          *this, values);
     }
 
     /// @}
