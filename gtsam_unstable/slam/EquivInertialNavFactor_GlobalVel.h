@@ -14,10 +14,16 @@
  *  @file   EquivInertialNavFactor_GlobalVel.h
  *  @author Vadim Indelman, Stephen Williams
  *  @brief  Equivalent inertial navigation factor (velocity in the global frame).
+ *  @deprecated This legacy unstable inertial-navigation factor is no longer
+ *  maintained. Use the stable navigation factors where applicable.
  *  @date   Sep. 26, 2012
  **/
 
 #pragma once
+
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
@@ -718,3 +724,5 @@ private:
 }; // \class EquivInertialNavFactor_GlobalVel
 
 } /// namespace gtsam
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

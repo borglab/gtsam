@@ -6,6 +6,10 @@
 
 #pragma once
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam_unstable/dynamics/PoseRTV.h>
@@ -15,11 +19,13 @@
 namespace gtsam {
 
 /**
- * Class that represents integrating IMU measurements over time for dynamic systems
+ * Class that represents integrating IMU measurements over time for dynamic systems.
  * This factor has dimension 9, with a built-in constraint for velocity modeling
  *
  * Templated to allow for different key types, but variables all
  * assumed to be PoseRTV
+ *
+ * @deprecated Use gtsam::ImuFactor with gtsam::NavState instead.
  */
 template<class POSE>
 class FullIMUFactor : public NoiseModelFactorN<POSE, POSE> {
@@ -118,3 +124,5 @@ private:
 };
 
 } // \namespace gtsam
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

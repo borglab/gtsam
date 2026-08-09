@@ -3,9 +3,12 @@
  * @author Alex Cunningham
  */
 
-#include <iostream>
-
+#include <gtsam/config.h>
 #include <CppUnitLite/TestHarness.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
+#include <iostream>
 
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/PriorFactor.h>
@@ -171,6 +174,9 @@ TEST( testIMUSystem, linear_trajectory) {
   }
 //  EXPECT_DOUBLES_EQUAL(0, graph.error(true_traj), 1e-5); // FAIL
 }
+
+/* ************************************************************************* */
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

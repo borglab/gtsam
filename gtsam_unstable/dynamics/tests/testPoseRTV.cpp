@@ -3,7 +3,11 @@
  * @author Alex Cunningham
  */
 
+#include <gtsam/config.h>
 #include <CppUnitLite/TestHarness.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/TestableAssertions.h>
@@ -238,6 +242,9 @@ TEST(testPoseRTV, RRTMnb) {
   EXPECT(assert_equal(I_3x3, PoseRTV::RRTMnb(Rot3())));
   EXPECT(assert_equal(PoseRTV::RRTMnb(Vector3(0.3, 0.2, 0.1)), PoseRTV::RRTMnb(Rot3::Ypr(0.1, 0.2, 0.3))));
 }
+
+/* ************************************************************************* */
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
