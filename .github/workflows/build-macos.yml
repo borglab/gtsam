@@ -18,6 +18,7 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
+      GTSAM_BUILD_EXAMPLES_ALWAYS: ON
       GTSAM_ALLOW_DEPRECATED_SINCE_V43: OFF
 
     strategy:
