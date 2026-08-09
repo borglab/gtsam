@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/Cal3.h>
 #include <gtsam/geometry/Point2.h>
 

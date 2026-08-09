@@ -65,8 +65,8 @@ class GTSAM_EXPORT MultifrontalSolverNotSupported : public std::runtime_error {
  * provides efficient methods for loading new factors, eliminating the graph,
  * and solving for the update vector.
  *
- * @note Only JacobianFactor inputs are supported. Any non-Jacobian factors
- * will throw during construction/precompute or load.
+ * @note Only JacobianFactor and BatchJacobianFactor inputs are supported. Other
+ * Gaussian factor types will throw during construction/precompute or load.
  *
  * @note Clique merging has two optional phases: an initial leaf-merge pass
  * (leafMergeDimCap) that merges multiple leaf children into a common parent
@@ -84,10 +84,11 @@ class GTSAM_EXPORT MultifrontalSolver
 
   /// Precomputed symbolic and sizing data for multifrontal solver construction.
   struct PrecomputedData {
-    std::map<Key, size_t> dims;                 ///< Map from variable key to dimension.
-    std::unordered_set<Key> fixedKeys;          ///< Keys fixed by constrained factors.
-    IndexedJunctionTree indexedJunctionTree;    ///< Precomputed indexed junction tree.
-    std::vector<size_t> rowCounts;              ///< Row counts indexed by factor index.
+    std::map<Key, size_t> dims;         ///< Map from variable key to dimension.
+    std::unordered_set<Key> fixedKeys;  ///< Keys fixed by constrained factors.
+    IndexedJunctionTree
+        indexedJunctionTree;        ///< Precomputed indexed junction tree.
+    std::vector<size_t> rowCounts;  ///< Row counts indexed by factor index.
   };
 
   /// Shared pointer to a MultifrontalClique.
@@ -114,7 +115,8 @@ class GTSAM_EXPORT MultifrontalSolver
    * This builds the indexed junction tree and pre-allocates all matrices.
    * Call load() before eliminating to populate numerical values.
    * @param graph The factor graph to solve.
-   *              Must contain only JacobianFactor instances.
+   *              Must contain only JacobianFactor or BatchJacobianFactor
+   *              instances.
    * @param ordering The variable ordering to use for elimination.
    * @param params Tunable parameters for traversal and reporting.
    */
@@ -135,11 +137,13 @@ class GTSAM_EXPORT MultifrontalSolver
    * Precompute symbolic structure and sizing data from a factor graph.
    * This builds an IndexedJunctionTree that can be reused across multiple
    * solver instances when the graph structure and ordering remain unchanged.
-   * Only JacobianFactor inputs are supported.
-   * 
-   * @param graph The factor graph (must contain only JacobianFactor instances)
+   * Only JacobianFactor and BatchJacobianFactor inputs are supported.
+   *
+   * @param graph The factor graph (must contain only supported Jacobian-style
+   *              factor instances)
    * @param ordering The variable elimination ordering
-   * @return PrecomputedData containing the indexed junction tree and sizing info
+   * @return PrecomputedData containing the indexed junction tree and sizing
+   * info
    */
   static PrecomputedData Precompute(const GaussianFactorGraph& graph,
                                     const Ordering& ordering);

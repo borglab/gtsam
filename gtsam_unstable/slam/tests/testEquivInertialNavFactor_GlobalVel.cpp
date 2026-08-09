@@ -20,7 +20,6 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/inference/Key.h>
-#include <gtsam/base/numericalDerivative.h>
 
 #include <CppUnitLite/TestHarness.h>
 #include <iostream>

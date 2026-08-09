@@ -36,13 +36,10 @@ namespace {
 
 const Rot3 kR1 = Rot3::RzRyRx(0.1, -0.2, 0.3);
 const Rot3 kR2 = Rot3::RzRyRx(-0.3, 0.4, -0.2);
-const Matrix3 kX1 =
-    (Matrix3() << 1.0, 4.0, -1.0, 2.0, 5.0, 0.5, 3.0, 6.0, 2.0).finished();
-const Matrix3 kX2 =
-    (Matrix3() << -2.0, 1.0, 0.1, 0.3, -1.5, 2.2, 0.7, -0.9, 1.6).finished();
-const Vector12 kXi = (Vector12() << 0.11, -0.07, 0.05, 0.3, -0.4, 0.1, -0.2,
-                      0.6, -0.5, 0.7, -0.1, 0.2)
-                         .finished();
+const Matrix3 kX1{{1.0, 4.0, -1.0}, {2.0, 5.0, 0.5}, {3.0, 6.0, 2.0}};
+const Matrix3 kX2{{-2.0, 1.0, 0.1}, {0.3, -1.5, 2.2}, {0.7, -0.9, 1.6}};
+const Vector12 kXi{0.11, -0.07, 0.05, 0.3, -0.4, 0.1,
+                   -0.2, 0.6,   -0.5, 0.7, -0.1, 0.2};
 
 }  // namespace
 
@@ -205,10 +202,8 @@ TEST(ExtendedPose3, AdjointTranspose) {
 //******************************************************************************
 TEST(ExtendedPose3, adjointTranspose) {
   const Vector12 xi = kXi;
-  const Vector12 y =
-      (Vector12() << 0.03, -0.07, 0.02, 0.4, 0.1, -0.2, -0.3, 0.5, 0.9, 0.2,
-       -0.8, 0.6)
-          .finished();
+  const Vector12 y{0.03, -0.07, 0.02, 0.4, 0.1,  -0.2,
+                   -0.3, 0.5,   0.9,  0.2, -0.8, 0.6};
   const Vector xi_dynamic = xi;
   const Vector y_dynamic = y;
 

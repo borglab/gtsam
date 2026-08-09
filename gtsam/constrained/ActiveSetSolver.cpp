@@ -22,6 +22,7 @@
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/linearExceptions.h>
 
+#include <Eigen/Cholesky>
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -124,11 +125,7 @@ double ConstraintSign(LinearConstraint::Sense sense) {
 }
 
 /* ************************************************************************* */
-Vector SingleValue(double value) {
-  Vector vector(1);
-  vector << value;
-  return vector;
-}
+Vector1 SingleValue(double value) { return Vector1{value}; }
 
 /* ************************************************************************* */
 JacobianFactor::shared_ptr OneRowConstraintFactor(const JacobianFactor& factor,

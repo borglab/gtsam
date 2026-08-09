@@ -21,7 +21,6 @@
 
 #include <gtsam/discrete/DecisionTree.h>
 
-#include <algorithm>
 #include <cassert>
 #include <fstream>
 #include <iterator>

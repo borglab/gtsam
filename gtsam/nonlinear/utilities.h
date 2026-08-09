@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    utilities.h
+ * @file    gtsam/nonlinear/utilities.h
  * @brief   Contains *generic* global functions designed particularly for the matlab interface
  * @author  Stephen Williams
  */
@@ -281,7 +281,7 @@ void perturbPoint3(Values& values, double sigma, int32_t seed = 42u) {
 void perturbPose3(Values& values, double sigmaT, double sigmaR,
                   int32_t seed = 42u) {
   auto model = noiseModel::Diagonal::Sigmas(
-      (Vector6() << sigmaR, sigmaR, sigmaR, sigmaT, sigmaT, sigmaT).finished());
+      Vector6{sigmaR, sigmaR, sigmaR, sigmaT, sigmaT, sigmaT});
   Sampler sampler(model, seed);
   for (const auto& [key, value] : values.extract<Pose3>()) {
     values.update<Pose3>(key, sampler.perturb(value));

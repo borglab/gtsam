@@ -18,10 +18,6 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <filesystem>
-#include <iostream>
-#include <cstdlib>
-#include <fstream>
-#include <sstream>
 
 using namespace std;
 using namespace gtsam;

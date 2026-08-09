@@ -103,7 +103,7 @@ public:
           << std::endl;
       return Vector::Ones(2) * 2.0 * K_->fx();
     }
-    return (Vector(1) << 0.0).finished();
+    return Vector{{0.0}};
   }
 
   /// Evaluate error h(x)-z and optionally derivatives
@@ -230,7 +230,7 @@ public:
           << std::endl;
       return Vector::Ones(2) * 2.0 * K_->fx();
     }
-    return (Vector(1) << 0.0).finished();
+    return Vector{{0.0}};
   }
 
   /// Evaluate error h(x)-z and optionally derivatives

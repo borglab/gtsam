@@ -21,6 +21,8 @@
 
 #include "PreintegratedRotation.h"
 
+#include <gtsam/base/MatrixConstants.h>
+
 using namespace std;
 
 namespace gtsam {

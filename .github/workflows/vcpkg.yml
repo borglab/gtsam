@@ -1,15 +1,10 @@
 name: vcpkg
 on:
-  workflow_dispatch: 
-  pull_request:
-  push:
-    # Runs on pushes targeting the develop branch
-    branches: [develop]
+  workflow_call:
+  workflow_dispatch:
 
-# Cancels any in-progress workflow runs for the same PR when a new push is made,
-# allowing the runner to become available more quickly for the latest changes.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  group: vcpkg-ci-${{ github.run_id }}
   cancel-in-progress: true
 
 jobs:
@@ -54,6 +49,10 @@ jobs:
       - name: Install sccache
         uses: mozilla-actions/sccache-action@v0.0.9
 
+      - name: Install mold
+        uses: rui314/setup-mold@v1
+        if: runner.os == 'Linux'
+
       - name: cl version
         if: runner.os == 'Windows'
         shell: cmd
@@ -78,13 +77,21 @@ jobs:
         env:
           VCPKG_BINARY_SOURCES: default,rw
 
+      - name: Get compiler hash
+        id: hash-compiler
+        shell: bash
+        run: |
+          ./vcpkg/vcpkg install --dry-run
+          cat vcpkg_installed/vcpkg/compiler-file-hash-cache.json
+          echo hash=$(jq '.[].["hash"]' < vcpkg_installed/vcpkg/compiler-file-hash-cache.json) >> $GITHUB_OUTPUT
+
       - name: Restore cache dependencies
         id: cache-restore
         uses: actions/cache/restore@v3
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: ${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}
-          restore-keys: ${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}
+          key: ${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}-${{ steps.hash-compiler.outputs.hash }}
+          restore-keys: ${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}-${{ steps.hash-compiler.outputs.hash }}
 
       - name: Set Swap Space (Linux)
         if: runner.os == 'Linux'
@@ -118,9 +125,7 @@ jobs:
               -DGTSAM_ENABLE_GEOGRAPHICLIB=ON \
               -DGTSAM_SUPPORT_NESTED_DISSECTION=ON \
               -DGTSAM_WITH_EIGEN_MKL=ON \
-              -DGTSAM_WITH_EIGEN_MKL_OPENMP=ON \
-              -DCTEST_EXTRA_ARGS='${{ matrix.ctest_extra_flags }}' \
-              -DPYTEST_EXTRA_ARGS='${{ matrix.pytest_extra_flags }}'
+              -DGTSAM_WITH_EIGEN_MKL_OPENMP=ON
 
       - name: On Failure, upload vcpkg logs
         if: failure()
@@ -131,11 +136,11 @@ jobs:
 
       - name: Cache dependencies
         # Don't save if it's the exact same
-        if: steps.cache-restore.outputs.cache-matched-key != format('{0}-{1}-{2}', matrix.os, hashFiles('vcpkg.json'), hashFiles('vcpkg_installed/**/vcpkg_abi_info.txt'))
+        if: steps.cache-restore.outputs.cache-matched-key != format('{0}-{1}-{2}-{3}', matrix.os, hashFiles('vcpkg.json'), steps.hash-compiler.outputs.hash, hashFiles('vcpkg_installed/**/vcpkg_abi_info.txt'))
         uses: actions/cache/save@v4
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
-          key: ${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}-${{ hashFiles('vcpkg_installed/**/vcpkg_abi_info.txt') }}
+          key: ${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}-${{ steps.hash-compiler.outputs.hash }}-${{ hashFiles('vcpkg_installed/**/vcpkg_abi_info.txt') }}
 
       - name: Install python packages
         shell: bash
@@ -146,7 +151,9 @@ jobs:
       - name: cmake build
         shell: bash
         run: |
-          cmake --build build
+          cmake --build build --target examples
+          cmake --build build -j 2 --target gtsam_py
+          cmake --build build -j 2 --target gtsam_unstable_py
 
       - name: Run Python tests
         shell: bash

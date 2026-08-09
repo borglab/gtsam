@@ -19,10 +19,11 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/linear/NoiseModel.h>
-#include <gtsam/geometry/Rot3.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/geometry/Rot3.h>
+#include <gtsam/linear/NoiseModel.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
 
 // Using numerical derivative to calculate d(Pose3::Expmap)/dw
 #include <gtsam/base/numericalDerivative.h>
@@ -369,9 +370,6 @@ public:
     delta_t += msr_dt;
 
     // Update EquivCov_Overall
-    Matrix Z_3x3 = Z_3x3;
-    Matrix I_3x3 = I_3x3;
-
     Matrix H_pos_pos = numericalDerivative11<Vector, Vector>(std::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, _1, delta_vel_in_t0), delta_pos_in_t0);
     Matrix H_pos_vel = numericalDerivative11<Vector, Vector>(std::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt, delta_pos_in_t0, _1), delta_vel_in_t0);
     Matrix H_pos_angles = Z_3x3;
@@ -481,16 +479,15 @@ public:
 
   static inline void Calc_g_rho_omega_earth_NED(const Vector& Pos_NED, const Vector& Vel_NED, const Vector& LatLonHeight_IC, const Vector& Pos_NED_Initial,
       Vector& g_NED, Vector& rho_NED, Vector& omega_earth_NED) {
+    Matrix ENU_to_NED{//
+                      {0.0, 1.0, 0.0},
+                      {1.0, 0.0, 0.0},
+                      {0.0, 0.0, -1.0}};
 
-    Matrix ENU_to_NED = (Matrix(3, 3) <<
-        0.0,  1.0,  0.0,
-        1.0,  0.0,  0.0,
-        0.0,  0.0, -1.0).finished();
-
-    Matrix NED_to_ENU = (Matrix(3, 3) <<
-        0.0,  1.0,  0.0,
-        1.0,  0.0,  0.0,
-        0.0,  0.0, -1.0).finished();
+    Matrix NED_to_ENU{//
+                      {0.0, 1.0, 0.0},
+                      {1.0, 0.0, 0.0},
+                      {0.0, 0.0, -1.0}};
 
     // Convert incoming parameters to ENU
     Vector Pos_ENU = NED_to_ENU * Pos_NED;
@@ -538,7 +535,7 @@ public:
 
     Rot3 R_ECEF_to_ENU( UEN_to_ENU * C2 * C1 );
 
-    Vector omega_earth_ECEF((Vector(3) << 0.0, 0.0, 7.292115e-5));
+    Vector omega_earth_ECEF{{0.0, 0.0, 7.292115e-5}};
     omega_earth_ENU = R_ECEF_to_ENU.matrix() * omega_earth_ECEF;
 
     // Calculating g
@@ -552,8 +549,7 @@ public:
     double Ro( sqrt(Rp*Rm) );           // mean earth radius of curvature
     double g0( 9.780318*( 1 + 5.3024e-3 * pow(sin(lat_new),2) - 5.9e-6 * pow(sin(2*lat_new),2) ) );
     double g_calc( g0/( pow(1 + height/Ro, 2) ) );
-    g_ENU = (Vector(3) << 0.0, 0.0, -g_calc);
-
+    g_ENU = Vector{{0.0, 0.0, -g_calc}};
 
     // Calculate rho
     double Ve( Vel_ENU(0) );
@@ -561,7 +557,7 @@ public:
     double rho_E = -Vn/(Rm + height);
     double rho_N = Ve/(Rp + height);
     double rho_U = Ve*tan(lat_new)/(Rp + height);
-    rho_ENU = (Vector(3) << rho_E, rho_N, rho_U);
+    rho_ENU = Vector{{rho_E, rho_N, rho_U}};
   }
 
   static inline noiseModel::Gaussian::shared_ptr calc_descrete_noise_model(const noiseModel::Gaussian::shared_ptr& model, double delta_t){

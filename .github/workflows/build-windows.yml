@@ -1,20 +1,11 @@
 name: Windows CI
 
 on:
+  workflow_call:
   workflow_dispatch:
-  pull_request:
-    paths-ignore:
-      - '**.md'
-      - '**.ipynb'
-      - 'myst.yml'
-  push:
-    # Run on pushes to develop branch to cache compilations
-    branches: [develop]
 
-# Cancels any in-progress workflow runs for the same PR when a new push is made,
-# allowing the runner to become available more quickly for the latest changes.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  group: windows-ci-${{ github.run_id }}
   cancel-in-progress: true
 
 jobs:
@@ -96,7 +87,7 @@ jobs:
           cmake -E remove_directory build
           if [ "${{ matrix.build_type }}" = "Release" ]; then
             cmake -B build -G Ninja \
-                  -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
+                  -DGTSAM_BUILD_EXAMPLES_ALWAYS=ON \
                   -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
                   -DGTSAM_USE_BOOST_FEATURES=ON \
                   -DGTSAM_ENABLE_BOOST_SERIALIZATION=ON \
@@ -108,7 +99,7 @@ jobs:
                   -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           else
             cmake -B build -G Ninja \
-                  -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
+                  -DGTSAM_BUILD_EXAMPLES_ALWAYS=ON \
                   -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
                   -DGTSAM_ENABLE_CONSISTENCY_CHECKS=ON \
                   -DGTSAM_USE_BOOST_FEATURES=OFF \
@@ -117,7 +108,7 @@ jobs:
 
       - name: Build
         shell: bash
-        run: cmake --build build -j4 --target all.tests
+        run: cmake --build build -j4 --target all.tests examples
 
       - name: Test
         shell: bash

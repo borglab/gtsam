@@ -659,6 +659,10 @@ gtsam::TriangulationResult triangulateSafe(
     const gtsam::CameraSetCal3_S2& cameras,
     const gtsam::Point2Vector& measurements,
     const gtsam::TriangulationParameters& params);
+std::vector<gtsam::TriangulationResult> triangulateSafe(
+    const gtsam::CameraSetCal3_S2& cameras,
+    const std::vector<std::map<size_t, gtsam::Point2>>& tracks,
+    const gtsam::TriangulationParameters& params);
 
 // Cal3DS2 versions
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
@@ -681,6 +685,10 @@ gtsam::Point3 triangulateNonlinear(const gtsam::CameraSetCal3DS2& cameras,
 gtsam::TriangulationResult triangulateSafe(
     const gtsam::CameraSetCal3DS2& cameras,
     const gtsam::Point2Vector& measurements,
+    const gtsam::TriangulationParameters& params);
+std::vector<gtsam::TriangulationResult> triangulateSafe(
+    const gtsam::CameraSetCal3DS2& cameras,
+    const std::vector<std::map<size_t, gtsam::Point2>>& tracks,
     const gtsam::TriangulationParameters& params);
 
 // Cal3Bundler versions
@@ -705,6 +713,10 @@ gtsam::TriangulationResult triangulateSafe(
     const gtsam::CameraSetCal3Bundler& cameras,
     const gtsam::Point2Vector& measurements,
     const gtsam::TriangulationParameters& params);
+std::vector<gtsam::TriangulationResult> triangulateSafe(
+    const gtsam::CameraSetCal3Bundler& cameras,
+    const std::vector<std::map<size_t, gtsam::Point2>>& tracks,
+    const gtsam::TriangulationParameters& params);
 
 // Cal3Fisheye versions
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
@@ -727,6 +739,10 @@ gtsam::Point3 triangulateNonlinear(const gtsam::CameraSetCal3Fisheye& cameras,
 gtsam::TriangulationResult triangulateSafe(
     const gtsam::CameraSetCal3Fisheye& cameras,
     const gtsam::Point2Vector& measurements,
+    const gtsam::TriangulationParameters& params);
+std::vector<gtsam::TriangulationResult> triangulateSafe(
+    const gtsam::CameraSetCal3Fisheye& cameras,
+    const std::vector<std::map<size_t, gtsam::Point2>>& tracks,
     const gtsam::TriangulationParameters& params);
 
 // Cal3Unified versions
@@ -751,6 +767,10 @@ gtsam::TriangulationResult triangulateSafe(
     const gtsam::CameraSetCal3Unified& cameras,
     const gtsam::Point2Vector& measurements,
     const gtsam::TriangulationParameters& params);
+std::vector<gtsam::TriangulationResult> triangulateSafe(
+    const gtsam::CameraSetCal3Unified& cameras,
+    const std::vector<std::map<size_t, gtsam::Point2>>& tracks,
+    const gtsam::TriangulationParameters& params);
 
 // Spherical versions
 gtsam::Point3 triangulatePoint3(
@@ -766,6 +786,10 @@ gtsam::Point3 triangulateNonlinear(
 gtsam::TriangulationResult triangulateSafe(
     const gtsam::CameraSet<gtsam::SphericalCamera>& cameras,
     const gtsam::SphericalCamera::MeasurementVector& measurements,
+    const gtsam::TriangulationParameters& params);
+std::vector<gtsam::TriangulationResult> triangulateSafe(
+    const gtsam::CameraSet<gtsam::SphericalCamera>& cameras,
+    const std::vector<std::map<size_t, gtsam::Unit3>>& tracks,
     const gtsam::TriangulationParameters& params);
 
 }  // namespace gtsam

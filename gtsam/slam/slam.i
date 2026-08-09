@@ -22,7 +22,8 @@ namespace gtsam {
 template <T = {double, gtsam::Vector, gtsam::Point2, gtsam::Point3, gtsam::Rot2, gtsam::SO3,
                gtsam::SO4, gtsam::SL4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3,
                gtsam::Similarity2, gtsam::Similarity3, gtsam::Gal3, gtsam::NavState,
-               gtsam::Se23, gtsam::ExtendedPose3d, gtsam::imuBias::ConstantBias}>
+               gtsam::Se23, gtsam::ExtendedPose3d, gtsam::imuBias::ConstantBias,
+               gtsam::SOn}>
 virtual class BetweenFactor : gtsam::NoiseModelFactor {
   BetweenFactor(gtsam::Key key1, gtsam::Key key2, const T& relativePose,
                 const gtsam::noiseModel::Base* noiseModel = nullptr);
@@ -589,6 +590,11 @@ class InitializePose3 {
                                   bool useGradient);
   static gtsam::Values initialize(const gtsam::NonlinearFactorGraph& graph);
 };
+
+#include <gtsam/slam/FastSync.h>
+template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3,
+               gtsam::Similarity2, gtsam::Similarity3, gtsam::SL4}>
+gtsam::Values fastSync(const gtsam::NonlinearFactorGraph& graph);
 
 #include <gtsam/slam/KarcherMeanFactor-inl.h>
 template <T = {gtsam::Rot2, gtsam::Pose2, gtsam::SO3, gtsam::SO4, gtsam::Rot3,

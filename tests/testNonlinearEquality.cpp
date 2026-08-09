@@ -14,24 +14,24 @@
  * @author Alex Cunningham
  */
 
-#include <tests/simulated2DConstraints.h>
-
-#include <gtsam/nonlinear/PriorFactor.h>
-#include <gtsam/slam/ProjectionFactor.h>
-#include <gtsam/nonlinear/NonlinearEquality.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/LevenbergMarquardtParams.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/Pose3.h>
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/PinholeCamera.h>
-
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/LevenbergMarquardtParams.h>
+#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/PriorFactor.h>
+#include <gtsam/slam/ProjectionFactor.h>
+#include <tests/simulated2DConstraints.h>
 
 using namespace std;
 using namespace gtsam;

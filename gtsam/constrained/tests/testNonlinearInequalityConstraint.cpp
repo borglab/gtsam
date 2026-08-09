@@ -19,7 +19,6 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/TestableAssertions.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/constrained/NonlinearInequalityConstraint.h>
 #include <gtsam/nonlinear/factorTesting.h>
 

@@ -76,8 +76,6 @@ public:
   void print(const std::string& s = "") const;
 
   virtual ~AHRS();
-
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 } /* namespace gtsam */

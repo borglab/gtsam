@@ -15,7 +15,7 @@ Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellae
 from typing import List, Sequence, Union
 
 from pyparsing import ParseResults  # type: ignore
-from pyparsing import Forward, Optional, Or, delimitedList
+from pyparsing import Forward, Optional, Or, DelimitedList
 
 from .tokens import (BASIC_TYPES, CONST, IDENT, LOPBRACK, RAW_POINTER, REF,
                      ROPBRACK, SHARED_POINTER)
@@ -39,10 +39,10 @@ class Typename:
         instantiations: Template parameters to the type.
     """
 
-    namespaces_name_rule = delimitedList(IDENT, "::")
+    namespaces_name_rule = DelimitedList(IDENT, "::")
     rule = (
         namespaces_name_rule("namespaces_and_name")  #
-    ).setParseAction(lambda t: Typename.from_parse_result(t))
+    ).set_parse_action(lambda t: Typename.from_parse_result(t))
 
     def __init__(self,
                  name: str,
@@ -59,7 +59,7 @@ class Typename:
             if isinstance(instantiations, Sequence):
                 self.instantiations = instantiations  # type: ignore
             else:
-                self.instantiations = instantiations.asList()
+                self.instantiations = instantiations.as_list()
         else:
             self.instantiations = []
 
@@ -152,7 +152,7 @@ class BasicType:
     ```
     """
 
-    rule = (Or(BASIC_TYPES)("typename")).setParseAction(lambda t: BasicType(t))
+    rule = (Or(BASIC_TYPES)("typename")).set_parse_action(lambda t: BasicType(t))
 
     def __init__(self, t: ParseResults):
         self.typename = Typename.from_parse_result(t)
@@ -171,7 +171,7 @@ class CustomType:
     Here `gtsam::Matrix` is a custom type.
     """
 
-    rule = (Typename.rule("typename")).setParseAction(lambda t: CustomType(t))
+    rule = (Typename.rule("typename")).set_parse_action(lambda t: CustomType(t))
 
     def __init__(self, t: ParseResults):
         self.typename = Typename.from_parse_result(t)
@@ -193,7 +193,7 @@ class Type:
         + Optional(
             SHARED_POINTER("is_shared_ptr") | RAW_POINTER("is_ptr")
             | REF("is_ref"))  #
-    ).setParseAction(lambda t: Type.from_parse_result(t))
+    ).set_parse_action(lambda t: Type.from_parse_result(t))
 
     def __init__(self, typename: Typename, is_const: str, is_shared_ptr: str,
                  is_ptr: str, is_ref: str, is_basic: bool):
@@ -278,12 +278,12 @@ class TemplatedType:
         + Typename.rule("typename")  #
         + (
             LOPBRACK  #
-            + delimitedList(Type.rule ^ rule, ",")("template_params")  #
+            + DelimitedList(Type.rule ^ rule, ",")("template_params")  #
             + ROPBRACK)  #
         + Optional(
             SHARED_POINTER("is_shared_ptr") | RAW_POINTER("is_ptr")
             | REF("is_ref"))  #
-    ).setParseAction(lambda t: TemplatedType.from_parse_result(t))
+    ).set_parse_action(lambda t: TemplatedType.from_parse_result(t))
 
     def __init__(self, typename: Typename, template_params: List[Type],
                  is_const: str, is_shared_ptr: str, is_ptr: str, is_ref: str):

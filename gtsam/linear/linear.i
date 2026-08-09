@@ -830,6 +830,8 @@ virtual class PCGSolverParameters : gtsam::ConjugateGradientParameters {
   void print(string s = "");
 
   std::shared_ptr<gtsam::PreconditionerParameters> preconditioner;
+  bool parallel;
+  size_t numThreads;
 };
 
 #include <gtsam/linear/SubgraphSolver.h>

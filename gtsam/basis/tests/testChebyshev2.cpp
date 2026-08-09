@@ -19,6 +19,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/basis/Chebyshev2.h>
 #include <gtsam/basis/FitBasis.h>
 #include <gtsam/geometry/Pose2.h>
@@ -357,7 +358,7 @@ TEST(Chebyshev2, DerivativeWeights7) {
 
 //******************************************************************************
 // Check derivative in two different ways: numerical and using D on f
-Vector6 f3_at_6points = (Vector6() << 4, 2, 6, 2, 4, 3).finished();
+Vector6 f3_at_6points{4, 2, 6, 2, 4, 3};
 double proxy3(double x) {
   return Chebyshev2::EvaluationFunctor(6, x)(f3_at_6points);
 }
@@ -511,10 +512,9 @@ TEST(Chebyshev2, IntegrationWeights7) {
   Weights actual = Chebyshev2::IntegrationWeights(N, -1, 1);
 
   // Expected values were calculated using chebfun:
-  Weights expected = (Weights(N) << 0.0285714285714286, 0.253968253968254,
-    0.457142857142857, 0.520634920634921, 0.457142857142857,
-    0.253968253968254, 0.0285714285714286)
-    .finished();
+  Weights expected{{0.0285714285714286, 0.253968253968254, 0.457142857142857,
+                    0.520634920634921, 0.457142857142857, 0.253968253968254,
+                    0.0285714285714286}};
   EXPECT(assert_equal(expected, actual));
 
   // Assert that multiplying with all ones gives the correct integral (2.0)
@@ -542,8 +542,7 @@ TEST(Chebyshev2, IntegrationWeights7) {
 TEST(Chebyshev2, IntegrationMatrixFinalRowOddN) {
   const size_t N = 3;
   const Matrix P = Chebyshev2::IntegrationMatrix(N, -1, 1);
-  const Weights expected =
-      (Weights(N) << 1.0 / 3.0, 4.0 / 3.0, 1.0 / 3.0).finished();
+  const Weights expected{{1.0 / 3.0, 4.0 / 3.0, 1.0 / 3.0}};
   LONGS_EQUAL(N + 1, P.rows());
   LONGS_EQUAL(N, P.cols());
   EXPECT(assert_equal(expected, Weights(P.row(N)), 1e-12));
@@ -555,10 +554,9 @@ TEST(Chebyshev2, IntegrationMatrixFinalRowOddN) {
 TEST(Chebyshev2, IntegrationWeights8) {
   const size_t N = 8;
   Weights actual = Chebyshev2::IntegrationWeights(N, -1, 1);
-  Weights expected = (Weights(N) << 0.0204081632653061, 0.190141007218208,
-    0.352242423718159, 0.437208405798326, 0.437208405798326,
-    0.352242423718159, 0.190141007218208, 0.0204081632653061)
-    .finished();
+  Weights expected{{0.0204081632653061, 0.190141007218208, 0.352242423718159,
+                    0.437208405798326, 0.437208405798326, 0.352242423718159,
+                    0.190141007218208, 0.0204081632653061}};
   EXPECT(assert_equal(expected, actual));
   EXPECT_DOUBLES_EQUAL(2.0, actual.array().sum(), 1e-9);
 }

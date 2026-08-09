@@ -246,6 +246,77 @@ TEST(TestCarrierPhaseFactorArm, equals) {
 }
 
 // *************************************************************************
+// UndifferencedCarrierPhaseFactor (PPP) tests
+// *************************************************************************
+TEST(TestUndifferencedCarrierPhaseFactor, Model) {
+  const double m_w = 3.0, mu_f = 1.28, lam = kLambdaL1;
+  const auto factor = UndifferencedCarrierPhaseFactor(
+      Key(0), Key(1), Key(2), Key(3), Key(4), sample::kPseudorange,
+      sample::kSatPos, m_w, mu_f, lam, sample::kSatClkBias);
+
+  const double ztd = 0.15, iono = 5.3, amb = 1234.0;  // amb in cycles
+  const double error = factor.evaluateError(
+      sample::kReceiverPos, sample::kReceiverClock, ztd, iono, amb)[0];
+
+  Point3 e;
+  const double range = gnss::geodist(sample::kSatPos, sample::kReceiverPos, e);
+  const double expected =
+      range + kCLight * (sample::kReceiverClock - sample::kSatClkBias) +
+      m_w * ztd - mu_f * iono + lam * amb - sample::kPseudorange;
+  EXPECT_DOUBLES_EQUAL(expected, error, 1e-6);
+
+  Values values;
+  values.insert(Key(0), sample::kReceiverPos);
+  values.insert(Key(1), sample::kReceiverClock);
+  values.insert(Key(2), ztd);
+  values.insert(Key(3), iono);
+  values.insert(Key(4), amb);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-3, 1e-5);
+}
+
+// *************************************************************************
+TEST(TestUndifferencedCarrierPhaseFactorArm, Jacobians) {
+  const Point3 leverArm(0.31, 0.0, 0.55);
+  const double m_w = 2.9, mu_f = 1.0, lam = kLambdaL1;
+  const auto factor = UndifferencedCarrierPhaseFactorArm(
+      Key(0), Key(1), Key(2), Key(3), Key(4), sample::kPseudorange,
+      sample::kSatPos, leverArm, m_w, mu_f, lam, sample::kSatClkBias);
+
+  Values values;
+  values.insert(Key(0),
+                Pose3(Rot3::RzRyRx(0.1, 0.2, 0.3), sample::kReceiverPos));
+  values.insert(Key(1), sample::kReceiverClock);
+  values.insert(Key(2), 0.12);
+  values.insert(Key(3), 4.1);
+  values.insert(Key(4), 800.0);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-3, 1e-5);
+}
+
+// *************************************************************************
+// ecef_T_nav consistency: ECEF pose vs local-nav pose give the same residual.
+TEST(TestUndifferencedCarrierPhaseFactorArm, EcefTnavConsistency) {
+  const Pose3 ecef_T_nav = tokyo::ecefTnav();
+  const Pose3 nav_T_body(Rot3::RzRyRx(0.05, -0.03, 0.1), Point3(10, 20, 5));
+  const Pose3 ecef_T_body = ecef_T_nav.compose(nav_T_body);
+  const Point3 leverArm(0.1, 0.0, -0.5);
+  const double m_w = 2.7, mu_f = 1.0, lam = kLambdaL1;
+
+  const auto fEcef = UndifferencedCarrierPhaseFactorArm(
+      Key(0), Key(1), Key(2), Key(3), Key(4), sample::kPseudorange,
+      sample::kSatPos, leverArm, m_w, mu_f, lam, sample::kSatClkBias);
+  const auto fNav = UndifferencedCarrierPhaseFactorArm(
+      Key(0), Key(1), Key(2), Key(3), Key(4), sample::kPseudorange,
+      sample::kSatPos, leverArm, ecef_T_nav, m_w, mu_f, lam,
+      sample::kSatClkBias);
+
+  const double eEcef = fEcef.evaluateError(
+      ecef_T_body, sample::kReceiverClock, 0.1, 3.0, 100.0)[0];
+  const double eNav = fNav.evaluateError(
+      nav_T_body, sample::kReceiverClock, 0.1, 3.0, 100.0)[0];
+  EXPECT_DOUBLES_EQUAL(eEcef, eNav, 1e-6);
+}
+
+// *************************************************************************
 // DoubleDifferenceCarrierPhaseFactor tests
 // *************************************************************************
 TEST(TestDoubleDifferenceCarrierPhaseFactor, ZeroError) {

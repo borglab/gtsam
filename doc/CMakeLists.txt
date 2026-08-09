@@ -74,8 +74,28 @@ if (GTSAM_BUILD_DOCS)
         set(GTSAM_DOXYGEN_INPUT_PATHS "${GTSAM_DOXYGEN_INPUT_PATHS} ${PROJECT_SOURCE_DIR}/${dir}")
     endforeach()
 
-    # Generate Doxyfile
+    # Compatibility forwarding headers contain no declarations of their own.
+    # Excluding them prevents duplicate filenames from obscuring the canonical
+    # header that Doxygen and gtwrap should document.
+    set(gtsam_doxygen_forwarding_headers
+        gtsam/nonlinear/Symbol.h
+        gtsam/slam/BearingFactor.h
+        gtsam/slam/BearingRangeFactor.h
+        gtsam/slam/PriorFactor.h
+        gtsam/slam/RangeFactor.h
+        gtsam_unstable/nonlinear/BatchFixedLagSmoother.h
+        gtsam_unstable/nonlinear/BayesTreeMarginalizationHelper.h
+        gtsam_unstable/nonlinear/FixedLagSmoother.h
+        gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h
+    )
+    set(gtsam_doxygen_exclude_paths ${gtsam_doxygen_forwarding_headers})
+    list(TRANSFORM gtsam_doxygen_exclude_paths PREPEND "${PROJECT_SOURCE_DIR}/")
+    string(JOIN " " GTSAM_DOXYGEN_EXCLUDE_PATHS ${gtsam_doxygen_exclude_paths})
+
+    # Generate the full documentation configuration and a minimal XML-only
+    # configuration compatible with the older Doxygen versions in manylinux.
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.xml.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile.xml @ONLY)
     
     # Add target to actually build documentation as configured
     add_custom_target(doc

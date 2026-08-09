@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9...3.29)
+cmake_minimum_required(VERSION 3.16...3.29)
 if (POLICY CMP0167)
     cmake_policy(SET CMP0167 OLD) # Don't complain about boost
 endif()
@@ -7,7 +7,7 @@ endif()
 set (GTSAM_VERSION_MAJOR 4)
 set (GTSAM_VERSION_MINOR 3)
 set (GTSAM_VERSION_PATCH 0)
-set (GTSAM_PRERELEASE_VERSION "a1")
+set (GTSAM_PRERELEASE_VERSION "a2")
 math (EXPR GTSAM_VERSION_NUMERIC "10000 * ${GTSAM_VERSION_MAJOR} + 100 * ${GTSAM_VERSION_MINOR} + ${GTSAM_VERSION_PATCH}")
 
 # Set the version string for the library. 
@@ -127,13 +127,16 @@ endif()
 include(cmake/HandleCCache.cmake)           # ccache
 include(cmake/HandleCPack.cmake)            # CPack
 include(cmake/HandleEigen.cmake)            # Eigen3
+include(cmake/HandleSpectra.cmake)          # Spectra
 include(cmake/HandleMetis.cmake)            # metis
 include(cmake/HandleCephes.cmake)           # cephes
 include(cmake/HandleMKL.cmake)              # MKL
+include(cmake/HandleMOSEK.cmake)            # MOSEK SDP solver, optional
 include(cmake/HandleOpenMP.cmake)           # OpenMP
 include(cmake/HandlePerfTools.cmake)        # Google perftools
 include(cmake/HandlePython.cmake)           # Python options and commands
 include(cmake/HandleTBB.cmake)              # TBB
+include(cmake/HandleCuda.cmake)             # CUDA acceleration options
 include(cmake/HandleUninstall.cmake)        # for "make uninstall"
 
 include(cmake/HandleAllocators.cmake)       # Must be after tbb, pertools

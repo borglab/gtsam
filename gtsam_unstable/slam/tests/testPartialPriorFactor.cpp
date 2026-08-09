@@ -11,6 +11,7 @@
 
 #include <gtsam_unstable/slam/PartialPriorFactor.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/numericalDerivative.h>
@@ -34,6 +35,7 @@ static const int kIndexTz = 5;
 
 typedef PartialPriorFactor<Pose2> TestPartialPriorFactor2;
 typedef PartialPriorFactor<Pose3> TestPartialPriorFactor3;
+typedef PartialPriorFactor<Point3> TestPartialPriorFactorPoint3;
 typedef std::vector<size_t> Indices;
 
 /// traits
@@ -43,6 +45,9 @@ struct traits<TestPartialPriorFactor2> : public Testable<TestPartialPriorFactor2
 
 template<>
 struct traits<TestPartialPriorFactor3> : public Testable<TestPartialPriorFactor3> {};
+
+template<>
+struct traits<TestPartialPriorFactorPoint3> : public Testable<TestPartialPriorFactorPoint3> {};
 }
 
 /* ************************************************************************* */
@@ -242,7 +247,8 @@ TEST(PartialPriorFactor, JacobianTxTz3) {
 
   std::vector<size_t> translationIndices = { kIndexTx, kIndexTz };
   TestPartialPriorFactor3 factor(poseKey, translationIndices,
-      (Vector(2) << measurement.x(), measurement.z()).finished(), model);
+                                 Vector{{measurement.x(), measurement.z()}},
+                                 model);
 
   Pose3 pose = measurement; // Zero-error linearization point.
 
@@ -276,6 +282,31 @@ TEST(PartialPriorFactor, JacobianFullRotation3) {
   // Use the factor to calculate the derivative.
   Matrix actualH1;
   factor.evaluateError(pose, actualH1);
+
+  // Verify we get the expected error.
+  CHECK(assert_equal(expectedH1, actualH1, 1e-5));
+}
+
+/* ************************************************************************* */
+// Vector-space types like Point3 (an Eigen typedef) must also work (see #2413).
+TEST(PartialPriorFactor, JacobianPartialPoint3) {
+  Key pointKey(1);
+  Point3 measurement(1.0, -2.0, 3.0);
+
+  // Prior on z component of the point.
+  TestPartialPriorFactorPoint3 factor(pointKey, 2, measurement.z(), NM::Isotropic::Sigma(1, 0.25));
+
+  Point3 point = measurement; // Zero-error linearization point.
+
+  EXPECT(assert_equal(Vector1::Zero(), factor.evaluateError(point), 1e-9));
+
+  // Calculate numerical derivatives.
+  Matrix expectedH1 = numericalDerivative11<Vector, Point3>(
+      [&factor](const Point3& p) { return factor.evaluateError(p); }, point);
+
+  // Use the factor to calculate the derivative.
+  Matrix actualH1;
+  factor.evaluateError(point, actualH1);
 
   // Verify we get the expected error.
   CHECK(assert_equal(expectedH1, actualH1, 1e-5));

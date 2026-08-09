@@ -10,6 +10,7 @@
 | [easyPoint2KalmanFilter](easyPoint2KalmanFilter.ipynb) | ExtendedKalmanFilter not yet exposed through Python |
 | [elaboratePoint2KalmanFilter](elaboratePoint2KalmanFilter.ipynb) | GaussianSequentialSolver not yet exposed through Python |
 | [FisheyeExample](FisheyeExample.ipynb) | :heavy_check_mark: |
+| [FixedLagSmootherExample](FixedLagSmootherExample.ipynb) | :heavy_check_mark: |
 | [HMMExample](HMMExample.ipynb) | :heavy_check_mark: |
 | ImuFactorsExample2                                    | :heavy_check_mark: |
 | ImuFactorsExample                                     |        |
@@ -19,7 +20,7 @@
 | ISAM2_SmartFactorStereo_IMU                           |        |
 | LocalizationExample                                   | :heavy_check_mark: |
 | METISOrderingExample                                  |        |
-| OdometryExample                                       | :heavy_check_mark: |
+| [OdometryExample](OdometryExample.ipynb) | :heavy_check_mark: |
 | [PlanarSLAMExample](PlanarSLAMExample.ipynb) | :heavy_check_mark: |
 | [Pose2SLAMExample](Pose2SLAMExample.ipynb) | :heavy_check_mark: |
 | Pose2SLAMExampleExpressions                           | ExpressionFactorGraph not yet exposed through Python |
@@ -36,17 +37,17 @@
 | Pose3SLAMExample_initializePose3Chordal               | :heavy_check_mark: |
 | Pose3SLAMExample_initializePose3Gradient              |        |
 | [RangeISAMExample_plaza2](RangeISAMExample_plaza2.ipynb) | :heavy_check_mark: |
-| SelfCalibrationExample                                | :heavy_check_mark: |
+| [SelfCalibrationExample](SelfCalibrationExample.ipynb) | :heavy_check_mark: |
 | SFMdata                                               | :heavy_check_mark: |     
 | SFMExample_bal_COLAMD_METIS                           |        |
 | SFMExample_bal                                        | :heavy_check_mark: |
-| SFMExample                                            | :heavy_check_mark: |
+| [SFMExample](SFMExample.ipynb) | :heavy_check_mark: |
 | SFMExampleExpressions_bal                             |        |
 | SFMExampleExpressions                                 |        |
 | SFMExample_SmartFactor                                |        |
 | SFMExample_SmartFactorPCG                             |        |
 | ShonanAveragingCLI                                    | :heavy_check_mark: |
-| SimpleRotation                                        | :heavy_check_mark: |
+| [SimpleRotation](SimpleRotation.ipynb) | :heavy_check_mark: |
 | SolverComparer                                        |        |
 | [StereoVOExample](StereoVOExample.ipynb) | :heavy_check_mark: |
 | [StereoVOExample_large](StereoVOExample_large.ipynb) | :heavy_check_mark: |
@@ -54,12 +55,13 @@
 | UGM_chain                                             | discrete functionality not yet exposed |
 | UGM_small                                             | discrete functionality not yet exposed |
 | VisualISAM2Example                                    | :heavy_check_mark: |
-| VisualISAMExample                                     | :heavy_check_mark: |
+| [VisualISAMExample](VisualISAMExample.ipynb) | :heavy_check_mark: |
 
 Extra Examples (with no C++ equivalent)
 - [FitBasisExample](FitBasisExample.ipynb)
-- DogLegOptimizerExample
-- GPSFactorExample
+- [PseudoSpectralChebyshevExample](PseudoSpectralChebyshevExample.ipynb)
+- [DogLegOptimizerExample](DogLegOptimizerExample.ipynb)
+- [GPSFactorExample](GPSFactorExample.ipynb)
 - PlanarManipulatorExample
 - PreintegrationExample
 - SFMData

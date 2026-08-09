@@ -43,9 +43,7 @@ TEST( InvDepthFactorVariant3, optimize) {
   double theta = atan2(landmark_p1.x(), landmark_p1.z());
   double phi = atan2(landmark_p1.y(), sqrt(landmark_p1.x()*landmark_p1.x()+landmark_p1.z()*landmark_p1.z()));
   double rho = 1./landmark_p1.norm();
-  Vector3 expected((Vector(3) << theta, phi, rho).finished());
-
-
+  Vector3 expected{theta, phi, rho};
 
   // Create a factor graph with two inverse depth factors and two pose priors
   Key poseKey1(1);
@@ -64,8 +62,12 @@ TEST( InvDepthFactorVariant3, optimize) {
 
   // Create a values with slightly incorrect initial conditions
   Values values;
-  values.insert(poseKey1, pose1.retract((Vector(6) << +0.01, -0.02, +0.03, -0.10, +0.20, -0.30).finished()));
-  values.insert(poseKey2, pose2.retract((Vector(6) << +0.01, +0.02, -0.03, -0.10, +0.20, +0.30).finished()));
+  values.insert(
+      poseKey1,
+      pose1.retract(Vector{{+0.01, -0.02, +0.03, -0.10, +0.20, -0.30}}));
+  values.insert(
+      poseKey2,
+      pose2.retract(Vector{{+0.01, +0.02, -0.03, -0.10, +0.20, +0.30}}));
   values.insert(landmarkKey, Vector3(expected + Vector3(+0.02, -0.04, +0.05)));
 
   // Optimize the graph to recover the actual landmark position

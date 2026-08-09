@@ -23,10 +23,7 @@
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/discrete/Ring.h>
 
-#include <algorithm>
-#include <map>
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>

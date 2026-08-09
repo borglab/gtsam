@@ -18,6 +18,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/basis/Chebyshev.h>
 #include <gtsam/basis/FitBasis.h>
 #include <gtsam/nonlinear/factorTesting.h>

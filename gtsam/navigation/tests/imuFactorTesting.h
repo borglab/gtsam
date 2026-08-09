@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/navigation/ImuBias.h>
 

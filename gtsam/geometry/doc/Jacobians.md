@@ -86,11 +86,15 @@ J_r(\omega) & 0\\[4pt]
 Q_r(\omega,\rho) & J_r(\omega)
 \end{pmatrix}.
 \]
-The off-diagonal block \(Q_r\) is obtained by applying the SO(3) kernel \(J_r\) to the translation vector and taking the derivative with respect to \(\omega\). In the API, this corresponds to calling `apply()` on the kernel, with the Jacobian `H1` capturing the derivative for the off-diagonal block. This approach leverages the closed-form kernel derivatives developed in Part 1, requiring no additional series or integrals.
+The off-diagonal block \(Q_r\) is obtained by differentiating
+\(J_l(\omega)\rho\), then rotating that derivative into body coordinates. In
+the API, `Jacobian().applyLeft()` returns the transported vector, with `H1`
+capturing its derivative with respect to \(\omega\). This reuses the closed-form
+kernel derivatives from Part 1 without additional series or integrals.
 
 Additionally, constructing an SE(3) object from a rotation matrix and a translation introduces another \(R^\top\). This leads to the following expression for the \(Q_r\) block:
 \[
-Q_r(\omega, \rho) = R^\top \cdot \mathcal{L}_{J_r}(\Omega)[-[\rho]_\times],
+Q_r(\omega, \rho) = R^\top \cdot \mathcal{L}_{J_l}(\Omega)[-[\rho]_\times],
 \]
 where \(Q_r\) is expressed in the body frame, and \(R^T = \exp(-\Omega)\) ensures the correct frame transformation.
 

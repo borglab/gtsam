@@ -16,19 +16,19 @@
  */
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/navigation/LeggedEstimator.h>
 #include <gtsam/navigation/LeggedEstimatorFactors.h>
-#include <gtsam/navigation/NavStateImuEKF.h>
+#include <gtsam/navigation/NavState.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 
+#include <Eigen/Eigenvalues>
 #include <algorithm>
-#include <map>
 #include <set>
-#include <sstream>
 #include <stdexcept>
 
 namespace gtsam {
@@ -115,11 +115,10 @@ Matrix3 contactCovarianceFrom(
 }
 
 SharedNoiseModel fixedLagBiasPriorModel() {
-  Vector6 sigmas;
   // The contact-event smoother only constrains bias intermittently, so a tight
   // prior keeps the single persistent bias variable from absorbing large
   // translational drift between sparse contact updates.
-  sigmas << 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6;
+  Vector6 sigmas{1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6};
   return Diagonal::Sigmas(sigmas);
 }
 
@@ -163,11 +162,10 @@ Point3 imuMeasurement(const Pose3& body_P_imu, const Vector3& bodyPoint);
 namespace {
 
 SharedNoiseModel fullContactInitializationBasePrior() {
-  Vector9 sigmas;
   // Only roll, pitch, and base height should move appreciably during the
   // contact-based inverse-kinematics solve. Planar translation, yaw, and
   // velocity are treated as fixed gauge choices for initialization.
-  sigmas << 1.0, 1.0, 1e-6, 1e-6, 1e-6, 1.0, 1e-6, 1e-6, 1e-6;
+  Vector9 sigmas{1.0, 1.0, 1e-6, 1e-6, 1e-6, 1.0, 1e-6, 1e-6, 1e-6};
   return Diagonal::Sigmas(sigmas);
 }
 

@@ -26,11 +26,10 @@ using namespace std;
 using symbol_shorthand::X;
 
 /* ************************************************************************* */
-TEST(GaussianDensity, constructor)
-{
-  Matrix R = (Matrix(2,2) <<
-      -12.1244,  -5.1962,
-            0.,   4.6904).finished();
+TEST(GaussianDensity, constructor) {
+  Matrix R{//
+           {-12.1244, -5.1962},
+           {0., 4.6904}};
 
   Vector d = Vector2(1.0, 2.0), s = Vector2(3.0, 4.0);
   GaussianConditional conditional(1, d, R, noiseModel::Diagonal::Sigmas(s));
@@ -43,7 +42,7 @@ TEST(GaussianDensity, constructor)
 /* ************************************************************************* */
 // Test FromMeanAndStddev named constructor
 TEST(GaussianDensity, FromMeanAndStddev) {
-  Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
+  Matrix A1{{1., 2.}, {3., 4.}};
   const Vector2 b(20, 40), x0(1, 2);
   const double sigma = 3;
 

@@ -18,11 +18,12 @@
 
 #pragma once
 
+#include <gtsam/base/Manifold.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/Vector.h>
 #include <gtsam/geometry/BearingRange.h>
 #include <gtsam/geometry/ExtendedPose3.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/base/Vector.h>
-#include <gtsam/base/Manifold.h>
 
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/base_object.hpp>
@@ -58,9 +59,7 @@ public:
 
   /// Construct from attitude, position, velocity
   NavState(const Rot3& R, const Point3& t, const Velocity3& v)
-      : Base(R, (Eigen::Matrix<double, 3, 2>() << t.x(), v.x(), t.y(), v.y(),
-                 t.z(), v.z())
-                    .finished()) {}
+      : Base(R, Matrix32{{t.x(), v.x()}, {t.y(), v.y()}, {t.z(), v.z()}}) {}
 
   /// Construct from pose and velocity
   NavState(const Pose3& pose, const Velocity3& v)
@@ -211,7 +210,7 @@ public:
   struct AutonomousFlow {
     double dt;
 
-    // Differential at identity (right-trivialized): Φ = I with ∂p/∂v = dt·I.
+    // Differential at identity: Φ = I with ∂p/∂v = dt·I.
     Jacobian dIdentity() const {
       Jacobian Phi = I_9x9;
       Phi.template block<3, 3>(3, 6) = I_3x3 * dt;

@@ -216,6 +216,12 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
           marginalizeLeaves(leafKeys, (&optArgs)...);
       }
 
+  /** An added function specifically to return the marginalFactorIndices
+   * and deletedFactorIndices. Made for the python wrapping
+   * of marginalizeLeaves
+   */
+  std::pair<FactorIndices, FactorIndices> marginalizeLeavesWithIndices(const FastList<Key>& leafKeys);
+
   /// Access the current linearization point
   const Values& getLinearizationPoint() const { return theta_; }
 
@@ -257,10 +263,10 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
   /// Return the marginal covariance matrix on any variable.
   Matrix marginalCovariance(Key key) const;
 
-  /// Return the joint marginal covariance on a set of variables.
+  /// Return joint marginal covariance with blocks in `queryKeys` order.
   JointMarginal jointMarginalCovariance(const KeyVector& queryKeys) const;
 
-  /// Return the joint marginal information on a set of variables.
+  /// Return joint marginal information with blocks in `queryKeys` order.
   JointMarginal jointMarginalInformation(const KeyVector& queryKeys) const;
 
   /// @name Public members for non-typical usage
@@ -300,6 +306,9 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
    * \Sigma^{-1} R x - d \right\Vert^2 \f$, centered around zero. The gradient
    * about zero is \f$ -R^T d \f$.  See also gradient(const GaussianBayesNet&,
    * const VectorValues&).
+   *
+   * Components associated with hard constraints are undefined and are
+   * represented as zero in the returned gradient.
    *
    * @return A VectorValues storing the gradient.
    */

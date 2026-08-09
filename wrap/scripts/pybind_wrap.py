@@ -8,7 +8,9 @@ and invoked during the wrapping by CMake.
 # pylint: disable=import-error
 
 import argparse
+import sys
 
+from gtwrap.interface_parser import InterfaceParseError
 from gtwrap.pybind_wrapper import PybindWrapper
 
 
@@ -86,14 +88,20 @@ def main():
         xml_source=args.xml_source,
     )
 
-    if args.is_submodule:
-        wrapper.wrap_submodule(args.src)
+    try:
+        if args.is_submodule:
+            wrapper.wrap_submodule(args.src)
 
-    else:
-        # Wrap the code and get back the cpp/cc code.
-        sources = args.src.split(';')
-        wrapper.wrap(sources, args.out)
+        else:
+            # Wrap the code and get back the cpp/cc code.
+            sources = args.src.split(';')
+            wrapper.wrap(sources, args.out)
+    except InterfaceParseError as error:
+        print(error, file=sys.stderr)
+        return 1
+
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

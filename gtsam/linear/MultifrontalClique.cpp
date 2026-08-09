@@ -18,9 +18,11 @@
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/config.h>
+#include <gtsam/linear/BatchJacobianFactor.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/MultifrontalClique.h>
+#include <gtsam/linear/MultifrontalSolver.h>
 
 #ifdef GTSAM_USE_TBB
 #include <tbb/blocked_range.h>
@@ -100,6 +102,12 @@ SymmetricBlockMatrix makeZeroLocalInfo(const std::vector<size_t>& blockDims) {
 
 }  // namespace
 
+namespace {
+// Global toggle for the direct BatchJacobianFactor hessian path.
+// The path is documented in `linear/doc/BatchFactor_Performance_Notes.html`.
+constexpr bool kUseDirectBatchHessianUpdate = true;
+}
+
 MultifrontalClique::MultifrontalClique(
     std::vector<size_t> factorIndices,
     const std::weak_ptr<MultifrontalClique>& parent, const KeyVector& frontals,
@@ -120,6 +128,11 @@ MultifrontalClique::MultifrontalClique(
   orderedKeys_.insert(orderedKeys_.end(), frontals.begin(), frontals.end());
   orderedKeys_.insert(orderedKeys_.end(), separatorKeys.begin(),
                       separatorKeys.end());
+  blockIndexCache_.reserve(orderedKeys_.size());
+  for (DenseIndex i = 0; i < static_cast<DenseIndex>(orderedKeys_.size());
+       ++i) {
+    blockIndexCache_.emplace(orderedKeys_[i], i);
+  }
 
   // Cache total frontal/separator dimensions for scheduling and sizing.
   frontalDim = internal::sumDims(dims, frontals);
@@ -188,9 +201,9 @@ void MultifrontalClique::finalize(std::vector<ChildInfo> children,
 }
 
 DenseIndex MultifrontalClique::blockIndex(Key key) const {
-  const auto it = std::find(orderedKeys_.begin(), orderedKeys_.end(), key);
-  assert(it != orderedKeys_.end());
-  return static_cast<DenseIndex>(std::distance(orderedKeys_.begin(), it));
+  const auto it = blockIndexCache_.find(key);
+  assert(it != blockIndexCache_.end());
+  return it->second;
 }
 
 void MultifrontalClique::cacheSolutionPointers(VectorValues* solution,
@@ -218,42 +231,171 @@ std::vector<size_t> MultifrontalClique::blockDims(
   return blockDims;
 }
 
-size_t MultifrontalClique::addJacobianFactor(
-    const JacobianFactor& jacobianFactor, size_t rowOffset) {
-  // We only overwrite the fixed sparsity pattern, so Ab must be zeroed once in
-  // finalize and then kept consistent across loads.
-  const size_t rows = jacobianFactor.rows();
+size_t MultifrontalClique::addJacobianFactor(const JacobianFactor& factor,
+                                            size_t rowOffset,
+                                            const FactorLoadPlan& plan) {
   const size_t rhsBlockIdx = Ab_.nBlocks() - 1;
-  for (auto it = jacobianFactor.begin(); it != jacobianFactor.end(); ++it) {
-    Key k = *it;
-    if (fixedKeys_ && fixedKeys_->count(k)) continue;
-    const size_t blockIdx = blockIndex(k);
-    Ab_(blockIdx).middleRows(rowOffset, rows) = jacobianFactor.getA(it);
-  }
-  Ab_(rhsBlockIdx).middleRows(rowOffset, rows) = jacobianFactor.getb();
-
-  if (auto model = jacobianFactor.get_model()) {
-    if (!model->isConstrained()) {
-      // Only whiten non-constrained rows; constrained factors are handled as
-      // hard constraints elsewhere.
-      model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, rows));
+  auto blockIt = plan.blockIndices.begin();
+  for (auto factorIt = factor.begin(); factorIt != factor.end();
+       ++factorIt, ++blockIt) {
+    assert(blockIt != plan.blockIndices.end());
+    const auto blockIdx = *blockIt;
+    if (blockIdx >= 0) {
+      Ab_(blockIdx).middleRows(rowOffset, plan.rows) =
+          factor.getA(factorIt);
     }
+  }
+  assert(blockIt == plan.blockIndices.end());
+
+  Ab_(rhsBlockIdx).middleRows(rowOffset, plan.rows) = factor.getb();
+  if (plan.model && !plan.model->isConstrained()) {
+    plan.model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, plan.rows));
+  }
+  return plan.rows;
+}
+
+size_t MultifrontalClique::addBatchJacobianFactor(
+    const BatchJacobianFactorBase& batchFactor, size_t rowOffset,
+    const FactorLoadPlan& plan) {
+  const size_t rows = batchFactor.scatterInto(Ab_, rowOffset, plan.blockIndices);
+  if (plan.model && !plan.model->isConstrained()) {
+    plan.model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, rows));
   }
   return rows;
 }
 
+void MultifrontalClique::buildLoadPlans(const GaussianFactorGraph& graph) const {
+  if (loadPlansBuilt_) return;
+  loadPlans_.clear();
+  loadPlans_.reserve(factorIndices_.size());
+  allBatchFactors_ = true;
+  hasDirectBatchFactors_ = false;
+  for (size_t factorIndex : factorIndices_) {
+    assert(factorIndex < graph.size());
+    const GaussianFactor::shared_ptr& factor = graph[factorIndex];
+    if (!factor) {
+      FactorLoadPlan emptyPlan;
+      emptyPlan.kind = FactorLoadKind::Jacobian;
+      emptyPlan.factorIndex = factorIndex;
+      loadPlans_.push_back(std::move(emptyPlan));
+      allBatchFactors_ = false;
+      continue;
+    }
+
+    FactorLoadPlan plan;
+    plan.factorIndex = factorIndex;
+    const JacobianFactor* jacobianFactor = dynamic_cast<JacobianFactor*>(factor.get());
+    if (jacobianFactor) {
+      plan.kind = FactorLoadKind::Jacobian;
+      allBatchFactors_ = false;
+      plan.rows = jacobianFactor->rows();
+      plan.model = jacobianFactor->get_model();
+      for (Key key : jacobianFactor->keys()) {
+        if (fixedKeys_ && fixedKeys_->count(key)) {
+          plan.blockIndices.push_back(-1);
+        } else {
+          plan.blockIndices.push_back(blockIndex(key));
+        }
+      }
+      assert(plan.blockIndices.size() == jacobianFactor->keys().size());
+      loadPlans_.push_back(std::move(plan));
+      continue;
+    }
+
+    const BatchJacobianFactorBase* batchFactor =
+        dynamic_cast<BatchJacobianFactorBase*>(factor.get());
+    if (batchFactor) {
+      bool hasFixedKey = false;
+      for (Key key : batchFactor->keys()) {
+        if (fixedKeys_ && fixedKeys_->count(key)) {
+          hasFixedKey = true;
+          break;
+        }
+      }
+      if (hasFixedKey) {
+        allBatchFactors_ = false;
+      }
+      plan.kind = FactorLoadKind::Batch;
+      plan.rows = batchFactor->rows();
+      plan.model = batchFactor->get_model();
+      plan.canDirectUpdate =
+          !hasFixedKey && !(plan.model && plan.model->isConstrained());
+      if (!plan.canDirectUpdate) {
+        allBatchFactors_ = false;
+      }
+      for (Key key : batchFactor->keys()) {
+        if (fixedKeys_ && fixedKeys_->count(key)) {
+          plan.blockIndices.push_back(-1);
+        } else {
+          plan.blockIndices.push_back(blockIndex(key));
+        }
+      }
+      assert(plan.blockIndices.size() == batchFactor->keys().size());
+      plan.blockIndicesWithRhs = plan.blockIndices;
+      plan.blockIndicesWithRhs.push_back(
+          static_cast<DenseIndex>(orderedKeys_.size()));
+      if (plan.canDirectUpdate) {
+        batchFactor->buildMappedSlots(plan.blockIndicesWithRhs,
+                                     plan.mappedSlots);
+      }
+      hasDirectBatchFactors_ |= plan.canDirectUpdate;
+      loadPlans_.push_back(std::move(plan));
+      continue;
+    }
+
+    throw MultifrontalSolverNotSupported(
+        "only JacobianFactor or BatchJacobianFactor inputs are supported");
+  }
+  assert(loadPlans_.size() == factorIndices_.size());
+  loadPlansBuilt_ = true;
+}
+
 void MultifrontalClique::fillAb(const GaussianFactorGraph& graph) {
+  activeLoadGraph_ = &graph;
   assert(validateFactorKeys(graph, factorIndices_, orderedKeys_, fixedKeys_));
 
+  if (!loadPlansBuilt_) {
+    buildLoadPlans(graph);
+  }
+
+  assert(loadPlans_.size() == factorIndices_.size());
+  fillRows_ = 0;
+  if (allBatchFactors_ && !useQR() && kUseDirectBatchHessianUpdate) {
+    // All-factor direct mode intentionally skips materializing Ab rows and writes
+    // directly into info_. This is the highest-impact branch in the doc.
+    fillRows_ = 0;
+    RSdReady_ = false;
+    assert((useQR() && RSd_.matrix().rows() ==
+                           static_cast<DenseIndex>(Ab_.matrix().rows())) ||
+           (RSd_.matrix().rows() == static_cast<DenseIndex>(frontalDim)));
+    return;
+  }
+
   size_t rowOffset = 0;
-  for (size_t index : factorIndices_) {
-    assert(index < graph.size());
-    const GaussianFactor::shared_ptr& gf = graph[index];
-    if (!gf) continue;
-    assert(gf->isJacobian() &&
-           "MultifrontalClique::fillAb: inconsistent graph passed.");
-    auto jacobianFactor = std::static_pointer_cast<JacobianFactor>(gf);
-    rowOffset += addJacobianFactor(*jacobianFactor, rowOffset);
+  for (const FactorLoadPlan& plan : loadPlans_) {
+    const auto* factor = graph[plan.factorIndex].get();
+    if (!factor) continue;
+    if (plan.kind == FactorLoadKind::Jacobian) {
+      auto* jacobianFactor = dynamic_cast<const JacobianFactor*>(factor);
+      assert(jacobianFactor);
+      rowOffset += addJacobianFactor(*jacobianFactor, rowOffset, plan);
+      continue;
+    }
+    if (plan.kind == FactorLoadKind::Batch) {
+      auto* batchFactor =
+          dynamic_cast<const BatchJacobianFactorBase*>(factor);
+      assert(batchFactor);
+  if (plan.canDirectUpdate && kUseDirectBatchHessianUpdate && !useQR()) {
+      // Batch direct path: avoid Jacobian expansion work here and defer to
+      // prepareForElimination(). See the performance doc for batching details.
+      continue;
+    }
+      rowOffset +=
+          addBatchJacobianFactor(*batchFactor, rowOffset, plan);
+      continue;
+    }
+    throw MultifrontalSolverNotSupported(
+        "only JacobianFactor or BatchJacobianFactor inputs are supported");
   }
 
   RSdReady_ = false;
@@ -261,6 +403,7 @@ void MultifrontalClique::fillAb(const GaussianFactorGraph& graph) {
                          static_cast<DenseIndex>(Ab_.matrix().rows())) ||
          (RSd_.matrix().rows() == static_cast<DenseIndex>(frontalDim)));
   assert(useQR() || info_.nBlocks() > 0);
+  fillRows_ = rowOffset;
 }
 
 void MultifrontalClique::eliminateInPlace() {
@@ -277,8 +420,37 @@ void MultifrontalClique::prepareForElimination() {
   if (useQR()) return;
   assert(info_.nBlocks() > 0);
   info_.setZero();
-  if (Ab_.matrix().rows() > 0) {
-    info_.selfadjointView().rankUpdate(Ab_.matrix().transpose());
+
+  const bool canUseDirectBatchHessianUpdate =
+      kUseDirectBatchHessianUpdate && activeLoadGraph_ && !useQR();
+  if (canUseDirectBatchHessianUpdate &&
+      (allBatchFactors_ || hasDirectBatchFactors_)) {
+    // Direct update path for batch factors:
+    // precomputed mapped slots let each row group update info_ directly.
+    // This avoids repeated key lookup and dense block materialization.
+    assert(loadPlans_.size() == factorIndices_.size());
+    for (const FactorLoadPlan& plan : loadPlans_) {
+      if (!plan.canDirectUpdate || plan.kind != FactorLoadKind::Batch) {
+        continue;
+      }
+      const auto* factor = (*activeLoadGraph_)[plan.factorIndex].get();
+      if (!factor) continue;
+      const auto* batchFactor =
+          dynamic_cast<const BatchJacobianFactorBase*>(factor);
+      if (!batchFactor) continue;
+      if (plan.mappedSlots.empty()) {
+        batchFactor->updateHessian(plan.blockIndicesWithRhs, &info_);
+      } else {
+        batchFactor->updateHessianWithMappedSlots(plan.mappedSlots, &info_);
+      }
+    }
+    if (fillRows_ > 0 && !allBatchFactors_) {
+      info_.selfadjointView().rankUpdate(
+          Ab_.matrix().topRows(static_cast<DenseIndex>(fillRows_)).transpose());
+    }
+  } else if (Ab_.matrix().rows() > 0 && fillRows_ > 0) {
+    info_.selfadjointView().rankUpdate(
+        Ab_.matrix().topRows(static_cast<DenseIndex>(fillRows_)).transpose());
   }
 
   // Heuristic: avoid parallel overhead on small cliques.

@@ -4,14 +4,15 @@
  * @author: Hyungtae Lim
  */
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/SL4.h>
 #include <gtsam/geometry/SO4.h>
 
 // To use exp(), log()
+#include <Eigen/SVD>
 #include <cmath>
 #include <limits>
 #include <unsupported/Eigen/MatrixFunctions>
-#include <Eigen/SVD>
 
 using namespace std;
 
@@ -24,38 +25,22 @@ constexpr double kInvSqrt6 = 0.4082482904638630164;
 constexpr double kInvSqrt12 = 0.2886751345948128823;
 
 Vector6 SkewToSO4(const Vector6& r) {
-  Vector6 so4;
-  so4 << r(5), -r(4), r(2), -r(3), r(1), -r(0);
-  return so4;
+  return Vector6{r(5), -r(4), r(2), -r(3), r(1), -r(0)};
 }
 
 Vector6 SO4ToSkew(const Vector6& so4) {
-  Vector6 r;
-  r << -so4(5), so4(4), so4(2), -so4(3), -so4(1), so4(0);
-  return r;
+  return Vector6{-so4(5), so4(4), so4(2), -so4(3), -so4(1), so4(0)};
 }
 
 Matrix44 HatSym4(const Vector6& s) {
-  Matrix44 A = Matrix44::Zero();
-  A(0, 1) = s(0);
-  A(1, 0) = s(0);
-  A(0, 2) = s(1);
-  A(2, 0) = s(1);
-  A(0, 3) = s(2);
-  A(3, 0) = s(2);
-  A(1, 2) = s(3);
-  A(2, 1) = s(3);
-  A(1, 3) = s(4);
-  A(3, 1) = s(4);
-  A(2, 3) = s(5);
-  A(3, 2) = s(5);
-  return A;
+  return Matrix44{{0, s(0), s(1), s(2)},
+                  {s(0), 0, s(3), s(4)},
+                  {s(1), s(3), 0, s(5)},
+                  {s(2), s(4), s(5), 0}};
 }
 
 Vector6 VeeSym4(const Matrix44& A) {
-  Vector6 s;
-  s << A(0, 1), A(0, 2), A(0, 3), A(1, 2), A(1, 3), A(2, 3);
-  return s;
+  return Vector6{A(0, 1), A(0, 2), A(0, 3), A(1, 2), A(1, 3), A(2, 3)};
 }
 
 Eigen::Matrix<double, 16, 15> setVecToAlgMatrix() {
@@ -122,7 +107,8 @@ namespace gtsam {
 
 SL4::SL4(const Matrix44& pose) {
   // Compute SVD: pose = U * S * V^T
-  const Eigen::JacobiSVD<Matrix44> svd(pose, Eigen::ComputeFullU | Eigen::ComputeFullV);
+  const Eigen::JacobiSVD<Matrix44> svd(
+      pose, Eigen::ComputeFullU | Eigen::ComputeFullV);
 
   Matrix44 U = svd.matrixU();
   const Matrix44 V = svd.matrixV();
@@ -130,7 +116,7 @@ SL4::SL4(const Matrix44& pose) {
 
   // Handle Orientation (Negative Determinant / Reflection)
   const double detUV = (U * V.transpose()).determinant();
-  
+
   if (detUV < 0.0) {
     U.col(3) = -U.col(3);
   }
@@ -138,12 +124,14 @@ SL4::SL4(const Matrix44& pose) {
   // Reconstruct the matrix with corrected orientation
   const Matrix44 M_corrected = U * S.asDiagonal() * V.transpose();
   const double current_det_mag = S.prod();
-  
-   // Check for Singularity
-  if (current_det_mag <= std::numeric_limits<double>::epsilon() || !std::isfinite(current_det_mag)) {
+
+  // Check for Singularity
+  if (current_det_mag <= std::numeric_limits<double>::epsilon() ||
+      !std::isfinite(current_det_mag)) {
     throw std::runtime_error(
-        "SL4 Constructor: Input matrix is singular or invalid. " 
-        "SVD singular values product = " + std::to_string(current_det_mag));
+        "SL4 Constructor: Input matrix is singular or invalid. "
+        "SVD singular values product = " +
+        std::to_string(current_det_mag));
   }
 
   // Normalize: T = M / det^(1/4)
@@ -198,11 +186,13 @@ SL4 SL4::Expmap(const Vector& xi, SL4Jacobian H) {
   // https://eigen.tuxfamily.org/dox/unsupported/group__MatrixFunctions__Module.html
 
   // For SL(4), the Lie algebra consists of trace-zero 4x4 matrices.
-  // The exponential of a trace-zero matrix should have determinant 1 by the property:
+  // The exponential of a trace-zero matrix should have determinant 1 by the
+  // property:
   // det(exp(A)) = exp(trace(A)) = exp(0) = 1.
-  // However, for large tangent vectors, numerical errors in the matrix exponential
-  // can cause the determinant to drift from 1. The constructor handles normalization.
-  
+  // However, for large tangent vectors, numerical errors in the matrix
+  // exponential can cause the determinant to drift from 1. The constructor
+  // handles normalization.
+
   Matrix44 expA = A.exp();
   return SL4(expA);
 }
@@ -243,8 +233,7 @@ Matrix44 SL4::Hat(const Vector& xi) {
   const double b = kInvSqrt6 * xi(13);
   const double c = kInvSqrt12 * xi(14);
 
-  Vector4 diag;
-  diag << a + b + c, -a + b + c, -2.0 * b + c, -3.0 * c;
+  Vector4 diag{a + b + c, -a + b + c, -2.0 * b + c, -3.0 * c};
   A.diagonal() += diag;
 
   return A;
