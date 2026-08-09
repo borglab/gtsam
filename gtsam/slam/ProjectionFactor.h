@@ -22,6 +22,7 @@
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
+#include <gtsam/nonlinear/internal/LinearizeBinaryFactor.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Point3.h>
@@ -164,6 +165,14 @@ namespace gtsam {
           throw CheiralityException(this->key2());
       }
       return Vector2::Constant(2.0 * K_->fx());
+    }
+
+    /// Linearize to a fixed-size binary factor when dimensions are static.
+    std::shared_ptr<GaussianFactor> linearize(
+        const Values& values) const override {
+      return internal::linearizeBinaryFactor<
+          2, traits<POSE>::dimension, traits<LANDMARK>::dimension>(*this,
+                                                                  values);
     }
 
     /** return the measurement */

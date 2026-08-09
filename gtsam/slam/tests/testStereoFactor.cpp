@@ -21,6 +21,7 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/BinaryJacobianFactor.h>
 #include <gtsam/geometry/StereoCamera.h>
 #include <gtsam/geometry/Cal3_S2Stereo.h>
 #include <gtsam/geometry/Pose3.h>
@@ -214,6 +215,49 @@ TEST( StereoFactor, singlePoint)
 
   DOUBLES_EQUAL(0.0, optimizer.error(), 1e-6);
 }
+
+/* ************************************************************************* */
+namespace binary_linearization {
+
+bool checkStereoLinearization(const TestStereoFactor& factor,
+                              const Values& values) {
+  const auto expected = factor.NoiseModelFactor::linearize(values);
+  const auto actual = factor.linearize(values);
+  const bool isBinary = static_cast<bool>(
+      std::dynamic_pointer_cast<BinaryJacobianFactor<3, 6, 3>>(actual));
+  return isBinary && assert_equal(*expected, *actual, 1e-9);
+}
+
+// Verifies stereo factors with and without a sensor transform are binary.
+TEST(StereoFactor, BinaryLinearization) {
+  const StereoPoint2 measurement(323, 268, 241);
+  const Point3 point(0.0, 0.0, 0.0);
+  const Values values{{X(1), genericValue(Pose3(
+                                 Rot3(), Point3(0.0, 0.0, -6.25)))},
+                      {L(1), genericValue(point)}};
+  EXPECT(checkStereoLinearization(
+      TestStereoFactor(measurement, model, X(1), L(1), K), values));
+
+  const Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2),
+                            Point3(0.25, -0.10, 1.0));
+  const Values transformedValues{
+      {X(1), genericValue(Pose3(Rot3(), Point3(-6.50, 0.10, -1.0)))},
+      {L(1), genericValue(point)}};
+  EXPECT(checkStereoLinearization(TestStereoFactor(
+      measurement, model, X(1), L(1), K, body_P_sensor), transformedValues));
+}
+
+// Verifies throwing stereo cheirality behavior is preserved in linearization.
+TEST(StereoFactor, BinaryLinearizationCheirality) {
+  const TestStereoFactor factor(StereoPoint2(0.0, 0.0, 0.0), model, X(1),
+                                L(1), K, true, false);
+  const Values values{{X(1), genericValue(Pose3())},
+                      {L(1), genericValue(Point3(0.0, 0.0, -1.0))}};
+  CHECK_EXCEPTION(factor.linearize(values), StereoCheiralityException);
+}
+
+}  // namespace binary_linearization
+/* ************************************************************************* */
 
 /* ************************************************************************* */
   int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

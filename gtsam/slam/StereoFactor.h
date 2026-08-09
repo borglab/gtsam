@@ -22,6 +22,7 @@
 #include <gtsam/geometry/StereoCamera.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/internal/LinearizeBinaryFactor.h>
 
 #include <optional>
 
@@ -154,6 +155,14 @@ public:
         throw StereoCheiralityException(this->key2());
     }
     return Vector3::Constant(2.0 * K_->fx());
+  }
+
+  /// Linearize to a fixed-size binary factor when dimensions are static.
+  std::shared_ptr<GaussianFactor> linearize(
+      const Values& values) const override {
+    return internal::linearizeBinaryFactor<
+        3, traits<POSE>::dimension, traits<LANDMARK>::dimension>(*this,
+                                                                values);
   }
 
   /** return the measured */
