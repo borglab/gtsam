@@ -30,6 +30,11 @@ namespace internal {
 /**
  * Linearize a two-key noise-model factor to a fixed-size binary Jacobian
  * factor. Dynamically sized instantiations retain the generic implementation.
+ *
+ * This helper is intended for factors whose existing `unwhitenedError()` path
+ * returns dynamic Jacobian matrices. Factors such as `GeneralSFMFactor` that
+ * already compute directly into fixed-size Jacobians retain their specialized
+ * linearization to avoid introducing these dynamic temporaries.
  */
 template <int M, int N1, int N2>
 std::shared_ptr<GaussianFactor> linearizeBinaryFactor(

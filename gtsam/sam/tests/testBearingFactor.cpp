@@ -81,25 +81,32 @@ TEST(BearingFactor, 2D) {
 /* ************************************************************************* */
 namespace binary_linearization {
 
-// Verifies 2D and 3D bearing factors produce equivalent binary factors.
+// Calls the base implementation explicitly to obtain a generic JacobianFactor,
+// then checks that the override returns an equal BinaryJacobianFactor<M,N1,N2>,
+// where M is the residual dimension and N1/N2 are variable tangent dimensions.
 TEST(BearingFactor, BinaryLinearization) {
+  // A Pose2 has three tangent dimensions, a Point2 has two, and a Rot2
+  // bearing has one. The optimized result should therefore have shape <1,3,2>.
   const Values values2D{{poseKey, genericValue(Pose2(1.0, 2.0, 0.57))},
                         {pointKey, genericValue(Point2(-4.0, 11.0))}};
-  const auto expected2D = factor2D.NoiseModelFactor::linearize(values2D);
-  const auto actual2D = factor2D.linearize(values2D);
+  const auto generic2D = factor2D.NoiseModelFactor::linearize(values2D);
+  const auto optimized2D = factor2D.linearize(values2D);
   const bool isBinary2D = static_cast<bool>(
-      std::dynamic_pointer_cast<BinaryJacobianFactor<1, 3, 2>>(actual2D));
+      std::dynamic_pointer_cast<BinaryJacobianFactor<1, 3, 2>>(optimized2D));
   CHECK(isBinary2D);
-  EXPECT(assert_equal(*expected2D, *actual2D, 1e-9));
+  EXPECT(assert_equal(*generic2D, *optimized2D, 1e-9));
 
+  // A Unit3 bearing has two local dimensions, while Pose3 and Point3 have six
+  // and three. The base-qualified call bypasses the optimized override and
+  // supplies the reference whitened Jacobians and right-hand side.
   const Values values3D{{poseKey, genericValue(Pose3())},
                         {pointKey, genericValue(Point3(1.0, 0.0, 0.0))}};
-  const auto expected3D = factor3D.NoiseModelFactor::linearize(values3D);
-  const auto actual3D = factor3D.linearize(values3D);
+  const auto generic3D = factor3D.NoiseModelFactor::linearize(values3D);
+  const auto optimized3D = factor3D.linearize(values3D);
   const bool isBinary3D = static_cast<bool>(
-      std::dynamic_pointer_cast<BinaryJacobianFactor<2, 6, 3>>(actual3D));
+      std::dynamic_pointer_cast<BinaryJacobianFactor<2, 6, 3>>(optimized3D));
   CHECK(isBinary3D);
-  EXPECT(assert_equal(*expected3D, *actual3D, 1e-9));
+  EXPECT(assert_equal(*generic3D, *optimized3D, 1e-9));
 }
 
 }  // namespace binary_linearization

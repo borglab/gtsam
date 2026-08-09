@@ -168,7 +168,12 @@ class GeneralSFMFactor : public NoiseModelFactorN<CAMERA, LANDMARK> {
     }
   }
 
-  /// Linearize using fixed-size matrices
+  /**
+   * Linearize by passing fixed-size Jacobians directly to `project2()`.
+   *
+   * This deliberately does not use `internal::linearizeBinaryFactor`, whose
+   * generic `unwhitenedError()` path creates dynamic Jacobian matrices.
+   */
   std::shared_ptr<GaussianFactor> linearize(
       const Values& values) const override {
     // Only linearize if the factor is active

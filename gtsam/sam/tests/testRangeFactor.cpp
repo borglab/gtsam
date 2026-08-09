@@ -354,29 +354,35 @@ TEST(RangeFactor, NonGTSAM) {
 /* ************************************************************************* */
 namespace binary_linearization {
 
-// Verifies Point2 and Point3 range factors produce equivalent binary factors.
+// Calls the base implementation explicitly to obtain a generic JacobianFactor,
+// then checks that the override returns an equal BinaryJacobianFactor<M,N1,N2>,
+// where M is the residual dimension and N1/N2 are variable tangent dimensions.
 TEST(RangeFactor, BinaryLinearization) {
+  // A range contributes one residual row. Two Point2 variables therefore
+  // produce a BinaryJacobianFactor with shape <1,2,2>.
   const Point2 point2A(1.0, 2.0), point2B(-4.0, 11.0);
   const Values values2D{{11, genericValue(point2A)},
                         {22, genericValue(point2B)}};
   const RangeFactor<Point2> factor2D(11, 22, measurement, model);
-  const auto expected2D = factor2D.NoiseModelFactor::linearize(values2D);
-  const auto actual2D = factor2D.linearize(values2D);
+  const auto generic2D = factor2D.NoiseModelFactor::linearize(values2D);
+  const auto optimized2D = factor2D.linearize(values2D);
   const bool isBinary2D = static_cast<bool>(
-      std::dynamic_pointer_cast<BinaryJacobianFactor<1, 2, 2>>(actual2D));
+      std::dynamic_pointer_cast<BinaryJacobianFactor<1, 2, 2>>(optimized2D));
   CHECK(isBinary2D);
-  EXPECT(assert_equal(*expected2D, *actual2D, 1e-9));
+  EXPECT(assert_equal(*generic2D, *optimized2D, 1e-9));
 
+  // Point3 changes each variable block to three columns, while the range stays
+  // scalar. The base-qualified call supplies the generic whitened reference.
   const Point3 point3A(1.0, 2.0, 0.0), point3B(-4.0, 11.0, 0.0);
   const Values values3D{{11, genericValue(point3A)},
                         {22, genericValue(point3B)}};
   const RangeFactor<Point3> factor3D(11, 22, measurement, model);
-  const auto expected3D = factor3D.NoiseModelFactor::linearize(values3D);
-  const auto actual3D = factor3D.linearize(values3D);
+  const auto generic3D = factor3D.NoiseModelFactor::linearize(values3D);
+  const auto optimized3D = factor3D.linearize(values3D);
   const bool isBinary3D = static_cast<bool>(
-      std::dynamic_pointer_cast<BinaryJacobianFactor<1, 3, 3>>(actual3D));
+      std::dynamic_pointer_cast<BinaryJacobianFactor<1, 3, 3>>(optimized3D));
   CHECK(isBinary3D);
-  EXPECT(assert_equal(*expected3D, *actual3D, 1e-9));
+  EXPECT(assert_equal(*generic3D, *optimized3D, 1e-9));
 }
 
 }  // namespace binary_linearization
