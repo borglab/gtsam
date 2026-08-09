@@ -19,7 +19,7 @@ endif()
 gtsamAddTestsGlob(tests "test*.cpp" "${excluded_tests}" "gtsam")
 
 # Exercise Values RTTI across a hidden-by-default shared-library boundary.
-if(GTSAM_SHARED_LIB)
+if(GTSAM_BUILD_TESTS AND GTSAM_SHARED_LIB)
   add_library(testValuesCrossLibraryHelper SHARED
               values_cross_library/ValuesCrossLibrary.cpp)
   target_compile_definitions(testValuesCrossLibraryHelper
