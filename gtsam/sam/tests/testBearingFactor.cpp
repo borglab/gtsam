@@ -82,7 +82,7 @@ TEST(BearingFactor, 2D) {
 namespace binary_linearization {
 
 // Calls the base implementation explicitly to obtain a generic JacobianFactor,
-// then checks that the override returns an equal BinaryJacobianFactor<M,N1,N2>,
+// then checks that the normal call returns an equal BinaryJacobianFactor<M,N1,N2>,
 // where M is the residual dimension and N1/N2 are variable tangent dimensions.
 TEST(BearingFactor, BinaryLinearization) {
   // A Pose2 has three tangent dimensions, a Point2 has two, and a Rot2

@@ -20,8 +20,8 @@
 #pragma once
 
 #include <gtsam/geometry/BearingRange.h>
+#include <gtsam/linear/BinaryJacobianFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
-#include <gtsam/nonlinear/internal/LinearizeBinaryFactor.h>
 
 namespace gtsam {
 
@@ -32,10 +32,13 @@ namespace gtsam {
 template <typename A1, typename A2,
           typename B = typename Bearing<A1, A2>::result_type,
           typename R = typename Range<A1, A2>::result_type>
-class BearingRangeFactor : public NoiseModelFactorN<A1, A2> {
+class BearingRangeFactor
+    : public NoiseModelFactorT<
+          typename traits<BearingRange<A1, A2, B, R>>::TangentVector, A1, A2> {
  private:
   typedef BearingRange<A1, A2> T;
-  typedef NoiseModelFactorN<A1, A2> Base;
+  using ErrorVector = typename traits<T>::TangentVector;
+  typedef NoiseModelFactorT<ErrorVector, A1, A2> Base;
   typedef BearingRangeFactor<A1, A2, B, R> This;
 
  public:
@@ -80,9 +83,9 @@ class BearingRangeFactor : public NoiseModelFactorN<A1, A2> {
   }
 
   /// Evaluate the unwhitened bearing-range error and optional Jacobians.
-  Vector evaluateError(const A1& a1, const A2& a2,
-                       OptionalMatrixType H1 = OptionalNone,
-                       OptionalMatrixType H2 = OptionalNone) const override {
+  ErrorVector evaluateError(const A1& a1, const A2& a2,
+                            OptionalMatrixType H1 = OptionalNone,
+                            OptionalMatrixType H2 = OptionalNone) const override {
     constexpr int dimB = traits<B>::dimension;
     constexpr int dimR = traits<R>::dimension;
     constexpr int dim1 = traits<A1>::dimension;
@@ -98,7 +101,7 @@ class BearingRangeFactor : public NoiseModelFactorN<A1, A2> {
     const R predictedRange =
         Range<A1, A2>()(a1, a2, H1 ? &HR1 : nullptr, H2 ? &HR2 : nullptr);
 
-    Vector error(dimB + dimR);
+    ErrorVector error;
     error.head(dimB) = -traits<B>::Local(predictedBearing, measured_.bearing());
     error.tail(dimR) = -traits<R>::Local(predictedRange, measured_.range());
 
@@ -113,14 +116,6 @@ class BearingRangeFactor : public NoiseModelFactorN<A1, A2> {
       H2->bottomRows(dimR) = HR2;
     }
     return error;
-  }
-
-  /// Linearize to a fixed-size binary factor when dimensions are static.
-  std::shared_ptr<GaussianFactor> linearize(
-      const Values& values) const override {
-    return internal::linearizeBinaryFactor<
-        BearingRange<A1, A2, B, R>::dimension, traits<A1>::dimension,
-        traits<A2>::dimension>(*this, values);
   }
 
   /// print

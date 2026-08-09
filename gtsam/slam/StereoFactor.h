@@ -20,9 +20,9 @@
 
 #include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/StereoCamera.h>
+#include <gtsam/linear/BinaryJacobianFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/nonlinear/internal/LinearizeBinaryFactor.h>
 
 #include <optional>
 
@@ -33,7 +33,8 @@ namespace gtsam {
  * @ingroup slam
  */
 template<class POSE, class LANDMARK>
-class GenericStereoFactor: public NoiseModelFactorN<POSE, LANDMARK> {
+class GenericStereoFactor
+    : public NoiseModelFactorT<Vector3, POSE, LANDMARK> {
 private:
 
   // Keep a copy of measurement and calibration for I/O
@@ -48,7 +49,7 @@ private:
 public:
 
   // shorthand for base class type
-  typedef NoiseModelFactorN<POSE, LANDMARK> Base;             ///< typedef for base class
+  typedef NoiseModelFactorT<Vector3, POSE, LANDMARK> Base;  ///< base class
   typedef GenericStereoFactor<POSE, LANDMARK> This;           ///< typedef for this class (with templates)
   typedef std::shared_ptr<GenericStereoFactor> shared_ptr;  ///< typedef for shared pointer to this object
   typedef POSE CamPose;                                       ///< typedef for Pose Lie Value type
@@ -127,8 +128,9 @@ public:
   }
 
   /** h(x)-z */
-  Vector evaluateError(const Pose3& pose, const Point3& point,
-      OptionalMatrixType H1, OptionalMatrixType H2) const override {
+  Vector3 evaluateError(const Pose3& pose, const Point3& point,
+                        OptionalMatrixType H1,
+                        OptionalMatrixType H2) const override {
     try {
       if(body_P_sensor_) {
         if(H1) {
@@ -155,14 +157,6 @@ public:
         throw StereoCheiralityException(this->key2());
     }
     return Vector3::Constant(2.0 * K_->fx());
-  }
-
-  /// Linearize to a fixed-size binary factor when dimensions are static.
-  std::shared_ptr<GaussianFactor> linearize(
-      const Values& values) const override {
-    return internal::linearizeBinaryFactor<
-        3, traits<POSE>::dimension, traits<LANDMARK>::dimension>(*this,
-                                                                values);
   }
 
   /** return the measured */

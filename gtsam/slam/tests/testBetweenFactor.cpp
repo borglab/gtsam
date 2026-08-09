@@ -15,7 +15,6 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/BinaryJacobianFactor.h>
 #include <gtsam/nonlinear/factorTesting.h>
-#include <gtsam/nonlinear/internal/LinearizeBinaryFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 
 using namespace std::placeholders;
@@ -120,10 +119,11 @@ TEST(BetweenFactor, Pose3Jacobians) {
 /* ************************************************************************* */
 namespace binary_linearization {
 
-class TestBinaryFactor : public NoiseModelFactorN<Pose2, Point2> {
+class TestBinaryFactor : public NoiseModelFactorT<Vector2, Pose2, Point2> {
  public:
   TestBinaryFactor(const SharedNoiseModel& model, bool isActive = true)
-      : NoiseModelFactorN<Pose2, Point2>(model, 1, 2), isActive_(isActive) {}
+      : NoiseModelFactorT<Vector2, Pose2, Point2>(model, 1, 2),
+        isActive_(isActive) {}
 
   NonlinearFactor::shared_ptr clone() const override {
     return std::make_shared<TestBinaryFactor>(*this);
@@ -131,19 +131,14 @@ class TestBinaryFactor : public NoiseModelFactorN<Pose2, Point2> {
 
   bool active(const Values&) const override { return isActive_; }
 
-  Vector evaluateError(const Pose2& pose, const Point2& point,
-                       OptionalMatrixType H1,
-                       OptionalMatrixType H2) const override {
+  Vector2 evaluateError(const Pose2& pose, const Point2& point,
+                        OptionalMatrixType H1,
+                        OptionalMatrixType H2) const override {
     if (H1) {
       *H1 = (Matrix23() << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0).finished();
     }
     if (H2) *H2 = -Matrix2::Identity();
     return Vector2(pose.x() - point.x(), pose.y() - point.y());
-  }
-
-  std::shared_ptr<GaussianFactor> linearize(
-      const Values& values) const override {
-    return internal::linearizeBinaryFactor<2, 3, 2>(*this, values);
   }
 
  private:

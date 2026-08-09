@@ -22,7 +22,11 @@
 // \callgraph
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
+
 namespace gtsam {
+
+template <int M, int N1, int N2>
+struct BinaryJacobianFactor;
 
 /* ************************************************************************* */
 namespace detail {
@@ -81,6 +85,21 @@ struct NoiseModelFactorAliases<T1, T2, T3, T4, T5, T6, TExtra...> {
   using X5 = T5;
   using X6 = T6;
 };
+
+/** Compile-time dimensions for fixed-size binary factors. */
+template <typename OutputVec, typename... ValueTypes>
+struct FixedSizeBinaryDimensions {
+  inline constexpr static bool available = false;
+};
+
+template <typename OutputVec, typename T1, typename T2>
+struct FixedSizeBinaryDimensions<OutputVec, T1, T2> {
+  inline constexpr static int M = traits<OutputVec>::dimension;
+  inline constexpr static int N1 = traits<T1>::dimension;
+  inline constexpr static int N2 = traits<T2>::dimension;
+  inline constexpr static bool available =
+      M != Eigen::Dynamic && N1 != Eigen::Dynamic && N2 != Eigen::Dynamic;
+};
 }  // namespace detail
 
 /* ************************************************************************* */
@@ -136,7 +155,9 @@ struct NoiseModelFactorAliases<T1, T2, T3, T4, T5, T6, TExtra...> {
  * are typically more general than just vectors, e.g., Rot3 or Pose3, which are
  * objects in non-linear manifolds (Lie groups).
  *
- * @tparam OutputVec The type of the error vector, usually Vector.
+ * @tparam OutputVec The error-vector type. A fixed-size vector enables
+ * automatic `BinaryJacobianFactor` linearization for fixed-size two-key
+ * factors; `Vector` retains generic linearization.
  * @tparam ValueTypes The types of the variables connected to this factor, e.g., Pose3, Point3.
  */
 template <class OutputVec, class... ValueTypes>
@@ -301,6 +322,61 @@ class NoiseModelFactorT
 
   /// @name NoiseModelFactor methods
   /// @{
+
+  /**
+   * Linearize fixed-size two-key factors to `BinaryJacobianFactor`.
+   * All other factors retain the generic `JacobianFactor` implementation.
+   */
+  std::shared_ptr<GaussianFactor> linearize(
+      const Values& values) const override {
+    using Dimensions =
+        detail::FixedSizeBinaryDimensions<OutputVec, ValueTypes...>;
+    if constexpr (!Dimensions::available) {
+      return NoiseModelFactor::linearize(values);
+    } else {
+      constexpr int M = Dimensions::M;
+      constexpr int N1 = Dimensions::N1;
+      constexpr int N2 = Dimensions::N2;
+      static_assert(M > 0 && N1 > 0 && N2 > 0,
+                    "Binary factor dimensions must be positive");
+
+      if (!this->active(values)) return std::shared_ptr<JacobianFactor>();
+
+      std::vector<Matrix> jacobians(2);
+      Vector b = -this->unwhitenedError(values, jacobians);
+      const SharedNoiseModel& noiseModel = this->noiseModel();
+      if (noiseModel && static_cast<size_t>(b.size()) != noiseModel->dim()) {
+        throw std::invalid_argument(
+            "NoiseModelFactor: NoiseModel has dimension " +
+            std::to_string(noiseModel->dim()) + " instead of " +
+            std::to_string(b.size()) + ".");
+      }
+      if (b.size() != M || jacobians[0].rows() != M ||
+          jacobians[0].cols() != N1 || jacobians[1].rows() != M ||
+          jacobians[1].cols() != N2) {
+        throw std::invalid_argument(
+            "NoiseModelFactorT::linearize: error or Jacobian dimension "
+            "mismatch");
+      }
+
+      if (noiseModel) {
+        noiseModel->WhitenSystem(jacobians[0], jacobians[1], b);
+      }
+
+      SharedDiagonal linearModel;
+      if (noiseModel && noiseModel->isConstrained()) {
+        const auto constrained =
+            std::static_pointer_cast<noiseModel::Constrained>(noiseModel);
+        linearModel = constrained->unit();
+      }
+
+      const Eigen::Matrix<double, M, N1> A1 = jacobians[0];
+      const Eigen::Matrix<double, M, N2> A2 = jacobians[1];
+      const Eigen::Matrix<double, M, 1> fixedB = b;
+      return std::make_shared<BinaryJacobianFactor<M, N1, N2>>(
+          this->keys_[0], A1, this->keys_[1], A2, fixedB, linearModel);
+    }
+  }
 
   /** This implements the `unwhitenedError` virtual function by calling the
    * n-key specific version of evaluateError, which is pure virtual so must be

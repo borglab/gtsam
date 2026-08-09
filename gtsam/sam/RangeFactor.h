@@ -18,8 +18,8 @@
 
 #pragma once
 
+#include <gtsam/linear/BinaryJacobianFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
-#include <gtsam/nonlinear/internal/LinearizeBinaryFactor.h>
 
 #include <type_traits>
 
@@ -35,10 +35,12 @@ struct Range;
  * @ingroup sam
  */
 template <typename A1, typename A2 = A1, typename T = double>
-class RangeFactor : public NoiseModelFactorN<A1, A2> {
+class RangeFactor
+    : public NoiseModelFactorT<typename traits<T>::TangentVector, A1, A2> {
  private:
   typedef RangeFactor<A1, A2, T> This;
-  typedef NoiseModelFactorN<A1, A2> Base;
+  using ErrorVector = typename traits<T>::TangentVector;
+  typedef NoiseModelFactorT<ErrorVector, A1, A2> Base;
 
   T measured_;  ///< The measured range
 
@@ -60,19 +62,11 @@ class RangeFactor : public NoiseModelFactorN<A1, A2> {
   const T& measured() const { return measured_; }
 
   /// Evaluate the unwhitened range error and optional Jacobians.
-  Vector evaluateError(const A1& a1, const A2& a2,
-                       OptionalMatrixType H1 = OptionalNone,
-                       OptionalMatrixType H2 = OptionalNone) const override {
+  ErrorVector evaluateError(const A1& a1, const A2& a2,
+                            OptionalMatrixType H1 = OptionalNone,
+                            OptionalMatrixType H2 = OptionalNone) const override {
     const T predicted = Range<A1, A2>()(a1, a2, H1, H2);
     return -traits<T>::Local(predicted, measured_);
-  }
-
-  /// Linearize to a fixed-size binary factor when dimensions are static.
-  std::shared_ptr<GaussianFactor> linearize(
-      const Values& values) const override {
-    return internal::linearizeBinaryFactor<
-        traits<T>::dimension, traits<A1>::dimension, traits<A2>::dimension>(
-        *this, values);
   }
 
   /// print
