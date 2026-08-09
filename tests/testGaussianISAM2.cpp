@@ -14,6 +14,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianBayesTree.h>
@@ -1256,6 +1257,28 @@ TEST(ISAM2, AdaptiveReorder_DisabledByDefault) {
   EXPECT(!result.batchReorderTriggered);
   // treeNnz should still be populated
   EXPECT(result.treeNnz > 0);
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, constrained_gradient_at_zero) {
+  // A hard-constrained variable should not receive gradient contributions from
+  // regular factors after the Bayes tree aggregates clique gradients.
+  ISAM2 isam;
+  NonlinearFactorGraph graph;
+  Values init;
+  const Pose2 origin(0.0, 0.0, 0.0);
+
+  graph.emplace_shared<NonlinearEquality<Pose2>>(1, origin);
+  graph.emplace_shared<BetweenFactor<Pose2>>(
+      0, 1, Pose2(1.0, 0.0, 0.0), odoNoise);
+  init.insert(0, origin);
+  init.insert(1, origin);
+
+  FastMap<Key, int> constrainedKeys;
+  constrainedKeys.emplace(1, 1);
+  isam.update(graph, init, FactorIndices(), constrainedKeys);
+
+  EXPECT(assert_equal(Vector3::Zero(), isam.gradientAtZero().at(1)));
 }
 
 /* ************************************************************************* */
