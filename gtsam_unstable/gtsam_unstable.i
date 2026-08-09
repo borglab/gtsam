@@ -29,6 +29,8 @@ virtual class gtsam::NoiseModelFactorN;
 virtual class gtsam::GaussianFactor;
 virtual class gtsam::HessianFactor;
 virtual class gtsam::JacobianFactor;
+class gtsam::LinearInequality;
+class gtsam::InequalityFactorGraph;
 class gtsam::Cal3_S2;
 class gtsam::Cal3DS2;
 class gtsam::Cal3_S2Stereo;
@@ -892,6 +894,60 @@ virtual class LocalOrientedPlane3Factor : gtsam::NoiseModelFactor {
                             gtsam::Key anchorPoseKey,
                             gtsam::Key landmarkKey);
   void serialize() const;
+};
+
+//*************************************************************************
+// linear inequality constraints
+//*************************************************************************
+#include <gtsam_unstable/linear/LinearInequality.h>
+virtual class LinearInequality : gtsam::JacobianFactor {
+  LinearInequality();
+  LinearInequality(const gtsam::JacobianFactor& factor, gtsam::Key dualKey);
+  LinearInequality(gtsam::Key i1, const gtsam::Matrix& A1, double b,
+                   gtsam::Key dualKey);
+  LinearInequality(gtsam::Key i1, const gtsam::Matrix& A1, gtsam::Key i2,
+                   const gtsam::Matrix& A2, double b, gtsam::Key dualKey);
+  LinearInequality(gtsam::Key i1, const gtsam::Matrix& A1, gtsam::Key i2,
+                   const gtsam::Matrix& A2, gtsam::Key i3,
+                   const gtsam::Matrix& A3, double b, gtsam::Key dualKey);
+
+  gtsam::Key dualKey() const;
+  bool active() const;
+  void activate();
+  void inactivate();
+  double error(const gtsam::VectorValues& c) const;
+  double dotProductRow(const gtsam::VectorValues& p) const;
+};
+
+#include <gtsam_unstable/linear/InequalityFactorGraph.h>
+class InequalityFactorGraph {
+  InequalityFactorGraph();
+
+  void print(const string& str = "",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+  bool equals(const gtsam::InequalityFactorGraph& other,
+              double tol = 1e-9) const;
+  size_t size() const;
+  bool empty() const;
+  void remove(size_t i);
+  void resize(size_t size);
+  void replace(size_t index, gtsam::LinearInequality* factor);
+  size_t nrFactors() const;
+  bool exists(size_t idx) const;
+  gtsam::LinearInequality* at(size_t i) const;
+  gtsam::KeySet keys() const;
+  gtsam::KeyVector keyVector() const;
+
+  void add(gtsam::Key i1, const gtsam::Matrix& A1, double b,
+           gtsam::Key dualKey);
+  void add(gtsam::Key i1, const gtsam::Matrix& A1, gtsam::Key i2,
+           const gtsam::Matrix& A2, double b, gtsam::Key dualKey);
+  void add(gtsam::Key i1, const gtsam::Matrix& A1, gtsam::Key i2,
+           const gtsam::Matrix& A2, gtsam::Key i3, const gtsam::Matrix& A3,
+           double b, gtsam::Key dualKey);
+
+  double error(const gtsam::VectorValues& x) const;
 };
 
 
