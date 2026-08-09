@@ -80,7 +80,7 @@ function build()
   cmake $GITHUB_WORKSPACE \
       -B build -G Ninja \
       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
-      -DGTSAM_BUILD_TESTS=OFF \
+      -DGTSAM_BUILD_TESTS=${GTSAM_BUILD_TESTS:-OFF} \
       -DGTSAM_BUILD_UNSTABLE=${GTSAM_BUILD_UNSTABLE:-ON} \
       -DGTSAM_USE_QUATERNIONS=OFF \
       -DGTSAM_WITH_TBB=${GTSAM_WITH_TBB:-OFF} \
@@ -114,7 +114,12 @@ function build()
 function test()
 {
   if [ "${NO_BOOST_BUILD}" == "ON" ]; then
-    export PYTHONPATH="$GITHUB_WORKSPACE/build/python:$PYTHONPATH"
+    if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" || "$OSTYPE" == "cygwin" ]]; then
+      PYTHON_BUILD_DIRECTORY=$(cygpath -w "$GITHUB_WORKSPACE/build/python")
+      export PYTHONPATH="${PYTHON_BUILD_DIRECTORY}${PYTHONPATH:+;$PYTHONPATH}"
+    else
+      export PYTHONPATH="$GITHUB_WORKSPACE/build/python${PYTHONPATH:+:$PYTHONPATH}"
+    fi
   fi
 
   cd $GITHUB_WORKSPACE/python/gtsam/tests

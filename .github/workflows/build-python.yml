@@ -68,13 +68,13 @@ jobs:
           RUNNER_SELECTION: ${{ inputs.runner || 'all' }}
         run: |
           if [ "$EVENT_NAME" = "push" ] || [ "$RUNNER_SELECTION" = "windows-2022-msvc" ]; then
-            echo 'build_matrix={"include":[{"name":"windows-2022-msvc","build_type":"Release","python_version":3,"os":"windows-2022","platform":64}]}' >> "$GITHUB_OUTPUT"
+            echo 'build_matrix={"include":[{"name":"windows-2022-msvc","build_type":"Release","python_version":3,"os":"windows-2022","platform":64,"no_boost":false,"cpp_tests":false,"use_sccache":true}]}' >> "$GITHUB_OUTPUT"
           elif [ "$RUNNER_SELECTION" = "nightly-extra" ]; then
-            echo 'build_matrix={"include":[{"name":"ubuntu-22.04-gcc-11-noboost","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"gcc","version":"11"},{"name":"ubuntu-22.04-clang-11","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"clang","version":"11"}]}' >> "$GITHUB_OUTPUT"
+            echo 'build_matrix={"include":[{"name":"ubuntu-22.04-gcc-11-noboost","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"gcc","version":"11","no_boost":true,"cpp_tests":false,"use_sccache":false},{"name":"ubuntu-22.04-clang-11","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"clang","version":"11","no_boost":false,"cpp_tests":false,"use_sccache":false}]}' >> "$GITHUB_OUTPUT"
           elif [ "$EVENT_NAME" = "pull_request" ]; then
-            echo 'build_matrix={"include":[{"name":"ubuntu-22.04-gcc-11","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"gcc","version":"11"},{"name":"macos-15-xcode-16","build_type":"Release","python_version":3,"os":"macos-15","compiler":"xcode","version":"16"},{"name":"windows-2022-msvc","build_type":"Release","python_version":3,"os":"windows-2022","platform":64}]}' >> "$GITHUB_OUTPUT"
+            echo 'build_matrix={"include":[{"name":"ubuntu-22.04-gcc-11","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"gcc","version":"11","no_boost":true,"cpp_tests":true,"use_sccache":true},{"name":"macos-15-xcode-16","build_type":"Release","python_version":3,"os":"macos-15","compiler":"xcode","version":"16","no_boost":true,"cpp_tests":true,"use_sccache":true},{"name":"windows-2022-msvc","build_type":"Release","python_version":3,"os":"windows-2022","platform":64,"no_boost":true,"cpp_tests":true,"use_sccache":true}]}' >> "$GITHUB_OUTPUT"
           else
-            echo 'build_matrix={"include":[{"name":"ubuntu-22.04-gcc-11","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"gcc","version":"11"},{"name":"ubuntu-22.04-gcc-11-noboost","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"gcc","version":"11"},{"name":"ubuntu-22.04-clang-11","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"clang","version":"11"},{"name":"macos-15-xcode-16","build_type":"Release","python_version":3,"os":"macos-15","compiler":"xcode","version":"16"},{"name":"windows-2022-msvc","build_type":"Release","python_version":3,"os":"windows-2022","platform":64}]}' >> "$GITHUB_OUTPUT"
+            echo 'build_matrix={"include":[{"name":"ubuntu-22.04-gcc-11","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"gcc","version":"11","no_boost":false,"cpp_tests":false,"use_sccache":false},{"name":"ubuntu-22.04-gcc-11-noboost","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"gcc","version":"11","no_boost":true,"cpp_tests":false,"use_sccache":false},{"name":"ubuntu-22.04-clang-11","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"clang","version":"11","no_boost":false,"cpp_tests":false,"use_sccache":false},{"name":"macos-15-xcode-16","build_type":"Release","python_version":3,"os":"macos-15","compiler":"xcode","version":"16","no_boost":false,"cpp_tests":false,"use_sccache":false},{"name":"windows-2022-msvc","build_type":"Release","python_version":3,"os":"windows-2022","platform":64,"no_boost":false,"cpp_tests":false,"use_sccache":true}]}' >> "$GITHUB_OUTPUT"
           fi
 
   fast-compile:
@@ -82,47 +82,68 @@ jobs:
     needs: check-paths
     if: github.event_name == 'pull_request' && needs.check-paths.outputs.should_run == 'true'
     runs-on: ${{ matrix.os }}
+    env:
+      SCCACHE_BASEDIRS: ${{ github.workspace }}
+      SCCACHE_GHA_ENABLED: ON
     strategy:
       fail-fast: true
-      matrix:
-        include:
-          - name: Linux
-            os: ubuntu-latest
-          - name: Windows
-            os: windows-latest
-          - name: macOS
-            os: macos-latest
+      matrix: ${{ fromJSON(needs.check-paths.outputs.build_matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Install GCC (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get -y update
+          sudo apt-get install -y g++-${{ matrix.version }}
+          echo "CC=gcc-${{ matrix.version }}" >> "$GITHUB_ENV"
+          echo "CXX=g++-${{ matrix.version }}" >> "$GITHUB_ENV"
+
+      - name: Select Xcode (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          sudo xcode-select -switch /Applications/Xcode.app
+          echo "CC=clang" >> "$GITHUB_ENV"
+          echo "CXX=clang++" >> "$GITHUB_ENV"
 
       - name: Setup MSVC
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
         with:
-          arch: x64
+          arch: x${{ matrix.platform }}
+          toolset: 14.40
+
+      - name: Install sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
 
       - name: Configure
         shell: bash
         run: >-
-          cmake -S . -B build-fast -G Ninja
+          cmake -S . -B build -G Ninja
           -DCMAKE_BUILD_TYPE=Release
           -DGTSAM_BUILD_TESTS=OFF
-          -DGTSAM_BUILD_UNSTABLE=OFF
-          -DGTSAM_UNSTABLE_BUILD_PYTHON=OFF
-          -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF
-          -DGTSAM_BUILD_TIMING_ALWAYS=OFF
-          -DGTSAM_BUILD_DOCS=OFF
-          -DGTSAM_BUILD_PYTHON=OFF
-          -DGTSAM_INSTALL_MATLAB_TOOLBOX=OFF
+          -DGTSAM_BUILD_UNSTABLE=ON
+          -DGTSAM_USE_QUATERNIONS=OFF
           -DGTSAM_WITH_TBB=OFF
+          -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF
+          -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF
+          -DGTSAM_BUILD_WITH_PRECOMPILED_HEADERS=OFF
+          -DGTSAM_BUILD_PYTHON=OFF
+          -DGTSAM_UNSTABLE_BUILD_PYTHON=OFF
           -DGTSAM_USE_BOOST_FEATURES=OFF
           -DGTSAM_ENABLE_BOOST_SERIALIZATION=OFF
           -DGTSAM_ENABLE_GEOGRAPHICLIB=OFF
-          -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF
+          -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache
+          -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
-      - name: Compile gtsam
-        run: cmake --build build-fast --target gtsam --parallel 4
+      - name: Compile GTSAM libraries
+        run: cmake --build build --target gtsam gtsam_unstable --parallel 4
+
+      - name: Show sccache statistics
+        shell: bash
+        run: sccache --show-stats
 
   build:
     # On PRs, create all existing required contexts even if the fast gate fails.
@@ -142,7 +163,9 @@ jobs:
       CTEST_OUTPUT_ON_FAILURE: ON
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
+      GTSAM_BUILD_TESTS: ${{ matrix.cpp_tests && 'ON' || 'OFF' }}
       PYTHON_VERSION: ${{ matrix.python_version }}
+      SCCACHE_BASEDIRS: ${{ github.workspace }}
       SCCACHE_GHA_ENABLED: ON
 
     strategy:
@@ -179,7 +202,7 @@ jobs:
           fi
 
           sudo apt-get -y update
-          if [ "${{ matrix.name }}" = "ubuntu-22.04-gcc-11-noboost" ]; then
+          if [ "${{ matrix.no_boost }}" = "true" ]; then
             sudo apt-get -y install build-essential pkg-config libpython3-dev python3-numpy
           else
             sudo apt-get -y install build-essential pkg-config libpython3-dev python3-numpy libboost-all-dev
@@ -199,8 +222,10 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           brew update
-          # Install boost only if missing
-          brew list boost >/dev/null 2>&1 || brew install boost
+          if [ "${{ matrix.no_boost }}" != "true" ]; then
+            # Install Boost only if missing.
+            brew list boost >/dev/null 2>&1 || brew install boost
+          fi
           sudo xcode-select -switch /Applications/Xcode.app
           echo "CC=clang" >> $GITHUB_ENV
           echo "CXX=clang++" >> $GITHUB_ENV
@@ -224,7 +249,7 @@ jobs:
           python-version: ${{ matrix.python_version }}
 
       - name: Install Boost (Windows)
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && matrix.no_boost != true
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
@@ -288,7 +313,7 @@ jobs:
           Write-Host "Using BOOST_LIBRARYDIR=$boostLibraryDir"
     
       - name: Install sccache
-        if: runner.os == 'Windows'
+        if: matrix.use_sccache == true
         uses: mozilla-actions/sccache-action@v0.0.9
 
       - name: Set GTSAM_WITH_TBB Flag
@@ -322,32 +347,34 @@ jobs:
 
       - name: Build
         shell: bash
-        if: matrix.name != 'ubuntu-22.04-gcc-11-noboost' && matrix.name != 'windows-2022-msvc'
         run: |
-          bash .github/scripts/python.sh -b
-
-      - name: Build
-        shell: bash
-        if: matrix.name == 'windows-2022-msvc'
-        env:
-          BUILD_JOBS: 3
-        run: |
-          bash .github/scripts/python.sh -b --sccache
-
-      - name: Build (No Boost Wrapper Check)
-        if: matrix.name == 'ubuntu-22.04-gcc-11-noboost'
-        shell: bash
-        run: |
-          bash .github/scripts/python.sh -b --no-boost
+          args=(-b)
+          if [ "${{ matrix.no_boost }}" = "true" ]; then
+            args+=(--no-boost)
+          fi
+          if [ "${{ matrix.use_sccache }}" = "true" ]; then
+            args+=(--sccache)
+          fi
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            export BUILD_JOBS=3
+          fi
+          bash .github/scripts/python.sh "${args[@]}"
 
       - name: Test
         shell: bash
-        if: matrix.name != 'ubuntu-22.04-gcc-11-noboost'
         run: |
-          bash .github/scripts/python.sh -t
+          args=(-t)
+          if [ "${{ matrix.no_boost }}" = "true" ]; then
+            args+=(--no-boost)
+          fi
+          bash .github/scripts/python.sh "${args[@]}"
 
-      - name: Test (No Boost Wrapper Check)
-        if: matrix.name == 'ubuntu-22.04-gcc-11-noboost'
+      - name: Test C++
+        if: matrix.cpp_tests == true
         shell: bash
-        run: |
-          bash .github/scripts/python.sh -t --no-boost
+        run: cmake --build build --target check --parallel 2
+
+      - name: Show sccache statistics
+        if: matrix.use_sccache == true
+        shell: bash
+        run: sccache --show-stats
