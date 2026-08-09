@@ -23,6 +23,7 @@
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/inference/BayesTree-inst.h>
+#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/GaussianBayesTreeQueries.h>
 #include <gtsam/nonlinear/LinearContainerFactor.h>
 
@@ -30,6 +31,7 @@
 #include <map>
 #include <utility>
 #include <variant>
+#include <vector>
 #include <cassert>
 
 using namespace std;
@@ -942,9 +944,47 @@ double ISAM2::error(const VectorValues& x) const {
 VectorValues ISAM2::gradientAtZero() const {
   // Create result
   VectorValues g;
+  bool hasConstrainedConditional = false;
 
   // Sum up contributions for each clique
-  for (const auto& root : this->roots()) root->addGradientAtZero(&g);
+  for (const auto& root : this->roots())
+    root->addGradientAtZero(&g, &hasConstrainedConditional);
+
+  if (!hasConstrainedConditional) return g;
+
+  // A constrained conditional makes the corresponding frontal gradient
+  // components undefined. Find those components only for constrained trees.
+  FastMap<Key, std::vector<char>> constrainedComponents;
+  for (const auto& [key, clique] : this->nodes()) {
+    const auto& conditional = clique->conditional();
+    if (key != conditional->firstFrontalKey()) continue;
+
+    const auto& model = conditional->get_model();
+    if (!model || !model->isConstrained()) continue;
+    const auto constrainedModel =
+        std::dynamic_pointer_cast<noiseModel::Constrained>(model);
+    if (!constrainedModel) continue;
+
+    DenseIndex position = 0;
+    for (auto it = conditional->beginFrontals();
+         it != conditional->endFrontals(); ++it) {
+      const DenseIndex dim = conditional->getDim(it);
+      auto& mask = constrainedComponents[*it];
+      if (mask.empty()) mask.assign(static_cast<size_t>(dim), 0);
+      for (DenseIndex i = 0; i < dim; ++i) {
+        mask[static_cast<size_t>(i)] =
+            constrainedModel->constrained(static_cast<size_t>(position + i));
+      }
+      position += dim;
+    }
+  }
+
+  for (const auto& [key, mask] : constrainedComponents) {
+    Vector& gradient = g.at(key);
+    for (size_t i = 0; i < mask.size(); ++i) {
+      if (mask[i]) gradient(static_cast<DenseIndex>(i)) = 0.0;
+    }
+  }
 
   return g;
 }

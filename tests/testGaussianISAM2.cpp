@@ -14,6 +14,8 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianBayesTree.h>
@@ -1256,6 +1258,56 @@ TEST(ISAM2, AdaptiveReorder_DisabledByDefault) {
   EXPECT(!result.batchReorderTriggered);
   // treeNnz should still be populated
   EXPECT(result.treeNnz > 0);
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, constrained_gradient_at_zero) {
+  // A hard-constrained variable should not receive gradient contributions from
+  // regular factors after the Bayes tree aggregates clique gradients.
+  ISAM2Params params(ISAM2DoglegParams(1.0), 0.0, 0, false);
+  ISAM2 isam(params);
+  NonlinearFactorGraph graph;
+  Values init;
+  const Pose2 origin(0.0, 0.0, 0.0);
+
+  graph.emplace_shared<NonlinearEquality<Pose2>>(1, origin);
+  graph.emplace_shared<BetweenFactor<Pose2>>(
+      0, 1, Pose2(1.0, 0.0, 0.0), odoNoise);
+  init.insert(0, origin);
+  init.insert(1, origin);
+
+  FastMap<Key, int> constrainedKeys;
+  constrainedKeys.emplace(1, 1);
+  isam.update(graph, init, FactorIndices(), constrainedKeys);
+
+  const VectorValues gradient = isam.gradientAtZero();
+  EXPECT(assert_equal(Vector3::Zero(), gradient.at(1)));
+  EXPECT(gradient.at(0).norm() > 0.0);
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, constrained_gradient_at_zero_mixed_components) {
+  // Only constrained scalar components should be represented as zero.
+  ISAM2Params params(ISAM2DoglegParams(1.0), 0.0, 0, false);
+  ISAM2 isam(params);
+  NonlinearFactorGraph graph;
+  Values init;
+
+  graph.emplace_shared<PriorFactor<Point2>>(
+      1, Point2(0.0, 0.0),
+      noiseModel::Constrained::MixedSigmas(Vector2(0.0, 1.0)));
+  graph.emplace_shared<BetweenFactor<Point2>>(
+      0, 1, Point2(1.0, 1.0), noiseModel::Isotropic::Sigma(2, 1.0));
+  init.insert(0, Point2(0.0, 0.0));
+  init.insert(1, Point2(0.0, 0.0));
+
+  FastMap<Key, int> constrainedKeys;
+  constrainedKeys.emplace(1, 1);
+  isam.update(graph, init, FactorIndices(), constrainedKeys);
+
+  const VectorValues gradient = isam.gradientAtZero();
+  EXPECT(std::abs(gradient.at(1)(0)) < 1e-9);
+  EXPECT(std::abs(gradient.at(1)(1)) > 1e-9);
 }
 
 /* ************************************************************************* */
