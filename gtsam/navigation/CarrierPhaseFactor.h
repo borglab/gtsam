@@ -44,10 +44,10 @@ using CarrierPhaseBase = GnssMeasurementBase;
  * @ingroup navigation
  */
 class GTSAM_EXPORT CarrierPhaseFactor
-    : public NoiseModelFactorN<Point3, double, double>,
+    : public NoiseModelFactorT<Vector1, Point3, double, double>,
       private CarrierPhaseBase {
  private:
-  typedef NoiseModelFactorN<Point3, double, double> Base;
+  typedef NoiseModelFactorT<Vector1, Point3, double, double> Base;
 
  public:
   using Base::evaluateError;
@@ -93,12 +93,12 @@ class GTSAM_EXPORT CarrierPhaseFactor
               double tol = 1e-9) const override;
 
   /// vector of errors
-  Vector evaluateError(const Point3& receiverPosition,
-                       const double& receiverClockBias,
-                       const double& ambiguity,
-                       OptionalMatrixType HreceiverPos,
-                       OptionalMatrixType HreceiverClockBias,
-                       OptionalMatrixType Hambiguity) const override;
+  Vector1 evaluateError(const Point3& receiverPosition,
+                        const double& receiverClockBias,
+                        const double& ambiguity,
+                        OptionalMatrixType HreceiverPos,
+                        OptionalMatrixType HreceiverClockBias,
+                        OptionalMatrixType Hambiguity) const override;
 
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION  ///
@@ -338,10 +338,10 @@ struct traits<UndifferencedCarrierPhaseFactorArm>
  * @ingroup navigation
  */
 class GTSAM_EXPORT CarrierPhaseFactorArm
-    : public NoiseModelFactorN<Pose3, double, double>,
+    : public NoiseModelFactorT<Vector1, Pose3, double, double>,
       private CarrierPhaseBase {
  private:
-  typedef NoiseModelFactorN<Pose3, double, double> Base;
+  typedef NoiseModelFactorT<Vector1, Pose3, double, double> Base;
 
   gnss::LeverArm arm_;
 
@@ -390,12 +390,12 @@ class GTSAM_EXPORT CarrierPhaseFactorArm
               double tol = 1e-9) const override;
 
   /// vector of errors
-  Vector evaluateError(const Pose3& pose,
-                       const double& receiverClockBias,
-                       const double& ambiguity,
-                       OptionalMatrixType H_pose,
-                       OptionalMatrixType HreceiverClockBias,
-                       OptionalMatrixType Hambiguity) const override;
+  Vector1 evaluateError(const Pose3& pose,
+                        const double& receiverClockBias,
+                        const double& ambiguity,
+                        OptionalMatrixType H_pose,
+                        OptionalMatrixType HreceiverClockBias,
+                        OptionalMatrixType Hambiguity) const override;
 
   /// return the lever arm
   inline const Point3& leverArm() const { return arm_.b; }
@@ -455,9 +455,9 @@ struct traits<CarrierPhaseFactorArm>
  * @ingroup navigation
  */
 class GTSAM_EXPORT DoubleDifferenceCarrierPhaseFactor
-    : public NoiseModelFactorN<Point3, double, double> {
+    : public NoiseModelFactorT<Vector1, Point3, double, double> {
  private:
-  typedef NoiseModelFactorN<Point3, double, double> Base;
+  typedef NoiseModelFactorT<Vector1, Point3, double, double> Base;
 
   gnss::DoubleDifferenceData dd_;
   double lam_ = 0;
@@ -493,11 +493,10 @@ class GTSAM_EXPORT DoubleDifferenceCarrierPhaseFactor
   bool equals(const NonlinearFactor& expected,
               double tol = 1e-9) const override;
 
-  Vector evaluateError(const Point3& pos,
-                       const double& ambRef, const double& ambTarget,
-                       OptionalMatrixType Hpos,
-                       OptionalMatrixType HambRef,
-                       OptionalMatrixType HambTarget) const override;
+  Vector1 evaluateError(const Point3& pos, const double& ambRef,
+                        const double& ambTarget, OptionalMatrixType Hpos,
+                        OptionalMatrixType HambRef,
+                        OptionalMatrixType HambTarget) const override;
 
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
@@ -532,9 +531,9 @@ struct traits<DoubleDifferenceCarrierPhaseFactor>
  * @ingroup navigation
  */
 class GTSAM_EXPORT DoubleDifferenceCarrierPhaseFactorArm
-    : public NoiseModelFactorN<Pose3, double, double> {
+    : public NoiseModelFactorT<Vector1, Pose3, double, double> {
  private:
-  typedef NoiseModelFactorN<Pose3, double, double> Base;
+  typedef NoiseModelFactorT<Vector1, Pose3, double, double> Base;
 
   gnss::DoubleDifferenceData dd_;
   double lam_ = 0;
@@ -582,11 +581,10 @@ class GTSAM_EXPORT DoubleDifferenceCarrierPhaseFactorArm
   bool equals(const NonlinearFactor& expected,
               double tol = 1e-9) const override;
 
-  Vector evaluateError(const Pose3& pose,
-                       const double& ambRef, const double& ambTarget,
-                       OptionalMatrixType H_pose,
-                       OptionalMatrixType HambRef,
-                       OptionalMatrixType HambTarget) const override;
+  Vector1 evaluateError(const Pose3& pose, const double& ambRef,
+                        const double& ambTarget, OptionalMatrixType H_pose,
+                        OptionalMatrixType HambRef,
+                        OptionalMatrixType HambTarget) const override;
 
   inline const Point3& leverArm() const { return arm_.b; }
   inline const std::optional<Pose3>& ecefTnav() const { return arm_.ecef_T_nav; }

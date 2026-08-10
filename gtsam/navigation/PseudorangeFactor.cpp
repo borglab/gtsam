@@ -322,7 +322,7 @@ bool DifferentialPseudorangeFactor::equals(const NonlinearFactor& expected,
 }
 
 //***************************************************************************
-Vector DifferentialPseudorangeFactor::evaluateError(
+Vector1 DifferentialPseudorangeFactor::evaluateError(
     const Point3& receiverPosition, const double& receiverClock_bias,
     const double& differentialCorrection, OptionalMatrixType HreceiverPos,
     OptionalMatrixType HreceiverClockBias,
@@ -398,7 +398,7 @@ bool DifferentialPseudorangeFactorArm::equals(
 }
 
 //***************************************************************************
-Vector DifferentialPseudorangeFactorArm::evaluateError(
+Vector1 DifferentialPseudorangeFactorArm::evaluateError(
     const Pose3& pose, const double& receiverClockBias,
     const double& differentialCorrection, OptionalMatrixType H_pose,
     OptionalMatrixType HreceiverClockBias,

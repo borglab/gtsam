@@ -91,8 +91,8 @@ class GTSAM_EXPORT PlanarGyroBiasFactor : public BetweenFactor<double> {
  * A "between" factor for Pose2 rotation, with variable bias.
  */
 class GTSAM_EXPORT PlanarGyroFactor
-    : public NoiseModelFactorN<Pose2, Pose2, double> {
-  typedef NoiseModelFactorN<Pose2, Pose2, double> Base;
+    : public NoiseModelFactorT<Vector3, Pose2, Pose2, double> {
+  typedef NoiseModelFactorT<Vector3, Pose2, Pose2, double> Base;
 
  private:
   const std::shared_ptr<PlanarGyroParams> p_;
@@ -189,8 +189,8 @@ class GTSAM_EXPORT PlanarGyroFactor
    * @param H3 dErr/dBias (3x1)
    * @return Vector3 err
    */
-  Vector evaluateError(const Pose2& Pi, const Pose2& Pj, const double& bias,
-                       OptionalMatrixType H1, OptionalMatrixType H2,
-                       OptionalMatrixType H3) const override;
+  Vector3 evaluateError(const Pose2& Pi, const Pose2& Pj, const double& bias,
+                        OptionalMatrixType H1, OptionalMatrixType H2,
+                        OptionalMatrixType H3) const override;
 };
 }  // namespace gtsam

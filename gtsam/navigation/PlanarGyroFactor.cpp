@@ -100,11 +100,11 @@ bool PlanarGyroFactor::equals(const NonlinearFactor& other, double tol) const {
          && std::abs(deltaT_ - e->deltaT_) < tol;
 }
 
-Vector PlanarGyroFactor::evaluateError(const Pose2& Pi, const Pose2& Pj,
-                                       const double& bias,
-                                       OptionalMatrixType H1,
-                                       OptionalMatrixType H2,
-                                       OptionalMatrixType H3) const {
+Vector3 PlanarGyroFactor::evaluateError(const Pose2& Pi, const Pose2& Pj,
+                                        const double& bias,
+                                        OptionalMatrixType H1,
+                                        OptionalMatrixType H2,
+                                        OptionalMatrixType H3) const {
   Matrix1 rH1, rH2, rH3;
   double err = computeError(Pi.r(), Pj.r(), bias, H1 ? &rH1 : 0, H2 ? &rH2 : 0,
                             H3 ? &rH3 : 0);

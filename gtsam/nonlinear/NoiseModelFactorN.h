@@ -21,15 +21,11 @@
 #pragma once
 // \callgraph
 
+#include <gtsam/linear/BinaryJacobianFactor.h>
+#include <gtsam/linear/TernaryJacobianFactor.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
-
-template <int M, int N1, int N2>
-struct BinaryJacobianFactor;
-
-template <int M, int N1, int N2, int N3>
-struct TernaryJacobianFactor;
 
 /* ************************************************************************* */
 namespace detail {

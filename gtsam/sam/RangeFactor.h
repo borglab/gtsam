@@ -203,10 +203,12 @@ struct traits<RangeFactorWithTransform<A1, A2, T> >
  */
 template <typename A1, typename A2 = A1,
           typename T = typename Range<A1, A2>::result_type>
-class RangeFactorWithTransformBias : public NoiseModelFactorN<A1, A2, T> {
+class RangeFactorWithTransformBias
+    : public NoiseModelFactorT<typename traits<T>::TangentVector, A1, A2, T> {
  private:
   typedef RangeFactorWithTransformBias<A1, A2, T> This;
-  typedef NoiseModelFactorN<A1, A2, T> Base;
+  typedef NoiseModelFactorT<typename traits<T>::TangentVector, A1, A2, T> Base;
+  using ErrorVector = typename traits<T>::TangentVector;
 
   T measured_;        ///< The measured range.
   A1 body_T_sensor_;  ///< The pose of the sensor in the body frame.
@@ -236,10 +238,10 @@ class RangeFactorWithTransformBias : public NoiseModelFactorN<A1, A2, T> {
   const T& measured() const { return measured_; }
 
   /// Evaluate the unwhitened range error and optional Jacobians.
-  Vector evaluateError(const A1& a1, const A2& a2, const T& bias,
-                       OptionalMatrixType H1 = OptionalNone,
-                       OptionalMatrixType H2 = OptionalNone,
-                       OptionalMatrixType H3 = OptionalNone) const override {
+  ErrorVector evaluateError(const A1& a1, const A2& a2, const T& bias,
+                            OptionalMatrixType H1 = OptionalNone,
+                            OptionalMatrixType H2 = OptionalNone,
+                            OptionalMatrixType H3 = OptionalNone) const override {
     Matrix HposeCompose;
     const A1 nav_T_sensor =
         a1.compose(body_T_sensor_, H1 ? &HposeCompose : nullptr);

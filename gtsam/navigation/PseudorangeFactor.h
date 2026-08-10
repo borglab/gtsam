@@ -341,10 +341,10 @@ struct traits<UndifferencedPseudorangeFactorArm>
  * Performance", Second Edition, 2012.
  */
 class GTSAM_EXPORT DifferentialPseudorangeFactor
-    : public NoiseModelFactorN<Point3, double, double>,
+    : public NoiseModelFactorT<Vector1, Point3, double, double>,
       private PseudorangeBase {
  private:
-  typedef NoiseModelFactorN<Point3, double, double> Base;
+  typedef NoiseModelFactorT<Vector1, Point3, double, double> Base;
 
  public:
   using Base::evaluateError;
@@ -369,7 +369,7 @@ class GTSAM_EXPORT DifferentialPseudorangeFactor
                                             DefaultKeyFormatter) const override;
   bool equals(const NonlinearFactor& expected,
               double tol = 1e-9) const override;
-  Vector evaluateError(
+  Vector1 evaluateError(
       const Point3& receiverPosition, const double& receiverClock_bias,
       const double& differentialCorrection, OptionalMatrixType HreceiverPos,
       OptionalMatrixType HreceiverClockBias,
@@ -537,10 +537,10 @@ struct traits<PseudorangeFactorArm>
  * @ingroup navigation
  */
 class GTSAM_EXPORT DifferentialPseudorangeFactorArm
-    : public NoiseModelFactorN<Pose3, double, double>,
+    : public NoiseModelFactorT<Vector1, Pose3, double, double>,
       private PseudorangeBase {
  private:
-  typedef NoiseModelFactorN<Pose3, double, double> Base;
+  typedef NoiseModelFactorT<Vector1, Pose3, double, double> Base;
   gnss::LeverArm arm_;
 
  public:
@@ -574,12 +574,12 @@ class GTSAM_EXPORT DifferentialPseudorangeFactorArm
                                             DefaultKeyFormatter) const override;
   bool equals(const NonlinearFactor& expected,
               double tol = 1e-9) const override;
-  Vector evaluateError(const Pose3& pose,
-                       const double& receiverClockBias,
-                       const double& differentialCorrection,
-                       OptionalMatrixType H_pose,
-                       OptionalMatrixType HreceiverClockBias,
-                       OptionalMatrixType HdifferentialCorrection) const override;
+  Vector1 evaluateError(const Pose3& pose,
+                        const double& receiverClockBias,
+                        const double& differentialCorrection,
+                        OptionalMatrixType H_pose,
+                        OptionalMatrixType HreceiverClockBias,
+                        OptionalMatrixType HdifferentialCorrection) const override;
 
   inline const Point3& leverArm() const { return arm_.b; }
   inline const std::optional<Pose3>& ecefTnav() const { return arm_.ecef_T_nav; }

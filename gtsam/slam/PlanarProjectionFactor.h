@@ -232,9 +232,11 @@ namespace gtsam {
      * Landmark is constant.
      * This is intended to be used for camera calibration.
     */
-    class PlanarProjectionFactor3 : public PlanarProjectionFactorBase, public NoiseModelFactorN<Pose2, Pose3, Cal3DS2> {
+    class PlanarProjectionFactor3
+        : public PlanarProjectionFactorBase,
+          public NoiseModelFactorT<Vector2, Pose2, Pose3, Cal3DS2> {
     public:
-        typedef NoiseModelFactorN<Pose2, Pose3, Cal3DS2> Base;
+        typedef NoiseModelFactorT<Vector2, Pose2, Pose3, Cal3DS2> Base;
         using Base::evaluateError;
 
         PlanarProjectionFactor3() {}
@@ -260,8 +262,7 @@ namespace gtsam {
                                 const Point3& landmark, const Point2& measured,
                                 const SharedNoiseModel& model = {})
             : PlanarProjectionFactorBase(measured),
-              NoiseModelFactorN<Pose2, Pose3, Cal3DS2>(model, poseKey,
-                                                       offsetKey, calibKey),
+              Base(model, poseKey, offsetKey, calibKey),
               landmark_(landmark) {}
 
         /**
@@ -272,7 +273,7 @@ namespace gtsam {
          * @param HbTc offset jacobian
          * @param Hcalib calibration jacobian
          */
-        Vector evaluateError(
+        Vector2 evaluateError(
             const Pose2& wTb,
             const Pose3& bTc,
             const Cal3DS2& calib,

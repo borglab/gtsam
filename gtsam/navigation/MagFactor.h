@@ -176,7 +176,8 @@ public:
  * This version uses model measured bM = scale * bRn * direction + bias
  * and optimizes for both scale, direction, and the bias.
  */
-class MagFactor3: public NoiseModelFactorN<double, Unit3, Point3> {
+class MagFactor3
+    : public NoiseModelFactorT<Vector3, double, Unit3, Point3> {
 
   const Point3 measured_; ///< The measured magnetometer values
   const Rot3 bRn_; ///< The assumed known rotation from nav to body
@@ -184,13 +185,14 @@ class MagFactor3: public NoiseModelFactorN<double, Unit3, Point3> {
 public:
 
   // Provide access to Matrix& version of evaluateError:
-  using NoiseModelFactor3<double, Unit3, Point3>::evaluateError;
+  using Base = NoiseModelFactorT<Vector3, double, Unit3, Point3>;
+  using Base::evaluateError;
 
 
   /** Constructor */
   MagFactor3(Key key1, Key key2, Key key3, const Point3& measured,
       const Rot3& nRb, const SharedNoiseModel& model) :
-      NoiseModelFactorN<double, Unit3, Point3>(model, key1, key2, key3), //
+      Base(model, key1, key2, key3), //
       measured_(measured), bRn_(nRb.inverse()) {
   }
 
@@ -205,7 +207,7 @@ public:
    * @param nM (unknown) local earth magnetic field vector, in nav frame
    * @param bias (unknown) 3D bias
    */
-  Vector evaluateError(const double& scale, const Unit3& direction,
+  Vector3 evaluateError(const double& scale, const Unit3& direction,
       const Point3& bias, OptionalMatrixType H1,
       OptionalMatrixType H2, OptionalMatrixType H3) const override {
     // measured bM = nRb� * nM + b, where b is unknown bias

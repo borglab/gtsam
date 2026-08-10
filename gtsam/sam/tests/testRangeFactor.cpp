@@ -385,6 +385,25 @@ TEST(RangeFactor, BinaryLinearization) {
   EXPECT(assert_equal(*generic3D, *optimized3D, 1e-9));
 }
 
+// The transform-bias variant has three keys, so its scalar residual and
+// Pose2/Point2/scalar arguments produce a <1,3,2,1> ternary factor.
+TEST(RangeFactor, TernaryLinearizationWithTransformBias) {
+  const Pose2 body_P_sensor(0.25, -0.10, -M_PI_2);
+  const RangeFactorWithTransformBias2D factor(
+      poseKey, pointKey, biasKey, measurement, model, body_P_sensor);
+  const Values values{{poseKey, genericValue(Pose2(1.0, 2.0, 0.57))},
+                      {pointKey, genericValue(Point2(-4.0, 11.0))},
+                      {biasKey, genericValue(0.5)}};
+
+  const auto generic = factor.NoiseModelFactor::linearize(values);
+  const auto optimized = factor.linearize(values);
+  const bool isTernary = static_cast<bool>(
+      std::dynamic_pointer_cast<TernaryJacobianFactor<1, 3, 2, 1>>(
+          optimized));
+  CHECK(isTernary);
+  EXPECT(assert_equal(*generic, *optimized, 1e-12));
+}
+
 }  // namespace binary_linearization
 /* ************************************************************************* */
 

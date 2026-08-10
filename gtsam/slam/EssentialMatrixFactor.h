@@ -422,11 +422,13 @@ class EssentialMatrixFactor4
  */
 template <class CALIBRATION>
 class EssentialMatrixFactor5
-    : public NoiseModelFactorN<EssentialMatrix, CALIBRATION, CALIBRATION> {
+    : public NoiseModelFactorT<Vector1, EssentialMatrix, CALIBRATION,
+                               CALIBRATION> {
  private:
   Point2 pA_, pB_;  ///< points in pixel coordinates
 
-  typedef NoiseModelFactorN<EssentialMatrix, CALIBRATION, CALIBRATION> Base;
+  typedef NoiseModelFactorT<Vector1, EssentialMatrix, CALIBRATION, CALIBRATION>
+      Base;
   typedef EssentialMatrixFactor5 This;
 
   static constexpr int DimK = FixedDimension<CALIBRATION>::value;
@@ -479,10 +481,10 @@ class EssentialMatrixFactor5
    * @param H3 optional jacobian of error w.r.t Kb
    * @return * Vector 1D vector of algebraic error
    */
-  Vector evaluateError(const EssentialMatrix& E, const CALIBRATION& Ka,
-                       const CALIBRATION& Kb, OptionalMatrixType HE,
-                       OptionalMatrixType HKa,
-                       OptionalMatrixType HKb) const override {
+  Vector1 evaluateError(const EssentialMatrix& E, const CALIBRATION& Ka,
+                        const CALIBRATION& Kb, OptionalMatrixType HE,
+                        OptionalMatrixType HKa,
+                        OptionalMatrixType HKb) const override {
     // converting from pixel coordinates to normalized coordinates cA and cB
     JacobianCalibration cA_H_Ka;  // dcA/dKa
     JacobianCalibration cB_H_Kb;  // dcB/dKb
@@ -505,10 +507,7 @@ class EssentialMatrixFactor5
       *HKb = DynamicHkb;
     }
 
-    Vector error(1);
-    error(0) = E.error(vA, vB, HE);
-
-    return error;
+    return Vector1(E.error(vA, vB, HE));
   }
 };
 // EssentialMatrixFactor5

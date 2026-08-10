@@ -22,8 +22,8 @@ void LocalOrientedPlane3Factor::print(const string& s,
 }
 
 //***************************************************************************
-Vector LocalOrientedPlane3Factor::evaluateError(const Pose3& wTwi,
-    const Pose3& wTwa, const OrientedPlane3& a_plane,
+Vector3 LocalOrientedPlane3Factor::evaluateError(
+    const Pose3& wTwi, const Pose3& wTwa, const OrientedPlane3& a_plane,
     OptionalMatrixType H1, OptionalMatrixType H2,
     OptionalMatrixType H3) const {
 
