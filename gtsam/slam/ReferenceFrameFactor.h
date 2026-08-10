@@ -9,6 +9,10 @@
 
  * -------------------------------------------------------------------------- */
 
+/**
+ * @file ReferenceFrameFactor.h
+ */
+
 /*
  * @file ReferenceFrameFactor.h
  * @brief A constraint for combining graphs by common landmarks and a transform node

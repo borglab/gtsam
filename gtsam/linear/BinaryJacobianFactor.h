@@ -21,8 +21,8 @@
 #pragma once
 
 #include <gtsam/base/timing.h>
-#include <gtsam/linear/FixedJacobianFactorOps.h>
 #include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/internal/FixedJacobianFactorOps.h>
 
 #include <algorithm>
 
