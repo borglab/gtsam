@@ -250,6 +250,133 @@ def undiff_observations(frame, data):
 
 
 # --------------------------------------------------------------------------- #
+# Doppler (range rate): single receiver, same open-sky RINEX as the PPP example
+# --------------------------------------------------------------------------- #
+def load_doppler(observation_path, navigation_path=None, reference_ecef=None,
+                 n_epochs=120, elmask_deg=15.0):
+    """Load RINEX files and return per-epoch Doppler measurements.
+
+    ``observation_path`` and ``navigation_path`` can point to any static-receiver
+    RINEX observation and broadcast-navigation files. For compatibility with
+    this example, omitting ``navigation_path`` treats ``observation_path`` as
+    the cssrlib-data root and selects the open-sky day 233 files automatically.
+    ``reference_ecef`` defaults to the RINEX header position for custom files.
+
+    Returns a namespace with ``frames`` (list of per-epoch namespaces holding
+    the observation time and the per-satellite records), ``xyz_ref``/``pos_ref``
+    (the surveyed static marker, so the true velocity is zero) and ``syss``.
+    """
+    from cssrlib.ephemeris import satposs
+    from cssrlib.gnss import geodist, satazel
+    from cssrlib.rinex import rnxdec
+
+    syss = (uGNSS.GPS, uGNSS.GAL, uGNSS.QZS)
+    elmask = np.deg2rad(elmask_deg)
+    if navigation_path is None:
+        bdir = f"{observation_path}/doy2025-233/"
+        observation_path = bdir + "233h_rnx.obs"
+        navigation_path = bdir + "233h_rnx.nav"
+        if reference_ecef is None:
+            reference_ecef = [-3962108.7007, 3381309.5532, 3668678.6648]
+
+    sigs = [rSigRnx(f"{c}{t}1{a}") for c, a in (("G", "C"), ("E", "C"), ("J", "C"))
+            for t in "CLDS"]
+    nav = rnxdec().decode_nav(str(navigation_path), Nav())
+    rnx = rnxdec()
+    rnx.setSignals(sigs)
+    assert rnx.decode_obsh(str(observation_path)) >= 0
+    rnx.autoSubstituteSignals()
+    xyz_ref = np.asarray(rnx.pos if reference_ecef is None else reference_ecef,
+                         dtype=float)
+    pos_ref = ecef2pos(xyz_ref)
+
+    frames = []
+    for _ in range(n_epochs):
+        obs = rnx.decode_obs()
+        if obs.t.time == 0:
+            break
+        rs, vs, dts, svh, _ = satposs(obs, nav)
+        sats = {}
+        for i, s in enumerate(obs.sat):
+            s = int(s)
+            sys = sat2prn(s)[0]
+            if sys not in syss or svh[i] != 0:
+                continue
+            if obs.D[i, 0] == 0.0 or obs.P[i, 0] == 0.0:
+                continue
+            if not np.all(np.isfinite(rs[i])) or np.linalg.norm(rs[i]) < 1e6:
+                continue
+            _, e = geodist(rs[i], xyz_ref)
+            _, el = satazel(pos_ref, e)
+            if el < elmask:
+                continue
+            sats[s] = SimpleNamespace(
+                sat=s, sys=sys, doppler=obs.D[i, 0], el=el, los=e,
+                lam=obs.sig[sys][uTYP.L][0].wavelength(),
+                sat_pos=rs[i].copy(), sat_vel=vs[i].copy(), sat_clk=dts[i])
+        frames.append(SimpleNamespace(t=obs.t, sats=sats))
+
+    return SimpleNamespace(frames=frames, xyz_ref=xyz_ref, pos_ref=pos_ref,
+                           syss=syss)
+
+
+def doppler_observations(previous, current, data):
+    """Yield ready-to-use Doppler observations for one pair of epochs.
+
+    Only satellites seen at both epochs are returned, because the receiver
+    clock drift is modelled as the difference of the two clock-bias states and
+    the satellite clock drift is differenced from the same pair.  The argument
+    tuples splat straight into the two factors::
+
+        DopplerFactor(vel, biasPrev, biasCurr, *o.meas_args, *o.epoch_args, noise)
+        DopplerFactorArm(pose, vel, biasPrev, biasCurr, *o.meas_args,
+                         leverArm, angularVelocity, *o.epoch_args, noise)
+    """
+    from cssrlib.gnss import timediff
+
+    dt = timediff(current.t, previous.t)
+    for s, o in current.sats.items():
+        if s not in previous.sats:
+            continue
+        sat_drift = (o.sat_clk - previous.sats[s].sat_clk) / dt
+        yield SimpleNamespace(
+            sat=s, sys=o.sys, el=o.el, los=o.los, lam=o.lam, dt=dt,
+            w=1.0 / max(np.sin(o.el), 0.1),
+            meas_args=(o.doppler, o.lam, _P3(o.sat_pos), _P3(o.sat_vel),
+                       _P3(data.xyz_ref)),
+            epoch_args=(dt, sat_drift))
+
+
+def save_doppler_data(data, path):
+    """Save factor-ready Doppler arrays for use without cssrlib."""
+    from cssrlib.gnss import timediff
+
+    records, offsets = [], [0]
+    epoch_dt = [0.0]
+    for previous, current in zip(data.frames[:-1], data.frames[1:]):
+        records.extend(doppler_observations(previous, current, data))
+        offsets.append(len(records))
+        epoch_dt.append(timediff(current.t, previous.t))
+
+    ecef_R_enu = np.column_stack(
+        [ecef2enu(data.pos_ref, axis) for axis in np.eye(3)])
+    np.savez_compressed(
+        path,
+        receiver_ecef=data.xyz_ref,
+        ecef_R_enu=ecef_R_enu,
+        epoch_dt=np.asarray(epoch_dt),
+        epoch_offsets=np.asarray(offsets, dtype=np.int32),
+        satellite=np.asarray([o.sat for o in records], dtype=np.int16),
+        doppler=np.asarray([o.meas_args[0] for o in records]),
+        elevation=np.asarray([o.el for o in records]),
+        wavelength=np.asarray([o.lam for o in records]),
+        satellite_position=np.asarray([o.meas_args[2] for o in records]),
+        satellite_velocity=np.asarray([o.meas_args[3] for o in records]),
+        satellite_clock_drift=np.asarray([o.epoch_args[1] for o in records]),
+    )
+
+
+# --------------------------------------------------------------------------- #
 # Integer ambiguity resolution (LAMBDA) on a GTSAM float estimate
 # --------------------------------------------------------------------------- #
 def resolve_integer_ambiguities(engine, isam, res, x_key, amb_key, sats, el,
