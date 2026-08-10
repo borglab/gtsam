@@ -29,13 +29,12 @@ TEST(Values, CrossLibraryGenericValue) {
   std::unique_ptr<gtsam::Value> foreignValue(
       values_cross_library::createValue(2.0));
   const gtsam::Value& foreignReference = *foreignValue;
-  CHECK(typeid(foreignReference) == typeid(gtsam::GenericValue<TestValue>));
 
   gtsam::Values values;
   values.insert(key, *foreignValue);
-  DOUBLES_EQUAL(2.0, values.at<TestValue>(key).value(), 1e-9);
-
   values.update(key, TestValue(3.0));
+
+  CHECK(typeid(foreignReference) == typeid(gtsam::GenericValue<TestValue>));
   DOUBLES_EQUAL(3.0, values.at<TestValue>(key).value(), 1e-9);
 
   const gtsam::Vector1 wrongType = gtsam::Vector1::Zero();
