@@ -29,12 +29,10 @@
 // GenericValue's RTTI must remain visible so the C++ ABI can identify a
 // specialization consistently when a Value crosses a shared-library boundary.
 #if defined(_WIN32)
-#define GENERICVALUE_VISIBILITY
-#elif defined(__GNUC__)
-#define GENERICVALUE_VISIBILITY __attribute__((visibility("default")))
-#else
-// This will trigger a LNKxxxx on MSVC, so disable for MSVC build
+// Exporting this header-only template triggers linker errors on MSVC.
 // Please refer to https://github.com/borglab/gtsam/blob/develop/Using-GTSAM-EXPORT.md
+#define GENERICVALUE_VISIBILITY
+#else
 #define GENERICVALUE_VISIBILITY GTSAM_EXPORT
 #endif
 
