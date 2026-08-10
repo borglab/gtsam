@@ -66,7 +66,7 @@ namespace gtsam {
 
   Resolving this problem:
    - This exception contains the variable at which the problem was
-     discovered (IndeterminantLinearSystemException::nearbyVariable()).
+     discovered (IndeterminateSystemException::nearbyVariable()).
      Note, however, that this is not necessarily the variable where the
      problem originates.  For example, in the case that a prior on the
      first camera was forgotten, it may only be another camera or landmark
@@ -91,14 +91,20 @@ namespace gtsam {
      ordered in elimination order and occupy scalars in the same way as
      described for Jacobian columns in the previous bullet.
    */
-  class GTSAM_EXPORT IndeterminantLinearSystemException : public ThreadsafeException<IndeterminantLinearSystemException> {
+  class GTSAM_EXPORT IndeterminateSystemException
+      : public ThreadsafeException<IndeterminateSystemException> {
     Key j_;
   public:
-    IndeterminantLinearSystemException(Key j) noexcept : j_(j) {}
-    ~IndeterminantLinearSystemException() noexcept override {}
+    IndeterminateSystemException(Key j) noexcept : j_(j) {}
+    ~IndeterminateSystemException() noexcept override {}
     Key nearbyVariable() const { return j_; }
     const char* what() const noexcept override;
   };
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+  /// @deprecated Use IndeterminateSystemException.
+  using IndeterminantLinearSystemException = IndeterminateSystemException;
+#endif
 
   /* ************************************************************************* */
   /** An exception indicating that the noise model dimension passed into a

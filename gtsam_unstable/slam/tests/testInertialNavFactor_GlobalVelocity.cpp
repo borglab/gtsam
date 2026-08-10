@@ -15,7 +15,11 @@
  * @author  Vadim Indelman, Stephen Williams
  */
 
+#include <gtsam/config.h>
 #include <CppUnitLite/TestHarness.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
@@ -704,6 +708,8 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
 }
 
 /* ************************************************************************* */
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

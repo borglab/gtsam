@@ -152,7 +152,7 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
     }
     systemSolvedSuccessfully = true;
     // ========================================================================
-  } catch (const IndeterminantLinearSystemException&) {
+  } catch (const IndeterminateSystemException&) {
     systemSolvedSuccessfully = false;
   }
 

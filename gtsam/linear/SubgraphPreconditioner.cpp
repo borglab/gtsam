@@ -238,9 +238,9 @@ void SubgraphPreconditioner::transposeSolve(const Vector &y, Vector &x) const {
         cg->R().transpose().triangularView<Eigen::Lower>().solve(
             rhsFrontal);
 
-    // Check for indeterminant solution
+    // Check for indeterminate solution
     if (solFrontal.hasNaN())
-      throw IndeterminantLinearSystemException(cg->keys().front());
+      throw IndeterminateSystemException(cg->keys().front());
 
     /* assign subvector of sol to the frontal variables */
     setSubvector(solFrontal, keyInfo_, frontalKeys, x);

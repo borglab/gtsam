@@ -247,7 +247,7 @@ TEST(OrientedPlane3Factor, Issue561Simplified) {
     EXPECT(x0.equals(result.at<Pose3>(X(0))));
     EXPECT(p1.equals(result.at<Plane>(P(1))));
     EXPECT(p2.equals(result.at<Plane>(P(2))));
-  } catch (const IndeterminantLinearSystemException &e) {
+  } catch (const IndeterminateSystemException &e) {
     std::cerr << "CAPTURED THE EXCEPTION: " << DefaultKeyFormatter(e.nearbyVariable()) << std::endl;
     EXPECT(false); // fail if this happens
   }

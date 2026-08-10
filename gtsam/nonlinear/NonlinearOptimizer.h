@@ -37,39 +37,40 @@ class NonlinearMultifrontalSolver;
  * maximum-likelihood estimate of a NonlinearFactorGraph.
  *
  * To use a class derived from this interface, construct the class with a
- * NonlinearFactorGraph and an initial Values variable assignment.  Next, call
-the
- * optimize() method which returns the optimized variable assignment.
+ * NonlinearFactorGraph and an initial Values variable assignment. Next, call
+ * the optimize() method, which returns the optimized variable assignment.
  *
  * Simple and compact example:
  * \code
-// One-liner to do full optimization and use the result.
-Values result = DoglegOptimizer(graph, initialValues).optimize();
-\endcode
+ * // One-liner to do full optimization and use the result.
+ * Values result = DoglegOptimizer(graph, initialValues).optimize();
+ * \endcode
  *
  * Example exposing more functionality and details:
  * \code
-// Create initial optimizer
-DoglegOptimizer optimizer(graph, initialValues);
-
-// Run full optimization until convergence.
-Values result = optimizer->optimize();
-
-// The new optimizer has results and statistics
-cout << "Converged in " << optimizer.iterations() << " iterations "
-        "with final error " << optimizer.error() << endl;
-\endcode
+ * // Create initial optimizer.
+ * DoglegOptimizer optimizer(graph, initialValues);
+ *
+ * // Run full optimization until convergence.
+ * Values result = optimizer.optimize();
+ *
+ * // The optimizer has results and statistics.
+ * cout << "Converged in " << optimizer.iterations() << " iterations "
+ *      << "with final error " << optimizer.error() << endl;
+ * \endcode
  *
  * Example of setting parameters before optimization:
  * \code
-// Each derived optimizer type has its own parameters class, which inherits from
-NonlinearOptimizerParams DoglegParams params; params.factorization =
-DoglegParams::QR; params.relativeErrorTol = 1e-3; params.absoluteErrorTol =
-1e-3;
-
-// Optimize
-Values result = DoglegOptimizer(graph, initialValues, params).optimize();
-\endcode
+ * // Each optimizer has a parameters class derived from
+ * // NonlinearOptimizerParams.
+ * DoglegParams params;
+ * params.factorization = DoglegParams::QR;
+ * params.relativeErrorTol = 1e-3;
+ * params.absoluteErrorTol = 1e-3;
+ *
+ * // Optimize.
+ * Values result = DoglegOptimizer(graph, initialValues, params).optimize();
+ * \endcode
  *
  * This interface also exposes an iterate() method, which performs one
  * iteration.  The optimize() method simply calls iterate() multiple times,
@@ -77,8 +78,8 @@ Values result = DoglegOptimizer(graph, initialValues, params).optimize();
  * you can easily control what happens between iterations, such as drawing or
  * printing, moving points from behind the camera to in front, etc.
  *
- * For more flexibility you may override virtual methods in your own derived
-class.
+ * For more flexibility, you may override virtual methods in your own derived
+ * class.
  */
 class GTSAM_EXPORT NonlinearOptimizer {
  protected:

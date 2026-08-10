@@ -6,6 +6,10 @@
 
 #pragma once
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
@@ -32,6 +36,8 @@ typedef enum {
  *
  * NOTE: this approximation is insufficient for large timesteps, but is accurate
  * if timesteps are small.
+ *
+ * @deprecated This factor depends on the deprecated gtsam::PoseRTV state.
  */
 class VelocityConstraint
     : public gtsam::NoiseModelFactorT<gtsam::Vector3, PoseRTV, PoseRTV> {
@@ -129,3 +135,5 @@ private:
 };
 
 } // \namespace gtsam
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
