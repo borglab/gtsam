@@ -28,6 +28,9 @@ namespace gtsam {
 template <int M, int N1, int N2>
 struct BinaryJacobianFactor;
 
+template <int M, int N1, int N2, int N3>
+struct TernaryJacobianFactor;
+
 /* ************************************************************************* */
 namespace detail {
 /** Convenience base class to add aliases `X1`, `X2`, ..., `X6` -> ValueType<N>.
@@ -100,6 +103,23 @@ struct FixedSizeBinaryDimensions<OutputVec, T1, T2> {
   inline constexpr static bool available =
       M != Eigen::Dynamic && N1 != Eigen::Dynamic && N2 != Eigen::Dynamic;
 };
+
+/** Compile-time dimensions for fixed-size ternary factors. */
+template <typename OutputVec, typename... ValueTypes>
+struct FixedSizeTernaryDimensions {
+  inline constexpr static bool available = false;
+};
+
+template <typename OutputVec, typename T1, typename T2, typename T3>
+struct FixedSizeTernaryDimensions<OutputVec, T1, T2, T3> {
+  inline constexpr static int M = traits<OutputVec>::dimension;
+  inline constexpr static int N1 = traits<T1>::dimension;
+  inline constexpr static int N2 = traits<T2>::dimension;
+  inline constexpr static int N3 = traits<T3>::dimension;
+  inline constexpr static bool available =
+      M != Eigen::Dynamic && N1 != Eigen::Dynamic && N2 != Eigen::Dynamic &&
+      N3 != Eigen::Dynamic;
+};
 }  // namespace detail
 
 /* ************************************************************************* */
@@ -156,8 +176,8 @@ struct FixedSizeBinaryDimensions<OutputVec, T1, T2> {
  * objects in non-linear manifolds (Lie groups).
  *
  * @tparam OutputVec The error-vector type. A fixed-size vector enables
- * automatic `BinaryJacobianFactor` linearization for fixed-size two-key
- * factors; `Vector` retains generic linearization.
+ * automatic fixed-size Jacobian-factor linearization for fixed-size two- and
+ * three-key factors; `Vector` retains generic linearization.
  * @tparam ValueTypes The types of the variables connected to this factor, e.g., Pose3, Point3.
  */
 template <class OutputVec, class... ValueTypes>
@@ -324,19 +344,19 @@ class NoiseModelFactorT
   /// @{
 
   /**
-   * Linearize fixed-size two-key factors to `BinaryJacobianFactor`.
-   * All other factors retain the generic `JacobianFactor` implementation.
+   * Linearize fixed-size two- and three-key factors to specialized Jacobian
+   * factors. All other factors retain the generic implementation.
    */
   std::shared_ptr<GaussianFactor> linearize(
       const Values& values) const override {
-    using Dimensions =
+    using BinaryDimensions =
         detail::FixedSizeBinaryDimensions<OutputVec, ValueTypes...>;
-    if constexpr (!Dimensions::available) {
-      return NoiseModelFactor::linearize(values);
-    } else {
-      constexpr int M = Dimensions::M;
-      constexpr int N1 = Dimensions::N1;
-      constexpr int N2 = Dimensions::N2;
+    using TernaryDimensions =
+        detail::FixedSizeTernaryDimensions<OutputVec, ValueTypes...>;
+    if constexpr (BinaryDimensions::available) {
+      constexpr int M = BinaryDimensions::M;
+      constexpr int N1 = BinaryDimensions::N1;
+      constexpr int N2 = BinaryDimensions::N2;
       static_assert(M > 0 && N1 > 0 && N2 > 0,
                     "Binary factor dimensions must be positive");
 
@@ -375,6 +395,54 @@ class NoiseModelFactorT
       const Eigen::Matrix<double, M, 1> fixedB = b;
       return std::make_shared<BinaryJacobianFactor<M, N1, N2>>(
           this->keys_[0], A1, this->keys_[1], A2, fixedB, linearModel);
+    } else if constexpr (TernaryDimensions::available) {
+      constexpr int M = TernaryDimensions::M;
+      constexpr int N1 = TernaryDimensions::N1;
+      constexpr int N2 = TernaryDimensions::N2;
+      constexpr int N3 = TernaryDimensions::N3;
+      static_assert(M > 0 && N1 > 0 && N2 > 0 && N3 > 0,
+                    "Ternary factor dimensions must be positive");
+
+      if (!this->active(values)) return std::shared_ptr<JacobianFactor>();
+
+      std::vector<Matrix> jacobians(3);
+      Vector b = -this->unwhitenedError(values, jacobians);
+      const SharedNoiseModel& noiseModel = this->noiseModel();
+      if (noiseModel && static_cast<size_t>(b.size()) != noiseModel->dim()) {
+        throw std::invalid_argument(
+            "NoiseModelFactor: NoiseModel has dimension " +
+            std::to_string(noiseModel->dim()) + " instead of " +
+            std::to_string(b.size()) + ".");
+      }
+      if (b.size() != M || jacobians[0].rows() != M ||
+          jacobians[0].cols() != N1 || jacobians[1].rows() != M ||
+          jacobians[1].cols() != N2 || jacobians[2].rows() != M ||
+          jacobians[2].cols() != N3) {
+        throw std::invalid_argument(
+            "NoiseModelFactorT::linearize: error or Jacobian dimension "
+            "mismatch");
+      }
+
+      if (noiseModel) {
+        noiseModel->WhitenSystem(jacobians[0], jacobians[1], jacobians[2], b);
+      }
+
+      SharedDiagonal linearModel;
+      if (noiseModel && noiseModel->isConstrained()) {
+        const auto constrained =
+            std::static_pointer_cast<noiseModel::Constrained>(noiseModel);
+        linearModel = constrained->unit();
+      }
+
+      const Eigen::Matrix<double, M, N1> A1 = jacobians[0];
+      const Eigen::Matrix<double, M, N2> A2 = jacobians[1];
+      const Eigen::Matrix<double, M, N3> A3 = jacobians[2];
+      const Eigen::Matrix<double, M, 1> fixedB = b;
+      return std::make_shared<TernaryJacobianFactor<M, N1, N2, N3>>(
+          this->keys_[0], A1, this->keys_[1], A2, this->keys_[2], A3, fixedB,
+          linearModel);
+    } else {
+      return NoiseModelFactor::linearize(values);
     }
   }
 

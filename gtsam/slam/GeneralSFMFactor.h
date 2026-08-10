@@ -36,6 +36,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/linear/BinaryJacobianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/linear/TernaryJacobianFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
@@ -245,7 +246,8 @@ struct traits<GeneralSFMFactor<CAMERA, LANDMARK>>
  * is isolated from camera..
  */
 template <class CALIBRATION>
-class GeneralSFMFactor2 : public NoiseModelFactorN<Pose3, Point3, CALIBRATION> {
+class GeneralSFMFactor2
+    : public NoiseModelFactorT<Vector2, Pose3, Point3, CALIBRATION> {
   GTSAM_CONCEPT_MANIFOLD_TYPE(CALIBRATION)
   static const int DimK = FixedDimension<CALIBRATION>::value;
 
@@ -255,7 +257,7 @@ class GeneralSFMFactor2 : public NoiseModelFactorN<Pose3, Point3, CALIBRATION> {
  public:
   typedef GeneralSFMFactor2<CALIBRATION> This;
   typedef PinholeCamera<CALIBRATION> Camera;  ///< typedef for camera type
-  typedef NoiseModelFactorN<Pose3, Point3, CALIBRATION>
+  typedef NoiseModelFactorT<Vector2, Pose3, Point3, CALIBRATION>
       Base;  ///< typedef for the base class
 
   // shorthand for a smart pointer to a factor
@@ -304,10 +306,10 @@ class GeneralSFMFactor2 : public NoiseModelFactorN<Pose3, Point3, CALIBRATION> {
   }
 
   /** h(x)-z */
-  Vector evaluateError(const Pose3& pose3, const Point3& point,
-                       const CALIBRATION& calib, OptionalMatrixType H1,
-                       OptionalMatrixType H2,
-                       OptionalMatrixType H3) const override {
+  Vector2 evaluateError(const Pose3& pose3, const Point3& point,
+                        const CALIBRATION& calib, OptionalMatrixType H1,
+                        OptionalMatrixType H2,
+                        OptionalMatrixType H3) const override {
     try {
       Camera camera(pose3, calib);
       return camera.project(point, H1, H2, H3) - measured_;
