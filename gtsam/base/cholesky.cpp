@@ -23,7 +23,6 @@
 #include <Eigen/Cholesky>
 #include <cassert>
 #include <cmath>
-#include <limits>
 
 using namespace std;
 
@@ -32,11 +31,10 @@ namespace gtsam {
 static const double negativePivotThreshold = -1e-1;
 static const double zeroPivotThreshold = 1e-6;
 static const double underconstrainedPrior = 1e-5;
-// Limit the estimated relative error kappa(D*A*D) * epsilon to sqrt(epsilon),
-// where D equilibrates the diagonal. This is invariant under diagonal changes
-// of variable units and symmetric permutations.
-static const double minimumReciprocalConditionNumber =
-    std::sqrt(std::numeric_limits<double>::epsilon());
+// Reject a Cholesky pivot more than 12 binary exponents below the square root
+// of its original diagonal entry. This is invariant under diagonal changes of
+// variable units, although the pivots still depend on elimination ordering.
+static constexpr double minimumNormalizedPivot = 1.0 / 4096.0;
 
 /* ************************************************************************* */
 static inline int choleskyStep(Matrix& ATA, size_t k, size_t order) {
@@ -126,41 +124,27 @@ bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft) {
   auto B = ABC.block(topleft, topleft + nFrontal, nFrontal, n - nFrontal);
   auto C = ABC.block(topleft + nFrontal, topleft + nFrontal, n - nFrontal, n - nFrontal);
 
-  // Equilibrate the diagonal before checking conditioning. If E = D*A*D and
-  // E = Re'*Re, then A = R'*R with R = Re*inv(D), which only rescales the
-  // columns of the upper-triangular factor.
+  // Compute Cholesky factorization A = R'*R.
   gttic(LLT);
   if (!A.diagonal().allFinite() || (A.diagonal().array() <= 0.0).any()) {
     return false;
   }
-  const Vector inverseDiagonalSqrt =
-      A.diagonal().cwiseSqrt().cwiseInverse();
-  // A is usually a strided block, so pack its upper triangle before the
-  // in-place factorization to retain Eigen's contiguous-storage performance.
-  Matrix factorStorage(nFrontal, nFrontal);
-  factorStorage.triangularView<Eigen::Upper>() = A;
-  for (DenseIndex column = 0; column < factorStorage.cols(); ++column) {
-    auto upperColumn = factorStorage.col(column).head(column + 1);
-    upperColumn.array() *= inverseDiagonalSqrt.head(column + 1).array();
-    upperColumn *= inverseDiagonalSqrt(column);
-  }
-
-  Eigen::Map<Matrix> factorStorageMap(factorStorage.data(), nFrontal,
-                                     nFrontal);
-  Eigen::LLT<Eigen::Map<Matrix>, Eigen::Upper> llt(factorStorageMap);
+  Eigen::LLT<Matrix, Eigen::Upper> llt(A);
   Eigen::ComputationInfo lltResult = llt.info();
   if (lltResult != Eigen::Success) {
     return false;
   }
-  if (llt.rcond() < minimumReciprocalConditionNumber) {
-    return false;
-  }
-  for (DenseIndex column = 0; column < factorStorage.cols(); ++column) {
-    factorStorage.col(column).head(column + 1) /=
-        inverseDiagonalSqrt(column);
+  const auto upperFactor = llt.matrixU();
+  for (DenseIndex index = 0; index < upperFactor.rows(); ++index) {
+    const double normalizedPivot =
+        std::abs(upperFactor(index, index)) / std::sqrt(A(index, index));
+    if (!std::isfinite(normalizedPivot) ||
+        normalizedPivot < minimumNormalizedPivot) {
+      return false;
+    }
   }
   auto R = A.triangularView<Eigen::Upper>();
-  R = factorStorage;
+  R = upperFactor;
   gttoc(LLT);
 
   // Compute S = inv(R') * B

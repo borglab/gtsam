@@ -72,17 +72,21 @@ TEST(cholesky, choleskyPartial) {
 }
 
 /* ************************************************************************* */
-// Verifies that nearly dependent systems are rejected in either variable
-// order.
+// Verifies that every pivot is checked, including a weak non-final pivot, in
+// representative variable orders.
 TEST(cholesky, NearRankDeficientCholesky) {
   constexpr double correlation = 1.0 - 1e-10;
-  Matrix matrix{{1e-12, correlation}, {correlation, 1e12}};
+  Matrix matrix{{1.0, correlation, 0.0},
+                {correlation, 1.0, 0.0},
+                {0.0, 0.0, 1.0}};
   Matrix factor = matrix;
-  EXPECT(!choleskyPartial(factor, 2));
+  EXPECT(!choleskyPartial(factor, 3));
 
-  Matrix permutation{{0.0, 1.0}, {1.0, 0.0}};
+  Matrix permutation{{0.0, 0.0, 1.0},
+                     {0.0, 1.0, 0.0},
+                     {1.0, 0.0, 0.0}};
   Matrix permuted = permutation * matrix * permutation.transpose();
-  EXPECT(!choleskyPartial(permuted, 2));
+  EXPECT(!choleskyPartial(permuted, 3));
 }
 
 /* ************************************************************************* */
@@ -102,6 +106,11 @@ TEST(cholesky, choleskyPartialScaleInvariant) {
   EXPECT(choleskyPartial(scaled, 2));
   const Matrix scaledR = scaled.triangularView<Eigen::Upper>();
   EXPECT(assert_equal(expectedScaled, scaledR.transpose() * scaledR, 1e-9));
+
+  Matrix scaledDown{{1e-40}};
+  Matrix scaledUp{{1e40}};
+  EXPECT(choleskyPartial(scaledDown, 1));
+  EXPECT(choleskyPartial(scaledUp, 1));
 }
 
 /* ************************************************************************* */

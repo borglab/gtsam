@@ -913,7 +913,7 @@ TEST(SmartProjectionPoseFactorRollingShutter,
       new SmartFactorRS(model, cameraRig, params));
   smartFactor4->add(measurements_lmk4, key_pairs, interp_factors);
 
-  const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
+  const SharedDiagonal noisePrior = noiseModel::Constrained::All(6);
 
   NonlinearFactorGraph graph;
   graph.push_back(smartFactor1);

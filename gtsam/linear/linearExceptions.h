@@ -43,7 +43,9 @@ namespace gtsam {
    - A very strong finite prior combined with much looser measurement noise can
      expose a weakly observed direction.  The raw weight ratio alone may only
      reflect different variable units, but the graph is nearly indeterminate
-     if it remains ill-conditioned after diagonal equilibration.
+     if elimination produces a Cholesky pivot that is very small relative to
+     its original diagonal entry.  This normalization is invariant to diagonal
+     changes of variable units but still depends on elimination ordering.
 
   Mathematically, the following conditions cause this problem:
    - Underdetermined system:  This occurs when the variables are not
