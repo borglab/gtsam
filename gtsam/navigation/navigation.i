@@ -139,8 +139,8 @@ class PreintegratedImuMeasurements {
 };
 
 virtual class ImuFactor: gtsam::NonlinearFactor {
-  ImuFactor(size_t pose_i, size_t vel_i, size_t pose_j, size_t vel_j,
-      size_t bias,
+  ImuFactor(gtsam::Key pose_i, gtsam::Key vel_i, gtsam::Key pose_j, gtsam::Key vel_j,
+      gtsam::Key bias,
       const gtsam::PreintegratedImuMeasurements& preintegratedMeasurements);
 
   // Standard Interface
@@ -200,9 +200,9 @@ class PreintegratedCombinedMeasurements {
       const gtsam::imuBias::ConstantBias& bias) const;
 };
 
-virtual class CombinedImuFactor: gtsam::NonlinearFactor {
-  CombinedImuFactor(size_t pose_i, size_t vel_i, size_t pose_j, size_t vel_j,
-      size_t bias_i, size_t bias_j,
+virtual class CombinedImuFactor: gtsam::NoiseModelFactor {
+  CombinedImuFactor(gtsam::Key pose_i, gtsam::Key vel_i, gtsam::Key pose_j, gtsam::Key vel_j,
+      gtsam::Key bias_i, gtsam::Key bias_j,
       const gtsam::PreintegratedCombinedMeasurements& CombinedPreintegratedMeasurements);
 
   // Standard Interface
@@ -240,9 +240,9 @@ class PreintegratedAhrsMeasurements {
 };
 
 virtual class AHRSFactor : gtsam::NonlinearFactor {
-  AHRSFactor(size_t rot_i, size_t rot_j,size_t bias,
+  AHRSFactor(gtsam::Key rot_i, gtsam::Key rot_j, gtsam::Key bias,
       const gtsam::PreintegratedAhrsMeasurements& preintegratedMeasurements, Vector omegaCoriolis);
-  AHRSFactor(size_t rot_i, size_t rot_j, size_t bias,
+  AHRSFactor(gtsam::Key rot_i, gtsam::Key rot_j, gtsam::Key bias,
       const gtsam::PreintegratedAhrsMeasurements& preintegratedMeasurements, Vector omegaCoriolis,
       const gtsam::Pose3& body_P_sensor);
 
@@ -261,9 +261,9 @@ virtual class AHRSFactor : gtsam::NonlinearFactor {
 //  AttitudeFactor();
 //};
 virtual class Rot3AttitudeFactor : gtsam::NonlinearFactor{
-  Rot3AttitudeFactor(size_t key, const gtsam::Unit3& nZ, const gtsam::noiseModel::Diagonal* model,
+  Rot3AttitudeFactor(gtsam::Key key, const gtsam::Unit3& nZ, const gtsam::noiseModel::Diagonal* model,
       const gtsam::Unit3& bRef);
-  Rot3AttitudeFactor(size_t key, const gtsam::Unit3& nZ, const gtsam::noiseModel::Diagonal* model);
+  Rot3AttitudeFactor(gtsam::Key key, const gtsam::Unit3& nZ, const gtsam::noiseModel::Diagonal* model);
   Rot3AttitudeFactor();
   void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
                                 gtsam::DefaultKeyFormatter) const;
@@ -272,11 +272,11 @@ virtual class Rot3AttitudeFactor : gtsam::NonlinearFactor{
   gtsam::Unit3 bRef() const;
 };
 
-virtual class Pose3AttitudeFactor : gtsam::NonlinearFactor {
-  Pose3AttitudeFactor(size_t key, const gtsam::Unit3& nZ,
+virtual class Pose3AttitudeFactor : gtsam::NoiseModelFactor {
+  Pose3AttitudeFactor(gtsam::Key key, const gtsam::Unit3& nRef,
                       const gtsam::noiseModel::Diagonal* model,
-                      const gtsam::Unit3& bRef);
-  Pose3AttitudeFactor(size_t key, const gtsam::Unit3& nZ,
+                      const gtsam::Unit3& bMeasured);
+  Pose3AttitudeFactor(gtsam::Key key, const gtsam::Unit3& nRef,
                       const gtsam::noiseModel::Diagonal* model);
   Pose3AttitudeFactor();
   void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
@@ -288,7 +288,7 @@ virtual class Pose3AttitudeFactor : gtsam::NonlinearFactor {
 
 #include <gtsam/navigation/GPSFactor.h>
 virtual class GPSFactor : gtsam::NonlinearFactor{
-  GPSFactor(size_t key, const gtsam::Point3& gpsIn,
+  GPSFactor(gtsam::Key key, const gtsam::Point3& gpsIn,
             const gtsam::noiseModel::Base* model);
 
   // Testable
@@ -301,7 +301,7 @@ virtual class GPSFactor : gtsam::NonlinearFactor{
 };
 
 virtual class GPSFactor2 : gtsam::NonlinearFactor {
-  GPSFactor2(size_t key, const gtsam::Point3& gpsIn,
+  GPSFactor2(gtsam::Key key, const gtsam::Point3& gpsIn,
             const gtsam::noiseModel::Base* model);
 
   // Testable

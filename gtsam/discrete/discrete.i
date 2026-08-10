@@ -232,7 +232,7 @@ class DiscreteBayesTree {
 
   size_t size() const;
   bool empty() const;
-  const DiscreteBayesTreeClique* operator[](size_t j) const;
+  const DiscreteBayesTreeClique* operator[](gtsam::Key j) const;
 
   double evaluate(const gtsam::DiscreteValues& values) const;
   double operator()(const gtsam::DiscreteValues& values) const;

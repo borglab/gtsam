@@ -69,8 +69,8 @@ public:
   /** Retrieve key character */
   inline unsigned char chr() const { return c_; }
 
-  /** Retrieve key index */
-  inline size_t index() const { return j_; }
+  /// Retrieve key index
+  inline std::uint64_t index() const { return j_; }
 
   /** Create a string from the key */
   operator std::string() const;
@@ -122,8 +122,8 @@ private:
   }
 }; // \class LabeledSymbol
 
-/** Create a symbol key from a character, label and index, i.e. xA5. */
-inline Key mrsymbol(unsigned char c, unsigned char label, size_t j) {
+/// Create a symbol key from a character, label and index, i.e. xA5.
+inline Key mrsymbol(unsigned char c, unsigned char label, std::uint64_t j) {
   return (Key)LabeledSymbol(c,label,j);
 }
 
@@ -133,11 +133,12 @@ inline unsigned char mrsymbolChr(Key key) { return LabeledSymbol(key).chr(); }
 /** Return the label portion of a symbol key. */
 inline unsigned char mrsymbolLabel(Key key) { return LabeledSymbol(key).label(); }
 
-/** Return the index portion of a symbol key. */
-inline size_t mrsymbolIndex(Key key) { return LabeledSymbol(key).index(); }
+/// Return the index portion of a symbol key.
+inline std::uint64_t mrsymbolIndex(Key key) {
+  return LabeledSymbol(key).index();
+}
 
 /// traits
 template<> struct traits<LabeledSymbol> : public Testable<LabeledSymbol> {};
 
 } // \namespace gtsam
-
