@@ -167,9 +167,10 @@ namespace gtsam {
      * This is similar to GeneralSFMFactor, used for SLAM.
     */
     class PlanarProjectionFactor2
-        : public PlanarProjectionFactorBase, public NoiseModelFactorN<Pose2, Point3> {
+        : public PlanarProjectionFactorBase,
+          public NoiseModelFactorT<Vector2, Pose2, Point3> {
     public:
-        typedef NoiseModelFactorN<Pose2, Point3> Base;
+        typedef NoiseModelFactorT<Vector2, Pose2, Point3> Base;
         using Base::evaluateError;
 
         PlanarProjectionFactor2() {}
@@ -199,7 +200,7 @@ namespace gtsam {
             const Cal3DS2& calib,
             const SharedNoiseModel& model = {})
             : PlanarProjectionFactorBase(measured),
-            NoiseModelFactorN<Pose2, Point3>(model, poseKey, landmarkKey),
+            Base(model, poseKey, landmarkKey),
             bTc_(bTc),
             calib_(calib) {}
 
@@ -209,7 +210,7 @@ namespace gtsam {
          * @param HwTb jacobian
          * @param Hlandmark jacobian
          */
-        Vector evaluateError(
+        Vector2 evaluateError(
             const Pose2& wTb,
             const Point3& landmark,
             OptionalMatrixType HwTb,

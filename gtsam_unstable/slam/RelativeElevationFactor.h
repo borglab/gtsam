@@ -26,13 +26,14 @@ namespace gtsam {
  *
  * TODO: enable use of a Pose3 for the target as well
  */
-class GTSAM_UNSTABLE_EXPORT RelativeElevationFactor: public NoiseModelFactorN<Pose3, Point3> {
+class GTSAM_UNSTABLE_EXPORT RelativeElevationFactor
+    : public NoiseModelFactorT<Vector1, Pose3, Point3> {
 private:
 
   double measured_; /** measurement */
 
   typedef RelativeElevationFactor This;
-  typedef NoiseModelFactorN<Pose3, Point3> Base;
+  typedef NoiseModelFactorT<Vector1, Pose3, Point3> Base;
 
 public:
 
@@ -52,8 +53,9 @@ public:
         gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   /** h(x)-z */
-  Vector evaluateError(const Pose3& pose, const Point3& point,
-      OptionalMatrixType H1, OptionalMatrixType H2) const override;
+  Vector1 evaluateError(const Pose3& pose, const Point3& point,
+                        OptionalMatrixType H1,
+                        OptionalMatrixType H2) const override;
 
   /** return the measured */
   inline double measured() const { return measured_; }
@@ -81,5 +83,4 @@ private:
 
 
 } // \namespace gtsam
-
 

@@ -16,15 +16,16 @@ namespace gtsam {
 /**
  * Factor to measure a planar landmark from a given pose
  */
-class GTSAM_EXPORT OrientedPlane3Factor: public NoiseModelFactorN<Pose3, OrientedPlane3> {
+class GTSAM_EXPORT OrientedPlane3Factor
+    : public NoiseModelFactorT<Vector3, Pose3, OrientedPlane3> {
  protected:
   OrientedPlane3 measured_p_;
-  typedef NoiseModelFactorN<Pose3, OrientedPlane3> Base;
+  typedef NoiseModelFactorT<Vector3, Pose3, OrientedPlane3> Base;
 
  public:
 
   // Provide access to the Matrix& version of evaluateError:
-  using NoiseModelFactor2<Pose3, OrientedPlane3>::evaluateError;
+  using Base::evaluateError;
 
   /// Constructor
   OrientedPlane3Factor() {
@@ -47,7 +48,7 @@ class GTSAM_EXPORT OrientedPlane3Factor: public NoiseModelFactorN<Pose3, Oriente
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override;
 
   /// evaluateError
-  Vector evaluateError(
+  Vector3 evaluateError(
       const Pose3& pose, const OrientedPlane3& plane,
       OptionalMatrixType H1, OptionalMatrixType H2) const override;
 };
@@ -84,4 +85,3 @@ class GTSAM_EXPORT OrientedPlane3DirectionPrior : public NoiseModelFactorN<Orien
 };
 
 } // gtsam
-

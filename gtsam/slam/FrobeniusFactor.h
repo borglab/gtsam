@@ -85,6 +85,12 @@ inline SharedNoiseModel ConvertModel(const SharedNoiseModel& model) {
   return ConvertNoiseModel(model, Dim);
 }
 
+template <class T>
+using FrobeniusErrorVector = Eigen::Matrix<
+    double, T::LieAlgebra::RowsAtCompileTime *
+                T::LieAlgebra::RowsAtCompileTime,
+    1>;
+
 /**
  * FrobeniusPrior calculates the Frobenius norm between a given matrix and a
  * fixed-size matrix Lie group element.
@@ -209,23 +215,26 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
  * elements.
  */
 template <class T>
-class FrobeniusFactor : public NoiseModelFactorN<T, T> {
+class FrobeniusFactor
+    : public NoiseModelFactorT<FrobeniusErrorVector<T>, T, T> {
   GTSAM_CONCEPT_ASSERT(IsMatrixLieGroup<T>);
   inline constexpr static auto N = T::LieAlgebra::RowsAtCompileTime;
   inline constexpr static auto Dim = N * N;
+  using Base = NoiseModelFactorT<FrobeniusErrorVector<T>, T, T>;
+  using VectorD = FrobeniusErrorVector<T>;
 
  public:
   // Provide access to the Matrix& version of evaluateError:
-  using NoiseModelFactor2<T, T>::evaluateError;
+  using Base::evaluateError;
 
   /// Constructor
   FrobeniusFactor(Key j1, Key j2, const SharedNoiseModel& model = nullptr)
-      : NoiseModelFactorN<T, T>(ConvertModel<T, Dim>(model), j1, j2) {}
+      : Base(ConvertModel<T, Dim>(model), j1, j2) {}
 
   /// Error is the vectorized matrix difference between the two group elements.
-  Vector evaluateError(const T& T1, const T& T2, OptionalMatrixType H1,
-                       OptionalMatrixType H2) const override {
-    Vector error = traits<T>::Vec(T2, H2) - traits<T>::Vec(T1, H1);
+  VectorD evaluateError(const T& T1, const T& T2, OptionalMatrixType H1,
+                        OptionalMatrixType H2) const override {
+    VectorD error = traits<T>::Vec(T2, H2) - traits<T>::Vec(T1, H1);
     if (H1) *H1 = -*H1;
     return error;
   }
@@ -243,7 +252,8 @@ class FrobeniusFactor : public NoiseModelFactorN<T, T> {
  * ||T2 - T1*T12_||_F. This only holds for certain groups, e.g., not Sim(3).
  */
 template <class T>
-class FrobeniusBetweenFactorNL : public NoiseModelFactorN<T, T> {
+class FrobeniusBetweenFactorNL
+    : public NoiseModelFactorT<FrobeniusErrorVector<T>, T, T> {
   GTSAM_CONCEPT_ASSERT(IsMatrixLieGroup<T>);
   inline constexpr static auto N = T::LieAlgebra::RowsAtCompileTime;
   inline constexpr static auto Dim = N * N;
@@ -254,10 +264,11 @@ class FrobeniusBetweenFactorNL : public NoiseModelFactorN<T, T> {
 
   using MatrixN = Eigen::Matrix<double, N, N>;
   using VectorD = Eigen::Matrix<double, Dim, 1>;
+  using Base = NoiseModelFactorT<VectorD, T, T>;
 
  public:
   // Provide access to the Matrix& version of evaluateError:
-  using NoiseModelFactor2<T, T>::evaluateError;
+  using Base::evaluateError;
 
   /// @name Constructor
   /// @{
@@ -265,7 +276,7 @@ class FrobeniusBetweenFactorNL : public NoiseModelFactorN<T, T> {
   /// Construct from two keys and a measured transformation.
   FrobeniusBetweenFactorNL(Key j1, Key j2, const T& T12,
                            const SharedNoiseModel& model = nullptr)
-      : NoiseModelFactorN<T, T>(ConvertModel<T, Dim>(model), j1, j2),
+      : Base(ConvertModel<T, Dim>(model), j1, j2),
         T12_(T12) {}
 
   /// @}
@@ -286,7 +297,7 @@ class FrobeniusBetweenFactorNL : public NoiseModelFactorN<T, T> {
   bool equals(const NonlinearFactor& expected,
               double tol = 1e-9) const override {
     const auto* e = dynamic_cast<const FrobeniusBetweenFactorNL*>(&expected);
-    return e != nullptr && NoiseModelFactorN<T, T>::equals(*e, tol) &&
+    return e != nullptr && Base::equals(*e, tol) &&
            traits<T>::Equals(this->T12_, e->T12_, tol);
   }
 
@@ -295,8 +306,8 @@ class FrobeniusBetweenFactorNL : public NoiseModelFactorN<T, T> {
   /// @{
 
   /// Error is |inv(T2)*T1*T12_ - I|_F.
-  Vector evaluateError(const T& T1, const T& T2, OptionalMatrixType H1,
-                       OptionalMatrixType H2) const override {
+  VectorD evaluateError(const T& T1, const T& T2, OptionalMatrixType H1,
+                        OptionalMatrixType H2) const override {
     const bool computeJacobians = H1 || H2;
 
     // Compute the predicted inverse-relative transform inv(T2) * T1.
@@ -317,7 +328,7 @@ class FrobeniusBetweenFactorNL : public NoiseModelFactorN<T, T> {
 
     // Vectorize the residual and retain its derivative for the chain rule.
     Eigen::Matrix<double, Dim, T::dimension> H_vec_pred;
-    Vector error =
+    VectorD error =
         traits<T>::Vec(pred, computeJacobians ? &H_vec_pred : nullptr) - vecI;
 
     // Propagate derivatives through Between and Compose.
@@ -339,12 +350,14 @@ template <class T>
 class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
   inline constexpr static auto N = T::LieAlgebra::RowsAtCompileTime;
   inline constexpr static auto Dim = N * N;
+  using Base = FrobeniusBetweenFactorNL<T>;
+  using VectorD = FrobeniusErrorVector<T>;
 
   typename T::Jacobian T2hat_H_T1_;  ///< fixed derivative of T2hat wrpt T1
 
  public:
   // Provide access to the Matrix& version of evaluateError:
-  using NoiseModelFactor2<T, T>::evaluateError;
+  using Base::evaluateError;
 
   /// Construct from two keys and a measured transformation.
   FrobeniusBetweenFactor(Key j1, Key j2, const T& T12,
@@ -353,12 +366,12 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
         T2hat_H_T1_(traits<T>::AdjointMap(traits<T>::Inverse(T12))) {}
 
   /// Error is Frobenius norm between T1*T12 and T2.
-  Vector evaluateError(const T& T1, const T& T2, OptionalMatrixType H1,
-                       OptionalMatrixType H2) const override {
+  VectorD evaluateError(const T& T1, const T& T2, OptionalMatrixType H1,
+                        OptionalMatrixType H2) const override {
     const T T2hat = traits<T>::Compose(T1, this->T12_);
     Eigen::Matrix<double, Dim, T::dimension> vec_H_T2hat;
-    Vector error = traits<T>::Vec(T2, H2) -
-                   traits<T>::Vec(T2hat, H1 ? &vec_H_T2hat : nullptr);
+    VectorD error = traits<T>::Vec(T2, H2) -
+                    traits<T>::Vec(T2hat, H1 ? &vec_H_T2hat : nullptr);
     if (H1) *H1 = -vec_H_T2hat * T2hat_H_T1_;
     return error;
   }

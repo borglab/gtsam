@@ -23,7 +23,8 @@ namespace gtsam {
 /**
  * Binary factor representing a visual measurement using an inverse-depth parameterization
  */
-class InvDepthFactorVariant1: public NoiseModelFactorN<Pose3, Vector6> {
+class InvDepthFactorVariant1
+    : public NoiseModelFactorT<Vector2, Pose3, Vector6> {
 protected:
 
   // Keep a copy of measurement and calibration for I/O
@@ -33,7 +34,7 @@ protected:
 public:
 
   /// shorthand for base class type
-  typedef NoiseModelFactor2<Pose3, Vector6> Base;
+  typedef NoiseModelFactorT<Vector2, Pose3, Vector6> Base;
 
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
@@ -104,8 +105,9 @@ public:
   }
 
   /// Evaluate error h(x)-z and optionally derivatives
-  Vector evaluateError(const Pose3& pose, const Vector6& landmark,
-      OptionalMatrixType H1, OptionalMatrixType H2) const override {
+  Vector2 evaluateError(const Pose3& pose, const Vector6& landmark,
+                        OptionalMatrixType H1,
+                        OptionalMatrixType H2) const override {
 
     if (H1) {
       (*H1) = numericalDerivative11<Vector, Pose3>(

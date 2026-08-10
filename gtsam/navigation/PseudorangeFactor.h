@@ -49,10 +49,11 @@ using PseudorangeBase = GnssMeasurementBase;
  * [1] P. Misra et. al., "Global Positioning Systems: Signals, Measurements, and
  * Performance", Second Edition, 2012.
  */
-class GTSAM_EXPORT PseudorangeFactor : public NoiseModelFactorN<Point3, double>,
+class GTSAM_EXPORT PseudorangeFactor
+    : public NoiseModelFactorT<Vector1, Point3, double>,
                                        private PseudorangeBase {
  private:
-  typedef NoiseModelFactorN<Point3, double> Base;
+  typedef NoiseModelFactorT<Vector1, Point3, double> Base;
 
  public:
   // Provide access to the Matrix& version of evaluateError:
@@ -101,10 +102,10 @@ class GTSAM_EXPORT PseudorangeFactor : public NoiseModelFactorN<Point3, double>,
               double tol = 1e-9) const override;
 
   /// vector of errors
-  Vector evaluateError(const Point3& receiverPosition,
-                       const double& receiverClockBias,
-                       OptionalMatrixType HreceiverPos,
-                       OptionalMatrixType HreceiverClockBias) const override;
+  Vector1 evaluateError(const Point3& receiverPosition,
+                        const double& receiverClockBias,
+                        OptionalMatrixType HreceiverPos,
+                        OptionalMatrixType HreceiverClockBias) const override;
 
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION  ///
@@ -415,10 +416,10 @@ struct traits<DifferentialPseudorangeFactor>
  * @ingroup navigation
  */
 class GTSAM_EXPORT PseudorangeFactorArm
-    : public NoiseModelFactorN<Pose3, double>,
+    : public NoiseModelFactorT<Vector1, Pose3, double>,
       private PseudorangeBase {
  private:
-  typedef NoiseModelFactorN<Pose3, double> Base;
+  typedef NoiseModelFactorT<Vector1, Pose3, double> Base;
 
   gnss::LeverArm arm_;  ///< Lever arm + optional ecef_T_nav.
 
@@ -488,10 +489,10 @@ class GTSAM_EXPORT PseudorangeFactorArm
               double tol = 1e-9) const override;
 
   /// vector of errors
-  Vector evaluateError(const Pose3& pose,
-                       const double& receiverClockBias,
-                       OptionalMatrixType H_pose,
-                       OptionalMatrixType HreceiverClockBias) const override;
+  Vector1 evaluateError(const Pose3& pose,
+                        const double& receiverClockBias,
+                        OptionalMatrixType H_pose,
+                        OptionalMatrixType HreceiverClockBias) const override;
 
   /// return the lever arm, a position in the body frame
   inline const Point3& leverArm() const { return arm_.b; }

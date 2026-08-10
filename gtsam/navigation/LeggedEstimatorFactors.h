@@ -134,8 +134,9 @@ class ExtendedPoseHeightFactor : public NoiseModelFactorN<ExtendedPose3d> {
 };
 
 /// Contact factor between a NavState and a foothold point variable.
-class NavStatePointContactFactor : public NoiseModelFactorN<NavState, Point3> {
-  using Base = NoiseModelFactorN<NavState, Point3>;
+class NavStatePointContactFactor
+    : public NoiseModelFactorT<Vector3, NavState, Point3> {
+  using Base = NoiseModelFactorT<Vector3, NavState, Point3>;
 
  public:
   using Base::evaluateError;
@@ -153,9 +154,9 @@ class NavStatePointContactFactor : public NoiseModelFactorN<NavState, Point3> {
   }
 
   /// Evaluate the contact residual and optional Jacobians.
-  Vector evaluateError(const NavState& navState, const Point3& foothold,
-                       OptionalMatrixType H1,
-                       OptionalMatrixType H2) const override {
+  Vector3 evaluateError(const NavState& navState, const Point3& foothold,
+                        OptionalMatrixType H1,
+                        OptionalMatrixType H2) const override {
     Matrix36 prediction_H_pose;
     Matrix3 prediction_H_foothold;
     const Vector3 prediction = navState.pose().transformTo(
@@ -177,8 +178,9 @@ class NavStatePointContactFactor : public NoiseModelFactorN<NavState, Point3> {
 };
 
 /// Contact factor between a Pose3 and a foothold point variable.
-class Pose3PointContactFactor : public NoiseModelFactorN<Pose3, Point3> {
-  using Base = NoiseModelFactorN<Pose3, Point3>;
+class Pose3PointContactFactor
+    : public NoiseModelFactorT<Vector3, Pose3, Point3> {
+  using Base = NoiseModelFactorT<Vector3, Pose3, Point3>;
 
  public:
   using Base::evaluateError;
@@ -195,9 +197,9 @@ class Pose3PointContactFactor : public NoiseModelFactorN<Pose3, Point3> {
   }
 
   /// Evaluate the contact residual and optional Jacobians.
-  Vector evaluateError(const Pose3& pose, const Point3& foothold,
-                       OptionalMatrixType H1,
-                       OptionalMatrixType H2) const override {
+  Vector3 evaluateError(const Pose3& pose, const Point3& foothold,
+                        OptionalMatrixType H1,
+                        OptionalMatrixType H2) const override {
     return pose.transformTo(foothold, H1, H2) - measurement_;
   }
 

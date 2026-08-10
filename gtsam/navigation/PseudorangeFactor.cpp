@@ -44,7 +44,7 @@ bool PseudorangeFactor::equals(const NonlinearFactor& expected,
 }
 
 //***************************************************************************
-Vector PseudorangeFactor::evaluateError(
+Vector1 PseudorangeFactor::evaluateError(
     const Point3& receiverPosition, const double& receiverClockBias,
     OptionalMatrixType HreceiverPos,
     OptionalMatrixType HreceiverClockBias) const {
@@ -263,7 +263,7 @@ bool PseudorangeFactorArm::equals(const NonlinearFactor& expected,
 }
 
 //***************************************************************************
-Vector PseudorangeFactorArm::evaluateError(
+Vector1 PseudorangeFactorArm::evaluateError(
     const Pose3& pose, const double& receiverClockBias,
     OptionalMatrixType H_pose,
     OptionalMatrixType HreceiverClockBias) const {

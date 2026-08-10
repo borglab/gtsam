@@ -61,11 +61,15 @@ namespace gtsam {
  * @ingroup slam
  */
 template <class CAMERA, class LANDMARK>
-class GeneralSFMFactor : public NoiseModelFactorN<CAMERA, LANDMARK> {
+class GeneralSFMFactor
+    : public NoiseModelFactorT<
+          typename traits<typename CAMERA::Measurement>::TangentVector, CAMERA,
+          LANDMARK> {
   GTSAM_CONCEPT_MANIFOLD_TYPE(CAMERA)
   GTSAM_CONCEPT_MANIFOLD_TYPE(LANDMARK)
 
   using Measurement = typename CAMERA::Measurement;
+  using ErrorVector = typename traits<Measurement>::TangentVector;
   static const int DimC = FixedDimension<CAMERA>::value;
   static const int DimL = FixedDimension<LANDMARK>::value;
   static const int ZDim = traits<Measurement>::dimension;
@@ -77,7 +81,7 @@ class GeneralSFMFactor : public NoiseModelFactorN<CAMERA, LANDMARK> {
 
  public:
   typedef GeneralSFMFactor<CAMERA, LANDMARK> This;  ///< typedef for this object
-  typedef NoiseModelFactorN<CAMERA, LANDMARK>
+  typedef NoiseModelFactorT<ErrorVector, CAMERA, LANDMARK>
       Base;  ///< typedef for the base class
 
   // Provide access to the Matrix& version of evaluateError:
@@ -139,9 +143,9 @@ class GeneralSFMFactor : public NoiseModelFactorN<CAMERA, LANDMARK> {
   }
 
   /** h(x)-z */
-  Vector evaluateError(const CAMERA& camera, const LANDMARK& point,
-                       OptionalMatrixType H1,
-                       OptionalMatrixType H2) const override {
+  ErrorVector evaluateError(const CAMERA& camera, const LANDMARK& point,
+                            OptionalMatrixType H1,
+                            OptionalMatrixType H2) const override {
     try {
       Measurement predicted = camera.project2(point, H1, H2);
       return traits<Measurement>::Local(measured_, predicted);

@@ -27,11 +27,11 @@ namespace gtsam {
 /**
  * DeltaFactor: relative 2D measurement between Pose2 and Point2
  */
-class DeltaFactor: public NoiseModelFactorN<Pose2, Point2> {
+class DeltaFactor : public NoiseModelFactorT<Vector2, Pose2, Point2> {
 
 public:
   typedef DeltaFactor This;
-  typedef NoiseModelFactorN<Pose2, Point2> Base;
+  typedef NoiseModelFactorT<Vector2, Pose2, Point2> Base;
   typedef std::shared_ptr<This> shared_ptr;
 
 private:
@@ -49,8 +49,9 @@ public:
   }
 
   /// Evaluate measurement error h(x)-z
-  Vector evaluateError(const Pose2& pose, const Point2& point,
-      OptionalMatrixType H1, OptionalMatrixType H2) const override {
+  Vector2 evaluateError(const Pose2& pose, const Point2& point,
+                        OptionalMatrixType H1,
+                        OptionalMatrixType H2) const override {
     return pose.transformTo(point, H1, H2) - measured_;
   }
 };
@@ -167,4 +168,3 @@ public:
 };
 
 }
-

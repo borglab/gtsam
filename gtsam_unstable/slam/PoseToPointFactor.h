@@ -22,10 +22,14 @@ namespace gtsam {
  * @ingroup slam
  */
 template<typename POSE = Pose3, typename POINT = Point3>
-class PoseToPointFactor : public NoiseModelFactorN<POSE, POINT> {
+class PoseToPointFactor
+    : public NoiseModelFactorT<typename traits<POINT>::TangentVector, POSE,
+                               POINT> {
  private:
   typedef PoseToPointFactor This;
-  typedef NoiseModelFactorN<POSE, POINT> Base;
+  typedef NoiseModelFactorT<typename traits<POINT>::TangentVector, POSE, POINT>
+      Base;
+  using ErrorVector = typename traits<POINT>::TangentVector;
 
   POINT measured_; /** the point measurement in local coordinates */
 
@@ -82,7 +86,7 @@ class PoseToPointFactor : public NoiseModelFactorN<POSE, POINT> {
    *
    * Note: measured_ and the error are in local coordiantes.
    */
-  Vector evaluateError(
+  ErrorVector evaluateError(
       const POSE& w_T_b, const POINT& w_P,
       OptionalMatrixType H1,
       OptionalMatrixType H2) const override {

@@ -27,18 +27,19 @@ namespace gtsam {
  * Binary factor for applying a constant velocity model to a moving body represented as a NavState.
  * The only measurement is dt, the time delta between the states.
  */
-class ConstantVelocityFactor : public NoiseModelFactorN<NavState, NavState> {
+class ConstantVelocityFactor
+    : public NoiseModelFactorT<Vector9, NavState, NavState> {
     double dt_;
 
    public:
-    using Base = NoiseModelFactor2<NavState, NavState>;
+    using Base = NoiseModelFactorT<Vector9, NavState, NavState>;
 
     // Provide access to the Matrix& version of evaluateError:
     using Base::evaluateError;
 
    public:
     ConstantVelocityFactor(Key i, Key j, double dt, const SharedNoiseModel &model)
-        : NoiseModelFactorN<NavState, NavState>(model, i, j), dt_(dt) {}
+        : Base(model, i, j), dt_(dt) {}
     ~ConstantVelocityFactor() override {}
 
     /**
@@ -51,8 +52,9 @@ class ConstantVelocityFactor : public NoiseModelFactorN<NavState, NavState> {
      * @param H2 optional jacobian in x2
      * @return * Vector
      */
-    gtsam::Vector evaluateError(const NavState &x1, const NavState &x2,
-                                OptionalMatrixType H1, OptionalMatrixType H2) const override {
+    Vector9 evaluateError(const NavState &x1, const NavState &x2,
+                          OptionalMatrixType H1,
+                          OptionalMatrixType H2) const override {
         // only used to use update() below
         static const Vector3 b_accel{0.0, 0.0, 0.0};
         static const Vector3 b_omega{0.0, 0.0, 0.0};

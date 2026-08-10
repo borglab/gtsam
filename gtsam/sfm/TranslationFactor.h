@@ -39,14 +39,14 @@ namespace gtsam {
  *
  * @ingroup sfm
  */
-class TranslationFactor : public NoiseModelFactorN<Point3, Point3> {
+class TranslationFactor : public NoiseModelFactorT<Vector3, Point3, Point3> {
  private:
-  typedef NoiseModelFactorN<Point3, Point3> Base;
+  typedef NoiseModelFactorT<Vector3, Point3, Point3> Base;
   Point3 measured_w_aZb_;
 
  public:
   // Provide access to the Matrix& version of evaluateError:
-  using NoiseModelFactor2<Point3, Point3>::evaluateError;
+  using Base::evaluateError;
 
   /// default constructor
   TranslationFactor() {}
@@ -66,9 +66,9 @@ class TranslationFactor : public NoiseModelFactorN<Point3, Point3> {
    * @param H2 optional jacobian in Tb
    * @return * Vector
    */
-  Vector evaluateError(const Point3& Ta, const Point3& Tb,
-                       OptionalMatrixType H1,
-                       OptionalMatrixType H2) const override {
+  Vector3 evaluateError(const Point3& Ta, const Point3& Tb,
+                        OptionalMatrixType H1,
+                        OptionalMatrixType H2) const override {
     const Point3 dir = Tb - Ta;
     Matrix33 H_predicted_dir;
     const Point3 predicted =
