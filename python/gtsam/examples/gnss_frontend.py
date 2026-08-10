@@ -250,6 +250,96 @@ def undiff_observations(frame, data):
 
 
 # --------------------------------------------------------------------------- #
+# Doppler (range rate): single receiver, same open-sky RINEX as the PPP example
+# --------------------------------------------------------------------------- #
+def load_doppler(datadir, n_epochs=120, elmask_deg=15.0):
+    """Load the open-sky RINEX and return per-epoch Doppler measurements.
+
+    Uses the observation and broadcast navigation files of the PPP-RTK dataset
+    (no CLAS corrections: Doppler needs neither precise clocks nor atmosphere).
+    Only the L1 Doppler of the healthy GPS/Galileo/QZSS satellites above the
+    elevation mask is kept.
+
+    Returns a namespace with ``frames`` (list of per-epoch namespaces holding
+    the observation time and the per-satellite records), ``xyz_ref``/``pos_ref``
+    (the surveyed static marker, so the true velocity is zero) and ``syss``.
+    """
+    from cssrlib.ephemeris import satposs
+    from cssrlib.gnss import geodist, satazel
+    from cssrlib.rinex import rnxdec
+
+    syss = (uGNSS.GPS, uGNSS.GAL, uGNSS.QZS)
+    xyz_ref = np.array([-3962108.7007, 3381309.5532, 3668678.6648])
+    pos_ref = ecef2pos(xyz_ref)
+    elmask = np.deg2rad(elmask_deg)
+    bdir = f"{datadir}/doy2025-233/"
+
+    sigs = [rSigRnx(f"{c}{t}1{a}") for c, a in (("G", "C"), ("E", "C"), ("J", "C"))
+            for t in "CLDS"]
+    nav = rnxdec().decode_nav(bdir + "233h_rnx.nav", Nav())
+    rnx = rnxdec()
+    rnx.setSignals(sigs)
+    assert rnx.decode_obsh(bdir + "233h_rnx.obs") >= 0
+    rnx.autoSubstituteSignals()
+
+    frames = []
+    for _ in range(n_epochs):
+        obs = rnx.decode_obs()
+        if obs.t.time == 0:
+            break
+        rs, vs, dts, svh, _ = satposs(obs, nav)
+        sats = {}
+        for i, s in enumerate(obs.sat):
+            s = int(s)
+            sys = sat2prn(s)[0]
+            if sys not in syss or svh[i] != 0:
+                continue
+            if obs.D[i, 0] == 0.0 or obs.P[i, 0] == 0.0:
+                continue
+            if not np.all(np.isfinite(rs[i])) or np.linalg.norm(rs[i]) < 1e6:
+                continue
+            _, e = geodist(rs[i], xyz_ref)
+            _, el = satazel(pos_ref, e)
+            if el < elmask:
+                continue
+            sats[s] = SimpleNamespace(
+                sat=s, sys=sys, doppler=obs.D[i, 0], el=el, los=e,
+                lam=obs.sig[sys][uTYP.L][0].wavelength(),
+                sat_pos=rs[i].copy(), sat_vel=vs[i].copy(), sat_clk=dts[i])
+        frames.append(SimpleNamespace(t=obs.t, sats=sats))
+
+    return SimpleNamespace(frames=frames, xyz_ref=xyz_ref, pos_ref=pos_ref,
+                           syss=syss)
+
+
+def doppler_observations(previous, current, data):
+    """Yield ready-to-use Doppler observations for one pair of epochs.
+
+    Only satellites seen at both epochs are returned, because the receiver
+    clock drift is modelled as the difference of the two clock-bias states and
+    the satellite clock drift is differenced from the same pair.  The argument
+    tuples splat straight into the two factors::
+
+        DopplerFactor(vel, biasPrev, biasCurr, *o.meas_args, *o.epoch_args, noise)
+        DopplerFactorArm(pose, vel, biasPrev, biasCurr, *o.meas_args,
+                         leverArm, angularVelocity, *o.epoch_args, noise)
+    """
+    from cssrlib.gnss import timediff
+
+    dt = timediff(current.t, previous.t)
+    for s, o in current.sats.items():
+        if s not in previous.sats:
+            continue
+        sat_drift = (o.sat_clk - previous.sats[s].sat_clk) / dt
+        yield SimpleNamespace(
+            sat=s, sys=o.sys, el=o.el, los=o.los, lam=o.lam, dt=dt,
+            w=1.0 / max(np.sin(o.el), 0.1),
+            meas_args=(o.doppler, o.lam, _P3(o.sat_pos), _P3(o.sat_vel),
+                       _P3(data.xyz_ref)),
+            epoch_args=(dt, sat_drift))
+
+
+# --------------------------------------------------------------------------- #
 # Integer ambiguity resolution (LAMBDA) on a GTSAM float estimate
 # --------------------------------------------------------------------------- #
 def resolve_integer_ambiguities(engine, isam, res, x_key, amb_key, sats, el,
