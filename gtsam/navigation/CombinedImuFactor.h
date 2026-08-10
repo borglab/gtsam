@@ -308,147 +308,77 @@ using CombinedImuFactor = CombinedImuFactorT<>;
 template <class PIM>
 GTSAM_EXPORT std::ostream& operator<<(std::ostream& os, const CombinedImuFactorT<PIM>& f);
 
-/**
- * CombinedImuFactorWithGravityT is CombinedImuFactorT with an additional
- * GRAVITY variable, so that gravity can be optimized instead of being fixed
- * by the preintegration parameters. The 15-dimensional residual is identical
- * to CombinedImuFactorT (9 preintegration rows and 6 bias random walk rows);
- * only the preintegration rows depend on gravity. Jointly estimating gravity
- * and the (evolving) accelerometer bias requires sufficient rotation
- * excitation, see Nemiroff, Chen and Lopez, "Joint On-Manifold Gravity and
- * Accelerometer Intrinsics Estimation for Inertially Aligned Mapping", 2023.
- *
- * See ImuFactorWithGravityDirection / ImuFactorWithGravityVector for the two
- * gravity parametrizations and their usage guidance.
- *
- * @ingroup navigation
- */
-template <class PIM = PreintegratedCombinedMeasurements, class GRAVITY = Unit3>
-class GTSAM_EXPORT CombinedImuFactorWithGravityT
-    : public NoiseModelFactorN<Pose3, Vector3, Pose3, Vector3,
-                               imuBias::ConstantBias, imuBias::ConstantBias,
-                               GRAVITY> {
- private:
-  typedef CombinedImuFactorWithGravityT<PIM, GRAVITY> This;
-  typedef NoiseModelFactorN<Pose3, Vector3, Pose3, Vector3,
-                            imuBias::ConstantBias, imuBias::ConstantBias,
-                            GRAVITY>
-      Base;
+namespace internal {
+/// Shared 15-dof error and block-Jacobian assembly for CombinedImuFactorT and
+/// CombinedImuFactorWithGravityT: rows 0-8 are the preintegration error for
+/// the given gravity vector, rows 9-14 the bias random walk. If D_r_gvec is
+/// given, it receives the 9x3 Jacobian of the preintegration rows wrt the
+/// gravity vector (the bias rows have a zero gravity Jacobian).
+template <class PIM>
+Vector combinedImuError(const PIM& pim, const Pose3& pose_i,
+    const Vector3& vel_i, const Pose3& pose_j, const Vector3& vel_j,
+    const imuBias::ConstantBias& bias_i, const imuBias::ConstantBias& bias_j,
+    const Vector3& n_gravity, OptionalMatrixType H1, OptionalMatrixType H2,
+    OptionalMatrixType H3, OptionalMatrixType H4, OptionalMatrixType H5,
+    OptionalMatrixType H6, Matrix93* D_r_gvec) {
+  // error wrt bias evolution model (random walk)
+  Matrix6 Hbias_i, Hbias_j;
+  Vector6 fbias = traits<imuBias::ConstantBias>::Between(bias_j, bias_i,
+      H6 ? &Hbias_j : 0, H5 ? &Hbias_i : 0).vector();
 
-  PIM pim_;
-  double gravityMagnitude_;  ///< used by the Unit3 parametrization only
+  Matrix96 D_r_pose_i, D_r_pose_j, D_r_bias_i;
+  Matrix93 D_r_vel_i, D_r_vel_j;
 
- public:
-  // Provide access to the Matrix& version of evaluateError:
-  using Base::evaluateError;
+  // error wrt preintegrated measurements
+  Vector9 r_Rpv = pim.computeErrorAndJacobians(pose_i, vel_i, pose_j, vel_j,
+      bias_i, n_gravity, H1 ? &D_r_pose_i : 0, H2 ? &D_r_vel_i : 0,
+      H3 ? &D_r_pose_j : 0, H4 ? &D_r_vel_j : 0, H5 ? &D_r_bias_i : 0,
+      D_r_gvec);
 
-  /** Shorthand for a smart pointer to a factor */
-  typedef std::shared_ptr<This> shared_ptr;
-
-  /** Default constructor - only use for serialization */
-  CombinedImuFactorWithGravityT() : gravityMagnitude_(0.0) {}
-
-  /**
-   * Constructor
-   * @param pose_i Previous pose key
-   * @param vel_i  Previous velocity key
-   * @param pose_j Current pose key
-   * @param vel_j  Current velocity key
-   * @param bias_i Previous bias key
-   * @param bias_j Current bias key
-   * @param gravity Gravity key
-   * @param preintegratedMeasurements Combined IMU measurements
-   * @param gravityMagnitude The known gravity magnitude for the Unit3
-   * parametrization; defaults to the norm of the gravity vector in the
-   * preintegration params. Must not be provided for the Point3
-   * parametrization, where the magnitude is part of the optimized variable;
-   * to constrain it, add a VectorNormFactor<3> on the gravity variable.
-   */
-  CombinedImuFactorWithGravityT(
-      Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias_i, Key bias_j,
-      Key gravity, const PIM& preintegratedMeasurements,
-      std::optional<double> gravityMagnitude = {})
-      : Base(noiseModel::Gaussian::Covariance(preintegratedMeasurements.preintMeasCov()),
-             pose_i, vel_i, pose_j, vel_j, bias_i, bias_j, gravity),
-        pim_(preintegratedMeasurements),
-        gravityMagnitude_(gravityMagnitude
-                              ? *gravityMagnitude
-                              : preintegratedMeasurements.params()->n_gravity.norm()) {
-    if (internal::GravityParametrization<GRAVITY>::usesMagnitude) {
-      if (!(gravityMagnitude_ > 0.0))
-        throw std::invalid_argument(
-            "CombinedImuFactorWithGravityT: gravityMagnitude must be positive");
-    } else if (gravityMagnitude) {
-      throw std::invalid_argument(
-          "CombinedImuFactorWithGravityT: gravityMagnitude is only used by the "
-          "Unit3 parametrization; the Point3 parametrization optimizes the "
-          "magnitude as part of the gravity variable - to constrain it, add a "
-          "VectorNormFactor<3> on the gravity variable instead");
-    }
+  // if we need the jacobians
+  if (H1) {
+    H1->resize(15, 6);
+    H1->block<9, 6>(0, 0) = D_r_pose_i;
+    // adding: [dBiasAcc/dPi ; dBiasOmega/dPi]
+    H1->block<6, 6>(9, 0).setZero();
+  }
+  if (H2) {
+    H2->resize(15, 3);
+    H2->block<9, 3>(0, 0) = D_r_vel_i;
+    // adding: [dBiasAcc/dVi ; dBiasOmega/dVi]
+    H2->block<6, 3>(9, 0).setZero();
+  }
+  if (H3) {
+    H3->resize(15, 6);
+    H3->block<9, 6>(0, 0) = D_r_pose_j;
+    // adding: [dBiasAcc/dPj ; dBiasOmega/dPj]
+    H3->block<6, 6>(9, 0).setZero();
+  }
+  if (H4) {
+    H4->resize(15, 3);
+    H4->block<9, 3>(0, 0) = D_r_vel_j;
+    // adding: [dBiasAcc/dVi ; dBiasOmega/dVi]
+    H4->block<6, 3>(9, 0).setZero();
+  }
+  if (H5) {
+    H5->resize(15, 6);
+    H5->block<9, 6>(0, 0) = D_r_bias_i;
+    // adding: [dBiasAcc/dBias_i ; dBiasOmega/dBias_i]
+    H5->block<6, 6>(9, 0) = Hbias_i;
+  }
+  if (H6) {
+    H6->resize(15, 6);
+    H6->block<9, 6>(0, 0).setZero();
+    // adding: [dBiasAcc/dBias_j ; dBiasOmega/dBias_j]
+    H6->block<6, 6>(9, 0) = Hbias_j;
   }
 
-  ~CombinedImuFactorWithGravityT() override {}
-
-  /// @return a deep copy of this factor
-  gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return std::make_shared<This>(*this);
-  }
-
-  /// @name Testable
-  /// @{
-  void print(const std::string& s = "", const KeyFormatter& keyFormatter =
-                                            DefaultKeyFormatter) const override;
-  bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
-  /// @}
-
-  /** Access the preintegrated measurements. */
-  const PIM& preintegratedMeasurements() const { return pim_; }
-
-  /** The gravity magnitude used by the Unit3 parametrization. */
-  double gravityMagnitude() const { return gravityMagnitude_; }
-
-  /** implement functions needed to derive from Factor */
-
-  /// vector of errors
-  Vector evaluateError(const Pose3& pose_i, const Vector3& vel_i,
-                       const Pose3& pose_j, const Vector3& vel_j,
-                       const imuBias::ConstantBias& bias_i,
-                       const imuBias::ConstantBias& bias_j,
-                       const GRAVITY& gravity, OptionalMatrixType H1,
-                       OptionalMatrixType H2, OptionalMatrixType H3,
-                       OptionalMatrixType H4, OptionalMatrixType H5,
-                       OptionalMatrixType H6, OptionalMatrixType H7) const override;
-
- private:
-#if GTSAM_ENABLE_BOOST_SERIALIZATION
-  /** Serialization function */
-  friend class boost::serialization::access;
-  template <class ARCHIVE>
-  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    // Archive name for the base follows the sibling factors' convention:
-    ar& boost::serialization::make_nvp(
-        "NoiseModelFactor7", boost::serialization::base_object<Base>(*this));
-    ar& BOOST_SERIALIZATION_NVP(pim_);
-    ar& BOOST_SERIALIZATION_NVP(gravityMagnitude_);
-  }
-#endif
-};
-// class CombinedImuFactorWithGravityT
-
-/// CombinedImuFactor variant optimizing the gravity direction (Unit3) with a
-/// fixed, known magnitude; see ImuFactorWithGravityDirection.
-using CombinedImuFactorWithGravityDirection =
-    CombinedImuFactorWithGravityT<PreintegratedCombinedMeasurements, Unit3>;
-
-/// CombinedImuFactor variant optimizing the free gravity vector (Point3);
-/// see ImuFactorWithGravityVector.
-using CombinedImuFactorWithGravityVector =
-    CombinedImuFactorWithGravityT<PreintegratedCombinedMeasurements, Point3>;
-
-// operator<< for CombinedImuFactorWithGravityT
-template <class PIM, class GRAVITY>
-GTSAM_EXPORT std::ostream& operator<<(
-    std::ostream& os, const CombinedImuFactorWithGravityT<PIM, GRAVITY>& f);
+  // overall error
+  Vector r(15);
+  r << r_Rpv, fbias;  // vector of size 15
+  return r;
+}
+}  // namespace internal
 
 template <>
 struct traits<PreintegrationCombinedParams>
@@ -460,9 +390,5 @@ struct traits<PreintegratedCombinedMeasurementsT<PreintegrationType>>
  
 template <class PIM>
 struct traits<CombinedImuFactorT<PIM>> : public Testable<CombinedImuFactorT<PIM>> {};
-
-template <class PIM, class GRAVITY>
-struct traits<CombinedImuFactorWithGravityT<PIM, GRAVITY>>
-    : public Testable<CombinedImuFactorWithGravityT<PIM, GRAVITY>> {};
 
 }  // namespace gtsam

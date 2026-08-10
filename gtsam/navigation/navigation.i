@@ -241,6 +241,7 @@ virtual class ImuFactor2: gtsam::NonlinearFactor {
   void serialize() const;
 };
 
+#include <gtsam/navigation/ImuFactorWithGravity.h>
 template <PIM, GRAVITY>
 virtual class ImuFactorWithGravityT : gtsam::NonlinearFactor {
   ImuFactorWithGravityT(gtsam::Key pose_i, gtsam::Key vel_i,
@@ -341,6 +342,7 @@ virtual class CombinedImuFactor: gtsam::NoiseModelFactor {
   void serialize() const;
 };
 
+#include <gtsam/navigation/CombinedImuFactorWithGravity.h>
 template <PIM, GRAVITY>
 virtual class CombinedImuFactorWithGravityT : gtsam::NoiseModelFactor {
   CombinedImuFactorWithGravityT(gtsam::Key pose_i, gtsam::Key vel_i,

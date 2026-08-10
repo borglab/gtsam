@@ -26,9 +26,11 @@
 #include <gtsam/navigation/AttitudeFactor.h>
 #include <gtsam/navigation/CarrierPhaseFactor.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
+#include <gtsam/navigation/CombinedImuFactorWithGravity.h>
 #include <gtsam/navigation/DopplerFactor.h>
 #include <gtsam/navigation/GPSFactor.h>
 #include <gtsam/navigation/ImuFactor.h>
+#include <gtsam/navigation/ImuFactorWithGravity.h>
 #include <gtsam/navigation/PseudorangeFactor.h>
 
 #include <fstream>
