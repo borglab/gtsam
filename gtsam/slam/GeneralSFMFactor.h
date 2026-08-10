@@ -44,6 +44,7 @@
 #include <boost/serialization/nvp.hpp>
 #endif
 #include <iostream>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 
@@ -161,66 +162,57 @@ class GeneralSFMFactor
    * Error function with Eigen::Ref for zero-malloc linearization.
    * Writes Jacobians directly into the provided matrix blocks.
    */
-  Vector evaluateError(const CAMERA& camera, const LANDMARK& point,
-                       Eigen::Ref<Matrix> H1, Eigen::Ref<Matrix> H2) const {
+  ErrorVector evaluateError(const CAMERA& camera, const LANDMARK& point,
+                            Eigen::Ref<Matrix> H1,
+                            Eigen::Ref<Matrix> H2) const {
     try {
       Measurement predicted = camera.project2(point, H1, H2);
       return traits<Measurement>::Local(measured_, predicted);
     } catch (CheiralityException& e [[maybe_unused]]) {
       H1.setZero();
       H2.setZero();
-      return Vector::Zero(ZDim);
+      return ErrorVector::Zero();
     }
   }
 
-  /**
-   * Linearize by passing fixed-size Jacobians directly to `project2()`.
-   *
-   * This deliberately retains a custom path instead of opting into
-   * `NoiseModelFactorT`'s fixed-output binary linearization, whose generic
-   * `unwhitenedError()` path creates dynamic Jacobian matrices.
-   */
+  /** Linearize using fixed-size Jacobians. */
   std::shared_ptr<GaussianFactor> linearize(
       const Values& values) const override {
-    // Only linearize if the factor is active
     if (!this->active(values)) return std::shared_ptr<JacobianFactor>();
 
     const Key key1 = this->key1(), key2 = this->key2();
     JacobianC Dcamera;
     JacobianL Dlandmark;
-    Eigen::Matrix<double, ZDim, 1> b;
-    try {
-      const CAMERA& camera = values.at<CAMERA>(key1);
-      const LANDMARK& point = values.at<LANDMARK>(key2);
-      Measurement predicted = camera.project2(point, &Dcamera, &Dlandmark);
+    ErrorVector b =
+        -evaluateError(values.at<CAMERA>(key1), values.at<LANDMARK>(key2),
+                       Dcamera, Dlandmark);
 
-      b = -traits<Measurement>::Local(measured_, predicted);
-    } catch (CheiralityException& e [[maybe_unused]]) {
-      Dcamera.setZero();
-      Dlandmark.setZero();
-      b.setZero();
-      // TODO Print the exception via logging
-    }
-
-    // Whiten the system if needed
     const SharedNoiseModel& noiseModel = this->noiseModel();
-    if (noiseModel && !noiseModel->isUnit()) {
-      // TODO: implement WhitenSystem for fixed size matrices and include
-      // above
-      Dcamera = noiseModel->Whiten(Dcamera);
-      Dlandmark = noiseModel->Whiten(Dlandmark);
-      b = noiseModel->Whiten(b);
+    if (noiseModel && static_cast<size_t>(ZDim) != noiseModel->dim()) {
+      throw std::invalid_argument(
+          "NoiseModelFactor: NoiseModel has dimension " +
+          std::to_string(noiseModel->dim()) + " instead of " +
+          std::to_string(ZDim) + ".");
     }
 
-    // Create new (unit) noiseModel, preserving constraints if applicable
-    SharedDiagonal model;
+    if (noiseModel && !noiseModel->isUnit()) {
+      Matrix dynamicCamera = Dcamera, dynamicLandmark = Dlandmark;
+      Vector dynamicB = b;
+      noiseModel->WhitenSystem(dynamicCamera, dynamicLandmark, dynamicB);
+      Dcamera = dynamicCamera;
+      Dlandmark = dynamicLandmark;
+      b = dynamicB;
+    }
+
+    SharedDiagonal linearModel;
     if (noiseModel && noiseModel->isConstrained()) {
-      model =
-          std::static_pointer_cast<noiseModel::Constrained>(noiseModel)->unit();
+      const auto constrained =
+          std::static_pointer_cast<noiseModel::Constrained>(noiseModel);
+      linearModel = constrained->unit();
     }
 
     return std::make_shared<BinaryJacobianFactor<ZDim, DimC, DimL>>(
-        key1, Dcamera, key2, Dlandmark, b, model);
+        key1, Dcamera, key2, Dlandmark, b, linearModel);
   }
 
   /** return the measured */
