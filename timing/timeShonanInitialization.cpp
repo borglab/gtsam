@@ -11,13 +11,14 @@
 
 /**
  * @file    timeShonanInitialization.cpp
- * @brief   Compare Shonan before and after FAST-Sync initialization.
+ * @brief   Compare Shonan before and after FAST-Sync initialization with PCG
+ *          and LM.
  * @date    August 2026
  * @author  Frank Dellaert
  *
- * The before path uses chordal initialization and COLAMD for the Shonan
- * Cholesky solves. The after path uses FAST-Sync and reuses its METIS ordering
- * for Shonan. Run with --help for all command-line arguments and an example.
+ * The before path uses chordal initialization and the default PCG solver. The
+ * after paths use FAST-Sync with the default PCG solver or direct LM solves.
+ * Run with --help for all command-line arguments and an example.
  */
 
 #include <gtsam/base/DSFMap.h>
@@ -71,13 +72,19 @@ using std::vector;
 constexpr size_t kMinimumRank = 3;
 constexpr size_t kMaximumRank = 10;
 constexpr double kOptimalityThreshold = -1e-4;
-const string kBefore = "Chordal/COLAMD";
-const string kAfter = "FAST-Sync/METIS";
+const string kBefore = "Before";
+const string kAfterPcg = "After/PCG";
+const string kAfterLm = "After/LM";
+
+const vector<string>& benchmarkMethods() {
+  static const vector<string> methods{kBefore, kAfterPcg, kAfterLm};
+  return methods;
+}
 
 struct Options {
   string dataset = "pose3example-grid.txt";
   optional<string> g2oDirectory;
-  string optimizerMethod = "JACOBI";
+  size_t largestFiles = 0;
   size_t warmups = 0;
   size_t repetitions = 1;
   double isotropicSigma = 0.0;
@@ -96,7 +103,8 @@ struct BenchmarkContext {
   NonlinearFactorGraph fastSyncGraph;
   gtsam::Ordering fastSyncOrdering;
   std::unique_ptr<ShonanAveraging3> beforeShonan;
-  std::unique_ptr<ShonanAveraging3> afterShonan;
+  std::unique_ptr<ShonanAveraging3> afterPcgShonan;
+  std::unique_ptr<ShonanAveraging3> afterLmShonan;
 };
 
 struct TrialResult {
@@ -159,8 +167,8 @@ string usage() {
          "pose3example-grid.txt)\n"
          "  --g2o-directory DIR             Benchmark each .g2o file directly "
          "in DIR\n"
-         "  --method NAME                   Shonan linear solver (default: "
-         "JACOBI)\n"
+         "  --largest N                    With --g2o-directory, benchmark the "
+         "N largest .g2o files by size\n"
          "  --warmup N                      Untimed runs per initializer "
          "(default: 0)\n"
          "  --repeats N                     Measured runs per initializer "
@@ -176,11 +184,12 @@ string usage() {
          "The console table reports rounded integer milliseconds.\n"
          "The Shonan staircase always runs from p=3 through p=10. "
          "Disconnected inputs are reduced to their largest component.\n"
-         "\nBefore: chordal initialization with COLAMD Shonan ordering.\n"
-         "After:  FAST-Sync with its METIS ordering reused by Shonan.\n"
+         "\nBefore: chordal initialization with PCG.\n"
+         "After/PCG: FAST-Sync initialization with PCG.\n"
+         "After/LM:  FAST-Sync initialization with direct LM solves.\n"
          "\nExample:\n"
          "  timeShonanInitialization --g2o-directory datasets/yfcc2 "
-         "--method CHOLESKY --repeats 1 --csv shonan.csv\n";
+         "--largest 5 --repeats 1 --csv shonan.csv\n";
 }
 
 optional<string> nonemptyPath(const string& path) {
@@ -193,7 +202,7 @@ Options parseOptions(int argc, char** argv) {
   options.help = arguments.helpRequested();
   const optional<string> datasetOption = arguments.optionalString("--dataset");
   options.g2oDirectory = arguments.optionalString("--g2o-directory");
-  options.optimizerMethod = arguments.stringValue("--method", "JACOBI");
+  options.largestFiles = arguments.sizeValue("--largest", 0);
   options.warmups = arguments.sizeValue("--warmup", 0);
   options.repetitions = arguments.sizeValue("--repeats", 1);
   options.isotropicSigma = arguments.doubleValue("--isotropic-sigma", 0.0);
@@ -211,6 +220,9 @@ Options parseOptions(int argc, char** argv) {
   if (options.g2oDirectory && (datasetOption || !positionals.empty())) {
     throw std::invalid_argument(
         "--g2o-directory cannot be combined with a single dataset");
+  }
+  if (options.largestFiles > 0 && !options.g2oDirectory) {
+    throw std::invalid_argument("--largest requires --g2o-directory");
   }
   if (datasetOption) {
     options.dataset = *datasetOption;
@@ -247,9 +259,18 @@ vector<string> resolveDatasets(const Options& options) {
       datasets.push_back(entry.path().string());
     }
   }
-  std::sort(datasets.begin(), datasets.end());
   if (datasets.empty()) {
     throw std::invalid_argument("No .g2o files found in " + directory.string());
+  }
+  std::sort(datasets.begin(), datasets.end(),
+            [](const string& left, const string& right) {
+              const auto leftSize = std::filesystem::file_size(left);
+              const auto rightSize = std::filesystem::file_size(right);
+              if (leftSize != rightSize) return leftSize > rightSize;
+              return left < right;
+            });
+  if (options.largestFiles > 0 && options.largestFiles < datasets.size()) {
+    datasets.resize(options.largestFiles);
   }
   return datasets;
 }
@@ -352,18 +373,23 @@ BenchmarkContext buildContext(const Options& options,
   gtsam::LevenbergMarquardtParams lmParameters =
       gtsam::LevenbergMarquardtParams::CeresDefaults();
   lmParameters.setOrderingType("COLAMD");
-  const ShonanAveraging3::Parameters beforeParameters(
-      lmParameters, options.optimizerMethod, kOptimalityThreshold);
-  ShonanAveraging3::Parameters afterParameters = beforeParameters;
+  const ShonanAveraging3::Parameters beforeParameters(lmParameters, "JACOBI",
+                                                      kOptimalityThreshold);
+  const ShonanAveraging3::Parameters afterPcgParameters(lmParameters, "JACOBI",
+                                                        kOptimalityThreshold);
+  ShonanAveraging3::Parameters afterLmParameters(lmParameters, "CHOLESKY",
+                                                 kOptimalityThreshold);
   context.fastSyncOrdering =
       gtsam::Ordering::Create(gtsam::Ordering::METIS, context.fastSyncGraph);
-  if (afterParameters.lm.requiresOrdering()) {
-    afterParameters.lm.setOrdering(context.fastSyncOrdering);
+  if (afterLmParameters.lm.requiresOrdering()) {
+    afterLmParameters.lm.setOrdering(context.fastSyncOrdering);
   }
   context.beforeShonan = std::make_unique<ShonanAveraging3>(
       context.measurements, beforeParameters);
-  context.afterShonan =
-      std::make_unique<ShonanAveraging3>(context.measurements, afterParameters);
+  context.afterPcgShonan = std::make_unique<ShonanAveraging3>(
+      context.measurements, afterPcgParameters);
+  context.afterLmShonan = std::make_unique<ShonanAveraging3>(
+      context.measurements, afterLmParameters);
   return context;
 }
 
@@ -408,9 +434,8 @@ TrialResult runTrial(const string& initializer, size_t runIndex,
       initial =
           gtsam::InitializePose3::initializeOrientations(context.chordalGraph);
     } else {
-      initial =
-          gtsam::fastSync<Rot3>(context.fastSyncGraph,
-                                context.fastSyncOrdering);
+      initial = gtsam::fastSync<Rot3>(context.fastSyncGraph,
+                                      context.fastSyncOrdering);
     }
   } catch (const std::exception& exception) {
     result.initializationSeconds = elapsedSeconds(start);
@@ -418,16 +443,24 @@ TrialResult runTrial(const string& initializer, size_t runIndex,
     return result;
   }
   result.initializationSeconds = elapsedSeconds(start);
-  const ShonanAveraging3& shonan =
-      initializer == kBefore ? *context.beforeShonan : *context.afterShonan;
-  result.initialCost = shonan.cost(initial);
+  const ShonanAveraging3* shonan = nullptr;
+  if (initializer == kBefore) {
+    shonan = context.beforeShonan.get();
+  } else if (initializer == kAfterPcg) {
+    shonan = context.afterPcgShonan.get();
+  } else if (initializer == kAfterLm) {
+    shonan = context.afterLmShonan.get();
+  } else {
+    throw std::invalid_argument("Unknown benchmark method: " + initializer);
+  }
+  result.initialCost = shonan->cost(initial);
 
   start = std::chrono::steady_clock::now();
   try {
     const StaircaseResult solution =
-        runStaircase(shonan, initial, &result.rankReached);
+        runStaircase(*shonan, initial, &result.rankReached);
     result.solveSeconds = elapsedSeconds(start);
-    result.finalCost = shonan.cost(solution.values);
+    result.finalCost = shonan->cost(solution.values);
     result.minimumEigenvalue = solution.minimumEigenvalue;
     result.rankReached = solution.rankReached;
     result.success = true;
@@ -440,10 +473,9 @@ TrialResult runTrial(const string& initializer, size_t runIndex,
 
 void runMethods(size_t runIndex, const BenchmarkContext& context,
                 vector<TrialResult>* results) {
-  const vector<string> initializers{kBefore, kAfter};
-  for (size_t offset = 0; offset < initializers.size(); ++offset) {
+  for (size_t offset = 0; offset < benchmarkMethods().size(); ++offset) {
     const string& initializer =
-        initializers[(runIndex + offset) % initializers.size()];
+        benchmarkMethods()[(runIndex + offset) % benchmarkMethods().size()];
     results->push_back(runTrial(initializer, runIndex, context));
   }
 }
@@ -501,7 +533,7 @@ DatasetBenchmark runDataset(const Options& options, const string& datasetPath) {
     runMethods(runIndex, context, &discardedWarmups);
   }
 
-  benchmark.results.reserve(2 * options.repetitions);
+  benchmark.results.reserve(benchmarkMethods().size() * options.repetitions);
   for (size_t runIndex = 0; runIndex < options.repetitions; ++runIndex) {
     runMethods(runIndex, context, &benchmark.results);
   }
@@ -538,7 +570,7 @@ void writeBenchmarkActionJson(const vector<DatasetBenchmark>& benchmarks,
     const string prefix =
         "timeShonanInitialization/" +
         std::filesystem::path(benchmark.path).filename().string() + "/";
-    for (const string& initializer : {kBefore, kAfter}) {
+    for (const string& initializer : benchmarkMethods()) {
       const auto summary = summarizeMethod(benchmark.results, initializer);
       if (!summary) continue;
       metrics.push_back({prefix + initializer + "/initialization", "s",
@@ -587,25 +619,25 @@ string compactError(const string& error) {
 
 void printSummary(const Options& options,
                   const vector<DatasetBenchmark>& benchmarks) {
-  std::cout << "Shonan before/after initialization benchmark\n"
+  std::cout << "Shonan initialization benchmark\n"
             << "p_min=" << kMinimumRank << " p_max=" << kMaximumRank
-            << " optimizer=" << options.optimizerMethod
             << " warmups=" << options.warmups
             << " repeats=" << options.repetitions;
   if (options.isotropicSigma > 0.0) {
     std::cout << " isotropic_sigma=" << options.isotropicSigma;
   }
   std::cout << "\n\n";
-  std::cout
-      << "| Dataset | Method | Components | Rotations (used/raw) | "
-         "Measurements (used/raw) | Init (ms) | Solve (ms) | Total (ms) | "
-         "p reached | Success |\n"
-      << "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|\n";
+  std::cout << "Times are init/solve/total milliseconds; each cell ends with "
+               "p reached and success count.\n\n"
+            << "| Dataset | Before | After/PCG | After/LM |\n"
+            << "|---|---|---|---|\n";
   for (const DatasetBenchmark& benchmark : benchmarks) {
     const string dataset =
         std::filesystem::path(benchmark.path).filename().string();
-    for (const string& initializer : {kBefore, kAfter}) {
+    std::cout << "| " << dataset;
+    for (const string& initializer : benchmarkMethods()) {
       const auto summary = summarizeMethod(benchmark.results, initializer);
+      std::cout << " | ";
       if (!summary) {
         size_t rankReached = 0;
         string error = "failed";
@@ -615,24 +647,18 @@ void printSummary(const Options& options,
             if (!result.error.empty()) error = result.error;
           }
         }
-        std::cout << "| " << dataset << " | " << initializer << " | "
-                  << benchmark.components << " | " << benchmark.rotations << "/"
-                  << benchmark.rawRotations << " | " << benchmark.measurements
-                  << "/" << benchmark.rawMeasurements << " | - | - | - | "
-                  << rankReached << " | 0/" << options.repetitions << " ("
-                  << compactError(error) << ") |\n";
-        continue;
+        std::cout << "- (p=" << rankReached << ", " << compactError(error)
+                  << ")";
+      } else {
+        std::cout << milliseconds(summary->initialization.mean) << "/"
+                  << milliseconds(summary->solve.mean) << "/"
+                  << milliseconds(summary->total.mean)
+                  << " ms, p=" << rankText(*summary) << ", "
+                  << summary->successes << "/"
+                  << summary->successes + summary->failures;
       }
-      std::cout << "| " << dataset << " | " << initializer << " | "
-                << benchmark.components << " | " << benchmark.rotations << "/"
-                << benchmark.rawRotations << " | " << benchmark.measurements
-                << "/" << benchmark.rawMeasurements << " | "
-                << milliseconds(summary->initialization.mean) << " | "
-                << milliseconds(summary->solve.mean) << " | "
-                << milliseconds(summary->total.mean) << " | "
-                << rankText(*summary) << " | " << summary->successes << "/"
-                << summary->successes + summary->failures << " |\n";
     }
+    std::cout << " |\n";
   }
 }
 
