@@ -34,6 +34,7 @@ TEST(IndeterminateSystemException, NearbyVariableAndMessage) {
   const std::string message = exception.what();
   CHECK(message.find("Indeterminate linear system") != std::string::npos);
   CHECK(message.find("Indeterminant linear system") == std::string::npos);
+  CHECK(message.find("nearly indeterminate systems") != std::string::npos);
 }
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43

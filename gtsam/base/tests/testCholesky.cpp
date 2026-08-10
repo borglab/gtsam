@@ -19,6 +19,10 @@
 #include <gtsam/base/cholesky.h>
 #include <CppUnitLite/TestHarness.h>
 
+#include <Eigen/Cholesky>
+#include <cmath>
+#include <limits>
+
 using namespace gtsam;
 using namespace std;
 
@@ -68,16 +72,45 @@ TEST(cholesky, choleskyPartial) {
 }
 
 /* ************************************************************************* */
-TEST(cholesky, BadScalingCholesky) {
-  Matrix A{{1e-40, 0.0}, {0.0, 1.0}};
+// Verifies that every pivot is checked, including a weak non-final pivot, in
+// representative variable orders.
+TEST(cholesky, NearRankDeficientCholesky) {
+  constexpr double correlation = 1.0 - 1e-10;
+  Matrix matrix{{1.0, correlation, 0.0},
+                {correlation, 1.0, 0.0},
+                {0.0, 0.0, 1.0}};
+  Matrix factor = matrix;
+  EXPECT(!choleskyPartial(factor, 3));
 
-  Matrix R(A.transpose() * A);
-  choleskyPartial(R, 2);
+  Matrix permutation{{0.0, 0.0, 1.0},
+                     {0.0, 1.0, 0.0},
+                     {1.0, 0.0, 0.0}};
+  Matrix permuted = permutation * matrix * permutation.transpose();
+  EXPECT(!choleskyPartial(permuted, 3));
+}
 
-  double expectedSqrtCondition = 1e-40;
-  double actualSqrtCondition = R(0,0) / R(1,1);
+/* ************************************************************************* */
+// Verifies that diagonal variable scaling does not cause a false rejection.
+TEST(cholesky, choleskyPartialScaleInvariant) {
+  Matrix matrix{{2.0, 0.5}, {0.5, 1.0}};
+  Matrix diagonalScale{{1e-5, 0.0}, {0.0, 1.0}};
+  Matrix scaled = diagonalScale * matrix * diagonalScale;
 
-  DOUBLES_EQUAL(expectedSqrtCondition, actualSqrtCondition, 1e-41);
+  Eigen::LLT<Matrix, Eigen::Upper> rawCholesky(scaled);
+  CHECK(rawCholesky.info() == Eigen::Success);
+  EXPECT(rawCholesky.rcond() <
+         std::sqrt(std::numeric_limits<double>::epsilon()));
+
+  EXPECT(choleskyPartial(matrix, 2));
+  const Matrix expectedScaled = scaled;
+  EXPECT(choleskyPartial(scaled, 2));
+  const Matrix scaledR = scaled.triangularView<Eigen::Upper>();
+  EXPECT(assert_equal(expectedScaled, scaledR.transpose() * scaledR, 1e-9));
+
+  Matrix scaledDown{{1e-40}};
+  Matrix scaledUp{{1e40}};
+  EXPECT(choleskyPartial(scaledDown, 1));
+  EXPECT(choleskyPartial(scaledUp, 1));
 }
 
 /* ************************************************************************* */

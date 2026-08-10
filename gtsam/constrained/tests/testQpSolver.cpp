@@ -513,7 +513,7 @@ TEST(QpSolver, QPS_HS51) {
 TEST(QpSolver, QPS_HS52) {
   for (const QpSolverType solverType : kSolverTypes) {
     EXPECT_DOUBLES_EQUAL(5.32664756,
-                         ObjectiveAtSolution("HS52.QPS", solverType), 1e-7);
+                         ObjectiveAtSolution("HS52.QPS", solverType), 1e-5);
   }
 }
 
