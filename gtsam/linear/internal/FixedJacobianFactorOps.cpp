@@ -15,6 +15,7 @@
  * @author Frank Dellaert
  */
 
+#include <gtsam/dllexport.h>
 #include <gtsam/linear/internal/FixedJacobianFactorOps.h>
 
 namespace gtsam {
@@ -46,22 +47,14 @@ namespace internal {
   MACRO(9, 6)                                            \
   MACRO(9, 9)
 
-#if defined(__GNUC__)
-#define GTSAM_FIXED_JACOBIAN_HIDDEN __attribute__((visibility("hidden")))
-#else
-#define GTSAM_FIXED_JACOBIAN_HIDDEN
-#endif
-
 #define GTSAM_INSTANTIATE_FIXED_BLOCK(M, N)                                \
-  template GTSAM_FIXED_JACOBIAN_HIDDEN EIGEN_DONT_INLINE void              \
-  updateJacobianHessian<M, N>(DenseIndex, const FixedJacobianBlock<M, N>&, \
-                              DenseIndex, const FixedJacobianBlock<M, 1>&, \
-                              SymmetricBlockMatrix*);
+  template GTSAM_LOCAL EIGEN_DONT_INLINE void updateJacobianHessian<M, N>( \
+      DenseIndex, const FixedJacobianBlock<M, N>&, DenseIndex,             \
+      const FixedJacobianBlock<M, 1>&, SymmetricBlockMatrix*);
 
 GTSAM_FIXED_JACOBIAN_BLOCK_INSTANTIATIONS(GTSAM_INSTANTIATE_FIXED_BLOCK)
 
 #undef GTSAM_INSTANTIATE_FIXED_BLOCK
-#undef GTSAM_FIXED_JACOBIAN_HIDDEN
 #undef GTSAM_FIXED_JACOBIAN_BLOCK_INSTANTIATIONS
 
 }  // namespace internal
