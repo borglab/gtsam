@@ -25,6 +25,8 @@
 #include <gtsam/linear/TernaryJacobianFactor.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
+#include <array>
+
 namespace gtsam {
 
 /* ************************************************************************* */
@@ -85,36 +87,18 @@ struct NoiseModelFactorAliases<T1, T2, T3, T4, T5, T6, TExtra...> {
   using X6 = T6;
 };
 
-/** Compile-time dimensions for fixed-size binary factors. */
+/** Compile-time residual and variable dimensions for a factor of any arity. */
 template <typename OutputVec, typename... ValueTypes>
-struct FixedSizeBinaryDimensions {
-  inline constexpr static bool available = false;
-};
-
-template <typename OutputVec, typename T1, typename T2>
-struct FixedSizeBinaryDimensions<OutputVec, T1, T2> {
+struct FixedSizeDimensions {
+  inline constexpr static size_t arity = sizeof...(ValueTypes);
   inline constexpr static int M = traits<OutputVec>::dimension;
-  inline constexpr static int N1 = traits<T1>::dimension;
-  inline constexpr static int N2 = traits<T2>::dimension;
-  inline constexpr static bool available =
-      M != Eigen::Dynamic && N1 != Eigen::Dynamic && N2 != Eigen::Dynamic;
-};
-
-/** Compile-time dimensions for fixed-size ternary factors. */
-template <typename OutputVec, typename... ValueTypes>
-struct FixedSizeTernaryDimensions {
-  inline constexpr static bool available = false;
-};
-
-template <typename OutputVec, typename T1, typename T2, typename T3>
-struct FixedSizeTernaryDimensions<OutputVec, T1, T2, T3> {
-  inline constexpr static int M = traits<OutputVec>::dimension;
-  inline constexpr static int N1 = traits<T1>::dimension;
-  inline constexpr static int N2 = traits<T2>::dimension;
-  inline constexpr static int N3 = traits<T3>::dimension;
-  inline constexpr static bool available =
-      M != Eigen::Dynamic && N1 != Eigen::Dynamic && N2 != Eigen::Dynamic &&
-      N3 != Eigen::Dynamic;
+  inline constexpr static std::array<int, arity + 1> dimensions{
+      M, traits<ValueTypes>::dimension...};
+  template <size_t I>
+  inline constexpr static int N = dimensions.at(I + 1);
+  inline constexpr static bool allFixed =
+      M != Eigen::Dynamic &&
+      ((traits<ValueTypes>::dimension != Eigen::Dynamic) && ...);
 };
 }  // namespace detail
 
@@ -345,14 +329,11 @@ class NoiseModelFactorT
    */
   std::shared_ptr<GaussianFactor> linearize(
       const Values& values) const override {
-    using BinaryDimensions =
-        detail::FixedSizeBinaryDimensions<OutputVec, ValueTypes...>;
-    using TernaryDimensions =
-        detail::FixedSizeTernaryDimensions<OutputVec, ValueTypes...>;
-    if constexpr (BinaryDimensions::available) {
-      constexpr int M = BinaryDimensions::M;
-      constexpr int N1 = BinaryDimensions::N1;
-      constexpr int N2 = BinaryDimensions::N2;
+    using Dimensions = detail::FixedSizeDimensions<OutputVec, ValueTypes...>;
+    if constexpr (Dimensions::arity == 2 && Dimensions::allFixed) {
+      constexpr int M = Dimensions::M;
+      constexpr int N1 = Dimensions::template N<0>;
+      constexpr int N2 = Dimensions::template N<1>;
       static_assert(M > 0 && N1 > 0 && N2 > 0,
                     "Binary factor dimensions must be positive");
 
@@ -391,11 +372,11 @@ class NoiseModelFactorT
       const Eigen::Matrix<double, M, 1> fixedB = b;
       return std::make_shared<BinaryJacobianFactor<M, N1, N2>>(
           this->keys_[0], A1, this->keys_[1], A2, fixedB, linearModel);
-    } else if constexpr (TernaryDimensions::available) {
-      constexpr int M = TernaryDimensions::M;
-      constexpr int N1 = TernaryDimensions::N1;
-      constexpr int N2 = TernaryDimensions::N2;
-      constexpr int N3 = TernaryDimensions::N3;
+    } else if constexpr (Dimensions::arity == 3 && Dimensions::allFixed) {
+      constexpr int M = Dimensions::M;
+      constexpr int N1 = Dimensions::template N<0>;
+      constexpr int N2 = Dimensions::template N<1>;
+      constexpr int N3 = Dimensions::template N<2>;
       static_assert(M > 0 && N1 > 0 && N2 > 0 && N3 > 0,
                     "Ternary factor dimensions must be positive");
 
