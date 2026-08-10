@@ -71,6 +71,32 @@ conda run -n py312 python timing/benchmark_range_factor_plaza2.py \
 The helper script runs the benchmark executable, preserves the CSV, and prints a
 short summary that can be copied into a PR description.
 
+## Binary Factor Pose-Graph Benchmark
+
+This benchmark compares the automatic fixed-size binary linearization of
+`BetweenFactor<Pose2>` with an explicitly qualified generic
+`NoiseModelFactor::linearize()` control. Both modes use the same graph, initial
+values, COLAMD ordering, and fixed number of Levenberg-Marquardt iterations.
+Trial order alternates to reduce systematic timing drift, and the executable
+checks that both modes produce equivalent final errors and poses.
+
+From the build directory:
+
+```bash
+make -j6 timeBinaryFactorPoseGraph
+./timing/timeBinaryFactorPoseGraph \
+  --dataset w10000.graph \
+  --warmup 1 \
+  --repeats 7 \
+  --linearize-repeats 3 \
+  --iterations 10 \
+  --output ../timing/results/binary_factor_pose_graph.csv
+```
+
+The console summary reports generic and binary medians plus the median paired
+percentage change. The optional CSV contains one row per mode and measured
+trial for more detailed analysis.
+
 ## Bayes-Tree Covariance Results
 
 The Bayes-tree covariance paper uses generated benchmark output rather than
