@@ -92,6 +92,29 @@ Matrix23 matrix{{1.0, 2.0, 3.0},
 * Documentation-only changes do not require unrelated C++ tests, but should
   still pass applicable documentation checks and `git diff --check`.
 
+## Debugging indeterminate linear systems
+
+* Use the correctly spelled `IndeterminateSystemException`. The former
+  `IndeterminantLinearSystemException` name is available only through the
+  GTSAM 4.3 deprecation machinery.
+* Treat `nearbyVariable()` as the key where elimination detected the problem,
+  not necessarily its source; the reported key depends on graph structure and
+  elimination ordering.
+* Preserve the failing nonlinear graph, values, and ordering. Linearize at
+  those values, request the Jacobian with an explicit ordering, and inspect its
+  singular spectrum and null space. Prefer Jacobian rank analysis over a
+  determinant or Hessian rank analysis because forming the Hessian squares the
+  condition number.
+* Check for missing gauge constraints, unused or accidental keys, disconnected
+  components, degenerate geometry or motion, lost observability after
+  marginalization, inconsistent units or noise scales, and negative curvature
+  introduced by custom Hessian factors.
+* Use a temporary, physically meaningful prior to test an observability
+  hypothesis, then recompute rank. Do not present damping or a dense solve as a
+  fix unless the model itself becomes observable and well conditioned.
+* See `gtsam/linear/doc/IndeterminateSystemException.ipynb` for a runnable
+  Python example and a full diagnostic checklist.
+
 ## C++ test organization
 
 * Avoid one large anonymous namespace collecting every helper at the top of a

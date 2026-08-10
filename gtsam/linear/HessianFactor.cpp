@@ -571,7 +571,7 @@ std::shared_ptr<GaussianConditional> HessianFactor::eliminateCholesky(const Orde
     keys.print("Frontal keys ");
     print("HessianFactor:");
 #endif
-    throw IndeterminantLinearSystemException(keys.front());
+    throw IndeterminateSystemException(keys.front());
   }
 
   // Return result
