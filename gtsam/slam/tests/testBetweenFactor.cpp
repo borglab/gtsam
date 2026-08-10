@@ -153,22 +153,23 @@ bool checkBetweenType(const Value& first, const Value& second) {
   Values values{{1, genericValue(first)}, {2, genericValue(second)}};
   const auto expected = factor.NoiseModelFactor::linearize(values);
   const auto actual = factor.linearize(values);
-  const bool isBinary = static_cast<bool>(std::dynamic_pointer_cast<
-      BinaryJacobianFactor<Dimension, Dimension, Dimension>>(actual));
-  return isBinary && assert_equal(*expected, *actual, 1e-9);
+  const bool isBetween = static_cast<bool>(
+      std::dynamic_pointer_cast<BetweenJacobianFactor<Dimension>>(actual));
+  return isBetween && assert_equal(*expected, *actual, 1e-9);
 }
 
 // Verifies all supported noise models match generic binary linearization.
 TEST(BetweenFactor, BinaryLinearizationNoiseModels) {
   const Matrix2 covariance{{2.0, 0.3}, {0.3, 1.0}};
   const std::vector<SharedNoiseModel> models{
-      SharedNoiseModel(), noiseModel::Unit::Create(2),
+      SharedNoiseModel(),
+      noiseModel::Unit::Create(2),
       noiseModel::Isotropic::Sigma(2, 0.5),
       noiseModel::Diagonal::Sigmas(Vector2{0.5, 0.8}),
       noiseModel::Gaussian::Covariance(covariance),
-      noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(1.345),
-                                 noiseModel::Diagonal::Sigmas(
-                                     Vector2{0.5, 0.8})),
+      noiseModel::Robust::Create(
+          noiseModel::mEstimator::Huber::Create(1.345),
+          noiseModel::Diagonal::Sigmas(Vector2{0.5, 0.8})),
       noiseModel::Constrained::MixedSigmas(Vector2{0.0, 0.8})};
   const Values values{{1, genericValue(Pose2(1.0, 2.0, 0.3))},
                       {2, genericValue(Point2(4.0, -1.0))}};
@@ -184,13 +185,79 @@ TEST(BetweenFactor, BinaryLinearizationNoiseModels) {
   }
 }
 
-// Verifies representative fixed-size BetweenFactor instantiations are binary.
+// Verifies representative fixed-size BetweenFactor instantiations select the
+// corresponding BetweenJacobianFactor, including the scalar specialization.
 TEST(BetweenFactor, BinaryLinearizationFixedTypes) {
+  EXPECT((checkBetweenType<double, 1>(0.3, 1.2)));
   EXPECT((checkBetweenType<Pose2, 3>(Pose2(), Pose2(1.0, 2.0, 0.3))));
-  EXPECT((checkBetweenType<Pose3, 6>(
-      Pose3(), Pose3(Rot3::Rz(0.2), Point3(1, 2, 3)))));
+  EXPECT((checkBetweenType<Pose3, 6>(Pose3(),
+                                     Pose3(Rot3::Rz(0.2), Point3(1, 2, 3)))));
   EXPECT((checkBetweenType<Rot2, 1>(Rot2(), Rot2::fromAngle(0.3))));
   EXPECT((checkBetweenType<Rot3, 3>(Rot3(), Rot3::Rz(0.2))));
+}
+
+// Compares whole and ranged Hessian assembly against generic linearization for
+// null/unit, diagonal, robust, full Gaussian, and constrained noise models.
+// Reversed key slots exercise the physical upper-triangular column rules.
+TEST(BetweenFactor, BetweenJacobianHessianMatchesGeneric) {
+  const Matrix3 covariance{{2.0, 0.3, -0.1}, {0.3, 1.5, 0.2}, {-0.1, 0.2, 1.0}};
+  const std::vector<SharedNoiseModel> models{
+      SharedNoiseModel(),
+      noiseModel::Unit::Create(3),
+      noiseModel::Isotropic::Sigma(3, 0.5),
+      noiseModel::Diagonal::Sigmas(Vector3{0.5, 0.8, 1.2}),
+      noiseModel::Gaussian::Covariance(covariance),
+      noiseModel::Robust::Create(
+          noiseModel::mEstimator::Huber::Create(1.345),
+          noiseModel::Diagonal::Sigmas(Vector3{0.5, 0.8, 1.2})),
+      noiseModel::Constrained::MixedSigmas(Vector3{0.0, 0.8, 1.2})};
+  const Values values{{1, genericValue(Pose2(1.0, 2.0, 0.3))},
+                      {2, genericValue(Pose2(4.0, -1.0, -0.2))}};
+
+  for (const SharedNoiseModel& model : models) {
+    const BetweenFactor<Pose2> factor(1, 2, Pose2(2.5, -2.0, -0.4), model);
+    const auto generic = factor.NoiseModelFactor::linearize(values);
+    const auto specialized = factor.linearize(values);
+    const auto between =
+        std::dynamic_pointer_cast<BetweenJacobianFactor<3>>(specialized);
+    CHECK(between);
+    EXPECT(assert_equal(*generic, *specialized, 1e-12));
+
+    const auto cloned = between->clone();
+    const auto clonedBetween =
+        std::dynamic_pointer_cast<BetweenJacobianFactor<3>>(cloned);
+    CHECK(clonedBetween);
+    EXPECT(assert_equal(*between, *clonedBetween, 1e-12));
+
+    for (const bool reverse : {false, true}) {
+      const KeyVector infoKeys = reverse ? KeyVector{2, 1} : KeyVector{1, 2};
+      const std::vector<size_t> dimensions{3, 3, 1};
+      SymmetricBlockMatrix genericInfo(dimensions), wholeInfo(dimensions),
+          rangedInfo(dimensions);
+      genericInfo.setZero();
+      wholeInfo.setZero();
+      rangedInfo.setZero();
+
+      if (model && model->isConstrained()) {
+        CHECK_EXCEPTION(specialized->updateHessian(infoKeys, &wholeInfo),
+                        std::invalid_argument);
+        CHECK_EXCEPTION(specialized->updateHessian(infoKeys, &rangedInfo, 0, 1),
+                        std::invalid_argument);
+        continue;
+      }
+
+      generic->updateHessian(infoKeys, &genericInfo);
+      specialized->updateHessian(infoKeys, &wholeInfo);
+      for (DenseIndex column = 0; column < rangedInfo.nBlocks(); ++column) {
+        specialized->updateHessian(infoKeys, &rangedInfo, column, column + 1);
+      }
+
+      EXPECT(assert_equal(Matrix(genericInfo.selfadjointView()),
+                          Matrix(wholeInfo.selfadjointView()), 1e-12));
+      EXPECT(assert_equal(Matrix(genericInfo.selfadjointView()),
+                          Matrix(rangedInfo.selfadjointView()), 1e-12));
+    }
+  }
 }
 
 // Verifies dynamic dimensions retain the generic JacobianFactor path.

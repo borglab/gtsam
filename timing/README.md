@@ -73,12 +73,13 @@ short summary that can be copied into a PR description.
 
 ## Binary Factor Pose-Graph Benchmark
 
-This benchmark compares the automatic fixed-size binary linearization of
-`BetweenFactor<Pose2>` with an explicitly qualified generic
-`NoiseModelFactor::linearize()` control. Both modes use the same graph, initial
-values, COLAMD ordering, and fixed number of Levenberg-Marquardt iterations.
-Trial order alternates to reduce systematic timing drift, and the executable
-checks that both modes produce equivalent final errors and poses.
+This benchmark compares three `BetweenFactor<Pose2>` linearization modes: an
+explicitly qualified generic `NoiseModelFactor::linearize()` control, the
+ordinary `BinaryJacobianFactor<3,3,3>`, and `BetweenJacobianFactor<3>`. All modes
+use the same graph, initial values, COLAMD ordering, and fixed number of
+Levenberg-Marquardt iterations. Trial order rotates among the three modes to
+reduce systematic timing drift, and the executable checks that every mode
+produces equivalent final errors and poses.
 
 From the build directory:
 
@@ -93,9 +94,33 @@ make -j6 timeBinaryFactorPoseGraph
   --output ../timing/results/binary_factor_pose_graph.csv
 ```
 
-The console summary reports generic and binary medians plus the median paired
-percentage change. The optional CSV contains one row per mode and measured
-trial for more detailed analysis.
+The console summary reports all three medians, the paired binary-versus-generic
+change, and the paired between-versus-binary change. The optional CSV contains
+one row per mode and measured trial for more detailed analysis.
+
+Use `--unit-noise` to replace every between-factor noise model in all three
+graphs with `Unit(3)`. This also exercises the structured Hessian path used by
+null noise models:
+
+```bash
+./timing/timeBinaryFactorPoseGraph \
+  --dataset w10000.graph \
+  --unit-noise \
+  --warmup 1 \
+  --repeats 9 \
+  --linearize-repeats 5 \
+  --iterations 5 \
+  --output ../timing/results/between_jacobian_pose_graph_unit.csv
+```
+
+In a Release build on arm64 macOS, this command benchmarked 10,000 poses and
+64,311 between factors. Paired medians showed `BetweenJacobianFactor` reducing
+linearization time by 3.9% and five-iteration optimization time by 4.0% relative
+to the ordinary fixed-size `BinaryJacobianFactor`. The ordinary binary factor
+was itself 28.4% faster to linearize and 31.1% faster to optimize than generic
+linearization. All three modes produced identical final errors and poses. The
+repository provides `w100.graph` and `w10000.graph`; it does not contain a
+separate `w1000.graph` dataset.
 
 ## Ternary Factor Benchmarks
 

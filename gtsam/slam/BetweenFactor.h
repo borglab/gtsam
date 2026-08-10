@@ -19,7 +19,7 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Lie.h>
-#include <gtsam/linear/BinaryJacobianFactor.h>
+#include <gtsam/linear/BetweenJacobianFactor.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 
@@ -67,6 +67,22 @@ namespace gtsam {
     typedef NoiseModelFactorT<ErrorVector, VALUE, VALUE> Base;
 
     VALUE measured_; /** The measurement */
+
+  protected:
+    std::shared_ptr<GaussianFactor> createBinaryJacobianFactor(
+        const Matrix& A1, const Matrix& A2, const Vector& b,
+        const SharedDiagonal& model) const override {
+      constexpr int D = traits<VALUE>::dimension;
+      if constexpr (D != Eigen::Dynamic) {
+        const Eigen::Matrix<double, D, D> fixedA1 = A1;
+        const Eigen::Matrix<double, D, D> fixedA2 = A2;
+        const Eigen::Matrix<double, D, 1> fixedB = b;
+        return std::make_shared<BetweenJacobianFactor<D>>(
+            this->keys_[0], fixedA1, this->keys_[1], fixedA2, fixedB, model);
+      } else {
+        return Base::createBinaryJacobianFactor(A1, A2, b, model);
+      }
+    }
 
   public:
 

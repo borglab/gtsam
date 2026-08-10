@@ -252,6 +252,27 @@ class NoiseModelFactorT
   template <typename T = void>
   using MatrixTypeT = Matrix;
 
+  /** Construct the fixed-size binary factor selected by this nonlinear type. */
+  virtual std::shared_ptr<GaussianFactor> createBinaryJacobianFactor(
+      const Matrix& A1, const Matrix& A2, const Vector& b,
+      const SharedDiagonal& model) const {
+    using Dimensions =
+        detail::FixedSizeBinaryDimensions<OutputVec, ValueTypes...>;
+    if constexpr (Dimensions::available) {
+      constexpr int M = Dimensions::M;
+      constexpr int N1 = Dimensions::N1;
+      constexpr int N2 = Dimensions::N2;
+      const Eigen::Matrix<double, M, N1> fixedA1 = A1;
+      const Eigen::Matrix<double, M, N2> fixedA2 = A2;
+      const Eigen::Matrix<double, M, 1> fixedB = b;
+      return std::make_shared<BinaryJacobianFactor<M, N1, N2>>(
+          this->keys_[0], fixedA1, this->keys_[1], fixedA2, fixedB, model);
+    } else {
+      throw std::logic_error(
+          "Fixed binary factor factory called for dynamic dimensions");
+    }
+  }
+
  public:
   /**
    * The type of the I'th template param can be obtained as ValueType<I>.
@@ -386,11 +407,8 @@ class NoiseModelFactorT
         linearModel = constrained->unit();
       }
 
-      const Eigen::Matrix<double, M, N1> A1 = jacobians[0];
-      const Eigen::Matrix<double, M, N2> A2 = jacobians[1];
-      const Eigen::Matrix<double, M, 1> fixedB = b;
-      return std::make_shared<BinaryJacobianFactor<M, N1, N2>>(
-          this->keys_[0], A1, this->keys_[1], A2, fixedB, linearModel);
+      return createBinaryJacobianFactor(jacobians[0], jacobians[1], b,
+                                        linearModel);
     } else if constexpr (TernaryDimensions::available) {
       constexpr int M = TernaryDimensions::M;
       constexpr int N1 = TernaryDimensions::N1;
