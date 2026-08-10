@@ -31,8 +31,9 @@ namespace gtsam {
           + " (Symbol: " + gtsam::DefaultKeyFormatter(gtsam::Symbol(j_)) + ").\n"
           "\n\
 Thrown when a linear system is ill-posed.  The most common cause for this\n\
-error is having underconstrained variables.  Mathematically, the system is\n\
-underdetermined.  See the GTSAM Doxygen documentation for\n\
+error is having underconstrained variables, but the exception is also raised\n\
+for nearly indeterminate systems that are too poorly conditioned to solve\n\
+reliably.  See the GTSAM Doxygen documentation for\n\
 gtsam::IndeterminateSystemException and the user\n\
 guide at\n\
 https://github.com/borglab/gtsam/blob/develop/gtsam/linear/doc/IndeterminateSystemException.ipynb\n\

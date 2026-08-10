@@ -100,6 +100,10 @@ Matrix23 matrix{{1.0, 2.0, 3.0},
 * Treat `nearbyVariable()` as the key where elimination detected the problem,
   not necessarily its source; the reported key depends on graph structure and
   elimination ordering.
+* Remember that the exception also protects against nearly indeterminate
+  systems. A mathematically full-rank graph can trigger it when, for example, a
+  very strong finite prior is combined with much looser measurement noise and
+  the resulting weight ratio makes the system numerically ill-conditioned.
 * Preserve the failing nonlinear graph, values, and ordering. Linearize at
   those values, request the Jacobian with an explicit ordering, and inspect its
   singular spectrum and null space. Prefer Jacobian rank analysis over a
@@ -110,7 +114,10 @@ Matrix23 matrix{{1.0, 2.0, 3.0},
   marginalization, inconsistent units or noise scales, and negative curvature
   introduced by custom Hessian factors.
 * Use a temporary, physically meaningful prior to test an observability
-  hypothesis, then recompute rank. Do not present damping or a dense solve as a
+  hypothesis, then recompute rank. If the intended prior fixes a gauge exactly,
+  prefer a hard constraint such as `noiseModel::Constrained::All(dimension)`;
+  it expresses that intent without creating an extreme finite weight that can
+  itself trigger the exception. Do not present damping or a dense solve as a
   fix unless the model itself becomes observable and well conditioned.
 * See `gtsam/linear/doc/IndeterminateSystemException.ipynb` for a runnable
   Python example and a full diagnostic checklist.

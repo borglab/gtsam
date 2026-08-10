@@ -294,9 +294,9 @@ TEST( Lago, largeGraphNoisy_orientations ) {
   string inputFile = findExampleDataFile("noisyToyGraph");
   const auto [g, initial] = readG2o(inputFile);
 
-  // Add prior on the pose having index (key) = 0
+  // Fix the gauge with an exact prior on pose 0.
   NonlinearFactorGraph graphWithPrior = *g;
-  noiseModel::Diagonal::shared_ptr priorModel = noiseModel::Diagonal::Variances(Vector3(1e-2, 1e-2, 1e-4));
+  SharedNoiseModel priorModel = noiseModel::Constrained::All(3);
   graphWithPrior.addPrior(0, Pose2(), priorModel);
 
   VectorValues actualVV = lago::initializeOrientations(graphWithPrior);

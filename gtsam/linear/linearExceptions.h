@@ -24,9 +24,12 @@ namespace gtsam {
 
   /**
   Thrown when a linear system is ill-posed.  The most common cause for this
-  error is having underconstrained variables.  Mathematically, the system is
-  either underdetermined, or its quadratic error function is concave in some
-  directions.
+  error is having underconstrained variables.  The exception also protects
+  against nearly indeterminate systems that are mathematically full rank but
+  too poorly conditioned to solve reliably.  Mathematically, the system is
+  underdetermined, its quadratic error function is concave in some directions,
+  or its numerical conditioning makes it indistinguishable from a singular
+  system at machine precision.
 
   Examples of situations causing this error are:
    - A landmark observed by two cameras with a very small baseline will have
@@ -37,6 +40,9 @@ namespace gtsam {
    - An overall scale or rigid transformation ambiguity, for example missing
      a prior or hard constraint on the first pose, or missing a scale
      constraint between the first two cameras (in structure-from-motion).
+   - A very strong finite prior combined with much looser measurement noise.
+     The graph may have a unique mathematical solution, but the extreme ratio
+     between factor weights can make it numerically ill-conditioned.
 
   Mathematically, the following conditions cause this problem:
    - Underdetermined system:  This occurs when the variables are not
@@ -65,6 +71,13 @@ namespace gtsam {
      or variable units can be poorly-conditioned.
 
   Resolving this problem:
+   - If a prior is intended to fix a gauge exactly, as is often the case for a
+     gauge-fixing prior, prefer a hard constraint such as a PriorFactor with
+     noiseModel::Constrained::All(dimension) over an extremely strong finite
+     prior.  The hard constraint expresses the intended model without
+     introducing an extreme finite weight, so it will not trigger this
+     exception merely because of the weight ratio.  Other underconstrained or
+     ill-conditioned parts of the graph can still trigger the exception.
    - This exception contains the variable at which the problem was
      discovered (IndeterminateSystemException::nearbyVariable()).
      Note, however, that this is not necessarily the variable where the
