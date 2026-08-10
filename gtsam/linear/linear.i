@@ -130,6 +130,8 @@ virtual class Null: gtsam::noiseModel::mEstimator::Base {
 
   double weight(double error) const;
   double loss(double error) const;
+  double graduatedWeight(double error, double mu) const;
+  double graduatedLoss(double error, double mu) const;
 };
 
 virtual class Fair: gtsam::noiseModel::mEstimator::Base {
@@ -141,6 +143,8 @@ virtual class Fair: gtsam::noiseModel::mEstimator::Base {
 
   double weight(double error) const;
   double loss(double error) const;
+  double graduatedWeight(double error, double mu) const;
+  double graduatedLoss(double error, double mu) const;
 };
 
 virtual class Huber: gtsam::noiseModel::mEstimator::Base {
@@ -152,6 +156,8 @@ virtual class Huber: gtsam::noiseModel::mEstimator::Base {
 
   double weight(double error) const;
   double loss(double error) const;
+  double graduatedWeight(double error, double mu) const;
+  double graduatedLoss(double error, double mu) const;
 };
 
 virtual class Cauchy: gtsam::noiseModel::mEstimator::Base {
@@ -164,6 +170,8 @@ virtual class Cauchy: gtsam::noiseModel::mEstimator::Base {
 
   double weight(double error) const;
   double loss(double error) const;
+  double graduatedWeight(double error, double mu) const;
+  double graduatedLoss(double error, double mu) const;
 };
 
 virtual class Tukey: gtsam::noiseModel::mEstimator::Base {
@@ -176,6 +184,8 @@ virtual class Tukey: gtsam::noiseModel::mEstimator::Base {
 
   double weight(double error) const;
   double loss(double error) const;
+  double graduatedWeight(double error, double mu) const;
+  double graduatedLoss(double error, double mu) const;
 };
 
 virtual class Welsch: gtsam::noiseModel::mEstimator::Base {
@@ -188,23 +198,35 @@ virtual class Welsch: gtsam::noiseModel::mEstimator::Base {
 
   double weight(double error) const;
   double loss(double error) const;
+  double graduatedWeight(double error, double mu) const;
+  double graduatedLoss(double error, double mu) const;
 };
 
 virtual class GemanMcClure: gtsam::noiseModel::mEstimator::Base {
+  enum GradScheme { STANDARD, SCALE_INVARIANT };
+
   GemanMcClure(double c);
   GemanMcClure(double c,
-    gtsam::noiseModel::mEstimator::GemanMcClure::GradScheme graduation,
-    gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
+      gtsam::noiseModel::mEstimator::GemanMcClure::GradScheme graduation,
+      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
   static gtsam::noiseModel::mEstimator::GemanMcClure* Create(double c);
+  static gtsam::noiseModel::mEstimator::GemanMcClure* Create(
+      double c,
+      gtsam::noiseModel::mEstimator::GemanMcClure::GradScheme graduation,
+      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
 
   // enabling serialization functionality
   void serializable() const;
 
   double weight(double error) const;
   double loss(double error) const;
+  double graduatedWeight(double error, double mu) const;
+  double graduatedLoss(double error, double mu) const;
 };
 
 virtual class TruncatedLeastSquares: gtsam::noiseModel::mEstimator::Base {
+  enum GradScheme { STANDARD, GNC_LINEAR, GNC_SUPERLINEAR };
+
   TruncatedLeastSquares(double c);
   TruncatedLeastSquares(
       double c,
@@ -212,13 +234,17 @@ virtual class TruncatedLeastSquares: gtsam::noiseModel::mEstimator::Base {
       gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
   static gtsam::noiseModel::mEstimator::TruncatedLeastSquares* Create(double c);
   static gtsam::noiseModel::mEstimator::TruncatedLeastSquares* Create(
-      double c, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
+      double c,
+      gtsam::noiseModel::mEstimator::TruncatedLeastSquares::GradScheme graduation,
+      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
 
   // enabling serialization functionality
   void serializable() const;
 
   double weight(double error) const;
   double loss(double error) const;
+  double graduatedWeight(double error, double mu) const;
+  double graduatedLoss(double error, double mu) const;
 };
 
 
@@ -232,6 +258,8 @@ virtual class DCS: gtsam::noiseModel::mEstimator::Base {
 
   double weight(double error) const;
   double loss(double error) const;
+  double graduatedWeight(double error, double mu) const;
+  double graduatedLoss(double error, double mu) const;
 };
 
 virtual class L2WithDeadZone: gtsam::noiseModel::mEstimator::Base {
@@ -244,6 +272,8 @@ virtual class L2WithDeadZone: gtsam::noiseModel::mEstimator::Base {
 
   double weight(double error) const;
   double loss(double error) const;
+  double graduatedWeight(double error, double mu) const;
+  double graduatedLoss(double error, double mu) const;
 };
 
 virtual class AsymmetricTukey: gtsam::noiseModel::mEstimator::Base {
@@ -256,6 +286,8 @@ virtual class AsymmetricTukey: gtsam::noiseModel::mEstimator::Base {
 
   double weight(double error) const;
   double loss(double error) const;
+  double graduatedWeight(double error, double mu) const;
+  double graduatedLoss(double error, double mu) const;
 };
 
 virtual class AsymmetricCauchy: gtsam::noiseModel::mEstimator::Base {
@@ -268,20 +300,27 @@ virtual class AsymmetricCauchy: gtsam::noiseModel::mEstimator::Base {
 
   double weight(double error) const;
   double loss(double error) const;
+  double graduatedWeight(double error, double mu) const;
+  double graduatedLoss(double error, double mu) const;
 };
 
 virtual class Custom: gtsam::noiseModel::mEstimator::Base {
   Custom(gtsam::noiseModel::mEstimator::CustomWeightFunction weight,
+         gtsam::noiseModel::mEstimator::CustomLossFunction loss);
+  Custom(gtsam::noiseModel::mEstimator::CustomWeightFunction weight,
          gtsam::noiseModel::mEstimator::CustomLossFunction loss,
-         gtsam::noiseModel::mEstimator::CustomGraduatedWeightFunction weight,
-         gtsam::noiseModel::mEstimator::CustomGraduatedLossFunction loss,
+         gtsam::noiseModel::mEstimator::CustomGraduatedWeightFunction grad_weight,
+         gtsam::noiseModel::mEstimator::CustomGraduatedLossFunction grad_loss,
          gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight,
          std::string name);
   static gtsam::noiseModel::mEstimator::Custom* Create(
       gtsam::noiseModel::mEstimator::CustomWeightFunction weight,
+      gtsam::noiseModel::mEstimator::CustomLossFunction loss);
+  static gtsam::noiseModel::mEstimator::Custom* Create(
+      gtsam::noiseModel::mEstimator::CustomWeightFunction weight,
       gtsam::noiseModel::mEstimator::CustomLossFunction loss,
-      gtsam::noiseModel::mEstimator::CustomGraduatedWeightFunction weight,
-      gtsam::noiseModel::mEstimator::CustomGraduatedLossFunction loss,
+      gtsam::noiseModel::mEstimator::CustomGraduatedWeightFunction grad_weight,
+      gtsam::noiseModel::mEstimator::CustomGraduatedLossFunction grad_loss,
       gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight,
       std::string name);
 
@@ -290,6 +329,8 @@ virtual class Custom: gtsam::noiseModel::mEstimator::Base {
 
   double weight(double error) const;
   double loss(double error) const;
+  double graduatedWeight(double error, double mu) const;
+  double graduatedLoss(double error, double mu) const;
 };
 
 
