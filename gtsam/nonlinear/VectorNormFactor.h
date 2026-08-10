@@ -141,9 +141,6 @@ class VectorNormFactor : public NoiseModelFactorN<Eigen::Matrix<double, N, 1>> {
 #endif
 };
 
-/// The most common instantiation, eg. for gravity or magnetic field vectors
-using VectorNormFactor3 = VectorNormFactor<3>;
-
 /// traits
 template <int N>
 struct traits<VectorNormFactor<N>> : public Testable<VectorNormFactor<N>> {};
