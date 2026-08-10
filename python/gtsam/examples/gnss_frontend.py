@@ -252,13 +252,15 @@ def undiff_observations(frame, data):
 # --------------------------------------------------------------------------- #
 # Doppler (range rate): single receiver, same open-sky RINEX as the PPP example
 # --------------------------------------------------------------------------- #
-def load_doppler(datadir, n_epochs=120, elmask_deg=15.0):
-    """Load the open-sky RINEX and return per-epoch Doppler measurements.
+def load_doppler(observation_path, navigation_path=None, reference_ecef=None,
+                 n_epochs=120, elmask_deg=15.0):
+    """Load RINEX files and return per-epoch Doppler measurements.
 
-    Uses the observation and broadcast navigation files of the PPP-RTK dataset
-    (no CLAS corrections: Doppler needs neither precise clocks nor atmosphere).
-    Only the L1 Doppler of the healthy GPS/Galileo/QZSS satellites above the
-    elevation mask is kept.
+    ``observation_path`` and ``navigation_path`` can point to any static-receiver
+    RINEX observation and broadcast-navigation files. For compatibility with
+    this example, omitting ``navigation_path`` treats ``observation_path`` as
+    the cssrlib-data root and selects the open-sky day 233 files automatically.
+    ``reference_ecef`` defaults to the RINEX header position for custom files.
 
     Returns a namespace with ``frames`` (list of per-epoch namespaces holding
     the observation time and the per-satellite records), ``xyz_ref``/``pos_ref``
@@ -269,18 +271,24 @@ def load_doppler(datadir, n_epochs=120, elmask_deg=15.0):
     from cssrlib.rinex import rnxdec
 
     syss = (uGNSS.GPS, uGNSS.GAL, uGNSS.QZS)
-    xyz_ref = np.array([-3962108.7007, 3381309.5532, 3668678.6648])
-    pos_ref = ecef2pos(xyz_ref)
     elmask = np.deg2rad(elmask_deg)
-    bdir = f"{datadir}/doy2025-233/"
+    if navigation_path is None:
+        bdir = f"{observation_path}/doy2025-233/"
+        observation_path = bdir + "233h_rnx.obs"
+        navigation_path = bdir + "233h_rnx.nav"
+        if reference_ecef is None:
+            reference_ecef = [-3962108.7007, 3381309.5532, 3668678.6648]
 
     sigs = [rSigRnx(f"{c}{t}1{a}") for c, a in (("G", "C"), ("E", "C"), ("J", "C"))
             for t in "CLDS"]
-    nav = rnxdec().decode_nav(bdir + "233h_rnx.nav", Nav())
+    nav = rnxdec().decode_nav(str(navigation_path), Nav())
     rnx = rnxdec()
     rnx.setSignals(sigs)
-    assert rnx.decode_obsh(bdir + "233h_rnx.obs") >= 0
+    assert rnx.decode_obsh(str(observation_path)) >= 0
     rnx.autoSubstituteSignals()
+    xyz_ref = np.asarray(rnx.pos if reference_ecef is None else reference_ecef,
+                         dtype=float)
+    pos_ref = ecef2pos(xyz_ref)
 
     frames = []
     for _ in range(n_epochs):
@@ -337,6 +345,35 @@ def doppler_observations(previous, current, data):
             meas_args=(o.doppler, o.lam, _P3(o.sat_pos), _P3(o.sat_vel),
                        _P3(data.xyz_ref)),
             epoch_args=(dt, sat_drift))
+
+
+def save_doppler_data(data, path):
+    """Save factor-ready Doppler arrays for use without cssrlib."""
+    from cssrlib.gnss import timediff
+
+    records, offsets = [], [0]
+    epoch_dt = [0.0]
+    for previous, current in zip(data.frames[:-1], data.frames[1:]):
+        records.extend(doppler_observations(previous, current, data))
+        offsets.append(len(records))
+        epoch_dt.append(timediff(current.t, previous.t))
+
+    ecef_R_enu = np.column_stack(
+        [ecef2enu(data.pos_ref, axis) for axis in np.eye(3)])
+    np.savez_compressed(
+        path,
+        receiver_ecef=data.xyz_ref,
+        ecef_R_enu=ecef_R_enu,
+        epoch_dt=np.asarray(epoch_dt),
+        epoch_offsets=np.asarray(offsets, dtype=np.int32),
+        satellite=np.asarray([o.sat for o in records], dtype=np.int16),
+        doppler=np.asarray([o.meas_args[0] for o in records]),
+        elevation=np.asarray([o.el for o in records]),
+        wavelength=np.asarray([o.lam for o in records]),
+        satellite_position=np.asarray([o.meas_args[2] for o in records]),
+        satellite_velocity=np.asarray([o.meas_args[3] for o in records]),
+        satellite_clock_drift=np.asarray([o.epoch_args[1] for o in records]),
+    )
 
 
 # --------------------------------------------------------------------------- #
