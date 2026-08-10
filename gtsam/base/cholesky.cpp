@@ -34,7 +34,9 @@ static const double underconstrainedPrior = 1e-5;
 // Reject a Cholesky pivot more than 12 binary exponents below the square root
 // of its original diagonal entry. This is invariant under diagonal changes of
 // variable units, although the pivots still depend on elimination ordering.
-static constexpr double minimumNormalizedPivot = 1.0 / 4096.0;
+// Compare squared values below to avoid a square root and division per pivot.
+static constexpr double minimumNormalizedPivotSquared =
+    1.0 / (4096.0 * 4096.0);
 
 /* ************************************************************************* */
 static inline int choleskyStep(Matrix& ATA, size_t k, size_t order) {
@@ -136,10 +138,9 @@ bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft) {
   }
   const auto upperFactor = llt.matrixU();
   for (DenseIndex index = 0; index < upperFactor.rows(); ++index) {
-    const double normalizedPivot =
-        std::abs(upperFactor(index, index)) / std::sqrt(A(index, index));
-    if (!std::isfinite(normalizedPivot) ||
-        normalizedPivot < minimumNormalizedPivot) {
+    const double pivot = upperFactor(index, index);
+    if (!std::isfinite(pivot) ||
+        pivot * pivot < minimumNormalizedPivotSquared * A(index, index)) {
       return false;
     }
   }
