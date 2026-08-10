@@ -21,6 +21,15 @@ namespace gtsam {
 
 /**
  * A class for a soft prior on any Value type.
+ *
+ * The noise model applies to `-Local(value, prior)`. For pose types using
+ * GTSAM's right-hand retraction and exponential-map chart, the covariance is
+ * expressed in the local/body frame of the prior pose. For `Pose3`, the
+ * tangent-space order is rotation followed by translation.
+ *
+ * See `gtsam/nonlinear/doc/PriorFactor.ipynb` for a detailed discussion of
+ * coordinate frames and covariance conventions.
+ *
  * @ingroup nonlinear
  **/
 template <class VALUE>

@@ -34,6 +34,15 @@ namespace gtsam {
 
   /**
    * A class for a measurement predicted by "between(config[key1],config[key2])"
+   *
+   * The noise model applies to `Local(measured, between(p1, p2))`. For pose
+   * types using GTSAM's right-hand retraction, this means the covariance is
+   * expressed in the local frame of the second (target) pose. For `Pose3`, the
+   * tangent-space order is rotation followed by translation.
+   *
+   * See `gtsam/slam/doc/BetweenFactor.ipynb` for a detailed discussion of
+   * coordinate frames and covariance conventions.
+   *
    * @tparam VALUE the Value type
    * @ingroup slam
    */
