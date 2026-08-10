@@ -176,6 +176,55 @@ TEST(TernaryJacobianFactor, ConstrainedRangedUpdateThrows) {
                   std::invalid_argument);
 }
 
+// Verifies an uncommon dimension combination instantiates and executes the
+// header-defined fixed-size helper fallback.
+TEST(TernaryJacobianFactor, UnlistedDimensionsUseInlineFallback) {
+  using UnlistedFactor = TernaryJacobianFactor<4, 2, 4, 5>;
+  const Eigen::Matrix<double, 4, 2> A1{
+      {1.0, 2.0}, {-1.0, 0.5}, {3.0, -2.0}, {0.25, 4.0}};
+  const Matrix4 A2{{2.0, 0.0, -1.0, 0.5},
+                   {1.0, 3.0, 0.25, -2.0},
+                   {-0.5, 2.0, 4.0, 1.0},
+                   {3.0, -1.0, 0.0, 2.0}};
+  const Eigen::Matrix<double, 4, 5> A3{{1.0, 0.0, 2.0, -1.0, 0.5},
+                                       {-2.0, 1.0, 0.0, 3.0, 0.25},
+                                       {0.5, -1.0, 4.0, 0.0, 2.0},
+                                       {3.0, 2.0, -0.5, 1.0, -1.0}};
+  const Vector4 b{0.5, -1.0, 2.0, 0.25};
+  const UnlistedFactor actual(kKey1, A1, kKey2, A2, kKey3, A3, b);
+  const JacobianFactor expected(kKey1, A1, kKey2, A2, kKey3, A3, b);
+  const GaussianFactor& actualBase = actual;
+
+  VectorValues testValues;
+  testValues.insert(kKey1, Vector2{0.5, -1.0});
+  testValues.insert(kKey2, Vector4{1.0, -0.5, 2.0, 0.25});
+  testValues.insert(kKey3, Vector5{0.25, 1.5, -2.0, 0.5, 3.0});
+  DOUBLES_EQUAL(expected.deltaError(testValues),
+                actualBase.deltaError(testValues), 1e-12);
+
+  VectorValues expectedDiagonal, actualDiagonal;
+  expected.hessianDiagonalAdd(expectedDiagonal);
+  actualBase.hessianDiagonalAdd(actualDiagonal);
+  EXPECT(assert_equal(expectedDiagonal, actualDiagonal, 1e-12));
+
+  const KeyVector infoKeys{kKey3, kKey1, kKey2};
+  const std::vector<size_t> dimensions{5, 2, 4, 1};
+  SymmetricBlockMatrix expectedInfo(dimensions), wholeInfo(dimensions),
+      rangedInfo(dimensions);
+  expectedInfo.setZero();
+  wholeInfo.setZero();
+  rangedInfo.setZero();
+  expected.updateHessian(infoKeys, &expectedInfo);
+  actualBase.updateHessian(infoKeys, &wholeInfo);
+  for (DenseIndex column = 0; column < rangedInfo.nBlocks(); ++column) {
+    actualBase.updateHessian(infoKeys, &rangedInfo, column, column + 1);
+  }
+  EXPECT(assert_equal(Matrix(expectedInfo.selfadjointView()),
+                      Matrix(wholeInfo.selfadjointView()), 1e-12));
+  EXPECT(assert_equal(Matrix(expectedInfo.selfadjointView()),
+                      Matrix(rangedInfo.selfadjointView()), 1e-12));
+}
+
 }  // namespace ternary_jacobian_factor
 /* ************************************************************************* */
 

@@ -20,10 +20,9 @@
 
 #pragma once
 
-#include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/linear/VectorValues.h>
-#include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/timing.h>
+#include <gtsam/linear/FixedJacobianFactorOps.h>
+#include <gtsam/linear/JacobianFactor.h>
 
 #include <algorithm>
 
@@ -61,21 +60,8 @@ struct BinaryJacobianFactor: JacobianFactor {
     const Matrix& Ab = Ab_.matrix();
     const Eigen::Block<const Matrix, M, N1> A1(Ab, 0, 0);
     const Eigen::Block<const Matrix, M, N2> A2(Ab, 0, N1);
-    const Eigen::Matrix<double, N1, 1> diagonal1 =
-        A1.colwise().squaredNorm().transpose();
-    const Eigen::Matrix<double, N2, 1> diagonal2 =
-        A2.colwise().squaredNorm().transpose();
-
-    const auto addDiagonal = [&diagonal](Key key, const auto& contribution) {
-      auto result = diagonal.emplace(key, contribution.rows());
-      if (result.second) {
-        result.first->second = contribution;
-      } else {
-        result.first->second += contribution;
-      }
-    };
-    addDiagonal(key1(), diagonal1);
-    addDiagonal(key2(), diagonal2);
+    internal::accumulateHessianDiagonal<M, N1>(key1(), A1, diagonal);
+    internal::accumulateHessianDiagonal<M, N2>(key2(), A2, diagonal);
   }
 
   /** Compute the error change using a fixed-size residual. */
@@ -92,8 +78,8 @@ struct BinaryJacobianFactor: JacobianFactor {
     const Eigen::Block<const Matrix, M, 1> b(Ab, 0, N1 + N2);
 
     Eigen::Matrix<double, M, 1> error = -b;
-    error.noalias() += A1 * values.at(key1());
-    error.noalias() += A2 * values.at(key2());
+    internal::accumulateResidual<M, N1>(A1, values.at(key1()), error);
+    internal::accumulateResidual<M, N2>(A2, values.at(key2()), error);
 
     const double oldValue = 0.5 * b.squaredNorm();
     const double newValue = 0.5 * error.squaredNorm();
@@ -129,20 +115,10 @@ struct BinaryJacobianFactor: JacobianFactor {
       Eigen::Block<const Matrix, M, 1> b(Ab, 0, N1 + N2);
 
       // We perform I += A'*A to the upper triangle
-      if constexpr (N1 == 1) {
-        info->updateDiagonalBlock(slot1, A1.transpose() * A1);
-      } else {
-        info->diagonalBlock(slot1).rankUpdate(A1.transpose());
-      }
-      info->updateOffDiagonalBlock(slot1, slot2, A1.transpose() * A2);
-      info->updateOffDiagonalBlock(slot1, slotB, A1.transpose() * b);
-      if constexpr (N2 == 1) {
-        info->updateDiagonalBlock(slot2, A2.transpose() * A2);
-      } else {
-        info->diagonalBlock(slot2).rankUpdate(A2.transpose());
-      }
-      info->updateOffDiagonalBlock(slot2, slotB, A2.transpose() * b);
-      info->updateDiagonalBlock(slotB, b.transpose() * b);
+      internal::updateJacobianHessian<M, N1>(slot1, A1, slotB, b, info);
+      internal::updateCrossHessian<M, N1, N2>(slot1, A1, slot2, A2, info);
+      internal::updateJacobianHessian<M, N2>(slot2, A2, slotB, b, info);
+      internal::updateSelfHessian<M, 1>(slotB, b, info);
     }
   }
 
@@ -169,30 +145,22 @@ struct BinaryJacobianFactor: JacobianFactor {
     const Eigen::Block<const Matrix, M, 1> b(Ab, 0, N1 + N2);
 
     if (ownsColumn(slot1)) {
-      if constexpr (N1 == 1) {
-        info->updateDiagonalBlock(slot1, A1.transpose() * A1);
-      } else {
-        info->diagonalBlock(slot1).rankUpdate(A1.transpose());
-      }
+      internal::updateSelfHessian<M, N1>(slot1, A1, info);
     }
     if (ownsColumn(std::max(slot1, slot2))) {
-      info->updateOffDiagonalBlock(slot1, slot2, A1.transpose() * A2);
+      internal::updateCrossHessian<M, N1, N2>(slot1, A1, slot2, A2, info);
     }
     if (ownsColumn(std::max(slot1, slotB))) {
-      info->updateOffDiagonalBlock(slot1, slotB, A1.transpose() * b);
+      internal::updateCrossHessian<M, N1, 1>(slot1, A1, slotB, b, info);
     }
     if (ownsColumn(slot2)) {
-      if constexpr (N2 == 1) {
-        info->updateDiagonalBlock(slot2, A2.transpose() * A2);
-      } else {
-        info->diagonalBlock(slot2).rankUpdate(A2.transpose());
-      }
+      internal::updateSelfHessian<M, N2>(slot2, A2, info);
     }
     if (ownsColumn(std::max(slot2, slotB))) {
-      info->updateOffDiagonalBlock(slot2, slotB, A2.transpose() * b);
+      internal::updateCrossHessian<M, N2, 1>(slot2, A2, slotB, b, info);
     }
     if (ownsColumn(slotB)) {
-      info->updateDiagonalBlock(slotB, b.transpose() * b);
+      internal::updateSelfHessian<M, 1>(slotB, b, info);
     }
   }
 };
