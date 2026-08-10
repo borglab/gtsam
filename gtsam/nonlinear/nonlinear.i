@@ -166,8 +166,8 @@ class Marginals {
 
   void print(string s = "Marginals: ", const gtsam::KeyFormatter& keyFormatter =
                                            gtsam::DefaultKeyFormatter) const;
-  gtsam::Matrix marginalCovariance(size_t variable) const;
-  gtsam::Matrix marginalInformation(size_t variable) const;
+  gtsam::Matrix marginalCovariance(gtsam::Key variable) const;
+  gtsam::Matrix marginalInformation(gtsam::Key variable) const;
   gtsam::JointMarginal jointMarginalCovariance(
       const gtsam::KeyVector& variables) const;
   gtsam::JointMarginal jointMarginalInformation(
@@ -904,9 +904,9 @@ template <T = {gtsam::Point2,
                gtsam::imuBias::ConstantBias}>
 virtual class NonlinearEquality : gtsam::NoiseModelFactor {
   // Constructor - forces exact evaluation
-  NonlinearEquality(size_t j, const T& feasible);
+  NonlinearEquality(gtsam::Key j, const T& feasible);
   // Constructor - allows inexact evaluation
-  NonlinearEquality(size_t j, const T& feasible, double error_gain);
+  NonlinearEquality(gtsam::Key j, const T& feasible, double error_gain);
 
   // enabling serialization functionality
   void serialize() const;

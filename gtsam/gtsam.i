@@ -29,8 +29,8 @@ class KeyList {
   void clear();
 
   // structure specific methods
-  size_t front() const;
-  size_t back() const;
+  gtsam::Key front() const;
+  gtsam::Key back() const;
   void push_back(gtsam::Key key);
   void push_front(gtsam::Key key);
   void pop_back();
@@ -89,9 +89,9 @@ class KeyVector {
   void clear();
 
   // structure specific methods
-  size_t at(size_t i) const;
-  size_t front() const;
-  size_t back() const;
+  gtsam::Key at(size_t i) const;
+  gtsam::Key front() const;
+  gtsam::Key back() const;
   void push_back(gtsam::Key key) const;
 
   void serialize() const;
@@ -114,7 +114,7 @@ class KeyGroupMap {
   void clear();
 
   // structure specific methods
-  size_t at(gtsam::Key key) const;
+  int at(gtsam::Key key) const;
   int erase(gtsam::Key key);
   bool insert2(gtsam::Key key, int val);
 };
@@ -131,9 +131,9 @@ class FactorIndexSet {
   void clear();
 
   // structure specific methods
-  void insert(size_t factorIndex);
-  bool erase(size_t factorIndex);        // returns true if value was removed
-  bool count(size_t factorIndex) const;  // returns true if value exists
+  void insert(gtsam::FactorIndex factorIndex);
+  bool erase(gtsam::FactorIndex factorIndex);        // returns true if value was removed
+  bool count(gtsam::FactorIndex factorIndex) const;  // returns true if value exists
 };
 
 // Actually a vector<FactorIndex>
@@ -148,10 +148,10 @@ class FactorIndices {
   void clear();
 
   // structure specific methods
-  size_t at(size_t i) const;
-  size_t front() const;
-  size_t back() const;
-  void push_back(size_t factorIndex) const;
+  gtsam::FactorIndex at(size_t i) const;
+  gtsam::FactorIndex front() const;
+  gtsam::FactorIndex back() const;
+  void push_back(gtsam::FactorIndex factorIndex) const;
 };
 
 //*************************************************************************
@@ -185,7 +185,7 @@ void insertBackprojections(gtsam::Values& values,
                            const gtsam::Vector& J, gtsam::ConstMatrixView Z,
                            double depth);
 void insertProjectionFactors(
-    gtsam::NonlinearFactorGraph& graph, size_t i, const gtsam::Vector& J,
+    gtsam::NonlinearFactorGraph& graph, gtsam::Key i, const gtsam::Vector& J,
     gtsam::ConstMatrixView Z,
     const gtsam::noiseModel::Base* model, const gtsam::Cal3_S2* K,
     const gtsam::Pose3& body_P_sensor = gtsam::Pose3());
