@@ -259,7 +259,7 @@ struct FastSync {
  *
  * @throws std::invalid_argument for invalid noise models, an empty measurement
  * graph, a prior outside the measurement graph, or multiple matching priors.
- * @throws IndeterminantLinearSystemException when the measurement graph is
+ * @throws IndeterminateSystemException when the measurement graph is
  * disconnected or otherwise underconstrained.
  * @throws std::runtime_error if GTSAM was built without METIS support.
  */

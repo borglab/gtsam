@@ -276,7 +276,7 @@ TEST(FastSync, InvalidGraphStructure) {
   try {
     solver.solve();
     CHECK(false);
-  } catch (const IndeterminantLinearSystemException&) {
+  } catch (const IndeterminateSystemException&) {
     // The nearby variable is ordering-dependent, but the failure occurs in
     // the linear solve after the constructor accepts both components.
   } catch (...) {

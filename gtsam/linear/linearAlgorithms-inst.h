@@ -95,8 +95,9 @@ namespace gtsam
             // TODO(gareth): Inline instantiation of Eigen::Solve and check flag
             const Vector solution = c.R().triangularView<Eigen::Upper>().solve(rhs);
 
-            // Check for indeterminant solution
-            if(solution.hasNaN()) throw IndeterminantLinearSystemException(c.keys().front());
+            // Check for indeterminate solution
+            if (solution.hasNaN())
+              throw IndeterminateSystemException(c.keys().front());
 
             // Insert solution into a VectorValues
             DenseIndex vectorPosition = 0;

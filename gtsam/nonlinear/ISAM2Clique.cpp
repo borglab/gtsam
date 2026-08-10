@@ -147,9 +147,9 @@ void ISAM2Clique::fastBackSubstitute(VectorValues* delta) const {
     const Vector rhs = c.getb() - c.S() * xS;
     const Vector solution = c.R().triangularView<Eigen::Upper>().solve(rhs);
 
-    // Check for indeterminant solution
+    // Check for indeterminate solution
     if (solution.hasNaN())
-      throw IndeterminantLinearSystemException(c.keys().front());
+      throw IndeterminateSystemException(c.keys().front());
 
     // Insert solution into a VectorValues
     DenseIndex vectorPosition = 0;
