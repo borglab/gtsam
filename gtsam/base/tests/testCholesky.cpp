@@ -68,16 +68,31 @@ TEST(cholesky, choleskyPartial) {
 }
 
 /* ************************************************************************* */
+// Verifies that ill-conditioned systems are rejected in either variable order.
 TEST(cholesky, BadScalingCholesky) {
   Matrix A{{1e-40, 0.0}, {0.0, 1.0}};
 
   Matrix R(A.transpose() * A);
-  choleskyPartial(R, 2);
+  EXPECT(!choleskyPartial(R, 2));
 
   double expectedSqrtCondition = 1e-40;
   double actualSqrtCondition = R(0,0) / R(1,1);
 
   DOUBLES_EQUAL(expectedSqrtCondition, actualSqrtCondition, 1e-41);
+
+  Matrix permutedA{{1.0, 0.0}, {0.0, 1e-40}};
+  Matrix permutedR(permutedA.transpose() * permutedA);
+  EXPECT(!choleskyPartial(permutedR, 2));
+}
+
+/* ************************************************************************* */
+// Verifies that uniform matrix scaling does not change the conditioning result.
+TEST(cholesky, choleskyPartialScaleInvariant) {
+  Matrix scaledDown{{1e-20}};
+  Matrix scaledUp{{1e20}};
+
+  EXPECT(choleskyPartial(scaledDown, 1));
+  EXPECT(choleskyPartial(scaledUp, 1));
 }
 
 /* ************************************************************************* */

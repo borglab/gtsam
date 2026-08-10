@@ -23,6 +23,7 @@
 #include <Eigen/Cholesky>
 #include <cassert>
 #include <cmath>
+#include <limits>
 
 using namespace std;
 
@@ -31,7 +32,9 @@ namespace gtsam {
 static const double negativePivotThreshold = -1e-1;
 static const double zeroPivotThreshold = 1e-6;
 static const double underconstrainedPrior = 1e-5;
-static const int underconstrainedExponentDifference = 12;
+// Limit the estimated relative error kappa(A) * epsilon to sqrt(epsilon).
+static const double minimumReciprocalConditionNumber =
+    std::sqrt(std::numeric_limits<double>::epsilon());
 
 /* ************************************************************************* */
 static inline int choleskyStep(Matrix& ATA, size_t k, size_t order) {
@@ -125,10 +128,14 @@ bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft) {
   gttic(LLT);
   Eigen::LLT<Matrix, Eigen::Upper> llt(A);
   Eigen::ComputationInfo lltResult = llt.info();
-  if (lltResult != Eigen::Success)
+  if (lltResult != Eigen::Success) {
     return false;
+  }
   auto R = A.triangularView<Eigen::Upper>();
   R = llt.matrixU();
+  if (llt.rcond() < minimumReciprocalConditionNumber) {
+    return false;
+  }
   gttoc(LLT);
 
   // Compute S = inv(R') * B
@@ -143,19 +150,6 @@ bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft) {
     C.selfadjointView<Eigen::Upper>().rankUpdate(B.transpose(), -1.0);
   gttoc(compute_L);
 
-  // Check last diagonal element - Eigen does not check it
-  if (nFrontal >= 2) {
-    int exp2, exp1;
-    // NOTE(gareth): R is already the size of A, so we don't need to add topleft here.
-    (void)frexp(R(nFrontal - 2, nFrontal - 2), &exp2);
-    (void)frexp(R(nFrontal - 1, nFrontal - 1), &exp1);
-    return (exp2 - exp1 < underconstrainedExponentDifference);
-  } else if (nFrontal == 1) {
-    int exp1;
-    (void)frexp(R(0, 0), &exp1);
-    return (exp1 > -underconstrainedExponentDifference);
-  } else {
-    return true;
-  }
+  return true;
 }
 }  // namespace gtsam
