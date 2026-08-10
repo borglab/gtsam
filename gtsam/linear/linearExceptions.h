@@ -40,9 +40,10 @@ namespace gtsam {
    - An overall scale or rigid transformation ambiguity, for example missing
      a prior or hard constraint on the first pose, or missing a scale
      constraint between the first two cameras (in structure-from-motion).
-   - A very strong finite prior combined with much looser measurement noise.
-     The graph may have a unique mathematical solution, but the extreme ratio
-     between factor weights can make it numerically ill-conditioned.
+   - A very strong finite prior combined with much looser measurement noise can
+     expose a weakly observed direction.  The raw weight ratio alone may only
+     reflect different variable units, but the graph is nearly indeterminate
+     if it remains ill-conditioned after diagonal equilibration.
 
   Mathematically, the following conditions cause this problem:
    - Underdetermined system:  This occurs when the variables are not
@@ -75,9 +76,9 @@ namespace gtsam {
      gauge-fixing prior, prefer a hard constraint such as a PriorFactor with
      noiseModel::Constrained::All(dimension) over an extremely strong finite
      prior.  The hard constraint expresses the intended model without
-     introducing an extreme finite weight, so it will not trigger this
-     exception merely because of the weight ratio.  Other underconstrained or
-     ill-conditioned parts of the graph can still trigger the exception.
+     choosing an arbitrary extreme finite weight, and cannot create a nearly
+     singular finite weight ratio.  Other underconstrained or ill-conditioned
+     parts of the graph can still trigger the exception.
    - This exception contains the variable at which the problem was
      discovered (IndeterminateSystemException::nearbyVariable()).
      Note, however, that this is not necessarily the variable where the

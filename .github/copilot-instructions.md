@@ -101,9 +101,11 @@ Matrix23 matrix{{1.0, 2.0, 3.0},
   not necessarily its source; the reported key depends on graph structure and
   elimination ordering.
 * Remember that the exception also protects against nearly indeterminate
-  systems. A mathematically full-rank graph can trigger it when, for example, a
-  very strong finite prior is combined with much looser measurement noise and
-  the resulting weight ratio makes the system numerically ill-conditioned.
+  systems. A mathematically full-rank graph can trigger it when it remains
+  numerically ill-conditioned after diagonal equilibration. For example, a very
+  strong finite prior combined with much looser measurement noise can expose a
+  weakly observed direction, although the raw weight ratio alone may only
+  reflect different variable units and is not sufficient evidence.
 * Preserve the failing nonlinear graph, values, and ordering. Linearize at
   those values, request the Jacobian with an explicit ordering, and inspect its
   singular spectrum and null space. Prefer Jacobian rank analysis over a
@@ -116,9 +118,9 @@ Matrix23 matrix{{1.0, 2.0, 3.0},
 * Use a temporary, physically meaningful prior to test an observability
   hypothesis, then recompute rank. If the intended prior fixes a gauge exactly,
   prefer a hard constraint such as `noiseModel::Constrained::All(dimension)`;
-  it expresses that intent without creating an extreme finite weight that can
-  itself trigger the exception. Do not present damping or a dense solve as a
-  fix unless the model itself becomes observable and well conditioned.
+  it expresses that intent without choosing an arbitrary extreme finite weight.
+  Do not present damping or a dense solve as a fix unless the model itself
+  becomes observable and well conditioned.
 * See `gtsam/linear/doc/IndeterminateSystemException.ipynb` for a runnable
   Python example and a full diagnostic checklist.
 

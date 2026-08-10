@@ -19,6 +19,10 @@
 #include <gtsam/base/cholesky.h>
 #include <CppUnitLite/TestHarness.h>
 
+#include <Eigen/Cholesky>
+#include <cmath>
+#include <limits>
+
 using namespace gtsam;
 using namespace std;
 
@@ -68,31 +72,36 @@ TEST(cholesky, choleskyPartial) {
 }
 
 /* ************************************************************************* */
-// Verifies that ill-conditioned systems are rejected in either variable order.
-TEST(cholesky, BadScalingCholesky) {
-  Matrix A{{1e-40, 0.0}, {0.0, 1.0}};
+// Verifies that nearly dependent systems are rejected in either variable
+// order.
+TEST(cholesky, NearRankDeficientCholesky) {
+  constexpr double correlation = 1.0 - 1e-10;
+  Matrix matrix{{1e-12, correlation}, {correlation, 1e12}};
+  Matrix factor = matrix;
+  EXPECT(!choleskyPartial(factor, 2));
 
-  Matrix R(A.transpose() * A);
-  EXPECT(!choleskyPartial(R, 2));
-
-  double expectedSqrtCondition = 1e-40;
-  double actualSqrtCondition = R(0,0) / R(1,1);
-
-  DOUBLES_EQUAL(expectedSqrtCondition, actualSqrtCondition, 1e-41);
-
-  Matrix permutedA{{1.0, 0.0}, {0.0, 1e-40}};
-  Matrix permutedR(permutedA.transpose() * permutedA);
-  EXPECT(!choleskyPartial(permutedR, 2));
+  Matrix permutation{{0.0, 1.0}, {1.0, 0.0}};
+  Matrix permuted = permutation * matrix * permutation.transpose();
+  EXPECT(!choleskyPartial(permuted, 2));
 }
 
 /* ************************************************************************* */
-// Verifies that uniform matrix scaling does not change the conditioning result.
+// Verifies that diagonal variable scaling does not cause a false rejection.
 TEST(cholesky, choleskyPartialScaleInvariant) {
-  Matrix scaledDown{{1e-20}};
-  Matrix scaledUp{{1e20}};
+  Matrix matrix{{2.0, 0.5}, {0.5, 1.0}};
+  Matrix diagonalScale{{1e-5, 0.0}, {0.0, 1.0}};
+  Matrix scaled = diagonalScale * matrix * diagonalScale;
 
-  EXPECT(choleskyPartial(scaledDown, 1));
-  EXPECT(choleskyPartial(scaledUp, 1));
+  Eigen::LLT<Matrix, Eigen::Upper> rawCholesky(scaled);
+  CHECK(rawCholesky.info() == Eigen::Success);
+  EXPECT(rawCholesky.rcond() <
+         std::sqrt(std::numeric_limits<double>::epsilon()));
+
+  EXPECT(choleskyPartial(matrix, 2));
+  const Matrix expectedScaled = scaled;
+  EXPECT(choleskyPartial(scaled, 2));
+  const Matrix scaledR = scaled.triangularView<Eigen::Upper>();
+  EXPECT(assert_equal(expectedScaled, scaledR.transpose() * scaledR, 1e-9));
 }
 
 /* ************************************************************************* */
