@@ -97,6 +97,41 @@ The console summary reports generic and binary medians plus the median paired
 percentage change. The optional CSV contains one row per mode and measured
 trial for more detailed analysis.
 
+## Ternary Factor Benchmarks
+
+`timeTernarySfmBAL` compares variable-calibration BAL in three forms: a split
+Pose3/Point3/Cal3Bundler graph forced through generic linearization, the same
+graph using `TernaryJacobianFactor<2,6,3,3>`, and the existing packed-camera
+graph using `BinaryJacobianFactor<2,9,3>`. The generic and ternary runs have
+identical nonlinear factors, values, ordering, and iteration counts.
+
+`timeTernaryImuFactor` builds a deterministic NavState/bias chain with one
+second of preintegrated stationary IMU data per interval and weak anchors every
+100 intervals to keep the long Cholesky solve well-conditioned. It compares
+the standard generic `ImuFactor2` linearization against a benchmark-local forced
+`TernaryJacobianFactor<9,9,9,6>` implementation. This records why the large IMU
+blocks are not opted into automatic ternary linearization without stronger
+performance evidence. Both executables alternate trial order, verify concrete
+linear-factor types, and reject numerically different optimization results. BAL
+uses fixed-iteration Levenberg-Marquardt, while the IMU chain uses fixed-step
+Gauss-Newton to avoid adaptive damping retries in the timed comparison.
+
+From the build directory:
+
+```bash
+make -j6 timeTernarySfmBAL timeTernaryImuFactor
+./timing/timeTernarySfmBAL --dataset /path/to/dubrovnik-88-64298-pre.txt \
+  --warmup 1 --repeats 5 --linearize-repeats 3 --iterations 5 \
+  --output ../timing/results/ternary_sfm_bal.csv
+./timing/timeTernaryImuFactor --steps 1000 \
+  --warmup 1 --repeats 5 --linearize-repeats 3 --iterations 1 \
+  --output ../timing/results/ternary_imu_factor.csv
+```
+
+Each console summary reports median linearization and fixed-iteration solver
+times.
+The optional CSV files retain every measured trial for independent analysis.
+
 ## Bayes-Tree Covariance Results
 
 The Bayes-tree covariance paper uses generated benchmark output rather than
