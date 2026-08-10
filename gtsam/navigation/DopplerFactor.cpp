@@ -72,12 +72,12 @@ bool DopplerFactor::equals(const NonlinearFactor& expected, double tol) const {
 }
 
 //***************************************************************************
-Vector DopplerFactor::evaluateError(const Vector3& velocity,
-                                    const double& clockBiasPrev,
-                                    const double& clockBiasCurr,
-                                    OptionalMatrixType Hvelocity,
-                                    OptionalMatrixType HclockBiasPrev,
-                                    OptionalMatrixType HclockBiasCurr) const {
+Vector1 DopplerFactor::evaluateError(const Vector3& velocity,
+                                     const double& clockBiasPrev,
+                                     const double& clockBiasCurr,
+                                     OptionalMatrixType Hvelocity,
+                                     OptionalMatrixType HclockBiasPrev,
+                                     OptionalMatrixType HclockBiasCurr) const {
   // range rate = e . (v_s - v_r)
   //            + c * ((bias_k - bias_{k-1})/dt - ddt_s) + sagnac_rate
   const double drift = (clockBiasCurr - clockBiasPrev) / dt_;

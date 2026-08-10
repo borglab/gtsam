@@ -6,6 +6,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/linear/TernaryJacobianFactor.h>
 #include <gtsam/navigation/DopplerFactor.h>
 #include <gtsam/navigation/tests/gnssTestHelpers.h>
 #include <gtsam/nonlinear/factorTesting.h>
@@ -54,6 +55,24 @@ TEST(TestDopplerFactor, Model) {
   values.insert(Key(1), biasPrev);
   values.insert(Key(2), biasCurr);
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-3, 1e-5);
+}
+
+// *************************************************************************
+// Fixed residual and argument dimensions select the automatic ternary path.
+TEST(TestDopplerFactor, TernaryLinearization) {
+  const Vector3 velocity(0.3, -0.1, 0.05);
+  const double biasPrev = 1.0e-6, biasCurr = 1.0045e-6;
+  const DopplerFactor factor(0, 1, 2, -1500.0, kLambdaL1, sample::kSatPos,
+                              Point3(-1200.0, 2400.0, 800.0),
+                              sample::kReceiverPos, 1.0, 1.2e-9);
+  const Values values{{0, genericValue(velocity)},
+                      {1, genericValue(biasPrev)},
+                      {2, genericValue(biasCurr)}};
+
+  const auto generic = factor.NoiseModelFactor::linearize(values);
+  const auto fixed = factor.linearize(values);
+  CHECK((std::dynamic_pointer_cast<TernaryJacobianFactor<1, 3, 1, 1>>(fixed)));
+  EXPECT(assert_equal(*generic, *fixed, 1e-12));
 }
 
 // *************************************************************************
