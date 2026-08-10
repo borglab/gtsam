@@ -84,7 +84,7 @@ class GTSAM_EXPORT LabeledSymbol {
   inline unsigned char chr() const { return c_; }
 
   /// Retrieve key index
-  inline size_t index() const { return j_; }
+  inline std::uint64_t index() const { return j_; }
 
   /// Create a string from the key
   operator std::string() const;
@@ -155,7 +155,7 @@ class GTSAM_EXPORT LabeledSymbol {
 };  // \class LabeledSymbol
 
 /// Create a symbol key from a character, label and index, i.e. xA5.
-inline Key mrsymbol(unsigned char c, unsigned char label, size_t j) {
+inline Key mrsymbol(unsigned char c, unsigned char label, std::uint64_t j) {
   return (Key)LabeledSymbol(c, label, j);
 }
 
@@ -168,7 +168,9 @@ inline unsigned char mrsymbolLabel(Key key) {
 }
 
 /// Return the index portion of a symbol key.
-inline size_t mrsymbolIndex(Key key) { return LabeledSymbol(key).index(); }
+inline std::uint64_t mrsymbolIndex(Key key) {
+  return LabeledSymbol(key).index();
+}
 
 /// traits
 template <>
