@@ -129,10 +129,18 @@ struct BinaryJacobianFactor: JacobianFactor {
       Eigen::Block<const Matrix, M, 1> b(Ab, 0, N1 + N2);
 
       // We perform I += A'*A to the upper triangle
-      info->diagonalBlock(slot1).rankUpdate(A1.transpose());
+      if constexpr (N1 == 1) {
+        info->updateDiagonalBlock(slot1, A1.transpose() * A1);
+      } else {
+        info->diagonalBlock(slot1).rankUpdate(A1.transpose());
+      }
       info->updateOffDiagonalBlock(slot1, slot2, A1.transpose() * A2);
       info->updateOffDiagonalBlock(slot1, slotB, A1.transpose() * b);
-      info->diagonalBlock(slot2).rankUpdate(A2.transpose());
+      if constexpr (N2 == 1) {
+        info->updateDiagonalBlock(slot2, A2.transpose() * A2);
+      } else {
+        info->diagonalBlock(slot2).rankUpdate(A2.transpose());
+      }
       info->updateOffDiagonalBlock(slot2, slotB, A2.transpose() * b);
       info->updateDiagonalBlock(slotB, b.transpose() * b);
     }
@@ -161,7 +169,11 @@ struct BinaryJacobianFactor: JacobianFactor {
     const Eigen::Block<const Matrix, M, 1> b(Ab, 0, N1 + N2);
 
     if (ownsColumn(slot1)) {
-      info->diagonalBlock(slot1).rankUpdate(A1.transpose());
+      if constexpr (N1 == 1) {
+        info->updateDiagonalBlock(slot1, A1.transpose() * A1);
+      } else {
+        info->diagonalBlock(slot1).rankUpdate(A1.transpose());
+      }
     }
     if (ownsColumn(std::max(slot1, slot2))) {
       info->updateOffDiagonalBlock(slot1, slot2, A1.transpose() * A2);
@@ -170,7 +182,11 @@ struct BinaryJacobianFactor: JacobianFactor {
       info->updateOffDiagonalBlock(slot1, slotB, A1.transpose() * b);
     }
     if (ownsColumn(slot2)) {
-      info->diagonalBlock(slot2).rankUpdate(A2.transpose());
+      if constexpr (N2 == 1) {
+        info->updateDiagonalBlock(slot2, A2.transpose() * A2);
+      } else {
+        info->diagonalBlock(slot2).rankUpdate(A2.transpose());
+      }
     }
     if (ownsColumn(std::max(slot2, slotB))) {
       info->updateOffDiagonalBlock(slot2, slotB, A2.transpose() * b);

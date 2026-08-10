@@ -138,6 +138,40 @@ TEST(BinaryJacobianFactor, RangedUpdateMatchesWholeAndGeneric) {
   }
 }
 
+// Verifies scalar variable blocks use the same whole and ranged Hessian update
+// semantics as a generic JacobianFactor, including reversed physical slots.
+TEST(BinaryJacobianFactor, ScalarBlocksMatchGeneric) {
+  using ScalarFactor = BinaryJacobianFactor<3, 1, 1>;
+  const Eigen::Matrix<double, 3, 1> A1{1.0, -2.0, 0.5};
+  const Eigen::Matrix<double, 3, 1> A2{-0.25, 3.0, 1.5};
+  const Vector3 b{0.75, -1.0, 2.0};
+  const ScalarFactor actual(kKey1, A1, kKey2, A2, b);
+  const JacobianFactor expected(kKey1, A1, kKey2, A2, b);
+  const GaussianFactor& actualBase = actual;
+
+  for (const bool reverse : {false, true}) {
+    const KeyVector infoKeys =
+        reverse ? KeyVector{kKey2, kKey1} : KeyVector{kKey1, kKey2};
+    const std::vector<size_t> dimensions{1, 1, 1};
+    SymmetricBlockMatrix expectedInfo(dimensions), wholeInfo(dimensions),
+        rangedInfo(dimensions);
+    expectedInfo.setZero();
+    wholeInfo.setZero();
+    rangedInfo.setZero();
+
+    expected.updateHessian(infoKeys, &expectedInfo);
+    actualBase.updateHessian(infoKeys, &wholeInfo);
+    for (DenseIndex column = 0; column < rangedInfo.nBlocks(); ++column) {
+      actualBase.updateHessian(infoKeys, &rangedInfo, column, column + 1);
+    }
+
+    EXPECT(assert_equal(Matrix(expectedInfo.selfadjointView()),
+                        Matrix(wholeInfo.selfadjointView()), 1e-12));
+    EXPECT(assert_equal(Matrix(expectedInfo.selfadjointView()),
+                        Matrix(rangedInfo.selfadjointView()), 1e-12));
+  }
+}
+
 // Verifies constrained ranged updates retain the generic exception behavior.
 TEST(BinaryJacobianFactor, ConstrainedRangedUpdateThrows) {
   const SharedDiagonal model = noiseModel::Constrained::All(2);
