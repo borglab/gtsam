@@ -27,6 +27,7 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/linear/Sampler.h>
+#include <gtsam/linear/TernaryJacobianFactor.h>
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/navigation/ScenarioRunner.h>
 #include <gtsam/nonlinear/Values.h>
@@ -164,6 +165,45 @@ static const Pose3 x2(Rot3::RzRyRx(M_PI / 12.0 + w, M_PI / 6.0, M_PI / 4.0),
 static const Vector3 v2(Vector3(0.5, 0.0, 0.0));
 static const NavState state2(x2, v2);
 } // namespace common
+
+/* ************************************************************************* */
+namespace ternary_linearization {
+
+// Verifies fixed-size IMU linearization changes only the concrete factor type.
+TEST_PIM(ImuFactor2, TernaryLinearizationIsBitwiseIdentical) {
+  using namespace common;
+  PIM pim(testing::Params());
+  pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+
+  const Key state1Key = 101, state2Key = 102, biasKey = 103;
+  const ImuFactor2T<PIM> factor(state1Key, state2Key, biasKey, pim);
+  const Values values{{state1Key, genericValue(state1)},
+                      {state2Key, genericValue(state2)},
+                      {biasKey, genericValue(kZeroBias)}};
+  const auto expectedBase = factor.NoiseModelFactor::linearize(values);
+  const auto actualBase = factor.linearize(values);
+  const auto expected = std::dynamic_pointer_cast<JacobianFactor>(expectedBase);
+  const auto actual = std::dynamic_pointer_cast<JacobianFactor>(actualBase);
+
+  const bool isTernary = static_cast<bool>(
+      std::dynamic_pointer_cast<TernaryJacobianFactor<9, 9, 9, 6>>(actualBase));
+  CHECK(isTernary);
+  CHECK(expected);
+  CHECK(actual);
+  CHECK(expected->keys() == actual->keys());
+  CHECK(expected->get_model() == actual->get_model());
+  CHECK((expected->getb().array() == actual->getb().array()).all());
+  auto expectedBlock = expected->begin();
+  auto actualBlock = actual->begin();
+  for (; expectedBlock != expected->end(); ++expectedBlock, ++actualBlock) {
+    CHECK((expected->getA(expectedBlock).array() ==
+           actual->getA(actualBlock).array())
+              .all());
+  }
+}
+
+}  // namespace ternary_linearization
+/* ************************************************************************* */
 
 /* ************************************************************************* */
 TEST_PIM(ImuFactor, PreintegrationBaseMethods) {

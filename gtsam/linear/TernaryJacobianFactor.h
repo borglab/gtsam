@@ -127,14 +127,26 @@ struct TernaryJacobianFactor : JacobianFactor {
     const Eigen::Block<const Matrix, M, N3> A3(Ab, 0, N1 + N2);
     const Eigen::Block<const Matrix, M, 1> b(Ab, 0, N1 + N2 + N3);
 
-    info->updateDiagonalBlock(slot1, A1.transpose() * A1);
+    if constexpr (N1 == 1) {
+      info->updateDiagonalBlock(slot1, A1.transpose() * A1);
+    } else {
+      info->diagonalBlock(slot1).rankUpdate(A1.transpose());
+    }
     info->updateOffDiagonalBlock(slot1, slot2, A1.transpose() * A2);
     info->updateOffDiagonalBlock(slot1, slot3, A1.transpose() * A3);
     info->updateOffDiagonalBlock(slot1, slotB, A1.transpose() * b);
-    info->updateDiagonalBlock(slot2, A2.transpose() * A2);
+    if constexpr (N2 == 1) {
+      info->updateDiagonalBlock(slot2, A2.transpose() * A2);
+    } else {
+      info->diagonalBlock(slot2).rankUpdate(A2.transpose());
+    }
     info->updateOffDiagonalBlock(slot2, slot3, A2.transpose() * A3);
     info->updateOffDiagonalBlock(slot2, slotB, A2.transpose() * b);
-    info->updateDiagonalBlock(slot3, A3.transpose() * A3);
+    if constexpr (N3 == 1) {
+      info->updateDiagonalBlock(slot3, A3.transpose() * A3);
+    } else {
+      info->diagonalBlock(slot3).rankUpdate(A3.transpose());
+    }
     info->updateOffDiagonalBlock(slot3, slotB, A3.transpose() * b);
     info->updateDiagonalBlock(slotB, b.transpose() * b);
   }
@@ -163,7 +175,11 @@ struct TernaryJacobianFactor : JacobianFactor {
     const Eigen::Block<const Matrix, M, 1> b(Ab, 0, N1 + N2 + N3);
 
     if (ownsColumn(slot1)) {
-      info->updateDiagonalBlock(slot1, A1.transpose() * A1);
+      if constexpr (N1 == 1) {
+        info->updateDiagonalBlock(slot1, A1.transpose() * A1);
+      } else {
+        info->diagonalBlock(slot1).rankUpdate(A1.transpose());
+      }
     }
     if (ownsColumn(std::max(slot1, slot2))) {
       info->updateOffDiagonalBlock(slot1, slot2, A1.transpose() * A2);
@@ -175,7 +191,11 @@ struct TernaryJacobianFactor : JacobianFactor {
       info->updateOffDiagonalBlock(slot1, slotB, A1.transpose() * b);
     }
     if (ownsColumn(slot2)) {
-      info->updateDiagonalBlock(slot2, A2.transpose() * A2);
+      if constexpr (N2 == 1) {
+        info->updateDiagonalBlock(slot2, A2.transpose() * A2);
+      } else {
+        info->diagonalBlock(slot2).rankUpdate(A2.transpose());
+      }
     }
     if (ownsColumn(std::max(slot2, slot3))) {
       info->updateOffDiagonalBlock(slot2, slot3, A2.transpose() * A3);
@@ -184,7 +204,11 @@ struct TernaryJacobianFactor : JacobianFactor {
       info->updateOffDiagonalBlock(slot2, slotB, A2.transpose() * b);
     }
     if (ownsColumn(slot3)) {
-      info->updateDiagonalBlock(slot3, A3.transpose() * A3);
+      if constexpr (N3 == 1) {
+        info->updateDiagonalBlock(slot3, A3.transpose() * A3);
+      } else {
+        info->diagonalBlock(slot3).rankUpdate(A3.transpose());
+      }
     }
     if (ownsColumn(std::max(slot3, slotB))) {
       info->updateOffDiagonalBlock(slot3, slotB, A3.transpose() * b);

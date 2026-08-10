@@ -108,13 +108,14 @@ identical nonlinear factors, values, ordering, and iteration counts.
 `timeTernaryImuFactor` builds a deterministic NavState/bias chain with one
 second of preintegrated stationary IMU data per interval and weak anchors every
 100 intervals to keep the long Cholesky solve well-conditioned. It compares
-the standard generic `ImuFactor2` linearization against a benchmark-local forced
-`TernaryJacobianFactor<9,9,9,6>` implementation. This records why the large IMU
-blocks are not opted into automatic ternary linearization without stronger
-performance evidence. Both executables alternate trial order, verify concrete
-linear-factor types, and reject numerically different optimization results. BAL
-uses fixed-iteration Levenberg-Marquardt, while the IMU chain uses fixed-step
-Gauss-Newton to avoid adaptive damping retries in the timed comparison.
+`ImuFactor2` forced through generic linearization against automatic
+`TernaryJacobianFactor<9,9,9,6>` linearization. Before timing, it requires the
+keys, all three whitened Jacobian blocks, RHS, and noise model of every factor
+to be bitwise identical. Both executables alternate trial order, verify
+concrete linear-factor types, and reject numerically different optimization
+results. BAL uses fixed-iteration Levenberg-Marquardt, while the IMU chain uses
+fixed-step Gauss-Newton to avoid adaptive damping retries in the timed
+comparison.
 
 From the build directory:
 

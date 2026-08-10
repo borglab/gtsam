@@ -63,29 +63,18 @@ struct TrialResult {
   Values values;
 };
 
-/** ImuFactor2 forced through the fixed-size ternary path for A/B evidence. */
-class ForcedTernaryImuFactor2 : public gtsam::ImuFactor2 {
+/** ImuFactor2 forced through the pre-specialization generic path. */
+class GenericImuFactor2 : public gtsam::ImuFactor2 {
  public:
   using gtsam::ImuFactor2::ImuFactor2;
 
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return std::make_shared<ForcedTernaryImuFactor2>(*this);
+    return std::make_shared<GenericImuFactor2>(*this);
   }
 
   std::shared_ptr<gtsam::GaussianFactor> linearize(
       const Values& values) const override {
-    if (!active(values)) return std::shared_ptr<gtsam::JacobianFactor>();
-
-    std::vector<gtsam::Matrix> jacobians(3);
-    gtsam::Vector b = -unwhitenedError(values, jacobians);
-    const gtsam::SharedNoiseModel& model = noiseModel();
-    model->WhitenSystem(jacobians[0], jacobians[1], jacobians[2], b);
-    const gtsam::Matrix9 A1 = jacobians[0];
-    const gtsam::Matrix9 A2 = jacobians[1];
-    const Eigen::Matrix<double, 9, 6> A3 = jacobians[2];
-    const gtsam::Vector9 fixedB = b;
-    return std::make_shared<gtsam::TernaryJacobianFactor<9, 9, 9, 6>>(
-        keys()[0], A1, keys()[1], A2, keys()[2], A3, fixedB);
+    return this->gtsam::NoiseModelFactor::linearize(values);
   }
 };
 
@@ -150,6 +139,46 @@ size_t countTernaryFactors(const gtsam::GaussianFactorGraph& graph) {
   return std::count_if(graph.begin(), graph.end(), [](const auto& factor) {
     return static_cast<bool>(std::dynamic_pointer_cast<Ternary>(factor));
   });
+}
+
+bool exactlyEqual(const gtsam::Matrix& left, const gtsam::Matrix& right) {
+  return left.rows() == right.rows() && left.cols() == right.cols() &&
+         (left.array() == right.array()).all();
+}
+
+/** Verify that changing the runtime factor type changes no stored numbers. */
+void verifyIdenticalLinearGraphs(const gtsam::GaussianFactorGraph& generic,
+                                 const gtsam::GaussianFactorGraph& ternary) {
+  if (generic.size() != ternary.size()) {
+    throw std::runtime_error("Linearized IMU graph sizes differ");
+  }
+  for (size_t index = 0; index < generic.size(); ++index) {
+    const auto genericFactor =
+        std::dynamic_pointer_cast<gtsam::JacobianFactor>(generic[index]);
+    const auto ternaryFactor =
+        std::dynamic_pointer_cast<gtsam::JacobianFactor>(ternary[index]);
+    if (!genericFactor || !ternaryFactor ||
+        genericFactor->keys() != ternaryFactor->keys() ||
+        genericFactor->size() != ternaryFactor->size() ||
+        !exactlyEqual(genericFactor->getb(), ternaryFactor->getb())) {
+      throw std::runtime_error("Linearized IMU factors differ");
+    }
+    auto genericBlock = genericFactor->begin();
+    auto ternaryBlock = ternaryFactor->begin();
+    for (; genericBlock != genericFactor->end();
+         ++genericBlock, ++ternaryBlock) {
+      if (!exactlyEqual(genericFactor->getA(genericBlock),
+                        ternaryFactor->getA(ternaryBlock))) {
+        throw std::runtime_error("Linearized IMU Jacobian blocks differ");
+      }
+    }
+    const auto& genericModel = genericFactor->get_model();
+    const auto& ternaryModel = ternaryFactor->get_model();
+    if (static_cast<bool>(genericModel) != static_cast<bool>(ternaryModel) ||
+        (genericModel && !genericModel->equals(*ternaryModel, 0.0))) {
+      throw std::runtime_error("Linearized IMU noise models differ");
+    }
+  }
 }
 
 TrialResult runTrial(size_t trial, bool generic,
@@ -293,16 +322,18 @@ int main(int argc, char** argv) {
   const auto pim = makePim();
   const Values initial = makeInitial(options.steps, pim);
   const NonlinearFactorGraph genericGraph =
-      makeGraph<gtsam::ImuFactor2>(options.steps, pim);
+      makeGraph<GenericImuFactor2>(options.steps, pim);
   const NonlinearFactorGraph ternaryGraph =
-      makeGraph<ForcedTernaryImuFactor2>(options.steps, pim);
+      makeGraph<gtsam::ImuFactor2>(options.steps, pim);
   const Ordering ordering = Ordering::Create(Ordering::COLAMD, ternaryGraph);
-  if (countTernaryFactors(*genericGraph.linearize(initial)) != 0 ||
-      countTernaryFactors(*ternaryGraph.linearize(initial)) != options.steps) {
+  const auto genericLinear = genericGraph.linearize(initial);
+  const auto ternaryLinear = ternaryGraph.linearize(initial);
+  verifyIdenticalLinearGraphs(*genericLinear, *ternaryLinear);
+  if (countTernaryFactors(*genericLinear) != 0 ||
+      countTernaryFactors(*ternaryLinear) != options.steps) {
     throw std::runtime_error(
         "IMU graphs did not produce expected factor types");
   }
-
   for (size_t warmup = 0; warmup < options.warmups; ++warmup) {
     for (size_t pass = 0; pass < 2; ++pass) {
       const bool generic = (warmup + pass) % 2 == 0;
