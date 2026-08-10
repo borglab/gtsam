@@ -304,11 +304,10 @@ struct constructor {
             extra...);
     }
 
-    template <
-        typename Class,
-        typename... Extra,
-        enable_if_t<Class::has_alias && std::is_constructible<Cpp<Class>, Args...>::value, int>
-        = 0>
+    template <typename Class,
+              typename... Extra,
+              enable_if_t<Class::has_alias && std::is_constructible<Cpp<Class>, Args...>::value,
+                          int> = 0>
     static void execute(Class &cl, const Extra &...extra) {
         cl.def(
             "__init__",
@@ -325,11 +324,10 @@ struct constructor {
             extra...);
     }
 
-    template <
-        typename Class,
-        typename... Extra,
-        enable_if_t<Class::has_alias && !std::is_constructible<Cpp<Class>, Args...>::value, int>
-        = 0>
+    template <typename Class,
+              typename... Extra,
+              enable_if_t<Class::has_alias && !std::is_constructible<Cpp<Class>, Args...>::value,
+                          int> = 0>
     static void execute(Class &cl, const Extra &...extra) {
         cl.def(
             "__init__",
@@ -345,11 +343,10 @@ struct constructor {
 // Implementing class for py::init_alias<...>()
 template <typename... Args>
 struct alias_constructor {
-    template <
-        typename Class,
-        typename... Extra,
-        enable_if_t<Class::has_alias && std::is_constructible<Alias<Class>, Args...>::value, int>
-        = 0>
+    template <typename Class,
+              typename... Extra,
+              enable_if_t<Class::has_alias && std::is_constructible<Alias<Class>, Args...>::value,
+                          int> = 0>
     static void execute(Class &cl, const Extra &...extra) {
         cl.def(
             "__init__",
@@ -370,8 +367,15 @@ template <typename CFunc,
 struct factory;
 
 // Specialization for py::init(Func)
+// Note: The 4th template parameter `void_type()` is explicitly specified to resolve a
+// template ambiguity with the dual-factory specialization below when compiled with
+// nvcc + GCC (see #5565). Without it, both specializations match equally well for the
+// single-factory case, since the 4th parameter defaults to
+// `function_signature_t<void_type(*)()>` = `void_type()`, which the dual-factory
+// specialization can also decompose as `AReturn(AArgs...)` with `AReturn=void_type`
+// and `AArgs={}`.
 template <typename Func, typename Return, typename... Args>
-struct factory<Func, void_type (*)(), Return(Args...)> {
+struct factory<Func, void_type (*)(), Return(Args...), void_type()> {
     remove_reference_t<Func> class_factory;
 
     // NOLINTNEXTLINE(google-explicit-constructor)
@@ -476,9 +480,9 @@ void setstate(value_and_holder &v_h, std::pair<T, O> &&result, bool need_alias) 
         return;
     }
     // Our tests never run into an unset dict, but being careful here for now (see #5658)
-    auto dict = getattr((PyObject *) v_h.inst, "__dict__", none());
+    auto dict = getattr(reinterpret_cast<PyObject *>(v_h.inst), "__dict__", none());
     if (dict.is_none()) {
-        setattr((PyObject *) v_h.inst, "__dict__", d);
+        setattr(reinterpret_cast<PyObject *>(v_h.inst), "__dict__", d);
     } else {
         // Keep the original object dict and just update it
         if (PyDict_Update(dict.ptr(), d.ptr()) < 0) {
@@ -501,9 +505,15 @@ template <typename Get,
           typename NewInstance,
           typename ArgState>
 struct pickle_factory<Get, Set, RetState(Self), NewInstance(ArgState)> {
-    static_assert(std::is_same<intrinsic_t<RetState>, intrinsic_t<ArgState>>::value,
-                  "The type returned by `__getstate__` must be the same "
-                  "as the argument accepted by `__setstate__`");
+    using Ret = intrinsic_t<RetState>;
+    using Arg = intrinsic_t<ArgState>;
+
+    // Subclasses are now allowed for support between type hint and generic versions of types
+    // (e.g.) typing::List <--> list
+    static_assert(std::is_same<Ret, Arg>::value || std::is_base_of<Ret, Arg>::value
+                      || std::is_base_of<Arg, Ret>::value,
+                  "The type returned by `__getstate__` must be the same or subclass of the "
+                  "argument accepted by `__setstate__`");
 
     remove_reference_t<Get> get;
     remove_reference_t<Set> set;
