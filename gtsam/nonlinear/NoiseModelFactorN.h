@@ -21,11 +21,13 @@
 #pragma once
 // \callgraph
 
-#include <gtsam/linear/BinaryJacobianFactor.h>
-#include <gtsam/linear/TernaryJacobianFactor.h>
+#include <gtsam/linear/FixedJacobianFactor.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 #include <array>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 namespace gtsam {
 
@@ -87,19 +89,6 @@ struct NoiseModelFactorAliases<T1, T2, T3, T4, T5, T6, TExtra...> {
   using X6 = T6;
 };
 
-/** Compile-time residual and variable dimensions for a factor of any arity. */
-template <typename OutputVec, typename... ValueTypes>
-struct FixedSizeDimensions {
-  inline constexpr static size_t arity = sizeof...(ValueTypes);
-  inline constexpr static int M = traits<OutputVec>::dimension;
-  inline constexpr static std::array<int, arity + 1> dimensions{
-      M, traits<ValueTypes>::dimension...};
-  template <size_t I>
-  inline constexpr static int N = dimensions.at(I + 1);
-  inline constexpr static bool allFixed =
-      M != Eigen::Dynamic &&
-      ((traits<ValueTypes>::dimension != Eigen::Dynamic) && ...);
-};
 }  // namespace detail
 
 /* ************************************************************************* */
@@ -329,99 +318,65 @@ class NoiseModelFactorT
    */
   std::shared_ptr<GaussianFactor> linearize(
       const Values& values) const override {
-    using Dimensions = detail::FixedSizeDimensions<OutputVec, ValueTypes...>;
-    if constexpr (Dimensions::arity == 2 && Dimensions::allFixed) {
-      constexpr int M = Dimensions::M;
-      constexpr int N1 = Dimensions::template N<0>;
-      constexpr int N2 = Dimensions::template N<1>;
-      static_assert(M > 0 && N1 > 0 && N2 > 0,
-                    "Binary factor dimensions must be positive");
-
-      if (!this->active(values)) return std::shared_ptr<JacobianFactor>();
-
-      std::vector<Matrix> jacobians(2);
-      Vector b = -this->unwhitenedError(values, jacobians);
-      const SharedNoiseModel& noiseModel = this->noiseModel();
-      if (noiseModel && static_cast<size_t>(b.size()) != noiseModel->dim()) {
-        throw std::invalid_argument(
-            "NoiseModelFactor: NoiseModel has dimension " +
-            std::to_string(noiseModel->dim()) + " instead of " +
-            std::to_string(b.size()) + ".");
-      }
-      if (b.size() != M || jacobians[0].rows() != M ||
-          jacobians[0].cols() != N1 || jacobians[1].rows() != M ||
-          jacobians[1].cols() != N2) {
-        throw std::invalid_argument(
-            "NoiseModelFactorT::linearize: error or Jacobian dimension "
-            "mismatch");
-      }
-
-      if (noiseModel) {
-        noiseModel->WhitenSystem(jacobians[0], jacobians[1], b);
-      }
-
-      SharedDiagonal linearModel;
-      if (noiseModel && noiseModel->isConstrained()) {
-        const auto constrained =
-            std::static_pointer_cast<noiseModel::Constrained>(noiseModel);
-        linearModel = constrained->unit();
-      }
-
-      const Eigen::Matrix<double, M, N1> A1 = jacobians[0];
-      const Eigen::Matrix<double, M, N2> A2 = jacobians[1];
-      const Eigen::Matrix<double, M, 1> fixedB = b;
-      return std::make_shared<BinaryJacobianFactor<M, N1, N2>>(
-          this->keys_[0], A1, this->keys_[1], A2, fixedB, linearModel);
-    } else if constexpr (Dimensions::arity == 3 && Dimensions::allFixed) {
-      constexpr int M = Dimensions::M;
-      constexpr int N1 = Dimensions::template N<0>;
-      constexpr int N2 = Dimensions::template N<1>;
-      constexpr int N3 = Dimensions::template N<2>;
-      static_assert(M > 0 && N1 > 0 && N2 > 0 && N3 > 0,
-                    "Ternary factor dimensions must be positive");
-
-      if (!this->active(values)) return std::shared_ptr<JacobianFactor>();
-
-      std::vector<Matrix> jacobians(3);
-      Vector b = -this->unwhitenedError(values, jacobians);
-      const SharedNoiseModel& noiseModel = this->noiseModel();
-      if (noiseModel && static_cast<size_t>(b.size()) != noiseModel->dim()) {
-        throw std::invalid_argument(
-            "NoiseModelFactor: NoiseModel has dimension " +
-            std::to_string(noiseModel->dim()) + " instead of " +
-            std::to_string(b.size()) + ".");
-      }
-      if (b.size() != M || jacobians[0].rows() != M ||
-          jacobians[0].cols() != N1 || jacobians[1].rows() != M ||
-          jacobians[1].cols() != N2 || jacobians[2].rows() != M ||
-          jacobians[2].cols() != N3) {
-        throw std::invalid_argument(
-            "NoiseModelFactorT::linearize: error or Jacobian dimension "
-            "mismatch");
-      }
-
-      if (noiseModel) {
-        noiseModel->WhitenSystem(jacobians[0], jacobians[1], jacobians[2], b);
-      }
-
-      SharedDiagonal linearModel;
-      if (noiseModel && noiseModel->isConstrained()) {
-        const auto constrained =
-            std::static_pointer_cast<noiseModel::Constrained>(noiseModel);
-        linearModel = constrained->unit();
-      }
-
-      const Eigen::Matrix<double, M, N1> A1 = jacobians[0];
-      const Eigen::Matrix<double, M, N2> A2 = jacobians[1];
-      const Eigen::Matrix<double, M, N3> A3 = jacobians[2];
-      const Eigen::Matrix<double, M, 1> fixedB = b;
-      return std::make_shared<TernaryJacobianFactor<M, N1, N2, N3>>(
-          this->keys_[0], A1, this->keys_[1], A2, this->keys_[2], A3, fixedB,
-          linearModel);
-    } else {
-      return NoiseModelFactor::linearize(values);
-    }
+    using Dimensions = internal::FixedSizeDimensions<OutputVec, ValueTypes...>;
+    using Factory = internal::FixedJacobianFactorFactory<
+        Dimensions::M, traits<ValueTypes>::dimension...>;
+    using UseFixed = std::bool_constant<Dimensions::allFixed &&
+                                        Factory::available>;
+    return linearizeImpl<Factory>(values, UseFixed{});
   }
+
+ private:
+  /** Linearize a fixed-size factor supported by the selected factory. */
+  template <typename Factory>
+  std::shared_ptr<GaussianFactor> linearizeImpl(const Values& values,
+                                                std::true_type) const {
+    using Dimensions = internal::FixedSizeDimensions<OutputVec, ValueTypes...>;
+    constexpr int M = Dimensions::M;
+    static_assert(M > 0 && ((traits<ValueTypes>::dimension > 0) && ...),
+                  "Fixed factor dimensions must be positive");
+
+    if (!this->active(values)) return std::shared_ptr<JacobianFactor>();
+
+    std::vector<Matrix> jacobians(Dimensions::arity);
+    Vector b = -this->unwhitenedError(values, jacobians);
+    const SharedNoiseModel& noiseModel = this->noiseModel();
+    if (noiseModel && static_cast<size_t>(b.size()) != noiseModel->dim()) {
+      throw std::invalid_argument(
+          "NoiseModelFactor: NoiseModel has dimension " +
+          std::to_string(noiseModel->dim()) + " instead of " +
+          std::to_string(b.size()) + ".");
+    }
+    if (b.size() != M || jacobians.size() != Dimensions::arity ||
+        !internal::dimensionsMatch<Dimensions>(
+            jacobians, std::make_index_sequence<Dimensions::arity>{})) {
+      throw std::invalid_argument(
+          "NoiseModelFactorT::linearize: error or Jacobian dimension "
+          "mismatch");
+    }
+
+    if (noiseModel) {
+      noiseModel->WhitenSystem(jacobians, b);
+    }
+
+    SharedDiagonal linearModel;
+    if (noiseModel && noiseModel->isConstrained()) {
+      const auto constrained =
+          std::static_pointer_cast<noiseModel::Constrained>(noiseModel);
+      linearModel = constrained->unit();
+    }
+
+    return Factory::create(this->keys_, jacobians, b, linearModel);
+  }
+
+  /** Retain generic linearization for dynamic or unsupported arities. */
+  template <typename Factory>
+  std::shared_ptr<GaussianFactor> linearizeImpl(const Values& values,
+                                                std::false_type) const {
+    return NoiseModelFactor::linearize(values);
+  }
+
+ public:
 
   /** This implements the `unwhitenedError` virtual function by calling the
    * n-key specific version of evaluateError, which is pure virtual so must be
