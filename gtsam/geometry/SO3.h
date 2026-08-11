@@ -67,6 +67,10 @@ inline Matrix3 SO3::AdjointMap() const{ return matrix_; }
  */
 template <>
 GTSAM_EXPORT
+SO3 SO3::Expmap(const Vector3& omega);
+
+template <>
+GTSAM_EXPORT
 SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H);
 
 /// Derivative of Expmap
@@ -80,6 +84,10 @@ Matrix3 SO3::ExpmapDerivative(const Vector3& omega);
  */
 template <>
 GTSAM_EXPORT
+Vector3 SO3::Logmap(const SO3& R);
+
+template <>
+GTSAM_EXPORT
 Vector3 SO3::Logmap(const SO3& R, ChartJacobian H);
 
 /// Derivative of Logmap
@@ -90,7 +98,15 @@ Matrix3 SO3::LogmapDerivative(const Vector3& omega);
 // Chart at origin for SO3 is *not* Cayley but actual Expmap/Logmap
 template <>
 GTSAM_EXPORT
+SO3 SO3::ChartAtOrigin::Retract(const Vector3& omega);
+
+template <>
+GTSAM_EXPORT
 SO3 SO3::ChartAtOrigin::Retract(const Vector3& omega, ChartJacobian H);
+
+template <>
+GTSAM_EXPORT
+Vector3 SO3::ChartAtOrigin::Local(const SO3& R);
 
 template <>
 GTSAM_EXPORT

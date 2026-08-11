@@ -37,8 +37,7 @@ typename SO<N>::TangentVector SO<N>::Vee(const MatrixNN& X) {
 }
 
 template <int N>
-SO<N> SO<N>::ChartAtOrigin::Retract(const TangentVector& xi, ChartJacobian H) {
-  if (H) throw std::runtime_error("SO<N>::Retract jacobian not implemented.");
+SO<N> SO<N>::ChartAtOrigin::Retract(const TangentVector& xi) {
   const Matrix X = Hat(xi / 2.0);
   size_t n = AmbientDim(xi.size());
   const auto I = Eigen::MatrixXd::Identity(n, n);
@@ -47,9 +46,7 @@ SO<N> SO<N>::ChartAtOrigin::Retract(const TangentVector& xi, ChartJacobian H) {
 }
 
 template <int N>
-typename SO<N>::TangentVector SO<N>::ChartAtOrigin::Local(const SO& R,
-                                                          ChartJacobian H) {
-  if (H) throw std::runtime_error("SO<N>::Local jacobian not implemented.");
+typename SO<N>::TangentVector SO<N>::ChartAtOrigin::Local(const SO& R) {
   const size_t n = R.rows();
   const auto I = Eigen::MatrixXd::Identity(n, n);
   const Matrix X = (I - R.matrix_) * (I + R.matrix_).inverse();
@@ -57,23 +54,13 @@ typename SO<N>::TangentVector SO<N>::ChartAtOrigin::Local(const SO& R,
 }
 
 template <int N>
-SO<N> SO<N>::Expmap(const TangentVector& omega, ChartJacobian H) {
+SO<N> SO<N>::Expmap(const TangentVector& omega) {
   throw std::runtime_error("SO<N>::Expmap only implemented for SO3 and SO4.");
 }
 
 template <int N>
-typename SO<N>::MatrixDD SO<N>::ExpmapDerivative(const TangentVector& omega) {
-  throw std::runtime_error("SO<N>::ExpmapDerivative only implemented for SO3.");
-}
-
-template <int N>
-typename SO<N>::TangentVector SO<N>::Logmap(const SO& R, ChartJacobian H) {
+typename SO<N>::TangentVector SO<N>::Logmap(const SO& R) {
   throw std::runtime_error("SO<N>::Logmap only implemented for SO3.");
-}
-
-template <int N>
-typename SO<N>::MatrixDD SO<N>::LogmapDerivative(const TangentVector& omega) {
-  throw std::runtime_error("O<N>::LogmapDerivative only implemented for SO3.");
 }
 
 template <int N>

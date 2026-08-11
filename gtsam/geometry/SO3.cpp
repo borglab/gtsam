@@ -301,6 +301,12 @@ Vector3 SO3::Vee(const Matrix3& X) {
 //******************************************************************************
 template <>
 GTSAM_EXPORT
+SO3 SO3::Expmap(const Vector3& omega) {
+  return Expmap(omega, {});
+}
+
+template <>
+GTSAM_EXPORT
 SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H) {
   so3::DexpFunctor local(omega);
   if (H) *H = local.rightJacobian();
@@ -318,6 +324,12 @@ template <>
 GTSAM_EXPORT
 Matrix3 SO3::LogmapDerivative(const Vector3& omega) {
   return so3::DexpFunctor(omega).InvJacobian().right();
+}
+
+template <>
+GTSAM_EXPORT
+Vector3 SO3::Logmap(const SO3& Q) {
+  return Logmap(Q, {});
 }
 
 template <>
@@ -403,8 +415,20 @@ Vector3 SO3::Logmap(const SO3& Q, ChartJacobian H) {
 
 template <>
 GTSAM_EXPORT
+SO3 SO3::ChartAtOrigin::Retract(const Vector3& omega) {
+  return Expmap(omega);
+}
+
+template <>
+GTSAM_EXPORT
 SO3 SO3::ChartAtOrigin::Retract(const Vector3& omega, ChartJacobian H) {
   return Expmap(omega, H);
+}
+
+template <>
+GTSAM_EXPORT
+Vector3 SO3::ChartAtOrigin::Local(const SO3& R) {
+  return Logmap(R);
 }
 
 template <>

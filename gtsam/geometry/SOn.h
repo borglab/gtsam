@@ -242,12 +242,19 @@ class SO : public MatrixLieGroup<SO<N>, internal::DimensionSO(N), N> {
      * Retract uses Cayley map. See note about xi element order in Hat.
      * Deafault implementation has no Jacobian implemented
      */
-    static SO Retract(const TangentVector& xi, ChartJacobian H = {});
+    static SO Retract(const TangentVector& xi);
+
+    /// Retract with a Jacobian, specialized only for dimensions that support
+    /// it.
+    static SO Retract(const TangentVector& xi, ChartJacobian H) = delete;
 
     /**
      * Inverse of Retract. See note about xi element order in Hat.
      */
-    static TangentVector Local(const SO& R, ChartJacobian H = {});
+    static TangentVector Local(const SO& R);
+
+    /// Local coordinates with a Jacobian, specialized when supported.
+    static TangentVector Local(const SO& R, ChartJacobian H) = delete;
   };
 
   // Return dynamic identity DxD Jacobian for given SO(n)
@@ -269,18 +276,24 @@ class SO : public MatrixLieGroup<SO<N>, internal::DimensionSO(N), N> {
   /**
    * Exponential map at identity - create a rotation from canonical coordinates
    */
-  static SO Expmap(const TangentVector& omega, ChartJacobian H = {});
+  static SO Expmap(const TangentVector& omega);
 
-  /// Derivative of Expmap, currently only defined for SO3
-  static MatrixDD ExpmapDerivative(const TangentVector& omega);
+  /// Exponential map with a Jacobian, specialized when supported.
+  static SO Expmap(const TangentVector& omega, ChartJacobian H) = delete;
+
+  /// Derivative of Expmap, specialized when supported.
+  static MatrixDD ExpmapDerivative(const TangentVector& omega) = delete;
 
   /**
    * Log map at identity - returns the canonical coordinates of this rotation
    */
-  static TangentVector Logmap(const SO& R, ChartJacobian H = {});
+  static TangentVector Logmap(const SO& R);
 
-  /// Derivative of Logmap, currently only defined for SO3
-  static MatrixDD LogmapDerivative(const TangentVector& omega);
+  /// Logarithm map with a Jacobian, specialized when supported.
+  static TangentVector Logmap(const SO& R, ChartJacobian H) = delete;
+
+  /// Derivative of Logmap, specialized when supported.
+  static MatrixDD LogmapDerivative(const TangentVector& omega) = delete;
 
   // inverse with optional derivative
   using LieGroup<SO<N>, internal::DimensionSO(N)>::inverse;
