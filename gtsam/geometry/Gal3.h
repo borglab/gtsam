@@ -201,7 +201,7 @@ class GTSAM_EXPORT Gal3 : public MatrixLieGroup<Gal3, 10, 5> {
   static Jacobian LogmapDerivative(const TangentVector& xi);
 
   /// Chart at origin, uses Expmap/Logmap for Retract/Local
-  struct ChartAtOrigin {
+  struct GTSAM_EXPORT ChartAtOrigin {
     static Gal3 Retract(const TangentVector& xi, ChartJacobian Hxi = {});
     static TangentVector Local(const Gal3& g, ChartJacobian Hg = {});
   };
