@@ -120,9 +120,10 @@ class GenericGraduatedFactor : public FACTOR_TYPE, public GraduatedFactor {
         GraduatedFactor(loss, scheduler) {}
 
   /// @brief Copy Constructor
+  /// Delegates to GraduatedFactor's copy constructor so the copy preserves the
+  /// current graduation progress (mu) rather than resetting it to muInit.
   GenericGraduatedFactor(const GenericGraduatedFactor<FACTOR_TYPE>& other)
-      : FACTOR_TYPE(other),
-        GraduatedFactor(other.robust_loss_, other.scheduler_) {}
+      : FACTOR_TYPE(other), GraduatedFactor(other) {}
 
   /// @brief Makes a deep copy of the factor
   NonlinearFactor::shared_ptr clone() const override {

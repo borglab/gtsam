@@ -113,6 +113,63 @@ TEST(RISAMGraduatedFactor, Error) {
 }
 
 /* ************************************************************************* */
+/// @brief Test helper that exposes the protected mu control parameter
+class TestableGraduatedPrior : public GenericGraduatedFactor<PriorFactor<double>> {
+ public:
+  typedef GenericGraduatedFactor<PriorFactor<double>> Base;
+  using Base::Base;
+  void setMu(double mu) { *mu_ = mu; }
+  double getMu() const { return *mu_; }
+};
+
+/* ************************************************************************* */
+TEST(RISAMGraduatedFactor, ClonePreservesMu) {
+  GMLoss::shared_ptr robust_loss =
+      GMLoss::Create(1.0, GMLoss::GradScheme::SCALE_INVARIANT);
+  GradSch::shared_ptr scheduler = std::make_shared<GradSch>();
+
+  TestableGraduatedPrior factor(robust_loss, scheduler, 0, 0.0,
+                               noiseModel::Unit::Create(1));
+  gtsam::Values values;
+  values.insert(0, 1.0);  // residual == 1.0
+
+  // Advance the factor to an intermediate mu (i.e. not muInit and not converged)
+  const double kIntermediateMu = 0.5;
+  factor.setMu(kIntermediateMu);
+  CHECK(std::abs(kIntermediateMu - scheduler->muInit()) > 1e-9);
+
+  // The clone must behave as if it were graduated to the intermediate mu
+  NonlinearFactor::shared_ptr cloned = factor.clone();
+  GraduatedFactor::shared_ptr grad_clone =
+      std::dynamic_pointer_cast<GraduatedFactor>(cloned);
+  CHECK(grad_clone);
+
+  const double expected_loss =
+      robust_loss->graduatedLoss(1.0, kIntermediateMu);
+  const double expected_weight =
+      robust_loss->graduatedWeight(1.0, kIntermediateMu);
+
+  CHECK(assert_equal(expected_loss, grad_clone->robustResidual(values), 1e-9));
+  CHECK(assert_equal(factor.robustResidual(values),
+                     grad_clone->robustResidual(values), 1e-9));
+
+  // The weight used to linearize must match as well
+  auto jac_clone = cloned->linearize(values)->jacobian();
+  CHECK(assert_equal(Matrix::Identity(1, 1) * sqrt(expected_weight),
+                     jac_clone.first, 1e-9));
+
+  // The two mu states must not alias: advancing the original leaves the clone
+  // graduated at the mu it was cloned with
+  factor.setMu(1.0);
+  CHECK(assert_equal(expected_loss, grad_clone->robustResidual(values), 1e-9));
+  auto jac_clone_after = cloned->linearize(values)->jacobian();
+  CHECK(assert_equal(jac_clone.first, jac_clone_after.first, 1e-9));
+  CHECK(assert_equal(jac_clone.second, jac_clone_after.second, 1e-9));
+  // Sanity check that mu=1.0 is actually distinguishable from mu=0.5
+  CHECK(std::abs(factor.robustResidual(values) - expected_loss) > 1e-9);
+}
+
+/* ************************************************************************* */
 TEST(RISAM, RISAMIntegrationTest) {
   SharedDiagonal odoNoise = noiseModel::Diagonal::Sigmas(
       (Vector(3) << 0.1, 0.1, M_PI / 100.0).finished());
