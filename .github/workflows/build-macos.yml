@@ -11,6 +11,7 @@ jobs:
       CTEST_OUTPUT_ON_FAILURE: ON
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
+      CMAKE_POLICY_VERSION_MINIMUM: "3.5"
       GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
 
     strategy:
@@ -34,18 +35,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Install Dependencies
+      - name: Prepare Homebrew
         run: |
-          brew install cmake ninja
-          brew install boost
-          if [ "${{ matrix.compiler }}" = "gcc" ]; then
-            brew install gcc@${{ matrix.version }}
-            echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
-            echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
-          else
-            sudo xcode-select -switch /Applications/Xcode.app
-            echo "CC=clang" >> $GITHUB_ENV
-            echo "CXX=clang++" >> $GITHUB_ENV
-          fi
+          set -euxo pipefail
+          export HOMEBREW_NO_AUTO_UPDATE=1
+          export HOMEBREW_NO_INSTALL_FROM_API=1
+          export HOMEBREW_CURL_RETRIES=5
+          brew update-reset -q || true
+          brew tap --repair || true
+          brew analytics off || true
+          brew outdated || true
+      - name: Set up compiler
+        run: |
+          sudo xcode-select -switch /Applications/Xcode.app
+          echo "CC=clang" >> $GITHUB_ENV
+          echo "CXX=clang++" >> $GITHUB_ENV
+      - name: Install Boost
+        run: brew upgrade boost --quiet || brew install boost --quiet
       - name: Build and Test
         run: bash .github/scripts/unix.sh -t

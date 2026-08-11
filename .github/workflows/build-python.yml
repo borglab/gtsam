@@ -78,18 +78,16 @@ jobs:
       - name: Install (macOS)
         if: runner.os == 'macOS'
         run: |
-          brew tap ProfFan/robotics
-          brew install cmake ninja
-          brew install boost
-          if [ "${{ matrix.compiler }}" = "gcc" ]; then
-            brew install gcc@${{ matrix.version }}
-            echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
-            echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
-          else
-            sudo xcode-select -switch /Applications/Xcode.app
-            echo "CC=clang" >> $GITHUB_ENV
-            echo "CXX=clang++" >> $GITHUB_ENV
-          fi
+          brew update
+          brew list boost &>/dev/null || brew install boost
+          sudo xcode-select -switch /Applications/Xcode.app
+          echo "CC=clang" >> $GITHUB_ENV
+          echo "CXX=clang++" >> $GITHUB_ENV
+          echo "CMAKE_POLICY_VERSION_MINIMUM=3.5" >> $GITHUB_ENV
+
+          python3 -m venv "$RUNNER_TEMP/gtsam-venv"
+          echo "VIRTUAL_ENV=$RUNNER_TEMP/gtsam-venv" >> $GITHUB_ENV
+          echo "$RUNNER_TEMP/gtsam-venv/bin" >> $GITHUB_PATH
       - name: Set GTSAM_WITH_TBB Flag
         if: matrix.flag == 'tbb'
         run: |

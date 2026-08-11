@@ -45,39 +45,15 @@ jobs:
             platform: 64
 
     steps:
-      - name: Install Dependencies
-        shell: powershell
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x${{ matrix.platform }}
+          toolset: 14.40
+
+      - name: Check MSVC version
         run: |
-          iwr -useb get.scoop.sh -outfile 'install_scoop.ps1'
-          .\install_scoop.ps1 -RunAsAdmin
-
-          scoop install cmake --global  # So we don't get issues with CMP0074 policy
-          scoop install ninja --global
-
-          if ("${{ matrix.compiler }}".StartsWith("clang")) {
-            scoop install llvm --global
-          }
-
-          if ("${{ matrix.compiler }}" -eq "gcc") {
-            # Chocolatey GCC is broken on the windows-2019 image.
-            # See: https://github.com/DaanDeMeyer/doctest/runs/231595515
-            # See: https://github.community/t5/GitHub-Actions/Something-is-wrong-with-the-chocolatey-installed-version-of-gcc/td-p/32413
-            scoop install gcc --global
-            echo "CC=gcc" >> $GITHUB_ENV
-            echo "CXX=g++" >> $GITHUB_ENV
-
-          } elseif ("${{ matrix.compiler }}" -eq "clang") {
-            echo "CC=clang" >> $GITHUB_ENV
-            echo "CXX=clang++" >> $GITHUB_ENV
-
-          } else {
-            echo "CC=${{ matrix.compiler }}" >> $env:GITHUB_ENV
-            echo "CXX=${{ matrix.compiler }}" >> $env:GITHUB_ENV
-
-          }
-
-          # Scoop modifies the PATH so we make the modified PATH global.
-          echo "$env:PATH" >> $env:GITHUB_PATH
+          cl
 
       - name: Install Boost
         shell: powershell
@@ -104,7 +80,7 @@ jobs:
       - name: Configuration
         run: |
           cmake -E remove_directory build
-          cmake -B build -S . -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib"
+          cmake -B build -S . -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DBOOST_ROOT="${env:BOOST_ROOT}" -DBOOST_INCLUDEDIR="${env:BOOST_ROOT}\boost\include" -DBOOST_LIBRARYDIR="${env:BOOST_ROOT}\lib"
 
       - name: Build
         run: |
