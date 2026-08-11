@@ -87,7 +87,7 @@ std::set<size_t> RISAM::getOutliers(double chi2_outlier_thresh) {
       const double thresh =
           internal::chiSquaredQuantile(nlf_ptr->dim(), chi2_outlier_thresh);
       const double residual = grad_ptr->residual(current_est);
-      if (residual > thresh) outlier_factors.insert(i);
+      if (residual * residual > thresh) outlier_factors.insert(i);
     }
   }
   return outlier_factors;
@@ -345,15 +345,16 @@ void RISAM::incrementMuInits() {
           std::dynamic_pointer_cast<GraduatedFactor>(factors_[fidx]);
 
       double mahdist = grad_factor->residual(theta);
+      double mahdist_sq = mahdist * mahdist;
       const double mah_upper_bound = internal::chiSquaredQuantile(
           factors_[fidx]->dim(), params_.outlier_mu_chisq_upper_bound);
       const double mah_lower_bound = internal::chiSquaredQuantile(
           factors_[fidx]->dim(), params_.outlier_mu_chisq_lower_bound);
 
-      if (mahdist > mah_upper_bound) {
+      if (mahdist_sq > mah_upper_bound) {
         *(mu_inits_[fidx]) =
             grad_factor->scheduler()->updateMuInit(*(mu_inits_[fidx]), false);
-      } else if (mahdist < mah_lower_bound) {
+      } else if (mahdist_sq < mah_lower_bound) {
         *(mu_inits_[fidx]) =
             grad_factor->scheduler()->updateMuInit(*(mu_inits_[fidx]), true);
       }

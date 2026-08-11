@@ -456,10 +456,11 @@ GemanMcClure::shared_ptr GemanMcClure::Create(
 }
 
 /* ************************************************************************* */
-double GemanMcClure::shapeParamFromInfThresh(double influence_thresh, size_t dof,
-                                          double chi2_outlier_thresh) {
+double GemanMcClure::shapeParamFromInfThresh(double influence_thresh,
+                                             size_t dof,
+                                             double chi2_outlier_thresh) {
   double outlier_residual_thresh =
-      2 * gtsam_cephes_igami(dof / 2, chi2_outlier_thresh);
+      std::sqrt(2 * gtsam_cephes_igami(dof / 2, chi2_outlier_thresh));
   // Equation [d/dr \rho(x) = influence_thresh] solved for c
   const double t1 =
       std::sqrt(2 * influence_thresh * std::pow(outlier_residual_thresh, 5));
