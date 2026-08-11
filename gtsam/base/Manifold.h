@@ -140,6 +140,18 @@ struct ManifoldTraits: GetDimensionImpl<Class, Class::dimension> {
   }
 };
 
+/// Detect whether a traits type provides Local with Jacobians.
+template <class T, class = void>
+struct HasLocalJacobians : std::false_type {};
+
+template <class T>
+struct HasLocalJacobians<
+    T, std::void_t<decltype(traits<T>::Local(
+           std::declval<const T&>(), std::declval<const T&>(),
+           std::declval<typename traits<T>::ChartJacobian>(),
+           std::declval<typename traits<T>::ChartJacobian>()))>>
+    : std::true_type {};
+
 /// Both ManifoldTraits and Testable
 template<class Class> struct Manifold: ManifoldTraits<Class>, Testable<Class> {};
 

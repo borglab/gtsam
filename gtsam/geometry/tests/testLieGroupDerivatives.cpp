@@ -68,6 +68,12 @@ TEST(LieGroupDerivatives, TraitIntrospection) {
   CHECK(hasNoJacobians<Similarity2>);
   CHECK(hasNoJacobians<Similarity3>);
   CHECK(hasNoJacobians<SL4>);
+
+  CHECK(internal::HasLocalJacobians<SO3>::value);
+  CHECK(!internal::HasLocalJacobians<SO4>::value);
+  CHECK(!internal::HasLocalJacobians<Similarity2>::value);
+  CHECK(!internal::HasLocalJacobians<Similarity3>::value);
+  CHECK(!internal::HasLocalJacobians<SL4>::value);
 }
 
 }  // namespace lie_group_derivative_support
