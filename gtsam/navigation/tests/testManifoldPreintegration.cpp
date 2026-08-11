@@ -54,6 +54,9 @@ TEST(ManifoldPreintegration, BiasCorrectionJacobians) {
   ManifoldPreintegration pim(testing::Params());
   testing::integrateMeasurements(measurements, &pim);
 
+  EXPECT(assert_equal(pim.biasCorrectedDelta(pim.biasHat()),
+                      pim.preintegrated()));
+
   EXPECT(
       assert_equal(numericalDerivative21(deltaRij, kZero, kZero),
           Matrix3(Z_3x3)));
