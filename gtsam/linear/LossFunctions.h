@@ -473,6 +473,8 @@ class GTSAM_EXPORT GemanMcClure : public Base {
   static shared_ptr Create(double k, const GradScheme graduation,
                            const ReweightScheme reweight = Block);
   double modelParameter() const { return c_; }
+  /// @brief Returns the graduation scheme used by this loss
+  GradScheme gradScheme() const { return graduation_; }
 
   /// @brief A static helper function to compute the Geman-McClure robust weight
   static double Weight(double distance2, double c2);
@@ -502,7 +504,7 @@ class GTSAM_EXPORT GemanMcClure : public Base {
  protected:
   double c_;
   double csquared_;
-  GradScheme graduation_;  
+  GradScheme graduation_;
 
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
@@ -513,6 +515,7 @@ class GTSAM_EXPORT GemanMcClure : public Base {
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar &BOOST_SERIALIZATION_NVP(c_);
     ar &BOOST_SERIALIZATION_NVP(csquared_);
+    ar &BOOST_SERIALIZATION_NVP(graduation_);
   }
 #endif
 };
@@ -572,6 +575,8 @@ class GTSAM_EXPORT TruncatedLeastSquares : public Base {
   static shared_ptr Create(double c, GradScheme graduation,
                            const ReweightScheme reweight = Block);
   double modelParameter() const { return c_; }
+  /// @brief Returns the graduation scheme used by this loss
+  GradScheme gradScheme() const { return graduation_; }
 
   /// @brief Static implementation of TLS Weight
   static double Weight(double distance2, double c2);
@@ -599,6 +604,7 @@ class GTSAM_EXPORT TruncatedLeastSquares : public Base {
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar &BOOST_SERIALIZATION_NVP(c_);
     ar &BOOST_SERIALIZATION_NVP(csquared_);
+    ar &BOOST_SERIALIZATION_NVP(graduation_);
   }
 #endif
 };

@@ -21,6 +21,7 @@
 
 #include <iostream>
 #include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -442,14 +443,27 @@ double GemanMcClure::graduatedLoss(double distance, double mu) const {
   return GraduatedLoss(distance * distance, csquared_, mu, graduation_);
 }
 
-void GemanMcClure::print(const std::string &s="") const {
-  std::cout << s << ": Geman-McClure (" << c_ << ")" << std::endl;
+static std::string GemanMcClureGradSchemeName(
+    GemanMcClure::GradScheme graduation) {
+  switch (graduation) {
+    case GemanMcClure::GradScheme::STANDARD:
+      return "STANDARD";
+    case GemanMcClure::GradScheme::SCALE_INVARIANT:
+      return "SCALE_INVARIANT";
+    default:
+      return "UNKNOWN";
+  }
 }
 
-bool GemanMcClure::equals(const Base &expected, double tol) const {
+void GemanMcClure::print(const std::string& s = "") const {
+  std::cout << s << ": Geman-McClure (" << c_ << ", "
+            << GemanMcClureGradSchemeName(graduation_) << ")" << std::endl;
+}
+
+bool GemanMcClure::equals(const Base& expected, double tol) const {
   const GemanMcClure* p = dynamic_cast<const GemanMcClure*>(&expected);
   if (p == nullptr) return false;
-  return std::abs(c_ - p->c_) < tol;
+  return std::abs(c_ - p->c_) < tol && graduation_ == p->graduation_;
 }
 
 GemanMcClure::shared_ptr GemanMcClure::Create(double c,
@@ -574,15 +588,31 @@ double TruncatedLeastSquares::graduatedLoss(double distance, double mu) const {
   return GraduatedLoss(distance * distance, csquared_, mu, graduation_);
 }
 
+static std::string TruncatedLeastSquaresGradSchemeName(
+    TruncatedLeastSquares::GradScheme graduation) {
+  switch (graduation) {
+    case TruncatedLeastSquares::GradScheme::STANDARD:
+      return "STANDARD";
+    case TruncatedLeastSquares::GradScheme::GNC_LINEAR:
+      return "GNC_LINEAR";
+    case TruncatedLeastSquares::GradScheme::GNC_SUPERLINEAR:
+      return "GNC_SUPERLINEAR";
+    default:
+      return "UNKNOWN";
+  }
+}
+
 void TruncatedLeastSquares::print(const std::string& s = "") const {
-  std::cout << s << ": TLS (" << c_ << ")" << std::endl;
+  std::cout << s << ": TLS (" << c_ << ", "
+            << TruncatedLeastSquaresGradSchemeName(graduation_) << ")"
+            << std::endl;
 }
 
 bool TruncatedLeastSquares::equals(const Base& expected, double tol) const {
   const TruncatedLeastSquares* p =
       dynamic_cast<const TruncatedLeastSquares*>(&expected);
   if (p == nullptr) return false;
-  return std::abs(c_ - p->c_) < tol;
+  return std::abs(c_ - p->c_) < tol && graduation_ == p->graduation_;
 }
 
 TruncatedLeastSquares::shared_ptr TruncatedLeastSquares::Create(
