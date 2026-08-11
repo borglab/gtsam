@@ -22,6 +22,47 @@ These helpers are private to the timing targets and do not add public GTSAM
 API. Legacy `gttic_` microbenchmarks continue to use `gtsam/base/timing` and are
 not candidates for migration to this harness.
 
+## BetweenFactor Jacobian Benchmark
+
+`timeBetweenFactor` measures `BetweenFactor<Rot3>::evaluateError` with both
+Jacobians requested at a nonzero residual. It also reports maximum absolute
+differences from numerical Jacobians outside the timed region. This migrates
+the experiment from PR 88 into a standalone, reproducible timing target.
+The current factor and an exact copy of the legacy Jacobian path are timed in
+alternating order within each repetition, reducing CPU-frequency drift in the
+comparison.
+
+Build and run it from the build directory:
+
+```bash
+make -j6 timeBetweenFactor
+./timing/timeBetweenFactor --warmup 5 --repeats 20 \
+  --iterations 100000 --output between_factor.json
+```
+
+With `GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON`, the output directly compares
+the corrected Local-Jacobian path with the legacy approximation. The optional
+output uses the shared Benchmark Action JSON format.
+
+### End-to-end pose-graph optimization
+
+`timeBetweenFactorPoseGraph` assesses whether the more expensive Jacobians
+change nonlinear convergence enough to offset their per-evaluation cost. It
+loads `w10000.graph`, anchors pose zero, computes one shared FAST-Sync
+initialization, and then runs Levenberg-Marquardt to its standard termination
+condition on two otherwise identical graphs. FAST-Sync is outside the timed
+refinements. The current factors and benchmark-only copies of the legacy
+`BetweenFactor` and `PriorFactor` Jacobian paths are run in alternating order.
+
+```bash
+make -j6 timeBetweenFactorPoseGraph
+./timing/timeBetweenFactorPoseGraph --warmup 1 --repeats 5 \
+  --dataset w10000.graph --output between_factor_pose_graph.json
+```
+
+Pass `--raw-initial` only to reproduce the difficult uninitialized convergence
+diagnostic.
+
 BAL benchmarks additionally share `BalBenchmarkConfig` and the builders in
 `timing/internal/SfmBalBenchmark`. The configuration carries ordering and
 projection-noise choices explicitly; timing headers no longer define mutable

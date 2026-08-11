@@ -22,14 +22,6 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 
-#ifdef _WIN32
-#define BETWEENFACTOR_VISIBILITY
-#else
-// This will trigger a LNKxxxx on MSVC, so disable for MSVC build
-// Please refer to https://github.com/borglab/gtsam/blob/develop/Using-GTSAM-EXPORT.md
-#define BETWEENFACTOR_VISIBILITY GTSAM_EXPORT
-#endif
-
 namespace gtsam {
 
   /**
@@ -124,14 +116,18 @@ namespace gtsam {
       T hx = traits<T>::Between(p1, p2, H1, H2); // h(x)
       // manifold equivalent of h(x)-z -> log(z,h(x))
 #ifdef GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR
-      typename traits<T>::ChartJacobian::Jacobian Hlocal;
-      Vector rval = traits<T>::Local(measured_, hx, OptionalNone, (H1 || H2) ? &Hlocal : 0);
-      if (H1) *H1 = Hlocal * (*H1);
-      if (H2) *H2 = Hlocal * (*H2);
-      return rval;
-#else
-      return traits<T>::Local(measured_, hx);
+      if constexpr (internal::HasLocalJacobians<T>::value) {
+        if (H1 || H2) {
+          typename traits<T>::ChartJacobian::Jacobian Hlocal;
+          Vector error =
+              traits<T>::Local(measured_, hx, OptionalNone, &Hlocal);
+          if (H1) *H1 = Hlocal * (*H1);
+          if (H2) *H2 = Hlocal * (*H2);
+          return error;
+        }
+      }
 #endif
+      return traits<T>::Local(measured_, hx);
     }
 
     /// @}

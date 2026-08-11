@@ -238,27 +238,19 @@ Matrix2 Similarity2::GetV(double theta, double lambda) {
   return Matrix2{{X, -theta * Y}, {theta * Y, X}};
 }
 
-Vector4 Similarity2::Logmap(const Similarity2& S,  //
-                            OptionalJacobian<4, 4> Hm) {
+Vector4 Similarity2::Logmap(const Similarity2& S) {
   const Vector1 w = Rot2::Logmap(S.R_);
   const double lambda = log(S.s_);
   // In Expmap, t = V * u -> in Logmap, u = V^{-1} * t
   Vector4 result;
   result << GetV(w[0], lambda).inverse() * S.t_, w, lambda;
-  if (Hm) {
-    throw std::runtime_error("Similarity2::Logmap: derivative not implemented");
-  }
   return result;
 }
 
-Similarity2 Similarity2::Expmap(const Vector4& v,  //
-                                OptionalJacobian<4, 4> Hm) {
+Similarity2 Similarity2::Expmap(const Vector4& v) {
   const Vector2 u = v.head<2>();
   const double theta = v[2];
   const double lambda = v[3];
-  if (Hm) {
-    throw std::runtime_error("Similarity2::Expmap: derivative not implemented");
-  }
   const Matrix2 V = GetV(theta, lambda);
   return Similarity2(Rot2::Expmap(v.segment<1>(2)), V * u, exp(lambda));
 }

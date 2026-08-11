@@ -39,19 +39,27 @@ void testChartDerivativesN(TestResult& result_, const std::string& name_,
   OJ none;
   const V w12 = T::Local(t1, t2);
   EXPECT(assert_equal<State>(t2, T::Retract(t1, w12, H1, H2)));
+  const auto retract = [](const State& origin, const V& v, const OJ& H1,
+                          const OJ& H2) {
+    return T::Retract(origin, v, H1, H2);
+  };
   EXPECT(assert_equal(numericalDerivative41<State, State, V, OJ, OJ, N>(
-                          T::Retract, t1, w12, none, none),
+                          retract, t1, w12, none, none),
                       H1, 1e-5));
   EXPECT(assert_equal(numericalDerivative42<State, State, V, OJ, OJ, N>(
-                          T::Retract, t1, w12, none, none),
+                          retract, t1, w12, none, none),
                       H2, 1e-5));
 
   EXPECT(assert_equal(w12, T::Local(t1, t2, H1, H2), 1e-9));
+  const auto local = [](const State& origin, const State& other, const OJ& H1,
+                        const OJ& H2) {
+    return T::Local(origin, other, H1, H2);
+  };
   EXPECT(assert_equal(numericalDerivative41<V, State, State, OJ, OJ, N>(
-                          T::Local, t1, t2, none, none),
+                          local, t1, t2, none, none),
                       H1, 1e-5));
   EXPECT(assert_equal(numericalDerivative42<V, State, State, OJ, OJ, N>(
-                          T::Local, t1, t2, none, none),
+                          local, t1, t2, none, none),
                       H2, 1e-5));
 }
 

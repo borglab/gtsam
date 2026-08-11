@@ -198,7 +198,7 @@ TEST(SO3, ExpmapDerivative) {
 TEST(SO3, ExpmapDerivative2) {
   const Vector3 theta(0.1, 0, 0.1);
   const Matrix Jexpected = numericalDerivative11<SO3, Vector3>(
-    std::bind(&SO3::Expmap, std::placeholders::_1, nullptr), theta);
+      [](const Vector3& omega) { return SO3::Expmap(omega); }, theta);
 
   CHECK(assert_equal(Jexpected, SO3::ExpmapDerivative(theta)));
   CHECK(assert_equal(Matrix3(Jexpected.transpose()),
@@ -209,7 +209,7 @@ TEST(SO3, ExpmapDerivative2) {
 TEST(SO3, ExpmapDerivative3) {
   const Vector3 theta(10, 20, 30);
   const Matrix Jexpected = numericalDerivative11<SO3, Vector3>(
-    std::bind(&SO3::Expmap, std::placeholders::_1, nullptr), theta);
+      [](const Vector3& omega) { return SO3::Expmap(omega); }, theta);
 
   CHECK(assert_equal(Jexpected, SO3::ExpmapDerivative(theta)));
   CHECK(assert_equal(Matrix3(Jexpected.transpose()),
@@ -264,7 +264,7 @@ TEST(SO3, ExpmapDerivative5) {
 TEST(SO3, ExpmapDerivative6) {
   const Vector3 theta(0.1, 0, 0.1);
   const Matrix expectedH = numericalDerivative11<SO3, Vector3>(
-    std::bind(&SO3::Expmap, std::placeholders::_1, nullptr), theta);
+      [](const Vector3& omega) { return SO3::Expmap(omega); }, theta);
   Matrix3 actualH;
   SO3::Expmap(theta, actualH);
   EXPECT(assert_equal(expectedH, actualH));
@@ -307,7 +307,7 @@ TEST(SO3, LogmapDerivative) {
     //    and should match the analytical derivative.
     if (!nearPi) {
       const Matrix expectedH = numericalDerivative11<Vector3, SO3>(
-        std::bind(&SO3::Logmap, std::placeholders::_1, nullptr), R, 1e-7);
+          [](const SO3& value) { return SO3::Logmap(value); }, R, 1e-7);
       EXPECT(assert_equal(expectedH, actualH, 1e-6)); // 1e-6 needed to pass R4
     }
     else {

@@ -847,9 +847,8 @@ virtual class ExtendedPriorFactor : gtsam::NoiseModelFactor {
 
 #include <gtsam/nonlinear/ConcentratedGaussian.h>
 template <T = {double, gtsam::Vector, gtsam::Point2, gtsam::StereoPoint2,
-               gtsam::Point3, gtsam::Gal3, gtsam::Rot2, gtsam::SO3, gtsam::SO4,
-               gtsam::SOn, gtsam::SL4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3,
-               gtsam::Similarity2, gtsam::Similarity3}>
+               gtsam::Point3, gtsam::Gal3, gtsam::Rot2, gtsam::SO3,
+               gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
 virtual class ConcentratedGaussian : gtsam::ExtendedPriorFactor<T> {
   ConcentratedGaussian();
   // Constructors mirroring header (origin terminology)

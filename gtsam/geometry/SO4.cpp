@@ -91,9 +91,8 @@ Vector6 SO4::Vee(const Matrix4& X) {
  * Ramona-Andreaa Rohan */
 template <>
 GTSAM_EXPORT
-SO4 SO4::Expmap(const Vector6& xi, ChartJacobian H) {
+SO4 SO4::Expmap(const Vector6& xi) {
   using namespace std;
-  if (H) throw std::runtime_error("SO4::Expmap Jacobian");
 
   // skew symmetric matrix X = xi^
   const Matrix4 X = Hat(xi);
@@ -166,8 +165,7 @@ SO4::VectorN2 SO4::vec(OptionalJacobian<16, 6> H) const {
 ///******************************************************************************
 template <>
 GTSAM_EXPORT
-SO4 SO4::ChartAtOrigin::Retract(const Vector6& xi, ChartJacobian H) {
-  if (H) throw std::runtime_error("SO4::ChartAtOrigin::Retract Jacobian");
+SO4 SO4::ChartAtOrigin::Retract(const Vector6& xi) {
   gttic(SO4_Retract);
   const Matrix4 X = Hat(xi / 2);
   return SO4((I_4x4 + X) * (I_4x4 - X).inverse());
@@ -176,8 +174,7 @@ SO4 SO4::ChartAtOrigin::Retract(const Vector6& xi, ChartJacobian H) {
 //******************************************************************************
 template <>
 GTSAM_EXPORT
-Vector6 SO4::ChartAtOrigin::Local(const SO4& Q, ChartJacobian H) {
-  if (H) throw std::runtime_error("SO4::ChartAtOrigin::Retract Jacobian");
+Vector6 SO4::ChartAtOrigin::Local(const SO4& Q) {
   const Matrix4& R = Q.matrix();
   const Matrix4 X = (I_4x4 - R) * (I_4x4 + R).inverse();
   return -2 * Vee(X);

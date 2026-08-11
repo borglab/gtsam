@@ -342,26 +342,20 @@ struct LocalV : public so3::DexpFunctor {
 Matrix3 Similarity3::GetV(Vector3 w, double lambda) {
   return LocalV(w, lambda).V();
 }
-Vector7 Similarity3::Logmap(const Similarity3& T, OptionalJacobian<7, 7> Hm) {
+Vector7 Similarity3::Logmap(const Similarity3& T) {
   // To get the logmap, calculate w and lambda, then solve for u as shown by Ethan at
   // www.ethaneade.org/latex2html/lie/node29.html
   const Vector3 w = Rot3::Logmap(T.R_);
   const double lambda = log(T.s_);
   Vector7 result;
   result << w, GetV(w, lambda).inverse() * T.t_, lambda;
-  if (Hm) {
-    throw std::runtime_error("Similarity3::Logmap: derivative not implemented");
-  }
   return result;
 }
 
-Similarity3 Similarity3::Expmap(const Vector7& v, OptionalJacobian<7, 7> Hm) {
+Similarity3 Similarity3::Expmap(const Vector7& v) {
   const auto w = v.head<3>();
   const auto rho = v.segment<3>(3);
   const double lambda = v[6];
-  if (Hm) {
-    throw std::runtime_error("Similarity3::Expmap: derivative not implemented");
-  }
   const LocalV local(w, lambda);
   const Matrix3 V = local.V();
 #ifdef GTSAM_USE_QUATERNIONS

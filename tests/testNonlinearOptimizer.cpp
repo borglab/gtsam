@@ -424,18 +424,18 @@ TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
     VectorValues  expectedDiagonal = d + params.lambdaInitial * d;
     EXPECT(assert_equal(expectedDiagonal, damped.hessianDiagonal()));
 
-    // test convergence (does not!)
+    // test convergence
     Values actual = optimizer.optimize();
-    EXPECT(assert_equal(expected, actual));
+    EXPECT(assert_equal(expected, actual, tol));
 
-    // Check that the gradient is zero (it is not!)
+    // Check that the gradient is zero
     linear = optimizer.linearize();
-    EXPECT(assert_equal(expectedGradient,linear->gradientAtZero()));
+    EXPECT(assert_equal(expectedGradient, linear->gradientAtZero(), tol));
 
-    // Check that the gradient is zero for damped system (it is not!)
+    // Check that the gradient is zero for damped system
     damped = optimizer.buildDampedSystem(*linear, sqrtHessianDiagonal);
     VectorValues actualGradient = damped.gradientAtZero();
-    EXPECT(assert_equal(expectedGradient,actualGradient));
+    EXPECT(assert_equal(expectedGradient, actualGradient, tol));
 
     /* This block was made to test the original initial guess "init"
     // Check errors at convergence and errors in direction of gradient (decreases!)
@@ -482,7 +482,7 @@ TEST(NonlinearOptimizer, Pose2OptimizationWithHuberNoOutlier) {
 
   Values expected;
   expected.insert(0, Pose2(0,0,0));
-  expected.insert(1, Pose2(0.961187, 0.99965, 1.1781));
+  expected.insert(1, Pose2(1, 1, 3.0 * M_PI / 8.0));
 
   LevenbergMarquardtParams lmParams;
 
@@ -490,9 +490,9 @@ TEST(NonlinearOptimizer, Pose2OptimizationWithHuberNoOutlier) {
   auto lm_result = LevenbergMarquardtOptimizer(fg, init, lmParams).optimize();
   auto dl_result = DoglegOptimizer(fg, init).optimize();
 
-  EXPECT(assert_equal(expected, gn_result, 3e-2));
-  EXPECT(assert_equal(expected, lm_result, 3e-2));
-  EXPECT(assert_equal(expected, dl_result, 3e-2));
+  EXPECT(assert_equal(expected, gn_result, tol));
+  EXPECT(assert_equal(expected, lm_result, tol));
+  EXPECT(assert_equal(expected, dl_result, tol));
 }
 
 /* ************************************************************************* */
@@ -553,7 +553,7 @@ TEST(NonlinearOptimizer, Pose2OptimizationWithHuber) {
 
   Values expected;
   expected.insert(0, Pose2(0, 0, 0));
-  expected.insert(1, Pose2(0, 10, 1.45212));
+  expected.insert(1, Pose2(0, 9.89465463, 1.44927133));
 
   LevenbergMarquardtParams params;
 
@@ -561,9 +561,9 @@ TEST(NonlinearOptimizer, Pose2OptimizationWithHuber) {
   auto lm_result = LevenbergMarquardtOptimizer(fg, init, params).optimize();
   auto dl_result = DoglegOptimizer(fg, init).optimize();
 
-  EXPECT(assert_equal(expected, gn_result, 1e-1));
-  EXPECT(assert_equal(expected, lm_result, 1e-1));
-  EXPECT(assert_equal(expected, dl_result, 1e-1));
+  EXPECT(assert_equal(expected, gn_result, tol));
+  EXPECT(assert_equal(expected, lm_result, tol));
+  EXPECT(assert_equal(expected, dl_result, tol));
 }
 
 /* ************************************************************************* */

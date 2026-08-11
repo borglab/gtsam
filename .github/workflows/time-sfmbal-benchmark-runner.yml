@@ -85,6 +85,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="-w" \
             -DGTSAM_BUILD_TESTS=OFF \
+            -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
             -DGTSAM_BUILD_UNSTABLE=ON \
             -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
             -DGTSAM_BUILD_TIMING_ALWAYS=ON \
@@ -123,6 +124,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="-w" \
             -DGTSAM_BUILD_TESTS=OFF \
+            -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
             -DGTSAM_BUILD_UNSTABLE=ON \
             -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
             -DGTSAM_BUILD_TIMING_ALWAYS=ON \
@@ -199,6 +201,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="-w" \
             -DGTSAM_BUILD_TESTS=OFF \
+            -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
             -DGTSAM_BUILD_UNSTABLE=ON \
             -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
             -DGTSAM_BUILD_TIMING_ALWAYS=ON \
@@ -237,6 +240,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="-w" \
             -DGTSAM_BUILD_TESTS=OFF \
+            -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
             -DGTSAM_BUILD_UNSTABLE=ON \
             -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
             -DGTSAM_BUILD_TIMING_ALWAYS=ON \
@@ -311,6 +315,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="-w" \
             -DGTSAM_BUILD_TESTS=OFF \
+            -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
             -DGTSAM_BUILD_UNSTABLE=ON \
             -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
             -DGTSAM_BUILD_TIMING_ALWAYS=ON \
@@ -349,6 +354,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="-w" \
             -DGTSAM_BUILD_TESTS=OFF \
+            -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
             -DGTSAM_BUILD_UNSTABLE=ON \
             -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
             -DGTSAM_BUILD_TIMING_ALWAYS=ON \

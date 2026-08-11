@@ -88,6 +88,7 @@ jobs:
           if [ "${{ matrix.build_type }}" = "Release" ]; then
             cmake -B build -G Ninja \
                   -DGTSAM_BUILD_EXAMPLES_ALWAYS=ON \
+                  -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
                   -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
                   -DGTSAM_USE_BOOST_FEATURES=ON \
                   -DGTSAM_ENABLE_BOOST_SERIALIZATION=ON \
@@ -100,6 +101,7 @@ jobs:
           else
             cmake -B build -G Ninja \
                   -DGTSAM_BUILD_EXAMPLES_ALWAYS=ON \
+                  -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
                   -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
                   -DGTSAM_ENABLE_CONSISTENCY_CHECKS=ON \
                   -DGTSAM_USE_BOOST_FEATURES=OFF \

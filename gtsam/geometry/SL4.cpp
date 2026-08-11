@@ -147,9 +147,7 @@ bool SL4::equals(const SL4& sl4, double tol) const {
   return T_.isApprox(sl4.T_, tol);
 }
 /* ************************************************************************* */
-SL4 SL4::ChartAtOrigin::Retract(const Vector15& v, ChartJacobian H) {
-  if (H) throw std::runtime_error("SL4::Retract: Jacobian not implemented.");
-
+SL4 SL4::ChartAtOrigin::Retract(const Vector15& v) {
   const Matrix44 candidate = I_4x4 + Hat(v);
   const double det = candidate.determinant();
 
@@ -163,22 +161,18 @@ SL4 SL4::ChartAtOrigin::Retract(const Vector15& v, ChartJacobian H) {
 }
 
 /* ************************************************************************* */
-Vector15 SL4::ChartAtOrigin::Local(const SL4& sl4, ChartJacobian H) {
-  Vector xi = Vee(sl4.T_ - I_4x4);
-  if (H) throw std::runtime_error("SL4::Local: Jacobian not implemented.");
-  return xi;
+Vector15 SL4::ChartAtOrigin::Local(const SL4& sl4) {
+  return Vee(sl4.T_ - I_4x4);
 }
 
 /* ************************************************************************* */
-SL4 SL4::Expmap(const Vector& xi, SL4Jacobian H) {
+SL4 SL4::Expmap(const Vector& xi) {
   if (xi.size() != 15) {
     throw std::runtime_error(
         "SL4::Expmap: xi must be a vector of size 15. Got size " +
         std::to_string(xi.size()));
   }
   const auto& A = Hat(xi);
-
-  if (H) throw std::runtime_error("SL4::Expmap: Jacobian not implemented.");
 
   // NOTE(hlim):
   // The cost of the computation is approximately 20n^3 for matrices of size n.
@@ -198,10 +192,7 @@ SL4 SL4::Expmap(const Vector& xi, SL4Jacobian H) {
 }
 
 /* ************************************************************************* */
-Vector SL4::Logmap(const SL4& p, SL4Jacobian H) {
-  if (H) throw std::runtime_error("SL4::Logmap: Jacobian not implemented.");
-  return Vee(p.T_.log());
-}
+Vector SL4::Logmap(const SL4& p) { return Vee(p.T_.log()); }
 
 /* ************************************************************************* */
 Matrix15x15 SL4::AdjointMap() const {

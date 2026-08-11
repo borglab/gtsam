@@ -26,10 +26,21 @@
 #include <gtsam/base/Manifold.h>
 
 #include <type_traits>
+#include <utility>
 
 namespace gtsam {
 
 namespace internal {
+
+/// Probe for a class static Expmap implementation with a Jacobian.
+template <class C, class TangentVector, class ChartJacobian>
+using ExpmapWithJacobian = decltype(C::Expmap(
+    std::declval<const TangentVector&>(), std::declval<ChartJacobian>()));
+
+/// Probe for a class static Logmap implementation with a Jacobian.
+template <class C, class ChartJacobian>
+using LogmapWithJacobian = decltype(
+    C::Logmap(std::declval<const C&>(), std::declval<ChartJacobian>()));
 
 /// Sum compile-time dimensions, propagating Eigen::Dynamic.
 constexpr int dimensionSum(int n, int m) {
@@ -55,7 +66,17 @@ struct ChartAtIdentity {
   using TangentVector = Eigen::Matrix<double, N, 1>;
   using ChartJacobian = OptionalJacobian<N, N>;
 
-  static Class Retract(const TangentVector& v, ChartJacobian H = {}) {
+  static Class Retract(const TangentVector& v) {
+    if constexpr (N == Eigen::Dynamic) {
+      return Class::Expmap(v);
+    } else {
+      return Class::Identity().retract(v);
+    }
+  }
+
+  template <class C = Class,
+            class = ExpmapWithJacobian<C, TangentVector, ChartJacobian>>
+  static Class Retract(const TangentVector& v, ChartJacobian H) {
     if constexpr (N == Eigen::Dynamic) {
       return Class::Expmap(v, H);
     } else {
@@ -63,7 +84,17 @@ struct ChartAtIdentity {
     }
   }
 
-  static TangentVector Local(const Class& value, ChartJacobian H = {}) {
+  static TangentVector Local(const Class& value) {
+    if constexpr (N == Eigen::Dynamic) {
+      return Class::Logmap(value);
+    } else {
+      return Class::Identity().localCoordinates(value);
+    }
+  }
+
+  template <class C = Class,
+            class = LogmapWithJacobian<C, ChartJacobian>>
+  static TangentVector Local(const Class& value, ChartJacobian H) {
     if constexpr (N == Eigen::Dynamic) {
       return Class::Logmap(value, H);
     } else {
@@ -131,7 +162,10 @@ struct LieGroup {
     return Class::Logmap(between(g));
   }
 
-  /// expmap with optional derivatives
+  /// expmap with optional derivatives, when the class provides them
+  template <class C = Class,
+            class = internal::ExpmapWithJacobian<C, TangentVector,
+                                                 ChartJacobian>>
   Class expmap(const TangentVector& v,  //
                ChartJacobian H1, ChartJacobian H2 = {}) const {
     Jacobian D_g_v;
@@ -142,7 +176,9 @@ struct LieGroup {
     return h;
   }
 
-  /// logmap with optional derivatives
+  /// logmap with optional derivatives, when the class provides them
+  template <class C = Class,
+            class = internal::LogmapWithJacobian<C, ChartJacobian>>
   TangentVector logmap(const Class& g,  //
                        ChartJacobian H1, ChartJacobian H2 = {}) const {
     Class h = between(g);  // derivatives inlined below
@@ -164,12 +200,18 @@ struct LieGroup {
     return Class::ChartAtOrigin::Local(g);
   }
 
-  /// Retract at origin with optional derivative
+  /// Retract at origin with optional derivative, when the chart provides it
+  template <class C = Class, class = decltype(C::ChartAtOrigin::Retract(
+                                 std::declval<const TangentVector&>(),
+                                 std::declval<ChartJacobian>()))>
   static Class Retract(const TangentVector& v, ChartJacobian H) {
     return Class::ChartAtOrigin::Retract(v, H);
   }
 
-  /// LocalCoordinates at origin with optional derivative
+  /// LocalCoordinates at origin with optional derivative, when provided
+  template <class C = Class,
+            class = decltype(C::ChartAtOrigin::Local(
+                std::declval<const C&>(), std::declval<ChartJacobian>()))>
   static TangentVector LocalCoordinates(const Class& g, ChartJacobian H) {
     return Class::ChartAtOrigin::Local(g, H);
   }
@@ -185,7 +227,10 @@ struct LieGroup {
     return Class::ChartAtOrigin::Local(between(g));
   }
 
-  /// retract with optional derivatives
+  /// retract with optional derivatives, when the chart provides them
+  template <class C = Class, class = decltype(C::ChartAtOrigin::Retract(
+                                 std::declval<const TangentVector&>(),
+                                 std::declval<ChartJacobian>()))>
   Class retract(const TangentVector& v,  //
                 ChartJacobian H1, ChartJacobian H2 = {}) const {
     Jacobian D_g_v;
@@ -196,7 +241,10 @@ struct LieGroup {
     return h;
   }
 
-  /// localCoordinates with optional derivatives
+  /// localCoordinates with optional derivatives, when the chart provides them
+  template <class C = Class,
+            class = decltype(C::ChartAtOrigin::Local(
+                std::declval<const C&>(), std::declval<ChartJacobian>()))>
   TangentVector localCoordinates(const Class& g,  //
                                  ChartJacobian H1,
                                  ChartJacobian H2 = {}) const {
@@ -230,7 +278,8 @@ namespace internal {
 /// Assumes existence of: identity, dimension, localCoordinates, retract,
 /// and additionally Logmap, Expmap, AdjointMap, compose, between, and inverse
 template <class Class>
-struct LieGroupTraits : public GetDimensionImpl<Class, Class::dimension> {
+struct LieGroupTraits : ManifoldTraits<Class> {
+  using Manifold = ManifoldTraits<Class>;
   using structure_category = lie_group_tag;
 
   /// @name Group
@@ -241,33 +290,28 @@ struct LieGroupTraits : public GetDimensionImpl<Class, Class::dimension> {
 
   /// @name Manifold
   /// @{
-  using ManifoldType = Class;
-  // Note: Class::dimension can be an int or Eigen::Dynamic.
-  // GetDimensionImpl handles resolving this to a static value or providing
-  // GetDimension(obj).
-  inline constexpr static auto dimension = Class::dimension;
-  using TangentVector = Eigen::Matrix<double, dimension, 1>;
+  using typename Manifold::ChartJacobian;
+  using typename Manifold::ManifoldType;
+  using typename Manifold::TangentVector;
+  inline constexpr static auto dimension = Manifold::dimension;
   using Jacobian = Eigen::Matrix<double, dimension, dimension>;
-  using ChartJacobian = OptionalJacobian<dimension, dimension>;
-
-  static TangentVector Local(const Class& origin, const Class& other,
-                             ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
-    return origin.localCoordinates(other, H1, H2);
-  }
-
-  static Class Retract(const Class& origin, const TangentVector& v,
-                       ChartJacobian H = {}, ChartJacobian Hv = {}) {
-    return origin.retract(v, H, Hv);
-  }
   /// @}
 
   /// @name Lie Group
   /// @{
-  static TangentVector Logmap(const Class& m, ChartJacobian Hm = {}) {
+  static TangentVector Logmap(const Class& m) { return Class::Logmap(m); }
+
+  template <class C = Class,
+            class = LogmapWithJacobian<C, ChartJacobian>>
+  static TangentVector Logmap(const Class& m, ChartJacobian Hm) {
     return Class::Logmap(m, Hm);
   }
 
-  static Class Expmap(const TangentVector& v, ChartJacobian Hv = {}) {
+  static Class Expmap(const TangentVector& v) { return Class::Expmap(v); }
+
+  template <class C = Class,
+            class = ExpmapWithJacobian<C, TangentVector, ChartJacobian>>
+  static Class Expmap(const TangentVector& v, ChartJacobian Hv) {
     return Class::Expmap(v, Hv);
   }
 
@@ -353,9 +397,6 @@ class IsLieGroup : public IsGroup<T>, public IsManifold<T> {
     // log and exp map without Jacobians
     g = traits<T>::Expmap(v);
     v = traits<T>::Logmap(g);
-    // log and exponential map with Jacobians
-    g = traits<T>::Expmap(v, Hg);
-    v = traits<T>::Logmap(g, Hg);
     // AdjointMap
     *Hg = traits<T>::AdjointMap(g);
   }
