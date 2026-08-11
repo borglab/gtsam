@@ -44,6 +44,21 @@ With `GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON`, the output directly compares
 the corrected Local-Jacobian path with the legacy approximation. The optional
 output uses the shared Benchmark Action JSON format.
 
+### End-to-end pose-graph optimization
+
+`timeBetweenFactorPoseGraph` assesses whether the more expensive Jacobians
+change nonlinear convergence enough to offset their per-evaluation cost. It
+loads `w10000.graph`, anchors pose zero, and runs Levenberg-Marquardt to
+its standard termination condition on two otherwise identical graphs. The
+current factors and benchmark-only copies of the legacy `BetweenFactor` and
+`PriorFactor` Jacobian paths are run in alternating order.
+
+```bash
+make -j6 timeBetweenFactorPoseGraph
+./timing/timeBetweenFactorPoseGraph --warmup 1 --repeats 5 \
+  --dataset w10000.graph --output between_factor_pose_graph.json
+```
+
 BAL benchmarks additionally share `BalBenchmarkConfig` and the builders in
 `timing/internal/SfmBalBenchmark`. The configuration carries ordering and
 projection-noise choices explicitly; timing headers no longer define mutable
