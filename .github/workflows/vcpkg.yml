@@ -117,6 +117,7 @@ jobs:
               -DGTSAM_POSE3_EXPMAP=ON \
               -DGTSAM_BUILD_PYTHON=ON \
               -DGTSAM_BUILD_TESTS=ON \
+              -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
               -DGTSAM_BUILD_UNSTABLE=ON \
               -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
               -DGTSAM_USE_SYSTEM_EIGEN=ON \

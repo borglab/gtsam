@@ -110,7 +110,9 @@ jobs:
       # the wheels to ensure platform compatibility.
       - name: Run CMake
         run: |
-          cmake -B build -G Ninja -DGTSAM_BUILD_PYTHON=1 -DGTSAM_PYTHON_VERSION=${{ matrix.python_version }}
+          cmake -B build -G Ninja -DGTSAM_BUILD_PYTHON=1 \
+            -DGTSAM_PYTHON_VERSION=${{ matrix.python_version }} \
+            -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON
 
       # If on macOS, we previously installed boost using homebrew for the first build.
       # We need to uninstall it before building the wheels with cibuildwheel, which will

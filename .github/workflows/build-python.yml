@@ -124,6 +124,7 @@ jobs:
           cmake -S . -B build -G Ninja
           -DCMAKE_BUILD_TYPE=Release
           -DGTSAM_BUILD_TESTS=OFF
+          -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON
           -DGTSAM_BUILD_UNSTABLE=${{ runner.os == 'Windows' && 'OFF' || 'ON' }}
           -DGTSAM_USE_QUATERNIONS=OFF
           -DGTSAM_WITH_TBB=OFF
