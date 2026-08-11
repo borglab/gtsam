@@ -23,7 +23,7 @@ jobs:
         name: [
             #TODO This build fails, need to understand why.
             # windows-2016-cl,
-            windows-2019-cl,
+            windows-2022-cl,
           ]
 
         build_type: [
@@ -39,8 +39,8 @@ jobs:
           #   compiler: cl
           #   platform: 32
 
-          - name: windows-2019-cl
-            os: windows-2019
+          - name: windows-2022-cl
+            os: windows-2022
             compiler: cl
             platform: 64
 
@@ -94,7 +94,7 @@ jobs:
           echo "BOOST_ROOT=$BOOST_PATH" >> $env:GITHUB_ENV
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
 
       - name: Configuration
         run: |
