@@ -31,6 +31,7 @@
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/navigation/ScenarioRunner.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/factorTesting.h>
 
 #include <list>
 

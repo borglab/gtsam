@@ -26,9 +26,11 @@
 #include <gtsam/navigation/AttitudeFactor.h>
 #include <gtsam/navigation/CarrierPhaseFactor.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
+#include <gtsam/navigation/CombinedImuFactorWithGravity.h>
 #include <gtsam/navigation/DopplerFactor.h>
 #include <gtsam/navigation/GPSFactor.h>
 #include <gtsam/navigation/ImuFactor.h>
+#include <gtsam/navigation/ImuFactorWithGravity.h>
 #include <gtsam/navigation/PseudorangeFactor.h>
 
 #include <fstream>
@@ -105,6 +107,21 @@ TEST(ImuFactor2, serialization) {
 }
 
 /* ************************************************************************* */
+TEST(ImuFactorWithGravity, serialization) {
+  auto pim = getPreintegratedMeasurements<PreintegratedImuMeasurements>();
+
+  ImuFactorWithGravityDirection direction(1, 2, 3, 4, 5, 6, pim, 9.81);
+  EXPECT(equalsObj<ImuFactorWithGravityDirection>(direction));
+  EXPECT(equalsXML<ImuFactorWithGravityDirection>(direction));
+  EXPECT(equalsBinary<ImuFactorWithGravityDirection>(direction));
+
+  ImuFactorWithGravityVector vector(1, 2, 3, 4, 5, 6, pim);
+  EXPECT(equalsObj<ImuFactorWithGravityVector>(vector));
+  EXPECT(equalsXML<ImuFactorWithGravityVector>(vector));
+  EXPECT(equalsBinary<ImuFactorWithGravityVector>(vector));
+}
+
+/* ************************************************************************* */
 TEST(CombinedImuFactor, Serialization) {
   auto pim = getPreintegratedMeasurements<PreintegratedCombinedMeasurements>();
 
@@ -117,6 +134,21 @@ TEST(CombinedImuFactor, Serialization) {
   EXPECT(equalsObj<CombinedImuFactor>(factor));
   EXPECT(equalsXML<CombinedImuFactor>(factor));
   EXPECT(equalsBinary<CombinedImuFactor>(factor));
+}
+
+/* ************************************************************************* */
+TEST(CombinedImuFactorWithGravity, Serialization) {
+  auto pim = getPreintegratedMeasurements<PreintegratedCombinedMeasurements>();
+
+  CombinedImuFactorWithGravityDirection direction(1, 2, 3, 4, 5, 6, 7, pim, 9.81);
+  EXPECT(equalsObj<CombinedImuFactorWithGravityDirection>(direction));
+  EXPECT(equalsXML<CombinedImuFactorWithGravityDirection>(direction));
+  EXPECT(equalsBinary<CombinedImuFactorWithGravityDirection>(direction));
+
+  CombinedImuFactorWithGravityVector vector(1, 2, 3, 4, 5, 6, 7, pim);
+  EXPECT(equalsObj<CombinedImuFactorWithGravityVector>(vector));
+  EXPECT(equalsXML<CombinedImuFactorWithGravityVector>(vector));
+  EXPECT(equalsBinary<CombinedImuFactorWithGravityVector>(vector));
 }
 
 /* ************************************************************************* */

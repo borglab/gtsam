@@ -29,6 +29,8 @@
 #include <gtsam/linear/Sampler.h>
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/navigation/ScenarioRunner.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/factorTesting.h>
 
@@ -123,7 +125,12 @@ TEST_PIM(ImuFactor, PreintegratedMeasurements) {
   Matrix9 aH1, aH2;
   Matrix96 aH3;
   actual.computeError(x1, x2, bias, aH1, aH2, aH3);
-  auto f = std::bind(&PreintegrationBase::computeError, actual,
+  // Select the overload without the gravity parameter:
+  using ComputeErrorNoGravity = Vector9 (PreintegrationBase::*)(
+      const NavState&, const NavState&, const imuBias::ConstantBias&,
+      OptionalJacobian<9, 9>, OptionalJacobian<9, 9>,
+      OptionalJacobian<9, 6>) const;
+  auto f = std::bind(static_cast<ComputeErrorNoGravity>(&PreintegrationBase::computeError), actual,
                   std::placeholders::_1, std::placeholders::_2, std::placeholders::_3,
                   nullptr, nullptr, nullptr);
   EXPECT(assert_equal(numericalDerivative31(f, x1, x2, bias), aH1, 1e-9));
@@ -167,6 +174,10 @@ static const NavState state2(x2, v2);
 
 /* ************************************************************************* */
 TEST_PIM(ImuFactor, PreintegrationBaseMethods) {
+  // Select the overload without the gravity parameter:
+  using PredictNoGravity = NavState (PreintegrationBase::*)(
+      const NavState&, const imuBias::ConstantBias&, OptionalJacobian<9, 9>,
+      OptionalJacobian<9, 6>) const;
   using namespace common;
   auto p = testing::Params();
   p->omegaCoriolis = Vector3(0.02, 0.03, 0.04);
@@ -188,13 +199,61 @@ TEST_PIM(ImuFactor, PreintegrationBaseMethods) {
   Matrix96 aH2;
   NavState predictedState = pim.predict(state1, kZeroBias, aH1, aH2);
   Matrix eH1 = numericalDerivative11<NavState, NavState>(
-      std::bind(&PreintegrationBase::predict, pim, std::placeholders::_1,
+      std::bind(static_cast<PredictNoGravity>(&PreintegrationBase::predict), pim, std::placeholders::_1,
           kZeroBias, nullptr, nullptr), state1);
   EXPECT(assert_equal(eH1, aH1));
   Matrix eH2 = numericalDerivative11<NavState, Bias>(
-      std::bind(&PreintegrationBase::predict, pim, state1,
+      std::bind(static_cast<PredictNoGravity>(&PreintegrationBase::predict), pim, state1,
           std::placeholders::_1, nullptr, nullptr), kZeroBias);
   EXPECT(assert_equal(eH2, aH2));
+}
+
+/* ************************************************************************* */
+TEST_PIM(ImuFactor, PredictWithGravityVector) {
+  using namespace common;
+  PIM pim(testing::Params(), kZeroBiasHat);
+  pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+  pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+
+  // A gravity vector tilted away from the params' vector, with a different
+  // magnitude:
+  const Vector3 tilted_gravity = Vector3(0.5, -0.3, 9.7);
+
+  // The gravity overload with the params' gravity must match the legacy one:
+  EXPECT(assert_equal(pim.predict(state1, kZeroBias),
+                      pim.predict(state1, kZeroBias, testing::Params()->n_gravity)));
+
+  // Check all three Jacobians of the gravity overload:
+  Matrix9 aH1;
+  Matrix96 aH2;
+  Matrix93 aH3;
+  pim.predict(state1, kZeroBias, tilted_gravity, aH1, aH2, aH3);
+  EXPECT(assert_equal(
+      numericalDerivative11<NavState, NavState>(
+          [&](const NavState& s) { return pim.predict(s, kZeroBias, tilted_gravity); },
+          state1),
+      Matrix(aH1)));
+  EXPECT(assert_equal(
+      numericalDerivative11<NavState, Bias>(
+          [&](const Bias& b) { return pim.predict(state1, b, tilted_gravity); },
+          kZeroBias),
+      Matrix(aH2)));
+  EXPECT(assert_equal(
+      numericalDerivative11<NavState, Vector3>(
+          [&](const Vector3& g) { return pim.predict(state1, kZeroBias, g); },
+          tilted_gravity),
+      Matrix(aH3)));
+
+  // And the gravity Jacobian of computeError:
+  Matrix93 aH4;
+  pim.computeError(state1, state2, kZeroBias, tilted_gravity, {}, {}, {}, aH4);
+  EXPECT(assert_equal(
+      numericalDerivative11<Vector9, Vector3>(
+          [&](const Vector3& g) {
+            return pim.computeError(state1, state2, kZeroBias, g, {}, {}, {}, {});
+          },
+          tilted_gravity),
+      Matrix(aH4)));
 }
 
 /* ************************************************************************* */

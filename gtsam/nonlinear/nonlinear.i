@@ -879,6 +879,20 @@ virtual class ConcentratedGaussian : gtsam::ExtendedPriorFactor<T> {
   This operator*(const This& other) const;
 };
 
+#include <gtsam/nonlinear/VectorNormFactor.h>
+template <N = {3}>
+virtual class VectorNormFactor : gtsam::NoiseModelFactor {
+  VectorNormFactor(gtsam::Key key, double norm,
+                   const gtsam::noiseModel::Base* model);
+
+  // Standard Interface
+  double norm() const;
+  gtsam::Vector evaluateError(const gtsam::Point3& v);
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+
 #include <gtsam/nonlinear/NonlinearEquality.h>
 template <T = {gtsam::Point2,
                gtsam::StereoPoint2,

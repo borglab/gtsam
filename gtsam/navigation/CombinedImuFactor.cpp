@@ -191,62 +191,9 @@ Vector CombinedImuFactorT<PIM>::evaluateError(const Pose3& pose_i,
     OptionalMatrixType H1, OptionalMatrixType H2,
     OptionalMatrixType H3, OptionalMatrixType H4,
     OptionalMatrixType H5, OptionalMatrixType H6) const {
-
-  // error wrt bias evolution model (random walk)
-  Matrix6 Hbias_i, Hbias_j;
-  Vector6 fbias = traits<imuBias::ConstantBias>::Between(bias_j, bias_i,
-      H6 ? &Hbias_j : 0, H5 ? &Hbias_i : 0).vector();
-
-  Matrix96 D_r_pose_i, D_r_pose_j, D_r_bias_i;
-  Matrix93 D_r_vel_i, D_r_vel_j;
-
-  // error wrt preintegrated measurements
-  Vector9 r_Rpv = pim_.computeErrorAndJacobians(pose_i, vel_i, pose_j, vel_j,
-      bias_i, H1 ? &D_r_pose_i : 0, H2 ? &D_r_vel_i : 0, H3 ? &D_r_pose_j : 0,
-      H4 ? &D_r_vel_j : 0, H5 ? &D_r_bias_i : 0);
-
-  // if we need the jacobians
-  if (H1) {
-    H1->resize(15, 6);
-    H1->block<9, 6>(0, 0) = D_r_pose_i;
-    // adding: [dBiasAcc/dPi ; dBiasOmega/dPi]
-    H1->block<6, 6>(9, 0).setZero();
-  }
-  if (H2) {
-    H2->resize(15, 3);
-    H2->block<9, 3>(0, 0) = D_r_vel_i;
-    // adding: [dBiasAcc/dVi ; dBiasOmega/dVi]
-    H2->block<6, 3>(9, 0).setZero();
-  }
-  if (H3) {
-    H3->resize(15, 6);
-    H3->block<9, 6>(0, 0) = D_r_pose_j;
-    // adding: [dBiasAcc/dPj ; dBiasOmega/dPj]
-    H3->block<6, 6>(9, 0).setZero();
-  }
-  if (H4) {
-    H4->resize(15, 3);
-    H4->block<9, 3>(0, 0) = D_r_vel_j;
-    // adding: [dBiasAcc/dVi ; dBiasOmega/dVi]
-    H4->block<6, 3>(9, 0).setZero();
-  }
-  if (H5) {
-    H5->resize(15, 6);
-    H5->block<9, 6>(0, 0) = D_r_bias_i;
-    // adding: [dBiasAcc/dBias_i ; dBiasOmega/dBias_i]
-    H5->block<6, 6>(9, 0) = Hbias_i;
-  }
-  if (H6) {
-    H6->resize(15, 6);
-    H6->block<9, 6>(0, 0).setZero();
-    // adding: [dBiasAcc/dBias_j ; dBiasOmega/dBias_j]
-    H6->block<6, 6>(9, 0) = Hbias_j;
-  }
-
-  // overall error
-  Vector r(15);
-  r << r_Rpv, fbias; // vector of size 15
-  return r;
+  return internal::combinedImuError(pim_, pose_i, vel_i, pose_j, vel_j,
+                                    bias_i, bias_j, pim_.params()->n_gravity,
+                                    H1, H2, H3, H4, H5, H6, nullptr);
 }
 
 //------------------------------------------------------------------------------
@@ -271,6 +218,5 @@ template GTSAM_EXPORT std::ostream& operator<<<PreintegratedCombinedMeasurements
     std::ostream& os, const CombinedImuFactorT<PreintegratedCombinedMeasurementsT<ManifoldPreintegration>>& f);
 template GTSAM_EXPORT std::ostream& operator<<<PreintegratedCombinedMeasurementsT<TangentPreintegration>>(
     std::ostream& os, const CombinedImuFactorT<PreintegratedCombinedMeasurementsT<TangentPreintegration>>& f);
-
 
 }  // namespace gtsam

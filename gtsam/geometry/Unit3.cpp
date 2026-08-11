@@ -154,6 +154,16 @@ Vector3 Unit3::unitVector(OptionalJacobian<3, 2> H) const {
 }
 
 /* ************************************************************************* */
+Vector3 Unit3::scaled(double magnitude, OptionalJacobian<3, 2> H_this,
+                      OptionalJacobian<3, 1> H_magnitude) const {
+  if (H_this)
+    *H_this = magnitude * basis();
+  if (H_magnitude)
+    *H_magnitude = p_;
+  return magnitude * p_;
+}
+
+/* ************************************************************************* */
 std::ostream& operator<<(std::ostream& os, const Unit3& pair) {
   os << pair.p_ << endl;
   return os;

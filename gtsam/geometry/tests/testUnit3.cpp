@@ -57,6 +57,26 @@ TEST(Unit3, point3) {
 }
 
 //*******************************************************************************
+static Vector3 scaled_(const Unit3& p, const double& magnitude) {
+  return p.scaled(magnitude);
+}
+
+TEST(Unit3, scaled) {
+  const Unit3 d(1, 2, 3);
+  const double magnitude = 9.81;
+  Matrix32 actualH_d;
+  Matrix31 actualH_m;
+  const Vector3 actual = d.scaled(magnitude, actualH_d, actualH_m);
+  EXPECT(assert_equal(Vector3(magnitude * d.unitVector()), actual, 1e-9));
+  const Matrix expectedH_d =
+      numericalDerivative21<Vector3, Unit3, double>(scaled_, d, magnitude);
+  const Matrix expectedH_m =
+      numericalDerivative22<Vector3, Unit3, double>(scaled_, d, magnitude);
+  EXPECT(assert_equal(expectedH_d, Matrix(actualH_d), 1e-5));
+  EXPECT(assert_equal(expectedH_m, Matrix(actualH_m), 1e-5));
+}
+
+//*******************************************************************************
 static Unit3 rotate_(const Rot3& R, const Unit3& p) { return R * p; }
 
 TEST(Unit3, Rotate) {
