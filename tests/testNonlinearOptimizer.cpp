@@ -70,6 +70,86 @@ class CountingNonlinearFactorGraph : public NonlinearFactorGraph {
 };
 
 /* ************************************************************************* */
+namespace arm64_return_regression {
+
+class GpsLikePositionFactor : public NoiseModelFactorN<Pose2> {
+  Point2 measurement_;
+
+ public:
+  GpsLikePositionFactor(Key key, const Point2& measurement,
+                        const SharedNoiseModel& model)
+      : NoiseModelFactorN<Pose2>(model, key), measurement_(measurement) {}
+
+  Vector evaluateError(const Pose2& pose,
+                       OptionalMatrixType H) const override {
+    const Rot2& rotation = pose.rotation();
+    if (H) {
+      *H = Matrix23{{rotation.c(), -rotation.s(), 0.0},
+                    {rotation.s(), rotation.c(), 0.0}};
+    }
+    return pose.translation() - measurement_;
+  }
+
+  NonlinearFactor::shared_ptr clone() const override {
+    return std::make_shared<GpsLikePositionFactor>(*this);
+  }
+};
+
+// Verifies BetweenFactor<Pose2> error evaluation with nonzero rotations.
+TEST(NonlinearOptimizer, Arm64Pose2BetweenFactorError) {
+  const SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 1.0);
+  const BetweenFactor<Pose2> factor(X(0), X(1),
+                                    Pose2(1.0, 0.0, M_PI / 4.0), model);
+  const Pose2 pose1(0.0, 0.0, M_PI / 4.0);
+  const double sqrtTwo = std::sqrt(2.0);
+  const Pose2 pose2(sqrtTwo, sqrtTwo, M_PI / 2.0);
+  const double inverseSqrtTwo = std::sqrt(0.5);
+  const Vector3 expected{inverseSqrtTwo, -inverseSqrtTwo, 0.0};
+
+  EXPECT(assert_equal(expected, factor.evaluateError(pose1, pose2), 1e-9));
+}
+
+// Verifies LM follows strong GPS-like evidence over contradictory diagonal
+// odometry.
+TEST(NonlinearOptimizer, Arm64ConflictingOdometryAndPositionEvidence) {
+  const auto priorModel = noiseModel::Isotropic::Sigma(3, 1e-3);
+  const auto odometryModel = noiseModel::Isotropic::Sigma(3, 1.0);
+  const auto positionModel = noiseModel::Isotropic::Sigma(2, 1e-3);
+
+  NonlinearFactorGraph graph;
+  graph.addPrior(X(0), Pose2(0.0, 0.0, M_PI / 4.0), priorModel);
+  graph.emplace_shared<BetweenFactor<Pose2>>(
+      X(0), X(1), Pose2(1.0, 0.0, 0.0), odometryModel);
+  graph.emplace_shared<BetweenFactor<Pose2>>(
+      X(1), X(2), Pose2(1.0, 0.0, 0.0), odometryModel);
+  graph.emplace_shared<GpsLikePositionFactor>(X(1), Point2(0.0, 1.0),
+                                               positionModel);
+  graph.emplace_shared<GpsLikePositionFactor>(X(2), Point2(0.0, 2.0),
+                                               positionModel);
+
+  const double inverseSqrtTwo = std::sqrt(0.5);
+  Values initial;
+  initial.insert(X(0), Pose2(0.0, 0.0, M_PI / 4.0));
+  initial.insert(X(1), Pose2(inverseSqrtTwo, inverseSqrtTwo, M_PI / 4.0));
+  initial.insert(X(2), Pose2(2.0 * inverseSqrtTwo, 2.0 * inverseSqrtTwo,
+                             M_PI / 4.0));
+
+  const double initialError = graph.error(initial);
+  const Values result = LevenbergMarquardtOptimizer(graph, initial).optimize();
+  const Pose2& pose1 = result.at<Pose2>(X(1));
+  const Pose2& pose2 = result.at<Pose2>(X(2));
+
+  CHECK(graph.error(result) < initialError);
+  DOUBLES_EQUAL(0.0, pose1.x(), 1e-3);
+  DOUBLES_EQUAL(1.0, pose1.y(), 1e-3);
+  DOUBLES_EQUAL(0.0, pose2.x(), 1e-3);
+  DOUBLES_EQUAL(2.0, pose2.y(), 1e-3);
+}
+
+}  // namespace arm64_return_regression
+/* ************************************************************************* */
+
+/* ************************************************************************* */
 TEST( NonlinearOptimizer, paramsEquals )
 {
   // default constructors lead to two identical params

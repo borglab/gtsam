@@ -41,9 +41,6 @@ namespace gtsam {
     /** we store cos(theta) and sin(theta) */
     double c_, s_;
 
-    /** normalize to make sure cos and sin form unit vector */
-    Rot2& normalize();
-
     /** private constructor from cos/sin */
     inline Rot2(double c, double s) : c_(c), s_(s) {}
 

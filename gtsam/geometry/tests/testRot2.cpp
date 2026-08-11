@@ -30,6 +30,27 @@ Rot2 R(Rot2::fromAngle(0.1));
 Point2 P(0.2, 0.7);
 
 /* ************************************************************************* */
+namespace return_value_tests {
+
+// Verifies that normalized factory results remain valid through copy and group
+// operations.
+TEST(Rot2, NormalizedFactoryReturnValues) {
+  const Rot2 fromCosSin = Rot2::fromCosSin(3.0, 4.0);
+  DOUBLES_EQUAL(0.6, fromCosSin.c(), 1e-12);
+  DOUBLES_EQUAL(0.8, fromCosSin.s(), 1e-12);
+
+  const Rot2 fromAtan2 = Rot2::atan2(4.0, 3.0);
+  CHECK(assert_equal(fromCosSin, fromAtan2, 1e-12));
+
+  const Rot2 copied(fromCosSin);
+  CHECK(assert_equal(fromCosSin, copied, 1e-12));
+  CHECK(assert_equal(Rot2(), copied * copied.inverse(), 1e-12));
+}
+
+}  // namespace return_value_tests
+/* ************************************************************************* */
+
+/* ************************************************************************* */
 TEST( Rot2, constructors_and_angle)
 {
   double c=cos(0.1), s=sin(0.1);

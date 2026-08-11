@@ -28,14 +28,18 @@ namespace gtsam {
 
 /* ************************************************************************* */
 Rot2 Rot2::fromCosSin(double c, double s) {
-  Rot2 R(c, s);
-  return R.normalize();
+  double squaredNorm = c * c + s * s;
+  if (std::abs(squaredNorm - 1.0) > 1e-10) {
+    const double inverseNorm = 1.0 / std::sqrt(squaredNorm);
+    c *= inverseNorm;
+    s *= inverseNorm;
+  }
+  return Rot2(c, s);
 }
 
 /* ************************************************************************* */
 Rot2 Rot2::atan2(double y, double x) {
-  Rot2 R(x, y);
-  return R.normalize();
+  return fromCosSin(x, y);
 }
 
 /* ************************************************************************* */
@@ -53,17 +57,6 @@ void Rot2::print(const string& s) const {
 /* ************************************************************************* */
 bool Rot2::equals(const Rot2& R, double tol) const {
   return std::abs(c_ - R.c_) <= tol && std::abs(s_ - R.s_) <= tol;
-}
-
-/* ************************************************************************* */
-Rot2& Rot2::normalize() {
-  double scale = c_*c_ + s_*s_;
-  if(std::abs(scale-1.0) > 1e-10) {
-    scale = 1 / sqrt(scale);
-    c_ *= scale;
-    s_ *= scale;
-  }
-  return *this;
 }
 
 /* ************************************************************************* */
