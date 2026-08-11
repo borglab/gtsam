@@ -30,7 +30,7 @@ class TestRobust(GtsamTestCase):
             return abs_e * abs_e / 2.0 if abs_e <= k else k * abs_e - k * k / 2.0
 
         custom_robust = gtsam.noiseModel.Robust.Create(
-            gtsam.noiseModel.mEstimator.Custom(custom_weight, custom_loss, None, None,
+            gtsam.noiseModel.mEstimator.Custom(custom_weight, custom_loss,
                                                gtsam.noiseModel.mEstimator.Base.ReweightScheme.Scalar,
                                                "huber"),
             gtsam.noiseModel.Isotropic.Sigma(1, 2.0))

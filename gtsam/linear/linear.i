@@ -206,10 +206,18 @@ virtual class GemanMcClure: gtsam::noiseModel::mEstimator::Base {
   enum GradScheme { STANDARD, SCALE_INVARIANT };
 
   GemanMcClure(double c);
+  GemanMcClure(double c, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
+  GemanMcClure(double c,
+      gtsam::noiseModel::mEstimator::GemanMcClure::GradScheme graduation);
   GemanMcClure(double c,
       gtsam::noiseModel::mEstimator::GemanMcClure::GradScheme graduation,
       gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
   static gtsam::noiseModel::mEstimator::GemanMcClure* Create(double c);
+  static gtsam::noiseModel::mEstimator::GemanMcClure* Create(
+      double c, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
+  static gtsam::noiseModel::mEstimator::GemanMcClure* Create(
+      double c,
+      gtsam::noiseModel::mEstimator::GemanMcClure::GradScheme graduation);
   static gtsam::noiseModel::mEstimator::GemanMcClure* Create(
       double c,
       gtsam::noiseModel::mEstimator::GemanMcClure::GradScheme graduation,
@@ -228,11 +236,20 @@ virtual class TruncatedLeastSquares: gtsam::noiseModel::mEstimator::Base {
   enum GradScheme { STANDARD, GNC_LINEAR, GNC_SUPERLINEAR };
 
   TruncatedLeastSquares(double c);
+  TruncatedLeastSquares(double c, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
+  TruncatedLeastSquares(
+      double c,
+      gtsam::noiseModel::mEstimator::TruncatedLeastSquares::GradScheme graduation);
   TruncatedLeastSquares(
       double c,
       gtsam::noiseModel::mEstimator::TruncatedLeastSquares::GradScheme graduation,
       gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
   static gtsam::noiseModel::mEstimator::TruncatedLeastSquares* Create(double c);
+  static gtsam::noiseModel::mEstimator::TruncatedLeastSquares* Create(
+      double c, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
+  static gtsam::noiseModel::mEstimator::TruncatedLeastSquares* Create(
+      double c,
+      gtsam::noiseModel::mEstimator::TruncatedLeastSquares::GradScheme graduation);
   static gtsam::noiseModel::mEstimator::TruncatedLeastSquares* Create(
       double c,
       gtsam::noiseModel::mEstimator::TruncatedLeastSquares::GradScheme graduation,
@@ -309,6 +326,10 @@ virtual class Custom: gtsam::noiseModel::mEstimator::Base {
          gtsam::noiseModel::mEstimator::CustomLossFunction loss);
   Custom(gtsam::noiseModel::mEstimator::CustomWeightFunction weight,
          gtsam::noiseModel::mEstimator::CustomLossFunction loss,
+         gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight,
+         std::string name);
+  Custom(gtsam::noiseModel::mEstimator::CustomWeightFunction weight,
+         gtsam::noiseModel::mEstimator::CustomLossFunction loss,
          gtsam::noiseModel::mEstimator::CustomGraduatedWeightFunction grad_weight,
          gtsam::noiseModel::mEstimator::CustomGraduatedLossFunction grad_loss,
          gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight,
@@ -316,6 +337,11 @@ virtual class Custom: gtsam::noiseModel::mEstimator::Base {
   static gtsam::noiseModel::mEstimator::Custom* Create(
       gtsam::noiseModel::mEstimator::CustomWeightFunction weight,
       gtsam::noiseModel::mEstimator::CustomLossFunction loss);
+  static gtsam::noiseModel::mEstimator::Custom* Create(
+      gtsam::noiseModel::mEstimator::CustomWeightFunction weight,
+      gtsam::noiseModel::mEstimator::CustomLossFunction loss,
+      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight,
+      std::string name);
   static gtsam::noiseModel::mEstimator::Custom* Create(
       gtsam::noiseModel::mEstimator::CustomWeightFunction weight,
       gtsam::noiseModel::mEstimator::CustomLossFunction loss,

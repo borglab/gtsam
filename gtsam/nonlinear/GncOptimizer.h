@@ -509,8 +509,8 @@ class GncOptimizer {
             // NOTE: GNC actually stores lambda^2 according to lambda used in the GM loss
             double mu = 1.0 - ((std::sqrt(lambda) - 1.0) / lmax);
             weights[k] = noiseModel::mEstimator::GemanMcClure::GraduatedWeight(
-                noiseModel::mEstimator::GemanMcClure::GradScheme::STANDARD,
-                barcSq_[k], u2_k, mu);
+                u2_k, barcSq_[k], mu,
+                noiseModel::mEstimator::GemanMcClure::GradScheme::STANDARD);
           }
         }
         return weights;
@@ -529,9 +529,9 @@ class GncOptimizer {
                 double mu = (lambda - lmin) / lmax;
                 weights[k] = noiseModel::mEstimator::TruncatedLeastSquares::
                     GraduatedWeight(
+                        u2_k, barcSq_[k], mu,
                         noiseModel::mEstimator::TruncatedLeastSquares::
-                            GradScheme::GNC_SUPERLINEAR,
-                        barcSq_[k], u2_k, mu);
+                            GradScheme::GNC_SUPERLINEAR);
                 break;
               }
               case GncScheduler::Linear: {  // use eq (14) in GNC paper
@@ -542,9 +542,9 @@ class GncOptimizer {
                 double mu = (lambda - lmin) / lmax;
                 weights[k] = noiseModel::mEstimator::TruncatedLeastSquares::
                     GraduatedWeight(
+                        u2_k, barcSq_[k], mu,
                         noiseModel::mEstimator::TruncatedLeastSquares::
-                            GradScheme::GNC_LINEAR,
-                        barcSq_[k], u2_k, mu);
+                            GradScheme::GNC_LINEAR);
                 break;
               }
               default:

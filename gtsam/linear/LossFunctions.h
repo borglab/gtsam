@@ -266,9 +266,9 @@ class GTSAM_EXPORT Huber : public Base {
   double modelParameter() const { return k_; }
 
   /// @brief Static implementation of Huber Weight
-  static double Weight(double k, double distance);
+  static double Weight(double distance, double k);
   /// @brief Static implementation of Huber Loss
-  static double Loss(double k, double distance);
+  static double Loss(double distance, double k);
 
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
@@ -318,9 +318,9 @@ class GTSAM_EXPORT Cauchy : public Base {
   double modelParameter() const { return k_; }
 
   /// @brief Static implementation of Cauchy Weight
-  static double Weight(double ksquared, double distance);
+  static double Weight(double distance, double ksquared);
   /// @brief Static implementation of Cauchy Loss
-  static double Loss(double ksquared, double distance);
+  static double Loss(double distance, double ksquared);
 
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
@@ -365,9 +365,9 @@ class GTSAM_EXPORT Tukey : public Base {
   double modelParameter() const { return c_; }
 
   /// @brief Static implementation of Tukey Weight
-  static double Weight(double c, double csquared, double distance);
+  static double Weight(double distance, double c, double csquared);
   /// @brief Static implementation of Tukey Loss
-  static double Loss(double c, double csquared, double distance);
+  static double Loss(double distance, double c, double csquared);
 
 
  private:
@@ -413,9 +413,9 @@ class GTSAM_EXPORT Welsch : public Base {
   double modelParameter() const { return c_; }
 
   /// @brief Static implementation of Welsch Weight
-  static double Weight(double csquared, double distance);
+  static double Weight(double distance, double csquared);
   /// @brief Static implementation of Welsch Loss
-  static double Loss(double csquared, double distance);
+  static double Loss(double distance, double csquared);
 
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
@@ -456,8 +456,10 @@ class GTSAM_EXPORT GemanMcClure : public Base {
   enum GradScheme { STANDARD, SCALE_INVARIANT };
   static constexpr double LAMBDA_MAX = 1e10;
 
-  GemanMcClure(double c = 1.0,
-               const GradScheme graduation = GradScheme::STANDARD,
+  /// @brief Construct standard GemanMcClure loss
+  GemanMcClure(double c = 1.0, const ReweightScheme reweight = Block);
+  /// @brief Constructor for a loss with an explicit graduation scheme.
+  GemanMcClure(double c, const GradScheme graduation,
                const ReweightScheme reweight = Block);
   ~GemanMcClure() override {}
   double weight(double distance) const override;
@@ -466,21 +468,22 @@ class GTSAM_EXPORT GemanMcClure : public Base {
   double graduatedLoss(double distance, double mu) const override;
   void print(const std::string &s) const override;
   bool equals(const Base &expected, double tol = 1e-8) const override;
-  static shared_ptr Create(double k,
-                           const GradScheme graduation = GradScheme::STANDARD,
+  static shared_ptr Create(double k, const ReweightScheme reweight = Block);
+  /// @brief Factory for a loss with an explicit graduation scheme.
+  static shared_ptr Create(double k, const GradScheme graduation,
                            const ReweightScheme reweight = Block);
   double modelParameter() const { return c_; }
 
-  /// @brief Static implementation of GemanMcClure Weight
-  static double Weight(double csquared, double distance2);
+  /// @brief A static helper function to compute the Geman-McClure robust weight
+  static double Weight(double distance2, double c2);
   /// @brief Static implementation of GemanMcClure Loss
-  static double Loss(double csquared, double distance2);
-  /// @brief Static implementation of TLS Graduated Weight
-  static double GraduatedWeight(GradScheme graduation, double csquared,
-                                double distance2, double mu);
-  /// @brief Static implementation of TLS Graduated Loss
-  static double GraduatedLoss(GradScheme graduation, double csquared,
-                              double distance2, double mu);
+  static double Loss(double distance2, double c2);
+  /// @brief Static implementation of GemanMcClure Graduated Weight.
+  static double GraduatedWeight(double distance2, double c2, double mu,
+                                GradScheme graduation);
+  /// @brief Static implementation of GemanMcClure Graduated Loss
+  static double GraduatedLoss(double distance2, double c2, double mu,
+                              GradScheme graduation);
 
   /** @brief Static helper to compute shape param (c) using outlier influence.
    * Computes a shape param such that an outlier (any measurement with
@@ -553,8 +556,10 @@ class GTSAM_EXPORT TruncatedLeastSquares : public Base {
   static constexpr double LAMBDA_MAX = 1e12;
   static constexpr double LAMBDA_MIN = 1e-12;
 
-  TruncatedLeastSquares(double c = 1.0,
-                        GradScheme graduation = GradScheme::STANDARD,
+  /// @brief Construct standard TLS loss
+  TruncatedLeastSquares(double c = 1.0, const ReweightScheme reweight = Block);
+  /// @brief Construct with an explicit graduation scheme.
+  TruncatedLeastSquares(double c, GradScheme graduation,
                         const ReweightScheme reweight = Block);
   double weight(double distance) const override;
   double loss(double distance) const override;
@@ -562,22 +567,23 @@ class GTSAM_EXPORT TruncatedLeastSquares : public Base {
   double graduatedLoss(double distance, double mu) const override;
   void print(const std::string& s) const override;
   bool equals(const Base& expected, double tol = 1e-8) const override;
-  static shared_ptr Create(double c,
-                           GradScheme graduation = GradScheme::STANDARD,
+  static shared_ptr Create(double c, const ReweightScheme reweight = Block);
+  /// @brief Factory for a loss with an explicit graduation scheme.
+  static shared_ptr Create(double c, GradScheme graduation,
                            const ReweightScheme reweight = Block);
   double modelParameter() const { return c_; }
 
   /// @brief Static implementation of TLS Weight
-  static double Weight(double csquared, double distance2);
-  /// @brief Static implementation of TLS Loss
-  static double Loss(double csquared, double distance2);
+  static double Weight(double distance2, double c2);
+  /// @brief Static implementation of TLS Loss.
+  static double Loss(double distance2, double c2);
 
-  /// @brief Static implementation of TLS Graduated Weight
-  static double GraduatedWeight(GradScheme graduation, double csquared,
-                                double distance2, double mu);
+  /// @brief Static implementation of TLS Graduated Weight.
+  static double GraduatedWeight(double distance2, double c2, double mu,
+                                GradScheme graduation);
   /// @brief Static implementation of TLS Graduated Loss
-  static double GraduatedLoss(GradScheme graduation, double csquared,
-                              double distance2, double mu);
+  static double GraduatedLoss(double distance2, double c2, double mu,
+                              GradScheme graduation);
 
  protected:
   double c_;
@@ -629,9 +635,9 @@ class GTSAM_EXPORT DCS : public Base {
   double modelParameter() const { return c_; }
 
   /// @brief Static implementation of DCS Weight
-  static double Weight(double c, double distance);
+  static double Weight(double distance, double c);
   /// @brief Static implementation of DCS Loss
-  static double Loss(double c, double distance);
+  static double Loss(double distance, double c);
 
  protected:
   double c_;
@@ -800,6 +806,8 @@ class GTSAM_EXPORT Custom : public Base {
          CustomGraduatedWeightFunction grad_weight = std::nullopt,
          CustomGraduatedLossFunction grad_loss = std::nullopt,
          const ReweightScheme reweight = Block, std::string name = "Custom");
+  Custom(CustomWeightFunction weight, CustomLossFunction loss,
+         const ReweightScheme reweight, std::string name = "Custom");
   double weight(double distance) const override;
   double loss(double distance) const override;
   double graduatedWeight(double distance, double mu) const override;
@@ -812,6 +820,10 @@ class GTSAM_EXPORT Custom : public Base {
       CustomGraduatedLossFunction grad_loss = std::nullopt,
       const ReweightScheme reweight = Block,
       const std::string& name = "Custom");
+  static shared_ptr Create(std::function<double(double)> weight,
+                           std::function<double(double)> loss,
+                           const ReweightScheme reweight,
+                           const std::string& name = "Custom");
   inline std::string& name() { return name_; }
 
   inline std::function<double(double)>& weightFunction() { return weight_; }

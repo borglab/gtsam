@@ -64,7 +64,13 @@ class GncParams {
     SUMMARY,
     LAMBDA,
     WEIGHTS,
-    VALUES
+    VALUES,
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+    /// @deprecated: use LAMBDA. GNC's unbounded control parameter is named
+    /// lambda so that `mu` keeps its GTSAM meaning of normalized graduation
+    /// progress in [0, 1].
+    MU = LAMBDA,
+#endif
   };
 
   /// Constructor.
@@ -162,6 +168,12 @@ class GncParams {
   void setAllowNonNoiseModelFactors(bool allow) {
     allowNonNoiseModelFactors = allow;
   }
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+  /// @deprecated: use setLambdaStep. The quantity GNC steps multiplicatively
+  /// is the unbounded lambda, not the normalized mu in [0, 1].
+  void setMuStep(const double step) { setLambdaStep(step); }
+#endif
 
   /// Equals.
   bool equals(const GncParams& other, double tol = 1e-9) const {

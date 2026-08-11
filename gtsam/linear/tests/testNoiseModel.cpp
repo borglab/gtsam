@@ -956,7 +956,6 @@ TEST(NoiseModel, robustNoiseCustomHuber) {
                            const auto abs_e = std::abs(e);
                            return abs_e <= k ? abs_e * abs_e / 2.0 : k * abs_e - k * k / 2.0;
                          },
-                         std::nullopt, std::nullopt,
                          noiseModel::mEstimator::Custom::Scalar, "Huber"),
                      Unit::Create(2));
 

@@ -186,12 +186,12 @@ Huber::Huber(double k, const ReweightScheme reweight) : Base(reweight), k_(k) {
   }
 }
 
-double Huber::Weight(double k, double distance) {
+double Huber::Weight(double distance, double k) {
   const double absError = std::abs(distance);
   return (absError <= k) ? (1.0) : (k / absError);
 }
 
-double Huber::Loss(double k, double distance) {
+double Huber::Loss(double distance, double k) {
   const double absError = std::abs(distance);
   if (absError <= k) {  // |x| <= k
     return distance * distance / 2;
@@ -200,18 +200,18 @@ double Huber::Loss(double k, double distance) {
   }
 }
 
-double Huber::weight(double distance) const { return Weight(k_, distance); }
+double Huber::weight(double distance) const { return Weight(distance, k_); }
 
-double Huber::loss(double distance) const { return Loss(k_, distance); }
+double Huber::loss(double distance) const { return Loss(distance, k_); }
 
 double Huber::graduatedWeight(double distance, double mu) const {
   const double lambda = 1.0 + ((1.0 - std::clamp(mu, 0.0, 1.0)) * LAMBDA_MAX);
-  return Weight(k_ * lambda, distance);
+  return Weight(distance, k_ * lambda);
 }
 
 double Huber::graduatedLoss(double distance, double mu) const {
   const double lambda = 1.0 + ((1.0 - std::clamp(mu, 0.0, 1.0)) * LAMBDA_MAX);
-  return Loss(k_ * lambda, distance);
+  return Loss(distance, k_ * lambda);
 }
 
 void Huber::print(const std::string &s="") const {
@@ -238,29 +238,29 @@ Cauchy::Cauchy(double k, const ReweightScheme reweight) : Base(reweight), k_(k),
   }
 }
 
-double Cauchy::Weight(double ksquared, double distance) {
+double Cauchy::Weight(double distance, double ksquared) {
   return ksquared / (ksquared + distance * distance);
 }
 
-double Cauchy::Loss(double ksquared, double distance) {
+double Cauchy::Loss(double distance, double ksquared) {
   const double val = std::log1p(distance * distance / ksquared);
   return ksquared * val * 0.5;
 }
 
 double Cauchy::weight(double distance) const {
-  return Weight(ksquared_, distance);
+  return Weight(distance, ksquared_);
 }
 
-double Cauchy::loss(double distance) const { return Loss(ksquared_, distance); }
+double Cauchy::loss(double distance) const { return Loss(distance, ksquared_); }
 
 double Cauchy::graduatedWeight(double distance, double mu) const {
   const double lambda = 1.0 + ((1.0 - std::clamp(mu, 0.0, 1.0)) * LAMBDA_MAX);
-  return Cauchy::Weight(ksquared_ * (lambda * lambda), distance);
+  return Cauchy::Weight(distance, ksquared_ * (lambda * lambda));
 }
 
 double Cauchy::graduatedLoss(double distance, double mu) const {
   const double lambda = 1.0 + ((1.0 - std::clamp(mu, 0.0, 1.0)) * LAMBDA_MAX);
-  return Cauchy::Loss(ksquared_ * (lambda * lambda), distance);
+  return Cauchy::Loss(distance, ksquared_ * (lambda * lambda));
 }
 
 void Cauchy::print(const std::string &s="") const {
@@ -287,7 +287,7 @@ Tukey::Tukey(double c, const ReweightScheme reweight) : Base(reweight), c_(c), c
   }
 }
 
-double Tukey::Weight(double c, double csquared, double distance) {
+double Tukey::Weight(double distance, double c, double csquared) {
   if (std::abs(distance) <= c) {
     const double one_minus_xc2 = 1.0 - distance * distance / csquared;
     return one_minus_xc2 * one_minus_xc2;
@@ -295,7 +295,7 @@ double Tukey::Weight(double c, double csquared, double distance) {
   return 0.0;
 }
 
-double Tukey::Loss(double c, double csquared, double distance) {
+double Tukey::Loss(double distance, double c, double csquared) {
   const double absError = std::abs(distance);
   if (absError <= c) {
     const double one_minus_xc2 = 1.0 - distance * distance / csquared;
@@ -307,21 +307,21 @@ double Tukey::Loss(double c, double csquared, double distance) {
 }
 
 double Tukey::weight(double distance) const {
-  return Weight(c_, csquared_, distance);
+  return Weight(distance, c_, csquared_);
 }
 
 double Tukey::loss(double distance) const {
-  return Loss(c_, csquared_, distance);
+  return Loss(distance, c_, csquared_);
 }
 
 double Tukey::graduatedWeight(double distance, double mu) const {
   const double lambda = 1.0 + ((1.0 - std::clamp(mu, 0.0, 1.0)) * LAMBDA_MAX);
-  return Weight(c_ * lambda, csquared_ * (lambda * lambda), distance);
+  return Weight(distance, c_ * lambda, csquared_ * (lambda * lambda));
 }
 
 double Tukey::graduatedLoss(double distance, double mu) const {
   const double lambda = 1.0 + ((1.0 - std::clamp(mu, 0.0, 1.0)) * LAMBDA_MAX);
-  return Loss(c_ * lambda, csquared_ * (lambda * lambda), distance);
+  return Loss(distance, c_ * lambda, csquared_ * (lambda * lambda));
 }
 
 void Tukey::print(const std::string &s="") const {
@@ -344,30 +344,30 @@ Tukey::shared_ptr Tukey::Create(double c, const ReweightScheme reweight) {
 
 Welsch::Welsch(double c, const ReweightScheme reweight) : Base(reweight), c_(c), csquared_(c * c) {}
 
-double Welsch::Weight(double csquared, double distance) {
+double Welsch::Weight(double distance, double csquared) {
   const double xc2 = (distance * distance) / csquared;
   return std::exp(-xc2);
 }
 
-double Welsch::Loss(double csquared, double distance) {
+double Welsch::Loss(double distance, double csquared) {
   const double xc2 = (distance * distance) / csquared;
   return csquared * 0.5 * -std::expm1(-xc2);
 }
 
 double Welsch::weight(double distance) const {
-  return Weight(csquared_, distance);
+  return Weight(distance, csquared_);
 }
 
-double Welsch::loss(double distance) const { return Loss(csquared_, distance); }
+double Welsch::loss(double distance) const { return Loss(distance, csquared_); }
 
 double Welsch::graduatedWeight(double distance, double mu) const {
   const double lambda = 1.0 + ((1.0 - std::clamp(mu, 0.0, 1.0)) * LAMBDA_MAX);
-  return Weight(csquared_ * (lambda * lambda), distance);
+  return Weight(distance, csquared_ * (lambda * lambda));
 }
 
 double Welsch::graduatedLoss(double distance, double mu) const {
   const double lambda = 1.0 + ((1.0 - std::clamp(mu, 0.0, 1.0)) * LAMBDA_MAX);
-  return Loss(csquared_ * (lambda * lambda), distance);
+  return Loss(distance, csquared_ * (lambda * lambda));
 }
 
 void Welsch::print(const std::string &s="") const {
@@ -387,56 +387,59 @@ Welsch::shared_ptr Welsch::Create(double c, const ReweightScheme reweight) {
 /* ************************************************************************* */
 // GemanMcClure
 /* ************************************************************************* */
+GemanMcClure::GemanMcClure(double c, const ReweightScheme reweight)
+    : GemanMcClure(c, GradScheme::STANDARD, reweight) {}
+
 GemanMcClure::GemanMcClure(double c, const GemanMcClure::GradScheme graduation,
                            const ReweightScheme reweight)
     : Base(reweight), c_(c), csquared_(c * c), graduation_(graduation) {}
 
-double GemanMcClure::Weight(double csquared, double distance2) {
-  const double c4 = csquared * csquared;
-  const double c2error = csquared + distance2;
+double GemanMcClure::Weight(double distance2, double c2) {
+  const double c4 = c2 * c2;
+  const double c2error = c2 + distance2;
   return c4 / (c2error * c2error);
 }
 
-double GemanMcClure::Loss(double csquared, double distance2) {
-  return 0.5 * (csquared * distance2) / (csquared + distance2);
+double GemanMcClure::Loss(double distance2, double c2) {
+  return 0.5 * (c2 * distance2) / (c2 + distance2);
 }
 
-double GemanMcClure::GraduatedWeight(GradScheme graduation, double csquared,
-                                     double distance2, double mu) {
+double GemanMcClure::GraduatedWeight(double distance2, double c2, double mu,
+                                     GradScheme graduation) {
   if (graduation == GemanMcClure::GradScheme::STANDARD) {
     const double lambda = 1.0 + ((1.0 - std::clamp(mu, 0.0, 1.0)) * LAMBDA_MAX);
-    return Weight(csquared * (lambda * lambda), distance2);
+    return Weight(distance2, c2 * (lambda * lambda));
   } else {  // GemanMcClure::GradScheme::SCALE_INVARIANT
-    const double sqrt_denom = csquared + std::pow(distance2, mu);
-    return (csquared * (csquared + std::pow(distance2, mu) * (1 - mu))) /
+    const double sqrt_denom = c2 + std::pow(distance2, mu);
+    return (c2 * (c2 + std::pow(distance2, mu) * (1 - mu))) /
            (sqrt_denom * sqrt_denom);
   }
 }
 
-double GemanMcClure::GraduatedLoss(GradScheme graduation, double csquared,
-                                   double distance2, double mu) {
+double GemanMcClure::GraduatedLoss(double distance2, double c2, double mu,
+                                   GradScheme graduation) {
   if (graduation == GemanMcClure::GradScheme::STANDARD) {
     const double lambda = 1.0 + ((1.0 - std::clamp(mu, 0.0, 1.0)) * LAMBDA_MAX);
-    return Loss(csquared * (lambda * lambda), distance2);
+    return Loss(distance2, c2 * (lambda * lambda));
   } else {  // GemanMcClure::GradScheme::SCALE_INVARIANT
-    return 0.5 * (csquared * distance2) / (csquared + std::pow(distance2, mu));
+    return 0.5 * (c2 * distance2) / (c2 + std::pow(distance2, mu));
   }
 }
 
 double GemanMcClure::weight(double distance) const {
-  return Weight(csquared_, distance * distance);
+  return Weight(distance * distance, csquared_);
 }
 
 double GemanMcClure::loss(double distance) const {
-  return Loss(csquared_, distance * distance);
+  return Loss(distance * distance, csquared_);
 }
 
 double GemanMcClure::graduatedWeight(double distance, double mu) const {
-  return GraduatedWeight(graduation_, csquared_, distance * distance, mu);
+  return GraduatedWeight(distance * distance, csquared_, mu, graduation_);
 }
 
 double GemanMcClure::graduatedLoss(double distance, double mu) const {
-  return GraduatedLoss(graduation_, csquared_, distance * distance, mu);
+  return GraduatedLoss(distance * distance, csquared_, mu, graduation_);
 }
 
 void GemanMcClure::print(const std::string &s="") const {
@@ -447,6 +450,11 @@ bool GemanMcClure::equals(const Base &expected, double tol) const {
   const GemanMcClure* p = dynamic_cast<const GemanMcClure*>(&expected);
   if (p == nullptr) return false;
   return std::abs(c_ - p->c_) < tol;
+}
+
+GemanMcClure::shared_ptr GemanMcClure::Create(double c,
+                                              const ReweightScheme reweight) {
+  return shared_ptr(new GemanMcClure(c, reweight));
 }
 
 GemanMcClure::shared_ptr GemanMcClure::Create(
@@ -473,8 +481,12 @@ double GemanMcClure::shapeParamFromInfThresh(double influence_thresh,
 // TruncatedLeastSquares
 /* ************************************************************************* */
 
+TruncatedLeastSquares::TruncatedLeastSquares(double c,
+                                             const ReweightScheme reweight)
+    : TruncatedLeastSquares(c, GradScheme::STANDARD, reweight) {}
+
 TruncatedLeastSquares::TruncatedLeastSquares(
-    double c, const TruncatedLeastSquares::GradScheme graduation,
+    double c, TruncatedLeastSquares::GradScheme graduation,
     const ReweightScheme reweight)
     : Base(reweight), c_(c), csquared_(c * c), graduation_(graduation) {
   if (c_ <= 0) {
@@ -484,61 +496,61 @@ TruncatedLeastSquares::TruncatedLeastSquares(
   }
 }
 
-double TruncatedLeastSquares::Weight(double csquared, double distance2) {
-  if (distance2 <= csquared) {
+double TruncatedLeastSquares::Weight(double distance2, double c2) {
+  if (distance2 <= c2) {
     return 1.0;
   }
   return 0.0;
 }
 
-double TruncatedLeastSquares::Loss(double csquared, double distance2) {
-  if (distance2 <= csquared) {
+double TruncatedLeastSquares::Loss(double distance2, double c2) {
+  if (distance2 <= c2) {
     return 0.5 * distance2;
   }
-  return 0.5 * csquared;
+  return 0.5 * c2;
 }
 
-double TruncatedLeastSquares::GraduatedWeight(GradScheme graduation,
-                                              double csquared, double distance2,
-                                              double mu) {
+double TruncatedLeastSquares::GraduatedWeight(double distance2, double c2,
+                                              double mu,
+                                              GradScheme graduation) {
   if (graduation == TruncatedLeastSquares::GradScheme::STANDARD) {
     const double lambda = 1.0 + ((1.0 - std::clamp(mu, 0.0, 1.0)) * LAMBDA_MAX);
-    return Weight(csquared * (lambda * lambda), distance2);
+    return Weight(distance2, c2 * (lambda * lambda));
   } else if (graduation == TruncatedLeastSquares::GradScheme::GNC_LINEAR) {
     const double lambda = std::clamp(mu, 0.0, 1.0) * LAMBDA_MAX + LAMBDA_MIN;
-    const double lowerbound = (lambda / (lambda + 1.0)) * csquared;
-    const double upperbound = ((lambda + 1.0) / lambda) * csquared;
+    const double lowerbound = (lambda / (lambda + 1.0)) * c2;
+    const double upperbound = ((lambda + 1.0) / lambda) * c2;
 
     if (distance2 <= lowerbound) return 1.0;
     if (distance2 >= upperbound) return 0.0;
-    return std::sqrt(csquared * lambda * (lambda + 1.0) / distance2) - lambda;
+    return std::sqrt(c2 * lambda * (lambda + 1.0) / distance2) - lambda;
   } else {  // TruncatedLeastSquares::GradScheme::GNC_SUPERLINEAR
     const double lambda = std::clamp(mu, 0.0, 1.0) * LAMBDA_MAX + LAMBDA_MIN;
-    const double lowerbound = csquared;
-    const double upperbound = ((lambda + 1.0) * (lambda + 1.0) / (lambda * lambda)) * csquared;
+    const double lowerbound = c2;
+    const double upperbound = ((lambda + 1.0) * (lambda + 1.0) / (lambda * lambda)) * c2;
 
     if (distance2 <= lowerbound) return 1.0;
     if (distance2 >= upperbound) return 0.0;
-    return std::sqrt(csquared / distance2) * (lambda + 1.0) - lambda;
+    return std::sqrt(c2 / distance2) * (lambda + 1.0) - lambda;
   }
 }
 
-double TruncatedLeastSquares::GraduatedLoss(GradScheme graduation,
-                                            double csquared, double distance2,
-                                            double mu) {
+double TruncatedLeastSquares::GraduatedLoss(double distance2, double c2,
+                                            double mu,
+                                            GradScheme graduation) {
   if (graduation == TruncatedLeastSquares::GradScheme::STANDARD) {
     const double lambda = 1.0 + ((1.0 - std::clamp(mu, 0.0, 1.0)) * LAMBDA_MAX);
-    return Loss(csquared * (lambda * lambda), distance2);
+    return Loss(distance2, c2 * (lambda * lambda));
   } else if (graduation == TruncatedLeastSquares::GradScheme::GNC_LINEAR) {
     const double lambda = std::clamp(mu, 0.0, 1.0) * LAMBDA_MAX + LAMBDA_MIN;
-    const double lowerbound = (lambda / (lambda + 1.0)) * csquared;
-    const double upperbound = ((lambda + 1.0) / lambda) * csquared;
+    const double lowerbound = (lambda / (lambda + 1.0)) * c2;
+    const double upperbound = ((lambda + 1.0) / lambda) * c2;
 
     if (distance2 <= lowerbound) return 0.5 * distance2;
-    if (distance2 >= upperbound) return 0.5 * csquared;
-    return 0.5 * (2 * std::sqrt(csquared) * std::sqrt(distance2) *
+    if (distance2 >= upperbound) return 0.5 * c2;
+    return 0.5 * (2 * std::sqrt(c2) * std::sqrt(distance2) *
                       std::sqrt(lambda * (lambda + 1.0)) -
-                  (lambda * (csquared + distance2)));
+                  (lambda * (c2 + distance2)));
   } else {  // TruncatedLeastSquares::GradScheme::GNC_SUPERLINEAR
     throw std::runtime_error(
         "TLS with GradScheme::GNC_SUPERLINEAR has no loss form");
@@ -546,20 +558,20 @@ double TruncatedLeastSquares::GraduatedLoss(GradScheme graduation,
 }
 
 double TruncatedLeastSquares::weight(double distance) const {
-  return Weight(csquared_, distance * distance);
+  return Weight(distance * distance, csquared_);
 }
 
 double TruncatedLeastSquares::loss(double distance) const {
-  return Loss(csquared_, distance * distance);
+  return Loss(distance * distance, csquared_);
 }
 
 double TruncatedLeastSquares::graduatedWeight(double distance,
                                               double mu) const {
-  return GraduatedWeight(graduation_, csquared_, distance * distance, mu);
+  return GraduatedWeight(distance * distance, csquared_, mu, graduation_);
 }
 
 double TruncatedLeastSquares::graduatedLoss(double distance, double mu) const {
-  return GraduatedLoss(graduation_, csquared_, distance * distance, mu);
+  return GraduatedLoss(distance * distance, csquared_, mu, graduation_);
 }
 
 void TruncatedLeastSquares::print(const std::string& s = "") const {
@@ -571,6 +583,11 @@ bool TruncatedLeastSquares::equals(const Base& expected, double tol) const {
       dynamic_cast<const TruncatedLeastSquares*>(&expected);
   if (p == nullptr) return false;
   return std::abs(c_ - p->c_) < tol;
+}
+
+TruncatedLeastSquares::shared_ptr TruncatedLeastSquares::Create(
+    double c, const ReweightScheme reweight) {
+  return shared_ptr(new TruncatedLeastSquares(c, reweight));
 }
 
 TruncatedLeastSquares::shared_ptr TruncatedLeastSquares::Create(
@@ -586,7 +603,7 @@ DCS::DCS(double c, const ReweightScheme reweight)
   : Base(reweight), c_(c) {
 }
 
-double DCS::Weight(double c, double distance) {
+double DCS::Weight(double distance, double c) {
   const double e2 = distance * distance;
   if (e2 > c) {
     const double w = 2.0 * c / (c + e2);
@@ -595,7 +612,7 @@ double DCS::Weight(double c, double distance) {
   return 1.0;
 }
 
-double DCS::Loss(double c, double distance) {
+double DCS::Loss(double distance, double c) {
   // This is the simplified version of Eq 9 from (Agarwal13icra)
   // after you simplify and cancel terms.
   const double e2 = distance * distance;
@@ -604,18 +621,18 @@ double DCS::Loss(double c, double distance) {
   return (c2 * e2 + c * e4) / ((e2 + c) * (e2 + c));
 }
 
-double DCS::weight(double distance) const { return Weight(c_, distance); }
+double DCS::weight(double distance) const { return Weight(distance, c_); }
 
-double DCS::loss(double distance) const { return Loss(c_, distance); }
+double DCS::loss(double distance) const { return Loss(distance, c_); }
 
 double DCS::graduatedWeight(double distance, double mu) const {
   const double lambda = 1.0 + ((1.0 - std::clamp(mu, 0.0, 1.0)) * LAMBDA_MAX);
-  return Weight(c_ * lambda, distance);
+  return Weight(distance, c_ * lambda);
 }
 
 double DCS::graduatedLoss(double distance, double mu) const {
   const double lambda = 1.0 + ((1.0 - std::clamp(mu, 0.0, 1.0)) * LAMBDA_MAX);
-  return Loss(c_ * lambda, distance);
+  return Loss(distance, c_ * lambda);
 }
 
 void DCS::print(const std::string &s="") const {
@@ -809,6 +826,12 @@ Custom::Custom(std::function<double(double)> weight,
       grad_loss_(grad_loss),
       name_(std::move(name)) {}
 
+Custom::Custom(std::function<double(double)> weight,
+               std::function<double(double)> loss,
+               const ReweightScheme reweight, std::string name)
+    : Custom(std::move(weight), std::move(loss), std::nullopt, std::nullopt,
+             reweight, std::move(name)) {}
+
 double Custom::weight(double distance) const { return weight_(distance); }
 
 double Custom::loss(double distance) const { return loss_(distance); }
@@ -849,6 +872,14 @@ Custom::shared_ptr Custom::Create(
   return std::make_shared<Custom>(std::move(weight), std::move(loss),
                                   std::move(grad_weight), std::move(grad_loss),
                                   reweight, name);
+}
+
+Custom::shared_ptr Custom::Create(std::function<double(double)> weight,
+                                  std::function<double(double)> loss,
+                                  const ReweightScheme reweight,
+                                  const std::string& name) {
+  return Create(std::move(weight), std::move(loss), std::nullopt, std::nullopt,
+                reweight, name);
 }
 
 } // namespace mEstimator
