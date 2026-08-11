@@ -117,7 +117,7 @@ class HybridBayesTree {
 
   size_t size() const;
   bool empty() const;
-  const HybridBayesTreeClique* operator[](size_t j) const;
+  const HybridBayesTreeClique* operator[](gtsam::Key j) const;
 
   gtsam::HybridValues optimize() const;
 

@@ -8,11 +8,11 @@
 if(MSVC)
     # By default, boost only builds static libraries on windows
     set(Boost_USE_STATIC_LIBS ON)  # only find static libs
-    # If we ever reset above on windows and, ...
-    # If we use Boost shared libs, disable auto linking.
-    # Some libraries, at least Boost Program Options, rely on this to export DLL symbols.
+    # GTSAM links Boost through imported CMake targets, so disable Boost's
+    # pragma-based auto-linking to avoid bare library names on the link line.
+    list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC BOOST_ALL_NO_LIB)
     if(NOT Boost_USE_STATIC_LIBS)
-        list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC BOOST_ALL_NO_LIB BOOST_ALL_DYN_LINK)
+        list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC BOOST_ALL_DYN_LINK)
     endif()
     # Virtual memory range for PCH exceeded on VS2015
     if(MSVC_VERSION LESS 1910) # older than VS2017

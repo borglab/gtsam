@@ -57,6 +57,11 @@ function configure()
     export CXX=g++-$GCC_VERSION
   fi
 
+  CMAKE_POLICY_ARGS=()
+  if [ -n "${CMAKE_POLICY_VERSION_MINIMUM:-}" ]; then
+    CMAKE_POLICY_ARGS+=("-DCMAKE_POLICY_VERSION_MINIMUM=${CMAKE_POLICY_VERSION_MINIMUM}")
+  fi
+
   # GTSAM_BUILD_WITH_MARCH_NATIVE=OFF: to avoid crashes in builder VMs
   cmake $SOURCE_DIR \
       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-Debug} \
@@ -74,7 +79,8 @@ function configure()
       -DGTSAM_SINGLE_TEST_EXE=ON \
       -DBOOST_ROOT=$BOOST_ROOT \
       -DBoost_NO_SYSTEM_PATHS=ON \
-      -DBoost_ARCHITECTURE=-x64
+      -DBoost_ARCHITECTURE=-x64 \
+      "${CMAKE_POLICY_ARGS[@]}"
 }
 
 

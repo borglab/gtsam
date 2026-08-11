@@ -14,4 +14,9 @@
 // Seems this is not a good idea with inherited stl
 //py::bind_vector<std::vector<gtsam::DiscreteKey>>(m_, "DiscreteKeys");
 
-py::bind_map<gtsam::DiscreteValues>(m_, "DiscreteValues");
+auto discreteValues =
+    py::bind_map<gtsam::DiscreteValues>(m_, "DiscreteValues");
+discreteValues.def(
+    "__len__",
+    [](const gtsam::DiscreteValues& values) { return values.size(); },
+    py::prepend{});

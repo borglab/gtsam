@@ -141,15 +141,17 @@ class TestUtilites(GtsamTestCase):
 
     def test_insertProjectionFactors(self):
         """Test insertProjectionFactors."""
+        pose_key = gtsam.symbol("x", 0)
         graph = gtsam.NonlinearFactorGraph()
         gtsam.utilities.insertProjectionFactors(
-            graph, 0, [0, 1], np.asarray([[20, 30], [20, 30]]),
+            graph, pose_key, [0, 1], np.asarray([[20, 30], [20, 30]]),
             gtsam.noiseModel.Isotropic.Sigma(2, 0.1), gtsam.Cal3_S2())
         self.assertEqual(graph.size(), 2)
+        self.assertEqual(graph.at(0).keys()[0], pose_key)
 
         graph = gtsam.NonlinearFactorGraph()
         gtsam.utilities.insertProjectionFactors(
-            graph, 0, [0, 1], np.asarray([[20, 30], [20, 30]]),
+            graph, pose_key, [0, 1], np.asarray([[20, 30], [20, 30]]),
             gtsam.noiseModel.Isotropic.Sigma(2, 0.1), gtsam.Cal3_S2(),
             gtsam.Pose3(gtsam.Rot3(), gtsam.Point3(1, 0, 0)))
         self.assertEqual(graph.size(), 2)

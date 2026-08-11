@@ -67,6 +67,10 @@ function build()
   cd $GITHUB_WORKSPACE/build
 
   BUILD_PYBIND="ON"
+  CMAKE_POLICY_ARGS=()
+  if [ -n "${CMAKE_POLICY_VERSION_MINIMUM:-}" ]; then
+    CMAKE_POLICY_ARGS+=("-DCMAKE_POLICY_VERSION_MINIMUM=${CMAKE_POLICY_VERSION_MINIMUM}")
+  fi
 
   cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
       -DGTSAM_BUILD_TESTS=OFF \
@@ -80,14 +84,19 @@ function build()
       -DGTSAM_PYTHON_VERSION=$PYTHON_VERSION \
       -DPYTHON_EXECUTABLE:FILEPATH=$(which $PYTHON) \
       -DGTSAM_ALLOW_DEPRECATED_SINCE_V42=OFF \
-      -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/gtsam_install
+      -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/gtsam_install \
+      "${CMAKE_POLICY_ARGS[@]}"
 
 
   # Set to 2 cores so that Actions does not error out during resource provisioning.
   make -j2 install
 
   cd $GITHUB_WORKSPACE/build/python
-  $PYTHON -m pip install --user .
+  if [ -n "${VIRTUAL_ENV:-}" ]; then
+    $PYTHON -m pip install .
+  else
+    $PYTHON -m pip install --user .
+  fi
 }
 
 function test()

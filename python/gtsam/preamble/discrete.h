@@ -10,6 +10,7 @@
  * Without this they will be automatically converted to a Python object, and all
  * mutations on Python side will not be reflected on C++.
  */
+PYBIND11_MAKE_OPAQUE(gtsam::DiscreteKeys);
+PYBIND11_MAKE_OPAQUE(gtsam::DiscreteValues);
 
 #include <pybind11/stl.h>
-
