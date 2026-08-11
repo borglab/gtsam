@@ -34,8 +34,8 @@ TEST(BetweenFactor, Rot3) {
   Matrix actualH1, actualH2;
   Vector actual = factor.evaluateError(R1, R2, actualH1, actualH2);
 
-  Vector expected = Rot3::Logmap(measured.inverse() * R1.between(R2));
-  EXPECT(assert_equal(expected,actual/*, 1e-100*/)); // Uncomment to make unit test fail
+  const Vector3 expected = measured.localCoordinates(R1.between(R2));
+  EXPECT(assert_equal(expected, actual));
 
   Matrix numericalH1 = numericalDerivative21<Vector3, Rot3, Rot3>(
         [&factor](const Rot3& r1, const Rot3& r2) {return factor.evaluateError(r1, r2);},
