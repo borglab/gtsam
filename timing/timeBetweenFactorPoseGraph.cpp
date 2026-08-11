@@ -26,6 +26,7 @@
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/FastSync.h>
 #include <gtsam/slam/dataset.h>
 
 #include <iomanip>
@@ -58,6 +59,7 @@ struct BenchmarkOptions {
   size_t warmups = 1;
   size_t repetitions = 5;
   size_t maxIterations = 100;
+  bool useFastSync = true;
   std::optional<std::string> outputPath;
 };
 
@@ -223,7 +225,7 @@ void printRuns(const std::string& name, const std::vector<RunResult>& results) {
 void printUsage() {
   std::cout << "Usage: timeBetweenFactorPoseGraph [--dataset NAME] "
                "[--warmup N] [--repeats N] [--max-iterations N] "
-               "[--output FILE]\n";
+               "[--raw-initial] [--output FILE]\n";
 }
 
 }  // namespace
@@ -240,6 +242,7 @@ int main(int argc, char** argv) {
       arguments.sizeValue("--warmup", 1),
       arguments.sizeValue("--repeats", 5),
       arguments.sizeValue("--max-iterations", 100),
+      !arguments.flag("--raw-initial"),
       [&] {
         const std::string path = arguments.stringValue("--output", "");
         return path.empty() ? std::optional<std::string>()
@@ -252,7 +255,13 @@ int main(int argc, char** argv) {
         "--repeats and --max-iterations must both be at least 1");
   }
 
-  const Graphs graphs = loadGraphs(options.dataset);
+  Graphs graphs = loadGraphs(options.dataset);
+  const double rawInitialError = graphs.current.error(graphs.initial);
+  double initializationSeconds = 0.0;
+  if (options.useFastSync) {
+    initializationSeconds = gtsam::timing::measureSeconds(
+        [&] { graphs.initial = gtsam::fastSync<Pose2>(graphs.current); });
+  }
   const double initialError = graphs.current.error(graphs.initial);
   const ComparisonResults results = runComparison(graphs, options);
 
@@ -296,11 +305,14 @@ int main(int argc, char** argv) {
   std::cout << std::fixed << std::setprecision(6);
   std::cout << "Pose2 pose-graph optimization benchmark\n";
   std::cout << "dataset=" << options.dataset << " mode=" << mode
+            << " initialization=" << (options.useFastSync ? "fast_sync" : "raw")
             << " poses=" << graphs.initial.size()
             << " between_factors=" << graphs.betweenFactors
             << " warmups=" << options.warmups
             << " repetitions=" << options.repetitions
-            << " initial_error=" << initialError << '\n';
+            << " raw_initial_error=" << rawInitialError
+            << " initial_error=" << initialError
+            << " initialization_seconds=" << initializationSeconds << '\n';
   printRuns("current", results.current);
   printRuns("legacy", results.legacy);
   std::cout << "current_median_seconds=" << currentTime.median
@@ -332,7 +344,9 @@ int main(int argc, char** argv) {
          {"PoseGraph/current/final_error", "error", currentError.median},
          {"PoseGraph/legacy/final_error", "error", legacyError.median},
          {"PoseGraph/current/final_lambda", "lambda", currentLambda.median},
-         {"PoseGraph/legacy/final_lambda", "lambda", legacyLambda.median}});
+         {"PoseGraph/legacy/final_lambda", "lambda", legacyLambda.median},
+         {"PoseGraph/initialization", "s", initializationSeconds},
+         {"PoseGraph/initial_error", "error", initialError}});
   }
   return 0;
 }

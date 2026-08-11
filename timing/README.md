@@ -48,16 +48,20 @@ output uses the shared Benchmark Action JSON format.
 
 `timeBetweenFactorPoseGraph` assesses whether the more expensive Jacobians
 change nonlinear convergence enough to offset their per-evaluation cost. It
-loads `w10000.graph`, anchors pose zero, and runs Levenberg-Marquardt to
-its standard termination condition on two otherwise identical graphs. The
-current factors and benchmark-only copies of the legacy `BetweenFactor` and
-`PriorFactor` Jacobian paths are run in alternating order.
+loads `w10000.graph`, anchors pose zero, computes one shared FAST-Sync
+initialization, and then runs Levenberg-Marquardt to its standard termination
+condition on two otherwise identical graphs. FAST-Sync is outside the timed
+refinements. The current factors and benchmark-only copies of the legacy
+`BetweenFactor` and `PriorFactor` Jacobian paths are run in alternating order.
 
 ```bash
 make -j6 timeBetweenFactorPoseGraph
 ./timing/timeBetweenFactorPoseGraph --warmup 1 --repeats 5 \
   --dataset w10000.graph --output between_factor_pose_graph.json
 ```
+
+Pass `--raw-initial` only to reproduce the difficult uninitialized convergence
+diagnostic.
 
 BAL benchmarks additionally share `BalBenchmarkConfig` and the builders in
 `timing/internal/SfmBalBenchmark`. The configuration carries ordering and
