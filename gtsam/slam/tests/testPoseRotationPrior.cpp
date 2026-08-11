@@ -67,9 +67,7 @@ TEST( testPoseRotationFactor, level3_error ) {
   EXPECT(assert_equal(Vector3(-0.1, -0.2, -0.3), factor.evaluateError(pose1, actH1),1e-2));
 #endif
   Matrix expH1 = numericalDerivative22<Vector3,Pose3RotationPrior,Pose3>(evalFactorError3, factor, pose1, 1e-5);
-  // the derivative is more complex, but is close to the identity for Rot3 around the origin
-  // If not using true expmap will be close, but not exact around the origin
-  // EXPECT(assert_equal(expH1, actH1, tol));
+  EXPECT(assert_equal(expH1, actH1, tol));
 }
 
 /* ************************************************************************* */
