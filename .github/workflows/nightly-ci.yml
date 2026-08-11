@@ -13,6 +13,9 @@ jobs:
   linux:
     uses: ./.github/workflows/build-linux.yml
 
+  linux-arm64:
+    uses: ./.github/workflows/build-linux-arm64.yml
+
   macos:
     uses: ./.github/workflows/build-macos.yml
 
@@ -32,7 +35,7 @@ jobs:
 
   report:
     name: Report nightly status
-    needs: [linux, macos, windows, vcpkg, special, python-extra]
+    needs: [linux, linux-arm64, macos, windows, vcpkg, special, python-extra]
     if: always()
     runs-on: ubuntu-latest
     permissions:
@@ -40,6 +43,7 @@ jobs:
       issues: write
     env:
       LINUX_RESULT: ${{ needs.linux.result }}
+      LINUX_ARM64_RESULT: ${{ needs.linux-arm64.result }}
       MACOS_RESULT: ${{ needs.macos.result }}
       WINDOWS_RESULT: ${{ needs.windows.result }}
       VCPKG_RESULT: ${{ needs.vcpkg.result }}
@@ -54,6 +58,7 @@ jobs:
           script: |
             const results = {
               Linux: process.env.LINUX_RESULT,
+              "Linux ARM64": process.env.LINUX_ARM64_RESULT,
               macOS: process.env.MACOS_RESULT,
               Windows: process.env.WINDOWS_RESULT,
               vcpkg: process.env.VCPKG_RESULT,
