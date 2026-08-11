@@ -53,8 +53,6 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionFactorPP
   KeyVector body_P_cam_keys_;
 
  public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   /// shorthand for base class type
   typedef SmartStereoProjectionFactor Base;
 
@@ -285,7 +283,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionFactorPP
   }
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
+#if GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>

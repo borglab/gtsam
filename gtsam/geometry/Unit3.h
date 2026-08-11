@@ -53,9 +53,7 @@ private:
 
 public:
 
-  enum {
-    dimension = 2
-  };
+  inline constexpr static auto dimension = 2;
 
   /// @name Constructors
   /// @{
@@ -75,16 +73,17 @@ public:
   /// Unit3(p,1) can be viewed as normalized homogeneous coordinates of 2D point
   explicit Unit3(const Point2& p, double f);
 
-  /// Copy constructor
-  Unit3(const Unit3& u) {
-    p_ = u.p_;
-  }
+  /// Copy constructor: copies essential data and discards caches.
+  Unit3(const Unit3& u) : p_(u.p_) {}
 
-  /// Copy assignment
-  Unit3& operator=(const Unit3 & u) {
+  /// Copy assignment: copies essential data and invalidates local caches.
+  Unit3& operator=(const Unit3& u) {
+    if (this == &u) return *this;
     p_ = u.p_;
-    B_ = u.B_;
-    H_B_ = u.H_B_;
+
+    // Since p_ has changed, the old cached basis is no longer valid.
+    B_.reset();
+    H_B_.reset();
     return *this;
   }
 
@@ -137,7 +136,20 @@ public:
   /// Return unit-norm Vector
   Vector3 unitVector(OptionalJacobian<3, 2> H = {}) const;
 
-  /// Return scaled direction as Point3
+  /**
+   * Return this direction scaled by a magnitude, i.e. magnitude * unitVector().
+   * Useful to reconstruct a physical vector from a direction and a known (or
+   * separately estimated) magnitude, e.g. a gravity or magnetic field vector.
+   * @param magnitude scale applied to the unit vector
+   * @param H_this optional 3x2 Jacobian wrt this direction
+   * @param H_magnitude optional 3x1 Jacobian wrt the magnitude
+   * @sa operator*(double, const Unit3&), which returns the same value
+   *     without Jacobians
+   */
+  Vector3 scaled(double magnitude, OptionalJacobian<3, 2> H_this = {},
+                 OptionalJacobian<3, 1> H_magnitude = {}) const;
+
+  /// Return scaled direction as Point3 (no Jacobians; see scaled())
   friend Point3 operator*(double s, const Unit3& d) {
     return Point3(s * d.p_);
   }
@@ -145,10 +157,6 @@ public:
   /// Return dot product with q
   double dot(const Unit3& q, OptionalJacobian<1,2> H1 = {}, //
                              OptionalJacobian<1,2> H2 = {}) const;
-
-  /// Signed, vector-valued error between two directions
-  /// @deprecated, errorVector has the proper derivatives, this confusingly has only the second.
-  Vector2 error(const Unit3& q, OptionalJacobian<2, 2> H_q = {}) const;
 
   /// Signed, vector-valued error between two directions
   /// NOTE(hayk): This method has zero derivatives if this (p) and q are orthogonal.
@@ -159,17 +167,14 @@ public:
   double distance(const Unit3& q, OptionalJacobian<1, 2> H = {}) const;
 
   /// Cross-product between two Unit3s
-  Unit3 cross(const Unit3& q) const {
-    return Unit3(p_.cross(q.p_));
-  }
+  Unit3 cross(const Unit3& q, OptionalJacobian<2, 2> H_p = {},
+              OptionalJacobian<2, 2> H_q = {}) const;
 
   /// Cross-product w Point3
-  Point3 cross(const Point3& q) const {
-    return point3().cross(q);
-  }
+  Point3 cross(const Point3& q, OptionalJacobian<3, 2> H_p = {},
+               OptionalJacobian<3, 3> H_q = {}) const;
 
   /// @}
-
   /// @name Manifold
   /// @{
 
@@ -196,11 +201,18 @@ public:
 
   /// @}
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+  /// @deprecated, errorVector has the proper derivatives, this confusingly has only the second.
+  Vector2 error(const Unit3& q, OptionalJacobian<2, 2> H_q = {}) const {
+    return errorVector(q, {}, H_q);
+  }
+#endif
+
 private:
 
   /// @name Advanced Interface
   /// @{
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -210,12 +222,24 @@ private:
 #endif
 
   /// @}
-
-public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-// Define GTSAM traits
+/// cross product Unit3 x Unit3
+GTSAM_EXPORT Unit3 cross(const Unit3& p, const Unit3& q,
+                         OptionalJacobian<2, 2> H_p = {},
+                         OptionalJacobian<2, 2> H_q = {});
+
+/// cross product Unit3 x Point3
+GTSAM_EXPORT Point3 cross(const Unit3& p, const Point3& q,
+                          OptionalJacobian<3, 2> H_p = {},
+                          OptionalJacobian<3, 3> H_q = {});
+
+/// cross product Point3 x Unit3
+GTSAM_EXPORT Point3 cross(const Point3& p, const Unit3& q,
+                          OptionalJacobian<3, 3> H_p = {},
+                          OptionalJacobian<3, 2> H_q = {});
+
+/// Define GTSAM traits
 template<> struct traits<Unit3> : public internal::Manifold<Unit3> {
 };
 

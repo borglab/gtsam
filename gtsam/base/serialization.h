@@ -10,15 +10,18 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file serialization.h
+ * @file gtsam/base/serialization.h
  * @brief Convenience functions for serializing data structures via boost.serialization
  * @author Alex Cunningham
  * @author Richard Roberts
  * @date Feb 7, 2012
  */
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
 #pragma once
+
+#include <gtsam/config.h>
+
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 
 #include <Eigen/Core>
 #include <fstream>

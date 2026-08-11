@@ -41,6 +41,24 @@ TEST(DiscreteValues, Update) {
 }
 
 /* ************************************************************************* */
+// Test DiscreteValues::filter
+TEST(DiscreteValues, Filter) {
+  DiscreteValues values = {{12, 1}, {5, 0}, {13, 2}};
+  DiscreteKeys keys = {{12, 0}, {13, 0}, {99, 0}}; // 99 is missing in values
+
+  EXPECT(assert_equal(DiscreteValues({{12, 1}, {13, 2}}), values.filter(keys)));
+}
+
+/* ************************************************************************* */
+// Test DiscreteValues::missingKeys
+TEST(DiscreteValues, MissingKeys) {
+  DiscreteValues values = {{12, 1}, {5, 0}};
+  DiscreteKeys keys = {{12, 0}, {5, 0}, {99, 0}, {42, 0}}; // 99 and 42 are missing
+
+  EXPECT(assert_equal(DiscreteKeys({{99, 0}, {42, 0}}), values.missingKeys(keys)));
+}
+
+/* ************************************************************************* */
 // Check markdown representation with a value formatter.
 TEST(DiscreteValues, markdownWithValueFormatter) {
   string expected =

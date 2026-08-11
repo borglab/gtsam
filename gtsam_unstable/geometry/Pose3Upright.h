@@ -43,6 +43,7 @@ public:
   Pose3Upright(const Rot2& bearing, const Point3& t);
   Pose3Upright(double x, double y, double z, double theta);
   Pose3Upright(const Pose2& pose, double z);
+  Pose3Upright& operator=(const Pose3Upright& x) = default;
 
   /// Down-converts from a full Pose3
   Pose3Upright(const Pose3& fullpose);
@@ -130,7 +131,7 @@ public:
 
 private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  //
+#if GTSAM_ENABLE_BOOST_SERIALIZATION  //
   // Serialization function
   friend class boost::serialization::access;
   template<class Archive>

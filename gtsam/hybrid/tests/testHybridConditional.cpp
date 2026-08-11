@@ -29,6 +29,28 @@ using symbol_shorthand::X;
 using symbol_shorthand::Z;
 
 /* ****************************************************************************/
+// Test the HybridConditional constructor.
+TEST(HybridConditional, Constructor) {
+  // Create a HybridGaussianConditional.
+  const KeyVector continuousKeys{X(0), X(1)};
+  const DiscreteKeys discreteKeys{{M(0), 2}};
+  const size_t nFrontals = 1;
+  const HybridConditional hc(continuousKeys, discreteKeys, nFrontals);
+
+  // Check Frontals:
+  EXPECT_LONGS_EQUAL(1, hc.nrFrontals());
+  const auto frontals = hc.frontals();
+  EXPECT_LONGS_EQUAL(1, frontals.size());
+  EXPECT_LONGS_EQUAL(X(0), *frontals.begin());
+
+  // Check parents:
+  const auto parents = hc.parents();
+  EXPECT_LONGS_EQUAL(2, parents.size());
+  EXPECT_LONGS_EQUAL(X(1), *parents.begin());
+  EXPECT_LONGS_EQUAL(M(0), *(parents.begin() + 1));
+}
+
+/* ****************************************************************************/
 // Check invariants for all conditionals in a tiny Bayes net.
 TEST(HybridConditional, Invariants) {
   // Create hybrid Bayes net p(z|x,m)p(x)P(m)
@@ -42,6 +64,12 @@ TEST(HybridConditional, Invariants) {
   // Check invariants for p(z|x,m)
   auto hc0 = bn.at(0);
   CHECK(hc0->isHybrid());
+
+  // Check parents:
+  const auto parents = hc0->parents();
+  EXPECT_LONGS_EQUAL(2, parents.size());
+  EXPECT_LONGS_EQUAL(X(0), *parents.begin());
+  EXPECT_LONGS_EQUAL(M(0), *(parents.begin() + 1));
 
   // Check invariants as a HybridGaussianConditional.
   const auto conditional = hc0->asHybrid();

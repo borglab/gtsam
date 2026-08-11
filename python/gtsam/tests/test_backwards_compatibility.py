@@ -212,17 +212,17 @@ class TestBackwardsCompatibility(GtsamTestCase):
         i = 0
 
         ground_truth = [
-            Pose2(0.995821, 0.0231012, 0.0300001),
-            Pose2(1.49284, 0.0457247, 0.045),
-            Pose2(1.98981, 0.0758879, 0.06),
-            Pose2(2.48627, 0.113502, 0.075),
-            Pose2(2.98211, 0.158558, 0.09),
-            Pose2(3.47722, 0.211047, 0.105),
-            Pose2(3.97149, 0.270956, 0.12),
-            Pose2(4.4648, 0.338272, 0.135),
-            Pose2(4.95705, 0.41298, 0.15),
-            Pose2(5.44812, 0.495063, 0.165),
-            Pose2(5.9379, 0.584503, 0.18),
+            Pose2(0.99582398, 0.02346882, 0.03),
+            Pose2(1.49335993, 0.04640298, 0.045),
+            Pose2(1.99049591, 0.07679732, 0.06),
+            Pose2(2.48712007, 0.11464500, 0.075),
+            Pose2(2.98312067, 0.15993750, 0.09),
+            Pose2(3.47838610, 0.21266464, 0.105),
+            Pose2(3.97280494, 0.27281455, 0.12),
+            Pose2(4.46626594, 0.34037370, 0.135),
+            Pose2(4.95865808, 0.41532689, 0.15),
+            Pose2(5.44987057, 0.49765724, 0.165),
+            Pose2(5.93979289, 0.58734625, 0.18),
         ]
 
         # Iterates from 0.25s to 3.0s, adding 0.25s each loop
@@ -315,7 +315,7 @@ class TestBackwardsCompatibility(GtsamTestCase):
 
         rotations = gtsam.Rot3Vector([R, R.inverse()])
         expected = Rot3()
-        actual = gtsam.FindKarcherMean(rotations)
+        actual = gtsam.FindKarcherMeanRot3(rotations)
         self.gtsamAssertEquals(expected, actual)
 
     def test_find_karcher_mean_identity(self):
@@ -327,7 +327,7 @@ class TestBackwardsCompatibility(GtsamTestCase):
         aRb_list = gtsam.Rot3Vector([a1Rb1, a2Rb2, a3Rb3])
         aRb_expected = Rot3()
 
-        aRb = gtsam.FindKarcherMean(aRb_list)
+        aRb = gtsam.FindKarcherMeanRot3(aRb_list)
         self.gtsamAssertEquals(aRb, aRb_expected)
 
     def test_factor(self):
@@ -354,7 +354,7 @@ class TestBackwardsCompatibility(GtsamTestCase):
         expected = Rot3()
 
         result = gtsam.GaussNewtonOptimizer(graph, initial).optimize()
-        actual = gtsam.FindKarcherMean(
+        actual = gtsam.FindKarcherMeanRot3(
             gtsam.Rot3Vector([result.atRot3(1),
                               result.atRot3(2)]))
         self.gtsamAssertEquals(expected, actual)
@@ -453,8 +453,8 @@ class TestBackwardsCompatibility(GtsamTestCase):
                       wTi_list[i2].inverse().compose(wTi_list[i1]).rotation()
                       for (i1, i2) in edges}
 
-        lm_params = LevenbergMarquardtParams.CeresDefaults()
-        shonan_params = ShonanAveragingParameters2(lm_params)
+        lmParams = LevenbergMarquardtParams.CeresDefaults()
+        shonan_params = ShonanAveragingParameters2(lmParams)
         shonan_params.setUseHuber(False)
         shonan_params.setCertifyOptimality(True)
 
@@ -472,9 +472,8 @@ class TestBackwardsCompatibility(GtsamTestCase):
         wRi_list = [result_values.atRot2(i) for i in range(num_images)]
         thetas_deg = np.array([wRi.degrees() for wRi in wRi_list])
 
-        # map all angles to [0,360)
-        thetas_deg = thetas_deg % 360
-        thetas_deg -= thetas_deg[0]
+        # map all angles to [-180,180)
+        thetas_deg = (thetas_deg - thetas_deg[0] + 180) % 360 - 180
 
         expected_thetas_deg = np.array([0.0, 90.0, 0.0])
         np.testing.assert_allclose(thetas_deg, expected_thetas_deg, atol=0.1)

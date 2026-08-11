@@ -23,6 +23,7 @@
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 namespace gtsam {
 
@@ -55,7 +56,7 @@ class TranslationFactor : public NoiseModelFactorN<Point3, Point3> {
       : Base(noiseModel, a, b), measured_w_aZb_(w_aZb.point3()) {}
 
   /**
-   * @brief Caclulate error: (norm(Tb - Ta) - measurement)
+   * @brief Calculate error: (norm(Tb - Ta) - measurement)
    * where Tb and Ta are Point3 translations and measurement is
    * the Unit3 translation direction from a to b.
    *
@@ -78,7 +79,7 @@ class TranslationFactor : public NoiseModelFactorN<Point3, Point3> {
   }
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
@@ -120,7 +121,7 @@ class BilinearAngleTranslationFactor
   using NoiseModelFactor2<Point3, Point3, Vector1>::evaluateError;
 
   /**
-   * @brief Caclulate error: (scale * (Tb - Ta) - measurement)
+   * @brief Calculate error: (scale * (Tb - Ta) - measurement)
    * where Tb and Ta are Point3 translations and measurement is
    * the Unit3 translation direction from a to b.
    *
@@ -134,7 +135,7 @@ class BilinearAngleTranslationFactor
                        OptionalMatrixType H1, OptionalMatrixType H2,
                        OptionalMatrixType H3) const override {
     // Ideally we should use a positive real valued scalar datatype for scale.
-    const double abs_scale = abs(scale[0]);
+    const double abs_scale = std::abs(scale[0]);
     const Point3 predicted = (Tb - Ta) * abs_scale;
     if (H1) {
       *H1 = -Matrix3::Identity() * abs_scale;
@@ -149,11 +150,13 @@ class BilinearAngleTranslationFactor
   }
 
  private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
     ar& boost::serialization::make_nvp(
         "Base", boost::serialization::base_object<Base>(*this));
   }
+#endif
 };  // \ BilinearAngleTranslationFactor
 }  // namespace gtsam

@@ -35,8 +35,9 @@ def local(a: Y, b: Y) -> np.ndarray:
         raise TypeError(f"a {type(a)} b {type(b)}")
     if isinstance(a, np.ndarray):
         return b - a
-    if isinstance(a, (float, int)):
-        return np.ndarray([[b - a]])  # type:ignore
+    if isinstance(a, (float, int, np.floating, np.integer)):
+        # Represent scalar values as a 1D "tangent vector" of length 1.
+        return np.array([float(b) - float(a)])
     # there is no common superclass for Y
     return a.localCoordinates(b)  # type:ignore
 

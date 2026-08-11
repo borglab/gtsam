@@ -17,6 +17,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/base/Testable.h>
@@ -113,7 +114,7 @@ public:
 
 private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>

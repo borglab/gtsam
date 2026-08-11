@@ -120,6 +120,12 @@ class GTSAM_EXPORT ISAM2Clique
   void findAll(const KeySet& markedMask, KeySet* keys) const;
 
  private:
+  friend class ISAM2;
+
+  /// Recursively add gradient at zero to g and report constrained conditionals.
+  void addGradientAtZero(VectorValues* g,
+                         bool* hasConstrainedConditional) const;
+
   /**
    * Check if clique was replaced, or if any parents were changed above the
    * threshold or themselves replaced.
@@ -146,7 +152,7 @@ class GTSAM_EXPORT ISAM2Clique
   void restoreFromOriginals(const Vector& originalValues,
                             VectorValues* delta) const;
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>

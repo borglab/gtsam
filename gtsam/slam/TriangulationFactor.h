@@ -34,6 +34,8 @@ public:
 
   /// CAMERA type
   using Camera = CAMERA;
+  /// shorthand for measurement type, e.g. Point2 or StereoPoint2
+  using Measurement = typename CAMERA::Measurement;
 
 protected:
 
@@ -42,9 +44,6 @@ protected:
 
   /// shorthand for this class
   using This = TriangulationFactor<CAMERA>;
-
-  /// shorthand for measurement type, e.g. Point2 or StereoPoint2
-  using Measurement = typename CAMERA::Measurement;
 
   // Keep a copy of measurement and calibration for I/O
   const CAMERA camera_; ///< CAMERA in which this landmark was seen
@@ -55,8 +54,6 @@ protected:
   const bool verboseCheirality_; ///< If true, prints text for Cheirality exceptions (default: false)
 
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   /// shorthand for a smart pointer to a factor
   using shared_ptr = std::shared_ptr<This>;
 
@@ -65,7 +62,7 @@ public:
 
   /// Default constructor
   TriangulationFactor() :
-      throwCheirality_(false), verboseCheirality_(false) {
+      throwCheirality_(false), verboseCheirality_(false), measured_() {
   }
 
   /**
@@ -82,7 +79,7 @@ public:
       bool verboseCheirality = false) :
       Base(model, pointKey), camera_(camera), measured_(measured), throwCheirality_(
           throwCheirality), verboseCheirality_(verboseCheirality) {
-    if (model && model->dim() != traits<Measurement>::dimension)
+    if (model && !noiseModel::matchesDimension(*model, measured_))
       throw std::invalid_argument(
           "TriangulationFactor must be created with "
               + std::to_string((int) traits<Measurement>::dimension)
@@ -188,7 +185,7 @@ public:
 
 private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
+#if GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -202,4 +199,3 @@ private:
 #endif
 };
 } // \ namespace gtsam
-

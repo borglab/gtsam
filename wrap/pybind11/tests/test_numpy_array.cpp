@@ -14,11 +14,12 @@
 
 #include <cstdint>
 #include <utility>
+#include <vector>
 
 // Size / dtype checks.
 struct DtypeCheck {
-    py::dtype numpy{};
-    py::dtype pybind11{};
+    py::dtype numpy;
+    py::dtype pybind11;
 };
 
 template <typename T>
@@ -43,11 +44,11 @@ std::vector<DtypeCheck> get_concrete_dtype_checks() {
 }
 
 struct DtypeSizeCheck {
-    std::string name{};
+    std::string name;
     int size_cpp{};
     int size_numpy{};
     // For debugging.
-    py::dtype dtype{};
+    py::dtype dtype;
 };
 
 template <typename T>
@@ -156,6 +157,55 @@ py::handle auxiliaries(T &&r, T2 &&r2) {
     return l.release();
 }
 
+template <typename PyObjectType>
+PyObjectType convert_to_pyobjecttype(py::object obj);
+
+template <>
+PyObject *convert_to_pyobjecttype<PyObject *>(py::object obj) {
+    return obj.release().ptr();
+}
+
+template <>
+py::handle convert_to_pyobjecttype<py::handle>(py::object obj) {
+    return obj.release();
+}
+
+template <>
+py::object convert_to_pyobjecttype<py::object>(py::object obj) {
+    return obj;
+}
+
+template <typename PyObjectType>
+std::string pass_array_return_sum_str_values(const py::array_t<PyObjectType> &objs) {
+    std::string sum_str_values;
+    for (const auto &obj : objs) {
+        sum_str_values += py::str(obj.attr("value"));
+    }
+    return sum_str_values;
+}
+
+template <typename PyObjectType>
+py::list pass_array_return_as_list(const py::array_t<PyObjectType> &objs) {
+    return objs;
+}
+
+template <typename PyObjectType>
+py::array_t<PyObjectType> return_array_cpp_loop(const py::list &objs) {
+    py::size_t arr_size = py::len(objs);
+    py::array_t<PyObjectType> arr_from_list(static_cast<py::ssize_t>(arr_size));
+    PyObjectType *data = arr_from_list.mutable_data();
+    for (py::size_t i = 0; i < arr_size; i++) {
+        assert(!data[i]);
+        data[i] = convert_to_pyobjecttype<PyObjectType>(objs[i].attr("value"));
+    }
+    return arr_from_list;
+}
+
+template <typename PyObjectType>
+py::array_t<PyObjectType> return_array_from_list(const py::list &objs) {
+    return objs;
+}
+
 // note: declaration at local scope would create a dangling reference!
 static int data_i = 42;
 
@@ -197,6 +247,22 @@ TEST_SUBMODULE(numpy_array, sm) {
     sm.def("nbytes", [](const arr &a) { return a.nbytes(); });
     sm.def("owndata", [](const arr &a) { return a.owndata(); });
 
+#ifdef PYBIND11_HAS_SPAN
+    // test_shape_strides_span
+    sm.def("shape_span", [](const arr &a) {
+        auto span = a.shape_span();
+        return std::vector<py::ssize_t>(span.begin(), span.end());
+    });
+    sm.def("strides_span", [](const arr &a) {
+        auto span = a.strides_span();
+        return std::vector<py::ssize_t>(span.begin(), span.end());
+    });
+    // Test that spans can be used to construct new arrays
+    sm.def("array_from_spans", [](const arr &a) {
+        return py::array(a.dtype(), a.shape_span(), a.strides_span(), a.data(), a);
+    });
+#endif
+
     // test_index_offset
     def_index_fn(index_at, const arr &);
     def_index_fn(index_at_t, const arr_t &);
@@ -233,6 +299,7 @@ TEST_SUBMODULE(numpy_array, sm) {
     struct ArrayClass {
         int data[2] = {1, 2};
         ArrayClass() { py::print("ArrayClass()"); }
+        ArrayClass(const ArrayClass &) = default;
         ~ArrayClass() { py::print("~ArrayClass()"); }
     };
     py::class_<ArrayClass>(sm, "ArrayClass")
@@ -520,28 +587,30 @@ TEST_SUBMODULE(numpy_array, sm) {
     sm.def("round_trip_float", [](double d) { return d; });
 
     sm.def("pass_array_pyobject_ptr_return_sum_str_values",
-           [](const py::array_t<PyObject *> &objs) {
-               std::string sum_str_values;
-               for (const auto &obj : objs) {
-                   sum_str_values += py::str(obj.attr("value"));
-               }
-               return sum_str_values;
-           });
+           pass_array_return_sum_str_values<PyObject *>);
+    sm.def("pass_array_handle_return_sum_str_values",
+           pass_array_return_sum_str_values<py::handle>);
+    sm.def("pass_array_object_return_sum_str_values",
+           pass_array_return_sum_str_values<py::object>);
 
-    sm.def("pass_array_pyobject_ptr_return_as_list",
-           [](const py::array_t<PyObject *> &objs) -> py::list { return objs; });
+    sm.def("pass_array_pyobject_ptr_return_as_list", pass_array_return_as_list<PyObject *>);
+    sm.def("pass_array_handle_return_as_list", pass_array_return_as_list<py::handle>);
+    sm.def("pass_array_object_return_as_list", pass_array_return_as_list<py::object>);
 
-    sm.def("return_array_pyobject_ptr_cpp_loop", [](const py::list &objs) {
-        py::size_t arr_size = py::len(objs);
-        py::array_t<PyObject *> arr_from_list(static_cast<py::ssize_t>(arr_size));
-        PyObject **data = arr_from_list.mutable_data();
-        for (py::size_t i = 0; i < arr_size; i++) {
-            assert(data[i] == nullptr);
-            data[i] = py::cast<PyObject *>(objs[i].attr("value"));
-        }
-        return arr_from_list;
-    });
+    sm.def("return_array_pyobject_ptr_cpp_loop", return_array_cpp_loop<PyObject *>);
+    sm.def("return_array_handle_cpp_loop", return_array_cpp_loop<py::handle>);
+    sm.def("return_array_object_cpp_loop", return_array_cpp_loop<py::object>);
 
-    sm.def("return_array_pyobject_ptr_from_list",
-           [](const py::list &objs) -> py::array_t<PyObject *> { return objs; });
+    sm.def("return_array_pyobject_ptr_from_list", return_array_from_list<PyObject *>);
+    sm.def("return_array_handle_from_list", return_array_from_list<py::handle>);
+    sm.def("return_array_object_from_list", return_array_from_list<py::object>);
+
+    sm.def(
+        "round_trip_array_t",
+        [](const py::array_t<float> &x) -> py::array_t<float> { return x; },
+        py::arg("x"));
+    sm.def(
+        "round_trip_array_t_noconvert",
+        [](const py::array_t<float> &x) -> py::array_t<float> { return x; },
+        py::arg("x").noconvert());
 }

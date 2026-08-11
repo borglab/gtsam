@@ -31,8 +31,7 @@ def get_data() -> Tuple[gtsam.Values, List[gtsam.BinaryMeasurementUnit3]]:
     that lie on a circle and face the center. The poses of 8 cameras are obtained from SFMdata
     and the unit translations directions between some camera pairs are computed from their
     global translations. """
-    fx, fy, s, u0, v0 = 50.0, 50.0, 0.0, 50.0, 50.0
-    wTc_list = SFMdata.createPoses(gtsam.Cal3_S2(fx, fy, s, u0, v0))
+    wTc_list = SFMdata.createPoses()
     # Rotations of the cameras in the world frame.
     wRc_values = gtsam.Values()
     # Normalized translation directions from camera i to camera j

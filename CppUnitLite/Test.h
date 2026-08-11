@@ -129,7 +129,7 @@ protected:
     result_.addFailure(Failure(name_, __FILE__, __LINE__, #expected, #actual)); }
 
 #define CHECK_EQUAL(expected,actual)\
-{ if ((expected) == (actual)) return; result_.addFailure(Failure(name_, __FILE__, __LINE__, std::to_string(expected), std::to_string(actual))); }
+{ if (!((expected) == (actual))) { result_.addFailure(Failure(name_, __FILE__, __LINE__, std::to_string(expected), std::to_string(actual))); return; } }
 
 #define LONGS_EQUAL(expected,actual)\
 { long actualTemp = actual; \

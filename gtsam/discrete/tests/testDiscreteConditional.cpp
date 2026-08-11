@@ -46,7 +46,7 @@ TEST(DiscreteConditional, constructors) {
   DecisionTreeFactor f2(
       X & Y & Z, "0.2 0.5 0.3 0.6 0.4 0.7 0.25 0.55 0.35 0.65 0.45 0.75");
   DiscreteConditional actual2(1, f2);
-  DecisionTreeFactor expected2 = f2 / *f2.sum(1);
+  DecisionTreeFactor expected2 = f2 / f2.sum(1)->toDecisionTreeFactor();
   EXPECT(assert_equal(expected2, static_cast<DecisionTreeFactor>(actual2)));
 
   std::vector<double> probs{0.2, 0.5, 0.3, 0.6, 0.4, 0.7, 0.25, 0.55, 0.35, 0.65, 0.45, 0.75};
@@ -70,7 +70,7 @@ TEST(DiscreteConditional, constructors_alt_interface) {
   DecisionTreeFactor f2(
       X & Y & Z, "0.2 0.5 0.3 0.6 0.4 0.7 0.25 0.55 0.35 0.65 0.45 0.75");
   DiscreteConditional actual2(1, f2);
-  DecisionTreeFactor expected2 = f2 / *f2.sum(1);
+  DecisionTreeFactor expected2 = f2 / f2.sum(1)->toDecisionTreeFactor();
   EXPECT(assert_equal(expected2, static_cast<DecisionTreeFactor>(actual2)));
 }
 

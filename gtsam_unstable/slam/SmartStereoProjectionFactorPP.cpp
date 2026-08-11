@@ -18,6 +18,8 @@
 
 #include <gtsam_unstable/slam/SmartStereoProjectionFactorPP.h>
 
+#include <cassert>
+
 namespace gtsam {
 
 SmartStereoProjectionFactorPP::SmartStereoProjectionFactorPP(

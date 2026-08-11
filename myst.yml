@@ -1,0 +1,67 @@
+# See docs at: https://mystmd.org/guide/frontmatter
+version: 1
+project:
+  id: 7a62a86d-a893-4ab1-9473-b1a957f78902
+  title: GTSAM Docs
+  description: GTSAM is a library of C++ classes that implement smoothing and mapping (SAM) in robotics and vision, using factor graphs and Bayes networks as the underlying computing paradigm rather than sparse matrices.
+  github: https://github.com/borglab/gtsam
+  toc:
+    - file: README.md
+    - file: INSTALL.md
+    - file: ./doc/GTSAM-Concepts.md
+    - file: ./doc/user_guide.md
+      children: 
+      - file: ./gtsam/base/base.md
+        children:
+        - pattern: ./gtsam/base/doc/*
+      - file: ./gtsam/geometry/geometry.md
+        children:
+        - pattern: ./gtsam/geometry/doc/*
+      - file: ./gtsam/basis/basis.md
+        children:
+        - pattern: ./gtsam/basis/doc/*
+      - file: ./gtsam/inference/inference.md
+        children:
+        - pattern: ./gtsam/inference/doc/*
+      - file: ./gtsam/hybrid/hybrid.md
+        children:
+        - pattern: ./gtsam/hybrid/doc/*
+      - file: ./gtsam/nonlinear/nonlinear.md
+        children:
+        - pattern: ./gtsam/nonlinear/doc/*
+      - file: ./gtsam/constrained/constrained.md
+        children:
+        - pattern: ./gtsam/constrained/doc/*
+      - file: ./gtsam/symbolic/symbolic.md
+        children:
+        - pattern: ./gtsam/symbolic/doc/*
+      - file: ./gtsam/navigation/navigation.md
+        children:
+        - pattern: ./gtsam/navigation/doc/*
+      - file: ./gtsam/slam/slam.md
+        children:
+        - pattern: ./gtsam/slam/doc/*
+      - file: ./gtsam/discrete/discrete.md
+        children:
+        - pattern: ./gtsam/discrete/doc/*
+      - file: ./gtsam/hybrid/hybrid.md
+        children:
+        - pattern: ./gtsam/hybrid/doc/*
+    - file: ./doc/examples.md
+      children: 
+      - pattern: ./python/gtsam/examples/*.ipynb
+    - file: ./doc/expressions.md
+site:
+  nav: 
+    - title: GTSAM.org
+      url: https://gtsam.org
+    - title: C++ reference
+      url: https://gtsam.org/doxygen/
+  options:
+    logo_text: GTSAM 
+  template: book-theme
+
+  # TODO: Graphics for favicon, site logo
+  # options:
+  #   favicon: favicon.ico
+  #   logo: site_logo.png

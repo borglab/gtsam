@@ -91,7 +91,7 @@ static double find_inverse_gamma(double a, double p, double q)
         }
     }
     else if (a < 1) {
-        double g = Gamma(a);
+        double g = gtsam_cephes_Gamma(a);
         double b = q * g;
 
         if ((b > 0.6) || ((b >= 0.45) && (a >= 0.3))) {
@@ -184,7 +184,7 @@ static double find_inverse_gamma(double a, double p, double q)
             }
             else {
                 double D = fmax(2, a * (a - 1));
-                double lg = lgam(a);
+                double lg = gtsam_cephes_lgam(a);
                 double lb = log(q) + lg;
                 if (lb < -D * 2.3) {
                     /* DiDonato and Morris Eq 25: */
@@ -228,7 +228,7 @@ static double find_inverse_gamma(double a, double p, double q)
 	    double ap2 = a + 2;
 	    if (w < 0.15 * ap1) {
 		/* DiDonato and Morris Eq 35: */
-		double v = log(p) + lgam(ap1);
+		double v = log(p) + gtsam_cephes_lgam(ap1);
 		z = exp((v + w) / a);
 		s = log1p(z / ap1 * (1 + z / ap2));
 		z = exp((v + z - s) / a);
@@ -244,7 +244,7 @@ static double find_inverse_gamma(double a, double p, double q)
 	    else {
 		/* DiDonato and Morris Eq 36: */
 		double ls = log(didonato_SN(a, z, 100, 1e-4));
-		double v = log(p) + lgam(ap1);
+		double v = log(p) + gtsam_cephes_lgam(ap1);
 		z = exp((v + z - ls) / a);
 		result = z * (1 - (a * log(z) - z - v + ls) / (a - z));
 	    }
@@ -254,7 +254,7 @@ static double find_inverse_gamma(double a, double p, double q)
 }
 
 
-double igami(double a, double p)
+double gtsam_cephes_igami(double a, double p)
 {
     int i;
     double x, fac, f_fp, fpp_fp;
@@ -263,7 +263,7 @@ double igami(double a, double p)
 	return NAN;
     }
     else if ((a < 0) || (p < 0) || (p > 1)) {
-	sf_error("gammaincinv", SF_ERROR_DOMAIN, NULL);
+	gtsam_cephes_sf_error("gammaincinv", SF_ERROR_DOMAIN, NULL);
     }
     else if (p == 0.0) {
 	return 0.0;
@@ -272,17 +272,17 @@ double igami(double a, double p)
 	return INFINITY;
     }
     else if (p > 0.9) {
-	return igamci(a, 1 - p);
+	return gtsam_cephes_igamci(a, 1 - p);
     }
 
     x = find_inverse_gamma(a, p, 1 - p);
     /* Halley's method */
     for (i = 0; i < 3; i++) {
-	fac = igam_fac(a, x);
+	fac = gtsam_cephes_igam_fac(a, x);
 	if (fac == 0.0) {
 	    return x;
 	}
-	f_fp = (igam(a, x) - p) * x / fac;
+	f_fp = (gtsam_cephes_igam(a, x) - p) * x / fac;
 	/* The ratio of the first and second derivatives simplifies */
 	fpp_fp = -1.0 + (a - 1) / x;
 	if (isinf(fpp_fp)) {
@@ -298,7 +298,7 @@ double igami(double a, double p)
 }
 
 
-double igamci(double a, double q)
+double gtsam_cephes_igamci(double a, double q)
 {
     int i;
     double x, fac, f_fp, fpp_fp;
@@ -307,7 +307,7 @@ double igamci(double a, double q)
 	return NAN;
     }
     else if ((a < 0.0) || (q < 0.0) || (q > 1.0)) {
-	sf_error("gammainccinv", SF_ERROR_DOMAIN, NULL);
+	gtsam_cephes_sf_error("gammainccinv", SF_ERROR_DOMAIN, NULL);
     }
     else if (q == 0.0) {
 	return INFINITY;
@@ -316,16 +316,16 @@ double igamci(double a, double q)
 	return 0.0;
     }
     else if (q > 0.9) {
-	return igami(a, 1 - q);
+	return gtsam_cephes_igami(a, 1 - q);
     }
 
     x = find_inverse_gamma(a, 1 - q, q);
     for (i = 0; i < 3; i++) {
-	fac = igam_fac(a, x);
+	fac = gtsam_cephes_igam_fac(a, x);
 	if (fac == 0.0) {
 	    return x;
 	}
-	f_fp = (igamc(a, x) - q) * x / (-fac);
+	f_fp = (gtsam_cephes_igamc(a, x) - q) * x / (-fac);
 	fpp_fp = -1.0 + (a - 1) / x;
 	if (isinf(fpp_fp)) {
 	    x = x - f_fp;

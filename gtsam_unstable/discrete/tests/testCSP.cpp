@@ -124,7 +124,7 @@ TEST(CSP, allInOne) {
   EXPECT_DOUBLES_EQUAL(1, csp(valid), 1e-9);
 
   // Just for fun, create the product and check it
-  DecisionTreeFactor product = csp.product();
+  DecisionTreeFactor product = csp.product()->toDecisionTreeFactor();
   // product.dot("product");
   DecisionTreeFactor expectedProduct(ID & AZ & UT, "0 1 0 0 0 0 1 0");
   EXPECT(assert_equal(expectedProduct, product));

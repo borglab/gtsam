@@ -2,16 +2,16 @@
 
 import itertools
 from copy import deepcopy
-from typing import List, Sequence, Union
+from typing import Sequence, Union
 
 import gtwrap.interface_parser as parser
 
-ClassMembers = Union[parser.Constructor, parser.Method, parser.StaticMethod,
-                     parser.GlobalFunction, parser.Operator, parser.Variable,
-                     parser.Enum]
-InstantiatedMembers = Union['InstantiatedConstructor', 'InstantiatedMethod',
-                            'InstantiatedStaticMethod',
-                            'InstantiatedGlobalFunction']
+ClassMember = Union[parser.Constructor, parser.Method, parser.StaticMethod,
+                    parser.GlobalFunction, parser.Operator, parser.Variable,
+                    parser.Enum]
+InstantiatedMember = Union['InstantiatedConstructor', 'InstantiatedMethod',
+                           'InstantiatedStaticMethod',
+                           'InstantiatedGlobalFunction']
 
 
 def is_scoped_template(template_typenames: Sequence[str],
@@ -63,7 +63,6 @@ def instantiate_type(
                 ctype.typename.instantiations[idx].name =\
                     instantiations[template_idx]
 
-
     str_arg_typename = str(ctype.typename)
 
     # Check if template is a scoped template e.g. T::Value where T is the template
@@ -77,17 +76,24 @@ def instantiate_type(
     if scoped_template:
         # Create a copy of the instantiation so we can modify it.
         instantiation = deepcopy(instantiations[scoped_idx])
+
         # Replace the part of the template with the instantiation
-        instantiation.name = str_arg_typename.replace(scoped_template,
-                                                      instantiation.name)
+        # This new typename has the updated name, previous namespaces and no instantiations
+        new_typename = parser.type.Typename(
+            name=str_arg_typename.replace(scoped_template,
+                                          instantiation.templated_name()),
+            namespaces=instantiation.namespaces,
+        )
+
         return parser.Type(
-            typename=instantiation,
+            typename=new_typename,
             is_const=ctype.is_const,
             is_shared_ptr=ctype.is_shared_ptr,
             is_ptr=ctype.is_ptr,
             is_ref=ctype.is_ref,
             is_basic=ctype.is_basic,
         )
+
     # Check for exact template match.
     elif str_arg_typename in template_typenames:
         idx = template_typenames.index(str_arg_typename)
@@ -105,11 +111,9 @@ def instantiate_type(
         # Check if the class is template instantiated
         # so we can replace it with the instantiated version.
         if instantiated_class:
-            name = instantiated_class.original.name
-            namespaces_name = instantiated_class.namespaces()
-            namespaces_name.append(name)
             cpp_typename = parser.Typename(
-                namespaces_name,
+                name=instantiated_class.original.name,
+                namespaces=instantiated_class.namespaces(),
                 instantiations=instantiated_class.instantiations)
 
         return parser.Type(
@@ -209,7 +213,7 @@ def instantiate_name(original_name: str,
         # Using `capitalize` on the complete name causes other caps to be lower case
         instantiated_names.append(name.replace(name[0], name[0].capitalize()))
 
-    return "{}{}".format(original_name, "".join(instantiated_names))
+    return f"{original_name}{''.join(instantiated_names)}"
 
 
 class InstantiationHelper:
@@ -228,14 +232,14 @@ class InstantiationHelper:
                   parent=parent)
     ```
     """
-    def __init__(self, instantiation_type: InstantiatedMembers):
+
+    def __init__(self, instantiation_type: InstantiatedMember):
         self.instantiation_type = instantiation_type
 
-    def instantiate(self, instantiated_methods: List[InstantiatedMembers],
-                    method: ClassMembers, typenames: Sequence[str],
+    def instantiate(self, method: ClassMember, typenames: Sequence[str],
                     class_instantiations: Sequence[parser.Typename],
                     method_instantiations: Sequence[parser.Typename],
-                    parent: 'InstantiatedClass'):
+                    parent: 'InstantiatedClass') -> InstantiatedMember:
         """
         Instantiate both the class and method level templates.
         """
@@ -245,19 +249,17 @@ class InstantiationHelper:
                                                   typenames, instantiations,
                                                   parent.cpp_typename())
 
-        instantiated_methods.append(
-            self.instantiation_type.construct(method,
-                                              typenames,
-                                              class_instantiations,
-                                              method_instantiations,
-                                              instantiated_args,
-                                              parent=parent))
+        return self.instantiation_type.construct(method,
+                                                 typenames,
+                                                 class_instantiations,
+                                                 method_instantiations,
+                                                 instantiated_args,
+                                                 parent=parent)
 
-        return instantiated_methods
-
-    def multilevel_instantiation(self, methods_list: Sequence[ClassMembers],
-                                 typenames: Sequence[str],
-                                 parent: 'InstantiatedClass'):
+    def multilevel_instantiation(
+            self, methods_list: Sequence[ClassMember],
+            typenames: Sequence[str],
+            parent: 'InstantiatedClass') -> list[InstantiatedMember]:
         """
         Helper to instantiate methods at both the class and method level.
 
@@ -279,22 +281,22 @@ class InstantiationHelper:
                 for instantiations in itertools.product(
                         *method.template.instantiations):
 
-                    instantiated_methods = self.instantiate(
-                        instantiated_methods,
+                    instantiated_methods.append(
+                        self.instantiate(
+                            method,
+                            typenames=method_typenames,
+                            class_instantiations=parent.instantiations,
+                            method_instantiations=list(instantiations),
+                            parent=parent))
+
+            else:
+                # If no method level templates, just use the class templates
+                instantiated_methods.append(
+                    self.instantiate(
                         method,
                         typenames=method_typenames,
                         class_instantiations=parent.instantiations,
-                        method_instantiations=list(instantiations),
-                        parent=parent)
-
-            else:
-                # If no constructor level templates, just use the class templates
-                instantiated_methods = self.instantiate(
-                    instantiated_methods,
-                    method,
-                    typenames=method_typenames,
-                    class_instantiations=parent.instantiations,
-                    method_instantiations=[],
-                    parent=parent)
+                        method_instantiations=[],
+                        parent=parent))
 
         return instantiated_methods

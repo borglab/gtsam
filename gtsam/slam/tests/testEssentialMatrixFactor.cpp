@@ -14,8 +14,8 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/expressionTesting.h>
 #include <gtsam/nonlinear/factorTesting.h>
-#include <gtsam/slam/EssentialMatrixFactor.h>
 #include <gtsam/sfm/SfmData.h>
+#include <gtsam/slam/EssentialMatrixFactor.h>
 #include <gtsam/slam/dataset.h>
 
 using namespace std::placeholders;
@@ -54,8 +54,7 @@ Vector vB(size_t i) { return EssentialMatrix::Homogeneous(pB(i)); }
 //*************************************************************************
 TEST(EssentialMatrixFactor, testData) {
   // Check E matrix
-  Matrix expected(3, 3);
-  expected << 0, 0, 0, 0, 0, -0.1, 0.1, 0, 0;
+  Matrix expected{{0, 0, 0}, {0, 0, -0.1}, {0.1, 0, 0}};
   Matrix aEb_matrix =
       skewSymmetric(c1Tc2.x(), c1Tc2.y(), c1Tc2.z()) * c1Rc2.matrix();
   EXPECT(assert_equal(expected, aEb_matrix, 1e-8));
@@ -85,8 +84,7 @@ TEST(EssentialMatrixFactor, factor) {
     EssentialMatrixFactor factor(key, pA(i), pB(i), model1);
 
     // Check evaluation
-    Vector expected(1);
-    expected << 0;
+    Vector expected{{0}};
     Vector actual = factor.evaluateError(trueE);
     EXPECT(assert_equal(expected, actual, 1e-7));
 
@@ -101,7 +99,8 @@ TEST(EssentialMatrixFactor, ExpressionFactor) {
   Key key(1);
   for (size_t i = 0; i < 5; i++) {
     std::function<double(const EssentialMatrix &, OptionalJacobian<1, 5>)> f =
-        std::bind(&EssentialMatrix::error, std::placeholders::_1, vA(i), vB(i), std::placeholders::_2);
+        std::bind(&EssentialMatrix::error, std::placeholders::_1, vA(i), vB(i),
+                  std::placeholders::_2);
     Expression<EssentialMatrix> E_(key);  // leaf expression
     Expression<double> expr(f, E_);       // unary expression
 
@@ -114,10 +113,9 @@ TEST(EssentialMatrixFactor, ExpressionFactor) {
     ExpressionFactor<double> factor(model1, 0, expr);
 
     // Check evaluation
-    Vector expected(1);
-    expected << 0;
-    vector<Matrix> Hactual(1);
-    Vector actual = factor.unwhitenedError(values, Hactual);
+    Vector expected{{0}};
+    vector<Matrix> actualH(1);
+    Vector actual = factor.unwhitenedError(values, actualH);
     EXPECT(assert_equal(expected, actual, 1e-7));
   }
 }
@@ -127,10 +125,11 @@ TEST(EssentialMatrixFactor, ExpressionFactorRotationOnly) {
   Key key(1);
   for (size_t i = 0; i < 5; i++) {
     std::function<double(const EssentialMatrix &, OptionalJacobian<1, 5>)> f =
-        std::bind(&EssentialMatrix::error, std::placeholders::_1, vA(i), vB(i), std::placeholders::_2);
+        std::bind(&EssentialMatrix::error, std::placeholders::_1, vA(i), vB(i),
+                  std::placeholders::_2);
     std::function<EssentialMatrix(const Rot3 &, const Unit3 &,
-                                    OptionalJacobian<5, 3>,
-                                    OptionalJacobian<5, 2>)>
+                                  OptionalJacobian<5, 3>,
+                                  OptionalJacobian<5, 2>)>
         g;
     Expression<Rot3> R_(key);
     Expression<Unit3> d_(trueDirection);
@@ -147,10 +146,9 @@ TEST(EssentialMatrixFactor, ExpressionFactorRotationOnly) {
     ExpressionFactor<double> factor(model1, 0, expr);
 
     // Check evaluation
-    Vector expected(1);
-    expected << 0;
-    vector<Matrix> Hactual(1);
-    Vector actual = factor.unwhitenedError(values, Hactual);
+    Vector expected{{0}};
+    vector<Matrix> actualH(1);
+    Vector actual = factor.unwhitenedError(values, actualH);
     EXPECT(assert_equal(expected, actual, 1e-7));
   }
 }
@@ -175,8 +173,7 @@ TEST(EssentialMatrixFactor, minimization) {
 
   // Check error at initial estimate
   Values initial;
-  EssentialMatrix initialE =
-      trueE.retract((Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1).finished());
+  EssentialMatrix initialE = trueE.retract(Vector{{0.1, -0.1, 0.1, 0.1, -0.1}});
   initial.insert(1, initialE);
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)
   EXPECT_DOUBLES_EQUAL(643.26, graph.error(initial), 1e-2);
@@ -211,9 +208,9 @@ TEST(EssentialMatrixFactor2, factor) {
     const Point2 pi = PinholeBase::Project(P2);
     Point2 expected(pi - pB(i));
 
-    Matrix Hactual1, Hactual2;
+    Matrix actualH1, actualH2;
     double d(baseline / P1.z());
-    Vector actual = factor.evaluateError(trueE, d, Hactual1, Hactual2);
+    Vector actual = factor.evaluateError(trueE, d, actualH1, actualH2);
     EXPECT(assert_equal(expected, actual, 1e-7));
 
     Values val;
@@ -276,9 +273,9 @@ TEST(EssentialMatrixFactor3, factor) {
     const Point2 pi = camera2.project(P1);
     Point2 expected(pi - pB(i));
 
-    Matrix Hactual1, Hactual2;
+    Matrix actualH1, actualH2;
     double d(baseline / P1.z());
-    Vector actual = factor.evaluateError(bodyE, d, Hactual1, Hactual2);
+    Vector actual = factor.evaluateError(bodyE, d, actualH1, actualH2);
     EXPECT(assert_equal(expected, actual, 1e-7));
 
     Values val;
@@ -330,8 +327,7 @@ TEST(EssentialMatrixFactor4, factor) {
     EssentialMatrixFactor4<Cal3_S2> factor(keyE, keyK, pA(i), pB(i), model1);
 
     // Check evaluation
-    Vector1 expected;
-    expected << 0;
+    Vector1 expected{0};
     Vector actual = factor.evaluateError(trueE, trueK);
     EXPECT(assert_equal(expected, actual, 1e-7));
 
@@ -397,14 +393,12 @@ TEST(EssentialMatrixFactor4, minimizationWithStrongCal3S2Prior) {
 
   // Initialization
   Values initial;
-  EssentialMatrix initialE =
-      trueE.retract((Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1).finished());
+  EssentialMatrix initialE = trueE.retract(Vector{{0.1, -0.1, 0.1, 0.1, -0.1}});
   initial.insert(1, initialE);
   initial.insert(2, trueK);
 
   // add prior factor for calibration
-  Vector5 priorNoiseModelSigma;
-  priorNoiseModelSigma << 10, 10, 10, 10, 10;
+  Vector5 priorNoiseModelSigma{10, 10, 10, 10, 10};
   graph.emplace_shared<PriorFactor<Cal3_S2>>(
       2, trueK, noiseModel::Diagonal::Sigmas(priorNoiseModelSigma));
 
@@ -447,16 +441,13 @@ TEST(EssentialMatrixFactor4, minimizationWithWeakCal3S2Prior) {
 
   // Initialization
   Values initial;
-  EssentialMatrix initialE =
-      trueE.retract((Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1).finished());
-  Cal3_S2 initialK =
-      trueK.retract((Vector(5) << 0.1, -0.1, 0.0, -0.0, 0.0).finished());
+  EssentialMatrix initialE = trueE.retract(Vector{{0.1, -0.1, 0.1, 0.1, -0.1}});
+  Cal3_S2 initialK = trueK.retract(Vector{{0.1, -0.1, 0.0, -0.0, 0.0}});
   initial.insert(1, initialE);
   initial.insert(2, initialK);
 
   // add prior factor for calibration
-  Vector5 priorNoiseModelSigma;
-  priorNoiseModelSigma << 20, 20, 1, 1, 1;
+  Vector5 priorNoiseModelSigma{20, 20, 1, 1, 1};
   graph.emplace_shared<PriorFactor<Cal3_S2>>(
       2, initialK, noiseModel::Diagonal::Sigmas(priorNoiseModelSigma));
 
@@ -496,15 +487,13 @@ TEST(EssentialMatrixFactor4, minimizationWithStrongCal3BundlerPrior) {
 
   // Check error at initial estimate
   Values initial;
-  EssentialMatrix initialE =
-      trueE.retract((Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1).finished());
+  EssentialMatrix initialE = trueE.retract(Vector{{0.1, -0.1, 0.1, 0.1, -0.1}});
   Cal3Bundler initialK = trueK;
   initial.insert(1, initialE);
   initial.insert(2, initialK);
 
   // add prior factor for calibration
-  Vector3 priorNoiseModelSigma;
-  priorNoiseModelSigma << 0.1, 0.1, 0.1;
+  Vector3 priorNoiseModelSigma{0.1, 0.1, 0.1};
   graph.emplace_shared<PriorFactor<Cal3Bundler>>(
       2, trueK, noiseModel::Diagonal::Sigmas(priorNoiseModelSigma));
 
@@ -529,6 +518,47 @@ TEST(EssentialMatrixFactor4, minimizationWithStrongCal3BundlerPrior) {
         1e-6);
 }
 
+//*************************************************************************
+TEST(EssentialMatrixFactor5, factor) {
+  Key keyE(1), keyKa(2), keyKb(3);
+  for (size_t i = 0; i < 5; i++) {
+    EssentialMatrixFactor5<Cal3_S2> factor(keyE, keyKa, keyKb, pA(i), pB(i),
+                                           model1);
+
+    // Check evaluation
+    Vector1 expected{0};
+    Vector actual = factor.evaluateError(trueE, trueK, trueK);
+    EXPECT(assert_equal(expected, actual, 1e-7));
+
+    Values truth;
+    truth.insert(keyE, trueE);
+    truth.insert(keyKa, trueK);
+    truth.insert(keyKb, trueK);
+    EXPECT_CORRECT_FACTOR_JACOBIANS(factor, truth, 1e-6, 1e-7);
+  }
+}
+
+//*************************************************************************
+// Test that if we use the same keys for Ka and Kb the sum of the two K
+// Jacobians equals that of the single K Jacobian for EssentialMatrix4
+TEST(EssentialMatrixFactor5, SameKeys) {
+  Key keyE(1), keyK(2);
+  for (size_t i = 0; i < 5; i++) {
+    EssentialMatrixFactor4<Cal3_S2> factor4(keyE, keyK, pA(i), pB(i), model1);
+    EssentialMatrixFactor5<Cal3_S2> factor5(keyE, keyK, keyK, pA(i), pB(i),
+                                            model1);
+
+    Values truth;
+    truth.insert(keyE, trueE);
+    truth.insert(keyK, trueK);
+
+    // Check Jacobians
+    Matrix H0, H1, H2;
+    factor4.evaluateError(trueE, trueK, nullptr, &H0);
+    factor5.evaluateError(trueE, trueK, trueK, nullptr, &H1, &H2);
+    EXPECT(assert_equal(H0, H1 + H2, 1e-9));
+  }
+}
 }  // namespace example1
 
 //*************************************************************************
@@ -574,8 +604,7 @@ TEST(EssentialMatrixFactor, extraMinimization) {
 
   // Check error at initial estimate
   Values initial;
-  EssentialMatrix initialE =
-      trueE.retract((Vector(5) << 0.1, -0.1, 0.1, 0.1, -0.1).finished());
+  EssentialMatrix initialE = trueE.retract(Vector{{0.1, -0.1, 0.1, 0.1, -0.1}});
   initial.insert(1, initialE);
 
 #if defined(GTSAM_ROT3_EXPMAP) || defined(GTSAM_USE_QUATERNIONS)

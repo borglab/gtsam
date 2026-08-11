@@ -21,6 +21,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Point3.h>
@@ -188,7 +189,7 @@ namespace gtsam {
 
   private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION    ///
+#if GTSAM_ENABLE_BOOST_SERIALIZATION    ///
     /// Serialization function
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -201,9 +202,6 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(verboseCheirality_);
     }
 #endif
-
-  public:
-    GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
   /// traits

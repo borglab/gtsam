@@ -21,6 +21,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearOptimizerParams.h>
+#include <gtsam/nonlinear/LMDampingParams.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 namespace gtsam {
@@ -53,16 +54,12 @@ public:
   VerbosityLM verbosityLM; ///< The verbosity level for Levenberg-Marquardt (default: SILENT), see also NonlinearOptimizerParams::verbosity
   double minModelFidelity; ///< Lower bound for the modelFidelity to accept the result of an LM iteration
   std::string logFile; ///< an optional CSV log file, with [iteration, time, error, lambda]
-  bool diagonalDamping; ///< if true, use diagonal of Hessian
   bool useFixedLambdaFactor; ///< if true applies constant increase (or decrease) to lambda according to lambdaFactor
-  double minDiagonal; ///< when using diagonal damping saturates the minimum diagonal entries (default: 1e-6)
-  double maxDiagonal; ///< when using diagonal damping saturates the maximum diagonal entries (default: 1e32)
+  /// Parameters controlling LM damping behavior (legacy and `MULTIFRONTAL_SOLVER`).
+  LMDampingParams dampingParams;
 
   LevenbergMarquardtParams()
-      : verbosityLM(SILENT),
-        diagonalDamping(false),
-        minDiagonal(1e-6),
-        maxDiagonal(1e32) {
+      : verbosityLM(SILENT) {
     SetLegacyDefaults(this);
   }
 
@@ -77,8 +74,11 @@ public:
     p->lambdaUpperBound = 1e5;
     p->lambdaLowerBound = 0.0;
     p->minModelFidelity = 1e-3;
-    p->diagonalDamping = false;
     p->useFixedLambdaFactor = true;
+    p->dampingParams.diagonalDamping = false;
+    p->dampingParams.exactHessianDiagonal = false;
+    p->dampingParams.minDiagonal = 1e-6;
+    p->dampingParams.maxDiagonal = 1e32;
   }
 
   // these do seem to work better for SFM
@@ -93,8 +93,11 @@ public:
     p->lambdaInitial = 1e-04;
     p->lambdaFactor = 2.0;
     p->minModelFidelity = 1e-3;  // options.min_relative_decrease in CERES
-    p->diagonalDamping = true;
     p->useFixedLambdaFactor = false;  // This is important
+    p->dampingParams.diagonalDamping = true;
+    p->dampingParams.exactHessianDiagonal = false;
+    p->dampingParams.minDiagonal = 1e-6;
+    p->dampingParams.maxDiagonal = 1e32;
   }
 
   static LevenbergMarquardtParams LegacyDefaults() {
@@ -127,7 +130,7 @@ public:
 
   /// @name Getters/Setters, mainly for wrappers. Use fields above in C++.
   /// @{
-  bool getDiagonalDamping() const { return diagonalDamping; }
+  bool getDiagonalDamping() const { return dampingParams.diagonalDamping; }
   double getlambdaFactor() const { return lambdaFactor; }
   double getlambdaInitial() const { return lambdaInitial; }
   double getlambdaLowerBound() const { return lambdaLowerBound; }
@@ -136,7 +139,7 @@ public:
   std::string getLogFile() const { return logFile; }
   std::string getVerbosityLM() const { return verbosityLMTranslator(verbosityLM);}
   
-  void setDiagonalDamping(bool flag) { diagonalDamping = flag; }
+  void setDiagonalDamping(bool flag) { dampingParams.diagonalDamping = flag; }
   void setlambdaFactor(double value) { lambdaFactor = value; }
   void setlambdaInitial(double value) { lambdaInitial = value; }
   void setlambdaLowerBound(double value) { lambdaLowerBound = value; }

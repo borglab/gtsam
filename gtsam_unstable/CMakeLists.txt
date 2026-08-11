@@ -5,6 +5,7 @@ project(gtsam_unstable LANGUAGES CXX)
 set (gtsam_unstable_subdirs
     base
     geometry
+    navigation
     linear
     discrete
     dynamics
@@ -32,16 +33,12 @@ set (excluded_headers # "")
 # if GTSAM_USE_BOOST_FEATURES is not set, then we need to exclude the following:
 if(NOT GTSAM_USE_BOOST_FEATURES)
     list (APPEND excluded_sources
-        "${CMAKE_CURRENT_SOURCE_DIR}/linear/QPSParser.cpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/linear/QPSSolver.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/discrete/Scheduler.cpp"
     )
     list (APPEND excluded_headers
-        "${CMAKE_CURRENT_SOURCE_DIR}/linear/QPSParser.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/linear/QPSSolver.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/discrete/Scheduler.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/parition/FindSeparator.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/parition/FindSeparator-inl.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/partition/FindSeparator.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/partition/FindSeparator-inl.h"
     )
 endif()
 
@@ -70,6 +67,7 @@ install(FILES "${PROJECT_BINARY_DIR}/dllexport.h" DESTINATION ${CMAKE_INSTALL_IN
 set(gtsam_unstable_srcs
     ${base_srcs}
     ${geometry_srcs}
+    ${navigation_srcs}
     ${linear_srcs}
     ${discrete_srcs}
     ${dynamics_srcs}
@@ -107,9 +105,7 @@ if(WIN32) # Add 'lib' prefix to static library to avoid filename collision with 
 			COMPILE_DEFINITIONS GTSAM_UNSTABLE_IMPORT_STATIC)
 	else()
 		set_target_properties(gtsam_unstable PROPERTIES
-			PREFIX ""
-			DEFINE_SYMBOL GTSAM_UNSTABLE_EXPORTS
-			RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
+			DEFINE_SYMBOL GTSAM_UNSTABLE_EXPORTS)
 	endif()
 endif()
 

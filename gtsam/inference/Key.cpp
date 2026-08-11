@@ -28,6 +28,7 @@ namespace gtsam {
 
 /// Assign default key formatter
 KeyFormatter DefaultKeyFormatter = &_defaultKeyFormatter;
+KeyFormatter MultiRobotKeyFormatter = &_multirobotKeyFormatter;
 
 /* ************************************************************************* */
 string _defaultKeyFormatter(Key key) {

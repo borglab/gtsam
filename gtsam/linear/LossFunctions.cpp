@@ -19,6 +19,7 @@
 #include <gtsam/linear/LossFunctions.h>
 
 #include <iostream>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -314,20 +315,22 @@ Welsch::shared_ptr Welsch::Create(double c, const ReweightScheme reweight) {
 // GemanMcClure
 /* ************************************************************************* */
 GemanMcClure::GemanMcClure(double c, const ReweightScheme reweight)
-  : Base(reweight), c_(c) {
+  : Base(reweight), c_(c), csquared_(c * c) {
 }
 
 double GemanMcClure::weight(double distance) const {
-  const double c2 = c_*c_;
+  return Weight(distance*distance, csquared_);
+}
+
+double GemanMcClure::Weight(double distance2, double c2) {
   const double c4 = c2*c2;
-  const double c2error = c2 + distance*distance;
+  const double c2error = c2 + distance2;
   return c4/(c2error*c2error);
 }
 
 double GemanMcClure::loss(double distance) const {
-  const double c2 = c_*c_;
   const double error2 = distance*distance;
-  return 0.5 * (c2 * error2) / (c2 + error2);
+  return 0.5 * (csquared_ * error2) / (csquared_ + error2);
 }
 
 void GemanMcClure::print(const std::string &s="") const {
@@ -342,6 +345,49 @@ bool GemanMcClure::equals(const Base &expected, double tol) const {
 
 GemanMcClure::shared_ptr GemanMcClure::Create(double c, const ReweightScheme reweight) {
   return shared_ptr(new GemanMcClure(c, reweight));
+}
+
+/* ************************************************************************* */
+// TruncatedLeastSquares
+/* ************************************************************************* */
+
+TruncatedLeastSquares::TruncatedLeastSquares(double c, const ReweightScheme reweight)
+  : Base(reweight), c_(c), csquared_(c * c) {
+  if (c_ <= 0) {
+    throw runtime_error("mEstimator TruncatedLeastSquares takes only positive double in constructor.");
+  }
+}
+
+double TruncatedLeastSquares::weight(double distance) const {
+  const auto w = Weight(distance * distance, csquared_, csquared_);
+  return w.value();
+}
+
+std::optional<double> TruncatedLeastSquares::Weight(double distance2, double lowerbound, double upperbound) {
+  if (distance2 <= lowerbound) return 1.0;
+  if (distance2 >= upperbound) return 0.0;
+  return std::nullopt;
+}
+
+double TruncatedLeastSquares::loss(double distance) const {
+  if (std::abs(distance) <= c_) {
+    return 0.5 * distance * distance;
+  }
+  return 0.5 * csquared_;
+}
+
+void TruncatedLeastSquares::print(const std::string &s="") const {
+  std::cout << s << ": TLS (" << c_ << ")" << std::endl;
+}
+
+bool TruncatedLeastSquares::equals(const Base &expected, double tol) const {
+  const TruncatedLeastSquares* p = dynamic_cast<const TruncatedLeastSquares*>(&expected);
+  if (p == nullptr) return false;
+  return std::abs(c_ - p->c_) < tol;
+}
+
+TruncatedLeastSquares::shared_ptr TruncatedLeastSquares::Create(double c, const ReweightScheme reweight) {
+  return shared_ptr(new TruncatedLeastSquares(c, reweight));
 }
 
 /* ************************************************************************* */

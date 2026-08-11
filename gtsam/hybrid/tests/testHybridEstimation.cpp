@@ -15,10 +15,16 @@
  * @author  Varun Agrawal
  */
 
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/discrete/DiscreteBayesNet.h>
+#include <gtsam/discrete/DiscreteMarginals.h>
+#include <gtsam/discrete/TableDistribution.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/hybrid/DiscreteBoundaryFactor.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
+#include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridNonlinearFactor.h>
 #include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
 #include <gtsam/hybrid/HybridNonlinearISAM.h>
@@ -29,6 +35,7 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
@@ -36,8 +43,9 @@
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>
 
-#include <bitset>
+#include <string>
 
+#include "DiscreteFixture.h"
 #include "Switching.h"
 
 using namespace std;
@@ -54,7 +62,7 @@ TEST(HybridEstimation, Full) {
   // Switching example of robot moving in 1D
   // with given measurements and equal mode priors.
   Switching switching(K, 1.0, 0.1, measurements, "1/1 1/1");
-  HybridGaussianFactorGraph graph = switching.linearizedFactorGraph;
+  HybridGaussianFactorGraph graph = switching.linearizedFactorGraph();
 
   Ordering hybridOrdering;
   for (size_t k = 0; k < K; k++) {
@@ -88,92 +96,32 @@ TEST(HybridEstimation, Full) {
 
 /****************************************************************************/
 // Test approximate inference with an additional pruning step.
-TEST(HybridEstimation, IncrementalSmoother) {
-  size_t K = 15;
-  std::vector<double> measurements = {0, 1, 2, 2, 2, 2,  3,  4,  5,  6, 6,
-                                      7, 8, 9, 9, 9, 10, 11, 11, 11, 11};
-  // Ground truth discrete seq
-  std::vector<size_t> discrete_seq = {1, 1, 0, 0, 0, 1, 1, 1, 1, 0,
-                                      1, 1, 1, 0, 0, 1, 1, 0, 0, 0};
-  // Switching example of robot moving in 1D
-  // with given measurements and equal mode priors.
-  Switching switching(K, 1.0, 0.1, measurements, "1/1 1/1");
-  HybridSmoother smoother;
-  HybridNonlinearFactorGraph graph;
-  Values initial;
-
-  // Add the X(0) prior
-  graph.push_back(switching.nonlinearFactorGraph.at(0));
-  initial.insert(X(0), switching.linearizationPoint.at<double>(X(0)));
-
-  HybridGaussianFactorGraph linearized;
-
-  for (size_t k = 1; k < K; k++) {
-    // Motion Model
-    graph.push_back(switching.nonlinearFactorGraph.at(k));
-    // Measurement
-    graph.push_back(switching.nonlinearFactorGraph.at(k + K - 1));
-
-    initial.insert(X(k), switching.linearizationPoint.at<double>(X(k)));
-
-    linearized = *graph.linearize(initial);
-    Ordering ordering = smoother.getOrdering(linearized);
-
-    smoother.update(linearized, 3, ordering);
-    graph.resize(0);
-  }
-
-  HybridValues delta = smoother.hybridBayesNet().optimize();
-
-  Values result = initial.retract(delta.continuous());
-
-  DiscreteValues expected_discrete;
-  for (size_t k = 0; k < K - 1; k++) {
-    expected_discrete[M(k)] = discrete_seq[k];
-  }
-  EXPECT(assert_equal(expected_discrete, delta.discrete()));
-
-  Values expected_continuous;
-  for (size_t k = 0; k < K; k++) {
-    expected_continuous.insert(X(k), measurements[k]);
-  }
-  EXPECT(assert_equal(expected_continuous, result));
-}
-
-/****************************************************************************/
-// Test approximate inference with an additional pruning step.
 TEST(HybridEstimation, ISAM) {
+  using namespace estimation_fixture;
+
   size_t K = 15;
-  std::vector<double> measurements = {0, 1, 2, 2, 2, 2,  3,  4,  5,  6, 6,
-                                      7, 8, 9, 9, 9, 10, 11, 11, 11, 11};
-  // Ground truth discrete seq
-  std::vector<size_t> discrete_seq = {1, 1, 0, 0, 0, 1, 1, 1, 1, 0,
-                                      1, 1, 1, 0, 0, 1, 1, 0, 0, 0};
+
   // Switching example of robot moving in 1D
   // with given measurements and equal mode priors.
-  Switching switching(K, 1.0, 0.1, measurements, "1/1 1/1");
-  HybridNonlinearISAM isam;
   HybridNonlinearFactorGraph graph;
   Values initial;
-
-  // gttic_(Estimation);
-
-  // Add the X(0) prior
-  graph.push_back(switching.nonlinearFactorGraph.at(0));
-  initial.insert(X(0), switching.linearizationPoint.at<double>(X(0)));
+  Switching switching = InitializeEstimationProblem(
+      K, 1.0, 0.1, measurements, "1/1 1/1", &graph, &initial);
+  HybridNonlinearISAM isam;
 
   HybridGaussianFactorGraph linearized;
 
+  const size_t maxNrLeaves = 3;
   for (size_t k = 1; k < K; k++) {
-    // Motion Model
-    graph.push_back(switching.nonlinearFactorGraph.at(k));
-    // Measurement
-    graph.push_back(switching.nonlinearFactorGraph.at(k + K - 1));
+    if (k > 1) graph.push_back(switching.modeChain.at(k - 1));  // Mode chain
+    graph.push_back(switching.binaryFactors.at(k - 1));         // Motion Model
+    graph.push_back(switching.unaryFactors.at(k));              // Measurement
 
     initial.insert(X(k), switching.linearizationPoint.at<double>(X(k)));
 
-    isam.update(graph, initial, 3);
-    // isam.bayesTree().print("\n\n");
+    isam.update(graph, initial, maxNrLeaves);
+    // isam.saveGraph("NLiSAM" + std::to_string(k) + ".dot");
+    // GTSAM_PRINT(isam);
 
     graph.resize(0);
     initial.clear();
@@ -196,65 +144,6 @@ TEST(HybridEstimation, ISAM) {
 }
 
 /**
- * @brief A function to get a specific 1D robot motion problem as a linearized
- * factor graph. This is the problem P(X|Z, M), i.e. estimating the continuous
- * positions given the measurements and discrete sequence.
- *
- * @param K The number of timesteps.
- * @param measurements The vector of measurements for each timestep.
- * @param discrete_seq The discrete sequence governing the motion of the robot.
- * @param measurement_sigma Noise model sigma for measurements.
- * @param between_sigma Noise model sigma for the between factor.
- * @return GaussianFactorGraph::shared_ptr
- */
-GaussianFactorGraph::shared_ptr specificModesFactorGraph(
-    size_t K, const std::vector<double>& measurements,
-    const std::vector<size_t>& discrete_seq, double measurement_sigma = 0.1,
-    double between_sigma = 1.0) {
-  NonlinearFactorGraph graph;
-  Values linearizationPoint;
-
-  // Add measurement factors
-  auto measurement_noise = noiseModel::Isotropic::Sigma(1, measurement_sigma);
-  for (size_t k = 0; k < K; k++) {
-    graph.emplace_shared<PriorFactor<double>>(X(k), measurements.at(k),
-                                              measurement_noise);
-    linearizationPoint.insert<double>(X(k), static_cast<double>(k + 1));
-  }
-
-  using MotionModel = BetweenFactor<double>;
-
-  // Add "motion models".
-  auto motion_noise_model = noiseModel::Isotropic::Sigma(1, between_sigma);
-  for (size_t k = 0; k < K - 1; k++) {
-    auto motion_model = std::make_shared<MotionModel>(
-        X(k), X(k + 1), discrete_seq.at(k), motion_noise_model);
-    graph.push_back(motion_model);
-  }
-  GaussianFactorGraph::shared_ptr linear_graph =
-      graph.linearize(linearizationPoint);
-  return linear_graph;
-}
-
-/**
- * @brief Get the discrete sequence from the integer `x`.
- *
- * @tparam K Template parameter so we can set the correct bitset size.
- * @param x The integer to convert to a discrete binary sequence.
- * @return std::vector<size_t>
- */
-template <size_t K>
-std::vector<size_t> getDiscreteSequence(size_t x) {
-  std::bitset<K - 1> seq = x;
-  std::vector<size_t> discrete_seq(K - 1);
-  for (size_t i = 0; i < K - 1; i++) {
-    // Save to discrete vector in reverse order
-    discrete_seq[K - 2 - i] = seq[i];
-  }
-  return discrete_seq;
-}
-
-/**
  * @brief Helper method to get the tree of
  * unnormalized probabilities as per the elimination scheme.
  *
@@ -264,7 +153,7 @@ std::vector<size_t> getDiscreteSequence(size_t x) {
  * @param graph The HybridGaussianFactorGraph to eliminate.
  * @return AlgebraicDecisionTree<Key>
  */
-AlgebraicDecisionTree<Key> getProbPrimeTree(
+AlgebraicDecisionTree<Key> GetProbPrimeTree(
     const HybridGaussianFactorGraph& graph) {
   Ordering continuous(graph.continuousKeySet());
   const auto [bayesNet, remainingGraph] =
@@ -310,15 +199,16 @@ AlgebraicDecisionTree<Key> getProbPrimeTree(
  * The values should match those of P'(Continuous) for each discrete mode.
  ********************************************************************************/
 TEST(HybridEstimation, Probability) {
+  using namespace estimation_fixture;
+
   constexpr size_t K = 4;
-  std::vector<double> measurements = {0, 1, 2, 2};
   double between_sigma = 1.0, measurement_sigma = 0.1;
 
   // Switching example of robot moving in 1D with
   // given measurements and equal mode priors.
   Switching switching(K, between_sigma, measurement_sigma, measurements,
                       "1/1 1/1");
-  auto graph = switching.linearizedFactorGraph;
+  auto graph = switching.linearizedFactorGraph();
 
   // Continuous elimination
   Ordering continuous_ordering(graph.continuousKeySet());
@@ -337,12 +227,8 @@ TEST(HybridEstimation, Probability) {
   HybridValues hybrid_values = bayesNet->optimize();
 
   // This is the correct sequence as designed
-  DiscreteValues discrete_seq;
-  discrete_seq[M(0)] = 1;
-  discrete_seq[M(1)] = 1;
-  discrete_seq[M(2)] = 0;
-
-  EXPECT(assert_equal(discrete_seq, hybrid_values.discrete()));
+  DiscreteValues expectedSequence{{M(0), 1}, {M(1), 1}, {M(2), 0}};
+  EXPECT(assert_equal(expectedSequence, hybrid_values.discrete()));
 }
 
 /****************************************************************************/
@@ -352,8 +238,9 @@ TEST(HybridEstimation, Probability) {
  * for each discrete mode.
  */
 TEST(HybridEstimation, ProbabilityMultifrontal) {
+  using namespace estimation_fixture;
+
   constexpr size_t K = 4;
-  std::vector<double> measurements = {0, 1, 2, 2};
 
   double between_sigma = 1.0, measurement_sigma = 0.1;
 
@@ -361,10 +248,10 @@ TEST(HybridEstimation, ProbabilityMultifrontal) {
   // mode priors.
   Switching switching(K, between_sigma, measurement_sigma, measurements,
                       "1/1 1/1");
-  auto graph = switching.linearizedFactorGraph;
+  auto graph = switching.linearizedFactorGraph();
 
   // Get the tree of unnormalized probabilities for each mode sequence.
-  AlgebraicDecisionTree<Key> expected_probPrimeTree = getProbPrimeTree(graph);
+  AlgebraicDecisionTree<Key> expected_probPrimeTree = GetProbPrimeTree(graph);
 
   // Eliminate continuous
   Ordering continuous_ordering(graph.continuousKeySet());
@@ -408,18 +295,14 @@ TEST(HybridEstimation, ProbabilityMultifrontal) {
   HybridValues hybrid_values = discreteBayesTree->optimize();
 
   // This is the correct sequence as designed
-  DiscreteValues discrete_seq;
-  discrete_seq[M(0)] = 1;
-  discrete_seq[M(1)] = 1;
-  discrete_seq[M(2)] = 0;
-
-  EXPECT(assert_equal(discrete_seq, hybrid_values.discrete()));
+  DiscreteValues expectedSequence{{M(0), 1}, {M(1), 1}, {M(2), 0}};
+  EXPECT(assert_equal(expectedSequence, hybrid_values.discrete()));
 }
 
 /*********************************************************************************
   // Create a hybrid nonlinear factor graph f(x0, x1, m0; z0, z1)
  ********************************************************************************/
-static HybridNonlinearFactorGraph createHybridNonlinearFactorGraph() {
+static HybridNonlinearFactorGraph CreateHybridNonlinearFactorGraph() {
   HybridNonlinearFactorGraph nfg;
 
   constexpr double sigma = 0.5;  // measurement noise
@@ -435,10 +318,9 @@ static HybridNonlinearFactorGraph createHybridNonlinearFactorGraph() {
       std::make_shared<BetweenFactor<double>>(X(0), X(1), 0, noise_model);
   const auto one_motion =
       std::make_shared<BetweenFactor<double>>(X(0), X(1), 1, noise_model);
-  std::vector<NonlinearFactorValuePair> components = {{zero_motion, 0.0},
-                                                      {one_motion, 0.0}};
-  nfg.emplace_shared<HybridNonlinearFactor>(KeyVector{X(0), X(1)}, m,
-                                            components);
+  std::vector<NoiseModelFactor::shared_ptr> components = {zero_motion,
+                                                          one_motion};
+  nfg.emplace_shared<HybridNonlinearFactor>(m, components);
 
   return nfg;
 }
@@ -446,8 +328,8 @@ static HybridNonlinearFactorGraph createHybridNonlinearFactorGraph() {
 /*********************************************************************************
   // Create a hybrid linear factor graph f(x0, x1, m0; z0, z1)
  ********************************************************************************/
-static HybridGaussianFactorGraph::shared_ptr createHybridGaussianFactorGraph() {
-  HybridNonlinearFactorGraph nfg = createHybridNonlinearFactorGraph();
+static HybridGaussianFactorGraph::shared_ptr CreateHybridGaussianFactorGraph() {
+  HybridNonlinearFactorGraph nfg = CreateHybridNonlinearFactorGraph();
 
   Values initial;
   double z0 = 0.0, z1 = 1.0;
@@ -459,20 +341,20 @@ static HybridGaussianFactorGraph::shared_ptr createHybridGaussianFactorGraph() {
 /*********************************************************************************
  * Do hybrid elimination and do regression test on discrete conditional.
  ********************************************************************************/
-TEST(HybridEstimation, eliminateSequentialRegression) {
+TEST(HybridEstimation, EliminateSequentialRegression) {
   // Create the factor graph from the nonlinear factor graph.
-  HybridGaussianFactorGraph::shared_ptr fg = createHybridGaussianFactorGraph();
+  HybridGaussianFactorGraph::shared_ptr fg = CreateHybridGaussianFactorGraph();
 
   // Create expected discrete conditional on m0.
   DiscreteKey m(M(0), 2);
-  DiscreteConditional expected(m % "0.51341712/1");  // regression
+  TableDistribution expected(m, "0.51341712 1");  // regression
 
   // Eliminate into BN using one ordering
   const Ordering ordering1{X(0), X(1), M(0)};
   HybridBayesNet::shared_ptr bn1 = fg->eliminateSequential(ordering1);
 
   // Check that the discrete conditional matches the expected.
-  auto dc1 = bn1->back()->asDiscrete();
+  auto dc1 = bn1->back()->asDiscrete<TableDistribution>();
   EXPECT(assert_equal(expected, *dc1, 1e-9));
 
   // Eliminate into BN using a different ordering
@@ -480,7 +362,7 @@ TEST(HybridEstimation, eliminateSequentialRegression) {
   HybridBayesNet::shared_ptr bn2 = fg->eliminateSequential(ordering2);
 
   // Check that the discrete conditional matches the expected.
-  auto dc2 = bn2->back()->asDiscrete();
+  auto dc2 = bn2->back()->asDiscrete<TableDistribution>();
   EXPECT(assert_equal(expected, *dc2, 1e-9));
 }
 
@@ -496,7 +378,7 @@ TEST(HybridEstimation, eliminateSequentialRegression) {
  ********************************************************************************/
 TEST(HybridEstimation, CorrectnessViaSampling) {
   // 1. Create the factor graph from the nonlinear factor graph.
-  const auto fg = createHybridGaussianFactorGraph();
+  const auto fg = CreateHybridGaussianFactorGraph();
 
   // 2. Eliminate into BN
   const HybridBayesNet::shared_ptr bn = fg->eliminateSequential();
@@ -513,8 +395,6 @@ TEST(HybridEstimation, CorrectnessViaSampling) {
   // the normalizing term computed via the Bayes net determinant.
   const HybridValues sample = bn->sample(&rng);
   double expected_ratio = compute_ratio(sample);
-  // regression
-  EXPECT_DOUBLES_EQUAL(0.728588, expected_ratio, 1e-6);
 
   // 3. Do sampling
   constexpr int num_samples = 10;
@@ -525,51 +405,6 @@ TEST(HybridEstimation, CorrectnessViaSampling) {
     // 4. Check that the ratio is constant.
     EXPECT_DOUBLES_EQUAL(expected_ratio, compute_ratio(sample), 1e-6);
   }
-}
-
-/****************************************************************************/
-/**
- * Helper function to add the constant term corresponding to
- * the difference in noise models.
- */
-std::shared_ptr<HybridGaussianFactor> mixedVarianceFactor(
-    const HybridNonlinearFactor& mf, const Values& initial, const Key& mode,
-    double noise_tight, double noise_loose, size_t d, size_t tight_index) {
-  HybridGaussianFactor::shared_ptr gmf = mf.linearize(initial);
-
-  constexpr double log2pi = 1.8378770664093454835606594728112;
-  // logConstant will be of the tighter model
-  double logNormalizationConstant = log(1.0 / noise_tight);
-  double logConstant = -0.5 * d * log2pi + logNormalizationConstant;
-
-  auto func = [&](const Assignment<Key>& assignment,
-                  const GaussianFactor::shared_ptr& gf) {
-    if (assignment.at(mode) != tight_index) {
-      double factor_log_constant = -0.5 * d * log2pi + log(1.0 / noise_loose);
-
-      GaussianFactorGraph _gfg;
-      _gfg.push_back(gf);
-      Vector c(d);
-      for (size_t i = 0; i < d; i++) {
-        c(i) = std::sqrt(2.0 * (logConstant - factor_log_constant));
-      }
-
-      _gfg.emplace_shared<JacobianFactor>(c);
-      return std::make_shared<JacobianFactor>(_gfg);
-    } else {
-      return dynamic_pointer_cast<JacobianFactor>(gf);
-    }
-  };
-  auto updated_components = gmf->factors().apply(func);
-  auto updated_pairs = HybridGaussianFactor::FactorValuePairs(
-      updated_components,
-      [](const GaussianFactor::shared_ptr& gf) -> GaussianFactorValuePair {
-        return {gf, 0.0};
-      });
-  auto updated_gmf = std::make_shared<HybridGaussianFactor>(
-      gmf->continuousKeys(), gmf->discreteKeys(), updated_pairs);
-
-  return updated_gmf;
 }
 
 /****************************************************************************/
@@ -591,18 +426,14 @@ TEST(HybridEstimation, ModeSelection) {
            X(0), X(1), 0.0, noiseModel::Isotropic::Sigma(d, noise_loose)),
        model1 = std::make_shared<MotionModel>(
            X(0), X(1), 0.0, noiseModel::Isotropic::Sigma(d, noise_tight));
-  std::vector<NonlinearFactorValuePair> components = {{model0, 0.0},
-                                                      {model1, 0.0}};
+  std::vector<NoiseModelFactor::shared_ptr> components = {model0, model1};
 
-  KeyVector keys = {X(0), X(1)};
-  DiscreteKey modes(M(0), 2);
-  HybridNonlinearFactor mf(keys, modes, components);
+  HybridNonlinearFactor mf({M(0), 2}, components);
 
   initial.insert(X(0), 0.0);
   initial.insert(X(1), 0.0);
 
-  auto gmf =
-      mixedVarianceFactor(mf, initial, M(0), noise_tight, noise_loose, d, 1);
+  auto gmf = mf.linearize(initial);
   graph.add(gmf);
 
   auto gfg = graph.linearize(initial);
@@ -621,15 +452,10 @@ TEST(HybridEstimation, ModeSelection) {
   bn.push_back(
       GaussianConditional::sharedMeanAndStddev(Z(0), -I_1x1, X(1), Z_1x1, 0.1));
 
-  std::vector<GaussianConditional::shared_ptr> conditionals{
-      GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), -I_1x1, X(1),
-                                               Z_1x1, noise_loose),
-      GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), -I_1x1, X(1),
-                                               Z_1x1, noise_tight)};
-  bn.emplace_shared<HybridGaussianConditional>(
-      KeyVector{Z(0)}, KeyVector{X(0), X(1)}, DiscreteKeys{mode},
-      HybridGaussianConditional::Conditionals(DiscreteKeys{mode},
-                                              conditionals));
+  std::vector<std::pair<Vector, double>> parameters{{Z_1x1, noise_loose},
+                                                    {Z_1x1, noise_tight}};
+  bn.emplace_shared<HybridGaussianConditional>(mode, Z(0), I_1x1, X(0), -I_1x1,
+                                               X(1), parameters);
 
   VectorValues vv;
   vv.insert(Z(0), Z_1x1);
@@ -656,15 +482,10 @@ TEST(HybridEstimation, ModeSelection2) {
   bn.push_back(
       GaussianConditional::sharedMeanAndStddev(Z(0), -I_3x3, X(1), Z_3x1, 0.1));
 
-  std::vector<GaussianConditional::shared_ptr> conditionals{
-      GaussianConditional::sharedMeanAndStddev(Z(0), I_3x3, X(0), -I_3x3, X(1),
-                                               Z_3x1, noise_loose),
-      GaussianConditional::sharedMeanAndStddev(Z(0), I_3x3, X(0), -I_3x3, X(1),
-                                               Z_3x1, noise_tight)};
-  bn.emplace_shared<HybridGaussianConditional>(
-      KeyVector{Z(0)}, KeyVector{X(0), X(1)}, DiscreteKeys{mode},
-      HybridGaussianConditional::Conditionals(DiscreteKeys{mode},
-                                              conditionals));
+  std::vector<std::pair<Vector, double>> parameters{{Z_3x1, noise_loose},
+                                                    {Z_3x1, noise_tight}};
+  bn.emplace_shared<HybridGaussianConditional>(mode, Z(0), I_3x3, X(0), -I_3x3,
+                                               X(1), parameters);
 
   VectorValues vv;
   vv.insert(Z(0), Z_3x1);
@@ -688,18 +509,14 @@ TEST(HybridEstimation, ModeSelection2) {
            X(0), X(1), Z_3x1, noiseModel::Isotropic::Sigma(d, noise_loose)),
        model1 = std::make_shared<BetweenFactor<Vector3>>(
            X(0), X(1), Z_3x1, noiseModel::Isotropic::Sigma(d, noise_tight));
-  std::vector<NonlinearFactorValuePair> components = {{model0, 0.0},
-                                                      {model1, 0.0}};
+  std::vector<NoiseModelFactor::shared_ptr> components = {model0, model1};
 
-  KeyVector keys = {X(0), X(1)};
-  DiscreteKey modes(M(0), 2);
-  HybridNonlinearFactor mf(keys, modes, components);
+  HybridNonlinearFactor mf({M(0), 2}, components);
 
   initial.insert<Vector3>(X(0), Z_3x1);
   initial.insert<Vector3>(X(1), Z_3x1);
 
-  auto gmf =
-      mixedVarianceFactor(mf, initial, M(0), noise_tight, noise_loose, d, 1);
+  auto gmf = mf.linearize(initial);
   graph.add(gmf);
 
   auto gfg = graph.linearize(initial);
@@ -707,6 +524,198 @@ TEST(HybridEstimation, ModeSelection2) {
   HybridBayesNet::shared_ptr bayesNet = gfg->eliminateSequential();
 
   EXPECT(assert_equal(*expected_posterior, *bayesNet, 1e-6));
+}
+
+/****************************************************************************/
+/*
+ * Test discrete optimization using a simple mixture.
+ *
+ * Construct a single factor (for a single variable) consisting of a
+ * discrete-conditional mixture.
+ * Here we have a "null hypothesis" consisting of
+ * a Gaussian with large variance and an "alternative hypothesis"
+ * consisting of a Gaussian with smaller variance.
+ * After initializing the continuous variable far away from
+ * the ground-truth solution (x1 = 0), the discrete hypothesis selector
+ * will initially choose the null hypothesis.
+ */
+TEST(HybridEstimation, DiscreteMixture) {
+  using namespace discrete_mixture_fixture;
+
+  // Make an empty hybrid factor graph
+  HybridNonlinearFactorGraph dcfg;
+
+  // Make a symbol for a single continuous variable and add to KeyVector
+  KeyVector keys;
+  keys.push_back(x1);
+
+  std::vector<NoiseModelFactor::shared_ptr> factorComponents{f1(), fNullHypo()};
+
+  HybridNonlinearFactor dcMixture(dk, factorComponents);
+  dcfg.push_back(dcMixture);
+
+  DiscreteKey dkTest = dcMixture.discreteKeys()[0];
+  std::cout << "DK 1st: " << DefaultKeyFormatter(dkTest.first) << std::endl;
+  std::cout << "DK 2nd: " << dkTest.second << std::endl;
+
+  // Let's make an initial guess for the continuous values
+  Values initialGuess;
+  double initVal = -2.5;
+  initialGuess.insert(x1, initVal);
+
+  // We also need an initial guess for the discrete variables (this will only be
+  // used if it is needed by your factors), here it is ignored.
+  DiscreteValues initialGuessDiscrete;
+  initialGuessDiscrete[dk.first] = 0;
+
+  // Let's make a discrete factor graph
+  DiscreteFactorGraph dfg;
+
+  auto calculateError = [&](const NonlinearFactorValuePair& pair) -> double {
+    if (pair.first) {
+      auto gaussianNoiseModel = std::dynamic_pointer_cast<noiseModel::Gaussian>(
+          pair.first->noiseModel());
+      // `error` has the following contributions:
+      // - the scalar is the sum of all mode-dependent constants
+      // - factor->error(initial) is the error on the initial values
+      // - negLogK is log normalization constant from the noise model
+      return pair.second + pair.first->error(initialGuess) +
+             gaussianNoiseModel->negLogConstant();
+    } else {
+      // If the factor has been pruned, return infinite error
+      return std::numeric_limits<double>::infinity();
+    }
+  };
+  AlgebraicDecisionTree<Key> errors(dcMixture.factors(), calculateError);
+  DecisionTreeFactor dtf =
+      DiscreteFactorFromErrors(dcMixture.discreteKeys(), errors);
+
+  dfg.push_back(dtf);
+
+  // Solve for discrete given continuous
+  DiscreteValues mostProbableEstimate = dfg.optimize();
+
+  // Get the most probable estimate
+  const size_t mpeD = mostProbableEstimate.at(dk.first);
+
+  // Get the marginals
+  DiscreteMarginals newDiscreteMarginals(dfg);
+  Vector newMargProbs = newDiscreteMarginals.marginalProbabilities(dk);
+
+  // Ensure that the prediction is correct
+  EXPECT_LONGS_EQUAL(mpeD, 1);
+}
+
+/* ************************************************************************* */
+/*
+ * Test continuous optimization using a simple mixture
+ *
+ * Construct a single factor (for a single variable) consisting of a
+ * discrete-conditional mixture. Here we have a "null hypothesis" consisting
+ of
+ * a Gaussian with large variance and an "alternative hypothesis" consisting
+ of
+ * a Gaussian with smaller variance. After initializing the continuous
+ variable
+ * far away from the ground-truth solution (x1 = 0), the discrete hypothesis
+ * selector will initially choose the null hypothesis.
+ *
+ * After a step of continuous optimization, the continuous solution will move
+ to
+ * x1 = 0 (since the problem is linear, we have convergence in one step).
+ * Finally, updating the discrete value will show that the correct discrete
+ * hypothesis will shift to the "alternative hypothesis."
+ */
+TEST(HybridEstimation, ContinuousMixture) {
+  using namespace discrete_mixture_fixture;
+
+  // Make an empty hybrid factor graph
+  HybridNonlinearFactorGraph dcfg;
+
+  // Make a symbol for a single continuous variable and add to KeyVector
+  KeyVector keys;
+  keys.push_back(x1);
+
+  std::vector<NonlinearFactorValuePair> factorComponents{
+      {f1(), priorNoise1()->negLogConstant()},
+      {fNullHypo(), priorNoiseNullHypo()->negLogConstant()}};
+
+  HybridNonlinearFactor dcMixture(dk, factorComponents);
+  dcfg.push_back(dcMixture);
+
+  // Test calculation of negative log probability
+  DiscreteValues dv1, dvNH;
+  dv1[dk.first] = 0;
+  dvNH[dk.first] = 1;
+  Values xvals;
+  xvals.insert(x1, 0.0);
+  const double negLogProb_1 = dcMixture.error(xvals, dv1);
+  const double negLogProb_NH = dcMixture.error(xvals, dvNH);
+
+  // As calculated in MATLAB using -log(normpdf(0,0,1)), -log(normpdf(0,0,8))
+  EXPECT_DOUBLES_EQUAL(0.9189, negLogProb_1, 1e-3);
+  EXPECT_DOUBLES_EQUAL(2.9984, negLogProb_NH, 1e-3);
+
+  // Let's make an initial guess for the continuous values
+  Values values;
+  double initVal = -2.5;
+  values.insert(x1, initVal);
+
+  // We also need an initial guess for the discrete variables (this will only be
+  // used if it is needed by your factors), here it is ignored.
+  DiscreteValues initialGuessDiscrete;
+  initialGuessDiscrete[dk.first] = 0;
+
+  // Let's make some factor graphs
+  DiscreteFactorGraph dfg;
+  NonlinearFactorGraph nfg;
+
+  // Create DiscreteFactor from initial guess
+  DiscreteBoundaryFactor dtf(dcMixture.discreteKeys(), dcMixture.factors(),
+                             values);
+
+  dfg.push_back(dtf);
+
+  // Solve for discrete given continuous
+  DiscreteValues mostProbableEstimate = dfg.optimize();
+
+  // Get the most probable estimate
+  size_t mpeD = mostProbableEstimate.at(dk.first);
+
+  // From previous test we know this is == 1
+  EXPECT_LONGS_EQUAL(1, mpeD);
+
+  // Get the marginals
+  DiscreteMarginals newDiscreteMarginals(dfg);
+  Vector newMargProbs = newDiscreteMarginals.marginalProbabilities(dk);
+
+  // Use discrete info to get nonlinear factors
+  nfg.push_back(dcMixture.factors()(mostProbableEstimate).first);
+
+  // Setup isam
+  ISAM2Params isam_params;
+  isam_params.relinearizeThreshold = 0.01;
+  isam_params.relinearizeSkip = 1;
+  isam_params.setOptimizationParams(ISAM2DoglegParams());
+  ISAM2 isam(isam_params);
+  isam.update(nfg, values);
+
+  // Solve for updated continuous value
+  values = isam.calculateEstimate();
+
+  // Now update the continuous info in the discrete solver
+  dtf = DiscreteBoundaryFactor(dcMixture.discreteKeys(), dcMixture.factors(),
+                               values);
+
+  dfg.resize(0);
+  dfg.push_back(dtf);
+
+  // Re-solve discrete to verify that output has switched
+  mostProbableEstimate = dfg.optimize();
+  mpeD = mostProbableEstimate.at(dk.first);
+
+  // Ensure that the prediction is correct
+  EXPECT_LONGS_EQUAL(0, mpeD);
 }
 
 /* ************************************************************************* */

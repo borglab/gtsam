@@ -18,6 +18,7 @@
  */
 
 #include <gtsam/hybrid/HybridFactorGraph.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
 
@@ -29,8 +30,7 @@ std::set<DiscreteKey> HybridFactorGraph::discreteKeys() const {
       for (const DiscreteKey& key : p->discreteKeys()) {
         keys.insert(key);
       }
-    }
-    if (auto p = std::dynamic_pointer_cast<HybridFactor>(factor)) {
+    } else if (auto p = std::dynamic_pointer_cast<HybridFactor>(factor)) {
       for (const DiscreteKey& key : p->discreteKeys()) {
         keys.insert(key);
       }
@@ -58,6 +58,8 @@ const KeySet HybridFactorGraph::continuousKeySet() const {
         keys.insert(key);
       }
     } else if (auto p = std::dynamic_pointer_cast<GaussianFactor>(factor)) {
+      keys.insert(p->keys().begin(), p->keys().end());
+    } else if (auto p = std::dynamic_pointer_cast<NonlinearFactor>(factor)) {
       keys.insert(p->keys().begin(), p->keys().end());
     }
   }

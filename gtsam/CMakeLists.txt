@@ -6,6 +6,8 @@ project(gtsam LANGUAGES CXX)
 set (gtsam_subdirs
     base
     basis
+    constrained
+    certifiable
     geometry
     inference
     symbolic
@@ -72,6 +74,13 @@ install(FILES ${gtsam_core_headers} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsa
 foreach(subdir ${gtsam_subdirs})
     # Build convenience libraries
     file(GLOB_RECURSE subdir_srcs "${subdir}/*.cpp" "${subdir}/*.h") # Include header files so they show up in Visual Studio
+    if(GTSAM_ENABLE_CUDA)
+      file(GLOB_RECURSE subdir_cuda_srcs "${subdir}/*.cu")
+      list(APPEND subdir_srcs ${subdir_cuda_srcs})
+    else()
+      file(GLOB_RECURSE subdir_cuda_srcs "${subdir}/cuda/*")
+      list(REMOVE_ITEM subdir_srcs ${subdir_cuda_srcs})
+    endif()
     list(REMOVE_ITEM subdir_srcs ${excluded_sources})
 	file(GLOB subdir_test_files "${subdir}/tests/*")
 	list(REMOVE_ITEM subdir_srcs ${subdir_test_files}) # Remove test files from sources compiled into library
@@ -91,14 +100,16 @@ foreach(subdir ${gtsam_subdirs})
 endforeach(subdir)
 list(APPEND gtsam_srcs ${gtsam_core_headers})
 
-IF(MSVC)
-	# Add precompiled header to sources
-	include(gtsamAddPch)
-	gtsamAddPch("precompiled_header.h" "precompiled_header.cpp" "${gtsam_srcs}")
-	list(INSERT gtsam_srcs 0 "precompiled_header.cpp")
-ENDIF(MSVC)
-
 # Generate and install config and dllexport files
+#For config.in searches
+if(QNX)
+# QNX is cross-compiled for, and does not support make, cmake, or ctest natively. Additionally, space is limited in our embedded usecase.
+# Therefore, running tests must be done by manually copying test executables and required data files over, preferably avoiding
+# copying the whole source tree. Thus, we set the default file lookup to the recommended test folder, with the option
+# to manually change it.
+# for more info, check PR#1968 https://github.com/borglab/gtsam/pull/1968
+set(QNX_TARGET_DATASET_DIR "/data/home/root/qnxuser/test" CACHE STRING "Path to your on-target testing folder.")
+endif()
 configure_file(config.h.in config.h)
 set(library_name GTSAM) # For substitution in dllexport.h.in
 configure_file("${GTSAM_SOURCE_DIR}/cmake/dllexport.h.in" "dllexport.h")
@@ -127,9 +138,25 @@ message(STATUS "Building GTSAM - as a ${GTSAM_LIBRARY_TYPE} library")
 add_library(gtsam ${GTSAM_LIBRARY_TYPE} ${gtsam_srcs})
 target_link_libraries(gtsam PUBLIC ${GTSAM_BOOST_LIBRARIES})
 target_link_libraries(gtsam PUBLIC ${GTSAM_ADDITIONAL_LIBRARIES})
+if(GTSAM_ENABLE_CUDA)
+  target_link_libraries(gtsam PUBLIC CUDA::cudart)
+  target_link_libraries(gtsam PUBLIC CUDA::cusolver)
+  if(GTSAM_ENABLE_CUDSS)
+    target_link_libraries(gtsam PUBLIC cudss::cudss)
+  endif()
+endif()
+if(GTSAM_USE_MOSEK)
+  target_link_libraries(gtsam PRIVATE gtsam_mosek_backend)
+  set_property(TARGET gtsam APPEND PROPERTY BUILD_RPATH "${MOSEK_LIBRARY_DIR}")
+  set_property(TARGET gtsam APPEND PROPERTY INSTALL_RPATH "${MOSEK_LIBRARY_DIR}")
+endif()
 
 # Apply build flags:
 gtsam_apply_build_flags(gtsam)
+
+if(GTSAM_BUILD_WITH_PRECOMPILED_HEADERS)
+  target_precompile_headers(gtsam PRIVATE $<$<COMPILE_LANGUAGE:CXX>:<gtsam/precompiled_header.h$<ANGLE-R>>)
+endif()
 
 set_target_properties(gtsam PROPERTIES
     OUTPUT_NAME         gtsam
@@ -142,9 +169,17 @@ set_target_properties(gtsam PROPERTIES
 # system-eigen, or GTSAM eigen path
 target_link_libraries(gtsam PUBLIC Eigen3::Eigen)
 
+if(GTSAM_USE_SYSTEM_SPECTRA)
+  target_link_libraries(gtsam PRIVATE $<BUILD_INTERFACE:Spectra::Spectra>)
+endif()
+
 # MKL include dir:
 if (GTSAM_USE_EIGEN_MKL)
   target_include_directories(gtsam PUBLIC ${MKL_INCLUDE_DIR})
+endif()
+
+if (GTSAM_ENABLE_GPERFTOOLS AND GPERFTOOLS_FOUND)
+  target_link_libraries(gtsam PRIVATE ${GPERFTOOLS_TCMALLOC} ${GPERFTOOLS_PROFILER})
 endif()
 
 # Add includes for source directories 'BEFORE' boost and any system include
@@ -162,12 +197,17 @@ target_include_directories(gtsam BEFORE PUBLIC
 # 3rdparty libraries: use the "system" flag so they are included via "-isystem"
 # and warnings (and warnings-considered-errors) in those headers are not
 # reported as warnings/errors in our targets:
+set(gtsam_spectra_include)
+if(NOT GTSAM_USE_SYSTEM_SPECTRA)
+  set(gtsam_spectra_include
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty>)
+endif()
 target_include_directories(gtsam SYSTEM BEFORE PUBLIC
   # SuiteSparse_config
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/SuiteSparse_config>
   $<INSTALL_INTERFACE:include/gtsam/3rdparty/SuiteSparse_config>
   # Spectra
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/Spectra>
+  ${gtsam_spectra_include}
   # CCOLAMD
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CCOLAMD/Include>
   $<INSTALL_INTERFACE:include/gtsam/3rdparty/CCOLAMD>
@@ -179,10 +219,7 @@ if(WIN32) # Add 'lib' prefix to static library to avoid filename collision with 
 			PREFIX "lib")
 		target_compile_definitions(gtsam PRIVATE GTSAM_IMPORT_STATIC)
 	else()
-		set_target_properties(gtsam PROPERTIES
-			PREFIX ""
-			DEFINE_SYMBOL GTSAM_EXPORTS
-			RUNTIME_OUTPUT_DIRECTORY "${GTSAM_BINARY_DIR}/bin")
+		set_target_properties(gtsam PROPERTIES DEFINE_SYMBOL GTSAM_EXPORTS)
 	endif()
 endif()
 

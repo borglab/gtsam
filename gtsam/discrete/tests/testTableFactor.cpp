@@ -18,6 +18,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/discrete/DiscreteDistribution.h>
@@ -134,14 +135,77 @@ TEST(TableFactor, constructors) {
   EXPECT(assert_equal(expected, f4));
 
   // Test for 9=3x3 values.
-  DiscreteKey V(0, 3), W(1, 3);
+  DiscreteKey V(0, 3), W(1, 3), O(100, 3);
   DiscreteConditional conditional5(V | W = "1/2/3 5/6/7 9/10/11");
   TableFactor f5(conditional5);
-  // GTSAM_PRINT(f5);
-  TableFactor expected_f5(
-      X & Y,
-      "0.166667 0.277778 0.3 0.333333 0.333333 0.333333 0.5 0.388889 0.366667");
+
+  std::string expected_values =
+      "0.166667 0.277778 0.3 0.333333 0.333333 0.333333 0.5 0.388889 0.366667";
+  TableFactor expected_f5(V & W, expected_values);
   EXPECT(assert_equal(expected_f5, f5, 1e-6));
+
+  TableFactor f5_with_wrong_keys(V & O, expected_values);
+  EXPECT(assert_inequal(f5_with_wrong_keys, f5, 1e-9));
+}
+
+/* ************************************************************************* */
+// Check conversion from DecisionTreeFactor.
+TEST(TableFactor, Conversion) {
+  /* This is the DecisionTree we are using
+  Choice(m2)
+  0 Choice(m1)
+  0 0 Leaf    0
+  0 1 Choice(m0)
+  0 1 0 Leaf    0
+  0 1 1 Leaf 0.14649446  // 3
+  1 Choice(m1)
+  1 0 Choice(m0)
+  1 0 0 Leaf    0
+  1 0 1 Leaf 0.14648756  // 5
+  1 1 Choice(m0)
+  1 1 0 Leaf 0.14649446  // 6
+  1 1 1 Leaf 0.23918345  // 7
+  */
+  DiscreteKeys dkeys = {{0, 2}, {1, 2}, {2, 2}};
+  DecisionTreeFactor dtf(
+      dkeys, std::vector<double>{0, 0, 0, 0.14649446, 0, 0.14648756, 0.14649446,
+                                 0.23918345});
+
+  TableFactor tf(dtf.discreteKeys(), dtf);
+
+  EXPECT(assert_equal(dtf, tf.toDecisionTreeFactor()));
+
+  // Test for correct construction when keys are not in reverse order.
+  // This is possible in conditionals e.g. P(x1 | x0)
+  DiscreteKey X(1, 2), Y(0, 2);
+  DiscreteConditional dtf2(
+      X, {Y}, std::vector<double>{0.33333333, 0.6, 0.66666667, 0.4});
+
+  TableFactor tf2(dtf2);
+  // GTSAM_PRINT(dtf2);
+  // GTSAM_PRINT(tf2);
+  // GTSAM_PRINT(tf2.toDecisionTreeFactor());
+
+  // Check for ADT equality since the order of keys is irrelevant
+  EXPECT(assert_equal<AlgebraicDecisionTree<Key>>(dtf2,
+                                                  tf2.toDecisionTreeFactor()));
+}
+
+/* ************************************************************************* */
+TEST(TableFactor, Empty) {
+  DiscreteKey X(1, 2);
+
+  auto single = TableFactor({X}, "1 1").sum(1);
+  // Should not throw a segfault
+  auto expected_single = DecisionTreeFactor(X, "1 1").sum(1);
+  EXPECT(assert_equal(expected_single->toDecisionTreeFactor(),
+                      single->toDecisionTreeFactor()));
+
+  auto empty = TableFactor({X}, "0 0").sum(1);
+  // Should not throw a segfault
+  auto expected_empty = DecisionTreeFactor(X, "0 0").sum(1);
+  EXPECT(assert_equal(expected_empty->toDecisionTreeFactor(),
+                      empty->toDecisionTreeFactor()));
 }
 
 /* ************************************************************************* */
@@ -242,15 +306,18 @@ TEST(TableFactor, sum_max) {
   TableFactor f1(v0 & v1, "1 2  3 4  5 6");
 
   TableFactor expected(v1, "9 12");
-  TableFactor::shared_ptr actual = f1.sum(1);
+  auto actual = std::dynamic_pointer_cast<TableFactor>(f1.sum(1));
+  CHECK(actual);
   CHECK(assert_equal(expected, *actual, 1e-5));
 
   TableFactor expected2(v1, "5 6");
-  TableFactor::shared_ptr actual2 = f1.max(1);
+  auto actual2 = std::dynamic_pointer_cast<TableFactor>(f1.max(1));
+  CHECK(actual2);
   CHECK(assert_equal(expected2, *actual2));
 
   TableFactor f2(v1 & v0, "1 2  3 4  5 6");
-  TableFactor::shared_ptr actual22 = f2.sum(1);
+  auto actual22 = std::dynamic_pointer_cast<TableFactor>(f2.sum(1));
+  CHECK(actual22);
 }
 
 /* ************************************************************************* */

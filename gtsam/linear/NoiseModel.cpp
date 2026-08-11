@@ -16,9 +16,11 @@
  * @author Frank Dellaert
  */
 
-#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/base/timing.h>
+#include <gtsam/linear/NoiseModel.h>
 
+#include <Eigen/Cholesky>
+#include <cassert>
 #include <cmath>
 #include <iostream>
 #include <limits>
@@ -63,7 +65,7 @@ std::optional<Vector> checkIfDiagonal(const Matrix& M) {
     Vector diagonal(n);
     for (j = 0; j < n; j++)
       diagonal(j) = M(j, j);
-    return std::move(diagonal);
+    return diagonal;
   }
 }
 
@@ -169,6 +171,14 @@ Vector Gaussian::unwhiten(const Vector& v) const {
   return backSubstituteUpper(thisR(), v);
 }
 
+void Gaussian::unwhitenInPlace(Vector& v) const {
+  thisR().triangularView<Eigen::Upper>().solveInPlace(v);
+}
+
+void Gaussian::unwhitenInPlace(Eigen::Block<Vector>& v) const {
+  thisR().triangularView<Eigen::Upper>().solveInPlace(v);
+}
+
 /* ************************************************************************* */
 Matrix Gaussian::Whiten(const Matrix& H) const {
   return thisR() * H;
@@ -190,8 +200,6 @@ SharedDiagonal Gaussian::QR(Matrix& Ab) const {
 
   gttic(Gaussian_noise_model_QR);
 
-  static const bool debug = false;
-
   // get size(A) and maxRank
   // TODO: really no rank problems ?
    size_t m = Ab.rows(), n = Ab.cols()-1;
@@ -200,15 +208,8 @@ SharedDiagonal Gaussian::QR(Matrix& Ab) const {
   // pre-whiten everything (cheaply if possible)
   WhitenInPlace(Ab);
 
-  if(debug) gtsam::print(Ab, "Whitened Ab: ");
-
   // Eigen QR - much faster than older householder approach
   inplace_QR(Ab);
-  Ab.triangularView<Eigen::StrictlyLower>().setZero();
-
-  // hand-coded householder implementation
-  // TODO: necessary to isolate last column?
-  // householder(Ab, maxRank);
 
   return noiseModel::Unit::Create(maxRank);
 }
@@ -269,10 +270,7 @@ double Gaussian::negLogConstant() const {
 /* ************************************************************************* */
 // Diagonal
 /* ************************************************************************* */
-Diagonal::Diagonal() :
-    Gaussian(1) // TODO: Frank asks: really sure about this?
-{
-}
+Diagonal::Diagonal() : Gaussian() {}
 
 /* ************************************************************************* */
 Diagonal::Diagonal(const Vector& sigmas)
@@ -280,35 +278,38 @@ Diagonal::Diagonal(const Vector& sigmas)
       sigmas_(sigmas),
       invsigmas_(sigmas.array().inverse()),
       precisions_(invsigmas_.array().square()) {
+  if ((sigmas.array() < 0).any()) {
+    throw invalid_argument(
+        "Diagonal noise model: sigma values must be non-negative");
+  }
 }
 
 /* ************************************************************************* */
 Diagonal::shared_ptr Diagonal::Variances(const Vector& variances, bool smart) {
-  if (smart) {
-    // check whether all the same entry
-    size_t n = variances.size();
-    for (size_t j = 1; j < n; j++)
-      if (variances(j) != variances(0)) goto full;
-    return Isotropic::Variance(n, variances(0), true);
-  }
-  full: return shared_ptr(new Diagonal(variances.cwiseSqrt()));
+  // check whether all the same entry
+  return (smart && (variances.array() == variances(0)).all())
+             ? Isotropic::Variance(variances.size(), variances(0), true)
+             : shared_ptr(new Diagonal(variances.cwiseSqrt()));
 }
 
 /* ************************************************************************* */
 Diagonal::shared_ptr Diagonal::Sigmas(const Vector& sigmas, bool smart) {
   if (smart) {
     size_t n = sigmas.size();
-    if (n==0) goto full;
+    if (n == 0) goto full;
+
     // look for zeros to make a constraint
-    for (size_t j=0; j< n; ++j)
-      if (sigmas(j)<1e-8)
-        return Constrained::MixedSigmas(sigmas);
+    if ((sigmas.array() < 1e-8).any()) {
+      return Constrained::MixedSigmas(sigmas);
+    }
+
     // check whether all the same entry
-    for (size_t j = 1; j < n; j++)
-      if (sigmas(j) != sigmas(0)) goto full;
-    return Isotropic::Sigma(n, sigmas(0), true);
+    if ((sigmas.array() == sigmas(0)).all()) {
+      return Isotropic::Sigma(n, sigmas(0), true);
+    }
   }
-  full: return Diagonal::shared_ptr(new Diagonal(sigmas));
+full:
+  return Diagonal::shared_ptr(new Diagonal(sigmas));
 }
 
 /* ************************************************************************* */
@@ -316,6 +317,7 @@ Diagonal::shared_ptr Diagonal::Precisions(const Vector& precisions,
                                           bool smart) {
   return Variances(precisions.array().inverse(), smart);
 }
+
 /* ************************************************************************* */
 void Diagonal::print(const string& name) const {
   gtsam::print(sigmas_, name + "diagonal sigmas ");
@@ -330,6 +332,14 @@ Vector Diagonal::unwhiten(const Vector& v) const {
   return v.cwiseProduct(sigmas_);
 }
 
+void Diagonal::whitenInPlace(Vector& v) const {
+  v.array() *= invsigmas_.array();
+}
+
+void Diagonal::unwhitenInPlace(Vector& v) const {
+  v.array() *= sigmas_.array();
+}
+
 Matrix Diagonal::Whiten(const Matrix& H) const {
   return vector_scale(invsigmas(), H);
 }
@@ -342,6 +352,14 @@ void Diagonal::WhitenInPlace(Eigen::Block<Matrix> H) const {
   H = invsigmas().asDiagonal() * H;
 }
 
+void Diagonal::whitenInPlace(Eigen::Block<Vector>& v) const {
+  v.array() *= invsigmas_.array();
+}
+
+void Diagonal::unwhitenInPlace(Eigen::Block<Vector>& v) const {
+  v.array() *= sigmas_.array();
+}
+
 /* *******************************************************************************/
 double Diagonal::logDetR() const {
   return invsigmas_.unaryExpr([](double x) { return log(x); }).sum();
@@ -352,12 +370,16 @@ double Diagonal::logDetR() const {
 /* ************************************************************************* */
 
 namespace internal {
-// switch precisions and invsigmas to finite value
-// TODO: why?? And, why not just ask s==0.0 below ?
+// Keep invsigmas finite for constrained entries while preserving infinite
+// precision so downstream information matrices reflect determinism.
 static void fix(const Vector& sigmas, Vector& precisions, Vector& invsigmas) {
+  static const double kInfinity = std::numeric_limits<double>::infinity();
   for (Vector::Index i = 0; i < sigmas.size(); ++i)
     if (!std::isfinite(1. / sigmas[i])) {
-      precisions[i] = 0.0;
+      // Preserve the infinite precision so downstream information matrices
+      // reflect deterministic constraints. We still zero invsigmas to avoid
+      // scaling constraint rows during whitening.
+      precisions[i] = kInfinity;
       invsigmas[i] = 0.0;
     }
 }
@@ -408,6 +430,26 @@ Vector Constrained::whiten(const Vector& v) const {
     c(i) = (bi==0.0) ? ai : ai/bi; // NOTE: not ediv_()
   }
   return c;
+}
+
+void Constrained::whitenInPlace(Vector& v) const {
+  const size_t n = v.size();
+  for (size_t i = 0; i < n; ++i) {
+    const double si = sigmas_(i);
+    if (si != 0.0) {
+      v(i) /= si;
+    }
+  }
+}
+
+void Constrained::whitenInPlace(Eigen::Block<Vector>& v) const {
+  const DenseIndex n = v.rows();
+  for (DenseIndex i = 0; i < n; ++i) {
+    const double si = sigmas_(static_cast<size_t>(i));
+    if (si != 0.0) {
+      v(i, 0) /= si;
+    }
+  }
 }
 
 /* ************************************************************************* */
@@ -466,6 +508,40 @@ void Constrained::WhitenInPlace(Eigen::Block<Matrix> H) const {
   for (DenseIndex i=0; i<(DenseIndex)dim_; ++i)
     if (!constrained(i)) // if constrained, leave row of H as is
       H.row(i) *= invsigmas_(i);
+}
+
+/* ************************************************************************* */
+Matrix Constrained::informationFromA(const Matrix& A) const {
+  const double kZeroTol = 1e-12;
+  const double kInfinity = std::numeric_limits<double>::infinity();
+  Matrix info = Matrix::Zero(A.cols(), A.cols());
+  assert(static_cast<DenseIndex>(precisions_.size()) == A.rows());
+  // Accumulate row-wise contributions so constrained rows can mark infinite entries.
+  for (DenseIndex row = 0; row < A.rows(); ++row) {
+    const double precision = precisions_(row);
+    if (precision == 0.0) {
+      continue;
+    }
+    const auto a = A.row(row);
+    if (std::isinf(precision)) {
+      // Constrained rows force infinite information wherever they have support.
+      for (DenseIndex i = 0; i < a.cols(); ++i) {
+        if (std::abs(a(i)) <= kZeroTol) {
+          continue;
+        }
+        for (DenseIndex j = 0; j < a.cols(); ++j) {
+          if (std::abs(a(j)) <= kZeroTol) {
+            continue;
+          }
+          info(i, j) = kInfinity;
+        }
+      }
+    } else {
+      // Finite precisions reduce to the standard weighted outer product.
+      info.noalias() += precision * a.transpose() * a;
+    }
+  }
+  return info;
 }
 
 /* ************************************************************************* */
@@ -625,12 +701,16 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
 // Isotropic
 /* ************************************************************************* */
 Isotropic::shared_ptr Isotropic::Sigma(size_t dim, double sigma, bool smart)  {
+  if (sigma < 0)
+    throw invalid_argument("Isotropic::Sigma: sigma value must be non-negative");
   if (smart && std::abs(sigma-1.0)<1e-9) return Unit::Create(dim);
   return shared_ptr(new Isotropic(dim, sigma));
 }
 
 /* ************************************************************************* */
 Isotropic::shared_ptr Isotropic::Variance(size_t dim, double variance, bool smart)  {
+  if (variance < 0)
+    throw invalid_argument("Isotropic::Variance: variance must be non-negative");
   if (smart && std::abs(variance-1.0)<1e-9) return Unit::Create(dim);
   return shared_ptr(new Isotropic(dim, sqrt(variance)));
 }
@@ -673,6 +753,16 @@ void Isotropic::whitenInPlace(Vector& v) const {
 /* ************************************************************************* */
 void Isotropic::WhitenInPlace(Eigen::Block<Matrix> H) const {
   H *= invsigma_;
+}
+
+/* ************************************************************************* */
+void Isotropic::unwhitenInPlace(Vector& v) const {
+  v *= sigma_;
+}
+
+/* ************************************************************************* */
+void Isotropic::unwhitenInPlace(Eigen::Block<Vector>& v) const {
+  v *= sigma_;
 }
 
 /* *******************************************************************************/

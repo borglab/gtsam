@@ -26,6 +26,7 @@
 #include <gtsam/inference/Key.h>
 
 #include <vector>
+#include <cassert>
 
 namespace gtsam {
 
@@ -471,7 +472,7 @@ class CameraSet : public std::vector<CAMERA, Eigen::aligned_allocator<CAMERA>> {
   }
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
+#if GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -479,9 +480,6 @@ class CameraSet : public std::vector<CAMERA, Eigen::aligned_allocator<CAMERA>> {
     ar&(*this);
   }
 #endif
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 template <class CAMERA>

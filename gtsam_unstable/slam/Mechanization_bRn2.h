@@ -7,9 +7,11 @@
 
 #pragma once
 
-#include <gtsam/geometry/Rot3.h>
 #include <gtsam/base/Vector.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/geometry/Rot3.h>
 #include <gtsam_unstable/dllexport.h>
+
 #include <list>
 
 namespace gtsam {
@@ -35,9 +37,9 @@ public:
   }
 
   /// Copy constructor
-  Mechanization_bRn2(const Mechanization_bRn2& other) :
-      bRn_(other.bRn_), x_g_(other.x_g_), x_a_(other.x_a_) {
-  }
+  Mechanization_bRn2(const Mechanization_bRn2& other) = default;
+
+  Mechanization_bRn2& operator=(const Mechanization_bRn2& other) = default;
 
   /// gravity in the body frame
   Vector3 b_g(double g_e) const {
@@ -85,7 +87,6 @@ public:
     std::cout << s + ".x_g" << x_g_ << std::endl;
     std::cout << s + ".x_a" << x_a_ << std::endl;
   }
-
 };
 
 } // namespace gtsam

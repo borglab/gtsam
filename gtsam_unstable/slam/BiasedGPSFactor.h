@@ -15,10 +15,12 @@
  **/
 #pragma once
 
-#include <ostream>
-
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+
+#include <ostream>
 
 namespace gtsam {
 
@@ -82,7 +84,7 @@ namespace gtsam {
         H1->resize(3,6); // jacobian wrt pose
         (*H1) << Z_3x3,  pose.rotation().matrix();
         H2->resize(3,3); // jacobian wrt bias
-        (*H2) << I_3x3;
+        *H2 = I_3x3;
       }
       return pose.translation() + bias - measured_;
     }
@@ -94,7 +96,7 @@ namespace gtsam {
 
   private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>

@@ -94,7 +94,7 @@ TEST_UNSAFE( DiscreteFactorGraph, DiscreteFactorGraphEvaluationTest) {
   EXPECT_DOUBLES_EQUAL( 1.944, graph(values), 1e-9);
 
   // Check if graph product works
-  DecisionTreeFactor product = graph.product();
+  DecisionTreeFactor product = graph.product()->toDecisionTreeFactor();
   EXPECT_DOUBLES_EQUAL( 1.944, product(values), 1e-9);
 }
 
@@ -113,12 +113,13 @@ TEST(DiscreteFactorGraph, test) {
   const Ordering frontalKeys{0};
   const auto [conditional, newFactorPtr] = EliminateDiscrete(graph, frontalKeys);
 
-  DecisionTreeFactor newFactor = *newFactorPtr;
+  DecisionTreeFactor newFactor =
+      *std::dynamic_pointer_cast<DecisionTreeFactor>(newFactorPtr);
 
   // Normalize newFactor by max for comparison with expected
-  auto normalization = newFactor.max(newFactor.size());
+  auto denominator = newFactor.max(newFactor.size())->toDecisionTreeFactor();
 
-  newFactor = newFactor / *normalization;
+  newFactor = newFactor / denominator;
 
   // Check Conditional
   CHECK(conditional);
@@ -130,9 +131,10 @@ TEST(DiscreteFactorGraph, test) {
   CHECK(&newFactor);
   DecisionTreeFactor expectedFactor(B & A, "10 6 6 10");
   // Normalize by max.
-  normalization = expectedFactor.max(expectedFactor.size());
-  // Ensure normalization is correct.
-  expectedFactor = expectedFactor / *normalization;
+  denominator =
+      expectedFactor.max(expectedFactor.size())->toDecisionTreeFactor();
+  // Ensure denominator is correct.
+  expectedFactor = expectedFactor / denominator;
   EXPECT(assert_equal(expectedFactor, newFactor));
 
   // Test using elimination tree

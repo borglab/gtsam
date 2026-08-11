@@ -57,15 +57,7 @@ class GTSAM_EXPORT HybridJunctionTree
   typedef HybridJunctionTree This;           ///< This class
   typedef std::shared_ptr<This> shared_ptr;  ///< Shared pointer to this class
 
-  /**
-   * Build the elimination tree of a factor graph using precomputed column
-   * structure.
-   * @param factorGraph The factor graph for which to build the elimination tree
-   * @param structure The set of factors involving each variable.  If this is
-   * not precomputed, you can call the Create(const FactorGraph<DERIVEDFACTOR>&)
-   * named constructor instead.
-   * @return The elimination tree
-   */
+  /// Construct the junction tree from an elimination tree
   HybridJunctionTree(const HybridEliminationTree& eliminationTree);
 };
 

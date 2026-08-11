@@ -19,6 +19,7 @@
 
 #include <stack>
 #include <queue>
+#include <cassert>
 
 #include <gtsam/base/timing.h>
 #include <gtsam/base/treeTraversal-inst.h>
@@ -196,20 +197,19 @@ namespace gtsam {
     for (auto&& root : roots_) {
       std::queue<sharedNode> bfs_queue;
 
-      // first, move the root to the queue
-      bfs_queue.push(root);
-      root = nullptr; // now the root node is owned by the queue
+      // first, steal the root and move it to the queue. This invalidates root
+      bfs_queue.push(std::move(root));
 
       // for each node iterated, if its reference count is 1, it will be deleted while its children are still in the queue.
       // so that the recursive deletion will not happen.
       while (!bfs_queue.empty()) {
-        // move the ownership of the front node from the queue to the current variable
-        auto node = bfs_queue.front();
+        // move the ownership of the front node from the queue to the current variable, invalidating the sharedClique at the front of the queue
+        auto node = std::move(bfs_queue.front());
         bfs_queue.pop();
 
         // add the children of the current node to the queue, so that the queue will also own the children nodes.
         for (auto&& child : node->children) {
-          bfs_queue.push(child);
+          bfs_queue.push(std::move(child));
         } // leaving the scope of current will decrease the reference count of the current node by 1, and if the reference count is 0,
           // the node will be deleted. Because the children are in the queue, the deletion of the node will not trigger a recursive
           // deletion of the children.

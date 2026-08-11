@@ -47,7 +47,7 @@ class GTSAM_EXPORT Line3 {
   double a_, b_;  // Intersection of line with the world x-y plane rotated by R_
   // Also the closest point on line to origin
  public:
-  enum { dimension = 4 };
+  inline constexpr static auto dimension = 4;
 
   /** Default constructor is the Z axis **/
   Line3() :

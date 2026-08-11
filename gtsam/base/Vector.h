@@ -16,6 +16,7 @@
  * @author  Frank Dellaert
  * @author  Alex Hagiopol
  * @author  Varun Agrawal
+ * @author  Fan Jiang
  */
 
 // \callgraph
@@ -41,26 +42,16 @@ typedef Eigen::VectorXd Vector;
 typedef Eigen::Matrix<double, 1, 1> Vector1;
 typedef Eigen::Vector2d Vector2;
 typedef Eigen::Vector3d Vector3;
-
-static const Eigen::MatrixBase<Vector2>::ConstantReturnType Z_2x1 = Vector2::Zero();
-static const Eigen::MatrixBase<Vector3>::ConstantReturnType Z_3x1 = Vector3::Zero();
-
-// Create handy typedefs and constants for vectors with N>3
-// VectorN and Z_Nx1, for N=1..9
-#define GTSAM_MAKE_VECTOR_DEFS(N)                \
-  using Vector##N = Eigen::Matrix<double, N, 1>; \
-  static const Eigen::MatrixBase<Vector##N>::ConstantReturnType Z_##N##x1 = Vector##N::Zero();
-
-GTSAM_MAKE_VECTOR_DEFS(4)
-GTSAM_MAKE_VECTOR_DEFS(5)
-GTSAM_MAKE_VECTOR_DEFS(6)
-GTSAM_MAKE_VECTOR_DEFS(7)
-GTSAM_MAKE_VECTOR_DEFS(8)
-GTSAM_MAKE_VECTOR_DEFS(9)
-GTSAM_MAKE_VECTOR_DEFS(10)
-GTSAM_MAKE_VECTOR_DEFS(11)
-GTSAM_MAKE_VECTOR_DEFS(12)
-GTSAM_MAKE_VECTOR_DEFS(15)
+using Vector4 = Eigen::Matrix<double, 4, 1>;
+using Vector5 = Eigen::Matrix<double, 5, 1>;
+using Vector6 = Eigen::Matrix<double, 6, 1>;
+using Vector7 = Eigen::Matrix<double, 7, 1>;
+using Vector8 = Eigen::Matrix<double, 8, 1>;
+using Vector9 = Eigen::Matrix<double, 9, 1>;
+using Vector10 = Eigen::Matrix<double, 10, 1>;
+using Vector11 = Eigen::Matrix<double, 11, 1>;
+using Vector12 = Eigen::Matrix<double, 12, 1>;
+using Vector15 = Eigen::Matrix<double, 15, 1>;
 
 typedef Eigen::VectorBlock<Vector> SubVector;
 typedef Eigen::VectorBlock<const Vector> ConstSubVector;
@@ -193,14 +184,12 @@ GTSAM_EXPORT Vector ediv_(const Vector &a, const Vector &b);
  */
 template<class V1, class V2>
 inline double dot(const V1 &a, const V2& b) {
-  assert (b.size()==a.size());
   return a.dot(b);
 }
 
 /** compatibility version for ublas' inner_prod() */
 template<class V1, class V2>
 inline double inner_prod(const V1 &a, const V2& b) {
-  assert (b.size()==a.size());
   return a.dot(b);
 }
 

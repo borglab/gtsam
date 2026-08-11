@@ -9,21 +9,17 @@
 
  * -------------------------------------------------------------------------- */
 
- /**
-  * @file    precompiled_header.h>
-  * @brief   Include headers that will be included nearly everywhere
-  * @author  Frank Dellaert
-  * @date    November 2018
-  */
+/**
+ * @file    precompiled_header.h>
+ * @brief   Include headers that are used heavily, or are heavy to parse
+ * @author  Frank Dellaert
+ * @date    November 2018
+ */
 
 #pragma once
 
 // All headers in base, except:
 // treeTraversal-inst.h: very specific to only a few compilation units
-// numericalDerivative.h : includes things in linear, nonlinear :-(
-// testLie.h: includes numericalDerivative
-#include <gtsam/base/Lie.h>
-#include <gtsam/base/chartTesting.h>
 #include <gtsam/base/cholesky.h>
 #include <gtsam/base/concepts.h>
 #include <gtsam/base/ConcurrentMap.h>
@@ -40,11 +36,14 @@
 #include <gtsam/base/lieProxies.h>
 #include <gtsam/base/Manifold.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/ProductLieGroup.h>
+#include <gtsam/base/SemidirectLieGroup.h>
 #include <gtsam/base/serialization.h>
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/base/SymmetricBlockMatrix.h>
+#include <gtsam/base/TangentLieGroup.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/ThreadsafeException.h>
@@ -54,5 +53,13 @@
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/base/VerticalBlockMatrix.h>
-
-
+#include <gtsam/geometry/BearingRange.h>
+#include <gtsam/geometry/CalibratedCamera.h>
+#include <gtsam/geometry/ExtendedPose3.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Rot3.h>
+#include <gtsam/geometry/SO3.h>
+#include <gtsam/geometry/Unit3.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>

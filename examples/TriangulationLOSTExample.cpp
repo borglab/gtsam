@@ -123,9 +123,9 @@ int main(int argc, char* argv[]) {
 
   double rank_tol = 1e-9;
   std::shared_ptr<Cal3_S2> calib = std::make_shared<Cal3_S2>();
-  std::chrono::nanoseconds durationDLT;
-  std::chrono::nanoseconds durationDLTOpt;
-  std::chrono::nanoseconds durationLOST;
+  std::chrono::nanoseconds durationDLT{};
+  std::chrono::nanoseconds durationDLTOpt{};
+  std::chrono::nanoseconds durationLOST{};
 
   for (int i = 0; i < nrTrials; i++) {
     Point2Vector noisyMeasurements =

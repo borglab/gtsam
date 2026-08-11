@@ -18,6 +18,7 @@
 
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/discrete/DiscreteConditional.h>
+#include <gtsam/discrete/TableDistribution.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridConditional.h>
@@ -39,43 +40,48 @@ using symbol_shorthand::Z;
 
 using namespace serializationTestHelpers;
 
-BOOST_CLASS_EXPORT_GUID(Factor, "gtsam_Factor");
-BOOST_CLASS_EXPORT_GUID(HybridFactor, "gtsam_HybridFactor");
-BOOST_CLASS_EXPORT_GUID(JacobianFactor, "gtsam_JacobianFactor");
-BOOST_CLASS_EXPORT_GUID(GaussianConditional, "gtsam_GaussianConditional");
-BOOST_CLASS_EXPORT_GUID(DiscreteConditional, "gtsam_DiscreteConditional");
+BOOST_CLASS_EXPORT_GUID(Factor, "gtsam_Factor")
+BOOST_CLASS_EXPORT_GUID(HybridFactor, "gtsam_HybridFactor")
+BOOST_CLASS_EXPORT_GUID(JacobianFactor, "gtsam_JacobianFactor")
+BOOST_CLASS_EXPORT_GUID(GaussianConditional, "gtsam_GaussianConditional")
+BOOST_CLASS_EXPORT_GUID(DiscreteConditional, "gtsam_DiscreteConditional")
+BOOST_CLASS_EXPORT_GUID(TableDistribution, "gtsam_TableDistribution")
 
-BOOST_CLASS_EXPORT_GUID(DecisionTreeFactor, "gtsam_DecisionTreeFactor");
+BOOST_CLASS_EXPORT_GUID(DecisionTreeFactor, "gtsam_DecisionTreeFactor")
 using ADT = AlgebraicDecisionTree<Key>;
-BOOST_CLASS_EXPORT_GUID(ADT, "gtsam_AlgebraicDecisionTree");
-BOOST_CLASS_EXPORT_GUID(ADT::Leaf, "gtsam_AlgebraicDecisionTree_Leaf");
+BOOST_CLASS_EXPORT_GUID(ADT, "gtsam_AlgebraicDecisionTree")
+BOOST_CLASS_EXPORT_GUID(ADT::Leaf, "gtsam_AlgebraicDecisionTree_Leaf")
 BOOST_CLASS_EXPORT_GUID(ADT::Choice, "gtsam_AlgebraicDecisionTree_Choice")
 
-BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor, "gtsam_HybridGaussianFactor");
-BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::Factors,
-                        "gtsam_HybridGaussianFactor_Factors");
-BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::Factors::Leaf,
-                        "gtsam_HybridGaussianFactor_Factors_Leaf");
-BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::Factors::Choice,
-                        "gtsam_HybridGaussianFactor_Factors_Choice");
+BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor, "gtsam_HybridGaussianFactor")
+BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::FactorValuePairs,
+                        "gtsam_HybridGaussianFactor_Factors")
+BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::FactorValuePairs::Leaf,
+                        "gtsam_HybridGaussianFactor_Factors_Leaf")
+BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::FactorValuePairs::Choice,
+                        "gtsam_HybridGaussianFactor_Factors_Choice")
+
+BOOST_CLASS_EXPORT_GUID(GaussianFactorGraphValuePair,
+                        "gtsam_GaussianFactorGraphValuePair")
+BOOST_CLASS_EXPORT_GUID(HybridGaussianProductFactor,
+                        "gtsam_HybridGaussianProductFactor")
 
 BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional,
-                        "gtsam_HybridGaussianConditional");
+                        "gtsam_HybridGaussianConditional")
 BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional::Conditionals,
-                        "gtsam_HybridGaussianConditional_Conditionals");
+                        "gtsam_HybridGaussianConditional_Conditionals")
 BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional::Conditionals::Leaf,
-                        "gtsam_HybridGaussianConditional_Conditionals_Leaf");
+                        "gtsam_HybridGaussianConditional_Conditionals_Leaf")
 BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional::Conditionals::Choice,
-                        "gtsam_HybridGaussianConditional_Conditionals_Choice");
+                        "gtsam_HybridGaussianConditional_Conditionals_Choice")
 // Needed since GaussianConditional::FromMeanAndStddev uses it
-BOOST_CLASS_EXPORT_GUID(noiseModel::Isotropic, "gtsam_noiseModel_Isotropic");
+BOOST_CLASS_EXPORT_GUID(noiseModel::Isotropic, "gtsam_noiseModel_Isotropic")
 
-BOOST_CLASS_EXPORT_GUID(HybridBayesNet, "gtsam_HybridBayesNet");
+BOOST_CLASS_EXPORT_GUID(HybridBayesNet, "gtsam_HybridBayesNet")
 
 /* ****************************************************************************/
 // Test HybridGaussianFactor serialization.
 TEST(HybridSerialization, HybridGaussianFactor) {
-  KeyVector continuousKeys{X(0)};
   DiscreteKey discreteKey{M(0), 2};
 
   auto A = Matrix::Zero(2, 1);
@@ -83,9 +89,9 @@ TEST(HybridSerialization, HybridGaussianFactor) {
   auto b1 = Matrix::Ones(2, 1);
   auto f0 = std::make_shared<JacobianFactor>(X(0), A, b0);
   auto f1 = std::make_shared<JacobianFactor>(X(0), A, b1);
-  std::vector<GaussianFactorValuePair> factors{{f0, 0.0}, {f1, 0.0}};
+  std::vector<GaussianFactor::shared_ptr> factors{f0, f1};
 
-  const HybridGaussianFactor factor(continuousKeys, discreteKey, factors);
+  const HybridGaussianFactor factor(discreteKey, factors);
 
   EXPECT(equalsObj<HybridGaussianFactor>(factor));
   EXPECT(equalsXML<HybridGaussianFactor>(factor));
@@ -115,9 +121,7 @@ TEST(HybridSerialization, HybridGaussianConditional) {
       GaussianConditional::FromMeanAndStddev(Z(0), I, X(0), Vector1(0), 0.5));
   const auto conditional1 = std::make_shared<GaussianConditional>(
       GaussianConditional::FromMeanAndStddev(Z(0), I, X(0), Vector1(0), 3));
-  const HybridGaussianConditional gm({Z(0)}, {X(0)}, {mode},
-                                     HybridGaussianConditional::Conditionals(
-                                         {mode}, {conditional0, conditional1}));
+  const HybridGaussianConditional gm(mode, {conditional0, conditional1});
 
   EXPECT(equalsObj<HybridGaussianConditional>(gm));
   EXPECT(equalsXML<HybridGaussianConditional>(gm));
@@ -128,7 +132,7 @@ TEST(HybridSerialization, HybridGaussianConditional) {
 // Test HybridBayesNet serialization.
 TEST(HybridSerialization, HybridBayesNet) {
   Switching s(2);
-  HybridBayesNet hbn = *(s.linearizedFactorGraph.eliminateSequential());
+  HybridBayesNet hbn = *(s.linearizedFactorGraph().eliminateSequential());
 
   EXPECT(equalsObj<HybridBayesNet>(hbn));
   EXPECT(equalsXML<HybridBayesNet>(hbn));
@@ -139,7 +143,7 @@ TEST(HybridSerialization, HybridBayesNet) {
 // Test HybridBayesTree serialization.
 TEST(HybridSerialization, HybridBayesTree) {
   Switching s(2);
-  HybridBayesTree hbt = *(s.linearizedFactorGraph.eliminateMultifrontal());
+  HybridBayesTree hbt = *(s.linearizedFactorGraph().eliminateMultifrontal());
 
   EXPECT(equalsObj<HybridBayesTree>(hbt));
   EXPECT(equalsXML<HybridBayesTree>(hbt));

@@ -26,7 +26,7 @@ void AllDiff::print(const std::string& s, const KeyFormatter& formatter) const {
 }
 
 /* ************************************************************************* */
-double AllDiff::operator()(const DiscreteValues& values) const {
+double AllDiff::evaluate(const Assignment<Key>& values) const {
   std::set<size_t> taken;  // record values taken by keys
   for (Key dkey : keys_) {
     size_t value = values.at(dkey);      // get the value for that key

@@ -119,13 +119,14 @@ namespace gtsam {
     /** Assignment operator */
     This& operator=(const This& other);
 
+  public:
+  
     /// @name Testable
     /// @{
 
     /** check equality */
     bool equals(const This& other, double tol = 1e-9) const;
 
-  public:
     /** print */
     void print(const std::string& s = "",
         const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
@@ -179,24 +180,38 @@ namespace gtsam {
      */
     sharedFactorGraph joint(Key j1, Key j2, const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
 
+    /** Return a joint factor graph on an arbitrary set of variables. */
+    sharedFactorGraph joint(
+        const KeyVector& keys,
+        const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
+
     /**
      * return joint on two variables as a BayesNet
      * Limitation: can only calculate joint if cliques are disjoint or one of them is root
      */
     sharedBayesNet jointBayesNet(Key j1, Key j2, const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
 
-   /// @name Graph Display
-   /// @{
+    /**
+     * Return a joint marginal Bayes net whose elimination order follows the
+     * first occurrence of each key.
+     */
+    sharedBayesNet jointBayesNet(
+        const KeyVector& keys,
+        const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
 
-   /// Output to graphviz format, stream version.
-   void dot(std::ostream& os, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+    /// @}   
+    /// @name Graph Display
+    /// @{
 
-   /// Output to graphviz format string.
-   std::string dot(
-       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+    /// Output to graphviz format, stream version.
+    void dot(std::ostream& os, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
-   /// output to file with graphviz format.
-   void saveGraph(const std::string& filename,
+    /// Output to graphviz format string.
+    std::string dot(
+        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
+    /// output to file with graphviz format.
+    void saveGraph(const std::string& filename,
                   const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
   
     /// @}
@@ -243,11 +258,21 @@ namespace gtsam {
     /** Add all cliques in this BayesTree to the specified factor graph */
     void addFactorsToGraph(FactorGraph<FactorType>* graph) const;
 
-  protected:
+    /**
+     * @brief Returns the set of keys from the tree that are affected by a
+     * update to 'keys'
+     * @param keys: The keys updated and in-turn affecting the tree
+     * @returns The set of keys from the tree that are affected
+     * @note Note: Return matches contents of BayesNet from removeTop without
+     * affecting the tree
+     */
+    gtsam::KeySet collectAffectedKeys(const gtsam::KeyVector& keys) const;
+
+   protected:
 
     /** private helper method for saving the Tree to a text file in GraphViz format */
     void dot(std::ostream &s, sharedClique clique, const KeyFormatter& keyFormatter,
-             int parentnum = 0) const;
+             size_t parentnum = 0) const;
 
     /** Gather data on a single clique */
     void getCliqueData(sharedClique clique, BayesTreeCliqueData* stats) const;
@@ -258,11 +283,16 @@ namespace gtsam {
     /** Fill the nodes index for a subtree */
     void fillNodesIndex(const sharedClique& subtree);
 
+    /// @brief Helper for collectAffectedKeys that recursively aggregates
+    /// affected keys from a path from 'clique' to the root of tree
+    void collectAffectedPathKeys(gtsam::KeySet& traversedKeys,
+                                 const sharedClique& clique) const;
+
     // Friend JunctionTree because it directly fills roots and nodes index.
     template<class BAYESTREE, class GRAPH> friend class EliminatableClusterTree;
 
    private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>

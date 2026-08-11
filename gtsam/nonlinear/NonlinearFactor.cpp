@@ -19,6 +19,8 @@
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
+#include <cassert>
+
 namespace gtsam {
 
 /* ************************************************************************* */
@@ -29,6 +31,14 @@ double NonlinearFactor::error(const Values& c) const {
 /* ************************************************************************* */
 double NonlinearFactor::error(const HybridValues& c) const {
   return this->error(c.nonlinear());
+}
+
+/* ************************************************************************* */
+void NonlinearFactor::qcqpFactors(
+    NonlinearFactorGraph* /*costs*/,
+    NonlinearEqualityConstraints* /*constraints*/,
+    size_t /*columnDimension*/) const {
+  throw std::runtime_error("NonlinearFactor::qcqpFactors is not implemented");
 }
 
 /* ************************************************************************* */

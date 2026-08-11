@@ -22,7 +22,9 @@
 
 // These are the included headers listed in `gtsam.i`
 {includes}
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/export.hpp>
+#endif
 
 // Export classes for serialization
 {boost_class_export}
@@ -47,4 +49,3 @@ namespace py = pybind11;
 {wrapped_namespace}
 
 }}
-

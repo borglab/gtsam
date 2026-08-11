@@ -15,11 +15,12 @@
  * @author  Richard Roberts
  */
 
-
-#include <gtsam/geometry/Pose2.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/timing.h>
+#include <gtsam/geometry/Pose2.h>
+
 #include <iostream>
-#include "gtsam/base/OptionalJacobian.h"
 
 using namespace std;
 using namespace gtsam;
@@ -93,7 +94,7 @@ int main()
   int n = 50000000;
   cout << "NOTE:  Times are reported for " << n << " calls" << endl;
 
-  Vector1 v; v << 0.1;
+  Vector1 v{0.1};
   Rot2 R = Rot2(0.4), R2(0.5), R3(0.6);
 
   TEST(Rot2_Expmap, Rot2::Expmap(v));

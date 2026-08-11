@@ -93,7 +93,7 @@ virtual class Value {
   // No constructors because this is an abstract class
 
   // Testable
-  void print(string s = "") const;
+  void print(string str = "") const;
 
   // Manifold
   size_t dim() const;

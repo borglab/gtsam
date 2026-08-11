@@ -117,8 +117,10 @@ namespace gtsam {
 
     /// @}
 
-  public:
+  protected:
     ~EliminationTree(); 
+
+  public:
     /// @name Standard Interface
     /// @{
 

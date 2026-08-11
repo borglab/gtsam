@@ -24,6 +24,7 @@
 #include <gtsam/discrete/DecisionTree.h>
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/hybrid/HybridFactor.h>
+#include <gtsam/hybrid/HybridGaussianProductFactor.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
@@ -66,20 +67,10 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
 
   /// typedef for Decision Tree of Gaussian factors and arbitrary value.
   using FactorValuePairs = DecisionTree<Key, GaussianFactorValuePair>;
-  /// typedef for Decision Tree of Gaussian factors.
-  using Factors = DecisionTree<Key, sharedFactor>;
 
  private:
   /// Decision tree of Gaussian factors indexed by discrete keys.
-  Factors factors_;
-
-  /**
-   * @brief Helper function to return factors and functional to create a
-   * DecisionTree of Gaussian Factor Graphs.
-   *
-   * @return GaussianFactorGraphTree
-   */
-  GaussianFactorGraphTree asGaussianFactorGraphTree() const;
+  FactorValuePairs factors_;
 
  public:
   /// @name Constructors
@@ -93,14 +84,11 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
    * providing the factors for each mode m as a vector of factors ϕ_m(x).
    * The value ϕ(x,m) for the factor is simply ϕ_m(x).
    *
-   * @param continuousKeys Vector of keys for continuous factors.
    * @param discreteKey The discrete key for the "mode", indexing components.
    * @param factors Vector of gaussian factors, one for each mode.
    */
-  HybridGaussianFactor(const KeyVector &continuousKeys,
-                       const DiscreteKey &discreteKey,
-                       const std::vector<GaussianFactor::shared_ptr> &factors)
-      : Base(continuousKeys, {discreteKey}), factors_({discreteKey}, factors) {}
+  HybridGaussianFactor(const DiscreteKey &discreteKey,
+                       const std::vector<GaussianFactor::shared_ptr> &factors);
 
   /**
    * @brief Construct a new HybridGaussianFactor on a single discrete key,
@@ -108,15 +96,11 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
    * provided as a vector of pairs (ϕ_m(x), E_m).
    * The value ϕ(x,m) for the factor is now ϕ_m(x) + E_m.
    *
-   * @param continuousKeys Vector of keys for continuous factors.
    * @param discreteKey The discrete key for the "mode", indexing components.
-   * @param factors Vector of gaussian factor-scalar pairs, one per mode.
+   * @param factorPairs Vector of gaussian factor-scalar pairs, one per mode.
    */
-  HybridGaussianFactor(const KeyVector &continuousKeys,
-                       const DiscreteKey &discreteKey,
-                       const std::vector<GaussianFactorValuePair> &factors)
-      : HybridGaussianFactor(continuousKeys, {discreteKey},
-                             FactorValuePairs({discreteKey}, factors)) {}
+  HybridGaussianFactor(const DiscreteKey &discreteKey,
+                       const std::vector<GaussianFactorValuePair> &factorPairs);
 
   /**
    * @brief Construct a new HybridGaussianFactor on a several discrete keys M,
@@ -124,13 +108,11 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
    * scalars are provided as a DecisionTree<Key> of pairs (ϕ_M(x), E_M).
    * The value ϕ(x,M) for the factor is again ϕ_m(x) + E_m.
    *
-   * @param continuousKeys A vector of keys representing continuous variables.
    * @param discreteKeys Discrete variables and their cardinalities.
-   * @param factors The decision tree of Gaussian factor/scalar pairs.
+   * @param factorPairs The decision tree of Gaussian factor/scalar pairs.
    */
-  HybridGaussianFactor(const KeyVector &continuousKeys,
-                       const DiscreteKeys &discreteKeys,
-                       const FactorValuePairs &factors);
+  HybridGaussianFactor(const DiscreteKeys &discreteKeys,
+                       const FactorValuePairs &factorPairs);
 
   /// @}
   /// @name Testable
@@ -146,17 +128,7 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
   /// @{
 
   /// Get factor at a given discrete assignment.
-  sharedFactor operator()(const DiscreteValues &assignment) const;
-
-  /**
-   * @brief Combine the Gaussian Factor Graphs in `sum` and `this` while
-   * maintaining the original tree structure.
-   *
-   * @param sum Decision Tree of Gaussian Factor Graphs indexed by the
-   * variables.
-   * @return Sum
-   */
-  GaussianFactorGraphTree add(const GaussianFactorGraphTree &sum) const;
+  GaussianFactorValuePair operator()(const DiscreteValues &assignment) const;
 
   /**
    * @brief Compute error of the HybridGaussianFactor as a tree.
@@ -172,25 +144,43 @@ class GTSAM_EXPORT HybridGaussianFactor : public HybridFactor {
    * @brief Compute the log-likelihood, including the log-normalizing constant.
    * @return double
    */
-  double error(const HybridValues &values) const override;
+  double error(const HybridValues &hybridValues) const override;
 
   /// Getter for GaussianFactor decision tree
-  const Factors &factors() const { return factors_; }
+  const FactorValuePairs &factors() const { return factors_; }
 
-  /// Add HybridNonlinearFactor to a Sum, syntactic sugar.
-  friend GaussianFactorGraphTree &operator+=(
-      GaussianFactorGraphTree &sum, const HybridGaussianFactor &factor) {
-    sum = factor.add(sum);
-    return sum;
-  }
+  /**
+   * @brief Helper function to return factors and functional to create a
+   * DecisionTree of Gaussian Factor Graphs.
+   *
+   * @return HybridGaussianProductFactor
+   */
+  virtual HybridGaussianProductFactor asProductFactor() const;
+
+  /// Restrict the factor to the given discrete values.
+  std::shared_ptr<Factor> restrict(
+      const DiscreteValues &discreteValues) const override;
+
   /// @}
 
  private:
-  /// Helper method to compute the error of a component.
-  double potentiallyPrunedComponentError(
-      const sharedFactor &gf, const VectorValues &continuousValues) const;
+  /**
+   * @brief Helper function to augment the [A|b] matrices in the factor
+   * components with the additional scalar values. This is done by storing the
+   * value in the `b` vector as an additional row.
+   *
+   * @param factors DecisionTree of GaussianFactors and arbitrary scalars.
+   * @return FactorValuePairs
+   */
+  static FactorValuePairs augment(const FactorValuePairs &factors);
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+  /// Helper struct to assist private constructor below.
+  struct ConstructorHelper;
+
+  // Private constructor using ConstructorHelper above.
+  HybridGaussianFactor(const ConstructorHelper &helper);
+
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>

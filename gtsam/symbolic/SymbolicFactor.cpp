@@ -16,7 +16,6 @@
  */
 
 #include <gtsam/base/FastVector.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/symbolic/SymbolicFactor.h>
 #include <gtsam/symbolic/SymbolicConditional.h>
 #include <gtsam/symbolic/SymbolicFactorGraph.h>

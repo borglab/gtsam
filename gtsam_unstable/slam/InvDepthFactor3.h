@@ -98,7 +98,7 @@ public:
           " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
       return Vector::Ones(2) * 2.0 * K_->fx();
     }
-    return (Vector(1) << 0.0).finished();
+    return Vector{{0.0}};
   }
 
   /** return the measurement */
@@ -113,7 +113,7 @@ public:
 
 private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
+#if GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>

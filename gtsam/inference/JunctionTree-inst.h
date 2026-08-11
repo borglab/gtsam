@@ -25,6 +25,8 @@
 #include <gtsam/symbolic/SymbolicConditional.h>
 #include <gtsam/symbolic/SymbolicFactor-inst.h>
 
+#include <cassert>
+
 namespace gtsam {
 
 template<class BAYESTREE, class GRAPH, class ETREE_NODE>

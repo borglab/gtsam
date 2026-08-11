@@ -21,6 +21,7 @@
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteBayesTree.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
+#include <gtsam/base/TestableAssertions.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -186,11 +187,11 @@ TEST(DiscreteBayesTree, Shortcuts) {
   shortcut = clique->shortcut(R, EliminateDiscrete);
   DOUBLES_EQUAL(joint_8_11_12_13 / joint_11_13, shortcut.evaluate(all1), 1e-9);
 
-  // calculate all shortcuts to root
-  DiscreteBayesTree::Nodes cliques = self.bayesTree->nodes();
-  for (auto clique : cliques) {
-    DiscreteBayesNet shortcut = clique.second->shortcut(R, EliminateDiscrete);
-    if (debug) {
+  if (debug) {
+    // print all shortcuts to root
+    DiscreteBayesTree::Nodes cliques = self.bayesTree->nodes();
+    for (auto clique : cliques) {
+      DiscreteBayesNet shortcut = clique.second->shortcut(R, EliminateDiscrete);
       clique.second->conditional_->printSignature();
       shortcut.print("shortcut:");
     }
@@ -202,6 +203,7 @@ TEST(DiscreteBayesTree, Shortcuts) {
 TEST(DiscreteBayesTree, MarginalFactors) {
   TestFixture self;
 
+  // Caclulate marginals with brute force enumeration.
   Vector marginals = Vector::Zero(15);
   for (size_t i = 0; i < self.assignments.size(); ++i) {
     DiscreteValues& x = self.assignments[i];
@@ -287,30 +289,33 @@ TEST(DiscreteBayesTree, Joints) {
 TEST(DiscreteBayesTree, Dot) {
   TestFixture self;
   std::string actual = self.bayesTree->dot();
-  EXPECT(actual ==
-         "digraph G{\n"
-         "0[label=\"13, 11, 6, 7\"];\n"
-         "0->1\n"
-         "1[label=\"14 : 11, 13\"];\n"
-         "1->2\n"
-         "2[label=\"9, 12 : 14\"];\n"
-         "2->3\n"
-         "3[label=\"3 : 9, 12\"];\n"
-         "2->4\n"
-         "4[label=\"2 : 9, 12\"];\n"
-         "2->5\n"
-         "5[label=\"8 : 12, 14\"];\n"
-         "5->6\n"
-         "6[label=\"1 : 8, 12\"];\n"
-         "5->7\n"
-         "7[label=\"0 : 8, 12\"];\n"
-         "1->8\n"
-         "8[label=\"10 : 13, 14\"];\n"
-         "8->9\n"
-         "9[label=\"5 : 10, 13\"];\n"
-         "8->10\n"
-         "10[label=\"4 : 10, 13\"];\n"
-         "}");
+  // print actual:
+  if (debug) std::cout << actual << std::endl;
+  std::string expected =
+    R"(digraph G{
+13[label="13, 11, 6, 7"];
+13->14
+14[label="14 : 11, 13"];
+14->9
+9[label="9, 12 : 14"];
+9->3
+3[label="3 : 9, 12"];
+9->2
+2[label="2 : 9, 12"];
+9->8
+8[label="8 : 12, 14"];
+8->1
+1[label="1 : 8, 12"];
+8->0
+0[label="0 : 8, 12"];
+14->10
+10[label="10 : 13, 14"];
+10->5
+5[label="5 : 10, 13"];
+10->4
+4[label="4 : 10, 13"];
+})";
+  EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
@@ -367,6 +372,41 @@ TEST(DiscreteBayesTree, Lookup) {
   EXPECT_DOUBLES_EQUAL(1.0, (*lookup_a2_x3)({{X(2),2},{A(2),0},{X(3),2}}), 1e-9);
   // x2 a2 x3 == 2 1 2
   EXPECT_DOUBLES_EQUAL(1.0, (*lookup_a2_x3)({{X(2),2},{A(2),1},{X(3),2}}), 1e-9);
+}
+
+/* ************************************************************************* */
+// Test creating a Bayes tree directly from cliques
+TEST(DiscreteBayesTree, DirectFromCliques) {
+  // Create a BayesNet
+  DiscreteBayesNet bayesNet;
+  DiscreteKey A(0, 2), B(1, 2), C(2, 2);
+  bayesNet.add(A % "1/3");
+  bayesNet.add(B | A = "1/3 3/1");
+  bayesNet.add(C | B = "3/1 3/1");
+
+  // Create cliques directly
+  auto clique2 = std::make_shared<DiscreteBayesTree::Clique>(
+      std::make_shared<DiscreteConditional>(C | B = "3/1 3/1"));
+  auto clique1 = std::make_shared<DiscreteBayesTree::Clique>(
+      std::make_shared<DiscreteConditional>(B | A = "1/3 3/1"));
+  auto clique0 = std::make_shared<DiscreteBayesTree::Clique>(
+      std::make_shared<DiscreteConditional>(A % "1/3"));
+
+  // Create a BayesTree
+  DiscreteBayesTree bayesTree;
+  bayesTree.insertRoot(clique2);
+  bayesTree.addClique(clique1, clique2);
+  bayesTree.addClique(clique0, clique1);
+
+  // Check that the BayesTree is correct
+  DiscreteValues values;
+  values[A.first] = 1;
+  values[B.first] = 1;
+  values[C.first] = 1;
+
+  // Regression
+  double expected = .046875;
+  DOUBLES_EQUAL(expected, bayesTree.evaluate(values), 1e-9);
 }
 
 /* ************************************************************************* */

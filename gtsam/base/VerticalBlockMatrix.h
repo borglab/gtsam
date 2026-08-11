@@ -21,6 +21,8 @@
 #include <gtsam/base/MatrixSerialization.h>
 #include <gtsam/base/FastVector.h>
 
+#include <cassert>
+
 namespace gtsam {
 
   // Forward declarations
@@ -55,13 +57,46 @@ namespace gtsam {
     DenseIndex blockStart_; ///< Changes apparent matrix view, see main class comment.
 
   public:
-
     /** Construct an empty VerticalBlockMatrix */
-    VerticalBlockMatrix() :
-      rowStart_(0), rowEnd_(0), blockStart_(0)
-    {
+    VerticalBlockMatrix() : rowStart_(0), rowEnd_(0), blockStart_(0) {
       variableColOffsets_.push_back(0);
-      assertInvariants();
+    }
+
+    // Destructor
+    ~VerticalBlockMatrix() = default;
+
+    // Copy constructor (default)
+    VerticalBlockMatrix(const VerticalBlockMatrix& other) = default;
+
+    // Copy assignment operator (default)
+    VerticalBlockMatrix& operator=(const VerticalBlockMatrix& other) = default;
+
+    // Move constructor
+    VerticalBlockMatrix(VerticalBlockMatrix&& other) noexcept
+      : matrix_(std::move(other.matrix_)),
+        variableColOffsets_(std::move(other.variableColOffsets_)),
+        rowStart_(other.rowStart_),
+        rowEnd_(other.rowEnd_),
+        blockStart_(other.blockStart_) {
+      other.rowStart_ = 0;
+      other.rowEnd_ = 0;
+      other.blockStart_ = 0;
+    }
+
+    // Move assignment operator
+    VerticalBlockMatrix& operator=(VerticalBlockMatrix&& other) noexcept {
+      if (this != &other) {
+        matrix_ = std::move(other.matrix_);
+        variableColOffsets_ = std::move(other.variableColOffsets_);
+        rowStart_ = other.rowStart_;
+        rowEnd_ = other.rowEnd_;
+        blockStart_ = other.blockStart_;
+
+        other.rowStart_ = 0;
+        other.rowEnd_ = 0;
+        other.blockStart_ = 0;
+      }
+      return *this;
     }
 
     /** Construct from a container of the sizes of each vertical block. */
@@ -219,7 +254,7 @@ namespace gtsam {
     friend class SymmetricBlockMatrix;
 
   private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>

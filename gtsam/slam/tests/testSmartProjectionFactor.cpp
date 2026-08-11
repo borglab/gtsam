@@ -19,11 +19,13 @@
  *  @date   Sept 2013
  */
 
-#include "smartFactorScenarios.h"
-#include <gtsam/slam/SmartProjectionFactor.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <CppUnitLite/TestHarness.h>
-#include <iostream>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/sfm/SfmTrack.h>
+#include <gtsam/slam/SmartProjectionFactor.h>
+
+#include "smartFactorScenarios.h"
 
 namespace {
 static const bool isDebugTest = false;
@@ -31,13 +33,22 @@ static const Symbol l1('l', 1), l2('l', 2), l3('l', 3);
 static const Key c1 = 1, c2 = 2, c3 = 3;
 static const Point2 measurement1(323.0, 240.0);
 static const double rankTol = 1.0;
+
+LevenbergMarquardtParams makeLMParams(bool debug = false) {
+  LevenbergMarquardtParams p;
+  p.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
+  if (debug) {
+    p.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
+    p.verbosity = NonlinearOptimizerParams::ERROR;
+  }
+  return p;
 }
 
-template<class CALIBRATION>
+template <class CALIBRATION>
 PinholeCamera<CALIBRATION> perturbCameraPoseAndCalibration(
     const PinholeCamera<CALIBRATION>& camera) {
-  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 10),
-      Point3(0.5, 0.1, 0.3));
+  Pose3 noise_pose =
+      Pose3(Rot3::Ypr(-M_PI / 10, 0., -M_PI / 10), Point3(0.5, 0.1, 0.3));
   Pose3 cameraPose = camera.pose();
   Pose3 perturbedCameraPose = cameraPose.compose(noise_pose);
   typename gtsam::traits<CALIBRATION>::TangentVector d;
@@ -46,6 +57,7 @@ PinholeCamera<CALIBRATION> perturbCameraPoseAndCalibration(
   CALIBRATION perturbedCalibration = camera.calibration().retract(d);
   return PinholeCamera<CALIBRATION>(perturbedCameraPose, perturbedCalibration);
 }
+}  // namespace
 
 /* ************************************************************************* */
 TEST(SmartProjectionFactor, perturbCameraPose) {
@@ -149,8 +161,7 @@ TEST(SmartProjectionFactor, noisy ) {
       assert_equal(Point3(13.7587, 1.43851, -1.14274), *factor1->point(), 1e-4));
 
   // Check whitened errors
-  Vector expected(4);
-  expected << -7, 235, 58, -242;
+  Vector4 expected{-7, 235, 58, -242};
   SmartFactor::Cameras cameras1 = factor1->cameras(values);
   Point3 point1 = *factor1->point();
   Vector actual = factor1->whitenedError(cameras1, point1);
@@ -231,8 +242,7 @@ TEST(SmartProjectionFactor, perturbPoseAndOptimize ) {
           1e-4));
 
   // Check whitened errors
-  Vector expected(6);
-  expected << 256, 29, -26, 29, -206, -202;
+  Vector6 expected{256, 29, -26, 29, -206, -202};
   Point3 point1 = *smartFactor1->point();
   SmartFactor::Cameras cameras1 = smartFactor1->cameras(initial);
   Vector reprojectionError = cameras1.reprojectionError(point1,
@@ -242,12 +252,7 @@ TEST(SmartProjectionFactor, perturbPoseAndOptimize ) {
   EXPECT(assert_equal(expected, actual, 1));
 
   // Optimize
-  LevenbergMarquardtParams lmParams;
-  if (isDebugTest) {
-    lmParams.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
-    lmParams.verbosity = NonlinearOptimizerParams::ERROR;
-  }
-  LevenbergMarquardtOptimizer optimizer(graph, initial, lmParams);
+  LevenbergMarquardtOptimizer optimizer(graph, initial, makeLMParams(isDebugTest));
   Values result = optimizer.optimize();
 
   EXPECT(assert_equal(landmark1, *smartFactor1->point(), 1e-5));
@@ -314,14 +319,8 @@ TEST(SmartProjectionFactor, perturbPoseAndOptimizeFromSfM_tracks ) {
   if (isDebugTest)
     values.at<Camera>(c3).print("Smart: Pose3 before optimization: ");
 
-  LevenbergMarquardtParams lmParams;
-  if (isDebugTest)
-    lmParams.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
-  if (isDebugTest)
-    lmParams.verbosity = NonlinearOptimizerParams::ERROR;
-
   Values result;
-  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
+  LevenbergMarquardtOptimizer optimizer(graph, values, makeLMParams(isDebugTest));
   result = optimizer.optimize();
 
   //  GaussianFactorGraph::shared_ptr GFG = graph.linearize(values);
@@ -388,15 +387,11 @@ TEST(SmartProjectionFactor, perturbCamerasAndOptimize ) {
   if (isDebugTest)
     values.at<Camera>(c3).print("Smart: Pose3 before optimization: ");
 
-  LevenbergMarquardtParams lmParams;
+  LevenbergMarquardtParams lmParams = makeLMParams(isDebugTest);
   lmParams.relativeErrorTol = 1e-8;
   lmParams.absoluteErrorTol = 0;
   lmParams.maxIterations = 20;
-  if (isDebugTest)
-    lmParams.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
-  if (isDebugTest)
-    lmParams.verbosity = NonlinearOptimizerParams::ERROR;
-
+  
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
@@ -464,14 +459,10 @@ TEST(SmartProjectionFactor, Cal3Bundler ) {
   if (isDebugTest)
     values.at<Camera>(c3).print("Smart: Pose3 before optimization: ");
 
-  LevenbergMarquardtParams lmParams;
+  LevenbergMarquardtParams lmParams = makeLMParams(isDebugTest);
   lmParams.relativeErrorTol = 1e-8;
   lmParams.absoluteErrorTol = 0;
   lmParams.maxIterations = 20;
-  if (isDebugTest)
-    lmParams.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
-  if (isDebugTest)
-    lmParams.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
@@ -537,14 +528,10 @@ TEST(SmartProjectionFactor, Cal3Bundler2 ) {
   if (isDebugTest)
     values.at<Camera>(c3).print("Smart: Pose3 before optimization: ");
 
-  LevenbergMarquardtParams lmParams;
+  LevenbergMarquardtParams lmParams = makeLMParams(isDebugTest);
   lmParams.relativeErrorTol = 1e-8;
   lmParams.absoluteErrorTol = 0;
   lmParams.maxIterations = 20;
-  if (isDebugTest)
-    lmParams.verbosityLM = LevenbergMarquardtParams::TRYLAMBDA;
-  if (isDebugTest)
-    lmParams.verbosity = NonlinearOptimizerParams::ERROR;
 
   Values result;
   LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
@@ -799,9 +786,8 @@ TEST(SmartProjectionFactor, implicitJacobianFactor ) {
   Implicit9& implicitSchurFactor =
       dynamic_cast<Implicit9&>(*gaussianImplicitSchurFactor);
 
-  VectorValues x{
-      {c1, (Vector(9) << 1, 2, 3, 4, 5, 6, 7, 8, 9).finished()},
-      {c2, (Vector(9) << 11, 12, 13, 14, 15, 16, 17, 18, 19).finished()}};
+  VectorValues x{{c1, Vector{{1, 2, 3, 4, 5, 6, 7, 8, 9}}},
+                 {c2, Vector{{11, 12, 13, 14, 15, 16, 17, 18, 19}}}};
 
   VectorValues yExpected, yActual;
   double alpha = 1.0;
@@ -816,4 +802,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

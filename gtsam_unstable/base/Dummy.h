@@ -29,6 +29,8 @@ namespace gtsam {
     size_t id;
     Dummy();
     ~Dummy();
+    Dummy(const Dummy& other) = default;
+    Dummy& operator=(const Dummy& other) = default;
     void print(const std::string& s="") const ;
     unsigned char dummyTwoVar(unsigned char a) const ;
   };

@@ -18,11 +18,15 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/debug.h>
+#include <gtsam/base/utilities.h>
 #include <gtsam/discrete/DiscreteConditional.h>
+#include <gtsam/discrete/Ring.h>
 #include <gtsam/discrete/Signature.h>
 #include <gtsam/hybrid/HybridValues.h>
+#include <gtsam/inference/Ordering.h>
 
 #include <algorithm>
+#include <cassert>
 #include <random>
 #include <set>
 #include <stdexcept>
@@ -42,8 +46,9 @@ template class GTSAM_EXPORT
 
 /* ************************************************************************** */
 DiscreteConditional::DiscreteConditional(const size_t nrFrontals,
-                                         const DecisionTreeFactor& f)
-    : BaseFactor(f / (*f.sum(nrFrontals))), BaseConditional(nrFrontals) {}
+                                         const DiscreteFactor& f)
+    : BaseFactor((f / f.sum(nrFrontals))->toDecisionTreeFactor()),
+      BaseConditional(nrFrontals) {}
 
 /* ************************************************************************** */
 DiscreteConditional::DiscreteConditional(size_t nrFrontals,
@@ -74,8 +79,15 @@ DiscreteConditional::DiscreteConditional(const Signature& signature)
 /* ************************************************************************** */
 DiscreteConditional DiscreteConditional::operator*(
     const DiscreteConditional& other) const {
+  // If the root is a nullptr, we have a TableDistribution
+  // TODO(Varun) Revisit this hack after RSS2025 submission
+  if (!other.root_) {
+    DiscreteConditional dc(other.nrFrontals(), other.toDecisionTreeFactor());
+    return dc * (*this);
+  }
+
   // Take union of frontal keys
-  std::set<Key> newFrontals;
+  KeySet newFrontals;
   for (auto&& key : this->frontals()) newFrontals.insert(key);
   for (auto&& key : other.frontals()) newFrontals.insert(key);
 
@@ -104,7 +116,7 @@ DiscreteConditional DiscreteConditional::operator*(
   // Finally, add parents to keys, in order
   for (auto&& dk : parents) discreteKeys.push_back(dk);
 
-  ADT product = ADT::apply(other, ADT::Ring::mul);
+  ADT product = ADT::apply(other, Ring::mul);
   return DiscreteConditional(newFrontals.size(), discreteKeys, product);
 }
 
@@ -148,11 +160,11 @@ void DiscreteConditional::print(const string& s,
 /* ************************************************************************** */
 bool DiscreteConditional::equals(const DiscreteFactor& other,
                                  double tol) const {
-  if (!dynamic_cast<const DecisionTreeFactor*>(&other)) {
+  if (!dynamic_cast<const BaseFactor*>(&other)) {
     return false;
   } else {
-    const DecisionTreeFactor& f(static_cast<const DecisionTreeFactor&>(other));
-    return DecisionTreeFactor::equals(f, tol);
+    const BaseFactor& f(static_cast<const BaseFactor&>(other));
+    return BaseFactor::equals(f, tol);
   }
 }
 
@@ -258,17 +270,27 @@ size_t DiscreteConditional::argmax(const DiscreteValues& parentsValues) const {
 }
 
 /* ************************************************************************** */
-void DiscreteConditional::sampleInPlace(DiscreteValues* values) const {
-  assert(nrFrontals() == 1);
-  Key j = (firstFrontalKey());
-  size_t sampled = sample(*values);  // Sample variable given parents
-  (*values)[j] = sampled;            // store result in partial solution
+void DiscreteConditional::sampleInPlace(DiscreteValues* values,
+                                        std::mt19937_64* rng) const {
+  // throw if more than one frontal:
+  if (nrFrontals() != 1) {
+    throw std::invalid_argument(
+        "DiscreteConditional::sampleInPlace can only be called on single "
+        "variable conditionals");
+  }
+  Key j = firstFrontalKey();
+  // throw if values already contains j:
+  if (values->count(j) > 0) {
+    throw std::invalid_argument(
+        "DiscreteConditional::sampleInPlace: values already contains j");
+  }
+  size_t sampled = sample(*values, rng);  // Sample variable given parents
+  (*values)[j] = sampled;                 // store result in partial solution
 }
 
 /* ************************************************************************** */
-size_t DiscreteConditional::sample(const DiscreteValues& parentsValues) const {
-  static mt19937 rng(2);  // random number generator
-
+size_t DiscreteConditional::sample(const DiscreteValues& parentsValues,
+                                   std::mt19937_64* rng) const {
   // Get the correct conditional distribution
   ADT pFS = choose(parentsValues, true);  // P(F|S=parentsValues)
 
@@ -289,28 +311,33 @@ size_t DiscreteConditional::sample(const DiscreteValues& parentsValues) const {
       return value;  // shortcut exit
     }
   }
+
+  // Check if rng is nullptr, then assign default
+  rng = (rng == nullptr) ? &kRandomNumberGenerator : rng;
+
   std::discrete_distribution<size_t> distribution(p.begin(), p.end());
-  return distribution(rng);
+  return distribution(*rng);
 }
 
 /* ************************************************************************** */
-size_t DiscreteConditional::sample(size_t parent_value) const {
+size_t DiscreteConditional::sample(size_t parent_value,
+                                   std::mt19937_64* rng) const {
   if (nrParents() != 1)
     throw std::invalid_argument(
         "Single value sample() can only be invoked on single-parent "
         "conditional");
   DiscreteValues values;
   values.emplace(keys_.back(), parent_value);
-  return sample(values);
+  return sample(values, rng);
 }
 
 /* ************************************************************************** */
-size_t DiscreteConditional::sample() const {
+size_t DiscreteConditional::sample(std::mt19937_64* rng) const {
   if (nrParents() != 0)
     throw std::invalid_argument(
         "sample() can only be invoked on no-parent prior");
   DiscreteValues values;
-  return sample(values);
+  return sample(values, rng);
 }
 
 /* ************************************************************************* */
@@ -363,7 +390,7 @@ std::string DiscreteConditional::markdown(const KeyFormatter& keyFormatter,
   ss << "*\n" << std::endl;
   if (nrParents() == 0) {
     // We have no parents, call factor method.
-    ss << DecisionTreeFactor::markdown(keyFormatter, names);
+    ss << BaseFactor::markdown(keyFormatter, names);
     return ss.str();
   }
 
@@ -415,7 +442,7 @@ string DiscreteConditional::html(const KeyFormatter& keyFormatter,
   ss << "</i></p>\n";
   if (nrParents() == 0) {
     // We have no parents, call factor method.
-    ss << DecisionTreeFactor::html(keyFormatter, names);
+    ss << BaseFactor::html(keyFormatter, names);
     return ss.str();
   }
 
@@ -463,13 +490,58 @@ string DiscreteConditional::html(const KeyFormatter& keyFormatter,
 
 /* ************************************************************************* */
 double DiscreteConditional::evaluate(const HybridValues& x) const {
-  return this->evaluate(x.discrete());
+  return this->operator()(x.discrete());
 }
 
 /* ************************************************************************* */
-double DiscreteConditional::negLogConstant() const {
-  return 0.0;
+DiscreteFactor::shared_ptr DiscreteConditional::max(
+    const Ordering& keys) const {
+  return BaseFactor::max(keys);
 }
+
+/* ************************************************************************* */
+void DiscreteConditional::prune(size_t maxNrAssignments) {
+  // Get as DiscreteConditional so the probabilities are normalized
+  DiscreteConditional pruned(nrFrontals(), BaseFactor::prune(maxNrAssignments));
+  this->root_ = pruned.root_;
+}
+
+/* ************************************************************************ */
+void DiscreteConditional::removeDiscreteModes(const DiscreteValues& given) {
+  AlgebraicDecisionTree<Key> tree(*this);
+  for (auto [key, value] : given) {
+    tree = tree.choose(key, value);
+  }
+
+  // Get the leftover DiscreteKey frontals
+  DiscreteKeys frontals;
+  std::for_each(this->frontals().begin(), this->frontals().end(), [&](Key key) {
+    // Check if frontal key exists in given, if not add to new frontals
+    if (given.count(key) == 0) {
+      frontals.emplace_back(key, this->cardinalities_.at(key));
+    }
+  });
+  // Get the leftover DiscreteKey parents
+  DiscreteKeys parents;
+  std::for_each(this->parents().begin(), this->parents().end(), [&](Key key) {
+    // Check if parent key exists in given, if not add to new parents
+    if (given.count(key) == 0) {
+      parents.emplace_back(key, this->cardinalities_.at(key));
+    }
+  });
+
+  DiscreteKeys allDkeys(frontals);
+  allDkeys.insert(allDkeys.end(), parents.begin(), parents.end());
+
+  // Update the conditional
+  this->keys_ = allDkeys.indices();
+  this->cardinalities_ = allDkeys.cardinalities();
+  this->root_ = tree.root_;
+  this->nrFrontals_ = frontals.size();
+}
+
+/* ************************************************************************* */
+double DiscreteConditional::negLogConstant() const { return 0.0; }
 
 /* ************************************************************************* */
 

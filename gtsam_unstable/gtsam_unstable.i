@@ -10,11 +10,15 @@ class gtsam::Point2Vector;
 class gtsam::Rot2;
 class gtsam::Pose2;
 class gtsam::Point3;
+class gtsam::StereoCamera;
 class gtsam::SO3;
 class gtsam::SO4;
 class gtsam::SOn;
 class gtsam::Rot3;
 class gtsam::Pose3;
+class gtsam::StereoCamera;
+class gtsam::SmartProjectionParams;
+class gtsam::SmartStereoProjectionFactor;
 virtual class gtsam::noiseModel::Base;
 virtual class gtsam::noiseModel::Gaussian;
 virtual class gtsam::noiseModel::Isotropic;
@@ -27,6 +31,7 @@ virtual class gtsam::HessianFactor;
 virtual class gtsam::JacobianFactor;
 class gtsam::Cal3_S2;
 class gtsam::Cal3DS2;
+class gtsam::Cal3_S2Stereo;
 class gtsam::GaussianFactorGraph;
 class gtsam::NonlinearFactorGraph;
 class gtsam::Ordering;
@@ -41,6 +46,7 @@ class gtsam::ISAM2Params;
 class gtsam::GaussianDensity;
 class gtsam::LevenbergMarquardtOptimizer;
 class gtsam::FixedLagSmoother;
+class gtsam::StereoPoint2;
 
 namespace gtsam {
 
@@ -162,7 +168,7 @@ class BearingS2 {
   void serializable() const; // enabling serialization functionality
 };
 
-  
+
 #include <gtsam_unstable/geometry/SimWall2D.h>
 class SimWall2D {
   SimWall2D();
@@ -280,7 +286,7 @@ class SimPolygon2D {
 #include <gtsam/nonlinear/PriorFactor.h>
 template<T = {gtsam::PoseRTV}>
 virtual class PriorFactor : gtsam::NoiseModelFactor {
-  PriorFactor(size_t key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
+  PriorFactor(gtsam::Key key, const T& prior, const gtsam::noiseModel::Base* noiseModel);
 
   void serializable() const; // enabling serialization functionality
 };
@@ -288,7 +294,7 @@ virtual class PriorFactor : gtsam::NoiseModelFactor {
 #include <gtsam/slam/BetweenFactor.h>
 template<T = {gtsam::PoseRTV}>
 virtual class BetweenFactor : gtsam::NoiseModelFactor {
-  BetweenFactor(size_t key1, size_t key2, const T& relativePose, const gtsam::noiseModel::Base* noiseModel);
+  BetweenFactor(gtsam::Key key1, gtsam::Key key2, const T& relativePose, const gtsam::noiseModel::Base* noiseModel);
 
   void serializable() const; // enabling serialization functionality
 };
@@ -296,11 +302,11 @@ virtual class BetweenFactor : gtsam::NoiseModelFactor {
 #include <gtsam_unstable/slam/BetweenFactorEM.h>
 template<T = {gtsam::Pose2}>
 virtual class BetweenFactorEM : gtsam::NonlinearFactor {
-  BetweenFactorEM(size_t key1, size_t key2, const T& relativePose,
+  BetweenFactorEM(gtsam::Key key1, gtsam::Key key2, const T& relativePose,
       const gtsam::noiseModel::Gaussian* model_inlier, const gtsam::noiseModel::Gaussian* model_outlier,
       double prior_inlier, double prior_outlier);
 
-  BetweenFactorEM(size_t key1, size_t key2, const T& relativePose,
+  BetweenFactorEM(gtsam::Key key1, gtsam::Key key2, const T& relativePose,
         const gtsam::noiseModel::Gaussian* model_inlier, const gtsam::noiseModel::Gaussian* model_outlier,
         double prior_inlier, double prior_outlier,  bool flag_bump_up_near_zero_probs);
 
@@ -322,12 +328,12 @@ virtual class BetweenFactorEM : gtsam::NonlinearFactor {
 #include <gtsam_unstable/slam/TransformBtwRobotsUnaryFactorEM.h>
 template<T = {gtsam::Pose2}>
 virtual class TransformBtwRobotsUnaryFactorEM : gtsam::NonlinearFactor {
-  TransformBtwRobotsUnaryFactorEM(size_t key, const T& relativePose, size_t keyA, size_t keyB,
+  TransformBtwRobotsUnaryFactorEM(gtsam::Key key, const T& relativePose, gtsam::Key keyA, gtsam::Key keyB,
       const gtsam::Values& valA, const gtsam::Values& valB,
       const gtsam::noiseModel::Gaussian* model_inlier, const gtsam::noiseModel::Gaussian* model_outlier,
       double prior_inlier, double prior_outlier);
 
-  TransformBtwRobotsUnaryFactorEM(size_t key, const T& relativePose, size_t keyA, size_t keyB,
+  TransformBtwRobotsUnaryFactorEM(gtsam::Key key, const T& relativePose, gtsam::Key keyA, gtsam::Key keyB,
         const gtsam::Values& valA, const gtsam::Values& valB,
         const gtsam::noiseModel::Gaussian* model_inlier, const gtsam::noiseModel::Gaussian* model_outlier,
         double prior_inlier, double prior_outlier, bool flag_bump_up_near_zero_probs, bool start_with_M_step);
@@ -348,7 +354,7 @@ virtual class TransformBtwRobotsUnaryFactorEM : gtsam::NonlinearFactor {
 #include <gtsam_unstable/slam/TransformBtwRobotsUnaryFactor.h>
 template<T = {gtsam::Pose2}>
 virtual class TransformBtwRobotsUnaryFactor : gtsam::NonlinearFactor {
-  TransformBtwRobotsUnaryFactor(size_t key, const T& relativePose, size_t keyA, size_t keyB,
+  TransformBtwRobotsUnaryFactor(gtsam::Key key, const T& relativePose, gtsam::Key keyA, gtsam::Key keyB,
       const gtsam::Values& valA, const gtsam::Values& valB,
       const gtsam::noiseModel::Gaussian* model);
 
@@ -363,7 +369,7 @@ virtual class TransformBtwRobotsUnaryFactor : gtsam::NonlinearFactor {
 virtual class SmartRangeFactor : gtsam::NoiseModelFactor {
   SmartRangeFactor(double s);
 
-  void addRange(size_t key, double measuredRange);
+  void addRange(gtsam::Key key, double measuredRange);
   gtsam::Point2 triangulate(const gtsam::Values& x) const;
   //void print(string s) const;
 
@@ -372,23 +378,12 @@ virtual class SmartRangeFactor : gtsam::NoiseModelFactor {
 #include <gtsam/sam/RangeFactor.h>
 template<POSE, POINT>
 virtual class RangeFactor : gtsam::NoiseModelFactor {
-  RangeFactor(size_t key1, size_t key2, double measured, const gtsam::noiseModel::Base* noiseModel);
+  RangeFactor(gtsam::Key key1, gtsam::Key key2, double measured, const gtsam::noiseModel::Base* noiseModel);
 
   void serializable() const; // enabling serialization functionality
 };
 
 typedef gtsam::RangeFactor<gtsam::PoseRTV, gtsam::PoseRTV> RangeFactorRTV;
-
-#include <gtsam_unstable/geometry/Event.h>
-class Event {
-  Event();
-  Event(double t, const gtsam::Point3& p);
-  Event(double t, double x, double y, double z);
-  double time() const;
-  gtsam::Point3 location() const;
-  double height() const;
-  void print(string s) const;
-};
 
 class TimeOfArrival {
   TimeOfArrival();
@@ -399,18 +394,18 @@ class TimeOfArrival {
 #include <gtsam_unstable/slam/TOAFactor.h>
 virtual class TOAFactor : gtsam::NonlinearFactor {
   // For now, because of overload issues, we only expose constructor with known sensor coordinates:
-  TOAFactor(size_t key1, gtsam::Point3 sensor, double measured,
+  TOAFactor(gtsam::Key key1, gtsam::Point3 sensor, double measured,
             const gtsam::noiseModel::Base* noiseModel);
-  static void InsertEvent(size_t key, const gtsam::Event& event, gtsam::Values* values);
+  static void InsertEvent(gtsam::Key key, const gtsam::Event& event, gtsam::Values* values);
 };
 
 #include <gtsam/nonlinear/NonlinearEquality.h>
 template<T = {gtsam::PoseRTV}>
 virtual class NonlinearEquality : gtsam::NoiseModelFactor {
   // Constructor - forces exact evaluation
-  NonlinearEquality(size_t j, const T& feasible);
+  NonlinearEquality(gtsam::Key j, const T& feasible);
   // Constructor - allows inexact evaluation
-  NonlinearEquality(size_t j, const T& feasible, double error_gain);
+  NonlinearEquality(gtsam::Key j, const T& feasible, double error_gain);
 
   void serializable() const; // enabling serialization functionality
 };
@@ -420,18 +415,18 @@ template<POSE = {gtsam::PoseRTV}>
 virtual class IMUFactor : gtsam::NoiseModelFactor {
   /** Standard constructor */
   IMUFactor(gtsam::Vector accel, gtsam::Vector gyro,
-    double dt, size_t key1, size_t key2, const gtsam::noiseModel::Base* model);
+    double dt, gtsam::Key key1, gtsam::Key key2, const gtsam::noiseModel::Base* model);
 
   /** Full IMU vector specification */
   IMUFactor(gtsam::Vector imu_vector,
-    double dt, size_t key1, size_t key2, const gtsam::noiseModel::Base* model);
+    double dt, gtsam::Key key1, gtsam::Key key2, const gtsam::noiseModel::Base* model);
 
   gtsam::Vector gyro() const;
   gtsam::Vector accel() const;
   gtsam::Vector z() const;
 
   template <I = {1, 2}>
-  size_t key() const;
+  gtsam::Key key() const;
 };
 
 #include <gtsam_unstable/dynamics/FullIMUFactor.h>
@@ -439,47 +434,47 @@ template<POSE = {gtsam::PoseRTV}>
 virtual class FullIMUFactor : gtsam::NoiseModelFactor {
   /** Standard constructor */
   FullIMUFactor(gtsam::Vector accel, gtsam::Vector gyro,
-    double dt, size_t key1, size_t key2, const gtsam::noiseModel::Base* model);
+    double dt, gtsam::Key key1, gtsam::Key key2, const gtsam::noiseModel::Base* model);
 
   /** Single IMU vector - imu = [accel, gyro] */
   FullIMUFactor(gtsam::Vector imu,
-    double dt, size_t key1, size_t key2, const gtsam::noiseModel::Base* model);
+    double dt, gtsam::Key key1, gtsam::Key key2, const gtsam::noiseModel::Base* model);
 
   gtsam::Vector gyro() const;
   gtsam::Vector accel() const;
   gtsam::Vector z() const;
 
   template <I = {1, 2}>
-  size_t key() const;
+  gtsam::Key key() const;
 };
 
 #include <gtsam_unstable/dynamics/DynamicsPriors.h>
 virtual class DHeightPrior : gtsam::NonlinearFactor {
-  DHeightPrior(size_t key, double height, const gtsam::noiseModel::Base* model);
+  DHeightPrior(gtsam::Key key, double height, const gtsam::noiseModel::Base* model);
 };
 
 virtual class DRollPrior : gtsam::NonlinearFactor {
   /** allows for explicit roll parameterization - uses canonical coordinate */
-  DRollPrior(size_t key, double wx, const gtsam::noiseModel::Base* model);
+  DRollPrior(gtsam::Key key, double wx, const gtsam::noiseModel::Base* model);
   /** Forces roll to zero */
-  DRollPrior(size_t key, const gtsam::noiseModel::Base* model);
+  DRollPrior(gtsam::Key key, const gtsam::noiseModel::Base* model);
 };
 
 virtual class VelocityPrior : gtsam::NonlinearFactor {
-  VelocityPrior(size_t key, gtsam::Vector vel, const gtsam::noiseModel::Base* model);
+  VelocityPrior(gtsam::Key key, gtsam::Vector vel, const gtsam::noiseModel::Base* model);
 };
 
 virtual class DGroundConstraint : gtsam::NonlinearFactor {
   // Primary constructor allows for variable height of the "floor"
-  DGroundConstraint(size_t key, double height, const gtsam::noiseModel::Base* model);
+  DGroundConstraint(gtsam::Key key, double height, const gtsam::noiseModel::Base* model);
   // Fully specify vector - use only for debugging
-  DGroundConstraint(size_t key, gtsam::Vector constraint, const gtsam::noiseModel::Base* model);
+  DGroundConstraint(gtsam::Key key, gtsam::Vector constraint, const gtsam::noiseModel::Base* model);
 };
 
 #include <gtsam_unstable/dynamics/VelocityConstraint3.h>
 virtual class VelocityConstraint3 : gtsam::NonlinearFactor {
   /** Standard constructor */
-  VelocityConstraint3(size_t key1, size_t key2, size_t velKey, double dt);
+  VelocityConstraint3(gtsam::Key key1, gtsam::Key key2, gtsam::Key velKey, double dt);
 
   gtsam::Vector evaluateError(const double& x1, const double& x2, const double& v) const;
 };
@@ -487,7 +482,7 @@ virtual class VelocityConstraint3 : gtsam::NonlinearFactor {
 #include <gtsam_unstable/dynamics/Pendulum.h>
 virtual class PendulumFactor1 : gtsam::NonlinearFactor {
   /** Standard constructor */
-  PendulumFactor1(size_t k1, size_t k, size_t velKey, double dt);
+  PendulumFactor1(gtsam::Key k1, gtsam::Key k, gtsam::Key velKey, double dt);
 
   gtsam::Vector evaluateError(const double& qk1, const double& qk, const double& v) const;
 };
@@ -495,34 +490,34 @@ virtual class PendulumFactor1 : gtsam::NonlinearFactor {
 #include <gtsam_unstable/dynamics/Pendulum.h>
 virtual class PendulumFactor2 : gtsam::NonlinearFactor {
   /** Standard constructor */
-  PendulumFactor2(size_t vk1, size_t vk, size_t qKey, double dt, double L, double g);
+  PendulumFactor2(gtsam::Key vk1, gtsam::Key vk, gtsam::Key qKey, double dt, double L, double g);
 
   gtsam::Vector evaluateError(const double& vk1, const double& vk, const double& q) const;
 };
 
 virtual class PendulumFactorPk : gtsam::NonlinearFactor {
   /** Standard constructor */
-  PendulumFactorPk(size_t pk, size_t qk, size_t qk1, double h, double m, double r, double g, double alpha);
+  PendulumFactorPk(gtsam::Key pk, gtsam::Key qk, gtsam::Key qk1, double h, double m, double r, double g, double alpha);
 
   gtsam::Vector evaluateError(const double& pk, const double& qk, const double& qk1) const;
 };
 
 virtual class PendulumFactorPk1 : gtsam::NonlinearFactor {
   /** Standard constructor */
-  PendulumFactorPk1(size_t pk1, size_t qk, size_t qk1, double h, double m, double r, double g, double alpha);
+  PendulumFactorPk1(gtsam::Key pk1, gtsam::Key qk, gtsam::Key qk1, double h, double m, double r, double g, double alpha);
 
   gtsam::Vector evaluateError(const double& pk1, const double& qk, const double& qk1) const;
 };
 
 #include <gtsam_unstable/dynamics/SimpleHelicopter.h>
 virtual class Reconstruction : gtsam::NoiseModelFactor {
-  Reconstruction(size_t gKey1, size_t gKey, size_t xiKey, double h);
+  Reconstruction(gtsam::Key gKey1, gtsam::Key gKey, gtsam::Key xiKey, double h);
 
   gtsam::Vector evaluateError(const gtsam::Pose3& gK1, const gtsam::Pose3& gK, gtsam::Vector xiK) const;
 };
 
 virtual class DiscreteEulerPoincareHelicopter : gtsam::NoiseModelFactor {
-  DiscreteEulerPoincareHelicopter(size_t xiKey, size_t xiKey_1, size_t gKey,
+  DiscreteEulerPoincareHelicopter(gtsam::Key xiKey, gtsam::Key xiKey_1, gtsam::Key gKey,
       double h, gtsam::Matrix Inertia, gtsam::Vector Fu, double m);
 
   gtsam::Vector evaluateError(gtsam::Vector xiK, gtsam::Vector xiK_1, const gtsam::Pose3& gK) const;
@@ -532,19 +527,6 @@ virtual class DiscreteEulerPoincareHelicopter : gtsam::NoiseModelFactor {
 // nonlinear
 //*************************************************************************
 #include <gtsam/nonlinear/FixedLagSmoother.h>
-#include <gtsam_unstable/nonlinear/IncrementalFixedLagSmoother.h>
-virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
-  IncrementalFixedLagSmoother();
-  IncrementalFixedLagSmoother(double smootherLag);
-  IncrementalFixedLagSmoother(double smootherLag, const gtsam::ISAM2Params& params);
-
-  void print(string s = "IncrementalFixedLagSmoother:\n") const;
-
-  gtsam::ISAM2Params params() const;
-
-  gtsam::NonlinearFactorGraph getFactors() const;
-  gtsam::ISAM2 getISAM2() const;
-};
 
 #include <gtsam_unstable/nonlinear/ConcurrentFilteringAndSmoothing.h>
 virtual class ConcurrentFilter {
@@ -615,7 +597,7 @@ virtual class ConcurrentBatchSmoother : gtsam::ConcurrentSmoother {
 #include <gtsam_unstable/slam/RelativeElevationFactor.h>
 virtual class RelativeElevationFactor: gtsam::NoiseModelFactor {
   RelativeElevationFactor();
-  RelativeElevationFactor(size_t poseKey, size_t pointKey, double measured,
+  RelativeElevationFactor(gtsam::Key poseKey, gtsam::Key pointKey, double measured,
       const gtsam::noiseModel::Base* model);
 
   double measured() const;
@@ -624,25 +606,25 @@ virtual class RelativeElevationFactor: gtsam::NoiseModelFactor {
 
 #include <gtsam_unstable/slam/DummyFactor.h>
 virtual class DummyFactor : gtsam::NonlinearFactor {
-  DummyFactor(size_t key1, size_t dim1, size_t key2, size_t dim2);
+  DummyFactor(gtsam::Key key1, size_t dim1, gtsam::Key key2, size_t dim2);
 };
 
 #include <gtsam_unstable/slam/InvDepthFactorVariant1.h>
 virtual class InvDepthFactorVariant1 : gtsam::NoiseModelFactor {
-  InvDepthFactorVariant1(size_t poseKey, size_t landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
+  InvDepthFactorVariant1(gtsam::Key poseKey, gtsam::Key landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
 };
 
 #include <gtsam_unstable/slam/InvDepthFactorVariant2.h>
 virtual class InvDepthFactorVariant2 : gtsam::NoiseModelFactor {
-  InvDepthFactorVariant2(size_t poseKey, size_t landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::Point3& referencePoint, const gtsam::noiseModel::Base* model);
+  InvDepthFactorVariant2(gtsam::Key poseKey, gtsam::Key landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::Point3& referencePoint, const gtsam::noiseModel::Base* model);
 };
 
 #include <gtsam_unstable/slam/InvDepthFactorVariant3.h>
 virtual class InvDepthFactorVariant3a : gtsam::NoiseModelFactor {
-  InvDepthFactorVariant3a(size_t poseKey, size_t landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
+  InvDepthFactorVariant3a(gtsam::Key poseKey, gtsam::Key landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
 };
 virtual class InvDepthFactorVariant3b : gtsam::NoiseModelFactor {
-  InvDepthFactorVariant3b(size_t poseKey1, size_t poseKey2, size_t landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
+  InvDepthFactorVariant3b(gtsam::Key poseKey1, gtsam::Key poseKey2, gtsam::Key landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
 };
 
 
@@ -691,7 +673,7 @@ virtual class PartialPriorFactor : gtsam::NoiseModelFactor {
 #include <gtsam_unstable/slam/TSAMFactors.h>
 //typedef gtsam::NoiseModelFactorN<gtsam::Pose2, gtsam::Point2> NLPosePose;
 virtual class DeltaFactor : gtsam::NoiseModelFactor {
-  DeltaFactor(size_t i, size_t j, const gtsam::Point2& measured,
+  DeltaFactor(gtsam::Key i, gtsam::Key j, const gtsam::Point2& measured,
       const gtsam::noiseModel::Base* noiseModel);
   //void print(string s) const;
 };
@@ -699,7 +681,7 @@ virtual class DeltaFactor : gtsam::NoiseModelFactor {
 //typedef gtsam::NoiseModelFactorN<gtsam::Pose2, gtsam::Pose2, gtsam::Pose2,
 //    gtsam::Point2> NLPosePosePosePoint;
 virtual class DeltaFactorBase : gtsam::NoiseModelFactor {
-  DeltaFactorBase(size_t b1, size_t i, size_t b2, size_t j,
+  DeltaFactorBase(gtsam::Key b1, gtsam::Key i, gtsam::Key b2, gtsam::Key j,
       const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel);
   //void print(string s) const;
 };
@@ -707,7 +689,7 @@ virtual class DeltaFactorBase : gtsam::NoiseModelFactor {
 //typedef gtsam::NoiseModelFactorN<gtsam::Pose2, gtsam::Pose2, gtsam::Pose2,
 //    gtsam::Pose2> NLPosePosePosePose;
 virtual class OdometryFactorBase : gtsam::NoiseModelFactor {
-  OdometryFactorBase(size_t b1, size_t i, size_t b2, size_t j,
+  OdometryFactorBase(gtsam::Key b1, gtsam::Key i, gtsam::Key b2, gtsam::Key j,
       const gtsam::Pose2& measured, const gtsam::noiseModel::Base* noiseModel);
   //void print(string s) const;
 };
@@ -718,10 +700,10 @@ virtual class OdometryFactorBase : gtsam::NoiseModelFactor {
 template<POSE, LANDMARK, CALIBRATION>
 virtual class ProjectionFactorPPP : gtsam::NoiseModelFactor {
   ProjectionFactorPPP(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
-    size_t poseKey, size_t transformKey, size_t pointKey, const CALIBRATION* k);
+    gtsam::Key poseKey, gtsam::Key transformKey, gtsam::Key pointKey, const CALIBRATION* k);
 
   ProjectionFactorPPP(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
-      size_t poseKey, size_t transformKey, size_t pointKey, const CALIBRATION* k, bool throwCheirality, bool verboseCheirality);
+      gtsam::Key poseKey, gtsam::Key transformKey, gtsam::Key pointKey, const CALIBRATION* k, bool throwCheirality, bool verboseCheirality);
 
   gtsam::Point2 measured() const;
   CALIBRATION* calibration() const;
@@ -739,10 +721,10 @@ typedef gtsam::ProjectionFactorPPP<gtsam::Pose3, gtsam::Point3, gtsam::Cal3Fishe
 template<POSE, LANDMARK, CALIBRATION>
 virtual class ProjectionFactorPPPC : gtsam::NoiseModelFactor {
   ProjectionFactorPPPC(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
-    size_t poseKey, size_t transformKey, size_t pointKey, size_t calibKey);
+    gtsam::Key poseKey, gtsam::Key transformKey, gtsam::Key pointKey, gtsam::Key calibKey);
 
   ProjectionFactorPPPC(const gtsam::Point2& measured, const gtsam::noiseModel::Base* noiseModel,
-      size_t poseKey, size_t transformKey, size_t pointKey, size_t calibKey, bool throwCheirality, bool verboseCheirality);
+      gtsam::Key poseKey, gtsam::Key transformKey, gtsam::Key pointKey, gtsam::Key calibKey, bool throwCheirality, bool verboseCheirality);
 
   gtsam::Point2 measured() const;
   bool verboseCheirality() const;
@@ -755,20 +737,72 @@ typedef gtsam::ProjectionFactorPPPC<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2>
 typedef gtsam::ProjectionFactorPPPC<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> ProjectionFactorPPPCCal3DS2;
 typedef gtsam::ProjectionFactorPPPC<gtsam::Pose3, gtsam::Point3, gtsam::Cal3Fisheye> ProjectionFactorPPPCCal3Fisheye;
 
+#include <gtsam_unstable/slam/SmartStereoProjectionFactor.h>
+virtual class SmartStereoProjectionFactor : gtsam::NonlinearFactor {
+  SmartStereoProjectionFactor(const gtsam::noiseModel::Base* sharedNoiseModel,
+      const gtsam::SmartProjectionParams& params,
+      const gtsam::Pose3& body_P_sensor);
+  SmartStereoProjectionFactor(const gtsam::noiseModel::Base* sharedNoiseModel,
+      const gtsam::SmartProjectionParams& params);
+  SmartStereoProjectionFactor(const gtsam::noiseModel::Base* sharedNoiseModel);
+
+  void print(string s) const;
+  bool equals(const gtsam::NonlinearFactor& p, double tol) const;
+  double error(const gtsam::Values& values) const;
+
+  gtsam::TriangulationResult point() const;
+  gtsam::TriangulationResult point(const gtsam::Values& values) const;
+
+  bool isValid() const;
+  bool isDegenerate() const;
+  bool isPointBehindCamera() const;
+  bool isOutlier() const;
+  bool isFarPoint() const;
+
+  gtsam::GaussianFactor linearizeDamped(const gtsam::CameraSet<gtsam::StereoCamera>& cameras,
+      const double _lambda) const;
+  gtsam::GaussianFactor linearizeDamped(const gtsam::Values& values,
+      const double _lambda) const;
+};
+
+#include <gtsam_unstable/slam/SmartStereoProjectionPoseFactor.h>
+virtual class SmartStereoProjectionPoseFactor : gtsam::SmartStereoProjectionFactor {
+  SmartStereoProjectionPoseFactor(const gtsam::noiseModel::Base* sharedNoiseModel,
+      const gtsam::SmartProjectionParams& params,
+      const gtsam::Pose3& body_P_sensor);
+  SmartStereoProjectionPoseFactor(const gtsam::noiseModel::Base* sharedNoiseModel,
+      const gtsam::SmartProjectionParams& params);
+  SmartStereoProjectionPoseFactor(const gtsam::noiseModel::Base* sharedNoiseModel);
+
+  void add(const gtsam::StereoPoint2& measured, gtsam::Key poseKey,
+      const std::shared_ptr<gtsam::Cal3_S2Stereo>& K);
+  void add(const std::vector<gtsam::StereoPoint2>& measurements,
+      const gtsam::KeyVector& poseKeys,
+      const std::vector<std::shared_ptr<gtsam::Cal3_S2Stereo>>& Ks);
+  void add(const std::vector<gtsam::StereoPoint2>& measurements,
+      const gtsam::KeyVector& poseKeys,
+      const std::shared_ptr<gtsam::Cal3_S2Stereo>& K);
+
+  void print(string s) const;
+  bool equals(const gtsam::NonlinearFactor& p, double tol) const;
+  double error(const gtsam::Values& values) const;
+  std::vector<std::shared_ptr<gtsam::Cal3_S2Stereo>> calibration() const;
+};
+
 #include <gtsam_unstable/slam/ProjectionFactorRollingShutter.h>
 virtual class ProjectionFactorRollingShutter : gtsam::NoiseModelFactor {
   ProjectionFactorRollingShutter(const gtsam::Point2& measured, double alpha, const gtsam::noiseModel::Base* noiseModel,
-      size_t poseKey_a, size_t poseKey_b, size_t pointKey, const gtsam::Cal3_S2* K);
+      gtsam::Key poseKey_a, gtsam::Key poseKey_b, gtsam::Key pointKey, const gtsam::Cal3_S2* K);
 
   ProjectionFactorRollingShutter(const gtsam::Point2& measured, double alpha, const gtsam::noiseModel::Base* noiseModel,
-    size_t poseKey_a, size_t poseKey_b, size_t pointKey, const gtsam::Cal3_S2* K, gtsam::Pose3& body_P_sensor);
+    gtsam::Key poseKey_a, gtsam::Key poseKey_b, gtsam::Key pointKey, const gtsam::Cal3_S2* K, gtsam::Pose3& body_P_sensor);
 
   ProjectionFactorRollingShutter(const gtsam::Point2& measured, double alpha, const gtsam::noiseModel::Base* noiseModel,
-        size_t poseKey_a, size_t poseKey_b, size_t pointKey, const gtsam::Cal3_S2* K, bool throwCheirality,
+        gtsam::Key poseKey_a, gtsam::Key poseKey_b, gtsam::Key pointKey, const gtsam::Cal3_S2* K, bool throwCheirality,
         bool verboseCheirality);
 
   ProjectionFactorRollingShutter(const gtsam::Point2& measured, double alpha, const gtsam::noiseModel::Base* noiseModel,
-      size_t poseKey_a, size_t poseKey_b, size_t pointKey, const gtsam::Cal3_S2* K, bool throwCheirality,
+      gtsam::Key poseKey_a, gtsam::Key poseKey_b, gtsam::Key pointKey, const gtsam::Cal3_S2* K, bool throwCheirality,
       bool verboseCheirality, gtsam::Pose3& body_P_sensor);
 
   gtsam::Point2 measured() const;
@@ -780,5 +814,85 @@ virtual class ProjectionFactorRollingShutter : gtsam::NoiseModelFactor {
   // enabling serialization functionality
   void serialize() const;
 };
+
+//*************************************************************************
+// navigation (EqVIO)
+//*************************************************************************
+#include <gtsam_unstable/navigation/EqVIOState.h>
+#include <gtsam_unstable/navigation/EqVIOFilter.h>
+namespace eqvio {
+
+class IMUInput {
+  IMUInput();
+  double stamp;
+  gtsam::Vector3 gyr;
+  gtsam::Vector3 acc;
+  gtsam::Vector3 gyrBiasVel;
+  gtsam::Vector3 accBiasVel;
+};
+
+class State {
+  State();
+  gtsam::imuBias::ConstantBias bias;
+  gtsam::Pose3 cameraOffset;
+  size_t n() const;
+  int dim() const;
+  gtsam::Pose3 pose() const;
+  gtsam::Vector3 velocity() const;
+  gtsam::Vector3 gravityDir() const;
+};
+
+class EqVIOFilterParams {
+  EqVIOFilterParams();
+  double initialPointDepth;
+  double initialPointVariance;
+  double outlierThresholdAbs;
+  double featureRetention;
+  double biasOmegaProcessVariance;
+  double biasAccelProcessVariance;
+  double attitudeProcessVariance;
+  double positionProcessVariance;
+  double velocityProcessVariance;
+  double cameraAttitudeProcessVariance;
+  double cameraPositionProcessVariance;
+  double pointProcessVariance;
+  gtsam::Matrix inputNoise;
+};
+
+class EqVIOFilter {
+  EqVIOFilter(const gtsam::eqvio::EqVIOFilterParams& params);
+  EqVIOFilter(const gtsam::eqvio::State& xi_ref, const gtsam::Matrix& Sigma,
+              const gtsam::KeyVector& landmarkKeys,
+              const gtsam::eqvio::EqVIOFilterParams& params);
+  void initializeFromIMU(const gtsam::eqvio::IMUInput& imu);
+  void predict(const gtsam::eqvio::IMUInput& imu, double dt);
+  void update(const std::map<gtsam::Key, gtsam::Point2>& measurement,
+              const std::shared_ptr<gtsam::eqvio::CameraModel>& camera,
+              const gtsam::Matrix& R);
+
+  bool isInitialized() const;
+  size_t landmarkCount() const;
+  gtsam::Point3 position() const;
+  gtsam::Vector3 velocity() const;
+};
+
+}  // namespace eqvio
+
+#include <gtsam_unstable/slam/LocalOrientedPlane3Factor.h>
+
+virtual class LocalOrientedPlane3Factor : gtsam::NoiseModelFactor {
+  LocalOrientedPlane3Factor(const gtsam::Vector4& z,
+                            const gtsam::noiseModel::Base* noiseModel,
+                            gtsam::Key poseKey,
+                            gtsam::Key anchorPoseKey,
+                            gtsam::Key landmarkKey);
+  LocalOrientedPlane3Factor(const gtsam::OrientedPlane3& z,
+                            const gtsam::noiseModel::Base* noiseModel,
+                            gtsam::Key poseKey,
+                            gtsam::Key anchorPoseKey,
+                            gtsam::Key landmarkKey);
+  void serialize() const;
+};
+
 
 } //\namespace gtsam

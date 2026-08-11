@@ -86,9 +86,11 @@ namespace gtsam {
       size_t size() const { return std::distance(range_.first, range_.second); }
       const auto& front() const { return *begin(); }
       // == operator overload for comparison with another iterator
-      template<class OTHER>
+      template <class OTHER>
       bool operator==(const OTHER& rhs) const {
-        return std::equal(begin(), end(), rhs.begin());
+        if (this->size() != rhs.size()) return false;
+        if (this->size() == 0) return true;
+        return std::equal(begin(), end(), rhs.begin(), rhs.end());
       }
     };
 
@@ -233,7 +235,7 @@ namespace gtsam {
     // Cast to derived type (const) (casts down to derived conditional type, then up to factor type)
     const FACTOR& asFactor() const { return static_cast<const FACTOR&>(static_cast<const DERIVEDCONDITIONAL&>(*this)); }
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>

@@ -26,7 +26,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Unit3.h>
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
 #endif
 
@@ -41,20 +41,21 @@ namespace gtsam {
  */
 class GTSAM_EXPORT EmptyCal {
  public:
-  enum { dimension = 0 };
+  inline constexpr static auto dimension = 0;
   EmptyCal() {}
   virtual ~EmptyCal() = default;
   using shared_ptr = std::shared_ptr<EmptyCal>;
 
   /// return DOF, dimensionality of tangent space
-  inline static size_t Dim() { return dimension; }
+  inline static size_t Dim() { return 0; }
+  size_t dim() const { return 0; }
 
   void print(const std::string& s) const {
     std::cout << "empty calibration: " << s << std::endl;
   }
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
+#if GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template <class Archive>
@@ -73,7 +74,7 @@ class GTSAM_EXPORT EmptyCal {
  */
 class GTSAM_EXPORT SphericalCamera {
  public:
-  enum { dimension = 6 };
+  inline constexpr static auto dimension = 6;
 
   using Measurement = Unit3;
   using MeasurementVector = std::vector<Unit3>;
@@ -216,14 +217,12 @@ class GTSAM_EXPORT SphericalCamera {
     return Eigen::Matrix<double, traits<Point2>::dimension, 1>::Constant(0.0);
   }
 
-  /// @deprecated
   size_t dim() const { return 6; }
 
-  /// @deprecated
   static size_t Dim() { return 6; }
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class Archive>
@@ -231,9 +230,6 @@ class GTSAM_EXPORT SphericalCamera {
     ar& BOOST_SERIALIZATION_NVP(pose_);
   }
 #endif
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // end of class SphericalCamera
 

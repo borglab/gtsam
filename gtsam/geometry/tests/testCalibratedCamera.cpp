@@ -53,8 +53,7 @@ TEST(CalibratedCamera, Create) {
   EXPECT(assert_equal(camera, CalibratedCamera::Create(kDefaultPose, actualH)));
 
   // Check derivative
-  std::function<CalibratedCamera(Pose3)> f =  //
-      std::bind(CalibratedCamera::Create, std::placeholders::_1, nullptr);
+  auto f = std::bind(CalibratedCamera::Create, std::placeholders::_1, nullptr);
   Matrix numericalH = numericalDerivative11<CalibratedCamera, Pose3>(f, kDefaultPose);
   EXPECT(assert_equal(numericalH, actualH, 1e-9));
 }

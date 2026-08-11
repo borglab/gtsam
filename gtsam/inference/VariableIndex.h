@@ -83,19 +83,13 @@ class GTSAM_EXPORT VariableIndex {
   /// The number of nonzero blocks, i.e. the number of variable-factor entries
   size_t nEntries() const { return nEntries_; }
 
+  /// Access a list of factors by variable without checking for existence
+  const FactorIndices& operator[](Key variable) const;
   /// Access a list of factors by variable
-  const FactorIndices& operator[](Key variable) const {
-    KeyMap::const_iterator item = index_.find(variable);
-    if(item == index_.end())
-      throw std::invalid_argument("Requested non-existent variable from VariableIndex");
-    else
-    return item->second;
-  }
+  const FactorIndices& at(Key variable) const;
 
   /// Return true if no factors associated with a variable
-  bool empty(Key variable) const {
-    return (*this)[variable].empty();
-  }
+  bool empty(Key variable) const;
 
   /// @}
   /// @name Testable
@@ -190,7 +184,7 @@ protected:
   }
 
 private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>

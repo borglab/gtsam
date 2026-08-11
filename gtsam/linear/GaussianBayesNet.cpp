@@ -20,14 +20,10 @@
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
-#include <fstream>
 #include <iterator>
 
 using namespace std;
 using namespace gtsam;
-
-// In Wrappers we have no access to this so have a default ready
-static std::mt19937_64 kRandomNumberGenerator(42);
 
 namespace gtsam {
 
@@ -74,15 +70,6 @@ namespace gtsam {
       result.insert(sampled);
     }
     return result;
-  }
-
-  /* ************************************************************************ */
-  VectorValues GaussianBayesNet::sample() const {
-    return sample(&kRandomNumberGenerator);
-  }
-
-  VectorValues GaussianBayesNet::sample(const VectorValues& given) const {
-    return sample(given, &kRandomNumberGenerator);
   }
 
   /* ************************************************************************ */

@@ -15,7 +15,9 @@
 
 #include <CppUnitLite/Test.h>
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/utilities.h>
 #include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
@@ -55,7 +57,7 @@ TEST(HybridFactorGraph, Keys) {
   std::vector<GaussianFactor::shared_ptr> components{
       std::make_shared<JacobianFactor>(X(1), I_3x3, Z_3x1),
       std::make_shared<JacobianFactor>(X(1), I_3x3, Vector3::Ones())};
-  hfg.add(HybridGaussianFactor({X(1)}, m1, components));
+  hfg.add(HybridGaussianFactor(m1, components));
 
   KeySet expected_continuous{X(0), X(1)};
   EXPECT(

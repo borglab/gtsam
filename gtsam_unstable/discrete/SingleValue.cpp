@@ -22,7 +22,7 @@ void SingleValue::print(const string& s, const KeyFormatter& formatter) const {
 }
 
 /* ************************************************************************* */
-double SingleValue::operator()(const DiscreteValues& values) const {
+double SingleValue::evaluate(const Assignment<Key>& values) const {
   return (double)(values.at(keys_[0]) == value_);
 }
 

@@ -12,6 +12,22 @@
  */
 
 // Seems this is not a good idea with inherited stl
-//py::bind_vector<std::vector<gtsam::DiscreteKey>>(m_, "DiscreteKeys");
+// py::bind_vector<std::vector<gtsam::DiscreteKey>>(m_, "DiscreteKeys");
 
+py::bind_map<gtsam::Assignment<gtsam::Key>>(m_, "AssignmentKey");
 py::bind_map<gtsam::DiscreteValues>(m_, "DiscreteValues");
+
+#include <gtsam/discrete/DiscreteValues.h>
+/// DiscreteValues print function for wrapper
+m_.def(
+    "PrintDiscreteValues",
+    [](const gtsam::DiscreteValues& values, const std::string& s,
+       const gtsam::KeyFormatter& keyFormatter) {
+      py::print(s + ": ");
+      for (const auto& kv : values) {
+        py::print("(" + keyFormatter(kv.first) + ", " +
+                  std::to_string(kv.second) + ")");
+      }
+    },
+    py::arg("values"), py::arg("s") = "",
+    py::arg("keyFormatter") = gtsam::DefaultKeyFormatter);

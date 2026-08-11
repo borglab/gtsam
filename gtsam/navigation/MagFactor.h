@@ -18,9 +18,11 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/Rot3.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
 
@@ -224,4 +226,3 @@ public:
 };
 
 }
-

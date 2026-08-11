@@ -20,7 +20,7 @@
 
 #include <gtsam/base/FastDefaultAllocator.h>
 #include <list>
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/version.hpp>
 #if BOOST_VERSION >= 107400
@@ -62,6 +62,8 @@ public:
   /// Construct from c++11 initializer list:
   FastList(std::initializer_list<VALUE> l) : Base(l) {}
 
+  FastList& operator=(const FastList& other) = default;
+
 #ifdef GTSAM_ALLOCATOR_BOOSTPOOL
   /** Copy constructor from a standard STL container */
   FastList(const std::list<VALUE>& x) {
@@ -79,7 +81,7 @@ public:
   }
 
 private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>

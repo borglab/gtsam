@@ -13,9 +13,10 @@ Author: Frank Dellaert
 
 import unittest
 
+from gtsam.utils.test_case import GtsamTestCase
+
 from gtsam import (DecisionTreeFactor, DiscreteDistribution, DiscreteValues,
                    Ordering)
-from gtsam.utils.test_case import GtsamTestCase
 
 
 class TestDecisionTreeFactor(GtsamTestCase):

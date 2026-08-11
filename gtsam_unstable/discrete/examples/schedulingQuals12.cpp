@@ -108,7 +108,8 @@ void runLargeExample() {
 
   // Do brute force product and output that to file
   if (scheduler.nrStudents() == 1) { // otherwise too slow
-    DecisionTreeFactor product = scheduler.product();
+    DecisionTreeFactor product =
+        *std::dynamic_pointer_cast<DecisionTreeFactor>(scheduler.product());
     product.dot("scheduling-large", DefaultKeyFormatter, false);
   }
 

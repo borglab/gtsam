@@ -11,6 +11,7 @@
 
 #include <gtsam/geometry/concepts.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 namespace gtsam {
 
@@ -65,8 +66,8 @@ public:
   Vector evaluateError(const Pose& pose, OptionalMatrixType H) const override {
     const Translation& newTrans = pose.translation();
     const Rotation& R = pose.rotation();
-    const int tDim = traits<Translation>::GetDimension(newTrans);
-    const int xDim = traits<Pose>::GetDimension(pose);
+    const size_t tDim = traits<Translation>::GetDimension(newTrans);
+    const size_t xDim = traits<Pose>::GetDimension(pose);
     if (H) {
       *H = Matrix::Zero(tDim, xDim);
       std::pair<size_t, size_t> transInterval = POSE::translationInterval();
@@ -90,7 +91,7 @@ public:
 
 private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -105,7 +106,6 @@ private:
 };
 
 } // \namespace gtsam
-
 
 
 

@@ -85,25 +85,31 @@ class Assignment : public std::map<L, size_t> {
    * variables with each having cardinalities 4, we get 4096 possible
    * configurations!!
    */
-  template <typename Derived = Assignment<L>>
-  static std::vector<Derived> CartesianProduct(
+  template <typename AssignmentType = Assignment<L>>
+  static std::vector<AssignmentType> CartesianProduct(
       const std::vector<std::pair<L, size_t>>& keys) {
-    std::vector<Derived> allPossValues;
-    Derived values;
-    typedef std::pair<L, size_t> DiscreteKey;
-    for (const DiscreteKey& key : keys)
-      values[key.first] = 0;  // Initialize from 0
-    while (1) {
-      allPossValues.push_back(values);
+    std::vector<AssignmentType> allPossValues;
+    AssignmentType assignment;
+    for (const auto& [idx, _] : keys) assignment[idx] = 0;  // Initialize from 0
+
+    const size_t nrKeys = keys.size();
+    while (true) {
+      allPossValues.push_back(assignment);
+
+      // Increment the assignment. This generalizes incrementing a binary number
       size_t j = 0;
-      for (j = 0; j < keys.size(); j++) {
-        L idx = keys[j].first;
-        values[idx]++;
-        if (values[idx] < keys[j].second) break;
-        // Wrap condition
-        values[idx] = 0;
+      for (j = 0; j < nrKeys; j++) {
+        auto [idx, cardinality] = keys[j];
+        // Most of the time, we just increment the value for the first key, j=0:
+        assignment[idx]++;
+        // But if this key is done, we increment next key.
+        const bool carry = (assignment[idx] == cardinality);
+        if (!carry) break;
+        assignment[idx] = 0; // wrap on carry, and continue to next variable
       }
-      if (j == keys.size()) break;
+
+      // If we propagated carry past the last key, exit:
+      if (j == nrKeys) break;
     }
     return allPossValues;
   }

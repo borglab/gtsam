@@ -11,7 +11,7 @@
 
 /**
  * @file     QPSolver.h
- * @brief    Policy of ActiveSetSolver to solve Quadratic Programming Problems
+ * @brief    Compatibility wrapper for the constrained active-set QP solver.
  * @author   Duy Nguyen Ta
  * @author   Ivan Dario Jimenez
  * @date     6/16/16
@@ -19,32 +19,44 @@
 
 #pragma once
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
+#include <gtsam/linear/VectorValues.h>
+#include <gtsam_unstable/dllexport.h>
+#include <gtsam_unstable/linear/InfeasibleInitialValues.h>
+#include <gtsam_unstable/linear/InfeasibleOrUnboundedProblem.h>
 #include <gtsam_unstable/linear/QP.h>
-#include <gtsam_unstable/linear/ActiveSetSolver.h>
-#include <gtsam_unstable/linear/QPInitSolver.h>
-#include <limits>
-#include <algorithm>
+
+#include <utility>
 
 namespace gtsam {
 
-/// Policy for ActivetSetSolver to solve Linear Programming \sa QP problems
-struct QPPolicy {
-  /// Maximum alpha for line search x'=xk + alpha*p, where p is the cost gradient
-  /// For QP, maxAlpha = 1 is the minimum point of the quadratic cost
-  static constexpr double maxAlpha = 1.0;
+/**
+ * Legacy unstable QP solver compatibility wrapper.
+ *
+ * @deprecated Use gtsam::QpProblem with
+ * gtsam::ActiveSetSolver instead.
+ */
+class GTSAM_UNSTABLE_EXPORT QPSolver {
+ public:
+  /** Construct from a legacy unstable QP problem. */
+  explicit QPSolver(const QP& qp);
 
-  /// Simply the cost of the QP problem
-  static const GaussianFactorGraph buildCostFunction(const QP& qp,
-      const VectorValues& xk = VectorValues()) {
-    GaussianFactorGraph no_constant_factor;
-    for (auto factor : qp.cost) {
-      HessianFactor hf = static_cast<HessianFactor>(*factor);
-      no_constant_factor.push_back(hf);
-    }
-    return no_constant_factor;
-  }
+  /** Optimize from caller-provided feasible initial values. */
+  std::pair<VectorValues, VectorValues> optimize(
+      const VectorValues& initialValues,
+      const VectorValues& duals = VectorValues(),
+      bool useWarmStart = false) const;
+
+  /** Find a feasible vector-valued point and optimize. */
+  std::pair<VectorValues, VectorValues> optimize() const;
+
+ private:
+  const QP& qp_;
 };
 
-using QPSolver = ActiveSetSolver<QP, QPPolicy, QPInitSolver>;
+}  // namespace gtsam
 
-}
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

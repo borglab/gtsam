@@ -25,102 +25,185 @@
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/Conditional-inst.h>
 #include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/JacobianFactor.h>
+
+#include <cstddef>
+#include <memory>
 
 namespace gtsam {
-HybridGaussianFactor::FactorValuePairs GetFactorValuePairs(
-    const HybridGaussianConditional::Conditionals &conditionals) {
-  auto func = [](const GaussianConditional::shared_ptr &conditional)
-      -> GaussianFactorValuePair {
-    double value = 0.0;
-    // Check if conditional is pruned
-    if (conditional) {
-      // Assign log(\sqrt(|2πΣ|)) = -log(1 / sqrt(|2πΣ|))
-      value = conditional->negLogConstant();
+
+/* *******************************************************************************/
+GaussianConditional::shared_ptr checkConditional(
+    const GaussianFactor::shared_ptr &factor) {
+  if (auto conditional =
+          std::dynamic_pointer_cast<GaussianConditional>(factor)) {
+    return conditional;
+  } else {
+    throw std::logic_error(
+        "A HybridGaussianConditional unexpectedly contained a non-conditional");
+  }
+}
+
+/* *******************************************************************************/
+/**
+ * @brief Helper struct for constructing HybridGaussianConditional objects
+ *
+ * This struct contains the following fields:
+ * - nrFrontals: Optional size_t for number of frontal variables
+ * - pairs: FactorValuePairs for storing conditionals with their negLogConstant
+ * - minNegLogConstant: minimum negLogConstant, computed here, subtracted in
+ * constructor
+ */
+struct HybridGaussianConditional::Helper {
+  FactorValuePairs pairs;
+  std::optional<size_t> nrFrontals = {};
+  double minNegLogConstant = std::numeric_limits<double>::infinity();
+
+  using GC = GaussianConditional;
+  using P = std::vector<std::pair<Vector, double>>;
+
+  /// Construct from a vector of mean and sigma pairs, plus extra args.
+  template <typename... Args>
+  explicit Helper(const DiscreteKey &mode, const P &p, Args &&...args) {
+    nrFrontals = 1;
+    std::vector<GaussianFactorValuePair> fvs;
+    std::vector<GC::shared_ptr> gcs;
+    fvs.reserve(p.size());
+    gcs.reserve(p.size());
+    for (auto &&[mean, sigma] : p) {
+      auto gaussianConditional =
+          GC::sharedMeanAndStddev(std::forward<Args>(args)..., mean, sigma);
+      double value = gaussianConditional->negLogConstant();
+      minNegLogConstant = std::min(minNegLogConstant, value);
+      fvs.emplace_back(gaussianConditional, value);
+      gcs.push_back(gaussianConditional);
     }
-    return {std::dynamic_pointer_cast<GaussianFactor>(conditional), value};
-  };
-  return HybridGaussianFactor::FactorValuePairs(conditionals, func);
-}
 
-HybridGaussianConditional::HybridGaussianConditional(
-    const KeyVector &continuousFrontals, const KeyVector &continuousParents,
-    const DiscreteKeys &discreteParents,
-    const HybridGaussianConditional::Conditionals &conditionals)
-    : BaseFactor(CollectKeys(continuousFrontals, continuousParents),
-                 discreteParents, GetFactorValuePairs(conditionals)),
-      BaseConditional(continuousFrontals.size()),
-      conditionals_(conditionals) {
-  // Calculate negLogConstant_ as the minimum of the negative-log normalizers of
-  // the conditionals, by visiting the decision tree:
-  negLogConstant_ = std::numeric_limits<double>::infinity();
-  conditionals_.visit(
-      [this](const GaussianConditional::shared_ptr &conditional) {
-        if (conditional) {
-          this->negLogConstant_ =
-              std::min(this->negLogConstant_, conditional->negLogConstant());
-        }
-      });
-}
+    pairs = FactorValuePairs({mode}, fvs);
+  }
+
+  /// Construct from tree of GaussianConditionals.
+  explicit Helper(const Conditionals &conditionals) {
+    auto func = [this](const GC::shared_ptr &gc) -> GaussianFactorValuePair {
+      if (!gc) return {nullptr, std::numeric_limits<double>::infinity()};
+      if (!nrFrontals) nrFrontals = gc->nrFrontals();
+      double value = gc->negLogConstant();
+      minNegLogConstant = std::min(minNegLogConstant, value);
+      return {gc, value};
+    };
+    pairs = FactorValuePairs(conditionals, func);
+    if (!nrFrontals.has_value()) {
+      throw std::runtime_error(
+          "HybridGaussianConditional: need at least one frontal variable. "
+          "Provided conditionals do not contain any frontal variables.");
+    }
+  }
+
+  /// Construct from tree of factor/scalar pairs.
+  explicit Helper(const FactorValuePairs &pairs) : pairs(pairs) {
+    auto func = [this](const GaussianFactorValuePair &pair) {
+      if (!pair.first) return;
+      auto gc = checkConditional(pair.first);
+      if (!nrFrontals) nrFrontals = gc->nrFrontals();
+      minNegLogConstant = std::min(minNegLogConstant, pair.second);
+    };
+    pairs.visit(func);
+    if (!nrFrontals.has_value()) {
+      throw std::runtime_error(
+          "HybridGaussianConditional: need at least one frontal variable. "
+          "Provided conditionals do not contain any frontal variables.");
+    }
+  }
+};
 
 /* *******************************************************************************/
-const HybridGaussianConditional::Conditionals &
-HybridGaussianConditional::conditionals() const {
-  return conditionals_;
-}
-
-/* *******************************************************************************/
 HybridGaussianConditional::HybridGaussianConditional(
-    const KeyVector &continuousFrontals, const KeyVector &continuousParents,
+    const DiscreteKeys &discreteParents, Helper &&helper, bool pruned)
+    : BaseFactor(discreteParents,
+                 FactorValuePairs(
+                     [&](const GaussianFactorValuePair
+                             &pair) {  // subtract minNegLogConstant
+                       return GaussianFactorValuePair{
+                           pair.first, pair.second - helper.minNegLogConstant};
+                     },
+                     std::move(helper.pairs))),
+      BaseConditional(*helper.nrFrontals),
+      negLogConstant_(helper.minNegLogConstant),
+      pruned_(pruned) {}
+
+HybridGaussianConditional::HybridGaussianConditional(
     const DiscreteKey &discreteParent,
     const std::vector<GaussianConditional::shared_ptr> &conditionals)
-    : HybridGaussianConditional(continuousFrontals, continuousParents,
-                                DiscreteKeys{discreteParent},
+    : HybridGaussianConditional(DiscreteKeys{discreteParent},
                                 Conditionals({discreteParent}, conditionals)) {}
 
+HybridGaussianConditional::HybridGaussianConditional(
+    const DiscreteKey &discreteParent, Key key,  //
+    const std::vector<std::pair<Vector, double>> &parameters)
+    : HybridGaussianConditional(DiscreteKeys{discreteParent},
+                                Helper(discreteParent, parameters, key)) {}
+
+HybridGaussianConditional::HybridGaussianConditional(
+    const DiscreteKey &discreteParent, Key key,  //
+    const Matrix &A, Key parent,
+    const std::vector<std::pair<Vector, double>> &parameters)
+    : HybridGaussianConditional(
+          DiscreteKeys{discreteParent},
+          Helper(discreteParent, parameters, key, A, parent)) {}
+
+HybridGaussianConditional::HybridGaussianConditional(
+    const DiscreteKey &discreteParent, Key key,  //
+    const Matrix &A1, Key parent1, const Matrix &A2, Key parent2,
+    const std::vector<std::pair<Vector, double>> &parameters)
+    : HybridGaussianConditional(
+          DiscreteKeys{discreteParent},
+          Helper(discreteParent, parameters, key, A1, parent1, A2, parent2)) {}
+
+HybridGaussianConditional::HybridGaussianConditional(
+    const DiscreteKeys &discreteParents,
+    const HybridGaussianConditional::Conditionals &conditionals)
+    : HybridGaussianConditional(discreteParents, Helper(conditionals)) {}
+
+HybridGaussianConditional::HybridGaussianConditional(
+    const DiscreteKeys &discreteParents, const FactorValuePairs &pairs,
+    bool pruned)
+    : HybridGaussianConditional(discreteParents, Helper(pairs), pruned) {}
+
 /* *******************************************************************************/
-GaussianFactorGraphTree HybridGaussianConditional::asGaussianFactorGraphTree()
-    const {
-  auto wrap = [this](const GaussianConditional::shared_ptr &gc) {
-    // First check if conditional has not been pruned
-    if (gc) {
-      const double Cgm_Kgcm = gc->negLogConstant() - this->negLogConstant_;
-      // If there is a difference in the covariances, we need to account for
-      // that since the error is dependent on the mode.
-      if (Cgm_Kgcm > 0.0) {
-        // We add a constant factor which will be used when computing
-        // the probability of the discrete variables.
-        Vector c(1);
-        c << std::sqrt(2.0 * Cgm_Kgcm);
-        auto constantFactor = std::make_shared<JacobianFactor>(c);
-        return GaussianFactorGraph{gc, constantFactor};
-      }
-    }
-    return GaussianFactorGraph{gc};
-  };
-  return {conditionals_, wrap};
+const HybridGaussianConditional::Conditionals
+HybridGaussianConditional::conditionals() const {
+  return Conditionals(factors(), [](auto &&pair) {
+    return std::dynamic_pointer_cast<GaussianConditional>(pair.first);
+  });
 }
 
 /* *******************************************************************************/
 size_t HybridGaussianConditional::nrComponents() const {
   size_t total = 0;
-  conditionals_.visit([&total](const GaussianFactor::shared_ptr &node) {
-    if (node) total += 1;
+  factors().visit([&total](auto &&node) {
+    if (node.first) total += 1;
   });
   return total;
 }
 
 /* *******************************************************************************/
-GaussianConditional::shared_ptr HybridGaussianConditional::operator()(
+GaussianConditional::shared_ptr HybridGaussianConditional::choose(
     const DiscreteValues &discreteValues) const {
-  auto &ptr = conditionals_(discreteValues);
-  if (!ptr) return nullptr;
-  auto conditional = std::dynamic_pointer_cast<GaussianConditional>(ptr);
-  if (conditional)
+  try {
+    auto &[factor, _] = factors()(discreteValues);
+    if (!factor) return nullptr;
+
+    auto conditional = checkConditional(factor);
     return conditional;
-  else
-    throw std::logic_error(
-        "A HybridGaussianConditional unexpectedly contained a non-conditional");
+  } catch (const std::out_of_range &e) {
+    GTSAM_PRINT(*this);
+    GTSAM_PRINT(discreteValues);
+    throw std::runtime_error(
+        "HybridGaussianConditional::choose: discreteValues does not contain "
+        "all discrete parents.");
+  }
 }
 
 /* *******************************************************************************/
@@ -129,39 +212,37 @@ bool HybridGaussianConditional::equals(const HybridFactor &lf,
   const This *e = dynamic_cast<const This *>(&lf);
   if (e == nullptr) return false;
 
-  // This will return false if either conditionals_ is empty or e->conditionals_
-  // is empty, but not if both are empty or both are not empty:
-  if (conditionals_.empty() ^ e->conditionals_.empty()) return false;
-
-  // Check the base and the factors:
-  return BaseFactor::equals(*e, tol) &&
-         conditionals_.equals(e->conditionals_,
-                              [tol](const GaussianConditional::shared_ptr &f1,
-                                    const GaussianConditional::shared_ptr &f2) {
-                                return f1->equals(*(f2), tol);
-                              });
+  // Factors existence and scalar values are checked in BaseFactor::equals.
+  // Here we check additionally that the factors *are* conditionals
+  // and are equal.
+  auto compareFunc = [tol](const GaussianFactorValuePair &pair1,
+                           const GaussianFactorValuePair &pair2) {
+    auto c1 = std::dynamic_pointer_cast<GaussianConditional>(pair1.first),
+         c2 = std::dynamic_pointer_cast<GaussianConditional>(pair2.first);
+    return (!c1 && !c2) || (c1 && c2 && c1->equals(*c2, tol));
+  };
+  return Base::equals(*e, tol) && factors().equals(e->factors(), compareFunc);
 }
 
 /* *******************************************************************************/
 void HybridGaussianConditional::print(const std::string &s,
                                       const KeyFormatter &formatter) const {
   std::cout << (s.empty() ? "" : s + "\n");
-  if (isContinuous()) std::cout << "Continuous ";
-  if (isDiscrete()) std::cout << "Discrete ";
-  if (isHybrid()) std::cout << "Hybrid ";
   BaseConditional::print("", formatter);
   std::cout << " Discrete Keys = ";
   for (auto &dk : discreteKeys()) {
     std::cout << "(" << formatter(dk.first) << ", " << dk.second << "), ";
   }
   std::cout << std::endl
-            << " logNormalizationConstant: " << -negLogConstant() << std::endl
+            << " logNormalizationConstant: " << std::fixed
+            << std::setprecision(4) << -negLogConstant() << std::endl
             << std::endl;
-  conditionals_.print(
+  factors().print(
       "", [&](Key k) { return formatter(k); },
-      [&](const GaussianConditional::shared_ptr &gf) -> std::string {
+      [&](const GaussianFactorValuePair &pair) -> std::string {
         RedirectCout rd;
-        if (gf && !gf->empty()) {
+        if (auto gf =
+                std::dynamic_pointer_cast<GaussianConditional>(pair.first)) {
           gf->print("", formatter);
           return rd.str();
         } else {
@@ -209,21 +290,19 @@ std::shared_ptr<HybridGaussianFactor> HybridGaussianConditional::likelihood(
   const DiscreteKeys discreteParentKeys = discreteKeys();
   const KeyVector continuousParentKeys = continuousParents();
   const HybridGaussianFactor::FactorValuePairs likelihoods(
-      conditionals_,
-      [&](const GaussianConditional::shared_ptr &conditional)
-          -> GaussianFactorValuePair {
-        const auto likelihood_m = conditional->likelihood(given);
-        const double Cgm_Kgcm = conditional->negLogConstant() - negLogConstant_;
-        if (Cgm_Kgcm == 0.0) {
-          return {likelihood_m, 0.0};
+      factors(),
+      [&](const GaussianFactorValuePair &pair) -> GaussianFactorValuePair {
+        if (auto conditional =
+                std::dynamic_pointer_cast<GaussianConditional>(pair.first)) {
+          const auto likelihood_m = conditional->likelihood(given);
+          // pair.second == conditional->negLogConstant() - negLogConstant_
+          return {likelihood_m, pair.second};
         } else {
-          // Add a constant to the likelihood in case the noise models
-          // are not all equal.
-          return {likelihood_m, Cgm_Kgcm};
+          return {nullptr, std::numeric_limits<double>::infinity()};
         }
       });
-  return std::make_shared<HybridGaussianFactor>(
-      continuousParentKeys, discreteParentKeys, likelihoods);
+  return std::make_shared<HybridGaussianFactor>(discreteParentKeys,
+                                                likelihoods);
 }
 
 /* ************************************************************************* */
@@ -232,105 +311,64 @@ std::set<DiscreteKey> DiscreteKeysAsSet(const DiscreteKeys &discreteKeys) {
   return s;
 }
 
-/* ************************************************************************* */
-/**
- * @brief Helper function to get the pruner functional.
- *
- * @param discreteProbs The probabilities of only discrete keys.
- * @return std::function<GaussianConditional::shared_ptr(
- * const Assignment<Key> &, const GaussianConditional::shared_ptr &)>
- */
-std::function<GaussianConditional::shared_ptr(
-    const Assignment<Key> &, const GaussianConditional::shared_ptr &)>
-HybridGaussianConditional::prunerFunc(const DecisionTreeFactor &discreteProbs) {
-  // Get the discrete keys as sets for the decision tree
-  // and the hybrid gaussian conditional.
-  auto discreteProbsKeySet = DiscreteKeysAsSet(discreteProbs.discreteKeys());
-  auto hybridGaussianCondKeySet = DiscreteKeysAsSet(this->discreteKeys());
+/* *******************************************************************************/
+HybridGaussianConditional::shared_ptr HybridGaussianConditional::prune(
+    const DiscreteConditional &discreteProbs) const {
+  // Find keys in discreteProbs.keys() but not in this->keys():
+  KeySet mine(this->keys().begin(), this->keys().end());
+  KeySet theirs(discreteProbs.keys().begin(),
+                       discreteProbs.keys().end());
+  std::vector<Key> diff;
+  std::set_difference(theirs.begin(), theirs.end(), mine.begin(), mine.end(),
+                      std::back_inserter(diff));
 
-  auto pruner = [discreteProbs, discreteProbsKeySet, hybridGaussianCondKeySet](
-                    const Assignment<Key> &choices,
-                    const GaussianConditional::shared_ptr &conditional)
-      -> GaussianConditional::shared_ptr {
-    // typecast so we can use this to get probability value
-    const DiscreteValues values(choices);
+  // Find maximum probability value for every combination of *our* keys.
+  auto max = discreteProbs.max(Ordering(diff));
 
-    // Case where the hybrid gaussian conditional has the same
-    // discrete keys as the decision tree.
-    if (hybridGaussianCondKeySet == discreteProbsKeySet) {
-      if (discreteProbs(values) == 0.0) {
-        // empty aka null pointer
-        std::shared_ptr<GaussianConditional> null;
-        return null;
-      } else {
-        return conditional;
-      }
+  // Check the max value for every combination of our keys.
+  // If the max value is 0.0, we can prune the corresponding conditional.
+  bool allPruned = true;
+  auto pruner =
+      [&](const Assignment<Key> &choices,
+          const GaussianFactorValuePair &pair) -> GaussianFactorValuePair {
+    // If this choice is zero probability or Gaussian is null, return infinity
+    if (!pair.first || max->evaluate(choices) == 0.0) {
+      return {nullptr, std::numeric_limits<double>::infinity()};
     } else {
-      std::vector<DiscreteKey> set_diff;
-      std::set_difference(
-          discreteProbsKeySet.begin(), discreteProbsKeySet.end(),
-          hybridGaussianCondKeySet.begin(), hybridGaussianCondKeySet.end(),
-          std::back_inserter(set_diff));
-
-      const std::vector<DiscreteValues> assignments =
-          DiscreteValues::CartesianProduct(set_diff);
-      for (const DiscreteValues &assignment : assignments) {
-        DiscreteValues augmented_values(values);
-        augmented_values.insert(assignment);
-
-        // If any one of the sub-branches are non-zero,
-        // we need this conditional.
-        if (discreteProbs(augmented_values) > 0.0) {
-          return conditional;
-        }
-      }
-      // If we are here, it means that all the sub-branches are 0,
-      // so we prune.
-      return nullptr;
+      allPruned = false;
+      // Add negLogConstant_ back so that the minimum negLogConstant in the
+      // HybridGaussianConditional is set correctly.
+      return {pair.first, pair.second + negLogConstant_};
     }
   };
-  return pruner;
-}
 
-/* *******************************************************************************/
-void HybridGaussianConditional::prune(const DecisionTreeFactor &discreteProbs) {
-  // Functional which loops over all assignments and create a set of
-  // GaussianConditionals
-  auto pruner = prunerFunc(discreteProbs);
-
-  auto pruned_conditionals = conditionals_.apply(pruner);
-  conditionals_.root_ = pruned_conditionals.root_;
-}
-
-/* *******************************************************************************/
-AlgebraicDecisionTree<Key> HybridGaussianConditional::logProbability(
-    const VectorValues &continuousValues) const {
-  // functor to calculate (double) logProbability value from
-  // GaussianConditional.
-  auto probFunc =
-      [continuousValues](const GaussianConditional::shared_ptr &conditional) {
-        if (conditional) {
-          return conditional->logProbability(continuousValues);
-        } else {
-          // Return arbitrarily small logProbability if conditional is null
-          // Conditional is null if it is pruned out.
-          return -1e20;
-        }
-      };
-  return DecisionTree<Key, double>(conditionals_, probFunc);
+  FactorValuePairs prunedConditionals = factors().apply(pruner);
+  if (allPruned) return nullptr;
+  return std::make_shared<HybridGaussianConditional>(discreteKeys(),
+                                                     prunedConditionals, true);
 }
 
 /* *******************************************************************************/
 double HybridGaussianConditional::logProbability(
     const HybridValues &values) const {
-  auto conditional = conditionals_(values.discrete());
+  auto [factor, _] = factors()(values.discrete());
+  auto conditional = checkConditional(factor);
   return conditional->logProbability(values.continuous());
 }
 
 /* *******************************************************************************/
 double HybridGaussianConditional::evaluate(const HybridValues &values) const {
-  auto conditional = conditionals_(values.discrete());
+  auto [factor, _] = factors()(values.discrete());
+  auto conditional = checkConditional(factor);
   return conditional->evaluate(values.continuous());
 }
 
+/* ************************************************************************ */
+std::shared_ptr<Factor> HybridGaussianConditional::restrict(
+    const DiscreteValues &assignment) const {
+  throw std::runtime_error(
+      "HybridGaussianConditional::restrict not implemented");
+}
+
+/* ************************************************************************ */
 }  // namespace gtsam

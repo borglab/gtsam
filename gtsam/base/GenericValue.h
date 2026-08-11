@@ -23,25 +23,29 @@
 #include <gtsam/base/types.h>
 #include <gtsam/base/Value.h>
 
-#include <cmath>
 #include <iostream>
 #include <typeinfo> // operator typeid
 
-#ifdef _WIN32
+// GenericValue's RTTI must remain visible so the C++ ABI can identify a
+// specialization consistently when a Value crosses a shared-library boundary.
+#if defined(_WIN32)
+// Exporting this header-only template triggers linker errors on MSVC.
+// Please refer to https://github.com/borglab/gtsam/blob/develop/Using-GTSAM-EXPORT.md
 #define GENERICVALUE_VISIBILITY
 #else
-// This will trigger a LNKxxxx on MSVC, so disable for MSVC build
-// Please refer to https://github.com/borglab/gtsam/blob/develop/Using-GTSAM-EXPORT.md
 #define GENERICVALUE_VISIBILITY GTSAM_EXPORT
 #endif
 
 namespace gtsam {
 
 /**
- * Wraps any type T so it can play as a Value
+ * Wraps any type T so it can play as a Value.
+ *
+ * A user-defined T that crosses a shared-library boundary must also have
+ * default visibility so the C++ ABI recognizes GenericValue<T> as one type.
  */
 template<class T>
-class GenericValue: public Value {
+class GENERICVALUE_VISIBILITY GenericValue: public Value {
 
 public:
 
@@ -56,9 +60,10 @@ public:
   GenericValue(){}
 
   /// Construct from value
-  GenericValue(const T& value) :
-      value_(value) {
-  }
+  GenericValue(const T& value) : Value(),
+      value_(value) {}
+
+  GenericValue(const GenericValue& other) = default;
 
   /// Return a constant value
   const T& value() const {
@@ -112,7 +117,7 @@ public:
      * Clone this value (normal clone on the heap, delete with 'delete' operator)
      */
     std::shared_ptr<Value> clone() const override {
-		return std::allocate_shared<GenericValue>(Eigen::aligned_allocator<GenericValue>(), *this);
+      return std::allocate_shared<GenericValue>(Eigen::aligned_allocator<GenericValue>(), *this);
     }
 
     /// Generic Value interface version of retract
@@ -173,7 +178,7 @@ public:
 
   private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -183,12 +188,6 @@ public:
       ar & boost::serialization::make_nvp("value", value_);
 	}
 #endif
-
-
-  // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
-  enum { NeedsToAlign = (sizeof(T) % 16) == 0 };
-public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
 };
 
 /// use this macro instead of BOOST_CLASS_EXPORT for GenericValues

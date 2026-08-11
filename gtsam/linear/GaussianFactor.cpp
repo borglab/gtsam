@@ -28,6 +28,20 @@ double GaussianFactor::error(const VectorValues& c) const {
   throw std::runtime_error("GaussianFactor::error is not implemented");
 }
 
+double GaussianFactor::deltaError(const VectorValues& c, double* oldError,
+                                  double* newError) const {
+  const VectorValues zero = VectorValues::Zero(c);
+  const double oldValue = error(zero);
+  const double newValue = error(c);
+  if (oldError) {
+    *oldError = oldValue;
+  }
+  if (newError) {
+    *newError = newValue;
+  }
+  return oldValue - newValue;
+}
+
 double GaussianFactor::error(const HybridValues& c) const {
   return this->error(c.continuous());
 }

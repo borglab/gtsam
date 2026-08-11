@@ -18,14 +18,13 @@
 #include <gtsam/base/DSFVector.h>
 #include <gtsam/base/FastMap.h>
 #include <gtsam/base/WeightedSampler.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/VariableIndex.h>
 #include <gtsam/linear/Errors.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/SubgraphBuilder.h>
 #include <gtsam/base/kruskal.h>
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/serialization/vector.hpp>
@@ -71,7 +70,7 @@ vector<size_t> Subgraph::edgeIndices() const {
   return eid;
 }
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 /****************************************************************************/
 void Subgraph::save(const std::string &fn) const {
   std::ofstream os(fn.c_str());

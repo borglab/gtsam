@@ -53,5 +53,5 @@ if(GTSAM_BUILD_PYTHON)
         endif()
     endif()
 
-    set(GTSAM_PY_INSTALL_PATH "${CMAKE_INSTALL_PREFIX}/python")
+    set(GTSAM_PY_INSTALL_PATH "python")
 endif()

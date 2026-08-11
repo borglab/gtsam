@@ -25,6 +25,7 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/geometry/Pose2.h>
 
 // Include for test suite
 #include <CppUnitLite/TestHarness.h>
@@ -32,13 +33,14 @@
 using namespace std;
 using namespace gtsam;
 
-static const HybridValues kExample{{{99, Vector2(2, 3)}}, {{100, 3}}};
+static const HybridValues kExample{ {{99, Vector2(2, 3)}}, {{100, 3}}, Values{{22, genericValue(Pose2(1,2,3))}} };
 
 /* ************************************************************************* */
 TEST(HybridValues, Basics) {
   HybridValues values;
   values.insert(99, Vector2(2, 3));
   values.insert(100, 3);
+  values.insertNonlinear(22, Pose2(1, 2, 3));
   EXPECT(assert_equal(kExample, values));
   EXPECT(assert_equal(values.at(99), Vector2(2, 3)));
   EXPECT(assert_equal(values.atDiscrete(100), int(3)));
@@ -57,6 +59,8 @@ TEST(HybridValues, Insert) {
                       actual.insert(DiscreteValues{{100, 3}})));
   EXPECT(assert_equal(kExample,  //
                       actual.insert(VectorValues{{99, Vector2(2, 3)}})));
+  EXPECT(assert_equal(kExample,  //
+            actual.insert(Values{{22, genericValue(Pose2(1, 2, 3))}})));
   HybridValues actual2;
   EXPECT(assert_equal(kExample, actual2.insert(kExample)));
 }
@@ -69,6 +73,8 @@ TEST(HybridValues, Update) {
                       actual.update(DiscreteValues{{100, 2}})));
   EXPECT(assert_equal({{{99, Vector1(4)}}, {{100, 2}}},
                       actual.update(VectorValues{{99, Vector1(4)}})));
+  EXPECT(assert_equal({{{99, Vector1(4)}}, {{100, 2}}, Values{{22, genericValue(Pose2(4, 5, 6))}}},
+            actual.update(Values{{22, genericValue(Pose2(4, 5, 6))}})));
   HybridValues actual2(kExample);
   EXPECT(assert_equal(kExample, actual2.update(kExample)));
 }

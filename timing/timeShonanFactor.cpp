@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
   // params.setVerbosityLM("SUMMARY");
   // params.linearSolverType = LevenbergMarquardtParams::Iterative;
   // auto pcg = std::make_shared<PCGSolverParameters>();
-  // pcg->preconditioner_ =
+  // pcg->preconditioner =
   // std::make_shared<SubgraphPreconditionerParameters>();
   // std::make_shared<BlockJacobiPreconditionerParameters>();
   // params.iterativeParams = pcg;

@@ -27,6 +27,8 @@
 
 #include <fstream>
 #include <queue>
+#include <cassert>
+#include <unordered_set>
 
 namespace gtsam {
 
@@ -67,7 +69,10 @@ namespace gtsam {
       throw std::invalid_argument(
           "the root of Bayes tree has not been initialized!");
     os << "digraph G{\n";
-    for (const sharedClique& root : roots_) dot(os, root, keyFormatter);
+    for (const sharedClique& root : roots_) { 
+      size_t key = root->conditional()->firstFrontalKey();
+      dot(os, root, keyFormatter, key);
+    }
     os << "}";
     std::flush(os);
   }
@@ -93,8 +98,8 @@ namespace gtsam {
   template <class CLIQUE>
   void BayesTree<CLIQUE>::dot(std::ostream& s, sharedClique clique,
                               const KeyFormatter& keyFormatter,
-                              int parentnum) const {
-    static int num = 0;
+                              size_t parentnum) const {
+    size_t num = clique->conditional()->firstFrontalKey();
     bool first = true;
     std::stringstream out;
     out << num;
@@ -120,11 +125,9 @@ namespace gtsam {
     }
     parent += "\"];\n";
     s << parent;
-    parentnum = num;
 
     for (sharedClique c : clique->children) {
-      num++;
-      dot(s, c, keyFormatter, parentnum);
+      dot(s, c, keyFormatter, num);
     }
   }
 
@@ -196,21 +199,20 @@ namespace gtsam {
     for (auto&& root: roots_) {
       std::queue<sharedClique> bfs_queue;
       
-      // first, move the root to the queue
-      bfs_queue.push(root);
-      root = nullptr; // now the root node is owned by the queue
+      // first, steal the root and move it to the queue. This invalidates root
+      bfs_queue.push(std::move(root));
 
       // do a BFS on the tree, for each node, add its children to the queue, and then delete it from the queue
       // So if the reference count of the node is 1, it will be deleted, and because its children are in the queue,
       // the deletion of the node will not trigger a recursive deletion of the children.
       while (!bfs_queue.empty()) {
-        // move the ownership of the front node from the queue to the current variable
-        auto current = bfs_queue.front();
+        // move the ownership of the front node from the queue to the current variable, invalidating the sharedClique at the front of the queue
+        auto current = std::move(bfs_queue.front());
         bfs_queue.pop();
 
         // add the children of the current node to the queue, so that the queue will also own the children nodes.
         for (auto child: current->children) {
-          bfs_queue.push(child);
+          bfs_queue.push(std::move(child));
         } // leaving the scope of current will decrease the reference count of the current node by 1, and if the reference count is 0,
           // the node will be deleted. Because the children are in the queue, the deletion of the node will not trigger a recursive
           // deletion of the children.
@@ -267,8 +269,35 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class CLIQUE>
   bool BayesTree<CLIQUE>::equals(const BayesTree<CLIQUE>& other, double tol) const {
-    return size()==other.size() &&
-      std::equal(nodes_.begin(), nodes_.end(), other.nodes_.begin(), &check_sharedCliques<CLIQUE>);
+    // Compare number of cliques first.
+    if (size() != other.size())
+      return false;
+
+    // Compare number of variables (nodes index size).
+    if (nodes_.size() != other.nodes_.size())
+      return false;
+
+    // Compare cliques by key so equality does not depend on the
+    // iteration order of the underlying ConcurrentMap.
+    for (const auto& kv : nodes_) {
+      const Key key = kv.first;
+      const sharedClique& clique = kv.second;
+
+      auto it = other.nodes_.find(key);
+      if (it == other.nodes_.end())
+        return false;
+
+      const sharedClique& otherClique = it->second;
+
+      if (!clique && !otherClique)
+        continue;
+      if (!clique || !otherClique)
+        return false;
+      if (!clique->equals(*otherClique, tol))
+        return false;
+    }
+
+    return true;
   }
 
   /* ************************************************************************* */
@@ -336,112 +365,318 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  template<class CLIQUE>
-  typename BayesTree<CLIQUE>::sharedBayesNet
-    BayesTree<CLIQUE>::jointBayesNet(Key j1, Key j2, const Eliminate& function) const
-  {
+  template <class CLIQUE>
+  typename BayesTree<CLIQUE>::sharedFactorGraph BayesTree<CLIQUE>::joint(
+      const KeyVector& keys, const Eliminate& function) const {
+    gttic(BayesTree_joint);
+    return std::make_shared<FactorGraphType>(*jointBayesNet(keys, function));
+  }
+
+  /* ************************************************************************* */
+  // Find the lowest common ancestor of two cliques
+  // TODO(Varun): consider implementing this as a Range Minimum Query
+  template <class CLIQUE>
+  static std::shared_ptr<CLIQUE> findLowestCommonAncestor(
+      const std::shared_ptr<CLIQUE>& C1, const std::shared_ptr<CLIQUE>& C2) {
+    // Collect all ancestors of C1
+    std::unordered_set<std::shared_ptr<CLIQUE>> ancestors;
+    for (auto p = C1; p; p = p->parent()) {
+      ancestors.insert(p);
+    }
+
+    // Find the first common ancestor in C2's lineage
+    std::shared_ptr<CLIQUE> B;
+    for (auto p = C2; p; p = p->parent()) {
+      if (ancestors.count(p)) {
+      return p;  // Return the common ancestor when found
+      }
+    }
+
+    return nullptr;  // Return nullptr if no common ancestor is found
+  }
+
+  /* ************************************************************************* */
+  template <class CLIQUE>
+  static std::shared_ptr<CLIQUE> findLowestCommonAncestor(
+      const std::vector<std::shared_ptr<CLIQUE>>& cliques) {
+    if (cliques.empty()) {
+      return nullptr;
+    }
+
+    std::shared_ptr<CLIQUE> lca = cliques.front();
+    for (size_t i = 1; i < cliques.size() && lca; ++i) {
+      lca = findLowestCommonAncestor(lca, cliques[i]);
+    }
+    return lca;
+  }
+
+  /* ************************************************************************* */
+  // Given the clique P(F:S) and the ancestor clique B
+  // Return the Bayes tree P(S\B | S \cap B), where \cap is intersection
+  template <class CLIQUE>
+  static auto factorInto(
+      const std::shared_ptr<CLIQUE>& p_F_S, const std::shared_ptr<CLIQUE>& B,
+      const typename CLIQUE::FactorGraphType::Eliminate& eliminate) {
+    gttic(Full_root_factoring);
+
+    // Get the shortcut P(S|B)
+    auto p_S_B = p_F_S->shortcut(B, eliminate);
+
+    // Compute S\B
+    KeyVector S_setminus_B = p_F_S->separator_setminus_B(B);
+
+    // Factor P(S|B) into P(S\B|S \cap B) and P(S \cap B)
+    auto [bayesTree, fg] =
+        typename CLIQUE::FactorGraphType(p_S_B).eliminatePartialMultifrontal(
+            Ordering(S_setminus_B), eliminate);
+    return bayesTree;
+  }
+
+  /* ************************************************************************* */
+  /** Return unique keys in order of first occurrence. */
+  template <class CLIQUE>
+  static KeyVector uniqueKeys(const KeyVector& keys) {
+    KeyVector unique;
+    unique.reserve(keys.size());
+    KeySet seen;
+    for (Key key : keys) {
+      if (seen.insert(key).second) {
+        unique.push_back(key);
+      }
+    }
+    return unique;
+  }
+
+  /* ************************************************************************* */
+  template <class CLIQUE>
+  static std::vector<std::shared_ptr<CLIQUE>> uniqueCliquesFromKeys(
+      const BayesTree<CLIQUE>& tree, const KeyVector& keys) {
+    std::vector<std::shared_ptr<CLIQUE>> queryCliques;
+    queryCliques.reserve(keys.size());
+    std::unordered_set<std::shared_ptr<CLIQUE>> seen;
+
+    for (Key key : keys) {
+      auto clique = tree.clique(key);
+      if (seen.insert(clique).second) {
+        queryCliques.push_back(clique);
+      }
+    }
+    return queryCliques;
+  }
+
+  /* ************************************************************************* */
+  template <class CLIQUE>
+  static std::shared_ptr<CLIQUE> rootClique(
+      const std::shared_ptr<CLIQUE>& clique) {
+    auto current = clique;
+    while (current && current->parent()) {
+      current = current->parent();
+    }
+    return current;
+  }
+
+  /* ************************************************************************* */
+  template <class CLIQUE>
+  static std::unordered_set<std::shared_ptr<CLIQUE>> collectSupportCliques(
+      const std::vector<std::shared_ptr<CLIQUE>>& queryCliques,
+      const std::shared_ptr<CLIQUE>& root) {
+    std::unordered_set<std::shared_ptr<CLIQUE>> support;
+    if (!root) {
+      return support;
+    }
+
+    support.insert(root);
+    for (const auto& clique : queryCliques) {
+      for (auto current = clique; current && current != root;
+           current = current->parent()) {
+        support.insert(current);
+      }
+    }
+    return support;
+  }
+
+  /* ************************************************************************* */
+  template <class CLIQUE>
+  static std::unordered_map<std::shared_ptr<CLIQUE>, size_t>
+  countSupportChildren(
+      const std::unordered_set<std::shared_ptr<CLIQUE>>& support,
+      const std::shared_ptr<CLIQUE>& root) {
+    std::unordered_map<std::shared_ptr<CLIQUE>, size_t> supportChildren;
+    for (const auto& clique : support) {
+      supportChildren[clique] = 0;
+    }
+
+    for (const auto& clique : support) {
+      if (clique == root) {
+        continue;
+      }
+      auto parent = clique->parent();
+      if (parent && support.count(parent)) {
+        ++supportChildren[parent];
+      }
+    }
+    return supportChildren;
+  }
+
+  /* ************************************************************************* */
+  template <class CLIQUE>
+  static std::unordered_set<std::shared_ptr<CLIQUE>> collectEssentialCliques(
+      const std::vector<std::shared_ptr<CLIQUE>>& queryCliques,
+      const std::unordered_set<std::shared_ptr<CLIQUE>>& support,
+      const std::unordered_map<std::shared_ptr<CLIQUE>, size_t>& supportChildren,
+      const std::shared_ptr<CLIQUE>& root) {
+    std::unordered_set<std::shared_ptr<CLIQUE>> essential;
+    if (root) {
+      essential.insert(root);
+    }
+
+    std::unordered_set<std::shared_ptr<CLIQUE>> querySet(queryCliques.begin(),
+                                                         queryCliques.end());
+    for (const auto& clique : support) {
+      const auto childCount = supportChildren.find(clique);
+      const size_t numSupportChildren =
+          childCount == supportChildren.end() ? 0 : childCount->second;
+      if (querySet.count(clique) || numSupportChildren > 1) {
+        essential.insert(clique);
+      }
+    }
+    return essential;
+  }
+
+  /* ************************************************************************* */
+  template <class CLIQUE>
+  static std::shared_ptr<CLIQUE> descendToNextEssentialClique(
+      const std::shared_ptr<CLIQUE>& child,
+      const std::unordered_set<std::shared_ptr<CLIQUE>>& support,
+      const std::unordered_set<std::shared_ptr<CLIQUE>>& essential) {
+    auto current = child;
+    while (current && !essential.count(current)) {
+      std::shared_ptr<CLIQUE> next;
+      for (const auto& grandChild : current->children) {
+        if (support.count(grandChild)) {
+          next = grandChild;
+          break;
+        }
+      }
+      current = next;
+    }
+    return current;
+  }
+
+  /* ************************************************************************* */
+  template <class CLIQUE>
+  static void appendCompressedSupport(
+      const std::shared_ptr<CLIQUE>& ancestor,
+      const std::unordered_set<std::shared_ptr<CLIQUE>>& support,
+      const std::unordered_set<std::shared_ptr<CLIQUE>>& essential,
+      typename CLIQUE::FactorGraphType* factorGraph,
+      const typename CLIQUE::FactorGraphType::Eliminate& eliminate) {
+    for (const auto& child : ancestor->children) {
+      if (!support.count(child)) {
+        continue;
+      }
+
+      auto nextEssential =
+          descendToNextEssentialClique(child, support, essential);
+      if (!nextEssential) {
+        continue;
+      }
+
+      factorGraph->push_back(*factorInto(nextEssential, ancestor, eliminate));
+      factorGraph->push_back(nextEssential->conditional());
+      appendCompressedSupport(nextEssential, support, essential, factorGraph,
+                              eliminate);
+    }
+  }
+  
+  /* ************************************************************************* */
+  template <class CLIQUE>
+  typename BayesTree<CLIQUE>::sharedBayesNet BayesTree<CLIQUE>::jointBayesNet(
+      Key j1, Key j2, const Eliminate& eliminate) const {
     gttic(BayesTree_jointBayesNet);
     // get clique C1 and C2
     sharedClique C1 = (*this)[j1], C2 = (*this)[j2];
 
-    gttic(Lowest_common_ancestor);
-    // Find lowest common ancestor clique
-    sharedClique B; {
-      // Build two paths to the root
-      FastList<sharedClique> path1, path2; {
-        sharedClique p = C1;
-        while(p) {
-          path1.push_front(p);
-          p = p->parent();
-        }
-      } {
-        sharedClique p = C2;
-        while(p) {
-          path2.push_front(p);
-          p = p->parent();
-        }
-      }
-      // Find the path intersection
-      typename FastList<sharedClique>::const_iterator p1 = path1.begin(), p2 = path2.begin();
-      if(*p1 == *p2)
-        B = *p1;
-      while(p1 != path1.end() && p2 != path2.end() && *p1 == *p2) {
-        B = *p1;
-        ++p1;
-        ++p2;
-      }
-    }
-    gttoc(Lowest_common_ancestor);
+    // Find the lowest common ancestor clique
+    auto B = findLowestCommonAncestor(C1, C2);
 
     // Build joint on all involved variables
     FactorGraphType p_BC1C2;
 
-    if(B)
-    {
+    if (B) {
       // Compute marginal on lowest common ancestor clique
-      gttic(LCA_marginal);
-      FactorGraphType p_B = B->marginal2(function);
-      gttoc(LCA_marginal);
+      FactorGraphType p_B = B->marginal2(eliminate);
 
-      // Compute shortcuts of the requested cliques given the lowest common ancestor
-      gttic(Clique_shortcuts);
-      BayesNetType p_C1_Bred = C1->shortcut(B, function);
-      BayesNetType p_C2_Bred = C2->shortcut(B, function);
-      gttoc(Clique_shortcuts);
+      // Factor the shortcuts to be conditioned on lowest common ancestor
+      auto p_C1_B = factorInto(C1, B, eliminate);
+      auto p_C2_B = factorInto(C2, B, eliminate);
 
-      // Factor the shortcuts to be conditioned on the full root
-      // Get the set of variables to eliminate, which is C1\B.
-      gttic(Full_root_factoring);
-      std::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C1_B; {
-        KeyVector C1_minus_B; {
-          KeySet C1_minus_B_set(C1->conditional()->beginParents(), C1->conditional()->endParents());
-          for(const Key j: *B->conditional()) {
-            C1_minus_B_set.erase(j); }
-          C1_minus_B.assign(C1_minus_B_set.begin(), C1_minus_B_set.end());
-        }
-        // Factor into C1\B | B.
-        p_C1_B =
-            FactorGraphType(p_C1_Bred)
-                .eliminatePartialMultifrontal(Ordering(C1_minus_B), function)
-                .first;
-      }
-      std::shared_ptr<typename EliminationTraitsType::BayesTreeType> p_C2_B; {
-        KeyVector C2_minus_B; {
-          KeySet C2_minus_B_set(C2->conditional()->beginParents(), C2->conditional()->endParents());
-          for(const Key j: *B->conditional()) {
-            C2_minus_B_set.erase(j); }
-          C2_minus_B.assign(C2_minus_B_set.begin(), C2_minus_B_set.end());
-        }
-        // Factor into C2\B | B.
-        p_C2_B =
-            FactorGraphType(p_C2_Bred)
-                .eliminatePartialMultifrontal(Ordering(C2_minus_B), function)
-                .first;
-      }
-      gttoc(Full_root_factoring);
-
-      gttic(Variable_joint);
       p_BC1C2.push_back(p_B);
       p_BC1C2.push_back(*p_C1_B);
       p_BC1C2.push_back(*p_C2_B);
-      if(C1 != B)
-        p_BC1C2.push_back(C1->conditional());
-      if(C2 != B)
-        p_BC1C2.push_back(C2->conditional());
-      gttoc(Variable_joint);
-    }
-    else
-    {
-      // The nodes have no common ancestor, they're in different trees, so they're joint is just the
-      // product of their marginals.
-      gttic(Disjoint_marginals);
-      p_BC1C2.push_back(C1->marginal2(function));
-      p_BC1C2.push_back(C2->marginal2(function));
-      gttoc(Disjoint_marginals);
+      if (C1 != B) p_BC1C2.push_back(C1->conditional());
+      if (C2 != B) p_BC1C2.push_back(C2->conditional());
+    } else {
+      // The nodes have no common ancestor, they're in different trees, so
+      // they're joint is just the product of their marginals.
+      p_BC1C2.push_back(C1->marginal2(eliminate));
+      p_BC1C2.push_back(C2->marginal2(eliminate));
     }
 
     // now, marginalize out everything that is not variable j1 or j2
-    return p_BC1C2.marginalMultifrontalBayesNet(Ordering{j1, j2}, function);
+    return p_BC1C2.marginalMultifrontalBayesNet(Ordering{j1, j2}, eliminate);
+  }
+
+  /* ************************************************************************* */
+  template <class CLIQUE>
+  typename BayesTree<CLIQUE>::sharedBayesNet BayesTree<CLIQUE>::jointBayesNet(
+      const KeyVector& keys, const Eliminate& eliminate) const {
+    gttic(BayesTree_jointBayesNet);
+
+    const KeyVector queryKeys = uniqueKeys<CLIQUE>(keys);
+    if (queryKeys.empty()) {
+      return std::make_shared<BayesNetType>();
+    }
+    if (queryKeys.size() == 1) {
+      auto bayesNet = std::make_shared<BayesNetType>();
+      bayesNet->push_back(marginalFactor(queryKeys.front(), eliminate));
+      return bayesNet;
+    }
+    if (queryKeys.size() == 2) {
+      return jointBayesNet(queryKeys[0], queryKeys[1], eliminate);
+    }
+
+    const auto queryCliques = uniqueCliquesFromKeys(*this, queryKeys);
+    std::unordered_map<std::shared_ptr<CLIQUE>, KeyVector> keysByRoot;
+    for (Key key : queryKeys) {
+      keysByRoot[rootClique(this->clique(key))].push_back(key);
+    }
+    if (keysByRoot.size() > 1) {
+      FactorGraphType disjointJoint;
+      for (const auto& [rootClique, groupKeys] : keysByRoot) {
+        (void)rootClique;
+        disjointJoint.push_back(*jointBayesNet(groupKeys, eliminate));
+      }
+      return disjointJoint.marginalMultifrontalBayesNet(Ordering(queryKeys),
+                                                        eliminate);
+    }
+
+    const auto root = findLowestCommonAncestor(queryCliques);
+    if (!root) {
+      return std::make_shared<BayesNetType>();
+    }
+
+    const auto support = collectSupportCliques(queryCliques, root);
+    const auto supportChildren = countSupportChildren(support, root);
+    const auto essential =
+        collectEssentialCliques(queryCliques, support, supportChildren, root);
+
+    FactorGraphType reducedJoint;
+    reducedJoint.push_back(root->marginal2(eliminate));
+    appendCompressedSupport(root, support, essential, &reducedJoint, eliminate);
+
+    return reducedJoint.marginalMultifrontalBayesNet(Ordering(queryKeys),
+                                                     eliminate);
   }
 
   /* ************************************************************************* */
@@ -570,5 +805,34 @@ namespace gtsam {
     return cliques;
   }
 
+  /* *********************************************************************** */
+  template <class CLIQUE>
+  void BayesTree<CLIQUE>::collectAffectedPathKeys(
+      gtsam::KeySet& traversedKeys, const sharedClique& clique) const {
+    // base case is nullptr, if so we do nothing and return empties above
+    if (clique) {
+      // traverse me
+      traversedKeys.insert(clique->conditional()->frontals().begin(),
+                           clique->conditional()->frontals().end());
+      // traverse path above me
+      this->collectAffectedPathKeys(traversedKeys, clique->parent_.lock());
+    }
+  }
+
+  /* *********************************************************************** */
+  template <class CLIQUE>
+  gtsam::KeySet BayesTree<CLIQUE>::collectAffectedKeys(
+      const gtsam::KeyVector& keys) const {
+    gtsam::KeySet traversedKeys;
+    // process each key of the new factor
+    for (const gtsam::Key& j : keys) {
+      typename Nodes::const_iterator node = nodes_.find(j);
+      if (node != nodes_.end()) {
+        // traverse path from clique to root
+        this->collectAffectedPathKeys(traversedKeys, node->second);
+      }
+    }
+    return traversedKeys;
+  }
 }
 /// namespace gtsam

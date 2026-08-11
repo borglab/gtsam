@@ -17,7 +17,7 @@
  */
 
 // Defined only if boost serialization is enabled
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #pragma once
 
 #include <gtsam/base/Vector.h>

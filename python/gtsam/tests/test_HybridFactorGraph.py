@@ -13,14 +13,14 @@ Author: Fan Jiang, Varun Agrawal, Frank Dellaert
 import unittest
 
 import numpy as np
-from gtsam.symbol_shorthand import C, M, X, Z
-from gtsam.utils.test_case import GtsamTestCase
 
 import gtsam
-from gtsam import (DiscreteConditional, DiscreteKeys, GaussianConditional,
-                   HybridBayesNet, HybridGaussianConditional,
-                   HybridGaussianFactor, HybridGaussianFactorGraph,
-                   HybridValues, JacobianFactor, noiseModel)
+from gtsam import (DiscreteConditional, GaussianConditional, HybridBayesNet,
+                   HybridGaussianConditional, HybridGaussianFactor,
+                   HybridGaussianFactorGraph, HybridValues, JacobianFactor,
+                   TableDistribution, noiseModel)
+from gtsam.symbol_shorthand import C, M, X, Z
+from gtsam.utils.test_case import GtsamTestCase
 
 DEBUG_MARGINALS = False
 
@@ -35,7 +35,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         jf1 = JacobianFactor(X(0), np.eye(3), np.zeros((3, 1)), model)
         jf2 = JacobianFactor(X(0), np.eye(3), np.ones((3, 1)), model)
 
-        gmf = HybridGaussianFactor([X(0)], (C(0), 2), [(jf1, 0), (jf2, 0)])
+        gmf = HybridGaussianFactor((C(0), 2), [(jf1, 0), (jf2, 0)])
 
         hfg = HybridGaussianFactorGraph()
         hfg.push_back(jf1)
@@ -51,7 +51,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         self.assertEqual(len(hybridCond.keys()), 2)
 
         discrete_conditional = hbn.at(hbn.size() - 1).inner()
-        self.assertIsInstance(discrete_conditional, DiscreteConditional)
+        self.assertIsInstance(discrete_conditional, TableDistribution)
 
     def test_optimize(self):
         """Test construction of hybrid factor graph."""
@@ -60,7 +60,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
         jf1 = JacobianFactor(X(0), np.eye(3), np.zeros((3, 1)), model)
         jf2 = JacobianFactor(X(0), np.eye(3), np.ones((3, 1)), model)
 
-        gmf = HybridGaussianFactor([X(0)], (C(0), 2), [(jf1, 0), (jf2, 0)])
+        gmf = HybridGaussianFactor((C(0), 2), [(jf1, 0), (jf2, 0)])
 
         hfg = HybridGaussianFactorGraph()
         hfg.push_back(jf1)
@@ -102,8 +102,7 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
                                                                  X(0), [0],
                                                                  sigma=3)
             bayesNet.push_back(
-                HybridGaussianConditional([Z(i)], [X(0)], mode,
-                                          [conditional0, conditional1]))
+                HybridGaussianConditional(mode, [conditional0, conditional1]))
 
         # Create prior on X(0).
         prior_on_x0 = GaussianConditional.FromMeanAndStddev(
@@ -288,8 +287,8 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
             print(f"P(mode=1; Z) = {marginals[1]}")
 
         # Check that the estimate is close to the true value.
-        self.assertAlmostEqual(marginals[0], 0.23, delta=0.01)
-        self.assertAlmostEqual(marginals[1], 0.77, delta=0.01)
+        self.assertAlmostEqual(marginals[0], 0.219, delta=0.01)
+        self.assertAlmostEqual(marginals[1], 0.781, delta=0.01)
 
         # Convert to factor graph using measurements.
         fg = bayesNet.toFactorGraph(measurements)

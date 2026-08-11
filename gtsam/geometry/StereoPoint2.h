@@ -20,7 +20,7 @@
 
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/base/VectorSpace.h>
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
 #endif
 
@@ -37,7 +37,7 @@ private:
   double uL_, uR_, v_;
 
 public:
-  enum { dimension = 3 };
+  inline constexpr static auto dimension = 3;
   /// @name Standard Constructors
   /// @{
 
@@ -130,17 +130,6 @@ public:
     return Point2(uR_, v_);
   }
 
-  /// @name Deprecated
-  /// @{
-  inline StereoPoint2 inverse() const { return StereoPoint2()- (*this);}
-  inline StereoPoint2 compose(const StereoPoint2& p1) const { return *this + p1;}
-  inline StereoPoint2 between(const StereoPoint2& p2) const { return p2 - *this; }
-  inline Vector localCoordinates(const StereoPoint2& t2) const { return Logmap(between(t2)); }
-  inline StereoPoint2 retract(const Vector& v) const { return compose(Expmap(v)); }
-  static inline Vector Logmap(const StereoPoint2& p) { return p.vector(); }
-  static inline StereoPoint2 Expmap(const Vector& d) { return StereoPoint2(d(0), d(1), d(2)); }
-  /// @}
-
   /// Streaming
   GTSAM_EXPORT friend std::ostream &operator<<(std::ostream &os, const StereoPoint2& p);
 
@@ -150,7 +139,7 @@ private:
   /// @name Advanced Interface
   /// @{
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>

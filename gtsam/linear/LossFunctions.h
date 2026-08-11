@@ -20,11 +20,12 @@
 
 #pragma once
 
+#include <optional>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/dllexport.h>
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/extended_type_info.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/version.hpp>
@@ -129,7 +130,7 @@ class GTSAM_EXPORT Base {
   void reweight(Matrix &A1, Matrix &A2, Matrix &A3, Vector &error) const;
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -161,7 +162,7 @@ class GTSAM_EXPORT Null : public Base {
   static shared_ptr Create();
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -195,7 +196,7 @@ class GTSAM_EXPORT Fair : public Base {
   double modelParameter() const { return c_; }
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -230,7 +231,7 @@ class GTSAM_EXPORT Huber : public Base {
   double modelParameter() const { return k_; }
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -270,7 +271,7 @@ class GTSAM_EXPORT Cauchy : public Base {
   double modelParameter() const { return k_; }
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -306,7 +307,7 @@ class GTSAM_EXPORT Tukey : public Base {
   double modelParameter() const { return c_; }
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -341,7 +342,7 @@ class GTSAM_EXPORT Welsch : public Base {
   double modelParameter() const { return c_; }
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -375,18 +376,83 @@ class GTSAM_EXPORT GemanMcClure : public Base {
   bool equals(const Base &expected, double tol = 1e-8) const override;
   static shared_ptr Create(double k, const ReweightScheme reweight = Block);
   double modelParameter() const { return c_; }
+  /** @brief A static helper function to compute the Geman-McClure robust weight.
+   * The static function takes the squared value of the residual and the scale parameter.
+   * The weight member function now calls this function. While the member function takes the residual as input, 
+   * it passes x² and c² to the static helper.
+   * 
+   * w(x², c²) = \phi(x)/x = c⁴/(c²+x²)²
+   * 
+   * 
+   * @param distance2 Squared residual magnitude.
+   * @param c2 Squared scale parameter.
+   * @return Weight w(x) in (0, 1]
+   */
+  static double Weight(double distance2, double c2);
 
  protected:
   double c_;
+  double csquared_;
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar &BOOST_SERIALIZATION_NVP(c_);
+    ar &BOOST_SERIALIZATION_NVP(csquared_);
+  }
+#endif
+};
+
+/** Truncated Least Squares (TLS) robust error model.
+ *
+ *  This model has a scalar parameter "c" (threshold).
+ *
+ * - Loss       \rho(x) = 0.5 x^2  if |x|<=c, 0.5 c^2 otherwise
+ * - Derivative \phi(x) = x        if |x|<=c, 0 otherwise
+ * - Weight     w(x) = \phi(x)/x = 1 if |x|<=c, 0 otherwise
+ */
+class GTSAM_EXPORT TruncatedLeastSquares : public Base {
+ public:
+  typedef std::shared_ptr<TruncatedLeastSquares> shared_ptr;
+
+  TruncatedLeastSquares(double c = 1.0, const ReweightScheme reweight = Block);
+  double weight(double distance) const override;
+  double loss(double distance) const override;
+  void print(const std::string &s) const override;
+  bool equals(const Base &expected, double tol = 1e-8) const override;
+  static shared_ptr Create(double c, const ReweightScheme reweight = Block);
+  double modelParameter() const { return c_; }
+  /** @brief A static helper function to compute the TLS robust weight.
+   * The static function takes the squared value of the residual, the squared lower bound, the squared upper bound.
+   * This helper returns a optional<double> because it is also used for GNC, and we encounter transition weight cases,
+   * where the weight is not strictly binary (0 or 1) when the residual is within the transition region between inliers and outliers.
+   * The weight member function now calls the this function.
+   * While the member function takes the residual as input, it passes x², c² and c² to the static helper.
+   * 
+   * @param distance2 Squared residual magnitude.
+   * @param lowerbound Squared lower bound.
+   * @param upperbound Squared upper bound.
+   * @return Weight w(x) is {0, 1} or None if the residual is between lowerbound and upperbound.
+   */
+   static std::optional<double> Weight(double distance2, double lowerbound, double upperbound);
+
+ protected:
+  double c_;
+  double csquared_;
+
+ private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
+    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar &BOOST_SERIALIZATION_NVP(c_);
+    ar &BOOST_SERIALIZATION_NVP(csquared_);
   }
 #endif
 };
@@ -420,7 +486,7 @@ class GTSAM_EXPORT DCS : public Base {
   double c_;
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -460,7 +526,7 @@ class GTSAM_EXPORT L2WithDeadZone : public Base {
   double modelParameter() const { return k_; }
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -496,7 +562,7 @@ class GTSAM_EXPORT AsymmetricTukey : public Base {
   double modelParameter() const { return c_; }
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -532,7 +598,7 @@ class GTSAM_EXPORT AsymmetricCauchy : public Base {
   double modelParameter() const { return k_; }
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -577,7 +643,7 @@ class GTSAM_EXPORT Custom : public Base {
   inline Custom() = default;
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>

@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - develop
+    paths-ignore:
+      - '**.md'
+      - '**.ipynb' 
+      - 'myst.yml'
 jobs:
   trigger-package-build:
     runs-on: ubuntu-latest

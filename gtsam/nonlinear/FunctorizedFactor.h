@@ -19,6 +19,7 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 #include <cmath>
 
@@ -119,7 +120,7 @@ class FunctorizedFactor : public NoiseModelFactorN<T> {
   /// @}
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -231,7 +232,7 @@ class FunctorizedFactor2 : public NoiseModelFactorN<T1, T2> {
   /// @}
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>

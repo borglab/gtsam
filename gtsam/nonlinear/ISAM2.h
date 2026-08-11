@@ -96,6 +96,9 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
   int update_count_;  ///< Counter incremented every update(), used to determine
                       ///< periodic relinearization
 
+  size_t nnzAfterLastReorder_;  ///< Bayes tree nnz recorded after the most
+                                ///< recent full batch reorder
+
  public:
   using This = ISAM2;                       ///< This class
   using Base = BayesTree<ISAM2Clique>;      ///< The BayesTree base class
@@ -213,6 +216,12 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
           marginalizeLeaves(leafKeys, (&optArgs)...);
       }
 
+  /** An added function specifically to return the marginalFactorIndices
+   * and deletedFactorIndices. Made for the python wrapping
+   * of marginalizeLeaves
+   */
+  std::pair<FactorIndices, FactorIndices> marginalizeLeavesWithIndices(const FastList<Key>& leafKeys);
+
   /// Access the current linearization point
   const Values& getLinearizationPoint() const { return theta_; }
 
@@ -248,8 +257,17 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
    */
   const Value& calculateEstimate(Key key) const;
 
-  /** Return marginal on any variable as a covariance matrix */
+  /// Return the marginal information matrix on any variable.
+  Matrix marginalInformation(Key key) const;
+
+  /// Return the marginal covariance matrix on any variable.
   Matrix marginalCovariance(Key key) const;
+
+  /// Return joint marginal covariance with blocks in `queryKeys` order.
+  JointMarginal jointMarginalCovariance(const KeyVector& queryKeys) const;
+
+  /// Return joint marginal information with blocks in `queryKeys` order.
+  JointMarginal jointMarginalInformation(const KeyVector& queryKeys) const;
 
   /// @name Public members for non-typical usage
   /// @{
@@ -278,6 +296,9 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
 
   const ISAM2Params& params() const { return params_; }
 
+  /** Compute the total number of nonzeros in the Bayes tree. */
+  size_t treeNnz() const;
+
   /** prints out clique statistics */
   void printStats() const { getCliqueData().getStats().print(); }
 
@@ -286,9 +307,25 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
    * about zero is \f$ -R^T d \f$.  See also gradient(const GaussianBayesNet&,
    * const VectorValues&).
    *
+   * Components associated with hard constraints are undefined and are
+   * represented as zero in the returned gradient.
+   *
    * @return A VectorValues storing the gradient.
    */
   VectorValues gradientAtZero() const;
+
+  /** @brief Predicts the updated variables for a hypothetical update.
+   * @param newFactors The factors for the hypothetical update
+   * @param newTheta The estimates for new variables in the hypothetical update
+   * @param updateParams The update params for the hypothetical update
+   * @returns The set of all affected keys, and a flag indicating if this would
+   * be a batch update
+   *
+   * NOTE: Update may mutate the mutable field delta_
+   */
+  std::pair<KeySet, bool> predictUpdateInfo(
+      const NonlinearFactorGraph& newFactors, const Values& newTheta,
+      const ISAM2UpdateParams& updateParams) const;
 
   /// @}
 
@@ -340,7 +377,7 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
   void updateDelta(bool forceFullSolve = false) const;
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>

@@ -13,8 +13,9 @@ Author: Varun Agrawal
 
 import unittest
 
-from gtsam import DecisionTreeFactor, DiscreteConditional, DiscreteKeys
 from gtsam.utils.test_case import GtsamTestCase
+
+from gtsam import DecisionTreeFactor, DiscreteConditional, DiscreteKeys
 
 # Some DiscreteKeys for binary variables:
 A = 0, 2

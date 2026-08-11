@@ -15,14 +15,14 @@
  *  @author Frank Dellaert
  **/
 
-#include <tests/smallExample.h>
-#include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/iterative.h>
-#include <gtsam/geometry/Pose2.h>
-
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <tests/smallExample.h>
 
 using namespace std;
 using namespace gtsam;
@@ -61,7 +61,7 @@ TEST( Iterative, conjugateGradientDescent )
   // get matrices
   Vector x0 = Z_6x1;
   const auto [A, b] = fg.jacobian();
-  Vector expectedX = (Vector(6) << -0.1, 0.1, -0.1, -0.1, 0.1, -0.2).finished();
+  Vector expectedX{{-0.1, 0.1, -0.1, -0.1, 0.1, -0.2}};
 
   // Do conjugate gradient descent, System version
   System Ab(A, b);
@@ -95,9 +95,9 @@ TEST( Iterative, conjugateGradientDescent_hard_constraint )
   VectorValues zeros = config.zeroVectors();
 
   ConjugateGradientParameters parameters;
-  parameters.setEpsilon_abs(1e-3);
-  parameters.setEpsilon_rel(1e-5);
-  parameters.setMaxIterations(100);
+  parameters.epsilon_abs = 1e-3;
+  parameters.epsilon_rel = 1e-5;
+  parameters.maxIterations = 100;
   VectorValues actual = conjugateGradientDescent(*fg, zeros, parameters);
 
   VectorValues expected;
@@ -122,9 +122,9 @@ TEST( Iterative, conjugateGradientDescent_soft_constraint )
   VectorValues zeros = config.zeroVectors();
 
   ConjugateGradientParameters parameters;
-  parameters.setEpsilon_abs(1e-3);
-  parameters.setEpsilon_rel(1e-5);
-  parameters.setMaxIterations(100);
+  parameters.epsilon_abs = 1e-3;
+  parameters.epsilon_rel = 1e-5;
+  parameters.maxIterations = 100;
   VectorValues actual = conjugateGradientDescent(*fg, zeros, parameters);
 
   VectorValues expected;

@@ -40,7 +40,7 @@ class GTSAM_EXPORT DiscreteDistribution : public DiscreteConditional {
   /// Default constructor needed for serialization.
   DiscreteDistribution() {}
 
-  /// Constructor from factor.
+  /// Constructor from DecisionTreeFactor.
   explicit DiscreteDistribution(const DecisionTreeFactor& f)
       : Base(f.size(), f) {}
 

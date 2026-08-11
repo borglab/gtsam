@@ -56,7 +56,7 @@ TEST(BearingRange, 3D) {
   EXPECT(assert_equal(expected, actual));
 }
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 using namespace serializationTestHelpers;
 /* ************************************************************************* */
 TEST(BearingRange, Serialization2D) {

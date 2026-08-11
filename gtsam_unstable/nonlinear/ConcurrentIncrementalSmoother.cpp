@@ -208,7 +208,7 @@ void ConcurrentIncrementalSmoother::updateSmootherSummarization() {
     for(size_t slot: isam2_.getVariableIndex()[key]) {
       const NonlinearFactor::shared_ptr& factor = isam2_.getFactorsUnsafe().at(slot);
       if(factor) {
-        std::set<Key> factorKeys(factor->begin(), factor->end());
+        KeySet factorKeys(factor->begin(), factor->end());
         if(std::includes(cliqueKeys.begin(), cliqueKeys.end(), factorKeys.begin(), factorKeys.end())) {
           cliqueFactorSlots.insert(slot);
         }

@@ -18,11 +18,20 @@
 #pragma once
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/navigation/NavState.h>
+#include <gtsam/geometry/Gal3.h>
+#include <gtsam/base/Lie.h>
+#include <gtsam/dllexport.h>
+
+#include <map>
+#include <stdexcept>
+#include <string>
+
+using namespace std;
 
 namespace gtsam {
 
 /// Simple trajectory simulator.
-class Scenario {
+class GTSAM_EXPORT Scenario {
  public:
   /// virtual destructor
   virtual ~Scenario() {}
@@ -36,18 +45,13 @@ class Scenario {
 
   // Derived quantities:
 
-  Rot3 rotation(double t) const { return pose(t).rotation(); }
-  NavState navState(double t) const { return NavState(pose(t), velocity_n(t)); }
+  Rot3 rotation(double t) const;
+  NavState navState(double t) const;
+  Gal3 gal3(double t) const;
 
-  Vector3 velocity_b(double t) const {
-    const Rot3 nRb = rotation(t);
-    return nRb.transpose() * velocity_n(t);
-  }
+  Vector3 velocity_b(double t) const;
 
-  Vector3 acceleration_b(double t) const {
-    const Rot3 nRb = rotation(t);
-    return nRb.transpose() * acceleration_n(t);
-  }
+  Vector3 acceleration_b(double t) const;
 };
 
 /**
@@ -57,21 +61,17 @@ class Scenario {
  * compensated by thrust. The accelerometer will add the gravity component back
  * in, as modeled by the specificForce method in ScenarioRunner.
  */
-class ConstantTwistScenario : public Scenario {
+class GTSAM_EXPORT ConstantTwistScenario : public Scenario {
  public:
   /// Construct scenario with constant twist [w,v]
   ConstantTwistScenario(const Vector3& w, const Vector3& v,
                         const Pose3& nTb0 = Pose3())
       : twist_((Vector6() << w, v).finished()), a_b_(w.cross(v)), nTb0_(nTb0) {}
 
-  Pose3 pose(double t) const override {
-    return nTb0_ * Pose3::Expmap(twist_ * t);
-  }
-  Vector3 omega_b(double t) const override { return twist_.head<3>(); }
-  Vector3 velocity_n(double t) const override {
-    return rotation(t).matrix() * twist_.tail<3>();
-  }
-  Vector3 acceleration_n(double t) const override { return rotation(t) * a_b_; }
+  Pose3 pose(double t) const override;
+  Vector3 omega_b(double t) const override;
+  Vector3 velocity_n(double t) const override;
+  Vector3 acceleration_n(double t) const override;
 
  private:
   const Vector6 twist_;
@@ -80,7 +80,7 @@ class ConstantTwistScenario : public Scenario {
 };
 
 /// Accelerating from an arbitrary initial state, with optional rotation
-class AcceleratingScenario : public Scenario {
+class GTSAM_EXPORT AcceleratingScenario : public Scenario {
  public:
   /// Construct scenario with constant acceleration in navigation frame and
   /// optional angular velocity in body: rotating while translating...
@@ -89,16 +89,155 @@ class AcceleratingScenario : public Scenario {
                        const Vector3& omega_b = Vector3::Zero())
       : nRb_(nRb), p0_(p0), v0_(v0), a_n_(a_n), omega_b_(omega_b) {}
 
-  Pose3 pose(double t) const override {
-    return Pose3(nRb_.expmap(omega_b_ * t), p0_ + v0_ * t + a_n_ * t * t / 2.0);
-  }
-  Vector3 omega_b(double t) const override { return omega_b_; }
-  Vector3 velocity_n(double t) const override { return v0_ + a_n_ * t; }
-  Vector3 acceleration_n(double t) const override { return a_n_; }
+  Pose3 pose(double t) const override;
+  Vector3 omega_b(double t) const override;
+  Vector3 velocity_n(double t) const override;
+  Vector3 acceleration_n(double t) const override;
 
  private:
   const Rot3 nRb_;
   const Vector3 p0_, v0_, a_n_, omega_b_;
+};
+
+/**
+ * @brief A scenario defined by discrete ground-truth measurements over time.
+ *
+ * This class stores time-stamped ground truth values for pose, angular
+ * velocity, linear velocity, and linear acceleration. When queried for a
+ * value at a specific time `t`, it performs linear interpolation for vector
+ * quantities and manifold interpolation for poses. If `t` is outside the
+ * range of the provided timestamps, the value at the nearest endpoint is
+ * returned (i.e., the data is clamped).
+ */
+class GTSAM_EXPORT DiscreteScenario : public Scenario {
+ public:
+  /**
+   * Constructor.
+   * @param poses Map of timestamps to ground truth poses (nTb).
+   * @param angularVelocities_b Map of timestamps to ground truth angular velocities in body frame.
+   * @param velocities_n Map of timestamps to ground truth linear velocities in nav frame.
+   * @param accelerations_n Map of timestamps to ground truth linear accelerations in nav frame.
+   */
+  DiscreteScenario(const map<double, Pose3>& poses,
+                   const map<double, Vector3>& angularVelocities_b,
+                   const map<double, Vector3>& velocities_n,
+                   const map<double, Vector3>& accelerations_n)
+      : poses_(poses),
+        angularVelocities_b_(angularVelocities_b),
+        velocities_n_(velocities_n),
+        accelerations_n_(accelerations_n) {
+    if (poses_.empty() || angularVelocities_b_.empty() ||
+        velocities_n_.empty() || accelerations_n_.empty()) {
+      throw invalid_argument(
+          "Input maps for DiscreteScenario cannot be empty.");
+    }
+
+    // Since std::map is sorted, the first element has the smallest key
+    // and the last element has the largest key. We can access the last
+    // element's key efficiently using rbegin().
+    double min_t = poses_.begin()->first;
+    double max_t = poses_.rbegin()->first;
+
+    min_t = min(min_t, angularVelocities_b_.begin()->first);
+    max_t = max(max_t, angularVelocities_b_.rbegin()->first);
+
+    min_t = min(min_t, velocities_n_.begin()->first);
+    max_t = max(max_t, velocities_n_.rbegin()->first);
+
+    min_t = min(min_t, accelerations_n_.begin()->first);
+    max_t = max(max_t, accelerations_n_.rbegin()->first);
+
+    // Calculate and assign the duration.
+    t_ = max_t - min_t;
+  }
+
+  /**
+   * @brief Named constructor to create a scenario from a CSV file.
+   *
+   * The CSV file should contain a header row followed by data rows.
+   * All timestamps will be normalized so that the first timestamp in the file
+   * corresponds to t=0 for the scenario.
+   *
+   * CSV is expected to contain the following columns:
+   * t,q_w,q_x,q_y,q_z,v_x,v_y,v_z,p_x,p_y,p_z,w_x,w_y,w_z,a_x,a_y,a_z
+   * Other columns will be ignored.
+   *
+   * @param csv_filepath Path to the CSV file.
+   * @return A constructed DiscreteScenario.
+   * @throws runtime_error if file cannot be opened or is malformed.
+   */
+  static DiscreteScenario FromCSV(const string& csv_filepath);
+
+  /// @name Scenario interface
+  /// @{
+  Pose3 pose(double t) const override;
+  Vector3 omega_b(double t) const override;
+  Vector3 velocity_n(double t) const override;
+  Vector3 acceleration_n(double t) const override;
+  /// @}
+  
+  /// @brief The duration of time between the first timestamp and the last.
+  double duration() const;
+
+ private:
+  /// Map from timestamp to pose.
+  map<double, Pose3> poses_;
+  /// Map from timestamp to angular velocity in body frame.
+  map<double, Vector3> angularVelocities_b_;
+  /// Map from timestamp to velocity in navigation frame.
+  map<double, Vector3> velocities_n_;
+  /// Map from timestamp to acceleration in navigation frame.
+  map<double, Vector3> accelerations_n_;
+  /// Duration.
+  double t_;
+
+  /**
+   * @brief Internal helper to interpolate values in a time-stamped map.
+   *
+   * This function finds the two values that bracket the given time `t` and
+   * performs interpolation. It uses gtsam::interpolate, which correctly
+   * handles manifold types like Pose3 as well as vector types.
+   *
+   * @tparam T The type of the value to interpolate (e.g., Pose3, Vector3).
+   * @param values The map of time-stamped values.
+   * @param t The time at which to interpolate.
+   * @return The interpolated value.
+   */
+  template <typename T>
+  T interpolate(const map<double, T>& values, double t) const {
+    // Find the first element with a timestamp >= t
+    auto it2 = values.lower_bound(t);
+
+    // If t is before or at the very first measurement, return the first value.
+    if (it2 == values.begin()) {
+      return it2->second;
+    }
+
+    // If t is after the very last measurement, return the last value.
+    if (it2 == values.end()) {
+      return values.rbegin()->second;
+    }
+
+    // Standard case: t is between it1 and it2.
+    auto it1 = prev(it2);
+
+    const double t1 = it1->first;
+    const T& value1 = it1->second;
+    const double t2 = it2->first;
+    const T& value2 = it2->second;
+
+    const double dt = t2 - t1;
+    // Avoid division by zero if timestamps are identical
+    if (abs(dt) < 1e-9) {
+      return value1;
+    }
+
+    // Calculate interpolation fraction
+    const double alpha = (t - t1) / dt;
+
+    // Use GTSAM's manifold interpolation
+    return gtsam::interpolate<T>(value1, value2, alpha);
+  }
 };
 
 }  // namespace gtsam

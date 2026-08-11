@@ -20,8 +20,11 @@
 
 #pragma once
 
-#include <gtsam/geometry/Unit3.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Unit3.h>
+
 #include <string>
 
 namespace gtsam {
@@ -39,9 +42,7 @@ private:
   double d_;    ///< The perpendicular distance to this plane
 
 public:
-  enum {
-    dimension = 3
-  };
+  inline constexpr static auto dimension = 3;
 
   /// @name Constructors
   /// @{
@@ -132,7 +133,7 @@ public:
 
   /// Return the perpendicular distance to the origin
   inline double distance(OptionalJacobian<1, 3> H = {}) const {
-    if (H) *H << 0,0,1;
+    if (H) *H = Matrix13{{0, 0, 1}};
     return d_;
   }
 };
@@ -146,4 +147,3 @@ OrientedPlane3> {
 };
 
 }  // namespace gtsam
-

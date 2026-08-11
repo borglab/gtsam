@@ -22,8 +22,10 @@
 #pragma once
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/std_optional_serialization.h>
 #include <gtsam/geometry/Pose3.h>
+
 #include "gtsam/dllexport.h"
 
 namespace gtsam {
@@ -64,12 +66,11 @@ struct GTSAM_EXPORT PreintegratedRotationParams {
   PreintegratedRotationParams() : gyroscopeCovariance(I_3x3) {}
 
   PreintegratedRotationParams(const Matrix3& gyroscope_covariance,
-                              std::optional<Vector3> omega_coriolis)
-    : gyroscopeCovariance(gyroscope_covariance) {
-      if (omega_coriolis) {
-        omegaCoriolis = *omega_coriolis;
-      }
-  }
+                              std::optional<Vector3> omega_coriolis = {},
+                              std::optional<Pose3> body_P_sensor = {})
+    : gyroscopeCovariance(gyroscope_covariance),
+      omegaCoriolis(omega_coriolis),
+      body_P_sensor(body_P_sensor) {}
 
   virtual ~PreintegratedRotationParams() {}
 
@@ -85,7 +86,7 @@ struct GTSAM_EXPORT PreintegratedRotationParams {
   std::optional<Pose3>   getBodyPSensor()   const { return body_P_sensor; }
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -100,12 +101,6 @@ struct GTSAM_EXPORT PreintegratedRotationParams {
       ar & BOOST_SERIALIZATION_NVP(*omegaCoriolis);
     }
   }
-#endif
-
-#ifdef GTSAM_USE_QUATERNIONS
-  // Align if we are using Quaternions
-public:
-	GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 #endif
 };
 
@@ -126,12 +121,12 @@ class GTSAM_EXPORT PreintegratedRotation {
   Rot3 deltaRij_;             ///< Preintegrated relative orientation (in frame i)
   Matrix3 delRdelBiasOmega_;  ///< Jacobian of preintegrated rotation w.r.t. angular rate bias
 
-  /// Default constructor for serialization
-  PreintegratedRotation() {}
-
- public:
+  public:
   /// @name Constructors
   /// @{
+    
+  /// Default constructor for serialization
+  PreintegratedRotation() {}
 
   /// Default constructor, resets integration to zero
   explicit PreintegratedRotation(const std::shared_ptr<Params>& p) : p_(p) {
@@ -148,9 +143,6 @@ class GTSAM_EXPORT PreintegratedRotation {
 
   /// @name Basic utilities
   /// @{
-
-  /// Re-initialize PreintegratedMeasurements
-  void resetIntegration();
 
   /// check parameters equality: checks whether shared pointer points to same Params object.
   bool matchesParamsWith(const PreintegratedRotation& other) const {
@@ -175,6 +167,9 @@ class GTSAM_EXPORT PreintegratedRotation {
   /// @name Main functionality
   /// @{
 
+  /// Re-initialize PreintegratedMeasurements
+  void resetIntegration();
+
   /**
    * @brief Calculate an incremental rotation given the gyro measurement and a
    * time interval, and update both deltaTij_ and deltaRij_.
@@ -196,8 +191,9 @@ class GTSAM_EXPORT PreintegratedRotation {
   Rot3 biascorrectedDeltaRij(const Vector3& biasOmegaIncr,
                              OptionalJacobian<3, 3> H = {}) const;
 
-  /// Integrate coriolis correction in body frame rot_i
-  Vector3 integrateCoriolis(const Rot3& rot_i) const;
+  /// Integrate coriolis correction in body frame Ri
+  Vector3 integrateCoriolis(const Rot3& Ri,
+                            OptionalJacobian<3, 3> H = {}) const;
 
   /// @}
 
@@ -206,7 +202,8 @@ class GTSAM_EXPORT PreintegratedRotation {
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
   /// @deprecated: use IncrementalRotation functor with sane Jacobian
-  inline Rot3 GTSAM_DEPRECATED incrementalRotation(
+  [[deprecated]]
+  inline Rot3 incrementalRotation(
       const Vector3& measuredOmega, const Vector3& bias, double deltaT,
       OptionalJacobian<3, 3> D_incrR_integratedOmega) const {
     internal::IncrementalRotation f{measuredOmega, deltaT, p_->body_P_sensor};
@@ -218,16 +215,18 @@ class GTSAM_EXPORT PreintegratedRotation {
 
   /// @deprecated: use integrateGyroMeasurement from now on
   /// @note this returned hard-to-understand Jacobian D_incrR_integratedOmega.
-  void GTSAM_DEPRECATED integrateMeasurement(
-      const Vector3& measuredOmega, const Vector3& biasHat, double deltaT,
-      OptionalJacobian<3, 3> D_incrR_integratedOmega, OptionalJacobian<3, 3> F);
+  [[deprecated]]
+  void integrateMeasurement(const Vector3& measuredOmega,
+                            const Vector3& biasHat, double deltaT,
+                            OptionalJacobian<3, 3> D_incrR_integratedOmega,
+                            OptionalJacobian<3, 3> F);
 
 #endif
 
   /// @}
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -237,12 +236,6 @@ class GTSAM_EXPORT PreintegratedRotation {
     ar& BOOST_SERIALIZATION_NVP(deltaRij_);
     ar& BOOST_SERIALIZATION_NVP(delRdelBiasOmega_);
   }
-#endif
-
-#ifdef GTSAM_USE_QUATERNIONS
-  // Align if we are using Quaternions
-  public:
-	  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 #endif
 };
 

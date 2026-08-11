@@ -1,5 +1,5 @@
 /**
- * @file expressions.h
+ * @file gtsam/navigation/expressions.h
  * @brief Common expressions for solving navigation problems
  * @date May, 2019
  * @author Frank Dellaert
@@ -19,13 +19,13 @@ typedef Expression<Velocity3> Velocity3_;
 
 namespace internal {
 // define getters that return a value rather than a reference
-Rot3 attitude(const NavState& X, OptionalJacobian<3, 9> H) {
+inline Rot3 attitude(const NavState& X, OptionalJacobian<3, 9> H) {
   return X.attitude(H);
 }
-Point3 position(const NavState& X, OptionalJacobian<3, 9> H) {
+inline Point3 position(const NavState& X, OptionalJacobian<3, 9> H) {
   return X.position(H);
 }
-Velocity3 velocity(const NavState& X, OptionalJacobian<3, 9> H) {
+inline Velocity3 velocity(const NavState& X, OptionalJacobian<3, 9> H) {
   return X.velocity(H);
 }
 }  // namespace internal

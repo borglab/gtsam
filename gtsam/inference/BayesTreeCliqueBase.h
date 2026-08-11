@@ -18,7 +18,6 @@
 #pragma once
 
 #include <gtsam/inference/Key.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/base/types.h>
 #include <gtsam/base/FastVector.h>
 
@@ -140,6 +139,9 @@ namespace gtsam {
     /** Access the conditional */
     const sharedConditional& conditional() const { return conditional_; }
 
+    /** Write access to the conditional */
+    sharedConditional& conditional() { return conditional_; }
+
     /// Return true if this clique is the root of a Bayes tree. 
     inline bool isRoot() const { return parent_.expired(); }
 
@@ -187,10 +189,10 @@ namespace gtsam {
 
     friend class BayesTree<DerivedType>;
 
-  protected:
-
     /// Calculate set \f$ S \setminus B \f$ for shortcut calculations
     KeyVector separator_setminus_B(const derived_ptr& B) const;
+
+  protected:
 
     /** Determine variable indices to keep in recursive separator shortcut calculation The factor
      *  graph p_Cp_B has keys from the parent clique Cp and from B. But we only keep the variables
@@ -205,7 +207,7 @@ namespace gtsam {
 
   private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>

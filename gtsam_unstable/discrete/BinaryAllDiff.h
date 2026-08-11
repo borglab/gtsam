@@ -47,7 +47,7 @@ class BinaryAllDiff : public Constraint {
   }
 
   /// Calculate value
-  double operator()(const DiscreteValues& values) const override {
+  double evaluate(const Assignment<Key>& values) const override {
     return (double)(values.at(keys_[0]) != values.at(keys_[1]));
   }
 
@@ -90,11 +90,6 @@ class BinaryAllDiff : public Constraint {
   Constraint::shared_ptr partiallyApply(
       const Domains&) const override {
     throw std::runtime_error("BinaryAllDiff::partiallyApply not implemented");
-  }
-
-  /// Compute error for each assignment and return as a tree
-  AlgebraicDecisionTree<Key> errorTree() const override {
-    throw std::runtime_error("BinaryAllDiff::error not implemented");
   }
 };
 

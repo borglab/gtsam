@@ -18,13 +18,13 @@
 
 #pragma once
 
-#include <gtsam/base/Lie.h>
-#include <gtsam/base/Manifold.h>
-#include <gtsam/base/make_shared.h>
+#include <gtsam/base/MatrixLieGroup.h>
 #include <gtsam/dllexport.h>
-#include <Eigen/Core>
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
 #endif
 
@@ -33,6 +33,7 @@
 #include <type_traits>
 #include <vector>
 #include <random>
+#include <cassert>
 
 namespace gtsam {
 
@@ -51,14 +52,15 @@ constexpr int NSquaredSO(int N) { return (N < 0) ? Eigen::Dynamic : N * N; }
  * Template paramater N can be a fixed integer or can be Eigen::Dynamic
  */
 template <int N>
-class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
+class SO : public MatrixLieGroup<SO<N>, internal::DimensionSO(N), N> {
  public:
-  enum { dimension = internal::DimensionSO(N) };
+  inline constexpr static auto dimension = internal::DimensionSO(N);
   using MatrixNN = Eigen::Matrix<double, N, N>;
   using VectorN2 = Eigen::Matrix<double, internal::NSquaredSO(N), 1>;
   using MatrixDD = Eigen::Matrix<double, dimension, dimension>;
 
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(true)
+  /// LieGroup Concept requirements
+  using LieAlgebra = MatrixNN;
 
  protected:
   MatrixNN matrix_;  ///< Rotation matrix
@@ -201,9 +203,6 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   using TangentVector = Eigen::Matrix<double, dimension, 1>;
   using ChartJacobian = OptionalJacobian<dimension, dimension>;
 
-  /// Return compile-time dimensionality: fixed size N or Eigen::Dynamic
-  static int Dim() { return dimension; }
-
   // Calculate manifold dimensionality for SO(n).
   // Available as dimension or Dim() for fixed N.
   static size_t Dimension(size_t n) { return n * (n - 1) / 2; }
@@ -212,7 +211,6 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   static size_t AmbientDim(size_t d) { return (1 + std::sqrt(1 + 8 * d)) / 2; }
 
   // Calculate run-time dimensionality of manifold.
-  // Available as dimension or Dim() for fixed N.
   size_t dim() const { return Dimension(static_cast<size_t>(matrix_.rows())); }
 
   /**
@@ -244,12 +242,19 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
      * Retract uses Cayley map. See note about xi element order in Hat.
      * Deafault implementation has no Jacobian implemented
      */
-    static SO Retract(const TangentVector& xi, ChartJacobian H = {});
+    static SO Retract(const TangentVector& xi);
+
+    /// Retract with a Jacobian, specialized only for dimensions that support
+    /// it.
+    static SO Retract(const TangentVector& xi, ChartJacobian H) = delete;
 
     /**
      * Inverse of Retract. See note about xi element order in Hat.
      */
-    static TangentVector Local(const SO& R, ChartJacobian H = {});
+    static TangentVector Local(const SO& R);
+
+    /// Local coordinates with a Jacobian, specialized when supported.
+    static TangentVector Local(const SO& R, ChartJacobian H) = delete;
   };
 
   // Return dynamic identity DxD Jacobian for given SO(n)
@@ -264,23 +269,31 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   /// @{
 
   /// Adjoint map
-  MatrixDD AdjointMap() const;
+  MatrixDD AdjointMap() const {
+    return MatrixLieGroup<SO<N>, internal::DimensionSO(N), N>::AdjointMap();
+  }
 
   /**
    * Exponential map at identity - create a rotation from canonical coordinates
    */
-  static SO Expmap(const TangentVector& omega, ChartJacobian H = {});
+  static SO Expmap(const TangentVector& omega);
 
-  /// Derivative of Expmap, currently only defined for SO3
-  static MatrixDD ExpmapDerivative(const TangentVector& omega);
+  /// Exponential map with a Jacobian, specialized when supported.
+  static SO Expmap(const TangentVector& omega, ChartJacobian H) = delete;
+
+  /// Derivative of Expmap, specialized when supported.
+  static MatrixDD ExpmapDerivative(const TangentVector& omega) = delete;
 
   /**
    * Log map at identity - returns the canonical coordinates of this rotation
    */
-  static TangentVector Logmap(const SO& R, ChartJacobian H = {});
+  static TangentVector Logmap(const SO& R);
 
-  /// Derivative of Logmap, currently only defined for SO3
-  static MatrixDD LogmapDerivative(const TangentVector& omega);
+  /// Logarithm map with a Jacobian, specialized when supported.
+  static TangentVector Logmap(const SO& R, ChartJacobian H) = delete;
+
+  /// Derivative of Logmap, specialized when supported.
+  static MatrixDD LogmapDerivative(const TangentVector& omega) = delete;
 
   // inverse with optional derivative
   using LieGroup<SO<N>, internal::DimensionSO(N)>::inverse;
@@ -289,13 +302,11 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   /// @name Other methods
   /// @{
 
-  /**
-   * Return vectorized rotation matrix in column order.
-   * Will use dynamic matrices as intermediate results, but returns a fixed size
-   * X and fixed-size Jacobian if dimension is known at compile time.
-   * */
+  /// Return vectorized rotation matrix in column order.
   VectorN2 vec(OptionalJacobian<internal::NSquaredSO(N), dimension> H =
-                   {}) const;
+    {}) const {
+    return MatrixLieGroup<SO<N>, internal::DimensionSO(N), N>::vec(H);
+  }
 
   /// Calculate N^2 x dim matrix of vectorized Lie algebra generators for SO(N)
   template <int N_ = N, typename = IsFixed<N_>>
@@ -325,7 +336,7 @@ class SO : public LieGroup<SO<N>, internal::DimensionSO(N)> {
   /// @name Serialization
   /// @{
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   template <class Archive>
   friend void save(Archive&, SO&, const unsigned int);
   template <class Archive>
@@ -372,14 +383,7 @@ GTSAM_EXPORT
 SOn LieGroup<SOn, Eigen::Dynamic>::between(const SOn& g, DynamicJacobian H1,
                                            DynamicJacobian H2) const;
 
-/*
- * Specialize dynamic vec.
- */
-template <> 
-GTSAM_EXPORT
-typename SOn::VectorN2 SOn::vec(DynamicJacobian H) const;
-
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 /** Serialization function */
 template<class Archive>
 void serialize(
@@ -392,14 +396,14 @@ void serialize(
 #endif
 
 /*
- * Define the traits. internal::LieGroup provides both Lie group and Testable
+ * Define the traits. internal::MatrixLieGroup provides both Lie group and Testable
  */
 
 template <int N>
-struct traits<SO<N>> : public internal::LieGroup<SO<N>> {};
+struct traits<SO<N>> : public internal::MatrixLieGroup<SO<N>, N> {};
 
 template <int N>
-struct traits<const SO<N>> : public internal::LieGroup<SO<N>> {};
+struct traits<const SO<N>> : public internal::MatrixLieGroup<SO<N>, N> {};
 
 }  // namespace gtsam
 

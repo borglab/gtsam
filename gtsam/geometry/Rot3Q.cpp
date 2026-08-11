@@ -19,31 +19,50 @@
 
 #ifdef GTSAM_USE_QUATERNIONS
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/Rot3.h>
+
+#include <cassert>
 #include <cmath>
 
 using namespace std;
 
 namespace gtsam {
 
+namespace {
+
+#if !defined(NDEBUG) && defined(GTSAM_EXTRA_CONSISTENCY_CHECKS)
+void assertRot3Invariant(const Rot3& rotation) {
+  const auto quaternion = rotation.toQuaternion();
+  const Matrix3 matrix = rotation.matrix();
+  assert(quaternion.coeffs().allFinite());
+  assert(std::abs(quaternion.norm() - 1.0) <= 1e-9);
+  assert(matrix.allFinite());
+  assert((matrix.transpose() * matrix - I_3x3).norm() <= 1e-9);
+  assert(std::abs(matrix.determinant() - 1.0) <= 1e-9);
+}
+#else
+void assertRot3Invariant(const Rot3&) {}
+#endif
+
+}  // namespace
+
   /* ************************************************************************* */
   Rot3::Rot3() : quaternion_(Quaternion::Identity()) {}
 
   /* ************************************************************************* */
-  Rot3::Rot3(const Point3& col1, const Point3& col2, const Point3& col3) :
-      quaternion_((Matrix3() <<
-          col1.x(), col2.x(), col3.x(),
-          col1.y(), col2.y(), col3.y(),
-          col1.z(), col2.z(), col3.z()).finished()) {}
+  Rot3::Rot3(const Point3& col1, const Point3& col2, const Point3& col3)
+      : quaternion_(Matrix3{{col1.x(), col2.x(), col3.x()},
+                            {col1.y(), col2.y(), col3.y()},
+                            {col1.z(), col2.z(), col3.z()}}) {}
 
   /* ************************************************************************* */
-  Rot3::Rot3(double R11, double R12, double R13,
-      double R21, double R22, double R23,
-      double R31, double R32, double R33) :
-        quaternion_((Matrix3() <<
-            R11, R12, R13,
-            R21, R22, R23,
-            R31, R32, R33).finished()) {}
+  Rot3::Rot3(double R11, double R12, double R13, double R21, double R22,
+             double R23, double R31, double R32, double R33)
+      : quaternion_(Matrix3{//
+                            {R11, R12, R13},
+                            {R21, R22, R23},
+                            {R31, R32, R33}}) {}
 
   /* ************************************************************************* */
   Rot3::Rot3(const gtsam::Quaternion& q) :
@@ -68,14 +87,14 @@ namespace gtsam {
   /* ************************************************************************* */
   Rot3 Rot3::RzRyRx(double x, double y, double z, OptionalJacobian<3, 1> Hx,
                     OptionalJacobian<3, 1> Hy, OptionalJacobian<3, 1> Hz) {
-    if (Hx) (*Hx) << 1, 0, 0;
+    if (Hx) *Hx = Matrix31{{1}, {0}, {0}};
 
     if (Hy or Hz) {
       const auto cx = cos(x), sx = sin(x);
-      if (Hy) (*Hy) << 0, cx, -sx;
+      if (Hy) *Hy = Matrix31{{0}, {cx}, {-sx}};
       if (Hz) {
         const auto cy = cos(y), sy = sin(y);
-        (*Hz) << -sy, sx * cy, cx * cy;
+        *Hz = Matrix31{{-sy}, {sx * cy}, {cx * cy}};
       }
     }
 
@@ -117,6 +136,14 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  Rot3 Rot3::Expmap(const Vector3& v, OptionalJacobian<3,3> H) {
+    if(H) *H = Rot3::ExpmapDerivative(v);
+    const Rot3 result = traits<gtsam::Quaternion>::Expmap(v);
+    assertRot3Invariant(result);
+    return result;
+  }
+
+  /* ************************************************************************* */
   Vector3 Rot3::Logmap(const Rot3& R, OptionalJacobian<3, 3> H) {
     return traits<gtsam::Quaternion>::Logmap(R.quaternion_, H);
   }
@@ -124,8 +151,13 @@ namespace gtsam {
   /* ************************************************************************* */
   Rot3 Rot3::ChartAtOrigin::Retract(const Vector3& omega, ChartJacobian H) {
     static const CoordinatesMode mode = ROT3_DEFAULT_COORDINATES_MODE;
-    if (mode == Rot3::EXPMAP) return Expmap(omega, H);
-    else throw std::runtime_error("Rot3::Retract: unknown mode");
+    if (mode == Rot3::EXPMAP) {
+      const Rot3 result = Expmap(omega, H);
+      assertRot3Invariant(result);
+      return result;
+    } else {
+      throw std::runtime_error("Rot3::Retract: unknown mode");
+    }
   }
 
   /* ************************************************************************* */

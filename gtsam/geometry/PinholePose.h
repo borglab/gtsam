@@ -212,7 +212,7 @@ public:
 
 private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
@@ -222,9 +222,6 @@ private:
         boost::serialization::base_object<PinholeBase>(*this));
   }
 #endif
-
-public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // end of class PinholeBaseK
 
@@ -245,9 +242,7 @@ private:
 
 public:
 
-  enum {
-    dimension = 6
-  }; ///< There are 6 DOF to optimize for
+  inline constexpr static auto dimension = 6; ///< There are 6 DOF to optimize for
 
   /// @name Standard Constructors
   /// @{
@@ -388,12 +383,10 @@ public:
   /// @name Manifold
   /// @{
 
-  /// @deprecated
   size_t dim() const {
     return 6;
   }
 
-  /// @deprecated
   static size_t Dim() {
     return 6;
   }
@@ -427,7 +420,7 @@ public:
 
 private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
@@ -438,9 +431,6 @@ private:
     ar & BOOST_SERIALIZATION_NVP(K_);
   }
 #endif
-
-public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // end of class PinholePose
 

@@ -20,12 +20,14 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/discrete/DecisionTree-inl.h>
+#include <gtsam/discrete/Ring.h>
 
-#include <algorithm>
+#include <iomanip>
+#include <limits>
 #include <map>
 #include <string>
-#include <iomanip>
 #include <vector>
+
 namespace gtsam {
 
   /**
@@ -53,26 +55,10 @@ namespace gtsam {
    public:
     using Base = DecisionTree<L, double>;
 
-    /** The Real ring with addition and multiplication */
-    struct Ring {
-      static inline double zero() { return 0.0; }
-      static inline double one() { return 1.0; }
-      static inline double add(const double& a, const double& b) {
-        return a + b;
-      }
-      static inline double max(const double& a, const double& b) {
-        return std::max(a, b);
-      }
-      static inline double mul(const double& a, const double& b) {
-        return a * b;
-      }
-      static inline double div(const double& a, const double& b) {
-        return a / b;
-      }
-      static inline double id(const double& x) { return x; }
-    };
-
     AlgebraicDecisionTree(double leaf = 1.0) : Base(leaf) {}
+
+    /// Constructor which accepts root pointer
+    AlgebraicDecisionTree(const typename Base::NodePtr root) : Base(root) {}
 
     // Explicitly non-explicit constructor
     AlgebraicDecisionTree(const Base& add) : Base(add) {}
@@ -181,9 +167,34 @@ namespace gtsam {
       this->root_ = DecisionTree<L, double>::convertFrom(other.root_, L_of_M, op);
     }
 
+    /**
+     * @brief Create from an arbitrary DecisionTree<L, X> by operating on it
+     * with a functional `f`.
+     *
+     * @tparam X The type of the leaf of the original DecisionTree
+     * @tparam Func Type signature of functional `f`.
+     * @param other The original DecisionTree from which the
+     * AlgbraicDecisionTree is constructed.
+     * @param f Functional used to operate on
+     * the leaves of the input DecisionTree.
+     */
+    template <typename X, typename Func>
+    AlgebraicDecisionTree(const DecisionTree<L, X>& other, Func f)
+        : Base(other, f) {}
+
     /** sum */
     AlgebraicDecisionTree operator+(const AlgebraicDecisionTree& g) const {
       return this->apply(g, &Ring::add);
+    }
+
+    /** negation */
+    AlgebraicDecisionTree operator-() const {
+      return this->apply(&Ring::negate);
+    }
+
+    /** subtract */
+    AlgebraicDecisionTree operator-(const AlgebraicDecisionTree& g) const {
+      return *this + (-g);
     }
 
     /** product */
@@ -208,12 +219,9 @@ namespace gtsam {
      * @brief Helper method to perform normalization such that all leaves in the
      * tree sum to 1
      *
-     * @param sum
      * @return AlgebraicDecisionTree
      */
-    AlgebraicDecisionTree normalize(double sum) const {
-      return this->apply([&sum](const double& x) { return x / sum; });
-    }
+    AlgebraicDecisionTree normalize() const { return (*this) / this->sum(); }
 
     /// Find the minimum values amongst all leaves
     double min() const {

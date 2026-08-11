@@ -19,14 +19,16 @@ using namespace gtsam;
 using namespace gtsam::symbol_shorthand;
 using namespace gtsam::noiseModel;
 
-/**
- * This TEST should fail. If you want it to pass, change noise to 0.
- */
+// Verifies the corrected Jacobians at a nonzero residual when enabled.
 TEST(BetweenFactor, Rot3) {
-  Rot3 R1 = Rot3::Rodrigues(0.1, 0.2, 0.3);
-  Rot3 R2 = Rot3::Rodrigues(0.4, 0.5, 0.6);
-  Rot3 noise = Rot3(); // Rot3::Rodrigues(0.01, 0.01, 0.01); // Uncomment to make unit test fail
-  Rot3 measured = R1.between(R2)*noise  ;
+  const Rot3 R1 = Rot3::Rodrigues(0.1, 0.2, 0.3);
+  const Rot3 R2 = Rot3::Rodrigues(0.4, 0.5, 0.6);
+#ifdef GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR
+  const Rot3 noise = Rot3::Rodrigues(0.01, 0.01, 0.01);
+#else
+  const Rot3 noise;
+#endif
+  const Rot3 measured = R1.between(R2) * noise;
 
   BetweenFactor<Rot3> factor(R(1), R(2), measured, Isotropic::Sigma(3, 0.05));
   Matrix actualH1, actualH2;
@@ -66,7 +68,7 @@ TEST(BetweenFactor, ConstructorVector3) {
 // Constructor dynamic sized vector
 TEST(BetweenFactor, ConstructorDynamicSizeVector) {
   SharedNoiseModel model = noiseModel::Isotropic::Sigma(5, 1.0);
-  Vector measured(5); measured << 1, 2, 3, 4, 5;
+  Vector measured{{1, 2, 3, 4, 5}};
   BetweenFactor<Vector> factor(1, 2, measured, model);
 }
 

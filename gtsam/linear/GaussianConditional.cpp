@@ -15,11 +15,14 @@
  * @author Christian Potthast, Frank Dellaert
  */
 
+#include <gtsam/base/utilities.h>
+#include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/Sampler.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/linearExceptions.h>
-#include <gtsam/hybrid/HybridValues.h>
+
+#include <iomanip>
 
 #ifdef __GNUC__
 #pragma GCC diagnostic push
@@ -33,9 +36,6 @@
 #include <list>
 #include <string>
 #include <cmath>
-
-// In Wrappers we have no access to this so have a default ready
-static std::mt19937_64 kRandomNumberGenerator(42);
 
 using namespace std;
 
@@ -121,7 +121,8 @@ namespace gtsam {
       const auto mean = solve({});  // solve for mean.
       mean.print("  mean", formatter);
     }
-    cout << "  logNormalizationConstant: " << -negLogConstant() << endl;
+    cout << "  logNormalizationConstant: " << std::fixed << std::setprecision(4)
+       << -negLogConstant() << endl;
     if (model_)
       model_->print("  Noise model: ");
     else
@@ -147,8 +148,8 @@ namespace gtsam {
           const_iterator it2 = c->beginParents() + (it - beginParents());
           if (*it != *(it2))
             return false;
-          rows1.push_back(row(getA(it), i));
-          rows2.push_back(row(c->getA(it2), i));
+          rows1.push_back(getA(it).row(i));
+          rows2.push_back(c->getA(it2).row(i));
         }
 
         Vector row1 = concatVectors(rows1);
@@ -225,9 +226,9 @@ namespace gtsam {
     // Solve matrix
     const Vector solution = R().triangularView<Eigen::Upper>().solve(rhs);
 
-    // Check for indeterminant solution
+    // Check for indeterminate solution
     if (solution.hasNaN()) {
-      throw IndeterminantLinearSystemException(keys().front());
+      throw IndeterminateSystemException(keys().front());
     }
 
     // Insert solution into a VectorValues
@@ -243,7 +244,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   VectorValues GaussianConditional::solveOtherRHS(
-    const VectorValues& parents, const VectorValues& rhs) const {
+      const VectorValues& parents, const VectorValues& rhs) const {
     // Concatenate all vector values that correspond to parent variables
     Vector xS = parents.vector(KeyVector(beginParents(), endParents()));
 
@@ -252,17 +253,18 @@ namespace gtsam {
     xS = rhsR - S() * xS;
 
     // Solve Matrix
-    Vector soln = R().triangularView<Eigen::Upper>().solve(xS);
+    Vector solution = R().triangularView<Eigen::Upper>().solve(xS);
 
     // Scale by sigmas
-    if (model_)
-      soln.array() *= model_->sigmas().array();
+    if (model_) solution.array() *= model_->sigmasRef().array();
 
     // Insert solution into a VectorValues
     VectorValues result;
     DenseIndex vectorPosition = 0;
-    for (const_iterator frontal = beginFrontals(); frontal != endFrontals(); ++frontal) {
-      result.emplace(*frontal, soln.segment(vectorPosition, getDim(frontal)));
+    for (const_iterator frontal = beginFrontals(); frontal != endFrontals();
+         ++frontal) {
+      result.emplace(*frontal,
+                     solution.segment(vectorPosition, getDim(frontal)));
       vectorPosition += getDim(frontal);
     }
 
@@ -275,14 +277,15 @@ namespace gtsam {
     frontalVec = R().transpose().triangularView<Eigen::Lower>().solve(frontalVec);
 
     // Check for indeterminate solution
-    if (frontalVec.hasNaN()) throw IndeterminantLinearSystemException(this->keys().front());
+    if (frontalVec.hasNaN())
+      throw IndeterminateSystemException(this->keys().front());
 
     for (const_iterator it = beginParents(); it!= endParents(); it++)
       gy[*it].noalias() += -1.0 * getA(it).transpose() * frontalVec;
 
     // Scale by sigmas
     if (model_)
-      frontalVec.array() *= model_->sigmas().array();
+      frontalVec.array() *= model_->sigmasRef().array();
 
     // Write frontal solution into a VectorValues
     DenseIndex vectorPosition = 0;
@@ -304,23 +307,36 @@ namespace gtsam {
     const Vector x =
         frontalValues.vector(KeyVector(beginFrontals(), endFrontals()));
 
-    // Copy the augmented Jacobian matrix:
-    auto newAb = Ab_;
-
-    // Restrict view to parent blocks
-    newAb.firstBlock() += nrFrontals_;
-
-    // Update right-hand-side (last column)
-    auto last = newAb.matrix().cols() - 1;
+    // Compute updated right-hand side: d - R * x
     const auto RR = R().triangularView<Eigen::Upper>();
-    newAb.matrix().col(last) -= RR * x;
+    const Vector rhs = d() - RR * x;
+
+    // Collect parent dimensions
+    FastVector<DenseIndex> parentDims;
+    parentDims.reserve(nrParents());
+    for (auto it = beginParents(); it != endParents(); ++it) {
+      parentDims.push_back(getDim(it));
+    }
+
+    // Build a VerticalBlockMatrix containing only parent blocks and RHS.
+    const DenseIndex m = rows();
+    VerticalBlockMatrix newAb(parentDims, m, true);
+
+    // Copy parent blocks (S matrices).
+    DenseIndex blockIndex = 0;
+    for (auto it = beginParents(); it != endParents(); ++it, ++blockIndex) {
+      newAb(blockIndex) = S(it);
+    }
+
+    // Set the RHS block.
+    const DenseIndex lastBlock = newAb.nBlocks() - 1;
+    newAb(lastBlock).col(0) = rhs;
 
     // The keys now do not include the frontal keys:
     KeyVector newKeys;
     newKeys.reserve(nrParents());
     for (auto&& key : parents()) newKeys.push_back(key);
 
-    // Hopefully second newAb copy below is optimized out...
     return std::make_shared<JacobianFactor>(newKeys, newAb, model_);
   }
 
@@ -347,10 +363,17 @@ namespace gtsam {
 
     VectorValues solution = solve(parentsValues);
     Key key = firstFrontalKey();
+
+    // Check if rng is nullptr, then assign default
+    rng = (rng == nullptr) ? &kRandomNumberGenerator : rng;
+
     // The vector of sigma values for sampling.
     // If no model, initialize sigmas to 1, else to model sigmas
-    const Vector& sigmas = (!model_) ? Vector::Ones(rows()) : model_->sigmas();
-    solution[key] += Sampler::sampleDiagonal(sigmas, rng);
+    if (model_) {
+      solution[key] += Sampler::sampleDiagonal(model_->sigmasRef(), rng);
+    } else {
+      solution[key] += Sampler::sampleDiagonal(Vector::Ones(rows()), rng);
+    }
     return solution;
   }
 
@@ -359,16 +382,7 @@ namespace gtsam {
       throw std::invalid_argument(
           "sample() can only be invoked on no-parent prior");
     VectorValues values;
-    return sample(values);
-  }
-
-  /* ************************************************************************ */
-  VectorValues GaussianConditional::sample() const {
-    return sample(&kRandomNumberGenerator);
-  }
-
-  VectorValues GaussianConditional::sample(const VectorValues& given) const {
-    return sample(given, &kRandomNumberGenerator);
+    return sample(values, rng);
   }
 
   /* ************************************************************************ */

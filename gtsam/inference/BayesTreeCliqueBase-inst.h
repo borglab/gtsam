@@ -18,7 +18,10 @@
 
 #include <gtsam/inference/BayesTreeCliqueBase.h>
 #include <gtsam/inference/FactorGraph-inst.h>
+#include <gtsam/inference/Ordering.h>
 #include <gtsam/base/timing.h>
+
+#include <vector>
 
 namespace gtsam {
 
@@ -48,7 +51,7 @@ namespace gtsam {
     KeySet indicesB(B->conditional()->begin(), B->conditional()->end());
     KeyVector S_setminus_B;
     std::set_difference(p_F_S_parents.begin(), p_F_S_parents.end(),
-      indicesB.begin(), indicesB.end(), back_inserter(S_setminus_B));
+      indicesB.begin(), indicesB.end(), std::back_inserter(S_setminus_B));
     return S_setminus_B;
   }
 
@@ -64,10 +67,10 @@ namespace gtsam {
     KeyVector keep;
     // keep = S\B intersect allKeys (S_setminus_B is already sorted)
     std::set_intersection(S_setminus_B.begin(), S_setminus_B.end(), //
-      allKeys.begin(), allKeys.end(), back_inserter(keep));
+      allKeys.begin(), allKeys.end(), std::back_inserter(keep));
     // keep += B intersect allKeys
     std::set_intersection(indicesB.begin(), indicesB.end(), //
-      allKeys.begin(), allKeys.end(), back_inserter(keep));
+      allKeys.begin(), allKeys.end(), std::back_inserter(keep));
     return keep;
   }
 
@@ -104,14 +107,16 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  // The shortcut density is a conditional P(S|R) of the separator of this
-  // clique on the root. We can compute it recursively from the parent shortcut
-  // P(Sp|R) as \int P(Fp|Sp) P(Sp|R), where Fp are the frontal nodes in p
-  /* ************************************************************************* */
-  template<class DERIVED, class FACTORGRAPH>
+  // The shortcut density is a conditional P(S|B) of the separator of this
+  // clique on the root or common ancestor B. We can compute it recursively from
+  // the parent shortcut P(Sp|B) as \int P(Fp|Sp) P(Sp|B), where Fp are the
+  // frontal nodes in the parent p, and Sp the separator of the parent.
+  /* *************************************************************************
+   */
+  template <class DERIVED, class FACTORGRAPH>
   typename BayesTreeCliqueBase<DERIVED, FACTORGRAPH>::BayesNetType
-    BayesTreeCliqueBase<DERIVED, FACTORGRAPH>::shortcut(const derived_ptr& B, Eliminate function) const
-  {
+  BayesTreeCliqueBase<DERIVED, FACTORGRAPH>::shortcut(
+      const derived_ptr& B, Eliminate function) const {
     gttic(BayesTreeCliqueBase_shortcut);
     // We only calculate the shortcut when this clique is not B
     // and when the S\B is not empty
@@ -120,12 +125,10 @@ namespace gtsam {
     {
       // Obtain P(Cp||B) = P(Fp|Sp) * P(Sp||B) as a factor graph
       derived_ptr parent(parent_.lock());
-      gttoc(BayesTreeCliqueBase_shortcut);
       FactorGraphType p_Cp_B(parent->shortcut(B, function)); // P(Sp||B)
-      gttic(BayesTreeCliqueBase_shortcut);
       p_Cp_B.push_back(parent->conditional_); // P(Fp|Sp)
 
-      // Determine the variables we want to keepSet, S union B
+      // Determine the variables we want to keep, S union B
       KeyVector keep = shortcut_indices(B, p_Cp_B);
 
       // Marginalize out everything except S union B
@@ -139,51 +142,65 @@ namespace gtsam {
   }
 
   /* *********************************************************************** */
-  // separator marginal, uses separator marginal of parent recursively
-  // P(C) = P(F|S) P(S)
+  // Separator marginal, using cached separator marginals of ancestors
+  // Calculates P(S) = \int P(Cp) = \int P(Fp|Sp) P(Sp)
+  // if P(Sp) is not cached, it walks to the nearest cached ancestor.
+  // Here again, Fp and Sp are the frontal nodes and separator in the parent p.
   /* *********************************************************************** */
   template <class DERIVED, class FACTORGRAPH>
   typename BayesTreeCliqueBase<DERIVED, FACTORGRAPH>::FactorGraphType
   BayesTreeCliqueBase<DERIVED, FACTORGRAPH>::separatorMarginal(
       Eliminate function) const {
-    std::lock_guard<std::mutex> marginalLock(cachedSeparatorMarginalMutex_);
     gttic(BayesTreeCliqueBase_separatorMarginal);
-    // Check if the Separator marginal was already calculated
-    if (!cachedSeparatorMarginal_) {
-      gttic(BayesTreeCliqueBase_separatorMarginal_cachemiss);
 
-      // If this is the root, there is no separator
-      if (parent_.expired() /*(if we're the root)*/) {
-        // we are root, return empty
-        FactorGraphType empty;
-        cachedSeparatorMarginal_ = empty;
-      } else {
-        // Flatten recursion in timing outline
-        gttoc(BayesTreeCliqueBase_separatorMarginal_cachemiss);
-        gttoc(BayesTreeCliqueBase_separatorMarginal);
-
-        // Obtain P(S) = \int P(Cp) = \int P(Fp|Sp) P(Sp)
-        // initialize P(Cp) with the parent separator marginal
-        derived_ptr parent(parent_.lock());
-        FactorGraphType p_Cp(parent->separatorMarginal(function));  // P(Sp)
-
-        gttic(BayesTreeCliqueBase_separatorMarginal);
-        gttic(BayesTreeCliqueBase_separatorMarginal_cachemiss);
-
-        // now add the parent conditional
-        p_Cp.push_back(parent->conditional_);  // P(Fp|Sp)
-
-        // The variables we want to keepSet are exactly the ones in S
-        KeyVector indicesS(this->conditional()->beginParents(),
-                           this->conditional()->endParents());
-        auto separatorMarginal =
-            p_Cp.marginalMultifrontalBayesNet(Ordering(indicesS), function);
-        cachedSeparatorMarginal_ = *separatorMarginal;
+    // Lock the leaf-to-root path, then fill uncached separator marginals from
+    // root to leaf. This preserves the recursive implementation's locking
+    // semantics without consuming stack space for deep Bayes-tree chains.
+    std::vector<const This*> path;
+    std::vector<derived_ptr> keepAlive;
+    std::vector<std::unique_lock<std::mutex>> locks;
+    const This* clique = this;
+    while (true) {
+      path.push_back(clique);
+      locks.emplace_back(clique->cachedSeparatorMarginalMutex_);
+      if (clique->cachedSeparatorMarginal_) {
+        break;
       }
+
+      derived_ptr parent = clique->parent_.lock();
+      if (!parent) {
+        break;
+      }
+      keepAlive.push_back(parent);
+      clique = parent.get();
     }
 
-    // return the shortcut P(S||B)
-    return *cachedSeparatorMarginal_;  // return the cached version
+    for (auto it = path.rbegin(); it != path.rend(); ++it) {
+      const This* clique = *it;
+      if (clique->cachedSeparatorMarginal_) {
+        continue;
+      }
+
+      derived_ptr parent = clique->parent_.lock();
+      if (!parent) {
+        FactorGraphType empty;
+        clique->cachedSeparatorMarginal_ = empty;
+        continue;
+      }
+
+      // Obtain P(S) = \int P(Cp) = \int P(Fp|Sp) P(Sp).
+      FactorGraphType p_Cp(*parent->cachedSeparatorMarginal_);
+      p_Cp.push_back(parent->conditional_);
+
+      // The variables we want to keep are exactly the ones in S.
+      KeyVector indicesS(clique->conditional()->beginParents(),
+                         clique->conditional()->endParents());
+      auto separatorMarginal =
+          p_Cp.marginalMultifrontalBayesNet(Ordering(indicesS), function);
+      clique->cachedSeparatorMarginal_ = *separatorMarginal;
+    }
+
+    return *cachedSeparatorMarginal_;
   }
 
   /* *********************************************************************** */

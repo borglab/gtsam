@@ -125,7 +125,7 @@ struct GTSAM_EXPORT SfmData {
   /// @name Serialization
   /// @{
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;
   /** Serialization function */
   template <class Archive>

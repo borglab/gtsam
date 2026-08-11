@@ -13,6 +13,7 @@
  *  @file HybridConditional.h
  *  @date Mar 11, 2022
  *  @author Fan Jiang
+ *  @author Varun Agrawal
  */
 
 #pragma once
@@ -152,7 +153,8 @@ class GTSAM_EXPORT HybridConditional
    * @return HybridGaussianConditional::shared_ptr otherwise
    */
   HybridGaussianConditional::shared_ptr asHybrid() const {
-    return std::dynamic_pointer_cast<HybridGaussianConditional>(inner_);
+    if (!isHybrid()) return nullptr;
+    return std::static_pointer_cast<HybridGaussianConditional>(inner_);
   }
 
   /**
@@ -161,23 +163,26 @@ class GTSAM_EXPORT HybridConditional
    * @return GaussianConditional::shared_ptr otherwise
    */
   GaussianConditional::shared_ptr asGaussian() const {
-    return std::dynamic_pointer_cast<GaussianConditional>(inner_);
+    if (!isContinuous()) return nullptr;
+    return std::static_pointer_cast<GaussianConditional>(inner_);
   }
 
   /**
-   * @brief Return conditional as a DiscreteConditional
+   * @brief Return conditional as a DiscreteConditional or specified type T.
    * @return nullptr if not a DiscreteConditional
    * @return DiscreteConditional::shared_ptr
    */
-  DiscreteConditional::shared_ptr asDiscrete() const {
-    return std::dynamic_pointer_cast<DiscreteConditional>(inner_);
+  template <typename T = DiscreteConditional>
+  typename T::shared_ptr asDiscrete() const {
+    if (!isDiscrete()) return nullptr;
+    return std::static_pointer_cast<T>(inner_);
   }
 
   /// Get the type-erased pointer to the inner type
   std::shared_ptr<Factor> inner() const { return inner_; }
 
   /// Return the error of the underlying conditional.
-  double error(const HybridValues& values) const override;
+  double error(const HybridValues& hybridValues) const override;
 
   /**
    * @brief Compute error of the HybridConditional as a tree.
@@ -187,7 +192,7 @@ class GTSAM_EXPORT HybridConditional
    * as the conditionals involved, and leaf values as the error.
    */
   AlgebraicDecisionTree<Key> errorTree(
-      const VectorValues& values) const override;
+      const VectorValues& continuousValues) const override;
 
   /// Return the log-probability (or density) of the underlying conditional.
   double logProbability(const HybridValues& values) const override;
@@ -213,10 +218,19 @@ class GTSAM_EXPORT HybridConditional
     return true;
   }
 
+  /**
+   * Return a HybridConditional by choosing branches based on the given discrete
+   * values. If all discrete parents are specified, return a HybridConditional
+   * which is just a GaussianConditional. If this conditional is *not* a hybrid
+   * conditional, just return that.
+   */
+  std::shared_ptr<Factor> restrict(
+      const DiscreteValues& assignment) const override;
+
   /// @}
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class Archive>

@@ -3,9 +3,9 @@
 To create a DLL in windows, the `GTSAM_EXPORT` keyword has been created and needs to be applied to different methods and classes in the code to expose this code outside of the DLL.  However, there are several intricacies that make this more difficult than it sounds.  In general, if you follow the following three rules, GTSAM_EXPORT should work properly.  The rest of the document also describes (1) the common error message encountered when you are not following these rules and (2) the reasoning behind these usage rules.
 
 ## Usage Rules
-1.  Put `GTSAM_EXPORT` in front of any function that you want exported in the DLL _if and only if_ that function is declared in a .cpp file, not just a .h file.
+1.  Put `GTSAM_EXPORT` in front of any function that you want exported in the DLL _if and only if_ that function is defined in a .cpp file, not just a .h file.
 2.  Use `GTSAM_EXPORT` in a class definition (i.e. `class GSTAM_EXPORT MyClass {...}`) only if:
-    * At least one of the functions inside that class is declared in a .cpp file and not just the .h file.
+    * At least one of the functions inside that class is defined in a .cpp file and not just the .h file.
     * You can `GTSAM_EXPORT` any class it inherits from as well.  (Note that this implictly requires the class does not derive from a "header-only" class.  Note that Eigen is a "header-only" library, so if your class derives from Eigen, _do not_ use `GTSAM_EXPORT` in the class definition!) 
 3.  If you have defined a class using `GTSAM_EXPORT`, do not use `GTSAM_EXPORT` in any of its individual function declarations.  (Note that you _can_ put `GTSAM_EXPORT` in the definition of individual functions within a class as long as you don't put `GTSAM_EXPORT` in the class definition.)
 4. For template specializations, you need to add `GTSAM_EXPORT` to each individual specialization.
@@ -28,7 +28,7 @@ But first, we need to understand exactly what `GTSAM_EXPORT` is.  `GTSAM_EXPORT`
 
 Rule #1 doesn't seem very bad, until you combine it with rule #2
 
-***Compiler Rule #2*** Anything declared in a header file is not included in a DLL.
+***Compiler Rule #2*** Anything defined in a header file is not included in a DLL.
 
 When these two rules are combined, you get some very confusing results.  For example, a class which is completely defined in a header (e.g. Foo) cannot use `GTSAM_EXPORT` in its definition.  If Foo is defined with `GTSAM_EXPORT`, then the compiler _must_ find Foo in a DLL.  Because Foo is a header-only class, however, it can't find it, leading to a very confusing "I can't find this symbol" type of error.  Note that the linker says it can't find the symbol even though the compiler found the header file that completely defines the class.
 

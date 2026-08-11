@@ -102,29 +102,4 @@ SOn LieGroup<SOn, Eigen::Dynamic>::between(const SOn& g, DynamicJacobian H1,
   return result;
 }
 
-// Dynamic version of vec
-template <>
-typename SOn::VectorN2 SOn::vec(DynamicJacobian H) const
-{
-  const size_t n = rows(), n2 = n * n;
-
-  // Vectorize
-  VectorN2 X(n2);
-  X << Eigen::Map<const Matrix>(matrix_.data(), n2, 1);
-
-  // If requested, calculate H as (I \oplus Q) * P,
-  // where Q is the N*N rotation matrix, and P is calculated below.
-  if (H) {
-    // Calculate P matrix of vectorized generators
-    // TODO(duy): Should we refactor this as the jacobian of Hat?
-    Matrix P = SOn::VectorizedGenerators(n);
-    const size_t d = dim();
-    H->resize(n2, d);
-    for (size_t i = 0; i < n; i++) {
-      H->block(i * n, 0, n, d) = matrix_ * P.block(i * n, 0, n, d);
-    }
-  }
-  return X;
-}
-
 }  // namespace gtsam

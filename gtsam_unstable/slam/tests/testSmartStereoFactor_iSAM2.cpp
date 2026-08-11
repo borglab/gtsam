@@ -22,10 +22,7 @@
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam_unstable/slam/SmartStereoProjectionPoseFactor.h>
 
-#include <array>
-#include <fstream>
 #include <iostream>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -40,6 +37,15 @@
 
 // Tolerance for ground-truth pose comparison:
 static const double tol = 1e-3;
+
+namespace  {
+gtsam::LevenbergMarquardtParams makeLmParams() {
+  gtsam::LevenbergMarquardtParams params;
+  params.linearSolverType =
+      gtsam::LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
+  return params;
+}
+}  // namespace
 
 // Synthetic dataset generated with rwt
 // (https://github.com/jlblancoc/recursive-world-toolkit)
@@ -159,8 +165,7 @@ TEST(testISAM2SmartFactor, Stereo_Batch) {
       std::make_shared<Cal3_S2Stereo>(fx, fy, .0, cx, cy, baseline);
 
   // Pose prior - at identity
-  auto priorPoseNoise = noiseModel::Diagonal::Sigmas(
-      (Vector(6) << Vector3::Constant(0.2), Vector3::Constant(0.2)).finished());
+  auto priorPoseNoise = noiseModel::Constrained::All(6);
 
   // Map: landmark_id => smart_factor_index inside iSAM2
   std::map<lm_id_t, FactorIndex> lm2factor;
@@ -204,7 +209,7 @@ TEST(testISAM2SmartFactor, Stereo_Batch) {
     batch_values.insert(X(kf_id), Pose3::Identity());
   }
 
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
 #if TEST_VERBOSE_OUTPUT
   parameters.verbosity = NonlinearOptimizerParams::LINEAR;
   parameters.verbosityLM = LevenbergMarquardtParams::TRYDELTA;
@@ -258,8 +263,7 @@ TEST(testISAM2SmartFactor, Stereo_iSAM2) {
   ISAM2 isam(parameters);
 
   // Pose prior - at identity
-  auto priorPoseNoise = noiseModel::Diagonal::Sigmas(
-      (Vector(6) << Vector3::Constant(0.2), Vector3::Constant(0.2)).finished());
+  auto priorPoseNoise = noiseModel::Constrained::All(6);
 
   // Map: landmark_id => smart_factor_index inside iSAM2
   std::map<lm_id_t, FactorIndex> lm2factor;

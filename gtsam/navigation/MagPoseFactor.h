@@ -14,6 +14,7 @@
 #include <gtsam/base/std_optional_serialization.h>
 #include <gtsam/geometry/concepts.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 #include <optional>
 
@@ -77,7 +78,7 @@ class MagPoseFactor: public NoiseModelFactorN<POSE> {
                 const Point& direction,
                 const Point& bias,
                 const SharedNoiseModel& model,
-                const std::optional<POSE>& body_P_sensor)
+                const std::optional<POSE>& body_P_sensor = {})
       : Base(model, pose_key),
         measured_(body_P_sensor ? body_P_sensor->rotation() * measured : measured),
         nM_(scale * direction.normalized()),
@@ -132,7 +133,7 @@ class MagPoseFactor: public NoiseModelFactorN<POSE> {
   }
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
+#if GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function.
   friend class boost::serialization::access;
   template<class ARCHIVE>

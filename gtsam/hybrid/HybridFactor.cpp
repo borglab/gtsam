@@ -23,6 +23,7 @@ namespace gtsam {
 KeyVector CollectKeys(const KeyVector &continuousKeys,
                       const DiscreteKeys &discreteKeys) {
   KeyVector allKeys;
+  allKeys.reserve(continuousKeys.size() + discreteKeys.size());
   std::copy(continuousKeys.begin(), continuousKeys.end(),
             std::back_inserter(allKeys));
   std::transform(discreteKeys.begin(), discreteKeys.end(),
@@ -34,6 +35,7 @@ KeyVector CollectKeys(const KeyVector &continuousKeys,
 /* ************************************************************************ */
 KeyVector CollectKeys(const KeyVector &keys1, const KeyVector &keys2) {
   KeyVector allKeys;
+  allKeys.reserve(keys1.size() + keys2.size());
   std::copy(keys1.begin(), keys1.end(), std::back_inserter(allKeys));
   std::copy(keys2.begin(), keys2.end(), std::back_inserter(allKeys));
   return allKeys;

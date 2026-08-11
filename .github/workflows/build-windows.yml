@@ -1,11 +1,11 @@
 name: Windows CI
 
-on: [pull_request]
+on:
+  workflow_call:
+  workflow_dispatch:
 
-# Every time you make a push to your PR, it cancel immediately the previous checks, 
-# and start a new one. The other runner will be available more quickly to your PR. 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  group: windows-ci-${{ github.run_id }}
   cancel-in-progress: true
 
 jobs:
@@ -17,9 +17,9 @@ jobs:
       CTEST_OUTPUT_ON_FAILURE: ON
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
-      GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
       BOOST_VERSION: 1.72.0
       BOOST_EXE: boost_1_72_0-msvc-14.2
+      SCCACHE_GHA_ENABLED: ON
 
     strategy:
       fail-fast: true
@@ -35,7 +35,6 @@ jobs:
             Release
           ]
 
-        build_unstable: [ON]
         include:
           - name: windows-2022-cl
             os: windows-2022
@@ -44,9 +43,9 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - name: Setup msbuild
+      - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x${{ matrix.platform }}
@@ -56,41 +55,8 @@ jobs:
         shell: cmd
         run: cl
 
-      - name: Install Dependencies
-        shell: powershell
-        run: |
-          iwr -useb get.scoop.sh -outfile 'install_scoop.ps1'
-          .\install_scoop.ps1 -RunAsAdmin
-
-          scoop install cmake --global  # So we don't get issues with CMP0074 policy
-          scoop install ninja --global
-
-          if ("${{ matrix.compiler }}".StartsWith("clang")) {
-            scoop install llvm --global
-          }
-
-          if ("${{ matrix.compiler }}" -eq "gcc") {
-            # Chocolatey GCC is broken on the windows-2019 image.
-            # See: https://github.com/DaanDeMeyer/doctest/runs/231595515
-            # See: https://github.community/t5/GitHub-Actions/Something-is-wrong-with-the-chocolatey-installed-version-of-gcc/td-p/32413
-            scoop install gcc --global
-            echo "CC=gcc" >> $GITHUB_ENV
-            echo "CXX=g++" >> $GITHUB_ENV
-
-          } elseif ("${{ matrix.compiler }}" -eq "clang") {
-            echo "CC=clang" >> $GITHUB_ENV
-            echo "CXX=clang++" >> $GITHUB_ENV
-
-          } else {
-            echo "CC=${{ matrix.compiler }}" >> $env:GITHUB_ENV
-            echo "CXX=${{ matrix.compiler }}" >> $env:GITHUB_ENV
-
-          }
-
-          # Scoop modifies the PATH so we make the modified PATH global.
-          echo "$env:PATH" >> $env:GITHUB_PATH
-
       - name: Install Boost
+        if: matrix.build_type == 'Release'
         shell: powershell
         run: |
           # Snippet from: https://github.com/actions/virtual-environments/issues/2667
@@ -98,68 +64,54 @@ jobs:
 
           # Use the prebuilt binary for Windows
           $Url = "https://sourceforge.net/projects/boost/files/boost-binaries/$env:BOOST_VERSION/$env:BOOST_EXE-${{matrix.platform}}.exe"
-          (New-Object System.Net.WebClient).DownloadFile($Url, "$env:TEMP\boost.exe")
+
+          # Create WebClient with appropriate settings and download Boost exe
+          $wc = New-Object System.Net.Webclient
+          $wc.Headers.Add("User-Agent: Other");
+          $wc.DownloadFile($Url, "$env:TEMP\boost.exe")
+
           Start-Process -Wait -FilePath "$env:TEMP\boost.exe" "/SILENT","/SP-","/SUPPRESSMSGBOXES","/DIR=$BOOST_PATH"
 
           # Set the BOOST_ROOT variable
           echo "BOOST_ROOT=$BOOST_PATH" >> $env:GITHUB_ENV
 
+      - name: Install sccache
+        if: matrix.build_type == 'Release'
+        uses: mozilla-actions/sccache-action@v0.0.9
+
       - name: Configuration
         shell: bash
         run: |
-          export CMAKE_GENERATOR=Ninja 
+          # Convert Windows backslashes to forward slashes for CMake
+          BOOST_ROOT_UNIX=$(echo "$BOOST_ROOT" | sed 's/\\/\//g')
           cmake -E remove_directory build
-          cmake -B build \
-                -S . \
-                -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
-                -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
-                -DBOOST_ROOT="${BOOST_ROOT}" \
-                -DBOOST_INCLUDEDIR="${BOOST_ROOT}\boost\include" \
-                -DBOOST_LIBRARYDIR="${BOOST_ROOT}\lib"
+          if [ "${{ matrix.build_type }}" = "Release" ]; then
+            cmake -B build -G Ninja \
+                  -DGTSAM_BUILD_EXAMPLES_ALWAYS=ON \
+                  -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
+                  -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
+                  -DGTSAM_USE_BOOST_FEATURES=ON \
+                  -DGTSAM_ENABLE_BOOST_SERIALIZATION=ON \
+                  -DGTSAM_BUILD_WITH_PRECOMPILED_HEADERS=OFF \
+                  -DBOOST_ROOT="${BOOST_ROOT_UNIX}" \
+                  -DBOOST_INCLUDEDIR="${BOOST_ROOT_UNIX}/include" \
+                  -DBOOST_LIBRARYDIR="${BOOST_ROOT_UNIX}/lib" \
+                  -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                  -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+          else
+            cmake -B build -G Ninja \
+                  -DGTSAM_BUILD_EXAMPLES_ALWAYS=ON \
+                  -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
+                  -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
+                  -DGTSAM_ENABLE_CONSISTENCY_CHECKS=ON \
+                  -DGTSAM_USE_BOOST_FEATURES=OFF \
+                  -DGTSAM_ENABLE_BOOST_SERIALIZATION=OFF
+          fi
 
       - name: Build
         shell: bash
-        run: |
-          # Since Visual Studio is a multi-generator, we need to use --config
-          # https://stackoverflow.com/a/24470998/1236990
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target gtsam
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target gtsam_unstable
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target all.tests
+        run: cmake --build build -j4 --target all.tests examples
 
       - name: Test
         shell: bash
-        run: |
-          # Run GTSAM tests
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.base
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.basis
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.discrete
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.geometry
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.inference
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.linear
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.navigation
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.sam
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.sfm
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.symbolic
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.hybrid
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.nonlinear
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.slam
-
-          # Run GTSAM_UNSTABLE tests
-          cmake --build build -j4 --config ${{ matrix.build_type }} --target check.base_unstable
-          # Compile. Fail with exception
-          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.geometry_unstable
-          # Compile. Fail with exception
-          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.linear_unstable
-          # Compile. Fail with exception
-          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.discrete_unstable
-          # Compile. Fail with exception
-          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.dynamics_unstable
-          # Compile. Fail with exception
-          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.nonlinear_unstable
-          # Compile. Fail with exception
-          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.slam_unstable
-          # Compile. Fail with exception
-          # cmake --build build -j4 --config ${{ matrix.build_type }} --target check.partition
-
-          # Run all tests
-          # cmake --build build -j1 --config ${{ matrix.build_type }} --target check
+        run: cmake --build build -j1 --target check

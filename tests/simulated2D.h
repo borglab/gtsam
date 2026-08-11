@@ -91,7 +91,7 @@ namespace simulated2D {
 
   /// Prior on a single pose, optionally returns derivative
   inline Point2 prior(const Point2& x, OptionalJacobian<2,2> H = OptionalNone) {
-    if (H) *H = I_2x2;
+    if (H) *H = Matrix2::Identity();
     return x;
   }
 
@@ -104,9 +104,9 @@ namespace simulated2D {
   inline Point2 odo(const Point2& x1, const Point2& x2, 
 		  OptionalJacobian<2,2> H1 = OptionalNone, 
 		  OptionalJacobian<2,2> H2 = OptionalNone) {
-      if (H1) *H1 = -I_2x2;
-      if (H2) *H2 = I_2x2;
-      return x2 - x1;
+    if (H1) *H1 = -Matrix2::Identity();
+    if (H2) *H2 = Matrix2::Identity();
+    return x2 - x1;
   }
 
   /// measurement between landmark and pose
@@ -117,9 +117,9 @@ namespace simulated2D {
   /// measurement between landmark and pose, optionally returns derivative
   inline Point2 mea(const Point2& x, const Point2& l, OptionalJacobian<2,2> H1 =
     OptionalNone, OptionalMatrixType H2 = OptionalNone) {
-      if (H1) *H1 = -I_2x2;
-      if (H2) *H2 = I_2x2;
-      return l - x;
+    if (H1) *H1 = -Matrix2::Identity();
+    if (H2) *H2 = Matrix2::Identity();
+    return l - x;
   }
 
   /**
@@ -160,7 +160,7 @@ namespace simulated2D {
     /// Default constructor
     GenericPrior() { }
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION    ///
+#if GTSAM_ENABLE_BOOST_SERIALIZATION    ///
     /// Serialization function
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -210,7 +210,7 @@ namespace simulated2D {
     /// Default constructor
     GenericOdometry() { }
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION    ///
+#if GTSAM_ENABLE_BOOST_SERIALIZATION    ///
     /// Serialization function
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -261,7 +261,7 @@ namespace simulated2D {
     /// Default constructor
     GenericMeasurement() { }
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION    ///
+#if GTSAM_ENABLE_BOOST_SERIALIZATION    ///
     /// Serialization function
     friend class boost::serialization::access;
     template<class ARCHIVE>

@@ -27,13 +27,17 @@
 namespace gtsam {
 /**
  * Optimize for the Karcher mean, minimizing the geodesic distance to each of
- * the given rotations, by constructing a factor graph out of simple
+ * the given Lie groups elements, by constructing a factor graph out of simple
  * PriorFactors.
  */
 template <class T>
-T FindKarcherMean(const std::vector<T, Eigen::aligned_allocator<T>> &rotations);
+typename std::enable_if<traits<T>::IsLieGroup, T>::type 
+FindKarcherMean(const std::vector<T, Eigen::aligned_allocator<T>> &elements);
 
-template <class T> T FindKarcherMean(std::initializer_list<T> &&rotations);
+/// FindKarcherMean version from initializer list
+template <class T>
+typename std::enable_if<traits<T>::IsLieGroup, T>::type 
+FindKarcherMean(std::initializer_list<T> &&elements);
 
 /**
  * The KarcherMeanFactor creates a constraint on all SO(n) variables with
@@ -45,7 +49,7 @@ template <class T> T FindKarcherMean(std::initializer_list<T> &&rotations);
  * */
 template <class T> class KarcherMeanFactor : public NonlinearFactor {
   // Compile time dimension: can be -1
-  enum { D = traits<T>::dimension };
+  inline constexpr static auto D = traits<T>::dimension;
 
   // Runtime dimension: always >=0
   size_t d_;

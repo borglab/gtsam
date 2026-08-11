@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/global_includes.h>
+#include <gtsam/base/FastMap.h>
 
 // Change class depending on whether we are using TBB
 #ifdef GTSAM_USE_TBB
@@ -41,14 +42,13 @@ using ConcurrentMapBase = tbb::concurrent_unordered_map<
 
 #else
 
-// If we're not using TBB, use a FastMap for ConcurrentMap
-#include <gtsam/base/FastMap.h>
+// If we're not using TBB, use a std::map
 template <typename KEY, typename VALUE>
 using ConcurrentMapBase = gtsam::FastMap<KEY, VALUE>;
 
 #endif
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/split_member.hpp>
 #endif
@@ -85,6 +85,8 @@ public:
   /** Copy constructor from the base map class */
   ConcurrentMap(const Base& x) : Base(x) {}
 
+  ConcurrentMap& operator=(const ConcurrentMap& other) = default;
+
   /** Handy 'exists' function */
   bool exists(const KEY& e) const { return this->count(e); }
 
@@ -101,7 +103,7 @@ public:
 #endif
 
 private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>

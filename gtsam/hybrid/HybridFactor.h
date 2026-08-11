@@ -32,9 +32,6 @@ namespace gtsam {
 
 class HybridValues;
 
-/// Alias for DecisionTree of GaussianFactorGraphs
-using GaussianFactorGraphTree = DecisionTree<Key, GaussianFactorGraph>;
-
 KeyVector CollectKeys(const KeyVector &continuousKeys,
                       const DiscreteKeys &discreteKeys);
 KeyVector CollectKeys(const KeyVector &keys1, const KeyVector &keys2);
@@ -136,14 +133,18 @@ class GTSAM_EXPORT HybridFactor : public Factor {
   /// Return only the continuous keys for this factor.
   const KeyVector &continuousKeys() const { return continuousKeys_; }
 
-  /// Virtual class to compute tree of linear errors.
+  /// Compute tree of linear errors.
   virtual AlgebraicDecisionTree<Key> errorTree(
-      const VectorValues &values) const = 0;
+      const VectorValues &continuousValues) const = 0;
+
+  /// Restrict the factor to the given discrete values.
+  virtual std::shared_ptr<Factor> restrict(
+      const DiscreteValues &discreteValues) const = 0;
 
   /// @}
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -160,5 +161,8 @@ class GTSAM_EXPORT HybridFactor : public Factor {
 // traits
 template <>
 struct traits<HybridFactor> : public Testable<HybridFactor> {};
+
+// For wrapper:
+using AlgebraicDecisionTreeKey = AlgebraicDecisionTree<Key>;
 
 }  // namespace gtsam

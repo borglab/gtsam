@@ -106,6 +106,14 @@ class GTSAM_EXPORT HybridBayesTree : public BayesTree<HybridBayesTreeClique> {
   VectorValues optimize(const DiscreteValues& assignment) const;
 
   /**
+   * @brief Compute the Most Probable Explanation (MPE)
+   * of the discrete variables.
+   *
+   * @return DiscreteValues
+   */
+  DiscreteValues mpe() const;
+
+  /**
    * @brief Prune the underlying Bayes tree.
    *
    * @param maxNumberLeaves The max number of leaf nodes to keep.
@@ -115,7 +123,11 @@ class GTSAM_EXPORT HybridBayesTree : public BayesTree<HybridBayesTreeClique> {
   /// @}
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+  /// Helper method to compute the max product assignment
+  /// given a DiscreteFactorGraph
+  DiscreteValues discreteMaxProduct(const DiscreteFactorGraph& dfg) const;
+
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>

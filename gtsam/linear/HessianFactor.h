@@ -23,7 +23,6 @@
 #include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/FastVector.h>
 
-
 namespace gtsam {
 
   // Forward declarations
@@ -204,6 +203,13 @@ namespace gtsam {
      */
     double error(const VectorValues& c) const override;
 
+    /**
+     * Compute the change in error from zero to c, optionally returning
+     * the old and new errors.
+     */
+    double deltaError(const VectorValues& c, double* oldError = nullptr,
+                      double* newError = nullptr) const override;
+
     /** Return the dimension of the variable pointed to by the given key iterator
      * todo: Remove this in favor of keeping track of dimensions with variables?
      * @param variable An iterator pointing to the slot in this factor.  You can
@@ -241,14 +247,18 @@ namespace gtsam {
      * use, for example, begin() + 2 to get the 3rd variable in this factor.
      * @return The linear term \f$ g \f$ */
     SymmetricBlockMatrix::constBlock linearTerm(const_iterator j) const {
-      assert(!empty());
+#ifndef NDEBUG
+      if(empty()) throw;
+#endif
       return info_.aboveDiagonalBlock(j - begin(), size());
     }
 
     /** Return the complete linear term \f$ g \f$ as described above.
      * @return The linear term \f$ g \f$ */
     SymmetricBlockMatrix::constBlock linearTerm() const {
-      assert(!empty());
+#ifndef NDEBUG
+      if(empty()) throw;
+#endif
       // get the last column (except the bottom right block)
       return info_.aboveDiagonalRange(0, size(), size(), size() + 1);
     }
@@ -256,7 +266,9 @@ namespace gtsam {
     /** Return the complete linear term \f$ g \f$ as described above.
      * @return The linear term \f$ g \f$ */
     SymmetricBlockMatrix::Block linearTerm() {
-      assert(!empty());
+#ifndef NDEBUG
+      if(empty()) throw;
+#endif
       return info_.aboveDiagonalRange(0, size(), size(), size() + 1);
     }
 
@@ -321,11 +333,24 @@ namespace gtsam {
      */
     void updateHessian(const KeyVector& keys, SymmetricBlockMatrix* info) const override;
 
+    /** Update an information matrix by adding the information corresponding to this factor
+     * (used internally during elimination), restricted to a range of block columns,
+     * useful for parallelization.
+     * @param keys The ordered vector of keys for the information matrix to be updated
+     * @param info The information matrix to be updated
+     * @param beginCol First block column index (inclusive) in the range to update
+     * @param endCol Last block column index (exclusive) in the range to update
+     */
+    void updateHessian(const KeyVector& keys, SymmetricBlockMatrix* info,
+                       DenseIndex beginCol, DenseIndex endCol) const override;
+
     /** Update another Hessian factor
      * @param other the HessianFactor to be updated
      */
     void updateHessian(HessianFactor* other) const {
-      assert(other);
+#ifndef NDEBUG
+      if(!other) throw;
+#endif
       updateHessian(other->keys_, &other->info_);
     }
 
@@ -363,7 +388,7 @@ namespace gtsam {
     friend class NonlinearFactorGraph;
     friend class NonlinearClusterTree;
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>

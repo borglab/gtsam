@@ -50,8 +50,6 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionPoseFactor
   std::vector<std::shared_ptr<Cal3_S2Stereo>> K_all_;
 
  public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   /// shorthand for base class type
   typedef SmartStereoProjectionFactor Base;
 
@@ -138,7 +136,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionPoseFactor
   Base::Cameras cameras(const Values& values) const override;
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION  ///
+#if GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template <class ARCHIVE>

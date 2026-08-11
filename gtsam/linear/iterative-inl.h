@@ -49,10 +49,12 @@ namespace gtsam {
 
       // init gamma and calculate threshold
       gamma = dot(g,g);
-      threshold = std::max(parameters_.epsilon_abs(), parameters_.epsilon() * parameters_.epsilon() * gamma);
+      threshold =
+          std::max(parameters_.epsilon_abs,
+                   parameters_.epsilon_rel * parameters_.epsilon_rel * gamma);
 
       // Allocate and calculate A*d for first iteration
-      if (gamma > parameters_.epsilon_abs()) Ad = Ab * d;
+      if (gamma > parameters_.epsilon_abs) Ad = Ab * d;
     }
 
     /* ************************************************************************* */
@@ -79,13 +81,13 @@ namespace gtsam {
     // take a step, return true if converged
     bool step(const S& Ab, V& x) {
 
-      if ((++k) >= ((int)parameters_.maxIterations())) return true;
+      if ((++k) >= ((int)parameters_.maxIterations)) return true;
 
       //---------------------------------->
       double alpha = takeOptimalStep(x);
 
       // update gradient (or re-calculate at reset time)
-      if (k % parameters_.reset() == 0) g = Ab.gradient(x);
+      if (k % parameters_.reset == 0) g = Ab.gradient(x);
       // axpy(alpha, Ab ^ Ad, g);  // g += alpha*(Ab^Ad)
       else Ab.transposeMultiplyAdd(alpha, Ad, g);
 
@@ -126,11 +128,10 @@ namespace gtsam {
     CGState<S, V, E> state(Ab, x, parameters, steepest);
 
     if (parameters.verbosity() != ConjugateGradientParameters::SILENT)
-      std::cout << "CG: epsilon = " << parameters.epsilon()
-                << ", maxIterations = " << parameters.maxIterations()
+      std::cout << "CG: epsilon = " << parameters.epsilon_rel
+                << ", maxIterations = " << parameters.maxIterations
                 << ", ||g0||^2 = " << state.gamma
-                << ", threshold = " << state.threshold
-                << std::endl;
+                << ", threshold = " << state.threshold << std::endl;
 
     if ( state.gamma < state.threshold ) {
       if (parameters.verbosity() != ConjugateGradientParameters::SILENT)

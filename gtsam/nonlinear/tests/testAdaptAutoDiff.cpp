@@ -179,9 +179,10 @@ Matrix E2 = numericalDerivative22<Vector2, Vector9, Vector3>(adapted, P, X);
 TEST(AdaptAutoDiff, Local) {
   using namespace example;
 #ifdef GTSAM_POSE3_EXPMAP
-  Vector9 expectedP = (Vector9() << 0.1, 0.2, 0.3, 0.7583528428, 4.9582357859, -0.224941471539, 1, 0, 0).finished();
+  Vector9 expectedP{0.1, 0.2, 0.3, 0.7583528428, 4.9582357859, -0.224941471539,
+                    1,   0,   0};
 #else
-  Vector9 expectedP = (Vector9() << 0.1, 0.2, 0.3, 0, 5, 0, 1, 0, 0).finished();
+  Vector9 expectedP{0.1, 0.2, 0.3, 0, 5, 0, 1, 0, 0};
 #endif
   EXPECT(equal_with_abs_tol(expectedP, P));
   Vector3 expectedX(10, 0, -5);  // negative Z-axis convention of Snavely!
@@ -250,7 +251,7 @@ TEST(AdaptAutoDiff, SnavelyExpression) {
     internal::upAligned(RecordSize) + P.traceSize() + X.traceSize(),
     expression.traceSize());
 
-  const set<Key> expected{1, 2};
+  const KeySet expected{1, 2};
   EXPECT(expected == expression.keys());
 }
 

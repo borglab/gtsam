@@ -82,7 +82,7 @@ class EssentialMatrix {
 
   /// @name Manifold
   /// @{
-  enum { dimension = 5 };
+  inline constexpr static auto dimension = 5;
   inline static size_t Dim() { return dimension;}
   inline size_t dim() const { return dimension;}
 
@@ -180,7 +180,7 @@ class EssentialMatrix {
   /// @name Advanced Interface
   /// @{
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -201,9 +201,6 @@ class EssentialMatrix {
 #endif
 
   /// @}
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 template<>

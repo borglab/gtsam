@@ -19,6 +19,7 @@
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
+#include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
 
 #include <optional>
 
@@ -26,10 +27,39 @@ namespace gtsam {
 
 class GTSAM_EXPORT HybridSmoother {
  private:
+  HybridNonlinearFactorGraph allFactors_;
+  Values linearizationPoint_;
+
   HybridBayesNet hybridBayesNet_;
-  HybridGaussianFactorGraph remainingFactorGraph_;
+  /// The threshold above which we make a decision about a mode.
+  std::optional<double> marginalThreshold_;
+  DiscreteValues fixedValues_;
 
  public:
+  /**
+   * @brief Constructor
+   *
+   * @param removeDeadModes Flag indicating whether to remove dead modes.
+   * @param marginalThreshold The threshold above which a mode gets assigned a
+   * value and is considered "dead". 0.99 is a good starting value.
+   */
+  HybridSmoother(const std::optional<double> marginalThreshold = {})
+      : marginalThreshold_(marginalThreshold) {}
+
+  /// Return fixed values:
+  const DiscreteValues& fixedValues() const { return fixedValues_; }
+
+  /**
+   * Re-initialize the smoother from a new hybrid Bayes Net.
+   */
+  void reInitialize(HybridBayesNet&& hybridBayesNet);
+
+  /**
+   * Re-initialize the smoother from
+   * a new hybrid Bayes Net (non rvalue version).
+   */
+  void reInitialize(HybridBayesNet& hybridBayesNet);
+
   /**
    * Given new factors, perform an incremental update.
    * The relevant densities in the `hybridBayesNet` will be added to the input
@@ -39,21 +69,34 @@ class GTSAM_EXPORT HybridSmoother {
    * discrete factor on all discrete keys, plus all discrete factors in the
    * original graph.
    *
-   * \note If maxComponents is given, we look at the discrete factor resulting
+   * \note If maxNrLeaves is given, we look at the discrete factor resulting
    * from this elimination, and prune it and the Gaussian components
    * corresponding to the pruned choices.
    *
    * @param graph The new factors, should be linear only
    * @param maxNrLeaves The maximum number of leaves in the new discrete factor,
    * if applicable
-   * @param given_ordering The (optional) ordering for elimination, only
+   * @param givenOrdering The (optional) ordering for elimination, only
    * continuous variables are allowed
    */
-  void update(HybridGaussianFactorGraph graph,
+  void update(const HybridNonlinearFactorGraph& graph, const Values& initial,
               std::optional<size_t> maxNrLeaves = {},
-              const std::optional<Ordering> given_ordering = {});
+              const std::optional<Ordering> givenOrdering = {});
 
-  Ordering getOrdering(const HybridGaussianFactorGraph& newFactors);
+  /**
+   * @brief Get an elimination ordering which eliminates continuous
+   * and then discrete.
+   *
+   * Expects `factors` to already have the necessary conditionals
+   * which were connected to the variables in the newly added factors.
+   * Those variables should be in `newFactorKeys`.
+   *
+   * @param factors All the new factors and connected conditionals.
+   * @param newFactorKeys The keys/variables in the newly added factors.
+   * @return Ordering
+   */
+  Ordering getOrdering(const HybridGaussianFactorGraph& factors,
+                       const KeySet& newFactorKeys);
 
   /**
    * @brief Add conditionals from previous timestep as part of liquefication.
@@ -66,7 +109,7 @@ class GTSAM_EXPORT HybridSmoother {
    */
   std::pair<HybridGaussianFactorGraph, HybridBayesNet> addConditionals(
       const HybridGaussianFactorGraph& graph,
-      const HybridBayesNet& hybridBayesNet, const Ordering& ordering) const;
+      const HybridBayesNet& hybridBayesNet) const;
 
   /**
    * @brief Get the hybrid Gaussian conditional from
@@ -79,6 +122,61 @@ class GTSAM_EXPORT HybridSmoother {
 
   /// Return the Bayes Net posterior.
   const HybridBayesNet& hybridBayesNet() const;
+
+  /// Optimize the hybrid Bayes Net, taking into accound fixed values.
+  HybridValues optimize() const;
+
+  /**
+   * @brief Relinearize the nonlinear factor graph with
+   * the latest stored linearization point.
+   *
+   * @param givenOrdering An optional elimination ordering.
+   */
+  void relinearize(const std::optional<Ordering> givenOrdering = {});
+
+  /// Return the current linearization point.
+  Values linearizationPoint() const;
+
+  /// Return all the recorded nonlinear factors
+  HybridNonlinearFactorGraph allFactors() const;
+
+  /**
+   * @brief Compute the linear error using the underlying solver for
+   * the explicitly provided discrete assignment.
+   *
+   * @param x The vector and discrete values to compute the error for.
+   * @return double The error value.
+   */
+  double error(const HybridValues& x) const;
+
+  /**
+   * @brief Compute the linear error using the underlying solver.
+   * The error is computed using the computed Most-Probable Explanation (MPE)
+   * of the discrete variables.
+   *
+   * @param x The vector values to compute the error for.
+   * @return double The error value.
+   */
+  double error(const VectorValues& x) const;
+
+ private:
+  /// Helper to compute the ordering if ordering is not given.
+  Ordering maybeComputeOrdering(const HybridGaussianFactorGraph& updatedGraph,
+                                const std::optional<Ordering> givenOrdering);
+
+  /**
+   * @brief Remove fixed discrete values for discrete keys
+   * introduced in `newFactors`, and reintroduce discrete factors
+   * with marginalThreshold_ as the probability value.
+   *
+   * @param graph The factor graph with previous conditionals added in.
+   * @param newFactors The new factors added to the smoother,
+   * used to check if a fixed discrete value has been reintroduced.
+   * @return HybridGaussianFactorGraph
+   */
+  HybridGaussianFactorGraph removeFixedValues(
+      const HybridGaussianFactorGraph& graph,
+      const HybridGaussianFactorGraph& newFactors);
 };
 
 }  // namespace gtsam

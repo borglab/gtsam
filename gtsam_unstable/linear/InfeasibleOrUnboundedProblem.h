@@ -18,15 +18,19 @@
 
 #pragma once
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
+#include <gtsam/base/ThreadsafeException.h>
+
 namespace gtsam {
 
-class InfeasibleOrUnboundedProblem: public ThreadsafeException<
-    InfeasibleOrUnboundedProblem> {
-public:
-  InfeasibleOrUnboundedProblem() {
-  }
-  ~InfeasibleOrUnboundedProblem() noexcept override {
-  }
+class InfeasibleOrUnboundedProblem
+    : public ThreadsafeException<InfeasibleOrUnboundedProblem> {
+ public:
+  InfeasibleOrUnboundedProblem() {}
+  ~InfeasibleOrUnboundedProblem() noexcept override {}
 
   const char* what() const noexcept override {
     if (description_->empty())
@@ -34,4 +38,6 @@ public:
     return description_->c_str();
   }
 };
-}
+}  // namespace gtsam
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

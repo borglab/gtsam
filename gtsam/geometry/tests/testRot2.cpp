@@ -15,18 +15,40 @@
  * @author  Frank Dellaert
  */
 
-#include <gtsam/geometry/Rot2.h>
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/testLie.h>
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/geometry/Rot2.h>
 
 using namespace gtsam;
 
 GTSAM_CONCEPT_TESTABLE_INST(Rot2)
-GTSAM_CONCEPT_LIE_INST(Rot2)
+GTSAM_CONCEPT_MATRIX_LIE_GROUP_INST(Rot2)
 
 Rot2 R(Rot2::fromAngle(0.1));
 Point2 P(0.2, 0.7);
+
+/* ************************************************************************* */
+namespace return_value_tests {
+
+// Verifies that normalized factory results remain valid through copy and group
+// operations.
+TEST(Rot2, NormalizedFactoryReturnValues) {
+  const Rot2 fromCosSin = Rot2::fromCosSin(3.0, 4.0);
+  DOUBLES_EQUAL(0.6, fromCosSin.c(), 1e-12);
+  DOUBLES_EQUAL(0.8, fromCosSin.s(), 1e-12);
+
+  const Rot2 fromAtan2 = Rot2::atan2(4.0, 3.0);
+  CHECK(assert_equal(fromCosSin, fromAtan2, 1e-12));
+
+  const Rot2 copied(fromCosSin);
+  CHECK(assert_equal(fromCosSin, copied, 1e-12));
+  CHECK(assert_equal(Rot2(), copied * copied.inverse(), 1e-12));
+}
+
+}  // namespace return_value_tests
+/* ************************************************************************* */
 
 /* ************************************************************************* */
 TEST( Rot2, constructors_and_angle)
@@ -98,9 +120,27 @@ TEST(Rot2, logmap)
 {
   Rot2 rot0(Rot2::fromAngle(M_PI/2.0));
   Rot2 rot(Rot2::fromAngle(M_PI));
-  Vector expected = (Vector(1) << M_PI/2.0).finished();
+  Vector expected{{M_PI / 2.0}};
   Vector actual = rot0.localCoordinates(rot);
   CHECK(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST(Rot2, HatAndVee) {
+  // Create a few test vectors
+  Vector1 v1{1};
+  Vector1 v2{0.1};
+  Vector1 v3{0.0};
+
+  // Test that Vee(Hat(v)) == v for various inputs
+  EXPECT(assert_equal(v1, Rot2::Vee(Rot2::Hat(v1))));
+  EXPECT(assert_equal(v2, Rot2::Vee(Rot2::Hat(v2))));
+  EXPECT(assert_equal(v3, Rot2::Vee(Rot2::Hat(v3))));
+
+  // Check the structure of the Lie Algebra element
+  Matrix2 expected{{0., -1.}, {1., 0.}};
+
+  EXPECT(assert_equal(expected, Rot2::Hat(v1)));
 }
 
 /* ************************************************************************* */
@@ -155,6 +195,20 @@ TEST( Rot2, relativeBearing )
   CHECK(assert_equal(expectedH,actualH));
 }
 
+/* ************************************************************************* */
+TEST(Rot2, vec) {
+  // Test the 'vec' method
+  Vector4 expected_vec = Eigen::Map<Vector4>(R.matrix().data());
+  Matrix41 actualH;
+  Vector4 actual_vec = R.vec(actualH);
+  EXPECT(assert_equal(expected_vec, actual_vec));
+
+  // Verify Jacobian with numerical derivatives
+  auto f = [](const Rot2& p) { return p.vec(); };
+  Matrix41 numericalH = numericalDerivative11<Vector4, Rot2>(f, R);
+  EXPECT(assert_equal(numericalH, actualH, 1e-9));
+}
+
 //******************************************************************************
 namespace {
 Rot2 id;
@@ -197,4 +251,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

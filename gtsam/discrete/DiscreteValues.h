@@ -64,23 +64,95 @@ class GTSAM_EXPORT DiscreteValues : public Assignment<Key> {
   /// @name Standard Interface
   /// @{
 
+  /// ostream operator:
+  friend std::ostream& operator<<(std::ostream& os, const DiscreteValues& x);
+
   // insert in base class;
-  std::pair<iterator, bool> insert( const value_type& value ){
+  std::pair<iterator, bool> insert(const value_type& value) {
     return Base::insert(value);
   }
 
-  /** Insert all values from \c values.  Throws an invalid_argument exception if
-   * any keys to be inserted are already used. */
+  /**
+   * @brief Insert key-assignment pair.
+   *
+   * @param assignment The key-assignment pair to insert.
+   * @return DiscreteValues& Reference to the updated DiscreteValues object.
+   * @throws std::invalid_argument if any keys to be inserted are already used.
+   */
+  DiscreteValues& insert(const std::pair<Key, size_t>& assignment);
+
+  /**
+   * @brief Insert all values from another DiscreteValues object.
+   *
+   * @param values The DiscreteValues object containing values to insert.
+   * @return DiscreteValues& Reference to the updated DiscreteValues object.
+   * @throws std::invalid_argument if any keys to be inserted are already used.
+   */
   DiscreteValues& insert(const DiscreteValues& values);
 
-  /** For all key/value pairs in \c values, replace values with corresponding
-   * keys in this object with those in \c values.  Throws std::out_of_range if
-   * any keys in \c values are not present in this object. */
+  /**
+   * @brief Update values with corresponding keys from another DiscreteValues
+   * object.
+   *
+   * @param values The DiscreteValues object containing values to update.
+   * @return DiscreteValues& Reference to the updated DiscreteValues object.
+   * @throws std::out_of_range if any keys in values are not present in this
+   * object.
+   */
   DiscreteValues& update(const DiscreteValues& values);
 
   /**
-   * @brief Return a vector of DiscreteValues, one for each possible
-   * combination of values.
+   * @brief Insert each element of `values` if it does not already exist,
+   * else assign it.
+   * 
+   * @param values DiscreteValues to insert or assign to this.
+   * @return DiscreteValues& 
+   */
+  DiscreteValues& insert_or_assign(const DiscreteValues& values);
+
+  /**
+   * @brief Check if the DiscreteValues contains the given key.
+   *
+   * @param key The key to check for.
+   * @return True if the key is present, false otherwise.
+   */
+  bool contains(Key key) const { return this->find(key) != this->end(); }
+
+  /**
+   * @brief Filter values by keys.
+   *
+   * @param keys The keys to filter by.
+   * @return DiscreteValues The filtered DiscreteValues object.
+   */
+  DiscreteValues filter(const DiscreteKeys& keys) const {
+    DiscreteValues result;
+    for (const auto& [key, _] : keys) {
+      if (auto it = this->find(key); it != this->end())
+        result[key] = it->second;
+    }
+    return result;
+  }
+
+  /**
+   * @brief Return the keys that are not present in the DiscreteValues object.
+   *
+   * @param keys The keys to check for.
+   * @return DiscreteKeys Keys not present in the DiscreteValues object.
+   */
+  DiscreteKeys missingKeys(const DiscreteKeys& keys) const {
+    DiscreteKeys result;
+    for (const auto& [key, cardinality] : keys) {
+      if (!this->contains(key)) result.emplace_back(key, cardinality);
+    }
+    return result;
+  }
+
+  /**
+   * @brief Return a vector of DiscreteValues, one for each possible combination
+   * of values.
+   *
+   * @param keys The keys to generate the Cartesian product for.
+   * @return std::vector<DiscreteValues> The vector of DiscreteValues.
    */
   static std::vector<DiscreteValues> CartesianProduct(
       const DiscreteKeys& keys) {
@@ -126,14 +198,16 @@ inline std::vector<DiscreteValues> cartesianProduct(const DiscreteKeys& keys) {
 }
 
 /// Free version of markdown.
-std::string GTSAM_EXPORT markdown(const DiscreteValues& values,
-                     const KeyFormatter& keyFormatter = DefaultKeyFormatter,
-                     const DiscreteValues::Names& names = {});
+std::string GTSAM_EXPORT
+markdown(const DiscreteValues& values,
+         const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+         const DiscreteValues::Names& names = {});
 
 /// Free version of html.
-std::string GTSAM_EXPORT html(const DiscreteValues& values,
-                 const KeyFormatter& keyFormatter = DefaultKeyFormatter,
-                 const DiscreteValues::Names& names = {});
+std::string GTSAM_EXPORT
+html(const DiscreteValues& values,
+     const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+     const DiscreteValues::Names& names = {});
 
 // traits
 template <>

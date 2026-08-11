@@ -15,11 +15,11 @@
  * @author Frank Dellaert
  **/
 
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Vector.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/base/testLie.h>
-#include <CppUnitLite/TestHarness.h>
-#include <iostream>
 
 using namespace std;
 using namespace gtsam;
@@ -38,6 +38,15 @@ namespace {
   {
     return in;
   }
+}
+
+/* ************************************************************************* */
+// Verifies the 8x1 zero macro has the correct type and value.
+TEST(VectorConstants, EightByOne) {
+  const Vector8 zero = Z_8x1;
+  const Vector expected = Vector8::Zero();
+
+  EXPECT(assert_equal(expected, zero));
 }
 
 /* ************************************************************************* */
@@ -192,12 +201,12 @@ TEST(Vector, weightedPseudoinverse_constraint )
 /* ************************************************************************* */
 TEST(Vector, weightedPseudoinverse_nan )
 {
-  Vector a = (Vector(4) << 1., 0., 0., 0.).finished();
-  Vector sigmas = (Vector(4) << 0.1, 0.1, 0., 0.).finished();
+  Vector a{{1., 0., 0., 0.}};
+  Vector sigmas{{0.1, 0.1, 0., 0.}};
   Vector weights = sigmas.array().square().inverse();
   const auto [pseudo, precision] = weightedPseudoinverse(a, weights);
 
-  Vector expected = (Vector(4) << 1., 0., 0.,0.).finished();
+  Vector expected{{1., 0., 0., 0.}};
   EXPECT(assert_equal(expected, pseudo));
   DOUBLES_EQUAL(100, precision, 1e-5);
 }
@@ -226,8 +235,8 @@ TEST(Vector, axpy )
 /* ************************************************************************* */
 TEST(Vector, equals )
 {
-  Vector v1 = (Vector(1) << 0.0/std::numeric_limits<double>::quiet_NaN()).finished(); //testing nan
-  Vector v2 = (Vector(1) << 1.0).finished();
+  Vector v1{{0.0 / std::numeric_limits<double>::quiet_NaN()}};  // testing nan
+  Vector v2{{1.0}};
   double tol = 1.;
   EXPECT(!equal_with_abs_tol(v1, v2, tol));
 }
@@ -272,7 +281,7 @@ TEST(Vector, VectorIsVectorSpace) {
 }
 
 TEST(Vector, RowVectorIsVectorSpace) {
-#ifdef GTSAM_USE_BOOST_FEATURES
+#if GTSAM_USE_BOOST_FEATURES
   typedef Eigen::Matrix<double,1,-1> RowVector;
   GTSAM_CONCEPT_ASSERT(IsVectorSpace<RowVector>);
 #endif

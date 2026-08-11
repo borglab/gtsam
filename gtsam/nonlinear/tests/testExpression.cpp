@@ -17,13 +17,13 @@
  * @brief unit tests for Block Automatic Differentiation
  */
 
-#include <gtsam/nonlinear/expressions.h>
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/Testable.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Point3.h>
-#include <gtsam/base/Testable.h>
-
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/nonlinear/expressions.h>
 
 using namespace std;
 using namespace gtsam;
@@ -86,7 +86,7 @@ Vector f3(const Point3& p, OptionalJacobian<Eigen::Dynamic, 3> H) {
   return p;
 }
 Point3_ pointExpression(1);
-const set<Key> expected{1};
+const KeySet expected{1};
 }  // namespace unary
 
 // Create a unary expression that takes another expression as a single argument.
@@ -115,7 +115,7 @@ TEST(Expression, Unary3) {
 // Simple test class that implements the `VectorSpace` protocol.
 class Class : public Point3 {
  public:
-  enum {dimension = 3};
+  inline constexpr static auto dimension = 3;
   using Point3::Point3;
   const Vector3& vector() const { return *this; }
   inline static Class Identity() { return Class(0,0,0); }
@@ -158,8 +158,7 @@ TEST(Expression, NullaryMethod) {
   // Check all
   const double norm = sqrt(3*3 + 4*4 + 5*5);
   EXPECT(actual == norm)
-  Matrix expected(1, 3);
-  expected << 3.0 / norm, 4.0 / norm, 5.0 / norm;
+  Matrix13 expected{{3.0 / norm, 4.0 / norm, 5.0 / norm}};
   EXPECT(assert_equal(expected, H[0]))
 }
 
@@ -186,7 +185,7 @@ TEST(Expression, BinaryToDouble) {
 /* ************************************************************************* */
 // Check keys of an expression created from class method.
 TEST(Expression, BinaryKeys) {
-  const set<Key> expected{1, 2};
+  const KeySet expected{1, 2};
   EXPECT(expected == binary::p_cam.keys())
 }
 
@@ -223,7 +222,7 @@ Expression<Point2> uv_hat(uncalibrate<Cal3_S2>, K, projection);
 /* ************************************************************************* */
 // keys
 TEST(Expression, TreeKeys) {
-  const set<Key> expected{1, 2, 3};
+  const KeySet expected{1, 2, 3};
   EXPECT(expected == tree::uv_hat.keys())
 }
 
@@ -261,7 +260,7 @@ TEST(Expression, compose1) {
   Rot3_ R3 = R1 * R2;
 
   // Check keys
-  const set<Key> expected{1, 2};
+  const KeySet expected{1, 2};
   EXPECT(expected == R3.keys())
 }
 
@@ -273,7 +272,7 @@ TEST(Expression, compose2) {
   Rot3_ R3 = R1 * R2;
 
   // Check keys
-  const set<Key> expected{1};
+  const KeySet expected{1};
   EXPECT(expected == R3.keys())
 }
 
@@ -285,7 +284,7 @@ TEST(Expression, compose3) {
   Rot3_ R3 = R1 * R2;
 
   // Check keys
-  const set<Key> expected{3};
+  const KeySet expected{3};
   EXPECT(expected == R3.keys())
 }
 
@@ -298,7 +297,7 @@ TEST(Expression, compose4) {
   Double_ R3 = R1 * R2;
 
   // Check keys
-  const set<Key> expected{1};
+  const KeySet expected{1};
   EXPECT(expected == R3.keys())
 }
 
@@ -322,7 +321,7 @@ TEST(Expression, ternary) {
   Rot3_ ABC(composeThree, A, B, C);
 
   // Check keys
-  const set<Key> expected {1, 2, 3};
+  const KeySet expected {1, 2, 3};
   EXPECT(expected == ABC.keys())
 }
 
@@ -332,7 +331,7 @@ TEST(Expression, ScalarMultiply) {
   const Key key(67);
   const Point3_ expr = 23 * Point3_(key);
 
-  const set<Key> expected_keys{key};
+  const KeySet expected_keys{key};
   EXPECT(expected_keys == expr.keys())
 
   map<Key, int> actual_dims, expected_dims {{key, 3}};
@@ -363,7 +362,7 @@ TEST(Expression, BinarySum) {
   const Key key(67);
   const Point3_ sum_ = Point3_(key) + Point3_(Point3(1, 1, 1));
 
-  const set<Key> expected_keys{key};
+  const KeySet expected_keys{key};
   EXPECT(expected_keys == sum_.keys())
 
   map<Key, int> actual_dims, expected_dims {{key, 3}};
@@ -508,7 +507,7 @@ TEST(Expression, Subtract) {
   values.insert(0, p);
   values.insert(1, q);
   const Vector3_ expression = Vector3_(0) - Vector3_(1);
-  set<Key> expected_keys = {0, 1};
+  KeySet expected_keys = {0, 1};
   EXPECT(expression.keys() == expected_keys)
 
   // Check value + Jacobians

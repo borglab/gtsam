@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/discrete/DiscreteDistribution.h>
+#include <gtsam/discrete/TableFactor.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/FactorGraph.h>
 
@@ -53,6 +54,18 @@ class GTSAM_EXPORT DiscreteLookupTable : public DiscreteConditional {
   DiscreteLookupTable(size_t nFrontals, const DiscreteKeys& keys,
                       const ADT& potentials)
       : DiscreteConditional(nFrontals, keys, potentials) {}
+
+  /**
+   * @brief Construct a new Discrete Lookup Table object
+   *
+   * @param nFrontals number of frontal variables
+   * @param keys a sorted list of gtsam::Keys
+   * @param potentials Discrete potentials as a TableFactor.
+   */
+  DiscreteLookupTable(size_t nFrontals, const DiscreteKeys& keys,
+                      const TableFactor& potentials)
+      : DiscreteConditional(nFrontals, keys,
+                            potentials.toDecisionTreeFactor()) {}
 
   /// GTSAM-style print
   void print(
@@ -123,7 +136,7 @@ class GTSAM_EXPORT DiscreteLookupDAG : public BayesNet<DiscreteLookupTable> {
   /// @}
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>

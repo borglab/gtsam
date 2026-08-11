@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.22)
 
 # Set the project name and version
 project(gtwrap VERSION 1.0)
@@ -20,6 +20,8 @@ set(INSTALL_LIB_DIR lib/${PROJECT_NAME})
 set(INSTALL_BIN_DIR bin/${PROJECT_NAME})
 set(INSTALL_INCLUDE_DIR include/${PROJECT_NAME})
 
+option(GTWRAP_ADD_DOCSTRINGS "Whether to add docstrings to the Python bindings from Doxygen-generated XML located at {project_root}/xml" OFF)
+
 # ##############################################################################
 # Package Configuration
 
@@ -32,14 +34,13 @@ configure_package_config_file(
   ${CMAKE_CURRENT_BINARY_DIR}/cmake/gtwrapConfig.cmake
   INSTALL_DESTINATION "${INSTALL_CMAKE_DIR}"
   PATH_VARS INSTALL_CMAKE_DIR INSTALL_LIB_DIR INSTALL_BIN_DIR
-            INSTALL_INCLUDE_DIR
-  INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+            INSTALL_INCLUDE_DIR)
 
 # Set all the install paths
-set(GTWRAP_CMAKE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/${INSTALL_CMAKE_DIR})
-set(GTWRAP_LIB_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR})
-set(GTWRAP_BIN_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/${INSTALL_BIN_DIR})
-set(GTWRAP_INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/${INSTALL_INCLUDE_DIR})
+set(GTWRAP_CMAKE_INSTALL_DIR ${INSTALL_CMAKE_DIR})
+set(GTWRAP_LIB_INSTALL_DIR ${INSTALL_LIB_DIR})
+set(GTWRAP_BIN_INSTALL_DIR ${INSTALL_BIN_DIR})
+set(GTWRAP_INCLUDE_INSTALL_DIR ${INSTALL_INCLUDE_DIR})
 
 # ##############################################################################
 # Install the package

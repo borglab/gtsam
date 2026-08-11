@@ -15,12 +15,15 @@
  * @author  Vadim Indelman, Stephen Williams
  */
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <iostream>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam_unstable/slam/InertialNavFactor_GlobalVelocity.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/inference/Key.h>
 
 using namespace std;
@@ -107,3 +110,5 @@ int main() {
 }
 
 /* ************************************************************************* */
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

@@ -45,18 +45,13 @@ class GTSAM_UNSTABLE_EXPORT AllDiff : public Constraint {
   }
 
   /// Calculate value = expensive !
-  double operator()(const DiscreteValues& values) const override;
+  double evaluate(const Assignment<Key>& values) const override;
 
   /// Convert into a decisiontree, can be *very* expensive !
   DecisionTreeFactor toDecisionTreeFactor() const override;
 
   /// Multiply into a decisiontree
   DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override;
-
-  /// Compute error for each assignment and return as a tree
-  AlgebraicDecisionTree<Key> errorTree() const override {
-    throw std::runtime_error("AllDiff::error not implemented");
-  }
 
   /*
    * Ensure Arc-consistency by checking every possible value of domain j.

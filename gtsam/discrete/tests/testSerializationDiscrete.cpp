@@ -20,6 +20,7 @@
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteDistribution.h>
+#include <gtsam/discrete/TableFactor.h>
 #include <gtsam/inference/Symbol.h>
 
 using namespace std;
@@ -31,10 +32,11 @@ BOOST_CLASS_EXPORT_GUID(Tree, "gtsam_DecisionTreeStringInt")
 BOOST_CLASS_EXPORT_GUID(Tree::Leaf, "gtsam_DecisionTreeStringInt_Leaf")
 BOOST_CLASS_EXPORT_GUID(Tree::Choice, "gtsam_DecisionTreeStringInt_Choice")
 
-BOOST_CLASS_EXPORT_GUID(DecisionTreeFactor, "gtsam_DecisionTreeFactor");
+BOOST_CLASS_EXPORT_GUID(DecisionTreeFactor, "gtsam_DecisionTreeFactor")
+BOOST_CLASS_EXPORT_GUID(TableFactor, "gtsam_TableFactor")
 
 using ADT = AlgebraicDecisionTree<Key>;
-BOOST_CLASS_EXPORT_GUID(ADT, "gtsam_AlgebraicDecisionTree");
+BOOST_CLASS_EXPORT_GUID(ADT, "gtsam_AlgebraicDecisionTree")
 BOOST_CLASS_EXPORT_GUID(ADT::Leaf, "gtsam_AlgebraicDecisionTree_Leaf")
 BOOST_CLASS_EXPORT_GUID(ADT::Choice, "gtsam_AlgebraicDecisionTree_Choice")
 
@@ -77,6 +79,19 @@ TEST(DiscreteSerialization, DecisionTreeFactor) {
   EXPECT(equalsObj<DecisionTreeFactor>(f));
   EXPECT(equalsXML<DecisionTreeFactor>(f));
   EXPECT(equalsBinary<DecisionTreeFactor>(f));
+}
+
+/* ************************************************************************* */
+// Check serialization for TableFactor
+TEST(DiscreteSerialization, TableFactor) {
+  using namespace serializationTestHelpers;
+
+  DiscreteKey A(Symbol('x', 1), 3);
+  TableFactor tf(A, "1 2 2");
+
+  EXPECT(equalsObj<TableFactor>(tf));
+  EXPECT(equalsXML<TableFactor>(tf));
+  EXPECT(equalsBinary<TableFactor>(tf));
 }
 
 /* ************************************************************************* */

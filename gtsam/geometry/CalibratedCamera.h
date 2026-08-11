@@ -18,14 +18,15 @@
 
 #pragma once
 
+#include <gtsam/base/Manifold.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/ThreadsafeException.h>
+#include <gtsam/base/concepts.h>
+#include <gtsam/dllexport.h>
 #include <gtsam/geometry/BearingRange.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/base/concepts.h>
-#include <gtsam/base/Manifold.h>
-#include <gtsam/base/ThreadsafeException.h>
-#include <gtsam/dllexport.h>
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
 #endif
 
@@ -56,15 +57,15 @@ class GTSAM_EXPORT PinholeBase {
 public:
 
   /** Pose Concept requirements */
-  typedef Rot3 Rotation;
-  typedef Point3 Translation;
+  using Rotation = Rot3;
+  using Translation = Point3;
 
   /**
    *  Some classes template on either PinholeCamera or StereoCamera,
    *  and this typedef informs those classes what "project" returns.
    */
-  typedef Point2 Measurement;
-  typedef Point2Vector MeasurementVector;
+  using Measurement = Point2;
+  using MeasurementVector = Point2Vector;
 
 private:
 
@@ -222,7 +223,7 @@ public:
    * exponential map parameterization
    * @return a pair of [start, end] indices into the tangent space vector
    */
-  inline static std::pair<size_t, size_t> translationInterval() {
+  static std::pair<size_t, size_t> TranslationInterval() {
     return {3, 5};
   }
 
@@ -230,7 +231,7 @@ public:
 
 private:
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
@@ -252,9 +253,7 @@ class GTSAM_EXPORT CalibratedCamera: public PinholeBase {
 
 public:
 
-  enum {
-    dimension = 6
-  };
+  inline constexpr static auto dimension = 6;
 
   /// @name Standard Constructors
   /// @{
@@ -275,8 +274,7 @@ public:
   // Create CalibratedCamera, with derivatives
   static CalibratedCamera Create(const Pose3& pose,
                                  OptionalJacobian<dimension, 6> H1 = {}) {
-    if (H1)
-      *H1 << I_6x6;
+    if (H1) *H1 = I_6x6;
     return CalibratedCamera(pose);
   }
 
@@ -323,12 +321,10 @@ public:
     PinholeBase::print(s);
   }
 
-  /// @deprecated
   inline size_t dim() const {
     return dimension;
   }
 
-  /// @deprecated
   inline static size_t Dim() {
     return dimension;
   }
@@ -408,7 +404,7 @@ private:
   /// @name Advanced Interface
   /// @{
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>

@@ -1,6 +1,6 @@
 """Setup file to install the GTSAM package."""
 
-from setuptools import setup, find_namespace_packages
+from setuptools import setup, find_namespace_packages, Distribution
 
 packages = find_namespace_packages(
     where=".",
@@ -20,8 +20,14 @@ package_data = {
 # Cleaner to read in the contents rather than copy them over.
 readme_contents = open("${GTSAM_SOURCE_DIR}/README.md").read()
 
+# The cibuildwheel tool won't recognize a wheel as platform-dependent unless the ext_modules option is defined in setup.py. This is used to define C/C++ source files that need to be built for the wheel.
+# However, we pre-build our C++ files. Thus, we force cibuildwheel to think that there are ext_modules defined by overwriting the has_ext_modules() function.
+class BinaryDistribution(Distribution):
+    def has_ext_modules(foo):
+        return True
+
 setup(
-    name='gtsam',
+    name='${SETUP_NAME}',
     description='Georgia Tech Smoothing And Mapping library',
     url='https://gtsam.org/',
     version='${GTSAM_VERSION_STRING}',  # https://www.python.org/dev/peps/pep-0440/
@@ -46,6 +52,7 @@ setup(
     packages=packages,
     include_package_data=True,
     package_data=package_data,
+    distclass=BinaryDistribution,
     test_suite="gtsam.tests",
     install_requires=open("${GTSAM_SOURCE_DIR}/python/requirements.txt").readlines(),
     zip_safe=False,

@@ -25,7 +25,6 @@
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/geometry/Pose3.h>
 
 using namespace std;

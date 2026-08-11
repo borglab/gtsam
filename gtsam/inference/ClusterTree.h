@@ -10,6 +10,8 @@
 #pragma once
 
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/FastMap.h>
+#include <gtsam/base/FastSet.h>
 #include <gtsam/base/FastVector.h>
 #include <gtsam/inference/Ordering.h>
 
@@ -96,11 +98,28 @@ class ClusterTree {
     /// Return a vector with nrFrontal keys for each child
     std::vector<size_t> nrFrontalsOfChildren() const;
 
+    using KeySetMap = FastMap<const Cluster*, KeySet>;
+
+    /// Return the separator keys (subtree keys minus frontals), optionally cached.
+    KeySet separatorKeys(KeySetMap* cache = nullptr) const;
+
     /// Merge in given cluster
     void merge(const std::shared_ptr<Cluster>& cluster);
 
     /// Merge all children for which bit is set into this node
     void mergeChildren(const std::vector<bool>& merge);
+
+    /** Merge selected siblings into a new child cluster. */
+    void mergeChildrenSiblings(const std::vector<bool>& merge);
+
+    /** Merge selected children (provided as pointers) into this node. */
+    void mergeChildren(const Children& selected);
+
+    /** Merge selected siblings (provided as pointers) into a new child. */
+    void mergeChildrenSiblings(const Children& selected);
+
+    /** Convert a child-selection mask into the selected child pointers. */
+    Children childrenFromMask(const std::vector<bool>& merge) const;
   };
 
   typedef std::shared_ptr<Cluster> sharedCluster;  ///< Shared pointer to Cluster
@@ -166,9 +185,9 @@ class ClusterTree {
 
   /// @}
 
+ protected:
   ~ClusterTree();
 
- protected:
   /// @name Details
   /// @{
 

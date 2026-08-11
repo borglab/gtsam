@@ -15,13 +15,13 @@
  * @author  Frank Dellaert
  */
 
-#include <gtsam/navigation/TangentPreintegration.h>
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/nonlinear/expressions.h>
+#include <gtsam/navigation/TangentPreintegration.h>
 #include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/expressionTesting.h>
-
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/nonlinear/expressions.h>
 
 #include "imuFactorTesting.h"
 
@@ -31,17 +31,6 @@ static const double kDt = 0.1;
 
 Vector9 f(const Vector9& zeta, const Vector3& a, const Vector3& w) {
   return TangentPreintegration::UpdatePreintegrated(a, w, kDt, zeta);
-}
-
-namespace testing {
-// Create default parameters with Z-down and above noise parameters
-static std::shared_ptr<PreintegrationParams> Params() {
-  auto p = PreintegrationParams::MakeSharedD(kGravity);
-  p->gyroscopeCovariance = kGyroSigma * kGyroSigma * I_3x3;
-  p->accelerometerCovariance = kAccelSigma * kAccelSigma * I_3x3;
-  p->integrationCovariance = 0.0001 * I_3x3;
-  return p;
-}
 }
 
 /* ************************************************************************* */
@@ -62,8 +51,7 @@ TEST(TangentPreintegration, UpdateEstimate1) {
 TEST(TangentPreintegration, UpdateEstimate2) {
   TangentPreintegration pim(testing::Params());
   const Vector3 acc(0.1, 0.2, 10), omega(0.1, 0.2, 0.3);
-  Vector9 zeta;
-  zeta << 0.01, 0.02, 0.03, 100, 200, 300, 10, 5, 3;
+  Vector9 zeta{0.01, 0.02, 0.03, 100, 200, 300, 10, 5, 3};
   Matrix9 aH1;
   Matrix93 aH2, aH3;
   pim.UpdatePreintegrated(acc, omega, kDt, zeta, aH1, aH2, aH3);
@@ -77,8 +65,7 @@ TEST(TangentPreintegration, UpdateEstimate2) {
 TEST(ImuFactor, BiasCorrectionJacobians) {
   testing::SomeMeasurements measurements;
 
-  std::function<Vector9(const Vector3&, const Vector3&)> preintegrated =
-      [=](const Vector3& a, const Vector3& w) {
+  auto preintegrated = [&](const Vector3& a, const Vector3& w) {
         TangentPreintegration pim(testing::Params(), Bias(a, w));
         testing::integrateMeasurements(measurements, &pim);
         return pim.preintegrated();
@@ -104,9 +91,12 @@ TEST(TangentPreintegration, computeError) {
   Matrix9 aH1, aH2;
   Matrix96 aH3;
   pim.computeError(x1, x2, bias, aH1, aH2, aH3);
-  std::function<Vector9(const NavState&, const NavState&,
-                        const imuBias::ConstantBias&)>
-      f = std::bind(&TangentPreintegration::computeError, pim,
+  // Select the overload without the gravity parameter:
+  using ComputeErrorNoGravity = Vector9 (PreintegrationBase::*)(
+      const NavState&, const NavState&, const imuBias::ConstantBias&,
+      OptionalJacobian<9, 9>, OptionalJacobian<9, 9>,
+      OptionalJacobian<9, 6>) const;
+  auto f = std::bind(static_cast<ComputeErrorNoGravity>(&TangentPreintegration::computeError), pim,
                     std::placeholders::_1, std::placeholders::_2,
                     std::placeholders::_3, nullptr, nullptr,
                     nullptr);
@@ -122,8 +112,7 @@ TEST(TangentPreintegration, Compose) {
   TangentPreintegration pim(testing::Params());
   testing::integrateMeasurements(measurements, &pim);
 
-  std::function<Vector9(const Vector9&, const Vector9&)> f =
-      [pim](const Vector9& zeta01, const Vector9& zeta12) {
+  auto f = [pim](const Vector9& zeta01, const Vector9& zeta12) {
         return TangentPreintegration::Compose(zeta01, zeta12, pim.deltaTij());
       };
 
@@ -149,7 +138,7 @@ TEST(TangentPreintegration, Compose) {
 TEST(TangentPreintegration, MergedBiasDerivatives) {
   testing::SomeMeasurements measurements;
 
-  auto f = [=](const Vector3& a, const Vector3& w) {
+  auto f = [&](const Vector3& a, const Vector3& w) {
     TangentPreintegration pim02(testing::Params(), Bias(a, w));
     testing::integrateMeasurements(measurements, &pim02);
     testing::integrateMeasurements(measurements, &pim02);

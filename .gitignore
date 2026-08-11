@@ -1,9 +1,11 @@
-/build*
+/build
+/build-*/
 /debug*
 .idea
 *.pyc
 *.DS_Store
 *.swp
+*:Zone.Identifier
 /examples/Data/dubrovnik-3-7-pre-rewritten.txt
 /examples/Data/pose2example-rewritten.txt
 /examples/Data/pose3example-rewritten.txt
@@ -13,6 +15,7 @@
 .vscode
 .env
 /.vs/
+vcpkg_installed/
 /CMakeSettings.json
 # for QtCreator:
 CMakeLists.txt.user*
@@ -20,3 +23,23 @@ xcode/
 /Dockerfile
 /python/gtsam/notebooks/.ipynb_checkpoints/ellipses-checkpoint.ipynb
 .cache/
+.venv/
+
+# MyST build outputs
+_build
+doc/#*.lyx#
+/cmake-build-debug/
+.venv/
+conductor/
+.ccache/
+gtsam_unstable/timing/data/
+timing/results/bayes_tree_covariance/
+timing/**/benchmark_logs/
+
+# Local development docs/artifacts
+docs/*
+timing/pypose_ba/*.json
+timing/pypose_ba/run_frank_benchmark.py
+timing/pypose_ba/test_benchmark_cli.py
+artifacts/
+build-tbb/

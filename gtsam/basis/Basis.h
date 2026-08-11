@@ -144,7 +144,7 @@ class Basis {
     double apply(const typename DERIVED::Parameters& p,
                  OptionalJacobian<-1, -1> H = {}) const {
       if (H) *H = weights_;
-      return (weights_ * p)(0);
+      return weights_.transpose().dot(p);
     }
 
     /// c++ sugar
@@ -184,8 +184,6 @@ class Basis {
     }
 
    public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
     /// For serialization
     VectorEvaluationFunctor() {}
 
@@ -291,7 +289,7 @@ class Basis {
    */
   template <class T>
   class ManifoldEvaluationFunctor : public VectorEvaluationFunctor {
-    enum { M = traits<T>::dimension };
+    inline constexpr static auto M = traits<T>::dimension;
     using Base = VectorEvaluationFunctor;
 
    public:
@@ -407,8 +405,6 @@ class Basis {
     }
 
    public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
     /// For serialization
     VectorDerivativeFunctor() {}
 

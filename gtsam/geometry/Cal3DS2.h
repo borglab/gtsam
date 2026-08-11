@@ -36,8 +36,6 @@ class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base {
   using Base = Cal3DS2_Base;
 
  public:
-  enum { dimension = 9 };
-
   ///< shared pointer to stereo calibration object
   using shared_ptr = std::shared_ptr<Cal3DS2>;
 
@@ -83,12 +81,6 @@ class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base {
   /// Given a different calibration, calculate update to obtain it
   Vector localCoordinates(const Cal3DS2& T2) const;
 
-  /// Return dimensions of calibration manifold object
-  size_t dim() const override { return Dim(); }
-
-  /// Return dimensions of calibration manifold object
-  inline static size_t Dim() { return dimension; }
-
   /// @}
   /// @name Clone
   /// @{
@@ -104,7 +96,7 @@ class GTSAM_EXPORT Cal3DS2 : public Cal3DS2_Base {
   /// @name Advanced Interface
   /// @{
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class Archive>

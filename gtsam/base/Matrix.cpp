@@ -24,11 +24,10 @@
 #include <Eigen/LU>
 
 #include <cstdarg>
+#include <cassert>
 #include <cstring>
-#include <iomanip>
 #include <list>
 #include <fstream>
-#include <limits>
 #include <iostream>
 #include <iterator>
 
@@ -89,7 +88,7 @@ static bool is_linear_dependent(const Matrix& A, const Matrix& B, double tol) {
   if(m1!=m2 || n1!=n2) dependent = false;
 
   for(size_t i=0; dependent && i<m1; i++) {
-    if (!gtsam::linear_dependent(Vector(row(A,i)), Vector(row(B,i)), tol))
+    if (!gtsam::linear_dependent(Vector(A.row(i)), Vector(B.row(i)), tol))
       dependent = false;
   }
 
@@ -125,17 +124,6 @@ bool linear_dependent(const Matrix& A, const Matrix& B, double tol) {
 }
 
 /* ************************************************************************* */
-Vector operator^(const Matrix& A, const Vector & v) {
-  if (A.rows()!=v.size()) {
-    throw std::invalid_argument("Matrix operator^ : A.m(" + std::to_string(A.rows()) + ")!=v.size(" +
-                                std::to_string(v.size()) + ")");
-  }
-//  Vector vt = v.transpose();
-//  Vector vtA = vt * A;
-//  return vtA.transpose();
-  return A.transpose() * v;
-}
-
 const Eigen::IOFormat& matlabFormat() {
   static const Eigen::IOFormat matlab(
     Eigen::StreamPrecision, // precision
@@ -284,7 +272,7 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
   // Then update A and b by substituting x with d-rS, zero-ing out x's column.
   for (size_t j=0; j<n; ++j) {
     // extract the first column of A
-    Vector a(column(A, j));
+    Vector a(A.col(j));
 
     // Calculate weighted pseudo-inverse and corresponding precision
     double precision = weightedPseudoinverse(a, weights, pseudo);
@@ -580,7 +568,8 @@ std::tuple<int, double, Vector> DLT(const Matrix& A, double rank_tol) {
 
   // Return rank, error, and corresponding column of V
   double error = m<p ? 0 : s(m-1);
-  return std::tuple<int, double, Vector>((int)rank, error, Vector(column(V, p-1)));
+  return std::tuple<int, double, Vector>((int)rank, error,
+                                         Vector(V.col(p - 1)));
 }
 
 /* ************************************************************************* */
@@ -649,7 +638,7 @@ void inplace_QR(Matrix& A){
   Eigen::internal::householder_qr_inplace_blocked<Matrix, HCoeffsType>::run(A, hCoeffs, 48, temp.data());
 #endif
 
-  zeroBelowDiagonal(A);
+  A.triangularView<Eigen::StrictlyLower>().setZero();
 }
 
 } // namespace gtsam

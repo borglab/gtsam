@@ -23,6 +23,7 @@
 #include <iterator>
 #include <string>
 #include <utility>
+#include <cassert>
 
 using std::pair;
 using std::vector;

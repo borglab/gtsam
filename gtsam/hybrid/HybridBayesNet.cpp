@@ -17,12 +17,13 @@
  */
 
 #include <gtsam/discrete/DiscreteBayesNet.h>
+#include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
+#include <gtsam/discrete/TableDistribution.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridValues.h>
 
-// In Wrappers we have no access to this so have a default ready
-static std::mt19937_64 kRandomNumberGenerator(42);
+#include <memory>
 
 namespace gtsam {
 
@@ -38,165 +39,89 @@ bool HybridBayesNet::equals(const This &bn, double tol) const {
 }
 
 /* ************************************************************************* */
-/**
- * @brief Helper function to get the pruner functional.
- *
- * @param prunedDiscreteProbs  The prob. decision tree of only discrete keys.
- * @param conditional Conditional to prune. Used to get full assignment.
- * @return std::function<double(const Assignment<Key> &, double)>
- */
-std::function<double(const Assignment<Key> &, double)> prunerFunc(
-    const DecisionTreeFactor &prunedDiscreteProbs,
-    const HybridConditional &conditional) {
-  // Get the discrete keys as sets for the decision tree
-  // and the hybrid Gaussian conditional.
-  std::set<DiscreteKey> discreteProbsKeySet =
-      DiscreteKeysAsSet(prunedDiscreteProbs.discreteKeys());
-  std::set<DiscreteKey> conditionalKeySet =
-      DiscreteKeysAsSet(conditional.discreteKeys());
+HybridBayesNet HybridBayesNet::prune(
+    size_t maxNrLeaves, const std::optional<double> &marginalThreshold,
+    DiscreteValues *fixedValues) const {
+#if GTSAM_HYBRID_TIMING
+  gttic_(HybridPruning);
+#endif
+  // Collect all the discrete conditionals. Could be small if already pruned.
+  const DiscreteBayesNet discreteMarginalBN = discreteMarginal();
 
-  auto pruner = [prunedDiscreteProbs, discreteProbsKeySet, conditionalKeySet](
-                    const Assignment<Key> &choices,
-                    double probability) -> double {
-    // This corresponds to 0 probability
-    double pruned_prob = 0.0;
+  // We use a separate value here since we need this to perform `restrict` on
+  // the HybridConditionals later.
+  DiscreteValues fixed;
+  // Prune discrete Bayes net
+  DiscreteBayesNet prunedBN =
+      discreteMarginalBN.prune(maxNrLeaves, marginalThreshold, &fixed);
 
-    // typecast so we can use this to get probability value
-    DiscreteValues values(choices);
-    // Case where the hybrid Gaussian conditional has the same
-    // discrete keys as the decision tree.
-    if (conditionalKeySet == discreteProbsKeySet) {
-      if (prunedDiscreteProbs(values) == 0) {
-        return pruned_prob;
-      } else {
-        return probability;
-      }
-    } else {
-      // Due to branch merging (aka pruning) in DecisionTree, it is possible we
-      // get a `values` which doesn't have the full set of keys.
-      std::set<Key> valuesKeys;
-      for (auto kvp : values) {
-        valuesKeys.insert(kvp.first);
-      }
-      std::set<Key> conditionalKeys;
-      for (auto kvp : conditionalKeySet) {
-        conditionalKeys.insert(kvp.first);
-      }
-      // If true, then values is missing some keys
-      if (conditionalKeys != valuesKeys) {
-        // Get the keys present in conditionalKeys but not in valuesKeys
-        std::vector<Key> missing_keys;
-        std::set_difference(conditionalKeys.begin(), conditionalKeys.end(),
-                            valuesKeys.begin(), valuesKeys.end(),
-                            std::back_inserter(missing_keys));
-        // Insert missing keys with a default assignment.
-        for (auto missing_key : missing_keys) {
-          values[missing_key] = 0;
-        }
-      }
+  // Multiply into one big conditional.
+  // NOTE: This is cheap since discreteMarginalBN.prune above creates a
+  // DBN with a single joint conditional.
+  DiscreteConditional pruned = prunedBN.joint();
 
-      // Now we generate the full assignment by enumerating
-      // over all keys in the prunedDiscreteProbs.
-      // First we find the differing keys
-      std::vector<DiscreteKey> set_diff;
-      std::set_difference(discreteProbsKeySet.begin(),
-                          discreteProbsKeySet.end(), conditionalKeySet.begin(),
-                          conditionalKeySet.end(),
-                          std::back_inserter(set_diff));
-
-      // Now enumerate over all assignments of the differing keys
-      const std::vector<DiscreteValues> assignments =
-          DiscreteValues::CartesianProduct(set_diff);
-      for (const DiscreteValues &assignment : assignments) {
-        DiscreteValues augmented_values(values);
-        augmented_values.insert(assignment);
-
-        // If any one of the sub-branches are non-zero,
-        // we need this probability.
-        if (prunedDiscreteProbs(augmented_values) > 0.0) {
-          return probability;
-        }
-      }
-      // If we are here, it means that all the sub-branches are 0,
-      // so we prune.
-      return pruned_prob;
+  // Set the fixed values if requested.
+  if (marginalThreshold && fixedValues) {
+    if (!fixedValues->empty()) {
+      throw std::invalid_argument(
+          "HybridBayesNet::prune: fixedValues should be empty since it is "
+          "a purely output argument.");
     }
-  };
-  return pruner;
-}
-
-/* ************************************************************************* */
-DecisionTreeFactor HybridBayesNet::pruneDiscreteConditionals(
-    size_t maxNrLeaves) {
-  // Get the joint distribution of only the discrete keys
-  // The joint discrete probability.
-  DiscreteConditional discreteProbs;
-
-  std::vector<size_t> discrete_factor_idxs;
-  // Record frontal keys so we can maintain ordering
-  Ordering discrete_frontals;
-
-  for (size_t i = 0; i < this->size(); i++) {
-    auto conditional = this->at(i);
-    if (conditional->isDiscrete()) {
-      discreteProbs = discreteProbs * (*conditional->asDiscrete());
-
-      Ordering conditional_keys(conditional->frontals());
-      discrete_frontals += conditional_keys;
-      discrete_factor_idxs.push_back(i);
-    }
+    *fixedValues = fixed;
   }
 
-  const DecisionTreeFactor prunedDiscreteProbs =
-      discreteProbs.prune(maxNrLeaves);
+  HybridBayesNet result;
+  result.reserve(size());
 
-  // Eliminate joint probability back into conditionals
-  DiscreteFactorGraph dfg{prunedDiscreteProbs};
-  DiscreteBayesNet::shared_ptr dbn = dfg.eliminateSequential(discrete_frontals);
+  // Go through all the Gaussian conditionals, restrict them according to
+  // fixed values, and then prune further.
+  for (std::shared_ptr<HybridConditional> conditional : *this) {
+    if (conditional->isDiscrete()) continue;
 
-  // Assign pruned discrete conditionals back at the correct indices.
-  for (size_t i = 0; i < discrete_factor_idxs.size(); i++) {
-    size_t idx = discrete_factor_idxs.at(i);
-    this->at(idx) = std::make_shared<HybridConditional>(dbn->at(i));
-  }
+    // No-op if not a HybridGaussianConditional.
+    if (marginalThreshold) {
+      conditional = std::static_pointer_cast<HybridConditional>(
+          conditional->restrict(fixed));
+    }
 
-  return prunedDiscreteProbs;
-}
-
-/* ************************************************************************* */
-HybridBayesNet HybridBayesNet::prune(size_t maxNrLeaves) {
-  DecisionTreeFactor prunedDiscreteProbs =
-      this->pruneDiscreteConditionals(maxNrLeaves);
-
-  /* To prune, we visitWith every leaf in the HybridGaussianConditional.
-   * For each leaf, using the assignment we can check the discrete decision tree
-   * for 0.0 probability, then just set the leaf to a nullptr.
-   *
-   * We can later check the HybridGaussianConditional for just nullptrs.
-   */
-
-  HybridBayesNet prunedBayesNetFragment;
-
-  // Go through all the conditionals in the
-  // Bayes Net and prune them as per prunedDiscreteProbs.
-  for (auto &&conditional : *this) {
-    if (auto gm = conditional->asHybrid()) {
-      // Make a copy of the hybrid Gaussian conditional and prune it!
-      auto prunedHybridGaussianConditional =
-          std::make_shared<HybridGaussianConditional>(*gm);
-      prunedHybridGaussianConditional->prune(
-          prunedDiscreteProbs);  // imperative :-(
-
+    // Now decide on type what to do:
+    if (auto hgc = conditional->asHybrid()) {
+      // Prune the hybrid Gaussian conditional!
+      auto prunedHybridGaussianConditional = hgc->prune(pruned);
+      if (!prunedHybridGaussianConditional) {
+        throw std::runtime_error(
+            "A HybridGaussianConditional had all its conditionals pruned");
+      }
       // Type-erase and add to the pruned Bayes Net fragment.
-      prunedBayesNetFragment.push_back(prunedHybridGaussianConditional);
-
-    } else {
-      // Add the non-HybridGaussianConditional conditional
-      prunedBayesNetFragment.push_back(conditional);
-    }
+      result.push_back(prunedHybridGaussianConditional);
+    } else if (conditional->isContinuous()) {
+      // Add the non-Hybrid GaussianConditional conditional
+      result.push_back(conditional);
+    } else
+      throw std::runtime_error(
+          "HybrdiBayesNet::prune: Unknown HybridConditional type.");
   }
 
-  return prunedBayesNetFragment;
+#if GTSAM_HYBRID_TIMING
+  gttoc_(HybridPruning);
+#endif
+
+  // Add the pruned discrete conditionals to the result.
+  for (const DiscreteConditional::shared_ptr &discrete : prunedBN)
+    result.push_back(discrete);
+
+  return result;
+}
+
+/* ************************************************************************* */
+DiscreteBayesNet HybridBayesNet::discreteMarginal() const {
+  DiscreteBayesNet result;
+  for (auto &&conditional : *this) {
+    if (auto dc = conditional->asDiscrete()) {
+      result.push_back(dc);
+    }
+  }
+  return result;
 }
 
 /* ************************************************************************* */
@@ -206,7 +131,7 @@ GaussianBayesNet HybridBayesNet::choose(
   for (auto &&conditional : *this) {
     if (auto gm = conditional->asHybrid()) {
       // If conditional is hybrid, select based on assignment.
-      gbn.push_back((*gm)(assignment));
+      gbn.push_back(gm->choose(assignment));
     } else if (auto gc = conditional->asGaussian()) {
       // If continuous only, add Gaussian conditional.
       gbn.push_back(gc);
@@ -220,18 +145,30 @@ GaussianBayesNet HybridBayesNet::choose(
 }
 
 /* ************************************************************************* */
-HybridValues HybridBayesNet::optimize() const {
+DiscreteValues HybridBayesNet::mpe() const {
   // Collect all the discrete factors to compute MPE
   DiscreteFactorGraph discrete_fg;
 
   for (auto &&conditional : *this) {
     if (conditional->isDiscrete()) {
-      discrete_fg.push_back(conditional->asDiscrete());
+      if (auto dtc = conditional->asDiscrete<TableDistribution>()) {
+        // The number of keys should be small so should not
+        // be expensive to convert to DiscreteConditional.
+        discrete_fg.push_back(DiscreteConditional(dtc->nrFrontals(),
+                                                  dtc->toDecisionTreeFactor()));
+      } else {
+        discrete_fg.push_back(conditional->asDiscrete());
+      }
     }
   }
 
+  return discrete_fg.optimize();
+}
+
+/* ************************************************************************* */
+HybridValues HybridBayesNet::optimize() const {
   // Solve for the MPE
-  DiscreteValues mpe = discrete_fg.optimize();
+  DiscreteValues mpe = this->mpe();
 
   // Given the MPE, compute the optimal continuous values.
   return HybridValues(optimize(mpe), mpe);
@@ -260,7 +197,7 @@ HybridValues HybridBayesNet::sample(const HybridValues &given,
     }
   }
   // Sample a discrete assignment.
-  const DiscreteValues assignment = dbn.sample(given.discrete());
+  const DiscreteValues assignment = dbn.sample(given.discrete(), rng);
   // Select the continuous Bayes net corresponding to the assignment.
   GaussianBayesNet gbn = choose(assignment);
   // Sample from the Gaussian Bayes net.
@@ -275,82 +212,49 @@ HybridValues HybridBayesNet::sample(std::mt19937_64 *rng) const {
 }
 
 /* ************************************************************************* */
-HybridValues HybridBayesNet::sample(const HybridValues &given) const {
-  return sample(given, &kRandomNumberGenerator);
-}
-
-/* ************************************************************************* */
-HybridValues HybridBayesNet::sample() const {
-  return sample(&kRandomNumberGenerator);
-}
-
-/* ************************************************************************* */
 AlgebraicDecisionTree<Key> HybridBayesNet::errorTree(
     const VectorValues &continuousValues) const {
   AlgebraicDecisionTree<Key> result(0.0);
 
   // Iterate over each conditional.
   for (auto &&conditional : *this) {
-    if (auto gm = conditional->asHybrid()) {
-      // If conditional is hybrid, compute error for all assignments.
-      result = result + gm->errorTree(continuousValues);
-
-    } else if (auto gc = conditional->asGaussian()) {
-      // If continuous, get the error and add it to the result
-      double error = gc->error(continuousValues);
-      // Add the computed error to every leaf of the result tree.
-      result = result.apply(
-          [error](double leaf_value) { return leaf_value + error; });
-
-    } else if (auto dc = conditional->asDiscrete()) {
-      // If discrete, add the discrete error in the right branch
-      result = result.apply(
-          [dc](const Assignment<Key> &assignment, double leaf_value) {
-            return leaf_value + dc->error(DiscreteValues(assignment));
-          });
-    }
+    result = result + conditional->errorTree(continuousValues);
   }
 
   return result;
 }
 
 /* ************************************************************************* */
-AlgebraicDecisionTree<Key> HybridBayesNet::logProbability(
-    const VectorValues &continuousValues) const {
-  AlgebraicDecisionTree<Key> result(0.0);
-
+double HybridBayesNet::negLogConstant(
+    const std::optional<DiscreteValues> &discrete) const {
+  double negLogNormConst = 0.0;
   // Iterate over each conditional.
   for (auto &&conditional : *this) {
-    if (auto gm = conditional->asHybrid()) {
-      // If conditional is hybrid, select based on assignment and compute
-      // logProbability.
-      result = result + gm->logProbability(continuousValues);
-    } else if (auto gc = conditional->asGaussian()) {
-      // If continuous, get the (double) logProbability and add it to the
-      // result
-      double logProbability = gc->logProbability(continuousValues);
-      // Add the computed logProbability to every leaf of the logProbability
-      // tree.
-      result = result.apply([logProbability](double leaf_value) {
-        return leaf_value + logProbability;
-      });
-    } else if (auto dc = conditional->asDiscrete()) {
-      // If discrete, add the discrete logProbability in the right branch
-      result = result.apply(
-          [dc](const Assignment<Key> &assignment, double leaf_value) {
-            return leaf_value + dc->logProbability(DiscreteValues(assignment));
-          });
+    if (discrete.has_value()) {
+      if (auto gm = conditional->asHybrid()) {
+        negLogNormConst += gm->choose(*discrete)->negLogConstant();
+      } else if (auto gc = conditional->asGaussian()) {
+        negLogNormConst += gc->negLogConstant();
+      } else if (auto dc = conditional->asDiscrete()) {
+        negLogNormConst += dc->choose(*discrete)->negLogConstant();
+      } else {
+        throw std::runtime_error(
+            "Unknown conditional type when computing negLogConstant");
+      }
+    } else {
+      negLogNormConst += conditional->negLogConstant();
     }
   }
-
-  return result;
+  return negLogNormConst;
 }
 
 /* ************************************************************************* */
-AlgebraicDecisionTree<Key> HybridBayesNet::evaluate(
+AlgebraicDecisionTree<Key> HybridBayesNet::discretePosterior(
     const VectorValues &continuousValues) const {
-  AlgebraicDecisionTree<Key> tree = this->logProbability(continuousValues);
-  return tree.apply([](double log) { return exp(log); });
+  AlgebraicDecisionTree<Key> errors = this->errorTree(continuousValues);
+  AlgebraicDecisionTree<Key> p =
+      errors.apply([](double error) { return exp(-error); });
+  return p / p.sum();
 }
 
 /* ************************************************************************* */

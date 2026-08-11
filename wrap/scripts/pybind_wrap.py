@@ -8,7 +8,9 @@ and invoked during the wrapping by CMake.
 # pylint: disable=import-error
 
 import argparse
+import sys
 
+from gtwrap.interface_parser import InterfaceParseError
 from gtwrap.pybind_wrapper import PybindWrapper
 
 
@@ -64,6 +66,10 @@ def main():
     arg_parser.add_argument("--is_submodule",
                             default=False,
                             action="store_true")
+    arg_parser.add_argument("--xml_source",
+                            type=str,
+                            default="",
+                            help="The path to the Doxygen-generated XML documentation")
     args = arg_parser.parse_args()
 
     top_module_namespaces = args.top_module_namespaces.split("::")
@@ -79,16 +85,23 @@ def main():
         top_module_namespaces=top_module_namespaces,
         ignore_classes=args.ignore,
         module_template=template_content,
+        xml_source=args.xml_source,
     )
 
-    if args.is_submodule:
-        wrapper.wrap_submodule(args.src)
+    try:
+        if args.is_submodule:
+            wrapper.wrap_submodule(args.src)
 
-    else:
-        # Wrap the code and get back the cpp/cc code.
-        sources = args.src.split(';')
-        wrapper.wrap(sources, args.out)
+        else:
+            # Wrap the code and get back the cpp/cc code.
+            sources = args.src.split(';')
+            wrapper.wrap(sources, args.out)
+    except InterfaceParseError as error:
+        print(error, file=sys.stderr)
+        return 1
+
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

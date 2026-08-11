@@ -18,13 +18,18 @@
  * @date    December 2021
  */
 
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/discrete/DecisionTree.h>
+#include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/discrete/DiscreteValues.h>
+#include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridGaussianConditional.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianConditional.h>
 
+#include <memory>
 #include <vector>
 
 // Include for test suite
@@ -52,8 +57,7 @@ const std::vector<GaussianConditional::shared_ptr> conditionals{
                                              commonSigma),
     GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Vector1(0.0),
                                              commonSigma)};
-const HybridGaussianConditional hybrid_conditional({Z(0)}, {X(0)}, mode,
-                                                   conditionals);
+const HybridGaussianConditional hybrid_conditional(mode, conditionals);
 }  // namespace equal_constants
 
 /* ************************************************************************* */
@@ -75,17 +79,6 @@ TEST(HybridGaussianConditional, Invariants) {
 /// Check LogProbability.
 TEST(HybridGaussianConditional, LogProbability) {
   using namespace equal_constants;
-  auto actual = hybrid_conditional.logProbability(vv);
-
-  // Check result.
-  std::vector<DiscreteKey> discrete_keys = {mode};
-  std::vector<double> leaves = {conditionals[0]->logProbability(vv),
-                                conditionals[1]->logProbability(vv)};
-  AlgebraicDecisionTree<Key> expected(discrete_keys, leaves);
-
-  EXPECT(assert_equal(expected, actual, 1e-6));
-
-  // Check for non-tree version.
   for (size_t mode : {0, 1}) {
     const HybridValues hv{vv, {{M(0), mode}}};
     EXPECT_DOUBLES_EQUAL(conditionals[mode]->logProbability(vv),
@@ -158,8 +151,7 @@ const std::vector<GaussianConditional::shared_ptr> conditionals{
                                              0.5),
     GaussianConditional::sharedMeanAndStddev(Z(0), I_1x1, X(0), Vector1(0.0),
                                              3.0)};
-const HybridGaussianConditional hybrid_conditional({Z(0)}, {X(0)}, mode,
-                                                   conditionals);
+const HybridGaussianConditional hybrid_conditional(mode, conditionals);
 }  // namespace mode_dependent_constants
 
 /* ************************************************************************* */
@@ -170,6 +162,9 @@ TEST(HybridGaussianConditional, ContinuousParents) {
   // Check that the continuous parent keys are correct:
   EXPECT(continuousParentKeys.size() == 1);
   EXPECT(continuousParentKeys[0] == X(0));
+
+  EXPECT(HybridGaussianConditional::CheckInvariants(hybrid_conditional, hv0));
+  EXPECT(HybridGaussianConditional::CheckInvariants(hybrid_conditional, hv1));
 }
 
 /* ************************************************************************* */
@@ -223,30 +218,16 @@ TEST(HybridGaussianConditional, Likelihood2) {
   // Check the detailed JacobianFactor calculation for mode==1.
   {
     // We have a JacobianFactor
-    const auto gf1 = (*likelihood)(assignment1);
+    const auto [gf1, _] = (*likelihood)(assignment1);
     const auto jf1 = std::dynamic_pointer_cast<JacobianFactor>(gf1);
     CHECK(jf1);
 
-    // It has 2 rows, not 1!
-    CHECK(jf1->rows() == 2);
-
-    // Check that the constant C1 is properly encoded in the JacobianFactor.
-    const double C1 =
-        conditionals[1]->negLogConstant() - hybrid_conditional.negLogConstant();
-    const double c1 = std::sqrt(2.0 * C1);
-    Vector expected_unwhitened(2);
-    expected_unwhitened << 4.9 - 5.0, -c1;
-    Vector actual_unwhitened = jf1->unweighted_error(vv);
-    EXPECT(assert_equal(expected_unwhitened, actual_unwhitened));
-
-    // Make sure the noise model does not touch it.
-    Vector expected_whitened(2);
-    expected_whitened << (4.9 - 5.0) / 3.0, -c1;
-    Vector actual_whitened = jf1->error_vector(vv);
-    EXPECT(assert_equal(expected_whitened, actual_whitened));
-
-    // Check that the error is equal to the conditional error:
-    EXPECT_DOUBLES_EQUAL(hybrid_conditional.error(hv1), jf1->error(hv1), 1e-8);
+    // Check that the JacobianFactor error with constants is equal to the
+    // conditional error:
+    EXPECT_DOUBLES_EQUAL(hybrid_conditional.error(hv1),
+                         jf1->error(hv1) + conditionals[1]->negLogConstant() -
+                             hybrid_conditional.negLogConstant(),
+                         1e-8);
   }
 
   // Check that the ratio of probPrime to evaluate is the same for all modes.
@@ -260,8 +241,112 @@ TEST(HybridGaussianConditional, Likelihood2) {
 }
 
 /* ************************************************************************* */
+namespace two_mode_measurement {
+// Create a two key conditional:
+const DiscreteKeys modes{{M(1), 2}, {M(2), 2}};
+const std::vector<GaussianConditional::shared_ptr> gcs = {
+    GaussianConditional::sharedMeanAndStddev(Z(0), Vector1(1), 1),
+    GaussianConditional::sharedMeanAndStddev(Z(0), Vector1(2), 2),
+    GaussianConditional::sharedMeanAndStddev(Z(0), Vector1(3), 3),
+    GaussianConditional::sharedMeanAndStddev(Z(0), Vector1(4), 4)};
+const HybridGaussianConditional::Conditionals conditionals(modes, gcs);
+const auto hgc =
+    std::make_shared<HybridGaussianConditional>(modes, conditionals);
+}  // namespace two_mode_measurement
+
+/* ************************************************************************* */
+// Test pruning a HybridGaussianConditional with two discrete keys, based on a
+// DecisionTreeFactor with 3 keys:
+TEST(HybridGaussianConditional, Prune) {
+  using two_mode_measurement::hgc;
+
+  DiscreteKeys keys = two_mode_measurement::modes;
+  keys.push_back({M(3), 2});
+  {
+    for (size_t i = 0; i < 8; i++) {
+      std::vector<double> potentials{0, 0, 0, 0, 0, 0, 0, 0};
+      potentials[i] = 1;
+      const DecisionTreeFactor decisionTreeFactor(keys, potentials);
+      // Prune the HybridGaussianConditional
+      const auto pruned =
+          hgc->prune(DiscreteConditional(keys.size(), decisionTreeFactor));
+      // Check that the pruned HybridGaussianConditional has 1 conditional
+      EXPECT_LONGS_EQUAL(1, pruned->nrComponents());
+    }
+  }
+  {
+    const std::vector<double> potentials{0, 0, 0.5, 0,  //
+                                         0, 0, 0.5, 0};
+    const DecisionTreeFactor decisionTreeFactor(keys, potentials);
+
+    const auto pruned =
+        hgc->prune(DiscreteConditional(keys.size(), decisionTreeFactor));
+
+    // Check that the pruned HybridGaussianConditional has 2 conditionals
+    EXPECT_LONGS_EQUAL(2, pruned->nrComponents());
+
+    // Check that the minimum negLogConstant is set correctly
+    EXPECT_DOUBLES_EQUAL(
+        hgc->conditionals()({{M(1), 0}, {M(2), 1}})->negLogConstant(),
+        pruned->negLogConstant(), 1e-9);
+  }
+  {
+    const std::vector<double> potentials{0.2, 0, 0.3, 0,  //
+                                         0,   0, 0.5, 0};
+    const DecisionTreeFactor decisionTreeFactor(keys, potentials);
+
+    const auto pruned =
+        hgc->prune(DiscreteConditional(keys.size(), decisionTreeFactor));
+
+    // Check that the pruned HybridGaussianConditional has 3 conditionals
+    EXPECT_LONGS_EQUAL(3, pruned->nrComponents());
+
+    // Check that the minimum negLogConstant is correct
+    EXPECT_DOUBLES_EQUAL(hgc->negLogConstant(), pruned->negLogConstant(), 1e-9);
+  }
+}
+
+/* *************************************************************************
+ * This test verifies the behavior of the restrict method in different
+ * scenarios:
+ * - When no restrictions are applied.
+ * - When one parent is restricted.
+ * - When two parents are restricted.
+ * - When the restriction results in a Gaussian conditional.
+ */
+TEST(HybridGaussianConditional, Restrict) {
+  // Create a HybridConditional with two discrete parents P(z0|m0,m1)
+  const auto hc =
+      std::make_shared<HybridConditional>(two_mode_measurement::hgc);
+
+  const auto same =
+      std::dynamic_pointer_cast<HybridConditional>(hc->restrict({}));
+  CHECK(same);
+  EXPECT(same->isHybrid());
+  EXPECT(same->asHybrid()->nrComponents() == 4);
+
+  const auto oneParent =
+      std::dynamic_pointer_cast<HybridConditional>(hc->restrict({{M(1), 0}}));
+  CHECK(oneParent);
+  EXPECT(oneParent->isHybrid());
+  EXPECT(oneParent->asHybrid()->nrComponents() == 2);
+
+  const auto oneParent2 = std::dynamic_pointer_cast<HybridConditional>(
+      hc->restrict({{M(7), 0}, {M(1), 0}}));
+  CHECK(oneParent2);
+  EXPECT(oneParent2->isHybrid());
+  EXPECT(oneParent2->asHybrid()->nrComponents() == 2);
+
+  const auto gaussian = std::dynamic_pointer_cast<HybridConditional>(
+      hc->restrict({{M(1), 0}, {M(2), 1}}));
+  CHECK(gaussian);
+  EXPECT(gaussian->asGaussian());
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
 }
-/* ************************************************************************* */
+/* *************************************************************************
+ */

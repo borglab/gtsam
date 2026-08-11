@@ -17,10 +17,12 @@
 
 #pragma once
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/VectorSpace.h>
+
 #include <iosfwd>
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
 #endif
 
@@ -77,7 +79,7 @@ public:
                                OptionalJacobian<3, 6> H1 = {},
                                OptionalJacobian<3, 3> H2 = {}) const {
     if (H1) (*H1) << -I_3x3, Z_3x3;
-    if (H2) (*H2) << I_3x3;
+    if (H2) *H2 = I_3x3;
     return measurement - biasAcc_;
   }
 
@@ -86,7 +88,7 @@ public:
                            OptionalJacobian<3, 6> H1 = {},
                            OptionalJacobian<3, 3> H2 = {}) const {
     if (H1) (*H1) << Z_3x3, -I_3x3;
-    if (H2) (*H2) << I_3x3;
+    if (H2) *H2 = I_3x3;
     return measurement - biasGyro_;
   }
 
@@ -136,13 +138,27 @@ public:
   }
 
   /// @}
+  /// @name Manifold
+  /// @{
+
+  /// The retract function
+  ConstantBias retract(const Vector6& v) const {
+    return ConstantBias(biasAcc_ + v.head<3>(), biasGyro_ + v.tail<3>());
+  }
+
+  /// The local coordinates function
+  Vector6 localCoordinates(const ConstantBias& other) const {
+    return other.vector() - vector();
+  }
+
+  /// @}
 
 private:
 
   /// @name Advanced Interface
   /// @{
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -152,9 +168,6 @@ private:
   }
 #endif
 
-
-public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
   /// @}
 
 }; // ConstantBias class
@@ -166,4 +179,3 @@ struct traits<imuBias::ConstantBias> : public internal::VectorSpace<
 };
 
 } // namespace gtsam
-

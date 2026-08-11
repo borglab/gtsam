@@ -35,7 +35,7 @@ class TestKarcherMean(GtsamTestCase):
         """
         rotations = [R, R.inverse()]
         expected = Rot3()
-        actual = gtsam.FindKarcherMean(rotations)
+        actual = gtsam.FindKarcherMeanRot3(rotations)
         self.gtsamAssertEquals(expected, actual)
 
     def test_find_karcher_mean_identity(self):
@@ -47,7 +47,7 @@ class TestKarcherMean(GtsamTestCase):
         aRb_list = [a1Rb1, a2Rb2, a3Rb3]
         aRb_expected = Rot3()
 
-        aRb = gtsam.FindKarcherMean(aRb_list)
+        aRb = gtsam.FindKarcherMeanRot3(aRb_list)
         self.gtsamAssertEquals(aRb, aRb_expected)
 
     def test_factor(self):
@@ -69,7 +69,7 @@ class TestKarcherMean(GtsamTestCase):
         expected = Rot3()
 
         result = gtsam.GaussNewtonOptimizer(graph, initial).optimize()
-        actual = gtsam.FindKarcherMean([result.atRot3(1), result.atRot3(2)])
+        actual = gtsam.FindKarcherMeanRot3([result.atRot3(1), result.atRot3(2)])
         self.gtsamAssertEquals(expected, actual)
         self.gtsamAssertEquals(R12, result.atRot3(1).between(result.atRot3(2)))
 

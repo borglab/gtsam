@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 import time
 from threading import Thread
 
@@ -89,6 +90,7 @@ def test_keyword_args_and_generalized_unpacking():
     )
 
 
+@pytest.mark.skipif("env.GRAALPY", reason="Cannot reliably trigger GC")
 def test_lambda_closure_cleanup():
     m.test_lambda_closure_cleanup()
     cstats = m.payload_cstats()
@@ -97,6 +99,7 @@ def test_lambda_closure_cleanup():
     assert cstats.move_constructions >= 1
 
 
+@pytest.mark.skipif("env.GRAALPY", reason="Cannot reliably trigger GC")
 def test_cpp_callable_cleanup():
     alive_counts = m.test_cpp_callable_cleanup()
     assert alive_counts == [0, 1, 2, 1, 2, 1, 0]
@@ -135,8 +138,14 @@ def test_cpp_function_roundtrip():
 
 
 def test_function_signatures(doc):
-    assert doc(m.test_callback3) == "test_callback3(arg0: Callable[[int], int]) -> str"
-    assert doc(m.test_callback4) == "test_callback4() -> Callable[[int], int]"
+    assert (
+        doc(m.test_callback3)
+        == "test_callback3(arg0: collections.abc.Callable[[typing.SupportsInt | typing.SupportsIndex], int]) -> str"
+    )
+    assert (
+        doc(m.test_callback4)
+        == "test_callback4() -> collections.abc.Callable[[typing.SupportsInt | typing.SupportsIndex], int]"
+    )
 
 
 def test_movable_object():
@@ -153,6 +162,7 @@ def test_python_builtins():
     assert m.test_sum_builtin(sum, []) == 0
 
 
+@pytest.mark.skipif(sys.platform.startswith("emscripten"), reason="Requires threads")
 def test_async_callbacks():
     # serves as state for async callback
     class Item:
@@ -169,13 +179,15 @@ def test_async_callbacks():
     # do some work async
     work = [1, 2, 3, 4]
     m.test_async_callback(gen_f(), work)
-    # wait until work is done
-    from time import sleep
-
-    sleep(0.5)
+    # Wait for all detached worker threads to finish.
+    deadline = time.monotonic() + 5.0
+    while len(res) < len(work) and time.monotonic() < deadline:
+        time.sleep(0.01)
+    assert len(res) == len(work), f"Timed out waiting for callbacks: res={res!r}"
     assert sum(res) == sum(x + 3 for x in work)
 
 
+@pytest.mark.skipif(sys.platform.startswith("emscripten"), reason="Requires threads")
 def test_async_async_callbacks():
     t = Thread(target=test_async_callbacks)
     t.start()
@@ -212,9 +224,6 @@ def test_custom_func():
     assert m.roundtrip(m.custom_function)(4) == 36
 
 
-@pytest.mark.skipif(
-    m.custom_function2 is None, reason="Current PYBIND11_INTERNALS_VERSION too low"
-)
 def test_custom_func2():
     assert m.custom_function2(3) == 27
     assert m.roundtrip(m.custom_function2)(3) == 27
@@ -223,5 +232,17 @@ def test_custom_func2():
 def test_callback_docstring():
     assert (
         m.test_tuple_unpacking.__doc__.strip()
-        == "test_tuple_unpacking(arg0: Callable) -> object"
+        == "test_tuple_unpacking(arg0: collections.abc.Callable) -> object"
     )
+
+
+def test_boost_histogram_apply_custom_transform():
+    ctd = m.boost_histogram_custom_transform_double
+    cti = m.boost_histogram_custom_transform_int
+    apply = m.boost_histogram_apply_custom_transform
+    assert apply(ctd, 5) == 15
+    assert apply(cti, 0) == -200
+    assert apply(None, 0) == -100
+    assert apply(lambda value: value, 9) == -200
+    assert apply({}, 0) == -100
+    assert apply("", 0) == -100

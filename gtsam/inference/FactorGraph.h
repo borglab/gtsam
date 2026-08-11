@@ -29,7 +29,7 @@
 
 #include <Eigen/Core>  // for Eigen::aligned_allocator
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/vector.hpp>
 #endif
@@ -420,7 +420,7 @@ class FactorGraph {
   inline bool exists(size_t idx) const { return idx < size() && at(idx); }
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>

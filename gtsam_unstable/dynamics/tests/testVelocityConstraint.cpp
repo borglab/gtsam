@@ -3,8 +3,12 @@
  * @author Alex Cunningham
  */
 
+#include <gtsam/config.h>
 #include <CppUnitLite/TestHarness.h>
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam_unstable/dynamics/VelocityConstraint.h>
 
 using namespace gtsam;
@@ -54,6 +58,9 @@ TEST( testEulerVelocityConstraint, euler_end ) {
   EXPECT(assert_equal(Z_3x1, constraint.evaluateError(pose1, pose2), tol));
   EXPECT(assert_equal(Vector::Unit(3,0)*0.5, constraint.evaluateError(origin, pose1a), tol));
 }
+
+/* ************************************************************************* */
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

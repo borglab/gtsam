@@ -37,7 +37,7 @@ class GTSAM_EXPORT HybridNonlinearISAM {
   /// The discrete assignment
   DiscreteValues assignment_;
 
-  /** The original factors, used when relinearizing */
+  /** The original factors, used when re-linearizing */
   HybridNonlinearFactorGraph factors_;
 
   /** The reordering interval and counter */
@@ -52,8 +52,8 @@ class GTSAM_EXPORT HybridNonlinearISAM {
   /// @{
 
   /**
-   * Periodically reorder and relinearize
-   * @param reorderInterval is the number of updates between reorderings,
+   * Periodically reorder and re-linearize
+   * @param reorderInterval is the number of updates between re-orderings,
    *   0 never reorders (and is dangerous for memory consumption)
    *  1 (default) reorders every time, in worse case is batch every update
    *  typical values are 50 or 100
@@ -114,18 +114,14 @@ class GTSAM_EXPORT HybridNonlinearISAM {
   void saveGraph(const std::string& s,
                  const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
-  /// @}
-  /// @name Advanced Interface
-  /// @{
-
   /** Add new factors along with their initial linearization points */
   void update(const HybridNonlinearFactorGraph& newFactors,
               const Values& initialValues,
               const std::optional<size_t>& maxNrLeaves = {},
               const std::optional<Ordering>& ordering = {});
 
-  /** Relinearization and reordering of variables */
-  void reorder_relinearize();
+  /** Re-linearization and reordering of variables */
+  void reorderRelinearize();
 
   /// @}
 };

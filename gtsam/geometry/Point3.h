@@ -26,7 +26,7 @@
 #include <gtsam/base/Vector.h>
 #include <gtsam/dllexport.h>
 #include <gtsam/base/VectorSerialization.h>
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
 #endif
 #include <numeric>
@@ -35,8 +35,8 @@ namespace gtsam {
 
 /// As of GTSAM 4, in order to make GTSAM more lean,
 /// it is now possible to just typedef Point3 to Vector3
-typedef Vector3 Point3;
-typedef std::vector<Point3, Eigen::aligned_allocator<Point3> > Point3Vector;
+using Point3 = Vector3;
+using Point3Vector = std::vector<Point3, Eigen::aligned_allocator<Point3>>;
 
 // Convenience typedef
 using Point3Pair = std::pair<Point3, Point3>;
@@ -55,10 +55,15 @@ GTSAM_EXPORT double norm3(const Point3& p, OptionalJacobian<1, 3> H = {});
 /// normalize, with optional Jacobian
 GTSAM_EXPORT Point3 normalize(const Point3& p, OptionalJacobian<3, 3> H = {});
 
-/// cross product @return this x q
+/// cross product @return p x q
 GTSAM_EXPORT Point3 cross(const Point3& p, const Point3& q,
                           OptionalJacobian<3, 3> H_p = {},
                           OptionalJacobian<3, 3> H_q = {});
+
+/// double cross product @return p x (p x q)
+GTSAM_EXPORT Point3 doubleCross(const Point3& p, const Point3& q,
+                                OptionalJacobian<3, 3> H1 = {},
+                                OptionalJacobian<3, 3> H2 = {});
 
 /// dot product
 GTSAM_EXPORT double dot(const Point3& p, const Point3& q,

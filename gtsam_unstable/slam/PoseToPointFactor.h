@@ -12,6 +12,7 @@
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <ostream>
 
 namespace gtsam {
@@ -92,7 +93,7 @@ class PoseToPointFactor : public NoiseModelFactorN<POSE, POINT> {
   const POINT& measured() const { return measured_; }
 
  private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>

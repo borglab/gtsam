@@ -52,25 +52,29 @@ TEST(ConstantVelocityFactor, VelocityFactor) {
 
     // positions are the same, secondary state has velocity 1.0 in z,
     const auto state0_err_origin = factor.evaluateError(origin, state0);
-    EXPECT(assert_equal((Vector9() << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0).finished(), state0_err_origin, tol));
+    EXPECT(assert_equal(Vector9{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0},
+                        state0_err_origin, tol));
 
     // same velocities, different position
     // second state agrees with initial state + velocity * dt
     const auto state1_err_state0 = factor.evaluateError(state0, state1);
-    EXPECT(assert_equal((Vector9() << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0).finished(), state1_err_state0, tol));
+    EXPECT(assert_equal(Vector9{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+                        state1_err_state0, tol));
 
     // same velocities, same position, different rotations
     // second state agrees with initial state + velocity * dt
     // as we assume that omega is 0.0 this is the same as the above case
     //  TODO: this should respect omega and actually fail in this case
     const auto state3_err_state2 = factor.evaluateError(state0, state1);
-    EXPECT(assert_equal((Vector9() << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0).finished(), state3_err_state2, tol));
+    EXPECT(assert_equal(Vector9{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+                        state3_err_state2, tol));
 
     // both bodies have the same velocity,
     // but state2.pose() does not agree with state0.update()
     // error comes from this position difference
     const auto state2_err_state0 = factor.evaluateError(state0, state2);
-    EXPECT(assert_equal((Vector9() << 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0).finished(), state2_err_state0, tol));
+    EXPECT(assert_equal(Vector9{0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0},
+                        state2_err_state0, tol));
 }
 
 /* ************************************************************************* */

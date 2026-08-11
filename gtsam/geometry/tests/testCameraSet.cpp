@@ -19,7 +19,6 @@
 #include <gtsam/geometry/CameraSet.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
@@ -72,10 +71,9 @@ TEST(CameraSet, Pinhole) {
   ZZ measured;
   measured.push_back(Point2(1, 2));
   measured.push_back(Point2(3, 4));
-  Vector4 expectedV;
+  Vector4 expectedV{-1, -2, -3, -4};
 
   // reprojectionError
-  expectedV << -1, -2, -3, -4;
   Vector actualV = set.reprojectionError(p, measured);
   EXPECT(assert_equal(expectedV, actualV));
 
@@ -251,4 +249,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

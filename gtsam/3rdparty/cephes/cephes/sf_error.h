@@ -26,10 +26,10 @@ typedef enum {
 } sf_action_t;
 
 extern const char *sf_error_messages[];
-void sf_error(const char *func_name, sf_error_t code, const char *fmt, ...);
-void sf_error_check_fpe(const char *func_name);
-void sf_error_set_action(sf_error_t code, sf_action_t action);
-sf_action_t sf_error_get_action(sf_error_t code);
+void gtsam_cephes_sf_error(const char *func_name, sf_error_t code, const char *fmt, ...);
+void gtsam_cephes_sf_error_check_fpe(const char *func_name);
+void gtsam_cephes_sf_error_set_action(sf_error_t code, sf_action_t action);
+sf_action_t gtsam_cephes_sf_error_get_action(sf_error_t code);
 
 #ifdef __cplusplus
 }

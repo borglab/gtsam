@@ -23,7 +23,6 @@
 #include <gtsam/hybrid/HybridNonlinearFactor.h>
 #include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-
 namespace gtsam {
 
 /* ************************************************************************* */
@@ -179,4 +178,80 @@ HybridGaussianFactorGraph::shared_ptr HybridNonlinearFactorGraph::linearize(
   return linearFG;
 }
 
+/* ************************************************************************* */
+AlgebraicDecisionTree<Key> HybridNonlinearFactorGraph::errorTree(
+    const Values& values) const {
+  AlgebraicDecisionTree<Key> result(0.0);
+
+  // Iterate over each factor.
+  for (auto& factor : factors_) {
+    if (auto hnf = std::dynamic_pointer_cast<HybridNonlinearFactor>(factor)) {
+      // Compute factor error and add it.
+      result = result + hnf->errorTree(values);
+
+    } else if (auto nf = std::dynamic_pointer_cast<NonlinearFactor>(factor)) {
+      // If continuous only, get the (double) error
+      // and add it to every leaf of the result
+      result = result + nf->error(values);
+
+    } else if (auto df = std::dynamic_pointer_cast<DiscreteFactor>(factor)) {
+      // If discrete, just add its errorTree as well
+      result = result + df->errorTree();
+
+    } else {
+      throw std::runtime_error(
+          "HybridNonlinearFactorGraph::errorTree(Values) not implemented for "
+          "factor type " +
+          demangle(typeid(factor).name()) + ".");
+    }
+  }
+
+  return result;
+}
+
+/* ************************************************************************ */
+AlgebraicDecisionTree<Key> HybridNonlinearFactorGraph::discretePosterior(
+    const Values& continuousValues) const {
+  AlgebraicDecisionTree<Key> errors = this->errorTree(continuousValues);
+  AlgebraicDecisionTree<Key> p = errors.apply([](double error) {
+    // NOTE: The 0.5 term is handled by each factor
+    return exp(-error);
+  });
+  return p / p.sum();
+}
+
+/* ************************************************************************ */
+HybridNonlinearFactorGraph HybridNonlinearFactorGraph::restrict(
+    const DiscreteValues& discreteValues) const {
+  using std::dynamic_pointer_cast;
+
+  HybridNonlinearFactorGraph result;
+  result.reserve(size());
+  for (auto& f : factors_) {
+    // First check if it is a valid factor
+    if (!f) {
+      continue;
+    }
+    // Check if it is a hybrid factor
+    if (auto hf = dynamic_pointer_cast<HybridFactor>(f)) {
+      result.push_back(hf->restrict(discreteValues));
+    } else if (auto df = dynamic_pointer_cast<DiscreteFactor>(f)) {
+      auto restricted_df = df->restrict(discreteValues);
+      // In the case where all the discrete values in the factor
+      // have been selected, we get a factor without any keys,
+      // and default values of 0.5.
+      // Since this factor no longer adds any information, we ignore it to make
+      // inference faster.
+      if (restricted_df->discreteKeys().size() > 0) {
+        result.push_back(restricted_df);
+      }
+    } else {
+      result.push_back(f);  // Everything else is just added as is
+    }
+  }
+
+  return result;
+}
+
+/* ************************************************************************ */
 }  // namespace gtsam

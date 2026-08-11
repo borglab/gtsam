@@ -20,11 +20,15 @@
 #include <gtsam/base/treeTraversal-inst.h>
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
+#include <gtsam/discrete/TableDistribution.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
+#include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/inference/BayesTree-inst.h>
 #include <gtsam/inference/BayesTreeCliqueBase-inst.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
+
+#include <memory>
 
 namespace gtsam {
 
@@ -39,7 +43,23 @@ bool HybridBayesTree::equals(const This& other, double tol) const {
 }
 
 /* ************************************************************************* */
-HybridValues HybridBayesTree::optimize() const {
+DiscreteValues HybridBayesTree::discreteMaxProduct(
+    const DiscreteFactorGraph& dfg) const {
+  DiscreteFactor::shared_ptr product = dfg.scaledProduct();
+
+  // Check type of product, and get as TableFactor for efficiency.
+  TableFactor p;
+  if (auto tf = std::dynamic_pointer_cast<TableFactor>(product)) {
+    p = *tf;
+  } else {
+    p = TableFactor(product->toDecisionTreeFactor());
+  }
+  DiscreteValues assignment = TableDistribution(p).argmax();
+  return assignment;
+}
+
+/* ************************************************************************* */
+DiscreteValues HybridBayesTree::mpe() const {
   DiscreteFactorGraph discrete_fg;
   DiscreteValues mpe;
 
@@ -49,13 +69,19 @@ HybridValues HybridBayesTree::optimize() const {
 
   //  The root should be discrete only, we compute the MPE
   if (root_conditional->isDiscrete()) {
-    discrete_fg.push_back(root_conditional->asDiscrete());
-    mpe = discrete_fg.optimize();
+    auto discrete = root_conditional->asDiscrete<TableDistribution>();
+    discrete_fg.push_back(discrete);
+    mpe = discreteMaxProduct(discrete_fg);
   } else {
-    throw std::runtime_error(
-        "HybridBayesTree root is not discrete-only. Please check elimination "
-        "ordering or use continuous factor graph.");
+    mpe = DiscreteValues();
   }
+
+  return mpe;
+}
+
+/* ************************************************************************* */
+HybridValues HybridBayesTree::optimize() const {
+  DiscreteValues mpe = this->mpe();
 
   VectorValues values = optimize(mpe);
   return HybridValues(values, mpe);
@@ -176,16 +202,22 @@ VectorValues HybridBayesTree::optimize(const DiscreteValues& assignment) const {
 
 /* ************************************************************************* */
 void HybridBayesTree::prune(const size_t maxNrLeaves) {
-  auto discreteProbs = this->roots_.at(0)->conditional()->asDiscrete();
+  if (!this->roots_.at(0)->conditional()->asDiscrete()) {
+    // Root of the BayesTree is not a discrete clique, so we do nothing.
+    return;
+  }
 
-  DecisionTreeFactor prunedDiscreteProbs = discreteProbs->prune(maxNrLeaves);
-  discreteProbs->root_ = prunedDiscreteProbs.root_;
+  auto prunedDiscreteProbs =
+      this->roots_.at(0)->conditional()->asDiscrete<TableDistribution>();
+
+  // Imperative pruning
+  prunedDiscreteProbs->prune(maxNrLeaves);
 
   /// Helper struct for pruning the hybrid bayes tree.
   struct HybridPrunerData {
     /// The discrete decision tree after pruning.
-    DecisionTreeFactor prunedDiscreteProbs;
-    HybridPrunerData(const DecisionTreeFactor& prunedDiscreteProbs,
+    DiscreteConditional::shared_ptr prunedDiscreteProbs;
+    HybridPrunerData(const DiscreteConditional::shared_ptr& prunedDiscreteProbs,
                      const HybridBayesTree::sharedNode& parentClique)
         : prunedDiscreteProbs(prunedDiscreteProbs) {}
 
@@ -207,7 +239,11 @@ void HybridBayesTree::prune(const size_t maxNrLeaves) {
       if (conditional->isHybrid()) {
         auto hybridGaussianCond = conditional->asHybrid();
 
-        hybridGaussianCond->prune(parentData.prunedDiscreteProbs);
+        if (!hybridGaussianCond->pruned()) {
+          // Imperative
+          clique->conditional() = std::make_shared<HybridConditional>(
+              hybridGaussianCond->prune(*parentData.prunedDiscreteProbs));
+        }
       }
       return parentData;
     }

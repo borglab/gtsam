@@ -78,6 +78,11 @@ public:
   Vector3  deltaPij() const override { return deltaXij_.position(); }
   Vector3  deltaVij() const override { return deltaXij_.velocity(); }
 
+  /// Return the preintegrated measurements as NavState tangent coordinates.
+  Vector9 preintegrated() const {
+    return NavState().localCoordinates(deltaXij_);
+  }
+
   Matrix3  delRdelBiasOmega() const { return delRdelBiasOmega_; }
   Matrix3  delPdelBiasAcc() const { return delPdelBiasAcc_; }
   Matrix3  delPdelBiasOmega() const { return delPdelBiasOmega_; }
@@ -113,7 +118,7 @@ public:
   /// @}
 
 private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>

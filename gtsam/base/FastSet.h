@@ -18,7 +18,9 @@
 
 #pragma once
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#include <gtsam/config.h>
+
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/version.hpp>
 #if BOOST_VERSION >= 107400
 #include <boost/serialization/library_version_type.hpp>
@@ -51,8 +53,6 @@ template<typename VALUE>
 class FastSet: public std::set<VALUE, std::less<VALUE>,
     typename internal::FastDefaultAllocator<VALUE>::type> {
 
-  GTSAM_CONCEPT_ASSERT(IsTestable<VALUE>);
-
 public:
 
   typedef std::set<VALUE, std::less<VALUE>,
@@ -77,6 +77,8 @@ public:
   FastSet(const Base& x) :
   Base(x) {
   }
+
+  FastSet& operator=(const FastSet& other) = default;
 
 #ifdef GTSAM_ALLOCATOR_BOOSTPOOL
   /** Copy constructor from a standard STL container */
@@ -123,7 +125,7 @@ public:
   }
 
 private:
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>

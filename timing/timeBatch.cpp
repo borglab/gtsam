@@ -29,18 +29,16 @@ int main(int argc, char *argv[]) {
     cout << "Loading data..." << endl;
 
     string datasetFile = findExampleDataFile("w10000");
-    std::pair<NonlinearFactorGraph::shared_ptr, Values::shared_ptr> data =
-      load2D(datasetFile);
-
-    NonlinearFactorGraph graph = *data.first;
-    Values initial = *data.second;
+    auto [graph, initial] = load2D(datasetFile);
+    graph->addPrior(0, initial->at<Pose2>(0), noiseModel::Unit::Create(3));
 
     cout << "Optimizing..." << endl;
 
     gttic_(Create_optimizer);
-    LevenbergMarquardtOptimizer optimizer(graph, initial);
+    LevenbergMarquardtOptimizer optimizer(*graph, *initial);
     gttoc_(Create_optimizer);
     tictoc_print_();
+    tictoc_reset_();
     double lastError = optimizer.error();
     do {
       gttic_(Iterate_optimizer);
@@ -53,19 +51,19 @@ int main(int argc, char *argv[]) {
     } while(!checkConvergence(optimizer.params().relativeErrorTol,
       optimizer.params().absoluteErrorTol, optimizer.params().errorTol,
       lastError, optimizer.error(), optimizer.params().verbosity));
+    tictoc_reset_();
 
     // Compute marginals
-    Marginals marginals(graph, optimizer.values());
-    int i=0;
-    for(Key key: initial.keys()) {
+    gttic_(ConstructMarginals);
+    Marginals marginals(*graph, optimizer.values());
+    gttoc_(ConstructMarginals);
+    for(Key key: initial->keys()) {
       gttic_(marginalInformation);
       Matrix info = marginals.marginalInformation(key);
       gttoc_(marginalInformation);
       tictoc_finishedIteration_();
-      if(i % 1000 == 0)
-        tictoc_print_();
-      ++i;
     }
+    tictoc_print_();
 
   } catch(std::exception& e) {
     cout << e.what() << endl;

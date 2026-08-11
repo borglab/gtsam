@@ -24,7 +24,7 @@
 #include <gtsam/global_includes.h>
 #include <gtsam/inference/VariableSlots.h>
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/version.hpp>
 #include <boost/serialization/split_member.hpp>
 #endif
@@ -117,6 +117,8 @@ namespace gtsam {
     /** Conversion from HessianFactor (does Cholesky to obtain Jacobian matrix) */
     explicit JacobianFactor(const HessianFactor& hf);
 
+    JacobianFactor& operator=(const JacobianFactor& jf) = default;
+
     /** default constructor for I/O */
     JacobianFactor();
 
@@ -127,15 +129,45 @@ namespace gtsam {
     JacobianFactor(Key i1, const Matrix& A1,
         const Vector& b, const SharedDiagonal& model = SharedDiagonal());
 
+    /** Construct unary factor from fixed-size Eigen matrices. */
+    template <int M, int N1,
+              typename = std::enable_if_t<(M != Eigen::Dynamic &&
+                                           N1 != Eigen::Dynamic)>>
+    JacobianFactor(Key i1, const Eigen::Matrix<double, M, N1>& A1,
+        const Eigen::Matrix<double, M, 1>& b,
+        const SharedDiagonal& model = SharedDiagonal());
+
     /** Construct binary factor */
     JacobianFactor(Key i1, const Matrix& A1,
         Key i2, const Matrix& A2,
         const Vector& b, const SharedDiagonal& model = SharedDiagonal());
 
+    /** Construct binary factor from fixed-size Eigen matrices. */
+    template <int M, int N1, int N2,
+              typename = std::enable_if_t<(M != Eigen::Dynamic &&
+                                           N1 != Eigen::Dynamic &&
+                                           N2 != Eigen::Dynamic)>>
+    JacobianFactor(Key i1, const Eigen::Matrix<double, M, N1>& A1,
+        Key i2, const Eigen::Matrix<double, M, N2>& A2,
+        const Eigen::Matrix<double, M, 1>& b,
+        const SharedDiagonal& model = SharedDiagonal());
+
     /** Construct ternary factor */
     JacobianFactor(Key i1, const Matrix& A1, Key i2,
         const Matrix& A2, Key i3, const Matrix& A3,
         const Vector& b, const SharedDiagonal& model = SharedDiagonal());
+
+    /** Construct ternary factor from fixed-size Eigen matrices. */
+    template <int M, int N1, int N2, int N3,
+              typename = std::enable_if_t<(M != Eigen::Dynamic &&
+                                           N1 != Eigen::Dynamic &&
+                                           N2 != Eigen::Dynamic &&
+                                           N3 != Eigen::Dynamic)>>
+    JacobianFactor(Key i1, const Eigen::Matrix<double, M, N1>& A1,
+        Key i2, const Eigen::Matrix<double, M, N2>& A2,
+        Key i3, const Eigen::Matrix<double, M, N3>& A3,
+        const Eigen::Matrix<double, M, 1>& b,
+        const SharedDiagonal& model = SharedDiagonal());
 
     /** Construct an n-ary factor
      * @tparam TERMS A container whose value type is std::pair<Key, Matrix>, specifying the
@@ -143,13 +175,17 @@ namespace gtsam {
     template<typename TERMS>
     JacobianFactor(const TERMS& terms, const Vector& b, const SharedDiagonal& model = SharedDiagonal());
 
-    /** Constructor with arbitrary number keys, and where the augmented matrix is given all together
-     *  instead of in block terms.  Note that only the active view of the provided augmented matrix
-     *  is used, and that the matrix data is copied into a newly-allocated matrix in the constructed
-     *  factor. */
-    template<typename KEYS>
-    JacobianFactor(
-      const KEYS& keys, const VerticalBlockMatrix& augmentedMatrix, const SharedDiagonal& sigmas = SharedDiagonal());
+    /** Constructor with arbitrary number keys, and where the augmented matrix
+     * is given all together instead of in block terms.
+     */
+    template <typename KEYS>
+    JacobianFactor(const KEYS& keys, const VerticalBlockMatrix& augmentedMatrix,
+                   const SharedDiagonal& sigmas = SharedDiagonal());
+
+    /** Construct with an rvalue VerticalBlockMatrix, to allow std::move. */
+    template <typename KEYS>
+    JacobianFactor(const KEYS& keys, VerticalBlockMatrix&& augmentedMatrix,
+                   const SharedDiagonal& model);
 
     /**
      * Build a dense joint factor from all the factors in a factor graph.  If a VariableSlots
@@ -192,6 +228,9 @@ namespace gtsam {
           std::make_shared<JacobianFactor>(*this));
     }
 
+    /// Identify JacobianFactor-based types.
+    bool isJacobian() const override { return true; }
+
     // Implementing Testable interface
     void print(const std::string& s = "",
       const KeyFormatter& formatter = DefaultKeyFormatter) const override;
@@ -203,8 +242,15 @@ namespace gtsam {
     /// HybridValues simply extracts the \class VectorValues and calls error.
     using GaussianFactor::error;
 
-    //// 0.5*(A*x-b)'*D*(A*x-b).
+    /// 0.5*(A*x-b)'*D*(A*x-b).
     double error(const VectorValues& c) const override; 
+
+    /**
+     * Compute the change in error from zero to c, optionally returning
+     * the old and new errors.
+     */
+    double deltaError(const VectorValues& c, double* oldError = nullptr,
+                      double* newError = nullptr) const override;
 
     /** Return the augmented information matrix represented by this GaussianFactor.
      * The augmented information matrix contains the information matrix with an
@@ -325,6 +371,17 @@ namespace gtsam {
      */
     void updateHessian(const KeyVector& keys, SymmetricBlockMatrix* info) const override;
 
+    /** Update an information matrix by adding the information corresponding to this factor
+     * (used internally during elimination), restricted to a range of block columns,
+     * useful for parallelization.
+     * @param keys The ordered vector of keys for the information matrix to be updated
+     * @param info The information matrix to be updated
+     * @param beginCol First block column index (inclusive) in the range to update
+     * @param endCol Last block column index (exclusive) in the range to update
+     */
+    void updateHessian(const KeyVector& keys, SymmetricBlockMatrix* info,
+                       DenseIndex beginCol, DenseIndex endCol) const override;
+
     /** Return A*x */
     Vector operator*(const VectorValues& x) const;
 
@@ -396,7 +453,11 @@ namespace gtsam {
     template<typename TERMS>
     void fillTerms(const TERMS& terms, const Vector& b, const SharedDiagonal& noiseModel);
 
-  private:
+    /// Common code between VerticalBlockMatrix constructors
+    void checkAb(const SharedDiagonal& model,
+                 const VerticalBlockMatrix& augmentedMatrix) const;
+
+   private:
 
     /**
      * Helper function for public constructors:
@@ -421,7 +482,7 @@ namespace gtsam {
     // be very selective on who can access these private methods:
     template<typename T> friend class ExpressionFactor;
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -468,10 +529,8 @@ struct traits<JacobianFactor> : public Testable<JacobianFactor> {
 
 } // \ namespace gtsam
 
-#ifdef GTSAM_ENABLE_BOOST_SERIALIZATION
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 BOOST_CLASS_VERSION(gtsam::JacobianFactor, 1)
 #endif
 
 #include <gtsam/linear/JacobianFactor-inl.h>
-
-

@@ -17,18 +17,23 @@
 
 #pragma once
 
+#include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/discrete/DiscreteKey.h>
-#include <gtsam/inference/Ordering.h>
+#include <gtsam/discrete/Ring.h>
 
 #include <Eigen/Sparse>
-#include <algorithm>
 #include <map>
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
+
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+#include <gtsam/base/MatrixSerialization.h>
+
+#include <boost/serialization/nvp.hpp>
+#endif
 
 namespace gtsam {
 
@@ -79,40 +84,24 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
     return DiscreteKey(keys_[i], cardinalities_.at(keys_[i]));
   }
 
-  /// Convert probability table given as doubles to SparseVector.
-  /// Example) {0, 1, 1, 0, 0, 1, 0} -> values: {1, 1, 1}, indices: {1, 2, 5}
-  static Eigen::SparseVector<double> Convert(const std::vector<double>& table);
+ public:
+  /**
+   * Convert probability table given as doubles to SparseVector.
+   * Example: {0, 1, 1, 0, 0, 1, 0} -> values: {1, 1, 1}, indices: {1, 2, 5}
+   */
+  static Eigen::SparseVector<double> Convert(const DiscreteKeys& keys,
+                                             const std::vector<double>& table);
 
   /// Convert probability table given as string to SparseVector.
-  static Eigen::SparseVector<double> Convert(const std::string& table);
+  static Eigen::SparseVector<double> Convert(const DiscreteKeys& keys,
+                                             const std::string& table);
 
- public:
   // typedefs needed to play nice with gtsam
   typedef TableFactor This;
   typedef DiscreteFactor Base;  ///< Typedef to base class
   typedef std::shared_ptr<TableFactor> shared_ptr;
   typedef Eigen::SparseVector<double>::InnerIterator SparseIt;
   typedef std::vector<std::pair<DiscreteValues, double>> AssignValList;
-  using Unary = std::function<double(const double&)>;
-  using UnaryAssignment =
-      std::function<double(const Assignment<Key>&, const double&)>;
-  using Binary = std::function<double(const double, const double)>;
-
- public:
-  /** The Real ring with addition and multiplication */
-  struct Ring {
-    static inline double zero() { return 0.0; }
-    static inline double one() { return 1.0; }
-    static inline double add(const double& a, const double& b) { return a + b; }
-    static inline double max(const double& a, const double& b) {
-      return std::max(a, b);
-    }
-    static inline double mul(const double& a, const double& b) { return a * b; }
-    static inline double div(const double& a, const double& b) {
-      return (a == 0 || b == 0) ? 0 : (a / b);
-    }
-    static inline double id(const double& x) { return x; }
-  };
 
   /// @name Standard Constructors
   /// @{
@@ -129,11 +118,11 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
 
   /** Constructor from doubles */
   TableFactor(const DiscreteKeys& keys, const std::vector<double>& table)
-      : TableFactor(keys, Convert(table)) {}
+      : TableFactor(keys, Convert(keys, table)) {}
 
   /** Constructor from string */
   TableFactor(const DiscreteKeys& keys, const std::string& table)
-      : TableFactor(keys, Convert(table)) {}
+      : TableFactor(keys, Convert(keys, table)) {}
 
   /// Single-key specialization
   template <class SOURCE>
@@ -146,6 +135,7 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
 
   /// Constructor from DecisionTreeFactor
   TableFactor(const DiscreteKeys& keys, const DecisionTreeFactor& dtf);
+  TableFactor(const DecisionTreeFactor& dtf);
 
   /// Constructor from DecisionTree<Key, double>/AlgebraicDecisionTree
   TableFactor(const DiscreteKeys& keys, const DecisionTree<Key, double>& dtree);
@@ -169,17 +159,20 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   // /// @name Standard Interface
   // /// @{
 
-  /// Calculate probability for given values `x`,
-  /// is just look up in TableFactor.
-  double evaluate(const DiscreteValues& values) const {
-    return operator()(values);
-  }
+  /// Getter for the underlying sparse vector
+  Eigen::SparseVector<double> sparseTable() const { return sparse_table_; }
 
-  /// Evaluate probability distribution, sugar.
-  double operator()(const DiscreteValues& values) const override;
+  /// Evaluate probability distribution, is just look up in TableFactor.
+  double evaluate(const Assignment<Key>& values) const override;
 
   /// Calculate error for DiscreteValues `x`, is -log(probability).
-  double error(const DiscreteValues& values) const;
+  double error(const DiscreteValues& values) const override;
+
+  /// multiply with a scalar
+  DiscreteFactor::shared_ptr operator*(double s) const override {
+    return std::make_shared<TableFactor>(
+        apply([s](const double& a) { return Ring::mul(a, s); }));
+  }
 
   /// multiply two TableFactors
   TableFactor operator*(const TableFactor& f) const {
@@ -189,6 +182,23 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   /// multiply with DecisionTreeFactor
   DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override;
 
+  /**
+   * @brief Multiply factors, DiscreteFactor::shared_ptr edition.
+   *
+   * This method accepts `DiscreteFactor::shared_ptr` and uses dynamic
+   * dispatch and specializations to perform the most efficient
+   * multiplication.
+   *
+   * While converting a DecisionTreeFactor to a TableFactor is efficient, the
+   * reverse is not.
+   * Hence we specialize the code to return a TableFactor always.
+   *
+   * @param f The factor to multiply with.
+   * @return DiscreteFactor::shared_ptr
+   */
+  virtual DiscreteFactor::shared_ptr multiply(
+      const DiscreteFactor::shared_ptr& f) const override;
+
   static double safe_div(const double& a, const double& b);
 
   /// divide by factor f (safely)
@@ -196,32 +206,31 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
     return apply(f, safe_div);
   }
 
+  /// divide by DiscreteFactor::shared_ptr f (safely)
+  DiscreteFactor::shared_ptr operator/(
+      const DiscreteFactor::shared_ptr& f) const override;
+
   /// Convert into a decisiontree
   DecisionTreeFactor toDecisionTreeFactor() const override;
 
   /// Create a TableFactor that is a subset of this TableFactor
-  TableFactor choose(const DiscreteValues assignments,
+  TableFactor choose(const DiscreteValues parentAssignments,
                      DiscreteKeys parent_keys) const;
 
   /// Create new factor by summing all values with the same separator values
-  shared_ptr sum(size_t nrFrontals) const {
-    return combine(nrFrontals, Ring::add);
-  }
+  DiscreteFactor::shared_ptr sum(size_t nrFrontals) const override;
 
   /// Create new factor by summing all values with the same separator values
-  shared_ptr sum(const Ordering& keys) const {
-    return combine(keys, Ring::add);
-  }
+  DiscreteFactor::shared_ptr sum(const Ordering& keys) const override;
+
+  /// Find the maximum value in the factor.
+  double max() const override;
 
   /// Create new factor by maximizing over all values with the same separator.
-  shared_ptr max(size_t nrFrontals) const {
-    return combine(nrFrontals, Ring::max);
-  }
+  DiscreteFactor::shared_ptr max(size_t nrFrontals) const override;
 
   /// Create new factor by maximizing over all values with the same separator.
-  shared_ptr max(const Ordering& keys) const {
-    return combine(keys, Ring::max);
-  }
+  DiscreteFactor::shared_ptr max(const Ordering& keys) const override;
 
   /// @}
   /// @name Advanced Interface
@@ -324,6 +333,16 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
    */
   TableFactor prune(size_t maxNrAssignments) const;
 
+  /**
+   * Get the number of non-zero values contained in this factor.
+   * It could be much smaller than `prod_{key}(cardinality(key))`.
+   */
+  uint64_t nrValues() const override { return sparse_table_.nonZeros(); }
+
+  /// Restrict the factor to the given assignment.
+  DiscreteFactor::shared_ptr restrict(
+      const DiscreteValues& assignment) const override;
+
   /// @}
   /// @name Wrapper support
   /// @{
@@ -358,10 +377,20 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
    */
   double error(const HybridValues& values) const override;
 
-  /// Compute error for each assignment and return as a tree
-  AlgebraicDecisionTree<Key> errorTree() const override;
-
   /// @}
+
+ private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    ar& BOOST_SERIALIZATION_NVP(sparse_table_);
+    ar& BOOST_SERIALIZATION_NVP(denominators_);
+    ar& BOOST_SERIALIZATION_NVP(sorted_dkeys_);
+  }
+#endif
 };
 
 // traits

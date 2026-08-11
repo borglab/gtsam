@@ -32,7 +32,6 @@ using namespace std;
 using namespace gtsam;
 using namespace gtsam::serializationTestHelpers;
 
-
 /* ************************************************************************* */
 // Create GUIDs for Noisemodels
 BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Diagonal, "gtsam_noiseModel_Diagonal")
@@ -153,9 +152,20 @@ TEST(Serialization, NoiseModelFactor1_backwards_compatibility) {
 
   // Deserialize XML
   PriorFactor<Pose3> factor_deserialized_xml = PriorFactor<Pose3>();
+  #if !defined(__QNX__)
   deserializeFromXMLFile(GTSAM_SOURCE_TREE_DATASET_DIR
                          "/../../gtsam/nonlinear/tests/priorFactor.xml",
                          factor_deserialized_xml);
+  #else
+  /*QNX is cross-compiled for, and does not support make, cmake, or ctest natively. Additionally, space is a large constraint on embedded systems.
+   * Therefore, running tests must be done by manually copying test executables and required data files over, preferably avoiding
+   * copying the whole source tree. Thus, we set the default file lookup to the same folder. Please copy data files to the same folder as this test.
+   * for more info, check PR#1968 https://github.com/borglab/gtsam/pull/1968
+   */
+  bool c = deserializeFromXMLFile(
+                        "priorFactor.xml",
+                        factor_deserialized_xml);
+  #endif
   EXPECT(assert_equal(factor, factor_deserialized_xml));
 #endif
 }
