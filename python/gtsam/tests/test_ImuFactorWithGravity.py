@@ -13,7 +13,8 @@ import unittest
 import numpy as np
 
 import gtsam
-from gtsam import ImuFactorWithGravityDirection, ImuFactorWithGravityVector
+from gtsam import (ImuFactor2WithGravityDirection, ImuFactor2WithGravityVector,
+                   ImuFactorWithGravityDirection, ImuFactorWithGravityVector)
 from gtsam.symbol_shorthand import B, G, V, X
 from gtsam.utils.test_case import GtsamTestCase
 
@@ -103,6 +104,37 @@ class TestImuFactorWithGravity(GtsamTestCase):
             gtsam.Pose3(), np.zeros(3), gtsam.Pose3(), np.zeros(3), zb, zb,
             np.array([0.0, 0.0, -9.81]))
         np.testing.assert_allclose(error, np.zeros(15), atol=1e-9)
+
+    def test_navstate_direction_factor(self):
+        pim = stationary_pim()
+        factor = ImuFactor2WithGravityDirection(X(1), X(2), B(1), G(0), pim)
+        self.assertAlmostEqual(factor.gravityMagnitude(), 9.81)
+
+        error = factor.evaluateError(
+            gtsam.NavState(), gtsam.NavState(), gtsam.imuBias.ConstantBias(),
+            gtsam.Unit3(np.array([0.0, 0.0, -1.0])))
+        np.testing.assert_allclose(error, np.zeros(9), atol=1e-9)
+
+    def test_navstate_direction_factor_explicit_magnitude(self):
+        pim = stationary_pim()
+        factor = ImuFactor2WithGravityDirection(
+            X(1), X(2), B(1), G(0), pim, 1.62)
+        self.assertAlmostEqual(factor.gravityMagnitude(), 1.62)
+
+    def test_navstate_vector_factor(self):
+        pim = stationary_pim()
+        factor = ImuFactor2WithGravityVector(X(1), X(2), B(1), G(0), pim)
+        error = factor.evaluateError(
+            gtsam.NavState(), gtsam.NavState(), gtsam.imuBias.ConstantBias(),
+            np.array([0.0, 0.0, -9.81]))
+        np.testing.assert_allclose(error, np.zeros(9), atol=1e-9)
+
+    def test_navstate_vector_factor_rejects_magnitude(self):
+        """The Point3 parametrization optimizes the magnitude with the
+        variable; a magnitude argument is rejected (use VectorNormFactor3)."""
+        pim = stationary_pim()
+        with self.assertRaises(ValueError):
+            ImuFactor2WithGravityVector(X(1), X(2), B(1), G(0), pim, 9.81)
 
     def test_vector_norm_factor(self):
         model = gtsam.noiseModel.Isotropic.Sigma(1, 0.03)

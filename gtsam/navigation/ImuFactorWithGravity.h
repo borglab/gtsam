@@ -216,4 +216,138 @@ template <class PIM, class GRAVITY>
 struct traits<ImuFactorWithGravityT<PIM, GRAVITY>>
     : public Testable<ImuFactorWithGravityT<PIM, GRAVITY>> {};
 
+/**
+ * ImuFactor2WithGravityT is the NavState version of ImuFactorWithGravityT,
+ * just as ImuFactor2T is the NavState version of ImuFactorT: a 4-ways factor
+ * involving the previous and current NavStates, the bias estimate, and a
+ * GRAVITY variable so that gravity can be optimized instead of being fixed by
+ * the preintegration parameters. Two parametrizations are provided, see
+ * ImuFactor2WithGravityDirection and ImuFactor2WithGravityVector.
+ *
+ * The observability caveat of ImuFactorWithGravityT applies here as well:
+ * gravity in the nav frame is entangled with the initial attitude, so a graph
+ * should anchor one of the two.
+ *
+ * @ingroup navigation
+ */
+template <class PIM = PreintegratedImuMeasurements, class GRAVITY = Unit3>
+class GTSAM_EXPORT ImuFactor2WithGravityT
+    : public NoiseModelFactorT<Vector9, NavState, NavState,
+                               imuBias::ConstantBias, GRAVITY> {
+private:
+
+  typedef ImuFactor2WithGravityT<PIM, GRAVITY> This;
+  typedef NoiseModelFactorT<Vector9, NavState, NavState, imuBias::ConstantBias,
+                            GRAVITY>
+      Base;
+
+  PIM pim_;
+  double gravityMagnitude_;  ///< used by the Unit3 parametrization only
+
+public:
+
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
+  /** Default constructor - only use for serialization */
+  ImuFactor2WithGravityT() : gravityMagnitude_(0.0) {}
+
+  /**
+   * Constructor
+   * @param state_i Previous state key
+   * @param state_j Current state key
+   * @param bias    Previous bias key
+   * @param gravity Gravity key
+   * @param preintegratedMeasurements The preintegrated measurements since the
+   * last state
+   * @param gravityMagnitude The known gravity magnitude for the Unit3
+   * parametrization; defaults to the norm of the gravity vector in the
+   * preintegration params. Must not be provided for the Point3
+   * parametrization, where the magnitude is part of the optimized variable;
+   * to constrain it, add a VectorNormFactor<3> on the gravity variable.
+   */
+  ImuFactor2WithGravityT(Key state_i, Key state_j, Key bias, Key gravity,
+      const PIM& preintegratedMeasurements,
+      std::optional<double> gravityMagnitude = {})
+      : Base(noiseModel::Gaussian::Covariance(
+                 preintegratedMeasurements.residualCovariance()),
+             state_i, state_j, bias, gravity),
+        pim_(preintegratedMeasurements),
+        gravityMagnitude_(internal::resolveGravityMagnitude<GRAVITY>(
+            "ImuFactor2WithGravityT", preintegratedMeasurements,
+            gravityMagnitude)) {}
+
+  ~ImuFactor2WithGravityT() override {
+  }
+
+  /// @return a deep copy of this factor
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
+    return std::make_shared<This>(*this);
+  }
+
+  /// @name Testable
+  /// @{
+  void print(const std::string& s = "", const KeyFormatter& keyFormatter =
+                                            DefaultKeyFormatter) const override;
+  bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
+  /// @}
+
+  /** Access the preintegrated measurements. */
+  const PIM& preintegratedMeasurements() const {
+    return pim_;
+  }
+
+  /** The gravity magnitude used by the Unit3 parametrization. */
+  double gravityMagnitude() const {
+    return gravityMagnitude_;
+  }
+
+  /** implement functions needed to derive from Factor */
+
+  /// vector of errors
+  Vector9 evaluateError(const NavState& state_i, const NavState& state_j,
+                        const imuBias::ConstantBias& bias_i,
+                        const GRAVITY& gravity, OptionalMatrixType H1,
+                        OptionalMatrixType H2, OptionalMatrixType H3,
+                        OptionalMatrixType H4) const override;
+
+ private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    // Archive name for the base follows the sibling factors' convention:
+    ar & boost::serialization::make_nvp("NoiseModelFactor4",
+         boost::serialization::base_object<Base>(*this));
+    ar & BOOST_SERIALIZATION_NVP(pim_);
+    ar & BOOST_SERIALIZATION_NVP(gravityMagnitude_);
+  }
+#endif
+};
+// class ImuFactor2WithGravityT
+
+/**
+ * ImuFactor2 variant with the gravity direction as an optimized Unit3 variable
+ * and a fixed, known magnitude; see ImuFactorWithGravityDirection.
+ */
+using ImuFactor2WithGravityDirection =
+    ImuFactor2WithGravityT<PreintegratedImuMeasurements, Unit3>;
+
+/**
+ * ImuFactor2 variant with the gravity vector as a free Point3 variable, ie.
+ * direction and magnitude both optimized; see ImuFactorWithGravityVector.
+ */
+using ImuFactor2WithGravityVector =
+    ImuFactor2WithGravityT<PreintegratedImuMeasurements, Point3>;
+
+// operator<< for ImuFactor2WithGravityT
+template <class PIM, class GRAVITY>
+GTSAM_EXPORT std::ostream& operator<<(std::ostream& os,
+                                      const ImuFactor2WithGravityT<PIM, GRAVITY>& f);
+
+template <class PIM, class GRAVITY>
+struct traits<ImuFactor2WithGravityT<PIM, GRAVITY>>
+    : public Testable<ImuFactor2WithGravityT<PIM, GRAVITY>> {};
+
 } /// namespace gtsam

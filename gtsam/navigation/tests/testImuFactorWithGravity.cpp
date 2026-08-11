@@ -270,6 +270,196 @@ TEST(ImuFactorWithGravity, Merge) {
 #endif
 
 /* ************************************************************************* */
+// The NavState-based ImuFactor2WithGravity must agree with the
+// Pose3/Vector3-based factor and have correct Jacobians (Unit3 variant).
+TEST_PIM(ImuFactor2WithGravity, DirectionJacobians) {
+  using namespace common;
+  using symbol_shorthand::G;
+  auto params = testing::Params();
+  params->omegaCoriolis = kNonZeroOmegaCoriolis;
+  PIM pim(params);
+  pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+
+  ImuFactor2WithGravityT<PIM, Unit3> factor(X(1), X(2), B(1), G(0), pim);
+  // The default magnitude comes from the params' gravity vector:
+  DOUBLES_EQUAL(testing::Params()->n_gravity.norm(), factor.gravityMagnitude(),
+                1e-9);
+
+  // With the params' gravity direction, the error must match plain ImuFactor2:
+  ImuFactor2T<PIM> plain(X(1), X(2), B(1), pim);
+  EXPECT(assert_equal(
+      plain.evaluateError(NavState(x1, v1), NavState(x2, v2), kZeroBias),
+      factor.evaluateError(NavState(x1, v1), NavState(x2, v2), kZeroBias,
+                           Unit3(testing::Params()->n_gravity))));
+
+  // At a tilted direction, the error must match the Pose3/Vector3-based factor:
+  const Unit3 tilt(0.1, -0.2, -1.0);  // tilted away from params
+  ImuFactorWithGravityT<PIM, Unit3> poseVelFactor(X(1), V(1), X(2), V(2), B(1),
+                                                  G(0), pim);
+  EXPECT(assert_equal(
+      poseVelFactor.evaluateError(x1, v1, x2, v2, kZeroBias, tilt),
+      factor.evaluateError(NavState(x1, v1), NavState(x2, v2), kZeroBias,
+                           tilt)));
+
+  Values values;
+  values.insert(X(1), NavState(x1, v1));
+  values.insert(X(2), NavState(x2, v2));
+  values.insert(B(1), kZeroBias);
+  values.insert(G(0), tilt);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-3);
+
+  // The magnitude scales the gravity Jacobian block; check it at a
+  // deliberately non-default value:
+  ImuFactor2WithGravityT<PIM, Unit3> lunar(X(1), X(2), B(1), G(0), pim, 1.62);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(lunar, values, 1e-7, 1e-3);
+}
+
+/* ************************************************************************* */
+// Jacobians of the free-vector (Point3) parametrization of the NavState-based
+// factor, at a tilted direction and non-standard magnitude.
+TEST_PIM(ImuFactor2WithGravity, VectorJacobians) {
+  using namespace common;
+  using symbol_shorthand::G;
+  auto params = testing::Params();
+  params->omegaCoriolis = kNonZeroOmegaCoriolis;
+  PIM pim(params);
+  pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+
+  ImuFactor2WithGravityT<PIM, Point3> factor(X(1), X(2), B(1), G(0), pim);
+
+  // The error must match the Pose3/Vector3-based factor:
+  const Point3 gravity(0.4, -0.6, -9.5);
+  ImuFactorWithGravityT<PIM, Point3> poseVelFactor(X(1), V(1), X(2), V(2), B(1),
+                                                   G(0), pim);
+  EXPECT(assert_equal(
+      poseVelFactor.evaluateError(x1, v1, x2, v2, kZeroBias, gravity),
+      factor.evaluateError(NavState(x1, v1), NavState(x2, v2), kZeroBias,
+                           gravity)));
+
+  Values values;
+  values.insert(X(1), NavState(x1, v1));
+  values.insert(X(2), NavState(x2, v2));
+  values.insert(B(1), kZeroBias);
+  values.insert(G(0), gravity);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-3);
+}
+
+/* ************************************************************************* */
+// equals() must compare the stored magnitude only for the Unit3
+// parametrization, and must not crash across factor types.
+TEST(ImuFactor2WithGravity, Equals) {
+  using symbol_shorthand::G;
+  auto pim = PreintegratedImuMeasurements(testing::Params());
+  pim.integrateMeasurement(Vector3(0.1, 0.2, -9.81), Vector3(0.1, 0, 0), 0.5);
+  ImuFactor2WithGravityDirection factor1(X(1), X(2), B(1), G(0), pim);
+  ImuFactor2WithGravityDirection factor2(X(1), X(2), B(1), G(0), pim);
+  ImuFactor2WithGravityDirection factor3(X(1), X(2), B(1), G(0), pim,
+                                         1.62);  // lunar gravity
+  EXPECT(factor1.equals(factor2));
+  EXPECT(!factor1.equals(factor3));
+  // clone() must preserve the magnitude:
+  EXPECT(factor3.equals(*factor3.clone()));
+  // The magnitude comparison respects the given tolerance:
+  ImuFactor2WithGravityDirection nearby(X(1), X(2), B(1), G(0), pim, 9.8105);
+  ImuFactor2WithGravityDirection standard(X(1), X(2), B(1), G(0), pim, 9.81);
+  EXPECT(standard.equals(nearby, 1e-3));
+  EXPECT(!standard.equals(nearby, 1e-6));
+  // Comparing against a different factor type must not crash:
+  ImuFactor2WithGravityVector vectorFactor(X(1), X(2), B(1), G(0), pim);
+  EXPECT(!factor1.equals(vectorFactor));
+  EXPECT(!vectorFactor.equals(factor1));
+}
+
+/* ************************************************************************* */
+// The constructor must reject a non-positive magnitude (Unit3) and any
+// magnitude at all for the Point3 parametrization.
+TEST(ImuFactor2WithGravity, ConstructorValidation) {
+  using symbol_shorthand::G;
+  auto pim = PreintegratedImuMeasurements(testing::Params());
+  pim.integrateMeasurement(Vector3(0.1, 0.2, -9.81), Vector3(0.1, 0, 0), 0.5);
+  // The Unit3 parametrization requires a positive magnitude:
+  CHECK_EXCEPTION(ImuFactor2WithGravityDirection(X(1), X(2), B(1), G(0), pim,
+                                                 0.0),
+                  std::invalid_argument);
+  // The Point3 parametrization optimizes the magnitude as part of the gravity
+  // variable, so providing one is rejected (use VectorNormFactor<3> instead):
+  CHECK_EXCEPTION(ImuFactor2WithGravityVector(X(1), X(2), B(1), G(0), pim,
+                                              9.81),
+                  std::invalid_argument);
+  // Without params there is no default magnitude for the Unit3 parametrization
+  // to fall back on; an explicit one still works, and Point3 needs none:
+  const PreintegratedImuMeasurements noParams(
+      std::shared_ptr<PreintegrationParams>{});
+  CHECK_EXCEPTION(ImuFactor2WithGravityDirection(X(1), X(2), B(1), G(0),
+                                                 noParams),
+                  std::invalid_argument);
+  const ImuFactor2WithGravityDirection explicitMagnitude(X(1), X(2), B(1), G(0),
+                                                         noParams, 9.81);
+  DOUBLES_EQUAL(9.81, explicitMagnitude.gravityMagnitude(), 1e-9);
+  const ImuFactor2WithGravityVector vectorNoParams(X(1), X(2), B(1), G(0),
+                                                   noParams);
+  EXPECT_LONGS_EQUAL(4, vectorNoParams.size());
+}
+
+/* ************************************************************************* */
+// NavState counterparts of the tilted-fixture priors and initial values, for
+// the ImuFactor2WithGravity recovery tests below.
+namespace tiltedNavState {
+static void addStationaryPriors(NonlinearFactorGraph* graph) {
+  auto tightState = noiseModel::Isotropic::Sigma(9, 1e-6);
+  auto tightBias = noiseModel::Isotropic::Sigma(6, 1e-6);
+  graph->addPrior(X(1), NavState(), tightState);
+  graph->addPrior(X(2), NavState(), tightState);
+  graph->addPrior(B(1), kZeroBias, tightBias);
+}
+static Values stationaryInitial() {
+  Values initial;
+  initial.insert(X(1), NavState());
+  initial.insert(X(2), NavState());
+  initial.insert(B(1), kZeroBias);
+  return initial;
+}
+}  // namespace tiltedNavState
+/* ************************************************************************* */
+
+// Optimizing NavStates anchored by tight priors recovers the tilted gravity
+// direction, as in the Pose3/Vector3-based RecoverGravityDirection test.
+TEST(ImuFactor2WithGravity, RecoverGravityDirection) {
+  using symbol_shorthand::G;
+  NonlinearFactorGraph graph;
+  // The magnitude is given explicitly since the params' norm is kGravity = 10,
+  // while the data was generated with |g| = 9.81:
+  graph.emplace_shared<ImuFactor2WithGravityDirection>(
+      X(1), X(2), B(1), G(0), tilted::integrateStationary(), 9.81);
+  tiltedNavState::addStationaryPriors(&graph);
+
+  Values initial = tiltedNavState::stationaryInitial();
+  initial.insert(G(0), Unit3(0, 0, -1));
+
+  const Values result = LevenbergMarquardtOptimizer(graph, initial).optimize();
+  EXPECT(assert_equal(Unit3(tilted::trueGravity), result.at<Unit3>(G(0)), 1e-5));
+}
+
+/* ************************************************************************* */
+// Same recovery through the free-vector parametrization, with Lupton's
+// magnitude pseudo-observation on the gravity variable.
+TEST(ImuFactor2WithGravity, RecoverGravityVector) {
+  using symbol_shorthand::G;
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<ImuFactor2WithGravityVector>(
+      X(1), X(2), B(1), G(0), tilted::integrateStationary());
+  graph.emplace_shared<VectorNormFactor<3>>(
+      G(0), 9.81, noiseModel::Isotropic::Sigma(1, 0.03));
+  tiltedNavState::addStationaryPriors(&graph);
+
+  Values initial = tiltedNavState::stationaryInitial();
+  initial.insert(G(0), Point3(0, 0, -9.0));
+
+  const Values result = LevenbergMarquardtOptimizer(graph, initial).optimize();
+  EXPECT(assert_equal(Point3(tilted::trueGravity), result.at<Point3>(G(0)), 1e-4));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
