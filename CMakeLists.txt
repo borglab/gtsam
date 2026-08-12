@@ -128,6 +128,7 @@ include(cmake/HandleCCache.cmake)           # ccache
 include(cmake/HandleCPack.cmake)            # CPack
 include(cmake/HandleEigen.cmake)            # Eigen3
 include(cmake/HandleSpectra.cmake)          # Spectra
+include(cmake/HandleSuiteSparse.cmake)      # CCOLAMD and SuiteSparse_config
 include(cmake/HandleMetis.cmake)            # metis
 include(cmake/HandleCephes.cmake)           # cephes
 include(cmake/HandleMKL.cmake)              # MKL

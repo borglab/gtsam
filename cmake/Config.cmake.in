@@ -35,6 +35,12 @@ if(@GTSAM_USE_SYSTEM_EIGEN@)
 find_dependency(Eigen3 REQUIRED)
 endif()
 
+# Define GTSAM's system CCOLAMD implementation dependency before loading the
+# exported targets.
+if("@GTSAM_USE_SYSTEM_SUITESPARSE@")
+  find_dependency(CCOLAMD CONFIG)
+endif()
+
 if(@GTSAM_ENABLE_CUDA@)
   if(${CMAKE_VERSION} VERSION_LESS "3.17")
     message(FATAL_ERROR "GTSAM_ENABLE_CUDA requires CMake 3.17 or newer")
