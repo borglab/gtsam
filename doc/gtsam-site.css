@@ -1,0 +1,17 @@
+/*
+ * MyST flattens the README's <picture> element to its fallback <img>. Replace
+ * that fallback with the matching README artwork for the selected site theme.
+ */
+html.light
+  img[data-canonical-url="doc/images/gtsam-manifold-optimization-light.png"] {
+  content:
+    url("https://github.com/borglab/gtsam/raw/develop/doc/images/gtsam-manifold-optimization-light.png") /
+    "GTSAM manifold optimization workflow: build a factor graph, linearize and solve in tangent spaces, retract to manifolds, and iterate to convergence.";
+}
+
+html.dark
+  img[data-canonical-url="doc/images/gtsam-manifold-optimization-light.png"] {
+  content:
+    url("https://github.com/borglab/gtsam/raw/develop/doc/images/gtsam-manifold-optimization-dark.png") /
+    "GTSAM manifold optimization workflow: build a factor graph, linearize and solve in tangent spaces, retract to manifolds, and iterate to convergence.";
+}
