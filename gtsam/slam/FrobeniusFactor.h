@@ -100,7 +100,11 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
   GTSAM_CONCEPT_ASSERT(IsMatrixLieGroup<T>);
   inline constexpr static auto N = T::LieAlgebra::RowsAtCompileTime;
   inline constexpr static auto Dim = N * N;
+
+ public:
   using MatrixNN = Eigen::Matrix<double, N, N>;
+
+ private:
   Eigen::Matrix<double, Dim, 1> vecM_;  ///< vectorized matrix to approximate
 
  public:
@@ -112,6 +116,11 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
                  const SharedNoiseModel& model = nullptr)
       : NoiseModelFactorN<T>(ConvertModel<T, Dim>(model), j) {
     vecM_ << Eigen::Map<const Matrix>(M.data(), Dim, 1);
+  }
+
+  /// Return the fixed ambient matrix targeted by this prior.
+  MatrixNN priorMatrix() const {
+    return Eigen::Map<const MatrixNN>(vecM_.data());
   }
 
   /// Error is just Frobenius norm between T element and vectorized matrix M.
@@ -278,6 +287,9 @@ class FrobeniusBetweenFactorNL
                            const SharedNoiseModel& model = nullptr)
       : Base(ConvertModel<T, Dim>(model), j1, j2),
         T12_(T12) {}
+
+  /// Return the measured transformation from the first key to the second.
+  const T& measured() const { return T12_; }
 
   /// @}
   /// @name Testable
