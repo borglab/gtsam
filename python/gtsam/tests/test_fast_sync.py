@@ -54,6 +54,19 @@ class TestFastSync(unittest.TestCase):
         self._check(values, gtsam.BetweenFactorRot2, gtsam.PriorFactorRot2, 1,
                     gtsam.fastSyncRot2, lambda result, key: result.atRot2(key))
 
+    def test_ordering_selection(self):
+        """Test generated and caller-supplied FAST-Sync orderings."""
+        values = [Rot2(0.2), Rot2(0.7), Rot2(-0.4)]
+        graph, keys = self._triangle(values, gtsam.BetweenFactorRot2,
+                                     gtsam.PriorFactorRot2, 1)
+        colamd = gtsam.fastSyncRot2(
+            graph, gtsam.Ordering.OrderingType.COLAMD)
+        custom = gtsam.fastSyncRot2(
+            graph, gtsam.Ordering(keys=[keys[2], keys[0], keys[1]]))
+        for key, expected in zip(keys, values):
+            self.assertTrue(expected.equals(colamd.atRot2(key), 1e-7))
+            self.assertTrue(expected.equals(custom.atRot2(key), 1e-7))
+
     def test_rot3(self):
         """Test the fastSync<Rot3> instantiation."""
         values = [

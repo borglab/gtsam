@@ -279,6 +279,7 @@ class ShonanAveraging2 {
   gtsam::Values initializeRandomly() const;
   pair<gtsam::Values, double> run(const gtsam::Values& initial, size_t min_p,
                                   size_t max_p) const;
+  pair<gtsam::Values, double> run(size_t min_p, size_t max_p) const;
 };
 
 class ShonanAveraging3 {
@@ -329,6 +330,7 @@ class ShonanAveraging3 {
   gtsam::Values initializeRandomly() const;
   pair<gtsam::Values, double> run(const gtsam::Values& initial, size_t min_p,
                                   size_t max_p) const;
+  pair<gtsam::Values, double> run(size_t min_p, size_t max_p) const;
 };
 
 #include <gtsam/sfm/MFAS.h>

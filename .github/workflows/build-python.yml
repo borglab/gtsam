@@ -379,7 +379,7 @@ jobs:
       - name: Test C++
         if: matrix.cpp_tests == true
         shell: bash
-        run: cmake --build build --target check --parallel 2
+        run: cmake --build build --target check --parallel 4
 
       - name: Show sccache statistics
         if: matrix.use_sccache == true

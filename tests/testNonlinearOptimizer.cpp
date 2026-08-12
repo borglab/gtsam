@@ -22,6 +22,8 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/linear/PCGSolver.h>
+#include <gtsam/linear/Preconditioner.h>
 #include <gtsam/nonlinear/DoglegOptimizer.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
@@ -147,6 +149,46 @@ TEST(NonlinearOptimizer, Arm64ConflictingOdometryAndPositionEvidence) {
 }
 
 }  // namespace arm64_return_regression
+
+namespace lm_ordering_fixture {
+
+NonlinearFactorGraph MakeGraph() {
+  return example::createReallyNonlinearFactorGraph();
+}
+
+// Verifies block-Jacobi PCG does not compute an unused elimination ordering.
+TEST(LevenbergMarquardtParams, PCGDoesNotRequireOrdering) {
+  LevenbergMarquardtParams params;
+  params.linearSolverType = NonlinearOptimizerParams::Iterative;
+  params.iterativeParams = std::make_shared<PCGSolverParameters>(
+      std::make_shared<BlockJacobiPreconditionerParameters>());
+
+  const auto resolved =
+      LevenbergMarquardtParams::EnsureHasOrdering(params, MakeGraph());
+  EXPECT(!resolved.ordering);
+}
+
+// Verifies the subgraph iterative solver still receives an ordering.
+TEST(LevenbergMarquardtParams, SubgraphRequiresOrdering) {
+  LevenbergMarquardtParams params;
+  params.linearSolverType = NonlinearOptimizerParams::Iterative;
+  params.iterativeParams = std::make_shared<SubgraphSolverParameters>();
+
+  const auto resolved =
+      LevenbergMarquardtParams::EnsureHasOrdering(params, MakeGraph());
+  EXPECT(resolved.ordering);
+}
+
+// Verifies direct elimination solvers still receive an ordering.
+TEST(LevenbergMarquardtParams, DirectSolverRequiresOrdering) {
+  LevenbergMarquardtParams params;
+
+  const auto resolved =
+      LevenbergMarquardtParams::EnsureHasOrdering(params, MakeGraph());
+  EXPECT(resolved.ordering);
+}
+
+}  // namespace lm_ordering_fixture
 /* ************************************************************************* */
 
 /* ************************************************************************* */

@@ -115,6 +115,29 @@ TEST(FastSync, SL4Noiseless) {
                        SL4::Expmap(Vector::LinSpaced(15, 0.02, -0.01)), 1e-6));
 }
 
+// Verifies the class and convenience APIs accept generated and custom
+// orderings.
+TEST(FastSync, OrderingSelection) {
+  const Rot2 value0 = Rot2::fromAngle(0.2);
+  const Rot2 value1 = Rot2::fromAngle(0.7);
+  const Rot2 value2 = Rot2::fromAngle(-0.4);
+  const NonlinearFactorGraph graph = triangleGraph(value0, value1, value2);
+
+  const FastSync<Rot2> solver(graph);
+  const Values relaxed = solver.solve(Ordering::COLAMD);
+  const Values classResult = solver.projectAndAlign(relaxed);
+  const Values functionResult = fastSync<Rot2>(graph, Ordering::COLAMD);
+  const Ordering customOrdering{k2, k0, k1};
+  const Values customResult = fastSync<Rot2>(graph, customOrdering);
+
+  for (const auto& [key, expected] :
+       std::map<Key, Rot2>{{k0, value0}, {k1, value1}, {k2, value2}}) {
+    EXPECT(assert_equal(expected, classResult.at<Rot2>(key), 1e-7));
+    EXPECT(assert_equal(expected, functionResult.at<Rot2>(key), 1e-7));
+    EXPECT(assert_equal(expected, customResult.at<Rot2>(key), 1e-7));
+  }
+}
+
 }  // namespace noiseless_fixture
 
 /* ************************************************************************* */
@@ -262,6 +285,18 @@ TEST(FastSync, BuiltInProjections) {
 
 /* ************************************************************************* */
 namespace validation_fixture {
+
+// Verifies custom orderings must cover every graph key exactly once.
+TEST(FastSync, InvalidCustomOrdering) {
+  NonlinearFactorGraph graph;
+  const auto model = noiseModel::Unit::Create(1);
+  graph.emplace_shared<BetweenFactor<Rot2>>(0, 1, Rot2(), model);
+  const FastSync<Rot2> solver(graph);
+
+  CHECK_EXCEPTION(solver.solve(Ordering{0}), std::invalid_argument);
+  CHECK_EXCEPTION(solver.solve(Ordering{0, 0}), std::invalid_argument);
+  CHECK_EXCEPTION(solver.solve(Ordering{0, 2}), std::invalid_argument);
+}
 
 // Verifies empty graphs fail early and disconnected graphs fail in elimination.
 TEST(FastSync, InvalidGraphStructure) {

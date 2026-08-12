@@ -107,22 +107,36 @@ void FastSync<T>::backSubstituteConditional(
 }
 
 template <class T>
-Values FastSync<T>::solve() const {
+Values FastSync<T>::solve(Ordering::OrderingType orderingType) const {
+  return solveOrdered(Ordering::Create(orderingType, reducedGraph_));
+}
+
+template <class T>
+Values FastSync<T>::solve(const Ordering& ordering) const {
+  const KeySet graphKeys = reducedGraph_.keys();
+  const KeySet orderingKeys(ordering);
+  if (ordering.size() != graphKeys.size() || orderingKeys != graphKeys) {
+    throw std::invalid_argument(
+        "FastSync ordering must contain every measurement graph key exactly "
+        "once");
+  }
+  return solveOrdered(ordering);
+}
+
+template <class T>
+Values FastSync<T>::solveOrdered(const Ordering& ordering) const {
   const MatrixN identity = MatrixN::Identity();
   const VectorN zero = VectorN::Zero();
 
   GaussianFactorGraph graph = reducedGraph_;
-  const Ordering ordering = Ordering::Metis(graph);
-  if (ordering.empty()) {
-    throw std::runtime_error("FastSync METIS ordering failed");
-  }
   const Key gaugeKey = ordering.back();
   graph.emplace_shared<JacobianFactor>(gaugeKey, identity, zero,
                                        noiseModel::Unit::Create(N));
 
-  const auto bayesNet = graph.eliminateSequential(ordering, EliminateQR);
+  const auto bayesNet =
+      graph.eliminateSequential(ordering, EliminatePreferCholesky);
   if (!bayesNet || bayesNet->size() != ordering.size()) {
-    throw std::runtime_error("FastSync sequential QR elimination failed");
+    throw std::runtime_error("FastSync sequential Cholesky elimination failed");
   }
 
   Values solution;
@@ -167,10 +181,20 @@ Values FastSync<T>::projectAndAlign(const Values& relaxed) const {
 
 /* ************************************************************************* */
 template <class T>
-Values fastSync(const NonlinearFactorGraph& graph) {
+Values fastSync(const NonlinearFactorGraph& graph,
+                Ordering::OrderingType orderingType) {
   GTSAM_CONCEPT_ASSERT(IsMatrixLieGroup<T>);
   const FastSync<T> solver(graph);
-  const Values relaxed = solver.solve();
+  const Values relaxed = solver.solve(orderingType);
+  return solver.projectAndAlign(relaxed);
+}
+
+/* ************************************************************************* */
+template <class T>
+Values fastSync(const NonlinearFactorGraph& graph, const Ordering& ordering) {
+  GTSAM_CONCEPT_ASSERT(IsMatrixLieGroup<T>);
+  const FastSync<T> solver(graph);
+  const Values relaxed = solver.solve(ordering);
   return solver.projectAndAlign(relaxed);
 }
 
