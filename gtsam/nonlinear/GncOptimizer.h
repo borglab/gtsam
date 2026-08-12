@@ -494,9 +494,33 @@ class GncOptimizer {
     return newGraph;
   }
 
+  /** Map this optimizer's historical graduation parameter to the normalized
+   * \mu in [0,1] expected by the robust loss interface.
+   *
+   * The GNC schedule is expressed in the unbounded parameters of Yang et al.,
+   * which are internal scheduling state of this class:
+   *  - GM  uses \lambda, decreasing from a large value to 1; \mu = 1 / \lambda.
+   *  - TLS uses \theta, increasing from ~0 to infinity; \mu =
+   * \theta/(1+\theta). Both maps are exact inverses of the ones documented in
+   * LossFunctions.h.
+   */
+  static double normalizedMu(GncLossType lossType, const double lambda) {
+    switch (lossType) {
+      case GncLossType::GM:
+        // lambda saturates at 1, which is the final GM loss (mu = 1).
+        return std::min(1.0, 1.0 / lambda);
+      case GncLossType::TLS:
+        return lambda / (1.0 + lambda);
+      default:
+        throw std::runtime_error(
+            "GncOptimizer::normalizedMu: called with unknown loss type.");
+    }
+  }
+
   /// Calculate gnc weights.
   Vector calculateWeights(const Values& currentEstimate, const double lambda) {
     Vector weights = initializeWeightsFromKnownInliersAndOutliers();
+    const double mu = normalizedMu(params_.lossType, lambda);
 
     // update weights of unknown measurements
     switch (params_.lossType) {
@@ -505,9 +529,6 @@ class GncOptimizer {
           if (needsWeightUpdate(factorTypes_[k])) {
             // squared (and whitened) residual
             double u2_k = nfg_[k]->error(currentEstimate);
-            double lmax = noiseModel::mEstimator::GemanMcClure::LAMBDA_MAX;
-            // NOTE: GNC actually stores lambda^2 according to lambda used in the GM loss
-            double mu = 1.0 - ((std::sqrt(lambda) - 1.0) / lmax);
             weights[k] = noiseModel::mEstimator::GemanMcClure::GraduatedWeight(
                 u2_k, barcSq_[k], mu,
                 noiseModel::mEstimator::GemanMcClure::GradScheme::STANDARD);
@@ -522,11 +543,6 @@ class GncOptimizer {
                 currentEstimate);  // squared (and whitened) residual
             switch (params_.scheduler) {
               case GncScheduler::SuperLinear: {
-                double lmin =
-                    noiseModel::mEstimator::TruncatedLeastSquares::LAMBDA_MIN;
-                double lmax =
-                    noiseModel::mEstimator::TruncatedLeastSquares::LAMBDA_MAX;
-                double mu = (lambda - lmin) / lmax;
                 weights[k] = noiseModel::mEstimator::TruncatedLeastSquares::
                     GraduatedWeight(
                         u2_k, barcSq_[k], mu,
@@ -535,11 +551,6 @@ class GncOptimizer {
                 break;
               }
               case GncScheduler::Linear: {  // use eq (14) in GNC paper
-                double lmin =
-                    noiseModel::mEstimator::TruncatedLeastSquares::LAMBDA_MIN;
-                double lmax =
-                    noiseModel::mEstimator::TruncatedLeastSquares::LAMBDA_MAX;
-                double mu = (lambda - lmin) / lmax;
                 weights[k] = noiseModel::mEstimator::TruncatedLeastSquares::
                     GraduatedWeight(
                         u2_k, barcSq_[k], mu,
@@ -548,7 +559,8 @@ class GncOptimizer {
                 break;
               }
               default:
-                throw std::runtime_error("GncOptimizer::calculateWeights: unknown scheduler type.");
+                throw std::runtime_error(
+                    "GncOptimizer::calculateWeights: unknown scheduler type.");
             }
           }
         }
@@ -560,5 +572,4 @@ class GncOptimizer {
     }
   }
 };
-
 }

@@ -1023,11 +1023,12 @@ TEST(NoiseModel, graduatedWeightLossNonStandard) {
 
   auto tls_lin = mEstimator::TruncatedLeastSquares::Create(
     k, mEstimator::TruncatedLeastSquares::GradScheme::GNC_LINEAR);
-  // TLS Linear is convex for mu=0 but not quadratic
-  DOUBLES_EQUAL(5e-6, tls_lin->graduatedWeight(e1, 0.0), 1e-8);
-  DOUBLES_EQUAL(5e-7, tls_lin->graduatedWeight(e2, 0.0), 1e-8);
-  DOUBLES_EQUAL(5e-6, tls_lin->graduatedLoss(e1, 0.0), 1e-8);
-  DOUBLES_EQUAL(5e-5, tls_lin->graduatedLoss(e2, 0.0), 1e-8);
+  // Yang's theta -> 0 surrogate is degenerate (all weights vanish), so mu=0 is
+  // defined as the all-inlier least-squares initialization step.
+  DOUBLES_EQUAL(1.0, tls_lin->graduatedWeight(e1, 0.0), 1e-8);
+  DOUBLES_EQUAL(1.0, tls_lin->graduatedWeight(e2, 0.0), 1e-8);
+  DOUBLES_EQUAL(0.5 * e1 * e1, tls_lin->graduatedLoss(e1, 0.0), 1e-8);
+  DOUBLES_EQUAL(0.5 * e2 * e2, tls_lin->graduatedLoss(e2, 0.0), 1e-8);
   // TLS Linear matches TLS for mu=1
   DOUBLES_EQUAL(tls_lin->weight(e1), tls_lin->graduatedWeight(e1, 1.0), 1e-8);
   DOUBLES_EQUAL(tls_lin->weight(e2), tls_lin->graduatedWeight(e2, 1.0), 1e-8);
@@ -1047,7 +1048,7 @@ TEST(NoiseModel, graduatedWeightLossNonStandard) {
   // GM Scale Invariant, at mu=0.0 weight depends on shape param
   DOUBLES_EQUAL(0.961538, gmc_si->graduatedWeight(e1, 0.0), 1e-6);
   DOUBLES_EQUAL(0.961538, gmc_si->graduatedWeight(e2, 0.0), 1e-6);
-  
+
 }
 
 TEST(NoiseModel, lossFunctionAtZero) {

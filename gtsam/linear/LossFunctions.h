@@ -61,6 +61,13 @@ namespace noiseModel {
  * Graduated Weight    \w(x,\mu)
  * The control parameter \mu in [0, 1] transitions the loss from convex (\mu=0)to its original robust form (\mu=1).
  * This is used by continuation-style algorithms (GNC, riSAM) to modify the underlying problem structure.
+ *
+ * GTSAM convention for graduated robust losses:
+ *   \mu in [0, 1]
+ *   \mu = 0: most convex / least-squares-like initialization
+ *   \mu = 1: final target robust loss
+ * Increasing \mu always increases non-convexity, and both endpoints are exact
+ * rather than approached asymptotically.
  */
 // clang-format on
 namespace mEstimator {
@@ -244,8 +251,8 @@ class GTSAM_EXPORT Fair : public Base {
  * - Derivative \phi(x)          = x       if |x|<k, k sgn(x)         otherwise
  * - Weight     w(x) = \phi(x)/x = 1       if |x|<k, k/|x|            otherwise
  * 
- *  Huber loss is graduated by scaling k by \lambda which is 
- *  inversely proportional to \mu.
+ *  Huber loss is graduated by scaling k with \lambda = 1 / \mu, i.e. by
+ *  replacing k with k / sqrt(\mu). \mu = 0 is least squares.
  */
 class GTSAM_EXPORT Huber : public Base {
  protected:
@@ -253,7 +260,6 @@ class GTSAM_EXPORT Huber : public Base {
 
  public:
   typedef std::shared_ptr<Huber> shared_ptr;
-  static constexpr double LAMBDA_MAX = 1e10;
 
   Huber(double k = 1.345, const ReweightScheme reweight = Block);
   double weight(double distance) const override;
@@ -295,8 +301,8 @@ class GTSAM_EXPORT Huber : public Base {
  * - Derivative \phi(x) = (k²x)/(x²+k²)
  * - Weight     w(x) = \phi(x)/x = k²/(x²+k²)
  *
- *  Cauchy loss is graduated by scaling k by \lambda which is 
- *  inversely proportional to \mu.
+ *  Cauchy loss is graduated by scaling k with \lambda = 1 / \mu, i.e. by
+ *  replacing k² with k²/\mu. \mu = 0 is least squares.
  */
 class GTSAM_EXPORT Cauchy : public Base {
  protected:
@@ -304,8 +310,6 @@ class GTSAM_EXPORT Cauchy : public Base {
 
  public:
   typedef std::shared_ptr<Cauchy> shared_ptr;
-  static constexpr double LAMBDA_MAX = 1e10;
-
 
   Cauchy(double k = 0.1, const ReweightScheme reweight = Block);
   double weight(double distance) const override;
@@ -343,8 +347,8 @@ class GTSAM_EXPORT Cauchy : public Base {
  * - Derivative \f$ \phi(x) = x(1-x²/c²)² if |x|<c \f$,  0   otherwise
  * - Weight     \f$ w(x) = \phi(x)/x = (1-x²/c²)² \f$ if |x|<c,  0   otherwise
  * 
- *  Tukey loss is graduated by scaling k by \lambda which is 
- *  inversely proportional to \mu.
+ *  Tukey loss is graduated by scaling c with \lambda = 1 / \mu, i.e. by
+ *  replacing c² with c²/\mu. \mu = 0 is least squares.
  */
 class GTSAM_EXPORT Tukey : public Base {
  protected:
@@ -352,7 +356,6 @@ class GTSAM_EXPORT Tukey : public Base {
 
  public:
   typedef std::shared_ptr<Tukey> shared_ptr;
-  static constexpr double LAMBDA_MAX = 1e5;
 
   Tukey(double c = 4.6851, const ReweightScheme reweight = Block);
   double weight(double distance) const override;
@@ -390,8 +393,8 @@ class GTSAM_EXPORT Tukey : public Base {
  * - Derivative \f$ \phi(x) = x exp(-x²/c²) \f$
  * - Weight     \f$ w(x) = \phi(x)/x = exp(-x²/c²) \f$
  *
- *  Welsch loss is graduated by scaling k by \lambda which is
- *  inversely proportional to \mu.
+ *  Welsch loss is graduated by scaling c with \lambda = 1 / \mu, i.e. by
+ *  replacing c² with c²/\mu. \mu = 0 is least squares.
  */
 class GTSAM_EXPORT Welsch : public Base {
  protected:
@@ -400,7 +403,6 @@ class GTSAM_EXPORT Welsch : public Base {
 
  public:
   typedef std::shared_ptr<Welsch> shared_ptr;
-  static constexpr double LAMBDA_MAX = 1e10;
 
   Welsch(double c = 2.9846, const ReweightScheme reweight = Block);
   double weight(double distance) const override;
@@ -441,10 +443,17 @@ class GTSAM_EXPORT Welsch : public Base {
  * - Weight     w(x) = \phi(x)/x = c⁴/(c²+x²)²
  *
  * Geman-McClure loss has two graduated forms
- * 
- * STANDARD [1] is graduated by scaling k by \lambda which is
- * inversely proportional to \mu.
- * 
+ *
+ * STANDARD [1] is the normalized form of the Yang GNC-GM surrogate. It relaxes
+ * the shape parameter by the historical \lambda = 1 / \mu, i.e. it evaluates
+ * the Geman-McClure loss above with c² replaced by c²/\mu.
+ * - Loss       \rho(x,\mu) = 0.5 ((c²/\mu)x²)/((c²/\mu)+x²)
+ * - Derivative \phi(x,\mu) = x(c²/\mu)²/((c²/\mu)+x²)²
+ * - Weight     w(x,\mu) = \phi(x)/x = (c²/\mu)²/((c²/\mu)+x²)²
+ * Both endpoints are exact: \mu = 1 is Geman-McClure, and \mu = 0 is the
+ * least-squares limit (\rho = 0.5x², w = 1), evaluated directly rather than by
+ * letting c²/\mu diverge.
+ *
  * SCALE_INVARIANT [2] is graduated according to the following form.
  * - Loss       \rho(x) = 0.5 (c²x²)/(c²+(x²)^\mu)
  * - Derivative \phi(x) = x(c²(c²+(x²)^\mu * (1-\mu)))/(c²+(x²)^\mu)²
@@ -454,7 +463,6 @@ class GTSAM_EXPORT GemanMcClure : public Base {
  public:
   typedef std::shared_ptr<GemanMcClure> shared_ptr;
   enum GradScheme { STANDARD, SCALE_INVARIANT };
-  static constexpr double LAMBDA_MAX = 1e10;
 
   /// @brief Construct standard GemanMcClure loss
   GemanMcClure(double c = 1.0, const ReweightScheme reweight = Block);
@@ -528,36 +536,43 @@ class GTSAM_EXPORT GemanMcClure : public Base {
  * - Derivative \phi(x) = x        if |x|<=c, 0 otherwise
  * - Weight     w(x) = \phi(x)/x = 1 if |x|<=c, 0 otherwise
  *
- *  TLS has three graduated forms
+ *  TLS has three graduated forms. All are stated in terms of the normalized
+ *  \mu; the historical Yang/Peng parameter is \theta = \mu / (1 - \mu).
  *
- *  STANDARD TLS loss is graduated by scaling k by \lambda which is
- *  inversely proportional to \mu.
+ *  STANDARD TLS loss is graduated by relaxing the threshold with
+ *  \lambda = 1 / \mu, i.e. by replacing c² with c²/\mu.
+ * - Loss  \rho(x,\mu) = 0.5 x^2 if x^2 <= c^2/\mu, 0.5 c^2/\mu otherwise
+ * - Weight w(x,\mu)   = 1 if x^2 <= c^2/\mu, 0 otherwise
  *
- *  GNC_LINEAR TLS loss is graduated according to the following forms
- *  Let \lambda = 1 / \mu
- *      LB = c^2 (\lambda / (\lambda + 1)) 
- *      UB =  c^2 ((\lambda + 1) / \lambda)
- * - Loss  \rho(x,\mu) = 0.5 * x^2 if x < LB
- *                     = c|x|\sqrt(\lambda(\lambda+1))-\lambda(c^2 + r^2) if LB < x < UB
- *                     = c^2 if UB < x
- * - Weight w(x, \mu)  = 1 if x < LB
- *                     = \sqrt(c^2 \lambda ((\lambda + 1.0) / x^2)) - \lambda if LB < x < UB
- *                     = 0 if UB < x
+ *  GNC_LINEAR is the normalized Yang GNC-TLS surrogate
+ *      LB = \mu c^2
+ *      UB = c^2 / \mu
+ * - Loss  \rho(x,\mu) = 0.5 x^2 if x^2 < LB
+ *                     = 0.5 (2\sqrt(\mu c^2 x^2) - \mu(c^2 + x^2))/(1-\mu)
+ *                       if LB < x^2 < UB
+ *                     = 0.5 c^2 if UB < x^2
+ * - Weight w(x,\mu)   = 1 if x^2 < LB
+ *                     = (\sqrt(\mu c^2 / x^2) - \mu)/(1-\mu) if LB < x^2 < UB
+ *                     = 0 if UB < x^2
+ *  Yang's \theta -> 0 surrogate is degenerate (every weight vanishes), so the
+ *  \mu = 0 endpoint is defined to be the all-inlier least-squares
+ *  initialization step: w = 1 and \rho = 0.5 x^2. \mu = 1 is exact TLS.
  *
- * GNC_SUPERLINEAR is graduated according to the following forms
- *  Let \lambda = 1 / \mu 
+ * GNC_SUPERLINEAR is the normalized Peng MS-GNC-TLS majorizer
  *      LB = c^2
- *      UB = c^2\lambda + 1)^2 / \lambda^2
+ *      UB = c^2 / \mu^2
  * - Loss  \rho(x, \mu) = (not formally defined)
- * - Weight w(x, \mu)   = 1 if x < LB
- *                      = sqrt(c^2 / x^2) * (\lambda + 1.0) - \lambda
+ * - Weight w(x, \mu)   = 1 if x^2 < LB
+ *                      = (\sqrt(c^2 / x^2) - \mu)/(1-\mu) if LB < x^2 < UB
+ *                      = 0 if UB < x^2
+ *  Its \mu = 0 endpoint is the non-degenerate convex weight min(1, c/|x|), so
+ *  unlike GNC_LINEAR it needs no separate initialization convention.
+ *  \mu = 1 is exact TLS.
  */
 class GTSAM_EXPORT TruncatedLeastSquares : public Base {
  public:
   typedef std::shared_ptr<TruncatedLeastSquares> shared_ptr;
   enum GradScheme { STANDARD, GNC_LINEAR, GNC_SUPERLINEAR };
-  static constexpr double LAMBDA_MAX = 1e12;
-  static constexpr double LAMBDA_MIN = 1e-12;
 
   /// @brief Construct standard TLS loss
   TruncatedLeastSquares(double c = 1.0, const ReweightScheme reweight = Block);
@@ -621,13 +636,13 @@ class GTSAM_EXPORT TruncatedLeastSquares : public Base {
  * - Derivative \phi(x) = 2c²x/(x²+c)²
  * - Weight     w(x) = \phi(x)/x = 2c²/(x²+c)²  if x²>c,   1  otherwise
  * 
- *  DCS loss is graduated by scaling k by \lambda which is 
- *  inversely proportional to \mu.
+ *  DCS loss is graduated by scaling c with \lambda = 1 / \mu, i.e. by
+ *  replacing c with c/\mu (c already has units of squared error).
+ *  \mu = 0 is least squares.
  */
 class GTSAM_EXPORT DCS : public Base {
  public:
   typedef std::shared_ptr<DCS> shared_ptr;
-  static constexpr double LAMBDA_MAX = 1e10;
 
   DCS(double c = 1.0, const ReweightScheme reweight = Block);
   ~DCS() override {}
