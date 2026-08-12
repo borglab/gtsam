@@ -932,42 +932,51 @@ TEST(GncOptimizer, setInlierCostThresholds) {
 }
 
 /* ************************************************************************* */
+// Verifies GNC rejects a false loop closure in a constrained Pose2 trajectory.
 TEST(GncOptimizer, optimizeSmallPoseGraph) {
-  /// load small pose graph
-  const string filename = findExampleDataFile("w100.graph");
-  const auto [graph, initial] = load2D(filename);
-  // Add a Gaussian prior on first poses
-  Pose2 priorMean(0.0, 0.0, 0.0);  // prior at origin
-  SharedDiagonal priorNoise = noiseModel::Diagonal::Sigmas(
-      Vector3(0.01, 0.01, 0.01));
-  graph->addPrior(0, priorMean, priorNoise);
+  NonlinearFactorGraph graph;
+  Values initial, expected;
+  const auto priorNoise = noiseModel::Diagonal::Sigmas(
+      Vector3(0.1, 0.1, 0.1));
+  const auto odometryNoise = noiseModel::Diagonal::Sigmas(
+      Vector3(0.05, 0.05, 0.02));
+  const std::vector<Pose2> expectedPoses{
+      Pose2(0.0, 0.0, 0.0),     Pose2(1.0, 0.0, 0.0),
+      Pose2(2.0, 0.0, M_PI_2),  Pose2(2.0, 1.0, M_PI_2),
+      Pose2(2.0, 2.0, M_PI),    Pose2(1.0, 2.0, M_PI),
+      Pose2(0.0, 2.0, -M_PI_2), Pose2(0.0, 1.0, -M_PI_2)};
 
-  /// get expected values by optimizing outlier-free graph
-  Values expected = LevenbergMarquardtOptimizer(*graph, *initial).optimize();
+  // The prior and odometry define trusted structure, matching the common GNC
+  // SLAM use case where only loop-closure hypotheses are reweighted. This
+  // makes rejecting the false closure the unambiguous robust optimum; the old
+  // w100.graph test admitted a lower TLS objective at a deformed trajectory.
+  graph.addPrior(0, expectedPoses.front(), priorNoise);
+  GncParams<GaussNewtonParams>::IndexVector knownInliers{0};
+  for (Key key = 0; key < expectedPoses.size(); ++key) {
+    const Pose2& truth = expectedPoses[key];
+    expected.insert(key, truth);
+    initial.insert(key, truth.compose(Pose2(0.05, -0.05, 0.01)));
+    if (key > 0) {
+      graph.emplace_shared<BetweenFactor<Pose2>>(
+          key - 1, key, expectedPoses[key - 1].between(truth),
+          odometryNoise);
+      knownInliers.push_back(graph.size() - 1);
+    }
+  }
 
-  // add a few outliers
-  SharedDiagonal betweenNoise = noiseModel::Diagonal::Sigmas(
-      Vector3(0.1, 0.1, 0.01));
-  // some arbitrary and incorrect between factor
-  graph->push_back(BetweenFactor<Pose2>(90, 50, Pose2(), betweenNoise));
+  // This closure claims that opposite corners of the trajectory coincide.
+  graph.emplace_shared<BetweenFactor<Pose2>>(0, 4, Pose2(), odometryNoise);
+  const size_t outlierIndex = graph.size() - 1;
 
-  /// get expected values by optimizing outlier-free graph
-  Values expectedWithOutliers = LevenbergMarquardtOptimizer(*graph, *initial)
-      .optimize();
-  // as expected, the following test fails due to the presence of an outlier!
-  // CHECK(assert_equal(expected, expectedWithOutliers, 1e-3));
-
-  // GNC
-  // NOTE: in difficult instances, we set the odometry measurements to be
-  // inliers, but this problem is simple enough to succeed even without that
-  // assumption.
   GncParams<GaussNewtonParams> gncParams;
-  auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(*graph, *initial,
-                                                        gncParams);
-  Values actual = gnc.optimize();
+  gncParams.setKnownInliers(knownInliers);
+  GncOptimizer<GncParams<GaussNewtonParams>> gnc(graph, initial, gncParams);
+  const Values actual = gnc.optimize();
 
-  // compare
-  CHECK(assert_equal(expected, actual, 1e-3));  // yay! we are robust to outliers!
+  CHECK(assert_equal(expected, actual, 2e-3));
+  CHECK(gnc.getWeights()[outlierIndex] < gncParams.weightsTol);
+  CHECK(graph[outlierIndex]->error(actual) >
+        gnc.getInlierCostThresholds()[outlierIndex]);
 }
 
 /* ************************************************************************* */

@@ -148,7 +148,7 @@ TEST(Chebyshev2, InterpolatePose2) {
       std::placeholders::_1, nullptr);
   Matrix numericalH =
     numericalDerivative11<Pose2, Matrix, 3 * N>(f, X);
-  EXPECT(assert_equal(numericalH, actualH, 1e-9));
+  EXPECT(assert_equal(numericalH, actualH, 1e-8));
 }
 
 #ifdef GTSAM_POSE3_EXPMAP

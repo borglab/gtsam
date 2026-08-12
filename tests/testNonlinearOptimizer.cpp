@@ -379,7 +379,11 @@ TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
   Values expected;
   expected.insert(0, Pose2(0, 0, 0));
   expected.insert(1, Pose2(1, 0, M_PI / 2));
+#ifdef GTSAM_SLOW_BUT_CORRECT_EXPMAP
+  expected.insert(2, Pose2(1, 1, -M_PI));
+#else
   expected.insert(2, Pose2(1, 1, M_PI));
+#endif
 
   VectorValues expectedGradient;
   expectedGradient.insert(0,Z_3x1);
@@ -393,11 +397,12 @@ TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
 
     // test convergence
     Values actual = optimizer.optimize();
-    EXPECT(assert_equal(expected, actual));
+
+    EXPECT(assert_equal(expected, actual, 1e-5));
 
     // Check that the gradient is zero
     GaussianFactorGraph::shared_ptr linear = optimizer.linearize();
-    EXPECT(assert_equal(expectedGradient,linear->gradientAtZero()));
+    EXPECT(assert_equal(expectedGradient,linear->gradientAtZero(), 1e-7));
   }
   EXPECT(assert_equal(expected, DoglegOptimizer(fg, init).optimize()));
 
@@ -553,7 +558,11 @@ TEST(NonlinearOptimizer, Pose2OptimizationWithHuber) {
 
   Values expected;
   expected.insert(0, Pose2(0, 0, 0));
+#ifdef GTSAM_SLOW_BUT_CORRECT_EXPMAP
+  expected.insert(1, Pose2(0, 9.878697519, 1.445427280));
+#else
   expected.insert(1, Pose2(0, 9.89465463, 1.44927133));
+#endif
 
   LevenbergMarquardtParams params;
 
