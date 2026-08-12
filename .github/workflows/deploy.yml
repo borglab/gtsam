@@ -10,6 +10,7 @@ on:
       - '**.md'
       - '**.ipynb'
       - '**.css'
+      - 'doc/images/gtsam-manifold-optimization-*.png'
       - 'myst.yml'
 env:
   # `BASE_URL` determines the website is served from, including CSS & JS assets
@@ -43,6 +44,8 @@ jobs:
         run: npm install -g mystmd
       - name: Build HTML Assets
         run: myst build --html
+      - name: Copy theme-aware splash image
+        run: cp doc/images/gtsam-manifold-optimization-dark.png _build/html/
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
