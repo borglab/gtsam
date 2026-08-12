@@ -81,6 +81,72 @@ AugmentedLagrangianParams::shared_ptr DefaultAlmParams() {
 }  // namespace RingFixture
 
 /* ************************************************************************* */
+namespace CachedQcqpFixture {
+
+class CountingFrobeniusBetweenFactor : public FrobeniusBetweenFactor<Rot2> {
+ public:
+  using Base = FrobeniusBetweenFactor<Rot2>;
+
+  CountingFrobeniusBetweenFactor(Key key1, Key key2, const Rot2& measured,
+                                 const SharedNoiseModel& noise,
+                                 const std::shared_ptr<size_t>& buildCount)
+      : Base(key1, key2, measured, noise), buildCount_(buildCount) {}
+
+  void qcqpFactors(NonlinearFactorGraph* costs,
+                   NonlinearEqualityConstraints* constraints,
+                   size_t columnDimension) const override {
+    ++*buildCount_;
+    Base::qcqpFactors(costs, constraints, columnDimension);
+  }
+
+ private:
+  std::shared_ptr<size_t> buildCount_;
+};
+
+// The constructor's pMin QCQP is reused, and each subsequently visited rank
+// lowers every source factor exactly once.
+TEST(RiemannianStaircase, ReusesCachedPMinQcqp) {
+  constexpr size_t kNumPoses = 5;
+  constexpr double kDelta = 2.0 * kPi / static_cast<double>(kNumPoses);
+  const auto noise = noiseModel::Isotropic::Sigma(1, 1.0);
+  const auto buildCount = std::make_shared<size_t>(0);
+  NonlinearFactorGraph graph;
+  for (size_t i = 0; i < kNumPoses; ++i) {
+    graph.emplace_shared<CountingFrobeniusBetweenFactor>(
+        Symbol('x', i), Symbol('x', (i + 1) % kNumPoses),
+        Rot2::fromAngle(kDelta), noise, buildCount);
+  }
+
+  RiemannianStaircaseParams params;
+  params.pMin = 2;
+  params.pMax = 3;
+  params.eta = -1.0;
+  params.almParams = RingFixture::DefaultAlmParams();
+  const Values initial = RingFixture::RingQcqpValuesD2(kNumPoses, kDelta, 0.01);
+
+  const RiemannianStaircaseOptimizer optimizer(graph, initial, params);
+  EXPECT_LONGS_EQUAL(kNumPoses, *buildCount);
+  const auto result = optimizer.optimize();
+
+  EXPECT_LONGS_EQUAL(2, result.ranksVisited.size());
+  EXPECT_LONGS_EQUAL(kNumPoses * result.ranksVisited.size(), *buildCount);
+  EXPECT_LONGS_EQUAL(result.ranksVisited.size(),
+                     result.qcqpBuildTimePerLevel.size());
+  EXPECT_LONGS_EQUAL(result.ranksVisited.size(), result.nlpTimePerLevel.size());
+  EXPECT_LONGS_EQUAL(result.ranksVisited.size(),
+                     result.verifyTimePerLevel.size());
+
+  double accountedTime = 0.0;
+  for (size_t i = 0; i < result.ranksVisited.size(); ++i) {
+    accountedTime += result.qcqpBuildTimePerLevel[i] +
+                     result.nlpTimePerLevel[i] + result.verifyTimePerLevel[i];
+  }
+  EXPECT(result.totalTime >= accountedTime);
+}
+
+}  // namespace CachedQcqpFixture
+
+/* ************************************************************************* */
 namespace FastSyncRot3Fixture {
 
 Values noncontiguousTriangleRotations() {

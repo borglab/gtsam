@@ -1321,6 +1321,147 @@ TEST(QcqpProblem, InsertQcqpConstraintsMatchesExactQuadratics) {
   LONGS_EQUAL(4, constraints.size());
 }
 
+// Repeated graph factors retain every cost but register the six Rot3
+// row-Stiefel constraints only once for each unique variable.
+TEST(QcqpProblem, RepeatedFactorsRegisterUniqueVariableConstraints) {
+  constexpr size_t kFactorCount = 50;
+  const Key x1 = Symbol('x', 1);
+  const auto noise = noiseModel::Isotropic::Sigma(Rot3::dimension, 1.0);
+  NonlinearFactorGraph graph;
+  for (size_t i = 0; i < kFactorCount; ++i) {
+    graph.emplace_shared<FrobeniusBetweenFactor<Rot3>>(
+        x0, x1, Rot3::RzRyRx(0.0, 0.0, 0.001 * i), noise);
+  }
+
+  const QcqpProblem problem(graph, 3);
+  LONGS_EQUAL(kFactorCount, problem.costs().size());
+  LONGS_EQUAL(12, problem.eConstraints().size());
+
+  for (size_t i = 0; i < problem.eConstraints().size(); ++i) {
+    const auto quadratic =
+        std::dynamic_pointer_cast<QuadraticEqualityConstraintFactor>(
+            problem.eConstraints().at(i));
+    CHECK(quadratic != nullptr);
+    LONGS_EQUAL(i < 6 ? x0 : x1, quadratic->quadraticConstraint().key());
+  }
+
+  Values manifoldValues;
+  manifoldValues.insert(x0, Rot3::Identity());
+  manifoldValues.insert(x1, Rot3::Identity());
+  Values qcqpValues;
+  InsertQcqpValue<Rot3, 3>(x0, Rot3::Identity(), &qcqpValues);
+  InsertQcqpValue<Rot3, 3>(x1, Rot3::Identity(), &qcqpValues);
+  EXPECT_DOUBLES_EQUAL(graph.error(manifoldValues),
+                       problem.costs().error(qcqpValues), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
+                       1e-12);
+}
+
+class QuadraticConstraintEmitter : public NonlinearFactor {
+ public:
+  explicit QuadraticConstraintEmitter(
+      const std::vector<QuadraticConstraint>& constraints)
+      : NonlinearFactor(KeyVector{x0}), constraints_(constraints) {}
+
+  size_t dim() const override { return 0; }
+
+  GaussianFactor::shared_ptr linearize(const Values&) const override {
+    return nullptr;
+  }
+
+  void qcqpFactors(NonlinearFactorGraph*,
+                   NonlinearEqualityConstraints* constraints,
+                   size_t) const override {
+    for (const auto& constraint : constraints_) {
+      constraints->push_back(constraint.createEqualityFactor());
+    }
+  }
+
+  NonlinearFactor::shared_ptr clone() const override {
+    return std::make_shared<QuadraticConstraintEmitter>(*this);
+  }
+
+ private:
+  std::vector<QuadraticConstraint> constraints_;
+};
+
+class NonquadraticConstraintEmitter : public NonlinearFactor {
+ public:
+  explicit NonquadraticConstraintEmitter(
+      const NonlinearEqualityConstraint::shared_ptr& constraint)
+      : NonlinearFactor(KeyVector{x0}), constraint_(constraint) {}
+
+  size_t dim() const override { return 0; }
+
+  GaussianFactor::shared_ptr linearize(const Values&) const override {
+    return nullptr;
+  }
+
+  void qcqpFactors(NonlinearFactorGraph*,
+                   NonlinearEqualityConstraints* constraints,
+                   size_t) const override {
+    constraints->push_back(constraint_);
+  }
+
+  NonlinearFactor::shared_ptr clone() const override {
+    return std::make_shared<NonquadraticConstraintEmitter>(*this);
+  }
+
+ private:
+  NonlinearEqualityConstraint::shared_ptr constraint_;
+};
+
+// Indexed merging removes exact repeats across source factors without
+// suppressing distinct quadratic equations on the same key or reordering them.
+TEST(QcqpProblem, IndexedMergePreservesDistinctQuadratics) {
+  const Matrix A0{{1.0, 0.0}, {0.0, 0.0}};
+  const Matrix A1{{0.0, 0.0}, {0.0, 1.0}};
+  const Matrix A2 = Matrix2::Identity();
+  const QuadraticConstraint c0 = QuadraticConstraint::Equal(x0, A0, 1.0);
+  const QuadraticConstraint c1 = QuadraticConstraint::Equal(x0, A1, 1.0);
+  const QuadraticConstraint c2 = QuadraticConstraint::Equal(x0, A2, 2.0);
+
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<QuadraticConstraintEmitter>(
+      std::vector<QuadraticConstraint>{c0, c1});
+  graph.emplace_shared<QuadraticConstraintEmitter>(
+      std::vector<QuadraticConstraint>{c0, c2});
+
+  const QcqpProblem problem(graph, 2);
+  LONGS_EQUAL(3, problem.eConstraints().size());
+  const std::array<Matrix, 3> expected{A0, A1, A2};
+  for (size_t i = 0; i < expected.size(); ++i) {
+    const auto quadratic =
+        std::dynamic_pointer_cast<QuadraticEqualityConstraintFactor>(
+            problem.eConstraints().at(i));
+    CHECK(quadratic != nullptr);
+    EXPECT(
+        assert_equal(expected[i], quadratic->quadraticConstraint().A(), 0.0));
+  }
+
+  Values values;
+  values.insert(x0, Matrix(Matrix2::Identity()));
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(values),
+                       1e-12);
+}
+
+// Nonquadratic equalities are never deduplicated as a side effect of the
+// quadratic index, even when two source factors emit the same shared factor.
+TEST(QcqpProblem, IndexedMergePreservesNonquadraticConstraints) {
+  const Matrix A{{1.0, 0.0}};
+  const auto constraint =
+      LinearConstraint::Equal(JacobianFactor(x0, A, Vector1(1.0)))
+          .createEqualityFactor();
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<NonquadraticConstraintEmitter>(constraint);
+  graph.emplace_shared<NonquadraticConstraintEmitter>(constraint);
+
+  const QcqpProblem problem(graph, 2);
+  LONGS_EQUAL(2, problem.eConstraints().size());
+  EXPECT(problem.eConstraints().at(0) == constraint);
+  EXPECT(problem.eConstraints().at(1) == constraint);
+}
+
 }  // namespace QcqpConstraintInsertionFixture
 /* ************************************************************************* */
 namespace QcqpExtractionFixture {

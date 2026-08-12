@@ -35,6 +35,34 @@
 #include <stdexcept>
 
 namespace gtsam {
+namespace {
+
+using Clock = std::chrono::steady_clock;
+
+double ElapsedSeconds(Clock::time_point start) {
+  return std::chrono::duration<double>(Clock::now() - start).count();
+}
+
+}  // namespace
+
+/* ************************************************************************* */
+RiemannianStaircaseOptimizer::RiemannianStaircaseOptimizer(
+    const NonlinearFactorGraph& graph, const Values& initialValues,
+    const RiemannianStaircaseParams& params)
+    : graph_(graph), initialValues_(initialValues), params_(params) {
+  validateParams(params_);
+  const auto buildStart = Clock::now();
+  try {
+    pMinQcqp_ = std::make_shared<QcqpProblem>(graph_, params_.pMin);
+  } catch (const std::exception& e) {
+    throw std::invalid_argument(
+        std::string("RiemannianStaircaseOptimizer: QcqpProblem(graph, pMin) "
+                    "failed — is the source graph QCQP-representable? "
+                    "Underlying error: ") +
+        e.what());
+  }
+  pMinQcqpBuildTime_ = ElapsedSeconds(buildStart);
+}
 
 /* ************************************************************************* */
 RiemannianStaircaseOptimizer::Layout
@@ -500,10 +528,6 @@ std::tuple<bool, double, Vector> RiemannianStaircaseOptimizer::verifySpectra(
 
 /* ************************************************************************* */
 RiemannianStaircaseResult RiemannianStaircaseOptimizer::optimize() const {
-  using Clock = std::chrono::steady_clock;
-  const auto seconds = [](Clock::time_point a, Clock::time_point b) {
-    return std::chrono::duration<double>(b - a).count();
-  };
   const auto totalStart = Clock::now();
 
   RiemannianStaircaseResult result;
@@ -517,16 +541,24 @@ RiemannianStaircaseResult RiemannianStaircaseOptimizer::optimize() const {
       std::cout << "Staircase at rank = " << p << std::endl;
     }
 
+    std::shared_ptr<const QcqpProblem> qcqp;
+    if (p == params_.pMin) {
+      qcqp = pMinQcqp_;
+      result.qcqpBuildTimePerLevel.push_back(pMinQcqpBuildTime_);
+    } else {
+      const auto buildStart = Clock::now();
+      qcqp = std::make_shared<QcqpProblem>(graph_, p);
+      result.qcqpBuildTimePerLevel.push_back(ElapsedSeconds(buildStart));
+    }
+
     // Inner solve (Alg. 1 line 3). Swap point for non-ALM solvers — downstream
     // needs (Y*, lambdaEq) aligned with qcqp.eConstraints().
     const auto nlpStart = Clock::now();
-    QcqpProblem qcqp(graph_, p);
-    const InnerSolveResult inner =
-        runLocalSolver(qcqp, Y, params_.almParams);
+    const InnerSolveResult inner = runLocalSolver(*qcqp, Y, params_.almParams);
+    result.nlpTimePerLevel.push_back(ElapsedSeconds(nlpStart));
     Y = inner.Y;
 
-    result.costPerLevel.push_back(qcqp.costs().error(Y));
-    result.nlpTimePerLevel.push_back(seconds(nlpStart, Clock::now()));
+    result.costPerLevel.push_back(qcqp->costs().error(Y));
 
     // Certificate + verify (Alg. 1 lines 4-9). Pass => global SDP optimum.
     const auto verifyStart = Clock::now();
@@ -539,9 +571,9 @@ RiemannianStaircaseResult RiemannianStaircaseOptimizer::optimize() const {
           "multipliers and the closed-form extractor is not implemented.");
     }
     const Eigen::SparseMatrix<double> S =
-        buildCertificate(qcqp, layout, inner.lambdaEq);
+        buildCertificate(*qcqp, layout, inner.lambdaEq);
     auto [passed, lambdaMin, vMin] = verify(S, params_);
-    result.verifyTimePerLevel.push_back(seconds(verifyStart, Clock::now()));
+    result.verifyTimePerLevel.push_back(ElapsedSeconds(verifyStart));
     result.minEigenvaluePerLevel.push_back(lambdaMin);
 
     if (params_.verbose) {
@@ -560,7 +592,7 @@ RiemannianStaircaseResult RiemannianStaircaseOptimizer::optimize() const {
       result.minEigenvalue = lambdaMin;
       result.rounded =
           truncateToRankD(Y, layout, static_cast<int>(layout.maxRowDim()));
-      result.totalTime = seconds(totalStart, Clock::now());
+      result.totalTime = pMinQcqpBuildTime_ + ElapsedSeconds(totalStart);
       return result;
     }
 
@@ -578,7 +610,7 @@ RiemannianStaircaseResult RiemannianStaircaseOptimizer::optimize() const {
   result.layout = Layout::From(Y);
   result.finalRank = params_.pMax;
   result.certified = false;
-  result.totalTime = seconds(totalStart, Clock::now());
+  result.totalTime = pMinQcqpBuildTime_ + ElapsedSeconds(totalStart);
   return result;
 }
 
@@ -615,6 +647,10 @@ Vector RiemannianStaircaseResult::getCostPerLevel() const {
 
 Vector RiemannianStaircaseResult::getMinEigenvaluePerLevel() const {
   return ToVector(minEigenvaluePerLevel);
+}
+
+Vector RiemannianStaircaseResult::getQcqpBuildTimePerLevel() const {
+  return ToVector(qcqpBuildTimePerLevel);
 }
 
 Vector RiemannianStaircaseResult::getNlpTimePerLevel() const {
