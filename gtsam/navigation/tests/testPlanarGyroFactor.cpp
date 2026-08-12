@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  * @file testPlanarGyroFactor.cpp
  * @date May 1, 2026
@@ -9,6 +20,7 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/TernaryJacobianFactor.h>
 #include <gtsam/navigation/PlanarGyroFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
@@ -60,6 +72,23 @@ TEST(PlanarGyroFactor, fromRotation) {
   Rot2 corrected = x.deltaR(bias, H);
   EXPECT(assert_equal(0.025, corrected.theta(), 1e-9))
   EXPECT(assert_equal(-0.5, H(0, 0), 1e-9))
+}
+
+TEST(PlanarGyroFactor, TernaryLinearization) {
+  const auto params = std::make_shared<PlanarGyroParams>(1.0, 3e-4);
+  const PlanarGyroFactor factor =
+      PlanarGyroFactor::FromRate(P(0), P(1), B(0), params, 0.1, 0.5);
+  const Values values{{P(0), genericValue(Pose2(1.0, 2.0, 0.3))},
+                      {P(1), genericValue(Pose2(1.2, 2.1, 0.4))},
+                      {B(0), genericValue(0.02)}};
+
+  const auto generic = factor.NoiseModelFactor::linearize(values);
+  const auto optimized = factor.linearize(values);
+  const bool isTernary = static_cast<bool>(
+      std::dynamic_pointer_cast<TernaryJacobianFactor<3, 3, 3, 1>>(
+          optimized));
+  CHECK(isTernary);
+  EXPECT(assert_equal(*generic, *optimized, 1e-12));
 }
 
 TEST(PlanarGyroParams, variance) {

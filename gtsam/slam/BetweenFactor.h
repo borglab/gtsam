@@ -19,6 +19,7 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Lie.h>
+#include <gtsam/linear/BinaryJacobianFactor.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 
@@ -39,7 +40,9 @@ namespace gtsam {
    * @ingroup slam
    */
   template<class VALUE>
-  class BetweenFactor: public NoiseModelFactorN<VALUE, VALUE> {
+  class BetweenFactor
+      : public NoiseModelFactorT<typename traits<VALUE>::TangentVector, VALUE,
+                                 VALUE> {
 
     // Check that VALUE type is a testable Lie group
     GTSAM_CONCEPT_ASSERT(IsTestable<VALUE>);
@@ -48,11 +51,12 @@ namespace gtsam {
   public:
 
     typedef VALUE T;
+    using ErrorVector = typename traits<VALUE>::TangentVector;
 
   private:
 
     typedef BetweenFactor<VALUE> This;
-    typedef NoiseModelFactorN<VALUE, VALUE> Base;
+    typedef NoiseModelFactorT<ErrorVector, VALUE, VALUE> Base;
 
     VALUE measured_; /** The measurement */
 
@@ -111,7 +115,7 @@ namespace gtsam {
     /// @{
 
     /// evaluate error, returns vector of errors size of tangent space
-    Vector evaluateError(const T& p1, const T& p2,
+    ErrorVector evaluateError(const T& p1, const T& p2,
 			OptionalMatrixType H1, OptionalMatrixType H2) const override {
       T hx = traits<T>::Between(p1, p2, H1, H2); // h(x)
       // manifold equivalent of h(x)-z -> log(z,h(x))

@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  * @file testVelocityConstraint
  * @author Alex Cunningham
@@ -33,6 +44,16 @@ TEST( testVelocityConstraint, trapezoidal ) {
   EXPECT(assert_equal(Z_3x1, constraint.evaluateError(origin, origin), tol));
   EXPECT(assert_equal(Vector::Unit(3,0)*(-1.0), constraint.evaluateError(pose1, pose1), tol));
   EXPECT(assert_equal(Vector::Unit(3,0)*0.5, constraint.evaluateError(origin, pose1a), tol));
+
+  // Fixed PoseRTV dimensions select BinaryJacobianFactor<3, 9, 9>, including
+  // for this constrained model. Verify it preserves the old generic system.
+  const Values values{{x1, genericValue(origin)}, {x2, genericValue(pose1)}};
+  const auto generic = constraint.NoiseModelFactor::linearize(values);
+  const auto specialized = constraint.linearize(values);
+  const bool isBinary = static_cast<bool>(
+      std::dynamic_pointer_cast<BinaryJacobianFactor<3, 9, 9>>(specialized));
+  CHECK(isBinary);
+  EXPECT(assert_equal(*generic, *specialized, tol));
 }
 
 /* ************************************************************************* */

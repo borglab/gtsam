@@ -23,6 +23,7 @@
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/nonlinear/factorTesting.h>
+#include <gtsam/linear/BinaryJacobianFactor.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -349,6 +350,62 @@ TEST(RangeFactor, NonGTSAM) {
   // Verify we get the expected error
   CHECK(assert_equal(expectedError, factor.unwhitenedError({{poseKey, genericValue(pose)}, {pointKey, genericValue(point)}}), 1e-9));
 }
+
+/* ************************************************************************* */
+namespace binary_linearization {
+
+// Calls the base implementation explicitly to obtain a generic JacobianFactor,
+// then checks that the normal call returns an equal BinaryJacobianFactor<M,N1,N2>,
+// where M is the residual dimension and N1/N2 are variable tangent dimensions.
+TEST(RangeFactor, BinaryLinearization) {
+  // A range contributes one residual row. Two Point2 variables therefore
+  // produce a BinaryJacobianFactor with shape <1,2,2>.
+  const Point2 point2A(1.0, 2.0), point2B(-4.0, 11.0);
+  const Values values2D{{11, genericValue(point2A)},
+                        {22, genericValue(point2B)}};
+  const RangeFactor<Point2> factor2D(11, 22, measurement, model);
+  const auto generic2D = factor2D.NoiseModelFactor::linearize(values2D);
+  const auto optimized2D = factor2D.linearize(values2D);
+  const bool isBinary2D = static_cast<bool>(
+      std::dynamic_pointer_cast<BinaryJacobianFactor<1, 2, 2>>(optimized2D));
+  CHECK(isBinary2D);
+  EXPECT(assert_equal(*generic2D, *optimized2D, 1e-9));
+
+  // Point3 changes each variable block to three columns, while the range stays
+  // scalar. The base-qualified call supplies the generic whitened reference.
+  const Point3 point3A(1.0, 2.0, 0.0), point3B(-4.0, 11.0, 0.0);
+  const Values values3D{{11, genericValue(point3A)},
+                        {22, genericValue(point3B)}};
+  const RangeFactor<Point3> factor3D(11, 22, measurement, model);
+  const auto generic3D = factor3D.NoiseModelFactor::linearize(values3D);
+  const auto optimized3D = factor3D.linearize(values3D);
+  const bool isBinary3D = static_cast<bool>(
+      std::dynamic_pointer_cast<BinaryJacobianFactor<1, 3, 3>>(optimized3D));
+  CHECK(isBinary3D);
+  EXPECT(assert_equal(*generic3D, *optimized3D, 1e-9));
+}
+
+// The transform-bias variant has three keys, so its scalar residual and
+// Pose2/Point2/scalar arguments produce a <1,3,2,1> ternary factor.
+TEST(RangeFactor, TernaryLinearizationWithTransformBias) {
+  const Pose2 body_P_sensor(0.25, -0.10, -M_PI_2);
+  const RangeFactorWithTransformBias2D factor(
+      poseKey, pointKey, biasKey, measurement, model, body_P_sensor);
+  const Values values{{poseKey, genericValue(Pose2(1.0, 2.0, 0.57))},
+                      {pointKey, genericValue(Point2(-4.0, 11.0))},
+                      {biasKey, genericValue(0.5)}};
+
+  const auto generic = factor.NoiseModelFactor::linearize(values);
+  const auto optimized = factor.linearize(values);
+  const bool isTernary = static_cast<bool>(
+      std::dynamic_pointer_cast<TernaryJacobianFactor<1, 3, 2, 1>>(
+          optimized));
+  CHECK(isTernary);
+  EXPECT(assert_equal(*generic, *optimized, 1e-12));
+}
+
+}  // namespace binary_linearization
+/* ************************************************************************* */
 
 /* ************************************************************************* */
 int main() {

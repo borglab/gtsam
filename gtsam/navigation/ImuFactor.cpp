@@ -177,7 +177,7 @@ bool ImuFactor2T<PIM>::equals(const NonlinearFactor& other, double tol) const {
 
 //------------------------------------------------------------------------------
 template <class PIM>
-Vector ImuFactor2T<PIM>::evaluateError(const NavState& state_i,
+Vector9 ImuFactor2T<PIM>::evaluateError(const NavState& state_i,
     const NavState& state_j,
     const imuBias::ConstantBias& bias_i, //
     OptionalMatrixType H1, OptionalMatrixType H2,

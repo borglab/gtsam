@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  *  @file   PseudorangeFactor.h
  *  @author Sammy Guo
@@ -49,10 +60,11 @@ using PseudorangeBase = GnssMeasurementBase;
  * [1] P. Misra et. al., "Global Positioning Systems: Signals, Measurements, and
  * Performance", Second Edition, 2012.
  */
-class GTSAM_EXPORT PseudorangeFactor : public NoiseModelFactorN<Point3, double>,
+class GTSAM_EXPORT PseudorangeFactor
+    : public NoiseModelFactorT<Vector1, Point3, double>,
                                        private PseudorangeBase {
  private:
-  typedef NoiseModelFactorN<Point3, double> Base;
+  typedef NoiseModelFactorT<Vector1, Point3, double> Base;
 
  public:
   // Provide access to the Matrix& version of evaluateError:
@@ -101,10 +113,10 @@ class GTSAM_EXPORT PseudorangeFactor : public NoiseModelFactorN<Point3, double>,
               double tol = 1e-9) const override;
 
   /// vector of errors
-  Vector evaluateError(const Point3& receiverPosition,
-                       const double& receiverClockBias,
-                       OptionalMatrixType HreceiverPos,
-                       OptionalMatrixType HreceiverClockBias) const override;
+  Vector1 evaluateError(const Point3& receiverPosition,
+                        const double& receiverClockBias,
+                        OptionalMatrixType HreceiverPos,
+                        OptionalMatrixType HreceiverClockBias) const override;
 
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION  ///
@@ -341,10 +353,10 @@ struct traits<UndifferencedPseudorangeFactorArm>
  * Performance", Second Edition, 2012.
  */
 class GTSAM_EXPORT DifferentialPseudorangeFactor
-    : public NoiseModelFactorN<Point3, double, double>,
+    : public NoiseModelFactorT<Vector1, Point3, double, double>,
       private PseudorangeBase {
  private:
-  typedef NoiseModelFactorN<Point3, double, double> Base;
+  typedef NoiseModelFactorT<Vector1, Point3, double, double> Base;
 
  public:
   using Base::evaluateError;
@@ -369,7 +381,7 @@ class GTSAM_EXPORT DifferentialPseudorangeFactor
                                             DefaultKeyFormatter) const override;
   bool equals(const NonlinearFactor& expected,
               double tol = 1e-9) const override;
-  Vector evaluateError(
+  Vector1 evaluateError(
       const Point3& receiverPosition, const double& receiverClock_bias,
       const double& differentialCorrection, OptionalMatrixType HreceiverPos,
       OptionalMatrixType HreceiverClockBias,
@@ -415,10 +427,10 @@ struct traits<DifferentialPseudorangeFactor>
  * @ingroup navigation
  */
 class GTSAM_EXPORT PseudorangeFactorArm
-    : public NoiseModelFactorN<Pose3, double>,
+    : public NoiseModelFactorT<Vector1, Pose3, double>,
       private PseudorangeBase {
  private:
-  typedef NoiseModelFactorN<Pose3, double> Base;
+  typedef NoiseModelFactorT<Vector1, Pose3, double> Base;
 
   gnss::LeverArm arm_;  ///< Lever arm + optional ecef_T_nav.
 
@@ -488,10 +500,10 @@ class GTSAM_EXPORT PseudorangeFactorArm
               double tol = 1e-9) const override;
 
   /// vector of errors
-  Vector evaluateError(const Pose3& pose,
-                       const double& receiverClockBias,
-                       OptionalMatrixType H_pose,
-                       OptionalMatrixType HreceiverClockBias) const override;
+  Vector1 evaluateError(const Pose3& pose,
+                        const double& receiverClockBias,
+                        OptionalMatrixType H_pose,
+                        OptionalMatrixType HreceiverClockBias) const override;
 
   /// return the lever arm, a position in the body frame
   inline const Point3& leverArm() const { return arm_.b; }
@@ -537,10 +549,10 @@ struct traits<PseudorangeFactorArm>
  * @ingroup navigation
  */
 class GTSAM_EXPORT DifferentialPseudorangeFactorArm
-    : public NoiseModelFactorN<Pose3, double, double>,
+    : public NoiseModelFactorT<Vector1, Pose3, double, double>,
       private PseudorangeBase {
  private:
-  typedef NoiseModelFactorN<Pose3, double, double> Base;
+  typedef NoiseModelFactorT<Vector1, Pose3, double, double> Base;
   gnss::LeverArm arm_;
 
  public:
@@ -574,12 +586,12 @@ class GTSAM_EXPORT DifferentialPseudorangeFactorArm
                                             DefaultKeyFormatter) const override;
   bool equals(const NonlinearFactor& expected,
               double tol = 1e-9) const override;
-  Vector evaluateError(const Pose3& pose,
-                       const double& receiverClockBias,
-                       const double& differentialCorrection,
-                       OptionalMatrixType H_pose,
-                       OptionalMatrixType HreceiverClockBias,
-                       OptionalMatrixType HdifferentialCorrection) const override;
+  Vector1 evaluateError(const Pose3& pose,
+                        const double& receiverClockBias,
+                        const double& differentialCorrection,
+                        OptionalMatrixType H_pose,
+                        OptionalMatrixType HreceiverClockBias,
+                        OptionalMatrixType HdifferentialCorrection) const override;
 
   inline const Point3& leverArm() const { return arm_.b; }
   inline const std::optional<Pose3>& ecefTnav() const { return arm_.ecef_T_nav; }

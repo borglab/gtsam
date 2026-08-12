@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  *  @file   DopplerFactor.h
  *  @brief  Header file for the GNSS Doppler (range-rate) factor
@@ -48,9 +59,9 @@ namespace gtsam {
  * @ingroup navigation
  */
 class GTSAM_EXPORT DopplerFactor
-    : public NoiseModelFactorN<Vector3, double, double> {
+    : public NoiseModelFactorT<Vector1, Vector3, double, double> {
  private:
-  typedef NoiseModelFactorN<Vector3, double, double> Base;
+  typedef NoiseModelFactorT<Vector1, Vector3, double, double> Base;
 
   double measRangeRate_ = 0.0;        ///< Measured range rate = -lambda*D [m/s].
   Point3 satVel_{0, 0, 0};            ///< Satellite ECEF velocity [m/s].
@@ -102,11 +113,11 @@ class GTSAM_EXPORT DopplerFactor
               double tol = 1e-9) const override;
 
   /// vector of errors
-  Vector evaluateError(const Vector3& velocity, const double& clockBiasPrev,
-                       const double& clockBiasCurr,
-                       OptionalMatrixType Hvelocity,
-                       OptionalMatrixType HclockBiasPrev,
-                       OptionalMatrixType HclockBiasCurr) const override;
+  Vector1 evaluateError(const Vector3& velocity, const double& clockBiasPrev,
+                        const double& clockBiasCurr,
+                        OptionalMatrixType Hvelocity,
+                        OptionalMatrixType HclockBiasPrev,
+                        OptionalMatrixType HclockBiasCurr) const override;
 
   /// Measured range rate (= -lambda * Doppler) [m/s].
   inline double measuredRangeRate() const { return measRangeRate_; }

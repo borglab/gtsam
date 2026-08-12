@@ -20,6 +20,7 @@
 
 #include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/StereoCamera.h>
+#include <gtsam/linear/BinaryJacobianFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
@@ -32,7 +33,8 @@ namespace gtsam {
  * @ingroup slam
  */
 template<class POSE, class LANDMARK>
-class GenericStereoFactor: public NoiseModelFactorN<POSE, LANDMARK> {
+class GenericStereoFactor
+    : public NoiseModelFactorT<Vector3, POSE, LANDMARK> {
 private:
 
   // Keep a copy of measurement and calibration for I/O
@@ -47,7 +49,7 @@ private:
 public:
 
   // shorthand for base class type
-  typedef NoiseModelFactorN<POSE, LANDMARK> Base;             ///< typedef for base class
+  typedef NoiseModelFactorT<Vector3, POSE, LANDMARK> Base;  ///< base class
   typedef GenericStereoFactor<POSE, LANDMARK> This;           ///< typedef for this class (with templates)
   typedef std::shared_ptr<GenericStereoFactor> shared_ptr;  ///< typedef for shared pointer to this object
   typedef POSE CamPose;                                       ///< typedef for Pose Lie Value type
@@ -126,8 +128,9 @@ public:
   }
 
   /** h(x)-z */
-  Vector evaluateError(const Pose3& pose, const Point3& point,
-      OptionalMatrixType H1, OptionalMatrixType H2) const override {
+  Vector3 evaluateError(const Pose3& pose, const Point3& point,
+                        OptionalMatrixType H1,
+                        OptionalMatrixType H2) const override {
     try {
       if(body_P_sensor_) {
         if(H1) {
