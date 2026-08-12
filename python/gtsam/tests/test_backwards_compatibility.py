@@ -267,7 +267,7 @@ class TestBackwardsCompatibility(GtsamTestCase):
                 smoother_batch.update(new_factors, new_values, new_timestamps)
 
                 estimate = smoother_batch.calculateEstimatePose2(current_key)
-                self.assertTrue(estimate.equals(ground_truth[i], 1e-4))
+                self.gtsamAssertEquals(estimate, ground_truth[i], 1e-4)
                 i += 1
 
                 new_timestamps.clear()
