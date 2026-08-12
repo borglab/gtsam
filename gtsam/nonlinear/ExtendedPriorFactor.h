@@ -150,9 +150,8 @@ class ExtendedPriorFactor : public NoiseModelFactorN<VALUE> {
 #ifdef GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR
     if constexpr (internal::HasLocalJacobians<T>::value) {
       if (H) {
-        typename traits<T>::ChartJacobian::Jacobian Hlocal;
-        error = -traits<T>::Local(x, origin_, &Hlocal, OptionalNone);
-        *H = -Hlocal;
+        error = -traits<T>::Local(x, origin_, H, OptionalNone);
+        *H *= -1.0;
       } else {
         error = -traits<T>::Local(x, origin_);
       }
