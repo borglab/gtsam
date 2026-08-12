@@ -78,6 +78,8 @@ jobs:
       - name: Install sccache
         if: matrix.build_type == 'Release'
         uses: mozilla-actions/sccache-action@v0.0.11
+        with:
+          version: "v0.17.0"
 
       - name: Configuration
         shell: bash

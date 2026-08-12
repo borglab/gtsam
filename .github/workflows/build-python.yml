@@ -116,6 +116,8 @@ jobs:
 
       - name: Install sccache
         uses: mozilla-actions/sccache-action@v0.0.11
+        with:
+          version: "v0.17.0"
 
       # Keep the Windows PR fast-compile gate focused on the stable library.
       - name: Configure
@@ -322,6 +324,8 @@ jobs:
       - name: Install sccache
         if: matrix.use_sccache == true
         uses: mozilla-actions/sccache-action@v0.0.11
+        with:
+          version: "v0.17.0"
 
       - name: Set GTSAM_WITH_TBB Flag
         if: matrix.flag == 'tbb'
