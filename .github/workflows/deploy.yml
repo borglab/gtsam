@@ -5,10 +5,11 @@ on:
   push:
     # Runs on pushes targeting the develop branch
     branches: [develop]
-    # Only trigger redeploy if Markdown files, notebooks, or config changes
+    # Only trigger redeploy if documentation source or config changes
     paths:
       - '**.md'
-      - '**.ipynb' 
+      - '**.ipynb'
+      - '**.css'
       - 'myst.yml'
 env:
   # `BASE_URL` determines the website is served from, including CSS & JS assets
