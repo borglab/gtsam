@@ -484,8 +484,8 @@ Sparse ShonanAveraging<d>::computeLambda(const Matrix &S) const {
   std::vector<Eigen::Triplet<double>> triplets;
   triplets.reserve(stride * N);
 
-  // Do sparse-dense multiply to get Q*S'
-  auto QSt = Q_ * S.transpose();
+  // Materialize Q*S' once before extracting a block for each pose.
+  const Matrix QSt = Q_ * S.transpose();
 
   for (size_t j = 0; j < N; j++) {
     // Compute B, the building block for the j^th diagonal block of Lambda
