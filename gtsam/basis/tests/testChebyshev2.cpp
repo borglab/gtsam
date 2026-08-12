@@ -566,7 +566,7 @@ TEST(Chebyshev2, DoubleIntegrationWeights) {
   const size_t N = 7;
   const double a = 0, b = 10;
   auto ones = Vector::Ones(N);
-
+  
   // Check the sum which should be 0.5*t^2 | [0,b] = b^2/2:
   Weights w = Chebyshev2::DoubleIntegrationWeights(N, a, b);
   EXPECT_DOUBLES_EQUAL(b*b/2, w * ones, 1e-9);
@@ -576,7 +576,7 @@ TEST(Chebyshev2, DoubleIntegrationWeights2) {
   const size_t N = 8;
   const double a = 0, b = 3;
   auto ones = Vector::Ones(N);
-
+  
   // Check the sum which should be 0.5*t^2 | [0,b] = b^2/2:
   Weights w = Chebyshev2::DoubleIntegrationWeights(N, a, b);
   EXPECT_DOUBLES_EQUAL(b*b/2, w * ones, 1e-9);
