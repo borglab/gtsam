@@ -54,6 +54,48 @@ struct GTSAM_EXPORT IncrementalRotation {
 
 }  // namespace internal
 
+/**
+ * Integrate timed gyroscope samples using sequential trapezoidal rotation
+ * increments. The timestamps must increase strictly, and measuredOmegas must
+ * have one three-axis sample per timestamp.
+ *
+ * The bias is subtracted in the sensor frame before body_R_sensor rotates each
+ * sample into the body frame.
+ *
+ * @param times Strictly increasing sample timestamps.
+ * @param measuredOmegas M-by-3 matrix of sensor-frame angular velocities.
+ * @param biasHat Gyroscope bias expressed in the sensor frame.
+ * @param body_R_sensor Rotation from sensor coordinates to body coordinates.
+ * @return The integrated body rotation.
+ * @throws std::invalid_argument if the sample count, matrix shape, or timestamp
+ * ordering is invalid.
+ */
+GTSAM_EXPORT Rot3 integrateSequentialRotations(
+    const Vector& times, ConstMatrixView measuredOmegas,
+    const Vector3& biasHat = Vector3::Zero(),
+    const Rot3& body_R_sensor = Rot3());
+
+/**
+ * Integrate timed gyroscope samples with a single-speed coning correction.
+ * The timestamps must increase strictly, and measuredOmegas must have one
+ * three-axis sample per timestamp.
+ *
+ * The bias is subtracted in the sensor frame before body_R_sensor rotates each
+ * sample into the body frame.
+ *
+ * @param times Strictly increasing sample timestamps.
+ * @param measuredOmegas M-by-3 matrix of sensor-frame angular velocities.
+ * @param biasHat Gyroscope bias expressed in the sensor frame.
+ * @param body_R_sensor Rotation from sensor coordinates to body coordinates.
+ * @return The integrated body rotation.
+ * @throws std::invalid_argument if the sample count, matrix shape, or timestamp
+ * ordering is invalid.
+ */
+GTSAM_EXPORT Rot3 integrateSingleSpeedConing(
+    const Vector& times, ConstMatrixView measuredOmegas,
+    const Vector3& biasHat = Vector3::Zero(),
+    const Rot3& body_R_sensor = Rot3());
+
 /// Parameters for pre-integration:
 /// Usage: Create just a single Params and pass a shared pointer to the constructor
 struct GTSAM_EXPORT PreintegratedRotationParams {
