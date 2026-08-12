@@ -18,6 +18,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Rot2.h>
 #include <gtsam/nonlinear/ExtendedPriorFactor.h>
 
 using namespace std;
@@ -65,6 +66,21 @@ TEST(ExtendedPriorFactor, ErrorWithMean) {
   Vector expected_error{{0.05463769, -0.038484723, -0.05}};
   Vector actual_error = factor.evaluateError(x);
   EXPECT(assert_equal(expected_error, actual_error, 1e-8));
+}
+
+//******************************************************************************
+// Verifies the fixed-size Rot2 Local Jacobian is written to the dynamic output.
+TEST(ExtendedPriorFactor, Rot2Jacobian) {
+  const Rot2 origin = Rot2::fromAngle(0.3);
+  const auto model = noiseModel::Isotropic::Sigma(1, 0.5);
+  const ExtendedPriorFactor<Rot2> factor(1, origin, model);
+
+  Matrix actualH;
+  const Vector actualError =
+      factor.evaluateError(Rot2::fromAngle(0.5), actualH);
+
+  EXPECT(assert_equal(Vector1{0.2}, actualError, 1e-9));
+  EXPECT(assert_equal(Matrix1::Identity(), actualH, 1e-9));
 }
 
 //******************************************************************************
