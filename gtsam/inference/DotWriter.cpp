@@ -40,10 +40,10 @@ void DotWriter::digraphPreamble(ostream* os) const {
 }
 
 void DotWriter::drawVariable(Key key, const KeyFormatter& keyFormatter,
-                             const boost::optional<Vector2>& position,
+                             const std::optional<Vector2>& position,
                              ostream* os) const {
   // Label the node with the label from the KeyFormatter
-  *os << "  var" << keyFormatter(key) << "[label=\"" << keyFormatter(key)
+  *os << "  var" << key << "[label=\"" << keyFormatter(key)
       << "\"";
   if (position) {
     *os << ", pos=\"" << position->x() << "," << position->y() << "!\"";
@@ -54,7 +54,7 @@ void DotWriter::drawVariable(Key key, const KeyFormatter& keyFormatter,
   *os << "];\n";
 }
 
-void DotWriter::DrawFactor(size_t i, const boost::optional<Vector2>& position,
+void DotWriter::DrawFactor(size_t i, const std::optional<Vector2>& position,
                            ostream* os) {
   *os << "  factor" << i << "[label=\"\", shape=point";
   if (position) {
@@ -65,37 +65,39 @@ void DotWriter::DrawFactor(size_t i, const boost::optional<Vector2>& position,
 
 static void ConnectVariables(Key key1, Key key2,
                              const KeyFormatter& keyFormatter, ostream* os) {
-  *os << "  var" << keyFormatter(key1) << "--"
-      << "var" << keyFormatter(key2) << ";\n";
+  *os << "  var" << key1 << "--"
+      << "var" << key2 << ";\n";
 }
 
 static void ConnectVariableFactor(Key key, const KeyFormatter& keyFormatter,
                                   size_t i, ostream* os) {
-  *os << "  var" << keyFormatter(key) << "--"
+  *os << "  var" << key << "--"
       << "factor" << i << ";\n";
 }
 
 /// Return variable position or none
-boost::optional<Vector2> DotWriter::variablePos(Key key) const {
-  boost::optional<Vector2> result = boost::none;
+std::optional<Vector2> DotWriter::variablePos(Key key) const {
+  std::optional<Vector2> result = {};
 
   // Check position hint
   Symbol symbol(key);
   auto hint = positionHints.find(symbol.chr());
-  if (hint != positionHints.end())
-    result.reset(Vector2(symbol.index(), hint->second));
+  if (hint != positionHints.end()) {
+    result = Vector2(symbol.index(), hint->second);
+  }
 
   // Override with explicit position, if given.
   auto pos = variablePositions.find(key);
-  if (pos != variablePositions.end())
-    result.reset(pos->second);
+  if (pos != variablePositions.end()) {
+    result = pos->second;
+  }
 
   return result;
 }
 
 void DotWriter::processFactor(size_t i, const KeyVector& keys,
                               const KeyFormatter& keyFormatter,
-                              const boost::optional<Vector2>& position,
+                              const std::optional<Vector2>& position,
                               ostream* os) const {
   if (plotFactorPoints) {
     if (binaryEdges && keys.size() == 2) {

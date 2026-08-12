@@ -17,6 +17,8 @@
  * @date June 14, 2012
  */
 
+#pragma once
+
 #include <gtsam/global_includes.h>
 #include <gtsam_unstable/dllexport.h>
 #include <string>
@@ -27,6 +29,8 @@ namespace gtsam {
     size_t id;
     Dummy();
     ~Dummy();
+    Dummy(const Dummy& other) = default;
+    Dummy& operator=(const Dummy& other) = default;
     void print(const std::string& s="") const ;
     unsigned char dummyTwoVar(unsigned char a) const ;
   };

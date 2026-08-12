@@ -68,7 +68,7 @@ Point2 uncalibrate_(const Cal3Unified& k, const Point2& pt) {
 /* ************************************************************************* */
 TEST(Cal3Unified, Duncalibrate1) {
   Matrix computed;
-  K.uncalibrate(p, computed, boost::none);
+  K.uncalibrate(p, computed, {});
   Matrix numerical = numericalDerivative21(uncalibrate_, K, p, 1e-7);
   CHECK(assert_equal(numerical, computed, 1e-6));
 }
@@ -76,7 +76,7 @@ TEST(Cal3Unified, Duncalibrate1) {
 /* ************************************************************************* */
 TEST(Cal3Unified, Duncalibrate2) {
   Matrix computed;
-  K.uncalibrate(p, boost::none, computed);
+  K.uncalibrate(p, {}, computed);
   Matrix numerical = numericalDerivative22(uncalibrate_, K, p, 1e-7);
   CHECK(assert_equal(numerical, computed, 1e-6));
 }
@@ -108,8 +108,7 @@ TEST(Cal3Unified, Retract) {
   EXPECT_LONGS_EQUAL(Cal3Unified::Dim(), 10);
   EXPECT_LONGS_EQUAL(expected.dim(), 10);
 
-  Vector10 d;
-  d << 2, 3, 4, 5, 6, 7, 8, 9, 10, 1;
+  Vector10 d{2, 3, 4, 5, 6, 7, 8, 9, 10, 1};
   Cal3Unified actual = K.retract(d);
   CHECK(assert_equal(expected, actual, 1e-9));
   CHECK(assert_equal(d, K.localCoordinates(actual), 1e-9));

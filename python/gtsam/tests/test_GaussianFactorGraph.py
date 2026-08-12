@@ -14,28 +14,30 @@ from __future__ import print_function
 
 import unittest
 
-import gtsam
 import numpy as np
 from gtsam.symbol_shorthand import X
 from gtsam.utils.test_case import GtsamTestCase
+
+import gtsam
 
 
 def create_graph():
     """Create a basic linear factor graph for testing"""
     graph = gtsam.GaussianFactorGraph()
-    
+
     x0 = X(0)
     x1 = X(1)
     x2 = X(2)
-    
+
     BETWEEN_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.ones(1))
     PRIOR_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.ones(1))
 
     graph.add(x1, np.eye(1), x0, -np.eye(1), np.ones(1), BETWEEN_NOISE)
-    graph.add(x2, np.eye(1), x1, -np.eye(1), 2*np.ones(1), BETWEEN_NOISE)
+    graph.add(x2, np.eye(1), x1, -np.eye(1), 2 * np.ones(1), BETWEEN_NOISE)
     graph.add(x0, np.eye(1), np.zeros(1), PRIOR_NOISE)
 
     return graph, (x0, x1, x2)
+
 
 class TestGaussianFactorGraph(GtsamTestCase):
     """Tests for Gaussian Factor Graphs."""
@@ -71,7 +73,7 @@ class TestGaussianFactorGraph(GtsamTestCase):
         self.assertAlmostEqual(EXPECTEDM[0], m[0], delta=1e-8)
         self.assertAlmostEqual(EXPECTEDM[1], m[1], delta=1e-8)
         self.assertAlmostEqual(EXPECTEDM[2], m[2], delta=1e-8)
-    
+
     def test_linearMarginalization(self):
         """Marginalize a linear factor graph"""
         graph, X = create_graph()
@@ -87,6 +89,23 @@ class TestGaussianFactorGraph(GtsamTestCase):
         self.assertAlmostEqual(EXPECTEDM[0], m[0], delta=1e-8)
         self.assertAlmostEqual(EXPECTEDM[1], m[1], delta=1e-8)
         self.assertAlmostEqual(EXPECTEDM[2], m[2], delta=1e-8)
+
+    def test_ordering(self):
+        """Test ordering"""
+        gfg, keys = create_graph()
+        ordering = gtsam.Ordering()
+        for key in keys[::-1]:
+            ordering.push_back(key)
+
+        bn = gfg.eliminateSequential(ordering)
+        self.assertEqual(bn.size(), 3)
+
+        keyVector = [keys[2]]
+        ordering = gtsam.Ordering.ColamdConstrainedLastGaussianFactorGraph(
+            gfg, keyVector)
+        bn = gfg.eliminateSequential(ordering)
+        self.assertEqual(bn.size(), 3)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,15 +1,13 @@
 
 project(EigenBlas CXX)
 
-include("../cmake/language_support.cmake")
-
-workaround_9220(Fortran EIGEN_Fortran_COMPILER_WORKS)
-
-if(EIGEN_Fortran_COMPILER_WORKS)
-  enable_language(Fortran OPTIONAL)
-  if(NOT CMAKE_Fortran_COMPILER)
-    set(EIGEN_Fortran_COMPILER_WORKS OFF)
-  endif()
+include(CheckLanguage)
+check_language(Fortran)
+if(CMAKE_Fortran_COMPILER)
+  enable_language(Fortran)
+  set(EIGEN_Fortran_COMPILER_WORKS ON)
+else()
+  set(EIGEN_Fortran_COMPILER_WORKS OFF)
 endif()
 
 add_custom_target(blas)
@@ -28,20 +26,27 @@ else()
   set(EigenBlas_SRCS ${EigenBlas_SRCS} f2c/complexdots.c)
 endif()
 
-add_library(eigen_blas_static ${EigenBlas_SRCS})
-add_library(eigen_blas SHARED ${EigenBlas_SRCS})
+set(EIGEN_BLAS_TARGETS "")
 
-if(EIGEN_STANDARD_LIBRARIES_TO_LINK_TO)
-  target_link_libraries(eigen_blas_static ${EIGEN_STANDARD_LIBRARIES_TO_LINK_TO})
-  target_link_libraries(eigen_blas        ${EIGEN_STANDARD_LIBRARIES_TO_LINK_TO})
+add_library(eigen_blas_static ${EigenBlas_SRCS})
+list(APPEND EIGEN_BLAS_TARGETS eigen_blas_static)
+
+if (EIGEN_BUILD_SHARED_LIBS)
+  add_library(eigen_blas SHARED ${EigenBlas_SRCS})
+  list(APPEND EIGEN_BLAS_TARGETS eigen_blas)
 endif()
 
-add_dependencies(blas eigen_blas eigen_blas_static)
+foreach(target IN LISTS EIGEN_BLAS_TARGETS)
+  if(EIGEN_STANDARD_LIBRARIES_TO_LINK_TO)
+      target_link_libraries(${target} ${EIGEN_STANDARD_LIBRARIES_TO_LINK_TO})
+  endif()
 
-install(TARGETS eigen_blas eigen_blas_static
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+  add_dependencies(blas ${target})
+  install(TARGETS ${target}
+          RUNTIME DESTINATION bin
+          LIBRARY DESTINATION lib
+          ARCHIVE DESTINATION lib)
+endforeach()
 
 if(EIGEN_Fortran_COMPILER_WORKS)
 

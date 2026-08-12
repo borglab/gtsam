@@ -52,10 +52,24 @@ Convenience classes for specific Python types
 .. doxygengroup:: pytypes
     :members:
 
+Convenience functions converting to Python types
+================================================
+
+.. doxygenfunction:: make_tuple(Args&&...)
+
+.. doxygenfunction:: make_iterator(Iterator, Sentinel, Extra &&...)
+.. doxygenfunction:: make_iterator(Type &, Extra&&...)
+
+.. doxygenfunction:: make_key_iterator(Iterator, Sentinel, Extra &&...)
+.. doxygenfunction:: make_key_iterator(Type &, Extra&&...)
+
+.. doxygenfunction:: make_value_iterator(Iterator, Sentinel, Extra &&...)
+.. doxygenfunction:: make_value_iterator(Type &, Extra&&...)
+
 .. _extras:
 
-Passing extra arguments to ``def`` or ``class_``
-================================================
+Passing extra arguments to ``def`` or ``py::class_``
+====================================================
 
 .. doxygengroup:: annotations
     :members:
@@ -109,7 +123,6 @@ Exceptions
 
 .. doxygenclass:: builtin_exception
     :members:
-
 
 Literals
 ========

@@ -16,22 +16,16 @@
  * @date    Nov 12, 2014
  */
 
-#include <gtsam/linear/RegularJacobianFactor.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/GaussianConditional.h>
-#include <gtsam/linear/VectorValues.h>
-#include <gtsam/base/TestableAssertions.h>
-
 #include <CppUnitLite/TestHarness.h>
-
-#include <boost/assign/std/vector.hpp>
-#include <boost/assign/list_of.hpp>
-#include <boost/range/iterator_range.hpp>
-#include <boost/range/adaptor/map.hpp>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/TestableAssertions.h>
+#include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/RegularJacobianFactor.h>
+#include <gtsam/linear/VectorValues.h>
 
 using namespace std;
 using namespace gtsam;
-using namespace boost::assign;
 
 static const size_t fixedDim = 3;
 static const size_t nrKeys = 3;
@@ -40,25 +34,22 @@ static const size_t nrKeys = 3;
 namespace {
   namespace simple {
     // Terms we'll use
-    const vector<pair<Key, Matrix> > terms = list_of<pair<Key,Matrix> >
-      (make_pair(0, Matrix3::Identity()))
-      (make_pair(1, 2*Matrix3::Identity()))
-      (make_pair(2, 3*Matrix3::Identity()));
+    const vector<pair<Key, Matrix> > terms{
+      {0, 1 * I_3x3}, {1, 2 * I_3x3}, {2, 3 * I_3x3}};
 
     // RHS and sigmas
-    const Vector b = (Vector(3) << 1., 2., 3.).finished();
-    const SharedDiagonal noise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.5,0.5,0.5).finished());
+    const Vector b{{1., 2., 3.}};
+    const SharedDiagonal noise =
+        noiseModel::Diagonal::Sigmas(Vector{{0.5, 0.5, 0.5}});
   }
 
   namespace simple2 {
     // Terms
-    const vector<pair<Key, Matrix> > terms2 = list_of<pair<Key,Matrix> >
-      (make_pair(0, 2*Matrix3::Identity()))
-      (make_pair(1, 4*Matrix3::Identity()))
-      (make_pair(2, 6*Matrix3::Identity()));
+    const vector<pair<Key, Matrix> > terms2{
+      {0, 2 * I_3x3}, {1, 4 * I_3x3}, {2, 6 * I_3x3}};
 
     // RHS
-    const Vector b2 = (Vector(3) << 2., 4., 6.).finished();
+    const Vector b2{{2., 4., 6.}};
   }
 }
 
@@ -190,15 +181,15 @@ TEST(RegularJacobian, multiplyHessianAdd)
 
   // arbitrary vector X
   VectorValues X;
-  X.insert(0, (Vector(3) << 10.,20.,30.).finished());
-  X.insert(1, (Vector(3) << 10.,20.,30.).finished());
-  X.insert(2, (Vector(3) << 10.,20.,30.).finished());
+  X.insert(0, Vector{{10., 20., 30.}});
+  X.insert(1, Vector{{10., 20., 30.}});
+  X.insert(2, Vector{{10., 20., 30.}});
 
   // arbitrary vector Y
   VectorValues Y;
-  Y.insert(0, (Vector(3) << 10.,10.,10.).finished());
-  Y.insert(1, (Vector(3) << 20.,20.,20.).finished());
-  Y.insert(2, (Vector(3) << 30.,30.,30.).finished());
+  Y.insert(0, Vector{{10., 10., 10.}});
+  Y.insert(1, Vector{{20., 20., 20.}});
+  Y.insert(2, Vector{{30., 30., 30.}});
 
   // multiplyHessianAdd Y += alpha*A'A*X
   double alpha = 2.0;

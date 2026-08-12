@@ -33,7 +33,7 @@ void resizeLikeTest12() { resizeLikeTest<1,2>(); }
 void resizeLikeTest1020() { resizeLikeTest<10,20>(); }
 void resizeLikeTest31() { resizeLikeTest<3,1>(); }
 
-void test_resize()
+EIGEN_DECLARE_TEST(resize)
 {
   CALL_SUBTEST(resizeLikeTest12() );
   CALL_SUBTEST(resizeLikeTest1020() );

@@ -22,13 +22,15 @@
 #include <gtsam/geometry/Cal3.h>
 #include <gtsam/geometry/Point2.h>
 
+#include <memory>
+
 #include <string>
 
 namespace gtsam {
 
 /**
  * @brief Calibration of a fisheye camera
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  *
  * Uses same distortionmodel as OpenCV, with
@@ -53,9 +55,9 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
   double tol_ = 1e-5;             ///< tolerance value when calibrating
 
  public:
-  enum { dimension = 9 };
+  constexpr static auto dimension = 9;
   ///< shared pointer to fisheye calibration object
-  using shared_ptr = boost::shared_ptr<Cal3Fisheye>;
+  using shared_ptr = std::shared_ptr<Cal3Fisheye>;
 
   /// @name Standard Constructors
   /// @{
@@ -91,16 +93,16 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
   /// @{
 
   /// First distortion coefficient
-  inline double k1() const { return k1_; }
+  double k1() const { return k1_; }
 
   /// Second distortion coefficient
-  inline double k2() const { return k2_; }
+  double k2() const { return k2_; }
 
   /// First tangential distortion coefficient
-  inline double k3() const { return k3_; }
+  double k3() const { return k3_; }
 
   /// Second tangential distortion coefficient
-  inline double k4() const { return k4_; }
+  double k4() const { return k4_; }
 
   /// return distortion parameter vector
   Vector4 k() const { return Vector4(k1_, k2_, k3_, k4_); }
@@ -119,8 +121,8 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates (xi, yi)
    * @return point in (distorted) image coordinates
    */
-  Point2 uncalibrate(const Point2& p, OptionalJacobian<2, 9> Dcal = boost::none,
-                     OptionalJacobian<2, 2> Dp = boost::none) const;
+  Point2 uncalibrate(const Point2& p, OptionalJacobian<2, 9> Dcal = {},
+                     OptionalJacobian<2, 2> Dp = {}) const;
 
   /**
    * Convert (distorted) image coordinates [u;v] to intrinsic coordinates [x_i,
@@ -130,8 +132,8 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates (xi, yi)
    * @return point in intrinsic coordinates
    */
-  Point2 calibrate(const Point2& p, OptionalJacobian<2, 9> Dcal = boost::none,
-                   OptionalJacobian<2, 2> Dp = boost::none) const;
+  Point2 calibrate(const Point2& p, OptionalJacobian<2, 9> Dcal = {},
+                   OptionalJacobian<2, 2> Dp = {}) const;
 
   /// @}
   /// @name Testable
@@ -152,13 +154,13 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
   /// @{
 
   /// Return dimensions of calibration manifold object
-  size_t dim() const override { return Dim(); }
+  size_t dim() const { return Dim(); }
 
   /// Return dimensions of calibration manifold object
-  inline static size_t Dim() { return dimension; }
+  static size_t Dim() { return dimension; }
 
   /// Given delta vector, update calibration
-  inline Cal3Fisheye retract(const Vector& d) const {
+  Cal3Fisheye retract(const Vector& d) const {
     return Cal3Fisheye(vector() + d);
   }
 
@@ -172,8 +174,8 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
   /// @{
 
   /// @return a deep copy of this object
-  virtual boost::shared_ptr<Cal3Fisheye> clone() const {
-    return boost::shared_ptr<Cal3Fisheye>(new Cal3Fisheye(*this));
+  virtual std::shared_ptr<Cal3Fisheye> clone() const {
+    return std::shared_ptr<Cal3Fisheye>(new Cal3Fisheye(*this));
   }
 
   /// @}
@@ -182,6 +184,7 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
   /// @name Advanced Interface
   /// @{
 
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class Archive>
@@ -193,6 +196,7 @@ class GTSAM_EXPORT Cal3Fisheye : public Cal3 {
     ar& BOOST_SERIALIZATION_NVP(k3_);
     ar& BOOST_SERIALIZATION_NVP(k4_);
   }
+#endif
 
   /// @}
 };

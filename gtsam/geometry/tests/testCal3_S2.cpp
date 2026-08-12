@@ -15,6 +15,7 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/numericalDerivative.h>
@@ -64,7 +65,7 @@ Point2 uncalibrate_(const Cal3_S2& k, const Point2& pt) {
 
 TEST(Cal3_S2, Duncalibrate1) {
   Matrix25 computed;
-  K.uncalibrate(p, computed, boost::none);
+  K.uncalibrate(p, computed, {});
   Matrix numerical = numericalDerivative21(uncalibrate_, K, p);
   CHECK(assert_equal(numerical, computed, 1e-8));
 }
@@ -72,7 +73,7 @@ TEST(Cal3_S2, Duncalibrate1) {
 /* ************************************************************************* */
 TEST(Cal3_S2, Duncalibrate2) {
   Matrix computed;
-  K.uncalibrate(p, boost::none, computed);
+  K.uncalibrate(p, {}, computed);
   Matrix numerical = numericalDerivative22(uncalibrate_, K, p);
   CHECK(assert_equal(numerical, computed, 1e-9));
 }
@@ -84,7 +85,7 @@ Point2 calibrate_(const Cal3_S2& k, const Point2& pt) {
 /* ************************************************************************* */
 TEST(Cal3_S2, Dcalibrate1) {
   Matrix computed;
-  Point2 expected = K.calibrate(p_uv, computed, boost::none);
+  Point2 expected = K.calibrate(p_uv, computed, {});
   Matrix numerical = numericalDerivative21(calibrate_, K, p_uv);
   CHECK(assert_equal(expected, p_xy, 1e-8));
   CHECK(assert_equal(numerical, computed, 1e-8));
@@ -93,7 +94,7 @@ TEST(Cal3_S2, Dcalibrate1) {
 /* ************************************************************************* */
 TEST(Cal3_S2, Dcalibrate2) {
   Matrix computed;
-  Point2 expected = K.calibrate(p_uv, boost::none, computed);
+  Point2 expected = K.calibrate(p_uv, {}, computed);
   Matrix numerical = numericalDerivative22(calibrate_, K, p_uv);
   CHECK(assert_equal(expected, p_xy, 1e-8));
   CHECK(assert_equal(numerical, computed, 1e-8));
@@ -114,8 +115,7 @@ TEST(Cal3_S2, Retract) {
   EXPECT_LONGS_EQUAL(Cal3_S2::Dim(), 5);
   EXPECT_LONGS_EQUAL(expected.dim(), 5);
 
-  Vector5 d;
-  d << 1, 2, 3, 4, 5;
+  Vector5 d{1, 2, 3, 4, 5};
   Cal3_S2 actual = K.retract(d);
   CHECK(assert_equal(expected, actual, 1e-7));
   CHECK(assert_equal(d, K.localCoordinates(actual), 1e-7));

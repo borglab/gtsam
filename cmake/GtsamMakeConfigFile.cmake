@@ -39,7 +39,7 @@ function(GtsamMakeConfigFile PACKAGE_NAME)
 	  COMPATIBILITY SameMajorVersion
 	)
 
-	# Config file
+	# Config file. RELATIVE_PATH needs the full path hence install prefix is specified.
 	file(RELATIVE_PATH CONF_REL_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/${DEF_INSTALL_CMAKE_DIR}" "${CMAKE_INSTALL_PREFIX}/include")
 	file(RELATIVE_PATH CONF_REL_LIB_DIR "${CMAKE_INSTALL_PREFIX}/${DEF_INSTALL_CMAKE_DIR}" "${CMAKE_INSTALL_PREFIX}/lib")
 	configure_file(${GTSAM_CONFIG_TEMPLATE_PATH}/Config.cmake.in "${PROJECT_BINARY_DIR}/${PACKAGE_NAME}Config.cmake" @ONLY)
@@ -51,7 +51,7 @@ function(GtsamMakeConfigFile PACKAGE_NAME)
 			"${PROJECT_BINARY_DIR}/${PACKAGE_NAME}Config.cmake"
 			"${PROJECT_BINARY_DIR}/${PACKAGE_NAME}ConfigVersion.cmake"
 		DESTINATION
-			"${CMAKE_INSTALL_PREFIX}/${DEF_INSTALL_CMAKE_DIR}"
+			"${DEF_INSTALL_CMAKE_DIR}"
 	)
 	install(EXPORT ${PACKAGE_NAME}-exports DESTINATION ${DEF_INSTALL_CMAKE_DIR})
 

@@ -97,7 +97,7 @@ static void test_plus_equal()
 }
 
 
-void test_cxx11_tensor_of_const_values()
+EIGEN_DECLARE_TEST(cxx11_tensor_of_const_values)
 {
   CALL_SUBTEST(test_assign());
   CALL_SUBTEST(test_plus());

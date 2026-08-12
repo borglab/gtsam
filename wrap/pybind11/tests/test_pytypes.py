@@ -1,12 +1,29 @@
-# -*- coding: utf-8 -*-
-from __future__ import division
-import pytest
+from __future__ import annotations
+
+import contextlib
 import sys
+import types
 
-import env  # noqa: F401
+import pytest
 
+import env
+from pybind11_tests import detailed_error_messages_enabled
 from pybind11_tests import pytypes as m
-from pybind11_tests import debug_enabled
+
+
+def test_obj_class_name():
+    assert m.obj_class_name(None) == "NoneType"
+    assert m.obj_class_name(list) == "list"
+    assert m.obj_class_name([]) == "list"
+
+
+def test_handle_from_move_only_type_with_operator_PyObject():
+    assert m.handle_from_move_only_type_with_operator_PyObject_ncnst()
+    assert m.handle_from_move_only_type_with_operator_PyObject_const()
+
+
+def test_bool(doc):
+    assert doc(m.get_bool) == "get_bool() -> bool"
 
 
 def test_int(doc):
@@ -14,57 +31,138 @@ def test_int(doc):
 
 
 def test_iterator(doc):
-    assert doc(m.get_iterator) == "get_iterator() -> Iterator"
+    assert doc(m.get_iterator) == "get_iterator() -> collections.abc.Iterator"
+
+
+@pytest.mark.parametrize(
+    ("pytype", "from_iter_func"),
+    [
+        (frozenset, m.get_frozenset_from_iterable),
+        (list, m.get_list_from_iterable),
+        (set, m.get_set_from_iterable),
+        (tuple, m.get_tuple_from_iterable),
+    ],
+)
+def test_from_iterable(pytype, from_iter_func):
+    my_iter = iter(range(10))
+    s = from_iter_func(my_iter)
+    assert type(s) == pytype
+    assert s == pytype(range(10))
 
 
 def test_iterable(doc):
-    assert doc(m.get_iterable) == "get_iterable() -> Iterable"
+    assert doc(m.get_iterable) == "get_iterable() -> collections.abc.Iterable"
+    lst = [1, 2, 3]
+    i = m.get_first_item_from_iterable(lst)
+    assert i == 1
+    i = m.get_second_item_from_iterable(lst)
+    assert i == 2
+
+
+def test_float(doc):
+    assert doc(m.get_float) == "get_float() -> float"
+    assert doc(m.float_roundtrip) == "float_roundtrip(arg0: float) -> float"
+    f1 = m.float_roundtrip(5.5)
+    assert isinstance(f1, float)
+    assert f1 == 5.5
+    f2 = m.float_roundtrip(5)
+    assert isinstance(f2, float)
+    assert f2 == 5.0
 
 
 def test_list(capture, doc):
+    assert m.list_no_args() == []
+    assert m.list_ssize_t() == []
+    assert m.list_size_t() == []
+    lst = [1, 2]
+    m.list_insert_ssize_t(lst)
+    assert lst == [1, 83, 2]
+    m.list_insert_size_t(lst)
+    assert lst == [1, 83, 2, 57]
+    m.list_clear(lst)
+    assert lst == []
+
     with capture:
         lst = m.get_list()
         assert lst == ["inserted-0", "overwritten", "inserted-2"]
 
         lst.append("value2")
         m.print_list(lst)
-    assert capture.unordered == """
+    assert (
+        capture.unordered
+        == """
         Entry at position 0: value
         list item 0: inserted-0
         list item 1: overwritten
         list item 2: inserted-2
         list item 3: value2
     """
+    )
 
     assert doc(m.get_list) == "get_list() -> list"
     assert doc(m.print_list) == "print_list(arg0: list) -> None"
 
 
-def test_none(capture, doc):
+def test_none(doc):
     assert doc(m.get_none) == "get_none() -> None"
     assert doc(m.print_none) == "print_none(arg0: None) -> None"
 
 
 def test_set(capture, doc):
     s = m.get_set()
+    assert isinstance(s, set)
     assert s == {"key1", "key2", "key3"}
 
+    s.add("key4")
     with capture:
-        s.add("key4")
-        m.print_set(s)
-    assert capture.unordered == """
+        m.print_anyset(s)
+    assert (
+        capture.unordered
+        == """
         key: key1
         key: key2
         key: key3
         key: key4
     """
+    )
 
-    assert not m.set_contains(set([]), 42)
-    assert m.set_contains({42}, 42)
-    assert m.set_contains({"foo"}, "foo")
+    m.set_add(s, "key5")
+    assert m.anyset_size(s) == 5
 
-    assert doc(m.get_list) == "get_list() -> list"
-    assert doc(m.print_list) == "print_list(arg0: list) -> None"
+    m.set_clear(s)
+    assert m.anyset_empty(s)
+
+    assert not m.anyset_contains(set(), 42)
+    assert m.anyset_contains({42}, 42)
+    assert m.anyset_contains({"foo"}, "foo")
+
+    assert doc(m.get_set) == "get_set() -> set"
+    assert doc(m.print_anyset) == "print_anyset(arg0: set | frozenset) -> None"
+
+
+def test_frozenset(capture, doc):
+    s = m.get_frozenset()
+    assert isinstance(s, frozenset)
+    assert s == frozenset({"key1", "key2", "key3"})
+
+    with capture:
+        m.print_anyset(s)
+    assert (
+        capture.unordered
+        == """
+        key: key1
+        key: key2
+        key: key3
+    """
+    )
+    assert m.anyset_size(s) == 3
+    assert not m.anyset_empty(s)
+
+    assert not m.anyset_contains(frozenset(), 42)
+    assert m.anyset_contains(frozenset({42}), 42)
+    assert m.anyset_contains(frozenset({"foo"}), "foo")
+
+    assert doc(m.get_frozenset) == "get_frozenset() -> frozenset"
 
 
 def test_dict(capture, doc):
@@ -74,10 +172,13 @@ def test_dict(capture, doc):
     with capture:
         d["key2"] = "value2"
         m.print_dict(d)
-    assert capture.unordered == """
+    assert (
+        capture.unordered
+        == """
         key: key, value=value
         key: key2, value=value2
     """
+    )
 
     assert not m.dict_contains({}, 42)
     assert m.dict_contains({42: None}, 42)
@@ -89,13 +190,54 @@ def test_dict(capture, doc):
     assert m.dict_keyword_constructor() == {"x": 1, "y": 2, "z": 3}
 
 
+class CustomContains:
+    d = {"key": None}
+
+    def __contains__(self, m):
+        return m in self.d
+
+
+@pytest.mark.parametrize(
+    ("arg", "func"),
+    [
+        (set(), m.anyset_contains),
+        ({}, m.dict_contains),
+        (CustomContains(), m.obj_contains),
+    ],
+)
+def test_unhashable_exceptions(arg, func):
+    class Unhashable:
+        __hash__ = None
+
+    with pytest.raises(TypeError) as exc_info:
+        func(arg, Unhashable())
+    assert "unhashable type:" in str(exc_info.value)
+
+
+def test_tuple():
+    assert m.tuple_no_args() == ()
+    assert m.tuple_ssize_t() == ()
+    assert m.tuple_size_t() == ()
+    assert m.get_tuple() == (42, None, "spam")
+
+
+def test_simple_namespace():
+    ns = m.get_simple_namespace()
+    assert ns.attr == 42
+    assert ns.x == "foo"
+    assert ns.right == 2
+    assert not hasattr(ns, "wrong")
+
+
 def test_str(doc):
+    assert m.str_from_char_ssize_t().encode().decode() == "red"
+    assert m.str_from_char_size_t().encode().decode() == "blue"
     assert m.str_from_string().encode().decode() == "baz"
     assert m.str_from_bytes().encode().decode() == "boo"
 
     assert doc(m.str_from_bytes) == "str_from_bytes() -> str"
 
-    class A(object):
+    class A:
         def __str__(self):
             return "this is a str"
 
@@ -111,24 +253,47 @@ def test_str(doc):
     assert s1 == s2
 
     malformed_utf8 = b"\x80"
-    assert m.str_from_object(malformed_utf8) is malformed_utf8  # To be fixed; see #2380
-    if env.PY2:
-        # with pytest.raises(UnicodeDecodeError):
-        #     m.str_from_object(malformed_utf8)
-        with pytest.raises(UnicodeDecodeError):
-            m.str_from_handle(malformed_utf8)
+    if hasattr(m, "PYBIND11_STR_LEGACY_PERMISSIVE"):
+        assert m.str_from_object(malformed_utf8) is malformed_utf8
     else:
-        # assert m.str_from_object(malformed_utf8) == "b'\\x80'"
-        assert m.str_from_handle(malformed_utf8) == "b'\\x80'"
+        assert m.str_from_object(malformed_utf8) == "b'\\x80'"
+    assert m.str_from_handle(malformed_utf8) == "b'\\x80'"
+
+    assert m.str_from_string_from_str("this is a str") == "this is a str"
+    ucs_surrogates_str = "\udcc3"
+    with pytest.raises(UnicodeEncodeError):
+        m.str_from_string_from_str(ucs_surrogates_str)
+
+
+@pytest.mark.parametrize(
+    "func",
+    [
+        m.str_from_bytes_input,
+        m.str_from_cstr_input,
+        m.str_from_std_string_input,
+    ],
+)
+@pytest.mark.xfail("env.GRAALPY", reason="TODO should be fixed on GraalPy side")
+def test_surrogate_pairs_unicode_error(func):
+    input_str = "\ud83d\ude4f".encode("utf-8", "surrogatepass")
+    with pytest.raises(UnicodeDecodeError):
+        func(input_str)
 
 
 def test_bytes(doc):
+    assert m.bytes_from_char_ssize_t().decode() == "green"
+    assert m.bytes_from_char_size_t().decode() == "purple"
     assert m.bytes_from_string().decode() == "foo"
     assert m.bytes_from_str().decode() == "bar"
 
-    assert doc(m.bytes_from_str) == "bytes_from_str() -> {}".format(
-        "str" if env.PY2 else "bytes"
-    )
+    assert doc(m.bytes_from_str) == "bytes_from_str() -> bytes"
+
+
+def test_bytearray():
+    assert m.bytearray_from_char_ssize_t().decode() == "$%"
+    assert m.bytearray_from_char_size_t().decode() == "@$!"
+    assert m.bytearray_from_string().decode() == "foo"
+    assert m.bytearray_size() == len("foo")
 
 
 def test_capsule(capture):
@@ -137,28 +302,87 @@ def test_capsule(capture):
         a = m.return_capsule_with_destructor()
         del a
         pytest.gc_collect()
-    assert capture.unordered == """
+    assert (
+        capture.unordered
+        == """
         creating capsule
         destructing capsule
     """
+    )
+
+    with capture:
+        a = m.return_renamed_capsule_with_destructor()
+        del a
+        pytest.gc_collect()
+    assert (
+        capture.unordered
+        == """
+        creating capsule
+        renaming capsule
+        destructing capsule
+    """
+    )
 
     with capture:
         a = m.return_capsule_with_destructor_2()
         del a
         pytest.gc_collect()
-    assert capture.unordered == """
+    assert (
+        capture.unordered
+        == """
         creating capsule
         destructing capsule: 1234
     """
+    )
+
+    with capture:
+        a = m.return_capsule_with_destructor_3()
+        del a
+        pytest.gc_collect()
+    assert (
+        capture.unordered
+        == """
+        creating capsule
+        destructing capsule: 1233
+        original name: oname
+    """
+    )
+
+    with capture:
+        a = m.return_renamed_capsule_with_destructor_2()
+        del a
+        pytest.gc_collect()
+    assert (
+        capture.unordered
+        == """
+        creating capsule
+        renaming capsule
+        destructing capsule: 1234
+    """
+    )
 
     with capture:
         a = m.return_capsule_with_name_and_destructor()
         del a
         pytest.gc_collect()
-    assert capture.unordered == """
+    assert (
+        capture.unordered
+        == """
         created capsule (1234, 'pointer type description')
         destructing capsule (1234, 'pointer type description')
     """
+    )
+
+    with capture:
+        a = m.return_capsule_with_explicit_nullptr_dtor()
+        del a
+        pytest.gc_collect()
+    assert (
+        capture.unordered
+        == """
+        creating capsule with explicit nullptr dtor
+    """
+    )
 
 
 def test_accessors():
@@ -190,7 +414,7 @@ def test_accessors():
     assert d["implicit_list"] == [1, 2, 3]
     assert all(x in TestObject.__dict__ for x in d["implicit_dict"])
 
-    assert m.tuple_accessor(tuple()) == (0, 1, 2)
+    assert m.tuple_accessor(()) == (0, 1, 2)
 
     d = m.accessor_assignment()
     assert d["get"] == 0
@@ -200,19 +424,24 @@ def test_accessors():
     assert d["var"] == 99
 
 
+def test_accessor_moves():
+    inc_refs = m.accessor_moves()
+    if inc_refs:
+        assert inc_refs == [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
+    else:
+        pytest.skip("Not defined: PYBIND11_HANDLE_REF_DEBUG")
+
+
+@pytest.mark.xfail("env.GRAALPY", reason="TODO should be fixed on GraalPy side")
 def test_constructors():
     """C++ default and converting constructors are equivalent to type calls in Python"""
-    types = [bytes, str, bool, int, float, tuple, list, dict, set]
+    types = [bytes, bytearray, str, bool, int, float, tuple, list, dict, set]
     expected = {t.__name__: t() for t in types}
-    if env.PY2:
-        # Note that bytes.__name__ == 'str' in Python 2.
-        # pybind11::str is unicode even under Python 2.
-        expected["bytes"] = bytes()
-        expected["str"] = unicode()  # noqa: F821
     assert m.default_constructors() == expected
 
     data = {
-        bytes: b'41',  # Currently no supported or working conversions.
+        bytes: b"41",  # Currently no supported or working conversions.
+        bytearray: bytearray(b"41"),
         str: 42,
         bool: "Not empty",
         int: "42",
@@ -221,15 +450,11 @@ def test_constructors():
         list: range(3),
         dict: [("two", 2), ("one", 1), ("three", 3)],
         set: [4, 4, 5, 6, 6, 6],
-        memoryview: b'abc'
+        frozenset: [4, 4, 5, 6, 6, 6],
+        memoryview: b"abc",
     }
     inputs = {k.__name__: v for k, v in data.items()}
     expected = {k.__name__: k(v) for k, v in data.items()}
-    if env.PY2:  # Similar to the above. See comments above.
-        inputs["bytes"] = b'41'
-        inputs["str"] = 42
-        expected["bytes"] = b'41'
-        expected["str"] = u"42"
 
     assert m.converting_constructors(inputs) == expected
     assert m.cast_functions(inputs) == expected
@@ -245,53 +470,87 @@ def test_constructors():
         assert noconv2[k] is expected[k]
 
 
+def test_non_converting_constructors():
+    non_converting_test_cases = [
+        ("bytes", range(10)),
+        ("none", 42),
+        ("ellipsis", 42),
+        ("type", 42),
+    ]
+    for t, v in non_converting_test_cases:
+        for move in [True, False]:
+            with pytest.raises(TypeError) as excinfo:
+                m.nonconverting_constructor(t, v, move)
+            expected_error = (
+                f"Object of type '{type(v).__name__}' is not an instance of '{t}'"
+            )
+            assert str(excinfo.value) == expected_error
+
+
 def test_pybind11_str_raw_str():
     # specifically to exercise pybind11::str::raw_str
     cvt = m.convert_to_pybind11_str
-    assert cvt(u"Str") == u"Str"
-    assert cvt(b'Bytes') == u"Bytes" if env.PY2 else "b'Bytes'"
-    assert cvt(None) == u"None"
-    assert cvt(False) == u"False"
-    assert cvt(True) == u"True"
-    assert cvt(42) == u"42"
-    assert cvt(2**65) == u"36893488147419103232"
-    assert cvt(-1.50) == u"-1.5"
-    assert cvt(()) == u"()"
-    assert cvt((18,)) == u"(18,)"
-    assert cvt([]) == u"[]"
-    assert cvt([28]) == u"[28]"
-    assert cvt({}) == u"{}"
-    assert cvt({3: 4}) == u"{3: 4}"
-    assert cvt(set()) == u"set([])" if env.PY2 else "set()"
-    assert cvt({3, 3}) == u"set([3])" if env.PY2 else "{3}"
+    assert cvt("Str") == "Str"
+    assert cvt(b"Bytes") == "b'Bytes'"
+    assert cvt(None) == "None"
+    assert cvt(False) == "False"
+    assert cvt(True) == "True"
+    assert cvt(42) == "42"
+    assert cvt(2**65) == "36893488147419103232"
+    assert cvt(-1.50) == "-1.5"
+    assert cvt(()) == "()"
+    assert cvt((18,)) == "(18,)"
+    assert cvt([]) == "[]"
+    assert cvt([28]) == "[28]"
+    assert cvt({}) == "{}"
+    assert cvt({3: 4}) == "{3: 4}"
+    assert cvt(set()) == "set()"
+    assert cvt({3}) == "{3}"
 
-    valid_orig = u"Ǳ"
+    valid_orig = "Ǳ"
     valid_utf8 = valid_orig.encode("utf-8")
     valid_cvt = cvt(valid_utf8)
-    assert type(valid_cvt) == bytes  # Probably surprising.
-    assert valid_cvt == b'\xc7\xb1'
+    if hasattr(m, "PYBIND11_STR_LEGACY_PERMISSIVE"):
+        assert valid_cvt is valid_utf8
+    else:
+        assert type(valid_cvt) is str
+        assert valid_cvt == "b'\\xc7\\xb1'"
 
-    malformed_utf8 = b'\x80'
-    malformed_cvt = cvt(malformed_utf8)
-    assert type(malformed_cvt) == bytes  # Probably surprising.
-    assert malformed_cvt == b'\x80'
+    malformed_utf8 = b"\x80"
+    if hasattr(m, "PYBIND11_STR_LEGACY_PERMISSIVE"):
+        assert cvt(malformed_utf8) is malformed_utf8
+    else:
+        malformed_cvt = cvt(malformed_utf8)
+        assert type(malformed_cvt) is str
+        assert malformed_cvt == "b'\\x80'"
 
 
 def test_implicit_casting():
     """Tests implicit casting when assigning or appending to dicts and lists."""
     z = m.get_implicit_casting()
-    assert z['d'] == {
-        'char*_i1': 'abc', 'char*_i2': 'abc', 'char*_e': 'abc', 'char*_p': 'abc',
-        'str_i1': 'str', 'str_i2': 'str1', 'str_e': 'str2', 'str_p': 'str3',
-        'int_i1': 42, 'int_i2': 42, 'int_e': 43, 'int_p': 44
+    assert z["d"] == {
+        "char*_i1": "abc",
+        "char*_i2": "abc",
+        "char*_e": "abc",
+        "char*_p": "abc",
+        "str_i1": "str",
+        "str_i2": "str1",
+        "str_e": "str2",
+        "str_p": "str3",
+        "int_i1": 42,
+        "int_i2": 42,
+        "int_e": 43,
+        "int_p": 44,
     }
-    assert z['l'] == [3, 6, 9, 12, 15]
+    assert z["l"] == [3, 6, 9, 12, 15]
 
 
 def test_print(capture):
     with capture:
         m.print_function()
-    assert capture == """
+    assert (
+        capture
+        == """
         Hello, World!
         1 2.0 three True -- multiple args
         *args-and-a-custom-separator
@@ -299,26 +558,27 @@ def test_print(capture):
         flush
         py::print + str.format = this
     """
+    )
     assert capture.stderr == "this goes to stderr"
 
     with pytest.raises(RuntimeError) as excinfo:
         m.print_failure()
-    assert str(excinfo.value) == "make_tuple(): unable to convert " + (
-        "argument of type 'UnregisteredType' to Python object"
-        if debug_enabled else
-        "arguments to Python object (compile in debug mode for details)"
+    assert str(excinfo.value) == "Unable to convert call argument " + (
+        "'1' of type 'UnregisteredType' to Python object"
+        if detailed_error_messages_enabled
+        else "'1' to Python object (#define PYBIND11_DETAILED_ERROR_MESSAGES or compile in debug mode for details)"
     )
 
 
 def test_hash():
-    class Hashable(object):
+    class Hashable:
         def __init__(self, value):
             self.value = value
 
         def __hash__(self):
             return self.value
 
-    class Unhashable(object):
+    class Unhashable:
         __hash__ = None
 
     assert m.hash_function(Hashable(42)) == 42
@@ -328,14 +588,30 @@ def test_hash():
 
 def test_number_protocol():
     for a, b in [(1, 1), (3, 5)]:
-        li = [a == b, a != b, a < b, a <= b, a > b, a >= b, a + b,
-              a - b, a * b, a / b, a | b, a & b, a ^ b, a >> b, a << b]
+        li = [
+            a == b,
+            a != b,
+            a < b,
+            a <= b,
+            a > b,
+            a >= b,
+            a + b,
+            a - b,
+            a * b,
+            a / b,
+            a | b,
+            a & b,
+            a ^ b,
+            a >> b,
+            a << b,
+        ]
         assert m.test_number_protocol(a, b) == li
 
 
 def test_list_slicing():
     li = list(range(100))
-    assert li[::2] == m.test_list_slicing(li)
+    assert li[0:-1:2] == m.test_list_slicing(li)
+    assert li[::] == m.test_list_slicing_default(li)
 
 
 def test_issue2361():
@@ -343,35 +619,38 @@ def test_issue2361():
     assert m.issue2361_str_implicit_copy_none() == "None"
     with pytest.raises(TypeError) as excinfo:
         assert m.issue2361_dict_implicit_copy_none()
-    assert "'NoneType' object is not iterable" in str(excinfo.value)
+    assert "NoneType" in str(excinfo.value)
+    assert "iterable" in str(excinfo.value)
 
 
-@pytest.mark.parametrize('method, args, fmt, expected_view', [
-    (m.test_memoryview_object, (b'red',), 'B', b'red'),
-    (m.test_memoryview_buffer_info, (b'green',), 'B', b'green'),
-    (m.test_memoryview_from_buffer, (False,), 'h', [3, 1, 4, 1, 5]),
-    (m.test_memoryview_from_buffer, (True,), 'H', [2, 7, 1, 8]),
-    (m.test_memoryview_from_buffer_nativeformat, (), '@i', [4, 7, 5]),
-])
+@pytest.mark.parametrize(
+    ("method", "args", "fmt", "expected_view"),
+    [
+        (m.test_memoryview_object, (b"red",), "B", b"red"),
+        (m.test_memoryview_buffer_info, (b"green",), "B", b"green"),
+        (m.test_memoryview_from_buffer, (False,), "h", [3, 1, 4, 1, 5]),
+        (m.test_memoryview_from_buffer, (True,), "H", [2, 7, 1, 8]),
+        (m.test_memoryview_from_buffer_nativeformat, (), "@i", [4, 7, 5]),
+    ],
+)
 def test_memoryview(method, args, fmt, expected_view):
     view = method(*args)
     assert isinstance(view, memoryview)
     assert view.format == fmt
-    if isinstance(expected_view, bytes) or not env.PY2:
-        view_as_list = list(view)
-    else:
-        # Using max to pick non-zero byte (big-endian vs little-endian).
-        view_as_list = [max([ord(c) for c in s]) for s in view]
-    assert view_as_list == list(expected_view)
+    assert list(view) == list(expected_view)
 
 
 @pytest.mark.xfail("env.PYPY", reason="getrefcount is not available")
-@pytest.mark.parametrize('method', [
-    m.test_memoryview_object,
-    m.test_memoryview_buffer_info,
-])
+@pytest.mark.parametrize(
+    "method",
+    [
+        m.test_memoryview_object,
+        m.test_memoryview_buffer_info,
+    ],
+)
 def test_memoryview_refcount(method):
-    buf = b'\x0a\x0b\x0c\x0d'
+    # Avoiding a literal to avoid an immortal object in free-threaded builds
+    buf = "\x0a\x0b\x0c\x0d".encode("ascii")
     ref_before = sys.getrefcount(buf)
     view = method(buf)
     ref_after = sys.getrefcount(buf)
@@ -382,13 +661,8 @@ def test_memoryview_refcount(method):
 def test_memoryview_from_buffer_empty_shape():
     view = m.test_memoryview_from_buffer_empty_shape()
     assert isinstance(view, memoryview)
-    assert view.format == 'B'
-    if env.PY2:
-        # Python 2 behavior is weird, but Python 3 (the future) is fine.
-        # PyPy3 has <memoryview, while CPython 2 has <memory
-        assert bytes(view).startswith(b'<memory')
-    else:
-        assert bytes(view) == b''
+    assert view.format == "B"
+    assert bytes(view) == b""
 
 
 def test_test_memoryview_from_buffer_invalid_strides():
@@ -397,16 +671,704 @@ def test_test_memoryview_from_buffer_invalid_strides():
 
 
 def test_test_memoryview_from_buffer_nullptr():
-    if env.PY2:
+    with pytest.raises(ValueError):
         m.test_memoryview_from_buffer_nullptr()
-    else:
-        with pytest.raises(ValueError):
-            m.test_memoryview_from_buffer_nullptr()
 
 
-@pytest.mark.skipif("env.PY2")
 def test_memoryview_from_memory():
     view = m.test_memoryview_from_memory()
     assert isinstance(view, memoryview)
-    assert view.format == 'B'
-    assert bytes(view) == b'\xff\xe1\xab\x37'
+    assert view.format == "B"
+    assert bytes(view) == b"\xff\xe1\xab\x37"
+
+
+def test_builtin_functions():
+    assert m.get_len(list(range(42))) == 42
+    with pytest.raises(TypeError) as exc_info:
+        m.get_len(i for i in range(42))
+    assert str(exc_info.value) in [
+        "object of type 'generator' has no len()",
+        "'generator' has no length",
+    ]  # PyPy
+
+
+def test_isinstance_string_types():
+    assert m.isinstance_pybind11_bytes(b"")
+    assert not m.isinstance_pybind11_bytes("")
+
+    assert m.isinstance_pybind11_str("")
+    if hasattr(m, "PYBIND11_STR_LEGACY_PERMISSIVE"):
+        assert m.isinstance_pybind11_str(b"")
+    else:
+        assert not m.isinstance_pybind11_str(b"")
+
+
+def test_pass_bytes_or_unicode_to_string_types():
+    assert m.pass_to_pybind11_bytes(b"Bytes") == 5
+    with pytest.raises(TypeError):
+        m.pass_to_pybind11_bytes("Str")
+
+    if hasattr(m, "PYBIND11_STR_LEGACY_PERMISSIVE"):
+        assert m.pass_to_pybind11_str(b"Bytes") == 5
+    else:
+        with pytest.raises(TypeError):
+            m.pass_to_pybind11_str(b"Bytes")
+    assert m.pass_to_pybind11_str("Str") == 3
+
+    assert m.pass_to_std_string(b"Bytes") == 5
+    assert m.pass_to_std_string("Str") == 3
+
+    malformed_utf8 = b"\x80"
+    if hasattr(m, "PYBIND11_STR_LEGACY_PERMISSIVE"):
+        assert m.pass_to_pybind11_str(malformed_utf8) == 1
+    else:
+        with pytest.raises(TypeError):
+            m.pass_to_pybind11_str(malformed_utf8)
+
+
+@pytest.mark.skipif("env.GRAALPY", reason="Cannot reliably trigger GC")
+@pytest.mark.parametrize(
+    ("create_weakref", "create_weakref_with_callback"),
+    [
+        (m.weakref_from_handle, m.weakref_from_handle_and_function),
+        (m.weakref_from_object, m.weakref_from_object_and_function),
+    ],
+)
+def test_weakref(create_weakref, create_weakref_with_callback):
+    from weakref import getweakrefcount
+
+    # Apparently, you cannot weakly reference an object()
+    class WeaklyReferenced:
+        pass
+
+    callback_called = False
+
+    def callback(_):
+        nonlocal callback_called
+        callback_called = True
+
+    obj = WeaklyReferenced()
+    assert getweakrefcount(obj) == 0
+    wr = create_weakref(obj)
+    assert getweakrefcount(obj) == 1
+
+    obj = WeaklyReferenced()
+    assert getweakrefcount(obj) == 0
+    wr = create_weakref_with_callback(obj, callback)  # noqa: F841
+    assert getweakrefcount(obj) == 1
+    assert not callback_called
+    del obj
+    pytest.gc_collect()
+    assert callback_called
+
+
+@pytest.mark.parametrize(
+    ("create_weakref", "has_callback"),
+    [
+        (m.weakref_from_handle, False),
+        (m.weakref_from_object, False),
+        (m.weakref_from_handle_and_function, True),
+        (m.weakref_from_object_and_function, True),
+    ],
+)
+def test_weakref_err(create_weakref, has_callback):
+    class C:
+        __slots__ = []
+
+    def callback(_):
+        pass
+
+    ob = C()
+    # Should raise TypeError on CPython
+    cm = pytest.raises(TypeError)
+    if env.PYPY or env.GRAALPY:
+        cm = contextlib.nullcontext()
+    with cm:
+        _ = create_weakref(ob, callback) if has_callback else create_weakref(ob)
+
+
+def test_cpp_iterators():
+    assert m.tuple_iterator() == 12
+    assert m.dict_iterator() == 305 + 711
+    assert m.passed_iterator(iter((-7, 3))) == -4
+
+
+def test_implementation_details():
+    lst = [39, 43, 92, 49, 22, 29, 93, 98, 26, 57, 8]
+    tup = tuple(lst)
+    assert m.sequence_item_get_ssize_t(lst) == 43
+    assert m.sequence_item_set_ssize_t(lst) is None
+    assert lst[1] == "peppa"
+    assert m.sequence_item_get_size_t(lst) == 92
+    assert m.sequence_item_set_size_t(lst) is None
+    assert lst[2] == "george"
+    assert m.list_item_get_ssize_t(lst) == 49
+    assert m.list_item_set_ssize_t(lst) is None
+    assert lst[3] == "rebecca"
+    assert m.list_item_get_size_t(lst) == 22
+    assert m.list_item_set_size_t(lst) is None
+    assert lst[4] == "richard"
+    assert m.tuple_item_get_ssize_t(tup) == 29
+    assert m.tuple_item_set_ssize_t() == ("emely", "edmond")
+    assert m.tuple_item_get_size_t(tup) == 93
+    assert m.tuple_item_set_size_t() == ("candy", "cat")
+
+
+def test_external_float_():
+    r1 = m.square_float_(2.0)
+    assert r1 == 4.0
+
+
+def test_tuple_rvalue_getter():
+    pop = 1000
+    tup = tuple(range(pop))
+    m.tuple_rvalue_getter(tup)
+
+
+def test_list_rvalue_getter():
+    pop = 1000
+    my_list = list(range(pop))
+    m.list_rvalue_getter(my_list)
+
+
+def test_populate_dict_rvalue():
+    pop = 1000
+    my_dict = {i: i for i in range(pop)}
+    assert m.populate_dict_rvalue(pop) == my_dict
+
+
+def test_populate_obj_str_attrs():
+    pop = 1000
+    o = types.SimpleNamespace(**{str(i): i for i in range(pop)})
+    new_o = m.populate_obj_str_attrs(o, pop)
+    new_attrs = {k: v for k, v in new_o.__dict__.items() if not k.startswith("_")}
+    assert all(isinstance(v, str) for v in new_attrs.values())
+    assert len(new_attrs) == pop
+
+
+@pytest.mark.parametrize(
+    ("a", "b"),
+    [("foo", "bar"), (1, 2), (1.0, 2.0), (list(range(3)), list(range(3, 6)))],
+)
+def test_inplace_append(a, b):
+    expected = a + b
+    assert m.inplace_append(a, b) == expected
+
+
+@pytest.mark.parametrize(
+    ("a", "b"), [(3, 2), (3.0, 2.0), (set(range(3)), set(range(2)))]
+)
+def test_inplace_subtract(a, b):
+    expected = a - b
+    assert m.inplace_subtract(a, b) == expected
+
+
+@pytest.mark.parametrize(("a", "b"), [(3, 2), (3.0, 2.0), ([1], 3)])
+def test_inplace_multiply(a, b):
+    expected = a * b
+    assert m.inplace_multiply(a, b) == expected
+
+
+@pytest.mark.parametrize(("a", "b"), [(6, 3), (6.0, 3.0)])
+def test_inplace_divide(a, b):
+    expected = a / b
+    assert m.inplace_divide(a, b) == expected
+
+
+@pytest.mark.parametrize(
+    ("a", "b"),
+    [
+        (False, True),
+        (
+            set(),
+            {
+                1,
+            },
+        ),
+    ],
+)
+def test_inplace_or(a, b):
+    expected = a | b
+    assert m.inplace_or(a, b) == expected
+
+
+@pytest.mark.parametrize(
+    ("a", "b"),
+    [
+        (True, False),
+        (
+            {1, 2, 3},
+            {
+                1,
+            },
+        ),
+    ],
+)
+def test_inplace_and(a, b):
+    expected = a & b
+    assert m.inplace_and(a, b) == expected
+
+
+@pytest.mark.parametrize(("a", "b"), [(8, 1), (-3, 2)])
+def test_inplace_lshift(a, b):
+    expected = a << b
+    assert m.inplace_lshift(a, b) == expected
+
+
+@pytest.mark.parametrize(("a", "b"), [(8, 1), (-2, 2)])
+def test_inplace_rshift(a, b):
+    expected = a >> b
+    assert m.inplace_rshift(a, b) == expected
+
+
+def test_tuple_nonempty_annotations(doc):
+    assert (
+        doc(m.annotate_tuple_float_str)
+        == "annotate_tuple_float_str(arg0: tuple[float, str]) -> None"
+    )
+
+
+def test_tuple_empty_annotations(doc):
+    assert (
+        doc(m.annotate_tuple_empty) == "annotate_tuple_empty(arg0: tuple[()]) -> None"
+    )
+
+
+def test_tuple_variable_length_annotations(doc):
+    assert (
+        doc(m.annotate_tuple_variable_length)
+        == "annotate_tuple_variable_length(arg0: tuple[float, ...]) -> None"
+    )
+
+
+def test_dict_annotations(doc):
+    assert (
+        doc(m.annotate_dict_str_int)
+        == "annotate_dict_str_int(arg0: dict[str, typing.SupportsInt | typing.SupportsIndex]) -> None"
+    )
+
+
+def test_list_annotations(doc):
+    assert (
+        doc(m.annotate_list_int)
+        == "annotate_list_int(arg0: list[typing.SupportsInt | typing.SupportsIndex]) -> None"
+    )
+
+
+def test_set_annotations(doc):
+    assert doc(m.annotate_set_str) == "annotate_set_str(arg0: set[str]) -> None"
+
+
+def test_iterable_annotations(doc):
+    assert (
+        doc(m.annotate_iterable_str)
+        == "annotate_iterable_str(arg0: collections.abc.Iterable[str]) -> None"
+    )
+
+
+def test_iterator_annotations(doc):
+    assert (
+        doc(m.annotate_iterator_int)
+        == "annotate_iterator_int(arg0: collections.abc.Iterator[typing.SupportsInt | typing.SupportsIndex]) -> None"
+    )
+
+
+def test_fn_annotations(doc):
+    assert (
+        doc(m.annotate_fn)
+        == "annotate_fn(arg0: collections.abc.Callable[[list[str], str], int]) -> None"
+    )
+
+
+def test_fn_return_only(doc):
+    assert (
+        doc(m.annotate_fn_only_return)
+        == "annotate_fn_only_return(arg0: collections.abc.Callable[..., int]) -> None"
+    )
+
+
+def test_type_annotation(doc):
+    assert (
+        doc(m.annotate_type)
+        == "annotate_type(arg0: type[typing.SupportsInt | typing.SupportsIndex]) -> type"
+    )
+
+
+def test_union_annotations(doc):
+    assert (
+        doc(m.annotate_union)
+        == "annotate_union(arg0: list[str | int | object], arg1: str, arg2: int, arg3: object) -> list[str | int | object]"
+    )
+
+
+def test_union_typing_only(doc):
+    assert doc(m.union_typing_only) == "union_typing_only(arg0: list[str]) -> list[int]"
+
+
+def test_union_object_annotations(doc):
+    assert (
+        doc(m.annotate_union_to_object)
+        == "annotate_union_to_object(arg0: typing.SupportsInt | typing.SupportsIndex | str) -> object"
+    )
+
+
+def test_optional_annotations(doc):
+    assert (
+        doc(m.annotate_optional) == "annotate_optional(arg0: list) -> list[str | None]"
+    )
+
+
+def test_type_guard_annotations(doc, backport_typehints):
+    assert (
+        backport_typehints(doc(m.annotate_type_guard))
+        == "annotate_type_guard(arg0: object) -> typing.TypeGuard[str]"
+    )
+
+
+def test_type_is_annotations(doc, backport_typehints):
+    assert (
+        backport_typehints(doc(m.annotate_type_is))
+        == "annotate_type_is(arg0: object) -> typing.TypeIs[str]"
+    )
+
+
+def test_no_return_annotation(doc):
+    assert doc(m.annotate_no_return) == "annotate_no_return() -> typing.NoReturn"
+
+
+def test_never_annotation(doc, backport_typehints):
+    assert (
+        backport_typehints(doc(m.annotate_never)) == "annotate_never() -> typing.Never"
+    )
+
+
+def test_optional_object_annotations(doc):
+    assert (
+        doc(m.annotate_optional_to_object)
+        == "annotate_optional_to_object(arg0: typing.SupportsInt | typing.SupportsIndex | None) -> object"
+    )
+
+
+@pytest.mark.skipif(
+    not m.defined_PYBIND11_TYPING_H_HAS_STRING_LITERAL,
+    reason="C++20 non-type template args feature not available.",
+)
+def test_literal(doc):
+    assert (
+        doc(m.annotate_literal)
+        == 'annotate_literal(arg0: typing.Literal[26, 0x1A, "hello world", b"hello world", u"hello world", True, Color.RED, None]) -> object'
+    )
+    # The characters !, @, %, {, } and -> are used in the signature parser as special characters, but Literal should escape those for the parser to work.
+    assert (
+        doc(m.identity_literal_exclamation)
+        == 'identity_literal_exclamation(arg0: typing.Literal["!"]) -> typing.Literal["!"]'
+    )
+    assert (
+        doc(m.identity_literal_at)
+        == 'identity_literal_at(arg0: typing.Literal["@"]) -> typing.Literal["@"]'
+    )
+    assert (
+        doc(m.identity_literal_percent)
+        == 'identity_literal_percent(arg0: typing.Literal["%"]) -> typing.Literal["%"]'
+    )
+    assert (
+        doc(m.identity_literal_curly_open)
+        == 'identity_literal_curly_open(arg0: typing.Literal["{"]) -> typing.Literal["{"]'
+    )
+    assert (
+        doc(m.identity_literal_curly_close)
+        == 'identity_literal_curly_close(arg0: typing.Literal["}"]) -> typing.Literal["}"]'
+    )
+    assert (
+        doc(m.identity_literal_arrow_with_io_name)
+        == 'identity_literal_arrow_with_io_name(arg0: typing.Literal["->"], arg1: float | int) -> typing.Literal["->"]'
+    )
+    assert (
+        doc(m.identity_literal_arrow_with_callable)
+        == 'identity_literal_arrow_with_callable(arg0: collections.abc.Callable[[typing.Literal["->"], float | int], float]) -> collections.abc.Callable[[typing.Literal["->"], float | int], float]'
+    )
+    assert (
+        doc(m.identity_literal_all_special_chars)
+        == 'identity_literal_all_special_chars(arg0: typing.Literal["!@!!->{%}"]) -> typing.Literal["!@!!->{%}"]'
+    )
+
+
+@pytest.mark.skipif(
+    not m.defined_PYBIND11_TYPING_H_HAS_STRING_LITERAL,
+    reason="C++20 non-type template args feature not available.",
+)
+def test_typevar(doc):
+    assert (
+        doc(m.annotate_generic_containers)
+        == "annotate_generic_containers(arg0: list[T]) -> list[V]"
+    )
+
+    assert doc(m.annotate_listT_to_T) == "annotate_listT_to_T(arg0: list[T]) -> T"
+
+    assert doc(m.annotate_object_to_T) == "annotate_object_to_T(arg0: object) -> T"
+
+
+@pytest.mark.skipif(
+    not m.defined_PYBIND11_TEST_PYTYPES_HAS_RANGES,
+    reason="<ranges> not available.",
+)
+@pytest.mark.parametrize(
+    ("tested_tuple", "expected"),
+    [((1,), [2]), ((3, 4), [4, 5]), ((7, 8, 9), [8, 9, 10])],
+)
+def test_tuple_ranges(tested_tuple, expected):
+    assert m.tuple_iterator_default_initialization()
+    assert m.transform_tuple_plus_one(tested_tuple) == expected
+
+
+@pytest.mark.skipif(
+    not m.defined_PYBIND11_TEST_PYTYPES_HAS_RANGES,
+    reason="<ranges> not available.",
+)
+@pytest.mark.parametrize(
+    ("tested_list", "expected"), [([1], [2]), ([3, 4], [4, 5]), ([7, 8, 9], [8, 9, 10])]
+)
+def test_list_ranges(tested_list, expected):
+    assert m.list_iterator_default_initialization()
+    assert m.transform_list_plus_one(tested_list) == expected
+
+
+@pytest.mark.skipif(
+    not m.defined_PYBIND11_TEST_PYTYPES_HAS_RANGES,
+    reason="<ranges> not available.",
+)
+@pytest.mark.parametrize(
+    ("tested_dict", "expected"),
+    [
+        ({1: 2}, [(2, 3)]),
+        ({3: 4, 5: 6}, [(4, 5), (6, 7)]),
+        ({7: 8, 9: 10, 11: 12}, [(8, 9), (10, 11), (12, 13)]),
+    ],
+)
+def test_dict_ranges(tested_dict, expected):
+    assert m.dict_iterator_default_initialization()
+    assert m.transform_dict_plus_one(tested_dict) == expected
+
+
+# https://docs.python.org/3/howto/annotations.html#accessing-the-annotations-dict-of-an-object-in-python-3-9-and-older
+def get_annotations_helper(o):
+    if sys.version_info >= (3, 14):
+        import annotationlib
+
+        return annotationlib.get_annotations(o) or None
+    if isinstance(o, type):
+        return o.__dict__.get("__annotations__", None)
+    return getattr(o, "__annotations__", None)
+
+
+@pytest.mark.skipif(
+    not m.defined___cpp_inline_variables,
+    reason="C++17 feature __cpp_inline_variables not available.",
+)
+def test_module_attribute_types() -> None:
+    module_annotations = get_annotations_helper(m)
+
+    assert (
+        module_annotations["list_int"]
+        == "list[typing.SupportsInt | typing.SupportsIndex]"
+    )
+    assert module_annotations["set_str"] == "set[str]"
+    assert module_annotations["foo"] == "pybind11_tests.pytypes.foo"
+
+    assert (
+        module_annotations["foo_union"]
+        == "pybind11_tests.pytypes.foo | pybind11_tests.pytypes.foo2 | pybind11_tests.pytypes.foo3"
+    )
+
+
+@pytest.mark.skipif(
+    not m.defined___cpp_inline_variables,
+    reason="C++17 feature __cpp_inline_variables not available.",
+)
+@pytest.mark.skipif(
+    sys.version_info < (3, 10),
+    reason="get_annotations function does not exist until Python3.10",
+)
+def test_get_annotations_compliance() -> None:
+    from inspect import get_annotations
+
+    module_annotations = get_annotations(m)
+
+    assert (
+        module_annotations["list_int"]
+        == "list[typing.SupportsInt | typing.SupportsIndex]"
+    )
+    assert module_annotations["set_str"] == "set[str]"
+
+
+@pytest.mark.skipif(
+    not m.defined___cpp_inline_variables,
+    reason="C++17 feature __cpp_inline_variables not available.",
+)
+def test_class_attribute_types() -> None:
+    empty_annotations = get_annotations_helper(m.EmptyAnnotationClass)
+    static_annotations = get_annotations_helper(m.Static)
+    instance_annotations = get_annotations_helper(m.Instance)
+
+    assert empty_annotations is None
+    assert (
+        static_annotations["x"]
+        == "typing.ClassVar[typing.SupportsFloat | typing.SupportsIndex]"
+    )
+    assert (
+        static_annotations["dict_str_int"]
+        == "typing.ClassVar[dict[str, typing.SupportsInt | typing.SupportsIndex]]"
+    )
+
+    assert m.Static.x == 1.0
+
+    m.Static.x = 3.0
+    static = m.Static()
+    assert static.x == 3.0
+
+    static.dict_str_int["hi"] = 3
+    assert m.Static().dict_str_int == {"hi": 3}
+
+    assert instance_annotations["y"] == "typing.SupportsFloat | typing.SupportsIndex"
+    instance1 = m.Instance()
+    instance1.y = 4.0
+
+    instance2 = m.Instance()
+    instance2.y = 5.0
+
+    assert instance1.y != instance2.y
+
+
+@pytest.mark.skipif(
+    not m.defined___cpp_inline_variables,
+    reason="C++17 feature __cpp_inline_variables not available.",
+)
+def test_redeclaration_attr_with_type_hint() -> None:
+    obj = m.Instance()
+    m.attr_with_type_hint_float_x(obj)
+    assert (
+        get_annotations_helper(obj)["x"]
+        == "typing.SupportsFloat | typing.SupportsIndex"
+    )
+    with pytest.raises(
+        RuntimeError, match=r'^__annotations__\["x"\] was set already\.$'
+    ):
+        m.attr_with_type_hint_float_x(obj)
+
+
+@pytest.mark.skipif(
+    not m.defined___cpp_inline_variables,
+    reason="C++17 feature __cpp_inline_variables not available.",
+)
+def test_final_annotation() -> None:
+    module_annotations = get_annotations_helper(m)
+    assert module_annotations["CONST_INT"] == "typing.Final[int]"
+
+
+def test_arg_return_type_hints(doc, backport_typehints):
+    assert doc(m.half_of_number) == "half_of_number(arg0: float | int) -> float"
+    assert (
+        doc(m.half_of_number_convert)
+        == "half_of_number_convert(x: float | int) -> float"
+    )
+    assert (
+        doc(m.half_of_number_noconvert) == "half_of_number_noconvert(x: float) -> float"
+    )
+    assert m.half_of_number(2.0) == 1.0
+    assert m.half_of_number(2) == 1.0
+    assert m.half_of_number(0) == 0
+    assert isinstance(m.half_of_number(0), float)
+    assert not isinstance(m.half_of_number(0), int)
+
+    # std::vector<T>
+    assert (
+        doc(m.half_of_number_vector)
+        == "half_of_number_vector(arg0: collections.abc.Sequence[float | int]) -> list[float]"
+    )
+    # Tuple<T, T>
+    assert (
+        doc(m.half_of_number_tuple)
+        == "half_of_number_tuple(arg0: tuple[float | int, float | int]) -> tuple[float, float]"
+    )
+    # Tuple<T, ...>
+    assert (
+        doc(m.half_of_number_tuple_ellipsis)
+        == "half_of_number_tuple_ellipsis(arg0: tuple[float | int, ...]) -> tuple[float, ...]"
+    )
+    # Dict<K, V>
+    assert (
+        doc(m.half_of_number_dict)
+        == "half_of_number_dict(arg0: dict[str, float | int]) -> dict[str, float]"
+    )
+    # List<T>
+    assert (
+        doc(m.half_of_number_list)
+        == "half_of_number_list(arg0: list[float | int]) -> list[float]"
+    )
+    # List<List<T>>
+    assert (
+        doc(m.half_of_number_nested_list)
+        == "half_of_number_nested_list(arg0: list[list[float | int]]) -> list[list[float]]"
+    )
+    # Set<T>
+    assert doc(m.identity_set) == "identity_set(arg0: set[float | int]) -> set[float]"
+    # Iterable<T>
+    assert (
+        doc(m.identity_iterable)
+        == "identity_iterable(arg0: collections.abc.Iterable[float | int]) -> collections.abc.Iterable[float]"
+    )
+    # Iterator<T>
+    assert (
+        doc(m.identity_iterator)
+        == "identity_iterator(arg0: collections.abc.Iterator[float | int]) -> collections.abc.Iterator[float]"
+    )
+    # Callable<R(A)> identity
+    assert (
+        doc(m.identity_callable)
+        == "identity_callable(arg0: collections.abc.Callable[[float | int], float]) -> collections.abc.Callable[[float | int], float]"
+    )
+    # Callable<R(...)> identity
+    assert (
+        doc(m.identity_callable_ellipsis)
+        == "identity_callable_ellipsis(arg0: collections.abc.Callable[..., float]) -> collections.abc.Callable[..., float]"
+    )
+    # Nested Callable<R(A)> identity
+    assert (
+        doc(m.identity_nested_callable)
+        == "identity_nested_callable(arg0: collections.abc.Callable[[collections.abc.Callable[[float | int], float]], collections.abc.Callable[[float | int], float]]) -> collections.abc.Callable[[collections.abc.Callable[[float | int], float]], collections.abc.Callable[[float | int], float]]"
+    )
+    # Callable<R(A)>
+    assert (
+        doc(m.apply_callable)
+        == "apply_callable(arg0: float | int, arg1: collections.abc.Callable[[float | int], float]) -> float"
+    )
+    # Callable<R(...)>
+    assert (
+        doc(m.apply_callable_ellipsis)
+        == "apply_callable_ellipsis(arg0: float | int, arg1: collections.abc.Callable[..., float]) -> float"
+    )
+    # Union<T1, T2>
+    assert (
+        doc(m.identity_union)
+        == "identity_union(arg0: float | int | str) -> float | str"
+    )
+    # Optional<T>
+    assert (
+        doc(m.identity_optional)
+        == "identity_optional(arg0: float | int | None) -> float | None"
+    )
+    # TypeIs<T>
+    assert (
+        backport_typehints(doc(m.check_type_is))
+        == "check_type_is(arg0: object) -> typing.TypeIs[float]"
+    )
+    # TypeGuard<T>
+    assert (
+        backport_typehints(doc(m.check_type_guard))
+        == "check_type_guard(arg0: list[object]) -> typing.TypeGuard[list[float]]"
+    )
+
+
+def test_const_kwargs_ref_to_str():
+    assert m.const_kwargs_ref_to_str() == "{}"
+    assert m.const_kwargs_ref_to_str(a=1) == "{'a': 1}"

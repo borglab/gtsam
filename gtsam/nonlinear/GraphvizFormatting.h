@@ -53,14 +53,14 @@ struct GTSAM_EXPORT GraphvizFormatting : public DotWriter {
   Vector2 findBounds(const Values& values, const KeySet& keys) const;
 
   /// Extract a Vector2 from either Vector2, Pose2, Pose3, or Point3
-  boost::optional<Vector2> extractPosition(const Value& value) const;
+  std::optional<Vector2> extractPosition(const Value& value) const;
 
   /// Return affinely transformed variable position if it exists.
-  boost::optional<Vector2> variablePos(const Values& values, const Vector2& min,
+  std::optional<Vector2> variablePos(const Values& values, const Vector2& min,
                                        Key key) const;
 
   /// Return affinely transformed factor position if it exists.
-  boost::optional<Vector2> factorPos(const Vector2& min, size_t i) const;
+  std::optional<Vector2> factorPos(const Vector2& min, size_t i) const;
 };
 
 }  // namespace gtsam

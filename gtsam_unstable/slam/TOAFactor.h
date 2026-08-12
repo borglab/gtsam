@@ -20,7 +20,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/ExpressionFactor.h>
-#include <gtsam_unstable/geometry/Event.h>
+#include <gtsam/geometry/Event.h>
 
 namespace gtsam {
 
@@ -59,7 +59,7 @@ class TOAFactor : public ExpressionFactor<double> {
                   model, speed) {}
 
   static void InsertEvent(Key key, const Event& event,
-                          boost::shared_ptr<Values> values) {
+                          std::shared_ptr<Values> values) {
     values->insert(key, event);
   }
 };

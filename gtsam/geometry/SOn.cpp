@@ -22,7 +22,7 @@
 namespace gtsam {
 
 template <>
-GTSAM_EXPORT void SOn::Hat(const Vector &xi, Eigen::Ref<Matrix> X) {
+void SOn::Hat(const Vector &xi, Eigen::Ref<Matrix> X) {
   size_t n = AmbientDim(xi.size());
   if (n < 2)
     throw std::invalid_argument("SO<N>::Hat: n<2 not supported");
@@ -48,7 +48,7 @@ GTSAM_EXPORT void SOn::Hat(const Vector &xi, Eigen::Ref<Matrix> X) {
   }
 }
 
-template <> GTSAM_EXPORT Matrix SOn::Hat(const Vector &xi) {
+template <> Matrix SOn::Hat(const Vector &xi) {
   size_t n = AmbientDim(xi.size());
   Matrix X(n, n); // allocate space for n*n skew-symmetric matrix
   SOn::Hat(xi, X);
@@ -56,7 +56,6 @@ template <> GTSAM_EXPORT Matrix SOn::Hat(const Vector &xi) {
 }
 
 template <>
-GTSAM_EXPORT
 Vector SOn::Vee(const Matrix& X) {
   const size_t n = X.rows();
   if (n < 2) throw std::invalid_argument("SO<N>::Hat: n<2 not supported");
@@ -101,29 +100,6 @@ SOn LieGroup<SOn, Eigen::Dynamic>::between(const SOn& g, DynamicJacobian H1,
   if (H1) *H1 = -result.inverse().AdjointMap();
   if (H2) *H2 = SOn::IdentityJacobian(g.rows());
   return result;
-}
-
-// Dynamic version of vec
-template <> typename SOn::VectorN2 SOn::vec(DynamicJacobian H) const {
-  const size_t n = rows(), n2 = n * n;
-
-  // Vectorize
-  VectorN2 X(n2);
-  X << Eigen::Map<const Matrix>(matrix_.data(), n2, 1);
-
-  // If requested, calculate H as (I \oplus Q) * P,
-  // where Q is the N*N rotation matrix, and P is calculated below.
-  if (H) {
-    // Calculate P matrix of vectorized generators
-    // TODO(duy): Should we refactor this as the jacobian of Hat?
-    Matrix P = SOn::VectorizedGenerators(n);
-    const size_t d = dim();
-    H->resize(n2, d);
-    for (size_t i = 0; i < n; i++) {
-      H->block(i * n, 0, n, d) = matrix_ * P.block(i * n, 0, n, d);
-    }
-  }
-  return X;
 }
 
 }  // namespace gtsam

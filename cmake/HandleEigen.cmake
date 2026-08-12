@@ -1,6 +1,5 @@
 ###############################################################################
 # Option for using system Eigen or GTSAM-bundled Eigen
-
 option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', use the one bundled with GTSAM" OFF)
 
 if(NOT GTSAM_USE_SYSTEM_EIGEN)
@@ -11,10 +10,8 @@ endif()
 
 # Switch for using system Eigen or GTSAM-bundled Eigen
 if(GTSAM_USE_SYSTEM_EIGEN)
-    find_package(Eigen3 REQUIRED)
-
-    # Use generic Eigen include paths e.g. <Eigen/Core>
-    set(GTSAM_EIGEN_INCLUDE_FOR_INSTALL "${EIGEN3_INCLUDE_DIR}")
+    # Since Eigen 3.3.0 a Eigen3Config.cmake is available so use it.
+    find_package(Eigen3 CONFIG REQUIRED) # need to find again as REQUIRED
 
     # check if MKL is also enabled - can have one or the other, but not both!
     # Note: Eigen >= v3.2.5 includes our patches
@@ -27,9 +24,8 @@ if(GTSAM_USE_SYSTEM_EIGEN)
     if(EIGEN_USE_MKL_ALL AND (EIGEN3_VERSION VERSION_EQUAL 3.3.4))
         message(FATAL_ERROR "MKL does not work with Eigen 3.3.4 because of a bug in Eigen. See http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1527. Disable GTSAM_USE_SYSTEM_EIGEN to use GTSAM's copy of Eigen, disable GTSAM_WITH_EIGEN_MKL, or upgrade/patch your installation of Eigen.")
     endif()
-
-    # The actual include directory (for BUILD cmake target interface):
-    set(GTSAM_EIGEN_INCLUDE_FOR_BUILD "${EIGEN3_INCLUDE_DIR}")
+    
+    set(GTSAM_EIGEN_VERSION "${EIGEN3_VERSION}")
 else()
     # Use bundled Eigen include path.
     # Clear any variables set by FindEigen3
@@ -42,12 +38,22 @@ else()
     set(GTSAM_EIGEN_INCLUDE_FOR_INSTALL "include/gtsam/3rdparty/Eigen/")
 
     # The actual include directory (for BUILD cmake target interface):
-    set(GTSAM_EIGEN_INCLUDE_FOR_BUILD "${GTSAM_SOURCE_DIR}/gtsam/3rdparty/Eigen/")
-endif()
+    set(GTSAM_EIGEN_INCLUDE_FOR_BUILD "${GTSAM_SOURCE_DIR}/gtsam/3rdparty/Eigen")
 
-# Detect Eigen version:
-set(EIGEN_VER_H "${GTSAM_EIGEN_INCLUDE_FOR_BUILD}/Eigen/src/Core/util/Macros.h")
-if (EXISTS ${EIGEN_VER_H})
+    add_library(gtsam_eigen3 INTERFACE)
+
+    target_include_directories(gtsam_eigen3 SYSTEM INTERFACE
+      $<BUILD_INTERFACE:${GTSAM_EIGEN_INCLUDE_FOR_BUILD}>
+      $<INSTALL_INTERFACE:${GTSAM_EIGEN_INCLUDE_FOR_INSTALL}>
+    )
+    add_library(Eigen3::Eigen ALIAS gtsam_eigen3)
+
+    install(TARGETS gtsam_eigen3 EXPORT GTSAM-exports PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+    list(APPEND GTSAM_EXPORTED_TARGETS gtsam_eigen3)
+    set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}")
+    # Detect Eigen version:
+    set(EIGEN_VER_H "${GTSAM_EIGEN_INCLUDE_FOR_BUILD}/Eigen/src/Core/util/Macros.h")
     file(READ "${EIGEN_VER_H}" STR_EIGEN_VERSION)
 
     # Extract the Eigen version from the Macros.h file, lines "#define EIGEN_WORLD_VERSION  XX", etc...
@@ -62,14 +68,12 @@ if (EXISTS ${EIGEN_VER_H})
     string(REGEX MATCH "[0-9]+" GTSAM_EIGEN_VERSION_MINOR "${GTSAM_EIGEN_VERSION_MINOR}")
 
     set(GTSAM_EIGEN_VERSION "${GTSAM_EIGEN_VERSION_WORLD}.${GTSAM_EIGEN_VERSION_MAJOR}.${GTSAM_EIGEN_VERSION_MINOR}")
+endif()
 
-    message(STATUS "Found Eigen version: ${GTSAM_EIGEN_VERSION}")
-else()
-    message(WARNING "Cannot determine Eigen version, missing file: `${EIGEN_VER_H}`")
-endif ()
+message(STATUS "Found Eigen version: ${GTSAM_EIGEN_VERSION}")
 
 if (MSVC)
-    if (BUILD_SHARED_LIBS)
+    if (GTSAM_SHARED_LIB)
         # mute eigen static assert to avoid errors in shared lib
         list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC EIGEN_NO_STATIC_ASSERT)
     endif()

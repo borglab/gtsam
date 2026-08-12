@@ -77,7 +77,7 @@ static void test_equality()
 }
 
 
-void test_cxx11_tensor_comparisons()
+EIGEN_DECLARE_TEST(cxx11_tensor_comparisons)
 {
   CALL_SUBTEST(test_orderings());
   CALL_SUBTEST(test_equality());

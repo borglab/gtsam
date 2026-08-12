@@ -26,7 +26,7 @@ void test_none_aligned_helper(Scalar *array, int size)
 
 struct some_non_vectorizable_type { float x; };
 
-void test_first_aligned()
+EIGEN_DECLARE_TEST(first_aligned)
 {
   EIGEN_ALIGN16 float array_float[100];
   test_first_aligned_helper(array_float, 50);

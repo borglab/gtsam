@@ -28,6 +28,9 @@ template<typename MatrixType> void matrixRedux(const MatrixType& m)
   // failures if we underflow into denormals. Thus, we scale so that entries are close to 1.
   MatrixType m1_for_prod = MatrixType::Ones(rows, cols) + RealScalar(0.2) * m1;
 
+  Matrix<Scalar, MatrixType::RowsAtCompileTime, MatrixType::RowsAtCompileTime> m2(rows,rows);
+  m2.setRandom();
+
   VERIFY_IS_MUCH_SMALLER_THAN(MatrixType::Zero(rows, cols).sum(), Scalar(1));
   VERIFY_IS_APPROX(MatrixType::Ones(rows, cols).sum(), Scalar(float(rows*cols))); // the float() here to shut up excessive MSVC warning about int->complex conversion being lossy
   Scalar s(0), p(1), minc(numext::real(m1.coeff(0))), maxc(numext::real(m1.coeff(0)));
@@ -46,6 +49,10 @@ template<typename MatrixType> void matrixRedux(const MatrixType& m)
   VERIFY_IS_APPROX(m1_for_prod.prod(), p);
   VERIFY_IS_APPROX(m1.real().minCoeff(), numext::real(minc));
   VERIFY_IS_APPROX(m1.real().maxCoeff(), numext::real(maxc));
+  
+  // test that partial reduction works if nested expressions is forced to evaluate early
+  VERIFY_IS_APPROX((m1.matrix() * m1.matrix().transpose())       .cwiseProduct(m2.matrix()).rowwise().sum().sum(), 
+                   (m1.matrix() * m1.matrix().transpose()).eval().cwiseProduct(m2.matrix()).rowwise().sum().sum());
 
   // test slice vectorization assuming assign is ok
   Index r0 = internal::random<Index>(0,rows-1);
@@ -72,8 +79,6 @@ template<typename MatrixType> void matrixRedux(const MatrixType& m)
 
   // test nesting complex expression
   VERIFY_EVALUATION_COUNT( (m1.matrix()*m1.matrix().transpose()).sum(), (MatrixType::IsVectorAtCompileTime && MatrixType::SizeAtCompileTime!=1 ? 0 : 1) );
-  Matrix<Scalar, MatrixType::RowsAtCompileTime, MatrixType::RowsAtCompileTime> m2(rows,rows);
-  m2.setRandom();
   VERIFY_EVALUATION_COUNT( ((m1.matrix()*m1.matrix().transpose())+m2).sum(),(MatrixType::IsVectorAtCompileTime && MatrixType::SizeAtCompileTime!=1 ? 0 : 1));
 }
 
@@ -146,7 +151,7 @@ template<typename VectorType> void vectorRedux(const VectorType& w)
   VERIFY_RAISES_ASSERT(v.head(0).maxCoeff());
 }
 
-void test_redux()
+EIGEN_DECLARE_TEST(redux)
 {
   // the max size cannot be too large, otherwise reduxion operations obviously generate large errors.
   int maxsize = (std::min)(100,EIGEN_TEST_MAX_SIZE);

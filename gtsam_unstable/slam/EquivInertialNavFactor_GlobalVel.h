@@ -14,21 +14,25 @@
  *  @file   EquivInertialNavFactor_GlobalVel.h
  *  @author Vadim Indelman, Stephen Williams
  *  @brief  Equivalent inertial navigation factor (velocity in the global frame).
+ *  @deprecated This legacy unstable inertial-navigation factor is no longer
+ *  maintained. Use the stable navigation factors where applicable.
  *  @date   Sep. 26, 2012
  **/
 
 #pragma once
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/base/Matrix.h>
 
 // Using numerical derivative to calculate d(Pose3::Expmap)/dw
 #include <gtsam/base/numericalDerivative.h>
-
-#include <boost/bind/bind.hpp>
-#include <boost/optional.hpp>
 
 #include <ostream>
 
@@ -88,12 +92,12 @@ namespace gtsam {
  */
 
 template<class POSE, class VELOCITY, class IMUBIAS>
-class EquivInertialNavFactor_GlobalVel : public NoiseModelFactor5<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> {
+class EquivInertialNavFactor_GlobalVel : public NoiseModelFactorN<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> {
 
 private:
 
   typedef EquivInertialNavFactor_GlobalVel<POSE, VELOCITY, IMUBIAS> This;
-  typedef NoiseModelFactor5<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> Base;
+  typedef NoiseModelFactorN<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> Base;
 
   Vector delta_pos_in_t0_;
   Vector delta_vel_in_t0_;
@@ -106,13 +110,16 @@ private:
 
   Matrix Jacobian_wrt_t0_Overall_;
 
-  boost::optional<IMUBIAS> Bias_initial_; // Bias used when pre-integrating IMU measurements
-  boost::optional<POSE> body_P_sensor_;   // The pose of the sensor in the body frame
+  std::optional<IMUBIAS> Bias_initial_; // Bias used when pre-integrating IMU measurements
+  std::optional<POSE> body_P_sensor_;   // The pose of the sensor in the body frame
 
 public:
+	
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
 
   // shorthand for a smart pointer to a factor
-  typedef typename boost::shared_ptr<EquivInertialNavFactor_GlobalVel> shared_ptr;
+  typedef typename std::shared_ptr<EquivInertialNavFactor_GlobalVel> shared_ptr;
 
   /** default constructor - only use for serialization */
   EquivInertialNavFactor_GlobalVel() {}
@@ -123,7 +130,7 @@ public:
       double dt12, const Vector world_g, const Vector world_rho,
       const Vector& world_omega_earth, const noiseModel::Gaussian::shared_ptr& model_equivalent,
       const Matrix& Jacobian_wrt_t0_Overall,
-      boost::optional<IMUBIAS> Bias_initial = boost::none, boost::optional<POSE> body_P_sensor = boost::none) :
+      std::optional<IMUBIAS> Bias_initial = {}, std::optional<POSE> body_P_sensor = {}) :
         Base(model_equivalent, Pose1, Vel1, IMUBias1, Pose2, Vel2),
         delta_pos_in_t0_(delta_pos_in_t0), delta_vel_in_t0_(delta_vel_in_t0), delta_angles_(delta_angles),
         dt12_(dt12), world_g_(world_g), world_rho_(world_rho), world_omega_earth_(world_omega_earth), Jacobian_wrt_t0_Overall_(Jacobian_wrt_t0_Overall),
@@ -299,11 +306,8 @@ public:
   }
 
   Vector evaluateError(const POSE& Pose1, const VELOCITY& Vel1, const IMUBIAS& Bias1, const POSE& Pose2, const VELOCITY& Vel2,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none,
-      boost::optional<Matrix&> H3 = boost::none,
-      boost::optional<Matrix&> H4 = boost::none,
-      boost::optional<Matrix&> H5 = boost::none) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2, OptionalMatrixType H3, OptionalMatrixType H4,
+      OptionalMatrixType H5) const override {
 
     // TODO: Write analytical derivative calculations
     // Jacobian w.r.t. Pose1
@@ -385,7 +389,7 @@ public:
       const Vector& delta_pos_in_t0, const Vector3& delta_angles,
       double dt12, const Vector world_g, const Vector world_rho,
       const Vector& world_omega_earth, const Matrix& Jacobian_wrt_t0_Overall,
-      const boost::optional<IMUBIAS>& Bias_initial = boost::none) {
+      const std::optional<IMUBIAS>& Bias_initial = {}) {
 
 
     // Correct delta_pos_in_t0_ using (Bias1 - Bias_t0)
@@ -414,7 +418,7 @@ public:
   static inline VELOCITY PredictVelocityFromPreIntegration(const POSE& Pose1, const VELOCITY& Vel1, const IMUBIAS& Bias1,
       const Vector& delta_vel_in_t0, double dt12, const Vector world_g, const Vector world_rho,
       const Vector& world_omega_earth, const Matrix& Jacobian_wrt_t0_Overall,
-      const boost::optional<IMUBIAS>& Bias_initial = boost::none) {
+      const std::optional<IMUBIAS>& Bias_initial = {}) {
 
     // Correct delta_vel_in_t0_ using (Bias1 - Bias_t0)
     Vector delta_BiasAcc  = Bias1.accelerometer();
@@ -436,7 +440,7 @@ public:
       const Vector& delta_pos_in_t0, const Vector& delta_vel_in_t0, const Vector3& delta_angles,
       double dt12, const Vector world_g, const Vector world_rho,
       const Vector& world_omega_earth, const Matrix& Jacobian_wrt_t0_Overall,
-      const boost::optional<IMUBIAS>& Bias_initial = boost::none) {
+      const std::optional<IMUBIAS>& Bias_initial = {}) {
 
     Pose2 = PredictPoseFromPreIntegration(Pose1, Vel1, Bias1, delta_pos_in_t0, delta_angles, dt12, world_g, world_rho, world_omega_earth, Jacobian_wrt_t0_Overall, Bias_initial);
     Vel2  = PredictVelocityFromPreIntegration(Pose1, Vel1, Bias1, delta_vel_in_t0, dt12, world_g, world_rho, world_omega_earth, Jacobian_wrt_t0_Overall, Bias_initial);
@@ -447,7 +451,7 @@ public:
       Vector& delta_pos_in_t0, Vector3& delta_angles, Vector& delta_vel_in_t0, double& delta_t,
       const noiseModel::Gaussian::shared_ptr& model_continuous_overall,
       Matrix& EquivCov_Overall, Matrix& Jacobian_wrt_t0_Overall, const IMUBIAS Bias_t0 = IMUBIAS(),
-      boost::optional<POSE> p_body_P_sensor = boost::none){
+      std::optional<POSE> p_body_P_sensor = {}){
     // Note: all delta terms refer to an IMU\sensor system at t0
     // Note: Earth-related terms are not accounted here but are incorporated in predict functions.
 
@@ -465,8 +469,8 @@ public:
     delta_t += msr_dt;
 
     // Update EquivCov_Overall
-    Matrix Z_3x3 = Z_3x3;
-    Matrix I_3x3 = I_3x3;
+    Matrix Z3x3 = Matrix3::Zero();
+    Matrix I3x3 = Matrix3::Identity();
 
     Matrix H_pos_pos = numericalDerivative11<Vector3, Vector3>(
         std::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt,
@@ -477,7 +481,7 @@ public:
                     delta_pos_in_t0, std::placeholders::_1),
         delta_vel_in_t0);
     Matrix H_pos_angles = Z_3x3;
-    Matrix H_pos_bias = collect(2, &Z_3x3, &Z_3x3);
+    Matrix H_pos_bias = collect(2, &Z3x3, &Z3x3);
 
     Matrix H_vel_vel = numericalDerivative11<Vector3, Vector3>(
         std::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t,
@@ -513,8 +517,8 @@ public:
     Matrix F_angles = collect(4, &H_angles_angles, &H_angles_pos, &H_angles_vel, &H_angles_bias);
     Matrix F_pos    = collect(4, &H_pos_angles, &H_pos_pos, &H_pos_vel, &H_pos_bias);
     Matrix F_vel    = collect(4, &H_vel_angles, &H_vel_pos, &H_vel_vel, &H_vel_bias);
-    Matrix F_bias_a = collect(5, &Z_3x3, &Z_3x3, &Z_3x3, &I_3x3, &Z_3x3);
-    Matrix F_bias_g = collect(5, &Z_3x3, &Z_3x3, &Z_3x3, &Z_3x3, &I_3x3);
+    Matrix F_bias_a = collect(5, &Z3x3, &Z3x3, &Z3x3, &I3x3, &Z3x3);
+    Matrix F_bias_g = collect(5, &Z3x3, &Z3x3, &Z3x3, &Z3x3, &I3x3);
     Matrix F = stack(5, &F_angles, &F_pos, &F_vel, &F_bias_a, &F_bias_g);
 
 
@@ -615,16 +619,15 @@ public:
 
   static inline void Calc_g_rho_omega_earth_NED(const Vector& Pos_NED, const Vector& Vel_NED, const Vector& LatLonHeight_IC, const Vector& Pos_NED_Initial,
       Vector& g_NED, Vector& rho_NED, Vector& omega_earth_NED) {
+    Matrix ENU_to_NED{//
+                      {0.0, 1.0, 0.0},
+                      {1.0, 0.0, 0.0},
+                      {0.0, 0.0, -1.0}};
 
-    Matrix ENU_to_NED = (Matrix(3, 3) <<
-        0.0,  1.0,  0.0,
-        1.0,  0.0,  0.0,
-        0.0,  0.0, -1.0).finished();
-
-    Matrix NED_to_ENU = (Matrix(3, 3) <<
-        0.0,  1.0,  0.0,
-        1.0,  0.0,  0.0,
-        0.0,  0.0, -1.0).finished();
+    Matrix NED_to_ENU{//
+                      {0.0, 1.0, 0.0},
+                      {1.0, 0.0, 0.0},
+                      {0.0, 0.0, -1.0}};
 
     // Convert incoming parameters to ENU
     Vector Pos_ENU = NED_to_ENU * Pos_NED;
@@ -686,8 +689,7 @@ public:
     double Ro( sqrt(Rp*Rm) );           // mean earth radius of curvature
     double g0( 9.780318*( 1 + 5.3024e-3 * pow(sin(lat_new),2) - 5.9e-6 * pow(sin(2*lat_new),2) ) );
     double g_calc( g0/( pow(1 + height/Ro, 2) ) );
-    g_ENU = (Vector(3) << 0.0, 0.0, -g_calc).finished();
-
+    g_ENU = Vector{{0.0, 0.0, -g_calc}};
 
     // Calculate rho
     double Ve( Vel_ENU(0) );
@@ -695,7 +697,7 @@ public:
     double rho_E = -Vn/(Rm + height);
     double rho_N = Ve/(Rp + height);
     double rho_U = Ve*tan(lat_new)/(Rp + height);
-    rho_ENU = (Vector(3) << rho_E, rho_N, rho_U).finished();
+    rho_ENU = Vector{{rho_E, rho_N, rho_U}};
   }
 
   static inline noiseModel::Gaussian::shared_ptr calc_descrete_noise_model(const noiseModel::Gaussian::shared_ptr& model, double delta_t){
@@ -707,6 +709,7 @@ public:
     }
 private:
 
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -714,9 +717,12 @@ private:
     ar & boost::serialization::make_nvp("NonlinearFactor2",
         boost::serialization::base_object<Base>(*this));
   }
+#endif
 
 
 
 }; // \class EquivInertialNavFactor_GlobalVel
 
 } /// namespace gtsam
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

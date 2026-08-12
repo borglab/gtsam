@@ -11,20 +11,19 @@ pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename, Test*
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename, const gtsam::noiseModel::Diagonal* model, int maxID, bool addNoise, bool smart);
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(string filename, gtsam::noiseModel::Diagonal@ model);
 
-Vector aGlobalFunction();
+gtsam::Vector aGlobalFunction();
 
 // An overloaded global function
-Vector overloadedGlobalFunction(int a);
-Vector overloadedGlobalFunction(int a, double b);
+gtsam::Vector overloadedGlobalFunction(int a);
+gtsam::Vector overloadedGlobalFunction(int a, double b);
 
 // A templated free/global function. Multiple templates supported.
 template<T1 = {string, double}, T2 = {size_t}, R = {double}>
-R MultiTemplatedFunction(const T& x, T2 y);
+R MultiTemplatedFunction(const T1& x, T2 y);
 
 // Check if we can typedef the templated function
 template<T>
 void TemplatedFunction(const T& t);
-
 typedef TemplatedFunction<gtsam::Rot3> TemplatedFunctionRot3;
 
 // Check default arguments
@@ -36,3 +35,18 @@ void DefaultFuncVector(const std::vector<int> &i = {1, 2, 3}, const std::vector<
 
 // Test for non-trivial default constructor
 void setPose(const gtsam::Pose3& pose = gtsam::Pose3());
+
+std::pair<gtsam::DiscreteConditional*, gtsam::DecisionTreeFactor*>
+EliminateDiscrete(const gtsam::DiscreteFactorGraph& factors,
+                  const gtsam::Ordering& frontalKeys);
+
+// Example of function where template is a shared pointer
+template <CAL = {gtsam::Cal3_S2}>
+gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses, CAL* sharedCal,
+                                const gtsam::Point2Vector& measurements,
+                                double rank_tol, bool optimize,
+                                const gtsam::SharedNoiseModel& model = nullptr);
+
+// Function which takes vector<T> as an argument
+template <T = {gtsam::Point3, gtsam::SO3, gtsam::SO4, gtsam::Pose3}>
+T FindKarcherMean(const std::vector<T>& elements);

@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file serialization.h
+ * @file gtsam/base/serialization.h
  * @brief Convenience functions for serializing data structures via boost.serialization
  * @author Alex Cunningham
  * @author Richard Roberts
@@ -19,12 +19,17 @@
 
 #pragma once
 
+#include <gtsam/config.h>
+
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+
 #include <Eigen/Core>
 #include <fstream>
 #include <sstream>
 #include <string>
 
 // includes for standard serialization types
+#include <boost/serialization/version.hpp>
 #include <boost/serialization/optional.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/vector.hpp>
@@ -269,3 +274,4 @@ void deserializeBinary(const std::string& serialized, T& output,
 ///@}
 
 }  // namespace gtsam
+#endif

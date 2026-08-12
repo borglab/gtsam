@@ -11,27 +11,26 @@
 #include <gtsam/sam/BearingRangeFactor.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/treeTraversal-inst.h>
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/list_of.hpp>
-#include <boost/range/adaptor/map.hpp>
-using namespace boost::assign;
-namespace br { using namespace boost::adaptors; using namespace boost::range; }
+#include <cassert>
 
 using namespace std;
 using namespace gtsam;
-using boost::shared_ptr;
+using std::shared_ptr;
 
 static const SharedNoiseModel model;
 
@@ -40,12 +39,14 @@ static const SharedNoiseModel model;
 //  SETDEBUG("ISAM2 recalculate", true);
 
 // Set up parameters
-SharedDiagonal odoNoise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.1, 0.1, M_PI/100.0).finished());
-SharedDiagonal brNoise = noiseModel::Diagonal::Sigmas((Vector(2) << M_PI/100.0, 0.1).finished());
+SharedDiagonal odoNoise =
+    noiseModel::Diagonal::Sigmas(Vector{{0.1, 0.1, M_PI / 100.0}});
+SharedDiagonal brNoise =
+    noiseModel::Diagonal::Sigmas(Vector{{M_PI / 100.0, 0.1}});
 
 ISAM2 createSlamlikeISAM2(
-    boost::optional<Values&> init_values = boost::none,
-    boost::optional<NonlinearFactorGraph&> full_graph = boost::none,
+    Values* init_values = nullptr,
+    NonlinearFactorGraph* full_graph = nullptr,
     const ISAM2Params& params = ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0,
                                             0, false, true,
                                             ISAM2Params::CHOLESKY, true,
@@ -78,7 +79,7 @@ ISAM2 createSlamlikeISAM2(
   // Add odometry from time 0 to time 5
   for( ; i<5; ++i) {
     NonlinearFactorGraph newfactors;
-    newfactors += BetweenFactor<Pose2>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.emplace_shared<BetweenFactor<Pose2>>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -97,9 +98,9 @@ ISAM2 createSlamlikeISAM2(
   // Add odometry from time 5 to 6 and landmark measurement at time 5
   {
     NonlinearFactorGraph newfactors;
-    newfactors += BetweenFactor<Pose2>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors += BearingRangeFactor<Pose2,Point2>(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
-    newfactors += BearingRangeFactor<Pose2,Point2>(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
+    newfactors.emplace_shared<BetweenFactor<Pose2>>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.emplace_shared<BearingRangeFactor<Pose2, Point2>>(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
+    newfactors.emplace_shared<BearingRangeFactor<Pose2, Point2>>(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -120,7 +121,7 @@ ISAM2 createSlamlikeISAM2(
   // Add odometry from time 6 to time 10
   for( ; i<10; ++i) {
     NonlinearFactorGraph newfactors;
-    newfactors += BetweenFactor<Pose2>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.emplace_shared<BetweenFactor<Pose2>>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -139,9 +140,9 @@ ISAM2 createSlamlikeISAM2(
   // Add odometry from time 10 to 11 and landmark measurement at time 10
   {
     NonlinearFactorGraph newfactors;
-    newfactors += BetweenFactor<Pose2>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors += BearingRangeFactor<Pose2,Point2>(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
-    newfactors += BearingRangeFactor<Pose2,Point2>(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+    newfactors.emplace_shared<BetweenFactor<Pose2>>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.emplace_shared<BearingRangeFactor<Pose2, Point2>>(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+    newfactors.emplace_shared<BearingRangeFactor<Pose2, Point2>>(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -234,7 +235,7 @@ bool isam_check(const NonlinearFactorGraph& fullgraph, const Values& fullinit, c
 
   // Check information
   GaussianFactorGraph isamGraph(isam);
-  isamGraph += isam.roots().front()->cachedFactor_;
+  isamGraph.push_back(isam.roots().front()->cachedFactor_);
   Matrix expectedHessian = fullgraph.linearize(isam.getLinearizationPoint())->augmentedHessian();
   Matrix actualHessian = isamGraph.augmentedHessian();
   expectedHessian.bottomRightCorner(1,1) = actualHessian.bottomRightCorner(1,1);
@@ -250,11 +251,10 @@ bool isam_check(const NonlinearFactorGraph& fullgraph, const Values& fullinit, c
 
   // Check gradient at each node
   bool nodeGradientsOk = true;
-  typedef ISAM2::sharedClique sharedClique;
-  for(const sharedClique& clique: isam.nodes() | br::map_values) {
+  for (const auto& [key, clique] : isam.nodes()) {
     // Compute expected gradient
     GaussianFactorGraph jfg;
-    jfg += clique->conditional();
+    jfg.push_back(clique->conditional());
     VectorValues expectedGradient = jfg.gradientAtZero();
     // Compare with actual gradients
     DenseIndex variablePosition = 0;
@@ -290,7 +290,7 @@ TEST(ISAM2, simple)
     // These variables will be reused and accumulate factors and values
     Values fullinit;
     NonlinearFactorGraph fullgraph;
-    ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false), i);
+    ISAM2 isam = createSlamlikeISAM2(&fullinit, &fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false), i);
 
     // Compare solutions
     EXPECT(isam_check(fullgraph, fullinit, isam, *this, result_));
@@ -303,7 +303,7 @@ TEST(ISAM2, slamlike_solution_gaussnewton)
   // These variables will be reused and accumulate factors and values
   Values fullinit;
   NonlinearFactorGraph fullgraph;
-  ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
+  ISAM2 isam = createSlamlikeISAM2(&fullinit, &fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
 
   // Compare solutions
   CHECK(isam_check(fullgraph, fullinit, isam, *this, result_));
@@ -315,7 +315,21 @@ TEST(ISAM2, slamlike_solution_dogleg)
   // These variables will be reused and accumulate factors and values
   Values fullinit;
   NonlinearFactorGraph fullgraph;
-  ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, ISAM2Params(ISAM2DoglegParams(1.0), 0.0, 0, false));
+  ISAM2 isam = createSlamlikeISAM2(&fullinit, &fullgraph, ISAM2Params(ISAM2DoglegParams(1.0), 0.0, 0, false));
+
+  // Compare solutions
+  CHECK(isam_check(fullgraph, fullinit, isam, *this, result_));
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, SlamlikeSolutionDoglegLineSearch) {
+  // These variables will be reused and accumulate factors and values
+  Values fullinit;
+  NonlinearFactorGraph fullgraph;
+  ISAM2 isam = createSlamlikeISAM2(
+      &fullinit, &fullgraph,
+      ISAM2Params(ISAM2DoglegLineSearchParams(0.1, 1.0, 3, 1e-4, false, 1e-3),
+                  0.0, 0, false));
 
   // Compare solutions
   CHECK(isam_check(fullgraph, fullinit, isam, *this, result_));
@@ -327,7 +341,7 @@ TEST(ISAM2, slamlike_solution_gaussnewton_qr)
   // These variables will be reused and accumulate factors and values
   Values fullinit;
   NonlinearFactorGraph fullgraph;
-  ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false, false, ISAM2Params::QR));
+  ISAM2 isam = createSlamlikeISAM2(&fullinit, &fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false, false, ISAM2Params::QR));
 
   // Compare solutions
   CHECK(isam_check(fullgraph, fullinit, isam, *this, result_));
@@ -339,7 +353,21 @@ TEST(ISAM2, slamlike_solution_dogleg_qr)
   // These variables will be reused and accumulate factors and values
   Values fullinit;
   NonlinearFactorGraph fullgraph;
-  ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, ISAM2Params(ISAM2DoglegParams(1.0), 0.0, 0, false, false, ISAM2Params::QR));
+  ISAM2 isam = createSlamlikeISAM2(&fullinit, &fullgraph, ISAM2Params(ISAM2DoglegParams(1.0), 0.0, 0, false, false, ISAM2Params::QR));
+
+  // Compare solutions
+  CHECK(isam_check(fullgraph, fullinit, isam, *this, result_));
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, SlamlikeSolutionDoglegLineSearchQr) {
+  // These variables will be reused and accumulate factors and values
+  Values fullinit;
+  NonlinearFactorGraph fullgraph;
+  ISAM2 isam = createSlamlikeISAM2(
+      &fullinit, &fullgraph,
+      ISAM2Params(ISAM2DoglegLineSearchParams(0.1, 10.0, 3, 1e-4, false, 1e-3),
+                  0.0, 0, false, false, ISAM2Params::QR));
 
   // Compare solutions
   CHECK(isam_check(fullgraph, fullinit, isam, *this, result_));
@@ -358,7 +386,7 @@ TEST(ISAM2, clone) {
 
     // Modify original isam
     NonlinearFactorGraph factors;
-    factors += BetweenFactor<Pose2>(0, 10,
+    factors.emplace_shared<BetweenFactor<Pose2>>(0, 10,
         isam.calculateEstimate<Pose2>(0).between(isam.calculateEstimate<Pose2>(10)), noiseModel::Unit::Create(3));
     isam.update(factors);
 
@@ -388,7 +416,7 @@ TEST(ISAM2, removeFactors)
   // These variables will be reused and accumulate factors and values
   Values fullinit;
   NonlinearFactorGraph fullgraph;
-  ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
+  ISAM2 isam = createSlamlikeISAM2(&fullinit, &fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
 
   // Remove the 2nd measurement on landmark 0 (Key 100)
   FactorIndices toRemove;
@@ -408,7 +436,7 @@ TEST(ISAM2, removeVariables)
   // These variables will be reused and accumulate factors and values
   Values fullinit;
   NonlinearFactorGraph fullgraph;
-  ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
+  ISAM2 isam = createSlamlikeISAM2(&fullinit, &fullgraph, ISAM2Params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false));
 
   // Remove the measurement on landmark 0 (Key 100)
   FactorIndices toRemove;
@@ -433,7 +461,7 @@ TEST(ISAM2, swapFactors)
 
   Values fullinit;
   NonlinearFactorGraph fullgraph;
-  ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph);
+  ISAM2 isam = createSlamlikeISAM2(&fullinit, &fullgraph);
 
   // Remove the measurement on landmark 0 and replace with a different one
   {
@@ -444,7 +472,7 @@ TEST(ISAM2, swapFactors)
 
     NonlinearFactorGraph swapfactors;
 //    swapfactors += BearingRange<Pose2,Point2>(10, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise; // original factor
-    swapfactors += BearingRangeFactor<Pose2,Point2>(10, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 5.0, brNoise);
+    swapfactors.emplace_shared<BearingRangeFactor<Pose2, Point2>>(10, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 5.0, brNoise);
     fullgraph.push_back(swapfactors);
     isam.update(swapfactors, Values(), toRemove);
   }
@@ -454,11 +482,10 @@ TEST(ISAM2, swapFactors)
   EXPECT(isam_check(fullgraph, fullinit, isam, *this, result_));
 
   // Check gradient at each node
-  typedef ISAM2::sharedClique sharedClique;
-  for(const sharedClique& clique: isam.nodes() | br::map_values) {
+  for (const auto& [key, clique]: isam.nodes()) {
     // Compute expected gradient
     GaussianFactorGraph jfg;
-    jfg += clique->conditional();
+    jfg.push_back(clique->conditional());
     VectorValues expectedGradient = jfg.gradientAtZero();
     // Compare with actual gradients
     DenseIndex variablePosition = 0;
@@ -513,7 +540,7 @@ TEST(ISAM2, constrained_ordering)
   // Add odometry from time 0 to time 5
   for( ; i<5; ++i) {
     NonlinearFactorGraph newfactors;
-    newfactors += BetweenFactor<Pose2>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.emplace_shared<BetweenFactor<Pose2>>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -529,9 +556,9 @@ TEST(ISAM2, constrained_ordering)
   // Add odometry from time 5 to 6 and landmark measurement at time 5
   {
     NonlinearFactorGraph newfactors;
-    newfactors += BetweenFactor<Pose2>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors += BearingRangeFactor<Pose2,Point2>(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
-    newfactors += BearingRangeFactor<Pose2,Point2>(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
+    newfactors.emplace_shared<BetweenFactor<Pose2>>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.emplace_shared<BearingRangeFactor<Pose2, Point2>>(i, 100, Rot2::fromAngle(M_PI/4.0), 5.0, brNoise);
+    newfactors.emplace_shared<BearingRangeFactor<Pose2, Point2>>(i, 101, Rot2::fromAngle(-M_PI/4.0), 5.0, brNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -549,7 +576,7 @@ TEST(ISAM2, constrained_ordering)
   // Add odometry from time 6 to time 10
   for( ; i<10; ++i) {
     NonlinearFactorGraph newfactors;
-    newfactors += BetweenFactor<Pose2>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.emplace_shared<BetweenFactor<Pose2>>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -562,9 +589,9 @@ TEST(ISAM2, constrained_ordering)
   // Add odometry from time 10 to 11 and landmark measurement at time 10
   {
     NonlinearFactorGraph newfactors;
-    newfactors += BetweenFactor<Pose2>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
-    newfactors += BearingRangeFactor<Pose2,Point2>(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
-    newfactors += BearingRangeFactor<Pose2,Point2>(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+    newfactors.emplace_shared<BetweenFactor<Pose2>>(i, i+1, Pose2(1.0, 0.0, 0.0), odoNoise);
+    newfactors.emplace_shared<BearingRangeFactor<Pose2, Point2>>(i, 100, Rot2::fromAngle(M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
+    newfactors.emplace_shared<BearingRangeFactor<Pose2, Point2>>(i, 101, Rot2::fromAngle(-M_PI/4.0 + M_PI/16.0), 4.5, brNoise);
     fullgraph.push_back(newfactors);
 
     Values init;
@@ -579,11 +606,10 @@ TEST(ISAM2, constrained_ordering)
   EXPECT(isam_check(fullgraph, fullinit, isam, *this, result_));
 
   // Check gradient at each node
-  typedef ISAM2::sharedClique sharedClique;
-  for(const sharedClique& clique: isam.nodes() | br::map_values) {
+  for (const auto& [key, clique]: isam.nodes()) {
     // Compute expected gradient
     GaussianFactorGraph jfg;
-    jfg += clique->conditional();
+    jfg.push_back(clique->conditional());
     VectorValues expectedGradient = jfg.gradientAtZero();
     // Compare with actual gradients
     DenseIndex variablePosition = 0;
@@ -612,7 +638,7 @@ TEST(ISAM2, slamlike_solution_partial_relinearization_check)
   NonlinearFactorGraph fullgraph;
   ISAM2Params params(ISAM2GaussNewtonParams(0.001), 0.0, 0, false);
   params.enablePartialRelinearizationCheck = true;
-  ISAM2 isam = createSlamlikeISAM2(fullinit, fullgraph, params);
+  ISAM2 isam = createSlamlikeISAM2(&fullinit, &fullgraph, params);
 
   // Compare solutions
   CHECK(isam_check(fullgraph, fullinit, isam, *this, result_));
@@ -622,9 +648,11 @@ namespace {
   bool checkMarginalizeLeaves(ISAM2& isam, const FastList<Key>& leafKeys) {
     Matrix expectedAugmentedHessian, expected3AugmentedHessian;
     KeyVector toKeep;
-    for(Key j: isam.getDelta() | br::map_keys)
-      if(find(leafKeys.begin(), leafKeys.end(), j) == leafKeys.end())
-        toKeep.push_back(j);
+    for (const auto& [key, clique]: isam.getDelta()) {
+      if(find(leafKeys.begin(), leafKeys.end(), key) == leafKeys.end()) {
+        toKeep.push_back(key);
+      }
+    }
 
     // Calculate expected marginal from iSAM2 tree
     expectedAugmentedHessian = GaussianFactorGraph(isam).marginal(toKeep, EliminateQR)->augmentedHessian();
@@ -662,6 +690,77 @@ namespace {
     bool ok = treeEqual && /*linEqual &&*/ nonlinEqual && /*linCorrect &&*/ /*afterLinCorrect &&*/ afterNonlinCorrect;
     return ok;
   }
+
+  std::optional<FastMap<Key, int>> createOrderingConstraints(const ISAM2& isam, const KeyVector& newKeys, const KeySet& marginalizableKeys)
+  {
+    if (marginalizableKeys.empty()) {
+      return {};
+    } else {
+      FastMap<Key, int> constrainedKeys = FastMap<Key, int>();
+      // Generate ordering constraints so that the marginalizable variables will be eliminated first
+      // Set all existing and new variables to Group1
+      for (const auto& key_val : isam.getDelta()) {
+        constrainedKeys.emplace(key_val.first, 1);
+      }
+      for (const auto& key : newKeys) {
+        constrainedKeys.emplace(key, 1);
+      }
+      // And then re-assign the marginalizable variables to Group0 so that they'll all be leaf nodes
+      for (const auto& key : marginalizableKeys) {
+        constrainedKeys.at(key) = 0;
+      }
+      return constrainedKeys;
+    }
+  }
+
+  void markAffectedKeys(const Key& key, const ISAM2Clique::shared_ptr& rootClique, KeyList& additionalKeys)
+  {
+    std::stack<ISAM2Clique::shared_ptr> frontier;
+    frontier.push(rootClique);
+    // Basic DFS to find additional keys
+    while (!frontier.empty()) {
+      // Get the top of the stack
+      const ISAM2Clique::shared_ptr clique = frontier.top();
+      frontier.pop();
+      // Check if we have more keys and children to add
+      if (std::find(clique->conditional()->beginParents(), clique->conditional()->endParents(), key) !=
+          clique->conditional()->endParents()) {
+        for (Key i : clique->conditional()->frontals()) {
+          additionalKeys.push_back(i);
+        }
+        for (const ISAM2Clique::shared_ptr& child : clique->children) {
+          frontier.push(child);
+        }
+      }
+    }
+  }
+
+  bool updateAndMarginalize(const NonlinearFactorGraph& newFactors, const Values& newValues, const KeySet& marginalizableKeys, ISAM2& isam)
+  {
+    // Force ISAM2 to put marginalizable variables at the beginning
+    auto orderingConstraints = createOrderingConstraints(isam, newValues.keys(), marginalizableKeys);
+
+    // Mark additional keys between the marginalized keys and the leaves
+    KeyList markedKeys;
+    for (Key key : marginalizableKeys) {
+      markedKeys.push_back(key);
+      ISAM2Clique::shared_ptr clique = isam[key];
+      for (const ISAM2Clique::shared_ptr& child : clique->children) {
+        markAffectedKeys(key, child, markedKeys);
+      }
+    }
+
+    // Update
+    isam.update(newFactors, newValues, FactorIndices{}, orderingConstraints, {}, markedKeys);
+
+    if (!marginalizableKeys.empty()) {
+      FastList<Key> leafKeys(marginalizableKeys.begin(), marginalizableKeys.end());
+      return checkMarginalizeLeaves(isam, leafKeys);
+    }
+    else {
+      return true;
+    }
+  }
 }
 
 /* ************************************************************************* */
@@ -670,9 +769,9 @@ TEST(ISAM2, marginalizeLeaves1) {
   NonlinearFactorGraph factors;
   factors.addPrior(0, 0.0, model);
 
-  factors += BetweenFactor<double>(0, 1, 0.0, model);
-  factors += BetweenFactor<double>(1, 2, 0.0, model);
-  factors += BetweenFactor<double>(0, 2, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(0, 1, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(1, 2, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(0, 2, 0.0, model);
 
   Values values;
   values.insert(0, 0.0);
@@ -686,7 +785,7 @@ TEST(ISAM2, marginalizeLeaves1) {
 
   isam.update(factors, values, FactorIndices(), constrainedKeys);
 
-  FastList<Key> leafKeys = list_of(0);
+  FastList<Key> leafKeys {0};
   EXPECT(checkMarginalizeLeaves(isam, leafKeys));
 }
 
@@ -697,10 +796,10 @@ TEST(ISAM2, marginalizeLeaves2) {
   NonlinearFactorGraph factors;
   factors.addPrior(0, 0.0, model);
 
-  factors += BetweenFactor<double>(0, 1, 0.0, model);
-  factors += BetweenFactor<double>(1, 2, 0.0, model);
-  factors += BetweenFactor<double>(0, 2, 0.0, model);
-  factors += BetweenFactor<double>(2, 3, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(0, 1, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(1, 2, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(0, 2, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(2, 3, 0.0, model);
 
   Values values;
   values.insert(0, 0.0);
@@ -716,7 +815,7 @@ TEST(ISAM2, marginalizeLeaves2) {
 
   isam.update(factors, values, FactorIndices(), constrainedKeys);
 
-  FastList<Key> leafKeys = list_of(0);
+  FastList<Key> leafKeys {0};
   EXPECT(checkMarginalizeLeaves(isam, leafKeys));
 }
 
@@ -727,15 +826,15 @@ TEST(ISAM2, marginalizeLeaves3) {
   NonlinearFactorGraph factors;
   factors.addPrior(0, 0.0, model);
 
-  factors += BetweenFactor<double>(0, 1, 0.0, model);
-  factors += BetweenFactor<double>(1, 2, 0.0, model);
-  factors += BetweenFactor<double>(0, 2, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(0, 1, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(1, 2, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(0, 2, 0.0, model);
 
-  factors += BetweenFactor<double>(2, 3, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(2, 3, 0.0, model);
 
-  factors += BetweenFactor<double>(3, 4, 0.0, model);
-  factors += BetweenFactor<double>(4, 5, 0.0, model);
-  factors += BetweenFactor<double>(3, 5, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(3, 4, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(4, 5, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(3, 5, 0.0, model);
 
   Values values;
   values.insert(0, 0.0);
@@ -755,7 +854,7 @@ TEST(ISAM2, marginalizeLeaves3) {
 
   isam.update(factors, values, FactorIndices(), constrainedKeys);
 
-  FastList<Key> leafKeys = list_of(0);
+  FastList<Key> leafKeys {0};
   EXPECT(checkMarginalizeLeaves(isam, leafKeys));
 }
 
@@ -765,8 +864,8 @@ TEST(ISAM2, marginalizeLeaves4) {
 
   NonlinearFactorGraph factors;
   factors.addPrior(0, 0.0, model);
-  factors += BetweenFactor<double>(0, 2, 0.0, model);
-  factors += BetweenFactor<double>(1, 2, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(0, 2, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(1, 2, 0.0, model);
 
   Values values;
   values.insert(0, 0.0);
@@ -780,7 +879,7 @@ TEST(ISAM2, marginalizeLeaves4) {
 
   isam.update(factors, values, FactorIndices(), constrainedKeys);
 
-  FastList<Key> leafKeys = list_of(1);
+  FastList<Key> leafKeys {1};
   EXPECT(checkMarginalizeLeaves(isam, leafKeys));
 }
 
@@ -791,8 +890,118 @@ TEST(ISAM2, marginalizeLeaves5)
   ISAM2 isam = createSlamlikeISAM2();
 
   // Marginalize
-  FastList<Key> marginalizeKeys = list_of(0);
+  FastList<Key> marginalizeKeys {0};
   EXPECT(checkMarginalizeLeaves(isam, marginalizeKeys));
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, marginalizeLeaves6)
+{
+  auto nm = noiseModel::Isotropic::Sigma(6, 1.0);
+
+  int gridDim = 10;
+
+  auto idxToKey = [gridDim](int i, int j){return i * gridDim + j;};
+
+  NonlinearFactorGraph factors;
+  Values values;
+  ISAM2 isam;
+
+  // Create a grid of pose variables
+  for (int i = 0; i < gridDim; ++i) {
+    for (int j = 0; j < gridDim; ++j) {
+      Pose3 pose = Pose3(Rot3::Identity(), Point3(i, j, 0));
+      Key key = idxToKey(i, j);
+      // Place a prior on the first pose
+      factors.addPrior(key, Pose3(Rot3::Identity(), Point3(i, j, 0)), nm);
+      values.insert(key, pose);
+      if (i > 0) {
+        factors.emplace_shared<BetweenFactor<Pose3>>(idxToKey(i - 1, j), key, Pose3(Rot3::Identity(), Point3(1, 0, 0)),nm);
+      }
+      if (j > 0) {
+        factors.emplace_shared<BetweenFactor<Pose3>>(idxToKey(i, j - 1), key, Pose3(Rot3::Identity(), Point3(0, 1, 0)),nm);
+      }
+    }
+  }
+
+  // Optimize the graph
+  EXPECT(updateAndMarginalize(factors, values, {}, isam));
+  auto estimate = isam.calculateBestEstimate();
+
+  // Get the list of keys
+  std::vector<Key> key_list(gridDim * gridDim);
+  std::iota(key_list.begin(), key_list.end(), 0);
+
+  // Shuffle the keys -> we will marginalize the keys one by one in this order
+  std::shuffle(key_list.begin(), key_list.end(), std::default_random_engine(1234));
+
+  for (const auto& key : key_list) {
+    KeySet marginalKeys;
+    marginalKeys.insert(key);
+    EXPECT(updateAndMarginalize({}, {}, marginalKeys, isam));
+    estimate = isam.calculateBestEstimate();
+  }
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, MarginalizeRoot)
+{
+  auto nm = noiseModel::Isotropic::Sigma(6, 1.0);
+
+  NonlinearFactorGraph factors;
+  Values values;
+  ISAM2 isam;
+
+  // Create a factor graph with one variable and a prior
+  Pose3 root = Pose3::Identity();
+  Key rootKey(0);
+  values.insert(rootKey, root);
+  factors.addPrior(rootKey, Pose3::Identity(), nm);
+
+  // Optimize the graph
+  EXPECT(updateAndMarginalize(factors, values, {}, isam));
+  auto estimate = isam.calculateBestEstimate();
+  EXPECT(estimate.size() == 1);
+
+  // And remove the node from the graph
+  KeySet marginalizableKeys;
+  marginalizableKeys.insert(rootKey);
+
+  EXPECT(updateAndMarginalize({}, {}, marginalizableKeys, isam));
+
+  estimate = isam.calculateBestEstimate();
+  EXPECT(estimate.empty());
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, marginalizationSize)
+{
+  auto nm = noiseModel::Isotropic::Sigma(6, 1.0);
+
+  NonlinearFactorGraph factors;
+  Values values;
+  ISAM2Params params;
+  params.findUnusedFactorSlots = true;
+  ISAM2 isam{params};
+
+  // Create a pose variable
+  Key aKey(0);
+  values.insert(aKey, Pose3::Identity());
+  factors.addPrior(aKey, Pose3::Identity(), nm);
+  // Create another pose variable linked to the first
+  Pose3 b = Pose3::Identity();
+  Key bKey(1);
+  values.insert(bKey, Pose3::Identity());
+  factors.emplace_shared<BetweenFactor<Pose3>>(aKey, bKey, Pose3::Identity(), nm);
+  // Optimize the graph
+  EXPECT(updateAndMarginalize(factors, values, {}, isam));
+
+  // Now remove a variable -> we should not see the number of factors increase
+  gtsam::KeySet to_remove;
+  to_remove.insert(aKey);
+  const auto numFactorsBefore = isam.getFactorsUnsafe().size();
+  updateAndMarginalize({}, {}, to_remove, isam);
+  EXPECT(numFactorsBefore == isam.getFactorsUnsafe().size());
 }
 
 /* ************************************************************************* */
@@ -808,6 +1017,30 @@ TEST(ISAM2, marginalCovariance)
 }
 
 /* ************************************************************************* */
+TEST(ISAM2, marginalInformation) {
+  ISAM2 isam = createSlamlikeISAM2();
+
+  Matrix expected = Marginals(isam.getFactorsUnsafe(), isam.getLinearizationPoint(),
+                              Marginals::CHOLESKY)
+                        .marginalInformation(5);
+  Matrix actual = isam.marginalInformation(5);
+  EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, jointMarginals) {
+  ISAM2 isam = createSlamlikeISAM2();
+  const KeyVector query{101, 5, 100};
+  Marginals marginals(isam.getFactorsUnsafe(), isam.getLinearizationPoint(),
+                      Marginals::CHOLESKY);
+
+  EXPECT(assert_equal(marginals.jointMarginalCovariance(query).fullMatrix(),
+                      isam.jointMarginalCovariance(query).fullMatrix(), 1e-9));
+  EXPECT(assert_equal(marginals.jointMarginalInformation(query).fullMatrix(),
+                      isam.jointMarginalInformation(query).fullMatrix(), 1e-9));
+}
+
+/* ************************************************************************* */
 TEST(ISAM2, calculate_nnz)
 {
   ISAM2 isam = createSlamlikeISAM2();
@@ -815,6 +1048,266 @@ TEST(ISAM2, calculate_nnz)
   int actual = isam.roots().front()->calculate_nnz();
 
   EXPECT_LONGS_EQUAL(expected, actual);
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, PredictUpdateInfo) {
+  // Setup iSAM2
+  ISAM2Params params;
+  params.findUnusedFactorSlots = true;
+  params.enableDetailedResults = true;
+
+  ISAM2 isam{params};
+
+  // Generate scenario - Straight motion along X w/ loop closures at 3 points
+  for (int i = 0; i < 50; i++) {
+    ISAM2UpdateParams update_params;
+    NonlinearFactorGraph factors;
+    Values values;
+    // Add Values
+    values.insert(i, Pose2(i, 0, 0));
+
+    // Add Odometry
+    if (i == 0) {
+      factors.emplace_shared<PriorFactor<Pose2>>(0, Pose2(), odoNoise);
+    } else {
+      factors.emplace_shared<BetweenFactor<Pose2>>(i - 1, i, Pose2(1, 0, 0),
+                                                   odoNoise);
+    }
+
+    // Add Loop Closures at various points
+    if (i == 10)
+      factors.emplace_shared<BetweenFactor<Pose2>>(10, 0, Pose2(-10, 0, 0),
+                                                   odoNoise);
+    if (i == 20)
+      factors.emplace_shared<BetweenFactor<Pose2>>(20, 5, Pose2(-15, 0, 0),
+                                                   odoNoise);
+    if (i == 40)
+      factors.emplace_shared<BetweenFactor<Pose2>>(40, 35, Pose2(5, 0, 0),
+                                                   odoNoise);
+
+    // Predict the Update
+    std::pair<KeySet, bool> predicted =
+        isam.predictUpdateInfo(factors, values, update_params);
+
+    // Actually perform the update
+    ISAM2Result result = isam.update(factors, values, update_params);
+    isam.calculateEstimate();
+
+    // Validate
+    if (result.details()->variableStatus.size() == size_t(i + 1)) {
+      EXPECT(predicted.second);
+    } else {
+      for (auto kvp : result.details()->variableStatus) {
+        if (kvp.second.isReeliminated) {
+          EXPECT(predicted.first.count(kvp.first) == 1 ||
+                 kvp.second.isAboveRelinThreshold);
+        }
+      }
+    }
+  }
+}
+
+/* ************************************************************************* */
+class FixActiveFactor : public NoiseModelFactorN<Vector2> {
+  using Base = NoiseModelFactorN<Vector2>;
+  bool is_active_;
+
+public:
+  FixActiveFactor(const gtsam::Key& key, const bool active)
+      : Base(noiseModel::Unit::Create(2), key), is_active_(active) {}
+
+  virtual bool active(const gtsam::Values &values) const override {
+    return is_active_;
+  }
+
+  virtual Vector
+  evaluateError(const Vector2& x,
+                Base::OptionalMatrixTypeT<Vector2> H = nullptr) const override {
+    if (H) {
+      *H = Vector2::Identity();
+    }
+    return Vector2::Zero();
+  }
+};
+
+TEST(ActiveFactorTesting, Issue1596) {
+  // Issue1596: When a derived Nonlinear Factor is not active, the linearization returns a nullptr (NonlinearFactor.cpp:156), which  
+  //            causes an error when `EliminateSymbolic` is called (SymbolicFactor-inst.h:45) due to not checking if the factor is nullptr.
+  const gtsam::Key key{Symbol('x', 0)};
+
+  ISAM2 isam;
+  Values values;
+  NonlinearFactorGraph graph;
+
+  // Insert an active factor
+  values.insert<Vector2>(key, Vector2::Zero());
+  graph.emplace_shared<FixActiveFactor>(key, true);
+
+  // No problem here
+  isam.update(graph, values);
+
+  graph = NonlinearFactorGraph();
+  
+  // Inserting a factor that is never active
+  graph.emplace_shared<FixActiveFactor>(key, false);
+
+  // This call throws the error if the pointer is not validated on (SymbolicFactor-inst.h:45)
+  isam.update(graph);
+
+  // If the bug is fixed, this line is reached.
+  EXPECT(isam.getFactorsUnsafe().size() == 2);
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, AdaptiveReorder_NnzTracking) {
+  // Verify that treeNnz is populated and nnz baseline is set after first update
+  ISAM2Params params;
+  params.enableAdaptiveReorder = true;
+  params.adaptiveReorderThreshold = 2.0;
+  ISAM2 isam(params);
+
+  NonlinearFactorGraph graph;
+  Values init;
+
+  // Add a prior
+  graph.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
+  init.insert(0, Pose2(0.01, 0.01, 0.01));
+  ISAM2Result result = isam.update(graph, init);
+
+  // After first update, nnz should be set
+  EXPECT(result.treeNnz > 0);
+  EXPECT(!result.batchReorderTriggered);
+
+  // Add a chain of poses
+  for (int i = 0; i < 5; ++i) {
+    graph = NonlinearFactorGraph();
+    init = Values();
+    graph.emplace_shared<BetweenFactor<Pose2>>(i, i + 1,
+        Pose2(1.0, 0.0, 0.0), odoNoise);
+    init.insert(i + 1, Pose2(double(i + 1) + 0.1, -0.1, 0.01));
+    result = isam.update(graph, init);
+  }
+
+  // Nnz should be growing but no reorder yet (small problem)
+  EXPECT(result.treeNnz > 0);
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, AdaptiveReorder_Triggered) {
+  // Use a very low threshold to force a reorder
+  ISAM2Params params;
+  params.enableAdaptiveReorder = true;
+  params.adaptiveReorderThreshold = 1.01;  // trigger on any fill-in growth
+  params.relinearizeSkip = 1;
+  ISAM2 isam(params);
+
+  NonlinearFactorGraph graph;
+  Values init;
+
+  graph.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
+  init.insert(0, Pose2(0.01, 0.01, 0.01));
+  isam.update(graph, init);
+
+  // Build a longer chain so there's some structure
+  for (int i = 0; i < 10; ++i) {
+    graph = NonlinearFactorGraph();
+    init = Values();
+    graph.emplace_shared<BetweenFactor<Pose2>>(i, i + 1,
+        Pose2(1.0, 0.0, 0.0), odoNoise);
+    init.insert(i + 1, Pose2(double(i + 1) + 0.1, -0.1, 0.01));
+    isam.update(graph, init);
+  }
+
+  // Add a loop closure that changes the structure
+  graph = NonlinearFactorGraph();
+  init = Values();
+  graph.emplace_shared<BetweenFactor<Pose2>>(0, 10,
+      Pose2(10.0, 0.0, 0.0), odoNoise);
+  ISAM2Result result = isam.update(graph, init);
+
+  // With threshold 1.01, the loop closure fill-in should trigger a reorder
+  // on this or the next update
+  bool triggered = result.batchReorderTriggered;
+  if (!triggered) {
+    // Try one more update to see if fill-in was detected
+    graph = NonlinearFactorGraph();
+    graph.emplace_shared<BetweenFactor<Pose2>>(5, 10,
+        Pose2(5.0, 0.0, 0.0), odoNoise);
+    result = isam.update(graph, init);
+    triggered = result.batchReorderTriggered;
+  }
+
+  // With threshold 1.01, any fill-in growth triggers a batch reorder
+  EXPECT(triggered);
+  EXPECT(result.treeNnz > 0);
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, AdaptiveReorder_DisabledByDefault) {
+  // With default params, adaptive reorder should never trigger
+  ISAM2 isam;
+
+  NonlinearFactorGraph graph;
+  Values init;
+
+  graph.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
+  init.insert(0, Pose2(0.01, 0.01, 0.01));
+  ISAM2Result result = isam.update(graph, init);
+
+  EXPECT(!result.batchReorderTriggered);
+  // treeNnz should still be populated
+  EXPECT(result.treeNnz > 0);
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, constrained_gradient_at_zero) {
+  // A hard-constrained variable should not receive gradient contributions from
+  // regular factors after the Bayes tree aggregates clique gradients.
+  ISAM2Params params(ISAM2DoglegParams(1.0), 0.0, 0, false);
+  ISAM2 isam(params);
+  NonlinearFactorGraph graph;
+  Values init;
+  const Pose2 origin(0.0, 0.0, 0.0);
+
+  graph.emplace_shared<NonlinearEquality<Pose2>>(1, origin);
+  graph.emplace_shared<BetweenFactor<Pose2>>(
+      0, 1, Pose2(1.0, 0.0, 0.0), odoNoise);
+  init.insert(0, origin);
+  init.insert(1, origin);
+
+  FastMap<Key, int> constrainedKeys;
+  constrainedKeys.emplace(1, 1);
+  isam.update(graph, init, FactorIndices(), constrainedKeys);
+
+  const VectorValues gradient = isam.gradientAtZero();
+  EXPECT(assert_equal(Vector3::Zero(), gradient.at(1)));
+  EXPECT(gradient.at(0).norm() > 0.0);
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, constrained_gradient_at_zero_mixed_components) {
+  // Only constrained scalar components should be represented as zero.
+  ISAM2Params params(ISAM2DoglegParams(1.0), 0.0, 0, false);
+  ISAM2 isam(params);
+  NonlinearFactorGraph graph;
+  Values init;
+
+  graph.emplace_shared<PriorFactor<Point2>>(
+      1, Point2(0.0, 0.0),
+      noiseModel::Constrained::MixedSigmas(Vector2(0.0, 1.0)));
+  graph.emplace_shared<BetweenFactor<Point2>>(
+      0, 1, Point2(1.0, 1.0), noiseModel::Isotropic::Sigma(2, 1.0));
+  init.insert(0, Point2(0.0, 0.0));
+  init.insert(1, Point2(0.0, 0.0));
+
+  FastMap<Key, int> constrainedKeys;
+  constrainedKeys.emplace(1, 1);
+  isam.update(graph, init, FactorIndices(), constrainedKeys);
+
+  const VectorValues gradient = isam.gradientAtZero();
+  EXPECT(std::abs(gradient.at(1)(0)) < 1e-9);
+  EXPECT(std::abs(gradient.at(1)(1)) > 1e-9);
 }
 
 /* ************************************************************************* */

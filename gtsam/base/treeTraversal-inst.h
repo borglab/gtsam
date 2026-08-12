@@ -27,8 +27,9 @@
 #include <stack>
 #include <vector>
 #include <string>
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
+#include <memory>
+#include <functional>
+#include <cassert>
 
 namespace gtsam {
 
@@ -41,10 +42,10 @@ namespace {
 template<typename NODE, typename DATA>
 struct TraversalNode {
   bool expanded;
-  const boost::shared_ptr<NODE>& treeNode;
+  const std::shared_ptr<NODE>& treeNode;
   DATA& parentData;
   typename FastList<DATA>::iterator dataPointer;
-  TraversalNode(const boost::shared_ptr<NODE>& _treeNode, DATA& _parentData) :
+  TraversalNode(const std::shared_ptr<NODE>& _treeNode, DATA& _parentData) :
       expanded(false), treeNode(_treeNode), parentData(_parentData) {
   }
 };
@@ -52,7 +53,7 @@ struct TraversalNode {
 // Do nothing - default argument for post-visitor for tree traversal
 struct no_op {
   template<typename NODE, typename DATA>
-  void operator()(const boost::shared_ptr<NODE>& node, const DATA& data) {
+  void operator()(const std::shared_ptr<NODE>& node, const DATA& data) {
   }
 };
 
@@ -78,7 +79,7 @@ void DepthFirstForest(FOREST& forest, DATA& rootData, VISITOR_PRE& visitorPre,
     VISITOR_POST& visitorPost) {
   // Typedefs
   typedef typename FOREST::Node Node;
-  typedef boost::shared_ptr<Node> sharedNode;
+  typedef std::shared_ptr<Node> sharedNode;
 
   // Depth first traversal stack
   typedef TraversalNode<typename FOREST::Node, DATA> TraversalNode;
@@ -118,6 +119,30 @@ void DepthFirstForest(FOREST& forest, DATA& rootData, VISITOR_PRE& visitorPre,
   assert(dataList.empty());
 }
 
+/* ************************************************************************* */
+/** Traverse a forest depth-first with post-order visits only.
+ *  @param forest The forest of trees to traverse. The method \c forest.roots()
+ *         should exist and return a collection of (shared) pointers to
+ *         \c FOREST::Node.
+ *  @param visitorPost \c visitorPost(node) will be called at every node, after
+ *         visiting its children. */
+template<class FOREST, typename VISITOR_POST>
+void PostOrderForest(FOREST& forest, VISITOR_POST& visitorPost) {
+  typedef typename FOREST::Node Node;
+  typedef std::shared_ptr<Node> sharedNode;
+
+  std::function<void(const sharedNode&)> visit =
+      [&](const sharedNode& node) {
+        if (!node) return;
+        for (const sharedNode& child : node->children) visit(child);
+        (void)visitorPost(node);
+      };
+
+  for (const sharedNode& root : forest.roots()) {
+    visit(root);
+  }
+}
+
 /** Traverse a forest depth-first, with a pre-order visit but no post-order visit.
  *  @param forest The forest of trees to traverse.  The method \c forest.roots() should exist
  *         and return a collection of (shared) pointers to \c FOREST::Node.
@@ -138,6 +163,8 @@ void DepthFirstForest(FOREST& forest, DATA& rootData, VISITOR_PRE& visitorPre) {
 /** Traverse a forest depth-first with pre-order and post-order visits.
  *  @param forest The forest of trees to traverse.  The method \c forest.roots() should exist
  *         and return a collection of (shared) pointers to \c FOREST::Node.
+ *  @param rootData The data to pass by reference to \c visitorPre when it is called on each
+ *         root node.
  *  @param visitorPre \c visitorPre(node, parentData) will be called at every node, before
  *         visiting its children, and will be passed, by reference, the \c DATA object returned
  *         by the visit to its parent.  Likewise, \c visitorPre should return the \c DATA object
@@ -147,15 +174,18 @@ void DepthFirstForest(FOREST& forest, DATA& rootData, VISITOR_PRE& visitorPre) {
  *  @param visitorPost \c visitorPost(node, data) will be called at every node, after visiting
  *         its children, and will be passed, by reference, the \c DATA object returned by the
  *         call to \c visitorPre (the \c DATA object may be modified by visiting the children).
- *  @param rootData The data to pass by reference to \c visitorPre when it is called on each
- *         root node. */
+ *  @param problemSizeThreshold
+ */
 template<class FOREST, typename DATA, typename VISITOR_PRE,
     typename VISITOR_POST>
 void DepthFirstForestParallel(FOREST& forest, DATA& rootData,
     VISITOR_PRE& visitorPre, VISITOR_POST& visitorPost,
     int problemSizeThreshold = 10) {
-#ifdef GTSAM_USE_TBB
-  // Typedefs
+
+#if defined(GTSAM_USE_TBB) && !defined(GTSAM_TBB_BOUNDED_MEMORY_GROWTH_FLAG)
+  // Note: Parallel tree traversal (the default) causes a large increase in memory footprint.
+  // In a tested use case, memory grew from approximately 4 GB to 12 GB.
+
   typedef typename FOREST::Node Node;
 
   internal::CreateRootTask<Node>(forest.roots(), rootData, visitorPre,
@@ -166,32 +196,54 @@ void DepthFirstForestParallel(FOREST& forest, DATA& rootData,
 }
 
 /* ************************************************************************* */
+/** Traverse a forest depth-first with post-order visits only (parallel if TBB).
+ *  @param forest The forest of trees to traverse. The method \c forest.roots()
+ *         should exist and return a collection of (shared) pointers to
+ *         \c FOREST::Node.
+ *  @param visitorPost \c visitorPost(node) will be called at every node, after
+ *         visiting its children.
+ *  @param problemSizeThreshold Threshold for creating parallel subtasks. */
+template<class FOREST, typename VISITOR_POST>
+void PostOrderForestParallel(FOREST& forest, VISITOR_POST& visitorPost,
+                             int problemSizeThreshold = 10) {
+#if defined(GTSAM_USE_TBB) && !defined(GTSAM_TBB_BOUNDED_MEMORY_GROWTH_FLAG)
+  // Note: Parallel tree traversal (the default) causes a large increase in memory footprint.
+
+  typedef typename FOREST::Node Node;
+  internal::CreateRootPostOrderTask<Node>(forest.roots(), visitorPost,
+                                          problemSizeThreshold);
+#else
+  PostOrderForest(forest, visitorPost);
+#endif
+}
+
+/* ************************************************************************* */
 /** Traversal function for CloneForest */
 namespace {
 template<typename NODE>
-boost::shared_ptr<NODE> CloneForestVisitorPre(
-    const boost::shared_ptr<NODE>& node,
-    const boost::shared_ptr<NODE>& parentPointer) {
+std::shared_ptr<NODE> CloneForestVisitorPre(
+    const std::shared_ptr<NODE>& node,
+    const std::shared_ptr<NODE>& parentPointer) {
   // Clone the current node and add it to its cloned parent
-  boost::shared_ptr<NODE> clone = boost::make_shared<NODE>(*node);
+  std::shared_ptr<NODE> clone = std::make_shared<NODE>(*node);
   clone->children.clear();
   parentPointer->children.push_back(clone);
   return clone;
 }
 }
 
-/** Clone a tree, copy-constructing new nodes (calling boost::make_shared) and setting up child
+/** Clone a tree, copy-constructing new nodes (calling std::make_shared) and setting up child
  *  pointers for a clone of the original tree.
  *  @param forest The forest of trees to clone.  The method \c forest.roots() should exist and
  *         return a collection of shared pointers to \c FOREST::Node.
  *  @return The new collection of roots. */
 template<class FOREST>
-FastVector<boost::shared_ptr<typename FOREST::Node> > CloneForest(
+FastVector<std::shared_ptr<typename FOREST::Node> > CloneForest(
     const FOREST& forest) {
   typedef typename FOREST::Node Node;
-  boost::shared_ptr<Node> rootContainer = boost::make_shared<Node>();
+  std::shared_ptr<Node> rootContainer = std::make_shared<Node>();
   DepthFirstForest(forest, rootContainer, CloneForestVisitorPre<Node>);
-  return FastVector<boost::shared_ptr<Node> >(rootContainer->children.begin(),
+  return FastVector<std::shared_ptr<Node> >(rootContainer->children.begin(),
       rootContainer->children.end());
 }
 
@@ -204,7 +256,7 @@ struct PrintForestVisitorPre {
       formatter(formatter) {
   }
   template<typename NODE> std::string operator()(
-      const boost::shared_ptr<NODE>& node, const std::string& parentString) {
+      const std::shared_ptr<NODE>& node, const std::string& parentString) {
     // Print the current node
     node->print(parentString + "-", formatter);
     // Increment the indentation
@@ -221,6 +273,6 @@ void PrintForest(const FOREST& forest, std::string str,
   PrintForestVisitorPre visitor(keyFormatter);
   DepthFirstForest(forest, str, visitor);
 }
-}
+}  // namespace treeTraversal
 
-}
+}  // namespace gtsam

@@ -18,10 +18,12 @@
 #pragma once
 
 #include <gtsam/base/Lie.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/concepts.h>
-#include <gtsam/geometry/SO3.h> // Logmap/Expmap derivatives
-#include <limits>
+#include <gtsam/geometry/SO3.h>  // Logmap/Expmap derivatives
+
 #include <iostream>
+#include <limits>
 
 #define QUATERNION_TYPE Eigen::Quaternion<_Scalar,_Options>
 
@@ -45,9 +47,8 @@ struct traits<QUATERNION_TYPE> {
   /// @}
   /// @name Basic manifold traits
   /// @{
-  enum {
-    dimension = 3
-  };
+  inline constexpr static auto dimension = 3;
+  static int GetDimension(const Q& /* g */) { return 3; }
   typedef OptionalJacobian<3, 3> ChartJacobian;
   typedef Eigen::Matrix<_Scalar, 3, 1, _Options, 3, 1> TangentVector;
 
@@ -55,14 +56,14 @@ struct traits<QUATERNION_TYPE> {
   /// @name Lie group traits
   /// @{
   static Q Compose(const Q &g, const Q & h,
-      ChartJacobian Hg = boost::none, ChartJacobian Hh = boost::none) {
+      ChartJacobian Hg = {}, ChartJacobian Hh = {}) {
     if (Hg) *Hg = h.toRotationMatrix().transpose();
     if (Hh) *Hh = I_3x3;
     return g * h;
   }
 
   static Q Between(const Q &g, const Q & h,
-      ChartJacobian Hg = boost::none, ChartJacobian Hh = boost::none) {
+      ChartJacobian Hg = {}, ChartJacobian Hh = {}) {
     Q d = g.inverse() * h;
     if (Hg) *Hg = -d.toRotationMatrix().transpose();
     if (Hh) *Hh = I_3x3;
@@ -70,14 +71,14 @@ struct traits<QUATERNION_TYPE> {
   }
 
   static Q Inverse(const Q &g,
-      ChartJacobian H = boost::none) {
+      ChartJacobian H = {}) {
     if (H) *H = -g.toRotationMatrix();
     return g.inverse();
   }
 
   /// Exponential map, using the inlined code from Eigen's conversion from axis/angle
   static Q Expmap(const Eigen::Ref<const TangentVector>& omega,
-                  ChartJacobian H = boost::none) {
+                  ChartJacobian H = {}) {
     using std::cos;
     using std::sin;
     if (H) *H = SO3::ExpmapDerivative(omega.template cast<double>());
@@ -95,7 +96,7 @@ struct traits<QUATERNION_TYPE> {
   }
 
   /// We use our own Logmap, as there is a slight bug in Eigen
-  static TangentVector Logmap(const Q& q, ChartJacobian H = boost::none) {
+  static TangentVector Logmap(const Q& q, ChartJacobian H = {}) {
     using std::acos;
     using std::sqrt;
 
@@ -140,12 +141,30 @@ struct traits<QUATERNION_TYPE> {
     return omega;
   }
 
+  static Matrix3 AdjointMap(const Q &g) {
+    return g.toRotationMatrix();
+  }
+
+  using LieAlgebra = Matrix3;
+
+  static Matrix3 Hat(const Vector3& v) {
+    return SO3::Hat(v);
+  }
+  
+  static Vector3 Vee(const Matrix3& X) {
+    return SO3::Vee(X);
+  }
+
+  static Vector9 Vec(const Q& q, OptionalJacobian<9, 3> H = {}) {
+    return SO3(q.toRotationMatrix()).SO3::vec(H);
+  }
+
   /// @}
   /// @name Manifold traits
   /// @{
 
   static TangentVector Local(const Q& g, const Q& h,
-      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
+      ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
     Q b = Between(g, h, H1, H2);
     Matrix3 D_v_b;
     TangentVector v = Logmap(b, (H1 || H2) ? &D_v_b : 0);
@@ -155,7 +174,7 @@ struct traits<QUATERNION_TYPE> {
   }
 
   static Q Retract(const Q& g, const TangentVector& v,
-      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
+      ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
     Matrix3 D_h_v;
     Q b = Expmap(v,H2 ? &D_h_v : 0);
     Q h = Compose(g, b, H1, H2);
@@ -182,4 +201,3 @@ struct traits<QUATERNION_TYPE> {
 typedef Eigen::Quaternion<double, Eigen::DontAlign> Quaternion;
 
 } // \namespace gtsam
-

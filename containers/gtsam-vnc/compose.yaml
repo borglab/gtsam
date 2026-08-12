@@ -1,0 +1,10 @@
+services:
+  gtsam_vnc:
+    build:
+      args:
+        GTSAM_TAG: ${GTSAM_TAG}
+      context: .
+      dockerfile: Containerfile
+    env_file:
+      - .env
+    image: gtsam-vnc:${GTSAM_TAG}

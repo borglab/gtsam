@@ -66,9 +66,9 @@ The output is as follows:
 
 \section GettingStartedExplanation2 Explanation of the second example
 
-The second example starts by declaring a 3-by-3 matrix \c m which is initialized using the \link DenseBase::Random(Index,Index) Random() \endlink method with random values between -1 and 1. The next line applies a linear mapping such that the values are between 10 and 110. The function call \link DenseBase::Constant(Index,Index,const Scalar&) MatrixXd::Constant\endlink(3,3,1.2) returns a 3-by-3 matrix expression having all coefficients equal to 1.2. The rest is standard arithmetics.
+The second example starts by declaring a 3-by-3 matrix \c m which is initialized using the \link DenseBase::Random(Index,Index) Random() \endlink method with random values between -1 and 1. The next line applies a linear mapping such that the values are between 10 and 110. The function call \link DenseBase::Constant(Index,Index,const Scalar&) MatrixXd::Constant\endlink(3,3,1.2) returns a 3-by-3 matrix expression having all coefficients equal to 1.2. The rest is standard arithmetic.
 
-The next line of the \c main function introduces a new type: \c VectorXd. This represents a (column) vector of arbitrary size. Here, the vector \c v is created to contain \c 3 coefficients which are left unitialized. The one but last line uses the so-called comma-initializer, explained in \ref TutorialAdvancedInitialization, to set all coefficients of the vector \c v to be as follows:
+The next line of the \c main function introduces a new type: \c VectorXd. This represents a (column) vector of arbitrary size. Here, the vector \c v is created to contain \c 3 coefficients which are left uninitialized. The one but last line uses the so-called comma-initializer, explained in \ref TutorialAdvancedInitialization, to set all coefficients of the vector \c v to be as follows:
 
 \f[
 v =

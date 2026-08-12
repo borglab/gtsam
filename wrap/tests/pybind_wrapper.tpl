@@ -1,5 +1,3 @@
-{include_boost}
-
 #include <pybind11/eigen.h>
 #include <pybind11/stl_bind.h>
 #include <pybind11/pybind11.h>
@@ -7,12 +5,8 @@
 #include "gtsam/nonlinear/utilities.h"  // for RedirectCout.
 
 {includes}
-#include "wrap/serialization.h"
-#include <boost/serialization/export.hpp>
 
 {boost_class_export}
-
-{holder_type}
 
 using namespace std;
 

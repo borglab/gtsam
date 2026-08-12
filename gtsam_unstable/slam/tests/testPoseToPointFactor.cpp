@@ -16,7 +16,7 @@ using namespace gtsam::noiseModel;
 /* ************************************************************************* */
 // Verify zero error when there is no noise
 TEST(PoseToPointFactor, errorNoiseless_2D) {
-  Pose2 pose = Pose2::identity();
+  Pose2 pose = Pose2::Identity();
   Point2 point(1.0, 2.0);
   Point2 noise(0.0, 0.0);
   Point2 measured = point + noise;
@@ -33,7 +33,7 @@ TEST(PoseToPointFactor, errorNoiseless_2D) {
 /* ************************************************************************* */
 // Verify expected error in test scenario
 TEST(PoseToPointFactor, errorNoise_2D) {
-  Pose2 pose = Pose2::identity();
+  Pose2 pose = Pose2::Identity();
   Point2 point(1.0, 2.0);
   Point2 noise(-1.0, 0.5);
   Point2 measured = point + noise;
@@ -67,9 +67,9 @@ TEST(PoseToPointFactor, jacobian_2D) {
   PoseToPointFactor<Pose2,Point2> factor(pose_key, point_key, l_meas, noise);
 
   // Calculate numerical derivatives
-  auto f = std::bind(&PoseToPointFactor<Pose2,Point2>::evaluateError, factor,
-                     std::placeholders::_1, std::placeholders::_2, boost::none,
-                     boost::none);
+  auto f = [&factor] (const Pose2& pose, const Point2& pt) {
+	  return factor.evaluateError(pose, pt);
+  };
   Matrix numerical_H1 = numericalDerivative21<Vector, Pose2, Point2>(f, p, l);
   Matrix numerical_H2 = numericalDerivative22<Vector, Pose2, Point2>(f, p, l);
 
@@ -86,7 +86,7 @@ TEST(PoseToPointFactor, jacobian_2D) {
 /* ************************************************************************* */
 // Verify zero error when there is no noise
 TEST(PoseToPointFactor, errorNoiseless_3D) {
-  Pose3 pose = Pose3::identity();
+  Pose3 pose = Pose3::Identity();
   Point3 point(1.0, 2.0, 3.0);
   Point3 noise(0.0, 0.0, 0.0);
   Point3 measured = point + noise;
@@ -103,7 +103,7 @@ TEST(PoseToPointFactor, errorNoiseless_3D) {
 /* ************************************************************************* */
 // Verify expected error in test scenario
 TEST(PoseToPointFactor, errorNoise_3D) {
-  Pose3 pose = Pose3::identity();
+  Pose3 pose = Pose3::Identity();
   Point3 point(1.0, 2.0, 3.0);
   Point3 noise(-1.0, 0.5, 0.3);
   Point3 measured = point + noise;
@@ -137,9 +137,10 @@ TEST(PoseToPointFactor, jacobian_3D) {
   PoseToPointFactor<Pose3,Point3> factor(pose_key, point_key, l_meas, noise);
 
   // Calculate numerical derivatives
-  auto f = std::bind(&PoseToPointFactor<Pose3,Point3>::evaluateError, factor,
-                     std::placeholders::_1, std::placeholders::_2, boost::none,
-                     boost::none);
+  auto f = [&factor] (const Pose3& pose, const Point3& pt) {
+	  return factor.evaluateError(pose, pt);
+  };
+
   Matrix numerical_H1 = numericalDerivative21<Vector, Pose3, Point3>(f, p, l);
   Matrix numerical_H2 = numericalDerivative22<Vector, Pose3, Point3>(f, p, l);
 

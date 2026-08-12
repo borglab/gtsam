@@ -1,5 +1,8 @@
-# -*- coding: utf-8 -*-
+from __future__ import annotations
+
 import pytest
+
+from pybind11_tests import defined___cpp_noexcept_function_type
 from pybind11_tests import numpy_vectorize as m
 
 np = pytest.importorskip("numpy")
@@ -17,28 +20,40 @@ def test_vectorize(capture):
         assert capture == "my_func(x:int=1, y:float=2, z:float=3)"
         with capture:
             assert np.allclose(f(np.array([1, 3]), np.array([2, 4]), 3), [6, 36])
-        assert capture == """
+        assert (
+            capture
+            == """
             my_func(x:int=1, y:float=2, z:float=3)
             my_func(x:int=3, y:float=4, z:float=3)
         """
+        )
         with capture:
-            a = np.array([[1, 2], [3, 4]], order='F')
-            b = np.array([[10, 20], [30, 40]], order='F')
+            a = np.array([[1, 2], [3, 4]], order="F")
+            b = np.array([[10, 20], [30, 40]], order="F")
             c = 3
             result = f(a, b, c)
             assert np.allclose(result, a * b * c)
             assert result.flags.f_contiguous
         # All inputs are F order and full or singletons, so we the result is in col-major order:
-        assert capture == """
+        assert (
+            capture
+            == """
             my_func(x:int=1, y:float=10, z:float=3)
             my_func(x:int=3, y:float=30, z:float=3)
             my_func(x:int=2, y:float=20, z:float=3)
             my_func(x:int=4, y:float=40, z:float=3)
         """
+        )
         with capture:
-            a, b, c = np.array([[1, 3, 5], [7, 9, 11]]), np.array([[2, 4, 6], [8, 10, 12]]), 3
+            a, b, c = (
+                np.array([[1, 3, 5], [7, 9, 11]]),
+                np.array([[2, 4, 6], [8, 10, 12]]),
+                3,
+            )
             assert np.allclose(f(a, b, c), a * b * c)
-        assert capture == """
+        assert (
+            capture
+            == """
             my_func(x:int=1, y:float=2, z:float=3)
             my_func(x:int=3, y:float=4, z:float=3)
             my_func(x:int=5, y:float=6, z:float=3)
@@ -46,10 +61,13 @@ def test_vectorize(capture):
             my_func(x:int=9, y:float=10, z:float=3)
             my_func(x:int=11, y:float=12, z:float=3)
         """
+        )
         with capture:
             a, b, c = np.array([[1, 2, 3], [4, 5, 6]]), np.array([2, 3, 4]), 2
             assert np.allclose(f(a, b, c), a * b * c)
-        assert capture == """
+        assert (
+            capture
+            == """
             my_func(x:int=1, y:float=2, z:float=2)
             my_func(x:int=2, y:float=3, z:float=2)
             my_func(x:int=3, y:float=4, z:float=2)
@@ -57,10 +75,13 @@ def test_vectorize(capture):
             my_func(x:int=5, y:float=3, z:float=2)
             my_func(x:int=6, y:float=4, z:float=2)
         """
+        )
         with capture:
             a, b, c = np.array([[1, 2, 3], [4, 5, 6]]), np.array([[2], [3]]), 2
             assert np.allclose(f(a, b, c), a * b * c)
-        assert capture == """
+        assert (
+            capture
+            == """
             my_func(x:int=1, y:float=2, z:float=2)
             my_func(x:int=2, y:float=2, z:float=2)
             my_func(x:int=3, y:float=2, z:float=2)
@@ -68,10 +89,17 @@ def test_vectorize(capture):
             my_func(x:int=5, y:float=3, z:float=2)
             my_func(x:int=6, y:float=3, z:float=2)
         """
+        )
         with capture:
-            a, b, c = np.array([[1, 2, 3], [4, 5, 6]], order='F'), np.array([[2], [3]]), 2
+            a, b, c = (
+                np.array([[1, 2, 3], [4, 5, 6]], order="F"),
+                np.array([[2], [3]]),
+                2,
+            )
             assert np.allclose(f(a, b, c), a * b * c)
-        assert capture == """
+        assert (
+            capture
+            == """
             my_func(x:int=1, y:float=2, z:float=2)
             my_func(x:int=2, y:float=2, z:float=2)
             my_func(x:int=3, y:float=2, z:float=2)
@@ -79,36 +107,53 @@ def test_vectorize(capture):
             my_func(x:int=5, y:float=3, z:float=2)
             my_func(x:int=6, y:float=3, z:float=2)
         """
+        )
         with capture:
             a, b, c = np.array([[1, 2, 3], [4, 5, 6]])[::, ::2], np.array([[2], [3]]), 2
             assert np.allclose(f(a, b, c), a * b * c)
-        assert capture == """
+        assert (
+            capture
+            == """
             my_func(x:int=1, y:float=2, z:float=2)
             my_func(x:int=3, y:float=2, z:float=2)
             my_func(x:int=4, y:float=3, z:float=2)
             my_func(x:int=6, y:float=3, z:float=2)
         """
+        )
         with capture:
-            a, b, c = np.array([[1, 2, 3], [4, 5, 6]], order='F')[::, ::2], np.array([[2], [3]]), 2
+            a, b, c = (
+                np.array([[1, 2, 3], [4, 5, 6]], order="F")[::, ::2],
+                np.array([[2], [3]]),
+                2,
+            )
             assert np.allclose(f(a, b, c), a * b * c)
-        assert capture == """
+        assert (
+            capture
+            == """
             my_func(x:int=1, y:float=2, z:float=2)
             my_func(x:int=3, y:float=2, z:float=2)
             my_func(x:int=4, y:float=3, z:float=2)
             my_func(x:int=6, y:float=3, z:float=2)
         """
+        )
 
 
 def test_type_selection():
     assert m.selective_func(np.array([1], dtype=np.int32)) == "Int branch taken."
     assert m.selective_func(np.array([1.0], dtype=np.float32)) == "Float branch taken."
-    assert m.selective_func(np.array([1.0j], dtype=np.complex64)) == "Complex float branch taken."
+    assert (
+        m.selective_func(np.array([1.0j], dtype=np.complex64))
+        == "Complex float branch taken."
+    )
 
 
 def test_docs(doc):
-    assert doc(m.vectorized_func) == """
-        vectorized_func(arg0: numpy.ndarray[numpy.int32], arg1: numpy.ndarray[numpy.float32], arg2: numpy.ndarray[numpy.float64]) -> object
-    """  # noqa: E501 line too long
+    assert (
+        doc(m.vectorized_func)
+        == """
+        vectorized_func(arg0: typing.Annotated[numpy.typing.ArrayLike, numpy.int32], arg1: typing.Annotated[numpy.typing.ArrayLike, numpy.float32], arg2: typing.Annotated[numpy.typing.ArrayLike, numpy.float64]) -> object
+    """
+    )
 
 
 def test_trivial_broadcasting():
@@ -116,16 +161,24 @@ def test_trivial_broadcasting():
 
     assert vectorized_is_trivial(1, 2, 3) == trivial.c_trivial
     assert vectorized_is_trivial(np.array(1), np.array(2), 3) == trivial.c_trivial
-    assert vectorized_is_trivial(np.array([1, 3]), np.array([2, 4]), 3) == trivial.c_trivial
+    assert (
+        vectorized_is_trivial(np.array([1, 3]), np.array([2, 4]), 3)
+        == trivial.c_trivial
+    )
     assert trivial.c_trivial == vectorized_is_trivial(
-        np.array([[1, 3, 5], [7, 9, 11]]), np.array([[2, 4, 6], [8, 10, 12]]), 3)
-    assert vectorized_is_trivial(
-        np.array([[1, 2, 3], [4, 5, 6]]), np.array([2, 3, 4]), 2) == trivial.non_trivial
-    assert vectorized_is_trivial(
-        np.array([[1, 2, 3], [4, 5, 6]]), np.array([[2], [3]]), 2) == trivial.non_trivial
-    z1 = np.array([[1, 2, 3, 4], [5, 6, 7, 8]], dtype='int32')
-    z2 = np.array(z1, dtype='float32')
-    z3 = np.array(z1, dtype='float64')
+        np.array([[1, 3, 5], [7, 9, 11]]), np.array([[2, 4, 6], [8, 10, 12]]), 3
+    )
+    assert (
+        vectorized_is_trivial(np.array([[1, 2, 3], [4, 5, 6]]), np.array([2, 3, 4]), 2)
+        == trivial.non_trivial
+    )
+    assert (
+        vectorized_is_trivial(np.array([[1, 2, 3], [4, 5, 6]]), np.array([[2], [3]]), 2)
+        == trivial.non_trivial
+    )
+    z1 = np.array([[1, 2, 3, 4], [5, 6, 7, 8]], dtype="int32")
+    z2 = np.array(z1, dtype="float32")
+    z3 = np.array(z1, dtype="float64")
     assert vectorized_is_trivial(z1, z2, z3) == trivial.c_trivial
     assert vectorized_is_trivial(1, z2, z3) == trivial.c_trivial
     assert vectorized_is_trivial(z1, 1, z3) == trivial.c_trivial
@@ -135,7 +188,7 @@ def test_trivial_broadcasting():
     assert vectorized_is_trivial(1, 1, z3[::2, ::2]) == trivial.non_trivial
     assert vectorized_is_trivial(z1, 1, z3[1::4, 1::4]) == trivial.c_trivial
 
-    y1 = np.array(z1, order='F')
+    y1 = np.array(z1, order="F")
     y2 = np.array(y1)
     y3 = np.array(y1)
     assert vectorized_is_trivial(y1, y2, y3) == trivial.f_trivial
@@ -156,31 +209,92 @@ def test_trivial_broadcasting():
 
 def test_passthrough_arguments(doc):
     assert doc(m.vec_passthrough) == (
-        "vec_passthrough(" + ", ".join([
-            "arg0: float",
-            "arg1: numpy.ndarray[numpy.float64]",
-            "arg2: numpy.ndarray[numpy.float64]",
-            "arg3: numpy.ndarray[numpy.int32]",
-            "arg4: int",
-            "arg5: m.numpy_vectorize.NonPODClass",
-            "arg6: numpy.ndarray[numpy.float64]"]) + ") -> object")
+        "vec_passthrough("
+        + ", ".join(
+            [
+                "arg0: typing.SupportsFloat | typing.SupportsIndex",
+                "arg1: typing.Annotated[numpy.typing.ArrayLike, numpy.float64]",
+                "arg2: typing.Annotated[numpy.typing.ArrayLike, numpy.float64]",
+                "arg3: typing.Annotated[numpy.typing.ArrayLike, numpy.int32]",
+                "arg4: typing.SupportsInt | typing.SupportsIndex",
+                "arg5: m.numpy_vectorize.NonPODClass",
+                "arg6: typing.Annotated[numpy.typing.ArrayLike, numpy.float64]",
+            ]
+        )
+        + ") -> object"
+    )
 
-    b = np.array([[10, 20, 30]], dtype='float64')
+    b = np.array([[10, 20, 30]], dtype="float64")
     c = np.array([100, 200])  # NOT a vectorized argument
-    d = np.array([[1000], [2000], [3000]], dtype='int')
-    g = np.array([[1000000, 2000000, 3000000]], dtype='int')  # requires casting
+    d = np.array([[1000], [2000], [3000]], dtype="int")
+    g = np.array([[1000000, 2000000, 3000000]], dtype="int")  # requires casting
     assert np.all(
-        m.vec_passthrough(1, b, c, d, 10000, m.NonPODClass(100000), g) ==
-        np.array([[1111111, 2111121, 3111131],
-                  [1112111, 2112121, 3112131],
-                  [1113111, 2113121, 3113131]]))
+        m.vec_passthrough(1, b, c, d, 10000, m.NonPODClass(100000), g)
+        == np.array(
+            [
+                [1111111, 2111121, 3111131],
+                [1112111, 2112121, 3112131],
+                [1113111, 2113121, 3113131],
+            ]
+        )
+    )
 
 
 def test_method_vectorization():
     o = m.VectorizeTestClass(3)
-    x = np.array([1, 2], dtype='int')
-    y = np.array([[10], [20]], dtype='float32')
+    x = np.array([1, 2], dtype="int")
+    y = np.array([[10], [20]], dtype="float32")
     assert np.all(o.method(x, y) == [[14, 15], [24, 25]])
+
+
+def test_ref_qualified_method_vectorization():
+    """Test issue #2234 follow-up: vectorize with lvalue-ref-qualified member pointers.
+
+    Covers:
+      - vectorize(Return (Class::*)(Args...) &)
+      - vectorize(Return (Class::*)(Args...) const &)
+      - vectorize(Return (Class::*)(Args...) & noexcept)
+      - vectorize(Return (Class::*)(Args...) const & noexcept)
+    """
+    o = m.VectorizeTestClass(3)
+    x = np.array([1, 2], dtype="int")
+    y = np.array([[10], [20]], dtype="float32")
+    assert np.all(o.method_lref(x, y) == [[14, 15], [24, 25]])
+    assert np.all(o.method_const_lref(x, y) == [[14, 15], [24, 25]])
+
+
+@pytest.mark.skipif(
+    not defined___cpp_noexcept_function_type,
+    reason="Requires __cpp_noexcept_function_type",
+)
+def test_noexcept_ref_qualified_method_vectorization():
+    """Test issue #2234 follow-up: vectorize with noexcept lvalue-ref-qualified member pointers.
+
+    Covers:
+      - vectorize(Return (Class::*)(Args...) & noexcept)
+      - vectorize(Return (Class::*)(Args...) const & noexcept)
+    """
+    o = m.VectorizeTestClass(3)
+    x = np.array([1, 2], dtype="int")
+    y = np.array([[10], [20]], dtype="float32")
+    assert np.all(o.method_lref_noexcept(x, y) == [[14, 15], [24, 25]])
+    assert np.all(o.method_const_lref_noexcept(x, y) == [[14, 15], [24, 25]])
+
+
+def test_noexcept_method_vectorization():
+    """Test issue #2234: vectorize must handle noexcept member function pointers.
+
+    Covers both new vectorize specialisations:
+      - vectorize(Return (Class::*)(Args...) noexcept)
+      - vectorize(Return (Class::*)(Args...) const noexcept)
+    """
+    o = m.VectorizeTestClass(3)
+    x = np.array([1, 2], dtype="int")
+    y = np.array([[10], [20]], dtype="float32")
+    # vectorize(Return (Class::*)(Args...) noexcept)
+    assert np.all(o.method_noexcept(x, y) == [[14, 15], [24, 25]])
+    # vectorize(Return (Class::*)(Args...) const noexcept)
+    assert np.all(o.method_const_noexcept(x, y) == [[14, 15], [24, 25]])
 
 
 def test_array_collapse():
@@ -188,7 +302,18 @@ def test_array_collapse():
     assert not isinstance(m.vectorized_func(np.array(1), 2, 3), np.ndarray)
     z = m.vectorized_func([1], 2, 3)
     assert isinstance(z, np.ndarray)
-    assert z.shape == (1, )
+    assert z.shape == (1,)
     z = m.vectorized_func(1, [[[2]]], 3)
     assert isinstance(z, np.ndarray)
     assert z.shape == (1, 1, 1)
+
+
+def test_vectorized_noreturn():
+    x = m.NonPODClass(0)
+    assert x.value == 0
+    m.add_to(x, [1, 2, 3, 4])
+    assert x.value == 10
+    m.add_to(x, 1)
+    assert x.value == 11
+    m.add_to(x, [[1, 1], [2, 3]])
+    assert x.value == 18

@@ -172,7 +172,7 @@ template<typename MatrixType> void test_reference(const MatrixType& m) {
   typedef typename MatrixType::Scalar Scalar;
   enum { Flag          =  MatrixType::IsRowMajor ? Eigen::RowMajor : Eigen::ColMajor};
   enum { TransposeFlag = !MatrixType::IsRowMajor ? Eigen::RowMajor : Eigen::ColMajor};
-  typename MatrixType::Index rows = m.rows(), cols=m.cols();
+  Index rows = m.rows(), cols=m.cols();
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, Flag         > MatrixX;
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, TransposeFlag> MatrixXT;
   // Dynamic reference:
@@ -202,7 +202,7 @@ template<typename MatrixType> void test_reference(const MatrixType& m) {
 
 }
 
-void test_nomalloc()
+EIGEN_DECLARE_TEST(nomalloc)
 {
   // create some dynamic objects
   Eigen::MatrixXd M1 = MatrixXd::Random(3,3);

@@ -10,6 +10,7 @@ Author: Frank Dellaert
 """
 import pickle
 import unittest
+from copy import deepcopy
 
 
 class GtsamTestCase(unittest.TestCase):
@@ -28,8 +29,8 @@ class GtsamTestCase(unittest.TestCase):
         else:
             equal = actual.equals(expected, tol)
         if not equal:
-            raise self.failureException(
-                "Values are not equal:\n{}!={}".format(actual, expected))
+            raise self.failureException("Values are not equal:\n{}!={}".format(
+                actual, expected))
 
     def assertEqualityOnPickleRoundtrip(self, obj: object, tol=1e-9) -> None:
         """ Performs a round-trip using pickle and asserts equality.
@@ -41,3 +42,14 @@ class GtsamTestCase(unittest.TestCase):
         """
         roundTripObj = pickle.loads(pickle.dumps(obj))
         self.gtsamAssertEquals(roundTripObj, obj)
+
+    def assertDeepCopyEquality(self, obj):
+        """Perform assertion by checking if a
+        deep copied version of `obj` is equal to itself.
+
+        Args:
+            obj: The object to check is deep-copyable.
+        """
+        # If deep copy failed, then this will throw an error
+        obj2 = deepcopy(obj)
+        self.gtsamAssertEquals(obj, obj2)

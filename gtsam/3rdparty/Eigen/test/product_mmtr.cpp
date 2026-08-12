@@ -82,9 +82,19 @@ template<typename Scalar> void mmtr(int size)
   ref2.template triangularView<Lower>() = ref1.template triangularView<Lower>();
   matc.template triangularView<Lower>() = sqc * matc * sqc.adjoint();
   VERIFY_IS_APPROX(matc, ref2);
+
+  // destination with a non-default inner-stride
+  // see bug 1741
+  {
+    typedef Matrix<Scalar,Dynamic,Dynamic> MatrixX;
+    MatrixX buffer(2*size,2*size);
+    Map<MatrixColMaj,0,Stride<Dynamic,Dynamic> > map1(buffer.data(),size,size,Stride<Dynamic,Dynamic>(2*size,2));
+    buffer.setZero();
+    CHECK_MMTR(map1, Lower, = s*soc*sor.adjoint());
+  }
 }
 
-void test_product_mmtr()
+EIGEN_DECLARE_TEST(product_mmtr)
 {
   for(int i = 0; i < g_repeat ; i++)
   {

@@ -43,6 +43,7 @@ public:
   Pose3Upright(const Rot2& bearing, const Point3& t);
   Pose3Upright(double x, double y, double z, double theta);
   Pose3Upright(const Pose2& pose, double z);
+  Pose3Upright& operator=(const Pose3Upright& x) = default;
 
   /// Down-converts from a full Pose3
   Pose3Upright(const Pose3& fullpose);
@@ -95,15 +96,15 @@ public:
   /// @{
 
   /// identity for group operation
-  static Pose3Upright identity() { return Pose3Upright(); }
+  static Pose3Upright Identity() { return Pose3Upright(); }
 
   /// inverse transformation with derivatives
-  Pose3Upright inverse(boost::optional<Matrix&> H1=boost::none) const;
+  Pose3Upright inverse(OptionalJacobian<4,4> H1={}) const;
 
   ///compose this transformation onto another (first *this and then p2)
   Pose3Upright compose(const Pose3Upright& p2,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const;
+      OptionalJacobian<4,4> H1={},
+      OptionalJacobian<4,4> H2={}) const;
 
   /// compose syntactic sugar
   inline Pose3Upright operator*(const Pose3Upright& T) const { return compose(T); }
@@ -113,8 +114,8 @@ public:
    * as well as optionally the derivatives
    */
   Pose3Upright between(const Pose3Upright& p2,
-      boost::optional<Matrix&> H1=boost::none,
-      boost::optional<Matrix&> H2=boost::none) const;
+      OptionalJacobian<4,4> H1={},
+      OptionalJacobian<4,4> H2={}) const;
 
   /// @}
   /// @name Lie Group
@@ -130,6 +131,7 @@ public:
 
 private:
 
+#if GTSAM_ENABLE_BOOST_SERIALIZATION  //
   // Serialization function
   friend class boost::serialization::access;
   template<class Archive>
@@ -137,6 +139,7 @@ private:
     ar & BOOST_SERIALIZATION_NVP(T_);
     ar & BOOST_SERIALIZATION_NVP(z_);
   }
+#endif
 
 }; // \class Pose3Upright
 

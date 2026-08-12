@@ -7,7 +7,7 @@ else()
     list(APPEND possible_allocators BoostPool STL)
     set(preferred_allocator STL)
 endif()
-if(GOOGLE_PERFTOOLS_FOUND)
+if(GPERFTOOLS_FOUND)
     list(APPEND possible_allocators tcmalloc)
 endif()
 

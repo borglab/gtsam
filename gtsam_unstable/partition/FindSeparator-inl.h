@@ -12,22 +12,17 @@
 
 #include <stdexcept>
 #include <iostream>
+#include <string>
 #include <vector>
-#include <boost/tuple/tuple.hpp>
+#include <optional>
+#include <cassert>
 #include <boost/shared_array.hpp>
 
 #include <gtsam/base/timing.h>
 
 #include "FindSeparator.h"
 
-#ifndef GTSAM_USE_SYSTEM_METIS
-
-extern "C" {
 #include <metis.h>
-#include "metislib.h"
-}
-
-
 
 namespace gtsam { namespace partition {
 
@@ -40,7 +35,7 @@ namespace gtsam { namespace partition {
    * whether node j is in the left part of the graph, the right part, or the
    * separator, respectively
    */
-  std::pair<int, sharedInts> separatorMetis(idx_t n, const sharedInts& xadj,
+  std::pair<idx_t, sharedInts> separatorMetis(idx_t n, const sharedInts& xadj,
     const sharedInts& adjncy, const sharedInts& adjwgt, bool verbose) {
 
     // control parameters
@@ -79,49 +74,6 @@ namespace gtsam { namespace partition {
   }
 
   /* ************************************************************************* */
-  void modefied_EdgeComputeSeparator(idx_t *nvtxs, idx_t *xadj, idx_t *adjncy, idx_t *vwgt,
-      idx_t *adjwgt, idx_t *options, idx_t *edgecut, idx_t *part)
-  {
-    idx_t i, ncon;
-    graph_t *graph;
-    real_t *tpwgts2;
-    ctrl_t *ctrl;
-    ctrl = SetupCtrl(METIS_OP_OMETIS, options, 1, 3, nullptr, nullptr);
-    ctrl->iptype = METIS_IPTYPE_GROW;
-    //if () == nullptr)
-    //  return METIS_ERROR_INPUT;
-
-    InitRandom(ctrl->seed);
-
-    graph = SetupGraph(ctrl, *nvtxs, 1, xadj, adjncy, vwgt, nullptr, nullptr);
-
-    AllocateWorkSpace(ctrl, graph);
-
-    ncon = graph->ncon;
-    ctrl->ncuts = 1;
-
-    /* determine the weights of the two partitions as a function of the weight of the
-       target partition weights */
-
-    tpwgts2 = rwspacemalloc(ctrl, 2*ncon);
-    for (i=0; i<ncon; i++) {
-      tpwgts2[i]      = rsum((2>>1), ctrl->tpwgts+i, ncon);
-      tpwgts2[ncon+i] = 1.0 - tpwgts2[i];
-    }
-    /* perform the bisection */
-    *edgecut = MultilevelBisect(ctrl, graph, tpwgts2);
-
-    //  ConstructMinCoverSeparator(&ctrl, &graph, 1.05);
-  //  *edgecut = graph->mincut;
-  //  *sepsize = graph.pwgts[2];
-    icopy(*nvtxs, graph->where, part);
-    std::cout << "Finished bisection:" << *edgecut << std::endl;
-    FreeGraph(&graph);
-
-    FreeCtrl(&ctrl);
-  }
-
-  /* ************************************************************************* */
   /**
    * Return the number of edge cuts and the partition indices {part}
    * Part [j] is 0 or 1, depending on
@@ -134,6 +86,9 @@ namespace gtsam { namespace partition {
     std::vector<idx_t> vwgt;                  // the weights of the vertices
     idx_t options[METIS_NOPTIONS];
     METIS_SetDefaultOptions(options);  // use defaults
+    options[METIS_OPTION_IPTYPE] = METIS_IPTYPE_GROW;
+    options[METIS_OPTION_NCUTS] = 1;
+    options[METIS_OPTION_UFACTOR] = 200;
     idx_t edgecut;                      // the number of edge cuts, output
     sharedInts part_(new idx_t[n]);      // the partition of each vertex, output
 
@@ -151,12 +106,21 @@ namespace gtsam { namespace partition {
       //starttimer(TOTALTmr);
     }
 
-    //int wgtflag = 1; // only edge weights
-    //int numflag = 0; // c style numbering starting from 0
-    //int nparts = 2; // partition the graph to 2 submaps
-    modefied_EdgeComputeSeparator(&n, xadj.get(), adjncy.get(), &vwgt[0], adjwgt.get(),
-        options, &edgecut, part_.get());
-
+    idx_t ncon = 1;
+    idx_t nparts = 2;
+    // Deliberately preserve the existing behavior: the private implementation
+    // ignored adjwgt and treated every edge as having uniform weight.
+    static_cast<void>(adjwgt);
+    const int status = METIS_PartGraphRecursive(
+        &n, &ncon, xadj.get(), adjncy.get(), &vwgt[0], nullptr, nullptr,
+        &nparts, nullptr, nullptr, options, &edgecut, part_.get());
+    if (status != METIS_OK) {
+      throw std::runtime_error(
+          "METIS_PartGraphRecursive failed with error code " +
+          std::to_string(status) +
+          "; check the graph inputs and METIS installation");
+    }
+    std::cout << "Finished bisection:" << edgecut << std::endl;
 
     if (verbose) {
       //stoptimer(TOTALTmr);
@@ -238,7 +202,7 @@ namespace gtsam { namespace partition {
 
   /* ************************************************************************* */
   template<class GenericGraph>
-  boost::optional<MetisResult> separatorPartitionByMetis(const GenericGraph& graph,
+  std::optional<MetisResult> separatorPartitionByMetis(const GenericGraph& graph,
     const std::vector<size_t>& keys, WorkSpace& workspace, bool verbose) {
     // create a metis graph
     size_t numKeys = keys.size();
@@ -250,10 +214,8 @@ namespace gtsam { namespace partition {
     prepareMetisGraph<GenericGraph>(graph, keys, workspace, &xadj, &adjncy, &adjwgt);
 
     // run ND on the graph
-    size_t sepsize;
-    sharedInts part;
-    boost::tie(sepsize, part) = separatorMetis(numKeys, xadj, adjncy, adjwgt, verbose);
-    if (!sepsize)  return boost::optional<MetisResult>();
+    const auto [sepsize, part] = separatorMetis(numKeys, xadj, adjncy, adjwgt, verbose);
+    if (!sepsize)  return std::optional<MetisResult>();
 
     // convert the 0-1-2 from Metis to 1-2-0, so that the separator is 0, as later
     //  we will have more submaps
@@ -280,7 +242,7 @@ namespace gtsam { namespace partition {
       //throw runtime_error("separatorPartitionByMetis:stop for debug");
     }
 
-    if(result.C.size() != sepsize) {
+    if(result.C.size() != size_t(sepsize)) {
       std::cout << "total key: " << keys.size()
           << " result(A,B,C) = " << result.A.size() << ", " << result.B.size() << ", " << result.C.size()
           << "; sepsize from Metis = " << sepsize << std::endl;
@@ -292,7 +254,7 @@ namespace gtsam { namespace partition {
 
   /* *************************************************************************/
   template<class GenericGraph>
-  boost::optional<MetisResult> edgePartitionByMetis(const GenericGraph& graph,
+  std::optional<MetisResult> edgePartitionByMetis(const GenericGraph& graph,
    const std::vector<size_t>& keys, WorkSpace& workspace, bool verbose) {
 
     // a small hack for handling the camera1-camera2 case used in the unit tests
@@ -310,9 +272,7 @@ namespace gtsam { namespace partition {
     prepareMetisGraph<GenericGraph>(graph, keys, workspace, &xadj, &adjncy, &adjwgt);
 
     // run metis on the graph
-    int edgecut;
-    sharedInts part;
-    boost::tie(edgecut, part) = edgeMetis(numKeys, xadj, adjncy, adjwgt, verbose);
+    const auto [edgecut, part] = edgeMetis(numKeys, xadj, adjncy, adjwgt, verbose);
 
     // convert the 0-1-2 from Metis to 1-2-0, so that the separator is 0, as later we will have more submaps
     MetisResult result;
@@ -444,15 +404,15 @@ namespace gtsam { namespace partition {
 
   /* ************************************************************************* */
   template<class GenericGraph>
-  boost::optional<MetisResult> findPartitoning(const GenericGraph& graph, const std::vector<size_t>& keys,
+  std::optional<MetisResult> findPartitoning(const GenericGraph& graph, const std::vector<size_t>& keys,
       WorkSpace& workspace, bool verbose,
-      const boost::optional<std::vector<Symbol> >& int2symbol, const bool reduceGraph) {
-    boost::optional<MetisResult> result;
+      const std::optional<std::vector<Symbol> >& int2symbol, const bool reduceGraph) {
+    std::optional<MetisResult> result;
     GenericGraph reducedGraph;
     std::vector<size_t> keyToPartition;
     std::vector<size_t> cameraKeys, landmarkKeys;
     if (reduceGraph) {
-      if (!int2symbol.is_initialized())
+      if (!int2symbol.has_value())
         throw std::invalid_argument("findSeparator: int2symbol must be valid!");
 
       // find out all the landmark keys, which are to be eliminated
@@ -475,9 +435,9 @@ namespace gtsam { namespace partition {
     }  else // call Metis to partition the graph to A, B, C
       result = separatorPartitionByMetis(graph, keys, workspace, verbose);
 
-    if (!result.is_initialized()) {
+    if (!result.has_value()) {
       std::cout << "metis failed!" << std::endl;
-      return boost::none;
+      return {};
     }
 
     if (reduceGraph) {
@@ -492,10 +452,10 @@ namespace gtsam { namespace partition {
   template<class GenericGraph>
   int findSeparator(const GenericGraph& graph, const std::vector<size_t>& keys,
       const int minNodesPerMap, WorkSpace& workspace, bool verbose,
-      const boost::optional<std::vector<Symbol> >& int2symbol, const bool reduceGraph,
+      const std::optional<std::vector<Symbol> >& int2symbol, const bool reduceGraph,
       const int minNrConstraintsPerCamera, const int minNrConstraintsPerLandmark) {
 
-    boost::optional<MetisResult> result = findPartitoning(graph, keys, workspace,
+    std::optional<MetisResult> result = findPartitoning(graph, keys, workspace,
       verbose, int2symbol, reduceGraph);
 
     // find the island in A and B, and make them separated submaps
@@ -566,5 +526,3 @@ namespace gtsam { namespace partition {
   }
 
 }} //namespace
-
-#endif

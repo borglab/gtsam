@@ -21,13 +21,12 @@
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/base/Vector.h>
 
-#include <boost/tuple/tuple.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/optional.hpp>
+#include <memory>
 
 #include <iosfwd>
 #include <string>
 #include <map>
+#include <optional>
 
 namespace gtsam {
 
@@ -42,15 +41,14 @@ class VectorValues;
  * parameters for iterative linear solvers
  */
 class IterativeOptimizationParameters {
+ public:
+  typedef std::shared_ptr<IterativeOptimizationParameters> shared_ptr;
+  enum Verbosity { SILENT = 0, COMPLEXITY, ERROR };
 
-public:
+ protected:
+  Verbosity verbosity_;
 
-  typedef boost::shared_ptr<IterativeOptimizationParameters> shared_ptr;
-  enum Verbosity {
-    SILENT = 0, COMPLEXITY, ERROR
-  } verbosity_;
-
-public:
+ public:
 
   IterativeOptimizationParameters(Verbosity v = SILENT) :
       verbosity_(v) {
@@ -72,9 +70,12 @@ public:
   /* virtual print function */
   GTSAM_EXPORT virtual void print(std::ostream &os) const;
 
+  GTSAM_EXPORT virtual bool equals(const IterativeOptimizationParameters &other,
+                                   double tol = 1e-9) const;
+
   /* for serialization */
-  friend std::ostream& operator<<(std::ostream &os,
-      const IterativeOptimizationParameters &p);
+  GTSAM_EXPORT friend std::ostream &operator<<(
+      std::ostream &os, const IterativeOptimizationParameters &p);
 
   GTSAM_EXPORT static Verbosity verbosityTranslator(const std::string &s);
   GTSAM_EXPORT static std::string verbosityTranslator(Verbosity v);
@@ -85,7 +86,7 @@ public:
  */
 class IterativeSolver {
 public:
-  typedef boost::shared_ptr<IterativeSolver> shared_ptr;
+  typedef std::shared_ptr<IterativeSolver> shared_ptr;
   IterativeSolver() {
   }
   virtual ~IterativeSolver() {
@@ -93,8 +94,8 @@ public:
 
   /* interface to the nonlinear optimizer, without metadata, damping and initial estimate */
   GTSAM_EXPORT VectorValues optimize(const GaussianFactorGraph &gfg,
-      boost::optional<const KeyInfo&> = boost::none,
-      boost::optional<const std::map<Key, Vector>&> lambda = boost::none);
+      const KeyInfo* = nullptr,
+      const std::map<Key, Vector>* lambda = nullptr);
 
   /* interface to the nonlinear optimizer, without initial estimate */
   GTSAM_EXPORT VectorValues optimize(const GaussianFactorGraph &gfg, const KeyInfo &keyInfo,

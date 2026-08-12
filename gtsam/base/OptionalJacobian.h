@@ -18,21 +18,22 @@
  */
 
 #pragma once
-#include <gtsam/config.h>      // Configuration from CMake
-#include <Eigen/Dense>
+#include <gtsam/config.h>  // Configuration from CMake
 
-#ifndef OPTIONALJACOBIAN_NOBOOST
-#include <boost/optional.hpp>
-#endif
+#include <Eigen/Core>
+#include <Eigen/LU>
+#include <cstddef>
+#include <functional>
+#include <optional>
+#include <stdexcept>
+#include <string>
 
 namespace gtsam {
 
 /**
  * OptionalJacobian is an Eigen::Ref like class that can take be constructed using
  * either a fixed size or dynamic Eigen matrix. In the latter case, the dynamic
- * matrix will be resized. Finally, there is a constructor that takes
- * boost::none, the default constructor acts like boost::none, and
- * boost::optional<Eigen::MatrixXd&> is also supported for backwards compatibility.
+ * matrix will be resized.
  * Below this class, a dynamic version is also implemented.
  */
 template<int Rows, int Cols>
@@ -43,20 +44,23 @@ public:
   /// Jacobian size type
   /// TODO(frank): how to enforce RowMajor? Or better, make it work with any storage order?
   typedef Eigen::Matrix<double, Rows, Cols> Jacobian;
+  typedef Eigen::Stride<Eigen::Dynamic, 1> Stride;
+  typedef Eigen::Map<Jacobian, 0, Stride> Map;
 
 private:
 
-  Eigen::Map<Jacobian> map_; /// View on constructor argument, if given
+  Map map_; /// View on constructor argument, if given
 
   // Trick from http://eigen.tuxfamily.org/dox/group__TutorialMapClass.html
   // uses "placement new" to make map_ usurp the memory of the fixed size matrix
-  void usurp(double* data) {
-    new (&map_) Eigen::Map<Jacobian>(data);
+  void usurp(double* data, Eigen::Index outerStride) {
+    new (&map_) Map(data, Stride(outerStride, 1));
   }
 
   // Private and very dangerous constructor straight from memory
-  OptionalJacobian(double* data) : map_(nullptr) {
-    if (data) usurp(data);
+  OptionalJacobian(double* data, Eigen::Index outerStride)
+      : map_(nullptr, Stride(1, 1)) {
+    if (data) usurp(data, outerStride);
   }
 
   template<int M, int N>
@@ -64,56 +68,78 @@ private:
 
 public:
 
-  /// Default constructor acts like boost::none
-  OptionalJacobian() :
-      map_(nullptr) {
+  /// Default constructor
+  OptionalJacobian() : map_(nullptr, Stride(1, 1)) {
+  }
+
+  /// Default constructor with nullptr_t
+  /// To guide the compiler when nullptr
+  /// is passed to args of the type OptionalJacobian
+  OptionalJacobian(std::nullptr_t /*unused*/) :
+      map_(nullptr, Stride(1, 1)) {
   }
 
   /// Constructor that will usurp data of a fixed-size matrix
   OptionalJacobian(Jacobian& fixed) :
-      map_(nullptr) {
-    usurp(fixed.data());
+      map_(nullptr, Stride(1, 1)) {
+    usurp(fixed.data(), fixed.rows());
   }
 
   /// Constructor that will usurp data of a fixed-size matrix, pointer version
   OptionalJacobian(Jacobian* fixedPtr) :
-      map_(nullptr) {
+      map_(nullptr, Stride(1, 1)) {
     if (fixedPtr)
-      usurp(fixedPtr->data());
+      usurp(fixedPtr->data(), fixedPtr->rows());
   }
 
   /// Constructor that will resize a dynamic matrix (unless already correct)
   OptionalJacobian(Eigen::MatrixXd& dynamic) :
-      map_(nullptr) {
+      map_(nullptr, Stride(1, 1)) {
     dynamic.resize(Rows, Cols); // no malloc if correct size
-    usurp(dynamic.data());
+    usurp(dynamic.data(), dynamic.rows());
   }
 
   /// Constructor that will resize a dynamic matrix (unless already correct)
   OptionalJacobian(Eigen::MatrixXd* dynamic) :
-      map_(nullptr) {
-    dynamic->resize(Rows, Cols); // no malloc if correct size
-    usurp(dynamic->data());
-  }
-
-#ifndef OPTIONALJACOBIAN_NOBOOST
-
-  /// Constructor with boost::none just makes empty
-  OptionalJacobian(boost::none_t /*none*/) :
-      map_(nullptr) {
-  }
-
-  /// Constructor compatible with old-style derivatives
-  OptionalJacobian(const boost::optional<Eigen::MatrixXd&> optional) :
-      map_(nullptr) {
-    if (optional) {
-      optional->resize(Rows, Cols);
-      usurp(optional->data());
+      map_(nullptr, Stride(1, 1)) {
+    if (dynamic) {
+      dynamic->resize(Rows, Cols);  // no malloc if correct size
+      usurp(dynamic->data(), dynamic->rows());
     }
   }
 
-#endif
+  /**
+   * @brief Constructor from an Eigen::Ref *value*. Will not usurp if dimension is wrong
+   * @note This is important so we don't overwrite someone else's memory!
+   */
+  template<class MATRIX>
+  OptionalJacobian(Eigen::Ref<MATRIX> dynamic_ref) :
+      map_(nullptr, Stride(1, 1)) {
+    if (dynamic_ref.rows() == Rows && dynamic_ref.cols() == Cols &&
+        !dynamic_ref.IsRowMajor && dynamic_ref.innerStride() == 1) {
+      usurp(dynamic_ref.data(), dynamic_ref.outerStride());
+    } else {
+      throw std::invalid_argument(
+          std::string("OptionalJacobian called with wrong dimensions or "
+                      "storage order.\n"
+                      "Expected: ") +
+          "(" + std::to_string(Rows) + ", " + std::to_string(Cols) + ")");
+    }
+  } 
 
+  /// Constructor with std::nullopt just makes empty
+  OptionalJacobian(std::nullopt_t /*none*/) :
+      map_(nullptr, Stride(1, 1)) {
+  }
+
+  /// Constructor compatible with old-style derivatives
+  OptionalJacobian(const std::optional<std::reference_wrapper<Eigen::MatrixXd>> optional) :
+      map_(nullptr, Stride(1, 1)) {
+    if (optional) {
+      optional->get().resize(Rows, Cols);
+      usurp(optional->get().data(), optional->get().rows());
+    }
+  }
   /// Constructor that will usurp data of a block expression
   /// TODO(frank): unfortunately using a Map makes usurping non-contiguous memory impossible
   //  template <typename Derived, bool InnerPanel>
@@ -125,12 +151,12 @@ public:
   }
 
   /// De-reference, like boost optional
-  Eigen::Map<Jacobian>& operator*() {
+  Map& operator*() {
     return map_;
   }
 
   /// operator->()
-  Eigen::Map<Jacobian>* operator->() {
+  Map* operator->() {
     return &map_;
   }
 
@@ -150,7 +176,7 @@ public:
   template <int N>
   OptionalJacobian<Rows, N> cols(int startCol) {
     if (*this)
-      return OptionalJacobian<Rows, N>(&map_(0,startCol));
+      return OptionalJacobian<Rows, N>(&map_(0, startCol), map_.outerStride());
     else
       return OptionalJacobian<Rows, N>();
   }
@@ -178,7 +204,7 @@ private:
 
 public:
 
-  /// Default constructor acts like boost::none
+  /// Default constructor 
   OptionalJacobian() :
     pointer_(nullptr) {
   }
@@ -189,20 +215,16 @@ public:
   /// Construct from refrence to dynamic matrix
   OptionalJacobian(Jacobian& dynamic) : pointer_(&dynamic) {}
 
-#ifndef OPTIONALJACOBIAN_NOBOOST
-
-  /// Constructor with boost::none just makes empty
-  OptionalJacobian(boost::none_t /*none*/) :
+  /// Constructor with std::nullopt just makes empty
+  OptionalJacobian(std::nullopt_t /*none*/) :
     pointer_(nullptr) {
   }
 
-  /// Constructor compatible with old-style derivatives
-  OptionalJacobian(const boost::optional<Eigen::MatrixXd&> optional) :
+  /// Constructor for optional matrix reference
+  OptionalJacobian(const std::optional<std::reference_wrapper<Eigen::MatrixXd>> optional) :
       pointer_(nullptr) {
-    if (optional) pointer_ = &(*optional);
+    if (optional) pointer_ = &((*optional).get());
   }
-
-#endif
 
   /// Return true if allocated, false if default constructor was used
   operator bool() const {
@@ -244,4 +266,3 @@ struct MakeOptionalJacobian {
 };
 
 } // namespace gtsam
-

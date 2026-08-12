@@ -20,6 +20,7 @@
  */
 
 #include <gtsam/slam/lago.h>
+#include <gtsam/slam/InitializePose.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/geometry/Pose2.h>
@@ -31,10 +32,10 @@
 
 using namespace std;
 using namespace gtsam;
-using namespace boost::assign;
 
 static Symbol x0('x', 0), x1('x', 1), x2('x', 2), x3('x', 3);
 static SharedNoiseModel model(noiseModel::Isotropic::Sigma(3, 0.1));
+static SharedNoiseModel rotModel(noiseModel::Isotropic::Sigma(1, 0.1));
 
 namespace simpleLago {
 // We consider a small graph:
@@ -65,48 +66,79 @@ NonlinearFactorGraph graph() {
 }
 }
 
+/*******************************************************************************/
+TEST(Lago, findMinimumSpanningTree) {
+  NonlinearFactorGraph g = simpleLago::graph();
+  auto gPlus = initialize::buildPoseGraph<Pose2>(g);
+  lago::PredecessorMap tree = lago::findMinimumSpanningTree(gPlus);
+
+  /* We should recover the following spanning tree:
+                x2
+               /  \
+              /    \
+            x3     x1
+                   /
+                  /
+                x0
+                 |
+                 a
+  */
+  using initialize::kAnchorKey;
+  EXPECT_LONGS_EQUAL(kAnchorKey, tree[kAnchorKey]);
+  EXPECT_LONGS_EQUAL(kAnchorKey, tree[x0]);
+  EXPECT_LONGS_EQUAL(x0, tree[x1]);
+  EXPECT_LONGS_EQUAL(x1, tree[x2]);
+  EXPECT_LONGS_EQUAL(x2, tree[x3]);
+}
+
 /* *************************************************************************** */
 TEST( Lago, checkSTandChords ) {
   NonlinearFactorGraph g = simpleLago::graph();
-  PredecessorMap<Key> tree = findMinimumSpanningTree<NonlinearFactorGraph, Key,
-      BetweenFactor<Pose2> >(g);
+  auto gPlus = initialize::buildPoseGraph<Pose2>(g);
+  lago::PredecessorMap tree = lago::findMinimumSpanningTree(gPlus);
 
   lago::key2doubleMap deltaThetaMap;
   vector<size_t> spanningTreeIds; // ids of between factors forming the spanning tree T
   vector<size_t> chordsIds; // ids of between factors corresponding to chordsIds wrt T
   lago::getSymbolicGraph(spanningTreeIds, chordsIds, deltaThetaMap, tree, g);
 
-  DOUBLES_EQUAL(spanningTreeIds[0], 0, 1e-6); // factor 0 is the first in the ST (0->1)
-  DOUBLES_EQUAL(spanningTreeIds[1], 3, 1e-6); // factor 3 is the second in the ST(2->0)
-  DOUBLES_EQUAL(spanningTreeIds[2], 4, 1e-6); // factor 4 is the third in the  ST(0->3)
+  EXPECT_LONGS_EQUAL(0, spanningTreeIds[0]); // factor 0 is the first in the ST(0->1)
+  EXPECT_LONGS_EQUAL(1, spanningTreeIds[1]); // factor 1 is the second in the ST(1->2)
+  EXPECT_LONGS_EQUAL(2, spanningTreeIds[2]); // factor 2 is the third in the  ST(2->3)
 
 }
 
 /* *************************************************************************** */
-TEST( Lago, orientationsOverSpanningTree ) {
+TEST(Lago, orientationsOverSpanningTree) {
   NonlinearFactorGraph g = simpleLago::graph();
-  PredecessorMap<Key> tree = findMinimumSpanningTree<NonlinearFactorGraph, Key,
-      BetweenFactor<Pose2> >(g);
+  auto gPlus = initialize::buildPoseGraph<Pose2>(g);
+  lago::PredecessorMap tree = lago::findMinimumSpanningTree(gPlus);
 
   // check the tree structure
-  EXPECT_LONGS_EQUAL(tree[x0], x0);
-  EXPECT_LONGS_EQUAL(tree[x1], x0);
-  EXPECT_LONGS_EQUAL(tree[x2], x0);
-  EXPECT_LONGS_EQUAL(tree[x3], x0);
+  using initialize::kAnchorKey;
+
+  EXPECT_LONGS_EQUAL(kAnchorKey, tree[x0]);
+  EXPECT_LONGS_EQUAL(x0, tree[x1]);
+  EXPECT_LONGS_EQUAL(x1, tree[x2]);
+  EXPECT_LONGS_EQUAL(x2, tree[x3]);
 
   lago::key2doubleMap expected;
-  expected[x0]=  0;
-  expected[x1]=  M_PI/2; // edge x0->x1 (consistent with edge (x0,x1))
-  expected[x2]= -M_PI; // edge x0->x2 (traversed backwards wrt edge (x2,x0))
-  expected[x3]= -M_PI/2;  // edge x0->x3 (consistent with edge (x0,x3))
+  expected[x0] = 0;
+  expected[x1] = M_PI / 2;      // edges traversed: x0->x1
+  expected[x2] = M_PI;          // edges traversed: x0->x1->x2
+  expected[x3] = 3 * M_PI / 2;  // edges traversed: x0->x1->x2->x3
 
   lago::key2doubleMap deltaThetaMap;
-  vector<size_t> spanningTreeIds; // ids of between factors forming the spanning tree T
-  vector<size_t> chordsIds; // ids of between factors corresponding to chordsIds wrt T
-  lago::getSymbolicGraph(spanningTreeIds, chordsIds, deltaThetaMap, tree, g);
+  vector<size_t>
+      spanningTreeIds;  // ids of between factors forming the spanning tree T
+  vector<size_t>
+      chordsIds;  // ids of between factors corresponding to chordsIds wrt T
+  lago::getSymbolicGraph(spanningTreeIds, chordsIds, deltaThetaMap, tree,
+                         gPlus);
 
   lago::key2doubleMap actual;
   actual = lago::computeThetasToRoot(deltaThetaMap, tree);
+
   DOUBLES_EQUAL(expected[x0], actual[x0], 1e-6);
   DOUBLES_EQUAL(expected[x1], actual[x1], 1e-6);
   DOUBLES_EQUAL(expected[x2], actual[x2], 1e-6);
@@ -116,24 +148,25 @@ TEST( Lago, orientationsOverSpanningTree ) {
 /* *************************************************************************** */
 TEST( Lago, regularizedMeasurements ) {
   NonlinearFactorGraph g = simpleLago::graph();
-  PredecessorMap<Key> tree = findMinimumSpanningTree<NonlinearFactorGraph, Key,
-      BetweenFactor<Pose2> >(g);
+  auto gPlus = initialize::buildPoseGraph<Pose2>(g);
+  lago::PredecessorMap tree = lago::findMinimumSpanningTree(gPlus);
 
   lago::key2doubleMap deltaThetaMap;
   vector<size_t> spanningTreeIds; // ids of between factors forming the spanning tree T
   vector<size_t> chordsIds; // ids of between factors corresponding to chordsIds wrt T
-  lago::getSymbolicGraph(spanningTreeIds, chordsIds, deltaThetaMap, tree, g);
+  lago::getSymbolicGraph(spanningTreeIds, chordsIds, deltaThetaMap, tree, gPlus);
 
   lago::key2doubleMap orientationsToRoot = lago::computeThetasToRoot(deltaThetaMap, tree);
 
-  GaussianFactorGraph lagoGraph = lago::buildLinearOrientationGraph(spanningTreeIds, chordsIds, g, orientationsToRoot, tree);
+  GaussianFactorGraph lagoGraph = lago::buildLinearOrientationGraph(spanningTreeIds, chordsIds, gPlus, orientationsToRoot, tree);
   std::pair<Matrix,Vector> actualAb = lagoGraph.jacobian();
   // jacobian corresponding to the orientation measurements (last entry is the prior on the anchor and is disregarded)
-  Vector actual = (Vector(5) <<  actualAb.second(0),actualAb.second(1),actualAb.second(2),actualAb.second(3),actualAb.second(4)).finished();
+  Vector actual{{actualAb.second(0), actualAb.second(1), actualAb.second(2),
+                 actualAb.second(3), actualAb.second(4)}};
   // this is the whitened error, so we multiply by the std to unwhiten
   actual = 0.1 * actual;
   // Expected regularized measurements (same for the spanning tree, corrected for the chordsIds)
-  Vector expected = (Vector(5) << M_PI/2, M_PI, -M_PI/2, M_PI/2 - 2*M_PI , M_PI/2).finished();
+  Vector expected{{M_PI / 2, M_PI / 2, M_PI / 2, 0, -M_PI}};
 
   EXPECT(assert_equal(expected, actual, 1e-6));
 }
@@ -144,10 +177,10 @@ TEST( Lago, smallGraphVectorValues ) {
   VectorValues initial = lago::initializeOrientations(simpleLago::graph(), useOdometricPath);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
-  EXPECT(assert_equal((Vector(1) << 0.0).finished(), initial.at(x0), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI).finished(), initial.at(x1), 1e-6));
-  EXPECT(assert_equal((Vector(1) << M_PI - 2*M_PI).finished(), initial.at(x2), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI - 2*M_PI).finished(), initial.at(x3), 1e-6));
+  EXPECT(assert_equal(Vector{{0.0}}, initial.at(x0), 1e-6));
+  EXPECT(assert_equal(Vector{{0.5 * M_PI}}, initial.at(x1), 1e-6));
+  EXPECT(assert_equal(Vector{{M_PI}}, initial.at(x2), 1e-6));
+  EXPECT(assert_equal(Vector{{1.5 * M_PI}}, initial.at(x3), 1e-6));
 }
 
 /* *************************************************************************** */
@@ -156,10 +189,10 @@ TEST( Lago, smallGraphVectorValuesSP ) {
   VectorValues initial = lago::initializeOrientations(simpleLago::graph());
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
-  EXPECT(assert_equal((Vector(1) << 0.0).finished(), initial.at(x0), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI).finished(), initial.at(x1), 1e-6));
-  EXPECT(assert_equal((Vector(1) << M_PI ).finished(), initial.at(x2), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI ).finished(), initial.at(x3), 1e-6));
+  EXPECT(assert_equal(Vector{{0.0}}, initial.at(x0), 1e-6));
+  EXPECT(assert_equal(Vector{{0.5 * M_PI}}, initial.at(x1), 1e-6));
+  EXPECT(assert_equal(Vector{{M_PI}}, initial.at(x2), 1e-6));
+  EXPECT(assert_equal(Vector{{1.5 * M_PI}}, initial.at(x3), 1e-6));
 }
 
 /* *************************************************************************** */
@@ -170,10 +203,10 @@ TEST( Lago, multiplePosePriors ) {
   VectorValues initial = lago::initializeOrientations(g, useOdometricPath);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
-  EXPECT(assert_equal((Vector(1) << 0.0).finished(), initial.at(x0), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI).finished(), initial.at(x1), 1e-6));
-  EXPECT(assert_equal((Vector(1) << M_PI - 2*M_PI).finished(), initial.at(x2), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI - 2*M_PI).finished(), initial.at(x3), 1e-6));
+  EXPECT(assert_equal(Vector{{0.0}}, initial.at(x0), 1e-6));
+  EXPECT(assert_equal(Vector{{0.5 * M_PI}}, initial.at(x1), 1e-6));
+  EXPECT(assert_equal(Vector{{M_PI}}, initial.at(x2), 1e-6));
+  EXPECT(assert_equal(Vector{{1.5 * M_PI}}, initial.at(x3), 1e-6));
 }
 
 /* *************************************************************************** */
@@ -183,37 +216,37 @@ TEST( Lago, multiplePosePriorsSP ) {
   VectorValues initial = lago::initializeOrientations(g);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
-  EXPECT(assert_equal((Vector(1) << 0.0).finished(), initial.at(x0), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI).finished(), initial.at(x1), 1e-6));
-  EXPECT(assert_equal((Vector(1) << M_PI ).finished(), initial.at(x2), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI ).finished(), initial.at(x3), 1e-6));
+  EXPECT(assert_equal(Vector{{0.0}}, initial.at(x0), 1e-6));
+  EXPECT(assert_equal(Vector{{0.5 * M_PI}}, initial.at(x1), 1e-6));
+  EXPECT(assert_equal(Vector{{M_PI}}, initial.at(x2), 1e-6));
+  EXPECT(assert_equal(Vector{{1.5 * M_PI}}, initial.at(x3), 1e-6));
 }
 
 /* *************************************************************************** */
 TEST( Lago, multiplePoseAndRotPriors ) {
   bool useOdometricPath = false;
   NonlinearFactorGraph g = simpleLago::graph();
-  g.addPrior(x1, simpleLago::pose1.theta(), model);
+  g.addPrior(x1, simpleLago::pose1.theta(), rotModel);
   VectorValues initial = lago::initializeOrientations(g, useOdometricPath);
-
+  
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
-  EXPECT(assert_equal((Vector(1) << 0.0).finished(), initial.at(x0), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI).finished(), initial.at(x1), 1e-6));
-  EXPECT(assert_equal((Vector(1) << M_PI - 2*M_PI).finished(), initial.at(x2), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI - 2*M_PI).finished(), initial.at(x3), 1e-6));
+  EXPECT(assert_equal(Vector{{0.0}}, initial.at(x0), 1e-6));
+  EXPECT(assert_equal(Vector{{0.5 * M_PI}}, initial.at(x1), 1e-6));
+  EXPECT(assert_equal(Vector{{M_PI}}, initial.at(x2), 1e-6));
+  EXPECT(assert_equal(Vector{{1.5 * M_PI}}, initial.at(x3), 1e-6));
 }
 
 /* *************************************************************************** */
 TEST( Lago, multiplePoseAndRotPriorsSP ) {
   NonlinearFactorGraph g = simpleLago::graph();
-  g.addPrior(x1, simpleLago::pose1.theta(), model);
+  g.addPrior(x1, simpleLago::pose1.theta(), rotModel);
   VectorValues initial = lago::initializeOrientations(g);
 
   // comparison is up to M_PI, that's why we add some multiples of 2*M_PI
-  EXPECT(assert_equal((Vector(1) << 0.0).finished(), initial.at(x0), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 0.5 * M_PI).finished(), initial.at(x1), 1e-6));
-  EXPECT(assert_equal((Vector(1) << M_PI ).finished(), initial.at(x2), 1e-6));
-  EXPECT(assert_equal((Vector(1) << 1.5 * M_PI ).finished(), initial.at(x3), 1e-6));
+  EXPECT(assert_equal(Vector{{0.0}}, initial.at(x0), 1e-6));
+  EXPECT(assert_equal(Vector{{0.5 * M_PI}}, initial.at(x1), 1e-6));
+  EXPECT(assert_equal(Vector{{M_PI}}, initial.at(x2), 1e-6));
+  EXPECT(assert_equal(Vector{{1.5 * M_PI}}, initial.at(x3), 1e-6));
 }
 
 /* *************************************************************************** */
@@ -259,13 +292,11 @@ TEST( Lago, smallGraph2 ) {
 TEST( Lago, largeGraphNoisy_orientations ) {
 
   string inputFile = findExampleDataFile("noisyToyGraph");
-  NonlinearFactorGraph::shared_ptr g;
-  Values::shared_ptr initial;
-  boost::tie(g, initial) = readG2o(inputFile);
+  const auto [g, initial] = readG2o(inputFile);
 
-  // Add prior on the pose having index (key) = 0
+  // Fix the gauge with an exact prior on pose 0.
   NonlinearFactorGraph graphWithPrior = *g;
-  noiseModel::Diagonal::shared_ptr priorModel = noiseModel::Diagonal::Variances(Vector3(1e-2, 1e-2, 1e-4));
+  SharedNoiseModel priorModel = noiseModel::Constrained::All(3);
   graphWithPrior.addPrior(0, Pose2(), priorModel);
 
   VectorValues actualVV = lago::initializeOrientations(graphWithPrior);
@@ -280,13 +311,12 @@ TEST( Lago, largeGraphNoisy_orientations ) {
     }
   }
   string matlabFile = findExampleDataFile("orientationsNoisyToyGraph");
-  NonlinearFactorGraph::shared_ptr gmatlab;
-  Values::shared_ptr expected;
-  boost::tie(gmatlab, expected) = readG2o(matlabFile);
+  const auto [gmatlab, expected] = readG2o(matlabFile);
 
-  for(const auto key_val: *expected){
-    Key k = key_val.key;
-    EXPECT(assert_equal(expected->at<Pose2>(k), actual.at<Pose2>(k), 1e-5));
+  for(const auto& key_pose: expected->extract<Pose2>()){
+    const Key& k = key_pose.first;
+    const Pose2& pose = key_pose.second;
+    EXPECT(assert_equal(pose, actual.at<Pose2>(k), 1e-5));
   }
 }
 
@@ -294,9 +324,7 @@ TEST( Lago, largeGraphNoisy_orientations ) {
 TEST( Lago, largeGraphNoisy ) {
 
   string inputFile = findExampleDataFile("noisyToyGraph");
-  NonlinearFactorGraph::shared_ptr g;
-  Values::shared_ptr initial;
-  boost::tie(g, initial) = readG2o(inputFile);
+  const auto [g, initial] = readG2o(inputFile);
 
   // Add prior on the pose having index (key) = 0
   NonlinearFactorGraph graphWithPrior = *g;
@@ -306,13 +334,12 @@ TEST( Lago, largeGraphNoisy ) {
   Values actual = lago::initialize(graphWithPrior);
 
   string matlabFile = findExampleDataFile("optimizedNoisyToyGraph");
-  NonlinearFactorGraph::shared_ptr gmatlab;
-  Values::shared_ptr expected;
-  boost::tie(gmatlab, expected) = readG2o(matlabFile);
+  const auto [gmatlab, expected] = readG2o(matlabFile);
 
-  for(const auto key_val: *expected){
-    Key k = key_val.key;
-    EXPECT(assert_equal(expected->at<Pose2>(k), actual.at<Pose2>(k), 1e-2));
+  for(const auto& key_pose: expected->extract<Pose2>()){
+    const Key& k = key_pose.first;
+    const Pose2& pose = key_pose.second;
+    EXPECT(assert_equal(pose, actual.at<Pose2>(k), 1e-2));
   }
 }
 
@@ -323,4 +350,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

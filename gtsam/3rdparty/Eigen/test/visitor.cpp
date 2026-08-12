@@ -56,9 +56,44 @@ template<typename MatrixType> void matrixVisitor(const MatrixType& p)
   VERIFY_IS_APPROX(maxc, m.maxCoeff());
 
   eigen_maxc = (m.adjoint()*m).maxCoeff(&eigen_maxrow,&eigen_maxcol);
-  eigen_maxc = (m.adjoint()*m).eval().maxCoeff(&maxrow,&maxcol);
-  VERIFY(maxrow == eigen_maxrow);
-  VERIFY(maxcol == eigen_maxcol);
+  Index maxrow2=0,maxcol2=0;
+  eigen_maxc = (m.adjoint()*m).eval().maxCoeff(&maxrow2,&maxcol2);
+  VERIFY(maxrow2 == eigen_maxrow);
+  VERIFY(maxcol2 == eigen_maxcol);
+
+  if (!NumTraits<Scalar>::IsInteger && m.size() > 2) {
+    // Test NaN propagation by replacing an element with NaN.
+    bool stop = false;
+    for (Index j = 0; j < cols && !stop; ++j) {
+      for (Index i = 0; i < rows && !stop; ++i) {
+        if (!(j == mincol && i == minrow) &&
+            !(j == maxcol && i == maxrow)) {
+          m(i,j) = NumTraits<Scalar>::quiet_NaN();
+          stop = true;
+          break;
+        }
+      }
+    }
+
+    eigen_minc = m.template minCoeff<PropagateNumbers>(&eigen_minrow, &eigen_mincol);
+    eigen_maxc = m.template maxCoeff<PropagateNumbers>(&eigen_maxrow, &eigen_maxcol);
+    VERIFY(minrow == eigen_minrow);
+    VERIFY(maxrow == eigen_maxrow);
+    VERIFY(mincol == eigen_mincol);
+    VERIFY(maxcol == eigen_maxcol);
+    VERIFY_IS_APPROX(minc, eigen_minc);
+    VERIFY_IS_APPROX(maxc, eigen_maxc);
+    VERIFY_IS_APPROX(minc, m.template minCoeff<PropagateNumbers>());
+    VERIFY_IS_APPROX(maxc, m.template maxCoeff<PropagateNumbers>());
+
+    eigen_minc = m.template minCoeff<PropagateNaN>(&eigen_minrow, &eigen_mincol);
+    eigen_maxc = m.template maxCoeff<PropagateNaN>(&eigen_maxrow, &eigen_maxcol);
+    VERIFY(minrow != eigen_minrow || mincol != eigen_mincol);
+    VERIFY(maxrow != eigen_maxrow || maxcol != eigen_maxcol);
+    VERIFY((numext::isnan)(eigen_minc));
+    VERIFY((numext::isnan)(eigen_maxc));
+  }
+
 }
 
 template<typename VectorType> void vectorVisitor(const VectorType& w)
@@ -111,9 +146,34 @@ template<typename VectorType> void vectorVisitor(const VectorType& w)
   v2.maxCoeff(&eigen_maxidx);
   VERIFY(eigen_minidx == (std::min)(idx0,idx1));
   VERIFY(eigen_maxidx == (std::min)(idx0,idx2));
+
+  if (!NumTraits<Scalar>::IsInteger && size > 2) {
+    // Test NaN propagation by replacing an element with NaN.
+    for (Index i = 0; i < size; ++i) {
+      if (i != minidx && i != maxidx) {
+        v(i) = NumTraits<Scalar>::quiet_NaN();
+        break;
+      }
+    }
+    eigen_minc = v.template minCoeff<PropagateNumbers>(&eigen_minidx);
+    eigen_maxc = v.template maxCoeff<PropagateNumbers>(&eigen_maxidx);
+    VERIFY(minidx == eigen_minidx);
+    VERIFY(maxidx == eigen_maxidx);
+    VERIFY_IS_APPROX(minc, eigen_minc);
+    VERIFY_IS_APPROX(maxc, eigen_maxc);
+    VERIFY_IS_APPROX(minc, v.template minCoeff<PropagateNumbers>());
+    VERIFY_IS_APPROX(maxc, v.template maxCoeff<PropagateNumbers>());
+
+    eigen_minc = v.template minCoeff<PropagateNaN>(&eigen_minidx);
+    eigen_maxc = v.template maxCoeff<PropagateNaN>(&eigen_maxidx);
+    VERIFY(minidx != eigen_minidx);
+    VERIFY(maxidx != eigen_maxidx);
+    VERIFY((numext::isnan)(eigen_minc));
+    VERIFY((numext::isnan)(eigen_maxc));
+  }
 }
 
-void test_visitor()
+EIGEN_DECLARE_TEST(visitor)
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( matrixVisitor(Matrix<float, 1, 1>()) );

@@ -27,12 +27,10 @@
 #include <gtsam/nonlinear/ISAM2Params.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
-#include <boost/variant.hpp>
-
 namespace gtsam {
 
 /**
- * @addtogroup ISAM2
+ * @ingroup isam2
  * This struct is returned from ISAM2::update() and contains information about
  * the update that is useful for determining whether the solution is
  * converging, and about how much work was required for the update.  See member
@@ -51,7 +49,7 @@ struct ISAM2Result {
    * ISAM2Params::evaluateNonlinearError is set to \c true, because there is
    * some cost to this computation.
    */
-  boost::optional<double> errorBefore;
+  std::optional<double> errorBefore;
 
   /** The nonlinear error of all of the factors computed after the current
    * update, meaning that variables above the relinearization threshold
@@ -63,7 +61,7 @@ struct ISAM2Result {
    * ISAM2Params::evaluateNonlinearError is set to \c true, because there is
    * some cost to this computation.
    */
-  boost::optional<double> errorAfter;
+  std::optional<double> errorAfter;
 
   /** The number of variables that were relinearized because their linear
    * deltas exceeded the reslinearization threshold
@@ -89,6 +87,15 @@ struct ISAM2Result {
 
   /** The number of cliques in the Bayes' Tree */
   size_t cliques;
+
+  /** Total number of nonzero entries in the Bayes tree (upper-triangular R and
+   *  rectangular S blocks of every clique conditional).  Useful for monitoring
+   *  fill-in growth over long incremental sessions. */
+  size_t treeNnz;
+
+  /** Whether a full batch reorder was triggered during this update, either by
+   *  the adaptive reorder heuristic or by the existing batch threshold. */
+  bool batchReorderTriggered;
 
   /** The indices of the newly-added factors, in 1-to-1 correspondence with the
    * factors passed as \c newFactors to ISAM2::update().  These indices may be
@@ -155,27 +162,45 @@ struct ISAM2Result {
 
   /** Detailed results, if enabled by ISAM2Params::enableDetailedResults.  See
    * Detail for information about the results data stored here. */
-  boost::optional<DetailedResults> detail;
+  std::optional<DetailedResults> detail;
 
-  explicit ISAM2Result(bool enableDetailedResults = false) {
-    if (enableDetailedResults) detail.reset(DetailedResults());
+  explicit ISAM2Result(bool enableDetailedResults = false)
+      : variablesRelinearized(0),
+        variablesReeliminated(0),
+        factorsRecalculated(0),
+        cliques(0),
+        treeNnz(0),
+        batchReorderTriggered(false) {
+    if (enableDetailedResults) detail = DetailedResults();
   }
 
   /// Return pointer to detail, 0 if no detail requested
-  DetailedResults* details() { return detail.get_ptr(); }
+  DetailedResults* details() {
+    if (detail.has_value()) {
+      return &(*detail);
+    } else {
+      return nullptr;
+    }
+  }
 
   /// Print results
   void print(const std::string str = "") const {
     using std::cout;
     cout << str << "  Reelimintated: " << variablesReeliminated
          << "  Relinearized: " << variablesRelinearized
-         << "  Cliques: " << cliques << std::endl;
+         << "  Cliques: " << cliques
+         << "  Nnz: " << treeNnz;
+    if (batchReorderTriggered) cout << "  [REORDERED]";
+    cout << std::endl;
   }
 
   /** Getters and Setters */
   size_t getVariablesRelinearized() const { return variablesRelinearized; }
   size_t getVariablesReeliminated() const { return variablesReeliminated; }
+  FactorIndices getNewFactorsIndices() const { return newFactorsIndices; }
   size_t getCliques() const { return cliques; }
+  size_t getTreeNnz() const { return treeNnz; }
+  bool getBatchReorderTriggered() const { return batchReorderTriggered; }
   double getErrorBefore() const { return errorBefore ? *errorBefore : std::nan(""); }
   double getErrorAfter() const { return errorAfter ? *errorAfter : std::nan(""); }
 };

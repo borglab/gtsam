@@ -15,11 +15,12 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Point3.h>
 
-#include <boost/function.hpp>
+#include <Eigen/Geometry>
 
 using namespace std::placeholders;
 using namespace gtsam;
@@ -32,13 +33,14 @@ static Point3 P(0.2, 0.7, -2);
 //******************************************************************************
 TEST(Point3 , Constructor) {
   Point3 p;
+  (void)p;
 }
 
 //******************************************************************************
 TEST(Point3 , Concept) {
-  BOOST_CONCEPT_ASSERT((IsGroup<Point3>));
-  BOOST_CONCEPT_ASSERT((IsManifold<Point3>));
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<Point3>));
+  GTSAM_CONCEPT_ASSERT(IsGroup<Point3>);
+  GTSAM_CONCEPT_ASSERT(IsManifold<Point3>);
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Point3>);
 }
 
 //******************************************************************************
@@ -101,8 +103,7 @@ TEST( Point3, dot) {
 
   // Use numerical derivatives to calculate the expected Jacobians
   Matrix H1, H2;
-  std::function<double(const Point3&, const Point3&)> f =
-      [](const Point3& p, const Point3& q) { return gtsam::dot(p, q); };
+  auto f = [](const Point3& p, const Point3& q) { return gtsam::dot(p, q); };
   {
     gtsam::dot(p, q, H1, H2);
     EXPECT(assert_equal(numericalDerivative21<double,Point3>(f, p, q), H1, 1e-9));
@@ -123,9 +124,7 @@ TEST( Point3, dot) {
 /* ************************************************************************* */
 TEST(Point3, cross) {
   Matrix aH1, aH2;
-  std::function<Point3(const Point3&, const Point3&)> f =
-      std::bind(&gtsam::cross, std::placeholders::_1, std::placeholders::_2,
-                boost::none, boost::none);
+  auto f = [](const Point3& p, const Point3& q) { return gtsam::cross(p, q); };
   const Point3 omega(0, 1, 0), theta(4, 6, 8);
   cross(omega, theta, aH1, aH2);
   EXPECT(assert_equal(numericalDerivative21(f, omega, theta), aH1));
@@ -143,9 +142,7 @@ TEST( Point3, cross2) {
 
   // Use numerical derivatives to calculate the expected Jacobians
   Matrix H1, H2;
-  std::function<Point3(const Point3&, const Point3&)> f =
-      std::bind(&gtsam::cross, std::placeholders::_1, std::placeholders::_2,  //
-                boost::none, boost::none);
+  auto f = [](const Point3& p, const Point3& q) { return gtsam::cross(p, q); };
   {
     gtsam::cross(p, q, H1, H2);
     EXPECT(assert_equal(numericalDerivative21<Point3,Point3>(f, p, q), H1, 1e-9));
@@ -158,14 +155,24 @@ TEST( Point3, cross2) {
   }
 }
 
+/* ************************************************************************* */
+TEST(Point3, doubleCross) {
+  Matrix aH1, aH2;
+  auto f = [](const Point3& p, const Point3& q) { return doubleCross(p, q); };
+  const Point3 omega(1, 2, 3), theta(4, 5, 6);
+  doubleCross(omega, theta, aH1, aH2);
+  EXPECT(assert_equal(numericalDerivative21(f, omega, theta), aH1));
+  EXPECT(assert_equal(numericalDerivative22(f, omega, theta), aH2));
+}
+
 //*************************************************************************
 TEST (Point3, normalize) {
   Matrix actualH;
   Point3 point(1, -2, 3); // arbitrary point
   Point3 expected(point / sqrt(14.0));
   EXPECT(assert_equal(expected, normalize(point, actualH), 1e-8));
-  Matrix expectedH = numericalDerivative11<Point3, Point3>(
-      std::bind(gtsam::normalize, std::placeholders::_1, boost::none), point);
+  auto fn = [](const Point3& p) { return normalize(p); };
+  Matrix expectedH = numericalDerivative11<Point3, Point3>(fn, point);
   EXPECT(assert_equal(expectedH, actualH, 1e-8));
 }
 
@@ -180,7 +187,7 @@ TEST(Point3, mean) {
 
 TEST(Point3, mean_pair) {
   Point3 a_mean(2, 2, 2), b_mean(-1, 1, 0);
-  Point3Pair expected = std::make_pair(a_mean, b_mean);
+  Point3Pair expected = {a_mean, b_mean};
   Point3 a1(0, 0, 0), a2(1, 2, 3), a3(5, 4, 3);
   Point3 b1(-1, 0, 0), b2(-2, 4, 0), b3(0, -1, 0);
   std::vector<Point3Pair> point_pairs{{a1, b1}, {a2, b2}, {a3, b3}};

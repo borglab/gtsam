@@ -11,10 +11,9 @@ Author: Frank Dellaert & Gerry Chen (Python)
 import unittest
 
 import numpy as np
+from gtsam.utils.test_case import GtsamTestCase
 
 import gtsam
-from gtsam.utils.test_case import GtsamTestCase
-from gtsam.symbol_shorthand import B
 
 
 class TestBasis(GtsamTestCase):
@@ -26,6 +25,7 @@ class TestBasis(GtsamTestCase):
     Chebyshev bases, the line y=x is used to generate the data while for Fourier, 0.7*cos(x) is
     used.
     """
+
     def setUp(self):
         self.N = 2
         self.x = [0., 0.5, 0.75]

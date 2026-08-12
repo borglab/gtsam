@@ -23,6 +23,24 @@ namespace gtsam {
 
 using namespace std;
 
+const FactorIndices& VariableIndex::operator[](Key variable) const {
+  return index_.find(variable)->second;
+}
+
+const FactorIndices& VariableIndex::at(Key variable) const {
+  KeyMap::const_iterator item = index_.find(variable);
+  if(item == index_.end())
+    throw std::invalid_argument("Requested non-existent variable '" +
+                                DefaultKeyFormatter(variable) +
+                                "' from VariableIndex");
+  else
+    return item->second;
+}
+
+bool VariableIndex::empty(Key variable) const {
+  return (*this)[variable].empty();
+}
+
 /* ************************************************************************* */
 bool VariableIndex::equals(const VariableIndex& other, double tol) const {
   return this->nEntries_ == other.nEntries_ && this->nFactors_ == other.nFactors_

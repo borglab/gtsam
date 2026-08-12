@@ -24,10 +24,8 @@
 #include <gtsam/base/types.h>
 #include <gtsam/base/Vector.h>
 
-#include <boost/algorithm/string.hpp>
-#include <boost/range/adaptor/reversed.hpp>
-
 #include <stdexcept>
+#include <cassert>
 
 using std::cout;
 using std::endl;
@@ -82,9 +80,9 @@ static GaussianFactorGraph convertToJacobianFactors(
   GaussianFactorGraph result;
   for (const auto &factor : gfg) 
     if (factor) {
-      auto jf = boost::dynamic_pointer_cast<JacobianFactor>(factor);
+      auto jf = std::dynamic_pointer_cast<JacobianFactor>(factor);
       if (!jf) {
-        jf = boost::make_shared<JacobianFactor>(*factor);
+        jf = std::make_shared<JacobianFactor>(*factor);
       }
       result.push_back(jf);
     }
@@ -110,7 +108,7 @@ VectorValues SubgraphPreconditioner::x(const VectorValues& y) const {
 
 /* ************************************************************************* */
 double SubgraphPreconditioner::error(const VectorValues& y) const {
-  Errors e(y);
+  Errors e = createErrors(y);
   VectorValues x = this->x(y);
   Errors e2 = Ab2_.gaussianErrors(x);
   return 0.5 * (dot(e, e) + dot(e2,e2));
@@ -129,7 +127,7 @@ VectorValues SubgraphPreconditioner::gradient(const VectorValues &y) const {
 /* ************************************************************************* */
 // Apply operator A, A*y = [I;A2*inv(R1)]*y = [y; A2*inv(R1)*y]
 Errors SubgraphPreconditioner::operator*(const VectorValues &y) const {
-  Errors e(y);
+  Errors e = createErrors(y);
   VectorValues x = Rc1_.backSubstitute(y); /* x=inv(R1)*y */
   Errors e2 = Ab2_ * x;                      /* A2*x */
   e.splice(e.end(), e2);
@@ -141,8 +139,9 @@ Errors SubgraphPreconditioner::operator*(const VectorValues &y) const {
 void SubgraphPreconditioner::multiplyInPlace(const VectorValues& y, Errors& e) const {
 
   Errors::iterator ei = e.begin();
-  for(const auto& key_value: y) {
-    *ei = key_value.second;
+  // Fill the identity-part errors in key-sorted order, to match createErrors.
+  for (const auto& [key, value] : y.sorted()) {
+    *ei = value;
     ++ei;
   }
 
@@ -157,8 +156,9 @@ VectorValues SubgraphPreconditioner::operator^(const Errors& e) const {
 
   Errors::const_iterator it = e.begin();
   VectorValues y = zero();
-  for(auto& key_value: y) {
-    key_value.second = *it;
+  // Map the identity-part errors back into y using key-sorted order.
+  for (const auto& [key, value] : y.sorted()) {
+    y.at(key) = *it;
     ++it;
   }
   transposeMultiplyAdd2(1.0, it, e.end(), y);
@@ -171,9 +171,11 @@ void SubgraphPreconditioner::transposeMultiplyAdd
 (double alpha, const Errors& e, VectorValues& y) const {
 
   Errors::const_iterator it = e.begin();
-  for(auto& key_value: y) {
+  // Add the identity-part contribution in key-sorted order so it
+  // matches the layout produced by createErrors().
+  for (const auto& [key, value] : y.sorted()) {
     const Vector& ei = *it;
-    key_value.second += alpha * ei;
+    y.at(key) += alpha * ei;
     ++it;
   }
   transposeMultiplyAdd2(alpha, it, e.end(), y);
@@ -205,7 +207,8 @@ void SubgraphPreconditioner::solve(const Vector &y, Vector &x) const {
   assert(x.size() == y.size());
 
   /* back substitute */
-  for (const auto &cg : boost::adaptors::reverse(Rc1_)) {
+  for (auto it = std::make_reverse_iterator(Rc1_.end()); it != std::make_reverse_iterator(Rc1_.begin()); ++it) {
+    auto& cg = *it;
     /* collect a subvector of x that consists of the parents of cg (S) */
     const KeyVector parentKeys(cg->beginParents(), cg->endParents());
     const KeyVector frontalKeys(cg->beginFrontals(), cg->endFrontals());
@@ -235,9 +238,9 @@ void SubgraphPreconditioner::transposeSolve(const Vector &y, Vector &x) const {
         cg->R().transpose().triangularView<Eigen::Lower>().solve(
             rhsFrontal);
 
-    // Check for indeterminant solution
+    // Check for indeterminate solution
     if (solFrontal.hasNaN())
-      throw IndeterminantLinearSystemException(cg->keys().front());
+      throw IndeterminateSystemException(cg->keys().front());
 
     /* assign subvector of sol to the frontal variables */
     setSubvector(solFrontal, keyInfo_, frontalKeys, x);

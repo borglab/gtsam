@@ -53,7 +53,7 @@ TEST(ShonanAveraging, GaugeFactorSO6) {
   JacobianFactor linearized(key, A, Vector::Zero(3));
   Values values;
   EXPECT_LONGS_EQUAL(3, factor.dim());
-  EXPECT(assert_equal(linearized, *boost::dynamic_pointer_cast<JacobianFactor>(
+  EXPECT(assert_equal(linearized, *std::dynamic_pointer_cast<JacobianFactor>(
                                       factor.linearize(values))));
 }
 
@@ -73,7 +73,7 @@ TEST(ShonanAveraging, GaugeFactorSO7) {
   JacobianFactor linearized(key, A, Vector::Zero(6));
   Values values;
   EXPECT_LONGS_EQUAL(6, factor.dim());
-  EXPECT(assert_equal(linearized, *boost::dynamic_pointer_cast<JacobianFactor>(
+  EXPECT(assert_equal(linearized, *std::dynamic_pointer_cast<JacobianFactor>(
                                       factor.linearize(values))));
 }
 
@@ -94,7 +94,7 @@ TEST(ShonanAveraging, GaugeFactorSO6over2) {
   JacobianFactor linearized(key, A, Vector::Zero(6));
   Values values;
   EXPECT_LONGS_EQUAL(6, factor.dim());
-  EXPECT(assert_equal(linearized, *boost::dynamic_pointer_cast<JacobianFactor>(
+  EXPECT(assert_equal(linearized, *std::dynamic_pointer_cast<JacobianFactor>(
                                       factor.linearize(values))));
 }
 

@@ -57,6 +57,8 @@ handles.output = hObject;
 % Update handles structure
 guidata(hObject, handles);
 
+fixLegacyGuideLabels(hObject);
+
 OdometryExample;
 
 % --- Outputs from this function are returned to the command line.
@@ -174,3 +176,24 @@ echo off
 function StereoVOLarge_Callback(hObject, eventdata, handles)
 axes(handles.axes3);
 StereoVOExample_large
+
+function fixLegacyGuideLabels(figureHandle)
+% Older GUIDE figures stored a few button labels as HTML strings. Current
+% MATLAB releases render those tags literally, so replace the known affected
+% labels with plain multi-line button text.
+setLabelIfPresent(figureHandle, 'Pose2SLAMCircle', ...
+                  {'2D Pose SLAM', 'Circle'});
+setLabelIfPresent(figureHandle, 'Pose2SLAMManhattan', ...
+                  {'2D Pose SLAM', 'Mini-Manhattan'});
+setLabelIfPresent(figureHandle, 'Pose3SLAMSphere', ...
+                  {'3D Pose SLAM', 'Sphere'});
+setLabelIfPresent(figureHandle, 'PlanarSLAMSampling', ...
+                  {'Planar SLAM', 'Sampling'});
+setLabelIfPresent(figureHandle, 'pushbutton25', ...
+                  {'Planar SLAM', 'Graph'});
+
+function setLabelIfPresent(figureHandle, tagName, label)
+object = findobj(figureHandle, 'Tag', tagName);
+if ~isempty(object)
+    set(object, 'String', label);
+end

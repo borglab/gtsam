@@ -34,9 +34,10 @@ int main (int argc, char** argv) {
   // we are in build/examples, data is in examples/Data
   NonlinearFactorGraph::shared_ptr graph;
   Values::shared_ptr initial;
-  SharedDiagonal model = noiseModel::Diagonal::Sigmas((Vector(3) << 0.05, 0.05, 5.0 * M_PI / 180.0).finished());
+  SharedDiagonal model =
+      noiseModel::Diagonal::Sigmas(Vector{{0.05, 0.05, 5.0 * M_PI / 180.0}});
   string graph_file = findExampleDataFile("w100.graph");
-  boost::tie(graph, initial) = load2D(graph_file, model);
+  std::tie(graph, initial) = load2D(graph_file, model);
   initial->print("Initial estimate:\n");
 
   // Add a Gaussian prior on first poses

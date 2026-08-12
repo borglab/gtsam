@@ -18,6 +18,10 @@
 
 #pragma once
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam_unstable/linear/LinearEquality.h>
 
@@ -29,7 +33,7 @@ namespace gtsam {
  */
 class EqualityFactorGraph: public FactorGraph<LinearEquality> {
 public:
-  typedef boost::shared_ptr<EqualityFactorGraph> shared_ptr;
+  typedef std::shared_ptr<EqualityFactorGraph> shared_ptr;
 
   /// Add a linear inequality, forwards arguments to LinearInequality.
   template <class... Args> void add(Args &&... args) {
@@ -54,3 +58,4 @@ template<> struct traits<EqualityFactorGraph> : public Testable<
 
 } // \ namespace gtsam
 
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

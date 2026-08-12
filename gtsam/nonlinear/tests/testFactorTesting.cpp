@@ -16,20 +16,20 @@
  * @brief unit tests for testFactorJacobians and testExpressionJacobians
  */
 
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/nonlinear/expressions.h>
-#include <gtsam/nonlinear/expressionTesting.h>
-#include <gtsam/slam/expressions.h>
-
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/nonlinear/expressionTesting.h>
+#include <gtsam/nonlinear/expressions.h>
+#include <gtsam/slam/expressions.h>
 
 using namespace gtsam;
 
 /* ************************************************************************* */
 Vector3 bodyVelocity(const Pose3& w_t_b,
                      const Vector3& vec_w,
-                     OptionalJacobian<3, 6> Hpose = boost::none,
-                     OptionalJacobian<3, 3> Hvel = boost::none) {
+                     OptionalJacobian<3, 6> Hpose = {},
+                     OptionalJacobian<3, 3> Hvel = {}) {
   Matrix36 Hrot__pose;
   Rot3 w_R_b = w_t_b.rotation(Hrot__pose);
   Matrix33 Hvel__rot;
@@ -51,7 +51,7 @@ class ScaledVelocityFunctor {
   // and velocity scale factor. Also computes the corresponding jacobian
   // (w.r.t. the velocity scale).
   Vector3 operator()(double vscale,
-                     OptionalJacobian<3, 1> H = boost::none) const {
+                     OptionalJacobian<3, 1> H = {}) const {
     // The velocity scale factor value we are optimizing for is centered around
     // 0, so we need to add 1 to it before scaling the velocity.
     const Vector3 scaled_velocity = (vscale + 1.0) * measured_velocity_;

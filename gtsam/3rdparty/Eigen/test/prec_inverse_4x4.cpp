@@ -30,18 +30,17 @@ template<typename MatrixType> void inverse_general_4x4(int repeat)
 {
   using std::abs;
   typedef typename MatrixType::Scalar Scalar;
-  typedef typename MatrixType::RealScalar RealScalar;
   double error_sum = 0., error_max = 0.;
   for(int i = 0; i < repeat; ++i)
   {
     MatrixType m;
-    RealScalar absdet;
+    bool is_invertible;
     do {
       m = MatrixType::Random();
-      absdet = abs(m.determinant());
-    } while(absdet < NumTraits<Scalar>::epsilon());
+      is_invertible = Eigen::FullPivLU<MatrixType>(m).isInvertible();
+    } while(!is_invertible);
     MatrixType inv = m.inverse();
-    double error = double( (m*inv-MatrixType::Identity()).norm() * absdet / NumTraits<Scalar>::epsilon() );
+    double error = double( (m*inv-MatrixType::Identity()).norm());
     error_sum += error;
     error_max = (std::max)(error_max, error);
   }
@@ -68,7 +67,7 @@ template<typename MatrixType> void inverse_general_4x4(int repeat)
   }
 }
 
-void test_prec_inverse_4x4()
+EIGEN_DECLARE_TEST(prec_inverse_4x4)
 {
   CALL_SUBTEST_1((inverse_permutation_4x4<Matrix4f>()));
   CALL_SUBTEST_1(( inverse_general_4x4<Matrix4f>(200000 * g_repeat) ));

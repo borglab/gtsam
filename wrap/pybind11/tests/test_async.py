@@ -1,8 +1,14 @@
-# -*- coding: utf-8 -*-
+from __future__ import annotations
+
+import sys
+
 import pytest
 
 asyncio = pytest.importorskip("asyncio")
 m = pytest.importorskip("pybind11_tests.async_module")
+
+if sys.platform.startswith("emscripten"):
+    pytest.skip("Can't run a new event_loop in pyodide", allow_module_level=True)
 
 
 @pytest.fixture
@@ -17,7 +23,7 @@ async def get_await_result(x):
 
 
 def test_await(event_loop):
-    assert 5 == event_loop.run_until_complete(get_await_result(m.SupportsAsync()))
+    assert event_loop.run_until_complete(get_await_result(m.SupportsAsync())) == 5
 
 
 def test_await_missing(event_loop):

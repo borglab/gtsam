@@ -104,7 +104,7 @@ static void test_custom_binary_op()
 }
 
 
-void test_cxx11_tensor_custom_op()
+EIGEN_DECLARE_TEST(cxx11_tensor_custom_op)
 {
   CALL_SUBTEST(test_custom_unary_op());
   CALL_SUBTEST(test_custom_binary_op());

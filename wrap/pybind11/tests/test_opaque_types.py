@@ -1,7 +1,10 @@
-# -*- coding: utf-8 -*-
+from __future__ import annotations
+
 import pytest
-from pybind11_tests import opaque_types as m
+
+import env
 from pybind11_tests import ConstructorStats, UserType
+from pybind11_tests import opaque_types as m
 
 
 def test_string_list():
@@ -12,7 +15,7 @@ def test_string_list():
     assert lst.back() == "Element 2"
 
     for i, k in enumerate(lst, start=1):
-        assert k == "Element {}".format(i)
+        assert k == f"Element {i}"
     lst.pop_back()
     assert m.print_opaque_list(lst) == "Opaque list: [Element 1]"
 
@@ -24,20 +27,26 @@ def test_string_list():
     assert m.print_opaque_list(cvp.stringList) == "Opaque list: [Element 1, Element 3]"
 
 
-def test_pointers(msg):
+def test_pointers(msg, backport_typehints):
     living_before = ConstructorStats.get(UserType).alive()
     assert m.get_void_ptr_value(m.return_void_ptr()) == 0x1234
     assert m.get_void_ptr_value(UserType())  # Should also work for other C++ types
-    assert ConstructorStats.get(UserType).alive() == living_before
+
+    if not env.GRAALPY:
+        assert ConstructorStats.get(UserType).alive() == living_before
 
     with pytest.raises(TypeError) as excinfo:
         m.get_void_ptr_value([1, 2, 3])  # This should not work
-    assert msg(excinfo.value) == """
-        get_void_ptr_value(): incompatible function arguments. The following argument types are supported:
-            1. (arg0: capsule) -> int
 
-        Invoked with: [1, 2, 3]
-    """  # noqa: E501 line too long
+    assert (
+        backport_typehints(msg(excinfo.value))
+        == """
+            get_void_ptr_value(): incompatible function arguments. The following argument types are supported:
+                1. (arg0: types.CapsuleType) -> int
+
+            Invoked with: [1, 2, 3]
+        """
+    )
 
     assert m.return_null_str() is None
     assert m.get_null_str_value(m.return_null_str()) is not None
@@ -45,3 +54,11 @@ def test_pointers(msg):
     ptr = m.return_unique_ptr()
     assert "StringList" in repr(ptr)
     assert m.print_opaque_list(ptr) == "Opaque list: [some value]"
+
+
+def test_unions():
+    int_float_union = m.IntFloat()
+    int_float_union.i = 42
+    assert int_float_union.i == 42
+    int_float_union.f = 3.0
+    assert int_float_union.f == 3.0

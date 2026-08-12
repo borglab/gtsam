@@ -101,11 +101,39 @@ Matrix3f a(3,3);
 \endcode
 and is a no-operation.
 
-Finally, we also offer some constructors to initialize the coefficients of small fixed-size vectors up to size 4:
+Matrices and vectors can also be initialized from lists of coefficients.
+Prior to C++11, this feature is limited to small fixed-size column or vectors up to size 4:
 \code
 Vector2d a(5.0, 6.0);
 Vector3d b(5.0, 6.0, 7.0);
 Vector4d c(5.0, 6.0, 7.0, 8.0);
+\endcode
+
+If C++11 is enabled, fixed-size column or row vectors of arbitrary size can be initialized by passing an arbitrary number of coefficients:
+\code
+Vector2i a(1, 2);                      // A column vector containing the elements {1, 2}
+Matrix<int, 5, 1> b {1, 2, 3, 4, 5};   // A row-vector containing the elements {1, 2, 3, 4, 5}
+Matrix<int, 1, 5> c = {1, 2, 3, 4, 5}; // A column vector containing the elements {1, 2, 3, 4, 5}
+\endcode
+
+In the general case of matrices and vectors with either fixed or runtime sizes,
+coefficients have to be grouped by rows and passed as an initializer list of initializer list (\link Matrix::Matrix(const std::initializer_list<std::initializer_list<Scalar>>&) details \endlink):
+\code
+MatrixXi a {      // construct a 2x2 matrix
+      {1, 2},     // first row
+      {3, 4}      // second row
+};
+Matrix<double, 2, 3> b {
+      {2, 3, 4},
+      {5, 6, 7},
+};
+\endcode
+
+For column or row vectors, implicit transposition is allowed.
+This means that a column vector can be initialized from a single row:
+\code
+VectorXd a {{1.5, 2.5, 3.5}};             // A column-vector with 3 coefficients
+RowVectorXd b {{1.0, 2.0, 3.0, 4.0}};     // A row-vector with 4 coefficients
 \endcode
 
 \section TutorialMatrixCoeffAccessors Coefficient accessors

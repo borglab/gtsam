@@ -88,7 +88,7 @@ static void test_sizes_as_index()
 }
 
 
-void test_cxx11_tensor_custom_index() {
+EIGEN_DECLARE_TEST(cxx11_tensor_custom_index) {
   test_map_as_index<ColMajor>();
   test_map_as_index<RowMajor>();
   test_matrix_as_index<ColMajor>();

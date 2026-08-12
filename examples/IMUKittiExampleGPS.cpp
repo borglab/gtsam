@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file IMUKittiExampleGPS
+ * @file IMUKittiExampleGPS.cpp
  * @brief Example of application of ISAM2 for GPS-aided navigation on the KITTI
  * VISION BENCHMARK SUITE
  * @author Ported by Thomas Jespersen (thomasj@tkjelectronics.dk), TKJ
@@ -18,6 +18,7 @@
  */
 
 // GTSAM related includes.
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
 #include <gtsam/navigation/GPSFactor.h>
@@ -159,11 +160,9 @@ int main(int argc, char* argv[]) {
   vector<GpsMeasurement> gps_measurements;
   loadKittiData(kitti_calibration, imu_measurements, gps_measurements);
 
-  Vector6 BodyP =
-      (Vector6() << kitti_calibration.body_ptx, kitti_calibration.body_pty,
-       kitti_calibration.body_ptz, kitti_calibration.body_prx,
-       kitti_calibration.body_pry, kitti_calibration.body_prz)
-          .finished();
+  Vector6 BodyP{kitti_calibration.body_ptx, kitti_calibration.body_pty,
+                kitti_calibration.body_ptz, kitti_calibration.body_prx,
+                kitti_calibration.body_pry, kitti_calibration.body_prz};
   auto body_T_imu = Pose3::Expmap(BodyP);
   if (!body_T_imu.equals(Pose3(), 1e-5)) {
     printf(
@@ -241,7 +240,6 @@ int main(int argc, char* argv[]) {
       "-- Starting main loop: inference is performed at each time step, but we "
       "plot trajectory every 10 steps\n");
   size_t j = 0;
-  size_t included_imu_measurement_count = 0;
 
   for (size_t i = first_gps_pose; i < gps_measurements.size() - 1; i++) {
     // At each non=IMU measurement we initialize a new node in the graph
@@ -249,6 +247,7 @@ int main(int argc, char* argv[]) {
     auto current_vel_key = V(i);
     auto current_bias_key = B(i);
     double t = gps_measurements[i].time;
+    size_t included_imu_measurement_count = 0;
 
     if (i == first_gps_pose) {
       // Create initial estimate and prior on initial pose, velocity, and biases

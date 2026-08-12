@@ -33,7 +33,10 @@ def visual_ISAM2_plot(result):
     fignum = 0
 
     fig = plt.figure(fignum)
-    axes = fig.gca(projection='3d')
+    if not fig.axes:
+        axes = fig.add_subplot(projection='3d')
+    else:
+        axes = fig.axes[0]
     plt.cla()
 
     # Plot points
@@ -70,7 +73,7 @@ def visual_ISAM2_example():
     points = SFMdata.createPoints()
 
     # Create the set of ground-truth poses
-    poses = SFMdata.createPoses(K)
+    poses = SFMdata.createPoses()
 
     # Create an iSAM2 object. Unlike iSAM1, which performs periodic batch steps
     # to maintain proper linearization and efficient variable ordering, iSAM2

@@ -24,7 +24,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/make_shared.hpp>
 
 using namespace std;
 using namespace gtsam;
@@ -84,9 +83,9 @@ TEST(SymbolicBayesNet, Dot) {
   using symbol_shorthand::A;
   using symbol_shorthand::X;
   SymbolicBayesNet bn;
-  bn += SymbolicConditional(X(3), X(2), A(2));
-  bn += SymbolicConditional(X(2), X(1), A(1));
-  bn += SymbolicConditional(X(1));
+  bn.emplace_shared<SymbolicConditional>(X(3), X(2), A(2));
+  bn.emplace_shared<SymbolicConditional>(X(2), X(1), A(1));
+  bn.emplace_shared<SymbolicConditional>(X(1));
 
   DotWriter writer;
   writer.positionHints.emplace('a', 2);
@@ -104,16 +103,16 @@ TEST(SymbolicBayesNet, Dot) {
          "digraph {\n"
          "  size=\"5,5\";\n"
          "\n"
-         "  vara1[label=\"a1\", pos=\"1,2!\", shape=box];\n"
-         "  vara2[label=\"a2\", pos=\"2,2!\", shape=box];\n"
-         "  varx1[label=\"x1\", pos=\"1,1!\"];\n"
-         "  varx2[label=\"x2\", pos=\"2,1!\"];\n"
-         "  varx3[label=\"x3\", pos=\"3,1!\"];\n"
+         "  var6989586621679009793[label=\"a1\", pos=\"1,2!\", shape=box];\n"
+         "  var6989586621679009794[label=\"a2\", pos=\"2,2!\", shape=box];\n"
+         "  var8646911284551352321[label=\"x1\", pos=\"1,1!\"];\n"
+         "  var8646911284551352322[label=\"x2\", pos=\"2,1!\"];\n"
+         "  var8646911284551352323[label=\"x3\", pos=\"3,1!\"];\n"
          "\n"
-         "  varx1->varx2\n"
-         "  vara1->varx2\n"
-         "  varx2->varx3\n"
-         "  vara2->varx3\n"
+         "  var8646911284551352321->var8646911284551352322\n"
+         "  var6989586621679009793->var8646911284551352322\n"
+         "  var8646911284551352322->var8646911284551352323\n"
+         "  var6989586621679009794->var8646911284551352323\n"
          "}");
 }
 

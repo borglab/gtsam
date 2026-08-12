@@ -115,7 +115,7 @@ template<typename Scalar,int Size> void homogeneous(void)
   VERIFY_IS_APPROX( (t2.template triangularView<Lower>() * v0.homogeneous()).eval(), (t2.template triangularView<Lower>()*hv0) );
 }
 
-void test_geo_homogeneous()
+EIGEN_DECLARE_TEST(geo_homogeneous)
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1(( homogeneous<float,1>() ));

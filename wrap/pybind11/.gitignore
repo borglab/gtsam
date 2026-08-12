@@ -26,6 +26,7 @@ MANIFEST
 /.ninja_*
 /*.ninja
 /docs/.build
+__pycache__/
 *.py[co]
 *.egg-info
 *~
@@ -41,3 +42,13 @@ pybind11Targets.cmake
 /.vscode
 /pybind11/include/*
 /pybind11/share/*
+/docs/_build/*
+.ipynb_checkpoints/
+tests/main.cpp
+CMakeUserPresents.json
+
+/Python
+/tmp*
+.ruby-version
+.*cache*/
+*.lock

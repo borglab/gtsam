@@ -22,10 +22,7 @@
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam_unstable/slam/SmartStereoProjectionPoseFactor.h>
 
-#include <array>
-#include <fstream>
 #include <iostream>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -40,6 +37,15 @@
 
 // Tolerance for ground-truth pose comparison:
 static const double tol = 1e-3;
+
+namespace  {
+gtsam::LevenbergMarquardtParams makeLmParams() {
+  gtsam::LevenbergMarquardtParams params;
+  params.linearSolverType =
+      gtsam::LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
+  return params;
+}
+}  // namespace
 
 // Synthetic dataset generated with rwt
 // (https://github.com/jlblancoc/recursive-world-toolkit)
@@ -156,11 +162,10 @@ TEST(testISAM2SmartFactor, Stereo_Batch) {
   using symbol_shorthand::X;
 
   const auto K =
-      boost::make_shared<Cal3_S2Stereo>(fx, fy, .0, cx, cy, baseline);
+      std::make_shared<Cal3_S2Stereo>(fx, fy, .0, cx, cy, baseline);
 
   // Pose prior - at identity
-  auto priorPoseNoise = noiseModel::Diagonal::Sigmas(
-      (Vector(6) << Vector3::Constant(0.2), Vector3::Constant(0.2)).finished());
+  auto priorPoseNoise = noiseModel::Constrained::All(6);
 
   // Map: landmark_id => smart_factor_index inside iSAM2
   std::map<lm_id_t, FactorIndex> lm2factor;
@@ -184,7 +189,7 @@ TEST(testISAM2SmartFactor, Stereo_Batch) {
         SmartProjectionParams parm(HESSIAN, ZERO_ON_DEGENERACY);
 
         smartFactors[stObs.lm_id] =
-            boost::make_shared<SmartStereoProjectionPoseFactor>(noise, parm);
+            std::make_shared<SmartStereoProjectionPoseFactor>(noise, parm);
 
         batch_graph.push_back(smartFactors[stObs.lm_id]);
       }
@@ -198,13 +203,13 @@ TEST(testISAM2SmartFactor, Stereo_Batch) {
 
     // prior, for the first keyframe:
     if (kf_id == 0) {
-      batch_graph.addPrior(X(kf_id), Pose3::identity(), priorPoseNoise);
+      batch_graph.addPrior(X(kf_id), Pose3::Identity(), priorPoseNoise);
     }
 
-    batch_values.insert(X(kf_id), Pose3::identity());
+    batch_values.insert(X(kf_id), Pose3::Identity());
   }
 
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
 #if TEST_VERBOSE_OUTPUT
   parameters.verbosity = NonlinearOptimizerParams::LINEAR;
   parameters.verbosityLM = LevenbergMarquardtParams::TRYDELTA;
@@ -242,7 +247,7 @@ TEST(testISAM2SmartFactor, Stereo_iSAM2) {
   using symbol_shorthand::X;
 
   const auto K =
-      boost::make_shared<Cal3_S2Stereo>(fx, fy, .0, cx, cy, baseline);
+      std::make_shared<Cal3_S2Stereo>(fx, fy, .0, cx, cy, baseline);
 
   ISAM2Params parameters;
   parameters.relinearizeThreshold = 0.01;
@@ -258,8 +263,7 @@ TEST(testISAM2SmartFactor, Stereo_iSAM2) {
   ISAM2 isam(parameters);
 
   // Pose prior - at identity
-  auto priorPoseNoise = noiseModel::Diagonal::Sigmas(
-      (Vector(6) << Vector3::Constant(0.2), Vector3::Constant(0.2)).finished());
+  auto priorPoseNoise = noiseModel::Constrained::All(6);
 
   // Map: landmark_id => smart_factor_index inside iSAM2
   std::map<lm_id_t, FactorIndex> lm2factor;
@@ -267,7 +271,7 @@ TEST(testISAM2SmartFactor, Stereo_iSAM2) {
   // Storage of smart factors:
   std::map<lm_id_t, SmartStereoProjectionPoseFactor::shared_ptr> smartFactors;
 
-  Pose3 lastKeyframePose = Pose3::identity();
+  Pose3 lastKeyframePose = Pose3::Identity();
 
   // Run one timestep at once:
   for (const auto &entries : dataset) {
@@ -290,7 +294,7 @@ TEST(testISAM2SmartFactor, Stereo_iSAM2) {
         SmartProjectionParams params(HESSIAN, ZERO_ON_DEGENERACY);
 
         smartFactors[stObs.lm_id] =
-            boost::make_shared<SmartStereoProjectionPoseFactor>(noise, params);
+            std::make_shared<SmartStereoProjectionPoseFactor>(noise, params);
         newFactor2lm[newFactors.size()] = stObs.lm_id;
         newFactors.push_back(smartFactors[stObs.lm_id]);
       } else {
@@ -307,7 +311,7 @@ TEST(testISAM2SmartFactor, Stereo_iSAM2) {
 
     // prior, for the first keyframe:
     if (kf_id == 0) {
-      newFactors.addPrior(X(kf_id), Pose3::identity(), priorPoseNoise);
+      newFactors.addPrior(X(kf_id), Pose3::Identity(), priorPoseNoise);
     }
 
     // 2) Run iSAM2:

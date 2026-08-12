@@ -168,8 +168,9 @@ TEST( ProjectionFactorPPP, Jacobian ) {
   factor.evaluateError(pose, Pose3(), point, H1Actual, H2Actual, H3Actual);
 
   // The expected Jacobians
-  Matrix H1Expected = (Matrix(2, 6) << 0., -554.256, 0., -92.376, 0., 0., 554.256, 0., 0., 0., -92.376, 0.).finished();
-  Matrix H3Expected = (Matrix(2, 3) << 92.376, 0., 0., 0., 92.376, 0.).finished();
+  Matrix H1Expected{{0., -554.256, 0., -92.376, 0., 0.},
+                    {554.256, 0., 0., 0., -92.376, 0.}};
+  Matrix H3Expected{{92.376, 0., 0.}, {0., 92.376, 0.}};
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-3));
@@ -177,11 +178,9 @@ TEST( ProjectionFactorPPP, Jacobian ) {
 
   // Verify H2 with numerical derivative
   Matrix H2Expected = numericalDerivative32<Vector, Pose3, Pose3, Point3>(
-      std::function<Vector(const Pose3&, const Pose3&, const Point3&)>(
-          std::bind(&TestProjectionFactor::evaluateError, &factor,
-                    std::placeholders::_1, std::placeholders::_2,
-                    std::placeholders::_3, boost::none, boost::none,
-                    boost::none)),
+      [&factor](const Pose3& pose, const Pose3& transform, const Point3& point) {
+        return factor.evaluateError(pose, transform, point);
+      },
       pose, Pose3(), point);
 
   CHECK(assert_equal(H2Expected, H2Actual, 1e-5));
@@ -206,8 +205,9 @@ TEST( ProjectionFactorPPP, JacobianWithTransform ) {
   factor.evaluateError(pose, body_P_sensor, point, H1Actual, H2Actual, H3Actual);
 
   // The expected Jacobians
-  Matrix H1Expected = (Matrix(2, 6) << -92.376, 0., 577.350, 0., 92.376, 0., -9.2376, -577.350, 0., 0., 0., 92.376).finished();
-  Matrix H3Expected = (Matrix(2, 3) << 0., -92.376, 0., 0., 0., -92.376).finished();
+  Matrix H1Expected{{-92.376, 0., 577.350, 0., 92.376, 0.},
+                    {-9.2376, -577.350, 0., 0., 0., 92.376}};
+  Matrix H3Expected{{0., -92.376, 0.}, {0., 0., -92.376}};
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-3));
@@ -215,11 +215,9 @@ TEST( ProjectionFactorPPP, JacobianWithTransform ) {
 
   // Verify H2 with numerical derivative
   Matrix H2Expected = numericalDerivative32<Vector, Pose3, Pose3, Point3>(
-      std::function<Vector(const Pose3&, const Pose3&, const Point3&)>(
-          std::bind(&TestProjectionFactor::evaluateError, &factor,
-                    std::placeholders::_1, std::placeholders::_2,
-                    std::placeholders::_3, boost::none, boost::none,
-                    boost::none)),
+      [&factor](const Pose3& pose, const Pose3& transform, const Point3& point) {
+        return factor.evaluateError(pose, transform, point);
+      },
       pose, body_P_sensor, point);
 
   CHECK(assert_equal(H2Expected, H2Actual, 1e-5));

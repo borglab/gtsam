@@ -15,12 +15,15 @@
  * @author  Richard Roberts
  */
 
+#pragma once
+
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/base/treeTraversal-inst.h>
 
-#include <boost/optional.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
+
+#include <optional>
 
 namespace gtsam
 {
@@ -30,7 +33,7 @@ namespace gtsam
     {
       /* ************************************************************************* */
       struct OptimizeData {
-        boost::optional<OptimizeData&> parentData;
+        OptimizeData* parentData = nullptr;
         FastMap<Key, VectorValues::const_iterator> cliqueResults;
         //VectorValues ancestorResults;
         //VectorValues results;
@@ -49,11 +52,11 @@ namespace gtsam
         VectorValues collectedResult;
 
         OptimizeData operator()(
-          const boost::shared_ptr<CLIQUE>& clique,
+          const std::shared_ptr<CLIQUE>& clique,
           OptimizeData& parentData)
         {
           OptimizeData myData;
-          myData.parentData = parentData;
+          myData.parentData = &parentData;
           // Take any ancestor results we'll need
           for(Key parent: clique->conditional_->parents())
             myData.cliqueResults.emplace(parent, myData.parentData->cliqueResults.at(parent));
@@ -92,8 +95,9 @@ namespace gtsam
             // TODO(gareth): Inline instantiation of Eigen::Solve and check flag
             const Vector solution = c.R().triangularView<Eigen::Upper>().solve(rhs);
 
-            // Check for indeterminant solution
-            if(solution.hasNaN()) throw IndeterminantLinearSystemException(c.keys().front());
+            // Check for indeterminate solution
+            if (solution.hasNaN())
+              throw IndeterminateSystemException(c.keys().front());
 
             // Insert solution into a VectorValues
             DenseIndex vectorPosition = 0;

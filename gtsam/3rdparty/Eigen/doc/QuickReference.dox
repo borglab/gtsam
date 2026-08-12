@@ -68,7 +68,7 @@ Array<float,4,1>                <=>   Array4f
 
 Conversion between the matrix and array worlds:
 \code
-Array44f a1, a1;
+Array44f a1, a2;
 Matrix4f m1, m2;
 m1 = a1 * a2;                     // coeffwise product, implicit conversion from array to matrix.
 a1 = m1 * m2;                     // matrix product, implicit conversion from matrix to array.
@@ -261,6 +261,8 @@ x.setIdentity();
 Vector3f::UnitX() // 1 0 0
 Vector3f::UnitY() // 0 1 0
 Vector3f::UnitZ() // 0 0 1
+Vector4f::Unit(i)
+x.setUnit(i);
 \endcode
   </td>
   <td>
@@ -278,6 +280,7 @@ N/A
 
 
 VectorXf::Unit(size,i)
+x.setUnit(size,i);
 VectorXf::Unit(4,1) == Vector4f(0,1,0,0)
                     == Vector4f::UnitY()
 \endcode
@@ -285,7 +288,12 @@ VectorXf::Unit(4,1) == Vector4f(0,1,0,0)
 </tr>
 </table>
 
-
+Note that it is allowed to call any of the \c set* functions to a dynamic-sized vector or matrix without passing new sizes.
+For instance:
+\code
+MatrixXi M(3,3);
+M.setIdentity();
+\endcode
 
 \subsection QuickRef_Map Mapping external arrays
 
@@ -472,13 +480,14 @@ The main difference between the two API is that the one based on cwise* methods 
 while the second one (based on .array()) returns an array expression.
 Recall that .array() has no cost, it only changes the available API and interpretation of the data.
 
-It is also very simple to apply any user defined function \c foo using DenseBase::unaryExpr together with <a href="http://en.cppreference.com/w/cpp/utility/functional/ptr_fun">std::ptr_fun</a> (c++03), <a href="http://en.cppreference.com/w/cpp/utility/functional/ref">std::ref</a> (c++11), or <a href="http://en.cppreference.com/w/cpp/language/lambda">lambdas</a> (c++11):
+It is also very simple to apply any user defined function \c foo using DenseBase::unaryExpr together with <a href="http://en.cppreference.com/w/cpp/utility/functional/ptr_fun">std::ptr_fun</a> (c++03, deprecated or removed in newer C++ versions), <a href="http://en.cppreference.com/w/cpp/utility/functional/ref">std::ref</a> (c++11), or <a href="http://en.cppreference.com/w/cpp/language/lambda">lambdas</a> (c++11):
 \code
 mat1.unaryExpr(std::ptr_fun(foo));
 mat1.unaryExpr(std::ref(foo));
 mat1.unaryExpr([](double x) { return foo(x); });
 \endcode
 
+Please note that it's not possible to pass a raw function pointer to \c unaryExpr, so please warp it as shown above.
 
 <a href="#" class="top">top</a>
 \section QuickRef_Reductions Reductions
@@ -520,6 +529,12 @@ if((array1 < array2).any()) ... // if there exist a pair i,j such that array1(i,
 
 
 <a href="#" class="top">top</a>\section QuickRef_Blocks Sub-matrices
+
+<div class="warningbox">
+<strong>PLEASE HELP US IMPROVING THIS SECTION.</strong>
+%Eigen 3.4 supports a much improved API for sub-matrices, including,
+slicing and indexing from arrays: \ref TutorialSlicingIndexing
+</div>
 
 Read-write access to a \link DenseBase::col(Index) column \endlink
 or a \link DenseBase::row(Index) row \endlink of a matrix (or array):
@@ -575,6 +590,11 @@ Read-write access to sub-matrices:</td></tr>
 
 
 <a href="#" class="top">top</a>\section QuickRef_Misc Miscellaneous operations
+
+<div class="warningbox">
+<strong>PLEASE HELP US IMPROVING THIS SECTION.</strong>
+%Eigen 3.4 supports a new API for reshaping: \ref TutorialReshape
+</div>
 
 \subsection QuickRef_Reverse Reverse
 Vectors, rows, and/or columns of a matrix can be reversed (see DenseBase::reverse(), DenseBase::reverseInPlace(), VectorwiseOp::reverse()).

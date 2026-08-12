@@ -26,6 +26,7 @@
 #include <Eigen/Sparse>
 #include <random>
 #include <vector>
+#include <optional>
 
 namespace gtsam {
 
@@ -75,10 +76,10 @@ class PowerMethod {
 
   /// Construct from the aim matrix and intial ritz vector
   explicit PowerMethod(const Operator &A,
-                       const boost::optional<Vector> initial = boost::none)
+                       const std::optional<Vector> initial = {})
       : A_(A), dim_(A.rows()), nrIterations_(0) {
     Vector x0;
-    x0 = initial ? initial.get() : Vector::Random(dim_);
+    x0 = initial ? *initial : Vector::Random(dim_);
     x0.normalize();
 
     // initialize Ritz eigen value

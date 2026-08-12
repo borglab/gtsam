@@ -20,8 +20,10 @@
 #include <gtsam/discrete/DiscreteLookupDAG.h>
 #include <gtsam/discrete/DiscreteValues.h>
 
+#include <iterator>
 #include <string>
 #include <utility>
+#include <cassert>
 
 using std::pair;
 using std::vector;
@@ -106,7 +108,7 @@ DiscreteLookupDAG DiscreteLookupDAG::FromBayesNet(
   DiscreteLookupDAG dag;
   for (auto&& conditional : bayesNet) {
     if (auto lookupTable =
-            boost::dynamic_pointer_cast<DiscreteLookupTable>(conditional)) {
+            std::dynamic_pointer_cast<DiscreteLookupTable>(conditional)) {
       dag.push_back(lookupTable);
     } else {
       throw std::runtime_error(
@@ -118,8 +120,11 @@ DiscreteLookupDAG DiscreteLookupDAG::FromBayesNet(
 
 DiscreteValues DiscreteLookupDAG::argmax(DiscreteValues result) const {
   // Argmax each node in turn in topological sort order (parents first).
-  for (auto lookupTable : boost::adaptors::reverse(*this))
-    lookupTable->argmaxInPlace(&result);
+  for (auto it = std::make_reverse_iterator(end());
+       it != std::make_reverse_iterator(begin()); ++it) {
+    // dereference to get the sharedFactor to the lookup table
+    (*it)->argmaxInPlace(&result);
+  }
   return result;
 }
 /* ************************************************************************** */

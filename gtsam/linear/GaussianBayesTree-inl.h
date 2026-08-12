@@ -43,7 +43,7 @@ double logDeterminant(const typename BAYESTREE::sharedClique& clique) {
   double result = 0.0;
 
   // this clique
-  result += clique->conditional()->R().diagonal().unaryExpr(std::ptr_fun<double,double>(log)).sum();
+  result += clique->conditional()->logDeterminant();
 
   // sum of children
   for(const typename BAYESTREE::sharedClique& child: clique->children_)

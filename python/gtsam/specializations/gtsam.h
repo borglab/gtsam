@@ -11,10 +11,14 @@
  * and saves one copy operation.
  */
 
-#ifdef GTSAM_ALLOCATOR_TBB
-py::bind_vector<std::vector<gtsam::Key, tbb::tbb_allocator<gtsam::Key> > >(m_, "KeyVector");
-py::implicitly_convertible<py::list, std::vector<gtsam::Key, tbb::tbb_allocator<gtsam::Key> > >();
-#else
-py::bind_vector<std::vector<gtsam::Key> >(m_, "KeyVector");
-py::implicitly_convertible<py::list, std::vector<gtsam::Key> >();
-#endif
+/*
+ * Custom Pybind11 module for the Mersenne-Twister PRNG object
+ * `std::mt19937_64`.
+ * This can be invoked with `gtsam.MT19937()` and passed
+ * wherever a rng pointer is expected.
+ */
+#include <random>
+py::class_<std::mt19937_64>(m_, "MT19937")
+    .def(py::init<>())
+    .def(py::init<std::mt19937_64::result_type>())
+    .def("__call__", &std::mt19937_64::operator());

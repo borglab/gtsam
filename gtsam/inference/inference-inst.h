@@ -19,7 +19,6 @@
 
 #pragma once
 
-#include <boost/shared_ptr.hpp>
 #include <utility>
 
 #include <gtsam/base/treeTraversal-inst.h>

@@ -1,1 +1,1 @@
-install(FILES metis.h DESTINATION include/gtsam/3rdparty/metis)
+install(FILES metis.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam/3rdparty/metis)

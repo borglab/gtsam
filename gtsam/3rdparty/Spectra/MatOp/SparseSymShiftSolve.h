@@ -1,11 +1,11 @@
-// Copyright (C) 2016-2019 Yixuan Qiu <yixuan.qiu@cos.name>
+// Copyright (C) 2016-2025 Yixuan Qiu <yixuan.qiu@cos.name>
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-#ifndef SPARSE_SYM_SHIFT_SOLVE_H
-#define SPARSE_SYM_SHIFT_SOLVE_H
+#ifndef SPECTRA_SPARSE_SYM_SHIFT_SOLVE_H
+#define SPECTRA_SPARSE_SYM_SHIFT_SOLVE_H
 
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
@@ -21,19 +21,33 @@ namespace Spectra {
 /// i.e., calculating \f$y=(A-\sigma I)^{-1}x\f$ for any real \f$\sigma\f$ and
 /// vector \f$x\f$. It is mainly used in the SymEigsShiftSolver eigen solver.
 ///
-template <typename Scalar, int Uplo = Eigen::Lower, int Flags = 0, typename StorageIndex = int>
+/// \tparam Scalar_      The element type of the matrix, for example,
+///                      `float`, `double`, and `long double`.
+/// \tparam Uplo         Either `Eigen::Lower` or `Eigen::Upper`, indicating which
+///                      triangular part of the matrix is used.
+/// \tparam Flags        Either `Eigen::ColMajor` or `Eigen::RowMajor`, indicating
+///                      the storage format of the input matrix.
+/// \tparam StorageIndex The type of the indices for the sparse matrix.
+///
+template <typename Scalar_, int Uplo = Eigen::Lower, int Flags = Eigen::ColMajor, typename StorageIndex = int>
 class SparseSymShiftSolve
 {
+public:
+    ///
+    /// Element type of the matrix.
+    ///
+    using Scalar = Scalar_;
+
 private:
-    typedef Eigen::Index Index;
-    typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
-    typedef Eigen::Map<const Vector> MapConstVec;
-    typedef Eigen::Map<Vector> MapVec;
-    typedef Eigen::SparseMatrix<Scalar, Flags, StorageIndex> SparseMatrix;
-    typedef const Eigen::Ref<const SparseMatrix> ConstGenericSparseMatrix;
+    using Index = Eigen::Index;
+    using Vector = Eigen::Matrix<Scalar, Eigen::Dynamic, 1>;
+    using MapConstVec = Eigen::Map<const Vector>;
+    using MapVec = Eigen::Map<Vector>;
+    using SparseMatrix = Eigen::SparseMatrix<Scalar, Flags, StorageIndex>;
+    using ConstGenericSparseMatrix = const Eigen::Ref<const SparseMatrix>;
 
     ConstGenericSparseMatrix m_mat;
-    const int m_n;
+    const Index m_n;
     Eigen::SparseLU<SparseMatrix> m_solver;
 
 public:
@@ -44,9 +58,14 @@ public:
     /// `Eigen::SparseMatrix<Scalar, ...>` or its mapped version
     /// `Eigen::Map<Eigen::SparseMatrix<Scalar, ...> >`.
     ///
-    SparseSymShiftSolve(ConstGenericSparseMatrix& mat) :
+    template <typename Derived>
+    SparseSymShiftSolve(const Eigen::SparseMatrixBase<Derived>& mat) :
         m_mat(mat), m_n(mat.rows())
     {
+        static_assert(
+            static_cast<int>(Derived::PlainObject::IsRowMajor) == static_cast<int>(SparseMatrix::IsRowMajor),
+            "SparseSymShiftSolve: the \"Flags\" template parameter does not match the input matrix (Eigen::ColMajor/Eigen::RowMajor)");
+
         if (mat.rows() != mat.cols())
             throw std::invalid_argument("SparseSymShiftSolve: matrix must be square");
     }
@@ -63,7 +82,7 @@ public:
     ///
     /// Set the real shift \f$\sigma\f$.
     ///
-    void set_shift(Scalar sigma)
+    void set_shift(const Scalar& sigma)
     {
         SparseMatrix mat = m_mat.template selfadjointView<Uplo>();
         SparseMatrix identity(m_n, m_n);
@@ -92,4 +111,4 @@ public:
 
 }  // namespace Spectra
 
-#endif  // SPARSE_SYM_SHIFT_SOLVE_H
+#endif  // SPECTRA_SPARSE_SYM_SHIFT_SOLVE_H

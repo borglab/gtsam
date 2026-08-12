@@ -25,7 +25,7 @@ bool SimWall2D::equals(const SimWall2D& other, double tol) const {
 }
 
 /* ************************************************************************* */
-bool SimWall2D::intersects(const SimWall2D& B, boost::optional<Point2&> pt) const {
+bool SimWall2D::intersects(const SimWall2D& B, Point2* pt) const {
   const bool debug = false;
 
   const SimWall2D& A = *this;
@@ -128,7 +128,8 @@ std::pair<Pose2, bool> moveWithBounce(const Pose2& cur_pose, double step_size,
 
   // calculate angle to change by
   Rot2 dtheta = Rot2::fromAngle(angle_drift.sample()(0) + bias.theta());
-  Pose2 test_pose = cur_pose.retract((Vector(3) << step_size, 0.0, Rot2::Logmap(dtheta)(0)).finished());
+  Pose2 test_pose =
+      cur_pose.retract(Vector{{step_size, 0.0, Rot2::Logmap(dtheta)(0)}});
 
   // create a segment to use for intersection checking
   // find the closest intersection
@@ -163,7 +164,7 @@ std::pair<Pose2, bool> moveWithBounce(const Pose2& cur_pose, double step_size,
     pose = Pose2(closest_wall.reflection(cur_pose.t(), intersection), intersection + inside_bias * norm);
 
     // perturb the rotation for better exploration
-    pose = pose.retract(reflect_noise.sample());
+    pose = reflect_noise.perturb(pose);
   }
 
   return make_pair(pose, collision);

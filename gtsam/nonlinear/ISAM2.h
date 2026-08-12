@@ -32,7 +32,7 @@
 namespace gtsam {
 
 /**
- * @addtogroup ISAM2
+ * @ingroup isam2
  * Implementation of the full ISAM2 algorithm for incremental nonlinear
  * optimization.
  *
@@ -87,7 +87,7 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
   ISAM2Params params_;
 
   /** The current Dogleg Delta (trust region radius) */
-  mutable boost::optional<double> doglegDelta_;
+  mutable std::optional<double> doglegDelta_;
 
   /** Set of variables that are involved with linear factors from marginalized
    * variables and thus cannot have their linearization points changed. */
@@ -95,6 +95,9 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
 
   int update_count_;  ///< Counter incremented every update(), used to determine
                       ///< periodic relinearization
+
+  size_t nnzAfterLastReorder_;  ///< Bayes tree nnz recorded after the most
+                                ///< recent full batch reorder
 
  public:
   using This = ISAM2;                       ///< This class
@@ -152,9 +155,9 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
       const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
       const Values& newTheta = Values(),
       const FactorIndices& removeFactorIndices = FactorIndices(),
-      const boost::optional<FastMap<Key, int> >& constrainedKeys = boost::none,
-      const boost::optional<FastList<Key> >& noRelinKeys = boost::none,
-      const boost::optional<FastList<Key> >& extraReelimKeys = boost::none,
+      const std::optional<FastMap<Key, int> >& constrainedKeys = {},
+      const std::optional<FastList<Key> >& noRelinKeys = {},
+      const std::optional<FastList<Key> >& extraReelimKeys = {},
       bool force_relinearize = false);
 
   /**
@@ -198,8 +201,26 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
    */
   void marginalizeLeaves(
       const FastList<Key>& leafKeys,
-      boost::optional<FactorIndices&> marginalFactorsIndices = boost::none,
-      boost::optional<FactorIndices&> deletedFactorsIndices = boost::none);
+      FactorIndices* marginalFactorsIndices = nullptr,
+      FactorIndices* deletedFactorsIndices = nullptr);
+
+  /** An overload of marginalizeLeaves that takes references
+   * to vectors instead of pointers to vectors and passes
+   * it to the pointer version of the function.
+   */
+  template <class... OptArgs>
+      void marginalizeLeaves(const FastList<Key>& leafKeys,
+                             OptArgs&&... optArgs) {
+          // dereference the optional arguments and pass
+          // it to the pointer version
+          marginalizeLeaves(leafKeys, (&optArgs)...);
+      }
+
+  /** An added function specifically to return the marginalFactorIndices
+   * and deletedFactorIndices. Made for the python wrapping
+   * of marginalizeLeaves
+   */
+  std::pair<FactorIndices, FactorIndices> marginalizeLeavesWithIndices(const FastList<Key>& leafKeys);
 
   /// Access the current linearization point
   const Values& getLinearizationPoint() const { return theta_; }
@@ -236,8 +257,17 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
    */
   const Value& calculateEstimate(Key key) const;
 
-  /** Return marginal on any variable as a covariance matrix */
+  /// Return the marginal information matrix on any variable.
+  Matrix marginalInformation(Key key) const;
+
+  /// Return the marginal covariance matrix on any variable.
   Matrix marginalCovariance(Key key) const;
+
+  /// Return joint marginal covariance with blocks in `queryKeys` order.
+  JointMarginal jointMarginalCovariance(const KeyVector& queryKeys) const;
+
+  /// Return joint marginal information with blocks in `queryKeys` order.
+  JointMarginal jointMarginalInformation(const KeyVector& queryKeys) const;
 
   /// @name Public members for non-typical usage
   /// @{
@@ -266,6 +296,9 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
 
   const ISAM2Params& params() const { return params_; }
 
+  /** Compute the total number of nonzeros in the Bayes tree. */
+  size_t treeNnz() const;
+
   /** prints out clique statistics */
   void printStats() const { getCliqueData().getStats().print(); }
 
@@ -274,9 +307,25 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
    * about zero is \f$ -R^T d \f$.  See also gradient(const GaussianBayesNet&,
    * const VectorValues&).
    *
+   * Components associated with hard constraints are undefined and are
+   * represented as zero in the returned gradient.
+   *
    * @return A VectorValues storing the gradient.
    */
   VectorValues gradientAtZero() const;
+
+  /** @brief Predicts the updated variables for a hypothetical update.
+   * @param newFactors The factors for the hypothetical update
+   * @param newTheta The estimates for new variables in the hypothetical update
+   * @param updateParams The update params for the hypothetical update
+   * @returns The set of all affected keys, and a flag indicating if this would
+   * be a batch update
+   *
+   * NOTE: Update may mutate the mutable field delta_
+   */
+  std::pair<KeySet, bool> predictUpdateInfo(
+      const NonlinearFactorGraph& newFactors, const Values& newTheta,
+      const ISAM2UpdateParams& updateParams) const;
 
   /// @}
 
@@ -295,6 +344,17 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
       const ISAM2UpdateParams& updateParams, const FastList<Key>& affectedKeys,
       const KeySet& relinKeys);
 
+  /**
+   * @brief Perform an incremental update of the factor graph to return a new
+   * Bayes Tree with affected keys.
+   *
+   * @param updateParams Parameters for the ISAM2 update.
+   * @param relinKeys Keys of variables to relinearize.
+   * @param affectedKeys The set of keys which are affected in the update.
+   * @param affectedKeysSet [output] Affected and contaminated keys.
+   * @param orphans [output] List of orphanes cliques after elimination.
+   * @param result [output] The result of the incremental update step.
+   */
   void recalculateIncremental(const ISAM2UpdateParams& updateParams,
                               const KeySet& relinKeys,
                               const FastList<Key>& affectedKeys,
@@ -317,11 +377,12 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
   void updateDelta(bool forceFullSolve = false) const;
 
  private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & boost::serialization::base_object<BayesTree<ISAM2Clique> >(*this);
+      ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
       ar & BOOST_SERIALIZATION_NVP(theta_);
       ar & BOOST_SERIALIZATION_NVP(variableIndex_);
       ar & BOOST_SERIALIZATION_NVP(delta_);
@@ -334,6 +395,7 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
       ar & BOOST_SERIALIZATION_NVP(fixedVariables_);
       ar & BOOST_SERIALIZATION_NVP(update_count_);
   }
+#endif
 
 };  // ISAM2
 

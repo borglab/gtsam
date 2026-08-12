@@ -24,42 +24,37 @@
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/linear/GaussianBayesTree.h>
-#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/nonlinear/ISAM2.h>
+#include <gtsam/slam/SmartProjectionPoseFactor.h>
+#include "examples/SFMdata.h"
 
-#include <boost/assign/list_of.hpp> // for 'list_of()'
 #include <functional>
-#include <boost/iterator/counting_iterator.hpp>
 
 using namespace std;
 using namespace gtsam;
 
 // Convenience for named keys
 using symbol_shorthand::X;
-using symbol_shorthand::L;
 
 /* ************************************************************************* */
 TEST(DoglegOptimizer, ComputeBlend) {
   // Create an arbitrary Bayes Net
   GaussianBayesNet gbn;
-  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-      0, Vector2(1.0,2.0), (Matrix(2, 2) << 3.0,4.0,0.0,6.0).finished(),
-      3, (Matrix(2, 2) << 7.0,8.0,9.0,10.0).finished(),
-      4, (Matrix(2, 2) << 11.0,12.0,13.0,14.0).finished()));
-  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-      1, Vector2(15.0,16.0), (Matrix(2, 2) << 17.0,18.0,0.0,20.0).finished(),
-      2, (Matrix(2, 2) << 21.0,22.0,23.0,24.0).finished(),
-      4, (Matrix(2, 2) << 25.0,26.0,27.0,28.0).finished()));
-  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-      2, Vector2(29.0,30.0), (Matrix(2, 2) << 31.0,32.0,0.0,34.0).finished(),
-      3, (Matrix(2, 2) << 35.0,36.0,37.0,38.0).finished()));
-  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-      3, Vector2(39.0,40.0), (Matrix(2, 2) << 41.0,42.0,0.0,44.0).finished(),
-      4, (Matrix(2, 2) << 45.0,46.0,47.0,48.0).finished()));
-  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-      4, Vector2(49.0,50.0), (Matrix(2, 2) << 51.0,52.0,0.0,54.0).finished()));
+  gbn.emplace_shared<GaussianConditional>(
+      0, Vector2(1.0, 2.0), Matrix{{3.0, 4.0}, {0.0, 6.0}}, 3,
+      Matrix{{7.0, 8.0}, {9.0, 10.0}}, 4, Matrix{{11.0, 12.0}, {13.0, 14.0}});
+  gbn.emplace_shared<GaussianConditional>(1, Vector2(15.0, 16.0),
+                                          Matrix{{17.0, 18.0}, {0.0, 20.0}}, 2,
+                                          Matrix{{21.0, 22.0}, {23.0, 24.0}}, 4,
+                                          Matrix{{25.0, 26.0}, {27.0, 28.0}});
+  gbn.emplace_shared<GaussianConditional>(2, Vector2(29.0, 30.0),
+                                          Matrix{{31.0, 32.0}, {0.0, 34.0}}, 3,
+                                          Matrix{{35.0, 36.0}, {37.0, 38.0}});
+  gbn.emplace_shared<GaussianConditional>(3, Vector2(39.0, 40.0),
+                                          Matrix{{41.0, 42.0}, {0.0, 44.0}}, 4,
+                                          Matrix{{45.0, 46.0}, {47.0, 48.0}});
+  gbn.emplace_shared<GaussianConditional>(4, Vector2(49.0, 50.0),
+                                          Matrix{{51.0, 52.0}, {0.0, 54.0}});
 
   // Compute steepest descent point
   VectorValues xu = gbn.optimizeGradientSearch();
@@ -77,25 +72,42 @@ TEST(DoglegOptimizer, ComputeBlend) {
 }
 
 /* ************************************************************************* */
+TEST(DoglegOptimizer, ComputeBlendEdgeCases) {
+  // Test Derived from Issue #1861
+  // Evaluate ComputeBlend Behavior for edge cases where the trust region
+  // is equal in size to that of the newton step or the gradient step.
+
+  // Simulated Newton (n) and Gradient Descent (u) step vectors w/ ||n|| > ||u||
+  VectorValues::Dims dims;
+  dims[0] = 3;
+  VectorValues n(Vector3(0.3233546123, -0.2133456123, 0.3664345632), dims);
+  VectorValues u(Vector3(0.0023456342, -0.04535687, 0.087345661212), dims);
+  
+  // Test upper edge case where trust region is equal to magnitude of newton step
+  EXPECT(assert_equal(n, DoglegOptimizerImpl::ComputeBlend(n.norm(), u, n, false)));
+  // Test lower edge case where trust region is equal to magnitude of gradient step 
+  EXPECT(assert_equal(u, DoglegOptimizerImpl::ComputeBlend(u.norm(), u, n, false)));
+}
+
+/* ************************************************************************* */
 TEST(DoglegOptimizer, ComputeDoglegPoint) {
   // Create an arbitrary Bayes Net
   GaussianBayesNet gbn;
-  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-      0, Vector2(1.0,2.0), (Matrix(2, 2) << 3.0,4.0,0.0,6.0).finished(),
-      3, (Matrix(2, 2) << 7.0,8.0,9.0,10.0).finished(),
-      4, (Matrix(2, 2) << 11.0,12.0,13.0,14.0).finished()));
-  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-      1, Vector2(15.0,16.0), (Matrix(2, 2) << 17.0,18.0,0.0,20.0).finished(),
-      2, (Matrix(2, 2) << 21.0,22.0,23.0,24.0).finished(),
-      4, (Matrix(2, 2) << 25.0,26.0,27.0,28.0).finished()));
-  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-      2, Vector2(29.0,30.0), (Matrix(2, 2) << 31.0,32.0,0.0,34.0).finished(),
-      3, (Matrix(2, 2) << 35.0,36.0,37.0,38.0).finished()));
-  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-      3, Vector2(39.0,40.0), (Matrix(2, 2) << 41.0,42.0,0.0,44.0).finished(),
-      4, (Matrix(2, 2) << 45.0,46.0,47.0,48.0).finished()));
-  gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-      4, Vector2(49.0,50.0), (Matrix(2, 2) << 51.0,52.0,0.0,54.0).finished()));
+  gbn.emplace_shared<GaussianConditional>(
+      0, Vector2(1.0, 2.0), Matrix{{3.0, 4.0}, {0.0, 6.0}}, 3,
+      Matrix{{7.0, 8.0}, {9.0, 10.0}}, 4, Matrix{{11.0, 12.0}, {13.0, 14.0}});
+  gbn.emplace_shared<GaussianConditional>(1, Vector2(15.0, 16.0),
+                                          Matrix{{17.0, 18.0}, {0.0, 20.0}}, 2,
+                                          Matrix{{21.0, 22.0}, {23.0, 24.0}}, 4,
+                                          Matrix{{25.0, 26.0}, {27.0, 28.0}});
+  gbn.emplace_shared<GaussianConditional>(2, Vector2(29.0, 30.0),
+                                          Matrix{{31.0, 32.0}, {0.0, 34.0}}, 3,
+                                          Matrix{{35.0, 36.0}, {37.0, 38.0}});
+  gbn.emplace_shared<GaussianConditional>(3, Vector2(39.0, 40.0),
+                                          Matrix{{41.0, 42.0}, {0.0, 44.0}}, 4,
+                                          Matrix{{45.0, 46.0}, {47.0, 48.0}});
+  gbn.emplace_shared<GaussianConditional>(4, Vector2(49.0, 50.0),
+                                          Matrix{{51.0, 52.0}, {0.0, 54.0}});
 
   // Compute dogleg point for different deltas
 
@@ -127,20 +139,58 @@ TEST(DoglegOptimizer, Iterate) {
 
   double Delta = 1.0;
   for(size_t it=0; it<10; ++it) {
-    GaussianBayesNet gbn = *fg.linearize(config)->eliminateSequential();
+    auto linearized = fg.linearize(config);
+    
     // Iterate assumes that linear error = nonlinear error at the linearization point, and this should be true
     double nonlinearError = fg.error(config);
-    double linearError = GaussianFactorGraph(gbn).error(config.zeroVectors());
+    double linearError = linearized->error(config.zeroVectors());
     DOUBLES_EQUAL(nonlinearError, linearError, 1e-5);
-//    cout << "it " << it << ", Delta = " << Delta << ", error = " << fg->error(*config) << endl;
-    VectorValues dx_u = gbn.optimizeGradientSearch();
-    VectorValues dx_n = gbn.optimize();
-    DoglegOptimizerImpl::IterationResult result = DoglegOptimizerImpl::Iterate(Delta, DoglegOptimizerImpl::SEARCH_EACH_ITERATION, dx_u, dx_n, gbn, fg, config, fg.error(config));
+    
+    auto gbn = linearized->eliminateSequential();
+    VectorValues dx_u = gbn->optimizeGradientSearch();
+    VectorValues dx_n = gbn->optimize();
+    DoglegOptimizerImpl::IterationResult result = DoglegOptimizerImpl::Iterate(
+        Delta, DoglegOptimizerImpl::SEARCH_EACH_ITERATION, dx_u, dx_n, *gbn, fg,
+        config, fg.error(config));
     Delta = result.delta;
     EXPECT(result.f_error < fg.error(config)); // Check that error decreases
+    
     Values newConfig(config.retract(result.dx_d));
     config = newConfig;
     DOUBLES_EQUAL(fg.error(config), result.f_error, 1e-5); // Check that error is correctly filled in
+  }
+}
+
+/* ************************************************************************* */
+TEST(DoglegOptimizer, IterateLineSearch) {
+  // really non-linear factor graph
+  NonlinearFactorGraph fg = example::createReallyNonlinearFactorGraph();
+
+  // config far from minimum
+  Point2 x0(3, 0);
+  Values config;
+  config.insert(X(1), x0);
+
+  for (size_t it = 0; it < 10; ++it) {
+    auto linearized = fg.linearize(config);
+
+    // Iterate assumes that linear error = nonlinear error at the linearization
+    // point, and this should be true
+    double nonlinearError = fg.error(config);
+    double linearError = linearized->error(config.zeroVectors());
+    DOUBLES_EQUAL(nonlinearError, linearError, 1e-5);
+
+    auto gbn = linearized->eliminateSequential();
+    VectorValues dx_u = gbn->optimizeGradientSearch();
+    VectorValues dx_n = gbn->optimize();
+    DoglegOptimizerImpl::IterationResult result = DoglegLineSearchImpl::Iterate(
+        {0.02, 0.5, 1.5, 1e-3, false}, dx_u, dx_n, *gbn, fg, config);
+    EXPECT(result.f_error < fg.error(config));  // Check that error decreases
+
+    Values newConfig(config.retract(result.dx_d));
+    config = newConfig;
+    DOUBLES_EQUAL(fg.error(config), result.f_error,
+                  1e-5);  // Check that error is correctly filled in
   }
 }
 
@@ -180,6 +230,175 @@ TEST(DoglegOptimizer, Constraint) {
 #else
   CHECK_EXCEPTION(optimizer2.optimize(), std::invalid_argument);
 #endif
+}
+
+/* ************************************************************************* */
+/**
+ * Test created to fix issue in ISAM2 when using the DogLegOptimizer.
+ * Originally reported by kvmanohar22 in issue #301
+ * https://github.com/borglab/gtsam/issues/301
+ *
+ * This test is based on a script provided by kvmanohar22
+ * to help reproduce the issue.
+ */
+TEST(DogLegOptimizer, VariableUpdate) {
+  // Make the typename short so it looks much cleaner
+  typedef SmartProjectionPoseFactor<Cal3_S2> SmartFactor;
+
+  // create a typedef to the camera type
+  typedef PinholePose<Cal3_S2> Camera;
+  // Define the camera calibration parameters
+  Cal3_S2::shared_ptr K(new Cal3_S2(50.0, 50.0, 0.0, 50.0, 50.0));
+
+  // Define the camera observation noise model
+  noiseModel::Isotropic::shared_ptr measurementNoise =
+      noiseModel::Isotropic::Sigma(2, 1.0);  // one pixel in u and v
+
+  // Create the set of ground-truth landmarks and poses
+  vector<Point3> points = createPoints();
+  vector<Pose3> poses = createPoses();
+
+  // Create a factor graph
+  NonlinearFactorGraph graph;
+
+  ISAM2DoglegParams doglegparams = ISAM2DoglegParams();
+  doglegparams.verbose = false;
+  ISAM2Params isam2_params;
+  isam2_params.evaluateNonlinearError = true;
+  isam2_params.relinearizeThreshold = 0.0;
+  isam2_params.enableRelinearization = true;
+  isam2_params.optimizationParams = doglegparams;
+  isam2_params.relinearizeSkip = 1;
+  ISAM2 isam2(isam2_params);
+
+  // Simulated measurements from each camera pose, adding them to the factor
+  // graph
+  unordered_map<int, SmartFactor::shared_ptr> smart_factors;
+  for (size_t j = 0; j < points.size(); ++j) {
+    // every landmark represent a single landmark, we use shared pointer to init
+    // the factor, and then insert measurements.
+    SmartFactor::shared_ptr smartfactor(new SmartFactor(measurementNoise, K));
+
+    for (size_t i = 0; i < poses.size(); ++i) {
+      // generate the 2D measurement
+      Camera camera(poses[i], K);
+      Point2 measurement = camera.project(points[j]);
+
+      // call add() function to add measurement into a single factor, here we
+      // need to add:
+      //    1. the 2D measurement
+      //    2. the corresponding camera's key
+      //    3. camera noise model
+      //    4. camera calibration
+
+      // add only first 3 measurements and update the later measurements
+      // incrementally
+      if (i < 3) smartfactor->add(measurement, i);
+    }
+
+    // insert the smart factor in the graph
+    smart_factors[j] = smartfactor;
+    graph.push_back(smartfactor);
+  }
+
+  // Add a prior on pose x0. This indirectly specifies where the origin is.
+  // 30cm std on x,y,z 0.1 rad on roll,pitch,yaw
+  noiseModel::Diagonal::shared_ptr noise =
+      noiseModel::Diagonal::Sigmas(Vector{{0.3, 0.3, 0.3, 0.1, 0.1, 0.1}});
+  graph.emplace_shared<PriorFactor<Pose3> >(0, poses[0], noise);
+
+  // Because the structure-from-motion problem has a scale ambiguity, the
+  // problem is still under-constrained. Here we add a prior on the second pose
+  // x1, so this will fix the scale by indicating the distance between x0 and
+  // x1. Because these two are fixed, the rest of the poses will be also be
+  // fixed.
+  graph.emplace_shared<PriorFactor<Pose3> >(1, poses[1],
+                                            noise);  // add directly to graph
+
+  // Create the initial estimate to the solution
+  // Intentionally initialize the variables off from the ground truth
+  Values initialEstimate;
+  Pose3 delta(Rot3::Rodrigues(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20));
+  for (size_t i = 0; i < 3; ++i)
+    initialEstimate.insert(i, poses[i].compose(delta));
+  // initialEstimate.print("Initial Estimates:\n");
+
+  // Optimize the graph and print results
+  isam2.update(graph, initialEstimate);
+  Values result = isam2.calculateEstimate();
+  // result.print("Results:\n");
+
+  // we add new measurements from this pose
+  size_t pose_idx = 3;
+
+  // Now update existing smart factors with new observations
+  for (size_t j = 0; j < points.size(); ++j) {
+    SmartFactor::shared_ptr smartfactor = smart_factors[j];
+
+    // add the 4th measurement
+    Camera camera(poses[pose_idx], K);
+    Point2 measurement = camera.project(points[j]);
+    smartfactor->add(measurement, pose_idx);
+  }
+
+  graph.resize(0);
+  initialEstimate.clear();
+
+  // update initial estimate for the new pose
+  initialEstimate.insert(pose_idx, poses[pose_idx].compose(delta));
+
+  // this should break the system
+  isam2.update(graph, initialEstimate);
+  result = isam2.calculateEstimate();
+  auto resultKeys = result.keys();
+  EXPECT(std::find(resultKeys.begin(), resultKeys.end(), pose_idx) !=
+         resultKeys.end());
+}
+
+/* ************************************************************************* */
+/**
+ * Validate computeblend when Newton delta is mis-matched with gradient delta
+ *
+ * To enable variable changes to smart factors, ISAM2 was updated to add
+ * variables before updating the delta. This however can cause a structural
+ * miss-match between dx_n and dx_u during ComputeBlend causing this test to
+ * crash with an error before the fix.
+ * ref: https://github.com/borglab/gtsam/issues/301
+ */
+TEST(DogLegOptimizer, ComputeBlend) {
+  auto model = noiseModel::Diagonal::Sigmas(Vector3(0.2, 0.2, 0.1));
+  ISAM2DoglegParams doglegparams = ISAM2DoglegParams();
+  doglegparams.initialDelta = 1e-2;
+  doglegparams.verbose = false;
+  ISAM2Params isam2_params;
+  isam2_params.evaluateNonlinearError = true;
+  isam2_params.relinearizeThreshold = 0.0;
+  isam2_params.enableRelinearization = true;
+  isam2_params.optimizationParams = doglegparams;
+  isam2_params.relinearizeSkip = 1;
+  ISAM2 isam2(isam2_params);
+
+  ISAM2UpdateParams update_params;
+  update_params.force_relinearize = true;
+
+  {
+    NonlinearFactorGraph graph;
+    graph.emplace_shared<PriorFactor<Pose2>>(0, Pose2(), model);
+    Values values;
+    values.insert(0, Pose2(5, 5, 3));
+    isam2.update(graph, values, update_params);
+  }
+  for (size_t i = 0; i < 3; i++) {
+    NonlinearFactorGraph graph;
+    graph.emplace_shared<BetweenFactor<Pose2>>(i, i + 1, Pose2(1, 0, 0), model);
+    Values values;
+    values.insert(i + 1, Pose2(i + 5, i + 5, 3));
+    isam2.update(graph, values, update_params);
+  }
+
+  // Check is trivial as test validates no runtime error
+  Values computed = isam2.calculateEstimate();
+  CHECK(computed.size() == 4);
 }
 
 /* ************************************************************************* */

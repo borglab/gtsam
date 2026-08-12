@@ -47,9 +47,9 @@ if (EIGEN3_FOUND)
 
 #     if(BUILD_btl_eigen3_adv)
 #       target_link_libraries(btl_eigen3_adv ${MKL_LIBRARIES})
-#     endif(BUILD_btl_eigen3_adv)
+#     endif()
 
-  endif(NOT BTL_NOVEC)
+  endif()
 
   btl_add_bench(btl_tiny_eigen3 btl_tiny_eigen3.cpp OFF)
 
@@ -59,7 +59,7 @@ if (EIGEN3_FOUND)
 
     if(BUILD_btl_tiny_eigen3_novec)
       btl_add_target_property(btl_tiny_eigen3_novec    COMPILE_FLAGS "-DEIGEN_DONT_VECTORIZE -DBTL_PREFIX=eigen3_tiny_novec")
-    endif(BUILD_btl_tiny_eigen3_novec)
-  endif(NOT BTL_NOVEC)
+    endif()
+  endif()
 
-endif (EIGEN3_FOUND)
+endif ()

@@ -6,10 +6,9 @@ if (GTSAM_WITH_TBB)
     # Set up variables if we're using TBB
     if(TBB_FOUND)
         set(GTSAM_USE_TBB 1)  # This will go into config.h
-
-#        if ((${TBB_VERSION} VERSION_GREATER "2021.1") OR (${TBB_VERSION} VERSION_EQUAL "2021.1"))
-#            message(FATAL_ERROR "TBB version greater than 2021.1 (oneTBB API) is not yet supported. Use an older version instead.")
-#        endif()
+        if (GTSAM_TBB_BOUNDED_MEMORY_GROWTH)
+            set(GTSAM_TBB_BOUNDED_MEMORY_GROWTH_FLAG 1)
+        endif()
 
         if ((${TBB_VERSION_MAJOR} GREATER 2020) OR (${TBB_VERSION_MAJOR} EQUAL 2020))
             set(TBB_GREATER_EQUAL_2020 1)
@@ -18,7 +17,7 @@ if (GTSAM_WITH_TBB)
         endif()
         # all definitions and link requisites will go via imported targets:
         # tbb & tbbmalloc
-        list(APPEND GTSAM_ADDITIONAL_LIBRARIES tbb tbbmalloc)
+        list(APPEND GTSAM_ADDITIONAL_LIBRARIES TBB::tbb TBB::tbbmalloc)
     else()
         set(GTSAM_USE_TBB 0)  # This will go into config.h
     endif()

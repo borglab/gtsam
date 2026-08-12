@@ -16,12 +16,10 @@
  * @author Frank Dellaert
  */
 
-#include <boost/shared_ptr.hpp>
-#include <boost/assign/std/list.hpp> // for +=
-using namespace boost::assign;
-
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam_unstable/base/BTree.h>
+
+#include <list>
 
 using namespace std;
 using namespace gtsam;
@@ -147,13 +145,12 @@ TEST( BTree, iterating )
 
   // acid iterator test
   int sum = 0;
-  for(const KeyInt& p: tree)
-sum  += p.second;
+  for (const KeyInt& p : tree) sum += p.second;
   LONGS_EQUAL(15,sum)
 
   // STL iterator test
-  list<KeyInt> expected, actual;
-  expected += p1,p2,p3,p4,p5;
+  auto expected = std::list<KeyInt> {p1, p2, p3, p4, p5};
+  std::list<KeyInt> actual;
   copy (tree.begin(),tree.end(),back_inserter(actual));
   CHECK(actual==expected)
 }
@@ -181,7 +178,7 @@ TEST( BTree, stress )
     tree = tree.add(key, value);
     LONGS_EQUAL(i,tree.size())
     CHECK(tree.find(key) == value)
-    expected += make_pair(key, value);
+    expected.emplace_back(key, value);
   }
 
   // Check height is log(N)

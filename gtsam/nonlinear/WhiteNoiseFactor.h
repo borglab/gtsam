@@ -17,6 +17,8 @@
  * @date   September 2011
  */
 
+#pragma once
+
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <cmath>
@@ -74,11 +76,11 @@ namespace gtsam {
         Key j1, Key j2) {
       double e = u - z, e2 = e * e;
       double c = 2 * logSqrt2PI - log(p) + e2 * p;
-      Vector g1 = (Vector(1) << -e * p).finished();
-      Vector g2 = (Vector(1) <<  0.5 / p - 0.5 * e2).finished();
-      Matrix G11 = (Matrix(1, 1) << p).finished();
-      Matrix G12 = (Matrix(1, 1) << e).finished();
-      Matrix G22 = (Matrix(1, 1) << 0.5 / (p * p)).finished();
+      Vector g1{{-e * p}};
+      Vector g2{{0.5 / p - 0.5 * e2}};
+      Matrix G11{{p}};
+      Matrix G12{{e}};
+      Matrix G22{{0.5 / (p * p)}};
       return HessianFactor::shared_ptr(
           new HessianFactor(j1, j2, G11, G12, g1, G22, g2, c));
     }
@@ -136,7 +138,7 @@ namespace gtsam {
      * TODO: Where is this used? should disappear.
      */
     virtual Vector unwhitenedError(const Values& x) const {
-      return (Vector(1) << std::sqrt(2 * error(x))).finished();
+      return Vector{{std::sqrt(2 * error(x))}};
     }
 
     /**
@@ -153,7 +155,7 @@ namespace gtsam {
     /// @{
 
     /// linearize returns a Hessianfactor that is an approximation of error(p)
-    boost::shared_ptr<GaussianFactor> linearize(const Values& x) const override {
+    std::shared_ptr<GaussianFactor> linearize(const Values& x) const override {
       double u = x.at<double>(meanKey_);
       double p = x.at<double>(precisionKey_);
       Key j1 = meanKey_;
@@ -164,7 +166,7 @@ namespace gtsam {
     // TODO: Frank commented this out for now, can it go?
     //    /// @return a deep copy of this factor
     //    gtsam::NonlinearFactor::shared_ptr clone() const override {
-    //      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    //      return std::static_pointer_cast<gtsam::NonlinearFactor>(
     //          gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
     /// @}

@@ -13,6 +13,14 @@ gtwrap_get_python_version(${WRAP_PYTHON_VERSION})
 message(STATUS "Setting Python version for wrapper")
 set(PYBIND11_PYTHON_VERSION ${WRAP_PYTHON_VERSION})
 
+if(GTWRAP_ADD_DOCSTRINGS)
+  set(GTWRAP_PYTHON_DOCS_SOURCE "${CMAKE_SOURCE_DIR}/xml")
+  message(STATUS "Python docstring generation is on. XML source: '${GTWRAP_PYTHON_DOCS_SOURCE}'")
+else()
+  message(STATUS "Python docstring generation is off.")
+  set(GTWRAP_PYTHON_DOCS_SOURCE "")
+endif()
+
 # User-friendly Pybind11 wrapping and installing function. Builds a Pybind11
 # module from the provided interface_headers. For example, for the interface
 # header gtsam.h, this will build the wrap module 'gtsam_py.cc'.
@@ -29,7 +37,7 @@ set(PYBIND11_PYTHON_VERSION ${WRAP_PYTHON_VERSION})
 # module_template: The template file (.tpl) from which to generate the Pybind11 module.
 # libs: Libraries to link with.
 # dependencies: Dependencies which need to be built before the wrapper.
-# use_boost (optional): Flag indicating whether to include Boost.
+# use_boost_serialization (optional): Flag indicating whether to include Boost.
 function(
   pybind_wrap
   target
@@ -42,12 +50,12 @@ function(
   libs
   dependencies)
   set(ExtraMacroArgs ${ARGN})
-  list(GET ExtraMacroArgs 0 USE_BOOST)
-  if(USE_BOOST)
-    set(_WRAP_BOOST_ARG "--use-boost")
-  else(USE_BOOST)
+  list(GET ExtraMacroArgs 0 USE_BOOST_SERIALIZATION)
+  if(USE_BOOST_SERIALIZATION)
+    set(_WRAP_BOOST_ARG "--use-boost-serialization")
+  else(USE_BOOST_SERIALIZATION)
     set(_WRAP_BOOST_ARG "")
-  endif(USE_BOOST)
+  endif(USE_BOOST_SERIALIZATION)
 
   if(UNIX)
     set(GTWRAP_PATH_SEPARATOR ":")
@@ -82,6 +90,7 @@ function(
           --out "${cpp_file}"  --module_name ${module_name}
           --top_module_namespaces "${top_namespace}" --ignore ${ignore_classes}
           --template ${module_template} --is_submodule ${_WRAP_BOOST_ARG}
+          --xml_source "${GTWRAP_PYTHON_DOCS_SOURCE}"
       DEPENDS "${interface_file}" ${module_template} "${module_name}/specializations/${interface}.h" "${module_name}/preamble/${interface}.h"
       VERBATIM)
 
@@ -100,6 +109,7 @@ function(
       --out "${generated_cpp}" --module_name ${module_name}
       --top_module_namespaces "${top_namespace}" --ignore ${ignore_classes}
       --template ${module_template} ${_WRAP_BOOST_ARG}
+      --xml_source "${GTWRAP_PYTHON_DOCS_SOURCE}"
     DEPENDS "${main_interface}" ${module_template} "${module_name}/specializations/${main_interface_name}.h" "${module_name}/specializations/${main_interface_name}.h"
     VERBATIM)
 

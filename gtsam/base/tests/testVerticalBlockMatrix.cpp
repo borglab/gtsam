@@ -18,14 +18,13 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/VerticalBlockMatrix.h>
-#include <boost/assign/list_of.hpp>
 
-using namespace std;
+#include<list>
+#include<vector>
+
 using namespace gtsam;
-using boost::assign::list_of;
 
-list<size_t> L = list_of(3)(2)(1);
-vector<size_t> dimensions(L.begin(),L.end());
+const std::vector<size_t> dimensions{3, 2, 1};
 
 //*****************************************************************************
 TEST(VerticalBlockMatrix, Constructor1) {
@@ -37,13 +36,12 @@ TEST(VerticalBlockMatrix, Constructor1) {
 
 //*****************************************************************************
 TEST(VerticalBlockMatrix, Constructor2) {
-  VerticalBlockMatrix actual(dimensions,
-      (Matrix(6, 6) << 1, 2, 3, 4, 5, 6, //
-      2, 8, 9, 10, 11, 12, //
-      3, 9, 15, 16, 17, 18, //
-      4, 10, 16, 22, 23, 24, //
-      5, 11, 17, 23, 29, 30, //
-      6, 12, 18, 24, 30, 36).finished());
+  VerticalBlockMatrix actual(dimensions, Matrix6{{1, 2, 3, 4, 5, 6},       //
+                                                 {2, 8, 9, 10, 11, 12},    //
+                                                 {3, 9, 15, 16, 17, 18},   //
+                                                 {4, 10, 16, 22, 23, 24},  //
+                                                 {5, 11, 17, 23, 29, 30},  //
+                                                 {6, 12, 18, 24, 30, 36}});
   EXPECT_LONGS_EQUAL(6,actual.rows());
   EXPECT_LONGS_EQUAL(6,actual.cols());
   EXPECT_LONGS_EQUAL(3,actual.nBlocks());

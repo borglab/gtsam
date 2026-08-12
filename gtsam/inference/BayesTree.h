@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include <gtsam/inference/Key.h>
 #include <gtsam/base/FastList.h>
@@ -59,7 +59,7 @@ namespace gtsam {
    * @tparam CLIQUE The type of the clique data structure, defaults to BayesTreeClique, normally do not change this
    * as it is only used when developing special versions of BayesTree, e.g. for ISAM2.
    *
-   * \addtogroup Multifrontal
+   * \ingroup Multifrontal
    * \nosubgrouping
    */
   template<class CLIQUE>
@@ -67,21 +67,21 @@ namespace gtsam {
   {
   protected:
     typedef BayesTree<CLIQUE> This;
-    typedef boost::shared_ptr<This> shared_ptr;
+    typedef std::shared_ptr<This> shared_ptr;
 
   public:
     typedef CLIQUE Clique; ///< The clique type, normally BayesTreeClique
-    typedef boost::shared_ptr<Clique> sharedClique; ///< Shared pointer to a clique
+    typedef std::shared_ptr<Clique> sharedClique; ///< Shared pointer to a clique
     typedef Clique Node; ///< Synonym for Clique (TODO: remove)
     typedef sharedClique sharedNode; ///< Synonym for sharedClique (TODO: remove)
     typedef typename CLIQUE::ConditionalType ConditionalType;
-    typedef boost::shared_ptr<ConditionalType> sharedConditional;
+    typedef std::shared_ptr<ConditionalType> sharedConditional;
     typedef typename CLIQUE::BayesNetType BayesNetType;
-    typedef boost::shared_ptr<BayesNetType> sharedBayesNet;
+    typedef std::shared_ptr<BayesNetType> sharedBayesNet;
     typedef typename CLIQUE::FactorType FactorType;
-    typedef boost::shared_ptr<FactorType> sharedFactor;
+    typedef std::shared_ptr<FactorType> sharedFactor;
     typedef typename CLIQUE::FactorGraphType FactorGraphType;
-    typedef boost::shared_ptr<FactorGraphType> sharedFactorGraph;
+    typedef std::shared_ptr<FactorGraphType> sharedFactorGraph;
     typedef typename FactorGraphType::Eliminate Eliminate;
     typedef typename CLIQUE::EliminationTraitsType EliminationTraitsType;
 
@@ -113,16 +113,20 @@ namespace gtsam {
 
     /// @}
 
+    /** Destructor */
+    ~BayesTree(); 
+
     /** Assignment operator */
     This& operator=(const This& other);
 
+  public:
+  
     /// @name Testable
     /// @{
 
     /** check equality */
     bool equals(const This& other, double tol = 1e-9) const;
 
-  public:
     /** print */
     void print(const std::string& s = "",
         const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
@@ -139,7 +143,7 @@ namespace gtsam {
       return nodes_.empty();
     }
 
-    /** return nodes */
+    /** Return nodes. Each node is a clique of variables obtained after elimination. */
     const Nodes& nodes() const { return nodes_; }
 
     /** Access node by variable */
@@ -176,24 +180,38 @@ namespace gtsam {
      */
     sharedFactorGraph joint(Key j1, Key j2, const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
 
+    /** Return a joint factor graph on an arbitrary set of variables. */
+    sharedFactorGraph joint(
+        const KeyVector& keys,
+        const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
+
     /**
      * return joint on two variables as a BayesNet
      * Limitation: can only calculate joint if cliques are disjoint or one of them is root
      */
     sharedBayesNet jointBayesNet(Key j1, Key j2, const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
 
-   /// @name Graph Display
-   /// @{
+    /**
+     * Return a joint marginal Bayes net whose elimination order follows the
+     * first occurrence of each key.
+     */
+    sharedBayesNet jointBayesNet(
+        const KeyVector& keys,
+        const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
 
-   /// Output to graphviz format, stream version.
-   void dot(std::ostream& os, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+    /// @}   
+    /// @name Graph Display
+    /// @{
 
-   /// Output to graphviz format string.
-   std::string dot(
-       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+    /// Output to graphviz format, stream version.
+    void dot(std::ostream& os, const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
-   /// output to file with graphviz format.
-   void saveGraph(const std::string& filename,
+    /// Output to graphviz format string.
+    std::string dot(
+        const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
+
+    /// output to file with graphviz format.
+    void saveGraph(const std::string& filename,
                   const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
   
     /// @}
@@ -240,11 +258,21 @@ namespace gtsam {
     /** Add all cliques in this BayesTree to the specified factor graph */
     void addFactorsToGraph(FactorGraph<FactorType>* graph) const;
 
-  protected:
+    /**
+     * @brief Returns the set of keys from the tree that are affected by a
+     * update to 'keys'
+     * @param keys: The keys updated and in-turn affecting the tree
+     * @returns The set of keys from the tree that are affected
+     * @note Note: Return matches contents of BayesNet from removeTop without
+     * affecting the tree
+     */
+    gtsam::KeySet collectAffectedKeys(const gtsam::KeyVector& keys) const;
+
+   protected:
 
     /** private helper method for saving the Tree to a text file in GraphViz format */
     void dot(std::ostream &s, sharedClique clique, const KeyFormatter& keyFormatter,
-             int parentnum = 0) const;
+             size_t parentnum = 0) const;
 
     /** Gather data on a single clique */
     void getCliqueData(sharedClique clique, BayesTreeCliqueData* stats) const;
@@ -255,10 +283,16 @@ namespace gtsam {
     /** Fill the nodes index for a subtree */
     void fillNodesIndex(const sharedClique& subtree);
 
+    /// @brief Helper for collectAffectedKeys that recursively aggregates
+    /// affected keys from a path from 'clique' to the root of tree
+    void collectAffectedPathKeys(gtsam::KeySet& traversedKeys,
+                                 const sharedClique& clique) const;
+
     // Friend JunctionTree because it directly fills roots and nodes index.
     template<class BAYESTREE, class GRAPH> friend class EliminatableClusterTree;
 
    private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
@@ -266,30 +300,40 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(nodes_);
       ar & BOOST_SERIALIZATION_NVP(roots_);
     }
+#endif
 
     /// @}
 
   }; // BayesTree
 
   /* ************************************************************************* */
-  template<class CLIQUE>
-  class BayesTreeOrphanWrapper : public CLIQUE::ConditionalType
-  {
-  public:
+  template <class CLIQUE, typename = void>
+  class BayesTreeOrphanWrapper : public CLIQUE::ConditionalType {
+   public:
     typedef CLIQUE CliqueType;
     typedef typename CLIQUE::ConditionalType Base;
 
-    boost::shared_ptr<CliqueType> clique;
+    std::shared_ptr<CliqueType> clique;
 
-    BayesTreeOrphanWrapper(const boost::shared_ptr<CliqueType>& clique) :
-      clique(clique)
-    {
-      // Store parent keys in our base type factor so that eliminating those parent keys will pull
-      // this subtree into the elimination.
-      this->keys_.assign(clique->conditional()->beginParents(), clique->conditional()->endParents());
+    /**
+     * @brief Construct a new Bayes Tree Orphan Wrapper object
+     *
+     * This object stores parent keys in our base type factor so that
+     * eliminating those parent keys will pull this subtree into the
+     * elimination.
+     *
+     * @param clique Orphan clique to add for further consideration in
+     * elimination.
+     */
+    BayesTreeOrphanWrapper(const std::shared_ptr<CliqueType>& clique)
+        : clique(clique) {
+      this->keys_.assign(clique->conditional()->beginParents(),
+                         clique->conditional()->endParents());
     }
 
-    void print(const std::string& s="", const KeyFormatter& formatter = DefaultKeyFormatter) const override {
+    void print(
+        const std::string& s = "",
+        const KeyFormatter& formatter = DefaultKeyFormatter) const override {
       clique->print(s + "stored clique", formatter);
     }
   };

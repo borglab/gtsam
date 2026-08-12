@@ -8,6 +8,7 @@
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 #include "sparse.h"
+#include "AnnoyingScalar.h"
 
 template<typename T>
 typename Eigen::internal::enable_if<(T::Flags&RowMajorBit)==RowMajorBit, typename T::RowXpr>::type
@@ -31,6 +32,7 @@ template<typename SparseMatrixType> void sparse_block(const SparseMatrixType& re
   const Index outer = ref.outerSize();
 
   typedef typename SparseMatrixType::Scalar Scalar;
+  typedef typename SparseMatrixType::RealScalar RealScalar;
   typedef typename SparseMatrixType::StorageIndex StorageIndex;
 
   double density = (std::max)(8./(rows*cols), 0.01);
@@ -164,14 +166,14 @@ template<typename SparseMatrixType> void sparse_block(const SparseMatrixType& re
     {
       VERIFY(j==numext::real(m3.innerVector(j).nonZeros()));
       if(j>0)
-        VERIFY(j==numext::real(m3.innerVector(j).lastCoeff()));
+        VERIFY(RealScalar(j)==numext::real(m3.innerVector(j).lastCoeff()));
     }
     m3.makeCompressed();
     for(Index j=0; j<(std::min)(outer, inner); ++j)
     {
       VERIFY(j==numext::real(m3.innerVector(j).nonZeros()));
       if(j>0)
-        VERIFY(j==numext::real(m3.innerVector(j).lastCoeff()));
+        VERIFY(RealScalar(j)==numext::real(m3.innerVector(j).lastCoeff()));
     }
 
     VERIFY(m3.innerVector(j0).nonZeros() == m3.transpose().innerVector(j0).nonZeros());
@@ -288,7 +290,7 @@ template<typename SparseMatrixType> void sparse_block(const SparseMatrixType& re
   }
 }
 
-void test_sparse_block()
+EIGEN_DECLARE_TEST(sparse_block)
 {
   for(int i = 0; i < g_repeat; i++) {
     int r = Eigen::internal::random<int>(1,200), c = Eigen::internal::random<int>(1,200);
@@ -313,5 +315,9 @@ void test_sparse_block()
     
     CALL_SUBTEST_4(( sparse_block(SparseMatrix<double,ColMajor,short int>(short(r), short(c))) ));
     CALL_SUBTEST_4(( sparse_block(SparseMatrix<double,RowMajor,short int>(short(r), short(c))) ));
+#ifndef EIGEN_TEST_ANNOYING_SCALAR_DONT_THROW
+    AnnoyingScalar::dont_throw = true;
+#endif
+    CALL_SUBTEST_5((  sparse_block(SparseMatrix<AnnoyingScalar>(r,c)) ));
   }
 }

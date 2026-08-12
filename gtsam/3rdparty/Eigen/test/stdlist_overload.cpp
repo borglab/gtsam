@@ -44,10 +44,10 @@ void set(Container & c, Position position, const Value & value)
 template<typename MatrixType>
 void check_stdlist_matrix(const MatrixType& m)
 {
-  typename MatrixType::Index rows = m.rows();
-  typename MatrixType::Index cols = m.cols();
+  Index rows = m.rows();
+  Index cols = m.cols();
   MatrixType x = MatrixType::Random(rows,cols), y = MatrixType::Random(rows,cols);
-  std::list<MatrixType> v(10, MatrixType(rows,cols)), w(20, y);
+  std::list<MatrixType> v(10, MatrixType::Zero(rows,cols)), w(20, y);
   typename std::list<MatrixType>::iterator itv = get(v, 5);
   typename std::list<MatrixType>::iterator itw = get(w, 6);
   *itv = x;
@@ -86,8 +86,8 @@ template<typename TransformType>
 void check_stdlist_transform(const TransformType&)
 {
   typedef typename TransformType::MatrixType MatrixType;
-  TransformType x(MatrixType::Random()), y(MatrixType::Random());
-  std::list<TransformType> v(10), w(20, y);
+  TransformType x(MatrixType::Random()), y(MatrixType::Random()), ti=TransformType::Identity();
+  std::list<TransformType> v(10,ti), w(20, y);
   typename std::list<TransformType>::iterator itv = get(v, 5);
   typename std::list<TransformType>::iterator itw = get(w, 6);
   *itv = x;
@@ -103,7 +103,7 @@ void check_stdlist_transform(const TransformType&)
     ++itw;
   }
 
-  v.resize(21);
+  v.resize(21, ti);
   set(v, 20, x);
   VERIFY_IS_APPROX(*get(v, 20), x);
   v.resize(22,y);
@@ -126,8 +126,8 @@ template<typename QuaternionType>
 void check_stdlist_quaternion(const QuaternionType&)
 {
   typedef typename QuaternionType::Coefficients Coefficients;
-  QuaternionType x(Coefficients::Random()), y(Coefficients::Random());
-  std::list<QuaternionType> v(10), w(20, y);
+  QuaternionType x(Coefficients::Random()), y(Coefficients::Random()), qi=QuaternionType::Identity();
+  std::list<QuaternionType> v(10,qi), w(20, y);
   typename std::list<QuaternionType>::iterator itv = get(v, 5);
   typename std::list<QuaternionType>::iterator itw = get(w, 6);
   *itv = x;
@@ -143,7 +143,7 @@ void check_stdlist_quaternion(const QuaternionType&)
     ++itw;
   }
 
-  v.resize(21);
+  v.resize(21,qi);
   set(v, 20, x);
   VERIFY_IS_APPROX(*get(v, 20), x);
   v.resize(22,y);
@@ -162,7 +162,7 @@ void check_stdlist_quaternion(const QuaternionType&)
   }
 }
 
-void test_stdlist_overload()
+EIGEN_DECLARE_TEST(stdlist_overload)
 {
   // some non vectorizable fixed sizes
   CALL_SUBTEST_1(check_stdlist_matrix(Vector2f()));

@@ -67,7 +67,7 @@ struct GTSAM_EXPORT SubgraphSolverParameters
  *
  *  LevenbergMarquardtParams parameters;
  *  parameters.linearSolverType = NonlinearOptimizerParams::CONJUGATE_GRADIENT;
- *  parameters.iterativeParams = boost::make_shared<SubgraphSolverParameters>();
+ *  parameters.iterativeParams = std::make_shared<SubgraphSolverParameters>();
  *  LevenbergMarquardtOptimizer optimizer(graph, initialEstimate, parameters);
  *  Values result = optimizer.optimize();
  *
@@ -79,7 +79,7 @@ class GTSAM_EXPORT SubgraphSolver : public IterativeSolver {
 
  protected:
   Parameters parameters_;
-  boost::shared_ptr<SubgraphPreconditioner> pc_;  ///< preconditioner object
+  std::shared_ptr<SubgraphPreconditioner> pc_;  ///< preconditioner object
 
  public:
   /// @name Constructors

@@ -12,14 +12,14 @@
 #include <Eigen/IterativeLinearSolvers>
 #include <unsupported/Eigen/IterativeSolvers>
 
-template<typename T, typename I> void test_incomplete_cholesky_T()
+template<typename T, typename I_> void test_incomplete_cholesky_T()
 {
-  typedef SparseMatrix<T,0,I> SparseMatrixType;
-  ConjugateGradient<SparseMatrixType, Lower, IncompleteCholesky<T, Lower, AMDOrdering<I> > >        cg_illt_lower_amd;
-  ConjugateGradient<SparseMatrixType, Lower, IncompleteCholesky<T, Lower, NaturalOrdering<I> > >    cg_illt_lower_nat;
-  ConjugateGradient<SparseMatrixType, Upper, IncompleteCholesky<T, Upper, AMDOrdering<I> > >        cg_illt_upper_amd;
-  ConjugateGradient<SparseMatrixType, Upper, IncompleteCholesky<T, Upper, NaturalOrdering<I> > >    cg_illt_upper_nat;
-  ConjugateGradient<SparseMatrixType, Upper|Lower, IncompleteCholesky<T, Lower, AMDOrdering<I> > >  cg_illt_uplo_amd;
+  typedef SparseMatrix<T,0,I_> SparseMatrixType;
+  ConjugateGradient<SparseMatrixType, Lower, IncompleteCholesky<T, Lower, AMDOrdering<I_> > >        cg_illt_lower_amd;
+  ConjugateGradient<SparseMatrixType, Lower, IncompleteCholesky<T, Lower, NaturalOrdering<I_> > >    cg_illt_lower_nat;
+  ConjugateGradient<SparseMatrixType, Upper, IncompleteCholesky<T, Upper, AMDOrdering<I_> > >        cg_illt_upper_amd;
+  ConjugateGradient<SparseMatrixType, Upper, IncompleteCholesky<T, Upper, NaturalOrdering<I_> > >    cg_illt_upper_nat;
+  ConjugateGradient<SparseMatrixType, Upper|Lower, IncompleteCholesky<T, Lower, AMDOrdering<I_> > >  cg_illt_uplo_amd;
   
 
   CALL_SUBTEST( check_sparse_spd_solving(cg_illt_lower_amd) );
@@ -29,14 +29,10 @@ template<typename T, typename I> void test_incomplete_cholesky_T()
   CALL_SUBTEST( check_sparse_spd_solving(cg_illt_uplo_amd) );
 }
 
-void test_incomplete_cholesky()
+template<int>
+void bug1150()
 {
-  CALL_SUBTEST_1(( test_incomplete_cholesky_T<double,int>() ));
-  CALL_SUBTEST_2(( test_incomplete_cholesky_T<std::complex<double>, int>() ));
-  CALL_SUBTEST_3(( test_incomplete_cholesky_T<double,long int>() ));
-
-#ifdef EIGEN_TEST_PART_1
-    // regression for bug 1150
+  // regression for bug 1150
   for(int N = 1; N<20; ++N)
   {
     Eigen::MatrixXd b( N, N );
@@ -61,5 +57,13 @@ void test_incomplete_cholesky()
     VERIFY(solver.preconditioner().info() == Eigen::Success);
     VERIFY(solver.info() == Eigen::Success);
   }
-#endif
+}
+
+EIGEN_DECLARE_TEST(incomplete_cholesky)
+{
+  CALL_SUBTEST_1(( test_incomplete_cholesky_T<double,int>() ));
+  CALL_SUBTEST_2(( test_incomplete_cholesky_T<std::complex<double>, int>() ));
+  CALL_SUBTEST_3(( test_incomplete_cholesky_T<double,long int>() ));
+
+  CALL_SUBTEST_1(( bug1150<0>() ));
 }

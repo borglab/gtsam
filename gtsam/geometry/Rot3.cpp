@@ -19,16 +19,23 @@
  * @author  Varun Agrawal
  */
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/SO3.h>
-#include <boost/math/constants/constants.hpp>
 
+#include <cassert>
 #include <cmath>
 #include <random>
 
 using namespace std;
 
 namespace gtsam {
+
+/* ************************************************************************* */
+bool Rot3::IsValid(const Matrix3& R, double tol) {
+  return (R.transpose() * R - Matrix3::Identity()).norm() <= tol &&
+         R.determinant() > 0;
+}
 
 /* ************************************************************************* */
 void Rot3::print(const std::string& s) const {
@@ -121,7 +128,7 @@ Unit3 Rot3::unrotate(const Unit3& p,
     OptionalJacobian<2,3> HR, OptionalJacobian<2,2> Hp) const {
   Matrix32 Dp;
   Unit3 q = Unit3(unrotate(p.point3(Dp)));
-  if (Hp) *Hp = q.basis().transpose() * matrix().transpose () * Dp;
+  if (Hp) *Hp = q.basis().transpose() * matrix().transpose() * Dp;
   if (HR) *HR = q.basis().transpose() * q.skew();
   return q;
 }
@@ -138,14 +145,14 @@ Point3 Rot3::unrotate(const Point3& p, OptionalJacobian<3,3> H1,
   const Matrix3& Rt = transpose();
   Point3 q(Rt * p); // q = Rt*p
   const double wx = q.x(), wy = q.y(), wz = q.z();
-  if (H1)
-    *H1 << 0.0, -wz, +wy, +wz, 0.0, -wx, -wy, +wx, 0.0;
+  if (H1) *H1 = Matrix3{{0.0, -wz, +wy}, {+wz, 0.0, -wx}, {-wy, +wx, 0.0}};
   if (H2)
     *H2 = Rt;
   return q;
 }
 
 /* ************************************************************************* */
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 Point3 Rot3::column(int index) const{
   if(index == 3)
     return r3();
@@ -156,6 +163,7 @@ Point3 Rot3::column(int index) const{
   else
     throw invalid_argument("Argument to Rot3::column must be 1, 2, or 3");
 }
+#endif
 
 /* ************************************************************************* */
 Vector3 Rot3::xyz(OptionalJacobian<3, 3> H) const {
@@ -170,13 +178,13 @@ Vector3 Rot3::xyz(OptionalJacobian<3, 3> H) const {
 #endif
 
     Matrix39 qHm;
-    boost::tie(I, q) = RQ(m, qHm);
+    std::tie(I, q) = RQ(m, qHm);
 
     // TODO : Explore whether this expression can be optimized as both
     // qHm and mH are super-sparse
     *H = qHm * mH;
   } else
-    boost::tie(I, q) = RQ(matrix());
+    std::tie(I, q) = RQ(matrix());
   return q;
 }
 
@@ -225,17 +233,6 @@ double Rot3::yaw(OptionalJacobian<1, 3> H) const {
   } else
     y = xyz()(2);
   return y;
-}
-
-/* ************************************************************************* */
-Vector Rot3::quaternion() const {
-  gtsam::Quaternion q = toQuaternion();
-  Vector v(4);
-  v(0) = q.w();
-  v(1) = q.x();
-  v(2) = q.y();
-  v(3) = q.z();
-  return v;
 }
 
 /* ************************************************************************* */
@@ -292,8 +289,8 @@ pair<Matrix3, Vector3> RQ(const Matrix3& A, OptionalJacobian<3, 9> H) {
     (*H)(1, 8) = yHb22 * cx;
 
     // Next, calculate the derivate of z. We have
-    // c20 = a10 * cy + a11 * sx * sy + a12 * cx * sy
-    // c22 = a11 * cx - a12 * sx
+    // c10 = a10 * cy + a11 * sx * sy + a12 * cx * sy
+    // c11 = a11 * cx - a12 * sx
     const auto c10Hx = (A(1, 1) * cx - A(1, 2) * sx) * sy;
     const auto c10Hy = A(1, 2) * cx * cy + A(1, 1) * cy * sx - A(1, 0) * sy;
     Vector9 c10HA = c10Hx * H->row(0) + c10Hy * H->row(1);
@@ -328,4 +325,3 @@ Rot3 Rot3::slerp(double t, const Rot3& other) const {
 /* ************************************************************************* */
 
 } // namespace gtsam
-

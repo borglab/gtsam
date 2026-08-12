@@ -17,6 +17,7 @@
 
 #include <gtsam_unstable/nonlinear/LinearizedFactor.h>
 #include <iostream>
+#include <cassert>
 
 namespace gtsam {
 
@@ -68,8 +69,9 @@ void LinearizedJacobianFactor::print(const std::string& s, const KeyFormatter& k
     std::cout << keyFormatter(key) << " ";
   std::cout << std::endl;
 
-  for(const_iterator key=begin(); key!=end(); ++key)
-    std::cout << boost::format("A[%1%]=\n")%keyFormatter(*key) << A(*key) << std::endl;
+  for(const_iterator key=begin(); key!=end(); ++key) {
+    std::cout << "A[" << keyFormatter(*key) << "]=\n" << A(*key) << std::endl;
+  }
   std::cout << "b=\n" << b() << std::endl;
 
   lin_points_.print("Linearization Point: ");
@@ -99,7 +101,7 @@ double LinearizedJacobianFactor::error(const Values& c) const {
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<GaussianFactor>
+std::shared_ptr<GaussianFactor>
 LinearizedJacobianFactor::linearize(const Values& c) const {
 
   // Create the 'terms' data structure for the Jacobian constructor
@@ -111,7 +113,7 @@ LinearizedJacobianFactor::linearize(const Values& c) const {
   // compute rhs
   Vector b = -error_vector(c);
 
-  return boost::shared_ptr<GaussianFactor>(new JacobianFactor(terms, b, noiseModel::Unit::Create(dim())));
+  return std::shared_ptr<GaussianFactor>(new JacobianFactor(terms, b, noiseModel::Unit::Create(dim())));
 }
 
 /* ************************************************************************* */
@@ -192,13 +194,13 @@ double LinearizedHessianFactor::error(const Values& c) const {
   // error 0.5*(f - 2*x'*g + x'*G*x)
   double f = constantTerm();
   double xtg = dx.dot(linearTerm());
-  double xGx = dx.transpose() * squaredTerm() * dx;
+  double xGx = dx.dot(squaredTerm() * dx);
 
   return 0.5 * (f - 2.0 * xtg +  xGx);
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<GaussianFactor>
+std::shared_ptr<GaussianFactor>
 LinearizedHessianFactor::linearize(const Values& c) const {
 
   // Construct an error vector in key-order from the Values
@@ -214,7 +216,7 @@ LinearizedHessianFactor::linearize(const Values& c) const {
 
   // f2 = f1 - 2*dx'*g1 + dx'*G1*dx
   //newInfo(this->size(), this->size())(0,0) += -2*dx.dot(linearTerm()) + dx.transpose() * squaredTerm().selfadjointView<Eigen::Upper>() * dx;
-  double f = constantTerm() - 2*dx.dot(linearTerm()) + dx.transpose() * squaredTerm() * dx;
+  double f = constantTerm() - 2*dx.dot(linearTerm()) + dx.dot(squaredTerm() * dx);
 
   // g2 = g1 - G1*dx
   //newInfo.rangeColumn(0, this->size(), this->size(), 0) -= squaredTerm().selfadjointView<Eigen::Upper>() * dx;
@@ -238,8 +240,8 @@ LinearizedHessianFactor::linearize(const Values& c) const {
   }
 
   // Create a Hessian Factor from the modified info matrix
-  //return boost::shared_ptr<GaussianFactor>(new HessianFactor(js, newInfo));
-  return boost::shared_ptr<GaussianFactor>(new HessianFactor(keys(), Gs, gs, f));
+  //return std::shared_ptr<GaussianFactor>(new HessianFactor(js, newInfo));
+  return std::shared_ptr<GaussianFactor>(new HessianFactor(keys(), Gs, gs, f));
 }
 
 } // \namespace aspn

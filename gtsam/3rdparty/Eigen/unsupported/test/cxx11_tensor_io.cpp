@@ -119,7 +119,7 @@ static void test_output_const()
 }
 
 
-void test_cxx11_tensor_io()
+EIGEN_DECLARE_TEST(cxx11_tensor_io)
 {
   CALL_SUBTEST(test_output_0d<ColMajor>());
   CALL_SUBTEST(test_output_0d<RowMajor>());

@@ -20,8 +20,11 @@
 
 #pragma once
 
-#include <gtsam/geometry/Unit3.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Unit3.h>
+
 #include <string>
 
 namespace gtsam {
@@ -39,9 +42,7 @@ private:
   double d_;    ///< The perpendicular distance to this plane
 
 public:
-  enum {
-    dimension = 3
-  };
+  inline constexpr static auto dimension = 3;
 
   /// @name Constructors
   /// @{
@@ -87,8 +88,8 @@ public:
    * @return the transformed plane
    */
   OrientedPlane3 transform(const Pose3& xr,
-                           OptionalJacobian<3, 3> Hp = boost::none,
-                           OptionalJacobian<3, 6> Hr = boost::none) const;
+                           OptionalJacobian<3, 3> Hp = {},
+                           OptionalJacobian<3, 6> Hr = {}) const;
 
   /** Computes the error between the two planes, with derivatives.
    *  This uses Unit3::errorVector, as opposed to the other .error() in this
@@ -98,8 +99,8 @@ public:
    * @param other the other plane
    */
   Vector3 errorVector(const OrientedPlane3& other,
-                      OptionalJacobian<3, 3> H1 = boost::none,
-                      OptionalJacobian<3, 3> H2 = boost::none) const;
+                      OptionalJacobian<3, 3> H1 = {},
+                      OptionalJacobian<3, 3> H2 = {}) const;
 
   /// Dimensionality of tangent space = 3 DOF
   inline static size_t Dim() {
@@ -113,7 +114,7 @@ public:
 
   /// The retract function
   OrientedPlane3 retract(const Vector3& v,
-                        OptionalJacobian<3, 3> H = boost::none) const;
+                        OptionalJacobian<3, 3> H = {}) const;
 
   /// The local coordinates function
   Vector3 localCoordinates(const OrientedPlane3& s) const;
@@ -125,16 +126,16 @@ public:
   }
 
   /// Return the normal
-  inline Unit3 normal() const {
+  inline Unit3 normal(OptionalJacobian<2, 3> H = {}) const {
+    if (H) *H << I_2x2, Z_2x1;
     return n_;
   }
 
   /// Return the perpendicular distance to the origin
-  inline double distance() const {
+  inline double distance(OptionalJacobian<1, 3> H = {}) const {
+    if (H) *H = Matrix13{{0, 0, 1}};
     return d_;
   }
-
-  /// @}
 };
 
 template<> struct traits<OrientedPlane3> : public internal::Manifold<
@@ -146,4 +147,3 @@ OrientedPlane3> {
 };
 
 }  // namespace gtsam
-

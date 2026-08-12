@@ -18,7 +18,10 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/base/Lie.h>
+
+#include <cassert>
 
 namespace gtsam {
 
@@ -35,7 +38,7 @@ namespace gtsam {
    * @tparam VALUE is the type of variable the prior effects
    */
   template<class VALUE>
-  class PartialPriorFactor: public NoiseModelFactor1<VALUE> {
+  class PartialPriorFactor: public NoiseModelFactorN<VALUE> {
 
   public:
     typedef VALUE T;
@@ -44,14 +47,11 @@ namespace gtsam {
     // Concept checks on the variable type - currently requires Lie
     GTSAM_CONCEPT_LIE_TYPE(VALUE)
 
-    typedef NoiseModelFactor1<VALUE> Base;
+    typedef NoiseModelFactorN<VALUE> Base;
     typedef PartialPriorFactor<VALUE> This;
 
     Vector prior_;                 ///< Measurement on tangent space parameters, in compressed form.
     std::vector<size_t> indices_;  ///< Indices of the measured tangent space parameters.
-
-    /** default constructor - only use for serialization */
-    PartialPriorFactor() {}
 
     /**
      * constructor with just minimum requirements for a factor - allows more
@@ -62,13 +62,16 @@ namespace gtsam {
 
   public:
 
-    ~PartialPriorFactor() override {}
+    // Provide access to the Matrix& version of evaluateError:
+    using Base::evaluateError;
+
+    /** default constructor - only use for serialization */
+    PartialPriorFactor() {}
 
     /** Single Element Constructor: Prior on a single parameter at index 'idx' in the tangent vector.*/
-    PartialPriorFactor(Key key, size_t idx, double prior, const SharedNoiseModel& model) :
-      Base(model, key),
-      prior_((Vector(1) << prior).finished()),
-      indices_(1, idx) {
+    PartialPriorFactor(Key key, size_t idx, double prior,
+                       const SharedNoiseModel& model)
+        : Base(model, key), prior_(Vector{{prior}}), indices_(1, idx) {
       assert(model->dim() == 1);
     }
 
@@ -82,9 +85,11 @@ namespace gtsam {
       assert(model->dim() == (size_t)prior.size());
     }
 
+    ~PartialPriorFactor() override {}
+
     /// @return a deep copy of this factor
     gtsam::NonlinearFactor::shared_ptr clone() const override {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+      return std::static_pointer_cast<gtsam::NonlinearFactor>(
           gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
     /** implement functions needed for Testable */
@@ -106,19 +111,23 @@ namespace gtsam {
     /** implement functions needed to derive from Factor */
 
     /** Returns a vector of errors for the measured tangent parameters.  */
-    Vector evaluateError(const T& p, boost::optional<Matrix&> H = boost::none) const override {
-      Eigen::Matrix<double, T::dimension, T::dimension> H_local;
+    Vector evaluateError(const T& p, OptionalMatrixType H) const override {
+      // Use traits so this also works for types without static members,
+      // e.g. Point3, which is just an alias for Eigen::Vector3d (see #2413).
+      constexpr int Dim = traits<T>::dimension;
+      Eigen::Matrix<double, Dim, Dim> H_local;
 
       // If the Rot3 Cayley map is used, Rot3::LocalCoordinates will throw a runtime error
       // when asked to compute the Jacobian matrix (see Rot3M.cpp).
       #ifdef GTSAM_ROT3_EXPMAP
-      const Vector full_tangent = T::LocalCoordinates(p, H ? &H_local : nullptr);
+      const Vector full_tangent =
+          traits<T>::Local(traits<T>::Identity(), p, {}, H ? &H_local : nullptr);
       #else
-      const Vector full_tangent = T::Logmap(p, H ? &H_local : nullptr);
+      const Vector full_tangent = traits<T>::Logmap(p, H ? &H_local : nullptr);
       #endif
 
       if (H) {
-        (*H) = Matrix::Zero(indices_.size(), T::dimension);
+        (*H) = Matrix::Zero(indices_.size(), Dim);
         for (size_t i = 0; i < indices_.size(); ++i) {
           (*H).row(i) = H_local.row(indices_.at(i));
         }
@@ -137,16 +146,19 @@ namespace gtsam {
     const std::vector<size_t>& indices() const { return indices_; }
 
   private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+      // NoiseModelFactor1 instead of NoiseModelFactorN for backward compatibility
       ar & boost::serialization::make_nvp("NoiseModelFactor1",
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(prior_);
       ar & BOOST_SERIALIZATION_NVP(indices_);
       // ar & BOOST_SERIALIZATION_NVP(H_);
     }
+#endif
   }; // \class PartialPriorFactor
 
 } /// namespace gtsam

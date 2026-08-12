@@ -3,8 +3,12 @@
  * @author Alex Cunningham
  */
 
+#include <gtsam/config.h>
 #include <CppUnitLite/TestHarness.h>
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam_unstable/dynamics/VelocityConstraint.h>
 
 using namespace gtsam;
@@ -15,9 +19,9 @@ const Key x1 = 1, x2 = 2;
 const double dt = 1.0;
 
 PoseRTV origin,
-        pose1(Point3(0.5, 0.0, 0.0), Rot3::identity(), Velocity3(1.0, 0.0, 0.0)),
+        pose1(Point3(0.5, 0.0, 0.0), Rot3(), Velocity3(1.0, 0.0, 0.0)),
         pose1a(Point3(0.5, 0.0, 0.0)),
-        pose2(Point3(1.5, 0.0, 0.0), Rot3::identity(), Velocity3(1.0, 0.0, 0.0));
+        pose2(Point3(1.5, 0.0, 0.0), Rot3(), Velocity3(1.0, 0.0, 0.0));
 
 /* ************************************************************************* */
 TEST( testVelocityConstraint, trapezoidal ) {
@@ -54,6 +58,9 @@ TEST( testEulerVelocityConstraint, euler_end ) {
   EXPECT(assert_equal(Z_3x1, constraint.evaluateError(pose1, pose2), tol));
   EXPECT(assert_equal(Vector::Unit(3,0)*0.5, constraint.evaluateError(origin, pose1a), tol));
 }
+
+/* ************************************************************************* */
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

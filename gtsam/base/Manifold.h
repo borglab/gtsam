@@ -22,10 +22,10 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/OptionalJacobian.h>
+#include <gtsam/base/concepts.h>
 
-#include <boost/concept_check.hpp>
-#include <boost/concept/requires.hpp>
-#include <boost/type_traits/is_base_of.hpp>
+#include <type_traits>
+#include <utility>
 
 namespace gtsam {
 
@@ -54,37 +54,46 @@ template <typename T> struct traits;
 
 namespace internal {
 
+/// Probe for a class member localCoordinates implementation with Jacobians.
+template <class C, class ChartJacobian>
+using LocalCoordinatesWithJacobians = decltype(
+    std::declval<const C&>().localCoordinates(
+        std::declval<const C&>(), std::declval<ChartJacobian>(),
+        std::declval<ChartJacobian>()));
+
+/// Probe for a class member retract implementation with Jacobians.
+template <class C, class TangentVector, class ChartJacobian>
+using RetractWithJacobians = decltype(std::declval<const C&>().retract(
+    std::declval<const TangentVector&>(), std::declval<ChartJacobian>(),
+    std::declval<ChartJacobian>()));
+
 /// Requirements on type to pass it to Manifold template below
 template<class Class>
 struct HasManifoldPrereqs {
 
-  enum { dim = Class::dimension };
+  inline constexpr static auto dim = Class::dimension;
 
   Class p, q;
   Eigen::Matrix<double, dim, 1> v;
   OptionalJacobian<dim, dim> Hp, Hq, Hv;
 
-  BOOST_CONCEPT_USAGE(HasManifoldPrereqs) {
+  GTSAM_CONCEPT_USAGE(HasManifoldPrereqs) {
     v = p.localCoordinates(q);
     q = p.retract(v);
   }
 };
 
-/// Extra manifold traits for fixed-dimension types
+/// Traits to get dimension, supporting both fixed and dynamic
 template<class Class, int N>
 struct GetDimensionImpl {
-  // Compile-time dimensionality
-  static int GetDimension(const Class&) {
-    return N;
-  }
-};
-
-/// Extra manifold traits for variable-dimension types
-template<class Class>
-struct GetDimensionImpl<Class, Eigen::Dynamic> {
-  // Run-time dimensionality
-  static int GetDimension(const Class& m) {
-    return m.dim();
+  // Get dimension at compile-time for fixed-size manifolds, and at
+  // run-time for dynamic-size manifolds.
+  static size_t GetDimension(const Class& m) {
+    if constexpr (N == Eigen::Dynamic) {
+      return m.dim();
+    } else {
+      return static_cast<size_t>(N);
+    }
   }
 };
 
@@ -95,26 +104,53 @@ template<class Class>
 struct ManifoldTraits: GetDimensionImpl<Class, Class::dimension> {
 
   // Check that Class has the necessary machinery
-  BOOST_CONCEPT_ASSERT((HasManifoldPrereqs<Class>));
+  GTSAM_CONCEPT_ASSERT(HasManifoldPrereqs<Class>);
 
   // Dimension of the manifold
-  enum { dimension = Class::dimension };
+  inline constexpr static auto dimension = Class::dimension;
 
   // Typedefs required by all manifold types.
   typedef Class ManifoldType;
   typedef manifold_tag structure_category;
   typedef Eigen::Matrix<double, dimension, 1> TangentVector;
+  typedef OptionalJacobian<dimension, dimension> ChartJacobian;
 
   // Local coordinates
   static TangentVector Local(const Class& origin, const Class& other) {
     return origin.localCoordinates(other);
   }
 
+  template <class C = Class,
+            class = LocalCoordinatesWithJacobians<C, ChartJacobian>>
+  static TangentVector Local(const Class& origin, const Class& other,
+                             ChartJacobian H1, ChartJacobian H2 = {}) {
+    return origin.localCoordinates(other, H1, H2);
+  }
+
   // Retraction back to manifold
   static Class Retract(const Class& origin, const TangentVector& v) {
     return origin.retract(v);
   }
+
+  template <class C = Class,
+            class = RetractWithJacobians<C, TangentVector, ChartJacobian>>
+  static Class Retract(const Class& origin, const TangentVector& v,
+                       ChartJacobian H1, ChartJacobian H2 = {}) {
+    return origin.retract(v, H1, H2);
+  }
 };
+
+/// Detect whether a traits type provides Local with Jacobians.
+template <class T, class = void>
+struct HasLocalJacobians : std::false_type {};
+
+template <class T>
+struct HasLocalJacobians<
+    T, std::void_t<decltype(traits<T>::Local(
+           std::declval<const T&>(), std::declval<const T&>(),
+           std::declval<typename traits<T>::ChartJacobian>(),
+           std::declval<typename traits<T>::ChartJacobian>()))>>
+    : std::true_type {};
 
 /// Both ManifoldTraits and Testable
 template<class Class> struct Manifold: ManifoldTraits<Class>, Testable<Class> {};
@@ -123,7 +159,7 @@ template<class Class> struct Manifold: ManifoldTraits<Class>, Testable<Class> {}
 
 /// Check invariants for Manifold type
 template<typename T>
-BOOST_CONCEPT_REQUIRES(((IsTestable<T>)),(bool)) //
+GTSAM_CONCEPT_REQUIRES(IsTestable<T>, bool) //
 check_manifold_invariants(const T& a, const T& b, double tol=1e-9) {
   typename traits<T>::TangentVector v0 = traits<T>::Local(a,a);
   typename traits<T>::TangentVector v = traits<T>::Local(a,b);
@@ -137,16 +173,21 @@ class IsManifold {
 
 public:
 
-  typedef typename traits<T>::structure_category structure_category_tag;
-  static const int dim = traits<T>::dimension;
-  typedef typename traits<T>::ManifoldType ManifoldType;
-  typedef typename traits<T>::TangentVector TangentVector;
+  using structure_category_tag = typename traits<T>::structure_category;
+  static inline constexpr int dim = traits<T>::dimension;
+  using ManifoldType = typename traits<T>::ManifoldType;
+  using TangentVector = typename traits<T>::TangentVector;
+  // Concept marker: allows checking IsManifold<T>::value in templates
+  static constexpr bool value =
+    std::is_base_of_v<manifold_tag, structure_category_tag>;
 
-  BOOST_CONCEPT_USAGE(IsManifold) {
-    BOOST_STATIC_ASSERT_MSG(
-        (boost::is_base_of<manifold_tag, structure_category_tag>::value),
+  GTSAM_CONCEPT_USAGE(IsManifold) {
+    static_assert(
+        value,
         "This type's structure_category trait does not assert it as a manifold (or derived)");
-    BOOST_STATIC_ASSERT(TangentVector::SizeAtCompileTime == dim);
+    if constexpr (dim != Eigen::Dynamic) {
+      static_assert(TangentVector::SizeAtCompileTime == dim);
+    }
 
     // make sure Chart methods are defined
     v = traits<T>::Local(p, q);
@@ -162,10 +203,10 @@ private:
 /// Give fixed size dimension of a type, fails at compile time if dynamic
 template<typename T>
 struct FixedDimension {
-  typedef const int value_type;
-  static const int value = traits<T>::dimension;
-  BOOST_STATIC_ASSERT_MSG(value != Eigen::Dynamic,
-      "FixedDimension instantiated for dymanically-sized type.");
+  using value_type = const int;
+  static inline constexpr int value = traits<T>::dimension;
+  static_assert(value != Eigen::Dynamic,
+      "FixedDimension instantiated for dynamically-sized type.");
 };
 } // \ namespace gtsam
 

@@ -1,5 +1,5 @@
 /**
- * @file EliminatableClusterTree.h
+ * @file ClusterTree.h
  * @date Oct 8, 2013
  * @author Kai Ni
  * @author Richard Roberts
@@ -10,6 +10,8 @@
 #pragma once
 
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/FastMap.h>
+#include <gtsam/base/FastSet.h>
 #include <gtsam/base/FastVector.h>
 #include <gtsam/inference/Ordering.h>
 
@@ -26,15 +28,15 @@ class ClusterTree {
  public:
   typedef GRAPH FactorGraphType;               ///< The factor graph type
   typedef ClusterTree<GRAPH> This;             ///< This class
-  typedef boost::shared_ptr<This> shared_ptr;  ///< Shared pointer to this class
+  typedef std::shared_ptr<This> shared_ptr;  ///< Shared pointer to this class
 
   typedef typename GRAPH::FactorType FactorType;       ///< The type of factors
-  typedef boost::shared_ptr<FactorType> sharedFactor;  ///< Shared pointer to a factor
+  typedef std::shared_ptr<FactorType> sharedFactor;  ///< Shared pointer to a factor
 
   /// A Cluster is just a collection of factors
   // TODO(frank): re-factor JunctionTree so we can make members private
   struct Cluster {
-    typedef FastVector<boost::shared_ptr<Cluster> > Children;
+    typedef FastVector<std::shared_ptr<Cluster> > Children;
     Children children;  ///< sub-trees
 
     typedef Ordering Keys;
@@ -49,7 +51,7 @@ class ClusterTree {
     virtual ~Cluster() {}
 
     const Cluster& operator[](size_t i) const {
-      return *(children[i]);
+      return *(children.at(i));
     }
 
     /// Construct from factors associated with a single key
@@ -68,7 +70,7 @@ class ClusterTree {
     }
 
     /// Add a child cluster
-    void addChild(const boost::shared_ptr<Cluster>& cluster) {
+    void addChild(const std::shared_ptr<Cluster>& cluster) {
       children.push_back(cluster);
       problemSize_ = std::max(problemSize_, cluster->problemSize_);
     }
@@ -96,14 +98,31 @@ class ClusterTree {
     /// Return a vector with nrFrontal keys for each child
     std::vector<size_t> nrFrontalsOfChildren() const;
 
+    using KeySetMap = FastMap<const Cluster*, KeySet>;
+
+    /// Return the separator keys (subtree keys minus frontals), optionally cached.
+    KeySet separatorKeys(KeySetMap* cache = nullptr) const;
+
     /// Merge in given cluster
-    void merge(const boost::shared_ptr<Cluster>& cluster);
+    void merge(const std::shared_ptr<Cluster>& cluster);
 
     /// Merge all children for which bit is set into this node
     void mergeChildren(const std::vector<bool>& merge);
+
+    /** Merge selected siblings into a new child cluster. */
+    void mergeChildrenSiblings(const std::vector<bool>& merge);
+
+    /** Merge selected children (provided as pointers) into this node. */
+    void mergeChildren(const Children& selected);
+
+    /** Merge selected siblings (provided as pointers) into a new child. */
+    void mergeChildrenSiblings(const Children& selected);
+
+    /** Convert a child-selection mask into the selected child pointers. */
+    Children childrenFromMask(const std::vector<bool>& merge) const;
   };
 
-  typedef boost::shared_ptr<Cluster> sharedCluster;  ///< Shared pointer to Cluster
+  typedef std::shared_ptr<Cluster> sharedCluster;  ///< Shared pointer to Cluster
 
   // Define Node=Cluster for compatibility with tree traversal functions
   typedef Cluster Node;
@@ -139,15 +158,14 @@ class ClusterTree {
              const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
   /// @}
-
   /// @name Advanced Interface
   /// @{
 
-  void addRoot(const boost::shared_ptr<Cluster>& cluster) {
+  void addRoot(const std::shared_ptr<Cluster>& cluster) {
     roots_.push_back(cluster);
   }
 
-  void addChildrenAsRoots(const boost::shared_ptr<Cluster>& cluster) {
+  void addChildrenAsRoots(const std::shared_ptr<Cluster>& cluster) {
     for (auto child : cluster->children)
       this->addRoot(child);
   }
@@ -162,13 +180,16 @@ class ClusterTree {
   }
 
   const Cluster& operator[](size_t i) const {
-    return *(roots_[i]);
+    return *(roots_.at(i));
   }
 
   /// @}
 
  protected:
+  ~ClusterTree();
+
   /// @name Details
+  /// @{
 
   /// Assignment operator - makes a deep copy of the tree structure, but only pointers to factors
   /// are copied, factors are not cloned.
@@ -186,15 +207,15 @@ class EliminatableClusterTree : public ClusterTree<GRAPH> {
   typedef BAYESTREE BayesTreeType;  ///< The BayesTree type produced by elimination
   typedef GRAPH FactorGraphType;    ///< The factor graph type
   typedef EliminatableClusterTree<BAYESTREE, GRAPH> This;  ///< This class
-  typedef boost::shared_ptr<This> shared_ptr;              ///< Shared pointer to this class
+  typedef std::shared_ptr<This> shared_ptr;              ///< Shared pointer to this class
 
   typedef typename BAYESTREE::ConditionalType ConditionalType;  ///< The type of conditionals
-  typedef boost::shared_ptr<ConditionalType>
+  typedef std::shared_ptr<ConditionalType>
       sharedConditional;  ///< Shared pointer to a conditional
 
   typedef typename GRAPH::Eliminate Eliminate;         ///< Typedef for an eliminate subroutine
   typedef typename GRAPH::FactorType FactorType;       ///< The type of factors
-  typedef boost::shared_ptr<FactorType> sharedFactor;  ///< Shared pointer to a factor
+  typedef std::shared_ptr<FactorType> sharedFactor;  ///< Shared pointer to a factor
 
  protected:
   FastVector<sharedFactor> remainingFactors_;
@@ -219,7 +240,7 @@ class EliminatableClusterTree : public ClusterTree<GRAPH> {
    * in GaussianFactorGraph.h
    * @return The Bayes tree and factor graph resulting from elimination
    */
-  std::pair<boost::shared_ptr<BayesTreeType>, boost::shared_ptr<FactorGraphType> > eliminate(
+  std::pair<std::shared_ptr<BayesTreeType>, std::shared_ptr<FactorGraphType> > eliminate(
       const Eliminate& function) const;
 
   /// @}
@@ -236,6 +257,7 @@ class EliminatableClusterTree : public ClusterTree<GRAPH> {
 
  protected:
   /// @name Details
+  /// @{
 
   /// Assignment operator - makes a deep copy of the tree structure, but only pointers to factors
   /// are copied, factors are not cloned.

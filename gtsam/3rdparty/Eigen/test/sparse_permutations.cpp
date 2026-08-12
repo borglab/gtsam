@@ -220,7 +220,7 @@ template<typename Scalar> void sparse_permutations_all(int size)
   CALL_SUBTEST(( sparse_permutations<RowMajor>(SparseMatrix<Scalar, RowMajor>(size,size)) ));
 }
 
-void test_sparse_permutations()
+EIGEN_DECLARE_TEST(sparse_permutations)
 {
   for(int i = 0; i < g_repeat; i++) {
     int s = Eigen::internal::random<int>(1,50);

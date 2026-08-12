@@ -12,7 +12,7 @@ Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellae
 
 from typing import Any, Iterable, List, Union
 
-from pyparsing import Optional, ParseResults, delimitedList  # type: ignore
+from pyparsing import Literal, Optional, ParseResults, DelimitedList
 
 from .template import Template
 from .tokens import (COMMA, DEFAULT_ARG, EQUAL, IDENT, LOPBRACK, LPAREN, PAIR,
@@ -30,9 +30,9 @@ class Argument:
     ```
     """
     rule = ((Type.rule ^ TemplatedType.rule)("ctype")  #
-            + IDENT("name")  #
+            + IDENT.copy().set_name("argument name")("name")  #
             + Optional(EQUAL + DEFAULT_ARG)("default")
-            ).setParseAction(lambda t: Argument(
+            ).set_parse_action(lambda t: Argument(
                 t.ctype,  #
                 t.name,  #
                 t.default[0] if isinstance(t.default, ParseResults) else None))
@@ -61,7 +61,7 @@ class ArgumentList:
     """
     List of Argument objects for all arguments in a function.
     """
-    rule = Optional(delimitedList(Argument.rule)("args_list")).setParseAction(
+    rule = Optional(DelimitedList(Argument.rule)("args_list")).set_parse_action(
         lambda t: ArgumentList.from_parse_result(t.args_list))
 
     def __init__(self, args_list: List[Argument]):
@@ -76,12 +76,12 @@ class ArgumentList:
     def from_parse_result(parse_result: ParseResults):
         """Return the result of parsing."""
         if parse_result:
-            return ArgumentList(parse_result.asList())
+            return ArgumentList(parse_result.as_list())
         else:
             return ArgumentList([])
 
     def __repr__(self) -> str:
-        return repr(tuple(self.args_list))
+        return ", ".join([repr(x) for x in self.args_list])
 
     def __len__(self) -> int:
         return len(self.args_list)
@@ -94,9 +94,9 @@ class ArgumentList:
         """Return a list of the names of all the arguments."""
         return self.args_list
 
-    def to_cpp(self, use_boost: bool) -> List[str]:
+    def to_cpp(self) -> List[str]:
         """Generate the C++ code for wrapping."""
-        return [arg.ctype.to_cpp(use_boost) for arg in self.args_list]
+        return [arg.ctype.to_cpp() for arg in self.args_list]
 
 
 class ReturnType:
@@ -105,8 +105,10 @@ class ReturnType:
 
     The return type can either be a single type or a pair such as <type1, type2>.
     """
+    # rule to parse optional std:: in front of `pair`
+    optional_std = Optional(Literal('std::')).suppress()
     _pair = (
-        PAIR.suppress()  #
+        optional_std + PAIR.suppress()  #
         + LOPBRACK  #
         + Type.rule("type1")  #
         + COMMA  #
@@ -114,7 +116,7 @@ class ReturnType:
         + ROPBRACK  #
     )
     rule = (_pair ^
-            (Type.rule ^ TemplatedType.rule)("type1")).setParseAction(  # BR
+            (Type.rule ^ TemplatedType.rule)("type1")).set_parse_action(  # BR
                 lambda t: ReturnType(t.type1, t.type2))
 
     def __init__(self, type1: Union[Type, TemplatedType], type2: Type):
@@ -135,7 +137,7 @@ class ReturnType:
         return "{}{}".format(
             self.type1, (', ' + self.type2.__repr__()) if self.type2 else '')
 
-    def to_cpp(self, use_boost: bool) -> str:
+    def to_cpp(self) -> str:
         """
         Generate the C++ code for wrapping.
 
@@ -144,10 +146,9 @@ class ReturnType:
         """
         if self.type2:
             return "std::pair<{type1},{type2}>".format(
-                type1=self.type1.to_cpp(use_boost),
-                type2=self.type2.to_cpp(use_boost))
+                type1=self.type1.to_cpp(), type2=self.type2.to_cpp())
         else:
-            return self.type1.to_cpp(use_boost)
+            return self.type1.to_cpp()
 
 
 class GlobalFunction:
@@ -161,7 +162,7 @@ class GlobalFunction:
         + ArgumentList.rule("args_list")  #
         + RPAREN  #
         + SEMI_COLON  #
-    ).setParseAction(lambda t: GlobalFunction(t.name, t.return_type, t.
+    ).set_parse_action(lambda t: GlobalFunction(t.name, t.return_type, t.
                                               args_list, t.template))
 
     def __init__(self,
@@ -180,8 +181,7 @@ class GlobalFunction:
         self.args.parent = self
 
     def __repr__(self) -> str:
-        return "GlobalFunction:  {}{}({})".format(self.return_type, self.name,
-                                                  self.args)
+        return f"GlobalFunction:  {self.name}({self.args}) -> {self.return_type}"
 
     def to_cpp(self) -> str:
         """Generate the C++ code for wrapping."""

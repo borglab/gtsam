@@ -23,7 +23,7 @@ int main()
   // Some Euler angles representation that our plane use.
   EulerAnglesZYZd planeAngles(0.78474, 0.5271, -0.513794);
   
-  MyArmyAngles planeAnglesInMyArmyAngles = MyArmyAngles::FromRotation<true, false, false>(planeAngles);
+  MyArmyAngles planeAnglesInMyArmyAngles(planeAngles);
   
   std::cout << "vehicle angles(MyArmy):     " << vehicleAngles << std::endl;
   std::cout << "plane angles(ZYZ):        " << planeAngles << std::endl;
@@ -37,7 +37,7 @@ int main()
   Quaterniond planeRotated = AngleAxisd(-0.342, Vector3d::UnitY()) * planeAngles;
   
   planeAngles = planeRotated;
-  planeAnglesInMyArmyAngles = MyArmyAngles::FromRotation<true, false, false>(planeRotated);
+  planeAnglesInMyArmyAngles = planeRotated;
   
   std::cout << "new plane angles(ZYZ):     " << planeAngles << std::endl;
   std::cout << "new plane angles(MyArmy): " << planeAnglesInMyArmyAngles << std::endl;

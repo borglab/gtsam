@@ -25,7 +25,7 @@ class GTSAM_UNSTABLE_EXPORT SingleValue : public Constraint {
   }
 
  public:
-  typedef boost::shared_ptr<SingleValue> shared_ptr;
+  typedef std::shared_ptr<SingleValue> shared_ptr;
 
   /// Construct from key, cardinality, and given value.
   SingleValue(Key key, size_t n, size_t value)
@@ -50,7 +50,7 @@ class GTSAM_UNSTABLE_EXPORT SingleValue : public Constraint {
   }
 
   /// Calculate value
-  double operator()(const DiscreteValues& values) const override;
+  double evaluate(const Assignment<Key>& values) const override;
 
   /// Convert into a decisiontree
   DecisionTreeFactor toDecisionTreeFactor() const override;

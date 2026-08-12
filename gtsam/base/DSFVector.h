@@ -21,7 +21,7 @@
 #include <gtsam/dllexport.h>
 #include <gtsam/global_includes.h>
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include <vector>
 #include <set>
@@ -33,7 +33,7 @@ namespace gtsam {
  * A fast implementation of disjoint set forests that uses vector as underly data structure.
  * This is the absolute minimal DSF data structure, and only allows size_t keys
  * Uses rank compression but not union by rank :-(
- * @addtogroup base
+ * @ingroup base
  */
 class GTSAM_EXPORT DSFBase {
 
@@ -41,14 +41,14 @@ public:
   typedef std::vector<size_t> V; ///< Vector of ints
 
 private:
-  boost::shared_ptr<V> v_;///< Stores parent pointers, representative iff v[i]==i
+  std::shared_ptr<V> v_;///< Stores parent pointers, representative iff v[i]==i
 
 public:
   /// Constructor that allocates new memory, allows for keys 0...numNodes-1.
   DSFBase(const size_t numNodes);
 
   /// Constructor that uses an existing, pre-allocated vector.
-  DSFBase(const boost::shared_ptr<V>& v_in);
+  DSFBase(const std::shared_ptr<V>& v_in);
 
   /// Find the label of the set in which {key} lives.
   size_t find(size_t key) const;
@@ -59,7 +59,7 @@ public:
 
 /**
  * DSFVector additionally keeps a vector of keys to support more expensive operations
- * @addtogroup base
+ * @ingroup base
  */
 class GTSAM_EXPORT DSFVector: public DSFBase {
 
@@ -74,7 +74,7 @@ public:
   DSFVector(const std::vector<size_t>& keys);
 
   /// Constructor that uses existing vectors.
-  DSFVector(const boost::shared_ptr<V>& v_in, const std::vector<size_t>& keys);
+  DSFVector(const std::shared_ptr<V>& v_in, const std::vector<size_t>& keys);
 
   // All operations below loop over all keys and hence are *at least* O(n)
 

@@ -14,7 +14,7 @@ QR, %SVD, eigendecompositions... After reading this page, don't miss our
     \f[ Ax \: = \: b \f]
 Where \a A and \a b are matrices (\a b could be a vector, as a special case). You want to find a solution \a x.
 
-\b The \b solution: You can choose between various decompositions, depending on what your matrix \a A looks like,
+\b The \b solution: You can choose between various decompositions, depending on the properties of your matrix \a A,
 and depending on whether you favor speed or accuracy. However, let's start with an example that works in all cases,
 and is a good compromise:
 <table class="example">
@@ -34,7 +34,7 @@ Vector3f x = dec.solve(b);
 
 Here, ColPivHouseholderQR is a QR decomposition with column pivoting. It's a good compromise for this tutorial, as it
 works for all matrices while being quite fast. Here is a table of some other decompositions that you can choose from,
-depending on your matrix and the trade-off you want to make:
+depending on your matrix, the problem you are trying to solve, and the trade-off you want to make:
 
 <table class="manual">
     <tr>
@@ -128,11 +128,13 @@ depending on your matrix and the trade-off you want to make:
 </table>
 To get an overview of the true relative speed of the different decompositions, check this \link DenseDecompositionBenchmark benchmark \endlink.
 
-All of these decompositions offer a solve() method that works as in the above example.
+All of these decompositions offer a solve() method that works as in the above example. 
 
-For example, if your matrix is positive definite, the above table says that a very good
-choice is then the LLT or LDLT decomposition. Here's an example, also demonstrating that using a general
-matrix (not a vector) as right hand side is possible.
+If you know more about the properties of your matrix, you can use the above table to select the best method.
+For example, a good choice for solving linear systems with a non-symmetric matrix of full rank is PartialPivLU.
+If you know that your matrix is also symmetric and positive definite, the above table says that
+a very good choice is the LLT or LDLT decomposition. Here's an example, also demonstrating that using a general
+matrix (not a vector) as right hand side is possible:
 
 <table class="example">
 <tr><th>Example:</th><th>Output:</th></tr>
@@ -146,7 +148,34 @@ For a \ref TopicLinearAlgebraDecompositions "much more complete table" comparing
 supports many other decompositions), see our special page on
 \ref TopicLinearAlgebraDecompositions "this topic".
 
-\section TutorialLinAlgSolutionExists Checking if a solution really exists
+
+\section TutorialLinAlgLeastsquares Least squares solving
+
+The most general and accurate method to solve under- or over-determined linear systems
+in the least squares sense, is the SVD decomposition. Eigen provides two implementations.
+The recommended one is the BDCSVD class, which scales well for large problems
+and automatically falls back to the JacobiSVD class for smaller problems.
+For both classes, their solve() method solved the linear system in the least-squares
+sense. 
+
+Here is an example:
+<table class="example">
+<tr><th>Example:</th><th>Output:</th></tr>
+<tr>
+  <td>\include TutorialLinAlgSVDSolve.cpp </td>
+  <td>\verbinclude TutorialLinAlgSVDSolve.out </td>
+</tr>
+</table>
+
+An alternative to the SVD, which is usually faster and about as accurate, is CompleteOrthogonalDecomposition. 
+
+Again, if you know more about the problem, the table above contains methods that are potentially faster.
+If your matrix is full rank, HouseHolderQR is the method of choice. If your matrix is full rank and well conditioned,
+using the Cholesky decomposition (LLT) on the matrix of the normal equations can be faster still.
+Our page on \link LeastSquares least squares solving \endlink has more details.
+
+
+\section TutorialLinAlgSolutionExists Checking if a matrix is singular
 
 Only you know what error margin you want to allow for a solution to be considered valid.
 So Eigen lets you do this computation for yourself, if you want to, as in this example:
@@ -179,11 +208,11 @@ very rare. The call to info() is to check for this possibility.
 \section TutorialLinAlgInverse Computing inverse and determinant
 
 First of all, make sure that you really want this. While inverse and determinant are fundamental mathematical concepts,
-in \em numerical linear algebra they are not as popular as in pure mathematics. Inverse computations are often
+in \em numerical linear algebra they are not as useful as in pure mathematics. Inverse computations are often
 advantageously replaced by solve() operations, and the determinant is often \em not a good way of checking if a matrix
 is invertible.
 
-However, for \em very \em small matrices, the above is not true, and inverse and determinant can be very useful.
+However, for \em very \em small matrices, the above may not be true, and inverse and determinant can be very useful.
 
 While certain decompositions, such as PartialPivLU and FullPivLU, offer inverse() and determinant() methods, you can also
 call inverse() and determinant() directly on a matrix. If your matrix is of a very small fixed size (at most 4x4) this
@@ -197,28 +226,6 @@ Here is an example:
   <td>\verbinclude TutorialLinAlgInverseDeterminant.out </td>
 </tr>
 </table>
-
-\section TutorialLinAlgLeastsquares Least squares solving
-
-The most accurate method to do least squares solving is with a SVD decomposition.
-Eigen provides two implementations.
-The recommended one is the BDCSVD class, which scale well for large problems
-and automatically fall-back to the JacobiSVD class for smaller problems.
-For both classes, their solve() method is doing least-squares solving.
-
-Here is an example:
-<table class="example">
-<tr><th>Example:</th><th>Output:</th></tr>
-<tr>
-  <td>\include TutorialLinAlgSVDSolve.cpp </td>
-  <td>\verbinclude TutorialLinAlgSVDSolve.out </td>
-</tr>
-</table>
-
-Another methods, potentially faster but less reliable, are to use a Cholesky decomposition of the
-normal matrix or a QR decomposition. Our page on \link LeastSquares least squares solving \endlink
-has more details.
-
 
 \section TutorialLinAlgSeparateComputation Separating the computation from the construction
 

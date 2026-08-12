@@ -17,10 +17,14 @@
 
 #pragma once
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/VectorSpace.h>
+
 #include <iosfwd>
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
+#endif
 
 namespace gtsam {
 
@@ -36,6 +40,9 @@ public:
   /// dimension of the variable - used to autodetect sizes
   static const size_t dimension = 6;
 
+  /// @name Standard Constructors
+  /// @{
+
   ConstantBias() :
       biasAcc_(0.0, 0.0, 0.0), biasGyro_(0.0, 0.0, 0.0) {
   }
@@ -47,6 +54,8 @@ public:
   explicit ConstantBias(const Vector6& v) :
       biasAcc_(v.head<3>()), biasGyro_(v.tail<3>()) {
   }
+
+  /// @}
 
   /** return the accelerometer and gyro biases in a single vector */
   Vector6 vector() const {
@@ -67,23 +76,22 @@ public:
 
   /** Correct an accelerometer measurement using this bias model, and optionally compute Jacobians */
   Vector3 correctAccelerometer(const Vector3& measurement,
-                               OptionalJacobian<3, 6> H1 = boost::none,
-                               OptionalJacobian<3, 3> H2 = boost::none) const {
+                               OptionalJacobian<3, 6> H1 = {},
+                               OptionalJacobian<3, 3> H2 = {}) const {
     if (H1) (*H1) << -I_3x3, Z_3x3;
-    if (H2) (*H2) << I_3x3;
+    if (H2) *H2 = I_3x3;
     return measurement - biasAcc_;
   }
 
   /** Correct a gyroscope measurement using this bias model, and optionally compute Jacobians */
   Vector3 correctGyroscope(const Vector3& measurement,
-                           OptionalJacobian<3, 6> H1 = boost::none,
-                           OptionalJacobian<3, 3> H2 = boost::none) const {
+                           OptionalJacobian<3, 6> H1 = {},
+                           OptionalJacobian<3, 3> H2 = {}) const {
     if (H1) (*H1) << Z_3x3, -I_3x3;
-    if (H2) (*H2) << I_3x3;
+    if (H2) *H2 = I_3x3;
     return measurement - biasGyro_;
   }
 
-  /// @}
   /// @name Testable
   /// @{
 
@@ -105,7 +113,7 @@ public:
   /// @{
 
   /** identity for group operation */
-  static ConstantBias identity() {
+  static ConstantBias Identity() {
     return ConstantBias();
   }
 
@@ -130,37 +138,27 @@ public:
   }
 
   /// @}
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-  /// @name Deprecated
+  /// @name Manifold
   /// @{
-  ConstantBias GTSAM_DEPRECATED inverse() { return -(*this); }
-  ConstantBias GTSAM_DEPRECATED compose(const ConstantBias& q) {
-    return (*this) + q;
+
+  /// The retract function
+  ConstantBias retract(const Vector6& v) const {
+    return ConstantBias(biasAcc_ + v.head<3>(), biasGyro_ + v.tail<3>());
   }
-  ConstantBias GTSAM_DEPRECATED between(const ConstantBias& q) {
-    return q - (*this);
+
+  /// The local coordinates function
+  Vector6 localCoordinates(const ConstantBias& other) const {
+    return other.vector() - vector();
   }
-  Vector6 GTSAM_DEPRECATED localCoordinates(const ConstantBias& q) {
-    return (q - (*this)).vector();
-  }
-  ConstantBias GTSAM_DEPRECATED retract(const Vector6& v) {
-    return (*this) + ConstantBias(v);
-  }
-  static Vector6 GTSAM_DEPRECATED Logmap(const ConstantBias& p) {
-    return p.vector();
-  }
-  static ConstantBias GTSAM_DEPRECATED Expmap(const Vector6& v) {
-    return ConstantBias(v);
-  }
+
   /// @}
-#endif
 
 private:
 
   /// @name Advanced Interface
   /// @{
 
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -168,10 +166,8 @@ private:
     ar & BOOST_SERIALIZATION_NVP(biasAcc_);
     ar & BOOST_SERIALIZATION_NVP(biasGyro_);
   }
+#endif
 
-
-public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
   /// @}
 
 }; // ConstantBias class
@@ -183,4 +179,3 @@ struct traits<imuBias::ConstantBias> : public internal::VectorSpace<
 };
 
 } // namespace gtsam
-

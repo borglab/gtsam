@@ -21,13 +21,14 @@
 
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/DoglegOptimizerImpl.h>
-#include <boost/variant.hpp>
+
 #include <string>
+#include <variant>
 
 namespace gtsam {
 
 /**
- * @addtogroup ISAM2
+ * @ingroup isam2
  * Parameters for ISAM2 using Gauss-Newton optimization.  Either this class or
  * ISAM2DoglegParams should be specified as the optimizationParams in
  * ISAM2Params, which should in turn be passed to ISAM2(const ISAM2Params&).
@@ -59,7 +60,7 @@ struct GTSAM_EXPORT ISAM2GaussNewtonParams {
 };
 
 /**
- * @addtogroup ISAM2
+ * @ingroup isam2
  * Parameters for ISAM2 using Dogleg optimization.  Either this class or
  * ISAM2GaussNewtonParams should be specified as the optimizationParams in
  * ISAM2Params, which should in turn be passed to ISAM2(const ISAM2Params&).
@@ -126,17 +127,82 @@ struct GTSAM_EXPORT ISAM2DoglegParams {
 };
 
 /**
- * @addtogroup ISAM2
+ * @ingroup isam2
+ * Parameters for ISAM2 using Dogleg Line Search optimization.  Either this
+ * class, ISAM2GaussNewtonParams, or ISAM2DoglegParams should be specified as
+ * the optimizationParams in ISAM2Params, which should in turn be passed to
+ * ISAM2(const ISAM2Params&).
+ */
+struct GTSAM_EXPORT ISAM2DoglegLineSearchParams {
+  DoglegLineSearchImpl::Params dllsParams;  ///< Params for DoglegLineSearch
+  double wildfireThreshold;  ///< Update delta when changes are above thresh
+
+  /** Specify parameters as constructor arguments */
+  ISAM2DoglegLineSearchParams(double minDelta = 0.02, double maxDelta = 0.5,
+                              double stepSize = 1.5,
+                              double sufficientDecreaseCoeff = 1e-3,
+                              bool verbose = false,
+                              double wildfireThreshold = 1e-4)
+      : dllsParams{minDelta, maxDelta, stepSize, sufficientDecreaseCoeff,
+                   verbose},
+        wildfireThreshold(wildfireThreshold) {
+    if (minDelta < 1e-12 || maxDelta < 1e-12 || stepSize < 1.0) {
+      throw std::invalid_argument(
+          "ISAM2DoglegLineSearchParams constructed with invalid configuration. "
+          "Search Bounds [minDelta, maxDelta] ~ 0 or stepSize < 1.0");
+    }
+  }
+
+  void print(const std::string str = "") const {
+    using std::cout;
+    cout << str << "type:                      ISAM2DoglegLineSearchParams\n";
+    cout << str << "minDelta:                 " << dllsParams.minDelta << "\n";
+    cout << str << "maxDelta:                 " << dllsParams.maxDelta << "\n";
+    cout << str << "stepSize:                 " << dllsParams.stepSize << "\n";
+    cout << str
+         << "sufficientDecreaseCoeff: " << dllsParams.sufficientDecreaseCoeff
+         << "\n";
+    cout << str << "verbose:        " << dllsParams.verbose << "\n";
+    cout << str << "wildfireThreshold:        " << wildfireThreshold << "\n";
+    cout.flush();
+  }
+  /** Getters **/
+  double getMinDelta() const { return dllsParams.minDelta; }
+  double getMaxDelta() const { return dllsParams.maxDelta; }
+  double getStepSize() const { return dllsParams.stepSize; }
+  double getSufficientDecreaseCoeff() const {
+    return dllsParams.sufficientDecreaseCoeff;
+  }
+  bool isVerbose() const { return dllsParams.verbose; }
+  double getWildfireThreshold() const { return wildfireThreshold; }
+
+  /** Setters */
+  void setMinDelta(double minDelta) { this->dllsParams.minDelta = minDelta; }
+  void setMaxDelta(double maxDelta) { this->dllsParams.maxDelta = maxDelta; }
+  void setStepSize(double stepSize) { this->dllsParams.stepSize = stepSize; }
+  void setSufficientDecreaseCoeff(double sufficientDecreaseCoeff) {
+    this->dllsParams.sufficientDecreaseCoeff = sufficientDecreaseCoeff;
+  }
+  void setVerbose(bool verbose) { this->dllsParams.verbose = verbose; }
+  void setWildfireThreshold(double wildfireThreshold) {
+    this->wildfireThreshold = wildfireThreshold;
+  }
+};
+
+/**
+ * @ingroup isam2
  * Parameters for the ISAM2 algorithm.  Default parameter values are listed
  * below.
  */
 typedef FastMap<char, Vector> ISAM2ThresholdMap;
 typedef ISAM2ThresholdMap::value_type ISAM2ThresholdMapValue;
 struct GTSAM_EXPORT ISAM2Params {
-  typedef boost::variant<ISAM2GaussNewtonParams, ISAM2DoglegParams>
+  typedef std::variant<ISAM2GaussNewtonParams, ISAM2DoglegParams,
+                       ISAM2DoglegLineSearchParams>
       OptimizationParams;  ///< Either ISAM2GaussNewtonParams or
-                           ///< ISAM2DoglegParams
-  typedef boost::variant<double, FastMap<char, Vector> >
+                           ///< ISAM2DoglegParams or
+                           ///< ISAM2DoglegLineSearchParams
+  typedef std::variant<double, FastMap<char, Vector> >
       RelinearizationThreshold;  ///< Either a constant relinearization
                                  ///< threshold or a per-variable-type set of
                                  ///< thresholds
@@ -158,12 +224,13 @@ struct GTSAM_EXPORT ISAM2Params {
    * and landmark keys are of type TypedSymbol<'l',Point3>, then appropriate
    * entries would be added with:
    * \code
-     FastMap<char,Vector> thresholds;
-     thresholds['x'] = (Vector(6) << 0.1, 0.1, 0.1, 0.5, 0.5, 0.5).finished();
-   // 0.1 rad rotation threshold, 0.5 m translation threshold thresholds['l'] =
-   Vector3(1.0, 1.0, 1.0);                // 1.0 m landmark position threshold
-     params.relinearizeThreshold = thresholds;
-     \endcode
+   * FastMap<char, Vector> thresholds;
+   * // 0.1 rad rotation threshold, 0.5 m translation threshold
+   * thresholds['x'] = Vector{{0.1, 0.1, 0.1, 0.5, 0.5, 0.5}};
+   * // 1.0 m landmark position threshold
+   * thresholds['l'] = Vector3(1.0, 1.0, 1.0);
+   * params.relinearizeThreshold = thresholds;
+   * \endcode
    */
   RelinearizationThreshold relinearizeThreshold;
 
@@ -223,6 +290,20 @@ struct GTSAM_EXPORT ISAM2Params {
   /// cost of having to search for slots every time a factor is added.
   bool findUnusedFactorSlots;
 
+  /** When enabled, ISAM2 tracks the total number of nonzero entries (nnz) in
+   * the Bayes tree after every batch reorder.  If the current nnz exceeds
+   * `adaptiveReorderThreshold` times the nnz recorded after the last batch
+   * reorder, a full batch re-elimination with COLAMD reordering is triggered
+   * automatically.  This prevents fill-in from accumulating over long sessions
+   * (e.g. thousands of incremental SLAM updates).  Default: disabled.
+   */
+  bool enableAdaptiveReorder;
+
+  /** The fill-in growth ratio that triggers a batch reorder when
+   * enableAdaptiveReorder is true (default: 2.0, i.e. reorder when nnz
+   * doubles relative to the last fresh ordering). */
+  double adaptiveReorderThreshold;
+
   /**
    * Specify parameters as constructor arguments
    * See the documentation of member variables above.
@@ -246,7 +327,9 @@ struct GTSAM_EXPORT ISAM2Params {
         keyFormatter(_keyFormatter),
         enableDetailedResults(_enableDetailedResults),
         enablePartialRelinearizationCheck(false),
-        findUnusedFactorSlots(false) {}
+        findUnusedFactorSlots(false),
+        enableAdaptiveReorder(false),
+        adaptiveReorderThreshold(2.0) {}
 
   /// print iSAM2 parameters
   void print(const std::string& str = "") const {
@@ -254,20 +337,21 @@ struct GTSAM_EXPORT ISAM2Params {
     cout << str << "\n";
 
     static const std::string kStr("optimizationParams:                ");
-    if (optimizationParams.type() == typeid(ISAM2GaussNewtonParams))
-      boost::get<ISAM2GaussNewtonParams>(optimizationParams).print();
-    else if (optimizationParams.type() == typeid(ISAM2DoglegParams))
-      boost::get<ISAM2DoglegParams>(optimizationParams).print(kStr);
-    else
+    if (std::holds_alternative<ISAM2GaussNewtonParams>(optimizationParams)) {
+      std::get<ISAM2GaussNewtonParams>(optimizationParams).print();
+    } else if (std::holds_alternative<ISAM2DoglegParams>(optimizationParams)) {
+      std::get<ISAM2DoglegParams>(optimizationParams).print(kStr);
+    } else {
       cout << kStr << "{unknown type}\n";
+    }
 
     cout << "relinearizeThreshold:              ";
-    if (relinearizeThreshold.type() == typeid(double)) {
-      cout << boost::get<double>(relinearizeThreshold) << "\n";
+    if (std::holds_alternative<double>(relinearizeThreshold)) {
+      cout << std::get<double>(relinearizeThreshold) << "\n";
     } else {
       cout << "{mapped}\n";
       for (const ISAM2ThresholdMapValue& value :
-           boost::get<ISAM2ThresholdMap>(relinearizeThreshold)) {
+           std::get<ISAM2ThresholdMap>(relinearizeThreshold)) {
         cout << "                                   '" << value.first
              << "' -> [" << value.second.transpose() << " ]\n";
       }
@@ -288,6 +372,11 @@ struct GTSAM_EXPORT ISAM2Params {
          << enablePartialRelinearizationCheck << "\n";
     cout << "findUnusedFactorSlots:             " << findUnusedFactorSlots
          << "\n";
+    cout << "enableAdaptiveReorder:             " << enableAdaptiveReorder
+         << "\n";
+    if (enableAdaptiveReorder)
+      cout << "adaptiveReorderThreshold:          " << adaptiveReorderThreshold
+           << "\n";
     cout.flush();
   }
 

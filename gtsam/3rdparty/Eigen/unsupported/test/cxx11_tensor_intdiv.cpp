@@ -135,7 +135,7 @@ void test_specific() {
   VERIFY_IS_EQUAL(result, result_op);
 }
 
-void test_cxx11_tensor_intdiv()
+EIGEN_DECLARE_TEST(cxx11_tensor_intdiv)
 {
   CALL_SUBTEST_1(test_signed_32bit());
   CALL_SUBTEST_2(test_unsigned_32bit());

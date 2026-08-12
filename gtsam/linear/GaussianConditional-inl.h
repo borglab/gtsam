@@ -33,4 +33,10 @@ namespace gtsam {
     const KEYS& keys, size_t nrFrontals, const VerticalBlockMatrix& augmentedMatrix, const SharedDiagonal& sigmas) :
   BaseFactor(keys, augmentedMatrix, sigmas), BaseConditional(nrFrontals) {}
 
+  /* ************************************************************************* */
+  template<typename KEYS>
+  GaussianConditional::GaussianConditional(
+    const KEYS& keys, size_t nrFrontals, VerticalBlockMatrix&& augmentedMatrix, const SharedDiagonal& sigmas) :
+  BaseFactor(keys, std::move(augmentedMatrix), sigmas), BaseConditional(nrFrontals) {}
+
 } // gtsam

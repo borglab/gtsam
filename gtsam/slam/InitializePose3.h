@@ -21,7 +21,6 @@
 #pragma once
 
 #include <gtsam/geometry/Rot3.h>
-#include <gtsam/inference/graph.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>

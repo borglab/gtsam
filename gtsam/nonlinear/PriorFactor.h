@@ -15,111 +15,115 @@
  **/
 #pragma once
 
-#include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/base/Testable.h>
-
-#include <string>
+#include <gtsam/nonlinear/ExtendedPriorFactor.h>
 
 namespace gtsam {
 
-  /**
-   * A class for a soft prior on any Value type
-   * @addtogroup SLAM
-   */
-  template<class VALUE>
-  class PriorFactor: public NoiseModelFactor1<VALUE> {
+/**
+ * A class for a soft prior on any Value type.
+ *
+ * The noise model applies to `-Local(value, prior)`. For pose types using
+ * GTSAM's right-hand retraction and exponential-map chart, the covariance is
+ * expressed in the local/body frame of the prior pose. For `Pose3`, the
+ * tangent-space order is rotation followed by translation.
+ *
+ * See `gtsam/nonlinear/doc/PriorFactor.ipynb` for a detailed discussion of
+ * coordinate frames and covariance conventions.
+ *
+ * @ingroup nonlinear
+ **/
+template <class VALUE>
+class PriorFactor : public ExtendedPriorFactor<VALUE> {
+ public:
+  typedef VALUE T;
+  typedef ExtendedPriorFactor<VALUE> Base;
 
-  public:
-    typedef VALUE T;
+ private:
+  /// concept check by type
+  GTSAM_CONCEPT_TESTABLE_TYPE(T)
 
-  private:
+ public:
+  /// @name Standard Constructors
+  /// @{
 
-    typedef NoiseModelFactor1<VALUE> Base;
+  /// shorthand for a smart pointer to a factor
+  typedef typename std::shared_ptr<PriorFactor<VALUE>> shared_ptr;
 
-    VALUE prior_; /** The measurement */
+  /// Typedef to this class
+  typedef PriorFactor<VALUE> This;
 
-    /** concept check by type */
-    GTSAM_CONCEPT_TESTABLE_TYPE(T)
+  /// default constructor - only use for serialization
+  PriorFactor() {}
 
-  public:
+  /// Constructor
+  PriorFactor(Key key, const VALUE& prior,
+              const SharedNoiseModel& model = nullptr)
+      : Base(key, prior, noiseModel::validOrDefault(prior, model)) {}
 
-    /// shorthand for a smart pointer to a factor
-    typedef typename boost::shared_ptr<PriorFactor<VALUE> > shared_ptr;
+  /// Convenience constructor that takes a full covariance argument
+  PriorFactor(Key key, const VALUE& prior, const Matrix& covariance)
+      : Base(key, prior, noiseModel::Gaussian::Covariance(covariance)) {}
 
-    /// Typedef to this class
-    typedef PriorFactor<VALUE> This;
+  /// @}
+  /// @name Standard Destructor
+  /// @{
 
-    /** default constructor - only use for serialization */
-    PriorFactor() {}
+  ~PriorFactor() override {}
 
-    ~PriorFactor() override {}
+  /// @}
+  /// @name Testable
+  /// @{
 
-    /** Constructor */
-    PriorFactor(Key key, const VALUE& prior, const SharedNoiseModel& model = nullptr) :
-      Base(model, key), prior_(prior) {
-    }
+  /// @return a deep copy of this factor
+  gtsam::NonlinearFactor::shared_ptr clone() const override {
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
+        gtsam::NonlinearFactor::shared_ptr(new This(*this)));
+  }
 
-    /** Convenience constructor that takes a full covariance argument */
-    PriorFactor(Key key, const VALUE& prior, const Matrix& covariance) :
-      Base(noiseModel::Gaussian::Covariance(covariance), key), prior_(prior) {
-    }
+  /// print
+  void print(const std::string& s, const KeyFormatter& keyFormatter =
+                                       DefaultKeyFormatter) const override {
+    std::cout << s << "PriorFactor on " << keyFormatter(this->key()) << "\n";
+    traits<T>::Print(this->origin(), "  prior mean: ");
+    if (this->noiseModel_)
+      this->noiseModel_->print("  noise model: ");
+    else
+      std::cout << "no noise model" << std::endl;
+  }
 
-    /// @return a deep copy of this factor
-    gtsam::NonlinearFactor::shared_ptr clone() const override {
-      return boost::static_pointer_cast<gtsam::NonlinearFactor>(
-          gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
+  /// equals
+  bool equals(const NonlinearFactor& expected,
+              double tol = 1e-9) const override {
+    const auto* e = dynamic_cast<const This*>(&expected);
+    return e && Base::equals(*e, tol);
+  }
 
-    /** implement functions needed for Testable */
+  /// @}
+  /// @name Access
+  /// @{
 
-    /** print */
-    void print(const std::string& s,
-       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
-      std::cout << s << "PriorFactor on " << keyFormatter(this->key()) << "\n";
-      traits<T>::Print(prior_, "  prior mean: ");
-      if (this->noiseModel_)
-        this->noiseModel_->print("  noise model: ");
-      else
-        std::cout << "no noise model" << std::endl;
-    }
+  const VALUE& prior() const { return this->origin(); }
 
-    /** equals */
-    bool equals(const NonlinearFactor& expected, double tol=1e-9) const override {
-      const This* e = dynamic_cast<const This*> (&expected);
-      return e != nullptr && Base::equals(*e, tol) && traits<T>::Equals(prior_, e->prior_, tol);
-    }
+  /// @}
 
-    /** implement functions needed to derive from Factor */
+ private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+  /// Serialization function
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    // For backwards compatibility, we manually serialize the base class members
+    // as if we were a PriorFactor from before the refactor.
+    ar& boost::serialization::make_nvp(
+        "NoiseModelFactor1",
+        boost::serialization::base_object<NoiseModelFactorN<VALUE>>(*this));
+    ar& boost::serialization::make_nvp("prior_", this->origin_);
+  }
+#endif
+};
 
-    /** vector of errors */
-    Vector evaluateError(const T& x, boost::optional<Matrix&> H = boost::none) const override {
-      if (H) (*H) = Matrix::Identity(traits<T>::GetDimension(x),traits<T>::GetDimension(x));
-      // manifold equivalent of z-x -> Local(x,z)
-      // TODO(ASL) Add Jacobians.
-      return -traits<T>::Local(x, prior_);
-    }
+/// traits
+template <class VALUE>
+struct traits<PriorFactor<VALUE>> : public Testable<PriorFactor<VALUE>> {};
 
-    const VALUE & prior() const { return prior_; }
-
-  private:
-
-    /** Serialization function */
-    friend class boost::serialization::access;
-    template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & boost::serialization::make_nvp("NoiseModelFactor1",
-          boost::serialization::base_object<Base>(*this));
-      ar & BOOST_SERIALIZATION_NVP(prior_);
-    }
-
-	// Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
-	enum { NeedsToAlign = (sizeof(T) % 16) == 0 };
-  public:
-	GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
-  };
-
-  /// traits
-  template<class VALUE>
-  struct traits<PriorFactor<VALUE> > : public Testable<PriorFactor<VALUE> > {};
-
-
-} /// namespace gtsam
+}  // namespace gtsam

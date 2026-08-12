@@ -11,6 +11,7 @@
 
 #include <gtsam/geometry/concepts.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 namespace gtsam {
 
@@ -18,13 +19,16 @@ namespace gtsam {
  * A prior on the translation part of a pose
  */
 template<class POSE>
-class PoseTranslationPrior : public NoiseModelFactor1<POSE> {
+class PoseTranslationPrior : public NoiseModelFactorN<POSE> {
 public:
   typedef PoseTranslationPrior<POSE> This;
-  typedef NoiseModelFactor1<POSE> Base;
+  typedef NoiseModelFactorN<POSE> Base;
   typedef POSE Pose;
   typedef typename POSE::Translation Translation;
   typedef typename POSE::Rotation Rotation;
+  
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
 
   GTSAM_CONCEPT_POSE_TYPE(Pose)
   GTSAM_CONCEPT_GROUP_TYPE(Pose)
@@ -55,15 +59,15 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   /** h(x)-z */
-  Vector evaluateError(const Pose& pose, boost::optional<Matrix&> H = boost::none) const override {
+  Vector evaluateError(const Pose& pose, OptionalMatrixType H) const override {
     const Translation& newTrans = pose.translation();
     const Rotation& R = pose.rotation();
-    const int tDim = traits<Translation>::GetDimension(newTrans);
-    const int xDim = traits<Pose>::GetDimension(pose);
+    const size_t tDim = traits<Translation>::GetDimension(newTrans);
+    const size_t xDim = traits<Pose>::GetDimension(pose);
     if (H) {
       *H = Matrix::Zero(tDim, xDim);
       std::pair<size_t, size_t> transInterval = POSE::translationInterval();
@@ -87,19 +91,21 @@ public:
 
 private:
 
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
   void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    // NoiseModelFactor1 instead of NoiseModelFactorN for backward compatibility
     ar & boost::serialization::make_nvp("NoiseModelFactor1",
         boost::serialization::base_object<Base>(*this));
     ar & BOOST_SERIALIZATION_NVP(measured_);
   }
+#endif
 
 };
 
 } // \namespace gtsam
-
 
 
 

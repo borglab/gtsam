@@ -22,17 +22,22 @@
 
 #include <map>
 #include <vector>
+#include <optional>
 
 namespace gtsam {
 /**
  * Optimize for the Karcher mean, minimizing the geodesic distance to each of
- * the given rotations, by constructing a factor graph out of simple
+ * the given Lie groups elements, by constructing a factor graph out of simple
  * PriorFactors.
  */
 template <class T>
-T FindKarcherMean(const std::vector<T, Eigen::aligned_allocator<T>> &rotations);
+typename std::enable_if<traits<T>::IsLieGroup, T>::type 
+FindKarcherMean(const std::vector<T, Eigen::aligned_allocator<T>> &elements);
 
-template <class T> T FindKarcherMean(std::initializer_list<T> &&rotations);
+/// FindKarcherMean version from initializer list
+template <class T>
+typename std::enable_if<traits<T>::IsLieGroup, T>::type 
+FindKarcherMean(std::initializer_list<T> &&elements);
 
 /**
  * The KarcherMeanFactor creates a constraint on all SO(n) variables with
@@ -44,13 +49,13 @@ template <class T> T FindKarcherMean(std::initializer_list<T> &&rotations);
  * */
 template <class T> class KarcherMeanFactor : public NonlinearFactor {
   // Compile time dimension: can be -1
-  enum { D = traits<T>::dimension };
+  inline constexpr static auto D = traits<T>::dimension;
 
   // Runtime dimension: always >=0
   size_t d_;
 
   /// Constant Jacobian made of d*d identity matrices
-  boost::shared_ptr<JacobianFactor> whitenedJacobian_;
+  std::shared_ptr<JacobianFactor> whitenedJacobian_;
 
 public:
   /**
@@ -60,7 +65,7 @@ public:
    */
   template <typename CONTAINER>
   KarcherMeanFactor(const CONTAINER &keys, int d = D,
-                    boost::optional<double> beta = boost::none);
+                    std::optional<double> beta = {});
 
   /// Destructor
   ~KarcherMeanFactor() override {}
@@ -72,7 +77,7 @@ public:
   size_t dim() const override { return d_; }
 
   /// linearize to a GaussianFactor
-  boost::shared_ptr<GaussianFactor> linearize(const Values &c) const override {
+  std::shared_ptr<GaussianFactor> linearize(const Values &c) const override {
     return whitenedJacobian_;
   }
 };

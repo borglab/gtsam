@@ -15,17 +15,19 @@
  * @author Christian Potthast, Frank Dellaert
  */
 
-#include <gtsam/linear/linearExceptions.h>
+#include <gtsam/base/utilities.h>
+#include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/Sampler.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/linearExceptions.h>
 
-#include <boost/format.hpp>
+#include <iomanip>
+
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
 #endif
-#include <boost/lambda/lambda.hpp>
-#include <boost/lambda/bind.hpp>
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
@@ -33,6 +35,7 @@
 #include <functional>
 #include <list>
 #include <string>
+#include <cmath>
 
 using namespace std;
 
@@ -43,31 +46,83 @@ namespace gtsam {
     Key key, const Vector& d, const Matrix& R, const SharedDiagonal& sigmas) :
   BaseFactor(key, R, d, sigmas), BaseConditional(1) {}
 
-  /* ************************************************************************* */
-  GaussianConditional::GaussianConditional(
-    Key key, const Vector& d, const Matrix& R,
-    Key name1, const Matrix& S, const SharedDiagonal& sigmas) :
-  BaseFactor(key, R, name1, S, d, sigmas), BaseConditional(1) {}
+  /* ************************************************************************ */
+  GaussianConditional::GaussianConditional(Key key, const Vector& d,
+                                           const Matrix& R, Key parent1,
+                                           const Matrix& S,
+                                           const SharedDiagonal& sigmas)
+      : BaseFactor(key, R, parent1, S, d, sigmas), BaseConditional(1) {}
 
-  /* ************************************************************************* */
-  GaussianConditional::GaussianConditional(
-    Key key, const Vector& d, const Matrix& R,
-    Key name1, const Matrix& S, Key name2, const Matrix& T, const SharedDiagonal& sigmas) :
-  BaseFactor(key, R, name1, S, name2, T, d, sigmas), BaseConditional(1) {}
+  /* ************************************************************************ */
+  GaussianConditional::GaussianConditional(Key key, const Vector& d,
+                                           const Matrix& R, Key parent1,
+                                           const Matrix& S, Key parent2,
+                                           const Matrix& T,
+                                           const SharedDiagonal& sigmas)
+      : BaseFactor(key, R, parent1, S, parent2, T, d, sigmas),
+        BaseConditional(1) {}
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
+  GaussianConditional GaussianConditional::FromMeanAndStddev(Key key,
+                                                             const Vector& mu,
+                                                             double sigma) {
+    // |Rx - d| = |x - mu|/sigma
+    const Matrix R = Matrix::Identity(mu.size(), mu.size());
+    const Vector& d = mu;
+    return GaussianConditional(key, d, R,
+                               noiseModel::Isotropic::Sigma(mu.size(), sigma));
+  }
+
+  /* ************************************************************************ */
+  GaussianConditional GaussianConditional::FromMeanAndStddev(
+      Key key, const Matrix& A, Key parent, const Vector& b, double sigma) {
+    // |Rx + Sy - d| = |x-(Ay + b)|/sigma
+    const Matrix R = Matrix::Identity(b.size(), b.size());
+    const Matrix S = -A;
+    const Vector& d = b;
+    return GaussianConditional(key, d, R, parent, S,
+                               noiseModel::Isotropic::Sigma(b.size(), sigma));
+  }
+
+  /* ************************************************************************ */
+  GaussianConditional GaussianConditional::FromMeanAndStddev(
+      Key key, const Matrix& A1, Key parent1, const Matrix& A2, Key parent2,
+      const Vector& b, double sigma) {
+    // |Rx + Sy + Tz - d| = |x-(A1 y + A2 z + b)|/sigma
+    const Matrix R = Matrix::Identity(b.size(), b.size());
+    const Matrix S = -A1;
+    const Matrix T = -A2;
+    const Vector& d = b;
+    return GaussianConditional(key, d, R, parent1, S, parent2, T,
+                               noiseModel::Isotropic::Sigma(b.size(), sigma));
+  }
+
+  /* ************************************************************************ */
   void GaussianConditional::print(const string &s, const KeyFormatter& formatter) const {
-    cout << s << "  Conditional density ";
+    cout << (s.empty() ? "" : s + " ") << "p(";
     for (const_iterator it = beginFrontals(); it != endFrontals(); ++it) {
-      cout << (boost::format("[%1%]")%(formatter(*it))).str() << " ";
+      cout << formatter(*it) << (nrFrontals() > 1 ? " " : "");
     }
-    cout << endl;
+
+    if (nrParents()) {
+      cout << " |";
+      for (const_iterator it = beginParents(); it != endParents(); ++it) {
+        cout << " " << formatter(*it);
+      }
+    }
+    cout << ")" << endl;
+
     cout << formatMatrixIndented("  R = ", R()) << endl;
     for (const_iterator it = beginParents() ; it != endParents() ; ++it) {
-      cout << formatMatrixIndented((boost::format("  S[%1%] = ")%(formatter(*it))).str(), getA(it))
-        << endl;
+      cout << formatMatrixIndented("  S[" + formatter(*it) + "] = ", getA(it)) << endl;
     }
     cout << formatMatrixIndented("  d = ", getb(), true) << "\n";
+    if (nrParents() == 0) {
+      const auto mean = solve({});  // solve for mean.
+      mean.print("  mean", formatter);
+    }
+    cout << "  logNormalizationConstant: " << std::fixed << std::setprecision(4)
+       << -negLogConstant() << endl;
     if (model_)
       model_->print("  Noise model: ");
     else
@@ -93,8 +148,8 @@ namespace gtsam {
           const_iterator it2 = c->beginParents() + (it - beginParents());
           if (*it != *(it2))
             return false;
-          rows1.push_back(row(getA(it), i));
-          rows2.push_back(row(c->getA(it2), i));
+          rows1.push_back(getA(it).row(i));
+          rows2.push_back(c->getA(it2).row(i));
         }
 
         Vector row1 = concatVectors(rows1);
@@ -115,6 +170,52 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  double GaussianConditional::logDeterminant() const {
+    if (get_model()) {
+      Vector diag = R().diagonal();
+      get_model()->whitenInPlace(diag);
+      return diag.unaryExpr([](double x) { return log(x); }).sum();
+    } else {
+      return R().diagonal().unaryExpr([](double x) { return log(x); }).sum();
+    }
+  }
+
+  /* ************************************************************************* */
+  //  normalization constant = 1.0 / sqrt((2*pi)^n*det(Sigma))
+  //  neg-log = 0.5 * n*log(2*pi) + 0.5 * log det(Sigma)
+  double GaussianConditional::negLogConstant() const {
+    constexpr double log2pi = 1.8378770664093454835606594728112;
+    size_t n = d().size();
+    // Sigma = (R'R)^{-1}, det(Sigma) = det((R'R)^{-1}) = det(R'R)^{-1}
+    // log det(Sigma) = -log(det(R'R)) = -2*log(det(R))
+    // Hence, log det(Sigma)) = -2.0 * logDeterminant()
+    // which gives neg-log = 0.5*n*log(2*pi) + 0.5*(-2.0 * logDeterminant())
+    //     = 0.5*n*log(2*pi) - (0.5*2.0 * logDeterminant())
+    //     = 0.5*n*log(2*pi) - logDeterminant()
+    return 0.5 * n * log2pi - logDeterminant();
+  }
+
+  /* ************************************************************************* */
+  //  density = k exp(-error(x))
+  //  log = log(k) - error(x)
+  double GaussianConditional::logProbability(const VectorValues& x) const {
+    return -(negLogConstant() + error(x));
+  }
+
+  double GaussianConditional::logProbability(const HybridValues& x) const {
+    return logProbability(x.continuous());
+  }
+
+  /* ************************************************************************* */
+  double GaussianConditional::evaluate(const VectorValues& x) const {
+    return exp(logProbability(x));
+  }
+
+  double GaussianConditional::evaluate(const HybridValues& x) const {
+    return evaluate(x.continuous());
+  }
+
+  /* ************************************************************************* */
   VectorValues GaussianConditional::solve(const VectorValues& x) const {
     // Concatenate all vector values that correspond to parent variables
     const Vector xS = x.vector(KeyVector(beginParents(), endParents()));
@@ -125,9 +226,9 @@ namespace gtsam {
     // Solve matrix
     const Vector solution = R().triangularView<Eigen::Upper>().solve(rhs);
 
-    // Check for indeterminant solution
+    // Check for indeterminate solution
     if (solution.hasNaN()) {
-      throw IndeterminantLinearSystemException(keys().front());
+      throw IndeterminateSystemException(keys().front());
     }
 
     // Insert solution into a VectorValues
@@ -143,7 +244,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   VectorValues GaussianConditional::solveOtherRHS(
-    const VectorValues& parents, const VectorValues& rhs) const {
+      const VectorValues& parents, const VectorValues& rhs) const {
     // Concatenate all vector values that correspond to parent variables
     Vector xS = parents.vector(KeyVector(beginParents(), endParents()));
 
@@ -152,17 +253,18 @@ namespace gtsam {
     xS = rhsR - S() * xS;
 
     // Solve Matrix
-    Vector soln = R().triangularView<Eigen::Upper>().solve(xS);
+    Vector solution = R().triangularView<Eigen::Upper>().solve(xS);
 
     // Scale by sigmas
-    if (model_)
-      soln.array() *= model_->sigmas().array();
+    if (model_) solution.array() *= model_->sigmasRef().array();
 
     // Insert solution into a VectorValues
     VectorValues result;
     DenseIndex vectorPosition = 0;
-    for (const_iterator frontal = beginFrontals(); frontal != endFrontals(); ++frontal) {
-      result.emplace(*frontal, soln.segment(vectorPosition, getDim(frontal)));
+    for (const_iterator frontal = beginFrontals(); frontal != endFrontals();
+         ++frontal) {
+      result.emplace(*frontal,
+                     solution.segment(vectorPosition, getDim(frontal)));
       vectorPosition += getDim(frontal);
     }
 
@@ -174,15 +276,16 @@ namespace gtsam {
     Vector frontalVec = gy.vector(KeyVector(beginFrontals(), endFrontals()));
     frontalVec = R().transpose().triangularView<Eigen::Lower>().solve(frontalVec);
 
-    // Check for indeterminant solution
-    if (frontalVec.hasNaN()) throw IndeterminantLinearSystemException(this->keys().front());
+    // Check for indeterminate solution
+    if (frontalVec.hasNaN())
+      throw IndeterminateSystemException(this->keys().front());
 
     for (const_iterator it = beginParents(); it!= endParents(); it++)
       gy[*it].noalias() += -1.0 * getA(it).transpose() * frontalVec;
 
     // Scale by sigmas
     if (model_)
-      frontalVec.array() *= model_->sigmas().array();
+      frontalVec.array() *= model_->sigmasRef().array();
 
     // Write frontal solution into a VectorValues
     DenseIndex vectorPosition = 0;
@@ -192,16 +295,96 @@ namespace gtsam {
     }
   }
 
-  /* ************************************************************************* */
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-  void GTSAM_DEPRECATED
-  GaussianConditional::scaleFrontalsBySigma(VectorValues& gy) const {
-    DenseIndex vectorPosition = 0;
-    for (const_iterator frontal = beginFrontals(); frontal != endFrontals(); ++frontal) {
-      gy[*frontal].array() *= model_->sigmas().segment(vectorPosition, getDim(frontal)).array();
-      vectorPosition += getDim(frontal);
+  /* ************************************************************************ */
+  JacobianFactor::shared_ptr GaussianConditional::likelihood(
+      const VectorValues& frontalValues) const {
+    // Error is |Rx - (d - Sy - Tz - ...)|^2
+    // so when we instantiate x (which has to be completely known) we beget:
+    // |Sy + Tz + ... - (d - Rx)|^2
+    // The noise model just transfers over!
+
+    // Get frontalValues as vector
+    const Vector x =
+        frontalValues.vector(KeyVector(beginFrontals(), endFrontals()));
+
+    // Compute updated right-hand side: d - R * x
+    const auto RR = R().triangularView<Eigen::Upper>();
+    const Vector rhs = d() - RR * x;
+
+    // Collect parent dimensions
+    FastVector<DenseIndex> parentDims;
+    parentDims.reserve(nrParents());
+    for (auto it = beginParents(); it != endParents(); ++it) {
+      parentDims.push_back(getDim(it));
     }
+
+    // Build a VerticalBlockMatrix containing only parent blocks and RHS.
+    const DenseIndex m = rows();
+    VerticalBlockMatrix newAb(parentDims, m, true);
+
+    // Copy parent blocks (S matrices).
+    DenseIndex blockIndex = 0;
+    for (auto it = beginParents(); it != endParents(); ++it, ++blockIndex) {
+      newAb(blockIndex) = S(it);
+    }
+
+    // Set the RHS block.
+    const DenseIndex lastBlock = newAb.nBlocks() - 1;
+    newAb(lastBlock).col(0) = rhs;
+
+    // The keys now do not include the frontal keys:
+    KeyVector newKeys;
+    newKeys.reserve(nrParents());
+    for (auto&& key : parents()) newKeys.push_back(key);
+
+    return std::make_shared<JacobianFactor>(newKeys, newAb, model_);
   }
-#endif
+
+  /* **************************************************************************/
+  JacobianFactor::shared_ptr GaussianConditional::likelihood(
+      const Vector& frontal) const {
+    if (nrFrontals() != 1)
+      throw std::invalid_argument(
+          "GaussianConditional Single value likelihood can only be invoked on "
+          "single-variable conditional");
+    VectorValues values;
+    values.insert(keys_[0], frontal);
+    return likelihood(values);
+  }
+
+  /* ************************************************************************ */
+  VectorValues GaussianConditional::sample(const VectorValues& parentsValues,
+                                           std::mt19937_64* rng) const {
+    if (nrFrontals() != 1) {
+      throw std::invalid_argument(
+          "GaussianConditional::sample can only be called on single variable "
+          "conditionals");
+    }
+
+    VectorValues solution = solve(parentsValues);
+    Key key = firstFrontalKey();
+
+    // Check if rng is nullptr, then assign default
+    rng = (rng == nullptr) ? &kRandomNumberGenerator : rng;
+
+    // The vector of sigma values for sampling.
+    // If no model, initialize sigmas to 1, else to model sigmas
+    if (model_) {
+      solution[key] += Sampler::sampleDiagonal(model_->sigmasRef(), rng);
+    } else {
+      solution[key] += Sampler::sampleDiagonal(Vector::Ones(rows()), rng);
+    }
+    return solution;
+  }
+
+  VectorValues GaussianConditional::sample(std::mt19937_64* rng) const {
+    if (nrParents() != 0)
+      throw std::invalid_argument(
+          "sample() can only be invoked on no-parent prior");
+    VectorValues values;
+    return sample(values, rng);
+  }
+
+  /* ************************************************************************ */
 
 }  // namespace gtsam

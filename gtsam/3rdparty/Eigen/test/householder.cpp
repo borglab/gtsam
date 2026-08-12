@@ -48,6 +48,17 @@ template<typename MatrixType> void householder(const MatrixType& m)
   v1.applyHouseholderOnTheLeft(essential,beta,tmp);
   VERIFY_IS_APPROX(v1.norm(), v2.norm());
 
+  // reconstruct householder matrix:
+  SquareMatrixType id, H1, H2;
+  id.setIdentity(rows, rows);
+  H1 = H2 = id;
+  VectorType vv(rows);
+  vv << Scalar(1), essential;
+  H1.applyHouseholderOnTheLeft(essential, beta, tmp);
+  H2.applyHouseholderOnTheRight(essential, beta, tmp);
+  VERIFY_IS_APPROX(H1, H2);
+  VERIFY_IS_APPROX(H1, id - beta * vv*vv.adjoint());
+
   MatrixType m1(rows, cols),
              m2(rows, cols);
 
@@ -68,7 +79,7 @@ template<typename MatrixType> void householder(const MatrixType& m)
   m3.rowwise() = v1.transpose();
   m4 = m3;
   m3.row(0).makeHouseholder(essential, beta, alpha);
-  m3.applyHouseholderOnTheRight(essential,beta,tmp);
+  m3.applyHouseholderOnTheRight(essential.conjugate(),beta,tmp);
   VERIFY_IS_APPROX(m3.norm(), m4.norm());
   if(rows>=2) VERIFY_IS_MUCH_SMALLER_THAN(m3.block(0,1,rows,rows-1).norm(), m3.norm());
   VERIFY_IS_MUCH_SMALLER_THAN(numext::imag(m3(0,0)), numext::real(m3(0,0)));
@@ -103,14 +114,14 @@ template<typename MatrixType> void householder(const MatrixType& m)
   VERIFY_IS_APPROX(hseq_mat.adjoint(),    hseq_mat_adj);
   VERIFY_IS_APPROX(hseq_mat.conjugate(),  hseq_mat_conj);
   VERIFY_IS_APPROX(hseq_mat.transpose(),  hseq_mat_trans);
-  VERIFY_IS_APPROX(hseq_mat * m6,             hseq_mat * m6);
-  VERIFY_IS_APPROX(hseq_mat.adjoint() * m6,   hseq_mat_adj * m6);
-  VERIFY_IS_APPROX(hseq_mat.conjugate() * m6, hseq_mat_conj * m6);
-  VERIFY_IS_APPROX(hseq_mat.transpose() * m6, hseq_mat_trans * m6);
-  VERIFY_IS_APPROX(m6 * hseq_mat,             m6 * hseq_mat);
-  VERIFY_IS_APPROX(m6 * hseq_mat.adjoint(),   m6 * hseq_mat_adj);
-  VERIFY_IS_APPROX(m6 * hseq_mat.conjugate(), m6 * hseq_mat_conj);
-  VERIFY_IS_APPROX(m6 * hseq_mat.transpose(), m6 * hseq_mat_trans);
+  VERIFY_IS_APPROX(hseq * m6,             hseq_mat * m6);
+  VERIFY_IS_APPROX(hseq.adjoint() * m6,   hseq_mat_adj * m6);
+  VERIFY_IS_APPROX(hseq.conjugate() * m6, hseq_mat_conj * m6);
+  VERIFY_IS_APPROX(hseq.transpose() * m6, hseq_mat_trans * m6);
+  VERIFY_IS_APPROX(m6 * hseq,             m6 * hseq_mat);
+  VERIFY_IS_APPROX(m6 * hseq.adjoint(),   m6 * hseq_mat_adj);
+  VERIFY_IS_APPROX(m6 * hseq.conjugate(), m6 * hseq_mat_conj);
+  VERIFY_IS_APPROX(m6 * hseq.transpose(), m6 * hseq_mat_trans);
 
   // test householder sequence on the right with a shift
 
@@ -122,7 +133,7 @@ template<typename MatrixType> void householder(const MatrixType& m)
   VERIFY_IS_APPROX(m3 * m5, m1); // test evaluating rhseq to a dense matrix, then applying
 }
 
-void test_householder()
+EIGEN_DECLARE_TEST(householder)
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( householder(Matrix<double,2,2>()) );

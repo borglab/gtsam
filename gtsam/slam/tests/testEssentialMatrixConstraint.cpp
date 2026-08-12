@@ -17,13 +17,13 @@
  *  @date Jan 5, 2014
  */
 
-#include <gtsam/slam/EssentialMatrixConstraint.h>
-#include <gtsam/nonlinear/Symbol.h>
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/base/numericalDerivative.h>
-#include <gtsam/base/TestableAssertions.h>
-
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/nonlinear/Symbol.h>
+#include <gtsam/slam/EssentialMatrixConstraint.h>
 
 using namespace std::placeholders;
 using namespace std;
@@ -53,12 +53,11 @@ TEST( EssentialMatrixConstraint, test ) {
 
   // Calculate numerical derivatives
   Matrix expectedH1 = numericalDerivative11<Vector5, Pose3>(
-      std::bind(&EssentialMatrixConstraint::evaluateError, &factor,
-                std::placeholders::_1, pose2, boost::none, boost::none),
-      pose1);
+		[&factor, &pose2](const Pose3& p1) {return factor.evaluateError(p1, pose2);},
+		pose1);
+
   Matrix expectedH2 = numericalDerivative11<Vector5, Pose3>(
-      std::bind(&EssentialMatrixConstraint::evaluateError, &factor, pose1,
-                std::placeholders::_1, boost::none, boost::none),
+		[&factor, &pose1](const Pose3& p2) {return factor.evaluateError(pose1, p2);},
       pose2);
 
   // Use the factor to calculate the derivative

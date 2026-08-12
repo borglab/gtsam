@@ -21,12 +21,13 @@
 
 #include <gtsam/geometry/Cal3.h>
 #include <gtsam/geometry/Point2.h>
+#include <memory>
 
 namespace gtsam {
 
 /**
  * @brief Calibration of a camera with radial distortion
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  *
  * Uses same distortionmodel as OpenCV, with
@@ -45,7 +46,10 @@ class GTSAM_EXPORT Cal3DS2_Base : public Cal3 {
   double tol_ = 1e-5;             ///< tolerance value when calibrating
 
  public:
-  enum { dimension = 9 };
+  constexpr static auto dimension = 9;
+
+  ///< shared pointer to stereo calibration object
+  using shared_ptr = std::shared_ptr<Cal3DS2_Base>;
 
   /// @name Standard Constructors
   /// @{
@@ -94,16 +98,16 @@ class GTSAM_EXPORT Cal3DS2_Base : public Cal3 {
   /// @{
 
   /// First distortion coefficient
-  inline double k1() const { return k1_; }
+  double k1() const { return k1_; }
 
   /// Second distortion coefficient
-  inline double k2() const { return k2_; }
+  double k2() const { return k2_; }
 
   /// First tangential distortion coefficient
-  inline double p1() const { return p1_; }
+  double p1() const { return p1_; }
 
   /// Second tangential distortion coefficient
-  inline double p2() const { return p2_; }
+  double p2() const { return p2_; }
 
   /// return distortion parameter vector
   Vector4 k() const { return Vector4(k1_, k2_, p1_, p2_); }
@@ -118,12 +122,12 @@ class GTSAM_EXPORT Cal3DS2_Base : public Cal3 {
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in (distorted) image coordinates
    */
-  Point2 uncalibrate(const Point2& p, OptionalJacobian<2, 9> Dcal = boost::none,
-                     OptionalJacobian<2, 2> Dp = boost::none) const;
+  Point2 uncalibrate(const Point2& p, OptionalJacobian<2, 9> Dcal = {},
+                     OptionalJacobian<2, 2> Dp = {}) const;
 
   /// Convert (distorted) image coordinates uv to intrinsic coordinates xy
-  Point2 calibrate(const Point2& p, OptionalJacobian<2, 9> Dcal = boost::none,
-                   OptionalJacobian<2, 2> Dp = boost::none) const;
+  Point2 calibrate(const Point2& p, OptionalJacobian<2, 9> Dcal = {},
+                   OptionalJacobian<2, 2> Dp = {}) const;
 
   /// Derivative of uncalibrate wrpt intrinsic coordinates
   Matrix2 D2d_intrinsic(const Point2& p) const;
@@ -132,18 +136,18 @@ class GTSAM_EXPORT Cal3DS2_Base : public Cal3 {
   Matrix29 D2d_calibration(const Point2& p) const;
 
   /// return DOF, dimensionality of tangent space
-  size_t dim() const override { return Dim(); }
+  size_t dim() const { return Dim(); }
 
   /// return DOF, dimensionality of tangent space
-  inline static size_t Dim() { return dimension; }
+  static size_t Dim() { return dimension; }
 
   /// @}
   /// @name Clone
   /// @{
 
   /// @return a deep copy of this object
-  virtual boost::shared_ptr<Cal3DS2_Base> clone() const {
-    return boost::shared_ptr<Cal3DS2_Base>(new Cal3DS2_Base(*this));
+  virtual std::shared_ptr<Cal3DS2_Base> clone() const {
+    return std::shared_ptr<Cal3DS2_Base>(new Cal3DS2_Base(*this));
   }
 
   /// @}
@@ -152,6 +156,7 @@ class GTSAM_EXPORT Cal3DS2_Base : public Cal3 {
   /// @name Advanced Interface
   /// @{
 
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class Archive>
@@ -164,6 +169,7 @@ class GTSAM_EXPORT Cal3DS2_Base : public Cal3 {
     ar& BOOST_SERIALIZATION_NVP(p2_);
     ar& BOOST_SERIALIZATION_NVP(tol_);
   }
+#endif
 
   /// @}
 };

@@ -1,22 +1,18 @@
 #include <gtwrap/matlab.h>
 #include <map>
 
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/serialization/export.hpp>
-
 #include <gtsam/geometry/Cal3Bundler.h>
 
 typedef gtsam::PinholeCamera<gtsam::Cal3Bundler> PinholeCameraCal3Bundler;
 typedef gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3> GeneralSFMFactorCal3Bundler;
 
-typedef std::set<boost::shared_ptr<gtsam::NonlinearFactorGraph>*> Collector_gtsamNonlinearFactorGraph;
+typedef std::set<std::shared_ptr<gtsam::NonlinearFactorGraph>*> Collector_gtsamNonlinearFactorGraph;
 static Collector_gtsamNonlinearFactorGraph collector_gtsamNonlinearFactorGraph;
-typedef std::set<boost::shared_ptr<gtsam::SfmTrack>*> Collector_gtsamSfmTrack;
+typedef std::set<std::shared_ptr<gtsam::SfmTrack>*> Collector_gtsamSfmTrack;
 static Collector_gtsamSfmTrack collector_gtsamSfmTrack;
-typedef std::set<boost::shared_ptr<PinholeCameraCal3Bundler>*> Collector_gtsamPinholeCameraCal3Bundler;
+typedef std::set<std::shared_ptr<PinholeCameraCal3Bundler>*> Collector_gtsamPinholeCameraCal3Bundler;
 static Collector_gtsamPinholeCameraCal3Bundler collector_gtsamPinholeCameraCal3Bundler;
-typedef std::set<boost::shared_ptr<GeneralSFMFactorCal3Bundler>*> Collector_gtsamGeneralSFMFactorCal3Bundler;
+typedef std::set<std::shared_ptr<GeneralSFMFactorCal3Bundler>*> Collector_gtsamGeneralSFMFactorCal3Bundler;
 static Collector_gtsamGeneralSFMFactorCal3Bundler collector_gtsamGeneralSFMFactorCal3Bundler;
 
 
@@ -94,7 +90,7 @@ void _special_cases_RTTIRegister() {
 void gtsamNonlinearFactorGraph_collectorInsertAndMakeBase_0(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<gtsam::NonlinearFactorGraph> Shared;
+  typedef std::shared_ptr<gtsam::NonlinearFactorGraph> Shared;
 
   Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
   collector_gtsamNonlinearFactorGraph.insert(self);
@@ -102,7 +98,7 @@ void gtsamNonlinearFactorGraph_collectorInsertAndMakeBase_0(int nargout, mxArray
 
 void gtsamNonlinearFactorGraph_deconstructor_1(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<gtsam::NonlinearFactorGraph> Shared;
+  typedef std::shared_ptr<gtsam::NonlinearFactorGraph> Shared;
   checkArguments("delete_gtsamNonlinearFactorGraph",nargout,nargin,1);
   Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
   Collector_gtsamNonlinearFactorGraph::iterator item;
@@ -119,14 +115,14 @@ void gtsamNonlinearFactorGraph_addPrior_2(int nargout, mxArray *out[], int nargi
   auto obj = unwrap_shared_ptr<gtsam::NonlinearFactorGraph>(in[0], "ptr_gtsamNonlinearFactorGraph");
   size_t key = unwrap< size_t >(in[1]);
   gtsam::PinholeCamera<gtsam::Cal3Bundler>& prior = *unwrap_shared_ptr< gtsam::PinholeCamera<gtsam::Cal3Bundler> >(in[2], "ptr_gtsamPinholeCameraCal3Bundler");
-  boost::shared_ptr<gtsam::noiseModel::Base> noiseModel = unwrap_shared_ptr< gtsam::noiseModel::Base >(in[3], "ptr_gtsamnoiseModelBase");
+  std::shared_ptr<gtsam::noiseModel::Base> noiseModel = unwrap_shared_ptr< gtsam::noiseModel::Base >(in[3], "ptr_gtsamnoiseModelBase");
   obj->addPrior<gtsam::PinholeCamera<gtsam::Cal3Bundler>>(key,prior,noiseModel);
 }
 
 void gtsamSfmTrack_collectorInsertAndMakeBase_3(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<gtsam::SfmTrack> Shared;
+  typedef std::shared_ptr<gtsam::SfmTrack> Shared;
 
   Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
   collector_gtsamSfmTrack.insert(self);
@@ -134,7 +130,7 @@ void gtsamSfmTrack_collectorInsertAndMakeBase_3(int nargout, mxArray *out[], int
 
 void gtsamSfmTrack_deconstructor_4(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<gtsam::SfmTrack> Shared;
+  typedef std::shared_ptr<gtsam::SfmTrack> Shared;
   checkArguments("delete_gtsamSfmTrack",nargout,nargin,1);
   Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
   Collector_gtsamSfmTrack::iterator item;
@@ -145,18 +141,33 @@ void gtsamSfmTrack_deconstructor_4(int nargout, mxArray *out[], int nargin, cons
   delete self;
 }
 
-void gtsamPinholeCameraCal3Bundler_collectorInsertAndMakeBase_5(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void gtsamSfmTrack_get_measurements_5(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("measurements",nargout,nargin-1,0);
+  auto obj = unwrap_shared_ptr<gtsam::SfmTrack>(in[0], "ptr_gtsamSfmTrack");
+  out[0] = wrap_shared_ptr(std::make_shared<std::vector<std::pair<size_t,Point2>>>(obj->measurements),"std.vectorpairsize_tPoint2", false);
+}
+
+void gtsamSfmTrack_set_measurements_6(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("measurements",nargout,nargin-1,1);
+  auto obj = unwrap_shared_ptr<gtsam::SfmTrack>(in[0], "ptr_gtsamSfmTrack");
+  std::shared_ptr<std::vector<std::pair<size_t,Point2>>> measurements = unwrap_shared_ptr< std::vector<std::pair<size_t,Point2>> >(in[1], "ptr_stdvectorpairsize_tPoint2");
+  obj->measurements = *measurements;
+}
+
+void gtsamPinholeCameraCal3Bundler_collectorInsertAndMakeBase_7(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<gtsam::PinholeCamera<gtsam::Cal3Bundler>> Shared;
+  typedef std::shared_ptr<gtsam::PinholeCamera<gtsam::Cal3Bundler>> Shared;
 
   Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
   collector_gtsamPinholeCameraCal3Bundler.insert(self);
 }
 
-void gtsamPinholeCameraCal3Bundler_deconstructor_6(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void gtsamPinholeCameraCal3Bundler_deconstructor_8(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<gtsam::PinholeCamera<gtsam::Cal3Bundler>> Shared;
+  typedef std::shared_ptr<gtsam::PinholeCamera<gtsam::Cal3Bundler>> Shared;
   checkArguments("delete_gtsamPinholeCameraCal3Bundler",nargout,nargin,1);
   Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
   Collector_gtsamPinholeCameraCal3Bundler::iterator item;
@@ -167,18 +178,18 @@ void gtsamPinholeCameraCal3Bundler_deconstructor_6(int nargout, mxArray *out[], 
   delete self;
 }
 
-void gtsamGeneralSFMFactorCal3Bundler_collectorInsertAndMakeBase_7(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void gtsamGeneralSFMFactorCal3Bundler_collectorInsertAndMakeBase_9(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   mexAtExit(&_deleteAllObjects);
-  typedef boost::shared_ptr<gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>> Shared;
+  typedef std::shared_ptr<gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>> Shared;
 
   Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
   collector_gtsamGeneralSFMFactorCal3Bundler.insert(self);
 }
 
-void gtsamGeneralSFMFactorCal3Bundler_deconstructor_8(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void gtsamGeneralSFMFactorCal3Bundler_deconstructor_10(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
-  typedef boost::shared_ptr<gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>> Shared;
+  typedef std::shared_ptr<gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>> Shared;
   checkArguments("delete_gtsamGeneralSFMFactorCal3Bundler",nargout,nargin,1);
   Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
   Collector_gtsamGeneralSFMFactorCal3Bundler::iterator item;
@@ -187,6 +198,21 @@ void gtsamGeneralSFMFactorCal3Bundler_deconstructor_8(int nargout, mxArray *out[
     collector_gtsamGeneralSFMFactorCal3Bundler.erase(item);
   }
   delete self;
+}
+
+void gtsamGeneralSFMFactorCal3Bundler_get_verbosity_11(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("verbosity",nargout,nargin-1,0);
+  auto obj = unwrap_shared_ptr<gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>>(in[0], "ptr_gtsamGeneralSFMFactorCal3Bundler");
+  out[0] = wrap_enum(obj->verbosity,"gtsam.GeneralSFMFactorCal3Bundler.Verbosity");
+}
+
+void gtsamGeneralSFMFactorCal3Bundler_set_verbosity_12(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("verbosity",nargout,nargin-1,1);
+  auto obj = unwrap_shared_ptr<gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>>(in[0], "ptr_gtsamGeneralSFMFactorCal3Bundler");
+  gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>::Verbosity verbosity = unwrap_enum<gtsam::GeneralSFMFactor<gtsam::PinholeCamera<gtsam::Cal3Bundler>, gtsam::Point3>::Verbosity>(in[1]);
+  obj->verbosity = verbosity;
 }
 
 
@@ -217,16 +243,28 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       gtsamSfmTrack_deconstructor_4(nargout, out, nargin-1, in+1);
       break;
     case 5:
-      gtsamPinholeCameraCal3Bundler_collectorInsertAndMakeBase_5(nargout, out, nargin-1, in+1);
+      gtsamSfmTrack_get_measurements_5(nargout, out, nargin-1, in+1);
       break;
     case 6:
-      gtsamPinholeCameraCal3Bundler_deconstructor_6(nargout, out, nargin-1, in+1);
+      gtsamSfmTrack_set_measurements_6(nargout, out, nargin-1, in+1);
       break;
     case 7:
-      gtsamGeneralSFMFactorCal3Bundler_collectorInsertAndMakeBase_7(nargout, out, nargin-1, in+1);
+      gtsamPinholeCameraCal3Bundler_collectorInsertAndMakeBase_7(nargout, out, nargin-1, in+1);
       break;
     case 8:
-      gtsamGeneralSFMFactorCal3Bundler_deconstructor_8(nargout, out, nargin-1, in+1);
+      gtsamPinholeCameraCal3Bundler_deconstructor_8(nargout, out, nargin-1, in+1);
+      break;
+    case 9:
+      gtsamGeneralSFMFactorCal3Bundler_collectorInsertAndMakeBase_9(nargout, out, nargin-1, in+1);
+      break;
+    case 10:
+      gtsamGeneralSFMFactorCal3Bundler_deconstructor_10(nargout, out, nargin-1, in+1);
+      break;
+    case 11:
+      gtsamGeneralSFMFactorCal3Bundler_get_verbosity_11(nargout, out, nargin-1, in+1);
+      break;
+    case 12:
+      gtsamGeneralSFMFactorCal3Bundler_set_verbosity_12(nargout, out, nargin-1, in+1);
       break;
     }
   } catch(const std::exception& e) {

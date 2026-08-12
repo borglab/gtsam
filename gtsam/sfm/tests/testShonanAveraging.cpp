@@ -14,18 +14,21 @@
  * @date   March 2019
  * @author Frank Dellaert
  * @brief  Unit tests for Shonan Averaging algorithm
+ * @author Fan Jiang
  */
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/sfm/ShonanAveraging.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/slam/FrobeniusFactor.h>
 
+#include <Eigen/Eigenvalues>
 #include <algorithm>
-#include <iostream>
-#include <map>
+#include <array>
+#include <cmath>
+#include <cstdint>
 #include <random>
+#include <stdexcept>
 
 using namespace std;
 using namespace gtsam;
@@ -45,7 +48,7 @@ ShonanAveraging3 fromExampleName(
 
 static const ShonanAveraging3 kShonan = fromExampleName("toyExample.g2o");
 
-static std::mt19937 kRandomNumberGenerator(42);
+static std::mt19937 kPRNG(42);
 
 /* ************************************************************************* */
 TEST(ShonanAveraging3, checkConstructor) {
@@ -78,7 +81,7 @@ TEST(ShonanAveraging3, buildGraphAt) {
 
 /* ************************************************************************* */
 TEST(ShonanAveraging3, checkOptimality) {
-  const Values randomRotations = kShonan.initializeRandomly(kRandomNumberGenerator);
+  const Values randomRotations = kShonan.initializeRandomly(kPRNG);
   Values random = ShonanAveraging3::LiftTo<Rot3>(4, randomRotations);  // lift to 4!
   auto Lambda = kShonan.computeLambda(random);
   EXPECT_LONGS_EQUAL(15, Lambda.rows());
@@ -106,7 +109,7 @@ TEST(ShonanAveraging3, checkSubgraph) {
 
   // Create initial random estimation
   Values initial;
-  initial = subgraphShonan.initializeRandomly(kRandomNumberGenerator);
+  initial = subgraphShonan.initializeRandomly(kPRNG);
 
   // Run Shonan with SUBGRAPH solver
   auto result = subgraphShonan.run(initial, 3, 3);
@@ -115,7 +118,7 @@ TEST(ShonanAveraging3, checkSubgraph) {
 
 /* ************************************************************************* */
 TEST(ShonanAveraging3, tryOptimizingAt3) {
-  const Values randomRotations = kShonan.initializeRandomly(kRandomNumberGenerator);
+  const Values randomRotations = kShonan.initializeRandomly(kPRNG);
   Values initial = ShonanAveraging3::LiftTo<Rot3>(3, randomRotations);  // convert to SOn
   EXPECT(!kShonan.checkOptimality(initial));
   const Values result = kShonan.tryOptimizingAt(3, initial);
@@ -130,7 +133,7 @@ TEST(ShonanAveraging3, tryOptimizingAt3) {
 
 /* ************************************************************************* */
 TEST(ShonanAveraging3, tryOptimizingAt4) {
-  const Values randomRotations = kShonan.initializeRandomly(kRandomNumberGenerator);
+  const Values randomRotations = kShonan.initializeRandomly(kPRNG);
   Values random = ShonanAveraging3::LiftTo<Rot3>(4, randomRotations);  // lift to 4!
   const Values result = kShonan.tryOptimizingAt(4, random);
   EXPECT(kShonan.checkOptimality(result));
@@ -144,12 +147,10 @@ TEST(ShonanAveraging3, tryOptimizingAt4) {
 
 /* ************************************************************************* */
 TEST(ShonanAveraging3, TangentVectorValues) {
-  Vector9 v;
-  v << 1, 2, 3, 4, 5, 6, 7, 8, 9;
-  Vector expected0(10), expected1(10), expected2(10);
-  expected0 << 0, 3, -2, 1, 0, 0, 0, 0, 0, 0;
-  expected1 << 0, 6, -5, 4, 0, 0, 0, 0, 0, 0;
-  expected2 << 0, 9, -8, 7, 0, 0, 0, 0, 0, 0;
+  Vector9 v{1, 2, 3, 4, 5, 6, 7, 8, 9};
+  Vector expected0{{0, 3, -2, 1, 0, 0, 0, 0, 0, 0}},
+      expected1{{0, 6, -5, 4, 0, 0, 0, 0, 0, 0}},
+      expected2{{0, 9, -8, 7, 0, 0, 0, 0, 0, 0}};
   const VectorValues xi = ShonanAveraging3::TangentVectorValues(5, v);
   EXPECT(assert_equal(expected0, xi[0]));
   EXPECT(assert_equal(expected1, xi[1]));
@@ -205,19 +206,31 @@ TEST(ShonanAveraging3, CheckWithEigen) {
       ShonanAveraging3::LiftwithDescent(4, Qstar3, descentDirection);
   EXPECT_LONGS_EQUAL(5, initialQ4.size());
 
-  // TODO(frank): uncomment this regression test: currently not repeatable
-  // across platforms.
-  // Matrix expected(4, 4);
-  // expected << 0.0459224, -0.688689, -0.216922, 0.690321, //
-  //     0.92381, 0.191931, 0.255854, 0.21042,              //
-  //     -0.376669, 0.301589, 0.687953, 0.542111,           //
-  //     -0.0508588, 0.630804, -0.643587, 0.43046;
+  Matrix expected(4, 4);
+#if __APPLE__
+  expected << 0.145767, -0.938445, 0.135713, -0.282233,  //
+      0.780348, -0.0104323, 0.266238, 0.565743,          //
+      -0.383624, 0.0434887, 0.917211, 0.0983088,         //
+      -0.471849, -0.342523, -0.263482, 0.768514;
+#elif __linux__
+  expected << 0.100724, -0.987231, 0.104092, 0.0662867,  //
+      0.571527, 0.0292782, 0.226546, -0.788147,          //
+      -0.349294, 0.064102, 0.93465, 0.0177471,           //
+      0.735667, 0.142857, 0.253519, 0.611649;
+#elif _WIN32
+  expected << 0.0825862, -0.645931, 0.271896, 0.708537,  //
+      0.927285, -0.0156335, 0.291603, -0.234236,         //
+      -0.36419, -0.132115, 0.831933, -0.39724,           //
+      0.0262425, 0.751715, 0.385912, 0.534143;
+#endif
+
+  // TODO: need to fix the test for eigen3 v5.x.x
   // EXPECT(assert_equal(SOn(expected), initialQ4.at<SOn>(0), 1e-5));
 }
 
 /* ************************************************************************* */
 TEST(ShonanAveraging3, initializeWithDescent) {
-  const Values randomRotations = kShonan.initializeRandomly(kRandomNumberGenerator);
+  const Values randomRotations = kShonan.initializeRandomly(kPRNG);
   Values random = ShonanAveraging3::LiftTo<Rot3>(3, randomRotations);
   const Values Qstar3 = kShonan.tryOptimizingAt(3, random);
   Vector minEigenVector;
@@ -229,7 +242,7 @@ TEST(ShonanAveraging3, initializeWithDescent) {
 
 /* ************************************************************************* */
 TEST(ShonanAveraging3, run) {
-  auto initial = kShonan.initializeRandomly(kRandomNumberGenerator); 
+  auto initial = kShonan.initializeRandomly(kPRNG); 
   auto result = kShonan.run(initial, 5);
   EXPECT_DOUBLES_EQUAL(0, kShonan.cost(result.first), 1e-3);
   EXPECT_DOUBLES_EQUAL(-5.427688831332745e-07, result.second,
@@ -284,7 +297,7 @@ TEST(ShonanAveraging3, runKlaus) {
   EXPECT(assert_equal(R02, wR0.between(wR2), 0.1));
 
   // Run Shonan (with prior on first rotation)
-  auto initial = shonan.initializeRandomly(kRandomNumberGenerator); 
+  auto initial = shonan.initializeRandomly(kPRNG); 
   auto result = shonan.run(initial, 5);
   EXPECT_DOUBLES_EQUAL(0, shonan.cost(result.first), 1e-2);
   EXPECT_DOUBLES_EQUAL(-9.2259161494467889e-05, result.second,
@@ -312,7 +325,7 @@ TEST(ShonanAveraging3, runKlausKarcher) {
   static const ShonanAveraging3 shonan = fromExampleName("Klaus3.g2o");
 
   // Run Shonan (with Karcher mean prior)
-  auto initial = shonan.initializeRandomly(kRandomNumberGenerator); 
+  auto initial = shonan.initializeRandomly(kPRNG); 
   auto result = shonan.run(initial, 5);
   EXPECT_DOUBLES_EQUAL(0, shonan.cost(result.first), 1e-2);
   EXPECT_DOUBLES_EQUAL(-1.361402670507772e-05, result.second,
@@ -342,7 +355,7 @@ TEST(ShonanAveraging2, noisyToyGraph) {
   // Check graph building
   NonlinearFactorGraph graph = shonan.buildGraphAt(2);
   EXPECT_LONGS_EQUAL(6, graph.size());
-  auto initial = shonan.initializeRandomly(kRandomNumberGenerator); 
+  auto initial = shonan.initializeRandomly(kPRNG); 
   auto result = shonan.run(initial, 2);
   EXPECT_DOUBLES_EQUAL(0.0008211, shonan.cost(result.first), 1e-6);
   EXPECT_DOUBLES_EQUAL(0, result.second, 1e-10); // certificate!
@@ -372,13 +385,15 @@ TEST(ShonanAveraging2, noisyToyGraphWithHuber) {
 
   // test that each factor is actually robust
   for (size_t i=0; i<=4; i++) { // note: last is the Gauge factor and is not robust
-	  const auto &robust = boost::dynamic_pointer_cast<noiseModel::Robust>(
-			  boost::dynamic_pointer_cast<NoiseModelFactor>(graph[i])->noiseModel());
-	  EXPECT(robust); // we expect the factors to be use a robust noise model (in particular, Huber)
+    const auto &robust = std::dynamic_pointer_cast<noiseModel::Robust>(
+        graph.at<NoiseModelFactor>(i)->noiseModel());
+    // we expect the factors to be use a robust noise model
+    // (in particular, Huber)
+    EXPECT(robust);
   }
 
   // test result
-  auto initial = shonan.initializeRandomly(kRandomNumberGenerator);
+  auto initial = shonan.initializeRandomly(kPRNG);
   auto result = shonan.run(initial, 2,2);
   EXPECT_DOUBLES_EQUAL(0.0008211, shonan.cost(result.first), 1e-6);
   EXPECT_DOUBLES_EQUAL(0, result.second, 1e-10); // certificate!
@@ -404,7 +419,7 @@ TEST(ShonanAveraging3, PriorWeights) {
   for (auto i : {0,1,2}) {
     const auto& m = shonan.measurement(i);
     auto isotropic =
-        boost::static_pointer_cast<noiseModel::Isotropic>(m.noiseModel());
+        std::static_pointer_cast<noiseModel::Isotropic>(m.noiseModel());
     CHECK(isotropic != nullptr);
     EXPECT_LONGS_EQUAL(3, isotropic->dim());
     EXPECT_DOUBLES_EQUAL(0.2, isotropic->sigma(), 1e-9);
@@ -415,6 +430,123 @@ TEST(ShonanAveraging3, PriorWeights) {
   auto result = shonan.run(initial, 3, 3);
   EXPECT_DOUBLES_EQUAL(0.0015, shonan.cost(result.first), 1e-4);
 }
+
+/* ************************************************************************* */
+// Check a small graph created using binary measurements
+TEST(ShonanAveraging3, BinaryMeasurements) {
+  std::vector<BinaryMeasurement<Rot3>> measurements;
+  auto unit3 = noiseModel::Unit::Create(3);
+  measurements.emplace_back(0, 1, Rot3::Yaw(M_PI_2), unit3);
+  measurements.emplace_back(1, 2, Rot3::Yaw(M_PI_2), unit3);
+  ShonanAveraging3 shonan(measurements);
+  Values initial = shonan.initializeRandomly();
+  auto result = shonan.run(initial, 3, 5);
+  EXPECT_DOUBLES_EQUAL(0.0, shonan.cost(result.first), 1e-4);
+}
+
+/* ************************************************************************* */
+namespace false_certificate_fixture {
+
+constexpr size_t kNumNodes = 15;
+constexpr size_t kMinRank = 3;
+constexpr size_t kMaxRank = 8;
+constexpr double kOptimalityThreshold = -1e-4;
+
+std::array<double, 4> StandardNormalSamples(std::mt19937 &rng) {
+  std::array<double, 4> samples;
+  for (size_t i = 0; i < samples.size(); i += 2) {
+    double x, y, squaredNorm;
+    do {
+      const uint64_t xBits = static_cast<uint64_t>(rng()) |
+                             (static_cast<uint64_t>(rng()) << 32);
+      const uint64_t yBits = static_cast<uint64_t>(rng()) |
+                             (static_cast<uint64_t>(rng()) << 32);
+      x = 2.0 * static_cast<double>(xBits) * 0x1p-64 - 1.0;
+      y = 2.0 * static_cast<double>(yBits) * 0x1p-64 - 1.0;
+      squaredNorm = x * x + y * y;
+    } while (squaredNorm > 1.0 || squaredNorm == 0.0);
+
+    const double scale = std::sqrt(-2.0 * std::log(squaredNorm) / squaredNorm);
+    samples[i] = y * scale;
+    samples[i + 1] = x * scale;
+  }
+  return samples;
+}
+
+Rot3 RandomHaarRotation(std::mt19937 &rng) {
+  // Use a specified polar transform instead of implementation-defined
+  // std::normal_distribution output so these regressions are portable.
+  const auto samples = StandardNormalSamples(rng);
+  Eigen::Quaterniond quaternion(samples[0], samples[1], samples[2], samples[3]);
+  quaternion.normalize();
+  return Rot3(quaternion.toRotationMatrix());
+}
+
+ShonanAveraging3::Measurements MakeMeasurements(uint32_t seed) {
+  std::mt19937 rng(seed);
+  std::vector<Rot3> rotations;
+  rotations.reserve(kNumNodes);
+  for (size_t i = 0; i < kNumNodes; ++i) {
+    rotations.push_back(RandomHaarRotation(rng));
+  }
+
+  ShonanAveraging3::Measurements measurements;
+  measurements.reserve(kNumNodes * (kNumNodes - 1));
+  const auto unit3 = noiseModel::Unit::Create(3);
+  for (size_t i = 0; i < kNumNodes; ++i) {
+    for (size_t j = 0; j < kNumNodes; ++j) {
+      if (i == j) continue;
+      const Matrix3 measured =
+          rotations[j].matrix() * rotations[i].matrix().transpose();
+      measurements.emplace_back(i, j, Rot3(measured), unit3);
+    }
+  }
+  return measurements;
+}
+
+bool HasFalseCertificate(uint32_t seed) {
+  const ShonanAveraging3 shonan(MakeMeasurements(seed));
+  std::mt19937 initialRng(42);
+  Values initial = ShonanAveraging3::LiftTo<Rot3>(
+      kMinRank, shonan.initializeRandomly(initialRng));
+
+  for (size_t rank = kMinRank; rank <= kMaxRank; ++rank) {
+    const Values optimum = shonan.tryOptimizingAt(rank, initial);
+    Vector minEigenVector;
+    const double reportedMinimum =
+        shonan.computeMinEigenValue(optimum, &minEigenVector);
+
+    const Matrix certificate(shonan.computeA(optimum));
+    const Eigen::SelfAdjointEigenSolver<Matrix> referenceSolver(certificate);
+    if (referenceSolver.info() != Eigen::Success) {
+      throw std::runtime_error("Dense reference eigensolve failed");
+    }
+    const double referenceMinimum = referenceSolver.eigenvalues()(0);
+    if (reportedMinimum > kOptimalityThreshold) {
+      return referenceMinimum <= kOptimalityThreshold;
+    }
+
+    if (rank != kMaxRank) {
+      initial = shonan.initializeWithDescent(
+          rank + 1, optimum, minEigenVector, reportedMinimum);
+    }
+  }
+  return false;
+}
+
+}  // namespace false_certificate_fixture
+/* ************************************************************************* */
+
+// Verify randomized case 26 is never certified against a negative eigenvalue.
+TEST(ShonanCertificate, RandomizedCase26) {
+  EXPECT(!false_certificate_fixture::HasFalseCertificate(26));
+}
+
+// Verify randomized case 54 is never certified against a negative eigenvalue.
+TEST(ShonanCertificate, RandomizedCase54) {
+  EXPECT(!false_certificate_fixture::HasFalseCertificate(54));
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;

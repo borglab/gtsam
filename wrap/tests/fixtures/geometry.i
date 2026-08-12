@@ -20,7 +20,7 @@ class Point2 {
  void argChar(const char& a) const;
  void argChar(const char@ a) const;
  void argUChar(unsigned char a) const;
- void eigenArguments(Vector v, Matrix m) const;
+ void eigenArguments(const gtsam::Vector& v, const gtsam::Matrix& m) const;
  VectorNotEigen vectorConfusion();
 
  void serializable() const; // Sets flag and creates export, but does not make serialization functions

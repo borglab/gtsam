@@ -32,12 +32,11 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/assign/std/list.hpp>
-#include <boost/assign/std/set.hpp>
-using namespace boost::assign;
-
 /*STL/C++*/
 #include <iostream>
+#include <mutex>
+#include <set>
+#include <thread>
 
 using namespace std;
 using namespace gtsam;
@@ -45,6 +44,50 @@ using namespace example;
 
 using symbol_shorthand::X;
 using symbol_shorthand::L;
+
+/* ************************************************************************* */
+// Test factor class that is not sendable (for testing parallel error
+// computation)
+class NonSendableBetweenFactor : public BetweenFactor<Pose2> {
+ public:
+  using Base = BetweenFactor<Pose2>;
+
+  // Static members to track thread IDs that process this factor
+  static std::set<std::thread::id> processingThreadIds;
+  static std::mutex threadIdMutex;
+
+  NonSendableBetweenFactor(Key key1, Key key2, const Pose2& measured,
+                           const SharedNoiseModel& model = nullptr)
+      : Base(key1, key2, measured, model) {}
+
+  bool sendable() const override { return false; }
+
+  // Override error() to track which thread processes this factor
+  double error(const Values& c) const override {
+    std::thread::id currentThreadId = std::this_thread::get_id();
+    {
+      std::lock_guard<std::mutex> lock(threadIdMutex);
+      processingThreadIds.insert(currentThreadId);
+    }
+    return Base::error(c);
+  }
+
+  // Static method to reset tracking (for test cleanup)
+  static void resetTracking() {
+    std::lock_guard<std::mutex> lock(threadIdMutex);
+    processingThreadIds.clear();
+  }
+
+  // Static method to get all thread IDs that processed this factor
+  static std::set<std::thread::id> getProcessingThreadIds() {
+    std::lock_guard<std::mutex> lock(threadIdMutex);
+    return processingThreadIds;
+  }
+};
+
+// Static member definitions
+std::set<std::thread::id> NonSendableBetweenFactor::processingThreadIds;
+std::mutex NonSendableBetweenFactor::threadIdMutex;
 
 /* ************************************************************************* */
 TEST( NonlinearFactorGraph, equals )
@@ -68,6 +111,106 @@ TEST( NonlinearFactorGraph, error )
 }
 
 /* ************************************************************************* */
+TEST( NonlinearFactorGraph, errorParallel ) 
+{
+  constexpr size_t kNumFactors = 512 + 2; // Create graph with >512 factors to trigger TBB parallel path
+  NonlinearFactorGraph fg;
+  Values values;
+  auto noise = noiseModel::Isotropic::Sigma(3, 0.1);
+  size_t numSendableFactors = 0;
+  size_t numNonSendableFactors = 0;
+
+  for (size_t i = 0; i < kNumFactors; ++i) {
+    values.insert(X(i), Pose2(i * 0.1, 0.0, 0.0));
+    if (i > 0) {
+      // Mix sendable and non-sendable factors: use non-sendable for every 10th
+      // factor
+      if (i % 10 == 0) {
+        fg.emplace_shared<NonSendableBetweenFactor>(
+            X(i - 1), X(i), Pose2(0.1, 0.0, 0.0), noise);
+        numNonSendableFactors++;
+      } else {
+        fg.emplace_shared<BetweenFactor<Pose2>>(X(i - 1), X(i),
+                                                Pose2(0.1, 0.0, 0.0), noise);
+        numSendableFactors++;
+      }
+    }
+  }
+
+  // Verify we have both types of factors
+  EXPECT(numSendableFactors > 0);
+  EXPECT(numNonSendableFactors > 0);
+
+  // Reset tracking and get main thread ID before testing
+  NonSendableBetweenFactor::resetTracking();
+  std::thread::id mainThreadId = std::this_thread::get_id();
+
+  // Test with correct values
+  double actual1 = fg.error(values);
+  DOUBLES_EQUAL(0.0, actual1, 1e-9);
+
+  // Verify that NonSendableBetweenFactor instances were only processed on main thread
+  std::set<std::thread::id> threadIds = NonSendableBetweenFactor::getProcessingThreadIds();
+  EXPECT_LONGS_EQUAL(1, threadIds.size());
+  for (const auto& threadId : threadIds) {
+    EXPECT(threadId == mainThreadId); // All should be main thread
+  }
+
+  // Test with noisy values
+  Values noisyValues;
+  for (size_t i = 0; i < kNumFactors; ++i) {
+    noisyValues.insert(X(i), Pose2(i * 0.1 + 0.1, 0.1, 0.01));
+  }
+  
+  // Reset tracking before noisy values test
+  NonSendableBetweenFactor::resetTracking();
+  
+  double actual2 = fg.error(noisyValues);
+
+  // Verify that NonSendableBetweenFactor instances were only processed on main thread
+  threadIds = NonSendableBetweenFactor::getProcessingThreadIds();
+  EXPECT(threadIds.size() > 0); // Should have processed at least some factors
+  for (const auto& threadId : threadIds) {
+    EXPECT(threadId == mainThreadId); // All should be main thread
+  }
+
+  // Verify determinism - parallel should give same result each time
+  double actual3 = fg.error(noisyValues);
+  DOUBLES_EQUAL(actual2, actual3, 0.0);
+
+  // Verify that non-sendable factors are computed by comparing with
+  // a graph that has only sendable factors (should have same error since
+  // both factor types compute the same error, just processed differently)
+  NonlinearFactorGraph fgSendableOnly;
+  Values valuesSendableOnly;
+  for (size_t i = 0; i < kNumFactors; ++i) {
+    valuesSendableOnly.insert(X(i), Pose2(i * 0.1, 0.0, 0.0));
+    if (i > 0) {
+      fgSendableOnly.emplace_shared<BetweenFactor<Pose2>>(
+          X(i - 1), X(i), Pose2(0.1, 0.0, 0.0), noise);
+    }
+  }
+
+  // With correct values, both should have zero error
+  double errorSendableOnly = fgSendableOnly.error(valuesSendableOnly);
+  DOUBLES_EQUAL(0.0, errorSendableOnly, 1e-9);
+
+  // With noisy values, verify that mixed graph (with non-sendable factors)
+  // produces the same error as sendable-only graph, confirming that
+  // non-sendable factors are being computed correctly
+  Values noisyValuesSendableOnly;
+  for (size_t i = 0; i < kNumFactors; ++i) {
+    noisyValuesSendableOnly.insert(X(i), Pose2(i * 0.1 + 0.1, 0.1, 0.01));
+  }
+  double errorSendableOnlyNoisy = fgSendableOnly.error(noisyValuesSendableOnly);
+
+  // Both graphs should produce the same error since they have equivalent
+  // factors (non-sendable factors compute the same error, just processed
+  // sequentially)
+  DOUBLES_EQUAL(errorSendableOnlyNoisy, actual2, 1e-9);
+}
+
+/* ************************************************************************* */
 TEST( NonlinearFactorGraph, keys )
 {
   NonlinearFactorGraph fg = createNonlinearFactorGraph();
@@ -82,13 +225,13 @@ TEST( NonlinearFactorGraph, keys )
 /* ************************************************************************* */
 TEST( NonlinearFactorGraph, GET_ORDERING)
 {
-  Ordering expected; expected += L(1), X(2), X(1); // For starting with l1,x1,x2
+  const Ordering expected{L(1), X(2), X(1)};  // For starting with l1,x1,x2
   NonlinearFactorGraph nlfg = createNonlinearFactorGraph();
   Ordering actual = Ordering::Colamd(nlfg);
   EXPECT(assert_equal(expected,actual));
 
   // Constrained ordering - put x2 at the end
-  Ordering expectedConstrained; expectedConstrained += L(1), X(1), X(2);
+  const Ordering expectedConstrained{L(1), X(1), X(2)};
   FastMap<Key, int> constraints;
   constraints[X(2)] = 1;
   Ordering actualConstrained = Ordering::ColamdConstrained(nlfg, constraints);
@@ -166,8 +309,8 @@ TEST( NonlinearFactorGraph, rekey )
   // updated measurements
   Point2 z3(0, -1),  z4(-1.5, -1.);
   SharedDiagonal sigma0_2 = noiseModel::Isotropic::Sigma(2,0.2);
-  expRekey += simulated2D::Measurement(z3, sigma0_2, X(1), L(4));
-  expRekey += simulated2D::Measurement(z4, sigma0_2, X(2), L(4));
+  expRekey.emplace_shared<simulated2D::Measurement>(z3, sigma0_2, X(1), L(4));
+  expRekey.emplace_shared<simulated2D::Measurement>(z4, sigma0_2, X(2), L(4));
 
   EXPECT(assert_equal(expRekey, actRekey));
 }
@@ -202,8 +345,7 @@ TEST(NonlinearFactorGraph, UpdateCholesky) {
   EXPECT(assert_equal(expected, fg.updateCholesky(initial)));
 
   // solve with Ordering
-  Ordering ordering;
-  ordering += L(1), X(2), X(1);
+  const Ordering ordering{L(1), X(2), X(1)};
   EXPECT(assert_equal(expected, fg.updateCholesky(initial, ordering)));
 
   // solve with new method, heavily damped
@@ -255,8 +397,7 @@ TEST(testNonlinearFactorGraph, eliminate) {
   auto linearized = graph.linearize(values);
 
   // Eliminate
-  Ordering ordering;
-  ordering += 11, 21, 12, 22;
+  const Ordering ordering{11, 21, 12, 22};
   auto bn = linearized->eliminateSequential(ordering);
   EXPECT_LONGS_EQUAL(4, bn->size());
 }
@@ -335,21 +476,21 @@ TEST(NonlinearFactorGraph, dot) {
       "graph {\n"
       "  size=\"5,5\";\n"
       "\n"
-      "  varl1[label=\"l1\"];\n"
-      "  varx1[label=\"x1\"];\n"
-      "  varx2[label=\"x2\"];\n"
+      "  var7782220156096217089[label=\"l1\"];\n"
+      "  var8646911284551352321[label=\"x1\"];\n"
+      "  var8646911284551352322[label=\"x2\"];\n"
       "\n"
       "  factor0[label=\"\", shape=point];\n"
-      "  varx1--factor0;\n"
+      "  var8646911284551352321--factor0;\n"
       "  factor1[label=\"\", shape=point];\n"
-      "  varx1--factor1;\n"
-      "  varx2--factor1;\n"
+      "  var8646911284551352321--factor1;\n"
+      "  var8646911284551352322--factor1;\n"
       "  factor2[label=\"\", shape=point];\n"
-      "  varx1--factor2;\n"
-      "  varl1--factor2;\n"
+      "  var8646911284551352321--factor2;\n"
+      "  var7782220156096217089--factor2;\n"
       "  factor3[label=\"\", shape=point];\n"
-      "  varx2--factor3;\n"
-      "  varl1--factor3;\n"
+      "  var8646911284551352322--factor3;\n"
+      "  var7782220156096217089--factor3;\n"
       "}\n";
 
   const NonlinearFactorGraph fg = createNonlinearFactorGraph();
@@ -363,21 +504,21 @@ TEST(NonlinearFactorGraph, dot_extra) {
       "graph {\n"
       "  size=\"5,5\";\n"
       "\n"
-      "  varl1[label=\"l1\", pos=\"0,0!\"];\n"
-      "  varx1[label=\"x1\", pos=\"1,0!\"];\n"
-      "  varx2[label=\"x2\", pos=\"1,1.5!\"];\n"
+      "  var7782220156096217089[label=\"l1\", pos=\"0,0!\"];\n"
+      "  var8646911284551352321[label=\"x1\", pos=\"1,0!\"];\n"
+      "  var8646911284551352322[label=\"x2\", pos=\"1,1.5!\"];\n"
       "\n"
       "  factor0[label=\"\", shape=point];\n"
-      "  varx1--factor0;\n"
+      "  var8646911284551352321--factor0;\n"
       "  factor1[label=\"\", shape=point];\n"
-      "  varx1--factor1;\n"
-      "  varx2--factor1;\n"
+      "  var8646911284551352321--factor1;\n"
+      "  var8646911284551352322--factor1;\n"
       "  factor2[label=\"\", shape=point];\n"
-      "  varx1--factor2;\n"
-      "  varl1--factor2;\n"
+      "  var8646911284551352321--factor2;\n"
+      "  var7782220156096217089--factor2;\n"
       "  factor3[label=\"\", shape=point];\n"
-      "  varx2--factor3;\n"
-      "  varl1--factor3;\n"
+      "  var8646911284551352322--factor3;\n"
+      "  var7782220156096217089--factor3;\n"
       "}\n";
 
   const NonlinearFactorGraph fg = createNonlinearFactorGraph();

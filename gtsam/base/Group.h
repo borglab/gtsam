@@ -22,11 +22,8 @@
 
 #include <gtsam/base/Testable.h>
 
-#include <boost/concept_check.hpp>
-#include <boost/concept/requires.hpp>
-#include <boost/type_traits/is_base_of.hpp>
-#include <boost/static_assert.hpp>
 #include <utility>
+#include <type_traits>
 
 namespace gtsam {
 
@@ -49,37 +46,34 @@ public:
   typedef typename traits<G>::group_flavor flavor_tag;
   //typedef typename traits<G>::identity::value_type identity_value_type;
 
-  BOOST_CONCEPT_USAGE(IsGroup) {
-    BOOST_STATIC_ASSERT_MSG(
-        (boost::is_base_of<group_tag, structure_category_tag>::value),
+  GTSAM_CONCEPT_USAGE(IsGroup) {
+    static_assert(
+        (std::is_base_of_v<group_tag, structure_category_tag>),
         "This type's structure_category trait does not assert it as a group (or derived)");
     e = traits<G>::Identity();
     e = traits<G>::Compose(g, h);
     e = traits<G>::Between(g, h);
     e = traits<G>::Inverse(g);
-    operator_usage(flavor);
+
+    if constexpr (std::is_same_v<flavor_tag, multiplicative_group_tag>) {
+      e = g * h;
+      //e = -g; // todo this should work, but it is failing for Quaternions
+    } else if constexpr (std::is_same_v<flavor_tag, additive_group_tag>) {
+      e = g + h;
+      e = h - g;
+      e = -g;
+    }
     // todo: how do we test the act concept? or do we even need to?
   }
 
 private:
-  void operator_usage(multiplicative_group_tag) {
-    e = g * h;
-    //e = -g; // todo this should work, but it is failing for Quaternions
-  }
-  void operator_usage(additive_group_tag) {
-    e = g + h;
-    e = h - g;
-    e = -g;
-  }
-
-  flavor_tag flavor;
   G e, g, h;
   bool b;
 };
 
 /// Check invariants
 template<typename G>
-BOOST_CONCEPT_REQUIRES(((IsGroup<G>)),(bool)) //
+GTSAM_CONCEPT_REQUIRES(IsGroup<G>,bool) //
 check_group_invariants(const G& a, const G& b, double tol = 1e-9) {
   G e = traits<G>::Identity();
   return traits<G>::Equals(traits<G>::Compose(a, traits<G>::Inverse(a)), e, tol)
@@ -95,7 +89,7 @@ template<class Class>
 struct MultiplicativeGroupTraits {
   typedef group_tag structure_category;
   typedef multiplicative_group_tag group_flavor;
-  static Class Identity() { return Class::identity(); }
+  static Class Identity() { return Class::Identity(); }
   static Class Compose(const Class &g, const Class & h) { return g * h;}
   static Class Between(const Class &g, const Class & h) { return g.inverse() * h;}
   static Class Inverse(const Class &g) { return g.inverse();}
@@ -111,7 +105,7 @@ template<class Class>
 struct AdditiveGroupTraits {
   typedef group_tag structure_category;
   typedef additive_group_tag group_flavor;
-  static Class Identity() { return Class::identity(); }
+  static Class Identity() { return Class::Identity(); }
   static Class Compose(const Class &g, const Class & h) { return g + h;}
   static Class Between(const Class &g, const Class & h) { return h - g;}
   static Class Inverse(const Class &g) { return -g;}
@@ -125,7 +119,7 @@ struct AdditiveGroup : AdditiveGroupTraits<Class>, Testable<Class> {};
 
 /// compose multiple times
 template<typename G>
-BOOST_CONCEPT_REQUIRES(((IsGroup<G>)),(G)) //
+GTSAM_CONCEPT_REQUIRES(IsGroup<G>,G) //
 compose_pow(const G& g, size_t n) {
   if (n == 0) return traits<G>::Identity();
   else if (n == 1) return g;
@@ -136,8 +130,8 @@ compose_pow(const G& g, size_t n) {
 /// Assumes nothing except group structure and Testable from G and H
 template<typename G, typename H>
 class DirectProduct: public std::pair<G, H> {
-  BOOST_CONCEPT_ASSERT((IsGroup<G>));
-  BOOST_CONCEPT_ASSERT((IsGroup<H>));
+  GTSAM_CONCEPT_ASSERT(IsGroup<G>);
+  GTSAM_CONCEPT_ASSERT(IsGroup<H>);
 
 public:
   /// Default constructor yields identity
@@ -147,7 +141,7 @@ public:
   DirectProduct(const G& g, const H& h):std::pair<G,H>(g,h) {}
 
   // identity
-  static DirectProduct identity() { return DirectProduct(); }
+  static DirectProduct Identity() { return DirectProduct(); }
 
   DirectProduct operator*(const DirectProduct& other) const {
     return DirectProduct(traits<G>::Compose(this->first, other.first),
@@ -167,8 +161,8 @@ struct traits<DirectProduct<G, H> > :
 /// Assumes existence of three additive operators for both groups
 template<typename G, typename H>
 class DirectSum: public std::pair<G, H> {
-  BOOST_CONCEPT_ASSERT((IsGroup<G>));  // TODO(frank): check additive
-  BOOST_CONCEPT_ASSERT((IsGroup<H>));  // TODO(frank): check additive
+  GTSAM_CONCEPT_ASSERT(IsGroup<G>);  // TODO(frank): check additive
+  GTSAM_CONCEPT_ASSERT(IsGroup<H>);  // TODO(frank): check additive
 
   const G& g() const { return this->first; }
   const H& h() const { return this->second;}
@@ -181,7 +175,7 @@ public:
   DirectSum(const G& g, const H& h):std::pair<G,H>(g,h) {}
 
   // identity
-  static DirectSum identity() { return DirectSum(); }
+  static DirectSum Identity() { return DirectSum(); }
 
   DirectSum operator+(const DirectSum& other) const {
     return DirectSum(g()+other.g(), h()+other.h());

@@ -38,7 +38,7 @@ namespace imuBias {
 //    // H1: Jacobian w.r.t. IMUBias
 //    // H2: Jacobian w.r.t. pose
 //    Vector CorrectGyroWithEarthRotRate(Vector measurement, const Pose3& pose, const Vector& w_earth_rate_G,
-//        boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const {
+//        Matrix* H1=nullptr, Matrix* H2=nullptr) const {
 //
 //      Matrix R_G_to_I( pose.rotation().matrix().transpose() );
 //      Vector w_earth_rate_I = R_G_to_I * w_earth_rate_G;
@@ -61,7 +61,7 @@ namespace imuBias {
 //
 //      return measurement - biasGyro_ - w_earth_rate_I;
 //
-////      Vector bias_gyro_temp((Vector(3) << -bias_gyro_(0), bias_gyro_(1), bias_gyro_(2)));
+////      Vector bias_gyro_temp{-bias_gyro_(0), bias_gyro_(1), bias_gyro_(2)};
 ////      return measurement - bias_gyro_temp - R_G_to_I * w_earth_rate_G;
 //    }
 /// ostream operator
@@ -79,4 +79,3 @@ void ConstantBias::print(const std::string& s) const {
 } // namespace imuBias
 
 } // namespace gtsam
-

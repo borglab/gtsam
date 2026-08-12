@@ -25,7 +25,6 @@
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/geometry/Pose3.h>
 
 using namespace std;
@@ -61,7 +60,7 @@ TEST( AntiFactor, NegativeHessian)
 
   // Linearize the AntiFactor into a Hessian Factor
   GaussianFactor::shared_ptr antiGaussian = antiFactor->linearize(values);
-  HessianFactor::shared_ptr antiHessian = boost::dynamic_pointer_cast<HessianFactor>(antiGaussian);
+  HessianFactor::shared_ptr antiHessian = std::dynamic_pointer_cast<HessianFactor>(antiGaussian);
 
   Matrix expected_information = -originalHessian->information();
   Matrix actual_information = antiHessian->information();

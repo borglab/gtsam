@@ -15,8 +15,6 @@
 #include "TestResult.h"
 #include "Failure.h"
 
-#include <boost/lexical_cast.hpp>
-
 Test::Test (const std::string& testName)
   : name_ (testName), next_(0), lineNumber_(-1), safeCheck_(true)
 {
@@ -47,10 +45,10 @@ bool Test::check(long expected, long actual, TestResult& result, const std::stri
   result.addFailure (
     Failure (
       name_,
-      boost::lexical_cast<std::string> (__FILE__),
+      std::string(__FILE__),
       __LINE__,
-      boost::lexical_cast<std::string> (expected),
-      boost::lexical_cast<std::string> (actual)));
+      std::to_string(expected),
+      std::to_string(actual)));
 
   return false;
 
@@ -64,7 +62,7 @@ bool Test::check(const std::string& expected, const std::string& actual, TestRes
   result.addFailure (
     Failure (
       name_,
-      boost::lexical_cast<std::string> (__FILE__),
+      std::string(__FILE__),
       __LINE__,
       expected,
       actual));

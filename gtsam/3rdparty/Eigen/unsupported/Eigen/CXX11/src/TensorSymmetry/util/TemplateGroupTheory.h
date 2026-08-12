@@ -244,7 +244,7 @@ struct dimino_first_step_elements
   * multiplying all elements in the given subgroup with the new
   * coset representative. Note that the first element of the
   * subgroup is always the identity element, so the first element of
-  * ther result of this template is going to be the coset
+  * the result of this template is going to be the coset
   * representative itself.
   *
   * Note that this template accepts an additional boolean parameter

@@ -93,6 +93,22 @@ template<typename MatrixType> void product_extra(const MatrixType& m)
 
   VERIFY_IS_APPROX(m1.col(j2).adjoint() * m1.block(0,j,m1.rows(),c), m1.col(j2).adjoint().eval() * m1.block(0,j,m1.rows(),c).eval());
   VERIFY_IS_APPROX(m1.block(i,0,r,m1.cols()) * m1.row(i2).adjoint(), m1.block(i,0,r,m1.cols()).eval() * m1.row(i2).adjoint().eval());
+
+  // test negative strides
+  {
+    Map<MatrixType,Unaligned,Stride<Dynamic,Dynamic> > map1(&m1(rows-1,cols-1), rows, cols, Stride<Dynamic,Dynamic>(-m1.outerStride(),-1));
+    Map<MatrixType,Unaligned,Stride<Dynamic,Dynamic> > map2(&m2(rows-1,cols-1), rows, cols, Stride<Dynamic,Dynamic>(-m2.outerStride(),-1));
+    Map<RowVectorType,Unaligned,InnerStride<-1> > mapv1(&v1(v1.size()-1), v1.size(), InnerStride<-1>(-1));
+    Map<ColVectorType,Unaligned,InnerStride<-1> > mapvc2(&vc2(vc2.size()-1), vc2.size(), InnerStride<-1>(-1));
+    VERIFY_IS_APPROX(MatrixType(map1), m1.reverse());
+    VERIFY_IS_APPROX(MatrixType(map2), m2.reverse());
+    VERIFY_IS_APPROX(m3.noalias() = MatrixType(map1) * MatrixType(map2).adjoint(), m1.reverse() * m2.reverse().adjoint());
+    VERIFY_IS_APPROX(m3.noalias() = map1 * map2.adjoint(), m1.reverse() * m2.reverse().adjoint());
+    VERIFY_IS_APPROX(map1 * vc2, m1.reverse() * vc2);
+    VERIFY_IS_APPROX(m1 * mapvc2, m1 * mapvc2);
+    VERIFY_IS_APPROX(map1.adjoint() * v1.transpose(), m1.adjoint().reverse() * v1.transpose());
+    VERIFY_IS_APPROX(m1.adjoint() * mapv1.transpose(), m1.adjoint() * v1.reverse().transpose());
+  }
   
   // regression test
   MatrixType tmp = m1 * m1.adjoint() * s1;
@@ -352,7 +368,7 @@ void bug_1308()
   VERIFY_IS_APPROX(r44.noalias() += Vector4d::Ones() * m44.col(0).transpose(), ones44);
 }
 
-void test_product_extra()
+EIGEN_DECLARE_TEST(product_extra)
 {
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( product_extra(MatrixXf(internal::random<int>(1,EIGEN_TEST_MAX_SIZE), internal::random<int>(1,EIGEN_TEST_MAX_SIZE))) );

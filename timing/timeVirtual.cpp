@@ -18,13 +18,11 @@
 
 #include <gtsam/base/timing.h>
 
-#include <boost/shared_ptr.hpp>
-#include <boost/intrusive_ptr.hpp>
+#include <memory>
 
 #include <iostream>
 
 using namespace std;
-using namespace boost;
 using namespace gtsam;
 
 struct Plain {
@@ -47,14 +45,6 @@ struct VirtualCounted {
   virtual void setData(size_t data) { this->data = data; }
   virtual ~VirtualCounted() {}
 };
-
-void intrusive_ptr_add_ref(VirtualCounted* obj) { ++ obj->refCount; }
-void intrusive_ptr_release(VirtualCounted* obj) {
-  assert(obj->refCount > 0);
-  -- obj->refCount;
-  if(obj->refCount == 0)
-    delete obj;
-}
 
 int main(int argc, char *argv[]) {
 
@@ -88,13 +78,13 @@ int main(int argc, char *argv[]) {
 
   gttic_(shared_plain_alloc_dealloc);
   for(size_t i=0; i<trials; ++i) {
-    boost::shared_ptr<Plain> obj(new Plain(i));
+    std::shared_ptr<Plain> obj(new Plain(i));
   }
   gttoc_(shared_plain_alloc_dealloc);
 
   gttic_(shared_virtual_alloc_dealloc);
   for(size_t i=0; i<trials; ++i) {
-    boost::shared_ptr<Virtual> obj(new Virtual(i));
+    std::shared_ptr<Virtual> obj(new Virtual(i));
   }
   gttoc_(shared_virtual_alloc_dealloc);
 
@@ -131,21 +121,21 @@ int main(int argc, char *argv[]) {
 
   gttic_(shared_plain_alloc_dealloc_call);
   for(size_t i=0; i<trials; ++i) {
-    boost::shared_ptr<Plain> obj(new Plain(i));
+    std::shared_ptr<Plain> obj(new Plain(i));
     obj->setData(i+1);
   }
   gttoc_(shared_plain_alloc_dealloc_call);
 
   gttic_(shared_virtual_alloc_dealloc_call);
   for(size_t i=0; i<trials; ++i) {
-    boost::shared_ptr<Virtual> obj(new Virtual(i));
+    std::shared_ptr<Virtual> obj(new Virtual(i));
     obj->setData(i+1);
   }
   gttoc_(shared_virtual_alloc_dealloc_call);
 
   gttic_(intrusive_virtual_alloc_dealloc_call);
   for(size_t i=0; i<trials; ++i) {
-    intrusive_ptr<VirtualCounted> obj(new VirtualCounted(i));
+    std::shared_ptr<VirtualCounted> obj(new VirtualCounted(i));
     obj->setData(i+1);
   }
   gttoc_(intrusive_virtual_alloc_dealloc_call);

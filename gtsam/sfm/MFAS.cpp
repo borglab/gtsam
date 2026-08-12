@@ -116,7 +116,7 @@ MFAS::MFAS(const TranslationEdges& relativeTranslations,
   // Iterate over edges, obtain weights by projecting
   // their relativeTranslations along the projection direction
   for (const auto& measurement : relativeTranslations) {
-    edgeWeights_[std::make_pair(measurement.key1(), measurement.key2())] =
+    edgeWeights_[{measurement.key1(), measurement.key2()}] =
         measurement.measured().dot(projectionDirection);
   }
 }

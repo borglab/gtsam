@@ -52,11 +52,11 @@ Defines two useful functions for creating CTest unit tests.  Also immediately cr
                        Pass an empty string "" if nothing needs to be excluded.
         linkLibraries: The list of libraries to link to in addition to CppUnitLite.
         
-*   `gtsamAddExamplesGlob(globPatterns excludedFiles linkLibraries)` Add scripts that will serve as examples of how to use the library.  A list of files or glob patterns is specified, and one executable will be created for each matching .cpp file.  These executables will not be installed.  They are build with 'make all' if GTSAM_BUILD_EXAMPLES_ALWAYS is enabled.  They may also be built with 'make examples'.
+*   `gtsamAddExamplesGlob(globPatterns excludedFiles linkLibraries buildWithAll)` Add scripts that will serve as examples of how to use the library.  A list of files or glob patterns is specified, and one executable will be created for each matching .cpp file.  These executables will not be installed.  They are build with 'make all' if GTSAM_BUILD_EXAMPLES_ALWAYS is enabled.  They may also be built with 'make examples'.
 
     Usage example:
 
-        gtsamAddExamplesGlob("*.cpp" "BrokenExample.cpp" "gtsam;GeographicLib")
+        gtsamAddExamplesGlob("*.cpp" "BrokenExample.cpp" "gtsam;GeographicLib" ON)
 
     Arguments:
 
@@ -66,6 +66,7 @@ Defines two useful functions for creating CTest unit tests.  Also immediately cr
         excludedFiles: A list of files or globs to exclude, e.g. "C*.cpp;BrokenExample.cpp".  Pass
                        an empty string "" if nothing needs to be excluded.
         linkLibraries: The list of libraries to link to.
+        buildWithAll: Build examples with `make` and/or `make all`
 
 ## GtsamMakeConfigFile
 

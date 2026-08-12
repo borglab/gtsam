@@ -9,7 +9,6 @@
  */
 
 #include <gtsam/nonlinear/NonlinearOptimizerParams.h>
-#include <boost/algorithm/string.hpp>
 
 namespace gtsam {
 
@@ -17,7 +16,8 @@ namespace gtsam {
 NonlinearOptimizerParams::Verbosity NonlinearOptimizerParams::verbosityTranslator(
     const std::string &src) {
   std::string s = src;
-  boost::algorithm::to_upper(s);
+  // Convert to upper case
+  std::transform(s.begin(), s.end(), s.begin(), ::toupper);
   if (s == "SILENT")
     return NonlinearOptimizerParams::SILENT;
   if (s == "ERROR")
@@ -67,7 +67,7 @@ std::string NonlinearOptimizerParams::verbosityTranslator(
 
 /* ************************************************************************* */
 void NonlinearOptimizerParams::setIterativeParams(
-    const boost::shared_ptr<IterativeOptimizationParameters> params) {
+    const std::shared_ptr<IterativeOptimizationParameters> params) {
   iterativeParams = params;
 }
 
@@ -85,6 +85,9 @@ void NonlinearOptimizerParams::print(const std::string& str) const {
   std::cout.flush();
 
   switch (linearSolverType) {
+  case MULTIFRONTAL_SOLVER:
+    std::cout << "         linear solver type: MULTIFRONTAL SOLVER\n";
+    break;
   case MULTIFRONTAL_CHOLESKY:
     std::cout << "         linear solver type: MULTIFRONTAL CHOLESKY\n";
     break;
@@ -108,6 +111,31 @@ void NonlinearOptimizerParams::print(const std::string& str) const {
     break;
   }
 
+  if (linearSolverType == MULTIFRONTAL_SOLVER) {
+    const auto& p = multifrontalParams;
+    std::cout << "  multifrontal.leafMergeDimCap: " << p.leafMergeDimCap << "\n";
+    std::cout << "  multifrontal.mergeDimCap: " << p.mergeDimCap << "\n";
+    const char* qrMode = "off";
+    switch (p.qrMode) {
+    case MultifrontalParameters::QRMode::Off:
+      qrMode = "off";
+      break;
+    case MultifrontalParameters::QRMode::Allow:
+      qrMode = "allow";
+      break;
+    case MultifrontalParameters::QRMode::Force:
+      qrMode = "force";
+      break;
+    }
+    std::cout << "  multifrontal.qrMode: " << qrMode << "\n";
+    std::cout << "  multifrontal.qrAspectRatio: " << p.qrAspectRatio << "\n";
+    std::cout << "  multifrontal.eliminationParallelThreshold: "
+              << p.eliminationParallelThreshold << "\n";
+    std::cout << "  multifrontal.solutionParallelThreshold: "
+              << p.solutionParallelThreshold << "\n";
+    std::cout << "  multifrontal.numThreads: " << p.numThreads << "\n";
+  }
+
   switch (orderingType){
   case Ordering::COLAMD:
     std::cout << "                   ordering: COLAMD\n";
@@ -124,9 +152,46 @@ void NonlinearOptimizerParams::print(const std::string& str) const {
 }
 
 /* ************************************************************************* */
+bool NonlinearOptimizerParams::equals(const NonlinearOptimizerParams& other,
+                                      double tol) const {
+  // Check for equality of shared ptrs
+  bool iterative_params_equal = iterativeParams == other.iterativeParams;
+  // Check equality of components
+  if (iterativeParams && other.iterativeParams) {
+    iterative_params_equal = iterativeParams->equals(*other.iterativeParams);
+  } else {
+    // Check if either is null. If both are null, then true
+    iterative_params_equal = !iterativeParams && !other.iterativeParams;
+  }
+
+  auto multifrontalEqual = [&]() {
+    const auto& a = multifrontalParams;
+    const auto& b = other.multifrontalParams;
+    return a.leafMergeDimCap == b.leafMergeDimCap &&
+           a.mergeDimCap == b.mergeDimCap &&
+           a.qrMode == b.qrMode && a.qrAspectRatio == b.qrAspectRatio &&
+           a.reportStream == b.reportStream &&
+           a.eliminationParallelThreshold == b.eliminationParallelThreshold &&
+           a.solutionParallelThreshold == b.solutionParallelThreshold &&
+           a.numThreads == b.numThreads;
+  };
+
+  return maxIterations == other.getMaxIterations() &&
+         std::abs(relativeErrorTol - other.getRelativeErrorTol()) <= tol &&
+         std::abs(absoluteErrorTol - other.getAbsoluteErrorTol()) <= tol &&
+         std::abs(errorTol - other.getErrorTol()) <= tol &&
+         verbosityTranslator(verbosity) == other.getVerbosity() &&
+         orderingType == other.orderingType && ordering == other.ordering &&
+         linearSolverType == other.linearSolverType && iterative_params_equal &&
+         multifrontalEqual();
+}
+
+/* ************************************************************************* */
 std::string NonlinearOptimizerParams::linearSolverTranslator(
     LinearSolverType linearSolverType) const {
   switch (linearSolverType) {
+  case MULTIFRONTAL_SOLVER:
+    return "MULTIFRONTAL_SOLVER";
   case MULTIFRONTAL_CHOLESKY:
     return "MULTIFRONTAL_CHOLESKY";
   case MULTIFRONTAL_QR:
@@ -148,6 +213,8 @@ std::string NonlinearOptimizerParams::linearSolverTranslator(
 /* ************************************************************************* */
 NonlinearOptimizerParams::LinearSolverType NonlinearOptimizerParams::linearSolverTranslator(
     const std::string& linearSolverType) const {
+  if (linearSolverType == "MULTIFRONTAL_SOLVER")
+    return MULTIFRONTAL_SOLVER;
   if (linearSolverType == "MULTIFRONTAL_CHOLESKY")
     return MULTIFRONTAL_CHOLESKY;
   if (linearSolverType == "MULTIFRONTAL_QR")

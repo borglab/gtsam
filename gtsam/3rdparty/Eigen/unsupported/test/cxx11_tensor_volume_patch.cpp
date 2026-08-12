@@ -70,9 +70,9 @@ static void test_entire_volume_patch()
   const int dy = patch_y - 1;
   const int dx = patch_x - 1;
 
-  const int forward_pad_z = dz - dz / 2;
-  const int forward_pad_y = dy - dy / 2;
-  const int forward_pad_x = dx - dx / 2;
+  const int forward_pad_z = dz / 2;
+  const int forward_pad_y = dy / 2;
+  const int forward_pad_x = dx / 2;
 
   for (int pz = 0; pz < patch_z; pz++) {
     for (int py = 0; py < patch_y; py++) {
@@ -105,7 +105,7 @@ static void test_entire_volume_patch()
   }
 }
 
-void test_cxx11_tensor_volume_patch()
+EIGEN_DECLARE_TEST(cxx11_tensor_volume_patch)
 {
   CALL_SUBTEST(test_single_voxel_patch());
   CALL_SUBTEST(test_entire_volume_patch());

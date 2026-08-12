@@ -1,7 +1,7 @@
 
 if (ATLAS_LIBRARIES)
   set(ATLAS_FIND_QUIETLY TRUE)
-endif (ATLAS_LIBRARIES)
+endif ()
 
 find_file(ATLAS_LIB libatlas.so.3 PATHS /usr/lib /usr/lib/atlas /usr/lib64 /usr/lib64/atlas $ENV{ATLASDIR} ${LIB_INSTALL_DIR})
 find_library(ATLAS_LIB satlas PATHS $ENV{ATLASDIR} ${LIB_INSTALL_DIR})
@@ -23,7 +23,7 @@ if(ATLAS_LIB AND ATLAS_CBLAS AND ATLAS_LAPACK AND ATLAS_F77BLAS)
 #     set(ATLAS_LIBRARIES ${ATLAS_LIBRARIES} ${ATLAS_REFERENCE_LAPACK})
 #   endif()
   
-endif(ATLAS_LIB AND ATLAS_CBLAS AND ATLAS_LAPACK AND ATLAS_F77BLAS)
+endif()
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(ATLAS DEFAULT_MSG ATLAS_LIBRARIES)

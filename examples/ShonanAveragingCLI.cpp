@@ -103,7 +103,7 @@ int main(int argc, char* argv[]) {
     auto result = shonan.run(initial, pMin);
 
     // Parse file again to set up translation problem, adding a prior
-    boost::tie(inputGraph, posesInFile) = load2D(inputFile);
+    std::tie(inputGraph, posesInFile) = load2D(inputFile);
     auto priorModel = noiseModel::Unit::Create(3);
     inputGraph->addPrior(0, posesInFile->at<Pose2>(0), priorModel);
 
@@ -119,7 +119,7 @@ int main(int argc, char* argv[]) {
     auto result = shonan.run(initial, pMin);
 
     // Parse file again to set up translation problem, adding a prior
-    boost::tie(inputGraph, posesInFile) = load3D(inputFile);
+    std::tie(inputGraph, posesInFile) = load3D(inputFile);
     auto priorModel = noiseModel::Unit::Create(6);
     inputGraph->addPrior(0, posesInFile->at<Pose3>(0), priorModel);
 

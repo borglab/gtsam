@@ -18,6 +18,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/basis/Chebyshev.h>
 #include <gtsam/basis/FitBasis.h>
 #include <gtsam/nonlinear/factorTesting.h>
@@ -25,9 +26,10 @@
 using namespace std;
 using namespace gtsam;
 
+namespace {
 auto model = noiseModel::Unit::Create(1);
-
 const size_t N = 3;
+}  // namespace
 
 //******************************************************************************
 TEST(Chebyshev, Chebyshev1) {

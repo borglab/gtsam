@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/global_includes.h>
+#include <gtsam/base/FastMap.h>
 
 // Change class depending on whether we are using TBB
 #ifdef GTSAM_USE_TBB
@@ -41,16 +42,16 @@ using ConcurrentMapBase = tbb::concurrent_unordered_map<
 
 #else
 
-// If we're not using TBB, use a FastMap for ConcurrentMap
-#include <gtsam/base/FastMap.h>
+// If we're not using TBB, use a std::map
 template <typename KEY, typename VALUE>
 using ConcurrentMapBase = gtsam::FastMap<KEY, VALUE>;
 
 #endif
 
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/split_member.hpp>
-#include <boost/static_assert.hpp>
+#endif
 
 #include <gtsam/base/FastVector.h>
 
@@ -62,7 +63,7 @@ namespace gtsam {
  * convenience to avoid having lengthy types in the code.  Through timing,
  * we've seen that the fast_pool_allocator can lead to speedups of several
  * percent.
- * @addtogroup base
+ * @ingroup base
  */
 template<typename KEY, typename VALUE>
 class ConcurrentMap : public ConcurrentMapBase<KEY,VALUE> {
@@ -84,6 +85,8 @@ public:
   /** Copy constructor from the base map class */
   ConcurrentMap(const Base& x) : Base(x) {}
 
+  ConcurrentMap& operator=(const ConcurrentMap& other) = default;
+
   /** Handy 'exists' function */
   bool exists(const KEY& e) const { return this->count(e); }
 
@@ -100,6 +103,7 @@ public:
 #endif
 
 private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
@@ -113,12 +117,14 @@ private:
   template<class Archive>
   void load(Archive& ar, const unsigned int /*version*/)
   {
+    this->clear();
     // Load into STL container and then fill our map
     FastVector<std::pair<KEY, VALUE> > map;
     ar & BOOST_SERIALIZATION_NVP(map);
     this->insert(map.begin(), map.end());
   }
   BOOST_SERIALIZATION_SPLIT_MEMBER()
+#endif
 };
 
 }

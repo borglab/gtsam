@@ -188,9 +188,7 @@ TEST( PosePriorFactor, Jacobian ) {
 
   // Calculate numerical derivatives
   Matrix expectedH1 = numericalDerivative11<Vector, Pose3>(
-      std::bind(&TestPosePriorFactor::evaluateError, &factor,
-                std::placeholders::_1, boost::none),
-      pose);
+		  [&factor](const Pose3& p) { return factor.evaluateError(p); }, pose);
 
   // Use the factor to calculate the derivative
   Matrix actualH1;
@@ -215,9 +213,7 @@ TEST( PosePriorFactor, JacobianWithTransform ) {
 
   // Calculate numerical derivatives
   Matrix expectedH1 = numericalDerivative11<Vector, Pose3>(
-      std::bind(&TestPosePriorFactor::evaluateError, &factor,
-                std::placeholders::_1, boost::none),
-      pose);
+		  [&factor](const Pose3& p) { return factor.evaluateError(p); }, pose);
 
   // Use the factor to calculate the derivative
   Matrix actualH1;

@@ -36,7 +36,7 @@ template<typename T> void test_sparselu_T()
   check_sparse_square_determinant(sparselu_amd);
 }
 
-void test_sparselu()
+EIGEN_DECLARE_TEST(sparselu)
 {
   CALL_SUBTEST_1(test_sparselu_T<float>()); 
   CALL_SUBTEST_2(test_sparselu_T<double>());

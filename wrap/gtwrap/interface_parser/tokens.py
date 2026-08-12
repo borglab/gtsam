@@ -10,9 +10,10 @@ All the token definitions.
 Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellaert
 """
 
-from pyparsing import (Keyword, Literal, OneOrMore, Or,  # type: ignore
-                       QuotedString, Suppress, Word, alphanums, alphas,
-                       nestedExpr, nums, originalTextFor, printables)
+from pyparsing import Or  # type: ignore
+from pyparsing import (Keyword, Literal, OneOrMore, QuotedString, Suppress,
+                       Word, alphanums, alphas, nested_expr, nums,
+                       original_text_for, printables)
 
 # rule for identifiers (e.g. variable names)
 IDENT = Word(alphas + '_', alphanums + '_') ^ Word(nums)
@@ -21,20 +22,21 @@ RAW_POINTER, SHARED_POINTER, REF = map(Literal, "@*&")
 
 LPAREN, RPAREN, LBRACE, RBRACE, COLON, SEMI_COLON = map(Suppress, "(){}:;")
 LOPBRACK, ROPBRACK, COMMA, EQUAL = map(Suppress, "<>,=")
+DUNDER = Suppress(Literal("__"))
 
 # Default argument passed to functions/methods.
 # Allow anything up to ',' or ';' except when they
 # appear inside matched expressions such as
 # (a, b) {c, b} "hello, world", templates, initializer lists, etc.
-DEFAULT_ARG = originalTextFor(
+DEFAULT_ARG = original_text_for(
     OneOrMore(
         QuotedString('"') ^  # parse double quoted strings
         QuotedString("'") ^  # parse single quoted strings
-        Word(printables, excludeChars="(){}[]<>,;") ^  # parse arbitrary words
-        nestedExpr(opener='(', closer=')') ^  # parse expression in parentheses
-        nestedExpr(opener='[', closer=']') ^  # parse expression in brackets
-        nestedExpr(opener='{', closer='}') ^  # parse expression in braces
-        nestedExpr(opener='<', closer='>')  # parse template expressions
+        Word(printables, exclude_chars="(){}[]<>,;") ^  # parse arbitrary words
+        nested_expr(opener='(', closer=')') ^  # parse expression in parentheses
+        nested_expr(opener='[', closer=']') ^  # parse expression in brackets
+        nested_expr(opener='{', closer='}') ^  # parse expression in braces
+        nested_expr(opener='<', closer='>')  # parse template expressions
     ))
 
 CONST, VIRTUAL, CLASS, STATIC, PAIR, TEMPLATE, TYPEDEF, INCLUDE = map(
@@ -52,7 +54,7 @@ CONST, VIRTUAL, CLASS, STATIC, PAIR, TEMPLATE, TYPEDEF, INCLUDE = map(
 )
 ENUM = Keyword("enum") ^ Keyword("enum class") ^ Keyword("enum struct")
 NAMESPACE = Keyword("namespace")
-BASIS_TYPES = map(
+BASIC_TYPES = map(
     Keyword,
     [
         "void",

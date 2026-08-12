@@ -9,10 +9,21 @@ import gtwrap.template_instantiator as instantiator
 class CheckMixin:
     """Mixin to provide various checks."""
     # Data types that are primitive types
-    not_ptr_type: Tuple = ('int', 'double', 'bool', 'char', 'unsigned char',
-                           'size_t')
+    not_ptr_type: Tuple = (
+        "int",
+        "double",
+        "bool",
+        "char",
+        "unsigned char",
+        "size_t",
+        "Key",  # This is an alias for a uint64_t
+    )
     # Ignore the namespace for these datatypes
     ignore_namespace: Tuple = ('Matrix', 'Vector', 'Point2', 'Point3')
+    # Matrix-like view types that can alias MATLAB double matrix storage.
+    matrix_view_types: Tuple = ('ConstMatrixView', )
+    # Eigen Ref types used as Jacobian output arguments (not inputs).
+    eigen_ref_types: Tuple = ('MatrixXd', )
     # Methods that should be ignored
     ignore_methods: Tuple = ('pickle', )
     # Methods that should not be wrapped directly
@@ -35,6 +46,7 @@ class CheckMixin:
         """
         return (arg_type.typename.name not in self.not_ptr_type
                 and arg_type.typename.name not in self.ignore_namespace
+                and not self.is_matrix_view(arg_type)
                 and arg_type.typename.name != 'string')
 
     def is_shared_ptr(self, arg_type: parser.Type):
@@ -59,6 +71,49 @@ class CheckMixin:
         return arg_type.typename.name not in self.ignore_namespace and \
                arg_type.typename.name not in self.not_ptr_type and \
                arg_type.is_ref
+
+    def is_matrix_view(self, arg_type: parser.Type):
+        """Check if `arg_type` should be unwrapped as a matrix view."""
+        return arg_type.typename.name in self.matrix_view_types
+
+    def is_eigen_ref(self, arg_type) -> bool:
+        """Check if `arg_type` is an Eigen Ref output argument (e.g. Ref<MatrixXd>).
+
+        These are Jacobian output arguments in C++ that should be treated as
+        extra return values in MATLAB rather than input arguments.
+        Eigen::Ref<Eigen::MatrixXd> parses as a TemplatedType with
+        typename.name == 'Ref' and a MatrixXd template parameter.
+        """
+        return (arg_type.typename.name == 'Ref'
+                and hasattr(arg_type, 'template_params')
+                and len(arg_type.template_params) == 1
+                and arg_type.template_params[0].typename.name
+                in self.eigen_ref_types)
+    
+    def is_class_enum(self, arg_type: parser.Type, class_: parser.Class):
+        """Check if arg_type is an enum in the class `class_`."""
+        if class_:
+            class_enums = [enum.name for enum in class_.enums]
+            return arg_type.typename.name in class_enums
+        else:
+            return False
+
+    def is_global_enum(self, arg_type: parser.Type, class_: parser.Class):
+        """Check if arg_type is a global enum."""
+        if class_:
+            # Get the enums in the class' namespace
+            global_enums = [
+                member.name for member in class_.parent.content
+                if isinstance(member, parser.Enum)
+            ]
+            return arg_type.typename.name in global_enums
+        else:
+            return False
+
+    def is_enum(self, arg_type: parser.Type, class_: parser.Class):
+        """Check if `arg_type` is an enum."""
+        return self.is_class_enum(arg_type, class_) or self.is_global_enum(
+            arg_type, class_)
 
 
 class FormatMixin:
@@ -86,6 +141,9 @@ class FormatMixin:
                           is_constructor: bool = False,
                           is_method: bool = False):
         """
+        Helper method to get the string version of `type_name` which can go into the wrapper generated C++ code.
+        This is specific to the semantics of Matlab.
+
         Args:
             type_name: an interface_parser.Typename to reformat
             separator: the statement to add between namespaces and typename
@@ -107,6 +165,9 @@ class FormatMixin:
             for namespace in type_name.namespaces:
                 if name not in self.ignore_namespace and namespace != '':
                     formatted_type_name += namespace + separator
+
+        # Get string representation so we can use as dict key.
+        name = str(name)
 
         if is_constructor:
             formatted_type_name += self.data_type.get(name) or name

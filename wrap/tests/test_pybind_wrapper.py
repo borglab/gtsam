@@ -31,20 +31,27 @@ class TestWrap(unittest.TestCase):
     # Create the `actual/python` directory
     os.makedirs(PYTHON_ACTUAL_DIR, exist_ok=True)
 
-    def wrap_content(self, sources, module_name, output_dir):
+    def wrap_content(self,
+                     sources,
+                     module_name,
+                     output_dir,
+                     use_boost_serialization=False,
+                     module_template=None):
         """
         Common function to wrap content in `sources`.
         """
-        with open(osp.join(self.TEST_DIR,
-                           "pybind_wrapper.tpl")) as template_file:
-            module_template = template_file.read()
+        if module_template is None:
+            with open(osp.join(self.TEST_DIR, "pybind_wrapper.tpl"),
+                      encoding="UTF-8") as template_file:
+                module_template = template_file.read()
 
         # Create Pybind wrapper instance
-        wrapper = PybindWrapper(module_name=module_name,
-                                use_boost=False,
-                                top_module_namespaces=[''],
-                                ignore_classes=[''],
-                                module_template=module_template)
+        wrapper = PybindWrapper(
+            module_name=module_name,
+            top_module_namespaces=[''],
+            ignore_classes=[''],
+            module_template=module_template,
+            use_boost_serialization=use_boost_serialization)
 
         output = osp.join(self.TEST_DIR, output_dir, module_name + ".cpp")
 
@@ -64,8 +71,8 @@ class TestWrap(unittest.TestCase):
         success = filecmp.cmp(actual, expected)
 
         if not success:
-            os.system("diff {} {}".format(actual, expected))
-        self.assertTrue(success, "Mismatch for file {0}".format(file))
+            os.system(f"diff {actual} {expected}")
+        self.assertTrue(success, f"Mismatch for file {file}")
 
     def test_geometry(self):
         """
@@ -74,8 +81,10 @@ class TestWrap(unittest.TestCase):
             geometry_py --out output/geometry_py.cc
         """
         source = osp.join(self.INTERFACE_DIR, 'geometry.i')
-        output = self.wrap_content([source], 'geometry_py',
-                                   self.PYTHON_ACTUAL_DIR)
+        output = self.wrap_content([source],
+                                   'geometry_py',
+                                   self.PYTHON_ACTUAL_DIR,
+                                   use_boost_serialization=True)
 
         self.compare_and_diff('geometry_pybind.cpp', output)
 
@@ -151,6 +160,89 @@ class TestWrap(unittest.TestCase):
         output = self.wrap_content([source], 'enum_py', self.PYTHON_ACTUAL_DIR)
 
         self.compare_and_diff('enum_pybind.cpp', output)
+
+    def test_argument_policy_hook(self):
+        """Test that typed args are emitted through the overridable policy hook."""
+        source = osp.join(self.INTERFACE_DIR, 'arg_policies.i')
+        module_template = """#include <pybind11/pybind11.h>
+
+{includes}
+
+#include "python/arg_policy_preamble.h"
+
+namespace py = pybind11;
+
+PYBIND11_MODULE({module_name}, m_) {{
+    m_.doc() = "pybind11 wrapper of {module_name}";
+
+{wrapped_namespace}
+
+}}
+"""
+        output = self.wrap_content([source],
+                                   'arg_policies_py',
+                                   self.PYTHON_ACTUAL_DIR,
+                                   module_template=module_template)
+
+        with open(output, 'r', encoding='UTF-8') as f:
+            content = f.read()
+
+        self.assertLess(content.index('template <typename T>\nstruct PyArgPolicy'),
+                        content.index('#include "python/arg_policy_preamble.h"'))
+        self.assertIn(
+            'gtwrap::internal::py_arg<const testing::SpecialView&>("values")',
+            content)
+        self.assertIn('gtwrap::internal::py_arg<int>("count") = 1', content)
+
+    def test_const_ref_return_policy(self):
+        """Test that methods returning const T& emit reference_internal policy.
+
+        Without this policy, pybind11 defaults to copying the returned reference.
+        With the policy, the binding keeps the reference alive via the parent object.
+
+        Expected emitted code difference:
+          Before: [](Cls* self, ...){return self->method(...);}, py::arg(...))
+          After:  [](Cls* self, ...) -> const auto&{return self->method(...);},
+                  py::return_value_policy::reference_internal, py::arg(...))
+        """
+        source = osp.join(self.INTERFACE_DIR, 'class.i')
+        output = self.wrap_content([source], 'class_py',
+                                   self.PYTHON_ACTUAL_DIR)
+
+        with open(output, 'r') as f:
+            content = f.read()
+
+        # const Vector& return_vector2 should have reference_internal
+        self.assertIn('-> const auto&{return self->return_vector2', content)
+        self.assertIn('py::return_value_policy::reference_internal', content)
+
+        # const Matrix& return_matrix2 should also have reference_internal
+        self.assertIn('-> const auto&{return self->return_matrix2', content)
+
+        # Non-ref returns (e.g. return_vector1 which returns by value) should NOT
+        lines = content.split('\n')
+        for line in lines:
+            if 'return_vector1' in line:
+                self.assertNotIn('reference_internal', line)
+                self.assertNotIn('-> const auto&', line)
+            if 'return_matrix1' in line:
+                self.assertNotIn('reference_internal', line)
+                self.assertNotIn('-> const auto&', line)
+
+        source = osp.join(self.INTERFACE_DIR, 'return_policies.i')
+        output = self.wrap_content([source], 'return_policies_py',
+                                   self.PYTHON_ACTUAL_DIR)
+
+        with open(output, 'r', encoding='UTF-8') as f:
+            content = f.read()
+
+        for line in content.split('\n'):
+            if 'return_const_ref' in line:
+                self.assertIn('reference_internal', line)
+                self.assertIn('-> const auto&', line)
+            if '.def("return_mutable_ref"' in line or '.def("return_value"' in line:
+                self.assertNotIn('reference_internal', line)
+                self.assertNotIn('-> const auto&', line)
 
 
 if __name__ == '__main__':

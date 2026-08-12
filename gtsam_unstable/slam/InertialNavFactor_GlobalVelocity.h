@@ -13,21 +13,25 @@
  *  @file   InertialNavFactor_GlobalVelocity.h
  *  @author Vadim Indelman, Stephen Williams
  *  @brief  Inertial navigation factor (velocity in the global frame)
+ *  @deprecated This legacy unstable inertial-navigation factor is no longer
+ *  maintained. Use the stable navigation factors where applicable.
  *  @date   Sept 13, 2012
  **/
 
 #pragma once
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/base/Matrix.h>
 
 // Using numerical derivative to calculate d(Pose3::Expmap)/dw
 #include <gtsam/base/numericalDerivative.h>
-
-#include <boost/bind/bind.hpp>
-#include <boost/optional.hpp>
 
 #include <ostream>
 
@@ -77,12 +81,12 @@ namespace gtsam {
  *            vehicle
  */
 template<class POSE, class VELOCITY, class IMUBIAS>
-class InertialNavFactor_GlobalVelocity : public NoiseModelFactor5<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> {
+class InertialNavFactor_GlobalVelocity : public NoiseModelFactorN<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> {
 
 private:
 
   typedef InertialNavFactor_GlobalVelocity<POSE, VELOCITY, IMUBIAS> This;
-  typedef NoiseModelFactor5<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> Base;
+  typedef NoiseModelFactorN<POSE, VELOCITY, IMUBIAS, POSE, VELOCITY> Base;
 
   Vector measurement_acc_;
   Vector measurement_gyro_;
@@ -92,12 +96,15 @@ private:
   Vector world_rho_;
   Vector world_omega_earth_;
 
-  boost::optional<POSE> body_P_sensor_; // The pose of the sensor in the body frame
+  std::optional<POSE> body_P_sensor_; // The pose of the sensor in the body frame
 
 public:
 
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
   // shorthand for a smart pointer to a factor
-  typedef typename boost::shared_ptr<InertialNavFactor_GlobalVelocity> shared_ptr;
+  typedef typename std::shared_ptr<InertialNavFactor_GlobalVelocity> shared_ptr;
 
   /** default constructor - only use for serialization */
   InertialNavFactor_GlobalVelocity() {}
@@ -105,7 +112,7 @@ public:
   /** Constructor */
   InertialNavFactor_GlobalVelocity(const Key& Pose1, const Key& Vel1, const Key& IMUBias1, const Key& Pose2, const Key& Vel2,
       const Vector& measurement_acc, const Vector& measurement_gyro, const double measurement_dt, const Vector world_g, const Vector world_rho,
-      const Vector& world_omega_earth, const noiseModel::Gaussian::shared_ptr& model_continuous, boost::optional<POSE> body_P_sensor = boost::none) :
+      const Vector& world_omega_earth, const noiseModel::Gaussian::shared_ptr& model_continuous, std::optional<POSE> body_P_sensor = {}) :
         Base(calc_descrete_noise_model(model_continuous, measurement_dt ),
             Pose1, Vel1, IMUBias1, Pose2, Vel2), measurement_acc_(measurement_acc), measurement_gyro_(measurement_gyro),
             dt_(measurement_dt), world_g_(world_g), world_rho_(world_rho), world_omega_earth_(world_omega_earth), body_P_sensor_(body_P_sensor) {  }
@@ -226,11 +233,8 @@ public:
 
   /** implement functions needed to derive from Factor */
   Vector evaluateError(const POSE& Pose1, const VELOCITY& Vel1, const IMUBIAS& Bias1, const POSE& Pose2, const VELOCITY& Vel2,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none,
-      boost::optional<Matrix&> H3 = boost::none,
-      boost::optional<Matrix&> H4 = boost::none,
-      boost::optional<Matrix&> H5 = boost::none) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2, OptionalMatrixType H3, OptionalMatrixType H4,
+      OptionalMatrixType H5) const override {
 
     // TODO: Write analytical derivative calculations
     // Jacobian w.r.t. Pose1
@@ -321,16 +325,15 @@ public:
 
   static inline void Calc_g_rho_omega_earth_NED(const Vector& Pos_NED, const Vector& Vel_NED, const Vector& LatLonHeight_IC, const Vector& Pos_NED_Initial,
       Vector& g_NED, Vector& rho_NED, Vector& omega_earth_NED) {
+    Matrix ENU_to_NED{//
+                      {0.0, 1.0, 0.0},
+                      {1.0, 0.0, 0.0},
+                      {0.0, 0.0, -1.0}};
 
-    Matrix ENU_to_NED = (Matrix(3, 3) <<
-        0.0,  1.0,  0.0,
-        1.0,  0.0,  0.0,
-        0.0,  0.0, -1.0).finished();
-
-    Matrix NED_to_ENU = (Matrix(3, 3) <<
-        0.0,  1.0,  0.0,
-        1.0,  0.0,  0.0,
-        0.0,  0.0, -1.0).finished();
+    Matrix NED_to_ENU{//
+                      {0.0, 1.0, 0.0},
+                      {1.0, 0.0, 0.0},
+                      {0.0, 0.0, -1.0}};
 
     // Convert incoming parameters to ENU
     Vector Pos_ENU = NED_to_ENU * Pos_NED;
@@ -392,8 +395,7 @@ public:
     double Ro( sqrt(Rp*Rm) );           // mean earth radius of curvature
     double g0( 9.780318*( 1 + 5.3024e-3 * pow(sin(lat_new),2) - 5.9e-6 * pow(sin(2*lat_new),2) ) );
     double g_calc( g0/( pow(1 + height/Ro, 2) ) );
-    g_ENU = (Vector(3) << 0.0, 0.0, -g_calc).finished();
-
+    g_ENU = Vector{{0.0, 0.0, -g_calc}};
 
     // Calculate rho
     double Ve( Vel_ENU(0) );
@@ -401,7 +403,7 @@ public:
     double rho_E = -Vn/(Rm + height);
     double rho_N = Ve/(Rp + height);
     double rho_U = Ve*tan(lat_new)/(Rp + height);
-    rho_ENU = (Vector(3) << rho_E, rho_N, rho_U).finished();
+    rho_ENU = Vector{{rho_E, rho_N, rho_U}};
   }
 
   static inline noiseModel::Gaussian::shared_ptr calc_descrete_noise_model(const noiseModel::Gaussian::shared_ptr& model, double delta_t){
@@ -414,6 +416,7 @@ public:
 
 private:
 
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template<class ARCHIVE>
@@ -421,6 +424,7 @@ private:
     ar & boost::serialization::make_nvp("NonlinearFactor2",
         boost::serialization::base_object<Base>(*this));
   }
+#endif
 
 }; // \class InertialNavFactor_GlobalVelocity
 
@@ -431,3 +435,5 @@ struct traits<InertialNavFactor_GlobalVelocity<POSE, VELOCITY, IMUBIAS> > :
 };
 
 } /// namespace aspn
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

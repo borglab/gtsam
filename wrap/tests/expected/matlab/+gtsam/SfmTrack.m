@@ -1,9 +1,13 @@
 %class SfmTrack, see Doxygen page for details
 %at https://gtsam.org/doxygen/
 %
+%-------Properties-------
+%measurements
+%
 classdef SfmTrack < handle
   properties
     ptr_gtsamSfmTrack = 0
+    measurements
   end
   methods
     function obj = SfmTrack(varargin)
@@ -24,6 +28,16 @@ classdef SfmTrack < handle
     %DISPLAY Calls print on the object
     function disp(obj), obj.display; end
     %DISP Calls print on the object
+
+    function varargout = get.measurements(this)
+        varargout{1} = special_cases_wrapper(5, this);
+        this.measurements = varargout{1};
+    end
+
+    function set.measurements(this, value)
+        obj.measurements = value;
+        special_cases_wrapper(6, this, value);
+    end
   end
 
   methods(Static = true)

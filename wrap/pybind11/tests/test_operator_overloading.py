@@ -1,9 +1,13 @@
-# -*- coding: utf-8 -*-
+from __future__ import annotations
+
 import pytest
-from pybind11_tests import operators as m
+
+import env
 from pybind11_tests import ConstructorStats
+from pybind11_tests import operators as m
 
 
+@pytest.mark.xfail("env.GRAALPY", reason="TODO should get fixed on GraalPy side")
 def test_operator_overloading():
     v1 = m.Vector2(1, 2)
     v2 = m.Vector(3, -1)
@@ -47,6 +51,9 @@ def test_operator_overloading():
     v2 /= v1
     assert str(v2) == "[2.000000, 8.000000]"
 
+    if env.GRAALPY:
+        pytest.skip("ConstructorStats is incompatible with GraalPy.")
+
     cstats = ConstructorStats.get(m.Vector2)
     assert cstats.alive() == 3
     del v1
@@ -56,23 +63,23 @@ def test_operator_overloading():
     del v3
     assert cstats.alive() == 0
     assert cstats.values() == [
-        '[1.000000, 2.000000]',
-        '[3.000000, -1.000000]',
-        '[1.000000, 2.000000]',
-        '[-3.000000, 1.000000]',
-        '[4.000000, 1.000000]',
-        '[-2.000000, 3.000000]',
-        '[-7.000000, -6.000000]',
-        '[9.000000, 10.000000]',
-        '[8.000000, 16.000000]',
-        '[0.125000, 0.250000]',
-        '[7.000000, 6.000000]',
-        '[9.000000, 10.000000]',
-        '[8.000000, 16.000000]',
-        '[8.000000, 4.000000]',
-        '[3.000000, -2.000000]',
-        '[3.000000, -0.500000]',
-        '[6.000000, -2.000000]',
+        "[1.000000, 2.000000]",
+        "[3.000000, -1.000000]",
+        "[1.000000, 2.000000]",
+        "[-3.000000, 1.000000]",
+        "[4.000000, 1.000000]",
+        "[-2.000000, 3.000000]",
+        "[-7.000000, -6.000000]",
+        "[9.000000, 10.000000]",
+        "[8.000000, 16.000000]",
+        "[0.125000, 0.250000]",
+        "[7.000000, 6.000000]",
+        "[9.000000, 10.000000]",
+        "[8.000000, 16.000000]",
+        "[8.000000, 4.000000]",
+        "[3.000000, -2.000000]",
+        "[3.000000, -0.500000]",
+        "[6.000000, -2.000000]",
     ]
     assert cstats.default_constructions == 0
     assert cstats.copy_constructions == 0
@@ -81,6 +88,9 @@ def test_operator_overloading():
     assert cstats.move_assignments == 0
 
 
+@pytest.mark.xfail(
+    env.GRAALPY and env.GRAALPY_VERSION < (24, 2), reason="Fixed in GraalPy 24.2"
+)
 def test_operators_notimplemented():
     """#393: need to return NotSupported to ensure correct arithmetic operator behavior"""
 
@@ -130,12 +140,12 @@ def test_nested():
 
 
 def test_overriding_eq_reset_hash():
-
     assert m.Comparable(15) is not m.Comparable(15)
     assert m.Comparable(15) == m.Comparable(15)
 
-    with pytest.raises(TypeError):
-        hash(m.Comparable(15))  # TypeError: unhashable type: 'm.Comparable'
+    with pytest.raises(TypeError) as excinfo:
+        hash(m.Comparable(15))
+    assert str(excinfo.value).startswith("unhashable type:")
 
     for hashable in (m.Hashable, m.Hashable2):
         assert hashable(15) is not hashable(15)
@@ -143,3 +153,9 @@ def test_overriding_eq_reset_hash():
 
         assert hash(hashable(15)) == 15
         assert hash(hashable(15)) == hash(hashable(15))
+
+
+def test_return_set_of_unhashable():
+    with pytest.raises(TypeError) as excinfo:
+        m.get_unhashable_HashMe_set()
+    assert "unhashable type" in str(excinfo.value.__cause__)

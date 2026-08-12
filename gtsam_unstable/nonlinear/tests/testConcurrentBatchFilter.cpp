@@ -25,7 +25,6 @@
 #include <gtsam/nonlinear/LinearContainerFactor.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/JunctionTree.h>
 #include <gtsam/geometry/Pose3.h>
@@ -44,14 +43,22 @@ const Pose3 poseError( Rot3::RzRyRx(Vector3(0.01, 0.02, -0.1)), Point3(0.05, -0.
 
 // Set up noise models for the factors
 const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
-const SharedDiagonal noiseOdometery = noiseModel::Diagonal::Sigmas((Vector(6) << 0.1, 0.1, 0.1, 0.5, 0.5, 0.5).finished());
-const SharedDiagonal noiseLoop = noiseModel::Diagonal::Sigmas((Vector(6) << 0.25, 0.25, 0.25, 1.0, 1.0, 1.0).finished());
+const SharedDiagonal noiseOdometery =
+    noiseModel::Diagonal::Sigmas(Vector{{0.1, 0.1, 0.1, 0.5, 0.5, 0.5}});
+const SharedDiagonal noiseLoop =
+    noiseModel::Diagonal::Sigmas(Vector{{0.25, 0.25, 0.25, 1.0, 1.0, 1.0}});
+
+LevenbergMarquardtParams makeLmParams() {
+  LevenbergMarquardtParams params;
+  params.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
+  return params;
+}
 
 /* ************************************************************************* */
 Values BatchOptimize(const NonlinearFactorGraph& graph, const Values& theta, int maxIter = 100) {
 
   // Create an L-M optimizer
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   parameters.maxIterations = maxIter;
 
   LevenbergMarquardtOptimizer optimizer(graph, theta, parameters);
@@ -63,9 +70,9 @@ Values BatchOptimize(const NonlinearFactorGraph& graph, const Values& theta, int
 NonlinearFactorGraph CalculateMarginals(const NonlinearFactorGraph& factorGraph, const Values& linPoint, const FastList<Key>& keysToMarginalize){
 
 
-  std::set<Key> KeysToKeep;
-  for(const auto key_value: linPoint) { // we cycle over all the keys of factorGraph
-    KeysToKeep.insert(key_value.key);
+  KeySet KeysToKeep;
+  for(const auto key: linPoint.keys()) { // we cycle over all the keys of factorGraph
+    KeysToKeep.insert(key);
   } // so far we are keeping all keys, but we want to delete the ones that we are going to marginalize
   for(Key key: keysToMarginalize) {
     KeysToKeep.erase(key);
@@ -101,15 +108,15 @@ TEST( ConcurrentBatchFilter, equals )
   // TODO: Test 'equals' more vigorously
 
   // Create a Concurrent Batch Filter
-  LevenbergMarquardtParams parameters1;
+  LevenbergMarquardtParams parameters1 = makeLmParams();
   ConcurrentBatchFilter filter1(parameters1);
 
   // Create an identical Concurrent Batch Filter
-  LevenbergMarquardtParams parameters2;
+  LevenbergMarquardtParams parameters2 = makeLmParams();
   ConcurrentBatchFilter filter2(parameters2);
 
   // Create a different Concurrent Batch Filter
-  LevenbergMarquardtParams parameters3;
+  LevenbergMarquardtParams parameters3 = makeLmParams();
   parameters3.maxIterations = 1;
   ConcurrentBatchFilter filter3(parameters3);
 
@@ -122,7 +129,7 @@ TEST( ConcurrentBatchFilter, equals )
 TEST( ConcurrentBatchFilter, getFactors )
 {
   // Create a Concurrent Batch Filter
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   ConcurrentBatchFilter filter(parameters);
 
   // Expected graph is empty
@@ -172,7 +179,7 @@ TEST( ConcurrentBatchFilter, getFactors )
 TEST( ConcurrentBatchFilter, getLinearizationPoint )
 {
   // Create a Concurrent Batch Filter
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   ConcurrentBatchFilter filter(parameters);
 
   // Expected values is empty
@@ -234,7 +241,7 @@ TEST( ConcurrentBatchFilter, getDelta )
 TEST( ConcurrentBatchFilter, calculateEstimate )
 {
   // Create a Concurrent Batch Filter
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   ConcurrentBatchFilter filter(parameters);
 
   // Expected values is empty
@@ -307,7 +314,7 @@ TEST( ConcurrentBatchFilter, calculateEstimate )
 TEST( ConcurrentBatchFilter, update_empty )
 {
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   ConcurrentBatchFilter filter(parameters);
 
   // Call update
@@ -318,7 +325,7 @@ TEST( ConcurrentBatchFilter, update_empty )
 TEST( ConcurrentBatchFilter, update_multiple )
 {
   // Create a Concurrent Batch Filter
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   ConcurrentBatchFilter filter(parameters);
 
   // Expected values is empty
@@ -375,7 +382,7 @@ TEST( ConcurrentBatchFilter, update_multiple )
 TEST( ConcurrentBatchFilter, update_and_marginalize )
 {
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   ConcurrentBatchFilter filter(parameters);
 
   // Add some factors to the filter
@@ -462,7 +469,7 @@ TEST( ConcurrentBatchFilter, update_and_marginalize )
 TEST( ConcurrentBatchFilter, synchronize_0 )
 {
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
 
   // Create a Concurrent Batch Filter
   ConcurrentBatchFilter filter(parameters);
@@ -495,7 +502,7 @@ TEST( ConcurrentBatchFilter, synchronize_0 )
 TEST( ConcurrentBatchFilter, synchronize_1 )
 {
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   parameters.maxIterations = 1;
 
   // Create a Concurrent Batch Filter
@@ -540,7 +547,7 @@ TEST( ConcurrentBatchFilter, synchronize_2 )
 {
   std::cout << "*********************** synchronize_2 ************************" << std::endl;
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   //parameters.maxIterations = 1;
 
   // Create a Concurrent Batch Filter
@@ -608,7 +615,7 @@ TEST( ConcurrentBatchFilter, synchronize_3 )
 {
   std::cout << "*********************** synchronize_3 ************************" << std::endl;
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   //parameters.maxIterations = 1;
 
   // Create a Concurrent Batch Filter
@@ -692,7 +699,7 @@ TEST( ConcurrentBatchFilter, synchronize_3 )
 TEST( ConcurrentBatchFilter, synchronize_4 )
 {
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   parameters.maxIterations = 1;
 
   // Create a Concurrent Batch Filter
@@ -786,7 +793,7 @@ TEST( ConcurrentBatchFilter, synchronize_5 )
 {
   std::cout << "*********************** synchronize_5 ************************" << std::endl;
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   parameters.maxIterations = 1;
 
   // Create a Concurrent Batch Filter
@@ -1085,7 +1092,7 @@ TEST( ConcurrentBatchFilter, removeFactors_topology_1 )
   std::cout << "*********************** removeFactors_topology_1 ************************" << std::endl;
 
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   ConcurrentBatchFilter filter(parameters);
 
   // Add some factors to the filter
@@ -1140,7 +1147,7 @@ TEST( ConcurrentBatchFilter, removeFactors_topology_2 )
 
 
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   ConcurrentBatchFilter filter(parameters);
 
   // Add some factors to the filter
@@ -1195,7 +1202,7 @@ TEST( ConcurrentBatchFilter, removeFactors_topology_3 )
   // we try removing the first factor
 
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   ConcurrentBatchFilter filter(parameters);
 
   // Add some factors to the filter
@@ -1248,7 +1255,7 @@ TEST( ConcurrentBatchFilter, removeFactors_values )
   // we try removing the last factor
 
   // Create a set of optimizer parameters
-  LevenbergMarquardtParams parameters;
+  LevenbergMarquardtParams parameters = makeLmParams();
   ConcurrentBatchFilter filter(parameters);
 
   // Add some factors to the filter
@@ -1305,7 +1312,7 @@ TEST( ConcurrentBatchFilter, removeFactors_values )
 //TEST( ConcurrentBatchFilter, synchronize_10 )
 //{
 //  // Create a set of optimizer parameters
-//  LevenbergMarquardtParams parameters;
+//  LevenbergMarquardtParams parameters = makeLmParams();
 //  parameters.maxIterations = 1;
 //
 //  // Create a Concurrent Batch Filter
@@ -1320,7 +1327,7 @@ TEST( ConcurrentBatchFilter, removeFactors_values )
 //TEST( ConcurrentBatchFilter, synchronize_11 )
 //{
 //  // Create a set of optimizer parameters
-//  LevenbergMarquardtParams parameters;
+//  LevenbergMarquardtParams parameters = makeLmParams();
 //  parameters.maxIterations = 1;
 //
 //  // Create a Concurrent Batch Filter

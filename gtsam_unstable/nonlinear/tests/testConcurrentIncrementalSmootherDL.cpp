@@ -26,7 +26,6 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/inference/Key.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/JunctionTree.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/TestableAssertions.h>
@@ -44,8 +43,10 @@ const Pose3 poseError( Rot3::RzRyRx(Vector3(0.01, 0.02, -0.1)), Point3(0.05, -0.
 
 // Set up noise models for the factors
 const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
-const SharedDiagonal noiseOdometery = noiseModel::Diagonal::Sigmas((Vector(6) << 0.1, 0.1, 0.1, 0.5, 0.5, 0.5).finished());
-const SharedDiagonal noiseLoop = noiseModel::Diagonal::Sigmas((Vector(6) << 0.25, 0.25, 0.25, 1.0, 1.0, 1.0).finished());
+const SharedDiagonal noiseOdometery =
+    noiseModel::Diagonal::Sigmas(Vector{{0.1, 0.1, 0.1, 0.5, 0.5, 0.5}});
+const SharedDiagonal noiseLoop =
+    noiseModel::Diagonal::Sigmas(Vector{{0.25, 0.25, 0.25, 1.0, 1.0, 1.0}});
 
 /* ************************************************************************* */
 Values BatchOptimize(const NonlinearFactorGraph& graph, const Values& theta, int maxIter = 100) {
@@ -512,8 +513,8 @@ TEST( ConcurrentIncrementalSmootherDL, synchronize_2 )
 //  Values expectedLinearizationPoint = BatchOptimize(allFactors, allValues, 1);
   Values expectedLinearizationPoint = filterSeparatorValues;
   Values actualLinearizationPoint;
-  for(const auto key_value: filterSeparatorValues) {
-    actualLinearizationPoint.insert(key_value.key, smoother.getLinearizationPoint().at(key_value.key));
+  for(const auto key: filterSeparatorValues.keys()) {
+    actualLinearizationPoint.insert(key, smoother.getLinearizationPoint().at(key));
   }
   CHECK(assert_equal(expectedLinearizationPoint, actualLinearizationPoint, 1e-6));
 }
@@ -580,14 +581,14 @@ TEST( ConcurrentIncrementalSmootherDL, synchronize_3 )
 //  GaussianBayesNet::shared_ptr GBNsptr = GSS.eliminate();
 
   KeySet allkeys = LinFactorGraph->keys();
-  for(const auto key_value: filterSeparatorValues) {
-    allkeys.erase(key_value.key);
+  for(const auto key: filterSeparatorValues.keys()) {
+    allkeys.erase(key);
   }
   KeyVector variables(allkeys.begin(), allkeys.end());
-  std::pair<GaussianBayesNet::shared_ptr, GaussianFactorGraph::shared_ptr> result = LinFactorGraph->eliminatePartialSequential(variables, EliminateCholesky);
+  const auto [bn, fg] = LinFactorGraph->eliminatePartialSequential(variables, EliminateCholesky);
 
   expectedSmootherSummarization.resize(0);
-  for(const GaussianFactor::shared_ptr& factor: *result.second) {
+  for(const GaussianFactor::shared_ptr& factor: *fg) {
     expectedSmootherSummarization.push_back(LinearContainerFactor(factor, allValues));
   }
 

@@ -15,26 +15,18 @@
  *  @author Christian Potthast
  **/
 
-#include <tests/smallExample.h>
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/base/numericalDerivative.h>
-#include <gtsam/base/Matrix.h>
-#include <gtsam/base/Testable.h>
-
-#include <CppUnitLite/TestHarness.h>
-
-#include <boost/tuple/tuple.hpp>
-#include <boost/assign/std/list.hpp> // for operator +=
-#include <boost/assign/std/set.hpp> // for operator +=
-#include <boost/assign/std/vector.hpp> // for operator +=
-using namespace boost::assign;
-#include <boost/range/adaptor/map.hpp>
-namespace br { using namespace boost::range; using namespace boost::adaptors; }
-
 #include <string.h>
+#include <tests/smallExample.h>
+
 #include <iostream>
 
 using namespace std;
@@ -73,7 +65,7 @@ TEST(GaussianFactorGraph, eliminateOne_x1) {
   GaussianFactorGraph fg = createGaussianFactorGraph();
 
   GaussianConditional::shared_ptr conditional;
-  auto result = fg.eliminatePartialSequential(Ordering(list_of(X(1))));
+  auto result = fg.eliminatePartialSequential(Ordering{X(1)});
   conditional = result.first->front();
 
   // create expected Conditional Gaussian
@@ -86,10 +78,9 @@ TEST(GaussianFactorGraph, eliminateOne_x1) {
 
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, eliminateOne_x2) {
-  Ordering ordering;
-  ordering += X(2), L(1), X(1);
+  const Ordering ordering{X(2), L(1), X(1)};
   GaussianFactorGraph fg = createGaussianFactorGraph();
-  auto actual = EliminateQR(fg, Ordering(list_of(X(2)))).first;
+  auto actual = EliminateQR(fg, Ordering{X(2)}).first;
 
   // create expected Conditional Gaussian
   double sigma = 0.0894427;
@@ -102,10 +93,9 @@ TEST(GaussianFactorGraph, eliminateOne_x2) {
 
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, eliminateOne_l1) {
-  Ordering ordering;
-  ordering += L(1), X(1), X(2);
+  const Ordering ordering{L(1), X(1), X(2)};
   GaussianFactorGraph fg = createGaussianFactorGraph();
-  auto actual = EliminateQR(fg, Ordering(list_of(L(1)))).first;
+  auto actual = EliminateQR(fg, Ordering{L(1)}).first;
 
   // create expected Conditional Gaussian
   double sigma = sqrt(2.0) / 10.;
@@ -119,9 +109,7 @@ TEST(GaussianFactorGraph, eliminateOne_l1) {
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, eliminateOne_x1_fast) {
   GaussianFactorGraph fg = createGaussianFactorGraph();
-  GaussianConditional::shared_ptr conditional;
-  JacobianFactor::shared_ptr remaining;
-  boost::tie(conditional, remaining) = EliminateQR(fg, Ordering(list_of(X(1))));
+  const auto [conditional, remaining] = EliminateQR(fg, Ordering{X(1)});
 
   // create expected Conditional Gaussian
   Matrix I = 15 * I_2x2, R11 = I, S12 = -0.111111 * I, S13 = -0.444444 * I;
@@ -130,11 +118,9 @@ TEST(GaussianFactorGraph, eliminateOne_x1_fast) {
 
   // Create expected remaining new factor
   JacobianFactor expectedFactor(
-      L(1), (Matrix(4, 2) << 6.87184, 0, 0, 6.87184, 0, 0, 0, 0).finished(),
-      X(2),
-      (Matrix(4, 2) << -5.25494, 0, 0, -5.25494, -7.27607, 0, 0, -7.27607)
-          .finished(),
-      (Vector(4) << -1.21268, 1.73817, -0.727607, 1.45521).finished(),
+      L(1), Matrix{{6.87184, 0}, {0, 6.87184}, {0, 0}, {0, 0}}, X(2),
+      Matrix{{-5.25494, 0}, {0, -5.25494}, {-7.27607, 0}, {0, -7.27607}},
+      Vector{{-1.21268, 1.73817, -0.727607, 1.45521}},
       noiseModel::Unit::Create(4));
 
   EXPECT(assert_equal(expected, *conditional, tol));
@@ -144,7 +130,7 @@ TEST(GaussianFactorGraph, eliminateOne_x1_fast) {
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, eliminateOne_x2_fast) {
   GaussianFactorGraph fg = createGaussianFactorGraph();
-  auto actual = EliminateQR(fg, Ordering(list_of(X(2)))).first;
+  auto actual = EliminateQR(fg, Ordering{X(2)}).first;
 
   // create expected Conditional Gaussian
   double sigma = 0.0894427;
@@ -158,7 +144,7 @@ TEST(GaussianFactorGraph, eliminateOne_x2_fast) {
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, eliminateOne_l1_fast) {
   GaussianFactorGraph fg = createGaussianFactorGraph();
-  auto actual = EliminateQR(fg, Ordering(list_of(L(1)))).first;
+  auto actual = EliminateQR(fg, Ordering{L(1)}).first;
 
   // create expected Conditional Gaussian
   double sigma = sqrt(2.0) / 10.;
@@ -272,10 +258,10 @@ TEST(GaussianFactorGraph, multiplication) {
   VectorValues x = createCorrectDelta();
   Errors actual = A * x;
   Errors expected;
-  expected += Vector2(-1.0, -1.0);
-  expected += Vector2(2.0, -1.0);
-  expected += Vector2(0.0, 1.0);
-  expected += Vector2(-1.0, 1.5);
+  expected.push_back(Vector2(-1.0, -1.0));
+  expected.push_back(Vector2(2.0, -1.0));
+  expected.push_back(Vector2(0.0, 1.0));
+  expected.push_back(Vector2(-1.0, 1.5));
   EXPECT(assert_equal(expected, actual));
 }
 
@@ -285,25 +271,20 @@ TEST(GaussianFactorGraph, elimination) {
   // Create Gaussian Factor Graph
   GaussianFactorGraph fg;
   Matrix Ap = I_1x1, An = I_1x1 * -1;
-  Vector b = (Vector(1) << 0.0).finished();
+  Vector b{{0.0}};
   SharedDiagonal sigma = noiseModel::Isotropic::Sigma(1, 2.0);
-  fg += JacobianFactor(X(1), An, X(2), Ap, b, sigma);
-  fg += JacobianFactor(X(1), Ap, b, sigma);
-  fg += JacobianFactor(X(2), Ap, b, sigma);
+  fg.emplace_shared<JacobianFactor>(X(1), An, X(2), Ap, b, sigma);
+  fg.emplace_shared<JacobianFactor>(X(1), Ap, b, sigma);
+  fg.emplace_shared<JacobianFactor>(X(2), Ap, b, sigma);
 
   // Eliminate
-  Ordering ordering;
-  ordering += X(1), X(2);
+  const Ordering ordering{X(1), X(2)};
   GaussianBayesNet bayesNet = *fg.eliminateSequential();
 
   // Check matrix
-  Matrix R;
-  Vector d;
-  boost::tie(R, d) = bayesNet.matrix();
-  Matrix expected =
-      (Matrix(2, 2) << 0.707107, -0.353553, 0.0, 0.612372).finished();
-  Matrix expected2 =
-      (Matrix(2, 2) << 0.707107, -0.353553, 0.0, -0.612372).finished();
+  const auto [R, d] = bayesNet.matrix();
+  Matrix expected{{0.707107, -0.353553}, {0.0, 0.612372}};
+  Matrix expected2{{0.707107, -0.353553}, {0.0, -0.612372}};
   EXPECT(assert_equal(expected, R, 1e-6));
   EXPECT(equal_with_abs_tol(expected, R, 1e-6) ||
          equal_with_abs_tol(expected2, R, 1e-6));
@@ -360,7 +341,6 @@ static SharedDiagonal model = noiseModel::Isotropic::Sigma(2,1);
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, replace)
 {
-  Ordering ord; ord += X(1),X(2),X(3),X(4),X(5),X(6);
   SharedDiagonal noise(noiseModel::Isotropic::Sigma(3, 1.0));
 
   GaussianFactorGraph::sharedFactor f1(new JacobianFactor(
@@ -413,7 +393,8 @@ TEST( GaussianFactorGraph, conditional_sigma_failure) {
   gtsam::Key xC1 = 0, l32 = 1, l41 = 2;
 
   // noisemodels at nonlinear level
-  gtsam::SharedNoiseModel priorModel = noiseModel::Diagonal::Sigmas((Vector(6) << 0.05, 0.05, 3.0, 0.2, 0.2, 0.2).finished());
+  gtsam::SharedNoiseModel priorModel =
+      noiseModel::Diagonal::Sigmas(Vector{{0.05, 0.05, 3.0, 0.2, 0.2, 0.2}});
   gtsam::SharedNoiseModel measModel = kUnit2;
   gtsam::SharedNoiseModel elevationModel = noiseModel::Isotropic::Sigma(1, 3.0);
 
@@ -443,10 +424,10 @@ TEST( GaussianFactorGraph, conditional_sigma_failure) {
           0.0,             1.,           0.0,
           -1.2246468e-16,           0.0,            -1),
           Point3(0.511832102, 8.42819594, 5.76841725)), priorModel);
-  factors += ProjectionFactor(Point2(333.648615, 98.61535), measModel, xC1, l32, K);
-  factors += ProjectionFactor(Point2(218.508, 83.8022039), measModel, xC1, l41, K);
-  factors += RangeFactor<Pose3,Point3>(xC1, l32, relElevation, elevationModel);
-  factors += RangeFactor<Pose3,Point3>(xC1, l41, relElevation, elevationModel);
+  factors.emplace_shared<ProjectionFactor>(Point2(333.648615, 98.61535), measModel, xC1, l32, K);
+  factors.emplace_shared<ProjectionFactor>(Point2(218.508, 83.8022039), measModel, xC1, l41, K);
+  factors.emplace_shared<RangeFactor<Pose3,Point3>>(xC1, l32, relElevation, elevationModel);
+  factors.emplace_shared<RangeFactor<Pose3,Point3>>(xC1, l41, relElevation, elevationModel);
 
   // Check that sigmas are correct (i.e., unit)
   GaussianFactorGraph lfg = *factors.linearize(initValues);
@@ -454,7 +435,7 @@ TEST( GaussianFactorGraph, conditional_sigma_failure) {
   GaussianBayesTree actBT = *lfg.eliminateMultifrontal();
 
   // Check that all sigmas in an unconstrained bayes tree are set to one
-  for(const GaussianBayesTree::sharedClique& clique: actBT.nodes() | br::map_values) {
+  for (const auto& [key, clique]: actBT.nodes()) {
     GaussianConditional::shared_ptr conditional = clique->conditional();
     //size_t dim = conditional->rows();
     //EXPECT(assert_equal(gtsam::Vector::Ones(dim), conditional->get_model()->sigmas(), tol));

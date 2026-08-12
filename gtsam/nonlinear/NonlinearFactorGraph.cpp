@@ -25,12 +25,13 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/linearExceptions.h>
 #include <gtsam/linear/VectorValues.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam/config.h> // for GTSAM_USE_TBB
 
 #ifdef GTSAM_USE_TBB
 #  include <tbb/parallel_for.h>
+#  include <tbb/parallel_reduce.h>
+#  include <tbb/blocked_range.h>
 #endif
 
 #include <algorithm>
@@ -129,7 +130,7 @@ void NonlinearFactorGraph::dot(std::ostream& os, const Values& values,
     // Create factors and variable connections
     size_t i = 0;
     for (const KeyVector& factorKeys : structure) {
-      writer.processFactor(i++, factorKeys, keyFormatter, boost::none, &os);
+      writer.processFactor(i++, factorKeys, keyFormatter, {}, &os);
     }
   } else {
     // Create factors and variable connections
@@ -169,6 +170,35 @@ void NonlinearFactorGraph::saveGraph(const std::string& filename,
 /* ************************************************************************* */
 double NonlinearFactorGraph::error(const Values& values) const {
   gttic(NonlinearFactorGraph_error);
+
+#ifdef GTSAM_USE_TBB
+  constexpr size_t kGrainSize = 256; // Fixed grain size for deterministic splitting
+  if (factors_.size() > 2 * kGrainSize) {
+    TbbOpenMPMixedScope threadLimiter;
+    double total_error = tbb::parallel_deterministic_reduce(
+      tbb::blocked_range<size_t>(0, size(), kGrainSize),
+      0.0, // identity value
+      [this, &values](const tbb::blocked_range<size_t>& r, double local_error) -> double {
+        for (size_t i = r.begin(); i != r.end(); ++i) {
+          const auto& factor = factors_[i];
+          if (factor && factor->sendable())
+            local_error += factor->error(values);
+        }
+        return local_error;
+      },
+      [](double x, double y) -> double {
+        return x + y;
+      });
+
+    // Process non-sendable factors sequentially (e.g., Python factors requiring GIL)
+    for(const sharedFactor& factor: factors_) {
+      if (factor && !factor->sendable())
+        total_error += factor->error(values);
+    }
+    return total_error;
+  }
+#endif
+
   double total_error = 0.;
   // iterate over all the factors_ to accumulate the log probabilities
   for(const sharedFactor& factor: factors_) {
@@ -194,14 +224,14 @@ Ordering NonlinearFactorGraph::orderingCOLAMDConstrained(const FastMap<Key, int>
 SymbolicFactorGraph::shared_ptr NonlinearFactorGraph::symbolic() const
 {
   // Generate the symbolic factor graph
-  SymbolicFactorGraph::shared_ptr symbolic = boost::make_shared<SymbolicFactorGraph>();
+  SymbolicFactorGraph::shared_ptr symbolic = std::make_shared<SymbolicFactorGraph>();
   symbolic->reserve(size());
 
   for (const sharedFactor& factor: factors_) {
     if(factor)
-      *symbolic += SymbolicFactor(*factor);
+      symbolic->push_back(SymbolicFactor(*factor));
     else
-      *symbolic += SymbolicFactorGraph::sharedFactor();
+      symbolic->push_back(SymbolicFactorGraph::sharedFactor());
   }
 
   return symbolic;
@@ -241,7 +271,7 @@ GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(const Values& li
   gttic(NonlinearFactorGraph_linearize);
 
   // create an empty linear FG
-  GaussianFactorGraph::shared_ptr linearFG = boost::make_shared<GaussianFactorGraph>();
+  GaussianFactorGraph::shared_ptr linearFG = std::make_shared<GaussianFactorGraph>();
 
 #ifdef GTSAM_USE_TBB
 
@@ -265,11 +295,11 @@ GaussianFactorGraph::shared_ptr NonlinearFactorGraph::linearize(const Values& li
   linearFG->reserve(size());
 
   // linearize all factors
-  for(const sharedFactor& factor: factors_) {
-    if(factor) {
-      (*linearFG) += factor->linearize(linearizationPoint);
+  for (const sharedFactor& factor : factors_) {
+    if (factor) {
+      linearFG->push_back(factor->linearize(linearizationPoint));
     } else
-    (*linearFG) += GaussianFactor::shared_ptr();
+      linearFG->push_back(GaussianFactor::shared_ptr());
   }
 
 #endif
@@ -285,8 +315,8 @@ static Scatter scatterFromValues(const Values& values) {
   scatter.reserve(values.size());
 
   // use "natural" ordering with keys taken from the initial values
-  for (const auto key_value : values) {
-    scatter.add(key_value.key, key_value.value.dim());
+  for (const auto& key_dim : values.dims()) {
+    scatter.add(key_dim.first, key_dim.second);
   }
 
   return scatter;

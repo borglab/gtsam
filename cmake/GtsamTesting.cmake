@@ -42,7 +42,7 @@ endmacro()
 # GTSAM_BUILD_EXAMPLES_ALWAYS is enabled.  They may also be built with 'make examples'.
 #
 # Usage example:
-#   gtsamAddExamplesGlob("*.cpp" "BrokenExample.cpp" "gtsam;GeographicLib")
+#   gtsamAddExamplesGlob("*.cpp" "BrokenExample.cpp" "gtsam;GeographicLib" ON)
 #
 # Arguments:
 #   globPatterns:  The list of files or glob patterns from which to create examples, with
@@ -51,8 +51,9 @@ endmacro()
 #   excludedFiles: A list of files or globs to exclude, e.g. "C*.cpp;BrokenExample.cpp".  Pass
 #                  an empty string "" if nothing needs to be excluded.
 #   linkLibraries: The list of libraries to link to.
-macro(gtsamAddExamplesGlob globPatterns excludedFiles linkLibraries)
-	gtsamAddExesGlob_impl("${globPatterns}" "${excludedFiles}" "${linkLibraries}" "examples" ${GTSAM_BUILD_EXAMPLES_ALWAYS})
+#   buildWithAll: Build examples with `make` and/or `make all`
+macro(gtsamAddExamplesGlob globPatterns excludedFiles linkLibraries buildWithAll)
+	gtsamAddExesGlob_impl("${globPatterns}" "${excludedFiles}" "${linkLibraries}" "examples" ${buildWithAll})
 endmacro()
 
 
@@ -76,8 +77,9 @@ endmacro()
 #   excludedFiles: A list of files or globs to exclude, e.g. "C*.cpp;BrokenExample.cpp".  Pass
 #                  an empty string "" if nothing needs to be excluded.
 #   linkLibraries: The list of libraries to link to.
-macro(gtsamAddTimingGlob globPatterns excludedFiles linkLibraries)
-	gtsamAddExesGlob_impl("${globPatterns}" "${excludedFiles}" "${linkLibraries}" "timing" ${GTSAM_BUILD_TIMING_ALWAYS})
+#   buildWithAll: Build examples with `make` and/or `make all`
+macro(gtsamAddTimingGlob globPatterns excludedFiles linkLibraries buildWithAll)
+	gtsamAddExesGlob_impl("${globPatterns}" "${excludedFiles}" "${linkLibraries}" "timing" ${buildWithAll})
 endmacro()
 
 
@@ -86,9 +88,8 @@ endmacro()
 # Build macros for using tests
 enable_testing()
 
-option(GTSAM_BUILD_TESTS                 "Enable/Disable building of tests"          ON)
-option(GTSAM_BUILD_EXAMPLES_ALWAYS       "Build examples with 'make all' (build with 'make examples' if not)"       ON)
-option(GTSAM_BUILD_TIMING_ALWAYS         "Build timing scripts with 'make all' (build with 'make timing' if not"    OFF)
+#TODO(Varun) Move to HandlePrintConfiguration.cmake. This will require additional changes.
+option(GTSAM_BUILD_TESTS                 "Enable/Disable building of tests"          ON)	
 
 # Add option for combining unit tests
 if(MSVC OR XCODE_VERSION)
@@ -100,7 +101,8 @@ mark_as_advanced(GTSAM_SINGLE_TEST_EXE)
 
 # Enable make check (http://www.cmake.org/Wiki/CMakeEmulateMakeCheck)
 if(GTSAM_BUILD_TESTS)
-	add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --output-on-failure)
+	separate_arguments(CTEST_EXTRA_ARGS_LIST UNIX_COMMAND "${CTEST_EXTRA_ARGS}")
+	add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIGURATION> --output-on-failure ${CTEST_EXTRA_ARGS_LIST} VERBATIM)
 	# Also add alternative checks using valgrind.
 	# We don't look for valgrind being installed in the system, since these
 	# targets are not invoked unless directly instructed by the user.
@@ -123,6 +125,7 @@ add_custom_target(timing)
 # Implementations of this file's macros:
 
 macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
+	#TODO(Varun) Building of tests should not depend on global gtsam flag
 	if(GTSAM_BUILD_TESTS)
 		# Add group target if it doesn't already exist
 		if(NOT TARGET check.${groupName})
@@ -197,7 +200,9 @@ macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 				set_property(SOURCE ${script_src} APPEND PROPERTY COMPILE_DEFINITIONS "TOPSRCDIR=\"${GTSAM_SOURCE_DIR}\"")
 
 				# Exclude from 'make all' and 'make install'
-				set_target_properties(${script_name} PROPERTIES EXCLUDE_FROM_ALL ON)
+				if(NOT QNX)
+					set_target_properties(${script_name} PROPERTIES EXCLUDE_FROM_ALL ON)
+				endif()
 
 				# Configure target folder (for MSVC and Xcode)
 				set_property(TARGET ${script_name} PROPERTY FOLDER "Unit tests/${groupName}")
@@ -238,8 +243,13 @@ macro(gtsamAddTestsGlob_impl groupName globPatterns excludedFiles linkLibraries)
 			set_property(SOURCE ${script_srcs} APPEND PROPERTY COMPILE_DEFINITIONS "TOPSRCDIR=\"${GTSAM_SOURCE_DIR}\"")
 
 			# Exclude from 'make all' and 'make install'
-			set_target_properties(${target_name} PROPERTIES EXCLUDE_FROM_ALL ON)
-
+			# QNX is cross-compiled for, and does not support make, cmake, or ctest natively.
+			# Therefore, running tests must be done by manually copying test executables and required data files over.
+			# for more info, check PR#1968 https://github.com/borglab/gtsam/pull/1968
+			if(NOT QNX)
+				set_target_properties(${target_name} PROPERTIES EXCLUDE_FROM_ALL ON)
+			endif()
+		
 			# Configure target folder (for MSVC and Xcode)
 			set_property(TARGET ${script_name} PROPERTY FOLDER "Unit tests")
 		endif()

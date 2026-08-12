@@ -29,18 +29,18 @@ struct VectorSpaceImpl {
   typedef Eigen::Matrix<double, N, 1> TangentVector;
   typedef OptionalJacobian<N, N> ChartJacobian;
   typedef Eigen::Matrix<double, N, N> Jacobian;
-  static int GetDimension(const Class&) { return N;}
+  static size_t GetDimension(const Class&) { return static_cast<size_t>(N);}
 
   static TangentVector Local(const Class& origin, const Class& other,
-      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
+      ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
     if (H1) *H1 = - Jacobian::Identity();
     if (H2) *H2 = Jacobian::Identity();
-    Class v = other-origin;
+    Class v = other - origin;
     return v.vector();
   }
 
   static Class Retract(const Class& origin, const TangentVector& v,
-      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
+      ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
     if (H1) *H1 = Jacobian::Identity();
     if (H2) *H2 = Jacobian::Identity();
     return origin + v;
@@ -51,35 +51,44 @@ struct VectorSpaceImpl {
   /// @name Lie Group
   /// @{
 
-  static TangentVector Logmap(const Class& m, ChartJacobian Hm = boost::none) {
+  typedef Eigen::Matrix<double, N, 1> LieAlgebra;
+
+  static TangentVector Logmap(const Class& m, ChartJacobian Hm = {}) {
     if (Hm) *Hm = Jacobian::Identity();
     return m.vector();
   }
 
-  static Class Expmap(const TangentVector& v, ChartJacobian Hv = boost::none) {
+  static Class Expmap(const TangentVector& v, ChartJacobian Hv = {}) {
     if (Hv)  *Hv = Jacobian::Identity();
     return Class(v);
   }
 
-  static Class Compose(const Class& v1, const Class& v2, ChartJacobian H1 = boost::none,
-      ChartJacobian H2 = boost::none) {
+  static Class Compose(const Class& v1, const Class& v2, ChartJacobian H1 = {},
+      ChartJacobian H2 = {}) {
     if (H1) *H1 = Jacobian::Identity();
     if (H2) *H2 = Jacobian::Identity();
     return v1 + v2;
   }
 
-  static Class Between(const Class& v1, const Class& v2, ChartJacobian H1 = boost::none,
-      ChartJacobian H2 = boost::none) {
+  static Class Between(const Class& v1, const Class& v2, ChartJacobian H1 = {},
+      ChartJacobian H2 = {}) {
     if (H1) *H1 = - Jacobian::Identity();
     if (H2) *H2 =   Jacobian::Identity();
     return v2 - v1;
   }
 
-  static Class Inverse(const Class& v, ChartJacobian H = boost::none) {
+  static Class Inverse(const Class& v, ChartJacobian H = {}) {
     if (H) *H = - Jacobian::Identity();
     return -v;
   }
 
+  static LieAlgebra Hat(const TangentVector& v) { return v; }
+
+  static TangentVector Vee(const LieAlgebra& X) { return X; }
+
+  static Jacobian AdjointMap(const Class& /*m*/) {
+    return Jacobian::Identity();
+  }
   /// @}
 };
 
@@ -98,23 +107,23 @@ struct VectorSpaceImpl<Class,Eigen::Dynamic> {
   /// @{
   typedef Eigen::VectorXd TangentVector;
   typedef OptionalJacobian<Eigen::Dynamic,Eigen::Dynamic> ChartJacobian;
-  static int GetDimension(const Class& m) { return m.dim();}
+  static size_t GetDimension(const Class& m) { return m.dim();}
 
   static Eigen::MatrixXd Eye(const Class& m) {
-    int dim = GetDimension(m);
+    size_t dim = GetDimension(m);
     return Eigen::MatrixXd::Identity(dim, dim);
   }
 
   static TangentVector Local(const Class& origin, const Class& other,
-      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
+      ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
     if (H1) *H1 = - Eye(origin);
     if (H2) *H2 = Eye(other);
-    Class v = other-origin;
+    Class v = other - origin;
     return v.vector();
   }
 
   static Class Retract(const Class& origin, const TangentVector& v,
-      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
+      ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
     if (H1) *H1 = Eye(origin);
     if (H2) *H2 = Eye(origin);
     return origin + v;
@@ -125,27 +134,26 @@ struct VectorSpaceImpl<Class,Eigen::Dynamic> {
   /// @name Lie Group
   /// @{
 
-  static TangentVector Logmap(const Class& m, ChartJacobian Hm = boost::none) {
+  static TangentVector Logmap(const Class& m, ChartJacobian Hm = {}) {
     if (Hm) *Hm = Eye(m);
     return m.vector();
   }
 
-  static Class Expmap(const TangentVector& v, ChartJacobian Hv = boost::none) {
+  static Class Expmap(const TangentVector& v, ChartJacobian Hv = {}) {
     Class result(v);
-    if (Hv)
-      *Hv = Eye(v);
+    if (Hv) *Hv = Eye(result);
     return result;
   }
 
   static Class Compose(const Class& v1, const Class& v2, ChartJacobian H1,
-      ChartJacobian H2 = boost::none) {
+      ChartJacobian H2 = {}) {
     if (H1) *H1 = Eye(v1);
     if (H2) *H2 = Eye(v2);
     return v1 + v2;
   }
 
   static Class Between(const Class& v1, const Class& v2, ChartJacobian H1,
-      ChartJacobian H2 = boost::none) {
+      ChartJacobian H2 = {}) {
     if (H1) *H1 = - Eye(v1);
     if (H2) *H2 =   Eye(v2);
     return v2 - v1;
@@ -156,6 +164,7 @@ struct VectorSpaceImpl<Class,Eigen::Dynamic> {
     return -v;
   }
 
+  static Eigen::MatrixXd AdjointMap(const Class& m) { return Eye(m); }
   /// @}
 };
 
@@ -163,13 +172,13 @@ struct VectorSpaceImpl<Class,Eigen::Dynamic> {
 template<class Class>
 struct HasVectorSpacePrereqs {
 
-  enum { dim = Class::dimension };
+  inline constexpr static auto dim = Class::dimension;
 
   Class p, q;
   Vector v;
 
-  BOOST_CONCEPT_USAGE(HasVectorSpacePrereqs) {
-    p = Class::identity();  // identity
+  GTSAM_CONCEPT_USAGE(HasVectorSpacePrereqs) {
+    p = Class::Identity();  // identity
     q = p + p;              // addition
     q = p - p;              // subtraction
     v = p.vector();         // conversion to vector
@@ -185,19 +194,19 @@ template<class Class>
 struct VectorSpaceTraits: VectorSpaceImpl<Class, Class::dimension> {
 
   // Check that Class has the necessary machinery
-  BOOST_CONCEPT_ASSERT((HasVectorSpacePrereqs<Class>));
+GTSAM_CONCEPT_ASSERT(HasVectorSpacePrereqs<Class>);
 
   typedef vector_space_tag structure_category;
 
   /// @name Group
   /// @{
   typedef additive_group_tag group_flavor;
-  static Class Identity() { return Class::identity();}
+  static Class Identity() { return Class::Identity();}
   /// @}
 
   /// @name Manifold
   /// @{
-  enum { dimension = Class::dimension};
+  inline constexpr static auto dimension = Class::dimension;
   typedef Class ManifoldType;
   /// @}
 };
@@ -232,12 +241,12 @@ struct ScalarTraits : VectorSpaceImpl<Scalar, 1> {
   /// @name Manifold
   /// @{
   typedef Scalar ManifoldType;
-  enum { dimension = 1 };
+  inline constexpr static auto dimension = 1;
   typedef Eigen::Matrix<double, 1, 1> TangentVector;
   typedef OptionalJacobian<1, 1> ChartJacobian;
 
   static TangentVector Local(Scalar origin, Scalar other,
-      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
+      ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
     if (H1) (*H1)[0] = -1.0;
     if (H2) (*H2)[0] =  1.0;
     TangentVector result;
@@ -246,7 +255,7 @@ struct ScalarTraits : VectorSpaceImpl<Scalar, 1> {
   }
 
   static Scalar Retract(Scalar origin, const TangentVector& v,
-      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
+      ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
     if (H1) (*H1)[0] = 1.0;
     if (H2) (*H2)[0] = 1.0;
     return origin + v[0];
@@ -255,17 +264,17 @@ struct ScalarTraits : VectorSpaceImpl<Scalar, 1> {
 
   /// @name Lie Group
   /// @{
-  static TangentVector Logmap(Scalar m, ChartJacobian H = boost::none) {
+  static TangentVector Logmap(Scalar m, ChartJacobian H = {}) {
     if (H) (*H)[0] = 1.0;
     return Local(0, m);
   }
 
-  static Scalar Expmap(const TangentVector& v, ChartJacobian H = boost::none) {
+  static Scalar Expmap(const TangentVector& v, ChartJacobian H = {}) {
     if (H) (*H)[0] = 1.0;
     return v[0];
   }
+  // AdjointMap for ScalarTraits is inherited from VectorSpaceImpl<Scalar, 1>
   /// @}
-
 };
 
 } // namespace internal
@@ -305,14 +314,14 @@ struct traits<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > :
 
   /// @name Manifold
   /// @{
-  enum { dimension = M*N};
+  inline constexpr static auto dimension = M * N;
   typedef Fixed ManifoldType;
   typedef Eigen::Matrix<double, dimension, 1> TangentVector;
   typedef Eigen::Matrix<double, dimension, dimension> Jacobian;
   typedef OptionalJacobian<dimension, dimension> ChartJacobian;
 
   static TangentVector Local(const Fixed& origin, const Fixed& other,
-      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
+      ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
     if (H1) (*H1) = -Jacobian::Identity();
     if (H2) (*H2) =  Jacobian::Identity();
     TangentVector result;
@@ -321,7 +330,7 @@ struct traits<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > :
   }
 
   static Fixed Retract(const Fixed& origin, const TangentVector& v,
-      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
+      ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
     if (H1) (*H1) = Jacobian::Identity();
     if (H2) (*H2) = Jacobian::Identity();
     return origin + Eigen::Map<const Fixed>(v.data());
@@ -330,19 +339,22 @@ struct traits<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > :
 
   /// @name Lie Group
   /// @{
-  static TangentVector Logmap(const Fixed& m, ChartJacobian H = boost::none) {
+  static TangentVector Logmap(const Fixed& m, ChartJacobian H = {}) {
     if (H) *H = Jacobian::Identity();
     TangentVector result;
     Eigen::Map<Fixed>(result.data()) = m;
     return result;
   }
 
-  static Fixed Expmap(const TangentVector& v, ChartJacobian H = boost::none) {
+  static Fixed Expmap(const TangentVector& v, ChartJacobian H = {}) {
     Fixed m;
     m.setZero();
     if (H) *H = Jacobian::Identity();
     return m + Eigen::Map<const Fixed>(v.data());
   }
+
+  // AdjointMap for fixed-size Eigen matrices is inherited from
+  // internal::VectorSpaceImpl< Eigen::Matrix<double, M, N, ...> , M*N >
   /// @}
 };
 
@@ -377,32 +389,32 @@ struct DynamicTraits {
 
   /// @name Manifold
   /// @{
-  enum { dimension = Eigen::Dynamic };
+  inline constexpr static auto dimension = Eigen::Dynamic;
   typedef Eigen::VectorXd TangentVector;
   typedef Eigen::MatrixXd Jacobian;
   typedef OptionalJacobian<dimension, dimension> ChartJacobian;
   typedef Dynamic ManifoldType;
 
-  static int GetDimension(const Dynamic& m) {
-    return m.rows() * m.cols();
+  static size_t GetDimension(const Dynamic& m) {
+    return static_cast<size_t>(m.rows() * m.cols());
   }
 
   static Jacobian Eye(const Dynamic& m) {
-    int dim = GetDimension(m);
+    size_t dim = GetDimension(m);
     return Eigen::Matrix<double, dimension, dimension>::Identity(dim, dim);
   }
 
   static TangentVector Local(const Dynamic& m, const Dynamic& other, //
-      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
+      ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
     if (H1) *H1 = -Eye(m);
-    if (H2) *H2 =  Eye(m);
+    if (H2) *H2 = Eye(m);
     TangentVector v(GetDimension(m));
     Eigen::Map<Dynamic>(v.data(), m.rows(), m.cols()) = other - m;
     return v;
   }
 
   static Dynamic Retract(const Dynamic& m, const TangentVector& v, //
-      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
+      ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
     if (H1) *H1 = Eye(m);
     if (H2) *H2 = Eye(m);
     return m + Eigen::Map<const Dynamic>(v.data(), m.rows(), m.cols());
@@ -411,36 +423,62 @@ struct DynamicTraits {
 
   /// @name Lie Group
   /// @{
-  static TangentVector Logmap(const Dynamic& m, ChartJacobian H = boost::none) {
+  using LieAlgebra = Dynamic;
+    
+  static TangentVector Logmap(const Dynamic& m, ChartJacobian H = {}) {
     if (H) *H = Eye(m);
     TangentVector result(GetDimension(m));
-    Eigen::Map<Dynamic>(result.data(), m.cols(), m.rows()) = m;
+    Eigen::Map<Dynamic>(result.data(), m.rows(), m.cols()) = m;
     return result;
   }
 
-  static Dynamic Expmap(const TangentVector& /*v*/, ChartJacobian H = boost::none) {
-    static_cast<void>(H);
-    throw std::runtime_error("Expmap not defined for dynamic types");
+  static Dynamic Expmap(const TangentVector& v, ChartJacobian H = {}) {
+    if constexpr (M == Eigen::Dynamic && N == Eigen::Dynamic) {
+      static_cast<void>(v);
+      static_cast<void>(H);
+      throw std::runtime_error("Expmap not defined for fully dynamic matrices");
+    } else {
+      const int rows = (M == Eigen::Dynamic) ? v.size() / N : M;
+      const int cols = (N == Eigen::Dynamic) ? v.size() / M : N;
+      if (rows * cols != v.size()) {
+        throw std::invalid_argument(
+            "Dynamic Expmap tangent dimension does not match matrix shape");
+      }
+      Dynamic result(rows, cols);
+      result = Eigen::Map<const Dynamic>(v.data(), rows, cols);
+      if (H) *H = Jacobian::Identity(v.size(), v.size());
+      return result;
+    }
   }
 
-  static Dynamic Inverse(const Dynamic& m, ChartJacobian H = boost::none) {
+  static Dynamic Inverse(const Dynamic& m, ChartJacobian H = {}) {
     if (H) *H = -Eye(m);
     return -m;
   }
 
   static Dynamic Compose(const Dynamic& v1, const Dynamic& v2,
-      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
+      ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
     if (H1) *H1 = Eye(v1);
     if (H2) *H2 = Eye(v1);
     return v1 + v2;
   }
 
   static Dynamic Between(const Dynamic& v1, const Dynamic& v2,
-      ChartJacobian H1 = boost::none, ChartJacobian H2 = boost::none) {
+      ChartJacobian H1 = {}, ChartJacobian H2 = {}) {
     if (H1) *H1 = -Eye(v1);
     if (H2) *H2 = Eye(v1);
     return v2 - v1;
   }
+  
+  static LieAlgebra Hat(const TangentVector& v) {
+    return v;
+  }
+  
+  static TangentVector Vee(const LieAlgebra& X) {
+    return X;
+  }
+
+  static Jacobian AdjointMap(const Dynamic& m) { return Eye(m); }
   /// @}
 
 };
@@ -472,9 +510,9 @@ public:
 
   typedef typename traits<T>::structure_category structure_category_tag;
 
-  BOOST_CONCEPT_USAGE(IsVectorSpace) {
-    BOOST_STATIC_ASSERT_MSG(
-        (boost::is_base_of<vector_space_tag, structure_category_tag>::value),
+  GTSAM_CONCEPT_USAGE(IsVectorSpace) {
+    static_assert(
+        (std::is_base_of<vector_space_tag, structure_category_tag>::value),
         "This type's trait does not assert it as a vector space (or derived)");
     r = p + q;
     r = -p;
@@ -485,5 +523,4 @@ private:
   T p, q, r;
 };
 
-} // namespace gtsam
-
+}  // namespace gtsam

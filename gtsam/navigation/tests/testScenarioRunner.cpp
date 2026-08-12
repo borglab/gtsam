@@ -17,9 +17,12 @@
 
 // #define ENABLE_TIMING // uncomment for timing results
 
-#include <gtsam/navigation/ScenarioRunner.h>
-#include <gtsam/base/timing.h>
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/base/timing.h>
+#include <gtsam/navigation/ScenarioRunner.h>
+
 #include <cmath>
 
 using namespace std;
@@ -36,7 +39,7 @@ static const Vector3 kAccBias(0.2, 0, 0), kRotBias(0.1, 0, 0.3);
 static const imuBias::ConstantBias kNonZeroBias(kAccBias, kRotBias);
 
 // Create default parameters with Z-up and above noise parameters
-static boost::shared_ptr<PreintegrationParams> defaultParams() {
+static std::shared_ptr<PreintegrationParams> defaultParams() {
   auto p = PreintegrationParams::MakeSharedU(10);
   p->gyroscopeCovariance = kGyroSigma * kGyroSigma * I_3x3;
   p->accelerometerCovariance = kAccelSigma * kAccelSigma * I_3x3;

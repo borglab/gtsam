@@ -17,15 +17,13 @@
  *  @date December 2014
  */
 
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/expressions.h>
-#include <gtsam_unstable/geometry/Event.h>
+#include <gtsam/geometry/Event.h>
 #include <gtsam_unstable/slam/TOAFactor.h>
 
 #include <CppUnitLite/TestHarness.h>
-#include <boost/format.hpp>
 
 using namespace std;
 using namespace gtsam;
@@ -86,8 +84,7 @@ TEST(TOAFactor, WholeEnchilada) {
   // Create initial estimate
   Values initialEstimate;
   // Event estimatedEvent(timeOfEvent -10, 200 * cm, 150 * cm, 350 * cm);
-  Vector4 delta;
-  delta << 0.1, 0.1, -0.1, 0.1;
+  Vector4 delta{0.1, 0.1, -0.1, 0.1};
   Event estimatedEvent = groundTruthEvent.retract(delta);
   initialEstimate.insert(key, estimatedEvent);
 

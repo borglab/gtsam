@@ -159,7 +159,7 @@ BTL_DONT_INLINE void bench( int size_min, int size_max, int nb_point ){
 //    bench<Mixed_Perf_Analyzer,Action>(size_min,size_max,nb_point);
 
 
-  // Only for small problem size. Otherwize it will be too long
+  // Only for small problem size. Otherwise it will be too long
 //   bench<X86_Perf_Analyzer,Action>(size_min,size_max,nb_point);
 //   bench<STL_Perf_Analyzer,Action>(size_min,size_max,nb_point);
 

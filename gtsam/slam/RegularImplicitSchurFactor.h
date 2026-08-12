@@ -40,7 +40,7 @@ class RegularImplicitSchurFactor: public GaussianFactor {
 
 public:
   typedef RegularImplicitSchurFactor This; ///< Typedef to this class
-  typedef boost::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
+  typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
 protected:
 
@@ -138,17 +138,25 @@ public:
   void updateHessian(const KeyVector& keys,
                          SymmetricBlockMatrix* info) const override {
     throw std::runtime_error(
-        "RegularImplicitSchurFactor::updateHessian non implemented");
+        "RegularImplicitSchurFactor::updateHessian not implemented");
   }
+
+  void updateHessian(const KeyVector& keys,
+                         SymmetricBlockMatrix* info,
+                         DenseIndex beginCol, DenseIndex endCol) const override {
+    throw std::runtime_error(
+        "RegularImplicitSchurFactor::updateHessian not implemented");
+  }
+
   Matrix augmentedJacobian() const override {
     throw std::runtime_error(
-        "RegularImplicitSchurFactor::augmentedJacobian non implemented");
+        "RegularImplicitSchurFactor::augmentedJacobian not implemented");
     return Matrix();
   }
   std::pair<Matrix, Vector> jacobian() const override {
     throw std::runtime_error(
-        "RegularImplicitSchurFactor::jacobian non implemented");
-    return std::make_pair(Matrix(), Vector());
+        "RegularImplicitSchurFactor::jacobian not implemented");
+    return {Matrix(), Vector()};
   }
 
   /// *Compute* full augmented information matrix
@@ -254,17 +262,17 @@ public:
   }
 
   GaussianFactor::shared_ptr clone() const override {
-    return boost::make_shared<RegularImplicitSchurFactor<CAMERA> >(keys_,
+    return std::make_shared<RegularImplicitSchurFactor<CAMERA> >(keys_,
         FBlocks_, PointCovariance_, E_, b_);
     throw std::runtime_error(
-        "RegularImplicitSchurFactor::clone non implemented");
+        "RegularImplicitSchurFactor::clone not implemented");
   }
 
   GaussianFactor::shared_ptr negate() const override {
-    return boost::make_shared<RegularImplicitSchurFactor<CAMERA> >(keys_,
+    return std::make_shared<RegularImplicitSchurFactor<CAMERA> >(keys_,
         FBlocks_, PointCovariance_, E_, b_);
     throw std::runtime_error(
-        "RegularImplicitSchurFactor::negate non implemented");
+        "RegularImplicitSchurFactor::negate not implemented");
   }
 
   // Raw Vector version of y += F'*alpha*(I - E*P*E')*F*x, for testing

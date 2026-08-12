@@ -8,7 +8,9 @@ and invoked during the wrapping by CMake.
 # pylint: disable=import-error
 
 import argparse
+import sys
 
+from gtwrap.interface_parser import InterfaceParseError
 from gtwrap.pybind_wrapper import PybindWrapper
 
 
@@ -34,9 +36,9 @@ def main():
         help="Name of the output pybind .cc file(s)",
     )
     arg_parser.add_argument(
-        "--use-boost",
+        "--use-boost-serialization",
         action="store_true",
-        help="using boost's shared_ptr instead of std's",
+        help="Allow boost based serialization methods",
     )
     arg_parser.add_argument(
         "--top_module_namespaces",
@@ -64,31 +66,42 @@ def main():
     arg_parser.add_argument("--is_submodule",
                             default=False,
                             action="store_true")
+    arg_parser.add_argument("--xml_source",
+                            type=str,
+                            default="",
+                            help="The path to the Doxygen-generated XML documentation")
     args = arg_parser.parse_args()
 
     top_module_namespaces = args.top_module_namespaces.split("::")
     if top_module_namespaces[0]:
         top_module_namespaces = [''] + top_module_namespaces
 
-    with open(args.template, "r") as f:
+    with open(args.template, "r", encoding="UTF-8") as f:
         template_content = f.read()
 
     wrapper = PybindWrapper(
         module_name=args.module_name,
-        use_boost=args.use_boost,
+        use_boost_serialization=args.use_boost_serialization,
         top_module_namespaces=top_module_namespaces,
         ignore_classes=args.ignore,
         module_template=template_content,
+        xml_source=args.xml_source,
     )
 
-    if args.is_submodule:
-        wrapper.wrap_submodule(args.src)
+    try:
+        if args.is_submodule:
+            wrapper.wrap_submodule(args.src)
 
-    else:
-        # Wrap the code and get back the cpp/cc code.
-        sources = args.src.split(';')
-        wrapper.wrap(sources, args.out)
+        else:
+            # Wrap the code and get back the cpp/cc code.
+            sources = args.src.split(';')
+            wrapper.wrap(sources, args.out)
+    except InterfaceParseError as error:
+        print(error, file=sys.stderr)
+        return 1
+
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

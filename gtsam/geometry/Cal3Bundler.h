@@ -19,29 +19,28 @@
 
 #pragma once
 
-#include <gtsam/geometry/Cal3.h>
+#include <gtsam/geometry/Cal3f.h>
 #include <gtsam/geometry/Point2.h>
 
 namespace gtsam {
 
 /**
  * @brief Calibration used by Bundler
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Cal3Bundler : public Cal3 {
+class GTSAM_EXPORT Cal3Bundler : public Cal3f {
  private:
-  double k1_ = 0.0f, k2_ = 0.0f;  ///< radial distortion
-  double tol_ = 1e-5;             ///< tolerance value when calibrating
+  double k1_ = 0.0, k2_ = 0.0;  ///< radial distortion coefficients
+  double tol_ = 1e-5;           ///< tolerance value when calibrating
 
-  // NOTE: We use the base class fx to represent the common focal length.
-  // Also, image center parameters (u0, v0) are not optimized
-  // but are treated as constants.
+  // Note: u0 and v0 are constants and not optimized.
 
  public:
-  enum { dimension = 3 };
+  constexpr static auto dimension = 3;
+  using shared_ptr = std::shared_ptr<Cal3Bundler>;
 
-  /// @name Standard Constructors
+  /// @name Constructors
   /// @{
 
   /// Default constructor
@@ -58,9 +57,9 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
    */
   Cal3Bundler(double f, double k1, double k2, double u0 = 0, double v0 = 0,
               double tol = 1e-5)
-      : Cal3(f, f, 0, u0, v0), k1_(k1), k2_(k2), tol_(tol) {}
+      : Cal3f(f, u0, v0), k1_(k1), k2_(k2), tol_(tol) {}
 
-  ~Cal3Bundler() override {}
+  ~Cal3Bundler() override = default;
 
   /// @}
   /// @name Testable
@@ -74,36 +73,22 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
   void print(const std::string& s = "") const override;
 
   /// assert equality up to a tolerance
-  bool equals(const Cal3Bundler& K, double tol = 10e-9) const;
+  bool equals(const Cal3Bundler& K, double tol = 1e-9) const;
 
   /// @}
   /// @name Standard Interface
   /// @{
 
-  /// distorsion parameter k1
-  inline double k1() const { return k1_; }
+  /// distortion parameter k1
+  double k1() const { return k1_; }
 
-  /// distorsion parameter k2
-  inline double k2() const { return k2_; }
-
-  /// image center in x
-  inline double px() const { return u0_; }
-
-  /// image center in y
-  inline double py() const { return v0_; }
+  /// distortion parameter k2
+  double k2() const { return k2_; }
 
   Matrix3 K() const override;  ///< Standard 3*3 calibration matrix
   Vector4 k() const;  ///< Radial distortion parameters (4 of them, 2 0)
 
   Vector3 vector() const;
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V42
-  /// get parameter u0
-  inline double GTSAM_DEPRECATED u0() const { return u0_; }
-
-  /// get parameter v0
-  inline double GTSAM_DEPRECATED v0() const { return v0_; }
-#endif
 
   /**
    * @brief: convert intrinsic coordinates xy to image coordinates uv
@@ -113,19 +98,18 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in image coordinates
    */
-  Point2 uncalibrate(const Point2& p, OptionalJacobian<2, 3> Dcal = boost::none,
-                     OptionalJacobian<2, 2> Dp = boost::none) const;
+  Point2 uncalibrate(const Point2& p, OptionalJacobian<2, 3> Dcal = {},
+                     OptionalJacobian<2, 2> Dp = {}) const;
 
   /**
    * Convert a pixel coordinate to ideal coordinate xy
-   * @param p point in image coordinates
-   * @param tol optional tolerance threshold value for iterative minimization
+   * @param pi point in image coordinates
    * @param Dcal optional 2*3 Jacobian wrpt Cal3Bundler parameters
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in intrinsic coordinates
    */
-  Point2 calibrate(const Point2& pi, OptionalJacobian<2, 3> Dcal = boost::none,
-                   OptionalJacobian<2, 2> Dp = boost::none) const;
+  Point2 calibrate(const Point2& pi, OptionalJacobian<2, 3> Dcal = {},
+                   OptionalJacobian<2, 2> Dp = {}) const;
 
   /// @deprecated might be removed in next release, use uncalibrate
   Matrix2 D2d_intrinsic(const Point2& p) const;
@@ -140,14 +124,14 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
   /// @name Manifold
   /// @{
 
-  /// return DOF, dimensionality of tangent space
-  size_t dim() const override { return Dim(); }
+  /// Return DOF, dimensionality of tangent space
+  size_t dim() const { return Dim(); }
 
-  /// return DOF, dimensionality of tangent space
-  inline static size_t Dim() { return dimension; }
+  /// Return DOF, dimensionality of tangent space
+  static size_t Dim() { return dimension; }
 
   /// Update calibration with tangent space delta
-  inline Cal3Bundler retract(const Vector& d) const {
+  Cal3Bundler retract(const Vector& d) const {
     return Cal3Bundler(fx_ + d(0), k1_ + d(1), k2_ + d(2), u0_, v0_);
   }
 
@@ -161,6 +145,7 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
   /// @name Advanced Interface
   /// @{
 
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class Archive>
@@ -171,6 +156,7 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3 {
     ar& BOOST_SERIALIZATION_NVP(k2_);
     ar& BOOST_SERIALIZATION_NVP(tol_);
   }
+#endif
 
   /// @}
 };

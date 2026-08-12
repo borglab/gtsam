@@ -55,6 +55,10 @@
 #include "bdcsvd.cpp"
 #endif
 
+#ifdef EIGEN_TEST_PART_11
+#include "simplicial_cholesky.cpp"
+#endif
+
 #include <Eigen/Dense>
 
 #undef min
@@ -62,7 +66,9 @@
 #undef isnan
 #undef isinf
 #undef isfinite
+#undef I
 
+#include <boost/serialization/nvp.hpp>
 #include <boost/multiprecision/cpp_dec_float.hpp>
 #include <boost/multiprecision/number.hpp>
 #include <boost/math/special_functions.hpp>
@@ -141,7 +147,7 @@ namespace Eigen {
 
 }
 
-void test_boostmultiprec()
+EIGEN_DECLARE_TEST(boostmultiprec)
 {
   typedef Matrix<Real,Dynamic,Dynamic> Mat;
   typedef Matrix<std::complex<Real>,Dynamic,Dynamic> MatC;
@@ -152,7 +158,7 @@ void test_boostmultiprec()
   std::cout << "NumTraits<Real>::highest()         = " << NumTraits<Real>::highest() << std::endl;
   std::cout << "NumTraits<Real>::digits10()        = " << NumTraits<Real>::digits10() << std::endl;
 
-  // chekc stream output
+  // check stream output
   {
     Mat A(10,10);
     A.setRandom();
@@ -197,5 +203,6 @@ void test_boostmultiprec()
 
   CALL_SUBTEST_9(( jacobisvd(Mat(internal::random<int>(EIGEN_TEST_MAX_SIZE/4, EIGEN_TEST_MAX_SIZE), internal::random<int>(EIGEN_TEST_MAX_SIZE/4, EIGEN_TEST_MAX_SIZE/2))) ));
   CALL_SUBTEST_10(( bdcsvd(Mat(internal::random<int>(EIGEN_TEST_MAX_SIZE/4, EIGEN_TEST_MAX_SIZE), internal::random<int>(EIGEN_TEST_MAX_SIZE/4, EIGEN_TEST_MAX_SIZE/2))) ));
-}
 
+  CALL_SUBTEST_11(( test_simplicial_cholesky_T<Real,int,ColMajor>() ));
+}

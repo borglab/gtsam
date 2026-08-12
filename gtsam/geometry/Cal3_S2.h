@@ -16,11 +16,12 @@
  */
 
 /**
- * @addtogroup geometry
+ * @ingroup geometry
  */
 
 #pragma once
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/Cal3.h>
 #include <gtsam/geometry/Point2.h>
 
@@ -28,15 +29,15 @@ namespace gtsam {
 
 /**
  * @brief The most common 5DOF 3D->2D calibration
- * @addtogroup geometry
+ * @ingroup geometry
  * \nosubgrouping
  */
 class GTSAM_EXPORT Cal3_S2 : public Cal3 {
  public:
-  enum { dimension = 5 };
+  constexpr static auto dimension = 5;
 
   ///< shared pointer to calibration object
-  using shared_ptr = boost::shared_ptr<Cal3_S2>;
+  using shared_ptr = std::shared_ptr<Cal3_S2>;
 
   /// @name Standard Constructors
   /// @{
@@ -60,14 +61,14 @@ class GTSAM_EXPORT Cal3_S2 : public Cal3 {
   Cal3_S2(double fov, int w, int h) : Cal3(fov, w, h) {}
 
   /**
-   * Convert intrinsic coordinates xy to image coordinates uv, fixed derivaitves
+   * Convert intrinsic coordinates xy to image coordinates uv, fixed derivatives
    * @param p point in intrinsic coordinates
    * @param Dcal optional 2*5 Jacobian wrpt Cal3 parameters
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in image coordinates
    */
-  Point2 uncalibrate(const Point2& p, OptionalJacobian<2, 5> Dcal = boost::none,
-                     OptionalJacobian<2, 2> Dp = boost::none) const;
+  Point2 uncalibrate(const Point2& p, OptionalJacobian<2, 5> Dcal = {},
+                     OptionalJacobian<2, 2> Dp = {}) const;
 
   /**
    * Convert image coordinates uv to intrinsic coordinates xy
@@ -76,8 +77,8 @@ class GTSAM_EXPORT Cal3_S2 : public Cal3 {
    * @param Dp optional 2*2 Jacobian wrpt intrinsic coordinates
    * @return point in intrinsic coordinates
    */
-  Point2 calibrate(const Point2& p, OptionalJacobian<2, 5> Dcal = boost::none,
-                   OptionalJacobian<2, 2> Dp = boost::none) const;
+  Point2 calibrate(const Point2& p, OptionalJacobian<2, 5> Dcal = {},
+                   OptionalJacobian<2, 2> Dp = {}) const;
 
   /**
    * Convert homogeneous image coordinates to intrinsic coordinates
@@ -101,9 +102,9 @@ class GTSAM_EXPORT Cal3_S2 : public Cal3 {
   bool equals(const Cal3_S2& K, double tol = 10e-9) const;
 
   /// "Between", subtracts calibrations. between(p,q) == compose(inverse(p),q)
-  inline Cal3_S2 between(const Cal3_S2& q,
-                         OptionalJacobian<5, 5> H1 = boost::none,
-                         OptionalJacobian<5, 5> H2 = boost::none) const {
+  Cal3_S2 between(const Cal3_S2& q,
+                         OptionalJacobian<5, 5> H1 = {},
+                         OptionalJacobian<5, 5> H2 = {}) const {
     if (H1) *H1 = -I_5x5;
     if (H2) *H2 = I_5x5;
     return Cal3_S2(q.fx_ - fx_, q.fy_ - fy_, q.s_ - s_, q.u0_ - u0_,
@@ -115,10 +116,13 @@ class GTSAM_EXPORT Cal3_S2 : public Cal3 {
   /// @{
 
   /// return DOF, dimensionality of tangent space
-  inline static size_t Dim() { return dimension; }
+  virtual size_t dim() const { return Dim(); };
+
+  /// return DOF, dimensionality of tangent space
+  static size_t Dim() { return dimension; }
 
   /// Given 5-dim tangent vector, create new calibration
-  inline Cal3_S2 retract(const Vector& d) const {
+  Cal3_S2 retract(const Vector& d) const {
     return Cal3_S2(fx_ + d(0), fy_ + d(1), s_ + d(2), u0_ + d(3), v0_ + d(4));
   }
 
@@ -132,6 +136,7 @@ class GTSAM_EXPORT Cal3_S2 : public Cal3 {
   /// @{
 
  private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION  ///
   /// Serialization function
   friend class boost::serialization::access;
   template <class Archive>
@@ -139,6 +144,7 @@ class GTSAM_EXPORT Cal3_S2 : public Cal3 {
     ar& boost::serialization::make_nvp(
         "Cal3_S2", boost::serialization::base_object<Cal3>(*this));
   }
+#endif
 
   /// @}
 };

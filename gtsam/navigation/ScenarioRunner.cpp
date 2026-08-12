@@ -15,14 +15,13 @@
  * @author  Frank Dellaert
  */
 
-#include <gtsam/navigation/ScenarioRunner.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/timing.h>
+#include <gtsam/navigation/ScenarioRunner.h>
 
-#include <boost/assign.hpp>
 #include <cmath>
 
 using namespace std;
-using namespace boost::assign;
 
 namespace gtsam {
 
@@ -102,6 +101,104 @@ Matrix6 ScenarioRunner::estimateNoiseCovariance(size_t N) const {
     Q += xi * xi.transpose();
   }
 
+  return Q / (N - 1);
+}
+
+PreintegratedCombinedMeasurements CombinedScenarioRunner::integrate(
+    double T, const Bias& estimatedBias, bool corrupted) const {
+  gttic_(integrate);
+  PreintegratedCombinedMeasurements pim(p_, estimatedBias, preintMeasCov_);
+
+  const double dt = imuSampleTime();
+  const size_t nrSteps = T / dt;
+  double t = 0;
+  for (size_t k = 0; k < nrSteps; k++, t += dt) {
+    Vector3 measuredOmega =
+        corrupted ? measuredAngularVelocity(t) : actualAngularVelocity(t);
+    Vector3 measuredAcc =
+        corrupted ? measuredSpecificForce(t) : actualSpecificForce(t);
+    pim.integrateMeasurement(measuredAcc, measuredOmega, dt);
+  }
+
+  return pim;
+}
+
+NavState CombinedScenarioRunner::predict(
+    const PreintegratedCombinedMeasurements& pim,
+    const Bias& estimatedBias) const {
+  const NavState state_i(scenario().pose(0), scenario().velocity_n(0));
+  return pim.predict(state_i, estimatedBias);
+}
+
+Eigen::Matrix<double, 15, 15> CombinedScenarioRunner::estimateCovariance(
+    double T, size_t N, const Bias& estimatedBias) const {
+  gttic_(estimateCovariance);
+
+  // Get predict prediction from ground truth measurements
+  NavState prediction = predict(integrate(T));
+
+  // Sample !
+  Matrix samples(15, N);
+  Vector15 sum = Vector15::Zero();
+  for (size_t i = 0; i < N; i++) {
+    auto pim = integrate(T, estimatedBias, true);
+    NavState sampled = predict(pim);
+    Vector15 xi = Vector15::Zero();
+    xi << sampled.localCoordinates(prediction),
+        (estimatedBias_.vector() - estimatedBias.vector());
+    samples.col(i) = xi;
+    sum += xi;
+  }
+
+  // Compute MC covariance
+  Vector15 sampleMean = sum / N;
+  Eigen::Matrix<double, 15, 15> Q;
+  Q.setZero();
+  for (size_t i = 0; i < N; i++) {
+    Vector15 xi = samples.col(i) - sampleMean;
+    Q += xi * xi.transpose();
+  }
+
+  return Q / (N - 1);
+}
+
+PreintegratedAhrsMeasurements AhrsScenarioRunner::integrate(
+    double T, const Bias& estimatedBias, bool corrupted) const {
+  PreintegratedAhrsMeasurements pim(p_, estimatedBias.gyroscope());
+  double t = 0.0;
+  while (t < T) {
+    Vector3 omega =
+        corrupted ? measuredAngularVelocity(t) : actualAngularVelocity(t);
+    pim.integrateMeasurement(omega, imuSampleTime_);
+    t += imuSampleTime_;
+  }
+  return pim;
+}
+
+Rot3 AhrsScenarioRunner::predict(const PreintegratedAhrsMeasurements& pim,
+                                 const Bias& estimatedBias) const {
+  const Rot3 rot_i(scenario_.pose(0).rotation());
+  return pim.predict(rot_i, estimatedBias.gyroscope());
+}
+
+Matrix3 AhrsScenarioRunner::estimateCovariance(
+    double T, size_t N, const Bias& estimatedBias) const {
+  Rot3 prediction = predict(integrate(T));
+  Matrix samples(3, N);
+  Vector3 sum = Vector3::Zero();
+  for (size_t i = 0; i < N; i++) {
+    auto pim = integrate(T, estimatedBias, true);
+    Rot3 sampled = predict(pim);
+    Vector3 xi = sampled.localCoordinates(prediction);
+    samples.col(i) = xi;
+    sum += xi;
+  }
+  Vector3 sampleMean = sum / N;
+  Matrix3 Q = Matrix3::Zero();
+  for (size_t i = 0; i < N; i++) {
+    Vector3 xi = samples.col(i) - sampleMean;
+    Q += xi * xi.transpose();
+  }
   return Q / (N - 1);
 }
 

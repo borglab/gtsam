@@ -9,18 +9,23 @@
 
 #include <gtsam/geometry/OrientedPlane3.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 namespace gtsam {
 
 /**
  * Factor to measure a planar landmark from a given pose
  */
-class OrientedPlane3Factor: public NoiseModelFactor2<Pose3, OrientedPlane3> {
+class GTSAM_EXPORT OrientedPlane3Factor: public NoiseModelFactorN<Pose3, OrientedPlane3> {
  protected:
   OrientedPlane3 measured_p_;
-  typedef NoiseModelFactor2<Pose3, OrientedPlane3> Base;
+  typedef NoiseModelFactorN<Pose3, OrientedPlane3> Base;
 
  public:
+
+  // Provide access to the Matrix& version of evaluateError:
+  using NoiseModelFactor2<Pose3, OrientedPlane3>::evaluateError;
+
   /// Constructor
   OrientedPlane3Factor() {
   }
@@ -44,17 +49,20 @@ class OrientedPlane3Factor: public NoiseModelFactor2<Pose3, OrientedPlane3> {
   /// evaluateError
   Vector evaluateError(
       const Pose3& pose, const OrientedPlane3& plane,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const override;
+      OptionalMatrixType H1, OptionalMatrixType H2) const override;
 };
 
 // TODO: Convert this factor to dimension two, three dimensions is redundant for direction prior
-class OrientedPlane3DirectionPrior : public NoiseModelFactor1<OrientedPlane3> {
+class GTSAM_EXPORT OrientedPlane3DirectionPrior : public NoiseModelFactorN<OrientedPlane3> {
  protected:
   OrientedPlane3 measured_p_;  /// measured plane parameters
-  typedef NoiseModelFactor1<OrientedPlane3> Base;
+  typedef NoiseModelFactorN<OrientedPlane3> Base;
 
  public:
+
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
   typedef OrientedPlane3DirectionPrior This;
   /// Constructor
   OrientedPlane3DirectionPrior() {
@@ -72,8 +80,7 @@ class OrientedPlane3DirectionPrior : public NoiseModelFactor1<OrientedPlane3> {
   /// equals
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
-  Vector evaluateError(const OrientedPlane3& plane,
-      boost::optional<Matrix&> H = boost::none) const override;
+  Vector evaluateError(const OrientedPlane3& plane, OptionalMatrixType H) const override;
 };
 
 } // gtsam

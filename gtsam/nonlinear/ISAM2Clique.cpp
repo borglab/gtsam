@@ -22,6 +22,7 @@
 
 #include <stack>
 #include <utility>
+#include <cassert>
 
 using namespace std;
 
@@ -146,9 +147,9 @@ void ISAM2Clique::fastBackSubstitute(VectorValues* delta) const {
     const Vector rhs = c.getb() - c.S() * xS;
     const Vector solution = c.R().triangularView<Eigen::Upper>().solve(rhs);
 
-    // Check for indeterminant solution
+    // Check for indeterminate solution
     if (solution.hasNaN())
-      throw IndeterminantLinearSystemException(c.keys().front());
+      throw IndeterminateSystemException(c.keys().front());
 
     // Insert solution into a VectorValues
     DenseIndex vectorPosition = 0;
@@ -245,7 +246,7 @@ bool ISAM2Clique::optimizeWildfireNode(const KeySet& replaced, double threshold,
 
     // Back-substitute
     fastBackSubstitute(delta);
-    count += conditional_->nrFrontals();
+    *count += conditional_->nrFrontals();
 
     if (valuesChanged(replaced, originalValues, *delta, threshold)) {
       markFrontalsAsChanged(changed);
@@ -325,21 +326,30 @@ void ISAM2Clique::findAll(const KeySet& markedMask, KeySet* keys) const {
 
 /* ************************************************************************* */
 void ISAM2Clique::addGradientAtZero(VectorValues* g) const {
+  addGradientAtZero(g, nullptr);
+}
+
+/* ************************************************************************* */
+void ISAM2Clique::addGradientAtZero(
+    VectorValues* g, bool* hasConstrainedConditional) const {
+  if (hasConstrainedConditional && conditional_->get_model() &&
+      conditional_->get_model()->isConstrained()) {
+    *hasConstrainedConditional = true;
+  }
+
   // Loop through variables in each clique, adding contributions
   DenseIndex position = 0;
   for (auto it = conditional_->begin(); it != conditional_->end(); ++it) {
     const DenseIndex dim = conditional_->getDim(it);
     const Vector contribution = gradientContribution_.segment(position, dim);
-    VectorValues::iterator values_it;
-    bool success;
-    std::tie(values_it, success) = g->tryInsert(*it, contribution);
+    auto [values_it, success] = g->tryInsert(*it, contribution);
     if (!success) values_it->second += contribution;
     position += dim;
   }
 
   // Recursively add contributions from children
   for (const auto& child : children) {
-    child->addGradientAtZero(g);
+    child->addGradientAtZero(g, hasConstrainedConditional);
   }
 }
 

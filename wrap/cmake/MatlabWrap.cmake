@@ -32,7 +32,13 @@ macro(find_and_configure_matlab)
   set(MEX_COMMAND ${Matlab_MEX_COMPILER} CACHE PATH "Path to MATLAB MEX compiler")
   set(MATLAB_ROOT ${Matlab_ROOT_DIR} CACHE PATH "Path to MATLAB installation root (e.g. /usr/local/MATLAB/R2012a)")
 
-  # Try to automatically configure mex path from provided custom `bin` path.
+  # Try to configure mex explicitly from a user-provided MATLAB bin directory.
+  # This is the main escape hatch when find_package(Matlab) does not work with
+  # app-bundle installs or when `matlab`/`mex` is not on PATH. On macOS the
+  # expected value is typically something like:
+  #   /Applications/MATLAB_R2025b.app/bin
+  # If wrapper configuration fails because CMake found the wrong mex binary, or
+  # because Matlab_ROOT_DIR points somewhere ambiguous, check this branch first.
   if(WRAP_CUSTOM_MATLAB_PATH)
     set(matlab_bin_directory ${WRAP_CUSTOM_MATLAB_PATH})
 
@@ -42,15 +48,17 @@ macro(find_and_configure_matlab)
       set(mex_program_name "mex")
     endif()
 
-    # Run find_program explicitly putting $PATH after our predefined program
-    # directories using 'ENV PATH' and 'NO_SYSTEM_ENVIRONMENT_PATH' - this prevents
-    # finding the LaTeX mex program (totally unrelated to MATLAB Mex) when LaTeX is
-    # on the system path.
+    # Run find_program with the requested bin directory first and without the
+    # usual system-path fallback. This avoids accidentally picking up unrelated
+    # programs named `mex` (for example the LaTeX helper) and then producing
+    # confusing downstream errors such as missing MATLAB headers or libraries.
     find_program(MEX_COMMAND ${mex_program_name}
       PATHS ${matlab_bin_directory} ENV PATH
       NO_DEFAULT_PATH)
     mark_as_advanced(FORCE MEX_COMMAND)
-    # Now that we have mex, trace back to find the Matlab installation root
+    # Once we have mex, infer MATLAB_ROOT from the resolved executable rather
+    # than trusting the original user input. That keeps later include/library
+    # lookups aligned with the mex binary that will actually compile the module.
     get_filename_component(MEX_COMMAND "${MEX_COMMAND}" REALPATH)
     get_filename_component(mex_path "${MEX_COMMAND}" PATH)
     if(mex_path MATCHES ".*/win64$")
@@ -63,11 +71,11 @@ endmacro()
 
 # Consistent and user-friendly wrap function
 function(matlab_wrap interfaceHeader moduleName linkLibraries
-         extraIncludeDirs extraMexFlags ignore_classes)
+         extraIncludeDirs extraMexFlags ignore_classes use_boost_serialization)
   find_and_configure_matlab()
   wrap_and_install_library("${interfaceHeader}" "${moduleName}" "${linkLibraries}"
                            "${extraIncludeDirs}" "${extraMexFlags}"
-                           "${ignore_classes}")
+                           "${ignore_classes}" "${use_boost_serialization}")
 endfunction()
 
 # Wrapping function.  Builds a mex module from the provided
@@ -86,16 +94,18 @@ endfunction()
 # extraMexFlags:    Any *additional* flags to pass to the compiler when building
 # the wrap code.  Normally, leave this empty.
 # ignore_classes:  List of classes to ignore in the wrapping.
+# use_boost_serialization: Flag indicating whether to provide Boost-based serialization.
 function(wrap_and_install_library interfaceHeader moduleName linkLibraries
-         extraIncludeDirs extraMexFlags ignore_classes)
+         extraIncludeDirs extraMexFlags ignore_classes use_boost_serialization)
   wrap_library_internal("${interfaceHeader}" "${moduleName}" "${linkLibraries}"
-                        "${extraIncludeDirs}" "${mexFlags}")
+                        "${extraIncludeDirs}" "${extraMexFlags}" "${ignore_classes}"
+                        "${use_boost_serialization}")
   install_wrapped_library_internal("${moduleName}")
 endfunction()
 
 # Internal function that wraps a library and compiles the wrapper
 function(wrap_library_internal interfaceHeader moduleName linkLibraries extraIncludeDirs
-         extraMexFlags)
+         extraMexFlags ignore_classes use_boost_serialization)
   if(UNIX AND NOT APPLE)
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
       set(mexModuleExt mexa64)
@@ -103,7 +113,12 @@ function(wrap_library_internal interfaceHeader moduleName linkLibraries extraInc
       set(mexModuleExt mexglx)
     endif()
   elseif(APPLE)
-    set(mexModuleExt mexmaci64)
+    check_cxx_compiler_flag("-arch arm64" arm64Supported)
+    if (arm64Supported)
+      set(mexModuleExt mexmaca64)
+    else()
+      set(mexModuleExt mexmaci64)
+    endif()
   elseif(MSVC)
     if(CMAKE_CL_64)
       set(mexModuleExt mexw64)
@@ -145,30 +160,6 @@ function(wrap_library_internal interfaceHeader moduleName linkLibraries extraInc
       endif()
     endif()
   endforeach()
-
-  # CHRIS: Temporary fix. On my system the get_target_property above returned
-  # Not-found for gtsam module This needs to be fixed!!
-  if(UNIX AND NOT APPLE)
-    list(
-      APPEND
-      automaticDependencies
-      ${Boost_SERIALIZATION_LIBRARY_RELEASE}
-      ${Boost_FILESYSTEM_LIBRARY_RELEASE}
-      ${Boost_SYSTEM_LIBRARY_RELEASE}
-      ${Boost_THREAD_LIBRARY_RELEASE}
-      ${Boost_DATE_TIME_LIBRARY_RELEASE})
-    # Only present in Boost >= 1.48.0
-    if(Boost_TIMER_LIBRARY_RELEASE)
-      list(APPEND automaticDependencies ${Boost_TIMER_LIBRARY_RELEASE}
-           ${Boost_CHRONO_LIBRARY_RELEASE})
-      if(WRAP_MEX_BUILD_STATIC_MODULE)
-        # list(APPEND automaticDependencies -Wl,--no-as-needed -lrt)
-      endif()
-    endif()
-  endif()
-
-  # message("AUTOMATIC DEPENDENCIES:  ${automaticDependencies}") CHRIS: End
-  # temporary fix
 
   # Separate dependencies
   set(correctedOtherLibraries "")
@@ -242,6 +233,20 @@ function(wrap_library_internal interfaceHeader moduleName linkLibraries extraInc
   find_package(PythonInterp ${WRAP_PYTHON_VERSION} EXACT)
   find_package(PythonLibs ${WRAP_PYTHON_VERSION} EXACT)
 
+  # Set the path separator for PYTHONPATH
+  if(UNIX)
+    set(GTWRAP_PATH_SEPARATOR ":")
+  else()
+    set(GTWRAP_PATH_SEPARATOR ";")
+  endif()
+
+  # Set boost serialization flag for the python script call below.
+  if(use_boost_serialization)
+    set(_BOOST_SERIALIZATION "--use-boost-serialization")
+  else(use_boost_serialization)
+    set(_BOOST_SERIALIZATION "")
+  endif(use_boost_serialization)
+
   add_custom_command(
     OUTPUT ${generated_cpp_file}
     DEPENDS ${interfaceHeader} ${module_library_target} ${otherLibraryTargets}
@@ -251,7 +256,7 @@ function(wrap_library_internal interfaceHeader moduleName linkLibraries extraInc
       "PYTHONPATH=${GTWRAP_PACKAGE_DIR}${GTWRAP_PATH_SEPARATOR}$ENV{PYTHONPATH}"
       ${PYTHON_EXECUTABLE} ${MATLAB_WRAP_SCRIPT} --src "${interfaceHeader}"
       --module_name ${moduleName} --out ${generated_files_path}
-      --top_module_namespaces ${moduleName} --ignore ${ignore_classes}
+      --top_module_namespaces ${moduleName} --ignore ${ignore_classes} ${_BOOST_SERIALIZATION}
     VERBATIM
     WORKING_DIRECTORY ${generated_files_path})
 
@@ -263,6 +268,11 @@ function(wrap_library_internal interfaceHeader moduleName linkLibraries extraInc
     ${generated_cpp_file} ${interfaceHeader} ${otherSourcesAndObjects})
   target_link_libraries(${moduleName}_matlab_wrapper ${correctedOtherLibraries})
   target_link_libraries(${moduleName}_matlab_wrapper ${moduleName})
+  # BUILD_RPATH/INSTALL_RPATH make the mex module able to find libgtsam at
+  # runtime when loaded from MATLAB. This matters most on macOS and Linux,
+  # where a wrapper can compile successfully and still fail to load later with
+  # an @rpath / shared-library-not-found error. The expected layout is that
+  # GTSAM shared libraries live under ${CMAKE_INSTALL_PREFIX}/lib.
   set_target_properties(
     ${moduleName}_matlab_wrapper
     PROPERTIES OUTPUT_NAME "${moduleName}_wrapper"
@@ -271,6 +281,9 @@ function(wrap_library_internal interfaceHeader moduleName linkLibraries extraInc
                LIBRARY_OUTPUT_DIRECTORY "${compiled_mex_modules_root}"
                ARCHIVE_OUTPUT_DIRECTORY "${compiled_mex_modules_root}"
                RUNTIME_OUTPUT_DIRECTORY "${compiled_mex_modules_root}"
+               BUILD_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
+               INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
+               INSTALL_RPATH_USE_LINK_PATH TRUE
                CLEAN_DIRECT_OUTPUT 1)
   set_property(
     TARGET ${moduleName}_matlab_wrapper
@@ -279,6 +292,10 @@ function(wrap_library_internal interfaceHeader moduleName linkLibraries extraInc
       COMPILE_FLAGS
       " ${extraMexFlagsSpaced} ${mexFlagsSpaced} \"-I${MATLAB_ROOT}/extern/include\" -DMATLAB_MEX_FILE -DMX_COMPAT_32"
   )
+  # extraIncludeDirs is forwarded from matlab/CMakeLists.txt and is meant for
+  # wrapper-only headers, not the core GTSAM include tree. If generated mex
+  # code fails to compile because it cannot find a MATLAB-specific helper
+  # header, inspect this property and the matlab_wrap() call site.
   set_property(
     TARGET ${moduleName}_matlab_wrapper
     APPEND
@@ -307,7 +324,12 @@ function(wrap_library_internal interfaceHeader moduleName linkLibraries extraInc
       APPEND
       PROPERTY COMPILE_FLAGS "/bigobj")
   elseif(APPLE)
-    set(mxLibPath "${MATLAB_ROOT}/bin/maci64")
+    check_cxx_compiler_flag("-arch arm64" arm64Supported)
+    if (arm64Supported)
+      set(mxLibPath "${MATLAB_ROOT}/bin/maca64")
+    else()
+      set(mxLibPath "${MATLAB_ROOT}/bin/maci64")
+    endif()
     target_link_libraries(
       ${moduleName}_matlab_wrapper "${mxLibPath}/libmex.dylib"
       "${mxLibPath}/libmx.dylib" "${mxLibPath}/libmat.dylib")
@@ -375,7 +397,12 @@ function(check_conflicting_libraries_internal libraries)
   if(UNIX)
     # Set path for matlab's built-in libraries
     if(APPLE)
-      set(mxLibPath "${MATLAB_ROOT}/bin/maci64")
+      check_cxx_compiler_flag("-arch arm64" arm64Supported)
+      if (arm64Supported)
+        set(mxLibPath "${MATLAB_ROOT}/bin/maca64")
+      else()
+        set(mxLibPath "${MATLAB_ROOT}/bin/maci64")
+      endif()
     else()
       if(CMAKE_CL_64)
         set(mxLibPath "${MATLAB_ROOT}/bin/glnxa64")

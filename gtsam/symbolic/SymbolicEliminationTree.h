@@ -30,7 +30,7 @@ namespace gtsam {
   public:
     typedef EliminationTree<SymbolicBayesNet, SymbolicFactorGraph> Base; ///< Base class
     typedef SymbolicEliminationTree This; ///< This class
-    typedef boost::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
+    typedef std::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
 
     /** Build the elimination tree of a factor graph using pre-computed column structure.
      *  @param factorGraph The factor graph for which to build the elimination tree

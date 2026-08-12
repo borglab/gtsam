@@ -10,11 +10,7 @@
 #include <gtsam/base/timing.h>
 #include <gtsam_unstable/discrete/Scheduler.h>
 
-#include <boost/assign/std/map.hpp>
-#include <boost/assign/std/vector.hpp>
-#include <boost/optional.hpp>
 
-using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
@@ -73,7 +69,7 @@ DiscreteFactorGraph createExpected() {
   // Mutual exclusion for students
   expected.addAllDiff(A, J);
 
-  return std::move(expected);
+  return expected;
 }
 
 /* ************************************************************************* */
@@ -117,7 +113,7 @@ TEST(schedulingExample, test) {
   EXPECT(assert_equal(expected, (DiscreteFactorGraph)s));
 
   // Do brute force product and output that to file
-  DecisionTreeFactor product = s.product();
+  DecisionTreeFactor product = s.product()->toDecisionTreeFactor();
   // product.dot("scheduling", false);
 
   // Do exact inference
@@ -144,7 +140,11 @@ TEST(schedulingExample, test) {
 
 /* ************************************************************************* */
 TEST(schedulingExample, smallFromFile) {
+  #if !defined(__QNX__)
   string path(TOPSRCDIR "/gtsam_unstable/discrete/examples/");
+  #else
+  string path(""); //Same Directory
+  #endif
   Scheduler s(2, path + "small.csv");
 
   // add areas

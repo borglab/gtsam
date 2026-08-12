@@ -26,8 +26,8 @@ namespace gtsam {
 void BarometricFactor::print(const string& s,
                              const KeyFormatter& keyFormatter) const {
     cout << (s.empty() ? "" : s + " ") << "Barometric Factor on "
-         << keyFormatter(key1()) << "Barometric Bias on "
-         << keyFormatter(key2()) << "\n";
+         << keyFormatter(key<1>()) << "Barometric Bias on "
+         << keyFormatter(key<2>()) << "\n";
 
     cout << "  Baro measurement: " << nT_ << "\n";
     noiseModel_->print("  noise model: ");
@@ -43,12 +43,12 @@ bool BarometricFactor::equals(const NonlinearFactor& expected,
 
 //***************************************************************************
 Vector BarometricFactor::evaluateError(const Pose3& p, const double& bias,
-                                       boost::optional<Matrix&> H,
-                                       boost::optional<Matrix&> H2) const {
+                                       OptionalMatrixType H,
+                                       OptionalMatrixType H2) const {
     Matrix tH;
-    Vector ret = (Vector(1) << (p.translation(tH).z() + bias - nT_)).finished();
+    Vector ret{{p.translation(tH).z() + bias - nT_}};
     if (H) (*H) = tH.block<1, 6>(2, 0);
-    if (H2) (*H2) = (Matrix(1, 1) << 1.0).finished();
+    if (H2) (*H2) = Matrix{{1.0}};
     return ret;
 }
 

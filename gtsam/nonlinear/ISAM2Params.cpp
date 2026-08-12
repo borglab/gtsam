@@ -16,7 +16,6 @@
  */
 
 #include <gtsam/nonlinear/ISAM2Params.h>
-#include <boost/algorithm/string.hpp>
 
 using namespace std;
 
@@ -46,7 +45,8 @@ DoglegOptimizerImpl::TrustRegionAdaptationMode
 ISAM2DoglegParams::adaptationModeTranslator(
     const string& adaptationMode) const {
   string s = adaptationMode;
-  boost::algorithm::to_upper(s);
+  // convert to upper case
+  std::transform(s.begin(), s.end(), s.begin(), ::toupper);
   if (s == "SEARCH_EACH_ITERATION")
     return DoglegOptimizerImpl::SEARCH_EACH_ITERATION;
   if (s == "ONE_STEP_PER_ITERATION")
@@ -60,7 +60,8 @@ ISAM2DoglegParams::adaptationModeTranslator(
 ISAM2Params::Factorization ISAM2Params::factorizationTranslator(
     const string& str) {
   string s = str;
-  boost::algorithm::to_upper(s);
+  // convert to upper case
+  std::transform(s.begin(), s.end(), s.begin(), ::toupper);
   if (s == "QR") return ISAM2Params::QR;
   if (s == "CHOLESKY") return ISAM2Params::CHOLESKY;
 

@@ -54,7 +54,7 @@ static void test_float_ceiling()
   }
 }
 
-void test_cxx11_tensor_roundings()
+EIGEN_DECLARE_TEST(cxx11_tensor_roundings)
 {
    CALL_SUBTEST(test_float_rounding());
    CALL_SUBTEST(test_float_ceiling());

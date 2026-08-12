@@ -34,7 +34,7 @@ using namespace gtsam;
 static Pose3 camera1(Rot3(Vector3(1, -1, -1).asDiagonal()),
         Point3(0,0,6.25));
 
-static boost::shared_ptr<Cal3_S2Stereo> K(new Cal3_S2Stereo(625, 625, 0, 320, 240, 0.5));
+static std::shared_ptr<Cal3_S2Stereo> K(new Cal3_S2Stereo(625, 625, 0, 320, 240, 0.5));
 
 // point X Y Z in meters
 static Point3 p(0, 0, 5);
@@ -140,12 +140,13 @@ TEST( StereoFactor, Jacobian ) {
   factor.evaluateError(pose, point, H1Actual, H2Actual);
 
   // The expected Jacobians
-  Matrix H1Expected = (Matrix(3, 6) << 0.0,  -625.0, 0.0, -100.0,    0.0,  0.0,
-                                    0.0,  -625.0, 0.0, -100.0,    0.0, -8.0,
-                                    625.0,   0.0, 0.0,    0.0, -100.0,  0.0).finished();
-  Matrix H2Expected = (Matrix(3, 3) << 100.0,   0.0, 0.0,
-                                    100.0,   0.0, 8.0,
-                                    0.0,   100.0, 0.0).finished();
+  Matrix H1Expected{{0.0, -625.0, 0.0, -100.0, 0.0, 0.0},
+                    {0.0, -625.0, 0.0, -100.0, 0.0, -8.0},
+                    {625.0, 0.0, 0.0, 0.0, -100.0, 0.0}};
+  Matrix H2Expected{//
+                    {100.0, 0.0, 0.0},
+                    {100.0, 0.0, 8.0},
+                    {0.0, 100.0, 0.0}};
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-3));
@@ -168,12 +169,13 @@ TEST( StereoFactor, JacobianWithTransform ) {
   factor.evaluateError(pose, point, H1Actual, H2Actual);
 
   // The expected Jacobians
-  Matrix H1Expected = (Matrix(3, 6) << -100.0,    0.0,  650.0,   0.0,  100.0,    0.0,
-                                    -100.0,   -8.0,  649.2,  -8.0,  100.0,    0.0,
-                                     -10.0, -650.0,    0.0,   0.0,    0.0,  100.0).finished();
-  Matrix H2Expected = (Matrix(3, 3) <<    0.0, -100.0,    0.0,
-                                       8.0, -100.0,    0.0,
-                                       0.0,    0.0, -100.0).finished();
+  Matrix H1Expected{{-100.0, 0.0, 650.0, 0.0, 100.0, 0.0},
+                    {-100.0, -8.0, 649.2, -8.0, 100.0, 0.0},
+                    {-10.0, -650.0, 0.0, 0.0, 0.0, 100.0}};
+  Matrix H2Expected{//
+                    {0.0, -100.0, 0.0},
+                    {8.0, -100.0, 0.0},
+                    {0.0, 0.0, -100.0}};
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-3));

@@ -12,16 +12,18 @@ Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellae
 
 from typing import Any, Iterable, List, Union
 
-from pyparsing import Literal, Optional, ZeroOrMore  # type: ignore
+from pyparsing import ZeroOrMore  # type: ignore
+from pyparsing import Literal, Optional, Word, alphas
 
 from .enum import Enum
 from .function import ArgumentList, ReturnType
 from .template import Template
-from .tokens import (CLASS, COLON, CONST, IDENT, LBRACE, LPAREN, OPERATOR,
-                     RBRACE, RPAREN, SEMI_COLON, STATIC, VIRTUAL)
+from .tokens import (CLASS, COLON, CONST, DUNDER, IDENT, LBRACE, LPAREN,
+                     OPERATOR, RBRACE, RPAREN, SEMI_COLON, STATIC, VIRTUAL)
 from .type import TemplatedType, Typename
 from .utils import collect_namespaces
 from .variable import Variable
+from .diagnostics import semantic_error
 
 
 class Method:
@@ -44,7 +46,7 @@ class Method:
         + RPAREN  #
         + Optional(CONST("is_const"))  #
         + SEMI_COLON  # BR
-    ).setParseAction(lambda t: Method(t.template, t.name, t.return_type, t.
+    ).set_parse_action(lambda t: Method(t.template, t.name, t.return_type, t.
                                       args_list, t.is_const))
 
     def __init__(self,
@@ -96,7 +98,7 @@ class StaticMethod:
         + ArgumentList.rule("args_list")  #
         + RPAREN  #
         + SEMI_COLON  # BR
-    ).setParseAction(
+    ).set_parse_action(
         lambda t: StaticMethod(t.name, t.return_type, t.args_list, t.template))
 
     def __init__(self,
@@ -132,18 +134,23 @@ class Constructor:
         + ArgumentList.rule("args_list")  #
         + RPAREN  #
         + SEMI_COLON  # BR
-    ).setParseAction(lambda t: Constructor(t.name, t.args_list, t.template))
+    ).set_parse_action(lambda s, loc, t: Constructor(
+        t.name, t.args_list, t.template, source=s, location=loc))
 
     def __init__(self,
                  name: str,
                  args: ArgumentList,
                  template: Union[Template, Any],
-                 parent: Union["Class", Any] = ''):
+                 parent: Union["Class", Any] = '',
+                 source: str = '',
+                 location: int = 0):
         self.name = name
         self.args = args
         self.template = template
 
         self.parent = parent
+        self.source = source
+        self.location = location
 
     def __repr__(self) -> str:
         return "Constructor: {}{}".format(self.name, self.args)
@@ -168,8 +175,15 @@ class Operator:
         + RPAREN  #
         + CONST("is_const")  #
         + SEMI_COLON  # BR
-    ).setParseAction(lambda t: Operator(t.name, t.operator, t.return_type, t.
-                                        args_list, t.is_const))
+    ).set_parse_action(lambda s, loc, t: Operator(
+        t.name,
+        t.operator,
+        t.return_type,
+        t.args_list,
+        t.is_const,
+        source=s,
+        location=loc,
+    ))
 
     def __init__(self,
                  name: str,
@@ -177,7 +191,9 @@ class Operator:
                  return_type: ReturnType,
                  args: ArgumentList,
                  is_const: str,
-                 parent: Union["Class", Any] = ''):
+                 parent: Union["Class", Any] = '',
+                 source: str = '',
+                 location: int = 0):
         self.name = name
         self.operator = operator
         self.return_type = return_type
@@ -186,21 +202,41 @@ class Operator:
         self.is_unary = len(args) == 0
 
         self.parent = parent
+        self.source = source
+        self.location = location
 
         # Check for valid unary operators
         if self.is_unary and self.operator not in ('+', '-'):
-            raise ValueError("Invalid unary operator {} used for {}".format(
-                self.operator, self))
+            raise semantic_error(
+                source,
+                location,
+                "operator declaration",
+                f"unsupported unary operator '{self.operator}'",
+            )
 
         # Check that number of arguments are either 0 or 1
-        assert 0 <= len(args) < 2, \
-            "Operator overload should be at most 1 argument, " \
-                "{} arguments provided".format(len(args))
+        if not 0 <= len(args) < 2:
+            raise semantic_error(
+                source,
+                location,
+                "operator declaration",
+                "operator overload must have at most one argument; "
+                f"found {len(args)}",
+            )
 
         # Check to ensure arg and return type are the same.
         if len(args) == 1 and self.operator not in ("()", "[]"):
-            assert args.list()[0].ctype.typename.name == return_type.type1.typename.name, \
-                "Mixed type overloading not supported. Both arg and return type must be the same."
+            argument_type = args.list()[0].ctype.typename.name
+            return_type_name = return_type.type1.typename.name
+            if argument_type != return_type_name:
+                raise semantic_error(
+                    source,
+                    location,
+                    "operator declaration",
+                    "mixed-type operator overloads are unsupported; "
+                    f"argument type '{argument_type}' does not match return "
+                    f"type '{return_type_name}'",
+                )
 
     def __repr__(self) -> str:
         return "Operator: {}{}{}({}) {}".format(
@@ -210,6 +246,26 @@ class Operator:
             self.args,
             self.is_const,
         )
+
+
+class DunderMethod:
+    """Special Python double-underscore (dunder) methods, e.g. __iter__, __contains__"""
+    rule = (
+        DUNDER  #
+        + (Word(alphas))("name")  #
+        + DUNDER  #
+        + LPAREN  #
+        + ArgumentList.rule("args_list")  #
+        + RPAREN  #
+        + SEMI_COLON  # BR
+    ).set_parse_action(lambda t: DunderMethod(t.name, t.args_list))
+
+    def __init__(self, name: str, args: ArgumentList):
+        self.name = name
+        self.args = args
+
+    def __repr__(self) -> str:
+        return f"DunderMethod: __{self.name}__({self.args})"
 
 
 class Class:
@@ -223,23 +279,26 @@ class Class:
     };
     ```
     """
+
     class Members:
         """
         Rule for all the members within a class.
         """
-        rule = ZeroOrMore(Constructor.rule  #
+        rule = ZeroOrMore(DunderMethod.rule  #
+                          ^ Constructor.rule  #
                           ^ Method.rule  #
                           ^ StaticMethod.rule  #
                           ^ Variable.rule  #
                           ^ Operator.rule  #
                           ^ Enum.rule  #
-                          ).setParseAction(lambda t: Class.Members(t.asList()))
+                          ).set_parse_action(lambda t: Class.Members(t.as_list()))
 
-        def __init__(self,
-                     members: List[Union[Constructor, Method, StaticMethod,
-                                         Variable, Operator]]):
+        def __init__(self, members: List[Union[Constructor, Method,
+                                               StaticMethod, Variable,
+                                               Operator, Enum, DunderMethod]]):
             self.ctors = []
             self.methods = []
+            self.dunder_methods = []
             self.static_methods = []
             self.properties = []
             self.operators = []
@@ -251,6 +310,8 @@ class Class:
                     self.methods.append(m)
                 elif isinstance(m, StaticMethod):
                     self.static_methods.append(m)
+                elif isinstance(m, DunderMethod):
+                    self.dunder_methods.append(m)
                 elif isinstance(m, Variable):
                     self.properties.append(m)
                 elif isinstance(m, Operator):
@@ -269,10 +330,10 @@ class Class:
         + Members.rule("members")  #
         + RBRACE  #
         + SEMI_COLON  # BR
-    ).setParseAction(lambda t: Class(
+    ).set_parse_action(lambda t: Class(
         t.template, t.is_virtual, t.name, t.parent_class, t.members.ctors, t.
-        members.methods, t.members.static_methods, t.members.properties, t.
-        members.operators, t.members.enums))
+        members.methods, t.members.static_methods, t.members.dunder_methods, t.
+        members.properties, t.members.operators, t.members.enums))
 
     def __init__(
         self,
@@ -283,6 +344,7 @@ class Class:
         ctors: List[Constructor],
         methods: List[Method],
         static_methods: List[StaticMethod],
+        dunder_methods: List[DunderMethod],
         properties: List[Variable],
         operators: List[Operator],
         enums: List[Enum],
@@ -299,7 +361,7 @@ class Class:
             # If the base class is a TemplatedType,
             # we want the instantiated Typename
             if isinstance(parent_class, TemplatedType):
-                parent_class = parent_class.typename  # type: ignore
+                pass  # Note: this must get handled in InstantiatedClass
 
             self.parent_class = parent_class
         else:
@@ -308,6 +370,7 @@ class Class:
         self.ctors = ctors
         self.methods = methods
         self.static_methods = static_methods
+        self.dunder_methods = dunder_methods
         self.properties = properties
         self.operators = operators
         self.enums = enums
@@ -317,8 +380,13 @@ class Class:
         # Make sure ctors' names and class name are the same.
         for ctor in self.ctors:
             if ctor.name != self.name:
-                raise ValueError("Error in constructor name! {} != {}".format(
-                    ctor.name, self.name))
+                raise semantic_error(
+                    ctor.source,
+                    ctor.location,
+                    "constructor declaration",
+                    f"constructor name '{ctor.name}' must match class "
+                    f"name '{self.name}'",
+                )
 
         for ctor in self.ctors:
             ctor.parent = self
@@ -326,6 +394,8 @@ class Class:
             method.parent = self
         for static_method in self.static_methods:
             static_method.parent = self
+        for dunder_method in self.dunder_methods:
+            dunder_method.parent = self
         for _property in self.properties:
             _property.parent = self
 

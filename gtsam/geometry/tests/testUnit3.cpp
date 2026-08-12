@@ -18,25 +18,21 @@
  * @brief Tests the Unit3 class
  */
 
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/serializationTestHelpers.h>
-#include <gtsam/geometry/Unit3.h>
 #include <gtsam/geometry/Rot3.h>
+#include <gtsam/geometry/Unit3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
-
-#include <CppUnitLite/TestHarness.h>
-
-#include <boost/assign/std/vector.hpp>
-
 #include <cmath>
 #include <random>
 
-using namespace boost::assign;
 using namespace std::placeholders;
 using namespace gtsam;
 using namespace std;
@@ -46,16 +42,13 @@ GTSAM_CONCEPT_TESTABLE_INST(Unit3)
 GTSAM_CONCEPT_MANIFOLD_INST(Unit3)
 
 //*******************************************************************************
-Point3 point3_(const Unit3& p) {
-  return p.point3();
-}
+Point3 point3_(const Unit3& p) { return p.point3(); }
 
 TEST(Unit3, point3) {
-  vector<Point3> ps;
-  ps += Point3(1, 0, 0), Point3(0, 1, 0), Point3(0, 0, 1), Point3(1, 1, 0)
-      / sqrt(2.0);
+  const vector<Point3> ps{Point3(1, 0, 0), Point3(0, 1, 0), Point3(0, 0, 1),
+                          Point3(1, 1, 0) / sqrt(2.0)};
   Matrix actualH, expectedH;
-  for(Point3 p: ps) {
+  for (Point3 p : ps) {
     Unit3 s(p);
     expectedH = numericalDerivative11<Point3, Unit3>(point3_, s);
     EXPECT(assert_equal(p, s.point3(actualH), 1e-5));
@@ -64,36 +57,52 @@ TEST(Unit3, point3) {
 }
 
 //*******************************************************************************
-static Unit3 rotate_(const Rot3& R, const Unit3& p) {
-  return R * p;
+static Vector3 scaled_(const Unit3& p, const double& magnitude) {
+  return p.scaled(magnitude);
 }
 
-TEST(Unit3, rotate) {
+TEST(Unit3, scaled) {
+  const Unit3 d(1, 2, 3);
+  const double magnitude = 9.81;
+  Matrix32 actualH_d;
+  Matrix31 actualH_m;
+  const Vector3 actual = d.scaled(magnitude, actualH_d, actualH_m);
+  EXPECT(assert_equal(Vector3(magnitude * d.unitVector()), actual, 1e-9));
+  const Matrix expectedH_d =
+      numericalDerivative21<Vector3, Unit3, double>(scaled_, d, magnitude);
+  const Matrix expectedH_m =
+      numericalDerivative22<Vector3, Unit3, double>(scaled_, d, magnitude);
+  EXPECT(assert_equal(expectedH_d, Matrix(actualH_d), 1e-5));
+  EXPECT(assert_equal(expectedH_m, Matrix(actualH_m), 1e-5));
+}
+
+//*******************************************************************************
+static Unit3 rotate_(const Rot3& R, const Unit3& p) { return R * p; }
+
+TEST(Unit3, Rotate) {
   Rot3 R = Rot3::Yaw(0.5);
   Unit3 p(1, 0, 0);
-  Unit3 expected = Unit3(R.column(1));
+  Unit3 expected = Unit3(R.matrix().col(0));
   Unit3 actual = R * p;
   EXPECT(assert_equal(expected, actual, 1e-5));
   Matrix actualH, expectedH;
   // Use numerical derivatives to calculate the expected Jacobian
   {
     expectedH = numericalDerivative21(rotate_, R, p);
-    R.rotate(p, actualH, boost::none);
+    R.rotate(p, actualH, {});
     EXPECT(assert_equal(expectedH, actualH, 1e-5));
   }
   {
     expectedH = numericalDerivative22(rotate_, R, p);
-    R.rotate(p, boost::none, actualH);
+    R.rotate(p, {}, actualH);
     EXPECT(assert_equal(expectedH, actualH, 1e-5));
   }
 }
 
 //*******************************************************************************
-static Unit3 unrotate_(const Rot3& R, const Unit3& p) {
-  return R.unrotate(p);
-}
+static Unit3 unrotate_(const Rot3& R, const Unit3& p) { return R.unrotate(p); }
 
-TEST(Unit3, unrotate) {
+TEST(Unit3, Unrotate) {
   Rot3 R = Rot3::Yaw(-M_PI / 4.0);
   Unit3 p(1, 0, 0);
   Unit3 expected = Unit3(1, 1, 0);
@@ -104,17 +113,17 @@ TEST(Unit3, unrotate) {
   // Use numerical derivatives to calculate the expected Jacobian
   {
     expectedH = numericalDerivative21(unrotate_, R, p);
-    R.unrotate(p, actualH, boost::none);
+    R.unrotate(p, actualH, {});
     EXPECT(assert_equal(expectedH, actualH, 1e-5));
   }
   {
     expectedH = numericalDerivative22(unrotate_, R, p);
-    R.unrotate(p, boost::none, actualH);
+    R.unrotate(p, {}, actualH);
     EXPECT(assert_equal(expectedH, actualH, 1e-5));
   }
 }
 
-TEST(Unit3, dot) {
+TEST(Unit3, Dot) {
   Unit3 p(1, 0.2, 0.3);
   Unit3 q = p.retract(Vector2(0.5, 0));
   Unit3 r = p.retract(Vector2(0.8, 0));
@@ -126,59 +135,65 @@ TEST(Unit3, dot) {
 
   // Use numerical derivatives to calculate the expected Jacobians
   Matrix H1, H2;
-  std::function<double(const Unit3&, const Unit3&)> f =
-      std::bind(&Unit3::dot, std::placeholders::_1, std::placeholders::_2,  //
-                boost::none, boost::none);
+  auto f = std::bind(&Unit3::dot, std::placeholders::_1, std::placeholders::_2,
+                     nullptr, nullptr);
   {
     p.dot(q, H1, H2);
-    EXPECT(assert_equal(numericalDerivative21<double,Unit3>(f, p, q), H1, 1e-5));
-    EXPECT(assert_equal(numericalDerivative22<double,Unit3>(f, p, q), H2, 1e-5));
+    EXPECT(
+        assert_equal(numericalDerivative21<double, Unit3>(f, p, q), H1, 1e-5));
+    EXPECT(
+        assert_equal(numericalDerivative22<double, Unit3>(f, p, q), H2, 1e-5));
   }
   {
     p.dot(r, H1, H2);
-    EXPECT(assert_equal(numericalDerivative21<double,Unit3>(f, p, r), H1, 1e-5));
-    EXPECT(assert_equal(numericalDerivative22<double,Unit3>(f, p, r), H2, 1e-5));
+    EXPECT(
+        assert_equal(numericalDerivative21<double, Unit3>(f, p, r), H1, 1e-5));
+    EXPECT(
+        assert_equal(numericalDerivative22<double, Unit3>(f, p, r), H2, 1e-5));
   }
   {
     p.dot(t, H1, H2);
-    EXPECT(assert_equal(numericalDerivative21<double,Unit3>(f, p, t), H1, 1e-5));
-    EXPECT(assert_equal(numericalDerivative22<double,Unit3>(f, p, t), H2, 1e-5));
+    EXPECT(
+        assert_equal(numericalDerivative21<double, Unit3>(f, p, t), H1, 1e-5));
+    EXPECT(
+        assert_equal(numericalDerivative22<double, Unit3>(f, p, t), H2, 1e-5));
   }
 }
 
 //*******************************************************************************
-TEST(Unit3, error) {
+TEST(Unit3, ErrorVector) {
   Unit3 p(1, 0, 0), q = p.retract(Vector2(0.5, 0)), //
   r = p.retract(Vector2(0.8, 0));
-  EXPECT(assert_equal((Vector)(Vector2(0, 0)), p.error(p), 1e-5));
-  EXPECT(assert_equal((Vector)(Vector2(0.479426, 0)), p.error(q), 1e-5));
-  EXPECT(assert_equal((Vector)(Vector2(0.717356, 0)), p.error(r), 1e-5));
+  EXPECT(assert_equal((Vector)(Vector2(0, 0)), p.errorVector(p), 1e-5));
+  EXPECT(assert_equal((Vector)(Vector2(0.479426, 0)), p.errorVector(q), 1e-5));
+  EXPECT(assert_equal((Vector)(Vector2(0.717356, 0)), p.errorVector(r), 1e-5));
 
   Matrix actual, expected;
   // Use numerical derivatives to calculate the expected Jacobian
   {
     expected = numericalDerivative11<Vector2,Unit3>(
-        std::bind(&Unit3::error, &p, std::placeholders::_1, boost::none), q);
-    p.error(q, actual);
+        std::bind(&Unit3::errorVector, &p, std::placeholders::_1, nullptr, nullptr), q);
+    p.errorVector(q, {}, actual);
     EXPECT(assert_equal(expected.transpose(), actual, 1e-5));
   }
   {
     expected = numericalDerivative11<Vector2,Unit3>(
-        std::bind(&Unit3::error, &p, std::placeholders::_1, boost::none), r);
-    p.error(r, actual);
+        std::bind(&Unit3::errorVector, &p, std::placeholders::_1, nullptr, nullptr), r);
+    p.errorVector(r, {}, actual);
     EXPECT(assert_equal(expected.transpose(), actual, 1e-5));
   }
 }
 
 //*******************************************************************************
-TEST(Unit3, error2) {
+TEST(Unit3, ErrorVector2) {
   Unit3 p(0.1, -0.2, 0.8);
   Unit3 q = p.retract(Vector2(0.2, -0.1));
   Unit3 r = p.retract(Vector2(0.8, 0));
 
   // Hard-coded as simple regression values
   EXPECT(assert_equal((Vector)(Vector2(0.0, 0.0)), p.errorVector(p), 1e-5));
-  EXPECT(assert_equal((Vector)(Vector2(0.198337495, -0.0991687475)), p.errorVector(q), 1e-5));
+  EXPECT(assert_equal((Vector)(Vector2(0.198337495, -0.0991687475)),
+                      p.errorVector(q), 1e-5));
   EXPECT(assert_equal((Vector)(Vector2(0.717356, 0)), p.errorVector(r), 1e-5));
 
   Matrix actual, expected;
@@ -186,39 +201,39 @@ TEST(Unit3, error2) {
   {
     expected = numericalDerivative21<Vector2, Unit3, Unit3>(
         std::bind(&Unit3::errorVector, std::placeholders::_1,
-                  std::placeholders::_2, boost::none, boost::none),
+                  std::placeholders::_2, nullptr, nullptr),
         p, q);
-    p.errorVector(q, actual, boost::none);
+    p.errorVector(q, actual, {});
     EXPECT(assert_equal(expected, actual, 1e-5));
   }
   {
     expected = numericalDerivative21<Vector2, Unit3, Unit3>(
         std::bind(&Unit3::errorVector, std::placeholders::_1,
-                  std::placeholders::_2, boost::none, boost::none),
+                  std::placeholders::_2, nullptr, nullptr),
         p, r);
-    p.errorVector(r, actual, boost::none);
+    p.errorVector(r, actual, {});
     EXPECT(assert_equal(expected, actual, 1e-5));
   }
   {
     expected = numericalDerivative22<Vector2, Unit3, Unit3>(
         std::bind(&Unit3::errorVector, std::placeholders::_1,
-                  std::placeholders::_2, boost::none, boost::none),
+                  std::placeholders::_2, nullptr, nullptr),
         p, q);
-    p.errorVector(q, boost::none, actual);
+    p.errorVector(q, {}, actual);
     EXPECT(assert_equal(expected, actual, 1e-5));
   }
   {
     expected = numericalDerivative22<Vector2, Unit3, Unit3>(
         std::bind(&Unit3::errorVector, std::placeholders::_1,
-                  std::placeholders::_2, boost::none, boost::none),
+                  std::placeholders::_2, nullptr, nullptr),
         p, r);
-    p.errorVector(r, boost::none, actual);
+    p.errorVector(r, {}, actual);
     EXPECT(assert_equal(expected, actual, 1e-5));
   }
 }
 
 //*******************************************************************************
-TEST(Unit3, distance) {
+TEST(Unit3, Distance) {
   Unit3 p(1, 0, 0), q = p.retract(Vector2(0.5, 0)), //
   r = p.retract(Vector2(0.8, 0));
   EXPECT_DOUBLES_EQUAL(0, p.distance(p), 1e-5);
@@ -229,20 +244,20 @@ TEST(Unit3, distance) {
   // Use numerical derivatives to calculate the expected Jacobian
   {
     expected = numericalGradient<Unit3>(
-        std::bind(&Unit3::distance, &p, std::placeholders::_1, boost::none), q);
+        std::bind(&Unit3::distance, &p, std::placeholders::_1, nullptr), q);
     p.distance(q, actual);
     EXPECT(assert_equal(expected.transpose(), actual, 1e-5));
   }
   {
     expected = numericalGradient<Unit3>(
-        std::bind(&Unit3::distance, &p, std::placeholders::_1, boost::none), r);
+        std::bind(&Unit3::distance, &p, std::placeholders::_1, nullptr), r);
     p.distance(r, actual);
     EXPECT(assert_equal(expected.transpose(), actual, 1e-5));
   }
 }
 
 //*******************************************************************************
-TEST(Unit3, localCoordinates0) {
+TEST(Unit3, LocalCoordinates0) {
   Unit3 p;
   Vector actual = p.localCoordinates(p);
   EXPECT(assert_equal(Z_2x1, actual, 1e-5));
@@ -253,14 +268,14 @@ TEST(Unit3, localCoordinates) {
     Unit3 p, q;
     Vector2 expected = Vector2::Zero();
     Vector2 actual = p.localCoordinates(q);
-    EXPECT(assert_equal((Vector) Z_2x1, actual, 1e-5));
+    EXPECT(assert_equal((Vector)Z_2x1, actual, 1e-5));
     EXPECT(assert_equal(q, p.retract(expected), 1e-5));
   }
   {
     Unit3 p, q(1, 6.12385e-21, 0);
     Vector2 expected = Vector2::Zero();
     Vector2 actual = p.localCoordinates(q);
-    EXPECT(assert_equal((Vector) Z_2x1, actual, 1e-5));
+    EXPECT(assert_equal((Vector)Z_2x1, actual, 1e-5));
     EXPECT(assert_equal(q, p.retract(expected), 1e-5));
   }
   {
@@ -272,7 +287,7 @@ TEST(Unit3, localCoordinates) {
   }
   {
     Unit3 p, q(0, 1, 0);
-    Vector2 expected(0,-M_PI_2);
+    Vector2 expected(0, -M_PI_2);
     Vector2 actual = p.localCoordinates(q);
     EXPECT(assert_equal(expected, actual, 1e-5));
     EXPECT(assert_equal(q, p.retract(expected), 1e-5));
@@ -285,12 +300,12 @@ TEST(Unit3, localCoordinates) {
     EXPECT(assert_equal(q, p.retract(expected), 1e-5));
   }
   {
-    Unit3 p(0,1,0), q(0,-1,0);
+    Unit3 p(0, 1, 0), q(0, -1, 0);
     Vector2 actual = p.localCoordinates(q);
     EXPECT(assert_equal(q, p.retract(actual), 1e-5));
   }
   {
-    Unit3 p(0,0,1), q(0,0,-1);
+    Unit3 p(0, 0, 1), q(0, 0, -1);
     Vector2 actual = p.localCoordinates(q);
     EXPECT(assert_equal(q, p.retract(actual), 1e-5));
   }
@@ -322,12 +337,13 @@ Vector6 BasisTest(const Unit3& p, OptionalJacobian<6, 2> H) {
 TEST(Unit3, basis) {
   Unit3 p(0.1, -0.2, 0.9);
 
-  Matrix expected(3, 2);
-  expected << 0.0, -0.994169047, 0.97618706, -0.0233922129, 0.216930458, 0.105264958;
+  Matrix32 expected{{0.0, -0.994169047},
+                    {0.97618706, -0.0233922129},
+                    {0.216930458, 0.105264958}};
 
   Matrix62 actualH;
   Matrix62 expectedH = numericalDerivative11<Vector6, Unit3>(
-      std::bind(BasisTest, std::placeholders::_1, boost::none), p);
+      std::bind(BasisTest, std::placeholders::_1, nullptr), p);
 
   // without H, first time
   EXPECT(assert_equal(expected, p.basis(), 1e-6));
@@ -346,7 +362,7 @@ TEST(Unit3, basis) {
 
 //*******************************************************************************
 /// Check the basis derivatives of a bunch of random Unit3s.
-TEST(Unit3, basis_derivatives) {
+TEST(Unit3, BasisDerivatives) {
   int num_tests = 100;
   std::mt19937 rng(42);
   for (int i = 0; i < num_tests; i++) {
@@ -356,13 +372,13 @@ TEST(Unit3, basis_derivatives) {
     p.basis(actualH);
 
     Matrix62 expectedH = numericalDerivative11<Vector6, Unit3>(
-        std::bind(BasisTest, std::placeholders::_1, boost::none), p);
+        std::bind(BasisTest, std::placeholders::_1, nullptr), p);
     EXPECT(assert_equal(expectedH, actualH, 1e-5));
   }
 }
 
 //*******************************************************************************
-TEST(Unit3, retract) {
+TEST(Unit3, Retract) {
   {
     Unit3 p;
     Vector2 v(0.5, 0);
@@ -381,27 +397,26 @@ TEST(Unit3, retract) {
 }
 
 //*******************************************************************************
-TEST (Unit3, jacobian_retract) {
+TEST (Unit3, JacobianRetract) {
   Matrix22 H;
   Unit3 p;
-  std::function<Unit3(const Vector2&)> f =
-      std::bind(&Unit3::retract, p, std::placeholders::_1, boost::none);
+  auto f = std::bind(&Unit3::retract, p, std::placeholders::_1, nullptr);
   {
-      Vector2 v (-0.2, 0.1);
-      p.retract(v, H);
-      Matrix H_expected_numerical = numericalDerivative11(f, v);
-      EXPECT(assert_equal(H_expected_numerical, H, 1e-5));
+    Vector2 v(-0.2, 0.1);
+    p.retract(v, H);
+    Matrix H_expected_numerical = numericalDerivative11(f, v);
+    EXPECT(assert_equal(H_expected_numerical, H, 1e-5));
   }
   {
-      Vector2 v (0, 0);
-      p.retract(v, H);
-      Matrix H_expected_numerical = numericalDerivative11(f, v);
-      EXPECT(assert_equal(H_expected_numerical, H, 1e-5));
+    Vector2 v(0, 0);
+    p.retract(v, H);
+    Matrix H_expected_numerical = numericalDerivative11(f, v);
+    EXPECT(assert_equal(H_expected_numerical, H, 1e-5));
   }
 }
 
 //*******************************************************************************
-TEST(Unit3, retract_expmap) {
+TEST(Unit3, RetractExpmap) {
   Unit3 p;
   Vector2 v((M_PI / 2.0), 0);
   Unit3 expected(Point3(0, 0, 1));
@@ -414,16 +429,16 @@ TEST(Unit3, retract_expmap) {
 TEST(Unit3, Random) {
   std::mt19937 rng(42);
   // Check that means are all zero at least
-  Point3 expectedMean(0,0,0), actualMean(0,0,0);
+  Point3 expectedMean(0, 0, 0), actualMean(0, 0, 0);
   for (size_t i = 0; i < 100; i++)
     actualMean = actualMean + Unit3::Random(rng).point3();
   actualMean = actualMean / 100;
-  EXPECT(assert_equal(expectedMean,actualMean,0.1));
+  EXPECT(assert_equal(expectedMean, actualMean, 0.1));
 }
 
 //*******************************************************************************
 // New test that uses Unit3::Random
-TEST(Unit3, localCoordinates_retract) {
+TEST(Unit3, LocalCoordinatesRetract) {
   std::mt19937 rng(42);
   size_t numIterations = 10000;
 
@@ -431,8 +446,9 @@ TEST(Unit3, localCoordinates_retract) {
     // Create two random Unit3s
     const Unit3 s1 = Unit3::Random(rng);
     const Unit3 s2 = Unit3::Random(rng);
-    // Check that they are not at opposite ends of the sphere, which is ill defined
-    if (s1.unitVector().dot(s2.unitVector())<-0.9) continue;
+    // Check that they are not at opposite ends of the sphere, which is ill
+    // defined
+    if (s1.unitVector().dot(s2.unitVector()) < -0.9) continue;
 
     // Check if the local coordinates and retract return consistent results.
     Vector v12 = s1.localCoordinates(s2);
@@ -442,13 +458,13 @@ TEST(Unit3, localCoordinates_retract) {
 }
 
 //*************************************************************************
-TEST (Unit3, FromPoint3) {
+TEST(Unit3, FromPoint3) {
   Matrix actualH;
-  Point3 point(1, -2, 3); // arbitrary point
+  Point3 point(1, -2, 3);  // arbitrary point
   Unit3 expected(point);
   EXPECT(assert_equal(expected, Unit3::FromPoint3(point, actualH), 1e-5));
   Matrix expectedH = numericalDerivative11<Unit3, Point3>(
-      std::bind(Unit3::FromPoint3, std::placeholders::_1, boost::none), point);
+      std::bind(Unit3::FromPoint3, std::placeholders::_1, nullptr), point);
   EXPECT(assert_equal(expectedH, actualH, 1e-5));
 }
 
@@ -489,27 +505,102 @@ TEST(Unit3, ErrorBetweenFactor) {
 
   // Check that the dot product between variables is close to 1.
   for (size_t i = 0; i < data.size() - 1; i++) {
-    EXPECT(assert_equal(1.0, values.at<Unit3>(U(i)).dot(values.at<Unit3>(U(i + 1))), 1e-2));
+    EXPECT(assert_equal(
+        1.0, values.at<Unit3>(U(i)).dot(values.at<Unit3>(U(i + 1))), 1e-2));
   }
 }
 
 TEST(Unit3, CopyAssign) {
   Unit3 p{1, 0.2, 0.3};
 
-  EXPECT(p.error(p).isZero());
+  EXPECT(p.errorVector(p).isZero());
 
   p = Unit3{-1, 2, 8};
-  EXPECT(p.error(p).isZero());
+  EXPECT(p.errorVector(p).isZero());
 }
 
 /* ************************************************************************* */
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 TEST(actualH, Serialization) {
   Unit3 p(0, 1, 0);
   EXPECT(serializationTestHelpers::equalsObj(p));
   EXPECT(serializationTestHelpers::equalsXML(p));
   EXPECT(serializationTestHelpers::equalsBinary(p));
 }
+#endif
 
+/* ************************************************************************* */
+TEST(Unit3, cross) {
+  Matrix22 aH1, aH2;
+  auto f = [](const Unit3& p, const Unit3& q) { return cross(p, q); };
+  const Unit3 p(0, 1, 4), q(4, 6, 8);
+  Unit3 actual = cross(p, q, aH1, aH2);
+  EXPECT(assert_equal(p.cross(q), actual, 1e-9));
+  EXPECT(assert_equal(Unit3::FromPoint3(p.point3().cross(q.point3())), actual, 1e-9));
+  EXPECT(assert_equal(numericalDerivative21(f, p, q), aH1));
+  EXPECT(assert_equal(numericalDerivative22(f, p, q), aH2));
+}
+
+/* ************************************************************************* */
+TEST(Unit3, MixedCrossUnit3Point3) {
+  Matrix32 aH1;
+  Matrix33 aH2;
+
+  // Define some test values
+  const Unit3 p(0.1, -0.2, 0.9);
+  const Point3 q(1.0, 2.0, 3.0);
+
+  // Check result
+  Point3 actual = cross(p, q, aH1, aH2);
+  EXPECT(assert_equal(p.cross(q), actual, 1e-9));
+  EXPECT(assert_equal(cross(p.point3(), q), actual, 1e-9));
+
+  // Define a lambda function for numerical differentiation
+  auto f = [](const Unit3& p, const Point3& q) {
+    return cross(p, q, nullptr, nullptr);
+  };
+
+  // Calculate numerical Jacobians
+  Matrix32 expectedH1 = numericalDerivative21(f, p, q);
+  Matrix33 expectedH2 = numericalDerivative22(f, p, q);
+
+  // Check correctness of Jacobians
+  EXPECT(assert_equal(expectedH1, aH1, 1e-5));
+  EXPECT(assert_equal(expectedH2, aH2, 1e-5));
+}
+
+/* ************************************************************************* */
+TEST(Unit3, MixedCrossPoint3Unit3) {
+  Matrix33 aH1;
+  Matrix32 aH2;
+
+  // Define some test values
+  const Point3 p(1.0, 2.0, 3.0);
+  const Unit3 q(0.1, -0.2, 0.9);
+
+  // Check result
+  Point3 actual = cross(p, q, aH1, aH2);
+  Point3 expected = cross(p, q.unitVector());
+  EXPECT(assert_equal(expected, actual, 1e-9));
+
+  // Check that reversing args yields negative result
+  actual = cross(q, p);
+  expected = -cross(p, q.unitVector());
+  EXPECT(assert_equal(expected, actual, 1e-9));
+
+  // Define a lambda function for numerical differentiation
+  auto f = [](const Point3& p, const Unit3& q) {
+    return cross(p, q, nullptr, nullptr);
+  };
+
+  // Calculate numerical Jacobians
+  Matrix33 expectedH1 = numericalDerivative21(f, p, q);
+  Matrix32 expectedH2 = numericalDerivative22(f, p, q);
+
+  // Check correctness of Jacobians
+  EXPECT(assert_equal(expectedH1, aH1, 1e-5));
+  EXPECT(assert_equal(expectedH2, aH2, 1e-5));
+}
 
 /* ************************************************************************* */
 int main() {

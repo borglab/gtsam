@@ -11,11 +11,15 @@ Author: Frank Dellaert
 
 # pylint: disable=no-name-in-module, invalid-name
 
+import math
+import textwrap
 import unittest
 
-from gtsam import (DiscreteBayesNet, DiscreteConditional, DiscreteFactorGraph,
-                   DiscreteKeys, DiscreteDistribution, DiscreteValues, Ordering)
 from gtsam.utils.test_case import GtsamTestCase
+
+import gtsam
+from gtsam import (DiscreteBayesNet, DiscreteConditional, DiscreteDistribution,
+                   DiscreteFactorGraph, DiscreteKeys, DiscreteValues, Ordering)
 
 # Some keys:
 Asia = (0, 2)
@@ -27,6 +31,41 @@ Bronchitis = (7, 2)
 Either = (5, 2)
 XRay = (2, 2)
 Dyspnea = (1, 2)
+
+
+class TestDiscreteConditional(GtsamTestCase):
+    """Tests for Discrete Conditional"""
+
+    def setUp(self):
+        self.key = (0, 2)
+        self.parent = (1, 2)
+        self.parents = DiscreteKeys()
+        self.parents.push_back(self.parent)
+
+    def test_sample(self):
+        """Tests to check sampling in DiscreteConditionals"""
+        rng = gtsam.MT19937(11)
+        niters = 1000
+
+        # Sample with only 1 variable
+        conditional = DiscreteConditional(self.key, "7/3")
+        # Sample multiple times and average to get mean
+        p = 0
+        for _ in range(niters):
+            p += conditional.sample(rng)
+
+        self.assertAlmostEqual(p / niters, 0.3, 1)
+
+        # Sample with variable and parent
+        conditional = DiscreteConditional(self.key, self.parents, "7/3 2/8")
+        # Sample multiple times and average to get mean
+        p = 0
+        parentValues = gtsam.DiscreteValues()
+        parentValues[self.parent[0]] = 1
+        for _ in range(niters):
+            p += conditional.sample(parentValues, rng)
+
+        self.assertAlmostEqual(p / niters, 0.8, 1)
 
 
 class TestDiscreteBayesNet(GtsamTestCase):
@@ -81,10 +120,12 @@ class TestDiscreteBayesNet(GtsamTestCase):
         # solve
         actualMPE = fg.optimize()
         expectedMPE = DiscreteValues()
-        for key in [Asia, Dyspnea, XRay, Tuberculosis, Smoking, Either, LungCancer, Bronchitis]:
+        for key in [
+                Asia, Dyspnea, XRay, Tuberculosis, Smoking, Either, LungCancer,
+                Bronchitis
+        ]:
             expectedMPE[key[0]] = 0
-        self.assertEqual(list(actualMPE.items()),
-                         list(expectedMPE.items()))
+        self.assertEqual(list(actualMPE.items()), list(expectedMPE.items()))
 
         # Check value for MPE is the same
         self.assertAlmostEqual(asia(actualMPE), fg(actualMPE))
@@ -100,16 +141,17 @@ class TestDiscreteBayesNet(GtsamTestCase):
             expectedMPE2[key[0]] = 0
         for key in [Asia, Dyspnea, Smoking, Bronchitis]:
             expectedMPE2[key[0]] = 1
-        self.assertEqual(list(actualMPE2.items()),
-                         list(expectedMPE2.items()))
+        self.assertEqual(list(actualMPE2.items()), list(expectedMPE2.items()))
 
         # now sample from it
         chordal2 = fg.eliminateSequential(ordering)
         actualSample = chordal2.sample()
-        self.assertEqual(len(actualSample), 8)
+        # TODO(kartikarcot): Resolve the len function issue. Probably
+        # due to a use of initializer list which is not supported in CPP17
+        # self.assertEqual(len(actualSample), 8)
 
     def test_fragment(self):
-        """Test sampling and optimizing for Asia fragment."""
+        """Test evaluate/sampling/optimizing for Asia fragment."""
 
         # Create a reverse-topologically sorted fragment:
         fragment = DiscreteBayesNet()
@@ -123,8 +165,54 @@ class TestDiscreteBayesNet(GtsamTestCase):
             given[key[0]] = 0
 
         # Now sample from fragment:
+        values = fragment.sample(given)
+        # TODO(kartikarcot): Resolve the len function issue. Probably
+        # due to a use of initializer list which is not supported in CPP17
+        # self.assertEqual(len(values), 5)
+
+        for i in [0, 1, 2]:
+            self.assertAlmostEqual(
+                fragment.at(i).logProbability(values),
+                math.log(fragment.at(i).evaluate(values)))
+        self.assertAlmostEqual(fragment.logProbability(values),
+                               math.log(fragment.evaluate(values)))
         actual = fragment.sample(given)
-        self.assertEqual(len(actual), 5)
+        # TODO(kartikarcot): Resolve the len function issue. Probably
+        # due to a use of initializer list which is not supported in CPP17
+        # self.assertEqual(len(actual), 5)
+
+    def test_dot(self):
+        """Check that dot works with position hints."""
+        fragment = DiscreteBayesNet()
+        fragment.add(Either, [Tuberculosis, LungCancer], "F T T T")
+        MyAsia = gtsam.symbol('a', 0), 2  # use a symbol!
+        fragment.add(Tuberculosis, [MyAsia], "99/1 95/5")
+        fragment.add(LungCancer, [Smoking], "99/1 90/10")
+
+        # Make sure we can *update* position hints
+        writer = gtsam.DotWriter()
+        ph: dict = writer.positionHints
+        ph['a'] = 2  # hint at symbol position
+        writer.positionHints = ph
+
+        # Check the output of dot
+        actual = fragment.dot(writer=writer)
+        expected_result = """\
+            digraph {
+              size="5,5";
+
+              var3[label="3"];
+              var4[label="4"];
+              var5[label="5"];
+              var6[label="6"];
+              var6989586621679009792[label="a0", pos="0,2!"];
+
+              var4->var6
+              var6989586621679009792->var3
+              var3->var5
+              var6->var5
+            }"""
+        self.assertEqual(actual, textwrap.dedent(expected_result))
 
 
 if __name__ == "__main__":

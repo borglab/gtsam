@@ -18,7 +18,9 @@
 
 #include <gtsam/inference/Key.h>
 
+#include <gtsam/base/ConcurrentMap.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixSerialization.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/FastList.h>
 #include <gtsam/base/FastMap.h>
@@ -26,6 +28,7 @@
 #include <gtsam/base/FastVector.h>
 
 #include <gtsam/base/serializationTestHelpers.h>
+#include <gtsam/base/std_optional_serialization.h>
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
@@ -86,23 +89,56 @@ TEST (Serialization, FastVector) {
 
 /* ************************************************************************* */
 TEST (Serialization, matrix_vector) {
-  EXPECT(equality<Vector>((Vector(4) << 1.0, 2.0, 3.0, 4.0).finished()));
+  EXPECT(equality<Vector>(Vector{{1.0, 2.0, 3.0, 4.0}}));
   EXPECT(equality<Vector2>(Vector2(1.0, 2.0)));
   EXPECT(equality<Vector3>(Vector3(1.0, 2.0, 3.0)));
-  EXPECT(equality<Vector6>((Vector6() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0).finished()));
-  EXPECT(equality<Matrix>((Matrix(2, 2) << 1.0, 2.0, 3.0, 4.0).finished()));
+  EXPECT(equality<Vector6>(Vector6{1.0, 2.0, 3.0, 4.0, 5.0, 6.0}));
+  EXPECT(equality<Matrix>(Matrix{{1.0, 2.0}, {3.0, 4.0}}));
 
-  EXPECT(equalityXML<Vector>((Vector(4) << 1.0, 2.0, 3.0, 4.0).finished()));
+  EXPECT(equalityXML<Vector>(Vector{{1.0, 2.0, 3.0, 4.0}}));
   EXPECT(equalityXML<Vector2>(Vector2(1.0, 2.0)));
   EXPECT(equalityXML<Vector3>(Vector3(1.0, 2.0, 3.0)));
-  EXPECT(equalityXML<Vector6>((Vector6() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0).finished()));
-  EXPECT(equalityXML<Matrix>((Matrix(2, 2) << 1.0, 2.0, 3.0, 4.0).finished()));
+  EXPECT(equalityXML<Vector6>(Vector6{1.0, 2.0, 3.0, 4.0, 5.0, 6.0}));
+  EXPECT(equalityXML<Matrix>(Matrix{{1.0, 2.0}, {3.0, 4.0}}));
 
-  EXPECT(equalityBinary<Vector>((Vector(4) << 1.0, 2.0, 3.0, 4.0).finished()));
+  EXPECT(equalityBinary<Vector>(Vector{{1.0, 2.0, 3.0, 4.0}}));
   EXPECT(equalityBinary<Vector2>(Vector2(1.0, 2.0)));
   EXPECT(equalityBinary<Vector3>(Vector3(1.0, 2.0, 3.0)));
-  EXPECT(equalityBinary<Vector6>((Vector6() << 1.0, 2.0, 3.0, 4.0, 5.0, 6.0).finished()));
-  EXPECT(equalityBinary<Matrix>((Matrix(2, 2) << 1.0, 2.0, 3.0, 4.0).finished()));
+  EXPECT(equalityBinary<Vector6>(Vector6{1.0, 2.0, 3.0, 4.0, 5.0, 6.0}));
+  EXPECT(equalityBinary<Matrix>(Matrix{{1.0, 2.0}, {3.0, 4.0}}));
+}
+
+/* ************************************************************************* */
+TEST (Serialization, ConcurrentMap) {
+
+  ConcurrentMap<int, std::string> map;
+
+  map.insert(make_pair(1, "apple"));
+  map.insert(make_pair(2, "banana"));
+
+  std::string binaryPath = "saved_map.dat";
+    try {
+    std::ofstream outputStream(binaryPath);
+    boost::archive::binary_oarchive outputArchive(outputStream);
+    outputArchive << map;
+  } catch(...) {
+    EXPECT(false);
+  }
+
+  // Verify that the existing map contents are replaced by the archive data
+  ConcurrentMap<int, std::string> mapFromDisk;
+  mapFromDisk.insert(make_pair(3, "clam"));
+  EXPECT(mapFromDisk.exists(3));
+  try {
+    std::ifstream ifs(binaryPath);
+    boost::archive::binary_iarchive inputArchive(ifs);
+    inputArchive >> mapFromDisk;
+  } catch(...) {
+    EXPECT(false);
+  }
+  EXPECT(mapFromDisk.exists(1));
+  EXPECT(mapFromDisk.exists(2));
+  EXPECT(!mapFromDisk.exists(3));
 }
 
 /* ************************************************************************* */

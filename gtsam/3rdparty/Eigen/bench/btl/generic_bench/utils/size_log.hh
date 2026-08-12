@@ -23,7 +23,7 @@
 #include "math.h"
 // The Vector class must satisfy the following part of STL vector concept :
 //            resize() method
-//            [] operator for seting element
+//            [] operator for setting element
 // the vector element are int compatible.
 template<class Vector>
 void size_log(const int nb_point, const int size_min, const int size_max, Vector & X)

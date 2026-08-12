@@ -35,10 +35,8 @@ class InstantiatedDeclaration(parser.ForwardDeclaration):
         ]
         name = "{}<{}>".format(self.original.name,
                                ",".join(instantiated_names))
-        namespaces_name = self.namespaces()
-        namespaces_name.append(name)
         # Leverage Typename to generate the fully qualified C++ name
-        return parser.Typename(namespaces_name).to_cpp()
+        return parser.Typename(name=name, namespaces=self.namespaces()).to_cpp()
 
     def __repr__(self):
         return "Instantiated {}".format(

@@ -17,6 +17,7 @@
 #endif
 
 #include "svd_fill.h"
+#include "solverbase.h"
 
 // Check that the matrix m is properly reconstructed and that the U and V factors are unitary
 // The SVD must have already been computed.
@@ -219,12 +220,33 @@ void svd_min_norm(const MatrixType& m, unsigned int computationOptions)
   VERIFY_IS_APPROX(x21, x3);
 }
 
+template<typename MatrixType, typename SolverType>
+void svd_test_solvers(const MatrixType& m, const SolverType& solver) {
+    Index rows, cols, cols2;
+
+    rows = m.rows();
+    cols = m.cols();
+
+    if(MatrixType::ColsAtCompileTime==Dynamic)
+    {
+      cols2 = internal::random<int>(2,EIGEN_TEST_MAX_SIZE);
+    }
+    else
+    {
+      cols2 = cols;
+    }
+    typedef Matrix<typename MatrixType::Scalar, MatrixType::ColsAtCompileTime, MatrixType::ColsAtCompileTime> CMatrixType;
+    check_solverbase<CMatrixType, MatrixType>(m, solver, rows, cols, cols2);
+}
+
 // Check full, compare_to_full, least_square, and min_norm for all possible compute-options
 template<typename SvdType, typename MatrixType>
 void svd_test_all_computation_options(const MatrixType& m, bool full_only)
 {
 //   if (QRPreconditioner == NoQRPreconditioner && m.rows() != m.cols())
 //     return;
+  STATIC_CHECK(( internal::is_same<typename SvdType::StorageIndex,int>::value ));
+
   SvdType fullSvd(m, ComputeFullU|ComputeFullV);
   CALL_SUBTEST(( svd_check_full(m, fullSvd) ));
   CALL_SUBTEST(( svd_least_square<SvdType>(m, ComputeFullU | ComputeFullV) ));
@@ -234,6 +256,9 @@ void svd_test_all_computation_options(const MatrixType& m, bool full_only)
   // remark #111: statement is unreachable
   #pragma warning disable 111
   #endif
+
+  svd_test_solvers(m, fullSvd);
+
   if(full_only)
     return;
 
@@ -273,7 +298,8 @@ EIGEN_DONT_INLINE Scalar zero() { return Scalar(0); }
 // workaround aggressive optimization in ICC
 template<typename T> EIGEN_DONT_INLINE  T sub(T a, T b) { return a - b; }
 
-// all this function does is verify we don't iterate infinitely on nan/inf values
+// This function verifies we don't iterate infinitely on nan/inf values,
+// and that info() returns InvalidInput.
 template<typename SvdType, typename MatrixType>
 void svd_inf_nan()
 {
@@ -282,18 +308,22 @@ void svd_inf_nan()
   Scalar some_inf = Scalar(1) / zero<Scalar>();
   VERIFY(sub(some_inf, some_inf) != sub(some_inf, some_inf));
   svd.compute(MatrixType::Constant(10,10,some_inf), ComputeFullU | ComputeFullV);
+  VERIFY(svd.info() == InvalidInput);
 
   Scalar nan = std::numeric_limits<Scalar>::quiet_NaN();
   VERIFY(nan != nan);
   svd.compute(MatrixType::Constant(10,10,nan), ComputeFullU | ComputeFullV);
+  VERIFY(svd.info() == InvalidInput);  
 
   MatrixType m = MatrixType::Zero(10,10);
   m(internal::random<int>(0,9), internal::random<int>(0,9)) = some_inf;
   svd.compute(m, ComputeFullU | ComputeFullV);
+  VERIFY(svd.info() == InvalidInput);
 
   m = MatrixType::Zero(10,10);
   m(internal::random<int>(0,9), internal::random<int>(0,9)) = nan;
   svd.compute(m, ComputeFullU | ComputeFullV);
+  VERIFY(svd.info() == InvalidInput);
   
   // regression test for bug 791
   m.resize(3,3);
@@ -301,6 +331,7 @@ void svd_inf_nan()
        0,   -0.5,                             0,
        nan,  0,                               0;
   svd.compute(m, ComputeFullU | ComputeFullV);
+  VERIFY(svd.info() == InvalidInput);
   
   m.resize(4,4);
   m <<  1, 0, 0, 0,
@@ -308,6 +339,7 @@ void svd_inf_nan()
         1, 0, 1, nan,
         0, nan, nan, 0;
   svd.compute(m, ComputeFullU | ComputeFullV);
+  VERIFY(svd.info() == InvalidInput);
 }
 
 // Regression test for bug 286: JacobiSVD loops indefinitely with some
@@ -430,7 +462,7 @@ void svd_preallocate()
 }
 
 template<typename SvdType,typename MatrixType> 
-void svd_verify_assert(const MatrixType& m)
+void svd_verify_assert(const MatrixType& m, bool fullOnly = false)
 {
   typedef typename MatrixType::Scalar Scalar;
   Index rows = m.rows();
@@ -448,6 +480,8 @@ void svd_verify_assert(const MatrixType& m)
   VERIFY_RAISES_ASSERT(svd.singularValues())
   VERIFY_RAISES_ASSERT(svd.matrixV())
   VERIFY_RAISES_ASSERT(svd.solve(rhs))
+  VERIFY_RAISES_ASSERT(svd.transpose().solve(rhs))
+  VERIFY_RAISES_ASSERT(svd.adjoint().solve(rhs))
   MatrixType a = MatrixType::Zero(rows, cols);
   a.setZero();
   svd.compute(a, 0);
@@ -455,8 +489,17 @@ void svd_verify_assert(const MatrixType& m)
   VERIFY_RAISES_ASSERT(svd.matrixV())
   svd.singularValues();
   VERIFY_RAISES_ASSERT(svd.solve(rhs))
-    
-  if (ColsAtCompileTime == Dynamic)
+
+  svd.compute(a, ComputeFullU);
+  svd.matrixU();
+  VERIFY_RAISES_ASSERT(svd.matrixV())
+  VERIFY_RAISES_ASSERT(svd.solve(rhs))
+  svd.compute(a, ComputeFullV);
+  svd.matrixV();
+  VERIFY_RAISES_ASSERT(svd.matrixU())
+  VERIFY_RAISES_ASSERT(svd.solve(rhs))
+
+  if (!fullOnly && ColsAtCompileTime == Dynamic)
   {
     svd.compute(a, ComputeThinU);
     svd.matrixU();

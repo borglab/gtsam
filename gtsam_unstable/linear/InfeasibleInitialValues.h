@@ -18,28 +18,31 @@
 
 #pragma once
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
+#include <gtsam/base/ThreadsafeException.h>
+
 namespace gtsam {
 /* ************************************************************************* */
 /** An exception indicating that the provided initial value is infeasible
  * Also used to inzdicatethat the noise model dimension passed into a
  * JacobianFactor has a different dimensionality than the factor. */
-class InfeasibleInitialValues: public ThreadsafeException<
-    InfeasibleInitialValues> {
-public:
-  InfeasibleInitialValues() {
-  }
+class InfeasibleInitialValues
+    : public ThreadsafeException<InfeasibleInitialValues> {
+ public:
+  InfeasibleInitialValues() {}
 
-  ~InfeasibleInitialValues() noexcept override {
-  }
+  ~InfeasibleInitialValues() noexcept override {}
 
   const char *what() const noexcept override {
-    if (description_.empty())
+    if (description_->empty())
       description_ =
           "An infeasible initial value was provided for the solver.\n";
-    return description_.c_str();
+    return description_->c_str();
   }
-
-private:
-  mutable std::string description_;
 };
-}
+}  // namespace gtsam
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

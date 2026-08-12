@@ -12,13 +12,26 @@ from mpl_toolkits.mplot3d import Axes3D  # pylint: disable=unused-import
 import gtsam
 from gtsam import Marginals, Point2, Point3, Pose2, Pose3, Values
 
-# For future reference: following
-# https://www.xarg.org/2018/04/how-to-plot-a-covariance-error-ellipse/
-# we have, in 2D:
-# def kk(p): return math.sqrt(-2*math.log(1-p)) # k to get p probability mass
-# def pp(k): return 1-math.exp(-float(k**2)/2.0) # p as a function of k
-# Some values:
-# k = 5 => p = 99.9996 %
+# For translation between a scaling of the uncertainty ellipse and the
+# percentage of inliers see discussion in
+#   [PR 1067](https://github.com/borglab/gtsam/pull/1067)
+# and the notebook python/gtsam/notebooks/ellipses.ipynb (needs scipy).
+#
+# In the following, the default scaling is chosen for 95% inliers, which
+# translates to the following sigma values:
+# 1D: 1.959963984540
+# 2D: 2.447746830681
+# 3D: 2.795483482915
+#
+# Further references are Stochastic Models, Estimation, and Control Vol 1 by Maybeck,
+# page 366 and https://www.xarg.org/2018/04/how-to-plot-a-covariance-error-ellipse/
+#
+# For reference, here are the inlier percentages for some sigma values:
+#   	    1    	    2    	    3    	    4    	    5
+# 1D	68.26895	95.44997	99.73002	99.99367	99.99994
+# 2D	39.34693	86.46647	98.88910	99.96645	99.99963
+# 3D	19.87480	73.85359	97.07091	99.88660	99.99846
+
 
 def set_axes_equal(fignum: int) -> None:
     """
@@ -81,9 +94,8 @@ def plot_covariance_ellipse_3d(axes,
     """
     Plots a Gaussian as an uncertainty ellipse
 
-    Based on Maybeck Vol 1, page 366
-    k=2.296 corresponds to 1 std, 68.26% of all probability
-    k=11.82 corresponds to 3 std, 99.74% of all probability
+    The ellipse is scaled in such a way that 95% of drawn samples are inliers.
+    Derivation of the scaling factor is explained at the beginning of this file.
 
     Args:
         axes (matplotlib.axes.Axes): Matplotlib axes.
@@ -94,7 +106,8 @@ def plot_covariance_ellipse_3d(axes,
         n: Defines the granularity of the ellipse. Higher values indicate finer ellipses.
         alpha: Transparency value for the plotted surface in the range [0, 1].
     """
-    k = 11.82
+    # this corresponds to 95%, see note above
+    k = 2.795483482915
     U, S, _ = np.linalg.svd(P)
 
     radii = k * np.sqrt(S)
@@ -115,12 +128,47 @@ def plot_covariance_ellipse_3d(axes,
     axes.plot_surface(x, y, z, alpha=alpha, cmap='hot')
 
 
+def plot_covariance_ellipse_2d(axes, origin: Point2,
+                               covariance: np.ndarray) -> None:
+    """
+    Plots a Gaussian as an uncertainty ellipse
+
+    The ellipse is scaled in such a way that 95% of drawn samples are inliers.
+    Derivation of the scaling factor is explained at the beginning of this file.
+
+    Args:
+        axes (matplotlib.axes.Axes): Matplotlib axes.
+        origin: The origin in the world frame.
+        covariance: The marginal covariance matrix of the 2D point
+                    which will be represented as an ellipse.
+    """
+
+    w, v = np.linalg.eigh(covariance)
+
+    # this corresponds to 95%, see note above
+    k = 2.447746830681
+
+    angle = np.arctan2(v[1, 0], v[0, 0])
+    # We multiply k by 2 since k corresponds to the radius but Ellipse uses
+    # the diameter.
+    e1 = patches.Ellipse(origin,
+                         np.sqrt(w[0]) * 2 * k,
+                         np.sqrt(w[1]) * 2 * k,
+                         angle=np.rad2deg(angle),
+                         fill=False)
+    axes.add_patch(e1)
+
+
 def plot_point2_on_axes(axes,
                         point: Point2,
                         linespec: str,
                         P: Optional[np.ndarray] = None) -> None:
     """
-    Plot a 2D point on given axis `axes` with given `linespec`.
+    Plot a 2D point and its corresponding uncertainty ellipse on given axis
+    `axes` with given `linespec`.
+
+    The uncertainty ellipse (if covariance is given) is scaled in such a way
+    that 95% of drawn samples are inliers, see `plot_covariance_ellipse_2d`.
 
     Args:
         axes (matplotlib.axes.Axes): Matplotlib axes.
@@ -130,29 +178,21 @@ def plot_point2_on_axes(axes,
     """
     axes.plot([point[0]], [point[1]], linespec, marker='.', markersize=10)
     if P is not None:
-        w, v = np.linalg.eig(P)
-
-        # 5 sigma corresponds to 99.9996%, see note above
-        k = 5.0
-
-        angle = np.arctan2(v[1, 0], v[0, 0])
-        e1 = patches.Ellipse(point,
-                             np.sqrt(w[0] * k),
-                             np.sqrt(w[1] * k),
-                             np.rad2deg(angle),
-                             fill=False)
-        axes.add_patch(e1)
+        plot_covariance_ellipse_2d(axes, point, P)
 
 
 def plot_point2(
-    fignum: int,
-    point: Point2,
-    linespec: str,
-    P: np.ndarray = None,
-    axis_labels: Iterable[str] = ("X axis", "Y axis"),
+        fignum: int,
+        point: Point2,
+        linespec: str,
+        P: np.ndarray = None,
+        axis_labels: Iterable[str] = ("X axis", "Y axis"),
 ) -> plt.Figure:
     """
     Plot a 2D point on given figure with given `linespec`.
+
+    The uncertainty ellipse (if covariance is given) is scaled in such a way
+    that 95% of drawn samples are inliers, see `plot_covariance_ellipse_2d`.
 
     Args:
         fignum: Integer representing the figure number to use for plotting.
@@ -182,6 +222,9 @@ def plot_pose2_on_axes(axes,
     """
     Plot a 2D pose on given axis `axes` with given `axis_length`.
 
+    The ellipse is scaled in such a way that 95% of drawn samples are inliers,
+    see `plot_covariance_ellipse_2d`.
+
     Args:
         axes (matplotlib.axes.Axes): Matplotlib axes.
         pose: The pose to be plotted.
@@ -206,19 +249,7 @@ def plot_pose2_on_axes(axes,
     if covariance is not None:
         pPp = covariance[0:2, 0:2]
         gPp = np.matmul(np.matmul(gRp, pPp), gRp.T)
-
-        w, v = np.linalg.eig(gPp)
-
-        # 5 sigma corresponds to 99.9996%, see note above
-        k = 5.0
-
-        angle = np.arctan2(v[1, 0], v[0, 0])
-        e1 = patches.Ellipse(origin,
-                             np.sqrt(w[0] * k),
-                             np.sqrt(w[1] * k),
-                             np.rad2deg(angle),
-                             fill=False)
-        axes.add_patch(e1)
+        plot_covariance_ellipse_2d(axes, origin, gPp)
 
 
 def plot_pose2(
@@ -230,6 +261,9 @@ def plot_pose2(
 ) -> plt.Figure:
     """
     Plot a 2D pose on given figure with given `axis_length`.
+
+    The uncertainty ellipse (if covariance is given) is scaled in such a way
+    that 95% of drawn samples are inliers, see `plot_covariance_ellipse_2d`.
 
     Args:
         fignum: Integer representing the figure number to use for plotting.
@@ -260,6 +294,9 @@ def plot_point3_on_axes(axes,
     """
     Plot a 3D point on given axis `axes` with given `linespec`.
 
+    The uncertainty ellipse (if covariance is given) is scaled in such a way
+    that 95% of drawn samples are inliers, see `plot_covariance_ellipse_3d`.
+
     Args:
         axes (matplotlib.axes.Axes): Matplotlib axes.
         point: The point to be plotted.
@@ -281,6 +318,9 @@ def plot_point3(
     """
     Plot a 3D point on given figure with given `linespec`.
 
+    The uncertainty ellipse (if covariance is given) is scaled in such a way
+    that 95% of drawn samples are inliers, see `plot_covariance_ellipse_3d`.
+
     Args:
         fignum: Integer representing the figure number to use for plotting.
         point: The point to be plotted.
@@ -293,7 +333,10 @@ def plot_point3(
 
     """
     fig = plt.figure(fignum)
-    axes = fig.gca(projection='3d')
+    if not fig.axes:
+        axes = fig.add_subplot(projection='3d')
+    else:
+        axes = fig.axes[0]
     plot_point3_on_axes(axes, point, linespec, P)
 
     axes.set_xlabel(axis_labels[0])
@@ -348,12 +391,15 @@ def plot_3d_points(fignum,
 
     fig = plt.figure(fignum)
     fig.suptitle(title)
-    fig.canvas.set_window_title(title.lower())
+    fig.canvas.manager.set_window_title(title.lower())
 
 
 def plot_pose3_on_axes(axes, pose, axis_length=0.1, P=None, scale=1):
     """
     Plot a 3D pose on given axis `axes` with given `axis_length`.
+
+    The uncertainty ellipse (if covariance is given) is scaled in such a way
+    that 95% of drawn samples are inliers, see `plot_covariance_ellipse_3d`.
 
     Args:
         axes (matplotlib.axes.Axes): Matplotlib axes.
@@ -396,6 +442,9 @@ def plot_pose3(
 ) -> plt.Figure:
     """
     Plot a 3D pose on given figure with given `axis_length`.
+
+    The uncertainty ellipse (if covariance is given) is scaled in such a way
+    that 95% of drawn samples are inliers, see `plot_covariance_ellipse_3d`.
 
     Args:
         fignum: Integer representing the figure number to use for plotting.
@@ -444,7 +493,10 @@ def plot_trajectory(
         axis_labels (iterable[string]): List of axis labels to set.
     """
     fig = plt.figure(fignum)
-    axes = fig.gca(projection='3d')
+    if not fig.axes:
+        axes = fig.add_subplot(projection='3d')
+    else:
+        axes = fig.axes[0]
 
     axes.set_xlabel(axis_labels[0])
     axes.set_ylabel(axis_labels[1])
@@ -476,7 +528,7 @@ def plot_trajectory(
         plot_pose3_on_axes(axes, pose, P=covariance, axis_length=scale)
 
     fig.suptitle(title)
-    fig.canvas.set_window_title(title.lower())
+    fig.canvas.manager.set_window_title(title.lower())
 
 
 def plot_incremental_trajectory(fignum: int,
@@ -499,10 +551,13 @@ def plot_incremental_trajectory(fignum: int,
             Used to create animation effect.
     """
     fig = plt.figure(fignum)
-    axes = fig.gca(projection='3d')
+    if not fig.axes:
+        axes = fig.add_subplot(projection='3d')
+    else:
+        axes = fig.axes[0]
 
     poses = gtsam.utilities.allPose3s(values)
-    keys = gtsam.KeyVector(poses.keys())
+    keys = poses.keys()
 
     for key in keys[start:]:
         if values.exists(key):

@@ -6,23 +6,29 @@
 
 #pragma once
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam_unstable/dynamics/PoseRTV.h>
 
-#include <boost/bind/bind.hpp>
+#include <cassert>
 
 namespace gtsam {
 
 /**
- * Class that represents integrating IMU measurements over time for dynamic systems
+ * Class that represents integrating IMU measurements over time for dynamic systems.
  * Templated to allow for different key types, but variables all
  * assumed to be PoseRTV
+ *
+ * @deprecated Use gtsam::ImuFactor with gtsam::NavState instead.
  */
 template<class POSE>
-class IMUFactor : public NoiseModelFactor2<POSE, POSE> {
+class IMUFactor : public NoiseModelFactorN<POSE, POSE> {
 public:
-  typedef NoiseModelFactor2<POSE, POSE> Base;
+  typedef NoiseModelFactorN<POSE, POSE> Base;
   typedef IMUFactor<POSE> This;
 
 protected:
@@ -32,6 +38,9 @@ protected:
   double dt_; /// time between measurements
 
 public:
+
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
 
   /** Standard constructor */
   IMUFactor(const Vector3& accel, const Vector3& gyro,
@@ -47,7 +56,7 @@ public:
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
-    return boost::static_pointer_cast<gtsam::NonlinearFactor>(
+    return std::static_pointer_cast<gtsam::NonlinearFactor>(
         gtsam::NonlinearFactor::shared_ptr(new This(*this))); }
 
   /** Check if two factors are equal */
@@ -77,8 +86,7 @@ public:
    *  z - h(x1,x2)
    */
   Vector evaluateError(const PoseRTV& x1, const PoseRTV& x2,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const override {
+      OptionalMatrixType H1, OptionalMatrixType H2) const override {
     const Vector6 meas = z();
     if (H1) *H1 = numericalDerivative21<Vector6, PoseRTV, PoseRTV>(
         std::bind(This::predict_proxy, std::placeholders::_1, std::placeholders::_2, dt_, meas), x1, x2, 1e-5);
@@ -89,8 +97,7 @@ public:
 
   /** dummy version that fails for non-dynamic poses */
   virtual Vector evaluateError(const Pose3& x1, const Pose3& x2,
-      boost::optional<Matrix&> H1 = boost::none,
-      boost::optional<Matrix&> H2 = boost::none) const {
+      OptionalMatrixType H1, OptionalMatrixType H2) const {
     assert(false); // no corresponding factor here
     return Vector6::Zero();
   }
@@ -105,3 +112,5 @@ private:
 };
 
 } // \namespace gtsam
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

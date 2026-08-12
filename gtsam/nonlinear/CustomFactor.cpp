@@ -22,13 +22,13 @@ namespace gtsam {
 /*
  * Calculates the unwhitened error by invoking the callback functor (i.e. from Python).
  */
-Vector CustomFactor::unwhitenedError(const Values& x, boost::optional<std::vector<Matrix>&> H) const {
+Vector CustomFactor::unwhitenedError(const Values& x, OptionalMatrixVecType H) const {
   if(this->active(x)) {
 
     if(H) {
       /*
        * In this case, we pass the raw pointer to the `std::vector<Matrix>` object directly to pybind.
-       * As the type `std::vector<Matrix>` has been marked as opaque in `preamble.h`, any changes in
+       * As the type `std::vector<Matrix>` has been marked as opaque in `preamble/custom.h`, any changes in
        * Python will be immediately reflected on the C++ side.
        *
        * Example:
@@ -43,7 +43,7 @@ Vector CustomFactor::unwhitenedError(const Values& x, boost::optional<std::vecto
        *    return error
        * ```
        */
-      return this->error_function_(*this, x, H.get_ptr());
+      return this->error_function_(*this, x, H);
     } else {
       /*
        * In this case, we pass the a `nullptr` to pybind, and it will translate to `None` in Python.

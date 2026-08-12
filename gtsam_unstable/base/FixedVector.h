@@ -37,6 +37,8 @@ public:
   /** copy constructors */
   FixedVector(const FixedVector& v) : Base(v) {}
 
+  FixedVector& operator=(const FixedVector& other) = default;
+
   /** Convert from a variable-size vector to a fixed size vector */
   FixedVector(const Vector& v) : Base(v) {}
 

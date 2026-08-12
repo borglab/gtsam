@@ -8,6 +8,7 @@
  * The data file is at examples/Data/ISAM2_SmartFactorStereo_IMU.txt
  * It contains 5 frames of stereo matches and IMU data.
  */
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam_unstable/slam/SmartStereoProjectionPoseFactor.h>
@@ -20,9 +21,9 @@
 
 using namespace std;
 using namespace gtsam;
-using symbol_shorthand::X;
-using symbol_shorthand::V;
 using symbol_shorthand::B;
+using symbol_shorthand::V;
+using symbol_shorthand::X;
 
 struct IMUHelper {
   IMUHelper() {
@@ -45,7 +46,7 @@ struct IMUHelper {
     }
 
     // expect IMU to be rotated in image space co-ords
-    auto p = boost::make_shared<PreintegratedCombinedMeasurements::Params>(
+    auto p = std::make_shared<PreintegratedCombinedMeasurements::Params>(
         Vector3(0.0, 9.8, 0.0));
 
     p->accelerometerCovariance =
@@ -57,11 +58,13 @@ struct IMUHelper {
     p->biasAccCovariance = I_3x3 * pow(0.00002, 2.0);  // acc bias in continuous
     p->biasOmegaCovariance =
         I_3x3 * pow(0.001, 2.0);  // gyro bias in continuous
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
     p->biasAccOmegaInt = Matrix::Identity(6, 6) * 1e-5;
+#endif
 
     // body to IMU rotation
-    Rot3 iRb(0.036129, -0.998727, 0.035207,
-             0.045417, -0.033553, -0.998404,
+    Rot3 iRb(0.036129, -0.998727, 0.035207, 0.045417, -0.033553, -0.998404,
              0.998315, 0.037670, 0.044147);
 
     // body to IMU translation (meters)
@@ -129,12 +132,11 @@ int main(int argc, char* argv[]) {
   // Pose prior - at identity
   auto priorPoseNoise = noiseModel::Diagonal::Sigmas(
       (Vector(6) << Vector3::Constant(0.1), Vector3::Constant(0.1)).finished());
-  graph.addPrior(X(1), Pose3::identity(), priorPoseNoise);
-  initialEstimate.insert(X(0), Pose3::identity());
+  graph.addPrior(X(1), Pose3::Identity(), priorPoseNoise);
+  initialEstimate.insert(X(0), Pose3::Identity());
 
   // Bias prior
-  graph.addPrior(B(1), imu.priorImuBias,
-                                               imu.biasNoiseModel);
+  graph.addPrior(B(1), imu.priorImuBias, imu.biasNoiseModel);
   initialEstimate.insert(B(0), imu.priorImuBias);
 
   // Velocity prior - assume stationary
@@ -157,7 +159,7 @@ int main(int argc, char* argv[]) {
     if (frame != lastFrame || in.eof()) {
       cout << "Running iSAM for frame: " << lastFrame << "\n";
 
-      initialEstimate.insert(X(lastFrame), Pose3::identity());
+      initialEstimate.insert(X(lastFrame), Pose3::Identity());
       initialEstimate.insert(V(lastFrame), Vector3(0, 0, 0));
       initialEstimate.insert(B(lastFrame), imu.prevBias);
 

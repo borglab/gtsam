@@ -21,9 +21,6 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/SparseEigen.h>
 
-#include <boost/assign/list_of.hpp>
-using boost::assign::list_of;
-
 #include <gtsam/base/TestableAssertions.h>
 #include <CppUnitLite/TestHarness.h>
 
@@ -35,10 +32,8 @@ TEST(SparseEigen, sparseJacobianEigen) {
   GaussianFactorGraph gfg;
   SharedDiagonal model = noiseModel::Isotropic::Sigma(2, 0.5);
   const Key x123 = 0, x45 = 1;
-  gfg.add(x123, (Matrix(2, 3) << 1, 2, 3, 5, 6, 7).finished(),
-          Vector2(4, 8), model);
-  gfg.add(x123, (Matrix(2, 3) << 9, 10, 0, 0, 0, 0).finished(),
-          x45,  (Matrix(2, 2) << 11, 12, 14, 15.).finished(),
+  gfg.add(x123, Matrix{{1, 2, 3}, {5, 6, 7}}, Vector2(4, 8), model);
+  gfg.add(x123, Matrix{{9, 10, 0}, {0, 0, 0}}, x45, Matrix{{11, 12}, {14, 15.}},
           Vector2(13, 16), model);
 
   // Sparse Matrix
@@ -49,7 +44,7 @@ TEST(SparseEigen, sparseJacobianEigen) {
   EXPECT(assert_equal(gfg.augmentedJacobian(), Matrix(sparseResult)));
 
   // Call sparseJacobian with optional ordering...
-  auto ordering = Ordering(list_of(x45)(x123));
+  const Ordering ordering{x45, x123};
 
   // Eigen Sparse with optional ordering
   EXPECT(assert_equal(gfg.augmentedJacobian(ordering),

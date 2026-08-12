@@ -18,7 +18,7 @@ void testMatrixSqrt(const MatrixType& m)
   VERIFY_IS_APPROX(sqrtA * sqrtA, A);
 }
 
-void test_matrix_square_root()
+EIGEN_DECLARE_TEST(matrix_square_root)
 {
   for (int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1(testMatrixSqrt(Matrix3cf()));

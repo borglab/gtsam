@@ -20,19 +20,20 @@
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/slam/KarcherMeanFactor.h>
-
-using namespace std;
+#include <optional>
 
 namespace gtsam {
 
 template <class T, class ALLOC>
-T FindKarcherMeanImpl(const vector<T, ALLOC>& rotations) {
+T FindKarcherMeanImpl(const std::vector<T, ALLOC>& rotations) {
+  static_assert(T::dimension != Eigen::Dynamic,
+                "FindKarcherMean requires fixed-size manifolds.");
   // Cost function C(R) = \sum PriorFactor(R_i)::error(R)
   // No closed form solution.
   NonlinearFactorGraph graph;
   static const Key kKey(0);
   for (const auto& R : rotations) {
-    graph.addPrior<T>(kKey, R);
+    graph.addPrior<T>(kKey, R, noiseModel::Unit::Create(R));
   }
   Values initial;
   initial.insert<T>(kKey, T());
@@ -40,8 +41,7 @@ T FindKarcherMeanImpl(const vector<T, ALLOC>& rotations) {
   return result.at<T>(kKey);
 }
 
-template <class T,
-        typename = typename std::enable_if< std::is_same<gtsam::Rot3, T>::value >::type >
+template <class T>
 T FindKarcherMean(const std::vector<T>& rotations) {
   return FindKarcherMeanImpl(rotations);
 }
@@ -59,7 +59,7 @@ T FindKarcherMean(std::initializer_list<T>&& rotations) {
 template <class T>
 template <typename CONTAINER>
 KarcherMeanFactor<T>::KarcherMeanFactor(const CONTAINER &keys, int d,
-                                        boost::optional<double> beta)
+                                        std::optional<double> beta)
     : NonlinearFactor(keys), d_(static_cast<size_t>(d)) {
   if (d <= 0) {
     throw std::invalid_argument(
@@ -74,6 +74,6 @@ KarcherMeanFactor<T>::KarcherMeanFactor(const CONTAINER &keys, int d,
     terms[j] = A;
   }
   whitenedJacobian_ =
-      boost::make_shared<JacobianFactor>(terms, Vector::Zero(d));
+      std::make_shared<JacobianFactor>(terms, Vector::Zero(d));
 }
 }  // namespace gtsam

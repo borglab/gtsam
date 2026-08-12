@@ -23,6 +23,8 @@
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
+#include <cassert>
+
 namespace gtsam {
 
   /* ************************************************************************* */
@@ -35,8 +37,7 @@ namespace gtsam {
     // Compute the marginal on the last key
     // Solve the linear factor graph, converting it into a linear Bayes Network
     // P(x0,x1) = P(x0|x1)*P(x1)
-    Ordering lastKeyAsOrdering;
-    lastKeyAsOrdering += lastKey;
+    const Ordering lastKeyAsOrdering{lastKey};
     const GaussianConditional::shared_ptr marginal =
       linearFactorGraph.marginalMultifrontalBayesNet(lastKeyAsOrdering)->front();
 
@@ -51,7 +52,7 @@ namespace gtsam {
     // and the key/index needs to be reset to 0, the first key in the next iteration.
     assert(marginal->nrFrontals() == 1);
     assert(marginal->nrParents() == 0);
-    *newPrior = boost::make_shared<JacobianFactor>(
+    *newPrior = std::make_shared<JacobianFactor>(
       marginal->keys().front(),
       marginal->getA(marginal->begin()),
       marginal->getb() - marginal->getA(marginal->begin()) * result[lastKey],
@@ -69,7 +70,7 @@ namespace gtsam {
     // Create a Jacobian Prior Factor directly P_initial.
     // Since x0 is set to the provided mean, the b vector in the prior will be zero
     // TODO(Frank): is there a reason why noiseModel is not simply P_initial?
-    int n = traits<T>::GetDimension(x_initial);
+    size_t n = traits<T>::GetDimension(x_initial);
     priorFactor_ = JacobianFactor::shared_ptr(
         new JacobianFactor(key_initial, P_initial->R(), Vector::Zero(n),
             noiseModel::Unit::Create(n)));

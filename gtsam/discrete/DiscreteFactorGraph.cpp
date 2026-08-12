@@ -14,6 +14,7 @@
  *  @date Feb 14, 2011
  *  @author Duy-Nguyen Ta
  *  @author Frank Dellaert
+ *  @author Varun Agrawal
  */
 
 #include <gtsam/discrete/DiscreteBayesTree.h>
@@ -35,13 +36,12 @@ namespace gtsam {
   template class FactorGraph<DiscreteFactor>;
   template class EliminateableFactorGraph<DiscreteFactorGraph>;
 
-  /* ************************************************************************* */
-  bool DiscreteFactorGraph::equals(const This& fg, double tol) const
-  {
+  /* ************************************************************************ */
+  bool DiscreteFactorGraph::equals(const This& fg, double tol) const {
     return Base::equals(fg, tol);
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   KeySet DiscreteFactorGraph::keys() const {
     KeySet keys;
     for (const sharedFactor& factor : *this) {
@@ -50,11 +50,11 @@ namespace gtsam {
     return keys;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   DiscreteKeys DiscreteFactorGraph::discreteKeys() const {
     DiscreteKeys result;
     for (auto&& factor : *this) {
-      if (auto p = boost::dynamic_pointer_cast<DecisionTreeFactor>(factor)) {
+      if (auto p = std::dynamic_pointer_cast<DiscreteFactor>(factor)) {
         DiscreteKeys factor_keys = p->discreteKeys();
         result.insert(result.end(), factor_keys.begin(), factor_keys.end());
       }
@@ -63,26 +63,34 @@ namespace gtsam {
     return result;
   }
 
-  /* ************************************************************************* */
-  DecisionTreeFactor DiscreteFactorGraph::product() const {
-    DecisionTreeFactor result;
-    for(const sharedFactor& factor: *this)
-      if (factor) result = (*factor) * result;
+  /* ************************************************************************ */
+  DiscreteFactor::shared_ptr DiscreteFactorGraph::product() const {
+    DiscreteFactor::shared_ptr result = nullptr;
+    for (const auto& factor : *this) {
+      if (factor) {
+        result = result ? result->multiply(factor) : factor;
+      }
+    }
+    if (result->max() == 0.0 && result->nrValues() == 1) {
+      throw std::runtime_error(
+          "Product factor is 0.0, possibly due to disjointed discrete "
+          "factors.");
+    }
     return result;
   }
 
-  /* ************************************************************************* */
-  double DiscreteFactorGraph::operator()(
-      const DiscreteValues &values) const {
+  /* ************************************************************************ */
+  double DiscreteFactorGraph::operator()(const DiscreteValues& values) const {
     double product = 1.0;
-    for( const sharedFactor& factor: factors_ )
-      product *= (*factor)(values);
+    for (const sharedFactor& factor : factors_) {
+      if (factor) product *= (*factor)(values);
+    }
     return product;
   }
 
-  /* ************************************************************************* */
+  /* ************************************************************************ */
   void DiscreteFactorGraph::print(const string& s,
-      const KeyFormatter& formatter) const {
+                                  const KeyFormatter& formatter) const {
     std::cout << s << std::endl;
     std::cout << "size: " << size() << std::endl;
     for (size_t i = 0; i < factors_.size(); i++) {
@@ -111,37 +119,37 @@ namespace gtsam {
 //  }
 
   /* ************************************************************************ */
+  DiscreteFactor::shared_ptr DiscreteFactorGraph::scaledProduct() const {
+    return product()->scale();
+  }
+
+  /* ************************************************************************ */
   // Alternate eliminate function for MPE
-  std::pair<DiscreteConditional::shared_ptr, DecisionTreeFactor::shared_ptr>  //
+  std::pair<DiscreteConditional::shared_ptr, DiscreteFactor::shared_ptr>  //
   EliminateForMPE(const DiscreteFactorGraph& factors,
                   const Ordering& frontalKeys) {
-    // PRODUCT: multiply all factors
-    gttic(product);
-    DecisionTreeFactor product;
-    for (auto&& factor : factors) product = (*factor) * product;
-    gttoc(product);
+    DiscreteFactor::shared_ptr product = factors.scaledProduct();
 
     // max out frontals, this is the factor on the separator
     gttic(max);
-    DecisionTreeFactor::shared_ptr max = product.max(frontalKeys);
+    DiscreteFactor::shared_ptr max = product->max(frontalKeys);
     gttoc(max);
 
     // Ordering keys for the conditional so that frontalKeys are really in front
     DiscreteKeys orderedKeys;
     for (auto&& key : frontalKeys)
-      orderedKeys.emplace_back(key, product.cardinality(key));
+      orderedKeys.emplace_back(key, product->cardinality(key));
     for (auto&& key : max->keys())
-      orderedKeys.emplace_back(key, product.cardinality(key));
+      orderedKeys.emplace_back(key, product->cardinality(key));
 
     // Make lookup with product
     gttic(lookup);
     size_t nrFrontals = frontalKeys.size();
-    auto lookup = boost::make_shared<DiscreteLookupTable>(nrFrontals,
-                                                          orderedKeys, product);
+    auto lookup = std::make_shared<DiscreteLookupTable>(
+        nrFrontals, orderedKeys, product->toDecisionTreeFactor());
     gttoc(lookup);
 
-    return std::make_pair(
-        boost::dynamic_pointer_cast<DiscreteConditional>(lookup), max);
+    return {std::dynamic_pointer_cast<DiscreteConditional>(lookup), max};
   }
 
   /* ************************************************************************ */
@@ -188,26 +196,24 @@ namespace gtsam {
     return dag.argmax();
   }
 
-  DiscreteValues DiscreteFactorGraph::optimize(
-      const Ordering& ordering) const {
+  DiscreteValues DiscreteFactorGraph::optimize(const Ordering& ordering) const {
     gttic(DiscreteFactorGraph_optimize);
     DiscreteLookupDAG dag = maxProduct(ordering);
     return dag.argmax();
   }
 
   /* ************************************************************************ */
-  std::pair<DiscreteConditional::shared_ptr, DecisionTreeFactor::shared_ptr>  //
+  std::pair<DiscreteConditional::shared_ptr, DiscreteFactor::shared_ptr>  //
   EliminateDiscrete(const DiscreteFactorGraph& factors,
                     const Ordering& frontalKeys) {
-    // PRODUCT: multiply all factors
     gttic(product);
-    DecisionTreeFactor product;
-    for (auto&& factor : factors) product = (*factor) * product;
+    // `product` is scaled later to prevent underflow.
+    DiscreteFactor::shared_ptr product = factors.scaledProduct();
     gttoc(product);
 
     // sum out frontals, this is the factor on the separator
     gttic(sum);
-    DecisionTreeFactor::shared_ptr sum = product.sum(frontalKeys);
+    DiscreteFactor::shared_ptr sum = product->sum(frontalKeys);
     gttoc(sum);
 
     // Ordering keys for the conditional so that frontalKeys are really in front
@@ -219,11 +225,12 @@ namespace gtsam {
 
     // now divide product/sum to get conditional
     gttic(divide);
-    auto conditional =
-        boost::make_shared<DiscreteConditional>(product, *sum, orderedKeys);
+    auto conditional = std::make_shared<DiscreteConditional>(
+        product->toDecisionTreeFactor(), sum->toDecisionTreeFactor(),
+        orderedKeys);
     gttoc(divide);
 
-    return std::make_pair(conditional, sum);
+    return {conditional, sum};
   }
 
   /* ************************************************************************ */

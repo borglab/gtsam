@@ -30,7 +30,10 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/nonlinear/GncOptimizer.h>
 #include <gtsam/nonlinear/LinearContainerFactor.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/slam/dataset.h>
+#include <gtsam/slam/KarcherMeanFactor.h>
+#include <gtsam/slam/KarcherMeanFactor-inl.h>
 #include <tests/smallExample.h>
 
 #include <gtsam/sam/BearingFactor.h>
@@ -42,6 +45,24 @@ using namespace gtsam;
 using symbol_shorthand::L;
 using symbol_shorthand::X;
 static double tol = 1e-7;
+
+/* ************************************************************************* */
+TEST(GncOptimizer, GncFactorType) {
+  GncFactorType null = GncFactorType::NullPointer;
+  CHECK(isNullType(null));
+
+  GncFactorType nonNoiseModel = GncFactorType::NonNoiseModel;
+  CHECK(isNonNoiseModelType(nonNoiseModel));
+
+  GncFactorType normal = GncFactorType::Normal;
+  CHECK(needsWeightUpdate(normal));
+
+  GncFactorType inlier = GncFactorType::Inlier;
+  GncFactorType outlier = GncFactorType::Outlier;
+  CHECK(hasNoise(normal));
+  CHECK(hasNoise(inlier));
+  CHECK(hasNoise(outlier));
+}
 
 /* ************************************************************************* */
 TEST(GncOptimizer, gncParamsConstructor) {
@@ -96,6 +117,30 @@ TEST(GncOptimizer, gncConstructor) {
 
   // check the equal works
   CHECK(gnc.equals(gnc2));
+}
+
+/* ************************************************************************* */
+TEST(GncOptimizer, solverParameterParsing) {
+  // has to have Gaussian noise models !
+  auto fg = example::createReallyNonlinearFactorGraph();  // just a unary factor
+                                                          // on a 2D point
+
+  Point2 p0(3, 3);
+  Values initial;
+  initial.insert(X(1), p0);
+
+  LevenbergMarquardtParams lmParams;
+  lmParams.setMaxIterations(0); // forces not to perform optimization
+  GncParams<LevenbergMarquardtParams> gncParams(lmParams);
+  auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial,
+                                                               gncParams);
+  Values result = gnc.optimize();
+
+  // check that LM did not perform optimization and result is the same as the initial guess
+  DOUBLES_EQUAL(fg.error(initial), fg.error(result), tol);
+
+  // also check the params:
+  DOUBLES_EQUAL(0.0, gncParams.baseOptimizerParams.maxIterations, tol);
 }
 
 /* ************************************************************************* */
@@ -186,6 +231,29 @@ TEST(GncOptimizer, updateMuTLS) {
 
   double mu = 5.0;
   EXPECT_DOUBLES_EQUAL(gnc.updateMu(mu), mu * 1.4, tol);
+}
+
+/* ************************************************************************* */
+TEST(GncOptimizer, updateMuTLSSuperLinear) {
+  // has to have Gaussian noise models !
+  auto fg = example::createReallyNonlinearFactorGraph();
+
+  Point2 p0(3, 3);
+  Values initial;
+  initial.insert(X(1), p0);
+
+  GncParams<LevenbergMarquardtParams> gncParams;
+  gncParams.setMuStep(4.0);
+  gncParams.setLossType(GncLossType::TLS);
+  gncParams.setScheduler(GncScheduler::SuperLinear);
+  auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial,
+                                                               gncParams);
+
+  double mu = 0.25;
+  EXPECT_DOUBLES_EQUAL(gnc.updateMu(mu), 2.0, tol);
+
+  mu = 5.0;
+  EXPECT_DOUBLES_EQUAL(gnc.updateMu(mu), 20.0, tol);
 }
 
 /* ************************************************************************* */
@@ -385,6 +453,31 @@ TEST(GncOptimizer, calculateWeightsTLS) {
 }
 
 /* ************************************************************************* */
+TEST(GncOptimizer, calculateWeightsTLSSuperLinear) {
+  auto fg = example::sharedNonRobustFactorGraphWithOutliers();
+
+  Point2 p0(0, 0);
+  Values initial;
+  initial.insert(X(1), p0);
+
+  // we have 4 factors, 3 with zero errors (inliers), 1 with error
+  Vector weights_expected = Vector::Zero(4);
+  weights_expected[0] = 1.0;                             // zero error
+  weights_expected[1] = 1.0;                             // zero error
+  weights_expected[2] = 1.0;                             // zero error
+  weights_expected[3] = 0;                               // outliers
+
+  GaussNewtonParams gnParams;
+  GncParams<GaussNewtonParams> gncParams(gnParams);
+  gncParams.setLossType(GncLossType::TLS);
+  gncParams.setScheduler(GncScheduler::SuperLinear);
+  auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
+  double mu = 1.0;
+  Vector weights_actual = gnc.calculateWeights(initial, mu);
+  CHECK(assert_equal(weights_expected, weights_actual, tol));
+}
+
+/* ************************************************************************* */
 TEST(GncOptimizer, calculateWeightsTLS2) {
 
   // create values
@@ -450,6 +543,79 @@ TEST(GncOptimizer, calculateWeightsTLS2) {
     double mu = 1e6;  // very large mu recovers original TLS cost
     Vector weights_actual = gnc.calculateWeights(initial, mu);
     CHECK(assert_equal(weights_expected, weights_actual, 1e-5));
+  }
+}
+
+/* ************************************************************************* */
+TEST(GncOptimizer, calculateWeightsTLSSuperLinear2) {
+
+  // create values
+  Point2 x_val(0.0, 0.0);
+  Point2 x_prior(1.0, 0.0);
+  Values initial;
+  initial.insert(X(1), x_val);
+
+  // create very simple factor graph with a single factor 0.5 * 1/sigma^2 * || x - [1;0] ||^2
+  double sigma = 1;
+  SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(sigma, sigma));
+  NonlinearFactorGraph nfg;
+  nfg.add(PriorFactor<Point2>(X(1), x_prior, noise));
+
+  // cost of the factor:
+  DOUBLES_EQUAL(0.5 * 1 / (sigma * sigma), nfg.error(initial), tol);
+
+  // check the TLS weights are correct: CASE 1: residual below barcsq
+  {
+    // expected:
+    Vector weights_expected = Vector::Zero(1);
+    weights_expected[0] = 1.0;  // inlier
+    // actual:
+    GaussNewtonParams gnParams;
+    GncParams<GaussNewtonParams> gncParams(gnParams);
+    gncParams.setLossType(GncLossType::TLS);
+    gncParams.setScheduler(GncScheduler::SuperLinear);
+    auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial,
+                                                          gncParams);
+    gnc.setInlierCostThresholds(0.51);  // if inlier threshold is slightly larger than 0.5, then measurement is inlier
+
+    double mu = 1e6;
+    Vector weights_actual = gnc.calculateWeights(initial, mu);
+    CHECK(assert_equal(weights_expected, weights_actual, tol));
+  }
+  // check the TLS weights are correct: CASE 2: residual above barcsq
+  {
+    // expected:
+    Vector weights_expected = Vector::Zero(1);
+    weights_expected[0] = 0.0;  // outlier
+    // actual:
+    GaussNewtonParams gnParams;
+    GncParams<GaussNewtonParams> gncParams(gnParams);
+    gncParams.setLossType(GncLossType::TLS);
+    gncParams.setScheduler(GncScheduler::SuperLinear);
+    auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial,
+                                                          gncParams);
+    gnc.setInlierCostThresholds(0.49);  // if inlier threshold is slightly below 0.5, then measurement is outlier
+    double mu = 1e6;
+    Vector weights_actual = gnc.calculateWeights(initial, mu);
+    CHECK(assert_equal(weights_expected, weights_actual, tol));
+  }
+  // check the TLS weights are correct: CASE 3: residual in transition region
+  {
+    // expected:
+    Vector weights_expected = Vector::Zero(1);
+    double barcSq = 0.4;
+    double mu = 1.0;
+    weights_expected[0] = std::sqrt(barcSq / 0.5) * (mu + 1.0) - mu;
+    // actual:
+    GaussNewtonParams gnParams;
+    GncParams<GaussNewtonParams> gncParams(gnParams);
+    gncParams.setLossType(GncLossType::TLS);
+    gncParams.setScheduler(GncScheduler::SuperLinear);
+    auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial,
+                                                          gncParams);
+    gnc.setInlierCostThresholds(barcSq);
+    Vector weights_actual = gnc.calculateWeights(initial, mu);
+    CHECK(assert_equal(weights_expected, weights_actual, tol));
   }
 }
 
@@ -543,7 +709,7 @@ TEST(GncOptimizer, optimizeWithKnownInliers) {
   Values initial;
   initial.insert(X(1), p0);
 
-  std::vector<size_t> knownInliers;
+  GncParams<GaussNewtonParams>::IndexVector knownInliers;
   knownInliers.push_back(0);
   knownInliers.push_back(1);
   knownInliers.push_back(2);
@@ -620,7 +786,7 @@ TEST(GncOptimizer, barcsq) {
   Values initial;
   initial.insert(X(1), p0);
 
-  std::vector<size_t> knownInliers;
+  GncParams<GaussNewtonParams>::IndexVector knownInliers;
   knownInliers.push_back(0);
   knownInliers.push_back(1);
   knownInliers.push_back(2);
@@ -660,6 +826,62 @@ TEST(GncOptimizer, barcsq_heterogeneousFactors) {
 }
 
 /* ************************************************************************* */
+TEST(GncOptimizer, nonNoiseFactorBehavior) {
+  NonlinearFactorGraph nfg;
+  SharedNoiseModel pose_noise = noiseModel::Isotropic::Sigma(6, 0.5);
+  nfg.add(PriorFactor<Pose3>(X(0), Pose3(), pose_noise));
+
+  KeyVector keys;
+  keys.push_back(X(0));
+  keys.push_back(X(1));
+  nfg.emplace_shared<KarcherMeanFactor<Pose3>>(keys, 6, 1000.0);
+
+  Values initial;
+  initial.insert(X(0), Pose3(Rot3(), Point3(7.0, 0.0, 0.0)));
+  initial.insert(X(1), Pose3());
+
+  GncParams<LevenbergMarquardtParams> gncParams;
+  gncParams.setLossType(GncLossType::GM);
+  gncParams.setAllowNonNoiseModelFactors(true);
+  GncParams<LevenbergMarquardtParams>::IndexVector knownInliers;
+  knownInliers.push_back(1);
+  knownInliers.push_back(
+      1);  // duplicate should still keep factor 1 as non-noise
+  gncParams.setKnownInliers(knownInliers);
+  auto gnc = GncOptimizer<GncParams<LevenbergMarquardtParams>>(nfg, initial,
+                                                               gncParams);
+
+  // check if the weight is carried correctly and non noise model factor is
+  // unchanged
+  Vector weights = Vector::Ones(nfg.size());
+  weights[1] = 0.0;
+  NonlinearFactorGraph weighted = gnc.makeWeightedGraph(weights);
+  CHECK(!weighted.at<NoiseModelFactor>(1));
+  CHECK(weighted.at<NoiseModelFactor>(0));
+  CHECK(weighted.at(1).get() == nfg.at(1).get());
+
+  // checks if knownInliers (our non noise model factor) is not reweighted
+  double mu = 1.5;
+  double expectedWeight = 1.0;
+  Vector w = gnc.calculateWeights(initial, mu);
+  DOUBLES_EQUAL(expectedWeight, w[1], tol);
+  CHECK(w[0] < 1.0);
+
+  // checks if non noise model factors are ignored is calculating mu
+  double err0 = gnc.getFactors().at(0)->error(initial);
+  Vector barcSq = gnc.getInlierCostThresholds();
+  double expectedMu = 2.0 * err0 / barcSq[0];
+  EXPECT_DOUBLES_EQUAL(expectedMu, gnc.initializeMu(), 1e-6);
+
+  // checks if gnc optimization runs and keeps the non noise model factor weight
+  // fixed at 1
+  Values result = gnc.optimize();
+  CHECK(result.exists(X(0)));
+  Vector finalWeights = gnc.getWeights();
+  DOUBLES_EQUAL(1.0, finalWeights[1], tol);
+}
+
+/* ************************************************************************* */
 TEST(GncOptimizer, setInlierCostThresholds) {
   auto fg = example::sharedNonRobustFactorGraphWithOutliers();
 
@@ -667,7 +889,7 @@ TEST(GncOptimizer, setInlierCostThresholds) {
   Values initial;
   initial.insert(X(1), p0);
 
-  std::vector<size_t> knownInliers;
+  GncParams<GaussNewtonParams>::IndexVector knownInliers;
   knownInliers.push_back(0);
   knownInliers.push_back(1);
   knownInliers.push_back(2);
@@ -713,9 +935,7 @@ TEST(GncOptimizer, setInlierCostThresholds) {
 TEST(GncOptimizer, optimizeSmallPoseGraph) {
   /// load small pose graph
   const string filename = findExampleDataFile("w100.graph");
-  NonlinearFactorGraph::shared_ptr graph;
-  Values::shared_ptr initial;
-  boost::tie(graph, initial) = load2D(filename);
+  const auto [graph, initial] = load2D(filename);
   // Add a Gaussian prior on first poses
   Pose2 priorMean(0.0, 0.0, 0.0);  // prior at origin
   SharedDiagonal priorNoise = noiseModel::Diagonal::Sigmas(
@@ -728,7 +948,8 @@ TEST(GncOptimizer, optimizeSmallPoseGraph) {
   // add a few outliers
   SharedDiagonal betweenNoise = noiseModel::Diagonal::Sigmas(
       Vector3(0.1, 0.1, 0.01));
-  graph->push_back(BetweenFactor<Pose2>(90, 50, Pose2(), betweenNoise));  // some arbitrary and incorrect between factor
+  // some arbitrary and incorrect between factor
+  graph->push_back(BetweenFactor<Pose2>(90, 50, Pose2(), betweenNoise));
 
   /// get expected values by optimizing outlier-free graph
   Values expectedWithOutliers = LevenbergMarquardtOptimizer(*graph, *initial)
@@ -737,9 +958,9 @@ TEST(GncOptimizer, optimizeSmallPoseGraph) {
   // CHECK(assert_equal(expected, expectedWithOutliers, 1e-3));
 
   // GNC
-  // Note: in difficult instances, we set the odometry measurements to be
-  // inliers, but this problem is simple enought to succeed even without that
-  // assumption std::vector<size_t> knownInliers;
+  // NOTE: in difficult instances, we set the odometry measurements to be
+  // inliers, but this problem is simple enough to succeed even without that
+  // assumption.
   GncParams<GaussNewtonParams> gncParams;
   auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(*graph, *initial,
                                                         gncParams);
@@ -760,12 +981,12 @@ TEST(GncOptimizer, knownInliersAndOutliers) {
   // nonconvexity with known inliers and known outliers (check early stopping
   // when all measurements are known to be inliers or outliers)
   {
-    std::vector<size_t> knownInliers;
+    GncParams<GaussNewtonParams>::IndexVector knownInliers;
     knownInliers.push_back(0);
     knownInliers.push_back(1);
     knownInliers.push_back(2);
 
-    std::vector<size_t> knownOutliers;
+    GncParams<GaussNewtonParams>::IndexVector knownOutliers;
     knownOutliers.push_back(3);
 
     GncParams<GaussNewtonParams> gncParams;
@@ -789,11 +1010,11 @@ TEST(GncOptimizer, knownInliersAndOutliers) {
 
   // nonconvexity with known inliers and known outliers
   {
-    std::vector<size_t> knownInliers;
+    GncParams<GaussNewtonParams>::IndexVector knownInliers;
     knownInliers.push_back(2);
     knownInliers.push_back(0);
 
-    std::vector<size_t> knownOutliers;
+    GncParams<GaussNewtonParams>::IndexVector knownOutliers;
     knownOutliers.push_back(3);
 
     GncParams<GaussNewtonParams> gncParams;
@@ -817,7 +1038,7 @@ TEST(GncOptimizer, knownInliersAndOutliers) {
 
   // only known outliers
   {
-    std::vector<size_t> knownOutliers;
+    GncParams<GaussNewtonParams>::IndexVector knownOutliers;
     knownOutliers.push_back(3);
 
     GncParams<GaussNewtonParams> gncParams;
@@ -892,11 +1113,11 @@ TEST(GncOptimizer, setWeights) {
   // initialize weights and also set known inliers/outliers
   {
     GncParams<GaussNewtonParams> gncParams;
-    std::vector<size_t> knownInliers;
+    GncParams<GaussNewtonParams>::IndexVector knownInliers;
     knownInliers.push_back(2);
     knownInliers.push_back(0);
 
-    std::vector<size_t> knownOutliers;
+    GncParams<GaussNewtonParams>::IndexVector knownOutliers;
     knownOutliers.push_back(3);
     gncParams.setKnownInliers(knownInliers);
     gncParams.setKnownOutliers(knownOutliers);

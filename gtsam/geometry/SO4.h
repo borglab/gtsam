@@ -49,11 +49,7 @@ Vector6 SO4::Vee(const Matrix4 &X);
 
 template <>
 GTSAM_EXPORT
-SO4 SO4::Expmap(const Vector6 &xi, ChartJacobian H);
-
-template <>
-GTSAM_EXPORT
-Matrix6 SO4::AdjointMap() const;
+SO4 SO4::Expmap(const Vector6 &xi);
 
 template <>
 GTSAM_EXPORT
@@ -61,25 +57,26 @@ SO4::VectorN2 SO4::vec(OptionalJacobian<16, 6> H) const;
 
 template <>
 GTSAM_EXPORT
-SO4 SO4::ChartAtOrigin::Retract(const Vector6 &omega, ChartJacobian H);
+SO4 SO4::ChartAtOrigin::Retract(const Vector6 &omega);
 
 template <>
 GTSAM_EXPORT
-Vector6 SO4::ChartAtOrigin::Local(const SO4 &Q, ChartJacobian H);
+Vector6 SO4::ChartAtOrigin::Local(const SO4 &Q);
 
 /**
  * Project to top-left 3*3 matrix. Note this is *not* in general \in SO(3).
  */
-GTSAM_EXPORT Matrix3 topLeft(const SO4 &Q, OptionalJacobian<9, 6> H = boost::none);
+GTSAM_EXPORT Matrix3 topLeft(const SO4 &Q, OptionalJacobian<9, 6> H = {});
 
 /**
  * Project to Stiefel manifold of 4*3 orthonormal 3-frames in R^4, i.e., pi(Q)
- * -> S \in St(3,4).
+ * -> \f$ S \in St(3,4) \f$.
  */
-GTSAM_EXPORT Matrix43 stiefel(const SO4 &Q, OptionalJacobian<12, 6> H = boost::none);
+GTSAM_EXPORT Matrix43 stiefel(const SO4 &Q, OptionalJacobian<12, 6> H = {});
 
-/** Serialization function */
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 template <class Archive>
+/** Serialization function */
 void serialize(Archive &ar, SO4 &Q, const unsigned int /*version*/) {
   Matrix4 &M = Q.matrix_;
   ar &boost::serialization::make_nvp("Q11", M(0, 0));
@@ -102,15 +99,16 @@ void serialize(Archive &ar, SO4 &Q, const unsigned int /*version*/) {
   ar &boost::serialization::make_nvp("Q43", M(3, 2));
   ar &boost::serialization::make_nvp("Q44", M(3, 3));
 }
+#endif
 
 /*
- * Define the traits. internal::LieGroup provides both Lie group and Testable
+ * Define the traits. internal::MatrixLieGroup provides both Lie group and Testable
  */
 
 template <>
-struct traits<SO4> : public internal::LieGroup<SO4> {};
+struct traits<SO4> : public internal::MatrixLieGroup<SO4, 4> {};
 
 template <>
-struct traits<const SO4> : public internal::LieGroup<SO4> {};
+struct traits<const SO4> : public internal::MatrixLieGroup<SO4, 4> {};
 
 }  // end namespace gtsam

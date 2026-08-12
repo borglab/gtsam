@@ -37,9 +37,9 @@ using namespace gtsam;
 //******************************************************************************
 namespace so3 {
 SO3 id;
-Vector3 v1 = (Vector(3) << 0.1, 0, 0).finished();
+Vector3 v1{0.1, 0, 0};
 SO3 R1 = SO3::Expmap(v1);
-Vector3 v2 = (Vector(3) << 0.01, 0.02, 0.03).finished();
+Vector3 v2{0.01, 0.02, 0.03};
 SO3 R2 = SO3::Expmap(v2);
 SO3 R12 = R1.between(R2);
 } // namespace so3
@@ -47,10 +47,10 @@ SO3 R12 = R1.between(R2);
 //******************************************************************************
 namespace submanifold {
 SO4 id;
-Vector6 v1 = (Vector(6) << 0, 0, 0, 0.1, 0, 0).finished();
+Vector6 v1{0, 0, 0, 0.1, 0, 0};
 SO3 R1 = SO3::Expmap(v1.tail<3>());
 SO4 Q1 = SO4::Expmap(v1);
-Vector6 v2 = (Vector(6) << 0, 0, 0, 0.01, 0.02, 0.03).finished();
+Vector6 v2{0, 0, 0, 0.01, 0.02, 0.03};
 SO3 R2 = SO3::Expmap(v2.tail<3>());
 SO4 Q2 = SO4::Expmap(v2);
 SO3 R12 = R1.between(R2);
@@ -81,7 +81,7 @@ TEST(ShonanFactor3, evaluateError) {
 TEST(ShonanFactor3, equivalenceToSO3) {
   using namespace ::submanifold;
   auto R12 = ::so3::R12.retract(Vector3(0.1, 0.2, -0.1));
-  auto model = noiseModel::Isotropic::Sigma(6, 1.2); // wrong dimension
+  auto model = noiseModel::Isotropic::Sigma(3, 1.2);
   auto factor3 = FrobeniusBetweenFactor<SO3>(1, 2, R12, model);
   auto factor4 = ShonanFactor3(1, 2, Rot3(R12.matrix()), 4, model);
   const Matrix3 E3(factor3.evaluateError(R1, R2).data());

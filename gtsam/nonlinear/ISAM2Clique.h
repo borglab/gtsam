@@ -38,8 +38,8 @@ class GTSAM_EXPORT ISAM2Clique
  public:
   typedef ISAM2Clique This;
   typedef BayesTreeCliqueBase<This, GaussianFactorGraph> Base;
-  typedef boost::shared_ptr<This> shared_ptr;
-  typedef boost::weak_ptr<This> weak_ptr;
+  typedef std::shared_ptr<This> shared_ptr;
+  typedef std::weak_ptr<This> weak_ptr;
   typedef GaussianConditional ConditionalType;
   typedef ConditionalType::shared_ptr sharedConditional;
 
@@ -51,7 +51,6 @@ class GTSAM_EXPORT ISAM2Clique
 
   /// Default constructor
   ISAM2Clique() : Base() {}
-  virtual ~ISAM2Clique() = default;
 
   /// Copy constructor, does *not* copy solution pointers as these are invalid
   /// in different trees.
@@ -121,6 +120,12 @@ class GTSAM_EXPORT ISAM2Clique
   void findAll(const KeySet& markedMask, KeySet* keys) const;
 
  private:
+  friend class ISAM2;
+
+  /// Recursively add gradient at zero to g and report constrained conditionals.
+  void addGradientAtZero(VectorValues* g,
+                         bool* hasConstrainedConditional) const;
+
   /**
    * Check if clique was replaced, or if any parents were changed above the
    * threshold or themselves replaced.
@@ -147,6 +152,7 @@ class GTSAM_EXPORT ISAM2Clique
   void restoreFromOriginals(const Vector& originalValues,
                             VectorValues* delta) const;
 
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
   template <class ARCHIVE>
@@ -155,6 +161,7 @@ class GTSAM_EXPORT ISAM2Clique
     ar& BOOST_SERIALIZATION_NVP(cachedFactor_);
     ar& BOOST_SERIALIZATION_NVP(gradientContribution_);
   }
+#endif
 };  // \struct ISAM2Clique
 
 /**

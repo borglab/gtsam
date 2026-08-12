@@ -15,6 +15,15 @@
 // tolerance for chekcing number of iterations
 #define LM_EVAL_COUNT_TOL 4/3
 
+#define LM_CHECK_N_ITERS(SOLVER,NFEV,NJEV) { \
+            ++g_test_level; \
+            VERIFY_IS_EQUAL(SOLVER.nfev, NFEV); \
+            VERIFY_IS_EQUAL(SOLVER.njev, NJEV); \
+            --g_test_level; \
+            VERIFY(SOLVER.nfev <= NFEV * LM_EVAL_COUNT_TOL); \
+            VERIFY(SOLVER.njev <= NJEV * LM_EVAL_COUNT_TOL); \
+        }
+
 int fcn_chkder(const VectorXd &x, VectorXd &fvec, MatrixXd &fjac, int iflag)
 {
     /*      subroutine fcn for chkder example. */
@@ -180,8 +189,7 @@ void testLmder1()
 
   // check return value
   VERIFY_IS_EQUAL(info, 1);
-  VERIFY_IS_EQUAL(lm.nfev, 6);
-  VERIFY_IS_EQUAL(lm.njev, 5);
+  LM_CHECK_N_ITERS(lm, 6, 5);
 
   // check norm
   VERIFY_IS_APPROX(lm.fvec.blueNorm(), 0.09063596);
@@ -209,8 +217,7 @@ void testLmder()
 
   // check return values
   VERIFY_IS_EQUAL(info, 1);
-  VERIFY_IS_EQUAL(lm.nfev, 6);
-  VERIFY_IS_EQUAL(lm.njev, 5);
+  LM_CHECK_N_ITERS(lm, 6, 5);
 
   // check norm
   fnorm = lm.fvec.blueNorm();
@@ -294,8 +301,7 @@ void testHybrj1()
 
   // check return value
   VERIFY_IS_EQUAL(info, 1);
-  VERIFY_IS_EQUAL(solver.nfev, 11);
-  VERIFY_IS_EQUAL(solver.njev, 1);
+  LM_CHECK_N_ITERS(solver, 11, 1);
 
   // check norm
   VERIFY_IS_APPROX(solver.fvec.blueNorm(), 1.192636e-08);
@@ -329,8 +335,7 @@ void testHybrj()
 
   // check return value
   VERIFY_IS_EQUAL(info, 1);
-  VERIFY_IS_EQUAL(solver.nfev, 11);
-  VERIFY_IS_EQUAL(solver.njev, 1);
+  LM_CHECK_N_ITERS(solver, 11, 1);
 
   // check norm
   VERIFY_IS_APPROX(solver.fvec.blueNorm(), 1.192636e-08);
@@ -485,8 +490,7 @@ void testLmstr1()
 
   // check return value
   VERIFY_IS_EQUAL(info, 1);
-  VERIFY_IS_EQUAL(lm.nfev, 6);
-  VERIFY_IS_EQUAL(lm.njev, 5);
+  LM_CHECK_N_ITERS(lm, 6, 5);
 
   // check norm
   VERIFY_IS_APPROX(lm.fvec.blueNorm(), 0.09063596);
@@ -514,8 +518,7 @@ void testLmstr()
 
   // check return values
   VERIFY_IS_EQUAL(info, 1);
-  VERIFY_IS_EQUAL(lm.nfev, 6);
-  VERIFY_IS_EQUAL(lm.njev, 5);
+  LM_CHECK_N_ITERS(lm, 6, 5);
 
   // check norm
   fnorm = lm.fvec.blueNorm();
@@ -686,8 +689,7 @@ void testNistChwirut2(void)
 
   // check return value
   VERIFY_IS_EQUAL(info, 1);
-  VERIFY_IS_EQUAL(lm.nfev, 10);
-  VERIFY_IS_EQUAL(lm.njev, 8);
+  LM_CHECK_N_ITERS(lm, 10, 8);
   // check norm^2
   VERIFY_IS_APPROX(lm.fvec.squaredNorm(), 5.1304802941E+02);
   // check x
@@ -707,8 +709,7 @@ void testNistChwirut2(void)
 
   // check return value
   VERIFY_IS_EQUAL(info, 1);
-  VERIFY_IS_EQUAL(lm.nfev, 7);
-  VERIFY_IS_EQUAL(lm.njev, 6);
+  LM_CHECK_N_ITERS(lm, 7, 6);
   // check norm^2
   VERIFY_IS_APPROX(lm.fvec.squaredNorm(), 5.1304802941E+02);
   // check x
@@ -766,8 +767,7 @@ void testNistMisra1a(void)
 
   // check return value
   VERIFY_IS_EQUAL(info, 1);
-  VERIFY_IS_EQUAL(lm.nfev, 19);
-  VERIFY_IS_EQUAL(lm.njev, 15);
+  LM_CHECK_N_ITERS(lm, 19, 15);
   // check norm^2
   VERIFY_IS_APPROX(lm.fvec.squaredNorm(), 1.2455138894E-01);
   // check x
@@ -783,8 +783,7 @@ void testNistMisra1a(void)
 
   // check return value
   VERIFY_IS_EQUAL(info, 1);
-  VERIFY_IS_EQUAL(lm.nfev, 5);
-  VERIFY_IS_EQUAL(lm.njev, 4);
+  LM_CHECK_N_ITERS(lm, 5, 4);
   // check norm^2
   VERIFY_IS_APPROX(lm.fvec.squaredNorm(), 1.2455138894E-01);
   // check x
@@ -856,8 +855,7 @@ void testNistHahn1(void)
 
   // check return value
   VERIFY_IS_EQUAL(info, 1);
-  VERIFY_IS_EQUAL(lm.nfev, 11);
-  VERIFY_IS_EQUAL(lm.njev, 10);
+  LM_CHECK_N_ITERS(lm, 11, 10);
   // check norm^2
   VERIFY_IS_APPROX(lm.fvec.squaredNorm(), 1.5324382854E+00);
   // check x
@@ -878,8 +876,7 @@ void testNistHahn1(void)
 
   // check return value
   VERIFY_IS_EQUAL(info, 1);
-  VERIFY_IS_EQUAL(lm.nfev, 11);
-  VERIFY_IS_EQUAL(lm.njev, 10);
+  LM_CHECK_N_ITERS(lm, 11, 10);
   // check norm^2
   VERIFY_IS_APPROX(lm.fvec.squaredNorm(), 1.5324382854E+00);
   // check x
@@ -942,8 +939,7 @@ void testNistMisra1d(void)
 
   // check return value
   VERIFY_IS_EQUAL(info, 3);
-  VERIFY_IS_EQUAL(lm.nfev, 9);
-  VERIFY_IS_EQUAL(lm.njev, 7);
+  LM_CHECK_N_ITERS(lm, 9, 7);
   // check norm^2
   VERIFY_IS_APPROX(lm.fvec.squaredNorm(), 5.6419295283E-02);
   // check x
@@ -959,8 +955,7 @@ void testNistMisra1d(void)
 
   // check return value
   VERIFY_IS_EQUAL(info, 1);
-  VERIFY_IS_EQUAL(lm.nfev, 4);
-  VERIFY_IS_EQUAL(lm.njev, 3);
+  LM_CHECK_N_ITERS(lm, 4, 3);
   // check norm^2
   VERIFY_IS_APPROX(lm.fvec.squaredNorm(), 5.6419295283E-02);
   // check x
@@ -1020,8 +1015,7 @@ void testNistLanczos1(void)
 
   // check return value
   VERIFY_IS_EQUAL(info, 2);
-  VERIFY_IS_EQUAL(lm.nfev, 79);
-  VERIFY_IS_EQUAL(lm.njev, 72);
+  LM_CHECK_N_ITERS(lm, 79, 72);
   // check norm^2
   std::cout.precision(30);
   std::cout << lm.fvec.squaredNorm() << "\n";
@@ -1043,8 +1037,7 @@ void testNistLanczos1(void)
 
   // check return value
   VERIFY_IS_EQUAL(info, 2);
-  VERIFY_IS_EQUAL(lm.nfev, 9);
-  VERIFY_IS_EQUAL(lm.njev, 8);
+  LM_CHECK_N_ITERS(lm, 9, 8);
   // check norm^2
   VERIFY(lm.fvec.squaredNorm() <= 1.4307867721E-25);
   // check x
@@ -1108,8 +1101,7 @@ void testNistRat42(void)
 
   // check return value
   VERIFY_IS_EQUAL(info, 1);
-  VERIFY_IS_EQUAL(lm.nfev, 10);
-  VERIFY_IS_EQUAL(lm.njev, 8);
+  LM_CHECK_N_ITERS(lm, 10, 8);
   // check norm^2
   VERIFY_IS_APPROX(lm.fvec.squaredNorm(), 8.0565229338E+00);
   // check x
@@ -1126,8 +1118,7 @@ void testNistRat42(void)
 
   // check return value
   VERIFY_IS_EQUAL(info, 1);
-  VERIFY_IS_EQUAL(lm.nfev, 6);
-  VERIFY_IS_EQUAL(lm.njev, 5);
+  LM_CHECK_N_ITERS(lm, 6, 5);
   // check norm^2
   VERIFY_IS_APPROX(lm.fvec.squaredNorm(), 8.0565229338E+00);
   // check x
@@ -1186,8 +1177,7 @@ void testNistMGH10(void)
 
   // check return value
   VERIFY_IS_EQUAL(info, 2); 
-  VERIFY_IS_EQUAL(lm.nfev, 284 ); 
-  VERIFY_IS_EQUAL(lm.njev, 249 ); 
+  LM_CHECK_N_ITERS(lm, 284, 249); 
   // check norm^2
   VERIFY_IS_APPROX(lm.fvec.squaredNorm(), 8.7945855171E+01);
   // check x
@@ -1204,8 +1194,7 @@ void testNistMGH10(void)
 
   // check return value
   VERIFY_IS_EQUAL(info, 3);
-  VERIFY_IS_EQUAL(lm.nfev, 126);
-  VERIFY_IS_EQUAL(lm.njev, 116);
+  LM_CHECK_N_ITERS(lm, 126, 116);
   // check norm^2
   VERIFY_IS_APPROX(lm.fvec.squaredNorm(), 8.7945855171E+01);
   // check x
@@ -1265,8 +1254,7 @@ void testNistBoxBOD(void)
 
   // check return value
   VERIFY_IS_EQUAL(info, 1);
-  VERIFY(lm.nfev < 31); // 31
-  VERIFY(lm.njev < 25); // 25
+  LM_CHECK_N_ITERS(lm, 31, 25);
   // check norm^2
   VERIFY_IS_APPROX(lm.fvec.squaredNorm(), 1.1680088766E+03);
   // check x
@@ -1284,9 +1272,8 @@ void testNistBoxBOD(void)
   info = lm.minimize(x);
 
   // check return value
-  VERIFY_IS_EQUAL(info, 1); 
-  VERIFY_IS_EQUAL(lm.nfev, 15 ); 
-  VERIFY_IS_EQUAL(lm.njev, 14 ); 
+  VERIFY_IS_EQUAL(info, 1);
+  LM_CHECK_N_ITERS(lm, 15, 14);
   // check norm^2
   VERIFY_IS_APPROX(lm.fvec.squaredNorm(), 1.1680088766E+03);
   // check x
@@ -1356,12 +1343,7 @@ void testNistMGH17(void)
   
   // check return value
   VERIFY_IS_EQUAL(info, 2); 
-  ++g_test_level;
-  VERIFY_IS_EQUAL(lm.nfev, 602);  // 602
-  VERIFY_IS_EQUAL(lm.njev, 545);  // 545
-  --g_test_level;
-  VERIFY(lm.nfev < 602 * LM_EVAL_COUNT_TOL);
-  VERIFY(lm.njev < 545 * LM_EVAL_COUNT_TOL);
+  LM_CHECK_N_ITERS(lm, 602, 545);
 
   /*
    * Second try
@@ -1373,8 +1355,7 @@ void testNistMGH17(void)
 
   // check return value
   VERIFY_IS_EQUAL(info, 1);
-  VERIFY_IS_EQUAL(lm.nfev, 18);
-  VERIFY_IS_EQUAL(lm.njev, 15);
+  LM_CHECK_N_ITERS(lm, 18, 15);
   // check norm^2
   VERIFY_IS_APPROX(lm.fvec.squaredNorm(), 5.4648946975E-05);
   // check x
@@ -1438,9 +1419,8 @@ void testNistMGH09(void)
   info = lm.minimize(x);
 
   // check return value
-  VERIFY_IS_EQUAL(info, 1); 
-  VERIFY_IS_EQUAL(lm.nfev, 490 ); 
-  VERIFY_IS_EQUAL(lm.njev, 376 ); 
+  VERIFY_IS_EQUAL(info, 1);
+  LM_CHECK_N_ITERS(lm, 490, 376);
   // check norm^2
   VERIFY_IS_APPROX(lm.fvec.squaredNorm(), 3.0750560385E-04);
   // check x
@@ -1459,8 +1439,7 @@ void testNistMGH09(void)
 
   // check return value
   VERIFY_IS_EQUAL(info, 1);
-  VERIFY_IS_EQUAL(lm.nfev, 18);
-  VERIFY_IS_EQUAL(lm.njev, 16);
+  LM_CHECK_N_ITERS(lm, 18, 16);
   // check norm^2
   VERIFY_IS_APPROX(lm.fvec.squaredNorm(), 3.0750560385E-04);
   // check x
@@ -1525,8 +1504,7 @@ void testNistBennett5(void)
 
   // check return value
   VERIFY_IS_EQUAL(info, 1);
-  VERIFY_IS_EQUAL(lm.nfev, 758);
-  VERIFY_IS_EQUAL(lm.njev, 744);
+  LM_CHECK_N_ITERS(lm, 758, 744);
   // check norm^2
   VERIFY_IS_APPROX(lm.fvec.squaredNorm(), 5.2404744073E-04);
   // check x
@@ -1543,8 +1521,7 @@ void testNistBennett5(void)
 
   // check return value
   VERIFY_IS_EQUAL(info, 1);
-  VERIFY_IS_EQUAL(lm.nfev, 203);
-  VERIFY_IS_EQUAL(lm.njev, 192);
+  LM_CHECK_N_ITERS(lm, 203, 192);
   // check norm^2
   VERIFY_IS_APPROX(lm.fvec.squaredNorm(), 5.2404744073E-04);
   // check x
@@ -1613,8 +1590,7 @@ void testNistThurber(void)
 
   // check return value
   VERIFY_IS_EQUAL(info, 1);
-  VERIFY_IS_EQUAL(lm.nfev, 39);
-  VERIFY_IS_EQUAL(lm.njev, 36);
+  LM_CHECK_N_ITERS(lm, 39,36);
   // check norm^2
   VERIFY_IS_APPROX(lm.fvec.squaredNorm(), 5.6427082397E+03);
   // check x
@@ -1638,8 +1614,7 @@ void testNistThurber(void)
 
   // check return value
   VERIFY_IS_EQUAL(info, 1);
-  VERIFY_IS_EQUAL(lm.nfev, 29);
-  VERIFY_IS_EQUAL(lm.njev, 28);
+  LM_CHECK_N_ITERS(lm, 29, 28);
   // check norm^2
   VERIFY_IS_APPROX(lm.fvec.squaredNorm(), 5.6427082397E+03);
   // check x
@@ -1705,8 +1680,7 @@ void testNistRat43(void)
 
   // check return value
   VERIFY_IS_EQUAL(info, 1);
-  VERIFY_IS_EQUAL(lm.nfev, 27);
-  VERIFY_IS_EQUAL(lm.njev, 20);
+  LM_CHECK_N_ITERS(lm, 27, 20);
   // check norm^2
   VERIFY_IS_APPROX(lm.fvec.squaredNorm(), 8.7864049080E+03);
   // check x
@@ -1727,8 +1701,7 @@ void testNistRat43(void)
 
   // check return value
   VERIFY_IS_EQUAL(info, 1);
-  VERIFY_IS_EQUAL(lm.nfev, 9);
-  VERIFY_IS_EQUAL(lm.njev, 8);
+  LM_CHECK_N_ITERS(lm, 9, 8);
   // check norm^2
   VERIFY_IS_APPROX(lm.fvec.squaredNorm(), 8.7864049080E+03);
   // check x
@@ -1790,8 +1763,7 @@ void testNistEckerle4(void)
 
   // check return value
   VERIFY_IS_EQUAL(info, 1);
-  VERIFY_IS_EQUAL(lm.nfev, 18);
-  VERIFY_IS_EQUAL(lm.njev, 15);
+  LM_CHECK_N_ITERS(lm, 18, 15);
   // check norm^2
   VERIFY_IS_APPROX(lm.fvec.squaredNorm(), 1.4635887487E-03);
   // check x
@@ -1808,8 +1780,7 @@ void testNistEckerle4(void)
 
   // check return value
   VERIFY_IS_EQUAL(info, 1);
-  VERIFY_IS_EQUAL(lm.nfev, 7);
-  VERIFY_IS_EQUAL(lm.njev, 6);
+  LM_CHECK_N_ITERS(lm, 7, 6);
   // check norm^2
   VERIFY_IS_APPROX(lm.fvec.squaredNorm(), 1.4635887487E-03);
   // check x
@@ -1818,7 +1789,7 @@ void testNistEckerle4(void)
   VERIFY_IS_APPROX(x[2], 4.5154121844E+02);
 }
 
-void test_NonLinearOptimization()
+EIGEN_DECLARE_TEST(NonLinearOptimization)
 {
     // Tests using the examples provided by (c)minpack
     CALL_SUBTEST/*_1*/(testChkder());

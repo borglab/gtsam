@@ -44,6 +44,14 @@ at LAAS-CNRS
 
 * Ellon Paiva
 
+* Sammy Guo
+
+at Northeastern
+
+* Zhexin Xu
+* Hanna Jiamei Zhang
+* David M. Rosen
+
 Many thanks for your hard work!!!!
 
 Frank Dellaert

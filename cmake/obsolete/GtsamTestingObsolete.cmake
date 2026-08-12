@@ -2,7 +2,7 @@
 # Macro for adding categorized tests in a "tests" folder, with
 # optional exclusion of tests and convenience library linking options
 #
-# By default, all tests are linked with CppUnitLite and boost
+# By default, all tests are linked with CppUnitLite
 # Arguments:
 #   - subdir    The name of the category for this test
 #   - local_libs  A list of convenience libraries to use (if GTSAM_BUILD_CONVENIENCE_LIBRARIES is true)
@@ -32,7 +32,6 @@ endfunction()
 # Macro for adding categorized timing scripts in a "tests" folder, with
 # optional exclusion of tests and convenience library linking options
 #
-# By default, all tests are linked with boost
 # Arguments:
 #   - subdir    The name of the category for this timing script
 #   - local_libs  A list of convenience libraries to use (if GTSAM_BUILD_CONVENIENCE_LIBRARIES is true)
@@ -51,8 +50,7 @@ macro(gtsam_add_subdir_timing subdir local_libs full_libs excluded_srcs)
 endmacro()
 
 # Macro for adding executables matching a pattern - builds one executable for
-# each file matching the pattern.  These exectuables are automatically linked
-# with boost.
+# each file matching the pattern.
 # Arguments:
 #   - pattern    The glob pattern to match source files
 #   - local_libs A list of convenience libraries to use (if GTSAM_BUILD_CONVENIENCE_LIBRARIES is true)
@@ -138,9 +136,9 @@ macro(gtsam_add_grouped_scripts group pattern target_prefix pretty_prefix_name l
 
 				# Linking and dependendencies
 				if (GTSAM_BUILD_CONVENIENCE_LIBRARIES)
-					target_link_libraries(${script_bin} ${local_libs} ${GTSAM_BOOST_LIBRARIES})
+					target_link_libraries(${script_bin} ${local_libs})
 				else()
-					target_link_libraries(${script_bin} ${full_libs} ${GTSAM_BOOST_LIBRARIES})
+					target_link_libraries(${script_bin} ${full_libs})
 				endif()
 
 				# Add .run target

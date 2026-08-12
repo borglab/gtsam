@@ -162,7 +162,7 @@ public:
 
     //add a factor that connects all those cells
     laser_indices_.push_back(factors_.size());
-    push_back(boost::make_shared<LaserFactor>(cells));
+    push_back(std::make_shared<LaserFactor>(cells));
 
   }
 

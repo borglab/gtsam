@@ -75,7 +75,7 @@ template<typename MatrixType> void real_qz(const MatrixType& m)
   VERIFY_IS_APPROX(qz.matrixZ()*qz.matrixZ().adjoint(), MatrixType::Identity(dim,dim));
 }
 
-void test_real_qz()
+EIGEN_DECLARE_TEST(real_qz)
 {
   int s = 0;
   for(int i = 0; i < g_repeat; i++) {

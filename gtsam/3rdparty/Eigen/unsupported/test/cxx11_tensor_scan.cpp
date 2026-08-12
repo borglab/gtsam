@@ -98,7 +98,7 @@ static void test_tensor_maps() {
   }
 }
 
-void test_cxx11_tensor_scan() {
+EIGEN_DECLARE_TEST(cxx11_tensor_scan) {
   CALL_SUBTEST((test_1d_scan<ColMajor, float, true>()));
   CALL_SUBTEST((test_1d_scan<ColMajor, float, false>()));
   CALL_SUBTEST((test_1d_scan<RowMajor, float, true>()));

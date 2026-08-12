@@ -52,7 +52,7 @@ can be mapped *and* if the numpy array is writeable (that is
 the passed variable will be transparently carried out directly on the
 ``numpy.ndarray``.
 
-This means you can can write code such as the following and have it work as
+This means you can write code such as the following and have it work as
 expected:
 
 .. code-block:: cpp
@@ -112,7 +112,7 @@ example:
 .. code-block:: python
 
     a = MyClass()
-    m = a.get_matrix()   # flags.writeable = True,  flags.owndata = False
+    m = a.get_matrix()  # flags.writeable = True,  flags.owndata = False
     v = a.view_matrix()  # flags.writeable = False, flags.owndata = False
     c = a.copy_matrix()  # flags.writeable = True,  flags.owndata = True
     # m[5,6] and v[5,6] refer to the same element, c[5,6] does not.
@@ -203,7 +203,7 @@ adding the ``order='F'`` option when creating an array:
 
 .. code-block:: python
 
-    myarray = np.array(source, order='F')
+    myarray = np.array(source, order="F")
 
 Such an object will be passable to a bound function accepting an
 ``Eigen::Ref<MatrixXd>`` (or similar column-major Eigen type).
@@ -259,7 +259,7 @@ copying to take place:
         "small"_a            // <- This one can be copied if needed
     );
 
-With the above binding code, attempting to call the the ``some_method(m)``
+With the above binding code, attempting to call the ``some_method(m)``
 method on a ``MyClass`` object, or attempting to call ``some_function(m, m2)``
 will raise a ``RuntimeError`` rather than making a temporary copy of the array.
 It will, however, allow the ``m2`` argument to be copied into a temporary if

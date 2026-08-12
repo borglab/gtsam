@@ -16,25 +16,19 @@
  * @date    Oct 20, 2013
  */
 
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/timing.h>
+#include <gtsam/geometry/CalibratedCamera.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/linear/NoiseModel.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/slam/JacobianFactorQ.h>
 #include <gtsam/slam/JacobianFactorQR.h>
 #include <gtsam/slam/RegularImplicitSchurFactor.h>
-#include <gtsam/geometry/CalibratedCamera.h>
-#include <gtsam/geometry/Point2.h>
-
-#include <gtsam/linear/VectorValues.h>
-#include <gtsam/linear/NoiseModel.h>
-#include <gtsam/linear/GaussianFactor.h>
-#include <gtsam/base/timing.h>
-
-#include <boost/assign/list_of.hpp>
-#include <boost/assign/std/vector.hpp>
-#include <boost/range/iterator_range.hpp>
-#include <boost/range/adaptor/map.hpp>
-#include <CppUnitLite/TestHarness.h>
 
 using namespace std;
-using namespace boost::assign;
 using namespace gtsam;
 
 // F
@@ -44,7 +38,7 @@ const Matrix26 F3 = 3 * Matrix26::Ones();
 const vector<Matrix26, Eigen::aligned_allocator<Matrix26> > FBlocks {F0, F1, F3};
 const KeyVector keys {0, 1, 3};
 // RHS and sigmas
-const Vector b = (Vector(6) << 1., 2., 3., 4., 5., 6.).finished();
+const Vector b{{1., 2., 3., 4., 5., 6.}};
 
 //*************************************************************************************
 TEST( regularImplicitSchurFactor, creation ) {
@@ -68,17 +62,15 @@ TEST( regularImplicitSchurFactor, addHessianMultiply ) {
   Matrix3 P = (E.transpose() * E).inverse();
 
   double alpha = 0.5;
-  VectorValues xvalues = map_list_of //
-  (0, Vector::Constant(6, 2))//
-  (1, Vector::Constant(6, 4))//
-  (2, Vector::Constant(6, 0))// distractor
-  (3, Vector::Constant(6, 8));
+  VectorValues xvalues{{0, Vector::Constant(6, 2)},  //
+                       {1, Vector::Constant(6, 4)},  //
+                       {2, Vector::Constant(6, 0)},  // distractor
+                       {3, Vector::Constant(6, 8)}};
 
-  VectorValues yExpected = map_list_of//
-  (0, Vector::Constant(6, 27))//
-  (1, Vector::Constant(6, -40))//
-  (2, Vector::Constant(6, 0))// distractor
-  (3, Vector::Constant(6, 279));
+  VectorValues yExpected{{0, Vector::Constant(6, 27)},   //
+                         {1, Vector::Constant(6, -40)},  //
+                         {2, Vector::Constant(6, 0)},    // distractor
+                         {3, Vector::Constant(6, 279)}};
 
   // Create full F
   size_t M=4, m = 3, d = 6;
@@ -218,10 +210,8 @@ TEST(regularImplicitSchurFactor, hessianDiagonal)
       H = F' * (eye(6) - E * P * E') * F
       diag(H)
    */
-  Matrix E(6,3);
-  E.block<2,3>(0, 0) << 1,2,3,4,5,6;
-  E.block<2,3>(2, 0) << 1,2,3,4,5,6;
-  E.block<2,3>(4, 0) << 0.5,1,2,3,4,5;
+  Matrix63 E{{1, 2, 3}, {4, 5, 6}, {1, 2, 3},
+             {4, 5, 6}, {0.5, 1, 2}, {3, 4, 5}};
   Matrix3 P = (E.transpose() * E).inverse();
   RegularImplicitSchurFactor<CalibratedCamera> factor(keys, FBlocks, E, P, b);
 

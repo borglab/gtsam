@@ -9,6 +9,7 @@
 
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam_unstable/discrete/Constraint.h>
+#include <optional>
 
 namespace gtsam {
 
@@ -21,7 +22,7 @@ class GTSAM_UNSTABLE_EXPORT Domain : public Constraint {
   std::set<size_t> values_;  /// allowed values
 
  public:
-  typedef boost::shared_ptr<Domain> shared_ptr;
+  typedef std::shared_ptr<Domain> shared_ptr;
 
   // Constructor on Discrete Key initializes an "all-allowed" domain
   Domain(const DiscreteKey& dkey)
@@ -48,7 +49,7 @@ class GTSAM_UNSTABLE_EXPORT Domain : public Constraint {
   /// Erase a value, non const :-(
   void erase(size_t value) { values_.erase(value); }
 
-  size_t nrValues() const { return values_.size(); }
+  uint64_t nrValues() const override { return values_.size(); }
 
   bool isSingleton() const { return nrValues() == 1; }
 
@@ -76,7 +77,7 @@ class GTSAM_UNSTABLE_EXPORT Domain : public Constraint {
   bool contains(size_t value) const { return values_.count(value) > 0; }
 
   /// Calculate value
-  double operator()(const DiscreteValues& values) const override;
+  double evaluate(const Assignment<Key>& values) const override;
 
   /// Convert into a decisiontree
   DecisionTreeFactor toDecisionTreeFactor() const override;
@@ -100,7 +101,7 @@ class GTSAM_UNSTABLE_EXPORT Domain : public Constraint {
    * @param keys connected domains through alldiff
    * @param keys other domains
    */
-  boost::optional<Domain> checkAllDiff(const KeyVector keys,
+  std::optional<Domain> checkAllDiff(const KeyVector keys,
                                        const Domains& domains) const;
 
   /// Partially apply known values

@@ -18,6 +18,10 @@
 
 #pragma once
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam_unstable/linear/EqualityFactorGraph.h>
 #include <gtsam_unstable/linear/InequalityFactorGraph.h>
@@ -78,3 +82,4 @@ public:
 
 } // namespace gtsam
 
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

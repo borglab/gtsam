@@ -33,27 +33,25 @@
 
 namespace gtsam {
 
-template <class T> class BinaryMeasurement : public Factor {
+template <class T>
+class BinaryMeasurement : public Factor {
   // Check that T type is testable
-  BOOST_CONCEPT_ASSERT((IsTestable<T>));
+  GTSAM_CONCEPT_ASSERT(IsTestable<T>);
 
-public:
+ public:
   // shorthand for a smart pointer to a measurement
-  using shared_ptr = typename boost::shared_ptr<BinaryMeasurement>;
+  using shared_ptr = typename std::shared_ptr<BinaryMeasurement>;
 
-private:
-  T measured_;                  ///< The measurement
-  SharedNoiseModel noiseModel_; ///< Noise model
+ private:
+  T measured_;                   ///< The measurement
+  SharedNoiseModel noiseModel_;  ///< Noise model
 
  public:
   BinaryMeasurement(Key key1, Key key2, const T &measured,
                     const SharedNoiseModel &model = nullptr)
       : Factor(std::vector<Key>({key1, key2})),
         measured_(measured),
-        noiseModel_(model) {}
-
-  /// Destructor
-  virtual ~BinaryMeasurement() {}
+        noiseModel_(noiseModel::validOrDefault(measured, model)) {}
 
   /// @name Standard Interface
   /// @{
@@ -84,4 +82,4 @@ private:
   }
   /// @}
 };
-} // namespace gtsam
+}  // namespace gtsam

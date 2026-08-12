@@ -79,7 +79,7 @@ template<typename DecType,typename MatrixType> void inplace(bool square = false,
 }
 
 
-void test_inplace_decomposition()
+EIGEN_DECLARE_TEST(inplace_decomposition)
 {
   EIGEN_UNUSED typedef Matrix<double,4,3> Matrix43d;
   for(int i = 0; i < g_repeat; i++) {

@@ -1,25 +1,25 @@
 
-ADD_CUSTOM_TARGET(copy_scripts)
+add_custom_target(copy_scripts)
 
-SET(script_files go_mean mk_mean_script.sh mk_new_gnuplot.sh
+set(script_files go_mean mk_mean_script.sh mk_new_gnuplot.sh
     perlib_plot_settings.txt action_settings.txt gnuplot_common_settings.hh )
 
-FOREACH(script_file ${script_files})
-ADD_CUSTOM_COMMAND(
+foreach(script_file ${script_files})
+add_custom_command(
   TARGET copy_scripts
   POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${script_file} ${CMAKE_CURRENT_BINARY_DIR}/
   ARGS
 )
-ENDFOREACH(script_file)
+endforeach(script_file)
 
-ADD_CUSTOM_COMMAND(
+add_custom_command(
   TARGET copy_scripts
   POST_BUILD
   COMMAND ${CMAKE_CXX_COMPILER} --version | head -n 1 > ${CMAKE_CURRENT_BINARY_DIR}/compiler_version.txt
   ARGS
 )
-ADD_CUSTOM_COMMAND(
+add_custom_command(
   TARGET copy_scripts
   POST_BUILD
   COMMAND echo "${Eigen_SOURCE_DIR}" > ${CMAKE_CURRENT_BINARY_DIR}/eigen_root_dir.txt

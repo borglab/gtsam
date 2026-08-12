@@ -30,7 +30,7 @@ namespace gtsam {
 
   /** 
    * GaussianBayesNet is a Bayes net made from linear-Gaussian conditionals.
-   * @addtogroup linear
+   * @ingroup linear
    */
   class GTSAM_EXPORT GaussianBayesNet: public BayesNet<GaussianConditional>
   {
@@ -39,13 +39,13 @@ namespace gtsam {
     typedef BayesNet<GaussianConditional> Base;
     typedef GaussianBayesNet This;
     typedef GaussianConditional ConditionalType;
-    typedef boost::shared_ptr<This> shared_ptr;
-    typedef boost::shared_ptr<ConditionalType> sharedConditional;
+    typedef std::shared_ptr<This> shared_ptr;
+    typedef std::shared_ptr<ConditionalType> sharedConditional;
 
     /// @name Standard Constructors
     /// @{
 
-    /** Construct empty factor graph */
+    /** Construct empty bayes net */
     GaussianBayesNet() {}
 
     /** Construct from iterator over conditionals */
@@ -65,8 +65,14 @@ namespace gtsam {
     explicit GaussianBayesNet(const FactorGraph<DERIVEDCONDITIONAL>& graph)
         : Base(graph) {}
 
-    /// Destructor
-    virtual ~GaussianBayesNet() {}
+    /**
+     * Constructor that takes an initializer list of shared pointers.
+     *  BayesNet bn = {make_shared<Conditional>(), ...};
+     */
+    template <class DERIVEDCONDITIONAL>
+    GaussianBayesNet(
+        std::initializer_list<std::shared_ptr<DERIVEDCONDITIONAL> > conditionals)
+        : Base(conditionals) {}
 
     /// @}
 
@@ -75,6 +81,12 @@ namespace gtsam {
 
     /** Check equality */
     bool equals(const This& bn, double tol = 1e-9) const;
+
+    /// Check exact equality.
+    friend bool operator==(const GaussianBayesNet& lhs,
+                           const GaussianBayesNet& rhs) {
+      return lhs.isEqual(rhs);
+    }
 
     /// print graph
     void print(
@@ -88,11 +100,47 @@ namespace gtsam {
     /// @name Standard Interface
     /// @{
 
-    /// Solve the GaussianBayesNet, i.e. return \f$ x = R^{-1}*d \f$, by back-substitution
+    /// Sum error over all variables.
+    double error(const VectorValues& x) const;
+
+    /// Sum logProbability over all variables.
+    double logProbability(const VectorValues& x) const;
+
+    /**
+     * Calculate probability density for given values `x`:
+     *   exp(logProbability)
+     * where x is the vector of values.
+     */
+    double evaluate(const VectorValues& x) const;
+
+    /// Evaluate probability density, sugar.
+    double operator()(const VectorValues& x) const {
+      return evaluate(x);
+    }
+
+    /// Solve the GaussianBayesNet, i.e. return \f$ x = R^{-1}*d \f$, by
+    /// back-substitution
     VectorValues optimize() const;
 
-    /// Version of optimize for incomplete BayesNet, needs solution for missing variables
-    VectorValues optimize(const VectorValues& solutionForMissing) const;
+    /// Version of optimize for incomplete BayesNet, given missing variables
+    VectorValues optimize(const VectorValues& given) const;
+
+    /**
+     * Sample using ancestral sampling
+     * Example:
+     *   std::mt19937_64 rng(42);
+     *   auto sample = gbn.sample(&rng);
+     */
+    VectorValues sample(std::mt19937_64* rng = nullptr) const;
+
+    /**
+     * Sample from an incomplete BayesNet, given missing variables
+     * Example:
+     *   std::mt19937_64 rng(42);
+     *   VectorValues given = ...;
+     *   auto sample = gbn.sample(given, &rng);
+     */
+    VectorValues sample(const VectorValues& given, std::mt19937_64* rng = nullptr) const;
 
     /**
      * Return ordering corresponding to a topological sort.
@@ -163,9 +211,6 @@ namespace gtsam {
      *        allocateVectorValues */
     VectorValues gradientAtZero() const;
 
-    /** 0.5 * sum of squared Mahalanobis distances. */
-    double error(const VectorValues& x) const;
-
     /**
      * Computes the determinant of a GassianBayesNet. A GaussianBayesNet is an upper triangular
      * matrix and for an upper triangular matrix determinant is the product of the diagonal
@@ -184,6 +229,14 @@ namespace gtsam {
     double logDeterminant() const;
 
     /**
+     * @brief Get the negative log of the normalization constant corresponding
+     * to the joint Gaussian density represented by this Bayes net.
+     *
+     * @return double
+     */
+    double negLogConstant() const;
+
+    /**
      * Backsubstitute with a different RHS vector than the one stored in this BayesNet.
      * gy=inv(R*inv(Sigma))*gx
      */
@@ -198,14 +251,24 @@ namespace gtsam {
     VectorValues backSubstituteTranspose(const VectorValues& gx) const;
 
     /// @}
+    /// @name HybridValues methods.
+    /// @{
+
+    using Base::evaluate; // Expose evaluate(const HybridValues&) method..
+    using Base::logProbability; // Expose logProbability(const HybridValues&) method..
+    using Base::error; // Expose error(const HybridValues&) method..
+
+    /// @}
 
   private:
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
       ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     }
+#endif
   };
 
   /// traits

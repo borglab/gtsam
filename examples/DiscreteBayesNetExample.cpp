@@ -51,8 +51,7 @@ int main(int argc, char **argv) {
   DiscreteFactorGraph fg(asia);
 
   // Create solver and eliminate
-  Ordering ordering;
-  ordering += Key(0), Key(1), Key(2), Key(3), Key(4), Key(5), Key(6), Key(7);
+  const Ordering ordering{0, 1, 2, 3, 4, 5, 6, 7};
 
   // solve
   auto mpe = fg.optimize();

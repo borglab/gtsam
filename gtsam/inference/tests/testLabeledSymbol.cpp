@@ -19,9 +19,7 @@
 #include <gtsam/base/TestableAssertions.h>
 
 #include <CppUnitLite/TestHarness.h>
-#include <boost/assign/std/list.hpp> // for operator +=
 
-using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
@@ -37,7 +35,7 @@ TEST(LabeledSymbol, KeyLabeledSymbolConversion ) {
 /* ************************************************************************* */
 TEST(LabeledSymbol, KeyLabeledSymbolEncoding ) {
 
-  // Test encoding of LabeledSymbol <-> size_t <-> string
+  // Test encoding of LabeledSymbol <-> Key <-> string
   // Encoding scheme:
   // Top 8 bits: variable type (255 possible values) - zero will not process
   // Next 8 high bits: variable type (255 possible values)
@@ -66,6 +64,16 @@ TEST(LabeledSymbol, KeyLabeledSymbolEncoding ) {
     EXPECT(assert_equal(str, MultiRobotKeyFormatter(symbol)));
     EXPECT(assert_equal(symbol, LabeledSymbol(key)));
   }
+}
+
+/* ************************************************************************* */
+// Verifies that labeled-symbol indices are not narrowed on 32-bit platforms.
+TEST(LabeledSymbol, LargeIndex) {
+  const std::uint64_t largeIndex = (std::uint64_t{1} << 32) + 7;
+  const LabeledSymbol symbol('x', 'A', largeIndex);
+
+  EXPECT(largeIndex == symbol.index());
+  EXPECT(largeIndex == mrsymbolIndex(mrsymbol('x', 'A', largeIndex)));
 }
 
 /* ************************************************************************* */
@@ -105,4 +113,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

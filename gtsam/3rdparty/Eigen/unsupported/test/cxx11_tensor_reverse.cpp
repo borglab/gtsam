@@ -179,7 +179,7 @@ static void test_expr_reverse(bool LValue)
 }
 
 
-void test_cxx11_tensor_reverse()
+EIGEN_DECLARE_TEST(cxx11_tensor_reverse)
 {
   CALL_SUBTEST(test_simple_reverse<ColMajor>());
   CALL_SUBTEST(test_simple_reverse<RowMajor>());

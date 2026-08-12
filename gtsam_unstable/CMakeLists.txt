@@ -5,6 +5,7 @@ project(gtsam_unstable LANGUAGES CXX)
 set (gtsam_unstable_subdirs
     base
     geometry
+    navigation
     linear
     discrete
     dynamics
@@ -28,6 +29,18 @@ set (excluded_sources # "")
 set (excluded_headers # "")
     "${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.h"
 )
+
+# if GTSAM_USE_BOOST_FEATURES is not set, then we need to exclude the following:
+if(NOT GTSAM_USE_BOOST_FEATURES)
+    list (APPEND excluded_sources
+        "${CMAKE_CURRENT_SOURCE_DIR}/discrete/Scheduler.cpp"
+    )
+    list (APPEND excluded_headers
+        "${CMAKE_CURRENT_SOURCE_DIR}/discrete/Scheduler.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/partition/FindSeparator.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/partition/FindSeparator-inl.h"
+    )
+endif()
 
 # assemble core libraries
 foreach(subdir ${gtsam_unstable_subdirs})
@@ -54,6 +67,7 @@ install(FILES "${PROJECT_BINARY_DIR}/dllexport.h" DESTINATION ${CMAKE_INSTALL_IN
 set(gtsam_unstable_srcs
     ${base_srcs}
     ${geometry_srcs}
+    ${navigation_srcs}
     ${linear_srcs}
     ${discrete_srcs}
     ${dynamics_srcs}
@@ -66,13 +80,12 @@ if(GTSAM_SUPPORT_NESTED_DISSECTION) # Only build partition if metis is built
 endif(GTSAM_SUPPORT_NESTED_DISSECTION)
 
 # Versions - same as core gtsam library
-set(gtsam_unstable_version   ${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH})
+set(gtsam_unstable_version   ${GTSAM_VERSION_STRING})
 set(gtsam_unstable_soversion ${GTSAM_VERSION_MAJOR})
 message(STATUS "GTSAM_UNSTABLE Version: ${gtsam_unstable_version}")
 message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
 
-# BUILD_SHARED_LIBS automatically defines static/shared libs:
-add_library(gtsam_unstable ${gtsam_unstable_srcs})
+add_library(gtsam_unstable ${GTSAM_LIBRARY_TYPE} ${gtsam_unstable_srcs})
 
 # Apply build flags:
 gtsam_apply_build_flags(gtsam_unstable)
@@ -86,15 +99,13 @@ target_link_libraries(gtsam_unstable PUBLIC gtsam)
 # No need to link against Boost here, it's inherited from gtsam PUBLIC interface
 
 if(WIN32) # Add 'lib' prefix to static library to avoid filename collision with shared library
-	if (NOT BUILD_SHARED_LIBS)
+	if (NOT GTSAM_SHARED_LIB)
 		set_target_properties(gtsam_unstable PROPERTIES
 			PREFIX "lib"
 			COMPILE_DEFINITIONS GTSAM_UNSTABLE_IMPORT_STATIC)
 	else()
 		set_target_properties(gtsam_unstable PROPERTIES
-			PREFIX ""
-			DEFINE_SYMBOL GTSAM_UNSTABLE_EXPORTS
-			RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
+			DEFINE_SYMBOL GTSAM_UNSTABLE_EXPORTS)
 	endif()
 endif()
 

@@ -23,20 +23,19 @@
 #include <gtsam/slam/PoseTranslationPrior.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/slam/StereoFactor.h>
-#include <boost/assign/std/vector.hpp>
 #include <CppUnitLite/TestHarness.h>
 #include <iostream>
 
 using namespace std;
-using namespace boost::assign;
 using namespace gtsam;
 
+namespace {
 // make a realistic calibration matrix
 static double b = 1;
 
 static Cal3_S2Stereo::shared_ptr K(new Cal3_S2Stereo(fov, w, h, b));
-static Cal3_S2Stereo::shared_ptr K2(
-    new Cal3_S2Stereo(1500, 1200, 0, 640, 480, b));
+static Cal3_S2Stereo::shared_ptr K2(new Cal3_S2Stereo(1500, 1200, 0, 640, 480,
+                                                      b));
 
 static SmartStereoProjectionParams params;
 
@@ -45,8 +44,8 @@ static SmartStereoProjectionParams params;
 static SharedNoiseModel model(noiseModel::Isotropic::Sigma(3, 0.1));
 
 // Convenience for named keys
-using symbol_shorthand::X;
 using symbol_shorthand::L;
+using symbol_shorthand::X;
 
 // tests data
 static Symbol x1('X', 1);
@@ -59,16 +58,19 @@ static Symbol body_P_cam3_key('P', 3);
 static Key poseKey1(x1);
 static Key poseExtrinsicKey1(body_P_cam1_key);
 static Key poseExtrinsicKey2(body_P_cam2_key);
-static StereoPoint2 measurement1(323.0, 300.0, 240.0); //potentially use more reasonable measurement value?
-static StereoPoint2 measurement2(350.0, 200.0, 240.0); //potentially use more reasonable measurement value?
+static StereoPoint2 measurement1(
+    323.0, 300.0, 240.0);  // potentially use more reasonable measurement value?
+static StereoPoint2 measurement2(
+    350.0, 200.0, 240.0);  // potentially use more reasonable measurement value?
 static Pose3 body_P_sensor1(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2),
-    Point3(0.25, -0.10, 1.0));
+                            Point3(0.25, -0.10, 1.0));
 
 static double missing_uR = std::numeric_limits<double>::quiet_NaN();
 
 vector<StereoPoint2> stereo_projectToMultipleCameras(const StereoCamera& cam1,
-    const StereoCamera& cam2, const StereoCamera& cam3, Point3 landmark) {
-
+                                                     const StereoCamera& cam2,
+                                                     const StereoCamera& cam3,
+                                                     Point3 landmark) {
   vector<StereoPoint2> measurements_cam;
 
   StereoPoint2 cam1_uv1 = cam1.project(landmark);
@@ -81,7 +83,14 @@ vector<StereoPoint2> stereo_projectToMultipleCameras(const StereoCamera& cam1,
   return measurements_cam;
 }
 
-LevenbergMarquardtParams lm_params;
+LevenbergMarquardtParams makeLmParams() {
+  LevenbergMarquardtParams params;
+  params.linearSolverType = LevenbergMarquardtParams::MULTIFRONTAL_CHOLESKY;
+  return params;
+}
+
+LevenbergMarquardtParams lmParams = makeLmParams();
+}  // namespace
 
 /* ************************************************************************* */
 TEST( SmartStereoProjectionFactorPP, params) {
@@ -176,8 +185,8 @@ TEST_UNSAFE( SmartStereoProjectionFactorPP, noiseless_error_identityExtrinsics )
   Values values;
   values.insert(x1, w_Pose_cam1);
   values.insert(x2, w_Pose_cam2);
-  values.insert(body_P_cam1_key, Pose3::identity());
-  values.insert(body_P_cam2_key, Pose3::identity());
+  values.insert(body_P_cam1_key, Pose3::Identity());
+  values.insert(body_P_cam2_key, Pose3::Identity());
 
   SmartStereoProjectionFactorPP factor1(model);
   factor1.add(cam1_uv, x1, body_P_cam1_key, K2);
@@ -284,9 +293,7 @@ TEST( SmartProjectionPoseFactor, noiseless_error_multipleExtrinsics_missingMeasu
    EXPECT_DOUBLES_EQUAL(expectedError, actualError2, 1e-7);
 
    // The following are generically exercising the triangulation
-   CameraSet<StereoCamera> cams;
-   cams += w_Camera_cam1;
-   cams += w_Camera_cam2;
+   CameraSet<StereoCamera> cams{w_Camera_cam1, w_Camera_cam2};
    TriangulationResult result = factor1.triangulateSafe(cams);
    CHECK(result);
    EXPECT(assert_equal(landmark, *result, 1e-7));
@@ -347,7 +354,7 @@ TEST( SmartStereoProjectionFactorPP, noisy_error_multipleExtrinsics ) {
   measurements.push_back(cam1_uv);
   measurements.push_back(cam2_uv);
 
-  vector<boost::shared_ptr<Cal3_S2Stereo> > Ks; ///< shared pointer to calibration object (one for each camera)
+  vector<std::shared_ptr<Cal3_S2Stereo> > Ks; ///< shared pointer to calibration object (one for each camera)
   Ks.push_back(K);
   Ks.push_back(K);
 
@@ -421,7 +428,7 @@ TEST( SmartStereoProjectionFactorPP, 3poses_optimization_multipleExtrinsics ) {
   // Values
   Pose3 body_Pose_cam1 = Pose3(Rot3::Ypr(-M_PI, 1., 0.1),Point3(0, 1, 0));
   Pose3 body_Pose_cam2 = Pose3(Rot3::Ypr(-M_PI / 4, 0.1, 1.0),Point3(1, 1, 1));
-  Pose3 body_Pose_cam3 = Pose3::identity();
+  Pose3 body_Pose_cam3 = Pose3::Identity();
   Pose3 w_Pose_body1 = w_Pose_cam1.compose(body_Pose_cam1.inverse());
   Pose3 w_Pose_body2 = w_Pose_cam2.compose(body_Pose_cam2.inverse());
   Pose3 w_Pose_body3 = w_Pose_cam3.compose(body_Pose_cam3.inverse());
@@ -469,7 +476,7 @@ TEST( SmartStereoProjectionFactorPP, 3poses_optimization_multipleExtrinsics ) {
 
   Values result;
   gttic_(SmartStereoProjectionFactorPP);
-  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
   gttoc_(SmartStereoProjectionFactorPP);
   tictoc_finishedIteration_();
@@ -525,7 +532,7 @@ TEST( SmartStereoProjectionFactorPP, 3poses_optimization_multipleExtrinsics ) {
   EXPECT_DOUBLES_EQUAL(833953.92789459578, graph2.error(values2), 1e-7);
   EXPECT_DOUBLES_EQUAL(initialErrorSmart, graph2.error(values2), 1e-7); // identical to previous case!
 
-  LevenbergMarquardtOptimizer optimizer2(graph2, values2, lm_params);
+  LevenbergMarquardtOptimizer optimizer2(graph2, values2, lmParams);
   Values result2 = optimizer2.optimize();
   EXPECT_DOUBLES_EQUAL(0, graph2.error(result2), 1e-5);
 }
@@ -849,14 +856,14 @@ TEST( SmartStereoProjectionFactorPP, 3poses_optimization_sameExtrinsicKey ) {
 
   Values result;
   gttic_(SmartStereoProjectionFactorPP);
-  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
   gttoc_(SmartStereoProjectionFactorPP);
   tictoc_finishedIteration_();
 
   EXPECT_DOUBLES_EQUAL(0, graph.error(result), 1e-5);
 
-  // This passes on my machine but gets and indeterminant linear system exception in CI.
+  // This passes locally but gets an indeterminate system exception in CI.
   // This is a very redundant test, so it's not a problem to omit.
   //  GaussianFactorGraph::shared_ptr GFG = graph.linearize(result);
   //  Matrix H = GFG->hessian().first;
@@ -950,7 +957,7 @@ TEST( SmartStereoProjectionFactorPP, 3poses_optimization_2ExtrinsicKeys ) {
 
   Values result;
   gttic_(SmartStereoProjectionFactorPP);
-  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
   gttoc_(SmartStereoProjectionFactorPP);
   tictoc_finishedIteration_();
@@ -1075,7 +1082,7 @@ TEST( SmartStereoProjectionFactorPP, monocular_multipleExtrinsicKeys ){
 
   Values result;
   gttic_(SmartStereoProjectionFactorPP);
-  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
   gttoc_(SmartStereoProjectionFactorPP);
   tictoc_finishedIteration_();
@@ -1142,7 +1149,7 @@ TEST( SmartStereoProjectionFactorPP, landmarkDistance ) {
   graph.push_back(smartFactor3);
   graph.addPrior(x1, pose1, noisePrior);
   graph.addPrior(x2, pose2, noisePrior);
-  graph.addPrior(body_P_cam_key, Pose3::identity(), noisePrior);
+  graph.addPrior(body_P_cam_key, Pose3::Identity(), noisePrior);
 
   //  Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI/10, 0., -M_PI/10), Point3(0.5,0.1,0.3)); // noise from regular projection factor test below
   Pose3 noise_pose = Pose3(Rot3::Ypr(-M_PI / 100, 0., -M_PI / 100),
@@ -1151,11 +1158,11 @@ TEST( SmartStereoProjectionFactorPP, landmarkDistance ) {
   values.insert(x1, pose1);
   values.insert(x2, pose2);
   values.insert(x3, pose3 * noise_pose);
-  values.insert(body_P_cam_key, Pose3::identity());
+  values.insert(body_P_cam_key, Pose3::Identity());
 
   // All smart factors are disabled and pose should remain where it is
   Values result;
-  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
   EXPECT(assert_equal(values.at<Pose3>(x3), result.at<Pose3>(x3), 1e-5));
   EXPECT_DOUBLES_EQUAL(graph.error(values), graph.error(result), 1e-5);
@@ -1240,7 +1247,7 @@ TEST( SmartStereoProjectionFactorPP, dynamicOutlierRejection ) {
   values.insert(x1, pose1);
   values.insert(x2, pose2);
   values.insert(x3, pose3);
-  values.insert(body_P_cam_key, Pose3::identity());
+  values.insert(body_P_cam_key, Pose3::Identity());
 
   EXPECT_DOUBLES_EQUAL(0, smartFactor1->error(values), 1e-9);
   EXPECT_DOUBLES_EQUAL(0, smartFactor2->error(values), 1e-9);
@@ -1260,9 +1267,9 @@ TEST( SmartStereoProjectionFactorPP, dynamicOutlierRejection ) {
 
   // Factor 4 is disabled, pose 3 stays put
   Values result;
-  LevenbergMarquardtOptimizer optimizer(graph, values, lm_params);
+  LevenbergMarquardtOptimizer optimizer(graph, values, lmParams);
   result = optimizer.optimize();
-  EXPECT(assert_equal(Pose3::identity(), result.at<Pose3>(body_P_cam_key)));
+  EXPECT(assert_equal(Pose3::Identity(), result.at<Pose3>(body_P_cam_key)));
 }
 
 /* ************************************************************************* */
@@ -1271,4 +1278,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

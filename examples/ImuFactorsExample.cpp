@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file ImuFactorsExample
+ * @file ImuFactorsExample.cpp
  * @brief Test example for using GTSAM ImuFactor and ImuCombinedFactor
  * navigation code.
  * @author Garrett (ghemann@gmail.com), Luca Carlone
@@ -38,6 +38,7 @@
 #include <boost/program_options.hpp>
 
 // GTSAM related includes.
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
 #include <gtsam/navigation/GPSFactor.h>
@@ -48,6 +49,7 @@
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/dataset.h>
 
+#include <cassert>
 #include <cstring>
 #include <fstream>
 #include <iostream>
@@ -82,7 +84,7 @@ po::variables_map parseOptions(int argc, char* argv[]) {
   return vm;
 }
 
-boost::shared_ptr<PreintegratedCombinedMeasurements::Params> imuParams() {
+std::shared_ptr<PreintegratedCombinedMeasurements::Params> imuParams() {
   // We use the sensor specs to build the noise model for the IMU factor.
   double accel_noise_sigma = 0.0003924;
   double gyro_noise_sigma = 0.000205689024915;
@@ -94,8 +96,6 @@ boost::shared_ptr<PreintegratedCombinedMeasurements::Params> imuParams() {
       I_3x3 * 1e-8;  // error committed in integrating position from velocities
   Matrix33 bias_acc_cov = I_3x3 * pow(accel_bias_rw_sigma, 2);
   Matrix33 bias_omega_cov = I_3x3 * pow(gyro_bias_rw_sigma, 2);
-  Matrix66 bias_acc_omega_int =
-      I_6x6 * 1e-5;  // error in the bias used for preintegration
 
   auto p = PreintegratedCombinedMeasurements::Params::MakeSharedD(0.0);
   // PreintegrationBase params:
@@ -110,7 +110,11 @@ boost::shared_ptr<PreintegratedCombinedMeasurements::Params> imuParams() {
   // PreintegrationCombinedMeasurements params:
   p->biasAccCovariance = bias_acc_cov;      // acc bias in continuous
   p->biasOmegaCovariance = bias_omega_cov;  // gyro bias in continuous
-  p->biasAccOmegaInt = bias_acc_omega_int;
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+  Matrix66 bias_acc_omega_init =
+      I_6x6 * 1e-5;  // error in the bias used for preintegration
+  p->biasAccOmegaInt = bias_acc_omega_init;
+#endif
 
   return p;
 }
@@ -178,8 +182,7 @@ int main(int argc, char* argv[]) {
 
   // Assemble prior noise model and add it the graph.`
   auto pose_noise_model = noiseModel::Diagonal::Sigmas(
-      (Vector(6) << 0.01, 0.01, 0.01, 0.5, 0.5, 0.5)
-          .finished());  // rad,rad,rad,m, m, m
+      Vector{{0.01, 0.01, 0.01, 0.5, 0.5, 0.5}});  // rad,rad,rad,m, m, m
   auto velocity_noise_model = noiseModel::Isotropic::Sigma(3, 0.1);  // m/s
   auto bias_noise_model = noiseModel::Isotropic::Sigma(6, 1e-3);
 
@@ -191,7 +194,7 @@ int main(int argc, char* argv[]) {
 
   auto p = imuParams();
 
-  std::shared_ptr<PreintegrationType> preintegrated =
+  std::shared_ptr<DefaultPreintegrationType> preintegrated =
       std::make_shared<PreintegratedImuMeasurements>(p, prior_imu_bias);
 
   assert(preintegrated);
@@ -209,10 +212,20 @@ int main(int argc, char* argv[]) {
                       // exactly the same, so keeping this for simplicity.
 
   // All priors have been set up, now iterate through the data file.
-  while (file.good()) {
-    // Parse out first value
-    getline(file, value, ',');
-    int type = stoi(value.c_str());
+  std::string line;
+  int type{1000};
+  while (std::getline(file, line)) {
+    std::stringstream ss(line);
+    std::string value;
+
+    // Read value until comma. Skip to next line on failure to read.
+    if (!std::getline(ss, value, ',')) continue;
+    try {
+      type = std::stoi(value);
+    } catch (const std::invalid_argument& e) {
+      std::cerr << "Invalid integer in input: \"" << value << "\"\n";
+      continue;  // Or break, depending on desired behavior
+    }
 
     if (type == 0) {  // IMU measurement
       Vector6 imu;
@@ -267,7 +280,6 @@ int main(int argc, char* argv[]) {
 
       if (use_isam) {
         isam2->update(*graph, initial_values);
-        isam2->update();
         result = isam2->calculateEstimate();
 
         // reset the graph

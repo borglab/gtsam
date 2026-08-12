@@ -13,9 +13,8 @@ foreach(example_src ${examples_SRCS})
     ARGS >${CMAKE_CURRENT_BINARY_DIR}/${example}.out
   )
   add_dependencies(all_examples ${example})
-endforeach(example_src)
+endforeach()
 
-check_cxx_compiler_flag("-std=c++11" EIGEN_COMPILER_SUPPORT_CPP11)
 if(EIGEN_COMPILER_SUPPORT_CPP11)
 ei_add_target_property(nullary_indexing COMPILE_FLAGS "-std=c++11")
 endif()

@@ -24,6 +24,13 @@
 #include <cmath>
 #include <iostream>
 
+#if defined(__i686__) || defined(__i386__)
+// See issue discussion: https://github.com/borglab/gtsam/issues/1605
+constexpr double TEST_THRESHOLD = 1e-5;
+#else
+constexpr double TEST_THRESHOLD = 1e-7;
+#endif
+
 using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
@@ -104,8 +111,8 @@ TEST(SphericalCamera, Dproject) {
   Matrix numerical_pose = numericalDerivative21(project3, pose, point1);
   Matrix numerical_point = numericalDerivative22(project3, pose, point1);
   EXPECT(assert_equal(bearing1, result));
-  EXPECT(assert_equal(numerical_pose, Dpose, 1e-7));
-  EXPECT(assert_equal(numerical_point, Dpoint, 1e-7));
+  EXPECT(assert_equal(numerical_pose, Dpose, TEST_THRESHOLD));
+  EXPECT(assert_equal(numerical_point, Dpoint, TEST_THRESHOLD));
 }
 
 /* ************************************************************************* */
@@ -123,8 +130,8 @@ TEST(SphericalCamera, reprojectionError) {
   Matrix numerical_point =
       numericalDerivative32(reprojectionError2, pose, point1, bearing1);
   EXPECT(assert_equal(Vector2(0.0, 0.0), result));
-  EXPECT(assert_equal(numerical_pose, Dpose, 1e-7));
-  EXPECT(assert_equal(numerical_point, Dpoint, 1e-7));
+  EXPECT(assert_equal(numerical_pose, Dpose, TEST_THRESHOLD));
+  EXPECT(assert_equal(numerical_point, Dpoint, TEST_THRESHOLD));
 }
 
 /* ************************************************************************* */
@@ -137,9 +144,9 @@ TEST(SphericalCamera, reprojectionError_noisy) {
       numericalDerivative31(reprojectionError2, pose, point1, bearing_noisy);
   Matrix numerical_point =
       numericalDerivative32(reprojectionError2, pose, point1, bearing_noisy);
-  EXPECT(assert_equal(Vector2(-0.050282, 0.00833482), result, 1e-5));
-  EXPECT(assert_equal(numerical_pose, Dpose, 1e-7));
-  EXPECT(assert_equal(numerical_point, Dpoint, 1e-7));
+  EXPECT(assert_equal(Vector2(-0.050282, 0.00833482), result, 1e2*TEST_THRESHOLD));
+  EXPECT(assert_equal(numerical_pose, Dpose, TEST_THRESHOLD));
+  EXPECT(assert_equal(numerical_point, Dpoint, TEST_THRESHOLD));
 }
 
 /* ************************************************************************* */
@@ -151,8 +158,8 @@ TEST(SphericalCamera, Dproject2) {
   camera.project2(point1, Dpose, Dpoint);
   Matrix numerical_pose = numericalDerivative21(project3, pose1, point1);
   Matrix numerical_point = numericalDerivative22(project3, pose1, point1);
-  CHECK(assert_equal(numerical_pose, Dpose, 1e-7));
-  CHECK(assert_equal(numerical_point, Dpoint, 1e-7));
+  CHECK(assert_equal(numerical_pose, Dpose, TEST_THRESHOLD));
+  CHECK(assert_equal(numerical_point, Dpoint, TEST_THRESHOLD));
 }
 
 /* ************************************************************************* */

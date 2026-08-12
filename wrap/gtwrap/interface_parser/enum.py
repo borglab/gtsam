@@ -10,7 +10,7 @@ Parser class and rules for parsing C++ enums.
 Author: Varun Agrawal
 """
 
-from pyparsing import delimitedList  # type: ignore
+from pyparsing import DelimitedList  # type: ignore
 
 from .tokens import ENUM, IDENT, LBRACE, RBRACE, SEMI_COLON
 from .type import Typename
@@ -21,8 +21,8 @@ class Enumerator:
     """
     Rule to parse an enumerator inside an enum.
     """
-    rule = (
-        IDENT("enumerator")).setParseAction(lambda t: Enumerator(t.enumerator))
+    rule = (IDENT.copy().set_name("enumerator name")("enumerator")
+            ).set_parse_action(lambda t: Enumerator(t.enumerator))
 
     def __init__(self, name):
         self.name = name
@@ -45,8 +45,8 @@ class Enum:
     """
 
     rule = (ENUM + IDENT("name") + LBRACE +
-            delimitedList(Enumerator.rule)("enumerators") + RBRACE +
-            SEMI_COLON).setParseAction(lambda t: Enum(t.name, t.enumerators))
+            DelimitedList(Enumerator.rule)("enumerators") + RBRACE +
+            SEMI_COLON).set_parse_action(lambda t: Enum(t.name, t.enumerators))
 
     def __init__(self, name, enumerators, parent=''):
         self.name = name
@@ -62,9 +62,7 @@ class Enum:
         Return a Typename with the namespaces and cpp name of this
         class.
         """
-        namespaces_name = self.namespaces()
-        namespaces_name.append(self.name)
-        return Typename(namespaces_name)
+        return Typename(self.name, self.namespaces())
 
     def __repr__(self):
         return "Enum: {0}".format(self.name)

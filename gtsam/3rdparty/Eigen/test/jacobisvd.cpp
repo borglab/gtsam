@@ -36,6 +36,9 @@ void jacobisvd(const MatrixType& a = MatrixType(), bool pickrandom = true)
 template<typename MatrixType> void jacobisvd_verify_assert(const MatrixType& m)
 {
   svd_verify_assert<JacobiSVD<MatrixType> >(m);
+  svd_verify_assert<JacobiSVD<MatrixType, FullPivHouseholderQRPreconditioner> >(m, true);
+  svd_verify_assert<JacobiSVD<MatrixType, ColPivHouseholderQRPreconditioner> >(m);
+  svd_verify_assert<JacobiSVD<MatrixType, HouseholderQRPreconditioner> >(m);
   Index rows = m.rows();
   Index cols = m.cols();
 
@@ -67,6 +70,8 @@ void jacobisvd_method()
   VERIFY_RAISES_ASSERT(m.jacobiSvd().matrixU());
   VERIFY_RAISES_ASSERT(m.jacobiSvd().matrixV());
   VERIFY_IS_APPROX(m.jacobiSvd(ComputeFullU|ComputeFullV).solve(m), m);
+  VERIFY_IS_APPROX(m.jacobiSvd(ComputeFullU|ComputeFullV).transpose().solve(m), m);
+  VERIFY_IS_APPROX(m.jacobiSvd(ComputeFullU|ComputeFullV).adjoint().solve(m), m);
 }
 
 namespace Foo {
@@ -84,7 +89,7 @@ void msvc_workaround()
   std::max EIGEN_NOT_A_MACRO (a,b);
 }
 
-void test_jacobisvd()
+EIGEN_DECLARE_TEST(jacobisvd)
 {
   CALL_SUBTEST_3(( jacobisvd_verify_assert(Matrix3f()) ));
   CALL_SUBTEST_4(( jacobisvd_verify_assert(Matrix4d()) ));

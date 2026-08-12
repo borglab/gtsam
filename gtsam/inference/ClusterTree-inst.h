@@ -1,5 +1,5 @@
 /**
- * @file EliminatableClusterTree-inst.h
+ * @file ClusterTree-inst.h
  * @date Oct 8, 2013
  * @author Kai Ni
  * @author Richard Roberts
@@ -11,9 +11,14 @@
 
 #include <gtsam/inference/ClusterTree.h>
 #include <gtsam/inference/BayesTree.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/base/treeTraversal-inst.h>
+
+#ifdef GTSAM_USE_TBB
+#include <mutex>
+#endif
+#include <queue>
+#include <cassert>
 
 namespace gtsam {
 
@@ -37,7 +42,35 @@ std::vector<size_t> ClusterTree<GRAPH>::Cluster::nrFrontalsOfChildren() const {
 
 /* ************************************************************************* */
 template <class GRAPH>
-void ClusterTree<GRAPH>::Cluster::merge(const boost::shared_ptr<Cluster>& cluster) {
+KeySet ClusterTree<GRAPH>::Cluster::separatorKeys(KeySetMap* cache) const {
+  if (cache) {
+    auto it = cache->find(this);
+    if (it != cache->end()) return it->second;
+  }
+
+  KeySet keys;
+  for (const auto& factor : factors) {
+    if (!factor) continue;
+    keys.insert(factor->begin(), factor->end());
+  }
+  for (const auto& child : children) {
+    KeySet childSeparators = child->separatorKeys(cache);
+    keys.insert(childSeparators.begin(), childSeparators.end());
+  }
+  for (Key key : orderedFrontalKeys) {
+    keys.erase(key);
+  }
+
+  if (cache) {
+    auto result = cache->emplace(this, std::move(keys));
+    return result.first->second;
+  }
+  return keys;
+}
+
+/* ************************************************************************* */
+template <class GRAPH>
+void ClusterTree<GRAPH>::Cluster::merge(const std::shared_ptr<Cluster>& cluster) {
   // Merge keys. For efficiency, we add keys in reverse order at end, calling reverse after..
   orderedFrontalKeys.insert(orderedFrontalKeys.end(), cluster->orderedFrontalKeys.rbegin(),
                             cluster->orderedFrontalKeys.rend());
@@ -48,27 +81,40 @@ void ClusterTree<GRAPH>::Cluster::merge(const boost::shared_ptr<Cluster>& cluste
 }
 
 /* ************************************************************************* */
-template<class GRAPH>
+template <class GRAPH>
 void ClusterTree<GRAPH>::Cluster::mergeChildren(
     const std::vector<bool>& merge) {
+  mergeChildren(childrenFromMask(merge));
+}
+
+/* ************************************************************************* */
+template <class GRAPH>
+void ClusterTree<GRAPH>::Cluster::mergeChildren(
+    const Children& selected) {
   gttic(Cluster_mergeChildren);
-  assert(merge.size() == this->children.size());
+  // Merge selected children into this node while preserving unselected children.
+  if (selected.empty()) return;
+
+  FastSet<const Cluster*> selectedSet;
+  for (const auto& child : selected) {
+    if (child) {
+      selectedSet.insert(child.get());
+    }
+  }
+  if (selectedSet.empty()) return;
 
   // Count how many keys, factors and children we'll end up with
   size_t nrKeys = orderedFrontalKeys.size();
   size_t nrFactors = factors.size();
   size_t nrNewChildren = 0;
-  // Loop over children
-  size_t i = 0;
-  for(const sharedNode& child: this->children) {
-    if (merge[i]) {
+  for (const sharedNode& child : this->children) {
+    if (child && selectedSet.count(child.get()) != 0) {
       nrKeys += child->orderedFrontalKeys.size();
       nrFactors += child->factors.size();
       nrNewChildren += child->nrChildren();
     } else {
-      nrNewChildren += 1; // we keep the child
+      nrNewChildren += 1;  // we keep the child
     }
-    ++i;
   }
 
   // now reserve space, and really merge
@@ -77,22 +123,123 @@ void ClusterTree<GRAPH>::Cluster::mergeChildren(
   this->children.reserve(nrNewChildren);
   orderedFrontalKeys.reserve(nrKeys);
   factors.reserve(nrFactors);
-  i = 0;
   for (const sharedNode& child : oldChildren) {
-    if (merge[i]) {
+    if (child && selectedSet.count(child.get()) != 0) {
       this->merge(child);
     } else {
       this->addChild(child);  // we keep the child
     }
-    ++i;
   }
+  // merge() appends keys in reverse order to defer a final reverse.
   std::reverse(orderedFrontalKeys.begin(), orderedFrontalKeys.end());
+}
+
+/* ************************************************************************* */
+template <class GRAPH>
+void ClusterTree<GRAPH>::Cluster::mergeChildrenSiblings(
+    const std::vector<bool>& merge) {
+  mergeChildrenSiblings(childrenFromMask(merge));
+}
+
+/* ************************************************************************* */
+template <class GRAPH>
+void ClusterTree<GRAPH>::Cluster::mergeChildrenSiblings(
+    const Children& selected) {
+  gttic(Cluster_mergeChildrenSiblings);
+  // Merge selected siblings into a new child while keeping unselected children.
+  if (selected.empty()) return;
+
+  FastSet<const Cluster*> selectedSet;
+  for (const auto& child : selected) {
+    if (child) {
+      selectedSet.insert(child.get());
+    }
+  }
+  const size_t selectedCount = selectedSet.size();
+  // Nothing to merge (0 or 1 selected), so keep children unchanged.
+  if (selectedCount <= 1) return;
+
+  auto oldChildren = this->children;
+  Children newChildren;
+  newChildren.reserve(oldChildren.size() - selectedCount + 1);
+  auto merged = std::make_shared<Cluster>();
+  bool inserted = false;
+
+  for (const sharedNode& child : oldChildren) {
+    if (child && selectedSet.count(child.get()) != 0) {
+      // Merge selected siblings into a single new cluster.
+      merged->merge(child);
+      if (!inserted) {
+        // Insert merged cluster at the first selected child's position.
+        newChildren.push_back(merged);
+        inserted = true;
+      }
+    } else {
+      newChildren.push_back(child);
+    }
+  }
+
+  // merge() appends keys in reverse order to defer a final reverse.
+  std::reverse(merged->orderedFrontalKeys.begin(),
+               merged->orderedFrontalKeys.end());
+  this->children.swap(newChildren);
+}
+
+/* ************************************************************************* */
+template <class GRAPH>
+typename ClusterTree<GRAPH>::Cluster::Children
+ClusterTree<GRAPH>::Cluster::childrenFromMask(
+    const std::vector<bool>& merge) const {
+  assert(merge.size() == this->children.size());
+  // Translate a boolean mask into the corresponding child pointers.
+  Children selected;
+  for (size_t i = 0; i < children.size(); ++i) {
+    if (merge[i]) {
+      selected.push_back(children[i]);
+    }
+  }
+  return selected;
 }
 
 /* ************************************************************************* */
 template <class GRAPH>
 void ClusterTree<GRAPH>::print(const std::string& s, const KeyFormatter& keyFormatter) const {
   treeTraversal::PrintForest(*this, s, keyFormatter);
+}
+
+/* ************************************************************************* */
+
+/* Destructor.
+ * Using default destructor causes stack overflow for large trees due to recursive destruction of nodes;
+ * so we manually decrease the reference count of each node in the tree through a BFS, and the nodes with
+ * reference count 0 will be deleted. Please see [PR-1441](https://github.com/borglab/gtsam/pull/1441) for more details.
+ */
+template <class GRAPH>
+ClusterTree<GRAPH>::~ClusterTree() {
+  // For each tree, we first move the root into a queue; then we do a BFS on the tree with the queue;
+  
+  for (auto&& root : roots_) {
+    std::queue<sharedNode> bfs_queue;
+
+    // first, steal the root and move it to the queue. This invalidates root
+    bfs_queue.push(std::move(root));
+
+    // for each node iterated, if its reference count is 1, it will be deleted while its children are still in the queue.
+    // so that the recursive deletion will not happen.
+    while (!bfs_queue.empty()) {
+      // move the ownership of the front node from the queue to the current variable, invalidating the sharedClique at the front of the queue
+      auto node = std::move(bfs_queue.front());
+      bfs_queue.pop();
+
+      // add the children of the current node to the queue, so that the queue will also own the children nodes.
+      for (auto child : node->children) {
+        bfs_queue.push(std::move(child));
+      } // leaving the scope of current will decrease the reference count of the current node by 1, and if the reference count is 0,
+        // the node will be deleted. Because the children are in the queue, the deletion of the node will not trigger a recursive
+        // deletion of the children.
+    }
+  }
+
 }
 
 /* ************************************************************************* */
@@ -119,13 +266,26 @@ struct EliminationData {
   EliminationData* const parentData;
   size_t myIndexInParent;
   FastVector<sharedFactor> childFactors;
-  boost::shared_ptr<BTNode> bayesTreeNode;
+  std::shared_ptr<BTNode> bayesTreeNode;
+#ifdef GTSAM_USE_TBB
+  std::shared_ptr<std::mutex> writeLock;
+#endif
 
   EliminationData(EliminationData* _parentData, size_t nChildren) :
-      parentData(_parentData), bayesTreeNode(boost::make_shared<BTNode>()) {
+      parentData(_parentData), bayesTreeNode(std::make_shared<BTNode>())
+#ifdef GTSAM_USE_TBB
+      , writeLock(std::make_shared<std::mutex>())
+#endif
+    {
     if (parentData) {
+#ifdef GTSAM_USE_TBB
+      parentData->writeLock->lock();
+#endif
       myIndexInParent = parentData->childFactors.size();
       parentData->childFactors.push_back(sharedFactor());
+#ifdef GTSAM_USE_TBB
+      parentData->writeLock->unlock();
+#endif
     } else {
       myIndexInParent = 0;
     }
@@ -168,8 +328,8 @@ struct EliminationData {
       // Gather factors
       FactorGraphType gatheredFactors;
       gatheredFactors.reserve(node->factors.size() + node->nrChildren());
-      gatheredFactors += node->factors;
-      gatheredFactors += myData.childFactors;
+      gatheredFactors.push_back(node->factors);
+      gatheredFactors.push_back(myData.childFactors);
 
       // Check for Bayes tree orphan subtrees, and add them to our children
       // TODO(frank): should this really happen here?
@@ -192,12 +352,23 @@ struct EliminationData {
       // Fill nodes index - we do this here instead of calling insertRoot at the end to avoid
       // putting orphan subtrees in the index - they'll already be in the index of the ISAM2
       // object they're added to.
-      for (const Key& j: myData.bayesTreeNode->conditional()->frontals())
-        nodesIndex_.insert(std::make_pair(j, myData.bayesTreeNode));
-
+      for (const Key& j : myData.bayesTreeNode->conditional()->frontals()) {
+#ifdef GTSAM_USE_TBB
+        nodesIndex_.insert({j, myData.bayesTreeNode});
+#else
+        nodesIndex_.emplace(j, myData.bayesTreeNode);
+#endif
+      }
       // Store remaining factor in parent's gathered factors
-      if (!eliminationResult.second->empty())
+      if (!eliminationResult.second->empty()) {
+#ifdef GTSAM_USE_TBB
+        myData.parentData->writeLock->lock();
+#endif
         myData.parentData->childFactors[myData.myIndexInParent] = eliminationResult.second;
+#ifdef GTSAM_USE_TBB
+        myData.parentData->writeLock->unlock();
+#endif
+      }
     }
   };
 };
@@ -217,13 +388,13 @@ EliminatableClusterTree<BAYESTREE, GRAPH>& EliminatableClusterTree<BAYESTREE, GR
 
 /* ************************************************************************* */
 template <class BAYESTREE, class GRAPH>
-std::pair<boost::shared_ptr<BAYESTREE>, boost::shared_ptr<GRAPH> >
+std::pair<std::shared_ptr<BAYESTREE>, std::shared_ptr<GRAPH> >
 EliminatableClusterTree<BAYESTREE, GRAPH>::eliminate(const Eliminate& function) const {
   gttic(ClusterTree_eliminate);
   // Do elimination (depth-first traversal).  The rootsContainer stores a 'dummy' BayesTree node
   // that contains all of the roots as its children.  rootsContainer also stores the remaining
   // un-eliminated factors passed up from the roots.
-  boost::shared_ptr<BayesTreeType> result = boost::make_shared<BayesTreeType>();
+  std::shared_ptr<BayesTreeType> result = std::make_shared<BayesTreeType>();
 
   typedef EliminationData<This> Data;
   Data rootsContainer(0, this->nrRoots());
@@ -240,7 +411,7 @@ EliminatableClusterTree<BAYESTREE, GRAPH>::eliminate(const Eliminate& function) 
                         rootsContainer.bayesTreeNode->children.end());
 
   // Add remaining factors that were not involved with eliminated variables
-  boost::shared_ptr<FactorGraphType> remaining = boost::make_shared<FactorGraphType>();
+  std::shared_ptr<FactorGraphType> remaining = std::make_shared<FactorGraphType>();
   remaining->reserve(remainingFactors_.size() + rootsContainer.childFactors.size());
   remaining->push_back(remainingFactors_.begin(), remainingFactors_.end());
   for (const sharedFactor& factor : rootsContainer.childFactors) {
@@ -249,7 +420,7 @@ EliminatableClusterTree<BAYESTREE, GRAPH>::eliminate(const Eliminate& function) 
   }
 
   // Return result
-  return std::make_pair(result, remaining);
+  return {result, remaining};
 }
 
 } // namespace gtsam

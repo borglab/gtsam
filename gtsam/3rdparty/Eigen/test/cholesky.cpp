@@ -7,15 +7,12 @@
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#ifndef EIGEN_NO_ASSERTION_CHECKING
-#define EIGEN_NO_ASSERTION_CHECKING
-#endif
-
 #define TEST_ENABLE_TEMPORARY_TRACKING
 
 #include "main.h"
 #include <Eigen/Cholesky>
 #include <Eigen/QR>
+#include "solverbase.h"
 
 template<typename MatrixType, int UpLo>
 typename MatrixType::RealScalar matrix_l1_norm(const MatrixType& m) {
@@ -81,15 +78,17 @@ template<typename MatrixType> void cholesky(const MatrixType& m)
   }
 
   {
+    STATIC_CHECK(( internal::is_same<typename LLT<MatrixType,Lower>::StorageIndex,int>::value ));
+    STATIC_CHECK(( internal::is_same<typename LLT<MatrixType,Upper>::StorageIndex,int>::value ));
+
     SquareMatrixType symmUp = symm.template triangularView<Upper>();
     SquareMatrixType symmLo = symm.template triangularView<Lower>();
 
     LLT<SquareMatrixType,Lower> chollo(symmLo);
     VERIFY_IS_APPROX(symm, chollo.reconstructedMatrix());
-    vecX = chollo.solve(vecB);
-    VERIFY_IS_APPROX(symm * vecX, vecB);
-    matX = chollo.solve(matB);
-    VERIFY_IS_APPROX(symm * matX, matB);
+
+    check_solverbase<VectorType, VectorType>(symm, chollo, rows, rows, 1);
+    check_solverbase<MatrixType, MatrixType>(symm, chollo, rows, cols, rows);
 
     const MatrixType symmLo_inverse = chollo.solve(MatrixType::Identity(rows,cols));
     RealScalar rcond = (RealScalar(1) / matrix_l1_norm<MatrixType, Lower>(symmLo)) /
@@ -143,6 +142,9 @@ template<typename MatrixType> void cholesky(const MatrixType& m)
 
   // LDLT
   {
+    STATIC_CHECK(( internal::is_same<typename LDLT<MatrixType,Lower>::StorageIndex,int>::value ));
+    STATIC_CHECK(( internal::is_same<typename LDLT<MatrixType,Upper>::StorageIndex,int>::value ));
+
     int sign = internal::random<int>()%2 ? 1 : -1;
 
     if(sign == -1)
@@ -156,10 +158,9 @@ template<typename MatrixType> void cholesky(const MatrixType& m)
     LDLT<SquareMatrixType,Lower> ldltlo(symmLo);
     VERIFY(ldltlo.info()==Success);
     VERIFY_IS_APPROX(symm, ldltlo.reconstructedMatrix());
-    vecX = ldltlo.solve(vecB);
-    VERIFY_IS_APPROX(symm * vecX, vecB);
-    matX = ldltlo.solve(matB);
-    VERIFY_IS_APPROX(symm * matX, matB);
+
+    check_solverbase<VectorType, VectorType>(symm, ldltlo, rows, rows, 1);
+    check_solverbase<MatrixType, MatrixType>(symm, ldltlo, rows, cols, rows);
 
     const MatrixType symmLo_inverse = ldltlo.solve(MatrixType::Identity(rows,cols));
     RealScalar rcond = (RealScalar(1) / matrix_l1_norm<MatrixType, Lower>(symmLo)) /
@@ -313,10 +314,9 @@ template<typename MatrixType> void cholesky_cplx(const MatrixType& m)
 
     LLT<RealMatrixType,Lower> chollo(symmLo);
     VERIFY_IS_APPROX(symm, chollo.reconstructedMatrix());
-    vecX = chollo.solve(vecB);
-    VERIFY_IS_APPROX(symm * vecX, vecB);
-//     matX = chollo.solve(matB);
-//     VERIFY_IS_APPROX(symm * matX, matB);
+
+    check_solverbase<VectorType, VectorType>(symm, chollo, rows, rows, 1);
+    //check_solverbase<MatrixType, MatrixType>(symm, chollo, rows, cols, rows);
   }
 
   // LDLT
@@ -333,10 +333,9 @@ template<typename MatrixType> void cholesky_cplx(const MatrixType& m)
     LDLT<RealMatrixType,Lower> ldltlo(symmLo);
     VERIFY(ldltlo.info()==Success);
     VERIFY_IS_APPROX(symm, ldltlo.reconstructedMatrix());
-    vecX = ldltlo.solve(vecB);
-    VERIFY_IS_APPROX(symm * vecX, vecB);
-//     matX = ldltlo.solve(matB);
-//     VERIFY_IS_APPROX(symm * matX, matB);
+
+    check_solverbase<VectorType, VectorType>(symm, ldltlo, rows, rows, 1);
+    //check_solverbase<MatrixType, MatrixType>(symm, ldltlo, rows, cols, rows);
   }
 }
 
@@ -477,19 +476,23 @@ template<typename MatrixType> void cholesky_verify_assert()
   VERIFY_RAISES_ASSERT(llt.matrixL())
   VERIFY_RAISES_ASSERT(llt.matrixU())
   VERIFY_RAISES_ASSERT(llt.solve(tmp))
-  VERIFY_RAISES_ASSERT(llt.solveInPlace(&tmp))
+  VERIFY_RAISES_ASSERT(llt.transpose().solve(tmp))
+  VERIFY_RAISES_ASSERT(llt.adjoint().solve(tmp))
+  VERIFY_RAISES_ASSERT(llt.solveInPlace(tmp))
 
   LDLT<MatrixType> ldlt;
   VERIFY_RAISES_ASSERT(ldlt.matrixL())
-  VERIFY_RAISES_ASSERT(ldlt.permutationP())
+  VERIFY_RAISES_ASSERT(ldlt.transpositionsP())
   VERIFY_RAISES_ASSERT(ldlt.vectorD())
   VERIFY_RAISES_ASSERT(ldlt.isPositive())
   VERIFY_RAISES_ASSERT(ldlt.isNegative())
   VERIFY_RAISES_ASSERT(ldlt.solve(tmp))
-  VERIFY_RAISES_ASSERT(ldlt.solveInPlace(&tmp))
+  VERIFY_RAISES_ASSERT(ldlt.transpose().solve(tmp))
+  VERIFY_RAISES_ASSERT(ldlt.adjoint().solve(tmp))
+  VERIFY_RAISES_ASSERT(ldlt.solveInPlace(tmp))
 }
 
-void test_cholesky()
+EIGEN_DECLARE_TEST(cholesky)
 {
   int s = 0;
   for(int i = 0; i < g_repeat; i++) {

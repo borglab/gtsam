@@ -1,1 +1,1 @@
-gtsamAddTestsGlob(linear_unstable "test*.cpp" "" "gtsam_unstable")
+gtsamAddTestsGlob(linear_unstable "test*.cpp" "${EXCLUDE_TESTS}" "gtsam_unstable")

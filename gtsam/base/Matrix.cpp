@@ -23,16 +23,13 @@
 #include <Eigen/SVD>
 #include <Eigen/LU>
 
-#include <boost/tuple/tuple.hpp>
-#include <boost/tokenizer.hpp>
-
 #include <cstdarg>
+#include <cassert>
 #include <cstring>
-#include <iomanip>
 #include <list>
 #include <fstream>
-#include <limits>
 #include <iostream>
+#include <iterator>
 
 using namespace std;
 
@@ -91,7 +88,7 @@ static bool is_linear_dependent(const Matrix& A, const Matrix& B, double tol) {
   if(m1!=m2 || n1!=n2) dependent = false;
 
   for(size_t i=0; dependent && i<m1; i++) {
-    if (!gtsam::linear_dependent(Vector(row(A,i)), Vector(row(B,i)), tol))
+    if (!gtsam::linear_dependent(Vector(A.row(i)), Vector(B.row(i)), tol))
       dependent = false;
   }
 
@@ -127,15 +124,6 @@ bool linear_dependent(const Matrix& A, const Matrix& B, double tol) {
 }
 
 /* ************************************************************************* */
-Vector operator^(const Matrix& A, const Vector & v) {
-  if (A.rows()!=v.size()) throw std::invalid_argument(
-      boost::str(boost::format("Matrix operator^ : A.m(%d)!=v.size(%d)") % A.rows() % v.size()));
-//  Vector vt = v.transpose();
-//  Vector vtA = vt * A;
-//  return vtA.transpose();
-  return A.transpose() * v;
-}
-
 const Eigen::IOFormat& matlabFormat() {
   static const Eigen::IOFormat matlab(
     Eigen::StreamPrecision, // precision
@@ -249,8 +237,7 @@ pair<Matrix,Matrix> qr(const Matrix& A) {
       xjm(k) = R(j+k, j);
 
     // calculate the Householder vector v
-    double beta; Vector vjm;
-    boost::tie(beta,vjm) = house(xjm);
+    const auto [beta, vjm] = house(xjm);
 
     // pad with zeros to get m-dimensional vector v
     for(size_t k = 0 ; k < m; k++)
@@ -268,13 +255,13 @@ pair<Matrix,Matrix> qr(const Matrix& A) {
 }
 
 /* ************************************************************************* */
-list<boost::tuple<Vector, double, double> >
+list<std::tuple<Vector, double, double> >
 weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
   size_t m = A.rows(), n = A.cols(); // get size(A)
   size_t maxRank = min(m,n);
 
   // create list
-  list<boost::tuple<Vector, double, double> > results;
+  list<std::tuple<Vector, double, double> > results;
 
   Vector pseudo(m); // allocate storage for pseudo-inverse
   Vector weights = sigmas.array().square().inverse(); // calculate weights once
@@ -285,7 +272,7 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
   // Then update A and b by substituting x with d-rS, zero-ing out x's column.
   for (size_t j=0; j<n; ++j) {
     // extract the first column of A
-    Vector a(column(A, j));
+    Vector a(A.col(j));
 
     // Calculate weighted pseudo-inverse and corresponding precision
     double precision = weightedPseudoinverse(a, weights, pseudo);
@@ -303,7 +290,7 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 
     // construct solution (r, d, sigma)
     // TODO: avoid sqrt, store precision or at least variance
-    results.push_back(boost::make_tuple(r, d, 1./sqrt(precision)));
+    results.push_back(std::make_tuple(r, d, 1./sqrt(precision)));
 
     // exit after rank exhausted
     if (results.size()>=maxRank) break;
@@ -564,7 +551,7 @@ void svd(const Matrix& A, Matrix& U, Vector& S, Matrix& V) {
 }
 
 /* ************************************************************************* */
-boost::tuple<int, double, Vector> DLT(const Matrix& A, double rank_tol) {
+std::tuple<int, double, Vector> DLT(const Matrix& A, double rank_tol) {
 
   // Check size of A
   size_t n = A.rows(), p = A.cols(), m = min(n,p);
@@ -581,7 +568,8 @@ boost::tuple<int, double, Vector> DLT(const Matrix& A, double rank_tol) {
 
   // Return rank, error, and corresponding column of V
   double error = m<p ? 0 : s(m-1);
-  return boost::tuple<int, double, Vector>((int)rank, error, Vector(column(V, p-1)));
+  return std::tuple<int, double, Vector>((int)rank, error,
+                                         Vector(V.col(p - 1)));
 }
 
 /* ************************************************************************* */
@@ -612,11 +600,12 @@ std::string formatMatrixIndented(const std::string& label, const Matrix& matrix,
     else
       matrixPrinted << matrix;
     const std::string matrixStr = matrixPrinted.str();
-    boost::tokenizer<boost::char_separator<char> > tok(matrixStr, boost::char_separator<char>("\n"));
 
+    // Split the matrix string into lines and indent them
+    std::string line;
+    std::istringstream iss(matrixStr);
     DenseIndex row = 0;
-    for(const std::string& line: tok)
-    {
+    while (std::getline(iss, line)) {
       assert(row < effectiveRows);
       if(row > 0)
         ss << padding;
@@ -625,6 +614,7 @@ std::string formatMatrixIndented(const std::string& label, const Matrix& matrix,
         ss << "\n";
       ++ row;
     }
+
   } else {
     ss << "Empty (" << matrix.rows() << "x" << matrix.cols() << ")";
   }
@@ -648,7 +638,7 @@ void inplace_QR(Matrix& A){
   Eigen::internal::householder_qr_inplace_blocked<Matrix, HCoeffsType>::run(A, hCoeffs, 48, temp.data());
 #endif
 
-  zeroBelowDiagonal(A);
+  A.triangularView<Eigen::StrictlyLower>().setZero();
 }
 
 } // namespace gtsam

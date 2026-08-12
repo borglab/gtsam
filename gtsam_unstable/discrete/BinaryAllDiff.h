@@ -47,7 +47,7 @@ class BinaryAllDiff : public Constraint {
   }
 
   /// Calculate value
-  double operator()(const DiscreteValues& values) const override {
+  double evaluate(const Assignment<Key>& values) const override {
     return (double)(values.at(keys_[0]) != values.at(keys_[1]));
   }
 

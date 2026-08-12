@@ -50,6 +50,12 @@ VectorXi::LinSpaced(((hi-low)/step)+1,      // low:step:hi
 // Matrix slicing and blocks. All expressions listed here are read/write.
 // Templated size versions are faster. Note that Matlab is 1-based (a size N
 // vector is x(1)...x(N)).
+/******************************************************************************/
+/*                  PLEASE HELP US IMPROVING THIS SECTION                     */
+/* Eigen 3.4 supports a much improved API for sub-matrices, including,        */
+/* slicing and indexing from arrays:                                          */
+/* http://eigen.tuxfamily.org/dox-devel/group__TutorialSlicingIndexing.html   */
+/******************************************************************************/
 // Eigen                           // Matlab
 x.head(n)                          // x(1:n)
 x.head<n>()                        // x(1:n)
@@ -88,6 +94,11 @@ R.row(i) = P.col(j);               // R(i, :) = P(:, j)
 R.col(j1).swap(mat1.col(j2));      // R(:, [j1 j2]) = R(:, [j2, j1])
 
 // Views, transpose, etc;
+/******************************************************************************/
+/*                  PLEASE HELP US IMPROVING THIS SECTION                     */
+/* Eigen 3.4 supports a new API for reshaping:                                */
+/* http://eigen.tuxfamily.org/dox-devel/group__TutorialReshape.html           */
+/******************************************************************************/
 // Eigen                           // Matlab
 R.adjoint()                        // R'
 R.transpose()                      // R.' or conj(R')       // Read-write

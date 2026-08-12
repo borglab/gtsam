@@ -10,14 +10,13 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file NonlinearISAM-inl.h
+ * @file NonlinearISAM.cpp
  * @date Jan 19, 2010
  * @author Viorela Ila and Richard Roberts
  */
 
 #include <gtsam/nonlinear/NonlinearISAM.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/inference/Ordering.h>
 
 #include <iostream>
 
@@ -48,7 +47,7 @@ void NonlinearISAM::update(const NonlinearFactorGraph& newFactors, const Values&
     // TODO: optimize for whole config?
     linPoint_.insert(initialValues);
 
-    boost::shared_ptr<GaussianFactorGraph> linearizedNewFactors = newFactors.linearize(linPoint_);
+    std::shared_ptr<GaussianFactorGraph> linearizedNewFactors = newFactors.linearize(linPoint_);
 
     // Update ISAM
     isam_.update(*linearizedNewFactors, eliminationFunction_);

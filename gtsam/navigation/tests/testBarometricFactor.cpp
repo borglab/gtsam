@@ -21,8 +21,6 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/navigation/BarometricFactor.h>
 
-#include <boost/bind/bind.hpp>
-
 using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
@@ -52,21 +50,16 @@ TEST(BarometricFactor, Constructor) {
     // Create a linearization point at zero error
     Pose3 T(Rot3::RzRyRx(0., 0., 0.), Point3(0., 0., 10.));
     double baroBias = 0.;
-    Vector1 zero;
-    zero << 0.;
+    Vector1 zero{0.};
     EXPECT(assert_equal(zero, factor.evaluateError(T, baroBias), 1e-5));
 
     // Calculate numerical derivatives
     Matrix expectedH = numericalDerivative21<Vector, Pose3, double>(
-        std::bind(&BarometricFactor::evaluateError, &factor,
-                  std::placeholders::_1, std::placeholders::_2, boost::none,
-                  boost::none),
-        T, baroBias);
+        [&factor](const Pose3& p, const double& d) {return factor.evaluateError(p, d);},
+		T, baroBias);
 
     Matrix expectedH2 = numericalDerivative22<Vector, Pose3, double>(
-        std::bind(&BarometricFactor::evaluateError, &factor,
-                  std::placeholders::_1, std::placeholders::_2, boost::none,
-                  boost::none),
+        [&factor](const Pose3& p, const double& d) {return factor.evaluateError(p, d);},
         T, baroBias);
 
     // Use the factor to calculate the derivative
@@ -99,21 +92,17 @@ TEST(BarometricFactor, nonZero) {
 
     // Calculate numerical derivatives
     Matrix expectedH = numericalDerivative21<Vector, Pose3, double>(
-        std::bind(&BarometricFactor::evaluateError, &factor,
-                  std::placeholders::_1, std::placeholders::_2, boost::none,
-                  boost::none),
+        [&factor](const Pose3& p, const double& d) {return factor.evaluateError(p, d);},
         T, baroBias);
 
     Matrix expectedH2 = numericalDerivative22<Vector, Pose3, double>(
-        std::bind(&BarometricFactor::evaluateError, &factor,
-                  std::placeholders::_1, std::placeholders::_2, boost::none,
-                  boost::none),
+        [&factor](const Pose3& p, const double& d) {return factor.evaluateError(p, d);},
         T, baroBias);
 
     // Use the factor to calculate the derivative and the error
     Matrix actualH, actualH2;
     Vector error = factor.evaluateError(T, baroBias, actualH, actualH2);
-    Vector actual = (Vector(1) << -4.0).finished();
+    Vector actual{{-4.0}};
 
     // Verify we get the expected error
     EXPECT(assert_equal(expectedH, actualH, 1e-8));

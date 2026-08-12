@@ -15,7 +15,6 @@ namespace Eigen {
 
 
 /** \page UserManual_Generalities General topics
-  - \subpage Eigen2ToEigen3
   - \subpage TopicFunctionTakingEigenTypes
   - \subpage TopicPreprocessorDirectives
   - \subpage TopicAssertions
@@ -64,42 +63,46 @@ namespace Eigen {
     \ingroup DenseMatrixManipulation_chapter */
 /** \addtogroup TutorialBlockOperations
     \ingroup DenseMatrixManipulation_chapter */
+/** \addtogroup TutorialSlicingIndexing
+    \ingroup DenseMatrixManipulation_chapter */
 /** \addtogroup TutorialAdvancedInitialization
     \ingroup DenseMatrixManipulation_chapter */
 /** \addtogroup TutorialReductionsVisitorsBroadcasting
     \ingroup DenseMatrixManipulation_chapter */
-/** \addtogroup TutorialMapClass
+/** \addtogroup TutorialReshape
     \ingroup DenseMatrixManipulation_chapter */
-/** \addtogroup TutorialReshapeSlicing
+/** \addtogroup TutorialSTL
+    \ingroup DenseMatrixManipulation_chapter */
+/** \addtogroup TutorialMapClass
     \ingroup DenseMatrixManipulation_chapter */
 /** \addtogroup TopicAliasing
     \ingroup DenseMatrixManipulation_chapter */
 /** \addtogroup TopicStorageOrders
     \ingroup DenseMatrixManipulation_chapter */
-    
+
 /** \addtogroup DenseMatrixManipulation_Alignement
-    \ingroup DenseMatrixManipulation_chapter */
-/** \addtogroup TopicUnalignedArrayAssert
-    \ingroup DenseMatrixManipulation_Alignement */
-/** \addtogroup TopicFixedSizeVectorizable
-    \ingroup DenseMatrixManipulation_Alignement */
-/** \addtogroup TopicStructHavingEigenMembers
-    \ingroup DenseMatrixManipulation_Alignement */
-/** \addtogroup TopicStlContainers
-    \ingroup DenseMatrixManipulation_Alignement */
-/** \addtogroup TopicPassingByValue
-    \ingroup DenseMatrixManipulation_Alignement */
-/** \addtogroup TopicWrongStackAlignment
-    \ingroup DenseMatrixManipulation_Alignement */
+    \ingroup DenseMatrixManipulation_chapter        */
+/**     \addtogroup TopicUnalignedArrayAssert
+        \ingroup DenseMatrixManipulation_Alignement */
+/**     \addtogroup TopicFixedSizeVectorizable
+        \ingroup DenseMatrixManipulation_Alignement */
+/**     \addtogroup TopicStructHavingEigenMembers
+        \ingroup DenseMatrixManipulation_Alignement */
+/**     \addtogroup TopicStlContainers
+        \ingroup DenseMatrixManipulation_Alignement */
+/**     \addtogroup TopicPassingByValue
+        \ingroup DenseMatrixManipulation_Alignement */
+/**     \addtogroup TopicWrongStackAlignment
+        \ingroup DenseMatrixManipulation_Alignement */
     
 /** \addtogroup DenseMatrixManipulation_Reference
-    \ingroup DenseMatrixManipulation_chapter */
-/** \addtogroup Core_Module
-    \ingroup DenseMatrixManipulation_Reference */  
-/** \addtogroup Jacobi_Module
-    \ingroup DenseMatrixManipulation_Reference */ 
-/** \addtogroup Householder_Module
-    \ingroup DenseMatrixManipulation_Reference */ 
+    \ingroup DenseMatrixManipulation_chapter       */
+/**     \addtogroup Core_Module
+        \ingroup DenseMatrixManipulation_Reference */  
+/**     \addtogroup Jacobi_Module
+        \ingroup DenseMatrixManipulation_Reference */ 
+/**     \addtogroup Householder_Module
+        \ingroup DenseMatrixManipulation_Reference */ 
 
 /** \addtogroup CoeffwiseMathFunctions
     \ingroup DenseMatrixManipulation_chapter */

@@ -15,10 +15,10 @@ template<typename MatrixType> void verifySizeOf(const MatrixType&)
   if (MatrixType::RowsAtCompileTime!=Dynamic && MatrixType::ColsAtCompileTime!=Dynamic)
     VERIFY_IS_EQUAL(std::ptrdiff_t(sizeof(MatrixType)),std::ptrdiff_t(sizeof(Scalar))*std::ptrdiff_t(MatrixType::SizeAtCompileTime));
   else
-    VERIFY_IS_EQUAL(sizeof(MatrixType),sizeof(Scalar*) + 2 * sizeof(typename MatrixType::Index));
+    VERIFY_IS_EQUAL(sizeof(MatrixType),sizeof(Scalar*) + 2 * sizeof(Index));
 }
 
-void test_sizeof()
+EIGEN_DECLARE_TEST(sizeof)
 {
   CALL_SUBTEST(verifySizeOf(Matrix<float, 1, 1>()) );
   CALL_SUBTEST(verifySizeOf(Array<float, 2, 1>()) );

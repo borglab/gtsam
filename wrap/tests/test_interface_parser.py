@@ -18,52 +18,55 @@ import unittest
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from gtwrap.interface_parser import (ArgumentList, Class, Constructor, Enum,
-                                     Enumerator, ForwardDeclaration,
-                                     GlobalFunction, Include, Method, Module,
-                                     Namespace, Operator, ReturnType,
-                                     StaticMethod, TemplatedType, Type,
+from gtwrap.interface_parser import (ArgumentList, Class, Constructor,
+                                     DunderMethod, Enum, Enumerator,
+                                     ForwardDeclaration, GlobalFunction,
+                                     Include, Method, Module, Namespace,
+                                     Operator, ReturnType, StaticMethod,
+                                     TemplatedType, Type,
                                      TypedefTemplateInstantiation, Typename,
                                      Variable)
+from gtwrap.template_instantiator.classes import InstantiatedClass
 
 
 class TestInterfaceParser(unittest.TestCase):
     """Test driver for all classes in interface_parser.py."""
+
     def test_typename(self):
         """Test parsing of Typename."""
-        typename = Typename.rule.parseString("size_t")[0]
+        typename = Typename.rule.parse_string("size_t")[0]
         self.assertEqual("size_t", typename.name)
 
     def test_basic_type(self):
         """Tests for BasicType."""
-        # Check basis type
-        t = Type.rule.parseString("int x")[0]
+        # Check basic type
+        t = Type.rule.parse_string("int x")[0]
         self.assertEqual("int", t.typename.name)
         self.assertTrue(t.is_basic)
 
         # Check const
-        t = Type.rule.parseString("const int x")[0]
+        t = Type.rule.parse_string("const int x")[0]
         self.assertEqual("int", t.typename.name)
         self.assertTrue(t.is_basic)
         self.assertTrue(t.is_const)
 
         # Check shared pointer
-        t = Type.rule.parseString("int* x")[0]
+        t = Type.rule.parse_string("int* x")[0]
         self.assertEqual("int", t.typename.name)
         self.assertTrue(t.is_shared_ptr)
 
         # Check raw pointer
-        t = Type.rule.parseString("int@ x")[0]
+        t = Type.rule.parse_string("int@ x")[0]
         self.assertEqual("int", t.typename.name)
         self.assertTrue(t.is_ptr)
 
         # Check reference
-        t = Type.rule.parseString("int& x")[0]
+        t = Type.rule.parse_string("int& x")[0]
         self.assertEqual("int", t.typename.name)
         self.assertTrue(t.is_ref)
 
         # Check const reference
-        t = Type.rule.parseString("const int& x")[0]
+        t = Type.rule.parse_string("const int& x")[0]
         self.assertEqual("int", t.typename.name)
         self.assertTrue(t.is_const)
         self.assertTrue(t.is_ref)
@@ -71,41 +74,38 @@ class TestInterfaceParser(unittest.TestCase):
     def test_custom_type(self):
         """Tests for CustomType."""
         # Check qualified type
-        t = Type.rule.parseString("gtsam::Pose3 x")[0]
+        t = Type.rule.parse_string("gtsam::Pose3 x")[0]
         self.assertEqual("Pose3", t.typename.name)
         self.assertEqual(["gtsam"], t.typename.namespaces)
         self.assertTrue(not t.is_basic)
 
         # Check const
-        t = Type.rule.parseString("const gtsam::Pose3 x")[0]
+        t = Type.rule.parse_string("const gtsam::Pose3 x")[0]
         self.assertEqual("Pose3", t.typename.name)
         self.assertEqual(["gtsam"], t.typename.namespaces)
         self.assertTrue(t.is_const)
 
         # Check shared pointer
-        t = Type.rule.parseString("gtsam::Pose3* x")[0]
+        t = Type.rule.parse_string("gtsam::Pose3* x")[0]
         self.assertEqual("Pose3", t.typename.name)
         self.assertEqual(["gtsam"], t.typename.namespaces)
         self.assertTrue(t.is_shared_ptr)
-        self.assertEqual("std::shared_ptr<gtsam::Pose3>",
-                         t.to_cpp(use_boost=False))
-        self.assertEqual("boost::shared_ptr<gtsam::Pose3>",
-                         t.to_cpp(use_boost=True))
+        self.assertEqual("std::shared_ptr<gtsam::Pose3>", t.to_cpp())
 
         # Check raw pointer
-        t = Type.rule.parseString("gtsam::Pose3@ x")[0]
+        t = Type.rule.parse_string("gtsam::Pose3@ x")[0]
         self.assertEqual("Pose3", t.typename.name)
         self.assertEqual(["gtsam"], t.typename.namespaces)
         self.assertTrue(t.is_ptr)
 
         # Check reference
-        t = Type.rule.parseString("gtsam::Pose3& x")[0]
+        t = Type.rule.parse_string("gtsam::Pose3& x")[0]
         self.assertEqual("Pose3", t.typename.name)
         self.assertEqual(["gtsam"], t.typename.namespaces)
         self.assertTrue(t.is_ref)
 
         # Check const reference
-        t = Type.rule.parseString("const gtsam::Pose3& x")[0]
+        t = Type.rule.parse_string("const gtsam::Pose3& x")[0]
         self.assertEqual("Pose3", t.typename.name)
         self.assertEqual(["gtsam"], t.typename.namespaces)
         self.assertTrue(t.is_const)
@@ -113,28 +113,28 @@ class TestInterfaceParser(unittest.TestCase):
 
     def test_templated_type(self):
         """Test a templated type."""
-        t = TemplatedType.rule.parseString("Eigen::Matrix<double, 3, 4>")[0]
+        t = TemplatedType.rule.parse_string("Eigen::Matrix<double, 3, 4>")[0]
         self.assertEqual("Matrix", t.typename.name)
         self.assertEqual(["Eigen"], t.typename.namespaces)
         self.assertEqual("double", t.typename.instantiations[0].name)
         self.assertEqual("3", t.typename.instantiations[1].name)
         self.assertEqual("4", t.typename.instantiations[2].name)
 
-        t = TemplatedType.rule.parseString(
+        t = TemplatedType.rule.parse_string(
             "gtsam::PinholeCamera<gtsam::Cal3S2>")[0]
         self.assertEqual("PinholeCamera", t.typename.name)
         self.assertEqual(["gtsam"], t.typename.namespaces)
         self.assertEqual("Cal3S2", t.typename.instantiations[0].name)
         self.assertEqual(["gtsam"], t.typename.instantiations[0].namespaces)
 
-        t = TemplatedType.rule.parseString("PinholeCamera<Cal3S2*>")[0]
+        t = TemplatedType.rule.parse_string("PinholeCamera<Cal3S2*>")[0]
         self.assertEqual("PinholeCamera", t.typename.name)
         self.assertEqual("Cal3S2", t.typename.instantiations[0].name)
         self.assertTrue(t.template_params[0].is_shared_ptr)
 
     def test_empty_arguments(self):
         """Test no arguments."""
-        empty_args = ArgumentList.rule.parseString("")[0]
+        empty_args = ArgumentList.rule.parse_string("")[0]
         self.assertEqual(0, len(empty_args))
 
     def test_argument_list(self):
@@ -142,7 +142,7 @@ class TestInterfaceParser(unittest.TestCase):
         arg_string = "int a, C1 c1, C2& c2, C3* c3, "\
             "const C4 c4, const C5& c5,"\
             "const C6* c6"
-        args = ArgumentList.rule.parseString(arg_string)[0]
+        args = ArgumentList.rule.parse_string(arg_string)[0]
 
         self.assertEqual(7, len(args.list()))
         self.assertEqual(['a', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6'],
@@ -155,7 +155,7 @@ class TestInterfaceParser(unittest.TestCase):
         """
         arg_string = "double x1, double* x2, double& x3, double@ x4, " \
             "const double x5, const double* x6, const double& x7, const double@ x8"
-        args = ArgumentList.rule.parseString(arg_string)[0].list()
+        args = ArgumentList.rule.parse_string(arg_string)[0].list()
         self.assertEqual(8, len(args))
         self.assertFalse(args[1].ctype.is_ptr and args[1].ctype.is_shared_ptr
                          and args[1].ctype.is_ref)
@@ -170,19 +170,17 @@ class TestInterfaceParser(unittest.TestCase):
     def test_argument_list_templated(self):
         """Test arguments list where the arguments can be templated."""
         arg_string = "std::pair<string, double> steps, vector<T*> vector_of_pointers"
-        args = ArgumentList.rule.parseString(arg_string)[0]
+        args = ArgumentList.rule.parse_string(arg_string)[0]
         args_list = args.list()
         self.assertEqual(2, len(args_list))
         self.assertEqual("std::pair<string, double>",
-                         args_list[0].ctype.to_cpp(False))
+                         args_list[0].ctype.to_cpp())
         self.assertEqual("vector<std::shared_ptr<T>>",
-                         args_list[1].ctype.to_cpp(False))
-        self.assertEqual("vector<boost::shared_ptr<T>>",
-                         args_list[1].ctype.to_cpp(True))
+                         args_list[1].ctype.to_cpp())
 
     def test_default_arguments(self):
         """Tests any expression that is a valid default argument"""
-        args = ArgumentList.rule.parseString("""
+        args = ArgumentList.rule.parse_string("""
             string c = "", int z = 0, double z2 = 0.0, bool f = false,
             string s="hello"+"goodbye", char c='a', int a=3,
             int b, double pi = 3.1415""")[0].list()
@@ -225,7 +223,7 @@ class TestInterfaceParser(unittest.TestCase):
                        arg5=arg5,
                        arg6=arg6,
                        arg7=arg7)
-        args = ArgumentList.rule.parseString(argument_list)[0].list()
+        args = ArgumentList.rule.parse_string(argument_list)[0].list()
 
         # Test non-basic type
         self.assertEqual(args[0].default, arg0)
@@ -242,55 +240,55 @@ class TestInterfaceParser(unittest.TestCase):
     def test_return_type(self):
         """Test ReturnType"""
         # Test void
-        return_type = ReturnType.rule.parseString("void")[0]
+        return_type = ReturnType.rule.parse_string("void")[0]
         self.assertEqual("void", return_type.type1.typename.name)
         self.assertTrue(return_type.type1.is_basic)
 
-        # Test basis type
-        return_type = ReturnType.rule.parseString("size_t")[0]
+        # Test basic type
+        return_type = ReturnType.rule.parse_string("size_t")[0]
         self.assertEqual("size_t", return_type.type1.typename.name)
         self.assertTrue(not return_type.type2)
         self.assertTrue(return_type.type1.is_basic)
 
         # Test with qualifiers
-        return_type = ReturnType.rule.parseString("int&")[0]
+        return_type = ReturnType.rule.parse_string("int&")[0]
         self.assertEqual("int", return_type.type1.typename.name)
         self.assertTrue(return_type.type1.is_basic
                         and return_type.type1.is_ref)
 
-        return_type = ReturnType.rule.parseString("const int")[0]
+        return_type = ReturnType.rule.parse_string("const int")[0]
         self.assertEqual("int", return_type.type1.typename.name)
         self.assertTrue(return_type.type1.is_basic
                         and return_type.type1.is_const)
 
         # Test pair return
-        return_type = ReturnType.rule.parseString("pair<char, int>")[0]
+        return_type = ReturnType.rule.parse_string("pair<char, int>")[0]
         self.assertEqual("char", return_type.type1.typename.name)
         self.assertEqual("int", return_type.type2.typename.name)
 
-        return_type = ReturnType.rule.parseString("pair<Test ,Test*>")[0]
+        return_type = ReturnType.rule.parse_string("pair<Test ,Test*>")[0]
         self.assertEqual("Test", return_type.type1.typename.name)
         self.assertEqual("Test", return_type.type2.typename.name)
         self.assertTrue(return_type.type2.is_shared_ptr)
 
     def test_method(self):
         """Test for a class method."""
-        ret = Method.rule.parseString("int f();")[0]
+        ret = Method.rule.parse_string("int f();")[0]
         self.assertEqual("f", ret.name)
         self.assertEqual(0, len(ret.args))
         self.assertTrue(not ret.is_const)
 
-        ret = Method.rule.parseString("int f() const;")[0]
+        ret = Method.rule.parse_string("int f() const;")[0]
         self.assertEqual("f", ret.name)
         self.assertEqual(0, len(ret.args))
         self.assertTrue(ret.is_const)
 
-        ret = Method.rule.parseString(
+        ret = Method.rule.parse_string(
             "int f(const int x, const Class& c, Class* t) const;")[0]
         self.assertEqual("f", ret.name)
         self.assertEqual(3, len(ret.args))
 
-        ret = Method.rule.parseString(
+        ret = Method.rule.parse_string(
             "pair<First ,Second*> create_MixedPtrs();")[0]
         self.assertEqual("create_MixedPtrs", ret.name)
         self.assertEqual(0, len(ret.args))
@@ -299,27 +297,27 @@ class TestInterfaceParser(unittest.TestCase):
 
     def test_static_method(self):
         """Test for static methods."""
-        ret = StaticMethod.rule.parseString("static int f();")[0]
+        ret = StaticMethod.rule.parse_string("static int f();")[0]
         self.assertEqual("f", ret.name)
         self.assertEqual(0, len(ret.args))
 
-        ret = StaticMethod.rule.parseString(
+        ret = StaticMethod.rule.parse_string(
             "static int f(const int x, const Class& c, Class* t);")[0]
         self.assertEqual("f", ret.name)
         self.assertEqual(3, len(ret.args))
 
     def test_constructor(self):
         """Test for class constructor."""
-        ret = Constructor.rule.parseString("f();")[0]
+        ret = Constructor.rule.parse_string("f();")[0]
         self.assertEqual("f", ret.name)
         self.assertEqual(0, len(ret.args))
 
-        ret = Constructor.rule.parseString(
+        ret = Constructor.rule.parse_string(
             "f(const int x, const Class& c, Class* t);")[0]
         self.assertEqual("f", ret.name)
         self.assertEqual(3, len(ret.args))
 
-        ret = Constructor.rule.parseString(
+        ret = Constructor.rule.parse_string(
             """ForwardKinematics(const gtdynamics::Robot& robot,
                     const string& start_link_name, const string& end_link_name,
                     const gtsam::Values& joint_angles,
@@ -334,7 +332,7 @@ class TestInterfaceParser(unittest.TestCase):
         template<T = {double, int}>
         Class();
         """
-        ret = Constructor.rule.parseString(f)[0]
+        ret = Constructor.rule.parse_string(f)[0]
         self.assertEqual("Class", ret.name)
         self.assertEqual(0, len(ret.args))
 
@@ -342,16 +340,27 @@ class TestInterfaceParser(unittest.TestCase):
         template<T = {double, int}>
         Class(const T& name);
         """
-        ret = Constructor.rule.parseString(f)[0]
+        ret = Constructor.rule.parse_string(f)[0]
         self.assertEqual("Class", ret.name)
         self.assertEqual(1, len(ret.args))
         self.assertEqual("const T & name", ret.args.args_list[0].to_cpp())
+
+    def test_dunder_method(self):
+        """Test for special python dunder methods."""
+        iter_string = "__iter__();"
+        ret = DunderMethod.rule.parse_string(iter_string)[0]
+        self.assertEqual("iter", ret.name)
+
+        contains_string = "__contains__(size_t key);"
+        ret = DunderMethod.rule.parse_string(contains_string)[0]
+        self.assertEqual("contains", ret.name)
+        self.assertTrue(len(ret.args) == 1)
 
     def test_operator_overload(self):
         """Test for operator overloading."""
         # Unary operator
         wrap_string = "gtsam::Vector2 operator-() const;"
-        ret = Operator.rule.parseString(wrap_string)[0]
+        ret = Operator.rule.parse_string(wrap_string)[0]
         self.assertEqual("operator", ret.name)
         self.assertEqual("-", ret.operator)
         self.assertEqual("Vector2", ret.return_type.type1.typename.name)
@@ -362,7 +371,7 @@ class TestInterfaceParser(unittest.TestCase):
 
         # Binary operator
         wrap_string = "gtsam::Vector2 operator*(const gtsam::Vector2 &v) const;"
-        ret = Operator.rule.parseString(wrap_string)[0]
+        ret = Operator.rule.parse_string(wrap_string)[0]
         self.assertEqual("operator", ret.name)
         self.assertEqual("*", ret.operator)
         self.assertEqual("Vector2", ret.return_type.type1.typename.name)
@@ -375,7 +384,7 @@ class TestInterfaceParser(unittest.TestCase):
 
     def test_typedef_template_instantiation(self):
         """Test for typedef'd instantiation of a template."""
-        typedef = TypedefTemplateInstantiation.rule.parseString("""
+        typedef = TypedefTemplateInstantiation.rule.parse_string("""
         typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Point2, gtsam::Rot2>
             BearingFactor2D;
         """)[0]
@@ -386,7 +395,7 @@ class TestInterfaceParser(unittest.TestCase):
 
     def test_base_class(self):
         """Test a base class."""
-        ret = Class.rule.parseString("""
+        ret = Class.rule.parse_string("""
             virtual class Base {
             };
             """)[0]
@@ -399,7 +408,7 @@ class TestInterfaceParser(unittest.TestCase):
 
     def test_empty_class(self):
         """Test an empty class declaration."""
-        ret = Class.rule.parseString("""
+        ret = Class.rule.parse_string("""
             class FactorIndices {};
         """)[0]
         self.assertEqual("FactorIndices", ret.name)
@@ -411,7 +420,7 @@ class TestInterfaceParser(unittest.TestCase):
 
     def test_class(self):
         """Test a non-trivial class."""
-        ret = Class.rule.parseString("""
+        ret = Class.rule.parse_string("""
         class SymbolicFactorGraph {
             SymbolicFactorGraph();
             SymbolicFactorGraph(const gtsam::SymbolicBayesNet& bayesNet);
@@ -468,7 +477,7 @@ class TestInterfaceParser(unittest.TestCase):
 
     def test_templated_class(self):
         """Test a templated class."""
-        ret = Class.rule.parseString("""
+        ret = Class.rule.parse_string("""
         template<POSE, POINT>
         class MyFactor {};
         """)[0]
@@ -478,7 +487,7 @@ class TestInterfaceParser(unittest.TestCase):
 
     def test_class_inheritance(self):
         """Test for class inheritance."""
-        ret = Class.rule.parseString("""
+        ret = Class.rule.parse_string("""
         virtual class Null: gtsam::noiseModel::mEstimator::Base {
           Null();
           void print(string s) const;
@@ -498,9 +507,11 @@ class TestInterfaceParser(unittest.TestCase):
                          ret.parent_class.namespaces)
         self.assertTrue(ret.is_virtual)
 
-        ret = Class.rule.parseString(
+        ret = Class.rule.parse_string(
             "class ForwardKinematicsFactor : gtsam::BetweenFactor<gtsam::Pose3> {};"
         )[0]
+        ret = InstantiatedClass(ret,
+                                [])  # Needed to correctly parse parent class
         self.assertEqual("ForwardKinematicsFactor", ret.name)
         self.assertEqual("BetweenFactor", ret.parent_class.name)
         self.assertEqual(["gtsam"], ret.parent_class.namespaces)
@@ -510,7 +521,7 @@ class TestInterfaceParser(unittest.TestCase):
 
     def test_class_with_enum(self):
         """Test for class with nested enum."""
-        ret = Class.rule.parseString("""
+        ret = Class.rule.parse_string("""
         class Pet {
             Pet(const string &name, Kind type);
             enum Kind { Dog, Cat };
@@ -521,13 +532,13 @@ class TestInterfaceParser(unittest.TestCase):
 
     def test_include(self):
         """Test for include statements."""
-        include = Include.rule.parseString(
+        include = Include.rule.parse_string(
             "#include <gtsam/slam/PriorFactor.h>")[0]
         self.assertEqual("gtsam/slam/PriorFactor.h", include.header)
 
     def test_forward_declaration(self):
         """Test for forward declarations."""
-        fwd = ForwardDeclaration.rule.parseString(
+        fwd = ForwardDeclaration.rule.parse_string(
             "virtual class Test:gtsam::Point3;")[0]
 
         self.assertEqual("Test", fwd.name)
@@ -535,7 +546,7 @@ class TestInterfaceParser(unittest.TestCase):
 
     def test_function(self):
         """Test for global/free function."""
-        func = GlobalFunction.rule.parseString("""
+        func = GlobalFunction.rule.parse_string("""
         gtsam::Values localToWorld(const gtsam::Values& local,
             const gtsam::Pose2& base, const gtsam::KeyVector& keys);
         """)[0]
@@ -545,29 +556,29 @@ class TestInterfaceParser(unittest.TestCase):
 
     def test_global_variable(self):
         """Test for global variable."""
-        variable = Variable.rule.parseString("string kGravity;")[0]
+        variable = Variable.rule.parse_string("string kGravity;")[0]
         self.assertEqual(variable.name, "kGravity")
         self.assertEqual(variable.ctype.typename.name, "string")
 
-        variable = Variable.rule.parseString("string kGravity = 9.81;")[0]
+        variable = Variable.rule.parse_string("string kGravity = 9.81;")[0]
         self.assertEqual(variable.name, "kGravity")
         self.assertEqual(variable.ctype.typename.name, "string")
         self.assertEqual(variable.default, "9.81")
 
-        variable = Variable.rule.parseString(
+        variable = Variable.rule.parse_string(
             "const string kGravity = 9.81;")[0]
         self.assertEqual(variable.name, "kGravity")
         self.assertEqual(variable.ctype.typename.name, "string")
         self.assertTrue(variable.ctype.is_const)
         self.assertEqual(variable.default, "9.81")
 
-        variable = Variable.rule.parseString(
+        variable = Variable.rule.parse_string(
             "gtsam::Pose3 wTc = gtsam::Pose3();")[0]
         self.assertEqual(variable.name, "wTc")
         self.assertEqual(variable.ctype.typename.name, "Pose3")
         self.assertEqual(variable.default, "gtsam::Pose3()")
 
-        variable = Variable.rule.parseString(
+        variable = Variable.rule.parse_string(
             "gtsam::Pose3 wTc = gtsam::Pose3(1, 2, 0);")[0]
         self.assertEqual(variable.name, "wTc")
         self.assertEqual(variable.ctype.typename.name, "Pose3")
@@ -575,15 +586,15 @@ class TestInterfaceParser(unittest.TestCase):
 
     def test_enumerator(self):
         """Test for enumerator."""
-        enumerator = Enumerator.rule.parseString("Dog")[0]
+        enumerator = Enumerator.rule.parse_string("Dog")[0]
         self.assertEqual(enumerator.name, "Dog")
 
-        enumerator = Enumerator.rule.parseString("Cat")[0]
+        enumerator = Enumerator.rule.parse_string("Cat")[0]
         self.assertEqual(enumerator.name, "Cat")
 
     def test_enum(self):
         """Test for enums."""
-        enum = Enum.rule.parseString("""
+        enum = Enum.rule.parse_string("""
         enum Kind {
             Dog,
             Cat
@@ -595,7 +606,7 @@ class TestInterfaceParser(unittest.TestCase):
 
     def test_namespace(self):
         """Test for namespace parsing."""
-        namespace = Namespace.rule.parseString("""
+        namespace = Namespace.rule.parse_string("""
         namespace gtsam {
           #include <gtsam/geometry/Point2.h>
           class Point2 {
@@ -626,7 +637,7 @@ class TestInterfaceParser(unittest.TestCase):
 
     def test_module(self):
         """Test module parsing."""
-        module = Module.parseString("""
+        module = Module.parse_string("""
         namespace one {
             namespace two {
                 namespace three {

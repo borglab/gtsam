@@ -30,7 +30,7 @@ bool CSP::runArcConsistency(const VariableIndex& index,
     // Otherwise, loop over all factors/constraints for variable with given key.
     for (size_t f : factors) {
       // If this factor is a constraint, call its ensureArcConsistency method:
-      auto constraint = boost::dynamic_pointer_cast<Constraint>((*this)[f]);
+      auto constraint = std::dynamic_pointer_cast<Constraint>((*this)[f]);
       if (constraint) {
         changed = constraint->ensureArcConsistency(key, domains) || changed;
       }
@@ -75,7 +75,7 @@ CSP CSP::partiallyApply(const Domains& domains) const {
 
   // Reduce all existing factors:
   for (const DiscreteFactor::shared_ptr& f : factors_) {
-    auto constraint = boost::dynamic_pointer_cast<Constraint>(f);
+    auto constraint = std::dynamic_pointer_cast<Constraint>(f);
     if (!constraint)
       throw runtime_error("CSP:runArcConsistency: non-constraint factor");
     Constraint::shared_ptr reduced = constraint->partiallyApply(domains);

@@ -15,11 +15,12 @@
  * @author Frank Dellaert
  **/
 
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/numericalDerivative.h>
-#include <gtsam/base/lieProxies.h>
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/lieProxies.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/Point2.h>
 
 using namespace std;
 using namespace gtsam;
@@ -30,13 +31,14 @@ GTSAM_CONCEPT_LIE_INST(Point2)
 //******************************************************************************
 TEST(Point2 , Constructor) {
   Point2 p;
+  (void)p;
 }
 
 //******************************************************************************
 TEST(Double , Concept) {
-  BOOST_CONCEPT_ASSERT((IsGroup<double>));
-  BOOST_CONCEPT_ASSERT((IsManifold<double>));
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<double>));
+  GTSAM_CONCEPT_ASSERT(IsGroup<double>);
+  GTSAM_CONCEPT_ASSERT(IsManifold<double>);
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<double>);
 }
 
 //******************************************************************************
@@ -48,9 +50,9 @@ TEST(Double , Invariants) {
 
 //******************************************************************************
 TEST(Point2 , Concept) {
-  BOOST_CONCEPT_ASSERT((IsGroup<Point2>));
-  BOOST_CONCEPT_ASSERT((IsManifold<Point2>));
-  BOOST_CONCEPT_ASSERT((IsVectorSpace<Point2>));
+  GTSAM_CONCEPT_ASSERT(IsGroup<Point2>);
+  GTSAM_CONCEPT_ASSERT(IsManifold<Point2>);
+  GTSAM_CONCEPT_ASSERT(IsVectorSpace<Point2>);
 }
 
 //******************************************************************************
@@ -140,7 +142,7 @@ TEST( Point2, norm ) {
   // exception, for (0,0) derivative is [Inf,Inf] but we return [1,1]
   actual = norm2(x1, actualH);
   EXPECT_DOUBLES_EQUAL(0, actual, 1e-9);
-  expectedH = (Matrix(1, 2) << 1.0, 1.0).finished();
+  expectedH = Matrix{{1.0, 1.0}};
   EXPECT(assert_equal(expectedH,actualH));
 
   actual = norm2(x2, actualH);
@@ -149,7 +151,7 @@ TEST( Point2, norm ) {
   EXPECT(assert_equal(expectedH,actualH));
 
   // analytical
-  expectedH = (Matrix(1, 2) << x2.x()/actual, x2.y()/actual).finished();
+  expectedH = Matrix{{x2.x() / actual, x2.y() / actual}};
   EXPECT(assert_equal(expectedH,actualH));
 }
 

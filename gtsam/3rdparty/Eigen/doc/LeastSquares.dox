@@ -30,14 +30,17 @@ computing least squares solutions:
 </table>
 
 This is example from the page \link TutorialLinearAlgebra Linear algebra and decompositions \endlink.
+If you just need to solve the least squares problem, but are not interested in the SVD per se, a
+faster alternative method is CompleteOrthogonalDecomposition. 
 
 
 \section LeastSquaresQR Using the QR decomposition
 
 The solve() method in QR decomposition classes also computes the least squares solution. There are
-three QR decomposition classes: HouseholderQR (no pivoting, so fast but unstable),
-ColPivHouseholderQR (column pivoting, thus a bit slower but more accurate) and FullPivHouseholderQR
-(full pivoting, so slowest and most stable). Here is an example with column pivoting:
+three QR decomposition classes: HouseholderQR (no pivoting, fast but unstable if your matrix is
+not rull rank), ColPivHouseholderQR (column pivoting, thus a bit slower but more stable) and
+FullPivHouseholderQR (full pivoting, so slowest and slightly more stable than ColPivHouseholderQR).
+Here is an example with column pivoting:
 
 <table class="example">
 <tr><th>Example:</th><th>Output:</th></tr>
@@ -61,9 +64,11 @@ Finding the least squares solution of \a Ax = \a b is equivalent to solving the 
 </tr>
 </table>
 
-If the matrix \a A is ill-conditioned, then this is not a good method, because the condition number
+This method is usually the fastest, especially when \a A is "tall and skinny". However, if the
+matrix \a A is even mildly ill-conditioned, this is not a good method, because the condition number
 of <i>A</i><sup>T</sup><i>A</i> is the square of the condition number of \a A. This means that you
-lose twice as many digits using normal equation than if you use the other methods.
+lose roughly twice as many digits of accuracy using the normal equation, compared to the more stable
+methods mentioned above.
 
 */
 
