@@ -9,6 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
+#include <gtsam/config.h>
+#include <CppUnitLite/TestHarness.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam_unstable/slam/PartialPriorFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/geometry/Point3.h>
@@ -18,8 +23,6 @@
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/nonlinear/FunctorizedFactor.h>
-
-#include <CppUnitLite/TestHarness.h>
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
@@ -34,18 +37,6 @@ namespace NM = gtsam::noiseModel;
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
 BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Isotropic,
                         "gtsam_noiseModel_Isotropic")
-#endif
-
-// This suite intentionally exercises the deprecated compatibility wrapper.
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-#elif defined(__GNUC__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#elif defined(_MSC_VER)
-#pragma warning(push)
-#pragma warning(disable : 4996)
 #endif
 
 // Pose3 parameter representation is [ Rx Ry Rz Tx Ty Tz ].
@@ -468,13 +459,8 @@ TEST(PartialPriorFactor, SerializationReconstructsFunctor) {
 
 }  // namespace functorized_wrapper
 /* ************************************************************************* */
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
-
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#elif defined(__GNUC__)
-#pragma GCC diagnostic pop
-#elif defined(_MSC_VER)
-#pragma warning(pop)
-#endif

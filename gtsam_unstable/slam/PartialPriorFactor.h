@@ -17,6 +17,10 @@
 
 #pragma once
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam/base/Lie.h>
 #include <gtsam/nonlinear/FunctorizedFactor.h>
 
@@ -57,8 +61,7 @@ namespace gtsam {
  * @tparam VALUE Type of variable affected by the prior.
  */
 template <class VALUE>
-class [[deprecated("Use FunctorizedFactor with a projection lambda instead")]]
-    PartialPriorFactor : public NoiseModelFactorN<VALUE> {
+class PartialPriorFactor : public NoiseModelFactorN<VALUE> {
   public:
     typedef VALUE T;
 
@@ -219,3 +222,5 @@ class [[deprecated("Use FunctorizedFactor with a projection lambda instead")]]
   }; // \class PartialPriorFactor
 
 } /// namespace gtsam
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
