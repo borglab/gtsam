@@ -20,8 +20,8 @@ focused.
 
 ## C++ style
 
-* Classes and types are `UpperCamelCase`; methods and functions are
-  `lowerCamelCase`.
+* Classes and types are `UpperCamelCase`. Static methods are `PascalCase`;
+  instance methods and free functions are `lowerCamelCase`.
 * Public fields in structs use plain names without a trailing underscore.
 * Apart from those naming conventions, follow Google C++ style.
 * Prefer concise, elegant examples. Use the fewest helpers needed and favor
