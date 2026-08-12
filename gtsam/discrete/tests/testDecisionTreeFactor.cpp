@@ -32,10 +32,12 @@ using namespace std;
 using namespace gtsam;
 
 /** Convert Signature into CPT */
-DecisionTreeFactor create(const Signature& signature) {
+namespace {
+static DecisionTreeFactor create(const Signature& signature) {
   DecisionTreeFactor p(signature.discreteKeys(), signature.cpt());
   return p;
 }
+}  // namespace
 
 /* ************************************************************************* */
 TEST(DecisionTreeFactor, ConstructorsMatch) {
@@ -170,6 +172,45 @@ TEST(DecisionTreeFactor, enumerate) {
     }
   }
   EXPECT(actual == expected);
+}
+
+/* ************************************************************************* */
+// Test if restricting a factor based on DiscreteValues works.
+TEST(DecisionTreeFactor, Restrict) {
+  // Test for restricting a single value from multiple values.
+  DiscreteKey A(12, 2), B(5, 3);
+  DecisionTreeFactor f1(A & B, "1 2  3 4  5 6");
+  DiscreteValues fixedValues = {{A.first, 1}};
+
+  DecisionTreeFactor restricted_f1 =
+      *std::static_pointer_cast<DecisionTreeFactor>(f1.restrict(fixedValues));
+
+  DecisionTreeFactor expected_f1(B, "4 5 6");
+  EXPECT(assert_equal(expected_f1, restricted_f1));
+
+  // Test for restricting a multiple value from multiple values.
+  DiscreteKey C(91, 2);
+  DecisionTreeFactor f2(A & B & C, "1 2  3 4  5 6  7 8  9 10  11 12");
+  fixedValues = {{A.first, 0}, {B.first, 2}};
+
+  DecisionTreeFactor restricted_f2 =
+      *std::static_pointer_cast<DecisionTreeFactor>(f2.restrict(fixedValues));
+
+  DecisionTreeFactor expected_f2(C, "5 6");
+  EXPECT(assert_equal(expected_f2, restricted_f2));
+
+  // Edge case of restricting a single value when it is the only value.
+  DecisionTreeFactor f3(A, "50 100");
+  fixedValues = {{A.first, 1}};  // select 100
+
+  DecisionTreeFactor restricted_f3 =
+      *std::static_pointer_cast<DecisionTreeFactor>(f3.restrict(fixedValues));
+
+  EXPECT_LONGS_EQUAL(0, restricted_f3.discreteKeys().size());
+  // There should only be 1 value which is 100
+  EXPECT_LONGS_EQUAL(1, restricted_f3.nrValues());
+  EXPECT_LONGS_EQUAL(1, restricted_f3.nrLeaves());
+  EXPECT_DOUBLES_EQUAL(100, restricted_f3.evaluate(DiscreteValues()), 1e-9);
 }
 
 namespace pruning_fixture {

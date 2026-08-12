@@ -172,8 +172,8 @@ class TestShonanAveraging(GtsamTestCase):
             for (i1, i2) in edges
         }
 
-        lm_params = LevenbergMarquardtParams.CeresDefaults()
-        shonan_params = ShonanAveragingParameters2(lm_params)
+        lmParams = LevenbergMarquardtParams.CeresDefaults()
+        shonan_params = ShonanAveragingParameters2(lmParams)
         shonan_params.setUseHuber(False)
         shonan_params.setCertifyOptimality(True)
 

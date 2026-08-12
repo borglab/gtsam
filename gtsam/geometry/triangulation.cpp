@@ -17,10 +17,11 @@
  * @author Akshay Krishnan
  */
 
-#include <gtsam/geometry/triangulation.h>
-
 #include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/triangulation.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+
+#include <Eigen/QR>
 
 namespace gtsam {
 
@@ -134,8 +135,8 @@ Point3 triangulateLOST(const std::vector<Pose3>& poses,
         q_i * skewSymmetric(calibratedMeasurements[i]).topLeftCorner(2, 3) *
         wTi.rotation().matrix().transpose();
 
-    A.block<2, 3>(2 * i, 0) << coefficientMat;
-    b.block<2, 1>(2 * i, 0) << coefficientMat * wTi.translation();
+    A.block<2, 3>(2 * i, 0) = coefficientMat;
+    b.block<2, 1>(2 * i, 0) = coefficientMat * wTi.translation();
   }
 
   Eigen::ColPivHouseholderQR<Matrix> A_Qr = A.colPivHouseholderQr();

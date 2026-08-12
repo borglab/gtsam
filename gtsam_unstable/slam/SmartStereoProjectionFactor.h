@@ -271,9 +271,9 @@ public:
 
   /// different (faster) way to compute Jacobian factor
   std::shared_ptr<JacobianFactor> createJacobianSVDFactor(
-      const Cameras& cameras, double lambda) const {
+      const Cameras& cameras, double _lambda) const {
     if (triangulateForLinearize(cameras))
-      return Base::createJacobianSVDFactor(cameras, *result_, lambda);
+      return Base::createJacobianSVDFactor(cameras, *result_, _lambda);
     else
       return std::make_shared<JacobianFactorSVD<Base::Dim, ZDim> >(this->keys_);
   }
@@ -302,15 +302,15 @@ public:
    * @return a Gaussian factor
    */
   std::shared_ptr<GaussianFactor> linearizeDamped(const Cameras& cameras,
-      const double lambda = 0.0) const {
+      const double _lambda = 0.0) const {
     // depending on flag set on construction we may linearize to different linear factors
     switch (params_.linearizationMode) {
     case HESSIAN:
-      return createHessianFactor(cameras, lambda);
+      return createHessianFactor(cameras, _lambda);
 //    case IMPLICIT_SCHUR:
-//      return createRegularImplicitSchurFactor(cameras, lambda);
+//      return createRegularImplicitSchurFactor(cameras, _lambda);
     case JACOBIAN_SVD:
-      return createJacobianSVDFactor(cameras, lambda);
+      return createJacobianSVDFactor(cameras, _lambda);
 //    case JACOBIAN_Q:
 //      return createJacobianQFactor(cameras, lambda);
     default:
@@ -324,10 +324,10 @@ public:
    * @return a Gaussian factor
    */
   std::shared_ptr<GaussianFactor> linearizeDamped(const Values& values,
-      const double lambda = 0.0) const {
+      const double _lambda = 0.0) const {
     // depending on flag set on construction we may linearize to different linear factors
     Cameras cameras = this->cameras(values);
-    return linearizeDamped(cameras, lambda);
+    return linearizeDamped(cameras, _lambda);
   }
 
   /// linearize

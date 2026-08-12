@@ -21,6 +21,7 @@
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteBayesTree.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
+#include <gtsam/base/TestableAssertions.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -290,30 +291,31 @@ TEST(DiscreteBayesTree, Dot) {
   std::string actual = self.bayesTree->dot();
   // print actual:
   if (debug) std::cout << actual << std::endl;
-  EXPECT(actual ==
-         "digraph G{\n"
-         "0[label=\"13, 11, 6, 7\"];\n"
-         "0->1\n"
-         "1[label=\"14 : 11, 13\"];\n"
-         "1->2\n"
-         "2[label=\"9, 12 : 14\"];\n"
-         "2->3\n"
-         "3[label=\"3 : 9, 12\"];\n"
-         "2->4\n"
-         "4[label=\"2 : 9, 12\"];\n"
-         "2->5\n"
-         "5[label=\"8 : 12, 14\"];\n"
-         "5->6\n"
-         "6[label=\"1 : 8, 12\"];\n"
-         "5->7\n"
-         "7[label=\"0 : 8, 12\"];\n"
-         "1->8\n"
-         "8[label=\"10 : 13, 14\"];\n"
-         "8->9\n"
-         "9[label=\"5 : 10, 13\"];\n"
-         "8->10\n"
-         "10[label=\"4 : 10, 13\"];\n"
-         "}");
+  std::string expected =
+    R"(digraph G{
+13[label="13, 11, 6, 7"];
+13->14
+14[label="14 : 11, 13"];
+14->9
+9[label="9, 12 : 14"];
+9->3
+3[label="3 : 9, 12"];
+9->2
+2[label="2 : 9, 12"];
+9->8
+8[label="8 : 12, 14"];
+8->1
+1[label="1 : 8, 12"];
+8->0
+0[label="0 : 8, 12"];
+14->10
+10[label="10 : 13, 14"];
+10->5
+5[label="5 : 10, 13"];
+10->4
+4[label="4 : 10, 13"];
+})";
+  EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */

@@ -125,7 +125,6 @@ class GTSAM_EXPORT TableDistribution : public DiscreteConditional {
   /// Create new factor by maximizing over all values with the same separator.
   DiscreteFactor::shared_ptr max(const Ordering& keys) const override;
 
-
   /// Multiply by scalar s
   DiscreteFactor::shared_ptr operator*(double s) const override;
 
@@ -143,9 +142,11 @@ class GTSAM_EXPORT TableDistribution : public DiscreteConditional {
   /**
    * sample
    * @param parentsValues Known values of the parents
+   * @param rng Pseudo random number generator
    * @return sample from conditional
    */
-  virtual size_t sample(const DiscreteValues& parentsValues) const override;
+  virtual size_t sample(const DiscreteValues& parentsValues,
+                        std::mt19937_64* rng = nullptr) const override;
 
   /// @}
   /// @name Advanced Interface

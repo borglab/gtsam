@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/base/Lie.h>
 
 #include <cassert>
@@ -68,10 +69,9 @@ namespace gtsam {
     PartialPriorFactor() {}
 
     /** Single Element Constructor: Prior on a single parameter at index 'idx' in the tangent vector.*/
-    PartialPriorFactor(Key key, size_t idx, double prior, const SharedNoiseModel& model) :
-      Base(model, key),
-      prior_((Vector(1) << prior).finished()),
-      indices_(1, idx) {
+    PartialPriorFactor(Key key, size_t idx, double prior,
+                       const SharedNoiseModel& model)
+        : Base(model, key), prior_(Vector{{prior}}), indices_(1, idx) {
       assert(model->dim() == 1);
     }
 
@@ -112,18 +112,22 @@ namespace gtsam {
 
     /** Returns a vector of errors for the measured tangent parameters.  */
     Vector evaluateError(const T& p, OptionalMatrixType H) const override {
-      Eigen::Matrix<double, T::dimension, T::dimension> H_local;
+      // Use traits so this also works for types without static members,
+      // e.g. Point3, which is just an alias for Eigen::Vector3d (see #2413).
+      constexpr int Dim = traits<T>::dimension;
+      Eigen::Matrix<double, Dim, Dim> H_local;
 
       // If the Rot3 Cayley map is used, Rot3::LocalCoordinates will throw a runtime error
       // when asked to compute the Jacobian matrix (see Rot3M.cpp).
       #ifdef GTSAM_ROT3_EXPMAP
-      const Vector full_tangent = T::LocalCoordinates(p, H ? &H_local : nullptr);
+      const Vector full_tangent =
+          traits<T>::Local(traits<T>::Identity(), p, {}, H ? &H_local : nullptr);
       #else
-      const Vector full_tangent = T::Logmap(p, H ? &H_local : nullptr);
+      const Vector full_tangent = traits<T>::Logmap(p, H ? &H_local : nullptr);
       #endif
 
       if (H) {
-        (*H) = Matrix::Zero(indices_.size(), T::dimension);
+        (*H) = Matrix::Zero(indices_.size(), Dim);
         for (size_t i = 0; i < indices_.size(); ++i) {
           (*H).row(i) = H_local.row(indices_.at(i));
         }

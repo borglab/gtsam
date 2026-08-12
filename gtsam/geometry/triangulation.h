@@ -34,7 +34,9 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/slam/TriangulationFactor.h>
 
+#include <map>
 #include <optional>
+#include <stdexcept>
 
 namespace gtsam {
 
@@ -459,9 +461,11 @@ Point3 triangulatePoint3(const std::vector<Pose3>& poses,
   }
 
   // Then refine using non-linear optimization
-  if (optimize)
+  if (optimize) {
+    const auto noiseModel = noiseModel::validOrDefault(Point2(0, 0), model);
     point = triangulateNonlinear<CALIBRATION>  //
-        (poses, sharedCal, measurements, point, model);
+        (poses, sharedCal, measurements, point, noiseModel);
+  }
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
   // verify that the triangulated point lies in front of all cameras
@@ -757,11 +761,46 @@ TriangulationResult triangulateSafe(const CameraSet<CAMERA>& cameras,
     }
 }
 
+/// Batch triangulation: triangulate multiple (possibly incomplete) tracks.
+/// Each track is a map from camera index to 2D measurement. Cameras missing
+/// from a track are simply skipped, supporting incomplete visibility.
+template <class CAMERA>
+std::vector<TriangulationResult> triangulateSafe(
+    const CameraSet<CAMERA>& cameras,
+    const std::vector<std::map<size_t, typename CAMERA::Measurement>>& tracks,
+    const TriangulationParameters& params) {
+  std::vector<TriangulationResult> results;
+  results.reserve(tracks.size());
+  for (const auto& track : tracks) {
+    CameraSet<CAMERA> trackCameras;
+    typename CAMERA::MeasurementVector measurements;
+    trackCameras.reserve(track.size());
+    measurements.reserve(track.size());
+    for (const auto& [cameraIndex, measurement] : track) {
+      if (cameraIndex >= cameras.size()) {
+        throw std::out_of_range(
+            "triangulateSafe(batch): cameraIndex out of range for CameraSet");
+      }
+      trackCameras.push_back(cameras.at(cameraIndex));
+      measurements.push_back(measurement);
+    }
+    results.push_back(triangulateSafe(trackCameras, measurements, params));
+  }
+  return results;
+}
+
 // Vector of Cameras - used by the Python/MATLAB wrapper
+using CameraSetPinholePoseCal3Bundler = CameraSet<PinholePose<Cal3Bundler>>;
+using CameraSetPinholePoseCal3_S2 = CameraSet<PinholePose<Cal3_S2>>;
+using CameraSetPinholePoseCal3DS2 = CameraSet<PinholePose<Cal3DS2>>;
+using CameraSetPinholePoseCal3Fisheye = CameraSet<PinholePose<Cal3Fisheye>>;
+using CameraSetPinholePoseCal3Unified = CameraSet<PinholePose<Cal3Unified>>;
+
 using CameraSetCal3Bundler = CameraSet<PinholeCamera<Cal3Bundler>>;
 using CameraSetCal3_S2 = CameraSet<PinholeCamera<Cal3_S2>>;
 using CameraSetCal3DS2 = CameraSet<PinholeCamera<Cal3DS2>>;
 using CameraSetCal3Fisheye = CameraSet<PinholeCamera<Cal3Fisheye>>;
 using CameraSetCal3Unified = CameraSet<PinholeCamera<Cal3Unified>>;
+
 using CameraSetSpherical = CameraSet<SphericalCamera>;
 } // \namespace gtsam

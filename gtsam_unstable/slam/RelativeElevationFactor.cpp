@@ -32,7 +32,7 @@ Vector RelativeElevationFactor::evaluateError(const Pose3& pose, const Point3& p
     *H2 = Matrix::Zero(1,3);
     (*H2)(0, 2) = -1.0;
   }
-  return (Vector(1) << hx - measured_).finished();
+  return Vector{{hx - measured_}};
 }
 
 /* ************************************************************************* */

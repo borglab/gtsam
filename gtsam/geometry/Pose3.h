@@ -20,9 +20,14 @@
 #include <gtsam/config.h>
 
 #include <gtsam/geometry/BearingRange.h>
+#include <gtsam/geometry/ExtendedPose3.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/base/Lie.h>
+
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+#include <boost/serialization/base_object.hpp>
+#endif
 
 namespace gtsam {
 
@@ -34,44 +39,41 @@ class Pose2;
  * @ingroup geometry
  * \nosubgrouping
  */
-class GTSAM_EXPORT Pose3: public LieGroup<Pose3, 6> {
+class GTSAM_EXPORT Pose3: public ExtendedPose3<1, Pose3> {
 public:
+  using Base = ExtendedPose3<1, Pose3>;
 
   /** Pose Concept requirements */
   typedef Rot3 Rotation;
   typedef Point3 Translation;
-
-private:
-
-  Rot3 R_; ///< Rotation gRp, between global and pose frame
-  Point3 t_; ///< Translation gPp, from global origin to pose frame origin
+  inline constexpr static auto dimension = 6;
 
 public:
+  using Vector16 = Eigen::Matrix<double, 16, 1>;
+  using Base::operator*;
 
   /// @name Standard Constructors
   /// @{
 
   /** Default constructor is origin */
-  Pose3() : R_(traits<Rot3>::Identity()), t_(traits<Point3>::Identity()) {}
+  Pose3() : Base() {}
 
   /** Copy constructor */
   Pose3(const Pose3& pose) = default;
 
   Pose3& operator=(const Pose3& other) = default;
 
+  Pose3(const Base& other) : Base(other) {}
+
   /** Construct from R,t */
-  Pose3(const Rot3& R, const Point3& t) :
-      R_(R), t_(t) {
-  }
+  Pose3(const Rot3& R, const Point3& t)
+      : Base(R, Vector3(t.x(), t.y(), t.z())) {}
 
   /** Construct from Pose2 */
   explicit Pose3(const Pose2& pose2);
 
   /** Constructor from 4*4 matrix */
-  Pose3(const Matrix &T) :
-      R_(T(0, 0), T(0, 1), T(0, 2), T(1, 0), T(1, 1), T(1, 2), T(2, 0), T(2, 1),
-          T(2, 2)), t_(T(0, 3), T(1, 3), T(2, 3)) {
-  }
+  Pose3(const Matrix &T) : Base(Matrix4(T)) {}
 
   /// Named constructor with derivatives
   static Pose3 Create(const Rot3& R, const Point3& t,
@@ -89,7 +91,7 @@ public:
   static std::optional<Pose3> Align(const Point3Pairs& abPointPairs);
 
   // Version of Pose3::Align that takes 2 matrices.
-  static std::optional<Pose3> Align(const Matrix& a, const Matrix& b);
+  static std::optional<Pose3> Align(ConstMatrixView a, ConstMatrixView b);
 
   /// @}
   /// @name Testable
@@ -104,19 +106,6 @@ public:
   /// @}
   /// @name Group
   /// @{
-
-  /// identity for group operation
-  static Pose3 Identity() {
-    return Pose3();
-  }
-
-  /// inverse transformation with derivatives
-  Pose3 inverse() const;
-
-  /// compose syntactic sugar
-  Pose3 operator*(const Pose3& T) const {
-    return Pose3(R_ * T.R_, t_ + R_ * T.t_);
-  }
 
   /**
    * Interpolate between two poses via individual rotation and translation
@@ -137,109 +126,29 @@ public:
                       OptionalJacobian<6, 6> Harg = {},
                       OptionalJacobian<6, 1> Ht = {}) const;
 
+  /// Compose syntactic sugar.
+  Pose3 operator*(const Pose3& T) const {
+    return Pose3(R_ * T.R_, t_ + R_ * T.t_);
+  }
+
   /// @}
   /// @name Lie Group
   /// @{
 
-  /// Exponential map at identity - create a rotation from canonical coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$
+  using LieAlgebra = Matrix4;
+
+  /// Exponential map at identity.
   static Pose3 Expmap(const Vector6& xi, OptionalJacobian<6, 6> Hxi = {});
-
-  /// Log map at identity - return the canonical coordinates \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$ of this rotation
-  static Vector6 Logmap(const Pose3& pose, OptionalJacobian<6, 6> Hpose = {});
-
-  /**
-   * Calculate Adjoint map, transforming a twist in this pose's (i.e, body) frame to the world spatial frame
-   * Ad_pose is 6*6 matrix that when applied to twist xi \f$ [R_x,R_y,R_z,T_x,T_y,T_z] \f$, returns Ad_pose(xi)
-   */
-  Matrix6 AdjointMap() const;
-
-  /**
-   * Apply this pose's AdjointMap Ad_g to a twist \f$ \xi_b \f$, i.e. a
-   * body-fixed velocity, transforming it to the spatial frame
-   * \f$ \xi^s = g*\xi^b*g^{-1} = Ad_g * \xi^b \f$
-   * Note that H_xib = AdjointMap()
-   */
-  Vector6 Adjoint(const Vector6& xi_b,
-                  OptionalJacobian<6, 6> H_this = {},
-                  OptionalJacobian<6, 6> H_xib = {}) const;
-  
-  /// The dual version of Adjoint
-  Vector6 AdjointTranspose(const Vector6& x,
-                           OptionalJacobian<6, 6> H_this = {},
-                           OptionalJacobian<6, 6> H_x = {}) const;
-
-  /**
-   * Compute the [ad(w,v)] operator as defined in [Kobilarov09siggraph], pg 11
-   * [ad(w,v)] = [w^, zero3; v^, w^]
-   * Note that this is the matrix representation of the adjoint operator for se3 Lie algebra,
-   * aka the Lie bracket, and also the derivative of Adjoint map for the Lie group SE3.
-   *
-   * Let \f$ \hat{\xi}_i \f$ be the se3 Lie algebra, and \f$ \hat{\xi}_i^\vee = \xi_i = [\omega_i,v_i] \in \mathbb{R}^6\f$ be its
-   * vector representation.
-   * We have the following relationship:
-   * \f$ [\hat{\xi}_1,\hat{\xi}_2]^\vee = ad_{\xi_1}(\xi_2) = [ad_{(\omega_1,v_1)}]*\xi_2 \f$
-   *
-   * We use this to compute the discrete version of the inverse right-trivialized tangent map,
-   * and its inverse transpose in the discrete Euler Poincare' (DEP) operator.
-   *
-   */
-  static Matrix6 adjointMap(const Vector6& xi);
-
-  /**
-   * Action of the adjointMap on a Lie-algebra vector y, with optional derivatives
-   */
-  static Vector6 adjoint(const Vector6& xi, const Vector6& y,
-                         OptionalJacobian<6, 6> Hxi = {},
-                         OptionalJacobian<6, 6> H_y = {});
 
   // temporary fix for wrappers until case issue is resolved
   static Matrix6 adjointMap_(const Vector6 &xi) { return adjointMap(xi);}
   static Vector6 adjoint_(const Vector6 &xi, const Vector6 &y) { return adjoint(xi, y);}
-
-  /**
-   * The dual version of adjoint action, acting on the dual space of the Lie-algebra vector space.
-   */
-  static Vector6 adjointTranspose(const Vector6& xi, const Vector6& y,
-                                  OptionalJacobian<6, 6> Hxi = {},
-                                  OptionalJacobian<6, 6> H_y = {});
-
-  /// Derivative of Expmap
-  static Matrix6 ExpmapDerivative(const Vector6& xi);
-
-  /// Derivative of Logmap
-  static Matrix6 LogmapDerivative(const Pose3& xi);
 
   // Chart at origin, depends on compile-time flag GTSAM_POSE3_EXPMAP
   struct GTSAM_EXPORT ChartAtOrigin {
     static Pose3 Retract(const Vector6& xi, ChartJacobian Hxi = {});
     static Vector6 Local(const Pose3& pose, ChartJacobian Hpose = {});
   };
-
-  /**
-  * Compute the 3x3 bottom-left block Q of SE3 Expmap right derivative matrix
-  *  J_r(xi) = [J_(w) Z_3x3;
-  *             Q_r   J_(w)]
-  *  where J_(w) is the SO3 Expmap right derivative.
-  *  (see Chirikjian11book2, pg 44, eq 10.95.
-  *  The closed-form formula is identical to formula 102 in Barfoot14tro where
-  *  Q_l of the SE3 Expmap left derivative matrix is given.
-  */
-  static Matrix3 ComputeQforExpmapDerivative(
-      const Vector6& xi, double nearZeroThreshold = 1e-5);
-
-  using LieGroup<Pose3, 6>::inverse; // version with derivative
-
-  /**
-   * wedge for Pose3:
-   * @param xi 6-dim twist (omega,v) where
-   *  omega = (wx,wy,wz) 3D angular velocity
-   *  v (vx,vy,vz) = 3D velocity
-   * @return xihat, 4*4 element of Lie algebra that can be exponentiated
-   */
-  static Matrix wedge(double wx, double wy, double wz, double vx, double vy,
-      double vz) {
-    return (Matrix(4, 4) << 0., -wz, wy, vx, wz, 0., -wx, vy, -wy, wx, 0., vz, 0., 0., 0., 0.).finished();
-  }
 
   /// @}
   /// @name Group Action on Point3
@@ -260,7 +169,7 @@ public:
    * @param points 3*N matrix in Pose coordinates
    * @return points in world coordinates, as 3*N Matrix
    */
-  Matrix transformFrom(const Matrix& points) const;
+  Matrix transformFrom(ConstMatrixView points) const;
 
   /** syntactic sugar for transformFrom */
   inline Point3 operator*(const Point3& point) const {
@@ -282,35 +191,29 @@ public:
    * @param points 3*N matrix in world coordinates
    * @return points in Pose coordinates, as 3*N Matrix
    */
-  Matrix transformTo(const Matrix& points) const;
+  Matrix transformTo(ConstMatrixView points) const;
 
   /// @}
   /// @name Standard Interface
   /// @{
-
-  /// get rotation
-  const Rot3& rotation(OptionalJacobian<3, 6> Hself = {}) const;
 
   /// get translation
   const Point3& translation(OptionalJacobian<3, 6> Hself = {}) const;
 
   /// get x
   double x() const {
-    return t_.x();
+    return translation().x();
   }
 
   /// get y
   double y() const {
-    return t_.y();
+    return translation().y();
   }
 
   /// get z
   double z() const {
-    return t_.z();
+    return translation().z();
   }
-
-  /** convert to 4*4 matrix */
-  Matrix4 matrix() const;
 
   /** 
     * Assuming self == wTa, takes a pose aTb in local coordinates 
@@ -394,6 +297,19 @@ public:
   GTSAM_EXPORT
   friend std::ostream &operator<<(std::ostream &os, const Pose3& p);
 
+  /// @}
+  /// @name deprecated
+  /// @{
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+  /// @deprecated: use Hat
+  static inline LieAlgebra wedge(double wx, double wy, double wz, double vx,
+                                 double vy, double vz) {
+    return Hat((TangentVector() << wx, wy, wz, vx, vy, vz).finished());
+  }
+#endif
+  /// @}
+
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
@@ -405,26 +321,17 @@ public:
   }
 #endif
   /// @}
-
-#ifdef GTSAM_USE_QUATERNIONS
-  // Align if we are using Quaternions
-  public:
-    GTSAM_MAKE_ALIGNED_OPERATOR_NEW
-#endif
 };
 // Pose3 class
 
-/**
- * wedge for Pose3:
- * @param xi 6-dim twist (omega,v) where
- *  omega = 3D angular velocity
- *  v = 3D velocity
- * @return xihat, 4*4 element of Lie algebra that can be exponentiated
- */
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+/// @deprecated: use T::Hat
 template<>
 inline Matrix wedge<Pose3>(const Vector& xi) {
-  return Pose3::wedge(xi(0), xi(1), xi(2), xi(3), xi(4), xi(5));
+  // NOTE(chris): Need eval() as workaround for Apple clang + avx2.
+  return Matrix(Pose3::Hat(xi)).eval();
 }
+#endif
 
 // Convenience typedef
 using Pose3Pair = std::pair<Pose3, Pose3>;
@@ -433,11 +340,175 @@ using Pose3Pairs = std::vector<std::pair<Pose3, Pose3> >;
 // For MATLAB wrapper
 typedef std::vector<Pose3> Pose3Vector;
 
+/**
+ * Add the Pose3-specific operations used by the generic QCQP conversion code.
+ *
+ * `template <> struct traits<Pose3>` specializes GTSAM's generic `traits<T>`
+ * interface for T=Pose3. Its static methods are called directly through the
+ * traits type. The member-template parameter D is the QCQP variable's column
+ * count, and `if constexpr (D == 1)` selects this exact homogenized vector
+ * formulation at compile time.
+ *
+ * The lift discards the fixed last row [0, 0, 0, 1] of the Pose3 matrix and
+ * stores the first three entries of each column consecutively:
+ *
+ *   x = [1, r00, r10, r20, r01, r11, r21,
+ *           r02, r12, r22, tx, ty, tz]'.
+ *
+ * Eigen's `segment<3>(start)` selects three consecutive entries of x, while
+ * `T.col(column).head<3>()` selects the retained part of one matrix column.
+ * QcqpConstraints returns the symmetric matrices A and scalars b for the ten
+ * equations x' A x = b. Their translation rows and columns are zero, so these
+ * equations constrain only the embedded SO(3) rotation.
+ */
 template <>
-struct traits<Pose3> : public internal::LieGroup<Pose3> {};
+struct traits<Pose3> : public internal::MatrixLieGroup<Pose3, 4> {
+  /// Dimension of the D=1 homogenized QCQP vector.
+  inline constexpr static int QcqpVectorDim = 13;
+
+  /**
+   * Return the D=1 homogenized QCQP variable
+   * x = [1, vec(R), tx, ty, tz] in column-major order.
+   */
+  template <int D = 1>
+  static Matrix QcqpValue(const Pose3& value) {
+    if constexpr (D == 1) {
+      const Matrix4 T = value.matrix();
+      Eigen::Matrix<double, 13, 1> X;
+      X(0, 0) = 1.0;
+      X.segment<3>(1) = T.col(0).head<3>();
+      X.segment<3>(4) = T.col(1).head<3>();
+      X.segment<3>(7) = T.col(2).head<3>();
+      X.segment<3>(10) = T.col(3).head<3>();
+      return X;
+    } else {
+      throw std::invalid_argument(
+          "traits<Pose3>::QcqpValue only supports D=1.");
+    }
+  }
+
+  /**
+   * Return the ten D=1 lifted SE(3) manifold constraints A, b such that
+   * trace(x' A x) = b.
+   */
+  template <int D = 1>
+  static std::vector<std::pair<Matrix, double>> QcqpConstraints() {
+    if constexpr (D == 1) {
+      std::vector<std::pair<Matrix, double>> constraints;
+      constraints.reserve(10);
+
+      Matrix A = Matrix::Zero(13, 13);
+
+      // Homogenization.
+      A(0, 0) = 1.0;
+      constraints.emplace_back(A, 1.0);
+
+      // cross(R.col(1), R.col(2)) = x(0) * R.col(0).
+      A.setZero();
+      A(5, 9) = 0.5;
+      A(9, 5) = 0.5;
+      A(6, 8) = -0.5;
+      A(8, 6) = -0.5;
+      A(0, 1) = -0.5;
+      A(1, 0) = -0.5;
+      constraints.emplace_back(A, 0.0);
+
+      A.setZero();
+      A(6, 7) = 0.5;
+      A(7, 6) = 0.5;
+      A(4, 9) = -0.5;
+      A(9, 4) = -0.5;
+      A(0, 2) = -0.5;
+      A(2, 0) = -0.5;
+      constraints.emplace_back(A, 0.0);
+
+      A.setZero();
+      A(4, 8) = 0.5;
+      A(8, 4) = 0.5;
+      A(5, 7) = -0.5;
+      A(7, 5) = -0.5;
+      A(0, 3) = -0.5;
+      A(3, 0) = -0.5;
+      constraints.emplace_back(A, 0.0);
+
+      // RR^T = I.
+      A.setZero();
+      A(1, 1) = 1.0;
+      A(4, 4) = 1.0;
+      A(7, 7) = 1.0;
+      constraints.emplace_back(A, 1.0);
+
+      A.setZero();
+      A(1, 2) = 0.5;
+      A(2, 1) = 0.5;
+      A(4, 5) = 0.5;
+      A(5, 4) = 0.5;
+      A(7, 8) = 0.5;
+      A(8, 7) = 0.5;
+      constraints.emplace_back(A, 0.0);
+
+      A.setZero();
+      A(1, 3) = 0.5;
+      A(3, 1) = 0.5;
+      A(4, 6) = 0.5;
+      A(6, 4) = 0.5;
+      A(7, 9) = 0.5;
+      A(9, 7) = 0.5;
+      constraints.emplace_back(A, 0.0);
+
+      A.setZero();
+      A(2, 2) = 1.0;
+      A(5, 5) = 1.0;
+      A(8, 8) = 1.0;
+      constraints.emplace_back(A, 1.0);
+
+      A.setZero();
+      A(2, 3) = 0.5;
+      A(3, 2) = 0.5;
+      A(5, 6) = 0.5;
+      A(6, 5) = 0.5;
+      A(8, 9) = 0.5;
+      A(9, 8) = 0.5;
+      constraints.emplace_back(A, 0.0);
+
+      A.setZero();
+      A(3, 3) = 1.0;
+      A(6, 6) = 1.0;
+      A(9, 9) = 1.0;
+      constraints.emplace_back(A, 1.0);
+
+      return constraints;
+    } else {
+      throw std::invalid_argument(
+          "traits<Pose3>::QcqpConstraints only supports D=1.");
+    }
+  }
+
+  /** Project a D=1 homogenized QCQP vector back to Pose3. */
+  template <int D>
+  static Pose3 FromQcqpValue(const Matrix& X) {
+    if constexpr (D == 1) {
+      if (X.rows() != QcqpVectorDim || X.cols() != 1 ||
+          std::abs(X(0, 0)) < 1e-9) {
+        throw std::invalid_argument(
+            "traits<Pose3>::FromQcqpValue requires a 13-by-1 vector with a "
+            "nonzero homogenization entry.");
+      }
+      const Vector x = X.col(0) / X(0, 0);
+      Matrix3 R;
+      R.col(0) = x.segment<3>(1);
+      R.col(1) = x.segment<3>(4);
+      R.col(2) = x.segment<3>(7);
+      return Pose3(Rot3::ClosestTo(R), x.segment<3>(10));
+    } else {
+      throw std::invalid_argument(
+          "traits<Pose3>::FromQcqpValue only supports D=1.");
+    }
+  }
+};
 
 template <>
-struct traits<const Pose3> : public internal::LieGroup<Pose3> {};
+struct traits<const Pose3> : public traits<Pose3> {};
 
 // bearing and range traits, used in RangeFactor
 template <>

@@ -8,11 +8,11 @@
  * See LICENSE for the license information
  * -------------------------------------------------------------------------- */
 
-/**
- * @file    MetisIndex.h
- * @author  Andrew Melim
- * @date    Oct. 10, 2014
- */
+ /**
+  * @file    MetisIndex.h
+  * @author  Andrew Melim
+  * @date    Oct. 10, 2014
+  */
 
 #pragma once
 
@@ -20,11 +20,11 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/base/types.h>
-#include <gtsam/base/timing.h>
 
 #include <vector>
 #include <map>
 #include <unordered_map>
+#include <iostream>
 
 namespace gtsam {
 /**
@@ -50,59 +50,60 @@ private:
  };
 
   std::vector<int32_t> xadj_; // Index of node's adjacency list in adj
-  std::vector<int32_t> adj_; // Stores ajacency lists of all nodes, appended into a single vector
+  std::vector<int32_t> adj_;  // Stores adjacency lists of all nodes, appended into a single vector
   BiMap intKeyBMap_; // Stores Key <-> integer value relationship
   size_t nKeys_;
 
 public:
-  /// @name Standard Constructors
+  /// @name Constructors
   /// @{
 
   /** Default constructor, creates empty MetisIndex */
-  MetisIndex() :
-      nKeys_(0) {
-  }
+  MetisIndex() : nKeys_(0) {}
 
-  template<class FACTORGRAPH>
-  MetisIndex(const FACTORGRAPH& factorGraph) :
-      nKeys_(0) {
+  template<class FactorGraphType>
+  MetisIndex(const FactorGraphType& factorGraph) :
+    nKeys_(0) {
     augment(factorGraph);
   }
 
-  ~MetisIndex() {
-  }
-  /// @}
-  /// @name Advanced Interface
-  /// @{
+  ~MetisIndex() {}
 
+  /// @}
+  /// @name Standard API
+  /// @{
+    
   /**
    * Augment the variable index with new factors.  This can be used when
    * solving problems incrementally.
    */
-  template<class FACTORGRAPH>
-  void augment(const FACTORGRAPH& factors);
-
-  const std::vector<int32_t>& xadj() const {
-    return xadj_;
-  }
-  const std::vector<int32_t>& adj() const {
-    return adj_;
-  }
-  size_t nValues() const {
-    return nKeys_;
-  }
-  Key intToKey(int32_t value) const {
-#ifndef NDEBUG
-    if (value < 0) {
-      throw;
-    }
-#endif
-    return intKeyBMap_.right.find(value)->second;
+  template<class FactorGraphType>
+  void augment(const FactorGraphType& factors);
+  
+  const std::vector<int32_t>& xadj() const { return xadj_; }
+  const std::vector<int32_t>& adj() const { return adj_; }
+  size_t nValues() const { return nKeys_; }
+  
+  Key intToKey(int32_t value) const { return intKeyBMap_.right.find(value)->second; }
+  
+  /// @}
+  /// @name Testable
+  /// @{
+    
+  /// print to std::cout
+  void print(const std::string& str = "MetisIndex:") const {
+    std::cout << str << "\nxadj_: ";
+    for (const auto& x : xadj_) std::cout << x << " ";
+    std::cout << "\nadj_: ";
+    for (const auto& x : adj_) std::cout << x << " ";
+    std::cout << "\nKey <-> Index: ";
+    for (const auto& [i, k] : intKeyBMap_.left) std::cout << i << " <-> " << k << ", ";
+    std::cout << std::endl;
   }
 
   /// @}
 };
 
-} // \ namesace gtsam
+} // \ namespace gtsam
 
 #include <gtsam/inference/MetisIndex-inl.h>

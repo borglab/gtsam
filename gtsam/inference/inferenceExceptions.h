@@ -21,6 +21,7 @@
 #include <gtsam/inference/Key.h>
 
 #include <exception>
+#include <string>
 
 namespace gtsam {
 
@@ -31,6 +32,7 @@ namespace gtsam {
 class InconsistentEliminationRequested : public std::exception {
   KeyVector keys_;
   const KeyFormatter& keyFormatter = DefaultKeyFormatter;
+  mutable std::string message_;
 
  public:
   InconsistentEliminationRequested() noexcept {}

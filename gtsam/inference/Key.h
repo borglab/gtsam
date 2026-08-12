@@ -57,8 +57,7 @@ GTSAM_EXPORT std::string _multirobotKeyFormatter(gtsam::Key key);
 /// formatter in print functions.
 ///
 /// Checks for LabeledSymbol, Symbol and then plain keys, in order.
-static const gtsam::KeyFormatter MultiRobotKeyFormatter =
-    &_multirobotKeyFormatter;
+extern GTSAM_EXPORT KeyFormatter MultiRobotKeyFormatter; 
 
 /// To use the key_formatter on Keys, they must be wrapped in a StreamedKey.
 struct StreamedKey {

@@ -234,7 +234,8 @@ void HybridGaussianConditional::print(const std::string &s,
     std::cout << "(" << formatter(dk.first) << ", " << dk.second << "), ";
   }
   std::cout << std::endl
-            << " logNormalizationConstant: " << -negLogConstant() << std::endl
+            << " logNormalizationConstant: " << std::fixed
+            << std::setprecision(4) << -negLogConstant() << std::endl
             << std::endl;
   factors().print(
       "", [&](Key k) { return formatter(k); },
@@ -314,16 +315,15 @@ std::set<DiscreteKey> DiscreteKeysAsSet(const DiscreteKeys &discreteKeys) {
 HybridGaussianConditional::shared_ptr HybridGaussianConditional::prune(
     const DiscreteConditional &discreteProbs) const {
   // Find keys in discreteProbs.keys() but not in this->keys():
-  std::set<Key> mine(this->keys().begin(), this->keys().end());
-  std::set<Key> theirs(discreteProbs.keys().begin(),
+  KeySet mine(this->keys().begin(), this->keys().end());
+  KeySet theirs(discreteProbs.keys().begin(),
                        discreteProbs.keys().end());
   std::vector<Key> diff;
   std::set_difference(theirs.begin(), theirs.end(), mine.begin(), mine.end(),
                       std::back_inserter(diff));
 
   // Find maximum probability value for every combination of *our* keys.
-  Ordering ordering(diff);
-  auto max = discreteProbs.max(ordering);
+  auto max = discreteProbs.max(Ordering(diff));
 
   // Check the max value for every combination of our keys.
   // If the max value is 0.0, we can prune the corresponding conditional.

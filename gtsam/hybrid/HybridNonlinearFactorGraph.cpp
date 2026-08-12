@@ -23,7 +23,6 @@
 #include <gtsam/hybrid/HybridNonlinearFactor.h>
 #include <gtsam/hybrid/HybridNonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-
 namespace gtsam {
 
 /* ************************************************************************* */
@@ -237,12 +236,20 @@ HybridNonlinearFactorGraph HybridNonlinearFactorGraph::restrict(
     if (auto hf = dynamic_pointer_cast<HybridFactor>(f)) {
       result.push_back(hf->restrict(discreteValues));
     } else if (auto df = dynamic_pointer_cast<DiscreteFactor>(f)) {
-      result.push_back(df->restrict(discreteValues));
+      auto restricted_df = df->restrict(discreteValues);
+      // In the case where all the discrete values in the factor
+      // have been selected, we get a factor without any keys,
+      // and default values of 0.5.
+      // Since this factor no longer adds any information, we ignore it to make
+      // inference faster.
+      if (restricted_df->discreteKeys().size() > 0) {
+        result.push_back(restricted_df);
+      }
     } else {
       result.push_back(f);  // Everything else is just added as is
     }
   }
-  
+
   return result;
 }
 

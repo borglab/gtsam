@@ -34,6 +34,7 @@
 
 #include <string>
 
+#include "DiscreteFixture.h"
 #include "Switching.h"
 
 using namespace std;
@@ -42,32 +43,49 @@ using namespace gtsam;
 using symbol_shorthand::X;
 using symbol_shorthand::Z;
 
-namespace estimation_fixture {
-std::vector<double> measurements = {0, 1, 2, 2, 2, 2,  3,  4,  5,  6, 6,
-                                    7, 8, 9, 9, 9, 10, 11, 11, 11, 11};
-// Ground truth discrete seq
-std::vector<size_t> discrete_seq = {1, 1, 0, 0, 0, 1, 1, 1, 1, 0,
-                                    1, 1, 1, 0, 0, 1, 1, 0, 0, 0};
+/****************************************************************************/
+// Test error computation.
+TEST(HybridSmoother, Error) {
+  using namespace estimation_fixture;
 
-Switching InitializeEstimationProblem(
-    const size_t K, const double between_sigma, const double measurement_sigma,
-    const std::vector<double>& measurements,
-    const std::string& transitionProbabilityTable,
-    HybridNonlinearFactorGraph* graph, Values* initial) {
-  Switching switching(K, between_sigma, measurement_sigma, measurements,
-                      transitionProbabilityTable);
+  size_t K = 5;
 
-  // Add prior on M(0)
-  graph->push_back(switching.modeChain.at(0));
+  // Switching example of robot moving in 1D
+  // with given measurements and equal mode priors.
+  HybridNonlinearFactorGraph graph;
+  Values initial;
+  Switching switching = InitializeEstimationProblem(
+      K, 1.0, 0.1, measurements, "1/1 1/1", &graph, &initial);
 
-  // Add the X(0) prior
-  graph->push_back(switching.unaryFactors.at(0));
-  initial->insert(X(0), switching.linearizationPoint.at<double>(X(0)));
+  HybridSmoother smoother;
+  constexpr size_t maxNrLeaves = 5;
 
-  return switching;
+  // Loop over timesteps from 1...K-1
+  for (size_t k = 1; k < K; k++) {
+    if (k > 1) graph.push_back(switching.modeChain.at(k - 1));  // Mode chain
+    graph.push_back(switching.binaryFactors.at(k - 1));         // Motion Model
+    graph.push_back(switching.unaryFactors.at(k));              // Measurement
+
+    initial.insert(X(k), switching.linearizationPoint.at<double>(X(k)));
+
+    smoother.update(graph, initial, maxNrLeaves);
+
+    // Clear all the factors from the graph
+    graph.resize(0);
+  }
+
+  HybridValues delta = smoother.optimize();
+
+  double expected_error = 1.238331316;
+
+  double hybrid_error = smoother.error(delta);
+  // regression
+  EXPECT_DOUBLES_EQUAL(expected_error, hybrid_error, 1e-8);
+
+  double linear_error = smoother.error(delta.continuous());
+  // regression
+  EXPECT_DOUBLES_EQUAL(expected_error, linear_error, 1e-8);
 }
-
-}  // namespace estimation_fixture
 
 /****************************************************************************/
 // Test approximate inference with an additional pruning step.
@@ -94,9 +112,7 @@ TEST(HybridSmoother, IncrementalSmoother) {
 
     initial.insert(X(k), switching.linearizationPoint.at<double>(X(k)));
 
-    HybridGaussianFactorGraph linearized = *graph.linearize(initial);
-
-    smoother.update(linearized, maxNrLeaves);
+    smoother.update(graph, initial, maxNrLeaves);
 
     // Clear all the factors from the graph
     graph.resize(0);
@@ -152,9 +168,7 @@ TEST(HybridSmoother, ValidPruningError) {
 
     initial.insert(X(k), switching.linearizationPoint.at<double>(X(k)));
 
-    HybridGaussianFactorGraph linearized = *graph.linearize(initial);
-
-    smoother.update(linearized, maxNrLeaves);
+    smoother.update(graph, initial, maxNrLeaves);
 
     // Clear all the factors from the graph
     graph.resize(0);
@@ -200,9 +214,7 @@ TEST(HybridSmoother, DeadModeRemoval) {
 
     initial.insert(X(k), switching.linearizationPoint.at<double>(X(k)));
 
-    HybridGaussianFactorGraph linearized = *graph.linearize(initial);
-
-    smoother.update(linearized, maxNrLeaves);
+    smoother.update(graph, initial, maxNrLeaves);
 
     // Clear all the factors from the graph
     graph.resize(0);

@@ -117,8 +117,8 @@ double HybridNonlinearFactor::error(
 }
 
 /* *******************************************************************************/
-double HybridNonlinearFactor::error(const HybridValues& values) const {
-  return error(values.nonlinear(), values.discrete());
+double HybridNonlinearFactor::error(const HybridValues& hybridValues) const {
+  return error(hybridValues.nonlinear(), hybridValues.discrete());
 }
 
 /* *******************************************************************************/
@@ -134,10 +134,13 @@ void HybridNonlinearFactor::print(const std::string& s,
   std::cout << (s.empty() ? "" : s + " ");
   Base::print("", keyFormatter);
   std::cout << "\nHybridNonlinearFactor\n";
-  auto valueFormatter = [](const std::pair<sharedFactor, double>& v) {
+  auto valueFormatter = [&keyFormatter](const std::pair<sharedFactor, double>& v) {
     auto [factor, val] = v;
     if (factor) {
-      return "Nonlinear factor on " + std::to_string(factor->size()) + " keys";
+      RedirectCout rd;
+      std::cout << "(val=" << val << ") ";
+      factor->print("", keyFormatter);
+      return rd.str();
     } else {
       return std::string("nullptr");
     }
@@ -213,8 +216,8 @@ std::shared_ptr<HybridGaussianFactor> HybridNonlinearFactor::linearize(
 HybridNonlinearFactor::shared_ptr HybridNonlinearFactor::prune(
     const DecisionTreeFactor& discreteProbs) const {
   // Find keys in discreteProbs.keys() but not in this->keys():
-  std::set<Key> mine(this->keys().begin(), this->keys().end());
-  std::set<Key> theirs(discreteProbs.keys().begin(),
+  KeySet mine(this->keys().begin(), this->keys().end());
+  KeySet theirs(discreteProbs.keys().begin(),
                        discreteProbs.keys().end());
   std::vector<Key> diff;
   std::set_difference(theirs.begin(), theirs.end(), mine.begin(), mine.end(),

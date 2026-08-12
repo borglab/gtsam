@@ -81,13 +81,12 @@ struct GTSAM_EXPORT SfmTrack2d {
    * @returns boolean result of the validation.
    */
   bool hasUniqueCameras() const {
-    std::vector<int> track_cam_indices;
+    std::vector<size_t> cameraIndices;
     for (auto& measurement : measurements) {
-      track_cam_indices.emplace_back(measurement.first);
+      cameraIndices.emplace_back(measurement.first);
     }
-    auto i =
-        std::adjacent_find(track_cam_indices.begin(), track_cam_indices.end());
-    bool all_cameras_unique = (i == track_cam_indices.end());
+    auto i = std::adjacent_find(cameraIndices.begin(), cameraIndices.end());
+    bool all_cameras_unique = (i == cameraIndices.end());
     return all_cameras_unique;
   }
 

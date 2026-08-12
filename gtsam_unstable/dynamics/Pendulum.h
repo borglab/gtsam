@@ -10,6 +10,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 namespace gtsam {
 
@@ -55,7 +56,7 @@ public:
     if (H1) *H1 = -Matrix::Identity(p,p);
     if (H2) *H2 = Matrix::Identity(p,p);
     if (H3) *H3 = Matrix::Identity(p,p)*h_;
-    return (Vector(1) << qk+v*h_-qk1).finished();
+    return Vector{{qk + v * h_ - qk1}};
   }
 
 }; // \PendulumFactor1
@@ -105,7 +106,7 @@ public:
     if (H1) *H1 = -Matrix::Identity(p,p);
     if (H2) *H2 = Matrix::Identity(p,p);
     if (H3) *H3 = -Matrix::Identity(p,p)*h_*g_/r_*cos(q);
-    return (Vector(1) << vk - h_ * g_ / r_ * sin(q) - vk1).finished();
+    return Vector{{vk - h_ * g_ / r_ * sin(q) - vk1}};
   }
 
 }; // \PendulumFactor2
@@ -164,7 +165,7 @@ public:
     if (H2) *H2 = Matrix::Identity(p,p)*(-mr2_h + mgrh*(1-alpha_)*(1-alpha_)*cos(qmid));
     if (H3) *H3 = Matrix::Identity(p,p)*( mr2_h + mgrh*(1-alpha_)*(alpha_)*cos(qmid));
 
-    return (Vector(1) << mr2_h * (qk1 - qk) + mgrh * (1 - alpha_) * sin(qmid) - pk).finished();
+    return Vector{{mr2_h * (qk1 - qk) + mgrh * (1 - alpha_) * sin(qmid) - pk}};
   }
 
 }; // \PendulumFactorPk
@@ -222,7 +223,7 @@ public:
     if (H2) *H2 = Matrix::Identity(p,p)*(-mr2_h - mgrh*(1-alpha_)*alpha_*cos(qmid));
     if (H3) *H3 = Matrix::Identity(p,p)*( mr2_h - mgrh*alpha_*alpha_*cos(qmid));
 
-    return (Vector(1) << mr2_h * (qk1 - qk) - mgrh * alpha_ * sin(qmid) - pk1).finished();
+    return Vector{{mr2_h * (qk1 - qk) - mgrh * alpha_ * sin(qmid) - pk1}};
   }
 
 }; // \PendulumFactorPk1

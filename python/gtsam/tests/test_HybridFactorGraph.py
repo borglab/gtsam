@@ -287,8 +287,8 @@ class TestHybridGaussianFactorGraph(GtsamTestCase):
             print(f"P(mode=1; Z) = {marginals[1]}")
 
         # Check that the estimate is close to the true value.
-        self.assertAlmostEqual(marginals[0], 0.23, delta=0.01)
-        self.assertAlmostEqual(marginals[1], 0.77, delta=0.01)
+        self.assertAlmostEqual(marginals[0], 0.219, delta=0.01)
+        self.assertAlmostEqual(marginals[1], 0.781, delta=0.01)
 
         # Convert to factor graph using measurements.
         fg = bayesNet.toFactorGraph(measurements)

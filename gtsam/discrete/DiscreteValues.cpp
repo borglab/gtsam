@@ -93,6 +93,14 @@ DiscreteValues& DiscreteValues::update(const DiscreteValues& values) {
 }
 
 /* ************************************************************************ */
+DiscreteValues& DiscreteValues::insert_or_assign(const DiscreteValues& values) {
+  for (auto&& [key, value] : values) {
+    Base::insert_or_assign(key, value);
+  }
+  return *this;
+}
+
+/* ************************************************************************ */
 string DiscreteValues::Translate(const Names& names, Key key, size_t index) {
   if (names.empty()) {
     stringstream ss;
@@ -142,12 +150,6 @@ string DiscreteValues::html(const KeyFormatter& keyFormatter,
   }
   ss << "  </tbody>\n</table>\n</div>";
   return ss.str();
-}
-
-/* ************************************************************************ */
-void PrintDiscreteValues(const DiscreteValues& values, const std::string& s,
-                         const KeyFormatter& keyFormatter) {
-  values.print(s, keyFormatter);
 }
 
 string markdown(const DiscreteValues& values, const KeyFormatter& keyFormatter,

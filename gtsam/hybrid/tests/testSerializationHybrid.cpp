@@ -40,44 +40,44 @@ using symbol_shorthand::Z;
 
 using namespace serializationTestHelpers;
 
-BOOST_CLASS_EXPORT_GUID(Factor, "gtsam_Factor");
-BOOST_CLASS_EXPORT_GUID(HybridFactor, "gtsam_HybridFactor");
-BOOST_CLASS_EXPORT_GUID(JacobianFactor, "gtsam_JacobianFactor");
-BOOST_CLASS_EXPORT_GUID(GaussianConditional, "gtsam_GaussianConditional");
-BOOST_CLASS_EXPORT_GUID(DiscreteConditional, "gtsam_DiscreteConditional");
-BOOST_CLASS_EXPORT_GUID(TableDistribution, "gtsam_TableDistribution");
+BOOST_CLASS_EXPORT_GUID(Factor, "gtsam_Factor")
+BOOST_CLASS_EXPORT_GUID(HybridFactor, "gtsam_HybridFactor")
+BOOST_CLASS_EXPORT_GUID(JacobianFactor, "gtsam_JacobianFactor")
+BOOST_CLASS_EXPORT_GUID(GaussianConditional, "gtsam_GaussianConditional")
+BOOST_CLASS_EXPORT_GUID(DiscreteConditional, "gtsam_DiscreteConditional")
+BOOST_CLASS_EXPORT_GUID(TableDistribution, "gtsam_TableDistribution")
 
-BOOST_CLASS_EXPORT_GUID(DecisionTreeFactor, "gtsam_DecisionTreeFactor");
+BOOST_CLASS_EXPORT_GUID(DecisionTreeFactor, "gtsam_DecisionTreeFactor")
 using ADT = AlgebraicDecisionTree<Key>;
-BOOST_CLASS_EXPORT_GUID(ADT, "gtsam_AlgebraicDecisionTree");
-BOOST_CLASS_EXPORT_GUID(ADT::Leaf, "gtsam_AlgebraicDecisionTree_Leaf");
+BOOST_CLASS_EXPORT_GUID(ADT, "gtsam_AlgebraicDecisionTree")
+BOOST_CLASS_EXPORT_GUID(ADT::Leaf, "gtsam_AlgebraicDecisionTree_Leaf")
 BOOST_CLASS_EXPORT_GUID(ADT::Choice, "gtsam_AlgebraicDecisionTree_Choice")
 
-BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor, "gtsam_HybridGaussianFactor");
+BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor, "gtsam_HybridGaussianFactor")
 BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::FactorValuePairs,
-                        "gtsam_HybridGaussianFactor_Factors");
+                        "gtsam_HybridGaussianFactor_Factors")
 BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::FactorValuePairs::Leaf,
-                        "gtsam_HybridGaussianFactor_Factors_Leaf");
+                        "gtsam_HybridGaussianFactor_Factors_Leaf")
 BOOST_CLASS_EXPORT_GUID(HybridGaussianFactor::FactorValuePairs::Choice,
-                        "gtsam_HybridGaussianFactor_Factors_Choice");
+                        "gtsam_HybridGaussianFactor_Factors_Choice")
 
 BOOST_CLASS_EXPORT_GUID(GaussianFactorGraphValuePair,
-                        "gtsam_GaussianFactorGraphValuePair");
+                        "gtsam_GaussianFactorGraphValuePair")
 BOOST_CLASS_EXPORT_GUID(HybridGaussianProductFactor,
-                        "gtsam_HybridGaussianProductFactor");
+                        "gtsam_HybridGaussianProductFactor")
 
 BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional,
-                        "gtsam_HybridGaussianConditional");
+                        "gtsam_HybridGaussianConditional")
 BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional::Conditionals,
-                        "gtsam_HybridGaussianConditional_Conditionals");
+                        "gtsam_HybridGaussianConditional_Conditionals")
 BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional::Conditionals::Leaf,
-                        "gtsam_HybridGaussianConditional_Conditionals_Leaf");
+                        "gtsam_HybridGaussianConditional_Conditionals_Leaf")
 BOOST_CLASS_EXPORT_GUID(HybridGaussianConditional::Conditionals::Choice,
-                        "gtsam_HybridGaussianConditional_Conditionals_Choice");
+                        "gtsam_HybridGaussianConditional_Conditionals_Choice")
 // Needed since GaussianConditional::FromMeanAndStddev uses it
-BOOST_CLASS_EXPORT_GUID(noiseModel::Isotropic, "gtsam_noiseModel_Isotropic");
+BOOST_CLASS_EXPORT_GUID(noiseModel::Isotropic, "gtsam_noiseModel_Isotropic")
 
-BOOST_CLASS_EXPORT_GUID(HybridBayesNet, "gtsam_HybridBayesNet");
+BOOST_CLASS_EXPORT_GUID(HybridBayesNet, "gtsam_HybridBayesNet")
 
 /* ****************************************************************************/
 // Test HybridGaussianFactor serialization.

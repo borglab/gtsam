@@ -40,7 +40,7 @@
 namespace gtsam {
 
 /// Create a set of ground-truth landmarks
-std::vector<Point3> createPoints() {
+[[maybe_unused]] static std::vector<Point3> createPoints() {
   std::vector<Point3> points;
   points.push_back(Point3(10.0, 10.0, 10.0));
   points.push_back(Point3(-10.0, 10.0, 10.0));
@@ -59,7 +59,7 @@ std::vector<Point3> createPoints() {
  * Default values give a circular trajectory, radius 30 at pi/4 intervals,
  * always facing the circle center
  */
-std::vector<Pose3> createPoses(
+[[maybe_unused]] static std::vector<Pose3> createPoses(
     const Pose3& init = Pose3(Rot3::Ypr(M_PI_2, 0, -M_PI_2), {30, 0, 0}),
     const Pose3& delta = Pose3(Rot3::Ypr(0, -M_PI_4, 0),
                                {sin(M_PI_4) * 30, 0, 30 * (1 - sin(M_PI_4))}),
@@ -78,7 +78,7 @@ std::vector<Pose3> createPoses(
 /**
  * Create regularly spaced poses with specified radius and number of cameras
  */
-std::vector<Pose3> posesOnCircle(int num_cameras = 8, double R = 30) {
+[[maybe_unused]] static std::vector<Pose3> posesOnCircle(int num_cameras = 8, double R = 30) {
   const double theta = 2 * M_PI / num_cameras;
 
   // Initial pose at angle 0, position (R, 0, 0), facing the center with Y-axis

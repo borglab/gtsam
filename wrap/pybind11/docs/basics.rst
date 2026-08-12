@@ -78,6 +78,13 @@ For brevity, all code examples assume that the following two lines are present:
 
     namespace py = pybind11;
 
+.. note::
+
+    ``pybind11/pybind11.h`` includes ``Python.h``, as such it must be the first file
+    included in any source file or header for `the same reasons as Python.h`_.
+
+.. _`the same reasons as Python.h`: https://docs.python.org/3/extending/extending.html#a-simple-example
+
 Some features may require additional headers, but those will be specified as needed.
 
 .. _simple_example:
@@ -101,11 +108,13 @@ a file named :file:`example.cpp` with the following contents:
 
     #include <pybind11/pybind11.h>
 
+    namespace py = pybind11;
+
     int add(int i, int j) {
         return i + j;
     }
 
-    PYBIND11_MODULE(example, m) {
+    PYBIND11_MODULE(example, m, py::mod_gil_not_used()) {
         m.doc() = "pybind11 example plugin"; // optional module docstring
 
         m.def("add", &add, "A function that adds two numbers");
@@ -135,7 +144,7 @@ On Linux, the above example can be compiled using the following command:
 
 .. code-block:: bash
 
-    $ c++ -O3 -Wall -shared -std=c++11 -fPIC $(python3 -m pybind11 --includes) example.cpp -o example$(python3-config --extension-suffix)
+    $ c++ -O3 -Wall -shared -std=c++11 -fPIC $(python3 -m pybind11 --includes) example.cpp -o example$(python3 -m pybind11 --extension-suffix)
 
 .. note::
 
@@ -281,7 +290,7 @@ converted using the function ``py::cast``.
 
 .. code-block:: cpp
 
-    PYBIND11_MODULE(example, m) {
+    PYBIND11_MODULE(example, m, py::mod_gil_not_used()) {
         m.attr("the_answer") = 42;
         py::object world = py::cast("World");
         m.attr("what") = world;

@@ -18,10 +18,12 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/debug.h>
+#include <gtsam/base/utilities.h>
 #include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/discrete/Ring.h>
 #include <gtsam/discrete/Signature.h>
 #include <gtsam/hybrid/HybridValues.h>
+#include <gtsam/inference/Ordering.h>
 
 #include <algorithm>
 #include <cassert>
@@ -85,7 +87,7 @@ DiscreteConditional DiscreteConditional::operator*(
   }
 
   // Take union of frontal keys
-  std::set<Key> newFrontals;
+  KeySet newFrontals;
   for (auto&& key : this->frontals()) newFrontals.insert(key);
   for (auto&& key : other.frontals()) newFrontals.insert(key);
 
@@ -268,7 +270,8 @@ size_t DiscreteConditional::argmax(const DiscreteValues& parentsValues) const {
 }
 
 /* ************************************************************************** */
-void DiscreteConditional::sampleInPlace(DiscreteValues* values) const {
+void DiscreteConditional::sampleInPlace(DiscreteValues* values,
+                                        std::mt19937_64* rng) const {
   // throw if more than one frontal:
   if (nrFrontals() != 1) {
     throw std::invalid_argument(
@@ -281,14 +284,13 @@ void DiscreteConditional::sampleInPlace(DiscreteValues* values) const {
     throw std::invalid_argument(
         "DiscreteConditional::sampleInPlace: values already contains j");
   }
-  size_t sampled = sample(*values);  // Sample variable given parents
-  (*values)[j] = sampled;            // store result in partial solution
+  size_t sampled = sample(*values, rng);  // Sample variable given parents
+  (*values)[j] = sampled;                 // store result in partial solution
 }
 
 /* ************************************************************************** */
-size_t DiscreteConditional::sample(const DiscreteValues& parentsValues) const {
-  static mt19937 rng(2);  // random number generator
-
+size_t DiscreteConditional::sample(const DiscreteValues& parentsValues,
+                                   std::mt19937_64* rng) const {
   // Get the correct conditional distribution
   ADT pFS = choose(parentsValues, true);  // P(F|S=parentsValues)
 
@@ -309,28 +311,33 @@ size_t DiscreteConditional::sample(const DiscreteValues& parentsValues) const {
       return value;  // shortcut exit
     }
   }
+
+  // Check if rng is nullptr, then assign default
+  rng = (rng == nullptr) ? &kRandomNumberGenerator : rng;
+
   std::discrete_distribution<size_t> distribution(p.begin(), p.end());
-  return distribution(rng);
+  return distribution(*rng);
 }
 
 /* ************************************************************************** */
-size_t DiscreteConditional::sample(size_t parent_value) const {
+size_t DiscreteConditional::sample(size_t parent_value,
+                                   std::mt19937_64* rng) const {
   if (nrParents() != 1)
     throw std::invalid_argument(
         "Single value sample() can only be invoked on single-parent "
         "conditional");
   DiscreteValues values;
   values.emplace(keys_.back(), parent_value);
-  return sample(values);
+  return sample(values, rng);
 }
 
 /* ************************************************************************** */
-size_t DiscreteConditional::sample() const {
+size_t DiscreteConditional::sample(std::mt19937_64* rng) const {
   if (nrParents() != 0)
     throw std::invalid_argument(
         "sample() can only be invoked on no-parent prior");
   DiscreteValues values;
-  return sample(values);
+  return sample(values, rng);
 }
 
 /* ************************************************************************* */

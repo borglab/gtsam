@@ -25,12 +25,13 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/linearExceptions.h>
 #include <gtsam/linear/VectorValues.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam/config.h> // for GTSAM_USE_TBB
 
 #ifdef GTSAM_USE_TBB
 #  include <tbb/parallel_for.h>
+#  include <tbb/parallel_reduce.h>
+#  include <tbb/blocked_range.h>
 #endif
 
 #include <algorithm>
@@ -169,6 +170,35 @@ void NonlinearFactorGraph::saveGraph(const std::string& filename,
 /* ************************************************************************* */
 double NonlinearFactorGraph::error(const Values& values) const {
   gttic(NonlinearFactorGraph_error);
+
+#ifdef GTSAM_USE_TBB
+  constexpr size_t kGrainSize = 256; // Fixed grain size for deterministic splitting
+  if (factors_.size() > 2 * kGrainSize) {
+    TbbOpenMPMixedScope threadLimiter;
+    double total_error = tbb::parallel_deterministic_reduce(
+      tbb::blocked_range<size_t>(0, size(), kGrainSize),
+      0.0, // identity value
+      [this, &values](const tbb::blocked_range<size_t>& r, double local_error) -> double {
+        for (size_t i = r.begin(); i != r.end(); ++i) {
+          const auto& factor = factors_[i];
+          if (factor && factor->sendable())
+            local_error += factor->error(values);
+        }
+        return local_error;
+      },
+      [](double x, double y) -> double {
+        return x + y;
+      });
+
+    // Process non-sendable factors sequentially (e.g., Python factors requiring GIL)
+    for(const sharedFactor& factor: factors_) {
+      if (factor && !factor->sendable())
+        total_error += factor->error(values);
+    }
+    return total_error;
+  }
+#endif
+
   double total_error = 0.;
   // iterate over all the factors_ to accumulate the log probabilities
   for(const sharedFactor& factor: factors_) {

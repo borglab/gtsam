@@ -86,9 +86,11 @@ namespace gtsam {
       size_t size() const { return std::distance(range_.first, range_.second); }
       const auto& front() const { return *begin(); }
       // == operator overload for comparison with another iterator
-      template<class OTHER>
+      template <class OTHER>
       bool operator==(const OTHER& rhs) const {
-        return std::equal(begin(), end(), rhs.begin());
+        if (this->size() != rhs.size()) return false;
+        if (this->size() == 0) return true;
+        return std::equal(begin(), end(), rhs.begin(), rhs.end());
       }
     };
 

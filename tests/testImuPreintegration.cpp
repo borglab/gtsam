@@ -15,9 +15,14 @@
  * @author Russell Buchanan
  **/
 
+// GCC bug workaround
+#if  defined(__GNUC__) && __GNUC__ == 16
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
 #include <gtsam/slam/dataset.h>
 #include <tests/ImuMeasurement.h>
@@ -43,7 +48,6 @@ TEST(TestImuPreintegration, LoadedSimulationData) {
   double gyrNoiseSigma = 0.000208;
   double gyrBiasRwSigma = 0.000004;
   double integrationCovariance = 1e-8;
-  double biasAccOmegaInt = 1e-5;
 
   double gravity = 9.81;
   double rate = 400.0;  // Hz
@@ -76,7 +80,6 @@ TEST(TestImuPreintegration, LoadedSimulationData) {
   imuPreintegratedParams->gyroscopeCovariance = I_3x3 * pow(gyrNoiseSigma, 2);
   imuPreintegratedParams->biasOmegaCovariance = I_3x3 * pow(gyrBiasRwSigma, 2);
   imuPreintegratedParams->integrationCovariance = I_3x3 * integrationCovariance;
-  imuPreintegratedParams->biasAccOmegaInt = I_6x6 * biasAccOmegaInt;
 
   // Initial state
   Pose3 priorPose;

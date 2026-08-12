@@ -37,7 +37,7 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3f {
   // Note: u0 and v0 are constants and not optimized.
 
  public:
-  inline constexpr static auto dimension = 3;
+  constexpr static auto dimension = 3;
   using shared_ptr = std::shared_ptr<Cal3Bundler>;
 
   /// @name Constructors
@@ -80,10 +80,10 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3f {
   /// @{
 
   /// distortion parameter k1
-  inline double k1() const { return k1_; }
+  double k1() const { return k1_; }
 
   /// distortion parameter k2
-  inline double k2() const { return k2_; }
+  double k2() const { return k2_; }
 
   Matrix3 K() const override;  ///< Standard 3*3 calibration matrix
   Vector4 k() const;  ///< Radial distortion parameters (4 of them, 2 0)
@@ -125,10 +125,10 @@ class GTSAM_EXPORT Cal3Bundler : public Cal3f {
   /// @{
 
   /// Return DOF, dimensionality of tangent space
-  size_t dim() const override { return Dim(); }
+  size_t dim() const { return Dim(); }
 
   /// Return DOF, dimensionality of tangent space
-  inline static size_t Dim() { return dimension; }
+  static size_t Dim() { return dimension; }
 
   /// Update calibration with tangent space delta
   Cal3Bundler retract(const Vector& d) const {

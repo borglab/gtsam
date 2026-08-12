@@ -14,11 +14,19 @@
  * @date   March 2019 - August 2020
  * @author Frank Dellaert, David Rosen, and Jing Wu
  * @brief  Shonan Averaging algorithm
+ * @author Fan Jiang
  */
 
-#include <SymEigsSolver.h>
-#include <cmath>
+// GCC bug workaround
+#if  defined(__GNUC__) && __GNUC__ == 16
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
+#include <Spectra/SymEigsSolver.h>
+#include <Spectra/Util/SimpleRandom.h>
+#include <gtsam/linear/AcceleratedPowerMethod.h>
 #include <gtsam/linear/PCGSolver.h>
+#include <gtsam/linear/PowerMethod.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
@@ -31,18 +39,16 @@
 
 #include <Eigen/Eigenvalues>
 #include <algorithm>
-#include <complex>
-#include <iostream>
-#include <map>
+#include <cassert>
+#include <cmath>
 #include <random>
 #include <set>
 #include <vector>
-#include <cassert>
 
 namespace gtsam {
 
 // In Wrappers we have no access to this so have a default ready
-static std::mt19937 kRandomNumberGenerator(42);
+static std::mt19937 kPRNG(42);
 
 using Sparse = Eigen::SparseMatrix<double>;
 
@@ -98,7 +104,7 @@ template <size_t d>
 static size_t NrUnknowns(
     const typename ShonanAveraging<d>::Measurements &measurements) {
   Key maxKey = 0;
-  std::set<Key> keys;
+  KeySet keys;
   for (const auto &measurement : measurements) {
     for (const Key &key : measurement.keys()) {
       maxKey = std::max(key, maxKey);
@@ -628,7 +634,7 @@ static bool SparseMinimumEigenValue(
     const Sparse &A, const Matrix &S, double *minEigenValue,
     Vector *minEigenVector = 0, size_t *numIterations = 0,
     size_t maxIterations = 1000,
-    double minEigenvalueNonnegativityTolerance = 10e-4,
+    double minEigenvalueNonnegativityTolerance = 1e-4,
     Eigen::Index numLanczosVectors = 20) {
   // a. Estimate the largest-magnitude eigenvalue of this matrix using Lanczos
   MatrixProdFunctor lmOperator(A);
@@ -683,8 +689,8 @@ static bool SparseMinimumEigenValue(
   // simultaneously allowing the iterations to escape from this fixed point in
   // the case that the relaxation is not exact.
   Vector v0 = S.row(0).transpose();
-  Vector perturbation(v0.size());
-  perturbation.setRandom();
+  Spectra::SimpleRandom<double> rng(0);
+  Vector perturbation = rng.random_vec(v0.size());
   perturbation.normalize();
   Vector xinit = v0 + (.03 * v0.norm()) * perturbation;  // Perturb v0 by ~3%
 
@@ -827,8 +833,8 @@ Values ShonanAveraging<d>::initializeWithDescent(
   double alphaMin = 1e-2;
   double alpha =
       std::max(1024 * alphaMin, 10 * gradienTolerance / fabs(minEigenValue));
-  vector<double> alphas;
-  vector<double> fvals;
+  std::vector<double> alphas;
+  std::vector<double> fvals;
   // line search
   while ((alpha >= alphaMin)) {
     Values Qplus = LiftwithDescent(p, values, alpha * minEigenVector);
@@ -869,7 +875,7 @@ Values ShonanAveraging<d>::initializeRandomly(std::mt19937 &rng) const {
 /* ************************************************************************* */
 template <size_t d>
 Values ShonanAveraging<d>::initializeRandomly() const {
-  return initializeRandomly(kRandomNumberGenerator);
+  return initializeRandomly(kPRNG);
 }
 
 /* ************************************************************************* */
@@ -883,7 +889,7 @@ Values ShonanAveraging<d>::initializeRandomlyAt(size_t p,
 /* ************************************************************************* */
 template <size_t d>
 Values ShonanAveraging<d>::initializeRandomlyAt(size_t p) const {
-  return initializeRandomlyAt(p, kRandomNumberGenerator);
+  return initializeRandomlyAt(p, kPRNG);
 }
 
 /* ************************************************************************* */
@@ -937,7 +943,7 @@ ShonanAveraging2::ShonanAveraging2(const Measurements &measurements,
     : ShonanAveraging<2>(maybeRobust(measurements, parameters.getUseHuber()),
                          parameters) {}
 
-ShonanAveraging2::ShonanAveraging2(string g2oFile, const Parameters &parameters)
+ShonanAveraging2::ShonanAveraging2(std::string g2oFile, const Parameters &parameters)
     : ShonanAveraging<2>(maybeRobust(parseMeasurements<Rot2>(g2oFile),
                                      parameters.getUseHuber()),
                          parameters) {}
@@ -983,7 +989,7 @@ ShonanAveraging3::ShonanAveraging3(const Measurements &measurements,
     : ShonanAveraging<3>(maybeRobust(measurements, parameters.getUseHuber()),
                          parameters) {}
 
-ShonanAveraging3::ShonanAveraging3(string g2oFile, const Parameters &parameters)
+ShonanAveraging3::ShonanAveraging3(std::string g2oFile, const Parameters &parameters)
     : ShonanAveraging<3>(maybeRobust(parseMeasurements<Rot3>(g2oFile),
                                      parameters.getUseHuber()),
                          parameters) {}

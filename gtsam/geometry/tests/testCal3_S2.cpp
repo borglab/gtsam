@@ -15,6 +15,7 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/numericalDerivative.h>
@@ -114,8 +115,7 @@ TEST(Cal3_S2, Retract) {
   EXPECT_LONGS_EQUAL(Cal3_S2::Dim(), 5);
   EXPECT_LONGS_EQUAL(expected.dim(), 5);
 
-  Vector5 d;
-  d << 1, 2, 3, 4, 5;
+  Vector5 d{1, 2, 3, 4, 5};
   Cal3_S2 actual = K.retract(d);
   CHECK(assert_equal(expected, actual, 1e-7));
   CHECK(assert_equal(d, K.localCoordinates(actual), 1e-7));

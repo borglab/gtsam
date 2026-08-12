@@ -14,6 +14,7 @@
  * @brief A class for computing marginals in a DiscreteFactorGraph
  * @author Abhijit Kundu
  * @author Richard Roberts
+ * @author Varun Agrawal
  * @author Frank Dellaert
  * @date June 4, 2012
  */
@@ -30,7 +31,7 @@ namespace gtsam {
  * A class for computing marginals of variables in a DiscreteFactorGraph
  * @ingroup discrete
  */
-class DiscreteMarginals {
+class GTSAM_EXPORT DiscreteMarginals {
  protected:
   DiscreteBayesTree::shared_ptr bayesTree_;
 
@@ -38,38 +39,23 @@ class DiscreteMarginals {
   DiscreteMarginals() {}
 
   /** Construct a marginals class.
-   * @param graph The factor graph defining the full joint 
+   * @param graph The factor graph defining the full joint
    * distribution on all variables.
    */
-  DiscreteMarginals(const DiscreteFactorGraph& graph) {
-    bayesTree_ = graph.eliminateMultifrontal();
-  }
+  DiscreteMarginals(const DiscreteFactorGraph& graph);
 
   /** Compute the marginal of a single variable */
-  DiscreteFactor::shared_ptr operator()(Key variable) const {
-    // Compute marginal
-    DiscreteFactor::shared_ptr marginalFactor =
-        bayesTree_->marginalFactor(variable, &EliminateDiscrete);
-    return marginalFactor;
-  }
+  DiscreteFactor::shared_ptr operator()(Key variable) const;
 
   /** Compute the marginal of a single variable
    *   @param key DiscreteKey of the Variable
    *   @return Vector of marginal probabilities
    */
-  Vector marginalProbabilities(const DiscreteKey& key) const {
-    // Compute marginal
-    DiscreteFactor::shared_ptr marginalFactor = this->operator()(key.first);
+  Vector marginalProbabilities(const DiscreteKey& key) const;
 
-    // Create result
-    Vector vResult(key.second);
-    for (size_t state = 0; state < key.second; ++state) {
-      DiscreteValues values;
-      values[key.first] = state;
-      vResult(state) = (*marginalFactor)(values);
-    }
-    return vResult;
-  }
+  /// Print details
+  void print(const std::string& s = "",
+             const KeyFormatter formatter = DefaultKeyFormatter) const;
 };
 
 } /* namespace gtsam */

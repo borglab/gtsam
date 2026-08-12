@@ -6,6 +6,7 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/SimpleCamera.h>
 #include <gtsam/nonlinear/factorTesting.h>

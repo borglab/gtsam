@@ -44,8 +44,10 @@ const Pose3 poseError( Rot3::RzRyRx(Vector3(0.1, 0.02, -0.1)), Point3(0.5, -0.05
 
 // Set up noise models for the factors
 const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
-const SharedDiagonal noiseOdometery = noiseModel::Diagonal::Sigmas((Vector(6) << 0.1, 0.1, 0.1, 0.5, 0.5, 0.5).finished());
-const SharedDiagonal noiseLoop = noiseModel::Diagonal::Sigmas((Vector(6) << 0.25, 0.25, 0.25, 1.0, 1.0, 1.0).finished());
+const SharedDiagonal noiseOdometery =
+    noiseModel::Diagonal::Sigmas(Vector{{0.1, 0.1, 0.1, 0.5, 0.5, 0.5}});
+const SharedDiagonal noiseLoop =
+    noiseModel::Diagonal::Sigmas(Vector{{0.25, 0.25, 0.25, 1.0, 1.0, 1.0}});
 
 /* ************************************************************************* */
 Values BatchOptimize(const NonlinearFactorGraph& graph, const Values& theta, int maxIter = 100) {
@@ -79,7 +81,7 @@ Values BatchOptimize(const NonlinearFactorGraph& graph, const Values& theta, int
 NonlinearFactorGraph CalculateMarginals(const NonlinearFactorGraph& factorGraph, const Values& linPoint, const FastList<Key>& keysToMarginalize){
 
 
-  std::set<Key> KeysToKeep;
+  KeySet KeysToKeep;
   for(const auto key: linPoint.keys()) { // we cycle over all the keys of factorGraph
     KeysToKeep.insert(key);
   } // so far we are keeping all keys, but we want to delete the ones that we are going to marginalize

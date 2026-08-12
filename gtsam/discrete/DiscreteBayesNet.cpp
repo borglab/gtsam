@@ -50,12 +50,13 @@ double DiscreteBayesNet::evaluate(const DiscreteValues& values) const {
 }
 
 /* ************************************************************************* */
-DiscreteValues DiscreteBayesNet::sample() const {
+DiscreteValues DiscreteBayesNet::sample(std::mt19937_64* rng) const {
   DiscreteValues result;
-  return sample(result);
+  return sample(result, rng);
 }
 
-DiscreteValues DiscreteBayesNet::sample(DiscreteValues result) const {
+DiscreteValues DiscreteBayesNet::sample(DiscreteValues result,
+                                        std::mt19937_64* rng) const {
   // sample each node in turn in topological sort order (parents first)
   for (auto it = std::make_reverse_iterator(end());
        it != std::make_reverse_iterator(begin()); ++it) {
@@ -63,7 +64,7 @@ DiscreteValues DiscreteBayesNet::sample(DiscreteValues result) const {
     // Sample the conditional only if value for j not already in result
     const Key j = conditional->firstFrontalKey();
     if (result.count(j) == 0) {
-      conditional->sampleInPlace(&result);
+      conditional->sampleInPlace(&result, rng);
     }
   }
   return result;
@@ -71,16 +72,14 @@ DiscreteValues DiscreteBayesNet::sample(DiscreteValues result) const {
 
 /* ************************************************************************* */
 // The implementation is: build the entire joint into one factor and then prune.
-// TODO(Frank): This can be quite expensive *unless* the factors have already
+// NOTE(Frank): This can be quite expensive *unless* the factors have already
 // been pruned before. Another, possibly faster approach is branch and bound
 // search to find the K-best leaves and then create a single pruned conditional.
 DiscreteBayesNet DiscreteBayesNet::prune(
     size_t maxNrLeaves, const std::optional<double>& marginalThreshold,
     DiscreteValues* fixedValues) const {
   // Multiply into one big conditional. NOTE: possibly quite expensive.
-  DiscreteConditional joint;
-  for (const DiscreteConditional::shared_ptr& conditional : *this)
-    joint = joint * (*conditional);
+  DiscreteConditional joint = this->joint();
 
   // Prune the joint. NOTE: imperative and, again, possibly quite expensive.
   DiscreteConditional pruned = joint;
@@ -112,6 +111,12 @@ DiscreteBayesNet DiscreteBayesNet::prune(
 
     // Set the fixed values if requested.
     if (fixedValues) {
+      if (!fixedValues->empty()) {
+        throw std::invalid_argument(
+            "DiscreteBayesNet::prune: fixedValues should be empty since it is "
+            "a purely output argument.");
+      }
+
       *fixedValues = deadModesValues;
     }
   }
@@ -120,6 +125,15 @@ DiscreteBayesNet DiscreteBayesNet::prune(
   DiscreteBayesNet result;
   if (pruned.keys().size() > 0) result.push_back(pruned);
   return result;
+}
+
+/* *********************************************************************** */
+DiscreteConditional DiscreteBayesNet::joint() const {
+  DiscreteConditional joint;
+  for (const DiscreteConditional::shared_ptr& conditional : *this)
+    joint = joint * (*conditional);
+
+  return joint;
 }
 
 /* *********************************************************************** */

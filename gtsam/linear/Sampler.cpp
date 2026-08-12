@@ -25,7 +25,7 @@ namespace gtsam {
 /* ************************************************************************* */
 Sampler::Sampler(const noiseModel::Diagonal::shared_ptr& model,
                  uint_fast64_t seed)
-    : model_(model), generator_(seed) {
+    : model_(model), generator_(seed), externalGenerator_(nullptr) {
   if (!model) {
     throw std::invalid_argument("Sampler::Sampler needs a non-null model.");
   }
@@ -33,7 +33,24 @@ Sampler::Sampler(const noiseModel::Diagonal::shared_ptr& model,
 
 /* ************************************************************************* */
 Sampler::Sampler(const Vector& sigmas, uint_fast64_t seed)
-    : model_(noiseModel::Diagonal::Sigmas(sigmas, true)), generator_(seed) {}
+    : model_(noiseModel::Diagonal::Sigmas(sigmas, true)),
+      generator_(seed),
+      externalGenerator_(nullptr) {}
+
+/* ************************************************************************* */
+Sampler::Sampler(const noiseModel::Diagonal::shared_ptr& model,
+                 std::mt19937_64& rng)
+    : model_(model), generator_(0u), externalGenerator_(&rng) {
+  if (!model) {
+    throw std::invalid_argument("Sampler::Sampler needs a non-null model.");
+  }
+}
+
+/* ************************************************************************* */
+Sampler::Sampler(const Vector& sigmas, std::mt19937_64& rng)
+    : model_(noiseModel::Diagonal::Sigmas(sigmas, true)),
+      generator_(0u),
+      externalGenerator_(&rng) {}
 
 /* ************************************************************************* */
 Vector Sampler::sampleDiagonal(const Vector& sigmas, std::mt19937_64* rng) {
@@ -55,13 +72,14 @@ Vector Sampler::sampleDiagonal(const Vector& sigmas, std::mt19937_64* rng) {
 
 /* ************************************************************************* */
 Vector Sampler::sampleDiagonal(const Vector& sigmas) const {
-  return sampleDiagonal(sigmas, &generator_);
+  std::mt19937_64* rng = externalGenerator_ ? externalGenerator_ : &generator_;
+  return sampleDiagonal(sigmas, rng);
 }
 
 /* ************************************************************************* */
 Vector Sampler::sample() const {
   assert(model_.get());
-  const Vector& sigmas = model_->sigmas();
+  const Vector& sigmas = model_->sigmasRef();
   return sampleDiagonal(sigmas);
 }
 

@@ -24,9 +24,12 @@ namespace gtsam {
 
   /**
   Thrown when a linear system is ill-posed.  The most common cause for this
-  error is having underconstrained variables.  Mathematically, the system is
-  either underdetermined, or its quadratic error function is concave in some
-  directions.
+  error is having underconstrained variables.  The exception also protects
+  against nearly indeterminate systems that are mathematically full rank but
+  too poorly conditioned to solve reliably.  Mathematically, the system is
+  underdetermined, its quadratic error function is concave in some directions,
+  or its numerical conditioning makes it indistinguishable from a singular
+  system at machine precision.
 
   Examples of situations causing this error are:
    - A landmark observed by two cameras with a very small baseline will have
@@ -37,6 +40,12 @@ namespace gtsam {
    - An overall scale or rigid transformation ambiguity, for example missing
      a prior or hard constraint on the first pose, or missing a scale
      constraint between the first two cameras (in structure-from-motion).
+   - A very strong finite prior combined with much looser measurement noise can
+     expose a weakly observed direction.  The raw weight ratio alone may only
+     reflect different variable units, but the graph is nearly indeterminate
+     if elimination produces a Cholesky pivot that is very small relative to
+     its original diagonal entry.  This normalization is invariant to diagonal
+     changes of variable units but still depends on elimination ordering.
 
   Mathematically, the following conditions cause this problem:
    - Underdetermined system:  This occurs when the variables are not
@@ -65,8 +74,15 @@ namespace gtsam {
      or variable units can be poorly-conditioned.
 
   Resolving this problem:
+   - If a prior is intended to fix a gauge exactly, as is often the case for a
+     gauge-fixing prior, prefer a hard constraint such as a PriorFactor with
+     noiseModel::Constrained::All(dimension) over an extremely strong finite
+     prior.  The hard constraint expresses the intended model without
+     choosing an arbitrary extreme finite weight, and cannot create a nearly
+     singular finite weight ratio.  Other underconstrained or ill-conditioned
+     parts of the graph can still trigger the exception.
    - This exception contains the variable at which the problem was
-     discovered (IndeterminantLinearSystemException::nearbyVariable()).
+     discovered (IndeterminateSystemException::nearbyVariable()).
      Note, however, that this is not necessarily the variable where the
      problem originates.  For example, in the case that a prior on the
      first camera was forgotten, it may only be another camera or landmark
@@ -91,14 +107,20 @@ namespace gtsam {
      ordered in elimination order and occupy scalars in the same way as
      described for Jacobian columns in the previous bullet.
    */
-  class GTSAM_EXPORT IndeterminantLinearSystemException : public ThreadsafeException<IndeterminantLinearSystemException> {
+  class GTSAM_EXPORT IndeterminateSystemException
+      : public ThreadsafeException<IndeterminateSystemException> {
     Key j_;
   public:
-    IndeterminantLinearSystemException(Key j) noexcept : j_(j) {}
-    ~IndeterminantLinearSystemException() noexcept override {}
+    IndeterminateSystemException(Key j) noexcept : j_(j) {}
+    ~IndeterminateSystemException() noexcept override {}
     Key nearbyVariable() const { return j_; }
     const char* what() const noexcept override;
   };
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+  /// @deprecated Use IndeterminateSystemException.
+  using IndeterminantLinearSystemException = IndeterminateSystemException;
+#endif
 
   /* ************************************************************************* */
   /** An exception indicating that the noise model dimension passed into a

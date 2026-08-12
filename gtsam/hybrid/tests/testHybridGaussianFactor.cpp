@@ -29,6 +29,7 @@
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
@@ -55,7 +56,7 @@ TEST(HybridGaussianFactor, Constructor) {
 }
 
 /* ************************************************************************* */
-namespace test_constructor {
+namespace test_hgn_constructor {
 DiscreteKey m1(1, 2);
 
 auto A1 = Matrix::Zero(2, 1);
@@ -64,12 +65,12 @@ auto b = Matrix::Zero(2, 1);
 
 auto f10 = std::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
 auto f11 = std::make_shared<JacobianFactor>(X(1), A1, X(2), A2, b);
-}  // namespace test_constructor
+}  // namespace test_hgn_constructor
 
 /* ************************************************************************* */
 // Test simple to complex constructors...
 TEST(HybridGaussianFactor, ConstructorVariants) {
-  using namespace test_constructor;
+  using namespace test_hgn_constructor;
   HybridGaussianFactor fromFactors(m1, {f10, f11});
 
   std::vector<GaussianFactorValuePair> pairs{{f10, 0.0}, {f11, 0.0}};
@@ -83,7 +84,7 @@ TEST(HybridGaussianFactor, ConstructorVariants) {
 
 /* ************************************************************************* */
 TEST(HybridGaussianFactor, Keys) {
-  using namespace test_constructor;
+  using namespace test_hgn_constructor;
   HybridGaussianFactor hybridFactorA(m1, {f10, f11});
   // Check the number of keys matches what we expect
   EXPECT_LONGS_EQUAL(3, hybridFactorA.keys().size());
@@ -105,7 +106,7 @@ TEST(HybridGaussianFactor, Keys) {
 
 /* ************************************************************************* */
 TEST(HybridGaussianFactor, Printing) {
-  using namespace test_constructor;
+  using namespace test_hgn_constructor;
   HybridGaussianFactor hybridFactor(m1, {f10, f11});
 
   std::string expected =
@@ -191,8 +192,28 @@ TEST(HybridGaussianFactor, Error) {
   DiscreteValues discreteValues;
   discreteValues[m1.first] = 1;
   EXPECT_DOUBLES_EQUAL(
-      4.0, hybridFactor.error({continuousValues, discreteValues}), 1e-9);
+    4.0, hybridFactor.error({ continuousValues, discreteValues }), 1e-9);
 }
+
+/* ************************************************************************* */
+// Test the restrict method of HybridGaussianFactor
+TEST(HybridGaussianFactor, Restrict) {
+  using namespace test_hgn_constructor;
+  HybridGaussianFactor hfg(m1, {f10, f11});
+
+  // --- Test Case 1: Restrict by M1=0 ---
+  DiscreteValues assignment1;
+  assignment1[m1.first] = 0;
+
+  auto f = hfg.restrict(assignment1);
+  auto restricted = std::dynamic_pointer_cast<HybridGaussianFactor>(f);
+  CHECK(restricted != nullptr);
+
+  // Check discrete keys now empty
+  DiscreteKeys expected_dk1;
+  EXPECT(restricted->discreteKeys().empty());
+}
+
 
 /* ************************************************************************* */
 int main() {

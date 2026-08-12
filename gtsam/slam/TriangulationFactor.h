@@ -54,8 +54,6 @@ protected:
   const bool verboseCheirality_; ///< If true, prints text for Cheirality exceptions (default: false)
 
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   /// shorthand for a smart pointer to a factor
   using shared_ptr = std::shared_ptr<This>;
 
@@ -64,7 +62,7 @@ public:
 
   /// Default constructor
   TriangulationFactor() :
-      throwCheirality_(false), verboseCheirality_(false) {
+      throwCheirality_(false), verboseCheirality_(false), measured_() {
   }
 
   /**
@@ -81,7 +79,7 @@ public:
       bool verboseCheirality = false) :
       Base(model, pointKey), camera_(camera), measured_(measured), throwCheirality_(
           throwCheirality), verboseCheirality_(verboseCheirality) {
-    if (model && model->dim() != traits<Measurement>::dimension)
+    if (model && !noiseModel::matchesDimension(*model, measured_))
       throw std::invalid_argument(
           "TriangulationFactor must be created with "
               + std::to_string((int) traits<Measurement>::dimension)
@@ -201,4 +199,3 @@ private:
 #endif
 };
 } // \ namespace gtsam
-

@@ -222,9 +222,6 @@ private:
         boost::serialization::base_object<PinholeBase>(*this));
   }
 #endif
-
-public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // end of class PinholeBaseK
 
@@ -386,12 +383,10 @@ public:
   /// @name Manifold
   /// @{
 
-  /// @deprecated
   size_t dim() const {
     return 6;
   }
 
-  /// @deprecated
   static size_t Dim() {
     return 6;
   }
@@ -436,9 +431,6 @@ private:
     ar & BOOST_SERIALIZATION_NVP(K_);
   }
 #endif
-
-public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // end of class PinholePose
 

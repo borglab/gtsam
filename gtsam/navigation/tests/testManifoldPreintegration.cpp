@@ -15,49 +15,36 @@
  * @author  Luca Carlone
  */
 
-#include <gtsam/navigation/ManifoldPreintegration.h>
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/nonlinear/expressions.h>
+#include <gtsam/navigation/ManifoldPreintegration.h>
 #include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/expressionTesting.h>
-
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/nonlinear/expressions.h>
 
 #include "imuFactorTesting.h"
 
 using namespace std::placeholders;
 
-namespace testing {
-// Create default parameters with Z-down and above noise parameters
-static std::shared_ptr<PreintegrationParams> Params() {
-  auto p = PreintegrationParams::MakeSharedD(kGravity);
-  p->gyroscopeCovariance = kGyroSigma * kGyroSigma * I_3x3;
-  p->accelerometerCovariance = kAccelSigma * kAccelSigma * I_3x3;
-  p->integrationCovariance = 0.0001 * I_3x3;
-  return p;
-}
-}
-
 /* ************************************************************************* */
 TEST(ManifoldPreintegration, BiasCorrectionJacobians) {
   testing::SomeMeasurements measurements;
 
-  std::function<Rot3(const Vector3&, const Vector3&)> deltaRij =
-      [&](const Vector3& a, const Vector3& w) {
+  auto deltaRij = [&](const Vector3& a, const Vector3& w) {
         ManifoldPreintegration pim(testing::Params(), Bias(a, w));
         testing::integrateMeasurements(measurements, &pim);
         return pim.deltaRij();
       };
 
-  std::function<Point3(const Vector3&, const Vector3&)> deltaPij =
-      [&](const Vector3& a, const Vector3& w) {
+  auto deltaPij = [&](const Vector3& a, const Vector3& w) {
         ManifoldPreintegration pim(testing::Params(), Bias(a, w));
         testing::integrateMeasurements(measurements, &pim);
         return pim.deltaPij();
       };
 
-  std::function<Vector3(const Vector3&, const Vector3&)> deltaVij =
-      [&](const Vector3& a, const Vector3& w) {
+  auto deltaVij = [&](const Vector3& a, const Vector3& w) {
         ManifoldPreintegration pim(testing::Params(), Bias(a, w));
         testing::integrateMeasurements(measurements, &pim);
         return pim.deltaVij();
@@ -66,6 +53,9 @@ TEST(ManifoldPreintegration, BiasCorrectionJacobians) {
   // Actual pre-integrated values
   ManifoldPreintegration pim(testing::Params());
   testing::integrateMeasurements(measurements, &pim);
+
+  EXPECT(assert_equal(pim.biasCorrectedDelta(pim.biasHat()),
+                      pim.preintegrated()));
 
   EXPECT(
       assert_equal(numericalDerivative21(deltaRij, kZero, kZero),
@@ -97,9 +87,12 @@ TEST(ManifoldPreintegration, computeError) {
   Matrix9 aH1, aH2;
   Matrix96 aH3;
   pim.computeError(x1, x2, bias, aH1, aH2, aH3);
-  std::function<Vector9(const NavState&, const NavState&,
-                        const imuBias::ConstantBias&)>
-      f = std::bind(&ManifoldPreintegration::computeError, pim,
+  // Select the overload without the gravity parameter:
+  using ComputeErrorNoGravity = Vector9 (PreintegrationBase::*)(
+      const NavState&, const NavState&, const imuBias::ConstantBias&,
+      OptionalJacobian<9, 9>, OptionalJacobian<9, 9>,
+      OptionalJacobian<9, 6>) const;
+  auto f = std::bind(static_cast<ComputeErrorNoGravity>(&ManifoldPreintegration::computeError), pim,
                     std::placeholders::_1, std::placeholders::_2,
                     std::placeholders::_3, nullptr, nullptr,
                     nullptr);

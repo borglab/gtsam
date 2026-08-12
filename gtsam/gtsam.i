@@ -29,20 +29,20 @@ class KeyList {
   void clear();
 
   // structure specific methods
-  size_t front() const;
-  size_t back() const;
-  void push_back(size_t key);
-  void push_front(size_t key);
+  gtsam::Key front() const;
+  gtsam::Key back() const;
+  void push_back(gtsam::Key key);
+  void push_front(gtsam::Key key);
   void pop_back();
   void pop_front();
   void sort();
-  void remove(size_t key);
+  void remove(gtsam::Key key);
 
   void serialize() const;
 
   // Special dunder methods for Python wrapping
   __len__();
-  __contains__(size_t key);
+  __contains__(gtsam::Key key);
   __iter__();
 };
 
@@ -63,16 +63,16 @@ class KeySet {
   void clear();
 
   // structure specific methods
-  void insert(size_t key);
+  void insert(gtsam::Key key);
   void merge(const gtsam::KeySet& other);
-  bool erase(size_t key);        // returns true if value was removed
-  bool count(size_t key) const;  // returns true if value exists
+  bool erase(gtsam::Key key);        // returns true if value was removed
+  bool count(gtsam::Key key) const;  // returns true if value exists
 
   void serialize() const;
 
   // Special dunder methods for Python wrapping
   __len__();
-  __contains__(size_t key);
+  __contains__(gtsam::Key key);
   __iter__();
 };
 
@@ -89,16 +89,16 @@ class KeyVector {
   void clear();
 
   // structure specific methods
-  size_t at(size_t i) const;
-  size_t front() const;
-  size_t back() const;
-  void push_back(size_t key) const;
+  gtsam::Key at(size_t i) const;
+  gtsam::Key front() const;
+  gtsam::Key back() const;
+  void push_back(gtsam::Key key) const;
 
   void serialize() const;
 
   // Special dunder methods for Python wrapping
   __len__();
-  __contains__(size_t key);
+  __contains__(gtsam::Key key);
   __iter__();
 };
 
@@ -114,9 +114,9 @@ class KeyGroupMap {
   void clear();
 
   // structure specific methods
-  size_t at(size_t key) const;
-  int erase(size_t key);
-  bool insert2(size_t key, int val);
+  int at(gtsam::Key key) const;
+  int erase(gtsam::Key key);
+  bool insert2(gtsam::Key key, int val);
 };
 
 // Actually a FastSet<FactorIndex>
@@ -131,9 +131,9 @@ class FactorIndexSet {
   void clear();
 
   // structure specific methods
-  void insert(size_t factorIndex);
-  bool erase(size_t factorIndex);        // returns true if value was removed
-  bool count(size_t factorIndex) const;  // returns true if value exists
+  void insert(gtsam::FactorIndex factorIndex);
+  bool erase(gtsam::FactorIndex factorIndex);        // returns true if value was removed
+  bool count(gtsam::FactorIndex factorIndex) const;  // returns true if value exists
 };
 
 // Actually a vector<FactorIndex>
@@ -148,10 +148,10 @@ class FactorIndices {
   void clear();
 
   // structure specific methods
-  size_t at(size_t i) const;
-  size_t front() const;
-  size_t back() const;
-  void push_back(size_t factorIndex) const;
+  gtsam::FactorIndex at(size_t i) const;
+  gtsam::FactorIndex front() const;
+  gtsam::FactorIndex back() const;
+  void push_back(gtsam::FactorIndex factorIndex) const;
 };
 
 //*************************************************************************
@@ -178,11 +178,15 @@ void perturbPoint2(gtsam::Values& values, double sigma, int seed = 42u);
 void perturbPose2(gtsam::Values& values, double sigmaT, double sigmaR,
                   int seed = 42u);
 void perturbPoint3(gtsam::Values& values, double sigma, int seed = 42u);
+void perturbPose3(gtsam::Values& values, double sigmaT, double sigmaR,
+                  int seed = 42u);
 void insertBackprojections(gtsam::Values& values,
-                           const gtsam::PinholeCamera<gtsam::Cal3_S2>& c,
-                           gtsam::Vector J, gtsam::Matrix Z, double depth);
+                           const gtsam::PinholeCamera<gtsam::Cal3_S2>& camera,
+                           const gtsam::Vector& J, gtsam::ConstMatrixView Z,
+                           double depth);
 void insertProjectionFactors(
-    gtsam::NonlinearFactorGraph& graph, size_t i, gtsam::Vector J, gtsam::Matrix Z,
+    gtsam::NonlinearFactorGraph& graph, gtsam::Key i, const gtsam::Vector& J,
+    gtsam::ConstMatrixView Z,
     const gtsam::noiseModel::Base* model, const gtsam::Cal3_S2* K,
     const gtsam::Pose3& body_P_sensor = gtsam::Pose3());
 gtsam::Matrix reprojectionErrors(const gtsam::NonlinearFactorGraph& graph,

@@ -18,15 +18,13 @@
 
 #pragma once
 
-#include <algorithm>
-
 /** The Real ring with addition and multiplication */
 struct Ring {
   static inline double zero() { return 0.0; }
   static inline double one() { return 1.0; }
   static inline double add(const double& a, const double& b) { return a + b; }
   static inline double max(const double& a, const double& b) {
-    return std::max(a, b);
+    return a > b ? a : b;
   }
   static inline double mul(const double& a, const double& b) { return a * b; }
   static inline double div(const double& a, const double& b) {

@@ -26,12 +26,9 @@
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/sfm/BinaryMeasurement.h>
-#include <gtsam/linear/PowerMethod.h>
-#include <gtsam/linear/AcceleratedPowerMethod.h>
 #include <gtsam/slam/dataset.h>
 
 #include <Eigen/Sparse>
-#include <map>
 #include <string>
 #include <type_traits>
 #include <utility>

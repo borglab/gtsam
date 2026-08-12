@@ -117,7 +117,7 @@ for i = 1:size(testOptions,1)
         imuSimulator.covarianceAnalysisBetween;
     catch
         errorRuns = [errorRuns i];
-        fprintf('\n*****\n   Something went wrong, most likely indeterminant linear system error.\n');
+        fprintf('\n*****\n   Something went wrong, most likely indeterminate linear system error.\n');
         disp('Test Options:\n');
         disp(testOptions(i,:));
         disp('Noises');
@@ -153,7 +153,6 @@ for i = 1:length(errorRuns)
     fprintf('  sigma_gyroBias = %f\n', noises(i,6));
     fprintf('  sigma_gps = %f\n', noises(i,7));
 end
-
 
 
 

@@ -1,6 +1,6 @@
 # README
 
-This is a vendored version of the Cephes Mathematical Library. The source code can be found on [netlib.org](https://www.netlib.org/cephes/).
+This is a vendored version of the Cephes Mathematical Library, trimmed down to just the required files for the `igami` function, and with exported functions renamed to prevent conflicts. The source code can be found on [netlib.org](https://www.netlib.org/cephes/).
 
 The software is provided with an [MIT License](https://smath.com/en-US/view/CephesMathLibrary/license).
 

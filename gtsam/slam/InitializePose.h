@@ -70,7 +70,8 @@ static Values computePoses(const Values& initialRot,
   }
 
   // add prior on dummy node
-  auto priorModel = noiseModel::Unit::Create(Pose::dimension);
+  auto priorModel =
+      noiseModel::Unit::Create(static_cast<size_t>(Pose::dimension));
   initialPose.insert(kAnchorKey, Pose());
   posegraph->emplace_shared<PriorFactor<Pose> >(kAnchorKey, Pose(), priorModel);
 

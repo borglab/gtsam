@@ -203,6 +203,13 @@ namespace gtsam {
      */
     double error(const VectorValues& c) const override;
 
+    /**
+     * Compute the change in error from zero to c, optionally returning
+     * the old and new errors.
+     */
+    double deltaError(const VectorValues& c, double* oldError = nullptr,
+                      double* newError = nullptr) const override;
+
     /** Return the dimension of the variable pointed to by the given key iterator
      * todo: Remove this in favor of keeping track of dimensions with variables?
      * @param variable An iterator pointing to the slot in this factor.  You can
@@ -325,6 +332,17 @@ namespace gtsam {
      * @param info The information matrix to be updated
      */
     void updateHessian(const KeyVector& keys, SymmetricBlockMatrix* info) const override;
+
+    /** Update an information matrix by adding the information corresponding to this factor
+     * (used internally during elimination), restricted to a range of block columns,
+     * useful for parallelization.
+     * @param keys The ordered vector of keys for the information matrix to be updated
+     * @param info The information matrix to be updated
+     * @param beginCol First block column index (inclusive) in the range to update
+     * @param endCol Last block column index (exclusive) in the range to update
+     */
+    void updateHessian(const KeyVector& keys, SymmetricBlockMatrix* info,
+                       DenseIndex beginCol, DenseIndex endCol) const override;
 
     /** Update another Hessian factor
      * @param other the HessianFactor to be updated

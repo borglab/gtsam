@@ -1,0 +1,170 @@
+name: vcpkg
+on:
+  workflow_call:
+  workflow_dispatch:
+
+concurrency:
+  group: vcpkg-ci-${{ github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    env:
+      SCCACHE_GHA_ENABLED: 1
+      # Some files take so long to compile that the sccache daemon times out,
+      # which is bad for stats tracking. Always keep sccache daemon alive.
+      SCCACHE_IDLE_TIMEOUT: 0
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            triplet: x64-windows-release
+            build_type: Release
+            test_target: RUN_TESTS
+            python: python
+          - os: ubuntu-latest
+            triplet: x64-linux-release
+            build_type: Release
+            test_target: test
+            python: python3
+          - os: macos-latest
+            triplet: arm64-osx-release
+            build_type: Release
+            test_target: test
+            python: python3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+          toolset: 14.40
+
+      - name: Install sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
+
+      - name: Install mold
+        uses: rui314/setup-mold@v1
+        if: runner.os == 'Linux'
+
+      - name: cl version
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: cl
+
+      - name: Install vcpkg python dependencies
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get install autoconf automake autoconf-archive
+
+      - name: Install vcpkg python dependencies
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          brew install autoconf autoconf-archive automake libtool
+
+      - name: Set up vcpkg
+        uses: lukka/run-vcpkg@v11.5
+        with:
+          vcpkgDirectory: ${{ github.workspace }}/vcpkg
+        env:
+          VCPKG_BINARY_SOURCES: default,rw
+
+      - name: Get compiler hash
+        id: hash-compiler
+        shell: bash
+        run: |
+          ./vcpkg/vcpkg install --dry-run
+          cat vcpkg_installed/vcpkg/compiler-file-hash-cache.json
+          echo hash=$(jq '.[].["hash"]' < vcpkg_installed/vcpkg/compiler-file-hash-cache.json) >> $GITHUB_OUTPUT
+
+      - name: Restore cache dependencies
+        id: cache-restore
+        uses: actions/cache/restore@v3
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: ${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}-${{ steps.hash-compiler.outputs.hash }}
+          restore-keys: ${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}-${{ steps.hash-compiler.outputs.hash }}
+
+      - name: Set Swap Space (Linux)
+        if: runner.os == 'Linux'
+        uses: pierotofy/set-swap-space@master
+        with:
+          swap-size-gb: 7
+
+      - name: cmake config
+        shell: bash
+        run: |
+          cmake -B build -G Ninja \
+              -DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
+              -DVCPKG_INSTALLED_DIR=$GITHUB_WORKSPACE/vcpkg_installed \
+              -DVCPKG_TARGET_TRIPLET=${{ matrix.triplet }} \
+              -DVCPKG_HOST_TRIPLET=${{ matrix.triplet }} \
+              -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+              -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF \
+              -DGTSAM_BUILD_EXAMPLES_ALWAYS=ON \
+              -DGTSAM_BUILD_WITH_PRECOMPILED_HEADERS=OFF \
+              -DGTSAM_ROT3_EXPMAP=ON \
+              -DGTSAM_POSE3_EXPMAP=ON \
+              -DGTSAM_BUILD_PYTHON=ON \
+              -DGTSAM_BUILD_TESTS=ON \
+              -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
+              -DGTSAM_BUILD_UNSTABLE=ON \
+              -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
+              -DGTSAM_USE_SYSTEM_EIGEN=ON \
+              -DGTSAM_USE_SYSTEM_METIS=OFF \
+              -DGTSAM_USE_SYSTEM_PYBIND=ON \
+              -DGTSAM_ENABLE_GEOGRAPHICLIB=ON \
+              -DGTSAM_SUPPORT_NESTED_DISSECTION=ON \
+              -DGTSAM_WITH_EIGEN_MKL=ON \
+              -DGTSAM_WITH_EIGEN_MKL_OPENMP=ON
+
+      - name: On Failure, upload vcpkg logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs_${{ matrix.os }}_${{ github.event.pull_request.head.sha }}
+          path: vcpkg/buildtrees/**/*.log
+
+      - name: Cache dependencies
+        # Don't save if it's the exact same
+        if: steps.cache-restore.outputs.cache-matched-key != format('{0}-{1}-{2}-{3}', matrix.os, hashFiles('vcpkg.json'), steps.hash-compiler.outputs.hash, hashFiles('vcpkg_installed/**/vcpkg_abi_info.txt'))
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: ${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}-${{ steps.hash-compiler.outputs.hash }}-${{ hashFiles('vcpkg_installed/**/vcpkg_abi_info.txt') }}
+
+      - name: Install python packages
+        shell: bash
+        run: |
+          vcpkg_installed/${{ matrix.triplet }}/tools/python3/${{ matrix.python }} -m ensurepip --upgrade
+          vcpkg_installed/${{ matrix.triplet }}/tools/python3/${{ matrix.python }} -m pip install -r python/dev_requirements.txt
+
+      - name: cmake build
+        shell: bash
+        run: |
+          cmake --build build --target examples
+          cmake --build build -j 2 --target gtsam_py
+          cmake --build build -j 2 --target gtsam_unstable_py
+
+      - name: Run Python tests
+        shell: bash
+        run: |
+          export PATH="$PATH:$GITHUB_WORKSPACE/vcpkg_installed/${{ matrix.triplet }}/bin"
+          cmake --build build --target python-install
+          cmake --build build --target python-test
+          cmake --build build --target python-test-unstable
+
+      - name: Run tests
+        shell: bash
+        run: |
+          cmake --build build --target check

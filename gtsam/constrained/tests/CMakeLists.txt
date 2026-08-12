@@ -6,4 +6,4 @@ else()
   set(EXCLUDE_TESTS "")
 endif()
 
-gtsamAddTestsGlob(constraint "test*.cpp" "${EXCLUDE_TESTS}" "gtsam")
+gtsamAddTestsGlob(constrained "test*.cpp" "${EXCLUDE_TESTS}" "gtsam")

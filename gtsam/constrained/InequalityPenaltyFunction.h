@@ -26,9 +26,9 @@ namespace gtsam {
 /** Base class for smooth approximation of the ramp function. */
 class GTSAM_EXPORT InequalityPenaltyFunction {
  public:
-  typedef std::shared_ptr<InequalityPenaltyFunction> shared_ptr;
-  typedef std::function<double(const double& x, OptionalJacobian<1, 1> H)>
-      UnaryScalarFunc;
+  using shared_ptr = std::shared_ptr<InequalityPenaltyFunction>;
+  using UnaryScalarFunc =
+      std::function<double(const double& x, OptionalJacobian<1, 1> H)>;
 
   /** Constructor. */
   InequalityPenaltyFunction() {}
@@ -48,9 +48,9 @@ class GTSAM_EXPORT InequalityPenaltyFunction {
  */
 class GTSAM_EXPORT RampFunction : public InequalityPenaltyFunction {
  public:
-  typedef InequalityPenaltyFunction Base;
-  typedef RampFunction This;
-  typedef std::shared_ptr<This> shared_ptr;
+  using Base = InequalityPenaltyFunction;
+  using This = RampFunction;
+  using shared_ptr = std::shared_ptr<This>;
 
  public:
   RampFunction() : Base() {}
@@ -74,9 +74,9 @@ class GTSAM_EXPORT RampFunction : public InequalityPenaltyFunction {
  */
 class GTSAM_EXPORT SmoothRampPoly2 : public InequalityPenaltyFunction {
  public:
-  typedef InequalityPenaltyFunction Base;
-  typedef SmoothRampPoly2 This;
-  typedef std::shared_ptr<This> shared_ptr;
+  using Base = InequalityPenaltyFunction;
+  using This = SmoothRampPoly2;
+  using shared_ptr = std::shared_ptr<This>;
 
  protected:
   double epsilon_;
@@ -103,9 +103,9 @@ class GTSAM_EXPORT SmoothRampPoly2 : public InequalityPenaltyFunction {
  */
 class GTSAM_EXPORT SmoothRampPoly3 : public InequalityPenaltyFunction {
  public:
-  typedef InequalityPenaltyFunction Base;
-  typedef SmoothRampPoly3 This;
-  typedef std::shared_ptr<This> shared_ptr;
+  using Base = InequalityPenaltyFunction;
+  using This = SmoothRampPoly3;
+  using shared_ptr = std::shared_ptr<This>;
 
  protected:
   double epsilon_;
@@ -129,9 +129,9 @@ class GTSAM_EXPORT SmoothRampPoly3 : public InequalityPenaltyFunction {
 /** Softplus function that implements f(x) = log(1 + exp(k*x)) / k. */
 class GTSAM_EXPORT SoftPlusFunction : public InequalityPenaltyFunction {
  public:
-  typedef InequalityPenaltyFunction Base;
-  typedef SoftPlusFunction This;
-  typedef std::shared_ptr<This> shared_ptr;
+  using Base = InequalityPenaltyFunction;
+  using This = SoftPlusFunction;
+  using shared_ptr = std::shared_ptr<This>;
 
  protected:
   double k_;

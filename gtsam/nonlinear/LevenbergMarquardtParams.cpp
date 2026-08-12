@@ -97,13 +97,15 @@ void LevenbergMarquardtParams::print(const std::string& str) const {
   std::cout << "           lambdaUpperBound: " << lambdaUpperBound << "\n";
   std::cout << "           lambdaLowerBound: " << lambdaLowerBound << "\n";
   std::cout << "           minModelFidelity: " << minModelFidelity << "\n";
-  std::cout << "            diagonalDamping: " << diagonalDamping << "\n";
-  std::cout << "                minDiagonal: " << minDiagonal << "\n";
-  std::cout << "                maxDiagonal: " << maxDiagonal << "\n";
+  std::cout << "            diagonalDamping: " << dampingParams.diagonalDamping
+            << "\n";
+  std::cout << "     exactHessianDiagonalMF: " << dampingParams.exactHessianDiagonal
+            << "\n";
+  std::cout << "                minDiagonal: " << dampingParams.minDiagonal << "\n";
+  std::cout << "                maxDiagonal: " << dampingParams.maxDiagonal << "\n";
   std::cout << "                verbosityLM: "
       << verbosityLMTranslator(verbosityLM) << "\n";
   std::cout.flush();
 }
 
 } /* namespace gtsam */
-

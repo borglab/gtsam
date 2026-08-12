@@ -97,12 +97,9 @@ class EssentialMatrixFactor : public NoiseModelFactorN<EssentialMatrix> {
   Vector evaluateError(const EssentialMatrix& E,
                        OptionalMatrixType H) const override {
     Vector error(1);
-    error << E.error(vA_, vB_, H);
+    error(0) = E.error(vA_, vB_, H);
     return error;
   }
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 /**
@@ -223,9 +220,6 @@ class EssentialMatrixFactor2
     Point2 reprojectionError = pn - pn_;
     return f_ * reprojectionError;
   }
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // EssentialMatrixFactor2
 
@@ -311,9 +305,6 @@ class EssentialMatrixFactor3 : public EssentialMatrixFactor2 {
       return e;
     }
   }
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // EssentialMatrixFactor3
 
@@ -357,7 +348,8 @@ class EssentialMatrixFactor4
    */
   EssentialMatrixFactor4(Key keyE, Key keyK, const Point2& pA, const Point2& pB,
                          const SharedNoiseModel& model = nullptr)
-      : Base(model, keyE, keyK), pA_(pA), pB_(pB) {}
+      : Base(noiseModel::validOrDefault(0.0, model), keyE, keyK),
+        pA_(pA), pB_(pB) {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -404,18 +396,16 @@ class EssentialMatrixFactor4
       // H2 = df/dK = vB.T * E.T * dvA/dK + vA.T * E * dvB/dK
       // where dvA/dK = dvA/dcA * dcA/dK, dVB/dK = dvB/dcB * dcB/dK
       // and dvA/dcA = dvB/dcB = [[1, 0], [0, 1], [0, 0]]
-      *HK = vB.transpose() * E.matrix().transpose().leftCols<2>() * cA_H_K +
-            vA.transpose() * E.matrix().leftCols<2>() * cB_H_K;
+      Matrix DynamicH_K = vB.transpose() * E.matrix().transpose().leftCols<2>() * cA_H_K +
+          vA.transpose() * E.matrix().leftCols<2>() * cB_H_K;  // (1*2) * (2*DimK)
+      *HK = DynamicH_K;
     }
 
     Vector error(1);
-    error << E.error(vA, vB, HE);
+    error(0) = E.error(vA, vB, HE);
 
     return error;
   }
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // EssentialMatrixFactor4
 
@@ -459,7 +449,8 @@ class EssentialMatrixFactor5
   EssentialMatrixFactor5(Key keyE, Key keyKa, Key keyKb, const Point2& pA,
                          const Point2& pB,
                          const SharedNoiseModel& model = nullptr)
-      : Base(model, keyE, keyKa, keyKb), pA_(pA), pB_(pB) {}
+      : Base(noiseModel::validOrDefault(0.0, model), keyE, keyKa, keyKb),
+        pA_(pA), pB_(pB) {}
 
   /// @return a deep copy of this factor
   gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -504,22 +495,21 @@ class EssentialMatrixFactor5
 
     if (HKa) {
       // Compute the jacobian of error w.r.t Ka.
-      *HKa = vB.transpose() * E.matrix().transpose().leftCols<2>() * cA_H_Ka;
+      Matrix DynamicHka = vB.transpose() * E.matrix().transpose().leftCols<2>() * cA_H_Ka;
+      *HKa = DynamicHka;
     }
 
     if (HKb) {
       // Compute the jacobian of error w.r.t Kb.
-      *HKb = vA.transpose() * E.matrix().leftCols<2>() * cB_H_Kb;
+      Matrix DynamicHkb = vA.transpose() * E.matrix().leftCols<2>() * cB_H_Kb;
+      *HKb = DynamicHkb;
     }
 
     Vector error(1);
-    error << E.error(vA, vB, HE);
+    error(0) = E.error(vA, vB, HE);
 
     return error;
   }
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // EssentialMatrixFactor5
 

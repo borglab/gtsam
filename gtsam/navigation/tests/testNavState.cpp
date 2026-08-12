@@ -16,21 +16,23 @@
  * @date    July 2015
  */
 
-#include <gtsam/navigation/NavState.h>
-
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/lieProxies.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/testLie.h>
+#include <gtsam/navigation/NavState.h>
 
-#include <CppUnitLite/TestHarness.h>
+#include <cmath>
 
 using namespace std::placeholders;
 using namespace std;
 using namespace gtsam;
 
 GTSAM_CONCEPT_TESTABLE_INST(NavState)
-GTSAM_CONCEPT_LIE_INST(NavState)
+GTSAM_CONCEPT_MATRIX_LIE_GROUP_INST(NavState)
 
 static const Rot3 kAttitude = Rot3::RzRyRx(0.1, 0.2, 0.3);
 static const Point3 kPosition(1.0, 2.0, 3.0);
@@ -52,10 +54,23 @@ static const NavState T2(Rot3::Rodrigues(0.3, 0.2, 0.1), P2, V2);
 static const NavState T3(Rot3::Rodrigues(-90, 0, 0), Point3(5, 6, 7),
                          Point3(1, 2, 3));
 
+// Some shared test values - pulled from equivalent tests in Pose3
+static const Point3 l1(1, 0, 0), l2(1, 1, 0), l3(2, 2, 0), l4(1, 4, -4);
+static const Velocity3 kTestVelocity(0.4, 0.5, 0.6);
+static const NavState x1(Rot3(), Point3::Zero(), kTestVelocity),
+    x2(Rot3::Ypr(0.0, 0.0, 0.0), l2, kTestVelocity),
+    x3(Rot3::Ypr(M_PI / 4.0, 0.0, 0.0), l2, kTestVelocity);
+
+//******************************************************************************
+TEST(NavState, Concept) {
+  GTSAM_CONCEPT_ASSERT(IsGroup<NavState >);
+  GTSAM_CONCEPT_ASSERT(IsManifold<NavState >);
+  GTSAM_CONCEPT_ASSERT(IsMatrixLieGroup<NavState >);
+}
+
 /* ************************************************************************* */
 TEST(NavState, Constructor) {
-  std::function<NavState(const Rot3&, const Point3&, const Vector3&)> create =
-      std::bind(&NavState::Create, std::placeholders::_1, std::placeholders::_2,
+  auto create = std::bind(&NavState::Create, std::placeholders::_1, std::placeholders::_2,
                 std::placeholders::_3, nullptr, nullptr, nullptr);
   Matrix aH1, aH2, aH3;
   EXPECT(
@@ -74,8 +89,7 @@ assert_equal(
 
 /* ************************************************************************* */
 TEST(NavState, Constructor2) {
-  std::function<NavState(const Pose3&, const Vector3&)> construct =
-      std::bind(&NavState::FromPoseVelocity, std::placeholders::_1,
+  auto construct = std::bind(&NavState::FromPoseVelocity, std::placeholders::_1,
                 std::placeholders::_2, nullptr, nullptr);
   Matrix aH1, aH2;
   EXPECT(
@@ -118,6 +132,22 @@ TEST( NavState, Velocity) {
 }
 
 /* ************************************************************************* */
+TEST(NavState, PoseJacobian) {
+  // NavState::pose() should be a pure projection onto the (R,t) components.
+  auto f = [](const NavState& s) {
+    return s.pose();
+  };
+
+  const Matrix69 actualH = numericalDerivative11<Pose3, NavState>(f, kState1);
+
+  Matrix69 expectedH = Matrix69::Zero();
+  expectedH.block<3, 3>(0, 0) = I_3x3;
+  expectedH.block<3, 3>(3, 3) = I_3x3;
+
+  EXPECT(assert_equal(expectedH, actualH, 1e-6));
+}
+
+/* ************************************************************************* */
 TEST( NavState, BodyVelocity) {
   Matrix39 aH, eH;
   Velocity3 actual = kState1.bodyVelocity(aH);
@@ -137,8 +167,7 @@ TEST( NavState, Manifold ) {
   EXPECT(assert_equal(kZeroXi, kState1.localCoordinates(kState1)));
 
   // Check definition of retract as operating on components separately
-  Vector9 xi;
-  xi << 0.1, 0.1, 0.1, 0.2, 0.3, 0.4, -0.1, -0.2, -0.3;
+  Vector9 xi{0.1, 0.1, 0.1, 0.2, 0.3, 0.4, -0.1, -0.2, -0.3};
   Rot3 drot = Rot3::Expmap(xi.head<3>());
   Point3 dt = Point3(xi.segment<3>(3));
   Velocity3 dvel = Velocity3(-0.1, -0.2, -0.3);
@@ -155,8 +184,7 @@ TEST( NavState, Manifold ) {
   // Check retract derivatives
   Matrix9 aH1, aH2;
   kState1.retract(xi, aH1, aH2);
-  std::function<NavState(const NavState&, const Vector9&)> retract =
-      std::bind(&NavState::retract, std::placeholders::_1,
+  auto retract = std::bind(&NavState::retract, std::placeholders::_1,
                 std::placeholders::_2, nullptr, nullptr);
   EXPECT(assert_equal(numericalDerivative21(retract, kState1, xi), aH1));
   EXPECT(assert_equal(numericalDerivative22(retract, kState1, xi), aH2));
@@ -168,8 +196,7 @@ TEST( NavState, Manifold ) {
   EXPECT(assert_equal(numericalDerivative22(retract, state2, xi2), aH2));
 
   // Check localCoordinates derivatives
-  std::function<Vector9(const NavState&, const NavState&)> local =
-      std::bind(&NavState::localCoordinates, std::placeholders::_1,
+  auto local = std::bind(&NavState::localCoordinates, std::placeholders::_1,
                 std::placeholders::_2, nullptr, nullptr);
   // from state1 to state2
   kState1.localCoordinates(state2, aH1, aH2);
@@ -225,7 +252,7 @@ TEST(NavState, Compose) {
 }
 
 /* ************************************************************************* */
-// Check compose and its push-forward, another case
+// Check compose and its pushforward, another case
 TEST(NavState, Compose2) {
   const NavState& T1 = T;
   Matrix actual = (T1 * T2).matrix();
@@ -324,8 +351,7 @@ TEST(NavState, interpolate) {
 
 /* ************************************************************************* */
 static const double dt = 2.0;
-std::function<Vector9(const NavState&, const bool&)> coriolis =
-    std::bind(&NavState::coriolis, std::placeholders::_1, dt, kOmegaCoriolis,
+auto coriolis = std::bind(&NavState::coriolis, std::placeholders::_1, dt, kOmegaCoriolis,
               std::placeholders::_2, nullptr);
 
 TEST(NavState, Coriolis) {
@@ -354,7 +380,7 @@ TEST(NavState, Coriolis2) {
 
 TEST(NavState, Coriolis3) {
   /** Consider a massless planet with an attached nav frame at
-   *  n_omega = [0 0 1]', and a body at position n_t = [1 0 0]', travelling with
+   *  n_omega = [0 0 1]', and a body at position n_t = [1 0 0]', traveling with
    *  velocity n_v = [0 1 0]'. Orient the body so that it is not instantaneously
    *  aligned with the nav frame (i.e., nRb != I_3x3). Test that first and
    *  second order Coriolis corrections are as expected.
@@ -364,7 +390,7 @@ TEST(NavState, Coriolis3) {
   double dt = 2.0, dt2 = dt * dt;
   Vector3 n_omega(0.0, 0.0, 1.0), n_t(1.0, 0.0, 0.0), n_v(0.0, 1.0, 0.0);
   Vector3 n_aCorr1 = -2.0 * n_omega.cross(n_v),
-          n_aCorr2 = -n_omega.cross(n_omega.cross(n_t));
+          n_aCorr2 = -doubleCross(n_omega, n_t);
   Rot3 nRb = Rot3(-1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0),
        bRn = nRb.inverse();
 
@@ -395,19 +421,54 @@ TEST(NavState, Coriolis3) {
 
 }
 
+TEST(NavState, Coriolis4) {
+  /** Consider a navigation frame with zero angular velocity.
+   * We expect that the coriolis correction does nothing and the Jacobian is zero.
+   */
+  const Vector3 omega(0.0, 0.0, 0.0);
+
+  const Vector9 expected_correction = Vector9::Zero();
+  const Matrix9 expected_H = Matrix9::Zero();
+  Matrix9 actual_H;
+
+  const Vector9 actual_correction =
+        kState1.coriolis(dt, omega, true, actual_H);
+
+  EXPECT(assert_equal(expected_correction, actual_correction));
+  EXPECT(assert_equal(expected_H, actual_H));
+}
+
+
 /* ************************************************************************* */
 TEST(NavState, CorrectPIM) {
-  Vector9 xi;
-  xi << 0.1, 0.1, 0.1, 0.2, 0.3, 0.4, -0.1, -0.2, -0.3;
+  Vector9 xi{0.1, 0.1, 0.1, 0.2, 0.3, 0.4, -0.1, -0.2, -0.3};
   double dt = 0.5;
   Matrix9 aH1, aH2;
-  std::function<Vector9(const NavState&, const Vector9&)> correctPIM =
-      std::bind(&NavState::correctPIM, std::placeholders::_1,
+  Matrix93 aH3;
+  auto correctPIM = std::bind(&NavState::correctPIM, std::placeholders::_1,
                 std::placeholders::_2, dt, kGravity, kOmegaCoriolis, false,
-                nullptr, nullptr);
-  kState1.correctPIM(xi, dt, kGravity, kOmegaCoriolis, false, aH1, aH2);
+                nullptr, nullptr, nullptr);
+  kState1.correctPIM(xi, dt, kGravity, kOmegaCoriolis, false, aH1, aH2, aH3);
   EXPECT(assert_equal(numericalDerivative21(correctPIM, kState1, xi), aH1));
   EXPECT(assert_equal(numericalDerivative22(correctPIM, kState1, xi), aH2));
+
+  // Check the Jacobian wrt the gravity vector:
+  auto correctPIMGravity = [&](const Vector3& gravity) {
+    return kState1.correctPIM(xi, dt, gravity, kOmegaCoriolis, false);
+  };
+  EXPECT(assert_equal(
+      numericalDerivative11<Vector9, Vector3>(correctPIMGravity, kGravity),
+      Matrix(aH3)));
+
+  // The gravity Jacobian must also be correct with coriolis disabled:
+  Matrix93 aH3NoCoriolis;
+  kState1.correctPIM(xi, dt, kGravity, {}, false, {}, {}, aH3NoCoriolis);
+  auto correctPIMNoCoriolis = [&](const Vector3& gravity) {
+    return kState1.correctPIM(xi, dt, gravity, {}, false);
+  };
+  EXPECT(assert_equal(
+      numericalDerivative11<Vector9, Vector3>(correctPIMNoCoriolis, kGravity),
+      Matrix(aH3NoCoriolis)));
 }
 
 /* ************************************************************************* */
@@ -486,8 +547,8 @@ TEST(NavState, Expmap_A_Full) {
 /* ************************************************************************* */
 TEST(NavState, Expmap_b) {
   NavState p1(Rot3(), Point3(-100, 0, 0), Point3(100, 0, 0));
-  NavState p2 = p1.retract(
-      (Vector(9) << 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0).finished());
+  NavState p2 =
+      p1.retract(Vector{{0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}});
   NavState expected(Rot3::Rodrigues(0.0, 0.0, 0.1), Point3(-100.0, 0.0, 0.0),
                     Point3(100.0, 0.0, 0.0));
   EXPECT(assert_equal(expected, p2));
@@ -497,12 +558,21 @@ TEST(NavState, Expmap_b) {
 // test case for screw motion in the plane
 namespace screwNavState {
 double a = 0.3, c = cos(a), s = sin(a), w = 0.3;
-Vector xi = (Vector(9) << 0.0, 0.0, w, w, 0.0, 1.0, w, 0.0, 1.0).finished();
+Vector xi{{0.0, 0.0, w, w, 0.0, 1.0, w, 0.0, 1.0}};
 Rot3 expectedR(c, -s, 0, s, c, 0, 0, 0, 1);
 Point3 expectedV(0.29552, 0.0446635, 1);
 Point3 expectedP(0.29552, 0.0446635, 1);
 NavState expected(expectedR, expectedV, expectedP);
 }  // namespace screwNavState
+
+/* ************************************************************************* */
+// Checks correct exponential map (Expmap) with brute force matrix exponential
+TEST(NavState, Expmap_c_full) {
+  EXPECT(assert_equal(screwNavState::expected,
+                      expm<NavState>(screwNavState::xi), 1e-6));
+  EXPECT(assert_equal(screwNavState::expected,
+                      NavState::Expmap(screwNavState::xi), 1e-6));
+}
 
 /* ************************************************************************* */
 // assert that T*exp(xi)*T^-1 is equal to exp(Ad_T(xi))
@@ -525,8 +595,7 @@ TEST(NavState, Adjoint_compose_full) {
   // To debug derivatives of compose, assert that
   // T1*T2*exp(Adjoint(inv(T2),x) = T1*exp(x)*T2
   const NavState& T1 = T;
-  Vector x =
-      (Vector(9) << 0.1, 0.1, 0.1, 0.4, 0.2, 0.8, 0.4, 0.2, 0.8).finished();
+  Vector9 x{0.1, 0.1, 0.1, 0.4, 0.2, 0.8, 0.4, 0.2, 0.8};
   NavState expected = T1 * NavState::Expmap(x) * T2;
   Vector y = T2.inverse().Adjoint(x);
   NavState actual = T1 * T2 * NavState::Expmap(y);
@@ -534,9 +603,90 @@ TEST(NavState, Adjoint_compose_full) {
 }
 
 /* ************************************************************************* */
+TEST(NavState, ExpmapsGaloreFull) {
+  Vector xi;
+  NavState actual;
+  xi = Vector{{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9}};
+  actual = NavState::Expmap(xi);
+  EXPECT(assert_equal(expm<NavState>(xi), actual, 1e-6));
+  EXPECT(assert_equal(xi, NavState::Logmap(actual), 1e-6));
+
+  xi = Vector{{0.1, -0.2, 0.3, -0.4, 0.5, -0.6, -0.7, -0.8, -0.9}};
+  for (double theta = 1.0; 0.3 * theta <= M_PI; theta *= 2) {
+    Vector txi = xi * theta;
+    actual = NavState::Expmap(txi);
+    EXPECT(assert_equal(expm<NavState>(txi, 30), actual, 1e-6));
+    Vector log = NavState::Logmap(actual);
+    EXPECT(assert_equal(actual, NavState::Expmap(log), 1e-6));
+    EXPECT(assert_equal(txi, log, 1e-6));  // not true once wraps
+  }
+
+  // Works with large v as well, but expm needs 10 iterations!
+  xi = Vector{{0.2, 0.3, -0.8, 100.0, 120.0, -60.0, 12, 14, 45}};
+  actual = NavState::Expmap(xi);
+  EXPECT(assert_equal(expm<NavState>(xi, 10), actual, 1e-5));
+  EXPECT(assert_equal(xi, NavState::Logmap(actual), 1e-9));
+}
+
+/* ************************************************************************* */
+TEST(NavState, HatAndVee) {
+  // Create a few test vectors
+  Vector9 v1(1, 2, 3, 4, 5, 6, 7, 8, 9);
+  Vector9 v2(0.1, -0.5, 1.0, -1.0, 0.5, 2.0, 0.3, -0.2, 0.8);
+  Vector9 v3 = Vector9::Zero();
+
+  // Test that Vee(Hat(v)) == v for various inputs
+  EXPECT(assert_equal(v1, NavState::Vee(NavState::Hat(v1))));
+  EXPECT(assert_equal(v2, NavState::Vee(NavState::Hat(v2))));
+  EXPECT(assert_equal(v3, NavState::Vee(NavState::Hat(v3))));
+
+  // Check the structure of the Lie Algebra element
+  Matrix5 expected{{0, -3, 2, 4, 7},
+                   {3, 0, -1, 5, 8},
+                   {-2, 1, 0, 6, 9},
+                   {0, 0, 0, 0, 0},
+                   {0, 0, 0, 0, 0}};
+
+  EXPECT(assert_equal(expected, NavState::Hat(v1)));
+}
+
+/* ************************************************************************* */
+// Checks correct exponential map (Expmap) with brute force matrix exponential
+TEST(NavState, BruteForceExpmap1) {
+  const Vector9 xi(0, 0, 0, 14, 24, 34, 15, 25, 35);
+  EXPECT(assert_equal(NavState::Expmap(xi), expm<NavState>(xi), 1e-6));
+}
+
+TEST(NavState, BruteForceExpmap2) {
+  const Vector9 xi(0.1, 0.2, 0.3, 0, 0, 0, 0, 0, 0);
+  EXPECT(assert_equal(NavState::Expmap(xi), expm<NavState>(xi), 1e-6));
+}
+
+TEST(NavState, BruteForceExpmap3) {
+  const Vector9 xi(0.1, 0.2, 0.3, 4, 5, 6, 7, 8, 9);
+  EXPECT(assert_equal(NavState::Expmap(xi), expm<NavState>(xi), 1e-6));
+}
+
+/* ************************************************************************* */
+// assert that T*Hat(xi)*T^-1 is equal to Hat(Ad_T(xi))
+TEST(NavState, Adjoint_hat)
+{
+  Matrix5 expected = T.matrix() * NavState::Hat(screwNavState::xi) * T.matrix().inverse();
+  Matrix5 xiprime = NavState::Hat(T.Adjoint(screwNavState::xi));
+  EXPECT(assert_equal(expected, xiprime, 1e-6));
+
+  Matrix5 expected2 = T2.matrix() * NavState::Hat(screwNavState::xi) * T2.matrix().inverse();
+  Matrix5 xiprime2 = NavState::Hat(T2.Adjoint(screwNavState::xi));
+  EXPECT(assert_equal(expected2, xiprime2, 1e-6));
+
+  Matrix5 expected3 = T3.matrix() * NavState::Hat(screwNavState::xi) * T3.matrix().inverse();
+  Matrix5 xiprime3 = NavState::Hat(T3.Adjoint(screwNavState::xi));
+  EXPECT(assert_equal(expected3, xiprime3, 1e-6));
+}
+
+/* ************************************************************************* */
 TEST(NavState, Retract_LocalCoordinates) {
-  Vector9 d;
-  d << 1, 2, 3, 4, 5, 6, 7, 8, 9;
+  Vector9 d{1, 2, 3, 4, 5, 6, 7, 8, 9};
   d /= 10;
   const Rot3 R = Rot3::Retract(d.head<3>());
   NavState t = NavState::Retract(d);
@@ -544,8 +694,7 @@ TEST(NavState, Retract_LocalCoordinates) {
 }
 /* ************************************************************************* */
 TEST(NavState, retract_localCoordinates) {
-  Vector9 d12;
-  d12 << 1, 2, 3, 4, 5, 6, 7, 8, 9;
+  Vector9 d12{1, 2, 3, 4, 5, 6, 7, 8, 9};
   d12 /= 10;
   NavState t1 = T, t2 = t1.retract(d12);
   EXPECT(assert_equal(d12, t1.localCoordinates(t2)));
@@ -586,8 +735,7 @@ TEST(NavState, manifold_expmap) {
 TEST(NavState, subgroups) {
   // Frank - Below only works for correct "Agrawal06iros style expmap
   // lines in canonical coordinates correspond to Abelian subgroups in SE(3)
-  Vector d =
-      (Vector(9) << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9).finished();
+  Vector9 d{{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9}};
   // exp(-d)=inverse(exp(d))
   EXPECT(assert_equal(NavState::Expmap(-d), NavState::Expmap(d).inverse()));
   // exp(5d)=exp(2*d+3*d)=exp(2*d)exp(3*d)=exp(3*d)exp(2*d)
@@ -615,11 +763,10 @@ TEST(NavState, adjointMap) {
 /* ************************************************************************* */
 TEST(NavState, ExpmapDerivative1) {
   Matrix9 actualH;
-  Vector9 w;
-  w << 0.1, 0.2, 0.3, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0;
+  Vector9 w{0.1, 0.2, 0.3, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0};
   NavState::Expmap(w, actualH);
 
-  std::function<NavState(const Vector9&)> f = [](const Vector9& w) {
+  [[maybe_unused]] auto f = [](const Vector9& w) {
     return NavState::Expmap(w);
   };
   Matrix expectedH =
@@ -631,12 +778,11 @@ TEST(NavState, ExpmapDerivative1) {
 /* ************************************************************************* */
 TEST(NavState, LogmapDerivative) {
   Matrix9 actualH;
-  Vector9 w;
-  w << 0.1, 0.2, 0.3, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0;
+  Vector9 w{0.1, 0.2, 0.3, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0};
   NavState p = NavState::Expmap(w);
   EXPECT(assert_equal(w, NavState::Logmap(p, actualH), 1e-5));
 
-  std::function<Vector9(const NavState&)> f = [](const NavState& p) {
+  [[maybe_unused]] auto f = [](const NavState& p) {
     return NavState::Logmap(p);
   };
   Matrix expectedH =
@@ -679,6 +825,92 @@ TEST(NavState, ChartDerivatives) {
     CHECK_CHART_DERIVATIVES(T2,id);
     CHECK_CHART_DERIVATIVES(T2,T3);
   }
+}
+
+/* ************************************************************************* */
+TEST(NavState, Vec) {
+  using Vector25 = Eigen::Matrix<double, 25, 1>;
+  const NavState navState(Rot3::Rodrigues(0.1, 0.2, 0.3), Point3(1.0, 2.0, 3.0), Velocity3(0.4, 0.5, 0.6));
+
+  Vector25 expected_vec = Eigen::Map<Vector25>(navState.matrix().data());
+  Eigen::Matrix<double, 25, 9> actualH;
+  Vector25 actual_vec = navState.vec(actualH);
+  EXPECT(assert_equal(expected_vec, actual_vec));
+
+  // Verify Jacobian with numerical derivatives
+  auto f = [](const NavState& p) { return p.vec(); };
+  Eigen::Matrix<double, 25, 9> numericalH = numericalDerivative11<Vector25, NavState>(f, navState);
+  EXPECT(assert_equal(numericalH, actualH, 1e-9));
+}
+
+/* ************************************************************************* */
+TEST(NavState, AutonomousFlow) {
+  const double dt = 0.1;
+  NavState::AutonomousFlow phi{dt};
+
+  // Check action on identity
+  CHECK(assert_equal(phi(NavState::Identity()), NavState::Identity()));
+
+  // Check action on static const NavState T(R, P2, V2);
+  CHECK(assert_equal(phi(T), {R, P2 + V2 * dt, V2}));
+
+  // Numerical derivative of phi at identity
+  auto numericalPhi = numericalDerivative11<NavState, NavState>(
+      [&](const NavState& X) { return phi(X); }, NavState());
+
+  // Check analytical derivative against numerical derivative
+  auto analyticalPhi = phi.dIdentity();
+  CHECK(assert_equal(numericalPhi, analyticalPhi, 1e-9));
+}
+
+/* ************************************************************************* */
+double range_proxy(const NavState& navState, const Point3& point) {
+  return navState.range(point);
+}
+TEST(NavState, RangeToPoint3) {
+  Matrix expectedH1, actualH1, expectedH2, actualH2;
+
+  // Establish range is indeed 1.
+  EXPECT_DOUBLES_EQUAL(1.0, x1.range(l1), 1e-9);
+
+  // Establish range is indeed sqrt(2).
+  EXPECT_DOUBLES_EQUAL(std::sqrt(2.0), x1.range(l2), 1e-9);
+
+  // Another pair
+  double actual23 = x2.range(l3, actualH1, actualH2);
+  EXPECT_DOUBLES_EQUAL(std::sqrt(2.0), actual23, 1e-9);
+
+  // Check numerical derivatives
+  expectedH1 = numericalDerivative21(range_proxy, x2, l3);
+  expectedH2 = numericalDerivative22(range_proxy, x2, l3);
+  EXPECT(assert_equal(expectedH1, actualH1));
+  EXPECT(assert_equal(expectedH2, actualH2));
+
+  // Another test
+  double actual34 = x3.range(l4, actualH1, actualH2);
+  EXPECT_DOUBLES_EQUAL(5.0, actual34, 1e-9);
+
+  // Check numerical derivatives
+  expectedH1 = numericalDerivative21(range_proxy, x3, l4);
+  expectedH2 = numericalDerivative22(range_proxy, x3, l4);
+  EXPECT(assert_equal(expectedH1, actualH1));
+  EXPECT(assert_equal(expectedH2, actualH2));
+}
+
+/* ************************************************************************* */
+Unit3 bearing_proxy(const NavState& navState, const Point3& point) {
+  return navState.bearing(point);
+}
+TEST(NavState, BearingToPoint3) {
+  Matrix expectedH1, actualH1, expectedH2, actualH2;
+
+  EXPECT(assert_equal(Unit3(1, 0, 0), x1.bearing(l1, actualH1, actualH2), 1e-9));
+
+  // Check numerical derivatives
+  expectedH1 = numericalDerivative21(bearing_proxy, x1, l1);
+  expectedH2 = numericalDerivative22(bearing_proxy, x1, l1);
+  EXPECT(assert_equal(expectedH1, actualH1, 1e-5));
+  EXPECT(assert_equal(expectedH2, actualH2, 1e-5));
 }
 
 /* ************************************************************************* */

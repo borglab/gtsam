@@ -6,7 +6,9 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/inference/Symbol.h>
@@ -28,15 +30,9 @@ Pose2 poseA1(0.0, 0.0, 0.0), poseA2(2.0, 0.0, 0.0);
 
 /* ************************************************************************* */
 TEST(TestLinearContainerFactor, generic_jacobian_factor) {
-
-  Matrix A1 = (Matrix(2, 2) <<
-      2.74222, -0.0067457,
-      0.0,  2.63624).finished();
-  Matrix A2 = (Matrix(2, 2) <<
-      -0.0455167, -0.0443573,
-      -0.0222154, -0.102489).finished();
-  Vector b = Vector2(0.0277052,
-      -0.0533393);
+  Matrix A1{{2.74222, -0.0067457}, {0.0, 2.63624}};
+  Matrix A2{{-0.0455167, -0.0443573}, {-0.0222154, -0.102489}};
+  Vector2 b(0.0277052, -0.0533393);
 
   JacobianFactor expLinFactor(l1, A1, l2, A2, b, diag_model2);
 
@@ -61,13 +57,8 @@ TEST(TestLinearContainerFactor, generic_jacobian_factor) {
 
 /* ************************************************************************* */
 TEST(TestLinearContainerFactor, jacobian_factor_withlinpoints) {
-
-  Matrix A1 = (Matrix(2, 2) <<
-      2.74222, -0.0067457,
-      0.0,  2.63624).finished();
-  Matrix A2 = (Matrix(2, 2) <<
-      -0.0455167, -0.0443573,
-      -0.0222154, -0.102489).finished();
+  Matrix A1{{2.74222, -0.0067457}, {0.0, 2.63624}};
+  Matrix A2{{-0.0455167, -0.0443573}, {-0.0222154, -0.102489}};
   Vector b = Vector2(0.0277052,
       -0.0533393);
 
@@ -115,20 +106,23 @@ TEST(TestLinearContainerFactor, jacobian_factor_withlinpoints) {
 
 /* ************************************************************************* */
 TEST(TestLinearContainerFactor, generic_hessian_factor) {
-  Matrix G11 = (Matrix(1, 1) << 1.0).finished();
-  Matrix G12 = (Matrix(1, 2) << 2.0, 4.0).finished();
-  Matrix G13 = (Matrix(1, 3) << 3.0, 6.0, 9.0).finished();
+  Matrix G11{{1.0}};
+  Matrix G12{{2.0, 4.0}};
+  Matrix G13{{3.0, 6.0, 9.0}};
 
-  Matrix G22 = (Matrix(2, 2) << 3.0, 5.0,
-                            0.0, 6.0).finished();
-  Matrix G23 = (Matrix(2, 3) << 4.0, 6.0, 8.0,
-                            1.0, 2.0, 4.0).finished();
+  Matrix G22{//
+             {3.0, 5.0},
+             {0.0, 6.0}};
+  Matrix G23{//
+             {4.0, 6.0, 8.0},
+             {1.0, 2.0, 4.0}};
 
-  Matrix G33 = (Matrix(3, 3) << 1.0, 2.0, 3.0,
-                            0.0, 5.0, 6.0,
-                            0.0, 0.0, 9.0).finished();
+  Matrix G33{//
+             {1.0, 2.0, 3.0},
+             {0.0, 5.0, 6.0},
+             {0.0, 0.0, 9.0}};
 
-  Vector g1 = (Vector(1) << -7.0).finished();
+  Vector g1{{-7.0}};
   Vector g2 = Vector2(-8.0, -9.0);
   Vector g3 = Vector3(1.0,  2.0,  3.0);
 
@@ -156,19 +150,19 @@ TEST(TestLinearContainerFactor, hessian_factor_withlinpoints) {
   // 2 variable example, one pose, one landmark (planar)
   // Initial ordering: x1, l1
 
-  Matrix G11 = (Matrix(3, 3) <<
-      1.0, 2.0, 3.0,
-      0.0, 5.0, 6.0,
-      0.0, 0.0, 9.0).finished();
-  Matrix G12 = (Matrix(3, 2) <<
-      1.0, 2.0,
-      3.0, 5.0,
-      4.0, 6.0).finished();
+  Matrix G11{//
+             {1.0, 2.0, 3.0},
+             {0.0, 5.0, 6.0},
+             {0.0, 0.0, 9.0}};
+  Matrix G12{//
+             {1.0, 2.0},
+             {3.0, 5.0},
+             {4.0, 6.0}};
   Vector g1 = Vector3(1.0,  2.0,  3.0);
 
-  Matrix G22 = (Matrix(2, 2) <<
-        0.5, 0.2,
-        0.0, 0.6).finished();
+  Matrix G22{//
+             {0.5, 0.2},
+             {0.0, 0.6}};
 
   Vector g2 = Vector2(-8.0, -9.0);
 
@@ -204,7 +198,8 @@ TEST(TestLinearContainerFactor, hessian_factor_withlinpoints) {
   delta.at(l1) = delta_l1;
   delta.at(x1) = delta_x1;
   delta.at(x2) = delta_x2;
-  EXPECT(assert_equal((Vector(5) << 3.0, 4.0, 0.5, 1.0, 2.0).finished(), delta.vector(initFactor.keys())));
+  EXPECT(assert_equal(Vector{{3.0, 4.0, 0.5, 1.0, 2.0}},
+                      delta.vector(initFactor.keys())));
   Values noisyValues = linearizationPoint.retract(delta);
 
   double expError = initFactor.error(delta);
@@ -212,14 +207,15 @@ TEST(TestLinearContainerFactor, hessian_factor_withlinpoints) {
   EXPECT_DOUBLES_EQUAL(initFactor.error(linearizationPoint.zeroVectors()), actFactor.error(linearizationPoint), tol);
 
   // Compute updated versions
-  Vector dv = (Vector(5) << 3.0, 4.0, 0.5, 1.0, 2.0).finished();
+  Vector dv{{3.0, 4.0, 0.5, 1.0, 2.0}};
   Vector g(5); g << g1, g2;
   Vector g_prime = g - G.selfadjointView<Eigen::Upper>() * dv;
 
   // Check linearization with corrections for updated linearization point
   Vector g1_prime = g_prime.head(3);
   Vector g2_prime = g_prime.tail(2);
-  double f_prime = f + dv.transpose() * G.selfadjointView<Eigen::Upper>() * dv - 2.0 * dv.transpose() * g;
+  const auto Gsym = G.selfadjointView<Eigen::Upper>();
+  double f_prime = f + dv.dot(Gsym * dv) - 2.0 * dv.dot(g);
   HessianFactor expNewFactor(x1, l1, G11, G12, g1_prime, G22, g2_prime, f_prime);
   EXPECT(assert_equal(*expNewFactor.clone(), *actFactor.linearize(noisyValues), tol));
 }
@@ -389,6 +385,31 @@ TEST(TestLinearContainerFactor, Rekey2) {
 }
 
 /* ************************************************************************* */
+// Test that rekey works without a linearization point (issue #1904)
+TEST(TestLinearContainerFactor, RekeyWithoutLinearizationPoint) {
+  double mu = 1e10;
+  size_t dim = 3;
+  Key key = 0;
+
+  HessianFactor H(key, mu * Matrix::Identity(dim, dim), Vector::Zero(dim),
+                   0.0);
+  LinearContainerFactor factor(H);
+
+  // Rekey with map
+  Key new_key = 1;
+  std::map<Key, Key> rekey_mapping = {{key, new_key}};
+  auto rekeyed = factor.rekey(rekey_mapping);
+  CHECK(rekeyed);
+  EXPECT(rekeyed->keys()[0] == new_key);
+
+  // Rekey with vector
+  Key new_key2 = 2;
+  KeyVector rekey_vector = {new_key2};
+  auto rekeyed2 = factor.rekey(rekey_vector);
+  CHECK(rekeyed2);
+  EXPECT(rekeyed2->keys()[0] == new_key2);
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
-

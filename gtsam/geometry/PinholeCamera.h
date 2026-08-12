@@ -18,8 +18,9 @@
 
 #pragma once
 
-#include <gtsam/geometry/PinholePose.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/BearingRange.h>
+#include <gtsam/geometry/PinholePose.h>
 
 namespace gtsam {
 
@@ -181,12 +182,10 @@ public:
   /// @name Manifold
   /// @{
 
-  /// @deprecated
   size_t dim() const {
     return dimension;
   }
 
-  /// @deprecated
   static size_t Dim() {
     return dimension;
   }
@@ -199,7 +198,7 @@ public:
       return PinholeCamera(this->pose().retract(d), calibration());
     else
       return PinholeCamera(this->pose().retract(d.head<6>()),
-          calibration().retract(d.tail(calibration().dim())));
+          calibration().retract(d.tail<DimK>()));
   }
 
   /// return canonical coordinate
@@ -258,7 +257,7 @@ public:
    */
   double range(const Point3& point, OptionalJacobian<1, dimension> Dcamera =
       {}, OptionalJacobian<1, 3> Dpoint = {}) const {
-    Matrix16 Dpose_;
+    Matrix16 Dpose_ = Matrix16::Zero();
     double result = this->pose().range(point, Dcamera ? &Dpose_ : 0, Dpoint);
     if (Dcamera)
       *Dcamera << Dpose_, Eigen::Matrix<double, 1, DimK>::Zero();
@@ -272,7 +271,7 @@ public:
    */
   double range(const Pose3& pose, OptionalJacobian<1, dimension> Dcamera =
       {}, OptionalJacobian<1, 6> Dpose = {}) const {
-    Matrix16 Dpose_;
+    Matrix16 Dpose_ = Matrix16::Zero();
     double result = this->pose().range(pose, Dcamera ? &Dpose_ : 0, Dpose);
     if (Dcamera)
       *Dcamera << Dpose_, Eigen::Matrix<double, 1, DimK>::Zero();
@@ -335,9 +334,6 @@ private:
     ar & BOOST_SERIALIZATION_NVP(K_);
   }
 #endif
-
-public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 // manifold traits

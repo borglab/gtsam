@@ -16,7 +16,7 @@ import numpy as np
 from gtsam.utils.test_case import GtsamTestCase
 
 import gtsam
-from gtsam import Point3, Pose3, Rot3
+from gtsam import Point3, Pose3, Rot3, Unit3
 from gtsam.utils.numerical_derivative import numericalDerivative11, numericalDerivative21, numericalDerivative22
 
 class TestPose3(GtsamTestCase):
@@ -97,6 +97,16 @@ class TestPose3(GtsamTestCase):
         expected_array = np.stack([expected, expected]).T
         np.testing.assert_allclose(actual_array, expected_array, atol=1e-6)
 
+        # C- and F-contiguous NumPy matrices should map without conversion.
+        for order in ("C", "F"):
+            points = np.array([[3.0, 3.0], [2.0, 2.0], [10.0, 10.0]],
+                              order=order)
+            np.testing.assert_allclose(
+                pose.transformTo(points), expected_array, atol=1e-6)
+
+        with self.assertRaises(TypeError):
+            pose.transformTo([[3.0, 3.0], [2.0, 2.0], [10.0, 10.0]])
+
     def test_transformFrom(self):
         """Test transformFrom method."""
         pose = Pose3(Rot3.Rodrigues(0, 0, -math.pi/2), Point3(2, 4, 0))
@@ -121,6 +131,16 @@ class TestPose3(GtsamTestCase):
         expected_array = np.stack([expected, expected]).T
         np.testing.assert_allclose(actual_array, expected_array, atol=1e-6)
 
+        # C- and F-contiguous NumPy matrices should map without conversion.
+        for order in ("C", "F"):
+            points = np.array([[2.0, 2.0], [1.0, 1.0], [10.0, 10.0]],
+                              order=order)
+            np.testing.assert_allclose(
+                pose.transformFrom(points), expected_array, atol=1e-6)
+
+        with self.assertRaises(TypeError):
+            pose.transformFrom([[2.0, 2.0], [1.0, 1.0], [10.0, 10.0]])
+
     def test_range(self):
         """Test range method."""
         l1 = Point3(1, 0, 0)
@@ -142,6 +162,59 @@ class TestPose3(GtsamTestCase):
         # establish range is indeed sqrt2
         self.assertEqual(math.sqrt(2.0), x1.range(pose=xl2))
 
+        # test jacobians: pose to point
+        pose = Pose3(Rot3.Rodrigues(0.3, 0.2, 0.1), Point3(3.5, -8.2, 4.2))
+        point = Point3(1, 4, -4)
+        jacobian_pose = np.zeros((1, 6), order='F')
+        jacobian_point = np.zeros((1, 3), order='F')
+        pose.range(point, jacobian_pose, jacobian_point)
+        jacobian_numerical_pose = numericalDerivative21(Pose3.range, pose, point)
+        jacobian_numerical_point = numericalDerivative22(Pose3.range, pose, point)
+        self.gtsamAssertEquals(jacobian_pose, jacobian_numerical_pose)
+        self.gtsamAssertEquals(jacobian_point, jacobian_numerical_point)
+
+        # test jacobians: pose to pose
+        other = Pose3(Rot3.Rodrigues(-0.2, 0.3, 0.1), Point3(1, 2, 3))
+        jacobian_self = np.zeros((1, 6), order='F')
+        jacobian_other = np.zeros((1, 6), order='F')
+        pose.range(other, jacobian_self, jacobian_other)
+        jacobian_numerical_self = numericalDerivative21(Pose3.range, pose, other)
+        jacobian_numerical_other = numericalDerivative22(Pose3.range, pose, other)
+        self.gtsamAssertEquals(jacobian_self, jacobian_numerical_self)
+        self.gtsamAssertEquals(jacobian_other, jacobian_numerical_other)
+
+    def test_bearing(self):
+        """Test bearing method."""
+        pose = Pose3(Rot3.Rodrigues(0.3, 0.2, 0.1), Point3(3.5, -8.2, 4.2))
+        point = Point3(1, 4, -4)
+
+        expected = Unit3(pose.transformTo(point))
+        actual = pose.bearing(point)
+        self.gtsamAssertEquals(actual, expected, 1e-6)
+
+        # test jacobians: pose to point
+        jacobian_pose = np.zeros((2, 6), order='F')
+        jacobian_point = np.zeros((2, 3), order='F')
+        pose.bearing(point, jacobian_pose, jacobian_point)
+        jacobian_numerical_pose = numericalDerivative21(Pose3.bearing, pose, point)
+        jacobian_numerical_point = numericalDerivative22(Pose3.bearing, pose, point)
+        self.gtsamAssertEquals(jacobian_pose, jacobian_numerical_pose)
+        self.gtsamAssertEquals(jacobian_point, jacobian_numerical_point)
+
+        # test jacobians: pose to pose (orientation of other is ignored)
+        other = Pose3(Rot3.Rodrigues(-0.2, 0.3, 0.1), Point3(1, 2, 3))
+        expected_pose = Unit3(pose.transformTo(other.translation()))
+        actual_pose = pose.bearing(other)
+        self.gtsamAssertEquals(actual_pose, expected_pose, 1e-6)
+
+        jacobian_self = np.zeros((2, 6), order='F')
+        jacobian_other = np.zeros((2, 6), order='F')
+        pose.bearing(other, jacobian_self, jacobian_other)
+        jacobian_numerical_self = numericalDerivative21(Pose3.bearing, pose, other)
+        jacobian_numerical_other = numericalDerivative22(Pose3.bearing, pose, other)
+        self.gtsamAssertEquals(jacobian_self, jacobian_numerical_self)
+        self.gtsamAssertEquals(jacobian_other, jacobian_numerical_other)
+
     def test_adjoint(self):
         """Test adjoint methods."""
         T = Pose3()
@@ -157,6 +230,7 @@ class TestPose3(GtsamTestCase):
         actual = Pose3.adjoint_(xi, xi)
         np.testing.assert_array_equal(actual, expected)
 
+    @unittest.skipUnless(hasattr(gtsam.Pose3, "serialize"), "Serialization not enabled")
     def test_serialization(self):
         """Test if serialization is working normally"""
         expected = Pose3(Rot3.Ypr(0.0, 1.0, 0.0), Point3(1, 1, 0))
@@ -179,9 +253,14 @@ class TestPose3(GtsamTestCase):
         estimated_sTt = Pose3.Align(st_pairs)
         self.gtsamAssertEquals(estimated_sTt, sTt, 1e-10)
 
-        # Matrix version
-        estimated_sTt = Pose3.Align(square, transformed)
-        self.gtsamAssertEquals(estimated_sTt, sTt, 1e-10)
+        # C- and F-contiguous NumPy matrices should map without conversion.
+        for order in ("C", "F"):
+            estimated_sTt = Pose3.Align(np.array(square, order=order),
+                                        np.array(transformed, order=order))
+            self.gtsamAssertEquals(estimated_sTt, sTt, 1e-10)
+
+        with self.assertRaises(TypeError):
+            Pose3.Align(square.tolist(), transformed.tolist())
 
 
 if __name__ == "__main__":

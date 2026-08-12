@@ -13,6 +13,9 @@
 /* Scipy changes:
  * - 06-10-2016: added lgam1p
  */
+/* gtsam changes:
+ * - 01-24-2026: removed log1p and expm1
+ */
 
 #include "mconf.h"
 
@@ -46,21 +49,8 @@ static const double LQ[] = {
     6.0118660497603843919306E1,
 };
 
-double log1p(double x)
-{
-    double z;
-
-    z = 1.0 + x;
-    if ((z < M_SQRT1_2) || (z > M_SQRT2))
-	return (log(z));
-    z = x * x;
-    z = -0.5 * z + x * (z * polevl(x, LP, 6) / p1evl(x, LQ, 6));
-    return (x + z);
-}
-
-
 /* log(1 + x) - x */
-double log1pmx(double x)
+double gtsam_cephes_log1pmx(double x)
 {
     if (fabs(x) < 0.5) {
 	int n;
@@ -103,31 +93,6 @@ static double EQ[4] = {
     2.0000000000000000000897E0,
 };
 
-double expm1(double x)
-{
-    double r, xx;
-
-    if (!cephes_isfinite(x)) {
-	if (cephes_isnan(x)) {
-	    return x;
-	}
-	else if (x > 0) {
-	    return x;
-	}
-	else {
-	    return -1.0;
-	}
-
-    }
-    if ((x < -0.5) || (x > 0.5))
-	return (exp(x) - 1.0);
-    xx = x * x;
-    r = x * polevl(xx, EP, 2);
-    r = r / (polevl(xx, EQ, 3) - r);
-    return (r + r);
-}
-
-
 
 /* cosm1(x) = cos(x) - 1  */
 
@@ -141,7 +106,7 @@ static double coscof[7] = {
     4.1666666666666666609054E-2,
 };
 
-double cosm1(double x)
+double gtsam_cephes_cosm1(double x)
 {
     double xx;
 
@@ -166,7 +131,7 @@ static double lgam1p_taylor(double x)
     xfac = -x;
     for (n = 2; n < 42; n++) {
         xfac *= -x;
-        coeff = zeta(n, 1) * xfac / n;
+        coeff = gtsam_cephes_zeta(n, 1) * xfac / n;
 	res += coeff;
 	if (fabs(coeff) < MACHEP * fabs(res)) {
             break;
@@ -178,13 +143,13 @@ static double lgam1p_taylor(double x)
 
 
 /* Compute lgam(x + 1). */
-double lgam1p(double x)
+double gtsam_cephes_lgam1p(double x)
 {
     if (fabs(x) <= 0.5) {
 	return lgam1p_taylor(x);
     } else if (fabs(x - 1) < 0.5) {
 	return log(x) + lgam1p_taylor(x - 1);
     } else {
-	return lgam(x + 1);
+	return gtsam_cephes_lgam(x + 1);
     }
 }

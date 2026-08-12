@@ -33,9 +33,18 @@ public:
   /// Typedef for a shared pointer to an Incremental Fixed-Lag Smoother
   typedef std::shared_ptr<BatchFixedLagSmoother> shared_ptr;
 
-  /** default constructor */
+  /** 
+   * Construct with parameters
+   *
+   * @param smootherLag The length of the smoother lag. Any variable older than this amount will be marginalized out.
+   * @param parameters The L-M optimization parameters
+   * @param enforceConsistency A flag indicating if the optimizer should enforce probabilistic consistency by maintaining the
+   * linearization point of all variables involved in linearized/marginal factors at the edge of the
+   * smoothing window.
+   */
   BatchFixedLagSmoother(double smootherLag = 0.0, const LevenbergMarquardtParams& parameters = LevenbergMarquardtParams(), bool enforceConsistency = true) :
-    FixedLagSmoother(smootherLag), parameters_(parameters), enforceConsistency_(enforceConsistency) { }
+    FixedLagSmoother(smootherLag), parameters_(parameters), enforceConsistency_(enforceConsistency) {
+  }
 
   /** destructor */
   ~BatchFixedLagSmoother() override {}
@@ -120,7 +129,7 @@ public:
 protected:
 
   /** A typedef defining an Key-Factor mapping **/
-  typedef std::map<Key, std::set<Key> > FactorIndex;
+  typedef std::map<Key, KeySet > FactorIndex;
 
   /** The L-M optimization parameters **/
   LevenbergMarquardtParams parameters_;
@@ -171,8 +180,7 @@ protected:
 
 private:
   /** Private methods for printing debug information */
-  static void PrintKeySet(const std::set<Key>& keys, const std::string& label);
-  static void PrintKeySet(const gtsam::KeySet& keys, const std::string& label);
+  static void PrintKeySet(const KeySet& keys, const std::string& label);
   static void PrintSymbolicFactor(const NonlinearFactor::shared_ptr& factor);
   static void PrintSymbolicFactor(const GaussianFactor::shared_ptr& factor);
   static void PrintSymbolicGraph(const NonlinearFactorGraph& graph, const std::string& label);

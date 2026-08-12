@@ -18,6 +18,7 @@
  * @date    December 2021
  */
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/discrete/TableDistribution.h>
@@ -90,7 +91,7 @@ TEST(HybridBayesNet, EvaluatePureDiscrete) {
 
   // sample
   std::mt19937_64 rng(42);
-  EXPECT(assert_equal(zero, bayesNet.sample(&rng)));
+  EXPECT(assert_equal(one, bayesNet.sample(&rng)));
   EXPECT(assert_equal(one, bayesNet.sample(one, &rng)));
   EXPECT(assert_equal(zero, bayesNet.sample(zero, &rng)));
 
@@ -616,16 +617,16 @@ TEST(HybridBayesNet, Sampling) {
   double discrete_sum =
       std::accumulate(discrete_samples.begin(), discrete_samples.end(),
                       decltype(discrete_samples)::value_type(0));
-  EXPECT_DOUBLES_EQUAL(0.477, discrete_sum / num_samples, 1e-9);
+  EXPECT_DOUBLES_EQUAL(0.519, discrete_sum / num_samples, 1e-9);
 
   VectorValues expected;
   // regression for specific RNG seed
 #if __APPLE__ || _WIN32
-  expected.insert({X(0), Vector1(-0.0131207162712)});
-  expected.insert({X(1), Vector1(-0.499026377568)});
+  expected.insert({X(0), Vector1(0.0252479903896)});
+  expected.insert({X(1), Vector1(-0.513637101911)});
 #elif __linux__
-  expected.insert({X(0), Vector1(-0.00799425182219)});
-  expected.insert({X(1), Vector1(-0.526463854268)});
+  expected.insert({X(0), Vector1(0.0165089744897)});
+  expected.insert({X(1), Vector1(-0.454323399979)});
 #endif
 
   EXPECT(assert_equal(expected, average_continuous.scale(1.0 / num_samples)));

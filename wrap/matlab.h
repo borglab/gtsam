@@ -37,6 +37,7 @@ extern "C" {
 #include <mex.h>
 }
 
+#include <limits>
 #include <list>
 #include <set>
 #include <sstream>
@@ -159,19 +160,29 @@ mxArray* wrap<bool>(const bool& value) {
   return result;
 }
 
-// specialization to size_t
+// specialization to size_t but skip Win64 size check & CUDACC check
+#if (!defined(_WIN64) && !defined(__LP64__)) || defined(__CUDACC__)
 template<>
 mxArray* wrap<size_t>(const size_t& value) {
   mxArray *result = scalar(mxUINT32OR64_CLASS);
   *(size_t*)mxGetData(result) = value;
   return result;
 }
+#endif
 
 // specialization to int
 template<>
 mxArray* wrap<int>(const int& value) {
   mxArray *result = scalar(mxUINT32OR64_CLASS);
   *(int*)mxGetData(result) = value;
+  return result;
+}
+
+// specialization to gtsam::Key which is an alias for uint64_t
+template<>
+mxArray* wrap<uint64_t>(const uint64_t& value) {
+  mxArray *result = scalar(mxUINT32OR64_CLASS);
+  *(uint64_t*)mxGetData(result) = value;
   return result;
 }
 
@@ -330,12 +341,23 @@ int unwrap<int>(const mxArray* array) {
   return myGetScalar<int>(array);
 }
 
-// specialization to size_t
+// specialization to gtsam::Key which is an alias for uint64_t
+template<>
+uint64_t unwrap<uint64_t>(const mxArray* array) {
+  checkScalar(array,"unwrap<uint64_t>");
+  return myGetScalar<uint64_t>(array);
+}
+
+// specialization to size_t; omit it on Win64 because size_t is uint64_t there
+// and would duplicate unwrap<uint64_t>. The __CUDACC__ case intentionally
+// bypasses the Win64 guard when compiling with CUDA.
+#if (!defined(_WIN64) && !defined(__LP64__)) || defined(__CUDACC__)
 template<>
 size_t unwrap<size_t>(const mxArray* array) {
   checkScalar(array, "unwrap<size_t>");
   return myGetScalar<size_t>(array);
 }
+#endif
 
 // specialization to double
 template<>
@@ -412,6 +434,31 @@ gtsam::Matrix unwrap< gtsam::Matrix >(const mxArray* array) {
   gtsam::print(A);
 #endif
   return A;
+}
+
+// unwrap a MATLAB double matrix as a const Eigen matrix view without copying
+template <typename MatrixView>
+MatrixView unwrapMatrixView(const mxArray* array) {
+  if (mxIsDouble(array)==false || mxIsComplex(array) || mxIsSparse(array))
+    error("unwrapMatrixView: not a full real double matrix");
+  const mwSize rows = mxGetM(array), cols = mxGetN(array);
+  const auto maxIndex =
+      static_cast<unsigned long long>((std::numeric_limits<Eigen::Index>::max)());
+  if (static_cast<unsigned long long>(rows) > maxIndex ||
+      static_cast<unsigned long long>(cols) > maxIndex) {
+    error("unwrapMatrixView: matrix dimensions exceed Eigen::Index");
+  }
+  const Eigen::Index m = static_cast<Eigen::Index>(rows);
+  const Eigen::Index n = static_cast<Eigen::Index>(cols);
+#ifdef DEBUG_WRAP
+  mexPrintf("unwrapMatrixView called with %lldx%lld argument\n",
+            static_cast<long long>(m), static_cast<long long>(n));
+#endif
+  using Stride = Eigen::Stride<Eigen::Dynamic, Eigen::Dynamic>;
+  using ConstMatrixMap = Eigen::Map<const gtsam::Matrix, 0, Stride>;
+  const double* data = static_cast<const double*>(mxGetData(array));
+  ConstMatrixMap map(data, m, n, Stride(m, 1));
+  return MatrixView(map);
 }
 
 /*
@@ -532,4 +579,3 @@ Class* unwrap_ptr(const mxArray* obj, const string& propertyName) {
 //  static_assert(unwrap_shared_ptr_Matrix_attempted, "Matrix cannot be unwrapped as a shared pointer");
 //  return Matrix();
 //}
-

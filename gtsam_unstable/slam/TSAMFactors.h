@@ -20,6 +20,7 @@
 
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 namespace gtsam {
 
@@ -147,12 +148,13 @@ public:
       Pose2 pose2_g = base2.compose(pose2, D_pose2_g_base2, D_pose2_g_pose2);
       Matrix D_e_pose1_g, D_e_pose2_g;
       Pose2 d = pose1_g.between(pose2_g, D_e_pose1_g, D_e_pose2_g);
-      Matrix3 H;
-      auto error = measured_.localCoordinates(d, nullptr, H);
-      if (H1) *H1 = H * D_e_pose1_g * D_pose1_g_base1;
-      if (H2) *H2 = H * D_e_pose1_g * D_pose1_g_pose1;
-      if (H3) *H3 = H * D_e_pose2_g * D_pose2_g_base2;
-      if (H4) *H4 = H * D_e_pose2_g * D_pose2_g_pose2;
+      Matrix3 localJacobian;
+      const Vector error =
+          measured_.localCoordinates(d, nullptr, localJacobian);
+      if (H1) *H1 = localJacobian * D_e_pose1_g * D_pose1_g_base1;
+      if (H2) *H2 = localJacobian * D_e_pose1_g * D_pose1_g_pose1;
+      if (H3) *H3 = localJacobian * D_e_pose2_g * D_pose2_g_base2;
+      if (H4) *H4 = localJacobian * D_e_pose2_g * D_pose2_g_pose2;
       return error;
     } else {
       Pose2 pose1_g = base1.compose(pose1);
@@ -164,4 +166,3 @@ public:
 };
 
 }
-

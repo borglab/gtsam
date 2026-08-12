@@ -11,6 +11,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Pose3.h>
@@ -99,7 +100,7 @@ public:
           << std::endl;
       return Vector::Ones(2) * 2.0 * K_->fx();
     }
-    return (Vector(1) << 0.0).finished();
+    return Vector{{0.0}};
   }
 
   /// Evaluate error h(x)-z and optionally derivatives

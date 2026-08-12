@@ -18,34 +18,30 @@
  * @brief utility functions for loading datasets
  */
 
+#include <gtsam/base/GenericValue.h>
+#include <gtsam/base/Lie.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/Value.h>
+#include <gtsam/base/Vector.h>
+#include <gtsam/base/types.h>
+#include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Rot3.h>
+#include <gtsam/inference/FactorGraph.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/Sampler.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/Values-inl.h>
 #include <gtsam/sam/BearingRangeFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/dataset.h>
 
-#include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/Rot3.h>
-
-#include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/nonlinear/Values-inl.h>
-
-#include <gtsam/linear/Sampler.h>
-
-#include <gtsam/inference/FactorGraph.h>
-#include <gtsam/inference/Symbol.h>
-
-#include <gtsam/base/GenericValue.h>
-#include <gtsam/base/Lie.h>
-#include <gtsam/base/Matrix.h>
-#include <gtsam/base/Value.h>
-#include <gtsam/base/Vector.h>
-#include <gtsam/base/types.h>
-
-#include <optional>
-
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <locale>
+#include <optional>
 #include <stdexcept>
 #include <string>
 
@@ -131,6 +127,7 @@ static void parseLines(const std::string &filename, Parser<T> parse) {
   std::ifstream is(filename.c_str());
   if (!is)
     throw std::invalid_argument("parse: can not find file " + filename);
+  is.imbue(std::locale::classic());
   std::string tag;
   while (is >> tag) {
     parse(is, tag); // ignore return value
@@ -368,7 +365,7 @@ template <> struct ParseMeasurement<Pose2> {
     // Get pose and optionally add noise
     Pose2 &pose = edge->second;
     if (sampler)
-      pose = pose.retract(sampler->sample());
+      pose = sampler->perturb(pose);
 
     // emplace measurement
     auto modelFromFile =
@@ -493,8 +490,8 @@ template <> struct ParseMeasurement<BearingRange2D> {
       return std::nullopt;
 
     // Create noise model
-    auto measurementNoise = noiseModel::Diagonal::Sigmas(
-        (Vector(2) << bearing_std, range_std).finished());
+    auto measurementNoise =
+        noiseModel::Diagonal::Sigmas(Vector{{bearing_std, range_std}});
 
     return BinaryMeasurement<BearingRange2D>(
         id1, L(id2), BearingRange2D(bearing, range), measurementNoise);
@@ -833,7 +830,7 @@ template <> struct ParseMeasurement<Pose3> {
       Pose3 T12(R, {x, y, z});
       //  optionally add noise
       if (sampler)
-        T12 = T12.retract(sampler->sample());
+        T12 = sampler->perturb(T12);
 
       return BinaryMeasurement<Pose3>(id1, id2, T12,
                                       noiseModel::Gaussian::Information(m));
@@ -845,7 +842,7 @@ template <> struct ParseMeasurement<Pose3> {
       Pose3 T12(q, {x, y, z});
       //  optionally add noise
       if (sampler)
-        T12 = T12.retract(sampler->sample());
+        T12 = sampler->perturb(T12);
 
       // g2o's EDGE_SE3:QUAT stores information/precision of Pose3 in t,R order, unlike GTSAM:
       Matrix6 mgtsam;

@@ -99,9 +99,9 @@ TEST(DiscreteBayesNet, Asia) {
 
   // now sample from it
   DiscreteValues expectedSample{{Asia.first, 1},       {Dyspnea.first, 1},
-                                {XRay.first, 1},       {Tuberculosis.first, 0},
-                                {Smoking.first, 1},    {Either.first, 1},
-                                {LungCancer.first, 1}, {Bronchitis.first, 0}};
+                                {XRay.first, 0},       {Tuberculosis.first, 0},
+                                {Smoking.first, 1},    {Either.first, 0},
+                                {LungCancer.first, 0}, {Bronchitis.first, 1}};
   SETDEBUG("DiscreteConditional::sample", false);
   auto actualSample = chordal2->sample();
   EXPECT(assert_equal(expectedSample, actualSample));
@@ -120,6 +120,36 @@ TEST(DiscreteBayesNet, Sugar) {
   // try multivalued
   bn.add(C % "1/1/2");
   bn.add(C | S = "1/1/2 5/2/3");
+}
+
+/* ************************************************************************* */
+// Test that pruning a DiscreteBayesNet results in a conditional whose leaves sum to 1.
+TEST(DiscreteBayesNet, PruneSumToOne) {
+  using namespace asia_example;
+  const DiscreteBayesNet asiaBn = createAsiaExample();
+
+  // Test with various numbers of max leaves.
+  // Asia network has 8 binary variables, so 2^8 = 256 possible assignments in the full joint.
+  std::vector<size_t> maxLeavesToTest = { 1, 2, 5, 10, 50, 100, 256, 500 };
+
+  for (size_t maxLeaves : maxLeavesToTest) {
+    // We expect maxLeaves >= 1 for the sum-to-one property to hold meaningfully.
+
+    DiscreteBayesNet prunedBn = asiaBn.prune(maxLeaves);
+
+    // If the original BN was not empty and maxLeaves >= 1,
+    // the prunedBN should contain one conditional (the pruned joint).
+    EXPECT(prunedBn.size() > 0);
+    if (prunedBn.size() > 0) {
+      EXPECT_LONGS_EQUAL(1, prunedBn.size());
+
+      DiscreteConditional::shared_ptr prunedConditional = prunedBn.front();
+      CHECK(prunedConditional); // Ensure it's not null
+
+      double sumOfProbs = prunedConditional->sum();
+      EXPECT_DOUBLES_EQUAL(1.0, sumOfProbs, 1e-8);
+    }
+  }
 }
 
 /* ************************************************************************* */

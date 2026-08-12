@@ -6,10 +6,9 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
-
 #include <gtsam_unstable/geometry/Pose3Upright.h>
 
 using namespace gtsam;
@@ -72,7 +71,7 @@ TEST( testPose3Upright, manifold ) {
   EXPECT(assert_equal(x1, x1.retract(Z_4x1), tol));
   EXPECT(assert_equal(x2, x2.retract(Z_4x1), tol));
 
-  Vector delta12 = (Vector(4) << 3.0, 0.0, 4.0, 0.0).finished(), delta21 = -delta12;
+  Vector delta12{{3.0, 0.0, 4.0, 0.0}}, delta21 = -delta12;
   EXPECT(assert_equal(x2, x1.retract(delta12), tol));
   EXPECT(assert_equal(x1, x2.retract(delta21), tol));
 

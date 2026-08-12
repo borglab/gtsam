@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/navigation/NavState.h>
 #include <gtsam/geometry/Pose3.h>
 
@@ -83,7 +84,7 @@ public:
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
   /// vector of errors
-  Vector evaluateError(const Pose3& p, OptionalMatrixType H) const override;
+  Vector evaluateError(const Pose3& nTb, OptionalMatrixType H) const override;
 
   /// return the measurement, in the navigation frame
   inline const Point3 & measurementIn() const {
@@ -171,7 +172,7 @@ public:
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
   /// vector of errors
-  Vector evaluateError(const Pose3& p, OptionalMatrixType H) const override;
+  Vector evaluateError(const Pose3& nTb, OptionalMatrixType H) const override;
 
   /// return the measurement, in the navigation frame
   inline const Point3 & measurementIn() const {
@@ -183,7 +184,26 @@ public:
     return bL_;
   }
 
+private:
+
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+  /// Serialization function
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    // NoiseModelFactor1 instead of NoiseModelFactorN for valid XML tag names
+    ar
+        & boost::serialization::make_nvp("NoiseModelFactor1",
+            boost::serialization::base_object<Base>(*this));
+    ar & BOOST_SERIALIZATION_NVP(nT_);
+    ar & BOOST_SERIALIZATION_NVP(bL_);
+  }
+#endif
 };
+
+/// traits
+template <>
+struct traits<GPSFactorArm> : public Testable<GPSFactorArm> {};
 
 /**
  * Version of GPSFactorArm (for Pose3) with unknown lever arm between GPS and
@@ -242,14 +262,33 @@ public:
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
   /// vector of errors
-  Vector evaluateError(const Pose3& p, const Point3& bL, OptionalMatrixType H1,
+  Vector evaluateError(const Pose3& nTb, const Point3& bL, OptionalMatrixType H1,
                        OptionalMatrixType H2) const override;
 
   /// return the measurement, in the navigation frame
   inline const Point3 & measurementIn() const {
     return nT_;
   }
+
+private:
+
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+  /// Serialization function
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    // NoiseModelFactor2 instead of NoiseModelFactorN for valid XML tag names
+    ar
+        & boost::serialization::make_nvp("NoiseModelFactor2",
+            boost::serialization::base_object<Base>(*this));
+    ar & BOOST_SERIALIZATION_NVP(nT_);
+  }
+#endif
 };
+
+/// traits
+template <>
+struct traits<GPSFactorArmCalib> : public Testable<GPSFactorArmCalib> {};
 
 /**
  * Version of GPSFactor for NavState, assuming zero lever arm between body frame
@@ -304,7 +343,7 @@ public:
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
   /// vector of errors
-  Vector evaluateError(const NavState& p, OptionalMatrixType H) const override;
+  Vector evaluateError(const NavState& nTb, OptionalMatrixType H) const override;
 
   /// return the measurement, in the navigation frame
   inline const Point3 & measurementIn() const {
@@ -384,7 +423,7 @@ public:
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
   /// vector of errors
-  Vector evaluateError(const NavState& p, OptionalMatrixType H) const override;
+  Vector evaluateError(const NavState& nTb, OptionalMatrixType H) const override;
 
   /// return the measurement, in the navigation frame
   inline const Point3 & measurementIn() const {
@@ -396,7 +435,26 @@ public:
     return bL_;
   }
 
+private:
+
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+  /// Serialization function
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    // NoiseModelFactor1 instead of NoiseModelFactorN for valid XML tag names
+    ar
+        & boost::serialization::make_nvp("NoiseModelFactor1",
+            boost::serialization::base_object<Base>(*this));
+    ar & BOOST_SERIALIZATION_NVP(nT_);
+    ar & BOOST_SERIALIZATION_NVP(bL_);
+  }
+#endif
 };
+
+/// traits
+template <>
+struct traits<GPSFactor2Arm> : public Testable<GPSFactor2Arm> {};
 
 /**
  * Version of GPSFactor2Arm for an unknown lever arm between GPS and Body frame.
@@ -453,7 +511,7 @@ public:
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
   /// vector of errors
-  Vector evaluateError(const NavState& p, const Point3& bL,
+  Vector evaluateError(const NavState& nTb, const Point3& bL,
                        OptionalMatrixType H1,
                        OptionalMatrixType H2) const override;
 
@@ -461,6 +519,25 @@ public:
   inline const Point3 & measurementIn() const {
     return nT_;
   }
+
+private:
+
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+  /// Serialization function
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+    // NoiseModelFactor2 instead of NoiseModelFactorN for valid XML tag names
+    ar
+        & boost::serialization::make_nvp("NoiseModelFactor2",
+            boost::serialization::base_object<Base>(*this));
+    ar & BOOST_SERIALIZATION_NVP(nT_);
+  }
+#endif
 };
+
+/// traits
+template <>
+struct traits<GPSFactor2ArmCalib> : public Testable<GPSFactor2ArmCalib> {};
 
 } /// namespace gtsam

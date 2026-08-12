@@ -5,11 +5,11 @@
  * @author Alex Cunningham
  */
 
-#include <iostream>
-
+#include <gtsam/base/Vector.h>
 #include <gtsam_unstable/geometry/BearingS2.h>
 
 #include <cassert>
+#include <iostream>
 
 namespace gtsam {
 
@@ -31,10 +31,7 @@ BearingS2 BearingS2::fromDownwardsObservation(const Pose3& A, const Point3& B) {
   Matrix Cnb = A.rotation().matrix().transpose();
 
   //  Cbc = [0,0,1;0,1,0;-1,0,0];
-  Matrix Cbc = (Matrix(3,3) <<
-      0.,0.,1.,
-      0.,1.,0.,
-      -1.,0.,0.).finished();
+  Matrix Cbc{{0., 0., 1.}, {0., 1., 0.}, {-1., 0., 0.}};
   //  p_rel_c = Cbc*Cnb*(PosObj - Pos);
   Vector p_rel_c = Cbc*Cnb*(B - A.translation());
 
@@ -71,8 +68,8 @@ BearingS2 BearingS2::retract(const Vector& v) const {
 
 /* ************************************************************************* */
 Vector BearingS2::localCoordinates(const BearingS2& x) const {
-  return (Vector(2) << azimuth_.localCoordinates(x.azimuth_)(0),
-                    elevation_.localCoordinates(x.elevation_)(0)).finished();
+  return Vector{{azimuth_.localCoordinates(x.azimuth_)(0),
+                 elevation_.localCoordinates(x.elevation_)(0)}};
 }
 
 } // \namespace gtsam

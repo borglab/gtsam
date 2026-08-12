@@ -309,11 +309,9 @@ TEST( GeneralSFMFactor_Cal3Bundler, optimize_varK_FixLandmarks ) {
     if (i == 0) {
       values.insert(X(i), cameras[i]);
     } else {
-
-      Vector delta = (Vector(9) << rot_noise, rot_noise, rot_noise, // rotation
-      trans_noise, trans_noise, trans_noise, // translation
-      focal_noise, distort_noise, distort_noise // f, k1, k2
-          ).finished();
+      Vector9 delta{rot_noise,   rot_noise,     rot_noise,       // rotation
+                    trans_noise, trans_noise,   trans_noise,     // translation
+                    focal_noise, distort_noise, distort_noise};  // f, k1, k2
       values.insert(X(i), cameras[i].retract(delta));
     }
   }

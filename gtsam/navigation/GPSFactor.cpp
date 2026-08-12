@@ -18,6 +18,8 @@
 
 #include "GPSFactor.h"
 
+#include <stdexcept>
+
 using namespace std;
 
 namespace gtsam {
@@ -37,9 +39,9 @@ bool GPSFactor::equals(const NonlinearFactor& expected, double tol) const {
 }
 
 //***************************************************************************
-Vector GPSFactor::evaluateError(const Pose3& p,
+Vector GPSFactor::evaluateError(const Pose3& nTb,
     OptionalMatrixType H) const {
-  return p.translation(H) -nT_;
+  return nTb.translation(H) -nT_;
 }
 
 //***************************************************************************
@@ -47,6 +49,11 @@ pair<Pose3, Vector3> GPSFactor::EstimateState(double t1, const Point3& NED1,
     double t2, const Point3& NED2, double timestamp) {
   // Estimate initial velocity as difference in NED frame
   double dt = t2 - t1;
+  if (dt == 0.0) {
+    throw std::invalid_argument(
+        "GPSFactor::EstimateState: t2 - t1 is zero; cannot estimate "
+        "velocity by dividing by dt.");
+  }
   Point3 nV = (NED2 - NED1) / dt;
 
   // Estimate initial position as linear interpolation
@@ -82,9 +89,9 @@ bool GPSFactorArm::equals(const NonlinearFactor& expected, double tol) const {
 }
 
 //***************************************************************************
-Vector GPSFactorArm::evaluateError(const Pose3& p,
+Vector GPSFactorArm::evaluateError(const Pose3& nTb,
     OptionalMatrixType H) const {
-  const Matrix3 nRb = p.rotation().matrix();
+  const Matrix3 nRb = nTb.rotation().matrix();
   if (H) {
     H->resize(3, 6);
 
@@ -92,7 +99,7 @@ Vector GPSFactorArm::evaluateError(const Pose3& p,
     H->block<3, 3>(0, 3) = nRb;
   }
 
-  return p.translation() + nRb * bL_ - nT_;
+  return nTb.translation() + nRb * bL_ - nT_;
 }
 
 //***************************************************************************
@@ -110,9 +117,9 @@ bool GPSFactorArmCalib::equals(const NonlinearFactor& expected, double tol) cons
 }
 
 //***************************************************************************
-Vector GPSFactorArmCalib::evaluateError(const Pose3& p, const Point3& bL,
+Vector GPSFactorArmCalib::evaluateError(const Pose3& nTb, const Point3& bL,
     OptionalMatrixType H1, OptionalMatrixType H2) const {
-  const Matrix3 nRb = p.rotation().matrix();
+  const Matrix3 nRb = nTb.rotation().matrix();
   if (H1) {
     H1->resize(3, 6);
 
@@ -124,7 +131,7 @@ Vector GPSFactorArmCalib::evaluateError(const Pose3& p, const Point3& bL,
     *H2 = nRb;
   }
 
-  return p.translation() + nRb * bL - nT_;
+  return nTb.translation() + nRb * bL - nT_;
 }
 
 //***************************************************************************
@@ -142,9 +149,9 @@ bool GPSFactor2::equals(const NonlinearFactor& expected, double tol) const {
 }
 
 //***************************************************************************
-Vector GPSFactor2::evaluateError(const NavState& p,
+Vector GPSFactor2::evaluateError(const NavState& nTb,
     OptionalMatrixType H) const {
-  return p.position(H) -nT_;
+  return nTb.position(H) -nT_;
 }
 
 //***************************************************************************
@@ -164,9 +171,9 @@ bool GPSFactor2Arm::equals(const NonlinearFactor& expected, double tol) const {
 }
 
 //***************************************************************************
-Vector GPSFactor2Arm::evaluateError(const NavState& p,
+Vector GPSFactor2Arm::evaluateError(const NavState& nTb,
     OptionalMatrixType H) const {
-  const Matrix3 nRb = p.attitude().matrix();
+  const Matrix3 nRb = nTb.attitude().matrix();
   if (H) {
     H->resize(3, 9);
 
@@ -175,7 +182,7 @@ Vector GPSFactor2Arm::evaluateError(const NavState& p,
     H->block<3, 3>(0, 6).setZero();
   }
 
-  return p.position() + nRb * bL_ - nT_;
+  return nTb.position() + nRb * bL_ - nT_;
 }
 
 //***************************************************************************
@@ -193,9 +200,9 @@ bool GPSFactor2ArmCalib::equals(const NonlinearFactor& expected, double tol) con
 }
 
 //***************************************************************************
-Vector GPSFactor2ArmCalib::evaluateError(const NavState& p, const Point3& bL,
+Vector GPSFactor2ArmCalib::evaluateError(const NavState& nTb, const Point3& bL,
     OptionalMatrixType H1, OptionalMatrixType H2) const {
-  const Matrix3 nRb = p.attitude().matrix();
+  const Matrix3 nRb = nTb.attitude().matrix();
   if (H1) {
     H1->resize(3, 9);
 
@@ -208,7 +215,7 @@ Vector GPSFactor2ArmCalib::evaluateError(const NavState& p, const Point3& bL,
     *H2 = nRb;
   }
 
-  return p.position() + nRb * bL - nT_;
+  return nTb.position() + nRb * bL - nT_;
 }
 
 }/// namespace gtsam

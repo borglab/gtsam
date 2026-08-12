@@ -54,3 +54,18 @@ values.insert(symbol('x', 7), Pose3());
 actual = utilities.extractVectors(values, 'x');
 expected = reshape(1:18, 6, 3)';
 CHECK('extractVectors', all(actual == expected, 'all'));
+
+% test batch measurement matrix wrappers
+tol = 1e-9;
+pixels = [20 30; 20 30];
+indices = [0; 1];
+batchValues = Values();
+camera = PinholeCameraCal3_S2();
+utilities.insertBackprojections(batchValues, camera, indices, pixels, 10);
+CHECK('insertBackprojections matrix', ...
+    norm(batchValues.atPoint3(0) - Point3(200, 200, 10)) < tol);
+
+graph = NonlinearFactorGraph();
+model = noiseModel.Isotropic.Sigma(2, 0.1);
+utilities.insertProjectionFactors(graph, 0, indices, pixels, model, Cal3_S2());
+CHECK('insertProjectionFactors matrix', graph.size == 2);

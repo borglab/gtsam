@@ -22,6 +22,7 @@
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/SOn.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 #include <type_traits>
 

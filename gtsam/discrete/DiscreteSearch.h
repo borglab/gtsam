@@ -113,7 +113,7 @@ class GTSAM_EXPORT DiscreteSearch {
   /// Construct from a DiscreteJunctionTree.
   DiscreteSearch(const DiscreteJunctionTree& junctionTree);
 
-  //// Construct from a DiscreteBayesNet.
+  /// Construct from a DiscreteBayesNet.
   DiscreteSearch(const DiscreteBayesNet& bayesNet);
 
   /// Construct from a DiscreteBayesTree.

@@ -23,7 +23,6 @@
 #include <gtsam/discrete/DiscreteLookupDAG.h>
 #include <gtsam/inference/EliminateableFactorGraph.h>
 #include <gtsam/inference/FactorGraph.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/base/FastSet.h>
 
 #include <string>
@@ -126,6 +125,9 @@ class GTSAM_EXPORT DiscreteFactorGraph
    * constructor */
   template <class DERIVED_FACTOR>
   DiscreteFactorGraph(const FactorGraph<DERIVED_FACTOR>& graph) : Base(graph) {}
+
+  /// Destructor
+  virtual ~DiscreteFactorGraph() {}
 
   /// @name Testable
   /// @{

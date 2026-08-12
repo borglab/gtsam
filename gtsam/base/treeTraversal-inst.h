@@ -28,6 +28,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <functional>
 #include <cassert>
 
 namespace gtsam {
@@ -118,6 +119,30 @@ void DepthFirstForest(FOREST& forest, DATA& rootData, VISITOR_PRE& visitorPre,
   assert(dataList.empty());
 }
 
+/* ************************************************************************* */
+/** Traverse a forest depth-first with post-order visits only.
+ *  @param forest The forest of trees to traverse. The method \c forest.roots()
+ *         should exist and return a collection of (shared) pointers to
+ *         \c FOREST::Node.
+ *  @param visitorPost \c visitorPost(node) will be called at every node, after
+ *         visiting its children. */
+template<class FOREST, typename VISITOR_POST>
+void PostOrderForest(FOREST& forest, VISITOR_POST& visitorPost) {
+  typedef typename FOREST::Node Node;
+  typedef std::shared_ptr<Node> sharedNode;
+
+  std::function<void(const sharedNode&)> visit =
+      [&](const sharedNode& node) {
+        if (!node) return;
+        for (const sharedNode& child : node->children) visit(child);
+        (void)visitorPost(node);
+      };
+
+  for (const sharedNode& root : forest.roots()) {
+    visit(root);
+  }
+}
+
 /** Traverse a forest depth-first, with a pre-order visit but no post-order visit.
  *  @param forest The forest of trees to traverse.  The method \c forest.roots() should exist
  *         and return a collection of (shared) pointers to \c FOREST::Node.
@@ -156,14 +181,39 @@ template<class FOREST, typename DATA, typename VISITOR_PRE,
 void DepthFirstForestParallel(FOREST& forest, DATA& rootData,
     VISITOR_PRE& visitorPre, VISITOR_POST& visitorPost,
     int problemSizeThreshold = 10) {
-#ifdef GTSAM_USE_TBB
-  // Typedefs
+
+#if defined(GTSAM_USE_TBB) && !defined(GTSAM_TBB_BOUNDED_MEMORY_GROWTH_FLAG)
+  // Note: Parallel tree traversal (the default) causes a large increase in memory footprint.
+  // In a tested use case, memory grew from approximately 4 GB to 12 GB.
+
   typedef typename FOREST::Node Node;
 
   internal::CreateRootTask<Node>(forest.roots(), rootData, visitorPre,
       visitorPost, problemSizeThreshold);
 #else
   DepthFirstForest(forest, rootData, visitorPre, visitorPost);
+#endif
+}
+
+/* ************************************************************************* */
+/** Traverse a forest depth-first with post-order visits only (parallel if TBB).
+ *  @param forest The forest of trees to traverse. The method \c forest.roots()
+ *         should exist and return a collection of (shared) pointers to
+ *         \c FOREST::Node.
+ *  @param visitorPost \c visitorPost(node) will be called at every node, after
+ *         visiting its children.
+ *  @param problemSizeThreshold Threshold for creating parallel subtasks. */
+template<class FOREST, typename VISITOR_POST>
+void PostOrderForestParallel(FOREST& forest, VISITOR_POST& visitorPost,
+                             int problemSizeThreshold = 10) {
+#if defined(GTSAM_USE_TBB) && !defined(GTSAM_TBB_BOUNDED_MEMORY_GROWTH_FLAG)
+  // Note: Parallel tree traversal (the default) causes a large increase in memory footprint.
+
+  typedef typename FOREST::Node Node;
+  internal::CreateRootPostOrderTask<Node>(forest.roots(), visitorPost,
+                                          problemSizeThreshold);
+#else
+  PostOrderForest(forest, visitorPost);
 #endif
 }
 

@@ -1,10 +1,17 @@
 #pragma once
 
-#include <string>
-#include <iostream>
-#include <sstream>
-
 #include <gtsam/dllexport.h>
+
+#include <iostream>
+#include <random>
+#include <sstream>
+#include <string>
+
+/**
+ * @brief Global default pseudo-random number generator object.
+ * In wrappers we can access std::mt19937_64 via gtsam.MT19937
+ */
+static std::mt19937_64 kRandomNumberGenerator(42);
 
 namespace gtsam {
 /**
@@ -28,7 +35,7 @@ private:
   std::streambuf* coutBuffer_;
 };
 
-}
+}  // namespace gtsam
 
 namespace gtsam {
 // Adapted from https://stackoverflow.com/a/32223343/9151520

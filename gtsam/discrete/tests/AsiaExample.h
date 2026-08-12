@@ -22,16 +22,17 @@
 namespace gtsam {
 namespace asia_example {
 
-static const Key D = Symbol('D', 1), X = Symbol('X', 2), E = Symbol('E', 3),
-                 B = Symbol('B', 4), L = Symbol('L', 5), T = Symbol('T', 6),
-                 S = Symbol('S', 7), A = Symbol('A', 8);
+[[maybe_unused]] static const Key D = Symbol('D', 1), X = Symbol('X', 2),
+                                  E = Symbol('E', 3), B = Symbol('B', 4),
+                                  L = Symbol('L', 5), T = Symbol('T', 6),
+                                  S = Symbol('S', 7), A = Symbol('A', 8);
 
-static const DiscreteKey Dyspnea(D, 2), XRay(X, 2), Either(E, 2),
-    Bronchitis(B, 2), LungCancer(L, 2), Tuberculosis(T, 2), Smoking(S, 2),
-    Asia(A, 2);
+[[maybe_unused]] static const DiscreteKey Dyspnea(D, 2), XRay(X, 2),
+    Either(E, 2), Bronchitis(B, 2), LungCancer(L, 2), Tuberculosis(T, 2),
+    Smoking(S, 2), Asia(A, 2);
 
 // Function to construct the Asia priors
-DiscreteBayesNet createPriors() {
+[[maybe_unused]] static DiscreteBayesNet createPriors() {
   DiscreteBayesNet priors;
   priors.add(Smoking % "50/50");
   priors.add(Asia, "99/1");
@@ -39,7 +40,7 @@ DiscreteBayesNet createPriors() {
 }
 
 // Function to construct the incomplete Asia example
-DiscreteBayesNet createFragment() {
+[[maybe_unused]] static DiscreteBayesNet createFragment() {
   DiscreteBayesNet fragment;
   fragment.add((Either | Tuberculosis, LungCancer) = "F T T T");
   fragment.add(LungCancer | Smoking = "99/1 90/10");
@@ -49,7 +50,7 @@ DiscreteBayesNet createFragment() {
 }
 
 // Function to construct the Asia example
-DiscreteBayesNet createAsiaExample() {
+[[maybe_unused]] static DiscreteBayesNet createAsiaExample() {
   DiscreteBayesNet asia;
   asia.add((Dyspnea | Either, Bronchitis) = "9/1 2/8 3/7 1/9");
   asia.add(XRay | Either = "95/5 2/98");

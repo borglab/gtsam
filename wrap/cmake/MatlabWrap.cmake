@@ -32,7 +32,13 @@ macro(find_and_configure_matlab)
   set(MEX_COMMAND ${Matlab_MEX_COMPILER} CACHE PATH "Path to MATLAB MEX compiler")
   set(MATLAB_ROOT ${Matlab_ROOT_DIR} CACHE PATH "Path to MATLAB installation root (e.g. /usr/local/MATLAB/R2012a)")
 
-  # Try to automatically configure mex path from provided custom `bin` path.
+  # Try to configure mex explicitly from a user-provided MATLAB bin directory.
+  # This is the main escape hatch when find_package(Matlab) does not work with
+  # app-bundle installs or when `matlab`/`mex` is not on PATH. On macOS the
+  # expected value is typically something like:
+  #   /Applications/MATLAB_R2025b.app/bin
+  # If wrapper configuration fails because CMake found the wrong mex binary, or
+  # because Matlab_ROOT_DIR points somewhere ambiguous, check this branch first.
   if(WRAP_CUSTOM_MATLAB_PATH)
     set(matlab_bin_directory ${WRAP_CUSTOM_MATLAB_PATH})
 
@@ -42,15 +48,17 @@ macro(find_and_configure_matlab)
       set(mex_program_name "mex")
     endif()
 
-    # Run find_program explicitly putting $PATH after our predefined program
-    # directories using 'ENV PATH' and 'NO_SYSTEM_ENVIRONMENT_PATH' - this prevents
-    # finding the LaTeX mex program (totally unrelated to MATLAB Mex) when LaTeX is
-    # on the system path.
+    # Run find_program with the requested bin directory first and without the
+    # usual system-path fallback. This avoids accidentally picking up unrelated
+    # programs named `mex` (for example the LaTeX helper) and then producing
+    # confusing downstream errors such as missing MATLAB headers or libraries.
     find_program(MEX_COMMAND ${mex_program_name}
       PATHS ${matlab_bin_directory} ENV PATH
       NO_DEFAULT_PATH)
     mark_as_advanced(FORCE MEX_COMMAND)
-    # Now that we have mex, trace back to find the Matlab installation root
+    # Once we have mex, infer MATLAB_ROOT from the resolved executable rather
+    # than trusting the original user input. That keeps later include/library
+    # lookups aligned with the mex binary that will actually compile the module.
     get_filename_component(MEX_COMMAND "${MEX_COMMAND}" REALPATH)
     get_filename_component(mex_path "${MEX_COMMAND}" PATH)
     if(mex_path MATCHES ".*/win64$")
@@ -260,6 +268,11 @@ function(wrap_library_internal interfaceHeader moduleName linkLibraries extraInc
     ${generated_cpp_file} ${interfaceHeader} ${otherSourcesAndObjects})
   target_link_libraries(${moduleName}_matlab_wrapper ${correctedOtherLibraries})
   target_link_libraries(${moduleName}_matlab_wrapper ${moduleName})
+  # BUILD_RPATH/INSTALL_RPATH make the mex module able to find libgtsam at
+  # runtime when loaded from MATLAB. This matters most on macOS and Linux,
+  # where a wrapper can compile successfully and still fail to load later with
+  # an @rpath / shared-library-not-found error. The expected layout is that
+  # GTSAM shared libraries live under ${CMAKE_INSTALL_PREFIX}/lib.
   set_target_properties(
     ${moduleName}_matlab_wrapper
     PROPERTIES OUTPUT_NAME "${moduleName}_wrapper"
@@ -268,6 +281,9 @@ function(wrap_library_internal interfaceHeader moduleName linkLibraries extraInc
                LIBRARY_OUTPUT_DIRECTORY "${compiled_mex_modules_root}"
                ARCHIVE_OUTPUT_DIRECTORY "${compiled_mex_modules_root}"
                RUNTIME_OUTPUT_DIRECTORY "${compiled_mex_modules_root}"
+               BUILD_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
+               INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
+               INSTALL_RPATH_USE_LINK_PATH TRUE
                CLEAN_DIRECT_OUTPUT 1)
   set_property(
     TARGET ${moduleName}_matlab_wrapper
@@ -276,6 +292,10 @@ function(wrap_library_internal interfaceHeader moduleName linkLibraries extraInc
       COMPILE_FLAGS
       " ${extraMexFlagsSpaced} ${mexFlagsSpaced} \"-I${MATLAB_ROOT}/extern/include\" -DMATLAB_MEX_FILE -DMX_COMPAT_32"
   )
+  # extraIncludeDirs is forwarded from matlab/CMakeLists.txt and is meant for
+  # wrapper-only headers, not the core GTSAM include tree. If generated mex
+  # code fails to compile because it cannot find a MATLAB-specific helper
+  # header, inspect this property and the matlab_wrap() call site.
   set_property(
     TARGET ${moduleName}_matlab_wrapper
     APPEND

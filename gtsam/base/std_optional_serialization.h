@@ -28,7 +28,7 @@
 #include <boost/serialization/detail/is_default_constructible.hpp>
 
 /** A bunch of declarations to deal with gcc bug
- * The compiler has a difficult time distinguisihing between:
+ * The compiler has a difficult time distinguishing between:
  *
  * template<template <Archive, class U> class SPT> void load(Archive, SPT<U>&, const unsigned int) : <boost/serialization/shared_ptr.hpp>
  *
@@ -37,7 +37,7 @@
  * template<T> void load(Archive, std::optional<T>&, const unsigned int) : <std_optional_serialization.h>
  *
  * The compiler will try to instantiate an object of the type of std::optional<boost::serialization::U> which is not valid since U is not a type and
- * thus leading to a whole series of errros.
+ * thus leading to a whole series of errors.
  *
  * This is a well known bug in gcc documented here: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=84075
  * A minimal reproducible example here: https://godbolt.org/z/anj9YjnPY

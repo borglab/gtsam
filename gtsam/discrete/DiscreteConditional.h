@@ -23,6 +23,7 @@
 #include <gtsam/inference/Conditional-inst.h>
 
 #include <memory>
+#include <random>  // for std::mt19937_64
 #include <string>
 #include <vector>
 
@@ -122,6 +123,8 @@ class GTSAM_EXPORT DiscreteConditional
                       const DecisionTreeFactor& marginal,
                       const Ordering& orderedKeys);
 
+  using DecisionTreeFactor::operator*;
+
   /**
    * @brief Combine two conditionals, yielding a new conditional with the union
    * of the frontal keys, ordered by gtsam::Key.
@@ -195,17 +198,29 @@ class GTSAM_EXPORT DiscreteConditional
   DecisionTreeFactor::shared_ptr likelihood(size_t frontal) const;
 
   /**
-   * sample
+   * Sample from conditional, given missing variables
+   * Example:
+   *   std::mt19937_64 rng(42);
+   *   DiscreteValues given = ...;
+   *   size_t sample = dc.sample(given, &rng);
+   *
    * @param parentsValues Known values of the parents
+   * @param rng Pseudo-Random Number Generator.
    * @return sample from conditional
    */
-  virtual size_t sample(const DiscreteValues& parentsValues) const;
+  virtual size_t sample(const DiscreteValues& parentsValues,
+                        std::mt19937_64* rng = nullptr) const;
 
   /// Single parent version.
-  size_t sample(size_t parent_value) const;
+  size_t sample(size_t parent_value, std::mt19937_64* rng = nullptr) const;
 
-  /// Zero parent version.
-  size_t sample() const;
+  /**
+   * Sample from conditional, zero parent version
+   * Example:
+   *   std::mt19937_64 rng(42);
+   *   auto sample = dc.sample(&rng);
+   */
+  size_t sample(std::mt19937_64* rng = nullptr) const;
 
   /**
    * @brief Return assignment for single frontal variable that maximizes value.
@@ -227,8 +242,9 @@ class GTSAM_EXPORT DiscreteConditional
   /// @name Advanced Interface
   /// @{
 
-  /// sample in place, stores result in partial solution
-  void sampleInPlace(DiscreteValues* parentsValues) const;
+  /// Sample in place with optional PRNG, stores result in partial solution
+  void sampleInPlace(DiscreteValues* parentsValues,
+                     std::mt19937_64* rng = nullptr) const;
 
   /// Return all assignments for frontal variables.
   std::vector<DiscreteValues> frontalAssignments() const;

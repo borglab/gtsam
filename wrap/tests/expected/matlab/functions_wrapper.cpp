@@ -108,16 +108,16 @@ void overloadedGlobalFunction_5(int nargout, mxArray *out[], int nargin, const m
 void MultiTemplatedFunctionStringSize_tDouble_6(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("MultiTemplatedFunctionStringSize_tDouble",nargout,nargin,2);
-  T& x = *unwrap_shared_ptr< T >(in[0], "ptr_T");
+  string& x = *unwrap_shared_ptr< string >(in[0], "ptr_string");
   size_t y = unwrap< size_t >(in[1]);
-  out[0] = wrap< double >(MultiTemplatedFunctionStringSize_tDouble(x,y));
+  out[0] = wrap< double >(MultiTemplatedFunction<string,size_t,double>(x,y));
 }
 void MultiTemplatedFunctionDoubleSize_tDouble_7(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("MultiTemplatedFunctionDoubleSize_tDouble",nargout,nargin,2);
-  T& x = *unwrap_shared_ptr< T >(in[0], "ptr_T");
+  double x = unwrap< double >(in[0]);
   size_t y = unwrap< size_t >(in[1]);
-  out[0] = wrap< double >(MultiTemplatedFunctionDoubleSize_tDouble(x,y));
+  out[0] = wrap< double >(MultiTemplatedFunction<double,size_t,double>(x,y));
 }
 void DefaultFuncInt_8(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
@@ -238,11 +238,56 @@ void EliminateDiscrete_25(int nargout, mxArray *out[], int nargin, const mxArray
   out[0] = wrap_shared_ptr(pairResult.first,"gtsam.DiscreteConditional", false);
   out[1] = wrap_shared_ptr(pairResult.second,"gtsam.DecisionTreeFactor", false);
 }
-void TemplatedFunctionRot3_26(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+void triangulatePoint3Cal3_S2_26(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("triangulatePoint3Cal3_S2",nargout,nargin,6);
+  gtsam::Pose3Vector& poses = *unwrap_shared_ptr< gtsam::Pose3Vector >(in[0], "ptr_gtsamPose3Vector");
+  std::shared_ptr<gtsam::Cal3_S2> sharedCal = unwrap_shared_ptr< gtsam::Cal3_S2 >(in[1], "ptr_gtsamCal3_S2");
+  gtsam::Point2Vector& measurements = *unwrap_shared_ptr< gtsam::Point2Vector >(in[2], "ptr_gtsamPoint2Vector");
+  double rank_tol = unwrap< double >(in[3]);
+  bool optimize = unwrap< bool >(in[4]);
+  gtsam::SharedNoiseModel& model = *unwrap_shared_ptr< gtsam::SharedNoiseModel >(in[5], "ptr_gtsamSharedNoiseModel");
+  out[0] = wrap< Point3 >(triangulatePoint3<gtsam::Cal3_S2>(poses,sharedCal,measurements,rank_tol,optimize,model));
+}
+void triangulatePoint3Cal3_S2_27(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("triangulatePoint3Cal3_S2",nargout,nargin,5);
+  gtsam::Pose3Vector& poses = *unwrap_shared_ptr< gtsam::Pose3Vector >(in[0], "ptr_gtsamPose3Vector");
+  std::shared_ptr<gtsam::Cal3_S2> sharedCal = unwrap_shared_ptr< gtsam::Cal3_S2 >(in[1], "ptr_gtsamCal3_S2");
+  gtsam::Point2Vector& measurements = *unwrap_shared_ptr< gtsam::Point2Vector >(in[2], "ptr_gtsamPoint2Vector");
+  double rank_tol = unwrap< double >(in[3]);
+  bool optimize = unwrap< bool >(in[4]);
+  out[0] = wrap< Point3 >(triangulatePoint3<gtsam::Cal3_S2>(poses,sharedCal,measurements,rank_tol,optimize,nullptr));
+}
+void FindKarcherMeanPoint3_28(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("FindKarcherMeanPoint3",nargout,nargin,1);
+  std::vector<gtsam::Point3>& elements = *unwrap_shared_ptr< std::vector<gtsam::Point3> >(in[0], "ptr_stdvectorgtsam::Point3");
+  out[0] = wrap< Point3 >(FindKarcherMean<gtsam::Point3>(elements));
+}
+void FindKarcherMeanSO3_29(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("FindKarcherMeanSO3",nargout,nargin,1);
+  std::vector<gtsam::SO3>& elements = *unwrap_shared_ptr< std::vector<gtsam::SO3> >(in[0], "ptr_stdvectorgtsam::SO3");
+  out[0] = wrap_shared_ptr(std::make_shared<gtsam::SO3>(FindKarcherMean<gtsam::SO3>(elements)),"gtsam.SO3", false);
+}
+void FindKarcherMeanSO4_30(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("FindKarcherMeanSO4",nargout,nargin,1);
+  std::vector<gtsam::SO4>& elements = *unwrap_shared_ptr< std::vector<gtsam::SO4> >(in[0], "ptr_stdvectorgtsam::SO4");
+  out[0] = wrap_shared_ptr(std::make_shared<gtsam::SO4>(FindKarcherMean<gtsam::SO4>(elements)),"gtsam.SO4", false);
+}
+void FindKarcherMeanPose3_31(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("FindKarcherMeanPose3",nargout,nargin,1);
+  std::vector<gtsam::Pose3>& elements = *unwrap_shared_ptr< std::vector<gtsam::Pose3> >(in[0], "ptr_stdvectorgtsam::Pose3");
+  out[0] = wrap_shared_ptr(std::make_shared<gtsam::Pose3>(FindKarcherMean<gtsam::Pose3>(elements)),"gtsam.Pose3", false);
+}
+void TemplatedFunctionRot3_32(int nargout, mxArray *out[], int nargin, const mxArray *in[])
 {
   checkArguments("TemplatedFunctionRot3",nargout,nargin,1);
   gtsam::Rot3& t = *unwrap_shared_ptr< gtsam::Rot3 >(in[0], "ptr_gtsamRot3");
-  TemplatedFunctionRot3(t);
+  TemplatedFunction<gtsam::Rot3>(t);
 }
 
 void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -335,7 +380,25 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       EliminateDiscrete_25(nargout, out, nargin-1, in+1);
       break;
     case 26:
-      TemplatedFunctionRot3_26(nargout, out, nargin-1, in+1);
+      triangulatePoint3Cal3_S2_26(nargout, out, nargin-1, in+1);
+      break;
+    case 27:
+      triangulatePoint3Cal3_S2_27(nargout, out, nargin-1, in+1);
+      break;
+    case 28:
+      FindKarcherMeanPoint3_28(nargout, out, nargin-1, in+1);
+      break;
+    case 29:
+      FindKarcherMeanSO3_29(nargout, out, nargin-1, in+1);
+      break;
+    case 30:
+      FindKarcherMeanSO4_30(nargout, out, nargin-1, in+1);
+      break;
+    case 31:
+      FindKarcherMeanPose3_31(nargout, out, nargin-1, in+1);
+      break;
+    case 32:
+      TemplatedFunctionRot3_32(nargout, out, nargin-1, in+1);
       break;
     }
   } catch(const std::exception& e) {

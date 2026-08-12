@@ -43,8 +43,10 @@ const Pose3 poseError( Rot3::RzRyRx(Vector3(0.01, 0.02, -0.1)), Point3(0.05, -0.
 
 // Set up noise models for the factors
 const SharedDiagonal noisePrior = noiseModel::Isotropic::Sigma(6, 0.10);
-const SharedDiagonal noiseOdometery = noiseModel::Diagonal::Sigmas((Vector(6) << 0.1, 0.1, 0.1, 0.5, 0.5, 0.5).finished());
-const SharedDiagonal noiseLoop = noiseModel::Diagonal::Sigmas((Vector(6) << 0.25, 0.25, 0.25, 1.0, 1.0, 1.0).finished());
+const SharedDiagonal noiseOdometery =
+    noiseModel::Diagonal::Sigmas(Vector{{0.1, 0.1, 0.1, 0.5, 0.5, 0.5}});
+const SharedDiagonal noiseLoop =
+    noiseModel::Diagonal::Sigmas(Vector{{0.25, 0.25, 0.25, 1.0, 1.0, 1.0}});
 
 /* ************************************************************************* */
 Values BatchOptimize(const NonlinearFactorGraph& graph, const Values& theta, int maxIter = 100) {

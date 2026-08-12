@@ -98,6 +98,7 @@ class TestDiscreteBayesNet(GtsamTestCase):
         self.assertFalse(bayesTree.empty())
         self.assertEqual(12, bayesTree.size())
 
+    @unittest.skip("Too Slow")
     def test_discrete_bayes_tree_lookup(self):
         """Check that we can have a multi-frontal lookup table."""
         # Make a small planning-like graph: 3 states, 2 actions

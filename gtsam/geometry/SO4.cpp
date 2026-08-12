@@ -16,13 +16,19 @@
  * @author  Luca Carlone
  */
 
+// GCC bug workaround
+#if  defined(__GNUC__) && __GNUC__ == 16
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/concepts.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/geometry/SO4.h>
 #include <gtsam/geometry/Unit3.h>
 
 #include <Eigen/Eigenvalues>
-
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -85,9 +91,8 @@ Vector6 SO4::Vee(const Matrix4& X) {
  * Ramona-Andreaa Rohan */
 template <>
 GTSAM_EXPORT
-SO4 SO4::Expmap(const Vector6& xi, ChartJacobian H) {
+SO4 SO4::Expmap(const Vector6& xi) {
   using namespace std;
-  if (H) throw std::runtime_error("SO4::Expmap Jacobian");
 
   // skew symmetric matrix X = xi^
   const Matrix4 X = Hat(xi);
@@ -135,57 +140,32 @@ SO4 SO4::Expmap(const Vector6& xi, ChartJacobian H) {
 }
 
 //******************************************************************************
-// local vectorize
-static SO4::VectorN2 vec4(const Matrix4& Q) {
-  return Eigen::Map<const SO4::VectorN2>(Q.data());
-}
-
-// so<4> generators
-static std::vector<Matrix4, Eigen::aligned_allocator<Matrix4> > G4(
-    {SO4::Hat(Vector6::Unit(0)), SO4::Hat(Vector6::Unit(1)),
-     SO4::Hat(Vector6::Unit(2)), SO4::Hat(Vector6::Unit(3)),
-     SO4::Hat(Vector6::Unit(4)), SO4::Hat(Vector6::Unit(5))});
-
-// vectorized generators
-static const Eigen::Matrix<double, 16, 6> P4 =
-    (Eigen::Matrix<double, 16, 6>() << vec4(G4[0]), vec4(G4[1]), vec4(G4[2]),
-     vec4(G4[3]), vec4(G4[4]), vec4(G4[5]))
-        .finished();
-
-//******************************************************************************
-template <>
-GTSAM_EXPORT
-Matrix6 SO4::AdjointMap() const {
-  // Elaborate way of calculating the AdjointMap
-  // TODO(frank): find a closed form solution. In SO(3) is just R :-/
-  const Matrix4& Q = matrix_;
-  const Matrix4 Qt = Q.transpose();
-  Matrix6 A;
-  for (size_t i = 0; i < 6; i++) {
-    // Calculate column i of linear map for coeffcient of Gi
-    A.col(i) = SO4::Vee(Q * G4[i] * Qt);
-  }
-  return A;
-}
-
-//******************************************************************************
 template <>
 GTSAM_EXPORT
 SO4::VectorN2 SO4::vec(OptionalJacobian<16, 6> H) const {
   const Matrix& Q = matrix_;
   if (H) {
-    // As Luca calculated, this is (I4 \oplus Q) * P4
-    *H << Q * P4.block<4, 6>(0, 0), Q * P4.block<4, 6>(4, 0),
-        Q * P4.block<4, 6>(8, 0), Q * P4.block<4, 6>(12, 0);
+    H->setZero();
+    H->block<4, 1>(0, 2) = -Q.col(3);
+    H->block<4, 1>(0, 4) = -Q.col(2);
+    H->block<4, 1>(0, 5) = Q.col(1);
+    H->block<4, 1>(4, 1) = Q.col(3);
+    H->block<4, 1>(4, 3) = Q.col(2);
+    H->block<4, 1>(4, 5) = -Q.col(0);
+    H->block<4, 1>(8, 0) = -Q.col(3);
+    H->block<4, 1>(8, 3) = -Q.col(1);
+    H->block<4, 1>(8, 4) = Q.col(0);
+    H->block<4, 1>(12, 0) = Q.col(2);
+    H->block<4, 1>(12, 1) = -Q.col(1);
+    H->block<4, 1>(12, 2) = Q.col(0);
   }
-  return gtsam::vec4(Q);
+  return Eigen::Map<const SO4::VectorN2>(Q.data());
 }
 
 ///******************************************************************************
 template <>
 GTSAM_EXPORT
-SO4 SO4::ChartAtOrigin::Retract(const Vector6& xi, ChartJacobian H) {
-  if (H) throw std::runtime_error("SO4::ChartAtOrigin::Retract Jacobian");
+SO4 SO4::ChartAtOrigin::Retract(const Vector6& xi) {
   gttic(SO4_Retract);
   const Matrix4 X = Hat(xi / 2);
   return SO4((I_4x4 + X) * (I_4x4 - X).inverse());
@@ -194,8 +174,7 @@ SO4 SO4::ChartAtOrigin::Retract(const Vector6& xi, ChartJacobian H) {
 //******************************************************************************
 template <>
 GTSAM_EXPORT
-Vector6 SO4::ChartAtOrigin::Local(const SO4& Q, ChartJacobian H) {
-  if (H) throw std::runtime_error("SO4::ChartAtOrigin::Retract Jacobian");
+Vector6 SO4::ChartAtOrigin::Local(const SO4& Q) {
   const Matrix4& R = Q.matrix();
   const Matrix4 X = (I_4x4 - R) * (I_4x4 + R).inverse();
   return -2 * Vee(X);

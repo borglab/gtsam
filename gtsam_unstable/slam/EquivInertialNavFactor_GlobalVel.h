@@ -14,12 +14,19 @@
  *  @file   EquivInertialNavFactor_GlobalVel.h
  *  @author Vadim Indelman, Stephen Williams
  *  @brief  Equivalent inertial navigation factor (velocity in the global frame).
+ *  @deprecated This legacy unstable inertial-navigation factor is no longer
+ *  maintained. Use the stable navigation factors where applicable.
  *  @date   Sep. 26, 2012
  **/
 
 #pragma once
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/base/Matrix.h>
@@ -462,8 +469,8 @@ public:
     delta_t += msr_dt;
 
     // Update EquivCov_Overall
-    Matrix Z_3x3 = Z_3x3;
-    Matrix I_3x3 = I_3x3;
+    Matrix Z3x3 = Matrix3::Zero();
+    Matrix I3x3 = Matrix3::Identity();
 
     Matrix H_pos_pos = numericalDerivative11<Vector3, Vector3>(
         std::bind(&PreIntegrateIMUObservations_delta_pos, msr_dt,
@@ -474,7 +481,7 @@ public:
                     delta_pos_in_t0, std::placeholders::_1),
         delta_vel_in_t0);
     Matrix H_pos_angles = Z_3x3;
-    Matrix H_pos_bias = collect(2, &Z_3x3, &Z_3x3);
+    Matrix H_pos_bias = collect(2, &Z3x3, &Z3x3);
 
     Matrix H_vel_vel = numericalDerivative11<Vector3, Vector3>(
         std::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t,
@@ -510,8 +517,8 @@ public:
     Matrix F_angles = collect(4, &H_angles_angles, &H_angles_pos, &H_angles_vel, &H_angles_bias);
     Matrix F_pos    = collect(4, &H_pos_angles, &H_pos_pos, &H_pos_vel, &H_pos_bias);
     Matrix F_vel    = collect(4, &H_vel_angles, &H_vel_pos, &H_vel_vel, &H_vel_bias);
-    Matrix F_bias_a = collect(5, &Z_3x3, &Z_3x3, &Z_3x3, &I_3x3, &Z_3x3);
-    Matrix F_bias_g = collect(5, &Z_3x3, &Z_3x3, &Z_3x3, &Z_3x3, &I_3x3);
+    Matrix F_bias_a = collect(5, &Z3x3, &Z3x3, &Z3x3, &I3x3, &Z3x3);
+    Matrix F_bias_g = collect(5, &Z3x3, &Z3x3, &Z3x3, &Z3x3, &I3x3);
     Matrix F = stack(5, &F_angles, &F_pos, &F_vel, &F_bias_a, &F_bias_g);
 
 
@@ -612,16 +619,15 @@ public:
 
   static inline void Calc_g_rho_omega_earth_NED(const Vector& Pos_NED, const Vector& Vel_NED, const Vector& LatLonHeight_IC, const Vector& Pos_NED_Initial,
       Vector& g_NED, Vector& rho_NED, Vector& omega_earth_NED) {
+    Matrix ENU_to_NED{//
+                      {0.0, 1.0, 0.0},
+                      {1.0, 0.0, 0.0},
+                      {0.0, 0.0, -1.0}};
 
-    Matrix ENU_to_NED = (Matrix(3, 3) <<
-        0.0,  1.0,  0.0,
-        1.0,  0.0,  0.0,
-        0.0,  0.0, -1.0).finished();
-
-    Matrix NED_to_ENU = (Matrix(3, 3) <<
-        0.0,  1.0,  0.0,
-        1.0,  0.0,  0.0,
-        0.0,  0.0, -1.0).finished();
+    Matrix NED_to_ENU{//
+                      {0.0, 1.0, 0.0},
+                      {1.0, 0.0, 0.0},
+                      {0.0, 0.0, -1.0}};
 
     // Convert incoming parameters to ENU
     Vector Pos_ENU = NED_to_ENU * Pos_NED;
@@ -683,8 +689,7 @@ public:
     double Ro( sqrt(Rp*Rm) );           // mean earth radius of curvature
     double g0( 9.780318*( 1 + 5.3024e-3 * pow(sin(lat_new),2) - 5.9e-6 * pow(sin(2*lat_new),2) ) );
     double g_calc( g0/( pow(1 + height/Ro, 2) ) );
-    g_ENU = (Vector(3) << 0.0, 0.0, -g_calc).finished();
-
+    g_ENU = Vector{{0.0, 0.0, -g_calc}};
 
     // Calculate rho
     double Ve( Vel_ENU(0) );
@@ -692,7 +697,7 @@ public:
     double rho_E = -Vn/(Rm + height);
     double rho_N = Ve/(Rp + height);
     double rho_U = Ve*tan(lat_new)/(Rp + height);
-    rho_ENU = (Vector(3) << rho_E, rho_N, rho_U).finished();
+    rho_ENU = Vector{{rho_E, rho_N, rho_U}};
   }
 
   static inline noiseModel::Gaussian::shared_ptr calc_descrete_noise_model(const noiseModel::Gaussian::shared_ptr& model, double delta_t){
@@ -719,3 +724,5 @@ private:
 }; // \class EquivInertialNavFactor_GlobalVel
 
 } /// namespace gtsam
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

@@ -39,6 +39,9 @@ protected:
   
   // startTime_ is a chrono time point
   std::chrono::time_point<std::chrono::high_resolution_clock> startTime_; ///< time when optimization started
+  std::chrono::time_point<std::chrono::high_resolution_clock> iterationStart_;
+  double lastLinearizeTime_{0.0};
+  double lastSolveTime_{0.0};
 
   void initTime();
 
@@ -127,6 +130,7 @@ protected:
   const NonlinearOptimizerParams& _params() const override {
     return params_;
   }
+
 };
 
 }

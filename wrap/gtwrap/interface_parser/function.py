@@ -12,8 +12,7 @@ Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellae
 
 from typing import Any, Iterable, List, Union
 
-from pyparsing import (Literal, Optional, ParseResults,  # type: ignore
-                       delimitedList)
+from pyparsing import Literal, Optional, ParseResults, DelimitedList
 
 from .template import Template
 from .tokens import (COMMA, DEFAULT_ARG, EQUAL, IDENT, LOPBRACK, LPAREN, PAIR,
@@ -31,9 +30,9 @@ class Argument:
     ```
     """
     rule = ((Type.rule ^ TemplatedType.rule)("ctype")  #
-            + IDENT("name")  #
+            + IDENT.copy().set_name("argument name")("name")  #
             + Optional(EQUAL + DEFAULT_ARG)("default")
-            ).setParseAction(lambda t: Argument(
+            ).set_parse_action(lambda t: Argument(
                 t.ctype,  #
                 t.name,  #
                 t.default[0] if isinstance(t.default, ParseResults) else None))
@@ -62,7 +61,7 @@ class ArgumentList:
     """
     List of Argument objects for all arguments in a function.
     """
-    rule = Optional(delimitedList(Argument.rule)("args_list")).setParseAction(
+    rule = Optional(DelimitedList(Argument.rule)("args_list")).set_parse_action(
         lambda t: ArgumentList.from_parse_result(t.args_list))
 
     def __init__(self, args_list: List[Argument]):
@@ -77,12 +76,12 @@ class ArgumentList:
     def from_parse_result(parse_result: ParseResults):
         """Return the result of parsing."""
         if parse_result:
-            return ArgumentList(parse_result.asList())
+            return ArgumentList(parse_result.as_list())
         else:
             return ArgumentList([])
 
     def __repr__(self) -> str:
-        return ",".join([repr(x) for x in self.args_list])
+        return ", ".join([repr(x) for x in self.args_list])
 
     def __len__(self) -> int:
         return len(self.args_list)
@@ -117,7 +116,7 @@ class ReturnType:
         + ROPBRACK  #
     )
     rule = (_pair ^
-            (Type.rule ^ TemplatedType.rule)("type1")).setParseAction(  # BR
+            (Type.rule ^ TemplatedType.rule)("type1")).set_parse_action(  # BR
                 lambda t: ReturnType(t.type1, t.type2))
 
     def __init__(self, type1: Union[Type, TemplatedType], type2: Type):
@@ -163,7 +162,7 @@ class GlobalFunction:
         + ArgumentList.rule("args_list")  #
         + RPAREN  #
         + SEMI_COLON  #
-    ).setParseAction(lambda t: GlobalFunction(t.name, t.return_type, t.
+    ).set_parse_action(lambda t: GlobalFunction(t.name, t.return_type, t.
                                               args_list, t.template))
 
     def __init__(self,
@@ -182,8 +181,7 @@ class GlobalFunction:
         self.args.parent = self
 
     def __repr__(self) -> str:
-        return "GlobalFunction:  {}{}({})".format(self.return_type, self.name,
-                                                  self.args)
+        return f"GlobalFunction:  {self.name}({self.args}) -> {self.return_type}"
 
     def to_cpp(self) -> str:
         """Generate the C++ code for wrapping."""

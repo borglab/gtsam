@@ -22,6 +22,7 @@
 #include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/discrete/TableFactor.h>
 #include <gtsam/hybrid/HybridValues.h>
+#include <gtsam/inference/Ordering.h>
 
 #include <utility>
 
@@ -547,7 +548,21 @@ namespace gtsam {
 /* ************************************************************************ */
 DiscreteFactor::shared_ptr DecisionTreeFactor::restrict(
     const DiscreteValues& assignment) const {
-  throw std::runtime_error("DecisionTreeFactor::restrict not implemented");
+  ADT restricted_tree = ADT::restrict(assignment);
+  // Get all the keys that are not restricted by the assignment
+  // This ensures that the new restricted factor doesn't have keys
+  // for which the information has been removed.
+  DiscreteKeys restricted_keys = this->discreteKeys();
+  for (auto&& kv : assignment) {
+    Key key = kv.first;
+    // Remove the key from the keys list
+    restricted_keys.erase(
+        std::remove_if(restricted_keys.begin(), restricted_keys.end(),
+                       [key](const DiscreteKey& k) { return k.first == key; }),
+        restricted_keys.end());
+  }
+  // Create the restricted factor with the appropriate keys and tree.
+  return std::make_shared<DecisionTreeFactor>(restricted_keys, restricted_tree);
 }
 
   /* ************************************************************************ */

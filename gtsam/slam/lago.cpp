@@ -16,19 +16,20 @@
  *  @date   May 14, 2014
  */
 
-#include <gtsam/slam/lago.h>
-
-#include <gtsam/slam/InitializePose.h>
-#include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/PriorFactor.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/base/kruskal.h>
+#include <gtsam/base/timing.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/base/timing.h>
-#include <gtsam/base/kruskal.h>
+#include <gtsam/nonlinear/PriorFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/InitializePose.h>
+#include <gtsam/slam/lago.h>
 
+#include <cmath>
 #include <iostream>
 #include <stack>
-#include <cmath>
 
 using namespace std;
 
@@ -36,9 +37,6 @@ namespace gtsam {
 namespace lago {
 
 using initialize::kAnchorKey;
-
-static const Matrix I = I_1x1;
-static const Matrix I3 = I_3x3;
 
 static const noiseModel::Diagonal::shared_ptr priorOrientationNoise =
     noiseModel::Diagonal::Sigmas(Vector1(0));
@@ -148,7 +146,7 @@ static void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
   if (!pose2Between)
     throw invalid_argument(
         "buildLinearOrientationGraph: invalid between factor!");
-  deltaTheta = (Vector(1) << pose2Between->measured().theta()).finished();
+  deltaTheta = Vector{{pose2Between->measured().theta()}};
 
   // Retrieve the noise model for the relative rotation
   SharedNoiseModel model = pose2Between->noiseModel();
@@ -157,7 +155,8 @@ static void getDeltaThetaAndNoise(NonlinearFactor::shared_ptr factor,
   if (!diagonalModel)
     throw invalid_argument("buildLinearOrientationGraph: invalid noise model "
         "(current version assumes diagonal noise model)!");
-  Vector std_deltaTheta = (Vector(1) << diagonalModel->sigma(2)).finished(); // std on the angular measurement
+  Vector std_deltaTheta{
+      {diagonalModel->sigma(2)}};  // std on the angular measurement
   model_deltaTheta = noiseModel::Diagonal::Sigmas(std_deltaTheta);
 }
 
@@ -176,7 +175,7 @@ GaussianFactorGraph buildLinearOrientationGraph(
     const KeyVector& keys = g[factorId]->keys();
     Key key1 = keys[0], key2 = keys[1];
     getDeltaThetaAndNoise(g[factorId], deltaTheta, model_deltaTheta);
-    lagoGraph.add(key1, -I, key2, I, deltaTheta, model_deltaTheta);
+    lagoGraph.add(key1, -I_1x1, key2, I_1x1, deltaTheta, model_deltaTheta);
   }
   // put regularized measurements in the chords
   for(const size_t& factorId: chordsIds) {
@@ -189,12 +188,11 @@ GaussianFactorGraph buildLinearOrientationGraph(
         - orientationsToRoot.at(key2); // this coincides to summing up measurements along the cycle induced by the chord
     double k = std::round(k2pi_noise / (2 * M_PI));
     //if (k2pi_noise - 2*k*M_PI > 1e-5) cout << k2pi_noise - 2*k*M_PI << endl; // for debug
-    Vector deltaThetaRegularized = (Vector(1)
-        << key1_DeltaTheta_key2 - 2 * k * M_PI).finished();
-    lagoGraph.add(key1, -I, key2, I, deltaThetaRegularized, model_deltaTheta);
+    Vector deltaThetaRegularized{{key1_DeltaTheta_key2 - 2 * k * M_PI}};
+    lagoGraph.add(key1, -I_1x1, key2, I_1x1, deltaThetaRegularized, model_deltaTheta);
   }
   // prior on the anchor orientation
-  lagoGraph.add(kAnchorKey, I, (Vector(1) << 0.0).finished(), priorOrientationNoise);
+  lagoGraph.add(kAnchorKey, I_1x1, Z_1x1, priorOrientationNoise);
   return lagoGraph;
 }
 
@@ -334,10 +332,9 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
       double dx = pose2Between->measured().x();
       double dy = pose2Between->measured().y();
 
-      Vector globalDeltaCart = //
-          (Vector(2) << c1 * dx - s1 * dy, s1 * dx + c1 * dy).finished();
+      Vector globalDeltaCart{{c1 * dx - s1 * dy, s1 * dx + c1 * dy}};
       Vector b = (Vector(3) << globalDeltaCart, linearDeltaRot).finished(); // rhs
-      Matrix J1 = -I3;
+      Matrix J1 = -I_3x3;
       J1(0, 2) = s1 * dx + c1 * dy;
       J1(1, 2) = -c1 * dx + s1 * dy;
       // Retrieve the noise model for the relative rotation
@@ -345,14 +342,14 @@ Values computePoses(const NonlinearFactorGraph& pose2graph,
           std::dynamic_pointer_cast<noiseModel::Diagonal>(
               pose2Between->noiseModel());
 
-      linearPose2graph.add(key1, J1, key2, I3, b, diagonalModel);
+      linearPose2graph.add(key1, J1, key2, I_3x3, b, diagonalModel);
     } else {
       throw invalid_argument(
           "computeLagoPoses: cannot manage non between factor here!");
     }
   }
   // add prior
-  linearPose2graph.add(kAnchorKey, I3, Vector3(0.0, 0.0, 0.0), priorPose2Noise);
+  linearPose2graph.add(kAnchorKey, I_3x3, Z_3x1, priorPose2Noise);
 
   // optimize
   VectorValues posesLago = linearPose2graph.optimize();
