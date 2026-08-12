@@ -290,7 +290,9 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
              "gtsam::RangeFactor<gtsam::PoseRTV, gtsam::PoseRTV>"
              "gtsam::NonlinearEquality<gtsam::PoseRTV>"
              "gtsam::IMUFactor<gtsam::PoseRTV>"
-             "gtsam::FullIMUFactor<gtsam::PoseRTV>")
+             "gtsam::FullIMUFactor<gtsam::PoseRTV>"
+             "gtsam::PartialPriorFactor<gtsam::Pose2>"
+             "gtsam::PartialPriorFactor<gtsam::Pose3>")
     endif()
 
     pybind_wrap(${GTSAM_PYTHON_UNSTABLE_TARGET} # target
