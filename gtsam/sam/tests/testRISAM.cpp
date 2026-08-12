@@ -17,8 +17,10 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>
@@ -104,12 +106,12 @@ TEST(RISAMGraduatedFactor, Error) {
                                                  noiseModel::Unit::Create(1));
   gtsam::Values values;
   values.insert(0, 1.0);
-  CHECK(assert_equal(factor->error(values), 0.03125, 1e-9));
+  CHECK(assert_equal(factor->error(values), 0.25, 1e-9));
 
   GraduatedFactor::shared_ptr grad_factor =
       std::dynamic_pointer_cast<GraduatedFactor>(factor);
   CHECK(assert_equal(grad_factor->residual(values), 1.0, 1e-9));
-  CHECK(assert_equal(grad_factor->robustResidual(values), 0.25, 1e-9));
+  CHECK(assert_equal(grad_factor->robustLoss(values), 0.25, 1e-9));
 }
 
 /* ************************************************************************* */
@@ -121,6 +123,47 @@ class TestableGraduatedPrior : public GenericGraduatedFactor<PriorFactor<double>
   void setMu(double mu) { *mu_ = mu; }
   double getMu() const { return *mu_; }
 };
+
+/* ************************************************************************* */
+TEST(RISAMGraduatedFactor, ErrorMatchesLinearization) {
+  GMLoss::shared_ptr robust_loss =
+      GMLoss::Create(1.0, GMLoss::GradScheme::SCALE_INVARIANT);
+  GradSch::shared_ptr scheduler = std::make_shared<GradSch>();
+
+  TestableGraduatedPrior factor(robust_loss, scheduler, 0, 0.0,
+                                noiseModel::Unit::Create(1));
+  gtsam::Values values;
+  values.insert(0, 1.0);
+
+  VectorValues zero_delta;
+  zero_delta.insert(0, Vector1::Zero());
+
+  // At mu = 0 the scale-invariant GM loss is exactly quadratic
+  factor.setMu(0.0);
+  CHECK(assert_equal(factor.error(values),
+                     factor.linearize(values)->error(zero_delta), 1e-9));
+
+  // For mu != 0 the loss is no longer quadratic, so the IRLS surrogate is only
+  // tangent to the error rather than equal to it.
+  auto error_at = [&factor](const double& x) {
+    gtsam::Values v;
+    v.insert(0, x);
+    return Vector1(factor.error(v));
+  };
+  for (const double mu : {0.0, 0.5, 1.0}) {
+    factor.setMu(mu);
+    const Matrix expected_gradient =
+        numericalDerivative11<Vector1, double>(error_at, 1.0);
+    CHECK(assert_equal(expected_gradient(0, 0),
+                       factor.linearize(values)->gradientAtZero().at(0)(0),
+                       1e-6));
+  }
+
+  // For mu != 0 the loss is no longer no longer directly matches the linearized
+  factor.setMu(0.5);
+  CHECK(std::abs(factor.error(values) -
+                 factor.linearize(values)->error(zero_delta)) > 1e-9);
+}
 
 /* ************************************************************************* */
 TEST(RISAMGraduatedFactor, ClonePreservesMu) {
@@ -149,9 +192,9 @@ TEST(RISAMGraduatedFactor, ClonePreservesMu) {
   const double expected_weight =
       robust_loss->graduatedWeight(1.0, kIntermediateMu);
 
-  CHECK(assert_equal(expected_loss, grad_clone->robustResidual(values), 1e-9));
-  CHECK(assert_equal(factor.robustResidual(values),
-                     grad_clone->robustResidual(values), 1e-9));
+  CHECK(assert_equal(expected_loss, grad_clone->robustLoss(values), 1e-9));
+  CHECK(assert_equal(factor.robustLoss(values),
+                     grad_clone->robustLoss(values), 1e-9));
 
   // The weight used to linearize must match as well
   auto jac_clone = cloned->linearize(values)->jacobian();
@@ -161,12 +204,12 @@ TEST(RISAMGraduatedFactor, ClonePreservesMu) {
   // The two mu states must not alias: advancing the original leaves the clone
   // graduated at the mu it was cloned with
   factor.setMu(1.0);
-  CHECK(assert_equal(expected_loss, grad_clone->robustResidual(values), 1e-9));
+  CHECK(assert_equal(expected_loss, grad_clone->robustLoss(values), 1e-9));
   auto jac_clone_after = cloned->linearize(values)->jacobian();
   CHECK(assert_equal(jac_clone.first, jac_clone_after.first, 1e-9));
   CHECK(assert_equal(jac_clone.second, jac_clone_after.second, 1e-9));
   // Sanity check that mu=1.0 is actually distinguishable from mu=0.5
-  CHECK(std::abs(factor.robustResidual(values) - expected_loss) > 1e-9);
+  CHECK(std::abs(factor.robustLoss(values) - expected_loss) > 1e-9);
 }
 
 /* ************************************************************************* */

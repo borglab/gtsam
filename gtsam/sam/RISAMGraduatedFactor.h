@@ -76,8 +76,8 @@ class GTSAM_EXPORT GraduatedFactor {
   /// @brief returns the residual of the factor
   virtual double residual(const Values& current_estimate) const = 0;
 
-  /// @brief returns \rho(r) of the factor
-  virtual double robustResidual(const Values& current_estimate) const = 0;
+  /// @brief returns the graduated robust loss \rho_\mu(r) of the factor
+  virtual double robustLoss(const Values& current_estimate) const = 0;
 
   /// @brief Returns the robust loss for this graduated factor
   const RobustLoss::shared_ptr loss() const { return robust_loss_; }
@@ -178,9 +178,9 @@ class GenericGraduatedFactor : public FACTOR_TYPE, public GraduatedFactor {
     return linearizeGraduated(current_estimate);
   }
 
-  /// @brief Returns 0.5 \rho(r)^2
+  /// @brief Returns the graduated robust loss \rho_\mu(r)
   double error(const Values& values) const override {
-    return 0.5 * std::pow(robustResidual(values), 2);
+    return robustLoss(values);
   }
   /// @}
 
@@ -191,8 +191,8 @@ class GenericGraduatedFactor : public FACTOR_TYPE, public GraduatedFactor {
     return sqrt(2.0 * FACTOR_TYPE::error(current_estimate));
   }
 
-  /// @brief See GraduatedFactor::robustResidual
-  double robustResidual(const Values& current_estimate) const override {
+  /// @brief See GraduatedFactor::robustLoss
+  double robustLoss(const Values& current_estimate) const override {
     return robust_loss_->graduatedLoss(residual(current_estimate), *mu_);
   }
 
