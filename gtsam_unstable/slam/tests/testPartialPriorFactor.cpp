@@ -15,7 +15,9 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/nonlinear/FunctorizedFactor.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -28,6 +30,23 @@ using namespace std;
 using namespace gtsam;
 
 namespace NM = gtsam::noiseModel;
+
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Isotropic,
+                        "gtsam_noiseModel_Isotropic")
+#endif
+
+// This suite intentionally exercises the deprecated compatibility wrapper.
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4996)
+#endif
 
 // Pose3 parameter representation is [ Rx Ry Rz Tx Ty Tz ].
 static const int kIndexRx = 0;
@@ -376,6 +395,86 @@ TEST(PartialPriorFactor, JacobianPartialPoint3) {
   // Verify we get the expected error.
   CHECK(assert_equal(expectedH1, actualH1, 1e-5));
 }
+
+/* ************************************************************************* */
+namespace functorized_wrapper {
+
+// Verifies the deprecated index API matches its explicit functorized form away
+// from zero residual.
+TEST(PartialPriorFactor, EquivalentFunctorizedFactor) {
+  const Key poseKey(1);
+  const Indices indices = {kIndexRy, kIndexTy};
+  const Vector2 prior{0.25, -1.5};
+  const auto model = NM::Isotropic::Sigma(2, 0.25);
+
+  auto projection =
+      [indices](const Pose3& pose,
+                OptionalJacobian<Eigen::Dynamic, Eigen::Dynamic> H = {}) {
+        Matrix66 Hlocal;
+#ifdef GTSAM_ROT3_EXPMAP
+        const Vector6 tangent = traits<Pose3>::Local(
+            Pose3::Identity(), pose, {}, H ? &Hlocal : nullptr);
+#else
+        const Vector6 tangent =
+            traits<Pose3>::Logmap(pose, H ? &Hlocal : nullptr);
+#endif
+        if (H) {
+          H->setZero(indices.size(), 6);
+          for (size_t i = 0; i < indices.size(); ++i) {
+            H->row(i) = Hlocal.row(indices.at(i));
+          }
+        }
+        Vector result(indices.size());
+        for (size_t i = 0; i < indices.size(); ++i) {
+          result(i) = tangent(indices.at(i));
+        }
+        return result;
+      };
+
+  const TestPartialPriorFactor3 wrapper(poseKey, indices, prior, model);
+  const auto explicitFactor = MakeFunctorizedFactor<Pose3>(
+      poseKey, Vector(prior), model, projection);
+  const Pose3 value(Rot3::RzRyRx(0.4, -0.2, 0.3),
+                    Point3(2.0, -3.0, 4.0));
+
+  Matrix wrapperH, explicitH;
+  const Vector wrapperError = wrapper.evaluateError(value, wrapperH);
+  const Vector explicitError = explicitFactor.evaluateError(value, explicitH);
+  EXPECT(assert_equal(explicitError, wrapperError, 1e-9));
+  EXPECT(assert_equal(explicitH, wrapperH, 1e-9));
+}
+
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+// Verifies deserialization reconstructs the internal projection lambda.
+TEST(PartialPriorFactor, SerializationReconstructsFunctor) {
+  const Key poseKey(1);
+  const Indices indices = {kIndexRx, kIndexTz};
+  const Vector2 prior{0.1, 2.0};
+  const auto model = NM::Isotropic::Sigma(2, 0.25);
+  const TestPartialPriorFactor3 original(poseKey, indices, prior, model);
+  TestPartialPriorFactor3 restored;
+  serializationTestHelpers::roundtrip(original, restored);
+
+  const Pose3 value(Rot3::RzRyRx(-0.3, 0.2, 0.1),
+                    Point3(-2.0, 1.0, 5.0));
+  Matrix originalH, restoredH;
+  const Vector originalError = original.evaluateError(value, originalH);
+  const Vector restoredError = restored.evaluateError(value, restoredH);
+  EXPECT(assert_equal(original, restored));
+  EXPECT(assert_equal(originalError, restoredError, 1e-9));
+  EXPECT(assert_equal(originalH, restoredH, 1e-9));
+}
+#endif
+
+}  // namespace functorized_wrapper
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
+
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#elif defined(__GNUC__)
+#pragma GCC diagnostic pop
+#elif defined(_MSC_VER)
+#pragma warning(pop)
+#endif
