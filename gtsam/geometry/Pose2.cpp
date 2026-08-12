@@ -190,8 +190,7 @@ Matrix3 Pose2::ExpmapDerivative(const Vector3& v) {
 }
 
 /* ************************************************************************* */
-Matrix3 Pose2::LogmapDerivative(const Pose2& p) {
-  Vector3 v = Logmap(p);
+Matrix3 Pose2::LogmapDerivative(const Vector3& v) {
   double alpha = v[2];
   Matrix3 J;
   if (std::abs(alpha) > 1e-5) {
@@ -209,6 +208,11 @@ Matrix3 Pose2::LogmapDerivative(const Pose2& p) {
         0,0, 1;
   }
   return J;
+}
+
+/* ************************************************************************* */
+Matrix3 Pose2::LogmapDerivative(const Pose2& pose) {
+  return LogmapDerivative(Logmap(pose));
 }
 
 /* ************************************************************************* */

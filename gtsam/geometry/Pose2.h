@@ -170,8 +170,22 @@ public:
   /// Derivative of Expmap
   static Matrix3 ExpmapDerivative(const Vector3& v);
 
-  /// Derivative of Logmap
-  static Matrix3 LogmapDerivative(const Pose2& v);
+  /**
+   * Inverse right Jacobian of the exponential map evaluated at a pose.
+   *
+   * @param pose Pose whose tangent coordinates determine the evaluation point.
+   * @return The 3-by-3 inverse right Jacobian at Logmap(pose).
+   */
+  static Matrix3 LogmapDerivative(const Pose2& pose);
+
+  /**
+   * Inverse right Jacobian of the exponential map evaluated at tangent
+   * coordinates xi = (dx, dy, dtheta).
+   *
+   * @param xi Tangent coordinates at which to evaluate the Jacobian.
+   * @return The 3-by-3 inverse right Jacobian at xi.
+   */
+  static Matrix3 LogmapDerivative(const Vector3& xi);
 
   // Chart at origin, depends on compile-time flag SLOW_BUT_CORRECT_EXPMAP
   struct GTSAM_EXPORT ChartAtOrigin {
