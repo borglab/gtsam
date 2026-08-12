@@ -20,6 +20,7 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam_unstable/slam/ProjectionFactorPPP.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/TernaryJacobianFactor.h>
 #include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Pose3.h>
@@ -78,6 +79,22 @@ TEST( ProjectionFactorPPP, ConstructorWithTransform) {
 
   Point2 measurement(323.0, 240.0);
   TestProjectionFactor factor(measurement, model, poseKey, transformKey, pointKey, K);
+}
+
+TEST(ProjectionFactorPPP, TernaryLinearization) {
+  const TestProjectionFactor factor(Point2(323.0, 240.0), model, X(1), T(1),
+                                    L(1), K);
+  const Values values{{X(1), genericValue(Pose3(Rot3(), Point3(0, 0, -6)))},
+                      {T(1), genericValue(Pose3())},
+                      {L(1), genericValue(Point3(0, 0, 0))}};
+
+  const auto generic = factor.NoiseModelFactor::linearize(values);
+  const auto optimized = factor.linearize(values);
+  const bool isTernary = static_cast<bool>(
+      std::dynamic_pointer_cast<TernaryJacobianFactor<2, 6, 6, 3>>(
+          optimized));
+  CHECK(isTernary);
+  EXPECT(assert_equal(*generic, *optimized, 1e-12));
 }
 
 /* ************************************************************************* */
@@ -228,4 +245,3 @@ TEST( ProjectionFactorPPP, JacobianWithTransform ) {
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
-

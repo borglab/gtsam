@@ -20,6 +20,7 @@
 
 #pragma once
 
+#include <gtsam/linear/BinaryJacobianFactor.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/geometry/PinholeCamera.h>
@@ -38,7 +39,8 @@ namespace gtsam {
    */
   template <class POSE = Pose3, class LANDMARK = Point3,
             class CALIBRATION = Cal3_S2>
-  class GenericProjectionFactor: public NoiseModelFactorN<POSE, LANDMARK> {
+  class GenericProjectionFactor
+      : public NoiseModelFactorT<Vector2, POSE, LANDMARK> {
   protected:
 
     // Keep a copy of measurement and calibration for I/O
@@ -53,7 +55,7 @@ namespace gtsam {
   public:
 
     /// shorthand for base class type
-    typedef NoiseModelFactorN<POSE, LANDMARK> Base;
+    typedef NoiseModelFactorT<Vector2, POSE, LANDMARK> Base;
 
     // Provide access to the Matrix& version of evaluateError:
     using Base::evaluateError;
@@ -136,8 +138,9 @@ namespace gtsam {
     }
 
     /// Evaluate error h(x)-z and optionally derivatives
-    Vector evaluateError(const Pose3& pose, const Point3& point,
-        OptionalMatrixType H1, OptionalMatrixType H2) const override {
+    Vector2 evaluateError(const Pose3& pose, const Point3& point,
+                          OptionalMatrixType H1,
+                          OptionalMatrixType H2) const override {
       try {
         if(body_P_sensor_) {
           if(H1) {

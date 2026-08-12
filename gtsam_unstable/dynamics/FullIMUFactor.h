@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  * @file FullIMUFactor.h
  * @brief Factor to express an IMU measurement between dynamic poses
@@ -28,9 +39,9 @@ namespace gtsam {
  * @deprecated Use gtsam::ImuFactor with gtsam::NavState instead.
  */
 template<class POSE>
-class FullIMUFactor : public NoiseModelFactorN<POSE, POSE> {
+class FullIMUFactor : public NoiseModelFactorT<Vector9, POSE, POSE> {
 public:
-  typedef NoiseModelFactorN<POSE, POSE> Base;
+  typedef NoiseModelFactorT<Vector9, POSE, POSE> Base;
   typedef FullIMUFactor<POSE> This;
 
 protected:
@@ -92,8 +103,9 @@ public:
    * Error evaluation with optional derivatives - calculates
    *  z - h(x1,x2)
    */
-  Vector evaluateError(const PoseRTV& x1, const PoseRTV& x2,
-      OptionalMatrixType H1, OptionalMatrixType H2) const override {
+  Vector9 evaluateError(const PoseRTV& x1, const PoseRTV& x2,
+                        OptionalMatrixType H1,
+                        OptionalMatrixType H2) const override {
     Vector9 z;
     z.head(3).operator=(accel_); // Strange syntax to work around ambiguous operator error with clang
     z.segment(3, 3).operator=(gyro_); // Strange syntax to work around ambiguous operator error with clang

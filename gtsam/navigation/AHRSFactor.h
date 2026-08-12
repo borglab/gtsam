@@ -192,9 +192,10 @@ class GTSAM_EXPORT PreintegratedAhrsMeasurements
  * where \f$ J_b \f$ is the Jacobian of the preintegrated rotation with respect
  * to the gyroscope bias.
  */
-class GTSAM_EXPORT AHRSFactor : public NoiseModelFactorN<Rot3, Rot3, Vector3> {
+class GTSAM_EXPORT AHRSFactor
+    : public NoiseModelFactorT<Vector3, Rot3, Rot3, Vector3> {
   typedef AHRSFactor This;
-  typedef NoiseModelFactorN<Rot3, Rot3, Vector3> Base;
+  typedef NoiseModelFactorT<Vector3, Rot3, Rot3, Vector3> Base;
 
   PreintegratedAhrsMeasurements _PIM_;
 
@@ -242,9 +243,9 @@ class GTSAM_EXPORT AHRSFactor : public NoiseModelFactorN<Rot3, Rot3, Vector3> {
   /** implement functions needed to derive from Factor */
 
   /// vector of errors
-  Vector evaluateError(const Rot3& Ri, const Rot3& Rj, const Vector3& bias,
-                       OptionalMatrixType H1, OptionalMatrixType H2,
-                       OptionalMatrixType H3) const override;
+  Vector3 evaluateError(const Rot3& Ri, const Rot3& Rj, const Vector3& bias,
+                        OptionalMatrixType H1, OptionalMatrixType H2,
+                        OptionalMatrixType H3) const override;
 
   /// @deprecated constructor, but used in tests.
   AHRSFactor(Key rot_i, Key rot_j, Key bias,

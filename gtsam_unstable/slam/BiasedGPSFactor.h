@@ -29,12 +29,13 @@ namespace gtsam {
    * common-mode errors and that can be partially corrected if other sensors are used
    * @ingroup slam
    */
-  class BiasedGPSFactor: public NoiseModelFactorN<Pose3, Point3> {
+  class BiasedGPSFactor
+      : public NoiseModelFactorT<Vector3, Pose3, Point3> {
 
   private:
 
     typedef BiasedGPSFactor This;
-    typedef NoiseModelFactorN<Pose3, Point3> Base;
+    typedef NoiseModelFactorT<Vector3, Pose3, Point3> Base;
 
     Point3 measured_; /** The measurement */
 
@@ -77,8 +78,9 @@ namespace gtsam {
     /** implement functions needed to derive from Factor */
 
     /** vector of errors */
-    Vector evaluateError(const Pose3& pose, const Point3& bias,
-        OptionalMatrixType H1, OptionalMatrixType H2) const override {
+    Vector3 evaluateError(const Pose3& pose, const Point3& bias,
+                          OptionalMatrixType H1,
+                          OptionalMatrixType H2) const override {
 
       if (H1 || H2){
         H1->resize(3,6); // jacobian wrt pose

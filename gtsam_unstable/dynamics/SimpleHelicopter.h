@@ -1,3 +1,18 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file SimpleHelicopter.h
+ */
+
 /*
  * @file SimpleHelicopter.h
  * @brief Implement SimpleHelicopter discrete dynamics model and variational integrator,
@@ -27,10 +42,11 @@ namespace gtsam {
  * Note: this factor is necessary if one needs to smooth the entire graph. It's not needed
  *  in sequential update method.
  */
-class Reconstruction : public NoiseModelFactorN<Pose3, Pose3, Vector6>  {
+class Reconstruction
+    : public NoiseModelFactorT<Vector6, Pose3, Pose3, Vector6> {
 
   double h_;  // time step
-  typedef NoiseModelFactorN<Pose3, Pose3, Vector6> Base;
+  typedef NoiseModelFactorT<Vector6, Pose3, Pose3, Vector6> Base;
 public:
 
   // Provide access to the Matrix& version of evaluateError:
@@ -48,9 +64,10 @@ public:
         gtsam::NonlinearFactor::shared_ptr(new Reconstruction(*this))); }
 
   /** \f$ log((g_k\exp(h\xi_k))^{-1}g_{k+1}) = 0 \f$, with optional derivatives */
-  Vector evaluateError(const Pose3& gk1, const Pose3& gk, const Vector6& xik,
-      OptionalMatrixType H1, OptionalMatrixType H2,
-      OptionalMatrixType H3) const override {
+  Vector6 evaluateError(const Pose3& gk1, const Pose3& gk,
+                        const Vector6& xik, OptionalMatrixType H1,
+                        OptionalMatrixType H2,
+                        OptionalMatrixType H3) const override {
 
     Matrix6 D_exphxi_xi;
     Pose3 exphxi = Pose3::Expmap(h_ * xik, H3 ? &D_exphxi_xi : 0);
@@ -79,7 +96,8 @@ public:
 /**
  * Implement the Discrete Euler-Poincare' equation:
  */
-class DiscreteEulerPoincareHelicopter : public NoiseModelFactorN<Vector6, Vector6, Pose3>  {
+class DiscreteEulerPoincareHelicopter
+    : public NoiseModelFactorT<Vector6, Vector6, Vector6, Pose3> {
 
   double h_;  /// time step
   Matrix Inertia_;  /// Inertia tensors Inertia = [ J 0; 0 M ]
@@ -92,7 +110,7 @@ class DiscreteEulerPoincareHelicopter : public NoiseModelFactorN<Vector6, Vector
   // This might be needed in control or system identification problems.
   // We treat them as constant here, since the control inputs are to specify.
 
-  typedef NoiseModelFactorN<Vector6, Vector6, Pose3> Base;
+  typedef NoiseModelFactorT<Vector6, Vector6, Vector6, Pose3> Base;
 
 public:
 
@@ -117,9 +135,10 @@ public:
    * where pk = CT_TLN(h*xi_k)*Inertia*xi_k
    *       pk_1 = CT_TLN(-h*xi_k_1)*Inertia*xi_k_1
    * */
-  Vector evaluateError(const Vector6& xik, const Vector6& xik_1, const Pose3& gk,
-      OptionalMatrixType H1, OptionalMatrixType H2,
-      OptionalMatrixType H3) const override {
+  Vector6 evaluateError(const Vector6& xik, const Vector6& xik_1,
+                        const Pose3& gk, OptionalMatrixType H1,
+                        OptionalMatrixType H2,
+                        OptionalMatrixType H3) const override {
 
     Vector muk = Inertia_*xik;
     Vector muk_1 = Inertia_*xik_1;

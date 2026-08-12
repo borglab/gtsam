@@ -175,10 +175,10 @@ bool AHRSFactor::equals(const NonlinearFactor& other, double tol) const {
 }
 
 //------------------------------------------------------------------------------
-Vector AHRSFactor::evaluateError(const Rot3& Ri, const Rot3& Rj,
-                                 const Vector3& bias, OptionalMatrixType H1,
-                                 OptionalMatrixType H2,
-                                 OptionalMatrixType H3) const {
+Vector3 AHRSFactor::evaluateError(const Rot3& Ri, const Rot3& Rj,
+                                  const Vector3& bias, OptionalMatrixType H1,
+                                  OptionalMatrixType H2,
+                                  OptionalMatrixType H3) const {
   return _PIM_.computeError(Ri, Rj, bias, H1, H2, H3);
 }
 

@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  * @file testPendulumExplicitEuler.cpp
  * @author Duy-Nguyen Ta
@@ -9,6 +20,7 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/TernaryJacobianFactor.h>
 #include <gtsam_unstable/dynamics/SimpleHelicopter.h>
 
 /* ************************************************************************* */
@@ -79,6 +91,21 @@ TEST( Reconstruction, evaluateError) {
 #else
   EXPECT(assert_equal(numericalH3,H3,1e-3));
 #endif
+}
+
+TEST(Reconstruction, TernaryLinearization) {
+  const Reconstruction factor(G(2), G(1), V(1), h);
+  const Values values{{G(2), genericValue(g2)},
+                      {G(1), genericValue(g1)},
+                      {V(1), genericValue(V1_g1)}};
+
+  const auto generic = factor.NoiseModelFactor::linearize(values);
+  const auto optimized = factor.linearize(values);
+  const bool isTernary = static_cast<bool>(
+      std::dynamic_pointer_cast<TernaryJacobianFactor<6, 6, 6, 6>>(
+          optimized));
+  CHECK(isTernary);
+  EXPECT(assert_equal(*generic, *optimized, 1e-12));
 }
 
 /* ************************************************************************* */

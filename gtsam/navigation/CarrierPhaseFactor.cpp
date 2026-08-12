@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  *  @file   CarrierPhaseFactor.cpp
  *  @brief  Implementation file for GNSS Carrier Phase factors
@@ -42,7 +53,7 @@ bool CarrierPhaseFactor::equals(const NonlinearFactor& expected,
 }
 
 //***************************************************************************
-Vector CarrierPhaseFactor::evaluateError(
+Vector1 CarrierPhaseFactor::evaluateError(
     const Point3& receiverPosition, const double& receiverClockBias,
     const double& ambiguity, OptionalMatrixType HreceiverPos,
     OptionalMatrixType HreceiverClockBias,
@@ -281,7 +292,7 @@ bool CarrierPhaseFactorArm::equals(const NonlinearFactor& expected,
 }
 
 //***************************************************************************
-Vector CarrierPhaseFactorArm::evaluateError(
+Vector1 CarrierPhaseFactorArm::evaluateError(
     const Pose3& pose, const double& receiverClockBias,
     const double& ambiguity, OptionalMatrixType H_pose,
     OptionalMatrixType HreceiverClockBias,
@@ -348,7 +359,7 @@ bool DoubleDifferenceCarrierPhaseFactor::equals(
 }
 
 //***************************************************************************
-Vector DoubleDifferenceCarrierPhaseFactor::evaluateError(
+Vector1 DoubleDifferenceCarrierPhaseFactor::evaluateError(
     const Point3& pos, const double& ambRef, const double& ambTarget,
     OptionalMatrixType Hpos, OptionalMatrixType HambRef,
     OptionalMatrixType HambTarget) const {
@@ -414,7 +425,7 @@ bool DoubleDifferenceCarrierPhaseFactorArm::equals(
 }
 
 //***************************************************************************
-Vector DoubleDifferenceCarrierPhaseFactorArm::evaluateError(
+Vector1 DoubleDifferenceCarrierPhaseFactorArm::evaluateError(
     const Pose3& pose, const double& ambRef, const double& ambTarget,
     OptionalMatrixType H_pose, OptionalMatrixType HambRef,
     OptionalMatrixType HambTarget) const {

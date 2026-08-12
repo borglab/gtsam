@@ -107,12 +107,12 @@ class EssentialMatrixFactor : public NoiseModelFactorN<EssentialMatrix> {
  * in image 2 is perfect, and returns re-projection error in image 1
  */
 class EssentialMatrixFactor2
-    : public NoiseModelFactorN<EssentialMatrix, double> {
+    : public NoiseModelFactorT<Vector2, EssentialMatrix, double> {
   Point3 dP1_;  ///< 3D point corresponding to measurement in image 1
   Point2 pn_;   ///< Measurement in image 2, in ideal coordinates
   double f_;    ///< approximate conversion factor for error scaling
 
-  typedef NoiseModelFactorN<EssentialMatrix, double> Base;
+  typedef NoiseModelFactorT<Vector2, EssentialMatrix, double> Base;
   typedef EssentialMatrixFactor2 This;
 
  public:
@@ -175,9 +175,9 @@ class EssentialMatrixFactor2
    * @param E essential matrix
    * @param d inverse depth d
    */
-  Vector evaluateError(const EssentialMatrix& E, const double& d,
-                       OptionalMatrixType DE,
-                       OptionalMatrixType Dd) const override {
+  Vector2 evaluateError(const EssentialMatrix& E, const double& d,
+                        OptionalMatrixType DE,
+                        OptionalMatrixType Dd) const override {
     // We have point x,y in image 1
     // Given a depth Z, the corresponding 3D point P1 = Z*(x,y,1) = (x,y,1)/d
     // We then convert to second camera by P2 = 1R2'*(P1-1T2)
@@ -285,9 +285,9 @@ class EssentialMatrixFactor3 : public EssentialMatrixFactor2 {
    * @param E essential matrix
    * @param d inverse depth d
    */
-  Vector evaluateError(const EssentialMatrix& E, const double& d,
-                       OptionalMatrixType DE,
-                       OptionalMatrixType Dd) const override {
+  Vector2 evaluateError(const EssentialMatrix& E, const double& d,
+                        OptionalMatrixType DE,
+                        OptionalMatrixType Dd) const override {
     if (!DE) {
       // Convert E from body to camera frame
       EssentialMatrix cameraE = cRb_ * E;
@@ -323,11 +323,11 @@ class EssentialMatrixFactor3 : public EssentialMatrixFactor2 {
  */
 template <class CALIBRATION>
 class EssentialMatrixFactor4
-    : public NoiseModelFactorN<EssentialMatrix, CALIBRATION> {
+    : public NoiseModelFactorT<Vector1, EssentialMatrix, CALIBRATION> {
  private:
   Point2 pA_, pB_;  ///< points in pixel coordinates
 
-  typedef NoiseModelFactorN<EssentialMatrix, CALIBRATION> Base;
+  typedef NoiseModelFactorT<Vector1, EssentialMatrix, CALIBRATION> Base;
   typedef EssentialMatrixFactor4 This;
 
   static constexpr int DimK = FixedDimension<CALIBRATION>::value;
@@ -376,9 +376,9 @@ class EssentialMatrixFactor4
    * @param H2 optional jacobian of error w.r.t K
    * @return * Vector 1D vector of algebraic error
    */
-  Vector evaluateError(const EssentialMatrix& E, const CALIBRATION& K,
-                       OptionalMatrixType HE,
-                       OptionalMatrixType HK) const override {
+  Vector1 evaluateError(const EssentialMatrix& E, const CALIBRATION& K,
+                        OptionalMatrixType HE,
+                        OptionalMatrixType HK) const override {
     // converting from pixel coordinates to normalized coordinates cA and cB
     JacobianCalibration cA_H_K;  // dcA/dK
     JacobianCalibration cB_H_K;  // dcB/dK
@@ -401,10 +401,7 @@ class EssentialMatrixFactor4
       *HK = DynamicH_K;
     }
 
-    Vector error(1);
-    error(0) = E.error(vA, vB, HE);
-
-    return error;
+    return Vector1(E.error(vA, vB, HE));
   }
 };
 // EssentialMatrixFactor4
@@ -422,11 +419,13 @@ class EssentialMatrixFactor4
  */
 template <class CALIBRATION>
 class EssentialMatrixFactor5
-    : public NoiseModelFactorN<EssentialMatrix, CALIBRATION, CALIBRATION> {
+    : public NoiseModelFactorT<Vector1, EssentialMatrix, CALIBRATION,
+                               CALIBRATION> {
  private:
   Point2 pA_, pB_;  ///< points in pixel coordinates
 
-  typedef NoiseModelFactorN<EssentialMatrix, CALIBRATION, CALIBRATION> Base;
+  typedef NoiseModelFactorT<Vector1, EssentialMatrix, CALIBRATION, CALIBRATION>
+      Base;
   typedef EssentialMatrixFactor5 This;
 
   static constexpr int DimK = FixedDimension<CALIBRATION>::value;
@@ -479,10 +478,10 @@ class EssentialMatrixFactor5
    * @param H3 optional jacobian of error w.r.t Kb
    * @return * Vector 1D vector of algebraic error
    */
-  Vector evaluateError(const EssentialMatrix& E, const CALIBRATION& Ka,
-                       const CALIBRATION& Kb, OptionalMatrixType HE,
-                       OptionalMatrixType HKa,
-                       OptionalMatrixType HKb) const override {
+  Vector1 evaluateError(const EssentialMatrix& E, const CALIBRATION& Ka,
+                        const CALIBRATION& Kb, OptionalMatrixType HE,
+                        OptionalMatrixType HKa,
+                        OptionalMatrixType HKb) const override {
     // converting from pixel coordinates to normalized coordinates cA and cB
     JacobianCalibration cA_H_Ka;  // dcA/dKa
     JacobianCalibration cB_H_Kb;  // dcB/dKb
@@ -505,10 +504,7 @@ class EssentialMatrixFactor5
       *HKb = DynamicHkb;
     }
 
-    Vector error(1);
-    error(0) = E.error(vA, vB, HE);
-
-    return error;
+    return Vector1(E.error(vA, vB, HE));
   }
 };
 // EssentialMatrixFactor5

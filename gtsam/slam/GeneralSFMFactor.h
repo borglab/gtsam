@@ -36,6 +36,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/linear/BinaryJacobianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/linear/TernaryJacobianFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
@@ -43,6 +44,7 @@
 #include <boost/serialization/nvp.hpp>
 #endif
 #include <iostream>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 
@@ -60,11 +62,15 @@ namespace gtsam {
  * @ingroup slam
  */
 template <class CAMERA, class LANDMARK>
-class GeneralSFMFactor : public NoiseModelFactorN<CAMERA, LANDMARK> {
+class GeneralSFMFactor
+    : public NoiseModelFactorT<
+          typename traits<typename CAMERA::Measurement>::TangentVector, CAMERA,
+          LANDMARK> {
   GTSAM_CONCEPT_MANIFOLD_TYPE(CAMERA)
   GTSAM_CONCEPT_MANIFOLD_TYPE(LANDMARK)
 
   using Measurement = typename CAMERA::Measurement;
+  using ErrorVector = typename traits<Measurement>::TangentVector;
   static const int DimC = FixedDimension<CAMERA>::value;
   static const int DimL = FixedDimension<LANDMARK>::value;
   static const int ZDim = traits<Measurement>::dimension;
@@ -76,7 +82,7 @@ class GeneralSFMFactor : public NoiseModelFactorN<CAMERA, LANDMARK> {
 
  public:
   typedef GeneralSFMFactor<CAMERA, LANDMARK> This;  ///< typedef for this object
-  typedef NoiseModelFactorN<CAMERA, LANDMARK>
+  typedef NoiseModelFactorT<ErrorVector, CAMERA, LANDMARK>
       Base;  ///< typedef for the base class
 
   // Provide access to the Matrix& version of evaluateError:
@@ -138,9 +144,9 @@ class GeneralSFMFactor : public NoiseModelFactorN<CAMERA, LANDMARK> {
   }
 
   /** h(x)-z */
-  Vector evaluateError(const CAMERA& camera, const LANDMARK& point,
-                       OptionalMatrixType H1,
-                       OptionalMatrixType H2) const override {
+  ErrorVector evaluateError(const CAMERA& camera, const LANDMARK& point,
+                            OptionalMatrixType H1,
+                            OptionalMatrixType H2) const override {
     try {
       Measurement predicted = camera.project2(point, H1, H2);
       return traits<Measurement>::Local(measured_, predicted);
@@ -156,60 +162,57 @@ class GeneralSFMFactor : public NoiseModelFactorN<CAMERA, LANDMARK> {
    * Error function with Eigen::Ref for zero-malloc linearization.
    * Writes Jacobians directly into the provided matrix blocks.
    */
-  Vector evaluateError(const CAMERA& camera, const LANDMARK& point,
-                       Eigen::Ref<Matrix> H1, Eigen::Ref<Matrix> H2) const {
+  ErrorVector evaluateError(const CAMERA& camera, const LANDMARK& point,
+                            Eigen::Ref<Matrix> H1,
+                            Eigen::Ref<Matrix> H2) const {
     try {
       Measurement predicted = camera.project2(point, H1, H2);
       return traits<Measurement>::Local(measured_, predicted);
     } catch (CheiralityException& e [[maybe_unused]]) {
       H1.setZero();
       H2.setZero();
-      return Vector::Zero(ZDim);
+      return ErrorVector::Zero();
     }
   }
 
-  /// Linearize using fixed-size matrices
+  /** Linearize using fixed-size Jacobians. */
   std::shared_ptr<GaussianFactor> linearize(
       const Values& values) const override {
-    // Only linearize if the factor is active
     if (!this->active(values)) return std::shared_ptr<JacobianFactor>();
 
     const Key key1 = this->key1(), key2 = this->key2();
     JacobianC Dcamera;
     JacobianL Dlandmark;
-    Eigen::Matrix<double, ZDim, 1> b;
-    try {
-      const CAMERA& camera = values.at<CAMERA>(key1);
-      const LANDMARK& point = values.at<LANDMARK>(key2);
-      Measurement predicted = camera.project2(point, &Dcamera, &Dlandmark);
+    ErrorVector b =
+        -evaluateError(values.at<CAMERA>(key1), values.at<LANDMARK>(key2),
+                       Dcamera, Dlandmark);
 
-      b = -traits<Measurement>::Local(measured_, predicted);
-    } catch (CheiralityException& e [[maybe_unused]]) {
-      Dcamera.setZero();
-      Dlandmark.setZero();
-      b.setZero();
-      // TODO Print the exception via logging
-    }
-
-    // Whiten the system if needed
     const SharedNoiseModel& noiseModel = this->noiseModel();
-    if (noiseModel && !noiseModel->isUnit()) {
-      // TODO: implement WhitenSystem for fixed size matrices and include
-      // above
-      Dcamera = noiseModel->Whiten(Dcamera);
-      Dlandmark = noiseModel->Whiten(Dlandmark);
-      b = noiseModel->Whiten(b);
+    if (noiseModel && static_cast<size_t>(ZDim) != noiseModel->dim()) {
+      throw std::invalid_argument(
+          "NoiseModelFactor: NoiseModel has dimension " +
+          std::to_string(noiseModel->dim()) + " instead of " +
+          std::to_string(ZDim) + ".");
     }
 
-    // Create new (unit) noiseModel, preserving constraints if applicable
-    SharedDiagonal model;
+    if (noiseModel && !noiseModel->isUnit()) {
+      Matrix dynamicCamera = Dcamera, dynamicLandmark = Dlandmark;
+      Vector dynamicB = b;
+      noiseModel->WhitenSystem(dynamicCamera, dynamicLandmark, dynamicB);
+      Dcamera = dynamicCamera;
+      Dlandmark = dynamicLandmark;
+      b = dynamicB;
+    }
+
+    SharedDiagonal linearModel;
     if (noiseModel && noiseModel->isConstrained()) {
-      model =
-          std::static_pointer_cast<noiseModel::Constrained>(noiseModel)->unit();
+      const auto constrained =
+          std::static_pointer_cast<noiseModel::Constrained>(noiseModel);
+      linearModel = constrained->unit();
     }
 
     return std::make_shared<BinaryJacobianFactor<ZDim, DimC, DimL>>(
-        key1, Dcamera, key2, Dlandmark, b, model);
+        key1, Dcamera, key2, Dlandmark, b, linearModel);
   }
 
   /** return the measured */
@@ -239,7 +242,8 @@ struct traits<GeneralSFMFactor<CAMERA, LANDMARK>>
  * is isolated from camera..
  */
 template <class CALIBRATION>
-class GeneralSFMFactor2 : public NoiseModelFactorN<Pose3, Point3, CALIBRATION> {
+class GeneralSFMFactor2
+    : public NoiseModelFactorT<Vector2, Pose3, Point3, CALIBRATION> {
   GTSAM_CONCEPT_MANIFOLD_TYPE(CALIBRATION)
   static const int DimK = FixedDimension<CALIBRATION>::value;
 
@@ -249,7 +253,7 @@ class GeneralSFMFactor2 : public NoiseModelFactorN<Pose3, Point3, CALIBRATION> {
  public:
   typedef GeneralSFMFactor2<CALIBRATION> This;
   typedef PinholeCamera<CALIBRATION> Camera;  ///< typedef for camera type
-  typedef NoiseModelFactorN<Pose3, Point3, CALIBRATION>
+  typedef NoiseModelFactorT<Vector2, Pose3, Point3, CALIBRATION>
       Base;  ///< typedef for the base class
 
   // shorthand for a smart pointer to a factor
@@ -298,10 +302,10 @@ class GeneralSFMFactor2 : public NoiseModelFactorN<Pose3, Point3, CALIBRATION> {
   }
 
   /** h(x)-z */
-  Vector evaluateError(const Pose3& pose3, const Point3& point,
-                       const CALIBRATION& calib, OptionalMatrixType H1,
-                       OptionalMatrixType H2,
-                       OptionalMatrixType H3) const override {
+  Vector2 evaluateError(const Pose3& pose3, const Point3& point,
+                        const CALIBRATION& calib, OptionalMatrixType H1,
+                        OptionalMatrixType H2,
+                        OptionalMatrixType H3) const override {
     try {
       Camera camera(pose3, calib);
       return camera.project(point, H1, H2, H3) - measured_;

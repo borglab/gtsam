@@ -68,6 +68,19 @@ TEST( EssentialMatrixConstraint, test ) {
   // Verify we get the expected error
   CHECK(assert_equal(expectedH1, actualH1, 1e-5));
   CHECK(assert_equal(expectedH2, actualH2, 1e-5));
+
+  // The five-dimensional essential-matrix error between two Pose3 variables
+  // has compile-time dimensions <5, 6, 6>, so linearization is specialized.
+  // Compare against the qualified base call to verify the optimized factor has
+  // exactly the same whitened system as the former generic implementation.
+  const Values values{{poseKey1, genericValue(pose1)},
+                      {poseKey2, genericValue(pose2)}};
+  const auto generic = factor.NoiseModelFactor::linearize(values);
+  const auto specialized = factor.linearize(values);
+  const bool isBinary = static_cast<bool>(
+      std::dynamic_pointer_cast<BinaryJacobianFactor<5, 6, 6>>(specialized));
+  CHECK(isBinary);
+  EXPECT(assert_equal(*generic, *specialized, 1e-9));
 }
 
 /* ************************************************************************* */
@@ -76,4 +89,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-
