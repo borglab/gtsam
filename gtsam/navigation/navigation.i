@@ -377,10 +377,12 @@ typedef gtsam::CombinedImuFactorWithGravityT<
 #include <gtsam/navigation/AHRSFactor.h>
 class PreintegratedAhrsMeasurements {
   // Standard Constructor
-  PreintegratedAhrsMeasurements(const gtsam::PreintegrationParams* params,
-                                const gtsam::Vector& biasHat);
-  PreintegratedAhrsMeasurements(const gtsam::PreintegrationParams* p,
-                                const gtsam::Vector& bias_hat, double deltaTij,
+  PreintegratedAhrsMeasurements(
+      const gtsam::PreintegratedRotationParams* params,
+      const gtsam::Vector3& biasHat = gtsam::Vector3::Zero());
+  PreintegratedAhrsMeasurements(
+      const gtsam::PreintegratedRotationParams* p,
+      const gtsam::Vector3& bias_hat, double deltaTij,
                                 const gtsam::Rot3& deltaRij,
                                 const gtsam::Matrix& delRdelBiasOmega,
                                 const gtsam::Matrix& preint_meas_cov);
@@ -394,6 +396,7 @@ class PreintegratedAhrsMeasurements {
   gtsam::Rot3 deltaRij() const;
   double deltaTij() const;
   gtsam::Vector biasHat() const;
+  gtsam::Matrix preintMeasCov() const;
 
   // Standard Interface
   void integrateMeasurement(gtsam::Vector measuredOmega, double deltaT);
@@ -411,19 +414,8 @@ virtual class AHRSFactor : gtsam::NonlinearFactor {
   gtsam::PreintegratedAhrsMeasurements preintegratedMeasurements() const;
   gtsam::Vector evaluateError(const gtsam::Rot3& rot_i, const gtsam::Rot3& rot_j,
       gtsam::Vector bias) const;
-  gtsam::Rot3 predict(const gtsam::Rot3& rot_i, gtsam::Vector bias,
-      const gtsam::PreintegratedAhrsMeasurements& preintegratedMeasurements,
-      gtsam::Vector omegaCoriolis) const;
-
   // enable serialization functionality
   void serialize() const;
-
-  // deprecated:
-  AHRSFactor(gtsam::Key rot_i, gtsam::Key rot_j, gtsam::Key bias,
-    const gtsam::PreintegratedAhrsMeasurements& preintegratedMeasurements, gtsam::Vector omegaCoriolis);
-  AHRSFactor(gtsam::Key rot_i, gtsam::Key rot_j, gtsam::Key bias,
-    const gtsam::PreintegratedAhrsMeasurements& preintegratedMeasurements, gtsam::Vector omegaCoriolis,
-    const gtsam::Pose3& body_P_sensor);
 };
 
 #include <gtsam/navigation/AttitudeFactor.h>

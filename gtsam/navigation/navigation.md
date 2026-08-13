@@ -115,7 +115,6 @@ classDiagram
         +integrateMeasurement()*
         +biasCorrectedDelta()*
         +predict()
-        +computeError()
     }
 
     class ManifoldPreintegration {

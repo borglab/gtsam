@@ -142,8 +142,8 @@ Vector ImuFactorT<PIM>::evaluateError(const Pose3& pose_i, const Vector3& vel_i,
     const imuBias::ConstantBias& bias_i, OptionalMatrixType H1,
     OptionalMatrixType H2, OptionalMatrixType H3,
     OptionalMatrixType H4, OptionalMatrixType H5) const {
-  return pim_.computeErrorAndJacobians(pose_i, vel_i, pose_j, vel_j, bias_i,
-      H1, H2, H3, H4, H5);
+  return internal::preintegrationErrorAndJacobians(
+      pim_, pose_i, vel_i, pose_j, vel_j, bias_i, H1, H2, H3, H4, H5);
 }
 
 //------------------------------------------------------------------------------
@@ -182,7 +182,8 @@ Vector9 ImuFactor2T<PIM>::evaluateError(const NavState& state_i,
     const imuBias::ConstantBias& bias_i, //
     OptionalMatrixType H1, OptionalMatrixType H2,
     OptionalMatrixType H3) const {
-  return pim_.computeError(state_i, state_j, bias_i, H1, H2, H3);
+  return internal::preintegrationError(pim_, state_i, state_j, bias_i, H1, H2,
+                                       H3);
 }
 
 //------------------------------------------------------------------------------

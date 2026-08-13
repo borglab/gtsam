@@ -118,26 +118,15 @@ TEST_PIM(ImuFactor, PreintegratedMeasurements) {
   EXPECT(assert_equal(expectedDeltaV1, actual.deltaVij()));
   DOUBLES_EQUAL(0.5, actual.deltaTij(), 1e-9);
 
-  // Check derivatives of computeError
+  // Check factor derivatives rather than exposing residual assembly on the PIM.
   Bias bias(Vector3(0.2, 0, 0), Vector3(0.1, 0, 0.3)); // Biases (acc, rot)
   NavState x1, x2 = actual.predict(x1, bias);
-
-  {
-  Matrix9 aH1, aH2;
-  Matrix96 aH3;
-  actual.computeError(x1, x2, bias, aH1, aH2, aH3);
-  // Select the overload without the gravity parameter:
-  using ComputeErrorNoGravity = Vector9 (PreintegrationBase::*)(
-      const NavState&, const NavState&, const imuBias::ConstantBias&,
-      OptionalJacobian<9, 9>, OptionalJacobian<9, 9>,
-      OptionalJacobian<9, 6>) const;
-  auto f = std::bind(static_cast<ComputeErrorNoGravity>(&PreintegrationBase::computeError), actual,
-                  std::placeholders::_1, std::placeholders::_2, std::placeholders::_3,
-                  nullptr, nullptr, nullptr);
-  EXPECT(assert_equal(numericalDerivative31(f, x1, x2, bias), aH1, 1e-9));
-  EXPECT(assert_equal(numericalDerivative32(f, x1, x2, bias), aH2, 1e-9));
-  EXPECT(assert_equal(numericalDerivative33(f, x1, x2, bias), aH3, 1e-9));
-  }
+  ImuFactor2T<PIM> factor(X(1), X(2), B(1), actual);
+  Values values;
+  values.insert(X(1), x1);
+  values.insert(X(2), x2);
+  values.insert(B(1), bias);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-6);
 
   // Integrate again
   Vector3 expectedDeltaR2(2.0 * 0.5 * M_PI / 100.0, 0.0, 0.0);
@@ -284,16 +273,6 @@ TEST_PIM(ImuFactor, PredictWithGravityVector) {
           tilted_gravity),
       Matrix(aH3)));
 
-  // And the gravity Jacobian of computeError:
-  Matrix93 aH4;
-  pim.computeError(state1, state2, kZeroBias, tilted_gravity, {}, {}, {}, aH4);
-  EXPECT(assert_equal(
-      numericalDerivative11<Vector9, Vector3>(
-          [&](const Vector3& g) {
-            return pim.computeError(state1, state2, kZeroBias, g, {}, {}, {}, {});
-          },
-          tilted_gravity),
-      Matrix(aH4)));
 }
 
 /* ************************************************************************* */
