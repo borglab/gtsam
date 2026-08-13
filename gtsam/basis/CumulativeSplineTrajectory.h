@@ -19,6 +19,7 @@
 
 #include <gtsam/basis/IrwinHall.h>
 #include <gtsam/basis/KernelBase.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/slam/expressions.h>
 
 #include <algorithm>
@@ -87,6 +88,11 @@ class CumulativeSplineTrajectory {
     }
   }
 
+  /** Construct a trajectory with the default cubic kernel and padding mode. */
+  CumulativeSplineTrajectory(double density, bool padFront)
+      : CumulativeSplineTrajectory(density, kernels::IrwinHallCDF2, {},
+                                   padFront) {}
+
   /// Number of control points per unit sample coordinate.
   double density() const { return density_; }
 
@@ -98,6 +104,9 @@ class CumulativeSplineTrajectory {
 
   /** Append a key, constant, or computed expression as a control point. */
   void addControlPoint(const Expression<T>& point) { points_.push_back(point); }
+
+  /** Append a constant value as a control point. */
+  void addControlPoint(const T& point) { points_.emplace_back(point); }
 
   /// Read-only access to the control-point expressions.
   const std::vector<Expression<T>>& getControlPoints() const { return points_; }
@@ -118,6 +127,20 @@ class CumulativeSplineTrajectory {
   }
 
   /**
+   * Sample a constant-control trajectory at a numeric timestamp.
+   *
+   * This value-based overload evaluates the same expression tree as the
+   * expression API and is convenient for language wrappers and visualization.
+   * Every control point must be constant; keyed expressions require the
+   * expression overload and a `Values` assignment.
+   */
+  T sampleTrajectory(double timestamp, double windowStart = 0.0,
+                     double windowEnd = -1.0) const {
+    return sampleTrajectory(Double_(timestamp), windowStart, windowEnd)
+        .value(Values());
+  }
+
+  /**
    * Create an expression for a trajectory derivative in the tangent space.
    *
    * @param derivative Derivative order: 1 for velocity, 2 for acceleration,
@@ -132,6 +155,21 @@ class CumulativeSplineTrajectory {
     return Double_(std::pow(density_, derivative)) *
            kernelInterpolateDerivative(kernel_, kernelTime, points_, start, end,
                                        derivative);
+  }
+
+  /**
+   * Evaluate a tangent derivative for constant controls and numeric time.
+   *
+   * The result is the derivative of the accumulated tangent coordinate. It is
+   * not a body-frame velocity without the appropriate Lie-group Jacobian.
+   */
+  TangentVector sampleTrajectoryDerivative(double timestamp,
+                                           double windowStart = 0.0,
+                                           double windowEnd = -1.0,
+                                           size_t derivative = 1) const {
+    return sampleTrajectoryDerivative(Double_(timestamp), windowStart,
+                                      windowEnd, derivative)
+        .value(Values());
   }
 
  private:

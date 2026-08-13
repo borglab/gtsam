@@ -143,6 +143,22 @@ TEST(CumulativeSplineTrajectory, Pose3Value) {
   CHECK(assert_equal(Pose3(Rot3(), Point3(0, 1, 0)), actual, kTolerance));
 }
 
+// Verifies numeric sampling uses the production expression implementation.
+TEST(CumulativeSplineTrajectory, ConstantValueSampling) {
+  CumulativeSplineTrajectory<Pose3> model;
+  model.addControlPoint(Pose3(Rot3(), Point3(0, 0, 0)));
+  model.addControlPoint(Pose3(Rot3(), Point3(0, 0, 0)));
+  model.addControlPoint(Pose3(Rot3(), Point3(0, 2, 0)));
+  model.addControlPoint(Pose3(Rot3(), Point3(0, 2, 0)));
+
+  const Pose3 actual = model.sampleTrajectory(3.5);
+  CHECK(assert_equal(Pose3(Rot3(), Point3(0, 1, 0)), actual, kTolerance));
+
+  const Vector6 tangentRate = model.sampleTrajectoryDerivative(3.5);
+  EXPECT_LONGS_EQUAL(6, tangentRate.size());
+  EXPECT(tangentRate.allFinite());
+}
+
 bool derivativesMatch(double density) {
   Values values;
   CumulativeSplineTrajectory<Pose3> model(density, kernels::IrwinHallCDF2,
