@@ -83,6 +83,19 @@ TEST(ImuFactor, BiasCorrectionJacobians) {
           pim.preintegrated_H_biasOmega(), 1e-3));
 }
 
+namespace tangent_interpolation {
+
+/* ************************************************************************* */
+TEST(TangentPreintegration, So3TangentAtUsesUnwrappedTheta) {
+  TangentPreintegration pim(testing::Params());
+  pim.integrateMeasurement(Z_3x1, Vector3(0.0, 0.0, 4.0), 1.0);
+
+  EXPECT(assert_equal(Vector3(0.0, 0.0, 4.0), pim.theta(), 1e-12));
+  EXPECT(assert_equal(Vector3(0.0, 0.0, 2.0), pim.so3TangentAt(0.5), 1e-12));
+}
+
+}  // namespace tangent_interpolation
+
 /* ************************************************************************* */
 TEST(TangentPreintegration, Compose) {
   testing::SomeMeasurements measurements;

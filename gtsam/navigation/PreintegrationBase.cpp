@@ -21,9 +21,11 @@
  **/
 
 #include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/navigation/PreintegrationBase.h>
 
 #include <cassert>
+#include <stdexcept>
 
 using namespace std;
 
@@ -111,6 +113,66 @@ void PreintegrationBase::integrateMeasurement(const Vector3& measuredAcc,
   Matrix9 A;
   Matrix93 B, C;
   update(measuredAcc, measuredOmega, dt, &A, &B, &C);
+}
+
+//------------------------------------------------------------------------------
+Vector3 PreintegrationBase::so3TangentAt(double t) const {
+  if (t < 0.0 || t > deltaTij_) {
+    throw std::out_of_range("t must be in [0, deltaTij]");
+  }
+  if (deltaTij_ == 0.0) return Z_3x1;
+  return (t / deltaTij_) * Rot3::Logmap(deltaRij());
+}
+
+//------------------------------------------------------------------------------
+Matrix PreintegrationBase::deskewPoints(ConstMatrixView points) const {
+  if (points.rows() % 3 != 0) {
+    throw std::invalid_argument(
+        "points must have shape 3m x n with rows divisible by 3");
+  }
+  const Eigen::Index batchCount = points.cols();
+  if (batchCount == 0) return Matrix(points.rows(), 0);
+
+  Vector times(batchCount);
+  for (Eigen::Index k = 0; k < batchCount; ++k) {
+    times(k) = deltaTij_ * static_cast<double>(k) /
+               static_cast<double>(batchCount);
+  }
+  return deskewPoints(points, times, Z_3x1);
+}
+
+//------------------------------------------------------------------------------
+Matrix PreintegrationBase::deskewPoints(ConstMatrixView points,
+                                        const Vector& times) const {
+  return deskewPoints(points, times, Z_3x1);
+}
+
+//------------------------------------------------------------------------------
+Matrix PreintegrationBase::deskewPoints(ConstMatrixView points,
+                                        const Vector& times,
+                                        const Vector3& velocity_i) const {
+  if (points.rows() % 3 != 0) {
+    throw std::invalid_argument(
+        "points must have shape 3m x n with rows divisible by 3");
+  }
+  const Eigen::Index batchCount = points.cols();
+  if (times.size() != batchCount) {
+    throw std::invalid_argument("times size must match the point batch count");
+  }
+  if (batchCount == 0) return Matrix(points.rows(), 0);
+
+  Matrix deskewed(points.rows(), batchCount);
+  for (Eigen::Index batch = 0; batch < batchCount; ++batch) {
+    const double t = times(batch);
+    const Rot3 rotation = Rot3::Expmap(so3TangentAt(t));
+    const Vector3 translation = velocity_i * t;
+    for (Eigen::Index pointRow = 0; pointRow < points.rows(); pointRow += 3) {
+      const Vector3 point = points.block<3, 1>(pointRow, batch);
+      deskewed.block<3, 1>(pointRow, batch) =
+          rotation.rotate(point) + translation;
+    }
+  }
+  return deskewed;
 }
 
 //------------------------------------------------------------------------------

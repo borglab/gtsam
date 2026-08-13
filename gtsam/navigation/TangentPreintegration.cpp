@@ -16,7 +16,10 @@
  **/
 
 #include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/navigation/TangentPreintegration.h>
+
+#include <stdexcept>
 
 using namespace std;
 
@@ -47,6 +50,15 @@ bool TangentPreintegration::equals(const TangentPreintegration& other,
           other.preintegrated_H_biasAcc_, tol)
       && equal_with_abs_tol(preintegrated_H_biasOmega_,
           other.preintegrated_H_biasOmega_, tol);
+}
+
+//------------------------------------------------------------------------------
+Vector3 TangentPreintegration::so3TangentAt(double t) const {
+  if (t < 0.0 || t > deltaTij_) {
+    throw std::out_of_range("t must be in [0, deltaTij]");
+  }
+  if (deltaTij_ == 0.0) return Z_3x1;
+  return (t / deltaTij_) * theta();
 }
 
 //------------------------------------------------------------------------------

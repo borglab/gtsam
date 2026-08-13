@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include <gtsam/base/Matrix.h>
 #include <gtsam/navigation/PreintegrationParams.h>
 #include <gtsam/navigation/NavState.h>
 #include <gtsam/navigation/ImuBias.h>
@@ -109,6 +110,23 @@ class GTSAM_EXPORT PreintegrationBase {
   virtual Vector3  deltaVij() const = 0;
   virtual Rot3     deltaRij() const = 0;
   virtual NavState deltaXij() const = 0;
+
+  /** Return the SO(3) tangent vector at local time t in [0, deltaTij]. */
+  virtual Vector3 so3TangentAt(double t) const;
+
+  /**
+   * Deskew endpoint-exclusive ordered point batches over the integration
+   * interval. Each column is a batch containing one or more stacked 3-vectors,
+   * so points must have shape 3m x n.
+   */
+  Matrix deskewPoints(ConstMatrixView points) const;
+
+  /** Deskew stacked 3m x n point batches at explicit local times. */
+  Matrix deskewPoints(ConstMatrixView points, const Vector& times) const;
+
+  /** Deskew points and translate them using a constant initial velocity. */
+  Matrix deskewPoints(ConstMatrixView points, const Vector& times,
+                      const Vector3& velocity_i) const;
 
   // Exposed for MATLAB
   Vector6 biasHatVector() const { return biasHat_.vector(); }

@@ -201,6 +201,12 @@ class PreintegratedImuMeasurements {
   gtsam::Rot3 deltaRij() const;
   gtsam::Vector deltaPij() const;
   gtsam::Vector deltaVij() const;
+  gtsam::Vector so3TangentAt(double t) const;
+  gtsam::Matrix deskewPoints(gtsam::ConstMatrixView points) const;
+  gtsam::Matrix deskewPoints(gtsam::ConstMatrixView points,
+      const gtsam::Vector& times) const;
+  gtsam::Matrix deskewPoints(gtsam::ConstMatrixView points,
+      const gtsam::Vector& times, const gtsam::Vector3& velocity_i) const;
   gtsam::imuBias::ConstantBias biasHat() const;
   gtsam::Vector biasHatVector() const;
   gtsam::NavState predict(const gtsam::NavState& state_i,
@@ -317,6 +323,12 @@ class PreintegratedCombinedMeasurements {
   gtsam::Rot3 deltaRij() const;
   gtsam::Vector deltaPij() const;
   gtsam::Vector deltaVij() const;
+  gtsam::Vector so3TangentAt(double t) const;
+  gtsam::Matrix deskewPoints(gtsam::ConstMatrixView points) const;
+  gtsam::Matrix deskewPoints(gtsam::ConstMatrixView points,
+      const gtsam::Vector& times) const;
+  gtsam::Matrix deskewPoints(gtsam::ConstMatrixView points,
+      const gtsam::Vector& times, const gtsam::Vector3& velocity_i) const;
   gtsam::imuBias::ConstantBias biasHat() const;
   gtsam::Vector biasHatVector() const;
   gtsam::NavState predict(const gtsam::NavState& state_i,
