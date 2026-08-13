@@ -26,10 +26,12 @@
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/FastSync.h>
 #include <gtsam/slam/FrobeniusFactor.h>
 
 #include <Eigen/Eigenvalues>
 
+#include <array>
 #include <cmath>
 #include <limits>
 
@@ -77,6 +79,60 @@ AugmentedLagrangianParams::shared_ptr DefaultAlmParams() {
 }
 
 }  // namespace RingFixture
+
+/* ************************************************************************* */
+namespace FastSyncRot3Fixture {
+
+Values noncontiguousTriangleRotations() {
+  Values rotations;
+  rotations.insert(Symbol('x', 2), Rot3::RzRyRx(0.1, -0.2, 0.3));
+  rotations.insert(Symbol('x', 7), Rot3::RzRyRx(-0.2, 0.4, -0.1));
+  rotations.insert(Symbol('x', 11), Rot3::RzRyRx(0.3, 0.1, -0.4));
+  return rotations;
+}
+
+NonlinearFactorGraph noncontiguousTriangle() {
+  const auto noise = noiseModel::Isotropic::Sigma(Rot3::dimension, 1.0);
+  const Key x2 = Symbol('x', 2), x7 = Symbol('x', 7), x11 = Symbol('x', 11);
+  const Values rotations = noncontiguousTriangleRotations();
+  const std::array<std::pair<Key, Key>, 3> edges{
+      std::make_pair(x2, x7), std::make_pair(x7, x11), std::make_pair(x11, x2)};
+  NonlinearFactorGraph graph;
+  for (const auto& [key1, key2] : edges) {
+    const Rot3 measured =
+        rotations.at<Rot3>(key1).between(rotations.at<Rot3>(key2));
+    graph.emplace_shared<FrobeniusBetweenFactor<Rot3>>(key1, key2, measured,
+                                                       noise);
+  }
+  return graph;
+}
+
+// FAST-Sync values converted through the public QCQP API certify with the
+// generic BM/ALM staircase, without a rotation-specific solver path.
+TEST(RiemannianStaircase, FastSyncRot3QcqpInitialization) {
+  const NonlinearFactorGraph graph = noncontiguousTriangle();
+  const Values rotations = fastSync<Rot3>(graph);
+  Values initial;
+  for (const auto& [key, rotation] : rotations.extract<Rot3>()) {
+    InsertQcqpValue<Rot3, 3>(key, rotation, &initial);
+  }
+
+  RiemannianStaircaseParams params;
+  params.pMin = 3;
+  params.pMax = 3;
+  params.eta = 1e-4;
+  params.almParams = RingFixture::DefaultAlmParams();
+
+  const auto result =
+      RiemannianStaircaseOptimizer(graph, initial, params).optimize();
+
+  EXPECT(result.certified);
+  EXPECT_LONGS_EQUAL(3, static_cast<long>(result.finalRank));
+  EXPECT_LONGS_EQUAL(3, static_cast<long>(result.roundedValues().size()));
+  EXPECT(result.costPerLevel.front() < 1e-8);
+}
+
+}  // namespace FastSyncRot3Fixture
 
 /* ************************************************************************* */
 // At an ALM-converged Ystar, S = Q + sum_m lambda_m * A_m is PSD and S * Y ≈ 0

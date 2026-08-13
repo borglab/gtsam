@@ -11,17 +11,19 @@
 
 /**
  * @file    timeShonanInitialization.cpp
- * @brief   Compare Shonan before and after FAST-Sync initialization with PCG
- *          and LM.
+ * @brief   Compare Shonan with the general QCQP/BM staircase.
  * @date    August 2026
  * @author  Frank Dellaert
  *
  * The before path uses chordal initialization and the default PCG solver. The
  * after paths use FAST-Sync with the default PCG solver or direct LM solves.
- * Run with --help for all command-line arguments and an example.
+ * The BM paths convert the same FAST-Sync estimate into matrix QCQP values and
+ * use the generic augmented-Lagrangian staircase and certificate.
  */
 
 #include <gtsam/base/DSFMap.h>
+#include <gtsam/certifiable/RiemannianStaircaseOptimizer.h>
+#include <gtsam/constrained/QcqpProblem.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/linear/NoiseModel.h>
@@ -31,6 +33,7 @@
 #include <gtsam/sfm/ShonanAveraging.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/FastSync.h>
+#include <gtsam/slam/FrobeniusFactor.h>
 #include <gtsam/slam/InitializePose3.h>
 #include <gtsam/slam/dataset.h>
 
@@ -44,7 +47,6 @@
 #include <iostream>
 #include <limits>
 #include <map>
-#include <memory>
 #include <optional>
 #include <set>
 #include <sstream>
@@ -75,10 +77,22 @@ constexpr double kOptimalityThreshold = -1e-4;
 const string kBefore = "Before";
 const string kAfterPcg = "After/PCG";
 const string kAfterLm = "After/LM";
+const string kBmDefault = "BM/ALM default";
+const string kBmTuned = "BM/ALM tuned";
 
-const vector<string>& benchmarkMethods() {
-  static const vector<string> methods{kBefore, kAfterPcg, kAfterLm};
+const vector<string>& allBenchmarkMethods() {
+  static const vector<string> methods{kBefore, kAfterPcg, kAfterLm, kBmDefault,
+                                      kBmTuned};
   return methods;
+}
+
+const std::map<string, string>& methodTokens() {
+  static const std::map<string, string> tokens{
+      {"before", kBefore},        {"shonan-pcg", kAfterPcg},
+      {"shonan-lm", kAfterLm},    {"bm-alm-default", kBmDefault},
+      {"bm-alm-tuned", kBmTuned},
+  };
+  return tokens;
 }
 
 struct Options {
@@ -88,6 +102,12 @@ struct Options {
   size_t warmups = 0;
   size_t repetitions = 1;
   double isotropicSigma = 0.0;
+  vector<string> methods = allBenchmarkMethods();
+  double bmInitialMu = 1.0;
+  double bmMuIncrease = 2.0;
+  size_t bmMaxIterations = 50;
+  double bmViolationTolerance = 1e-8;
+  double bmCostTolerance = 1e-10;
   optional<string> csvPath;
   optional<string> benchmarkActionJsonPath;
   bool help = false;
@@ -100,11 +120,8 @@ struct BenchmarkContext {
   size_t components = 0;
   ShonanAveraging3::Measurements measurements;
   NonlinearFactorGraph chordalGraph;
-  NonlinearFactorGraph fastSyncGraph;
+  NonlinearFactorGraph bmGraph;
   gtsam::Ordering fastSyncOrdering;
-  std::unique_ptr<ShonanAveraging3> beforeShonan;
-  std::unique_ptr<ShonanAveraging3> afterPcgShonan;
-  std::unique_ptr<ShonanAveraging3> afterLmShonan;
 };
 
 struct TrialResult {
@@ -129,8 +146,8 @@ struct MethodSummary {
   gtsam::timing::TimingSummary initialization;
   gtsam::timing::TimingSummary solve;
   gtsam::timing::TimingSummary total;
-  gtsam::timing::TimingSummary initialCost;
-  gtsam::timing::TimingSummary finalCost;
+  optional<gtsam::timing::TimingSummary> initialCost;
+  optional<gtsam::timing::TimingSummary> finalCost;
   size_t minimumRank = 0;
   size_t maximumRank = 0;
   size_t successes = 0;
@@ -175,6 +192,18 @@ string usage() {
          "(default: 1)\n"
          "  --isotropic-sigma VALUE         Replace all rotation noise; zero "
          "preserves input (default: 0)\n"
+         "  --methods LIST                  Comma-separated: before, "
+         "shonan-pcg, shonan-lm, bm-alm-default, bm-alm-tuned\n"
+         "  --bm-initial-mu VALUE           Tuned ALM initial equality penalty "
+         "(default: 1)\n"
+         "  --bm-mu-increase VALUE          Tuned ALM penalty growth "
+         "(default: 2)\n"
+         "  --bm-max-iterations N           Tuned ALM outer iteration cap "
+         "(default: 50)\n"
+         "  --bm-violation-tol VALUE        Tuned ALM absolute/relative "
+         "violation tolerance (default: 1e-8)\n"
+         "  --bm-cost-tol VALUE             Tuned ALM absolute/relative cost "
+         "tolerance (default: 1e-10)\n"
          "  --csv FILE                      Write individual trials in "
          "seconds\n"
          "  --benchmark-action-json FILE    Write mean metrics for Benchmark "
@@ -182,11 +211,13 @@ string usage() {
          "  --help                          Show this message\n"
          "\nSpecify at most one of dataset, --dataset, and --g2o-directory. "
          "The console table reports rounded integer milliseconds.\n"
-         "The Shonan staircase always runs from p=3 through p=10. "
+         "Both staircases run from p=3 through p=10. "
          "Disconnected inputs are reduced to their largest component.\n"
          "\nBefore: chordal initialization with PCG.\n"
          "After/PCG: FAST-Sync initialization with PCG.\n"
          "After/LM:  FAST-Sync initialization with direct LM solves.\n"
+         "BM/ALM default: FAST-Sync, QCQP conversion, and default ALM.\n"
+         "BM/ALM tuned: FAST-Sync, QCQP conversion, and configured ALM.\n"
          "\nExample:\n"
          "  timeShonanInitialization --g2o-directory datasets/yfcc2 "
          "--largest 5 --repeats 1 --csv shonan.csv\n";
@@ -194,6 +225,25 @@ string usage() {
 
 optional<string> nonemptyPath(const string& path) {
   return path.empty() ? optional<string>() : optional<string>(path);
+}
+
+vector<string> parseMethodList(const string& list) {
+  if (list.empty()) return allBenchmarkMethods();
+  vector<string> methods;
+  std::istringstream stream(list);
+  string token;
+  while (std::getline(stream, token, ',')) {
+    const auto method = methodTokens().find(token);
+    if (method == methodTokens().end()) {
+      throw std::invalid_argument("Unknown --methods token: " + token);
+    }
+    if (std::find(methods.begin(), methods.end(), method->second) ==
+        methods.end()) {
+      methods.push_back(method->second);
+    }
+  }
+  if (methods.empty()) throw std::invalid_argument("--methods is empty");
+  return methods;
 }
 
 Options parseOptions(int argc, char** argv) {
@@ -206,6 +256,13 @@ Options parseOptions(int argc, char** argv) {
   options.warmups = arguments.sizeValue("--warmup", 0);
   options.repetitions = arguments.sizeValue("--repeats", 1);
   options.isotropicSigma = arguments.doubleValue("--isotropic-sigma", 0.0);
+  options.methods = parseMethodList(arguments.stringValue("--methods", ""));
+  options.bmInitialMu = arguments.doubleValue("--bm-initial-mu", 1.0);
+  options.bmMuIncrease = arguments.doubleValue("--bm-mu-increase", 2.0);
+  options.bmMaxIterations = arguments.sizeValue("--bm-max-iterations", 50);
+  options.bmViolationTolerance =
+      arguments.doubleValue("--bm-violation-tol", 1e-8);
+  options.bmCostTolerance = arguments.doubleValue("--bm-cost-tol", 1e-10);
   options.csvPath = nonemptyPath(arguments.stringValue("--csv", ""));
   options.benchmarkActionJsonPath =
       nonemptyPath(arguments.stringValue("--benchmark-action-json", ""));
@@ -236,6 +293,13 @@ Options parseOptions(int argc, char** argv) {
   }
   if (options.isotropicSigma < 0.0) {
     throw std::invalid_argument("--isotropic-sigma must be non-negative");
+  }
+  if (options.bmInitialMu <= 0.0 || options.bmMuIncrease <= 1.0 ||
+      options.bmMaxIterations == 0 || options.bmViolationTolerance <= 0.0 ||
+      options.bmCostTolerance <= 0.0) {
+    throw std::invalid_argument(
+        "BM penalties, iteration count, and tolerances must be positive; "
+        "--bm-mu-increase must be greater than 1");
   }
   return options;
 }
@@ -355,7 +419,7 @@ BenchmarkContext buildContext(const Options& options,
         isotropicModel(measurement, options.isotropicSigma);
     context.measurements.emplace_back(measurement.key1(), measurement.key2(),
                                       measurement.measured(), rotationModel);
-    context.fastSyncGraph.emplace_shared<BetweenFactor<Rot3>>(
+    context.bmGraph.emplace_shared<gtsam::FrobeniusBetweenFactor<Rot3>>(
         measurement.key1(), measurement.key2(), measurement.measured(),
         rotationModel);
 
@@ -370,27 +434,86 @@ BenchmarkContext buildContext(const Options& options,
   context.chordalGraph.addPrior(anchorKey, Pose3(),
                                 gtsam::noiseModel::Isotropic::Sigma(6, 1e-6));
 
+  // Precompute FastSync's default METIS ordering so ordering construction is
+  // consistently excluded from every measured initialization.
+  context.fastSyncOrdering =
+      gtsam::Ordering::Create(gtsam::Ordering::METIS, context.bmGraph);
+  return context;
+}
+
+bool isBmMethod(const string& method) {
+  return method == kBmDefault || method == kBmTuned;
+}
+
+gtsam::RiemannianStaircaseParams bmParameters(const string& method,
+                                              const Options& options) {
+  gtsam::RiemannianStaircaseParams parameters;
+  parameters.pMin = kMinimumRank;
+  parameters.pMax = kMaximumRank;
+  parameters.eta = -kOptimalityThreshold;
+  if (method == kBmTuned) {
+    parameters.almParams->initialMuEq = options.bmInitialMu;
+    parameters.almParams->muEqIncreaseRate = options.bmMuIncrease;
+    parameters.almParams->maxIterations = options.bmMaxIterations;
+    parameters.almParams->absoluteViolationTolerance =
+        options.bmViolationTolerance;
+    parameters.almParams->relativeViolationTolerance =
+        options.bmViolationTolerance;
+    parameters.almParams->absoluteCostTolerance = options.bmCostTolerance;
+    parameters.almParams->relativeCostTolerance = options.bmCostTolerance;
+  }
+  return parameters;
+}
+
+ShonanAveraging3::Parameters shonanParameters(const string& method,
+                                              const BenchmarkContext& context) {
   gtsam::LevenbergMarquardtParams lmParameters =
       gtsam::LevenbergMarquardtParams::CeresDefaults();
   lmParameters.setOrderingType("COLAMD");
-  const ShonanAveraging3::Parameters beforeParameters(lmParameters, "JACOBI",
-                                                      kOptimalityThreshold);
-  const ShonanAveraging3::Parameters afterPcgParameters(lmParameters, "JACOBI",
-                                                        kOptimalityThreshold);
-  ShonanAveraging3::Parameters afterLmParameters(lmParameters, "CHOLESKY",
-                                                 kOptimalityThreshold);
-  context.fastSyncOrdering =
-      gtsam::Ordering::Create(gtsam::Ordering::METIS, context.fastSyncGraph);
-  if (afterLmParameters.lm.requiresOrdering()) {
-    afterLmParameters.lm.setOrdering(context.fastSyncOrdering);
+  const string linearSolver = method == kAfterLm ? "CHOLESKY" : "JACOBI";
+  ShonanAveraging3::Parameters parameters(lmParameters, linearSolver,
+                                          kOptimalityThreshold);
+  if (method == kAfterLm && parameters.lm.requiresOrdering()) {
+    parameters.lm.setOrdering(context.fastSyncOrdering);
   }
-  context.beforeShonan = std::make_unique<ShonanAveraging3>(
-      context.measurements, beforeParameters);
-  context.afterPcgShonan = std::make_unique<ShonanAveraging3>(
-      context.measurements, afterPcgParameters);
-  context.afterLmShonan = std::make_unique<ShonanAveraging3>(
-      context.measurements, afterLmParameters);
-  return context;
+  return parameters;
+}
+
+Values qcqpInitialValues(const Values& rotations) {
+  Values initial;
+  for (const auto& [key, rotation] : rotations.extract<Rot3>()) {
+    gtsam::InsertQcqpValue<Rot3, 3>(key, rotation, &initial);
+  }
+  return initial;
+}
+
+void alignBlockDeterminants(Values* values) {
+  size_t negative = 0, blocks = 0;
+  for (const auto& [key, matrix] : values->extract<gtsam::Matrix>()) {
+    (void)key;
+    if (matrix.rows() != 3 || matrix.cols() != 3) continue;
+    ++blocks;
+    if (matrix.determinant() < 0.0) ++negative;
+  }
+  if (blocks == 0 || negative <= blocks / 2) return;
+  for (const auto& [key, matrix] : values->extract<gtsam::Matrix>()) {
+    if (matrix.rows() != 3 || matrix.cols() != 3) continue;
+    gtsam::Matrix aligned = matrix;
+    aligned.col(2) *= -1.0;
+    values->update(key, aligned);
+  }
+}
+
+Values extractRoundedRotations(const gtsam::RiemannianStaircaseResult& result) {
+  if (!result.hasRoundedSolution()) return Values();
+  Values rounded = result.roundedValues();
+  alignBlockDeterminants(&rounded);
+  Values rotations;
+  for (const auto& [key, rotation] :
+       gtsam::ExtractQcqpValues<Rot3, 3>(rounded)) {
+    rotations.insert(key, rotation);
+  }
+  return rotations;
 }
 
 StaircaseResult runStaircase(const ShonanAveraging3& shonan,
@@ -419,23 +542,26 @@ double elapsedSeconds(const std::chrono::steady_clock::time_point& start) {
 }
 
 TrialResult runTrial(const string& initializer, size_t runIndex,
-                     const BenchmarkContext& context) {
+                     const BenchmarkContext& context, const Options& options) {
   TrialResult result;
   result.dataset = context.datasetPath;
   result.initializer = initializer;
-  result.rotations = context.beforeShonan->nrUnknowns();
+  result.rotations = context.bmGraph.keys().size();
   result.measurements = context.measurements.size();
   result.runIndex = runIndex;
 
-  Values initial;
+  Values initialRotations, initialQcqp;
   auto start = std::chrono::steady_clock::now();
   try {
     if (initializer == kBefore) {
-      initial =
+      initialRotations =
           gtsam::InitializePose3::initializeOrientations(context.chordalGraph);
     } else {
-      initial = gtsam::fastSync<Rot3>(context.fastSyncGraph,
-                                      context.fastSyncOrdering);
+      initialRotations =
+          gtsam::fastSync<Rot3>(context.bmGraph, context.fastSyncOrdering);
+    }
+    if (isBmMethod(initializer)) {
+      initialQcqp = qcqpInitialValues(initialRotations);
     }
   } catch (const std::exception& exception) {
     result.initializationSeconds = elapsedSeconds(start);
@@ -443,27 +569,52 @@ TrialResult runTrial(const string& initializer, size_t runIndex,
     return result;
   }
   result.initializationSeconds = elapsedSeconds(start);
-  const ShonanAveraging3* shonan = nullptr;
-  if (initializer == kBefore) {
-    shonan = context.beforeShonan.get();
-  } else if (initializer == kAfterPcg) {
-    shonan = context.afterPcgShonan.get();
-  } else if (initializer == kAfterLm) {
-    shonan = context.afterLmShonan.get();
-  } else {
-    throw std::invalid_argument("Unknown benchmark method: " + initializer);
+  result.initialCost = context.bmGraph.error(initialRotations);
+
+  if (isBmMethod(initializer)) {
+    start = std::chrono::steady_clock::now();
+    try {
+      const gtsam::RiemannianStaircaseParams parameters =
+          bmParameters(initializer, options);
+      const gtsam::RiemannianStaircaseOptimizer optimizer(
+          context.bmGraph, initialQcqp, parameters);
+      const gtsam::RiemannianStaircaseResult bmResult = optimizer.optimize();
+      result.minimumEigenvalue = bmResult.minEigenvalue;
+      result.rankReached = bmResult.finalRank;
+
+      const Values rotations = extractRoundedRotations(bmResult);
+      if (!rotations.empty()) {
+        result.finalCost = context.bmGraph.error(rotations);
+      }
+      result.success = bmResult.certified &&
+                       rotations.size() == result.rotations &&
+                       std::isfinite(result.finalCost);
+      if (!bmResult.certified) {
+        result.error = "BM did not certify";
+      } else if (rotations.size() != result.rotations) {
+        result.error = "BM rounded solution did not contain every rotation";
+      } else if (!std::isfinite(result.finalCost)) {
+        result.error = "BM rounded objective is not finite";
+      }
+      result.solveSeconds = elapsedSeconds(start);
+    } catch (const std::exception& exception) {
+      result.solveSeconds = elapsedSeconds(start);
+      result.error = string("BM solve: ") + exception.what();
+    }
+    return result;
   }
-  result.initialCost = shonan->cost(initial);
 
   start = std::chrono::steady_clock::now();
   try {
+    const ShonanAveraging3 shonan(context.measurements,
+                                  shonanParameters(initializer, context));
     const StaircaseResult solution =
-        runStaircase(*shonan, initial, &result.rankReached);
-    result.solveSeconds = elapsedSeconds(start);
-    result.finalCost = shonan->cost(solution.values);
+        runStaircase(shonan, initialRotations, &result.rankReached);
+    result.finalCost = context.bmGraph.error(solution.values);
     result.minimumEigenvalue = solution.minimumEigenvalue;
     result.rankReached = solution.rankReached;
     result.success = true;
+    result.solveSeconds = elapsedSeconds(start);
   } catch (const std::exception& exception) {
     result.solveSeconds = elapsedSeconds(start);
     result.error = string("solve: ") + exception.what();
@@ -472,11 +623,11 @@ TrialResult runTrial(const string& initializer, size_t runIndex,
 }
 
 void runMethods(size_t runIndex, const BenchmarkContext& context,
-                vector<TrialResult>* results) {
-  for (size_t offset = 0; offset < benchmarkMethods().size(); ++offset) {
+                const Options& options, vector<TrialResult>* results) {
+  for (size_t offset = 0; offset < options.methods.size(); ++offset) {
     const string& initializer =
-        benchmarkMethods()[(runIndex + offset) % benchmarkMethods().size()];
-    results->push_back(runTrial(initializer, runIndex, context));
+        options.methods[(runIndex + offset) % options.methods.size()];
+    results->push_back(runTrial(initializer, runIndex, context, options));
   }
 }
 
@@ -488,34 +639,41 @@ optional<MethodSummary> summarizeMethod(const vector<TrialResult>& results,
   vector<double> initialCost;
   vector<double> finalCost;
   vector<size_t> ranks;
+  size_t successes = 0;
   size_t failures = 0;
   for (const TrialResult& result : results) {
     if (result.initializer != initializer) continue;
-    if (!result.success) {
-      ++failures;
-      continue;
-    }
     initialization.push_back(result.initializationSeconds);
     solve.push_back(result.solveSeconds);
     total.push_back(result.totalSeconds());
-    initialCost.push_back(result.initialCost);
-    finalCost.push_back(result.finalCost);
-    ranks.push_back(result.rankReached);
+    if (std::isfinite(result.initialCost)) {
+      initialCost.push_back(result.initialCost);
+    }
+    if (std::isfinite(result.finalCost)) finalCost.push_back(result.finalCost);
+    if (result.rankReached > 0) ranks.push_back(result.rankReached);
+    result.success ? ++successes : ++failures;
   }
-  if (ranks.empty()) return std::nullopt;
+  if (initialization.empty()) return std::nullopt;
   const auto summarize = [](const vector<double>& samples) {
     return gtsam::timing::summarizeSamples(
         samples, gtsam::timing::MedianPolicy::kAverageMiddle);
   };
-  return MethodSummary{summarize(initialization),
-                       summarize(solve),
-                       summarize(total),
-                       summarize(initialCost),
-                       summarize(finalCost),
-                       *std::min_element(ranks.begin(), ranks.end()),
-                       *std::max_element(ranks.begin(), ranks.end()),
-                       ranks.size(),
-                       failures};
+  const auto optionalSummary = [&summarize](const vector<double>& samples)
+      -> optional<gtsam::timing::TimingSummary> {
+    return samples.empty()
+               ? std::nullopt
+               : optional<gtsam::timing::TimingSummary>(summarize(samples));
+  };
+  return MethodSummary{
+      summarize(initialization),
+      summarize(solve),
+      summarize(total),
+      optionalSummary(initialCost),
+      optionalSummary(finalCost),
+      ranks.empty() ? 0 : *std::min_element(ranks.begin(), ranks.end()),
+      ranks.empty() ? 0 : *std::max_element(ranks.begin(), ranks.end()),
+      successes,
+      failures};
 }
 
 DatasetBenchmark runDataset(const Options& options, const string& datasetPath) {
@@ -525,17 +683,17 @@ DatasetBenchmark runDataset(const Options& options, const string& datasetPath) {
   benchmark.rawRotations = context.rawRotations;
   benchmark.rawMeasurements = context.rawMeasurements;
   benchmark.components = context.components;
-  benchmark.rotations = context.beforeShonan->nrUnknowns();
+  benchmark.rotations = context.bmGraph.keys().size();
   benchmark.measurements = context.measurements.size();
 
   vector<TrialResult> discardedWarmups;
   for (size_t runIndex = 0; runIndex < options.warmups; ++runIndex) {
-    runMethods(runIndex, context, &discardedWarmups);
+    runMethods(runIndex, context, options, &discardedWarmups);
   }
 
-  benchmark.results.reserve(benchmarkMethods().size() * options.repetitions);
+  benchmark.results.reserve(options.methods.size() * options.repetitions);
   for (size_t runIndex = 0; runIndex < options.repetitions; ++runIndex) {
-    runMethods(runIndex, context, &benchmark.results);
+    runMethods(runIndex, context, options, &benchmark.results);
   }
   return benchmark;
 }
@@ -564,13 +722,13 @@ void writeCsv(const vector<DatasetBenchmark>& benchmarks, const string& path) {
 }
 
 void writeBenchmarkActionJson(const vector<DatasetBenchmark>& benchmarks,
-                              const string& path) {
+                              const Options& options, const string& path) {
   vector<gtsam::timing::BenchmarkMetric> metrics;
   for (const DatasetBenchmark& benchmark : benchmarks) {
     const string prefix =
         "timeShonanInitialization/" +
         std::filesystem::path(benchmark.path).filename().string() + "/";
-    for (const string& initializer : benchmarkMethods()) {
+    for (const string& initializer : options.methods) {
       const auto summary = summarizeMethod(benchmark.results, initializer);
       if (!summary) continue;
       metrics.push_back({prefix + initializer + "/initialization", "s",
@@ -581,17 +739,31 @@ void writeBenchmarkActionJson(const vector<DatasetBenchmark>& benchmarks,
           {prefix + initializer + "/total", "s", summary->total.mean});
       metrics.push_back({prefix + initializer + "/rank_reached", "rank",
                          static_cast<double>(summary->maximumRank)});
+      metrics.push_back(
+          {prefix + initializer + "/successes", "trials",
+           static_cast<double>(summary->successes)});
+      if (summary->finalCost) {
+        metrics.push_back({prefix + initializer + "/final_cost", "cost",
+                           summary->finalCost->mean});
+      }
     }
   }
   gtsam::timing::writeBenchmarkActionMetrics(path, metrics);
 }
 
 string rankText(const MethodSummary& summary) {
+  if (summary.maximumRank == 0) return "?";
   if (summary.minimumRank == summary.maximumRank) {
     return std::to_string(summary.minimumRank);
   }
   return std::to_string(summary.minimumRank) + "-" +
          std::to_string(summary.maximumRank);
+}
+
+string costText(double cost) {
+  std::ostringstream stream;
+  stream << std::scientific << std::setprecision(3) << cost;
+  return stream.str();
 }
 
 long long milliseconds(double seconds) {
@@ -619,36 +791,39 @@ string compactError(const string& error) {
 
 void printSummary(const Options& options,
                   const vector<DatasetBenchmark>& benchmarks) {
-  std::cout << "Shonan initialization benchmark\n"
+  std::cout << "Shonan versus generic QCQP/BM benchmark\n"
             << "p_min=" << kMinimumRank << " p_max=" << kMaximumRank
             << " warmups=" << options.warmups
             << " repeats=" << options.repetitions;
   if (options.isotropicSigma > 0.0) {
     std::cout << " isotropic_sigma=" << options.isotropicSigma;
   }
-  std::cout << "\n\n";
-  std::cout << "Times are init/solve/total milliseconds; each cell ends with "
-               "p reached and success count.\n\n"
-            << "| Dataset | Before | After/PCG | After/LM |\n"
-            << "|---|---|---|---|\n";
+  if (std::find(options.methods.begin(), options.methods.end(), kBmTuned) !=
+      options.methods.end()) {
+    std::cout << " bm_tuned={initial_mu=" << options.bmInitialMu
+              << ",mu_increase=" << options.bmMuIncrease
+              << ",max_iterations=" << options.bmMaxIterations
+              << ",violation_tol=" << options.bmViolationTolerance
+              << ",cost_tol=" << options.bmCostTolerance << "}";
+  }
+  std::cout << "\n\n"
+            << "Times are init/solve/total milliseconds over every attempt, "
+               "including failures. Dataset parsing, graph construction, and "
+               "the shared FAST-Sync ordering are excluded.\n\n"
+            << "| Dataset";
+  for (const string& method : options.methods) std::cout << " | " << method;
+  std::cout << " |\n|---";
+  for (size_t i = 0; i < options.methods.size(); ++i) std::cout << "|---";
+  std::cout << "|\n";
   for (const DatasetBenchmark& benchmark : benchmarks) {
     const string dataset =
         std::filesystem::path(benchmark.path).filename().string();
     std::cout << "| " << dataset;
-    for (const string& initializer : benchmarkMethods()) {
+    for (const string& initializer : options.methods) {
       const auto summary = summarizeMethod(benchmark.results, initializer);
       std::cout << " | ";
       if (!summary) {
-        size_t rankReached = 0;
-        string error = "failed";
-        for (const TrialResult& result : benchmark.results) {
-          if (result.initializer == initializer) {
-            rankReached = std::max(rankReached, result.rankReached);
-            if (!result.error.empty()) error = result.error;
-          }
-        }
-        std::cout << "- (p=" << rankReached << ", " << compactError(error)
-                  << ")";
+        std::cout << "not run";
       } else {
         std::cout << milliseconds(summary->initialization.mean) << "/"
                   << milliseconds(summary->solve.mean) << "/"
@@ -656,6 +831,18 @@ void printSummary(const Options& options,
                   << " ms, p=" << rankText(*summary) << ", "
                   << summary->successes << "/"
                   << summary->successes + summary->failures;
+        if (summary->finalCost) {
+          std::cout << ", cost=" << costText(summary->finalCost->mean);
+        }
+        if (summary->failures > 0) {
+          for (const TrialResult& result : benchmark.results) {
+            if (result.initializer == initializer && !result.success &&
+                !result.error.empty()) {
+              std::cout << ", error=" << compactError(result.error);
+              break;
+            }
+          }
+        }
       }
     }
     std::cout << " |\n";
@@ -691,7 +878,8 @@ int main(int argc, char** argv) {
 
   if (options.csvPath) writeCsv(benchmarks, *options.csvPath);
   if (options.benchmarkActionJsonPath) {
-    writeBenchmarkActionJson(benchmarks, *options.benchmarkActionJsonPath);
+    writeBenchmarkActionJson(benchmarks, options,
+                             *options.benchmarkActionJsonPath);
   }
   printSummary(options, benchmarks);
   return 0;
