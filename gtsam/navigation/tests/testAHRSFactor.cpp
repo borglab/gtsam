@@ -49,8 +49,8 @@ using namespace gtsam;
 using symbol_shorthand::B;
 using symbol_shorthand::R;
 
-// Define each reusable AHRS test as a templated helper. PR C deliberately
-// instantiates only the classic PIM; future PIMs can opt in at one call site.
+// Define each reusable AHRS test as a templated helper and instantiate it for
+// the public classic PIM.
 #define TEST_AHRS(testGroup, testName)                         \
   template <class PIM>                                        \
   void testGroup##testName##Helper(TestResult& result_,       \
