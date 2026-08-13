@@ -1,230 +1,205 @@
+/* ----------------------------------------------------------------------------
 
-#include <gtsam/nonlinear/Expression.h>
-#include <gtsam/basis/polynomial/TrajectoryModel.h>
-#include <gtsam/basis/polynomial/IrwinHall.h>
-#include <gtsam/geometry/Pose3.h>
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
 
 /**
-* In this example, we estimate pose from pictures and landmarks using bundle adjustment in the usual way
-* we also capture acceleration and rotation rates with a mems IMU on the camera.
-* Notably, we don't assume that the camera, accelerometer, or gryo clocks are related to each other.
-* We pick one sensor to be the clock datum, the other sensors' clocks are modelled as drifting in
-* relation to that datum.
-* we'll choose the camera's frame rate to be the datum clock for this example.
-*/
+ * @file ClockRecoveryContinuousTrajectory.cpp
+ * @brief Sketch clock-offset estimation with a continuous pose trajectory.
+ * @author Brett Downing
+ */
 
+#include <gtsam/basis/IrwinHall.h>
+#include <gtsam/basis/TrajectoryModel.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/nonlinear/ExpressionFactor.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/slam/expressions.h>
 
-// structs to collect and name the important measurements from each sensor
-struct {
-  gtsam::Key camera_pose;  // allow bundle adjustment to associate a Pose3 with a Key
-  double timestamp;  // the timestamp (in seconds) for the shutter based on the camera's frame rate.
-} shutter_event_t;
+#include <cmath>
+#include <iostream>
 
-struct {
-  Vector3 acceleration;  // raw acceleration measurement
-  double timestamp;  // the timestamp (in seconds) extrapolated from the accelerometer sample rate
-} acceleration_t;
+using namespace gtsam;
 
-struct {
-  Vector3 angular_velocity; // raw angular velocity measurement
-  double timestamp;  // the timestamp (in seconds) extrapolated from the gyro sample rate
-} angular_rate_t;
+namespace {
 
-
-
-// alias the time derivatives of pose so we can express intent through types
-using Vector3_ = Expression<Vector3>;
-using Vector6_ = Expression<Vector6>;
-
-using Pose3Deriv_ = Expression<typename traits<Pose3>::TangentVector>; // Vector6_
-using Pose3Vel_ = Pose3Deriv_;
-using Pose3Accel_ = Pose3Deriv_;
-
-using Point3Deriv_ = Vector3_;
-using Point3Accel_ = Point3Deriv_;
-
-using Rot3Deriv_ = Vector3_;
-using Rot3Vel_ = Rot3Deriv_;
-
-
-
-// We need to extract rotation and translation components from time derivatives of Pose3
-Rot3Deriv_ pose3DerivativeRotation(Pose3Deriv_ pose_derivative, OptionalJacobian<3, 6> H = {}){
-  if (H) *H << I_3x3, Z_3x3;
-  return pose_derivative.seq(0,2);
-}
-Point3Deriv_ pose3DerivativeTranslation(Pose3Deriv_ pose_derivative, OptionalJacobian<3, 6> H = {}){
-  if (H) *H << Z_3x3, I_3x3;
-  return pose_derivative.seq(3,5);
-}
-inline Rot3Deriv_ pose3DerivativeRotation(const Pose3Deriv_& p) {
-  return Vector3_(&pose3DerivativeRotation, p);
-}
-inline Point3Deriv_ pose3DerivativeTranslation(const Pose3Deriv_& p) {
-  return Point3Deriv_(&pose3DerivativeTranslation, p);
-}
-
-// we also need to compose Pose3 TangentVectors with Pose3s
-Pose3Deriv_ adjoint(const Pose3_& p, const Pose3Deriv_& v)
-{
-  return Point3_(p, &Pose3::Adjoint, v);
-}
-
-// enum to make the sampleTrajectoryDerivative arguments obvious
-struct TimeDerivatives{
-  enum TimeDerivatives{
-    velocity = 1;
-    acceleration = 2;
-    jerk = 3;
-    snap = 4;
-    crackle = 5;
-    pop = 6;
-  }
+struct ShutterEvent {
+  Key cameraPose;
+  double timestamp;
 };
 
+struct AccelerationMeasurement {
+  Vector3 acceleration;
+  double timestamp;
+};
 
+struct AngularRateMeasurement {
+  Vector3 angularVelocity;
+  double timestamp;
+};
 
+ShutterEvent sampleCamera() { return {Symbol('x', 0), 4.95}; }
 
-
-void simulate_run()
-{
-
-  gtsam::Values initial_values;
-
-  // First, consider the bandwidth you need to represent the dynamics you want to model.
-  // any valid sensor data above this frequency contributes to graph noise.
-  double trajectory_sample_rate = 20; // control points per unit time
-  double clock_drift_sample_rate = 0.1; // control points per unit time
-
-
-
-  // model the trajectory with cubic splines (makes accelerations piecewise linear)
-  TrajectoryModel<Pose3> trajectory_model(trajectory_sample_rate, kernels::IrwinHallCDF2);
-  // model the clock drift with a quadratic spline, (makes drift rate piecewise linear)
-  TrajectoryModel<double> accel_clock_model(clock_drift_sample_rate, kernels::IrwinHallCDF1);
-  TrajectoryModel<double> gyro_clock_model(clock_drift_sample_rate, kernels::IrwinHallCDF1);
-
-
-
-  // Account for typical raw-sensor weirdness:
-
-  // we know the IMU is not located at the camera's optical centre, we can compensate that.
-  // If these were Keys, we could estimate the location of the IMU relative to the camera.
-  Pose3_ accel_pose = Pose3_(Pose3());
-  Pose3_ gyro_pose = Pose3_(Pose3());
-
-  // Gravity vector gives us a massive hint about orientations, so keep it in our model
-  Point3Accel_ gravity = Point3Accel_(Vector3(0,0,9.81)); // North East Down coords
-
-  // the raw sensor will have a small bias to it, constrain the magnitude with a prior.
-  // for extremely long runs with thermal drift, these can also be a trajectory
-  Key accel_bias_key = Key('b', 0);
-  Key gyro_bias_key = Key('b', 1);
-  Point3Accel_ accel_bias = Point3Accel_(accel_bias_key);
-  Rot3Vel_ gyro_bias = Rot3Vel_(gyro_bias_key);
-  initial_values.insert<Vector3>(accel_bias_key, Vector3(0,0,0));
-  initial_values.insert<Vector3>(gyro_bias_key, Vector3(0,0,0));
-
-
-
-  // we'll build a bunch of trajectory up front, this can be done incrementally the same way
-  // just make sure that the trajectory is longer than your new timestamp + the kernel length before generating expressions.
-  double max_timestamp = 10.0; //seconds
-  // add some control points for poses
-  for(int i=0; i<ceil(max_timestamp * trajectory_sample_rate) + trajectory_model.kernel.getLength(); i++)
-  {
-    Key pose_key = Key('p', i);
-    trajectory_model.add_control_point(Pose3_(pose_key));
-    initial_values.insert<Pose3>(pose_key, Pose3());
-  }
-
-  // add control points for clock drift
-  for(int i=0; i<ceil(max_timestamp * clock_drift_sample_rate) + accel_clock_model.kernel.getLength(); i++)
-  {
-    Key accel_clock_drift_key = Key('a', i);
-    Key gyro_clock_drift_key = Key('g', i);
-    initial_values.insert<double>(accel_drift_key, 0.0);
-    initial_values.insert<double>(gyro_clock_drift_key, 0.0);
-    accel_clock_model.add_control_point(Double_(accel_clock_drift_key));
-    gyro_clock_model.add_control_point(Double_(gyro_clock_drift_key));
-  }
-
-
-
-
-  // sample each sensor
-  shutter_event_t shutter_event = sample_camera_add_slam_factors();
-  acceleration_t acceleration = sample_accelerometer();
-  angular_rate_t angular_rate = sample_gyro();
-
-  // use the clock models to estimate the sensor clock's offset from the datum for a given timestamp
-  Double_ gyro_clock_offset = gyro_clock_model.sampleTrajectory(Double_(angular_rate.timestamp));
-  Double_ accel_clock_offset = accel_clock_model.sampleTrajectory(Double_(acceleration.timestamp));
-
-  // apply clock offsets
-  Double_ camera_time = Double_(shutter_event.timestamp);
-  Double_ gyro_time = Double_(angular_rate.timestamp) - gyro_clock_offset;
-  Double_ accel_time = Double_(acceleration.timestamp) - accel_clock_offset;
-
-
-
-  // start evaluating the pose trajectory model
-
-  // we can prune control points out of the Expression by setting the window around the timestamp
-  double window_start = 0;  // timestamp - temporal_uncertainty
-  double window_end = -1; // timestamp + temporal_uncertainty
-
-  // construct an expression that estimates the pose at the shutter time
-  Pose3_ camera_pose = trajectory_model.sampleTrajectory(camera_time, window_start, window_end);
-  // construct an expression that estimates the velocity at the gyro sample time
-  Pose3Vel_ camera_velocity = trajectory_model.sampleTrajectoryDerivative(gyro_time, window_start, window_end, TimeDerivatives::velocity);
-  // construct an expression that estimates the acceleration at the accelerometer sample time
-  Pose3Accel_ camera_acceleration = trajectory_model.sampleTrajectoryDerivative(accel_time, window_start, window_end, TimeDerivatives::acceleration);
-
-
-  // transform the trajectory velocity and acceleration predictions into the IMU sensor's local coords
-  // XXX I'm not 100% sure that this is the right way of transforming the TangentVector,
-  //     this might need to invert gyro_pose
-  Pose3Vel_ gyro_vel = adjoint(gyro_pose, camera_velocity);
-  Pose3Accel_ accel_accel = adjoint(accel_pose, camera_acceleration);
-
-
-  // construct the pose factors connecting the trajectory_model to the slam bundle-adjustment graph
-  auto camera_factor = ExpressionFactor<Pose3>(
-    /*noise model*/
-    Pose3(),  // identity transform
-    between(camera_pose, Pose3_(shutter_event.camera_pose)), // discrepancy between bundle adjustment and trajectory model
-  );
-
-  // construct the velocity factor
-  auto gyro_factor = ExpressionFactor<Vector3>(
-    /*raw sensor noise model*/
-    angular_rate.angular_velocity,
-    Pose3DerivativeRotation(gyro_vel) + gyro_bias
-  );
-
-  // construct the acceleration factor
-  auto accel_factor = ExpressionFactor<Vector3>(
-    /*raw sensor noise model*/
-    acceleration.acceleration,
-    Pose3DerivativeTranslation(accel_accel) + gravity + accel_bias
-  );
-
-
-
-
-  // We can also constrain the smoothness of the trajectory by adding factors to high derivatives
-  // Factors are only needed at the control point rate.
-  // This is equivalent to certain forms of Penalty Spline methods
-  for(int i=0; i<trajectory_model.getControlPoints().size(); i++){
-    auto smoothness_factor = ExpressionFactor<Vector6>(
-      /* any robust noise model */
-      Vector6()::Zero(),
-      trajectory_model.sampleTrajectoryDerivative(i, window_start, window_end, TimeDerivatives::crackle);
-    );
-  }
-
-
+AccelerationMeasurement sampleAccelerometer() {
+  return {Vector3(0.0, 0.0, 9.81), 5.02};
 }
 
+AngularRateMeasurement sampleGyroscope() { return {Vector3::Zero(), 5.01}; }
 
+Vector3 rotationComponentValue(const Vector6& derivative,
+                               OptionalJacobian<3, 6> H = {}) {
+  if (H) *H << Matrix3::Identity(), Matrix3::Zero();
+  return derivative.head<3>();
+}
+
+Vector3 translationComponentValue(const Vector6& derivative,
+                                  OptionalJacobian<3, 6> H = {}) {
+  if (H) *H << Matrix3::Zero(), Matrix3::Identity();
+  return derivative.tail<3>();
+}
+
+Vector3_ rotationComponent(const Vector6_& derivative) {
+  return Vector3_(&rotationComponentValue, derivative);
+}
+
+Vector3_ translationComponent(const Vector6_& derivative) {
+  return Vector3_(&translationComponentValue, derivative);
+}
+
+Vector6 applyAdjoint(const Pose3& pose, const Vector6& tangent,
+                     OptionalJacobian<6, 6> Hpose = {},
+                     OptionalJacobian<6, 6> Htangent = {}) {
+  return pose.Adjoint(tangent, Hpose, Htangent);
+}
+
+Vector6_ adjoint(const Pose3_& pose, const Vector6_& tangent) {
+  return Vector6_(&applyAdjoint, pose, tangent);
+}
+
+enum class TimeDerivative : size_t {
+  kVelocity = 1,
+  kAcceleration = 2,
+  kJerk = 3,
+  kSnap = 4,
+  kCrackle = 5,
+  kPop = 6,
+};
+
+size_t derivativeOrder(TimeDerivative derivative) {
+  return static_cast<size_t>(derivative);
+}
+
+}  // namespace
+
+int main() {
+  Values initialValues;
+  NonlinearFactorGraph graph;
+
+  constexpr double trajectorySampleRate = 20.0;
+  constexpr double clockDriftSampleRate = 0.1;
+  constexpr double maximumTimestamp = 10.0;
+
+  TrajectoryModel<Pose3> trajectoryModel(trajectorySampleRate,
+                                         kernels::IrwinHallCDF2);
+  TrajectoryModel<double> accelerometerClockModel(clockDriftSampleRate,
+                                                  kernels::IrwinHallCDF1);
+  TrajectoryModel<double> gyroscopeClockModel(clockDriftSampleRate,
+                                              kernels::IrwinHallCDF1);
+
+  const Pose3_ accelerometerPose{Pose3()};
+  const Pose3_ gyroscopePose{Pose3()};
+  const Vector3_ gravity(Vector3(0.0, 0.0, 9.81));
+
+  const Key accelerometerBiasKey = Symbol('b', 0);
+  const Key gyroscopeBiasKey = Symbol('b', 1);
+  const Vector3_ accelerometerBias(accelerometerBiasKey);
+  const Vector3_ gyroscopeBias(gyroscopeBiasKey);
+  initialValues.insert(accelerometerBiasKey, Vector3(Vector3::Zero()));
+  initialValues.insert(gyroscopeBiasKey, Vector3(Vector3::Zero()));
+
+  const size_t poseCount =
+      static_cast<size_t>(std::ceil(maximumTimestamp * trajectorySampleRate) +
+                          trajectoryModel.kernel().getLength());
+  for (size_t index = 0; index < poseCount; ++index) {
+    const Key poseKey = Symbol('p', index);
+    trajectoryModel.addControlPoint(Pose3_(poseKey));
+    initialValues.insert(poseKey, Pose3());
+  }
+
+  const size_t clockPointCount =
+      static_cast<size_t>(std::ceil(maximumTimestamp * clockDriftSampleRate) +
+                          accelerometerClockModel.kernel().getLength());
+  for (size_t index = 0; index < clockPointCount; ++index) {
+    const Key accelerometerClockKey = Symbol('a', index);
+    const Key gyroscopeClockKey = Symbol('g', index);
+    initialValues.insert(accelerometerClockKey, 0.0);
+    initialValues.insert(gyroscopeClockKey, 0.0);
+    accelerometerClockModel.addControlPoint(Double_(accelerometerClockKey));
+    gyroscopeClockModel.addControlPoint(Double_(gyroscopeClockKey));
+  }
+
+  const ShutterEvent shutterEvent = sampleCamera();
+  const AccelerationMeasurement acceleration = sampleAccelerometer();
+  const AngularRateMeasurement angularRate = sampleGyroscope();
+  initialValues.insert(shutterEvent.cameraPose, Pose3());
+
+  const Double_ gyroscopeClockOffset =
+      gyroscopeClockModel.sampleTrajectory(Double_(angularRate.timestamp));
+  const Double_ accelerometerClockOffset =
+      accelerometerClockModel.sampleTrajectory(Double_(acceleration.timestamp));
+
+  const Double_ cameraTime(shutterEvent.timestamp);
+  const Double_ gyroscopeTime =
+      Double_(angularRate.timestamp) - gyroscopeClockOffset;
+  const Double_ accelerometerTime =
+      Double_(acceleration.timestamp) - accelerometerClockOffset;
+
+  constexpr double windowStart = 4.5;
+  constexpr double windowEnd = 5.5;
+  const Pose3_ cameraPose =
+      trajectoryModel.sampleTrajectory(cameraTime, windowStart, windowEnd);
+  const Vector6_ cameraVelocity = trajectoryModel.sampleTrajectoryDerivative(
+      gyroscopeTime, windowStart, windowEnd,
+      derivativeOrder(TimeDerivative::kVelocity));
+  const Vector6_ cameraAcceleration =
+      trajectoryModel.sampleTrajectoryDerivative(
+          accelerometerTime, windowStart, windowEnd,
+          derivativeOrder(TimeDerivative::kAcceleration));
+
+  const Vector6_ gyroscopeVelocity = adjoint(gyroscopePose, cameraVelocity);
+  const Vector6_ accelerometerAcceleration =
+      adjoint(accelerometerPose, cameraAcceleration);
+
+  const auto poseNoise = noiseModel::Isotropic::Sigma(6, 0.1);
+  const auto imuNoise = noiseModel::Isotropic::Sigma(3, 0.1);
+  const auto smoothnessNoise = noiseModel::Isotropic::Sigma(6, 1.0);
+
+  graph.emplace_shared<ExpressionFactor<Pose3>>(
+      poseNoise, Pose3(), between(cameraPose, Pose3_(shutterEvent.cameraPose)));
+  graph.emplace_shared<ExpressionFactor<Vector3>>(
+      imuNoise, angularRate.angularVelocity,
+      rotationComponent(gyroscopeVelocity) + gyroscopeBias);
+  graph.emplace_shared<ExpressionFactor<Vector3>>(
+      imuNoise, acceleration.acceleration,
+      translationComponent(accelerometerAcceleration) + gravity +
+          accelerometerBias);
+
+  const Double_ smoothnessTime(5.0);
+  graph.emplace_shared<ExpressionFactor<Vector6>>(
+      smoothnessNoise, Vector6::Zero(),
+      trajectoryModel.sampleTrajectoryDerivative(
+          smoothnessTime, windowStart, windowEnd,
+          derivativeOrder(TimeDerivative::kCrackle)));
+
+  std::cout << "Constructed " << graph.size() << " factors over "
+            << initialValues.size() << " initial values.\n";
+  return 0;
+}

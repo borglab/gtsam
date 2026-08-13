@@ -1,67 +1,50 @@
 /**
- * @file    TestPiecewisePolynomial.cpp
- * @brief   validate Irwin Hall coefficients and derivatives
- * @author  Brett Downing
- * @date    August 2025
+ * @file testPiecewisePolynomial.cpp
+ * @brief Validate analytic Jacobians of piecewise polynomial kernels.
+ * @author Brett Downing
  */
 
-
-
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/numericalDerivative.h>
-#include <gtsam/nonlinear/Expression.h>
-#include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/basis/polynomial/PiecewisePolynomial.h>
-#include <gtsam/basis/polynomial/IrwinHall.h>
+#include <gtsam/basis/IrwinHall.h>
 
+#include <cmath>
 
 using namespace gtsam;
 using namespace gtsam::kernels;
 
-// The summation of so many terms does get noisy,
-// so split the epsilon and the tolerance
-double epsilon = 1e-9;
-double tolerance = 1e-7;
-
-
-
-
-// test the jacobian of evaluate is the same as evaluate at the next derivative, for every valid derivative
-TEST( IrwinHall , DerivativeIsJacobian1 ) {
-  auto poly = IrwinHall6;
-  int max_d = poly.order-2;
-  for(const double &t : poly.getIntervals()) {
-    for(int d=0; d<max_d; d++) {
-      Eigen::Matrix<double, 1,1> jacobian;
-      poly.evaluateDerivative(d, t, &jacobian);
-      double derivative = poly.evaluateDerivative(d+1, t);
-      EXPECT_DOUBLES_EQUAL(jacobian[0], derivative, tolerance );
-    }
-  }
-}
-
-// test jacobian of evaluate against the next derivative
-TEST( IrwinHallCDF , DerivativeIsJacobian2 ) {
-  auto poly = IrwinHallCDF6;
-  int max_d = poly.order-2;
-  for(const double &t : poly.getIntervals()) {
-    for(int d=0; d<max_d; d++) {
-      Eigen::Matrix<double, 1,1> jacobian;
-      poly.evaluateDerivative(d, t, &jacobian);
-      double derivative = poly.evaluateDerivative(d+1, t);
-      EXPECT_DOUBLES_EQUAL(jacobian[0], derivative, tolerance );
-    }
-  }
-}
-
-
-
 /* ************************************************************************* */
+namespace piecewise_polynomial {
+
+constexpr double kTolerance = 1e-7;
+
+template <class Polynomial>
+bool checkDerivativeJacobians(const Polynomial& polynomial) {
+  const int maximumDerivative = static_cast<int>(polynomial.order) - 2;
+  for (double t : polynomial.getIntervals()) {
+    for (int derivative = 0; derivative < maximumDerivative; ++derivative) {
+      Eigen::Matrix<double, 1, 1> jacobian;
+      polynomial.evaluateDerivative(derivative, t, jacobian);
+      const double expected = polynomial.evaluateDerivative(derivative + 1, t);
+      if (std::abs(expected - jacobian(0, 0)) > kTolerance) return false;
+    }
+  }
+  return true;
+}
+
+// Verifies a PDF reports its next derivative through the Jacobian argument.
+TEST(PiecewisePolynomial, PdfDerivativeJacobian) {
+  EXPECT(checkDerivativeJacobians(IrwinHall6));
+}
+
+// Verifies a CDF reports its next derivative through the Jacobian argument.
+TEST(PiecewisePolynomial, CdfDerivativeJacobian) {
+  EXPECT(checkDerivativeJacobians(IrwinHallCDF6));
+}
+
+}  // namespace piecewise_polynomial
+/* ************************************************************************* */
+
 int main() {
-  TestResult tr;
-  return TestRegistry::runAllTests(tr);
+  TestResult result;
+  return TestRegistry::runAllTests(result);
 }
-/* ************************************************************************* */
-

@@ -1,182 +1,91 @@
 /**
- * @file    TestIrwinHall.cpp
- * @brief   validate Irwin Hall coefficients and derivatives
- * @author  Brett Downing
- * @date    August 2025
+ * @file testIrwinHall.cpp
+ * @brief Validate Irwin-Hall PDF coefficients and continuity.
+ * @author Brett Downing
  */
 
-
-
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/numericalDerivative.h>
-#include <gtsam/nonlinear/Expression.h>
-#include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/basis/polynomial/IrwinHall.h>
+#include <gtsam/basis/IrwinHall.h>
 
+#include <cmath>
 
 using namespace gtsam;
 using namespace gtsam::kernels;
 
-// these tests look for curve continuity across control-flow boundaries
-// tolerance should be about 2*(maximum gradient)*epsilon
-// actual polynomial construction mistakes will be extremely large
-double epsilon = 1e-7;
-double tolerance = 100*epsilon;
-
-
-
-// test boundary conditions at the limits of the domain
-TEST( poly , Boundaries1 ) {
-  auto poly = IrwinHall1;
-  EXPECT_DOUBLES_EQUAL( 0.0, poly.evaluate(poly.getIntervals().front()), tolerance);
-  EXPECT_DOUBLES_EQUAL( 0.0, poly.evaluate(poly.getIntervals().back()), tolerance);
-}
-TEST( poly , Boundaries2 ) {
-  auto poly = IrwinHall2;
-  EXPECT_DOUBLES_EQUAL( 0.0, poly.evaluate(poly.getIntervals().front()), tolerance);
-  EXPECT_DOUBLES_EQUAL( 0.0, poly.evaluate(poly.getIntervals().back()), tolerance);
-}
-TEST( poly , Boundaries3 ) {
-  auto poly = IrwinHall3;
-  EXPECT_DOUBLES_EQUAL( 0.0, poly.evaluate(poly.getIntervals().front()), tolerance);
-  EXPECT_DOUBLES_EQUAL( 0.0, poly.evaluate(poly.getIntervals().back()), tolerance);
-}
-TEST( poly , Boundaries4 ) {
-  auto poly = IrwinHall4;
-  EXPECT_DOUBLES_EQUAL( 0.0, poly.evaluate(poly.getIntervals().front()), tolerance);
-  EXPECT_DOUBLES_EQUAL( 0.0, poly.evaluate(poly.getIntervals().back()), tolerance);
-}
-TEST( poly , Boundaries5 ) {
-  auto poly = IrwinHall5;
-  EXPECT_DOUBLES_EQUAL( 0.0, poly.evaluate(poly.getIntervals().front()), tolerance);
-  EXPECT_DOUBLES_EQUAL( 0.0, poly.evaluate(poly.getIntervals().back()), tolerance);
-}
-TEST( poly , Boundaries6 ) {
-  auto poly = IrwinHall6;
-  EXPECT_DOUBLES_EQUAL( 0.0, poly.evaluate(poly.getIntervals().front()), tolerance);
-  EXPECT_DOUBLES_EQUAL( 0.0, poly.evaluate(poly.getIntervals().back()), tolerance);
-}
-
-
-
-// test continuity where the polynomial pieces join
-TEST( IrwinHall , Continuity1 ) {
-  auto poly = IrwinHall1;
-  for(const double &t : poly.getIntervals()) {
-    EXPECT_DOUBLES_EQUAL( poly.evaluate(t+epsilon),
-                          poly.evaluate(t-epsilon), tolerance );
-  }
-}
-TEST( IrwinHall , Continuity2 ) {
-  auto poly = IrwinHall2;
-  for(const double &t : poly.getIntervals()) {
-    EXPECT_DOUBLES_EQUAL( poly.evaluate(t+epsilon),
-                          poly.evaluate(t-epsilon), tolerance );
-  }
-}
-TEST( IrwinHall , Continuity3 ) {
-  auto poly = IrwinHall3;
-  for(const double &t : poly.getIntervals()) {
-    EXPECT_DOUBLES_EQUAL( poly.evaluate(t+epsilon),
-                          poly.evaluate(t-epsilon), tolerance );
-  }
-}
-TEST( IrwinHall , Continuity4 ) {
-  auto poly = IrwinHall4;
-  for(const double &t : poly.getIntervals()) {
-    EXPECT_DOUBLES_EQUAL( poly.evaluate(t+epsilon),
-                          poly.evaluate(t-epsilon), tolerance );
-  }
-}
-TEST( IrwinHall , Continuity5 ) {
-  auto poly = IrwinHall5;
-  for(const double &t : poly.getIntervals()) {
-    EXPECT_DOUBLES_EQUAL( poly.evaluate(t+epsilon),
-                          poly.evaluate(t-epsilon), tolerance );
-  }
-}
-TEST( IrwinHall , Continuity6 ) {
-  auto poly = IrwinHall6;
-  for(const double &t : poly.getIntervals()) {
-    EXPECT_DOUBLES_EQUAL( poly.evaluate(t+epsilon),
-                          poly.evaluate(t-epsilon), tolerance );
-  }
-}
-
-
-// test continuity of derivatives where the polynomial pieces join
-TEST( IrwinHall , DerivativeContinuity1 ) {
-  auto poly = IrwinHall1;
-  int max_d = poly.order-1;
-  for(const double &t : poly.getIntervals()) {
-    for(int d=0; d<max_d; d++) {
-      EXPECT_DOUBLES_EQUAL( poly.evaluateDerivative(d, t+epsilon),
-                            poly.evaluateDerivative(d, t-epsilon), tolerance );
-    }
-  }
-}
-TEST( IrwinHall , DerivativeContinuity2 ) {
-  auto poly = IrwinHall2;
-  int max_d = poly.order-1;
-  for(const double &t : poly.getIntervals()) {
-    for(int d=0; d<max_d; d++) {
-      EXPECT_DOUBLES_EQUAL( poly.evaluateDerivative(d, t+epsilon),
-                            poly.evaluateDerivative(d, t-epsilon), tolerance );
-    }
-  }
-}
-TEST( IrwinHall , DerivativeContinuity3 ) {
-  auto poly = IrwinHall3;
-  int max_d = poly.order-1;
-  for(const double &t : poly.getIntervals()) {
-    for(int d=0; d<max_d; d++) {
-      EXPECT_DOUBLES_EQUAL( poly.evaluateDerivative(d, t+epsilon),
-                            poly.evaluateDerivative(d, t-epsilon), tolerance );
-    }
-  }
-}
-TEST( IrwinHall , DerivativeContinuity4 ) {
-  auto poly = IrwinHall4;
-  int max_d = poly.order-1;
-  for(const double &t : poly.getIntervals()) {
-    for(int d=0; d<max_d; d++) {
-      EXPECT_DOUBLES_EQUAL( poly.evaluateDerivative(d, t+epsilon),
-                            poly.evaluateDerivative(d, t-epsilon), tolerance );
-    }
-  }
-}
-TEST( IrwinHall , DerivativeContinuity5 ) {
-  auto poly = IrwinHall5;
-  int max_d = poly.order-1;
-  for(const double &t : poly.getIntervals()) {
-    for(int d=0; d<max_d; d++) {
-      EXPECT_DOUBLES_EQUAL( poly.evaluateDerivative(d, t+epsilon),
-                            poly.evaluateDerivative(d, t-epsilon), tolerance );
-    }
-  }
-}
-TEST( IrwinHall , DerivativeContinuity6 ) {
-  auto poly = IrwinHall6;
-  int max_d = poly.order-1;
-  for(const double &t : poly.getIntervals()) {
-    for(int d=0; d<max_d; d++) {
-      EXPECT_DOUBLES_EQUAL( poly.evaluateDerivative(d, t+epsilon),
-                            poly.evaluateDerivative(d, t-epsilon), tolerance );
-    }
-  }
-}
-
-
-
-
-
-
 /* ************************************************************************* */
+namespace irwin_hall_pdf {
+
+constexpr double kEpsilon = 1e-7;
+constexpr double kTolerance = 100.0 * kEpsilon;
+
+template <class Polynomial>
+bool checkBoundaries(const Polynomial& polynomial) {
+  return std::abs(polynomial.evaluate(polynomial.getIntervals().front())) <=
+             kTolerance &&
+         std::abs(polynomial.evaluate(polynomial.getIntervals().back())) <=
+             kTolerance;
+}
+
+template <class Polynomial>
+bool checkContinuity(const Polynomial& polynomial) {
+  for (double t : polynomial.getIntervals()) {
+    if (std::abs(polynomial.evaluate(t + kEpsilon) -
+                 polynomial.evaluate(t - kEpsilon)) > kTolerance) {
+      return false;
+    }
+  }
+  return true;
+}
+
+template <class Polynomial>
+bool checkDerivativeContinuity(const Polynomial& polynomial) {
+  const int maximumDerivative = static_cast<int>(polynomial.order) - 1;
+  for (double t : polynomial.getIntervals()) {
+    for (int derivative = 0; derivative < maximumDerivative; ++derivative) {
+      if (std::abs(polynomial.evaluateDerivative(derivative, t + kEpsilon) -
+                   polynomial.evaluateDerivative(derivative, t - kEpsilon)) >
+          kTolerance) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+// Verifies every PDF vanishes at both support boundaries.
+TEST(IrwinHall, Boundaries) {
+  EXPECT(checkBoundaries(IrwinHall1));
+  EXPECT(checkBoundaries(IrwinHall2));
+  EXPECT(checkBoundaries(IrwinHall3));
+  EXPECT(checkBoundaries(IrwinHall4));
+  EXPECT(checkBoundaries(IrwinHall5));
+  EXPECT(checkBoundaries(IrwinHall6));
+}
+
+// Verifies every PDF is continuous where its polynomial pieces meet.
+TEST(IrwinHall, Continuity) {
+  EXPECT(checkContinuity(IrwinHall1));
+  EXPECT(checkContinuity(IrwinHall2));
+  EXPECT(checkContinuity(IrwinHall3));
+  EXPECT(checkContinuity(IrwinHall4));
+  EXPECT(checkContinuity(IrwinHall5));
+  EXPECT(checkContinuity(IrwinHall6));
+}
+
+// Verifies all meaningful PDF derivatives are continuous across pieces.
+TEST(IrwinHall, DerivativeContinuity) {
+  EXPECT(checkDerivativeContinuity(IrwinHall1));
+  EXPECT(checkDerivativeContinuity(IrwinHall2));
+  EXPECT(checkDerivativeContinuity(IrwinHall3));
+  EXPECT(checkDerivativeContinuity(IrwinHall4));
+  EXPECT(checkDerivativeContinuity(IrwinHall5));
+  EXPECT(checkDerivativeContinuity(IrwinHall6));
+}
+
+}  // namespace irwin_hall_pdf
+/* ************************************************************************* */
+
 int main() {
-  TestResult tr;
-  return TestRegistry::runAllTests(tr);
+  TestResult result;
+  return TestRegistry::runAllTests(result);
 }
-/* ************************************************************************* */
-

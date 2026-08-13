@@ -1,157 +1,111 @@
 /**
- * @file    testCartesinProduct.cpp
- * @brief   Test vector space properties of extrapolated manifolds
- * @author  Brett Downing
- * @date    April 2025
+ * @file testAsVectorSpace.cpp
+ * @brief Test explicit vector-space embeddings of manifold classes.
+ * @author Brett Downing
  */
-
-
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/base/numericalDerivative.h>
-#include <gtsam/nonlinear/Expression.h>
-#include <gtsam/geometry/Cal3f.h>
-#include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/AsVectorSpace.h>
 #include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/Cal3Fisheye.h>
-#include <gtsam/geometry/AsVectorSpace.h>
-
+#include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/Cal3f.h>
 
 using namespace gtsam;
-
 
 GTSAM_CONCEPT_TESTABLE_INST(AsVectorSpace<Cal3f>)
 GTSAM_CONCEPT_TESTABLE_INST(AsVectorSpace<Cal3_S2>)
 GTSAM_CONCEPT_TESTABLE_INST(AsVectorSpace<Cal3DS2>)
 GTSAM_CONCEPT_TESTABLE_INST(AsVectorSpace<Cal3Fisheye>)
 
-//******************************************************************************
-TEST( AsVectorSpace , Cal3fConstructor) {
-  AsVectorSpace<Cal3f> p;
-}
-//******************************************************************************
-TEST( AsVectorSpace , Cal3DS2Constructor) {
-  AsVectorSpace<Cal3f> p;
-}
-//******************************************************************************
-TEST( AsVectorSpace , Cal3_S2Constructor) {
-  AsVectorSpace<Cal3_S2> p;
-}
-//******************************************************************************
-TEST( AsVectorSpace , Cal3FisheyeConstructor) {
-  AsVectorSpace<Cal3Fisheye> p;
+/* ************************************************************************* */
+namespace as_vector_space_construction {
+
+// Verifies supported calibration manifolds construct at the chosen identity.
+TEST(AsVectorSpace, Constructors) {
+  const AsVectorSpace<Cal3f> cal3f;
+  const AsVectorSpace<Cal3_S2> cal3S2;
+  const AsVectorSpace<Cal3DS2> cal3DS2;
+  const AsVectorSpace<Cal3Fisheye> fisheye;
+  EXPECT(cal3f.equals(Cal3f()));
+  EXPECT(cal3S2.equals(Cal3_S2()));
+  EXPECT(cal3DS2.equals(Cal3DS2()));
+  EXPECT(fisheye.equals(Cal3Fisheye()));
 }
 
-//******************************************************************************
-TEST( AsVectorSpace , Cal3fUpCast) {
-  Cal3f q = Cal3f();
-  AsVectorSpace<Cal3f> p(q);
-}
-//******************************************************************************
-TEST( AsVectorSpace , Cal3_S2UpCast) {
-  Cal3_S2 q = Cal3_S2();
-  AsVectorSpace<Cal3_S2> p(q);
-}
-//******************************************************************************
-TEST( AsVectorSpace , Cal3DS2UpCast) {
-  Cal3DS2 q = Cal3DS2();
-  AsVectorSpace<Cal3DS2> p(q);
-}
-//******************************************************************************
-TEST( AsVectorSpace , Cal3FisheyeUpCast) {
-  Cal3Fisheye q = Cal3Fisheye();
-  AsVectorSpace<Cal3Fisheye> p(q);
+// Verifies a wrapped value retains its underlying calibration parameters.
+TEST(AsVectorSpace, WrapAndViewBase) {
+  const Cal3DS2 calibration(9, 8, 7, 6, 5, 4, 3, 2, 1);
+  const AsVectorSpace<Cal3DS2> wrapped(calibration);
+  const Cal3DS2& base = wrapped;
+  EXPECT(base.equals(calibration));
 }
 
-//******************************************************************************
-TEST( AsVectorSpace , Cal3fDownCast) {
-  AsVectorSpace<Cal3f> p = AsVectorSpace<Cal3f>();
-  const Cal3f& q = p;
-}
-//******************************************************************************
-TEST( AsVectorSpace , Cal3_S2DownCast) {
-  AsVectorSpace<Cal3_S2> p = AsVectorSpace<Cal3_S2>();
-  const Cal3_S2& q = p;
-}
-//******************************************************************************
-TEST( AsVectorSpace , Cal3DS2DownCast) {
-  AsVectorSpace<Cal3DS2> p = AsVectorSpace<Cal3DS2>();
-  const Cal3DS2& q = p;
-}
-//******************************************************************************
-TEST( AsVectorSpace , Cal3FisheyeDownCast) {
-  AsVectorSpace<Cal3Fisheye> p = AsVectorSpace<Cal3Fisheye>();
-  const Cal3Fisheye& q = p;
-}
-
-
-//******************************************************************************
-TEST( AsVectorSpace , Cal3fConcept) {
-  GTSAM_CONCEPT_ASSERT(IsManifold<AsVectorSpace<Cal3f>>);
-  GTSAM_CONCEPT_ASSERT(IsGroup<AsVectorSpace<Cal3f>>);
+// Verifies each adapter satisfies vector-space, group, and manifold concepts.
+TEST(AsVectorSpace, Concepts) {
   GTSAM_CONCEPT_ASSERT(IsVectorSpace<AsVectorSpace<Cal3f>>);
-}
-//******************************************************************************
-TEST( AsVectorSpace , Cal3_S2Concept) {
-  GTSAM_CONCEPT_ASSERT(IsManifold<AsVectorSpace<Cal3_S2>>);
-  GTSAM_CONCEPT_ASSERT(IsGroup<AsVectorSpace<Cal3_S2>>);
+  GTSAM_CONCEPT_ASSERT(IsGroup<AsVectorSpace<Cal3f>>);
+  GTSAM_CONCEPT_ASSERT(IsManifold<AsVectorSpace<Cal3f>>);
   GTSAM_CONCEPT_ASSERT(IsVectorSpace<AsVectorSpace<Cal3_S2>>);
-}
-//******************************************************************************
-TEST( AsVectorSpace , Cal3DS2Concept) {
-  GTSAM_CONCEPT_ASSERT(IsManifold<AsVectorSpace<Cal3DS2>>);
-  GTSAM_CONCEPT_ASSERT(IsGroup<AsVectorSpace<Cal3DS2>>);
   GTSAM_CONCEPT_ASSERT(IsVectorSpace<AsVectorSpace<Cal3DS2>>);
-}
-//******************************************************************************
-TEST( AsVectorSpace , Cal3FisheyeConcept) {
-  GTSAM_CONCEPT_ASSERT(IsManifold<AsVectorSpace<Cal3Fisheye>>);
-  GTSAM_CONCEPT_ASSERT(IsGroup<AsVectorSpace<Cal3Fisheye>>);
   GTSAM_CONCEPT_ASSERT(IsVectorSpace<AsVectorSpace<Cal3Fisheye>>);
 }
 
-
-//******************************************************************************
-TEST( AsVectorSpace , Cal3fInvariants) {
-  traits<Cal3f>::TangentVector va, vb;
-  va << 3;
-  vb << 5;
-  AsVectorSpace<Cal3f> ca(va), cb(vb);
-  EXPECT(check_group_invariants(ca, cb));
-  EXPECT(check_manifold_invariants(ca, cb));
-}
-//******************************************************************************
-TEST( AsVectorSpace , Cal3_S2Invariants) {
-  traits<Cal3_S2>::TangentVector va, vb;
-  va << 3,4,5,6,7;
-  vb << 5,6,7,8,9;
-  AsVectorSpace<Cal3_S2> ca(va), cb(vb);
-  EXPECT(check_group_invariants(ca, cb));
-  EXPECT(check_manifold_invariants(ca, cb));
-}
-//******************************************************************************
-TEST( AsVectorSpace , Cal3DS2Invariants) {
-  traits<Cal3DS2>::TangentVector va, vb;
-  va << 3,4,5,6,7,8,9,10,11;
-  vb << 5,6,7,8,9,10,11,12,13;
-  AsVectorSpace<Cal3DS2> ca(va), cb(vb);
-  EXPECT(check_group_invariants(ca, cb));
-  EXPECT(check_manifold_invariants(ca, cb));
-}
-//******************************************************************************
-TEST( AsVectorSpace , Cal3FisheyeInvariants) {
-  traits<Cal3Fisheye>::TangentVector va, vb;
-  va << 3,4,5,6,7,8,9,10,11;
-  vb << 5,6,7,8,9,10,11,12,13;
-  AsVectorSpace<Cal3Fisheye> ca(va), cb(vb);
-  EXPECT(check_group_invariants(ca, cb));
-  EXPECT(check_manifold_invariants(ca, cb));
-}
+}  // namespace as_vector_space_construction
+/* ************************************************************************* */
 
 /* ************************************************************************* */
+namespace as_vector_space_invariants {
+
+template <class Calibration>
+bool invariantsHold(const typename traits<Calibration>::TangentVector& first,
+                    const typename traits<Calibration>::TangentVector& second) {
+  const AsVectorSpace<Calibration> a(first);
+  const AsVectorSpace<Calibration> b(second);
+  return check_group_invariants(a, b) && check_manifold_invariants(a, b);
+}
+
+// Verifies the one-parameter calibration embedding obeys all invariants.
+TEST(AsVectorSpace, Cal3fInvariants) {
+  traits<Cal3f>::TangentVector first;
+  traits<Cal3f>::TangentVector second;
+  first << 3.0;
+  second << 5.0;
+  EXPECT(invariantsHold<Cal3f>(first, second));
+}
+
+// Verifies the five-parameter calibration embedding obeys all invariants.
+TEST(AsVectorSpace, Cal3S2Invariants) {
+  traits<Cal3_S2>::TangentVector first;
+  traits<Cal3_S2>::TangentVector second;
+  first << 3, 4, 5, 6, 7;
+  second << 5, 6, 7, 8, 9;
+  EXPECT(invariantsHold<Cal3_S2>(first, second));
+}
+
+// Verifies the distortion calibration embedding obeys all invariants.
+TEST(AsVectorSpace, Cal3DS2Invariants) {
+  traits<Cal3DS2>::TangentVector first;
+  traits<Cal3DS2>::TangentVector second;
+  first << 3, 4, 5, 6, 7, 8, 9, 10, 11;
+  second << 5, 6, 7, 8, 9, 10, 11, 12, 13;
+  EXPECT(invariantsHold<Cal3DS2>(first, second));
+}
+
+// Verifies the fisheye calibration embedding obeys all invariants.
+TEST(AsVectorSpace, Cal3FisheyeInvariants) {
+  traits<Cal3Fisheye>::TangentVector first;
+  traits<Cal3Fisheye>::TangentVector second;
+  first << 3, 4, 5, 6, 7, 8, 9, 10, 11;
+  second << 5, 6, 7, 8, 9, 10, 11, 12, 13;
+  EXPECT(invariantsHold<Cal3Fisheye>(first, second));
+}
+
+}  // namespace as_vector_space_invariants
+/* ************************************************************************* */
+
 int main() {
-  TestResult tr;
-  return TestRegistry::runAllTests(tr);
+  TestResult result;
+  return TestRegistry::runAllTests(result);
 }
-/* ************************************************************************* */

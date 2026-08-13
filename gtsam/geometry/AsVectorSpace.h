@@ -1,89 +1,99 @@
-#pragma once
+/* ----------------------------------------------------------------------------
 
-#include <gtsam/base/Lie.h>
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
 
 /**
- * Adapter to 'hack' VectorSpace traits onto a class that only satisfies Manifold traits
- * This class assumes that a there is no "most sensible" choice of embedding,
- * so composition will always be meaningless regardless of embedding.
- * This class provides rough and ready implementations for expmap and logmap 
- * based on extrapolations of ManifoldTraits::Local and ManifoldTraits::Retract
- * The Identity vector is chosen as the default constructor for the base class.
+ * @file AsVectorSpace.h
+ * @brief Explicit vector-space adapter for manifold-valued classes.
+ * @author Brett Downing
  */
+
+#pragma once
+
+#include <gtsam/base/VectorSpace.h>
 
 namespace gtsam {
 
-using namespace gtsam::internal;
-
+/**
+ * Opt-in adapter that equips a manifold class with additive vector-space
+ * operations.
+ *
+ * The default-constructed wrapped value is chosen as the additive identity.
+ * Addition and subtraction use the wrapped manifold's Local and Retract maps.
+ * This is useful when an application deliberately chooses a local affine
+ * embedding for a type, such as a camera calibration, that has no natural
+ * group composition.
+ *
+ * @tparam Class A type satisfying GTSAM's manifold traits.
+ */
 template <class Class>
-struct AsVectorSpace : public Class
-{
-  typedef typename traits<Class>::TangentVector TangentVector;
+class AsVectorSpace : public Class {
+ public:
+  using TangentVector = typename traits<Class>::TangentVector;
+  inline constexpr static int dimension = traits<Class>::dimension;
 
-  /**
-   * default and copy constructor allows up-cast from Class
-   */
-  AsVectorSpace(const Class& c = Identity()):Class(c){}
+  /// Construct the selected additive identity.
+  AsVectorSpace() : Class(Class()) {}
 
-  /**
-   * Identity can be anywhere, as long as it's consistent
-   * Choose the default constructor for simplicity.
-   */
-  static Class Identity() { return Class();}
+  /// Wrap an existing manifold value.
+  explicit AsVectorSpace(const Class& value) : Class(value) {}
 
-  /**
-   * satisfy vector constructor requirement imposed by
-   *  static Class VectorSpaceImpl::Expmap(const TangentVector&, ChartJacobian Hv)
-   */
-  AsVectorSpace(const TangentVector& v):
-    Class(Identity().retract(v)) {}
-    //Class(traits<Class>::Retract(Identity(), v)) {}
+  /// Retract a tangent vector from the selected identity.
+  explicit AsVectorSpace(const TangentVector& tangent)
+      : Class(traits<Class>::Retract(Class(), tangent)) {}
 
-  /**
-   * Local and Retract are provided by ManifoldTraits
-   * VectorSpace Compose, Between, Inverse require binary +- and unary - operators.
-   */
-  Class operator+ (const Class& rhs) const {
-    auto v_rhs = traits<Class>::Local(Identity(), rhs);
-    return traits<Class>::Retract(*this, v_rhs);
-  }
-  Class operator- (const Class& rhs) const {
-    auto v_rhs = traits<Class>::Local(Identity(), rhs);
-    return traits<Class>::Retract(*this, -v_rhs);
-  }
-  Class operator- () const {
-    auto v_rhs = traits<Class>::Local(Identity(), *this);
-    return traits<Class>::Retract(Identity(), -v_rhs);
-  }
-  Class operator+ (const TangentVector& rhs) const {
-    return traits<Class>::Retract(*this, rhs);
-  }
-  Class operator- (const TangentVector& rhs) const {
-    return traits<Class>::Retract(*this, -rhs);
+  /// Return the selected additive identity.
+  static AsVectorSpace Identity() { return AsVectorSpace(); }
+
+  AsVectorSpace operator+(const AsVectorSpace& other) const {
+    const TangentVector tangent =
+        traits<Class>::Local(Class(), static_cast<const Class&>(other));
+    return AsVectorSpace(
+        traits<Class>::Retract(static_cast<const Class&>(*this), tangent));
   }
 
-  /**
-   * return a vector describing the difference between this and Identity
-   * required by VectorSpaceImpl::Logmap
-   */
+  AsVectorSpace operator-(const AsVectorSpace& other) const {
+    const TangentVector tangent =
+        traits<Class>::Local(Class(), static_cast<const Class&>(other));
+    return AsVectorSpace(
+        traits<Class>::Retract(static_cast<const Class&>(*this), -tangent));
+  }
+
+  AsVectorSpace operator-() const {
+    const TangentVector tangent =
+        traits<Class>::Local(Class(), static_cast<const Class&>(*this));
+    return AsVectorSpace(traits<Class>::Retract(Class(), -tangent));
+  }
+
+  AsVectorSpace operator+(const TangentVector& tangent) const {
+    return AsVectorSpace(
+        traits<Class>::Retract(static_cast<const Class&>(*this), tangent));
+  }
+
+  AsVectorSpace operator-(const TangentVector& tangent) const {
+    return AsVectorSpace(
+        traits<Class>::Retract(static_cast<const Class&>(*this), -tangent));
+  }
+
+  /// Return coordinates relative to the selected additive identity.
   TangentVector vector() const {
-    return traits<Class>::Local(Identity(), *this);
+    return traits<Class>::Local(Class(), static_cast<const Class&>(*this));
   }
-  
-
-}; // class AsVectorSpace
-
+};
 
 template <class Class>
-struct traits<AsVectorSpace<Class>> :
-  public internal::VectorSpaceTraits<AsVectorSpace<Class>> ,
-  public Testable<AsVectorSpace<Class>>
-{};
+struct traits<AsVectorSpace<Class>>
+    : internal::VectorSpaceTraits<AsVectorSpace<Class>>,
+      Testable<AsVectorSpace<Class>> {};
 
 template <class Class>
-struct traits<const AsVectorSpace<Class>> :
-  public internal::VectorSpaceTraits<AsVectorSpace<Class>>,
-  public Testable<AsVectorSpace<Class>>
-{};
+struct traits<const AsVectorSpace<Class>> : traits<AsVectorSpace<Class>> {};
 
-} // namespace gtsam
+}  // namespace gtsam
