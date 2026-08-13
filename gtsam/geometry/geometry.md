@@ -100,6 +100,11 @@ direction TB
 
 It provides the basic functionality but is not intended to be used directly in optimization, as it does not define a manifold structure itself.
 
+For applications that deliberately need additive operations on a calibration
+manifold, see the [AsVectorSpace adapter](doc/AsVectorSpace.ipynb). The adapter
+makes a local affine approximation explicit without changing the calibration
+class's native manifold semantics.
+
 ### Cal3_S2
 [Cal3_S2](doc/Cal3_S2.ipynb) is the most common 5-degree-of-freedom (DOF) calibration model and is designed for use in optimization. It represents the five parameters of Cal3 on a 5-dimensional manifold, allowing it to be used directly in factor graphs.
 

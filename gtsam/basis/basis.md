@@ -28,6 +28,9 @@ solve for parameters in GTSAM.
 
 ## Polynomial Bases
 
+- [Cumulative Lie-group splines](doc/CumulativeSplineTrajectory.ipynb):
+  Piecewise-polynomial kernels, Irwin–Hall blending functions,
+  `CardinalSplineBasis`, and expression-valued cumulative trajectories.
 - [Chebyshev1Basis](doc/Chebyshev1Basis.ipynb): First-kind Chebyshev basis
   $T_n(x)$ on $[-1,1]$ (coefficient-based).
 - [Chebyshev2Basis](doc/Chebyshev2Basis.ipynb): Second-kind Chebyshev basis
