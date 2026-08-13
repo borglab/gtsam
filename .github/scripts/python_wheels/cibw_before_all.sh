@@ -5,7 +5,16 @@ set -x
 
 PYTHON_VERSION="$1"
 PROJECT_DIR="$2"
-WHEEL_BUILD_JOBS=2
+BOOST_BUILD_JOBS=2
+GTSAM_BUILD_JOBS=2
+
+# The generated Python wrapper translation units require substantial memory.
+# Compile them serially in Linux wheel containers to avoid the OOM killer.
+if [ "$(uname)" == "Linux" ]; then
+    GTSAM_BUILD_JOBS=1
+fi
+
+echo "Build parallelism: Boost=${BOOST_BUILD_JOBS}, GTSAM=${GTSAM_BUILD_JOBS}"
 
 export PYTHON="python${PYTHON_VERSION}"
 
@@ -27,13 +36,13 @@ BOOST_PREFIX="$HOME/opt/boost"
 ./bootstrap.sh --prefix=${BOOST_PREFIX}
 
 if [ "$(uname)" == "Linux" ]; then
-    ./b2 -j${WHEEL_BUILD_JOBS} install --prefix=${BOOST_PREFIX} -d0 --with-graph \
+    ./b2 -j${BOOST_BUILD_JOBS} install --prefix=${BOOST_PREFIX} -d0 --with-graph \
         --with-move --with-optional --with-program_options --with-random \
         --with-serialization --with-smart_ptr --with-timer --with-chrono \
         --with-filesystem
 elif [ "$(uname)" == "Darwin" ]; then
     BOOST_ARCH="${GTSAM_BOOST_ARCH:-arm}"
-    ./b2 -j${WHEEL_BUILD_JOBS} install --prefix=${BOOST_PREFIX} -d0 --with-graph \
+    ./b2 -j${BOOST_BUILD_JOBS} install --prefix=${BOOST_PREFIX} -d0 --with-graph \
         --with-move --with-optional --with-program_options --with-random \
         --with-serialization --with-smart_ptr --with-timer --with-chrono \
         --with-filesystem \
@@ -79,4 +88,4 @@ cmake $PROJECT_DIR \
     -DCMAKE_INSTALL_PREFIX=$PROJECT_DIR/gtsam_install
 
 cd $PROJECT_DIR/build
-make -j${WHEEL_BUILD_JOBS} install
+make -j${GTSAM_BUILD_JOBS} install
