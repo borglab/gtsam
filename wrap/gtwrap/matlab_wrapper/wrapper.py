@@ -51,8 +51,10 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             'unsigned char': 'unsigned char',
             'Vector': 'double',
             'Matrix': 'double',
+            'ConstMatrixView': 'double',
             'int': 'numeric',
             'size_t': 'numeric',
+            'Key': 'numeric',
             'bool': 'logical'
         }
         # Map the data type into the type used in Matlab methods.
@@ -68,6 +70,8 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             'Point3': 'double',
             'Vector': 'double',
             'Matrix': 'double',
+            'ConstMatrixView': 'double',
+            'Key': 'numeric',
             'bool': 'bool'
         }
         # The amount of times the wrapper has created a call to geometry_wrapper
@@ -108,7 +112,8 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
         Args:
             collector_function: tuple storing info about the wrapper function
-                (namespace, class instance, function name, function object)
+                (namespace, class/function instance,
+                type of collector function, method object if class instance)
             id_diff: constant to add to the id in the map
             function_name: Optional custom function_name.
 
@@ -296,11 +301,18 @@ class MatlabWrapper(CheckMixin, FormatMixin):
         """
         arg_id = 1
 
-        param_count = len(args)
+        # Eigen Ref args are output arguments, not inputs — exclude from count.
+        eigen_ref_count = sum(1 for arg in args.list()
+                              if self.is_eigen_ref(arg.ctype))
+        param_count = len(args) - eigen_ref_count
         check_statement = 'if length(varargin) == {param_count}'.format(
             param_count=param_count)
 
         for _, arg in enumerate(args.list()):
+            # Eigen Ref args are outputs — skip isa() check entirely.
+            if self.is_eigen_ref(arg.ctype):
+                continue
+
             name = arg.ctype.typename.name
 
             if name in self.not_check_type:
@@ -335,6 +347,11 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
             arg_id += 1
 
+        # If there are Ref output args, require nargout to match.
+        if eigen_ref_count > 0:
+            check_statement += ' && nargout == {n}'.format(
+                n=eigen_ref_count + 1)
+
         check_statement = check_statement \
             if check_statement == '' \
             else check_statement + '\n'
@@ -350,6 +367,17 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             enum_type = f"{arg.ctype.typename}"
             arg_type = f"{enum_type}"
             unwrap = f'unwrap_enum<{enum_type}>(in[{arg_id}]);'
+
+        elif self.is_matrix_view(arg.ctype):
+            arg_type = self._format_type_name(arg.ctype.typename)
+            unwrap = 'unwrapMatrixView< {ctype} >(in[{id}]);'.format(
+                ctype=arg_type, id=arg_id)
+
+        elif self.is_eigen_ref(arg.ctype):
+            # Ref<MatrixXd> is a Jacobian output arg — allocate locally,
+            # do not consume from in[]. Returned via out[] after the call.
+            arg_type = "Eigen::MatrixXd"
+            unwrap = 'Eigen::MatrixXd();'
 
         elif self.is_ref(arg.ctype):  # and not constructor:
             arg_type = "{ctype}&".format(ctype=ctype_sep)
@@ -372,9 +400,9 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                 ctype_sep=ctype_sep, ctype=ctype_camel, id=arg_id)
 
         else:
-            arg_type = "{ctype}".format(ctype=arg.ctype.typename.name)
+            arg_type = "{ctype}".format(ctype=self._format_type_name(arg.ctype.typename))
             unwrap = 'unwrap< {ctype} >(in[{id}]);'.format(
-                ctype=arg.ctype.typename.name, id=arg_id)
+                ctype=self._format_type_name(arg.ctype.typename), id=arg_id)
 
         return arg_type, unwrap
 
@@ -400,7 +428,9 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                     '''.format(arg_type=arg_type, name=arg.name,
                                unwrap=unwrap)),
                                          prefix='  ')
-            arg_id += 1
+            # Eigen Ref args don't consume an in[] slot — don't advance arg_id.
+            if not self.is_eigen_ref(arg.ctype):
+                arg_id += 1
 
         params = ''
         explicit_arg_names = [arg.name for arg in args.list()]
@@ -414,7 +444,8 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                 params += arg.default
                 continue
 
-            if not self.is_ref(arg.ctype) and (self.is_shared_ptr(arg.ctype) or \
+            if not self.is_eigen_ref(arg.ctype) and \
+                    not self.is_ref(arg.ctype) and (self.is_shared_ptr(arg.ctype) or \
                 self.is_ptr(arg.ctype) or self.can_be_pointer(arg.ctype)) and \
                     not self.is_enum(arg.ctype, instantiated_class) and \
                     arg.ctype.typename.name not in self.ignore_namespace:
@@ -578,6 +609,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
         # Get all combinations of parameters
         param_wrap = ''
 
+        # Iterate through possible overloads of the function
         for i, overload in enumerate(function):
             param_wrap += '      if' if i == 0 else '      elseif'
             param_wrap += ' length(varargin) == '
@@ -1218,7 +1250,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             if isinstance(func, parser.GlobalFunction)
         ]
 
-        self.wrap_methods(all_funcs, True, global_ns=namespace)
+        self.wrap_methods(all_funcs, global_funcs=True, global_ns=namespace)
 
         return wrapped
 
@@ -1258,10 +1290,15 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                 return_type_text = self.wrap_collector_function_shared_return(
                     return_type.typename, shared_obj, func_id, func_id == 0)
             else:
-                return_type_text += 'wrap_shared_ptr({0},"{1}", false);{new_line}' \
+                is_virtual = any(
+                    cls.name == return_type.typename.name and cls.is_virtual
+                    for cls in self.classes
+                )
+                return_type_text += 'wrap_shared_ptr({0},"{1}", {2});{new_line}' \
                     .format(shared_obj,
                             self._format_type_name(return_type.typename,
                                                    separator='.'),
+                            'true' if is_virtual else 'false',
                             new_line=new_line)
         else:
             return_type_text += 'wrap< {0} >(pairResult.{1});{2}'.format(
@@ -1328,12 +1365,17 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                             obj=obj)
 
             if ctype.typename.name not in self.ignore_namespace:
+                is_virtual = any(
+                    cls.name == ctype.typename.name and cls.is_virtual
+                    for cls in self.classes
+                )
                 expanded += textwrap.indent(
-                    'out[0] = wrap_shared_ptr({0}, false);'.format(shared_obj),
+                    'out[0] = wrap_shared_ptr({0}, {1});'.format(
+                        shared_obj, 'true' if is_virtual else 'false'),
                     prefix='  ')
         else:
             expanded += '  out[0] = wrap< {0} >({1});'.format(
-                ctype.typename.name, obj)
+                self._format_type_name(ctype.typename), obj)
 
         return expanded
 
@@ -1345,6 +1387,9 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
         params = self._wrapper_unwrap_arguments(
             method.args, arg_id=1, instantiated_class=instantiated_class)[0]
+        # Capture Ref output args before method may be reassigned to a string below.
+        eigen_ref_args = [arg for arg in method.args.backup.list()
+                          if self.is_eigen_ref(arg.ctype)]
 
         return_1 = method.return_type.type1
         return_count = self._return_count(method.return_type)
@@ -1365,8 +1410,8 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             method_name += method.original.name
 
         elif isinstance(method, parser.GlobalFunction):
-            method_name = self._format_global_function(method, '::')
-            method_name += method.name
+            namespace = self._format_global_function(method, '::')
+            method_name = namespace + method.to_cpp()
 
         else:
             if isinstance(method.parent, instantiator.InstantiatedClass):
@@ -1382,6 +1427,11 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             if return_count == 1:
                 expanded += self._collector_return(
                     obj, return_1, instantiated_class=instantiated_class)
+                
+                # Write any Eigen Ref (Jacobian) output args to out[1], out[2], ...
+                for i, ref_arg in enumerate(eigen_ref_args):
+                    expanded += '\n  out[{i}] = wrap< Eigen::MatrixXd >({name});'.format(
+                        i=i + 1, name=ref_arg.name)
 
             elif return_count == 2:
                 return_2 = method.return_type.type2
@@ -1549,7 +1599,8 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                     min1='-1' if is_method else '',
                     shared_obj=shared_obj,
                     method_name=method_name,
-                    num_args=len(extra.args.list()),
+                    num_args=len([a for a in extra.args.list()
+                                  if not self.is_eigen_ref(a.ctype)]),
                     body_args=body_args,
                     return_body=return_body)
 
@@ -1624,7 +1675,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
             body += self._wrapper_unwrap_arguments(collector_func[1].args)[1]
             body += self.wrap_collector_function_return(
-                collector_func[1]) + '\n}\n'
+                collector_func[1]) + "\n}\n"
 
             collector_function += body
 
@@ -1730,8 +1781,9 @@ class MatlabWrapper(CheckMixin, FormatMixin):
 
             if cls.is_virtual:
                 class_name, class_name_sep = self.get_class_name(cls)
+                matlab_class_name = self._format_class_name(cls, separator='.')
                 rtti_classes += '    types.insert(std::make_pair(typeid({}).name(), "{}"));\n' \
-                    .format(class_name_sep, class_name)
+                    .format(class_name_sep, matlab_class_name)
 
         # Generate the typedef instances string
         typedef_instances = "\n".join(typedef_instances)
@@ -1912,7 +1964,9 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                 content += f.read()
 
         # Parse the contents of the interface file
-        parsed_result = parser.Module.parseString(content)
+        source_name = files[0] if len(files) == 1 else ";".join(files)
+        parsed_result = parser.Module.parse_string(
+            content, source_name=source_name)
 
         # Instantiate the module
         module = instantiator.instantiate_namespace(parsed_result)

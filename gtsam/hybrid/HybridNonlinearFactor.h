@@ -32,7 +32,7 @@ namespace gtsam {
 
 /// Alias for a NoiseModelFactor shared pointer and double scalar pair.
 using NonlinearFactorValuePair =
-    std::pair<NoiseModelFactor::shared_ptr, double>;
+  std::pair<NoiseModelFactor::shared_ptr, double>;
 
 /**
  * @brief Implementation of a discrete-conditioned hybrid factor.
@@ -72,14 +72,23 @@ class GTSAM_EXPORT HybridNonlinearFactor : public HybridFactor {
   /// Decision tree of nonlinear factors indexed by discrete keys.
   FactorValuePairs factors_;
 
-  /// HybridFactor method implementation. Should not be used.
+  /**
+   * @brief HybridFactor method implementation.
+   * Should not be used for this class.
+   *
+   * This version is for linear/Gaussian continuous values.
+   * Use the overload taking gtsam::Values for nonlinear values.
+   *
+   * @param continuousValues 
+   * @return AlgebraicDecisionTree<Key> 
+   */
   AlgebraicDecisionTree<Key> errorTree(
-      const VectorValues& continuousValues) const override {
+    const VectorValues& continuousValues) const override {
     throw std::runtime_error(
-        "HybridNonlinearFactor::error does not take VectorValues.");
+      "HybridNonlinearFactor::errorTree: use errorTree(gtsam::Values) for nonlinear values.");
   }
 
- public:
+public:
   /// @name Constructors
   /// @{
 
@@ -89,14 +98,14 @@ class GTSAM_EXPORT HybridNonlinearFactor : public HybridFactor {
   /**
    * @brief Construct a new HybridNonlinearFactor on a single discrete key,
    * providing the factors for each mode m as a vector of factors ϕ_m(x).
-   * The value ϕ(x,m) for the factor is simply ϕ_m(x).
+   * The value ϕ(x,m) for the factor is simply ϕ_m(x) (i.e. scalar part is 0.0).
    *
    * @param discreteKey The discrete key for the "mode", indexing components.
-   * @param factors Vector of gaussian factors, one for each mode.
+   * @param factors Vector of nonlinear factors, one for each mode.
    */
   HybridNonlinearFactor(
-      const DiscreteKey& discreteKey,
-      const std::vector<NoiseModelFactor::shared_ptr>& factors);
+    const DiscreteKey& discreteKey,
+    const std::vector<NoiseModelFactor::shared_ptr>& factors);
 
   /**
    * @brief Construct a new HybridNonlinearFactor on a single discrete key,
@@ -105,7 +114,7 @@ class GTSAM_EXPORT HybridNonlinearFactor : public HybridFactor {
    * The value ϕ(x,m) for the factor is now ϕ_m(x) + E_m.
    *
    * @param discreteKey The discrete key for the "mode", indexing components.
-   * @param pairs Vector of gaussian factor-scalar pairs, one per mode.
+   * @param pairs Vector of nonlinear factor-scalar pairs, one per mode.
    */
   HybridNonlinearFactor(const DiscreteKey& discreteKey,
                         const std::vector<NonlinearFactorValuePair>& pairs);
@@ -122,22 +131,25 @@ class GTSAM_EXPORT HybridNonlinearFactor : public HybridFactor {
   HybridNonlinearFactor(const DiscreteKeys& discreteKeys,
                         const FactorValuePairs& factors);
 
+  /// @}
+  /// @name Standard Interface
+  /// @{
+
   /**
    * @brief Compute error of the HybridNonlinearFactor as a tree.
    *
-   * @param continuousValues The continuous values for which to compute the
-   * error.
-   * @return AlgebraicDecisionTree<Key> A decision tree with the same keys
-   * as the factor, and leaf values as the error.
+   * @param continuousValues The continuous gtsam::Values for which to compute the error.
+   * @return AlgebraicDecisionTree<Key> A decision tree with the same discrete
+   * keys as the factor, and leaf values as the error for each continuous component.
    */
   AlgebraicDecisionTree<Key> errorTree(const Values& continuousValues) const;
 
   /**
    * @brief Compute error of factor given both continuous and discrete values.
    *
-   * @param continuousValues The continuous Values.
-   * @param discreteValues The discrete Values.
-   * @return double The error of this factor.
+   * @param continuousValues The continuous gtsam::Values.
+   * @param assignment The assignment for the discrete keys.
+   * @return double The error of this factor for the given assignment.
    */
   double error(const Values& continuousValues,
                const DiscreteValues& assignment) const;
@@ -145,17 +157,60 @@ class GTSAM_EXPORT HybridNonlinearFactor : public HybridFactor {
   /**
    * @brief Compute error of factor given hybrid values.
    *
-   * @param values The continuous Values and the discrete assignment.
+   * @param values The HybridValues containing continuous (gtsam::Values) and
+   * discrete assignments.
    * @return double The error of this factor.
    */
-  double error(const HybridValues& values) const override;
+  double error(const HybridValues& hybridValues) const override;
 
   /**
    * @brief Get the dimension of the factor (number of rows on linearization).
-   * Returns the dimension of the first component factor.
+   * Returns the dimension of the first component factor found in the tree.
+   * Assumes all component factors have the same dimension.
    * @return size_t
    */
   size_t dim() const;
+
+  /// Getter for NonlinearFactor decision tree
+  const FactorValuePairs& factors() const { return factors_; }
+
+  /**
+   * @brief Linearize specific nonlinear factors based on
+   * the assignment in discreteValues.
+   *
+   * @param continuousValues The continuous values point to linearize around.
+   * @param assignment The discrete assignment specifying which continuous
+   * factors to linearize.
+   * @return GaussianFactor::shared_ptr
+   */
+  GaussianFactor::shared_ptr linearize(const Values& continuousValues,
+    const DiscreteValues& assignment) const;
+
+  /// Linearize all the continuous factors to get a HybridGaussianFactor.
+  std::shared_ptr<HybridGaussianFactor> linearize(
+    const Values& continuousValues) const;
+
+  /**
+   * @brief Prune this factor based on the discrete probabilities.
+   * Entries with probability 0 (or very small) in discreteProbs will lead to
+   * pruning of corresponding branches in this factor.
+   * 
+   * @param discreteProbs A DecisionTreeFactor representing P(M) or P(M|...).
+   * @return HybridNonlinearFactor::shared_ptr 
+   */
+  HybridNonlinearFactor::shared_ptr prune(
+      const DecisionTreeFactor& discreteProbs) const;
+
+  /**
+   * @brief Restrict the factor to the given discrete values.
+   *
+   * If all discrete keys in this factor are assigned, the result will be
+   * a NonlinearFactor (wrapped in a Factor::shared_ptr).
+   * Otherwise, it will be a new HybridNonlinearFactor over the remaining
+   * unassigned discrete keys.
+   */
+  std::shared_ptr<Factor> restrict(
+      const DiscreteValues& assignment) const override;
 
   /// @}
   /// @name Testable
@@ -163,34 +218,10 @@ class GTSAM_EXPORT HybridNonlinearFactor : public HybridFactor {
 
   /// print to stdout
   void print(const std::string& s = "", const KeyFormatter& keyFormatter =
-                                            DefaultKeyFormatter) const override;
+    DefaultKeyFormatter) const override;
 
   /// Check equality
   bool equals(const HybridFactor& other, double tol = 1e-9) const override;
-
-  /// @}
-  /// @name Standard API
-  /// @{
-
-  /// Getter for NonlinearFactor decision tree
-  const FactorValuePairs& factors() const { return factors_; }
-
-  /// Linearize specific nonlinear factors based on the assignment in
-  /// discreteValues.
-  GaussianFactor::shared_ptr linearize(const Values& continuousValues,
-                                       const DiscreteValues& assignment) const;
-
-  /// Linearize all the continuous factors to get a HybridGaussianFactor.
-  std::shared_ptr<HybridGaussianFactor> linearize(
-      const Values& continuousValues) const;
-
-  /// Prune this factor based on the discrete probabilities.
-  HybridNonlinearFactor::shared_ptr prune(
-      const DecisionTreeFactor& discreteProbs) const;
-
-  /// Restrict the factor to the given discrete values.
-  std::shared_ptr<Factor> restrict(
-      const DiscreteValues& assignment) const override;
 
   /// @}
 
@@ -200,6 +231,18 @@ class GTSAM_EXPORT HybridNonlinearFactor : public HybridFactor {
 
   // Private constructor using ConstructorHelper above.
   HybridNonlinearFactor(const ConstructorHelper& helper);
+
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class Archive>
+  void serialize(Archive& ar, const unsigned int /*version*/) {
+    // Serialize base class
+    ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    // Serialize derived class members
+    ar& BOOST_SERIALIZATION_NVP(factors_);
+  }
+#endif
 };
 
 // traits

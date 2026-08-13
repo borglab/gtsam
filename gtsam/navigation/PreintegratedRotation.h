@@ -22,8 +22,10 @@
 #pragma once
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/std_optional_serialization.h>
 #include <gtsam/geometry/Pose3.h>
+
 #include "gtsam/dllexport.h"
 
 namespace gtsam {
@@ -52,6 +54,48 @@ struct GTSAM_EXPORT IncrementalRotation {
 
 }  // namespace internal
 
+/**
+ * Integrate timed gyroscope samples using sequential trapezoidal rotation
+ * increments. The timestamps must increase strictly, and measuredOmegas must
+ * have one three-axis sample per timestamp.
+ *
+ * The bias is subtracted in the sensor frame before body_R_sensor rotates each
+ * sample into the body frame.
+ *
+ * @param times Strictly increasing sample timestamps.
+ * @param measuredOmegas M-by-3 matrix of sensor-frame angular velocities.
+ * @param biasHat Gyroscope bias expressed in the sensor frame.
+ * @param body_R_sensor Rotation from sensor coordinates to body coordinates.
+ * @return The integrated body rotation.
+ * @throws std::invalid_argument if the sample count, matrix shape, or timestamp
+ * ordering is invalid.
+ */
+GTSAM_EXPORT Rot3 integrateSequentialRotations(
+    const Vector& times, ConstMatrixView measuredOmegas,
+    const Vector3& biasHat = Vector3::Zero(),
+    const Rot3& body_R_sensor = Rot3());
+
+/**
+ * Integrate timed gyroscope samples with a single-speed coning correction.
+ * The timestamps must increase strictly, and measuredOmegas must have one
+ * three-axis sample per timestamp.
+ *
+ * The bias is subtracted in the sensor frame before body_R_sensor rotates each
+ * sample into the body frame.
+ *
+ * @param times Strictly increasing sample timestamps.
+ * @param measuredOmegas M-by-3 matrix of sensor-frame angular velocities.
+ * @param biasHat Gyroscope bias expressed in the sensor frame.
+ * @param body_R_sensor Rotation from sensor coordinates to body coordinates.
+ * @return The integrated body rotation.
+ * @throws std::invalid_argument if the sample count, matrix shape, or timestamp
+ * ordering is invalid.
+ */
+GTSAM_EXPORT Rot3 integrateSingleSpeedConing(
+    const Vector& times, ConstMatrixView measuredOmegas,
+    const Vector3& biasHat = Vector3::Zero(),
+    const Rot3& body_R_sensor = Rot3());
+
 /// Parameters for pre-integration:
 /// Usage: Create just a single Params and pass a shared pointer to the constructor
 struct GTSAM_EXPORT PreintegratedRotationParams {
@@ -64,12 +108,11 @@ struct GTSAM_EXPORT PreintegratedRotationParams {
   PreintegratedRotationParams() : gyroscopeCovariance(I_3x3) {}
 
   PreintegratedRotationParams(const Matrix3& gyroscope_covariance,
-                              std::optional<Vector3> omega_coriolis)
-    : gyroscopeCovariance(gyroscope_covariance) {
-      if (omega_coriolis) {
-        omegaCoriolis = *omega_coriolis;
-      }
-  }
+                              std::optional<Vector3> omega_coriolis = {},
+                              std::optional<Pose3> body_P_sensor = {})
+    : gyroscopeCovariance(gyroscope_covariance),
+      omegaCoriolis(omega_coriolis),
+      body_P_sensor(body_P_sensor) {}
 
   virtual ~PreintegratedRotationParams() {}
 
@@ -100,12 +143,6 @@ struct GTSAM_EXPORT PreintegratedRotationParams {
       ar & BOOST_SERIALIZATION_NVP(*omegaCoriolis);
     }
   }
-#endif
-
-#ifdef GTSAM_USE_QUATERNIONS
-  // Align if we are using Quaternions
-public:
-	GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 #endif
 };
 
@@ -196,8 +233,9 @@ class GTSAM_EXPORT PreintegratedRotation {
   Rot3 biascorrectedDeltaRij(const Vector3& biasOmegaIncr,
                              OptionalJacobian<3, 3> H = {}) const;
 
-  /// Integrate coriolis correction in body frame rot_i
-  Vector3 integrateCoriolis(const Rot3& rot_i) const;
+  /// Integrate coriolis correction in body frame Ri
+  Vector3 integrateCoriolis(const Rot3& Ri,
+                            OptionalJacobian<3, 3> H = {}) const;
 
   /// @}
 
@@ -206,7 +244,8 @@ class GTSAM_EXPORT PreintegratedRotation {
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
   /// @deprecated: use IncrementalRotation functor with sane Jacobian
-  inline Rot3 GTSAM_DEPRECATED incrementalRotation(
+  [[deprecated]]
+  inline Rot3 incrementalRotation(
       const Vector3& measuredOmega, const Vector3& bias, double deltaT,
       OptionalJacobian<3, 3> D_incrR_integratedOmega) const {
     internal::IncrementalRotation f{measuredOmega, deltaT, p_->body_P_sensor};
@@ -218,9 +257,11 @@ class GTSAM_EXPORT PreintegratedRotation {
 
   /// @deprecated: use integrateGyroMeasurement from now on
   /// @note this returned hard-to-understand Jacobian D_incrR_integratedOmega.
-  void GTSAM_DEPRECATED integrateMeasurement(
-      const Vector3& measuredOmega, const Vector3& biasHat, double deltaT,
-      OptionalJacobian<3, 3> D_incrR_integratedOmega, OptionalJacobian<3, 3> F);
+  [[deprecated]]
+  void integrateMeasurement(const Vector3& measuredOmega,
+                            const Vector3& biasHat, double deltaT,
+                            OptionalJacobian<3, 3> D_incrR_integratedOmega,
+                            OptionalJacobian<3, 3> F);
 
 #endif
 
@@ -237,12 +278,6 @@ class GTSAM_EXPORT PreintegratedRotation {
     ar& BOOST_SERIALIZATION_NVP(deltaRij_);
     ar& BOOST_SERIALIZATION_NVP(delRdelBiasOmega_);
   }
-#endif
-
-#ifdef GTSAM_USE_QUATERNIONS
-  // Align if we are using Quaternions
-  public:
-	  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 #endif
 };
 

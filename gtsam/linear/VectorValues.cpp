@@ -67,8 +67,8 @@ namespace gtsam {
   }
 
   /* ************************************************************************ */
-  std::map<Key, Vector> VectorValues::sorted() const {
-    std::map<Key, Vector> ordered;
+  std::map<Key, const Vector&> VectorValues::sorted() const {
+    std::map<Key, const Vector&> ordered;
     for (const auto& kv : *this) ordered.emplace(kv);
     return ordered;
   }
@@ -128,6 +128,18 @@ namespace gtsam {
   }
 
   /* ************************************************************************ */
+  VectorValues& VectorValues::insert(const Vector& values,
+                                     const KeyVector& keys, const Dims& dims) {
+    DenseIndex offset = 0;
+    for (Key key : keys) {
+      const size_t dim = dims.at(key);
+      insert(key, values.segment(offset, dim));
+      offset += dim;
+    }
+    return *this;
+  }
+
+  /* ************************************************************************ */
   void VectorValues::setZero()
   {
     for(auto& [key, value] : *this) {
@@ -137,13 +149,8 @@ namespace gtsam {
 
   /* ************************************************************************ */
   GTSAM_EXPORT std::ostream& operator<<(std::ostream& os, const VectorValues& v) {
-    // Change print depending on whether we are using TBB
-#ifdef GTSAM_USE_TBB
-    for (const auto& [key, value] : v.sorted())
-#else
-    for (const auto& [key,value] : v)
-#endif
-    {
+    // Always print in key-sorted order for deterministic output.
+    for (const auto& [key, value] : v.sorted()) {
       os << "  " << StreamedKey(key) << ": " << value.transpose() << "\n";
     }
     return os;
@@ -159,13 +166,18 @@ namespace gtsam {
 
   /* ************************************************************************ */
   bool VectorValues::equals(const VectorValues& x, double tol) const {
-    if(this->size() != x.size())
-      return false;
-    auto this_it = this->begin();
-    auto x_it = x.begin();
-    for(; this_it != this->end(); ++this_it, ++x_it) {
-      if(this_it->first != x_it->first || 
-          !equal_with_abs_tol(this_it->second, x_it->second, tol))
+    if (this->size() != x.size()) return false;
+
+    // Compare in key-sorted order so equality is independent of
+    // the underlying (possibly unordered) container iteration order.
+    const auto thisOrdered = this->sorted();
+    const auto xOrdered = x.sorted();
+
+    auto it1 = thisOrdered.begin();
+    auto it2 = xOrdered.begin();
+    for (; it1 != thisOrdered.end(); ++it1, ++it2) {
+      if (it1->first != it2->first ||
+          !equal_with_abs_tol(it1->second, it2->second, tol))
         return false;
     }
     return true;
@@ -181,12 +193,9 @@ namespace gtsam {
     // Copy vectors
     Vector result(totalDim);
     DenseIndex pos = 0;
-#ifdef GTSAM_USE_TBB
-    // TBB uses un-ordered map, so inefficiently order them:
+    // Always order by key so the concatenated vector is deterministic
+    // even if the underlying container is unordered.
     for (const auto& [key, value] : sorted()) {
-#else
-    for (const auto& [key, value] : *this) {
-#endif
       result.segment(pos, value.size()) = value;
       pos += value.size();
     }
@@ -227,26 +236,40 @@ namespace gtsam {
   /* ************************************************************************ */
   bool VectorValues::hasSameStructure(const VectorValues other) const
   {
-    // compare the "other" container with this one, using the structureCompareOp
-    // and then return true if all elements are compared as equal
-    return std::equal(this->begin(), this->end(), other.begin(), other.end(),
-      internal::structureCompareOp);
+    if (this->size() != other.size()) return false;
+
+    // Compare in key-sorted order so structure comparison is
+    // independent of the underlying container iteration order.
+    const auto thisOrdered = this->sorted();
+    const auto otherOrdered = other.sorted();
+
+    auto it1 = thisOrdered.begin();
+    auto it2 = otherOrdered.begin();
+    for (; it1 != thisOrdered.end(); ++it1, ++it2) {
+      if (!internal::structureCompareOp(*it1, *it2)) return false;
+    }
+    return true;
   }
 
   /* ************************************************************************ */
   double VectorValues::dot(const VectorValues& v) const
   {
-    if(this->size() != v.size())
-      throw std::invalid_argument("VectorValues::dot called with a VectorValues of different structure");
+    if (this->size() != v.size())
+      throw std::invalid_argument(
+          "VectorValues::dot called with a VectorValues of different "
+          "structure");
+
     double result = 0.0;
-    auto this_it = this->begin();
-    auto v_it = v.begin();
-    for(; this_it != this->end(); ++this_it, ++v_it) {
-      assert_throw(this_it->first == v_it->first, 
-          std::invalid_argument("VectorValues::dot called with a VectorValues of different structure"));
-      assert_throw(this_it->second.size() == v_it->second.size(), 
-          std::invalid_argument("VectorValues::dot called with a VectorValues of different structure"));
-      result += this_it->second.dot(v_it->second);
+    for (const auto& [key, value] : *this) {
+      const auto it = v.find(key);
+      assert_throw(it != v.end(), std::invalid_argument(
+                                      "VectorValues::dot called with a "
+                                      "VectorValues of different structure"));
+      assert_throw(
+          value.size() == it->second.size(),
+          std::invalid_argument("VectorValues::dot called with a VectorValues "
+                                "of different structure"));
+      result += value.dot(it->second);
     }
     return result;
   }
@@ -268,19 +291,27 @@ namespace gtsam {
   /* ************************************************************************ */
   VectorValues VectorValues::operator+(const VectorValues& c) const
   {
-    if(this->size() != c.size())
-      throw std::invalid_argument("VectorValues::operator+ called with different vector sizes");
-    assert_throw(hasSameStructure(c),
-      std::invalid_argument("VectorValues::operator+ called with different vector sizes"));
+    if (this->size() != c.size())
+      throw std::invalid_argument(
+          "VectorValues::operator+ called with different vector sizes");
 
     VectorValues result;
-    // The result.end() hint here should result in constant-time inserts
-    for(const_iterator j1 = begin(), j2 = c.begin(); j1 != end(); ++j1, ++j2)
+    for (const auto& [key, value] : *this) {
+      const auto it = c.find(key);
+      assert_throw(
+          it != c.end(),
+          std::invalid_argument(
+              "VectorValues::operator+ called with different vector sizes"));
+      assert_throw(
+          value.size() == it->second.size(),
+          std::invalid_argument(
+              "VectorValues::operator+ called with different vector sizes"));
 #ifdef TBB_GREATER_EQUAL_2020
-      result.values_.emplace(j1->first, j1->second + j2->second);
+      result.values_.emplace(key, value + it->second);
 #else
-      result.values_.insert({j1->first, j1->second + j2->second});
+      result.values_.insert({key, value + it->second});
 #endif
+    }
 
     return result;
   }
@@ -294,16 +325,22 @@ namespace gtsam {
   /* ************************************************************************ */
   VectorValues& VectorValues::operator+=(const VectorValues& c)
   {
-    if(this->size() != c.size())
-      throw std::invalid_argument("VectorValues::operator+= called with different vector sizes");
-    assert_throw(hasSameStructure(c),
-      std::invalid_argument("VectorValues::operator+= called with different vector sizes"));
+    if (this->size() != c.size())
+      throw std::invalid_argument(
+          "VectorValues::operator+= called with different vector sizes");
 
-    iterator j1 = begin();
-    const_iterator j2 = c.begin();
-    // The result.end() hint here should result in constant-time inserts
-    for(; j1 != end(); ++j1, ++j2)
-      j1->second += j2->second;
+    for (auto& [key, value] : *this) {
+      const auto it = c.find(key);
+      assert_throw(
+          it != c.end(),
+          std::invalid_argument(
+              "VectorValues::operator+= called with different vector sizes"));
+      assert_throw(
+          value.size() == it->second.size(),
+          std::invalid_argument(
+              "VectorValues::operator+= called with different vector sizes"));
+      value += it->second;
+    }
 
     return *this;
   }
@@ -330,19 +367,27 @@ namespace gtsam {
   /* ************************************************************************ */
   VectorValues VectorValues::operator-(const VectorValues& c) const
   {
-    if(this->size() != c.size())
-      throw std::invalid_argument("VectorValues::operator- called with different vector sizes");
-    assert_throw(hasSameStructure(c),
-      std::invalid_argument("VectorValues::operator- called with different vector sizes"));
+    if (this->size() != c.size())
+      throw std::invalid_argument(
+          "VectorValues::operator- called with different vector sizes");
 
     VectorValues result;
-    // The result.end() hint here should result in constant-time inserts
-    for(const_iterator j1 = begin(), j2 = c.begin(); j1 != end(); ++j1, ++j2)
+    for (const auto& [key, value] : *this) {
+      const auto it = c.find(key);
+      assert_throw(
+          it != c.end(),
+          std::invalid_argument(
+              "VectorValues::operator- called with different vector sizes"));
+      assert_throw(
+          value.size() == it->second.size(),
+          std::invalid_argument(
+              "VectorValues::operator- called with different vector sizes"));
 #ifdef TBB_GREATER_EQUAL_2020
-      result.values_.emplace(j1->first, j1->second - j2->second);
+      result.values_.emplace(key, value - it->second);
 #else
-      result.values_.insert({j1->first, j1->second - j2->second});
+      result.values_.insert({key, value - it->second});
 #endif
+    }
 
     return result;
   }
@@ -400,12 +445,7 @@ namespace gtsam {
     ss << "  </thead>\n  <tbody>\n";
 
     // Print out all rows.
-#ifdef GTSAM_USE_TBB
-    // TBB uses un-ordered map, so inefficiently order them:
     for (const auto& kv : sorted()) {
-#else
-    for (const auto& kv : *this) {
-#endif
       ss << "    <tr>";
       ss << "<th>" << keyFormatter(kv.first) << "</th><td>"
          << kv.second.transpose() << "</td>";

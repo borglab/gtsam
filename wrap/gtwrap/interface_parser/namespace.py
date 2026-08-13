@@ -74,7 +74,7 @@ class Namespace:
             ^ rule  #
         )("content")  # BR
         + RBRACE  #
-    ).setParseAction(lambda t: Namespace.from_parse_result(t))
+    ).set_parse_action(lambda t: Namespace.from_parse_result(t))
 
     def __init__(self, name: str, content: ZeroOrMore, parent=''):
         self.name = name
@@ -87,7 +87,7 @@ class Namespace:
     def from_parse_result(t: ParseResults):
         """Return the result of parsing."""
         if t.content:
-            content = t.content.asList()
+            content = t.content.as_list()
         else:
             content = []
         return Namespace(t.name, content)

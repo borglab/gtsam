@@ -44,7 +44,7 @@ TEST(HybridNonlinearFactor, Constructor) {
   CHECK(it == factor.end());
 }
 /* ************************************************************************* */
-namespace test_constructor {
+namespace test_hnf_constructor {
 DiscreteKey m1(1, 2);
 double between0 = 0.0;
 double between1 = 1.0;
@@ -54,12 +54,12 @@ auto model = noiseModel::Diagonal::Sigmas(sigmas, false);
 
 auto f0 = std::make_shared<BetweenFactor<double>>(X(1), X(2), between0, model);
 auto f1 = std::make_shared<BetweenFactor<double>>(X(1), X(2), between1, model);
-}  // namespace test_constructor
+}  // namespace test_hnf_constructor
 
 /* ************************************************************************* */
 // Test simple to complex constructors...
-TEST(HybridGaussianFactor, ConstructorVariants) {
-  using namespace test_constructor;
+TEST(HybridNonlinearFactor, ConstructorVariants) {
+  using namespace test_hnf_constructor;
   HybridNonlinearFactor fromFactors(m1, {f0, f1});
 
   std::vector<NonlinearFactorValuePair> pairs{{f0, 0.0}, {f1, 0.0}};
@@ -74,18 +74,18 @@ TEST(HybridGaussianFactor, ConstructorVariants) {
 /* ************************************************************************* */
 // Test .print() output.
 TEST(HybridNonlinearFactor, Printing) {
-  using namespace test_constructor;
+  using namespace test_hnf_constructor;
   HybridNonlinearFactor hybridFactor({m1}, {f0, f1});
 
   std::string expected =
       R"(Hybrid [x1 x2; 1]
 HybridNonlinearFactor
  Choice(1) 
- 0 Leaf BetweenFactor(x1,x2)
+ 0 Leaf (val=0) BetweenFactor(x1,x2)
   measured:  0
   noise model: diagonal sigmas [1];
 
- 1 Leaf BetweenFactor(x1,x2)
+ 1 Leaf (val=0) BetweenFactor(x1,x2)
   measured:  1
   noise model: diagonal sigmas [1];
 
@@ -140,7 +140,7 @@ TEST(HybridNonlinearFactor, Dim) {
 /* ************************************************************************* */
 // Test restrict method
 TEST(HybridNonlinearFactor, Restrict) {
-  using namespace test_constructor;
+  using namespace test_hnf_constructor;
   HybridNonlinearFactor factor(m1, {f0, f1});
   DiscreteValues assignment = {{m1.first, 0}};
   auto restricted = factor.restrict(assignment);

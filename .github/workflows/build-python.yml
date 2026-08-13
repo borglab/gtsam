@@ -1,38 +1,169 @@
-name: Python CI
+name: PR CI
 
-# Since this is a required check, specify paths-ignore in the check-paths job
-# instead of under 'pull_request:'. Otherwise, the check is still required but
-# never runs, and a maintainer must bypass the check in order to merge the PR.
-on: [pull_request]
+# Documentation-only changes are excluded at the trigger level, so neither the
+# fast compilation gate nor the Python matrix consumes a runner for those PRs.
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: Runner selection
+        required: false
+        default: nightly-extra
+        type: string
+  push:
+    branches:
+      - develop
+    paths-ignore:
+      - "**.md"
+      - "**.ipynb"
+      - "myst.yml"
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: Runner selection
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - windows-2022-msvc
+  pull_request:
+    paths-ignore:
+      - "**.md"
+      - "**.ipynb"
+      - "myst.yml"
 
 # Every time you make a push to your PR, it cancel immediately the previous checks,
 # and start a new one. The other runner will be available more quickly to your PR.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  group: pr-ci-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:
-  # Check paths to changed files to see if any are non-ignored.
+  # Check paths of changed files to see if any are non-ignored.
   check-paths:
     runs-on: ubuntu-latest
     outputs:
       should_run: ${{ steps.filter.outputs.relevant_changes }}
+      build_matrix: ${{ steps.matrix.outputs.build_matrix }}
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
       - name: Check modified files
         id: filter
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         with:
-          predicate-quantifier: "every" # If any changed file matches every filter, proceed with build
           filters: |
             relevant_changes:
               - '!**.md'
               - '!**.ipynb' 
               - '!myst.yml'
 
-  build:
-    # Only run build if relevant files have been modified in this PR.
+      - name: Configure build matrix
+        id: matrix
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RUNNER_SELECTION: ${{ inputs.runner || 'all' }}
+        run: |
+          if [ "$EVENT_NAME" = "push" ] || [ "$RUNNER_SELECTION" = "windows-2022-msvc" ]; then
+            echo 'build_matrix={"include":[{"name":"windows-2022-msvc","build_type":"Release","python_version":3,"os":"windows-2022","platform":64,"no_boost":false,"cpp_tests":false,"use_sccache":true}]}' >> "$GITHUB_OUTPUT"
+          elif [ "$RUNNER_SELECTION" = "nightly-extra" ]; then
+            echo 'build_matrix={"include":[{"name":"ubuntu-22.04-gcc-11-noboost","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"gcc","version":"11","no_boost":true,"cpp_tests":false,"use_sccache":false},{"name":"ubuntu-22.04-clang-11","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"clang","version":"11","no_boost":false,"cpp_tests":false,"use_sccache":false}]}' >> "$GITHUB_OUTPUT"
+          elif [ "$EVENT_NAME" = "pull_request" ]; then
+            echo 'build_matrix={"include":[{"name":"ubuntu-22.04-gcc-11","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"gcc","version":"11","no_boost":true,"cpp_tests":true,"use_sccache":true},{"name":"macos-15-xcode-16","build_type":"Release","python_version":3,"os":"macos-15","compiler":"xcode","version":"16","no_boost":true,"cpp_tests":true,"use_sccache":true},{"name":"windows-2022-msvc","build_type":"Release","python_version":3,"os":"windows-2022","platform":64,"no_boost":true,"cpp_tests":true,"use_sccache":true}]}' >> "$GITHUB_OUTPUT"
+          else
+            echo 'build_matrix={"include":[{"name":"ubuntu-22.04-gcc-11","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"gcc","version":"11","no_boost":false,"cpp_tests":false,"use_sccache":false},{"name":"ubuntu-22.04-gcc-11-noboost","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"gcc","version":"11","no_boost":true,"cpp_tests":false,"use_sccache":false},{"name":"ubuntu-22.04-clang-11","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"clang","version":"11","no_boost":false,"cpp_tests":false,"use_sccache":false},{"name":"macos-15-xcode-16","build_type":"Release","python_version":3,"os":"macos-15","compiler":"xcode","version":"16","no_boost":false,"cpp_tests":false,"use_sccache":false},{"name":"windows-2022-msvc","build_type":"Release","python_version":3,"os":"windows-2022","platform":64,"no_boost":false,"cpp_tests":false,"use_sccache":true}]}' >> "$GITHUB_OUTPUT"
+          fi
+
+  fast-compile:
+    name: Fast compile (${{ matrix.name }})
     needs: check-paths
-    if: needs.check-paths.outputs.should_run == 'true'
+    if: github.event_name == 'pull_request' && needs.check-paths.outputs.should_run == 'true'
+    runs-on: ${{ matrix.os }}
+    env:
+      SCCACHE_BASEDIRS: ${{ github.workspace }}
+      SCCACHE_GHA_ENABLED: ON
+    strategy:
+      fail-fast: true
+      matrix: ${{ fromJSON(needs.check-paths.outputs.build_matrix) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install GCC (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get -y update
+          sudo apt-get install -y g++-${{ matrix.version }}
+          echo "CC=gcc-${{ matrix.version }}" >> "$GITHUB_ENV"
+          echo "CXX=g++-${{ matrix.version }}" >> "$GITHUB_ENV"
+
+      - name: Select Xcode (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          sudo xcode-select -switch /Applications/Xcode.app
+          echo "CC=clang" >> "$GITHUB_ENV"
+          echo "CXX=clang++" >> "$GITHUB_ENV"
+
+      - name: Setup MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x${{ matrix.platform }}
+          toolset: 14.40
+
+      - name: Install sccache
+        uses: mozilla-actions/sccache-action@v0.0.11
+        with:
+          version: "v0.17.0"
+
+      # Keep the Windows PR fast-compile gate focused on the stable library.
+      - name: Configure
+        shell: bash
+        run: >-
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DGTSAM_BUILD_TESTS=OFF
+          -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON
+          -DGTSAM_BUILD_UNSTABLE=${{ runner.os == 'Windows' && 'OFF' || 'ON' }}
+          -DGTSAM_USE_QUATERNIONS=OFF
+          -DGTSAM_WITH_TBB=OFF
+          -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF
+          -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF
+          -DGTSAM_BUILD_WITH_PRECOMPILED_HEADERS=OFF
+          -DGTSAM_BUILD_PYTHON=OFF
+          -DGTSAM_UNSTABLE_BUILD_PYTHON=OFF
+          -DGTSAM_USE_BOOST_FEATURES=OFF
+          -DGTSAM_ENABLE_BOOST_SERIALIZATION=OFF
+          -DGTSAM_ENABLE_GEOGRAPHICLIB=OFF
+          -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache
+          -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+      - name: Compile GTSAM libraries
+        if: runner.os != 'Windows'
+        run: cmake --build build --target gtsam gtsam_unstable --parallel 4
+
+      - name: Compile GTSAM library (Windows)
+        if: runner.os == 'Windows'
+        run: cmake --build build --target gtsam --parallel 4
+
+      - name: Show sccache statistics
+        shell: bash
+        run: sccache --show-stats
+
+  build:
+    # On PRs, create all existing required contexts even if the fast gate fails.
+    # Their first step reports the gate failure; expensive setup never starts.
+    needs: [check-paths, fast-compile]
+    if: >-
+      always() &&
+      (github.event_name == 'workflow_dispatch' ||
+       github.event_name == 'workflow_call' ||
+       github.event_name == 'push' ||
+       needs.check-paths.outputs.should_run == 'true')
 
     name: ${{ matrix.name }} ${{ matrix.build_type }} Python ${{ matrix.python_version }}
     runs-on: ${{ matrix.os }}
@@ -41,54 +172,29 @@ jobs:
       CTEST_OUTPUT_ON_FAILURE: ON
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
+      GTSAM_BUILD_TESTS: ${{ matrix.cpp_tests && 'ON' || 'OFF' }}
       PYTHON_VERSION: ${{ matrix.python_version }}
-      BOOST_VERSION: 1.72.0
-      BOOST_EXE: boost_1_72_0-msvc-14.2
+      SCCACHE_BASEDIRS: ${{ github.workspace }}
+      SCCACHE_GHA_ENABLED: ON
 
     strategy:
-      fail-fast: true
-      matrix:
-        # Github Actions requires a single row to be added to the build matrix.
-        # See https://help.github.com/en/articles/workflow-syntax-for-github-actions.
-        name:
-          [
-            ubuntu-22.04-gcc-9,
-            ubuntu-22.04-clang-11,
-            macos-13-xcode-14.2,
-            macos-14-xcode-15.4,
-            windows-2022-msbuild,
-          ]
-
-        build_type: [Release]
-        python_version: [3]
-        include:
-          - name: ubuntu-22.04-gcc-9
-            os: ubuntu-22.04
-            compiler: gcc
-            version: "9"
-
-          - name: ubuntu-22.04-clang-11
-            os: ubuntu-22.04
-            compiler: clang
-            version: "11"
-
-          - name: macos-13-xcode-14.2
-            os: macos-13
-            compiler: xcode
-            version: "14.2"
-
-          - name: macos-14-xcode-15.4
-            os: macos-14
-            compiler: xcode
-            version: "15.4"
-
-          - name: windows-2022-msbuild
-            os: windows-2022
-            platform: 64
+      # Preserve fail-fast for normal Python CI, but let every required context
+      # report a failed fast gate instead of being cancelled by a sibling.
+      fail-fast: >-
+        ${{ github.event_name != 'pull_request' ||
+            needs.fast-compile.result == 'success' }}
+      matrix: ${{ fromJSON(needs.check-paths.outputs.build_matrix) }}
 
     steps:
+      - name: Require successful fast compilation
+        if: github.event_name == 'pull_request' && needs.fast-compile.result != 'success'
+        shell: bash
+        run: |
+          echo "Fast compilation did not succeed (result: ${{ needs.fast-compile.result }})."
+          exit 1
+
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install (Linux)
         if: runner.os == 'Linux'
@@ -105,7 +211,11 @@ jobs:
           fi
 
           sudo apt-get -y update
-          sudo apt-get -y install cmake build-essential pkg-config libpython3-dev python3-numpy libboost-all-dev ninja-build
+          if [ "${{ matrix.no_boost }}" = "true" ]; then
+            sudo apt-get -y install build-essential pkg-config libpython3-dev python3-numpy
+          else
+            sudo apt-get -y install build-essential pkg-config libpython3-dev python3-numpy libboost-all-dev
+          fi
 
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             sudo apt-get install -y g++-${{ matrix.version }} g++-${{ matrix.version }}-multilib
@@ -120,14 +230,16 @@ jobs:
       - name: Install (macOS)
         if: runner.os == 'macOS'
         run: |
-          brew tap ProfFan/robotics
-          brew install cmake ninja
-          brew install boost
+          brew update
+          if [ "${{ matrix.no_boost }}" != "true" ]; then
+            # Install Boost only if missing.
+            brew list boost >/dev/null 2>&1 || brew install boost
+          fi
           sudo xcode-select -switch /Applications/Xcode.app
           echo "CC=clang" >> $GITHUB_ENV
           echo "CXX=clang++" >> $GITHUB_ENV
 
-      - name: Setup msbuild (Windows)
+      - name: Setup MSVC (Windows)
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
         with:
@@ -140,38 +252,80 @@ jobs:
         run: cl
 
       - name: Setup python (Windows)
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         if: runner.os == 'Windows'
         with:
           python-version: ${{ matrix.python_version }}
 
-      - name: Install ninja (Windows)
-        if: runner.os == 'Windows'
-        shell: bash
-        run: |
-          choco install ninja
-          ninja --version
-          where ninja
-
       - name: Install Boost (Windows)
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && matrix.no_boost != true
         shell: powershell
         run: |
-          # Snippet from: https://github.com/actions/virtual-environments/issues/2667
-          $BOOST_PATH = "C:\hostedtoolcache\windows\Boost\$env:BOOST_VERSION\x86_64"
+          $ErrorActionPreference = "Stop"
+          choco install boost-msvc-14.2 --yes --no-progress
 
-          # Use the prebuilt binary for Windows
-          $Url = "https://sourceforge.net/projects/boost/files/boost-binaries/$env:BOOST_VERSION/$env:BOOST_EXE-${{matrix.platform}}.exe"
+          # Try common Chocolatey install roots for Boost
+          $candidates = @(
+            "C:\local\boost_*",
+            "C:\ProgramData\chocolatey\lib\boost-msvc-14.2\tools\boost_*",
+            "C:\ProgramData\chocolatey\lib\boost-msvc-14.2\**\boost_*"
+          )
 
-          # Create WebClient with appropriate settings and download Boost exe
-          $wc = New-Object System.Net.Webclient
-          $wc.Headers.Add("User-Agent: Other");
-          $wc.DownloadFile($Url, "$env:TEMP\boost.exe")
+          $boostRoot = $null
+          foreach ($pattern in $candidates) {
+            $match = Get-ChildItem -Path $pattern -Directory -ErrorAction SilentlyContinue |
+              Sort-Object FullName -Descending |
+              Select-Object -First 1
+            if ($match) { $boostRoot = $match.FullName; break }
+          }
 
-          Start-Process -Wait -FilePath "$env:TEMP\boost.exe" "/SILENT","/SP-","/SUPPRESSMSGBOXES","/DIR=$BOOST_PATH"
+          if (-not $boostRoot) {
+            throw "Boost installed but root directory was not found in expected locations."
+          }
 
-          # Set the BOOST_ROOT variable
-          echo "BOOST_ROOT=$BOOST_PATH" >> $env:GITHUB_ENV
+          $versionHeaderPath = Join-Path $boostRoot "boost\version.hpp"
+          if (Test-Path $versionHeaderPath -PathType Leaf) {
+            $versionHeader = Get-Item $versionHeaderPath
+          } else {
+            $versionHeaders = @(Get-ChildItem -Path $boostRoot -Filter version.hpp -File -Recurse |
+              Where-Object { $_.FullName -match '[\\/]boost[\\/]version\.hpp$' })
+            if ($versionHeaders.Count -ne 1) {
+              throw "Expected one Boost version header under $boostRoot; found $($versionHeaders.Count)."
+            }
+            $versionHeader = $versionHeaders[0]
+          }
+          $boostIncludeDir = Split-Path -Parent (Split-Path -Parent $versionHeader.FullName)
+
+          $boostLibraryDir = Join-Path $boostRoot "lib64-msvc-14.2"
+          if (-not (Test-Path $boostLibraryDir -PathType Container)) {
+            $libraryDirs = @(Get-ChildItem -Path $boostRoot -Filter "lib64-msvc-*" -Directory)
+            if ($libraryDirs.Count -ne 1) {
+              throw "Expected one x64 MSVC Boost library directory under $boostRoot; found $($libraryDirs.Count)."
+            }
+            $boostLibraryDir = $libraryDirs[0].FullName
+          }
+
+          $requiredComponents = @("chrono", "graph", "program_options", "random", "serialization", "timer")
+          foreach ($component in $requiredComponents) {
+            $componentLibrary = Get-ChildItem -Path $boostLibraryDir -Filter "libboost_$component-*-x64-*.lib" -File |
+              Select-Object -First 1
+            if (-not $componentLibrary) {
+              throw "Boost $component x64 library was not found in $boostLibraryDir."
+            }
+          }
+
+          "BOOST_ROOT=$boostRoot" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "BOOST_INCLUDEDIR=$boostIncludeDir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "BOOST_LIBRARYDIR=$boostLibraryDir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host "Using BOOST_ROOT=$boostRoot"
+          Write-Host "Using BOOST_INCLUDEDIR=$boostIncludeDir"
+          Write-Host "Using BOOST_LIBRARYDIR=$boostLibraryDir"
+    
+      - name: Install sccache
+        if: matrix.use_sccache == true
+        uses: mozilla-actions/sccache-action@v0.0.11
+        with:
+          version: "v0.17.0"
 
       - name: Set GTSAM_WITH_TBB Flag
         if: matrix.flag == 'tbb'
@@ -205,9 +359,33 @@ jobs:
       - name: Build
         shell: bash
         run: |
-          bash .github/scripts/python.sh -b
+          args=(-b)
+          if [ "${{ matrix.no_boost }}" = "true" ]; then
+            args+=(--no-boost)
+          fi
+          if [ "${{ matrix.use_sccache }}" = "true" ]; then
+            args+=(--sccache)
+          fi
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            export BUILD_JOBS=3
+          fi
+          bash .github/scripts/python.sh "${args[@]}"
 
       - name: Test
         shell: bash
         run: |
-          bash .github/scripts/python.sh -t
+          args=(-t)
+          if [ "${{ matrix.no_boost }}" = "true" ]; then
+            args+=(--no-boost)
+          fi
+          bash .github/scripts/python.sh "${args[@]}"
+
+      - name: Test C++
+        if: matrix.cpp_tests == true
+        shell: bash
+        run: cmake --build build --target check --parallel 4
+
+      - name: Show sccache statistics
+        if: matrix.use_sccache == true
+        shell: bash
+        run: sccache --show-stats

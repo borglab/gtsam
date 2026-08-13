@@ -18,6 +18,7 @@
 
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/BinaryJacobianFactor.h>
 #include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Pose3.h>
@@ -154,8 +155,9 @@ TEST( ProjectionFactor, Jacobian ) {
   factor.evaluateError(pose, point, H1Actual, H2Actual);
 
   // The expected Jacobians
-  Matrix H1Expected = (Matrix(2, 6) << 0., -554.256, 0., -92.376, 0., 0., 554.256, 0., 0., 0., -92.376, 0.).finished();
-  Matrix H2Expected = (Matrix(2, 3) << 92.376, 0., 0., 0., 92.376, 0.).finished();
+  Matrix H1Expected{{0., -554.256, 0., -92.376, 0., 0.},
+                    {554.256, 0., 0., 0., -92.376, 0.}};
+  Matrix H2Expected{{92.376, 0., 0.}, {0., 92.376, 0.}};
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-3));
@@ -180,8 +182,9 @@ TEST( ProjectionFactor, JacobianWithTransform ) {
   factor.evaluateError(pose, point, H1Actual, H2Actual);
 
   // The expected Jacobians
-  Matrix H1Expected = (Matrix(2, 6) << -92.376, 0., 577.350, 0., 92.376, 0., -9.2376, -577.350, 0., 0., 0., 92.376).finished();
-  Matrix H2Expected = (Matrix(2, 3) << 0., -92.376, 0., 0., 0., -92.376).finished();
+  Matrix H1Expected{{-92.376, 0., 577.350, 0., 92.376, 0.},
+                    {-9.2376, -577.350, 0., 0., 0., 92.376}};
+  Matrix H2Expected{{0., -92.376, 0.}, {0., 0., -92.376}};
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-3));
@@ -189,6 +192,48 @@ TEST( ProjectionFactor, JacobianWithTransform ) {
 }
 
 /* ************************************************************************* */
-int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
+namespace binary_linearization {
+
+bool checkProjectionLinearization(const TestProjectionFactor& factor,
+                                  const Values& values) {
+  const auto expected = factor.NoiseModelFactor::linearize(values);
+  const auto actual = factor.linearize(values);
+  const bool isBinary = static_cast<bool>(
+      std::dynamic_pointer_cast<BinaryJacobianFactor<2, 6, 3>>(actual));
+  return isBinary && assert_equal(*expected, *actual, 1e-9);
+}
+
+// Verifies projection factors with and without a sensor transform are binary.
+TEST(ProjectionFactor, BinaryLinearization) {
+  const Point2 measurement(323.0, 240.0);
+  const Pose3 pose(Rot3(), Point3(0.0, 0.0, -6.0));
+  const Point3 point(0.0, 0.0, 0.0);
+  const Values values{{X(1), genericValue(pose)},
+                      {L(1), genericValue(point)}};
+  EXPECT(checkProjectionLinearization(
+      TestProjectionFactor(measurement, model, X(1), L(1), K), values));
+
+  const Pose3 body_P_sensor(Rot3::RzRyRx(-M_PI_2, 0.0, -M_PI_2),
+                            Point3(0.25, -0.10, 1.0));
+  const Pose3 transformedPose(Rot3(), Point3(-6.25, 0.10, -1.0));
+  const Values transformedValues{{X(1), genericValue(transformedPose)},
+                                 {L(1), genericValue(point)}};
+  EXPECT(checkProjectionLinearization(TestProjectionFactor(
+      measurement, model, X(1), L(1), K, body_P_sensor), transformedValues));
+}
+
+// Verifies throwing cheirality behavior is preserved during linearization.
+TEST(ProjectionFactor, BinaryLinearizationCheirality) {
+  const TestProjectionFactor factor(Point2(0.0, 0.0), model, X(1), L(1), K,
+                                    true, false);
+  const Values values{{X(1), genericValue(Pose3())},
+                      {L(1), genericValue(Point3(0.0, 0.0, -1.0))}};
+  CHECK_EXCEPTION(factor.linearize(values), CheiralityException);
+}
+
+}  // namespace binary_linearization
 /* ************************************************************************* */
 
+/* ************************************************************************* */
+int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
+/* ************************************************************************* */

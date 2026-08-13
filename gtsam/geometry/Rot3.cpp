@@ -19,16 +19,23 @@
  * @author  Varun Agrawal
  */
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/SO3.h>
 
-#include <cmath>
 #include <cassert>
+#include <cmath>
 #include <random>
 
 using namespace std;
 
 namespace gtsam {
+
+/* ************************************************************************* */
+bool Rot3::IsValid(const Matrix3& R, double tol) {
+  return (R.transpose() * R - Matrix3::Identity()).norm() <= tol &&
+         R.determinant() > 0;
+}
 
 /* ************************************************************************* */
 void Rot3::print(const std::string& s) const {
@@ -121,7 +128,7 @@ Unit3 Rot3::unrotate(const Unit3& p,
     OptionalJacobian<2,3> HR, OptionalJacobian<2,2> Hp) const {
   Matrix32 Dp;
   Unit3 q = Unit3(unrotate(p.point3(Dp)));
-  if (Hp) *Hp = q.basis().transpose() * matrix().transpose () * Dp;
+  if (Hp) *Hp = q.basis().transpose() * matrix().transpose() * Dp;
   if (HR) *HR = q.basis().transpose() * q.skew();
   return q;
 }
@@ -138,8 +145,7 @@ Point3 Rot3::unrotate(const Point3& p, OptionalJacobian<3,3> H1,
   const Matrix3& Rt = transpose();
   Point3 q(Rt * p); // q = Rt*p
   const double wx = q.x(), wy = q.y(), wz = q.z();
-  if (H1)
-    *H1 << 0.0, -wz, +wy, +wz, 0.0, -wx, -wy, +wx, 0.0;
+  if (H1) *H1 = Matrix3{{0.0, -wz, +wy}, {+wz, 0.0, -wx}, {-wy, +wx, 0.0}};
   if (H2)
     *H2 = Rt;
   return q;
@@ -319,4 +325,3 @@ Rot3 Rot3::slerp(double t, const Rot3& other) const {
 /* ************************************************************************* */
 
 } // namespace gtsam
-

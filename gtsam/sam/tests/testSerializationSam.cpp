@@ -39,8 +39,8 @@ constexpr double rangeMmeasurement(10.0);
 /* ************************************************************************* */
 // Export Noisemodels
 // See http://www.boost.org/doc/libs/1_32_0/libs/serialization/doc/special.html
-BOOST_CLASS_EXPORT(gtsam::noiseModel::Isotropic);
-BOOST_CLASS_EXPORT(gtsam::noiseModel::Unit);
+BOOST_CLASS_EXPORT(gtsam::noiseModel::Isotropic)
+BOOST_CLASS_EXPORT(gtsam::noiseModel::Unit)
 
 /* ************************************************************************* */
 TEST(SerializationSam, BearingFactor2D) {

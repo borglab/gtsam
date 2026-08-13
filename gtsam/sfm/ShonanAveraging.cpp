@@ -14,11 +14,19 @@
  * @date   March 2019 - August 2020
  * @author Frank Dellaert, David Rosen, and Jing Wu
  * @brief  Shonan Averaging algorithm
+ * @author Fan Jiang
  */
 
-#include <SymEigsSolver.h>
-#include <cmath>
+// GCC bug workaround
+#if  defined(__GNUC__) && __GNUC__ == 16
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
+#include <Spectra/SymEigsSolver.h>
+#include <Spectra/Util/SimpleRandom.h>
+#include <gtsam/linear/AcceleratedPowerMethod.h>
 #include <gtsam/linear/PCGSolver.h>
+#include <gtsam/linear/PowerMethod.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
@@ -26,18 +34,18 @@
 #include <gtsam/sfm/ShonanAveraging.h>
 #include <gtsam/sfm/ShonanFactor.h>
 #include <gtsam/sfm/ShonanGaugeFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/FastSync.h>
 #include <gtsam/slam/FrobeniusFactor.h>
 #include <gtsam/slam/KarcherMeanFactor-inl.h>
 
 #include <Eigen/Eigenvalues>
 #include <algorithm>
-#include <complex>
-#include <iostream>
-#include <map>
+#include <cassert>
+#include <cmath>
 #include <random>
 #include <set>
 #include <vector>
-#include <cassert>
 
 namespace gtsam {
 
@@ -98,7 +106,7 @@ template <size_t d>
 static size_t NrUnknowns(
     const typename ShonanAveraging<d>::Measurements &measurements) {
   Key maxKey = 0;
-  std::set<Key> keys;
+  KeySet keys;
   for (const auto &measurement : measurements) {
     for (const Key &key : measurement.keys()) {
       maxKey = std::max(key, maxKey);
@@ -132,6 +140,28 @@ ShonanAveraging<d>::ShonanAveraging(const Measurements &measurements,
   Q_ = buildQ();
   D_ = buildD();
   L_ = D_ - Q_;
+}
+
+/* ************************************************************************* */
+template <size_t d>
+NonlinearFactorGraph ShonanAveraging<d>::buildFastSyncGraph() const {
+  NonlinearFactorGraph graph;
+  for (const auto &measurement : measurements_) {
+    SharedNoiseModel model = measurement.noiseModel();
+    if (const auto robust =
+            std::dynamic_pointer_cast<noiseModel::Robust>(model)) {
+      model = robust->noise();
+    }
+    graph.emplace_shared<BetweenFactor<Rot>>(
+        measurement.key1(), measurement.key2(), measurement.measured(), model);
+  }
+
+  if (parameters_.alpha > 0) {
+    const auto &[key, value] = parameters_.anchor;
+    graph.emplace_shared<PriorFactor<Rot>>(
+        key, value, noiseModel::Unit::Create(SO<d>::dimension));
+  }
+  return graph;
 }
 
 /* ************************************************************************* */
@@ -170,6 +200,15 @@ double ShonanAveraging<d>::costAt(size_t p, const Values &values) const {
 template <size_t d>
 std::shared_ptr<LevenbergMarquardtOptimizer>
 ShonanAveraging<d>::createOptimizerAt(size_t p, const Values &initial) const {
+  return createOptimizerAt(p, initial, std::nullopt);
+}
+
+/* ************************************************************************* */
+template <size_t d>
+std::shared_ptr<LevenbergMarquardtOptimizer>
+ShonanAveraging<d>::createOptimizerAt(
+    size_t p, const Values &initial,
+    const std::optional<Ordering> &ordering) const {
   // Build graph
   NonlinearFactorGraph graph = buildGraphAt(p);
 
@@ -182,8 +221,9 @@ ShonanAveraging<d>::createOptimizerAt(size_t p, const Values &initial) const {
                                            model);
   }
   // Optimize
-  return std::make_shared<LevenbergMarquardtOptimizer>(graph, initial,
-                                                         parameters_.lm);
+  LevenbergMarquardtParams lm = parameters_.lm;
+  if (ordering && lm.requiresOrdering()) lm.setOrdering(*ordering);
+  return std::make_shared<LevenbergMarquardtOptimizer>(graph, initial, lm);
 }
 
 /* ************************************************************************* */
@@ -444,8 +484,8 @@ Sparse ShonanAveraging<d>::computeLambda(const Matrix &S) const {
   std::vector<Eigen::Triplet<double>> triplets;
   triplets.reserve(stride * N);
 
-  // Do sparse-dense multiply to get Q*S'
-  auto QSt = Q_ * S.transpose();
+  // Materialize Q*S' once before extracting a block for each pose.
+  const Matrix QSt = Q_ * S.transpose();
 
   for (size_t j = 0; j < N; j++) {
     // Compute B, the building block for the j^th diagonal block of Lambda
@@ -628,7 +668,7 @@ static bool SparseMinimumEigenValue(
     const Sparse &A, const Matrix &S, double *minEigenValue,
     Vector *minEigenVector = 0, size_t *numIterations = 0,
     size_t maxIterations = 1000,
-    double minEigenvalueNonnegativityTolerance = 10e-4,
+    double minEigenvalueNonnegativityTolerance = 1e-4,
     Eigen::Index numLanczosVectors = 20) {
   // a. Estimate the largest-magnitude eigenvalue of this matrix using Lanczos
   MatrixProdFunctor lmOperator(A);
@@ -683,8 +723,8 @@ static bool SparseMinimumEigenValue(
   // simultaneously allowing the iterations to escape from this fixed point in
   // the case that the relaxation is not exact.
   Vector v0 = S.row(0).transpose();
-  Vector perturbation(v0.size());
-  perturbation.setRandom();
+  Spectra::SimpleRandom<double> rng(0);
+  Vector perturbation = rng.random_vec(v0.size());
   perturbation.normalize();
   Vector xinit = v0 + (.03 * v0.norm()) * perturbation;  // Perturb v0 by ~3%
 
@@ -827,8 +867,8 @@ Values ShonanAveraging<d>::initializeWithDescent(
   double alphaMin = 1e-2;
   double alpha =
       std::max(1024 * alphaMin, 10 * gradienTolerance / fabs(minEigenValue));
-  vector<double> alphas;
-  vector<double> fvals;
+  std::vector<double> alphas;
+  std::vector<double> fvals;
   // line search
   while ((alpha >= alphaMin)) {
     Values Qplus = LiftwithDescent(p, values, alpha * minEigenVector);
@@ -888,22 +928,64 @@ Values ShonanAveraging<d>::initializeRandomlyAt(size_t p) const {
 
 /* ************************************************************************* */
 template <size_t d>
-std::pair<Values, double> ShonanAveraging<d>::run(const Values &initialEstimate,
-                                                  size_t pMin,
-                                                  size_t pMax) const {
-  if (pMin < d) {
-    throw std::runtime_error("pMin is smaller than the base dimension d");
+std::pair<Values, double> ShonanAveraging<d>::run(const Values &initial,
+                                                  size_t min_p,
+                                                  size_t max_p) const {
+  if (min_p < d) {
+    throw std::runtime_error("min_p is smaller than the base dimension d");
+  }
+  if (max_p < min_p) {
+    throw std::runtime_error("max_p is smaller than min_p");
+  }
+
+  std::optional<Ordering> ordering = parameters_.lm.ordering;
+  if (!ordering && parameters_.lm.requiresOrdering()) {
+    ordering = Ordering::Create(parameters_.lm.orderingType,
+                                buildGraphAt(min_p));
+  }
+  return run(initial, min_p, max_p, ordering);
+}
+
+/* ************************************************************************* */
+template <size_t d>
+std::pair<Values, double> ShonanAveraging<d>::run(
+    size_t min_p, size_t max_p) const {
+  if (min_p < d) {
+    throw std::runtime_error("min_p is smaller than the base dimension d");
+  }
+  if (max_p < min_p) {
+    throw std::runtime_error("max_p is smaller than min_p");
+  }
+
+  const NonlinearFactorGraph graph = buildFastSyncGraph();
+  const Ordering ordering =
+      parameters_.lm.ordering ? *parameters_.lm.ordering
+                              : Ordering::Create(Ordering::METIS, graph);
+  const Values initial = fastSync<Rot>(graph, ordering);
+  const std::optional<Ordering> lmOrdering =
+      parameters_.lm.requiresOrdering() ? std::optional<Ordering>(ordering)
+                                        : std::nullopt;
+  return run(initial, min_p, max_p, lmOrdering);
+}
+
+/* ************************************************************************* */
+template <size_t d>
+std::pair<Values, double> ShonanAveraging<d>::run(
+    const Values &initial, size_t min_p, size_t max_p,
+    const std::optional<Ordering> &ordering) const {
+  if (min_p < d) {
+    throw std::runtime_error("min_p is smaller than the base dimension d");
   }
   Values Qstar;
-  Values initialSOp = LiftTo<Rot>(pMin, initialEstimate);  // lift to pMin!
-  for (size_t p = pMin; p <= pMax; p++) {
+  Values initialSOp = LiftTo<Rot>(min_p, initial);  // lift to min_p!
+  for (size_t p = min_p; p <= max_p; p++) {
     // Optimize until convergence at this level
-    Qstar = tryOptimizingAt(p, initialSOp);
+    Qstar = createOptimizerAt(p, initialSOp, ordering)->optimize();
     if (parameters_.getUseHuber() || !parameters_.getCertifyOptimality()) {
       // in this case, there is no optimality certification
-      if (pMin != pMax) {
+      if (min_p != max_p) {
         throw std::runtime_error(
-            "When using robust norm, Shonan only tests a single rank. Set pMin = pMax");
+            "When using robust norm, Shonan only tests a single rank. Set min_p = max_p");
       }
       const Values SO3Values = roundSolution(Qstar);
       return {SO3Values, 0};
@@ -917,15 +999,15 @@ std::pair<Values, double> ShonanAveraging<d>::run(const Values &initialEstimate,
         return {SO3Values, minEigenValue};
       }
 
-      // Not at global optimimum yet, so check whether we will go to next level
-      if (p != pMax) {
+      // Not at global optimum yet, so check whether we will go to next level
+      if (p != max_p) {
         // Calculate initial estimate for next level by following minEigenVector
         initialSOp =
             initializeWithDescent(p + 1, Qstar, minEigenVector, minEigenValue);
       }
     }
   }
-  throw std::runtime_error("Shonan::run did not converge for given pMax");
+  throw std::runtime_error("Shonan::run did not converge for given max_p");
 }
 
 /* ************************************************************************* */
@@ -937,7 +1019,7 @@ ShonanAveraging2::ShonanAveraging2(const Measurements &measurements,
     : ShonanAveraging<2>(maybeRobust(measurements, parameters.getUseHuber()),
                          parameters) {}
 
-ShonanAveraging2::ShonanAveraging2(string g2oFile, const Parameters &parameters)
+ShonanAveraging2::ShonanAveraging2(std::string g2oFile, const Parameters &parameters)
     : ShonanAveraging<2>(maybeRobust(parseMeasurements<Rot2>(g2oFile),
                                      parameters.getUseHuber()),
                          parameters) {}
@@ -983,7 +1065,7 @@ ShonanAveraging3::ShonanAveraging3(const Measurements &measurements,
     : ShonanAveraging<3>(maybeRobust(measurements, parameters.getUseHuber()),
                          parameters) {}
 
-ShonanAveraging3::ShonanAveraging3(string g2oFile, const Parameters &parameters)
+ShonanAveraging3::ShonanAveraging3(std::string g2oFile, const Parameters &parameters)
     : ShonanAveraging<3>(maybeRobust(parseMeasurements<Rot3>(g2oFile),
                                      parameters.getUseHuber()),
                          parameters) {}

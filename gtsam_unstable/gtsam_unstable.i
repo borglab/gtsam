@@ -10,11 +10,15 @@ class gtsam::Point2Vector;
 class gtsam::Rot2;
 class gtsam::Pose2;
 class gtsam::Point3;
+class gtsam::StereoCamera;
 class gtsam::SO3;
 class gtsam::SO4;
 class gtsam::SOn;
 class gtsam::Rot3;
 class gtsam::Pose3;
+class gtsam::StereoCamera;
+class gtsam::SmartProjectionParams;
+class gtsam::SmartStereoProjectionFactor;
 virtual class gtsam::noiseModel::Base;
 virtual class gtsam::noiseModel::Gaussian;
 virtual class gtsam::noiseModel::Isotropic;
@@ -27,6 +31,7 @@ virtual class gtsam::HessianFactor;
 virtual class gtsam::JacobianFactor;
 class gtsam::Cal3_S2;
 class gtsam::Cal3DS2;
+class gtsam::Cal3_S2Stereo;
 class gtsam::GaussianFactorGraph;
 class gtsam::NonlinearFactorGraph;
 class gtsam::Ordering;
@@ -41,6 +46,7 @@ class gtsam::ISAM2Params;
 class gtsam::GaussianDensity;
 class gtsam::LevenbergMarquardtOptimizer;
 class gtsam::FixedLagSmoother;
+class gtsam::StereoPoint2;
 
 namespace gtsam {
 
@@ -731,6 +737,58 @@ typedef gtsam::ProjectionFactorPPPC<gtsam::Pose3, gtsam::Point3, gtsam::Cal3_S2>
 typedef gtsam::ProjectionFactorPPPC<gtsam::Pose3, gtsam::Point3, gtsam::Cal3DS2> ProjectionFactorPPPCCal3DS2;
 typedef gtsam::ProjectionFactorPPPC<gtsam::Pose3, gtsam::Point3, gtsam::Cal3Fisheye> ProjectionFactorPPPCCal3Fisheye;
 
+#include <gtsam_unstable/slam/SmartStereoProjectionFactor.h>
+virtual class SmartStereoProjectionFactor : gtsam::NonlinearFactor {
+  SmartStereoProjectionFactor(const gtsam::noiseModel::Base* sharedNoiseModel,
+      const gtsam::SmartProjectionParams& params,
+      const gtsam::Pose3& body_P_sensor);
+  SmartStereoProjectionFactor(const gtsam::noiseModel::Base* sharedNoiseModel,
+      const gtsam::SmartProjectionParams& params);
+  SmartStereoProjectionFactor(const gtsam::noiseModel::Base* sharedNoiseModel);
+
+  void print(string s) const;
+  bool equals(const gtsam::NonlinearFactor& p, double tol) const;
+  double error(const gtsam::Values& values) const;
+
+  gtsam::TriangulationResult point() const;
+  gtsam::TriangulationResult point(const gtsam::Values& values) const;
+
+  bool isValid() const;
+  bool isDegenerate() const;
+  bool isPointBehindCamera() const;
+  bool isOutlier() const;
+  bool isFarPoint() const;
+
+  gtsam::GaussianFactor linearizeDamped(const gtsam::CameraSet<gtsam::StereoCamera>& cameras,
+      const double _lambda) const;
+  gtsam::GaussianFactor linearizeDamped(const gtsam::Values& values,
+      const double _lambda) const;
+};
+
+#include <gtsam_unstable/slam/SmartStereoProjectionPoseFactor.h>
+virtual class SmartStereoProjectionPoseFactor : gtsam::SmartStereoProjectionFactor {
+  SmartStereoProjectionPoseFactor(const gtsam::noiseModel::Base* sharedNoiseModel,
+      const gtsam::SmartProjectionParams& params,
+      const gtsam::Pose3& body_P_sensor);
+  SmartStereoProjectionPoseFactor(const gtsam::noiseModel::Base* sharedNoiseModel,
+      const gtsam::SmartProjectionParams& params);
+  SmartStereoProjectionPoseFactor(const gtsam::noiseModel::Base* sharedNoiseModel);
+
+  void add(const gtsam::StereoPoint2& measured, gtsam::Key poseKey,
+      const std::shared_ptr<gtsam::Cal3_S2Stereo>& K);
+  void add(const std::vector<gtsam::StereoPoint2>& measurements,
+      const gtsam::KeyVector& poseKeys,
+      const std::vector<std::shared_ptr<gtsam::Cal3_S2Stereo>>& Ks);
+  void add(const std::vector<gtsam::StereoPoint2>& measurements,
+      const gtsam::KeyVector& poseKeys,
+      const std::shared_ptr<gtsam::Cal3_S2Stereo>& K);
+
+  void print(string s) const;
+  bool equals(const gtsam::NonlinearFactor& p, double tol) const;
+  double error(const gtsam::Values& values) const;
+  std::vector<std::shared_ptr<gtsam::Cal3_S2Stereo>> calibration() const;
+};
+
 #include <gtsam_unstable/slam/ProjectionFactorRollingShutter.h>
 virtual class ProjectionFactorRollingShutter : gtsam::NoiseModelFactor {
   ProjectionFactorRollingShutter(const gtsam::Point2& measured, double alpha, const gtsam::noiseModel::Base* noiseModel,
@@ -756,5 +814,85 @@ virtual class ProjectionFactorRollingShutter : gtsam::NoiseModelFactor {
   // enabling serialization functionality
   void serialize() const;
 };
+
+//*************************************************************************
+// navigation (EqVIO)
+//*************************************************************************
+#include <gtsam_unstable/navigation/EqVIOState.h>
+#include <gtsam_unstable/navigation/EqVIOFilter.h>
+namespace eqvio {
+
+class IMUInput {
+  IMUInput();
+  double stamp;
+  gtsam::Vector3 gyr;
+  gtsam::Vector3 acc;
+  gtsam::Vector3 gyrBiasVel;
+  gtsam::Vector3 accBiasVel;
+};
+
+class State {
+  State();
+  gtsam::imuBias::ConstantBias bias;
+  gtsam::Pose3 cameraOffset;
+  size_t n() const;
+  int dim() const;
+  gtsam::Pose3 pose() const;
+  gtsam::Vector3 velocity() const;
+  gtsam::Vector3 gravityDir() const;
+};
+
+class EqVIOFilterParams {
+  EqVIOFilterParams();
+  double initialPointDepth;
+  double initialPointVariance;
+  double outlierThresholdAbs;
+  double featureRetention;
+  double biasOmegaProcessVariance;
+  double biasAccelProcessVariance;
+  double attitudeProcessVariance;
+  double positionProcessVariance;
+  double velocityProcessVariance;
+  double cameraAttitudeProcessVariance;
+  double cameraPositionProcessVariance;
+  double pointProcessVariance;
+  gtsam::Matrix inputNoise;
+};
+
+class EqVIOFilter {
+  EqVIOFilter(const gtsam::eqvio::EqVIOFilterParams& params);
+  EqVIOFilter(const gtsam::eqvio::State& xi_ref, const gtsam::Matrix& Sigma,
+              const gtsam::KeyVector& landmarkKeys,
+              const gtsam::eqvio::EqVIOFilterParams& params);
+  void initializeFromIMU(const gtsam::eqvio::IMUInput& imu);
+  void predict(const gtsam::eqvio::IMUInput& imu, double dt);
+  void update(const std::map<gtsam::Key, gtsam::Point2>& measurement,
+              const std::shared_ptr<gtsam::eqvio::CameraModel>& camera,
+              const gtsam::Matrix& R);
+
+  bool isInitialized() const;
+  size_t landmarkCount() const;
+  gtsam::Point3 position() const;
+  gtsam::Vector3 velocity() const;
+};
+
+}  // namespace eqvio
+
+#include <gtsam_unstable/slam/LocalOrientedPlane3Factor.h>
+
+virtual class LocalOrientedPlane3Factor : gtsam::NoiseModelFactor {
+  LocalOrientedPlane3Factor(const gtsam::Vector4& z,
+                            const gtsam::noiseModel::Base* noiseModel,
+                            gtsam::Key poseKey,
+                            gtsam::Key anchorPoseKey,
+                            gtsam::Key landmarkKey);
+  LocalOrientedPlane3Factor(const gtsam::OrientedPlane3& z,
+                            const gtsam::noiseModel::Base* noiseModel,
+                            gtsam::Key poseKey,
+                            gtsam::Key anchorPoseKey,
+                            gtsam::Key landmarkKey);
+  void serialize() const;
+};
+
 
 } //\namespace gtsam

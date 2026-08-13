@@ -70,7 +70,7 @@ namespace gtsam {
     // Create a Jacobian Prior Factor directly P_initial.
     // Since x0 is set to the provided mean, the b vector in the prior will be zero
     // TODO(Frank): is there a reason why noiseModel is not simply P_initial?
-    int n = traits<T>::GetDimension(x_initial);
+    size_t n = traits<T>::GetDimension(x_initial);
     priorFactor_ = JacobianFactor::shared_ptr(
         new JacobianFactor(key_initial, P_initial->R(), Vector::Zero(n),
             noiseModel::Unit::Create(n)));

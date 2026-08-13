@@ -133,6 +133,12 @@ class GTSAM_EXPORT DCSAM {
    */
   HybridValues calculateEstimate() const;
 
+  /// Access the current delta, computed during the last call to update
+  const VectorValues& getDelta() const;
+
+  /// Compute the linear error using the underlying solver
+  double error(const VectorValues& x) const;
+
   /**
    * Used to obtain the marginals from the solver.
    *

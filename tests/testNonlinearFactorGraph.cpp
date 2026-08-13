@@ -34,6 +34,9 @@
 
 /*STL/C++*/
 #include <iostream>
+#include <mutex>
+#include <set>
+#include <thread>
 
 using namespace std;
 using namespace gtsam;
@@ -41,6 +44,50 @@ using namespace example;
 
 using symbol_shorthand::X;
 using symbol_shorthand::L;
+
+/* ************************************************************************* */
+// Test factor class that is not sendable (for testing parallel error
+// computation)
+class NonSendableBetweenFactor : public BetweenFactor<Pose2> {
+ public:
+  using Base = BetweenFactor<Pose2>;
+
+  // Static members to track thread IDs that process this factor
+  static std::set<std::thread::id> processingThreadIds;
+  static std::mutex threadIdMutex;
+
+  NonSendableBetweenFactor(Key key1, Key key2, const Pose2& measured,
+                           const SharedNoiseModel& model = nullptr)
+      : Base(key1, key2, measured, model) {}
+
+  bool sendable() const override { return false; }
+
+  // Override error() to track which thread processes this factor
+  double error(const Values& c) const override {
+    std::thread::id currentThreadId = std::this_thread::get_id();
+    {
+      std::lock_guard<std::mutex> lock(threadIdMutex);
+      processingThreadIds.insert(currentThreadId);
+    }
+    return Base::error(c);
+  }
+
+  // Static method to reset tracking (for test cleanup)
+  static void resetTracking() {
+    std::lock_guard<std::mutex> lock(threadIdMutex);
+    processingThreadIds.clear();
+  }
+
+  // Static method to get all thread IDs that processed this factor
+  static std::set<std::thread::id> getProcessingThreadIds() {
+    std::lock_guard<std::mutex> lock(threadIdMutex);
+    return processingThreadIds;
+  }
+};
+
+// Static member definitions
+std::set<std::thread::id> NonSendableBetweenFactor::processingThreadIds;
+std::mutex NonSendableBetweenFactor::threadIdMutex;
 
 /* ************************************************************************* */
 TEST( NonlinearFactorGraph, equals )
@@ -61,6 +108,106 @@ TEST( NonlinearFactorGraph, error )
   Values c2 = createNoisyValues();
   double actual2 = fg.error(c2);
   DOUBLES_EQUAL( 5.625, actual2, 1e-9 );
+}
+
+/* ************************************************************************* */
+TEST( NonlinearFactorGraph, errorParallel ) 
+{
+  constexpr size_t kNumFactors = 512 + 2; // Create graph with >512 factors to trigger TBB parallel path
+  NonlinearFactorGraph fg;
+  Values values;
+  auto noise = noiseModel::Isotropic::Sigma(3, 0.1);
+  size_t numSendableFactors = 0;
+  size_t numNonSendableFactors = 0;
+
+  for (size_t i = 0; i < kNumFactors; ++i) {
+    values.insert(X(i), Pose2(i * 0.1, 0.0, 0.0));
+    if (i > 0) {
+      // Mix sendable and non-sendable factors: use non-sendable for every 10th
+      // factor
+      if (i % 10 == 0) {
+        fg.emplace_shared<NonSendableBetweenFactor>(
+            X(i - 1), X(i), Pose2(0.1, 0.0, 0.0), noise);
+        numNonSendableFactors++;
+      } else {
+        fg.emplace_shared<BetweenFactor<Pose2>>(X(i - 1), X(i),
+                                                Pose2(0.1, 0.0, 0.0), noise);
+        numSendableFactors++;
+      }
+    }
+  }
+
+  // Verify we have both types of factors
+  EXPECT(numSendableFactors > 0);
+  EXPECT(numNonSendableFactors > 0);
+
+  // Reset tracking and get main thread ID before testing
+  NonSendableBetweenFactor::resetTracking();
+  std::thread::id mainThreadId = std::this_thread::get_id();
+
+  // Test with correct values
+  double actual1 = fg.error(values);
+  DOUBLES_EQUAL(0.0, actual1, 1e-9);
+
+  // Verify that NonSendableBetweenFactor instances were only processed on main thread
+  std::set<std::thread::id> threadIds = NonSendableBetweenFactor::getProcessingThreadIds();
+  EXPECT_LONGS_EQUAL(1, threadIds.size());
+  for (const auto& threadId : threadIds) {
+    EXPECT(threadId == mainThreadId); // All should be main thread
+  }
+
+  // Test with noisy values
+  Values noisyValues;
+  for (size_t i = 0; i < kNumFactors; ++i) {
+    noisyValues.insert(X(i), Pose2(i * 0.1 + 0.1, 0.1, 0.01));
+  }
+  
+  // Reset tracking before noisy values test
+  NonSendableBetweenFactor::resetTracking();
+  
+  double actual2 = fg.error(noisyValues);
+
+  // Verify that NonSendableBetweenFactor instances were only processed on main thread
+  threadIds = NonSendableBetweenFactor::getProcessingThreadIds();
+  EXPECT(threadIds.size() > 0); // Should have processed at least some factors
+  for (const auto& threadId : threadIds) {
+    EXPECT(threadId == mainThreadId); // All should be main thread
+  }
+
+  // Verify determinism - parallel should give same result each time
+  double actual3 = fg.error(noisyValues);
+  DOUBLES_EQUAL(actual2, actual3, 0.0);
+
+  // Verify that non-sendable factors are computed by comparing with
+  // a graph that has only sendable factors (should have same error since
+  // both factor types compute the same error, just processed differently)
+  NonlinearFactorGraph fgSendableOnly;
+  Values valuesSendableOnly;
+  for (size_t i = 0; i < kNumFactors; ++i) {
+    valuesSendableOnly.insert(X(i), Pose2(i * 0.1, 0.0, 0.0));
+    if (i > 0) {
+      fgSendableOnly.emplace_shared<BetweenFactor<Pose2>>(
+          X(i - 1), X(i), Pose2(0.1, 0.0, 0.0), noise);
+    }
+  }
+
+  // With correct values, both should have zero error
+  double errorSendableOnly = fgSendableOnly.error(valuesSendableOnly);
+  DOUBLES_EQUAL(0.0, errorSendableOnly, 1e-9);
+
+  // With noisy values, verify that mixed graph (with non-sendable factors)
+  // produces the same error as sendable-only graph, confirming that
+  // non-sendable factors are being computed correctly
+  Values noisyValuesSendableOnly;
+  for (size_t i = 0; i < kNumFactors; ++i) {
+    noisyValuesSendableOnly.insert(X(i), Pose2(i * 0.1 + 0.1, 0.1, 0.01));
+  }
+  double errorSendableOnlyNoisy = fgSendableOnly.error(noisyValuesSendableOnly);
+
+  // Both graphs should produce the same error since they have equivalent
+  // factors (non-sendable factors compute the same error, just processed
+  // sequentially)
+  DOUBLES_EQUAL(errorSendableOnlyNoisy, actual2, 1e-9);
 }
 
 /* ************************************************************************* */

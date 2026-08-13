@@ -157,7 +157,7 @@ static double stirf(double x)
 }
 
 
-double Gamma(double x)
+double gtsam_cephes_Gamma(double x)
 {
     double p, q, z;
     int i;
@@ -173,7 +173,7 @@ double Gamma(double x)
 	    p = floor(q);
 	    if (p == q) {
 	      gamnan:
-		sf_error("Gamma", SF_ERROR_OVERFLOW, NULL);
+		gtsam_cephes_sf_error("Gamma", SF_ERROR_OVERFLOW, NULL);
 		return (INFINITY);
 	    }
 	    i = p;
@@ -272,13 +272,13 @@ static double LS2PI = 0.91893853320467274178;
 
 
 /* Logarithm of Gamma function */
-double lgam(double x)
+double gtsam_cephes_lgam(double x)
 {
     int sign;
-    return lgam_sgn(x, &sign);
+    return gtsam_cephes_lgam_sgn(x, &sign);
 }
 
-double lgam_sgn(double x, int *sign)
+double gtsam_cephes_lgam_sgn(double x, int *sign)
 {
     double p, q, u, w, z;
     int i;
@@ -290,11 +290,11 @@ double lgam_sgn(double x, int *sign)
 
     if (x < -34.0) {
 	q = -x;
-	w = lgam_sgn(q, sign);
+	w = gtsam_cephes_lgam_sgn(q, sign);
 	p = floor(q);
 	if (p == q) {
 	  lgsing:
-	    sf_error("lgam", SF_ERROR_SINGULAR, NULL);
+	    gtsam_cephes_sf_error("lgam", SF_ERROR_SINGULAR, NULL);
 	    return (INFINITY);
 	}
 	i = p;

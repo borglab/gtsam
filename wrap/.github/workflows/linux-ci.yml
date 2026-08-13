@@ -5,35 +5,33 @@ on: [pull_request]
 jobs:
   build:
     name: Tests for 🐍 ${{ matrix.python-version }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v5
 
       - name: Install Dependencies
         run: |
           sudo apt-get -y update
-          sudo apt install cmake build-essential pkg-config libpython3-dev python3-numpy libboost-all-dev
+          sudo apt install cmake
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+      - name: Install uv and set the ${{ matrix.python-version }}
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Python Dependencies
-        run: |
-          sudo pip3 install -U pip setuptools
-          sudo pip3 install -r requirements.txt
+        run: uv sync --locked --all-extras --dev
 
       - name: Build and Test
         run: |
+          # Build
           cmake .
-          cd tests
           # Use Pytest to run all the tests.
-          pytest
+          uv run pytest tests

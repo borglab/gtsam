@@ -22,6 +22,7 @@
 #include <gtsam/base/utilities.h>
 #include <gtsam/discrete/DecisionTree-inl.h>
 #include <gtsam/discrete/DecisionTree.h>
+#include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/hybrid/HybridGaussianProductFactor.h>
@@ -193,16 +194,41 @@ AlgebraicDecisionTree<Key> HybridGaussianFactor::errorTree(
 }
 
 /* *******************************************************************************/
-double HybridGaussianFactor::error(const HybridValues& values) const {
+double HybridGaussianFactor::error(const HybridValues& hybridValues) const {
   // Directly index to get the component, no need to build the whole tree.
-  const GaussianFactorValuePair pair = factors_(values.discrete());
-  return PotentiallyPrunedComponentError(pair, values.continuous());
+  const GaussianFactorValuePair pair = factors_(hybridValues.discrete());
+  return PotentiallyPrunedComponentError(pair, hybridValues.continuous());
 }
 
 /* ************************************************************************ */
 std::shared_ptr<Factor> HybridGaussianFactor::restrict(
-    const DiscreteValues& assignment) const {
-  throw std::runtime_error("HybridGaussianFactor::restrict not implemented");
+  const DiscreteValues& assignment) const {
+  FactorValuePairs restrictedTree = this->factors_;  // Start with the original tree
+
+  const DiscreteKeys& currentFactorDiscreteKeys = this->discreteKeys();
+  DiscreteKeys newFactorDiscreteKeys;  // For the new, restricted factor
+
+  // Iterate over the discrete keys of the current factor
+  for (const DiscreteKey& discreteKey : currentFactorDiscreteKeys) {
+    const Key& key = discreteKey.first;
+
+    // Check if this key is specified in the assignment
+    if (assignment.find(key) != assignment.end()) {
+      // Key is in assignment: restrict the tree by choosing the branch
+      restrictedTree = restrictedTree.choose(key, assignment.at(key));
+      // This key is now fixed, so it's not a discrete key for the new factor
+    }
+    else {
+      // Key is not in assignment: it remains a discrete key for the new factor
+      newFactorDiscreteKeys.push_back(discreteKey);
+    }
+  }
+
+  // Create and return the new HybridGaussianFactor.
+  // Its constructor will derive continuous keys from the GaussianFactor
+  // shared_ptrs within the restrictedTree.
+  return std::make_shared<HybridGaussianFactor>(newFactorDiscreteKeys,
+    restrictedTree);
 }
 
 /* ************************************************************************ */

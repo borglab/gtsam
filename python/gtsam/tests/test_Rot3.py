@@ -2057,6 +2057,32 @@ class TestRot3(GtsamTestCase):
         np.testing.assert_almost_equal(actual_p, c_p, decimal=6)
         np.testing.assert_almost_equal(actual_u.point3(), c_u.point3(), decimal=6)
 
+    def test_invalid_matrix_raises(self) -> None:
+        """Python wrapper should raise ValueError for degenerate matrix input."""
+        with self.assertRaises(ValueError):
+            Rot3(np.zeros((3, 3)))
+        # Nested lists are validated too, not only ndarrays.
+        with self.assertRaises(ValueError):
+            Rot3([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
+        with self.assertRaises(ValueError):
+            Rot3(np.diag([2.0, 1.0, 1.0]))
+        # Reflection (det = -1)
+        with self.assertRaises(ValueError):
+            Rot3(np.diag([1.0, 1.0, -1.0]))
+
+    def test_valid_matrix_no_raise(self) -> None:
+        """Valid and near-valid (rounded) rotation matrices must construct."""
+        Rot3(np.eye(3))
+        Rot3(Rot3.Rz(0.5).matrix())
+        # Real-data rotation rounded to 9 significant digits (orthogonality
+        # error ~6e-7, from test_Sim3's Skydio sequence). The loose validation
+        # tolerance must accept it, as both ndarray and nested lists.
+        R = [[0.692272397, -0.00529704529, -0.721616549],
+             [0.00634689669, 0.999979075, -0.00125157022],
+             [0.721608079, -0.0037136016, 0.692291531]]
+        Rot3(R)
+        Rot3(np.array(R))
+
 
 if __name__ == "__main__":
     unittest.main()

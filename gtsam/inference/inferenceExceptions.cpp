@@ -27,6 +27,8 @@ InconsistentEliminationRequested::InconsistentEliminationRequested(
     : keys_(keys.begin(), keys.end()), keyFormatter(key_formatter) {}
 
 const char* InconsistentEliminationRequested::what() const noexcept {
+  if (!message_.empty()) return message_.c_str();
+
   // Format keys for printing
   std::stringstream sstr;
   size_t nrKeysToDisplay = std::min(size_t(4), keys_.size());
@@ -42,19 +44,12 @@ const char* InconsistentEliminationRequested::what() const noexcept {
   sstr << ".";
   std::string keys = sstr.str();
 
-  std::string msg =
-      "An inference algorithm was called with inconsistent "
-      "arguments.  "
-      "The\n"
-      "factor graph, ordering, or variable index were "
-      "inconsistent with "
-      "each\n"
-      "other, or a full elimination routine was called with "
-      "an ordering "
-      "that\n"
+  message_ =
+      "An inference algorithm was called with inconsistent arguments.  The\n"
+      "factor graph, ordering, or variable index were inconsistent with each\n"
+      "other, or a full elimination routine was called with an ordering that\n"
       "does not include all of the variables.\n";
-  msg += ("Leftover keys after elimination: " + keys);
-  // `new` to allocate memory on heap instead of stack
-  return (new std::string(msg))->c_str();
+  message_ += ("Leftover keys after elimination: " + keys);
+  return message_.c_str();
 }
 }  // namespace gtsam

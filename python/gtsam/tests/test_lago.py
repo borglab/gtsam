@@ -26,8 +26,8 @@ class TestLago(unittest.TestCase):
         graph = gtsam.NonlinearFactorGraph()
         graph, initial = gtsam.readG2o(g2oFile)
 
-        # Add prior on the pose having index (key) = 0
-        priorModel = gtsam.noiseModel.Diagonal.Variances(Point3(1e-6, 1e-6, 1e-8))
+        # Fix the gauge with an exact prior on pose 0.
+        priorModel = gtsam.noiseModel.Constrained.All(3)
         graph.add(PriorFactorPose2(0, Pose2(), priorModel))
 
         estimateLago: Values = gtsam.lago.initialize(graph)

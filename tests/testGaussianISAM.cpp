@@ -20,7 +20,6 @@
 #include <tests/smallExample.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianISAM.h>
-#include <gtsam/inference/Ordering.h>
 
 using namespace std;
 using namespace gtsam;

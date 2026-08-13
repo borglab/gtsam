@@ -16,6 +16,9 @@
  * @date    August 2022
  */
 
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
@@ -24,6 +27,7 @@
 
 #include <numeric>
 
+#include "DiscreteFixture.h"
 #include "Switching.h"
 
 // Include for test suite
@@ -56,14 +60,6 @@ TEST(HybridGaussianFactorGraph, EliminateMultifrontal) {
 }
 
 /* ************************************************************************* */
-namespace two {
-std::vector<GaussianFactor::shared_ptr> components(Key key) {
-  return {std::make_shared<JacobianFactor>(key, I_3x3, Z_3x1),
-          std::make_shared<JacobianFactor>(key, I_3x3, Vector3::Ones())};
-}
-}  // namespace two
-
-/* ************************************************************************* */
 TEST(HybridGaussianFactorGraph,
      HybridGaussianFactorGraphEliminateFullMultifrontalSimple) {
   HybridGaussianFactorGraph hfg;
@@ -71,7 +67,7 @@ TEST(HybridGaussianFactorGraph,
   hfg.add(JacobianFactor(X(0), I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
-  hfg.add(HybridGaussianFactor(m1, two::components(X(1))));
+  hfg.add(HybridGaussianFactor(m1, two_component_fixture::components(X(1))));
 
   hfg.add(DecisionTreeFactor(m1, {2, 8}));
   hfg.add(DecisionTreeFactor({m1, m2}, "1 2 3 4"));
@@ -92,7 +88,7 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalCLG) {
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
 
   // Hybrid factor P(x1|c1)
-  hfg.add(HybridGaussianFactor(m1, two::components(X(1))));
+  hfg.add(HybridGaussianFactor(m1, two_component_fixture::components(X(1))));
   // Prior factor on c1
   hfg.add(DecisionTreeFactor(m1, {2, 8}));
 
@@ -113,16 +109,16 @@ TEST(HybridGaussianFactorGraph, eliminateFullMultifrontalTwoClique) {
   hfg.add(JacobianFactor(X(0), I_3x3, X(1), -I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(1), I_3x3, X(2), -I_3x3, Z_3x1));
 
-  hfg.add(HybridGaussianFactor(m0, two::components(X(0))));
-  hfg.add(HybridGaussianFactor(m1, two::components(X(2))));
+  hfg.add(HybridGaussianFactor(m0, two_component_fixture::components(X(0))));
+  hfg.add(HybridGaussianFactor(m1, two_component_fixture::components(X(2))));
 
   hfg.add(DecisionTreeFactor({m1, m2}, "1 2 3 4"));
 
   hfg.add(JacobianFactor(X(3), I_3x3, X(4), -I_3x3, Z_3x1));
   hfg.add(JacobianFactor(X(4), I_3x3, X(5), -I_3x3, Z_3x1));
 
-  hfg.add(HybridGaussianFactor(m3, two::components(X(3))));
-  hfg.add(HybridGaussianFactor(m2, two::components(X(5))));
+  hfg.add(HybridGaussianFactor(m3, two_component_fixture::components(X(3))));
+  hfg.add(HybridGaussianFactor(m2, two_component_fixture::components(X(5))));
 
   auto ordering_full =
       Ordering::ColamdConstrainedLast(hfg, {M(0), M(1), M(2), M(3)});
@@ -493,6 +489,50 @@ TEST(HybridBayesTree, Choose) {
   auto expected_gbt = bayesTree->choose(assignment);
 
   EXPECT(assert_equal(expected_gbt, gbt));
+}
+
+/* ************************************************************************* */
+TEST(HybridBayesTree, Dot) {
+  // Create a HybridGaussianFactorGraph
+  HybridGaussianFactorGraph hgfg;
+
+  // Gaussian Factor (prior on X0)
+  auto priorModel = noiseModel::Isotropic::Sigma(1, 1.0);
+  Matrix A = -Matrix::Identity(1, 1);
+  Vector b = Vector::Zero(1);
+  hgfg.emplace_shared<JacobianFactor>(X(0), A, b, priorModel);
+
+  // Discrete Factor (prior on D0)
+  DiscreteKey dk0(D(0), 2);
+  hgfg.emplace_shared<DecisionTreeFactor>(dk0, "0.7 0.3");
+
+  // Hybrid Gaussian Factor (measurement on X1 depends on D1)
+  DiscreteKey dk1(D(1), 2);
+  // Measurement model 0: N(X1; 0, 1)
+  auto meas0Model = noiseModel::Isotropic::Sigma(1, 1.0);
+  Matrix A1 = Matrix::Identity(1, 1);
+  Vector b1 = Vector::Zero(1);
+  std::vector<GaussianFactor::shared_ptr> components;
+  components.push_back(std::make_shared<JacobianFactor>(X(1), A1, b1, meas0Model));
+  // Measurement model 1: N(X1; 2, 0.5)
+  auto meas1Model = noiseModel::Isotropic::Sigma(1, 0.5);
+  Vector b2{{2.0}};
+  components.push_back(std::make_shared<JacobianFactor>(X(1), A1, b2, meas1Model));
+  hgfg.emplace_shared<HybridGaussianFactor>(dk1, components);
+
+  // Eliminate multifrontal and check number of cliques
+  auto hbt = hgfg.eliminateMultifrontal();
+  EXPECT_LONGS_EQUAL(4, hbt->size());
+
+  std::string expected =
+    R"(digraph G{
+8646911284551352320[label="x0"];
+7205759403792793600[label="d0"];
+7205759403792793601[label="d1"];
+7205759403792793601->8646911284551352321
+8646911284551352321[label="x1 : d1"];
+})";
+  EXPECT(assert_equal(expected, hbt->dot(DefaultKeyFormatter)));
 }
 
 /* ************************************************************************* */

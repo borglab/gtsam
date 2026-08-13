@@ -3,6 +3,32 @@
 //*************************************************************************
 namespace gtsam {
 
+#include <gtsam/base/SymmetricBlockMatrix.h>
+class SymmetricBlockMatrix {
+  SymmetricBlockMatrix();
+  SymmetricBlockMatrix(const std::vector<gtsam::DenseIndex>& dimensions,
+                       bool appendOneDimension = false);
+  SymmetricBlockMatrix(const std::vector<gtsam::DenseIndex>& dimensions,
+                       const gtsam::Matrix& matrix,
+                       bool appendOneDimension = false);
+
+  gtsam::DenseIndex rows() const;
+  gtsam::DenseIndex cols() const;
+  gtsam::DenseIndex nBlocks() const;
+  gtsam::DenseIndex getDim(gtsam::DenseIndex block) const;
+  gtsam::Matrix block(gtsam::DenseIndex I, gtsam::DenseIndex J) const;
+  void setZero();
+  void setAllZero();
+};
+
+#include <gtsam/linear/JointMarginal.h>
+class JointMarginal {
+  gtsam::Matrix at(gtsam::Key iVariable, gtsam::Key jVariable) const;
+  gtsam::Matrix fullMatrix() const;
+  void print(string s = "", gtsam::KeyFormatter keyFormatter =
+                                gtsam::DefaultKeyFormatter) const;
+};
+
 namespace noiseModel {
 #include <gtsam/linear/NoiseModel.h>
 virtual class Base {
@@ -176,6 +202,21 @@ virtual class GemanMcClure: gtsam::noiseModel::mEstimator::Base {
   double loss(double error) const;
 };
 
+virtual class TruncatedLeastSquares: gtsam::noiseModel::mEstimator::Base {
+  TruncatedLeastSquares(double c);
+  TruncatedLeastSquares(double c, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
+  static gtsam::noiseModel::mEstimator::TruncatedLeastSquares* Create(double c);
+  static gtsam::noiseModel::mEstimator::TruncatedLeastSquares* Create(
+      double c, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
+
+  // enabling serialization functionality
+  void serializable() const;
+
+  double weight(double error) const;
+  double loss(double error) const;
+};
+
+
 virtual class DCS: gtsam::noiseModel::mEstimator::Base {
   DCS(double c);
   DCS(double c, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
@@ -280,16 +321,16 @@ class VectorValues {
 
   //Standard Interface
   size_t size() const;
-  size_t dim(size_t j) const;
-  bool exists(size_t j) const;
+  size_t dim(gtsam::Key j) const;
+  bool exists(gtsam::Key j) const;
   void print(string s = "VectorValues",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::VectorValues& x, double tol) const;
-  void insert(size_t j, gtsam::Vector value);
+  void insert(gtsam::Key j, gtsam::Vector value);
   gtsam::Vector vector() const;
   gtsam::Vector vector(const gtsam::KeyVector& keys) const;
-  gtsam::Vector at(size_t j) const;
+  gtsam::Vector at(gtsam::Key j) const;
   void insert(const gtsam::VectorValues& values);
   void update(const gtsam::VectorValues& values);
 
@@ -684,8 +725,8 @@ virtual class GaussianBayesTree {
                                 gtsam::DefaultKeyFormatter);
   size_t size() const;
   bool empty() const;
-  const GaussianBayesTree::Roots& roots() const;
-  const gtsam::GaussianBayesTreeClique* operator[](size_t j) const;
+  const gtsam::GaussianBayesTree::Roots& roots() const;
+  const gtsam::GaussianBayesTreeClique* operator[](gtsam::Key j) const;
   size_t numCachedSeparatorMarginals() const;
 
   string dot(const gtsam::KeyFormatter& keyFormatter =
@@ -701,10 +742,18 @@ virtual class GaussianBayesTree {
   double error(const gtsam::VectorValues& x) const;
   double determinant() const;
   double logDeterminant() const;
+  gtsam::Matrix marginalInformation(gtsam::Key key) const;
   gtsam::Matrix marginalCovariance(gtsam::Key key) const;
+  gtsam::JointMarginal jointMarginalCovariance(
+      const gtsam::KeyVector& queryKeys) const;
+  gtsam::JointMarginal jointMarginalInformation(
+      const gtsam::KeyVector& queryKeys) const;
   gtsam::GaussianConditional* marginalFactor(gtsam::Key key) const;
   gtsam::GaussianFactorGraph* joint(gtsam::Key key1, gtsam::Key key2) const;
+  gtsam::GaussianFactorGraph* joint(const gtsam::KeyVector& queryKeys) const;
   gtsam::GaussianBayesNet* jointBayesNet(gtsam::Key key1, gtsam::Key key2) const;
+  gtsam::GaussianBayesNet* jointBayesNet(const gtsam::KeyVector& queryKeys) const;
+  void deleteCachedShortcuts();
 };
 
 #include <gtsam/linear/GaussianEliminationTree.h>
@@ -781,6 +830,8 @@ virtual class PCGSolverParameters : gtsam::ConjugateGradientParameters {
   void print(string s = "");
 
   std::shared_ptr<gtsam::PreconditionerParameters> preconditioner;
+  bool parallel;
+  size_t numThreads;
 };
 
 #include <gtsam/linear/SubgraphSolver.h>
@@ -800,7 +851,7 @@ class KalmanFilter {
   // gtsam::GaussianDensity* init(gtsam::Vector x0, const gtsam::SharedDiagonal& P0);
   gtsam::GaussianDensity* init(gtsam::Vector x0, gtsam::Matrix P0);
   void print(string s = "") const;
-  static size_t step(gtsam::GaussianDensity* p);
+  static gtsam::Key step(gtsam::GaussianDensity* p);
   gtsam::GaussianDensity* predict(gtsam::GaussianDensity* p, gtsam::Matrix F,
       gtsam::Matrix B, gtsam::Vector u, const gtsam::noiseModel::Diagonal* modelQ);
   gtsam::GaussianDensity* predictQ(gtsam::GaussianDensity* p, gtsam::Matrix F,

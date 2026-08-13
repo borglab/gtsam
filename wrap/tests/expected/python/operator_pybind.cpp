@@ -6,6 +6,24 @@
 
 #include "gtsam/geometry/Pose3.h"
 
+#include <type_traits>
+
+namespace gtwrap {
+namespace internal {
+
+template <typename T>
+struct PyArgPolicy {
+  static pybind11::arg make(const char* name) { return pybind11::arg(name); }
+};
+
+template <typename T>
+pybind11::arg py_arg(const char* name) {
+  return PyArgPolicy<typename std::decay<T>::type>::make(name);
+}
+
+}  // namespace internal
+}  // namespace gtwrap
+
 
 
 
@@ -20,7 +38,7 @@ PYBIND11_MODULE(operator_py, m_) {
 
     py::class_<gtsam::Pose3, std::shared_ptr<gtsam::Pose3>>(m_gtsam, "Pose3")
         .def(py::init<>())
-        .def(py::init<gtsam::Rot3, gtsam::Point3>(), py::arg("R"), py::arg("t"))
+        .def(py::init<gtsam::Rot3, gtsam::Point3>(), gtwrap::internal::py_arg<gtsam::Rot3>("R"), gtwrap::internal::py_arg<gtsam::Point3>("t"))
         .def(py::self * py::self);
 
     py::class_<gtsam::Container<gtsam::Matrix>, std::shared_ptr<gtsam::Container<gtsam::Matrix>>>(m_gtsam, "ContainerMatrix")

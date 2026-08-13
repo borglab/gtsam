@@ -71,6 +71,7 @@ public:
   Vector3  deltaPij() const override { return preintegrated_.segment<3>(3); }
   Vector3  deltaVij() const override { return preintegrated_.tail<3>(); }
   Rot3     deltaRij() const override { return Rot3::Expmap(theta()); }
+  Vector3 so3TangentAt(double t) const override;
   NavState deltaXij() const override { return NavState().retract(preintegrated_); }
 
   const Vector9& preintegrated() const { return preintegrated_; }
@@ -139,9 +140,6 @@ private:
     ar & BOOST_SERIALIZATION_NVP(preintegrated_H_biasOmega_);
   }
 #endif
-
-public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 } /// namespace gtsam

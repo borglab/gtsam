@@ -35,7 +35,6 @@
 #include <gtsam/symbolic/SymbolicEliminationTree.h>
 #include <gtsam/inference/BayesTree.h>
 #include <gtsam/inference/ClusterTree.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>
@@ -144,8 +143,8 @@ TEST(GaussianJunctionTreeB, optimizeMultiFrontal2) {
 //  Values init;
 //  NonlinearFactorGraph newfactors;
 //  NonlinearFactorGraph fullgraph;
-//  SharedDiagonal odoNoise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.1, 0.1, M_PI/100.0));
-//  SharedDiagonal brNoise = noiseModel::Diagonal::Sigmas((Vector(2) << M_PI/100.0, 0.1));
+//  SharedDiagonal odoNoise = noiseModel::Diagonal::Sigmas(Vector{{0.1, 0.1, M_PI/100.0}});
+//  SharedDiagonal brNoise = noiseModel::Diagonal::Sigmas(Vector{{M_PI/100.0, 0.1}});
 //
 //  size_t i = 0;
 //
@@ -247,4 +246,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

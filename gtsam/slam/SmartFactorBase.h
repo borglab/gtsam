@@ -86,8 +86,6 @@ protected:
   mutable FBlocks Fs;
 
  public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
-
   /// shorthand for a smart pointer to a factor.
   typedef std::shared_ptr<This> shared_ptr;
 

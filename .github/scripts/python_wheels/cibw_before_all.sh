@@ -8,15 +8,24 @@ set -x
 
 PYTHON_VERSION="$1"
 PROJECT_DIR="$2"
-ARCH=$(uname -m)
+BOOST_BUILD_JOBS=2
+GTSAM_BUILD_JOBS=2
+
+# The generated Python wrapper translation units require substantial memory.
+# Compile them serially in Linux wheel containers to avoid the OOM killer.
+if [ "$(uname)" == "Linux" ]; then
+    GTSAM_BUILD_JOBS=1
+fi
+
+echo "Build parallelism: Boost=${BOOST_BUILD_JOBS}, GTSAM=${GTSAM_BUILD_JOBS}"
 
 export PYTHON="python${PYTHON_VERSION}"
 
 if [ "$(uname)" == "Linux" ]; then
-    # manylinux2014 is based on CentOS 7, so use yum to install dependencies
+    # Supported manylinux images use a yum-compatible package manager.
     yum install -y wget doxygen
 elif [ "$(uname)" == "Darwin" ]; then
-    brew install cmake doxygen
+    brew install doxygen
 
     # If MACOSX_DEPLOYMENT_TARGET is not explicitly set, default to the version of the host system.
     if [[ -z "${MACOSX_DEPLOYMENT_TARGET}" ]]; then
@@ -33,11 +42,26 @@ BOOST_PREFIX="$HOME/opt/boost"
 ./bootstrap.sh --prefix=${BOOST_PREFIX}
 
 if [ "$(uname)" == "Linux" ]; then
-    ./b2 install --prefix=${BOOST_PREFIX} --with=all -d0
+    ./b2 -j${BOOST_BUILD_JOBS} install --prefix=${BOOST_PREFIX} -d0 --with-graph \
+        --with-move --with-optional --with-program_options --with-random \
+        --with-serialization --with-smart_ptr --with-timer --with-chrono
 elif [ "$(uname)" == "Darwin" ]; then
-    ./b2 install --prefix=${BOOST_PREFIX} --with=all -d0 \
+    ./b2 -j${BOOST_BUILD_JOBS} install --prefix=${BOOST_PREFIX} -d0 --with-graph \
+        --with-move --with-optional --with-program_options --with-random \
+        --with-serialization --with-smart_ptr --with-timer --with-chrono \
+        architecture=arm \
         cxxflags="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
         linkflags="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}"
+    ./b2 -j${BOOST_BUILD_JOBS} install --prefix=${BOOST_PREFIX}/x86 -d0 --with-graph \
+        --with-move --with-optional --with-program_options --with-random \
+        --with-serialization --with-smart_ptr --with-timer --with-chrono \
+        architecture=x86 \
+        cxxflags="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
+        linkflags="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}"
+    for dylib in ${BOOST_PREFIX}/lib/*.dylib; do
+        lipo -create -output $dylib $dylib ${BOOST_PREFIX}/x86/lib/$(basename $dylib)
+    done
+    rm -r ${BOOST_PREFIX}/x86
 fi
 cd ..
 
@@ -67,7 +91,9 @@ rm -rf CMakeCache.txt CMakeFiles
 cmake $PROJECT_DIR \
     -B build \
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
+    -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
     -DGTSAM_BUILD_TESTS=OFF \
+    -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
     -DGTSAM_BUILD_UNSTABLE=${GTSAM_BUILD_UNSTABLE:-ON} \
     -DGTSAM_USE_QUATERNIONS=OFF \
     -DGTSAM_WITH_TBB=${GTSAM_WITH_TBB:-OFF} \
@@ -82,16 +108,10 @@ cmake $PROJECT_DIR \
     -DGTSAM_GENERATE_DOC_XML=1 \
     -DGTWRAP_ADD_DOCSTRINGS=ON
 
-# Generate Doxygen XML documentation
-doxygen build/doc/Doxyfile
+# Generate Doxygen XML documentation with the legacy-compatible configuration.
+doxygen build/doc/Doxyfile.xml
 
 # Install the Python wrapper module and generate Python stubs
 cd $PROJECT_DIR/build/python
-if [ "$(uname)" == "Linux" ]; then
-    make -j $(nproc) install
-    make -j $(nproc) python-stubs
-elif [ "$(uname)" == "Darwin" ]; then
-    make -j $(sysctl -n hw.logicalcpu) install
-    make -j $(sysctl -n hw.logicalcpu) python-stubs
-fi
-
+make -j${GTSAM_BUILD_JOBS} install
+make -j${GTSAM_BUILD_JOBS} python-stubs

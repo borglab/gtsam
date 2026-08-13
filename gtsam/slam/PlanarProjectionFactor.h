@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  * ProjectionFactor, but with pose2 (robot on the floor)
  *
@@ -14,18 +25,16 @@
  */
 #pragma once
 
-#include <gtsam/base/Testable.h>
 #include <gtsam/base/Lie.h>
-
+#include <gtsam/base/Testable.h>
 #include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Rot3.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/base/numericalDerivative.h>
-
 
 namespace gtsam {
 
@@ -139,7 +148,7 @@ namespace gtsam {
             const Cal3DS2& calib,
             const SharedNoiseModel& model = {})
             : PlanarProjectionFactorBase(measured),
-            NoiseModelFactorN(model, poseKey),
+            NoiseModelFactorN<Pose2>(model, poseKey),
             landmark_(landmark),
             bTc_(bTc),
             calib_(calib) {}
@@ -169,9 +178,10 @@ namespace gtsam {
      * This is similar to GeneralSFMFactor, used for SLAM.
     */
     class PlanarProjectionFactor2
-        : public PlanarProjectionFactorBase, public NoiseModelFactorN<Pose2, Point3> {
+        : public PlanarProjectionFactorBase,
+          public NoiseModelFactorT<Vector2, Pose2, Point3> {
     public:
-        typedef NoiseModelFactorN<Pose2, Point3> Base;
+        typedef NoiseModelFactorT<Vector2, Pose2, Point3> Base;
         using Base::evaluateError;
 
         PlanarProjectionFactor2() {}
@@ -201,7 +211,7 @@ namespace gtsam {
             const Cal3DS2& calib,
             const SharedNoiseModel& model = {})
             : PlanarProjectionFactorBase(measured),
-            NoiseModelFactorN(model, poseKey, landmarkKey),
+            Base(model, poseKey, landmarkKey),
             bTc_(bTc),
             calib_(calib) {}
 
@@ -211,7 +221,7 @@ namespace gtsam {
          * @param HwTb jacobian
          * @param Hlandmark jacobian
          */
-        Vector evaluateError(
+        Vector2 evaluateError(
             const Pose2& wTb,
             const Point3& landmark,
             OptionalMatrixType HwTb,
@@ -234,9 +244,11 @@ namespace gtsam {
      * Landmark is constant.
      * This is intended to be used for camera calibration.
     */
-    class PlanarProjectionFactor3 : public PlanarProjectionFactorBase, public NoiseModelFactorN<Pose2, Pose3, Cal3DS2> {
+    class PlanarProjectionFactor3
+        : public PlanarProjectionFactorBase,
+          public NoiseModelFactorT<Vector2, Pose2, Pose3, Cal3DS2> {
     public:
-        typedef NoiseModelFactorN<Pose2, Pose3, Cal3DS2> Base;
+        typedef NoiseModelFactorT<Vector2, Pose2, Pose3, Cal3DS2> Base;
         using Base::evaluateError;
 
         PlanarProjectionFactor3() {}
@@ -258,16 +270,12 @@ namespace gtsam {
          * @param measured corresponding point2 in the camera frame
          * @param model stddev of the measurements, ~one pixel?
          */
-        PlanarProjectionFactor3(
-            Key poseKey,
-            Key offsetKey,
-            Key calibKey,
-            const Point3& landmark,
-            const Point2& measured,
-            const SharedNoiseModel& model = {})
+        PlanarProjectionFactor3(Key poseKey, Key offsetKey, Key calibKey,
+                                const Point3& landmark, const Point2& measured,
+                                const SharedNoiseModel& model = {})
             : PlanarProjectionFactorBase(measured),
-            NoiseModelFactorN(model, poseKey, offsetKey, calibKey),
-            landmark_(landmark) {}
+              Base(model, poseKey, offsetKey, calibKey),
+              landmark_(landmark) {}
 
         /**
          * @param wTb "world to body": estimated pose2
@@ -277,7 +285,7 @@ namespace gtsam {
          * @param HbTc offset jacobian
          * @param Hcalib calibration jacobian
          */
-        Vector evaluateError(
+        Vector2 evaluateError(
             const Pose2& wTb,
             const Pose3& bTc,
             const Cal3DS2& calib,

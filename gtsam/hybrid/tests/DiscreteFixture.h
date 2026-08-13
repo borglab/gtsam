@@ -15,46 +15,74 @@
  *  @author Varun Agrawal
  */
 
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 
-using namespace gtsam;
+#include "Switching.h"
+namespace gtsam {
 using symbol_shorthand::D;
 using symbol_shorthand::X;
 
 namespace discrete_mixture_fixture {
 // We'll make a variable with 2 possible assignments
-DiscreteKey dk(D(1), 2);
+[[maybe_unused]] static DiscreteKey dk(D(1), 2);
 
 // Key for single continuous variable
-Key x1 = X(1);
+[[maybe_unused]] static Key x1 = X(1);
 
-// Make a factor for non-null hypothesis
-inline std::shared_ptr<gtsam::PriorFactor<double>> f1() {
-  const double loc = 0.0;
-  const double sigma1 = 1.0;
-  static auto prior_noise1 = noiseModel::Isotropic::Sigma(1, sigma1);
-  static auto f = std::make_shared<PriorFactor<double>>(x1, loc, prior_noise1);
-  return f;
+[[maybe_unused]] static std::shared_ptr<noiseModel::Isotropic> priorNoise1() {
+  return noiseModel::Isotropic::Sigma(1, 1.0);
 }
 
-// Make a factor for null hypothesis
-inline std::shared_ptr<gtsam::PriorFactor<double>> fNullHypo() {
-  const double loc = 0.0;
-  const double sigmaNullHypo = 8.0;
-  static auto prior_noiseNullHypo = noiseModel::Isotropic::Sigma(1, sigmaNullHypo);
-  static auto f = std::make_shared<PriorFactor<double>>(x1, loc, prior_noiseNullHypo);
-  return f;
+[[maybe_unused]] static std::shared_ptr<PriorFactor<double>> f1() {
+  return std::make_shared<PriorFactor<double>>(X(1), 0.0, priorNoise1());
 }
 
-inline std::shared_ptr<gtsam::noiseModel::Isotropic> prior_noise1() {
-  const double sigma1 = 1.0;
-  static auto prior_noise1 = noiseModel::Isotropic::Sigma(1, sigma1);
-  return prior_noise1;
+[[maybe_unused]] static std::shared_ptr<noiseModel::Isotropic>
+priorNoiseNullHypo() {
+  return noiseModel::Isotropic::Sigma(1, 8.0);
 }
 
-inline std::shared_ptr<gtsam::noiseModel::Isotropic> prior_noiseNullHypo() {
-  const double sigmaNullHypo = 8.0;
-  static auto prior_noiseNullHypo = noiseModel::Isotropic::Sigma(1, sigmaNullHypo);
-  return prior_noiseNullHypo;
+[[maybe_unused]] static std::shared_ptr<PriorFactor<double>> fNullHypo() {
+  return std::make_shared<PriorFactor<double>>(X(1), 0.0, priorNoiseNullHypo());
 }
+
 }  // namespace discrete_mixture_fixture
+
+namespace two_component_fixture {
+[[maybe_unused]] static std::vector<GaussianFactor::shared_ptr> components(
+    Key key) {
+  return {std::make_shared<JacobianFactor>(key, I_3x3, Z_3x1),
+          std::make_shared<JacobianFactor>(key, I_3x3, Vector3::Ones())};
+}
+}  // namespace two_component_fixture
+
+namespace estimation_fixture {
+[[maybe_unused]] static std::vector<double> measurements = {
+    0, 1, 2, 2, 2, 2, 3, 4, 5, 6, 6, 7, 8, 9, 9, 9, 10, 11, 11, 11, 11};
+
+// Ground truth discrete seq
+[[maybe_unused]] static std::vector<size_t> discrete_seq = {
+    1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0};
+
+[[maybe_unused]] static Switching InitializeEstimationProblem(
+    const size_t K, const double between_sigma, const double measurement_sigma,
+    const std::vector<double>& measurements,
+    const std::string& transitionProbabilityTable,
+    HybridNonlinearFactorGraph* graph, Values* initial) {
+  Switching switching(K, between_sigma, measurement_sigma, measurements,
+                      transitionProbabilityTable);
+
+  // Add prior on M(0)
+  graph->push_back(switching.modeChain.at(0));
+
+  // Add the X(0) prior
+  graph->push_back(switching.unaryFactors.at(0));
+  initial->insert(X(0), switching.linearizationPoint.at<double>(X(0)));
+
+  return switching;
+}
+
+}  // namespace estimation_fixture
+}  // namespace gtsam

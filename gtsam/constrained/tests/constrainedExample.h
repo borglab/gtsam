@@ -27,14 +27,17 @@ namespace constrained_example {
 using namespace gtsam;
 
 /// Exponential function e^x.
-inline double exp_func(const double& x, gtsam::OptionalJacobian<1, 1> H1 = {}) {
+[[maybe_unused]] static double exp_func(const double& x,
+                                        gtsam::OptionalJacobian<1, 1> H1 = {}) {
   double result = exp(x);
   if (H1) H1->setConstant(result);
   return result;
 }
 
 /// Exponential expression e^x.
-inline Double_ exp(const Double_& x) { return Double_(exp_func, x); }
+[[maybe_unused]] static Double_ exp(const Double_& x) {
+  return Double_(exp_func, x);
+}
 
 /// Pow functor used for pow function.
 class PowFunctor {
@@ -44,28 +47,33 @@ class PowFunctor {
  public:
   PowFunctor(const double& c) : c_(c) {}
 
-  double operator()(const double& x, gtsam::OptionalJacobian<1, 1> H1 = {}) const {
+  double operator()(const double& x,
+                    gtsam::OptionalJacobian<1, 1> H1 = {}) const {
     if (H1) H1->setConstant(c_ * pow(x, c_ - 1));
     return pow(x, c_);
   }
 };
 
 /// Pow function.
-inline Double_ pow(const Double_& x, const double& c) {
+[[maybe_unused]] static Double_ pow(const Double_& x, const double& c) {
   PowFunctor pow_functor(c);
   return Double_(pow_functor, x);
 }
 
 /// Plus between Double expression and double.
-inline Double_ operator+(const Double_& x, const double& d) { return x + Double_(d); }
+[[maybe_unused]] static Double_ operator+(const Double_& x, const double& d) {
+  return x + Double_(d);
+}
 
 /// Negative sign operator.
-inline Double_ operator-(const Double_& x) { return Double_(0.0) - x; }
+[[maybe_unused]] static Double_ operator-(const Double_& x) {
+  return Double_(0.0) - x;
+}
 
 /// Keys for creating expressions.
-Symbol x1_key('x', 1);
-Symbol x2_key('x', 2);
-Double_ x1(x1_key), x2(x2_key);
+[[maybe_unused]] static Symbol x1_key('x', 1);
+[[maybe_unused]] static Symbol x2_key('x', 2);
+[[maybe_unused]] static Double_ x1(x1_key), x2(x2_key);
 
 }  // namespace constrained_example
 
@@ -78,7 +86,7 @@ Double_ x1(x1_key), x2(x2_key);
  */
 namespace constrained_example1 {
 using namespace constrained_example;
-NonlinearFactorGraph Cost() {
+[[maybe_unused]] static NonlinearFactorGraph Cost() {
   NonlinearFactorGraph graph;
   auto f1 = x1 + exp(-x2);
   auto f2 = pow(x1, 2.0) + 2.0 * x2 + 1.0;
@@ -88,7 +96,7 @@ NonlinearFactorGraph Cost() {
   return graph;
 }
 
-NonlinearEqualityConstraints EqConstraints() {
+[[maybe_unused]] static NonlinearEqualityConstraints EqConstraints() {
   NonlinearEqualityConstraints constraints;
   Vector sigmas = Vector1(1.0);
   auto h1 = x1 + pow(x1, 3) + x2 + pow(x2, 2);
@@ -97,26 +105,28 @@ NonlinearEqualityConstraints EqConstraints() {
   return constraints;
 }
 
-Values InitValues() {
+[[maybe_unused]] static Values InitValues() {
   Values values;
   values.insert(x1_key, -0.2);
   values.insert(x2_key, -0.2);
   return values;
 }
 
-Values OptimalValues() {
+[[maybe_unused]] static Values OptimalValues() {
   Values values;
   values.insert(x1_key, 0.0);
   values.insert(x2_key, 0.0);
   return values;
 }
 
-NonlinearFactorGraph costs = Cost();
-NonlinearEqualityConstraints eqConstraints = EqConstraints();
-NonlinearInequalityConstraints ineqConstraints;
-Values init_values = InitValues();
-ConstrainedOptProblem problem(costs, eqConstraints, ineqConstraints);
-Values optimal_values = OptimalValues();
+[[maybe_unused]] static NonlinearFactorGraph costs = Cost();
+[[maybe_unused]] static NonlinearEqualityConstraints eqConstraints =
+    EqConstraints();
+[[maybe_unused]] static NonlinearInequalityConstraints ineqConstraints;
+[[maybe_unused]] static Values init_values = InitValues();
+[[maybe_unused]] static ConstrainedOptProblem problem(costs, eqConstraints,
+                                                      ineqConstraints);
+[[maybe_unused]] static Values optimal_values = OptimalValues();
 }  // namespace constrained_example1
 
 /* ************************************************************************* */
@@ -129,7 +139,7 @@ Values optimal_values = OptimalValues();
  */
 namespace constrained_example2 {
 using namespace constrained_example;
-NonlinearFactorGraph Cost() {
+[[maybe_unused]] static NonlinearFactorGraph Cost() {
   NonlinearFactorGraph graph;
   auto cost_noise = gtsam::noiseModel::Isotropic::Sigma(1, 1.0);
   graph.addPrior(x1_key, 1.0, cost_noise);
@@ -137,15 +147,16 @@ NonlinearFactorGraph Cost() {
   return graph;
 }
 
-NonlinearEqualityConstraints EqConstraints() {
+[[maybe_unused]] static NonlinearEqualityConstraints EqConstraints() {
   NonlinearEqualityConstraints constraints;
   Vector1 sigmas(1.0);
   Double_ h1 = x1 * x1 + x2 * x2;
-  constraints.emplace_shared<ExpressionEqualityConstraint<double>>(h1, 1.0, sigmas);
+  constraints.emplace_shared<ExpressionEqualityConstraint<double>>(h1, 1.0,
+                                                                   sigmas);
   return constraints;
 }
 
-NonlinearInequalityConstraints IneqConstraints() {
+[[maybe_unused]] static NonlinearInequalityConstraints IneqConstraints() {
   NonlinearInequalityConstraints constraints;
   Double_ g1 = 4 * x1 * x1 + 0.25 * x2 * x2 - Double_(1.0);
   double sigma = 1;
@@ -153,25 +164,28 @@ NonlinearInequalityConstraints IneqConstraints() {
   return constraints;
 }
 
-Values InitValues() {
+[[maybe_unused]] static Values InitValues() {
   Values values;
   values.insert(x1_key, -1.0);
   values.insert(x2_key, 2.0);
   return values;
 }
 
-Values OptimalValues() {
+[[maybe_unused]] static Values OptimalValues() {
   Values values;
   values.insert(x1_key, 1.0 / sqrt(5));
   values.insert(x2_key, 2.0 / sqrt(5));
   return values;
 }
 
-NonlinearFactorGraph costs = Cost();
-NonlinearEqualityConstraints eqConstraints = EqConstraints();
-NonlinearInequalityConstraints ineqConstraints = IneqConstraints();
-Values init_values = InitValues();
-ConstrainedOptProblem problem(costs, eqConstraints, ineqConstraints);
-Values optimal_values = OptimalValues();
+[[maybe_unused]] static NonlinearFactorGraph costs = Cost();
+[[maybe_unused]] static NonlinearEqualityConstraints eqConstraints =
+    EqConstraints();
+[[maybe_unused]] static NonlinearInequalityConstraints ineqConstraints =
+    IneqConstraints();
+[[maybe_unused]] static Values init_values = InitValues();
+[[maybe_unused]] static ConstrainedOptProblem problem(costs, eqConstraints,
+                                                      ineqConstraints);
+[[maybe_unused]] static Values optimal_values = OptimalValues();
 
 }  // namespace constrained_example2

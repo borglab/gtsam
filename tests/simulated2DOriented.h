@@ -64,7 +64,7 @@ namespace simulated2DOriented {
 
   /// Prior on a single pose, optional derivative version
   Pose2 prior(const Pose2& x, OptionalJacobian<3,3> H = OptionalNone) {
-    if (H) *H = I_3x3;
+    if (H) *H = Matrix3::Identity();
     return x;
   }
 

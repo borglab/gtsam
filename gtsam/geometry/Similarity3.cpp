@@ -16,15 +16,13 @@
  * @author John Lambert
  */
 
-#include <gtsam/geometry/Similarity3.h>
-
-#include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/Manifold.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Similarity3.h>
 #include <gtsam/slam/KarcherMeanFactor-inl.h>
 
 namespace gtsam {
-
-using std::vector;
 
 namespace internal {
 /// Subtract centroids from point pairs.
@@ -120,6 +118,29 @@ void Similarity3::print(const std::string& s) const {
   std::cout << "t: " << translation().transpose() << " s: " << scale() << std::endl;
 }
 
+Rot3 Similarity3::rotation(OptionalJacobian<3, 7> Hself) const { 
+  if (Hself) {
+    Hself->setZero();
+    Hself->block<3, 3>(0, 0) = I_3x3;
+  }
+  return R_;
+}
+
+Point3 Similarity3::translation(OptionalJacobian<3, 7> Hself) const {
+  if (Hself) {
+    *Hself << Z_3x3, rotation().matrix(), -t_; 
+  }
+  return t_;
+}
+
+double Similarity3::scale(OptionalJacobian<1, 7> Hself) const {
+  if (Hself) {
+    Hself->setZero();
+    (*Hself)(0, 6) = s_; 
+  }
+  return s_;
+}
+
 Similarity3 Similarity3::Identity() {
   return Similarity3();
 }
@@ -147,9 +168,35 @@ Point3 Similarity3::transformFrom(const Point3& p, //
   return s_ * q;
 }
 
-Pose3 Similarity3::transformFrom(const Pose3& T) const {
-  Rot3 R = R_.compose(T.rotation());
-  Point3 t = Point3(s_ * (R_ * T.translation() + t_));
+Pose3 Similarity3::transformFrom(const Pose3& bTi, 
+  OptionalJacobian<6, 7> Hself, OptionalJacobian<6, 6> H_bTi) const {
+  const Rot3& bRi = bTi.rotation();
+  const Point3& bti = bTi.translation();
+  if (!Hself && !H_bTi) {
+    return Pose3(R_ * bRi, transformFrom(bti));
+  }
+
+  const Rot3 R = R_ * bRi;
+
+  // Delegate the translation jacobians to the point3 transformFrom.
+  Matrix37 Dt_dsim;
+  Matrix3 Dt_dp;
+  const Point3 t = transformFrom(bti, Hself ? &Dt_dsim : nullptr, H_bTi ? &Dt_dp : nullptr);
+
+  if (Hself) {
+    Hself->setZero();
+    Hself->block<3, 3>(0, 0) = bRi.transpose(); // DR_dsimR
+    // Chain D_result_t (ie R.T) * D_t_sim (3x7).
+    Hself->block<3, 7>(3, 0) = R.transpose() * Dt_dsim;
+  }
+
+  if (H_bTi) {
+    H_bTi->setIdentity();
+    // DR_dTR = I_3x3
+    // Chain D_result_t (ie R.T) * D_t_p (ie s * R_) * D_p_bTi (ie [Z_3x3, bRi])
+    // bRi.T * R_.T * s * R * bRi => s * I_3x3
+    H_bTi->block<3, 3>(3, 3) *= s_;
+  }
   return Pose3(R, t);
 }
 
@@ -176,7 +223,7 @@ Similarity3 Similarity3::Align(const Pose3Pairs &abPosePairs) {
     throw std::runtime_error("input should have at least 2 pairs of poses");
 
   // calculate rotation
-  vector<Rot3> rotations;
+  std::vector<Rot3> rotations;
   Point3Pairs abPointPairs;
   rotations.reserve(n);
   abPointPairs.reserve(n);
@@ -222,64 +269,101 @@ Matrix7 Similarity3::AdjointMap() const {
   return adj;
 }
 
-Matrix3 Similarity3::GetV(Vector3 w, double lambda) {
-  // http://www.ethaneade.org/latex2html/lie/node29.html
-  const double theta2 = w.transpose() * w;
-  double Y, Z, W;
-  if (theta2 > 1e-9) {
-    const double theta = sqrt(theta2);
-    const double X = sin(theta) / theta;
-    Y = (1 - cos(theta)) / theta2;
-    Z = (1 - X) / theta2;
-    W = (0.5 - Y) / theta2;
-  } else {
-    // Taylor series expansion for theta=0, X not needed (as is 1)
-    Y = 0.5 - theta2 / 24.0;
-    Z = 1.0 / 6.0 - theta2 / 120.0;
-    W = 1.0 / 24.0 - theta2 / 720.0;
-  }
-  const double lambda2 = lambda * lambda, lambda3 = lambda2 * lambda;
-  const double expMinLambda = exp(-lambda);
-  double A, alpha = 0.0, beta, mu;
-  if (lambda2 > 1e-9) {
-    A = (1.0 - expMinLambda) / lambda;
-    alpha = 1.0 / (1.0 + theta2 / lambda2);
-    beta = (expMinLambda - 1 + lambda) / lambda2;
-    mu = (1 - lambda + (0.5 * lambda2) - expMinLambda) / lambda3;
-  } else {
-    A = 1.0 - lambda / 2.0 + lambda2 / 6.0;
-    beta = 0.5 - lambda / 6.0 + lambda2 / 24.0 - lambda3 / 120.0;
-    mu = 1.0 / 6.0 - lambda / 24.0 + lambda2 / 120.0 - lambda3 / 720.0;
-  }
-  const double gamma = Y - (lambda * Z), upsilon = Z - (lambda * W);
-  const double B = alpha * (beta - gamma) + gamma;
-  const double C = alpha * (mu - upsilon) + upsilon;
-  const Matrix3 Wx = skewSymmetric(w[0], w[1], w[2]);
-  return A * I_3x3 + B * Wx + C * Wx * Wx;
+Matrix7 Similarity3::adjointMap(const Vector7& xi) {
+  const Vector3 w = xi.head<3>();
+  const Vector3 u = xi.segment<3>(3);
+  const double lambda = xi(6);
+
+  Matrix7 adj = Matrix7::Zero();
+  const Matrix3 W = skewSymmetric(w);
+  adj.block<3, 3>(0, 0) = W;
+  adj.block<3, 3>(3, 0) = skewSymmetric(u);
+  adj.block<3, 3>(3, 3) = W + lambda * I_3x3;
+  adj.block<3, 1>(3, 6) = -u;
+  return adj;
 }
 
-Vector7 Similarity3::Logmap(const Similarity3& T, OptionalJacobian<7, 7> Hm) {
+namespace {
+// Functor that implements the Similarity3 V(ω, λ) kernel:
+// See http://www.ethaneade.org/latex2html/lie/node29.html
+struct LocalV : public so3::DexpFunctor {
+  double lambda;  ///< scale log parameter
+  double alpha{0}, beta{0}, mu{0};
+  double P{0}, Q{0}, R{0};
+
+  explicit LocalV(const Vector3& omega, double lambda,
+                  double nearZeroThresholdSq, double nearPiThresholdSq)
+      : so3::DexpFunctor(omega, nearZeroThresholdSq, nearPiThresholdSq),
+        lambda(lambda) {
+    compute_();
+  }
+
+  explicit LocalV(const Vector3& omega, double lambda)
+      : so3::DexpFunctor(omega), lambda(lambda) {
+    compute_();
+  }
+
+  void compute_() {
+    const double lambda2 = lambda * lambda, lambda3 = lambda2 * lambda;
+    if (lambda2 > 1e-9) {
+      const double e = std::exp(-lambda);
+      P = (1.0 - e) / lambda;
+      alpha = 1.0 / (1.0 + (theta2 / lambda2));  // = λ²/(λ²+θ²)
+      beta = (e - 1.0 + lambda) / lambda2;
+      mu = (1.0 - lambda + 0.5 * lambda2 - e) / lambda3;
+    } else {
+      P = 1.0 - lambda / 2.0 + lambda2 / 6.0;
+      alpha = 0.0;
+      beta = 0.5 - lambda / 6.0 + lambda2 / 24.0 - lambda3 / 120.0;
+      mu = 1.0 / 6.0 - lambda / 24.0 + lambda2 / 120.0 - lambda3 / 720.0;
+    }
+    const double one_minus_alpha = 1.0 - alpha;
+    const double C_value = C();
+    Q = alpha * beta + one_minus_alpha * (B - lambda * C_value);
+    R = alpha * mu + one_minus_alpha * (C_value - lambda * E());
+  }
+
+  Matrix3 V() const { return P * I_3x3 + Q * W + R * WW; }
+
+  so3::Kernel kernel() const {
+    const double lambda2 = lambda * lambda;
+    const double dalpha =
+        (lambda2 > 1e-9) ? (-2.0 * alpha * alpha / lambda2) : 0.0;
+    const double C_value = C(), dC_value = dC();
+    const double dQ = (beta - (B - lambda * C_value)) * dalpha +
+                      (1.0 - alpha) * (dB() - lambda * dC_value);
+    const double dR = (mu - (C_value - lambda * E())) * dalpha +
+                      (1.0 - alpha) * (dC_value - lambda * dE());
+    return so3::Kernel{this, P, Q, R, dQ, dR};
+  }
+};
+}  // namespace
+
+Matrix3 Similarity3::GetV(Vector3 w, double lambda) {
+  return LocalV(w, lambda).V();
+}
+Vector7 Similarity3::Logmap(const Similarity3& T) {
   // To get the logmap, calculate w and lambda, then solve for u as shown by Ethan at
   // www.ethaneade.org/latex2html/lie/node29.html
   const Vector3 w = Rot3::Logmap(T.R_);
   const double lambda = log(T.s_);
   Vector7 result;
   result << w, GetV(w, lambda).inverse() * T.t_, lambda;
-  if (Hm) {
-    throw std::runtime_error("Similarity3::Logmap: derivative not implemented");
-  }
   return result;
 }
 
-Similarity3 Similarity3::Expmap(const Vector7& v, OptionalJacobian<7, 7> Hm) {
+Similarity3 Similarity3::Expmap(const Vector7& v) {
   const auto w = v.head<3>();
-  const auto u = v.segment<3>(3);
+  const auto rho = v.segment<3>(3);
   const double lambda = v[6];
-  if (Hm) {
-    throw std::runtime_error("Similarity3::Expmap: derivative not implemented");
-  }
-  const Matrix3 V = GetV(w, lambda);
-  return Similarity3(Rot3::Expmap(w), Point3(V * u), exp(lambda));
+  const LocalV local(w, lambda);
+  const Matrix3 V = local.V();
+#ifdef GTSAM_USE_QUATERNIONS
+  const Rot3 R = Rot3::Expmap(w);
+#else
+  const Rot3 R(local.expmap());
+#endif
+  return Similarity3(R, Point3(V * rho), exp(lambda));
 }
 
 std::ostream &operator<<(std::ostream &os, const Similarity3& p) {

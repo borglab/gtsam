@@ -25,6 +25,7 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/TernaryJacobianFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/base/Testable.h>
 
@@ -84,19 +85,13 @@ static const double baseline = 5.;
 /* ************************************************************************* */
 static vector<Point3> genPoint3() {
   const double z = 5;
-  vector<Point3> landmarks;
-  landmarks.push_back(Point3(-1., -1., z));
-  landmarks.push_back(Point3(-1., 1., z));
-  landmarks.push_back(Point3(1., 1., z));
-  landmarks.push_back(Point3(1., -1., z));
-  landmarks.push_back(Point3(-1.5, -1.5, 1.5 * z));
-  landmarks.push_back(Point3(-1.5, 1.5, 1.5 * z));
-  landmarks.push_back(Point3(1.5, 1.5, 1.5 * z));
-  landmarks.push_back(Point3(1.5, -1.5, 1.5 * z));
-  landmarks.push_back(Point3(-2., -2., 2 * z));
-  landmarks.push_back(Point3(-2., 2., 2 * z));
-  landmarks.push_back(Point3(2., 2., 2 * z));
-  landmarks.push_back(Point3(2., -2., 2 * z));
+  vector<Point3> landmarks{
+      Point3(-1., -1., z),         Point3(-1., 1., z),
+      Point3(1., 1., z),           Point3(1., -1., z),
+      Point3(-1.5, -1.5, 1.5 * z), Point3(-1.5, 1.5, 1.5 * z),
+      Point3(1.5, 1.5, 1.5 * z),   Point3(1.5, -1.5, 1.5 * z),
+      Point3(-2., -2., 2 * z),     Point3(-2., 2., 2 * z),
+      Point3(2., 2., 2 * z),       Point3(2., -2., 2 * z)};
   return landmarks;
 }
 
@@ -303,13 +298,13 @@ TEST( GeneralSFMFactor, optimize_varK_FixLandmarks ) {
     if (i == 0) {
       values.insert(X(i), cameras[i]);
     } else {
-
-      Vector delta = (Vector(11) << rot_noise, rot_noise, rot_noise, // rotation
-      trans_noise, trans_noise, trans_noise, // translation
-      focal_noise, focal_noise, // f_x, f_y
-      skew_noise, // s
-      trans_noise, trans_noise // ux, uy
-          ).finished();
+      Vector delta{{
+          rot_noise, rot_noise, rot_noise,        // rotation
+          trans_noise, trans_noise, trans_noise,  // translation
+          focal_noise, focal_noise,               // f_x, f_y
+          skew_noise,                             // s
+          trans_noise, trans_noise                // ux, uy
+      }};
       values.insert(X(i), cameras[i].retract(delta));
     }
   }
@@ -454,8 +449,10 @@ TEST(GeneralSFMFactor, BinaryJacobianFactor) {
     using namespace noiseModel;
     Rot2 R = Rot2::fromAngle(0.3);
     Matrix2 cov = R.matrix() * R.matrix().transpose();
+    const auto robust = Robust::Create(
+        mEstimator::Huber::Create(1.345), Isotropic::Sigma(2, 0.5));
     models = {SharedNoiseModel(), Unit::Create(2), Isotropic::Sigma(2, 0.5),
-              Constrained::All(2), Gaussian::Covariance(cov)};
+              Constrained::All(2), Gaussian::Covariance(cov), robust};
   }
 
   // Now loop over all these noise models
@@ -489,6 +486,49 @@ TEST(GeneralSFMFactor, BinaryJacobianFactor) {
     }
   }
 }
+
+/* ************************************************************************* */
+namespace ternary_linearization {
+
+// Verifies variable-calibration SFM factors use equivalent ternary factors.
+TEST(GeneralSFMFactor2, TernaryLinearization) {
+  const Key poseKey = 1, pointKey = 2, calibrationKey = 3;
+  const Pose3 pose;
+  const Point3 point(0.2, -0.1, 4.0);
+  const Cal3_S2 calibration(500.0, 510.0, 0.1, 320.0, 240.0);
+  const Point2 measurement =
+      PinholeCamera<Cal3_S2>(pose, calibration).project(point);
+  const Values values{{poseKey, genericValue(pose)},
+                      {pointKey, genericValue(point)},
+                      {calibrationKey, genericValue(calibration)}};
+  const Matrix2 covariance{{1.0, 0.2}, {0.2, 2.0}};
+  const auto robust = noiseModel::Robust::Create(
+      noiseModel::mEstimator::Huber::Create(1.345),
+      noiseModel::Isotropic::Sigma(2, 0.5));
+  const std::vector<SharedNoiseModel> models{
+      SharedNoiseModel(),
+      noiseModel::Unit::Create(2),
+      noiseModel::Isotropic::Sigma(2, 0.5),
+      noiseModel::Diagonal::Sigmas(Vector2{0.5, 0.8}),
+      noiseModel::Gaussian::Covariance(covariance),
+      robust,
+      noiseModel::Constrained::All(2),
+  };
+
+  for (const SharedNoiseModel& model : models) {
+    const GeneralSFMFactor2<Cal3_S2> factor(
+        measurement, model, poseKey, pointKey, calibrationKey);
+    const auto expected = factor.NoiseModelFactor::linearize(values);
+    const auto actual = factor.linearize(values);
+    const bool isTernary = static_cast<bool>(
+        std::dynamic_pointer_cast<TernaryJacobianFactor<2, 6, 3, 5>>(actual));
+    CHECK(isTernary);
+    EXPECT(assert_equal(*expected, *actual, 1e-9));
+  }
+}
+
+}  // namespace ternary_linearization
+/* ************************************************************************* */
 
 /* ************************************************************************* */
 // Do a thorough test of BinaryJacobianFactor

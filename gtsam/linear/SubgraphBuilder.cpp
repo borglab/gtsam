@@ -18,7 +18,6 @@
 #include <gtsam/base/DSFVector.h>
 #include <gtsam/base/FastMap.h>
 #include <gtsam/base/WeightedSampler.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/VariableIndex.h>
 #include <gtsam/linear/Errors.h>
 #include <gtsam/linear/GaussianFactorGraph.h>

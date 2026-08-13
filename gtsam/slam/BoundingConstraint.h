@@ -84,9 +84,9 @@ struct BoundingConstraint1: public NonlinearInequalityConstraint {
     }
 
     if (isGreaterThan_)
-      return (Vector(1) << error).finished();
+      return Vector{{error}};
     else
-      return -1.0 * (Vector(1) << error).finished();
+      return -1.0 * Vector{{error}};
   }
 
 private:
@@ -171,9 +171,9 @@ struct BoundingConstraint2: public NonlinearInequalityConstraint {
     }
 
     if (isGreaterThan_)
-      return (Vector(1) << error).finished();
+      return Vector{{error}};
     else
-      return -1.0 * (Vector(1) << error).finished();
+      return -1.0 * Vector{{error}};
   }
 
 private:

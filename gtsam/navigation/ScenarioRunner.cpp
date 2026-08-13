@@ -15,6 +15,7 @@
  * @author  Frank Dellaert
  */
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/navigation/ScenarioRunner.h>
 
@@ -26,6 +27,35 @@ namespace gtsam {
 
 static double intNoiseVar = 0.0000001;
 static const Matrix3 kIntegrationErrorCovariance = intNoiseVar * I_3x3;
+
+Vector3 ScenarioRunner::actualAngularVelocity(double t) const {
+  const Vector3 omega_b = scenario_.omega_b(t);
+  if (!p_->body_P_sensor) return omega_b;
+  return p_->body_P_sensor->rotation().unrotate(omega_b);
+}
+
+Vector3 ScenarioRunner::actualSpecificForce(double t) const {
+  const Vector3 gravity_b = scenario_.rotation(t).unrotate(gravity_n());
+  Vector3 specificForce_b = scenario_.acceleration_b(t) - gravity_b;
+
+  if (!p_->body_P_sensor) return specificForce_b;
+
+  const Pose3& body_P_sensor = *p_->body_P_sensor;
+  const Vector3 omega_b = scenario_.omega_b(t);
+  specificForce_b +=
+      omega_b.cross(omega_b.cross(body_P_sensor.translation()));
+  return body_P_sensor.rotation().unrotate(specificForce_b);
+}
+
+Vector3 ScenarioRunner::measuredAngularVelocity(double t) const {
+  return actualAngularVelocity(t) + estimatedBias_.gyroscope() +
+         gyroSampler_.sample() / sqrt_dt_;
+}
+
+Vector3 ScenarioRunner::measuredSpecificForce(double t) const {
+  return actualSpecificForce(t) + estimatedBias_.accelerometer() +
+         accSampler_.sample() / sqrt_dt_;
+}
 
 PreintegratedImuMeasurements ScenarioRunner::integrate(
     double T, const Bias& estimatedBias, bool corrupted) const {
@@ -158,6 +188,46 @@ Eigen::Matrix<double, 15, 15> CombinedScenarioRunner::estimateCovariance(
     Q += xi * xi.transpose();
   }
 
+  return Q / (N - 1);
+}
+
+PreintegratedAhrsMeasurements AhrsScenarioRunner::integrate(
+    double T, const Bias& estimatedBias, bool corrupted) const {
+  PreintegratedAhrsMeasurements pim(p_, estimatedBias.gyroscope());
+  double t = 0.0;
+  while (t < T) {
+    Vector3 omega =
+        corrupted ? measuredAngularVelocity(t) : actualAngularVelocity(t);
+    pim.integrateMeasurement(omega, imuSampleTime_);
+    t += imuSampleTime_;
+  }
+  return pim;
+}
+
+Rot3 AhrsScenarioRunner::predict(const PreintegratedAhrsMeasurements& pim,
+                                 const Bias& estimatedBias) const {
+  const Rot3 rot_i(scenario_.pose(0).rotation());
+  return pim.predict(rot_i, estimatedBias.gyroscope());
+}
+
+Matrix3 AhrsScenarioRunner::estimateCovariance(
+    double T, size_t N, const Bias& estimatedBias) const {
+  Rot3 prediction = predict(integrate(T));
+  Matrix samples(3, N);
+  Vector3 sum = Vector3::Zero();
+  for (size_t i = 0; i < N; i++) {
+    auto pim = integrate(T, estimatedBias, true);
+    Rot3 sampled = predict(pim);
+    Vector3 xi = sampled.localCoordinates(prediction);
+    samples.col(i) = xi;
+    sum += xi;
+  }
+  Vector3 sampleMean = sum / N;
+  Matrix3 Q = Matrix3::Zero();
+  for (size_t i = 0; i < N; i++) {
+    Vector3 xi = samples.col(i) - sampleMean;
+    Q += xi * xi.transpose();
+  }
   return Q / (N - 1);
 }
 

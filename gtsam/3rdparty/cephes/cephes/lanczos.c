@@ -22,7 +22,7 @@ static double lanczos_sum(double x)
 }
 
 
-double lanczos_sum_expg_scaled(double x)
+double gtsam_cephes_lanczos_sum_expg_scaled(double x)
 {
     return ratevl(x, lanczos_sum_expg_scaled_num,
 		  sizeof(lanczos_sum_expg_scaled_num) / sizeof(lanczos_sum_expg_scaled_num[0]) - 1,

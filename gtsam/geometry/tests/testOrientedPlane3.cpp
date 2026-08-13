@@ -17,9 +17,10 @@
  * @brief Tests the OrientedPlane3 class
  */
 
-#include <gtsam/geometry/OrientedPlane3.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/OrientedPlane3.h>
 
 using namespace std::placeholders;
 using namespace gtsam;
@@ -29,8 +30,7 @@ GTSAM_CONCEPT_MANIFOLD_INST(OrientedPlane3)
 
 //*******************************************************************************
 TEST(OrientedPlane3, getMethods) {
-  Vector4 c;
-  c << -1, 0, 0, 5;
+  Vector4 c{-1, 0, 0, 5};
   OrientedPlane3 plane1(c);
   OrientedPlane3 plane2(c[0], c[1], c[2], c[3]);
   Vector4 coefficient1 = plane1.planeCoefficients();
@@ -90,13 +90,9 @@ inline static Vector randomVector(const Vector& minLimits,
 //*******************************************************************************
 TEST(OrientedPlane3, localCoordinates_retract) {
   size_t numIterations = 10000;
-  Vector4 minPlaneLimit, maxPlaneLimit;
-  minPlaneLimit << -1.0, -1.0, -1.0, 0.01;
-  maxPlaneLimit << 1.0, 1.0, 1.0, 10.0;
+  Vector4 minPlaneLimit{-1.0, -1.0, -1.0, 0.01}, maxPlaneLimit{1.0, 1.0, 1.0, 10.0};
 
-  Vector3 minXiLimit, maxXiLimit;
-  minXiLimit << -M_PI, -M_PI, -10.0;
-  maxXiLimit << M_PI, M_PI, 10.0;
+  Vector3 minXiLimit{-M_PI, -M_PI, -10.0}, maxXiLimit{M_PI, M_PI, 10.0};
   for (size_t i = 0; i < numIterations; i++) {
     // Create a Plane
     OrientedPlane3 p1(randomVector(minPlaneLimit, maxPlaneLimit));
@@ -133,10 +129,9 @@ TEST(OrientedPlane3, errorVector) {
                       Vector2(actual[0], actual[1])));
   EXPECT(assert_equal(plane1.distance() - plane2.distance(), actual[2]));
 
-  std::function<Vector3(const OrientedPlane3&, const OrientedPlane3&)> f =
-    [](const OrientedPlane3& p1, const OrientedPlane3& p2) {
-      return p1.errorVector(p2);
-    };
+  auto f = [](const OrientedPlane3& p1, const OrientedPlane3& p2) {
+    return p1.errorVector(p2);
+  };
   expectedH1 = numericalDerivative21(f, plane1, plane2);
   expectedH2 = numericalDerivative22(f, plane1, plane2);
   EXPECT(assert_equal(expectedH1, actualH1, 1e-5));
@@ -147,9 +142,7 @@ TEST(OrientedPlane3, errorVector) {
 TEST(OrientedPlane3, jacobian_retract) {
   OrientedPlane3 plane(-1, 0.1, 0.2, 5);
   Matrix33 H_actual;
-  std::function<OrientedPlane3(const Vector3&)> f = [&plane](const Vector3& v) {
-    return plane.retract(v);
-  };
+  auto f = [&plane](const Vector3& v) { return plane.retract(v); };
 
   {
       Vector3 v(-0.1, 0.2, 0.3);
@@ -170,9 +163,7 @@ TEST(OrientedPlane3, jacobian_normal) {
   Matrix23 H_actual, H_expected;
   OrientedPlane3 plane(-1, 0.1, 0.2, 5);
 
-  std::function<Unit3(const OrientedPlane3&)> f = [](const OrientedPlane3& p) {
-    return p.normal();
-  };
+  auto f = [](const OrientedPlane3& p) { return p.normal(); };
 
   H_expected = numericalDerivative11(f, plane);
   plane.normal(H_actual);
@@ -184,9 +175,7 @@ TEST(OrientedPlane3, jacobian_distance) {
   Matrix13 H_actual, H_expected;
   OrientedPlane3 plane(-1, 0.1, 0.2, 5);
 
-  std::function<double(const OrientedPlane3&)> f = [](const OrientedPlane3& p) {
-    return p.distance();
-  };
+  auto f = [](const OrientedPlane3& p) { return p.distance(); };
 
   H_expected = numericalDerivative11(f, plane);
   plane.distance(H_actual);

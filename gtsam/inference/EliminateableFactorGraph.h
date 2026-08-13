@@ -19,14 +19,17 @@
 #pragma once
 
 #include <memory>
-#include <cstddef>
 #include <functional>
 #include <optional>
+#include <unordered_set>
 
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/VariableIndex.h>
 
 namespace gtsam {
+  // Forward declaration
+  class IndexedJunctionTree;
+
   /// Traits class for eliminateable factor graphs, specifies the types that result from
   /// elimination, etc.  This must be defined for each factor graph that inherits from
   /// EliminateableFactorGraph.
@@ -93,6 +96,20 @@ namespace gtsam {
 
     /// Typedef for an optional ordering type
     typedef std::optional<Ordering::OrderingType> OptionalOrderingType;
+
+    /**
+     * Build an `IndexedJunctionTree` for this factor graph and a fixed ordering.
+     *
+     * This structure can be cached and reused for repeated eliminations when the
+     * factor graph structure and ordering are unchanged.
+     *
+     * @param ordering The elimination ordering
+     * @param fixedKeys Optional set of keys to filter out (e.g., from hard constraints)
+     * @return An IndexedJunctionTree that can be reused for elimination
+     */
+    IndexedJunctionTree buildIndexedJunctionTree(
+        const Ordering& ordering,
+        const std::unordered_set<Key>& fixedKeys = {}) const;
 
     /** Do sequential elimination of all variables to produce a Bayes net.  If an ordering is not
      *  provided, the ordering provided by COLAMD will be used.
@@ -172,6 +189,23 @@ namespace gtsam {
       const Ordering& ordering,
       const Eliminate& function = EliminationTraitsType::DefaultEliminate,
       OptionalVariableIndex variableIndex = {}) const;
+
+    /**
+     * Do multifrontal elimination using a pre-built `IndexedJunctionTree`.
+     *
+     * This eliminates the factor graph following the cluster structure encoded in
+     * the indexed junction tree and calls the provided dense elimination function
+     * on each cluster. The indexed junction tree must have been built from a
+     * factor graph with the same factor ordering/indices and the same variable
+     * ordering.
+     *
+     * @param indexedJunctionTree Pre-built indexed junction tree
+     * @param function The elimination function to use for each cluster
+     * @return A Bayes tree containing the elimination results
+     */
+    std::shared_ptr<BayesTreeType> eliminateMultifrontal(
+        const IndexedJunctionTree& indexedJunctionTree,
+        const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
 
     /** Do sequential elimination of some variables, in \c ordering provided, to produce a Bayes net
      *  and a remaining factor graph.  This computes the factorization \f$ p(X) = p(A|B) p(B) \f$,

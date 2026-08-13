@@ -18,10 +18,12 @@
 #pragma once
 
 #include <gtsam/base/Lie.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/concepts.h>
-#include <gtsam/geometry/SO3.h> // Logmap/Expmap derivatives
-#include <limits>
+#include <gtsam/geometry/SO3.h>  // Logmap/Expmap derivatives
+
 #include <iostream>
+#include <limits>
 
 #define QUATERNION_TYPE Eigen::Quaternion<_Scalar,_Options>
 
@@ -46,6 +48,7 @@ struct traits<QUATERNION_TYPE> {
   /// @name Basic manifold traits
   /// @{
   inline constexpr static auto dimension = 3;
+  static int GetDimension(const Q& /* g */) { return 3; }
   typedef OptionalJacobian<3, 3> ChartJacobian;
   typedef Eigen::Matrix<_Scalar, 3, 1, _Options, 3, 1> TangentVector;
 
@@ -198,4 +201,3 @@ struct traits<QUATERNION_TYPE> {
 typedef Eigen::Quaternion<double, Eigen::DontAlign> Quaternion;
 
 } // \namespace gtsam
-

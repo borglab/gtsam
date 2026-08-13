@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /*
  * OrientedPlane3Factor.cpp
  *
@@ -6,6 +17,8 @@
  */
 
 #include "OrientedPlane3Factor.h"
+
+#include <gtsam/base/VectorConstants.h>
 
 using namespace std;
 
@@ -22,9 +35,10 @@ void OrientedPlane3Factor::print(const string& s,
 }
 
 //***************************************************************************
-Vector OrientedPlane3Factor::evaluateError(const Pose3& pose,
-    const OrientedPlane3& plane, OptionalMatrixType H1,
-    OptionalMatrixType H2) const {
+Vector3 OrientedPlane3Factor::evaluateError(const Pose3& pose,
+                                            const OrientedPlane3& plane,
+                                            OptionalMatrixType H1,
+                                            OptionalMatrixType H2) const {
   Matrix36 predicted_H_pose;
   Matrix33 predicted_H_plane, error_H_predicted;
 
@@ -68,7 +82,7 @@ Vector OrientedPlane3DirectionPrior::evaluateError(
   Unit3 n_hat_p = measured_p_.normal();
   Unit3 n_hat_q = plane.normal();
   Matrix2 H_p;
-  Vector e = n_hat_p.error(n_hat_q, H ? &H_p : nullptr);
+  Vector e = n_hat_p.errorVector(n_hat_q, {}, H ? &H_p : nullptr);
   if (H) {
     H->resize(2, 3);
     *H << H_p, Z_2x1;

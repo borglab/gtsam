@@ -57,7 +57,8 @@ int main() {
 
   // Timestep, process noise, measurement noise
   double dt = 0.1;
-  Matrix3 Q = Matrix3::Identity() * 0.01;
+  // Continuous-time process noise (scaled by dt inside predict).
+  Matrix3 Qc = Matrix3::Identity() * 0.1;
   Matrix3 Rm = Matrix3::Identity() * 0.05;
 
   cout << "=== Init ===\nR:\n"
@@ -65,7 +66,7 @@ int main() {
        << ekf.covariance() << "\n\n";
 
   // Predict using state‐dependent f
-  ekf.predict(dynamicsSO3, dt, Q);
+  ekf.predict(dynamicsSO3, dt, Qc);
   cout << "--- After predict ---\nR:\n" << ekf.state().matrix() << "\n\n";
 
   // Magnetometer measurement = body‐frame reading of m_world

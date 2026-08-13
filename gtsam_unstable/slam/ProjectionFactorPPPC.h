@@ -21,6 +21,7 @@
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam_unstable/dllexport.h>
 
 
@@ -130,7 +131,7 @@ class ProjectionFactorPPPC
         if (H3) *H3 = Matrix::Zero(2,3);
         if (H4) *H4 = Matrix::Zero(2,CALIBRATION::dimension);
         if (verboseCheirality_)
-          std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key2()) <<
+          std::cout << e.what() << ": Landmark "<< DefaultKeyFormatter(this->key3()) <<
               " moved behind camera " << DefaultKeyFormatter(this->key1()) << std::endl;
         if (throwCheirality_)
           throw e;

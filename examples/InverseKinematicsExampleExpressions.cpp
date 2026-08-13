@@ -16,6 +16,7 @@
  * @author Frank Dellaert
  */
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/ExpressionFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
