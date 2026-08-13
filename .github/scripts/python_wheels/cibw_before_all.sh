@@ -12,8 +12,8 @@ BOOST_BUILD_JOBS=2
 GTSAM_BUILD_JOBS=2
 
 # The generated Python wrapper translation units require substantial memory.
-# Compile them serially on Linux ARM runners to avoid the OOM killer.
-if [ "$(uname)" == "Linux" ] && [ "$(uname -m)" == "aarch64" ]; then
+# Compile them serially in Linux wheel containers to avoid the OOM killer.
+if [ "$(uname)" == "Linux" ]; then
     GTSAM_BUILD_JOBS=1
 fi
 

@@ -47,7 +47,9 @@ jobs:
           toolset: 14.40
 
       - name: Install sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
+        uses: mozilla-actions/sccache-action@v0.0.11
+        with:
+          version: "v0.17.0"
 
       - name: Install mold
         uses: rui314/setup-mold@v1
@@ -71,7 +73,7 @@ jobs:
           brew install autoconf autoconf-archive automake libtool
 
       - name: Set up vcpkg
-        uses: lukka/run-vcpkg@v11.5
+        uses: lukka/run-vcpkg@v11.6
         with:
           vcpkgDirectory: ${{ github.workspace }}/vcpkg
         env:
@@ -87,7 +89,7 @@ jobs:
 
       - name: Restore cache dependencies
         id: cache-restore
-        uses: actions/cache/restore@v3
+        uses: actions/cache/restore@v5
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
           key: ${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}-${{ steps.hash-compiler.outputs.hash }}
@@ -130,7 +132,7 @@ jobs:
 
       - name: On Failure, upload vcpkg logs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: logs_${{ matrix.os }}_${{ github.event.pull_request.head.sha }}
           path: vcpkg/buildtrees/**/*.log
@@ -138,7 +140,7 @@ jobs:
       - name: Cache dependencies
         # Don't save if it's the exact same
         if: steps.cache-restore.outputs.cache-matched-key != format('{0}-{1}-{2}-{3}', matrix.os, hashFiles('vcpkg.json'), steps.hash-compiler.outputs.hash, hashFiles('vcpkg_installed/**/vcpkg_abi_info.txt'))
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
           key: ${{ matrix.os }}-${{ hashFiles('vcpkg.json') }}-${{ steps.hash-compiler.outputs.hash }}-${{ hashFiles('vcpkg_installed/**/vcpkg_abi_info.txt') }}

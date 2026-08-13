@@ -204,26 +204,11 @@ class GTSAM_EXPORT RiemannianStaircaseOptimizer {
   /// Construct from a QCQP-representable factor graph and an initial
   /// feasible value. Every factor in `graph` must override
   /// `NonlinearFactor::qcqpFactors` (the base implementation throws).
-  /// The staircase rebuilds the rank-p QCQP internally at each level by
-  /// calling `QcqpProblem(graph, p)`.
+  /// The rank-pMin problem is built once here for fail-fast validation and
+  /// reused by `optimize`; higher staircase levels are built on demand.
   RiemannianStaircaseOptimizer(const NonlinearFactorGraph& graph,
                                const Values& initialValues,
-                               const RiemannianStaircaseParams& params = {})
-      : graph_(graph),
-        initialValues_(initialValues),
-        params_(params) {
-    validateParams(params_);
-    // Fail fast if the graph isn't QCQP-representable.
-    try {
-      (void)QcqpProblem(graph_, params_.pMin);
-    } catch (const std::exception& e) {
-      throw std::invalid_argument(
-          std::string("RiemannianStaircaseOptimizer: QcqpProblem(graph, pMin) "
-                      "failed — is the source graph QCQP-representable? "
-                      "Underlying error: ") +
-          e.what());
-    }
-  }
+                               const RiemannianStaircaseParams& params = {});
 
   /// Run the staircase. If it certifies, `result.rounded` holds the rank-d projection.
   RiemannianStaircaseResult optimize() const;
@@ -306,6 +291,8 @@ class GTSAM_EXPORT RiemannianStaircaseOptimizer {
   NonlinearFactorGraph graph_;
   Values initialValues_;
   RiemannianStaircaseParams params_;
+  std::shared_ptr<const QcqpProblem> pMinQcqp_;
+  double pMinQcqpBuildTime_ = 0.0;
 };
 
 struct GTSAM_EXPORT RiemannianStaircaseResult {
@@ -321,8 +308,10 @@ struct GTSAM_EXPORT RiemannianStaircaseResult {
   std::vector<size_t> ranksVisited;
   std::vector<double> costPerLevel;
   std::vector<double> minEigenvaluePerLevel;
+  std::vector<double> qcqpBuildTimePerLevel;
   std::vector<double> nlpTimePerLevel;
   std::vector<double> verifyTimePerLevel;
+  /// Cumulative pipeline time, including the cached rank-pMin QCQP build.
   double totalTime = 0.0;
 
   /// Return true if certification produced a rounded rank-d solution.
@@ -345,7 +334,10 @@ struct GTSAM_EXPORT RiemannianStaircaseResult {
   /// Return the minimum certificate eigenvalue at each staircase level.
   Vector getMinEigenvaluePerLevel() const;
 
-  /// Return the nonlinear-solver time at each staircase level, in seconds.
+  /// Return QCQP construction time at each staircase level, in seconds.
+  Vector getQcqpBuildTimePerLevel() const;
+
+  /// Return local nonlinear-solver time at each staircase level, in seconds.
   Vector getNlpTimePerLevel() const;
 
   /// Return the certificate-verification time at each level, in seconds.

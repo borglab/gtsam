@@ -21,6 +21,7 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/slam/FrobeniusFactor.h>
 
 #include <cmath>
 #include <stdexcept>
@@ -40,32 +41,51 @@ double FastSync<T>::isotropicSigma(const SharedNoiseModel& model) {
 
 template <class T>
 FastSync<T>::FastSync(const NonlinearFactorGraph& graph) {
+  const auto addMeasurement = [this](Key key1, Key key2,
+                                     const T& measurement,
+                                     const SharedNoiseModel& model,
+                                     size_t expectedNoiseDimension) {
+    if (model->dim() != expectedNoiseDimension) {
+      throw std::invalid_argument(
+          "fastSync noise dimension does not match the factor residual");
+    }
+    const double sigma = isotropicSigma(model);
+    if (!std::isfinite(sigma) || sigma <= 0.0) {
+      throw std::invalid_argument(
+          "FastSync requires finite, positive measurement sigmas");
+    }
+    const MatrixN firstBlock = -measurement.matrix().transpose();
+    // Whitening by sigma gives the paper's precision kappa = 1 / sigma^2.
+    reducedGraph_.emplace_shared<JacobianFactor>(
+        key1, firstBlock, key2, MatrixN::Identity(), VectorN::Zero(),
+        noiseModel::Isotropic::Sigma(N, sigma));
+  };
+  const auto addPrior = [this](Key key, const T& value) {
+    if (++priorCount_ > 1) {
+      throw std::invalid_argument(
+          "fastSync supports at most one matching prior");
+    }
+    priorKey_ = key;
+    priorValue_ = value;
+  };
+
   for (const auto& factor : graph) {
     if (const auto between =
             std::dynamic_pointer_cast<BetweenFactor<T>>(factor)) {
-      if (between->noiseModel()->dim() != T::dimension) {
-        throw std::invalid_argument(
-            "fastSync noise dimension must match the group dimension");
-      }
-      const double sigma = isotropicSigma(between->noiseModel());
-      if (!std::isfinite(sigma) || sigma <= 0.0) {
-        throw std::invalid_argument(
-            "FastSync requires finite, positive measurement sigmas");
-      }
-      const Key k1 = between->key1(), k2 = between->key2();
-      const MatrixN firstBlock = -between->measured().matrix().transpose();
-      // Whitening by sigma gives the paper's precision kappa = 1 / sigma^2.
-      reducedGraph_.emplace_shared<JacobianFactor>(
-          k1, firstBlock, k2, MatrixN::Identity(), VectorN::Zero(),
-          noiseModel::Isotropic::Sigma(N, sigma));
+      addMeasurement(between->key1(), between->key2(), between->measured(),
+                     between->noiseModel(), T::dimension);
+    } else if (const auto between =
+                   std::dynamic_pointer_cast<FrobeniusBetweenFactor<T>>(
+                       factor)) {
+      addMeasurement(between->key1(), between->key2(), between->measured(),
+                     between->noiseModel(), N * N);
     } else if (const auto prior =
                    std::dynamic_pointer_cast<PriorFactor<T>>(factor)) {
-      if (++priorCount_ > 1) {
-        throw std::invalid_argument(
-            "fastSync supports at most one matching prior");
-      }
-      priorKey_ = prior->key();
-      priorValue_ = prior->prior();
+      addPrior(prior->key(), prior->prior());
+    } else if (const auto prior =
+                   std::dynamic_pointer_cast<FrobeniusPrior<T>>(factor)) {
+      addPrior(prior->key(),
+               FastSyncProjection<T>::project(prior->priorMatrix()));
     }
   }
   if (reducedGraph_.empty()) {

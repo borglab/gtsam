@@ -26,10 +26,12 @@
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/FastSync.h>
 #include <gtsam/slam/FrobeniusFactor.h>
 
 #include <Eigen/Eigenvalues>
 
+#include <array>
 #include <cmath>
 #include <limits>
 
@@ -77,6 +79,126 @@ AugmentedLagrangianParams::shared_ptr DefaultAlmParams() {
 }
 
 }  // namespace RingFixture
+
+/* ************************************************************************* */
+namespace CachedQcqpFixture {
+
+class CountingFrobeniusBetweenFactor : public FrobeniusBetweenFactor<Rot2> {
+ public:
+  using Base = FrobeniusBetweenFactor<Rot2>;
+
+  CountingFrobeniusBetweenFactor(Key key1, Key key2, const Rot2& measured,
+                                 const SharedNoiseModel& noise,
+                                 const std::shared_ptr<size_t>& buildCount)
+      : Base(key1, key2, measured, noise), buildCount_(buildCount) {}
+
+  void qcqpFactors(NonlinearFactorGraph* costs,
+                   NonlinearEqualityConstraints* constraints,
+                   size_t columnDimension) const override {
+    ++*buildCount_;
+    Base::qcqpFactors(costs, constraints, columnDimension);
+  }
+
+ private:
+  std::shared_ptr<size_t> buildCount_;
+};
+
+// The constructor's pMin QCQP is reused, and each subsequently visited rank
+// lowers every source factor exactly once.
+TEST(RiemannianStaircase, ReusesCachedPMinQcqp) {
+  constexpr size_t kNumPoses = 5;
+  constexpr double kDelta = 2.0 * kPi / static_cast<double>(kNumPoses);
+  const auto noise = noiseModel::Isotropic::Sigma(1, 1.0);
+  const auto buildCount = std::make_shared<size_t>(0);
+  NonlinearFactorGraph graph;
+  for (size_t i = 0; i < kNumPoses; ++i) {
+    graph.emplace_shared<CountingFrobeniusBetweenFactor>(
+        Symbol('x', i), Symbol('x', (i + 1) % kNumPoses),
+        Rot2::fromAngle(kDelta), noise, buildCount);
+  }
+
+  RiemannianStaircaseParams params;
+  params.pMin = 2;
+  params.pMax = 3;
+  params.eta = -1.0;
+  params.almParams = RingFixture::DefaultAlmParams();
+  const Values initial = RingFixture::RingQcqpValuesD2(kNumPoses, kDelta, 0.01);
+
+  const RiemannianStaircaseOptimizer optimizer(graph, initial, params);
+  EXPECT_LONGS_EQUAL(kNumPoses, *buildCount);
+  const auto result = optimizer.optimize();
+
+  EXPECT_LONGS_EQUAL(2, result.ranksVisited.size());
+  EXPECT_LONGS_EQUAL(kNumPoses * result.ranksVisited.size(), *buildCount);
+  EXPECT_LONGS_EQUAL(result.ranksVisited.size(),
+                     result.qcqpBuildTimePerLevel.size());
+  EXPECT_LONGS_EQUAL(result.ranksVisited.size(), result.nlpTimePerLevel.size());
+  EXPECT_LONGS_EQUAL(result.ranksVisited.size(),
+                     result.verifyTimePerLevel.size());
+
+  double accountedTime = 0.0;
+  for (size_t i = 0; i < result.ranksVisited.size(); ++i) {
+    accountedTime += result.qcqpBuildTimePerLevel[i] +
+                     result.nlpTimePerLevel[i] + result.verifyTimePerLevel[i];
+  }
+  EXPECT(result.totalTime >= accountedTime);
+}
+
+}  // namespace CachedQcqpFixture
+
+/* ************************************************************************* */
+namespace FastSyncRot3Fixture {
+
+Values noncontiguousTriangleRotations() {
+  Values rotations;
+  rotations.insert(Symbol('x', 2), Rot3::RzRyRx(0.1, -0.2, 0.3));
+  rotations.insert(Symbol('x', 7), Rot3::RzRyRx(-0.2, 0.4, -0.1));
+  rotations.insert(Symbol('x', 11), Rot3::RzRyRx(0.3, 0.1, -0.4));
+  return rotations;
+}
+
+NonlinearFactorGraph noncontiguousTriangle() {
+  const auto noise = noiseModel::Isotropic::Sigma(Rot3::dimension, 1.0);
+  const Key x2 = Symbol('x', 2), x7 = Symbol('x', 7), x11 = Symbol('x', 11);
+  const Values rotations = noncontiguousTriangleRotations();
+  const std::array<std::pair<Key, Key>, 3> edges{
+      std::make_pair(x2, x7), std::make_pair(x7, x11), std::make_pair(x11, x2)};
+  NonlinearFactorGraph graph;
+  for (const auto& [key1, key2] : edges) {
+    const Rot3 measured =
+        rotations.at<Rot3>(key1).between(rotations.at<Rot3>(key2));
+    graph.emplace_shared<FrobeniusBetweenFactor<Rot3>>(key1, key2, measured,
+                                                       noise);
+  }
+  return graph;
+}
+
+// FAST-Sync values converted through the public QCQP API certify with the
+// generic BM/ALM staircase, without a rotation-specific solver path.
+TEST(RiemannianStaircase, FastSyncRot3QcqpInitialization) {
+  const NonlinearFactorGraph graph = noncontiguousTriangle();
+  const Values rotations = fastSync<Rot3>(graph);
+  Values initial;
+  for (const auto& [key, rotation] : rotations.extract<Rot3>()) {
+    InsertQcqpValue<Rot3, 3>(key, rotation, &initial);
+  }
+
+  RiemannianStaircaseParams params;
+  params.pMin = 3;
+  params.pMax = 3;
+  params.eta = 1e-4;
+  params.almParams = RingFixture::DefaultAlmParams();
+
+  const auto result =
+      RiemannianStaircaseOptimizer(graph, initial, params).optimize();
+
+  EXPECT(result.certified);
+  EXPECT_LONGS_EQUAL(3, static_cast<long>(result.finalRank));
+  EXPECT_LONGS_EQUAL(3, static_cast<long>(result.roundedValues().size()));
+  EXPECT(result.costPerLevel.front() < 1e-8);
+}
+
+}  // namespace FastSyncRot3Fixture
 
 /* ************************************************************************* */
 // At an ALM-converged Ystar, S = Q + sum_m lambda_m * A_m is PSD and S * Y ≈ 0

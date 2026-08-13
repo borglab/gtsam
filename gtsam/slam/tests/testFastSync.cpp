@@ -24,6 +24,7 @@
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/FastSync.h>
+#include <gtsam/slam/FrobeniusFactor.h>
 
 #include <Eigen/QR>
 #include <cmath>
@@ -73,6 +74,29 @@ TEST(FastSync, Rot3Noiseless) {
   EXPECT(checkTriangle(Rot3::Expmap(Vector3{0.1, -0.2, 0.05}),
                        Rot3::Expmap(Vector3{-0.3, 0.1, 0.2}),
                        Rot3::Expmap(Vector3{0.2, 0.25, -0.1})));
+}
+
+// Verifies Frobenius between/prior factors produce the same aligned Rot3
+// initialization as their tangent-residual counterparts.
+TEST(FastSync, FrobeniusRot3Factors) {
+  const Rot3 value0 = Rot3::Expmap(Vector3{0.1, -0.2, 0.05});
+  const Rot3 value1 = Rot3::Expmap(Vector3{-0.3, 0.1, 0.2});
+  const Rot3 value2 = Rot3::Expmap(Vector3{0.2, 0.25, -0.1});
+  const auto model = noiseModel::Isotropic::Sigma(Rot3::dimension, 0.1);
+
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusBetweenFactor<Rot3>>(
+      k0, k1, value0.between(value1), model);
+  graph.emplace_shared<FrobeniusBetweenFactor<Rot3>>(
+      k1, k2, value1.between(value2), model);
+  graph.emplace_shared<FrobeniusBetweenFactor<Rot3>>(
+      k2, k0, value2.between(value0), model);
+  graph.emplace_shared<FrobeniusPrior<Rot3>>(k0, value0.matrix(), model);
+
+  const Values actual = fastSync<Rot3>(graph);
+  EXPECT(assert_equal(value0, actual.at<Rot3>(k0), 1e-7));
+  EXPECT(assert_equal(value1, actual.at<Rot3>(k1), 1e-7));
+  EXPECT(assert_equal(value2, actual.at<Rot3>(k2), 1e-7));
 }
 
 // Verifies exact synchronization and prior alignment for Pose2.

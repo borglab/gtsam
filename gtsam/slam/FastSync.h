@@ -188,10 +188,11 @@ struct FastSyncProjection<SL4> {
 /**
  * Solver for the fixed-size ambient linear problem underlying FAST-Sync.
  *
- * The constructor extracts matching between factors and builds the reduced
- * Gaussian graph. `solve()` performs the ordered Cholesky solve and returns
- * ambient matrix estimates; `projectAndAlign()` rounds those estimates to T
- * and applies an optional matching prior.
+ * The constructor extracts matching BetweenFactor or FrobeniusBetweenFactor
+ * measurements and builds the reduced Gaussian graph. `solve()` performs the
+ * ordered Cholesky solve and returns ambient matrix estimates;
+ * `projectAndAlign()` rounds those estimates to T and applies an optional
+ * matching PriorFactor or FrobeniusPrior.
  */
 template <class T>
 struct FastSync {
@@ -263,11 +264,12 @@ struct FastSync {
 /**
  * Initialize a synchronization graph using FAST-Sync.
  *
- * The graph may contain BetweenFactor<T> measurements and at most one matching
- * PriorFactor<T>; factors of other types are ignored. Between-factor noise
- * models must have the tangent dimension of T and be finite, positive,
- * non-robust, unconstrained, diagonal, and isotropic. Arbitrary keys are
- * preserved in the returned Values.
+ * The graph may contain BetweenFactor<T> or FrobeniusBetweenFactor<T>
+ * measurements and at most one matching PriorFactor<T> or FrobeniusPrior<T>;
+ * factors of other types are ignored. Measurement noise models must have the
+ * factor's residual dimension and be finite, positive, non-robust,
+ * unconstrained, diagonal, and isotropic. Arbitrary keys are preserved in the
+ * returned Values.
  *
  * T must be a fixed-size square matrix Lie group with a
  * FastSyncProjection<T> specialization.
