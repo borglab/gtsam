@@ -28,12 +28,13 @@ namespace gtsam {
  * Cubic cardinal-spline basis for scalar, vector, and manifold Basis functors.
  *
  * This class expresses the same rear-padded cubic interpolation used by
- * `TrajectoryModel` as a dense weight vector. It therefore works with
- * `EvaluationFactor`, `VectorEvaluationFactor`, and the other reusable factor
- * types in BasisFactors.h when the sample coordinate is fixed.
+ * `CumulativeSplineTrajectory` as a dense weight vector. It therefore works
+ * with `EvaluationFactor`, `VectorEvaluationFactor`, and the other reusable
+ * factor types in BasisFactors.h when the sample coordinate is fixed.
  */
 class CardinalSplineBasis : public Basis<CardinalSplineBasis> {
  public:
+  /// Scalar control-point values consumed by the inherited basis functors.
   using Parameters = Vector;
 
   /** Calculate weights for unit-spaced control points. */
@@ -62,6 +63,7 @@ class CardinalSplineBasis : public Basis<CardinalSplineBasis> {
   }
 
  private:
+  /// Map a bounded domain onto the complete padded cardinal-spline support.
   static double coordinateScale(size_t N, double a, double b) {
     if (a == b) {
       throw std::invalid_argument(
@@ -72,6 +74,7 @@ class CardinalSplineBasis : public Basis<CardinalSplineBasis> {
            (b - a);
   }
 
+  /// Convert cumulative kernel values into per-control-point basis weights.
   static Weights calculateWeights(size_t N, double x, size_t derivative) {
     if (N == 0) return Weights(0);
     if (N == 1) {

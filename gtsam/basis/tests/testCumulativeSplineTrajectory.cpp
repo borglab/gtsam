@@ -1,5 +1,5 @@
 /**
- * @file testTrajectoryModel.cpp
+ * @file testCumulativeSplineTrajectory.cpp
  * @brief Unit tests for continuous cardinal spline trajectories.
  * @author Brett Downing
  */
@@ -7,8 +7,8 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/basis/CardinalSplineBasis.h>
+#include <gtsam/basis/CumulativeSplineTrajectory.h>
 #include <gtsam/basis/IrwinHall.h>
-#include <gtsam/basis/TrajectoryModel.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/Values.h>
@@ -39,11 +39,11 @@ std::vector<Pose3_> posePath() {
 namespace trajectory_bounds {
 
 // Verifies rear padding reaches the first and last scalar control points.
-TEST(TrajectoryModel, BasicBounds) {
+TEST(CumulativeSplineTrajectory, BasicBounds) {
   Values values;
   const auto path = scalarPath();
   const KernelBase& kernel = kernels::IrwinHallCDF2;
-  TrajectoryModel<double> model(1.0, kernel, path);
+  CumulativeSplineTrajectory<double> model(1.0, kernel, path);
 
   const Key timestampKey = Symbol('t', 0);
   values.insert(timestampKey, 0.0);
@@ -59,11 +59,11 @@ TEST(TrajectoryModel, BasicBounds) {
 }
 
 // Verifies front padding shifts the valid scalar trajectory interval.
-TEST(TrajectoryModel, FrontPadding) {
+TEST(CumulativeSplineTrajectory, FrontPadding) {
   Values values;
   const auto path = scalarPath();
   const KernelBase& kernel = kernels::IrwinHallCDF2;
-  TrajectoryModel<double> model(1.0, kernel, path, true);
+  CumulativeSplineTrajectory<double> model(1.0, kernel, path, true);
 
   const Key timestampKey = Symbol('t', 0);
   values.insert(timestampKey, 0.0);
@@ -78,7 +78,7 @@ TEST(TrajectoryModel, FrontPadding) {
 }
 
 // Verifies a padded control-point window matches the full expression.
-TEST(TrajectoryModel, WindowTruncation) {
+TEST(CumulativeSplineTrajectory, WindowTruncation) {
   Values values;
   const std::vector<Double_> path = {
       Double_(4.0), Double_(-4.0), Double_(3.0), Double_(7.0),
@@ -86,7 +86,7 @@ TEST(TrajectoryModel, WindowTruncation) {
       Double_(4.0), Double_(1.0),  Double_(3.0), Double_(-2.0),
       Double_(5.0), Double_(2.0),  Double_(9.0), Double_(-2.0),
   };
-  TrajectoryModel<double> model(1.0, kernels::IrwinHallCDF2, path);
+  CumulativeSplineTrajectory<double> model(1.0, kernels::IrwinHallCDF2, path);
 
   const Key timestampKey = Symbol('t', 0);
   values.insert(timestampKey, 0.0);
@@ -102,10 +102,10 @@ TEST(TrajectoryModel, WindowTruncation) {
 }
 
 // Verifies the reusable Basis functor matches the expression trajectory.
-TEST(TrajectoryModel, BasisFrameworkCompatibility) {
+TEST(CumulativeSplineTrajectory, BasisFrameworkCompatibility) {
   Values values;
   const auto path = scalarPath();
-  TrajectoryModel<double> model(1.0, kernels::IrwinHallCDF2, path);
+  CumulativeSplineTrajectory<double> model(1.0, kernels::IrwinHallCDF2, path);
   const Key timestampKey = Symbol('t', 0);
   values.insert(timestampKey, 0.0);
   const Double_ sample = model.sampleTrajectory(Double_(timestampKey));
@@ -126,7 +126,7 @@ TEST(TrajectoryModel, BasisFrameworkCompatibility) {
 namespace trajectory_pose {
 
 // Verifies Lie-group interpolation returns the expected translated pose.
-TEST(TrajectoryModel, Pose3Value) {
+TEST(CumulativeSplineTrajectory, Pose3Value) {
   Values values;
   const std::vector<Pose3_> path = {
       Pose3_(Pose3(Rot3(), Point3(0, 0, 0))),
@@ -134,7 +134,7 @@ TEST(TrajectoryModel, Pose3Value) {
       Pose3_(Pose3(Rot3(), Point3(0, 2, 0))),
       Pose3_(Pose3(Rot3(), Point3(0, 2, 0))),
   };
-  TrajectoryModel<Pose3> model(1.0, kernels::IrwinHallCDF2, path);
+  CumulativeSplineTrajectory<Pose3> model(1.0, kernels::IrwinHallCDF2, path);
 
   const Key timestampKey = Symbol('t', 0);
   values.insert(timestampKey, 3.5);
@@ -145,7 +145,8 @@ TEST(TrajectoryModel, Pose3Value) {
 
 bool derivativesMatch(double density) {
   Values values;
-  TrajectoryModel<Pose3> model(density, kernels::IrwinHallCDF2, posePath());
+  CumulativeSplineTrajectory<Pose3> model(density, kernels::IrwinHallCDF2,
+                                          posePath());
   const Key referenceKey = Symbol('t', 0);
   const Key offsetKey = Symbol('t', 1);
   values.insert(referenceKey, 0.0);
@@ -177,10 +178,12 @@ bool derivativesMatch(double density) {
 }
 
 // Verifies analytic trajectory derivatives match finite time increments.
-TEST(TrajectoryModel, Pose3Derivatives) { EXPECT(derivativesMatch(1.0)); }
+TEST(CumulativeSplineTrajectory, Pose3Derivatives) {
+  EXPECT(derivativesMatch(1.0));
+}
 
 // Verifies derivative scaling remains correct at a higher point density.
-TEST(TrajectoryModel, Pose3DerivativeDensity) {
+TEST(CumulativeSplineTrajectory, Pose3DerivativeDensity) {
   EXPECT(derivativesMatch(10.0));
 }
 
@@ -191,7 +194,7 @@ TEST(TrajectoryModel, Pose3DerivativeDensity) {
 namespace trajectory_mesh {
 
 // Verifies trajectory expressions can serve as another model's control points.
-TEST(TrajectoryModel, MeshModel) {
+TEST(CumulativeSplineTrajectory, MeshModel) {
   Values values;
   const std::vector<std::vector<Double_>> mesh = {
       {Double_(4.0), Double_(-4.0), Double_(3.0), Double_(7.0)},
@@ -206,10 +209,12 @@ TEST(TrajectoryModel, MeshModel) {
 
   std::vector<Double_> columnPath;
   for (const auto& rowPath : mesh) {
-    TrajectoryModel<double> row(1.0, kernels::IrwinHallCDF2, rowPath);
+    CumulativeSplineTrajectory<double> row(1.0, kernels::IrwinHallCDF2,
+                                           rowPath);
     columnPath.push_back(row.sampleTrajectory(Double_(xKey)));
   }
-  TrajectoryModel<double> column(1.0, kernels::IrwinHallCDF2, columnPath);
+  CumulativeSplineTrajectory<double> column(1.0, kernels::IrwinHallCDF2,
+                                            columnPath);
   const Double_ sample = column.sampleTrajectory(Double_(yKey));
 
   for (double x = 0.0; x < 7.0; x += 0.5) {

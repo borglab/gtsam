@@ -26,9 +26,18 @@ namespace kernels {
 /**
  * Irwin-Hall kernels for uniform cardinal splines.
  *
- * The PDFs below follow OEIS A188816 and the CDFs follow A188668. The CDF
- * index is two less than the resulting polynomial spline degree: CDF0 gives
- * linear interpolation and CDF2 gives a cubic spline.
+ * The Irwin-Hall distribution is the distribution of a sum of independent
+ * unit-uniform variables. Its probability density is a compactly supported
+ * piecewise polynomial: the order-@f$n@f$ PDF is a cardinal B-spline of degree
+ * @f$n@f$. Integrating it produces the cumulative blending function used to
+ * turn consecutive control-point increments on a Lie group on and off
+ * smoothly.
+ *
+ * The PDFs below follow OEIS A188816 and the CDFs follow OEIS A188668. The CDF
+ * suffix is two less than the resulting interpolating spline degree: CDF0
+ * gives linear interpolation, CDF1 gives a quadratic spline, and CDF2—the
+ * default used by CumulativeSplineTrajectory—gives a cubic spline. Higher
+ * suffixes provide progressively smoother, wider-support kernels.
  */
 
 /// Order-zero Irwin-Hall PDF.

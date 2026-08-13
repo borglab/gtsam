@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file Kernel.h
+ * @file KernelBase.h
  * @brief Continuous kernels for convolution-based trajectory models.
  * @author Brett Downing
  */
@@ -51,6 +51,7 @@ class KernelBase {
   /// Width of the kernel support.
   double getLength() const { return getEnd() - getBeginning(); }
 
+  /// Destroy the polymorphic kernel interface.
   virtual ~KernelBase() = default;
 };
 

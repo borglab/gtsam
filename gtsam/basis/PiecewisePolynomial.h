@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <gtsam/basis/Kernel.h>
+#include <gtsam/basis/KernelBase.h>
 
 #include <algorithm>
 #include <array>
@@ -30,8 +30,13 @@ namespace gtsam {
 /**
  * A one-dimensional piecewise polynomial kernel.
  *
- * Coefficients for each piece are stored in ascending power order. Values
- * outside the declared interval range are evaluated at the nearest endpoint.
+ * On interval @f$[b_j,b_{j+1}]@f$, the value is
+ * @f$p_j(t)=\sum_{k=0}^{Order} a_{j,k}t^k@f$. Coefficients for each piece are
+ * therefore stored in ascending power order. The @f$r@f$-th derivative uses
+ * the exact power rule,
+ * @f$p_j^{(r)}(t)=\sum_{k=r}^{Order}\frac{k!}{(k-r)!}a_{j,k}t^{k-r}@f$.
+ * Values outside the declared interval range are evaluated at the nearest
+ * endpoint, which lets cumulative kernels remain constant outside support.
  *
  * @tparam Order Polynomial order of every piece.
  * @tparam Pieces Number of polynomial pieces.
@@ -44,8 +49,11 @@ class PiecewisePolynomial : public KernelBase {
 
   /** Coefficients, interval boundaries, and center defining the kernel. */
   struct Parameters {
+    /// Polynomial coefficients indexed by piece, then ascending power.
     std::array<std::array<double, order + 1>, pieces> coefficients{};
+    /// Monotonically increasing boundaries for the polynomial pieces.
     std::array<double, pieces + 1> intervals{};
+    /// Representative center of the complete kernel support.
     double center = 0.0;
 
     /** Construct from row-major coefficients and ascending boundaries. */
@@ -71,12 +79,16 @@ class PiecewisePolynomial : public KernelBase {
   explicit PiecewisePolynomial(const Parameters& parameters)
       : parameters_(parameters) {}
 
+  /// Return the representative center of the kernel support.
   double getCenter() const override { return parameters_.center; }
 
+  /// Return the first boundary of the kernel support.
   double getBeginning() const override { return parameters_.intervals.front(); }
 
+  /// Return the last boundary of the kernel support.
   double getEnd() const override { return parameters_.intervals.back(); }
 
+  /// Return the largest derivative order available analytically.
   size_t getValidDerivatives() const override { return order; }
 
   /// Return interval boundaries, primarily for validation and visualization.
@@ -84,10 +96,12 @@ class PiecewisePolynomial : public KernelBase {
     return parameters_.intervals;
   }
 
+  /// Evaluate the selected polynomial piece and optionally its slope.
   double evaluate(double t, OptionalJacobian<1, 1> H = {}) const override {
     return evaluateDerivative(0, t, H);
   }
 
+  /// Evaluate an analytic derivative and optionally the next derivative.
   double evaluateDerivative(size_t derivative, double t,
                             OptionalJacobian<1, 1> H = {}) const override {
     if (derivative > order) {

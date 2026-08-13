@@ -15,8 +15,8 @@
  * @author Brett Downing
  */
 
+#include <gtsam/basis/CumulativeSplineTrajectory.h>
 #include <gtsam/basis/IrwinHall.h>
-#include <gtsam/basis/TrajectoryModel.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/ExpressionFactor.h>
@@ -107,12 +107,12 @@ int main() {
   constexpr double clockDriftSampleRate = 0.1;
   constexpr double maximumTimestamp = 10.0;
 
-  TrajectoryModel<Pose3> trajectoryModel(trajectorySampleRate,
-                                         kernels::IrwinHallCDF2);
-  TrajectoryModel<double> accelerometerClockModel(clockDriftSampleRate,
-                                                  kernels::IrwinHallCDF1);
-  TrajectoryModel<double> gyroscopeClockModel(clockDriftSampleRate,
-                                              kernels::IrwinHallCDF1);
+  CumulativeSplineTrajectory<Pose3> trajectoryModel(trajectorySampleRate,
+                                                    kernels::IrwinHallCDF2);
+  CumulativeSplineTrajectory<double> accelerometerClockModel(
+      clockDriftSampleRate, kernels::IrwinHallCDF1);
+  CumulativeSplineTrajectory<double> gyroscopeClockModel(
+      clockDriftSampleRate, kernels::IrwinHallCDF1);
 
   const Pose3_ accelerometerPose{Pose3()};
   const Pose3_ gyroscopePose{Pose3()};
