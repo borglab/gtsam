@@ -42,22 +42,24 @@ Rot3 predictAhrs(const PIM& pim, const Rot3& Ri, const Vector3& bias,
   Rot3 biasCorrected =
       pim.biascorrectedDeltaRij(bias - pim.biasHat(), H2);
 
-  // The common case needs no Coriolis correction. The compose Jacobian with
-  // respect to its second argument is identity, so H2 is already final.
-  if (!pim.p().omegaCoriolis) return Ri.compose(biasCorrected, H1);
+  // The common case needs no Earth-rotation correction. The compose Jacobian
+  // with respect to its second argument is identity, so H2 is already final.
+  if (!pim.p().omegaCoriolis || pim.p().omegaCoriolis->isZero())
+    return Ri.compose(biasCorrected, H1);
 
-  Matrix3 D_coriolis_Ri;
-  const Vector3 coriolis =
-      pim.integrateCoriolis(Ri, H1 ? &D_coriolis_Ri : nullptr);
+  // Exact rotating-frame attitude transition from Brossard et al.:
+  // Rj = Exp(-Omega * dt) * Ri * DeltaR.
+  const Rot3 gammaRotation =
+      Rot3::Expmap(-(*pim.p().omegaCoriolis) * pim.deltaTij());
+  Matrix3 D_gammaRi_Ri, D_Rj_gammaRi, D_Rj_delta;
+  const Rot3 gammaRi = gammaRotation.compose(
+      Ri, {}, H1 ? &D_gammaRi_Ri : nullptr);
+  const Rot3 Rj = gammaRi.compose(
+      biasCorrected, H1 ? &D_Rj_gammaRi : nullptr,
+      H2 ? &D_Rj_delta : nullptr);
 
-  Matrix3 D_delta_bias, D_delta_coriolis;
-  const Rot3 finalDelta = biasCorrected.expmap(
-      -coriolis, H2 ? &D_delta_bias : nullptr,
-      H1 ? &D_delta_coriolis : nullptr);
-  const Rot3 Rj = Ri.compose(finalDelta, H1);
-
-  if (H1) *H1 -= D_delta_coriolis * D_coriolis_Ri;
-  if (H2) *H2 = D_delta_bias * (*H2);
+  if (H1) *H1 = D_Rj_gammaRi * D_gammaRi_Ri;
+  if (H2) *H2 = D_Rj_delta * (*H2);
   return Rj;
 }
 
