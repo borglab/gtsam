@@ -259,6 +259,34 @@ TEST(Pose2, logmap_full) {
 }
 
 /* ************************************************************************* */
+namespace logmap_derivative {
+
+// Checks the tangent overload against the pose overload and Expmap Jacobian.
+TEST(Pose2, LogmapDerivativeTangent) {
+  const Vector3 xi{0.4, -0.2, 0.3};
+  const Matrix3 actual = Pose2::LogmapDerivative(xi);
+
+  EXPECT(assert_equal(Pose2::LogmapDerivative(Pose2::Expmap(xi)), actual,
+                      1e-12));
+  const Matrix3 identity = actual * Pose2::ExpmapDerivative(xi);
+  EXPECT(assert_equal<Matrix3>(I_3x3, identity, 1e-12));
+}
+
+// Checks that both overloads agree in the small-angle branch.
+TEST(Pose2, LogmapDerivativeTangentNearZero) {
+  const Vector3 xi{0.4, -0.2, 1e-8};
+  const Matrix3 actual = Pose2::LogmapDerivative(xi);
+
+  EXPECT(assert_equal(Pose2::LogmapDerivative(Pose2::Expmap(xi)), actual,
+                      1e-9));
+  const Matrix3 identity = actual * Pose2::ExpmapDerivative(xi);
+  EXPECT(assert_equal<Matrix3>(I_3x3, identity, 1e-12));
+}
+
+}  // namespace logmap_derivative
+/* ************************************************************************* */
+
+/* ************************************************************************* */
 TEST( Pose2, ExpmapDerivative1) {
   Matrix3 actualH;
   Vector3 w(0.1, 0.27, -0.3);

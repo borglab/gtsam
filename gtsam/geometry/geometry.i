@@ -560,7 +560,8 @@ class Pose2 {
   gtsam::Vector logmap(const gtsam::Pose2& g);
   gtsam::Vector logmap(const gtsam::Pose2& g, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2);
   static gtsam::Matrix ExpmapDerivative(gtsam::Vector v);
-  static gtsam::Matrix LogmapDerivative(const gtsam::Pose2& v);
+  static gtsam::Matrix3 LogmapDerivative(const gtsam::Pose2& pose);
+  static gtsam::Matrix3 LogmapDerivative(const gtsam::Vector3& xi);
 
   // Matrix Lie Group
   gtsam::Matrix AdjointMap() const;
