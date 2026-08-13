@@ -51,6 +51,4 @@ endif()
 
 # metis: already handled in ROOT/cmake/HandleMetis.cmake
 
-add_subdirectory(ceres)
-
 set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)

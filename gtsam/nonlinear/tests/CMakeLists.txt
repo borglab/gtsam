@@ -10,4 +10,7 @@ if(NOT GTSAM_ENABLE_CUDA AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/testCudaDeviceV
   list(APPEND EXCLUDE_TESTS "testCudaDeviceValues.cpp")
 endif()
 
+# This optional Ceres test is configured alongside the Ceres timing targets.
+list(APPEND EXCLUDE_TESTS "testAdaptAutoDiff.cpp")
+
 gtsamAddTestsGlob(nonlinear "test*.cpp" "${EXCLUDE_TESTS}" "gtsam")

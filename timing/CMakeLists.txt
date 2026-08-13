@@ -1,3 +1,10 @@
+find_package(Ceres CONFIG QUIET)
+if(Ceres_FOUND)
+  message(STATUS "Found Ceres ${CERES_VERSION}")
+else()
+  message(STATUS "Ceres not found; Ceres-dependent tests and timing scripts disabled")
+endif()
+
 # Add scripts to exclude if GTSAM_ENABLE_BOOST_SERIALIZATION is not set
 if (NOT GTSAM_ENABLE_BOOST_SERIALIZATION) 
   # add to excluded scripts
@@ -14,6 +21,13 @@ if (NOT GTSAM_USE_BOOST_FEATURES)
       )
 endif()
 
+set(ceres_timing_scripts
+    "timeAdaptAutoDiff.cpp"
+    "timeSFMBALautodiff.cpp")
+if(NOT Ceres_FOUND)
+  list(APPEND excluded_scripts ${ceres_timing_scripts})
+endif()
+
 add_library(gtsam_timing_utils STATIC internal/TimingUtils.cpp
                                       internal/SfmBalBenchmark.cpp
                                       internal/SfmPcgBenchmark.cpp)
@@ -24,7 +38,20 @@ set_property(TARGET gtsam_timing_utils PROPERTY FOLDER "Timing")
 
 gtsamAddTestsGlob(timing_utils "tests/test*.cpp" "" "gtsam_timing_utils")
 
+if(Ceres_FOUND)
+  gtsamAddTestsGlob(ceres_autodiff
+                    "${GTSAM_SOURCE_DIR}/gtsam/nonlinear/tests/testAdaptAutoDiff.cpp"
+                    "" "gtsam;Ceres::ceres")
+endif()
+
 gtsamAddTimingGlob("*.cpp" "${excluded_scripts}" "gtsam;gtsam_timing_utils" ${GTSAM_BUILD_TIMING_ALWAYS})
+
+if(Ceres_FOUND)
+  foreach(ceres_timing_script IN LISTS ceres_timing_scripts)
+    get_filename_component(ceres_timing_target ${ceres_timing_script} NAME_WE)
+    target_link_libraries(${ceres_timing_target} Ceres::ceres)
+  endforeach()
+endif()
 
 target_link_libraries(timeGaussianFactorGraph CppUnitLite)
 
