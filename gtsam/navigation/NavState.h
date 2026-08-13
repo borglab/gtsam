@@ -234,8 +234,9 @@ public:
   Vector9 coriolis(double dt, const Vector3& omega, bool secondOrder = false,
       OptionalJacobian<9, 9> H = {}) const;
 
-  /// Correct preintegrated tangent vector with our velocity and rotated gravity,
-  /// taking into account Coriolis forces if omegaCoriolis is given.
+  /// Correct a preintegrated tangent vector using the initial state and gravity.
+  /// If omegaCoriolis is present and nonzero, uses the exact rotating-frame
+  /// transition of Brossard et al.; otherwise preserves the inertial fast path.
   Vector9 correctPIM(const Vector9& pim, double dt, const Vector3& n_gravity,
       const std::optional<Vector3>& omegaCoriolis, bool use2ndOrderCoriolis =
           false, OptionalJacobian<9, 9> H1 = {},
