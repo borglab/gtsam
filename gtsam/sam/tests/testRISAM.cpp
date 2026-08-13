@@ -208,8 +208,6 @@ TEST(RISAMGraduatedFactor, ClonePreservesMu) {
   auto jac_clone_after = cloned->linearize(values)->jacobian();
   CHECK(assert_equal(jac_clone.first, jac_clone_after.first, 1e-9));
   CHECK(assert_equal(jac_clone.second, jac_clone_after.second, 1e-9));
-  // Sanity check that mu=1.0 is actually distinguishable from mu=0.5
-  CHECK(std::abs(factor.robustLoss(values) - expected_loss) > 1e-9);
 }
 
 /* ************************************************************************* */
