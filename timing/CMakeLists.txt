@@ -2,7 +2,7 @@ find_package(Ceres CONFIG QUIET)
 if(Ceres_FOUND)
   message(STATUS "Found Ceres ${CERES_VERSION}")
 else()
-  message(STATUS "Ceres not found; Ceres-dependent tests and timing scripts disabled")
+  message(STATUS "Ceres not found; Ceres-dependent timing scripts disabled")
 endif()
 
 # Add scripts to exclude if GTSAM_ENABLE_BOOST_SERIALIZATION is not set
@@ -37,12 +37,6 @@ gtsam_apply_build_flags(gtsam_timing_utils)
 set_property(TARGET gtsam_timing_utils PROPERTY FOLDER "Timing")
 
 gtsamAddTestsGlob(timing_utils "tests/test*.cpp" "" "gtsam_timing_utils")
-
-if(Ceres_FOUND)
-  gtsamAddTestsGlob(ceres_autodiff
-                    "${GTSAM_SOURCE_DIR}/gtsam/nonlinear/tests/testAdaptAutoDiff.cpp"
-                    "" "gtsam;Ceres::ceres")
-endif()
 
 gtsamAddTimingGlob("*.cpp" "${excluded_scripts}" "gtsam;gtsam_timing_utils" ${GTSAM_BUILD_TIMING_ALWAYS})
 

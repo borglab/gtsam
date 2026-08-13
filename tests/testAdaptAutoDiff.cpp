@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file testExpression.cpp
+ * @file testAdaptAutoDiff.cpp
  * @date September 18, 2014
  * @author Frank Dellaert
  * @author Paul Furgale
