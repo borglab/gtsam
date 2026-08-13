@@ -1,4 +1,5 @@
 /build
+/build-*/
 /debug*
 .idea
 *.pyc
@@ -26,7 +27,6 @@ xcode/
 
 # MyST build outputs
 _build
-GEMINI.md
 doc/#*.lyx#
 /cmake-build-debug/
 .venv/
@@ -34,3 +34,12 @@ conductor/
 .ccache/
 gtsam_unstable/timing/data/
 timing/results/bayes_tree_covariance/
+timing/**/benchmark_logs/
+
+# Local development docs/artifacts
+docs/*
+timing/pypose_ba/*.json
+timing/pypose_ba/run_frank_benchmark.py
+timing/pypose_ba/test_benchmark_cli.py
+artifacts/
+build-tbb/

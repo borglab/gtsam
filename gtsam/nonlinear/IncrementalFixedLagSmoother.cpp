@@ -138,10 +138,12 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
   }
 
   // Marginalize out any needed variables
+  FactorIndices marginalFactorIndices;  
+  FactorIndices deletedFactorIndices; 
   if (marginalizableKeys.size() > 0) {
     FastList<Key> leafKeys(marginalizableKeys.begin(),
         marginalizableKeys.end());
-    isam_.marginalizeLeaves(leafKeys);
+    isam_.marginalizeLeaves(leafKeys, &marginalFactorIndices, &deletedFactorIndices);
   }
 
   // Remove marginalized keys from the KeyTimestampMap
@@ -158,6 +160,9 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
   result.linearVariables = 0;
   result.nonlinearVariables = 0;
   result.error = 0;
+  result.marginalFactorIndices = marginalFactorIndices;
+  result.deletedFactorIndices = deletedFactorIndices;
+  result.keysOfDeletedNodes = KeySet(marginalizableKeys);
 
   if (debug)
     std::cout << "IncrementalFixedLagSmoother::update() Finish" << std::endl;

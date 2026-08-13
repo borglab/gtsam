@@ -308,6 +308,78 @@ using CombinedImuFactor = CombinedImuFactorT<>;
 template <class PIM>
 GTSAM_EXPORT std::ostream& operator<<(std::ostream& os, const CombinedImuFactorT<PIM>& f);
 
+namespace internal {
+/// Shared 15-dof error and block-Jacobian assembly for CombinedImuFactorT and
+/// CombinedImuFactorWithGravityT: rows 0-8 are the preintegration error for
+/// the given gravity vector, rows 9-14 the bias random walk. If D_r_gvec is
+/// given, it receives the 9x3 Jacobian of the preintegration rows wrt the
+/// gravity vector (the bias rows have a zero gravity Jacobian).
+template <class PIM>
+Vector combinedImuError(const PIM& pim, const Pose3& pose_i,
+    const Vector3& vel_i, const Pose3& pose_j, const Vector3& vel_j,
+    const imuBias::ConstantBias& bias_i, const imuBias::ConstantBias& bias_j,
+    const Vector3& n_gravity, OptionalMatrixType H1, OptionalMatrixType H2,
+    OptionalMatrixType H3, OptionalMatrixType H4, OptionalMatrixType H5,
+    OptionalMatrixType H6, Matrix93* D_r_gvec) {
+  // error wrt bias evolution model (random walk)
+  Matrix6 Hbias_i, Hbias_j;
+  Vector6 fbias = traits<imuBias::ConstantBias>::Between(bias_j, bias_i,
+      H6 ? &Hbias_j : 0, H5 ? &Hbias_i : 0).vector();
+
+  Matrix96 D_r_pose_i, D_r_pose_j, D_r_bias_i;
+  Matrix93 D_r_vel_i, D_r_vel_j;
+
+  // error wrt preintegrated measurements
+  Vector9 r_Rpv = pim.computeErrorAndJacobians(pose_i, vel_i, pose_j, vel_j,
+      bias_i, n_gravity, H1 ? &D_r_pose_i : 0, H2 ? &D_r_vel_i : 0,
+      H3 ? &D_r_pose_j : 0, H4 ? &D_r_vel_j : 0, H5 ? &D_r_bias_i : 0,
+      D_r_gvec);
+
+  // if we need the jacobians
+  if (H1) {
+    H1->resize(15, 6);
+    H1->block<9, 6>(0, 0) = D_r_pose_i;
+    // adding: [dBiasAcc/dPi ; dBiasOmega/dPi]
+    H1->block<6, 6>(9, 0).setZero();
+  }
+  if (H2) {
+    H2->resize(15, 3);
+    H2->block<9, 3>(0, 0) = D_r_vel_i;
+    // adding: [dBiasAcc/dVi ; dBiasOmega/dVi]
+    H2->block<6, 3>(9, 0).setZero();
+  }
+  if (H3) {
+    H3->resize(15, 6);
+    H3->block<9, 6>(0, 0) = D_r_pose_j;
+    // adding: [dBiasAcc/dPj ; dBiasOmega/dPj]
+    H3->block<6, 6>(9, 0).setZero();
+  }
+  if (H4) {
+    H4->resize(15, 3);
+    H4->block<9, 3>(0, 0) = D_r_vel_j;
+    // adding: [dBiasAcc/dVi ; dBiasOmega/dVi]
+    H4->block<6, 3>(9, 0).setZero();
+  }
+  if (H5) {
+    H5->resize(15, 6);
+    H5->block<9, 6>(0, 0) = D_r_bias_i;
+    // adding: [dBiasAcc/dBias_i ; dBiasOmega/dBias_i]
+    H5->block<6, 6>(9, 0) = Hbias_i;
+  }
+  if (H6) {
+    H6->resize(15, 6);
+    H6->block<9, 6>(0, 0).setZero();
+    // adding: [dBiasAcc/dBias_j ; dBiasOmega/dBias_j]
+    H6->block<6, 6>(9, 0) = Hbias_j;
+  }
+
+  // overall error
+  Vector r(15);
+  r << r_Rpv, fbias;  // vector of size 15
+  return r;
+}
+}  // namespace internal
+
 template <>
 struct traits<PreintegrationCombinedParams>
     : public Testable<PreintegrationCombinedParams> {};

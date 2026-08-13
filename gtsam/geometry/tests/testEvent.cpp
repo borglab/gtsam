@@ -90,8 +90,7 @@ TEST(Event, Expression) {
 //*****************************************************************************
 TEST(Event, Retract) {
   Event event, expected(1, 2, 3, 4);
-  Vector4 v;
-  v << 1, 2, 3, 4;
+  Vector4 v{1, 2, 3, 4};
   EXPECT(assert_equal(expected, event.retract(v)));
 }
 

@@ -16,14 +16,14 @@
  * @date   Feb 20, 2015
  */
 
-#include <gtsam/geometry/PinholePose.h>
-#include <gtsam/geometry/Cal3_S2.h>
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/Cal3Bundler.h>
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
-
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/geometry/Cal3Bundler.h>
+#include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/PinholePose.h>
+#include <gtsam/geometry/Pose2.h>
 
 #include <cmath>
 #include <iostream>

@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/linear/BinaryJacobianFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 namespace gtsam {
@@ -34,9 +35,11 @@ struct Bearing;
  */
 template <typename A1, typename A2,
           typename T = typename Bearing<A1, A2>::result_type>
-struct BearingFactor : public NoiseModelFactorN<A1, A2> {
+struct BearingFactor
+    : public NoiseModelFactorT<typename traits<T>::TangentVector, A1, A2> {
   typedef BearingFactor<A1, A2, T> This;
-  typedef NoiseModelFactorN<A1, A2> Base;
+  using ErrorVector = typename traits<T>::TangentVector;
+  typedef NoiseModelFactorT<ErrorVector, A1, A2> Base;
 
   T measured_;
 
@@ -73,9 +76,9 @@ struct BearingFactor : public NoiseModelFactorN<A1, A2> {
   }
 
   /// Evaluate the unwhitened bearing error and optional Jacobians.
-  Vector evaluateError(const A1& a1, const A2& a2,
-                       OptionalMatrixType H1 = OptionalNone,
-                       OptionalMatrixType H2 = OptionalNone) const override {
+  ErrorVector evaluateError(const A1& a1, const A2& a2,
+                            OptionalMatrixType H1 = OptionalNone,
+                            OptionalMatrixType H2 = OptionalNone) const override {
     const T predicted = Bearing<A1, A2>()(a1, a2, H1, H2);
     return -traits<T>::Local(predicted, measured_);
   }

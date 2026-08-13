@@ -51,8 +51,14 @@ option(GTSAM_INSTALL_MATLAB_TOOLBOX         "Enable/Disable installation of matl
 option(GTSAM_ALLOW_DEPRECATED_SINCE_V43     "Allow use of methods/functions deprecated in GTSAM 4.3" ON)
 option(GTSAM_SUPPORT_NESTED_DISSECTION      "Support Metis-based nested dissection" ON)
 option(GTSAM_TANGENT_PREINTEGRATION         "Use new ImuFactor with integration on tangent space" ON)
-option(GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR "Use the slower but correct version of BetweenFactor" OFF)
-option(GTSAM_SLOW_BUT_CORRECT_EXPMAP        "Use slower but correct expmap for Pose2"  OFF)
+option(GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR
+       "Use Local Jacobians in BetweenFactor and PriorFactor when provided by traits" ON)
+option(GTSAM_SLOW_BUT_CORRECT_EXPMAP        "Use slower but correct expmap for Pose2"  ON)
+
+if (NOT GTSAM_SLOW_BUT_CORRECT_EXPMAP)
+    message(WARNING
+            "Disabling GTSAM_SLOW_BUT_CORRECT_EXPMAP is deprecated and will be removed in a future release.")
+endif()
 
 if (GTSAM_FORCE_SHARED_LIB AND GTSAM_FORCE_STATIC_LIB)
     message(FATAL_ERROR "GTSAM_FORCE_SHARED_LIB and GTSAM_FORCE_STATIC_LIB are both true. Please, to unambiguously select the desired library type to use to build GTSAM, set one of GTSAM_FORCE_SHARED_LIB=ON, GTSAM_FORCE_STATIC_LIB=ON, or BUILD_SHARED_LIBS={ON/OFF}")

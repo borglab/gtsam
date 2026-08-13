@@ -57,11 +57,11 @@ TEST(SO4, Random) {
 //******************************************************************************
 namespace {
 SO4 id;
-Vector6 v1 = (Vector(6) << 0, 0, 0, 0.1, 0, 0).finished();
+Vector6 v1{0, 0, 0, 0.1, 0, 0};
 SO4 Q1 = SO4::Expmap(v1);
-Vector6 v2 = (Vector(6) << 0.00, 0.00, 0.00, 0.01, 0.02, 0.03).finished();
+Vector6 v2{0.00, 0.00, 0.00, 0.01, 0.02, 0.03};
 SO4 Q2 = SO4::Expmap(v2);
-Vector6 v3 = (Vector(6) << 1, 2, 3, 4, 5, 6).finished();
+Vector6 v3{1, 2, 3, 4, 5, 6};
 SO4 Q3 = SO4::Expmap(v3);
 }  // namespace
 

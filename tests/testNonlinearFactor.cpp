@@ -284,8 +284,8 @@ TEST( NonlinearFactor, linearize_constraint1 )
 
   // create expected
   Vector2 b(0., -3.);
-  JacobianFactor expected(X(1), (Matrix(2, 2) << 5.0, 0.0, 0.0, 1.0).finished(), b,
-    noiseModel::Constrained::MixedSigmas(Vector2(1,0)));
+  JacobianFactor expected(X(1), Matrix{{5.0, 0.0}, {0.0, 1.0}}, b,
+                          noiseModel::Constrained::MixedSigmas(Vector2(1, 0)));
   CHECK(assert_equal((const GaussianFactor&)expected, *actual));
 }
 
@@ -303,7 +303,7 @@ TEST( NonlinearFactor, linearize_constraint2 )
   GaussianFactor::shared_ptr actual = f0.linearize(config);
 
   // create expected
-  Matrix2 A; A << 5.0, 0.0, 0.0, 1.0;
+  Matrix2 A{{5.0, 0.0}, {0.0, 1.0}};
   Vector2 b(-15., -3.);
   JacobianFactor expected(X(1), -1*A, L(1), A, b,
     noiseModel::Constrained::MixedSigmas(Vector2(1,0)));
@@ -348,8 +348,8 @@ class TestFactor1 : public NoiseModelFactor1<double> {
   using Base::NoiseModelFactorT;  // inherit constructors
 
   Vector evaluateError(const double& x1, OptionalMatrixType H1) const override {
-    if (H1) *H1 = (Matrix(1, 1) << 1.0).finished();
-    return (Vector(1) << x1).finished();
+    if (H1) *H1 = Matrix{{1.0}};
+    return Vector{{x1}};
   }
 
   gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -363,14 +363,13 @@ TEST(NonlinearFactor, NoiseModelFactor1) {
   TestFactor1 tf;
   Values tv;
   tv.insert(L(1), double((1.0)));
-  EXPECT(assert_equal((Vector(1) << 1.0).finished(), tf.unwhitenedError(tv)));
+  EXPECT(assert_equal(Vector{{1.0}}, tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(0.25 / 2.0, tf.error(tv), 1e-9);
   JacobianFactor jf(
       *std::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv)));
   LONGS_EQUAL((long)L(1), (long)jf.keys()[0]);
-  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 0.5).finished(),
-                      jf.getA(jf.begin())));
-  EXPECT(assert_equal((Vector)(Vector(1) << -0.5).finished(), jf.getb()));
+  EXPECT(assert_equal((Matrix)Matrix{{0.5}}, jf.getA(jf.begin())));
+  EXPECT(assert_equal(Vector{{-0.5}}, jf.getb()));
 
   // Test all functions/types for backwards compatibility
   static_assert(std::is_same<TestFactor1::X, double>::value,
@@ -399,7 +398,9 @@ class TestFactor4 : public NoiseModelFactor4<double, double, double, double> {
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
-  TestFactor4() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4)) {}
+  TestFactor4()
+      : Base(noiseModel::Diagonal::Sigmas(Vector{{2.0}}), X(1), X(2), X(3),
+             X(4)) {}
 
   // Provide access to the Matrix& version of evaluateError:
   using Base::NoiseModelFactorT;  // inherit constructors
@@ -409,12 +410,12 @@ class TestFactor4 : public NoiseModelFactor4<double, double, double, double> {
         OptionalMatrixType H1, OptionalMatrixType H2,
         OptionalMatrixType H3, OptionalMatrixType H4) const override {
     if(H1) {
-      *H1 = (Matrix(1, 1) << 1.0).finished();
-      *H2 = (Matrix(1, 1) << 2.0).finished();
-      *H3 = (Matrix(1, 1) << 3.0).finished();
-      *H4 = (Matrix(1, 1) << 4.0).finished();
+      *H1 = Matrix{{1.0}};
+      *H2 = Matrix{{2.0}};
+      *H3 = Matrix{{3.0}};
+      *H4 = Matrix{{4.0}};
     }
-    return (Vector(1) << x1 + 2.0 * x2 + 3.0 * x3 + 4.0 * x4).finished();
+    return Vector{{x1 + 2.0 * x2 + 3.0 * x3 + 4.0 * x4}};
   }
 
   gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -430,18 +431,18 @@ TEST(NonlinearFactor, NoiseModelFactor4) {
   tv.insert(X(2), double((2.0)));
   tv.insert(X(3), double((3.0)));
   tv.insert(X(4), double((4.0)));
-  EXPECT(assert_equal((Vector(1) << 30.0).finished(), tf.unwhitenedError(tv)));
+  EXPECT(assert_equal(Vector{{30.0}}, tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(0.5 * 30.0 * 30.0 / 4.0, tf.error(tv), 1e-9);
   JacobianFactor jf(*std::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv)));
   LONGS_EQUAL((long)X(1), (long)jf.keys()[0]);
   LONGS_EQUAL((long)X(2), (long)jf.keys()[1]);
   LONGS_EQUAL((long)X(3), (long)jf.keys()[2]);
   LONGS_EQUAL((long)X(4), (long)jf.keys()[3]);
-  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 0.5).finished(), jf.getA(jf.begin())));
-  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 1.0).finished(), jf.getA(jf.begin()+1)));
-  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 1.5).finished(), jf.getA(jf.begin()+2)));
-  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 2.0).finished(), jf.getA(jf.begin()+3)));
-  EXPECT(assert_equal((Vector)(Vector(1) << 0.5 * -30.).finished(), jf.getb()));
+  EXPECT(assert_equal((Matrix)Matrix{{0.5}}, jf.getA(jf.begin())));
+  EXPECT(assert_equal((Matrix)Matrix{{1.0}}, jf.getA(jf.begin() + 1)));
+  EXPECT(assert_equal((Matrix)Matrix{{1.5}}, jf.getA(jf.begin() + 2)));
+  EXPECT(assert_equal((Matrix)Matrix{{2.0}}, jf.getA(jf.begin() + 3)));
+  EXPECT(assert_equal(Vector{{0.5 * -30.}}, jf.getb()));
 
   // Test all functions/types for backwards compatibility
   static_assert(std::is_same<TestFactor4::X1, double>::value,
@@ -458,10 +459,10 @@ TEST(NonlinearFactor, NoiseModelFactor4) {
   EXPECT(assert_equal(tf.key4(), X(4)));
   std::vector<Matrix> H = {Matrix(), Matrix(), Matrix(), Matrix()};
   EXPECT(assert_equal(Vector1(30.0), tf.unwhitenedError(tv, H)));
-  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 1.).finished(), H.at(0)));
-  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 2.).finished(), H.at(1)));
-  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 3.).finished(), H.at(2)));
-  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 4.).finished(), H.at(3)));
+  EXPECT(assert_equal((Matrix)Matrix{{1.}}, H.at(0)));
+  EXPECT(assert_equal((Matrix)Matrix{{2.}}, H.at(1)));
+  EXPECT(assert_equal((Matrix)Matrix{{3.}}, H.at(2)));
+  EXPECT(assert_equal((Matrix)Matrix{{4.}}, H.at(3)));
 
   // And test "forward compatibility" using `key<N>` and `ValueType<N>` too
   static_assert(std::is_same<TestFactor4::ValueType<1>, double>::value,
@@ -494,21 +495,22 @@ public:
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
-  TestFactor5() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4), X(5)) {}
+  TestFactor5()
+      : Base(noiseModel::Diagonal::Sigmas(Vector{{2.0}}), X(1), X(2), X(3),
+             X(4), X(5)) {}
 
   Vector
     evaluateError(const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5,
         OptionalMatrixType H1, OptionalMatrixType H2, OptionalMatrixType H3, 
 		OptionalMatrixType H4, OptionalMatrixType H5) const override {
     if(H1) {
-      *H1 = (Matrix(1, 1) << 1.0).finished();
-      *H2 = (Matrix(1, 1) << 2.0).finished();
-      *H3 = (Matrix(1, 1) << 3.0).finished();
-      *H4 = (Matrix(1, 1) << 4.0).finished();
-      *H5 = (Matrix(1, 1) << 5.0).finished();
+      *H1 = Matrix{{1.0}};
+      *H2 = Matrix{{2.0}};
+      *H3 = Matrix{{3.0}};
+      *H4 = Matrix{{4.0}};
+      *H5 = Matrix{{5.0}};
     }
-    return (Vector(1) << x1 + 2.0 * x2 + 3.0 * x3 + 4.0 * x4 + 5.0 * x5)
-        .finished();
+    return Vector{{x1 + 2.0 * x2 + 3.0 * x3 + 4.0 * x4 + 5.0 * x5}};
   }
 };
 
@@ -521,7 +523,7 @@ TEST(NonlinearFactor, NoiseModelFactor5) {
   tv.insert(X(3), double((3.0)));
   tv.insert(X(4), double((4.0)));
   tv.insert(X(5), double((5.0)));
-  EXPECT(assert_equal((Vector(1) << 55.0).finished(), tf.unwhitenedError(tv)));
+  EXPECT(assert_equal(Vector{{55.0}}, tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(0.5 * 55.0 * 55.0 / 4.0, tf.error(tv), 1e-9);
   JacobianFactor jf(*std::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv)));
   LONGS_EQUAL((long)X(1), (long)jf.keys()[0]);
@@ -529,12 +531,12 @@ TEST(NonlinearFactor, NoiseModelFactor5) {
   LONGS_EQUAL((long)X(3), (long)jf.keys()[2]);
   LONGS_EQUAL((long)X(4), (long)jf.keys()[3]);
   LONGS_EQUAL((long)X(5), (long)jf.keys()[4]);
-  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 0.5).finished(), jf.getA(jf.begin())));
-  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 1.0).finished(), jf.getA(jf.begin()+1)));
-  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 1.5).finished(), jf.getA(jf.begin()+2)));
-  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 2.0).finished(), jf.getA(jf.begin()+3)));
-  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 2.5).finished(), jf.getA(jf.begin()+4)));
-  EXPECT(assert_equal((Vector)(Vector(1) << 0.5 * -55.).finished(), jf.getb()));
+  EXPECT(assert_equal((Matrix)Matrix{{0.5}}, jf.getA(jf.begin())));
+  EXPECT(assert_equal((Matrix)Matrix{{1.0}}, jf.getA(jf.begin() + 1)));
+  EXPECT(assert_equal((Matrix)Matrix{{1.5}}, jf.getA(jf.begin() + 2)));
+  EXPECT(assert_equal((Matrix)Matrix{{2.0}}, jf.getA(jf.begin() + 3)));
+  EXPECT(assert_equal((Matrix)Matrix{{2.5}}, jf.getA(jf.begin() + 4)));
+  EXPECT(assert_equal(Vector{{0.5 * -55.}}, jf.getb()));
 }
 
 /* ************************************************************************* */
@@ -545,23 +547,23 @@ public:
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
-  TestFactor6() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4), X(5), X(6)) {}
+  TestFactor6()
+      : Base(noiseModel::Diagonal::Sigmas(Vector{{2.0}}), X(1), X(2), X(3),
+             X(4), X(5), X(6)) {}
 
   Vector
     evaluateError(const X1& x1, const X2& x2, const X3& x3, const X4& x4, const X5& x5, const X6& x6,
         OptionalMatrixType H1, OptionalMatrixType H2, OptionalMatrixType H3, OptionalMatrixType H4, 
 		OptionalMatrixType H5, OptionalMatrixType H6) const override {
     if(H1) {
-      *H1 = (Matrix(1, 1) << 1.0).finished();
-      *H2 = (Matrix(1, 1) << 2.0).finished();
-      *H3 = (Matrix(1, 1) << 3.0).finished();
-      *H4 = (Matrix(1, 1) << 4.0).finished();
-      *H5 = (Matrix(1, 1) << 5.0).finished();
-      *H6 = (Matrix(1, 1) << 6.0).finished();
+      *H1 = Matrix{{1.0}};
+      *H2 = Matrix{{2.0}};
+      *H3 = Matrix{{3.0}};
+      *H4 = Matrix{{4.0}};
+      *H5 = Matrix{{5.0}};
+      *H6 = Matrix{{6.0}};
     }
-    return (Vector(1) << x1 + 2.0 * x2 + 3.0 * x3 + 4.0 * x4 + 5.0 * x5 +
-                             6.0 * x6)
-        .finished();
+    return Vector{{x1 + 2.0 * x2 + 3.0 * x3 + 4.0 * x4 + 5.0 * x5 + 6.0 * x6}};
   }
 
 };
@@ -576,7 +578,7 @@ TEST(NonlinearFactor, NoiseModelFactor6) {
   tv.insert(X(4), double((4.0)));
   tv.insert(X(5), double((5.0)));
   tv.insert(X(6), double((6.0)));
-  EXPECT(assert_equal((Vector(1) << 91.0).finished(), tf.unwhitenedError(tv)));
+  EXPECT(assert_equal(Vector{{91.0}}, tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(0.5 * 91.0 * 91.0 / 4.0, tf.error(tv), 1e-9);
   JacobianFactor jf(*std::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv)));
   LONGS_EQUAL((long)X(1), (long)jf.keys()[0]);
@@ -585,14 +587,13 @@ TEST(NonlinearFactor, NoiseModelFactor6) {
   LONGS_EQUAL((long)X(4), (long)jf.keys()[3]);
   LONGS_EQUAL((long)X(5), (long)jf.keys()[4]);
   LONGS_EQUAL((long)X(6), (long)jf.keys()[5]);
-  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 0.5).finished(), jf.getA(jf.begin())));
-  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 1.0).finished(), jf.getA(jf.begin()+1)));
-  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 1.5).finished(), jf.getA(jf.begin()+2)));
-  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 2.0).finished(), jf.getA(jf.begin()+3)));
-  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 2.5).finished(), jf.getA(jf.begin()+4)));
-  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 3.0).finished(), jf.getA(jf.begin()+5)));
-  EXPECT(assert_equal((Vector)(Vector(1) << 0.5 * -91.).finished(), jf.getb()));
-
+  EXPECT(assert_equal((Matrix)Matrix{{0.5}}, jf.getA(jf.begin())));
+  EXPECT(assert_equal((Matrix)Matrix{{1.0}}, jf.getA(jf.begin() + 1)));
+  EXPECT(assert_equal((Matrix)Matrix{{1.5}}, jf.getA(jf.begin() + 2)));
+  EXPECT(assert_equal((Matrix)Matrix{{2.0}}, jf.getA(jf.begin() + 3)));
+  EXPECT(assert_equal((Matrix)Matrix{{2.5}}, jf.getA(jf.begin() + 4)));
+  EXPECT(assert_equal((Matrix)Matrix{{3.0}}, jf.getA(jf.begin() + 5)));
+  EXPECT(assert_equal(Vector{{0.5 * -91.}}, jf.getb()));
 }
 
 /* ************************************************************************* */
@@ -605,17 +606,19 @@ public:
 
   using Type1 = ValueType<1>;  // Test that we can use the ValueType<> template
 
-  TestFactorN() : Base(noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished()), X(1), X(2), X(3), X(4)) {}
+  TestFactorN()
+      : Base(noiseModel::Diagonal::Sigmas(Vector{{2.0}}), X(1), X(2), X(3),
+             X(4)) {}
 
   Vector
     evaluateError(const double& x1, const double& x2, const double& x3, const double& x4,
         OptionalMatrixType H1, OptionalMatrixType H2,
         OptionalMatrixType H3, OptionalMatrixType H4) const override {
-    if (H1) *H1 = (Matrix(1, 1) << 1.0).finished();
-    if (H2) *H2 = (Matrix(1, 1) << 2.0).finished();
-    if (H3) *H3 = (Matrix(1, 1) << 3.0).finished();
-    if (H4) *H4 = (Matrix(1, 1) << 4.0).finished();
-    return (Vector(1) << x1 + 2.0 * x2 + 3.0 * x3 + 4.0 * x4).finished();
+    if (H1) *H1 = Matrix{{1.0}};
+    if (H2) *H2 = Matrix{{2.0}};
+    if (H3) *H3 = Matrix{{3.0}};
+    if (H4) *H4 = Matrix{{4.0}};
+    return Vector{{x1 + 2.0 * x2 + 3.0 * x3 + 4.0 * x4}};
   }
 
   Key key1() const { return key<1>(); }  // Test that we can use key<> template
@@ -629,18 +632,18 @@ TEST(NonlinearFactor, NoiseModelFactorN) {
   tv.insert(X(2), double((2.0)));
   tv.insert(X(3), double((3.0)));
   tv.insert(X(4), double((4.0)));
-  EXPECT(assert_equal((Vector(1) << 30.0).finished(), tf.unwhitenedError(tv)));
+  EXPECT(assert_equal(Vector{{30.0}}, tf.unwhitenedError(tv)));
   DOUBLES_EQUAL(0.5 * 30.0 * 30.0 / 4.0, tf.error(tv), 1e-9);
   JacobianFactor jf(*std::dynamic_pointer_cast<JacobianFactor>(tf.linearize(tv)));
   LONGS_EQUAL((long)X(1), (long)jf.keys()[0]);
   LONGS_EQUAL((long)X(2), (long)jf.keys()[1]);
   LONGS_EQUAL((long)X(3), (long)jf.keys()[2]);
   LONGS_EQUAL((long)X(4), (long)jf.keys()[3]);
-  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 0.5).finished(), jf.getA(jf.begin())));
-  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 1.0).finished(), jf.getA(jf.begin()+1)));
-  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 1.5).finished(), jf.getA(jf.begin()+2)));
-  EXPECT(assert_equal((Matrix)(Matrix(1, 1) << 2.0).finished(), jf.getA(jf.begin()+3)));
-  EXPECT(assert_equal((Vector)(Vector(1) << -0.5 * 30.).finished(), jf.getb()));
+  EXPECT(assert_equal((Matrix)Matrix{{0.5}}, jf.getA(jf.begin())));
+  EXPECT(assert_equal((Matrix)Matrix{{1.0}}, jf.getA(jf.begin() + 1)));
+  EXPECT(assert_equal((Matrix)Matrix{{1.5}}, jf.getA(jf.begin() + 2)));
+  EXPECT(assert_equal((Matrix)Matrix{{2.0}}, jf.getA(jf.begin() + 3)));
+  EXPECT(assert_equal(Vector{{-0.5 * 30.}}, jf.getb()));
 
   // Test all evaluateError argument overloads to ensure backward compatibility
   Matrix H1_expected, H2_expected, H3_expected, H4_expected;

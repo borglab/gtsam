@@ -46,8 +46,7 @@ TEST(OrientedPlane3Factor, lm_translation_error) {
   // Init pose and prior.  Pose Prior is needed since a single plane measurement
   // does not fully constrain the pose
   Pose3 init_pose(Rot3::Ypr(0.0, 0.0, 0.0), Point3(0.0, 0.0, 0.0));
-  Vector6 sigmas;
-  sigmas << 0.001, 0.001, 0.001, 0.001, 0.001, 0.001;
+  Vector6 sigmas{0.001, 0.001, 0.001, 0.001, 0.001, 0.001};
   graph.addPrior(X(0), init_pose, noiseModel::Diagonal::Sigmas(sigmas));
 
   // Add two landmark measurements, differing in range
@@ -93,7 +92,7 @@ TEST (OrientedPlane3Factor, lm_rotation_error) {
   Pose3 init_pose(Rot3::Ypr(0.0, 0.0, 0.0), Point3(0.0, 0.0, 0.0));
   graph.addPrior(X(0), init_pose,
       noiseModel::Diagonal::Sigmas(
-          (Vector(6) << 0.001, 0.001, 0.001, 0.001, 0.001, 0.001).finished()));
+          Vector{{0.001, 0.001, 0.001, 0.001, 0.001, 0.001}}));
 
   // Add two landmark measurements, differing in angle
   Vector4 measurement0 {-1.0, 0.0, 0.0, 3.0};
@@ -162,7 +161,8 @@ TEST( OrientedPlane3DirectionPrior, Constructor ) {
   // If pitch and roll are zero for an aerospace frame,
   // that means Z is pointing down, i.e., direction of Z = (0,0,-1)
 
-  Vector4 planeOrientation = (Vector(4) << 0.0, 0.0, -1.0, 10.0).finished(); // all vertical planes directly facing the origin
+  Vector4 planeOrientation{
+      0.0, 0.0, -1.0, 10.0};  // all vertical planes directly facing the origin
 
   // Factor
   Key key(1);
@@ -247,7 +247,7 @@ TEST(OrientedPlane3Factor, Issue561Simplified) {
     EXPECT(x0.equals(result.at<Pose3>(X(0))));
     EXPECT(p1.equals(result.at<Plane>(P(1))));
     EXPECT(p2.equals(result.at<Plane>(P(2))));
-  } catch (const IndeterminantLinearSystemException &e) {
+  } catch (const IndeterminateSystemException &e) {
     std::cerr << "CAPTURED THE EXCEPTION: " << DefaultKeyFormatter(e.nearbyVariable()) << std::endl;
     EXPECT(false); // fail if this happens
   }

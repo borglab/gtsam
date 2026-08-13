@@ -1,8 +1,21 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  * @file PlanarGyroFactor.cpp
  * @author joel@truher.org
  * @date May 1, 2026
  */
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/navigation/PlanarGyroFactor.h>
 
 namespace gtsam {
@@ -98,11 +111,11 @@ bool PlanarGyroFactor::equals(const NonlinearFactor& other, double tol) const {
          && std::abs(deltaT_ - e->deltaT_) < tol;
 }
 
-Vector PlanarGyroFactor::evaluateError(const Pose2& Pi, const Pose2& Pj,
-                                       const double& bias,
-                                       OptionalMatrixType H1,
-                                       OptionalMatrixType H2,
-                                       OptionalMatrixType H3) const {
+Vector3 PlanarGyroFactor::evaluateError(const Pose2& Pi, const Pose2& Pj,
+                                        const double& bias,
+                                        OptionalMatrixType H1,
+                                        OptionalMatrixType H2,
+                                        OptionalMatrixType H3) const {
   Matrix1 rH1, rH2, rH3;
   double err = computeError(Pi.r(), Pj.r(), bias, H1 ? &rH1 : 0, H2 ? &rH2 : 0,
                             H3 ? &rH3 : 0);

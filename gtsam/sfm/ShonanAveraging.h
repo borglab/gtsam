@@ -29,6 +29,7 @@
 #include <gtsam/slam/dataset.h>
 
 #include <Eigen/Sparse>
+#include <optional>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -135,6 +136,19 @@ class GTSAM_EXPORT ShonanAveraging {
   Sparse D_;  // Sparse (diagonal) degree matrix
   Sparse Q_;  // Sparse measurement matrix, == \tilde{R} in Eriksson18cvpr
   Sparse L_;  // connection Laplacian L = D - Q, needed for optimality check
+
+  /// Build the base-dimension rotation graph used by FAST-Sync.
+  NonlinearFactorGraph buildFastSyncGraph() const;
+
+  /// Create an optimizer with an optional ordering shared across ranks.
+  std::shared_ptr<LevenbergMarquardtOptimizer> createOptimizerAt(
+      size_t p, const Values &initial,
+      const std::optional<Ordering> &ordering) const;
+
+  /// Run the staircase with an already chosen initial estimate and ordering.
+  std::pair<Values, double> run(const Values &initial, size_t min_p,
+                                size_t max_p,
+                                const std::optional<Ordering> &ordering) const;
 
   /**
    * Build 3Nx3N sparse matrix consisting of rotation measurements, arranged as
@@ -374,8 +388,8 @@ class GTSAM_EXPORT ShonanAveraging {
   /// @{
 
   /**
-   * Calculate cost for SO(3)
-   * Values should be of type Rot3
+   * Calculate cost at the base dimension.
+   * Values should be of type Rot2 or Rot3.
    */
   double cost(const Values &values) const;
 
@@ -384,7 +398,7 @@ class GTSAM_EXPORT ShonanAveraging {
    * @param rng random number generator
    * Example:
    *   std::mt19937 rng(42);
-   *   Values initial = initializeRandomly(rng, p);
+   *   Values initial = initializeRandomly(rng);
    */
   Values initializeRandomly(std::mt19937 &rng) const;
 
@@ -393,13 +407,21 @@ class GTSAM_EXPORT ShonanAveraging {
 
   /**
    * Optimize at different values of p until convergence.
-   * @param initial initial Rot3 values
-   * @param pMin value of p to start Riemanian staircase at (default: d).
-   * @param pMax maximum value of p to try (default: 10)
-   * @return (Rot3 values, minimum eigenvalue)
+   * @param initial initial Rot2 or Rot3 values.
+   * @param min_p value of p to start Riemannian staircase at (default: d).
+   * @param max_p maximum value of p to try (default: 10)
+   * @return (Rot2 or Rot3 values, minimum eigenvalue).
    */
-  std::pair<Values, double> run(const Values &initialEstimate, size_t pMin = d,
-                                size_t pMax = 10) const;
+  std::pair<Values, double> run(const Values &initial, size_t min_p = d,
+                                size_t max_p = 10) const;
+
+  /**
+   * Initialize with FAST-Sync using one METIS ordering, then run the staircase.
+   * @param min_p value of p to start Riemannian staircase at (default: d).
+   * @param max_p maximum value of p to try (default: 10).
+   * @return (Rot2 or Rot3 values, minimum eigenvalue).
+   */
+  std::pair<Values, double> run(size_t min_p = d, size_t max_p = 10) const;
   /// @}
 
   /**

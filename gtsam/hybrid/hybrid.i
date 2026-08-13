@@ -202,13 +202,13 @@ class HybridGaussianConditional : gtsam::HybridGaussianFactor {
       const gtsam::DiscreteKey& discreteParent,
       const std::vector<gtsam::GaussianConditional::shared_ptr>& conditionals);
   HybridGaussianConditional(
-      const gtsam::DiscreteKey& discreteParent, size_t key,
-      const gtsam::Matrix& A, size_t parent,
+      const gtsam::DiscreteKey& discreteParent, gtsam::Key key,
+      const gtsam::Matrix& A, gtsam::Key parent,
       const std::vector<std::pair<gtsam::Vector, double>>& parameters);
   HybridGaussianConditional(
-      const gtsam::DiscreteKey& discreteParent, size_t key,  //
-      const gtsam::Matrix& A1, size_t parent1, const gtsam::Matrix& A2,
-      size_t parent2,
+      const gtsam::DiscreteKey& discreteParent, gtsam::Key key,  //
+      const gtsam::Matrix& A1, gtsam::Key parent1, const gtsam::Matrix& A2,
+      gtsam::Key parent2,
       const std::vector<std::pair<gtsam::Vector, double>>& parameters);
 
   // Standard API
@@ -253,7 +253,7 @@ virtual class HybridBayesTree {
 
   size_t size() const;
   bool empty() const;
-  const HybridBayesTreeClique* operator[](size_t j) const;
+  const HybridBayesTreeClique* operator[](gtsam::Key j) const;
 
   gtsam::HybridValues optimize() const;
   gtsam::VectorValues optimize(const gtsam::DiscreteValues& assignment) const;

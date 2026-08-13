@@ -1,3 +1,13 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
 
 /**
  * @file InvDepthFactorVariant3.h
@@ -23,7 +33,8 @@ namespace gtsam {
 /**
  * Binary factor representing the first visual measurement using an inverse-depth parameterization
  */
-class InvDepthFactorVariant3a: public NoiseModelFactorN<Pose3, Vector3> {
+class InvDepthFactorVariant3a
+    : public NoiseModelFactorT<Vector2, Pose3, Vector3> {
 protected:
 
   // Keep a copy of measurement and calibration for I/O
@@ -33,7 +44,7 @@ protected:
 public:
 
   /// shorthand for base class type
-  typedef NoiseModelFactor2<Pose3, Vector3> Base;
+  typedef NoiseModelFactorT<Vector2, Pose3, Vector3> Base;
 
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
@@ -103,12 +114,13 @@ public:
           << std::endl;
       return Vector::Ones(2) * 2.0 * K_->fx();
     }
-    return (Vector(1) << 0.0).finished();
+    return Vector{{0.0}};
   }
 
   /// Evaluate error h(x)-z and optionally derivatives
-  Vector evaluateError(const Pose3& pose, const Vector3& landmark,
-      OptionalMatrixType H1, OptionalMatrixType H2) const override {
+  Vector2 evaluateError(const Pose3& pose, const Vector3& landmark,
+                        OptionalMatrixType H1,
+                        OptionalMatrixType H2) const override {
 
     if(H1) {
       (*H1) = numericalDerivative11<Vector, Pose3>(
@@ -153,7 +165,8 @@ private:
 /**
  * Ternary factor representing a visual measurement using an inverse-depth parameterization
  */
-class InvDepthFactorVariant3b: public NoiseModelFactorN<Pose3, Pose3, Vector3> {
+class InvDepthFactorVariant3b
+    : public NoiseModelFactorT<Vector2, Pose3, Pose3, Vector3> {
 protected:
 
   // Keep a copy of measurement and calibration for I/O
@@ -163,7 +176,7 @@ protected:
 public:
 
   /// shorthand for base class type
-  typedef NoiseModelFactorN<Pose3, Pose3, Vector3> Base;
+  typedef NoiseModelFactorT<Vector2, Pose3, Pose3, Vector3> Base;
 
   /// shorthand for this class
   typedef InvDepthFactorVariant3b This;
@@ -230,12 +243,14 @@ public:
           << std::endl;
       return Vector::Ones(2) * 2.0 * K_->fx();
     }
-    return (Vector(1) << 0.0).finished();
+    return Vector{{0.0}};
   }
 
   /// Evaluate error h(x)-z and optionally derivatives
-  Vector evaluateError(const Pose3& pose1, const Pose3& pose2, const Vector3& landmark,
-      OptionalMatrixType H1, OptionalMatrixType H2, OptionalMatrixType H3) const override {
+  Vector2 evaluateError(const Pose3& pose1, const Pose3& pose2,
+                        const Vector3& landmark, OptionalMatrixType H1,
+                        OptionalMatrixType H2,
+                        OptionalMatrixType H3) const override {
 
     if(H1)
       (*H1) = numericalDerivative11<Vector, Pose3>(

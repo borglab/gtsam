@@ -122,10 +122,10 @@ class GTSAM_EXPORT Marginals {
   /// Compute the marginal covariance of a single variable.
   Matrix marginalCovariance(Key variable) const;
 
-  /// Compute the joint marginal covariance of several variables.
+  /// Compute joint marginal covariance with blocks in `variables` order.
   JointMarginal jointMarginalCovariance(const KeyVector& variables) const;
 
-  /// Compute the joint marginal information of several variables.
+  /// Compute joint marginal information with blocks in `variables` order.
   JointMarginal jointMarginalInformation(const KeyVector& variables) const;
 
   /** Delete cached Bayes tree shortcuts created while computing marginals */

@@ -26,21 +26,26 @@
 #include <iostream>
 #include <typeinfo> // operator typeid
 
-#ifdef _WIN32
+// GenericValue's RTTI must remain visible so the C++ ABI can identify a
+// specialization consistently when a Value crosses a shared-library boundary.
+#if defined(_WIN32)
+// Exporting this header-only template triggers linker errors on MSVC.
+// Please refer to https://github.com/borglab/gtsam/blob/develop/Using-GTSAM-EXPORT.md
 #define GENERICVALUE_VISIBILITY
 #else
-// This will trigger a LNKxxxx on MSVC, so disable for MSVC build
-// Please refer to https://github.com/borglab/gtsam/blob/develop/Using-GTSAM-EXPORT.md
 #define GENERICVALUE_VISIBILITY GTSAM_EXPORT
 #endif
 
 namespace gtsam {
 
 /**
- * Wraps any type T so it can play as a Value
+ * Wraps any type T so it can play as a Value.
+ *
+ * A user-defined T that crosses a shared-library boundary must also have
+ * default visibility so the C++ ABI recognizes GenericValue<T> as one type.
  */
 template<class T>
-class GenericValue: public Value {
+class GENERICVALUE_VISIBILITY GenericValue: public Value {
 
 public:
 

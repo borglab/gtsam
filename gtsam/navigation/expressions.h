@@ -1,5 +1,5 @@
 /**
- * @file expressions.h
+ * @file gtsam/navigation/expressions.h
  * @brief Common expressions for solving navigation problems
  * @date May, 2019
  * @author Frank Dellaert

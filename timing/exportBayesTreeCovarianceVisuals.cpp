@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -35,6 +35,8 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#include "internal/TimingUtils.h"
 
 using namespace gtsam;
 using namespace std;
@@ -77,8 +79,8 @@ Values solveSequentiallyWithISAM2(const NonlinearFactorGraph& graph,
   parameters.relinearizeThreshold = 0.01;
   ISAM2 isam2(parameters);
 
-  const auto priorNoise = noiseModel::Diagonal::Sigmas(
-      (Vector(3) << 1e-6, 1e-6, 1e-6).finished());
+  const auto priorNoise =
+      noiseModel::Diagonal::Sigmas(Vector{{1e-6, 1e-6, 1e-6}});
   size_t nextFactor = 0;
 
   for (size_t stepIndex = 0; stepIndex < allPoseKeys.size(); ++stepIndex) {
@@ -88,7 +90,8 @@ Values solveSequentiallyWithISAM2(const NonlinearFactorGraph& graph,
 
     if (stepIndex == 0) {
       newTheta.insert(currentKey, initial.at<Pose2>(currentKey));
-      newFactors.addPrior(currentKey, initial.at<Pose2>(currentKey), priorNoise);
+      newFactors.addPrior(currentKey, initial.at<Pose2>(currentKey),
+                          priorNoise);
     }
 
     optional<Pose2> predictedPose;
@@ -115,7 +118,8 @@ Values solveSequentiallyWithISAM2(const NonlinearFactorGraph& graph,
       newFactors.push_back(factor);
       if (stepIndex > 0) {
         const Key previousKey = allPoseKeys[stepIndex - 1];
-        const auto between = dynamic_pointer_cast<const BetweenFactor<Pose2>>(factor);
+        const auto between =
+            dynamic_pointer_cast<const BetweenFactor<Pose2>>(factor);
         if (between && isam2.valueExists(previousKey)) {
           if (between->key1() == previousKey && between->key2() == currentKey) {
             predictedPose = isam2.calculateEstimate<Pose2>(previousKey) *
@@ -174,7 +178,7 @@ KeyVector evenlySpaced(const KeyVector& keys, size_t querySize) {
 
 /// Write a one-column key list CSV.
 void writeKeyListCsv(const filesystem::path& path, const KeyVector& keys) {
-  ofstream stream(path);
+  ofstream stream = gtsam::timing::openOutputFile(path.string());
   stream << "key\n";
   for (Key key : keys) {
     stream << key << '\n';
@@ -183,7 +187,7 @@ void writeKeyListCsv(const filesystem::path& path, const KeyVector& keys) {
 
 /// Write a dense matrix to CSV with fixed precision.
 void writeMatrixCsv(const filesystem::path& path, const Matrix& matrix) {
-  ofstream stream(path);
+  ofstream stream = gtsam::timing::openOutputFile(path.string());
   stream << fixed << setprecision(12);
   for (Eigen::Index row = 0; row < matrix.rows(); ++row) {
     for (Eigen::Index column = 0; column < matrix.cols(); ++column) {
@@ -202,7 +206,7 @@ void writePoseCsv(const filesystem::path& path, const Values& values,
   const set<Key> localKeys(localQuery.begin(), localQuery.end());
   const set<Key> wideKeys(wideQuery.begin(), wideQuery.end());
 
-  ofstream stream(path);
+  ofstream stream = gtsam::timing::openOutputFile(path.string());
   stream << "key,x,y,theta,in_local,in_wide\n";
   stream << fixed << setprecision(9);
   for (Key key : poseKeys(values)) {
@@ -228,7 +232,7 @@ void writeEdgeCsv(const filesystem::path& path,
     edges.insert(edge);
   }
 
-  ofstream stream(path);
+  ofstream stream = gtsam::timing::openOutputFile(path.string());
   stream << "key1,key2\n";
   for (const auto& [key1, key2] : edges) {
     stream << key1 << ',' << key2 << '\n';
@@ -255,9 +259,9 @@ OptimizedBayesTreeResult optimizeWithBayesTree(const string& datasetName) {
   Values result = solveSequentiallyWithISAM2(*graphPtr, *initialPtr);
   const KeyVector poseKeyList = poseKeys(result);
   if (!poseKeyList.empty()) {
-    graphPtr->addPrior(poseKeyList.front(), result.at<Pose2>(poseKeyList.front()),
-                       noiseModel::Diagonal::Sigmas(
-                           (Vector(3) << 1e-6, 1e-6, 1e-6).finished()));
+    graphPtr->addPrior(
+        poseKeyList.front(), result.at<Pose2>(poseKeyList.front()),
+        noiseModel::Diagonal::Sigmas(Vector{{1e-6, 1e-6, 1e-6}}));
   }
   GaussianFactorGraph linearGraph = *graphPtr->linearize(result);
   const Ordering ordering = Ordering::Create(Ordering::COLAMD, linearGraph);
@@ -269,7 +273,7 @@ OptimizedBayesTreeResult optimizeWithBayesTree(const string& datasetName) {
 /// Export optimized Pose2 values together with their COLAMD clique sizes.
 void writeCliquePoseCsv(const filesystem::path& path, const Values& values,
                         const GaussianBayesTree& bayesTree) {
-  ofstream stream(path);
+  ofstream stream = gtsam::timing::openOutputFile(path.string());
   stream << "key,x,y,theta,clique_size\n";
   stream << fixed << setprecision(9);
   for (Key key : poseKeys(values)) {
@@ -278,32 +282,21 @@ void writeCliquePoseCsv(const filesystem::path& path, const Values& values,
     const auto conditional = clique->conditional();
     const size_t cliqueSize =
         conditional->nrFrontals() + conditional->nrParents();
-    stream << key << ',' << pose.x() << ',' << pose.y() << ','
-           << pose.theta() << ',' << cliqueSize << '\n';
+    stream << key << ',' << pose.x() << ',' << pose.y() << ',' << pose.theta()
+           << ',' << cliqueSize << '\n';
   }
-}
-
-/// Read a string argument from argv or return a default value.
-string argumentOrDefault(char** begin, char** end, const string& flag,
-                         const string& defaultValue) {
-  for (auto it = begin; it != end; ++it) {
-    if (string(*it) == flag && it + 1 != end) {
-      return *(it + 1);
-    }
-  }
-  return defaultValue;
 }
 
 }  // namespace
 
 int main(int argc, char** argv) {
-  const string datasetName =
-      argumentOrDefault(argv, argv + argc, "--dataset", "w100.graph");
-  const filesystem::path outputDir =
-      argumentOrDefault(argv, argv + argc, "--output-dir",
-                        (filesystem::path("timing") / "results" /
-                         "bayes_tree_covariance" / "visuals")
-                            .string());
+  gtsam::timing::Arguments arguments(argc, argv);
+  const string datasetName = arguments.stringValue("--dataset", "w100.graph");
+  const filesystem::path outputDir = arguments.stringValue(
+      "--output-dir", (filesystem::path("timing") / "results" /
+                       "bayes_tree_covariance" / "visuals")
+                          .string());
+  arguments.validateAllConsumed();
   filesystem::create_directories(outputDir);
 
   const OptimizedBayesTreeResult w100 = optimizeWithBayesTree(datasetName);
@@ -328,8 +321,9 @@ int main(int argc, char** argv) {
   for (const string& cliqueDatasetName : {"w10000.graph", "w20000.txt"}) {
     const OptimizedBayesTreeResult optimized =
         optimizeWithBayesTree(cliqueDatasetName);
-    writeCliquePoseCsv(outputDir / (datasetStem(cliqueDatasetName) + "_cliques.csv"),
-                       optimized.values, optimized.bayesTree);
+    writeCliquePoseCsv(
+        outputDir / (datasetStem(cliqueDatasetName) + "_cliques.csv"),
+        optimized.values, optimized.bayesTree);
   }
 
   return 0;

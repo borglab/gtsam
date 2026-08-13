@@ -15,13 +15,13 @@
  * @author  Frank Dellaert
  */
 
-#include <gtsam/navigation/TangentPreintegration.h>
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/nonlinear/expressions.h>
+#include <gtsam/navigation/TangentPreintegration.h>
 #include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/expressionTesting.h>
-
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/nonlinear/expressions.h>
 
 #include "imuFactorTesting.h"
 
@@ -51,8 +51,7 @@ TEST(TangentPreintegration, UpdateEstimate1) {
 TEST(TangentPreintegration, UpdateEstimate2) {
   TangentPreintegration pim(testing::Params());
   const Vector3 acc(0.1, 0.2, 10), omega(0.1, 0.2, 0.3);
-  Vector9 zeta;
-  zeta << 0.01, 0.02, 0.03, 100, 200, 300, 10, 5, 3;
+  Vector9 zeta{0.01, 0.02, 0.03, 100, 200, 300, 10, 5, 3};
   Matrix9 aH1;
   Matrix93 aH2, aH3;
   pim.UpdatePreintegrated(acc, omega, kDt, zeta, aH1, aH2, aH3);
@@ -92,7 +91,12 @@ TEST(TangentPreintegration, computeError) {
   Matrix9 aH1, aH2;
   Matrix96 aH3;
   pim.computeError(x1, x2, bias, aH1, aH2, aH3);
-  auto f = std::bind(&TangentPreintegration::computeError, pim,
+  // Select the overload without the gravity parameter:
+  using ComputeErrorNoGravity = Vector9 (PreintegrationBase::*)(
+      const NavState&, const NavState&, const imuBias::ConstantBias&,
+      OptionalJacobian<9, 9>, OptionalJacobian<9, 9>,
+      OptionalJacobian<9, 6>) const;
+  auto f = std::bind(static_cast<ComputeErrorNoGravity>(&TangentPreintegration::computeError), pim,
                     std::placeholders::_1, std::placeholders::_2,
                     std::placeholders::_3, nullptr, nullptr,
                     nullptr);

@@ -34,8 +34,7 @@ double f(const Vector2& x) {
 TEST(testNumericalDerivative, numericalGradient) {
   Vector2 x(1, 1.1);
 
-  Vector expected(2);
-  expected << cos(x(0)), -sin(x(1));
+  Vector expected{{cos(x(0)), -sin(x(1))}};
 
   Vector actual = numericalGradient<Vector2>(f, x);
 
@@ -46,8 +45,7 @@ TEST(testNumericalDerivative, numericalGradient) {
 TEST(testNumericalDerivative, numericalHessian) {
   Vector2 x(1, 1.1);
 
-  Matrix expected(2, 2);
-  expected << -sin(x(0)), 0.0, 0.0, -cos(x(1));
+  Matrix expected{{-sin(x(0)), 0.0}, {0.0, -cos(x(1))}};
 
   Matrix actual = numericalHessian<Vector2>(f, x);
 
@@ -66,8 +64,8 @@ TEST(testNumericalDerivative, numericalHessian2) {
   Vector2 v(0.5, 1.0);
   Vector2 x(v);
 
-  Matrix expected = (Matrix(2, 2) << -cos(x(1)) * sin(x(0)), -sin(x(1))
-      * cos(x(0)), -cos(x(0)) * sin(x(1)), -sin(x(0)) * cos(x(1))).finished();
+  Matrix expected{{-cos(x(1)) * sin(x(0)), -sin(x(1)) * cos(x(0))},
+                  {-cos(x(0)) * sin(x(1)), -sin(x(0)) * cos(x(1))}};
 
   Matrix actual = numericalHessian(f2, x);
 
@@ -84,15 +82,15 @@ double f3(double x1, double x2) {
 TEST(testNumericalDerivative, numericalHessian211) {
   double x1 = 1, x2 = 5;
 
-  Matrix expected11 = (Matrix(1, 1) << -sin(x1) * cos(x2)).finished();
+  Matrix expected11{{-sin(x1) * cos(x2)}};
   Matrix actual11 = numericalHessian211<double, double>(f3, x1, x2);
   EXPECT(assert_equal(expected11, actual11, 1e-5));
 
-  Matrix expected12 = (Matrix(1, 1) << -cos(x1) * sin(x2)).finished();
+  Matrix expected12{{-cos(x1) * sin(x2)}};
   Matrix actual12 = numericalHessian212<double, double>(f3, x1, x2);
   EXPECT(assert_equal(expected12, actual12, 1e-5));
 
-  Matrix expected22 = (Matrix(1, 1) << -sin(x1) * cos(x2)).finished();
+  Matrix expected22{{-sin(x1) * cos(x2)}};
   Matrix actual22 = numericalHessian222<double, double>(f3, x1, x2);
   EXPECT(assert_equal(expected22, actual22, 1e-5));
 }
@@ -112,52 +110,50 @@ double f4(double x, double y, double z) {
 //
 TEST(testNumericalDerivative, numericalHessian311) {
   double x = 1, y = 2, z = 3;
-  Matrix expected11 = (Matrix(1, 1) << -sin(x) * cos(y) * z * z).finished();
-  Matrix actual11 = numericalHessian311<double, double, double>(f4, x, y, z);
+  Matrix11 expected11{{-sin(x) * cos(y) * z * z}};
+  Matrix11 actual11 = numericalHessian311<double, double, double>(f4, x, y, z);
   EXPECT(assert_equal(expected11, actual11, 1e-5));
 
-  Matrix expected12 = (Matrix(1, 1) << -cos(x) * sin(y) * z * z).finished();
-  Matrix actual12 = numericalHessian312<double, double, double>(f4, x, y, z);
+  Matrix11 expected12{{-cos(x) * sin(y) * z * z}};
+  Matrix11 actual12 = numericalHessian312<double, double, double>(f4, x, y, z);
   EXPECT(assert_equal(expected12, actual12, 1e-5));
 
-  Matrix expected13 = (Matrix(1, 1) << cos(x) * cos(y) * 2 * z).finished();
-  Matrix actual13 = numericalHessian313<double, double, double>(f4, x, y, z);
+  Matrix11 expected13{{cos(x) * cos(y) * 2 * z}};
+  Matrix11 actual13 = numericalHessian313<double, double, double>(f4, x, y, z);
   EXPECT(assert_equal(expected13, actual13, 1e-5));
 
-  Matrix expected22 = (Matrix(1, 1) << -sin(x) * cos(y) * z * z).finished();
-  Matrix actual22 = numericalHessian322<double, double, double>(f4, x, y, z);
+  Matrix11 expected22{{-sin(x) * cos(y) * z * z}};
+  Matrix11 actual22 = numericalHessian322<double, double, double>(f4, x, y, z);
   EXPECT(assert_equal(expected22, actual22, 1e-5));
 
-  Matrix expected23 = (Matrix(1, 1) << -sin(x) * sin(y) * 2 * z).finished();
-  Matrix actual23 = numericalHessian323<double, double, double>(f4, x, y, z);
+  Matrix11 expected23{{-sin(x) * sin(y) * 2 * z}};
+  Matrix11 actual23 = numericalHessian323<double, double, double>(f4, x, y, z);
   EXPECT(assert_equal(expected23, actual23, 1e-5));
 
-  Matrix expected33 = (Matrix(1, 1) << sin(x) * cos(y) * 2).finished();
-  Matrix actual33 = numericalHessian333<double, double, double>(f4, x, y, z);
+  Matrix11 expected33{{sin(x) * cos(y) * 2}};
+  Matrix11 actual33 = numericalHessian333<double, double, double>(f4, x, y, z);
   EXPECT(assert_equal(expected33, actual33, 1e-5));
 }
 
 /* ************************************************************************* */
 Vector6 f6(const double x1, const double x2, const double x3, const double x4,
            const double x5, const double x6) {
-  Vector6 result;
-  result << sin(x1), cos(x2), x3 * x3, x4 * x4 * x4, sqrt(x5), sin(x6) - cos(x6); 
-  return result;
+  return Vector6{sin(x1),      cos(x2),  x3 * x3,
+                 x4 * x4 * x4, sqrt(x5), sin(x6) - cos(x6)};
 }
 
 Vector g6(const double x1, const double x2, const double x3, const double x4,
           const double x5, const double x6) {
-  Vector result(6);
-  result << sin(x1), cos(x2), x3 * x3, x4 * x4 * x4, sqrt(x5), sin(x6) - cos(x6);
-  return result;
+  return Vector{
+      {sin(x1), cos(x2), x3 * x3, x4 * x4 * x4, sqrt(x5), sin(x6) - cos(x6)}};
 }
 
 /* ************************************************************************* */
 //
 TEST(testNumericalDerivative, numeriDerivative61) {
   double x1 = 1, x2 = 2, x3 = 3 , x4 = 4, x5 = 5, x6 = 6;
-  
-  Matrix expected61 = (Matrix(6, 1) << cos(x1), 0, 0, 0, 0, 0).finished();
+
+  Matrix expected61{{cos(x1)}, {0}, {0}, {0}, {0}, {0}};
   Matrix61 actual61 = numericalDerivative61<Vector6, double, double,
       double, double, double, double>(f6, x1, x2, x3, x4, x5, x6);
   
@@ -176,8 +172,8 @@ TEST(testNumericalDerivative, numeriDerivative61) {
 //
 TEST(testNumericalDerivative, numeriDerivative62) {
   double x1 = 1, x2 = 2, x3 = 3 , x4 = 4, x5 = 5, x6 = 6;
-  
-  Matrix expected62 = (Matrix(6, 1) << 0, -sin(x2), 0, 0, 0, 0).finished();
+
+  Matrix expected62{{0}, {-sin(x2)}, {0}, {0}, {0}, {0}};
   Matrix61 actual62 = numericalDerivative62<Vector6, double, double, double,
      double, double, double>(f6, x1, x2, x3, x4, x5, x6);
   
@@ -195,8 +191,8 @@ TEST(testNumericalDerivative, numeriDerivative62) {
 //
 TEST(testNumericalDerivative, numeriDerivative63) {
   double x1 = 1, x2 = 2, x3 = 3 , x4 = 4, x5 = 5, x6 = 6;
-  
-  Matrix expected63 = (Matrix(6, 1) << 0, 0, 2 * x3, 0, 0, 0).finished();
+
+  Matrix expected63{{0}, {0}, {2 * x3}, {0}, {0}, {0}};
   Matrix61 actual63 = numericalDerivative63<Vector6, double, double, double,
      double, double, double>(f6, x1, x2, x3, x4, x5, x6);
   
@@ -215,8 +211,8 @@ TEST(testNumericalDerivative, numeriDerivative63) {
 //
 TEST(testNumericalDerivative, numeriDerivative64) {
   double x1 = 1, x2 = 2, x3 = 3 , x4 = 4, x5 = 5, x6 = 6;
-  
-  Matrix expected64 = (Matrix(6, 1) << 0, 0, 0, 3 * x4 * x4, 0, 0).finished();
+
+  Matrix expected64{{0}, {0}, {0}, {3 * x4 * x4}, {0}, {0}};
   Matrix61 actual64 = numericalDerivative64<Vector6, double, double, double,
      double, double, double>(f6, x1, x2, x3, x4, x5, x6);
   
@@ -235,8 +231,8 @@ TEST(testNumericalDerivative, numeriDerivative64) {
 //
 TEST(testNumericalDerivative, numeriDerivative65) {
   double x1 = 1, x2 = 2, x3 = 3 , x4 = 4, x5 = 5, x6 = 6;
-  
-  Matrix expected65 = (Matrix(6, 1) << 0, 0, 0, 0, 0.5 / sqrt(x5), 0).finished();
+
+  Matrix expected65{{0}, {0}, {0}, {0}, {0.5 / sqrt(x5)}, {0}};
   Matrix61 actual65 = numericalDerivative65<Vector6, double, double, double,
      double, double, double>(f6, x1, x2, x3, x4, x5, x6);
   
@@ -255,8 +251,8 @@ TEST(testNumericalDerivative, numeriDerivative65) {
 //
 TEST(testNumericalDerivative, numeriDerivative66) {
   double x1 = 1, x2 = 2, x3 = 3 , x4 = 4, x5 = 5, x6 = 6;
-  
-  Matrix expected66 = (Matrix(6, 1) << 0, 0, 0, 0, 0, cos(x6) + sin(x6)).finished();
+
+  Matrix expected66{{0}, {0}, {0}, {0}, {0}, {cos(x6) + sin(x6)}};
   Matrix61 actual66 = numericalDerivative66<Vector6, double, double, double, 
       double, double, double>(f6, x1, x2, x3, x4, x5, x6);
   

@@ -15,13 +15,14 @@
  * @author  Luca Carlone
  */
 
-#include <gtsam/navigation/ManifoldPreintegration.h>
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/nonlinear/expressions.h>
+#include <gtsam/navigation/ManifoldPreintegration.h>
 #include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/expressionTesting.h>
-
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/nonlinear/expressions.h>
 
 #include "imuFactorTesting.h"
 
@@ -53,6 +54,9 @@ TEST(ManifoldPreintegration, BiasCorrectionJacobians) {
   ManifoldPreintegration pim(testing::Params());
   testing::integrateMeasurements(measurements, &pim);
 
+  EXPECT(assert_equal(pim.biasCorrectedDelta(pim.biasHat()),
+                      pim.preintegrated()));
+
   EXPECT(
       assert_equal(numericalDerivative21(deltaRij, kZero, kZero),
           Matrix3(Z_3x3)));
@@ -83,7 +87,12 @@ TEST(ManifoldPreintegration, computeError) {
   Matrix9 aH1, aH2;
   Matrix96 aH3;
   pim.computeError(x1, x2, bias, aH1, aH2, aH3);
-  auto f = std::bind(&ManifoldPreintegration::computeError, pim,
+  // Select the overload without the gravity parameter:
+  using ComputeErrorNoGravity = Vector9 (PreintegrationBase::*)(
+      const NavState&, const NavState&, const imuBias::ConstantBias&,
+      OptionalJacobian<9, 9>, OptionalJacobian<9, 9>,
+      OptionalJacobian<9, 6>) const;
+  auto f = std::bind(static_cast<ComputeErrorNoGravity>(&ManifoldPreintegration::computeError), pim,
                     std::placeholders::_1, std::placeholders::_2,
                     std::placeholders::_3, nullptr, nullptr,
                     nullptr);

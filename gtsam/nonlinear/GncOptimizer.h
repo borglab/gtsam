@@ -27,6 +27,7 @@
 #pragma once
 
 #include <algorithm>
+#include <chrono>
 
 #include <gtsam/linear/LossFunctions.h>
 #include <gtsam/nonlinear/GncParams.h>
@@ -59,6 +60,43 @@ GTSAM_EXPORT bool needsWeightUpdate(GncFactorType type);
 
 GTSAM_EXPORT bool hasNoise(GncFactorType type);
 
+/// Timing of one GNC outer iteration (all in seconds).
+struct GncIterationTiming {
+  double weightsUpdateElapsed = 0.0;   ///< calculateWeights (per-factor errors)
+  double makeGraphElapsed = 0.0;       ///< makeWeightedGraph (factor cloning)
+  double baseOptimizeElapsed = 0.0;    ///< inner optimizer construction + optimize()
+  double costEvaluationElapsed = 0.0;  ///< weighted graph error for convergence check
+  double totalElapsed = 0.0;
+};
+
+/// Timing of a full GncOptimizer::optimize() call.
+struct GncTiming {
+  double initialOptimizeElapsed = 0.0;  ///< optimize before the GNC loop
+  double totalElapsed = 0.0;
+  std::vector<GncIterationTiming> iterations;
+
+  double sumWeightsUpdate() const {
+    double sum = 0.0;
+    for (const auto& it : iterations) sum += it.weightsUpdateElapsed;
+    return sum;
+  }
+  double sumMakeGraph() const {
+    double sum = 0.0;
+    for (const auto& it : iterations) sum += it.makeGraphElapsed;
+    return sum;
+  }
+  double sumBaseOptimize() const {
+    double sum = 0.0;
+    for (const auto& it : iterations) sum += it.baseOptimizeElapsed;
+    return sum;
+  }
+  double sumCostEvaluation() const {
+    double sum = 0.0;
+    for (const auto& it : iterations) sum += it.costEvaluationElapsed;
+    return sum;
+  }
+};
+
 /* ************************************************************************* */
 template<class GncParameters>
 class GncOptimizer {
@@ -85,6 +123,9 @@ class GncOptimizer {
 
   /// Cached factor types for GNC.
   std::vector<GncFactorType> factorTypes_;
+
+  /// Timing of the last optimize() call.
+  GncTiming timing_;
 
  public:
   /// Constructor.
@@ -208,6 +249,9 @@ class GncOptimizer {
   /// Get the inlier threshold.
   const Vector& getInlierCostThresholds() const {return barcSq_;}
 
+  /// Get the timing of the last optimize() call.
+  const GncTiming& getTiming() const { return timing_; }
+
   /// Equals.
   bool equals(const GncOptimizer& other, double tol = 1e-9) const {
     return nfg_.equals(other.getFactors())
@@ -227,11 +271,19 @@ class GncOptimizer {
 
   /// Compute optimal solution using graduated non-convexity.
   Values optimize() {
+    using Clock = std::chrono::steady_clock;
+    const auto elapsedSince = [](Clock::time_point start) {
+      return std::chrono::duration<double>(Clock::now() - start).count();
+    };
+    timing_ = GncTiming();
+    const auto totalStart = Clock::now();
+
     validateLossSchedulerCombination();
     NonlinearFactorGraph graph_initial = this->makeWeightedGraph(weights_);
     BaseOptimizer baseOptimizer(
         graph_initial, state_, params_.baseOptimizerParams);
     Values result = baseOptimizer.optimize();
+    timing_.initialOptimizeElapsed = elapsedSince(totalStart);
     double lambda = initializeLambda();
     double prev_cost = graph_initial.error(result);
     double cost = 0.0;  // this will be updated in the main loop
@@ -263,11 +315,14 @@ class GncOptimizer {
       if (params_.verbosity >= GncParameters::Verbosity::VALUES) {
         result.print("result\n");
       }
+      timing_.totalElapsed = elapsedSince(totalStart);
       return result;
     }
 
     size_t iter;
     for (iter = 0; iter < params_.maxIterations; iter++) {
+      const auto iterationStart = Clock::now();
+      GncIterationTiming iterationTiming;
 
       // display info
       if (params_.verbosity >= GncParameters::Verbosity::LAMBDA) {
@@ -281,16 +336,26 @@ class GncOptimizer {
         result.print("result\n");
       }
       // weights update
+      auto stageStart = Clock::now();
       weights_ = calculateWeights(result, lambda);
+      iterationTiming.weightsUpdateElapsed = elapsedSince(stageStart);
 
       // variable/values update
+      stageStart = Clock::now();
       NonlinearFactorGraph graph_iter = this->makeWeightedGraph(weights_);
+      iterationTiming.makeGraphElapsed = elapsedSince(stageStart);
+      stageStart = Clock::now();
       BaseOptimizer baseOptimizer_iter(
           graph_iter, state_, params_.baseOptimizerParams);
       result = baseOptimizer_iter.optimize();
+      iterationTiming.baseOptimizeElapsed = elapsedSince(stageStart);
 
       // stopping condition
+      stageStart = Clock::now();
       cost = graph_iter.error(result);
+      iterationTiming.costEvaluationElapsed = elapsedSince(stageStart);
+      iterationTiming.totalElapsed = elapsedSince(iterationStart);
+      timing_.iterations.push_back(iterationTiming);
       if (checkConvergence(lambda, weights_, cost, prev_cost)) {
         break;
       }
@@ -317,6 +382,7 @@ class GncOptimizer {
     if (params_.verbosity >= GncParameters::Verbosity::WEIGHTS) {
       std::cout << "final weights: " << weights_ << std::endl;
     }
+    timing_.totalElapsed = elapsedSince(totalStart);
     return result;
   }
 

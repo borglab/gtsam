@@ -122,18 +122,7 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
                                             const VectorValues& sqrtHessianDiagonal) {
   auto currentState = static_cast<const State*>(state_.get());
   bool verbose = (params_.verbosityLM >= LevenbergMarquardtParams::TRYLAMBDA);
-
-#if GTSAM_USE_BOOST_FEATURES
-#ifdef GTSAM_USING_NEW_BOOST_TIMERS
-  boost::timer::cpu_timer lamda_iteration_timer;
-  lamda_iteration_timer.start();
-#else
-  boost::timer lamda_iteration_timer;
-  lamda_iteration_timer.restart();
-#endif
-#else
-  auto start = std::chrono::high_resolution_clock::now();
-#endif
+  auto solveStart = std::chrono::high_resolution_clock::now();
 
   if (verbose)
     cout << "trying lambda = " << currentState->lambda << endl;
@@ -163,7 +152,7 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
     }
     systemSolvedSuccessfully = true;
     // ========================================================================
-  } catch (const IndeterminantLinearSystemException&) {
+  } catch (const IndeterminateSystemException&) {
     systemSolvedSuccessfully = false;
   }
 
@@ -236,24 +225,25 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
     }
   } // if (systemSolvedSuccessfully)
 
+  lastSolveTime_ =
+      std::chrono::duration<double>(std::chrono::high_resolution_clock::now() -
+                                     solveStart)
+          .count();
   if (params_.verbosityLM == LevenbergMarquardtParams::SUMMARY) {
-#if GTSAM_USE_BOOST_FEATURES
-// do timing
-#ifdef GTSAM_USING_NEW_BOOST_TIMERS
-    double iterationTime = 1e-9 * lamda_iteration_timer.elapsed().wall;
-#else
-    double iterationTime = lamda_iteration_timer.elapsed();
-#endif
-#else
-    auto end = std::chrono::high_resolution_clock::now();
-    double iterationTime = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1e6;
-#endif
+    double iterationTime =
+        std::chrono::duration<double>(std::chrono::high_resolution_clock::now() -
+                                       iterationStart_)
+            .count();
     if (currentState->iterations == 0) {
-      cout << "iter      cost      cost_change    lambda  success iter_time" << endl;
+      cout << "iter      cost      cost_change    lambda  success "
+              "lin_time  solve_time total_time"
+           << endl;
     }
     cout << setw(4) << currentState->iterations << " " << setw(12) << newError << " " << setw(12) << setprecision(2)
          << costChange << " " << setw(10) << setprecision(2) << currentState->lambda << " " << setw(6)
-         << systemSolvedSuccessfully << " " << setw(10) << setprecision(2) << iterationTime << endl;
+         << systemSolvedSuccessfully << " " << setw(10) << setprecision(2) << lastLinearizeTime_ << " "
+         << setw(10) << setprecision(2) << lastSolveTime_ << " " << setw(10) << setprecision(2) << iterationTime
+         << endl;
   }
   if (step_is_successful) {
     // we have successfully decreased the cost and we have good modelFidelity
@@ -290,10 +280,16 @@ GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::iterate() {
 
   gttic(LM_iterate);
 
+  iterationStart_ = std::chrono::high_resolution_clock::now();
+  auto linStart = iterationStart_;
   // Linearize graph
   if (params_.verbosityLM >= LevenbergMarquardtParams::DAMPED)
     cout << "linearizing = " << endl;
   GaussianFactorGraph::shared_ptr linear = linearize();
+  lastLinearizeTime_ =
+      std::chrono::duration<double>(std::chrono::high_resolution_clock::now() -
+                                     linStart)
+          .count();
 
   const bool useMultifrontal =
       ensureMultifrontalSolver(params_, currentState->values);

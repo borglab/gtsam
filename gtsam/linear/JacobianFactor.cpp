@@ -20,6 +20,7 @@
 #include <gtsam/linear/linearExceptions.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/BatchJacobianFactor.h>
 #include <gtsam/linear/Scatter.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
@@ -56,9 +57,12 @@ JacobianFactor::JacobianFactor(const GaussianFactor& gf) {
     *this = JacobianFactor(*asJacobian);
   else if (const HessianFactor* asHessian = dynamic_cast<const HessianFactor*>(&gf))
     *this = JacobianFactor(*asHessian);
+  else if (const BatchJacobianFactorBase* asBatch =
+               dynamic_cast<const BatchJacobianFactorBase*>(&gf))
+    *this = asBatch->toJacobianFactor();
   else
     throw std::invalid_argument(
-        "In JacobianFactor(const GaussianFactor& rhs), rhs is neither a JacobianFactor nor a HessianFactor");
+        "In JacobianFactor(const GaussianFactor& rhs), rhs is not a supported Jacobian-compatible factor");
 }
 
 /* ************************************************************************* */
@@ -144,7 +148,7 @@ JacobianFactor::JacobianFactor(const HessianFactor& factor)
     model_ = SharedDiagonal();  // is equivalent to Unit::Create(maxrank)
   } else {
     // indefinite system
-    throw IndeterminantLinearSystemException(factor.keys().front());
+    throw IndeterminateSystemException(factor.keys().front());
   }
 }
 
@@ -1020,7 +1024,7 @@ GaussianConditional::shared_ptr JacobianFactor::splitConditional(size_t nrFronta
   // Check that the noise model has at least this dimension
   // If this is *not* the case, we do not have enough information on the frontal variables.
   if ((DenseIndex)model_->dim() < frontalDim)
-    throw IndeterminantLinearSystemException(this->keys().front());
+    throw IndeterminateSystemException(this->keys().front());
 
   // Restrict the matrix to be in the first nrFrontals variables and create the conditional
   const DenseIndex originalRowEnd = Ab_.rowEnd();

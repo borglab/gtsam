@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -17,8 +17,8 @@
  */
 
 #include <gtsam/base/Vector.h>
-#include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
@@ -29,21 +29,19 @@
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/dataset.h>
 
-#include <algorithm>
-#include <cstdint>
 #include <cmath>
-#include <chrono>
-#include <filesystem>
+#include <cstdint>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <numeric>
 #include <optional>
 #include <random>
 #include <set>
 #include <string>
 #include <tuple>
 #include <vector>
+
+#include "internal/TimingUtils.h"
 
 using gtsam::Point2;
 using gtsam::Pose2;
@@ -52,7 +50,6 @@ using gtsam::Vector;
 using gtsam::Vector3;
 using std::cout;
 using std::endl;
-using std::ofstream;
 using std::optional;
 using std::pair;
 using std::set;
@@ -65,8 +62,6 @@ namespace NM = gtsam::noiseModel;
 
 namespace {
 
-using Clock = std::chrono::steady_clock;
-using Seconds = std::chrono::duration<double>;
 using TimedOdometry = pair<double, Pose2>;
 using RangeTriple = tuple<double, size_t, double>;
 
@@ -100,37 +95,6 @@ struct RunResult {
   size_t initializedLandmarks = 0;
   size_t finalVariableCount = 0;
 };
-
-string argumentOrDefault(char** begin, char** end, const string& flag,
-                         const string& defaultValue) {
-  for (auto it = begin; it != end; ++it) {
-    if (string(*it) == flag && it + 1 != end) {
-      return *(it + 1);
-    }
-  }
-  return defaultValue;
-}
-
-size_t sizeTArgumentOrDefault(char** begin, char** end, const string& flag,
-                              size_t defaultValue) {
-  return static_cast<size_t>(
-      std::stoull(argumentOrDefault(begin, end, flag, std::to_string(defaultValue))));
-}
-
-uint64_t uint64ArgumentOrDefault(char** begin, char** end, const string& flag,
-                                 uint64_t defaultValue) {
-  return static_cast<uint64_t>(std::stoull(
-      argumentOrDefault(begin, end, flag, std::to_string(defaultValue))));
-}
-
-bool hasFlag(char** begin, char** end, const string& flag) {
-  for (auto it = begin; it != end; ++it) {
-    if (string(*it) == flag) {
-      return true;
-    }
-  }
-  return false;
-}
 
 vector<TimedOdometry> readOdometry() {
   vector<TimedOdometry> odometry;
@@ -175,33 +139,7 @@ vector<RangeTriple> readTriples() {
   return triples;
 }
 
-Dataset loadDataset() {
-  return Dataset{readOdometry(), readTriples()};
-}
-
-template <class T>
-double mean(const vector<T>& values) {
-  if (values.empty()) {
-    return 0.0;
-  }
-  const double sum = std::accumulate(values.begin(), values.end(), 0.0);
-  return sum / static_cast<double>(values.size());
-}
-
-template <class T>
-double median(vector<T> values) {
-  if (values.empty()) {
-    return 0.0;
-  }
-  const size_t middle = values.size() / 2;
-  std::nth_element(values.begin(), values.begin() + middle, values.end());
-  const double upper = static_cast<double>(values[middle]);
-  if (values.size() % 2 == 1) {
-    return upper;
-  }
-  std::nth_element(values.begin(), values.begin() + middle - 1, values.end());
-  return 0.5 * (upper + static_cast<double>(values[middle - 1]));
-}
+Dataset loadDataset() { return Dataset{readOdometry(), readTriples()}; }
 
 RunResult runOnce(const Dataset& dataset, const BenchmarkOptions& options,
                   size_t runIndex) {
@@ -213,14 +151,10 @@ RunResult runOnce(const Dataset& dataset, const BenchmarkOptions& options,
   Vector priorSigmas = Vector3(1.0, 1.0, M_PI);
   Vector odoSigmas = Vector3(0.05, 0.01, 0.1);
   const double sigmaR = 100.0;
-  const NM::Base::shared_ptr priorNoise =
-      NM::Diagonal::Sigmas(priorSigmas);
-  const NM::Base::shared_ptr looseNoise =
-      NM::Isotropic::Sigma(2, 1000.0);
-  const NM::Base::shared_ptr odoNoise =
-      NM::Diagonal::Sigmas(odoSigmas);
-  const NM::Base::shared_ptr gaussian =
-      NM::Isotropic::Sigma(1, sigmaR);
+  const NM::Base::shared_ptr priorNoise = NM::Diagonal::Sigmas(priorSigmas);
+  const NM::Base::shared_ptr looseNoise = NM::Isotropic::Sigma(2, 1000.0);
+  const NM::Base::shared_ptr odoNoise = NM::Diagonal::Sigmas(odoSigmas);
+  const NM::Base::shared_ptr gaussian = NM::Isotropic::Sigma(1, sigmaR);
   const NM::Base::shared_ptr tukey =
       NM::Robust::Create(NM::mEstimator::Tukey::Create(15), gaussian);
   const NM::Base::shared_ptr rangeNoise = options.robust ? tukey : gaussian;
@@ -242,76 +176,73 @@ RunResult runOnce(const Dataset& dataset, const BenchmarkOptions& options,
   Pose2 lastPose = pose0;
   size_t countK = 0;
 
-  const auto totalStart = Clock::now();
-  const auto solveStart = totalStart;
-  for (const TimedOdometry& timedOdometry : dataset.odometry) {
-    double time = 0.0;
-    Pose2 odometry;
-    std::tie(time, odometry) = timedOdometry;
+  gtsam::Values finalResult;
+  result.totalSeconds = gtsam::timing::measureSeconds([&] {
+    result.solveSeconds = gtsam::timing::measureSeconds([&] {
+      for (const TimedOdometry& timedOdometry : dataset.odometry) {
+        double time = 0.0;
+        Pose2 odometry;
+        std::tie(time, odometry) = timedOdometry;
 
-    newFactors.emplace_shared<gtsam::BetweenFactor<Pose2>>(i - 1, i, odometry,
-                                                           odoNoise);
+        newFactors.emplace_shared<gtsam::BetweenFactor<Pose2>>(
+            i - 1, i, odometry, odoNoise);
 
-    Pose2 predictedPose = lastPose.compose(odometry);
-    lastPose = predictedPose;
-    initial.insert(i, predictedPose);
+        Pose2 predictedPose = lastPose.compose(odometry);
+        lastPose = predictedPose;
+        initial.insert(i, predictedPose);
 
-    while (k < dataset.triples.size() && time >= std::get<0>(dataset.triples[k])) {
-      const size_t landmarkId = std::get<1>(dataset.triples[k]);
-      const Symbol landmarkKey('L', landmarkId);
-      const double range = std::get<2>(dataset.triples[k]);
+        while (k < dataset.triples.size() &&
+               time >= std::get<0>(dataset.triples[k])) {
+          const size_t landmarkId = std::get<1>(dataset.triples[k]);
+          const Symbol landmarkKey('L', landmarkId);
+          const double range = std::get<2>(dataset.triples[k]);
 
-      newFactors.emplace_shared<gtsam::RangeFactor<Pose2, Point2>>(
-          i, landmarkKey, range, rangeNoise);
-      ++result.rangeFactorsAdded;
+          newFactors.emplace_shared<gtsam::RangeFactor<Pose2, Point2>>(
+              i, landmarkKey, range, rangeNoise);
+          ++result.rangeFactorsAdded;
 
-      if (initializedLandmarks.count(landmarkKey) == 0) {
-        initial.insert(landmarkKey, Point2(normal(rng), normal(rng)));
-        initializedLandmarks.insert(landmarkKey);
-        newFactors.emplace_shared<gtsam::PriorFactor<Point2>>(landmarkKey,
-                                                              Point2(0.0, 0.0),
-                                                              looseNoise);
+          if (initializedLandmarks.count(landmarkKey) == 0) {
+            initial.insert(landmarkKey, Point2(normal(rng), normal(rng)));
+            initializedLandmarks.insert(landmarkKey);
+            newFactors.emplace_shared<gtsam::PriorFactor<Point2>>(
+                landmarkKey, Point2(0.0, 0.0), looseNoise);
+          }
+
+          ++k;
+          ++countK;
+        }
+
+        if (k > options.minRanges && countK > options.incrementRanges) {
+          if (!initialized) {
+            result.batchInitializationSeconds +=
+                gtsam::timing::measureSeconds([&] {
+                  gtsam::LevenbergMarquardtOptimizer batchOptimizer(newFactors,
+                                                                    initial);
+                  initial = batchOptimizer.optimize();
+                });
+            initialized = true;
+          }
+
+          result.updateSeconds += gtsam::timing::measureSeconds(
+              [&] { isam.update(newFactors, initial); });
+
+          gtsam::Values estimate;
+          result.calculateEstimateSeconds += gtsam::timing::measureSeconds(
+              [&] { estimate = isam.calculateEstimate(); });
+          lastPose = estimate.at<Pose2>(i);
+
+          newFactors = gtsam::NonlinearFactorGraph();
+          initial = gtsam::Values();
+          countK = 0;
+          ++result.updateCount;
+        }
+
+        ++i;
       }
-
-      ++k;
-      ++countK;
-    }
-
-    if (k > options.minRanges && countK > options.incrementRanges) {
-      if (!initialized) {
-        const auto batchStart = Clock::now();
-        gtsam::LevenbergMarquardtOptimizer batchOptimizer(newFactors, initial);
-        initial = batchOptimizer.optimize();
-        result.batchInitializationSeconds +=
-            Seconds(Clock::now() - batchStart).count();
-        initialized = true;
-      }
-
-      const auto updateStart = Clock::now();
-      isam.update(newFactors, initial);
-      result.updateSeconds += Seconds(Clock::now() - updateStart).count();
-
-      const auto estimateStart = Clock::now();
-      const gtsam::Values estimate = isam.calculateEstimate();
-      result.calculateEstimateSeconds +=
-          Seconds(Clock::now() - estimateStart).count();
-      lastPose = estimate.at<Pose2>(i);
-
-      newFactors = gtsam::NonlinearFactorGraph();
-      initial = gtsam::Values();
-      countK = 0;
-      ++result.updateCount;
-    }
-
-    ++i;
-  }
-  result.solveSeconds = Seconds(Clock::now() - solveStart).count();
-
-  const auto finalEstimateStart = Clock::now();
-  const gtsam::Values finalResult = isam.calculateEstimate();
-  result.finalEstimateSeconds =
-      Seconds(Clock::now() - finalEstimateStart).count();
-  result.totalSeconds = Seconds(Clock::now() - totalStart).count();
+    });
+    result.finalEstimateSeconds = gtsam::timing::measureSeconds(
+        [&] { finalResult = isam.calculateEstimate(); });
+  });
 
   result.initializedLandmarks = initializedLandmarks.size();
   result.finalVariableCount = finalResult.size();
@@ -319,19 +250,13 @@ RunResult runOnce(const Dataset& dataset, const BenchmarkOptions& options,
 }
 
 void writeCsv(const vector<RunResult>& results, const string& outputPath) {
-  const std::filesystem::path path(outputPath);
-  if (!path.parent_path().empty()) {
-    std::filesystem::create_directories(path.parent_path());
-  }
-  ofstream output(path);
-  if (!output) {
-    throw std::runtime_error("Could not open output file: " + outputPath);
-  }
+  std::ofstream output = gtsam::timing::openOutputFile(outputPath);
 
-  output << "run_index,solve_seconds,total_seconds,batch_initialization_seconds,"
-            "update_seconds,calculate_estimate_seconds,final_estimate_seconds,"
-            "odometry_entries,range_triples,range_factors_added,update_count,"
-            "initialized_landmarks,final_variable_count\n";
+  output
+      << "run_index,solve_seconds,total_seconds,batch_initialization_seconds,"
+         "update_seconds,calculate_estimate_seconds,final_estimate_seconds,"
+         "odometry_entries,range_triples,range_factors_added,update_count,"
+         "initialized_landmarks,final_variable_count\n";
   output << std::fixed << std::setprecision(6);
   for (const RunResult& result : results) {
     output << result.runIndex << ',' << result.solveSeconds << ','
@@ -373,31 +298,48 @@ void printSummary(const BenchmarkOptions& options, const Dataset& dataset,
        << " range_factors_added=" << shape.rangeFactorsAdded
        << " updates=" << shape.updateCount
        << " initialized_landmarks=" << shape.initializedLandmarks << '\n';
-  cout << "solve_seconds_mean=" << mean(solveSeconds)
-       << " solve_seconds_median=" << median(solveSeconds) << '\n';
-  cout << "total_seconds_mean=" << mean(totalSeconds)
-       << " total_seconds_median=" << median(totalSeconds) << '\n';
-  cout << "batch_initialization_seconds_mean=" << mean(batchSeconds) << '\n';
-  cout << "update_seconds_mean=" << mean(updateSeconds) << '\n';
-  cout << "calculate_estimate_seconds_mean=" << mean(estimateSeconds) << '\n';
+  const auto solveSummary = gtsam::timing::summarizeSamples(
+      solveSeconds, gtsam::timing::MedianPolicy::kAverageMiddle);
+  const auto totalSummary = gtsam::timing::summarizeSamples(
+      totalSeconds, gtsam::timing::MedianPolicy::kAverageMiddle);
+  cout << "solve_seconds_mean=" << solveSummary.mean
+       << " solve_seconds_median=" << solveSummary.median << '\n';
+  cout << "total_seconds_mean=" << totalSummary.mean
+       << " total_seconds_median=" << totalSummary.median << '\n';
+  cout << "batch_initialization_seconds_mean="
+       << gtsam::timing::summarizeSamples(
+              batchSeconds, gtsam::timing::MedianPolicy::kAverageMiddle)
+              .mean
+       << '\n';
+  cout << "update_seconds_mean="
+       << gtsam::timing::summarizeSamples(
+              updateSeconds, gtsam::timing::MedianPolicy::kAverageMiddle)
+              .mean
+       << '\n';
+  cout << "calculate_estimate_seconds_mean="
+       << gtsam::timing::summarizeSamples(
+              estimateSeconds, gtsam::timing::MedianPolicy::kAverageMiddle)
+              .mean
+       << '\n';
 }
 
 }  // namespace
 
 int main(int argc, char** argv) {
+  gtsam::timing::Arguments arguments(argc, argv);
   const BenchmarkOptions options{
-      sizeTArgumentOrDefault(argv, argv + argc, "--warmup", 1),
-      sizeTArgumentOrDefault(argv, argv + argc, "--repeats", 5),
-      sizeTArgumentOrDefault(argv, argv + argc, "--min-ranges", 150),
-      sizeTArgumentOrDefault(argv, argv + argc, "--inc-ranges", 25),
-      !hasFlag(argv, argv + argc, "--no-robust"),
-      uint64ArgumentOrDefault(argv, argv + argc, "--seed", 42),
+      arguments.sizeValue("--warmup", 1),
+      arguments.sizeValue("--repeats", 5),
+      arguments.sizeValue("--min-ranges", 150),
+      arguments.sizeValue("--inc-ranges", 25),
+      !arguments.flag("--no-robust"),
+      arguments.uint64Value("--seed", 42),
       [&]() -> optional<string> {
-        const string output =
-            argumentOrDefault(argv, argv + argc, "--output", "");
+        const string output = arguments.stringValue("--output", "");
         return output.empty() ? optional<string>() : optional<string>(output);
       }(),
   };
+  arguments.validateAllConsumed();
 
   if (options.measuredRuns == 0) {
     throw std::invalid_argument("--repeats must be at least 1");
@@ -405,7 +347,8 @@ int main(int argc, char** argv) {
 
   const Dataset dataset = loadDataset();
 
-  for (size_t warmupIndex = 0; warmupIndex < options.warmupRuns; ++warmupIndex) {
+  for (size_t warmupIndex = 0; warmupIndex < options.warmupRuns;
+       ++warmupIndex) {
     static_cast<void>(runOnce(dataset, options, warmupIndex));
   }
 

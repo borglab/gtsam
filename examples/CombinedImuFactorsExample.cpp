@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file CombinedImuFactorsExample
+ * @file CombinedImuFactorsExample.cpp
  * @brief Test example for using GTSAM ImuCombinedFactor
  * navigation code.
  * @author Varun Agrawal
@@ -36,6 +36,7 @@
 #include <boost/program_options.hpp>
 
 // GTSAM related includes.
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
 #include <gtsam/navigation/GPSFactor.h>
@@ -174,8 +175,7 @@ int main(int argc, char* argv[]) {
 
   // Assemble prior noise model and add it the graph.`
   auto pose_noise_model = noiseModel::Diagonal::Sigmas(
-      (Vector(6) << 0.01, 0.01, 0.01, 0.5, 0.5, 0.5)
-          .finished());  // rad,rad,rad,m, m, m
+      Vector{{0.01, 0.01, 0.01, 0.5, 0.5, 0.5}});  // rad,rad,rad,m, m, m
   auto velocity_noise_model = noiseModel::Isotropic::Sigma(3, 0.1);  // m/s
   auto bias_noise_model = noiseModel::Isotropic::Sigma(6, 1e-3);
 

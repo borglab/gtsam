@@ -433,11 +433,17 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  /** Return unique keys in order of first occurrence. */
   template <class CLIQUE>
   static KeyVector uniqueKeys(const KeyVector& keys) {
-    KeyVector unique = keys;
-    std::sort(unique.begin(), unique.end());
-    unique.erase(std::unique(unique.begin(), unique.end()), unique.end());
+    KeyVector unique;
+    unique.reserve(keys.size());
+    KeySet seen;
+    for (Key key : keys) {
+      if (seen.insert(key).second) {
+        unique.push_back(key);
+      }
+    }
     return unique;
   }
 

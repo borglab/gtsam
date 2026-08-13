@@ -224,12 +224,13 @@ struct GTSAM_EXPORT ISAM2Params {
    * and landmark keys are of type TypedSymbol<'l',Point3>, then appropriate
    * entries would be added with:
    * \code
-     FastMap<char,Vector> thresholds;
-     thresholds['x'] = (Vector(6) << 0.1, 0.1, 0.1, 0.5, 0.5, 0.5).finished();
-   // 0.1 rad rotation threshold, 0.5 m translation threshold thresholds['l'] =
-   Vector3(1.0, 1.0, 1.0);                // 1.0 m landmark position threshold
-     params.relinearizeThreshold = thresholds;
-     \endcode
+   * FastMap<char, Vector> thresholds;
+   * // 0.1 rad rotation threshold, 0.5 m translation threshold
+   * thresholds['x'] = Vector{{0.1, 0.1, 0.1, 0.5, 0.5, 0.5}};
+   * // 1.0 m landmark position threshold
+   * thresholds['l'] = Vector3(1.0, 1.0, 1.0);
+   * params.relinearizeThreshold = thresholds;
+   * \endcode
    */
   RelinearizationThreshold relinearizeThreshold;
 

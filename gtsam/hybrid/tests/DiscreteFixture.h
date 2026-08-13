@@ -15,6 +15,8 @@
  *  @author Varun Agrawal
  */
 
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
 
 #include "Switching.h"

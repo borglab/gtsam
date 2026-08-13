@@ -3,8 +3,7 @@
 namespace gtsam {
 
 Line3 Line3::retract(const Vector4 &v, OptionalJacobian<4, 4> Dp, OptionalJacobian<4, 4> Dv) const {
-  Vector3 w;
-  w << v[0], v[1], 0;
+  Vector3 w{v[0], v[1], 0};
   Rot3 incR;
 
   if (Dp) {
@@ -41,8 +40,7 @@ Vector4 Line3::localCoordinates(const Line3 &q, OptionalJacobian<4, 4> Dp,
     Dq->setIdentity();
     Dq->block<2, 2>(0, 0) = D_log.block<2, 2>(0, 0);
   }
-  Vector4 local;
-  local << omega[0], omega[1], q.a_ - a_, q.b_ - b_;
+  Vector4 local{omega[0], omega[1], q.a_ - a_, q.b_ - b_};
   return local;
 }
 
@@ -59,8 +57,7 @@ bool Line3::equals(const Line3 &l2, double tol) const {
 }
 
 Unit3 Line3::project(OptionalJacobian<2, 4> Dline) const {
-  Vector3 V_0;
-  V_0 << -b_, a_, 0.0;
+  Vector3 V_0{-b_, a_, 0.0};
 
   Unit3 l;
   if (Dline) {

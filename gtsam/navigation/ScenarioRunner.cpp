@@ -15,6 +15,7 @@
  * @author  Frank Dellaert
  */
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/navigation/ScenarioRunner.h>
 

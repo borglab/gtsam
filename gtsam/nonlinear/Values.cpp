@@ -149,9 +149,11 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void Values::insert(Key j, const Value& val) {
-    auto insertResult = values_.emplace(j, val.clone_());
-    if(!insertResult.second)
+    if (values_.find(j) != values_.end())
       throw ValuesKeyAlreadyExists(j);
+
+    auto clone = std::unique_ptr<Value>(val.clone_());
+    values_.emplace(j, std::move(clone));
   }
 
   /* ************************************************************************* */

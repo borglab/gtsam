@@ -29,10 +29,10 @@ double norm1(const Point1& p, OptionalJacobian<1, 1> H) {
   double r = std::abs(p.x());
   if (H) {
     if (std::abs(p.x()) > 1e-10)
-      *H << (p.x() >= 0 ? 1.0 : -1.0);
+      *H = Matrix1{{p.x() >= 0 ? 1.0 : -1.0}};
     else
-      *H << 1.0;  // derivative of abs(x) at x=0 is undefined, using 1 as
-                  // convention
+      *H = Matrix1{{1.0}};  // derivative of abs(x) at x=0 is undefined, using
+                            // 1 as convention
   }
   return r;
 }
