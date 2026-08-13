@@ -181,21 +181,16 @@ int RunCertifiableRA(const std::string& dataPath,
   if (skipped > 0) std::cout << "  (" << skipped << " non-Between skipped)";
   std::cout << "\n\n";
 
-  // Use the generic QCQP/Burer--Monteiro path with ALM. These globally tuned
-  // parameters are shared with timeShonanInitialization; initialization
-  // remains application-level policy rather than a BM solver backend.
+  // Use the generic QCQP/Burer--Monteiro path with the default BCL policy.
+  // Initialization remains application-level policy rather than a BM solver
+  // backend.
   RiemannianStaircaseParams params;
   params.pMin = IntrinsicDim;
   params.pMax = 10;
   params.eta = 1e-4;
   params.verbose = true;
-  params.almParams->initialMuEq = 1.0;
-  params.almParams->muEqIncreaseRate = 2.0;
   params.almParams->maxIterations = 50;
   params.almParams->absoluteViolationTolerance = 1e-8;
-  params.almParams->relativeViolationTolerance = 1e-8;
-  params.almParams->absoluteCostTolerance = 1e-10;
-  params.almParams->relativeCostTolerance = 1e-10;
   params.almParams->verbose = false;
 
   const auto initializationStart = std::chrono::steady_clock::now();

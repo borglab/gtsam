@@ -168,14 +168,14 @@ class TestConstrainedWrappers(unittest.TestCase):
         params = gtsam.AugmentedLagrangianParams()
         self.assertEqual(
             params.updatePolicy,
-            gtsam.AugmentedLagrangianUpdatePolicy.Aggressive,
+            gtsam.AugmentedLagrangianUpdatePolicy.BCL,
         )
-        params.updatePolicy = gtsam.AugmentedLagrangianUpdatePolicy.BCL
         self.assertEqual(params.bclInitialPenalty, 10.0)
         self.assertEqual(params.bclPenaltyIncreaseRate, 100.0)
         self.assertEqual(params.bclOmega0, 1.0)
         self.assertEqual(params.bclEta0, 1.0)
         self.assertEqual(params.bclGamma1, 0.1)
+        # Aggressive remains selectable through the wrapper.
         params.updatePolicy = gtsam.AugmentedLagrangianUpdatePolicy.Aggressive
         params.maxIterations = 100
         params.absoluteViolationTolerance = 1e-8

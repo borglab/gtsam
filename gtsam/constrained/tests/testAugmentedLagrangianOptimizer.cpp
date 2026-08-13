@@ -329,6 +329,7 @@ TEST(AugmentedLagrangianAggressive, UsesPostLmPoint) {
   const ConstrainedOptProblem problem =
       Problem(CostTo(2.0), EqualityTo(0.0), {});
   auto params = std::make_shared<AugmentedLagrangianParams>();
+  params->updatePolicy = AugmentedLagrangianUpdatePolicy::Aggressive;
   params->lmParams.maxIterations = 100;
   const AugmentedLagrangianOptimizer optimizer(problem, ValuesAt(-4.0), params);
   AugmentedLagrangianState state = StateAt(problem, -4.0, 1.0);
@@ -376,23 +377,24 @@ TEST(AugmentedLagrangian, VectorBiasUsesElementwiseSigmas) {
 /* ************************************************************************* */
 namespace optimization_tests {
 
-// Verifies the default remains the historical Aggressive policy.
-TEST(AugmentedLagrangianAggressive, DefaultAndEqualityOptimization) {
+// Verifies the default BCL policy solves the equality-only reference problem.
+TEST(AugmentedLagrangianBCL, DefaultAndEqualityOptimization) {
   using namespace constrained_example1;
   auto params = std::make_shared<AugmentedLagrangianParams>();
-  EXPECT(params->updatePolicy == AugmentedLagrangianUpdatePolicy::Aggressive);
-  const Values result =
-      AugmentedLagrangianOptimizer(problem, init_values, params).optimize();
-  EXPECT(assert_equal(optimal_values, result, 1e-4));
-}
-
-// Verifies BCL solves the equality-only reference problem.
-TEST(AugmentedLagrangianBCL, EqualityOnlyOptimization) {
-  using namespace constrained_example1;
-  auto params = scalar_problem::BclParams();
+  EXPECT(params->updatePolicy == AugmentedLagrangianUpdatePolicy::BCL);
   const Values result =
       AugmentedLagrangianOptimizer(problem, init_values, params).optimize();
   EXPECT(assert_equal(optimal_values, result, 2e-4));
+}
+
+// Verifies the opt-in Aggressive policy still solves the reference problem.
+TEST(AugmentedLagrangianAggressive, EqualityOnlyOptimization) {
+  using namespace constrained_example1;
+  auto params = std::make_shared<AugmentedLagrangianParams>();
+  params->updatePolicy = AugmentedLagrangianUpdatePolicy::Aggressive;
+  const Values result =
+      AugmentedLagrangianOptimizer(problem, init_values, params).optimize();
+  EXPECT(assert_equal(optimal_values, result, 1e-4));
 }
 
 // Verifies BCL activates an inequality whose unconstrained minimizer is

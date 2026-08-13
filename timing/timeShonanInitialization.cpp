@@ -80,10 +80,12 @@ const string kAfterPcg = "After/PCG";
 const string kAfterLm = "After/LM";
 const string kBmDefault = "BM/ALM default";
 const string kBmTuned = "BM/ALM tuned";
+const string kBmAggressive = "BM/ALM Aggressive";
+const string kBmBcl = "BM/ALM BCL";
 
 const vector<string>& allBenchmarkMethods() {
-  static const vector<string> methods{kBefore, kAfterPcg, kAfterLm, kBmDefault,
-                                      kBmTuned};
+  static const vector<string> methods{kBefore,       kAfterPcg, kAfterLm,
+                                      kBmAggressive, kBmTuned,  kBmBcl};
   return methods;
 }
 
@@ -91,7 +93,8 @@ const std::map<string, string>& methodTokens() {
   static const std::map<string, string> tokens{
       {"before", kBefore},        {"shonan-pcg", kAfterPcg},
       {"shonan-lm", kAfterLm},    {"bm-alm-default", kBmDefault},
-      {"bm-alm-tuned", kBmTuned},
+      {"bm-alm-tuned", kBmTuned}, {"bm-alm-aggressive", kBmAggressive},
+      {"bm-alm-bcl", kBmBcl},
   };
   return tokens;
 }
@@ -200,7 +203,8 @@ string usage() {
          "  --isotropic-sigma VALUE         Replace all rotation noise; zero "
          "preserves input (default: 0)\n"
          "  --methods LIST                  Comma-separated: before, "
-         "shonan-pcg, shonan-lm, bm-alm-default, bm-alm-tuned\n"
+         "shonan-pcg, shonan-lm, bm-alm-default, bm-alm-tuned, "
+         "bm-alm-aggressive, bm-alm-bcl\n"
          "  --bm-initial-mu VALUE           Tuned ALM initial equality penalty "
          "(default: 1)\n"
          "  --bm-mu-increase VALUE          Tuned ALM penalty growth "
@@ -224,7 +228,12 @@ string usage() {
          "After/PCG: FAST-Sync initialization with PCG.\n"
          "After/LM:  FAST-Sync initialization with direct LM solves.\n"
          "BM/ALM default: FAST-Sync, QCQP conversion, and default ALM.\n"
-         "BM/ALM tuned: FAST-Sync, QCQP conversion, and configured ALM.\n"
+         "BM/ALM tuned: FAST-Sync, QCQP conversion, and configured "
+         "Aggressive ALM.\n"
+         "BM/ALM Aggressive: FAST-Sync, QCQP conversion, and explicit "
+         "Aggressive ALM defaults.\n"
+         "BM/ALM BCL: FAST-Sync, QCQP conversion, and explicit BCL "
+         "defaults.\n"
          "\nExample:\n"
          "  timeShonanInitialization --g2o-directory datasets/yfcc2 "
          "--largest 5 --repeats 1 --csv shonan.csv\n";
@@ -449,7 +458,8 @@ BenchmarkContext buildContext(const Options& options,
 }
 
 bool isBmMethod(const string& method) {
-  return method == kBmDefault || method == kBmTuned;
+  return method == kBmDefault || method == kBmTuned ||
+         method == kBmAggressive || method == kBmBcl;
 }
 
 gtsam::RiemannianStaircaseParams bmParameters(const string& method,
@@ -458,6 +468,13 @@ gtsam::RiemannianStaircaseParams bmParameters(const string& method,
   parameters.pMin = kMinimumRank;
   parameters.pMax = kMaximumRank;
   parameters.eta = -kOptimalityThreshold;
+  if (method == kBmAggressive || method == kBmTuned) {
+    parameters.almParams->updatePolicy =
+        gtsam::AugmentedLagrangianUpdatePolicy::Aggressive;
+  } else if (method == kBmBcl) {
+    parameters.almParams->updatePolicy =
+        gtsam::AugmentedLagrangianUpdatePolicy::BCL;
+  }
   if (method == kBmTuned) {
     parameters.almParams->initialMuEq = options.bmInitialMu;
     parameters.almParams->muEqIncreaseRate = options.bmMuIncrease;

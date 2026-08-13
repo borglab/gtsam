@@ -44,9 +44,9 @@ class GTSAM_EXPORT AugmentedLagrangianParams : public PenaltyOptimizerParams {
   using This = AugmentedLagrangianParams;
   using shared_ptr = std::shared_ptr<AugmentedLagrangianParams>;
 
-  /// Outer update policy. Aggressive preserves the historical default.
+  /// Outer update policy. BCL is the default; Aggressive remains available.
   AugmentedLagrangianUpdatePolicy updatePolicy =
-      AugmentedLagrangianUpdatePolicy::Aggressive;
+      AugmentedLagrangianUpdatePolicy::BCL;
 
   /// Maximum equality-multiplier step for the Aggressive policy.
   double maxDualStepSizeEq = 10.0;
