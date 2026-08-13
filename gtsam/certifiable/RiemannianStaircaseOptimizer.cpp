@@ -24,8 +24,18 @@
 #include <Eigen/SVD>
 #include <Eigen/SparseCholesky>
 
+// Work around a GCC 16 false positive in Spectra's SortEigenvalue comparator.
+#if defined(__GNUC__) && __GNUC__ == 16
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
 #include <Spectra/MatOp/SparseSymMatProd.h>
 #include <Spectra/SymEigsSolver.h>
+
+#if defined(__GNUC__) && __GNUC__ == 16
+#pragma GCC diagnostic pop
+#endif
 
 #include <algorithm>
 #include <chrono>
