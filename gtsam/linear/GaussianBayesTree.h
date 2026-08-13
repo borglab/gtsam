@@ -169,3 +169,7 @@ namespace gtsam {
   };
 
 } //\ namespace gtsam
+
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+BOOST_CLASS_VERSION(gtsam::GaussianBayesTree, 1)
+#endif

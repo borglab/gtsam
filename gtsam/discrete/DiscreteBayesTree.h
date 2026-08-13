@@ -119,3 +119,7 @@ template <>
 struct traits<DiscreteBayesTree> : public Testable<DiscreteBayesTree> {};
 
 }  // namespace gtsam
+
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+BOOST_CLASS_VERSION(gtsam::DiscreteBayesTree, 1)
+#endif
