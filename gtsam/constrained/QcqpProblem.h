@@ -234,17 +234,7 @@ class GTSAM_EXPORT QcqpProblem : public ConstrainedOptProblem {
 
   /** Convert a supported nonlinear factor graph into QCQP costs/constraints. */
   explicit QcqpProblem(const NonlinearFactorGraph& graph,
-                       size_t columnDimension = 1) {
-    if (columnDimension == 0) {
-      throw std::invalid_argument(
-          "QcqpProblem: columnDimension must be positive.");
-    }
-    for (const auto& factor : graph) {
-      if (factor) {
-        factor->qcqpFactors(&costs_, &eqConstraints_, columnDimension);
-      }
-    }
-  }
+                       size_t columnDimension = 1);
 
   /** Add a quadratic cost. */
   void addCost(const QpCost& cost) { costs_.emplace_shared<QpCost>(cost); }

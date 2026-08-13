@@ -242,6 +242,9 @@ int RunCertifiableRA(const std::string& dataPath,
   } else {
     std::cout << "Rounded objective: " << graph.error(rounded) << "\n";
   }
+  const double buildSeconds =
+      std::accumulate(result.qcqpBuildTimePerLevel.begin(),
+                      result.qcqpBuildTimePerLevel.end(), 0.0);
   const double nlpSeconds = std::accumulate(result.nlpTimePerLevel.begin(),
                                             result.nlpTimePerLevel.end(), 0.0);
   const double verifySeconds = std::accumulate(
@@ -249,6 +252,7 @@ int RunCertifiableRA(const std::string& dataPath,
   std::cout << "Initialization:    " << initializationName(initializationMethod)
             << "\n"
             << "Initialization time: " << initializationSeconds << " s\n"
+            << "QCQP build time:    " << buildSeconds << " s\n"
             << "Local solve time:  " << nlpSeconds << " s\n"
             << "Certificate time:  " << verifySeconds << " s\n"
             << "Total BM time:     " << result.totalTime << " s\n"

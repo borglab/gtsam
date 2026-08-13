@@ -176,6 +176,9 @@ class TestCertifiableWrappers(unittest.TestCase):
         self.assertTrue(result.hasRoundedSolution())
         self.assertGreaterEqual(result.totalTime, 0.0)
         ranks = result.getRanksVisited()
+        self.assertEqual(
+            len(ranks), len(result.getQcqpBuildTimePerLevel())
+        )
         self.assertEqual(len(ranks), len(result.getNlpTimePerLevel()))
         self.assertEqual(
             len(ranks), len(result.getVerifyTimePerLevel())

@@ -47,6 +47,7 @@
 #include <iostream>
 #include <limits>
 #include <map>
+#include <numeric>
 #include <optional>
 #include <set>
 #include <sstream>
@@ -133,6 +134,9 @@ struct TrialResult {
   size_t rankReached = 0;
   double initializationSeconds = 0.0;
   double solveSeconds = 0.0;
+  double qcqpBuildSeconds = std::numeric_limits<double>::quiet_NaN();
+  double localSolveSeconds = std::numeric_limits<double>::quiet_NaN();
+  double certificateSeconds = std::numeric_limits<double>::quiet_NaN();
   double initialCost = std::numeric_limits<double>::quiet_NaN();
   double finalCost = std::numeric_limits<double>::quiet_NaN();
   double minimumEigenvalue = std::numeric_limits<double>::quiet_NaN();
@@ -146,6 +150,9 @@ struct MethodSummary {
   gtsam::timing::TimingSummary initialization;
   gtsam::timing::TimingSummary solve;
   gtsam::timing::TimingSummary total;
+  optional<gtsam::timing::TimingSummary> qcqpBuild;
+  optional<gtsam::timing::TimingSummary> localSolve;
+  optional<gtsam::timing::TimingSummary> certificate;
   optional<gtsam::timing::TimingSummary> initialCost;
   optional<gtsam::timing::TimingSummary> finalCost;
   size_t minimumRank = 0;
@@ -581,6 +588,15 @@ TrialResult runTrial(const string& initializer, size_t runIndex,
       const gtsam::RiemannianStaircaseResult bmResult = optimizer.optimize();
       result.minimumEigenvalue = bmResult.minEigenvalue;
       result.rankReached = bmResult.finalRank;
+      result.qcqpBuildSeconds =
+          std::accumulate(bmResult.qcqpBuildTimePerLevel.begin(),
+                          bmResult.qcqpBuildTimePerLevel.end(), 0.0);
+      result.localSolveSeconds =
+          std::accumulate(bmResult.nlpTimePerLevel.begin(),
+                          bmResult.nlpTimePerLevel.end(), 0.0);
+      result.certificateSeconds =
+          std::accumulate(bmResult.verifyTimePerLevel.begin(),
+                          bmResult.verifyTimePerLevel.end(), 0.0);
 
       const Values rotations = extractRoundedRotations(bmResult);
       if (!rotations.empty()) {
@@ -636,6 +652,9 @@ optional<MethodSummary> summarizeMethod(const vector<TrialResult>& results,
   vector<double> initialization;
   vector<double> solve;
   vector<double> total;
+  vector<double> qcqpBuild;
+  vector<double> localSolve;
+  vector<double> certificate;
   vector<double> initialCost;
   vector<double> finalCost;
   vector<size_t> ranks;
@@ -646,6 +665,15 @@ optional<MethodSummary> summarizeMethod(const vector<TrialResult>& results,
     initialization.push_back(result.initializationSeconds);
     solve.push_back(result.solveSeconds);
     total.push_back(result.totalSeconds());
+    if (std::isfinite(result.qcqpBuildSeconds)) {
+      qcqpBuild.push_back(result.qcqpBuildSeconds);
+    }
+    if (std::isfinite(result.localSolveSeconds)) {
+      localSolve.push_back(result.localSolveSeconds);
+    }
+    if (std::isfinite(result.certificateSeconds)) {
+      certificate.push_back(result.certificateSeconds);
+    }
     if (std::isfinite(result.initialCost)) {
       initialCost.push_back(result.initialCost);
     }
@@ -668,6 +696,9 @@ optional<MethodSummary> summarizeMethod(const vector<TrialResult>& results,
       summarize(initialization),
       summarize(solve),
       summarize(total),
+      optionalSummary(qcqpBuild),
+      optionalSummary(localSolve),
+      optionalSummary(certificate),
       optionalSummary(initialCost),
       optionalSummary(finalCost),
       ranks.empty() ? 0 : *std::min_element(ranks.begin(), ranks.end()),
@@ -702,8 +733,9 @@ void writeCsv(const vector<DatasetBenchmark>& benchmarks, const string& path) {
   std::ofstream output = gtsam::timing::openOutputFile(path);
   output << "dataset,initializer,raw_rotations,raw_measurements,components,"
             "rotations,measurements,run_index,success,p_reached,"
-            "initialization_seconds,solve_seconds,total_seconds,initial_cost,"
-            "final_cost,minimum_eigenvalue,error\n";
+            "initialization_seconds,solve_seconds,total_seconds,"
+            "qcqp_build_seconds,local_solve_seconds,certificate_seconds,"
+            "initial_cost,final_cost,minimum_eigenvalue,error\n";
   output << std::fixed << std::setprecision(9);
   for (const DatasetBenchmark& benchmark : benchmarks) {
     for (const TrialResult& result : benchmark.results) {
@@ -714,6 +746,8 @@ void writeCsv(const vector<DatasetBenchmark>& benchmarks, const string& path) {
              << result.runIndex << ',' << (result.success ? "true" : "false")
              << ',' << result.rankReached << ',' << result.initializationSeconds
              << ',' << result.solveSeconds << ',' << result.totalSeconds()
+             << ',' << result.qcqpBuildSeconds << ','
+             << result.localSolveSeconds << ',' << result.certificateSeconds
              << ',' << result.initialCost << ',' << result.finalCost << ','
              << result.minimumEigenvalue << ',' << std::quoted(result.error)
              << '\n';
@@ -737,6 +771,18 @@ void writeBenchmarkActionJson(const vector<DatasetBenchmark>& benchmarks,
           {prefix + initializer + "/solve", "s", summary->solve.mean});
       metrics.push_back(
           {prefix + initializer + "/total", "s", summary->total.mean});
+      if (summary->qcqpBuild) {
+        metrics.push_back({prefix + initializer + "/qcqp_build", "s",
+                           summary->qcqpBuild->mean});
+      }
+      if (summary->localSolve) {
+        metrics.push_back({prefix + initializer + "/local_solve", "s",
+                           summary->localSolve->mean});
+      }
+      if (summary->certificate) {
+        metrics.push_back({prefix + initializer + "/certificate", "s",
+                           summary->certificate->mean});
+      }
       metrics.push_back({prefix + initializer + "/rank_reached", "rank",
                          static_cast<double>(summary->maximumRank)});
       metrics.push_back(
@@ -846,6 +892,31 @@ void printSummary(const Options& options,
       }
     }
     std::cout << " |\n";
+  }
+
+  bool printedBreakdownHeader = false;
+  for (const DatasetBenchmark& benchmark : benchmarks) {
+    const string dataset =
+        std::filesystem::path(benchmark.path).filename().string();
+    for (const string& method : options.methods) {
+      if (!isBmMethod(method)) continue;
+      const auto summary = summarizeMethod(benchmark.results, method);
+      if (!summary || !summary->qcqpBuild || !summary->localSolve ||
+          !summary->certificate) {
+        continue;
+      }
+      if (!printedBreakdownHeader) {
+        std::cout << "\nBM phase times are QCQP build/local solve/certificate "
+                     "milliseconds.\n\n"
+                  << "| Dataset | Method | Build/Local/Certificate |\n"
+                  << "|---|---|---|\n";
+        printedBreakdownHeader = true;
+      }
+      std::cout << "| " << dataset << " | " << method << " | "
+                << milliseconds(summary->qcqpBuild->mean) << "/"
+                << milliseconds(summary->localSolve->mean) << "/"
+                << milliseconds(summary->certificate->mean) << " ms |\n";
+    }
   }
 }
 
