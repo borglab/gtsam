@@ -12,7 +12,8 @@
 /**
  * @file    AugmentedLagrangianOptimizer.h
  * @brief   Augmented Lagrangian method for nonlinear constrained optimization.
- * @author  Yetong Zhang, Frank Dellaert
+ * @author  Yetong Zhang
+ * @author  Frank Dellaert (codex assisted)
  * @date    Aug 3, 2024
  */
 
@@ -61,7 +62,12 @@ class GTSAM_EXPORT AugmentedLagrangianParams : public PenaltyOptimizerParams {
   /// Absolute full augmented-Lagrangian gradient tolerance for BCL convergence.
   double absoluteStationarityTolerance = 1e-5;
 
-  /// Initial common direct penalty rho for BCL (paper default: 1 / mu_0).
+  /**
+   * Initial common direct penalty rho for BCL (paper default: 1 / mu_0).
+   * Algorithm 1 has one penalty for the complete constraint vector, so BCL
+   * applies this rho to both equality and inequality blocks. Constraint sigmas
+   * provide fixed relative scaling. Aggressive may use separate penalties.
+   */
   double bclInitialPenalty = 10.0;
   /// BCL direct-penalty growth factor (paper default: 1 / tau).
   double bclPenaltyIncreaseRate = 100.0;
@@ -183,7 +189,9 @@ class GTSAM_EXPORT AugmentedLagrangianOptimizer : public ConstrainedOptimizer {
    * Solve one fixed-multiplier subproblem and perform one outer update.
    * `muEq` and `muIneq` are the direct penalties used for this subproblem and
    * the returned pair contains the penalties for the next subproblem. BCL
-   * requires the two supplied penalties to be equal.
+   * requires the two supplied penalties to be equal because Algorithm 1 uses
+   * one penalty for the combined constraint vector. Aggressive permits distinct
+   * equality and inequality penalties.
    */
   std::tuple<State, double, double> iterate(const State& state, double muEq,
                                             double muIneq) const;

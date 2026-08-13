@@ -11,7 +11,10 @@
 
 /**
  * @file  testAugmentedLagrangianOptimizer.cpp
- * @brief Tests for augmented-Lagrangian update policies and PHR inequalities.
+ * @brief Test the augmented Lagrangian optimizer for equality and inequality
+ * constraints, including Aggressive and BCL update policies and PHR terms.
+ * @author Yetong Zhang
+ * @author Frank Dellaert (codex assisted)
  */
 
 #include <CppUnitLite/TestHarness.h>
