@@ -674,10 +674,7 @@ PoseRingOptimizationResult<T> OptimizePoseRing(
 
   auto params = std::make_shared<AugmentedLagrangianParams>();
   params->maxIterations = 10;
-  params->initialMuEq = 10.0;
-  params->muEqIncreaseRate = 5.0;
   params->absoluteViolationTolerance = 1e-6;
-  params->absoluteCostTolerance = 1e-12;
   params->verbose = false;
 
   const Values result =
@@ -715,10 +712,7 @@ TEST(QcqpProblem, AugmentedLagrangianOptimizerRot2Ring) {
 
   auto params = std::make_shared<AugmentedLagrangianParams>();
   params->maxIterations = 5;
-  params->initialMuEq = 10.0;
-  params->muEqIncreaseRate = 5.0;
   params->absoluteViolationTolerance = 1e-6;
-  params->absoluteCostTolerance = 1e-12;
   params->verbose = false;
 
   const AugmentedLagrangianOptimizer optimizer(problem, initialValues, params);

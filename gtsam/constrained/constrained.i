@@ -193,14 +193,27 @@ class PenaltyOptimizerParams : gtsam::ConstrainedOptimizerParams {
 };
 
 #include <gtsam/constrained/AugmentedLagrangianOptimizer.h>
+enum class AugmentedLagrangianUpdatePolicy { Aggressive, BCL };
+
 class AugmentedLagrangianParams : gtsam::PenaltyOptimizerParams {
   AugmentedLagrangianParams();
 
+  gtsam::AugmentedLagrangianUpdatePolicy updatePolicy;
   double maxDualStepSizeEq;
   double maxDualStepSizeIneq;
   double dualStepSizeFactorEq;
   double dualStepSizeFactorIneq;
   double muIncreaseThreshold;
+  double absoluteStationarityTolerance;
+  double bclInitialPenalty;
+  double bclPenaltyIncreaseRate;
+  double bclOmega0;
+  double bclEta0;
+  double bclGamma1;
+  double bclAlphaOmega;
+  double bclBetaOmega;
+  double bclAlphaEta;
+  double bclBetaEta;
 };
 
 virtual class AugmentedLagrangianOptimizer {

@@ -35,12 +35,7 @@ def staircase_params(initial_rank):
     """Return deterministic parameters for the small wrapper test problems."""
     alm_params = gtsam.AugmentedLagrangianParams()
     alm_params.maxIterations = 100
-    alm_params.initialMuEq = 10.0
-    alm_params.muEqIncreaseRate = 2.0
     alm_params.absoluteViolationTolerance = 1e-8
-    alm_params.relativeViolationTolerance = 1e-8
-    alm_params.absoluteCostTolerance = 1e-10
-    alm_params.relativeCostTolerance = 1e-10
 
     params = gtsam.RiemannianStaircaseParams()
     params.pMin = initial_rank

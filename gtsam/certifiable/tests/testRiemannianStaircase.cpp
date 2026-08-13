@@ -66,15 +66,12 @@ Values RingQcqpValuesD2(size_t numPoses, double delta, double perturbation) {
   return values;
 }
 
-// Shared ALM tuning used by most tests. Tighter than library defaults so the
-// ring fixture converges to a 1st-order KKT point in <100 iterations.
+// Shared BCL tuning used by most tests. The tighter feasibility tolerance
+// makes the ring fixture suitable for certificate checks.
 AugmentedLagrangianParams::shared_ptr DefaultAlmParams() {
   auto p = std::make_shared<AugmentedLagrangianParams>();
   p->maxIterations = 50;
-  p->initialMuEq = 10.0;
-  p->muEqIncreaseRate = 2.0;
   p->absoluteViolationTolerance = 1e-8;
-  p->relativeViolationTolerance = 1e-8;
   return p;
 }
 

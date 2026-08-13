@@ -77,7 +77,10 @@ For a new user, it helps to think in two phases:
 
 Inequality constraints can use different smooth penalty shapes via
 `InequalityPenaltyFunction` (ramp, smooth polynomial ramps, or softplus),
-which controls behavior near the active constraint boundary.
+which controls behavior near the active constraint boundary in
+`PenaltyOptimizer`. `AugmentedLagrangianOptimizer` instead requires exact PHR
+inequality terms and rejects custom smooth penalties so its projected
+multiplier update remains mathematically consistent.
 
 ### 1) Build the Problem
 
