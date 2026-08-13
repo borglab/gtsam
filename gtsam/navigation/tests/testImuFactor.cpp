@@ -39,6 +39,24 @@
 
 #include "imuFactorTesting.h"
 
+namespace default_backend {
+
+#ifdef GTSAM_LIEGROUP_PREINTEGRATION
+static_assert(
+    std::is_same<DefaultPreintegrationType, LieGroupPreintegration>::value,
+    "Lie-group preintegration must take precedence as the default backend");
+#elif defined(GTSAM_TANGENT_PREINTEGRATION)
+static_assert(
+    std::is_same<DefaultPreintegrationType, TangentPreintegration>::value,
+    "Tangent preintegration must remain the default backend");
+#else
+static_assert(
+    std::is_same<DefaultPreintegrationType, ManifoldPreintegration>::value,
+    "Manifold preintegration must be selected when both options are disabled");
+#endif
+
+}  // namespace default_backend
+
 /* ************************************************************************* */
 TEST_PIM(ImuFactor, PreintegratedMeasurementsConstruction) {
   // Actual pre-integrated values
@@ -927,7 +945,8 @@ TEST_PIM(ImuFactor, bodyPSensorWithBias) {
 }
 
 /* ************************************************************************* */
-#ifdef GTSAM_TANGENT_PREINTEGRATION
+#if defined(GTSAM_TANGENT_PREINTEGRATION) && \
+    !defined(GTSAM_LIEGROUP_PREINTEGRATION)
 static const double kVelocity = 2.0, kAngularVelocity = M_PI / 6;
 
 struct ImuFactorMergeTest {

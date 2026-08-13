@@ -60,8 +60,9 @@ bool ManifoldPreintegration::equals(const ManifoldPreintegration& other,
 
 //------------------------------------------------------------------------------
 void ManifoldPreintegration::update(const Vector3& measuredAcc,
-    const Vector3& measuredOmega, const double dt, Matrix9* A, Matrix93* B,
-    Matrix93* C) {
+                                    const Vector3& measuredOmega,
+                                    const double dt, Matrix9* A, Matrix93* B,
+                                    Matrix93* C) {
   // Correct for bias in the sensor frame
   Vector3 acc = biasHat_.correctAccelerometer(measuredAcc);
   Vector3 omega = biasHat_.correctGyroscope(measuredOmega);

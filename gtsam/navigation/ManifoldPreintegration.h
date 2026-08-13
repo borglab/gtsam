@@ -133,7 +133,7 @@ public:
                                    const Matrix93& accelerationJacobian,
                                    const Matrix93& omegaJacobian);
 
-private:
+ private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;
