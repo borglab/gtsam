@@ -23,6 +23,8 @@
 
 #include <gtsam/base/MatrixConstants.h>
 
+#include <stdexcept>
+
 using namespace std;
 
 namespace gtsam {
@@ -110,6 +112,77 @@ void PreintegratedRotation::integrateGyroMeasurement(
   // Update Jacobian
   const Matrix3 incrRt = incrR.transpose();
   delRdelBiasOmega_ = incrRt * delRdelBiasOmega_ + H_bias;
+}
+
+namespace {
+
+void validateGyroIntegrationInputs(const Vector& times,
+                                   ConstMatrixView measuredOmegas) {
+  if (times.size() < 2) {
+    throw invalid_argument("Gyro integration requires at least two samples");
+  }
+  if (measuredOmegas.rows() != times.size() || measuredOmegas.cols() != 3) {
+    throw invalid_argument(
+        "Gyro integration requires an Mx3 omega matrix with one row per "
+        "sample time");
+  }
+  for (Eigen::Index index = 0; index + 1 < times.size(); ++index) {
+    if (times(index + 1) <= times(index)) {
+      throw invalid_argument(
+          "Gyro integration requires strictly increasing sample times");
+    }
+  }
+}
+
+Vector3 correctedOmega(ConstMatrixView measuredOmegas, Eigen::Index row,
+                       const Vector3& biasHat, const Rot3& body_R_sensor) {
+  const Vector3 measuredOmega = measuredOmegas.row(row).transpose();
+  return body_R_sensor * (measuredOmega - biasHat);
+}
+
+}  // namespace
+
+Rot3 integrateSequentialRotations(const Vector& times,
+                                  ConstMatrixView measuredOmegas,
+                                  const Vector3& biasHat,
+                                  const Rot3& body_R_sensor) {
+  validateGyroIntegrationInputs(times, measuredOmegas);
+
+  Rot3 rotation;
+  for (Eigen::Index index = 0; index + 1 < times.size(); ++index) {
+    const double deltaTime = times(index + 1) - times(index);
+    const Vector3 omega0 =
+        correctedOmega(measuredOmegas, index, biasHat, body_R_sensor);
+    const Vector3 omega1 =
+        correctedOmega(measuredOmegas, index + 1, biasHat, body_R_sensor);
+    const Vector3 theta = 0.5 * deltaTime * (omega0 + omega1);
+    rotation = rotation.compose(Rot3::Expmap(theta));
+  }
+  return rotation;
+}
+
+Rot3 integrateSingleSpeedConing(const Vector& times,
+                                ConstMatrixView measuredOmegas,
+                                const Vector3& biasHat,
+                                const Rot3& body_R_sensor) {
+  validateGyroIntegrationInputs(times, measuredOmegas);
+
+  Rot3 rotation;
+  Vector3 previousTheta = Vector3::Zero();
+  for (Eigen::Index index = 0; index + 1 < times.size(); ++index) {
+    const double deltaTime = times(index + 1) - times(index);
+    const Vector3 omega0 =
+        correctedOmega(measuredOmegas, index, biasHat, body_R_sensor);
+    const Vector3 omega1 =
+        correctedOmega(measuredOmegas, index + 1, biasHat, body_R_sensor);
+    const Vector3 theta = 0.5 * deltaTime * (omega0 + omega1);
+    const Vector3 correctedTheta =
+        index == 0 ? theta
+                   : theta + (1.0 / 12.0) * previousTheta.cross(theta);
+    rotation = rotation.compose(Rot3::Expmap(correctedTheta));
+    previousTheta = theta;
+  }
+  return rotation;
 }
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43

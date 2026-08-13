@@ -151,6 +151,16 @@ class PreintegratedRotation {
   void serialize() const;
 };
 
+gtsam::Rot3 integrateSequentialRotations(
+    const gtsam::Vector& times, gtsam::ConstMatrixView measuredOmegas,
+    const gtsam::Vector3& biasHat = gtsam::Vector3::Zero(),
+    const gtsam::Rot3& body_R_sensor = gtsam::Rot3());
+
+gtsam::Rot3 integrateSingleSpeedConing(
+    const gtsam::Vector& times, gtsam::ConstMatrixView measuredOmegas,
+    const gtsam::Vector3& biasHat = gtsam::Vector3::Zero(),
+    const gtsam::Rot3& body_R_sensor = gtsam::Rot3());
+
 #include <gtsam/navigation/PreintegrationParams.h>
 virtual class PreintegrationParams : gtsam::PreintegratedRotationParams {
   PreintegrationParams(gtsam::Vector n_gravity);
