@@ -21,9 +21,11 @@
  **/
 
 #include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/navigation/PreintegrationBase.h>
 
 #include <cassert>
+#include <stdexcept>
 
 using namespace std;
 
@@ -114,6 +116,77 @@ void PreintegrationBase::integrateMeasurement(const Vector3& measuredAcc,
 }
 
 //------------------------------------------------------------------------------
+Vector3 PreintegrationBase::so3TangentAt(double t) const {
+  if (t < 0.0 || t > deltaTij_) {
+    throw std::out_of_range("t must be in [0, deltaTij]");
+  }
+  if (deltaTij_ == 0.0) return Z_3x1;
+  return (t / deltaTij_) * Rot3::Logmap(deltaRij());
+}
+
+//------------------------------------------------------------------------------
+Matrix PreintegrationBase::deskewPoints(
+    ConstMatrixView points, const Vector3& velocity_i) const {
+  if (points.rows() % 3 != 0) {
+    throw std::invalid_argument(
+        "points must have shape 3m x n with rows divisible by 3");
+  }
+  const Eigen::Index batchCount = points.cols();
+  if (batchCount == 0) return Matrix(points.rows(), 0);
+
+  const Vector3 endpointTangent = so3TangentAt(deltaTij_);
+  const Rot3 rotationStep =
+      Rot3::Expmap(endpointTangent / static_cast<double>(batchCount));
+  Rot3 rotation;
+  Matrix deskewed(points.rows(), batchCount);
+  for (Eigen::Index batch = 0; batch < batchCount; ++batch) {
+    const double t = deltaTij_ * static_cast<double>(batch) /
+                     static_cast<double>(batchCount);
+    const Vector3 translation = velocity_i * t;
+    const Matrix3 rotationMatrix = rotation.matrix();
+    for (Eigen::Index pointRow = 0; pointRow < points.rows(); pointRow += 3) {
+      deskewed.block<3, 1>(pointRow, batch) =
+          rotationMatrix * points.block<3, 1>(pointRow, batch) + translation;
+    }
+    rotation = rotation.compose(rotationStep);
+  }
+  return deskewed;
+}
+
+//------------------------------------------------------------------------------
+Matrix PreintegrationBase::deskewPointsAtTimes(
+    ConstMatrixView points, const Vector& times,
+    const Vector3& velocity_i) const {
+  if (points.rows() % 3 != 0) {
+    throw std::invalid_argument(
+        "points must have shape 3m x n with rows divisible by 3");
+  }
+  const Eigen::Index batchCount = points.cols();
+  if (times.size() != batchCount) {
+    throw std::invalid_argument("times size must match the point batch count");
+  }
+  if (batchCount == 0) return Matrix(points.rows(), 0);
+
+  const Vector3 endpointTangent = so3TangentAt(deltaTij_);
+  Matrix deskewed(points.rows(), batchCount);
+  for (Eigen::Index batch = 0; batch < batchCount; ++batch) {
+    const double t = times(batch);
+    if (t < 0.0 || t > deltaTij_) {
+      throw std::out_of_range("t must be in [0, deltaTij]");
+    }
+    const double fraction = deltaTij_ == 0.0 ? 0.0 : t / deltaTij_;
+    const Matrix3 rotationMatrix =
+        Rot3::Expmap(fraction * endpointTangent).matrix();
+    const Vector3 translation = velocity_i * t;
+    for (Eigen::Index pointRow = 0; pointRow < points.rows(); pointRow += 3) {
+      deskewed.block<3, 1>(pointRow, batch) =
+          rotationMatrix * points.block<3, 1>(pointRow, batch) + translation;
+    }
+  }
+  return deskewed;
+}
+
+//------------------------------------------------------------------------------
 NavState PreintegrationBase::predict(const NavState& state_i,
     const imuBias::ConstantBias& bias_i, const Vector3& n_gravity,
     OptionalJacobian<9, 9> H1, OptionalJacobian<9, 6> H2,
@@ -150,90 +223,5 @@ NavState PreintegrationBase::predict(const NavState& state_i,
     OptionalJacobian<9, 6> H2) const {
   return predict(state_i, bias_i, p().n_gravity, H1, H2, nullptr);
 }
-
-//------------------------------------------------------------------------------
-Vector9 PreintegrationBase::computeError(const NavState& state_i,
-                                         const NavState& state_j,
-                                         const imuBias::ConstantBias& bias_i,
-                                         const Vector3& n_gravity,
-                                         OptionalJacobian<9, 9> H1,
-                                         OptionalJacobian<9, 9> H2,
-                                         OptionalJacobian<9, 6> H3,
-                                         OptionalJacobian<9, 3> H4) const {
-  // Predict state at time j
-  Matrix9 D_predict_state_i;
-  Matrix96 D_predict_bias_i;
-  Matrix93 D_predict_gravity;
-  NavState predictedState_j = predict(
-      state_i, bias_i, n_gravity, H1 ? &D_predict_state_i : 0,
-      H3 ? &D_predict_bias_i : 0, H4 ? &D_predict_gravity : 0);
-
-  // Calculate error
-  Matrix9 D_error_state_j, D_error_predict;
-  Vector9 error =
-      state_j.localCoordinates(predictedState_j, H2 ? &D_error_state_j : 0,
-                               H1 || H3 || H4 ? &D_error_predict : 0);
-
-  if (H1) *H1 = D_error_predict * D_predict_state_i;
-  if (H2) *H2 = D_error_state_j;
-  if (H3) *H3 = D_error_predict * D_predict_bias_i;
-  if (H4) *H4 = D_error_predict * D_predict_gravity;
-
-  return error;
-}
-
-//------------------------------------------------------------------------------
-Vector9 PreintegrationBase::computeError(const NavState& state_i,
-                                         const NavState& state_j,
-                                         const imuBias::ConstantBias& bias_i,
-                                         OptionalJacobian<9, 9> H1,
-                                         OptionalJacobian<9, 9> H2,
-                                         OptionalJacobian<9, 6> H3) const {
-  return computeError(state_i, state_j, bias_i, p().n_gravity, H1, H2, H3,
-                      nullptr);
-}
-
-//------------------------------------------------------------------------------
-Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i,
-    const Vector3& vel_i, const Pose3& pose_j, const Vector3& vel_j,
-    const imuBias::ConstantBias& bias_i, const Vector3& n_gravity,
-    OptionalJacobian<9, 6> H1, OptionalJacobian<9, 3> H2,
-    OptionalJacobian<9, 6> H3, OptionalJacobian<9, 3> H4,
-    OptionalJacobian<9, 6> H5, OptionalJacobian<9, 3> H6) const {
-
-  // Note that derivative of constructors below is not identity for velocity, but
-  // a 9*3 matrix == Z_3x3, Z_3x3, state.R().transpose()
-  NavState state_i(pose_i, vel_i);
-  NavState state_j(pose_j, vel_j);
-
-  // Predict state at time j
-  Matrix9 D_error_state_i, D_error_state_j;
-  Vector9 error = computeError(state_i, state_j, bias_i, n_gravity,
-                         H1 || H2 ? &D_error_state_i : 0, H3 || H4 ? &D_error_state_j : 0, H5, H6);
-
-  // Separate out derivatives in terms of 5 arguments
-  // Note that doing so requires special treatment of velocities, as when treated as
-  // separate variables the retract applied will not be the semi-direct product in NavState
-  // Instead, the velocities in nav are updated using a straight addition
-  // This is difference is accounted for by the R().transpose calls below
-  if (H1) *H1 << D_error_state_i.leftCols<6>();
-  if (H2) *H2 << D_error_state_i.rightCols<3>() * state_i.R().transpose();
-  if (H3) *H3 << D_error_state_j.leftCols<6>();
-  if (H4) *H4 << D_error_state_j.rightCols<3>() * state_j.R().transpose();
-
-  return error;
-}
-
-//------------------------------------------------------------------------------
-Vector9 PreintegrationBase::computeErrorAndJacobians(const Pose3& pose_i,
-    const Vector3& vel_i, const Pose3& pose_j, const Vector3& vel_j,
-    const imuBias::ConstantBias& bias_i, OptionalJacobian<9, 6> H1,
-    OptionalJacobian<9, 3> H2, OptionalJacobian<9, 6> H3,
-    OptionalJacobian<9, 3> H4, OptionalJacobian<9, 6> H5) const {
-  return computeErrorAndJacobians(pose_i, vel_i, pose_j, vel_j, bias_i,
-                                  p().n_gravity, H1, H2, H3, H4, H5, nullptr);
-}
-
-//------------------------------------------------------------------------------
 
 }  // namespace gtsam

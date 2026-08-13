@@ -118,26 +118,15 @@ TEST_PIM(ImuFactor, PreintegratedMeasurements) {
   EXPECT(assert_equal(expectedDeltaV1, actual.deltaVij()));
   DOUBLES_EQUAL(0.5, actual.deltaTij(), 1e-9);
 
-  // Check derivatives of computeError
+  // Check factor derivatives rather than exposing residual assembly on the PIM.
   Bias bias(Vector3(0.2, 0, 0), Vector3(0.1, 0, 0.3)); // Biases (acc, rot)
   NavState x1, x2 = actual.predict(x1, bias);
-
-  {
-  Matrix9 aH1, aH2;
-  Matrix96 aH3;
-  actual.computeError(x1, x2, bias, aH1, aH2, aH3);
-  // Select the overload without the gravity parameter:
-  using ComputeErrorNoGravity = Vector9 (PreintegrationBase::*)(
-      const NavState&, const NavState&, const imuBias::ConstantBias&,
-      OptionalJacobian<9, 9>, OptionalJacobian<9, 9>,
-      OptionalJacobian<9, 6>) const;
-  auto f = std::bind(static_cast<ComputeErrorNoGravity>(&PreintegrationBase::computeError), actual,
-                  std::placeholders::_1, std::placeholders::_2, std::placeholders::_3,
-                  nullptr, nullptr, nullptr);
-  EXPECT(assert_equal(numericalDerivative31(f, x1, x2, bias), aH1, 1e-9));
-  EXPECT(assert_equal(numericalDerivative32(f, x1, x2, bias), aH2, 1e-9));
-  EXPECT(assert_equal(numericalDerivative33(f, x1, x2, bias), aH3, 1e-9));
-  }
+  ImuFactor2T<PIM> factor(X(1), X(2), B(1), actual);
+  Values values;
+  values.insert(X(1), x1);
+  values.insert(X(2), x2);
+  values.insert(B(1), bias);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-6);
 
   // Integrate again
   Vector3 expectedDeltaR2(2.0 * 0.5 * M_PI / 100.0, 0.0, 0.0);
@@ -152,6 +141,107 @@ TEST_PIM(ImuFactor, PreintegratedMeasurements) {
   EXPECT(assert_equal(expectedDeltaV2, actual.deltaVij()));
   DOUBLES_EQUAL(1.0, actual.deltaTij(), 1e-9);
 }
+
+namespace deskew {
+
+Vector3 pointAt(const Matrix& points, Eigen::Index pointIndex,
+                Eigen::Index batchIndex) {
+  return points.block<3, 1>(3 * pointIndex, batchIndex);
+}
+
+/* ************************************************************************* */
+TEST_PIM(ImuFactor, DeskewImplicitAndExplicitTiming) {
+  PIM pim(testing::Params());
+  const double yawRate = 0.4, duration = 2.0;
+  pim.integrateMeasurement(Z_3x1, Vector3(0.0, 0.0, yawRate), duration);
+
+  const Vector3 first(1.0, 0.0, 0.0), second(0.0, 1.0, 0.5);
+  Matrix points(6, 4);
+  for (Eigen::Index batch = 0; batch < points.cols(); ++batch) {
+    points.block<3, 1>(0, batch) = first;
+    points.block<3, 1>(3, batch) = second;
+  }
+
+  const Matrix implicit = pim.deskewPoints(points);
+  for (Eigen::Index batch = 0; batch < implicit.cols(); ++batch) {
+    const double t = duration * static_cast<double>(batch) / implicit.cols();
+    const Rot3 rotation = Rot3::Yaw(yawRate * t);
+    EXPECT(assert_equal(rotation.rotate(first), pointAt(implicit, 0, batch),
+                        1e-8));
+    EXPECT(assert_equal(rotation.rotate(second), pointAt(implicit, 1, batch),
+                        1e-8));
+  }
+  CHECK((pointAt(implicit, 0, 3) - pim.deltaRij().rotate(first)).norm() >
+        1e-3);
+
+  const Vector3 velocity(0.5, -0.2, 0.1);
+  const Matrix implicitWithVelocity = pim.deskewPoints(points, velocity);
+  for (Eigen::Index batch = 0; batch < implicitWithVelocity.cols(); ++batch) {
+    const double t =
+        duration * static_cast<double>(batch) / implicitWithVelocity.cols();
+    const Rot3 rotation = Rot3::Yaw(yawRate * t);
+    const Vector3 expectedFirst = rotation.rotate(first) + velocity * t;
+    const Vector3 expectedSecond = rotation.rotate(second) + velocity * t;
+    EXPECT(assert_equal(expectedFirst,
+                        pointAt(implicitWithVelocity, 0, batch), 1e-8));
+    EXPECT(assert_equal(expectedSecond,
+                        pointAt(implicitWithVelocity, 1, batch), 1e-8));
+  }
+
+  Vector times(4);
+  times << duration, 0.0, 0.5 * duration, 0.25 * duration;
+  const Matrix explicitResult = pim.deskewPointsAtTimes(points, times);
+  for (Eigen::Index batch = 0; batch < explicitResult.cols(); ++batch) {
+    const Rot3 rotation = Rot3::Yaw(yawRate * times(batch));
+    EXPECT(assert_equal(rotation.rotate(first),
+                        pointAt(explicitResult, 0, batch), 1e-8));
+    EXPECT(assert_equal(rotation.rotate(second),
+                        pointAt(explicitResult, 1, batch), 1e-8));
+  }
+}
+
+/* ************************************************************************* */
+TEST_PIM(ImuFactor, DeskewVelocityAndValidation) {
+  PIM pim(testing::Params());
+  pim.integrateMeasurement(Z_3x1, Vector3(0.0, 0.0, 0.4), 2.0);
+
+  Matrix points(6, 2);
+  points << 1.0, -0.5, 0.0, 0.2, 0.0, 1.0, -0.2, 1.5, 0.8, 0.3, 1.2,
+      -0.4;
+  Vector times(2);
+  times << 2.0, 0.5;
+  const Vector3 velocity(0.5, -0.2, 0.1);
+  const Matrix actual = pim.deskewPointsAtTimes(points, times, velocity);
+  for (Eigen::Index batch = 0; batch < actual.cols(); ++batch) {
+    const Pose3 transform(Rot3::Expmap(pim.so3TangentAt(times(batch))),
+                          velocity * times(batch));
+    for (Eigen::Index pointIndex = 0; pointIndex < 2; ++pointIndex) {
+      EXPECT(assert_equal(
+          transform.transformFrom(pointAt(points, pointIndex, batch)),
+          pointAt(actual, pointIndex, batch), 1e-8));
+    }
+  }
+
+  const Matrix empty(0, 3);
+  EXPECT(assert_equal(empty, pim.deskewPoints(empty)));
+  CHECK_EXCEPTION(pim.deskewPoints(Matrix::Zero(2, 2)),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(pim.deskewPoints(Matrix::Zero(4, 3)),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(pim.deskewPointsAtTimes(Matrix::Zero(3, 2), Vector::Zero(1)),
+                  std::invalid_argument);
+  Vector badTime(1);
+  badTime << -1e-6;
+  CHECK_EXCEPTION(pim.deskewPointsAtTimes(Matrix::Zero(3, 1), badTime),
+                  std::out_of_range);
+  badTime << pim.deltaTij() + 1e-6;
+  CHECK_EXCEPTION(pim.deskewPointsAtTimes(Matrix::Zero(3, 1), badTime,
+                                          Z_3x1),
+                  std::out_of_range);
+}
+
+}  // namespace deskew
+
 /* ************************************************************************* */
 // Common linearization point and measurements for tests
 namespace common {
@@ -284,16 +374,6 @@ TEST_PIM(ImuFactor, PredictWithGravityVector) {
           tilted_gravity),
       Matrix(aH3)));
 
-  // And the gravity Jacobian of computeError:
-  Matrix93 aH4;
-  pim.computeError(state1, state2, kZeroBias, tilted_gravity, {}, {}, {}, aH4);
-  EXPECT(assert_equal(
-      numericalDerivative11<Vector9, Vector3>(
-          [&](const Vector3& g) {
-            return pim.computeError(state1, state2, kZeroBias, g, {}, {}, {}, {});
-          },
-          tilted_gravity),
-      Matrix(aH4)));
 }
 
 /* ************************************************************************* */

@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include <gtsam/base/Matrix.h>
 #include <gtsam/navigation/PreintegrationParams.h>
 #include <gtsam/navigation/NavState.h>
 #include <gtsam/navigation/ImuBias.h>
@@ -110,6 +111,23 @@ class GTSAM_EXPORT PreintegrationBase {
   virtual Rot3     deltaRij() const = 0;
   virtual NavState deltaXij() const = 0;
 
+  /** Return the SO(3) tangent vector at local time t in [0, deltaTij]. */
+  virtual Vector3 so3TangentAt(double t) const;
+
+  /**
+   * Deskew endpoint-exclusive ordered point batches over the integration
+   * interval. Each column is a batch containing one or more stacked 3-vectors,
+   * so points must have shape 3m x n.
+   */
+  Matrix deskewPoints(
+      ConstMatrixView points,
+      const Vector3& velocity_i = Vector3::Zero()) const;
+
+  /** Deskew stacked point batches at explicit times and initial velocity. */
+  Matrix deskewPointsAtTimes(
+      ConstMatrixView points, const Vector& times,
+      const Vector3& velocity_i = Vector3::Zero()) const;
+
   // Exposed for MATLAB
   Vector6 biasHatVector() const { return biasHat_.vector(); }
   /// @}
@@ -168,42 +186,6 @@ class GTSAM_EXPORT PreintegrationBase {
                    OptionalJacobian<9, 9> H1 = {},
                    OptionalJacobian<9, 6> H2 = {}) const;
 
-  /// Calculate error given navStates and a gravity vector in the nav frame
-  Vector9 computeError(const NavState& state_i, const NavState& state_j,
-                       const imuBias::ConstantBias& bias_i,
-                       const Vector3& n_gravity,
-                       OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2,
-                       OptionalJacobian<9, 6> H3,
-                       OptionalJacobian<9, 3> H4) const;
-
-  /// Calculate error given navStates, using the gravity vector from params
-  Vector9 computeError(const NavState& state_i, const NavState& state_j,
-                       const imuBias::ConstantBias& bias_i,
-                       OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2,
-                       OptionalJacobian<9, 6> H3) const;
-
-  /**
-   * Compute errors w.r.t. preintegrated measurements and jacobians
-   * wrt pose_i, vel_i, bias_i, pose_j, bias_j and the given gravity vector
-   */
-  Vector9 computeErrorAndJacobians(const Pose3& pose_i, const Vector3& vel_i,
-      const Pose3& pose_j, const Vector3& vel_j,
-      const imuBias::ConstantBias& bias_i, const Vector3& n_gravity,
-      OptionalJacobian<9, 6> H1 = {}, OptionalJacobian<9, 3> H2 = {},
-      OptionalJacobian<9, 6> H3 = {}, OptionalJacobian<9, 3> H4 = {},
-      OptionalJacobian<9, 6> H5 = {}, OptionalJacobian<9, 3> H6 = {}) const;
-
-  /**
-   * Compute errors w.r.t. preintegrated measurements and jacobians
-   * wrt pose_i, vel_i, bias_i, pose_j, bias_j
-   */
-  Vector9 computeErrorAndJacobians(const Pose3& pose_i, const Vector3& vel_i,
-      const Pose3& pose_j, const Vector3& vel_j,
-      const imuBias::ConstantBias& bias_i,
-      OptionalJacobian<9, 6> H1 = {}, OptionalJacobian<9, 3> H2 = {},
-      OptionalJacobian<9, 6> H3 = {}, OptionalJacobian<9, 3> H4 = {},
-      OptionalJacobian<9, 6> H5 = {}) const;
-
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
@@ -218,6 +200,84 @@ class GTSAM_EXPORT PreintegrationBase {
 };
 
 namespace internal {
+
+/** Calculate the 9-dof preintegration error for an explicit gravity vector. */
+template <class PIM>
+Vector9 preintegrationError(
+    const PIM& pim, const NavState& state_i, const NavState& state_j,
+    const imuBias::ConstantBias& bias_i, const Vector3& n_gravity,
+    OptionalJacobian<9, 9> H1 = {}, OptionalJacobian<9, 9> H2 = {},
+    OptionalJacobian<9, 6> H3 = {}, OptionalJacobian<9, 3> H4 = {}) {
+  Matrix9 D_predict_state_i;
+  Matrix96 D_predict_bias_i;
+  Matrix93 D_predict_gravity;
+  const NavState predictedState_j = pim.predict(
+      state_i, bias_i, n_gravity, H1 ? &D_predict_state_i : nullptr,
+      H3 ? &D_predict_bias_i : nullptr,
+      H4 ? &D_predict_gravity : nullptr);
+
+  Matrix9 D_error_state_j, D_error_predict;
+  const Vector9 error = state_j.localCoordinates(
+      predictedState_j, H2 ? &D_error_state_j : nullptr,
+      H1 || H3 || H4 ? &D_error_predict : nullptr);
+
+  if (H1) *H1 = D_error_predict * D_predict_state_i;
+  if (H2) *H2 = D_error_state_j;
+  if (H3) *H3 = D_error_predict * D_predict_bias_i;
+  if (H4) *H4 = D_error_predict * D_predict_gravity;
+  return error;
+}
+
+/** Calculate the 9-dof error using the gravity vector stored in params. */
+template <class PIM>
+Vector9 preintegrationError(
+    const PIM& pim, const NavState& state_i, const NavState& state_j,
+    const imuBias::ConstantBias& bias_i,
+    OptionalJacobian<9, 9> H1 = {}, OptionalJacobian<9, 9> H2 = {},
+    OptionalJacobian<9, 6> H3 = {}) {
+  return preintegrationError(pim, state_i, state_j, bias_i,
+                             pim.params()->n_gravity, H1, H2, H3);
+}
+
+/** Assemble pose/velocity Jacobians for an explicit gravity vector. */
+template <class PIM>
+Vector9 preintegrationErrorAndJacobians(
+    const PIM& pim, const Pose3& pose_i, const Vector3& vel_i,
+    const Pose3& pose_j, const Vector3& vel_j,
+    const imuBias::ConstantBias& bias_i, const Vector3& n_gravity,
+    OptionalJacobian<9, 6> H1 = {}, OptionalJacobian<9, 3> H2 = {},
+    OptionalJacobian<9, 6> H3 = {}, OptionalJacobian<9, 3> H4 = {},
+    OptionalJacobian<9, 6> H5 = {}, OptionalJacobian<9, 3> H6 = {}) {
+  const NavState state_i(pose_i, vel_i), state_j(pose_j, vel_j);
+
+  Matrix9 D_error_state_i, D_error_state_j;
+  const Vector9 error = preintegrationError(
+      pim, state_i, state_j, bias_i, n_gravity,
+      H1 || H2 ? &D_error_state_i : nullptr,
+      H3 || H4 ? &D_error_state_j : nullptr, H5, H6);
+
+  // Separate NavState derivatives. Independent velocity variables retract by
+  // straight addition rather than the NavState semidirect-product update.
+  if (H1) *H1 = D_error_state_i.leftCols<6>();
+  if (H2) *H2 = D_error_state_i.rightCols<3>() * state_i.R().transpose();
+  if (H3) *H3 = D_error_state_j.leftCols<6>();
+  if (H4) *H4 = D_error_state_j.rightCols<3>() * state_j.R().transpose();
+  return error;
+}
+
+/** Assemble pose/velocity Jacobians using gravity stored in params. */
+template <class PIM>
+Vector9 preintegrationErrorAndJacobians(
+    const PIM& pim, const Pose3& pose_i, const Vector3& vel_i,
+    const Pose3& pose_j, const Vector3& vel_j,
+    const imuBias::ConstantBias& bias_i,
+    OptionalJacobian<9, 6> H1 = {}, OptionalJacobian<9, 3> H2 = {},
+    OptionalJacobian<9, 6> H3 = {}, OptionalJacobian<9, 3> H4 = {},
+    OptionalJacobian<9, 6> H5 = {}) {
+  return preintegrationErrorAndJacobians(
+      pim, pose_i, vel_i, pose_j, vel_j, bias_i,
+      pim.params()->n_gravity, H1, H2, H3, H4, H5);
+}
 
 /**
  * Adapter mapping a gravity parametrization GRAVITY to the nav-frame gravity

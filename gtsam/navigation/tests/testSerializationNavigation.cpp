@@ -24,6 +24,7 @@
 #include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/navigation/AttitudeFactor.h>
+#include <gtsam/navigation/AHRSFactor.h>
 #include <gtsam/navigation/CarrierPhaseFactor.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
 #include <gtsam/navigation/CombinedImuFactorWithGravity.h>
@@ -52,6 +53,23 @@ BOOST_CLASS_EXPORT_GUID(PreintegrationCombinedParams,
                         "gtsam_PreintegrationCombinedParams")
 BOOST_CLASS_EXPORT_GUID(PreintegratedCombinedMeasurements,
                         "gtsam_PreintegratedCombinedMeasurements")
+
+/* ************************************************************************* */
+TEST(AHRSFactor, Serialization) {
+  auto params = std::make_shared<PreintegratedRotationParams>();
+  params->gyroscopeCovariance = 1e-8 * I_3x3;
+  PreintegratedAhrsMeasurements pim(params);
+  pim.integrateMeasurement(Vector3(0.1, -0.2, 0.3), 0.01);
+
+  EXPECT(equalsObj<PreintegratedAhrsMeasurements>(pim));
+  EXPECT(equalsXML<PreintegratedAhrsMeasurements>(pim));
+  EXPECT(equalsBinary<PreintegratedAhrsMeasurements>(pim));
+
+  const AHRSFactor factor(1, 2, 3, pim);
+  EXPECT(equalsObj<AHRSFactor>(factor));
+  EXPECT(equalsXML<AHRSFactor>(factor));
+  EXPECT(equalsBinary<AHRSFactor>(factor));
+}
 
 template <typename P>
 P getPreintegratedMeasurements() {

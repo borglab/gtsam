@@ -330,10 +330,11 @@ Vector combinedImuError(const PIM& pim, const Pose3& pose_i,
   Matrix93 D_r_vel_i, D_r_vel_j;
 
   // error wrt preintegrated measurements
-  Vector9 r_Rpv = pim.computeErrorAndJacobians(pose_i, vel_i, pose_j, vel_j,
-      bias_i, n_gravity, H1 ? &D_r_pose_i : 0, H2 ? &D_r_vel_i : 0,
-      H3 ? &D_r_pose_j : 0, H4 ? &D_r_vel_j : 0, H5 ? &D_r_bias_i : 0,
-      D_r_gvec);
+  Vector9 r_Rpv = internal::preintegrationErrorAndJacobians(
+      pim, pose_i, vel_i, pose_j, vel_j, bias_i, n_gravity,
+      H1 ? &D_r_pose_i : nullptr, H2 ? &D_r_vel_i : nullptr,
+      H3 ? &D_r_pose_j : nullptr, H4 ? &D_r_vel_j : nullptr,
+      H5 ? &D_r_bias_i : nullptr, D_r_gvec);
 
   // if we need the jacobians
   if (H1) {

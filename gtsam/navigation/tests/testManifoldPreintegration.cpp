@@ -80,29 +80,6 @@ TEST(ManifoldPreintegration, BiasCorrectionJacobians) {
 }
 
 /* ************************************************************************* */
-TEST(ManifoldPreintegration, computeError) {
-  ManifoldPreintegration pim(testing::Params());
-  NavState x1, x2;
-  imuBias::ConstantBias bias;
-  Matrix9 aH1, aH2;
-  Matrix96 aH3;
-  pim.computeError(x1, x2, bias, aH1, aH2, aH3);
-  // Select the overload without the gravity parameter:
-  using ComputeErrorNoGravity = Vector9 (PreintegrationBase::*)(
-      const NavState&, const NavState&, const imuBias::ConstantBias&,
-      OptionalJacobian<9, 9>, OptionalJacobian<9, 9>,
-      OptionalJacobian<9, 6>) const;
-  auto f = std::bind(static_cast<ComputeErrorNoGravity>(&ManifoldPreintegration::computeError), pim,
-                    std::placeholders::_1, std::placeholders::_2,
-                    std::placeholders::_3, nullptr, nullptr,
-                    nullptr);
-  // NOTE(frank): tolerance of 1e-3 on H1 because approximate away from 0
-  EXPECT(assert_equal(numericalDerivative31(f, x1, x2, bias), aH1, 1e-9));
-  EXPECT(assert_equal(numericalDerivative32(f, x1, x2, bias), aH2, 1e-9));
-  EXPECT(assert_equal(numericalDerivative33(f, x1, x2, bias), aH3, 1e-9));
-}
-
-/* ************************************************************************* */
 TEST(ManifoldPreintegration, CompareWithPreintegratedRotation) {
   // Create a PreintegratedRotation object
   auto p = std::make_shared<PreintegratedRotationParams>();
