@@ -19,13 +19,23 @@
 
 #pragma once
 
-#include <memory>
-
 #include <gtsam/inference/Key.h>
 #include <gtsam/base/FastList.h>
 #include <gtsam/base/ConcurrentMap.h>
 #include <gtsam/base/FastVector.h>
 
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+#include <boost/serialization/shared_ptr.hpp>
+#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/version.hpp>
+
+#include <stdexcept>
+#include <unordered_map>
+#include <vector>
+#endif
+
+#include <memory>
 #include <string>
 
 namespace gtsam {
@@ -293,13 +303,97 @@ namespace gtsam {
 
    private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
-    /** Serialization function */
+    /** Save the tree without recursively serializing clique links. */
     friend class boost::serialization::access;
     template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      ar & BOOST_SERIALIZATION_NVP(nodes_);
-      ar & BOOST_SERIALIZATION_NVP(roots_);
+    void save(ARCHIVE& ar, const unsigned int version) const {
+      if (version == 0) {
+        ar & BOOST_SERIALIZATION_NVP(nodes_);
+        ar & BOOST_SERIALIZATION_NVP(roots_);
+        return;
+      }
+
+      std::vector<sharedClique> cliques, detached;
+      std::unordered_map<const Clique*, size_t> indices;
+      for (const sharedClique& root : roots_) {
+        if (!indices.emplace(root.get(), cliques.size()).second)
+          throw std::invalid_argument("BayesTree contains duplicate cliques");
+        cliques.push_back(root);
+      }
+
+      std::vector<std::vector<size_t>> children;
+      for (size_t i = 0; i < cliques.size(); ++i) {
+        sharedClique copy = std::make_shared<Clique>(*cliques[i]);
+        copy->parent_.reset();
+        copy->children.clear();
+        copy->is_root = true;
+        detached.push_back(copy);
+        children.emplace_back();
+        for (const sharedClique& child : cliques[i]->children) {
+          if (!indices.emplace(child.get(), cliques.size()).second)
+            throw std::invalid_argument("BayesTree contains duplicate cliques");
+          children.back().push_back(cliques.size());
+          cliques.push_back(child);
+        }
+      }
+
+      const size_t rootCount = roots_.size();
+      ar & BOOST_SERIALIZATION_NVP(rootCount);
+      ar & boost::serialization::make_nvp("cliques", detached);
+      ar & BOOST_SERIALIZATION_NVP(children);
     }
+
+    /** Load either the legacy recursive format or the flat format. */
+    template<class ARCHIVE>
+    void load(ARCHIVE& ar, const unsigned int version) {
+      if (version == 0) {
+        ar & BOOST_SERIALIZATION_NVP(nodes_);
+        ar & BOOST_SERIALIZATION_NVP(roots_);
+        return;
+      }
+
+      size_t rootCount;
+      std::vector<sharedClique> cliques;
+      std::vector<std::vector<size_t>> children;
+      ar & BOOST_SERIALIZATION_NVP(rootCount);
+      ar & BOOST_SERIALIZATION_NVP(cliques);
+      ar & BOOST_SERIALIZATION_NVP(children);
+      if (rootCount > cliques.size() || children.size() != cliques.size())
+        throw std::invalid_argument("Invalid serialized BayesTree structure");
+
+      nodes_.clear();
+      roots_.assign(cliques.begin(), cliques.begin() + rootCount);
+      for (size_t i = 0; i < cliques.size(); ++i) {
+        sharedClique& clique = cliques[i];
+        clique->parent_.reset();
+        clique->children.clear();
+        clique->is_root = i < rootCount;
+      }
+      for (size_t i = 0; i < cliques.size(); ++i) {
+        sharedClique& clique = cliques[i];
+        for (size_t childIndex : children[i]) {
+          if (childIndex >= cliques.size())
+            throw std::invalid_argument("Invalid serialized BayesTree child");
+          sharedClique& child = cliques[childIndex];
+          if (!child->parent_.expired())
+            throw std::invalid_argument("Serialized BayesTree child has multiple parents");
+          clique->children.push_back(child);
+          child->parent_ = clique;
+          child->is_root = false;
+        }
+      }
+
+      for (size_t i = 0; i < cliques.size(); ++i) {
+        if ((i < rootCount) != cliques[i]->isRoot())
+          throw std::invalid_argument("Invalid serialized BayesTree roots");
+        for (Key key : cliques[i]->conditional()->frontals()) {
+          if (!nodes_.insert({key, cliques[i]}).second)
+            throw std::invalid_argument("Serialized BayesTree contains duplicate keys");
+        }
+      }
+    }
+
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
 #endif
 
     /// @}
@@ -339,3 +433,19 @@ namespace gtsam {
   };
 
 } /// namespace gtsam
+
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+namespace boost {
+namespace serialization {
+
+/** Version of the iterative BayesTree serialization format. */
+template <class CLIQUE>
+struct version<gtsam::BayesTree<CLIQUE>> {
+  typedef mpl::int_<1> type;
+  typedef mpl::integral_c_tag tag;
+  BOOST_STATIC_CONSTANT(int, value = type::value);
+};
+
+}  // namespace serialization
+}  // namespace boost
+#endif
