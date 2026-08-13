@@ -125,7 +125,8 @@ Vector3 PreintegrationBase::so3TangentAt(double t) const {
 }
 
 //------------------------------------------------------------------------------
-Matrix PreintegrationBase::deskewPoints(ConstMatrixView points) const {
+Matrix PreintegrationBase::deskewPoints(
+    ConstMatrixView points, const Vector3& velocity_i) const {
   if (points.rows() % 3 != 0) {
     throw std::invalid_argument(
         "points must have shape 3m x n with rows divisible by 3");
@@ -133,24 +134,29 @@ Matrix PreintegrationBase::deskewPoints(ConstMatrixView points) const {
   const Eigen::Index batchCount = points.cols();
   if (batchCount == 0) return Matrix(points.rows(), 0);
 
-  Vector times(batchCount);
-  for (Eigen::Index k = 0; k < batchCount; ++k) {
-    times(k) = deltaTij_ * static_cast<double>(k) /
-               static_cast<double>(batchCount);
+  const Vector3 endpointTangent = so3TangentAt(deltaTij_);
+  const Rot3 rotationStep =
+      Rot3::Expmap(endpointTangent / static_cast<double>(batchCount));
+  Rot3 rotation;
+  Matrix deskewed(points.rows(), batchCount);
+  for (Eigen::Index batch = 0; batch < batchCount; ++batch) {
+    const double t = deltaTij_ * static_cast<double>(batch) /
+                     static_cast<double>(batchCount);
+    const Vector3 translation = velocity_i * t;
+    const Matrix3 rotationMatrix = rotation.matrix();
+    for (Eigen::Index pointRow = 0; pointRow < points.rows(); pointRow += 3) {
+      deskewed.block<3, 1>(pointRow, batch) =
+          rotationMatrix * points.block<3, 1>(pointRow, batch) + translation;
+    }
+    rotation = rotation.compose(rotationStep);
   }
-  return deskewPoints(points, times, Z_3x1);
+  return deskewed;
 }
 
 //------------------------------------------------------------------------------
-Matrix PreintegrationBase::deskewPoints(ConstMatrixView points,
-                                        const Vector& times) const {
-  return deskewPoints(points, times, Z_3x1);
-}
-
-//------------------------------------------------------------------------------
-Matrix PreintegrationBase::deskewPoints(ConstMatrixView points,
-                                        const Vector& times,
-                                        const Vector3& velocity_i) const {
+Matrix PreintegrationBase::deskewPointsAtTimes(
+    ConstMatrixView points, const Vector& times,
+    const Vector3& velocity_i) const {
   if (points.rows() % 3 != 0) {
     throw std::invalid_argument(
         "points must have shape 3m x n with rows divisible by 3");
@@ -161,15 +167,20 @@ Matrix PreintegrationBase::deskewPoints(ConstMatrixView points,
   }
   if (batchCount == 0) return Matrix(points.rows(), 0);
 
+  const Vector3 endpointTangent = so3TangentAt(deltaTij_);
   Matrix deskewed(points.rows(), batchCount);
   for (Eigen::Index batch = 0; batch < batchCount; ++batch) {
     const double t = times(batch);
-    const Rot3 rotation = Rot3::Expmap(so3TangentAt(t));
+    if (t < 0.0 || t > deltaTij_) {
+      throw std::out_of_range("t must be in [0, deltaTij]");
+    }
+    const double fraction = deltaTij_ == 0.0 ? 0.0 : t / deltaTij_;
+    const Matrix3 rotationMatrix =
+        Rot3::Expmap(fraction * endpointTangent).matrix();
     const Vector3 translation = velocity_i * t;
     for (Eigen::Index pointRow = 0; pointRow < points.rows(); pointRow += 3) {
-      const Vector3 point = points.block<3, 1>(pointRow, batch);
       deskewed.block<3, 1>(pointRow, batch) =
-          rotation.rotate(point) + translation;
+          rotationMatrix * points.block<3, 1>(pointRow, batch) + translation;
     }
   }
   return deskewed;

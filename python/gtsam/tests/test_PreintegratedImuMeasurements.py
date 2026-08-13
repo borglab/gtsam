@@ -63,13 +63,26 @@ class TestPreintegratedImuMeasurements(GtsamTestCase):
         for pim in pims:
             implicit = pim.deskewPoints(c_points)
             self.assertEqual(c_points.shape, implicit.shape)
+            implicit_with_velocity = pim.deskewPoints(
+                c_points, velocity_i=velocity)
+            for column in range(c_points.shape[1]):
+                time = duration * column / c_points.shape[1]
+                rotation = gtsam.Rot3.Expmap(
+                    np.array([0.0, 0.0, yaw_rate * time]))
+                for row in (0, 3):
+                    expected = rotation.rotate(c_points[row:row + 3, column])
+                    expected += velocity * time
+                    np.testing.assert_allclose(
+                        implicit_with_velocity[row:row + 3, column], expected,
+                        atol=1e-8)
             np.testing.assert_allclose(
-                pim.deskewPoints(c_points, times),
-                pim.deskewPoints(f_points, times),
+                pim.deskewPointsAtTimes(c_points, times),
+                pim.deskewPointsAtTimes(f_points, times),
                 atol=1e-12,
                 rtol=0.0,
             )
-            translated = pim.deskewPoints(c_points, times, velocity)
+            translated = pim.deskewPointsAtTimes(
+                c_points, times, velocity)
             for column, time in enumerate(times):
                 rotation = gtsam.Rot3.Expmap(
                     np.array([0.0, 0.0, yaw_rate * time]))
@@ -79,7 +92,7 @@ class TestPreintegratedImuMeasurements(GtsamTestCase):
                     np.testing.assert_allclose(
                         translated[row:row + 3, column], expected, atol=1e-8)
             with self.assertRaises(TypeError):
-                pim.deskewPoints(c_points.tolist(), times)
+                pim.deskewPointsAtTimes(c_points.tolist(), times)
 
     def test_deskew_validation(self):
         """Deskew rejects invalid shapes, time counts, and interval times."""
@@ -88,11 +101,13 @@ class TestPreintegratedImuMeasurements(GtsamTestCase):
         with self.assertRaises(ValueError):
             pim.deskewPoints(np.zeros((4, 2)))
         with self.assertRaises(ValueError):
-            pim.deskewPoints(np.zeros((3, 2)), np.zeros(1))
+            pim.deskewPointsAtTimes(np.zeros((3, 2)), np.zeros(1))
         with self.assertRaises(IndexError):
-            pim.deskewPoints(np.zeros((3, 1)), np.array([-1e-6]))
+            pim.deskewPointsAtTimes(
+                np.zeros((3, 1)), np.array([-1e-6]))
         with self.assertRaises(IndexError):
-            pim.deskewPoints(np.zeros((3, 1)), np.array([duration + 1e-6]))
+            pim.deskewPointsAtTimes(
+                np.zeros((3, 1)), np.array([duration + 1e-6]))
 
 
 if __name__ == "__main__":

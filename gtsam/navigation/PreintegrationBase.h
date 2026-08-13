@@ -119,14 +119,14 @@ class GTSAM_EXPORT PreintegrationBase {
    * interval. Each column is a batch containing one or more stacked 3-vectors,
    * so points must have shape 3m x n.
    */
-  Matrix deskewPoints(ConstMatrixView points) const;
+  Matrix deskewPoints(
+      ConstMatrixView points,
+      const Vector3& velocity_i = Vector3::Zero()) const;
 
-  /** Deskew stacked 3m x n point batches at explicit local times. */
-  Matrix deskewPoints(ConstMatrixView points, const Vector& times) const;
-
-  /** Deskew points and translate them using a constant initial velocity. */
-  Matrix deskewPoints(ConstMatrixView points, const Vector& times,
-                      const Vector3& velocity_i) const;
+  /** Deskew stacked point batches at explicit times and initial velocity. */
+  Matrix deskewPointsAtTimes(
+      ConstMatrixView points, const Vector& times,
+      const Vector3& velocity_i = Vector3::Zero()) const;
 
   // Exposed for MATLAB
   Vector6 biasHatVector() const { return biasHat_.vector(); }

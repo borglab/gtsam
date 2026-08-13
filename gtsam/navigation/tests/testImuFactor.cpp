@@ -174,9 +174,23 @@ TEST_PIM(ImuFactor, DeskewImplicitAndExplicitTiming) {
   CHECK((pointAt(implicit, 0, 3) - pim.deltaRij().rotate(first)).norm() >
         1e-3);
 
+  const Vector3 velocity(0.5, -0.2, 0.1);
+  const Matrix implicitWithVelocity = pim.deskewPoints(points, velocity);
+  for (Eigen::Index batch = 0; batch < implicitWithVelocity.cols(); ++batch) {
+    const double t =
+        duration * static_cast<double>(batch) / implicitWithVelocity.cols();
+    const Rot3 rotation = Rot3::Yaw(yawRate * t);
+    const Vector3 expectedFirst = rotation.rotate(first) + velocity * t;
+    const Vector3 expectedSecond = rotation.rotate(second) + velocity * t;
+    EXPECT(assert_equal(expectedFirst,
+                        pointAt(implicitWithVelocity, 0, batch), 1e-8));
+    EXPECT(assert_equal(expectedSecond,
+                        pointAt(implicitWithVelocity, 1, batch), 1e-8));
+  }
+
   Vector times(4);
   times << duration, 0.0, 0.5 * duration, 0.25 * duration;
-  const Matrix explicitResult = pim.deskewPoints(points, times);
+  const Matrix explicitResult = pim.deskewPointsAtTimes(points, times);
   for (Eigen::Index batch = 0; batch < explicitResult.cols(); ++batch) {
     const Rot3 rotation = Rot3::Yaw(yawRate * times(batch));
     EXPECT(assert_equal(rotation.rotate(first),
@@ -197,7 +211,7 @@ TEST_PIM(ImuFactor, DeskewVelocityAndValidation) {
   Vector times(2);
   times << 2.0, 0.5;
   const Vector3 velocity(0.5, -0.2, 0.1);
-  const Matrix actual = pim.deskewPoints(points, times, velocity);
+  const Matrix actual = pim.deskewPointsAtTimes(points, times, velocity);
   for (Eigen::Index batch = 0; batch < actual.cols(); ++batch) {
     const Pose3 transform(Rot3::Expmap(pim.so3TangentAt(times(batch))),
                           velocity * times(batch));
@@ -214,14 +228,15 @@ TEST_PIM(ImuFactor, DeskewVelocityAndValidation) {
                   std::invalid_argument);
   CHECK_EXCEPTION(pim.deskewPoints(Matrix::Zero(4, 3)),
                   std::invalid_argument);
-  CHECK_EXCEPTION(pim.deskewPoints(Matrix::Zero(3, 2), Vector::Zero(1)),
+  CHECK_EXCEPTION(pim.deskewPointsAtTimes(Matrix::Zero(3, 2), Vector::Zero(1)),
                   std::invalid_argument);
   Vector badTime(1);
   badTime << -1e-6;
-  CHECK_EXCEPTION(pim.deskewPoints(Matrix::Zero(3, 1), badTime),
+  CHECK_EXCEPTION(pim.deskewPointsAtTimes(Matrix::Zero(3, 1), badTime),
                   std::out_of_range);
   badTime << pim.deltaTij() + 1e-6;
-  CHECK_EXCEPTION(pim.deskewPoints(Matrix::Zero(3, 1), badTime, Z_3x1),
+  CHECK_EXCEPTION(pim.deskewPointsAtTimes(Matrix::Zero(3, 1), badTime,
+                                          Z_3x1),
                   std::out_of_range);
 }
 
