@@ -45,6 +45,9 @@ BoundConstrainedLagrangian::State BoundConstrainedLagrangian::iterate(
   newState.setValues(optimizer->optimize(), problem_);
   newState.unconstrainedIterations = optimizer->iterations();
 
+  // The paper tests and updates using the point returned by the inner solve.
+  // This implementation instead evaluates those tests at `state.values` in
+  // updateMultipliers(), so the outer decision is one iterate behind.
   // Update Lagrangian multipliers, penalty parameters, and omega.
   updateMultipliers(state, &newState);
 
@@ -62,14 +65,19 @@ static double InfNorm(const VectorValues& vector_values) {
 /* ************************************************************************* */
 void BoundConstrainedLagrangian::updateMultipliers(const State& previousState,
                                                    State* state) const {
-  // Compute the inf norm of the cost gradient
+  // The paper uses a projected gradient of the augmented Lagrangian, including
+  // simple bounds. This implementation uses the infinity norm of the original
+  // cost gradient and has no projected/bound-constrained stationarity test.
   const NonlinearFactorGraph& cost = problem_.costs();
   auto gauss_graph = cost.linearize(previousState.values);
   VectorValues cost_gradient = gauss_graph->gradientAtZero();
   double gradient_inf_norm = InfNorm(cost_gradient);
 
   if (gradient_inf_norm < previousState.omega) {
-    // compute constraint violations
+    // The paper tests the constraint violation at the inner-solver result.
+    // This implementation tests the previous outer iterate instead.
+    // The BCL decision logic here also handles equality constraints only;
+    // the paper's general-constraint treatment is not implemented here.
     const NonlinearEqualityConstraints& eqConstraints = problem_.eConstraints();
     std::vector<Vector> constraint_violations;
     constraint_violations.reserve(eqConstraints.size());
@@ -88,14 +96,21 @@ void BoundConstrainedLagrangian::updateMultipliers(const State& previousState,
     if (constraint_violation_inf_norm < previousState.eta) {
       state->lambdaEq.resize(eqConstraints.size());
       for (size_t i = 0; i < eqConstraints.size(); i++) {
+        // The sign follows GTSAM's constraint residual convention. The paper
+        // writes its update using its own c(x) orientation, so this is not a
+        // literal sign-level transcription of the displayed formula there.
         state->lambdaEq[i] = previousState.lambdaEq[i] +
                              previousState.muEq * constraint_violations[i];
       }
       state->muEq = previousState.muEq;
+      // These fixed threshold updates are a simplified variant of the paper's
+      // adaptive parameter rules.
       state->eta = previousState.eta / std::pow(previousState.muEq, p_->alpha);
       state->omega = previousState.omega / previousState.muEq;
     } else {
       state->lambdaEq = previousState.lambdaEq;
+      // The paper has algorithm-specific penalty reduction/update rules; this
+      // implementation uses a fixed multiplicative increase instead.
       state->muEq = previousState.muEq * p_->k;
       state->eta = previousState.eta;
       state->omega = previousState.omega;
@@ -114,6 +129,8 @@ ConstrainedOptimizer::SharedOptimizer
 BoundConstrainedLagrangian::createUnconstrainedOptimizer(
     const NonlinearFactorGraph& graph, const Values& values) const {
   // TODO(yetong): make compatible with all NonlinearOptimizers.
+  // Unlike the paper's projected/bound-constrained inner iteration, this is an
+  // unconstrained LM solve, limited by the default parameter to one step.
   return std::make_shared<LevenbergMarquardtOptimizer>(graph, values,
                                                        p_->lmParams);
 }
@@ -121,6 +138,9 @@ BoundConstrainedLagrangian::createUnconstrainedOptimizer(
 /* ************************************************************************* */
 // TODO(yetong): currently copy-pasted from AugmentedLagrangianOptimizer.cpp,
 // need to redesign.
+// The factor construction uses GTSAM's residual/sign convention; the paper's
+// c(x) notation uses a different residual orientation, so the multiplier
+// signs should not be compared as a literal transcription.
 NonlinearFactorGraph BoundConstrainedLagrangian::augmentedLagrangianFunction(
     const State& state, const double epsilon) const {
   // Initialize by adding in cost factors.

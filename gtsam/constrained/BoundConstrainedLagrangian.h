@@ -33,10 +33,13 @@ class GTSAM_EXPORT BoundConstrainedLagrangianParams
 
   /// Multiplicative factor used to increase the equality penalty `muEq`
   /// when the iterate is not yet feasible enough for a multiplier update.
+  /// This fixed factor is a simplified choice; the paper uses
+  /// algorithm-dependent penalty rules.
   double k = 2;
 
   /// Exponent used in the BCL threshold update
   /// `eta_{k+1} = eta_k / mu_k^alpha` after an accepted multiplier step.
+  /// This update is a simplified variant of the paper's parameter rules.
   double alpha = 0.5;
 
   /// Initial feasibility threshold for the equality-constraint violation.
@@ -52,7 +55,8 @@ class GTSAM_EXPORT BoundConstrainedLagrangianParams
   double omega_threshold = 1e-3;
 
   BoundConstrainedLagrangianParams() {
-    // Set default inner optimizer to only iterate once.
+    // The paper uses an adaptive inner stopping rule. This implementation
+    // instead limits the unconstrained LM inner solve to one iteration.
     lmParams.maxIterations = 1;
   }
 };
@@ -71,7 +75,14 @@ class GTSAM_EXPORT BoundConstrainedLagrangianState
 };
 
 /**
- * Augmented Lagrangian method with BCL globalization strategy
+ * Augmented Lagrangian method with BCL globalization strategy.
+ *
+ * This implementation is inspired by A. R. Conn, N. I. M. Gould, and
+ * P. L. Toint, "A Globally Convergent Augmented Lagrangian Algorithm for
+ * Optimization with General Constraints and Simple Bounds," SIAM Journal on
+ * Numerical Analysis, 28(2):545-572, 1991,
+ * https://doi.org/10.1137/0728030. It is not an entirely faithful
+ * implementation of that paper.
  */
 class GTSAM_EXPORT BoundConstrainedLagrangian : public ConstrainedOptimizer {
  public:
@@ -105,6 +116,8 @@ class GTSAM_EXPORT BoundConstrainedLagrangian : public ConstrainedOptimizer {
 
  protected:
   /// Create an unconstrained optimizer that solves the augmented Lagrangian.
+  /// The paper uses a bound-constrained inner method; this implementation uses
+  /// an unconstrained Levenberg-Marquardt optimizer instead.
   SharedOptimizer createUnconstrainedOptimizer(
       const NonlinearFactorGraph& graph, const Values& values) const;
 

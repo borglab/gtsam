@@ -24,7 +24,14 @@
 namespace gtsam {
 
 /**
- * Lagrange dual function for equality constraints and inequality constraints
+ * The Lagrange dual function for equality constraints and inequality
+ * constraints is implemented as follows.
+ * The residual/sign convention here is GTSAM-specific: constraint factors
+ * return the residual used by GTSAM's factor graph, which may be the opposite
+ * orientation from the c(x) notation in the reference paper. Consequently,
+ * the displayed multiplier signs describe this implementation's convention,
+ * not a literal sign-level transcription of the paper.
+ *
  *   m(x) = 0.5 * ||f(x)||^2 - lambdaEq * h(x) + 0.5 * muEq * ||h(x)||^2
  *                           - lambdaIneq * g(x) + 0.5 * muIneq * ||g(x)_-||^2
  * To express in nonlinear least squares form, it is rewritten as
