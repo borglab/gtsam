@@ -58,6 +58,7 @@
 | [VisualISAMExample](VisualISAMExample.ipynb) | :heavy_check_mark: |
 
 Extra Examples (with no C++ equivalent)
+- [CumulativeSplineTrajectoryExample](CumulativeSplineTrajectoryExample.ipynb)
 - [FitBasisExample](FitBasisExample.ipynb)
 - [PseudoSpectralChebyshevExample](PseudoSpectralChebyshevExample.ipynb)
 - [DogLegOptimizerExample](DogLegOptimizerExample.ipynb)
