@@ -135,8 +135,6 @@ std::shared_ptr<PreintegrationCombinedParams> combinedPreintegrationParams(
         params.preintegrationParams->accelerometerCovariance;
     combinedParams->integrationCovariance =
         params.preintegrationParams->integrationCovariance;
-    combinedParams->use2ndOrderCoriolis =
-        params.preintegrationParams->use2ndOrderCoriolis;
     combinedParams->omegaCoriolis = params.preintegrationParams->omegaCoriolis;
     combinedParams->body_P_sensor = params.preintegrationParams->body_P_sensor;
   }

@@ -28,7 +28,9 @@ struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
   /// The units for stddev are σ = m/s²/√Hz
   Matrix3 accelerometerCovariance;
   Matrix3 integrationCovariance; ///< continuous-time "Covariance" describing integration uncertainty
-  bool use2ndOrderCoriolis; ///< Whether to use second order Coriolis integration
+  /// Retained only for source and archive compatibility. Exact rotating-Earth
+  /// dynamics are used whenever omegaCoriolis is set, regardless of this flag.
+  bool use2ndOrderCoriolis;
   Vector3 n_gravity; ///< Gravity vector in nav frame
 
   /// Default constructor for serialization only
@@ -63,12 +65,18 @@ struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
 
   void setAccelerometerCovariance(const Matrix3& cov) { accelerometerCovariance = cov; }
   void setIntegrationCovariance(const Matrix3& cov)   { integrationCovariance = cov; }
-  void setUse2ndOrderCoriolis(bool flag)              { use2ndOrderCoriolis = flag; }
+  [[deprecated("Exact rotating-Earth dynamics ignore this compatibility flag")]]
+  void setUse2ndOrderCoriolis(bool flag) {
+    use2ndOrderCoriolis = flag;
+  }
 
   const Matrix3& getAccelerometerCovariance() const { return accelerometerCovariance; }
   const Matrix3& getIntegrationCovariance()   const { return integrationCovariance; }
   const Vector3& getGravity()   const { return n_gravity; }
-  bool           getUse2ndOrderCoriolis()     const { return use2ndOrderCoriolis; }
+  [[deprecated("Exact rotating-Earth dynamics ignore this compatibility flag")]]
+  bool getUse2ndOrderCoriolis() const {
+    return use2ndOrderCoriolis;
+  }
 
 protected:
 

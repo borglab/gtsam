@@ -102,7 +102,9 @@ struct GTSAM_EXPORT PreintegratedRotationParams {
   /// Continuous-time "Covariance" of gyroscope measurements
   /// The units for stddev are σ = rad/s/√Hz
   Matrix3 gyroscopeCovariance;
-  std::optional<Vector3> omegaCoriolis;  ///< Coriolis constant
+  /// Navigation-frame angular velocity in radians per second. When present,
+  /// prediction uses the exact rotating-frame transition.
+  std::optional<Vector3> omegaCoriolis;
   std::optional<Pose3> body_P_sensor;    ///< The pose of the sensor in the body frame
 
   PreintegratedRotationParams() : gyroscopeCovariance(I_3x3) {}
@@ -233,7 +235,8 @@ class GTSAM_EXPORT PreintegratedRotation {
   Rot3 biascorrectedDeltaRij(const Vector3& biasOmegaIncr,
                              OptionalJacobian<3, 3> H = {}) const;
 
-  /// Integrate coriolis correction in body frame Ri
+  /// Legacy first-order Coriolis correction in body frame Ri.
+  [[deprecated("Use exact prediction with omegaCoriolis instead")]]
   Vector3 integrateCoriolis(const Rot3& Ri,
                             OptionalJacobian<3, 3> H = {}) const;
 

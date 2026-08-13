@@ -60,7 +60,9 @@ static_assert(
 /* ************************************************************************* */
 TEST_PIM(ImuFactor, PreintegratedMeasurementsConstruction) {
   // Actual pre-integrated values
-  PIM actual(testing::Params());
+  auto params = testing::Params();
+  params->omegaCoriolis = kNonZeroOmegaCoriolis;
+  PIM actual(params);
   EXPECT(assert_equal(Rot3(), actual.deltaRij()));
   EXPECT(assert_equal(kZero, actual.deltaPij()));
   EXPECT(assert_equal(kZero, actual.deltaVij()));
@@ -329,7 +331,6 @@ TEST_PIM(ImuFactor, PreintegrationBaseMethods) {
   using namespace common;
   auto p = testing::Params();
   p->omegaCoriolis = Vector3(0.02, 0.03, 0.04);
-  p->use2ndOrderCoriolis = true;
 
   PIM pim(p, kZeroBiasHat);
   pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
@@ -528,7 +529,7 @@ TEST_PIM(ImuFactor, ErrorAndJacobianWithBiases) {
 }
 
 /* ************************************************************************* */
-TEST_PIM(ImuFactor, ErrorAndJacobianWith2ndOrderCoriolis) {
+TEST_PIM(ImuFactor, ExactCoriolisIgnoresLegacySecondOrderFlag) {
   using common::x1;
   using common::v1;
   using common::v2;
@@ -548,6 +549,14 @@ TEST_PIM(ImuFactor, ErrorAndJacobianWith2ndOrderCoriolis) {
 
   PIM pim(p, Bias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.1)));
   pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+
+  auto pWithoutLegacyFlag = testing::Params();
+  pWithoutLegacyFlag->omegaCoriolis = kNonZeroOmegaCoriolis;
+  PIM pimWithoutLegacyFlag(
+      pWithoutLegacyFlag, Bias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.1)));
+  pimWithoutLegacyFlag.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+  EXPECT(assert_equal(pimWithoutLegacyFlag.predict(NavState(x1, v1), bias),
+                      pim.predict(NavState(x1, v1), bias), 1e-12));
 
   // Create factor
   ImuFactorT<PIM> factor(X(1), V(1), X(2), V(2), B(1), pim);

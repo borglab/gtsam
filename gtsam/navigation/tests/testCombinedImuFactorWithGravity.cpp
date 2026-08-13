@@ -56,6 +56,7 @@ TEST_PIM(CombinedImuFactorWithGravity, Jacobians) {
   Vector3 v2(0.5, 0.0, 0.0);
 
   auto p = combined::Params();
+  p->omegaCoriolis = kNonZeroOmegaCoriolis;
   CombinedPIM pim(p, Bias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)));
   const Vector3 measuredAcc =
       x1.rotation().unrotate(-p->n_gravity) + Vector3(0.2, 0.0, 0.0);

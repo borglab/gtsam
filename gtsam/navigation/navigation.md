@@ -241,5 +241,27 @@ The key components are:
   `LieGroupPreintegration` applies IMU increments with `NavState::expmap`, while
   `NavState::retract` and `localCoordinates` retain GTSAM's component-wise
   optimization chart.
+- `omegaCoriolis` is the angular velocity of the navigation frame, expressed
+  in navigation-frame coordinates in radians per second. When it is set,
+  `PreintegrationBase::predict` and AHRS prediction use the exact rotating-Earth
+  transition from Brossard, Barrau, and Bonnabel rather than an additive
+  Coriolis approximation. The covariance recursion is unchanged because Earth
+  rotation changes prediction and residual assembly, not the preintegrated IMU
+  measurement.
+- For $w=-\Omega\Delta t$, GTSAM evaluates the exact transition with stable
+  SO(3) kernels. In GTSAM's kernel conventions, Brossard's position term is
+  $\Gamma^p=(J_l(w)-\Gamma_{2,l}(w))g\Delta t^2$; using
+  `DexpFunctor::Gamma()` alone would have the wrong small-angle coefficients.
+  AHRS uses the corresponding exact attitude law
+  $R_j=\operatorname{Exp}(w)R_i\Delta R_{ij}$.
+- `use2ndOrderCoriolis` remains in `PreintegrationParams` and its serialized
+  layout for compatibility, but it is ignored: the exact model is used for
+  every nonzero `omegaCoriolis`. `NavState::coriolis` and
+  `PreintegratedRotation::integrateCoriolis` are retained as deprecated legacy
+  helpers and are no longer used internally.
+- `n_gravity` must be the gravity vector consistent with the chosen
+  navigation-frame origin. If a local frame is translated, absorb the constant
+  centrifugal contribution associated with that origin shift into
+  `n_gravity`.
 - Using the combined IMU factor is not recommended. Typically biases evolve slowly, and hence a separate, lower frequency Markov chain on the bias is more appropriate.
 - For short-duration experiments it is even recommended to use a single constant bias. Bias estimation is notoriously hard to tune/debug, and also acts as a "sink" for any modeling errors. Hence, starting with a constant bias is a good idea to get the rest of the pipeline working.

@@ -297,10 +297,13 @@ Vector9 NavState::coriolis(double dt, const Vector3& omega, bool secondOrder,
 
 //------------------------------------------------------------------------------
 Vector9 NavState::correctPIM(const Vector9& pim, double dt,
-    const Vector3& n_gravity, const std::optional<Vector3>& omegaCoriolis,
-    bool use2ndOrderCoriolis, OptionalJacobian<9, 9> H1,
-    OptionalJacobian<9, 9> H2, OptionalJacobian<9, 3> H3) const {
-  if (omegaCoriolis && !omegaCoriolis->isZero()) {
+                             const Vector3& n_gravity,
+                             const std::optional<Vector3>& omegaCoriolis,
+                             bool /*use2ndOrderCoriolis*/,
+                             OptionalJacobian<9, 9> H1,
+                             OptionalJacobian<9, 9> H2,
+                             OptionalJacobian<9, 3> H3) const {
+  if (omegaCoriolis && !omegaCoriolis->isZero(0.0)) {
     const Vector3& omega = *omegaCoriolis;
     const Vector3 earthRotationTangent = -omega * dt;
     const so3::DexpFunctor earthRotation(earthRotationTangent);
@@ -408,15 +411,10 @@ Vector9 NavState::correctPIM(const Vector9& pim, double dt,
       + dt22 * b_gravity;
   dV(xi) = dV(pim) + dt * b_gravity;
 
-  if (omegaCoriolis) {
-    xi += coriolis(dt, *omegaCoriolis, use2ndOrderCoriolis, H1);
-  }
-
   if (H1 || H2 || H3) {
     if (H1) {
       const Matrix3 Ri = nRb.matrix();
-      if (!omegaCoriolis)
-        H1->setZero(); // if coriolis H1 is already initialized
+      H1->setZero();
       D_t_R(H1) += dt * D_dP_Ri1 + dt22 * D_dP_Ri2;
       D_t_v(H1) += dt * D_dP_nv * Ri;
       D_v_R(H1) += dt * D_dP_Ri2;

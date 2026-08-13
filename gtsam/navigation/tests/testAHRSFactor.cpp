@@ -472,12 +472,10 @@ TEST_AHRS(AHRSFactor, PIM_predict_and_Jacobians_with_Coriolis) {
 
   // The rotating-frame attitude law is exact, rather than an additive
   // tangent correction.
-  const Rot3 biasCorrected =
-      pim.biascorrectedDeltaRij(bias - pim.biasHat());
-  const Rot3 expected =
-      Rot3::Expmap(-omegaCoriolis * pim.deltaTij())
-          .compose(Ri)
-          .compose(biasCorrected);
+  const Rot3 biasCorrected = pim.biascorrectedDeltaRij(bias - pim.biasHat());
+  const Rot3 expected = Rot3::Expmap(-omegaCoriolis * pim.deltaTij())
+                            .compose(Ri)
+                            .compose(biasCorrected);
   EXPECT(assert_equal(expected, pim.predict(Ri, bias), 1e-12));
 
   // --- Test Jacobians ---

@@ -52,7 +52,9 @@ static const Vector3 v2(Vector3(0.5, 0.0, 0.0));
 TEST_PIM(ImuFactorWithGravity, DirectionJacobians) {
   using namespace common;
   using symbol_shorthand::G;
-  PIM pim(testing::Params());
+  auto params = testing::Params();
+  params->omegaCoriolis = kNonZeroOmegaCoriolis;
+  PIM pim(params);
   pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   ImuFactorWithGravityT<PIM, Unit3> factor(X(1), V(1), X(2), V(2), B(1), G(0),
@@ -88,7 +90,9 @@ TEST_PIM(ImuFactorWithGravity, DirectionJacobians) {
 TEST_PIM(ImuFactorWithGravity, VectorJacobians) {
   using namespace common;
   using symbol_shorthand::G;
-  PIM pim(testing::Params());
+  auto params = testing::Params();
+  params->omegaCoriolis = kNonZeroOmegaCoriolis;
+  PIM pim(params);
   pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
   ImuFactorWithGravityT<PIM, Point3> factor(X(1), V(1), X(2), V(2), B(1), G(0),

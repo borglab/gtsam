@@ -352,6 +352,14 @@ TEST(NavState, interpolate) {
 
 /* ************************************************************************* */
 static const double dt = 2.0;
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4996)
+#elif defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 auto coriolis = std::bind(&NavState::coriolis, std::placeholders::_1, dt, kOmegaCoriolis,
               std::placeholders::_2, nullptr);
 
@@ -602,6 +610,12 @@ TEST(NavState, ExactRotatingEarthLongDurationReference) {
 
 }  // namespace rotating_earth_fixture
 /* ************************************************************************* */
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#elif defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 /* ************************************************************************* */
 TEST(NavState, Stream)

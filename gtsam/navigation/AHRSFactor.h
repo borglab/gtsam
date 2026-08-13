@@ -44,7 +44,7 @@ Rot3 predictAhrs(const PIM& pim, const Rot3& Ri, const Vector3& bias,
 
   // The common case needs no Earth-rotation correction. The compose Jacobian
   // with respect to its second argument is identity, so H2 is already final.
-  if (!pim.p().omegaCoriolis || pim.p().omegaCoriolis->isZero())
+  if (!pim.p().omegaCoriolis || pim.p().omegaCoriolis->isZero(0.0))
     return Ri.compose(biasCorrected, H1);
 
   // Exact rotating-frame attitude transition from Brossard et al.:
@@ -52,11 +52,10 @@ Rot3 predictAhrs(const PIM& pim, const Rot3& Ri, const Vector3& bias,
   const Rot3 gammaRotation =
       Rot3::Expmap(-(*pim.p().omegaCoriolis) * pim.deltaTij());
   Matrix3 D_gammaRi_Ri, D_Rj_gammaRi, D_Rj_delta;
-  const Rot3 gammaRi = gammaRotation.compose(
-      Ri, {}, H1 ? &D_gammaRi_Ri : nullptr);
-  const Rot3 Rj = gammaRi.compose(
-      biasCorrected, H1 ? &D_Rj_gammaRi : nullptr,
-      H2 ? &D_Rj_delta : nullptr);
+  const Rot3 gammaRi =
+      gammaRotation.compose(Ri, {}, H1 ? &D_gammaRi_Ri : nullptr);
+  const Rot3 Rj = gammaRi.compose(biasCorrected, H1 ? &D_Rj_gammaRi : nullptr,
+                                  H2 ? &D_Rj_delta : nullptr);
 
   if (H1) *H1 = D_Rj_gammaRi * D_gammaRi_Ri;
   if (H2) *H2 = D_Rj_delta * (*H2);
