@@ -16,11 +16,11 @@
  * @date    July 5, 2015
  */
 
-#include <gtsam/3rdparty/ceres/example.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/nonlinear/AdaptAutoDiff.h>
 #include <gtsam/nonlinear/ExpressionFactor.h>
 #include <stddef.h>
+#include <tests/SnavelyProjection.h>
 
 #include <stdexcept>
 #include <string>
@@ -29,6 +29,7 @@
 
 using namespace std;
 using namespace gtsam;
+using gtsam::testing::SnavelyProjection;
 using symbol_shorthand::C;
 using symbol_shorthand::P;
 namespace bal = gtsam::timing::bal;

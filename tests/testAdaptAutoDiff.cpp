@@ -10,25 +10,30 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file testExpression.cpp
+ * @file testAdaptAutoDiff.cpp
  * @date September 18, 2014
  * @author Frank Dellaert
  * @author Paul Furgale
  * @brief unit tests for Block Automatic Differentiation
  */
 
-#include <gtsam/3rdparty/ceres/example.h>
-#include <gtsam/nonlinear/AdaptAutoDiff.h>
-#include <gtsam/nonlinear/Expression.h>
+#include <ceres/autodiff_cost_function.h>
+#include <ceres/rotation.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/Cal3Bundler.h>
+#include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/geometry/Cal3_S2.h>
-#include <gtsam/geometry/Cal3Bundler.h>
-#include <gtsam/base/numericalDerivative.h>
-#include <gtsam/base/Testable.h>
+#include <gtsam/nonlinear/AdaptAutoDiff.h>
+#include <gtsam/nonlinear/Expression.h>
+#include <tests/SnavelyProjection.h>
 
+// Ceres includes glog's CHECK macro, which conflicts with CppUnitLite.
+#ifdef CHECK
+#undef CHECK
+#endif
 #include <CppUnitLite/TestHarness.h>
-
 
 namespace gtsam {
 
@@ -50,10 +55,11 @@ struct traits<Cal3Bundler0> : public internal::Manifold<Cal3Bundler0> {};
 
 // With that, camera below behaves like Snavely's 9-dim vector
 typedef PinholeCamera<Cal3Bundler0> Camera;
-}
+}  // namespace gtsam
 
 using namespace std;
 using namespace gtsam;
+using gtsam::testing::SnavelyProjection;
 
 /* ************************************************************************* */
 // Check that ceres rotation convention is the same
@@ -113,8 +119,6 @@ struct Projective {
 /* ************************************************************************* */
 // Test Ceres AutoDiff
 TEST(AdaptAutoDiff, AutoDiff) {
-  using ceres::internal::AutoDiff;
-
   // Instantiate function
   Projective projective;
 
@@ -140,14 +144,15 @@ TEST(AdaptAutoDiff, AutoDiff) {
   MatrixRowMajor H1(2, 12), H2(2, 4);
   double* parameters[] = {P.data(), X.data()};
   double* jacobians[] = {H1.data(), H2.data()};
-  CHECK((AutoDiff<Projective, double, 12, 4>::Differentiate(
-      projective, parameters, 2, actual2.data(), jacobians)));
+  ceres::AutoDiffCostFunction<Projective, 2, 12, 4> autoDiff(
+      &projective, ceres::DO_NOT_TAKE_OWNERSHIP);
+  CHECK(autoDiff.Evaluate(parameters, actual2.data(), jacobians));
   EXPECT(assert_equal(E1, H1, 1e-8));
   EXPECT(assert_equal(E2, H2, 1e-8));
 }
 
 /* ************************************************************************* */
-// Test Ceres AutoDiff on Snavely, defined in ceres_example.h
+// Test Ceres AutoDiff on Snavely's BAL projection model.
 // Adapt to GTSAM types
 Vector2 adapted(const Vector9& P, const Vector3& X) {
   SnavelyProjection snavely;
@@ -172,7 +177,7 @@ Vector2 expectedMeasurement(1.2431567, 1.2525694);
 #endif
 Matrix E1 = numericalDerivative21<Vector2, Vector9, Vector3>(adapted, P, X);
 Matrix E2 = numericalDerivative22<Vector2, Vector9, Vector3>(adapted, P, X);
-}
+}  // namespace example
 
 /* ************************************************************************* */
 // Check that Local worked as expected
@@ -193,7 +198,6 @@ TEST(AdaptAutoDiff, Local) {
 // Test Ceres AutoDiff
 TEST(AdaptAutoDiff, AutoDiff2) {
   using namespace example;
-  using ceres::internal::AutoDiff;
 
   // Apply the mapping, to get image point b_x.
   Vector2 actual = adapted(P, X);
@@ -207,8 +211,9 @@ TEST(AdaptAutoDiff, AutoDiff2) {
   MatrixRowMajor H1(2, 9), H2(2, 3);
   double* parameters[] = {P.data(), X.data()};
   double* jacobians[] = {H1.data(), H2.data()};
-  CHECK((AutoDiff<SnavelyProjection, double, 9, 3>::Differentiate(
-      snavely, parameters, 2, actual2.data(), jacobians)));
+  ceres::AutoDiffCostFunction<SnavelyProjection, 2, 9, 3> autoDiff(
+      &snavely, ceres::DO_NOT_TAKE_OWNERSHIP);
+  CHECK(autoDiff.Evaluate(parameters, actual2.data(), jacobians));
   EXPECT(assert_equal(E1, H1, 1e-8));
   EXPECT(assert_equal(E2, H2, 1e-8));
 }
@@ -245,11 +250,11 @@ TEST(AdaptAutoDiff, SnavelyExpression) {
   Expression<Vector2> expression(Adaptor(), P, X);
 
   std::size_t RecordSize =
-    sizeof(internal::BinaryExpression<Vector2, Vector9, Vector3>::Record);
+      sizeof(internal::BinaryExpression<Vector2, Vector9, Vector3>::Record);
 
   EXPECT_LONGS_EQUAL(
-    internal::upAligned(RecordSize) + P.traceSize() + X.traceSize(),
-    expression.traceSize());
+      internal::upAligned(RecordSize) + P.traceSize() + X.traceSize(),
+      expression.traceSize());
 
   const KeySet expected{1, 2};
   EXPECT(expected == expression.keys());

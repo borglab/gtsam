@@ -15,8 +15,22 @@ if (NOT GTSAM_ENABLE_BOOST_SERIALIZATION OR GTSAM_SINGLE_TEST_EXE)
 	list(APPEND excluded_tests "testSerializationSlam.cpp")
 endif()
 
+# Build the Ceres-dependent test separately when system Ceres is available.
+list(APPEND excluded_tests "testAdaptAutoDiff.cpp")
+
 # Build tests
 gtsamAddTestsGlob(tests "test*.cpp" "${excluded_tests}" "gtsam")
+
+if(GTSAM_BUILD_TESTS)
+  find_package(Ceres CONFIG QUIET)
+  if(Ceres_FOUND)
+    message(STATUS "Found Ceres ${CERES_VERSION}; enabling testAdaptAutoDiff")
+    gtsamAddTestsGlob(ceres_autodiff "testAdaptAutoDiff.cpp" ""
+                      "gtsam;Ceres::ceres")
+  else()
+    message(STATUS "Ceres not found; testAdaptAutoDiff disabled")
+  endif()
+endif()
 
 # Exercise Values RTTI across a hidden-by-default shared-library boundary.
 if(GTSAM_BUILD_TESTS AND GTSAM_SHARED_LIB)
