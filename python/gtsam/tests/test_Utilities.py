@@ -174,32 +174,45 @@ class TestUtilities(GtsamTestCase):
 
     def test_insertBackprojections(self):
         """Test insertBackprojections."""
-        values = gtsam.Values()
         cam = gtsam.PinholeCameraCal3_S2()
-        gtsam.utilities.insertBackprojections(
-            values, cam, [0, 1, 2], np.asarray([[20, 30, 40], [20, 30, 40]]),
-            10)
-        np.testing.assert_allclose(values.atPoint3(0),
-                                   gtsam.Point3(200, 200, 10))
+        pixels = np.asarray([[20, 30, 40], [20, 30, 40]], dtype=float)
+        for order in ("C", "F"):
+            values = gtsam.Values()
+            gtsam.utilities.insertBackprojections(
+                values, cam, [0, 1, 2], np.array(pixels, order=order), 10)
+            np.testing.assert_allclose(values.atPoint3(0),
+                                       gtsam.Point3(200, 200, 10))
+
+        with self.assertRaises(TypeError):
+            gtsam.utilities.insertBackprojections(
+                gtsam.Values(), cam, [0, 1, 2], pixels.tolist(), 10)
 
     def test_insertProjectionFactors(self):
         """Test insertProjectionFactors."""
+        pixels = np.asarray([[20, 30], [20, 30]], dtype=float)
+        pose_key = gtsam.symbol("x", 0)
         graph = gtsam.NonlinearFactorGraph()
         gtsam.utilities.insertProjectionFactors(
-            graph, 0, [0, 1], np.asarray([[20, 30], [20, 30]]),
+            graph, pose_key, [0, 1], np.array(pixels, order="C"),
             gtsam.noiseModel.Isotropic.Sigma(2, 0.1), gtsam.Cal3_S2())
         self.assertEqual(graph.size(), 2)
+        self.assertEqual(graph.at(0).keys()[0], pose_key)
 
         graph = gtsam.NonlinearFactorGraph()
         gtsam.utilities.insertProjectionFactors(
-            graph, 0, [0, 1], np.asarray([[20, 30], [20, 30]]),
+            graph, pose_key, [0, 1], np.array(pixels, order="F"),
             gtsam.noiseModel.Isotropic.Sigma(2, 0.1), gtsam.Cal3_S2(),
             gtsam.Pose3(gtsam.Rot3(), gtsam.Point3(1, 0, 0)))
         self.assertEqual(graph.size(), 2)
 
+        with self.assertRaises(TypeError):
+            gtsam.utilities.insertProjectionFactors(
+                gtsam.NonlinearFactorGraph(), pose_key, [0, 1], pixels.tolist(),
+                gtsam.noiseModel.Isotropic.Sigma(2, 0.1), gtsam.Cal3_S2())
+
     def test_reprojectionErrors(self):
         """Test reprojectionErrors."""
-        pixels = np.asarray([[20, 30], [20, 30]])
+        pixels = np.asarray([[20, 30], [20, 30]], dtype=float)
         I = [1, 2]
         K = gtsam.Cal3_S2()
         graph = gtsam.NonlinearFactorGraph()

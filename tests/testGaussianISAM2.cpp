@@ -14,6 +14,8 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianBayesTree.h>
@@ -37,8 +39,10 @@ static const SharedNoiseModel model;
 //  SETDEBUG("ISAM2 recalculate", true);
 
 // Set up parameters
-SharedDiagonal odoNoise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.1, 0.1, M_PI/100.0).finished());
-SharedDiagonal brNoise = noiseModel::Diagonal::Sigmas((Vector(2) << M_PI/100.0, 0.1).finished());
+SharedDiagonal odoNoise =
+    noiseModel::Diagonal::Sigmas(Vector{{0.1, 0.1, M_PI / 100.0}});
+SharedDiagonal brNoise =
+    noiseModel::Diagonal::Sigmas(Vector{{M_PI / 100.0, 0.1}});
 
 ISAM2 createSlamlikeISAM2(
     Values* init_values = nullptr,
@@ -1153,6 +1157,157 @@ TEST(ActiveFactorTesting, Issue1596) {
 
   // If the bug is fixed, this line is reached.
   EXPECT(isam.getFactorsUnsafe().size() == 2);
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, AdaptiveReorder_NnzTracking) {
+  // Verify that treeNnz is populated and nnz baseline is set after first update
+  ISAM2Params params;
+  params.enableAdaptiveReorder = true;
+  params.adaptiveReorderThreshold = 2.0;
+  ISAM2 isam(params);
+
+  NonlinearFactorGraph graph;
+  Values init;
+
+  // Add a prior
+  graph.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
+  init.insert(0, Pose2(0.01, 0.01, 0.01));
+  ISAM2Result result = isam.update(graph, init);
+
+  // After first update, nnz should be set
+  EXPECT(result.treeNnz > 0);
+  EXPECT(!result.batchReorderTriggered);
+
+  // Add a chain of poses
+  for (int i = 0; i < 5; ++i) {
+    graph = NonlinearFactorGraph();
+    init = Values();
+    graph.emplace_shared<BetweenFactor<Pose2>>(i, i + 1,
+        Pose2(1.0, 0.0, 0.0), odoNoise);
+    init.insert(i + 1, Pose2(double(i + 1) + 0.1, -0.1, 0.01));
+    result = isam.update(graph, init);
+  }
+
+  // Nnz should be growing but no reorder yet (small problem)
+  EXPECT(result.treeNnz > 0);
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, AdaptiveReorder_Triggered) {
+  // Use a very low threshold to force a reorder
+  ISAM2Params params;
+  params.enableAdaptiveReorder = true;
+  params.adaptiveReorderThreshold = 1.01;  // trigger on any fill-in growth
+  params.relinearizeSkip = 1;
+  ISAM2 isam(params);
+
+  NonlinearFactorGraph graph;
+  Values init;
+
+  graph.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
+  init.insert(0, Pose2(0.01, 0.01, 0.01));
+  isam.update(graph, init);
+
+  // Build a longer chain so there's some structure
+  for (int i = 0; i < 10; ++i) {
+    graph = NonlinearFactorGraph();
+    init = Values();
+    graph.emplace_shared<BetweenFactor<Pose2>>(i, i + 1,
+        Pose2(1.0, 0.0, 0.0), odoNoise);
+    init.insert(i + 1, Pose2(double(i + 1) + 0.1, -0.1, 0.01));
+    isam.update(graph, init);
+  }
+
+  // Add a loop closure that changes the structure
+  graph = NonlinearFactorGraph();
+  init = Values();
+  graph.emplace_shared<BetweenFactor<Pose2>>(0, 10,
+      Pose2(10.0, 0.0, 0.0), odoNoise);
+  ISAM2Result result = isam.update(graph, init);
+
+  // With threshold 1.01, the loop closure fill-in should trigger a reorder
+  // on this or the next update
+  bool triggered = result.batchReorderTriggered;
+  if (!triggered) {
+    // Try one more update to see if fill-in was detected
+    graph = NonlinearFactorGraph();
+    graph.emplace_shared<BetweenFactor<Pose2>>(5, 10,
+        Pose2(5.0, 0.0, 0.0), odoNoise);
+    result = isam.update(graph, init);
+    triggered = result.batchReorderTriggered;
+  }
+
+  // With threshold 1.01, any fill-in growth triggers a batch reorder
+  EXPECT(triggered);
+  EXPECT(result.treeNnz > 0);
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, AdaptiveReorder_DisabledByDefault) {
+  // With default params, adaptive reorder should never trigger
+  ISAM2 isam;
+
+  NonlinearFactorGraph graph;
+  Values init;
+
+  graph.addPrior(0, Pose2(0.0, 0.0, 0.0), odoNoise);
+  init.insert(0, Pose2(0.01, 0.01, 0.01));
+  ISAM2Result result = isam.update(graph, init);
+
+  EXPECT(!result.batchReorderTriggered);
+  // treeNnz should still be populated
+  EXPECT(result.treeNnz > 0);
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, constrained_gradient_at_zero) {
+  // A hard-constrained variable should not receive gradient contributions from
+  // regular factors after the Bayes tree aggregates clique gradients.
+  ISAM2Params params(ISAM2DoglegParams(1.0), 0.0, 0, false);
+  ISAM2 isam(params);
+  NonlinearFactorGraph graph;
+  Values init;
+  const Pose2 origin(0.0, 0.0, 0.0);
+
+  graph.emplace_shared<NonlinearEquality<Pose2>>(1, origin);
+  graph.emplace_shared<BetweenFactor<Pose2>>(
+      0, 1, Pose2(1.0, 0.0, 0.0), odoNoise);
+  init.insert(0, origin);
+  init.insert(1, origin);
+
+  FastMap<Key, int> constrainedKeys;
+  constrainedKeys.emplace(1, 1);
+  isam.update(graph, init, FactorIndices(), constrainedKeys);
+
+  const VectorValues gradient = isam.gradientAtZero();
+  EXPECT(assert_equal(Vector3::Zero(), gradient.at(1)));
+  EXPECT(gradient.at(0).norm() > 0.0);
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, constrained_gradient_at_zero_mixed_components) {
+  // Only constrained scalar components should be represented as zero.
+  ISAM2Params params(ISAM2DoglegParams(1.0), 0.0, 0, false);
+  ISAM2 isam(params);
+  NonlinearFactorGraph graph;
+  Values init;
+
+  graph.emplace_shared<PriorFactor<Point2>>(
+      1, Point2(0.0, 0.0),
+      noiseModel::Constrained::MixedSigmas(Vector2(0.0, 1.0)));
+  graph.emplace_shared<BetweenFactor<Point2>>(
+      0, 1, Point2(1.0, 1.0), noiseModel::Isotropic::Sigma(2, 1.0));
+  init.insert(0, Point2(0.0, 0.0));
+  init.insert(1, Point2(0.0, 0.0));
+
+  FastMap<Key, int> constrainedKeys;
+  constrainedKeys.emplace(1, 1);
+  isam.update(graph, init, FactorIndices(), constrainedKeys);
+
+  const VectorValues gradient = isam.gradientAtZero();
+  EXPECT(std::abs(gradient.at(1)(0)) < 1e-9);
+  EXPECT(std::abs(gradient.at(1)(1)) > 1e-9);
 }
 
 /* ************************************************************************* */

@@ -16,6 +16,7 @@
  **/
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/lieProxies.h>
 #include <gtsam/base/numericalDerivative.h>
@@ -123,13 +124,13 @@ TEST(Point1, norm) {
   DOUBLES_EQUAL(10, p0.norm(), 1e-6);
   DOUBLES_EQUAL(10, p1.norm(), 1e-6);
 
-  Matrix expectedH, actualH;
+  Matrix11 expectedH, actualH;
   double actual;
 
   // exception, for (0,0) derivative is [Inf,Inf] but we return [1,1]
   actual = norm1(x1, actualH);
   EXPECT_DOUBLES_EQUAL(0, actual, 1e-9);
-  expectedH = (Matrix(1, 1) << 1.0).finished();
+  expectedH << 1.0;
   EXPECT(assert_equal(expectedH, actualH));
 
   actual = norm1(x2, actualH);
@@ -138,7 +139,7 @@ TEST(Point1, norm) {
   EXPECT(assert_equal(expectedH, actualH));
 
   // analytical
-  expectedH = (Matrix(1, 1) << (x2.normalized())).finished();
+  expectedH << x2.normalized();
   EXPECT(assert_equal(expectedH, actualH));
 }
 
@@ -149,7 +150,7 @@ double distance_proxy(const Point1& location, const Point1& point) {
 }
 }  // namespace
 TEST(Point1, distance) {
-  Matrix expectedH1, actualH1, expectedH2, actualH2;
+  Matrix11 expectedH1, actualH1, expectedH2, actualH2;
 
   // establish distance is indeed zero
   EXPECT_DOUBLES_EQUAL(1, distance1(x1, l2), 1e-9);

@@ -104,79 +104,6 @@ Vector makeVector(std::initializer_list<double> values) {
   return vector;
 }
 
-Product composeProductProxy(const Product& A, const Product& B) {
-  return A.compose(B);
-}
-
-Product betweenProductProxy(const Product& A, const Product& B) {
-  return A.between(B);
-}
-
-Product inverseProductProxy(const Product& A) { return A.inverse(); }
-
-Product expmapProductProxy(const Vector5& vec) { return Product::Expmap(vec); }
-
-Vector5 logmapProductProxy(const Product& p) { return Product::Logmap(p); }
-
-ProductVR composeProductVRProxy(const ProductVR& A, const ProductVR& B) {
-  return A.compose(B);
-}
-
-ProductVR betweenProductVRProxy(const ProductVR& A, const ProductVR& B) {
-  return A.between(B);
-}
-
-ProductVR inverseProductVRProxy(const ProductVR& A) { return A.inverse(); }
-
-ProductVR expmapProductVRProxy(const Vector& vec) {
-  return ProductVR::Expmap(vec);
-}
-
-Vector logmapProductVRProxy(const ProductVR& p) { return ProductVR::Logmap(p); }
-
-ProductVV composeProductVVProxy(const ProductVV& A, const ProductVV& B) {
-  return A.compose(B);
-}
-
-ProductVV betweenProductVVProxy(const ProductVV& A, const ProductVV& B) {
-  return A.between(B);
-}
-
-ProductVV inverseProductVVProxy(const ProductVV& A) { return A.inverse(); }
-
-Vector logmapProductVVProxy(const ProductVV& p) { return ProductVV::Logmap(p); }
-
-Power composePowerProxy(const Power& A, const Power& B) { return A.compose(B); }
-
-Power betweenPowerProxy(const Power& A, const Power& B) { return A.between(B); }
-
-Power inversePowerProxy(const Power& A) { return A.inverse(); }
-
-Power powerExpmapProxy(const PowerTangent& vec) { return Power::Expmap(vec); }
-
-PowerTangent powerLogmapProxy(const Power& p) { return Power::Logmap(p); }
-
-DynamicPower composeDynamicPowerProxy(const DynamicPower& A,
-                                      const DynamicPower& B) {
-  return A.compose(B);
-}
-
-DynamicPower betweenDynamicPowerProxy(const DynamicPower& A,
-                                      const DynamicPower& B) {
-  return A.between(B);
-}
-
-DynamicPower inverseDynamicPowerProxy(const DynamicPower& A) {
-  return A.inverse();
-}
-
-DynamicPower dynamicPowerExpmapProxy(const DynamicPowerTangent& vec) {
-  return DynamicPower::Expmap(vec);
-}
-
-DynamicPowerTangent dynamicPowerLogmapProxy(const DynamicPower& p) {
-  return DynamicPower::Logmap(p);
-}
 }  // namespace
 
 /* ************************************************************************* */
@@ -185,8 +112,7 @@ TEST(Lie, ProductLieGroup) {
   GTSAM_CONCEPT_ASSERT(IsManifold<Product>);
   GTSAM_CONCEPT_ASSERT(IsLieGroup<Product>);
   Product pair1;
-  Vector5 d;
-  d << 1, 2, 0.1, 0.2, 0.3;
+  Vector5 d{1, 2, 0.1, 0.2, 0.3};
   Product expected(Point2(1, 2), Pose2::Expmap(Vector3(0.1, 0.2, 0.3)));
   Product pair2 = pair1.expmap(d);
   EXPECT(assert_equal(expected, pair2, kTol));
@@ -202,8 +128,8 @@ TEST(testProduct, compose) {
 
   Matrix actH1, actH2;
   state1.compose(state2, actH1, actH2);
-  Matrix numericH1 = numericalDerivative21(composeProductProxy, state1, state2);
-  Matrix numericH2 = numericalDerivative22(composeProductProxy, state1, state2);
+  Matrix numericH1 = numericalDerivative21(&Product::operator*, state1, state2);
+  Matrix numericH2 = numericalDerivative22(&Product::operator*, state1, state2);
   EXPECT(assert_equal(numericH1, actH1, kTol));
   EXPECT(assert_equal(numericH2, actH2, kTol));
 }
@@ -214,8 +140,11 @@ TEST(testProduct, between) {
 
   Matrix actH1, actH2;
   state1.between(state2, actH1, actH2);
-  Matrix numericH1 = numericalDerivative21(betweenProductProxy, state1, state2);
-  Matrix numericH2 = numericalDerivative22(betweenProductProxy, state1, state2);
+  const auto between = [](const Product& a, const Product& b) {
+    return a.between(b);
+  };
+  Matrix numericH1 = numericalDerivative21(between, state1, state2);
+  Matrix numericH2 = numericalDerivative22(between, state1, state2);
   EXPECT(assert_equal(numericH1, actH1, kTol));
   EXPECT(assert_equal(numericH2, actH2, kTol));
 }
@@ -226,18 +155,19 @@ TEST(testProduct, inverse) {
 
   Matrix actH1;
   state1.inverse(actH1);
-  Matrix numericH1 = numericalDerivative11(inverseProductProxy, state1);
+  const auto inverse = [](const Product& value) { return value.inverse(); };
+  Matrix numericH1 = numericalDerivative11(inverse, state1);
   EXPECT(assert_equal(numericH1, actH1, kTol));
 }
 
 /* ************************************************************************* */
 TEST(testProduct, Expmap) {
-  Vector5 vec;
-  vec << 1, 2, 0.1, 0.2, 0.3;
+  Vector5 vec{1, 2, 0.1, 0.2, 0.3};
 
   Matrix actH;
   Product::Expmap(vec, actH);
-  Matrix numericH = numericalDerivative11(expmapProductProxy, vec);
+  const auto expmap = [](const Vector5& v) { return Product::Expmap(v); };
+  Matrix numericH = numericalDerivative11(expmap, vec);
   EXPECT(assert_equal(numericH, actH, kTol));
 }
 
@@ -247,11 +177,46 @@ TEST(testProduct, Logmap) {
 
   Matrix actH;
   Product::Logmap(state, actH);
-  Matrix numericH = numericalDerivative11(logmapProductProxy, state);
+  const auto logmap = [](const Product& value) {
+    return Product::Logmap(value);
+  };
+  Matrix numericH = numericalDerivative11(logmap, state);
   EXPECT(assert_equal(numericH, actH, kTol));
 }
 
 /* ************************************************************************* */
+// Exercises the centered operations and origin retract inherited from LieGroup.
+TEST(testProduct, InheritedLieGroupOperations) {
+  const Product state(Point2(1, 2), Pose2(3, 4, 0.5));
+  Vector5 delta;
+  delta << 0.1, -0.2, 0.03, -0.04, 0.05;
+
+  Matrix H1, H2;
+  const Product updated = state.expmap(delta, H1, H2);
+  EXPECT(assert_equal(state.expmap(delta), updated, kTol));
+  const auto expmap = [](const Product& value, const Vector5& v) {
+    return value.expmap(v);
+  };
+  EXPECT(assert_equal(numericalDerivative21(expmap, state, delta), H1, kTol));
+  EXPECT(assert_equal(numericalDerivative22(expmap, state, delta), H2, kTol));
+
+  Matrix L1, L2;
+  EXPECT(assert_equal(delta, state.logmap(updated, L1, L2), kTol));
+  const auto logmap = [](const Product& value, const Product& other) {
+    return value.logmap(other);
+  };
+  EXPECT(assert_equal(numericalDerivative21(logmap, state, updated), L1, kTol));
+  EXPECT(assert_equal(numericalDerivative22(logmap, state, updated), L2, kTol));
+
+  Matrix actualH, expectedH;
+  const Product actual = Product::Retract(delta, actualH);
+  const Product expected = Product::Identity().retract(delta, {}, expectedH);
+  EXPECT(assert_equal(expected, actual, kTol));
+  EXPECT(assert_equal(expectedH, actualH, kTol));
+}
+
+/* ************************************************************************* */
+// Checks the group and algebra adjoints for a fixed-size direct product.
 TEST(testProduct, AdjointMap) {
   Product state(Point2(1, 2), Pose2(3, 4, 5));
   const Matrix actual = state.AdjointMap();
@@ -261,6 +226,12 @@ TEST(testProduct, AdjointMap) {
   expected.bottomRightCorner<3, 3>() = state.second.AdjointMap();
 
   EXPECT(assert_equal(expected, actual, kTol));
+
+  Vector5 xi;
+  xi << 1.0, 2.0, 0.1, 0.2, 0.3;
+  Matrix expectedAlgebra = Matrix::Zero(5, 5);
+  expectedAlgebra.bottomRightCorner<3, 3>() = Pose2::adjointMap(xi.tail<3>());
+  EXPECT(assert_equal(expectedAlgebra, Product::adjointMap(xi), kTol));
 }
 
 /* ************************************************************************* */
@@ -293,9 +264,9 @@ TEST(testProductDynamicVR, compose) {
   Matrix actH1, actH2;
   state1.compose(state2, actH1, actH2);
   Matrix numericH1 = numericalDerivative21<ProductVR, ProductVR, ProductVR, 5>(
-      composeProductVRProxy, state1, state2);
+      &ProductVR::operator*, state1, state2);
   Matrix numericH2 = numericalDerivative22<ProductVR, ProductVR, ProductVR, 5>(
-      composeProductVRProxy, state1, state2);
+      &ProductVR::operator*, state1, state2);
   EXPECT(assert_equal(numericH1, actH1, kTol));
   EXPECT(assert_equal(numericH2, actH2, kTol));
 }
@@ -307,10 +278,13 @@ TEST(testProductDynamicVR, between) {
 
   Matrix actH1, actH2;
   state1.between(state2, actH1, actH2);
+  const auto between = [](const ProductVR& a, const ProductVR& b) {
+    return a.between(b);
+  };
   Matrix numericH1 = numericalDerivative21<ProductVR, ProductVR, ProductVR, 5>(
-      betweenProductVRProxy, state1, state2);
+      between, state1, state2);
   Matrix numericH2 = numericalDerivative22<ProductVR, ProductVR, ProductVR, 5>(
-      betweenProductVRProxy, state1, state2);
+      between, state1, state2);
   EXPECT(assert_equal(numericH1, actH1, kTol));
   EXPECT(assert_equal(numericH2, actH2, kTol));
 }
@@ -321,8 +295,9 @@ TEST(testProductDynamicVR, inverse) {
 
   Matrix actH;
   state.inverse(actH);
-  Matrix numericH = numericalDerivative11<ProductVR, ProductVR, 5>(
-      inverseProductVRProxy, state);
+  const auto inverse = [](const ProductVR& value) { return value.inverse(); };
+  Matrix numericH =
+      numericalDerivative11<ProductVR, ProductVR, 5>(inverse, state);
   EXPECT(assert_equal(numericH, actH, kTol));
 }
 
@@ -332,8 +307,8 @@ TEST(testProductDynamicVR, Expmap) {
 
   Matrix actH;
   ProductVR::Expmap(vec, actH);
-  Matrix numericH =
-      numericalDerivative11<ProductVR, Vector, 5>(expmapProductVRProxy, vec);
+  const auto expmap = [](const Vector& v) { return ProductVR::Expmap(v); };
+  Matrix numericH = numericalDerivative11<ProductVR, Vector, 5>(expmap, vec);
   EXPECT(assert_equal(numericH, actH, kTol));
 }
 
@@ -343,12 +318,28 @@ TEST(testProductDynamicVR, Logmap) {
 
   Matrix actH;
   ProductVR::Logmap(state, actH);
-  Matrix numericH =
-      numericalDerivative11<Vector, ProductVR, 5>(logmapProductVRProxy, state);
+  const auto logmap = [](const ProductVR& value) {
+    return ProductVR::Logmap(value);
+  };
+  Matrix numericH = numericalDerivative11<Vector, ProductVR, 5>(logmap, state);
   EXPECT(assert_equal(numericH, actH, kTol));
 }
 
 /* ************************************************************************* */
+// A dynamic product with one fixed factor has an unambiguous origin tangent
+// split, so the inherited static Retract can infer the dynamic factor size.
+TEST(testProductDynamicVR, InheritedStaticRetract) {
+  const Vector delta = makeVector({1.0, 2.0, 0.1, 0.2, 0.3});
+  Matrix actualH, expectedH;
+  const ProductVR actual = ProductVR::Retract(delta, actualH);
+  const ProductVR identity(Vector::Zero(2), Rot3::Identity());
+  const ProductVR expected = identity.retract(delta, {}, expectedH);
+  EXPECT(assert_equal(expected, actual, kTol));
+  EXPECT(assert_equal(expectedH, actualH, kTol));
+}
+
+/* ************************************************************************* */
+// Checks group and algebra adjoints with a dynamic vector first factor.
 TEST(testProductDynamicVR, AdjointMap) {
   ProductVR state(makeVector({1.0, 2.0}), Rot3::RzRyRx(0.1, 0.2, 0.3));
   const Matrix actual = state.AdjointMap();
@@ -358,6 +349,11 @@ TEST(testProductDynamicVR, AdjointMap) {
   expected.bottomRightCorner(3, 3) = state.second.AdjointMap();
 
   EXPECT(assert_equal(expected, actual, kTol));
+
+  const Vector xi = makeVector({1.0, 2.0, 0.1, 0.2, 0.3});
+  Matrix expectedAlgebra = Matrix::Zero(5, 5);
+  expectedAlgebra.bottomRightCorner(3, 3) = Rot3::adjointMap(xi.tail<3>());
+  EXPECT(assert_equal(expectedAlgebra, ProductVR::adjointMap(xi), kTol));
 }
 
 /* ************************************************************************* */
@@ -385,9 +381,9 @@ TEST(testProductDynamicVV, compose) {
   Matrix actH1, actH2;
   state1.compose(state2, actH1, actH2);
   Matrix numericH1 = numericalDerivative21<ProductVV, ProductVV, ProductVV, 5>(
-      composeProductVVProxy, state1, state2);
+      &ProductVV::operator*, state1, state2);
   Matrix numericH2 = numericalDerivative22<ProductVV, ProductVV, ProductVV, 5>(
-      composeProductVVProxy, state1, state2);
+      &ProductVV::operator*, state1, state2);
   EXPECT(assert_equal(numericH1, actH1, kTol));
   EXPECT(assert_equal(numericH2, actH2, kTol));
 }
@@ -399,10 +395,13 @@ TEST(testProductDynamicVV, between) {
 
   Matrix actH1, actH2;
   state1.between(state2, actH1, actH2);
+  const auto between = [](const ProductVV& a, const ProductVV& b) {
+    return a.between(b);
+  };
   Matrix numericH1 = numericalDerivative21<ProductVV, ProductVV, ProductVV, 5>(
-      betweenProductVVProxy, state1, state2);
+      between, state1, state2);
   Matrix numericH2 = numericalDerivative22<ProductVV, ProductVV, ProductVV, 5>(
-      betweenProductVVProxy, state1, state2);
+      between, state1, state2);
   EXPECT(assert_equal(numericH1, actH1, kTol));
   EXPECT(assert_equal(numericH2, actH2, kTol));
 }
@@ -413,8 +412,9 @@ TEST(testProductDynamicVV, inverse) {
 
   Matrix actH;
   state.inverse(actH);
-  Matrix numericH = numericalDerivative11<ProductVV, ProductVV, 5>(
-      inverseProductVVProxy, state);
+  const auto inverse = [](const ProductVV& value) { return value.inverse(); };
+  Matrix numericH =
+      numericalDerivative11<ProductVV, ProductVV, 5>(inverse, state);
   EXPECT(assert_equal(numericH, actH, kTol));
 }
 
@@ -455,18 +455,25 @@ TEST(testProductDynamicVV, Logmap) {
 
   Matrix actH;
   ProductVV::Logmap(state, actH);
-  Matrix numericH =
-      numericalDerivative11<Vector, ProductVV, 5>(logmapProductVVProxy, state);
+  const auto logmap = [](const ProductVV& value) {
+    return ProductVV::Logmap(value);
+  };
+  Matrix numericH = numericalDerivative11<Vector, ProductVV, 5>(logmap, state);
   EXPECT(assert_equal(numericH, actH, kTol));
 }
 
 /* ************************************************************************* */
+// Checks that a direct product of two dynamic vector spaces has zero algebra
+// ad.
 TEST(testProductDynamicVV, AdjointMap) {
   ProductVV state(makeVector({1.0, 2.0}), makeVector({3.0, 4.0, 5.0}));
   const Matrix actual = state.AdjointMap();
   const Matrix expected = Matrix::Identity(5, 5);
 
   EXPECT(assert_equal(expected, actual, kTol));
+
+  const Vector xi = makeVector({1.0, 2.0, 3.0, 4.0, 5.0});
+  EXPECT(assert_equal(Matrix::Zero(5, 5), ProductVV::adjointMap(xi), kTol));
 }
 
 /* ************************************************************************* */
@@ -482,51 +489,50 @@ TEST(testProductDynamicVV, Exceptions) {
 }
 
 /* ************************************************************************* */
-Product interpolate_proxy(const Product& x, const Product& y, double t) {
-  return interpolate<Product>(x, y, t);
-}
-
 TEST(Lie, Interpolate) {
   Product x(Point2(1, 2), Pose2(3, 4, 5));
   Product y(Point2(6, 7), Pose2(8, 9, 0));
+  const auto f = [](const Product& a, const Product& b, double t) {
+    return interpolate<Product>(a, b, t);
+  };
 
   double t;
   Matrix actH1, numericH1, actH2, numericH2, actH3, numericH3;
 
   t = 0.0;
   interpolate<Product>(x, y, t, actH1, actH2, actH3);
-  numericH1 = numericalDerivative31<Product, Product, Product, double>(
-      interpolate_proxy, x, y, t);
+  numericH1 =
+      numericalDerivative31<Product, Product, Product, double>(f, x, y, t);
   EXPECT(assert_equal(numericH1, actH1, kTol));
-  numericH2 = numericalDerivative32<Product, Product, Product, double>(
-      interpolate_proxy, x, y, t);
+  numericH2 =
+      numericalDerivative32<Product, Product, Product, double>(f, x, y, t);
   EXPECT(assert_equal(numericH2, actH2, kTol));
-  numericH3 = numericalDerivative33<Product, Product, Product, double>(
-      interpolate_proxy, x, y, t);
+  numericH3 =
+      numericalDerivative33<Product, Product, Product, double>(f, x, y, t);
   EXPECT(assert_equal(numericH3, actH3, kTol));
 
   t = 0.5;
   interpolate<Product>(x, y, t, actH1, actH2);
-  numericH1 = numericalDerivative31<Product, Product, Product, double>(
-      interpolate_proxy, x, y, t);
+  numericH1 =
+      numericalDerivative31<Product, Product, Product, double>(f, x, y, t);
   EXPECT(assert_equal(numericH1, actH1, kTol));
-  numericH2 = numericalDerivative32<Product, Product, Product, double>(
-      interpolate_proxy, x, y, t);
+  numericH2 =
+      numericalDerivative32<Product, Product, Product, double>(f, x, y, t);
   EXPECT(assert_equal(numericH2, actH2, kTol));
-  numericH3 = numericalDerivative33<Product, Product, Product, double>(
-      interpolate_proxy, x, y, t);
+  numericH3 =
+      numericalDerivative33<Product, Product, Product, double>(f, x, y, t);
   EXPECT(assert_equal(numericH3, actH3, kTol));
 
   t = 1.0;
   interpolate<Product>(x, y, t, actH1, actH2);
-  numericH1 = numericalDerivative31<Product, Product, Product, double>(
-      interpolate_proxy, x, y, t);
+  numericH1 =
+      numericalDerivative31<Product, Product, Product, double>(f, x, y, t);
   EXPECT(assert_equal(numericH1, actH1, kTol));
-  numericH2 = numericalDerivative32<Product, Product, Product, double>(
-      interpolate_proxy, x, y, t);
+  numericH2 =
+      numericalDerivative32<Product, Product, Product, double>(f, x, y, t);
   EXPECT(assert_equal(numericH2, actH2, kTol));
-  numericH3 = numericalDerivative33<Product, Product, Product, double>(
-      interpolate_proxy, x, y, t);
+  numericH3 =
+      numericalDerivative33<Product, Product, Product, double>(f, x, y, t);
   EXPECT(assert_equal(numericH3, actH3, kTol));
 }
 
@@ -537,8 +543,7 @@ TEST(Lie, PowerLieGroup) {
   GTSAM_CONCEPT_ASSERT(IsLieGroup<Power>);
 
   Power identity;
-  PowerTangent xi;
-  xi << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6;
+  PowerTangent xi{0.1, 0.2, 0.3, 0.4, 0.5, 0.6};
   Power expected({Pose2::Expmap(xi.head<3>()), Pose2::Expmap(xi.tail<3>())});
 
   Power actual = identity.expmap(xi);
@@ -555,8 +560,8 @@ TEST(testPower, compose) {
 
   Matrix actH1, actH2;
   state1.compose(state2, actH1, actH2);
-  Matrix numericH1 = numericalDerivative21(composePowerProxy, state1, state2);
-  Matrix numericH2 = numericalDerivative22(composePowerProxy, state1, state2);
+  Matrix numericH1 = numericalDerivative21(&Power::operator*, state1, state2);
+  Matrix numericH2 = numericalDerivative22(&Power::operator*, state1, state2);
   EXPECT(assert_equal(numericH1, actH1, kTol));
   EXPECT(assert_equal(numericH2, actH2, kTol));
 }
@@ -567,8 +572,11 @@ TEST(testPower, between) {
 
   Matrix actH1, actH2;
   state1.between(state2, actH1, actH2);
-  Matrix numericH1 = numericalDerivative21(betweenPowerProxy, state1, state2);
-  Matrix numericH2 = numericalDerivative22(betweenPowerProxy, state1, state2);
+  const auto between = [](const Power& a, const Power& b) {
+    return a.between(b);
+  };
+  Matrix numericH1 = numericalDerivative21(between, state1, state2);
+  Matrix numericH2 = numericalDerivative22(between, state1, state2);
   EXPECT(assert_equal(numericH1, actH1, kTol));
   EXPECT(assert_equal(numericH2, actH2, kTol));
 }
@@ -579,18 +587,19 @@ TEST(testPower, inverse) {
 
   Matrix actH1;
   state1.inverse(actH1);
-  Matrix numericH1 = numericalDerivative11(inversePowerProxy, state1);
+  const auto inverse = [](const Power& value) { return value.inverse(); };
+  Matrix numericH1 = numericalDerivative11(inverse, state1);
   EXPECT(assert_equal(numericH1, actH1, kTol));
 }
 
 /* ************************************************************************* */
 TEST(testPower, Expmap) {
-  PowerTangent vec;
-  vec << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6;
+  PowerTangent vec{0.1, 0.2, 0.3, 0.4, 0.5, 0.6};
 
   Matrix actH;
   Power::Expmap(vec, actH);
-  Matrix numericH = numericalDerivative11(powerExpmapProxy, vec);
+  const auto expmap = [](const PowerTangent& v) { return Power::Expmap(v); };
+  Matrix numericH = numericalDerivative11(expmap, vec);
   EXPECT(assert_equal(numericH, actH, kTol));
 }
 
@@ -600,8 +609,40 @@ TEST(testPower, Logmap) {
 
   Matrix actH;
   Power::Logmap(state, actH);
-  Matrix numericH = numericalDerivative11(powerLogmapProxy, state);
+  const auto logmap = [](const Power& value) { return Power::Logmap(value); };
+  Matrix numericH = numericalDerivative11(logmap, state);
   EXPECT(assert_equal(numericH, actH, kTol));
+}
+
+/* ************************************************************************* */
+// Exercises the centered operations and origin retract inherited from LieGroup.
+TEST(testPower, InheritedLieGroupOperations) {
+  const Power state({Pose2(1, 2, 0.3), Pose2(4, 5, -0.2)});
+  PowerTangent delta;
+  delta << 0.1, -0.2, 0.03, -0.04, 0.05, -0.06;
+
+  Matrix H1, H2;
+  const Power updated = state.expmap(delta, H1, H2);
+  EXPECT(assert_equal(state.expmap(delta), updated, kTol));
+  const auto expmap = [](const Power& value, const PowerTangent& v) {
+    return value.expmap(v);
+  };
+  EXPECT(assert_equal(numericalDerivative21(expmap, state, delta), H1, kTol));
+  EXPECT(assert_equal(numericalDerivative22(expmap, state, delta), H2, kTol));
+
+  Matrix L1, L2;
+  EXPECT(assert_equal(delta, state.logmap(updated, L1, L2), kTol));
+  const auto logmap = [](const Power& value, const Power& other) {
+    return value.logmap(other);
+  };
+  EXPECT(assert_equal(numericalDerivative21(logmap, state, updated), L1, kTol));
+  EXPECT(assert_equal(numericalDerivative22(logmap, state, updated), L2, kTol));
+
+  Matrix actualH, expectedH;
+  const Power actual = Power::Retract(delta, actualH);
+  const Power expected = Power::Identity().retract(delta, {}, expectedH);
+  EXPECT(assert_equal(expected, actual, kTol));
+  EXPECT(assert_equal(expectedH, actualH, kTol));
 }
 
 /* ************************************************************************* */
@@ -655,10 +696,10 @@ TEST(testPowerDynamic, compose) {
   state1.compose(state2, actH1, actH2);
   Matrix numericH1 =
       numericalDerivative21<DynamicPower, DynamicPower, DynamicPower, 6>(
-          composeDynamicPowerProxy, state1, state2);
+          &DynamicPower::operator*, state1, state2);
   Matrix numericH2 =
       numericalDerivative22<DynamicPower, DynamicPower, DynamicPower, 6>(
-          composeDynamicPowerProxy, state1, state2);
+          &DynamicPower::operator*, state1, state2);
   EXPECT(assert_equal(numericH1, actH1, kTol));
   EXPECT(assert_equal(numericH2, actH2, kTol));
 }
@@ -670,12 +711,15 @@ TEST(testPowerDynamic, between) {
 
   Matrix actH1, actH2;
   state1.between(state2, actH1, actH2);
+  const auto between = [](const DynamicPower& a, const DynamicPower& b) {
+    return a.between(b);
+  };
   Matrix numericH1 =
       numericalDerivative21<DynamicPower, DynamicPower, DynamicPower, 6>(
-          betweenDynamicPowerProxy, state1, state2);
+          between, state1, state2);
   Matrix numericH2 =
       numericalDerivative22<DynamicPower, DynamicPower, DynamicPower, 6>(
-          betweenDynamicPowerProxy, state1, state2);
+          between, state1, state2);
   EXPECT(assert_equal(numericH1, actH1, kTol));
   EXPECT(assert_equal(numericH2, actH2, kTol));
 }
@@ -686,8 +730,11 @@ TEST(testPowerDynamic, inverse) {
 
   Matrix actH;
   state.inverse(actH);
-  Matrix numericH = numericalDerivative11<DynamicPower, DynamicPower, 6>(
-      inverseDynamicPowerProxy, state);
+  const auto inverse = [](const DynamicPower& value) {
+    return value.inverse();
+  };
+  Matrix numericH =
+      numericalDerivative11<DynamicPower, DynamicPower, 6>(inverse, state);
   EXPECT(assert_equal(numericH, actH, kTol));
 }
 
@@ -711,10 +758,57 @@ TEST(testPowerDynamic, Expmap) {
 
   Matrix actH;
   DynamicPower actual = DynamicPower::Expmap(vec, actH);
-  Matrix numericH = numericalDerivative11<DynamicPower, DynamicPowerTangent, 6>(
-      dynamicPowerExpmapProxy, vec);
+  const auto expmap = [](const DynamicPowerTangent& v) {
+    return DynamicPower::Expmap(v);
+  };
+  Matrix numericH =
+      numericalDerivative11<DynamicPower, DynamicPowerTangent, 6>(expmap, vec);
   EXPECT(assert_equal(expected, actual, kTol));
   EXPECT(assert_equal(numericH, actH, kTol));
+}
+
+/* ************************************************************************* */
+// Exercises the inherited operations for a runtime component count.
+TEST(testPowerDynamic, InheritedLieGroupOperations) {
+  const DynamicPower state({Pose2(1, 2, 0.3), Pose2(4, 5, -0.2)});
+  const DynamicPowerTangent delta =
+      makeVector({0.1, -0.2, 0.03, -0.04, 0.05, -0.06});
+
+  Matrix H1, H2;
+  const DynamicPower updated = state.expmap(delta, H1, H2);
+  EXPECT(assert_equal(state.expmap(delta), updated, kTol));
+  const auto expmap = [](const DynamicPower& value,
+                         const DynamicPowerTangent& v) {
+    return value.expmap(v);
+  };
+  EXPECT(assert_equal(
+      numericalDerivative21<DynamicPower, DynamicPower, DynamicPowerTangent, 6>(
+          expmap, state, delta),
+      H1, kTol));
+  EXPECT(assert_equal(
+      numericalDerivative22<DynamicPower, DynamicPower, DynamicPowerTangent, 6>(
+          expmap, state, delta),
+      H2, kTol));
+
+  Matrix L1, L2;
+  EXPECT(assert_equal(delta, state.logmap(updated, L1, L2), kTol));
+  const auto logmap = [](const DynamicPower& value, const DynamicPower& other) {
+    return value.logmap(other);
+  };
+  EXPECT(assert_equal(
+      numericalDerivative21<DynamicPowerTangent, DynamicPower, DynamicPower, 6>(
+          logmap, state, updated),
+      L1, kTol));
+  EXPECT(assert_equal(
+      numericalDerivative22<DynamicPowerTangent, DynamicPower, DynamicPower, 6>(
+          logmap, state, updated),
+      L2, kTol));
+
+  Matrix actualH, expectedH;
+  const DynamicPower actual = DynamicPower::Retract(delta, actualH);
+  const DynamicPower expected = DynamicPower(2).retract(delta, {}, expectedH);
+  EXPECT(assert_equal(expected, actual, kTol));
+  EXPECT(assert_equal(expectedH, actualH, kTol));
 }
 
 /* ************************************************************************* */
@@ -723,8 +817,11 @@ TEST(testPowerDynamic, Logmap) {
 
   Matrix actH;
   DynamicPower::Logmap(state, actH);
+  const auto logmap = [](const DynamicPower& value) {
+    return DynamicPower::Logmap(value);
+  };
   Matrix numericH = numericalDerivative11<DynamicPowerTangent, DynamicPower, 6>(
-      dynamicPowerLogmapProxy, state);
+      logmap, state);
   EXPECT(assert_equal(numericH, actH, kTol));
 }
 

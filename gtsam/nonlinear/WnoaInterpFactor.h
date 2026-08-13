@@ -35,7 +35,6 @@
 #include <gtsam/nonlinear/WnoaInterpolator.h>
 #include <gtsam/nonlinear/WnoaStateData.h>
 
-#include <algorithm>
 #include <array>
 #include <stdexcept>
 #include <unordered_set>
@@ -45,7 +44,7 @@
 namespace gtsam {
 
 /**
- * @class WNOAInterpFactor
+ * @class WnoaInterpFactor
  * @brief Wrapper factor that evaluates an inner NoiseModelFactor on states
  *        interpolated from neighboring estimated states using a WNOA
  *        (white-noise-on-acceleration) Gaussian process interpolator.
@@ -90,16 +89,10 @@ namespace gtsam {
  * compile time).
  */
 template <class PoseType>
-class WNOAInterpFactor : public NoiseModelFactor {
+class WnoaInterpFactor : public NoiseModelFactor {
  private:
-#ifndef GTSAM_ROT3_EXPMAP
-  static_assert(
-      !std::is_same_v<PoseType, Pose3> || std::is_same_v<PoseType, Rot3>,
-      "Interpolation factors are not supported for Pose3/Rot3 when using the "
-      "Cayley chart. Please switch to EXPMAP coordinates mode.");
-#endif
   using Base = NoiseModelFactor;
-  using This = WNOAInterpFactor<PoseType>;
+  using This = WnoaInterpFactor<PoseType>;
   using VelocityType = typename gtsam::traits<PoseType>::TangentVector;
   static constexpr int dim = traits<PoseType>::dimension;
 
@@ -195,7 +188,7 @@ class WNOAInterpFactor : public NoiseModelFactor {
    * @param precomp_interp_mats If true, precompute Lambda/Psi matrices for each
    * interpolated state.
    */
-  WNOAInterpFactor(const NoiseModelFactor::shared_ptr inner_factor,
+  WnoaInterpFactor(const NoiseModelFactor::shared_ptr inner_factor,
                    const std::set<StateData> estimated_states,
                    const std::set<StateData> interp_states,
                    const Eigen::Matrix<double, dim, 1> q_psd_diag,
@@ -338,7 +331,7 @@ class WNOAInterpFactor : public NoiseModelFactor {
   /**
    * @brief Default destructor.
    */
-  ~WNOAInterpFactor() override {};
+  ~WnoaInterpFactor() override {};
 
   /** Implement functions needed for Testable */
   /**
@@ -350,7 +343,7 @@ class WNOAInterpFactor : public NoiseModelFactor {
   void print(
       const std::string& s = "",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
-    std::cout << s << "WNOAInterpFactor on ";
+    std::cout << s << "WnoaInterpFactor on ";
     for (const auto& k : this->keys()) {
       std::cout << keyFormatter(k) << " ";  // raw numeric key
     }
@@ -846,175 +839,9 @@ class WNOAInterpFactor : public NoiseModelFactor {
   }
 };
 
-/**
- * @brief Convert a factor graph by removing interpolated states.
- *
- * This helper replaces factors that reference interpolated states with
- * equivalent wrapper factors that act on the bordering estimated states.
- * Additionally, WNOA motion prior factors are added between successive
- * estimated states. Factors that do not reference interpolated states are
- * copied unchanged into the returned graph.
- *
- * @tparam PoseType Pose type used in the graph (e.g. `Pose2`, `Pose3`).
- * @param graph Input factor graph possibly containing factors on interpolated
- * states.
- * @param estimated_states Ordered set of estimated `StateData` (main-solve
- * states).
- * @param interp_states Ordered set of `StateData` entries to be
- * interpolated/removed.
- * @param q_psd_diag Diagonal PSD vector for the WNOA motion prior (dimension
- * must match PoseType).
- * @param fixed_noise If true, do not augment measurement noise models for
- * interpolation.
- * @return NonlinearFactorGraph New graph with interpolated states removed and
- * wrapper factors added.
- */
-template <class PoseType>
-NonlinearFactorGraph interpolateFactorGraph(
-    const NonlinearFactorGraph& graph,
-    const std::set<StateData>& estimated_states,
-    const std::set<StateData>& interp_states, Vector q_psd_diag,
-    bool fixed_noise = false) {
-  // assert that the pose is the right kind of variable
-  static_assert(
-      std::is_same_v<typename traits<PoseType>::structure_category,
-                     lie_group_tag> ||
-          std::is_same_v<typename traits<PoseType>::structure_category,
-                         vector_space_tag>,
-      "Pose type must be either a Lie group or vector space");
-  // check dimension on the power spectral density matrix
-  assert(traits<PoseType>::dimension == q_psd_diag.size());
-  // Create new factor graph
-  NonlinearFactorGraph new_graph;
-  // Add WNOA prior between all estimated states
-  auto iter_state = estimated_states.begin();
-  while (std::next(iter_state) != estimated_states.end()) {
-    StateData state_k = *iter_state;
-    StateData state_kp1 = *std::next(iter_state);
-    // get time diff
-    double del_t = state_kp1.time - state_k.time;
-    // add factor
-    auto motion_factor = std::make_shared<WNOAMotionFactor<PoseType>>(
-        state_k.pose, state_k.velocity, state_kp1.pose, state_kp1.velocity,
-        del_t, q_psd_diag);
-    new_graph.add(motion_factor);
-    iter_state++;
-  }
-  // Get map from keys to interpolated state, and interpolated state to
-  // estimated state.
-  std::unordered_map<Key, StateData> key_to_interp_;
-  std::unordered_map<StateData, std::pair<StateData, StateData>>
-      interp_to_borders_;
-  for (const StateData& state : interp_states) {
-    // search for estimated state that upper bound current interpolated state
-    auto iter_est_state = estimated_states.lower_bound(state);
-    if (iter_est_state == estimated_states.begin()) {
-      throw std::runtime_error(
-          "Interpolated state time is before all estimated state times");
-    } else if (iter_est_state == estimated_states.end()) {
-      throw std::runtime_error(
-          "Interpolated state time is after all estimated state times");
-    } else {
-      // decrement iterator (point to left border)
-      iter_est_state--;
-      // map interp to left border index
-      interp_to_borders_[state] =
-          std::pair(*iter_est_state, *std::next(iter_est_state));
-      // map keys to interp state
-      key_to_interp_[state.pose] = state;
-      key_to_interp_[state.velocity] = state;
-    }
-  }
-  // loop through factors and wrap factors on interpolated states
-  for (auto& factor : graph) {
-    // handle null factor
-    if (!factor) continue;
-    // if the factor is a WNOA motion factor, do not add it
-    if (std::dynamic_pointer_cast<WNOAMotionFactor<PoseType>>(factor)) continue;
-    // get ordered sets of interpolated and estimated states
-    std::set<StateData> factor_interp_states;
-    std::set<StateData> factor_estimated_states;
-    for (Key& key : factor->keys()) {
-      // check if key is an interpolated value
-      if (key_to_interp_.count(key) > 0) {
-        // add indices
-        StateData interp_state = key_to_interp_[key];
-        factor_interp_states.insert(interp_state);
-        auto [left, right] = interp_to_borders_.at(interp_state);
-        factor_estimated_states.insert(left);
-        factor_estimated_states.insert(right);
-      }
-    }
-    // add factor to new graph
-    if (factor_interp_states.size() == 0) {
-      // factor does not require interpolation, just add factor as is
-      new_graph.add(factor);
-    } else {
-      // Downcast the NonlinearFactor to a NoiseModelFactor
-      auto nmfactor = std::dynamic_pointer_cast<NoiseModelFactor>(factor);
-      assert(nmfactor &&
-             "Defined factors must be NoiseModelFactor or derivative class");
-
-      // Define and add factor to new graph
-      const auto wrapped_factor = std::make_shared<WNOAInterpFactor<PoseType>>(
-          nmfactor, factor_estimated_states, factor_interp_states, q_psd_diag,
-          fixed_noise);
-      new_graph.add(wrapped_factor);
-    }
-  }
-
-  return new_graph;
-}
-
-/**
- * @brief Update a `Values` with interpolated pose and velocity entries.
- *
- * Given an interpolated factor graph and the current estimated `Values`,
- * evaluate the interpolator to produce interpolated pose/velocity entries
- * and merge them into a copy of `values` which is returned.
- *
- * @tparam PoseType Pose type used by the interpolator.
- * @param interp_graph Factor graph containing interpolation metadata (borders).
- * @param values Current estimated `Values` (outer states used as borders).
- * @param estim_states Ordered set of estimated `StateData` used by the main
- * solve.
- * @param interp_states Ordered set of `StateData` entries to interpolate.
- * @param q_psd_diag Diagonal PSD vector for the WNOA motion prior.
- * @param covarianceMapOut Optional output pointer to receive
- * per-interpolated-state covariances.
- * @return Values A copy of `values` updated with interpolated pose and velocity
- * entries.
- */
-template <class PoseType>
-Values updateInterpValues(
-    const NonlinearFactorGraph& interp_graph, const Values& values,
-    const std::set<StateData>& estim_states,
-    const std::set<StateData>& interp_states, const Vector Q_psd,
-    std::shared_ptr<typename Interpolator<PoseType>::CovarianceMap>
-        covarianceMapOut = nullptr) {
-  // assert that the pose is the right kind of variable
-  static_assert(
-      std::is_same_v<typename traits<PoseType>::structure_category,
-                     lie_group_tag> ||
-          std::is_same_v<typename traits<PoseType>::structure_category,
-                         vector_space_tag>,
-      "Pose type must be either a Lie group or vector space");
-  // check dimension on the power spectral density matrix
-  assert(traits<PoseType>::dimension == Q_psd.size());
-  // Define interpolator
-  Interpolator<PoseType> interpolator(Q_psd);
-  // get interpolated values
-  Values interp_vals = interpolator.interpolatePosesAndVelocities(
-      interp_graph, values, estim_states, interp_states, covarianceMapOut);
-  // update values
-  Values values_updated(values);
-  values_updated.insert(interp_vals);
-  return values_updated;
-}
-
 /// traits
 template <class POSE>
-struct traits<WNOAInterpFactor<POSE>>
-    : public Testable<WNOAInterpFactor<POSE>> {};
+struct traits<WnoaInterpFactor<POSE>>
+    : public Testable<WnoaInterpFactor<POSE>> {};
 
 }  // namespace gtsam

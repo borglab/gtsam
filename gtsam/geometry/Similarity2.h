@@ -147,22 +147,18 @@ public:
    * Log map at the identity
    * \f$ [t_x, t_y, \delta, \lambda] \f$
    */
-  static Vector4 Logmap(const Similarity2& S,  //
-                        OptionalJacobian<4, 4> Hm = {});
+  static Vector4 Logmap(const Similarity2& S);
 
   /// Exponential map at the identity
-  static Similarity2 Expmap(const Vector4& v,  //
-                            OptionalJacobian<4, 4> Hm = {});
+  static Similarity2 Expmap(const Vector4& v);
 
   /// Chart at the origin
   struct ChartAtOrigin {
-    static Similarity2 Retract(const Vector4& v,
-                               ChartJacobian H = {}) {
-      return Similarity2::Expmap(v, H);
+    static Similarity2 Retract(const Vector4& v) {
+      return Similarity2::Expmap(v);
     }
-    static Vector4 Local(const Similarity2& other,
-                         ChartJacobian H = {}) {
-      return Similarity2::Logmap(other, H);
+    static Vector4 Local(const Similarity2& other) {
+      return Similarity2::Logmap(other);
     }
   };
 

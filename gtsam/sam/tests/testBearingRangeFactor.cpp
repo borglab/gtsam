@@ -19,6 +19,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/linear/BinaryJacobianFactor.h>
 #include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/sam/BearingRangeFactor.h>
 
@@ -66,6 +67,46 @@ TEST(BearingRangeFactor, 3D) {
   // incompatible with the Unit3 localCoordinates. See testBearingFactor...
   // EXPECT_CORRECT_FACTOR_JACOBIANS(factor3D, values, 1e-7, 1e-5);
 }  // namespace
+
+/* ************************************************************************* */
+namespace binary_linearization {
+
+// Calls the base implementation explicitly to obtain a generic JacobianFactor,
+// then checks that the normal call returns an equal BinaryJacobianFactor<M,N1,N2>,
+// where M is the residual dimension and N1/N2 are variable tangent dimensions.
+TEST(BearingRangeFactor, BinaryLinearization) {
+  // The 2D measurement stacks a one-dimensional Rot2 bearing and one range,
+  // giving two residual rows for Pose2 (3 DOF) and Point2 (2 DOF).
+  const Values values2D{{poseKey, genericValue(Pose2(1.0, 2.0, 0.57))},
+                        {pointKey, genericValue(Point2(-4.0, 11.0))}};
+  const BearingRangeFactor<Pose2, Point2> factor2D(
+      poseKey, pointKey, Rot2::fromAngle(0.2), 3.0,
+      noiseModel::Diagonal::Sigmas(Vector2{0.5, 0.8}));
+  const auto generic2D = factor2D.NoiseModelFactor::linearize(values2D);
+  const auto optimized2D = factor2D.linearize(values2D);
+  const bool isBinary2D = static_cast<bool>(
+      std::dynamic_pointer_cast<BinaryJacobianFactor<2, 3, 2>>(optimized2D));
+  CHECK(isBinary2D);
+  EXPECT(assert_equal(*generic2D, *optimized2D, 1e-9));
+
+  // The 3D measurement stacks a two-dimensional Unit3 bearing and one range,
+  // giving three residual rows for Pose3 (6 DOF) and Point3 (3 DOF). The
+  // base-qualified call provides the generic numerical reference.
+  const Values values3D{{poseKey, genericValue(Pose3())},
+                        {pointKey, genericValue(Point3(1.0, 0.0, 0.0))}};
+  const BearingRangeFactor<Pose3, Point3> factor3D(
+      poseKey, pointKey, Pose3().bearing(Point3(1.0, 0.0, 0.0)), 1.0,
+      noiseModel::Isotropic::Sigma(3, 0.5));
+  const auto generic3D = factor3D.NoiseModelFactor::linearize(values3D);
+  const auto optimized3D = factor3D.linearize(values3D);
+  const bool isBinary3D = static_cast<bool>(
+      std::dynamic_pointer_cast<BinaryJacobianFactor<3, 6, 3>>(optimized3D));
+  CHECK(isBinary3D);
+  EXPECT(assert_equal(*generic3D, *optimized3D, 1e-9));
+}
+
+}  // namespace binary_linearization
+/* ************************************************************************* */
 
 /* ************************************************************************* */
 int main() {

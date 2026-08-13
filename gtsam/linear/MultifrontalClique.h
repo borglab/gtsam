@@ -30,16 +30,20 @@
 #include <gtsam/symbolic/SymbolicFactor.h>
 
 #include <iosfwd>
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
 namespace gtsam {
 
+class BatchJacobianFactorBase;
 class GaussianConditional;
+class JacobianFactor;
 
 /// Map from variable key to dimension.
 using KeyDimMap = std::map<Key, size_t>;
@@ -110,7 +114,8 @@ class GTSAM_EXPORT MultifrontalClique {
    * Load factor values into the pre-allocated Ab matrix.
    * @param graph The factor graph with updated values (structure must match
    *              the graph used to build this clique, apart from updated
-   *              numerical values). Only JacobianFactor inputs are supported.
+   *              numerical values). Only JacobianFactor and BatchJacobianFactor
+   *              inputs are supported.
    */
   void fillAb(const GaussianFactorGraph& graph);
 
@@ -246,6 +251,27 @@ class GTSAM_EXPORT MultifrontalClique {
   /// Linear lookup for block index in small cliques.
   DenseIndex blockIndex(Key key) const;
 
+  enum class FactorLoadKind : uint8_t { Jacobian, Batch };
+
+  struct FactorLoadPlan {
+    FactorLoadKind kind = FactorLoadKind::Jacobian;
+    size_t factorIndex = 0;
+    SharedDiagonal model;
+    size_t rows = 0;
+    /// Slot indices for factor keys (or -1 for fixed keys). See
+    /// `linear/doc/BatchFactor_Performance_Notes.html` for load-plan usage.
+    std::vector<DenseIndex> blockIndices;
+    std::vector<DenseIndex> blockIndicesWithRhs;
+    /// Flattened local key+RHS mapping for each batch row group.
+    /// Built once per clique and reused during direct Hessian updates.
+    /// See `linear/doc/BatchFactor_Performance_Notes.html`.
+    std::vector<DenseIndex> mappedSlots;
+    bool canDirectUpdate = false;
+  };
+
+  /// Build and cache loading metadata for factors in this clique.
+  void buildLoadPlans(const GaussianFactorGraph& graph) const;
+
   /// Update a parent information matrix with this clique's separator
   /// contribution.
   void updateParentInfo(SymmetricBlockMatrix& parentInfo) const;
@@ -275,7 +301,16 @@ class GTSAM_EXPORT MultifrontalClique {
    * Add a Jacobian factor's contributions into the Ab matrix.
    * @return Number of rows added.
    */
-  size_t addJacobianFactor(const JacobianFactor& factor, size_t rowOffset);
+  size_t addJacobianFactor(const JacobianFactor& factor, size_t rowOffset,
+                           const FactorLoadPlan& plan);
+
+  /**
+   * Add a compact batch Jacobian factor's contributions into the Ab matrix.
+   * @return Number of rows added.
+   */
+  size_t addBatchJacobianFactor(const BatchJacobianFactorBase& factor,
+                               size_t rowOffset,
+                               const FactorLoadPlan& plan);
 
   void setParentIndices(const std::vector<DenseIndex>& indices) {
     parentIndices_ = indices;
@@ -285,10 +320,17 @@ class GTSAM_EXPORT MultifrontalClique {
   std::vector<size_t> factorIndices_;
   KeyVector orderedKeys_;  ///< Keys ordered by block index (frontals+seps).
   const std::unordered_set<Key>* fixedKeys_ = nullptr;
+  std::unordered_map<Key, DenseIndex> blockIndexCache_;
   std::vector<Vector*> frontalPtrs_;          ///< Solution frontals.
   std::vector<const Vector*> separatorPtrs_;  ///< Solution separator.
   std::vector<size_t> blockDims_;  ///< Cached block dimensions (excluding RHS).
   size_t factorRows_ = 0;          ///< Number of rows allocated in Ab.
+  mutable const GaussianFactorGraph* activeLoadGraph_ = nullptr;
+  mutable bool allBatchFactors_ = false;
+  mutable bool hasDirectBatchFactors_ = false;
+  mutable std::vector<FactorLoadPlan> loadPlans_;
+  mutable bool loadPlansBuilt_ = false;
+  mutable size_t fillRows_ = 0;
 
   // Finalize-time metadata (set once after children are known).
   std::vector<DenseIndex>
@@ -297,7 +339,7 @@ class GTSAM_EXPORT MultifrontalClique {
 
   // Finalize-time allocations.
   VerticalBlockMatrix Ab_;
-  
+
   // mutable as temporarily updateParentInfo
   mutable VerticalBlockMatrix RSd_;  ///< Cached [R S d] from elimination.
   mutable SymmetricBlockMatrix info_;

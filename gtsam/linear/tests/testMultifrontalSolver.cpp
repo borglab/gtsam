@@ -17,7 +17,9 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/BatchJacobianFactor.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/HessianFactor.h>
@@ -79,11 +81,11 @@ TEST(MultifrontalSolver, Constructor) {
   // Verify initial load for childClique
   // Block 0 (x2):
   Matrix A0 = childClique->Ab()(0);  // 2x1
-  EXPECT(assert_equal((Matrix(2, 1) << 2., 1.).finished(), A0));
+  EXPECT(assert_equal(Matrix{{2.}, {1.}}, A0));
 
   // Block 3 (RHS):
   Matrix Ab = childClique->Ab()(3);  // 2x1
-  EXPECT(assert_equal((Matrix(2, 1) << 2., 1.).finished(), Ab));
+  EXPECT(assert_equal(Matrix{{2.}, {1.}}, Ab));
 }
 
 /* ************************************************************************* */
@@ -110,7 +112,7 @@ TEST(MultifrontalSolver, ConstructorPrecomputed) {
 
   // Verify load for childClique
   Matrix A0 = childClique->Ab()(0);
-  EXPECT(assert_equal((Matrix(2, 1) << 2., 1.).finished(), A0));
+  EXPECT(assert_equal(Matrix{{2.}, {1.}}, A0));
 }
 
 /* ************************************************************************* */
@@ -138,7 +140,7 @@ TEST(MultifrontalSolver, Load) {
 
   // Block 0 (x2) should now be doubled, then whitened.
   Matrix A0 = childClique->Ab()(0);
-  EXPECT(assert_equal((Matrix(2, 1) << 4., 2.).finished(), A0));
+  EXPECT(assert_equal(Matrix{{4.}, {2}}, A0));
 }
 
 /* ************************************************************************* */
@@ -186,10 +188,8 @@ TEST(MultifrontalSolver, DeltaErrorMatchesGraph) {
 TEST(MultifrontalSolver, DeltaErrorMatchesGraphInconsistent) {
   const SharedDiagonal noise = noiseModel::Isotropic::Sigma(1, 1.0);
   GaussianFactorGraph graph;
-  graph.emplace_shared<JacobianFactor>(x1, I_1x1,
-                                       (Vector(1) << 1.0).finished(), noise);
-  graph.emplace_shared<JacobianFactor>(x1, I_1x1,
-                                       (Vector(1) << -2.0).finished(), noise);
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector{{1.0}}, noise);
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector{{-2.0}}, noise);
   const Ordering ordering{x1};
   MultifrontalSolver solver(graph, ordering, noMergeParams());
   solver.eliminateInPlace(graph);
@@ -308,10 +308,10 @@ TEST(MultifrontalSolver, ComputeBayesTreeMarginals) {
 // Compare marginals on a constrained chain against legacy marginals.
 TEST(MultifrontalSolver, ComputeBayesTreeMarginalsConstrainedChain) {
   const SharedDiagonal hardConstraint =
-      noiseModel::Constrained::MixedSigmas((Vector(1) << 0.0).finished());
+      noiseModel::Constrained::MixedSigmas(Vector{{0.0}});
   GaussianFactorGraph constrainedChain = chain;
-  constrainedChain.emplace_shared<JacobianFactor>(
-      x2, I_1x1, (Vector(1) << 0.0).finished(), hardConstraint);
+  constrainedChain.emplace_shared<JacobianFactor>(x2, I_1x1, Vector{{0.0}},
+                                                  hardConstraint);
 
   MultifrontalSolver solver(constrainedChain, chainOrdering, noMergeParams());
   solver.load(constrainedChain);
@@ -332,14 +332,13 @@ TEST(MultifrontalSolver, ComputeBayesTreeMarginalsConstrainedChain) {
 // Verify feasible unary constrained factor clamps the update to zero.
 TEST(MultifrontalSolver, ConstrainedNoiseFeasible) {
   const SharedDiagonal hardConstraint =
-      noiseModel::Constrained::MixedSigmas((Vector(1) << 0.0).finished());
+      noiseModel::Constrained::MixedSigmas(Vector{{0.0}});
   const SharedDiagonal softNoise = noiseModel::Isotropic::Sigma(1, 10.0);
   GaussianFactorGraph graph;
   // Same setup as ConstrainedNoiseUnsupported, but feasible (b == 0).
-  graph.emplace_shared<JacobianFactor>(x1, I_1x1, (Vector(1) << 0.0).finished(),
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector{{0.0}},
                                        hardConstraint);
-  graph.emplace_shared<JacobianFactor>(
-      x1, I_1x1, (Vector(1) << 100.0).finished(), softNoise);
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector{{100.0}}, softNoise);
   const Ordering ordering{x1};
 
   MultifrontalSolver solver(graph, ordering, noMergeParams());
@@ -354,13 +353,12 @@ TEST(MultifrontalSolver, ConstrainedNoiseFeasible) {
 // Infeasible unary constrained factor is rejected.
 TEST(MultifrontalSolver, ConstrainedNoiseUnsupported) {
   const SharedDiagonal hardConstraint =
-      noiseModel::Constrained::MixedSigmas((Vector(1) << 0.0).finished());
+      noiseModel::Constrained::MixedSigmas(Vector{{0.0}});
   const SharedDiagonal softNoise = noiseModel::Isotropic::Sigma(1, 10.0);
   GaussianFactorGraph graph;
-  graph.emplace_shared<JacobianFactor>(x1, I_1x1, (Vector(1) << 1.0).finished(),
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector{{1.0}},
                                        hardConstraint);
-  graph.emplace_shared<JacobianFactor>(
-      x1, I_1x1, (Vector(1) << 100.0).finished(), softNoise);
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector{{100.0}}, softNoise);
   const Ordering ordering{x1};
 
   CHECK_EXCEPTION(
@@ -374,10 +372,9 @@ TEST(MultifrontalSolver, ConstrainedNoiseUnaryFeasible) {
   const SharedDiagonal hardConstraint = noiseModel::Constrained::All(1);
   const SharedDiagonal softNoise = noiseModel::Isotropic::Sigma(1, 1.0);
   GaussianFactorGraph graph;
-  graph.emplace_shared<JacobianFactor>(x1, I_1x1, (Vector(1) << 0.0).finished(),
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector{{0.0}},
                                        hardConstraint);
-  graph.emplace_shared<JacobianFactor>(x1, I_1x1, (Vector(1) << 5.0).finished(),
-                                       softNoise);
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector{{5.0}}, softNoise);
   const Ordering ordering{x1};
 
   MultifrontalSolver solver(graph, ordering, noMergeParams());
@@ -393,8 +390,8 @@ TEST(MultifrontalSolver, ConstrainedNoiseUnaryFeasible) {
 TEST(MultifrontalSolver, ConstrainedNoiseMixedKeysUnsupported) {
   const SharedDiagonal hardConstraint = noiseModel::Constrained::All(1);
   GaussianFactorGraph graph;
-  graph.emplace_shared<JacobianFactor>(
-      x1, I_1x1, x2, I_1x1, (Vector(1) << 0.0).finished(), hardConstraint);
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, x2, I_1x1, Vector{{0.0}},
+                                       hardConstraint);
   const Ordering ordering{x1, x2};
 
   CHECK_EXCEPTION(
@@ -411,10 +408,9 @@ TEST(MultifrontalSolver, WeightedScalarMeasurements) {
   const double sigma2 = std::sqrt(1.0 / w2);
 
   GaussianFactorGraph graph;
-  graph.emplace_shared<JacobianFactor>(x1, I_1x1, (Vector(1) << 0.0).finished(),
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector{{0.0}},
                                        noiseModel::Isotropic::Sigma(1, sigma1));
-  graph.emplace_shared<JacobianFactor>(x1, I_1x1,
-                                       (Vector(1) << 10.0).finished(),
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector{{10.0}},
                                        noiseModel::Isotropic::Sigma(1, sigma2));
 
   const Ordering ordering{x1};
@@ -427,16 +423,153 @@ TEST(MultifrontalSolver, WeightedScalarMeasurements) {
 }
 
 /* ************************************************************************* */
+// Compact batch Jacobians solve the same system as equivalent dense factors.
+TEST(MultifrontalSolver, BatchJacobianFactor) {
+  auto batch = std::make_shared<BatchJacobianFactor<1, 1, 1>>(
+      KeyVector{x1, x2}, std::vector<size_t>{1, 1});
+  batch->reserve(2);
+  std::vector<Matrix> blocks{I_1x1, -I_1x1};
+  batch->addRow({0, 1}, blocks, Vector{{1.0}});
+  blocks = {2.0 * I_1x1, I_1x1};
+  batch->addRow({0, 1}, blocks, Vector{{3.0}});
+
+  GaussianFactorGraph batchGraph;
+  batchGraph.push_back(batch);
+
+  GaussianFactorGraph denseGraph;
+  denseGraph.emplace_shared<JacobianFactor>(x1, I_1x1, x2, -I_1x1,
+                                            Vector{{1.0}});
+  denseGraph.emplace_shared<JacobianFactor>(x1, 2.0 * I_1x1, x2, I_1x1,
+                                            Vector{{3.0}});
+
+  const Ordering ordering{x1, x2};
+  MultifrontalSolver solver(batchGraph, ordering, noMergeParams());
+  solver.eliminateInPlace(batchGraph);
+  const VectorValues& actual = solver.updateSolution();
+
+  const VectorValues expected = denseGraph.optimize(ordering);
+  EXPECT(assert_equal(expected, actual, 1e-9));
+}
+
+/* ************************************************************************* */
+// Compact batch Jacobians can be densified for legacy QR elimination.
+TEST(MultifrontalSolver, BatchJacobianFactorLegacyQR) {
+  auto batch = std::make_shared<BatchJacobianFactor<1, 1, 1>>(
+      KeyVector{x1, x2}, std::vector<size_t>{1, 1});
+  batch->reserve(2);
+  std::vector<Matrix> blocks{I_1x1, -I_1x1};
+  batch->addRow({0, 1}, blocks, Vector{{1.0}});
+  blocks = {2.0 * I_1x1, I_1x1};
+  batch->addRow({0, 1}, blocks, Vector{{3.0}});
+
+  GaussianFactorGraph batchGraph;
+  batchGraph.push_back(batch);
+
+  GaussianFactorGraph denseGraph;
+  denseGraph.emplace_shared<JacobianFactor>(x1, I_1x1, x2, -I_1x1,
+                                            Vector{{1.0}});
+  denseGraph.emplace_shared<JacobianFactor>(x1, 2.0 * I_1x1, x2, I_1x1,
+                                            Vector{{3.0}});
+
+  const Ordering ordering{x1, x2};
+  const VectorValues actual = batchGraph.optimize(ordering, EliminateQR);
+  const VectorValues expected = denseGraph.optimize(ordering, EliminateQR);
+
+  EXPECT(assert_equal(expected, actual, 1e-9));
+}
+
+/* ************************************************************************* */
+// A batch factor with non-unit diagonal weights is equivalent to weighted dense factors.
+TEST(MultifrontalSolver, BatchJacobianFactorWeightedModel) {
+  auto nonUnitModel = noiseModel::Diagonal::Sigmas(Vector{{2.0, 0.5}});
+  auto batch = std::make_shared<BatchJacobianFactor<1, 1, 1>>(
+      KeyVector{x1, x2}, std::vector<size_t>{1, 1}, nonUnitModel);
+  batch->reserve(2);
+  std::vector<Matrix> blocks{I_1x1, -I_1x1};
+  batch->addRow({0, 1}, blocks, Vector{{1.0}});
+  blocks = {2.0 * I_1x1, I_1x1};
+  batch->addRow({0, 1}, blocks, Vector{{3.0}});
+
+  GaussianFactorGraph batchGraph;
+  batchGraph.push_back(batch);
+
+  GaussianFactorGraph denseGraph;
+  denseGraph.emplace_shared<JacobianFactor>(x1, Matrix{{0.5}}, x2,
+                                            Matrix{{-0.5}}, Vector{{0.5}});
+  denseGraph.emplace_shared<JacobianFactor>(x1, Matrix{{4.0}}, x2,
+                                            Matrix{{2.0}}, Vector{{6.0}});
+
+  const Ordering ordering{x1, x2};
+  const VectorValues actual = batchGraph.optimize(ordering);
+  const VectorValues expected = denseGraph.optimize(ordering);
+  EXPECT(assert_equal(expected, actual, 1e-9));
+}
+
+/* ************************************************************************* */
+// A mixed stack of unit and non-unit batch models with a unary constrained factor.
+TEST(MultifrontalSolver, BatchJacobianFactorMixedNoiseModels) {
+  auto unitModel = noiseModel::Unit::Create(1);
+  auto batchUnit = std::make_shared<BatchJacobianFactor<1, 1>>(
+      KeyVector{x1}, std::vector<size_t>{1}, unitModel);
+  batchUnit->reserve(1);
+  batchUnit->addRow({0}, {I_1x1}, Vector{{1.0}});
+
+  auto nonUnitModel = noiseModel::Diagonal::Sigmas(Vector{{2.0}});
+  auto batchNonUnit = std::make_shared<BatchJacobianFactor<1, 1>>(
+      KeyVector{x1}, std::vector<size_t>{1}, nonUnitModel);
+  batchNonUnit->reserve(1);
+  batchNonUnit->addRow({0}, {I_1x1}, Vector{{2.0}});
+
+  auto constrainedModel = noiseModel::Constrained::All(1);
+
+  GaussianFactorGraph batchGraph;
+  batchGraph.push_back(batchUnit);
+  batchGraph.push_back(batchNonUnit);
+  batchGraph.emplace_shared<JacobianFactor>(x2, I_1x1, Vector{{0.0}},
+                                            constrainedModel);
+
+  GaussianFactorGraph denseGraph;
+  denseGraph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector{{1.0}},
+                                            unitModel);
+  denseGraph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector{{2.0}},
+                                            nonUnitModel);
+  denseGraph.emplace_shared<JacobianFactor>(x2, I_1x1, Vector{{0.0}},
+                                            constrainedModel);
+
+  const Ordering ordering{x1, x2};
+  const VectorValues actual = batchGraph.optimize(ordering);
+  const VectorValues expected = denseGraph.optimize(ordering);
+  EXPECT(assert_equal(expected, actual, 1e-9));
+}
+
+/* ************************************************************************* */
 // Hessian factors are rejected by the multifrontal solver.
 TEST(MultifrontalSolver, HessianFactors) {
   GaussianFactorGraph graph;
-  graph.emplace_shared<HessianFactor>(x1, (Matrix(1, 1) << 4.0).finished(),
-                                      (Vector(1) << 8.0).finished(), 0.0);
+  graph.emplace_shared<HessianFactor>(x1, Matrix{{4.0}}, Vector{{8.0}}, 0.0);
 
   const Ordering ordering{x1};
   CHECK_EXCEPTION(
       { MultifrontalSolver solver(graph, ordering, noMergeParams()); },
       std::runtime_error);
+}
+
+/* ************************************************************************* */
+// Loading a HessianFactor into precomputed Jacobian-only structure is rejected.
+TEST(MultifrontalSolver, LoadRejectsHessianFactor) {
+  GaussianFactorGraph jacobianGraph;
+  jacobianGraph.emplace_shared<JacobianFactor>(
+      x1, I_1x1, Vector{{2.0}}, noiseModel::Isotropic::Sigma(1, 1.0));
+
+  GaussianFactorGraph hessianGraph;
+  hessianGraph.emplace_shared<HessianFactor>(x1, Matrix{{4.0}}, Vector{{8.0}},
+                                             0.0);
+
+  const Ordering ordering{x1};
+  auto data = MultifrontalSolver::Precompute(jacobianGraph, ordering);
+  MultifrontalSolver solver(std::move(data), ordering, noMergeParams());
+
+  CHECK_EXCEPTION(solver.load(hessianGraph), MultifrontalSolverNotSupported);
 }
 
 /* ************************************************************************* */

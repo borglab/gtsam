@@ -7,6 +7,8 @@ The `constrained` module in GTSAM provides constrained nonlinear optimization on
 - [`ConstrainedOptProblem`](doc/ConstrainedOptProblem.ipynb): Holds objective costs, equality constraints, and inequality constraints.
 - [`ConstrainedOptProblem::AuxiliaryKeyGenerator`](doc/ConstrainedOptProblem.ipynb): Generates keys for auxiliary variables used when transforming inequality constraints.
 - [`NonlinearConstraint`](doc/NonlinearConstraint.ipynb): Base class for nonlinear constraints represented as constrained `NoiseModelFactor` objects.
+- [`QpProblem`](doc/QpProblem.ipynb): Quadratic programs with affine quadratic costs and linear constraints over direct `Vector` and `Matrix` values, including guidance on sparse versus dense active-set subproblems.
+- [`LpProblem`](doc/LpProblem.ipynb): Linear programs with linear costs and linear constraints over direct `Vector` and `Matrix` values.
 
 ## Equality Constraints
 
@@ -27,12 +29,44 @@ The `constrained` module in GTSAM provides constrained nonlinear optimization on
   - [`SmoothRampPoly3`](doc/InequalityPenaltyFunction.ipynb)
   - [`SoftPlusFunction`](doc/InequalityPenaltyFunction.ipynb)
 
+## QP and QCQP Problems
+
+- [`QpProblem`](doc/QpProblem.ipynb): Holds affine quadratic costs and linear equality/inequality constraints over vector or matrix variables.
+- [`QpCost`](doc/QpProblem.ipynb): Affine quadratic objective term backed by a Hessian factor.
+- [`LinearConstraint`](doc/QpProblem.ipynb): Linear constraint represented as equal, less-equal, or greater-equal.
+- [`ActiveSetSolver`](doc/QpProblem.ipynb): Active-set QP/LP solver with sparse and dense QP subproblem modes.
+- [`QcqpProblem`](doc/QcqpProblem.ipynb): Holds quadratic costs and linear/quadratic constraints over vector or matrix variables.
+- [`QpCost`](doc/QcqpProblem.ipynb): Also used for QCQP objectives; `QpCost(keys, Q, columnDim)` creates a pure row-space quadratic cost $\frac{1}{2}\sum_{ij}\operatorname{tr}(X_i^\top Q_{ij}X_j)$ over vectors or matrices $X_i \in \mathbb{R}^{r_i \times d}$.
+- [`QuadraticConstraint`](doc/QcqpProblem.ipynb): Scalar quadratic constraint $\operatorname{tr}(X^\top A X) \sim b$, where $\sim$ is equal, less-equal, or greater-equal.
+- `QcqpProblem(graph, columnDim)`: Opt-in conversion hook for supported nonlinear factors that can populate `QpCost` objectives and `QuadraticConstraint` equalities over matrix-valued QCQP variables.
+- `InsertQcqpValue<T, D>` and `InsertQcqpConstraints<T, D>`: Helpers for inserting supported QCQP variable values and their equality constraints.
+- `ExtractQcqpValues<T, D>`: Projection of exact-shape D=1 homogeneous vectors
+  or matrix slices back to manifold values. Absolute results from unanchored
+  matrix components are gauge-dependent.
+
+The leading factor of `1/2` in row-space `QpCost` construction is intentional:
+it follows GTSAM's standard factor-error convention. To represent a QCQP
+objective written without the `1/2`, pass twice the row-space `Q` blocks to
+`QpCost`.
+
+The rotation conversion has two tracks. Rot2 at `D=1` uses an exact homogeneous
+lift and supports a sign-pinning hard prior. At `D>=N`, Rot2 (`D>=2`) and Rot3
+(`D>=3`) use row-Stiefel variables satisfying $XX^\top=I$. Between costs have a
+common right-$O(D)$ gauge. Matrix-form priors are intentionally unsupported: a
+fixed target $\|X-[M^\top\;0]\|_F^2$ breaks that gauge and cannot be represented
+by the Burer--Monteiro Gram matrix alone. A future BM-compatible lowering can
+introduce an anchor block and use the invariant cost
+$\|X-M^\top X_{\mathrm{anchor}}\|_F^2$. The Stiefel constraints do not enforce
+determinant $+1$, so square variables also admit reflections. Unsupported
+factors throw from `NonlinearFactor::qcqpFactors`.
+
 ## Optimizers
 
 - [`ConstrainedOptimizerParams`](doc/ConstrainedOptimizer.ipynb), [`ConstrainedOptimizerState`](doc/ConstrainedOptimizer.ipynb), [`ConstrainedOptimizer`](doc/ConstrainedOptimizer.ipynb): Shared base interfaces and iteration state for constrained solvers.
 - [`PenaltyOptimizerParams`](doc/PenaltyOptimizer.ipynb), [`PenaltyOptimizerState`](doc/PenaltyOptimizer.ipynb), [`PenaltyOptimizer`](doc/PenaltyOptimizer.ipynb): Classical penalty method solver and its parameters/state.
 - [`AugmentedLagrangianParams`](doc/AugmentedLagrangianOptimizer.ipynb), [`AugmentedLagrangianState`](doc/AugmentedLagrangianOptimizer.ipynb), [`AugmentedLagrangianOptimizer`](doc/AugmentedLagrangianOptimizer.ipynb): Generic augmented Lagrangian solver and its parameters/state.
 - [`BoundConstrainedLagrangianParams`](BoundConstrainedLagrangian.h), [`BoundConstrainedLagrangianState`](BoundConstrainedLagrangian.h), [`BoundConstrainedLagrangian`](BoundConstrainedLagrangian.h): Bound-constrained augmented Lagrangian variant with `eta` and `omega` thresholds for multiplier and penalty updates.
+- [`ActiveSetSolver`](doc/QpProblem.ipynb): Active-set solver for [`QpProblem`](doc/QpProblem.ipynb) and [`LpProblem`](doc/LpProblem.ipynb), with sparse and dense QP subproblem modes.
 
 ## How the Pieces Fit Together
 

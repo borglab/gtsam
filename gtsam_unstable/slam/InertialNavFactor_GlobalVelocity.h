@@ -13,10 +13,16 @@
  *  @file   InertialNavFactor_GlobalVelocity.h
  *  @author Vadim Indelman, Stephen Williams
  *  @brief  Inertial navigation factor (velocity in the global frame)
+ *  @deprecated This legacy unstable inertial-navigation factor is no longer
+ *  maintained. Use the stable navigation factors where applicable.
  *  @date   Sept 13, 2012
  **/
 
 #pragma once
+
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
@@ -319,16 +325,15 @@ public:
 
   static inline void Calc_g_rho_omega_earth_NED(const Vector& Pos_NED, const Vector& Vel_NED, const Vector& LatLonHeight_IC, const Vector& Pos_NED_Initial,
       Vector& g_NED, Vector& rho_NED, Vector& omega_earth_NED) {
+    Matrix ENU_to_NED{//
+                      {0.0, 1.0, 0.0},
+                      {1.0, 0.0, 0.0},
+                      {0.0, 0.0, -1.0}};
 
-    Matrix ENU_to_NED = (Matrix(3, 3) <<
-        0.0,  1.0,  0.0,
-        1.0,  0.0,  0.0,
-        0.0,  0.0, -1.0).finished();
-
-    Matrix NED_to_ENU = (Matrix(3, 3) <<
-        0.0,  1.0,  0.0,
-        1.0,  0.0,  0.0,
-        0.0,  0.0, -1.0).finished();
+    Matrix NED_to_ENU{//
+                      {0.0, 1.0, 0.0},
+                      {1.0, 0.0, 0.0},
+                      {0.0, 0.0, -1.0}};
 
     // Convert incoming parameters to ENU
     Vector Pos_ENU = NED_to_ENU * Pos_NED;
@@ -390,8 +395,7 @@ public:
     double Ro( sqrt(Rp*Rm) );           // mean earth radius of curvature
     double g0( 9.780318*( 1 + 5.3024e-3 * pow(sin(lat_new),2) - 5.9e-6 * pow(sin(2*lat_new),2) ) );
     double g_calc( g0/( pow(1 + height/Ro, 2) ) );
-    g_ENU = (Vector(3) << 0.0, 0.0, -g_calc).finished();
-
+    g_ENU = Vector{{0.0, 0.0, -g_calc}};
 
     // Calculate rho
     double Ve( Vel_ENU(0) );
@@ -399,7 +403,7 @@ public:
     double rho_E = -Vn/(Rm + height);
     double rho_N = Ve/(Rp + height);
     double rho_U = Ve*tan(lat_new)/(Rp + height);
-    rho_ENU = (Vector(3) << rho_E, rho_N, rho_U).finished();
+    rho_ENU = Vector{{rho_E, rho_N, rho_U}};
   }
 
   static inline noiseModel::Gaussian::shared_ptr calc_descrete_noise_model(const noiseModel::Gaussian::shared_ptr& model, double delta_t){
@@ -431,3 +435,5 @@ struct traits<InertialNavFactor_GlobalVelocity<POSE, VELOCITY, IMUBIAS> > :
 };
 
 } /// namespace aspn
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

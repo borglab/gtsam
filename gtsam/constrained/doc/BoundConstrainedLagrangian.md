@@ -69,7 +69,7 @@ $$
 
 Written in a compact form with our convention,
 
-$$ 
+$$
 \|\nabla_x \mathcal{L}_A(x_{k+1}, \lambda_k; \mu_k)\|_\infty \le \omega_k
 \quad \text{and} \quad
 \|h(x_{k+1})\|_\infty \le \eta_k
@@ -152,13 +152,13 @@ That function does the following:
 
 In formulas, the implemented logic is
 
-$$ 
+$$
 \|\nabla \phi(x_k)\|_\infty < \omega_k
 $$
 
 followed by
 
-$$ 
+$$
 \|h(x_k)\|_\infty < \eta_k.
 $$
 

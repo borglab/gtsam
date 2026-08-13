@@ -43,6 +43,7 @@ class Chebyshev2 {
   static gtsam::Matrix CalculateWeights(size_t N, double x);
   static gtsam::Matrix DerivativeWeights(size_t N, double x);
   
+  // Returns the exact (N+1) x N antiderivative matrix.
   static gtsam::Matrix IntegrationMatrix(size_t N);
   static gtsam::Matrix DifferentiationMatrix(size_t N);
   static gtsam::Matrix IntegrationWeights(size_t N);
@@ -50,6 +51,7 @@ class Chebyshev2 {
 
   static gtsam::Matrix CalculateWeights(size_t N, double x, double a, double b);
   static gtsam::Matrix DerivativeWeights(size_t N, double x, double a, double b);
+  // Returns the exact (N+1) x N antiderivative matrix on [a,b].
   static gtsam::Matrix IntegrationMatrix(size_t N, double a, double b);
   static gtsam::Matrix DifferentiationMatrix(size_t N, double a, double b);
   static gtsam::Matrix IntegrationWeights(size_t N, double a, double b);

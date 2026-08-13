@@ -5,18 +5,15 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-
-
-#include <gtsam_unstable/slam/TransformBtwRobotsUnaryFactorEM.h>
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/nonlinear/Values.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
-
-#include <gtsam/slam/BetweenFactor.h>
-
-#include <gtsam/nonlinear/NonlinearOptimizer.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam_unstable/slam/TransformBtwRobotsUnaryFactorEM.h>
 
 using namespace std::placeholders;
 using namespace std;
@@ -300,7 +297,7 @@ TEST( TransformBtwRobotsUnaryFactorEM, Jacobian)
 //  // compare to standard between factor
 //  BetweenFactor<gtsam::Pose2> h(keyA, keyB, rel_pose_msr, model_inlier );
 //  Vector actual_err_wh_stnd = h.whitenedError(values);
-//  Vector actual_err_wh_inlier = (Vector(3) << actual_err_wh[0], actual_err_wh[1], actual_err_wh[2]);
+//  Vector actual_err_wh_inlier{actual_err_wh[0], actual_err_wh[1], actual_err_wh[2]};
 //  CHECK( assert_equal(actual_err_wh_stnd, actual_err_wh_inlier, 1e-8));
 //  std::vector<gtsam::Matrix> H_actual_stnd_unwh(2);
 //  (void)h.unwhitenedError(values, H_actual_stnd_unwh);

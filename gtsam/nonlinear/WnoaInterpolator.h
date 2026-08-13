@@ -25,17 +25,10 @@
 #include <gtsam/nonlinear/WnoaFactor.h>
 #include <gtsam/nonlinear/WnoaStateData.h>
 
-#include <algorithm>
-#include <fstream>
 #include <functional>
-#include <iostream>
-#include <limits>
 #include <map>
 #include <optional>
-#include <random>
 #include <set>
-#include <string>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -94,6 +87,11 @@ struct TimestampedPoseVelocity {
 };
 
 /**
+ * @brief Type alias for a map from variable keys to interpolated state covariances.
+ */
+typedef std::map<Key, Matrix> InterpCovarianceMap;
+
+/**
  * @brief Interpolator for poses and velocities under a motion prior.
  *
  * The `Interpolator` class provides routines to interpolate pose and
@@ -115,10 +113,11 @@ class GTSAM_EXPORT Interpolator {
   using Vector2N = Eigen::Matrix<double, 2 * dim, 1>;
   using MatrixNx2N = Eigen::Matrix<double, dim, 2 * dim>;
 
-  VectorN Q_psd_;  // Diagonal power Spectral Density for WNOA
+  VectorN q_psd_diag_;  // Diagonal power Spectral Density for WNOA
   std::function<Matrix(double dt)> transitionFunction_;
-  std::function<Matrix(double dt, const VectorN& Q_psd)> covarianceFunction_;
-  std::function<Matrix(double dt, const VectorN& Q_psd)>
+  std::function<Matrix(double dt, const VectorN& q_psd_diag)>
+      covarianceFunction_;
+  std::function<Matrix(double dt, const VectorN& q_psd_diag)>
       inverseCovarianceFunction_;
   // Todo: need to make the below two functions generalize to cases with no
   // velocities, e.g. WNOV
@@ -144,29 +143,30 @@ class GTSAM_EXPORT Interpolator {
     MatrixN dxidotkp1_dvarpikp1;
   };
 
-  // Maps a pose or velocity to their covariance matrix
-  using CovarianceMap = std::map<Key, Matrix>;
 
   Interpolator() = delete;
 
   /**
    * @brief Construct an Interpolator with custom motion-model functions.
    *
-   * @param Q_psd Diagonal power spectral density vector for the motion prior.
+   * @param q_psd_diag Diagonal power spectral density vector for the motion
+   * prior.
    * @param transitionFunction Function returning the transition matrix for dt.
    * @param covarianceFunction Function returning process noise covariance for
-   * dt and Q_psd.
+   * dt and q_psd_diag.
    * @param inverseCovarianceFunction Function returning inverse covariance for
-   * dt and Q_psd.
+   * dt and q_psd_diag.
    * @param computeJacobianPrev Function that computes the Jacobian of the
    * interpolated state with respect to the previous bordering state.
    * @param computeJacobianNext Function that computes the Jacobian of the
    * interpolated state with respect to the next bordering state.
    */
   Interpolator(
-      const VectorN& Q_psd, std::function<Matrix(double dt)> transitionFunction,
-      std::function<Matrix(double dt, const VectorN& Q_psd)> covarianceFunction,
-      std::function<Matrix(double dt, const VectorN& Q_psd)>
+      const VectorN& q_psd_diag,
+      std::function<Matrix(double dt)> transitionFunction,
+      std::function<Matrix(double dt, const VectorN& q_psd_diag)>
+          covarianceFunction,
+      std::function<Matrix(double dt, const VectorN& q_psd_diag)>
           inverseCovarianceFunction,
       std::function<Matrix(const std::pair<PoseType, VelocityType>&,
                            const std::pair<PoseType, VelocityType>&, double)>
@@ -178,9 +178,10 @@ class GTSAM_EXPORT Interpolator {
   /**
    * @brief Default constructor using the WNOA motion model.
    *
-   * @param Q_psd Diagonal power spectral density vector for the motion prior.
+   * @param q_psd_diag Diagonal power spectral density vector for the motion
+   * prior.
    */
-  Interpolator(const VectorN& Q_psd);
+  Interpolator(const VectorN& q_psd_diag);
 
   /**
    * @brief Interpolate the pose and velocity at time `t_tau`.
@@ -250,7 +251,7 @@ class GTSAM_EXPORT Interpolator {
       const NonlinearFactorGraph& mainSolveGraph,
       const Values& mainSolveSolution, const StateDataSet& mainSolveStates,
       const StateDataSet& interpolatedStates,
-      std::shared_ptr<CovarianceMap> covarianceMapOut = nullptr) const;
+      std::shared_ptr<InterpCovarianceMap> covarianceMapOut = nullptr) const;
 
   /**
    * @brief Compute the conditional covariance of the interpolated state.
@@ -435,7 +436,7 @@ class GTSAM_EXPORT Interpolator {
    * @brief Step 1 of interpolatePoseAndVelocity: form local state vectors and
    * optional local Jacobians.
    *
-   * Computes $(\xi_k, \dot\xi_k, \xi_{k+1}, \dot\xi_{k+1})$ used by
+   * Computes \f$(\xi_k, \dot\xi_k, \xi_{k+1}, \dot\xi_{k+1})\f$ used by
    * interpolation. Jacobian outputs are populated only when all Jacobian
    * pointers are non-null.
    *
@@ -464,7 +465,7 @@ class GTSAM_EXPORT Interpolator {
    * Lambda/Psi matrices.
    *
    * Retrieves (or reuses precomputed) Lambda/Psi and computes
-   * $(\xi_\tau, \dot\xi_\tau)$.
+   * \f$(\xi_\tau, \dot\xi_\tau)\f$.
    *
    * @param t_k Left border timestamp.
    * @param t_kp1 Right border timestamp.
@@ -472,9 +473,9 @@ class GTSAM_EXPORT Interpolator {
    * @param xi_dot_k Local velocity vector at the left border.
    * @param xi_kp1 Local position vector at the right border.
    * @param xi_dot_kp1 Local velocity vector at the right border.
-   * @param LambdaPsiPreComp Optional precomputed $(\Lambda, \Psi)$ pair.
-   * @param Lambda Output interpolation matrix $\Lambda$.
-   * @param Psi Output interpolation matrix $\Psi$.
+   * @param LambdaPsiPreComp Optional precomputed \f$(\Lambda, \Psi)\f$ pair.
+   * @param Lambda Output interpolation matrix \f$\Lambda\f$.
+   * @param Psi Output interpolation matrix \f$\Psi\f$.
    * @param xi_tau Output interpolated local position vector.
    * @param xidot_tau Output interpolated local velocity vector.
    * @return void
@@ -497,9 +498,10 @@ class GTSAM_EXPORT Interpolator {
    * @param xi_tau Interpolated local position vector.
    * @param xidot_tau Interpolated local velocity vector.
    * @param right_jac_tau Output right Jacobian of `Expmap(xi_tau)`.
-   * @param dTtau_dTk Optional output Jacobian of $T_\tau$ wrt $T_k$.
-   * @param dTtau_dxitau Optional output Jacobian of $T_\tau$ wrt $\xi_\tau$.
-   * @return PoseVel Interpolated pose and velocity pair at $t_\tau$.
+   * @param dTtau_dTk Optional output Jacobian of \f$T_\tau\f$ wrt \f$T_k\f$.
+   * @param dTtau_dxitau Optional output Jacobian of \f$T_\tau\f$ wrt
+   * \f$\xi_\tau\f$.
+   * @return PoseVel Interpolated pose and velocity pair at \f$t_\tau\f$.
    */
   PoseVel mapLocalStateToManifold_(const PoseType& T_k, const VectorN& xi_tau,
                                    const VectorN& xidot_tau,
@@ -511,12 +513,12 @@ class GTSAM_EXPORT Interpolator {
    * @brief Step 4 of interpolatePoseAndVelocity: compose full Jacobians with
    * chain rule.
    *
-   * @param Lambda Interpolation matrix $\Lambda$.
-   * @param Psi Interpolation matrix $\Psi$.
+   * @param Lambda Interpolation matrix \f$\Lambda\f$.
+   * @param Psi Interpolation matrix \f$\Psi\f$.
    * @param xidot_tau Interpolated local velocity vector.
    * @param right_jac_tau Right Jacobian of `Expmap(xi_tau)`.
-   * @param dTtau_dTk Jacobian of $T_\tau$ wrt $T_k$ from composition.
-   * @param dTtau_dxitau Jacobian of $T_\tau$ wrt $\xi_\tau$.
+   * @param dTtau_dTk Jacobian of \f$T_\tau\f$ wrt \f$T_k\f$ from composition.
+   * @param dTtau_dxitau Jacobian of \f$T_\tau\f$ wrt \f$\xi_\tau\f$.
    * @param jacs Jacobians for local state wrt bordering states.
    * @param H Output vector of Jacobian blocks to populate.
    * @return void
@@ -537,8 +539,8 @@ class GTSAM_EXPORT Interpolator {
    * @param tPoseVel_kp1 Timestamped right border state.
    * @param poseVel_tau Interpolated pose/velocity at query time.
    * @param t_tau Query timestamp.
-   * @param Lambda Interpolation matrix $\Lambda$.
-   * @param Psi Interpolation matrix $\Psi$.
+   * @param Lambda Interpolation matrix \f$\Lambda\f$.
+   * @param Psi Interpolation matrix \f$\Psi\f$.
    * @param mainSolveMarginalMatrix Optional covariance of bordering states.
    * @param covarianceOut Optional output covariance for interpolated state.
    * @return void

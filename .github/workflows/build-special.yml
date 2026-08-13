@@ -1,16 +1,11 @@
 name: Special Cases CI
 
 on:
-  pull_request:
-    paths-ignore:
-      - '**.md'
-      - '**.ipynb' 
-      - 'myst.yml'
+  workflow_call:
+  workflow_dispatch:
 
-# Cancels any in-progress workflow runs for the same PR when a new push is made,
-# allowing the runner to become available more quickly for the latest changes.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  group: special-cases-ci-${{ github.run_id }}
   cancel-in-progress: true
 
 jobs:
@@ -21,6 +16,7 @@ jobs:
       image: borglab/gtsam-ci:${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.version }}
       env:
         CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
+        GTSAM_BUILD_EXAMPLES_ALWAYS: ON
       volumes:
         - ${{ github.workspace }}:/gtsam
     strategy:
@@ -37,7 +33,6 @@ jobs:
             ubuntu-clang-cayleymap,
             ubuntu-clang-system-libs,
             ubuntu-no-unstable,
-            ubuntu-build-examples,
           ]
 
         build_type: [Release]
@@ -79,15 +74,9 @@ jobs:
             version: "14"
             flag: no_unstable
 
-          - name: ubuntu-build-examples
-            os: ubuntu-22.04
-            compiler: clang
-            version: "14"
-            flag: build_examples
-
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set Allow Deprecated Flag
         if: matrix.flag == 'deprecated'
@@ -114,11 +103,6 @@ jobs:
           echo "GTSAM_ROT3_EXPMAP=OFF" >> $GITHUB_ENV
           echo "GTSAM Uses Cayley map for Rot3"
 
-      - name: Build Examples
-        if: matrix.flag == 'build_examples'
-        run: |
-          echo "GTSAM_BUILD_EXAMPLES_ALWAYS=ON" >> $GITHUB_ENV
-
       - name: Use system versions of 3rd party libraries
         if: matrix.flag == 'system'
         run: |
@@ -134,4 +118,3 @@ jobs:
       - name: Build & Test
         run: |
           bash .github/scripts/unix.sh -t
-

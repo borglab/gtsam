@@ -47,7 +47,7 @@ GaussianFactorGraph::shared_ptr GaussNewtonOptimizer::iterate() {
 
   // Linearize graph
   gttic(GaussNewtonOptimizer_Linearize);
-  GaussianFactorGraph::shared_ptr linear = graph_.linearize(state_->values);
+  GaussianFactorGraph::shared_ptr linear = graph().linearize(state_->values);
   gttoc(GaussNewtonOptimizer_Linearize);
 
   gttic(GaussNewtonOptimizer_Solve);
@@ -67,7 +67,7 @@ GaussianFactorGraph::shared_ptr GaussNewtonOptimizer::iterate() {
 
   // Create new state with new values and new error
   Values newValues = state_->values.retract(delta);
-  state_.reset(new State(std::move(newValues), graph_.error(newValues), state_->iterations + 1));
+  state_.reset(new State(std::move(newValues), graph().error(newValues), state_->iterations + 1));
 
   return linear;
 }

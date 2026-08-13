@@ -15,6 +15,7 @@
  * @author Rohan Bansal
  */
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam_unstable/navigation/EqVIOState.h>
 
 namespace gtsam {

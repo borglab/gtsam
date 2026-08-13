@@ -17,8 +17,10 @@
 
 #pragma once
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/VectorSpace.h>
+
 #include <iosfwd>
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
@@ -77,7 +79,7 @@ public:
                                OptionalJacobian<3, 6> H1 = {},
                                OptionalJacobian<3, 3> H2 = {}) const {
     if (H1) (*H1) << -I_3x3, Z_3x3;
-    if (H2) (*H2) << I_3x3;
+    if (H2) *H2 = I_3x3;
     return measurement - biasAcc_;
   }
 
@@ -86,7 +88,7 @@ public:
                            OptionalJacobian<3, 6> H1 = {},
                            OptionalJacobian<3, 3> H2 = {}) const {
     if (H1) (*H1) << Z_3x3, -I_3x3;
-    if (H2) (*H2) << I_3x3;
+    if (H2) *H2 = I_3x3;
     return measurement - biasGyro_;
   }
 
@@ -166,9 +168,6 @@ private:
   }
 #endif
 
-
-public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
   /// @}
 
 }; // ConstantBias class
@@ -180,4 +179,3 @@ struct traits<imuBias::ConstantBias> : public internal::VectorSpace<
 };
 
 } // namespace gtsam
-

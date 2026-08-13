@@ -41,17 +41,17 @@ jobs:
             python_version: "3.12"
             cibw_python_version: 312
             platform_id: manylinux_x86_64
-            manylinux_image: manylinux2014
+            manylinux_image: manylinux_2_28
           - os: ubuntu-latest
             python_version: "3.13"
             cibw_python_version: 313
             platform_id: manylinux_x86_64
-            manylinux_image: manylinux2014
+            manylinux_image: manylinux_2_28
           - os: ubuntu-latest
             python_version: "3.14"
             cibw_python_version: 314
             platform_id: manylinux_x86_64
-            manylinux_image: manylinux2014
+            manylinux_image: manylinux_2_28
 
           # Linux aarch64
           - os: ubuntu-24.04-arm
@@ -63,17 +63,17 @@ jobs:
             python_version: "3.12"
             cibw_python_version: 312
             platform_id: manylinux_aarch64
-            manylinux_image: manylinux2014
+            manylinux_image: manylinux_2_28
           - os: ubuntu-24.04-arm
             python_version: "3.13"
             cibw_python_version: 313
             platform_id: manylinux_aarch64
-            manylinux_image: manylinux2014
+            manylinux_image: manylinux_2_28
           - os: ubuntu-24.04-arm
             python_version: "3.14"
             cibw_python_version: 314
             platform_id: manylinux_aarch64
-            manylinux_image: manylinux2014
+            manylinux_image: manylinux_2_28
 
           # MacOS arm64
           - os: macos-latest
@@ -95,10 +95,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python ${{ matrix.python_version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python_version }}
 
@@ -129,7 +129,9 @@ jobs:
       # the wheels to ensure platform compatibility.
       - name: Run CMake
         run: |
-          cmake -B build -G Ninja -DGTSAM_BUILD_PYTHON=1 -DGTSAM_PYTHON_VERSION=${{ matrix.python_version }}
+          cmake -B build -G Ninja -DGTSAM_BUILD_PYTHON=1 \
+            -DGTSAM_PYTHON_VERSION=${{ matrix.python_version }} \
+            -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON
 
       # If on macOS, we previously installed boost using homebrew for the first build.
       # We need to uninstall it before building the wheels with cibuildwheel, which will
@@ -177,7 +179,7 @@ jobs:
           fi
 
       - name: Store artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: cibw-wheels-cp${{ matrix.cibw_python_version }}-${{ matrix.platform_id }}
           path: wheelhouse/*.whl
@@ -187,10 +189,11 @@ jobs:
     needs: build_wheels
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       id-token: write
     steps:
       - name: Download Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           path: dist/
           merge-multiple: true
@@ -201,3 +204,31 @@ jobs:
           verbose: true
           packages-dir: dist/
           # repository-url: https://test.pypi.org/legacy/
+
+      # Temporarily disabled: PyPI requires email confirmation when a
+      # GitHub-hosted runner appears as an unrecognized device. Restore these
+      # steps once PyPI supports unattended release deletion.
+      #
+      # - name: Checkout cleanup script
+      #   uses: actions/checkout@v6
+      #
+      # - name: Set up Python for cleanup
+      #   uses: actions/setup-python@v6
+      #   with:
+      #     python-version: "3.12"
+      #
+      # - name: Clean old develop releases on PyPI
+      #   env:
+      #     PYPI_CLEANUP_USERNAME: ${{ secrets.PYPI_CLEANUP_USERNAME }}
+      #     PYPI_CLEANUP_PASSWORD: ${{ secrets.PYPI_CLEANUP_PASSWORD }}
+      #     PYPI_CLEANUP_TOTP_SECRET: ${{ secrets.PYPI_CLEANUP_TOTP_SECRET }}
+      #   run: |
+      #     if [ -z "$PYPI_CLEANUP_USERNAME" ] || [ -z "$PYPI_CLEANUP_PASSWORD" ]; then
+      #       echo "Skipping PyPI cleanup because PYPI_CLEANUP_USERNAME or PYPI_CLEANUP_PASSWORD is not configured."
+      #       exit 0
+      #     fi
+      #
+      #     python3 -m pip install pypi-cleanup==0.1.10
+      #     if ! bash .github/scripts/python_wheels/cleanup_gtsam_develop.sh --keep 5 --yes; then
+      #       echo "Warning: PyPI cleanup failed; keeping old gtsam-develop releases and continuing."
+      #     fi

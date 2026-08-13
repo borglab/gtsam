@@ -15,6 +15,7 @@
  *  @author Frank Dellaert
  */
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/inference/Symbol.h>

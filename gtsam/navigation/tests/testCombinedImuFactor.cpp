@@ -20,7 +20,9 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/inference/Symbol.h>
@@ -29,6 +31,7 @@
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/navigation/ScenarioRunner.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/factorTesting.h>
 
 #include <list>
 
@@ -92,8 +95,7 @@ TEST_PIM(CombinedImuFactor, ErrorWithBiases ) {
   PIM pim(p, Bias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)));
 
   // Measurements
-  Vector3 measuredOmega;
-  measuredOmega << 0, 0, M_PI / 10.0 + 0.3;
+  Vector3 measuredOmega{0, 0, M_PI / 10.0 + 0.3};
   Vector3 measuredAcc =
       x1.rotation().unrotate(-p->n_gravity) + Vector3(0.2, 0.0, 0.0);
   double deltaT = 1.0;
@@ -225,22 +227,22 @@ TEST_PIM(CombinedImuFactor, CheckCovariance) {
 
   actual.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
 
-  Eigen::Matrix<double, 15, 15> expected;
-  expected << 1.53125e-07, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,          //
-      0, 1.53125e-07, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,                  //
-      0, 0, 1.53125e-07, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,                  //
-      0, 0, 0, 0.003125, 0, 0, 0.00125, 0, 0, 0, 0, 0, 0, 0, 0,  //
-      0, 0, 0, 0, 0.003125, 0, 0, 0.00125, 0, 0, 0, 0, 0, 0, 0,  //
-      0, 0, 0, 0, 0, 0.003125, 0, 0, 0.00125, 0, 0, 0, 0, 0, 0,  //
-      0, 0, 0, 0.00125, 0, 0, 0.0005, 0, 0, 0, 0, 0, 0, 0, 0,     //
-      0, 0, 0, 0, 0.00125, 0, 0, 0.0005, 0, 0, 0, 0, 0, 0, 0,     //
-      0, 0, 0, 0, 0, 0.00125, 0, 0, 0.0005, 0, 0, 0, 0, 0, 0,     //
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 5., 0, 0, 0, 0, 0,                  //
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5., 0, 0, 0, 0,                  //
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5., 0, 0, 0,                  //
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5., 0, 0,                  //
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5., 0,                  //
-      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5.;
+  Eigen::Matrix<double, 15, 15> expected{
+      {1.53125e-07, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+      {0, 1.53125e-07, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+      {0, 0, 1.53125e-07, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+      {0, 0, 0, 0.003125, 0, 0, 0.00125, 0, 0, 0, 0, 0, 0, 0, 0},
+      {0, 0, 0, 0, 0.003125, 0, 0, 0.00125, 0, 0, 0, 0, 0, 0, 0},
+      {0, 0, 0, 0, 0, 0.003125, 0, 0, 0.00125, 0, 0, 0, 0, 0, 0},
+      {0, 0, 0, 0.00125, 0, 0, 0.0005, 0, 0, 0, 0, 0, 0, 0, 0},
+      {0, 0, 0, 0, 0.00125, 0, 0, 0.0005, 0, 0, 0, 0, 0, 0, 0},
+      {0, 0, 0, 0, 0, 0.00125, 0, 0, 0.0005, 0, 0, 0, 0, 0, 0},
+      {0, 0, 0, 0, 0, 0, 0, 0, 0, 5., 0, 0, 0, 0, 0},
+      {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5., 0, 0, 0, 0},
+      {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5., 0, 0, 0},
+      {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5., 0, 0},
+      {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5., 0},
+      {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5.}};
 
   // regression
   EXPECT(assert_equal(expected, actual.preintMeasCov()));

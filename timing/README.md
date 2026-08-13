@@ -2,6 +2,76 @@
 
 This directory contains timing executables and helper scripts for GTSAM.
 
+## Shared timing conventions
+
+Modern benchmarks share the private support library in `timing/internal`.
+`Arguments` provides consistent typed command-line parsing, timing helpers use
+`std::chrono::steady_clock`, and `TimingSummary` records the statistical
+definitions already used by the individual programs. In particular, callers
+must select either the averaged-middle or upper-middle median policy so that a
+migration does not silently change historical results.
+
+Warmups execute before the measured repetitions, and harness work such as
+argument parsing, sample aggregation, formatting, and file creation remains
+outside the timed callable. Output files are checked when opened and missing
+parent directories are created. Benchmark Action JSON uses the shared
+`BenchmarkMetric` writer to keep names, units, numeric precision, and escaping
+consistent.
+
+These helpers are private to the timing targets and do not add public GTSAM
+API. Legacy `gttic_` microbenchmarks continue to use `gtsam/base/timing` and are
+not candidates for migration to this harness.
+
+## BetweenFactor Jacobian Benchmark
+
+`timeBetweenFactor` measures `BetweenFactor<Rot3>::evaluateError` with both
+Jacobians requested at a nonzero residual. It also reports maximum absolute
+differences from numerical Jacobians outside the timed region. This migrates
+the experiment from PR 88 into a standalone, reproducible timing target.
+The current factor and an exact copy of the legacy Jacobian path are timed in
+alternating order within each repetition, reducing CPU-frequency drift in the
+comparison.
+
+Build and run it from the build directory:
+
+```bash
+make -j6 timeBetweenFactor
+./timing/timeBetweenFactor --warmup 5 --repeats 20 \
+  --iterations 100000 --output between_factor.json
+```
+
+With `GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON`, the output directly compares
+the corrected Local-Jacobian path with the legacy approximation. The optional
+output uses the shared Benchmark Action JSON format.
+
+### End-to-end pose-graph optimization
+
+`timeBetweenFactorPoseGraph` assesses whether the more expensive Jacobians
+change nonlinear convergence enough to offset their per-evaluation cost. It
+loads `w10000.graph`, anchors pose zero, computes one shared FAST-Sync
+initialization, and then runs Levenberg-Marquardt to its standard termination
+condition on two otherwise identical graphs. FAST-Sync is outside the timed
+refinements. The current factors and benchmark-only copies of the legacy
+`BetweenFactor` and `PriorFactor` Jacobian paths are run in alternating order.
+
+```bash
+make -j6 timeBetweenFactorPoseGraph
+./timing/timeBetweenFactorPoseGraph --warmup 1 --repeats 5 \
+  --dataset w10000.graph --output between_factor_pose_graph.json
+```
+
+Pass `--raw-initial` only to reproduce the difficult uninitialized convergence
+diagnostic.
+
+BAL benchmarks additionally share `BalBenchmarkConfig` and the builders in
+`timing/internal/SfmBalBenchmark`. The configuration carries ordering and
+projection-noise choices explicitly; timing headers no longer define mutable
+globals or inject the `std` and `gtsam` namespaces. Dataset selection, initial
+values, point- and camera-batch graph variants, orderings, and LM defaults live
+in that component. The end-to-end full-system and reduced-camera PCG comparison
+is isolated in `SfmPcgBenchmark` so `timeSFMBAL.cpp` remains focused on selecting
+and reporting benchmark modes.
+
 ## RangeFactor Plaza2 Benchmark
 
 This benchmark isolates the current range-only Plaza2 incremental SLAM workload
@@ -41,6 +111,68 @@ conda run -n py312 python timing/benchmark_range_factor_plaza2.py \
 
 The helper script runs the benchmark executable, preserves the CSV, and prints a
 short summary that can be copied into a PR description.
+
+## Binary Factor Pose-Graph Benchmark
+
+This benchmark compares the automatic fixed-size binary linearization of
+`BetweenFactor<Pose2>` with an explicitly qualified generic
+`NoiseModelFactor::linearize()` control. Both modes use the same graph, initial
+values, COLAMD ordering, and fixed number of Levenberg-Marquardt iterations.
+Trial order alternates to reduce systematic timing drift, and the executable
+checks that both modes produce equivalent final errors and poses.
+
+From the build directory:
+
+```bash
+make -j6 timeBinaryFactorPoseGraph
+./timing/timeBinaryFactorPoseGraph \
+  --dataset w10000.graph \
+  --warmup 1 \
+  --repeats 7 \
+  --linearize-repeats 3 \
+  --iterations 10 \
+  --output ../timing/results/binary_factor_pose_graph.csv
+```
+
+The console summary reports generic and binary medians plus the median paired
+percentage change. The optional CSV contains one row per mode and measured
+trial for more detailed analysis.
+
+## Ternary Factor Benchmarks
+
+`timeTernarySfmBAL` compares variable-calibration BAL in three forms: a split
+Pose3/Point3/Cal3Bundler graph forced through generic linearization, the same
+graph using `TernaryJacobianFactor<2,6,3,3>`, and the existing packed-camera
+graph using `BinaryJacobianFactor<2,9,3>`. The generic and ternary runs have
+identical nonlinear factors, values, ordering, and iteration counts.
+
+`timeTernaryImuFactor` builds a deterministic NavState/bias chain with one
+second of preintegrated stationary IMU data per interval and weak anchors every
+100 intervals to keep the long Cholesky solve well-conditioned. It compares
+`ImuFactor2` forced through generic linearization against automatic
+`TernaryJacobianFactor<9,9,9,6>` linearization. Before timing, it requires the
+keys, all three whitened Jacobian blocks, RHS, and noise model of every factor
+to be bitwise identical. Both executables alternate trial order, verify
+concrete linear-factor types, and reject numerically different optimization
+results. BAL uses fixed-iteration Levenberg-Marquardt, while the IMU chain uses
+fixed-step Gauss-Newton to avoid adaptive damping retries in the timed
+comparison.
+
+From the build directory:
+
+```bash
+make -j6 timeTernarySfmBAL timeTernaryImuFactor
+./timing/timeTernarySfmBAL --dataset /path/to/dubrovnik-88-64298-pre.txt \
+  --warmup 1 --repeats 5 --linearize-repeats 3 --iterations 5 \
+  --output ../timing/results/ternary_sfm_bal.csv
+./timing/timeTernaryImuFactor --steps 1000 \
+  --warmup 1 --repeats 5 --linearize-repeats 3 --iterations 1 \
+  --output ../timing/results/ternary_imu_factor.csv
+```
+
+Each console summary reports median linearization and fixed-iteration solver
+times.
+The optional CSV files retain every measured trial for independent analysis.
 
 ## Bayes-Tree Covariance Results
 

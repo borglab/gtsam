@@ -124,37 +124,37 @@ const StateData& state_2 = fixture().state_2;
 }  // namespace
 
 /* ************************************************************************* */
-TEST(WNOAFactor, Constructor) {
+TEST(WnoaFactor, Constructor) {
   // Create WNOA Motion Factor for Point1
-  WNOAMotionFactor<Point1> factorP1(P(1), V(1), P(2), V(2), timestep, Q_p1);
-  WNOAMotionFactor<Point2> factorP2(P(1), V(1), P(2), V(2), timestep, Q_p2);
-  WNOAMotionFactor<Point3> factorP3(P(1), V(1), P(2), V(2), timestep, Q_p3);
-  WNOAMotionFactor<Pose2> factorSE2(P(1), V(1), P(2), V(2), timestep, Q_se2);
-  WNOAMotionFactor<Pose3> factorSE3(P(1), V(1), P(2), V(2), timestep, Q_se3);
+  WnoaMotionFactor<Point1> factorP1(P(1), V(1), P(2), V(2), timestep, Q_p1);
+  WnoaMotionFactor<Point2> factorP2(P(1), V(1), P(2), V(2), timestep, Q_p2);
+  WnoaMotionFactor<Point3> factorP3(P(1), V(1), P(2), V(2), timestep, Q_p3);
+  WnoaMotionFactor<Pose2> factorSE2(P(1), V(1), P(2), V(2), timestep, Q_se2);
+  WnoaMotionFactor<Pose3> factorSE3(P(1), V(1), P(2), V(2), timestep, Q_se3);
 }
 
 /* ************************************************************************* */
-TEST(WNOAFactor, ConstructorStateData) {
+TEST(WnoaFactor, ConstructorStateData) {
   // Create WNOA Motion Factor for Point1
-  WNOAMotionFactor<Point1> factorP1(state_1, state_2, Q_p1);
-  WNOAMotionFactor<Point2> factorP2(state_1, state_2, Q_p2);
-  WNOAMotionFactor<Point3> factorP3(state_1, state_2, Q_p3);
-  WNOAMotionFactor<Pose2> factorSE2(state_1, state_2, Q_se2);
-  WNOAMotionFactor<Pose3> factorSE3(state_1, state_2, Q_se3);
+  WnoaMotionFactor<Point1> factorP1(state_1, state_2, Q_p1);
+  WnoaMotionFactor<Point2> factorP2(state_1, state_2, Q_p2);
+  WnoaMotionFactor<Point3> factorP3(state_1, state_2, Q_p3);
+  WnoaMotionFactor<Pose2> factorSE2(state_1, state_2, Q_se2);
+  WnoaMotionFactor<Pose3> factorSE3(state_1, state_2, Q_se3);
 }
 
 /* *************************************************************************
  */
-TEST(WNOAFactor, Equals) {
+TEST(WnoaFactor, Equals) {
   // Create two identical factors and make sure they're equal
-  WNOAMotionFactor<Pose2> factor1(P(1), V(1), P(2), V(2), timestep, Q_se2);
-  WNOAMotionFactor<Pose2> factor2(P(1), V(1), P(2), V(2), timestep, Q_se2);
+  WnoaMotionFactor<Pose2> factor1(P(1), V(1), P(2), V(2), timestep, Q_se2);
+  WnoaMotionFactor<Pose2> factor2(P(1), V(1), P(2), V(2), timestep, Q_se2);
 
   CHECK(assert_equal(factor1, factor2));
 
-  WNOAMotionFactor<Point2> factor1_point(P(1), V(1), P(2), V(2), timestep,
+  WnoaMotionFactor<Point2> factor1_point(P(1), V(1), P(2), V(2), timestep,
                                          Q_p2);
-  WNOAMotionFactor<Point2> factor2_point(P(1), V(1), P(2), V(2), timestep,
+  WnoaMotionFactor<Point2> factor2_point(P(1), V(1), P(2), V(2), timestep,
                                          Q_p2);
 
   CHECK(assert_equal(factor1_point, factor2_point));
@@ -163,14 +163,13 @@ TEST(WNOAFactor, Equals) {
 /* *************************************************************************
  */
 
-TEST(WNOAFactor, EvalErrorP1) {
+TEST(WnoaFactor, EvalErrorP1) {
   // Define factor
-  WNOAMotionFactor<Point1> factorP1(P(1), V(1), P(2), V(2), timestep, Q_p1);
+  WnoaMotionFactor<Point1> factorP1(P(1), V(1), P(2), V(2), timestep, Q_p1);
   // compute error
   Vector actualError(factorP1.evaluateError(p0_p1, v0_p1, p1_p1, v1_p1));
   // expected is zero
-  Vector2 expectedError;
-  expectedError << Vector1(0.0), v0_p1;
+  Vector2 expectedError(0.0, v0_p1(0));
 
   // Actual error depends on the level of accuracy we are using for the expmap
   double tol = 1e-9;
@@ -182,9 +181,9 @@ TEST(WNOAFactor, EvalErrorP1) {
 /* *************************************************************************
  */
 
-TEST(WNOAFactor, EvalErrorP2) {
+TEST(WnoaFactor, EvalErrorP2) {
   // Define factor
-  WNOAMotionFactor<Point2> factorP2(P(1), V(1), P(2), V(2), timestep, Q_p2);
+  WnoaMotionFactor<Point2> factorP2(P(1), V(1), P(2), V(2), timestep, Q_p2);
   // compute error
   Vector actualError(factorP2.evaluateError(p0_p2, v0_p2, p1_p2, v1_p2));
   // expected is zero
@@ -200,9 +199,9 @@ TEST(WNOAFactor, EvalErrorP2) {
 /* *************************************************************************
  */
 
-TEST(WNOAFactor, EvalErrorP3) {
+TEST(WnoaFactor, EvalErrorP3) {
   // Define factor
-  WNOAMotionFactor<Point3> factorP3(P(1), V(1), P(2), V(2), timestep, Q_p3);
+  WnoaMotionFactor<Point3> factorP3(P(1), V(1), P(2), V(2), timestep, Q_p3);
   // compute error
   Vector actualError(factorP3.evaluateError(p0_p3, v0_p3, p1_p3, v1_p3));
   // expected is zero
@@ -218,9 +217,9 @@ TEST(WNOAFactor, EvalErrorP3) {
 /* *************************************************************************
  */
 
-TEST(WNOAFactor, EvalErrorSE2) {
+TEST(WnoaFactor, EvalErrorSE2) {
   // Define factor
-  WNOAMotionFactor<Pose2> factorSE2(P(1), V(1), P(2), V(2), timestep, Q_se2);
+  WnoaMotionFactor<Pose2> factorSE2(P(1), V(1), P(2), V(2), timestep, Q_se2);
   // compute error
   Vector actualError(factorSE2.evaluateError(p0_se2, v0_se2, p1_se2, v1_se2));
   // expected is zero
@@ -242,9 +241,9 @@ TEST(WNOAFactor, EvalErrorSE2) {
 /* *************************************************************************
  */
 
-TEST(WNOAFactor, EvalErrorSE3) {
+TEST(WnoaFactor, EvalErrorSE3) {
   // Define factor (keys don't matter here)
-  WNOAMotionFactor<Pose3> factorSE3(P(1), V(1), P(2), V(2), timestep, Q_se3);
+  WnoaMotionFactor<Pose3> factorSE3(P(1), V(1), P(2), V(2), timestep, Q_se3);
   // compute error
   Vector actualError(factorSE3.evaluateError(p0_se3, v0_se3, p1_se3, v1_se3));
   // expected is zero
@@ -266,9 +265,9 @@ TEST(WNOAFactor, EvalErrorSE3) {
 /* *************************************************************************
  */
 
-TEST(WNOAFactor, EvalErrorSE3StateData) {
+TEST(WnoaFactor, EvalErrorSE3StateData) {
   // Define factor (keys don't matter here)
-  WNOAMotionFactor<Pose3> factorSE3(state_1, state_2, Q_se3);
+  WnoaMotionFactor<Pose3> factorSE3(state_1, state_2, Q_se3);
   // compute error
   Vector actualError(factorSE3.evaluateError(p0_se3, v0_se3, p1_se3, v1_se3));
   // expected is zero
@@ -290,10 +289,10 @@ TEST(WNOAFactor, EvalErrorSE3StateData) {
 /* *************************************************************************
  */
 
-TEST(WNOAFactor, ErrorJacobianP1) {
+TEST(WnoaFactor, ErrorJacobianP1) {
   // Get analytical derivatives
   Matrix J_p0, J_v0, J_p1, J_v1;
-  WNOAMotionFactor<Point1> factorP1(P(1), V(1), P(2), V(2), timestep, Q_p1);
+  WnoaMotionFactor<Point1> factorP1(P(1), V(1), P(2), V(2), timestep, Q_p1);
   auto residual = factorP1.evaluateError(p0_p1, v0_p1, p1_p1, v1_p1, J_p0, J_v0,
                                          J_p1, J_v1);
 
@@ -326,10 +325,10 @@ TEST(WNOAFactor, ErrorJacobianP1) {
 /* *************************************************************************
  */
 
-TEST(WNOAFactor, ErrorJacobianP2) {
+TEST(WnoaFactor, ErrorJacobianP2) {
   // Get analytical derivatives
   Matrix J_p0, J_v0, J_p1, J_v1;
-  WNOAMotionFactor<Point2> factorP2(P(1), V(1), P(2), V(2), timestep, Q_p2);
+  WnoaMotionFactor<Point2> factorP2(P(1), V(1), P(2), V(2), timestep, Q_p2);
   auto residual = factorP2.evaluateError(p0_p2, v0_p2, p1_p2, v1_p2, J_p0, J_v0,
                                          J_p1, J_v1);
 
@@ -362,10 +361,10 @@ TEST(WNOAFactor, ErrorJacobianP2) {
 /* *************************************************************************
  */
 
-TEST(WNOAFactor, ErrorJacobianP3) {
+TEST(WnoaFactor, ErrorJacobianP3) {
   // Get analytical derivatives
   Matrix J_p0, J_v0, J_p1, J_v1;
-  WNOAMotionFactor<Point3> factorP3(P(1), V(1), P(2), V(2), timestep, Q_p3);
+  WnoaMotionFactor<Point3> factorP3(P(1), V(1), P(2), V(2), timestep, Q_p3);
   auto residual = factorP3.evaluateError(p0_p3, v0_p3, p1_p3, v1_p3, J_p0, J_v0,
                                          J_p1, J_v1);
 
@@ -398,10 +397,10 @@ TEST(WNOAFactor, ErrorJacobianP3) {
 /* *************************************************************************
  */
 
-TEST(WNOAFactor, ErrorJacobianSE2) {
+TEST(WnoaFactor, ErrorJacobianSE2) {
   // Get analytical derivatives
   Matrix J_p0, J_v0, J_p1, J_v1;
-  WNOAMotionFactor<Pose2> factorSE2(P(1), V(1), P(2), V(2), timestep, Q_se2);
+  WnoaMotionFactor<Pose2> factorSE2(P(1), V(1), P(2), V(2), timestep, Q_se2);
   auto residual = factorSE2.evaluateError(p0_se2, v0_se2, p1_se2, v1_se2, J_p0,
                                           J_v0, J_p1, J_v1);
 
@@ -434,10 +433,10 @@ TEST(WNOAFactor, ErrorJacobianSE2) {
 /* *************************************************************************
  */
 
-TEST(WNOAFactor, ErrorJacobianSE3) {
+TEST(WnoaFactor, ErrorJacobianSE3) {
   // Get analytical derivatives
   Matrix J_p0, J_v0, J_p1, J_v1;
-  WNOAMotionFactor<Pose3> factorSE3(P(1), V(1), P(2), V(2), timestep, Q_se3);
+  WnoaMotionFactor<Pose3> factorSE3(P(1), V(1), P(2), V(2), timestep, Q_se3);
   auto residual = factorSE3.evaluateError(p0_se3, v0_se3, p1_se3, v1_se3, J_p0,
                                           J_v0, J_p1, J_v1);
 
@@ -470,7 +469,7 @@ TEST(WNOAFactor, ErrorJacobianSE3) {
 /* *************************************************************************
  */
 
-TEST(WNOAFactor, OptimizeP1) {
+TEST(WnoaFactor, OptimizeP1) {
   // Create a factor graph
   NonlinearFactorGraph graph;
   // Lock the first pose
@@ -478,7 +477,7 @@ TEST(WNOAFactor, OptimizeP1) {
   graph.emplace_shared<NonlinearEquality<Vector1>>(V(0), v0_p1);
 
   // add WNOA factor
-  graph.add(WNOAMotionFactor<Point1>(P(0), V(0), P(1), V(1), timestep, Q_p1));
+  graph.add(WnoaMotionFactor<Point1>(P(0), V(0), P(1), V(1), timestep, Q_p1));
   // Set up initial guess
   Values values;
   values.insert(P(0), p0_p1);
@@ -504,7 +503,7 @@ TEST(WNOAFactor, OptimizeP1) {
 /* *************************************************************************
  */
 
-TEST(WNOAFactor, OptimizeP2) {
+TEST(WnoaFactor, OptimizeP2) {
   // Create a factor graph
   NonlinearFactorGraph graph;
   // Lock the first pose
@@ -512,7 +511,7 @@ TEST(WNOAFactor, OptimizeP2) {
   graph.emplace_shared<NonlinearEquality<Vector2>>(V(0), v0_p2);
 
   // add WNOA factor
-  graph.add(WNOAMotionFactor<Point2>(P(0), V(0), P(1), V(1), timestep, Q_p2));
+  graph.add(WnoaMotionFactor<Point2>(P(0), V(0), P(1), V(1), timestep, Q_p2));
   // Set up initial guess
   Values values;
   values.insert(P(0), p0_p2);
@@ -538,7 +537,7 @@ TEST(WNOAFactor, OptimizeP2) {
 /* *************************************************************************
  */
 
-TEST(WNOAFactor, OptimizeP3) {
+TEST(WnoaFactor, OptimizeP3) {
   // Create a factor graph
   NonlinearFactorGraph graph;
   // Lock the first pose
@@ -546,7 +545,7 @@ TEST(WNOAFactor, OptimizeP3) {
   graph.emplace_shared<NonlinearEquality<Vector3>>(V(0), v0_p3);
 
   // add WNOA factor
-  graph.add(WNOAMotionFactor<Point3>(P(0), V(0), P(1), V(1), timestep, Q_p3));
+  graph.add(WnoaMotionFactor<Point3>(P(0), V(0), P(1), V(1), timestep, Q_p3));
   // Set up initial guess
   Values values;
   values.insert(P(0), p0_p3);
@@ -572,7 +571,7 @@ TEST(WNOAFactor, OptimizeP3) {
 /* *************************************************************************
  */
 
-TEST(WNOAFactor, OptimizeSE2) {
+TEST(WnoaFactor, OptimizeSE2) {
   // Create a factor graph
   NonlinearFactorGraph graph;
   // Lock the first pose
@@ -580,7 +579,7 @@ TEST(WNOAFactor, OptimizeSE2) {
   graph.emplace_shared<NonlinearEquality<Vector3>>(V(0), v0_se2);
 
   // add WNOA factor
-  graph.add(WNOAMotionFactor<Pose2>(P(0), V(0), P(1), V(1), timestep, Q_se2));
+  graph.add(WnoaMotionFactor<Pose2>(P(0), V(0), P(1), V(1), timestep, Q_se2));
   // Set up initial guess
   Values values;
   values.insert(P(0), p0_se2);
@@ -605,7 +604,7 @@ TEST(WNOAFactor, OptimizeSE2) {
 
 /* ************************************************************************* */
 
-TEST(WNOAFactor, OptimizeSE3) {
+TEST(WnoaFactor, OptimizeSE3) {
   // Create a factor graph
   NonlinearFactorGraph graph;
   // Lock the first pose
@@ -613,7 +612,7 @@ TEST(WNOAFactor, OptimizeSE3) {
   graph.emplace_shared<NonlinearEquality<Vector6>>(V(0), v0_se3);
 
   // add WNOA factor
-  graph.add(WNOAMotionFactor<Pose3>(P(0), V(0), P(1), V(1), timestep, Q_se3));
+  graph.add(WnoaMotionFactor<Pose3>(P(0), V(0), P(1), V(1), timestep, Q_se3));
   // Set up initial guess
   Values values;
   values.insert(V(0), v0_se3);
@@ -638,7 +637,7 @@ TEST(WNOAFactor, OptimizeSE3) {
 
 /* ************************************************************************* */
 
-TEST(WNOAFactor, OptimizeP3Pert) {
+TEST(WnoaFactor, OptimizeP3Pert) {
   // Create a factor graph
   NonlinearFactorGraph graph;
   // Lock the first pose
@@ -646,7 +645,7 @@ TEST(WNOAFactor, OptimizeP3Pert) {
   graph.emplace_shared<NonlinearEquality<Vector3>>(V(0), v0_p3);
 
   // add WNOA factor
-  graph.add(WNOAMotionFactor<Point3>(P(0), V(0), P(1), V(1), timestep, Q_p3));
+  graph.add(WnoaMotionFactor<Point3>(P(0), V(0), P(1), V(1), timestep, Q_p3));
   // Set up initial guess
   Values values;
   values.insert(V(0), v0_p3);
@@ -666,7 +665,7 @@ TEST(WNOAFactor, OptimizeP3Pert) {
 
 /* ************************************************************************* */
 
-TEST(WNOAFactor, OptimizeSE3Pert) {
+TEST(WnoaFactor, OptimizeSE3Pert) {
   // Create a factor graph
   NonlinearFactorGraph graph;
   // Lock the first pose
@@ -674,7 +673,7 @@ TEST(WNOAFactor, OptimizeSE3Pert) {
   graph.emplace_shared<NonlinearEquality<Vector6>>(V(0), v0_se3);
 
   // add WNOA factor
-  graph.add(WNOAMotionFactor<Pose3>(P(0), V(0), P(1), V(1), timestep, Q_se3));
+  graph.add(WnoaMotionFactor<Pose3>(P(0), V(0), P(1), V(1), timestep, Q_se3));
   // Set up initial guess
   Values values;
   values.insert(V(0), v0_se3);

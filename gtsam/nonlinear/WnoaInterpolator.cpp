@@ -8,14 +8,34 @@
 
 #include "WnoaInterpolator.h"
 
+namespace {
+    /** Assign a fixed-size block so Eigen uses compile-time extents. Avoids GCC -Werror=
+        array bounds false positives in the SSE vectorizer when a fixed-size source is assigned
+        to a dynamic destination
+    */
+    template <typename DstType, typename SrcType>
+    void assignBlock(const SrcType& src, DstType* dst) {
+        constexpr int R = SrcType::RowsAtCompileTime;
+        constexpr int C = SrcType::ColsAtCompileTime;
+        if constexpr (R != Eigen::Dynamic && C != Eigen::Dynamic) {
+            dst->resize(R, C);
+            dst->template block<R, C>(0, 0) = src;
+        } else {
+            *dst = src;
+        }
+    }
+}
+
 namespace gtsam {
 
 // ---- Constructors ----
 template <typename PoseType>
 Interpolator<PoseType>::Interpolator(
-    const VectorN& Q_psd, std::function<Matrix(double dt)> transitionFunction,
-    std::function<Matrix(double dt, const VectorN& Q_psd)> covarianceFunction,
-    std::function<Matrix(double dt, const VectorN& Q_psd)>
+    const VectorN& q_psd_diag,
+    std::function<Matrix(double dt)> transitionFunction,
+    std::function<Matrix(double dt, const VectorN& q_psd_diag)>
+        covarianceFunction,
+    std::function<Matrix(double dt, const VectorN& q_psd_diag)>
 
         inverseCovarianceFunction,
     std::function<Matrix(const std::pair<PoseType, VelocityType>&,
@@ -24,7 +44,7 @@ Interpolator<PoseType>::Interpolator(
     std::function<Matrix(const std::pair<PoseType, VelocityType>&,
                          const std::pair<PoseType, VelocityType>&, double)>
         computeJacobianNext)
-    : Q_psd_(Q_psd),
+    : q_psd_diag_(q_psd_diag),
       transitionFunction_(transitionFunction),
       covarianceFunction_(covarianceFunction),
       inverseCovarianceFunction_(inverseCovarianceFunction),
@@ -32,12 +52,12 @@ Interpolator<PoseType>::Interpolator(
       computeJacobianNext_(computeJacobianNext) {}
 
 template <typename PoseType>
-Interpolator<PoseType>::Interpolator(const VectorN& Q_psd)
-    : Interpolator(Q_psd, WNOAMotionFactor<PoseType>::TransitionFunction,
-                   WNOAMotionFactor<PoseType>::BuildWNOACovariance,
-                   WNOAMotionFactor<PoseType>::BuildInverseWNOACovariance,
-                   WNOAMotionFactor<PoseType>::ComputeJacobianPrev,
-                   WNOAMotionFactor<PoseType>::ComputeJacobianNext) {}
+Interpolator<PoseType>::Interpolator(const VectorN& q_psd_diag)
+    : Interpolator(q_psd_diag, WnoaMotionFactor<PoseType>::TransitionFunction,
+                   WnoaMotionFactor<PoseType>::BuildWnoaCovariance,
+                   WnoaMotionFactor<PoseType>::BuildInverseWnoaCovariance,
+                   WnoaMotionFactor<PoseType>::ComputeJacobianPrev,
+                   WnoaMotionFactor<PoseType>::ComputeJacobianNext) {}
 
 // ---- Member Functions ----
 template <typename PoseType>
@@ -185,7 +205,7 @@ Interpolator<PoseType>::extrapolatePoseAndVelocity(
   if (mainSolveMarginalMatrix && covarianceOut) {
     assert(mainSolveMarginalMatrix->rows() == 2 * dim &&
            mainSolveMarginalMatrix->cols() == 2 * dim);
-    Matrix2N Sigma = covarianceFunction_(t_diff, Q_psd_);
+    Matrix2N Sigma = covarianceFunction_(t_diff, q_psd_diag_);
     // (11.5) in (Barfoot 2024)
     *covarianceOut = Sigma + Psi * *mainSolveMarginalMatrix * Psi.transpose();
   }
@@ -383,23 +403,27 @@ void Interpolator<PoseType>::computeCompleteJacobians_(
       jacs.dxidotkp1_dvarpikp1;  // dxikp1 does not depend on varpi_kp1
   // Compose final Jacobians using chain rule
   // dTtau_dTk
-  (*H)[0] = dTtau_dTk + dTtau_dxitau * dxitau_dTk;
+  assignBlock(dTtau_dTk + dTtau_dxitau * dxitau_dTk, &(*H)[0]);
   // dTtau_dvarpik
-  (*H)[1] = dTtau_dxitau * dxitau_dvarpik;
+  assignBlock(dTtau_dxitau * dxitau_dvarpik, &(*H)[1]);
   // dTtau_dTkp1
-  (*H)[2] = dTtau_dxitau * dxitau_dTkp1;
+  assignBlock(dTtau_dxitau * dxitau_dTkp1, &(*H)[2]);
   // dTtau_dvarpikp1
-  (*H)[3] = dTtau_dxitau * dxitau_dvarpikp1;
+  assignBlock(dTtau_dxitau * dxitau_dvarpikp1, &(*H)[3]);
   // dvarpitau_dTk
-  (*H)[4] = right_jac_tau * dxidottau_dTk + dvarpitau_dxitau * dxitau_dTk;
+  assignBlock(right_jac_tau * dxidottau_dTk + dvarpitau_dxitau * dxitau_dTk,
+              &(*H)[4]);
   // dvarpitau_dvarpik
-  (*H)[5] =
-      right_jac_tau * dxidottau_dvarpik + dvarpitau_dxitau * dxitau_dvarpik;
+  assignBlock(
+      right_jac_tau * dxidottau_dvarpik + dvarpitau_dxitau * dxitau_dvarpik,
+      &(*H)[5]);
   // dvarpitau_dTkp1
-  (*H)[6] = right_jac_tau * dxidottau_dTkp1 + dvarpitau_dxitau * dxitau_dTkp1;
+  assignBlock(right_jac_tau * dxidottau_dTkp1 + dvarpitau_dxitau * dxitau_dTkp1,
+              &(*H)[6]);
   // dvarpitau_dvarpikp1
-  (*H)[7] =
-      right_jac_tau * dxidottau_dvarpikp1 + dvarpitau_dxitau * dxitau_dvarpikp1;
+  assignBlock(
+      right_jac_tau * dxidottau_dvarpikp1 + dvarpitau_dxitau * dxitau_dvarpikp1,
+      &(*H)[7]);
 }
 
 template <typename PoseType>
@@ -464,7 +488,7 @@ template <typename PoseType>
 Values Interpolator<PoseType>::interpolatePosesAndVelocities(
     const NonlinearFactorGraph& mainSolveGraph, const Values& mainSolveSolution,
     const StateDataSet& mainSolveStates, const StateDataSet& interpolatedStates,
-    std::shared_ptr<CovarianceMap> covarianceMapOut) const {
+    std::shared_ptr<InterpCovarianceMap> covarianceMapOut) const {
   // Map from intervals [t1, t2) to query times inside that interval (bucket)
   std::map<StateDataInterval, std::vector<StateData>> queryBuckets;
 
@@ -582,8 +606,8 @@ std::pair<Matrix, Matrix> Interpolator<PoseType>::getLambdaPsiGeneral(
   auto Phi_tau2 = transitionFunction_(t_kp1 - t_tau);
 
   // Construct Q
-  auto Q_12_inv = inverseCovarianceFunction_(dt, Q_psd_);
-  auto Q_1tau = covarianceFunction_(t_tau - t_k, Q_psd_);
+  auto Q_12_inv = inverseCovarianceFunction_(dt, q_psd_diag_);
+  auto Q_1tau = covarianceFunction_(t_tau - t_k, q_psd_diag_);
 
   // Eq. (11.41) in (Barfoot 2024)
   auto Lambda = Phi_1tau - Q_1tau * Phi_tau2.transpose() * Q_12_inv * Phi_12;
@@ -657,8 +681,10 @@ Interpolator<PoseType>::computeConditionalCov(
          "t_tau must be in the interval (t_k, t_kp1)");
 
   // see Figure 5.4 in the paper
-  Matrix2N Q_tau_prev_inv = inverseCovarianceFunction_(t_tau - t_k, Q_psd_);
-  Matrix2N Q_tau_next_inv = inverseCovarianceFunction_(t_kp1 - t_tau, Q_psd_);
+  Matrix2N Q_tau_prev_inv =
+      inverseCovarianceFunction_(t_tau - t_k, q_psd_diag_);
+  Matrix2N Q_tau_next_inv =
+      inverseCovarianceFunction_(t_kp1 - t_tau, q_psd_diag_);
   Matrix2N E_tau = computeJacobianNext_(poseVel_k.asPair(),
                                         poseVel_tau.asPair(), t_tau - t_k);
   Matrix2N F_k_tau = computeJacobianPrev_(poseVel_tau.asPair(),

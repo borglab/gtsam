@@ -145,12 +145,25 @@ class ExtendedPriorFactor : public NoiseModelFactorN<VALUE> {
 
   /// vector of errors
   Vector evaluateError(const T& x, OptionalMatrixType H) const override {
-    if (H) {
-      (*H) = Matrix::Identity(traits<T>::GetDimension(x),
-                              traits<T>::GetDimension(x));
-    }
     // manifold equivalent of z-x -> Local(x,z)
-    Vector error = -traits<T>::Local(x, origin_);
+    Vector error;
+#ifdef GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR
+    if constexpr (internal::HasLocalJacobians<T>::value) {
+      if (H) {
+        error = -traits<T>::Local(x, origin_, H, OptionalNone);
+        *H *= -1.0;
+      } else {
+        error = -traits<T>::Local(x, origin_);
+      }
+    } else
+#endif
+    {
+      if (H) {
+        *H = Matrix::Identity(traits<T>::GetDimension(x),
+                              traits<T>::GetDimension(x));
+      }
+      error = -traits<T>::Local(x, origin_);
+    }
     if (mean_) {
       return error - *mean_;
     }
@@ -237,13 +250,6 @@ class ExtendedPriorFactor : public NoiseModelFactorN<VALUE> {
     ar& BOOST_SERIALIZATION_NVP(mean_);
   }
 #endif
-
-  /// Alignment, see
-  /// https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
-  inline constexpr static auto NeedsToAlign = (sizeof(T) % 16) == 0;
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
 };
 
 /// traits

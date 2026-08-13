@@ -39,14 +39,14 @@ namespace gtsam {
  *
  * @ingroup sfm
  */
-class TranslationFactor : public NoiseModelFactorN<Point3, Point3> {
+class TranslationFactor : public NoiseModelFactorT<Vector3, Point3, Point3> {
  private:
-  typedef NoiseModelFactorN<Point3, Point3> Base;
+  typedef NoiseModelFactorT<Vector3, Point3, Point3> Base;
   Point3 measured_w_aZb_;
 
  public:
   // Provide access to the Matrix& version of evaluateError:
-  using NoiseModelFactor2<Point3, Point3>::evaluateError;
+  using Base::evaluateError;
 
   /// default constructor
   TranslationFactor() {}
@@ -66,9 +66,9 @@ class TranslationFactor : public NoiseModelFactorN<Point3, Point3> {
    * @param H2 optional jacobian in Tb
    * @return * Vector
    */
-  Vector evaluateError(const Point3& Ta, const Point3& Tb,
-                       OptionalMatrixType H1,
-                       OptionalMatrixType H2) const override {
+  Vector3 evaluateError(const Point3& Ta, const Point3& Tb,
+                        OptionalMatrixType H1,
+                        OptionalMatrixType H2) const override {
     const Point3 dir = Tb - Ta;
     Matrix33 H_predicted_dir;
     const Point3 predicted =
@@ -103,9 +103,9 @@ class TranslationFactor : public NoiseModelFactorN<Point3, Point3> {
  * @ingroup sfm
  */
 class BilinearAngleTranslationFactor
-    : public NoiseModelFactorN<Point3, Point3, Vector1> {
+    : public NoiseModelFactorT<Vector3, Point3, Point3, Vector1> {
  private:
-  typedef NoiseModelFactorN<Point3, Point3, Vector1> Base;
+  typedef NoiseModelFactorT<Vector3, Point3, Point3, Vector1> Base;
   Point3 measured_w_aZb_;
 
  public:
@@ -118,7 +118,7 @@ class BilinearAngleTranslationFactor
       : Base(noiseModel, a, b, scale_key), measured_w_aZb_(w_aZb.point3()) {}
 
   // Provide access to the Matrix& version of evaluateError:
-  using NoiseModelFactor2<Point3, Point3, Vector1>::evaluateError;
+  using Base::evaluateError;
 
   /**
    * @brief Calculate error: (scale * (Tb - Ta) - measurement)
@@ -131,9 +131,10 @@ class BilinearAngleTranslationFactor
    * @param H2 optional jacobian in Tb
    * @return * Vector
    */
-  Vector evaluateError(const Point3& Ta, const Point3& Tb, const Vector1& scale,
-                       OptionalMatrixType H1, OptionalMatrixType H2,
-                       OptionalMatrixType H3) const override {
+  Vector3 evaluateError(const Point3& Ta, const Point3& Tb,
+                        const Vector1& scale, OptionalMatrixType H1,
+                        OptionalMatrixType H2,
+                        OptionalMatrixType H3) const override {
     // Ideally we should use a positive real valued scalar datatype for scale.
     const double abs_scale = std::abs(scale[0]);
     const Point3 predicted = (Tb - Ta) * abs_scale;

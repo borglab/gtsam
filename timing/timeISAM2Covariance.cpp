@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -23,7 +23,6 @@
 #include <gtsam/slam/dataset.h>
 
 #include <algorithm>
-#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -36,6 +35,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+#include "internal/TimingUtils.h"
 
 using namespace gtsam;
 using namespace std;
@@ -130,7 +131,8 @@ shared_ptr<CLIQUE> findLowestCommonAncestor(const shared_ptr<CLIQUE>& lhs,
 /// Collect the exact support subtree and its basic statistics for a query.
 template <class BAYESTREE>
 SupportAnalysis<typename BAYESTREE::Clique> collectSupportAnalysis(
-    const BAYESTREE& bayesTree, const KeyVector& queryKeys, const Values& values) {
+    const BAYESTREE& bayesTree, const KeyVector& queryKeys,
+    const Values& values) {
   using Clique = typename BAYESTREE::Clique;
   vector<shared_ptr<Clique>> queryCliques;
   unordered_set<shared_ptr<Clique>> seen;
@@ -197,8 +199,8 @@ SupportAnalysis<typename BAYESTREE::Clique> collectSupportAnalysis(
   SupportAnalysis<Clique> analysis;
   analysis.root = root;
   analysis.support = std::move(support);
-  analysis.queryCliques =
-      unordered_set<shared_ptr<Clique>>(queryCliques.begin(), queryCliques.end());
+  analysis.queryCliques = unordered_set<shared_ptr<Clique>>(
+      queryCliques.begin(), queryCliques.end());
   analysis.supportChildren = std::move(supportChildren);
   analysis.compressedCliques = compressed;
   analysis.maxFrontalDim = maxFrontalDim;
@@ -209,8 +211,7 @@ SupportAnalysis<typename BAYESTREE::Clique> collectSupportAnalysis(
 /// Estimate support size and clique-width statistics for a query.
 template <class BAYESTREE>
 SupportStats analyzeSupport(const BAYESTREE& bayesTree,
-                            const KeyVector& queryKeys,
-                            const Values& values) {
+                            const KeyVector& queryKeys, const Values& values) {
   const auto analysis = collectSupportAnalysis(bayesTree, queryKeys, values);
   return {analysis.support.size(), analysis.compressedCliques,
           analysis.maxFrontalDim, analysis.maxSeparatorDim};
@@ -267,7 +268,7 @@ void writeSupportSnapshotDot(const filesystem::path& path,
                 rhs->conditional()->firstFrontalKey();
        });
 
-  ofstream os(path);
+  ofstream os = gtsam::timing::openOutputFile(path.string());
   os << "digraph G {\n";
   os << "  graph [rankdir=LR, splines=false, nodesep=0.5, ranksep=0.35, "
         "margin=0.02, dpi=180];\n";
@@ -317,7 +318,7 @@ void writeSupportSnapshotDot(const filesystem::path& path,
 /// Write support-snapshot metadata to CSV.
 void writeSnapshotCsv(const filesystem::path& path,
                       const vector<SnapshotRecord>& records) {
-  ofstream os(path);
+  ofstream os = gtsam::timing::openOutputFile(path.string());
   os << "step_index,current_key,pose_count,support_cliques,compressed_cliques,"
         "max_separator_dim,dot_file\n";
   for (const auto& record : records) {
@@ -328,64 +329,19 @@ void writeSnapshotCsv(const filesystem::path& path,
   }
 }
 
-/// Compute the median of a small sample vector.
-double median(vector<double> values) {
-  if (values.empty()) {
-    return 0.0;
-  }
-  sort(values.begin(), values.end());
-  const size_t mid = values.size() / 2;
-  if (values.size() % 2 == 0) {
-    return 0.5 * (values[mid - 1] + values[mid]);
-  }
-  return values[mid];
-}
-
-/// Compute the arithmetic mean of a sample vector.
-double mean(const vector<double>& values) {
-  if (values.empty()) {
-    return 0.0;
-  }
-  const double sum = accumulate(values.begin(), values.end(), 0.0);
-  return sum / static_cast<double>(values.size());
-}
-
-/// Compute the population standard deviation of a sample vector.
-double stddev(const vector<double>& values) {
-  if (values.size() < 2) {
-    return 0.0;
-  }
-  const double sampleMean = mean(values);
-  double sumSquares = 0.0;
-  for (double value : values) {
-    const double delta = value - sampleMean;
-    sumSquares += delta * delta;
-  }
-  return sqrt(sumSquares / static_cast<double>(values.size()));
-}
-
-/// Read a string argument from argv or return a default value.
-string argumentOrDefault(char** begin, char** end, const string& flag,
-                         const string& defaultValue) {
-  for (auto it = begin; it != end; ++it) {
-    if (string(*it) == flag && it + 1 != end) {
-      return *(it + 1);
-    }
-  }
-  return defaultValue;
-}
-
-/// Read an unsigned integer argument from argv or return a default value.
-size_t sizeTArgumentOrDefault(char** begin, char** end, const string& flag,
-                              size_t defaultValue) {
-  return static_cast<size_t>(
-      stoull(argumentOrDefault(begin, end, flag, to_string(defaultValue))));
+/// Summarize query samples, retaining zeroes for the valid no-query mode.
+gtsam::timing::TimingSummary summarizeQueries(const vector<double>& values) {
+  return values.empty()
+             ? gtsam::timing::TimingSummary{}
+             : gtsam::timing::summarizeSamples(
+                   values, gtsam::timing::MedianPolicy::kAverageMiddle);
 }
 
 /// Write incremental timing results to CSV.
 void writeCsv(const filesystem::path& path, const vector<StepResult>& results) {
-  ofstream os(path);
-  os << "step_index,current_key,pose_count,factor_count,update_ms,query_mean_ms,"
+  ofstream os = gtsam::timing::openOutputFile(path.string());
+  os << "step_index,current_key,pose_count,factor_count,update_ms,query_mean_"
+        "ms,"
         "query_median_ms,query_stddev_ms,support_cliques,compressed_cliques,"
         "reduced_state_dim,max_frontal_dim,max_separator_dim,"
         "num_cached_separator_marginals\n";
@@ -397,31 +353,28 @@ void writeCsv(const filesystem::path& path, const vector<StepResult>& results) {
        << result.queryMedianMs << ',' << result.queryStddevMs << ','
        << result.supportCliques << ',' << result.compressedCliques << ','
        << result.reducedStateDim << ',' << result.maxFrontalDim << ','
-       << result.maxSeparatorDim << ','
-       << result.numCachedSeparatorMarginals << '\n';
+       << result.maxSeparatorDim << ',' << result.numCachedSeparatorMarginals
+       << '\n';
   }
 }
 
 }  // namespace
 
 int main(int argc, char** argv) {
-  const string datasetName =
-      argumentOrDefault(argv, argv + argc, "--dataset", "w20000.txt");
-  const filesystem::path outputPath = argumentOrDefault(
-      argv, argv + argc, "--output",
-      (filesystem::path("timing") / "results" / "bayes_tree_covariance" /
-       "isam2_w20000.csv")
-          .string());
-  const filesystem::path snapshotDir = argumentOrDefault(
-      argv, argv + argc, "--snapshot-dir",
+  gtsam::timing::Arguments arguments(argc, argv);
+  const string datasetName = arguments.stringValue("--dataset", "w20000.txt");
+  const filesystem::path outputPath = arguments.stringValue(
+      "--output", (filesystem::path("timing") / "results" /
+                   "bayes_tree_covariance" / "isam2_w20000.csv")
+                      .string());
+  const filesystem::path snapshotDir = arguments.stringValue(
+      "--snapshot-dir",
       (outputPath.parent_path() / "isam2_support_snapshots").string());
-  const size_t queryRepeats =
-      sizeTArgumentOrDefault(argv, argv + argc, "--query-repeats", 5);
-  const size_t maxSteps =
-      sizeTArgumentOrDefault(argv, argv + argc, "--max-steps", 0);
+  const size_t queryRepeats = arguments.sizeValue("--query-repeats", 5);
+  const size_t maxSteps = arguments.sizeValue("--max-steps", 0);
+  arguments.validateAllConsumed();
 
-  const auto [graphPtr, initialPtr] =
-      load2D(findExampleDataFile(datasetName));
+  const auto [graphPtr, initialPtr] = load2D(findExampleDataFile(datasetName));
   const KeyVector allPoseKeys = poseKeys(*initialPtr);
   if (allPoseKeys.empty()) {
     throw runtime_error("Dataset contains no Pose2 variables.");
@@ -439,8 +392,8 @@ int main(int argc, char** argv) {
   ISAM2 isam2(parameters);
 
   const Key firstKey = allPoseKeys.front();
-  const auto priorNoise = noiseModel::Diagonal::Sigmas(
-      (Vector(3) << 1e-6, 1e-6, 1e-6).finished());
+  const auto priorNoise =
+      noiseModel::Diagonal::Sigmas(Vector{{1e-6, 1e-6, 1e-6}});
 
   vector<StepResult> results;
   results.reserve(allPoseKeys.size());
@@ -466,8 +419,8 @@ int main(int argc, char** argv) {
 
     optional<Pose2> predictedPose;
     while (nextMeasurement < graphPtr->size()) {
-      auto between =
-          dynamic_pointer_cast<BetweenFactor<Pose2>>((*graphPtr)[nextMeasurement]);
+      auto between = dynamic_pointer_cast<BetweenFactor<Pose2>>(
+          (*graphPtr)[nextMeasurement]);
       if (!between) {
         ++nextMeasurement;
         continue;
@@ -504,15 +457,16 @@ int main(int argc, char** argv) {
       }
     }
 
-    const auto updateStart = chrono::steady_clock::now();
-    try {
-      isam2.update(newFactors, newTheta);
-    } catch (const std::exception& error) {
-      cerr << "ISAM2 update failed at step " << stepIndex << " key "
-           << currentKey << ": " << error.what() << endl;
-      throw;
-    }
-    const auto updateEnd = chrono::steady_clock::now();
+    const double updateMs = 1000.0 * gtsam::timing::measureSeconds([&] {
+                              try {
+                                isam2.update(newFactors, newTheta);
+                              } catch (const std::exception& error) {
+                                cerr << "ISAM2 update failed at step "
+                                     << stepIndex << " key " << currentKey
+                                     << ": " << error.what() << endl;
+                                throw;
+                              }
+                            });
     factorCount += newFactors.size();
 
     const KeyVector queryKeys{firstKey, currentKey};
@@ -522,37 +476,36 @@ int main(int argc, char** argv) {
       try {
         (void)isam2.jointMarginalCovariance(queryKeys);
       } catch (const std::exception& error) {
-        cerr << "Warmup covariance query failed at step " << stepIndex << " key "
-             << currentKey << ": " << error.what() << endl;
+        cerr << "Warmup covariance query failed at step " << stepIndex
+             << " key " << currentKey << ": " << error.what() << endl;
         throw;
       }
 
       for (size_t repeatIndex = 0; repeatIndex < queryRepeats; ++repeatIndex) {
-        const auto queryStart = chrono::steady_clock::now();
         JointMarginal covariance;
-        try {
-          covariance = isam2.jointMarginalCovariance(queryKeys);
-        } catch (const std::exception& error) {
-          cerr << "Covariance query failed at step " << stepIndex << " key "
-               << currentKey << " repeat " << repeatIndex << ": "
-               << error.what() << endl;
-          throw;
-        }
-        const auto queryEnd = chrono::steady_clock::now();
+        const double queryMs =
+            1000.0 * gtsam::timing::measureSeconds([&] {
+              try {
+                covariance = isam2.jointMarginalCovariance(queryKeys);
+              } catch (const std::exception& error) {
+                cerr << "Covariance query failed at step " << stepIndex
+                     << " key " << currentKey << " repeat " << repeatIndex
+                     << ": " << error.what() << endl;
+                throw;
+              }
+            });
         volatile double checksum = covariance.fullMatrix().sum();
         (void)checksum;
-        queryTimes.push_back(
-            chrono::duration<double, milli>(queryEnd - queryStart).count());
+        queryTimes.push_back(queryMs);
       }
     }
 
     const Values& linearizationPoint = isam2.getLinearizationPoint();
     const auto supportAnalysis =
         collectSupportAnalysis(isam2, queryKeys, linearizationPoint);
-    const SupportStats supportStats = {supportAnalysis.support.size(),
-                                       supportAnalysis.compressedCliques,
-                                       supportAnalysis.maxFrontalDim,
-                                       supportAnalysis.maxSeparatorDim};
+    const SupportStats supportStats = {
+        supportAnalysis.support.size(), supportAnalysis.compressedCliques,
+        supportAnalysis.maxFrontalDim, supportAnalysis.maxSeparatorDim};
     const GaussianFactorGraph reducedGraph =
         *isam2.joint(queryKeys, parameters.getEliminationFunction());
 
@@ -561,14 +514,15 @@ int main(int argc, char** argv) {
     result.currentKey = currentKey;
     result.poseCount = stepIndex + 1;
     result.factorCount = factorCount;
-    result.updateMs =
-        chrono::duration<double, milli>(updateEnd - updateStart).count();
-    result.queryMeanMs = mean(queryTimes);
-    result.queryMedianMs = median(queryTimes);
-    result.queryStddevMs = stddev(queryTimes);
+    result.updateMs = updateMs;
+    const auto querySummary = summarizeQueries(queryTimes);
+    result.queryMeanMs = querySummary.mean;
+    result.queryMedianMs = querySummary.median;
+    result.queryStddevMs = querySummary.standardDeviation;
     result.supportCliques = supportStats.supportCliques;
     result.compressedCliques = supportStats.compressedCliques;
-    result.reducedStateDim = totalDimension(reducedGraph.keys(), linearizationPoint);
+    result.reducedStateDim =
+        totalDimension(reducedGraph.keys(), linearizationPoint);
     result.maxFrontalDim = supportStats.maxFrontalDim;
     result.maxSeparatorDim = supportStats.maxSeparatorDim;
     result.numCachedSeparatorMarginals = isam2.numCachedSeparatorMarginals();
@@ -591,7 +545,6 @@ int main(int argc, char** argv) {
     }
   }
 
-  filesystem::create_directories(outputPath.parent_path());
   writeCsv(outputPath, results);
   if (!snapshots.empty()) {
     filesystem::create_directories(snapshotDir);

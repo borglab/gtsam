@@ -114,7 +114,7 @@ public:
 
   static LevenbergMarquardtParams EnsureHasOrdering(LevenbergMarquardtParams params,
                                                     const NonlinearFactorGraph& graph) {
-    if (!params.ordering)
+    if (!params.ordering && params.requiresOrdering())
       params.ordering = Ordering::Create(params.orderingType, graph);
     return params;
   }

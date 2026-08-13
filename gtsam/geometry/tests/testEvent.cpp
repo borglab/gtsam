@@ -17,11 +17,11 @@
  *  @date December 2014
  */
 
-#include <gtsam/base/numericalDerivative.h>
-#include <gtsam/nonlinear/Expression.h>
-#include <gtsam/geometry/Event.h>
-
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/Event.h>
+#include <gtsam/linear/NoiseModel.h>
+#include <gtsam/nonlinear/Expression.h>
 
 using namespace std::placeholders;
 using namespace std;
@@ -90,8 +90,7 @@ TEST(Event, Expression) {
 //*****************************************************************************
 TEST(Event, Retract) {
   Event event, expected(1, 2, 3, 4);
-  Vector4 v;
-  v << 1, 2, 3, 4;
+  Vector4 v{1, 2, 3, 4};
   EXPECT(assert_equal(expected, event.retract(v)));
 }
 

@@ -17,13 +17,13 @@
  * @brief unit tests for Block Automatic Differentiation
  */
 
-#include <gtsam/nonlinear/expressions.h>
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/Testable.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Point3.h>
-#include <gtsam/base/Testable.h>
-
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/nonlinear/expressions.h>
 
 using namespace std;
 using namespace gtsam;
@@ -158,8 +158,7 @@ TEST(Expression, NullaryMethod) {
   // Check all
   const double norm = sqrt(3*3 + 4*4 + 5*5);
   EXPECT(actual == norm)
-  Matrix expected(1, 3);
-  expected << 3.0 / norm, 4.0 / norm, 5.0 / norm;
+  Matrix13 expected{{3.0 / norm, 4.0 / norm, 5.0 / norm}};
   EXPECT(assert_equal(expected, H[0]))
 }
 

@@ -63,10 +63,8 @@ static PinholeCamera<Cal3_S2> cam1(pose3, cal1);
 static StereoCamera cam2(pose3, cal4ptr);
 static StereoPoint2 spt(1.0, 2.0, 3.0);
 
-static const Vector15 xi_sl4 =
-    (Vector15() << 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10,
-     0.11, 0.12, 0.13, 0.14, 0.15)
-        .finished();
+static const Vector15 xi_sl4{0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08,
+                             0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15};
 
 /* ************************************************************************* */
 TEST(Serialization, all_geometry_formats) {

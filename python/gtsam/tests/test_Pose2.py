@@ -27,6 +27,20 @@ class TestPose2(GtsamTestCase):
         actual = Pose2.adjoint_(xi, xi)
         np.testing.assert_array_equal(actual, expected)
 
+    def test_logmap_derivative_overloads(self) -> None:
+        """The tangent and pose overloads should return the same Jacobian."""
+        for xi in (np.array([0.4, -0.2, 0.3]),
+                   np.array([0.4, -0.2, 1e-8])):
+            with self.subTest(dtheta=xi[2]):
+                from_tangent = Pose2.LogmapDerivative(xi)
+                from_pose = Pose2.LogmapDerivative(Pose2.Expmap(xi))
+
+                np.testing.assert_allclose(from_tangent, from_pose,
+                                           rtol=0, atol=1e-9)
+                np.testing.assert_allclose(
+                    from_tangent @ Pose2.ExpmapDerivative(xi),
+                    np.eye(3), rtol=0, atol=1e-12)
+
     def test_transformTo(self):
         """Test transformTo method."""
         pose = Pose2(2, 4, -math.pi / 2)
@@ -41,6 +55,15 @@ class TestPose2(GtsamTestCase):
         expected_array = np.stack([expected, expected]).T
         np.testing.assert_allclose(actual_array, expected_array, atol=1e-6)
 
+        # C- and F-contiguous NumPy matrices should map without conversion.
+        for order in ("C", "F"):
+            points = np.array([[3.0, 3.0], [2.0, 2.0]], order=order)
+            np.testing.assert_allclose(
+                pose.transformTo(points), expected_array, atol=1e-6)
+
+        with self.assertRaises(TypeError):
+            pose.transformTo([[3.0, 3.0], [2.0, 2.0]])
+
     def test_transformFrom(self):
         """Test transformFrom method."""
         pose = Pose2(2, 4, -math.pi / 2)
@@ -54,6 +77,15 @@ class TestPose2(GtsamTestCase):
         self.assertEqual(actual_array.shape, (2, 2))
         expected_array = np.stack([expected, expected]).T
         np.testing.assert_allclose(actual_array, expected_array, atol=1e-6)
+
+        # C- and F-contiguous NumPy matrices should map without conversion.
+        for order in ("C", "F"):
+            points = np.array([[2.0, 2.0], [1.0, 1.0]], order=order)
+            np.testing.assert_allclose(
+                pose.transformFrom(points), expected_array, atol=1e-6)
+
+        with self.assertRaises(TypeError):
+            pose.transformFrom([[2.0, 2.0], [1.0, 1.0]])
 
     def test_align(self) -> None:
         """Ensure estimation of the Pose2 element to align two 2d point clouds succeeds.
@@ -92,15 +124,20 @@ class TestPose2(GtsamTestCase):
             pt_a_ = aTb.transformFrom(pt_b)
             np.testing.assert_allclose(pt_a, pt_a_)
 
-        # Matrix version
+        # C- and F-contiguous NumPy matrices should map without conversion.
         A = np.array(pts_a).T
         B = np.array(pts_b).T
-        aTb = Pose2.Align(A, B)
-        self.assertIsNotNone(aTb)
+        for order in ("C", "F"):
+            aTb = Pose2.Align(np.array(A, order=order),
+                              np.array(B, order=order))
+            self.assertIsNotNone(aTb)
 
-        for pt_a, pt_b in zip(pts_a, pts_b):
-            pt_a_ = aTb.transformFrom(pt_b)
-            np.testing.assert_allclose(pt_a, pt_a_)
+            for pt_a, pt_b in zip(pts_a, pts_b):
+                pt_a_ = aTb.transformFrom(pt_b)
+                np.testing.assert_allclose(pt_a, pt_a_)
+
+        with self.assertRaises(TypeError):
+            Pose2.Align(A.tolist(), B.tolist())
 
 
 if __name__ == "__main__":

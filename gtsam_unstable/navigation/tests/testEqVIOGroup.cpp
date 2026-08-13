@@ -72,19 +72,27 @@ void testChartDerivativesN(TestResult& result_, const std::string& name_,
   OJ none;
   const V w12 = T::Local(t1, t2);
   EXPECT(assert_equal<G>(t2, T::Retract(t1, w12, H1, H2)));
+  const auto retract = [](const G& origin, const V& v, const OJ& H1,
+                          const OJ& H2) {
+    return T::Retract(origin, v, H1, H2);
+  };
   EXPECT(assert_equal(numericalDerivative41<G, G, V, OJ, OJ, N>(
-                          T::Retract, t1, w12, none, none),
+                          retract, t1, w12, none, none),
                       H1));
   EXPECT(assert_equal(numericalDerivative42<G, G, V, OJ, OJ, N>(
-                          T::Retract, t1, w12, none, none),
+                          retract, t1, w12, none, none),
                       H2));
 
   EXPECT(assert_equal(w12, T::Local(t1, t2, H1, H2)));
+  const auto local = [](const G& origin, const G& other, const OJ& H1,
+                        const OJ& H2) {
+    return T::Local(origin, other, H1, H2);
+  };
   EXPECT(assert_equal(
-      numericalDerivative41<V, G, G, OJ, OJ, N>(T::Local, t1, t2, none, none),
+      numericalDerivative41<V, G, G, OJ, OJ, N>(local, t1, t2, none, none),
       H1));
   EXPECT(assert_equal(
-      numericalDerivative42<V, G, G, OJ, OJ, N>(T::Local, t1, t2, none, none),
+      numericalDerivative42<V, G, G, OJ, OJ, N>(local, t1, t2, none, none),
       H2));
 }
 
@@ -96,10 +104,8 @@ const Rot3 kR2 = Rot3::RzRyRx(-0.3, 0.2, -0.1);
 const Rot3 kR3 = Rot3::RzRyRx(0.2, 0.1, -0.25);
 const Rot3 kR4 = Rot3::RzRyRx(-0.15, -0.1, 0.05);
 
-const SE23::Matrix3K kX1 =
-    (SE23::Matrix3K() << 1.0, -0.4, 0.3, 0.9, -0.8, 0.2).finished();
-const SE23::Matrix3K kX2 =
-    (SE23::Matrix3K() << -0.5, 0.7, 0.1, -0.2, 0.4, 1.1).finished();
+const SE23::Matrix3K kX1{{1.0, -0.4}, {0.3, 0.9}, {-0.8, 0.2}};
+const SE23::Matrix3K kX2{{-0.5, 0.7}, {0.1, -0.2}, {0.4, 1.1}};
 
 const SE23 kA1(kR1, kX1);
 const SE23 kA2(kR2, kX2);
@@ -110,18 +116,12 @@ const Bias kBeta2(Vector3(0.2, -0.15, 0.07), Vector3(-0.05, 0.3, -0.1));
 const Pose3 kB1(kR3, Point3(0.2, -0.5, 1.1));
 const Pose3 kB2(kR4, Point3(-0.6, 0.7, 0.3));
 
-const SOT3 kQ1(SO3::Expmap((Vector3() << 0.08, -0.04, 0.05).finished()),
-               std::log(1.2));
-const SOT3 kQ2(SO3::Expmap((Vector3() << -0.03, 0.06, -0.02).finished()),
-               std::log(0.95));
-const SOT3 kQ3(SO3::Expmap((Vector3() << 0.04, 0.07, -0.08).finished()),
-               std::log(1.1));
-const SOT3 kQ4(SO3::Expmap((Vector3() << -0.06, -0.02, 0.09).finished()),
-               std::log(1.05));
-const SOT3 kQ5(SO3::Expmap((Vector3() << 0.01, 0.02, 0.03).finished()),
-               std::log(0.98));
-const SOT3 kQ6(SO3::Expmap((Vector3() << -0.02, 0.03, -0.01).finished()),
-               std::log(1.03));
+const SOT3 kQ1(SO3::Expmap(Vector3{0.08, -0.04, 0.05}), std::log(1.2));
+const SOT3 kQ2(SO3::Expmap(Vector3{-0.03, 0.06, -0.02}), std::log(0.95));
+const SOT3 kQ3(SO3::Expmap(Vector3{0.04, 0.07, -0.08}), std::log(1.1));
+const SOT3 kQ4(SO3::Expmap(Vector3{-0.06, -0.02, 0.09}), std::log(1.05));
+const SOT3 kQ5(SO3::Expmap(Vector3{0.01, 0.02, 0.03}), std::log(0.98));
+const SOT3 kQ6(SO3::Expmap(Vector3{-0.02, 0.03, -0.01}), std::log(1.03));
 
 LandmarkGroup MakeQ0() { return LandmarkGroup(0); }
 LandmarkGroup MakeQ1A() { return LandmarkGroup({kQ1}); }
@@ -137,10 +137,9 @@ VioGroup MakeG3() { return makeVioGroup(kA1, kBeta1, kB1, MakeQ3A()); }
 VioGroup MakeG3b() { return makeVioGroup(kA2, kBeta2, kB2, MakeQ3B()); }
 
 Vector Xi0() {
-  return (Vector(21) << 0.05, -0.04, 0.03, 0.2, -0.1, 0.15, -0.05, 0.07, -0.09,
-          0.1, -0.08, 0.06, -0.04, 0.02, 0.03, 0.01, -0.02, 0.04, -0.03, 0.05,
-          -0.01)
-      .finished();
+  return Vector{{0.05, -0.04, 0.03,  0.2,   -0.1,  0.15,  -0.05,
+                 0.07, -0.09, 0.1,   -0.08, 0.06,  -0.04, 0.02,
+                 0.03, 0.01,  -0.02, 0.04,  -0.03, 0.05,  -0.01}};
 }
 
 Vector Xi1() {

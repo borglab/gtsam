@@ -33,12 +33,9 @@ set (excluded_headers # "")
 # if GTSAM_USE_BOOST_FEATURES is not set, then we need to exclude the following:
 if(NOT GTSAM_USE_BOOST_FEATURES)
     list (APPEND excluded_sources
-        "${CMAKE_CURRENT_SOURCE_DIR}/linear/QPSParser.cpp"
         "${CMAKE_CURRENT_SOURCE_DIR}/discrete/Scheduler.cpp"
     )
     list (APPEND excluded_headers
-        "${CMAKE_CURRENT_SOURCE_DIR}/linear/QPSParser.h"
-        "${CMAKE_CURRENT_SOURCE_DIR}/linear/QPSParserException.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/discrete/Scheduler.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/partition/FindSeparator.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/partition/FindSeparator-inl.h"

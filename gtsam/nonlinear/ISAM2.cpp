@@ -23,6 +23,7 @@
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/inference/BayesTree-inst.h>
+#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/GaussianBayesTreeQueries.h>
 #include <gtsam/nonlinear/LinearContainerFactor.h>
 
@@ -30,6 +31,7 @@
 #include <map>
 #include <utility>
 #include <variant>
+#include <vector>
 #include <cassert>
 
 using namespace std;
@@ -40,7 +42,8 @@ namespace gtsam {
 template class BayesTree<ISAM2Clique>;
 
 /* ************************************************************************* */
-ISAM2::ISAM2(const ISAM2Params& params) : params_(params), update_count_(0) {
+ISAM2::ISAM2(const ISAM2Params& params)
+    : params_(params), update_count_(0), nnzAfterLastReorder_(0) {
   if (std::holds_alternative<ISAM2DoglegParams>(params_.optimizationParams)) {
     doglegDelta_ =
         std::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
@@ -48,7 +51,7 @@ ISAM2::ISAM2(const ISAM2Params& params) : params_(params), update_count_(0) {
 }
 
 /* ************************************************************************* */
-ISAM2::ISAM2() : update_count_(0) {
+ISAM2::ISAM2() : update_count_(0), nnzAfterLastReorder_(0) {
   if (std::holds_alternative<ISAM2DoglegParams>(params_.optimizationParams)) {
     doglegDelta_ =
         std::get<ISAM2DoglegParams>(params_.optimizationParams).initialDelta;
@@ -61,6 +64,13 @@ bool ISAM2::equals(const ISAM2& other, double tol) const {
          variableIndex_.equals(other.variableIndex_, tol) &&
          nonlinearFactors_.equals(other.nonlinearFactors_, tol) &&
          fixedVariables_ == other.fixedVariables_;
+}
+
+/* ************************************************************************* */
+size_t ISAM2::treeNnz() const {
+  size_t nnz = 0;
+  for (const auto& root : roots_) root->nnz_internal(&nnz);
+  return nnz;
 }
 
 /* ************************************************************************* */
@@ -158,6 +168,7 @@ void ISAM2::recalculate(const ISAM2UpdateParams& updateParams,
     if (affectedKeys.size() >= theta_.size() * kBatchThreshold) {
       // Do a batch step - reorder and relinearize all variables
       recalculateBatch(updateParams, &affectedKeysSet, result);
+      result->batchReorderTriggered = true;
     } else {
       recalculateIncremental(updateParams, relinKeys, affectedKeys,
                              &affectedKeysSet, &orphans, result);
@@ -489,10 +500,33 @@ ISAM2Result ISAM2::update(const NonlinearFactorGraph& newFactors,
   update.augmentVariableIndex(newFactors, result.newFactorsIndices,
                               &variableIndex_);
 
-  // 8. Redo top of Bayes tree and update data structures
+  // 8. Check whether adaptive reorder should force a batch recalculation.
+  // If fill-in has grown past the threshold, mark all keys so that
+  // recalculate() takes the batch path.
+  if (params_.enableAdaptiveReorder && nnzAfterLastReorder_ > 0 &&
+      !roots_.empty()) {
+    const size_t currentNnz = treeNnz();
+    if (static_cast<double>(currentNnz) / static_cast<double>(nnzAfterLastReorder_)
+        > params_.adaptiveReorderThreshold) {
+      for (const auto& [key, _] : variableIndex_) {
+        result.markedKeys.insert(key);
+      }
+      result.batchReorderTriggered = true;
+    }
+  }
+
+  // 9. Redo top of Bayes tree and update data structures
   recalculate(updateParams, relinKeys, &result);
   if (!result.unusedKeys.empty()) removeVariables(result.unusedKeys);
   result.cliques = this->nodes().size();
+
+  // 10. Track fill-in: record nnz and update baseline after batch reorders.
+  result.treeNnz = treeNnz();
+  // Update baseline on first update or after any batch reorder (adaptive or
+  // the existing 65% affected-variables threshold).
+  if (nnzAfterLastReorder_ == 0 || result.batchReorderTriggered) {
+    nnzAfterLastReorder_ = result.treeNnz;
+  }
 
   if (params_.evaluateNonlinearError)
     update.error(nonlinearFactors_, calculateEstimate(), &result.errorAfter);
@@ -736,6 +770,22 @@ void ISAM2::marginalizeLeaves(
   }
 }
 
+/** An added function specifically to return the marginalFactorIndices
+ * and deletedFactorIndices. Made for the python wrapping
+ * of marginalizeLeaves
+ */
+std::pair<FactorIndices, FactorIndices> ISAM2::marginalizeLeavesWithIndices(const FastList<Key>& leafKeys) {
+  FactorIndices marginal;
+  FactorIndices deleted;
+
+  marginalizeLeaves(
+      leafKeys,
+      &marginal,
+      &deleted);
+
+  return {marginal, deleted};
+}
+
 /* ************************************************************************* */
 // Marked const but actually changes mutable delta
 void ISAM2::updateDelta(bool forceFullSolve) const {
@@ -894,9 +944,47 @@ double ISAM2::error(const VectorValues& x) const {
 VectorValues ISAM2::gradientAtZero() const {
   // Create result
   VectorValues g;
+  bool hasConstrainedConditional = false;
 
   // Sum up contributions for each clique
-  for (const auto& root : this->roots()) root->addGradientAtZero(&g);
+  for (const auto& root : this->roots())
+    root->addGradientAtZero(&g, &hasConstrainedConditional);
+
+  if (!hasConstrainedConditional) return g;
+
+  // A constrained conditional makes the corresponding frontal gradient
+  // components undefined. Find those components only for constrained trees.
+  FastMap<Key, std::vector<char>> constrainedComponents;
+  for (const auto& [key, clique] : this->nodes()) {
+    const auto& conditional = clique->conditional();
+    if (key != conditional->firstFrontalKey()) continue;
+
+    const auto& model = conditional->get_model();
+    if (!model || !model->isConstrained()) continue;
+    const auto constrainedModel =
+        std::dynamic_pointer_cast<noiseModel::Constrained>(model);
+    if (!constrainedModel) continue;
+
+    DenseIndex position = 0;
+    for (auto it = conditional->beginFrontals();
+         it != conditional->endFrontals(); ++it) {
+      const DenseIndex dim = conditional->getDim(it);
+      auto& mask = constrainedComponents[*it];
+      if (mask.empty()) mask.assign(static_cast<size_t>(dim), 0);
+      for (DenseIndex i = 0; i < dim; ++i) {
+        mask[static_cast<size_t>(i)] =
+            constrainedModel->constrained(static_cast<size_t>(position + i));
+      }
+      position += dim;
+    }
+  }
+
+  for (const auto& [key, mask] : constrainedComponents) {
+    Vector& gradient = g.at(key);
+    for (size_t i = 0; i < mask.size(); ++i) {
+      if (mask[i]) gradient(static_cast<DenseIndex>(i)) = 0.0;
+    }
+  }
 
   return g;
 }

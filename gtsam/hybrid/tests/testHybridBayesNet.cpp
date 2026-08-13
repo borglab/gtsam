@@ -18,6 +18,7 @@
  * @date    December 2021
  */
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/discrete/TableDistribution.h>

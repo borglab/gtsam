@@ -129,6 +129,7 @@ class GTSAM_EXPORT NonlinearConjugateGradientOptimizer
    * variable assignments.
    */
   const Values &optimize() override;
+
 };
 
 /** Implement the golden-section line search algorithm */

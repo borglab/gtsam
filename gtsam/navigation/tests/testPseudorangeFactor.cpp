@@ -7,36 +7,14 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/navigation/PseudorangeFactor.h>
+#include <gtsam/navigation/tests/gnssTestHelpers.h>
 #include <gtsam/nonlinear/factorTesting.h>
 
 #include <cmath>
 
 using namespace gtsam;
-
-/// Test helper: compute ECEF-to-ENU transform from geodetic origin (WGS84).
-static Pose3 makeEcefTnav(double lat_deg, double lon_deg, double h) {
-  constexpr double deg2rad = M_PI / 180.0;
-  const double lat = lat_deg * deg2rad;
-  const double lon = lon_deg * deg2rad;
-  const double slat = std::sin(lat), clat = std::cos(lat);
-  const double slon = std::sin(lon), clon = std::cos(lon);
-
-  Matrix3 R;
-  R.col(0) = Vector3(-slon, clon, 0.0);
-  R.col(1) = Vector3(-slat * clon, -slat * slon, clat);
-  R.col(2) = Vector3(clat * clon, clat * slon, slat);
-
-  constexpr double a = 6378137.0;
-  constexpr double f = 1.0 / 298.257223563;
-  const double e2 = 2.0 * f - f * f;
-  const double N = a / std::sqrt(1.0 - e2 * slat * slat);
-  const Point3 t((N + h) * clat * clon,
-                 (N + h) * clat * slon,
-                 (N * (1.0 - e2) + h) * slat);
-  return Pose3(Rot3(R), t);
-}
+using namespace gtsam::gnss_test;
 
 // *************************************************************************
 TEST(TestPseudorangeFactor, Constructor) {
@@ -58,7 +36,7 @@ TEST(TestPseudorangeFactor, Constructor) {
   EXPECT(!Hbias.array().isNaN().any());
   EXPECT_DOUBLES_EQUAL(Hpos.norm(), 0.0, 1e-9);
   // Clock bias derivative should always be speed-of-light in vacuum:
-  EXPECT_DOUBLES_EQUAL(Hbias(0, 0), 299792458.0, 1e-9);
+  EXPECT_DOUBLES_EQUAL(Hbias(0, 0), kCLight, 1e-9);
 }
 
 // *************************************************************************
@@ -82,20 +60,89 @@ TEST(TestPseudorangeFactor, Jacobians1) {
 
 // *************************************************************************
 TEST(TestPseudorangeFactor, Jacobians2) {
-  // Example values borrowed from `SinglePointPositioningExample.ipynb`:
+  // Realistic values borrowed from `SinglePointPositioningExample.ipynb`:
   const auto factor = PseudorangeFactor(
-      Key(0), Key(1),  // Receiver position and clock bias keys.
-      24874028.989,    // Measured pseudorange.
-      // Satellite position:
-      Vector3(-5824269.46342, -22935011.26952, -12195522.22428),
-      -0.00022743876852667193  // Sat clock drift bias.
-  );
+      Key(0), Key(1), sample::kPseudorange, sample::kSatPos,
+      sample::kSatClkBias);
 
   Values values;
-  values.insert(
-      Key(0), Vector3(-2684418.91084688, -4293361.08683296, 3865365.45451951));
-  values.insert(Key(1), 5.377885093511699e-07);
+  values.insert(Key(0), sample::kReceiverPos);
+  values.insert(Key(1), sample::kReceiverClock);
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-3, 1e-5);
+}
+
+// *************************************************************************
+// Undifferenced PPP pseudorange factor: residual matches the model and all four
+// Jacobians (pose, clock, ZTD, slant-iono) are correct.
+TEST(TestUndifferencedPseudorangeFactor, Model) {
+  const double m_w = 3.2;     // tropo wet mapping at the predicted elevation
+  const double mu_f = 1.55;   // first-order iono coefficient (e.g. L2)
+  const auto factor = UndifferencedPseudorangeFactor(
+      Key(0), Key(1), Key(2), Key(3), sample::kPseudorange, sample::kSatPos,
+      m_w, mu_f, sample::kSatClkBias);
+
+  const double ztd = 0.12;    // zenith wet delay [m]
+  const double iono = 4.7;    // slant iono [m]
+  const double error = factor.evaluateError(
+      sample::kReceiverPos, sample::kReceiverClock, ztd, iono)[0];
+
+  Point3 e;
+  const double range = gnss::geodist(sample::kSatPos, sample::kReceiverPos, e);
+  const double expected =
+      range + kCLight * (sample::kReceiverClock - sample::kSatClkBias) +
+      m_w * ztd + mu_f * iono - sample::kPseudorange;
+  EXPECT_DOUBLES_EQUAL(expected, error, 1e-6);
+
+  Values values;
+  values.insert(Key(0), sample::kReceiverPos);
+  values.insert(Key(1), sample::kReceiverClock);
+  values.insert(Key(2), ztd);
+  values.insert(Key(3), iono);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-3, 1e-5);
+}
+
+// *************************************************************************
+// Undifferenced PPP pseudorange factor with lever arm: all five Jacobians
+// (pose, clock, ZTD, slant-iono) are correct.
+TEST(TestUndifferencedPseudorangeFactorArm, Jacobians) {
+  const Point3 leverArm(0.31, 0.0, 0.55);
+  const double m_w = 2.8, mu_f = 1.0;
+  const auto factor = UndifferencedPseudorangeFactorArm(
+      Key(0), Key(1), Key(2), Key(3), sample::kPseudorange, sample::kSatPos,
+      leverArm, m_w, mu_f, sample::kSatClkBias);
+
+  Values values;
+  values.insert(Key(0),
+                Pose3(Rot3::RzRyRx(0.1, -0.2, 0.3), sample::kReceiverPos));
+  values.insert(Key(1), sample::kReceiverClock);
+  values.insert(Key(2), 0.1);
+  values.insert(Key(3), 3.5);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-3, 1e-5);
+}
+
+// *************************************************************************
+// The undifferenced factor must apply the Sagnac correction via
+// gnss::geodist, matching the double-difference factors. With realistic ECEF
+// geometry the Sagnac term is non-zero, so the residual differs from a plain
+// Euclidean range by exactly that term.
+TEST(TestPseudorangeFactor, SagnacCorrection) {
+  const auto factor = PseudorangeFactor(
+      Key(0), Key(1), sample::kPseudorange, sample::kSatPos,
+      sample::kSatClkBias);
+  const double error =
+      factor.evaluateError(sample::kReceiverPos, sample::kReceiverClock)[0];
+
+  // Reference residual built from the Sagnac-corrected geodist.
+  Point3 e;
+  const double range = gnss::geodist(sample::kSatPos, sample::kReceiverPos, e);
+  const double expected =
+      range + kCLight * (sample::kReceiverClock - sample::kSatClkBias) -
+      sample::kPseudorange;
+  EXPECT_DOUBLES_EQUAL(expected, error, 1e-6);
+
+  // A plain-Euclidean model would give a measurably different residual.
+  const double euclid = (sample::kReceiverPos - sample::kSatPos).norm();
+  EXPECT(std::abs(range - euclid) > 1e-3);
 }
 
 // *************************************************************************
@@ -133,32 +180,19 @@ TEST(TestDifferentialPseudorangeFactor, Constructor) {
                                             Hbias, Hcorrection)[0];
   EXPECT_DOUBLES_EQUAL(0.0, error, 1e-9);
 
-  // Derivatives are technically undefined if the receiver and satellite
-  // positions are the same (hopefully that's never the case in reality). But
-  // for all intents and purposes, zero-valued derivatives can substitute for
-  // undefined gradient at that singularity. So make sure this corner-case does
-  // not numerically explode:
   EXPECT(!Hpos.array().isNaN().any());
   EXPECT(!Hbias.array().isNaN().any());
   EXPECT(!Hcorrection.array().isNaN().any());
   EXPECT_DOUBLES_EQUAL(Hpos.norm(), 0.0, 1e-9);
-  // Clock bias derivative should always be speed-of-light in vacuum:
-  EXPECT_DOUBLES_EQUAL(Hbias(0, 0), 299792458.0, 1e-9);
+  EXPECT_DOUBLES_EQUAL(Hbias(0, 0), kCLight, 1e-9);
   // Correction derivative should be constant -1:
   EXPECT_DOUBLES_EQUAL(Hcorrection(0, 0), -1.0, 1e-9);
 }
 
 // *************************************************************************
 TEST(TestDifferentialPseudorangeFactor, Jacobians) {
-  // Synthetic example with exact error/derivatives:
   const auto factor = DifferentialPseudorangeFactor(
-      Key(0), Key(1),  // Receiver position and clock bias keys.
-      Key(2),          // Differential correction keys.
-      4.0,             // Measured pseudorange.
-      // Satellite position:
-      Vector3(0.0, 0.0, 3.0),
-      0.0  // Sat clock drift bias.
-  );
+      Key(0), Key(1), Key(2), 4.0, Vector3(0.0, 0.0, 3.0), 0.0);
 
   // Zero differential correction case:
   {
@@ -181,8 +215,6 @@ TEST(TestDifferentialPseudorangeFactor, Jacobians) {
 
 // *************************************************************************
 TEST(TestDifferentialPseudorangeFactor, print) {
-  // Just make sure `print()` doesn't throw errors
-  // since there's no elegant way to check stdout.
   const auto factor = DifferentialPseudorangeFactor();
   factor.print();
 }
@@ -203,7 +235,6 @@ TEST(TestDifferentialPseudorangeFactor, equals) {
   CHECK(factor2.equals(factor3, 1e99));
   CHECK(!factor2.equals(factorCorr));
 
-  // Test print:
   factor2.print("factor2");
 }
 
@@ -220,26 +251,18 @@ TEST(TestPseudorangeFactorArm, Constructor) {
 
   // With identity pose and zero satellite position, the antenna is at the
   // lever arm position, so range = ||leverArm|| = sqrt(0.01+0.04+0.09)
-  const double expectedRange = leverArm.norm();
-  EXPECT_DOUBLES_EQUAL(expectedRange, error, 1e-9);
+  EXPECT_DOUBLES_EQUAL(leverArm.norm(), error, 1e-9);
 
-  // Check Jacobians are not NaN:
   EXPECT(!Hpose.array().isNaN().any());
   EXPECT(!Hbias.array().isNaN().any());
-  // Clock bias derivative should always be speed-of-light in vacuum:
-  EXPECT_DOUBLES_EQUAL(Hbias(0, 0), 299792458.0, 1e-9);
+  EXPECT_DOUBLES_EQUAL(Hbias(0, 0), kCLight, 1e-9);
 }
 
 // *************************************************************************
 TEST(TestPseudorangeFactorArm, Jacobians1) {
   const Point3 leverArm(0.5, -0.3, 1.0);
   const auto factor = PseudorangeFactorArm(
-      Key(0), Key(1),  // Receiver pose and clock bias keys.
-      4.0,             // Measured pseudorange.
-      Vector3(0.0, 0.0, 3.0),  // Satellite position.
-      leverArm,
-      0.0  // Sat clock drift bias.
-  );
+      Key(0), Key(1), 4.0, Vector3(0.0, 0.0, 3.0), leverArm, 0.0);
 
   Values values;
   values.insert(Key(0), Pose3(Rot3::RzRyRx(0.1, 0.2, 0.3),
@@ -250,22 +273,15 @@ TEST(TestPseudorangeFactorArm, Jacobians1) {
 
 // *************************************************************************
 TEST(TestPseudorangeFactorArm, Jacobians2) {
-  // Example values adapted from SinglePointPositioningExample:
   const Point3 leverArm(0.1, 0.0, -0.5);
   const auto factor = PseudorangeFactorArm(
-      Key(0), Key(1),  // Receiver pose and clock bias keys.
-      24874028.989,    // Measured pseudorange.
-      Vector3(-5824269.46342, -22935011.26952, -12195522.22428),
-      leverArm,
-      -0.00022743876852667193  // Sat clock drift bias.
-  );
+      Key(0), Key(1), sample::kPseudorange, sample::kSatPos, leverArm,
+      sample::kSatClkBias);
 
   Values values;
   values.insert(Key(0),
-                Pose3(Rot3::RzRyRx(0.05, -0.03, 0.1),
-                      Point3(-2684418.91084688, -4293361.08683296,
-                             3865365.45451951)));
-  values.insert(Key(1), 5.377885093511699e-07);
+                Pose3(Rot3::RzRyRx(0.05, -0.03, 0.1), sample::kReceiverPos));
+  values.insert(Key(1), sample::kReceiverClock);
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-3, 1e-5);
 }
 
@@ -278,19 +294,14 @@ TEST(TestPseudorangeFactorArm, LeverArmZeroError) {
   const Rot3 ecef_R_body = Rot3::RzRyRx(0.15, -0.30, 0.45);
   const Point3 satPos(1000.0, 2000.0, 3000.0);
 
-  // Choose antenna position, then back-compute body position:
   const Point3 antennaPos(10.0, 20.0, 30.0);
   const Point3 bodyPos = antennaPos - ecef_R_body.matrix() * leverArm;
   const Pose3 ecef_T_body(ecef_R_body, bodyPos);
 
-  // The true range from antenna to satellite:
   const double trueRange = (antennaPos - satPos).norm();
-
-  // Set pseudorange = trueRange + c * (clockBias - satClkBias)
-  // so that the error is exactly zero:
   const double clockBias = 1e-7;
   const double satClkBias = 2e-8;
-  const double pseudorange = trueRange + 299792458.0 * (clockBias - satClkBias);
+  const double pseudorange = trueRange + kCLight * (clockBias - satClkBias);
 
   const auto factor = PseudorangeFactorArm(
       Key(0), Key(1), pseudorange, satPos, leverArm, satClkBias);
@@ -362,13 +373,11 @@ TEST(TestDifferentialPseudorangeFactorArm, Constructor) {
   const double error = factor.evaluateError(Pose3::Identity(), 0.0, 0.0, Hpose,
                                             Hbias, Hcorrection)[0];
 
-  const double expectedRange = leverArm.norm();
-  EXPECT_DOUBLES_EQUAL(expectedRange, error, 1e-9);
-
+  EXPECT_DOUBLES_EQUAL(leverArm.norm(), error, 1e-9);
   EXPECT(!Hpose.array().isNaN().any());
   EXPECT(!Hbias.array().isNaN().any());
   EXPECT(!Hcorrection.array().isNaN().any());
-  EXPECT_DOUBLES_EQUAL(Hbias(0, 0), 299792458.0, 1e-9);
+  EXPECT_DOUBLES_EQUAL(Hbias(0, 0), kCLight, 1e-9);
   EXPECT_DOUBLES_EQUAL(Hcorrection(0, 0), -1.0, 1e-9);
 }
 
@@ -376,12 +385,7 @@ TEST(TestDifferentialPseudorangeFactorArm, Constructor) {
 TEST(TestDifferentialPseudorangeFactorArm, Jacobians1) {
   const Point3 leverArm(0.5, -0.3, 1.0);
   const auto factor = DifferentialPseudorangeFactorArm(
-      Key(0), Key(1), Key(2),
-      4.0,
-      Vector3(0.0, 0.0, 3.0),
-      leverArm,
-      0.0
-  );
+      Key(0), Key(1), Key(2), 4.0, Vector3(0.0, 0.0, 3.0), leverArm, 0.0);
 
   Values values;
   values.insert(Key(0), Pose3(Rot3::RzRyRx(0.1, 0.2, 0.3),
@@ -395,19 +399,13 @@ TEST(TestDifferentialPseudorangeFactorArm, Jacobians1) {
 TEST(TestDifferentialPseudorangeFactorArm, Jacobians2) {
   const Point3 leverArm(0.1, 0.0, -0.5);
   const auto factor = DifferentialPseudorangeFactorArm(
-      Key(0), Key(1), Key(2),
-      24874028.989,
-      Vector3(-5824269.46342, -22935011.26952, -12195522.22428),
-      leverArm,
-      -0.00022743876852667193
-  );
+      Key(0), Key(1), Key(2), sample::kPseudorange, sample::kSatPos, leverArm,
+      sample::kSatClkBias);
 
   Values values;
   values.insert(Key(0),
-                Pose3(Rot3::RzRyRx(0.05, -0.03, 0.1),
-                      Point3(-2684418.91084688, -4293361.08683296,
-                             3865365.45451951)));
-  values.insert(Key(1), 5.377885093511699e-07);
+                Pose3(Rot3::RzRyRx(0.05, -0.03, 0.1), sample::kReceiverPos));
+  values.insert(Key(1), sample::kReceiverClock);
   values.insert(Key(2), 10.0);
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-3, 1e-5);
 }
@@ -427,9 +425,9 @@ TEST(TestDifferentialPseudorangeFactorArm, LeverArmZeroError) {
   const double satClkBias = 2e-8;
   const double correction = 5.0;
   // pseudorange = trueRange + c*(clockBias - satClkBias) - correction
-  // so that error = 0
+  // so that error = 0.
   const double pseudorange =
-      trueRange + 299792458.0 * (clockBias - satClkBias) - correction;
+      trueRange + kCLight * (clockBias - satClkBias) - correction;
 
   const auto factor = DifferentialPseudorangeFactorArm(
       Key(0), Key(1), Key(2), pseudorange, satPos, leverArm, satClkBias);
@@ -441,8 +439,6 @@ TEST(TestDifferentialPseudorangeFactorArm, LeverArmZeroError) {
 
 // *************************************************************************
 TEST(TestDifferentialPseudorangeFactorArm, ZeroLeverArm) {
-  // With zero lever arm, should produce the same error as
-  // DifferentialPseudorangeFactor at the same position:
   const Point3 satPos(100.0, 200.0, 300.0);
   const Point3 receiverPos(1.0, 2.0, 3.0);
   const double pseudorange = 350.0;
@@ -528,20 +524,16 @@ TEST(TestPseudorangeFactorArm, EcefTnavIdentityJacobians) {
 
 // *************************************************************************
 TEST(TestPseudorangeFactorArm, EcefTnavENUJacobians) {
-  // Use a realistic ENU origin near Tokyo (lat=35.578, lon=139.749, h=80)
-  const Pose3 ecef_T_nav = makeEcefTnav(35.578, 139.749, 80.0);
-
+  const Pose3 ecef_T_nav = tokyo::ecefTnav();
   const Point3 leverArm(0.1, 0.0, -0.5);
-  const Point3 satPos(-5824269.46342, -22935011.26952, -12195522.22428);
   const auto factor = PseudorangeFactorArm(
-      Key(0), Key(1), 24874028.989, satPos, leverArm, ecef_T_nav,
-      -0.00022743876852667193);
+      Key(0), Key(1), sample::kPseudorange, sample::kSatPos, leverArm,
+      ecef_T_nav, sample::kSatClkBias);
 
-  // nav_T_body in ENU frame (small offsets from origin)
   Values values;
   values.insert(Key(0), Pose3(Rot3::RzRyRx(0.05, -0.03, 0.1),
                                Point3(10.0, 20.0, 5.0)));
-  values.insert(Key(1), 5.377885093511699e-07);
+  values.insert(Key(1), sample::kReceiverClock);
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-3, 1e-5);
 }
 
@@ -549,38 +541,37 @@ TEST(TestPseudorangeFactorArm, EcefTnavENUJacobians) {
 TEST(TestPseudorangeFactorArm, EcefTnavConsistency) {
   // Verify: factor with ecef_T_nav and nav_T_body should give the same error
   // as factor without ecef_T_nav using ecef_T_body = ecef_T_nav * nav_T_body.
-  const Pose3 ecef_T_nav = makeEcefTnav(35.578, 139.749, 80.0);
+  const Pose3 ecef_T_nav = tokyo::ecefTnav();
   const Pose3 nav_T_body(Rot3::RzRyRx(0.05, -0.03, 0.1),
                           Point3(10.0, 20.0, 5.0));
   const Pose3 ecef_T_body = ecef_T_nav.compose(nav_T_body);
 
   const Point3 leverArm(0.1, 0.0, -0.5);
-  const Point3 satPos(-5824269.46342, -22935011.26952, -12195522.22428);
-  const double pseudorange = 24874028.989;
-  const double satClkBias = -0.00022743876852667193;
-  const double clockBias = 5.377885093511699e-07;
 
   const auto factorEcef = PseudorangeFactorArm(
-      Key(0), Key(1), pseudorange, satPos, leverArm, satClkBias);
+      Key(0), Key(1), sample::kPseudorange, sample::kSatPos, leverArm,
+      sample::kSatClkBias);
   const auto factorNav = PseudorangeFactorArm(
-      Key(0), Key(1), pseudorange, satPos, leverArm, ecef_T_nav, satClkBias);
+      Key(0), Key(1), sample::kPseudorange, sample::kSatPos, leverArm,
+      ecef_T_nav, sample::kSatClkBias);
 
-  const double errorEcef = factorEcef.evaluateError(ecef_T_body, clockBias)[0];
-  const double errorNav = factorNav.evaluateError(nav_T_body, clockBias)[0];
+  const double errorEcef =
+      factorEcef.evaluateError(ecef_T_body, sample::kReceiverClock)[0];
+  const double errorNav =
+      factorNav.evaluateError(nav_T_body, sample::kReceiverClock)[0];
   EXPECT_DOUBLES_EQUAL(errorEcef, errorNav, 1e-6);
 }
 
 // *************************************************************************
 TEST(TestPseudorangeFactorArm, EcefTnavEquals) {
   const Point3 leverArm(0.1, 0.2, 0.3);
-  const Pose3 ecef_T_nav = makeEcefTnav(35.578, 139.749, 80.0);
+  const Pose3 ecef_T_nav = tokyo::ecefTnav();
 
   const auto factor1 = PseudorangeFactorArm(
       1, 2, 0.0, Point3::Zero(), leverArm, 0.0);
   const auto factor2 = PseudorangeFactorArm(
       1, 2, 0.0, Point3::Zero(), leverArm, ecef_T_nav, 0.0);
 
-  // Different ecef_T_nav should not be equal
   CHECK(!factor1.equals(factor2));
   CHECK(factor2.equals(factor2));
 }
@@ -612,47 +603,197 @@ TEST(TestDifferentialPseudorangeFactorArm, EcefTnavIdentity) {
 
 // *************************************************************************
 TEST(TestDifferentialPseudorangeFactorArm, EcefTnavENUJacobians) {
-  const Pose3 ecef_T_nav = makeEcefTnav(35.578, 139.749, 80.0);
+  const Pose3 ecef_T_nav = tokyo::ecefTnav();
   const Point3 leverArm(0.1, 0.0, -0.5);
-  const Point3 satPos(-5824269.46342, -22935011.26952, -12195522.22428);
 
   const auto factor = DifferentialPseudorangeFactorArm(
-      Key(0), Key(1), Key(2), 24874028.989, satPos, leverArm, ecef_T_nav,
-      -0.00022743876852667193);
+      Key(0), Key(1), Key(2), sample::kPseudorange, sample::kSatPos, leverArm,
+      ecef_T_nav, sample::kSatClkBias);
 
   Values values;
   values.insert(Key(0), Pose3(Rot3::RzRyRx(0.05, -0.03, 0.1),
                                Point3(10.0, 20.0, 5.0)));
-  values.insert(Key(1), 5.377885093511699e-07);
+  values.insert(Key(1), sample::kReceiverClock);
   values.insert(Key(2), 10.0);
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-3, 1e-5);
 }
 
 // *************************************************************************
 TEST(TestDifferentialPseudorangeFactorArm, EcefTnavConsistency) {
-  const Pose3 ecef_T_nav = makeEcefTnav(35.578, 139.749, 80.0);
+  const Pose3 ecef_T_nav = tokyo::ecefTnav();
   const Pose3 nav_T_body(Rot3::RzRyRx(0.05, -0.03, 0.1),
                           Point3(10.0, 20.0, 5.0));
   const Pose3 ecef_T_body = ecef_T_nav.compose(nav_T_body);
 
   const Point3 leverArm(0.1, 0.0, -0.5);
-  const Point3 satPos(-5824269.46342, -22935011.26952, -12195522.22428);
-  const double pseudorange = 24874028.989;
-  const double satClkBias = -0.00022743876852667193;
-  const double clockBias = 5.377885093511699e-07;
   const double correction = 10.0;
 
   const auto factorEcef = DifferentialPseudorangeFactorArm(
-      Key(0), Key(1), Key(2), pseudorange, satPos, leverArm, satClkBias);
+      Key(0), Key(1), Key(2), sample::kPseudorange, sample::kSatPos, leverArm,
+      sample::kSatClkBias);
   const auto factorNav = DifferentialPseudorangeFactorArm(
-      Key(0), Key(1), Key(2), pseudorange, satPos, leverArm, ecef_T_nav,
-      satClkBias);
+      Key(0), Key(1), Key(2), sample::kPseudorange, sample::kSatPos, leverArm,
+      ecef_T_nav, sample::kSatClkBias);
 
-  const double errorEcef =
-      factorEcef.evaluateError(ecef_T_body, clockBias, correction)[0];
-  const double errorNav =
-      factorNav.evaluateError(nav_T_body, clockBias, correction)[0];
+  const double errorEcef = factorEcef.evaluateError(
+      ecef_T_body, sample::kReceiverClock, correction)[0];
+  const double errorNav = factorNav.evaluateError(
+      nav_T_body, sample::kReceiverClock, correction)[0];
   EXPECT_DOUBLES_EQUAL(errorEcef, errorNav, 1e-6);
+}
+
+// *************************************************************************
+// DoubleDifferencePseudorangeFactor tests
+// *************************************************************************
+
+TEST(TestDoubleDifferencePseudorangeFactor, ZeroError) {
+  const double rRovRef = geodistRange(dd::kSatRefRov, dd::kTruePos);
+  const double rRovTarget = geodistRange(dd::kSatTargetRov, dd::kTruePos);
+  const double rBaseRef = geodistRange(dd::kSatRefBase, dd::kBasePos);
+  const double rBaseTarget = geodistRange(dd::kSatTargetBase, dd::kBasePos);
+
+  const double ddModel = (rRovRef - rBaseRef) - (rRovTarget - rBaseTarget);
+  // Set DD obs = DD model so error = 0.
+  const double prRovRef = ddModel / 2.0 + 1000.0;
+  const double prBaseRef = -ddModel / 2.0 + 1000.0;
+  const double prRovTarget = 500.0;
+  const double prBaseTarget = 500.0;
+
+  const auto factor = DoubleDifferencePseudorangeFactor(
+      Key(0), prRovRef, prBaseRef, prRovTarget, prBaseTarget,
+      dd::kSatRefRov, dd::kSatTargetRov, dd::kSatRefBase, dd::kSatTargetBase,
+      dd::kBasePos);
+
+  const double error = factor.evaluateError(dd::kTruePos)[0];
+  EXPECT_DOUBLES_EQUAL(0.0, error, 1e-4);
+}
+
+// *************************************************************************
+TEST(TestDoubleDifferencePseudorangeFactor, Jacobians) {
+  const auto factor = DoubleDifferencePseudorangeFactor(
+      Key(0), 25000000.0, 24999500.0, 22000000.0, 21999800.0,
+      dd::kSatRefRov, dd::kSatTargetRov, dd::kSatRefBase, dd::kSatTargetBase,
+      dd::kBasePos);
+
+  Values values;
+  values.insert(Key(0), dd::kTruePos);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-3, 1e-5);
+}
+
+// *************************************************************************
+TEST(TestDoubleDifferencePseudorangeFactor, equals) {
+  const auto f1 = DoubleDifferencePseudorangeFactor(
+      Key(0), 100.0, 99.0, 80.0, 79.0,
+      dd::kSatRefRov, dd::kSatTargetRov, dd::kSatRefBase, dd::kSatTargetBase,
+      dd::kBasePos);
+  const auto f2 = DoubleDifferencePseudorangeFactor(
+      Key(0), 100.0, 99.0, 80.0, 79.0,
+      dd::kSatRefRov, dd::kSatTargetRov, dd::kSatRefBase, dd::kSatTargetBase,
+      dd::kBasePos);
+  const auto f3 = DoubleDifferencePseudorangeFactor(
+      Key(0), 100.0, 99.0, 80.0, 79.0,
+      dd::kSatRefRov, dd::kSatTargetRov, dd::kSatRefBase, dd::kSatTargetBase,
+      Point3(0, 0, 0));  // different base pos
+
+  CHECK(f1.equals(f2));
+  CHECK(!f1.equals(f3));
+}
+
+// *************************************************************************
+TEST(TestDoubleDifferencePseudorangeFactor, print) {
+  const auto factor = DoubleDifferencePseudorangeFactor(
+      Key(0), 100.0, 99.0, 80.0, 79.0,
+      dd::kSatRefRov, dd::kSatTargetRov, dd::kSatRefBase, dd::kSatTargetBase,
+      dd::kBasePos);
+  factor.print("test ");
+}
+
+// *************************************************************************
+// DoubleDifferencePseudorangeFactorArm tests
+// *************************************************************************
+TEST(TestDoubleDifferencePseudorangeFactorArm, Jacobians) {
+  const Point3 leverArm(0.1, 0.0, -0.5);
+  const auto factor = DoubleDifferencePseudorangeFactorArm(
+      Key(0), 25000000.0, 24999500.0, 22000000.0, 21999800.0,
+      dd::kSatRefRov, dd::kSatTargetRov, dd::kSatRefBase, dd::kSatTargetBase,
+      dd::kBasePos, leverArm);
+
+  Values values;
+  values.insert(Key(0), Pose3(Rot3::RzRyRx(0.1, 0.2, 0.3), dd::kTruePos));
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-3, 1e-5);
+}
+
+// *************************************************************************
+TEST(TestDoubleDifferencePseudorangeFactorArm, EcefTnavJacobians) {
+  const Pose3 ecef_T_nav = tokyo::ecefTnav();
+  const Point3 leverArm(0.1, 0.0, -0.5);
+  const auto factor = DoubleDifferencePseudorangeFactorArm(
+      Key(0), 25000000.0, 24999500.0, 22000000.0, 21999800.0,
+      dd::kSatRefRov, dd::kSatTargetRov, dd::kSatRefBase, dd::kSatTargetBase,
+      dd::kBasePos, leverArm, ecef_T_nav);
+
+  Values values;
+  values.insert(Key(0), Pose3(Rot3::RzRyRx(0.05, -0.03, 0.1),
+                               Point3(10.0, 20.0, 5.0)));
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-3, 1e-5);
+}
+
+// *************************************************************************
+TEST(TestDoubleDifferencePseudorangeFactorArm, ZeroLeverArm) {
+  const auto factorPt = DoubleDifferencePseudorangeFactor(
+      Key(0), 25000000.0, 24999500.0, 22000000.0, 21999800.0,
+      dd::kSatRefRov, dd::kSatTargetRov, dd::kSatRefBase, dd::kSatTargetBase,
+      dd::kBasePos);
+  const auto factorArm = DoubleDifferencePseudorangeFactorArm(
+      Key(0), 25000000.0, 24999500.0, 22000000.0, 21999800.0,
+      dd::kSatRefRov, dd::kSatTargetRov, dd::kSatRefBase, dd::kSatTargetBase,
+      dd::kBasePos, Point3::Zero());
+
+  const double errorPt = factorPt.evaluateError(dd::kTruePos)[0];
+  const double errorArm = factorArm.evaluateError(
+      Pose3(Rot3::Identity(), dd::kTruePos))[0];
+  EXPECT_DOUBLES_EQUAL(errorPt, errorArm, 1e-9);
+}
+
+// *************************************************************************
+TEST(TestDoubleDifferencePseudorangeFactorArm, EcefTnavConsistency) {
+  const Pose3 ecef_T_nav = tokyo::ecefTnav();
+  const Pose3 nav_T_body(Rot3::RzRyRx(0.05, -0.03, 0.1),
+                          Point3(10.0, 20.0, 5.0));
+  const Pose3 ecef_T_body = ecef_T_nav.compose(nav_T_body);
+  const Point3 leverArm(0.1, 0.0, -0.5);
+
+  const auto factorEcef = DoubleDifferencePseudorangeFactorArm(
+      Key(0), 25000000.0, 24999500.0, 22000000.0, 21999800.0,
+      dd::kSatRefRov, dd::kSatTargetRov, dd::kSatRefBase, dd::kSatTargetBase,
+      dd::kBasePos, leverArm);
+  const auto factorNav = DoubleDifferencePseudorangeFactorArm(
+      Key(0), 25000000.0, 24999500.0, 22000000.0, 21999800.0,
+      dd::kSatRefRov, dd::kSatTargetRov, dd::kSatRefBase, dd::kSatTargetBase,
+      dd::kBasePos, leverArm, ecef_T_nav);
+
+  const double errorEcef = factorEcef.evaluateError(ecef_T_body)[0];
+  const double errorNav = factorNav.evaluateError(nav_T_body)[0];
+  EXPECT_DOUBLES_EQUAL(errorEcef, errorNav, 1e-6);
+}
+
+// *************************************************************************
+TEST(TestDoubleDifferencePseudorangeFactorArm, equals) {
+  const Point3 leverArm(0.1, 0.0, -0.5);
+  const Pose3 ecef_T_nav = tokyo::ecefTnav();
+
+  const auto f1 = DoubleDifferencePseudorangeFactorArm(
+      Key(0), 100.0, 99.0, 80.0, 79.0,
+      dd::kSatRefRov, dd::kSatTargetRov, dd::kSatRefBase, dd::kSatTargetBase,
+      dd::kBasePos, leverArm);
+  const auto f2 = DoubleDifferencePseudorangeFactorArm(
+      Key(0), 100.0, 99.0, 80.0, 79.0,
+      dd::kSatRefRov, dd::kSatTargetRov, dd::kSatRefBase, dd::kSatTargetBase,
+      dd::kBasePos, leverArm, ecef_T_nav);
+
+  CHECK(!f1.equals(f2));
+  CHECK(f1.equals(f1));
+  CHECK(f2.equals(f2));
 }
 
 // *************************************************************************

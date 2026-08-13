@@ -7,7 +7,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file Scheduler.h
+ * @file gtsam/base/Scheduler.h
  * @brief Policy-based work-stealing scheduler.
  *
  * @details
@@ -26,13 +26,11 @@
 
 #include <atomic>
 #include <condition_variable>
-#include <deque>
 #include <exception>
 #include <functional>
 #include <future>
 #include <memory>
 #include <mutex>
-#include <queue>
 #include <stdexcept>
 #include <thread>
 #include <type_traits>

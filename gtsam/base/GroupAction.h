@@ -213,6 +213,15 @@ struct InducedVectorField : public Action {
  *                OptionalJacobian<DimM, DimG> Hg = {}) const;
  *   (for Right action)
  *
+ * For SemidirectLieGroup where M is a vector space (Eigen column vector),
+ * provide the static method below so SemidirectLieGroup can
+ * derive Expmap and Logmap automatically via the φ₁ kernel:
+ *
+ *   static Eigen::Matrix<double,DimM,DimM> generator(const TangentVector_G& u);
+ *
+ * where generator(u)·h = d/dt φ(expG(t·u), h)|_{t=0} is the infinitesimal
+ * generator of the representation (a DimM×DimM matrix, linear in u).
+ *
  * @tparam Derived The user's action functor.
  * @tparam G The group type.
  * @tparam M The manifold type.

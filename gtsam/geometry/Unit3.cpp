@@ -46,8 +46,7 @@ Unit3 Unit3::FromPoint3(const Point3& point, OptionalJacobian<2, 3> H) {
   Matrix3 D_p_point;
   Unit3 direction;
   direction.p_ = normalize(point, H ? &D_p_point : 0);
-  if (H)
-    *H << direction.basis().transpose() * D_p_point;
+  if (H) *H = direction.basis().transpose() * D_p_point;
   return direction;
 }
 
@@ -155,6 +154,16 @@ Vector3 Unit3::unitVector(OptionalJacobian<3, 2> H) const {
 }
 
 /* ************************************************************************* */
+Vector3 Unit3::scaled(double magnitude, OptionalJacobian<3, 2> H_this,
+                      OptionalJacobian<3, 1> H_magnitude) const {
+  if (H_this)
+    *H_this = magnitude * basis();
+  if (H_magnitude)
+    *H_magnitude = p_;
+  return magnitude * p_;
+}
+
+/* ************************************************************************* */
 std::ostream& operator<<(std::ostream& os, const Unit3& pair) {
   os << pair.p_ << endl;
   return os;
@@ -173,8 +182,8 @@ Unit3 Unit3::cross(const Unit3& q, OptionalJacobian<2, 2> H1,
                    OptionalJacobian<2, 2> H2) const {
   Matrix23 H;
   const auto result = Unit3::FromPoint3(gtsam::cross(p_, q.p_), H);
-  if (H1) *H1 << -H * q.skew() * basis();
-  if (H2) *H2 << H * skew() * q.basis();
+  if (H1) *H1 = -H * q.skew() * basis();
+  if (H2) *H2 = H * skew() * q.basis();
   return result;
 }
 
@@ -218,11 +227,11 @@ double Unit3::dot(const Unit3& q, OptionalJacobian<1, 2> H_p,
   double d = gtsam::dot(pn, qn, H_p ? &H_dot_pn : nullptr, H_q ? &H_dot_qn : nullptr);
 
   if (H_p) {
-    (*H_p) << H_dot_pn * H_pn_p;
+    *H_p = H_dot_pn * H_pn_p;
   }
 
   if (H_q) {
-    (*H_q) = H_dot_qn * H_qn_q;
+    *H_q = H_dot_qn * H_qn_q;
   }
 
   return d;

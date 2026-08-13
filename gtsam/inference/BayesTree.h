@@ -191,7 +191,10 @@ namespace gtsam {
      */
     sharedBayesNet jointBayesNet(Key j1, Key j2, const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
 
-    /** Return a joint marginal on an arbitrary set of variables as a BayesNet. */
+    /**
+     * Return a joint marginal Bayes net whose elimination order follows the
+     * first occurrence of each key.
+     */
     sharedBayesNet jointBayesNet(
         const KeyVector& keys,
         const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;

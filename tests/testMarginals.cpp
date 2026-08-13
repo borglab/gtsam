@@ -92,7 +92,7 @@ Matrix legacyJointCovariance(const GaussianFactorGraph& graph,
 
   const GaussianFactorGraph jointFG =
       legacyJointFactorGraph(graph, ordering, sortedVariables, factorization);
-  const Matrix augmentedInfo = jointFG.augmentedHessian();
+  const Matrix augmentedInfo = jointFG.augmentedHessian(Ordering(variables));
   const Matrix information = augmentedInfo.topLeftCorner(
       augmentedInfo.rows() - 1, augmentedInfo.cols() - 1);
   return information.inverse();
@@ -370,6 +370,7 @@ TEST(Marginals, orderingEquivalence) {
 #endif
 
 /* ************************************************************************* */
+// Verifies joint covariance agrees with the full system in query-key order.
 TEST(Marginals, jointCovarianceMatchesFullHessianInverse) {
   auto dimsForKeys = [](const Values& values, const KeyVector& keys) {
     std::vector<size_t> dims;
@@ -391,7 +392,6 @@ TEST(Marginals, jointCovarianceMatchesFullHessianInverse) {
   auto covarianceBlockFromFullHessian = [&](const GaussianFactorGraph& graph,
                                             const Values& values,
                                             const KeyVector& queryKeys) {
-    const KeyVector orderedQuery = uniqueSortedKeys(queryKeys);
     const KeySet graphKeys = graph.keys();
     KeyVector allKeys(graphKeys.begin(), graphKeys.end());
     const Ordering ordering(allKeys);
@@ -401,7 +401,7 @@ TEST(Marginals, jointCovarianceMatchesFullHessianInverse) {
 
     const std::vector<size_t> allDims = dimsForKeys(values, allKeys);
     const std::vector<size_t> allOffsets = blockOffsets(allDims);
-    const std::vector<size_t> queryDims = dimsForKeys(values, orderedQuery);
+    const std::vector<size_t> queryDims = dimsForKeys(values, queryKeys);
     const std::vector<size_t> queryOffsets = blockOffsets(queryDims);
 
     FastMap<Key, size_t> indexByKey;
@@ -410,11 +410,11 @@ TEST(Marginals, jointCovarianceMatchesFullHessianInverse) {
     }
 
     Matrix result = Matrix::Zero(queryOffsets.back(), queryOffsets.back());
-    for (size_t rowIndex = 0; rowIndex < orderedQuery.size(); ++rowIndex) {
-      const size_t sourceRow = indexByKey.at(orderedQuery[rowIndex]);
+    for (size_t rowIndex = 0; rowIndex < queryKeys.size(); ++rowIndex) {
+      const size_t sourceRow = indexByKey.at(queryKeys[rowIndex]);
       const size_t rowDim = queryDims[rowIndex];
-      for (size_t colIndex = 0; colIndex < orderedQuery.size(); ++colIndex) {
-        const size_t sourceCol = indexByKey.at(orderedQuery[colIndex]);
+      for (size_t colIndex = 0; colIndex < queryKeys.size(); ++colIndex) {
+        const size_t sourceCol = indexByKey.at(queryKeys[colIndex]);
         const size_t colDim = queryDims[colIndex];
         result.block(queryOffsets[rowIndex], queryOffsets[colIndex], rowDim,
                      colDim) =

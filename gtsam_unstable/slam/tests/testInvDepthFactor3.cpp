@@ -54,7 +54,7 @@ TEST( InvDepthFactor, optimize) {
   Point2 expected_uv = level_camera.project(landmark);
 
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose, K);
-  Vector5 inv_landmark((Vector(5) << 0., 0., 1., 0., 0.).finished());
+  Vector5 inv_landmark(Vector{{0., 0., 1., 0., 0.}});
   // initialize inverse depth with "incorrect" depth of 1/4
   // in reality this is 1/5, but initial depth is guessed
   double inv_depth(1./4);
@@ -119,7 +119,7 @@ TEST( InvDepthFactor, Jacobian3D ) {
   // get expected landmark representation using backprojection
   InvDepthCamera3<Cal3_S2> inv_camera(level_pose, K);
   const auto [inv_landmark, inv_depth] = inv_camera.backproject(expected_uv, 5);
-  Vector5 expected_inv_landmark((Vector(5) << 0., 0., 1., 0., 0.).finished());
+  Vector5 expected_inv_landmark(Vector{{0., 0., 1., 0., 0.}});
 
   CHECK(assert_equal(expected_inv_landmark, inv_landmark, 1e-6));
   CHECK(assert_equal(inv_depth, 1./5, 1e-6));

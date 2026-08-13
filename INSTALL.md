@@ -15,9 +15,22 @@ $ cmake --build . --target install
 ## Important Installation Notes
 
 1. GTSAM requires the following libraries to be installed on your system:
-    - BOOST version 1.70 or greater (install through Linux repositories or MacPorts). Please see [Boost Notes](#boost-notes) for version recommendations based on your compiler.
+    - CMake version 3.16 or higher
+    - A compiler with C++17 support:
+      - Linux: GCC 9 or Clang 11
+      - macOS: Xcode 14.2
+      - Windows: MSVC 14.2
 
-    - CMake version 3.10 or higher
+    Boost version 1.70 or greater is required when either
+    `GTSAM_USE_BOOST_FEATURES` or `GTSAM_ENABLE_BOOST_SERIALIZATION` is
+    enabled. Both options are enabled by default outside ROS 2 `colcon` builds.
+    To build without Boost, disable both:
+
+    ```sh
+    $ cmake .. \
+        -DGTSAM_USE_BOOST_FEATURES=OFF \
+        -DGTSAM_ENABLE_BOOST_SERIALIZATION=OFF
+    ```
 
     Optional dependent libraries:
      - If TBB is installed and detectable by CMake GTSAM will use it automatically.
@@ -31,19 +44,6 @@ $ cmake --build . --target install
        achieved with MKL disabled. We therefore advise you to benchmark your problem
        before using MKL.
 
-    Tested compilers:
-
-    - GCC 4.2-7.3
-    - OS X Clang 2.9-10.0
-    - OS X GCC 4.2
-    - MSVC 2010, 2012, 2017
-
-    Tested systems:
-
-    - Ubuntu 16.04 - 18.04
-    - MacOS 10.6 - 10.14
-    - Windows 7, 8, 8.1, 10
-
 2. GTSAM makes extensive use of debug assertions, and we highly recommend you work
 in Debug mode while developing (enabled by default). Likewise, it is imperative
 that you switch to release mode when running finished code and for timing. GTSAM
@@ -51,7 +51,8 @@ will run up to 10x faster in Release mode! See the end of this document for
 additional debugging tips.
 
 3. GTSAM has Doxygen documentation. To generate, run 'make doc' from your
-build directory after setting the `GTSAM_BUILD_DOCS` and `GTSAM_BUILD_[HTML|LATEX]` cmake flags.
+build directory after setting the `GTSAM_BUILD_DOCS` and
+`GTSAM_BUILD_DOC_[HTML|LATEX]` cmake flags.
 
 4. The instructions below install the library to the default system install path and
 build all components. From a terminal, starting in the root library folder,
@@ -73,11 +74,78 @@ execute commands as follows for an out-of-source build:
 Versions of Boost prior to 1.65 have a known bug that prevents proper "deep" serialization of objects, which means that objects encapsulated inside other objects don't get serialized.
 This is particularly seen when using `clang` as the C++ compiler.
 
-For this reason we recommend Boost>=1.65, and recommend installing it through alternative channels when it is not available through your operating system's primary package manager.
+GTSAM's minimum supported Boost version, 1.70, already includes the fix. We
+recommend installing it through alternative channels when it is not available
+through your operating system's primary package manager.
 
-## Known Issues
+## Installing prebuilt packages
 
-- MSVC 2013 is not yet supported because it cannot build the serialization module of Boost 1.55 (or earlier).
+### Ubuntu PPA
+
+GTSAM can also be installed on Ubuntu using the
+[BorgLab PPA repositories](https://launchpad.net/~borglab).
+
+For the current GTSAM 4.2 release:
+
+```sh
+sudo add-apt-repository ppa:borglab/gtsam-release-4.2
+sudo apt update
+sudo apt install libgtsam-dev libgtsam-unstable-dev
+```
+
+For nightly builds from the `develop` branch:
+
+```sh
+sudo add-apt-repository ppa:borglab/gtsam-develop
+sudo apt update
+sudo apt install libgtsam-dev libgtsam-unstable-dev
+```
+
+Package availability depends on the Ubuntu release. Consult the linked PPA
+pages for the currently published packages.
+
+### Arch Linux AUR
+
+GTSAM is available in the Arch User Repository as
+[`gtsam`](https://aur.archlinux.org/packages/gtsam/). Installing GTSAM on
+Arch Linux is not tested by the GTSAM developers.
+
+Install it manually by following the
+[Arch Wiki instructions](https://wiki.archlinux.org/title/Arch_User_Repository)
+or use an AUR helper such as `yay`:
+
+```sh
+yay -S gtsam
+```
+
+An Intel MKL-enabled package is also available:
+
+```sh
+yay -S gtsam-mkl
+```
+
+## Using GTSAM from a CMake project
+
+After installing GTSAM, downstream CMake projects can use its exported target:
+
+```cmake
+find_package(GTSAM REQUIRED)
+
+add_executable(my_program main.cpp)
+target_link_libraries(my_program PRIVATE gtsam)
+```
+
+Linking the `gtsam` target supplies the required include directories and
+transitive build requirements. If GTSAM was installed to a nonstandard prefix,
+point CMake at it when configuring the downstream project:
+
+```sh
+cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/gtsam
+```
+
+See the complete
+[`cmake/example_cmake_find_gtsam`](cmake/example_cmake_find_gtsam)
+consumer example.
 
 # Windows Installation
 

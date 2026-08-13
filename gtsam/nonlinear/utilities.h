@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    utilities.h
+ * @file    gtsam/nonlinear/utilities.h
  * @brief   Contains *generic* global functions designed particularly for the matlab interface
  * @author  Stephen Williams
  */
@@ -281,7 +281,7 @@ void perturbPoint3(Values& values, double sigma, int32_t seed = 42u) {
 void perturbPose3(Values& values, double sigmaT, double sigmaR,
                   int32_t seed = 42u) {
   auto model = noiseModel::Diagonal::Sigmas(
-      (Vector6() << sigmaR, sigmaR, sigmaR, sigmaT, sigmaT, sigmaT).finished());
+      Vector6{sigmaR, sigmaR, sigmaR, sigmaT, sigmaT, sigmaT});
   Sampler sampler(model, seed);
   for (const auto& [key, value] : values.extract<Pose3>()) {
     values.update<Pose3>(key, sampler.perturb(value));
@@ -298,7 +298,7 @@ void perturbPose3(Values& values, double sigmaT, double sigmaR,
  * @param depth Initial depth value.
  */
 void insertBackprojections(Values& values, const PinholeCamera<Cal3_S2>& camera,
-    const Vector& J, const Matrix& Z, double depth) {
+    const Vector& J, ConstMatrixView Z, double depth) {
   if (Z.rows() != 2)
     throw std::invalid_argument("insertBackProjections: Z must be 2*J");
   if (Z.cols() != J.size())
@@ -323,7 +323,7 @@ void insertBackprojections(Values& values, const PinholeCamera<Cal3_S2>& camera,
  * @param body_P_sensor Pose of the camera sensor in the body frame.
  */
 void insertProjectionFactors(NonlinearFactorGraph& graph, Key i,
-    const Vector& J, const Matrix& Z, const SharedNoiseModel& model,
+    const Vector& J, ConstMatrixView Z, const SharedNoiseModel& model,
     const Cal3_S2::shared_ptr K, const Pose3& body_P_sensor = Pose3()) {
   if (Z.rows() != 2)
     throw std::invalid_argument("addMeasurements: Z must be 2*K");

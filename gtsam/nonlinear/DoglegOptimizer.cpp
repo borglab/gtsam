@@ -65,8 +65,8 @@ typedef internal::DoglegState State;
 DoglegOptimizer::DoglegOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues,
                                  const DoglegParams& params)
     : NonlinearOptimizer(
-          graph, std::unique_ptr<State>(
-                     new State(initialValues, graph.error(initialValues), params.deltaInitial))),
+          graph, std::unique_ptr<State>(new State(
+                     initialValues, graph.error(initialValues), params.deltaInitial))),
       params_(ensureHasOrdering(params, graph)) {}
 
 DoglegOptimizer::DoglegOptimizer(const NonlinearFactorGraph& graph, const Values& initialValues,
@@ -84,7 +84,7 @@ double DoglegOptimizer::getDelta() const {
 GaussianFactorGraph::shared_ptr DoglegOptimizer::iterate(void) {
 
   // Linearize graph
-  GaussianFactorGraph::shared_ptr linear = graph_.linearize(state_->values);
+  GaussianFactorGraph::shared_ptr linear = graph().linearize(state_->values);
 
   // Pull out parameters we'll use
   const bool dlVerbose = (params_.verbosityDL > DoglegParams::SILENT);
@@ -97,14 +97,14 @@ GaussianFactorGraph::shared_ptr DoglegOptimizer::iterate(void) {
     VectorValues dx_u = bt.optimizeGradientSearch();
     VectorValues dx_n = bt.optimize();
     result = DoglegOptimizerImpl::Iterate(getDelta(), DoglegOptimizerImpl::ONE_STEP_PER_ITERATION,
-      dx_u, dx_n, bt, graph_, state_->values, state_->error, dlVerbose);
+      dx_u, dx_n, bt, graph(), state_->values, state_->error, dlVerbose);
   }
   else if ( params_.isSequential() ) {
     GaussianBayesNet bn = *linear->eliminateSequential(*params_.ordering, params_.getEliminationFunction());
     VectorValues dx_u = bn.optimizeGradientSearch();
     VectorValues dx_n = bn.optimize();
     result = DoglegOptimizerImpl::Iterate(getDelta(), DoglegOptimizerImpl::ONE_STEP_PER_ITERATION,
-      dx_u, dx_n, bn, graph_, state_->values, state_->error, dlVerbose);
+      dx_u, dx_n, bn, graph(), state_->values, state_->error, dlVerbose);
   }
   else if ( params_.isIterative() ) {
     throw std::runtime_error("Dogleg is not currently compatible with the linear conjugate gradient solver");

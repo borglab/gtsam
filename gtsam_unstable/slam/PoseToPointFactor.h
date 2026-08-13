@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  *  @file   PoseToPointFactor.h
  *  @brief  This factor can be used to model relative position measurements
@@ -22,10 +33,14 @@ namespace gtsam {
  * @ingroup slam
  */
 template<typename POSE = Pose3, typename POINT = Point3>
-class PoseToPointFactor : public NoiseModelFactorN<POSE, POINT> {
+class PoseToPointFactor
+    : public NoiseModelFactorT<typename traits<POINT>::TangentVector, POSE,
+                               POINT> {
  private:
   typedef PoseToPointFactor This;
-  typedef NoiseModelFactorN<POSE, POINT> Base;
+  typedef NoiseModelFactorT<typename traits<POINT>::TangentVector, POSE, POINT>
+      Base;
+  using ErrorVector = typename traits<POINT>::TangentVector;
 
   POINT measured_; /** the point measurement in local coordinates */
 
@@ -82,7 +97,7 @@ class PoseToPointFactor : public NoiseModelFactorN<POSE, POINT> {
    *
    * Note: measured_ and the error are in local coordiantes.
    */
-  Vector evaluateError(
+  ErrorVector evaluateError(
       const POSE& w_T_b, const POINT& w_P,
       OptionalMatrixType H1,
       OptionalMatrixType H2) const override {

@@ -16,6 +16,7 @@
  */
 
 #include <gtsam/geometry/CalibratedCamera.h>
+#include <gtsam/sfm/SfmData.h>
 #include <gtsam/slam/dataset.h>
 
 using namespace std;

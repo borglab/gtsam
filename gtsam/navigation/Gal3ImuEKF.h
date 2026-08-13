@@ -31,6 +31,7 @@
 
 #pragma once
 
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/geometry/Gal3.h>
 #include <gtsam/navigation/InvariantEKF.h>  // Include the base class
 #include <gtsam/navigation/PreintegrationParams.h>

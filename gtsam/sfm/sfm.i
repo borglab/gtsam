@@ -106,6 +106,13 @@ virtual class EssentialTransferFactorK : gtsam::NoiseModelFactor {
                            const gtsam::noiseModel::Base* model = nullptr);
 };
 
+#include <gtsam/sfm/SelfCalibrationFactor.h>
+virtual class SelfCalibrationFactor : gtsam::NoiseModelFactor {
+  SelfCalibrationFactor(gtsam::Key fi_key, gtsam::Key fj_key, const gtsam::Matrix3& F,
+               const gtsam::Vector2& pp_i, const gtsam::Vector2& pp_j,
+               const gtsam::noiseModel::Base* model = nullptr);
+};
+
 #include <gtsam/sfm/ShonanFactor.h>
 
 virtual class ShonanFactor3 : gtsam::NoiseModelFactor {
@@ -272,6 +279,7 @@ class ShonanAveraging2 {
   gtsam::Values initializeRandomly() const;
   pair<gtsam::Values, double> run(const gtsam::Values& initial, size_t min_p,
                                   size_t max_p) const;
+  pair<gtsam::Values, double> run(size_t min_p, size_t max_p) const;
 };
 
 class ShonanAveraging3 {
@@ -322,6 +330,7 @@ class ShonanAveraging3 {
   gtsam::Values initializeRandomly() const;
   pair<gtsam::Values, double> run(const gtsam::Values& initial, size_t min_p,
                                   size_t max_p) const;
+  pair<gtsam::Values, double> run(size_t min_p, size_t max_p) const;
 };
 
 #include <gtsam/sfm/MFAS.h>

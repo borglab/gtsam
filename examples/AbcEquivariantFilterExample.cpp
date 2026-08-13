@@ -18,6 +18,7 @@
  * @date 2025
  */
 
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam_unstable/geometry/ABC.h>
 #include <gtsam_unstable/geometry/ABCEquivariantFilter.h>

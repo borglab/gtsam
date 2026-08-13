@@ -20,7 +20,6 @@
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
-#include <fstream>
 #include <iterator>
 
 using namespace std;

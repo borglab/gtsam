@@ -1,16 +1,11 @@
 name: macOS CI
 
 on:
-  pull_request:
-    paths-ignore:
-      - '**.md'
-      - '**.ipynb' 
-      - 'myst.yml'
+  workflow_call:
+  workflow_dispatch:
 
-# Cancels any in-progress workflow runs for the same PR when a new push is made,
-# allowing the runner to become available more quickly for the latest changes.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  group: macos-ci-${{ github.run_id }}
   cancel-in-progress: true
 
 jobs:
@@ -23,6 +18,7 @@ jobs:
       CTEST_PARALLEL_LEVEL: 2
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       GTSAM_BUILD_UNSTABLE: ${{ matrix.build_unstable }}
+      GTSAM_BUILD_EXAMPLES_ALWAYS: ON
       GTSAM_ALLOW_DEPRECATED_SINCE_V43: OFF
 
     strategy:
@@ -62,7 +58,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         
       - name: Prepare Homebrew (robust)
         shell: bash

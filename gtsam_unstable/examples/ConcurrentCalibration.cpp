@@ -62,7 +62,8 @@ int main(int argc, char** argv){
 
   initial_estimate.insert(K(0), noisy_K);
 
-  auto calNoise = noiseModel::Diagonal::Sigmas((Vector(5) << 500, 500, 1e-5, 100, 100).finished());
+  auto calNoise =
+      noiseModel::Diagonal::Sigmas(Vector{{500, 500, 1e-5, 100, 100}});
   graph.addPrior(K(0), noisy_K, calNoise);
 
 

@@ -148,8 +148,8 @@ namespace gtsam {
           const_iterator it2 = c->beginParents() + (it - beginParents());
           if (*it != *(it2))
             return false;
-          rows1.push_back(row(getA(it), i));
-          rows2.push_back(row(c->getA(it2), i));
+          rows1.push_back(getA(it).row(i));
+          rows2.push_back(c->getA(it2).row(i));
         }
 
         Vector row1 = concatVectors(rows1);
@@ -226,9 +226,9 @@ namespace gtsam {
     // Solve matrix
     const Vector solution = R().triangularView<Eigen::Upper>().solve(rhs);
 
-    // Check for indeterminant solution
+    // Check for indeterminate solution
     if (solution.hasNaN()) {
-      throw IndeterminantLinearSystemException(keys().front());
+      throw IndeterminateSystemException(keys().front());
     }
 
     // Insert solution into a VectorValues
@@ -277,7 +277,8 @@ namespace gtsam {
     frontalVec = R().transpose().triangularView<Eigen::Lower>().solve(frontalVec);
 
     // Check for indeterminate solution
-    if (frontalVec.hasNaN()) throw IndeterminantLinearSystemException(this->keys().front());
+    if (frontalVec.hasNaN())
+      throw IndeterminateSystemException(this->keys().front());
 
     for (const_iterator it = beginParents(); it!= endParents(); it++)
       gy[*it].noalias() += -1.0 * getA(it).transpose() * frontalVec;
