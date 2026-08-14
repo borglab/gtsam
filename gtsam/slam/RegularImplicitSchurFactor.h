@@ -8,6 +8,7 @@
 #pragma once
 
 #include <gtsam/geometry/CameraSet.h>
+#include <gtsam/linear/FlatGaussianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/VectorValues.h>
 
@@ -37,7 +38,7 @@ namespace gtsam {
  */
 template<class CAMERA>
 class RegularImplicitSchurFactor: public GaussianFactor,
-                                  public FlatHessianFactor {
+                                  public FlatGaussianFactor {
 
 public:
   typedef RegularImplicitSchurFactor This; ///< Typedef to this class

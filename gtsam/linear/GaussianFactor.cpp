@@ -24,8 +24,6 @@
 
 namespace gtsam {
 
-FlatHessianFactor::~FlatHessianFactor() = default;
-
 double GaussianFactor::error(const VectorValues& c) const {
   throw std::runtime_error("GaussianFactor::error is not implemented");
 }

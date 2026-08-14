@@ -24,41 +24,12 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>
 
-#include <vector>
-
 namespace gtsam {
 
   // Forward declarations
   class VectorValues;
   class Scatter;
   class SymmetricBlockMatrix;
-
-  /**
-   * Optional flat-vector kernels for matrix-free Gaussian factors.
-   *
-   * Solvers can use this interface with precomputed scalar offsets and block
-   * slots to avoid rebuilding VectorValues or keyed maps in iterative hot
-   * loops. Implementations remain GaussianFactor subclasses; this interface
-   * only supplies an optimized operator view.
-   */
-  class GTSAM_EXPORT FlatHessianFactor {
-   public:
-    virtual ~FlatHessianFactor();
-
-    /** Add this factor's Hessian-vector product to a flat output vector. */
-    virtual void multiplyHessianAdd(
-        double alpha, const std::vector<size_t>& scalarOffsets,
-        const double* x, double* y) const = 0;
-
-    /** Add this factor's zero-point gradient to a flat vector. */
-    virtual void gradientAtZeroAdd(
-        const std::vector<size_t>& scalarOffsets, double* gradient) const = 0;
-
-    /** Add this factor's Hessian diagonal to ordered variable blocks. */
-    virtual void hessianBlockDiagonalAdd(
-        const std::vector<size_t>& blockSlots,
-        std::vector<Matrix>* diagonalBlocks) const = 0;
-  };
 
   /**
    * An abstract virtual base class for JacobianFactor and HessianFactor. A GaussianFactor has a
