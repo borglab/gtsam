@@ -93,34 +93,6 @@ TEST(SfmBalBenchmark, SmartPcgLinearizationsAgree) {
 }  // namespace smart_pcg_tests
 /* ************************************************************************* */
 
-/* ************************************************************************* */
-namespace point_batch_pcg_tests {
-
-// Verifies explicit point batches can be Schur-reduced, solved with PCG, and
-// back-substituted without leaving unconverged linear solves.
-TEST(SfmBalBenchmark, PointBatchSchurPcgConverges) {
-  const SfmData data =
-      bal::loadDataset(findExampleDataFile("dubrovnik-3-7-pre"));
-  bal::BalBenchmarkConfig config;
-  const NonlinearFactorGraph graph =
-      bal::buildBatchSfmGraph(data, config, false, 0);
-  const Values initial = bal::buildGeneralSfmInitial(data);
-  const Ordering ordering = bal::createSchurOrdering(data, false);
-  LevenbergMarquardtParams parameters =
-      bal::makeLevenbergMarquardtParams(config, &ordering, "SILENT");
-  parameters.linearSolverType = NonlinearOptimizerParams::Iterative;
-
-  const bal::PcgOptimizationResult result =
-      bal::runPointBatchSchurPcgOptimization(graph, initial, parameters);
-
-  CHECK(result.finalError < result.initialError);
-  CHECK(result.linearSolves > 0);
-  LONGS_EQUAL(0, result.nonConvergedLinearSolves);
-}
-
-}  // namespace point_batch_pcg_tests
-/* ************************************************************************* */
-
 int main() {
   TestResult result;
   return TestRegistry::runAllTests(result);

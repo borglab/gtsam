@@ -85,13 +85,6 @@ make -j6 timeSFMBALsmart
 ./timing/timeSFMBALsmart examples/Data/dubrovnik-16-22106-pre.txt
 ```
 
-The explicit-point benchmark also exposes
-`--point-batch-schur-pcg-only`. This diagnostic path Schur-reduces compact
-point batches, solves the camera system with parallel block-Jacobi PCG, and
-back-substitutes the landmark updates. It is retained to compare iterative
-operator costs with sparse direct camera solvers, not as the preferred BAL
-backend.
-
 ## RangeFactor Plaza2 Benchmark
 
 This benchmark isolates the current range-only Plaza2 incremental SLAM workload

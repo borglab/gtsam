@@ -43,7 +43,6 @@
 #include "TimingUtils.h"
 
 using namespace gtsam;
-using symbol_shorthand::C;
 using symbol_shorthand::P;
 
 namespace gtsam::timing::bal {
@@ -59,7 +58,6 @@ struct LinearSolveStats {
   double operatorSetupSeconds = 0.0;
   double preconditionerSetupSeconds = 0.0;
   double solveSeconds = 0.0;
-  double backSubstituteSeconds = 0.0;
 };
 
 struct EndToEndResult {
@@ -313,9 +311,6 @@ class EigenPcgLevenbergMarquardtOptimizer final
 enum class ReducedCameraBackend { kParallelPcg, kEigenPcg };
 
 using ImplicitSfmSchurFactor = RegularImplicitSchurFactor<Camera>;
-using PointBatchJacobian = BatchJacobianFactor<2, 9, 3>;
-using PointDampingBatch = BatchJacobianFactor<3, 3>;
-using CameraDampingBatch = BatchJacobianFactor<9, 9>;
 using CameraJacobianBlock = Matrix29;
 using CameraJacobianBlocks =
     std::vector<CameraJacobianBlock,
@@ -333,7 +328,6 @@ struct LandmarkBackSubstitution {
 
 struct ReducedCameraSystem {
   std::vector<LandmarkBackSubstitution> landmarks;
-  KeyVector zeroLandmarks;
   GaussianFactorGraph cameraGraph;
 };
 
@@ -347,78 +341,6 @@ size_t parallelWorkerCount(size_t taskCount) {
   return std::max<size_t>(
       1, std::min(taskCount, std::max<size_t>(1, hardwareThreads)));
 }
-
-/** Factor graph with a local parallel evaluator when GTSAM lacks TBB. */
-class ParallelNonlinearFactorGraph final : public NonlinearFactorGraph {
-  struct Timings {
-    double errorSeconds = 0.0;
-    double linearizeSeconds = 0.0;
-  };
-  std::shared_ptr<Timings> timings_ = std::make_shared<Timings>();
-
- public:
-  explicit ParallelNonlinearFactorGraph(const NonlinearFactorGraph& graph)
-      : NonlinearFactorGraph(graph) {}
-
-  std::shared_ptr<const NonlinearFactorGraph> cloneShared() const override {
-    return std::make_shared<ParallelNonlinearFactorGraph>(*this);
-  }
-
-  double error(const Values& values) const override {
-    double total = 0.0;
-    timings_->errorSeconds += measureSeconds([&] {
-      const size_t workerCount = parallelWorkerCount(size());
-      if (workerCount <= 1) {
-        total = NonlinearFactorGraph::error(values);
-        return;
-      }
-
-      std::vector<double> partialErrors(workerCount, 0.0);
-      TaskScheduler<void> scheduler(workerCount);
-      for (size_t worker = 0; worker < workerCount; ++worker) {
-        scheduler.enqueue([&, worker] {
-          const size_t begin = size() * worker / workerCount;
-          const size_t end = size() * (worker + 1) / workerCount;
-          double partial = 0.0;
-          for (size_t index = begin; index < end; ++index) {
-            const auto& factor = at(index);
-            if (factor) partial += factor->error(values);
-          }
-          partialErrors[worker] = partial;
-        });
-      }
-      scheduler.waitForAllTasks();
-      for (const double partial : partialErrors) total += partial;
-    });
-    return total;
-  }
-
-  GaussianFactorGraph::shared_ptr linearize(
-      const Values& values) const override {
-    auto linear = std::make_shared<GaussianFactorGraph>();
-    timings_->linearizeSeconds += measureSeconds([&] {
-      linear->resize(size());
-      const size_t workerCount = parallelWorkerCount(size());
-      TaskScheduler<void> scheduler(workerCount);
-      for (size_t worker = 0; worker < workerCount; ++worker) {
-        scheduler.enqueue([&, worker] {
-          const size_t begin = size() * worker / workerCount;
-          const size_t end = size() * (worker + 1) / workerCount;
-          for (size_t index = begin; index < end; ++index) {
-            const auto& factor = at(index);
-            if (factor) (*linear)[index] = factor->linearize(values);
-          }
-        });
-      }
-      scheduler.waitForAllTasks();
-    });
-    return linear;
-  }
-
-  void resetTimings() const { *timings_ = Timings{}; }
-  double errorSeconds() const { return timings_->errorSeconds; }
-  double linearizeSeconds() const { return timings_->linearizeSeconds; }
-};
 
 std::optional<Key> measurementCameraKey(const GaussianFactor& factor,
                                         Key landmark) {
@@ -614,183 +536,9 @@ ReducedCameraSystem buildReducedCameraSystemParallel(
   return reduced;
 }
 
-LandmarkBackSubstitution preparePointBatch(
-    const PointBatchJacobian& batch,
-    const Matrix3& pointInformation,
-    const Vector3& pointInformationRhs = Vector3::Zero()) {
-  if (batch.get_model() && !batch.get_model()->isUnit()) {
-    throw std::runtime_error(
-        "Point-batch Schur PCG requires pre-whitened compact factors");
-  }
-  if (batch.rowSlots().empty()) {
-    throw std::runtime_error("Point-batch Schur PCG found an empty batch");
-  }
-
-  LandmarkBackSubstitution backSubstitution;
-  const size_t measurementCount = batch.rowSlots().size();
-  const auto& firstSlots = batch.rowSlots().front();
-  backSubstitution.landmark = batch.keys().at(firstSlots[1]);
-  backSubstitution.cameraKeys.reserve(measurementCount);
-  backSubstitution.cameraJacobians.reserve(measurementCount);
-  backSubstitution.pointJacobian.resize(2 * measurementCount, 3);
-  backSubstitution.measurementRhs.resize(2 * measurementCount);
-  backSubstitution.pointInformationRhs = pointInformationRhs;
-
-  for (size_t row = 0; row < measurementCount; ++row) {
-    const auto& slots = batch.rowSlots()[row];
-    const Key cameraKey = batch.keys().at(slots[0]);
-    const Key landmarkKey = batch.keys().at(slots[1]);
-    if (symbolChr(cameraKey) != 'c' ||
-        landmarkKey != backSubstitution.landmark ||
-        symbolChr(landmarkKey) != 'p') {
-      throw std::runtime_error(
-          "Point-batch Schur PCG requires camera-point BAL rows");
-    }
-    backSubstitution.cameraKeys.push_back(cameraKey);
-    backSubstitution.cameraJacobians.push_back(batch.block<0>(row));
-    backSubstitution.pointJacobian.block<2, 3>(2 * row, 0) =
-        batch.block<1>(row);
-    backSubstitution.measurementRhs.segment<2>(2 * row) = batch.rowRhs(row);
-  }
-
-  const Matrix3 pointHessian =
-      backSubstitution.pointJacobian.transpose() *
-          backSubstitution.pointJacobian +
-      pointInformation;
-  const Eigen::LLT<Matrix3> pointFactorization(pointHessian);
-  if (pointFactorization.info() != Eigen::Success) {
-    throw std::runtime_error(
-        "Point-batch Schur PCG found a singular landmark block");
-  }
-  backSubstitution.pointCovariance =
-      pointFactorization.solve(Matrix3::Identity());
-
-  return backSubstitution;
-}
-
-LandmarkBackSubstitution preparePointBatch(
-    const PointBatchJacobian& batch,
-    const GaussianFactor::shared_ptr& pointDamping) {
-  Matrix3 pointInformation = Matrix3::Zero();
-  Vector3 pointInformationRhs = Vector3::Zero();
-  if (pointDamping) {
-    const Matrix dampingInformation = pointDamping->information();
-    if (dampingInformation.rows() != 3 || dampingInformation.cols() != 3) {
-      throw std::runtime_error(
-          "Point-batch Schur PCG found invalid point damping");
-    }
-    pointInformation = dampingInformation;
-    const Key landmark =
-        batch.keys().at(batch.rowSlots().front()[1]);
-    const VectorValues gradient = pointDamping->gradientAtZero();
-    if (gradient.exists(landmark)) {
-      pointInformationRhs = -gradient.at(landmark);
-    }
-  }
-  return preparePointBatch(batch, pointInformation, pointInformationRhs);
-}
-
-LandmarkReduction reducePointBatch(
-    const PointBatchJacobian& batch,
-    const GaussianFactor::shared_ptr& pointDamping) {
-  LandmarkBackSubstitution backSubstitution =
-      preparePointBatch(batch, pointDamping);
-  GaussianFactor::shared_ptr cameraFactor = createReducedCameraFactor(
-      backSubstitution, ReducedCameraBackend::kParallelPcg);
-  return {std::move(backSubstitution), std::move(cameraFactor)};
-}
-
-ReducedCameraSystem buildPointBatchReducedCameraSystemParallel(
-    const GaussianFactorGraph& graph) {
-  std::vector<std::shared_ptr<const PointBatchJacobian>> pointBatches;
-  std::vector<GaussianFactor::shared_ptr> pointDamping;
-  ReducedCameraSystem reduced;
-
-  const auto resizeForPoint = [&](size_t pointIndex) {
-    if (pointBatches.size() <= pointIndex) {
-      pointBatches.resize(pointIndex + 1);
-      pointDamping.resize(pointIndex + 1);
-    }
-  };
-
-  for (const auto& factor : graph) {
-    if (!factor) continue;
-    if (const auto batch =
-            std::dynamic_pointer_cast<PointBatchJacobian>(factor)) {
-      if (batch->rowSlots().empty()) continue;
-      const Key landmark =
-          batch->keys().at(batch->rowSlots().front()[1]);
-      if (symbolChr(landmark) != 'p') {
-        throw std::runtime_error(
-            "Point-batch Schur PCG found a batch without a landmark");
-      }
-      const size_t pointIndex = symbolIndex(landmark);
-      resizeForPoint(pointIndex);
-      if (pointBatches[pointIndex]) {
-        throw std::runtime_error(
-            "Point-batch Schur PCG requires one batch per landmark");
-      }
-      pointBatches[pointIndex] = std::move(batch);
-      continue;
-    }
-
-    if (factor->size() != 1) {
-      throw std::runtime_error(
-          "Point-batch Schur PCG found an unsupported linear factor");
-    }
-    const Key key = factor->keys().front();
-    if (symbolChr(key) == 'c') {
-      reduced.cameraGraph.push_back(factor);
-    } else if (symbolChr(key) == 'p') {
-      const size_t pointIndex = symbolIndex(key);
-      resizeForPoint(pointIndex);
-      pointDamping[pointIndex] = factor;
-    } else {
-      throw std::runtime_error(
-          "Point-batch Schur PCG found an unsupported variable type");
-    }
-  }
-
-  std::vector<size_t> activePoints;
-  activePoints.reserve(pointBatches.size());
-  for (size_t point = 0; point < pointBatches.size(); ++point) {
-    if (pointBatches[point]) {
-      activePoints.push_back(point);
-    } else if (pointDamping[point]) {
-      reduced.zeroLandmarks.push_back(pointDamping[point]->keys().front());
-    }
-  }
-
-  std::vector<LandmarkReduction> reductions(activePoints.size());
-  std::atomic<size_t> nextPoint{0};
-  const size_t workerCount = parallelWorkerCount(activePoints.size());
-  TaskScheduler<void> scheduler(workerCount);
-  for (size_t worker = 0; worker < workerCount; ++worker) {
-    scheduler.enqueue([&] {
-      while (true) {
-        const size_t activeIndex = nextPoint.fetch_add(1);
-        if (activeIndex >= activePoints.size()) return;
-        const size_t point = activePoints[activeIndex];
-        reductions[activeIndex] =
-            reducePointBatch(*pointBatches[point], pointDamping[point]);
-      }
-    });
-  }
-  scheduler.waitForAllTasks();
-
-  reduced.landmarks.reserve(reductions.size());
-  reduced.cameraGraph.reserve(reduced.cameraGraph.size() + reductions.size());
-  for (LandmarkReduction& reduction : reductions) {
-    reduced.landmarks.push_back(std::move(reduction.backSubstitution));
-    reduced.cameraGraph.push_back(std::move(reduction.cameraFactor));
-  }
-  return reduced;
-}
-
 VectorValues backSubstituteLandmarksParallel(
     const std::vector<LandmarkBackSubstitution>& landmarks,
-    const VectorValues& cameraSolution,
-    const KeyVector& zeroLandmarks = {}) {
+    const VectorValues& cameraSolution) {
   std::vector<Vector3, Eigen::aligned_allocator<Vector3>> landmarkSolutions(
       landmarks.size());
   std::atomic<size_t> nextLandmark{0};
@@ -820,9 +568,6 @@ VectorValues backSubstituteLandmarksParallel(
   VectorValues solution = cameraSolution;
   for (size_t index = 0; index < landmarks.size(); ++index) {
     solution.insert(landmarks[index].landmark, landmarkSolutions[index]);
-  }
-  for (const Key landmark : zeroLandmarks) {
-    solution.insert(landmark, Vector3::Zero());
   }
   return solution;
 }
@@ -855,31 +600,6 @@ class ReducedCameraPcgLevenbergMarquardtOptimizer final
             : solveEigenPcgExplicitHessianGraph(reduced.cameraGraph,
                                                 &linearStats_);
     return backSubstituteLandmarksParallel(reduced.landmarks, cameraSolution);
-  }
-
-  const LinearSolveStats& linearStats() const { return linearStats_; }
-};
-
-class PointBatchSchurPcgLevenbergMarquardtOptimizer final
-    : public LevenbergMarquardtOptimizer {
-  PCGSolverParameters pcgParameters_;
-  mutable LinearSolveStats linearStats_;
-
- public:
-  PointBatchSchurPcgLevenbergMarquardtOptimizer(
-      const NonlinearFactorGraph& graph, const Values& initial,
-      const LevenbergMarquardtParams& lmParameters)
-      : LevenbergMarquardtOptimizer(graph, initial, lmParameters),
-        pcgParameters_(endToEndPcgParameters()) {}
-
-  VectorValues solve(const GaussianFactorGraph& graph,
-                     const NonlinearOptimizerParams&) const override {
-    const ReducedCameraSystem reduced =
-        buildPointBatchReducedCameraSystemParallel(graph);
-    const VectorValues cameraSolution = solveParallelPcgGraph(
-        reduced.cameraGraph, pcgParameters_, &linearStats_);
-    return backSubstituteLandmarksParallel(
-        reduced.landmarks, cameraSolution, reduced.zeroLandmarks);
   }
 
   const LinearSolveStats& linearStats() const { return linearStats_; }
@@ -1101,30 +821,6 @@ PcgOptimizationResult runParallelPcgOptimization(
     const NonlinearFactorGraph& graph, const Values& initial,
     const LevenbergMarquardtParams& parameters) {
   return runParallelPcgOptimizationImpl(graph, initial, parameters);
-}
-
-PcgOptimizationResult runPointBatchSchurPcgOptimization(
-    const NonlinearFactorGraph& graph, const Values& initial,
-    const LevenbergMarquardtParams& parameters) {
-  PcgOptimizationResult result;
-  const ParallelNonlinearFactorGraph parallelGraph(graph);
-  result.initialError = parallelGraph.error(initial);
-  PointBatchSchurPcgLevenbergMarquardtOptimizer optimizer(
-      parallelGraph, initial, parameters);
-  result.elapsedSeconds = measureSeconds([&] { optimizer.optimize(); });
-  result.finalError = optimizer.error();
-  result.lmIterations = optimizer.iterations();
-  result.lmInnerIterations =
-      static_cast<size_t>(optimizer.getInnerIterations());
-  result.linearSolves = optimizer.linearStats().solves;
-  result.pcgIterations = optimizer.linearStats().iterations;
-  result.nonConvergedLinearSolves =
-      optimizer.linearStats().nonConvergedSolves;
-  result.operatorSetupSeconds = optimizer.linearStats().operatorSetupSeconds;
-  result.preconditionerSetupSeconds =
-      optimizer.linearStats().preconditionerSetupSeconds;
-  result.solveSeconds = optimizer.linearStats().solveSeconds;
-  return result;
 }
 
 void runEndToEndPcgComparison(const std::vector<std::string>& filenames,

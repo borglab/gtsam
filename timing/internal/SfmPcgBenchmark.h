@@ -37,9 +37,6 @@ struct PcgOptimizationResult {
   double operatorSetupSeconds = 0.0;
   double preconditionerSetupSeconds = 0.0;
   double solveSeconds = 0.0;
-  double nonlinearErrorSeconds = 0.0;
-  double linearizeSeconds = 0.0;
-  double backSubstituteSeconds = 0.0;
 };
 
 /**
@@ -47,14 +44,6 @@ struct PcgOptimizationResult {
  * LM inner iteration.
  */
 PcgOptimizationResult runParallelPcgOptimization(
-    const NonlinearFactorGraph& graph, const Values& initial,
-    const LevenbergMarquardtParams& parameters);
-
-/**
- * Optimize an explicit-point batch factor graph by eliminating each compact
- * point batch into a matrix-free camera Schur factor before every PCG solve.
- */
-PcgOptimizationResult runPointBatchSchurPcgOptimization(
     const NonlinearFactorGraph& graph, const Values& initial,
     const LevenbergMarquardtParams& parameters);
 
