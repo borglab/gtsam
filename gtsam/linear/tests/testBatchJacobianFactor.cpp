@@ -285,6 +285,46 @@ TEST(BatchJacobianFactor, FlatHessianBlockDiagonal) {
   }
 }
 
+// Verifies weighted compact error and diagonal operations preserve the dense
+// compatibility semantics.
+TEST(BatchJacobianFactor, WeightedErrorAndDiagonalUseDenseFallback) {
+  const Factor factor = createWeightedFactor();
+  VectorValues values;
+  values.emplace(0, Vector2{{0.2, -0.4}});
+  values.emplace(1, Vector2{{0.7, 0.1}});
+  values.emplace(2, Vector3{{-0.3, 0.6, 0.9}});
+
+  double actualOld = 0.0, actualNew = 0.0;
+  double expectedOld = 0.0, expectedNew = 0.0;
+  const double actual = factor.deltaError(values, &actualOld, &actualNew);
+  const JacobianFactor dense = factor.toJacobianFactor();
+  const double expected =
+      dense.deltaError(values, &expectedOld, &expectedNew);
+  EXPECT_DOUBLES_EQUAL(expectedOld, actualOld, 1e-12);
+  EXPECT_DOUBLES_EQUAL(expectedNew, actualNew, 1e-12);
+  EXPECT_DOUBLES_EQUAL(expected, actual, 1e-12);
+
+  VectorValues actualDiagonal, expectedDiagonal;
+  factor.hessianDiagonalAdd(actualDiagonal);
+  dense.hessianDiagonalAdd(expectedDiagonal);
+  EXPECT(assert_equal(expectedDiagonal, actualDiagonal, 1e-12));
+}
+
+// Verifies unary-row insertion exposes the original fixed block and right-hand
+// side without converting through a dynamic Jacobian container.
+TEST(BatchJacobianFactor, UnaryRowAccess) {
+  using UnaryFactor = BatchJacobianFactor<3, 3>;
+  UnaryFactor factor(KeyVector{10, 20}, std::vector<size_t>{3, 3});
+  const Matrix3 block = 2.0 * Matrix3::Identity();
+  const Vector3 rhs{{1.0, -2.0, 3.0}};
+  factor.addUnaryRow(1, block, rhs);
+
+  EXPECT_LONGS_EQUAL(3, factor.rows());
+  EXPECT_LONGS_EQUAL(1, factor.rowSlots().at(0).at(0));
+  EXPECT(assert_equal(Matrix(block), Matrix(factor.block<0>(0)), 1e-12));
+  EXPECT(assert_equal(Vector(rhs), Vector(factor.rowRhs(0)), 1e-12));
+}
+
 }  // namespace update_hessian_fixture
 /* ************************************************************************* */
 

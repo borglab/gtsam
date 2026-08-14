@@ -252,6 +252,21 @@ TEST(PCGSolver, DetailedResult) {
   CHECK(result.solveSeconds >= 0.0);
 }
 
+// Verifies null linear factors are ignored when PCG discovers key dimensions.
+TEST(PCGSolver, DetailedResultWithNullFactor) {
+  const GaussianFactorGraph graph = createTwoDimensionalGraph();
+  GaussianFactorGraph graphWithNull = graph;
+  graphWithNull.push_back(GaussianFactor::shared_ptr());
+
+  const PCGSolverResult expected =
+      PCGSolver(createParameters()).optimizeDetailed(graph, false);
+  const PCGSolverResult actual =
+      PCGSolver(createParameters()).optimizeDetailed(graphWithNull, false);
+
+  EXPECT(assert_equal(expected.solution, actual.solution, 1e-12));
+  CHECK(actual.stats.converged());
+}
+
 // Verifies a fixed one-iteration solve reports the iteration limit.
 TEST(PCGSolver, DetailedMaxIterations) {
   const GaussianFactorGraph graph = createTwoDimensionalGraph();
