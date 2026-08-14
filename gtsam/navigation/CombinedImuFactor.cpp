@@ -22,6 +22,7 @@
 
 #include <gtsam/base/MatrixConstants.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
+#include <gtsam/navigation/LieGroupPreintegration.h>
 #include <gtsam/navigation/ManifoldPreintegration.h>
 #include <gtsam/navigation/TangentPreintegration.h>
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
@@ -209,14 +210,23 @@ std::ostream& operator<<(std::ostream& os, const CombinedImuFactorT<PIM>& f) {
 //------------------------------------------------------------------------------
 template class GTSAM_EXPORT PreintegratedCombinedMeasurementsT<ManifoldPreintegration>;
 template class GTSAM_EXPORT PreintegratedCombinedMeasurementsT<TangentPreintegration>;
+template class GTSAM_EXPORT
+    PreintegratedCombinedMeasurementsT<LieGroupPreintegration>;
 
 template class GTSAM_EXPORT CombinedImuFactorT<PreintegratedCombinedMeasurementsT<ManifoldPreintegration>>;
 template class GTSAM_EXPORT CombinedImuFactorT<PreintegratedCombinedMeasurementsT<TangentPreintegration>>;
+template class GTSAM_EXPORT CombinedImuFactorT<
+    PreintegratedCombinedMeasurementsT<LieGroupPreintegration>>;
 
 // Instantiate operator<<
 template GTSAM_EXPORT std::ostream& operator<<<PreintegratedCombinedMeasurementsT<ManifoldPreintegration>>(
     std::ostream& os, const CombinedImuFactorT<PreintegratedCombinedMeasurementsT<ManifoldPreintegration>>& f);
 template GTSAM_EXPORT std::ostream& operator<<<PreintegratedCombinedMeasurementsT<TangentPreintegration>>(
     std::ostream& os, const CombinedImuFactorT<PreintegratedCombinedMeasurementsT<TangentPreintegration>>& f);
+template GTSAM_EXPORT std::ostream&
+operator<< <PreintegratedCombinedMeasurementsT<LieGroupPreintegration>>(
+    std::ostream& os,
+    const CombinedImuFactorT<
+        PreintegratedCombinedMeasurementsT<LieGroupPreintegration>>& f);
 
 }  // namespace gtsam

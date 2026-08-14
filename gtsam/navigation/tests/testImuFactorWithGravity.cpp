@@ -207,7 +207,8 @@ TEST(ImuFactorWithGravity, RecoverGravityVector) {
 }
 
 /* ************************************************************************* */
-#ifdef GTSAM_TANGENT_PREINTEGRATION
+#if defined(GTSAM_TANGENT_PREINTEGRATION) && \
+    !defined(GTSAM_LIEGROUP_PREINTEGRATION)
 TEST(ImuFactorWithGravity, Merge) {
   using symbol_shorthand::G;
   auto p = testing::Params();

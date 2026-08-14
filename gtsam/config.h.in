@@ -92,7 +92,11 @@
 // Support Metis-based nested dissection
 #cmakedefine GTSAM_SUPPORT_NESTED_DISSECTION
 
-// Support Metis-based nested dissection
+// Whether to use NavState SE_2(3) Lie-group IMU preintegration by default.
+// This selection takes precedence over tangent-space preintegration.
+#cmakedefine GTSAM_LIEGROUP_PREINTEGRATION
+
+// Whether to use IMU pre-integration on tangent space
 #cmakedefine GTSAM_TANGENT_PREINTEGRATION
 
 // Whether to use the system installed Metis instead of the provided one

@@ -100,7 +100,11 @@ print_enabled_config(${GTSAM_DT_MERGING}                  "Enable branch merging
 print_enabled_config(${GTSAM_ENABLE_TIMING}               "Enable timing machinery")
 print_enabled_config(${GTSAM_ALLOW_DEPRECATED_SINCE_V43}  "Allow features deprecated in GTSAM 4.3")
 print_enabled_config(${GTSAM_SUPPORT_NESTED_DISSECTION}   "Metis-based Nested Dissection   ")
-print_enabled_config(${GTSAM_TANGENT_PREINTEGRATION}      "Use tangent-space preintegration")
+if(GTSAM_LIEGROUP_PREINTEGRATION)
+  print_enabled_config(${GTSAM_LIEGROUP_PREINTEGRATION}   "Use NavState Lie-group preintegration")
+else()
+  print_enabled_config(${GTSAM_TANGENT_PREINTEGRATION}    "Use tangent-space preintegration")
+endif()
 
 message(STATUS "MATLAB toolbox flags")
 print_enabled_config(${GTSAM_INSTALL_MATLAB_TOOLBOX}      "Install MATLAB toolbox          ")

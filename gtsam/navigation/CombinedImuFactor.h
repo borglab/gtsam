@@ -23,12 +23,15 @@
 #pragma once
 
 /* GTSAM includes */
+#include <gtsam/navigation/LieGroupPreintegration.h>
 #include <gtsam/navigation/PreintegrationCombinedParams.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 namespace gtsam {
 
-#ifdef GTSAM_TANGENT_PREINTEGRATION
+#ifdef GTSAM_LIEGROUP_PREINTEGRATION
+typedef LieGroupPreintegration DefaultPreintegrationType;
+#elif defined(GTSAM_TANGENT_PREINTEGRATION)
 typedef TangentPreintegration DefaultPreintegrationType;
 #else
 typedef ManifoldPreintegration DefaultPreintegrationType;

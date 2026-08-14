@@ -170,6 +170,74 @@ TEST(CombinedImuFactorWithGravity, Serialization) {
 }
 
 /* ************************************************************************* */
+namespace lie_group_serialization {
+
+using Pim = PreintegratedImuMeasurementsT<LieGroupPreintegration>;
+using CombinedPim = PreintegratedCombinedMeasurementsT<LieGroupPreintegration>;
+using StandardFactor = ImuFactorT<Pim>;
+using NavStateFactor = ImuFactor2T<Pim>;
+using GravityDirectionFactor = ImuFactorWithGravityT<Pim, Unit3>;
+using GravityVectorFactor = ImuFactorWithGravityT<Pim, Point3>;
+using CombinedFactor = CombinedImuFactorT<CombinedPim>;
+using CombinedGravityDirectionFactor =
+    CombinedImuFactorWithGravityT<CombinedPim, Unit3>;
+using CombinedGravityVectorFactor =
+    CombinedImuFactorWithGravityT<CombinedPim, Point3>;
+
+// Verifies explicit Lie-backed measurements and every factor family round-trip.
+TEST(LieGroupPreintegration, Serialization) {
+  const Pim pim = getPreintegratedMeasurements<Pim>();
+  EXPECT(equalsObj(pim));
+  EXPECT(equalsXML(pim));
+  EXPECT(equalsBinary(pim));
+
+  const StandardFactor standard(1, 2, 3, 4, 5, pim);
+  EXPECT(equalsObj(standard));
+  EXPECT(equalsXML(standard));
+  EXPECT(equalsBinary(standard));
+
+  const NavStateFactor navState(1, 2, 3, pim);
+  EXPECT(equalsObj(navState));
+  EXPECT(equalsXML(navState));
+  EXPECT(equalsBinary(navState));
+
+  const GravityDirectionFactor gravityDirection(1, 2, 3, 4, 5, 6, pim, 9.81);
+  EXPECT(equalsObj(gravityDirection));
+  EXPECT(equalsXML(gravityDirection));
+  EXPECT(equalsBinary(gravityDirection));
+
+  const GravityVectorFactor gravityVector(1, 2, 3, 4, 5, 6, pim);
+  EXPECT(equalsObj(gravityVector));
+  EXPECT(equalsXML(gravityVector));
+  EXPECT(equalsBinary(gravityVector));
+
+  const CombinedPim combinedPim = getPreintegratedMeasurements<CombinedPim>();
+  EXPECT(equalsObj(combinedPim));
+  EXPECT(equalsXML(combinedPim));
+  EXPECT(equalsBinary(combinedPim));
+
+  const CombinedFactor combined(1, 2, 3, 4, 5, 6, combinedPim);
+  EXPECT(equalsObj(combined));
+  EXPECT(equalsXML(combined));
+  EXPECT(equalsBinary(combined));
+
+  const CombinedGravityDirectionFactor combinedGravityDirection(
+      1, 2, 3, 4, 5, 6, 7, combinedPim, 9.81);
+  EXPECT(equalsObj(combinedGravityDirection));
+  EXPECT(equalsXML(combinedGravityDirection));
+  EXPECT(equalsBinary(combinedGravityDirection));
+
+  const CombinedGravityVectorFactor combinedGravityVector(1, 2, 3, 4, 5, 6, 7,
+                                                          combinedPim);
+  EXPECT(equalsObj(combinedGravityVector));
+  EXPECT(equalsXML(combinedGravityVector));
+  EXPECT(equalsBinary(combinedGravityVector));
+}
+
+}  // namespace lie_group_serialization
+/* ************************************************************************* */
+
+/* ************************************************************************* */
 TEST(AttitudeFactorRot3, Serialization) {
   Unit3 nDown(0, 0, -1);
   SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.25);

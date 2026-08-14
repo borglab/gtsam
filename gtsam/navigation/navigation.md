@@ -26,6 +26,9 @@ The `navigation` module in GTSAM provides specialized tools for inertial navigat
 - **[PreintegrationBase](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/PreintegrationBase.h)**: Base class for IMU preintegration classes.
 - **[ManifoldPreintegration](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/ManifoldPreintegration.h)**: Implements IMU preintegration using manifold-based methods as in the Forster et al paper.
 - **[TangentPreintegration](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/TangentPreintegration.h)**: Implements IMU preintegration using tangent space methods, developed at Skydio.
+- **LieGroupPreintegration**: Integrates IMU increments with the `NavState`
+  $SE_2(3)$ group exponential described by [Brossard, Barrau, and
+  Bonnabel](https://arxiv.org/abs/2007.14097).
 - **[ImuFactor](doc/ImuFactor.ipynb)**: IMU factor.
 - **[CombinedImuFactor](doc/CombinedImuFactor.ipynb)**: IMU factor with built-in bias evolution.
 
@@ -129,17 +132,25 @@ classDiagram
     }
     TangentPreintegration --|> PreintegrationBase : implements
 
+    class LieGroupPreintegration {
+        +NavState deltaXij_
+        +update()
+    }
+    LieGroupPreintegration --|> ManifoldPreintegration : specializes
+
     class PreintegratedImuMeasurements {
         +Matrix9 preintMeasCov_
     }
     PreintegratedImuMeasurements --|> ManifoldPreintegration : inherits
     PreintegratedImuMeasurements --|> TangentPreintegration : inherits
+    PreintegratedImuMeasurements --|> LieGroupPreintegration : inherits
 
     class PreintegratedCombinedMeasurements {
        +Matrix preintMeasCov_ (15x15)
     }
     PreintegratedCombinedMeasurements --|> ManifoldPreintegration : inherits
     PreintegratedCombinedMeasurements --|> TangentPreintegration : inherits
+    PreintegratedCombinedMeasurements --|> LieGroupPreintegration : inherits
 
     class ImuFactor {
         Pose3, Vector3, Pose3, Vector3, ConstantBias
@@ -196,6 +207,10 @@ The key components are:
 3.  **Preintegration Implementations**:
     *   `ManifoldPreintegration`: Concrete implementation of `PreintegrationBase`. Integrates directly on the `NavState` manifold, storing the result as a `NavState`. Corresponds to Forster et al. RSS 2015.
     *   `TangentPreintegration`: Concrete implementation of `PreintegrationBase`. Integrates increments in the 9D tangent space of `NavState`, storing the result as a `Vector9`.
+    *   `LieGroupPreintegration`: Specializes the manifold implementation by
+        applying increments with the `NavState` $SE_2(3)$ exponential and by
+        using the corresponding nonlinear group bias correction. It stores the
+        result as a `NavState`.
 
 4.  **Preintegrated Measurements Containers**:
     *   `PreintegratedImuMeasurements`: Stores the result of standard IMU preintegration along with its 9x9 covariance (`preintMeasCov_`).
@@ -207,9 +222,24 @@ The key components are:
     * [CombinedImuFactor](doc/CombinedImuFactor.ipynb): A 6-way factor connecting previous pose/velocity, current pose/velocity, previous bias, and current bias. *Includes* a model for bias random walk evolution between the two bias states.
 
 ### Important notes
-- Which implementation is used for the `DefaultPreintegrationType` used by `ImuFactor`s and `Preintegrated*Measurements` depends on the compile flag `GTSAM_TANGENT_PREINTEGRATION`, which is true by default.
-    - If false, `ManifoldPreintegration` is used. Please use this setting to get the exact implementation from {cite:t}`https://doi.org/10.1109/TRO.2016.2597321`.
-    - If true, `TangentPreintegration` is used. This does the integration on the tangent space of the NavState manifold.
+- The compiled `DefaultPreintegrationType` used by `ImuFactor`s and
+  `Preintegrated*Measurements` is selected by two CMake options:
+    - `GTSAM_LIEGROUP_PREINTEGRATION=ON` selects `LieGroupPreintegration` and
+      takes precedence if both options are enabled.
+    - Otherwise, `GTSAM_TANGENT_PREINTEGRATION=ON` (the default) selects
+      `TangentPreintegration`.
+    - With both options disabled, `ManifoldPreintegration` is used. Select this
+      backend for the implementation from
+      {cite:t}`https://doi.org/10.1109/TRO.2016.2597321`.
 - If you wish to use any preintegration type other than the default, you must template your PIMs and factors on the desired preintegration type using the template-supporting classes `PreintegratedImuMeasurementsT`, `ImuFactorT`, `ImuFactor2T`, `PreintegratedCombinedMeasurementsT`, or `CombinedImuFactorT`.
+- Named backend selection is a C++ template API. Python and MATLAB expose only
+  the aliases selected when GTSAM is compiled.
+- `NavState` stores tangent blocks in `(R,p,v)` order, whereas Brossard et al.
+  write the $SE_2(3)$ matrix in `(R,v,p)` order. Translate the position and
+  velocity blocks when comparing equations.
+- Lie-group *integration* does not change the chart used by optimization.
+  `LieGroupPreintegration` applies IMU increments with `NavState::expmap`, while
+  `NavState::retract` and `localCoordinates` retain GTSAM's component-wise
+  optimization chart.
 - Using the combined IMU factor is not recommended. Typically biases evolve slowly, and hence a separate, lower frequency Markov chain on the bias is more appropriate.
 - For short-duration experiments it is even recommended to use a single constant bias. Bias estimation is notoriously hard to tune/debug, and also acts as a "sink" for any modeling errors. Hence, starting with a constant bias is a good idea to get the rest of the pipeline working.

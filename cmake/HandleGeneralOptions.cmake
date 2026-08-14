@@ -51,6 +51,7 @@ option(GTSAM_INSTALL_MATLAB_TOOLBOX         "Enable/Disable installation of matl
 option(GTSAM_ALLOW_DEPRECATED_SINCE_V43     "Allow use of methods/functions deprecated in GTSAM 4.3" ON)
 option(GTSAM_SUPPORT_NESTED_DISSECTION      "Support Metis-based nested dissection" ON)
 option(GTSAM_TANGENT_PREINTEGRATION         "Use new ImuFactor with integration on tangent space" ON)
+option(GTSAM_LIEGROUP_PREINTEGRATION        "Use NavState SE_2(3) Lie-group IMU preintegration by default (takes precedence over tangent preintegration)" OFF)
 option(GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR
        "Use Local Jacobians in BetweenFactor and PriorFactor when provided by traits" ON)
 option(GTSAM_SLOW_BUT_CORRECT_EXPMAP        "Use slower but correct expmap for Pose2"  ON)
