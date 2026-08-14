@@ -54,6 +54,9 @@ struct LinearSolveStats {
   size_t solves = 0;
   size_t iterations = 0;
   size_t nonConvergedSolves = 0;
+  double operatorSetupSeconds = 0.0;
+  double preconditionerSetupSeconds = 0.0;
+  double solveSeconds = 0.0;
 };
 
 struct EndToEndResult {
@@ -87,6 +90,9 @@ VectorValues solveParallelPcgGraph(const GaussianFactorGraph& graph,
       PCGSolver(parameters).optimizeDetailed(graph, false);
   ++stats->solves;
   stats->iterations += result.stats.iterations;
+  stats->operatorSetupSeconds += result.operatorSetupSeconds;
+  stats->preconditionerSetupSeconds += result.preconditionerSetupSeconds;
+  stats->solveSeconds += result.solveSeconds;
   if (!result.stats.converged()) ++stats->nonConvergedSolves;
   if (result.stats.terminationReason ==
       ConjugateGradientTerminationReason::kNumericalBreakdown) {
@@ -629,6 +635,28 @@ EndToEndResult runDirectEndToEnd(const std::string& dataset,
   return result;
 }
 
+PcgOptimizationResult runParallelPcgOptimizationImpl(
+    const NonlinearFactorGraph& graph, const Values& initial,
+    const LevenbergMarquardtParams& parameters) {
+  PcgOptimizationResult result;
+  result.initialError = graph.error(initial);
+  ParallelPcgLevenbergMarquardtOptimizer optimizer(graph, initial, parameters);
+  result.elapsedSeconds = measureSeconds([&] { optimizer.optimize(); });
+  result.finalError = optimizer.error();
+  result.lmIterations = optimizer.iterations();
+  result.lmInnerIterations =
+      static_cast<size_t>(optimizer.getInnerIterations());
+  result.linearSolves = optimizer.linearStats().solves;
+  result.pcgIterations = optimizer.linearStats().iterations;
+  result.nonConvergedLinearSolves =
+      optimizer.linearStats().nonConvergedSolves;
+  result.operatorSetupSeconds = optimizer.linearStats().operatorSetupSeconds;
+  result.preconditionerSetupSeconds =
+      optimizer.linearStats().preconditionerSetupSeconds;
+  result.solveSeconds = optimizer.linearStats().solveSeconds;
+  return result;
+}
+
 EndToEndResult runParallelPcgEndToEnd(const std::string& dataset,
                                       const NonlinearFactorGraph& graph,
                                       const Values& initial,
@@ -636,17 +664,18 @@ EndToEndResult runParallelPcgEndToEnd(const std::string& dataset,
   EndToEndResult result;
   result.dataset = dataset;
   result.solver = "ParallelPCG(BlockJacobi)";
-  result.initialError = graph.error(initial);
   const auto parameters = endToEndParameters(
       ordering, NonlinearOptimizerParams::Iterative, useSchur);
-
-  ParallelPcgLevenbergMarquardtOptimizer optimizer(graph, initial, parameters);
-  result.elapsedSeconds = measureSeconds([&] { optimizer.optimize(); });
-  result.finalError = optimizer.error();
-  result.lmIterations = optimizer.iterations();
-  result.lmInnerIterations =
-      static_cast<size_t>(optimizer.getInnerIterations());
-  result.linear = optimizer.linearStats();
+  const PcgOptimizationResult pcg =
+      runParallelPcgOptimizationImpl(graph, initial, parameters);
+  result.elapsedSeconds = pcg.elapsedSeconds;
+  result.initialError = pcg.initialError;
+  result.finalError = pcg.finalError;
+  result.lmIterations = pcg.lmIterations;
+  result.lmInnerIterations = pcg.lmInnerIterations;
+  result.linear.solves = pcg.linearSolves;
+  result.linear.iterations = pcg.pcgIterations;
+  result.linear.nonConvergedSolves = pcg.nonConvergedLinearSolves;
   return result;
 }
 
@@ -786,6 +815,12 @@ void runEndToEndPcgComparisonImpl(const std::vector<std::string>& filenames,
 }
 
 }  // namespace
+
+PcgOptimizationResult runParallelPcgOptimization(
+    const NonlinearFactorGraph& graph, const Values& initial,
+    const LevenbergMarquardtParams& parameters) {
+  return runParallelPcgOptimizationImpl(graph, initial, parameters);
+}
 
 void runEndToEndPcgComparison(const std::vector<std::string>& filenames,
                               const BalBenchmarkConfig& config) {

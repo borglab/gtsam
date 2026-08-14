@@ -23,6 +23,7 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/dllexport.h>
 #include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/linear/FlatGaussianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/VectorValues.h>
@@ -55,7 +56,8 @@ namespace gtsam {
  * whitened and therefore has either no model or a unit model. Non-unit diagonal
  * models are still supported for compatibility paths.
  */
-class GTSAM_EXPORT BatchJacobianFactorBase : public GaussianFactor {
+class GTSAM_EXPORT BatchJacobianFactorBase : public GaussianFactor,
+                                             public FlatGaussianFactor {
  public:
   /// Inherit GaussianFactor constructors.
   using GaussianFactor::GaussianFactor;
@@ -217,7 +219,7 @@ class GTSAM_EXPORT BatchJacobianFactorBase : public GaussianFactor {
    */
   virtual void multiplyHessianAdd(double alpha,
                                   const std::vector<size_t>& scalarOffsets,
-                                  const double* x, double* y) const {
+                                  const double* x, double* y) const override {
     if (scalarOffsets.size() != size()) {
       throw std::invalid_argument(
           "BatchJacobianFactorBase::multiplyHessianAdd: offset count "
@@ -250,7 +252,7 @@ class GTSAM_EXPORT BatchJacobianFactorBase : public GaussianFactor {
    * @throws std::invalid_argument if the offset count differs from size().
    */
   virtual void gradientAtZeroAdd(const std::vector<size_t>& scalarOffsets,
-                                 double* gradient) const {
+                                 double* gradient) const override {
     if (scalarOffsets.size() != size()) {
       throw std::invalid_argument(
           "BatchJacobianFactorBase::gradientAtZeroAdd: offset count "
@@ -274,7 +276,7 @@ class GTSAM_EXPORT BatchJacobianFactorBase : public GaussianFactor {
    */
   virtual void hessianBlockDiagonalAdd(
       const std::vector<size_t>& blockSlots,
-      std::vector<Matrix>* diagonalBlocks) const {
+      std::vector<Matrix>* diagonalBlocks) const override {
     if (blockSlots.size() != size()) {
       throw std::invalid_argument(
           "BatchJacobianFactorBase::hessianBlockDiagonalAdd: slot count "

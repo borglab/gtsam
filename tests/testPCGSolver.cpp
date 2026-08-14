@@ -22,6 +22,7 @@
 #include <gtsam/geometry/CalibratedCamera.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/BatchJacobianFactor.h>
+#include <gtsam/linear/FlatGaussianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
@@ -322,6 +323,7 @@ TEST(GaussianFactorGraphSystem, MixedFactorTypes) {
   auto batch = std::make_shared<Batch>(
       KeyVector{firstKey, secondKey}, std::vector<size_t>{2, 2},
       noiseModel::Diagonal::Sigmas(Vector2(1.5, 2.5)));
+  CHECK(dynamic_cast<const FlatGaussianFactor*>(batch.get()) != nullptr);
   batch->addRow({0, 1},
                 {(Matrix(1, 2) << 0.5, -0.25).finished(),
                  (Matrix(1, 2) << 1.0, 0.75).finished()},
@@ -361,24 +363,11 @@ TEST(GaussianFactorGraphSystem, MixedFactorTypes) {
 /* ************************************************************************* */
 
 /* ************************************************************************* */
-namespace fallback_factor_fixture {
+namespace flat_gaussian_factor_fixture {
 
 using ImplicitFactor = RegularImplicitSchurFactor<CalibratedCamera>;
 
-GaussianFactorGraph createMixedFallbackGraph() {
-  const Key firstKey = 10;
-  const Key secondKey = 2;
-  GaussianFactorGraph graph;
-
-  const auto unit6 = noiseModel::Unit::Create(6);
-  // Add ordinary Jacobian factors handled by the compiled sparse path.
-  graph.emplace_shared<JacobianFactor>(
-      firstKey, Matrix6::Identity(),
-      (Vector6() << 0.2, -0.1, 0.4, 0.3, -0.2, 0.1).finished(), unit6);
-  graph.emplace_shared<JacobianFactor>(
-      secondKey, 1.5 * Matrix6::Identity(),
-      (Vector6() << -0.3, 0.5, -0.2, 0.1, 0.4, -0.1).finished(), unit6);
-
+ImplicitFactor::shared_ptr createImplicitFactor(Key firstKey, Key secondKey) {
   const Matrix26 firstBlock = (Matrix26() << 1.0, 0.2, -0.1, 0.3, 0.5, -0.4,
                                -0.2, 0.8, 0.4, -0.3, 0.1, 0.6)
                                   .finished();
@@ -392,9 +381,26 @@ GaussianFactorGraph createMixedFallbackGraph() {
                        .finished();
   const Matrix3 pointCovariance = 0.05 * Matrix3::Identity();
   const Vector b = (Vector(4) << 0.4, -0.2, 0.1, 0.3).finished();
-  // Add an implicit Schur factor handled by the compatibility path.
-  graph.emplace_shared<ImplicitFactor>(KeyVector{firstKey, secondKey}, blocks,
-                                       E, pointCovariance, b);
+  return std::make_shared<ImplicitFactor>(KeyVector{firstKey, secondKey}, blocks,
+                                          E, pointCovariance, b);
+}
+
+GaussianFactorGraph createMixedFlatGaussianGraph() {
+  const Key firstKey = 10;
+  const Key secondKey = 2;
+  GaussianFactorGraph graph;
+
+  const auto unit6 = noiseModel::Unit::Create(6);
+  // Add ordinary Jacobian factors handled by the compiled sparse path.
+  graph.emplace_shared<JacobianFactor>(
+      firstKey, Matrix6::Identity(),
+      (Vector6() << 0.2, -0.1, 0.4, 0.3, -0.2, 0.1).finished(), unit6);
+  graph.emplace_shared<JacobianFactor>(
+      secondKey, 1.5 * Matrix6::Identity(),
+      (Vector6() << -0.3, 0.5, -0.2, 0.1, 0.4, -0.1).finished(), unit6);
+
+  // Add an implicit Schur factor handled by the flat Gaussian-factor path.
+  graph.push_back(createImplicitFactor(firstKey, secondKey));
   return graph;
 }
 
@@ -417,10 +423,10 @@ Matrix legacyHessian(const GaussianFactorGraph& graph, const KeyInfo& keyInfo) {
   return hessian;
 }
 
-// Verifies compiled and fallback factor contributions compose in products, the
-// right-hand side, and a complete block-Jacobi PCG solve.
-TEST(GaussianFactorGraphSystem, MixedSupportedAndFallbackFactors) {
-  const GaussianFactorGraph graph = createMixedFallbackGraph();
+// Verifies sparse Jacobian and flat-factor contributions compose in products,
+// the right-hand side, and a complete block-Jacobi PCG solve.
+TEST(GaussianFactorGraphSystem, MixedSupportedAndFlatGaussianFactors) {
+  const GaussianFactorGraph graph = createMixedFlatGaussianGraph();
   const Ordering ordering{10, 2};
   const KeyInfo keyInfo(graph, ordering);
   DummyPreconditioner dummy;
@@ -457,7 +463,31 @@ TEST(GaussianFactorGraphSystem, MixedSupportedAndFallbackFactors) {
       assert_equal(expectedSolution, result.solution.vector(ordering), 1e-10));
 }
 
-}  // namespace fallback_factor_fixture
+// Verifies the parallel flat-factor reduction matches serial keyed execution.
+TEST(GaussianFactorGraphSystem, ParallelFlatGaussianFactors) {
+  const Key firstKey = 10;
+  const Key secondKey = 2;
+  GaussianFactorGraph graph;
+  for (size_t index = 0; index < 256; ++index) {
+    graph.push_back(createImplicitFactor(firstKey, secondKey));
+  }
+
+  const Ordering ordering{firstKey, secondKey};
+  const KeyInfo keyInfo(graph, ordering);
+  DummyPreconditioner preconditioner;
+  preconditioner.build(graph, keyInfo, {});
+  const GaussianFactorGraphSystem parallel(graph, preconditioner, keyInfo, {},
+                                            true, 2);
+  LONGS_EQUAL(2, static_cast<long>(parallel.numThreads()));
+
+  const Vector input =
+      Vector::LinSpaced(static_cast<DenseIndex>(keyInfo.numCols()), -0.4, 0.6);
+  Vector actual;
+  parallel.multiply(input, actual);
+  EXPECT(assert_equal(legacyProduct(graph, keyInfo, input), actual, 1e-10));
+}
+
+}  // namespace flat_gaussian_factor_fixture
 /* ************************************************************************* */
 
 /* ************************************************************************* */
