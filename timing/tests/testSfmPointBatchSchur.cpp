@@ -1,0 +1,133 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file testSfmPointBatchSchur.cpp
+ * @brief Correctness tests for backend-neutral compact BAL Schur assembly.
+ */
+
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/TestableAssertions.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/JacobianFactor.h>
+
+#include <Eigen/Cholesky>
+
+#include "internal/SfmPointBatchSchur.h"
+
+using namespace gtsam;
+using namespace gtsam::timing::bal;
+using symbol_shorthand::C;
+using symbol_shorthand::P;
+
+namespace {
+
+GaussianFactorGraph tinyPointBatchSystem() {
+  GaussianFactorGraph graph;
+  auto batch = std::make_shared<PointBatchJacobian>(
+      KeyVector{C(0), C(1), P(0)}, std::vector<size_t>{9, 9, 3});
+
+  Matrix29 camera0, camera1;
+  camera0 << 1.0, 0.2, -0.1, 0.3, 0.0, 0.4, -0.2, 0.1, 0.5,
+      -0.3, 0.8, 0.2, 0.0, 0.6, -0.1, 0.3, 0.2, -0.4;
+  camera1 << 0.4, -0.2, 0.5, 0.1, -0.3, 0.7, 0.2, 0.6, -0.1,
+      0.0, 0.3, -0.4, 0.8, 0.2, 0.1, -0.5, 0.7, 0.4;
+  Matrix23 point0, point1;
+  point0 << 0.7, -0.3, 0.2, 0.1, 0.6, -0.5;
+  point1 << -0.2, 0.4, 0.8, 0.5, -0.1, 0.3;
+  const Vector2 rhs0(0.6, -0.4), rhs1(-0.2, 0.7);
+  batch->addRow({0, 2}, {camera0, point0}, rhs0);
+  batch->addRow({1, 2}, {camera1, point1}, rhs1);
+  graph.push_back(batch);
+
+  const Matrix99 cameraPrior0 = 1.7 * Matrix99::Identity();
+  const Matrix99 cameraPrior1 = 1.3 * Matrix99::Identity();
+  const Vector9 cameraRhs0 =
+      (Vector9() << 0.1, -0.2, 0.3, 0.0, 0.2, -0.1, 0.4, 0.1, -0.3)
+          .finished();
+  const Vector9 cameraRhs1 =
+      (Vector9() << -0.2, 0.1, 0.0, 0.3, -0.1, 0.2, -0.4, 0.2, 0.1)
+          .finished();
+  graph.emplace_shared<JacobianFactor>(C(0), cameraPrior0, cameraRhs0);
+  graph.emplace_shared<JacobianFactor>(C(1), cameraPrior1, cameraRhs1);
+
+  const Matrix3 pointPrior = 1.1 * Matrix3::Identity();
+  const Vector3 pointRhs(0.2, -0.1, 0.3);
+  graph.emplace_shared<JacobianFactor>(P(0), pointPrior, pointRhs);
+  return graph;
+}
+
+Matrix denseCameraMatrix(const CompactCameraSystem& system) {
+  Matrix result = Matrix::Zero(9 * system.cameraCount,
+                               9 * system.cameraCount);
+  for (size_t row = 0; row < system.cameraCount; ++row) {
+    for (size_t column = row; column < system.cameraCount; ++column) {
+      const size_t slot =
+          upperCameraBlockIndex(row, column, system.cameraCount);
+      if (!system.usedBlocks[slot]) continue;
+      result.block<9, 9>(9 * row, 9 * column) = system.blocks[slot];
+      if (row != column) {
+        result.block<9, 9>(9 * column, 9 * row) =
+            system.blocks[slot].transpose();
+      }
+    }
+  }
+  return result;
+}
+
+}  // namespace
+
+// Dense matrices here are deliberately confined to this tiny correctness test.
+TEST(SfmPointBatchSchur, MatchesGenericReductionAndBackSubstitution) {
+  const GaussianFactorGraph graph = tinyPointBatchSystem();
+  const Ordering ordering{C(0), C(1), P(0)};
+  const auto [fullHessian, fullRhs] = graph.hessian(ordering);
+
+  constexpr DenseIndex cameraDimension = 18;
+  const Matrix cameraHessian =
+      fullHessian.topLeftCorner(cameraDimension, cameraDimension);
+  const Matrix cameraPoint =
+      fullHessian.block(0, cameraDimension, cameraDimension, 3);
+  const Matrix3 pointHessian =
+      fullHessian.bottomRightCorner<3, 3>();
+  const Matrix3 pointCovariance = pointHessian.inverse();
+  const Matrix expectedReducedHessian =
+      cameraHessian - cameraPoint * pointCovariance * cameraPoint.transpose();
+  const Vector expectedReducedRhs =
+      fullRhs.head(cameraDimension) -
+      cameraPoint * pointCovariance * fullRhs.tail<3>();
+
+  const CompactCameraSystem compact =
+      buildPointBatchCameraSystemParallel(graph);
+  EXPECT_LONGS_EQUAL(2, compact.cameraCount);
+  EXPECT(assert_equal(expectedReducedHessian, denseCameraMatrix(compact),
+                      1e-10));
+  EXPECT(assert_equal(expectedReducedRhs, compact.rhs, 1e-10));
+
+  const Vector cameraDelta =
+      expectedReducedHessian.llt().solve(expectedReducedRhs);
+  VectorValues cameraSolution;
+  cameraSolution.insert(C(0), cameraDelta.head<9>());
+  cameraSolution.insert(C(1), cameraDelta.tail<9>());
+  const VectorValues compactSolution =
+      backSubstitutePointBatchLandmarksParallel(compact, cameraSolution);
+
+  const Vector reference = fullHessian.llt().solve(fullRhs);
+  EXPECT(assert_equal(reference.head<9>(), compactSolution.at(C(0)), 1e-10));
+  EXPECT(assert_equal(reference.segment<9>(9), compactSolution.at(C(1)),
+                      1e-10));
+  EXPECT(assert_equal(reference.tail<3>(), compactSolution.at(P(0)), 1e-10));
+}
+
+int main() {
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
+}

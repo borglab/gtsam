@@ -30,7 +30,8 @@ endif()
 
 add_library(gtsam_timing_utils STATIC internal/TimingUtils.cpp
                                       internal/SfmBalBenchmark.cpp
-                                      internal/SfmPcgBenchmark.cpp)
+                                      internal/SfmPcgBenchmark.cpp
+                                      internal/SfmPointBatchSchur.cpp)
 target_include_directories(gtsam_timing_utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(gtsam_timing_utils PUBLIC gtsam)
 gtsam_apply_build_flags(gtsam_timing_utils)
