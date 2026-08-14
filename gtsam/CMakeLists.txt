@@ -28,7 +28,7 @@ message(STATUS "Building 3rdparty")
 add_subdirectory(3rdparty)
 
 set(3rdparty_srcs ${eigen_headers}) # Set by 3rdparty/CMakeLists.txt
-if(NOT GTSAM_USE_SYSTEM_SUITESPARSE)
+if(NOT GTSAM_USE_SYSTEM_CCOLAMD)
   set(gtsam_suitesparse_vendor_srcs
     ${CMAKE_CURRENT_SOURCE_DIR}/inference/internal/ccolamd_vendor.c
     ${CMAKE_CURRENT_SOURCE_DIR}/inference/internal/suitesparse_config_vendor.c)
@@ -155,8 +155,8 @@ message(STATUS "Building GTSAM - as a ${GTSAM_LIBRARY_TYPE} library")
 add_library(gtsam ${GTSAM_LIBRARY_TYPE} ${gtsam_srcs})
 target_link_libraries(gtsam PUBLIC ${GTSAM_BOOST_LIBRARIES})
 target_link_libraries(gtsam PUBLIC ${GTSAM_ADDITIONAL_LIBRARIES})
-if(GTSAM_USE_SYSTEM_SUITESPARSE)
-  target_compile_definitions(gtsam PRIVATE GTSAM_USE_SYSTEM_SUITESPARSE)
+if(GTSAM_USE_SYSTEM_CCOLAMD)
+  target_compile_definitions(gtsam PRIVATE GTSAM_USE_SYSTEM_CCOLAMD)
   target_link_libraries(gtsam PRIVATE SuiteSparse::CCOLAMD)
 endif()
 if(GTSAM_ENABLE_CUDA)
