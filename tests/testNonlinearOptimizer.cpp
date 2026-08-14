@@ -719,6 +719,60 @@ TEST(NonlinearOptimizer, subclass_solver) {
 }
 
 /* ************************************************************************* */
+namespace lm_extension_hooks_fixture {
+
+class HookedLM final : public LevenbergMarquardtOptimizer {
+  mutable bool builtDampedSystem_ = false;
+  mutable bool evaluatedLinearError_ = false;
+
+ protected:
+  double linearDeltaError(const GaussianFactorGraph& linear,
+                          const VectorValues& delta, double* oldError,
+                          double* newError) const override {
+    evaluatedLinearError_ = true;
+    return LevenbergMarquardtOptimizer::linearDeltaError(
+        linear, delta, oldError, newError);
+  }
+
+ public:
+  using LevenbergMarquardtOptimizer::LevenbergMarquardtOptimizer;
+
+  GaussianFactorGraph buildDampedSystem(
+      const GaussianFactorGraph& linear,
+      const VectorValues& sqrtHessianDiagonal) const override {
+    builtDampedSystem_ = true;
+    return LevenbergMarquardtOptimizer::buildDampedSystem(
+        linear, sqrtHessianDiagonal);
+  }
+
+  bool builtDampedSystem() const { return builtDampedSystem_; }
+  bool evaluatedLinearError() const { return evaluatedLinearError_; }
+};
+
+// Verifies custom damping and linear-model evaluation hooks are dispatched
+// while retaining the default optimizer result.
+TEST(NonlinearOptimizer, LevenbergMarquardtExtensionHooks) {
+  const NonlinearFactorGraph graph =
+      example::createReallyNonlinearFactorGraph();
+  Values initial;
+  initial.insert(X(1), Point2(3, 3));
+  LevenbergMarquardtParams parameters;
+  parameters.linearSolverType =
+      NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY;
+
+  const Values expected =
+      LevenbergMarquardtOptimizer(graph, initial, parameters).optimize();
+  HookedLM optimizer(graph, initial, parameters);
+  const Values actual = optimizer.optimize();
+
+  CHECK(optimizer.builtDampedSystem());
+  CHECK(optimizer.evaluatedLinearError());
+  EXPECT(assert_equal(expected, actual, 1e-9));
+}
+
+}  // namespace lm_extension_hooks_fixture
+
+/* ************************************************************************* */
 TEST( NonlinearOptimizer, logfile )
 {
   NonlinearFactorGraph fg(example::createReallyNonlinearFactorGraph());

@@ -112,6 +112,46 @@ TEST(BatchFactor, ConstructorAndLinearize) {
 }
 
 /* ************************************************************************* */
+// Verifies compact delta-error evaluation matches the dense compatibility path.
+TEST(BatchFactor, CompactDeltaErrorMatchesDenseJacobian) {
+  const Key pose = Symbol('x', 0);
+  const Key point1 = Symbol('l', 0);
+  const Key point2 = Symbol('l', 1);
+  const auto noise = noiseModel::Isotropic::Sigma(2, 1.0);
+  std::vector<ProjectionFactor> factors;
+  factors.emplace_back(Point2(0.1, -0.2), noise, pose, point1, sharedK);
+  factors.emplace_back(Point2(-0.3, 0.4), noise, pose, point2, sharedK);
+  BatchFactor<ProjectionFactor, 2> batch(std::move(factors));
+
+  Values values;
+  values.insert(pose, Pose3());
+  values.insert(point1, Point3(0.5, 0.1, 5.0));
+  values.insert(point2, Point3(-0.2, 0.3, 4.0));
+  const auto compact = batch.linearize(values);
+  const JacobianFactor dense = denseJacobian(compact);
+
+  VectorValues delta;
+  delta.insert(pose, Vector6::Constant(0.01));
+  delta.insert(point1, Vector3(0.02, -0.01, 0.03));
+  delta.insert(point2, Vector3(-0.01, 0.04, -0.02));
+  double compactOld = 0.0, compactNew = 0.0;
+  double denseOld = 0.0, denseNew = 0.0;
+  const double compactDelta =
+      compact->deltaError(delta, &compactOld, &compactNew);
+  const double denseDelta = dense.deltaError(delta, &denseOld, &denseNew);
+
+  DOUBLES_EQUAL(denseOld, compactOld, 1e-12);
+  DOUBLES_EQUAL(denseNew, compactNew, 1e-12);
+  DOUBLES_EQUAL(denseDelta, compactDelta, 1e-12);
+
+  VectorValues compactDiagonal;
+  compact->hessianDiagonalAdd(compactDiagonal);
+  VectorValues denseDiagonal;
+  dense.hessianDiagonalAdd(denseDiagonal);
+  EXPECT(assert_equal(denseDiagonal, compactDiagonal, 1e-12));
+}
+
+/* ************************************************************************* */
 // Verifies constrained row semantics are preserved in the dense Jacobian model.
 TEST(BatchFactor, ConstrainedNoiseModel) {
   Key key = Symbol('x', 0);
