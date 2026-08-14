@@ -12,6 +12,7 @@
 /**
  * @file FlatGaussianFactor.cpp
  * @brief Optional preindexed kernels for Gaussian factors.
+ * @author Frank Dellaert (using 5.6 Sol)
  */
 
 #include <gtsam/linear/FlatGaussianFactor.h>

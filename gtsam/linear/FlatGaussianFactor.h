@@ -12,6 +12,7 @@
 /**
  * @file FlatGaussianFactor.h
  * @brief Optional preindexed kernels for Gaussian factors.
+ * @author Frank Dellaert (using 5.6 Sol)
  */
 
 #pragma once

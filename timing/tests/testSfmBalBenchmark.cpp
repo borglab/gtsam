@@ -12,6 +12,7 @@
 /**
  * @file testSfmBalBenchmark.cpp
  * @brief Tests for shared BAL smart-factor and PCG timing support.
+ * @author Frank Dellaert (using 5.6 Sol)
  */
 
 #include <CppUnitLite/TestHarness.h>
