@@ -18,6 +18,7 @@
 
 #include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/Kernel.h>
+#include <gtsam/geometry/SO3.h>
 #include <gtsam/navigation/NavState.h>
 
 #include <string>
@@ -296,9 +297,103 @@ Vector9 NavState::coriolis(double dt, const Vector3& omega, bool secondOrder,
 
 //------------------------------------------------------------------------------
 Vector9 NavState::correctPIM(const Vector9& pim, double dt,
-    const Vector3& n_gravity, const std::optional<Vector3>& omegaCoriolis,
-    bool use2ndOrderCoriolis, OptionalJacobian<9, 9> H1,
-    OptionalJacobian<9, 9> H2, OptionalJacobian<9, 3> H3) const {
+                             const Vector3& n_gravity,
+                             const std::optional<Vector3>& omegaCoriolis,
+                             bool /*use2ndOrderCoriolis*/,
+                             OptionalJacobian<9, 9> H1,
+                             OptionalJacobian<9, 9> H2,
+                             OptionalJacobian<9, 3> H3) const {
+  if (omegaCoriolis && !omegaCoriolis->isZero(0.0)) {
+    const Vector3& omega = *omegaCoriolis;
+    const Vector3 earthRotationTangent = -omega * dt;
+    const so3::DexpFunctor earthRotation(earthRotationTangent);
+    const Matrix3 gammaRotation = earthRotation.Rodrigues().left();
+    const Matrix3 gammaVelocity = earthRotation.Jacobian().left();
+    // Brossard's Gamma^p integrates Gamma^v - Omega x Gamma^p. In
+    // GTSAM's kernel convention this is J_l(w) - Gamma_2,l(w), not
+    // Gamma_2,l(w) alone.
+    const Matrix3 gammaPosition = gammaVelocity - earthRotation.Gamma().left();
+    const Matrix3 initialRotation = R_.matrix();
+    const Point3 initialPosition = position();
+    const Velocity3 initialVelocity = velocity();
+    Matrix3 deltaRotation_H_pimRotation;
+    const Rot3 deltaRotation =
+        Rot3::Expmap(dR(pim), H2 ? &deltaRotation_H_pimRotation : nullptr);
+    const Matrix3 omegaCross = skewSymmetric(omega);
+
+    const Rot3 predictedRotation(gammaRotation * initialRotation *
+                                 deltaRotation.matrix());
+    const Point3 predictedPosition =
+        gammaPosition * n_gravity * (dt * dt) +
+        gammaRotation * (initialPosition +
+                         (initialVelocity + omegaCross * initialPosition) * dt +
+                         initialRotation * dP(pim));
+    const Velocity3 predictedVelocity =
+        gammaVelocity * n_gravity * dt +
+        gammaRotation * (initialVelocity + omegaCross * initialPosition +
+                         initialRotation * dV(pim)) -
+        omegaCross * predictedPosition;
+    const NavState predicted(predictedRotation, predictedPosition,
+                             predictedVelocity);
+
+    Matrix9 predicted_H_state, predicted_H_pim;
+    Matrix93 predicted_H_gravity;
+    const bool computeJacobians = H1 || H2 || H3;
+    if (computeJacobians) {
+      predicted_H_state.setZero();
+      predicted_H_pim.setZero();
+      predicted_H_gravity.setZero();
+
+      const Matrix3 finalRotationTranspose = predictedRotation.transpose();
+      const Matrix3 initialToFinal =
+          finalRotationTranspose * gammaRotation * initialRotation;
+      const Matrix3 navToFinal = finalRotationTranspose * gammaRotation;
+      const Vector3 pimPositionNav = initialRotation * dP(pim);
+      const Vector3 pimVelocityNav = initialRotation * dV(pim);
+
+      D_R_R(&predicted_H_state) = deltaRotation.transpose();
+      D_t_R(&predicted_H_state) =
+          finalRotationTranspose * gammaRotation *
+          (-skewSymmetric(pimPositionNav) * initialRotation);
+      D_t_t(&predicted_H_state) =
+          navToFinal * (I_3x3 + omegaCross * dt) * initialRotation;
+      D_t_v(&predicted_H_state) = navToFinal * initialRotation * dt;
+      D_v_R(&predicted_H_state) =
+          finalRotationTranspose *
+          (gammaRotation * (-skewSymmetric(pimVelocityNav) * initialRotation) -
+           omegaCross * gammaRotation *
+               (-skewSymmetric(pimPositionNav) * initialRotation));
+      D_v_t(&predicted_H_state) =
+          finalRotationTranspose *
+          ((gammaRotation * omegaCross -
+            omegaCross * gammaRotation * (I_3x3 + omegaCross * dt)) *
+           initialRotation);
+      D_v_v(&predicted_H_state) =
+          finalRotationTranspose *
+          ((gammaRotation - omegaCross * gammaRotation * dt) * initialRotation);
+
+      D_R_R(&predicted_H_pim) = deltaRotation_H_pimRotation;
+      D_t_t(&predicted_H_pim) = initialToFinal;
+      D_v_v(&predicted_H_pim) = initialToFinal;
+      D_v_t(&predicted_H_pim) = -finalRotationTranspose * omegaCross *
+                                gammaRotation * initialRotation;
+
+      predicted_H_gravity.block<3, 3>(3, 0) =
+          finalRotationTranspose * gammaPosition * (dt * dt);
+      predicted_H_gravity.block<3, 3>(6, 0) =
+          finalRotationTranspose *
+          (gammaVelocity * dt - omegaCross * gammaPosition * (dt * dt));
+    }
+
+    Matrix9 chart_H_initial, chart_H_predicted;
+    const Vector9 result =
+        localCoordinates(predicted, H1 ? &chart_H_initial : nullptr,
+                         computeJacobians ? &chart_H_predicted : nullptr);
+    if (H1) *H1 = chart_H_initial + chart_H_predicted * predicted_H_state;
+    if (H2) *H2 = chart_H_predicted * predicted_H_pim;
+    if (H3) *H3 = chart_H_predicted * predicted_H_gravity;
+    return result;
+  }
   const Rot3& nRb = R_;
   const Velocity3 n_v = t_.col(1); // derivative is Ri !
   const double dt22 = 0.5 * dt * dt;
@@ -316,15 +411,10 @@ Vector9 NavState::correctPIM(const Vector9& pim, double dt,
       + dt22 * b_gravity;
   dV(xi) = dV(pim) + dt * b_gravity;
 
-  if (omegaCoriolis) {
-    xi += coriolis(dt, *omegaCoriolis, use2ndOrderCoriolis, H1);
-  }
-
   if (H1 || H2 || H3) {
     if (H1) {
       const Matrix3 Ri = nRb.matrix();
-      if (!omegaCoriolis)
-        H1->setZero(); // if coriolis H1 is already initialized
+      H1->setZero();
       D_t_R(H1) += dt * D_dP_Ri1 + dt22 * D_dP_Ri2;
       D_t_v(H1) += dt * D_dP_nv * Ri;
       D_v_R(H1) += dt * D_dP_Ri2;

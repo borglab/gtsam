@@ -55,6 +55,21 @@ BOOST_CLASS_EXPORT_GUID(PreintegratedCombinedMeasurements,
                         "gtsam_PreintegratedCombinedMeasurements")
 
 /* ************************************************************************* */
+TEST(PreintegrationParams, LegacySecondOrderFlagSerialization) {
+  PreintegrationParams input(Vector3(0.1, -0.2, -9.8));
+  input.omegaCoriolis = Vector3(1e-5, -2e-5, 7e-5);
+  input.use2ndOrderCoriolis = true;
+
+  PreintegrationParams output;
+  roundtrip(input, output);
+  EXPECT(output.use2ndOrderCoriolis);
+
+  PreintegrationParams semanticallyEquivalent = input;
+  semanticallyEquivalent.use2ndOrderCoriolis = false;
+  EXPECT(input.equals(semanticallyEquivalent, 1e-9));
+}
+
+/* ************************************************************************* */
 TEST(AHRSFactor, Serialization) {
   auto params = std::make_shared<PreintegratedRotationParams>();
   params->gyroscopeCovariance = 1e-8 * I_3x3;

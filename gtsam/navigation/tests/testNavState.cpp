@@ -23,6 +23,7 @@
 #include <gtsam/base/lieProxies.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/testLie.h>
+#include <gtsam/geometry/SO3.h>
 #include <gtsam/navigation/NavState.h>
 
 #include <cmath>
@@ -351,6 +352,14 @@ TEST(NavState, interpolate) {
 
 /* ************************************************************************* */
 static const double dt = 2.0;
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4996)
+#elif defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 auto coriolis = std::bind(&NavState::coriolis, std::placeholders::_1, dt, kOmegaCoriolis,
               std::placeholders::_2, nullptr);
 
@@ -470,6 +479,143 @@ TEST(NavState, CorrectPIM) {
       numericalDerivative11<Vector9, Vector3>(correctPIMNoCoriolis, kGravity),
       Matrix(aH3NoCoriolis)));
 }
+
+/* ************************************************************************* */
+namespace rotating_earth_fixture {
+
+NavState predict(const NavState& initial, const Vector9& pim, double dt,
+                 const Vector3& gravity, const Vector3& omega,
+                 bool useSecondOrder = false) {
+  return initial.retract(
+      initial.correctPIM(pim, dt, gravity, omega, useSecondOrder));
+}
+
+NavState exactEquation(const NavState& initial, const Vector9& pim, double dt,
+                       const Vector3& gravity, const Vector3& omega) {
+  const so3::DexpFunctor earthRotation(-omega * dt);
+  const Matrix3 gammaRotation = earthRotation.Rodrigues().left();
+  const Matrix3 gammaVelocity = earthRotation.Jacobian().left();
+  const Matrix3 gammaPosition = gammaVelocity - earthRotation.Gamma().left();
+  const Matrix3 initialRotation = initial.R();
+  const Matrix3 omegaCross = skewSymmetric(omega);
+  const Point3 position =
+      gammaPosition * gravity * (dt * dt) +
+      gammaRotation *
+          (initial.position() +
+           (initial.velocity() + omegaCross * initial.position()) * dt +
+           initialRotation * NavState::dP(pim));
+  const Velocity3 velocity =
+      gammaVelocity * gravity * dt +
+      gammaRotation * (initial.velocity() + omegaCross * initial.position() +
+                       initialRotation * NavState::dV(pim)) -
+      omegaCross * position;
+  const Rot3 rotation(gammaRotation * initialRotation *
+                      Rot3::Expmap(NavState::dR(pim)).matrix());
+  return NavState(rotation, position, velocity);
+}
+
+struct PositionVelocity {
+  Point3 position;
+  Velocity3 velocity;
+};
+
+PositionVelocity derivative(const PositionVelocity& state,
+                            const Vector3& gravity, const Vector3& omega) {
+  return {state.velocity, gravity - 2.0 * omega.cross(state.velocity) -
+                              omega.cross(omega.cross(state.position))};
+}
+
+PositionVelocity addScaled(const PositionVelocity& state,
+                           const PositionVelocity& increment, double scale) {
+  return {state.position + scale * increment.position,
+          state.velocity + scale * increment.velocity};
+}
+
+NavState integrateReference(const NavState& initial, double duration,
+                            const Vector3& gravity, const Vector3& omega) {
+  constexpr double kStep = 1e-3;
+  const size_t steps = static_cast<size_t>(std::round(duration / kStep));
+  const double step = duration / static_cast<double>(steps);
+  PositionVelocity state{initial.position(), initial.velocity()};
+  for (size_t index = 0; index < steps; ++index) {
+    const PositionVelocity k1 = derivative(state, gravity, omega);
+    const PositionVelocity k2 =
+        derivative(addScaled(state, k1, 0.5 * step), gravity, omega);
+    const PositionVelocity k3 =
+        derivative(addScaled(state, k2, 0.5 * step), gravity, omega);
+    const PositionVelocity k4 =
+        derivative(addScaled(state, k3, step), gravity, omega);
+    state.position += (step / 6.0) * (k1.position + 2.0 * k2.position +
+                                      2.0 * k3.position + k4.position);
+    state.velocity += (step / 6.0) * (k1.velocity + 2.0 * k2.velocity +
+                                      2.0 * k3.velocity + k4.velocity);
+  }
+  return NavState(Rot3::Expmap(-omega * duration).compose(initial.attitude()),
+                  state.position, state.velocity);
+}
+
+// Verifies Brossard's exact transition for arbitrary state and PIM values.
+TEST(NavState, ExactRotatingEarthEquation) {
+  const NavState initial(Rot3::Ypr(0.4, -0.3, 0.2), Point3(120.0, -35.0, 18.0),
+                         Vector3(12.0, -4.0, 2.0));
+  const Vector9 pim{0.08, -0.04, 0.03, 1.2, -0.7, 0.4, 0.5, -0.2, 0.1};
+  const Vector3 gravity{0.2, -0.1, 9.78};
+  const Vector3 omega{0.002, -0.003, 0.004};
+  EXPECT(assert_equal(exactEquation(initial, pim, 2.5, gravity, omega),
+                      predict(initial, pim, 2.5, gravity, omega), 1e-12));
+}
+
+// Verifies the legacy second-order flag no longer changes rotating prediction.
+TEST(NavState, ExactRotatingEarthIgnoresSecondOrderFlag) {
+  const Vector9 pim{0.08, -0.04, 0.03, 1.2, -0.7, 0.4, 0.5, -0.2, 0.1};
+  EXPECT(assert_equal(
+      predict(kState1, pim, 2.5, kGravity, kOmegaCoriolis),
+      predict(kState1, pim, 2.5, kGravity, kOmegaCoriolis, true), 1e-12));
+}
+
+// Verifies absent and exactly zero Earth rates recover the fast inertial path.
+TEST(NavState, ExactRotatingEarthZeroLimit) {
+  const Vector9 pim{0.08, -0.04, 0.03, 1.2, -0.7, 0.4, 0.5, -0.2, 0.1};
+  const NavState noRotation =
+      kState1.retract(kState1.correctPIM(pim, 2.5, kGravity, {}));
+  EXPECT(assert_equal(noRotation,
+                      predict(kState1, pim, 2.5, kGravity, Vector3::Zero()),
+                      1e-12));
+}
+
+// Verifies the exact transition against an independent long-duration RK4 solve.
+TEST(NavState, ExactRotatingEarthLongDurationReference) {
+  const NavState initial(Rot3::Ypr(0.4, -0.3, 0.2), Point3(120.0, -35.0, 18.0),
+                         Vector3(12.0, -4.0, 2.0));
+  const Vector3 gravity{0.2, -0.1, 9.78};
+  const Vector3 omega{0.01, -0.006, 0.008};
+  constexpr double kDuration = 50.0;
+  const NavState reference =
+      integrateReference(initial, kDuration, gravity, omega);
+  const NavState exact =
+      predict(initial, Vector9::Zero(), kDuration, gravity, omega);
+
+  const Vector9 inertial =
+      initial.correctPIM(Vector9::Zero(), kDuration, gravity, {});
+  const NavState approximate =
+      initial.retract(inertial + initial.coriolis(kDuration, omega, true));
+  const double exactError = (exact.position() - reference.position()).norm() +
+                            (exact.velocity() - reference.velocity()).norm();
+  const double approximateError =
+      (approximate.position() - reference.position()).norm() +
+      (approximate.velocity() - reference.velocity()).norm();
+  EXPECT(exactError < 1e-8);
+  EXPECT(approximateError > 1e-2);
+}
+
+}  // namespace rotating_earth_fixture
+/* ************************************************************************* */
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#elif defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 
 /* ************************************************************************* */
 TEST(NavState, Stream)
