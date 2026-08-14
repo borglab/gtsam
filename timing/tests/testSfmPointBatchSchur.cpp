@@ -87,7 +87,8 @@ Matrix denseCameraMatrix(const CompactCameraSystem& system) {
 
 void verifyAgainstDenseReference(const GaussianFactorGraph& graph,
                                  size_t cameraCount, size_t pointCount,
-                                 double tolerance) {
+                                 double tolerance, TestResult& result_,
+                                 const std::string& name_) {
   Ordering ordering;
   for (size_t camera = 0; camera < cameraCount; ++camera) {
     ordering.push_back(C(camera));
@@ -144,7 +145,7 @@ void verifyAgainstDenseReference(const GaussianFactorGraph& graph,
 // Dense matrices here are deliberately confined to this tiny correctness test.
 TEST(SfmPointBatchSchur, MatchesGenericReductionAndBackSubstitution) {
   const GaussianFactorGraph graph = tinyPointBatchSystem();
-  verifyAgainstDenseReference(graph, 2, 1, 1e-10);
+  verifyAgainstDenseReference(graph, 2, 1, 1e-10, result_, name_);
 }
 
 // Exercise the production batch linearization on the repository's tiny BAL
@@ -170,7 +171,7 @@ TEST(SfmPointBatchSchur, TinyBalFixtureMatchesGenericReduction) {
   }
 
   verifyAgainstDenseReference(damped, data.numberCameras(),
-                              data.numberTracks(), 1e-6);
+                              data.numberTracks(), 1e-6, result_, name_);
 }
 
 int main() {
