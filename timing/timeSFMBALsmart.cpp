@@ -35,7 +35,7 @@ using namespace gtsam;
 namespace bal = gtsam::timing::bal;
 
 std::string usage() {
-  return "Usage: timeSFMBALsmart [--colamd] "
+  return "Usage: timeSFMBALsmart "
          "[--cholesky-only | --pcg-only | --hessian-pcg-only | "
          "--implicit-schur-pcg-only] "
          "[--benchmark-action-json FILE] [BALfile]";
@@ -73,7 +73,6 @@ struct SmartTimingResult {
 RunOptions parseOptions(int argc, char* argv[]) {
   gtsam::timing::Arguments arguments(argc, argv);
   RunOptions options;
-  options.config.useSchur = !arguments.flag("--colamd");
   options.choleskyOnly = arguments.flag("--cholesky-only");
   options.pcgOnly = arguments.flag("--pcg-only");
   options.hessianPcgOnly = arguments.flag("--hessian-pcg-only");

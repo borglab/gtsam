@@ -39,7 +39,6 @@
 #include <optional>
 #include <thread>
 
-
 #include "TimingUtils.h"
 
 using namespace gtsam;

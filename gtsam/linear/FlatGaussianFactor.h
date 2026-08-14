@@ -18,6 +18,7 @@
 
 #include <gtsam/base/Matrix.h>
 
+#include <cstddef>
 #include <vector>
 
 namespace gtsam {

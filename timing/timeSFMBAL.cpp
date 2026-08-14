@@ -224,6 +224,7 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
         "--end-to-end-pcg is a standalone comparison; combine it only with "
         "--colamd or a BAL file.");
   }
+
   if (hasFilename) return options;
   if (options.profile) {
     options.filenames = {bal::profileDataset()};

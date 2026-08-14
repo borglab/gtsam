@@ -75,7 +75,9 @@ and reporting benchmark modes.
 `timeSFMBALsmart` compares camera-only, structureless bundle adjustment using
 smart factors. Its default run reports Hessian smart factors with multifrontal
 Cholesky, Hessian smart factors with parallel block-Jacobi PCG, and implicit
-Schur smart factors with the same PCG solver. Use `--cholesky-only` or
+Schur smart factors with the same PCG solver. The implicit-Schur case exercises
+the common preindexed `FlatGaussianFactor` kernels also used by compact batch
+factors. Use `--cholesky-only` or
 `--pcg-only` to select a subset, or isolate one iterative representation with
 `--hessian-pcg-only` or `--implicit-schur-pcg-only`. Use
 `--benchmark-action-json FILE` for machine-readable timing output.
