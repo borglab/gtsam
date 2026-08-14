@@ -116,6 +116,14 @@ class GaussianFactorGraphSystem::Impl {
     std::vector<size_t> blockSlots;
   };
 
+  /** Precomputed storage and key mappings for one flat Hessian factor. */
+  struct FlatHessianPlan {
+    std::shared_ptr<const GaussianFactor> factor;
+    const FlatHessianFactor* kernel;
+    std::vector<size_t> scalarOffsets;
+    std::vector<size_t> blockSlots;
+  };
+
   KeyInfo keyInfo_;  ///< Flat ordering, dimensions, and offsets for all keys.
   Vector rhs_;       ///< Cached normal-equation right-hand side, `-g(0)`.
   Eigen::SparseMatrix<double, Eigen::ColMajor, int>
@@ -126,6 +134,12 @@ class GaussianFactorGraphSystem::Impl {
   std::vector<JacobianPlan> jacobianPlans_;  ///< Plans retained for diagonals.
   std::vector<HessianPlan> hessianPlans_;    ///< Direct Hessian-factor plans.
   std::vector<BatchPlan> batchPlans_;        ///< Direct compact-factor plans.
+  std::vector<FlatHessianPlan>
+      flatHessianPlans_;  ///< Matrix-free factor plans.
+  std::vector<OuterRange>
+      flatHessianRanges_;  ///< Independent matrix-free factor ranges.
+  mutable std::vector<Vector>
+      flatHessianProducts_;  ///< One output accumulator per factor range.
   GaussianFactorGraph fallbackFactors_;      ///< Unsupported factor types.
   mutable std::optional<std::vector<Matrix>>
       blockDiagonal_;      ///< Lazily assembled diagonal in KeyInfo ordering.
@@ -179,12 +193,16 @@ class GaussianFactorGraphSystem::Impl {
     const bool parallelJacobian =
         static_cast<size_t>(jacobian_.nonZeros()) >= kMinimumParallelNonzeros;
     const bool parallelBlocks = keyInfo_.size() >= kMinimumParallelBlocks;
+    const bool parallelFlatHessian =
+        flatHessianPlans_.size() >= kMinimumParallelBlocks;
     if (!parallel || resolvedThreads <= 1 ||
-        (!parallelJacobian && !parallelBlocks)) {
+        (!parallelJacobian && !parallelBlocks && !parallelFlatHessian)) {
       return;
     }
 
-    numThreads_ = std::min(resolvedThreads, keyInfo_.size());
+    const size_t maximumTasks =
+        std::max(keyInfo_.size(), flatHessianPlans_.size());
+    numThreads_ = std::min(resolvedThreads, maximumTasks);
     if (numThreads_ <= 1) {
       numThreads_ = 1;
       return;
@@ -199,7 +217,43 @@ class GaussianFactorGraphSystem::Impl {
           static_cast<size_t>(jacobian_.outerSize()), numThreads_);
     }
     blockRanges_ = makeOuterRanges(keyInfo_.size(), numThreads_);
+    if (parallelFlatHessian) {
+      flatHessianRanges_ =
+          makeOuterRanges(flatHessianPlans_.size(), numThreads_);
+      flatHessianProducts_.resize(flatHessianRanges_.size());
+      for (Vector& product : flatHessianProducts_) {
+        product = Vector::Zero(static_cast<DenseIndex>(keyInfo_.numCols()));
+      }
+    }
     scheduler_ = std::make_unique<TaskScheduler<void>>(numThreads_);
+  }
+
+  /** Apply matrix-free factors in parallel and reduce thread-local outputs. */
+  void addFlatHessianProducts(const Vector& x, Vector* y) const {
+    if (flatHessianRanges_.empty()) {
+      for (const FlatHessianPlan& plan : flatHessianPlans_) {
+        plan.kernel->multiplyHessianAdd(1.0, plan.scalarOffsets, x.data(),
+                                        y->data());
+      }
+      return;
+    }
+
+    for (size_t task = 0; task < flatHessianRanges_.size(); ++task) {
+      scheduler_->enqueue([&, task] {
+        Vector& product = flatHessianProducts_[task];
+        product.setZero();
+        const OuterRange range = flatHessianRanges_[task];
+        for (size_t index = range.begin; index < range.end; ++index) {
+          const FlatHessianPlan& plan = flatHessianPlans_[index];
+          plan.kernel->multiplyHessianAdd(1.0, plan.scalarOffsets, x.data(),
+                                          product.data());
+        }
+      });
+    }
+    scheduler_->waitForAllTasks();
+    for (const Vector& product : flatHessianProducts_) {
+      *y += product;
+    }
   }
 
   /** Evaluate `J * x` and `J.transpose() * (J * x)` in parallel. */
@@ -362,6 +416,17 @@ class GaussianFactorGraphSystem::Impl {
       return;
     }
 
+    if (const auto* kernel =
+            dynamic_cast<const FlatHessianFactor*>(factor.get())) {
+      FlatHessianPlan plan;
+      plan.factor = factor;
+      plan.kernel = kernel;
+      mapFactorKeys(*plan.factor, &plan.scalarOffsets, &plan.blockSlots);
+      plan.kernel->gradientAtZeroAdd(plan.scalarOffsets, gradient->data());
+      flatHessianPlans_.push_back(std::move(plan));
+      return;
+    }
+
     if (auto hessian = std::dynamic_pointer_cast<HessianFactor>(factor)) {
       HessianPlan plan;
       plan.factor = std::move(hessian);
@@ -448,6 +513,7 @@ class GaussianFactorGraphSystem::Impl {
     jacobianPlans_.reserve(graph.size());
     hessianPlans_.reserve(graph.size());
     batchPlans_.reserve(graph.size());
+    flatHessianPlans_.reserve(graph.size());
 
     // Dispatch supported factors into specialized plans and retain the rest.
     for (const auto& factor : graph) {
@@ -496,6 +562,8 @@ class GaussianFactorGraphSystem::Impl {
       plan.factor->multiplyHessianAdd(1.0, plan.scalarOffsets, x.data(),
                                       y->data());
     }
+
+    addFlatHessianProducts(x, y);
 
     // Preserve compatibility for all remaining GaussianFactor subclasses.
     addFallbackProduct(x, y);
@@ -555,6 +623,10 @@ class GaussianFactorGraphSystem::Impl {
 
     for (const BatchPlan& plan : batchPlans_) {
       plan.factor->hessianBlockDiagonalAdd(plan.blockSlots, &*blockDiagonal_);
+    }
+
+    for (const FlatHessianPlan& plan : flatHessianPlans_) {
+      plan.kernel->hessianBlockDiagonalAdd(plan.blockSlots, &*blockDiagonal_);
     }
 
     // Complete the diagonal through the general compatibility graph.

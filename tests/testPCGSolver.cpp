@@ -361,11 +361,11 @@ TEST(GaussianFactorGraphSystem, MixedFactorTypes) {
 /* ************************************************************************* */
 
 /* ************************************************************************* */
-namespace fallback_factor_fixture {
+namespace flat_hessian_factor_fixture {
 
 using ImplicitFactor = RegularImplicitSchurFactor<CalibratedCamera>;
 
-GaussianFactorGraph createMixedFallbackGraph() {
+GaussianFactorGraph createMixedFlatHessianGraph() {
   const Key firstKey = 10;
   const Key secondKey = 2;
   GaussianFactorGraph graph;
@@ -392,7 +392,7 @@ GaussianFactorGraph createMixedFallbackGraph() {
                        .finished();
   const Matrix3 pointCovariance = 0.05 * Matrix3::Identity();
   const Vector b = (Vector(4) << 0.4, -0.2, 0.1, 0.3).finished();
-  // Add an implicit Schur factor handled by the compatibility path.
+  // Add an implicit Schur factor handled by the flat Hessian path.
   graph.emplace_shared<ImplicitFactor>(KeyVector{firstKey, secondKey}, blocks,
                                        E, pointCovariance, b);
   return graph;
@@ -417,10 +417,10 @@ Matrix legacyHessian(const GaussianFactorGraph& graph, const KeyInfo& keyInfo) {
   return hessian;
 }
 
-// Verifies compiled and fallback factor contributions compose in products, the
-// right-hand side, and a complete block-Jacobi PCG solve.
-TEST(GaussianFactorGraphSystem, MixedSupportedAndFallbackFactors) {
-  const GaussianFactorGraph graph = createMixedFallbackGraph();
+// Verifies sparse Jacobian and flat Hessian contributions compose in products,
+// the right-hand side, and a complete block-Jacobi PCG solve.
+TEST(GaussianFactorGraphSystem, MixedSupportedAndFlatHessianFactors) {
+  const GaussianFactorGraph graph = createMixedFlatHessianGraph();
   const Ordering ordering{10, 2};
   const KeyInfo keyInfo(graph, ordering);
   DummyPreconditioner dummy;
@@ -457,7 +457,7 @@ TEST(GaussianFactorGraphSystem, MixedSupportedAndFallbackFactors) {
       assert_equal(expectedSolution, result.solution.vector(ordering), 1e-10));
 }
 
-}  // namespace fallback_factor_fixture
+}  // namespace flat_hessian_factor_fixture
 /* ************************************************************************* */
 
 /* ************************************************************************* */

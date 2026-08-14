@@ -45,6 +45,7 @@ std::string usage() {
   return "Usage: timeSFMBAL [--colamd] [--profile] [--camera-batch] "
          "[--cholesky-only] [--profile-point-cholesky] "
          "[--end-to-end-pcg] "
+         "[--point-batch-schur-pcg-only] "
          "[--batch-chunk-size N] "
          "[--benchmark-action-json FILE] [BALfile]";
 }
@@ -76,6 +77,7 @@ struct RunOptions {
   std::string benchmarkActionJsonPath;
   std::vector<std::string> filenames;
   bool endToEndPcg = false;
+  bool pointBatchSchurPcgOnly = false;
   bool help = false;
 };
 
@@ -189,6 +191,8 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
   options.choleskyOnly = arguments.flag("--cholesky-only");
   options.profilePointCholesky = arguments.flag("--profile-point-cholesky");
   options.endToEndPcg = arguments.flag("--end-to-end-pcg");
+  options.pointBatchSchurPcgOnly =
+      arguments.flag("--point-batch-schur-pcg-only");
   options.batchChunkSize = arguments.sizeValue("--batch-chunk-size", 0);
   const auto jsonPath = arguments.optionalString("--benchmark-action-json");
   options.benchmarkActionJson = jsonPath.has_value();
@@ -224,12 +228,20 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
         "--end-to-end-pcg is a standalone comparison; combine it only with "
         "--colamd or a BAL file.");
   }
-
+  if (options.pointBatchSchurPcgOnly &&
+      (options.profile || options.endToEndPcg ||
+       options.benchmarkActionJson || options.cameraBatch ||
+       options.choleskyOnly ||
+       options.profilePointCholesky || options.batchChunkSize != 0)) {
+    throw std::runtime_error(
+        "--point-batch-schur-pcg-only is a standalone comparison; combine it "
+        "only with --colamd or a BAL file.");
+  }
   if (hasFilename) return options;
   if (options.profile) {
     options.filenames = {bal::profileDataset()};
   } else if (options.profilePointCholesky || options.benchmarkActionJson ||
-             options.endToEndPcg) {
+             options.endToEndPcg || options.pointBatchSchurPcgOnly) {
     options.filenames = {bal::defaultDataset()};
   } else {
     options.filenames = bal::standardDatasets();
@@ -501,6 +513,52 @@ int main(int argc, char* argv[]) {
 
   if (options.endToEndPcg) {
     bal::runEndToEndPcgComparison(options.filenames, options.config);
+    return 0;
+  }
+
+  if (options.pointBatchSchurPcgOnly) {
+    for (const auto& filename : options.filenames) {
+      const SfmData data = bal::loadDataset(filename);
+      NonlinearFactorGraph graph;
+      const double graphBuildSeconds = gtsam::timing::measureSeconds([&] {
+        graph = bal::buildBatchSfmGraph(data, options.config, false, 0);
+      });
+      const Values initial = bal::buildGeneralSfmInitial(data);
+      const Ordering ordering = bal::createSchurOrdering(data, false);
+      LevenbergMarquardtParams parameters =
+          bal::makeLevenbergMarquardtParams(options.config, &ordering,
+                                            "SILENT");
+      parameters.linearSolverType = NonlinearOptimizerParams::Iterative;
+      const bal::PcgOptimizationResult result =
+          bal::runPointBatchSchurPcgOptimization(graph, initial, parameters);
+      const double averageIterations =
+          result.linearSolves == 0
+              ? 0.0
+              : static_cast<double>(result.pcgIterations) /
+                    static_cast<double>(result.linearSolves);
+      std::cout << std::fixed << std::setprecision(6)
+                << "\n| Dataset | Solver | Graph build s | Optimize s | "
+                   "Initial error | Final error | LM iterations | "
+                   "Linear solves | Avg. CG iterations | Non-converged CG "
+                   "solves | Operator setup s | Preconditioner setup s | "
+                   "Linear solve s | Nonlinear error s | Linearize s | "
+                   "Back-substitute s |\n"
+                << "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | "
+                   "---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |\n"
+                << "| " << std::filesystem::path(filename).filename().string()
+                << " | PointBatch/ImplicitSchur/ParallelPCG | "
+                << graphBuildSeconds << " | " << result.elapsedSeconds << " | "
+                << result.initialError << " | " << result.finalError << " | "
+                << result.lmIterations << " | " << result.linearSolves << " | "
+                << averageIterations << " | "
+                << result.nonConvergedLinearSolves << " | "
+                << result.operatorSetupSeconds << " | "
+                << result.preconditionerSetupSeconds << " | "
+                << result.solveSeconds << " | "
+                << result.nonlinearErrorSeconds << " | "
+                << result.linearizeSeconds << " | "
+                << result.backSubstituteSeconds << " |\n";
+    }
     return 0;
   }
 

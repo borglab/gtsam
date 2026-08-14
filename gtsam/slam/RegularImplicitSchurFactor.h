@@ -36,7 +36,8 @@ namespace gtsam {
  * the full 6m*6m F matrix, but rather only it's m 6x6 diagonal blocks.
  */
 template<class CAMERA>
-class RegularImplicitSchurFactor: public GaussianFactor {
+class RegularImplicitSchurFactor: public GaussianFactor,
+                                  public FlatHessianFactor {
 
 public:
   typedef RegularImplicitSchurFactor This; ///< Typedef to this class
@@ -261,6 +262,26 @@ public:
     return blocks;
   }
 
+  void hessianBlockDiagonalAdd(
+      const std::vector<size_t>& blockSlots,
+      std::vector<Matrix>* diagonalBlocks) const override {
+    if (blockSlots.size() != size()) {
+      throw std::invalid_argument(
+          "RegularImplicitSchurFactor::hessianBlockDiagonalAdd: block slot "
+          "count mismatch");
+    }
+    for (size_t position = 0; position < size(); ++position) {
+      const MatrixZD& cameraJacobian = FBlocks_[position];
+      const Matrix23 pointJacobian =
+          E_.block<ZDim, 3>(ZDim * position, 0);
+      diagonalBlocks->at(blockSlots[position]).noalias() +=
+          cameraJacobian.transpose() *
+          (cameraJacobian -
+           pointJacobian * PointCovariance_ * pointJacobian.transpose() *
+               cameraJacobian);
+    }
+  }
+
   GaussianFactor::shared_ptr clone() const override {
     return std::make_shared<RegularImplicitSchurFactor<CAMERA> >(keys_,
         FBlocks_, PointCovariance_, E_, b_);
@@ -411,6 +432,31 @@ public:
     }
   }
 
+  void multiplyHessianAdd(
+      double alpha, const std::vector<size_t>& scalarOffsets,
+      const double* x, double* y) const override {
+    if (scalarOffsets.size() != size()) {
+      throw std::invalid_argument(
+          "RegularImplicitSchurFactor::multiplyHessianAdd: offset count "
+          "mismatch");
+    }
+    typedef Eigen::Matrix<double, D, 1> DVector;
+    typedef Eigen::Map<DVector> DMap;
+    typedef Eigen::Map<const DVector> ConstDMap;
+
+    e1.resize(size());
+    e2.resize(size());
+    for (size_t position = 0; position < size(); ++position) {
+      e1[position] =
+          FBlocks_[position] * ConstDMap(x + scalarOffsets[position]);
+    }
+    projectError(e1, e2);
+    for (size_t position = 0; position < size(); ++position) {
+      DMap(y + scalarOffsets[position]) +=
+          alpha * FBlocks_[position].transpose() * e2[position];
+    }
+  }
+
   void multiplyHessianAdd(double alpha, const double* x, double* y,
       std::vector<size_t> keys) const {
   }
@@ -481,6 +527,28 @@ public:
     return g;
   }
 
+  void gradientAtZeroAdd(const std::vector<size_t>& scalarOffsets,
+                         double* gradient) const override {
+    if (scalarOffsets.size() != size()) {
+      throw std::invalid_argument(
+          "RegularImplicitSchurFactor::gradientAtZeroAdd: offset count "
+          "mismatch");
+    }
+    typedef Eigen::Matrix<double, D, 1> DVector;
+    typedef Eigen::Map<DVector> DMap;
+
+    e1.resize(size());
+    e2.resize(size());
+    for (size_t position = 0; position < size(); ++position) {
+      e1[position] = b_.segment<ZDim>(ZDim * position);
+    }
+    projectError(e1, e2);
+    for (size_t position = 0; position < size(); ++position) {
+      DMap(gradient + scalarOffsets[position]) +=
+          -FBlocks_[position].transpose() * e2[position];
+    }
+  }
+
   /**
    * Calculate gradient, which is -F'Q*b, see paper - RAW MEMORY ACCESS
    */
@@ -524,4 +592,3 @@ template<class CAMERA> struct traits<RegularImplicitSchurFactor<CAMERA> > : publ
 };
 
 }
-
