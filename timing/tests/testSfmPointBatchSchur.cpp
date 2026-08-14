@@ -18,9 +18,11 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/slam/dataset.h>
 
 #include <Eigen/Cholesky>
 
+#include "internal/SfmBalBenchmark.h"
 #include "internal/SfmPointBatchSchur.h"
 
 using namespace gtsam;
@@ -83,48 +85,92 @@ Matrix denseCameraMatrix(const CompactCameraSystem& system) {
   return result;
 }
 
+void verifyAgainstDenseReference(const GaussianFactorGraph& graph,
+                                 size_t cameraCount, size_t pointCount,
+                                 double tolerance) {
+  Ordering ordering;
+  for (size_t camera = 0; camera < cameraCount; ++camera) {
+    ordering.push_back(C(camera));
+  }
+  for (size_t point = 0; point < pointCount; ++point) {
+    ordering.push_back(P(point));
+  }
+  const auto [fullHessian, fullRhs] = graph.hessian(ordering);
+
+  const DenseIndex cameraDimension = 9 * cameraCount;
+  const DenseIndex pointDimension = 3 * pointCount;
+  const Matrix cameraHessian =
+      fullHessian.topLeftCorner(cameraDimension, cameraDimension);
+  const Matrix cameraPoint = fullHessian.block(
+      0, cameraDimension, cameraDimension, pointDimension);
+  const Matrix pointHessian = fullHessian.bottomRightCorner(
+      pointDimension, pointDimension);
+  const Matrix pointCovariance = pointHessian.inverse();
+  const Matrix expectedReducedHessian =
+      cameraHessian - cameraPoint * pointCovariance * cameraPoint.transpose();
+  const Vector expectedReducedRhs =
+      fullRhs.head(cameraDimension) -
+      cameraPoint * pointCovariance * fullRhs.tail(pointDimension);
+
+  const CompactCameraSystem compact =
+      buildPointBatchCameraSystemParallel(graph);
+  EXPECT_LONGS_EQUAL(cameraCount, compact.cameraCount);
+  EXPECT(assert_equal(expectedReducedHessian, denseCameraMatrix(compact),
+                      tolerance));
+  EXPECT(assert_equal(expectedReducedRhs, compact.rhs, tolerance));
+
+  const Vector cameraDelta =
+      expectedReducedHessian.llt().solve(expectedReducedRhs);
+  VectorValues cameraSolution;
+  for (size_t camera = 0; camera < cameraCount; ++camera) {
+    cameraSolution.insert(C(camera), cameraDelta.segment<9>(9 * camera));
+  }
+  const VectorValues compactSolution =
+      backSubstitutePointBatchLandmarksParallel(compact, cameraSolution);
+  const Vector reference = fullHessian.llt().solve(fullRhs);
+  for (size_t camera = 0; camera < cameraCount; ++camera) {
+    EXPECT(assert_equal(reference.segment<9>(9 * camera),
+                        compactSolution.at(C(camera)), tolerance));
+  }
+  for (size_t point = 0; point < pointCount; ++point) {
+    EXPECT(assert_equal(
+        reference.segment<3>(cameraDimension + 3 * point),
+        compactSolution.at(P(point)), tolerance));
+  }
+}
+
 }  // namespace
 
 // Dense matrices here are deliberately confined to this tiny correctness test.
 TEST(SfmPointBatchSchur, MatchesGenericReductionAndBackSubstitution) {
   const GaussianFactorGraph graph = tinyPointBatchSystem();
-  const Ordering ordering{C(0), C(1), P(0)};
-  const auto [fullHessian, fullRhs] = graph.hessian(ordering);
+  verifyAgainstDenseReference(graph, 2, 1, 1e-10);
+}
 
-  constexpr DenseIndex cameraDimension = 18;
-  const Matrix cameraHessian =
-      fullHessian.topLeftCorner(cameraDimension, cameraDimension);
-  const Matrix cameraPoint =
-      fullHessian.block(0, cameraDimension, cameraDimension, 3);
-  const Matrix3 pointHessian =
-      fullHessian.bottomRightCorner<3, 3>();
-  const Matrix3 pointCovariance = pointHessian.inverse();
-  const Matrix expectedReducedHessian =
-      cameraHessian - cameraPoint * pointCovariance * cameraPoint.transpose();
-  const Vector expectedReducedRhs =
-      fullRhs.head(cameraDimension) -
-      cameraPoint * pointCovariance * fullRhs.tail<3>();
+// Exercise the production batch linearization on the repository's tiny BAL
+// fixture. Dense reduction remains confined to this correctness test.
+TEST(SfmPointBatchSchur, TinyBalFixtureMatchesGenericReduction) {
+  const SfmData data =
+      loadDataset(findExampleDataFile("dubrovnik-3-7-pre"));
+  const BalBenchmarkConfig config;
+  const NonlinearFactorGraph nonlinear =
+      buildBatchSfmGraph(data, config, false, 0);
+  const Values initial = buildGeneralSfmInitial(data);
+  GaussianFactorGraph damped = *nonlinear.linearize(initial);
 
-  const CompactCameraSystem compact =
-      buildPointBatchCameraSystemParallel(graph);
-  EXPECT_LONGS_EQUAL(2, compact.cameraCount);
-  EXPECT(assert_equal(expectedReducedHessian, denseCameraMatrix(compact),
-                      1e-10));
-  EXPECT(assert_equal(expectedReducedRhs, compact.rhs, 1e-10));
+  const Matrix99 cameraDamping = 0.2 * Matrix99::Identity();
+  const Matrix3 pointDamping = 0.2 * Matrix3::Identity();
+  for (size_t camera = 0; camera < data.numberCameras(); ++camera) {
+    damped.emplace_shared<JacobianFactor>(C(camera), cameraDamping,
+                                          Vector9::Zero());
+  }
+  for (size_t point = 0; point < data.numberTracks(); ++point) {
+    damped.emplace_shared<JacobianFactor>(P(point), pointDamping,
+                                          Vector3::Zero());
+  }
 
-  const Vector cameraDelta =
-      expectedReducedHessian.llt().solve(expectedReducedRhs);
-  VectorValues cameraSolution;
-  cameraSolution.insert(C(0), cameraDelta.head<9>());
-  cameraSolution.insert(C(1), cameraDelta.tail<9>());
-  const VectorValues compactSolution =
-      backSubstitutePointBatchLandmarksParallel(compact, cameraSolution);
-
-  const Vector reference = fullHessian.llt().solve(fullRhs);
-  EXPECT(assert_equal(reference.head<9>(), compactSolution.at(C(0)), 1e-10));
-  EXPECT(assert_equal(reference.segment<9>(9), compactSolution.at(C(1)),
-                      1e-10));
-  EXPECT(assert_equal(reference.tail<3>(), compactSolution.at(P(0)), 1e-10));
+  verifyAgainstDenseReference(damped, data.numberCameras(),
+                              data.numberTracks(), 1e-6);
 }
 
 int main() {
