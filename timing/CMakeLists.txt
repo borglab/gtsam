@@ -1,4 +1,5 @@
 find_package(Ceres CONFIG QUIET)
+find_package(CHOLMOD CONFIG QUIET)
 if(Ceres_FOUND)
   message(STATUS "Found Ceres ${CERES_VERSION}")
 else()
@@ -31,9 +32,15 @@ endif()
 add_library(gtsam_timing_utils STATIC internal/TimingUtils.cpp
                                       internal/SfmBalBenchmark.cpp
                                       internal/SfmPcgBenchmark.cpp
-                                      internal/SfmPointBatchSchur.cpp)
+                                      internal/SfmPointBatchSchur.cpp
+                                      internal/SfmCholmodBenchmark.cpp)
 target_include_directories(gtsam_timing_utils PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(gtsam_timing_utils PUBLIC gtsam)
+if(CHOLMOD_FOUND)
+  target_link_libraries(gtsam_timing_utils PUBLIC SuiteSparse::CHOLMOD)
+  target_compile_definitions(gtsam_timing_utils PRIVATE
+                             GTSAM_TIMING_HAS_CHOLMOD=1)
+endif()
 gtsam_apply_build_flags(gtsam_timing_utils)
 set_property(TARGET gtsam_timing_utils PROPERTY FOLDER "Timing")
 

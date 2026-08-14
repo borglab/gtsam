@@ -34,6 +34,7 @@
 #include <optional>
 
 #include "internal/SfmPcgBenchmark.h"
+#include "internal/SfmCholmodBenchmark.h"
 #include "internal/TimingUtils.h"
 
 namespace {
@@ -45,6 +46,7 @@ std::string usage() {
   return "Usage: timeSFMBAL [--colamd] [--profile] [--camera-batch] "
          "[--cholesky-only] [--profile-point-cholesky] "
          "[--end-to-end-pcg] "
+         "[--point-batch-schur-cholmod-only] "
          "[--batch-chunk-size N] "
          "[--benchmark-action-json FILE] [BALfile]";
 }
@@ -76,6 +78,7 @@ struct RunOptions {
   std::string benchmarkActionJsonPath;
   std::vector<std::string> filenames;
   bool endToEndPcg = false;
+  bool pointBatchSchurCholmodOnly = false;
   bool help = false;
 };
 
@@ -189,6 +192,8 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
   options.choleskyOnly = arguments.flag("--cholesky-only");
   options.profilePointCholesky = arguments.flag("--profile-point-cholesky");
   options.endToEndPcg = arguments.flag("--end-to-end-pcg");
+  options.pointBatchSchurCholmodOnly =
+      arguments.flag("--point-batch-schur-cholmod-only");
   options.batchChunkSize = arguments.sizeValue("--batch-chunk-size", 0);
   const auto jsonPath = arguments.optionalString("--benchmark-action-json");
   options.benchmarkActionJson = jsonPath.has_value();
@@ -224,12 +229,26 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
         "--end-to-end-pcg is a standalone comparison; combine it only with "
         "--colamd or a BAL file.");
   }
+  if (options.pointBatchSchurCholmodOnly &&
+      (options.profile || options.endToEndPcg ||
+       options.benchmarkActionJson || options.cameraBatch ||
+       options.choleskyOnly || options.profilePointCholesky ||
+       options.batchChunkSize != 0)) {
+    throw std::runtime_error(
+        "--point-batch-schur-cholmod-only is a standalone comparison; "
+        "combine it only with --colamd or a BAL file.");
+  }
+  if (options.pointBatchSchurCholmodOnly &&
+      !bal::cholmodBackendAvailable()) {
+    throw std::runtime_error(
+        "--point-batch-schur-cholmod-only requires a build with CHOLMOD");
+  }
 
   if (hasFilename) return options;
   if (options.profile) {
     options.filenames = {bal::profileDataset()};
   } else if (options.profilePointCholesky || options.benchmarkActionJson ||
-             options.endToEndPcg) {
+             options.endToEndPcg || options.pointBatchSchurCholmodOnly) {
     options.filenames = {bal::defaultDataset()};
   } else {
     options.filenames = bal::standardDatasets();
@@ -501,6 +520,41 @@ int main(int argc, char* argv[]) {
 
   if (options.endToEndPcg) {
     bal::runEndToEndPcgComparison(options.filenames, options.config);
+    return 0;
+  }
+
+  if (options.pointBatchSchurCholmodOnly) {
+    for (const auto& filename : options.filenames) {
+      const SfmData data = bal::loadDataset(filename);
+      NonlinearFactorGraph graph;
+      const double graphBuildSeconds = gtsam::timing::measureSeconds([&] {
+        graph = bal::buildBatchSfmGraph(data, options.config, false, 0);
+      });
+      const Values initial = bal::buildGeneralSfmInitial(data);
+      const Ordering ordering = bal::createSchurOrdering(data, false);
+      LevenbergMarquardtParams parameters =
+          bal::makeLevenbergMarquardtParams(options.config, &ordering,
+                                            "SILENT");
+      const bal::SparseSchurOptimizationResult result =
+          bal::runPointBatchSchurCholmodOptimization(graph, initial,
+                                                      parameters);
+      std::cout << std::fixed << std::setprecision(6)
+                << "\n| Dataset | Solver | Graph build s | Optimize s | "
+                   "Initial error | Final error | LM iterations | "
+                   "LM inner iterations | Linear solves | Assembly s | "
+                   "Factor + solve s | Back-substitute s |\n"
+                << "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | "
+                   "---: | ---: | ---: | ---: |\n"
+                << "| " << std::filesystem::path(filename).filename().string()
+                << " | PointBatch/SparseSchur/CHOLMOD | "
+                << graphBuildSeconds << " | " << result.elapsedSeconds << " | "
+                << result.initialError << " | " << result.finalError << " | "
+                << result.lmIterations << " | " << result.lmInnerIterations
+                << " | " << result.linearSolves << " | "
+                << result.assemblySeconds << " | "
+                << result.factorAndSolveSeconds << " | "
+                << result.backSubstituteSeconds << " |\n";
+    }
     return 0;
   }
 
