@@ -21,12 +21,17 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/navigation/AttitudeFactor.h>
+#include <gtsam/navigation/AHRSFactor.h>
 #include <gtsam/navigation/CarrierPhaseFactor.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
+#include <gtsam/navigation/CombinedImuFactorWithGravity.h>
+#include <gtsam/navigation/DopplerFactor.h>
 #include <gtsam/navigation/GPSFactor.h>
 #include <gtsam/navigation/ImuFactor.h>
+#include <gtsam/navigation/ImuFactorWithGravity.h>
 #include <gtsam/navigation/PseudorangeFactor.h>
 
 #include <fstream>
@@ -48,6 +53,38 @@ BOOST_CLASS_EXPORT_GUID(PreintegrationCombinedParams,
                         "gtsam_PreintegrationCombinedParams")
 BOOST_CLASS_EXPORT_GUID(PreintegratedCombinedMeasurements,
                         "gtsam_PreintegratedCombinedMeasurements")
+
+/* ************************************************************************* */
+TEST(PreintegrationParams, LegacySecondOrderFlagSerialization) {
+  PreintegrationParams input(Vector3(0.1, -0.2, -9.8));
+  input.omegaCoriolis = Vector3(1e-5, -2e-5, 7e-5);
+  input.use2ndOrderCoriolis = true;
+
+  PreintegrationParams output;
+  roundtrip(input, output);
+  EXPECT(output.use2ndOrderCoriolis);
+
+  PreintegrationParams semanticallyEquivalent = input;
+  semanticallyEquivalent.use2ndOrderCoriolis = false;
+  EXPECT(input.equals(semanticallyEquivalent, 1e-9));
+}
+
+/* ************************************************************************* */
+TEST(AHRSFactor, Serialization) {
+  auto params = std::make_shared<PreintegratedRotationParams>();
+  params->gyroscopeCovariance = 1e-8 * I_3x3;
+  PreintegratedAhrsMeasurements pim(params);
+  pim.integrateMeasurement(Vector3(0.1, -0.2, 0.3), 0.01);
+
+  EXPECT(equalsObj<PreintegratedAhrsMeasurements>(pim));
+  EXPECT(equalsXML<PreintegratedAhrsMeasurements>(pim));
+  EXPECT(equalsBinary<PreintegratedAhrsMeasurements>(pim));
+
+  const AHRSFactor factor(1, 2, 3, pim);
+  EXPECT(equalsObj<AHRSFactor>(factor));
+  EXPECT(equalsXML<AHRSFactor>(factor));
+  EXPECT(equalsBinary<AHRSFactor>(factor));
+}
 
 template <typename P>
 P getPreintegratedMeasurements() {
@@ -103,6 +140,21 @@ TEST(ImuFactor2, serialization) {
 }
 
 /* ************************************************************************* */
+TEST(ImuFactorWithGravity, serialization) {
+  auto pim = getPreintegratedMeasurements<PreintegratedImuMeasurements>();
+
+  ImuFactorWithGravityDirection direction(1, 2, 3, 4, 5, 6, pim, 9.81);
+  EXPECT(equalsObj<ImuFactorWithGravityDirection>(direction));
+  EXPECT(equalsXML<ImuFactorWithGravityDirection>(direction));
+  EXPECT(equalsBinary<ImuFactorWithGravityDirection>(direction));
+
+  ImuFactorWithGravityVector vector(1, 2, 3, 4, 5, 6, pim);
+  EXPECT(equalsObj<ImuFactorWithGravityVector>(vector));
+  EXPECT(equalsXML<ImuFactorWithGravityVector>(vector));
+  EXPECT(equalsBinary<ImuFactorWithGravityVector>(vector));
+}
+
+/* ************************************************************************* */
 TEST(CombinedImuFactor, Serialization) {
   auto pim = getPreintegratedMeasurements<PreintegratedCombinedMeasurements>();
 
@@ -116,6 +168,89 @@ TEST(CombinedImuFactor, Serialization) {
   EXPECT(equalsXML<CombinedImuFactor>(factor));
   EXPECT(equalsBinary<CombinedImuFactor>(factor));
 }
+
+/* ************************************************************************* */
+TEST(CombinedImuFactorWithGravity, Serialization) {
+  auto pim = getPreintegratedMeasurements<PreintegratedCombinedMeasurements>();
+
+  CombinedImuFactorWithGravityDirection direction(1, 2, 3, 4, 5, 6, 7, pim, 9.81);
+  EXPECT(equalsObj<CombinedImuFactorWithGravityDirection>(direction));
+  EXPECT(equalsXML<CombinedImuFactorWithGravityDirection>(direction));
+  EXPECT(equalsBinary<CombinedImuFactorWithGravityDirection>(direction));
+
+  CombinedImuFactorWithGravityVector vector(1, 2, 3, 4, 5, 6, 7, pim);
+  EXPECT(equalsObj<CombinedImuFactorWithGravityVector>(vector));
+  EXPECT(equalsXML<CombinedImuFactorWithGravityVector>(vector));
+  EXPECT(equalsBinary<CombinedImuFactorWithGravityVector>(vector));
+}
+
+/* ************************************************************************* */
+namespace lie_group_serialization {
+
+using Pim = PreintegratedImuMeasurementsT<LieGroupPreintegration>;
+using CombinedPim = PreintegratedCombinedMeasurementsT<LieGroupPreintegration>;
+using StandardFactor = ImuFactorT<Pim>;
+using NavStateFactor = ImuFactor2T<Pim>;
+using GravityDirectionFactor = ImuFactorWithGravityT<Pim, Unit3>;
+using GravityVectorFactor = ImuFactorWithGravityT<Pim, Point3>;
+using CombinedFactor = CombinedImuFactorT<CombinedPim>;
+using CombinedGravityDirectionFactor =
+    CombinedImuFactorWithGravityT<CombinedPim, Unit3>;
+using CombinedGravityVectorFactor =
+    CombinedImuFactorWithGravityT<CombinedPim, Point3>;
+
+// Verifies explicit Lie-backed measurements and every factor family round-trip.
+TEST(LieGroupPreintegration, Serialization) {
+  const Pim pim = getPreintegratedMeasurements<Pim>();
+  EXPECT(equalsObj(pim));
+  EXPECT(equalsXML(pim));
+  EXPECT(equalsBinary(pim));
+
+  const StandardFactor standard(1, 2, 3, 4, 5, pim);
+  EXPECT(equalsObj(standard));
+  EXPECT(equalsXML(standard));
+  EXPECT(equalsBinary(standard));
+
+  const NavStateFactor navState(1, 2, 3, pim);
+  EXPECT(equalsObj(navState));
+  EXPECT(equalsXML(navState));
+  EXPECT(equalsBinary(navState));
+
+  const GravityDirectionFactor gravityDirection(1, 2, 3, 4, 5, 6, pim, 9.81);
+  EXPECT(equalsObj(gravityDirection));
+  EXPECT(equalsXML(gravityDirection));
+  EXPECT(equalsBinary(gravityDirection));
+
+  const GravityVectorFactor gravityVector(1, 2, 3, 4, 5, 6, pim);
+  EXPECT(equalsObj(gravityVector));
+  EXPECT(equalsXML(gravityVector));
+  EXPECT(equalsBinary(gravityVector));
+
+  const CombinedPim combinedPim = getPreintegratedMeasurements<CombinedPim>();
+  EXPECT(equalsObj(combinedPim));
+  EXPECT(equalsXML(combinedPim));
+  EXPECT(equalsBinary(combinedPim));
+
+  const CombinedFactor combined(1, 2, 3, 4, 5, 6, combinedPim);
+  EXPECT(equalsObj(combined));
+  EXPECT(equalsXML(combined));
+  EXPECT(equalsBinary(combined));
+
+  const CombinedGravityDirectionFactor combinedGravityDirection(
+      1, 2, 3, 4, 5, 6, 7, combinedPim, 9.81);
+  EXPECT(equalsObj(combinedGravityDirection));
+  EXPECT(equalsXML(combinedGravityDirection));
+  EXPECT(equalsBinary(combinedGravityDirection));
+
+  const CombinedGravityVectorFactor combinedGravityVector(1, 2, 3, 4, 5, 6, 7,
+                                                          combinedPim);
+  EXPECT(equalsObj(combinedGravityVector));
+  EXPECT(equalsXML(combinedGravityVector));
+  EXPECT(equalsBinary(combinedGravityVector));
+}
+
+}  // namespace lie_group_serialization
+/* ************************************************************************* */
 
 /* ************************************************************************* */
 TEST(AttitudeFactorRot3, Serialization) {
@@ -318,6 +453,82 @@ TEST(DoubleDifferenceCarrierPhaseFactorArm, Serialization) {
   DoubleDifferenceCarrierPhaseFactorArm f(0, 1, 2, kPr, kPr + 1, kPr + 2,
                                           kPr + 3, kSat1, kSat2, kSat3, kSat4,
                                           kBase, kLam, kLever, kGnss);
+  EXPECT(equalsObj(f));
+  EXPECT(equalsXML(f));
+  EXPECT(equalsBinary(f));
+}
+
+/* ************************************************************************* */
+TEST(DopplerFactor, Serialization) {
+  DopplerFactor f(0, 1, 2, -1500.0, kLam, kSat1, Point3(-1200, 2400, 800),
+                  kBase, 1.0, 1.2e-9, kGnss);
+  EXPECT(equalsObj(f));
+  EXPECT(equalsXML(f));
+  EXPECT(equalsBinary(f));
+}
+
+/* ************************************************************************* */
+TEST(DopplerFactorArm, Serialization) {
+  DopplerFactorArm f(0, 1, 2, 3, -1500.0, kLam, kSat1,
+                     Point3(-1200, 2400, 800), kBase, kLever,
+                     Point3(0.02, -0.05, 0.1), 1.0, 1.2e-9, kGnss);
+  EXPECT(equalsObj(f));
+  EXPECT(equalsXML(f));
+  EXPECT(equalsBinary(f));
+}
+
+/* ************************************************************************* */
+TEST(DopplerFactorArm, SerializationNavFrame) {
+  DopplerFactorArm f(0, 1, 2, 3, -1500.0, kLam, kSat1,
+                     Point3(-1200, 2400, 800), kBase, kLever,
+                     Pose3(Rot3::RzRyRx(0.1, 0.4, -0.7), kBase),
+                     Point3(0.02, -0.05, 0.1), 1.0, 1.2e-9, kGnss);
+  EXPECT(equalsObj(f));
+  EXPECT(equalsXML(f));
+  EXPECT(equalsBinary(f));
+}
+
+/* ************************************************************************* */
+// Undifferenced (PPP) GNSS factors: verify the measurement, geometry and
+// tropo/iono coefficients survive an obj/XML/binary serialization round-trip.
+namespace {
+const Point3 kUSat(1.5e7, -1.2e7, 2.0e7);
+const Point3 kULever(0.10, 0.20, 0.30);
+const SharedNoiseModel kUModel = noiseModel::Isotropic::Sigma(1, 0.5);
+const double kUPr = 2.1e7, kUmw = 3.2, kUmu = 1.55, kULam = 0.19;
+}  // namespace
+
+/* ************************************************************************* */
+TEST(UndifferencedPseudorangeFactor, Serialization) {
+  UndifferencedPseudorangeFactor f(0, 1, 2, 3, kUPr, kUSat, kUmw, kUmu, 1e-4,
+                                   kUModel);
+  EXPECT(equalsObj(f));
+  EXPECT(equalsXML(f));
+  EXPECT(equalsBinary(f));
+}
+
+/* ************************************************************************* */
+TEST(UndifferencedPseudorangeFactorArm, Serialization) {
+  UndifferencedPseudorangeFactorArm f(0, 1, 2, 3, kUPr, kUSat, kULever, kUmw,
+                                      kUmu, 1e-4, kUModel);
+  EXPECT(equalsObj(f));
+  EXPECT(equalsXML(f));
+  EXPECT(equalsBinary(f));
+}
+
+/* ************************************************************************* */
+TEST(UndifferencedCarrierPhaseFactor, Serialization) {
+  UndifferencedCarrierPhaseFactor f(0, 1, 2, 3, 4, kUPr, kUSat, kUmw, -kUmu,
+                                    kULam, 1e-4, kUModel);
+  EXPECT(equalsObj(f));
+  EXPECT(equalsXML(f));
+  EXPECT(equalsBinary(f));
+}
+
+/* ************************************************************************* */
+TEST(UndifferencedCarrierPhaseFactorArm, Serialization) {
+  UndifferencedCarrierPhaseFactorArm f(0, 1, 2, 3, 4, kUPr, kUSat, kULever, kUmw,
+                                       -kUmu, kULam, 1e-4, kUModel);
   EXPECT(equalsObj(f));
   EXPECT(equalsXML(f));
   EXPECT(equalsBinary(f));

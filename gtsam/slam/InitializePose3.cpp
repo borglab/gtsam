@@ -16,16 +16,17 @@
  *  @date   August, 2014
  */
 
-#include <gtsam/slam/InitializePose3.h> 
-
-#include <gtsam/slam/InitializePose.h> 
-#include <gtsam/nonlinear/PriorFactor.h>
-#include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
-#include <gtsam/inference/Symbol.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/base/timing.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/base/timing.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
+#include <gtsam/nonlinear/PriorFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/InitializePose.h>
+#include <gtsam/slam/InitializePose3.h>
 
 #include <utility>
 
@@ -64,9 +65,8 @@ GaussianFactorGraph InitializePose3::buildLinearOrientationGraph(const Nonlinear
   // prior on the anchor orientation
   linearGraph.add(
       initialize::kAnchorKey, I_9x9,
-      (Vector(9) << 1.0, 0.0, 0.0, /*  */ 0.0, 1.0, 0.0, /*  */ 0.0, 0.0, 1.0)
-          .finished(),
-          noiseModel::Isotropic::Precision(9, 1));
+      Vector{{1.0, 0.0, 0.0, /*  */ 0.0, 1.0, 0.0, /*  */ 0.0, 0.0, 1.0}},
+      noiseModel::Isotropic::Precision(9, 1));
   return linearGraph;
 }
 

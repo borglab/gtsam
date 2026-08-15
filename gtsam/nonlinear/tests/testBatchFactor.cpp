@@ -112,13 +112,51 @@ TEST(BatchFactor, ConstructorAndLinearize) {
 }
 
 /* ************************************************************************* */
+// Verifies compact delta-error evaluation matches the dense compatibility path.
+TEST(BatchFactor, CompactDeltaErrorMatchesDenseJacobian) {
+  const Key pose = Symbol('x', 0);
+  const Key point1 = Symbol('l', 0);
+  const Key point2 = Symbol('l', 1);
+  const auto noise = noiseModel::Isotropic::Sigma(2, 1.0);
+  std::vector<ProjectionFactor> factors;
+  factors.emplace_back(Point2(0.1, -0.2), noise, pose, point1, sharedK);
+  factors.emplace_back(Point2(-0.3, 0.4), noise, pose, point2, sharedK);
+  BatchFactor<ProjectionFactor, 2> batch(std::move(factors));
+
+  Values values;
+  values.insert(pose, Pose3());
+  values.insert(point1, Point3(0.5, 0.1, 5.0));
+  values.insert(point2, Point3(-0.2, 0.3, 4.0));
+  const auto compact = batch.linearize(values);
+  const JacobianFactor dense = denseJacobian(compact);
+
+  VectorValues delta;
+  delta.insert(pose, Vector6::Constant(0.01));
+  delta.insert(point1, Vector3(0.02, -0.01, 0.03));
+  delta.insert(point2, Vector3(-0.01, 0.04, -0.02));
+  double compactOld = 0.0, compactNew = 0.0;
+  double denseOld = 0.0, denseNew = 0.0;
+  const double compactDelta =
+      compact->deltaError(delta, &compactOld, &compactNew);
+  const double denseDelta = dense.deltaError(delta, &denseOld, &denseNew);
+
+  DOUBLES_EQUAL(denseOld, compactOld, 1e-12);
+  DOUBLES_EQUAL(denseNew, compactNew, 1e-12);
+  DOUBLES_EQUAL(denseDelta, compactDelta, 1e-12);
+
+  VectorValues compactDiagonal;
+  compact->hessianDiagonalAdd(compactDiagonal);
+  VectorValues denseDiagonal;
+  dense.hessianDiagonalAdd(denseDiagonal);
+  EXPECT(assert_equal(denseDiagonal, compactDiagonal, 1e-12));
+}
+
+/* ************************************************************************* */
 // Verifies constrained row semantics are preserved in the dense Jacobian model.
 TEST(BatchFactor, ConstrainedNoiseModel) {
   Key key = Symbol('x', 0);
-  Vector constrainedSigmas(3);
-  constrainedSigmas << 1.0, 0.0, 2.0;
-  Vector constrainedMus(3);
-  constrainedMus << 3.0, 4.0, 5.0;
+  Vector constrainedSigmas{{1.0, 0.0, 2.0}};
+  Vector constrainedMus{{3.0, 4.0, 5.0}};
   auto constrained =
       noiseModel::Constrained::MixedSigmas(constrainedMus, constrainedSigmas);
 
@@ -147,8 +185,7 @@ TEST(BatchFactor, ConstrainedNoiseModel) {
   constrainedRowMus[0] = 1000.0;
   constrainedRowMus[2] = 1000.0;
   expectedMus << constrainedRowMus, constrainedRowMus;
-  Vector expectedRowSigmas(3);
-  expectedRowSigmas << 1.0, 0.0, 1.0;
+  Vector expectedRowSigmas{{1.0, 0.0, 1.0}};
   expectedSigmas << expectedRowSigmas, expectedRowSigmas;
   EXPECT(assert_equal(expectedMus, constrainedModel->mu(), 1e-9));
   EXPECT(assert_equal(expectedSigmas, constrainedModel->sigmas(), 1e-9));
@@ -159,10 +196,8 @@ TEST(BatchFactor, ConstrainedNoiseModel) {
 // preserved correctly after whitening in linearization.
 TEST(BatchFactor, ConstrainedNoiseModelUsesUnitSigmasForUnconstrainedRows) {
   Key key = Symbol('x', 0);
-  Vector constrainedSigmas(3);
-  constrainedSigmas << 2.0, 0.0, 4.0;
-  Vector constrainedMus(3);
-  constrainedMus << 3.0, 7.0, 5.0;
+  Vector constrainedSigmas{{2.0, 0.0, 4.0}};
+  Vector constrainedMus{{3.0, 7.0, 5.0}};
   auto constrained =
       noiseModel::Constrained::MixedSigmas(constrainedMus, constrainedSigmas);
 
@@ -180,10 +215,8 @@ TEST(BatchFactor, ConstrainedNoiseModelUsesUnitSigmasForUnconstrainedRows) {
       std::dynamic_pointer_cast<noiseModel::Constrained>(jacobian->get_model());
   CHECK(constrainedModel);
 
-  Vector expectedSigmas(3);
-  expectedSigmas << 1.0, 0.0, 1.0;
-  Vector expectedMus(3);
-  expectedMus << 1000.0, 7.0, 1000.0;
+  Vector expectedSigmas{{1.0, 0.0, 1.0}};
+  Vector expectedMus{{1000.0, 7.0, 1000.0}};
 
   EXPECT(assert_equal(expectedSigmas, constrainedModel->sigmas(), 1e-9));
   EXPECT(assert_equal(expectedMus, constrainedModel->mu(), 1e-9));
@@ -220,10 +253,8 @@ TEST(BatchFactor, DynamicDimensionSupport) {
   Key key = Symbol('x', 0);
   const SharedDiagonal model = noiseModel::Isotropic::Sigma(2, 1.0);
   std::vector<DynamicVectorFactor> factors;
-  Vector measurement1(2);
-  measurement1 << 1.0, 2.0;
-  Vector measurement2(2);
-  measurement2 << 2.0, 3.0;
+  Vector measurement1{{1.0, 2.0}};
+  Vector measurement2{{2.0, 3.0}};
   factors.emplace_back(key, measurement1, model);
   factors.emplace_back(key, measurement2, model);
 
@@ -231,8 +262,7 @@ TEST(BatchFactor, DynamicDimensionSupport) {
       std::make_shared<BatchFactor<DynamicVectorFactor, 2>>(std::move(factors));
 
   Values values;
-  Vector dynamicX(2);
-  dynamicX << 0.0, 0.0;
+  Vector dynamicX{{0.0, 0.0}};
   values.insert(key, dynamicX);
 
   auto gaussian = batch->linearize(values);

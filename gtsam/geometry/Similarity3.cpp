@@ -16,10 +16,10 @@
  * @author John Lambert
  */
 
-#include <gtsam/geometry/Similarity3.h>
-
-#include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/Manifold.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Similarity3.h>
 #include <gtsam/slam/KarcherMeanFactor-inl.h>
 
 namespace gtsam {
@@ -269,6 +269,20 @@ Matrix7 Similarity3::AdjointMap() const {
   return adj;
 }
 
+Matrix7 Similarity3::adjointMap(const Vector7& xi) {
+  const Vector3 w = xi.head<3>();
+  const Vector3 u = xi.segment<3>(3);
+  const double lambda = xi(6);
+
+  Matrix7 adj = Matrix7::Zero();
+  const Matrix3 W = skewSymmetric(w);
+  adj.block<3, 3>(0, 0) = W;
+  adj.block<3, 3>(3, 0) = skewSymmetric(u);
+  adj.block<3, 3>(3, 3) = W + lambda * I_3x3;
+  adj.block<3, 1>(3, 6) = -u;
+  return adj;
+}
+
 namespace {
 // Functor that implements the Similarity3 V(ω, λ) kernel:
 // See http://www.ethaneade.org/latex2html/lie/node29.html
@@ -304,8 +318,9 @@ struct LocalV : public so3::DexpFunctor {
       mu = 1.0 / 6.0 - lambda / 24.0 + lambda2 / 120.0 - lambda3 / 720.0;
     }
     const double one_minus_alpha = 1.0 - alpha;
-    Q = alpha * beta + one_minus_alpha * (B - lambda * C());
-    R = alpha * mu + one_minus_alpha * (C() - lambda * E());
+    const double C_value = C();
+    Q = alpha * beta + one_minus_alpha * (B - lambda * C_value);
+    R = alpha * mu + one_minus_alpha * (C_value - lambda * E());
   }
 
   Matrix3 V() const { return P * I_3x3 + Q * W + R * WW; }
@@ -314,10 +329,11 @@ struct LocalV : public so3::DexpFunctor {
     const double lambda2 = lambda * lambda;
     const double dalpha =
         (lambda2 > 1e-9) ? (-2.0 * alpha * alpha / lambda2) : 0.0;
-    const double dQ = (beta - (B - lambda * C())) * dalpha +
-                      (1.0 - alpha) * (dB() - lambda * dC());
-    const double dR = (mu - (C() - lambda * E())) * dalpha +
-                      (1.0 - alpha) * (dC() - lambda * dE());
+    const double C_value = C(), dC_value = dC();
+    const double dQ = (beta - (B - lambda * C_value)) * dalpha +
+                      (1.0 - alpha) * (dB() - lambda * dC_value);
+    const double dR = (mu - (C_value - lambda * E())) * dalpha +
+                      (1.0 - alpha) * (dC_value - lambda * dE());
     return so3::Kernel{this, P, Q, R, dQ, dR};
   }
 };
@@ -326,28 +342,28 @@ struct LocalV : public so3::DexpFunctor {
 Matrix3 Similarity3::GetV(Vector3 w, double lambda) {
   return LocalV(w, lambda).V();
 }
-Vector7 Similarity3::Logmap(const Similarity3& T, OptionalJacobian<7, 7> Hm) {
+Vector7 Similarity3::Logmap(const Similarity3& T) {
   // To get the logmap, calculate w and lambda, then solve for u as shown by Ethan at
   // www.ethaneade.org/latex2html/lie/node29.html
   const Vector3 w = Rot3::Logmap(T.R_);
   const double lambda = log(T.s_);
   Vector7 result;
   result << w, GetV(w, lambda).inverse() * T.t_, lambda;
-  if (Hm) {
-    throw std::runtime_error("Similarity3::Logmap: derivative not implemented");
-  }
   return result;
 }
 
-Similarity3 Similarity3::Expmap(const Vector7& v, OptionalJacobian<7, 7> Hm) {
+Similarity3 Similarity3::Expmap(const Vector7& v) {
   const auto w = v.head<3>();
   const auto rho = v.segment<3>(3);
   const double lambda = v[6];
-  if (Hm) {
-    throw std::runtime_error("Similarity3::Expmap: derivative not implemented");
-  }
-  const Matrix3 V = GetV(w, lambda);
-  return Similarity3(Rot3::Expmap(w), Point3(V * rho), exp(lambda));
+  const LocalV local(w, lambda);
+  const Matrix3 V = local.V();
+#ifdef GTSAM_USE_QUATERNIONS
+  const Rot3 R = Rot3::Expmap(w);
+#else
+  const Rot3 R(local.expmap());
+#endif
+  return Similarity3(R, Point3(V * rho), exp(lambda));
 }
 
 std::ostream &operator<<(std::ostream &os, const Similarity3& p) {

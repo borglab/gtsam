@@ -85,6 +85,11 @@ PYBIND11_MODULE(inheritance_py, m_) {
 
     py::class_<ParentHasTemplate<double>, MyTemplate<double>, std::shared_ptr<ParentHasTemplate<double>>>(m_, "ParentHasTemplateDouble");
 
+    py::class_<Base, std::shared_ptr<Base>>(m_, "Base")
+        .def_static("Create",[](double x){return Base::Create(x);}, gtwrap::internal::py_arg<double>("x"));
+
+    py::class_<Derived, Base, std::shared_ptr<Derived>>(m_, "Derived");
+
 
 #include "python/specializations.h"
 

@@ -20,6 +20,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/GroupAction.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Unit3.h>
@@ -200,7 +201,7 @@ TEST(EquivariantFilter_Attitude, InducedGroupAction) {
 TEST(EquivariantFilter_Attitude, DiffeomorphismPushForward) {
   using namespace attitude_example;
 
-  const Vector2 tangent = (Vector2() << 0.1, -0.2).finished();
+  const Vector2 tangent{0.1, -0.2};
   Matrix H;
   Symmetry::Diffeomorphism phi_Q1(Q1);
   phi_Q1(eta1, H);

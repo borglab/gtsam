@@ -166,8 +166,8 @@ class Marginals {
 
   void print(string s = "Marginals: ", const gtsam::KeyFormatter& keyFormatter =
                                            gtsam::DefaultKeyFormatter) const;
-  gtsam::Matrix marginalCovariance(size_t variable) const;
-  gtsam::Matrix marginalInformation(size_t variable) const;
+  gtsam::Matrix marginalCovariance(gtsam::Key variable) const;
+  gtsam::Matrix marginalInformation(gtsam::Key variable) const;
   gtsam::JointMarginal jointMarginalCovariance(
       const gtsam::KeyVector& variables) const;
   gtsam::JointMarginal jointMarginalInformation(
@@ -621,6 +621,9 @@ class ISAM2 {
                  gtsam::DefaultKeyFormatter) const;
   void saveGraph(string s, const gtsam::KeyFormatter& keyFormatter =
                                gtsam::DefaultKeyFormatter) const;
+  void marginalizeLeaves(const gtsam::FastList<gtsam::Key>& leafKeys);
+  std::pair<gtsam::FactorIndices, gtsam::FactorIndices>
+  marginalizeLeavesWithIndices(const gtsam::FastList<gtsam::Key>& leafKeys);
 };
 
 #include <gtsam/nonlinear/NonlinearISAM.h>
@@ -775,7 +778,8 @@ template <T = {double,
                gtsam::PinholeCamera<gtsam::Cal3Unified>,
                gtsam::SphericalCamera,
                gtsam::NavState,
-               gtsam::imuBias::ConstantBias}>
+               gtsam::imuBias::ConstantBias,
+               gtsam::EssentialMatrix}>
 virtual class PriorFactor : gtsam::NoiseModelFactor {
   PriorFactor(gtsam::Key key, const T& prior,
               const gtsam::noiseModel::Base* noiseModel = nullptr);
@@ -843,9 +847,8 @@ virtual class ExtendedPriorFactor : gtsam::NoiseModelFactor {
 
 #include <gtsam/nonlinear/ConcentratedGaussian.h>
 template <T = {double, gtsam::Vector, gtsam::Point2, gtsam::StereoPoint2,
-               gtsam::Point3, gtsam::Gal3, gtsam::Rot2, gtsam::SO3, gtsam::SO4,
-               gtsam::SOn, gtsam::SL4, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3,
-               gtsam::Similarity2, gtsam::Similarity3}>
+               gtsam::Point3, gtsam::Gal3, gtsam::Rot2, gtsam::SO3,
+               gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
 virtual class ConcentratedGaussian : gtsam::ExtendedPriorFactor<T> {
   ConcentratedGaussian();
   // Constructors mirroring header (origin terminology)
@@ -875,6 +878,20 @@ virtual class ConcentratedGaussian : gtsam::ExtendedPriorFactor<T> {
   This operator*(const This& other) const;
 };
 
+#include <gtsam/nonlinear/VectorNormFactor.h>
+template <N = {3}>
+virtual class VectorNormFactor : gtsam::NoiseModelFactor {
+  VectorNormFactor(gtsam::Key key, double norm,
+                   const gtsam::noiseModel::Base* model);
+
+  // Standard Interface
+  double norm() const;
+  gtsam::Vector evaluateError(const gtsam::Point3& v);
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+
 #include <gtsam/nonlinear/NonlinearEquality.h>
 template <T = {gtsam::Point2,
                gtsam::StereoPoint2,
@@ -900,9 +917,9 @@ template <T = {gtsam::Point2,
                gtsam::imuBias::ConstantBias}>
 virtual class NonlinearEquality : gtsam::NoiseModelFactor {
   // Constructor - forces exact evaluation
-  NonlinearEquality(size_t j, const T& feasible);
+  NonlinearEquality(gtsam::Key j, const T& feasible);
   // Constructor - allows inexact evaluation
-  NonlinearEquality(size_t j, const T& feasible, double error_gain);
+  NonlinearEquality(gtsam::Key j, const T& feasible, double error_gain);
 
   // enabling serialization functionality
   void serialize() const;
@@ -962,6 +979,10 @@ class FixedLagSmootherResult {
   size_t getNonlinearVariables() const;
   size_t getLinearVariables() const;
   double getError() const;
+  gtsam::FactorIndices getMarginalFactorIndices() const;
+  gtsam::FactorIndices getDeletedFactorIndices() const;
+  gtsam::KeySet getKeysOfDeletedNodes() const;
+  void print() const;
 };
 
 virtual class FixedLagSmoother {
@@ -970,6 +991,7 @@ virtual class FixedLagSmoother {
 
   gtsam::FixedLagSmootherKeyTimestampMap timestamps() const;
   double smootherLag() const;
+  void setSmootherLag(double smootherLag);
 
   gtsam::FixedLagSmootherResult update(
       const gtsam::NonlinearFactorGraph& newFactors,
@@ -1017,6 +1039,7 @@ virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
 
   gtsam::NonlinearFactorGraph getFactors() const;
   gtsam::ISAM2 getISAM2() const;
+  gtsam::ISAM2Result& getISAM2Result() const;
 };
 
 #include <gtsam/nonlinear/ExtendedKalmanFilter.h>

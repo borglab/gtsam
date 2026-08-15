@@ -20,24 +20,49 @@
 
 // #define ENABLE_TIMING // uncomment for timing results
 
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/linear/Sampler.h>
+#include <gtsam/linear/TernaryJacobianFactor.h>
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/navigation/ScenarioRunner.h>
-#include <gtsam/geometry/Pose3.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/factorTesting.h>
-#include <gtsam/linear/Sampler.h>
-#include <gtsam/base/TestableAssertions.h>
-#include <gtsam/base/numericalDerivative.h>
 
-#include <CppUnitLite/TestHarness.h>
 #include <list>
 
 #include "imuFactorTesting.h"
 
+namespace default_backend {
+
+#ifdef GTSAM_LIEGROUP_PREINTEGRATION
+static_assert(
+    std::is_same<DefaultPreintegrationType, LieGroupPreintegration>::value,
+    "Lie-group preintegration must take precedence as the default backend");
+#elif defined(GTSAM_TANGENT_PREINTEGRATION)
+static_assert(
+    std::is_same<DefaultPreintegrationType, TangentPreintegration>::value,
+    "Tangent preintegration must remain the default backend");
+#else
+static_assert(
+    std::is_same<DefaultPreintegrationType, ManifoldPreintegration>::value,
+    "Manifold preintegration must be selected when both options are disabled");
+#endif
+
+}  // namespace default_backend
+
 /* ************************************************************************* */
 TEST_PIM(ImuFactor, PreintegratedMeasurementsConstruction) {
   // Actual pre-integrated values
-  PIM actual(testing::Params());
+  auto params = testing::Params();
+  params->omegaCoriolis = kNonZeroOmegaCoriolis;
+  PIM actual(params);
   EXPECT(assert_equal(Rot3(), actual.deltaRij()));
   EXPECT(assert_equal(kZero, actual.deltaPij()));
   EXPECT(assert_equal(kZero, actual.deltaVij()));
@@ -113,21 +138,15 @@ TEST_PIM(ImuFactor, PreintegratedMeasurements) {
   EXPECT(assert_equal(expectedDeltaV1, actual.deltaVij()));
   DOUBLES_EQUAL(0.5, actual.deltaTij(), 1e-9);
 
-  // Check derivatives of computeError
+  // Check factor derivatives rather than exposing residual assembly on the PIM.
   Bias bias(Vector3(0.2, 0, 0), Vector3(0.1, 0, 0.3)); // Biases (acc, rot)
   NavState x1, x2 = actual.predict(x1, bias);
-
-  {
-  Matrix9 aH1, aH2;
-  Matrix96 aH3;
-  actual.computeError(x1, x2, bias, aH1, aH2, aH3);
-  auto f = std::bind(&PreintegrationBase::computeError, actual,
-                  std::placeholders::_1, std::placeholders::_2, std::placeholders::_3,
-                  nullptr, nullptr, nullptr);
-  EXPECT(assert_equal(numericalDerivative31(f, x1, x2, bias), aH1, 1e-9));
-  EXPECT(assert_equal(numericalDerivative32(f, x1, x2, bias), aH2, 1e-9));
-  EXPECT(assert_equal(numericalDerivative33(f, x1, x2, bias), aH3, 1e-9));
-  }
+  ImuFactor2T<PIM> factor(X(1), X(2), B(1), actual);
+  Values values;
+  values.insert(X(1), x1);
+  values.insert(X(2), x2);
+  values.insert(B(1), bias);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-6);
 
   // Integrate again
   Vector3 expectedDeltaR2(2.0 * 0.5 * M_PI / 100.0, 0.0, 0.0);
@@ -142,6 +161,107 @@ TEST_PIM(ImuFactor, PreintegratedMeasurements) {
   EXPECT(assert_equal(expectedDeltaV2, actual.deltaVij()));
   DOUBLES_EQUAL(1.0, actual.deltaTij(), 1e-9);
 }
+
+namespace deskew {
+
+Vector3 pointAt(const Matrix& points, Eigen::Index pointIndex,
+                Eigen::Index batchIndex) {
+  return points.block<3, 1>(3 * pointIndex, batchIndex);
+}
+
+/* ************************************************************************* */
+TEST_PIM(ImuFactor, DeskewImplicitAndExplicitTiming) {
+  PIM pim(testing::Params());
+  const double yawRate = 0.4, duration = 2.0;
+  pim.integrateMeasurement(Z_3x1, Vector3(0.0, 0.0, yawRate), duration);
+
+  const Vector3 first(1.0, 0.0, 0.0), second(0.0, 1.0, 0.5);
+  Matrix points(6, 4);
+  for (Eigen::Index batch = 0; batch < points.cols(); ++batch) {
+    points.block<3, 1>(0, batch) = first;
+    points.block<3, 1>(3, batch) = second;
+  }
+
+  const Matrix implicit = pim.deskewPoints(points);
+  for (Eigen::Index batch = 0; batch < implicit.cols(); ++batch) {
+    const double t = duration * static_cast<double>(batch) / implicit.cols();
+    const Rot3 rotation = Rot3::Yaw(yawRate * t);
+    EXPECT(assert_equal(rotation.rotate(first), pointAt(implicit, 0, batch),
+                        1e-8));
+    EXPECT(assert_equal(rotation.rotate(second), pointAt(implicit, 1, batch),
+                        1e-8));
+  }
+  CHECK((pointAt(implicit, 0, 3) - pim.deltaRij().rotate(first)).norm() >
+        1e-3);
+
+  const Vector3 velocity(0.5, -0.2, 0.1);
+  const Matrix implicitWithVelocity = pim.deskewPoints(points, velocity);
+  for (Eigen::Index batch = 0; batch < implicitWithVelocity.cols(); ++batch) {
+    const double t =
+        duration * static_cast<double>(batch) / implicitWithVelocity.cols();
+    const Rot3 rotation = Rot3::Yaw(yawRate * t);
+    const Vector3 expectedFirst = rotation.rotate(first) + velocity * t;
+    const Vector3 expectedSecond = rotation.rotate(second) + velocity * t;
+    EXPECT(assert_equal(expectedFirst,
+                        pointAt(implicitWithVelocity, 0, batch), 1e-8));
+    EXPECT(assert_equal(expectedSecond,
+                        pointAt(implicitWithVelocity, 1, batch), 1e-8));
+  }
+
+  Vector times(4);
+  times << duration, 0.0, 0.5 * duration, 0.25 * duration;
+  const Matrix explicitResult = pim.deskewPointsAtTimes(points, times);
+  for (Eigen::Index batch = 0; batch < explicitResult.cols(); ++batch) {
+    const Rot3 rotation = Rot3::Yaw(yawRate * times(batch));
+    EXPECT(assert_equal(rotation.rotate(first),
+                        pointAt(explicitResult, 0, batch), 1e-8));
+    EXPECT(assert_equal(rotation.rotate(second),
+                        pointAt(explicitResult, 1, batch), 1e-8));
+  }
+}
+
+/* ************************************************************************* */
+TEST_PIM(ImuFactor, DeskewVelocityAndValidation) {
+  PIM pim(testing::Params());
+  pim.integrateMeasurement(Z_3x1, Vector3(0.0, 0.0, 0.4), 2.0);
+
+  Matrix points(6, 2);
+  points << 1.0, -0.5, 0.0, 0.2, 0.0, 1.0, -0.2, 1.5, 0.8, 0.3, 1.2,
+      -0.4;
+  Vector times(2);
+  times << 2.0, 0.5;
+  const Vector3 velocity(0.5, -0.2, 0.1);
+  const Matrix actual = pim.deskewPointsAtTimes(points, times, velocity);
+  for (Eigen::Index batch = 0; batch < actual.cols(); ++batch) {
+    const Pose3 transform(Rot3::Expmap(pim.so3TangentAt(times(batch))),
+                          velocity * times(batch));
+    for (Eigen::Index pointIndex = 0; pointIndex < 2; ++pointIndex) {
+      EXPECT(assert_equal(
+          transform.transformFrom(pointAt(points, pointIndex, batch)),
+          pointAt(actual, pointIndex, batch), 1e-8));
+    }
+  }
+
+  const Matrix empty(0, 3);
+  EXPECT(assert_equal(empty, pim.deskewPoints(empty)));
+  CHECK_EXCEPTION(pim.deskewPoints(Matrix::Zero(2, 2)),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(pim.deskewPoints(Matrix::Zero(4, 3)),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(pim.deskewPointsAtTimes(Matrix::Zero(3, 2), Vector::Zero(1)),
+                  std::invalid_argument);
+  Vector badTime(1);
+  badTime << -1e-6;
+  CHECK_EXCEPTION(pim.deskewPointsAtTimes(Matrix::Zero(3, 1), badTime),
+                  std::out_of_range);
+  badTime << pim.deltaTij() + 1e-6;
+  CHECK_EXCEPTION(pim.deskewPointsAtTimes(Matrix::Zero(3, 1), badTime,
+                                          Z_3x1),
+                  std::out_of_range);
+}
+
+}  // namespace deskew
+
 /* ************************************************************************* */
 // Common linearization point and measurements for tests
 namespace common {
@@ -164,11 +284,53 @@ static const NavState state2(x2, v2);
 } // namespace common
 
 /* ************************************************************************* */
+namespace ternary_linearization {
+
+// Verifies fixed-size IMU linearization changes only the concrete factor type.
+TEST_PIM(ImuFactor2, TernaryLinearizationIsBitwiseIdentical) {
+  using namespace common;
+  PIM pim(testing::Params());
+  pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+
+  const Key state1Key = 101, state2Key = 102, biasKey = 103;
+  const ImuFactor2T<PIM> factor(state1Key, state2Key, biasKey, pim);
+  const Values values{{state1Key, genericValue(state1)},
+                      {state2Key, genericValue(state2)},
+                      {biasKey, genericValue(kZeroBias)}};
+  const auto expectedBase = factor.NoiseModelFactor::linearize(values);
+  const auto actualBase = factor.linearize(values);
+  const auto expected = std::dynamic_pointer_cast<JacobianFactor>(expectedBase);
+  const auto actual = std::dynamic_pointer_cast<JacobianFactor>(actualBase);
+
+  const bool isTernary = static_cast<bool>(
+      std::dynamic_pointer_cast<TernaryJacobianFactor<9, 9, 9, 6>>(actualBase));
+  CHECK(isTernary);
+  CHECK(expected);
+  CHECK(actual);
+  CHECK(expected->keys() == actual->keys());
+  CHECK(expected->get_model() == actual->get_model());
+  CHECK((expected->getb().array() == actual->getb().array()).all());
+  auto expectedBlock = expected->begin();
+  auto actualBlock = actual->begin();
+  for (; expectedBlock != expected->end(); ++expectedBlock, ++actualBlock) {
+    CHECK((expected->getA(expectedBlock).array() ==
+           actual->getA(actualBlock).array())
+              .all());
+  }
+}
+
+}  // namespace ternary_linearization
+/* ************************************************************************* */
+
+/* ************************************************************************* */
 TEST_PIM(ImuFactor, PreintegrationBaseMethods) {
+  // Select the overload without the gravity parameter:
+  using PredictNoGravity = NavState (PreintegrationBase::*)(
+      const NavState&, const imuBias::ConstantBias&, OptionalJacobian<9, 9>,
+      OptionalJacobian<9, 6>) const;
   using namespace common;
   auto p = testing::Params();
   p->omegaCoriolis = Vector3(0.02, 0.03, 0.04);
-  p->use2ndOrderCoriolis = true;
 
   PIM pim(p, kZeroBiasHat);
   pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
@@ -186,13 +348,51 @@ TEST_PIM(ImuFactor, PreintegrationBaseMethods) {
   Matrix96 aH2;
   NavState predictedState = pim.predict(state1, kZeroBias, aH1, aH2);
   Matrix eH1 = numericalDerivative11<NavState, NavState>(
-      std::bind(&PreintegrationBase::predict, pim, std::placeholders::_1,
+      std::bind(static_cast<PredictNoGravity>(&PreintegrationBase::predict), pim, std::placeholders::_1,
           kZeroBias, nullptr, nullptr), state1);
   EXPECT(assert_equal(eH1, aH1));
   Matrix eH2 = numericalDerivative11<NavState, Bias>(
-      std::bind(&PreintegrationBase::predict, pim, state1,
+      std::bind(static_cast<PredictNoGravity>(&PreintegrationBase::predict), pim, state1,
           std::placeholders::_1, nullptr, nullptr), kZeroBias);
   EXPECT(assert_equal(eH2, aH2));
+}
+
+/* ************************************************************************* */
+TEST_PIM(ImuFactor, PredictWithGravityVector) {
+  using namespace common;
+  PIM pim(testing::Params(), kZeroBiasHat);
+  pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+  pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+
+  // A gravity vector tilted away from the params' vector, with a different
+  // magnitude:
+  const Vector3 tilted_gravity = Vector3(0.5, -0.3, 9.7);
+
+  // The gravity overload with the params' gravity must match the legacy one:
+  EXPECT(assert_equal(pim.predict(state1, kZeroBias),
+                      pim.predict(state1, kZeroBias, testing::Params()->n_gravity)));
+
+  // Check all three Jacobians of the gravity overload:
+  Matrix9 aH1;
+  Matrix96 aH2;
+  Matrix93 aH3;
+  pim.predict(state1, kZeroBias, tilted_gravity, aH1, aH2, aH3);
+  EXPECT(assert_equal(
+      numericalDerivative11<NavState, NavState>(
+          [&](const NavState& s) { return pim.predict(s, kZeroBias, tilted_gravity); },
+          state1),
+      Matrix(aH1)));
+  EXPECT(assert_equal(
+      numericalDerivative11<NavState, Bias>(
+          [&](const Bias& b) { return pim.predict(state1, b, tilted_gravity); },
+          kZeroBias),
+      Matrix(aH2)));
+  EXPECT(assert_equal(
+      numericalDerivative11<NavState, Vector3>(
+          [&](const Vector3& g) { return pim.predict(state1, kZeroBias, g); },
+          tilted_gravity),
+      Matrix(aH3)));
+
 }
 
 /* ************************************************************************* */
@@ -226,8 +426,7 @@ TEST_PIM(ImuFactor, ErrorAndJacobians) {
   ImuFactorT<PIM> factor(X(1), V(1), X(2), V(2), B(1), pim);
 
   // Expected error
-  Vector expectedError(9);
-  expectedError << 0, 0, 0, 0, 0, 0, 0, 0, 0;
+  Vector expectedError{{0, 0, 0, 0, 0, 0, 0, 0, 0}};
   EXPECT(
       assert_equal(expectedError,
           factor.evaluateError(x1, v1, x2, v2, kZeroBias)));
@@ -294,8 +493,7 @@ TEST_PIM(ImuFactor, ErrorAndJacobianWithBiases) {
       Point3(5.5, 1.0, -50.0));
 
   // Measurements
-  Vector3 measuredOmega;
-  measuredOmega << 0, 0, M_PI / 10.0 + 0.3;
+  Vector3 measuredOmega{0, 0, M_PI / 10.0 + 0.3};
   Vector3 measuredAcc = x1.rotation().unrotate(-kGravityAlongNavZDown)
       + Vector3(0.2, 0.0, 0.0);
   double deltaT = 1.0;
@@ -331,7 +529,7 @@ TEST_PIM(ImuFactor, ErrorAndJacobianWithBiases) {
 }
 
 /* ************************************************************************* */
-TEST_PIM(ImuFactor, ErrorAndJacobianWith2ndOrderCoriolis) {
+TEST_PIM(ImuFactor, ExactCoriolisIgnoresLegacySecondOrderFlag) {
   using common::x1;
   using common::v1;
   using common::v2;
@@ -340,8 +538,7 @@ TEST_PIM(ImuFactor, ErrorAndJacobianWith2ndOrderCoriolis) {
       Point3(5.5, 1.0, -50.0));
 
   // Measurements
-  Vector3 measuredOmega;
-  measuredOmega << 0, 0, M_PI / 10.0 + 0.3;
+  Vector3 measuredOmega{0, 0, M_PI / 10.0 + 0.3};
   Vector3 measuredAcc = x1.rotation().unrotate(-kGravityAlongNavZDown)
       + Vector3(0.2, 0.0, 0.0);
   double deltaT = 1.0;
@@ -352,6 +549,14 @@ TEST_PIM(ImuFactor, ErrorAndJacobianWith2ndOrderCoriolis) {
 
   PIM pim(p, Bias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.1)));
   pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+
+  auto pWithoutLegacyFlag = testing::Params();
+  pWithoutLegacyFlag->omegaCoriolis = kNonZeroOmegaCoriolis;
+  PIM pimWithoutLegacyFlag(
+      pWithoutLegacyFlag, Bias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.1)));
+  pimWithoutLegacyFlag.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+  EXPECT(assert_equal(pimWithoutLegacyFlag.predict(NavState(x1, v1), bias),
+                      pim.predict(NavState(x1, v1), bias), 1e-12));
 
   // Create factor
   ImuFactorT<PIM> factor(X(1), V(1), X(2), V(2), B(1), pim);
@@ -428,8 +633,7 @@ TEST(ImuFactor, fistOrderExponential) {
 
   // change w.r.t. linearization point
   double alpha = 0.0;
-  Vector3 deltaBiasOmega;
-  deltaBiasOmega << alpha, alpha, alpha;
+  Vector3 deltaBiasOmega{alpha, alpha, alpha};
 
   const Matrix3 Jr = Rot3::ExpmapDerivative(
       (measuredOmega - biasOmega) * deltaT);
@@ -530,10 +734,8 @@ TEST_PIM(ImuFactor, PredictPositionAndVelocity) {
   Bias bias(Vector3(0, 0, 0), Vector3(0, 0, 0)); // Biases (acc, rot)
 
   // Measurements
-  Vector3 measuredOmega;
-  measuredOmega << 0, 0, 0; // M_PI/10.0+0.3;
-  Vector3 measuredAcc;
-  measuredAcc << 0, 1, -kGravity;
+  Vector3 measuredOmega{0, 0, 0};  // M_PI/10.0+0.3;
+  Vector3 measuredAcc{0, 1, -kGravity};
   double deltaT = 0.001;
 
   PIM pim(testing::Params(), Bias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.0)));
@@ -558,10 +760,8 @@ TEST_PIM(ImuFactor, PredictRotation) {
   Bias bias(Vector3(0, 0, 0), Vector3(0, 0, 0)); // Biases (acc, rot)
 
   // Measurements
-  Vector3 measuredOmega;
-  measuredOmega << 0, 0, M_PI / 10; // M_PI/10.0+0.3;
-  Vector3 measuredAcc;
-  measuredAcc << 0, 0, -kGravity;
+  Vector3 measuredOmega{0, 0, M_PI / 10};  // M_PI/10.0+0.3;
+  Vector3 measuredAcc{0, 0, -kGravity};
   double deltaT = 0.001;
 
   PIM pim(testing::Params(),
@@ -702,11 +902,9 @@ TEST_PIM(ImuFactor, bodyPSensorWithBias) {
   double deltaT = 0.005;
 
   //   Specify noise values on priors
-  Vector6 priorNoisePoseSigmas(
-      (Vector(6) << 0.001, 0.001, 0.001, 0.01, 0.01, 0.01).finished());
-  Vector3 priorNoiseVelSigmas((Vector(3) << 0.1, 0.1, 0.1).finished());
-  Vector6 priorNoiseBiasSigmas(
-      (Vector(6) << 0.1, 0.1, 0.1, 0.5e-1, 0.5e-1, 0.5e-1).finished());
+  Vector6 priorNoisePoseSigmas(Vector{{0.001, 0.001, 0.001, 0.01, 0.01, 0.01}});
+  Vector3 priorNoiseVelSigmas(Vector{{0.1, 0.1, 0.1}});
+  Vector6 priorNoiseBiasSigmas(Vector{{0.1, 0.1, 0.1, 0.5e-1, 0.5e-1, 0.5e-1}});
   SharedDiagonal priorNoisePose = Diagonal::Sigmas(priorNoisePoseSigmas);
   SharedDiagonal priorNoiseVel = Diagonal::Sigmas(priorNoiseVelSigmas);
   SharedDiagonal priorNoiseBias = Diagonal::Sigmas(priorNoiseBiasSigmas);
@@ -756,7 +954,8 @@ TEST_PIM(ImuFactor, bodyPSensorWithBias) {
 }
 
 /* ************************************************************************* */
-#ifdef GTSAM_TANGENT_PREINTEGRATION
+#if defined(GTSAM_TANGENT_PREINTEGRATION) && \
+    !defined(GTSAM_LIEGROUP_PREINTEGRATION)
 static const double kVelocity = 2.0, kAngularVelocity = M_PI / 6;
 
 struct ImuFactorMergeTest {
@@ -863,16 +1062,15 @@ TEST_PIM(ImuFactor, CheckCovariance) {
 
   PIM actual(testing::Params());
   actual.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
-  Matrix9 expected;
-  expected << 1.0577e-08, 0, 0, 0, 0, 0, 0, 0, 0,     //
-      0, 1.0577e-08, 0, 0, 0, 0, 0, 0, 0,             //
-      0, 0, 1.0577e-08, 0, 0, 0, 0, 0, 0,             //
-      0, 0, 0, 5.00868e-05, 0, 0, 3.47222e-07, 0, 0,  //
-      0, 0, 0, 0, 5.00868e-05, 0, 0, 3.47222e-07, 0,  //
-      0, 0, 0, 0, 0, 5.00868e-05, 0, 0, 3.47222e-07,  //
-      0, 0, 0, 3.47222e-07, 0, 0, 1.38889e-06, 0, 0,  //
-      0, 0, 0, 0, 3.47222e-07, 0, 0, 1.38889e-06, 0,  //
-      0, 0, 0, 0, 0, 3.47222e-07, 0, 0, 1.38889e-06;
+  Matrix9 expected{{1.0577e-08, 0, 0, 0, 0, 0, 0, 0, 0},
+                   {0, 1.0577e-08, 0, 0, 0, 0, 0, 0, 0},
+                   {0, 0, 1.0577e-08, 0, 0, 0, 0, 0, 0},
+                   {0, 0, 0, 5.00868e-05, 0, 0, 3.47222e-07, 0, 0},
+                   {0, 0, 0, 0, 5.00868e-05, 0, 0, 3.47222e-07, 0},
+                   {0, 0, 0, 0, 0, 5.00868e-05, 0, 0, 3.47222e-07},
+                   {0, 0, 0, 3.47222e-07, 0, 0, 1.38889e-06, 0, 0},
+                   {0, 0, 0, 0, 3.47222e-07, 0, 0, 1.38889e-06, 0},
+                   {0, 0, 0, 0, 0, 3.47222e-07, 0, 0, 1.38889e-06}};
   EXPECT(assert_equal(expected, actual.preintMeasCov()));
 }
 

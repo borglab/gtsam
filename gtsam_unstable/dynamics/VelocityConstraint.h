@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  * @file VelocityConstraint.h
  * @brief Constraint enforcing the relationship between pose and velocity
@@ -5,6 +16,10 @@
  */
 
 #pragma once
+
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
@@ -32,10 +47,13 @@ typedef enum {
  *
  * NOTE: this approximation is insufficient for large timesteps, but is accurate
  * if timesteps are small.
+ *
+ * @deprecated This factor depends on the deprecated gtsam::PoseRTV state.
  */
-class VelocityConstraint : public gtsam::NoiseModelFactorN<PoseRTV,PoseRTV> {
+class VelocityConstraint
+    : public gtsam::NoiseModelFactorT<gtsam::Vector3, PoseRTV, PoseRTV> {
 public:
-  typedef gtsam::NoiseModelFactor2<PoseRTV,PoseRTV> Base;
+  typedef gtsam::NoiseModelFactorT<gtsam::Vector3, PoseRTV, PoseRTV> Base;
 
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
@@ -86,8 +104,9 @@ public:
   /**
    * Calculates the error for trapezoidal model given
    */
-  gtsam::Vector evaluateError(const PoseRTV& x1, const PoseRTV& x2,
-      OptionalMatrixType H1, OptionalMatrixType H2) const override {
+  gtsam::Vector3 evaluateError(const PoseRTV& x1, const PoseRTV& x2,
+                               OptionalMatrixType H1,
+                               OptionalMatrixType H2) const override {
     if (H1) *H1 = gtsam::numericalDerivative21<gtsam::Vector,PoseRTV,PoseRTV>(
         std::bind(VelocityConstraint::evaluateError_, std::placeholders::_1,
             std::placeholders::_2, dt_, integration_mode_), x1, x2, 1e-5);
@@ -127,3 +146,5 @@ private:
 };
 
 } // \namespace gtsam
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

@@ -17,9 +17,12 @@
 
 // #define ENABLE_TIMING // uncomment for timing results
 
-#include <gtsam/navigation/ScenarioRunner.h>
-#include <gtsam/base/timing.h>
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/base/timing.h>
+#include <gtsam/navigation/ScenarioRunner.h>
+
 #include <cmath>
 
 using namespace std;
@@ -45,6 +48,66 @@ static std::shared_ptr<PreintegrationParams> defaultParams() {
 }
 
 #define EXPECT_NEAR(a, b, c) EXPECT(assert_equal(Vector(a), Vector(b), c));
+
+/* ************************************************************************* */
+TEST(ScenarioRunner, FreefallSpecificForce) {
+  auto params = defaultParams();
+  const AcceleratingScenario scenario(Rot3(), Point3::Zero(), Vector3::Zero(),
+                                      params->n_gravity);
+  const ScenarioRunner runner(scenario, params, kDt);
+  EXPECT(assert_equal(Vector(Vector3::Zero()),
+                      Vector(runner.actualSpecificForce(0.0))));
+}
+
+/* ************************************************************************* */
+TEST(ScenarioRunner, RotatedSensorFrame) {
+  const Vector3 omega_b(0.2, -0.3, 0.4);
+  const ConstantTwistScenario scenario(omega_b, Vector3::Zero());
+  auto params = defaultParams();
+  const Rot3 body_R_sensor = Rot3::RzRyRx(0.2, -0.4, 0.7);
+  params->body_P_sensor = Pose3(body_R_sensor, Point3::Zero());
+  const ScenarioRunner runner(scenario, params, kDt);
+
+  EXPECT(assert_equal(body_R_sensor.unrotate(omega_b),
+                      runner.actualAngularVelocity(0.0)));
+  EXPECT(assert_equal(body_R_sensor.unrotate(Vector3(0.0, 0.0, 10.0)),
+                      runner.actualSpecificForce(0.0)));
+}
+
+/* ************************************************************************* */
+TEST(ScenarioRunner, LeverArmCentripetalAcceleration) {
+  const Vector3 omega_b(0.0, 0.0, 2.0);
+  const ConstantTwistScenario scenario(omega_b, Vector3::Zero());
+  auto params = defaultParams();
+  params->body_P_sensor = Pose3(Rot3(), Point3(1.0, 0.0, 0.0));
+  const ScenarioRunner runner(scenario, params, kDt);
+
+  EXPECT(assert_equal(Vector3(-4.0, 0.0, 10.0),
+                      runner.actualSpecificForce(0.0)));
+}
+
+/* ************************************************************************* */
+TEST(ScenarioRunner, SensorFrameBiasHandling) {
+  const Vector3 omega_b(0.0, 0.0, 0.5);
+  const ConstantTwistScenario scenario(omega_b, Vector3::Zero());
+  auto params = defaultParams();
+  params->body_P_sensor =
+      Pose3(Rot3::Yaw(M_PI_2), Point3(0.2, 0.0, 0.0));
+  const ScenarioRunner runner(scenario, params, kDt);
+  const imuBias::ConstantBias sensorBias(Vector3(0.1, -0.2, 0.3),
+                                         Vector3(-0.1, 0.2, -0.3));
+  PreintegratedImuMeasurements pim(params, sensorBias);
+
+  const Vector3 measuredAcc =
+      runner.actualSpecificForce(0.0) + sensorBias.accelerometer();
+  const Vector3 measuredOmega =
+      runner.actualAngularVelocity(0.0) + sensorBias.gyroscope();
+  pim.integrateMeasurement(measuredAcc, measuredOmega, kDt);
+
+  const NavState initial(scenario.pose(0.0), scenario.velocity_n(0.0));
+  EXPECT(assert_equal(scenario.pose(kDt), pim.predict(initial, sensorBias).pose(),
+                      1e-9));
+}
 
 /* ************************************************************************* */
 TEST(ScenarioRunner, Spin) {

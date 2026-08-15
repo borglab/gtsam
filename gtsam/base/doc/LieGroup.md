@@ -30,12 +30,17 @@ To implement a Lie group, you inherit from `gtsam::LieGroup<MyGroup, D>`.
     *   `MyGroup operator*(const MyGroup& other) const;`
 
 5.  **Lie Group Primitives**:
-    *   `static MyGroup Expmap(const gtsam::VectorD& v, ChartJacobian H = {});`: The Exponential map *at identity*. Must support an optional derivative.
-    *   `static gtsam::VectorD Logmap(const MyGroup& p, ChartJacobian H = {});`: The Logarithm map *at identity*. Must support an optional derivative.
+    *   `static MyGroup Expmap(const gtsam::VectorD& v);`: The Exponential map *at identity*.
+    *   `static gtsam::VectorD Logmap(const MyGroup& p);`: The Logarithm map *at identity*.
     *   `gtsam::MatrixD AdjointMap() const;`: Computes the Adjoint map.
     *   `ChartAtOrigin` struct: This nested struct implements a first-order `retract` and `local`. You must define:
-        *   `static MyGroup Retract(const gtsam::VectorD& v, ChartJacobian H = {});`
-        *   `static gtsam::VectorD Local(const MyGroup& p, ChartJacobian H = {});`
+        *   `static MyGroup Retract(const gtsam::VectorD& v);`
+        *   `static gtsam::VectorD Local(const MyGroup& p);`
+
+    A group may additionally overload these four operations with a
+    `ChartJacobian` argument. The CRTP helpers expose Jacobian-bearing
+    `expmap`, `logmap`, `retract`, and `localCoordinates` methods only when the
+    corresponding primitive overload exists.
 
 6.  **`using` Declaration for `inverse`**:
     *   `using LieGroup<MyGroup, D>::inverse;`: This makes the base class `inverse(ChartJacobian H)` method visible.
@@ -57,7 +62,7 @@ The `LieGroup` framework relies on this method to correctly size Jacobians and o
 
 ### 3. What You Get for Free (via CRTP)
 
-By inheriting from `gtsam::LieGroup` and defining the primitives above, your class automatically receives correct implementations for all of the following methods, including their Jacobian versions. **Do NOT implement these yourself**, unless you are *sure* you are able to more efficiently (and correctly) implement the Jacobians.
+By inheriting from `gtsam::LieGroup` and defining the primitives above, your class automatically receives correct implementations for all of the following methods. Jacobian versions are provided when the corresponding primitive Jacobian overload exists. **Do NOT implement these yourself**, unless you are *sure* you are able to more efficiently (and correctly) implement the Jacobians.
 
 *   `compose(const MyGroup& other)`: Composes `*this` with `other`.
 *   `between(const MyGroup& other)`: Calculates the relative transformation from `*this` to `other`.

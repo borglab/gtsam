@@ -19,13 +19,18 @@
  *  @date   Sept 2013
  */
 
-#include "smartFactorScenarios.h"
-#include <gtsam/slam/ProjectionFactor.h>
-#include <gtsam/slam/PoseTranslationPrior.h>
-#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/slam/PoseTranslationPrior.h>
+#include <gtsam/slam/ProjectionFactor.h>
+#include <gtsam/slam/SmartProjectionFactor.h>
+
 #include <iostream>
+#include <type_traits>
+
+#include "smartFactorScenarios.h"
 
 using namespace std::placeholders;
 
@@ -54,6 +59,25 @@ LevenbergMarquardtParams makeLMParams(bool verbose = false) {
 }
 
 }
+
+/* ************************************************************************* */
+namespace hierarchy {
+
+using Camera = PinholePose<Cal3_S2>;
+using ProjectionBase = SmartProjectionFactorBase<Camera>;
+using CameraFactor = SmartProjectionFactor<Camera>;
+using PoseFactor = SmartProjectionPoseFactor<Cal3_S2>;
+
+// Verifies that camera-variable and pose-variable factors share only the
+// projection-specific implementation base.
+TEST(SmartProjectionPoseFactor, CommonProjectionBase) {
+  EXPECT((std::is_base_of_v<ProjectionBase, CameraFactor>));
+  EXPECT((std::is_base_of_v<ProjectionBase, PoseFactor>));
+  EXPECT(!(std::is_base_of_v<CameraFactor, PoseFactor>));
+}
+
+}  // namespace hierarchy
+/* ************************************************************************* */
 
 /* ************************************************************************* */
 TEST( SmartProjectionPoseFactor, Constructor) {
@@ -386,9 +410,7 @@ TEST( SmartProjectionPoseFactor, Factors ) {
   double expectedError = 2500;
 
   // After eliminating the point, A1 and A2 contain 2-rank information on cameras:
-  Matrix16 A1, A2;
-  A1 << -10, 0, 0, 0, 1, 0;
-  A2 << 10, 0, 1, 0, -1, 0;
+  Matrix16 A1{-10, 0, 0, 0, 1, 0}, A2{10, 0, 1, 0, -1, 0};
   A1 *= 10. / sigma;
   A2 *= 10. / sigma;
   Matrix expectedInformation; // filled below
@@ -1340,4 +1362,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

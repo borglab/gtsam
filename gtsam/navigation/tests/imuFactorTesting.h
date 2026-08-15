@@ -17,8 +17,11 @@
 
 #pragma once
 
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/navigation/ImuBias.h>
+#include <gtsam/navigation/LieGroupPreintegration.h>
 
 using namespace std;
 using namespace gtsam;
@@ -86,7 +89,7 @@ struct SomeMeasurements : vector<ImuMeasurement> {
 
 }  // namespace testing
 namespace {
-// Macro to test ImuFactor with both Manifold and Tangent preintegration
+// Macro to test ImuFactor with every supported preintegration backend.
 // In the tests below the selected PreintegratedImuMeasurementsT is available
 // as `PIM`, and the combined version as `CombinedPIM`.
 #define TEST_PIM(testGroup, testName)                          \
@@ -100,8 +103,12 @@ namespace {
     using T = TangentPreintegration;                           \
     using PT = PreintegratedImuMeasurementsT<T>;               \
     using CT = PreintegratedCombinedMeasurementsT<T>;          \
+    using L = LieGroupPreintegration;                          \
+    using PL = PreintegratedImuMeasurementsT<L>;               \
+    using CL = PreintegratedCombinedMeasurementsT<L>;          \
     testGroup##testName##Helper<PM, CM>(result_, this->name_); \
     testGroup##testName##Helper<PT, CT>(result_, this->name_); \
+    testGroup##testName##Helper<PL, CL>(result_, this->name_); \
   }                                                            \
   template <class PIM, class CombinedPIM>                      \
   void testGroup##testName##Helper(TestResult& result_,        \

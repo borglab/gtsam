@@ -18,11 +18,12 @@
 
 #pragma once
 
+#include <gtsam/base/Manifold.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/Vector.h>
 #include <gtsam/geometry/BearingRange.h>
 #include <gtsam/geometry/ExtendedPose3.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/base/Vector.h>
-#include <gtsam/base/Manifold.h>
 
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/base_object.hpp>
@@ -58,9 +59,7 @@ public:
 
   /// Construct from attitude, position, velocity
   NavState(const Rot3& R, const Point3& t, const Velocity3& v)
-      : Base(R, (Eigen::Matrix<double, 3, 2>() << t.x(), v.x(), t.y(), v.y(),
-                 t.z(), v.z())
-                    .finished()) {}
+      : Base(R, Matrix32{{t.x(), v.x()}, {t.y(), v.y()}, {t.z(), v.z()}}) {}
 
   /// Construct from pose and velocity
   NavState(const Pose3& pose, const Velocity3& v)
@@ -211,7 +210,7 @@ public:
   struct AutonomousFlow {
     double dt;
 
-    // Differential at identity (right-trivialized): Φ = I with ∂p/∂v = dt·I.
+    // Differential at identity: Φ = I with ∂p/∂v = dt·I.
     Jacobian dIdentity() const {
       Jacobian Phi = I_9x9;
       Phi.template block<3, 3>(3, 6) = I_3x3 * dt;
@@ -231,16 +230,20 @@ public:
                   OptionalJacobian<9, 3> G1 = {},
                   OptionalJacobian<9, 3> G2 = {}) const;
 
-  /// Compute tangent space contribution due to Coriolis forces
+  /// Compute the legacy approximate tangent-space Coriolis contribution.
+  [[deprecated("Use correctPIM with omegaCoriolis for exact prediction")]]
   Vector9 coriolis(double dt, const Vector3& omega, bool secondOrder = false,
-      OptionalJacobian<9, 9> H = {}) const;
+                   OptionalJacobian<9, 9> H = {}) const;
 
-  /// Correct preintegrated tangent vector with our velocity and rotated gravity,
-  /// taking into account Coriolis forces if omegaCoriolis is given.
+  /// Correct a preintegrated tangent vector using the initial state and
+  /// gravity. If omegaCoriolis is present and nonzero, uses the exact
+  /// rotating-frame transition of Brossard et al.; otherwise preserves the
+  /// inertial fast path.
   Vector9 correctPIM(const Vector9& pim, double dt, const Vector3& n_gravity,
       const std::optional<Vector3>& omegaCoriolis, bool use2ndOrderCoriolis =
           false, OptionalJacobian<9, 9> H1 = {},
-      OptionalJacobian<9, 9> H2 = {}) const;
+      OptionalJacobian<9, 9> H2 = {},
+      OptionalJacobian<9, 3> H3 = {}) const;
 
   /// @}
 

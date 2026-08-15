@@ -591,6 +591,17 @@ class InitializePose3 {
   static gtsam::Values initialize(const gtsam::NonlinearFactorGraph& graph);
 };
 
+#include <gtsam/slam/FastSync.h>
+template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3,
+               gtsam::Similarity2, gtsam::Similarity3, gtsam::SL4}>
+gtsam::Values fastSync(
+    const gtsam::NonlinearFactorGraph& graph,
+    gtsam::Ordering::OrderingType orderingType = gtsam::Ordering::METIS);
+template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3,
+               gtsam::Similarity2, gtsam::Similarity3, gtsam::SL4}>
+gtsam::Values fastSync(const gtsam::NonlinearFactorGraph& graph,
+                       const gtsam::Ordering& ordering);
+
 #include <gtsam/slam/KarcherMeanFactor-inl.h>
 template <T = {gtsam::Rot2, gtsam::Pose2, gtsam::SO3, gtsam::SO4, gtsam::Rot3,
                gtsam::Pose3, gtsam::Similarity2, gtsam::Similarity3,

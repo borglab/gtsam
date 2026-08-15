@@ -27,6 +27,20 @@ class TestPose2(GtsamTestCase):
         actual = Pose2.adjoint_(xi, xi)
         np.testing.assert_array_equal(actual, expected)
 
+    def test_logmap_derivative_overloads(self) -> None:
+        """The tangent and pose overloads should return the same Jacobian."""
+        for xi in (np.array([0.4, -0.2, 0.3]),
+                   np.array([0.4, -0.2, 1e-8])):
+            with self.subTest(dtheta=xi[2]):
+                from_tangent = Pose2.LogmapDerivative(xi)
+                from_pose = Pose2.LogmapDerivative(Pose2.Expmap(xi))
+
+                np.testing.assert_allclose(from_tangent, from_pose,
+                                           rtol=0, atol=1e-9)
+                np.testing.assert_allclose(
+                    from_tangent @ Pose2.ExpmapDerivative(xi),
+                    np.eye(3), rtol=0, atol=1e-12)
+
     def test_transformTo(self):
         """Test transformTo method."""
         pose = Pose2(2, 4, -math.pi / 2)

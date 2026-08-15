@@ -49,7 +49,7 @@ Vector6 SO4::Vee(const Matrix4 &X);
 
 template <>
 GTSAM_EXPORT
-SO4 SO4::Expmap(const Vector6 &xi, ChartJacobian H);
+SO4 SO4::Expmap(const Vector6 &xi);
 
 template <>
 GTSAM_EXPORT
@@ -57,11 +57,11 @@ SO4::VectorN2 SO4::vec(OptionalJacobian<16, 6> H) const;
 
 template <>
 GTSAM_EXPORT
-SO4 SO4::ChartAtOrigin::Retract(const Vector6 &omega, ChartJacobian H);
+SO4 SO4::ChartAtOrigin::Retract(const Vector6 &omega);
 
 template <>
 GTSAM_EXPORT
-Vector6 SO4::ChartAtOrigin::Local(const SO4 &Q, ChartJacobian H);
+Vector6 SO4::ChartAtOrigin::Local(const SO4 &Q);
 
 /**
  * Project to top-left 3*3 matrix. Note this is *not* in general \in SO(3).

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -18,31 +18,33 @@
 
 #include "timeSFMBAL.h"
 
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/BatchJacobianFactor.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/nonlinear/BatchFactor.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/symbolic/IndexedJunctionTree.h>
 
-#include <chrono>
 #include <cmath>
-#include <cstring>
 #include <filesystem>
-#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <limits>
-#include <map>
+#include <optional>
+
+#include "internal/SfmPcgBenchmark.h"
+#include "internal/TimingUtils.h"
 
 namespace {
-constexpr const char* kDefaultBenchmarkDataset = "dubrovnik-16-22106-pre";
-constexpr const char* kProfileDataset = "dubrovnik-135-90642-pre";
-
-using Camera = PinholeCamera<Cal3Bundler>;
-using SfmFactor = GeneralSFMFactor<Camera, Point3>;
+using namespace gtsam;
+using symbol_shorthand::P;
+namespace bal = gtsam::timing::bal;
 
 std::string usage() {
   return "Usage: timeSFMBAL [--colamd] [--profile] [--camera-batch] "
          "[--cholesky-only] [--profile-point-cholesky] "
+         "[--end-to-end-pcg] "
          "[--batch-chunk-size N] "
          "[--benchmark-action-json FILE] [BALfile]";
 }
@@ -64,6 +66,7 @@ struct TimingRow {
 };
 
 struct RunOptions {
+  bal::BalBenchmarkConfig config;
   bool profile = false;
   bool benchmarkActionJson = false;
   bool cameraBatch = false;
@@ -72,6 +75,8 @@ struct RunOptions {
   size_t batchChunkSize = 0;
   std::string benchmarkActionJsonPath;
   std::vector<std::string> filenames;
+  bool endToEndPcg = false;
+  bool help = false;
 };
 
 struct PointCholeskyProfileRow {
@@ -105,390 +110,151 @@ struct PointCholeskyProfileRow {
   }
 };
 
-std::string escapeJson(std::string value) {
-  std::string escaped;
-  escaped.reserve(value.size());
-  for (const char c : value) {
-    switch (c) {
-      case '\\':
-        escaped += "\\\\";
-        break;
-      case '"':
-        escaped += "\\\"";
-        break;
-      case '\n':
-        escaped += "\\n";
-        break;
-      case '\r':
-        escaped += "\\r";
-        break;
-      case '\t':
-        escaped += "\\t";
-        break;
-      default:
-        escaped += c;
-        break;
-    }
-  }
-  return escaped;
-}
-
 void writeBenchmarkActionJson(const std::vector<TimingRow>& rows,
                               const std::string& outputPath,
                               bool includeCameraBatch, bool choleskyOnly) {
-  std::ofstream out(outputPath);
-  if (!out) {
-    throw runtime_error("Unable to open benchmark JSON output file: " +
-                        outputPath);
-  }
-
-  out << "[\n";
-  bool first = true;
-  const auto appendEntry = [&](const std::string& name, const double value) {
-    if (!first) out << ",\n";
-    first = false;
-    out << "  {\n";
-    out << "    \"name\": \"" << escapeJson(name) << "\",\n";
-    out << "    \"unit\": \"s\",\n";
-    out << "    \"value\": " << std::fixed << std::setprecision(9) << value
-        << "\n";
-    out << "  }";
+  std::vector<gtsam::timing::BenchmarkMetric> metrics;
+  const auto append = [&](const std::string& name, double value) {
+    metrics.push_back({name, "s", value});
   };
-
   for (const auto& row : rows) {
-    appendEntry("timeSFMBAL/" + row.dataset + "/MultifrontalCholesky",
-                row.regularCholesky);
+    const std::string prefix = "timeSFMBAL/" + row.dataset + "/";
+    append(prefix + "MultifrontalCholesky", row.regularCholesky);
     if (!choleskyOnly) {
-      appendEntry("timeSFMBAL/" + row.dataset + "/MultifrontalQR",
-                  row.regularQr);
-      appendEntry("timeSFMBAL/" + row.dataset + "/MultifrontalSolver",
-                  row.regularSolver);
+      append(prefix + "MultifrontalQR", row.regularQr);
+      append(prefix + "MultifrontalSolver", row.regularSolver);
     }
-    appendEntry(
-        "timeSFMBAL/" + row.dataset + "/BatchFactor/MultifrontalCholesky",
-        row.batchCholesky);
+    append(prefix + "BatchFactor/MultifrontalCholesky", row.batchCholesky);
     if (!choleskyOnly) {
-      appendEntry("timeSFMBAL/" + row.dataset + "/BatchFactor/MultifrontalQR",
-                  row.batchQr);
-      appendEntry(
-          "timeSFMBAL/" + row.dataset + "/BatchFactor/MultifrontalSolver",
-          row.batchSolver);
+      append(prefix + "BatchFactor/MultifrontalQR", row.batchQr);
+      append(prefix + "BatchFactor/MultifrontalSolver", row.batchSolver);
     }
     if (!includeCameraBatch) continue;
-    appendEntry("timeSFMBAL/" + row.dataset +
-                    "/CameraFirst/MultifrontalCholesky",
-                row.cameraFirstCholesky);
+    append(prefix + "CameraFirst/MultifrontalCholesky",
+           row.cameraFirstCholesky);
     if (!choleskyOnly) {
-      appendEntry("timeSFMBAL/" + row.dataset + "/CameraFirst/MultifrontalQR",
-                  row.cameraFirstQr);
-      appendEntry(
-          "timeSFMBAL/" + row.dataset + "/CameraFirst/MultifrontalSolver",
-          row.cameraFirstSolver);
+      append(prefix + "CameraFirst/MultifrontalQR", row.cameraFirstQr);
+      append(prefix + "CameraFirst/MultifrontalSolver", row.cameraFirstSolver);
     }
-    appendEntry("timeSFMBAL/" + row.dataset +
-                    "/CameraBatchFactor/MultifrontalCholesky",
-                row.cameraBatchCholesky);
+    append(prefix + "CameraBatchFactor/MultifrontalCholesky",
+           row.cameraBatchCholesky);
     if (!choleskyOnly) {
-      appendEntry("timeSFMBAL/" + row.dataset +
-                      "/CameraBatchFactor/MultifrontalQR",
-                  row.cameraBatchQr);
-      appendEntry("timeSFMBAL/" + row.dataset +
-                      "/CameraBatchFactor/MultifrontalSolver",
-                  row.cameraBatchSolver);
+      append(prefix + "CameraBatchFactor/MultifrontalQR", row.cameraBatchQr);
+      append(prefix + "CameraBatchFactor/MultifrontalSolver",
+             row.cameraBatchSolver);
     }
   }
-  out << "\n]\n";
+  gtsam::timing::writeBenchmarkActionMetrics(outputPath, metrics);
 }
 
 void writePointCholeskyProfileJson(
     const std::vector<PointCholeskyProfileRow>& rows,
     const std::string& outputPath) {
-  std::ofstream out(outputPath);
-  if (!out) {
-    throw runtime_error("Unable to open profile JSON output file: " +
-                        outputPath);
-  }
-
-  out << "[\n";
-  bool first = true;
-  const auto appendEntry = [&](const std::string& name, const std::string& unit,
-                               const double value) {
-    if (!first) out << ",\n";
-    first = false;
-    out << "  {\n";
-    out << "    \"name\": \"" << escapeJson(name) << "\",\n";
-    out << "    \"unit\": \"" << escapeJson(unit) << "\",\n";
-    out << "    \"value\": " << std::fixed << std::setprecision(9) << value
-        << "\n";
-    out << "  }";
+  std::vector<gtsam::timing::BenchmarkMetric> metrics;
+  const auto append = [&](const std::string& name, const std::string& unit,
+                          double value) {
+    metrics.push_back({name, unit, value});
   };
-
   for (const auto& row : rows) {
     const std::string prefix = "timeSFMBAL/" + row.dataset +
                                "/PointFirstCholeskyProfile/" + row.variant +
                                "/";
-    appendEntry(prefix + "linearize", "s", row.linearize);
-    appendEntry(prefix + "hessianDiagonal", "s", row.hessianDiagonal);
-    appendEntry(prefix + "damp", "s", row.damp);
-    appendEntry(prefix + "symbolic", "s", row.symbolic);
-    appendEntry(prefix + "eliminate", "s", row.eliminate);
-    appendEntry(prefix + "backSubstitute", "s", row.backSubstitute);
-    appendEntry(prefix + "deltaError", "s", row.deltaError);
-    appendEntry(prefix + "retractAndError", "s", row.retractAndError);
-    appendEntry(prefix + "total", "s", row.total());
-    appendEntry(prefix + "iterations", "count",
-                static_cast<double>(row.iterations));
-    appendEntry(prefix + "innerIterations", "count",
-                static_cast<double>(row.innerIterations));
-    appendEntry(prefix + "linearFactors", "count",
-                static_cast<double>(row.linearFactors));
-    appendEntry(prefix + "batchDenseScalarEntries", "count",
-                static_cast<double>(row.batchDenseScalarEntries));
-    appendEntry(prefix + "batchStoredScalarEntriesEstimate", "count",
-                static_cast<double>(row.batchStoredScalarEntriesEstimate));
+    append(prefix + "linearize", "s", row.linearize);
+    append(prefix + "hessianDiagonal", "s", row.hessianDiagonal);
+    append(prefix + "damp", "s", row.damp);
+    append(prefix + "symbolic", "s", row.symbolic);
+    append(prefix + "eliminate", "s", row.eliminate);
+    append(prefix + "backSubstitute", "s", row.backSubstitute);
+    append(prefix + "deltaError", "s", row.deltaError);
+    append(prefix + "retractAndError", "s", row.retractAndError);
+    append(prefix + "total", "s", row.total());
+    append(prefix + "iterations", "count", static_cast<double>(row.iterations));
+    append(prefix + "innerIterations", "count",
+           static_cast<double>(row.innerIterations));
+    append(prefix + "linearFactors", "count",
+           static_cast<double>(row.linearFactors));
+    append(prefix + "batchDenseScalarEntries", "count",
+           static_cast<double>(row.batchDenseScalarEntries));
+    append(prefix + "batchStoredScalarEntriesEstimate", "count",
+           static_cast<double>(row.batchStoredScalarEntriesEstimate));
   }
-  out << "\n]\n";
+  gtsam::timing::writeBenchmarkActionMetrics(outputPath, metrics);
 }
-
 RunOptions parseBalFiles(int argc, char* argv[]) {
-  std::string filename;
-  bool profile = false;
-  bool benchmarkActionJson = false;
-  bool cameraBatch = false;
-  bool choleskyOnly = false;
-  bool profilePointCholesky = false;
-  bool colamd = false;
-  size_t batchChunkSize = 0;
-  std::string benchmarkActionJsonPath;
-  for (int i = 1; i < argc; ++i) {
-    if (strcmp(argv[i], "--colamd") == 0) {
-      gUseSchur = false;
-      colamd = true;
-      continue;
-    }
-    if (strcmp(argv[i], "--profile") == 0) {
-      profile = true;
-      continue;
-    }
-    if (strcmp(argv[i], "--camera-batch") == 0) {
-      cameraBatch = true;
-      continue;
-    }
-    if (strcmp(argv[i], "--cholesky-only") == 0) {
-      choleskyOnly = true;
-      continue;
-    }
-    if (strcmp(argv[i], "--batch-chunk-size") == 0) {
-      if (++i >= argc || argv[i][0] == '-') {
-        throw runtime_error(usage());
-      }
-      batchChunkSize = std::stoul(argv[i]);
-      continue;
-    }
-    if (strcmp(argv[i], "--profile-point-cholesky") == 0) {
-      profilePointCholesky = true;
-      continue;
-    }
-    if (strcmp(argv[i], "--benchmark-action-json") == 0) {
-      if (++i >= argc || argv[i][0] == '-') {
-        throw runtime_error(usage());
-      }
-      benchmarkActionJson = true;
-      benchmarkActionJsonPath = argv[i];
-      continue;
-    }
-    if (argv[i][0] == '-') {
-      throw runtime_error(usage());
-    }
-    if (!filename.empty()) {
-      throw runtime_error(usage());
-    }
-    filename = argv[i];
+  gtsam::timing::Arguments arguments(argc, argv);
+  RunOptions options;
+  options.config.useSchur = !arguments.flag("--colamd");
+  options.profile = arguments.flag("--profile");
+  options.cameraBatch = arguments.flag("--camera-batch");
+  options.choleskyOnly = arguments.flag("--cholesky-only");
+  options.profilePointCholesky = arguments.flag("--profile-point-cholesky");
+  options.endToEndPcg = arguments.flag("--end-to-end-pcg");
+  options.batchChunkSize = arguments.sizeValue("--batch-chunk-size", 0);
+  const auto jsonPath = arguments.optionalString("--benchmark-action-json");
+  options.benchmarkActionJson = jsonPath.has_value();
+  options.benchmarkActionJsonPath = jsonPath.value_or("");
+  options.help = arguments.helpRequested();
+  options.filenames = arguments.positionals();
+  arguments.validateAllConsumed();
+
+  if (options.help) return options;
+  if (options.filenames.size() > 1) throw std::runtime_error(usage());
+  const bool hasFilename = !options.filenames.empty();
+  if (options.profile && hasFilename) throw std::runtime_error(usage());
+  if (options.profile &&
+      (options.benchmarkActionJson || options.cameraBatch ||
+       options.choleskyOnly || options.profilePointCholesky)) {
+    throw std::runtime_error(usage());
+  }
+  if (options.profilePointCholesky && options.cameraBatch) {
+    throw std::runtime_error(
+        "--profile-point-cholesky profiles the point-first path; do not "
+        "combine it with --camera-batch.");
+  }
+  if (options.cameraBatch && !options.config.useSchur) {
+    throw std::runtime_error(
+        "--camera-batch uses camera-first ordering; do not combine it with "
+        "--colamd.");
+  }
+  if (options.endToEndPcg &&
+      (options.profile || options.benchmarkActionJson || options.cameraBatch ||
+       options.choleskyOnly || options.profilePointCholesky ||
+       options.batchChunkSize != 0)) {
+    throw std::runtime_error(
+        "--end-to-end-pcg is a standalone comparison; combine it only with "
+        "--colamd or a BAL file.");
   }
 
-  if (profile && !filename.empty()) {
-    throw runtime_error(usage());
+  if (hasFilename) return options;
+  if (options.profile) {
+    options.filenames = {bal::profileDataset()};
+  } else if (options.profilePointCholesky || options.benchmarkActionJson ||
+             options.endToEndPcg) {
+    options.filenames = {bal::defaultDataset()};
+  } else {
+    options.filenames = bal::standardDatasets();
   }
-  if (profile && (benchmarkActionJson || cameraBatch || choleskyOnly ||
-                  profilePointCholesky)) {
-    throw runtime_error(usage());
-  }
-  if (profilePointCholesky && cameraBatch) {
-    throw runtime_error("--profile-point-cholesky profiles the point-first "
-                        "path; do not combine it with --camera-batch.");
-  }
-  if (cameraBatch && colamd) {
-    throw runtime_error("--camera-batch uses camera-first ordering; do not "
-                        "combine it with --colamd.");
-  }
-
-  if (!filename.empty()) {
-    return {profile,
-            benchmarkActionJson,
-            cameraBatch,
-            choleskyOnly,
-            profilePointCholesky,
-            batchChunkSize,
-            benchmarkActionJsonPath,
-            {filename}};
-  }
-
-  if (profile) {
-    return {profile,
-            benchmarkActionJson,
-            cameraBatch,
-            choleskyOnly,
-            profilePointCholesky,
-            batchChunkSize,
-            benchmarkActionJsonPath,
-            {findExampleDataFile(kProfileDataset)}};
-  }
-
-  if (profilePointCholesky) {
-    return {profile,
-            benchmarkActionJson,
-            cameraBatch,
-            choleskyOnly,
-            profilePointCholesky,
-            batchChunkSize,
-            benchmarkActionJsonPath,
-            {findExampleDataFile(kDefaultBenchmarkDataset)}};
-  }
-
-  if (benchmarkActionJson) {
-    return {profile,
-            benchmarkActionJson,
-            cameraBatch,
-            choleskyOnly,
-            profilePointCholesky,
-            batchChunkSize,
-            benchmarkActionJsonPath,
-            {findExampleDataFile(kDefaultBenchmarkDataset)}};
-  }
-
-  return {profile,
-          benchmarkActionJson,
-          cameraBatch,
-          choleskyOnly,
-          profilePointCholesky,
-          batchChunkSize,
-          benchmarkActionJsonPath,
-          {
-              findExampleDataFile("dubrovnik-16-22106-pre"),
-              findExampleDataFile("dubrovnik-88-64298-pre"),
-              findExampleDataFile("dubrovnik-135-90642-pre"),
-          }};
+  return options;
 }
-
 double runSolver(const NonlinearFactorGraph& graph, const Values& initial,
                  const Ordering& ordering,
                  NonlinearOptimizerParams::LinearSolverType solverType,
-                 const std::string& label) {
-  LevenbergMarquardtParams params;
-  LevenbergMarquardtParams::SetCeresDefaults(&params);
-  params.setVerbosityLM("SUMMARY");
-  params.setRelativeErrorTol(0.01);
+                 const std::string& label,
+                 const bal::BalBenchmarkConfig& config) {
+  LevenbergMarquardtParams params =
+      bal::makeLevenbergMarquardtParams(config, &ordering);
   params.linearSolverType = solverType;
   if (solverType == NonlinearOptimizerParams::MULTIFRONTAL_SOLVER) {
     params.multifrontalParams.qrMode = MultifrontalParameters::QRMode::Allow;
   }
-  if (gUseSchur) {
-    params.setOrdering(ordering);
-  }
-
-  auto start = std::chrono::high_resolution_clock::now();
   LevenbergMarquardtOptimizer lm(graph, initial, params);
-  lm.optimize();
-  auto end = std::chrono::high_resolution_clock::now();
-
-  std::chrono::duration<double> elapsed = end - start;
-  std::cout << "  " << label << ": " << elapsed.count() << " s\n";
-  return elapsed.count();
-}
-
-NonlinearFactorGraph buildBatchSfmGraph(const SfmData& db,
-                                        bool useHessianFactor,
-                                        size_t chunkSize) {
-  NonlinearFactorGraph graph;
-  for (size_t j = 0; j < db.numberTracks(); j++) {
-    const auto& measurementsForTrack = db.tracks[j].measurements;
-    if (measurementsForTrack.size() < 2) continue;
-
-    const size_t nMeasurements = measurementsForTrack.size();
-    const size_t effectiveChunkSize =
-        (chunkSize == 0) ? nMeasurements : std::min(chunkSize, nMeasurements);
-    if (effectiveChunkSize == 0) continue;
-
-    if (effectiveChunkSize >= nMeasurements) {
-      std::map<Key, Point2> measurements;
-      for (const SfmMeasurement& measurement : measurementsForTrack) {
-        measurements[C(measurement.first)] = measurement.second;
-      }
-
-      auto batch = std::make_shared<BatchFactor<SfmFactor, 2>>(measurements,
-                                                              P(j),
-                                                              gNoiseModel);
-      batch->setUseHessianFactor(useHessianFactor);
-      graph.add(batch);
-      continue;
-    }
-
-    for (size_t start = 0; start < nMeasurements; start += effectiveChunkSize) {
-      const size_t end = std::min(start + effectiveChunkSize, nMeasurements);
-      std::map<Key, Point2> measurements;
-      for (size_t i = start; i < end; ++i) {
-        const SfmMeasurement& measurement = measurementsForTrack[i];
-        measurements[C(measurement.first)] = measurement.second;
-      }
-      auto batch = std::make_shared<BatchFactor<SfmFactor, 2>>(measurements, P(j),
-                                                              gNoiseModel);
-      batch->setUseHessianFactor(useHessianFactor);
-      graph.add(batch);
-    }
-  }
-  return graph;
-}
-
-NonlinearFactorGraph buildCameraBatchSfmGraph(const SfmData& db) {
-  NonlinearFactorGraph graph;
-  std::vector<std::map<Key, Point2>> measurementsByCamera(db.numberCameras());
-
-  for (size_t j = 0; j < db.numberTracks(); j++) {
-    const auto& measurementsForTrack = db.tracks[j].measurements;
-    if (measurementsForTrack.size() < 2) continue;
-
-    for (const SfmMeasurement& measurement : measurementsForTrack) {
-      measurementsByCamera[measurement.first][P(j)] = measurement.second;
-    }
-  }
-
-  for (size_t i = 0; i < measurementsByCamera.size(); ++i) {
-    const auto& measurements = measurementsByCamera[i];
-    if (measurements.empty()) continue;
-
-    graph.add(std::make_shared<BatchFactor<SfmFactor, 2>>(C(i), measurements,
-                                                          gNoiseModel));
-  }
-  return graph;
-}
-
-Ordering createCameraFirstOrdering(const SfmData& db) {
-  Ordering ordering;
-  for (size_t i = 0; i < db.numberCameras(); i++) ordering.push_back(C(i));
-  for (size_t j = 0; j < db.numberTracks(); j++) ordering.push_back(P(j));
-  return ordering;
+  const double elapsed = gtsam::timing::measureSeconds([&] { lm.optimize(); });
+  std::cout << "  " << label << ": " << elapsed << " s\n";
+  return elapsed;
 }
 
 double speedup(double baseline, double candidate) {
   return candidate > 0.0 ? (baseline / candidate) : 0.0;
-}
-
-template <typename Callable>
-double measureSeconds(Callable&& callable) {
-  const auto start = std::chrono::high_resolution_clock::now();
-  callable();
-  const auto end = std::chrono::high_resolution_clock::now();
-  return std::chrono::duration<double>(end - start).count();
 }
 
 void collectLinearStats(const GaussianFactorGraph& linear,
@@ -524,18 +290,15 @@ void collectLinearStats(const GaussianFactorGraph& linear,
 PointCholeskyProfileRow profilePointFirstCholeskyVariant(
     const std::string& dataset, const std::string& variant,
     const NonlinearFactorGraph& graph, const Values& initial,
-    const Ordering& ordering) {
+    const Ordering& ordering, const bal::BalBenchmarkConfig& config) {
   PointCholeskyProfileRow row;
   row.dataset = dataset;
   row.variant = variant;
   row.nonlinearFactors = graph.size();
 
-  LevenbergMarquardtParams params;
-  LevenbergMarquardtParams::SetCeresDefaults(&params);
-  params.setVerbosityLM("SILENT");
-  params.setRelativeErrorTol(0.01);
+  LevenbergMarquardtParams params =
+      bal::makeLevenbergMarquardtParams(config, &ordering, "SILENT");
   params.linearSolverType = NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY;
-  params.setOrdering(ordering);
 
   Values values = initial;
   double currentError = graph.error(values);
@@ -547,11 +310,12 @@ PointCholeskyProfileRow profilePointFirstCholeskyVariant(
 
   for (size_t iteration = 0; iteration < params.maxIterations; ++iteration) {
     GaussianFactorGraph::shared_ptr linear;
-    row.linearize += measureSeconds([&] { linear = graph.linearize(values); });
+    row.linearize += gtsam::timing::measureSeconds(
+        [&] { linear = graph.linearize(values); });
     if (iteration == 0) collectLinearStats(*linear, &row);
 
     VectorValues sqrtHessianDiagonal;
-    row.hessianDiagonal += measureSeconds([&] {
+    row.hessianDiagonal += gtsam::timing::measureSeconds([&] {
       sqrtHessianDiagonal = linear->hessianDiagonal();
       for (auto& [key, value] : sqrtHessianDiagonal) {
         value = value.cwiseMax(params.dampingParams.minDiagonal)
@@ -568,7 +332,7 @@ PointCholeskyProfileRow profilePointFirstCholeskyVariant(
     while (!stepSuccessful && !stopSearchingLambda) {
       row.innerIterations++;
       GaussianFactorGraph damped;
-      row.damp += measureSeconds([&] {
+      row.damp += gtsam::timing::measureSeconds([&] {
         damped = *linear;
         damped.reserve(damped.size() + sqrtHessianDiagonal.size());
         const double sigma = 1.0 / std::sqrt(lambda);
@@ -584,23 +348,24 @@ PointCholeskyProfileRow profilePointFirstCholeskyVariant(
       });
 
       if (!indexedJunctionTree) {
-        row.symbolic += measureSeconds([&] {
-          indexedJunctionTree.emplace(damped.buildIndexedJunctionTree(ordering));
+        row.symbolic += gtsam::timing::measureSeconds([&] {
+          indexedJunctionTree.emplace(
+              damped.buildIndexedJunctionTree(ordering));
         });
       }
 
       std::shared_ptr<GaussianBayesTree> bayesTree;
-      row.eliminate += measureSeconds([&] {
+      row.eliminate += gtsam::timing::measureSeconds([&] {
         bayesTree = damped.eliminateMultifrontal(*indexedJunctionTree,
                                                  EliminatePreferCholesky);
       });
 
       VectorValues delta;
       row.backSubstitute +=
-          measureSeconds([&] { delta = bayesTree->optimize(); });
+          gtsam::timing::measureSeconds([&] { delta = bayesTree->optimize(); });
 
       double linearizedCostChange = 0.0;
-      row.deltaError += measureSeconds([&] {
+      row.deltaError += gtsam::timing::measureSeconds([&] {
         double oldLinearizedError = 0.0, newLinearizedError = 0.0;
         linearizedCostChange =
             linear->deltaError(delta, &oldLinearizedError, &newLinearizedError);
@@ -608,7 +373,7 @@ PointCholeskyProfileRow profilePointFirstCholeskyVariant(
 
       double newError = std::numeric_limits<double>::infinity();
       Values newValues;
-      row.retractAndError += measureSeconds([&] {
+      row.retractAndError += gtsam::timing::measureSeconds([&] {
         newValues = values.retract(delta);
         newError = graph.error(newValues);
       });
@@ -630,8 +395,8 @@ PointCholeskyProfileRow profilePointFirstCholeskyVariant(
         if (params.useFixedLambdaFactor) {
           lambda /= currentFactor;
         } else {
-          lambda *= std::max(1.0 / 3.0,
-                             1.0 - std::pow(2.0 * modelFidelity - 1.0, 3));
+          lambda *=
+              std::max(1.0 / 3.0, 1.0 - std::pow(2.0 * modelFidelity - 1.0, 3));
           currentFactor = 2.0 * currentFactor;
         }
         lambda = std::max(params.lambdaLowerBound, lambda);
@@ -665,23 +430,26 @@ PointCholeskyProfileRow profilePointFirstCholeskyVariant(
 }
 
 std::vector<PointCholeskyProfileRow> profilePointFirstCholesky(
-    const std::string& filename, size_t batchChunkSize) {
-  const std::string dataset = std::filesystem::path(filename).filename().string();
+    const std::string& filename, size_t batchChunkSize,
+    const bal::BalBenchmarkConfig& config) {
+  const std::string dataset =
+      std::filesystem::path(filename).filename().string();
   std::cout << "\nProfiling point-first Cholesky for BAL file: " << filename
             << std::endl;
-  const SfmData db = SfmData::FromBalFile(filename);
-  const Values initial = buildGeneralSfmInitial(db);
-  const Ordering ordering = createSchurOrdering(db, false);
+  const SfmData db = bal::loadDataset(filename);
+  const Values initial = bal::buildGeneralSfmInitial(db);
+  const Ordering ordering = bal::createSchurOrdering(db, false);
 
-  const NonlinearFactorGraph regularGraph = buildGeneralSfmGraph(db);
+  const NonlinearFactorGraph regularGraph =
+      bal::buildGeneralSfmGraph(db, config);
   const NonlinearFactorGraph batchGraph =
-      buildBatchSfmGraph(db, false, batchChunkSize);
+      bal::buildBatchSfmGraph(db, config, false, batchChunkSize);
 
   std::vector<PointCholeskyProfileRow> rows;
   rows.push_back(profilePointFirstCholeskyVariant(
-      dataset, "Regular", regularGraph, initial, ordering));
+      dataset, "Regular", regularGraph, initial, ordering, config));
   rows.push_back(profilePointFirstCholeskyVariant(
-      dataset, "PointBatch", batchGraph, initial, ordering));
+      dataset, "PointBatch", batchGraph, initial, ordering, config));
 
   std::cout
       << "\n| Dataset | Variant | Nonlinear factors | Linear factors | "
@@ -705,9 +473,8 @@ std::vector<PointCholeskyProfileRow> profilePointFirstCholesky(
               << row.retractAndError << " | " << row.total() << " |\n";
   }
 
-  std::cout
-      << "\n| Dataset | Variant | Batch dense scalar entries | "
-         "Estimated stored scalar entries | Dense/stored ratio |\n";
+  std::cout << "\n| Dataset | Variant | Batch dense scalar entries | "
+               "Estimated stored scalar entries | Dense/stored ratio |\n";
   std::cout << "| --- | --- | --- | --- | --- |\n";
   for (const auto& row : rows) {
     const double ratio =
@@ -727,12 +494,21 @@ std::vector<PointCholeskyProfileRow> profilePointFirstCholesky(
 
 int main(int argc, char* argv[]) {
   const auto options = parseBalFiles(argc, argv);
+  if (options.help) {
+    std::cout << usage() << '\n';
+    return 0;
+  }
+
+  if (options.endToEndPcg) {
+    bal::runEndToEndPcgComparison(options.filenames, options.config);
+    return 0;
+  }
 
   if (options.profilePointCholesky) {
     std::vector<PointCholeskyProfileRow> profileRows;
     for (const auto& filename : options.filenames) {
-      std::vector<PointCholeskyProfileRow> rows =
-          profilePointFirstCholesky(filename, options.batchChunkSize);
+      std::vector<PointCholeskyProfileRow> rows = profilePointFirstCholesky(
+          filename, options.batchChunkSize, options.config);
       profileRows.insert(profileRows.end(), rows.begin(), rows.end());
     }
     if (options.benchmarkActionJson) {
@@ -750,17 +526,17 @@ int main(int argc, char* argv[]) {
     const std::string dataset =
         std::filesystem::path(filename).filename().string();
     std::cout << "\nProcessing BAL file: " << filename << std::endl;
-    const SfmData db = SfmData::FromBalFile(filename);
+    const SfmData db = bal::loadDataset(filename);
 
-    NonlinearFactorGraph graph = buildGeneralSfmGraph(db);
-    Values initial = buildGeneralSfmInitial(db);
+    NonlinearFactorGraph graph = bal::buildGeneralSfmGraph(db, options.config);
+    Values initial = bal::buildGeneralSfmInitial(db);
 
     Ordering ordering;
     Ordering cameraFirstOrdering;
-    if (gUseSchur) {
-      ordering = createSchurOrdering(db, false);
+    if (options.config.useSchur) {
+      ordering = bal::createSchurOrdering(db, false);
       if (options.cameraBatch) {
-        cameraFirstOrdering = createCameraFirstOrdering(db);
+        cameraFirstOrdering = bal::createCameraFirstOrdering(db);
       }
     }
 
@@ -768,7 +544,7 @@ int main(int argc, char* argv[]) {
     if (!options.choleskyOnly) {
       newTime = runSolver(graph, initial, ordering,
                           NonlinearOptimizerParams::MULTIFRONTAL_SOLVER,
-                          "MultifrontalSolver");
+                          "MultifrontalSolver", options.config);
     }
     double legacyTime = 0.0;
     double legacyQrTime = 0.0;
@@ -784,58 +560,58 @@ int main(int argc, char* argv[]) {
     if (!options.profile) {
       legacyTime = runSolver(graph, initial, ordering,
                              NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY,
-                             "MultifrontalCholesky");
+                             "MultifrontalCholesky", options.config);
       if (!options.choleskyOnly) {
         legacyQrTime = runSolver(graph, initial, ordering,
                                  NonlinearOptimizerParams::MULTIFRONTAL_QR,
-                                 "MultifrontalQR");
+                                 "MultifrontalQR", options.config);
       }
-      const NonlinearFactorGraph batchGraph =
-          buildBatchSfmGraph(db, false, options.batchChunkSize);
+      const NonlinearFactorGraph batchGraph = bal::buildBatchSfmGraph(
+          db, options.config, false, options.batchChunkSize);
       batchLegacyTime =
           runSolver(batchGraph, initial, ordering,
                     NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY,
-                    "BatchFactor/MultifrontalCholesky");
+                    "BatchFactor/MultifrontalCholesky", options.config);
       if (!options.choleskyOnly) {
         batchQrTime = runSolver(batchGraph, initial, ordering,
                                 NonlinearOptimizerParams::MULTIFRONTAL_QR,
-                                "BatchFactor/MultifrontalQR");
+                                "BatchFactor/MultifrontalQR", options.config);
         batchTime = runSolver(batchGraph, initial, ordering,
                               NonlinearOptimizerParams::MULTIFRONTAL_SOLVER,
-                              "BatchFactor/MultifrontalSolver");
+                              "BatchFactor/MultifrontalSolver", options.config);
       }
 
       if (options.cameraBatch) {
         const NonlinearFactorGraph cameraBatchGraph =
-            buildCameraBatchSfmGraph(db);
+            bal::buildCameraBatchSfmGraph(db, options.config);
         cameraBatchLegacyTime =
             runSolver(cameraBatchGraph, initial, cameraFirstOrdering,
                       NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY,
-                      "CameraBatchFactor/MultifrontalCholesky");
+                      "CameraBatchFactor/MultifrontalCholesky", options.config);
         if (!options.choleskyOnly) {
           cameraBatchQrTime =
               runSolver(cameraBatchGraph, initial, cameraFirstOrdering,
                         NonlinearOptimizerParams::MULTIFRONTAL_QR,
-                        "CameraBatchFactor/MultifrontalQR");
+                        "CameraBatchFactor/MultifrontalQR", options.config);
           cameraBatchSolverTime =
               runSolver(cameraBatchGraph, initial, cameraFirstOrdering,
                         NonlinearOptimizerParams::MULTIFRONTAL_SOLVER,
-                        "CameraBatchFactor/MultifrontalSolver");
+                        "CameraBatchFactor/MultifrontalSolver", options.config);
         }
 
         cameraFirstLegacyTime =
             runSolver(graph, initial, cameraFirstOrdering,
                       NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY,
-                      "CameraFirst/MultifrontalCholesky");
+                      "CameraFirst/MultifrontalCholesky", options.config);
         if (!options.choleskyOnly) {
           cameraFirstQrTime =
               runSolver(graph, initial, cameraFirstOrdering,
                         NonlinearOptimizerParams::MULTIFRONTAL_QR,
-                        "CameraFirst/MultifrontalQR");
+                        "CameraFirst/MultifrontalQR", options.config);
           cameraFirstSolverTime =
               runSolver(graph, initial, cameraFirstOrdering,
                         NonlinearOptimizerParams::MULTIFRONTAL_SOLVER,
-                        "CameraFirst/MultifrontalSolver");
+                        "CameraFirst/MultifrontalSolver", options.config);
         }
       }
     }
@@ -857,8 +633,7 @@ int main(int argc, char* argv[]) {
       for (const auto& row : rows) {
         std::cout << "| " << row.dataset << " | " << row.regularCholesky
                   << " | " << row.batchCholesky << " | "
-                  << speedup(row.regularCholesky, row.batchCholesky)
-                  << "x |\n";
+                  << speedup(row.regularCholesky, row.batchCholesky) << "x |\n";
       }
     } else {
       std::cout << "\n| Dataset | Regular Cholesky s | Regular QR s | "
@@ -868,8 +643,8 @@ int main(int argc, char* argv[]) {
       for (const auto& row : rows) {
         std::cout << "| " << row.dataset << " | " << row.regularCholesky
                   << " | " << row.regularQr << " | " << row.regularSolver
-                  << " | " << row.batchCholesky << " | " << row.batchQr
-                  << " | " << row.batchSolver << " | "
+                  << " | " << row.batchCholesky << " | " << row.batchQr << " | "
+                  << row.batchSolver << " | "
                   << speedup(row.regularSolver, row.batchSolver) << "x |\n";
       }
     }
@@ -880,11 +655,9 @@ int main(int argc, char* argv[]) {
                      "Camera-batch Cholesky s | Cholesky Speedup |\n";
         std::cout << "| --- | --- | --- | --- |\n";
         for (const auto& row : rows) {
-          std::cout << "| " << row.dataset << " | "
-                    << row.cameraFirstCholesky << " | "
-                    << row.cameraBatchCholesky << " | "
-                    << speedup(row.cameraFirstCholesky,
-                               row.cameraBatchCholesky)
+          std::cout << "| " << row.dataset << " | " << row.cameraFirstCholesky
+                    << " | " << row.cameraBatchCholesky << " | "
+                    << speedup(row.cameraFirstCholesky, row.cameraBatchCholesky)
                     << "x |\n";
         }
       } else {
@@ -893,16 +666,15 @@ int main(int argc, char* argv[]) {
                "Camera-first Solver s | Camera-batch Cholesky s | "
                "Camera-batch QR s | Camera-batch Solver s | Cholesky Speedup | "
                "QR Speedup | Solver Speedup |\n";
-        std::cout
-            << "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n";
+        std::cout << "| --- | --- | --- | --- | --- | --- | --- | --- | --- | "
+                     "--- |\n";
         for (const auto& row : rows) {
           std::cout << "| " << row.dataset << " | " << row.cameraFirstCholesky
                     << " | " << row.cameraFirstQr << " | "
-                    << row.cameraFirstSolver << " | "
-                    << row.cameraBatchCholesky << " | " << row.cameraBatchQr
-                    << " | " << row.cameraBatchSolver << " | "
-                    << speedup(row.cameraFirstCholesky,
-                               row.cameraBatchCholesky)
+                    << row.cameraFirstSolver << " | " << row.cameraBatchCholesky
+                    << " | " << row.cameraBatchQr << " | "
+                    << row.cameraBatchSolver << " | "
+                    << speedup(row.cameraFirstCholesky, row.cameraBatchCholesky)
                     << "x | " << speedup(row.cameraFirstQr, row.cameraBatchQr)
                     << "x | "
                     << speedup(row.cameraFirstSolver, row.cameraBatchSolver)
@@ -914,7 +686,7 @@ int main(int argc, char* argv[]) {
 
   if (options.benchmarkActionJson) {
     if (rows.empty()) {
-      throw runtime_error("No benchmark rows found to write.");
+      throw std::runtime_error("No benchmark rows found to write.");
     }
     writeBenchmarkActionJson(rows, options.benchmarkActionJsonPath,
                              options.cameraBatch, options.choleskyOnly);

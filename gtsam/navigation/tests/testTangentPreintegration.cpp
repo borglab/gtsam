@@ -15,13 +15,13 @@
  * @author  Frank Dellaert
  */
 
-#include <gtsam/navigation/TangentPreintegration.h>
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/nonlinear/expressions.h>
+#include <gtsam/navigation/TangentPreintegration.h>
 #include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/expressionTesting.h>
-
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/nonlinear/expressions.h>
 
 #include "imuFactorTesting.h"
 
@@ -51,8 +51,7 @@ TEST(TangentPreintegration, UpdateEstimate1) {
 TEST(TangentPreintegration, UpdateEstimate2) {
   TangentPreintegration pim(testing::Params());
   const Vector3 acc(0.1, 0.2, 10), omega(0.1, 0.2, 0.3);
-  Vector9 zeta;
-  zeta << 0.01, 0.02, 0.03, 100, 200, 300, 10, 5, 3;
+  Vector9 zeta{0.01, 0.02, 0.03, 100, 200, 300, 10, 5, 3};
   Matrix9 aH1;
   Matrix93 aH2, aH3;
   pim.UpdatePreintegrated(acc, omega, kDt, zeta, aH1, aH2, aH3);
@@ -84,23 +83,18 @@ TEST(ImuFactor, BiasCorrectionJacobians) {
           pim.preintegrated_H_biasOmega(), 1e-3));
 }
 
+namespace tangent_interpolation {
+
 /* ************************************************************************* */
-TEST(TangentPreintegration, computeError) {
+TEST(TangentPreintegration, So3TangentAtUsesUnwrappedTheta) {
   TangentPreintegration pim(testing::Params());
-  NavState x1, x2;
-  imuBias::ConstantBias bias;
-  Matrix9 aH1, aH2;
-  Matrix96 aH3;
-  pim.computeError(x1, x2, bias, aH1, aH2, aH3);
-  auto f = std::bind(&TangentPreintegration::computeError, pim,
-                    std::placeholders::_1, std::placeholders::_2,
-                    std::placeholders::_3, nullptr, nullptr,
-                    nullptr);
-  // NOTE(frank): tolerance of 1e-3 on H1 because approximate away from 0
-  EXPECT(assert_equal(numericalDerivative31(f, x1, x2, bias), aH1, 1e-9));
-  EXPECT(assert_equal(numericalDerivative32(f, x1, x2, bias), aH2, 1e-9));
-  EXPECT(assert_equal(numericalDerivative33(f, x1, x2, bias), aH3, 1e-9));
+  pim.integrateMeasurement(Z_3x1, Vector3(0.0, 0.0, 4.0), 1.0);
+
+  EXPECT(assert_equal(Vector3(0.0, 0.0, 4.0), pim.theta(), 1e-12));
+  EXPECT(assert_equal(Vector3(0.0, 0.0, 2.0), pim.so3TangentAt(0.5), 1e-12));
 }
+
+}  // namespace tangent_interpolation
 
 /* ************************************************************************* */
 TEST(TangentPreintegration, Compose) {

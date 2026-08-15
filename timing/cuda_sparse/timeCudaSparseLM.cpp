@@ -3,6 +3,7 @@
 #include <cuda_runtime_api.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/cuda/CudaSparseLevenbergMarquardt.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/PriorFactor.h>
@@ -35,6 +36,8 @@
 #endif
 
 namespace {
+
+namespace bal = gtsam::timing::bal;
 
 using Clock = std::chrono::steady_clock;
 using gtsam::LevenbergMarquardtOptimizer;
@@ -633,9 +636,10 @@ LoadedWorkload LoadWorkload(const WorkloadSpec& specification,
 
   if (specification.kind == WorkloadKind::Bal) {
     const gtsam::SfmData data = gtsam::SfmData::FromBalFile(workload.path);
-    workload.graph = buildGeneralSfmGraph(data);
-    workload.initial = buildGeneralSfmInitial(data);
-    workload.cpuOrdering = createSchurOrdering(data, false);
+    const bal::BalBenchmarkConfig config;
+    workload.graph = bal::buildGeneralSfmGraph(data, config);
+    workload.initial = bal::buildGeneralSfmInitial(data);
+    workload.cpuOrdering = bal::createSchurOrdering(data, false);
   } else if (specification.kind == WorkloadKind::Pose2) {
     const auto [graph, initial] = gtsam::load2D(workload.path);
     if (!graph || !initial || !initial->exists(0)) {

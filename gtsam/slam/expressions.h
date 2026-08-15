@@ -1,5 +1,5 @@
 /**
- * @file expressions.h
+ * @file gtsam/slam/expressions.h
  * @brief Common expressions for solving geometry/slam/sfm problems
  * @date Oct 1, 2014
  * @author Frank Dellaert
@@ -195,8 +195,12 @@ inline Pose3_ getPose(const Expression<PinholeCamera<CALIBRATION> > & cam) {
 template <typename T>
 gtsam::Expression<typename gtsam::traits<T>::TangentVector> logmap(
     const gtsam::Expression<T> &x1, const gtsam::Expression<T> &x2) {
-  return Expression<typename gtsam::traits<T>::TangentVector>(
-      gtsam::traits<T>::Logmap, between(x1, x2));
+  using Traits = gtsam::traits<T>;
+  using TangentVector = typename Traits::TangentVector;
+  auto logmap = [](const T& value, typename Traits::ChartJacobian H) {
+    return Traits::Logmap(value, H);
+  };
+  return Expression<TangentVector>(logmap, between(x1, x2));
 }
 
 template <typename T>

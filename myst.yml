@@ -23,6 +23,9 @@ project:
       - file: ./gtsam/inference/inference.md
         children:
         - pattern: ./gtsam/inference/doc/*
+      - file: ./gtsam/linear/linear.md
+        children:
+        - pattern: ./gtsam/linear/doc/*
       - file: ./gtsam/hybrid/hybrid.md
         children:
         - pattern: ./gtsam/hybrid/doc/*
@@ -58,7 +61,8 @@ site:
     - title: C++ reference
       url: https://gtsam.org/doxygen/
   options:
-    logo_text: GTSAM 
+    logo_text: GTSAM
+    style: ./doc/gtsam-site.css
   template: book-theme
 
   # TODO: Graphics for favicon, site logo

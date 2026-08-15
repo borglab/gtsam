@@ -84,15 +84,15 @@ class GTSAM_EXPORT SL4 : public MatrixLieGroup<SL4, 15, 4> {
   using LieGroup<SL4, 15>::inverse;
 
   /// Exponential map at identity - create an element from canonical coordinates
-  static SL4 Expmap(const Vector& xi, SL4Jacobian H = {});
+  static SL4 Expmap(const Vector& xi);
 
   /// Log map at identity - return the canonical coordinates of this element
-  static Vector Logmap(const SL4& p, SL4Jacobian H = {});
+  static Vector Logmap(const SL4& p);
 
   // Chart at origin
   struct GTSAM_EXPORT ChartAtOrigin {
-    static SL4 Retract(const Vector15& xi, ChartJacobian Hxi = {});
-    static Vector15 Local(const SL4& pose, ChartJacobian Hpose = {});
+    static SL4 Retract(const Vector15& xi);
+    static Vector15 Local(const SL4& pose);
   };
 
   // retract and localCoordinates provided by LieGroup

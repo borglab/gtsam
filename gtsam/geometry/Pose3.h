@@ -340,11 +340,175 @@ using Pose3Pairs = std::vector<std::pair<Pose3, Pose3> >;
 // For MATLAB wrapper
 typedef std::vector<Pose3> Pose3Vector;
 
+/**
+ * Add the Pose3-specific operations used by the generic QCQP conversion code.
+ *
+ * `template <> struct traits<Pose3>` specializes GTSAM's generic `traits<T>`
+ * interface for T=Pose3. Its static methods are called directly through the
+ * traits type. The member-template parameter D is the QCQP variable's column
+ * count, and `if constexpr (D == 1)` selects this exact homogenized vector
+ * formulation at compile time.
+ *
+ * The lift discards the fixed last row [0, 0, 0, 1] of the Pose3 matrix and
+ * stores the first three entries of each column consecutively:
+ *
+ *   x = [1, r00, r10, r20, r01, r11, r21,
+ *           r02, r12, r22, tx, ty, tz]'.
+ *
+ * Eigen's `segment<3>(start)` selects three consecutive entries of x, while
+ * `T.col(column).head<3>()` selects the retained part of one matrix column.
+ * QcqpConstraints returns the symmetric matrices A and scalars b for the ten
+ * equations x' A x = b. Their translation rows and columns are zero, so these
+ * equations constrain only the embedded SO(3) rotation.
+ */
 template <>
-struct traits<Pose3> : public internal::MatrixLieGroup<Pose3, 4> {};
+struct traits<Pose3> : public internal::MatrixLieGroup<Pose3, 4> {
+  /// Dimension of the D=1 homogenized QCQP vector.
+  inline constexpr static int QcqpVectorDim = 13;
+
+  /**
+   * Return the D=1 homogenized QCQP variable
+   * x = [1, vec(R), tx, ty, tz] in column-major order.
+   */
+  template <int D = 1>
+  static Matrix QcqpValue(const Pose3& value) {
+    if constexpr (D == 1) {
+      const Matrix4 T = value.matrix();
+      Eigen::Matrix<double, 13, 1> X;
+      X(0, 0) = 1.0;
+      X.segment<3>(1) = T.col(0).head<3>();
+      X.segment<3>(4) = T.col(1).head<3>();
+      X.segment<3>(7) = T.col(2).head<3>();
+      X.segment<3>(10) = T.col(3).head<3>();
+      return X;
+    } else {
+      throw std::invalid_argument(
+          "traits<Pose3>::QcqpValue only supports D=1.");
+    }
+  }
+
+  /**
+   * Return the ten D=1 lifted SE(3) manifold constraints A, b such that
+   * trace(x' A x) = b.
+   */
+  template <int D = 1>
+  static std::vector<std::pair<Matrix, double>> QcqpConstraints() {
+    if constexpr (D == 1) {
+      std::vector<std::pair<Matrix, double>> constraints;
+      constraints.reserve(10);
+
+      Matrix A = Matrix::Zero(13, 13);
+
+      // Homogenization.
+      A(0, 0) = 1.0;
+      constraints.emplace_back(A, 1.0);
+
+      // cross(R.col(1), R.col(2)) = x(0) * R.col(0).
+      A.setZero();
+      A(5, 9) = 0.5;
+      A(9, 5) = 0.5;
+      A(6, 8) = -0.5;
+      A(8, 6) = -0.5;
+      A(0, 1) = -0.5;
+      A(1, 0) = -0.5;
+      constraints.emplace_back(A, 0.0);
+
+      A.setZero();
+      A(6, 7) = 0.5;
+      A(7, 6) = 0.5;
+      A(4, 9) = -0.5;
+      A(9, 4) = -0.5;
+      A(0, 2) = -0.5;
+      A(2, 0) = -0.5;
+      constraints.emplace_back(A, 0.0);
+
+      A.setZero();
+      A(4, 8) = 0.5;
+      A(8, 4) = 0.5;
+      A(5, 7) = -0.5;
+      A(7, 5) = -0.5;
+      A(0, 3) = -0.5;
+      A(3, 0) = -0.5;
+      constraints.emplace_back(A, 0.0);
+
+      // RR^T = I.
+      A.setZero();
+      A(1, 1) = 1.0;
+      A(4, 4) = 1.0;
+      A(7, 7) = 1.0;
+      constraints.emplace_back(A, 1.0);
+
+      A.setZero();
+      A(1, 2) = 0.5;
+      A(2, 1) = 0.5;
+      A(4, 5) = 0.5;
+      A(5, 4) = 0.5;
+      A(7, 8) = 0.5;
+      A(8, 7) = 0.5;
+      constraints.emplace_back(A, 0.0);
+
+      A.setZero();
+      A(1, 3) = 0.5;
+      A(3, 1) = 0.5;
+      A(4, 6) = 0.5;
+      A(6, 4) = 0.5;
+      A(7, 9) = 0.5;
+      A(9, 7) = 0.5;
+      constraints.emplace_back(A, 0.0);
+
+      A.setZero();
+      A(2, 2) = 1.0;
+      A(5, 5) = 1.0;
+      A(8, 8) = 1.0;
+      constraints.emplace_back(A, 1.0);
+
+      A.setZero();
+      A(2, 3) = 0.5;
+      A(3, 2) = 0.5;
+      A(5, 6) = 0.5;
+      A(6, 5) = 0.5;
+      A(8, 9) = 0.5;
+      A(9, 8) = 0.5;
+      constraints.emplace_back(A, 0.0);
+
+      A.setZero();
+      A(3, 3) = 1.0;
+      A(6, 6) = 1.0;
+      A(9, 9) = 1.0;
+      constraints.emplace_back(A, 1.0);
+
+      return constraints;
+    } else {
+      throw std::invalid_argument(
+          "traits<Pose3>::QcqpConstraints only supports D=1.");
+    }
+  }
+
+  /** Project a D=1 homogenized QCQP vector back to Pose3. */
+  template <int D>
+  static Pose3 FromQcqpValue(const Matrix& X) {
+    if constexpr (D == 1) {
+      if (X.rows() != QcqpVectorDim || X.cols() != 1 ||
+          std::abs(X(0, 0)) < 1e-9) {
+        throw std::invalid_argument(
+            "traits<Pose3>::FromQcqpValue requires a 13-by-1 vector with a "
+            "nonzero homogenization entry.");
+      }
+      const Vector x = X.col(0) / X(0, 0);
+      Matrix3 R;
+      R.col(0) = x.segment<3>(1);
+      R.col(1) = x.segment<3>(4);
+      R.col(2) = x.segment<3>(7);
+      return Pose3(Rot3::ClosestTo(R), x.segment<3>(10));
+    } else {
+      throw std::invalid_argument(
+          "traits<Pose3>::FromQcqpValue only supports D=1.");
+    }
+  }
+};
 
 template <>
-struct traits<const Pose3> : public internal::MatrixLieGroup<Pose3, 4> {};
+struct traits<const Pose3> : public traits<Pose3> {};
 
 // bearing and range traits, used in RangeFactor
 template <>

@@ -80,6 +80,8 @@ set(interface_files
     ${GTSAM_SOURCE_DIR}/gtsam/nonlinear/nonlinear.i
     ${GTSAM_SOURCE_DIR}/gtsam/nonlinear/values.i
     ${GTSAM_SOURCE_DIR}/gtsam/nonlinear/custom.i
+    ${GTSAM_SOURCE_DIR}/gtsam/constrained/constrained.i
+    ${GTSAM_SOURCE_DIR}/gtsam/certifiable/certifiable.i
     ${GTSAM_SOURCE_DIR}/gtsam/symbolic/symbolic.i
     ${GTSAM_SOURCE_DIR}/gtsam/sam/sam.i
     ${GTSAM_SOURCE_DIR}/gtsam/slam/slam.i
@@ -98,7 +100,7 @@ matlab_wrap("${interface_files}" "gtsam" "${GTSAM_ADDITIONAL_LIBRARIES}"
 # lib directory so MATLAB can load it on macOS/Linux.
 set_target_properties(
   gtsam_matlab_wrapper
-  PROPERTIES BUILD_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
+  PROPERTIES BUILD_RPATH "${PROJECT_BINARY_DIR}/gtsam;${CMAKE_INSTALL_PREFIX}/lib"
              INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
              INSTALL_RPATH_USE_LINK_PATH TRUE)
 
@@ -110,12 +112,40 @@ if(GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX)
     list(APPEND mexFlags -DGTSAM_IMPORT_STATIC)
   endif()
 
+  # PoseRTV and the unstable factors built around it are unavailable when
+  # deprecated APIs are disabled. Keep them out of the optional MATLAB
+  # wrapper in that configuration.
+  set(unstable_ignore ${ignore})
+  if(NOT GTSAM_ALLOW_DEPRECATED_SINCE_V43)
+    list(APPEND unstable_ignore
+         gtsam::PoseRTV
+         gtsam::PriorFactor
+         gtsam::BetweenFactor
+         gtsam::RangeFactor
+         gtsam::RangeFactorRTV
+         gtsam::NonlinearEquality
+         gtsam::IMUFactor
+         gtsam::FullIMUFactor
+         gtsam::DHeightPrior
+         gtsam::DRollPrior
+         gtsam::VelocityPrior
+         gtsam::DGroundConstraint
+         "gtsam::PriorFactor<gtsam::PoseRTV>"
+         "gtsam::BetweenFactor<gtsam::PoseRTV>"
+         "gtsam::RangeFactor<gtsam::PoseRTV,gtsam::PoseRTV>"
+         "gtsam::RangeFactor<gtsam::PoseRTV, gtsam::PoseRTV>"
+         "gtsam::NonlinearEquality<gtsam::PoseRTV>"
+         "gtsam::IMUFactor<gtsam::PoseRTV>"
+         "gtsam::FullIMUFactor<gtsam::PoseRTV>")
+  endif()
+
   # Wrap
   matlab_wrap(${GTSAM_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.i "gtsam_unstable"
-              "${GTSAM_ADDITIONAL_LIBRARIES}" "" "${mexFlags}" "${ignore}" "${GTSAM_ENABLE_BOOST_SERIALIZATION}")
+              "${GTSAM_ADDITIONAL_LIBRARIES}" "" "${mexFlags}" "${unstable_ignore}" "${GTSAM_ENABLE_BOOST_SERIALIZATION}")
   set_target_properties(
     gtsam_unstable_matlab_wrapper
-    PROPERTIES BUILD_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
+    PROPERTIES BUILD_RPATH
+               "${PROJECT_BINARY_DIR}/gtsam_unstable;${PROJECT_BINARY_DIR}/gtsam;${CMAKE_INSTALL_PREFIX}/lib"
                INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
                INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif(GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX)

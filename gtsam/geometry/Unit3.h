@@ -136,7 +136,20 @@ public:
   /// Return unit-norm Vector
   Vector3 unitVector(OptionalJacobian<3, 2> H = {}) const;
 
-  /// Return scaled direction as Point3
+  /**
+   * Return this direction scaled by a magnitude, i.e. magnitude * unitVector().
+   * Useful to reconstruct a physical vector from a direction and a known (or
+   * separately estimated) magnitude, e.g. a gravity or magnetic field vector.
+   * @param magnitude scale applied to the unit vector
+   * @param H_this optional 3x2 Jacobian wrt this direction
+   * @param H_magnitude optional 3x1 Jacobian wrt the magnitude
+   * @sa operator*(double, const Unit3&), which returns the same value
+   *     without Jacobians
+   */
+  Vector3 scaled(double magnitude, OptionalJacobian<3, 2> H_this = {},
+                 OptionalJacobian<3, 1> H_magnitude = {}) const;
+
+  /// Return scaled direction as Point3 (no Jacobians; see scaled())
   friend Point3 operator*(double s, const Unit3& d) {
     return Point3(s * d.p_);
   }

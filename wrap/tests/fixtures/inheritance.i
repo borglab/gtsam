@@ -27,3 +27,12 @@ virtual class ForwardKinematicsFactor : gtsam::BetweenFactor<gtsam::Pose3> {};
 
 template <T = {double}>
 virtual class ParentHasTemplate : MyTemplate<T> {};
+
+// A base class with a smart static factory that may downcast
+virtual class Base {
+  static gtsam::Base* Create(double x);
+};
+
+// A derived class returned by Base::Create when appropriate
+virtual class Derived : Base {
+};

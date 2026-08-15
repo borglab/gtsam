@@ -20,9 +20,11 @@
 
 #pragma once
 
-#include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/timing.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/internal/FixedJacobianFactorOps.h>
+
+#include <algorithm>
 
 namespace gtsam {
 
@@ -47,6 +49,45 @@ struct BinaryJacobianFactor: JacobianFactor {
     return keys_[1];
   }
 
+  /** Add the Hessian diagonal using fixed-size matrix operations. */
+  void hessianDiagonalAdd(VectorValues& diagonal) const override {
+    const SharedDiagonal& model = get_model();
+    if (model && !model->isUnit()) {
+      JacobianFactor::hessianDiagonalAdd(diagonal);
+      return;
+    }
+
+    const Matrix& Ab = Ab_.matrix();
+    const Eigen::Block<const Matrix, M, N1> A1(Ab, 0, 0);
+    const Eigen::Block<const Matrix, M, N2> A2(Ab, 0, N1);
+    internal::accumulateHessianDiagonal<M, N1>(key1(), A1, diagonal);
+    internal::accumulateHessianDiagonal<M, N2>(key2(), A2, diagonal);
+  }
+
+  /** Compute the error change using a fixed-size residual. */
+  double deltaError(const VectorValues& values, double* oldError = nullptr,
+                    double* newError = nullptr) const override {
+    const SharedDiagonal& model = get_model();
+    if (model && !model->isUnit()) {
+      return JacobianFactor::deltaError(values, oldError, newError);
+    }
+
+    const Matrix& Ab = Ab_.matrix();
+    const Eigen::Block<const Matrix, M, N1> A1(Ab, 0, 0);
+    const Eigen::Block<const Matrix, M, N2> A2(Ab, 0, N1);
+    const Eigen::Block<const Matrix, M, 1> b(Ab, 0, N1 + N2);
+
+    Eigen::Matrix<double, M, 1> error = -b;
+    internal::accumulateResidual<M, N1>(A1, values.at(key1()), error);
+    internal::accumulateResidual<M, N2>(A2, values.at(key2()), error);
+
+    const double oldValue = 0.5 * b.squaredNorm();
+    const double newValue = 0.5 * error.squaredNorm();
+    if (oldError) *oldError = oldValue;
+    if (newError) *newError = newValue;
+    return oldValue - newValue;
+  }
+
   // Fixed-size matrix update
   void updateHessian(const KeyVector& infoKeys,
       SymmetricBlockMatrix* info) const override {
@@ -58,8 +99,9 @@ struct BinaryJacobianFactor: JacobianFactor {
         throw std::invalid_argument(
             "BinaryJacobianFactor::updateHessian: cannot update information with "
                 "constrained noise model");
-      BinaryJacobianFactor whitenedFactor(key1(), model->Whiten(getA(begin())),
-          key2(), model->Whiten(getA(end())), model->whiten(getb()));
+      BinaryJacobianFactor whitenedFactor(
+          key1(), model->Whiten(getA(begin())), key2(),
+          model->Whiten(getA(begin() + 1)), model->whiten(getb()));
       whitenedFactor.updateHessian(infoKeys, info);
     } else {
       // First build an array of slots
@@ -73,12 +115,52 @@ struct BinaryJacobianFactor: JacobianFactor {
       Eigen::Block<const Matrix, M, 1> b(Ab, 0, N1 + N2);
 
       // We perform I += A'*A to the upper triangle
-      info->diagonalBlock(slot1).rankUpdate(A1.transpose());
-      info->updateOffDiagonalBlock(slot1, slot2, A1.transpose() * A2);
-      info->updateOffDiagonalBlock(slot1, slotB, A1.transpose() * b);
-      info->diagonalBlock(slot2).rankUpdate(A2.transpose());
-      info->updateOffDiagonalBlock(slot2, slotB, A2.transpose() * b);
-      info->updateDiagonalBlock(slotB, b.transpose() * b);
+      internal::updateJacobianHessian<M, N1>(slot1, A1, slotB, b, info);
+      internal::updateCrossHessian<M, N1, N2>(slot1, A1, slot2, A2, info);
+      internal::updateJacobianHessian<M, N2>(slot2, A2, slotB, b, info);
+      internal::updateSelfHessian<M, 1>(slotB, b, info);
+    }
+  }
+
+  /** Update a range of Hessian block columns using fixed-size operations. */
+  void updateHessian(const KeyVector& infoKeys, SymmetricBlockMatrix* info,
+                     DenseIndex beginCol, DenseIndex endCol) const override {
+    gttic(updateHessianRange_BinaryJacobianFactor);
+    const SharedDiagonal& model = get_model();
+    if (model && !model->isUnit()) {
+      JacobianFactor::updateHessian(infoKeys, info, beginCol, endCol);
+      return;
+    }
+
+    const DenseIndex slot1 = Slot(infoKeys, key1());
+    const DenseIndex slot2 = Slot(infoKeys, key2());
+    const DenseIndex slotB = info->nBlocks() - 1;
+    const auto ownsColumn = [beginCol, endCol](DenseIndex column) {
+      return column >= beginCol && column < endCol;
+    };
+
+    const Matrix& Ab = Ab_.matrix();
+    const Eigen::Block<const Matrix, M, N1> A1(Ab, 0, 0);
+    const Eigen::Block<const Matrix, M, N2> A2(Ab, 0, N1);
+    const Eigen::Block<const Matrix, M, 1> b(Ab, 0, N1 + N2);
+
+    if (ownsColumn(slot1)) {
+      internal::updateSelfHessian<M, N1>(slot1, A1, info);
+    }
+    if (ownsColumn(std::max(slot1, slot2))) {
+      internal::updateCrossHessian<M, N1, N2>(slot1, A1, slot2, A2, info);
+    }
+    if (ownsColumn(std::max(slot1, slotB))) {
+      internal::updateCrossHessian<M, N1, 1>(slot1, A1, slotB, b, info);
+    }
+    if (ownsColumn(slot2)) {
+      internal::updateSelfHessian<M, N2>(slot2, A2, info);
+    }
+    if (ownsColumn(std::max(slot2, slotB))) {
+      internal::updateCrossHessian<M, N2, 1>(slot2, A2, slotB, b, info);
+    }
+    if (ownsColumn(slotB)) {
+      internal::updateSelfHessian<M, 1>(slotB, b, info);
     }
   }
 };

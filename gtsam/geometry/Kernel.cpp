@@ -16,6 +16,7 @@
  * @date    August 2025
  */
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/Kernel.h>
 #include <gtsam/geometry/SO3.h>
 

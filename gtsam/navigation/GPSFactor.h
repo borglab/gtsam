@@ -213,11 +213,12 @@ struct traits<GPSFactorArm> : public Testable<GPSFactorArm> {};
  * turning.
  * @ingroup navigation
  */
-class GTSAM_EXPORT GPSFactorArmCalib: public NoiseModelFactorN<Pose3, Point3> {
+class GTSAM_EXPORT GPSFactorArmCalib
+    : public NoiseModelFactorT<Vector3, Pose3, Point3> {
 
 private:
 
-  typedef NoiseModelFactorN<Pose3, Point3> Base;
+  typedef NoiseModelFactorT<Vector3, Pose3, Point3> Base;
 
   Point3 nT_;  ///< Position measurement in cartesian coordinates (navigation frame)
 
@@ -262,8 +263,9 @@ public:
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
   /// vector of errors
-  Vector evaluateError(const Pose3& nTb, const Point3& bL, OptionalMatrixType H1,
-                       OptionalMatrixType H2) const override;
+  Vector3 evaluateError(const Pose3& nTb, const Point3& bL,
+                        OptionalMatrixType H1,
+                        OptionalMatrixType H2) const override;
 
   /// return the measurement, in the navigation frame
   inline const Point3 & measurementIn() const {
@@ -463,11 +465,12 @@ struct traits<GPSFactor2Arm> : public Testable<GPSFactor2Arm> {};
  * and accounts for position measurement vs state discrepancies while turning.
  * @ingroup navigation
  */
-class GTSAM_EXPORT GPSFactor2ArmCalib: public NoiseModelFactorN<NavState, Point3> {
+class GTSAM_EXPORT GPSFactor2ArmCalib
+    : public NoiseModelFactorT<Vector3, NavState, Point3> {
 
 private:
 
-  typedef NoiseModelFactorN<NavState, Point3> Base;
+  typedef NoiseModelFactorT<Vector3, NavState, Point3> Base;
 
   Point3 nT_; ///< Position measurement in cartesian coordinates (navigation frame)
 
@@ -511,9 +514,9 @@ public:
   bool equals(const NonlinearFactor& expected, double tol = 1e-9) const override;
 
   /// vector of errors
-  Vector evaluateError(const NavState& nTb, const Point3& bL,
-                       OptionalMatrixType H1,
-                       OptionalMatrixType H2) const override;
+  Vector3 evaluateError(const NavState& nTb, const Point3& bL,
+                        OptionalMatrixType H1,
+                        OptionalMatrixType H2) const override;
 
   /// return the measurement, in the navigation frame
   inline const Point3 & measurementIn() const {

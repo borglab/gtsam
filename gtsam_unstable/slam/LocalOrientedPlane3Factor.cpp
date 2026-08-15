@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /*
  * LocalOrientedPlane3Factor.cpp
  *
@@ -22,8 +33,8 @@ void LocalOrientedPlane3Factor::print(const string& s,
 }
 
 //***************************************************************************
-Vector LocalOrientedPlane3Factor::evaluateError(const Pose3& wTwi,
-    const Pose3& wTwa, const OrientedPlane3& a_plane,
+Vector3 LocalOrientedPlane3Factor::evaluateError(
+    const Pose3& wTwi, const Pose3& wTwa, const OrientedPlane3& a_plane,
     OptionalMatrixType H1, OptionalMatrixType H2,
     OptionalMatrixType H3) const {
 

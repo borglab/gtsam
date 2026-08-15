@@ -20,6 +20,7 @@
  **/
 
 #include <gtsam/navigation/ImuFactor.h>
+#include <gtsam/navigation/LieGroupPreintegration.h>
 #include <gtsam/navigation/ManifoldPreintegration.h>
 #include <gtsam/navigation/TangentPreintegration.h>
 
@@ -142,8 +143,8 @@ Vector ImuFactorT<PIM>::evaluateError(const Pose3& pose_i, const Vector3& vel_i,
     const imuBias::ConstantBias& bias_i, OptionalMatrixType H1,
     OptionalMatrixType H2, OptionalMatrixType H3,
     OptionalMatrixType H4, OptionalMatrixType H5) const {
-  return pim_.computeErrorAndJacobians(pose_i, vel_i, pose_j, vel_j, bias_i,
-      H1, H2, H3, H4, H5);
+  return internal::preintegrationErrorAndJacobians(
+      pim_, pose_i, vel_i, pose_j, vel_j, bias_i, H1, H2, H3, H4, H5);
 }
 
 //------------------------------------------------------------------------------
@@ -177,12 +178,13 @@ bool ImuFactor2T<PIM>::equals(const NonlinearFactor& other, double tol) const {
 
 //------------------------------------------------------------------------------
 template <class PIM>
-Vector ImuFactor2T<PIM>::evaluateError(const NavState& state_i,
+Vector9 ImuFactor2T<PIM>::evaluateError(const NavState& state_i,
     const NavState& state_j,
     const imuBias::ConstantBias& bias_i, //
     OptionalMatrixType H1, OptionalMatrixType H2,
     OptionalMatrixType H3) const {
-  return pim_.computeError(state_i, state_j, bias_i, H1, H2, H3);
+  return internal::preintegrationError(pim_, state_i, state_j, bias_i, H1, H2,
+                                       H3);
 }
 
 //------------------------------------------------------------------------------
@@ -190,25 +192,39 @@ Vector ImuFactor2T<PIM>::evaluateError(const NavState& state_i,
 //------------------------------------------------------------------------------
 template class GTSAM_EXPORT PreintegratedImuMeasurementsT<ManifoldPreintegration>;
 template class GTSAM_EXPORT PreintegratedImuMeasurementsT<TangentPreintegration>;
+template class GTSAM_EXPORT
+    PreintegratedImuMeasurementsT<LieGroupPreintegration>;
 
 // ImuFactorT instantiations
 template class GTSAM_EXPORT ImuFactorT<PreintegratedImuMeasurementsT<ManifoldPreintegration>>;
 template class GTSAM_EXPORT ImuFactorT<PreintegratedImuMeasurementsT<TangentPreintegration>>;
+template class GTSAM_EXPORT
+    ImuFactorT<PreintegratedImuMeasurementsT<LieGroupPreintegration>>;
 
 // ImuFactor2T instantiations
 template class GTSAM_EXPORT ImuFactor2T<PreintegratedImuMeasurementsT<ManifoldPreintegration>>;
 template class GTSAM_EXPORT ImuFactor2T<PreintegratedImuMeasurementsT<TangentPreintegration>>;
+template class GTSAM_EXPORT
+    ImuFactor2T<PreintegratedImuMeasurementsT<LieGroupPreintegration>>;
 
 // operator<< instantiations
 template GTSAM_EXPORT std::ostream& operator<<<PreintegratedImuMeasurementsT<ManifoldPreintegration>>(
     std::ostream& os, const ImuFactorT<PreintegratedImuMeasurementsT<ManifoldPreintegration>>& f);
 template GTSAM_EXPORT std::ostream& operator<<<PreintegratedImuMeasurementsT<TangentPreintegration>>(
     std::ostream& os, const ImuFactorT<PreintegratedImuMeasurementsT<TangentPreintegration>>& f);
+template GTSAM_EXPORT std::ostream&
+operator<< <PreintegratedImuMeasurementsT<LieGroupPreintegration>>(
+    std::ostream& os,
+    const ImuFactorT<PreintegratedImuMeasurementsT<LieGroupPreintegration>>& f);
 
 template GTSAM_EXPORT std::ostream& operator<<<PreintegratedImuMeasurementsT<ManifoldPreintegration>>(
     std::ostream& os, const ImuFactor2T<PreintegratedImuMeasurementsT<ManifoldPreintegration>>& f);
 template GTSAM_EXPORT std::ostream& operator<<<PreintegratedImuMeasurementsT<TangentPreintegration>>(
     std::ostream& os, const ImuFactor2T<PreintegratedImuMeasurementsT<TangentPreintegration>>& f);
-
+template GTSAM_EXPORT std::ostream&
+operator<< <PreintegratedImuMeasurementsT<LieGroupPreintegration>>(
+    std::ostream& os,
+    const ImuFactor2T<PreintegratedImuMeasurementsT<LieGroupPreintegration>>&
+        f);
 }
 // namespace gtsam

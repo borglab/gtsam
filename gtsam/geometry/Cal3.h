@@ -156,17 +156,11 @@ class GTSAM_EXPORT Cal3 {
   Point2 principalPoint() const { return Point2(u0_, v0_); }
 
   /// vectorized form (column-wise)
-  Vector5 vector() const {
-    Vector5 v;
-    v << fx_, fy_, s_, u0_, v0_;
-    return v;
-  }
+  Vector5 vector() const { return Vector5{fx_, fy_, s_, u0_, v0_}; }
 
   /// return calibration matrix K
   virtual Matrix3 K() const {
-    Matrix3 K;
-    K << fx_, s_, u0_, 0.0, fy_, v0_, 0.0, 0.0, 1.0;
-    return K;
+    return Matrix3{{fx_, s_, u0_}, {0.0, fy_, v0_}, {0.0, 0.0, 1.0}};
   }
 
   /// Return inverted calibration matrix inv(K)

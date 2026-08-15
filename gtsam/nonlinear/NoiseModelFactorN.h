@@ -21,7 +21,14 @@
 #pragma once
 // \callgraph
 
+#include <gtsam/linear/FixedJacobianFactor.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+
+#include <array>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
 namespace gtsam {
 
 /* ************************************************************************* */
@@ -81,6 +88,7 @@ struct NoiseModelFactorAliases<T1, T2, T3, T4, T5, T6, TExtra...> {
   using X5 = T5;
   using X6 = T6;
 };
+
 }  // namespace detail
 
 /* ************************************************************************* */
@@ -114,7 +122,7 @@ struct NoiseModelFactorAliases<T1, T2, T3, T4, T5, T6, TExtra...> {
  *     // H_T = H_a * a_H_t * t_H_T = the first row of t_H_T
  *     if (H_T) *H_T = (Matrix(1, 6) << t_H_T.row(0)).finished();
  *     // H_p = H_b * b_H_p = -1 * [1, 0, 0]
- *     if (H_p) *H_p = (Matrix(1, 3) << -1., 0., 0.).finished();
+ *     if (H_p) *H_p = Matrix{{-1., 0., 0.}};
  *
  *     return Vector1(error);
  *   }
@@ -136,7 +144,9 @@ struct NoiseModelFactorAliases<T1, T2, T3, T4, T5, T6, TExtra...> {
  * are typically more general than just vectors, e.g., Rot3 or Pose3, which are
  * objects in non-linear manifolds (Lie groups).
  *
- * @tparam OutputVec The type of the error vector, usually Vector.
+ * @tparam OutputVec The error-vector type. A fixed-size vector enables
+ * automatic fixed-size Jacobian-factor linearization for fixed-size two- and
+ * three-key factors; `Vector` retains generic linearization.
  * @tparam ValueTypes The types of the variables connected to this factor, e.g., Pose3, Point3.
  */
 template <class OutputVec, class... ValueTypes>
@@ -301,6 +311,72 @@ class NoiseModelFactorT
 
   /// @name NoiseModelFactor methods
   /// @{
+
+  /**
+   * Linearize fixed-size two- and three-key factors to specialized Jacobian
+   * factors. All other factors retain the generic implementation.
+   */
+  std::shared_ptr<GaussianFactor> linearize(
+      const Values& values) const override {
+    using Dimensions = internal::FixedSizeDimensions<OutputVec, ValueTypes...>;
+    using Factory = internal::FixedJacobianFactorFactory<
+        Dimensions::M, traits<ValueTypes>::dimension...>;
+    using UseFixed = std::bool_constant<Dimensions::allFixed &&
+                                        Factory::available>;
+    return linearizeImpl<Factory>(values, UseFixed{});
+  }
+
+ private:
+  /** Linearize a fixed-size factor supported by the selected factory. */
+  template <typename Factory>
+  std::shared_ptr<GaussianFactor> linearizeImpl(const Values& values,
+                                                std::true_type) const {
+    using Dimensions = internal::FixedSizeDimensions<OutputVec, ValueTypes...>;
+    constexpr int M = Dimensions::M;
+    static_assert(M > 0 && ((traits<ValueTypes>::dimension > 0) && ...),
+                  "Fixed factor dimensions must be positive");
+
+    if (!this->active(values)) return std::shared_ptr<JacobianFactor>();
+
+    std::vector<Matrix> jacobians(Dimensions::arity);
+    Vector b = -this->unwhitenedError(values, jacobians);
+    const SharedNoiseModel& noiseModel = this->noiseModel();
+    if (noiseModel && static_cast<size_t>(b.size()) != noiseModel->dim()) {
+      throw std::invalid_argument(
+          "NoiseModelFactor: NoiseModel has dimension " +
+          std::to_string(noiseModel->dim()) + " instead of " +
+          std::to_string(b.size()) + ".");
+    }
+    if (b.size() != M || jacobians.size() != Dimensions::arity ||
+        !internal::dimensionsMatch<Dimensions>(
+            jacobians, std::make_index_sequence<Dimensions::arity>{})) {
+      throw std::invalid_argument(
+          "NoiseModelFactorT::linearize: error or Jacobian dimension "
+          "mismatch");
+    }
+
+    if (noiseModel) {
+      noiseModel->WhitenSystem(jacobians, b);
+    }
+
+    SharedDiagonal linearModel;
+    if (noiseModel && noiseModel->isConstrained()) {
+      const auto constrained =
+          std::static_pointer_cast<noiseModel::Constrained>(noiseModel);
+      linearModel = constrained->unit();
+    }
+
+    return Factory::create(this->keys_, jacobians, b, linearModel);
+  }
+
+  /** Retain generic linearization for dynamic or unsupported arities. */
+  template <typename Factory>
+  std::shared_ptr<GaussianFactor> linearizeImpl(const Values& values,
+                                                std::false_type) const {
+    return NoiseModelFactor::linearize(values);
+  }
+
+ public:
 
   /** This implements the `unwhitenedError` virtual function by calling the
    * n-key specific version of evaluateError, which is pure virtual so must be

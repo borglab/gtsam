@@ -125,11 +125,7 @@ double ConstraintSign(LinearConstraint::Sense sense) {
 }
 
 /* ************************************************************************* */
-Vector SingleValue(double value) {
-  Vector vector(1);
-  vector << value;
-  return vector;
-}
+Vector1 SingleValue(double value) { return Vector1{value}; }
 
 /* ************************************************************************* */
 JacobianFactor::shared_ptr OneRowConstraintFactor(const JacobianFactor& factor,
@@ -332,7 +328,7 @@ void ActiveSetSolver::initializeDenseQpWorkspace() {
 
   try {
     workspace.costBayesNet = eliminate(regularizedCostGraph);
-  } catch (const IndeterminantLinearSystemException&) {
+  } catch (const IndeterminateSystemException&) {
     if (params_->regularization <= 0.0 ||
         params_->regularization >= kMinimumDenseRegularization) {
       throw std::runtime_error(
@@ -346,7 +342,7 @@ void ActiveSetSolver::initializeDenseQpWorkspace() {
                       kMinimumDenseRegularization);
     try {
       workspace.costBayesNet = eliminate(fallbackCostGraph);
-    } catch (const IndeterminantLinearSystemException&) {
+    } catch (const IndeterminateSystemException&) {
       throw std::runtime_error(
           "ActiveSetSolver: dense QP Hessian factorization failed even after "
           "minimum dense regularization. Increase regularization or use the "

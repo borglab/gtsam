@@ -36,7 +36,7 @@ class Variable:
             + IDENT("name")  #
             + Optional(EQUAL + DEFAULT_ARG)("default")  #
             + SEMI_COLON  #
-            ).setParseAction(lambda t: Variable(
+            ).set_parse_action(lambda t: Variable(
                 t.ctype,  #
                 t.name,  #
                 t.default[0] if isinstance(t.default, ParseResults) else None))

@@ -79,7 +79,8 @@ class TestMarginals(GtsamTestCase):
         union_keys = [x1, l1, l2, x3]
         joint = marginals.jointMarginalCovariance(union_keys)
         full = joint.fullMatrix()
-        ordered_keys = sorted(set(union_keys))
+        # JointMarginal preserves the order supplied to the query.
+        ordered_keys = union_keys
         dims = values.dims()
 
         offsets = {}

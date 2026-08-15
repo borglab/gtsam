@@ -4,11 +4,13 @@
 [![Docs](https://img.shields.io/badge/Docs-Python%20%7C%20C%2B%2B-green.svg)](https://borglab.github.io/gtsam/)
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="doc/images/gtsam-manifold-optimization-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="doc/images/gtsam-manifold-optimization-light.png">
-    <img alt="GTSAM is a manifold optimization library" src="doc/images/gtsam-manifold-optimization-light.png" width="100%">
-  </picture>
+  <a href="https://borglab.github.io/gtsam/">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="doc/images/gtsam-manifold-optimization-dark.png">
+      <source media="(prefers-color-scheme: light)" srcset="doc/images/gtsam-manifold-optimization-light.png">
+      <img alt="GTSAM manifold optimization workflow: build a factor graph, linearize and solve in tangent spaces, retract to manifolds, and iterate to convergence." src="doc/images/gtsam-manifold-optimization-light.png" width="100%">
+    </picture>
+  </a>
 </p>
 
 **Important Note**

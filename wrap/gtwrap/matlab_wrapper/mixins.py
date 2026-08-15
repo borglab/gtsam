@@ -22,6 +22,8 @@ class CheckMixin:
     ignore_namespace: Tuple = ('Matrix', 'Vector', 'Point2', 'Point3')
     # Matrix-like view types that can alias MATLAB double matrix storage.
     matrix_view_types: Tuple = ('ConstMatrixView', )
+    # Eigen Ref types used as Jacobian output arguments (not inputs).
+    eigen_ref_types: Tuple = ('MatrixXd', )
     # Methods that should be ignored
     ignore_methods: Tuple = ('pickle', )
     # Methods that should not be wrapped directly
@@ -74,6 +76,20 @@ class CheckMixin:
         """Check if `arg_type` should be unwrapped as a matrix view."""
         return arg_type.typename.name in self.matrix_view_types
 
+    def is_eigen_ref(self, arg_type) -> bool:
+        """Check if `arg_type` is an Eigen Ref output argument (e.g. Ref<MatrixXd>).
+
+        These are Jacobian output arguments in C++ that should be treated as
+        extra return values in MATLAB rather than input arguments.
+        Eigen::Ref<Eigen::MatrixXd> parses as a TemplatedType with
+        typename.name == 'Ref' and a MatrixXd template parameter.
+        """
+        return (arg_type.typename.name == 'Ref'
+                and hasattr(arg_type, 'template_params')
+                and len(arg_type.template_params) == 1
+                and arg_type.template_params[0].typename.name
+                in self.eigen_ref_types)
+    
     def is_class_enum(self, arg_type: parser.Type, class_: parser.Class):
         """Check if arg_type is an enum in the class `class_`."""
         if class_:

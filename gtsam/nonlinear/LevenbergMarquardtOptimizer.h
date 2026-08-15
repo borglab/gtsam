@@ -115,9 +115,10 @@ public:
   /** linearize, can be overwritten */
   virtual GaussianFactorGraph::shared_ptr linearize() const;
 
-  /** Build a damped system for a specific lambda -- for testing only */
-  GaussianFactorGraph buildDampedSystem(const GaussianFactorGraph& linear,
-                                        const VectorValues& sqrtHessianDiagonal) const;
+  /** Build the damped linear system for the current lambda. */
+  virtual GaussianFactorGraph buildDampedSystem(
+      const GaussianFactorGraph& linear,
+      const VectorValues& sqrtHessianDiagonal) const;
 
   /** Inner loop, changes state, returns true if successful or giving up */
   bool tryLambda(const GaussianFactorGraph& linear, const VectorValues& sqrtHessianDiagonal);
@@ -125,6 +126,12 @@ public:
   /// @}
 
 protected:
+
+  /** Evaluate the linear-model error change used for LM step quality. */
+  virtual double linearDeltaError(const GaussianFactorGraph& linear,
+                                  const VectorValues& delta,
+                                  double* oldError,
+                                  double* newError) const;
 
   /** Access the parameters (base class version) */
   const NonlinearOptimizerParams& _params() const override {

@@ -148,7 +148,7 @@ JacobianFactor::JacobianFactor(const HessianFactor& factor)
     model_ = SharedDiagonal();  // is equivalent to Unit::Create(maxrank)
   } else {
     // indefinite system
-    throw IndeterminantLinearSystemException(factor.keys().front());
+    throw IndeterminateSystemException(factor.keys().front());
   }
 }
 
@@ -1024,7 +1024,7 @@ GaussianConditional::shared_ptr JacobianFactor::splitConditional(size_t nrFronta
   // Check that the noise model has at least this dimension
   // If this is *not* the case, we do not have enough information on the frontal variables.
   if ((DenseIndex)model_->dim() < frontalDim)
-    throw IndeterminantLinearSystemException(this->keys().front());
+    throw IndeterminateSystemException(this->keys().front());
 
   // Restrict the matrix to be in the first nrFrontals variables and create the conditional
   const DenseIndex originalRowEnd = Ab_.rowEnd();

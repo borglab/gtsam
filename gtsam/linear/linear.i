@@ -6,24 +6,24 @@ namespace gtsam {
 #include <gtsam/base/SymmetricBlockMatrix.h>
 class SymmetricBlockMatrix {
   SymmetricBlockMatrix();
-  SymmetricBlockMatrix(const std::vector<size_t>& dimensions,
+  SymmetricBlockMatrix(const std::vector<gtsam::DenseIndex>& dimensions,
                        bool appendOneDimension = false);
-  SymmetricBlockMatrix(const std::vector<size_t>& dimensions,
+  SymmetricBlockMatrix(const std::vector<gtsam::DenseIndex>& dimensions,
                        const gtsam::Matrix& matrix,
                        bool appendOneDimension = false);
 
-  size_t rows() const;
-  size_t cols() const;
-  size_t nBlocks() const;
-  size_t getDim(size_t block) const;
-  gtsam::Matrix block(size_t I, size_t J) const;
+  gtsam::DenseIndex rows() const;
+  gtsam::DenseIndex cols() const;
+  gtsam::DenseIndex nBlocks() const;
+  gtsam::DenseIndex getDim(gtsam::DenseIndex block) const;
+  gtsam::Matrix block(gtsam::DenseIndex I, gtsam::DenseIndex J) const;
   void setZero();
   void setAllZero();
 };
 
 #include <gtsam/linear/JointMarginal.h>
 class JointMarginal {
-  gtsam::Matrix at(size_t iVariable, size_t jVariable) const;
+  gtsam::Matrix at(gtsam::Key iVariable, gtsam::Key jVariable) const;
   gtsam::Matrix fullMatrix() const;
   void print(string s = "", gtsam::KeyFormatter keyFormatter =
                                 gtsam::DefaultKeyFormatter) const;
@@ -321,16 +321,16 @@ class VectorValues {
 
   //Standard Interface
   size_t size() const;
-  size_t dim(size_t j) const;
-  bool exists(size_t j) const;
+  size_t dim(gtsam::Key j) const;
+  bool exists(gtsam::Key j) const;
   void print(string s = "VectorValues",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::VectorValues& x, double tol) const;
-  void insert(size_t j, gtsam::Vector value);
+  void insert(gtsam::Key j, gtsam::Vector value);
   gtsam::Vector vector() const;
   gtsam::Vector vector(const gtsam::KeyVector& keys) const;
-  gtsam::Vector at(size_t j) const;
+  gtsam::Vector at(gtsam::Key j) const;
   void insert(const gtsam::VectorValues& values);
   void update(const gtsam::VectorValues& values);
 
@@ -726,7 +726,7 @@ virtual class GaussianBayesTree {
   size_t size() const;
   bool empty() const;
   const gtsam::GaussianBayesTree::Roots& roots() const;
-  const gtsam::GaussianBayesTreeClique* operator[](size_t j) const;
+  const gtsam::GaussianBayesTreeClique* operator[](gtsam::Key j) const;
   size_t numCachedSeparatorMarginals() const;
 
   string dot(const gtsam::KeyFormatter& keyFormatter =
@@ -830,6 +830,8 @@ virtual class PCGSolverParameters : gtsam::ConjugateGradientParameters {
   void print(string s = "");
 
   std::shared_ptr<gtsam::PreconditionerParameters> preconditioner;
+  bool parallel;
+  size_t numThreads;
 };
 
 #include <gtsam/linear/SubgraphSolver.h>
@@ -849,7 +851,7 @@ class KalmanFilter {
   // gtsam::GaussianDensity* init(gtsam::Vector x0, const gtsam::SharedDiagonal& P0);
   gtsam::GaussianDensity* init(gtsam::Vector x0, gtsam::Matrix P0);
   void print(string s = "") const;
-  static size_t step(gtsam::GaussianDensity* p);
+  static gtsam::Key step(gtsam::GaussianDensity* p);
   gtsam::GaussianDensity* predict(gtsam::GaussianDensity* p, gtsam::Matrix F,
       gtsam::Matrix B, gtsam::Vector u, const gtsam::noiseModel::Diagonal* modelQ);
   gtsam::GaussianDensity* predictQ(gtsam::GaussianDensity* p, gtsam::Matrix F,

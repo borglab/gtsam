@@ -22,18 +22,22 @@
 #pragma once
 
 /* GTSAM includes */
-#include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/nonlinear/NoiseModelFactorN.h>
+#include <gtsam/base/debug.h>
+#include <gtsam/linear/TernaryJacobianFactor.h>
+#include <gtsam/navigation/LieGroupPreintegration.h>
 #include <gtsam/navigation/ManifoldPreintegration.h>
 #include <gtsam/navigation/TangentPreintegration.h>
-#include <gtsam/base/debug.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
 
-#include <type_traits> // For std::is_same, std::enable_if
- 
+#include <type_traits>  // For std::is_same, std::enable_if
+
 namespace gtsam {
 
 // Determine default preintegration backend
-#ifdef GTSAM_TANGENT_PREINTEGRATION
+#ifdef GTSAM_LIEGROUP_PREINTEGRATION
+typedef LieGroupPreintegration DefaultPreintegrationType;
+#elif defined(GTSAM_TANGENT_PREINTEGRATION)
 typedef TangentPreintegration DefaultPreintegrationType;
 #else
 typedef ManifoldPreintegration DefaultPreintegrationType;
@@ -354,11 +358,15 @@ GTSAM_EXPORT std::ostream& operator<<(std::ostream& os, const ImuFactorT<PIM>& f
  * @ingroup navigation
  */
 template <class PIM = PreintegratedImuMeasurements>
-class GTSAM_EXPORT ImuFactor2T : public NoiseModelFactorN<NavState, NavState, imuBias::ConstantBias> {
+class GTSAM_EXPORT ImuFactor2T
+    : public NoiseModelFactorT<Vector9, NavState, NavState,
+                               imuBias::ConstantBias> {
 private:
 
   typedef ImuFactor2T<PIM> This;
-  typedef NoiseModelFactorN<NavState, NavState, imuBias::ConstantBias> Base;
+  typedef NoiseModelFactorT<Vector9, NavState, NavState,
+                            imuBias::ConstantBias>
+      Base;
 
   PIM pim_;
 
@@ -408,10 +416,10 @@ public:
   /** implement functions needed to derive from Factor */
 
   /// vector of errors
-  Vector evaluateError(const NavState& state_i, const NavState& state_j,
-                       const imuBias::ConstantBias& bias_i,  //
-                       OptionalMatrixType H1, OptionalMatrixType H2,
-                       OptionalMatrixType H3) const override;
+  Vector9 evaluateError(const NavState& state_i, const NavState& state_j,
+                        const imuBias::ConstantBias& bias_i,  //
+                        OptionalMatrixType H1, OptionalMatrixType H2,
+                        OptionalMatrixType H3) const override;
 
 private:
 

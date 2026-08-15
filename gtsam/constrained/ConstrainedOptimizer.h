@@ -20,6 +20,8 @@
 #include <gtsam/constrained/ConstrainedOptProblem.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 
+#include <cmath>
+
 namespace gtsam {
 
 /** Base class for constrained optimization parameters. */
@@ -124,9 +126,10 @@ class GTSAM_EXPORT ConstrainedOptimizer {
       return true;
     }
 
-    if (abs(state.violation() - previousState.violation()) <
+    if (std::abs(state.violation() - previousState.violation()) <
             params.relativeViolationTolerance &&
-        abs(state.cost - previousState.cost) < params.relativeCostTolerance) {
+        std::abs(state.cost - previousState.cost) <
+            params.relativeCostTolerance) {
       return true;
     }
 

@@ -33,7 +33,7 @@ TEST(VectorValues, basics)
 
   // insert
   VectorValues actual;
-  actual.insert(0, (Vector(1) << 1).finished());
+  actual.insert(0, Vector{{1}});
   actual.insert(1, Vector2(2, 3));
   actual.insert(5, Vector2(6, 7));
   actual.insert(2, Vector2(4, 5));
@@ -55,12 +55,12 @@ TEST(VectorValues, basics)
   EXPECT(!actual.exists(6));
 
   // Check values
-  EXPECT(assert_equal((Vector(1) << 1).finished(), actual[0]));
+  EXPECT(assert_equal(Vector{{1}}, actual[0]));
   EXPECT(assert_equal(Vector2(2, 3), actual[1]));
   EXPECT(assert_equal(Vector2(4, 5), actual[2]));
   EXPECT(assert_equal(Vector2(6, 7), actual[5]));
   KeyVector keys {0, 1, 2, 5};
-  EXPECT(assert_equal((Vector(7) << 1, 2, 3, 4, 5, 6, 7).finished(), actual.vector(keys)));
+  EXPECT(assert_equal(Vector{{1, 2, 3, 4, 5, 6, 7}}, actual.vector(keys)));
 
   // Check exceptions
   CHECK_EXCEPTION(actual.insert(1, Vector()), invalid_argument);
@@ -87,13 +87,13 @@ TEST(VectorValues, Update) {
 TEST(VectorValues, combine)
 {
   VectorValues expected;
-  expected.insert(0, (Vector(1) << 1).finished());
+  expected.insert(0, Vector{{1}});
   expected.insert(1, Vector2(2, 3));
   expected.insert(5, Vector2(6, 7));
   expected.insert(2, Vector2(4, 5));
 
   VectorValues first;
-  first.insert(0, (Vector(1) << 1).finished());
+  first.insert(0, Vector{{1}});
   first.insert(1, Vector2(2, 3));
 
   VectorValues second;
@@ -109,13 +109,13 @@ TEST(VectorValues, combine)
 TEST(VectorValues, subvector)
 {
   VectorValues init;
-  init.insert(10, (Vector(1) << 1).finished());
+  init.insert(10, Vector{{1}});
   init.insert(11, Vector2(2, 3));
   init.insert(12, Vector2(4, 5));
   init.insert(13, Vector2(6, 7));
 
   KeyVector keys {10, 12, 13};
-  Vector expSubVector = (Vector(5) << 1, 4, 5, 6, 7).finished();
+  Vector expSubVector{{1, 4, 5, 6, 7}};
   EXPECT(assert_equal(expSubVector, init.vector(keys)));
 }
 
@@ -123,13 +123,13 @@ TEST(VectorValues, subvector)
 TEST(VectorValues, LinearAlgebra)
 {
   VectorValues test1;
-  test1.insert(0, (Vector(1) << 1).finished());
+  test1.insert(0, Vector{{1}});
   test1.insert(1, Vector2(2, 3));
   test1.insert(5, Vector2(6, 7));
   test1.insert(2, Vector2(4, 5));
 
   VectorValues test2;
-  test2.insert(0, (Vector(1) << 6).finished());
+  test2.insert(0, Vector{{6}});
   test2.insert(1, Vector2(1, 6));
   test2.insert(5, Vector2(4, 3));
   test2.insert(2, Vector2(1, 8));
@@ -183,11 +183,10 @@ TEST(VectorValues, LinearAlgebra)
 /* ************************************************************************* */
 TEST(VectorValues, convert)
 {
-  Vector x(7);
-  x << 1, 2, 3, 4, 5, 6, 7;
+  Vector x{{1, 2, 3, 4, 5, 6, 7}};
 
   VectorValues expected;
-  expected.insert(0, (Vector(1) << 1).finished());
+  expected.insert(0, Vector{{1}});
   expected.insert(1, Vector2(2, 3));
   expected.insert(2, Vector2(4, 5));
   expected.insert(5, Vector2(6, 7));
@@ -220,7 +219,7 @@ TEST(VectorValues, convert)
 TEST(VectorValues, vector_sub)
 {
   VectorValues vv;
-  vv.insert(0, (Vector(1) << 1).finished());
+  vv.insert(0, Vector{{1}});
   vv.insert(1, Vector2(2, 3));
   vv.insert(2, Vector2(4, 5));
   vv.insert(5, Vector2(6, 7));
@@ -230,8 +229,7 @@ TEST(VectorValues, vector_sub)
   dims.insert(make_pair(0,1));
   dims.insert(make_pair(5,2));
 
-  Vector expected(3);
-  expected << 1, 6, 7;
+  Vector expected{{1, 6, 7}};
 
   // Test FastVector version
   KeyVector keys {0, 5};
@@ -245,7 +243,7 @@ TEST(VectorValues, vector_sub)
 TEST(VectorValues, print)
 {
   VectorValues vv;
-  vv.insert(0, (Vector(1) << 1).finished());
+  vv.insert(0, Vector{{1}});
   vv.insert(1, Vector2(2, 3));
   vv.insert(2, Vector2(4, 5));
   vv.insert(5, Vector2(6, 7));

@@ -55,15 +55,13 @@ TEST(SO3, Constructors) {
 
 /* ************************************************************************* */
 TEST(SO3, ClosestTo) {
-  Matrix3 M;
-  M << 0.79067393, 0.6051136, -0.0930814,   //
-    0.4155925, -0.64214347, -0.64324489,  //
-    -0.44948549, 0.47046326, -0.75917576;
+  Matrix3 M{{0.79067393, 0.6051136, -0.0930814},
+            {0.4155925, -0.64214347, -0.64324489},
+            {-0.44948549, 0.47046326, -0.75917576}};
 
-  Matrix expected(3, 3);
-  expected << 0.790687, 0.605096, -0.0931312,  //
-    0.415746, -0.642355, -0.643844,          //
-    -0.449411, 0.47036, -0.759468;
+  Matrix expected{{0.790687, 0.605096, -0.0931312},
+                  {0.415746, -0.642355, -0.643844},
+                  {-0.449411, 0.47036, -0.759468}};
 
   auto actual = SO3::ClosestTo(3 * M);
   EXPECT(assert_equal(expected, actual.matrix(), 1e-6));
@@ -161,8 +159,7 @@ TEST(SO3, ChartDerivatives) {
 TEST(SO3, Local2) {
   Vector axis = Vector3(0., 1., 0.);  // rotation around Y
   double angle = 3.14 / 4.0;
-  Matrix expected(3, 3);
-  expected << 0.707388, 0, 0.706825, 0, 1, 0, -0.706825, 0, 0.707388;
+  Matrix expected{{0.707388, 0, 0.706825}, {0, 1, 0}, {-0.706825, 0, 0.707388}};
 
   // omega version
   so3::ExpmapFunctor f3(axis * angle);
@@ -179,31 +176,29 @@ TEST(SO3, Local2) {
 namespace exmap_derivative {
   static const Vector3 w(0.1, 0.27, -0.2);
 }
-// Left trivialized Derivative of exp(w) wrpt w:
-// How does exp(w) change when w changes?
-// We find a y such that: exp(w) exp(y) = exp(w + dw) for dw --> 0
-// => y = log (exp(-w) * exp(w+dw))
-Vector3 testDexpL(const Vector3& dw) {
+// The right Jacobian describes exp(w+dw) = exp(w)*exp(J_r(w)*dw) to first
+// order, so J_r(w)*dw = Log(exp(-w)*exp(w+dw)).
+Vector3 testRightJacobian(const Vector3& dw) {
   using exmap_derivative::w;
   return SO3::Logmap(SO3::Expmap(-w) * SO3::Expmap(w + dw));
 }
 
 TEST(SO3, ExpmapDerivative) {
   using exmap_derivative::w;
-  const Matrix actualDexpL = SO3::ExpmapDerivative(w);
-  const Matrix expectedDexpL =
-    numericalDerivative11<Vector3, Vector3>(testDexpL, Vector3::Zero(), 1e-2);
-  EXPECT(assert_equal(expectedDexpL, actualDexpL, 1e-7));
+  const Matrix actualJr = SO3::ExpmapDerivative(w);
+  const Matrix expectedJr = numericalDerivative11<Vector3, Vector3>(
+      testRightJacobian, Vector3::Zero(), 1e-2);
+  EXPECT(assert_equal(expectedJr, actualJr, 1e-7));
 
-  const Matrix actualDexpInvL = SO3::LogmapDerivative(w);
-  EXPECT(assert_equal(expectedDexpL.inverse(), actualDexpInvL, 1e-7));
+  const Matrix actualJrInverse = SO3::LogmapDerivative(w);
+  EXPECT(assert_equal(expectedJr.inverse(), actualJrInverse, 1e-7));
 }
 
 //******************************************************************************
 TEST(SO3, ExpmapDerivative2) {
   const Vector3 theta(0.1, 0, 0.1);
   const Matrix Jexpected = numericalDerivative11<SO3, Vector3>(
-    std::bind(&SO3::Expmap, std::placeholders::_1, nullptr), theta);
+      [](const Vector3& omega) { return SO3::Expmap(omega); }, theta);
 
   CHECK(assert_equal(Jexpected, SO3::ExpmapDerivative(theta)));
   CHECK(assert_equal(Matrix3(Jexpected.transpose()),
@@ -214,7 +209,7 @@ TEST(SO3, ExpmapDerivative2) {
 TEST(SO3, ExpmapDerivative3) {
   const Vector3 theta(10, 20, 30);
   const Matrix Jexpected = numericalDerivative11<SO3, Vector3>(
-    std::bind(&SO3::Expmap, std::placeholders::_1, nullptr), theta);
+      [](const Vector3& omega) { return SO3::Expmap(omega); }, theta);
 
   CHECK(assert_equal(Jexpected, SO3::ExpmapDerivative(theta)));
   CHECK(assert_equal(Matrix3(Jexpected.transpose()),
@@ -269,7 +264,7 @@ TEST(SO3, ExpmapDerivative5) {
 TEST(SO3, ExpmapDerivative6) {
   const Vector3 theta(0.1, 0, 0.1);
   const Matrix expectedH = numericalDerivative11<SO3, Vector3>(
-    std::bind(&SO3::Expmap, std::placeholders::_1, nullptr), theta);
+      [](const Vector3& omega) { return SO3::Expmap(omega); }, theta);
   Matrix3 actualH;
   SO3::Expmap(theta, actualH);
   EXPECT(assert_equal(expectedH, actualH));
@@ -277,21 +272,21 @@ TEST(SO3, ExpmapDerivative6) {
 
 //******************************************************************************
 TEST(SO3, LogmapDerivative) {
-  const SO3 R0; // Identity
+  const SO3 R0;  // Identity
   const Vector3 omega1(0.1, 0, 0.1);
   const SO3 R1 = SO3::Expmap(omega1);  // Small rotation
-  const SO3 R2((Matrix3() <<            // Near pi
-    -0.750767, -0.0285082, -0.659952,
-    -0.0102558, -0.998445, 0.0547974,
-    -0.660487, 0.0479084, 0.749307).finished());
-  const SO3 R3((Matrix3() <<            // Near pi
-    -0.747473, -0.00190019, -0.664289,
-    -0.0385114, -0.99819, 0.0461892,
-    -0.663175, 0.060108, 0.746047).finished());
-  const SO3 R4((Matrix3() <<            // Final pose in a drone experiment
-    0.324237, 0.902975, 0.281968,
-    -0.674322, 0.429668, -0.600562,
-    -0.663445, 0.00458662, 0.748211).finished());
+  const SO3 R2(Matrix3{                // Near pi
+                       {-0.750767, -0.0285082, -0.659952},
+                       {-0.0102558, -0.998445, 0.0547974},
+                       {-0.660487, 0.0479084, 0.749307}});
+  const SO3 R3(Matrix3{// Near pi
+                       {-0.747473, -0.00190019, -0.664289},
+                       {-0.0385114, -0.99819, 0.0461892},
+                       {-0.663175, 0.060108, 0.746047}});
+  const SO3 R4(Matrix3{// Final pose in a drone experiment
+                       {0.324237, 0.902975, 0.281968},
+                       {-0.674322, 0.429668, -0.600562},
+                       {-0.663445, 0.00458662, 0.748211}});
   size_t i = 0;
   for (const SO3& R : { R0, R1, R2, R3, R4 }) {
     const bool nearPi = (i == 2 || i == 3); // Flag cases near pi
@@ -312,7 +307,7 @@ TEST(SO3, LogmapDerivative) {
     //    and should match the analytical derivative.
     if (!nearPi) {
       const Matrix expectedH = numericalDerivative11<Vector3, SO3>(
-        std::bind(&SO3::Logmap, std::placeholders::_1, nullptr), R, 1e-7);
+          [](const SO3& value) { return SO3::Logmap(value); }, R, 1e-7);
       EXPECT(assert_equal(expectedH, actualH, 1e-6)); // 1e-6 needed to pass R4
     }
     else {
@@ -444,8 +439,7 @@ TEST(SO3, vec) {
 
 //******************************************************************************
 TEST(Matrix, compose) {
-  Matrix3 M;
-  M << 1, 2, 3, 4, 5, 6, 7, 8, 9;
+  Matrix3 M{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
   SO3 R = SO3::Expmap(Vector3(1, 2, 3));
   const Matrix3 expected = M * R.matrix();
   Matrix actualH;

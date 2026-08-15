@@ -443,6 +443,7 @@ class Rot3 {
   static gtsam::Rot3 Rodrigues(gtsam::Vector v);
   static gtsam::Rot3 Rodrigues(double wx, double wy, double wz);
   static gtsam::Rot3 ClosestTo(const gtsam::Matrix M);
+  static bool IsValid(const gtsam::Matrix& R, double tol);
 
   // Testable
   void print(string s = "") const;
@@ -559,7 +560,8 @@ class Pose2 {
   gtsam::Vector logmap(const gtsam::Pose2& g);
   gtsam::Vector logmap(const gtsam::Pose2& g, Eigen::Ref<Eigen::MatrixXd> H1, Eigen::Ref<Eigen::MatrixXd> H2);
   static gtsam::Matrix ExpmapDerivative(gtsam::Vector v);
-  static gtsam::Matrix LogmapDerivative(const gtsam::Pose2& v);
+  static gtsam::Matrix3 LogmapDerivative(const gtsam::Pose2& pose);
+  static gtsam::Matrix3 LogmapDerivative(const gtsam::Vector3& xi);
 
   // Matrix Lie Group
   gtsam::Matrix AdjointMap() const;
@@ -867,12 +869,8 @@ class SL4 {
   // Manifold
   static size_t Dim();
   size_t dim() const;
-  gtsam::SL4 retract(gtsam::Vector v,
-                     Eigen::Ref<Eigen::MatrixXd> Horigin,
-                     Eigen::Ref<Eigen::MatrixXd> Hv) const;
-  gtsam::Vector localCoordinates(const gtsam::SL4& g,
-                                 Eigen::Ref<Eigen::MatrixXd> Horigin,
-                                 Eigen::Ref<Eigen::MatrixXd> Hp2) const;
+  gtsam::SL4 retract(gtsam::Vector v) const;
+  gtsam::Vector localCoordinates(const gtsam::SL4& g) const;
 
   // Lie group
   static gtsam::SL4 Expmap(gtsam::Vector v);

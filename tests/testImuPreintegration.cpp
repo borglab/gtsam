@@ -15,7 +15,13 @@
  * @author Russell Buchanan
  **/
 
+// GCC bug workaround
+#if  defined(__GNUC__) && __GNUC__ == 16
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
 #include <gtsam/slam/dataset.h>

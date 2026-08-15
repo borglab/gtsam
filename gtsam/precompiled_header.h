@@ -11,7 +11,7 @@
 
 /**
  * @file    precompiled_header.h>
- * @brief   Include headers that are used heavily, or are heavy to parse 
+ * @brief   Include headers that are used heavily, or are heavy to parse
  * @author  Frank Dellaert
  * @date    November 2018
  */
@@ -39,9 +39,11 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/ProductLieGroup.h>
+#include <gtsam/base/SemidirectLieGroup.h>
 #include <gtsam/base/serialization.h>
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/base/SymmetricBlockMatrix.h>
+#include <gtsam/base/TangentLieGroup.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/ThreadsafeException.h>

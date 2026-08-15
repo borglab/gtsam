@@ -19,26 +19,30 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Lie.h>
+#include <gtsam/linear/BinaryJacobianFactor.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
-
-#ifdef _WIN32
-#define BETWEENFACTOR_VISIBILITY
-#else
-// This will trigger a LNKxxxx on MSVC, so disable for MSVC build
-// Please refer to https://github.com/borglab/gtsam/blob/develop/Using-GTSAM-EXPORT.md
-#define BETWEENFACTOR_VISIBILITY GTSAM_EXPORT
-#endif
 
 namespace gtsam {
 
   /**
    * A class for a measurement predicted by "between(config[key1],config[key2])"
+   *
+   * The noise model applies to `Local(measured, between(p1, p2))`. For pose
+   * types using GTSAM's right-hand retraction, this means the covariance is
+   * expressed in the local frame of the second (target) pose. For `Pose3`, the
+   * tangent-space order is rotation followed by translation.
+   *
+   * See `gtsam/slam/doc/BetweenFactor.ipynb` for a detailed discussion of
+   * coordinate frames and covariance conventions.
+   *
    * @tparam VALUE the Value type
    * @ingroup slam
    */
   template<class VALUE>
-  class BetweenFactor: public NoiseModelFactorN<VALUE, VALUE> {
+  class BetweenFactor
+      : public NoiseModelFactorT<typename traits<VALUE>::TangentVector, VALUE,
+                                 VALUE> {
 
     // Check that VALUE type is a testable Lie group
     GTSAM_CONCEPT_ASSERT(IsTestable<VALUE>);
@@ -47,11 +51,12 @@ namespace gtsam {
   public:
 
     typedef VALUE T;
+    using ErrorVector = typename traits<VALUE>::TangentVector;
 
   private:
 
     typedef BetweenFactor<VALUE> This;
-    typedef NoiseModelFactorN<VALUE, VALUE> Base;
+    typedef NoiseModelFactorT<ErrorVector, VALUE, VALUE> Base;
 
     VALUE measured_; /** The measurement */
 
@@ -110,19 +115,23 @@ namespace gtsam {
     /// @{
 
     /// evaluate error, returns vector of errors size of tangent space
-    Vector evaluateError(const T& p1, const T& p2,
+    ErrorVector evaluateError(const T& p1, const T& p2,
 			OptionalMatrixType H1, OptionalMatrixType H2) const override {
       T hx = traits<T>::Between(p1, p2, H1, H2); // h(x)
       // manifold equivalent of h(x)-z -> log(z,h(x))
 #ifdef GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR
-      typename traits<T>::ChartJacobian::Jacobian Hlocal;
-      Vector rval = traits<T>::Local(measured_, hx, OptionalNone, (H1 || H2) ? &Hlocal : 0);
-      if (H1) *H1 = Hlocal * (*H1);
-      if (H2) *H2 = Hlocal * (*H2);
-      return rval;
-#else
-      return traits<T>::Local(measured_, hx);
+      if constexpr (internal::HasLocalJacobians<T>::value) {
+        if (H1 || H2) {
+          typename traits<T>::ChartJacobian::Jacobian Hlocal;
+          Vector error =
+              traits<T>::Local(measured_, hx, OptionalNone, &Hlocal);
+          if (H1) *H1 = Hlocal * (*H1);
+          if (H2) *H2 = Hlocal * (*H2);
+          return error;
+        }
+      }
 #endif
+      return traits<T>::Local(measured_, hx);
     }
 
     /// @}

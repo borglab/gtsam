@@ -42,7 +42,7 @@ for i = 1:cylinderNum
             continue;       
         end            
 
-        % too small disparity may call indeterminant system exception
+        % too small disparity may cause an indeterminate system exception
         if Z.du < 0.6
             continue;
         end

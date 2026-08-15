@@ -137,6 +137,8 @@ class QpProblem : gtsam::ConstrainedOptProblem {
 #include <gtsam/constrained/QcqpProblem.h>
 class QcqpProblem : gtsam::ConstrainedOptProblem {
   QcqpProblem();
+  QcqpProblem(const gtsam::NonlinearFactorGraph& graph,
+               size_t columnDimension = 1);
 
   void addCost(const gtsam::QpCost& cost);
   void addConstraint(const gtsam::LinearConstraint& constraint);
@@ -147,11 +149,31 @@ class QcqpProblem : gtsam::ConstrainedOptProblem {
   std::tuple<size_t, size_t, size_t> dim() const;
 };
 
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Rot2.h>
+#include <gtsam/geometry/Rot3.h>
+
+template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
+gtsam::Matrix qcqpValue(const T& typedValue);
+
+template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
+void insertQcqpValue(gtsam::Key key, const T& typedValue,
+                     gtsam::Values& qcqpValues);
+
+template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
+T fromQcqpValue(const gtsam::Matrix& qcqpValue);
+
+template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
+gtsam::Values extractQcqpValues(const gtsam::Values& qcqpValues);
+
 #include <gtsam/constrained/ConstrainedOptimizer.h>
 class ConstrainedOptimizerParams {
   ConstrainedOptimizerParams();
 
-  size_t maxIterations;
+  // The wrapper generator marshals int as a scalar on every supported target;
+  // the underlying C++ field remains size_t.
+  int maxIterations;
   double absoluteViolationTolerance;
   double relativeViolationTolerance;
   double absoluteCostTolerance;
@@ -171,14 +193,27 @@ class PenaltyOptimizerParams : gtsam::ConstrainedOptimizerParams {
 };
 
 #include <gtsam/constrained/AugmentedLagrangianOptimizer.h>
+enum class AugmentedLagrangianUpdatePolicy { Aggressive, BCL };
+
 class AugmentedLagrangianParams : gtsam::PenaltyOptimizerParams {
   AugmentedLagrangianParams();
 
+  gtsam::AugmentedLagrangianUpdatePolicy updatePolicy;
   double maxDualStepSizeEq;
   double maxDualStepSizeIneq;
   double dualStepSizeFactorEq;
   double dualStepSizeFactorIneq;
   double muIncreaseThreshold;
+  double absoluteStationarityTolerance;
+  double bclInitialPenalty;
+  double bclPenaltyIncreaseRate;
+  double bclOmega0;
+  double bclEta0;
+  double bclGamma1;
+  double bclAlphaOmega;
+  double bclBetaOmega;
+  double bclAlphaEta;
+  double bclBetaEta;
 };
 
 virtual class AugmentedLagrangianOptimizer {
