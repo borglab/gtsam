@@ -18,6 +18,7 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/MultifrontalSolver.h>
 #include <gtsam/slam/dataset.h>
 
 #include <Eigen/Cholesky>
@@ -148,11 +149,10 @@ TEST(SfmPointBatchSchur, MatchesGenericReductionAndBackSubstitution) {
   verifyAgainstDenseReference(graph, 2, 1, 1e-10, result_, name_);
 }
 
-// Exercise the production batch linearization on the repository's tiny BAL
-// fixture. Dense reduction remains confined to this correctness test.
-TEST(SfmPointBatchSchur, TinyBalFixtureMatchesGenericReduction) {
-  const SfmData data =
-      loadDataset(findExampleDataFile("dubrovnik-3-7-pre"));
+/* ************************************************************************* */
+namespace tiny_bal_fixture {
+
+GaussianFactorGraph createDampedSystem(const SfmData& data) {
   const BalBenchmarkConfig config;
   const NonlinearFactorGraph nonlinear =
       buildBatchSfmGraph(data, config, false, 0);
@@ -169,10 +169,47 @@ TEST(SfmPointBatchSchur, TinyBalFixtureMatchesGenericReduction) {
     damped.emplace_shared<JacobianFactor>(P(point), pointDamping,
                                           Vector3::Zero());
   }
+  return damped;
+}
+
+// Exercise the production batch linearization on the repository's tiny BAL
+// fixture. Dense reduction remains confined to this correctness test.
+TEST(SfmPointBatchSchur, TinyBalFixtureMatchesGenericReduction) {
+  const SfmData data =
+      loadDataset(findExampleDataFile("dubrovnik-3-7-pre"));
+  const GaussianFactorGraph damped = createDampedSystem(data);
 
   verifyAgainstDenseReference(damped, data.numberCameras(),
                               data.numberTracks(), 1e-6, result_, name_);
 }
+
+// Verify partial multifrontal point elimination produces the same reduced
+// camera system as the compact SFM Schur implementation.
+TEST(SfmPointBatchSchur, PartialMultifrontalMatchesReducedCameraSystem) {
+  const SfmData data =
+      loadDataset(findExampleDataFile("dubrovnik-3-7-pre"));
+  const GaussianFactorGraph damped = createDampedSystem(data);
+  const CompactCameraSystem reducedCameraSystem =
+      buildPointBatchCameraSystemParallel(damped);
+
+  const Ordering pointFirstOrdering = createSchurOrdering(data, false);
+  MultifrontalSolver solver(damped, pointFirstOrdering,
+                            data.numberTracks());
+  solver.eliminatePartialInPlace(damped);
+  const GaussianFactorGraph remaining = solver.remainingFactorGraph();
+
+  Ordering cameraOrdering;
+  for (size_t camera = 0; camera < data.numberCameras(); ++camera) {
+    cameraOrdering.push_back(C(camera));
+  }
+  const auto [actualHessian, actualRhs] = remaining.hessian(cameraOrdering);
+  EXPECT(assert_equal(denseCameraMatrix(reducedCameraSystem), actualHessian,
+                      1e-6));
+  EXPECT(assert_equal(reducedCameraSystem.rhs, actualRhs, 1e-6));
+}
+
+}  // namespace tiny_bal_fixture
+/* ************************************************************************* */
 
 int main() {
   TestResult tr;
