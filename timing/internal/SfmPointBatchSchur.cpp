@@ -33,10 +33,12 @@ using symbol_shorthand::P;
 namespace gtsam::timing::bal {
 namespace {
 
-size_t parallelWorkerCount(size_t taskCount) {
+size_t parallelWorkerCount(size_t taskCount, size_t requestedThreads = 0) {
   const size_t hardwareThreads = std::thread::hardware_concurrency();
+  const size_t availableThreads =
+      requestedThreads == 0 ? hardwareThreads : requestedThreads;
   return std::max<size_t>(
-      1, std::min(taskCount, std::max<size_t>(1, hardwareThreads)));
+      1, std::min(taskCount, std::max<size_t>(1, availableThreads)));
 }
 
 struct CameraAccumulator {
@@ -168,7 +170,7 @@ size_t upperCameraBlockIndex(size_t row, size_t column,
 }
 
 CompactCameraSystem buildPointBatchCameraSystemParallel(
-    const GaussianFactorGraph& graph) {
+    const GaussianFactorGraph& graph, size_t numThreads) {
   std::vector<std::shared_ptr<const PointBatchJacobian>> pointBatches;
   std::vector<GaussianFactor::shared_ptr> pointDamping;
   std::vector<GaussianFactor::shared_ptr> cameraDamping;
@@ -271,7 +273,8 @@ CompactCameraSystem buildPointBatchCameraSystemParallel(
   }
   system.landmarks.resize(activePoints.size());
 
-  const size_t workerCount = parallelWorkerCount(activePoints.size());
+  const size_t workerCount =
+      parallelWorkerCount(activePoints.size(), numThreads);
   std::vector<CameraAccumulator> accumulators(workerCount);
   for (CameraAccumulator& accumulator : accumulators) {
     accumulator.blocks.assign(blockCount, Matrix99::Zero());

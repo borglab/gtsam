@@ -52,6 +52,7 @@ Options:
   --leaf-aggregate N  Total sibling-leaf problem size per task (default: 2048)
   --leaf-mode MODE    bounded or separator (default: bounded)
   --merge N       Multifrontal general merge dimension cap (default: 32)
+  --threads N     Workers used by both pipelines (default: 1)
   --report        Print multifrontal structure statistics
   --help          Show this message
 )";
@@ -124,6 +125,7 @@ int main(int argc, char* argv[]) {
     const std::string leafMode =
         arguments.optionalString("--leaf-mode").value_or("bounded");
     const size_t mergeCap = arguments.sizeValue("--merge", 32);
+    const size_t numThreads = arguments.sizeValue("--threads", 1);
     const bool reportStructure = arguments.flag("--report");
     arguments.validateAllConsumed();
 
@@ -137,6 +139,9 @@ int main(int argc, char* argv[]) {
     }
     if (lambda <= 0.0) {
       throw std::invalid_argument("--lambda must be positive");
+    }
+    if (numThreads == 0) {
+      throw std::invalid_argument("--threads must be positive");
     }
 
     const SfmData data = loadDataset(filename);
@@ -158,6 +163,7 @@ int main(int argc, char* argv[]) {
     }
     solverParameters.mergeDimCap = mergeCap;
     solverParameters.qrMode = MultifrontalParameters::QRMode::Off;
+    solverParameters.numThreads = numThreads;
     if (reportStructure) solverParameters.reportStream = &std::cout;
     std::unique_ptr<MultifrontalSolver> solver;
     const double symbolicSetupMilliseconds =
@@ -168,7 +174,7 @@ int main(int argc, char* argv[]) {
         });
 
     const CompactCameraSystem compactReference =
-        buildPointBatchCameraSystemParallel(damped);
+        buildPointBatchCameraSystemParallel(damped, numThreads);
     solver->eliminatePartialInPlace(damped);
     const GaussianFactorGraph remainingReference =
         solver->remainingFactorGraph();
@@ -199,7 +205,7 @@ int main(int argc, char* argv[]) {
     size_t benchmarkSink = 0;
     const auto assembleCompact = [&] {
       const CompactCameraSystem system =
-          buildPointBatchCameraSystemParallel(damped);
+          buildPointBatchCameraSystemParallel(damped, numThreads);
       benchmarkSink += system.blocks.size() + system.landmarks.size();
     };
     const auto loadPartial = [&] { solver->load(damped); };
@@ -312,6 +318,7 @@ int main(int argc, char* argv[]) {
               << leafAggregationProblemSize << "\n"
               << "Leaf mode: " << leafMode << "\n"
               << "General merge cap: " << mergeCap << "\n"
+              << "Threads per pipeline: " << numThreads << "\n"
               << "Warmups: " << warmups << ", repetitions: " << repetitions
               << "\n"
               << "Partial multifrontal symbolic setup: "

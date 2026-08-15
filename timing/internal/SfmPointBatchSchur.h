@@ -57,9 +57,10 @@ size_t upperCameraBlockIndex(size_t row, size_t column, size_t cameraCount);
  *
  * Each active landmark retains only its compact measurement batch, inverse
  * 3x3 point block, and point information RHS for later back-substitution.
+ * `numThreads == 0` selects the hardware concurrency.
  */
 CompactCameraSystem buildPointBatchCameraSystemParallel(
-    const GaussianFactorGraph& graph);
+    const GaussianFactorGraph& graph, size_t numThreads = 0);
 
 /** Recover landmark deltas after a backend has solved the camera system. */
 VectorValues backSubstitutePointBatchLandmarksParallel(

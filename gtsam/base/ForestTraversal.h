@@ -93,9 +93,14 @@ class ForestTraversal {
       int rootData = 0;
       VisitorPre visitor{&fn};
       auto visitorPost = [](const SharedNode&, int) {};
-      treeTraversal::DepthFirstForestParallel(static_cast<Forest&>(*this),
-                                              rootData, visitor, visitorPost,
-                                              parallelThreshold);
+      if (threadCount_ == 1) {
+        treeTraversal::DepthFirstForest(static_cast<Forest&>(*this), rootData,
+                                        visitor, visitorPost);
+      } else {
+        treeTraversal::DepthFirstForestParallel(static_cast<Forest&>(*this),
+                                                rootData, visitor, visitorPost,
+                                                parallelThreshold);
+      }
     });
   }
 
@@ -114,9 +119,13 @@ class ForestTraversal {
       };
 
       VisitorPost visitor{&fn};
-      treeTraversal::PostOrderForestParallel(static_cast<Forest&>(*this),
-                                             visitor, parallelThreshold,
-                                             leafAggregationProblemSize);
+      if (threadCount_ == 1) {
+        treeTraversal::PostOrderForest(static_cast<Forest&>(*this), visitor);
+      } else {
+        treeTraversal::PostOrderForestParallel(static_cast<Forest&>(*this),
+                                               visitor, parallelThreshold,
+                                               leafAggregationProblemSize);
+      }
     });
   }
 
