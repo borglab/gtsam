@@ -22,6 +22,60 @@
 
 namespace gtsam {
 
+/** @brief Struct Containing all configuration parameters for riSAM.
+ * See below for details on each parameters.
+ * @note Defined at namespace scope, and aliased as RISAM::Parameters
+ */
+struct RISAMParams {
+  /// @brief Explicit constructor to use default values.
+  RISAMParams(ISAM2Params isam2_params = ISAM2Params(),
+              bool increment_outlier_mu = true,
+              double outlier_mu_chisq_upper_bound = 0.95,
+              double outlier_mu_chisq_lower_bound = 0.25,
+              double outlier_mu_avg_var_convergence_thresh = 0.01,
+              size_t number_extra_iters = 1)
+      : isam2_params(isam2_params),
+        increment_outlier_mu(increment_outlier_mu),
+        outlier_mu_chisq_upper_bound(outlier_mu_chisq_upper_bound),
+        outlier_mu_chisq_lower_bound(outlier_mu_chisq_lower_bound),
+        outlier_mu_avg_var_convergence_thresh(
+            outlier_mu_avg_var_convergence_thresh),
+        number_extra_iters(number_extra_iters) {}
+
+  /// @brief The parameters for the encapsulated iSAM2 algorithm @Note some
+  /// are overridden in RISAM::RISAM().
+  ISAM2Params isam2_params;
+
+  /// @brief Flag to increment mu_init when the value estimate converges.
+  // See RISAM::IncrementMuInit for details.
+  bool increment_outlier_mu;
+  /// @brief Increment mu_init if chi^2 > upper bound.
+  double outlier_mu_chisq_upper_bound;
+  /// @brief  Decrement mu_init if chi^2 < lower bound.
+  double outlier_mu_chisq_lower_bound;
+  /// @brief Average variable delta threshold to identify value convergence.
+  double outlier_mu_avg_var_convergence_thresh;
+  /// @brief The number of extra iterations to perform after mu convergence.
+  size_t number_extra_iters;
+};
+
+/** @brief Struct containing information about the riSAM update.
+ * See below for details about the information included.
+ * @note Defined at namespace scope, and aliased as RISAM::UpdateResult
+ */
+struct RISAMUpdateResult {
+  /// @brief The iSAM2 result from the first internal update.
+  /// NOTE: riSAM may run multiple internal ISAM2 updates.
+  ISAM2Result isam2_result;
+
+  /// @brief The set variables directly involved in the update.
+  std::set<Key> involved_variables;
+  /// @brief The set of variables affected by the update.
+  std::set<Key> affected_variables;
+  /// @brief The set of factors convexified in this update.
+  std::set<FactorIndex> convexified_factors;
+};
+
 /** @brief Robust Incremental Smoothing and Mapping (riSAM) is a robust variant
  * of iSAM2 for incremental factor-graph optimization. riSAM solves each
  * incremental update using an efficient form of Graduated Non-Convexity to
@@ -36,57 +90,10 @@ class GTSAM_EXPORT RISAM {
   /// @name Types
   /// @{
  public:
-  /** @brief Struct Containing all configuration parameters for riSAM.
-   * See below for details on each parameters.
-   */
-  struct Parameters {
-    /// @brief Explicit constructor to use default values.
-    Parameters(ISAM2Params isam2_params = ISAM2Params(),
-               bool increment_outlier_mu = true,
-               double outlier_mu_chisq_upper_bound = 0.95,
-               double outlier_mu_chisq_lower_bound = 0.25,
-               double outlier_mu_avg_var_convergence_thresh = 0.01,
-               size_t number_extra_iters = 1)
-        : isam2_params(isam2_params),
-          increment_outlier_mu(increment_outlier_mu),
-          outlier_mu_chisq_upper_bound(outlier_mu_chisq_upper_bound),
-          outlier_mu_chisq_lower_bound(outlier_mu_chisq_lower_bound),
-          outlier_mu_avg_var_convergence_thresh(
-              outlier_mu_avg_var_convergence_thresh),
-          number_extra_iters(number_extra_iters) {}
-
-    /// @brief The parameters for the encapsulated iSAM2 algorithm @Note some
-    /// are overridden in RISAM::RISAM().
-    ISAM2Params isam2_params;
-
-    /// @brief Flag to increment mu_init when the value estimate converges.
-    // See RISAM::IncrementMuInit for details.
-    bool increment_outlier_mu;
-    /// @brief Increment mu_init if chi^2 > upper bound.
-    double outlier_mu_chisq_upper_bound;
-    /// @brief  Decrement mu_init if chi^2 < lower bound.
-    double outlier_mu_chisq_lower_bound;
-    /// @brief Average variable delta threshold to identify value convergence.
-    double outlier_mu_avg_var_convergence_thresh;
-    /// @brief The number of extra iterations to perform after mu convergence.
-    size_t number_extra_iters;
-  };
-
-  /** @brief Struct containing information about the riSAM update.
-   * See below for details about the information included.
-   */
-  struct UpdateResult {
-    /// @brief The iSAM2 result from the first internal update.
-    /// NOTE: riSAM may run multiple internal ISAM2 updates.
-    ISAM2Result isam2_result;
-
-    /// @brief The set variables directly involved in the update.
-    std::set<Key> involved_variables;
-    /// @brief The set of variables affected by the update.
-    std::set<Key> affected_variables;
-    /// @brief The set of factors convexified in this update.
-    std::set<FactorIndex> convexified_factors;
-  };
+  /// Configuration parameters for the riSAM algorithm.
+  typedef RISAMParams Parameters;
+  /// Information about a riSAM update.
+  typedef RISAMUpdateResult UpdateResult;
   /// @}
 
   /// @name Fields
