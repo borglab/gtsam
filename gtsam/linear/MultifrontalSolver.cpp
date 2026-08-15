@@ -356,7 +356,34 @@ void accumulateSymbolicStats(const SymbolicJunctionTree::sharedNode& cluster,
   }
 }
 
-/** Recursively merge compatible leaf siblings into dimension-capped leaves. */
+/**
+ * @brief Recursively groups eligible leaf children into super-leaves capped by
+ * total dimension.
+ *
+ * This function traverses the symbolic junction tree rooted at the given
+ * cluster node. For each cluster, it gathers direct leaf children (i.e.,
+ * children with no further descendants) that contain more than one factor and
+ * groups those with identical separators into new super-leaves until adding
+ * another leaf would exceed the specified leafMergeDimCap.
+ *
+ * The merging process works as follows:
+ * - Recursively process all children clusters first.
+ * - Identify eligible direct leaf children and collect their total dimensions
+ *   (separator plus frontal), separator keys, and original positions.
+ * - Leave one-factor children separate so their numerical load plans can still
+ *   select the fused direct-batch path.
+ * - Group the remaining children by identical separator keys, preserving
+ *   first-seen order for each separator.
+ * - Build super-leaves by accumulating children under the dimension cap, then
+ *   start a new super-leaf.
+ * - Replace grouped children with the new super-leaves. Non-leaf and excluded
+ *   children keep their relative order, and each super-leaf appears at the
+ *   first original position represented by its group.
+ *
+ * @param cluster The current symbolic junction-tree node to process.
+ * @param dims A map from variable keys to their dimensions.
+ * @param leafMergeDimCap The maximum summed dimension for a merged leaf.
+ */
 void mergeLeafChildren(const SymbolicJunctionTree::sharedNode& cluster,
                        const std::map<Key, size_t>& dims,
                        size_t leafMergeDimCap) {
@@ -437,6 +464,9 @@ struct CliqueBuilder {
 
     // Gather symbolic metadata for this clique.
     KeyVector frontals = cluster->orderedFrontalKeys;
+    // Symbolic cluster merges preserve membership but can leave frontals in
+    // merge order. Restore the requested elimination order so a partial
+    // solver's eliminated frontals form the prefix counted below.
     std::stable_sort(frontals.begin(), frontals.end(),
                      [this](Key a, Key b) {
                        return orderingIndex.at(a) < orderingIndex.at(b);
