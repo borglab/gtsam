@@ -26,6 +26,7 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/sfm/SfmData.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
+#include <gtsam/slam/SmartFactorParams.h>
 
 #include <optional>
 #include <string>
@@ -72,6 +73,17 @@ NonlinearFactorGraph buildGeneralSfmGraph(
 
 /** Build conventional camera and landmark initial values. */
 Values buildGeneralSfmInitial(const SfmData& data);
+
+/** Build one structureless smart projection factor per valid BAL track. */
+NonlinearFactorGraph buildSmartSfmGraph(
+    const SfmData& data, const BalBenchmarkConfig& config,
+    const SmartProjectionParams& smartParams = SmartProjectionParams());
+
+/** Build the camera-only initial values used by smart projection factors. */
+Values buildSmartSfmInitial(const SfmData& data);
+
+/** Create the camera-only ordering used by smart projection factors. */
+Ordering createCameraOrdering(const SfmData& data);
 
 /** Create a point-first Schur ordering, optionally separating calibration. */
 Ordering createSchurOrdering(const SfmData& data, bool separateCalibration);

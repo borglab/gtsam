@@ -319,8 +319,9 @@ TEST(Serialization, LegacyGaussianBayesTree) {
   const string legacyArchive =
       "0 0 0 0 0 0 1 0 0 0 7 0 1 5 1 0\n"
       "0 1 0 1 7 1 0\n"
-      "1 0 1 0 0 0 0 0 0 1 0 7 0 0 0 0 1 2 "
-      "3.00000000000000000e+00 2.00000000000000000e+00 0 0 3 0 0 1 2 0 1 "
+      "1 1 1\n"
+      "2 0 0 0 0 0 0 1 0 7 0 0 0 0 1 2 "
+      "2.00000000000000000e+00 3.00000000000000000e+00 0 0 3 0 0 1 2 0 1 "
       "0 1 0 0 1 0 0 0 1 1 1 5 0\n";
   istringstream stream(legacyArchive);
   boost::archive::text_iarchive archive(stream, boost::archive::no_header);

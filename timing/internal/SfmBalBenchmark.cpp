@@ -20,6 +20,7 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/BatchFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/slam/SmartProjectionFactor.h>
 #include <gtsam/slam/dataset.h>
 
 #include <algorithm>
@@ -109,6 +110,38 @@ Values buildGeneralSfmInitial(const SfmData& data) {
     initial.insert(P(j), data.tracks[j].p);
   }
   return initial;
+}
+
+NonlinearFactorGraph buildSmartSfmGraph(
+    const SfmData& data, const BalBenchmarkConfig& config,
+    const SmartProjectionParams& smartParams) {
+  using SmartSfmFactor = SmartProjectionFactor<Camera>;
+
+  NonlinearFactorGraph graph;
+  for (const SfmTrack& track : data.tracks) {
+    if (track.measurements.size() < 2) continue;
+    auto factor = std::make_shared<SmartSfmFactor>(config.projectionNoise,
+                                                   smartParams);
+    for (const SfmMeasurement& measurement : track.measurements) {
+      factor->add(measurement.second, C(measurement.first));
+    }
+    graph.push_back(factor);
+  }
+  return graph;
+}
+
+Values buildSmartSfmInitial(const SfmData& data) {
+  Values initial;
+  for (size_t i = 0; i < data.cameras.size(); ++i) {
+    initial.insert(C(i), data.cameras[i]);
+  }
+  return initial;
+}
+
+Ordering createCameraOrdering(const SfmData& data) {
+  Ordering ordering;
+  for (size_t i = 0; i < data.numberCameras(); ++i) ordering.push_back(C(i));
+  return ordering;
 }
 
 Ordering createSchurOrdering(const SfmData& data, bool separateCalibration) {
