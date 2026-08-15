@@ -61,9 +61,11 @@ class GTSAM_EXPORT MultifrontalSolverNotSupported : public std::runtime_error {
 /**
  * Imperative-style multifrontal solver for Gaussian factor graphs.
  *
- * This class pre-allocates all necessary memory for the elimination tree and
- * provides efficient methods for loading new factors, eliminating the graph,
- * and solving for the update vector.
+ * This class precomputes the elimination tree, allocates fixed solve storage,
+ * and provides efficient methods for loading new factors, eliminating the
+ * graph, and solving for the update vector. Each clique lazily allocates its
+ * packed Jacobian fallback rows on the first compatible load and reuses that
+ * storage thereafter.
  *
  * @note Only JacobianFactor and BatchJacobianFactor inputs are supported. Other
  * Gaussian factor types will throw during construction/precompute or load.
@@ -113,7 +115,9 @@ class GTSAM_EXPORT MultifrontalSolver
  public:
   /**
    * Construct the solver from a factor graph and an ordering.
-   * This builds the indexed junction tree and pre-allocates all matrices.
+   * This builds the indexed junction tree and allocates fixed solve matrices.
+   * Packed Jacobian fallback storage is allocated lazily during the first
+   * load.
    * Call load() before eliminating to populate numerical values.
    * @param graph The factor graph to solve.
    *              Must contain only JacobianFactor or BatchJacobianFactor
@@ -165,7 +169,9 @@ class GTSAM_EXPORT MultifrontalSolver
 
   /**
    * Load new numerical values from the factor graph.
-   * This overwrites the values in the pre-allocated matrices.
+   * The first load builds cached factor load plans and allocates only the
+   * Jacobian rows needed by the selected numerical path. Later compatible
+   * loads overwrite and reuse that packed storage.
    *
    * @param graph The factor graph with updated values (structure must match
    *              the graph used to construct/precompute this solver, apart
@@ -175,7 +181,7 @@ class GTSAM_EXPORT MultifrontalSolver
 
   /**
    * Eliminate the graph using Cholesky factorization.
-   * This operates in-place on the pre-allocated matrices.
+   * This operates in-place on the clique's reusable numerical storage.
    */
   void eliminateInPlace();
 
@@ -196,7 +202,8 @@ class GTSAM_EXPORT MultifrontalSolver
 
   /**
    * Materialize one Hessian factor per retained clique after partial
-   * elimination.
+   * elimination. Each returned factor owns a compact copy of its active
+   * upper-triangular information block because it may outlive the clique.
    */
   GaussianFactorGraph remainingFactorGraph() const;
 
