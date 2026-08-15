@@ -141,7 +141,7 @@ void SymmetricBlockMatrix::updateFromMappedBlocks(
 /* ************************************************************************* */
 void SymmetricBlockMatrix::updateFromOuterProductBlocks(
     const VerticalBlockMatrix& other,
-    const std::vector<DenseIndex>& blockIndices) {
+    const std::vector<DenseIndex>& blockIndices, double alpha) {
   assert(static_cast<DenseIndex>(blockIndices.size()) == other.nBlocks());
   const DenseIndex otherBlocks = other.nBlocks();
   for (DenseIndex i = 0; i < otherBlocks; ++i) {
@@ -149,15 +149,13 @@ void SymmetricBlockMatrix::updateFromOuterProductBlocks(
     if (I < 0) continue;
     assert(I < nBlocks());
     const auto Si = other(i);
-    Matrix diag = Si.transpose() * Si;
-    updateDiagonalBlock(I, diag);
+    updateDiagonalBlock(I, alpha * Si.transpose() * Si);
     for (DenseIndex j = i + 1; j < otherBlocks; ++j) {
       const DenseIndex J = blockIndices[j];
       if (J < 0) continue;
       assert(J < nBlocks());
       const auto Sj = other(j);
-      Matrix off = Si.transpose() * Sj;
-      updateOffDiagonalBlock(I, J, off);
+      updateOffDiagonalBlock(I, J, alpha * Si.transpose() * Sj);
     }
   }
 }

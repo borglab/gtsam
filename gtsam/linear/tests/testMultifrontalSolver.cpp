@@ -119,6 +119,106 @@ TEST(MultifrontalSolver, PartialElimination) {
 }  // namespace partial_elimination_fixture
 /* ************************************************************************* */
 
+namespace compact_leaf_fixture {
+
+constexpr size_t kCameraCount = 3;
+
+struct Problem {
+  GaussianFactorGraph graph;
+  Ordering pointOrdering;
+  Ordering cameraOrdering;
+  Ordering fullOrdering;
+};
+
+Problem createProblem() {
+  Problem problem;
+  const Key point = L(0);
+  problem.pointOrdering.push_back(point);
+  problem.fullOrdering.push_back(point);
+
+  KeyVector batchKeys{point};
+  for (size_t i = 0; i < kCameraCount; ++i) {
+    const Key camera = X(i);
+    batchKeys.push_back(camera);
+    problem.cameraOrdering.push_back(camera);
+    problem.fullOrdering.push_back(camera);
+  }
+
+  // The point sees two cameras. A third camera forms a larger parent clique,
+  // keeping the point conditional as a separate Bayes-tree leaf.
+  batchKeys.resize(3);
+  using PointCameraBatch = BatchJacobianFactor<1, 1, 1, 1>;
+  auto observations = std::make_shared<PointCameraBatch>(
+      batchKeys, std::vector<size_t>{1, 1, 1});
+  observations->addRow({0, 1, 2}, {I_1x1, I_1x1, -I_1x1}, Vector1(0.25));
+  problem.graph.push_back(observations);
+
+  const auto unit = noiseModel::Unit::Create(1);
+  for (size_t i = 0; i < kCameraCount; ++i) {
+    problem.graph.emplace_shared<JacobianFactor>(problem.cameraOrdering[i],
+                                                 I_1x1, Vector1(0.0), unit);
+  }
+  for (size_t i = 0; i < kCameraCount; ++i) {
+    for (size_t j = i + 1; j < kCameraCount; ++j) {
+      problem.graph.emplace_shared<JacobianFactor>(
+          problem.cameraOrdering[i], I_1x1, problem.cameraOrdering[j], -I_1x1,
+          Vector1(0.0), unit);
+    }
+  }
+  return problem;
+}
+
+MultifrontalSolver::Parameters compactParams() {
+  auto params = noMergeParams();
+  params.qrMode = MultifrontalParameters::QRMode::Off;
+  params.compactCholeskySeparatorDimThreshold = 2;
+  return params;
+}
+
+size_t compactCliqueCount(MultifrontalSolver* solver) {
+  size_t count = 0;
+  solver->runTopDown([&](MultifrontalClique& clique) {
+    if (clique.useCompactCholesky()) ++count;
+  });
+  return count;
+}
+
+}  // namespace compact_leaf_fixture
+
+// A large-separator batch leaf forms the same reduced factor without
+// materializing C, including through the fused load/eliminate overload.
+TEST(MultifrontalSolver, CompactLeafPartialElimination) {
+  using namespace compact_leaf_fixture;
+  const Problem problem = createProblem();
+  MultifrontalSolver solver(problem.graph, problem.fullOrdering,
+                            problem.pointOrdering.size(), compactParams());
+  EXPECT_LONGS_EQUAL(1, compactCliqueCount(&solver));
+
+  solver.eliminatePartialInPlace(problem.graph);
+  const GaussianFactorGraph actual = solver.remainingFactorGraph();
+  const auto [unusedBayesTree, expected] =
+      problem.graph.eliminatePartialMultifrontal(problem.pointOrdering);
+  (void)unusedBayesTree;
+  EXPECT(assert_equal(expected->augmentedHessian(problem.cameraOrdering),
+                      actual.augmentedHessian(problem.cameraOrdering), 1e-9));
+}
+
+// The same compact leaf path feeds an ordinary parent clique in a complete
+// multifrontal solve.
+TEST(MultifrontalSolver, CompactLeafFullElimination) {
+  using namespace compact_leaf_fixture;
+  const Problem problem = createProblem();
+  MultifrontalSolver solver(problem.graph, problem.fullOrdering,
+                            compactParams());
+  EXPECT_LONGS_EQUAL(1, compactCliqueCount(&solver));
+
+  solver.eliminateInPlace(problem.graph);
+  const VectorValues& actual = solver.updateSolution();
+  const VectorValues expected =
+      problem.graph.eliminateMultifrontal(problem.fullOrdering)->optimize();
+  EXPECT(assert_equal(expected, actual, 1e-8));
+}
+
 /* ************************************************************************* */
 // Build the solver and validate initial structure and explicit load.
 TEST(MultifrontalSolver, Constructor) {

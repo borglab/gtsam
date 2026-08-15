@@ -197,21 +197,29 @@ int main(int argc, char* argv[]) {
       loadPartial();
       eliminatePartial();
     };
+    const auto runPartialFused = [&] {
+      solver->eliminatePartialInPlace(damped);
+      benchmarkSink += solver->roots().size();
+    };
     for (size_t repetition = 0; repetition < warmups; ++repetition) {
       if (repetition % 2 == 0) {
         assembleCompact();
+        runPartialFused();
         runPartial();
       } else {
         runPartial();
+        runPartialFused();
         assembleCompact();
       }
     }
 
     std::vector<double> compactSamples;
+    std::vector<double> fusedPartialSamples;
     std::vector<double> partialSamples;
     std::vector<double> loadSamples;
     std::vector<double> eliminationSamples;
     compactSamples.reserve(repetitions);
+    fusedPartialSamples.reserve(repetitions);
     partialSamples.reserve(repetitions);
     loadSamples.reserve(repetitions);
     eliminationSamples.reserve(repetitions);
@@ -227,11 +235,16 @@ int main(int argc, char* argv[]) {
         eliminationSamples.push_back(eliminationMilliseconds);
         partialSamples.push_back(loadMilliseconds + eliminationMilliseconds);
       };
+      const auto timeFusedPartial = [&] {
+        fusedPartialSamples.push_back(1000.0 * measureSeconds(runPartialFused));
+      };
       if (repetition % 2 == 0) {
         timeCompact();
+        timeFusedPartial();
         timePartial();
       } else {
         timePartial();
+        timeFusedPartial();
         timeCompact();
       }
     }
@@ -240,6 +253,8 @@ int main(int argc, char* argv[]) {
         summarizeSamples(compactSamples, MedianPolicy::kAverageMiddle);
     const TimingSummary partialSummary =
         summarizeSamples(partialSamples, MedianPolicy::kAverageMiddle);
+    const TimingSummary fusedPartialSummary =
+        summarizeSamples(fusedPartialSamples, MedianPolicy::kAverageMiddle);
     const TimingSummary loadSummary =
         summarizeSamples(loadSamples, MedianPolicy::kAverageMiddle);
     const TimingSummary eliminationSummary =
@@ -265,11 +280,12 @@ int main(int argc, char* argv[]) {
               << "| Pipeline | Median ms | Mean ms | Min ms | Max ms |\n"
               << "| --- | ---: | ---: | ---: | ---: |\n";
     printSummary("Compact reduced-camera assembly", compactSummary);
-    printSummary("Partial multifrontal total", partialSummary);
+    printSummary("Partial multifrontal fused total", fusedPartialSummary);
+    printSummary("Partial multifrontal separate total", partialSummary);
     printSummary("  load factors", loadSummary);
     printSummary("  eliminate points", eliminationSummary);
-    std::cout << "\nPartial/compact median ratio: "
-              << partialSummary.median / compactSummary.median << "x\n";
+    std::cout << "\nFused partial/compact median ratio: "
+              << fusedPartialSummary.median / compactSummary.median << "x\n";
 
     if (benchmarkSink == 0) std::cerr << "Unexpected empty benchmark result\n";
     return 0;

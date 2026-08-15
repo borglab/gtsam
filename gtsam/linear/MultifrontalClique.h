@@ -29,8 +29,8 @@
 #include <gtsam/nonlinear/LMDampingParams.h>
 #include <gtsam/symbolic/SymbolicFactor.h>
 
-#include <iosfwd>
 #include <cstdint>
+#include <iosfwd>
 #include <map>
 #include <memory>
 #include <optional>
@@ -198,6 +198,11 @@ class GTSAM_EXPORT MultifrontalClique {
   /// Check if this clique is using QR elimination.
   bool useQR() const { return solveMode_ == SolveMode::QrLeaf; }
 
+  /// Check if this leaf avoids materializing its separator Hessian.
+  bool useCompactCholesky() const {
+    return solveMode_ == SolveMode::CompactCholeskyLeaf;
+  }
+
   /**
    * Print this clique.
    * @param s Optional string prefix.
@@ -254,7 +259,7 @@ class GTSAM_EXPORT MultifrontalClique {
                                   const MultifrontalClique& clique);
 
  private:
-  enum class SolveMode { Cholesky, QrLeaf };
+  enum class SolveMode { Cholesky, QrLeaf, CompactCholeskyLeaf };
 
   /// Cache pointers to frontal and separator update vectors.
   void cacheSolutionPointers(VectorValues* delta, const KeyVector& frontals,
@@ -270,6 +275,7 @@ class GTSAM_EXPORT MultifrontalClique {
     size_t factorIndex = 0;
     SharedDiagonal model;
     size_t rows = 0;
+    size_t rowOffset = 0;
     /// Slot indices for factor keys (or -1 for fixed keys). See
     /// `linear/doc/BatchFactor_Performance_Notes.html` for load-plan usage.
     std::vector<DenseIndex> blockIndices;
@@ -278,6 +284,9 @@ class GTSAM_EXPORT MultifrontalClique {
     /// Built once per clique and reused during direct Hessian updates.
     /// See `linear/doc/BatchFactor_Performance_Notes.html`.
     std::vector<DenseIndex> mappedSlots;
+    /// Flattened row-group mapping that drops frontal slots and writes the
+    /// original separator Hessian directly into the parent.
+    std::vector<DenseIndex> parentMappedSlots;
     bool canDirectUpdate = false;
   };
 
@@ -287,6 +296,15 @@ class GTSAM_EXPORT MultifrontalClique {
   /// Update a parent information matrix with this clique's separator
   /// contribution.
   void updateParentInfo(SymmetricBlockMatrix& parentInfo) const;
+
+  /// Assemble only the frontal rows [A B a] of a compact Cholesky leaf.
+  void prepareCompactCholesky();
+
+  /// Factor [A B a] in place into [R S d].
+  void factorizeCompactCholesky();
+
+  /// Add the original separator normal equations directly into the parent.
+  void updateParentDirectFactors(SymmetricBlockMatrix& parentInfo) const;
 
   /// Accumulate children separator updates into this clique's info matrix
   /// (single-threaded).
@@ -321,8 +339,7 @@ class GTSAM_EXPORT MultifrontalClique {
    * @return Number of rows added.
    */
   size_t addBatchJacobianFactor(const BatchJacobianFactorBase& factor,
-                               size_t rowOffset,
-                               const FactorLoadPlan& plan);
+                                size_t rowOffset, const FactorLoadPlan& plan);
 
   void setParentIndices(const std::vector<DenseIndex>& indices) {
     parentIndices_ = indices;
@@ -330,7 +347,7 @@ class GTSAM_EXPORT MultifrontalClique {
 
   // Construction-time metadata (set once in the constructor).
   std::vector<size_t> factorIndices_;
-  KeyVector orderedKeys_;  ///< Keys ordered by block index (frontals+seps).
+  KeyVector orderedKeys_;     ///< Keys ordered by block index (frontals+seps).
   size_t totalFrontals_ = 0;  ///< Symbolic frontals before a phase split.
   const std::unordered_set<Key>* fixedKeys_ = nullptr;
   std::unordered_map<Key, DenseIndex> blockIndexCache_;

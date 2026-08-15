@@ -206,6 +206,15 @@ class GTSAM_EXPORT BatchJacobianFactorBase : public GaussianFactor {
       SymmetricBlockMatrix* info) const = 0;
 
   /**
+   * Add only the frontal block rows of the augmented Hessian to a rectangular
+   * target. This is the compact Schur path: it forms [A B a] without
+   * allocating the separator block C.
+   */
+  virtual void updateFrontalHessianWithMappedSlots(
+      const std::vector<DenseIndex>& mappedSlots, DenseIndex numFrontalBlocks,
+      VerticalBlockMatrix* frontalRows) const = 0;
+
+  /**
    * Add this factor's Hessian-vector product using scalar offsets for keys().
    * This flat-vector interface avoids materializing a dense JacobianFactor.
    *
@@ -592,6 +601,66 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
     updateMappedAugmentedColumns(rowIndex, mappedSlots, weights, info, beginCol,
                                  endCol,
                                  std::make_index_sequence<NumSlots + 1>{});
+  }
+
+  /// Add one block to a frontal row of a rectangular augmented Hessian.
+  template <size_t I, size_t J>
+  void updateFrontalHessianBlock(size_t rowIndex, const DenseIndex* mappedSlots,
+                                 const RhsVector* weights,
+                                 DenseIndex numFrontalBlocks,
+                                 VerticalBlockMatrix* frontalRows) const {
+    static_assert(I < NumSlots);
+    static_assert(J <= NumSlots);
+    const DenseIndex targetI = mappedSlots[I];
+    const DenseIndex targetJ = mappedSlots[J];
+    if (targetI < 0 || targetI >= numFrontalBlocks || targetJ < 0) return;
+
+    const auto& Ai = std::get<I>(blocks_)[rowIndex];
+    const DenseIndex targetRow = frontalRows->offset(targetI);
+    auto destination = (*frontalRows)(targetJ).middleRows(
+        targetRow, static_cast<DenseIndex>(Ai.cols()));
+    if constexpr (J == NumSlots) {
+      const RhsVector& b = rhs_[rowIndex];
+      if (weights) {
+        destination += (Ai.transpose() * weights->asDiagonal() * b).eval();
+      } else {
+        destination += (Ai.transpose() * b).eval();
+      }
+    } else {
+      const auto& Aj = std::get<J>(blocks_)[rowIndex];
+      if (weights) {
+        destination += (Ai.transpose() * weights->asDiagonal() * Aj).eval();
+      } else {
+        destination += (Ai.transpose() * Aj).eval();
+      }
+    }
+  }
+
+  /// Add all augmented columns for one frontal row block.
+  template <size_t I, size_t... Js>
+  void updateFrontalHessianRowBlock(size_t rowIndex,
+                                    const DenseIndex* mappedSlots,
+                                    const RhsVector* weights,
+                                    DenseIndex numFrontalBlocks,
+                                    VerticalBlockMatrix* frontalRows,
+                                    std::index_sequence<Js...>) const {
+    (updateFrontalHessianBlock<I, Js>(rowIndex, mappedSlots, weights,
+                                      numFrontalBlocks, frontalRows),
+     ...);
+  }
+
+  /// Add every possible frontal row block for one compact row group.
+  template <size_t... Is>
+  void updateFrontalHessianRowGroup(size_t rowIndex,
+                                    const DenseIndex* mappedSlots,
+                                    const RhsVector* weights,
+                                    DenseIndex numFrontalBlocks,
+                                    VerticalBlockMatrix* frontalRows,
+                                    std::index_sequence<Is...>) const {
+    (updateFrontalHessianRowBlock<Is>(rowIndex, mappedSlots, weights,
+                                      numFrontalBlocks, frontalRows,
+                                      std::make_index_sequence<NumSlots + 1>{}),
+     ...);
   }
 
   /// Return the squared whitening scale for one compact row group.
@@ -1021,6 +1090,30 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
   void updateHessianWithMappedSlots(const std::vector<DenseIndex>& mappedSlots,
                                     SymmetricBlockMatrix* info) const override {
     updateHessianWithMappedSlots(mappedSlots, info, 0, info->nBlocks());
+  }
+
+  void updateFrontalHessianWithMappedSlots(
+      const std::vector<DenseIndex>& mappedSlots, DenseIndex numFrontalBlocks,
+      VerticalBlockMatrix* frontalRows) const override {
+    if (rows() == 0) return;
+    const size_t stride = NumSlots + 1;
+    if (mappedSlots.size() != rowSlots_.size() * stride) {
+      throw std::invalid_argument(
+          "BatchJacobianFactor::updateFrontalHessianWithMappedSlots: mapped "
+          "slot count mismatch.");
+    }
+    RhsVector weights;
+    const RhsVector* weightsPtr = nullptr;
+    const DenseIndex* rowSlotsPtr = mappedSlots.data();
+    for (size_t rowIndex = 0; rowIndex < rowSlots_.size(); ++rowIndex) {
+      if (model_ && !model_->isUnit()) {
+        weights = rowWeights(rowIndex);
+        weightsPtr = &weights;
+      }
+      updateFrontalHessianRowGroup(rowIndex, rowSlotsPtr + rowIndex * stride,
+                                   weightsPtr, numFrontalBlocks, frontalRows,
+                                   std::make_index_sequence<NumSlots>{});
+    }
   }
 
  private:

@@ -40,6 +40,8 @@ struct MultifrontalParameters {
   size_t mergeDimCap = 32;                ///< Merge threshold (0 disables).
   QRMode qrMode = QRMode::Allow;          ///< QR mode for leaf cliques.
   double qrAspectRatio = 2.0;             ///< Aspect ratio for QR mode=Allow.
+  /// Minimum separator dimension for C-free Cholesky leaves.
+  size_t compactCholeskySeparatorDimThreshold = 256;
   std::ostream* reportStream = nullptr;   ///< Optional structure reporting.
   int eliminationParallelThreshold = 10;  ///< Post-order task threshold.
   int solutionParallelThreshold = 4096;   ///< Pre-order task threshold.

@@ -699,8 +699,22 @@ void MultifrontalSolver::eliminatePartialInPlace() {
 /* ************************************************************************* */
 void MultifrontalSolver::eliminatePartialInPlace(
     const GaussianFactorGraph& graph) {
-  load(graph);
-  eliminatePartialInPlace();
+  if (firstPhaseSize_ >= ordering_.size()) {
+    throw std::runtime_error(
+        "MultifrontalSolver::eliminatePartialInPlace: solver is not "
+        "configured with a partial ordering.");
+  }
+  runBottomUp(
+      [&graph](MultifrontalClique& node) {
+        node.fillAb(graph);
+        node.prepareForElimination();
+        if (node.numFrontals() > 0) node.factorize();
+      },
+      params_.eliminationParallelThreshold);
+  loaded_ = true;
+  eliminated_ = false;
+  partiallyEliminated_ = true;
+  hasDeltaError_ = false;
 }
 
 /* ************************************************************************* */
