@@ -287,6 +287,8 @@ class GTSAM_EXPORT MultifrontalClique {
     /// Built once per clique and reused during direct Hessian updates.
     /// See `linear/doc/BatchFactor_Performance_Notes.html`.
     std::vector<DenseIndex> mappedSlots;
+    /// Scalar offsets corresponding to mappedSlots in this clique's info_.
+    std::vector<DenseIndex> mappedScalarOffsets;
     /// Flattened row-group mapping that drops frontal slots and writes the
     /// original separator Hessian directly into the parent.
     std::vector<DenseIndex> parentMappedSlots;
@@ -354,8 +356,10 @@ class GTSAM_EXPORT MultifrontalClique {
   size_t addBatchJacobianFactor(const BatchJacobianFactorBase& factor,
                                 size_t rowOffset, const FactorLoadPlan& plan);
 
-  void setParentIndices(const std::vector<DenseIndex>& indices) {
+  void setParentIndices(const std::vector<DenseIndex>& indices,
+                        const std::vector<DenseIndex>& scalarOffsets) {
     parentIndices_ = indices;
+    parentScalarOffsets_ = scalarOffsets;
   }
 
   // Construction-time metadata (set once in the constructor).
@@ -379,11 +383,14 @@ class GTSAM_EXPORT MultifrontalClique {
   // Finalize-time metadata (set once after children are known).
   std::vector<DenseIndex>
       parentIndices_;  ///< Parent block indices for separators + RHS.
+  std::vector<DenseIndex>
+      parentScalarOffsets_;  ///< Cached scalar offsets for parent blocks.
   std::vector<DenseIndex> separatorIndices_;  ///< Identity separator mapping.
   SolveMode solveMode_ = SolveMode::Cholesky;
 
   std::vector<std::vector<size_t>> sameSeparatorChildGroups_;
   std::vector<std::vector<DenseIndex>> sameSeparatorParentIndices_;
+  std::vector<std::vector<DenseIndex>> sameSeparatorParentScalarOffsets_;
   std::vector<SymmetricBlockMatrix> sameSeparatorInfos_;
   std::vector<uint8_t> childInSameSeparatorGroup_;
 

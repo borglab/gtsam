@@ -184,17 +184,30 @@ void MultifrontalClique::finalize(std::vector<ChildInfo> children,
     this->children.push_back(child.clique);
   }
 
-  // Compute parent indices for all children (separator blocks + RHS block).
+  // Compute parent indices and scalar offsets for all children. The RHS block
+  // follows the variable blocks and has dimension one.
+  std::vector<DenseIndex> blockScalarOffsets(blockDims_.size() + 1);
+  DenseIndex scalarOffset = 0;
+  for (size_t i = 0; i < blockDims_.size(); ++i) {
+    blockScalarOffsets[i] = scalarOffset;
+    scalarOffset += static_cast<DenseIndex>(blockDims_[i]);
+  }
+  blockScalarOffsets.back() = scalarOffset;
   for (const auto& child : children) {
     if (!child.clique) continue;
     std::vector<DenseIndex> indices;
+    std::vector<DenseIndex> scalarOffsets;
     indices.reserve(child.separatorKeys.size() + 1);
+    scalarOffsets.reserve(child.separatorKeys.size() + 1);
     for (Key key : child.separatorKeys) {
-      indices.push_back(blockIndex(key));
+      const DenseIndex index = blockIndex(key);
+      indices.push_back(index);
+      scalarOffsets.push_back(blockScalarOffsets[index]);
     }
     // The RHS block is always the last block in Ab/info.
     indices.push_back(static_cast<DenseIndex>(orderedKeys_.size()));
-    child.clique->setParentIndices(indices);
+    scalarOffsets.push_back(blockScalarOffsets.back());
+    child.clique->setParentIndices(indices, scalarOffsets);
   }
 
   // In leaf cliques, check whether to use QR elimination.
@@ -268,6 +281,13 @@ void MultifrontalClique::finalize(std::vector<ChildInfo> children,
         sameSeparatorChildGroups_.emplace_back(childIndices.begin() + begin,
                                                childIndices.begin() + end);
         sameSeparatorParentIndices_.push_back(parentIndices);
+        std::vector<DenseIndex> scalarOffsets;
+        scalarOffsets.reserve(parentIndices.size());
+        for (const DenseIndex index : parentIndices) {
+          scalarOffsets.push_back(blockScalarOffsets[index]);
+        }
+        sameSeparatorParentScalarOffsets_.push_back(
+            std::move(scalarOffsets));
         sameSeparatorInfos_.push_back(makeZeroLocalInfo(separatorDims));
         for (size_t childIndex : sameSeparatorChildGroups_.back()) {
           childInSameSeparatorGroup_[childIndex] = 1;
@@ -423,6 +443,13 @@ void MultifrontalClique::buildLoadPlans(
       if (plan.canDirectUpdate) {
         batchFactor->buildMappedSlots(plan.blockIndicesWithRhs,
                                       plan.mappedSlots);
+        if (!useQR() && !useCompactCholesky()) {
+          plan.mappedScalarOffsets.reserve(plan.mappedSlots.size());
+          for (const DenseIndex slot : plan.mappedSlots) {
+            plan.mappedScalarOffsets.push_back(
+                slot < 0 ? -1 : info_.blockScalarOffset(slot));
+          }
+        }
         if (useCompactCholesky()) {
           assert(parentIndices_.size() ==
                  orderedKeys_.size() - numFrontals() + 1);
@@ -598,7 +625,8 @@ void MultifrontalClique::prepareForElimination() {
       if (plan.mappedSlots.empty()) {
         batchFactor->updateHessian(plan.blockIndicesWithRhs, &info_);
       } else {
-        batchFactor->updateHessianWithMappedSlots(plan.mappedSlots, &info_);
+        batchFactor->updateHessianWithMappedSlots(
+            plan.mappedSlots, plan.mappedScalarOffsets, &info_);
       }
     }
     if (fillRows_ > 0 && !allBatchFactors_) {
@@ -928,7 +956,8 @@ void MultifrontalClique::updateParentInfo(
     // Accumulate the S^T S part from this clique's info matrix into the parent.
     assert(info_.nBlocks() > 0 && info_.blockStart() == 0);
     info_.blockStart() = numFrontals();
-    parentInfo.updateFromMappedBlocks(info_, parentIndices_);
+    parentInfo.updateFromMappedBlocks(info_, parentIndices_,
+                                      parentScalarOffsets_);
     info_.blockStart() = 0;
   }
 }
@@ -1054,8 +1083,9 @@ void MultifrontalClique::gatherSameSeparatorUpdates() {
   }
 #endif
   for (size_t group = 0; group < sameSeparatorInfos_.size(); ++group) {
-    info_.updateFromMappedBlocks(sameSeparatorInfos_[group],
-                                 sameSeparatorParentIndices_[group]);
+    info_.updateFromMappedBlocks(
+        sameSeparatorInfos_[group], sameSeparatorParentIndices_[group],
+        sameSeparatorParentScalarOffsets_[group]);
   }
 }
 

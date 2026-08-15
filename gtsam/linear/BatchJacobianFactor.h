@@ -208,6 +208,21 @@ class GTSAM_EXPORT BatchJacobianFactorBase : public GaussianFactor,
       SymmetricBlockMatrix* info) const = 0;
 
   /**
+   * Update the Hessian using cached block slots and scalar offsets.
+   *
+   * The default preserves compatibility for derived batch-factor types that
+   * only implement mapped block slots. Implementations may override this to
+   * bypass repeated block-to-scalar offset lookup.
+   */
+  virtual void updateHessianWithMappedSlots(
+      const std::vector<DenseIndex>& mappedSlots,
+      const std::vector<DenseIndex>& mappedScalarOffsets,
+      SymmetricBlockMatrix* info) const {
+    (void)mappedScalarOffsets;
+    updateHessianWithMappedSlots(mappedSlots, info);
+  }
+
+  /**
    * Add only the frontal block rows of the augmented Hessian to a rectangular
    * target. This is the compact Schur path: it forms [A B a] without
    * allocating the separator block C.
@@ -469,26 +484,37 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
    */
   template <size_t Slot>
   void updateAugmentedDiagonal(size_t rowIndex, DenseIndex targetSlot,
+                               DenseIndex targetScalarOffset,
                                const RhsVector* weights,
                                SymmetricBlockMatrix* info) const {
     if (targetSlot < 0) return;
     if constexpr (Slot == NumSlots) {
       const RhsVector& b = rhs_[rowIndex];
-      if (weights) {
-        info->updateDiagonalBlock(targetSlot,
-                                  b.transpose() * weights->asDiagonal() * b);
+      Eigen::Matrix<double, 1, 1> contribution;
+      contribution(0, 0) =
+          weights ? (weights->array() * b.array().square()).sum()
+                  : b.squaredNorm();
+      if (targetScalarOffset >= 0) {
+        info->updateFixedDiagonalBlockAt<1>(targetScalarOffset, contribution);
       } else {
-        Eigen::Matrix<double, 1, 1> contribution;
-        contribution(0, 0) = b.squaredNorm();
         info->updateDiagonalBlock(targetSlot, contribution);
       }
     } else {
+      using BlockType =
+          typename std::tuple_element<Slot, Blocks>::type::value_type;
+      constexpr int BlockDim = BlockType::ColsAtCompileTime;
       const auto& A = std::get<Slot>(blocks_)[rowIndex];
+      Eigen::Matrix<double, BlockDim, BlockDim> contribution;
       if (weights) {
-        info->updateDiagonalBlock(targetSlot,
-                                  A.transpose() * weights->asDiagonal() * A);
+        contribution.noalias() = A.transpose() * weights->asDiagonal() * A;
       } else {
-        info->diagonalBlock(targetSlot).rankUpdate(A.transpose());
+        contribution.noalias() = A.transpose() * A;
+      }
+      if (targetScalarOffset >= 0) {
+        info->updateFixedDiagonalBlockAt<BlockDim>(targetScalarOffset,
+                                                   contribution);
+      } else {
+        info->updateDiagonalBlock(targetSlot, contribution);
       }
     }
   }
@@ -496,11 +522,26 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
   /// Add an off-diagonal Hessian block, normalizing upper-triangular order.
   template <typename MatrixType>
   void updateOffDiagonalNormalized(DenseIndex targetI, DenseIndex targetJ,
+                                   DenseIndex scalarOffsetI,
+                                   DenseIndex scalarOffsetJ,
                                    const MatrixType& block,
                                    SymmetricBlockMatrix* info) const {
     assert((targetI != targetJ) &&
            "BatchJacobianFactor: duplicate mapped Hessian slots are not "
            "supported.");
+    constexpr int Rows = MatrixType::RowsAtCompileTime;
+    constexpr int Cols = MatrixType::ColsAtCompileTime;
+    static_assert(Rows != Eigen::Dynamic && Cols != Eigen::Dynamic);
+    if (scalarOffsetI >= 0 && scalarOffsetJ >= 0) {
+      if (targetI < targetJ) {
+        info->updateFixedOffDiagonalBlockAt<Rows, Cols>(
+            scalarOffsetI, scalarOffsetJ, block);
+      } else {
+        info->updateFixedOffDiagonalBlockAt<Cols, Rows>(
+            scalarOffsetJ, scalarOffsetI, block.transpose());
+      }
+      return;
+    }
     if (targetI < targetJ) {
       info->updateOffDiagonalBlock(targetI, targetJ, block);
       return;
@@ -517,37 +558,52 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
    */
   template <size_t I, size_t J>
   void updateAugmentedOffDiagonal(size_t rowIndex, DenseIndex targetI,
-                                  DenseIndex targetJ, const RhsVector* weights,
+                                  DenseIndex targetJ, DenseIndex scalarOffsetI,
+                                  DenseIndex scalarOffsetJ,
+                                  const RhsVector* weights,
                                   SymmetricBlockMatrix* info) const {
     static_assert(I < J, "BatchJacobianFactor expects upper-triangular order.");
     if constexpr (J == NumSlots) {
+      using BlockType =
+          typename std::tuple_element<I, Blocks>::type::value_type;
+      constexpr int BlockDim = BlockType::ColsAtCompileTime;
       const auto& A = std::get<I>(blocks_)[rowIndex];
       const RhsVector& b = rhs_[rowIndex];
+      Eigen::Matrix<double, BlockDim, 1> contribution;
       if (weights) {
         const RhsVector weightedRhs = weights->asDiagonal() * b;
-        updateOffDiagonalNormalized(targetI, targetJ,
-                                    A.transpose() * weightedRhs, info);
+        contribution.noalias() = A.transpose() * weightedRhs;
       } else {
-        updateOffDiagonalNormalized(targetI, targetJ, A.transpose() * b, info);
+        contribution.noalias() = A.transpose() * b;
       }
+      updateOffDiagonalNormalized(targetI, targetJ, scalarOffsetI,
+                                  scalarOffsetJ, contribution, info);
     } else {
+      using BlockTypeI =
+          typename std::tuple_element<I, Blocks>::type::value_type;
+      using BlockTypeJ =
+          typename std::tuple_element<J, Blocks>::type::value_type;
+      constexpr int BlockDimI = BlockTypeI::ColsAtCompileTime;
+      constexpr int BlockDimJ = BlockTypeJ::ColsAtCompileTime;
       const auto& Ai = std::get<I>(blocks_)[rowIndex];
       const auto& Aj = std::get<J>(blocks_)[rowIndex];
+      Eigen::Matrix<double, BlockDimI, BlockDimJ> contribution;
       if (weights) {
-        updateOffDiagonalNormalized(targetI, targetJ,
-                                    Ai.transpose() * weights->asDiagonal() * Aj,
-                                    info);
+        contribution.noalias() =
+            Ai.transpose() * weights->asDiagonal() * Aj;
       } else {
-        updateOffDiagonalNormalized(targetI, targetJ, Ai.transpose() * Aj,
-                                    info);
+        contribution.noalias() = Ai.transpose() * Aj;
       }
+      updateOffDiagonalNormalized(targetI, targetJ, scalarOffsetI,
+                                  scalarOffsetJ, contribution, info);
     }
   }
 
   /// Update all previous slots that contribute to augmented column J.
   template <size_t J, size_t... Is>
   void updateMappedPreviousAugmentedSlots(
-      size_t rowIndex, const DenseIndex* mappedSlots, const RhsVector* weights,
+      size_t rowIndex, const DenseIndex* mappedSlots,
+      const DenseIndex* mappedScalarOffsets, const RhsVector* weights,
       SymmetricBlockMatrix* info, DenseIndex beginCol, DenseIndex endCol,
       std::index_sequence<Is...>) const {
     (void)rowIndex;
@@ -560,7 +616,14 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
               slotInRange(std::max(mappedSlots[Is], targetSlot), beginCol,
                           endCol)
           ? updateAugmentedOffDiagonal<Is, J>(rowIndex, mappedSlots[Is],
-                                              targetSlot, weights, info)
+                                              targetSlot,
+                                              mappedScalarOffsets
+                                                  ? mappedScalarOffsets[Is]
+                                                  : -1,
+                                              mappedScalarOffsets
+                                                  ? mappedScalarOffsets[J]
+                                                  : -1,
+                                              weights, info)
           : void()),
      ...);
   }
@@ -569,39 +632,45 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
   template <size_t J>
   void updateMappedAugmentedColumn(size_t rowIndex,
                                    const DenseIndex* mappedSlots,
+                                   const DenseIndex* mappedScalarOffsets,
                                    const RhsVector* weights,
                                    SymmetricBlockMatrix* info,
                                    DenseIndex beginCol,
                                    DenseIndex endCol) const {
     const DenseIndex targetSlot = mappedSlots[J];
     if (slotInRange(targetSlot, beginCol, endCol)) {
-      updateAugmentedDiagonal<J>(rowIndex, targetSlot, weights, info);
+      updateAugmentedDiagonal<J>(
+          rowIndex, targetSlot,
+          mappedScalarOffsets ? mappedScalarOffsets[J] : -1, weights, info);
     }
-    updateMappedPreviousAugmentedSlots<J>(rowIndex, mappedSlots, weights, info,
-                                          beginCol, endCol,
-                                          std::make_index_sequence<J>{});
+    updateMappedPreviousAugmentedSlots<J>(
+        rowIndex, mappedSlots, mappedScalarOffsets, weights, info, beginCol,
+        endCol, std::make_index_sequence<J>{});
   }
 
   /// Update all augmented Hessian columns for a mapped compact row group.
   template <size_t... Js>
   void updateMappedAugmentedColumns(size_t rowIndex,
                                     const DenseIndex* mappedSlots,
+                                    const DenseIndex* mappedScalarOffsets,
                                     const RhsVector* weights,
                                     SymmetricBlockMatrix* info,
                                     DenseIndex beginCol, DenseIndex endCol,
                                     std::index_sequence<Js...>) const {
-    (updateMappedAugmentedColumn<Js>(rowIndex, mappedSlots, weights, info,
+    (updateMappedAugmentedColumn<Js>(rowIndex, mappedSlots,
+                                     mappedScalarOffsets, weights, info,
                                      beginCol, endCol),
      ...);
   }
 
   /// Update all Hessian contributions from one compact row group.
   void updateMappedHessianRow(size_t rowIndex, const DenseIndex* mappedSlots,
+                              const DenseIndex* mappedScalarOffsets,
                               const RhsVector* weights,
                               SymmetricBlockMatrix* info, DenseIndex beginCol,
                               DenseIndex endCol) const {
-    updateMappedAugmentedColumns(rowIndex, mappedSlots, weights, info, beginCol,
-                                 endCol,
+    updateMappedAugmentedColumns(rowIndex, mappedSlots, mappedScalarOffsets,
+                                 weights, info, beginCol, endCol,
                                  std::make_index_sequence<NumSlots + 1>{});
   }
 
@@ -1025,7 +1094,8 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
     if (slotIndices.size() == keys_.size() + 1 && !slotIndices.empty() &&
         slotIndices.back() == rhsSlot) {
       buildMappedSlots(slotIndices, mappedSlots);
-      updateHessianWithMappedSlots(mappedSlots, info, 0, info->nBlocks());
+      updateHessianWithMappedSlots(mappedSlots, nullptr, info, 0,
+                                   info->nBlocks());
       return;
     }
     if (slotIndices.size() != keys_.size()) {
@@ -1036,7 +1106,8 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
     std::vector<DenseIndex> slots = slotIndices;
     slots.push_back(rhsSlot);
     buildMappedSlots(slots, mappedSlots);
-    updateHessianWithMappedSlots(mappedSlots, info, 0, info->nBlocks());
+    updateHessianWithMappedSlots(mappedSlots, nullptr, info, 0,
+                                 info->nBlocks());
   }
 
   /**
@@ -1067,7 +1138,7 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
 
     std::vector<DenseIndex> mappedSlots;
     buildMappedSlots(slots, mappedSlots);
-    updateHessianWithMappedSlots(mappedSlots, info, beginCol, endCol);
+    updateHessianWithMappedSlots(mappedSlots, nullptr, info, beginCol, endCol);
   }
 
   /// Build mapped Hessian slots for each compact row group.
@@ -1091,7 +1162,16 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
   /// Update the full augmented Hessian from a pre-built mapped-slot buffer.
   void updateHessianWithMappedSlots(const std::vector<DenseIndex>& mappedSlots,
                                     SymmetricBlockMatrix* info) const override {
-    updateHessianWithMappedSlots(mappedSlots, info, 0, info->nBlocks());
+    updateHessianWithMappedSlots(mappedSlots, nullptr, info, 0,
+                                 info->nBlocks());
+  }
+
+  void updateHessianWithMappedSlots(
+      const std::vector<DenseIndex>& mappedSlots,
+      const std::vector<DenseIndex>& mappedScalarOffsets,
+      SymmetricBlockMatrix* info) const override {
+    updateHessianWithMappedSlots(mappedSlots, &mappedScalarOffsets, info, 0,
+                                 info->nBlocks());
   }
 
   void updateFrontalHessianWithMappedSlots(
@@ -1121,6 +1201,8 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
  private:
   /// Update a block-column range of the Hessian from mapped row-slot data.
   void updateHessianWithMappedSlots(const std::vector<DenseIndex>& mappedSlots,
+                                    const std::vector<DenseIndex>*
+                                        mappedScalarOffsets,
                                     SymmetricBlockMatrix* info,
                                     DenseIndex beginCol,
                                     DenseIndex endCol) const {
@@ -1137,6 +1219,12 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
           "BatchJacobianFactor::updateHessianWithMappedSlots: mapped slot "
           "count mismatch.");
     }
+    if (mappedScalarOffsets &&
+        mappedScalarOffsets->size() != mappedSlots.size()) {
+      throw std::invalid_argument(
+          "BatchJacobianFactor::updateHessianWithMappedSlots: mapped scalar "
+          "offset count mismatch.");
+    }
 
     const DenseIndex rhsSlot = static_cast<DenseIndex>(info->nBlocks() - 1);
     for (const DenseIndex slot : mappedSlots) {
@@ -1146,6 +1234,16 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
             "mapped slot index.");
       }
     }
+#ifndef NDEBUG
+    if (mappedScalarOffsets) {
+      for (size_t i = 0; i < mappedSlots.size(); ++i) {
+        const DenseIndex slot = mappedSlots[i];
+        const DenseIndex scalarOffset = (*mappedScalarOffsets)[i];
+        assert((slot < 0 && scalarOffset < 0) ||
+               (slot >= 0 && scalarOffset == info->blockScalarOffset(slot)));
+      }
+    }
+#endif
 
     RhsVector weights;
     const RhsVector* weightsPtr = nullptr;
@@ -1157,16 +1255,24 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
                       .array()
                       .square();
         weightsPtr = &weights;
-        updateMappedHessianRow(rowIndex, mappedSlots.data() + rowIndex * stride,
-                               weightsPtr, info, beginCol, endCol);
+        updateMappedHessianRow(
+            rowIndex, mappedSlots.data() + rowIndex * stride,
+            mappedScalarOffsets
+                ? mappedScalarOffsets->data() + rowIndex * stride
+                : nullptr,
+            weightsPtr, info, beginCol, endCol);
       }
       return;
     }
 
     const DenseIndex* rowSlotsPtr = mappedSlots.data();
+    const DenseIndex* rowOffsetsPtr =
+        mappedScalarOffsets ? mappedScalarOffsets->data() : nullptr;
     for (size_t rowIndex = 0; rowIndex < rowSlots_.size(); ++rowIndex) {
-      updateMappedHessianRow(rowIndex, rowSlotsPtr + rowIndex * stride, nullptr,
-                             info, beginCol, endCol);
+      updateMappedHessianRow(
+          rowIndex, rowSlotsPtr + rowIndex * stride,
+          rowOffsetsPtr ? rowOffsetsPtr + rowIndex * stride : nullptr, nullptr,
+          info, beginCol, endCol);
     }
   }
 

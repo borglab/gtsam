@@ -177,9 +177,11 @@ TEST(BatchJacobianFactor, UpdateHessianWithPermutedSlotOrder) {
 
   SymmetricBlockMatrix permutedDirect(permutedAugmentedDimensions),
       permutedMapped(permutedAugmentedDimensions),
+      permutedCached(permutedAugmentedDimensions),
       expected(permutedAugmentedDimensions);
   permutedDirect.setZero();
   permutedMapped.setZero();
+  permutedCached.setZero();
   expected.setZero();
 
   factor.updateHessian(slotIndices, &permutedDirect);
@@ -187,6 +189,14 @@ TEST(BatchJacobianFactor, UpdateHessianWithPermutedSlotOrder) {
   std::vector<DenseIndex> mappedSlots;
   factor.buildMappedSlots(slotIndices, mappedSlots);
   factor.updateHessianWithMappedSlots(mappedSlots, &permutedMapped);
+  const std::vector<DenseIndex> blockScalarOffsets{0, 2, 5, 7};
+  std::vector<DenseIndex> mappedScalarOffsets;
+  mappedScalarOffsets.reserve(mappedSlots.size());
+  for (const DenseIndex slot : mappedSlots) {
+    mappedScalarOffsets.push_back(blockScalarOffsets.at(slot));
+  }
+  factor.updateHessianWithMappedSlots(mappedSlots, mappedScalarOffsets,
+                                      &permutedCached);
 
   factor.toJacobianFactor().updateHessian(permutedInfoKeys, &expected);
 
@@ -194,6 +204,8 @@ TEST(BatchJacobianFactor, UpdateHessianWithPermutedSlotOrder) {
                       assembledHessian(permutedDirect), 1e-12));
   EXPECT(assert_equal(assembledHessian(expected),
                       assembledHessian(permutedMapped), 1e-12));
+  EXPECT(assert_equal(assembledHessian(expected),
+                      assembledHessian(permutedCached), 1e-12));
 }
 
 // Verifies mapped-slot buffers handle fixed-key slots as -1 and still match the

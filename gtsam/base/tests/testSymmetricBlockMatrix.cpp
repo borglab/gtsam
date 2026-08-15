@@ -217,6 +217,13 @@ TEST(SymmetricBlockMatrix, UpdateFromMappedBlocks)
   EXPECT(assert_equal(Matrix(expected.selfadjointView()),
                       actual.selfadjointView()));
 
+  SymmetricBlockMatrix cached(destDims);
+  cached.setZero();
+  const std::vector<DenseIndex> scalarOffsets{1, 4, 0};
+  cached.updateFromMappedBlocks(testBlockMatrix, mapping, scalarOffsets);
+  EXPECT(assert_equal(Matrix(expected.selfadjointView()),
+                      Matrix(cached.selfadjointView())));
+
   SymmetricBlockMatrix doubled(destDims);
   doubled.setZero();
   doubled.updateFromMappedBlocks(testBlockMatrix, mapping);
