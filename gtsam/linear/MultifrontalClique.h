@@ -270,10 +270,10 @@ class GTSAM_EXPORT MultifrontalClique {
   /// Linear lookup for block index in small cliques.
   DenseIndex blockIndex(Key key) const;
 
-  enum class FactorLoadKind : uint8_t { Jacobian, Batch };
+  enum class FactorLoadKind : uint8_t { Empty, Jacobian, Batch };
 
   struct FactorLoadPlan {
-    FactorLoadKind kind = FactorLoadKind::Jacobian;
+    FactorLoadKind kind = FactorLoadKind::Empty;
     size_t factorIndex = 0;
     SharedDiagonal model;
     size_t rows = 0;
@@ -295,6 +295,42 @@ class GTSAM_EXPORT MultifrontalClique {
     /// Compact-leaf mapping into a separator-local accumulator.
     std::vector<DenseIndex> separatorMappedSlots;
     bool canDirectUpdate = false;
+
+    /// Construct a plan for a null graph entry.
+    static FactorLoadPlan forNullFactor(size_t factorIndex);
+
+    /// Construct a plan for a conventional Jacobian factor.
+    static FactorLoadPlan forJacobian(size_t factorIndex,
+                                      const JacobianFactor& factor,
+                                      const MultifrontalClique& clique);
+
+    /// Construct a plan for a compact batch Jacobian factor.
+    static FactorLoadPlan forBatch(size_t factorIndex,
+                                   const BatchJacobianFactorBase& factor,
+                                   const MultifrontalClique& clique);
+
+    /// Return whether this plan represents a directly assembled batch factor.
+    bool isDirectBatch() const {
+      return kind == FactorLoadKind::Batch && canDirectUpdate;
+    }
+
+    /// Return whether this factor requires packed Jacobian rows in Ab_.
+    bool needsMaterializedRows(const MultifrontalClique& clique) const;
+
+    /// Reserve this plan's packed rows from a clique-wide row cursor.
+    void assignMaterializedRows(size_t* nextRow);
+
+    /// Assert the structural invariants established by the plan factories.
+    void assertInvariants(const GaussianFactor* factor,
+                          const MultifrontalClique& clique) const;
+
+   private:
+    /// Map factor keys to clique-local block indices.
+    void mapKeys(const KeyVector& keys, const MultifrontalClique& clique);
+
+    /// Build direct and compact mappings for a batch factor.
+    void buildBatchMappings(const BatchJacobianFactorBase& factor,
+                            const MultifrontalClique& clique);
   };
 
   /// Build and cache loading metadata for factors in this clique.

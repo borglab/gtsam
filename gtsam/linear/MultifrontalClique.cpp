@@ -328,6 +328,143 @@ std::vector<size_t> MultifrontalClique::blockDims(
   return blockDims;
 }
 
+MultifrontalClique::FactorLoadPlan
+MultifrontalClique::FactorLoadPlan::forNullFactor(size_t factorIndex) {
+  FactorLoadPlan plan;
+  plan.factorIndex = factorIndex;
+  return plan;
+}
+
+MultifrontalClique::FactorLoadPlan
+MultifrontalClique::FactorLoadPlan::forJacobian(
+    size_t factorIndex, const JacobianFactor& factor,
+    const MultifrontalClique& clique) {
+  FactorLoadPlan plan;
+  plan.kind = FactorLoadKind::Jacobian;
+  plan.factorIndex = factorIndex;
+  plan.model = factor.get_model();
+  plan.rows = factor.rows();
+  plan.mapKeys(factor.keys(), clique);
+  return plan;
+}
+
+MultifrontalClique::FactorLoadPlan
+MultifrontalClique::FactorLoadPlan::forBatch(
+    size_t factorIndex, const BatchJacobianFactorBase& factor,
+    const MultifrontalClique& clique) {
+  FactorLoadPlan plan;
+  plan.kind = FactorLoadKind::Batch;
+  plan.factorIndex = factorIndex;
+  plan.model = factor.get_model();
+  plan.rows = factor.rows();
+  plan.mapKeys(factor.keys(), clique);
+  const bool hasFixedKey = std::any_of(
+      plan.blockIndices.begin(), plan.blockIndices.end(),
+      [](DenseIndex index) { return index < 0; });
+  plan.canDirectUpdate =
+      !hasFixedKey && !(plan.model && plan.model->isConstrained());
+  plan.buildBatchMappings(factor, clique);
+  return plan;
+}
+
+bool MultifrontalClique::FactorLoadPlan::needsMaterializedRows(
+    const MultifrontalClique& clique) const {
+  if (kind == FactorLoadKind::Empty) return false;
+  if (kind == FactorLoadKind::Jacobian) return true;
+  return clique.useQR() || !canDirectUpdate ||
+         !kUseDirectBatchHessianUpdate;
+}
+
+void MultifrontalClique::FactorLoadPlan::assignMaterializedRows(
+    size_t* nextRow) {
+  assert(nextRow);
+  abRowOffset = *nextRow;
+  *nextRow += rows;
+}
+
+void MultifrontalClique::FactorLoadPlan::mapKeys(
+    const KeyVector& keys, const MultifrontalClique& clique) {
+  blockIndices.reserve(keys.size());
+  for (Key key : keys) {
+    if (clique.fixedKeys_ && clique.fixedKeys_->count(key)) {
+      blockIndices.push_back(-1);
+    } else {
+      blockIndices.push_back(clique.blockIndex(key));
+    }
+  }
+}
+
+void MultifrontalClique::FactorLoadPlan::buildBatchMappings(
+    const BatchJacobianFactorBase& factor,
+    const MultifrontalClique& clique) {
+  blockIndicesWithRhs = blockIndices;
+  blockIndicesWithRhs.push_back(
+      static_cast<DenseIndex>(clique.orderedKeys_.size()));
+  if (!canDirectUpdate) return;
+  factor.buildMappedSlots(blockIndicesWithRhs, mappedSlots);
+
+  if (!clique.useQR() && !clique.useCompactCholesky()) {
+    mappedScalarOffsets.reserve(mappedSlots.size());
+    for (const DenseIndex slot : mappedSlots) {
+      mappedScalarOffsets.push_back(
+          slot < 0 ? -1 : clique.info_.blockScalarOffset(slot));
+    }
+  }
+  if (!clique.useCompactCholesky()) return;
+
+  assert(clique.parentIndices_.size() ==
+         clique.orderedKeys_.size() - clique.numFrontals() + 1);
+  std::vector<DenseIndex> parentSlots;
+  std::vector<DenseIndex> separatorSlots;
+  parentSlots.reserve(blockIndices.size() + 1);
+  separatorSlots.reserve(blockIndices.size() + 1);
+  const DenseIndex numFrontals =
+      static_cast<DenseIndex>(clique.numFrontals());
+  for (const DenseIndex localIndex : blockIndices) {
+    if (localIndex < numFrontals) {
+      parentSlots.push_back(-1);
+      separatorSlots.push_back(-1);
+    } else {
+      parentSlots.push_back(
+          clique.parentIndices_.at(localIndex - numFrontals));
+      separatorSlots.push_back(localIndex - numFrontals);
+    }
+  }
+  parentSlots.push_back(clique.parentIndices_.back());
+  separatorSlots.push_back(
+      static_cast<DenseIndex>(clique.separatorIndices_.size() - 1));
+  factor.buildMappedSlots(parentSlots, parentMappedSlots);
+  factor.buildMappedSlots(separatorSlots, separatorMappedSlots);
+}
+
+void MultifrontalClique::FactorLoadPlan::assertInvariants(
+    const GaussianFactor* factor, const MultifrontalClique& clique) const {
+#ifdef NDEBUG
+  (void)factor;
+  (void)clique;
+#else
+  if (kind == FactorLoadKind::Empty) {
+    assert(!factor);
+    assert(rows == 0 && blockIndices.empty());
+    return;
+  }
+  assert(factor);
+  assert(blockIndices.size() == factor->keys().size());
+  if (kind == FactorLoadKind::Jacobian) {
+    assert(!canDirectUpdate && blockIndicesWithRhs.empty());
+    return;
+  }
+  assert(blockIndicesWithRhs.size() == blockIndices.size() + 1);
+  assert(blockIndicesWithRhs.back() ==
+         static_cast<DenseIndex>(clique.orderedKeys_.size()));
+  assert(mappedScalarOffsets.empty() ||
+         mappedScalarOffsets.size() == mappedSlots.size());
+  if (!clique.useCompactCholesky()) {
+    assert(parentMappedSlots.empty() && separatorMappedSlots.empty());
+  }
+#endif
+}
+
 size_t MultifrontalClique::addJacobianFactor(const JacobianFactor& factor,
                                              size_t rowOffset,
                                              const FactorLoadPlan& plan) {
@@ -372,121 +509,27 @@ void MultifrontalClique::buildLoadPlans(
   for (size_t factorIndex : factorIndices_) {
     assert(factorIndex < graph.size());
     const GaussianFactor::shared_ptr& factor = graph[factorIndex];
-    if (!factor) {
-      FactorLoadPlan emptyPlan;
-      emptyPlan.kind = FactorLoadKind::Jacobian;
-      emptyPlan.factorIndex = factorIndex;
-      loadPlans_.push_back(std::move(emptyPlan));
-      allBatchFactors_ = false;
-      continue;
-    }
-
     FactorLoadPlan plan;
-    plan.factorIndex = factorIndex;
-    const JacobianFactor* jacobianFactor =
-        dynamic_cast<JacobianFactor*>(factor.get());
-    if (jacobianFactor) {
-      plan.kind = FactorLoadKind::Jacobian;
-      allBatchFactors_ = false;
-      plan.rows = jacobianFactor->rows();
-      plan.abRowOffset = materializedRows_;
-      materializedRows_ += plan.rows;
-      plan.model = jacobianFactor->get_model();
-      for (Key key : jacobianFactor->keys()) {
-        if (fixedKeys_ && fixedKeys_->count(key)) {
-          plan.blockIndices.push_back(-1);
-        } else {
-          plan.blockIndices.push_back(blockIndex(key));
-        }
-      }
-      assert(plan.blockIndices.size() == jacobianFactor->keys().size());
-      loadPlans_.push_back(std::move(plan));
-      continue;
+    if (!factor) {
+      plan = FactorLoadPlan::forNullFactor(factorIndex);
+    } else if (const auto* jacobianFactor =
+                   dynamic_cast<const JacobianFactor*>(factor.get())) {
+      plan = FactorLoadPlan::forJacobian(factorIndex, *jacobianFactor, *this);
+    } else if (const auto* batchFactor =
+                   dynamic_cast<const BatchJacobianFactorBase*>(factor.get())) {
+      plan = FactorLoadPlan::forBatch(factorIndex, *batchFactor, *this);
+    } else {
+      throw MultifrontalSolverNotSupported(
+          "only JacobianFactor or BatchJacobianFactor inputs are supported");
     }
 
-    const BatchJacobianFactorBase* batchFactor =
-        dynamic_cast<BatchJacobianFactorBase*>(factor.get());
-    if (batchFactor) {
-      bool hasFixedKey = false;
-      for (Key key : batchFactor->keys()) {
-        if (fixedKeys_ && fixedKeys_->count(key)) {
-          hasFixedKey = true;
-          break;
-        }
-      }
-      if (hasFixedKey) {
-        allBatchFactors_ = false;
-      }
-      plan.kind = FactorLoadKind::Batch;
-      plan.rows = batchFactor->rows();
-      plan.model = batchFactor->get_model();
-      plan.canDirectUpdate =
-          !hasFixedKey && !(plan.model && plan.model->isConstrained());
-      if (!plan.canDirectUpdate) {
-        allBatchFactors_ = false;
-      }
-      if (useQR() || !plan.canDirectUpdate || !kUseDirectBatchHessianUpdate) {
-        plan.abRowOffset = materializedRows_;
-        materializedRows_ += plan.rows;
-      }
-      for (Key key : batchFactor->keys()) {
-        if (fixedKeys_ && fixedKeys_->count(key)) {
-          plan.blockIndices.push_back(-1);
-        } else {
-          plan.blockIndices.push_back(blockIndex(key));
-        }
-      }
-      assert(plan.blockIndices.size() == batchFactor->keys().size());
-      plan.blockIndicesWithRhs = plan.blockIndices;
-      plan.blockIndicesWithRhs.push_back(
-          static_cast<DenseIndex>(orderedKeys_.size()));
-      if (plan.canDirectUpdate) {
-        batchFactor->buildMappedSlots(plan.blockIndicesWithRhs,
-                                      plan.mappedSlots);
-        if (!useQR() && !useCompactCholesky()) {
-          plan.mappedScalarOffsets.reserve(plan.mappedSlots.size());
-          for (const DenseIndex slot : plan.mappedSlots) {
-            plan.mappedScalarOffsets.push_back(
-                slot < 0 ? -1 : info_.blockScalarOffset(slot));
-          }
-        }
-        if (useCompactCholesky()) {
-          assert(parentIndices_.size() ==
-                 orderedKeys_.size() - numFrontals() + 1);
-          std::vector<DenseIndex> parentSlots;
-          parentSlots.reserve(plan.blockIndices.size() + 1);
-          for (const DenseIndex localIndex : plan.blockIndices) {
-            if (localIndex < static_cast<DenseIndex>(numFrontals())) {
-              parentSlots.push_back(-1);
-            } else {
-              parentSlots.push_back(parentIndices_.at(
-                  localIndex - static_cast<DenseIndex>(numFrontals())));
-            }
-          }
-          parentSlots.push_back(parentIndices_.back());
-          batchFactor->buildMappedSlots(parentSlots, plan.parentMappedSlots);
-
-          std::vector<DenseIndex> separatorSlots;
-          separatorSlots.reserve(plan.blockIndices.size() + 1);
-          for (const DenseIndex localIndex : plan.blockIndices) {
-            separatorSlots.push_back(
-                localIndex < static_cast<DenseIndex>(numFrontals())
-                    ? -1
-                    : localIndex - static_cast<DenseIndex>(numFrontals()));
-          }
-          separatorSlots.push_back(
-              static_cast<DenseIndex>(separatorIndices_.size() - 1));
-          batchFactor->buildMappedSlots(separatorSlots,
-                                        plan.separatorMappedSlots);
-        }
-      }
-      hasDirectBatchFactors_ |= plan.canDirectUpdate;
-      loadPlans_.push_back(std::move(plan));
-      continue;
+    if (plan.needsMaterializedRows(*this)) {
+      plan.assignMaterializedRows(&materializedRows_);
     }
-
-    throw MultifrontalSolverNotSupported(
-        "only JacobianFactor or BatchJacobianFactor inputs are supported");
+    allBatchFactors_ &= plan.isDirectBatch();
+    hasDirectBatchFactors_ |= plan.isDirectBatch();
+    plan.assertInvariants(factor.get(), *this);
+    loadPlans_.push_back(std::move(plan));
   }
   assert(loadPlans_.size() == factorIndices_.size());
   assert(!useQR() || materializedRows_ == factorRows_);
