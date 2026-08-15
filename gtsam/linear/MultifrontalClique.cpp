@@ -168,6 +168,11 @@ MultifrontalClique::MultifrontalClique(
 
   // Cache sizing for allocation at finalize time.
   blockDims_ = this->blockDims(dims, frontals, separatorKeys);
+  const size_t numSeparatorBlocks = blockDims_.size() - numFrontals();
+  separatorIndices_.reserve(numSeparatorBlocks + 1);
+  for (size_t i = 0; i <= numSeparatorBlocks; ++i) {
+    separatorIndices_.push_back(static_cast<DenseIndex>(i));
+  }
   factorRows_ = vbmRows;
 }
 
@@ -229,6 +234,50 @@ void MultifrontalClique::finalize(std::vector<ChildInfo> children,
                                true);
     if (!useCompactCholesky) {
       info_ = SymmetricBlockMatrix(blockDims_, true);
+    }
+  }
+
+  if (params.leafMode == MultifrontalParameters::LeafMode::SameSeparator &&
+      params.leafAggregationProblemSize > 0) {
+    std::map<std::vector<DenseIndex>, std::vector<size_t>> groups;
+    for (size_t i = 0; i < this->children.size(); ++i) {
+      const auto& child = this->children[i];
+      if (child && child->children.empty() && child->fullyEliminated() &&
+          !child->useQR()) {
+        groups[child->parentIndices_].push_back(i);
+      }
+    }
+    childInSameSeparatorGroup_.assign(this->children.size(), 0);
+    for (const auto& [parentIndices, childIndices] : groups) {
+      if (childIndices.size() < 2) continue;
+      const auto& child = this->children[childIndices.front()];
+      size_t maximumProblemSize = 1;
+      for (size_t childIndex : childIndices) {
+        maximumProblemSize = std::max(
+            maximumProblemSize,
+            static_cast<size_t>(this->children[childIndex]->problemSize()));
+      }
+      const size_t maximumChildrenPerBatch = std::max<size_t>(
+          1, params.leafAggregationProblemSize / maximumProblemSize);
+      const size_t numBatches =
+          (childIndices.size() + maximumChildrenPerBatch - 1) /
+          maximumChildrenPerBatch;
+      const auto firstSeparatorDim =
+          child->blockDims_.begin() + child->numFrontals();
+      std::vector<size_t> separatorDims(firstSeparatorDim,
+                                        child->blockDims_.end());
+      for (size_t batch = 0; batch < numBatches; ++batch) {
+        const size_t begin = childIndices.size() * batch / numBatches;
+        const size_t end = childIndices.size() * (batch + 1) / numBatches;
+        if (end - begin < 2) continue;
+        sameSeparatorChildGroups_.emplace_back(childIndices.begin() + begin,
+                                               childIndices.begin() + end);
+        sameSeparatorParentIndices_.push_back(parentIndices);
+        sameSeparatorInfos_.push_back(makeZeroLocalInfo(separatorDims));
+        for (size_t childIndex : sameSeparatorChildGroups_.back()) {
+          childInSameSeparatorGroup_[childIndex] = 1;
+        }
+      }
     }
   }
 }
@@ -391,6 +440,19 @@ void MultifrontalClique::buildLoadPlans(
           }
           parentSlots.push_back(parentIndices_.back());
           batchFactor->buildMappedSlots(parentSlots, plan.parentMappedSlots);
+
+          std::vector<DenseIndex> separatorSlots;
+          separatorSlots.reserve(plan.blockIndices.size() + 1);
+          for (const DenseIndex localIndex : plan.blockIndices) {
+            separatorSlots.push_back(
+                localIndex < static_cast<DenseIndex>(numFrontals())
+                    ? -1
+                    : localIndex - static_cast<DenseIndex>(numFrontals()));
+          }
+          separatorSlots.push_back(
+              static_cast<DenseIndex>(separatorIndices_.size() - 1));
+          batchFactor->buildMappedSlots(separatorSlots,
+                                        plan.separatorMappedSlots);
         }
       }
       hasDirectBatchFactors_ |= plan.canDirectUpdate;
@@ -542,7 +604,16 @@ void MultifrontalClique::prepareForElimination() {
   // Heuristic: avoid parallel overhead on small cliques.
   const size_t minChildren =
       std::max<size_t>(1024, 4 * static_cast<size_t>(info_.rows()));
-  const size_t numChildren = children.size();
+  const size_t numChildren = childInSameSeparatorGroup_.empty()
+                                 ? children.size()
+                                 : static_cast<size_t>(std::count(
+                                       childInSameSeparatorGroup_.begin(),
+                                       childInSameSeparatorGroup_.end(), 0));
+  gatherSameSeparatorUpdates();
+  if (numChildren == 0) {
+    infoReady_ = true;
+    return;
+  }
   if (numChildren < minChildren) {  // Typical for chains: many small cliques.
     gatherUpdatesSequential();
   } else {
@@ -769,12 +840,14 @@ void MultifrontalClique::addExactDiagonalDamping(
   }
 }
 
-void MultifrontalClique::updateParentDirectFactors(
-    SymmetricBlockMatrix& parentInfo) const {
+void MultifrontalClique::updateDirectFactors(
+    SymmetricBlockMatrix& targetInfo,
+    const std::vector<DenseIndex>& targetIndices,
+    bool useParentMappedSlots) const {
   assert(activeLoadGraph_);
   const DenseIndex nf = static_cast<DenseIndex>(numFrontals());
   const DenseIndex rhsBlock = Ab_.nBlocks() - 1;
-  const DenseIndex parentRhs = parentIndices_.back();
+  const DenseIndex targetRhs = targetIndices.back();
 
   for (const FactorLoadPlan& plan : loadPlans_) {
     if (plan.rows == 0) continue;
@@ -785,28 +858,31 @@ void MultifrontalClique::updateParentDirectFactors(
       const auto* batchFactor =
           dynamic_cast<const BatchJacobianFactorBase*>(factor);
       assert(batchFactor);
-      batchFactor->updateHessianWithMappedSlots(plan.parentMappedSlots,
-                                                &parentInfo);
+      const auto& mappedSlots = useParentMappedSlots
+                                    ? plan.parentMappedSlots
+                                    : plan.separatorMappedSlots;
+      batchFactor->updateHessianWithMappedSlots(mappedSlots, &targetInfo);
       continue;
     }
 
     const DenseIndex row = static_cast<DenseIndex>(plan.rowOffset);
     const DenseIndex rows = static_cast<DenseIndex>(plan.rows);
     const auto b = Ab_(rhsBlock).middleRows(row, rows);
-    parentInfo.updateDiagonalBlock(parentRhs, b.transpose() * b);
+    targetInfo.updateDiagonalBlock(targetRhs, b.transpose() * b);
     for (size_t p = 0; p < plan.blockIndices.size(); ++p) {
       const DenseIndex I = plan.blockIndices[p];
       if (I < nf) continue;
-      const DenseIndex parentI = parentIndices_.at(I - nf);
+      const DenseIndex targetI = targetIndices.at(I - nf);
       const auto Ai = Ab_(I).middleRows(row, rows);
-      parentInfo.updateDiagonalBlock(parentI, Ai.transpose() * Ai);
-      parentInfo.updateOffDiagonalBlock(parentI, parentRhs, Ai.transpose() * b);
+      targetInfo.updateDiagonalBlock(targetI, Ai.transpose() * Ai);
+      targetInfo.updateOffDiagonalBlock(targetI, targetRhs,
+                                        Ai.transpose() * b);
       for (size_t q = p + 1; q < plan.blockIndices.size(); ++q) {
         const DenseIndex J = plan.blockIndices[q];
         if (J < nf) continue;
-        const DenseIndex parentJ = parentIndices_.at(J - nf);
+        const DenseIndex targetJ = targetIndices.at(J - nf);
         const auto Aj = Ab_(J).middleRows(row, rows);
-        parentInfo.updateOffDiagonalBlock(parentI, parentJ,
+        targetInfo.updateOffDiagonalBlock(targetI, targetJ,
                                           Ai.transpose() * Aj);
       }
     }
@@ -832,7 +908,7 @@ void MultifrontalClique::updateParentInfo(
     RSd_.rowEnd() = rowEnd;
   } else if (useCompactCholesky()) {
     assert(RSdReady_ && RSd_.firstBlock() == 0);
-    updateParentDirectFactors(parentInfo);
+    updateDirectFactors(parentInfo, parentIndices_, true);
     RSd_.firstBlock() = static_cast<DenseIndex>(numFrontals());
     parentInfo.updateFromOuterProductBlocks(RSd_, parentIndices_, -1.0);
     RSd_.firstBlock() = 0;
@@ -845,8 +921,31 @@ void MultifrontalClique::updateParentInfo(
   }
 }
 
+void MultifrontalClique::updateSeparatorInfo(
+    SymmetricBlockMatrix& separatorInfo) const {
+  assert(fullyEliminated() && !useQR());
+  assert(RSd_.rowStart() == 0);
+  if (useCompactCholesky()) {
+    assert(RSdReady_ && RSd_.firstBlock() == 0);
+    updateDirectFactors(separatorInfo, separatorIndices_, false);
+    RSd_.firstBlock() = static_cast<DenseIndex>(numFrontals());
+    separatorInfo.updateFromOuterProductBlocks(RSd_, separatorIndices_, -1.0);
+    RSd_.firstBlock() = 0;
+  } else {
+    assert(info_.nBlocks() > 0 && info_.blockStart() == 0);
+    info_.blockStart() = numFrontals();
+    separatorInfo.updateFromMappedBlocks(info_, separatorIndices_);
+    info_.blockStart() = 0;
+  }
+}
+
 void MultifrontalClique::gatherUpdatesSequential() {
-  for (const auto& child : children) {
+  for (size_t i = 0; i < children.size(); ++i) {
+    if (!childInSameSeparatorGroup_.empty() &&
+        childInSameSeparatorGroup_[i]) {
+      continue;
+    }
+    const auto& child = children[i];
     assert(child);
     if (child->fullyEliminated()) child->updateParentInfo(info_);
   }
@@ -864,6 +963,10 @@ void MultifrontalClique::gatherUpdatesParallel(size_t numThreads) {
         auto& local = locals.local();  // Thread-local info matrix.
         for (size_t i = range.begin(); i < range.end(); ++i) {
           const auto& child = children[i];
+          if (!childInSameSeparatorGroup_.empty() &&
+              childInSameSeparatorGroup_[i]) {
+            continue;
+          }
           assert(child);
           if (child->fullyEliminated()) {
             child->updateParentInfo(
@@ -892,6 +995,10 @@ void MultifrontalClique::gatherUpdatesParallel(size_t numThreads) {
     threads.emplace_back([this, start, end, &locals, t]() {
       auto& local = locals[t];
       for (size_t i = start; i < end; ++i) {
+        if (!childInSameSeparatorGroup_.empty() &&
+            childInSameSeparatorGroup_[i]) {
+          continue;
+        }
         const auto& child = children[i];
         assert(child);
         if (child->fullyEliminated()) {
@@ -909,6 +1016,35 @@ void MultifrontalClique::gatherUpdatesParallel(size_t numThreads) {
         local);  // Merge per-thread partial info matrices into this clique.
   }
 #endif
+}
+
+void MultifrontalClique::gatherSameSeparatorUpdates() {
+  if (sameSeparatorChildGroups_.empty()) return;
+#ifdef GTSAM_USE_TBB
+  tbb::parallel_for(
+      tbb::blocked_range<size_t>(0, sameSeparatorChildGroups_.size()),
+      [this](const tbb::blocked_range<size_t>& range) {
+        for (size_t group = range.begin(); group < range.end(); ++group) {
+          auto& groupInfo = sameSeparatorInfos_[group];
+          groupInfo.setZero();
+          for (size_t childIndex : sameSeparatorChildGroups_[group]) {
+            children[childIndex]->updateSeparatorInfo(groupInfo);
+          }
+        }
+      });
+#else
+  for (size_t group = 0; group < sameSeparatorChildGroups_.size(); ++group) {
+    auto& groupInfo = sameSeparatorInfos_[group];
+    groupInfo.setZero();
+    for (size_t childIndex : sameSeparatorChildGroups_[group]) {
+      children[childIndex]->updateSeparatorInfo(groupInfo);
+    }
+  }
+#endif
+  for (size_t group = 0; group < sameSeparatorInfos_.size(); ++group) {
+    info_.updateFromMappedBlocks(sameSeparatorInfos_[group],
+                                 sameSeparatorParentIndices_[group]);
+  }
 }
 
 std::shared_ptr<GaussianConditional> MultifrontalClique::conditional() const {

@@ -287,6 +287,8 @@ class GTSAM_EXPORT MultifrontalClique {
     /// Flattened row-group mapping that drops frontal slots and writes the
     /// original separator Hessian directly into the parent.
     std::vector<DenseIndex> parentMappedSlots;
+    /// Compact-leaf mapping into a separator-local accumulator.
+    std::vector<DenseIndex> separatorMappedSlots;
     bool canDirectUpdate = false;
   };
 
@@ -297,6 +299,9 @@ class GTSAM_EXPORT MultifrontalClique {
   /// contribution.
   void updateParentInfo(SymmetricBlockMatrix& parentInfo) const;
 
+  /// Update a separator-local information matrix without parent scattering.
+  void updateSeparatorInfo(SymmetricBlockMatrix& separatorInfo) const;
+
   /// Assemble only the frontal rows [A B a] of a compact Cholesky leaf.
   void prepareCompactCholesky();
 
@@ -304,7 +309,9 @@ class GTSAM_EXPORT MultifrontalClique {
   void factorizeCompactCholesky();
 
   /// Add the original separator normal equations directly into the parent.
-  void updateParentDirectFactors(SymmetricBlockMatrix& parentInfo) const;
+  void updateDirectFactors(SymmetricBlockMatrix& targetInfo,
+                           const std::vector<DenseIndex>& targetIndices,
+                           bool useParentMappedSlots) const;
 
   /// Accumulate children separator updates into this clique's info matrix
   /// (single-threaded).
@@ -313,6 +320,9 @@ class GTSAM_EXPORT MultifrontalClique {
   /// Accumulate children separator updates into this clique's info matrix
   /// (multi-threaded).
   void gatherUpdatesParallel(size_t numThreads);
+
+  /// Accumulate identical-separator Cholesky leaves, then scatter once/group.
+  void gatherSameSeparatorUpdates();
 
   /// Compute block dimensions from variable dimensions (excluding RHS).
   std::vector<size_t> blockDims(const KeyDimMap& dims,
@@ -365,7 +375,13 @@ class GTSAM_EXPORT MultifrontalClique {
   // Finalize-time metadata (set once after children are known).
   std::vector<DenseIndex>
       parentIndices_;  ///< Parent block indices for separators + RHS.
+  std::vector<DenseIndex> separatorIndices_;  ///< Identity separator mapping.
   SolveMode solveMode_ = SolveMode::Cholesky;
+
+  std::vector<std::vector<size_t>> sameSeparatorChildGroups_;
+  std::vector<std::vector<DenseIndex>> sameSeparatorParentIndices_;
+  std::vector<SymmetricBlockMatrix> sameSeparatorInfos_;
+  std::vector<uint8_t> childInSameSeparatorGroup_;
 
   // Finalize-time allocations.
   VerticalBlockMatrix Ab_;

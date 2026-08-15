@@ -49,7 +49,8 @@ Options:
   --warmup N      Untimed paired warmups (default: 1)
   --repeats N     Measured paired repetitions (default: 7)
   --lambda VALUE  Global identity damping (default: 0.04)
-  --leaf-merge N  Multifrontal leaf merge dimension cap (default: 256)
+  --leaf-aggregate N  Total sibling-leaf problem size per task (default: 2048)
+  --leaf-mode MODE    bounded or separator (default: bounded)
   --merge N       Multifrontal general merge dimension cap (default: 32)
   --report        Print multifrontal structure statistics
   --help          Show this message
@@ -118,7 +119,10 @@ int main(int argc, char* argv[]) {
     const size_t warmups = arguments.sizeValue("--warmup", 1);
     const size_t repetitions = arguments.sizeValue("--repeats", 7);
     const double lambda = arguments.doubleValue("--lambda", 0.04);
-    const size_t leafMergeCap = arguments.sizeValue("--leaf-merge", 256);
+    const size_t leafAggregationProblemSize =
+        arguments.sizeValue("--leaf-aggregate", 2048);
+    const std::string leafMode =
+        arguments.optionalString("--leaf-mode").value_or("bounded");
     const size_t mergeCap = arguments.sizeValue("--merge", 32);
     const bool reportStructure = arguments.flag("--report");
     arguments.validateAllConsumed();
@@ -141,7 +145,17 @@ int main(int argc, char* argv[]) {
     const Ordering pointFirstOrdering = createSchurOrdering(data, false);
 
     MultifrontalSolver::Parameters solverParameters;
-    solverParameters.leafMergeDimCap = leafMergeCap;
+    solverParameters.leafAggregationProblemSize =
+        leafAggregationProblemSize;
+    if (leafMode == "bounded") {
+      solverParameters.leafMode = MultifrontalParameters::LeafMode::Bounded;
+    } else if (leafMode == "separator") {
+      solverParameters.leafMode =
+          MultifrontalParameters::LeafMode::SameSeparator;
+    } else {
+      throw std::invalid_argument(
+          "--leaf-mode must be bounded or separator");
+    }
     solverParameters.mergeDimCap = mergeCap;
     solverParameters.qrMode = MultifrontalParameters::QRMode::Off;
     if (reportStructure) solverParameters.reportStream = &std::cout;
@@ -266,8 +280,10 @@ int main(int argc, char* argv[]) {
               << ", points: " << data.numberTracks() << "\n"
               << std::fixed << std::setprecision(3)
               << "Global damping lambda: " << lambda << "\n"
-              << "Merge caps: leaf=" << leafMergeCap << ", general=" << mergeCap
-              << "\n"
+              << "Leaf aggregation problem size: "
+              << leafAggregationProblemSize << "\n"
+              << "Leaf mode: " << leafMode << "\n"
+              << "General merge cap: " << mergeCap << "\n"
               << "Warmups: " << warmups << ", repetitions: " << repetitions
               << "\n"
               << "Partial multifrontal symbolic setup: "

@@ -117,7 +117,8 @@ void NonlinearMultifrontalSolver::eliminateInPlace(double lambda) {
         [this, lambda](MultifrontalClique& node) {
           node.eliminateInPlace(lambda, dampingParams_, exactHessianDiagonal_);
         },
-        params_.eliminationParallelThreshold);
+        params_.eliminationParallelThreshold,
+        params_.leafAggregationProblemSize);
   }
   eliminated_ = true;
 }
@@ -146,7 +147,8 @@ void NonlinearMultifrontalSolver::eliminateInPlace(
         node.fillAb(graph);
         node.eliminateInPlace(lambda, dampingParams_, exactHessianDiagonal_);
       },
-      params_.eliminationParallelThreshold);
+      params_.eliminationParallelThreshold,
+      params_.leafAggregationProblemSize);
   loaded_ = true;
   eliminated_ = true;
 }

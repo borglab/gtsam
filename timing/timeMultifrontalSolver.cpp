@@ -168,7 +168,8 @@ void runChain5000(MultifrontalSolver::Parameters params) {
 void tuneMergingBAL(MultifrontalSolver::Parameters params) {
   const size_t iterations = 2;
   const std::vector<std::string> balFiles = {bal16, bal88, bal135};
-  cout << "\nTune leaf merging (BAL, iterations=" << iterations << ")"
+  cout << "\nTune leaf scheduling aggregation (BAL, iterations=" << iterations
+       << ")"
        << std::endl;
 
   const std::vector<size_t> sweep = {0, 64, 128, 256, 512, 1024, 2048};
@@ -188,20 +189,20 @@ void tuneMergingBAL(MultifrontalSolver::Parameters params) {
 
     for (size_t i = 0; i < sweep.size(); ++i) {
       const size_t parameter = sweep[i];
-      params.leafMergeDimCap = parameter;
+      params.leafAggregationProblemSize = parameter;
 
       MultifrontalSolver solver(linear, ordering, params);
       solver.eliminateInPlace(linear);  // Warm up cache.
       const double imperativeSeconds = gtsam::timing::measureSeconds(
           [&] { runMultifrontalSolver(solver, linear, iterations); });
       results[i][fileIndex] = imperativeSeconds;
-      cout << "  leafMergeDimCap=" << parameter << " -> " << imperativeSeconds
-           << " s\n"
+      cout << "  leafAggregationProblemSize=" << parameter << " -> "
+           << imperativeSeconds << " s\n"
            << std::endl;
     }
   }
 
-  cout << "\n| LeafMergeDimCap | BAL16 | BAL88 | BAL135 |\n";
+  cout << "\n| LeafAggregationProblemSize | BAL16 | BAL88 | BAL135 |\n";
   cout << "| --- | --- | --- | --- |\n";
   for (size_t i = 0; i < sweep.size(); ++i) {
     cout << "| " << sweep[i];

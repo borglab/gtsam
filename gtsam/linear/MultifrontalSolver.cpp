@@ -172,172 +172,6 @@ size_t totalDimForSymbolicCluster(
          separatorDimForSymbolicCluster(cluster, dims, cache);
 }
 
-struct LeafInfo {
-  SymbolicJunctionTree::sharedNode child;
-  size_t totalDim = 0;
-  size_t index = 0;
-};
-
-struct LeafGroup {
-  std::vector<LeafInfo> leaves;
-  size_t firstIndex = 0;
-};
-
-std::vector<LeafGroup> collectLeafGroups(
-    const SymbolicJunctionTree::sharedNode& cluster,
-    const std::map<Key, size_t>& dims,
-    SymbolicJunctionTree::Cluster::KeySetMap* separatorCache) {
-  // Group leaf children by identical separators, keeping first-seen order.
-  FastMap<KeySet, size_t> groupIndexBySeparator;
-  std::vector<LeafGroup> groups;
-
-  for (size_t i = 0; i < cluster->children.size(); ++i) {
-    const auto& child = cluster->children[i];
-    if (!child || !child->children.empty()) continue;
-
-    child->separatorKeys(separatorCache);
-    const KeySet& separatorKeys = separatorCache->at(child.get());
-    auto it = groupIndexBySeparator.find(separatorKeys);
-    size_t groupIndex = 0;
-    if (it == groupIndexBySeparator.end()) {
-      groupIndex = groups.size();
-      groupIndexBySeparator.emplace(separatorKeys, groupIndex);
-      groups.push_back(LeafGroup{{}, i});
-    } else {
-      groupIndex = it->second;
-    }
-
-    const size_t totalDim =
-        totalDimForSymbolicCluster(child, dims, separatorCache);
-    groups[groupIndex].leaves.push_back({child, totalDim, i});
-  }
-
-  return groups;
-}
-
-struct LeafBatch {
-  SymbolicJunctionTree::Cluster::Children leaves;
-  size_t firstIndex = 0;
-};
-
-std::vector<LeafBatch> buildLeafBatches(const std::vector<LeafGroup>& groups,
-                                        size_t leafMergeDimCap) {
-  // Pack each group into batches capped by total dimension.
-  std::vector<LeafBatch> batches;
-  for (const auto& group : groups) {
-    size_t currentTotalDim = 0;
-    LeafBatch batch;
-    batch.firstIndex = group.firstIndex;
-    for (const auto& leaf : group.leaves) {
-      if (!batch.leaves.empty() &&
-          currentTotalDim + leaf.totalDim > leafMergeDimCap) {
-        batches.push_back(batch);
-        batch.leaves.clear();
-        currentTotalDim = 0;
-        batch.firstIndex = leaf.index;
-      }
-      if (batch.leaves.empty()) {
-        batch.firstIndex = leaf.index;
-      }
-      batch.leaves.push_back(leaf.child);
-      currentTotalDim += leaf.totalDim;
-    }
-    if (!batch.leaves.empty()) {
-      batches.push_back(batch);
-    }
-  }
-
-  std::sort(batches.begin(), batches.end(),
-            [](const LeafBatch& a, const LeafBatch& b) {
-              return a.firstIndex < b.firstIndex;
-            });
-  return batches;
-}
-
-struct MergedClusters {
-  FastMap<const SymbolicJunctionTree::Cluster*, size_t> indexByChild;
-  std::vector<SymbolicJunctionTree::sharedNode> clusters;
-  size_t count = 0;
-  size_t numSelectedLeaves = 0;
-};
-
-MergedClusters buildMergedClusters(const std::vector<LeafBatch>& clusters) {
-  MergedClusters merged;
-  merged.clusters.assign(clusters.size(), nullptr);
-
-  for (size_t i = 0; i < clusters.size(); ++i) {
-    const auto& batch = clusters[i];
-    if (batch.leaves.size() <= 1) continue;
-
-    merged.numSelectedLeaves += batch.leaves.size();
-    // Map each leaf pointer to its batch index so we can skip and insert in
-    // O(1) when scanning the original children list.
-    for (const auto& leaf : batch.leaves) {
-      if (leaf) merged.indexByChild.emplace(leaf.get(), i);
-    }
-
-    // Build the merged batch once so insertion is just pointer replacement.
-    auto mergedCluster = std::make_shared<SymbolicJunctionTree::Cluster>();
-    for (const auto& leaf : batch.leaves) {
-      if (leaf) mergedCluster->merge(leaf);
-    }
-    std::reverse(mergedCluster->orderedFrontalKeys.begin(),
-                 mergedCluster->orderedFrontalKeys.end());
-    merged.clusters[i] = mergedCluster;
-    merged.count += 1;
-  }
-
-  return merged;
-}
-
-SymbolicJunctionTree::Cluster::Children buildMergedChildren(
-    const SymbolicJunctionTree::Cluster::Children& oldChildren,
-    const std::vector<LeafBatch>& batches, const MergedClusters& merged) {
-  SymbolicJunctionTree::Cluster::Children newChildren;
-  newChildren.reserve(oldChildren.size() - merged.numSelectedLeaves +
-                      merged.count);
-  std::vector<bool> inserted(batches.size(), false);
-
-  for (size_t i = 0; i < oldChildren.size(); ++i) {
-    const auto& child = oldChildren[i];
-    if (!child) {
-      newChildren.push_back(child);
-      continue;
-    }
-
-    auto it = merged.indexByChild.find(child.get());
-    if (it == merged.indexByChild.end()) {
-      newChildren.push_back(child);
-      continue;
-    }
-
-    const size_t batchIndex = it->second;
-    // Insert the merged cluster exactly once, at the first original index where
-    // that cluster appeared. All other leaves in the cluster are skipped.
-    if (!inserted[batchIndex] && i == batches[batchIndex].firstIndex) {
-      newChildren.push_back(merged.clusters[batchIndex]);
-      inserted[batchIndex] = true;
-    }
-  }
-
-  return newChildren;
-}
-
-bool mergeLeafBatches(const SymbolicJunctionTree::sharedNode& cluster,
-                      const std::vector<LeafBatch>& batches) {
-  if (batches.empty()) return false;
-
-  // Merge in a single pass to avoid repeated scans of large child lists.
-  const MergedClusters merged = buildMergedClusters(batches);
-  if (merged.count == 0) return false;
-
-  auto oldChildren = cluster->children;
-  SymbolicJunctionTree::Cluster::Children newChildren =
-      buildMergedChildren(oldChildren, batches, merged);
-  cluster->children.swap(newChildren);
-  return true;
-}
-
 void accumulateSymbolicStats(const SymbolicJunctionTree::sharedNode& cluster,
                              const std::map<Key, size_t>& dims,
                              SymbolicJunctionTree::Cluster::KeySetMap* cache,
@@ -350,49 +184,6 @@ void accumulateSymbolicStats(const SymbolicJunctionTree::sharedNode& cluster,
   for (const auto& child : cluster->children) {
     accumulateSymbolicStats(child, dims, cache, stats);
   }
-}
-
-/**
- * @brief Recursively groups leaf children into super-leaves capped by total
- * dimension.
- *
- * This function traverses the symbolic junction tree rooted at the given
- * cluster node. For each cluster, it gathers direct leaf children (i.e.,
- * children with no further descendants) and groups those with identical
- * separators into new super-leaves until the running total dimension reaches
- * the specified leafMergeDimCap, then starts a new group.
- *
- * The merging process works as follows:
- * - Recursively process all children clusters first.
- * - Identify all direct leaf children of the current cluster and collect their
- * total dimensions (separator + frontal) and separator keys.
- * - Group leaf children by identical separator keys, preserving first-seen
- * order for each separator.
- * - Build super-leaves by accumulating leaf children until the total dimension
- * hits the cap, then start a new super-leaf.
- * - Replace leaf children with the new super-leaves (non-leaf children keep
- * their relative order and grouped leaves appear at the first leaf location
- * for that separator).
- *
- * @param cluster         The current symbolic junction tree node (cluster) to
- * process.
- * @param dims            A map from variable keys to their dimensions.
- * @param leafMergeDimCap The maximum allowed dimension for a merged cluster.
- */
-void mergeLeafChildren(const SymbolicJunctionTree::sharedNode& cluster,
-                       const std::map<Key, size_t>& dims,
-                       size_t leafMergeDimCap) {
-  if (!cluster || cluster->children.empty()) return;
-  for (const auto& child : cluster->children) {
-    mergeLeafChildren(child, dims, leafMergeDimCap);
-  }
-
-  SymbolicJunctionTree::Cluster::KeySetMap separatorCache;
-  const std::vector<LeafGroup> groups =
-      collectLeafGroups(cluster, dims, &separatorCache);
-  const std::vector<LeafBatch> batches =
-      buildLeafBatches(groups, leafMergeDimCap);
-  if (!mergeLeafBatches(cluster, batches)) return;
 }
 
 // Bottom-up merge of child clusters whose merged total dimension stays below
@@ -566,15 +357,6 @@ MultifrontalSolver::MultifrontalSolver(PrecomputedData data,
   reportStructure(data.indexedJunctionTree, dims_, "Symbolic cluster structure",
                   params_.reportStream);
 
-  // If applicable, merge leaf children by a separate cap first.
-  if (params_.leafMergeDimCap > 0) {
-    for (const auto& rootCluster : data.indexedJunctionTree.roots()) {
-      mergeLeafChildren(rootCluster, dims_, params_.leafMergeDimCap);
-    }
-    reportStructure(data.indexedJunctionTree, dims_,
-                    "Clique structure after leaf merge", params_.reportStream);
-  }
-
   // If applicable, merge small child cliques bottom-up.
   if (params_.mergeDimCap > 0) {
     for (const auto& rootCluster : data.indexedJunctionTree.roots()) {
@@ -650,7 +432,8 @@ void MultifrontalSolver::eliminateInPlace() {
   eliminated_ = false;
   hasDeltaError_ = false;
   runBottomUp([](MultifrontalClique& node) { node.eliminateInPlace(); },
-              params_.eliminationParallelThreshold);
+              params_.eliminationParallelThreshold,
+              params_.leafAggregationProblemSize);
   eliminated_ = true;
 }
 
@@ -667,7 +450,8 @@ void MultifrontalSolver::eliminateInPlace(const GaussianFactorGraph& graph) {
         node.fillAb(graph);
         node.eliminateInPlace();
       },
-      params_.eliminationParallelThreshold);
+      params_.eliminationParallelThreshold,
+      params_.leafAggregationProblemSize);
   loaded_ = true;
   eliminated_ = true;
   hasDeltaError_ = false;
@@ -690,7 +474,8 @@ void MultifrontalSolver::eliminatePartialInPlace() {
         node.prepareForElimination();
         if (node.numFrontals() > 0) node.factorize();
       },
-      params_.eliminationParallelThreshold);
+      params_.eliminationParallelThreshold,
+      params_.leafAggregationProblemSize);
   eliminated_ = false;
   partiallyEliminated_ = true;
   hasDeltaError_ = false;
@@ -710,7 +495,8 @@ void MultifrontalSolver::eliminatePartialInPlace(
         node.prepareForElimination();
         if (node.numFrontals() > 0) node.factorize();
       },
-      params_.eliminationParallelThreshold);
+      params_.eliminationParallelThreshold,
+      params_.leafAggregationProblemSize);
   loaded_ = true;
   eliminated_ = false;
   partiallyEliminated_ = true;

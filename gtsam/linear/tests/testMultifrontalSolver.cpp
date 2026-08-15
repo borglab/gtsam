@@ -53,7 +53,7 @@ const Ordering chainOrdering{x2, x1, x3, x4};
 MultifrontalSolver::Parameters noMergeParams() {
   MultifrontalSolver::Parameters params;
   params.mergeDimCap = 0;
-  params.leafMergeDimCap = 0;
+  params.leafAggregationProblemSize = 0;
   return params;
 }
 
@@ -114,6 +114,39 @@ TEST(MultifrontalSolver, PartialElimination) {
 
   EXPECT(checkPartialElimination(&solver, graph));
   EXPECT(checkPartialElimination(&solver, createGraph(2.0)));
+}
+
+// Leaf aggregation changes only task scheduling, not clique structure or the
+// reduced system produced by partial elimination.
+TEST(MultifrontalSolver, PartialEliminationLeafAggregation) {
+  const GaussianFactorGraph graph = createGraph();
+
+  MultifrontalSolver::Parameters separateTasks = noMergeParams();
+  separateTasks.qrMode = MultifrontalParameters::QRMode::Off;
+  MultifrontalSolver solverSeparate(graph, fullOrdering, pointOrdering.size(),
+                                    separateTasks);
+  solverSeparate.eliminatePartialInPlace(graph);
+
+  const Matrix expected =
+      solverSeparate.remainingFactorGraph().augmentedHessian(cameraOrdering);
+  for (const auto mode : {MultifrontalParameters::LeafMode::Bounded,
+                          MultifrontalParameters::LeafMode::SameSeparator}) {
+    MultifrontalSolver::Parameters aggregatedTasks = noMergeParams();
+    aggregatedTasks.qrMode = MultifrontalParameters::QRMode::Off;
+    aggregatedTasks.leafAggregationProblemSize = 2048;
+    aggregatedTasks.leafMode = mode;
+    MultifrontalSolver solverAggregated(
+        graph, fullOrdering, pointOrdering.size(), aggregatedTasks);
+    solverAggregated.eliminatePartialInPlace(graph);
+
+    EXPECT_LONGS_EQUAL(solverSeparate.cliqueCount(),
+                       solverAggregated.cliqueCount());
+    EXPECT(assert_equal(
+        expected,
+        solverAggregated.remainingFactorGraph().augmentedHessian(
+            cameraOrdering),
+        1e-9));
+  }
 }
 
 }  // namespace partial_elimination_fixture

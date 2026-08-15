@@ -68,13 +68,11 @@ class GTSAM_EXPORT MultifrontalSolverNotSupported : public std::runtime_error {
  * @note Only JacobianFactor and BatchJacobianFactor inputs are supported. Other
  * Gaussian factor types will throw during construction/precompute or load.
  *
- * @note Clique merging has two optional phases: an initial leaf-merge pass
- * (leafMergeDimCap) that merges multiple leaf children into a common parent
- * while the parent's total dimension plus merged frontal dimensions stays
- * below the cap, followed by a bottom-up pass (mergeDimCap) that merges any
- * remaining small child cliques into their parent. Both phases run before
- * numeric elimination and can reduce tiny cliques and improve cache locality.
- * Defaults are conservative and may need tuning per machine or dataset.
+ * @note Independent sibling leaves remain separate algebraic cliques, but the
+ * bottom-up traversal can process several in one scheduled task. LeafMode
+ * selects bounded batches or Cholesky accumulation by identical separator.
+ * The optional mergeDimCap pass still merges small child cliques into their
+ * parent before numeric elimination.
  */
 class GTSAM_EXPORT MultifrontalSolver
     : public ForestTraversal<MultifrontalSolver, MultifrontalClique> {

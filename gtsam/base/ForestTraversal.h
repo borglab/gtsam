@@ -101,7 +101,8 @@ class ForestTraversal {
 
   template <typename Fn>
   /// Post-order traversal using a bottom-up visitor (TBB path).
-  void runBottomUp(Fn fn, int parallelThreshold = 10) {
+  void runBottomUp(Fn fn, int parallelThreshold = 10,
+                   size_t leafAggregationProblemSize = 0) {
     withTbbTraversalControl([&] {
       // The bottom-up visitor runs after all children are processed;
       // treeTraversal helpers orchestrate the parallelism.
@@ -114,7 +115,8 @@ class ForestTraversal {
 
       VisitorPost visitor{&fn};
       treeTraversal::PostOrderForestParallel(static_cast<Forest&>(*this),
-                                             visitor, parallelThreshold);
+                                             visitor, parallelThreshold,
+                                             leafAggregationProblemSize);
     });
   }
 
@@ -150,7 +152,9 @@ class ForestTraversal {
 
   /// Scheduler-based bottom-up traversal.
   template <typename Fn>
-  void runBottomUp(Fn fn, int parallelThreshold = 10) {
+  void runBottomUp(Fn fn, int parallelThreshold = 10,
+                   size_t leafAggregationProblemSize = 0) {
+    (void)leafAggregationProblemSize;
     const auto& roots = getRoots();
     if (roots.empty()) return;
     // Create shared traversal state and run from all roots.

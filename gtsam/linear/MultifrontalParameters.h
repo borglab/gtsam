@@ -36,7 +36,10 @@ namespace gtsam {
  */
 struct MultifrontalParameters {
   enum class QRMode { Off, Allow, Force };
-  size_t leafMergeDimCap = 256;           ///< Leaf-merge cap (0 disables).
+  enum class LeafMode { Bounded, SameSeparator };
+  /// Total problem-size cap for sibling leaves processed by one task.
+  size_t leafAggregationProblemSize = 2048;
+  LeafMode leafMode = LeafMode::Bounded;
   size_t mergeDimCap = 32;                ///< Merge threshold (0 disables).
   QRMode qrMode = QRMode::Allow;          ///< QR mode for leaf cliques.
   double qrAspectRatio = 2.0;             ///< Aspect ratio for QR mode=Allow.

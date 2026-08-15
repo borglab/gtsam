@@ -202,17 +202,22 @@ void DepthFirstForestParallel(FOREST& forest, DATA& rootData,
  *         \c FOREST::Node.
  *  @param visitorPost \c visitorPost(node) will be called at every node, after
  *         visiting its children.
- *  @param problemSizeThreshold Threshold for creating parallel subtasks. */
+ *  @param problemSizeThreshold Threshold for creating parallel subtasks.
+ *  @param leafAggregationProblemSize Maximum total problem size of sibling
+ *         leaves processed by one task (0 disables aggregation). */
 template<class FOREST, typename VISITOR_POST>
 void PostOrderForestParallel(FOREST& forest, VISITOR_POST& visitorPost,
-                             int problemSizeThreshold = 10) {
+                             int problemSizeThreshold = 10,
+                             size_t leafAggregationProblemSize = 0) {
 #if defined(GTSAM_USE_TBB) && !defined(GTSAM_TBB_BOUNDED_MEMORY_GROWTH_FLAG)
   // Note: Parallel tree traversal (the default) causes a large increase in memory footprint.
 
   typedef typename FOREST::Node Node;
   internal::CreateRootPostOrderTask<Node>(forest.roots(), visitorPost,
-                                          problemSizeThreshold);
+                                          problemSizeThreshold,
+                                          leafAggregationProblemSize);
 #else
+  (void)leafAggregationProblemSize;
   PostOrderForest(forest, visitorPost);
 #endif
 }
