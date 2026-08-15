@@ -444,6 +444,8 @@ struct BuiltClique {
 // Build cliques from a symbolic junction tree and wire parent/child metadata.
 struct CliqueBuilder {
   const std::map<Key, size_t>& dims;
+  const FastMap<Key, size_t>& orderingIndex;
+  size_t firstPhaseSize;
   VectorValues* solution;
   std::vector<MultifrontalSolver::CliquePtr>* cliques;
   const std::unordered_set<Key>* fixedKeys;
@@ -456,7 +458,17 @@ struct CliqueBuilder {
     if (!cluster) return {nullptr, KeySet()};
 
     // Gather symbolic metadata for this clique.
-    const KeyVector& frontals = cluster->orderedFrontalKeys;
+    KeyVector frontals = cluster->orderedFrontalKeys;
+    std::stable_sort(frontals.begin(), frontals.end(),
+                     [this](Key a, Key b) {
+                       return orderingIndex.at(a) < orderingIndex.at(b);
+                     });
+    size_t numEliminatedFrontals = 0;
+    while (numEliminatedFrontals < frontals.size() &&
+           orderingIndex.at(frontals[numEliminatedFrontals]) <
+               firstPhaseSize) {
+      ++numEliminatedFrontals;
+    }
     const KeySet& separatorKeys = cluster->separatorKeys(&separatorCache);
     std::vector<size_t> factorIndices;
     factorIndices.reserve(cluster->factors.size());
@@ -472,7 +484,7 @@ struct CliqueBuilder {
     // Create the clique node and cache static structure.
     auto clique = std::make_shared<MultifrontalClique>(
         std::move(factorIndices), parent, frontals, separatorKeys, dims,
-        vbmRows, solution, fixedKeys);
+        vbmRows, solution, fixedKeys, numEliminatedFrontals);
 
     // Build children and collect separator keys.
     std::vector<MultifrontalClique::ChildInfo> childInfos;
@@ -506,15 +518,37 @@ size_t resolveThreadCount(size_t requested) {
 MultifrontalSolver::MultifrontalSolver(const GaussianFactorGraph& graph,
                                        const Ordering& ordering,
                                        const Parameters& params)
-    : MultifrontalSolver(Precompute(graph, ordering), ordering, params) {}
+    : MultifrontalSolver(Precompute(graph, ordering), ordering, ordering.size(),
+                         params) {}
+
+/* ************************************************************************* */
+MultifrontalSolver::MultifrontalSolver(const GaussianFactorGraph& graph,
+                                       const Ordering& ordering,
+                                       size_t firstPhaseSize,
+                                       const Parameters& params)
+    : MultifrontalSolver(Precompute(graph, ordering), ordering, firstPhaseSize,
+                         params) {}
 
 /* ************************************************************************* */
 MultifrontalSolver::MultifrontalSolver(PrecomputedData data,
                                        const Ordering& ordering,
                                        const Parameters& params)
+    : MultifrontalSolver(std::move(data), ordering, ordering.size(), params) {}
+
+/* ************************************************************************* */
+MultifrontalSolver::MultifrontalSolver(PrecomputedData data,
+                                       const Ordering& ordering,
+                                       size_t firstPhaseSize,
+                                       const Parameters& params)
     : ForestTraversal<MultifrontalSolver, MultifrontalClique>(
           resolveThreadCount(params.numThreads)),
+      ordering_(ordering),
+      firstPhaseSize_(firstPhaseSize),
       params_(params) {
+  if (firstPhaseSize_ > ordering_.size()) {
+    throw std::invalid_argument(
+        "MultifrontalSolver: first phase exceeds the ordering size.");
+  }
   dims_ = std::move(data.dims);
   fixedKeys_ = std::move(data.fixedKeys);
 
@@ -551,8 +585,13 @@ MultifrontalSolver::MultifrontalSolver(PrecomputedData data,
   }
 
   // Build the actual MultifrontalClique structure.
-  CliqueBuilder builder{dims_,       &solution_, &cliques_,
-                        &fixedKeys_, &params_,   &data.rowCounts};
+  FastMap<Key, size_t> orderingIndex;
+  for (size_t i = 0; i < ordering_.size(); ++i) {
+    orderingIndex.emplace(ordering_[i], i);
+  }
+  CliqueBuilder builder{dims_,       orderingIndex, firstPhaseSize_,
+                        &solution_,  &cliques_,  &fixedKeys_,
+                        &params_,    &data.rowCounts};
   for (const auto& rootCluster : data.indexedJunctionTree.roots()) {
     if (rootCluster) {
       roots_.push_back(
@@ -592,11 +631,17 @@ void MultifrontalSolver::load(const GaussianFactorGraph& graph) {
   }
   loaded_ = true;
   eliminated_ = false;
+  partiallyEliminated_ = false;
   hasDeltaError_ = false;
 }
 
 /* ************************************************************************* */
 void MultifrontalSolver::eliminateInPlace() {
+  if (firstPhaseSize_ != ordering_.size()) {
+    throw std::runtime_error(
+        "MultifrontalSolver::eliminateInPlace: solver is configured for "
+        "partial elimination.");
+  }
   if (!loaded_) {
     throw std::runtime_error(
         "MultifrontalSolver::eliminateInPlace: load() must be called before "
@@ -611,6 +656,11 @@ void MultifrontalSolver::eliminateInPlace() {
 
 /* ************************************************************************* */
 void MultifrontalSolver::eliminateInPlace(const GaussianFactorGraph& graph) {
+  if (firstPhaseSize_ != ordering_.size()) {
+    throw std::runtime_error(
+        "MultifrontalSolver::eliminateInPlace: solver is configured for "
+        "partial elimination.");
+  }
   // Combine load + eliminate in one post-order traversal to improve locality.
   runBottomUp(
       [&graph](MultifrontalClique& node) {
@@ -621,6 +671,52 @@ void MultifrontalSolver::eliminateInPlace(const GaussianFactorGraph& graph) {
   loaded_ = true;
   eliminated_ = true;
   hasDeltaError_ = false;
+}
+
+/* ************************************************************************* */
+void MultifrontalSolver::eliminatePartialInPlace() {
+  if (!loaded_) {
+    throw std::runtime_error(
+        "MultifrontalSolver::eliminatePartialInPlace: load() must be called "
+        "before eliminating.");
+  }
+  if (firstPhaseSize_ >= ordering_.size()) {
+    throw std::runtime_error(
+        "MultifrontalSolver::eliminatePartialInPlace: solver is not "
+        "configured with a partial ordering.");
+  }
+  runBottomUp(
+      [](MultifrontalClique& node) {
+        node.prepareForElimination();
+        if (node.numFrontals() > 0) node.factorize();
+      },
+      params_.eliminationParallelThreshold);
+  eliminated_ = false;
+  partiallyEliminated_ = true;
+  hasDeltaError_ = false;
+}
+
+/* ************************************************************************* */
+void MultifrontalSolver::eliminatePartialInPlace(
+    const GaussianFactorGraph& graph) {
+  load(graph);
+  eliminatePartialInPlace();
+}
+
+/* ************************************************************************* */
+GaussianFactorGraph MultifrontalSolver::remainingFactorGraph() const {
+  if (!partiallyEliminated_) {
+    throw std::runtime_error(
+        "MultifrontalSolver::remainingFactorGraph requires partial "
+        "elimination.");
+  }
+  GaussianFactorGraph remaining;
+  for (const auto& clique : cliques_) {
+    if (clique && !clique->fullyEliminated()) {
+      remaining.push_back(clique->remainingFactor());
+    }
+  }
+  return remaining;
 }
 
 /* ************************************************************************* */
@@ -698,6 +794,29 @@ const VectorValues& MultifrontalSolver::updateSolution() {
 
   // Mark delta error as valid for subsequent deltaError() calls.
   hasDeltaError_ = true;
+  return solution_;
+}
+
+/* ************************************************************************* */
+const VectorValues& MultifrontalSolver::updateSolution(
+    const VectorValues& retainedSolution) {
+  if (!partiallyEliminated_) {
+    throw std::runtime_error(
+        "MultifrontalSolver::updateSolution(retained) requires partial "
+        "elimination.");
+  }
+
+  for (size_t i = firstPhaseSize_; i < ordering_.size(); ++i) {
+    const Key key = ordering_[i];
+    if (fixedKeys_.count(key)) {
+      solution_.at(key).setZero();
+    } else {
+      solution_.at(key) = retainedSolution.at(key);
+    }
+  }
+  runTopDown([](MultifrontalClique& node) { node.updateSolution(); },
+             params_.solutionParallelThreshold);
+  hasDeltaError_ = false;
   return solution_;
 }
 

@@ -20,6 +20,7 @@
 #include <gtsam/config.h>
 #include <gtsam/linear/BatchJacobianFactor.h>
 #include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/MultifrontalClique.h>
 #include <gtsam/linear/MultifrontalSolver.h>
@@ -112,7 +113,8 @@ MultifrontalClique::MultifrontalClique(
     std::vector<size_t> factorIndices,
     const std::weak_ptr<MultifrontalClique>& parent, const KeyVector& frontals,
     const KeySet& separatorKeys, const KeyDimMap& dims, size_t vbmRows,
-    VectorValues* solution, const std::unordered_set<Key>* fixedKeys) {
+    VectorValues* solution, const std::unordered_set<Key>* fixedKeys,
+    size_t numEliminatedFrontals) {
   factorIndices_ = std::move(factorIndices);
   this->parent = parent;
   fixedKeys_ = fixedKeys;
@@ -121,6 +123,11 @@ MultifrontalClique::MultifrontalClique(
     throw std::runtime_error(
         "MultifrontalSolver: cluster has no frontal keys.");
   }
+  if (numEliminatedFrontals > frontals.size()) {
+    throw std::invalid_argument(
+        "MultifrontalClique: eliminated frontal count exceeds clique size.");
+  }
+  totalFrontals_ = frontals.size();
 
   // Cache keys in block order for fast linear lookup in small cliques.
   orderedKeys_.clear();
@@ -135,14 +142,27 @@ MultifrontalClique::MultifrontalClique(
   }
 
   // Cache total frontal/separator dimensions for scheduling and sizing.
-  frontalDim = internal::sumDims(dims, frontals);
+  frontalDim = 0;
   separatorDim = internal::sumDims(dims, separatorKeys);
+  for (size_t i = 0; i < frontals.size(); ++i) {
+    const size_t dim = dims.at(frontals[i]);
+    if (i < numEliminatedFrontals)
+      frontalDim += dim;
+    else
+      separatorDim += dim;
+  }
 
   rhsScratch_.resize(frontalDim);
   separatorScratch_.resize(separatorDim);
 
   // Cache pointers into the solution for fast back-substitution.
-  cacheSolutionPointers(solution, frontals, separatorKeys);
+  KeyVector eliminatedFrontals(frontals.begin(),
+                               frontals.begin() + numEliminatedFrontals);
+  KeyVector retainedKeys(frontals.begin() + numEliminatedFrontals,
+                         frontals.end());
+  retainedKeys.insert(retainedKeys.end(), separatorKeys.begin(),
+                      separatorKeys.end());
+  cacheSolutionPointers(solution, eliminatedFrontals, retainedKeys);
 
   // Cache sizing for allocation at finalize time.
   blockDims_ = this->blockDims(dims, frontals, separatorKeys);
@@ -172,14 +192,15 @@ void MultifrontalClique::finalize(std::vector<ChildInfo> children,
 
   // In leaf cliques, check whether to use QR elimination.
   const bool isLeaf = this->children.empty();
+  const bool eliminatesWholeClique = fullyEliminated();
   const bool hasRows =
       frontalDim > 0 && factorRows_ >= static_cast<size_t>(frontalDim);
   bool useQR = false;
   if (params.qrMode == MultifrontalParameters::QRMode::Allow) {
-    useQR = isLeaf && hasRows &&
+    useQR = eliminatesWholeClique && isLeaf && hasRows &&
             (frontalDim + separatorDim > params.qrAspectRatio * frontalDim);
   } else if (params.qrMode == MultifrontalParameters::QRMode::Force) {
-    useQR = isLeaf && hasRows;
+    useQR = eliminatesWholeClique && isLeaf && hasRows;
   }
   solveMode_ = useQR ? SolveMode::QrLeaf : SolveMode::Cholesky;
   RSdReady_ = false;
@@ -208,7 +229,7 @@ DenseIndex MultifrontalClique::blockIndex(Key key) const {
 
 void MultifrontalClique::cacheSolutionPointers(VectorValues* solution,
                                                const KeyVector& frontals,
-                                               const KeySet& separatorKeys) {
+                                               const KeyVector& separatorKeys) {
   frontalPtrs_.clear();
   separatorPtrs_.clear();
   frontalPtrs_.reserve(frontals.size());
@@ -353,6 +374,8 @@ void MultifrontalClique::buildLoadPlans(const GaussianFactorGraph& graph) const 
 void MultifrontalClique::fillAb(const GaussianFactorGraph& graph) {
   activeLoadGraph_ = &graph;
   assert(validateFactorKeys(graph, factorIndices_, orderedKeys_, fixedKeys_));
+  RSdReady_ = false;
+  infoReady_ = false;
 
   if (!loadPlansBuilt_) {
     buildLoadPlans(graph);
@@ -398,7 +421,6 @@ void MultifrontalClique::fillAb(const GaussianFactorGraph& graph) {
         "only JacobianFactor or BatchJacobianFactor inputs are supported");
   }
 
-  RSdReady_ = false;
   assert((useQR() && RSd_.matrix().rows() ==
                          static_cast<DenseIndex>(Ab_.matrix().rows())) ||
          (RSd_.matrix().rows() == static_cast<DenseIndex>(frontalDim)));
@@ -468,6 +490,7 @@ void MultifrontalClique::prepareForElimination() {
     else
       gatherUpdatesParallel(numThreads);
   }
+  infoReady_ = true;
 }
 
 void MultifrontalClique::factorize() {
@@ -587,6 +610,7 @@ void MultifrontalClique::addExactDiagonalDamping(
 
 void MultifrontalClique::updateParentInfo(
     SymmetricBlockMatrix& parentInfo) const {
+  assert(fullyEliminated());
   assert(RSd_.rowStart() == 0);
   if (useQR()) {
     // Accumulate separator (and RHS) normal equations from the QR residual.
@@ -613,7 +637,7 @@ void MultifrontalClique::updateParentInfo(
 void MultifrontalClique::gatherUpdatesSequential() {
   for (const auto& child : children) {
     assert(child);
-    child->updateParentInfo(info_);
+    if (child->fullyEliminated()) child->updateParentInfo(info_);
   }
 }
 
@@ -630,8 +654,10 @@ void MultifrontalClique::gatherUpdatesParallel(size_t numThreads) {
         for (size_t i = range.begin(); i < range.end(); ++i) {
           const auto& child = children[i];
           assert(child);
-          child->updateParentInfo(
-              local);  // No locking: each thread writes its own info matrix.
+          if (child->fullyEliminated()) {
+            child->updateParentInfo(
+                local);  // No locking: each thread writes its own info matrix.
+          }
         }
       });
   locals.combine_each([this](const SymmetricBlockMatrix& local) {
@@ -657,8 +683,10 @@ void MultifrontalClique::gatherUpdatesParallel(size_t numThreads) {
       for (size_t i = start; i < end; ++i) {
         const auto& child = children[i];
         assert(child);
-        child->updateParentInfo(
-            local);  // No locking: each thread writes its own info matrix.
+        if (child->fullyEliminated()) {
+          child->updateParentInfo(
+              local);  // No locking: each thread writes its own info matrix.
+        }
       }
     });
   }
@@ -679,8 +707,26 @@ std::shared_ptr<GaussianConditional> MultifrontalClique::conditional() const {
                                                RSd_);
 }
 
+std::shared_ptr<HessianFactor> MultifrontalClique::remainingFactor() const {
+  assert(infoReady_);
+  assert(!fullyEliminated());
+  if (numFrontals() > 0) assert(RSdReady_);
+
+  SymmetricBlockMatrix activeInfo = info_;
+  activeInfo.blockStart() = static_cast<DenseIndex>(numFrontals());
+  SymmetricBlockMatrix compactInfo =
+      SymmetricBlockMatrix::LikeActiveViewOf(activeInfo);
+  const Matrix denseActiveInfo = activeInfo.selfadjointView();
+  compactInfo.setFullMatrix(denseActiveInfo);
+
+  KeyVector retainedKeys(orderedKeys_.begin() + numFrontals(),
+                         orderedKeys_.end());
+  return std::make_shared<HessianFactor>(retainedKeys, compactInfo);
+}
+
 // Solve with block back-substitution on the Cholesky-stored info matrix.
 void MultifrontalClique::updateSolution() {
+  if (numFrontals() == 0) return;
   assert(RSdReady_);
   assert(RSd_.rowStart() == 0);
   // Use cached [R S d] for fast back-substitution.

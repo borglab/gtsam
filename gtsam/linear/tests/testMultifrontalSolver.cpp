@@ -34,6 +34,7 @@
 
 using namespace std;
 using namespace gtsam;
+using symbol_shorthand::L;
 using symbol_shorthand::X;
 
 namespace {
@@ -57,6 +58,66 @@ MultifrontalSolver::Parameters noMergeParams() {
 }
 
 }  // namespace
+
+/* ************************************************************************* */
+namespace partial_elimination_fixture {
+
+const Key point1 = L(1), point2 = L(2);
+const Key camera1 = X(1), camera2 = X(2);
+const Ordering pointOrdering{point1, point2};
+const Ordering cameraOrdering{camera1, camera2};
+const Ordering fullOrdering{point1, point2, camera1, camera2};
+
+GaussianFactorGraph createGraph(double rhsScale = 1.0) {
+  const auto model = noiseModel::Unit::Create(1);
+  return GaussianFactorGraph{
+      std::make_shared<JacobianFactor>(point1, I_1x1, camera1, -I_1x1,
+                                       Vector1(rhsScale), model),
+      std::make_shared<JacobianFactor>(point1, I_1x1, camera2, -I_1x1,
+                                       Vector1(2.0 * rhsScale), model),
+      std::make_shared<JacobianFactor>(point2, I_1x1, camera1, -I_1x1,
+                                       Vector1(3.0 * rhsScale), model),
+      std::make_shared<JacobianFactor>(point2, I_1x1, camera2, -I_1x1,
+                                       Vector1(4.0 * rhsScale), model),
+      std::make_shared<JacobianFactor>(camera1, I_1x1,
+                                       Vector1(0.5 * rhsScale), model)};
+}
+
+bool checkPartialElimination(MultifrontalSolver* solver,
+                             const GaussianFactorGraph& graph) {
+  solver->eliminatePartialInPlace(graph);
+  const GaussianFactorGraph actualRemaining = solver->remainingFactorGraph();
+  const auto [pointBayesTree, expectedRemaining] =
+      graph.eliminatePartialMultifrontal(pointOrdering);
+  (void)pointBayesTree;
+
+  const bool remainingFactorsAgree = assert_equal(
+      expectedRemaining->augmentedHessian(cameraOrdering),
+      actualRemaining.augmentedHessian(cameraOrdering), 1e-9);
+  const bool cliquesAreAggregated =
+      actualRemaining.size() < expectedRemaining->size();
+
+  const VectorValues retainedSolution = actualRemaining.optimize();
+  const VectorValues& actualSolution =
+      solver->updateSolution(retainedSolution);
+  const VectorValues expectedSolution = graph.optimize();
+  return remainingFactorsAgree && cliquesAreAggregated &&
+         assert_equal(expectedSolution, actualSolution, 1e-9);
+}
+
+// Partially eliminates point frontals, exports clique-level camera factors,
+// and reuses the symbolic structure after numerical values change.
+TEST(MultifrontalSolver, PartialElimination) {
+  const GaussianFactorGraph graph = createGraph();
+  MultifrontalSolver solver(graph, fullOrdering, pointOrdering.size(),
+                            noMergeParams());
+
+  EXPECT(checkPartialElimination(&solver, graph));
+  EXPECT(checkPartialElimination(&solver, createGraph(2.0)));
+}
+
+}  // namespace partial_elimination_fixture
+/* ************************************************************************* */
 
 /* ************************************************************************* */
 // Build the solver and validate initial structure and explicit load.

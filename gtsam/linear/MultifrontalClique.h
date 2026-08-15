@@ -43,6 +43,7 @@ namespace gtsam {
 
 class BatchJacobianFactorBase;
 class GaussianConditional;
+class HessianFactor;
 class JacobianFactor;
 
 /// Map from variable key to dimension.
@@ -97,7 +98,8 @@ class GTSAM_EXPORT MultifrontalClique {
                               const KeySet& separatorKeys,
                               const KeyDimMap& dims, size_t vbmRows,
                               VectorValues* solution,
-                              const std::unordered_set<Key>* fixedKeys);
+                              const std::unordered_set<Key>* fixedKeys,
+                              size_t numEliminatedFrontals);
 
   /// @name Setup (non-const)
   /// @{
@@ -171,11 +173,21 @@ class GTSAM_EXPORT MultifrontalClique {
   /// Return the number of frontal keys in this clique.
   size_t numFrontals() const { return frontalPtrs_.size(); }
 
+  /// Return whether every symbolic frontal in this clique is eliminated.
+  bool fullyEliminated() const { return numFrontals() == totalFrontals_; }
+
   /// Return keys ordered by block index (frontals followed by separators).
   const KeyVector& orderedKeys() const { return orderedKeys_; }
 
   /// Build a GaussianConditional from the in-place factorization.
   std::shared_ptr<GaussianConditional> conditional() const;
+
+  /**
+   * Build the assembled factor on variables retained after partial
+   * elimination. The clique must have been prepared, and any leading
+   * eliminated frontals must have been factorized.
+   */
+  std::shared_ptr<HessianFactor> remainingFactor() const;
 
   /// Get the vertical block matrix Ab.
   const VerticalBlockMatrix& Ab() const { return Ab_; }
@@ -246,7 +258,7 @@ class GTSAM_EXPORT MultifrontalClique {
 
   /// Cache pointers to frontal and separator update vectors.
   void cacheSolutionPointers(VectorValues* delta, const KeyVector& frontals,
-                             const KeySet& separatorKeys);
+                             const KeyVector& separatorKeys);
 
   /// Linear lookup for block index in small cliques.
   DenseIndex blockIndex(Key key) const;
@@ -319,6 +331,7 @@ class GTSAM_EXPORT MultifrontalClique {
   // Construction-time metadata (set once in the constructor).
   std::vector<size_t> factorIndices_;
   KeyVector orderedKeys_;  ///< Keys ordered by block index (frontals+seps).
+  size_t totalFrontals_ = 0;  ///< Symbolic frontals before a phase split.
   const std::unordered_set<Key>* fixedKeys_ = nullptr;
   std::unordered_map<Key, DenseIndex> blockIndexCache_;
   std::vector<Vector*> frontalPtrs_;          ///< Solution frontals.
@@ -346,6 +359,7 @@ class GTSAM_EXPORT MultifrontalClique {
 
   // Elimination-time state.
   bool RSdReady_ = false;
+  bool infoReady_ = false;
 
   // Solve-time scratch space.
   Vector rhsScratch_;        ///< Cached RHS workspace for back-substitution.

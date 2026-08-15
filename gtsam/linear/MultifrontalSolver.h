@@ -104,6 +104,9 @@ class GTSAM_EXPORT MultifrontalSolver
   std::unordered_set<Key> fixedKeys_;  ///< Keys fixed by constrained factors.
   bool loaded_ = false;                ///< Whether load() has been called.
   bool eliminated_ = false;            ///< Whether eliminateInPlace() ran.
+  bool partiallyEliminated_ = false;   ///< Whether partial elimination ran.
+  Ordering ordering_;                  ///< Complete variable ordering.
+  size_t firstPhaseSize_ = 0;          ///< Prefix eliminated in partial mode.
   Parameters params_;                  ///< Tunable solver parameters.
   double lastOldError_ = 0.0;          ///< Cached old linearized error.
   double lastNewError_ = 0.0;          ///< Cached new linearized error.
@@ -124,6 +127,15 @@ class GTSAM_EXPORT MultifrontalSolver
                      const Parameters& params = Parameters{});
 
   /**
+   * Construct a solver configured for partial multifrontal elimination.
+   * The leading `firstPhaseSize` keys in `ordering` are eliminated, while the
+   * remaining keys stay assembled in retained clique factors.
+   */
+  MultifrontalSolver(const GaussianFactorGraph& graph, const Ordering& ordering,
+                     size_t firstPhaseSize,
+                     const Parameters& params = Parameters{});
+
+  /**
    * Construct the solver from precomputed symbolic data.
    * Call load() before eliminating to populate numerical values.
    * @param data Precomputed symbolic structure and sizing data.
@@ -131,6 +143,11 @@ class GTSAM_EXPORT MultifrontalSolver
    * @param params Tunable parameters for traversal and reporting.
    */
   MultifrontalSolver(PrecomputedData data, const Ordering& ordering,
+                     const Parameters& params = Parameters{});
+
+  /** Construct a partial solver from precomputed symbolic data. */
+  MultifrontalSolver(PrecomputedData data, const Ordering& ordering,
+                     size_t firstPhaseSize,
                      const Parameters& params = Parameters{});
 
   /**
@@ -171,6 +188,21 @@ class GTSAM_EXPORT MultifrontalSolver
   void eliminateInPlace(const GaussianFactorGraph& graph);
 
   /**
+   * Eliminate the configured ordering prefix and assemble the retained
+   * clique factors without factorizing the retained variables.
+   */
+  void eliminatePartialInPlace();
+
+  /** Load a graph and partially eliminate it in one bottom-up traversal. */
+  void eliminatePartialInPlace(const GaussianFactorGraph& graph);
+
+  /**
+   * Materialize one Hessian factor per retained clique after partial
+   * elimination.
+   */
+  GaussianFactorGraph remainingFactorGraph() const;
+
+  /**
    * Compute a Bayes tree from the in-place Cholesky factorization.
    * Requires eliminateInPlace() to have been called beforehand.
    * @return A GaussianBayesTree representing the eliminated factor graph
@@ -184,6 +216,11 @@ class GTSAM_EXPORT MultifrontalSolver
    * @return Reference to the internally cached solution vector.
    */
   const VectorValues& updateSolution();
+
+  /**
+   * Seed retained variables and back-substitute through eliminated cliques.
+   */
+  const VectorValues& updateSolution(const VectorValues& retainedSolution);
 
   /**
    * Return the linearized delta error from the last updateSolution() call.
