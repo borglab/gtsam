@@ -6,6 +6,7 @@
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/cuda/CudaSparseLevenbergMarquardt.h>
 #include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/FastSync.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/dataset.h>
 
@@ -103,6 +104,7 @@ struct RunOptions {
   size_t pcgMaxIterations = 0; // 0 keeps the library default
   std::string pcgPreconditioner = "block-jacobi";
   bool pcgWarmStart = true;
+  bool pose2FastSync = false;
   // Relative CPU/GPU final-objective tolerance. The strict default assumes a
   // direct solver; inexact PCG takes a different LM trajectory and needs an
   // explicit, recorded loosening.
@@ -134,6 +136,7 @@ struct LoadedWorkload {
   NonlinearFactorGraph graph;
   Values initial;
   std::optional<Ordering> cpuOrdering;
+  double initializationWall = 0.0;
   double initialError = 0.0;
 };
 
@@ -183,6 +186,7 @@ struct WorkloadResult {
   std::string path;
   size_t factors = 0;
   size_t values = 0;
+  double initializationWall = 0.0;
   double initialError = 0.0;
   double referenceObjective = 0.0;
   double maximumObjectiveDifference = 0.0;
@@ -212,6 +216,7 @@ std::string Usage() {
       "  [--json FILE] [--csv FILE]\n"
       "  [--gpu-solver cudss|pcg] [--pcg-tol X] [--pcg-max-iters N]\n"
       "  [--pcg-preconditioner block-jacobi|jacobi|none] [--pcg-no-warm-start]\n"
+      "  [--pose2-fast-sync]\n"
       "  [--objective-tol X] [--self-test] [--help]";
 }
 
@@ -328,6 +333,8 @@ RunOptions ParseOptions(int argc, char** argv) {
       }
     } else if (argument == "--pcg-no-warm-start") {
       options.pcgWarmStart = false;
+    } else if (argument == "--pose2-fast-sync") {
+      options.pose2FastSync = true;
     } else if (argument == "--objective-tol") {
       const std::string value = requireValue(&index, "--objective-tol");
       size_t parsedCharacters = 0;
@@ -530,8 +537,15 @@ int RunSelfTest() {
                    const_cast<char**>(arguments));
   if (options.warmups != 1 || options.repeats != 5 ||
       options.datasets.size() != 4 || options.jsonPath != "results.json" ||
-      options.csvPath != "results.csv") {
+      options.csvPath != "results.csv" || options.pose2FastSync) {
     throw std::runtime_error("option parsing self-test failed");
+  }
+  const char* fastSyncArguments[] = {"timeCudaSparseLM",
+                                     "--pose2-fast-sync"};
+  const RunOptions fastSyncOptions =
+      ParseOptions(2, const_cast<char**>(fastSyncArguments));
+  if (!fastSyncOptions.pose2FastSync) {
+    throw std::runtime_error("Pose2 FastSync option parsing self-test failed");
   }
   if (!Throws([] {
         const char* args[] = {"timeCudaSparseLM", "--repeats", "0"};
@@ -649,6 +663,12 @@ LoadedWorkload LoadWorkload(const WorkloadSpec& specification,
     workload.initial = *initial;
     workload.graph.emplace_shared<gtsam::PriorFactor<Pose2>>(
         0, workload.initial.at<Pose2>(0), gtsam::noiseModel::Unit::Create(3));
+    if (options.pose2FastSync) {
+      const auto start = Clock::now();
+      workload.initial = gtsam::fastSync<Pose2>(workload.graph);
+      workload.initializationWall =
+          std::chrono::duration<double>(Clock::now() - start).count();
+    }
   } else {
     auto [graph, initial] = LoadLegacyToroPose3(workload.path);
     if (!initial.exists(0)) {
@@ -843,6 +863,12 @@ WorkloadResult BenchmarkWorkload(const LoadedWorkload& workload,
             << "  path: " << workload.path << "\n"
             << "  factors: " << workload.graph.size()
             << ", values: " << workload.initial.size()
+            << ", initialization: "
+            << (options.pose2FastSync &&
+                        workload.spec.kind == WorkloadKind::Pose2
+                    ? "fast_sync"
+                    : "raw")
+            << " (" << workload.initializationWall << " s)"
             << ", initial error: " << std::setprecision(15)
             << workload.initialError << std::setprecision(9) << "\n";
 
@@ -859,6 +885,7 @@ WorkloadResult BenchmarkWorkload(const LoadedWorkload& workload,
   result.path = workload.path;
   result.factors = workload.graph.size();
   result.values = workload.initial.size();
+  result.initializationWall = workload.initializationWall;
   result.initialError = workload.initialError;
   result.cpuRuns.reserve(options.repeats);
   result.gpuRuns.reserve(options.repeats);
@@ -1050,6 +1077,7 @@ void WriteWorkloadJson(std::ostream& output, const WorkloadResult& result) {
   output << "{\"name\":\"" << JsonEscape(result.name) << "\",\"path\":\""
          << JsonEscape(result.path) << "\",\"factors\":" << result.factors
          << ",\"values\":" << result.values
+         << ",\"initialization_seconds\":" << result.initializationWall
          << ",\"initial_error\":" << result.initialError
          << ",\"reference_objective\":" << result.referenceObjective
          << ",\"maximum_objective_difference\":"
@@ -1102,6 +1130,13 @@ std::string MakeJson(const RunOptions& options,
          << ",\"pcg_max_iterations\":" << options.pcgMaxIterations
          << ",\"pcg_preconditioner\":\"" << options.pcgPreconditioner << "\""
          << ",\"pcg_warm_start\":" << (options.pcgWarmStart ? "true" : "false")
+         << ",\"pose2_fast_sync\":"
+         << (options.pose2FastSync ? "true" : "false")
+#ifdef GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR
+         << ",\"correct_between_factor_jacobians\":true"
+#else
+         << ",\"correct_between_factor_jacobians\":false"
+#endif
          << ",\"objective_relative_tolerance\":" << kObjectiveTolerance
          << ",\"gpu_objective_relative_tolerance\":"
          << options.objectiveTolerance
