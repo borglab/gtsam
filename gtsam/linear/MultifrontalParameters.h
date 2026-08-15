@@ -37,6 +37,8 @@ namespace gtsam {
 struct MultifrontalParameters {
   enum class QRMode { Off, Allow, Force };
   enum class LeafMode { Bounded, SameSeparator };
+  /// Algebraic leaf-merge dimension cap (0 disables).
+  size_t leafMergeDimCap = 256;
   /// Total problem-size cap for sibling leaves processed by one task.
   size_t leafAggregationProblemSize = 2048;
   LeafMode leafMode = LeafMode::Bounded;

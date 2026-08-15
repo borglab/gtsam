@@ -113,6 +113,8 @@ void NonlinearOptimizerParams::print(const std::string& str) const {
 
   if (linearSolverType == MULTIFRONTAL_SOLVER) {
     const auto& p = multifrontalParams;
+    std::cout << "  multifrontal.leafMergeDimCap: " << p.leafMergeDimCap
+              << "\n";
     std::cout << "  multifrontal.leafAggregationProblemSize: "
               << p.leafAggregationProblemSize << "\n";
     const char* leafMode = "bounded";
@@ -173,7 +175,8 @@ bool NonlinearOptimizerParams::equals(const NonlinearOptimizerParams& other,
   auto multifrontalEqual = [&]() {
     const auto& a = multifrontalParams;
     const auto& b = other.multifrontalParams;
-    return a.leafAggregationProblemSize == b.leafAggregationProblemSize &&
+    return a.leafMergeDimCap == b.leafMergeDimCap &&
+           a.leafAggregationProblemSize == b.leafAggregationProblemSize &&
            a.leafMode == b.leafMode &&
            a.mergeDimCap == b.mergeDimCap &&
            a.qrMode == b.qrMode && a.qrAspectRatio == b.qrAspectRatio &&

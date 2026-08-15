@@ -29,6 +29,7 @@
 #include <gtsam/nonlinear/Marginals.h>
 #include <tests/smallExample.h>
 
+#include <algorithm>
 #include <cmath>
 #include <functional>
 #include <limits>
@@ -118,6 +119,7 @@ const Ordering chainOrdering{x2, x1, x3, x4};
 
 MultifrontalSolver::Parameters noMergeParams() {
   MultifrontalSolver::Parameters params;
+  params.leafMergeDimCap = 0;
   params.mergeDimCap = 0;
   params.leafAggregationProblemSize = 0;
   return params;
@@ -215,6 +217,143 @@ TEST(MultifrontalSolver, PartialEliminationLeafAggregation) {
 }
 
 }  // namespace partial_elimination_fixture
+/* ************************************************************************* */
+
+namespace algebraic_leaf_merge_fixture {
+
+struct Problem {
+  GaussianFactorGraph graph;
+  Ordering pointOrdering;
+  Ordering cameraOrdering;
+  Ordering fullOrdering;
+};
+
+Problem createProblem(size_t pointCount, bool differentLastSeparator = false,
+                      double rhsScale = 1.0) {
+  Problem problem;
+  const KeyVector cameras{X(10), X(11), X(12)};
+  problem.cameraOrdering = Ordering(cameras.begin(), cameras.end());
+  const auto unit = noiseModel::Unit::Create(1);
+  for (size_t index = 0; index < pointCount; ++index) {
+    const Key point = L(10 + index);
+    const Key secondCamera = differentLastSeparator && index + 1 == pointCount
+                                 ? cameras[2]
+                                 : cameras[1];
+    problem.pointOrdering.push_back(point);
+    problem.graph.emplace_shared<JacobianFactor>(
+        point, I_1x1, cameras[0], I_1x1,
+        Vector1(rhsScale * (1.0 + static_cast<double>(index))), unit);
+    problem.graph.emplace_shared<JacobianFactor>(
+        point, I_1x1, secondCamera, -I_1x1,
+        Vector1(rhsScale * (2.0 + static_cast<double>(index))), unit);
+  }
+  for (const Key camera : cameras) {
+    problem.graph.emplace_shared<JacobianFactor>(camera, I_1x1, Vector1::Zero(),
+                                                 unit);
+  }
+  for (size_t first = 0; first < cameras.size(); ++first) {
+    for (size_t second = first + 1; second < cameras.size(); ++second) {
+      problem.graph.emplace_shared<JacobianFactor>(cameras[first], I_1x1,
+                                                   cameras[second], -I_1x1,
+                                                   Vector1::Zero(), unit);
+    }
+  }
+  problem.fullOrdering = problem.pointOrdering;
+  problem.fullOrdering.insert(problem.fullOrdering.end(), cameras.begin(),
+                              cameras.end());
+  return problem;
+}
+
+std::vector<KeyVector> leafFrontals(MultifrontalSolver* solver) {
+  std::vector<KeyVector> result;
+  solver->runTopDown([&result](MultifrontalClique& clique) {
+    if (!clique.children.empty()) return;
+    const auto frontalEnd = clique.orderedKeys().begin() + clique.numFrontals();
+    result.emplace_back(clique.orderedKeys().begin(), frontalEnd);
+  });
+  return result;
+}
+
+bool containsFrontals(const std::vector<KeyVector>& leaves,
+                      const KeyVector& expected) {
+  return std::find(leaves.begin(), leaves.end(), expected) != leaves.end();
+}
+
+// Compatible multi-factor leaves merge algebraically, while disabling the
+// dedicated cap leaves task aggregation free to operate on the original tree.
+TEST(MultifrontalSolver, AlgebraicLeafMergeAndTaskAggregationIndependent) {
+  const Problem problem = createProblem(2);
+  auto separate = noMergeParams();
+  MultifrontalSolver separateSolver(problem.graph, problem.fullOrdering,
+                                    separate);
+
+  auto tasksOnly = separate;
+  tasksOnly.leafAggregationProblemSize = 2048;
+  MultifrontalSolver taskSolver(problem.graph, problem.fullOrdering, tasksOnly);
+  EXPECT_LONGS_EQUAL(separateSolver.cliqueCount(), taskSolver.cliqueCount());
+
+  auto algebraic = separate;
+  algebraic.leafMergeDimCap = 256;
+  MultifrontalSolver mergedSolver(problem.graph, problem.fullOrdering,
+                                  algebraic);
+  EXPECT_LONGS_EQUAL(separateSolver.cliqueCount() - 1,
+                     mergedSolver.cliqueCount());
+  EXPECT(
+      containsFrontals(leafFrontals(&mergedSolver), KeyVector{L(10), L(11)}));
+}
+
+// The historical dimension cap splits same-separator leaves in stable order,
+// and leaves with a different separator stay outside the merged batch.
+TEST(MultifrontalSolver, AlgebraicLeafMergeCapAndSeparator) {
+  const Problem sameSeparator = createProblem(3);
+  auto capped = noMergeParams();
+  capped.leafMergeDimCap = 6;
+  MultifrontalSolver cappedSolver(sameSeparator.graph,
+                                  sameSeparator.fullOrdering, capped);
+  const std::vector<KeyVector> cappedLeaves = leafFrontals(&cappedSolver);
+  EXPECT(containsFrontals(cappedLeaves, KeyVector{L(10), L(11)}));
+  EXPECT(containsFrontals(cappedLeaves, KeyVector{L(12)}));
+
+  const Problem differentSeparator = createProblem(3, true);
+  capped.leafMergeDimCap = 256;
+  MultifrontalSolver separatedSolver(differentSeparator.graph,
+                                     differentSeparator.fullOrdering, capped);
+  const std::vector<KeyVector> separatedLeaves = leafFrontals(&separatedSolver);
+  EXPECT(containsFrontals(separatedLeaves, KeyVector{L(10), L(11)}));
+  EXPECT(containsFrontals(separatedLeaves, KeyVector{L(12)}));
+}
+
+// Merged ordinary leaves agree with generic full and partial elimination and
+// remain correct when compatible numerical values are loaded again.
+TEST(MultifrontalSolver, AlgebraicLeafMergeNumericsAndReload) {
+  const Problem problem = createProblem(3);
+  auto params = noMergeParams();
+  params.leafMergeDimCap = 256;
+  params.qrMode = MultifrontalParameters::QRMode::Off;
+
+  MultifrontalSolver fullSolver(problem.graph, problem.fullOrdering, params);
+  const VectorValues expected = problem.graph.optimize(problem.fullOrdering);
+  fullSolver.eliminateInPlace(problem.graph);
+  EXPECT(assert_equal(expected, fullSolver.updateSolution(), 1e-9));
+
+  const Problem changed = createProblem(3, false, 2.0);
+  const VectorValues changedExpected =
+      changed.graph.optimize(changed.fullOrdering);
+  fullSolver.eliminateInPlace(changed.graph);
+  EXPECT(assert_equal(changedExpected, fullSolver.updateSolution(), 1e-9));
+
+  MultifrontalSolver partialSolver(problem.graph, problem.fullOrdering,
+                                   problem.pointOrdering.size(), params);
+  partialSolver.eliminatePartialInPlace(problem.graph);
+  const Matrix actual = partialSolver.remainingFactorGraph().augmentedHessian(
+      problem.cameraOrdering);
+  const Matrix partialExpected =
+      problem.graph.eliminatePartialMultifrontal(problem.pointOrdering)
+          .second->augmentedHessian(problem.cameraOrdering);
+  EXPECT(assert_equal(partialExpected, actual, 1e-9));
+}
+
+}  // namespace algebraic_leaf_merge_fixture
 /* ************************************************************************* */
 
 namespace compact_leaf_fixture {
@@ -616,6 +755,33 @@ TEST(MultifrontalSolver, FusedStarSameSeparatorAggregation) {
       expected,
       solver.remainingFactorGraph().augmentedHessian(problem.cameraOrdering),
       1e-9));
+}
+
+// The default algebraic merge cap leaves single-factor siblings separate so
+// automatic QR can still resolve each direct batch leaf to fused Cholesky.
+TEST(MultifrontalSolver, AlgebraicMergePreservesSingleBatchLeaves) {
+  using namespace compact_leaf_fixture;
+  const Problem problem = createSameSeparatorProblem();
+  auto params = noMergeParams();
+  params.leafMergeDimCap = 256;
+  MultifrontalSolver solver(problem.graph, problem.fullOrdering, params);
+  solver.load(problem.graph);
+
+  size_t fusedPointLeaves = 0;
+  solver.runTopDown([&](MultifrontalClique& clique) {
+    if (clique.children.empty() && clique.separatorDim > 0) {
+      ++fusedPointLeaves;
+      EXPECT_LONGS_EQUAL(1, clique.numFrontals());
+      EXPECT(clique.useCompactCholesky());
+      EXPECT_LONGS_EQUAL(0, clique.Ab().rows());
+    }
+  });
+  EXPECT_LONGS_EQUAL(2, fusedPointLeaves);
+
+  solver.eliminateInPlace();
+  const VectorValues expected =
+      problem.graph.eliminateMultifrontal(problem.fullOrdering)->optimize();
+  EXPECT(assert_equal(expected, solver.updateSolution(), 1e-9));
 }
 
 /* ************************************************************************* */
