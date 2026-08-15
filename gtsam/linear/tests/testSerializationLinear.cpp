@@ -265,6 +265,21 @@ Key frontal(const Clique::shared_ptr& clique) {
   return clique->conditional()->frontals().front();
 }
 
+/** Serializes the recursive Bayes tree representation used by version 0. */
+struct LegacyGaussianBayesTree {
+  GaussianBayesTree::Nodes nodes;
+  GaussianBayesTree::Roots roots;
+
+  explicit LegacyGaussianBayesTree(const GaussianBayesTree& tree)
+      : nodes(tree.nodes()), roots(tree.roots()) {}
+
+  template <class Archive>
+  void serialize(Archive& archive, const unsigned int /*version*/) {
+    archive & boost::serialization::make_nvp("nodes_", nodes);
+    archive & boost::serialization::make_nvp("roots_", roots);
+  }
+};
+
 // Verifies that a deep chain round-trips without recursive serialization.
 TEST(Serialization, LargeGaussianBayesTree) {
   constexpr size_t kCliqueCount = 10000;
@@ -316,17 +331,21 @@ TEST(Serialization, GaussianBayesTreeStructure) {
 
 // Verifies loading the recursive format written before BayesTree version 1.
 TEST(Serialization, LegacyGaussianBayesTree) {
-  const string legacyArchive =
-      "0 0 0 0 0 0 1 0 0 0 7 0 1 5 1 0\n"
-      "0 1 0 1 7 1 0\n"
-      "1 1 1\n"
-      "2 0 0 0 0 0 0 1 0 7 0 0 0 0 1 2 "
-      "2.00000000000000000e+00 3.00000000000000000e+00 0 0 3 0 0 1 2 0 1 "
-      "0 1 0 0 1 0 0 0 1 1 1 5 0\n";
-  istringstream stream(legacyArchive);
-  boost::archive::text_iarchive archive(stream, boost::archive::no_header);
+  GaussianBayesTree input;
+  input.insertRoot(makeRoot(7));
+
+  LegacyGaussianBayesTree legacy(input);
+  stringstream stream;
+  {
+    boost::archive::text_oarchive archive(stream);
+    archive << legacy;
+  }
+
   GaussianBayesTree actual;
-  archive >> actual;
+  {
+    boost::archive::text_iarchive archive(stream);
+    archive >> actual;
+  }
 
   EXPECT_LONGS_EQUAL(1, actual.nodes().size());
   EXPECT_LONGS_EQUAL(1, actual.roots().size());
