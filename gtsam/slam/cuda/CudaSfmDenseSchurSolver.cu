@@ -1,15 +1,13 @@
 #include <gtsam/base/cuda/CudaErrors.h>
+#include <gtsam/linear/cuda/CudaDenseCholeskySolver.h>
 #include <gtsam/nonlinear/cuda/DeviceGeometryKernels.h>
 #include <gtsam/slam/cuda/CudaSfmDenseSchurSolver.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionLinearization.h>
 
 #include <algorithm>
 #include <cmath>
-#include <cusolverDn.h>
 #include <limits>
-#include <sstream>
 #include <stdexcept>
-#include <vector>
 
 namespace gtsam::cuda {
 namespace {
@@ -17,101 +15,8 @@ namespace {
 constexpr int kDenseSchurBlockSize = 128;
 constexpr int kLongTrackSchurBlockSize = 256;
 
-const char* CusolverStatusName(cusolverStatus_t status) {
-  switch (status) {
-    case CUSOLVER_STATUS_SUCCESS:
-      return "CUSOLVER_STATUS_SUCCESS";
-    case CUSOLVER_STATUS_NOT_INITIALIZED:
-      return "CUSOLVER_STATUS_NOT_INITIALIZED";
-    case CUSOLVER_STATUS_ALLOC_FAILED:
-      return "CUSOLVER_STATUS_ALLOC_FAILED";
-    case CUSOLVER_STATUS_INVALID_VALUE:
-      return "CUSOLVER_STATUS_INVALID_VALUE";
-    case CUSOLVER_STATUS_ARCH_MISMATCH:
-      return "CUSOLVER_STATUS_ARCH_MISMATCH";
-    case CUSOLVER_STATUS_MAPPING_ERROR:
-      return "CUSOLVER_STATUS_MAPPING_ERROR";
-    case CUSOLVER_STATUS_EXECUTION_FAILED:
-      return "CUSOLVER_STATUS_EXECUTION_FAILED";
-    case CUSOLVER_STATUS_INTERNAL_ERROR:
-      return "CUSOLVER_STATUS_INTERNAL_ERROR";
-    case CUSOLVER_STATUS_MATRIX_TYPE_NOT_SUPPORTED:
-      return "CUSOLVER_STATUS_MATRIX_TYPE_NOT_SUPPORTED";
-    case CUSOLVER_STATUS_NOT_SUPPORTED:
-      return "CUSOLVER_STATUS_NOT_SUPPORTED";
-    case CUSOLVER_STATUS_ZERO_PIVOT:
-      return "CUSOLVER_STATUS_ZERO_PIVOT";
-    case CUSOLVER_STATUS_INVALID_LICENSE:
-      return "CUSOLVER_STATUS_INVALID_LICENSE";
-    case CUSOLVER_STATUS_IRS_PARAMS_NOT_INITIALIZED:
-      return "CUSOLVER_STATUS_IRS_PARAMS_NOT_INITIALIZED";
-    case CUSOLVER_STATUS_IRS_PARAMS_INVALID:
-      return "CUSOLVER_STATUS_IRS_PARAMS_INVALID";
-    case CUSOLVER_STATUS_IRS_PARAMS_INVALID_PREC:
-      return "CUSOLVER_STATUS_IRS_PARAMS_INVALID_PREC";
-    case CUSOLVER_STATUS_IRS_PARAMS_INVALID_REFINE:
-      return "CUSOLVER_STATUS_IRS_PARAMS_INVALID_REFINE";
-    case CUSOLVER_STATUS_IRS_PARAMS_INVALID_MAXITER:
-      return "CUSOLVER_STATUS_IRS_PARAMS_INVALID_MAXITER";
-    case CUSOLVER_STATUS_IRS_INTERNAL_ERROR:
-      return "CUSOLVER_STATUS_IRS_INTERNAL_ERROR";
-    case CUSOLVER_STATUS_IRS_NOT_SUPPORTED:
-      return "CUSOLVER_STATUS_IRS_NOT_SUPPORTED";
-    case CUSOLVER_STATUS_IRS_OUT_OF_RANGE:
-      return "CUSOLVER_STATUS_IRS_OUT_OF_RANGE";
-    case CUSOLVER_STATUS_IRS_NRHS_NOT_SUPPORTED_FOR_REFINE_GMRES:
-      return "CUSOLVER_STATUS_IRS_NRHS_NOT_SUPPORTED_FOR_REFINE_GMRES";
-    case CUSOLVER_STATUS_IRS_INFOS_NOT_INITIALIZED:
-      return "CUSOLVER_STATUS_IRS_INFOS_NOT_INITIALIZED";
-    case CUSOLVER_STATUS_IRS_INFOS_NOT_DESTROYED:
-      return "CUSOLVER_STATUS_IRS_INFOS_NOT_DESTROYED";
-    case CUSOLVER_STATUS_IRS_MATRIX_SINGULAR:
-      return "CUSOLVER_STATUS_IRS_MATRIX_SINGULAR";
-    case CUSOLVER_STATUS_INVALID_WORKSPACE:
-      return "CUSOLVER_STATUS_INVALID_WORKSPACE";
-  }
-  return "CUSOLVER_STATUS_UNKNOWN";
-}
-
-void CheckCusolver(cusolverStatus_t status, const char* expression) {
-  if (status == CUSOLVER_STATUS_SUCCESS) return;
-  std::ostringstream os;
-  os << "cuSOLVER call failed: " << expression << " returned "
-     << CusolverStatusName(status) << " (" << static_cast<int>(status) << ")";
-  throw std::runtime_error(os.str());
-}
-
-#define GTSAM_CUSOLVER_CHECK(expr) CheckCusolver((expr), #expr)
-
-struct CusolverDnHandle {
-  cusolverDnHandle_t value = nullptr;
-
-  CusolverDnHandle() { GTSAM_CUSOLVER_CHECK(cusolverDnCreate(&value)); }
-
-  CusolverDnHandle(const CusolverDnHandle&) = delete;
-  CusolverDnHandle& operator=(const CusolverDnHandle&) = delete;
-
-  ~CusolverDnHandle() {
-    if (value) {
-      cusolverDnDestroy(value);
-    }
-  }
-};
-
 __device__ int DenseColumnMajorIndex(int row, int col, int dimension) {
   return col * dimension + row;
-}
-
-void CheckDeviceInfo(const CudaDeviceArray<int>& info, cudaStream_t stream,
-                     const char* operation) {
-  std::vector<int> hostInfo;
-  info.download(&hostInfo, stream);
-  GTSAM_CUDA_CHECK(cudaStreamSynchronize(stream));
-  if (!hostInfo.empty() && hostInfo[0] != 0) {
-    std::ostringstream os;
-    os << operation << " failed with device info " << hostInfo[0];
-    throw std::runtime_error(os.str());
-  }
 }
 
 __device__ void AddCameraNormalBlock(const double* residuals,
@@ -507,33 +412,6 @@ __global__ void RecoverPointDeltaKernel(
   }
 }
 
-void SolveDenseCameraSystemOnDevice(CusolverDnHandle* handle,
-                                    CudaDeviceArray<double>* workspace,
-                                    CudaDeviceArray<int>* info,
-                                    CudaDeviceArray<double>* denseCameraSystem,
-                                    CudaDeviceArray<double>* cameraRhs,
-                                    int cameraDim, cudaStream_t stream) {
-  GTSAM_CUSOLVER_CHECK(cusolverDnSetStream(handle->value, stream));
-  int workspaceSize = 0;
-  GTSAM_CUSOLVER_CHECK(cusolverDnDpotrf_bufferSize(
-      handle->value, CUBLAS_FILL_MODE_LOWER, cameraDim,
-      denseCameraSystem->data(), cameraDim, &workspaceSize));
-  workspace->resize(static_cast<size_t>(workspaceSize));
-  info->resize(1);
-
-  GTSAM_CUSOLVER_CHECK(cusolverDnDpotrf(
-      handle->value, CUBLAS_FILL_MODE_LOWER, cameraDim,
-      denseCameraSystem->data(), cameraDim, workspace->data(), workspaceSize,
-      info->data()));
-  CheckDeviceInfo(*info, stream, "cusolverDnDpotrf");
-
-  GTSAM_CUSOLVER_CHECK(cusolverDnDpotrs(
-      handle->value, CUBLAS_FILL_MODE_LOWER, cameraDim, 1,
-      denseCameraSystem->data(), cameraDim, cameraRhs->data(), cameraDim,
-      info->data()));
-  CheckDeviceInfo(*info, stream, "cusolverDnDpotrs");
-}
-
 void CheckSchurInputs(const DeviceValues& values,
                       const CudaSfmProjectionBatch& batch, int numCameras,
                       double lambda,
@@ -575,12 +453,10 @@ void CheckSchurInputs(const DeviceValues& values,
 }  // namespace
 
 struct CudaSfmDenseSchurSolver::Impl {
-  CusolverDnHandle cusolver;
+  CudaDenseCholeskySolver denseSolver;
   CudaDeviceArray<double> denseCameraSystem;
   CudaDeviceArray<double> cameraRhs;
   CudaSfmProjectionLinearization linearization;
-  CudaDeviceArray<double> workspace;
-  CudaDeviceArray<int> info;
   CudaDeviceArray<int> singularPointBlocks;
 
   void solve(const DeviceValues& values, const CudaSfmProjectionBatch& batch,
@@ -658,9 +534,9 @@ struct CudaSfmDenseSchurSolver::Impl {
         denseCameraSystem.data());
     GTSAM_CUDA_CHECK(cudaGetLastError());
 
-    SolveDenseCameraSystemOnDevice(&cusolver, &workspace, &info,
-                                   &denseCameraSystem, &cameraRhs, cameraDim,
-                                   stream);
+    denseSolver.solveInPlace(
+        {cameraDim, cameraDim, denseCameraSystem.data(), cameraRhs.data()},
+        stream);
     delta->zero(stream);
     GTSAM_CUDA_CHECK(cudaMemcpyAsync(delta->data(), cameraRhs.data(),
                                      sizeof(double) * cameraRhs.size(),

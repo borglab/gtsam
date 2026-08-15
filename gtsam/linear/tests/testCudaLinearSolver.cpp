@@ -2,6 +2,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/cuda/CudaBlockOrdering.h>
+#include <gtsam/linear/cuda/CudaDenseCholeskySolver.h>
 #include <gtsam/linear/cuda/CudaLinearSolver.h>
 #include <gtsam/linear/cuda/DeviceSparseSpdSystem.h>
 
@@ -38,6 +39,24 @@ TEST(DeviceSparseSpdSystem, RejectsMissingDiagonalOnCapture) {
   system.uploadPattern(2, {0, 1, 2}, {1, 1});
   system.values().upload({1.0, 2.0});
   CHECK_EXCEPTION(system.captureUndampedDiagonal(), std::runtime_error);
+}
+
+TEST(CudaDenseCholeskySolver, SolvesTwoByTwoSpdSystem) {
+  CudaDeviceArray<double> matrix;
+  CudaDeviceArray<double> rhs;
+  CudaDeviceArray<double> solution;
+  matrix.upload({4.0, 1.0, 1.0, 3.0});
+  rhs.upload({1.0, 2.0});
+
+  CudaDenseCholeskySolver solver;
+  solver.solve({2, 2, matrix.data(), rhs.data()}, &solution);
+
+  std::vector<double> actual;
+  solution.download(&actual);
+  GTSAM_CUDA_CHECK(cudaDeviceSynchronize());
+  LONGS_EQUAL(2, actual.size());
+  DOUBLES_EQUAL(1.0 / 11.0, actual[0], 1e-12);
+  DOUBLES_EQUAL(7.0 / 11.0, actual[1], 1e-12);
 }
 
 TEST(CudaBlockOrdering, ExpandsKeysToScalars) {
