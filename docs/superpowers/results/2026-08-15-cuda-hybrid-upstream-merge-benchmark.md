@@ -100,23 +100,41 @@ more accurate than the current PCG configuration. PCG needs further
 preconditioning/convergence work before it should be the default for this
 new trajectory.
 
-## Frank's 42-to-17 result is reproduced
+## Two-by-two initialization/Jacobian isolation
 
-The hybrid benchmark currently uses raw Pose2 values. Frank's result used
-FastSync initialization, reducing the initial objective from 24,720,120 to
-23,454. On this same merged build, upstream's
-`timeBetweenFactorPoseGraph` benchmark produced:
+Upstream's CPU-only `timeBetweenFactorPoseGraph` benchmark was run with both
+raw and FastSync initialization. Within each initialization row it compares
+the real `BetweenFactor` against a legacy-factor implementation, so graph,
+starting `Values`, LM settings, and measured-run order are held constant.
 
-| Jacobian mode | CPU median | LM iterations | Inner LM attempts | Final objective |
-| --- | ---: | ---: | ---: | ---: |
-| Correct local Jacobians | 1.846 s | 10 | 17 | 144.910 |
-| Legacy approximation | 6.178 s | 23 | 42 | 144.877 |
+| Initialization | Jacobians | Initial objective | LM median | Inner LM attempts | Final objective |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Raw | Legacy approximation | 24,720,120 | 3.750 s | 28 | 4,642,335 |
+| Raw | Correct local | 24,720,120 | 1.161 s | 9 | 144.863 |
+| FastSync | Legacy approximation | 23,454 | 6.201 s | 42 | 144.877 |
+| FastSync | Correct local | 23,454 | 1.786 s | 17 | 144.910 |
 
-This confirms that the correct upstream commit was merged and enabled. It
-also explains why the raw hybrid benchmark does not show 42 -> 17: it is not
-using the same initialization regime. A follow-up hybrid benchmark should
-accept FastSync-initialized `Values` so the GPU timing can be measured on the
-same 17-attempt trajectory.
+The correct-Jacobian LM speedup is **3.23x from raw values** and **3.47x from
+FastSync values**. Frank's 42 -> 17 result is reproduced, but the raw 28 -> 9
+result shows that the Jacobian improvement does not depend on FastSync. The
+raw legacy run also terminates at a catastrophically worse objective, while
+the correct run reaches the same approximately 145 objective as the
+FastSync-initialized runs.
+
+FastSync itself took 0.648 seconds. Including that cost, its correct-Jacobian
+pipeline took 2.434 seconds, versus 1.161 seconds for correct-Jacobian LM from
+the raw dataset values. Thus FastSync was 2.10x slower end-to-end on this
+particular graph and configuration despite reducing the initial objective by
+roughly three orders of magnitude. Initial objective magnitude alone does not
+predict LM trajectory length.
+
+This isolation benchmark uses upstream's default LM parameters and tight
+anchor prior. `timeCudaSparseLM` uses Ceres-style LM defaults and a unit prior,
+which is why its raw correct-Jacobian Pose2 trajectory takes 32 accepted steps
+rather than nine. The CPU 2x2 result establishes the Jacobian effect, but its
+absolute iteration counts must not be transplanted directly to the hybrid
+GPU harness. A follow-up GPU 2x2 should control those parameters and the prior
+as well as initialization.
 
 ## Integration validation
 
