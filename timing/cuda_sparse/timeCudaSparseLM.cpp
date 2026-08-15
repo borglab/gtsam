@@ -3,6 +3,7 @@
 #include <cuda_runtime_api.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/cuda/CudaSparseLevenbergMarquardt.h>
 #include <gtsam/slam/BetweenFactor.h>
@@ -105,6 +106,7 @@ struct RunOptions {
   std::string pcgPreconditioner = "block-jacobi";
   bool pcgWarmStart = true;
   bool pose2FastSync = false;
+  bool pose2UpstreamSettings = false;
   // Relative CPU/GPU final-objective tolerance. The strict default assumes a
   // direct solver; inexact PCG takes a different LM trajectory and needs an
   // explicit, recorded loosening.
@@ -136,6 +138,7 @@ struct LoadedWorkload {
   NonlinearFactorGraph graph;
   Values initial;
   std::optional<Ordering> cpuOrdering;
+  bool pose2UpstreamSettings = false;
   double initializationWall = 0.0;
   double initialError = 0.0;
 };
@@ -216,7 +219,7 @@ std::string Usage() {
       "  [--json FILE] [--csv FILE]\n"
       "  [--gpu-solver cudss|pcg] [--pcg-tol X] [--pcg-max-iters N]\n"
       "  [--pcg-preconditioner block-jacobi|jacobi|none] [--pcg-no-warm-start]\n"
-      "  [--pose2-fast-sync]\n"
+      "  [--pose2-fast-sync] [--pose2-upstream-settings]\n"
       "  [--objective-tol X] [--self-test] [--help]";
 }
 
@@ -335,6 +338,8 @@ RunOptions ParseOptions(int argc, char** argv) {
       options.pcgWarmStart = false;
     } else if (argument == "--pose2-fast-sync") {
       options.pose2FastSync = true;
+    } else if (argument == "--pose2-upstream-settings") {
+      options.pose2UpstreamSettings = true;
     } else if (argument == "--objective-tol") {
       const std::string value = requireValue(&index, "--objective-tol");
       size_t parsedCharacters = 0;
@@ -537,7 +542,8 @@ int RunSelfTest() {
                    const_cast<char**>(arguments));
   if (options.warmups != 1 || options.repeats != 5 ||
       options.datasets.size() != 4 || options.jsonPath != "results.json" ||
-      options.csvPath != "results.csv" || options.pose2FastSync) {
+      options.csvPath != "results.csv" || options.pose2FastSync ||
+      options.pose2UpstreamSettings) {
     throw std::runtime_error("option parsing self-test failed");
   }
   const char* fastSyncArguments[] = {"timeCudaSparseLM",
@@ -546,6 +552,14 @@ int RunSelfTest() {
       ParseOptions(2, const_cast<char**>(fastSyncArguments));
   if (!fastSyncOptions.pose2FastSync) {
     throw std::runtime_error("Pose2 FastSync option parsing self-test failed");
+  }
+  const char* upstreamArguments[] = {"timeCudaSparseLM",
+                                     "--pose2-upstream-settings"};
+  const RunOptions upstreamOptions =
+      ParseOptions(2, const_cast<char**>(upstreamArguments));
+  if (!upstreamOptions.pose2UpstreamSettings) {
+    throw std::runtime_error(
+        "Pose2 upstream-settings option parsing self-test failed");
   }
   if (!Throws([] {
         const char* args[] = {"timeCudaSparseLM", "--repeats", "0"};
@@ -661,8 +675,16 @@ LoadedWorkload LoadWorkload(const WorkloadSpec& specification,
     }
     workload.graph = *graph;
     workload.initial = *initial;
+    workload.pose2UpstreamSettings = options.pose2UpstreamSettings;
+    gtsam::SharedNoiseModel priorModel;
+    if (options.pose2UpstreamSettings) {
+      priorModel = gtsam::noiseModel::Diagonal::Sigmas(
+          gtsam::Vector3(1e-6, 1e-6, 1e-8));
+    } else {
+      priorModel = gtsam::noiseModel::Unit::Create(3);
+    }
     workload.graph.emplace_shared<gtsam::PriorFactor<Pose2>>(
-        0, workload.initial.at<Pose2>(0), gtsam::noiseModel::Unit::Create(3));
+        0, workload.initial.at<Pose2>(0), priorModel);
     if (options.pose2FastSync) {
       const auto start = Clock::now();
       workload.initial = gtsam::fastSync<Pose2>(workload.graph);
@@ -694,7 +716,11 @@ LoadedWorkload LoadWorkload(const WorkloadSpec& specification,
 CudaSparseLevenbergMarquardtParams MakeGpuParams(
     const LoadedWorkload& workload, const RunOptions& options) {
   CudaSparseLevenbergMarquardtParams params;
-  LevenbergMarquardtParams::SetCeresDefaults(&params);
+  if (workload.pose2UpstreamSettings) {
+    params.maxIterations = 100;
+  } else {
+    LevenbergMarquardtParams::SetCeresDefaults(&params);
+  }
   params.setVerbosityLM("SILENT");
   if (workload.spec.kind == WorkloadKind::Bal) {
     params.maxIterations = 20;
@@ -1132,6 +1158,8 @@ std::string MakeJson(const RunOptions& options,
          << ",\"pcg_warm_start\":" << (options.pcgWarmStart ? "true" : "false")
          << ",\"pose2_fast_sync\":"
          << (options.pose2FastSync ? "true" : "false")
+         << ",\"pose2_upstream_settings\":"
+         << (options.pose2UpstreamSettings ? "true" : "false")
 #ifdef GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR
          << ",\"correct_between_factor_jacobians\":true"
 #else
