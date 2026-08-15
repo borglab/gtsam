@@ -134,23 +134,4 @@ typedef gtsam::BearingRangeFactor<gtsam::Pose3, gtsam::Pose3, gtsam::Unit3,
                                   double>
     BearingRangeFactorPose3;
 
-#include <gtsam/sam/RISAMGraduationScheduler.h>
-class GraduationScheduler {
-  GraduationScheduler();
-  GraduationScheduler(
-      const gtsam::GraduationScheduler::MuUpdateStrategy& mu_update_strat,
-      double mu_init_increment = 0.2, double mu_init = 0.0);
-
-  double muInit() const;
-  double updateMu(const double& mu, const double& residual,
-                  const size_t& update_count) const;
-  double updateMuInit(const double& mu_init, const bool is_inlier) const;
-  bool isMuConverged(const double& mu) const;
-
-  static double muUpdateMcGann2023(const double& mu, const double& residual,
-                                   const size_t& update_count);
-  static double muUpdateStable(const double& mu, const double& residual,
-                               const size_t& update_count);
-};
-
 }  // namespace gtsam
