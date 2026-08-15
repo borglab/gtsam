@@ -1,11 +1,17 @@
 #pragma once
 
 #include <gtsam/dllexport.h>
+#include <gtsam/base/cuda/CudaDeviceArray.h>
 #include <gtsam/linear/cuda/CudaLinearSystem.h>
+#include <gtsam/linear/cuda/DeviceSparseSpdSystem.h>
 
 #include <cstddef>
+#include <memory>
+#include <vector>
 
 namespace gtsam::cuda {
+
+struct CudaPcgOptions;
 
 enum class CudaLinearSolverType { DenseCholesky, Cudss, Pcg };
 
@@ -31,10 +37,47 @@ struct CudaLinearSolveStats {
 
 class GTSAM_EXPORT CudaLinearSolverSession {
  public:
+  explicit CudaLinearSolverSession(const CudaLinearSolverOptions& options);
+  ~CudaLinearSolverSession();
+
+  CudaLinearSolverSession(const CudaLinearSolverSession&) = delete;
+  CudaLinearSolverSession& operator=(const CudaLinearSolverSession&) = delete;
+  CudaLinearSolverSession(CudaLinearSolverSession&&) noexcept;
+  CudaLinearSolverSession& operator=(CudaLinearSolverSession&&) noexcept;
+
   static bool Supports(CudaLinearSolverType backend,
                        CudaLinearSystemKind systemKind);
   static void Validate(const CudaLinearSolverOptions& options,
                        CudaLinearSystemKind systemKind);
+
+  void analyze(int denseDimension, cudaStream_t stream = nullptr);
+  void analyze(const DeviceSparseSpdSystem& system,
+               CudaDeviceArray<double>* solution,
+               cudaStream_t stream = nullptr);
+  void analyze(const DeviceSparseSpdSystem& system,
+               CudaDeviceArray<double>* solution,
+               const std::vector<int>& scalarPermutation,
+               cudaStream_t stream = nullptr);
+  void analyze(int operatorDimension, const CudaPcgOptions& pcgOptions,
+               cudaStream_t stream = nullptr,
+               bool collectProfile = false);
+
+  void solve(CudaDenseSpdSystemView system,
+             CudaDeviceArray<double>* solution,
+             cudaStream_t stream = nullptr);
+  void solve(const DeviceSparseSpdSystem& system,
+             CudaDeviceArray<double>* solution,
+             cudaStream_t stream = nullptr);
+  void solve(const CudaLinearOperator& linearOperator,
+             const CudaPreconditioner& preconditioner, const double* rhs,
+             CudaDeviceArray<double>* solution,
+             cudaStream_t stream = nullptr);
+
+  const CudaLinearSolveStats& stats() const;
+
+ private:
+  struct Impl;
+  std::unique_ptr<Impl> impl_;
 };
 
 }  // namespace gtsam::cuda

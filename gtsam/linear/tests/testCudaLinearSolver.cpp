@@ -243,6 +243,46 @@ TEST(CudaLinearSolver, RejectsRepresentationMismatch) {
                   std::invalid_argument);
 }
 
+TEST(CudaLinearSolverSession, DispatchesDensePreparedSystem) {
+  CudaLinearSolverOptions options;
+  options.backend = CudaLinearSolverType::DenseCholesky;
+  CudaLinearSolverSession session(options);
+  session.analyze(2);
+
+  CudaDeviceArray<double> matrix;
+  CudaDeviceArray<double> rhs;
+  CudaDeviceArray<double> solution;
+  matrix.upload({4.0, 1.0, 1.0, 3.0});
+  rhs.upload({1.0, 2.0});
+  session.solve(CudaDenseSpdSystemView{2, 2, matrix.data(), rhs.data()},
+                &solution);
+
+  std::vector<double> actual;
+  solution.download(&actual);
+  GTSAM_CUDA_CHECK(cudaDeviceSynchronize());
+  DOUBLES_EQUAL(1.0 / 11.0, actual[0], 1e-12);
+  LONGS_EQUAL(1, session.stats().analysisCount);
+  LONGS_EQUAL(1, session.stats().solveCount);
+}
+
+TEST(CudaLinearSolverSession, DispatchesOrderedSparsePreparedSystem) {
+  DeviceSparseSpdSystem system;
+  system.uploadPattern(2, {0, 2, 3}, {0, 1, 1});
+  system.values().upload({2.0, 0.5, 2.0});
+  system.rhs().upload({1.0, 1.0});
+  CudaDeviceArray<double> solution;
+  CudaLinearSolverOptions options;
+  options.backend = CudaLinearSolverType::Cudss;
+  options.useUserOrdering = true;
+  CudaLinearSolverSession session(options);
+  session.analyze(system, &solution, std::vector<int>{1, 0});
+  session.solve(system, &solution);
+  EXPECT(session.stats().userOrderingApplied);
+  LONGS_EQUAL(1, session.stats().analysisCount);
+  LONGS_EQUAL(1, session.stats().factorizationCount);
+  LONGS_EQUAL(1, session.stats().solveCount);
+}
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
