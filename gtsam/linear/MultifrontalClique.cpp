@@ -236,19 +236,13 @@ void MultifrontalClique::finalize(std::vector<ChildInfo> children,
   solveMode_ = useQR ? SolveMode::QrLeaf
                      : (fusedStarCandidate ? SolveMode::FusedStarCandidate
                                            : starFallbackMode_);
+  deferredSingleFactorAutoQr_ =
+      params.qrMode == MultifrontalParameters::QRMode::Allow && useQR &&
+      eliminatesWholeClique && isLeaf && !parent.expired() &&
+      numFrontals() == 1 && factorIndices_.size() == 1;
   RSdReady_ = false;
 
-  if (useQR) {
-    const DenseIndex totalRows = static_cast<DenseIndex>(factorRows_) +
-                                 static_cast<DenseIndex>(frontalDim);
-    RSd_ = VerticalBlockMatrix(blockDims_, totalRows, true);
-  } else {
-    RSd_ = VerticalBlockMatrix(blockDims_, static_cast<DenseIndex>(frontalDim),
-                               true);
-    if (!useCompactCholesky && !fusedStarCandidate) {
-      info_ = SymmetricBlockMatrix(blockDims_, true);
-    }
-  }
+  if (!deferredSingleFactorAutoQr_) allocateSolveStorage();
 
   if (params.leafMode == MultifrontalParameters::LeafMode::SameSeparator &&
       params.leafAggregationProblemSize > 0) {
@@ -297,6 +291,21 @@ void MultifrontalClique::finalize(std::vector<ChildInfo> children,
           childInSameSeparatorGroup_[childIndex] = 1;
         }
       }
+    }
+  }
+}
+
+void MultifrontalClique::allocateSolveStorage() {
+  assert(RSd_.nBlocks() == 0 && info_.nBlocks() == 0);
+  if (useQR()) {
+    const DenseIndex totalRows = static_cast<DenseIndex>(factorRows_) +
+                                 static_cast<DenseIndex>(frontalDim);
+    RSd_ = VerticalBlockMatrix(blockDims_, totalRows, true);
+  } else {
+    RSd_ = VerticalBlockMatrix(blockDims_, static_cast<DenseIndex>(frontalDim),
+                               true);
+    if (solveMode_ == SolveMode::Cholesky) {
+      info_ = SymmetricBlockMatrix(blockDims_, true);
     }
   }
 }
@@ -543,16 +552,30 @@ size_t MultifrontalClique::addBatchJacobianFactor(
   return rows;
 }
 
-void MultifrontalClique::resolveFusedStarMode() {
-  if (solveMode_ != SolveMode::FusedStarCandidate) return;
-  const bool supported = kUseDirectBatchHessianUpdate &&
-                         hasDirectBatchFactors_ &&
-                         std::all_of(loadPlans_.begin(), loadPlans_.end(),
-                                     [](const FactorLoadPlan& plan) {
-                                       return plan.supportsFusedStarLeaf();
-                                     });
-  solveMode_ = supported ? SolveMode::FusedStarCholeskyLeaf : starFallbackMode_;
-  if (solveMode_ == SolveMode::Cholesky) {
+void MultifrontalClique::resolveLeafSolveMode() {
+  const bool needsDeferredStorage = deferredSingleFactorAutoQr_;
+  if (deferredSingleFactorAutoQr_) {
+    assert(solveMode_ == SolveMode::QrLeaf && loadPlans_.size() == 1);
+    deferredSingleFactorAutoQr_ = false;
+    if (loadPlans_.front().isDirectBatch()) {
+      solveMode_ = SolveMode::FusedStarCandidate;
+    }
+  }
+
+  if (solveMode_ == SolveMode::FusedStarCandidate) {
+    const bool supported =
+        kUseDirectBatchHessianUpdate && hasDirectBatchFactors_ &&
+        std::all_of(loadPlans_.begin(), loadPlans_.end(),
+                    [](const FactorLoadPlan& plan) {
+                      return plan.supportsFusedStarLeaf();
+                    });
+    solveMode_ =
+        supported ? SolveMode::FusedStarCholeskyLeaf : starFallbackMode_;
+  }
+
+  if (needsDeferredStorage) {
+    allocateSolveStorage();
+  } else if (solveMode_ == SolveMode::Cholesky && info_.nBlocks() == 0) {
     info_ = SymmetricBlockMatrix(blockDims_, true);
   }
 }
@@ -606,7 +629,7 @@ void MultifrontalClique::buildLoadPlans(const GaussianFactorGraph& graph) {
     loadPlans_.push_back(std::move(plan));
   }
 
-  resolveFusedStarMode();
+  resolveLeafSolveMode();
   buildFusedStarMappings();
   for (FactorLoadPlan& plan : loadPlans_) {
     const GaussianFactor::shared_ptr& factor = graph[plan.factorIndex];

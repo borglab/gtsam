@@ -322,6 +322,21 @@ Problem createSameSeparatorProblem() {
   return problem;
 }
 
+Problem createSingleJacobianProblem() {
+  Problem problem = createProblem();
+  problem.graph[0] = std::make_shared<JacobianFactor>(
+      L(0), I_1x1, X(0), I_1x1, X(1), -I_1x1, Vector1(0.25),
+      noiseModel::Unit::Create(1));
+  return problem;
+}
+
+Problem createIneligibleBatchProblem() {
+  Problem problem = createProblem();
+  problem.graph.emplace_shared<JacobianFactor>(
+      X(0), I_1x1, Vector1::Zero(), noiseModel::Constrained::All(1));
+  return problem;
+}
+
 MultifrontalSolver::Parameters compactParams() {
   auto params = noMergeParams();
   params.qrMode = MultifrontalParameters::QRMode::Off;
@@ -347,6 +362,14 @@ MultifrontalClique* compactClique(MultifrontalSolver* solver) {
   MultifrontalClique* result = nullptr;
   solver->runTopDown([&](MultifrontalClique& clique) {
     if (clique.useCompactCholesky()) result = &clique;
+  });
+  return result;
+}
+
+MultifrontalClique* pointLeaf(MultifrontalSolver* solver) {
+  MultifrontalClique* result = nullptr;
+  solver->runTopDown([&](MultifrontalClique& clique) {
+    if (clique.children.empty() && clique.separatorDim > 0) result = &clique;
   });
   return result;
 }
@@ -440,6 +463,100 @@ TEST(MultifrontalSolver, FusedStarBypassesCompactThreshold) {
       expected,
       solver.remainingFactorGraph().augmentedHessian(problem.cameraOrdering),
       1e-9));
+}
+
+// Automatic QR defers a sole direct batch observation to the fused star path
+// and preserves that choice and its row-free storage across repeated loads.
+TEST(MultifrontalSolver, AutoQrSingleBatchUsesFusedStar) {
+  using namespace compact_leaf_fixture;
+  const Problem problem = createProblem();
+  MultifrontalSolver solver(problem.graph, problem.fullOrdering,
+                            noMergeParams());
+  MultifrontalClique* leaf = pointLeaf(&solver);
+  EXPECT(leaf != nullptr);
+  EXPECT(leaf->useQR());
+
+  solver.load(problem.graph);
+  EXPECT(!leaf->useQR());
+  EXPECT(leaf->useCompactCholesky());
+  EXPECT_LONGS_EQUAL(0, leaf->Ab().rows());
+  EXPECT_LONGS_EQUAL(0, leaf->info().nBlocks());
+  solver.eliminateInPlace();
+  const VectorValues expected =
+      problem.graph.eliminateMultifrontal(problem.fullOrdering)->optimize();
+  EXPECT(assert_equal(expected, solver.updateSolution(), 1e-9));
+
+  solver.eliminateInPlace(problem.graph);
+  EXPECT(!leaf->useQR());
+  EXPECT_LONGS_EQUAL(0, leaf->Ab().rows());
+  EXPECT(assert_equal(expected, solver.updateSolution(), 1e-9));
+}
+
+// A sole ordinary Jacobian keeps the existing automatic QR selection.
+TEST(MultifrontalSolver, AutoQrSingleJacobianRemainsQr) {
+  using namespace compact_leaf_fixture;
+  const Problem problem = createSingleJacobianProblem();
+  MultifrontalSolver solver(problem.graph, problem.fullOrdering,
+                            noMergeParams());
+  MultifrontalClique* leaf = pointLeaf(&solver);
+  EXPECT(leaf != nullptr);
+  solver.load(problem.graph);
+  EXPECT(leaf->useQR());
+  solver.eliminateInPlace();
+  const VectorValues expected =
+      problem.graph.eliminateMultifrontal(problem.fullOrdering, EliminateQR)
+          ->optimize();
+  EXPECT(assert_equal(expected, solver.updateSolution(), 1e-9));
+}
+
+// A sole batch factor without direct-update support remains on automatic QR.
+TEST(MultifrontalSolver, AutoQrIneligibleBatchRemainsQr) {
+  using namespace compact_leaf_fixture;
+  const Problem problem = createIneligibleBatchProblem();
+  auto params = noMergeParams();
+  params.qrAspectRatio = 1.0;
+  MultifrontalSolver solver(problem.graph, problem.fullOrdering, params);
+  MultifrontalClique* leaf = pointLeaf(&solver);
+  EXPECT(leaf != nullptr);
+  solver.load(problem.graph);
+  EXPECT(leaf->useQR());
+}
+
+// Multiple batch factors retain the existing automatic QR behavior.
+TEST(MultifrontalSolver, AutoQrMultipleBatchFactorsRemainQr) {
+  using namespace compact_leaf_fixture;
+  const Problem problem = createProblem(false, false, true);
+  MultifrontalSolver solver(problem.graph, problem.fullOrdering,
+                            noMergeParams());
+  MultifrontalClique* leaf = pointLeaf(&solver);
+  EXPECT(leaf != nullptr);
+  solver.load(problem.graph);
+  EXPECT(leaf->useQR());
+}
+
+// A batch factor mixed with a Jacobian retains automatic QR behavior.
+TEST(MultifrontalSolver, AutoQrMixedFactorsRemainQr) {
+  using namespace compact_leaf_fixture;
+  const Problem problem = createProblem(true);
+  MultifrontalSolver solver(problem.graph, problem.fullOrdering,
+                            noMergeParams());
+  MultifrontalClique* leaf = pointLeaf(&solver);
+  EXPECT(leaf != nullptr);
+  solver.load(problem.graph);
+  EXPECT(leaf->useQR());
+}
+
+// Explicit Force overrides the sole direct batch-factor exception.
+TEST(MultifrontalSolver, ForcedQrSingleBatchRemainsQr) {
+  using namespace compact_leaf_fixture;
+  const Problem problem = createProblem();
+  auto params = noMergeParams();
+  params.qrMode = MultifrontalParameters::QRMode::Force;
+  MultifrontalSolver solver(problem.graph, problem.fullOrdering, params);
+  MultifrontalClique* leaf = pointLeaf(&solver);
+  EXPECT(leaf != nullptr);
+  solver.load(problem.graph);
+  EXPECT(leaf->useQR());
 }
 
 // A separator-bearing conventional Jacobian makes a small star candidate use

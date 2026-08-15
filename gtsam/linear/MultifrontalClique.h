@@ -363,8 +363,11 @@ class GTSAM_EXPORT MultifrontalClique {
   /// Build and cache loading metadata for factors in this clique.
   void buildLoadPlans(const GaussianFactorGraph& graph);
 
-  /// Resolve a provisional fused-star mode after factor plans are known.
-  void resolveFusedStarMode();
+  /// Allocate numerical solve storage after the clique mode is resolved.
+  void allocateSolveStorage();
+
+  /// Resolve deferred QR and fused-star choices after factor plans are known.
+  void resolveLeafSolveMode();
 
   /// Cache scalar-column destinations for fused Schur updates.
   void buildFusedStarMappings();
@@ -466,6 +469,8 @@ class GTSAM_EXPORT MultifrontalClique {
   std::vector<DenseIndex> separatorIndices_;  ///< Identity separator mapping.
   SolveMode solveMode_ = SolveMode::Cholesky;
   SolveMode starFallbackMode_ = SolveMode::Cholesky;
+  /// Whether one automatic-QR star awaits inspection of its sole factor.
+  bool deferredSingleFactorAutoQr_ = false;
   std::vector<DenseIndex> parentSchurScalarOffsets_;
   std::vector<DenseIndex> separatorSchurScalarOffsets_;
 
