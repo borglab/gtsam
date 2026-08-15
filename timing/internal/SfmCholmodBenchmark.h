@@ -16,13 +16,34 @@
 
 #pragma once
 
+#include <gtsam/base/Vector.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 
 #include <cstddef>
+#include <memory>
 
 namespace gtsam::timing::bal {
+
+struct CompactCameraSystem;
+
+/** Reusable optional CHOLMOD solver for a compact reduced-camera system. */
+class CholmodCameraSystemSolver {
+  class Impl;
+  std::unique_ptr<Impl> impl_;
+
+ public:
+  CholmodCameraSystemSolver();
+  ~CholmodCameraSystemSolver();
+
+  CholmodCameraSystemSolver(const CholmodCameraSystemSolver&) = delete;
+  CholmodCameraSystemSolver& operator=(const CholmodCameraSystemSolver&) =
+      delete;
+
+  /** Factor and solve the reduced camera system, reusing symbolic analysis. */
+  Vector solve(const CompactCameraSystem& system);
+};
 
 struct SparseSchurOptimizationResult {
   double elapsedSeconds = 0.0;

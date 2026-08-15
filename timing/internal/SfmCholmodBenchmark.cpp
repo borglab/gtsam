@@ -142,7 +142,9 @@ class CholmodFactor {
   }
 };
 
-class CholmodCameraSolver {
+}  // namespace
+
+class CholmodCameraSystemSolver::Impl {
   CholmodContext context_;
   CholmodFactor factor_{context_.get()};
   std::vector<uint8_t> pattern_;
@@ -167,10 +169,10 @@ class CholmodCameraSolver {
     auto* values = static_cast<double*>(triplet.get()->x);
     size_t entry = 0;
     for (size_t blockRow = 0; blockRow < system.cameraCount; ++blockRow) {
-      for (size_t blockColumn = blockRow;
-           blockColumn < system.cameraCount; ++blockColumn) {
-        const size_t block = upperCameraBlockIndex(
-            blockRow, blockColumn, system.cameraCount);
+      for (size_t blockColumn = blockRow; blockColumn < system.cameraCount;
+           ++blockColumn) {
+        const size_t block =
+            upperCameraBlockIndex(blockRow, blockColumn, system.cameraCount);
         if (!system.usedBlocks[block]) continue;
         const Matrix99& matrix = system.blocks[block];
         if (blockRow == blockColumn) {
@@ -217,6 +219,26 @@ class CholmodCameraSolver {
                               static_cast<DenseIndex>(dimension));
   }
 };
+#else
+class CholmodCameraSystemSolver::Impl {};
+#endif
+
+CholmodCameraSystemSolver::CholmodCameraSystemSolver()
+    : impl_(std::make_unique<Impl>()) {}
+
+CholmodCameraSystemSolver::~CholmodCameraSystemSolver() = default;
+
+Vector CholmodCameraSystemSolver::solve(const CompactCameraSystem& system) {
+#ifdef GTSAM_TIMING_HAS_CHOLMOD
+  return impl_->solve(system);
+#else
+  (void)system;
+  throw std::runtime_error("CHOLMOD camera solve requires CHOLMOD");
+#endif
+}
+
+#ifdef GTSAM_TIMING_HAS_CHOLMOD
+namespace {
 
 struct LinearTiming {
   size_t solves = 0;
@@ -227,7 +249,7 @@ struct LinearTiming {
 
 class PointBatchSchurCholmodLevenbergMarquardtOptimizer final
     : public PointBatchSchurLevenbergMarquardtOptimizer {
-  mutable CholmodCameraSolver solver_;
+  mutable CholmodCameraSystemSolver solver_;
   mutable LinearTiming timing_;
 
  public:
@@ -251,8 +273,8 @@ class PointBatchSchurCholmodLevenbergMarquardtOptimizer final
     }
     VectorValues solution;
     timing_.backSubstituteSeconds += measureSeconds([&] {
-      solution = backSubstitutePointBatchLandmarksParallel(reduced,
-                                                           cameraSolution);
+      solution =
+          backSubstitutePointBatchLandmarksParallel(reduced, cameraSolution);
     });
     return solution;
   }
@@ -269,8 +291,8 @@ SparseSchurOptimizationResult runPointBatchSchurCholmodOptimization(
 #ifdef GTSAM_TIMING_HAS_CHOLMOD
   SparseSchurOptimizationResult result;
   result.initialError = graph.error(initial);
-  PointBatchSchurCholmodLevenbergMarquardtOptimizer optimizer(
-      graph, initial, parameters);
+  PointBatchSchurCholmodLevenbergMarquardtOptimizer optimizer(graph, initial,
+                                                              parameters);
   result.elapsedSeconds = measureSeconds([&] { optimizer.optimize(); });
   result.finalError = optimizer.error();
   result.lmIterations = optimizer.iterations();
