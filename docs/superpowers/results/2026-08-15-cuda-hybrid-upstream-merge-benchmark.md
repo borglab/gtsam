@@ -4,8 +4,10 @@
 
 The final general hybrid CUDA solver commit, `458abdfbc`, was branched as
 `codex/cuda-hybrid-final` and merged with upstream `develop` at
-`49a9725f5`. The merge commit is `1ecee0c3c`; the tested branch tip is
-`2d7902072` after one integration-test correction.
+`49a9725f5`. The merge commit is `1ecee0c3c`; the solver integration tip is
+`2d7902072` after one integration-test correction. The controlled GPU 2x2
+below was recorded at `7196db0d9`, after benchmark-only additions for FastSync
+and upstream-matched Pose2 settings.
 
 This is the intended hybrid baseline. It contains
 `CudaSparseLevenbergMarquardt`, where nonlinear factor linearization and
@@ -44,6 +46,10 @@ Raw JSON and CSV are in the ignored build tree:
 ```text
 build-cuda-cudss-on/benchmarks/premerge/
 build-cuda-cudss-on/benchmarks/postmerge-correct-jacobians/
+build-cuda-cudss-on/benchmarks/gpu-2x2/
+build-cuda-cudss-on/benchmarks/gpu-2x2-matched/
+build-cuda-cudss-legacy-jacobian/benchmarks/gpu-2x2/
+build-cuda-cudss-legacy-jacobian/benchmarks/gpu-2x2-matched/
 ```
 
 ## Correctness-valid cuDSS comparison
@@ -129,12 +135,58 @@ roughly three orders of magnitude. Initial objective magnitude alone does not
 predict LM trajectory length.
 
 This isolation benchmark uses upstream's default LM parameters and tight
-anchor prior. `timeCudaSparseLM` uses Ceres-style LM defaults and a unit prior,
-which is why its raw correct-Jacobian Pose2 trajectory takes 32 accepted steps
-rather than nine. The CPU 2x2 result establishes the Jacobian effect, but its
-absolute iteration counts must not be transplanted directly to the hybrid
-GPU harness. A follow-up GPU 2x2 should control those parameters and the prior
-as well as initialization.
+anchor prior. The hybrid harness normally uses Ceres-style LM defaults and a
+unit prior, which is why its raw correct-Jacobian Pose2 trajectory takes 34
+lambda attempts rather than nine. The next two sections separate that settings
+effect from the Jacobian effect on GPU.
+
+## GPU 2x2 with native hybrid settings
+
+As a diagnostic control, the hybrid solver was first run with its existing
+Ceres-style LM defaults and unit anchor prior. All times are GPU wall medians
+from one warm-up and five measured repetitions using cuDSS.
+
+| Initialization | Jacobians | Initialization | GPU LM | LM attempts | Final objective |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Raw | Legacy approximation | 0 s | 0.373 s | 11 | 5,572,632 |
+| Raw | Correct local | 0 s | 1.155 s | 34 | 162.034 |
+| FastSync | Legacy approximation | 0.551 s | 0.463 s | 13 | 301.802 |
+| FastSync | Correct local | 0.632 s | 1.473 s | 44 | 175.762 |
+
+Under these settings the legacy solver appears faster only because it stops
+much earlier at a substantially worse objective. This is not a speed-to-equal-
+solution comparison. It also explains why the initial hybrid run seemed to
+contradict Frank's result: the Jacobian switch changed the LM trajectory while
+the benchmark settings differed from upstream.
+
+## GPU 2x2 with upstream-matched settings
+
+The decisive run uses the tight prior sigmas `(1e-6, 1e-6, 1e-8)` and GTSAM's
+default LM parameters, matching `timeBetweenFactorPoseGraph`. The only two
+variables are initialization and the compile-time BetweenFactor Jacobian
+mode. Each cell is one warm-up plus five measured repetitions on the A100 with
+cuDSS. Every result came from clean commit `7196db0d9` and passed the `1e-8`
+CPU/GPU objective-parity check.
+
+| Initialization | Jacobians | Initialization | GPU LM median | CPU LM median | CPU/GPU | LM attempts | Final objective |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Raw | Legacy approximation | 0 s | 0.636 s | 2.531 s | 3.98x | 28 | 4,642,335.229 |
+| Raw | Correct local | 0 s | 0.402 s | 1.054 s | 2.62x | 9 | 144.863 |
+| FastSync | Legacy approximation | 0.661 s | 1.120 s | 4.169 s | 3.72x | 42 | 144.877 |
+| FastSync | Correct local | 0.564 s | 0.490 s | 1.650 s | 3.37x | 17 | 144.910 |
+
+Correct Jacobians make GPU LM **1.58x faster from raw values** and **2.28x
+faster after FastSync**. Therefore the Jacobian benefit does not depend on
+FastSync. From raw values it also changes the outcome from a lambda-upper-bound
+termination at a 4.64-million objective to convergence at 144.863.
+
+FastSync is opt-in, not the default. It lowers the initial objective from
+24.72 million to 23,454, but it does not shorten the correct-Jacobian solve on
+this graph: GPU LM rises from 0.402 to 0.490 seconds, before paying another
+0.564 seconds for initialization. The fastest accurate pipeline in this matrix
+is therefore correct Jacobians from the raw dataset values. FastSync is what
+makes the legacy run accurate here, but that pipeline costs 1.780 seconds
+including initialization, versus 0.402 seconds for raw plus correct Jacobians.
 
 ## Integration validation
 
