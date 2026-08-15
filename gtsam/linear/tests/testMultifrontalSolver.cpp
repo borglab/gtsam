@@ -163,7 +163,7 @@ struct Problem {
   Ordering fullOrdering;
 };
 
-Problem createProblem() {
+Problem createProblem(bool addFallbackFactor = false) {
   Problem problem;
   const Key point = L(0);
   problem.pointOrdering.push_back(point);
@@ -185,6 +185,11 @@ Problem createProblem() {
       batchKeys, std::vector<size_t>{1, 1, 1});
   observations->addRow({0, 1, 2}, {I_1x1, I_1x1, -I_1x1}, Vector1(0.25));
   problem.graph.push_back(observations);
+
+  if (addFallbackFactor) {
+    problem.graph.emplace_shared<JacobianFactor>(point, I_1x1, Vector1(0.125),
+                                                 noiseModel::Unit::Create(1));
+  }
 
   const auto unit = noiseModel::Unit::Create(1);
   for (size_t i = 0; i < kCameraCount; ++i) {
@@ -216,6 +221,14 @@ size_t compactCliqueCount(MultifrontalSolver* solver) {
   return count;
 }
 
+MultifrontalClique* compactClique(MultifrontalSolver* solver) {
+  MultifrontalClique* result = nullptr;
+  solver->runTopDown([&](MultifrontalClique& clique) {
+    if (clique.useCompactCholesky()) result = &clique;
+  });
+  return result;
+}
+
 }  // namespace compact_leaf_fixture
 
 // A large-separator batch leaf forms the same reduced factor without
@@ -228,6 +241,7 @@ TEST(MultifrontalSolver, CompactLeafPartialElimination) {
   EXPECT_LONGS_EQUAL(1, compactCliqueCount(&solver));
 
   solver.eliminatePartialInPlace(problem.graph);
+  EXPECT_LONGS_EQUAL(0, compactClique(&solver)->Ab().rows());
   const GaussianFactorGraph actual = solver.remainingFactorGraph();
   const auto [unusedBayesTree, expected] =
       problem.graph.eliminatePartialMultifrontal(problem.pointOrdering);
@@ -250,6 +264,37 @@ TEST(MultifrontalSolver, CompactLeafFullElimination) {
   const VectorValues expected =
       problem.graph.eliminateMultifrontal(problem.fullOrdering)->optimize();
   EXPECT(assert_equal(expected, actual, 1e-8));
+}
+
+// A compact leaf packs only the Jacobian fallback row and reuses that storage
+// across loads while preserving the retained Hessian.
+TEST(MultifrontalSolver, CompactLeafMixedFallbackStorageReuse) {
+  using namespace compact_leaf_fixture;
+  const Problem problem = createProblem(true);
+  MultifrontalSolver solver(problem.graph, problem.fullOrdering,
+                            problem.pointOrdering.size(), compactParams());
+  MultifrontalClique* clique = compactClique(&solver);
+  EXPECT(clique != nullptr);
+
+  solver.load(problem.graph);
+  EXPECT_LONGS_EQUAL(1, clique->Ab().rows());
+  const double* storage = clique->Ab().matrix().data();
+  solver.eliminatePartialInPlace();
+  const Matrix expected =
+      problem.graph.eliminatePartialMultifrontal(problem.pointOrdering)
+          .second->augmentedHessian(problem.cameraOrdering);
+  EXPECT(assert_equal(
+      expected,
+      solver.remainingFactorGraph().augmentedHessian(problem.cameraOrdering),
+      1e-9));
+
+  solver.eliminatePartialInPlace(problem.graph);
+  EXPECT(storage == clique->Ab().matrix().data());
+  EXPECT_LONGS_EQUAL(1, clique->Ab().rows());
+  EXPECT(assert_equal(
+      expected,
+      solver.remainingFactorGraph().augmentedHessian(problem.cameraOrdering),
+      1e-9));
 }
 
 /* ************************************************************************* */
@@ -639,10 +684,67 @@ TEST(MultifrontalSolver, BatchJacobianFactor) {
   const Ordering ordering{x1, x2};
   MultifrontalSolver solver(batchGraph, ordering, noMergeParams());
   solver.eliminateInPlace(batchGraph);
+  EXPECT(!solver.roots().front()->useQR());
+  EXPECT_LONGS_EQUAL(0, solver.roots().front()->Ab().rows());
   const VectorValues& actual = solver.updateSolution();
 
   const VectorValues expected = denseGraph.optimize(ordering);
   EXPECT(assert_equal(expected, actual, 1e-9));
+}
+
+/* ************************************************************************* */
+// A mixed Cholesky clique stores only its dense fallback row; direct batch
+// rows update the Hessian without occupying Ab.
+TEST(MultifrontalSolver, MixedBatchJacobianFallbackStorage) {
+  auto batch = std::make_shared<BatchJacobianFactor<1, 1, 1>>(
+      KeyVector{x1, x2}, std::vector<size_t>{1, 1});
+  batch->addRow({0, 1}, {I_1x1, -I_1x1}, Vector1(1.0));
+  batch->addRow({0, 1}, {2.0 * I_1x1, I_1x1}, Vector1(3.0));
+
+  GaussianFactorGraph graph{batch};
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector1(0.5));
+  GaussianFactorGraph denseGraph;
+  denseGraph.emplace_shared<JacobianFactor>(x1, I_1x1, x2, -I_1x1,
+                                            Vector1(1.0));
+  denseGraph.emplace_shared<JacobianFactor>(x1, 2.0 * I_1x1, x2, I_1x1,
+                                            Vector1(3.0));
+  denseGraph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector1(0.5));
+
+  const Ordering ordering{x1, x2};
+  MultifrontalSolver solver(graph, ordering, noMergeParams());
+  solver.eliminateInPlace(graph);
+  EXPECT(!solver.roots().front()->useQR());
+  EXPECT_LONGS_EQUAL(1, solver.roots().front()->Ab().rows());
+  EXPECT(assert_equal(denseGraph.optimize(ordering), solver.updateSolution(),
+                      1e-9));
+}
+
+/* ************************************************************************* */
+// Forced QR materializes every batch row and reserves one damping row per
+// frontal dimension.
+TEST(MultifrontalSolver, BatchJacobianFactorForcedQRStorage) {
+  auto batch = std::make_shared<BatchJacobianFactor<1, 1, 1>>(
+      KeyVector{x1, x2}, std::vector<size_t>{1, 1});
+  batch->addRow({0, 1}, {I_1x1, -I_1x1}, Vector1(1.0));
+  batch->addRow({0, 1}, {2.0 * I_1x1, I_1x1}, Vector1(3.0));
+  const GaussianFactorGraph graph{batch};
+
+  auto params = noMergeParams();
+  params.qrMode = MultifrontalParameters::QRMode::Force;
+  const Ordering ordering{x1, x2};
+  MultifrontalSolver solver(graph, ordering, params);
+  solver.load(graph);
+  EXPECT(solver.roots().front()->useQR());
+  EXPECT_LONGS_EQUAL(4, solver.roots().front()->Ab().rows());
+  solver.eliminateInPlace();
+
+  GaussianFactorGraph denseGraph;
+  denseGraph.emplace_shared<JacobianFactor>(x1, I_1x1, x2, -I_1x1,
+                                            Vector1(1.0));
+  denseGraph.emplace_shared<JacobianFactor>(x1, 2.0 * I_1x1, x2, I_1x1,
+                                            Vector1(3.0));
+  EXPECT(assert_equal(denseGraph.optimize(ordering, EliminateQR),
+                      solver.updateSolution(), 1e-9));
 }
 
 /* ************************************************************************* */

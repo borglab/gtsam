@@ -207,6 +207,13 @@ int main(int argc, char* argv[]) {
       solver->eliminatePartialInPlace();
       benchmarkSink += solver->roots().size();
     };
+    const auto exportRemaining = [&] {
+      const GaussianFactorGraph remaining = solver->remainingFactorGraph();
+      benchmarkSink += remaining.size();
+      if (!remaining.empty() && remaining.front()) {
+        benchmarkSink += remaining.front()->size();
+      }
+    };
     const auto runPartial = [&] {
       loadPartial();
       eliminatePartial();
@@ -214,6 +221,7 @@ int main(int argc, char* argv[]) {
     const auto runPartialFused = [&] {
       solver->eliminatePartialInPlace(damped);
       benchmarkSink += solver->roots().size();
+      exportRemaining();
     };
     for (size_t repetition = 0; repetition < warmups; ++repetition) {
       if (repetition % 2 == 0) {
@@ -228,12 +236,16 @@ int main(int argc, char* argv[]) {
     }
 
     std::vector<double> compactSamples;
-    std::vector<double> fusedPartialSamples;
+    std::vector<double> fusedEndToEndSamples;
+    std::vector<double> fusedEliminationSamples;
+    std::vector<double> exportSamples;
     std::vector<double> partialSamples;
     std::vector<double> loadSamples;
     std::vector<double> eliminationSamples;
     compactSamples.reserve(repetitions);
-    fusedPartialSamples.reserve(repetitions);
+    fusedEndToEndSamples.reserve(repetitions);
+    fusedEliminationSamples.reserve(repetitions);
+    exportSamples.reserve(repetitions);
     partialSamples.reserve(repetitions);
     loadSamples.reserve(repetitions);
     eliminationSamples.reserve(repetitions);
@@ -250,7 +262,19 @@ int main(int argc, char* argv[]) {
         partialSamples.push_back(loadMilliseconds + eliminationMilliseconds);
       };
       const auto timeFusedPartial = [&] {
-        fusedPartialSamples.push_back(1000.0 * measureSeconds(runPartialFused));
+        const double eliminationMilliseconds =
+            1000.0 * measureSeconds([&] {
+              solver->eliminatePartialInPlace(damped);
+              benchmarkSink += solver->roots().size();
+            });
+        // Export must immediately follow its elimination: the returned factors
+        // own compact information that may outlive the solver's clique views.
+        const double exportMilliseconds =
+            1000.0 * measureSeconds(exportRemaining);
+        fusedEliminationSamples.push_back(eliminationMilliseconds);
+        exportSamples.push_back(exportMilliseconds);
+        fusedEndToEndSamples.push_back(eliminationMilliseconds +
+                                       exportMilliseconds);
       };
       if (repetition % 2 == 0) {
         timeCompact();
@@ -267,8 +291,12 @@ int main(int argc, char* argv[]) {
         summarizeSamples(compactSamples, MedianPolicy::kAverageMiddle);
     const TimingSummary partialSummary =
         summarizeSamples(partialSamples, MedianPolicy::kAverageMiddle);
-    const TimingSummary fusedPartialSummary =
-        summarizeSamples(fusedPartialSamples, MedianPolicy::kAverageMiddle);
+    const TimingSummary fusedEndToEndSummary =
+        summarizeSamples(fusedEndToEndSamples, MedianPolicy::kAverageMiddle);
+    const TimingSummary fusedEliminationSummary =
+        summarizeSamples(fusedEliminationSamples, MedianPolicy::kAverageMiddle);
+    const TimingSummary exportSummary =
+        summarizeSamples(exportSamples, MedianPolicy::kAverageMiddle);
     const TimingSummary loadSummary =
         summarizeSamples(loadSamples, MedianPolicy::kAverageMiddle);
     const TimingSummary eliminationSummary =
@@ -295,13 +323,19 @@ int main(int argc, char* argv[]) {
               << std::fixed
               << "| Pipeline | Median ms | Mean ms | Min ms | Max ms |\n"
               << "| --- | ---: | ---: | ---: | ---: |\n";
-    printSummary("Compact reduced-camera assembly", compactSummary);
-    printSummary("Partial multifrontal fused total", fusedPartialSummary);
-    printSummary("Partial multifrontal separate total", partialSummary);
-    printSummary("  load factors", loadSummary);
-    printSummary("  eliminate points", eliminationSummary);
-    std::cout << "\nFused partial/compact median ratio: "
-              << fusedPartialSummary.median / compactSummary.median << "x\n";
+    printSummary("Compact complete assembly", compactSummary);
+    printSummary("Partial fused end-to-end", fusedEndToEndSummary);
+    printSummary("  partial elimination only", fusedEliminationSummary);
+    printSummary("  retained-factor export only", exportSummary);
+    printSummary("Partial separate load+eliminate (diagnostic)",
+                 partialSummary);
+    printSummary("  separate load", loadSummary);
+    printSummary("  separate eliminate", eliminationSummary);
+    std::cout << "\nPartial end-to-end/compact median ratio: "
+              << fusedEndToEndSummary.median / compactSummary.median << "x\n"
+              << "Partial elimination-only/compact median ratio (diagnostic): "
+              << fusedEliminationSummary.median / compactSummary.median
+              << "x\n";
 
     if (benchmarkSink == 0) std::cerr << "Unexpected empty benchmark result\n";
     return 0;

@@ -56,6 +56,26 @@ TEST(HessianFactor, emptyConstructor)
 }
 
 /* ************************************************************************* */
+// Copying and taking ownership of the same block matrix produce identical
+// Hessian factors.
+TEST(HessianFactor, BlockMatrixCopyAndMoveConstructors) {
+  const KeyVector keys{0, 1};
+  const Dims dims{1, 2, 1};
+  const Matrix augmented{{4.0, 1.0, 2.0, 3.0},
+                         {1.0, 5.0, 0.5, 4.0},
+                         {2.0, 0.5, 6.0, 5.0},
+                         {3.0, 4.0, 5.0, 7.0}};
+  const SymmetricBlockMatrix copiedInfo(dims, augmented);
+  HessianFactor copied(keys, copiedInfo);
+
+  SymmetricBlockMatrix ownedInfo(dims, augmented);
+  HessianFactor owned(keys, std::move(ownedInfo));
+
+  EXPECT(assert_equal(copied.augmentedInformation(),
+                      owned.augmentedInformation(), 1e-9));
+}
+
+/* ************************************************************************* */
 TEST(HessianFactor, ConversionConstructor)
 {
   // clang-format off

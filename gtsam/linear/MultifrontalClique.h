@@ -113,7 +113,7 @@ class GTSAM_EXPORT MultifrontalClique {
                 const MultifrontalParameters& params);
 
   /**
-   * Load factor values into the pre-allocated Ab matrix.
+   * Load factor values into a lazily allocated, reusable Ab matrix.
    * @param graph The factor graph with updated values (structure must match
    *              the graph used to build this clique, apart from updated
    *              numerical values). Only JacobianFactor and BatchJacobianFactor
@@ -184,8 +184,10 @@ class GTSAM_EXPORT MultifrontalClique {
 
   /**
    * Build the assembled factor on variables retained after partial
-   * elimination. The clique must have been prepared, and any leading
-   * eliminated frontals must have been factorized.
+   * elimination. The returned factor owns its information because it may
+   * outlive this clique. Consequently, exporting requires one copy of the
+   * active upper-triangular block. The clique must have been prepared, and any
+   * leading eliminated frontals must have been factorized.
    */
   std::shared_ptr<HessianFactor> remainingFactor() const;
 
@@ -275,7 +277,8 @@ class GTSAM_EXPORT MultifrontalClique {
     size_t factorIndex = 0;
     SharedDiagonal model;
     size_t rows = 0;
-    size_t rowOffset = 0;
+    /// Packed row offset in Ab_ for factors that require Jacobian fallback.
+    size_t abRowOffset = 0;
     /// Slot indices for factor keys (or -1 for fixed keys). See
     /// `linear/doc/BatchFactor_Performance_Notes.html` for load-plan usage.
     std::vector<DenseIndex> blockIndices;
@@ -364,12 +367,13 @@ class GTSAM_EXPORT MultifrontalClique {
   std::vector<Vector*> frontalPtrs_;          ///< Solution frontals.
   std::vector<const Vector*> separatorPtrs_;  ///< Solution separator.
   std::vector<size_t> blockDims_;  ///< Cached block dimensions (excluding RHS).
-  size_t factorRows_ = 0;          ///< Number of rows allocated in Ab.
+  size_t factorRows_ = 0;  ///< Total symbolic factor rows before packing.
   mutable const GaussianFactorGraph* activeLoadGraph_ = nullptr;
   mutable bool allBatchFactors_ = false;
   mutable bool hasDirectBatchFactors_ = false;
   mutable std::vector<FactorLoadPlan> loadPlans_;
   mutable bool loadPlansBuilt_ = false;
+  mutable size_t materializedRows_ = 0;  ///< Packed fallback rows in Ab_.
   mutable size_t fillRows_ = 0;
 
   // Finalize-time metadata (set once after children are known).
@@ -383,7 +387,8 @@ class GTSAM_EXPORT MultifrontalClique {
   std::vector<SymmetricBlockMatrix> sameSeparatorInfos_;
   std::vector<uint8_t> childInSameSeparatorGroup_;
 
-  // Finalize-time allocations.
+  // Lazily allocated after load-plan construction. Direct batch factors need
+  // no rows; QR additionally reserves frontal damping rows.
   VerticalBlockMatrix Ab_;
 
   // mutable as temporarily updateParentInfo

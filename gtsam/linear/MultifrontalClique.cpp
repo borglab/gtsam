@@ -220,14 +220,9 @@ void MultifrontalClique::finalize(std::vector<ChildInfo> children,
                                            : SolveMode::Cholesky);
   RSdReady_ = false;
 
-  // If using QR, also reserve room for optional damping rows.
-  const DenseIndex baseRows = static_cast<DenseIndex>(factorRows_);
-  const DenseIndex totalRows =
-      baseRows + (useQR ? static_cast<DenseIndex>(frontalDim) : 0);
-  Ab_ = VerticalBlockMatrix(blockDims_, totalRows, true);
-  // Ab's structure is fixed; clear it once and reuse across loads.
-  Ab_.matrix().setZero();
   if (useQR) {
+    const DenseIndex totalRows = static_cast<DenseIndex>(factorRows_) +
+                                 static_cast<DenseIndex>(frontalDim);
     RSd_ = VerticalBlockMatrix(blockDims_, totalRows, true);
   } else {
     RSd_ = VerticalBlockMatrix(blockDims_, static_cast<DenseIndex>(frontalDim),
@@ -353,7 +348,7 @@ void MultifrontalClique::buildLoadPlans(
   loadPlans_.reserve(factorIndices_.size());
   allBatchFactors_ = true;
   hasDirectBatchFactors_ = false;
-  size_t rowOffset = 0;
+  materializedRows_ = 0;
   for (size_t factorIndex : factorIndices_) {
     assert(factorIndex < graph.size());
     const GaussianFactor::shared_ptr& factor = graph[factorIndex];
@@ -368,14 +363,14 @@ void MultifrontalClique::buildLoadPlans(
 
     FactorLoadPlan plan;
     plan.factorIndex = factorIndex;
-    plan.rowOffset = rowOffset;
     const JacobianFactor* jacobianFactor =
         dynamic_cast<JacobianFactor*>(factor.get());
     if (jacobianFactor) {
       plan.kind = FactorLoadKind::Jacobian;
       allBatchFactors_ = false;
       plan.rows = jacobianFactor->rows();
-      rowOffset += plan.rows;
+      plan.abRowOffset = materializedRows_;
+      materializedRows_ += plan.rows;
       plan.model = jacobianFactor->get_model();
       for (Key key : jacobianFactor->keys()) {
         if (fixedKeys_ && fixedKeys_->count(key)) {
@@ -404,12 +399,15 @@ void MultifrontalClique::buildLoadPlans(
       }
       plan.kind = FactorLoadKind::Batch;
       plan.rows = batchFactor->rows();
-      rowOffset += plan.rows;
       plan.model = batchFactor->get_model();
       plan.canDirectUpdate =
           !hasFixedKey && !(plan.model && plan.model->isConstrained());
       if (!plan.canDirectUpdate) {
         allBatchFactors_ = false;
+      }
+      if (useQR() || !plan.canDirectUpdate || !kUseDirectBatchHessianUpdate) {
+        plan.abRowOffset = materializedRows_;
+        materializedRows_ += plan.rows;
       }
       for (Key key : batchFactor->keys()) {
         if (fixedKeys_ && fixedKeys_->count(key)) {
@@ -464,6 +462,7 @@ void MultifrontalClique::buildLoadPlans(
         "only JacobianFactor or BatchJacobianFactor inputs are supported");
   }
   assert(loadPlans_.size() == factorIndices_.size());
+  assert(!useQR() || materializedRows_ == factorRows_);
   loadPlansBuilt_ = true;
 }
 
@@ -475,6 +474,17 @@ void MultifrontalClique::fillAb(const GaussianFactorGraph& graph) {
 
   if (!loadPlansBuilt_) {
     buildLoadPlans(graph);
+  }
+
+  if (Ab_.nBlocks() == 0) {
+    const DenseIndex dampingRows =
+        useQR() ? static_cast<DenseIndex>(frontalDim) : 0;
+    const DenseIndex totalRows =
+        static_cast<DenseIndex>(materializedRows_) + dampingRows;
+    Ab_ = VerticalBlockMatrix(blockDims_, totalRows, true);
+    // Ab_'s packed structure is fixed after the first compatible load. Clear
+    // it once; repeated loads overwrite the same structural nonzeros.
+    Ab_.matrix().setZero();
   }
 
   assert(loadPlans_.size() == factorIndices_.size());
@@ -504,26 +514,25 @@ void MultifrontalClique::fillAb(const GaussianFactorGraph& graph) {
         const auto* jacobianFactor =
             dynamic_cast<const JacobianFactor*>(factor);
         assert(jacobianFactor);
-        addJacobianFactor(*jacobianFactor, plan.rowOffset, plan);
+        addJacobianFactor(*jacobianFactor, plan.abRowOffset, plan);
       } else {
         const auto* batchFactor =
             dynamic_cast<const BatchJacobianFactorBase*>(factor);
         assert(batchFactor);
-        addBatchJacobianFactor(*batchFactor, plan.rowOffset, plan);
+        addBatchJacobianFactor(*batchFactor, plan.abRowOffset, plan);
       }
     }
-    fillRows_ = factorRows_;
+    fillRows_ = materializedRows_;
     return;
   }
 
-  size_t rowOffset = 0;
   for (const FactorLoadPlan& plan : loadPlans_) {
     const auto* factor = graph[plan.factorIndex].get();
     if (!factor) continue;
     if (plan.kind == FactorLoadKind::Jacobian) {
       auto* jacobianFactor = dynamic_cast<const JacobianFactor*>(factor);
       assert(jacobianFactor);
-      rowOffset += addJacobianFactor(*jacobianFactor, rowOffset, plan);
+      addJacobianFactor(*jacobianFactor, plan.abRowOffset, plan);
       continue;
     }
     if (plan.kind == FactorLoadKind::Batch) {
@@ -536,7 +545,7 @@ void MultifrontalClique::fillAb(const GaussianFactorGraph& graph) {
         // details.
         continue;
       }
-      rowOffset += addBatchJacobianFactor(*batchFactor, rowOffset, plan);
+      addBatchJacobianFactor(*batchFactor, plan.abRowOffset, plan);
       continue;
     }
     throw MultifrontalSolverNotSupported(
@@ -547,7 +556,7 @@ void MultifrontalClique::fillAb(const GaussianFactorGraph& graph) {
                          static_cast<DenseIndex>(Ab_.matrix().rows())) ||
          (RSd_.matrix().rows() == static_cast<DenseIndex>(frontalDim)));
   assert(useQR() || useCompactCholesky() || info_.nBlocks() > 0);
-  fillRows_ = rowOffset;
+  fillRows_ = materializedRows_;
 }
 
 void MultifrontalClique::eliminateInPlace() {
@@ -654,17 +663,18 @@ void MultifrontalClique::prepareCompactCholesky() {
       if (I < 0 || I >= nf) continue;
       const DenseIndex row = RSd_.offset(I);
       const DenseIndex dim = static_cast<DenseIndex>(blockDims_.at(I));
-      const auto Ai = Ab_(I).middleRows(static_cast<DenseIndex>(plan.rowOffset),
-                                        static_cast<DenseIndex>(plan.rows));
+      const auto Ai =
+          Ab_(I).middleRows(static_cast<DenseIndex>(plan.abRowOffset),
+                            static_cast<DenseIndex>(plan.rows));
       for (const DenseIndex J : plan.blockIndices) {
         if (J < 0) continue;
         const auto Aj =
-            Ab_(J).middleRows(static_cast<DenseIndex>(plan.rowOffset),
+            Ab_(J).middleRows(static_cast<DenseIndex>(plan.abRowOffset),
                               static_cast<DenseIndex>(plan.rows));
         RSd_(J).middleRows(row, dim).noalias() += Ai.transpose() * Aj;
       }
       const auto b =
-          Ab_(rhsBlock).middleRows(static_cast<DenseIndex>(plan.rowOffset),
+          Ab_(rhsBlock).middleRows(static_cast<DenseIndex>(plan.abRowOffset),
                                    static_cast<DenseIndex>(plan.rows));
       RSd_(rhsBlock).middleRows(row, dim).noalias() += Ai.transpose() * b;
     }
@@ -731,7 +741,8 @@ void MultifrontalClique::applyDampingQR(
     double lambda, const LMDampingParams& dampingParams,
     const VectorValues& exactHessianDiagonal) {
   if (lambda <= 0.0) return;
-  const DenseIndex baseRows = static_cast<DenseIndex>(factorRows_);
+  const DenseIndex baseRows = static_cast<DenseIndex>(materializedRows_);
+  assert(materializedRows_ == factorRows_);
   const DenseIndex dampRows = static_cast<DenseIndex>(frontalDim);
   assert(Ab_.matrix().rows() >= baseRows + dampRows);
   Ab_.matrix().middleRows(baseRows, dampRows).setZero();
@@ -846,7 +857,6 @@ void MultifrontalClique::updateDirectFactors(
     bool useParentMappedSlots) const {
   assert(activeLoadGraph_);
   const DenseIndex nf = static_cast<DenseIndex>(numFrontals());
-  const DenseIndex rhsBlock = Ab_.nBlocks() - 1;
   const DenseIndex targetRhs = targetIndices.back();
 
   for (const FactorLoadPlan& plan : loadPlans_) {
@@ -865,7 +875,9 @@ void MultifrontalClique::updateDirectFactors(
       continue;
     }
 
-    const DenseIndex row = static_cast<DenseIndex>(plan.rowOffset);
+    // Only fallback factors reach this branch, so Ab_ has packed row storage.
+    const DenseIndex rhsBlock = Ab_.nBlocks() - 1;
+    const DenseIndex row = static_cast<DenseIndex>(plan.abRowOffset);
     const DenseIndex rows = static_cast<DenseIndex>(plan.rows);
     const auto b = Ab_(rhsBlock).middleRows(row, rows);
     targetInfo.updateDiagonalBlock(targetRhs, b.transpose() * b);
@@ -1059,16 +1071,18 @@ std::shared_ptr<HessianFactor> MultifrontalClique::remainingFactor() const {
   assert(!fullyEliminated());
   if (numFrontals() > 0) assert(RSdReady_);
 
-  SymmetricBlockMatrix activeInfo = info_;
-  activeInfo.blockStart() = static_cast<DenseIndex>(numFrontals());
-  SymmetricBlockMatrix compactInfo =
-      SymmetricBlockMatrix::LikeActiveViewOf(activeInfo);
-  const Matrix denseActiveInfo = activeInfo.selfadjointView();
-  compactInfo.setFullMatrix(denseActiveInfo);
+  const DenseIndex firstRetainedBlock = static_cast<DenseIndex>(numFrontals());
+  SymmetricBlockMatrix compactInfo(blockDims_.begin() + firstRetainedBlock,
+                                   blockDims_.end(), true);
+  // The returned factor can outlive this clique, so one copy is unavoidable.
+  // Copy only the active upper triangle directly into its final compact owner.
+  compactInfo.setFullMatrix(
+      info_.selfadjointView(firstRetainedBlock, info_.nBlocks())
+          .nestedExpression());
 
   KeyVector retainedKeys(orderedKeys_.begin() + numFrontals(),
                          orderedKeys_.end());
-  return std::make_shared<HessianFactor>(retainedKeys, compactInfo);
+  return std::make_shared<HessianFactor>(retainedKeys, std::move(compactInfo));
 }
 
 // Solve with block back-substitution on the Cholesky-stored info matrix.
