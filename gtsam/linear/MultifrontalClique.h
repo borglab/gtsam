@@ -26,6 +26,7 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/MultifrontalParameters.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/internal/BatchHessianMapping.h>
 #include <gtsam/nonlinear/LMDampingParams.h>
 #include <gtsam/symbolic/SymbolicFactor.h>
 
@@ -290,22 +291,12 @@ class GTSAM_EXPORT MultifrontalClique {
     /// Slot indices for factor keys (or -1 for fixed keys). See
     /// `linear/doc/BatchFactor_Performance_Notes.html` for load-plan usage.
     std::vector<DenseIndex> blockIndices;
-    std::vector<DenseIndex> blockIndicesWithRhs;
-    /// Flattened local key+RHS mapping for each batch row group.
-    /// Built once per clique and reused during direct Hessian updates.
-    /// See `linear/doc/BatchFactor_Performance_Notes.html`.
-    std::vector<DenseIndex> mappedSlots;
-    /// Scalar offsets corresponding to mappedSlots in this clique's info_.
-    std::vector<DenseIndex> mappedScalarOffsets;
-    /// Flattened row-group mapping that drops frontal slots and writes the
-    /// original separator Hessian directly into the parent.
-    std::vector<DenseIndex> parentMappedSlots;
-    /// Cached scalar destinations corresponding to parentMappedSlots.
-    std::vector<DenseIndex> parentMappedScalarOffsets;
-    /// Compact-leaf mapping into a separator-local accumulator.
-    std::vector<DenseIndex> separatorMappedSlots;
-    /// Cached scalar destinations corresponding to separatorMappedSlots.
-    std::vector<DenseIndex> separatorMappedScalarOffsets;
+    /// Row-group destinations in this clique's augmented information matrix.
+    internal::BatchHessianMapping localMapping;
+    /// Retained row-group destinations in the parent information matrix.
+    internal::BatchHessianMapping parentMapping;
+    /// Retained row-group destinations in a separator-local accumulator.
+    internal::BatchHessianMapping separatorMapping;
     bool canDirectUpdate = false;
 
     /// Construct a plan for a null graph entry.
@@ -352,12 +343,10 @@ class GTSAM_EXPORT MultifrontalClique {
                                 const MultifrontalClique& clique);
 
     /// Map retained factor slots into one compact-update destination.
-    void buildRetainedMapping(
+    internal::BatchHessianMapping buildRetainedMapping(
         const BatchJacobianFactorBase& factor, DenseIndex numFrontals,
         const std::vector<DenseIndex>& targetIndices,
-        const std::vector<DenseIndex>& targetScalarOffsets,
-        std::vector<DenseIndex>* mappedTargetSlots,
-        std::vector<DenseIndex>* mappedTargetScalarOffsets) const;
+        const std::vector<DenseIndex>& targetScalarOffsets) const;
   };
 
   /// Build and cache loading metadata for factors in this clique.

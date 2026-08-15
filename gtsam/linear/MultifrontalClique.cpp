@@ -18,12 +18,12 @@
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/config.h>
-#include <gtsam/linear/BatchJacobianFactor.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/MultifrontalClique.h>
 #include <gtsam/linear/MultifrontalSolver.h>
+#include <gtsam/linear/internal/BatchJacobianFactorElimination.h>
 #include <gtsam/linear/internal/CompactLeafSchurKernel.h>
 
 #include <Eigen/Cholesky>
@@ -407,11 +407,11 @@ void MultifrontalClique::FactorLoadPlan::mapKeys(
 
 void MultifrontalClique::FactorLoadPlan::buildLocalBatchMapping(
     const BatchJacobianFactorBase& factor, const MultifrontalClique& clique) {
-  blockIndicesWithRhs = blockIndices;
-  blockIndicesWithRhs.push_back(
-      static_cast<DenseIndex>(clique.orderedKeys_.size()));
+  std::vector<DenseIndex> localSlots = blockIndices;
+  localSlots.push_back(static_cast<DenseIndex>(clique.orderedKeys_.size()));
   if (!canDirectUpdate) return;
-  factor.buildMappedSlots(blockIndicesWithRhs, mappedSlots);
+  localMapping = internal::BatchJacobianFactorElimination::buildMapping(
+      factor, localSlots);
 }
 
 bool MultifrontalClique::FactorLoadPlan::supportsFusedStarLeaf() const {
@@ -426,11 +426,8 @@ void MultifrontalClique::FactorLoadPlan::buildSolveMappings(
   if (!canDirectUpdate) return;
 
   if (!clique.useQR() && !clique.useCompactCholesky()) {
-    mappedScalarOffsets.reserve(mappedSlots.size());
-    for (const DenseIndex slot : mappedSlots) {
-      mappedScalarOffsets.push_back(
-          slot < 0 ? -1 : clique.info_.blockScalarOffset(slot));
-    }
+    internal::BatchJacobianFactorElimination::cacheScalarOffsets(clique.info_,
+                                                                 &localMapping);
   }
   if (!clique.useCompactCholesky()) return;
 
@@ -449,21 +446,18 @@ void MultifrontalClique::FactorLoadPlan::buildSolveMappings(
   }
   localSeparatorScalarOffsets.back() = separatorScalarOffset;
 
-  buildRetainedMapping(factor, numFrontals, clique.parentIndices_,
-                       clique.parentScalarOffsets_, &parentMappedSlots,
-                       &parentMappedScalarOffsets);
-  buildRetainedMapping(factor, numFrontals, clique.separatorIndices_,
-                       localSeparatorScalarOffsets, &separatorMappedSlots,
-                       &separatorMappedScalarOffsets);
+  parentMapping = buildRetainedMapping(
+      factor, numFrontals, clique.parentIndices_, clique.parentScalarOffsets_);
+  separatorMapping =
+      buildRetainedMapping(factor, numFrontals, clique.separatorIndices_,
+                           localSeparatorScalarOffsets);
 }
 
-void MultifrontalClique::FactorLoadPlan::buildRetainedMapping(
+internal::BatchHessianMapping
+MultifrontalClique::FactorLoadPlan::buildRetainedMapping(
     const BatchJacobianFactorBase& factor, DenseIndex numFrontals,
     const std::vector<DenseIndex>& targetIndices,
-    const std::vector<DenseIndex>& targetScalarOffsets,
-    std::vector<DenseIndex>* mappedTargetSlots,
-    std::vector<DenseIndex>* mappedTargetScalarOffsets) const {
-  assert(mappedTargetSlots && mappedTargetScalarOffsets);
+    const std::vector<DenseIndex>& targetScalarOffsets) const {
   assert(targetIndices.size() == targetScalarOffsets.size());
   std::vector<DenseIndex> factorTargetSlots;
   std::vector<DenseIndex> factorTargetScalarOffsets;
@@ -482,9 +476,8 @@ void MultifrontalClique::FactorLoadPlan::buildRetainedMapping(
   }
   factorTargetSlots.push_back(targetIndices.back());
   factorTargetScalarOffsets.push_back(targetScalarOffsets.back());
-  factor.buildMappedSlots(factorTargetSlots, *mappedTargetSlots);
-  factor.buildMappedSlots(factorTargetScalarOffsets,
-                          *mappedTargetScalarOffsets);
+  return internal::BatchJacobianFactorElimination::buildMapping(
+      factor, factorTargetSlots, factorTargetScalarOffsets);
 }
 
 void MultifrontalClique::FactorLoadPlan::assertInvariants(
@@ -501,20 +494,18 @@ void MultifrontalClique::FactorLoadPlan::assertInvariants(
   assert(factor);
   assert(blockIndices.size() == factor->keys().size());
   if (kind == FactorLoadKind::Jacobian) {
-    assert(!canDirectUpdate && blockIndicesWithRhs.empty());
+    assert(!canDirectUpdate && localMapping.empty());
     return;
   }
-  assert(blockIndicesWithRhs.size() == blockIndices.size() + 1);
-  assert(blockIndicesWithRhs.back() ==
-         static_cast<DenseIndex>(clique.orderedKeys_.size()));
-  assert(mappedScalarOffsets.empty() ||
-         mappedScalarOffsets.size() == mappedSlots.size());
-  assert(parentMappedScalarOffsets.empty() ||
-         parentMappedScalarOffsets.size() == parentMappedSlots.size());
-  assert(separatorMappedScalarOffsets.empty() ||
-         separatorMappedScalarOffsets.size() == separatorMappedSlots.size());
+  assert(localMapping.scalarOffsets.empty() ||
+         localMapping.scalarOffsets.size() == localMapping.blockSlots.size());
+  assert(parentMapping.scalarOffsets.empty() ||
+         parentMapping.scalarOffsets.size() == parentMapping.blockSlots.size());
+  assert(separatorMapping.scalarOffsets.empty() ||
+         separatorMapping.scalarOffsets.size() ==
+             separatorMapping.blockSlots.size());
   if (!clique.useCompactCholesky()) {
-    assert(parentMappedSlots.empty() && separatorMappedSlots.empty());
+    assert(parentMapping.empty() && separatorMapping.empty());
   }
 #endif
 }
@@ -544,8 +535,8 @@ size_t MultifrontalClique::addJacobianFactor(const JacobianFactor& factor,
 size_t MultifrontalClique::addBatchJacobianFactor(
     const BatchJacobianFactorBase& batchFactor, size_t rowOffset,
     const FactorLoadPlan& plan) {
-  const size_t rows =
-      batchFactor.scatterInto(Ab_, rowOffset, plan.blockIndices);
+  const size_t rows = internal::BatchJacobianFactorElimination::scatterRows(
+      batchFactor, Ab_, rowOffset, plan.blockIndices);
   if (plan.model && !plan.model->isConstrained()) {
     plan.model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, rows));
   }
@@ -778,12 +769,9 @@ void MultifrontalClique::prepareForElimination() {
       const auto* batchFactor =
           dynamic_cast<const BatchJacobianFactorBase*>(factor);
       if (!batchFactor) continue;
-      if (plan.mappedSlots.empty()) {
-        batchFactor->updateHessian(plan.blockIndicesWithRhs, &info_);
-      } else {
-        batchFactor->updateHessianWithMappedSlots(
-            plan.mappedSlots, plan.mappedScalarOffsets, &info_);
-      }
+      assert(!plan.localMapping.empty());
+      internal::BatchJacobianFactorElimination::addHessian(
+          *batchFactor, plan.localMapping, &info_);
     }
     if (fillRows_ > 0 && !allBatchFactors_) {
       info_.selfadjointView().rankUpdate(
@@ -834,13 +822,13 @@ void MultifrontalClique::prepareCompactCholesky() {
     if (plan.rows == 0) continue;
     if (plan.kind == FactorLoadKind::Batch && plan.canDirectUpdate &&
         kUseDirectBatchHessianUpdate) {
-      assert(activeLoadGraph_ && !plan.mappedSlots.empty());
+      assert(activeLoadGraph_ && !plan.localMapping.empty());
       const auto* factor = (*activeLoadGraph_)[plan.factorIndex].get();
       const auto* batchFactor =
           dynamic_cast<const BatchJacobianFactorBase*>(factor);
       assert(batchFactor);
-      batchFactor->updateFrontalHessianWithMappedSlots(plan.mappedSlots, nf,
-                                                       &RSd_);
+      internal::BatchJacobianFactorElimination::addFrontalHessian(
+          *batchFactor, plan.localMapping, nf, &RSd_);
       continue;
     }
     for (const DenseIndex I : plan.blockIndices) {
@@ -1057,18 +1045,14 @@ void MultifrontalClique::updateDirectFactors(
     const auto* factor = (*activeLoadGraph_)[plan.factorIndex].get();
     if (!factor) continue;
     if (plan.kind == FactorLoadKind::Batch && plan.canDirectUpdate &&
-        !plan.parentMappedSlots.empty()) {
+        !plan.parentMapping.empty()) {
       const auto* batchFactor =
           dynamic_cast<const BatchJacobianFactorBase*>(factor);
       assert(batchFactor);
-      const auto& mappedSlots = useParentMappedSlots
-                                    ? plan.parentMappedSlots
-                                    : plan.separatorMappedSlots;
-      const auto& mappedScalarOffsets = useParentMappedSlots
-                                            ? plan.parentMappedScalarOffsets
-                                            : plan.separatorMappedScalarOffsets;
-      batchFactor->updateHessianWithMappedSlots(
-          mappedSlots, mappedScalarOffsets, &targetInfo);
+      const auto& mapping =
+          useParentMappedSlots ? plan.parentMapping : plan.separatorMapping;
+      internal::BatchJacobianFactorElimination::addHessian(
+          *batchFactor, mapping, &targetInfo);
       continue;
     }
 

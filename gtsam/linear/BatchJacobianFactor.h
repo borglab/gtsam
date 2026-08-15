@@ -42,15 +42,18 @@
 
 namespace gtsam {
 
+namespace internal {
+class BatchJacobianFactorElimination;
+}  // namespace internal
+
 /**
  * Common interface for compact batch Jacobian factors.
  *
  * BatchJacobianFactorBase gives solvers a way to recognize compact batched
  * Jacobian storage without treating it as a regular dense-block
  * JacobianFactor. Generic GaussianFactor methods keep working through
- * toJacobianFactor(), while solvers that know this type can use scatterInto()
- * or derived-class updateHessian() implementations to avoid materializing
- * structural zeros.
+ * toJacobianFactor(), while the internal elimination adapter can access the
+ * compact storage without materializing structural zeros.
  *
  * The intended fast path is a factor whose row blocks have already been
  * whitened and therefore has either no model or a unit model. Non-unit diagonal
@@ -71,25 +74,15 @@ class GTSAM_EXPORT BatchJacobianFactorBase : public GaussianFactor,
   /// Convert compact storage to a dense-block JacobianFactor.
   virtual JacobianFactor toJacobianFactor() const = 0;
 
-  /**
-   * Scatter nonzero row blocks into an existing vertical block matrix.
-   *
-   * This is the QR/new-multifrontal fast path. The destination matrix is
-   * already allocated for a clique, and this method writes only the blocks
-   * present in each compact row group. Dense blocks implied by absent key slots
-   * are left untouched and are expected to have been zero-initialized by the
-   * caller.
-   *
-   * @param target Destination clique matrix.
-   * @param rowOffset First row to write.
-   * @param targetBlockIndices Maps this factor's key slots to target slots.
-   *        Negative entries are skipped, e.g. fixed constrained keys.
-   * @return Number of rows written.
-   */
+ private:
+  friend class internal::BatchJacobianFactorElimination;
+
+  /** Scatter nonzero row blocks into preallocated solver storage. */
   virtual size_t scatterInto(
       VerticalBlockMatrix& target, size_t rowOffset,
       const std::vector<DenseIndex>& targetBlockIndices) const = 0;
 
+ public:
   /// Print this compact factor by converting to a JacobianFactor.
   void print(
       const std::string& s = "",
@@ -163,57 +156,26 @@ class GTSAM_EXPORT BatchJacobianFactorBase : public GaussianFactor,
     toJacobianFactor().updateHessian(keys, info);
   }
 
-  /**
-   * Update augmented Hessian over all local columns using precomputed
-   * clique-local block indices.
-   *
-   * Callers in `MultifrontalClique` can use this to avoid repeated key lookup
-   * when a precomputed load plan already maps factor slots to clique blocks.
-   * See `linear/doc/BatchFactor_Performance_Notes.html` for the rationale and
-   * expected performance effect.
-   */
+ private:
+  /** Update all augmented-Hessian columns using precomputed block slots. */
   virtual void updateHessian(const std::vector<DenseIndex>& slotIndices,
                              SymmetricBlockMatrix* info) const = 0;
 
-  /**
-   * Update a half-open column-range of the augmented Hessian using precomputed
-   * clique-local block indices.
-   */
+  /** Update a half-open Hessian column range using precomputed block slots. */
   virtual void updateHessian(const std::vector<DenseIndex>& slotIndices,
                              SymmetricBlockMatrix* info, DenseIndex beginCol,
                              DenseIndex endCol) const = 0;
 
-  /**
-   * Build a flattened mapped-slot buffer for all row groups.
-   *
-   * The output length is `rowSlots_.size() * (NumSlots + 1)` and contains, for
-   * each row group in order, the pre-mapped local keys plus the RHS slot at
-   * index `NumSlots`. The RHS is expected to be `slotIndices.back()`.
-   * See `linear/doc/BatchFactor_Performance_Notes.html` for mapping layout and
-   * cache locality guidance.
-   */
+  /** Build flattened row-group destinations from factor-key destinations. */
   virtual void buildMappedSlots(const std::vector<DenseIndex>& slotIndices,
                                 std::vector<DenseIndex>& mappedSlots) const = 0;
 
-  /**
-   * Update the augmented Hessian using pre-mapped row slots.
-   *
-   * The `mappedSlots` vector is expected to be pre-filled by
-   * `buildMappedSlots()` and stores `NumSlots + 1` entries per row group.
-   * See `linear/doc/BatchFactor_Performance_Notes.html` for why this avoids
-   * repeated key lookups in elimination hot loops.
-   */
+  /** Update the augmented Hessian using flattened row-group destinations. */
   virtual void updateHessianWithMappedSlots(
       const std::vector<DenseIndex>& mappedSlots,
       SymmetricBlockMatrix* info) const = 0;
 
-  /**
-   * Update the Hessian using cached block slots and scalar offsets.
-   *
-   * The default preserves compatibility for derived batch-factor types that
-   * only implement mapped block slots. Implementations may override this to
-   * bypass repeated block-to-scalar offset lookup.
-   */
+  /** Update the Hessian using cached block and scalar destinations. */
   virtual void updateHessianWithMappedSlots(
       const std::vector<DenseIndex>& mappedSlots,
       const std::vector<DenseIndex>& mappedScalarOffsets,
@@ -222,15 +184,12 @@ class GTSAM_EXPORT BatchJacobianFactorBase : public GaussianFactor,
     updateHessianWithMappedSlots(mappedSlots, info);
   }
 
-  /**
-   * Add only the frontal block rows of the augmented Hessian to a rectangular
-   * target. This is the compact Schur path: it forms [A B a] without
-   * allocating the separator block C.
-   */
+  /** Add only frontal augmented-Hessian rows to a rectangular target. */
   virtual void updateFrontalHessianWithMappedSlots(
       const std::vector<DenseIndex>& mappedSlots, DenseIndex numFrontalBlocks,
       VerticalBlockMatrix* frontalRows) const = 0;
 
+ public:
   /**
    * Add this factor's Hessian-vector product using scalar offsets for keys().
    * This flat-vector interface avoids materializing a dense JacobianFactor.
@@ -1041,8 +1000,8 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
    * Convert compact row-block storage into a conventional JacobianFactor.
    *
    * This compatibility path allocates dense blocks for every key in the batch,
-   * including structural zeros. Performance-critical solvers should prefer
-   * scatterInto() or updateHessian().
+   * including structural zeros. Performance-critical solvers use the internal
+   * compact-factor elimination adapter.
    */
   JacobianFactor toJacobianFactor() const override {
     if (rowSlots_.empty()) return JacobianFactor();
@@ -1057,6 +1016,7 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
     return JacobianFactor(keys_, std::move(dense), model_);
   }
 
+ private:
   /**
    * Scatter this factor into a preallocated vertical block matrix.
    *

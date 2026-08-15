@@ -391,24 +391,23 @@ auto gaussian = batch.linearize(values); // yields compact batch Jacobian when f
 
       <h3>3.1 <code>BatchJacobianFactorBase</code> and <code>BatchJacobianFactor</code></h3>
       <p>
-        This is the API boundary for batch-specific execution in linear space. The base class exposes both:
+        The public batch-factor API provides standard Gaussian-factor behavior and compact storage. Solver-only row-group operations are deliberately hidden behind an internal adapter:
       </p>
       <ul>
-        <li>standard Gaussian-factor compatibility methods inherited from the solver contract, and</li>
-        <li>batch-specialized routes used by the direct fast path.</li>
+        <li><code>BatchJacobianFactorBase</code> exposes the standard factor contract, dimensions, model, and dense compatibility conversion, while</li>
+        <li><code>internal::BatchJacobianFactorElimination</code> is a friend that alone accesses scatter, mapped-Hessian, and frontal-row hooks.</li>
       </ul>
-      <pre><code>// Base batch interface used by solver/clique fast paths.
-template&lt;...&gt; class BatchJacobianFactorBase : public GaussianFactor {
-  virtual size_t scatterInto(VerticalBlockMatrix&amp; target,
-                             size_t rowOffset,
-                             const std::vector&lt;DenseIndex&gt;&amp; targetBlockIndices) const = 0;
-  virtual void buildMappedSlots(const std::vector&lt;DenseIndex&gt;&amp; slotIndices,
-                               std::vector&lt;DenseIndex&gt;&amp; mappedSlots) const = 0;
-  virtual void updateHessianWithMappedSlots(const std::vector&lt;DenseIndex&gt;&amp; mappedSlots,
-                                           SymmetricBlockMatrix* info) const = 0;
+      <pre><code>// Internal solver facade; fixed-size kernels remain header-defined.
+class BatchJacobianFactorElimination {
+  static BatchHessianMapping buildMapping(const BatchJacobianFactorBase&amp; factor, ...);
+  static void addHessian(const BatchJacobianFactorBase&amp; factor,
+                         const BatchHessianMapping&amp; mapping,
+                         SymmetricBlockMatrix* target);
+  static void addFrontalHessian(const BatchJacobianFactorBase&amp; factor,
+                                const BatchHessianMapping&amp; mapping, ...);
 };</code></pre>
       <p class="code-note">
-        Concrete class <code>BatchJacobianFactor&lt;ErrorDim, BlockDims...&gt;</code> stores compact row groups and compact RHS/blocks instead of fully dense row blocks for all keys.
+        Concrete class <code>BatchJacobianFactor&lt;ErrorDim, BlockDims...&gt;</code> stores compact row groups and compact RHS/blocks instead of fully dense row blocks for all keys. Its fixed-dimension implementations remain visible in the template header, but they are no longer part of the public factor interface.
       </p>
 
       <h3>3.2 Conversion and compatibility in <code>GaussianFactorGraph</code> / <code>JacobianFactor</code></h3>
@@ -447,14 +446,15 @@ template&lt;...&gt; class BatchJacobianFactorBase : public GaussianFactor {
         <tbody>
           <tr><td><code>kind</code></td><td>Jacobian vs Batch factor path in that clique</td></tr>
           <tr><td><code>blockIndices</code></td><td>slot index per key (or -1 for fixed keys)</td></tr>
-          <tr><td><code>blockIndicesWithRhs</code></td><td>same vector plus RHS slot index</td></tr>
-          <tr><td><code>mappedSlots</code></td><td>pre-expanded dense-index mapping for direct hessian kernels</td></tr>
+          <tr><td><code>localMapping</code></td><td>typed block/scalar destinations for direct clique assembly</td></tr>
+          <tr><td><code>parentMapping</code></td><td>typed retained destinations in the parent information matrix</td></tr>
+          <tr><td><code>separatorMapping</code></td><td>typed retained destinations in a separator-local accumulator</td></tr>
           <tr><td><code>canDirectUpdate</code></td><td>direct batch eligibility (model/constraint/fixed-key conditions)</td></tr>
           <tr><td><code>model</code></td><td>cached noise model pointer for fast checks</td></tr>
         </tbody>
       </table>
       <p>
-        This is built once, then reused for each solve iteration in a given graph structure.
+        Each <code>BatchHessianMapping</code> owns its paired block slots and scalar offsets. This prevents load plans from accidentally combining parallel vectors belonging to different destinations. The mappings are built once, then reused for each solve iteration in a given graph structure.
       </p>
 
       <h3>3.5 Stable infrastructure around the batch fast path</h3>
@@ -489,11 +489,12 @@ factorize()</code></pre>
         For direct-eligible batch factors, the clique updates <code>info_</code> directly using mapped slots and prewhitened rows. This avoids materializing rows into <code>Ab_</code> in full.
       </p>
       <p>
-        The mapped-slot kernel now intentionally uses the checked update path for all inputs: negative slots are treated as fixed/skip markers, while slots above the RHS block still trigger the same validation error as before. The previous unchecked “all slots non-negative” branch was removed to simplify control flow; numerical behavior and API contracts were kept unchanged.
+        The mapped-slot kernel uses the checked update path for all inputs: negative slots are treated as fixed/skip markers, while slots above the RHS block trigger a validation error. Mapped slots and cached scalar offsets now travel together in a typed internal mapping rather than as independent public-API arguments.
       </p>
       <pre><code>if (canUseDirectBatchHessianUpdate && (allBatchFactors_ || hasDirectBatchFactors_)) {
   for each direct Batch plan:
-    batchFactor->updateHessianWithMappedSlots(plan.mappedSlots, &amp;info_)
+    BatchJacobianFactorElimination::addHessian(
+        *batchFactor, plan.localMapping, &amp;info_)
   if (fillRows_ &gt; 0 &amp;&amp; !allBatchFactors_)
     info_.selfadjointView().rankUpdate(Ab_.topRows(fillRows_).transpose())
 }</code></pre>
