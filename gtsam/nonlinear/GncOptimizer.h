@@ -563,12 +563,14 @@ class GncOptimizer {
   /** Map this optimizer's historical graduation parameter to the normalized
    * \mu in [0,1] expected by the robust loss interface.
    *
-   * The GNC schedule is expressed in the unbounded parameters of Yang et al.,
-   * which are internal scheduling state of this class:
-   *  - GM  uses \lambda, decreasing from a large value to 1; \mu = 1 / \lambda.
-   *  - TLS uses \theta, increasing from ~0 to infinity; \mu =
-   * \theta/(1+\theta). Both maps are exact inverses of the ones documented in
-   * LossFunctions.h.
+   * \lambda is this class' name for the unbounded control parameter of the
+   * schedule, for every loss, which is why the parameters that drive it are
+   * named lambdaStep and lambdaMax. It is internal scheduling state, and the
+   * quantity it corresponds to in the publications differs per loss:
+   *  - GM: \lambda decreases from a large value to 1; \mu = 1 / \lambda.
+   *  - TLS: \lambda increases from ~0 to infinity; \mu = \lambda/(1 + \lambda).
+   *    This is the same quantity LossFunctions.h calls \theta for TLS.
+   * Both maps are exact inverses of the ones documented in LossFunctions.h.
    */
   static double normalizedMu(GncLossType lossType, const double lambda) {
     switch (lossType) {

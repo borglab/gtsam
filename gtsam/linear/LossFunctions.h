@@ -54,12 +54,12 @@ namespace noiseModel {
  * and hence we can solve the equivalent weighted least squares problem \sum w(r_i) \rho(r_i)
  *
  * Each M-estimator in the mEstimator name space simply implements the above functions.
- * 
+ *
  * Each M-estimator additionally implements "graduated" versions of these functions.
  * Name                Symbol
- * Graduated Loss      \phi(x,\mu)
+ * Graduated Loss      \rho(x,\mu)
  * Graduated Weight    \w(x,\mu)
- * The control parameter \mu in [0, 1] transitions the loss from convex (\mu=0)to its original robust form (\mu=1).
+ * The control parameter \mu in [0, 1] transitions the loss from convex (\mu=0) to its original robust form (\mu=1).
  * This is used by continuation-style algorithms (GNC, riSAM) to modify the underlying problem structure.
  *
  * GTSAM convention for graduated robust losses:
@@ -211,7 +211,7 @@ class GTSAM_EXPORT Null : public Base {
  * - Loss       \rho(x) = c² (|x|/c - log(1+|x|/c))
  * - Derivative \phi(x) = x/(1+|x|/c)
  * - Weight     w(x) = \phi(x)/x = 1/(1+|x|/c)
- * 
+ *
  *  Fair loss has no graduated form.
  */
 class GTSAM_EXPORT Fair : public Base {
@@ -250,7 +250,7 @@ class GTSAM_EXPORT Fair : public Base {
  * - Loss       \rho(x)          = 0.5 x²  if |x|<k, 0.5 k² + k|x-k|  otherwise
  * - Derivative \phi(x)          = x       if |x|<k, k sgn(x)         otherwise
  * - Weight     w(x) = \phi(x)/x = 1       if |x|<k, k/|x|            otherwise
- * 
+ *
  *  Huber loss is graduated by scaling k with \lambda = 1 / \mu, i.e. by
  *  replacing k with k / sqrt(\mu). \mu = 0 is least squares.
  */
@@ -346,7 +346,7 @@ class GTSAM_EXPORT Cauchy : public Base {
  * - Loss       \f$ \rho(x) = c² (1 - (1-x²/c²)³)/6 \f$  if |x|<c,  c²/6   otherwise
  * - Derivative \f$ \phi(x) = x(1-x²/c²)² if |x|<c \f$,  0   otherwise
  * - Weight     \f$ w(x) = \phi(x)/x = (1-x²/c²)² \f$ if |x|<c,  0   otherwise
- * 
+ *
  *  Tukey loss is graduated by scaling c with \lambda = 1 / \mu, i.e. by
  *  replacing c² with c²/\mu. \mu = 0 is least squares.
  */
@@ -496,14 +496,14 @@ class GTSAM_EXPORT GemanMcClure : public Base {
                               GradScheme graduation);
 
   /** @brief Static helper to compute shape param (c) using outlier influence.
-   * Computes a shape param such that an outlier (any measurement with
-   * residual equal to or greater than the chi2_outlier_threshold) will have an
-   * "influence" (derivative of loss) less than or equal to the
-   * influence_threshold: d/dx(\rho(x)) < influence_thresh
-   * @param influence_thresh - The max influence permited by an outlier
+   * Computes a shape param such that an outlier will have:
+   *    d/dx(\rho(x)) <= influence_thresh
+   * @param influence_thresh - The max influence permited by an outlier.
+   *                           Must be in (0, sqrt(chi2 quantile))
    * @param dof - The degrees of freedom of the corresponding measurement
-   * @param chi2_outlier_thresh - The threshold for outlier (i.e. 0.95 = any
-   * measurement with residual greater than 95% of expected is an outlier)
+   * @param chi2_outlier_thresh - The threshold for outlier (i.e. 0.95).
+   *                              Must be in [0,1]
+   * @throws std::invalid_argument if influence_thresh is outside that range.
    * @returns The shape param
    */
   static double shapeParamFromInfThresh(double influence_thresh, size_t dof,
@@ -537,7 +537,8 @@ class GTSAM_EXPORT GemanMcClure : public Base {
  * - Weight     w(x) = \phi(x)/x = 1 if |x|<=c, 0 otherwise
  *
  *  TLS has three graduated forms. All are stated in terms of the normalized
- *  \mu; the historical Yang/Peng parameter is \theta = \mu / (1 - \mu).
+ *  \mu; the historical Yang/Peng parameter is \theta = \mu / (1 - \mu), which
+ *  GncOptimizer schedules under the loss-independent name \lambda.
  *
  *  STANDARD TLS loss is graduated by relaxing the threshold with
  *  \lambda = 1 / \mu, i.e. by replacing c² with c²/\mu.
@@ -635,7 +636,7 @@ class GTSAM_EXPORT TruncatedLeastSquares : public Base {
  * - Loss       \rho(x) = (c²x² + cx⁴)/(x²+c)²   (for any "x")
  * - Derivative \phi(x) = 2c²x/(x²+c)²
  * - Weight     w(x) = \phi(x)/x = 2c²/(x²+c)²  if x²>c,   1  otherwise
- * 
+ *
  *  DCS loss is graduated by scaling c with \lambda = 1 / \mu, i.e. by
  *  replacing c with c/\mu (c already has units of squared error).
  *  \mu = 0 is least squares.
@@ -687,7 +688,7 @@ class GTSAM_EXPORT DCS : public Base {
  * - Loss       \f$ \rho(x) = 0 \f$ if |x|<k,    0.5(k-|x|)² otherwise
  * - Derivative \f$ \phi(x) = 0 \f$ if |x|<k, (-k+x) if x>k,  (k+x) if x<-k
  * - Weight     \f$ w(x) = \phi(x)/x = 0 \f$ if |x|<k, (-k+x)/x if x>k,  (k+x)/x if x<-k
- * 
+ *
  *  L2WithDeadZone loss has no graduated form.
  */
 class GTSAM_EXPORT L2WithDeadZone : public Base {
@@ -727,8 +728,8 @@ class GTSAM_EXPORT L2WithDeadZone : public Base {
  * - Loss       \rho(x) = c² (1 - (1-x²/c²)³)/6  if |x|<c,  c²/6   otherwise
  * - Derivative \phi(x) = x(1-x²/c²)² if |x|<c,  0   otherwise
  * - Weight     w(x) = \phi(x)/x = (1-x²/c²)² if |x|<c,  0   otherwise
- * 
- *  L2WithDeadZone loss has no graduated form.
+ *
+ *  AsymmetricTukey loss has no graduated form.
  */
 class GTSAM_EXPORT AsymmetricTukey : public Base {
  protected:
@@ -767,7 +768,7 @@ class GTSAM_EXPORT AsymmetricTukey : public Base {
  * - Loss       \rho(x) = 0.5 k² log(1+x²/k²)
  * - Derivative \phi(x) = (k²x)/(x²+k²)
  * - Weight     w(x) = \phi(x)/x = k²/(x²+k²)
- * 
+ *
  *  AsymmetricCauchy loss has no graduated form.
  */
 class GTSAM_EXPORT AsymmetricCauchy : public Base {
@@ -811,7 +812,7 @@ using CustomGraduatedWeightFunction =
 /** Implementation of the "Custom" robust error model.
  *
  *  This model just takes two functions as input, one for the loss and one for the weight.
- * 
+ *
  *  Optionally this model can also define graduated loss functions
  */
 class GTSAM_EXPORT Custom : public Base {

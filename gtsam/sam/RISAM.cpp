@@ -63,10 +63,10 @@ RISAM::UpdateResult RISAM::update(
   } else {
     result.isam2_result =
         solver_->update(new_factors, new_theta, update_params);
-    solver_->calculateEstimate();
+    solver_->calculateEstimate(); // force back-substitution
   }
 
-  // If we have converged update mu_inits_based on status
+  // If we have converged update mu_inits based on status
   if (params_.increment_outlier_mu) incrementMuInits();
 
   return result;
@@ -109,7 +109,7 @@ RISAM::UpdateResult RISAM::updateRobust(
   // Run the initial update to add new factors, after this the iSAM2
   // factors/var_index will match the risam copies
   result.isam2_result = solver_->update(new_factors, new_theta, init_params);
-  solver_->calculateEstimate();
+  solver_->calculateEstimate();  // force back-substitution
 
   // Update count used for some convexity graduation schedules
   std::map<FactorIndex, size_t> mu_update_count;
@@ -119,10 +119,10 @@ RISAM::UpdateResult RISAM::updateRobust(
     convex_factors = runRobustIteration(convex_factors, mu_update_count);
   }
 
-  // Orig RISAM preformed 1 extra iteration for better convergence
+  // Orig RISAM performed 1 extra iteration for better convergence
   for (size_t i = 0; i < params_.number_extra_iters; i++) {
     solver_->update();
-    solver_->calculateEstimate();
+    solver_->calculateEstimate();  // force back-substitution
   }
 
   return result;
@@ -143,10 +143,10 @@ FactorIndices RISAM::runRobustIteration(
 
   // Run the Update, re-eliminating the subproblem defined at this time-step
   ISAM2UpdateParams params_internal;
-  params_internal.constrainedKeys = FastMap<Key, int>();
+  params_internal.constrainedKeys = FastMap<Key, int>(); // force no constraints
   params_internal.extraReelimKeys = convex_keys;
   solver_->update({}, {}, params_internal);
-  solver_->calculateEstimate();
+  solver_->calculateEstimate();  // force back-substitution
 
   // Update set of convex Factors
   return updateConvexFactors(convex_factors);
@@ -156,7 +156,7 @@ FactorIndices RISAM::runRobustIteration(
 void RISAM::updateConvexFactorMu(const Values& current_est, const size_t fidx,
                                  std::map<FactorIndex, size_t>& mu_update_count,
                                  FastList<Key>& convex_keys) {
-  // Invariant: fidx referrs to a GraduatedFactor
+  // Invariant: fidx refers to a GraduatedFactor
   auto grad_factor =
       std::dynamic_pointer_cast<GraduatedFactor>(factors_.at(fidx));
   // Update the mu value using the factor's scheduler
@@ -303,7 +303,7 @@ void RISAM::updateHouseKeeping(const NonlinearFactorGraph& new_factors,
 /* ************************************************************************* */
 void RISAM::augmentMu(const NonlinearFactorGraph& new_factors,
                       const FactorIndices& new_factor_indices) {
-  for (size_t i = 0; i < new_factors.nrFactors(); i++) {
+  for (size_t i = 0; i < new_factors.size(); i++) {
     FactorIndex fidx = new_factor_indices[i];
     auto grad_factor =
         std::dynamic_pointer_cast<GraduatedFactor>(new_factors.at(i));
@@ -333,12 +333,12 @@ void RISAM::augmentMu(const NonlinearFactorGraph& new_factors,
 void RISAM::incrementMuInits() {
   // Compute Average Delta
   VectorValues delta = solver_->getDelta();
-  bool is_sufficient_delta =
+  bool is_small_delta =
       (delta.size() > 0) && (delta.norm() / delta.size() <
                              params_.outlier_mu_avg_var_convergence_thresh);
 
-  // Evaluate All Graduated factors if sufficient average delta
-  if (is_sufficient_delta) {
+  // Evaluate All Graduated factors if small enough average delta
+  if (is_small_delta) {
     Values theta = solver_->calculateEstimate();
     for (auto fidx : factors_to_check_status_) {
       auto grad_factor =

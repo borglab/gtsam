@@ -28,7 +28,7 @@
  *
  * Note: To adhere to GTSAM's definition of the control parameter $\mu$ we
  * redefine the publications (above) parameter of $\mu$ as $\lambda$ in this
- * implemenation.
+ * implementation.
  */
 
 #pragma once

@@ -20,6 +20,8 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/sam/RISAMGraduationScheduler.h>
 
+#include <cmath>
+
 namespace gtsam {
 
 /// @brief Graduated Factor for riSAM base class
@@ -66,9 +68,10 @@ class GTSAM_EXPORT GraduatedFactor {
     mu_ = std::make_shared<double>(*(other.mu_));
   }
 
+  virtual ~GraduatedFactor() = default;
+
   /** @brief Linearize this factor using the convexification parameter mu
    *  @param current_estimate: the estimate at which to linearize the factor
-   *  @param mu: the current value of the convexification parameter
    */
   virtual GaussianFactor::shared_ptr linearizeGraduated(
       const Values& current_estimate) const = 0;
@@ -80,10 +83,12 @@ class GTSAM_EXPORT GraduatedFactor {
   virtual double robustLoss(const Values& current_estimate) const = 0;
 
   /// @brief Returns the robust loss for this graduated factor
-  const RobustLoss::shared_ptr loss() const { return robust_loss_; }
+  const RobustLoss::shared_ptr& loss() const { return robust_loss_; }
 
   /// @brief Returns the graduation scheduler for this factor
-  const GraduationScheduler::shared_ptr scheduler() const { return scheduler_; }
+  const GraduationScheduler::shared_ptr& scheduler() const {
+    return scheduler_;
+  }
 
   /// @brief Copies this factor as an instance of its base type without the
   /// graduated robust loss or scheduler
@@ -138,11 +143,9 @@ class GenericGraduatedFactor : public FACTOR_TYPE, public GraduatedFactor {
     double residual = this->residual(current_estimate);
 
     // Use base factor to linearize
-    Matrix A;
-    Vector b;
     auto whitened_linear_system = FACTOR_TYPE::linearize(current_estimate);
-    std::tie(A, b) = whitened_linear_system->jacobian();
-    size_t output_dim = b.size();
+    auto [A, b] = whitened_linear_system->jacobian();
+    const size_t output_dim = b.size();
 
     // Extract the non-dense linear system
     auto keys = whitened_linear_system->keys();
@@ -150,13 +153,13 @@ class GenericGraduatedFactor : public FACTOR_TYPE, public GraduatedFactor {
     size_t idx_start = 0;
     for (const auto& key : keys) {
       size_t d = current_estimate.at(key).dim();
-      Matrix vblock = Matrix::Zero(output_dim, d);
       Ablocks.push_back(A.block(0, idx_start, output_dim, d));
       idx_start += d;
     }
 
     // Weight the Linearized Blocks
-    double sqrt_weight = sqrt(robust_loss_->graduatedWeight(residual, *mu_));
+    const double sqrt_weight =
+        std::sqrt(robust_loss_->graduatedWeight(residual, *mu_));
     for (Matrix& Aj : Ablocks) {
       Aj *= sqrt_weight;
     }
@@ -188,7 +191,7 @@ class GenericGraduatedFactor : public FACTOR_TYPE, public GraduatedFactor {
   /// @{
   /// @brief See GraduatedFactor::residual
   double residual(const Values& current_estimate) const override {
-    return sqrt(2.0 * FACTOR_TYPE::error(current_estimate));
+    return std::sqrt(2.0 * FACTOR_TYPE::error(current_estimate));
   }
 
   /// @brief See GraduatedFactor::robustLoss

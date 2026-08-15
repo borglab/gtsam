@@ -53,10 +53,10 @@ class GTSAM_EXPORT RISAM {
           outlier_mu_chisq_lower_bound(outlier_mu_chisq_lower_bound),
           outlier_mu_avg_var_convergence_thresh(
               outlier_mu_avg_var_convergence_thresh),
-          number_extra_iters(number_extra_iters) {};
+          number_extra_iters(number_extra_iters) {}
 
     /// @brief The parameters for the encapsulated iSAM2 algorithm @Note some
-    /// are overriden in RISAM::RISAM().
+    /// are overridden in RISAM::RISAM().
     ISAM2Params isam2_params;
 
     /// @brief Flag to increment mu_init when the value estimate converges.
@@ -101,7 +101,7 @@ class GTSAM_EXPORT RISAM {
   /// If factor i is not Graduated mu_[i] is a pointer to a value of zero.
   FastVector<std::shared_ptr<double>> mu_;
   /// @brief The current initial control parameter values for all factors. If
-  /// factor i is not Graduated mu_[i] is a pointer to a value of zero.
+  /// factor i is not Graduated mu_inits_[i] is a pointer to a value of zero.
   FastVector<std::shared_ptr<double>> mu_inits_;
   /// @brief The set of GraduatedFactors that have been convexified since the
   /// last mu_init_ increment These are the factors that we can increment mu's
@@ -178,7 +178,7 @@ class GTSAM_EXPORT RISAM {
   Values calculateEstimate();
 
   /// @brief Returns the underlying factors of the system.
-  NonlinearFactorGraph getFactorsUnsafe() { return factors_; }
+  const NonlinearFactorGraph& getFactorsUnsafe() const { return factors_; }
 
   /** @brief Returns the set of measurements (identified by their factor index)
    * that have been deemed outliers. riSAM defines a measurement as an outlier
@@ -193,7 +193,7 @@ class GTSAM_EXPORT RISAM {
   /// @name Private Interface
   /// @{
  protected:
-  /** @brief Preforms a robust update to the system.
+  /** @brief Performs a robust update to the system.
    * A robust update is required any time new_factors contains GraduatedFactors
    * (i.e. there are potentially new inlier/outlier measurements).
    * @see RISAM::update for details on params.
@@ -224,7 +224,7 @@ class GTSAM_EXPORT RISAM {
                             FastList<Key>& convex_keys);
 
   /** @brief Compute the new set of convex factors after a robust iteration.
-   * @brief convex_factors: The set of convex factors after the prev. iter.
+   * @param convex_factors: The set of convex factors after the prev. iter.
    * @return The set of factors that are still convex after the current iter.
    */
   FactorIndices updateConvexFactors(const FactorIndices& convex_factors) const;
@@ -236,7 +236,7 @@ class GTSAM_EXPORT RISAM {
    * @param update_result: structure containing information about this update,
    * modified by this function to fill in info about involved and affected
    * variables as well as convexified factors.
-   * @returns The indicies of all factors convexified in the update defined by
+   * @returns The indices of all factors convexified in the update defined by
    * the given parameters.
    */
   FactorIndices convexifyInvolvedFactors(
@@ -244,8 +244,8 @@ class GTSAM_EXPORT RISAM {
       const std::optional<std::set<Key>>& extra_gnc_involved_keys,
       ISAM2UpdateParams& internal_update_params, UpdateResult& update_result);
 
-  /** @brief Accumulates the keys of all vars directly invovled in an update.
-   * @param new_factors The new factors for hte update.
+  /** @brief Accumulates the keys of all vars directly involved in an update.
+   * @param new_factors The new factors for the update.
    * @param extra_gnc_involved_keys: User supplied involved keys.
    * @param update_params: The parameters for the underlying iSAM2 update.
    * @returns The set of involved factors.
@@ -258,7 +258,7 @@ class GTSAM_EXPORT RISAM {
   /** @brief Convexifies a single factor if it is involved with the update.
    * @param fidx: The factor to convexify if involved.
    * @param involved_keys: The set of keys involved with the update.
-   * @param affected_keys: The ser of keys affected by the update.
+   * @param affected_keys: The set of keys affected by the update.
    * @param is_batch_update: Flag indicating all factors are relinearized.
    * @param convex_factors: Accumulator for the set of all convex factors.
    */
@@ -269,7 +269,7 @@ class GTSAM_EXPORT RISAM {
                                  std::set<FactorIndex>& convex_factors);
 
   /** @brief Update housekeeping information for riSAM this involves:
-   * 1. Determining the indicies for new_factors.
+   * 1. Determining the indices for new_factors.
    * 2. Update the riSAM fields: factors_ and variable_index_.
    * NOTE: they will be ahead of those in solver_ until solver.update() is
    * called.
@@ -282,13 +282,13 @@ class GTSAM_EXPORT RISAM {
 
   /** @brief Extend or update mu and mu_init for new factors.
    * @param new_factors: The new factors for which to extend the containers.
-   * @param new_factor_indicies: the indicies assigned to each new_factor.
+   * @param new_factor_indices: the indices assigned to each new_factor.
    */
   void augmentMu(const NonlinearFactorGraph& new_factors,
                  const FactorIndices& new_factor_indices);
 
   /** @brief Increments mu_inits_ for any factor recently convexified.
-   * Used to mitigate the long-term affect of measurements that we are confident
+   * Used to mitigate the long-term effect of measurements that we are confident
    * are outliers.
    */
   void incrementMuInits();
@@ -299,7 +299,6 @@ class GTSAM_EXPORT RISAM {
  public:
   /** @brief Constructs a shared_ptr of FACTOR_TYPE graduated factor for riSAM
    * This identifies a factor as a potential outlier measurement.
-   * @param kernel: The graduated kernel to use for this factor
    * @param args: The arguments required to construct the FACTOR_TYPE
    */
   template <class FACTOR_TYPE, class... Args>

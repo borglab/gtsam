@@ -27,6 +27,8 @@
 #include <cmath>
 #include <iostream>
 #include <limits>
+#include <map>
+#include <stdexcept>
 
 using namespace std;
 using namespace gtsam;
@@ -723,6 +725,27 @@ TEST(NoiseModel, robustFunctionGemanMcClureGraduatedScaleInvariant) {
   DOUBLES_EQUAL(1.0, gmc->graduatedWeight(0.0, 0.8), 1e-9);
 }
 
+/* ************************************************************************* */
+TEST(NoiseModel, GemanMcClureShapeParamFromInfThresh) {
+  const double t = 0.1;
+  // Tabulated chi2 95th percentiles for dof 1, 2, 3, 6.
+  for (const auto& [dof, quantile] : std::map<size_t, double>{
+           {1, 3.841459}, {2, 5.991465}, {3, 7.814728}, {6, 12.591587}}) {
+    const double c =
+        mEstimator::GemanMcClure::shapeParamFromInfThresh(t, dof, 0.95);
+    const double r = std::sqrt(quantile);
+    EXPECT_DOUBLES_EQUAL(
+        t, r * mEstimator::GemanMcClure::Weight(r * r, c * c), 1e-5);
+    // The influence threshold must lie in (0, r).
+    CHECK_EXCEPTION(mEstimator::GemanMcClure::shapeParamFromInfThresh(
+                        1.1 * r, dof, 0.95),
+                    std::invalid_argument);
+    CHECK_EXCEPTION(
+        mEstimator::GemanMcClure::shapeParamFromInfThresh(0.0, dof, 0.95),
+        std::invalid_argument);
+  }
+}
+
 TEST(NoiseModel, robustFunctionTLS)
 {
   const double k = 4.0, error1 = 0.5, error2 = 10.0, error3 = -10.0, error4 = -0.5;
@@ -932,7 +955,7 @@ TEST(NoiseModel, robustNoiseL2WithDeadZone)
     DOUBLES_EQUAL(std::fmax(0, i - dead_zone_size) * i,
                   robust->squaredMahalanobisDistance(error), 1e-8);
   }
-} 
+}
 
 /* ************************************************************************* */
 TEST(NoiseModel, robustNoiseCustomHuber) {

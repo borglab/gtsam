@@ -19,8 +19,10 @@
 #include <gtsam/3rdparty/cephes/cephes.h>
 #include <gtsam/linear/LossFunctions.h>
 
+#include <algorithm>
 #include <iostream>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -47,22 +49,20 @@ namespace mEstimator {
  * Historical (orig. pub.) Yang/Peng TLS mu is replaced by theta = mu / (1 - mu)
  *
  * Losses that graduate by scaling their shape parameter do so with the exact
- * map lambda = 1 / mu, edge caes mu = 0 and mu = 1 are handled with
+ * map lambda = 1 / mu, edge case mu = 0 and mu = 1 are handled with
  * direct formulas so that no unbounded quantity is ever evaluated.
  */
 namespace {
 /// @brief Restrict a public graduation parameter to its valid range [0, 1].
-static double ClampMu(double mu) { return std::clamp(mu, 0.0, 1.0); }
+double ClampMu(double mu) { return std::clamp(mu, 0.0, 1.0); }
 
 /// @brief Graduate shape parameter by lambda = 1 / mu.
 /// Requires mu > 0; callers handle mu = 0 with the least-squares endpoint.
-static double GradShapeSquared(double csquared, double mu) {
-  return csquared / mu;
-}
+double GradShapeSquared(double csquared, double mu) { return csquared / mu; }
 
 /// @brief Graduate a shape parameter by sqrt(1 / mu).
 /// Requires mu > 0; callers handle mu = 0 with the least-squares endpoint.
-static double GradShape(double c, double mu) { return c / std::sqrt(mu); }
+double GradShape(double c, double mu) { return c / std::sqrt(mu); }
 }  // namespace
 
 Vector Base::weight(const Vector& error) const {
@@ -450,9 +450,9 @@ double GemanMcClure::GraduatedWeight(double distance2, double c2, double mu,
     if (m <= 0.0) return 1.0;
     return Weight(distance2, GradShapeSquared(c2, m));
   } else {  // GemanMcClure::GradScheme::SCALE_INVARIANT
-    const double sqrt_denom = c2 + std::pow(distance2, m);
-    return (c2 * (c2 + std::pow(distance2, m) * (1 - m))) /
-           (sqrt_denom * sqrt_denom);
+    const double d2mu = std::pow(distance2, m);
+    const double sqrt_denom = c2 + d2mu;
+    return (c2 * (c2 + d2mu * (1 - m))) / (sqrt_denom * sqrt_denom);
   }
 }
 
@@ -486,13 +486,12 @@ double GemanMcClure::graduatedLoss(double distance, double mu) const {
 
 static std::string GemanMcClureGradSchemeName(
     GemanMcClure::GradScheme graduation) {
-  switch (graduation) {
-    case GemanMcClure::GradScheme::STANDARD:
-      return "STANDARD";
-    case GemanMcClure::GradScheme::SCALE_INVARIANT:
-      return "SCALE_INVARIANT";
-    default:
-      return "UNKNOWN";
+  if (graduation == GemanMcClure::GradScheme::STANDARD) {
+    return "STANDARD";
+  } else if (graduation == GemanMcClure::GradScheme::SCALE_INVARIANT) {
+    return "SCALE_INVARIANT";
+  } else {
+    throw std::runtime_error("Invalid GemanMcClure::GradScheme");
   }
 }
 
@@ -522,14 +521,17 @@ GemanMcClure::shared_ptr GemanMcClure::Create(
 double GemanMcClure::shapeParamFromInfThresh(double influence_thresh,
                                              size_t dof,
                                              double chi2_outlier_thresh) {
-  double outlier_residual_thresh =
-      std::sqrt(2 * gtsam_cephes_igami(dof / 2, chi2_outlier_thresh));
-  // Equation [d/dr \rho(x) = influence_thresh] solved for c
-  const double t1 =
-      std::sqrt(2 * influence_thresh * std::pow(outlier_residual_thresh, 5));
-  const double t2 = influence_thresh * std::pow(outlier_residual_thresh, 2);
-  const double t3 = influence_thresh - 2 * outlier_residual_thresh;
-  return std::sqrt(-((t1 + t2) / t3));
+  const double r =
+      std::sqrt(2 * gtsam_cephes_igami(dof / 2.0, chi2_outlier_thresh));
+  if (!(influence_thresh > 0.0 && influence_thresh < r)) {
+    throw std::invalid_argument(
+        "GemanMcClure::shapeParamFromInfThresh: requires 0 < influence_thresh "
+        "< sqrt(chi2 quantile).");
+  }
+  // Equation [d/dx \rho(r) = influence_thresh] solved for c:
+  //   c² = r²(t + sqrt(t r)) / (r - t)
+  const double t = influence_thresh;
+  return r * std::sqrt((t + std::sqrt(t * r)) / (r - t));
 }
 
 /* ************************************************************************* */
@@ -634,15 +636,14 @@ double TruncatedLeastSquares::graduatedLoss(double distance, double mu) const {
 
 static std::string TruncatedLeastSquaresGradSchemeName(
     TruncatedLeastSquares::GradScheme graduation) {
-  switch (graduation) {
-    case TruncatedLeastSquares::GradScheme::STANDARD:
-      return "STANDARD";
-    case TruncatedLeastSquares::GradScheme::GNC_LINEAR:
-      return "GNC_LINEAR";
-    case TruncatedLeastSquares::GradScheme::GNC_SUPERLINEAR:
-      return "GNC_SUPERLINEAR";
-    default:
-      return "UNKNOWN";
+  if (graduation == TruncatedLeastSquares::GradScheme::STANDARD) {
+    return "STANDARD";
+  } else if (graduation == TruncatedLeastSquares::GradScheme::GNC_LINEAR) {
+    return "GNC_LINEAR";
+  } else if (graduation == TruncatedLeastSquares::GradScheme::GNC_SUPERLINEAR) {
+    return "GNC_SUPERLINEAR";
+  } else {
+    throw std::runtime_error("Invalid TruncatedLeastSquares::GradScheme");
   }
 }
 
@@ -934,12 +935,26 @@ void Custom::print(const std::string &s = "") const {
   std::cout << s << ": Custom (" << name_ << ")" << std::endl;
 }
 
-bool Custom::equals(const Base &expected, double tol) const {
+bool Custom::equals(const Base &expected, double /*tol*/) const {
   const auto *p = dynamic_cast<const Custom *>(&expected);
   if (p == nullptr)
     return false;
-  return name_ == p->name_ && weight_.target<double(double)>() == p->weight_.target<double(double)>() &&
-         loss_.target<double(double)>() == p->loss_.target<double(double)>() && reweight_ == p->reweight_;
+  // The graduated functions are optional, so they match when both are unset or
+  // both hold the same target.
+  auto sameGraduated =
+      [](const std::optional<std::function<double(double, double)>> &a,
+         const std::optional<std::function<double(double, double)>> &b) {
+        if (a.has_value() != b.has_value()) return false;
+        return !a.has_value() || a->target<double(double, double)>() ==
+                                     b->target<double(double, double)>();
+      };
+  return name_ == p->name_ &&
+         weight_.target<double(double)>() ==
+             p->weight_.target<double(double)>() &&
+         loss_.target<double(double)>() == p->loss_.target<double(double)>() &&
+         sameGraduated(grad_loss_, p->grad_loss_) &&
+         sameGraduated(grad_weight_, p->grad_weight_) &&
+         reweight_ == p->reweight_;
 }
 
 Custom::shared_ptr Custom::Create(
