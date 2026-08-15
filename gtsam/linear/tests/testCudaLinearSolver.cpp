@@ -4,6 +4,7 @@
 #include <gtsam/linear/cuda/CudaBlockOrdering.h>
 #include <gtsam/linear/cuda/CudaDenseCholeskySolver.h>
 #include <gtsam/linear/cuda/CudaLinearSolver.h>
+#include <gtsam/linear/cuda/CudaPcgSolver.h>
 #include <gtsam/linear/cuda/CudssSpdSolver.h>
 #include <gtsam/linear/cuda/DeviceSparseSpdSystem.h>
 
@@ -14,6 +15,62 @@ using namespace gtsam::cuda;
 using gtsam::Ordering;
 using gtsam::symbol_shorthand::L;
 using gtsam::symbol_shorthand::X;
+
+namespace {
+
+class TwoByTwoOperator final : public CudaLinearOperator {
+ public:
+  int dimension() const override { return 2; }
+  void apply(const double* input, double* output,
+             cudaStream_t stream) const override {
+    double hostInput[2];
+    double hostOutput[2];
+    GTSAM_CUDA_CHECK(cudaMemcpyAsync(hostInput, input, sizeof(hostInput),
+                                     cudaMemcpyDeviceToHost, stream));
+    GTSAM_CUDA_CHECK(cudaStreamSynchronize(stream));
+    hostOutput[0] = 4.0 * hostInput[0] + hostInput[1];
+    hostOutput[1] = hostInput[0] + 3.0 * hostInput[1];
+    GTSAM_CUDA_CHECK(cudaMemcpyAsync(output, hostOutput, sizeof(hostOutput),
+                                     cudaMemcpyHostToDevice, stream));
+  }
+};
+
+class IdentityPreconditioner final : public CudaPreconditioner {
+ public:
+  int dimension() const override { return 2; }
+  void apply(const double* input, double* output,
+             cudaStream_t stream) const override {
+    GTSAM_CUDA_CHECK(cudaMemcpyAsync(output, input, 2 * sizeof(double),
+                                     cudaMemcpyDeviceToDevice, stream));
+  }
+};
+
+}  // namespace
+
+TEST(CudaPcgSolver, SolvesThroughGenericOperatorInterface) {
+  CudaPcgOptions options;
+  options.maxIterations = 2;
+  options.relativeTolerance = 1e-12;
+  options.convergenceCheckInterval = 1;
+  options.warmStart = false;
+  CudaPcgSolver solver;
+  solver.initialize(2, options);
+
+  CudaDeviceArray<double> rhs;
+  CudaDeviceArray<double> solution(2);
+  rhs.upload({1.0, 2.0});
+  solution.zero();
+  solver.solve(TwoByTwoOperator{}, IdentityPreconditioner{}, rhs.data(),
+               &solution);
+
+  std::vector<double> actual;
+  solution.download(&actual);
+  GTSAM_CUDA_CHECK(cudaDeviceSynchronize());
+  DOUBLES_EQUAL(1.0 / 11.0, actual[0], 1e-12);
+  DOUBLES_EQUAL(7.0 / 11.0, actual[1], 1e-12);
+  EXPECT(solver.stats().lastPcgConverged);
+  LONGS_EQUAL(2, solver.stats().pcgIterationsTotal);
+}
 
 TEST(DeviceSparseSpdSystem, RestoresUndampedDiagonalBetweenAttempts) {
   DeviceSparseSpdSystem system;
