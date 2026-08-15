@@ -38,6 +38,10 @@ class access;
 
 namespace gtsam {
 
+namespace internal {
+class CompactLeafSchurKernel;
+}
+
   // Forward declarations
   class VerticalBlockMatrix;
 
@@ -507,6 +511,7 @@ namespace gtsam {
     }
 
     friend class VerticalBlockMatrix;
+    friend class internal::CompactLeafSchurKernel;
     template<typename SymmetricBlockMatrixType> friend class SymmetricBlockMatrixBlockExpr;
 
   private:

@@ -202,7 +202,9 @@ class GTSAM_EXPORT MultifrontalClique {
 
   /// Check if this leaf avoids materializing its separator Hessian.
   bool useCompactCholesky() const {
-    return solveMode_ == SolveMode::CompactCholeskyLeaf;
+    return solveMode_ == SolveMode::CompactCholeskyLeaf ||
+           solveMode_ == SolveMode::FusedStarCandidate ||
+           solveMode_ == SolveMode::FusedStarCholeskyLeaf;
   }
 
   /**
@@ -261,7 +263,13 @@ class GTSAM_EXPORT MultifrontalClique {
                                   const MultifrontalClique& clique);
 
  private:
-  enum class SolveMode { Cholesky, QrLeaf, CompactCholeskyLeaf };
+  enum class SolveMode {
+    Cholesky,
+    QrLeaf,
+    CompactCholeskyLeaf,
+    FusedStarCandidate,
+    FusedStarCholeskyLeaf
+  };
 
   /// Cache pointers to frontal and separator update vectors.
   void cacheSolutionPointers(VectorValues* delta, const KeyVector& frontals,
@@ -292,8 +300,12 @@ class GTSAM_EXPORT MultifrontalClique {
     /// Flattened row-group mapping that drops frontal slots and writes the
     /// original separator Hessian directly into the parent.
     std::vector<DenseIndex> parentMappedSlots;
+    /// Cached scalar destinations corresponding to parentMappedSlots.
+    std::vector<DenseIndex> parentMappedScalarOffsets;
     /// Compact-leaf mapping into a separator-local accumulator.
     std::vector<DenseIndex> separatorMappedSlots;
+    /// Cached scalar destinations corresponding to separatorMappedSlots.
+    std::vector<DenseIndex> separatorMappedScalarOffsets;
     bool canDirectUpdate = false;
 
     /// Construct a plan for a null graph entry.
@@ -324,17 +336,38 @@ class GTSAM_EXPORT MultifrontalClique {
     void assertInvariants(const GaussianFactor* factor,
                           const MultifrontalClique& clique) const;
 
+    /// Return whether this factor is supported by a fused star leaf.
+    bool supportsFusedStarLeaf() const;
+
+    /// Cache mappings required by the clique's resolved solve mode.
+    void buildSolveMappings(const BatchJacobianFactorBase& factor,
+                            const MultifrontalClique& clique);
+
    private:
     /// Map factor keys to clique-local block indices.
     void mapKeys(const KeyVector& keys, const MultifrontalClique& clique);
 
-    /// Build direct and compact mappings for a batch factor.
-    void buildBatchMappings(const BatchJacobianFactorBase& factor,
-                            const MultifrontalClique& clique);
+    /// Build the clique-local mapping shared by direct Hessian paths.
+    void buildLocalBatchMapping(const BatchJacobianFactorBase& factor,
+                                const MultifrontalClique& clique);
+
+    /// Map retained factor slots into one compact-update destination.
+    void buildRetainedMapping(
+        const BatchJacobianFactorBase& factor, DenseIndex numFrontals,
+        const std::vector<DenseIndex>& targetIndices,
+        const std::vector<DenseIndex>& targetScalarOffsets,
+        std::vector<DenseIndex>* mappedTargetSlots,
+        std::vector<DenseIndex>* mappedTargetScalarOffsets) const;
   };
 
   /// Build and cache loading metadata for factors in this clique.
-  void buildLoadPlans(const GaussianFactorGraph& graph) const;
+  void buildLoadPlans(const GaussianFactorGraph& graph);
+
+  /// Resolve a provisional fused-star mode after factor plans are known.
+  void resolveFusedStarMode();
+
+  /// Cache scalar-column destinations for fused Schur updates.
+  void buildFusedStarMappings();
 
   /// Update a parent information matrix with this clique's separator
   /// contribution.
@@ -348,6 +381,15 @@ class GTSAM_EXPORT MultifrontalClique {
 
   /// Factor [A B a] in place into [R S d].
   void factorizeCompactCholesky();
+
+  /// Factor fused-star frontal rows without allocating an LLT workspace.
+  void factorizeFusedStarCholesky();
+
+  /// Add a fused-star retained update directly into its destination.
+  void updateFusedStarInfo(SymmetricBlockMatrix& targetInfo,
+                           const std::vector<DenseIndex>& targetIndices,
+                           const std::vector<DenseIndex>& targetScalarOffsets,
+                           bool useParentMappedSlots) const;
 
   /// Add the original separator normal equations directly into the parent.
   void updateDirectFactors(SymmetricBlockMatrix& targetInfo,
@@ -423,6 +465,9 @@ class GTSAM_EXPORT MultifrontalClique {
       parentScalarOffsets_;  ///< Cached scalar offsets for parent blocks.
   std::vector<DenseIndex> separatorIndices_;  ///< Identity separator mapping.
   SolveMode solveMode_ = SolveMode::Cholesky;
+  SolveMode starFallbackMode_ = SolveMode::Cholesky;
+  std::vector<DenseIndex> parentSchurScalarOffsets_;
+  std::vector<DenseIndex> separatorSchurScalarOffsets_;
 
   std::vector<std::vector<size_t>> sameSeparatorChildGroups_;
   std::vector<std::vector<DenseIndex>> sameSeparatorParentIndices_;
