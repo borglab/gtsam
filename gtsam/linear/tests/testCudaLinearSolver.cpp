@@ -4,9 +4,11 @@
 #include <gtsam/linear/cuda/CudaBlockOrdering.h>
 #include <gtsam/linear/cuda/CudaDenseCholeskySolver.h>
 #include <gtsam/linear/cuda/CudaLinearSolver.h>
+#include <gtsam/linear/cuda/CudssSpdSolver.h>
 #include <gtsam/linear/cuda/DeviceSparseSpdSystem.h>
 
 #include <stdexcept>
+#include <optional>
 
 using namespace gtsam::cuda;
 using gtsam::Ordering;
@@ -57,6 +59,63 @@ TEST(CudaDenseCholeskySolver, SolvesTwoByTwoSpdSystem) {
   LONGS_EQUAL(2, actual.size());
   DOUBLES_EQUAL(1.0 / 11.0, actual[0], 1e-12);
   DOUBLES_EQUAL(7.0 / 11.0, actual[1], 1e-12);
+}
+
+TEST(CudssSpdSolver, AppliesRequestedPermutationWithoutChangingSolution) {
+  DeviceSparseSpdSystem automaticSystem;
+  automaticSystem.uploadPattern(4, {0, 2, 4, 6, 7},
+                                {0, 1, 1, 2, 2, 3, 3});
+  automaticSystem.values().upload({4.0, 1.0, 3.0, 1.0, 3.0, 1.0, 2.0});
+  automaticSystem.rhs().upload({1.0, 2.0, 3.0, 4.0});
+  DeviceSparseSpdSystem orderedSystem;
+  orderedSystem.uploadPattern(4, {0, 2, 4, 6, 7},
+                              {0, 1, 1, 2, 2, 3, 3});
+  orderedSystem.values().upload({4.0, 1.0, 3.0, 1.0, 3.0, 1.0, 2.0});
+  orderedSystem.rhs().upload({1.0, 2.0, 3.0, 4.0});
+
+  CudaDeviceArray<double> automaticSolution;
+  CudssSpdSolver automaticSolver;
+  automaticSolver.analyze(automaticSystem, &automaticSolution);
+  automaticSolver.solve(automaticSystem, &automaticSolution);
+
+  CudaDeviceArray<double> orderedSolution;
+  CudssSpdSolver orderedSolver;
+  orderedSolver.analyze(orderedSystem, &orderedSolution,
+                        std::vector<int>{2, 3, 0, 1});
+  orderedSolver.solve(orderedSystem, &orderedSolution);
+
+  std::vector<double> automatic;
+  std::vector<double> ordered;
+  automaticSolution.download(&automatic);
+  orderedSolution.download(&ordered);
+  GTSAM_CUDA_CHECK(cudaDeviceSynchronize());
+  LONGS_EQUAL(automatic.size(), ordered.size());
+  for (size_t i = 0; i < automatic.size(); ++i) {
+    DOUBLES_EQUAL(automatic[i], ordered[i], 1e-12);
+  }
+  EXPECT(!automaticSolver.stats().userOrderingApplied);
+  EXPECT(orderedSolver.stats().userOrderingApplied);
+  EXPECT(std::vector<int>({2, 3, 0, 1}) ==
+         orderedSolver.appliedPermutation());
+  LONGS_EQUAL(1, orderedSolver.stats().analysisCount);
+  LONGS_EQUAL(1, orderedSolver.stats().solveCount);
+}
+
+TEST(CudssSpdSolver, RejectsInvalidPermutation) {
+  DeviceSparseSpdSystem system;
+  system.uploadPattern(2, {0, 2, 3}, {0, 1, 1});
+  system.values().upload({2.0, 0.5, 2.0});
+  system.rhs().upload({1.0, 1.0});
+  CudaDeviceArray<double> solution;
+  CudssSpdSolver solver;
+  CHECK_EXCEPTION(solver.analyze(system, &solution, std::vector<int>{0}),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(
+      solver.analyze(system, &solution, std::vector<int>{0, 0}),
+      std::invalid_argument);
+  CHECK_EXCEPTION(
+      solver.analyze(system, &solution, std::vector<int>{0, 2}),
+      std::invalid_argument);
 }
 
 TEST(CudaBlockOrdering, ExpandsKeysToScalars) {
