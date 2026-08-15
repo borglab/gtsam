@@ -139,9 +139,41 @@ void SymmetricBlockMatrix::updateFromMappedBlocks(
 }
 
 /* ************************************************************************* */
+void SymmetricBlockMatrix::updateFromMappedBlocks(
+    const SymmetricBlockMatrix& other,
+    const std::vector<DenseIndex>& blockIndices,
+    const std::vector<DenseIndex>& scalarOffsets) {
+  assert(static_cast<DenseIndex>(blockIndices.size()) == other.nBlocks());
+  assert(scalarOffsets.size() == blockIndices.size());
+  const DenseIndex otherBlocks = other.nBlocks();
+  for (DenseIndex i = 0; i < otherBlocks; ++i) {
+    const DenseIndex I = blockIndices[i];
+    if (I < 0) continue;
+    assert(I < nBlocks());
+    const DenseIndex offsetI = scalarOffsets[i];
+    assert(offsetI == blockScalarOffset(I));
+    updateDiagonalBlockAt(offsetI, other.diagonalBlock(i));
+    for (DenseIndex j = i + 1; j < otherBlocks; ++j) {
+      const DenseIndex J = blockIndices[j];
+      if (J < 0) continue;
+      assert(J < nBlocks());
+      const DenseIndex offsetJ = scalarOffsets[j];
+      assert(offsetJ == blockScalarOffset(J));
+      if (I < J) {
+        updateOffDiagonalBlockAt(offsetI, offsetJ,
+                                 other.aboveDiagonalBlock(i, j));
+      } else {
+        updateOffDiagonalBlockAt(offsetJ, offsetI,
+                                 other.aboveDiagonalBlock(i, j).transpose());
+      }
+    }
+  }
+}
+
+/* ************************************************************************* */
 void SymmetricBlockMatrix::updateFromOuterProductBlocks(
     const VerticalBlockMatrix& other,
-    const std::vector<DenseIndex>& blockIndices) {
+    const std::vector<DenseIndex>& blockIndices, double alpha) {
   assert(static_cast<DenseIndex>(blockIndices.size()) == other.nBlocks());
   const DenseIndex otherBlocks = other.nBlocks();
   for (DenseIndex i = 0; i < otherBlocks; ++i) {
@@ -149,15 +181,13 @@ void SymmetricBlockMatrix::updateFromOuterProductBlocks(
     if (I < 0) continue;
     assert(I < nBlocks());
     const auto Si = other(i);
-    Matrix diag = Si.transpose() * Si;
-    updateDiagonalBlock(I, diag);
+    updateDiagonalBlock(I, alpha * Si.transpose() * Si);
     for (DenseIndex j = i + 1; j < otherBlocks; ++j) {
       const DenseIndex J = blockIndices[j];
       if (J < 0) continue;
       assert(J < nBlocks());
       const auto Sj = other(j);
-      Matrix off = Si.transpose() * Sj;
-      updateOffDiagonalBlock(I, J, off);
+      updateOffDiagonalBlock(I, J, alpha * Si.transpose() * Sj);
     }
   }
 }

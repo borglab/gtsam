@@ -187,13 +187,17 @@ std::vector<LeafGroup> collectLeafGroups(
     const SymbolicJunctionTree::sharedNode& cluster,
     const std::map<Key, size_t>& dims,
     SymbolicJunctionTree::Cluster::KeySetMap* separatorCache) {
-  // Group leaf children by identical separators, keeping first-seen order.
+  // Group eligible leaf children by identical separators, keeping first-seen
+  // order. One-factor leaves remain separate so their numerical load plan can
+  // still select the fused direct-batch path.
   FastMap<KeySet, size_t> groupIndexBySeparator;
   std::vector<LeafGroup> groups;
 
   for (size_t i = 0; i < cluster->children.size(); ++i) {
     const auto& child = cluster->children[i];
-    if (!child || !child->children.empty()) continue;
+    if (!child || !child->children.empty() || child->factors.size() == 1) {
+      continue;
+    }
 
     child->separatorKeys(separatorCache);
     const KeySet& separatorKeys = separatorCache->at(child.get());
@@ -353,31 +357,32 @@ void accumulateSymbolicStats(const SymbolicJunctionTree::sharedNode& cluster,
 }
 
 /**
- * @brief Recursively groups leaf children into super-leaves capped by total
- * dimension.
+ * @brief Recursively groups eligible leaf children into super-leaves capped by
+ * total dimension.
  *
  * This function traverses the symbolic junction tree rooted at the given
  * cluster node. For each cluster, it gathers direct leaf children (i.e.,
- * children with no further descendants) and groups those with identical
- * separators into new super-leaves until the running total dimension reaches
- * the specified leafMergeDimCap, then starts a new group.
+ * children with no further descendants) that contain more than one factor and
+ * groups those with identical separators into new super-leaves until adding
+ * another leaf would exceed the specified leafMergeDimCap.
  *
  * The merging process works as follows:
  * - Recursively process all children clusters first.
- * - Identify all direct leaf children of the current cluster and collect their
- * total dimensions (separator + frontal) and separator keys.
- * - Group leaf children by identical separator keys, preserving first-seen
- * order for each separator.
- * - Build super-leaves by accumulating leaf children until the total dimension
- * hits the cap, then start a new super-leaf.
- * - Replace leaf children with the new super-leaves (non-leaf children keep
- * their relative order and grouped leaves appear at the first leaf location
- * for that separator).
+ * - Identify eligible direct leaf children and collect their total dimensions
+ *   (separator plus frontal), separator keys, and original positions.
+ * - Leave one-factor children separate so their numerical load plans can still
+ *   select the fused direct-batch path.
+ * - Group the remaining children by identical separator keys, preserving
+ *   first-seen order for each separator.
+ * - Build super-leaves by accumulating children under the dimension cap, then
+ *   start a new super-leaf.
+ * - Replace grouped children with the new super-leaves. Non-leaf and excluded
+ *   children keep their relative order, and each super-leaf appears at the
+ *   first original position represented by its group.
  *
- * @param cluster         The current symbolic junction tree node (cluster) to
- * process.
- * @param dims            A map from variable keys to their dimensions.
- * @param leafMergeDimCap The maximum allowed dimension for a merged cluster.
+ * @param cluster The current symbolic junction-tree node to process.
+ * @param dims A map from variable keys to their dimensions.
+ * @param leafMergeDimCap The maximum summed dimension for a merged leaf.
  */
 void mergeLeafChildren(const SymbolicJunctionTree::sharedNode& cluster,
                        const std::map<Key, size_t>& dims,
@@ -444,6 +449,8 @@ struct BuiltClique {
 // Build cliques from a symbolic junction tree and wire parent/child metadata.
 struct CliqueBuilder {
   const std::map<Key, size_t>& dims;
+  const FastMap<Key, size_t>& orderingIndex;
+  size_t firstPhaseSize;
   VectorValues* solution;
   std::vector<MultifrontalSolver::CliquePtr>* cliques;
   const std::unordered_set<Key>* fixedKeys;
@@ -456,7 +463,20 @@ struct CliqueBuilder {
     if (!cluster) return {nullptr, KeySet()};
 
     // Gather symbolic metadata for this clique.
-    const KeyVector& frontals = cluster->orderedFrontalKeys;
+    KeyVector frontals = cluster->orderedFrontalKeys;
+    // Symbolic cluster merges preserve membership but can leave frontals in
+    // merge order. Restore the requested elimination order so a partial
+    // solver's eliminated frontals form the prefix counted below.
+    std::stable_sort(frontals.begin(), frontals.end(),
+                     [this](Key a, Key b) {
+                       return orderingIndex.at(a) < orderingIndex.at(b);
+                     });
+    size_t numEliminatedFrontals = 0;
+    while (numEliminatedFrontals < frontals.size() &&
+           orderingIndex.at(frontals[numEliminatedFrontals]) <
+               firstPhaseSize) {
+      ++numEliminatedFrontals;
+    }
     const KeySet& separatorKeys = cluster->separatorKeys(&separatorCache);
     std::vector<size_t> factorIndices;
     factorIndices.reserve(cluster->factors.size());
@@ -472,7 +492,7 @@ struct CliqueBuilder {
     // Create the clique node and cache static structure.
     auto clique = std::make_shared<MultifrontalClique>(
         std::move(factorIndices), parent, frontals, separatorKeys, dims,
-        vbmRows, solution, fixedKeys);
+        vbmRows, solution, fixedKeys, numEliminatedFrontals);
 
     // Build children and collect separator keys.
     std::vector<MultifrontalClique::ChildInfo> childInfos;
@@ -506,15 +526,37 @@ size_t resolveThreadCount(size_t requested) {
 MultifrontalSolver::MultifrontalSolver(const GaussianFactorGraph& graph,
                                        const Ordering& ordering,
                                        const Parameters& params)
-    : MultifrontalSolver(Precompute(graph, ordering), ordering, params) {}
+    : MultifrontalSolver(Precompute(graph, ordering), ordering, ordering.size(),
+                         params) {}
+
+/* ************************************************************************* */
+MultifrontalSolver::MultifrontalSolver(const GaussianFactorGraph& graph,
+                                       const Ordering& ordering,
+                                       size_t firstPhaseSize,
+                                       const Parameters& params)
+    : MultifrontalSolver(Precompute(graph, ordering), ordering, firstPhaseSize,
+                         params) {}
 
 /* ************************************************************************* */
 MultifrontalSolver::MultifrontalSolver(PrecomputedData data,
                                        const Ordering& ordering,
                                        const Parameters& params)
+    : MultifrontalSolver(std::move(data), ordering, ordering.size(), params) {}
+
+/* ************************************************************************* */
+MultifrontalSolver::MultifrontalSolver(PrecomputedData data,
+                                       const Ordering& ordering,
+                                       size_t firstPhaseSize,
+                                       const Parameters& params)
     : ForestTraversal<MultifrontalSolver, MultifrontalClique>(
           resolveThreadCount(params.numThreads)),
+      ordering_(ordering),
+      firstPhaseSize_(firstPhaseSize),
       params_(params) {
+  if (firstPhaseSize_ > ordering_.size()) {
+    throw std::invalid_argument(
+        "MultifrontalSolver: first phase exceeds the ordering size.");
+  }
   dims_ = std::move(data.dims);
   fixedKeys_ = std::move(data.fixedKeys);
 
@@ -532,7 +574,7 @@ MultifrontalSolver::MultifrontalSolver(PrecomputedData data,
   reportStructure(data.indexedJunctionTree, dims_, "Symbolic cluster structure",
                   params_.reportStream);
 
-  // If applicable, merge leaf children by a separate cap first.
+  // Merge compatible leaf children under their separate dimension cap first.
   if (params_.leafMergeDimCap > 0) {
     for (const auto& rootCluster : data.indexedJunctionTree.roots()) {
       mergeLeafChildren(rootCluster, dims_, params_.leafMergeDimCap);
@@ -551,8 +593,13 @@ MultifrontalSolver::MultifrontalSolver(PrecomputedData data,
   }
 
   // Build the actual MultifrontalClique structure.
-  CliqueBuilder builder{dims_,       &solution_, &cliques_,
-                        &fixedKeys_, &params_,   &data.rowCounts};
+  FastMap<Key, size_t> orderingIndex;
+  for (size_t i = 0; i < ordering_.size(); ++i) {
+    orderingIndex.emplace(ordering_[i], i);
+  }
+  CliqueBuilder builder{dims_,       orderingIndex, firstPhaseSize_,
+                        &solution_,  &cliques_,  &fixedKeys_,
+                        &params_,    &data.rowCounts};
   for (const auto& rootCluster : data.indexedJunctionTree.roots()) {
     if (rootCluster) {
       roots_.push_back(
@@ -592,11 +639,17 @@ void MultifrontalSolver::load(const GaussianFactorGraph& graph) {
   }
   loaded_ = true;
   eliminated_ = false;
+  partiallyEliminated_ = false;
   hasDeltaError_ = false;
 }
 
 /* ************************************************************************* */
 void MultifrontalSolver::eliminateInPlace() {
+  if (firstPhaseSize_ != ordering_.size()) {
+    throw std::runtime_error(
+        "MultifrontalSolver::eliminateInPlace: solver is configured for "
+        "partial elimination.");
+  }
   if (!loaded_) {
     throw std::runtime_error(
         "MultifrontalSolver::eliminateInPlace: load() must be called before "
@@ -605,22 +658,91 @@ void MultifrontalSolver::eliminateInPlace() {
   eliminated_ = false;
   hasDeltaError_ = false;
   runBottomUp([](MultifrontalClique& node) { node.eliminateInPlace(); },
-              params_.eliminationParallelThreshold);
+              params_.eliminationParallelThreshold,
+              params_.leafAggregationProblemSize);
   eliminated_ = true;
 }
 
 /* ************************************************************************* */
 void MultifrontalSolver::eliminateInPlace(const GaussianFactorGraph& graph) {
+  if (firstPhaseSize_ != ordering_.size()) {
+    throw std::runtime_error(
+        "MultifrontalSolver::eliminateInPlace: solver is configured for "
+        "partial elimination.");
+  }
   // Combine load + eliminate in one post-order traversal to improve locality.
   runBottomUp(
       [&graph](MultifrontalClique& node) {
         node.fillAb(graph);
         node.eliminateInPlace();
       },
-      params_.eliminationParallelThreshold);
+      params_.eliminationParallelThreshold,
+      params_.leafAggregationProblemSize);
   loaded_ = true;
   eliminated_ = true;
   hasDeltaError_ = false;
+}
+
+/* ************************************************************************* */
+void MultifrontalSolver::eliminatePartialInPlace() {
+  if (!loaded_) {
+    throw std::runtime_error(
+        "MultifrontalSolver::eliminatePartialInPlace: load() must be called "
+        "before eliminating.");
+  }
+  if (firstPhaseSize_ >= ordering_.size()) {
+    throw std::runtime_error(
+        "MultifrontalSolver::eliminatePartialInPlace: solver is not "
+        "configured with a partial ordering.");
+  }
+  runBottomUp(
+      [](MultifrontalClique& node) {
+        node.prepareForElimination();
+        if (node.numFrontals() > 0) node.factorize();
+      },
+      params_.eliminationParallelThreshold,
+      params_.leafAggregationProblemSize);
+  eliminated_ = false;
+  partiallyEliminated_ = true;
+  hasDeltaError_ = false;
+}
+
+/* ************************************************************************* */
+void MultifrontalSolver::eliminatePartialInPlace(
+    const GaussianFactorGraph& graph) {
+  if (firstPhaseSize_ >= ordering_.size()) {
+    throw std::runtime_error(
+        "MultifrontalSolver::eliminatePartialInPlace: solver is not "
+        "configured with a partial ordering.");
+  }
+  runBottomUp(
+      [&graph](MultifrontalClique& node) {
+        node.fillAb(graph);
+        node.prepareForElimination();
+        if (node.numFrontals() > 0) node.factorize();
+      },
+      params_.eliminationParallelThreshold,
+      params_.leafAggregationProblemSize);
+  loaded_ = true;
+  eliminated_ = false;
+  partiallyEliminated_ = true;
+  hasDeltaError_ = false;
+}
+
+/* ************************************************************************* */
+GaussianFactorGraph MultifrontalSolver::remainingFactorGraph() const {
+  if (!partiallyEliminated_) {
+    throw std::runtime_error(
+        "MultifrontalSolver::remainingFactorGraph requires partial "
+        "elimination.");
+  }
+  GaussianFactorGraph remaining;
+  for (const auto& clique : cliques_) {
+    if (clique && !clique->fullyEliminated()) {
+      remaining.push_back(clique->remainingFactor());
+    }
+  }
+  return remaining;
 }
 
 /* ************************************************************************* */
@@ -698,6 +820,29 @@ const VectorValues& MultifrontalSolver::updateSolution() {
 
   // Mark delta error as valid for subsequent deltaError() calls.
   hasDeltaError_ = true;
+  return solution_;
+}
+
+/* ************************************************************************* */
+const VectorValues& MultifrontalSolver::updateSolution(
+    const VectorValues& retainedSolution) {
+  if (!partiallyEliminated_) {
+    throw std::runtime_error(
+        "MultifrontalSolver::updateSolution(retained) requires partial "
+        "elimination.");
+  }
+
+  for (size_t i = firstPhaseSize_; i < ordering_.size(); ++i) {
+    const Key key = ordering_[i];
+    if (fixedKeys_.count(key)) {
+      solution_.at(key).setZero();
+    } else {
+      solution_.at(key) = retainedSolution.at(key);
+    }
+  }
+  runTopDown([](MultifrontalClique& node) { node.updateSolution(); },
+             params_.solutionParallelThreshold);
+  hasDeltaError_ = false;
   return solution_;
 }
 

@@ -20,6 +20,7 @@
 #include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/linear/BatchJacobianFactor.h>
+#include <gtsam/linear/internal/BatchJacobianFactorElimination.h>
 
 #include <vector>
 
@@ -29,6 +30,7 @@ using namespace gtsam;
 namespace update_hessian_fixture {
 
 using Factor = BatchJacobianFactor<2, 2, 3>;
+using Elimination = internal::BatchJacobianFactorElimination;
 
 const KeyVector keys{0, 1, 2};
 const std::vector<size_t> keyDimensions{2, 2, 3};
@@ -128,22 +130,22 @@ TEST(BatchJacobianFactor, BuildMappedSlotsUsesRowGroupStride) {
   const Factor factor = createWeightedFactor();
 
   std::vector<DenseIndex> slotIndices = {0, 1, 2, 3};
-  std::vector<DenseIndex> mappedSlots;
-  factor.buildMappedSlots(slotIndices, mappedSlots);
+  const internal::BatchHessianMapping mapping =
+      Elimination::buildMapping(factor, slotIndices);
 
   const size_t rowGroupCount = factor.rows() / 2;
   const size_t expectedSize = rowGroupCount * (2 + 1);
-  EXPECT_LONGS_EQUAL((long)expectedSize, (long)mappedSlots.size());
+  EXPECT_LONGS_EQUAL((long)expectedSize, (long)mapping.blockSlots.size());
 
   // First row maps slots for keys {0,2} and rhs.
-  EXPECT_LONGS_EQUAL(slotIndices[0], mappedSlots[0]);
-  EXPECT_LONGS_EQUAL(slotIndices[2], mappedSlots[1]);
-  EXPECT_LONGS_EQUAL(slotIndices[3], mappedSlots[2]);
+  EXPECT_LONGS_EQUAL(slotIndices[0], mapping.blockSlots[0]);
+  EXPECT_LONGS_EQUAL(slotIndices[2], mapping.blockSlots[1]);
+  EXPECT_LONGS_EQUAL(slotIndices[3], mapping.blockSlots[2]);
 
   // Second row maps slots for keys {1,2} and rhs.
-  EXPECT_LONGS_EQUAL(slotIndices[1], mappedSlots[3]);
-  EXPECT_LONGS_EQUAL(slotIndices[2], mappedSlots[4]);
-  EXPECT_LONGS_EQUAL(slotIndices[3], mappedSlots[5]);
+  EXPECT_LONGS_EQUAL(slotIndices[1], mapping.blockSlots[3]);
+  EXPECT_LONGS_EQUAL(slotIndices[2], mapping.blockSlots[4]);
+  EXPECT_LONGS_EQUAL(slotIndices[3], mapping.blockSlots[5]);
 }
 
 // Verifies the compact mapped-slot API updates identically to the dense path.
@@ -156,9 +158,9 @@ TEST(BatchJacobianFactor, UpdateHessianWithMappedSlotsMatchesToJacobian) {
   expected.setZero();
 
   std::vector<DenseIndex> slotIndices = {0, 1, 2, 3};
-  std::vector<DenseIndex> mappedSlots;
-  factor.buildMappedSlots(slotIndices, mappedSlots);
-  factor.updateHessianWithMappedSlots(mappedSlots, &mapped);
+  const internal::BatchHessianMapping mapping =
+      Elimination::buildMapping(factor, slotIndices);
+  Elimination::addHessian(factor, mapping, &mapped);
 
   factor.toJacobianFactor().updateHessian(keys, &expected);
 
@@ -177,16 +179,20 @@ TEST(BatchJacobianFactor, UpdateHessianWithPermutedSlotOrder) {
 
   SymmetricBlockMatrix permutedDirect(permutedAugmentedDimensions),
       permutedMapped(permutedAugmentedDimensions),
+      permutedCached(permutedAugmentedDimensions),
       expected(permutedAugmentedDimensions);
   permutedDirect.setZero();
   permutedMapped.setZero();
+  permutedCached.setZero();
   expected.setZero();
 
-  factor.updateHessian(slotIndices, &permutedDirect);
+  Elimination::addHessian(factor, slotIndices, &permutedDirect);
 
-  std::vector<DenseIndex> mappedSlots;
-  factor.buildMappedSlots(slotIndices, mappedSlots);
-  factor.updateHessianWithMappedSlots(mappedSlots, &permutedMapped);
+  internal::BatchHessianMapping mapping =
+      Elimination::buildMapping(factor, slotIndices);
+  Elimination::addHessian(factor, mapping, &permutedMapped);
+  Elimination::cacheScalarOffsets(permutedCached, &mapping);
+  Elimination::addHessian(factor, mapping, &permutedCached);
 
   factor.toJacobianFactor().updateHessian(permutedInfoKeys, &expected);
 
@@ -194,6 +200,8 @@ TEST(BatchJacobianFactor, UpdateHessianWithPermutedSlotOrder) {
                       assembledHessian(permutedDirect), 1e-12));
   EXPECT(assert_equal(assembledHessian(expected),
                       assembledHessian(permutedMapped), 1e-12));
+  EXPECT(assert_equal(assembledHessian(expected),
+                      assembledHessian(permutedCached), 1e-12));
 }
 
 // Verifies mapped-slot buffers handle fixed-key slots as -1 and still match the
@@ -202,19 +210,19 @@ TEST(BatchJacobianFactor, UpdateHessianWithMappedSlotsSkipsNegativeSlots) {
   const Factor factor = createWeightedFactor();
 
   std::vector<DenseIndex> slotIndicesWithRhs = {-1, 1, 2, 3};
-  std::vector<DenseIndex> mappedSlots;
-  factor.buildMappedSlots(slotIndicesWithRhs, mappedSlots);
+  const internal::BatchHessianMapping mapping =
+      Elimination::buildMapping(factor, slotIndicesWithRhs);
 
-  EXPECT_LONGS_EQUAL(-1, mappedSlots[0]);
-  EXPECT_LONGS_EQUAL(1, mappedSlots[3]);
+  EXPECT_LONGS_EQUAL(-1, mapping.blockSlots[0]);
+  EXPECT_LONGS_EQUAL(1, mapping.blockSlots[3]);
 
   SymmetricBlockMatrix mapped(augmentedDimensions),
       expected(augmentedDimensions);
   mapped.setZero();
   expected.setZero();
 
-  factor.updateHessianWithMappedSlots(mappedSlots, &mapped);
-  factor.updateHessian(slotIndicesWithRhs, &expected);
+  Elimination::addHessian(factor, mapping, &mapped);
+  Elimination::addHessian(factor, slotIndicesWithRhs, &expected);
 
   EXPECT(assert_equal(assembledHessian(expected), assembledHessian(mapped),
                       1e-12));
@@ -226,11 +234,11 @@ TEST(BatchJacobianFactor, DuplicateMappedSlotsAreInvalid) {
   const Factor factor = createWeightedFactor();
 
   std::vector<DenseIndex> slotIndicesWithDuplicate = {0, 1, 0, 3};
-  std::vector<DenseIndex> mappedSlots;
-  factor.buildMappedSlots(slotIndicesWithDuplicate, mappedSlots);
+  const internal::BatchHessianMapping mapping =
+      Elimination::buildMapping(factor, slotIndicesWithDuplicate);
 
-  EXPECT_LONGS_EQUAL(0, mappedSlots[0]);
-  EXPECT_LONGS_EQUAL(0, mappedSlots[1]);
+  EXPECT_LONGS_EQUAL(0, mapping.blockSlots[0]);
+  EXPECT_LONGS_EQUAL(0, mapping.blockSlots[1]);
   // Debug builds assert if this duplicate mapping reaches the mapped-slot
   // update path; we do not have a dedicated death-test helper in this suite.
 }

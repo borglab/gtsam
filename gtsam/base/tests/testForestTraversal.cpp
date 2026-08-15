@@ -99,6 +99,16 @@ TEST(ForestTraversal, BottomUpCounting) {
   EXPECT_LONGS_EQUAL(expectedTotalNodes, rootValue);
 }
 
+// Scheduling aggregation preserves post-order semantics and visits every leaf.
+TEST(ForestTraversal, BottomUpLeafAggregation) {
+  std::shared_ptr<TestNode1> root = createSimpleTree<TestNode1>();
+  TestForest1 forest;
+  forest.roots_.push_back(root);
+  forest.runBottomUp(&TestNode1::bottomUpValue, 1, 4);
+
+  EXPECT_LONGS_EQUAL(7, root->subtreeCount);
+}
+
 /* ************************************************************************* */
 // Test 2: Top-down traversal
 /* ************************************************************************* */

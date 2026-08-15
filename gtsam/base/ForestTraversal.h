@@ -93,15 +93,21 @@ class ForestTraversal {
       int rootData = 0;
       VisitorPre visitor{&fn};
       auto visitorPost = [](const SharedNode&, int) {};
-      treeTraversal::DepthFirstForestParallel(static_cast<Forest&>(*this),
-                                              rootData, visitor, visitorPost,
-                                              parallelThreshold);
+      if (threadCount_ == 1) {
+        treeTraversal::DepthFirstForest(static_cast<Forest&>(*this), rootData,
+                                        visitor, visitorPost);
+      } else {
+        treeTraversal::DepthFirstForestParallel(static_cast<Forest&>(*this),
+                                                rootData, visitor, visitorPost,
+                                                parallelThreshold);
+      }
     });
   }
 
   template <typename Fn>
   /// Post-order traversal using a bottom-up visitor (TBB path).
-  void runBottomUp(Fn fn, int parallelThreshold = 10) {
+  void runBottomUp(Fn fn, int parallelThreshold = 10,
+                   size_t leafAggregationProblemSize = 0) {
     withTbbTraversalControl([&] {
       // The bottom-up visitor runs after all children are processed;
       // treeTraversal helpers orchestrate the parallelism.
@@ -113,8 +119,13 @@ class ForestTraversal {
       };
 
       VisitorPost visitor{&fn};
-      treeTraversal::PostOrderForestParallel(static_cast<Forest&>(*this),
-                                             visitor, parallelThreshold);
+      if (threadCount_ == 1) {
+        treeTraversal::PostOrderForest(static_cast<Forest&>(*this), visitor);
+      } else {
+        treeTraversal::PostOrderForestParallel(static_cast<Forest&>(*this),
+                                               visitor, parallelThreshold,
+                                               leafAggregationProblemSize);
+      }
     });
   }
 
@@ -150,7 +161,9 @@ class ForestTraversal {
 
   /// Scheduler-based bottom-up traversal.
   template <typename Fn>
-  void runBottomUp(Fn fn, int parallelThreshold = 10) {
+  void runBottomUp(Fn fn, int parallelThreshold = 10,
+                   size_t leafAggregationProblemSize = 0) {
+    (void)leafAggregationProblemSize;
     const auto& roots = getRoots();
     if (roots.empty()) return;
     // Create shared traversal state and run from all roots.

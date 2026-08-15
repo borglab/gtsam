@@ -38,6 +38,10 @@ class access;
 
 namespace gtsam {
 
+namespace internal {
+class CompactLeafSchurKernel;
+}
+
   // Forward declarations
   class VerticalBlockMatrix;
 
@@ -126,6 +130,11 @@ namespace gtsam {
     /// Number of dimensions for variable on this diagonal block.
     DenseIndex getDim(DenseIndex block) const {
       return calcIndices(block, block, 1, 1)[2];
+    }
+
+    /// Return the scalar offset of a block in the underlying matrix.
+    DenseIndex blockScalarOffset(DenseIndex block) const {
+      return offset(block);
     }
 
     /// @name Block getter methods.
@@ -235,6 +244,33 @@ namespace gtsam {
       }
     }
 
+    /// Increment a diagonal block using its cached scalar offset.
+    template <typename XprType>
+    void updateDiagonalBlockAt(DenseIndex scalarOffset,
+                               const XprType& xpr) {
+      auto dest = matrix_.block(scalarOffset, scalarOffset, xpr.rows(),
+                                xpr.cols());
+      assert(dest.rows() == dest.cols());
+      for (DenseIndex col = 0; col < dest.cols(); ++col) {
+        for (DenseIndex row = 0; row <= col; ++row) {
+          dest(row, col) += xpr(row, col);
+        }
+      }
+    }
+
+    /// Increment a fixed-size diagonal block using its cached scalar offset.
+    template <int Dimension, typename XprType>
+    void updateFixedDiagonalBlockAt(DenseIndex scalarOffset,
+                                    const XprType& xpr) {
+      auto dest = matrix_.template block<Dimension, Dimension>(scalarOffset,
+                                                               scalarOffset);
+      for (int col = 0; col < Dimension; ++col) {
+        for (int row = 0; row <= col; ++row) {
+          dest(row, col) += xpr(row, col);
+        }
+      }
+    }
+
     /// Add a vector to the diagonal entries of block I.
     void addToDiagonalBlock(DenseIndex I, const Vector& deltaDiag) {
       auto dest = block_(I, I);
@@ -260,16 +296,40 @@ namespace gtsam {
       }
     }
 
+    /// Increment an upper off-diagonal block using cached scalar offsets.
+    template <typename XprType>
+    void updateOffDiagonalBlockAt(DenseIndex rowOffset, DenseIndex colOffset,
+                                  const XprType& xpr) {
+      assert(rowOffset < colOffset);
+      matrix_.block(rowOffset, colOffset, xpr.rows(), xpr.cols()) += xpr;
+    }
+
+    /// Increment a fixed-size upper block using cached scalar offsets.
+    template <int Rows, int Cols, typename XprType>
+    void updateFixedOffDiagonalBlockAt(DenseIndex rowOffset,
+                                       DenseIndex colOffset,
+                                       const XprType& xpr) {
+      assert(rowOffset < colOffset);
+      matrix_.template block<Rows, Cols>(rowOffset, colOffset) += xpr;
+    }
+
     /// Update this matrix with blocks from another block matrix using a mapping.
     /// Entries with index -1 are skipped.
     void updateFromMappedBlocks(const SymmetricBlockMatrix& other,
                                 const std::vector<DenseIndex>& blockIndices);
 
-    /// Update this matrix with blockwise outer products from a vertical block matrix.
-    /// Adds S_i^T S_j into block (I,J), using a block mapping; entries with index -1 are skipped.
+    /// Update mapped blocks using cached scalar offsets in this matrix.
+    void updateFromMappedBlocks(
+        const SymmetricBlockMatrix& other,
+        const std::vector<DenseIndex>& blockIndices,
+        const std::vector<DenseIndex>& scalarOffsets);
+
+    /// Update this matrix with scaled blockwise outer products from a vertical block matrix.
+    /// Adds alpha * S_i^T S_j into block (I,J), using a block mapping; entries with index -1 are skipped.
     /// The range to use is controlled by other.firstBlock().
     void updateFromOuterProductBlocks(const VerticalBlockMatrix& other,
-                                      const std::vector<DenseIndex>& blockIndices);
+                                      const std::vector<DenseIndex>& blockIndices,
+                                      double alpha = 1.0);
 
     /// Add the upper-triangular part of another symmetric block matrix.
     void addUpperTriangular(const SymmetricBlockMatrix& other) {
@@ -451,6 +511,7 @@ namespace gtsam {
     }
 
     friend class VerticalBlockMatrix;
+    friend class internal::CompactLeafSchurKernel;
     template<typename SymmetricBlockMatrixType> friend class SymmetricBlockMatrixBlockExpr;
 
   private:

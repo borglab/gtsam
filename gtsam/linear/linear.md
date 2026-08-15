@@ -23,8 +23,9 @@ the current estimate.
 ## Direct Solvers and Elimination
 
 - [MultifrontalSolver](doc/MultifrontalSolver.ipynb) explains the reusable,
-  imperative multifrontal solver, its lifecycle, supported factors, and every
-  tuning option with its default.
+  imperative multifrontal solver, its lifecycle, supported factors, packed
+  numerical storage, partial-elimination export, and every tuning option with
+  its default.
 - [GaussianBayesNet](GaussianBayesNet.h) and
   [GaussianBayesTree](GaussianBayesTree.h) store the results of sequential and
   multifrontal elimination. Their graph structure is introduced in the
