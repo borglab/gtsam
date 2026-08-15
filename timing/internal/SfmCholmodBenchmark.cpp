@@ -132,9 +132,21 @@ class CholmodFactor {
   CholmodFactor& operator=(const CholmodFactor&) = delete;
 
   cholmod_factor* get() { return value_; }
-  void analyze(cholmod_sparse* sparse) {
+  void analyze(cholmod_sparse* sparse,
+               const std::vector<int32_t>& scalarPermutation) {
     reset();
-    value_ = cholmod_analyze(sparse, common_);
+    if (scalarPermutation.empty()) {
+      common_->nmethods = 0;
+      common_->postorder = true;
+      value_ = cholmod_analyze(sparse, common_);
+    } else {
+      common_->nmethods = 1;
+      common_->method[0].ordering = CHOLMOD_GIVEN;
+      common_->postorder = false;
+      value_ = cholmod_analyze_p(sparse,
+                                 const_cast<int32_t*>(scalarPermutation.data()),
+                                 nullptr, 0, common_);
+    }
     if (!value_) throw std::runtime_error("CHOLMOD symbolic analysis failed");
   }
   void reset() {
@@ -148,11 +160,31 @@ class CholmodCameraSystemSolver::Impl {
   CholmodContext context_;
   CholmodFactor factor_{context_.get()};
   std::vector<uint8_t> pattern_;
+  std::vector<size_t> cameraPermutation_;
   size_t dimension_ = 0;
 
  public:
-  Vector solve(const CompactCameraSystem& system) {
+  Vector solve(const CompactCameraSystem& system,
+               const std::vector<size_t>& cameraPermutation) {
     const size_t dimension = 9 * system.cameraCount;
+    if (!cameraPermutation.empty() &&
+        cameraPermutation.size() != system.cameraCount) {
+      throw std::invalid_argument(
+          "CHOLMOD camera permutation has the wrong size");
+    }
+    std::vector<uint8_t> seen(system.cameraCount, 0);
+    std::vector<int32_t> scalarPermutation;
+    scalarPermutation.reserve(dimension);
+    for (size_t camera : cameraPermutation) {
+      if (camera >= system.cameraCount || seen[camera]) {
+        throw std::invalid_argument("Invalid CHOLMOD camera permutation");
+      }
+      seen[camera] = 1;
+      for (size_t dimensionIndex = 0; dimensionIndex < 9; ++dimensionIndex) {
+        scalarPermutation.push_back(
+            static_cast<int32_t>(9 * camera + dimensionIndex));
+      }
+    }
     size_t entryCount = 0;
     for (size_t row = 0; row < system.cameraCount; ++row) {
       for (size_t column = row; column < system.cameraCount; ++column) {
@@ -200,10 +232,12 @@ class CholmodCameraSystemSolver::Impl {
         context_.get());
 
     if (!factor_.get() || dimension_ != dimension ||
-        pattern_ != system.usedBlocks) {
-      factor_.analyze(sparse.get());
+        pattern_ != system.usedBlocks ||
+        cameraPermutation_ != cameraPermutation) {
+      factor_.analyze(sparse.get(), scalarPermutation);
       dimension_ = dimension;
       pattern_ = system.usedBlocks;
+      cameraPermutation_ = cameraPermutation;
     }
     if (!cholmod_factorize(sparse.get(), factor_.get(), context_.get())) {
       throw std::runtime_error("CHOLMOD camera factorization failed");
@@ -228,11 +262,14 @@ CholmodCameraSystemSolver::CholmodCameraSystemSolver()
 
 CholmodCameraSystemSolver::~CholmodCameraSystemSolver() = default;
 
-Vector CholmodCameraSystemSolver::solve(const CompactCameraSystem& system) {
+Vector CholmodCameraSystemSolver::solve(
+    const CompactCameraSystem& system,
+    const std::vector<size_t>& cameraPermutation) {
 #ifdef GTSAM_TIMING_HAS_CHOLMOD
-  return impl_->solve(system);
+  return impl_->solve(system, cameraPermutation);
 #else
   (void)system;
+  (void)cameraPermutation;
   throw std::runtime_error("CHOLMOD camera solve requires CHOLMOD");
 #endif
 }

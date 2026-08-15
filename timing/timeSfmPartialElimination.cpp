@@ -135,21 +135,85 @@ Vector flattenCameraSolution(const VectorValues& solution, size_t cameraCount) {
   return result;
 }
 
-std::shared_ptr<JacobianFactor> denseCameraJacobianFactor(const Matrix& hessian,
-                                                          const Vector& rhs,
-                                                          size_t cameraCount) {
-  const Eigen::LLT<Matrix> factorization(hessian);
+std::vector<size_t> cameraPermutation(const Ordering& ordering,
+                                      size_t cameraCount) {
+  if (ordering.size() != cameraCount) {
+    throw std::invalid_argument("Camera ordering has the wrong size");
+  }
+  std::vector<size_t> permutation;
+  std::vector<uint8_t> seen(cameraCount, 0);
+  permutation.reserve(cameraCount);
+  for (Key key : ordering) {
+    const Symbol symbol(key);
+    const size_t camera = symbol.index();
+    if (symbol.chr() != 'c' || camera >= cameraCount || seen[camera]) {
+      throw std::invalid_argument("Invalid camera ordering");
+    }
+    seen[camera] = 1;
+    permutation.push_back(camera);
+  }
+  return permutation;
+}
+
+std::pair<Matrix, Vector> permuteCameraSystem(
+    const Matrix& hessian, const Vector& rhs,
+    const std::vector<size_t>& permutation) {
+  const size_t cameraCount = permutation.size();
+  Matrix permutedHessian(9 * cameraCount, 9 * cameraCount);
+  Vector permutedRhs(9 * cameraCount);
+  for (size_t orderedRow = 0; orderedRow < cameraCount; ++orderedRow) {
+    const size_t naturalRow = permutation[orderedRow];
+    permutedRhs.segment<9>(9 * orderedRow) = rhs.segment<9>(9 * naturalRow);
+    for (size_t orderedColumn = 0; orderedColumn < cameraCount;
+         ++orderedColumn) {
+      const size_t naturalColumn = permutation[orderedColumn];
+      permutedHessian.block<9, 9>(9 * orderedRow, 9 * orderedColumn) =
+          hessian.block<9, 9>(9 * naturalRow, 9 * naturalColumn);
+    }
+  }
+  return {std::move(permutedHessian), std::move(permutedRhs)};
+}
+
+Vector unpermuteCameraVector(const Vector& permuted,
+                             const std::vector<size_t>& permutation) {
+  Vector natural(permuted.size());
+  for (size_t orderedCamera = 0; orderedCamera < permutation.size();
+       ++orderedCamera) {
+    natural.segment<9>(9 * permutation[orderedCamera]) =
+        permuted.segment<9>(9 * orderedCamera);
+  }
+  return natural;
+}
+
+GaussianFactorGraph sparseCameraJacobianGraph(const Matrix& permutedHessian,
+                                              const Vector& permutedRhs,
+                                              const Ordering& cameraOrdering) {
+  const Eigen::LLT<Matrix> factorization(permutedHessian);
   if (factorization.info() != Eigen::Success) {
     throw std::runtime_error("Reduced camera Hessian Cholesky failed");
   }
   const Matrix squareRoot = factorization.matrixU();
-  const Vector jacobianRhs = factorization.matrixL().solve(rhs);
-  std::vector<std::pair<Key, Matrix>> terms;
-  terms.reserve(cameraCount);
-  for (size_t camera = 0; camera < cameraCount; ++camera) {
-    terms.emplace_back(C(camera), squareRoot.middleCols<9>(9 * camera));
+  const Vector jacobianRhs = factorization.matrixL().solve(permutedRhs);
+  const size_t cameraCount = cameraOrdering.size();
+  const double nonzeroThreshold =
+      1e-14 * std::max(1.0, squareRoot.cwiseAbs().maxCoeff());
+  GaussianFactorGraph graph;
+  graph.reserve(cameraCount);
+  for (size_t blockRow = 0; blockRow < cameraCount; ++blockRow) {
+    std::vector<std::pair<Key, Matrix>> terms;
+    for (size_t blockColumn = blockRow; blockColumn < cameraCount;
+         ++blockColumn) {
+      const Matrix99 block =
+          squareRoot.block<9, 9>(9 * blockRow, 9 * blockColumn);
+      if (blockColumn == blockRow ||
+          block.cwiseAbs().maxCoeff() > nonzeroThreshold) {
+        terms.emplace_back(cameraOrdering[blockColumn], block);
+      }
+    }
+    graph.emplace_shared<JacobianFactor>(terms,
+                                         jacobianRhs.segment<9>(9 * blockRow));
   }
-  return std::make_shared<JacobianFactor>(terms, jacobianRhs);
+  return graph;
 }
 
 CompactCameraSystem compactSystemFromDense(const Matrix& hessian,
@@ -224,8 +288,13 @@ std::vector<ReducedSolveTiming> benchmarkReducedSolvers(
     const Ordering& cameraOrdering,
     const MultifrontalSolver::Parameters& solverParameters, size_t warmups,
     size_t repetitions) {
-  GaussianFactorGraph jacobianGraph;
-  jacobianGraph.push_back(denseCameraJacobianFactor(hessian, rhs, cameraCount));
+  const std::vector<size_t> permutation =
+      cameraPermutation(cameraOrdering, cameraCount);
+  const auto permutedSystem = permuteCameraSystem(hessian, rhs, permutation);
+  const Matrix& permutedHessian = permutedSystem.first;
+  const Vector& permutedRhs = permutedSystem.second;
+  GaussianFactorGraph jacobianGraph =
+      sparseCameraJacobianGraph(permutedHessian, permutedRhs, cameraOrdering);
   std::unique_ptr<MultifrontalSolver> reducedMultifrontal;
   const double multifrontalSetupMilliseconds =
       1000.0 * measureSeconds([&] {
@@ -249,9 +318,11 @@ std::vector<ReducedSolveTiming> benchmarkReducedSolvers(
   size_t pcgIterations = 0;
 
   std::vector<ReducedSolveTiming> results;
-  results.push_back(
-      measureReducedSolve("Dense Cholesky", warmups, repetitions, hessian, rhs,
-                          [&] { return hessian.llt().solve(rhs).eval(); }));
+  results.push_back(measureReducedSolve(
+      "Dense Cholesky", warmups, repetitions, hessian, rhs, [&] {
+        return unpermuteCameraVector(permutedHessian.llt().solve(permutedRhs),
+                                     permutation);
+      }));
   results.push_back(measureReducedSolve(
       "Factor Cholesky", warmups, repetitions, hessian, rhs, [&] {
         return flattenCameraSolution(
@@ -277,7 +348,7 @@ std::vector<ReducedSolveTiming> benchmarkReducedSolvers(
   if (cholmodBackendAvailable()) {
     results.push_back(measureReducedSolve(
         "CHOLMOD", warmups, repetitions, hessian, rhs,
-        [&] { return cholmodSolver.solve(cholmodSystem); }));
+        [&] { return cholmodSolver.solve(cholmodSystem, permutation); }));
   }
   return results;
 }
@@ -342,7 +413,17 @@ int main(int argc, char* argv[]) {
     const SfmData data = loadDataset(filename);
     const GaussianFactorGraph damped =
         createDampedPointBatchSystem(data, lambda);
-    const Ordering pointFirstOrdering = createSchurOrdering(data, false);
+    const CompactCameraSystem compactReference =
+        buildPointBatchCameraSystemParallel(damped, numThreads);
+    const GaussianFactorGraph compactReducedFactors =
+        compactCameraFactorGraph(compactReference);
+    const Ordering cameraOrdering = Ordering::Metis(compactReducedFactors);
+    Ordering pointFirstOrdering;
+    for (size_t point = 0; point < data.numberTracks(); ++point) {
+      pointFirstOrdering.push_back(P(point));
+    }
+    pointFirstOrdering.insert(pointFirstOrdering.end(), cameraOrdering.begin(),
+                              cameraOrdering.end());
 
     MultifrontalSolver::Parameters solverParameters;
     solverParameters.leafMergeDimCap = leafMergeDimCap;
@@ -367,18 +448,16 @@ int main(int argc, char* argv[]) {
               solverParameters);
         });
 
-    const CompactCameraSystem compactReference =
-        buildPointBatchCameraSystemParallel(damped, numThreads);
     solver->eliminatePartialInPlace(damped);
     const GaussianFactorGraph remainingReference =
         solver->remainingFactorGraph();
 
-    Ordering cameraOrdering;
+    Ordering naturalCameraOrdering;
     for (size_t camera = 0; camera < data.numberCameras(); ++camera) {
-      cameraOrdering.push_back(C(camera));
+      naturalCameraOrdering.push_back(C(camera));
     }
     const auto [partialHessian, partialRhs] =
-        remainingReference.hessian(cameraOrdering);
+        remainingReference.hessian(naturalCameraOrdering);
     const Matrix compactHessian = denseCameraMatrix(compactReference);
     const double maximumHessianDifference =
         maximumAbsoluteDifference(compactHessian, partialHessian);
@@ -514,6 +593,7 @@ int main(int argc, char* argv[]) {
               << "\n"
               << "Leaf mode: " << leafMode << "\n"
               << "General merge cap: " << mergeCap << "\n"
+              << "Reduced-system ordering: METIS (shared camera blocks)\n"
               << "Threads per pipeline: " << numThreads << "\n"
               << "Warmups: " << warmups << ", repetitions: " << repetitions
               << "\n"
@@ -540,8 +620,6 @@ int main(int argc, char* argv[]) {
               << fusedEliminationSummary.median / compactSummary.median
               << "x\n";
 
-    const GaussianFactorGraph compactReducedFactors =
-        compactCameraFactorGraph(compactReference);
     const std::vector<ReducedSolveTiming> compactSolvers =
         benchmarkReducedSolvers(compactHessian, compactReference.rhs,
                                 compactReducedFactors, data.numberCameras(),

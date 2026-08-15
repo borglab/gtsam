@@ -23,6 +23,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <vector>
 
 namespace gtsam::timing::bal {
 
@@ -42,7 +43,8 @@ class CholmodCameraSystemSolver {
       delete;
 
   /** Factor and solve the reduced camera system, reusing symbolic analysis. */
-  Vector solve(const CompactCameraSystem& system);
+  Vector solve(const CompactCameraSystem& system,
+               const std::vector<size_t>& cameraPermutation = {});
 };
 
 struct SparseSchurOptimizationResult {
