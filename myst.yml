@@ -23,6 +23,9 @@ project:
       - file: ./gtsam/inference/inference.md
         children:
         - pattern: ./gtsam/inference/doc/*
+      - file: ./gtsam/linear/linear.md
+        children:
+        - pattern: ./gtsam/linear/doc/*
       - file: ./gtsam/hybrid/hybrid.md
         children:
         - pattern: ./gtsam/hybrid/doc/*
