@@ -37,7 +37,7 @@ endif()
 
 # Define GTSAM's system CCOLAMD implementation dependency before loading the
 # exported targets.
-if("@GTSAM_USE_SYSTEM_SUITESPARSE@")
+if("@GTSAM_USE_SYSTEM_CCOLAMD@")
   find_dependency(CCOLAMD CONFIG)
 endif()
 
