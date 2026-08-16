@@ -1,4 +1,5 @@
 #include <gtsam/base/cuda/CudaErrors.h>
+#include <gtsam/slam/cuda/CudaSfmSchurProblem.h>
 #include <gtsam/slam/cuda/CudaSfmSchurOperator.h>
 
 #include <cmath>
@@ -34,38 +35,20 @@ __device__ bool InvertPointBlock(const double* A, double* inverse) {
   return true;
 }
 
-__device__ void FormPointBlock(const double* residuals,
-                               const double* pointJacobians, int begin,
-                               int end, int pointBase, double lambda,
+__device__ void FormPointBlock(const double* pointNormalBlocks,
+                               const double* pointGradient, int point,
+                               int pointBase, double lambda,
                                const double* damping, double* block,
                                double* rhs) {
-  for (int i = 0; i < 9; ++i) block[i] = 0.0;
-  block[0] = lambda * (damping ? damping[pointBase] : 1.0);
-  block[4] = lambda * (damping ? damping[pointBase + 1] : 1.0);
-  block[8] = lambda * (damping ? damping[pointBase + 2] : 1.0);
-  rhs[0] = rhs[1] = rhs[2] = 0.0;
-  for (int observation = begin; observation < end; ++observation) {
-    const double* J = pointJacobians + 6 * observation;
-    const double r0 = residuals ? residuals[2 * observation] : 0.0;
-    const double r1 = residuals ? residuals[2 * observation + 1] : 0.0;
-    for (int a = 0; a < 3; ++a) {
-      rhs[a] += -J[a] * r0 - J[3 + a] * r1;
-      for (int b = 0; b < 3; ++b) {
-        block[3 * a + b] += J[a] * J[b] + J[3 + a] * J[3 + b];
-      }
-    }
-  }
-}
-
-__device__ void CameraPointRow(const double* cameraJacobians,
-                               const double* pointJacobians, int observation,
-                               int cameraRow, double* row) {
-  const double* Jc = cameraJacobians + 18 * observation;
-  const double* Jp = pointJacobians + 6 * observation;
-  for (int p = 0; p < 3; ++p) {
-    row[p] = Jc[cameraRow] * Jp[p] +
-             Jc[9 + cameraRow] * Jp[3 + p];
-  }
+  const double* undamped = pointNormalBlocks + 9 * point;
+  const double* gradient = pointGradient ? pointGradient + 3 * point : nullptr;
+  for (int i = 0; i < 9; ++i) block[i] = undamped[i];
+  block[0] += lambda * (damping ? damping[pointBase] : 1.0);
+  block[4] += lambda * (damping ? damping[pointBase + 1] : 1.0);
+  block[8] += lambda * (damping ? damping[pointBase + 2] : 1.0);
+  rhs[0] = gradient ? gradient[0] : 0.0;
+  rhs[1] = gradient ? gradient[1] : 0.0;
+  rhs[2] = gradient ? gradient[2] : 0.0;
 }
 
 __device__ void RowTimesInverse(const double* row, const double* inverse,
@@ -78,15 +61,15 @@ __device__ void RowTimesInverse(const double* row, const double* inverse,
 
 __global__ void ApplyImplicitSchurKernel(
     const CudaSfmObservation* observations, const int* pointOffsets,
-    const double* cameraJacobians, const double* pointJacobians, int numPoints,
-    int cameraDimension, double lambda, const double* damping,
+    const double* pointNormalBlocks, const double* cameraPointBlocks,
+    int numPoints, int cameraDimension, double lambda, const double* damping,
     const double* input, double* output) {
   const int point = blockIdx.x * blockDim.x + threadIdx.x;
   if (point >= numPoints) return;
   const int begin = pointOffsets[point];
   const int end = pointOffsets[point + 1];
   double pointBlock[9], unusedRhs[3], inverse[9];
-  FormPointBlock(nullptr, pointJacobians, begin, end,
+  FormPointBlock(pointNormalBlocks, nullptr, point,
                  cameraDimension + 3 * point, lambda, damping, pointBlock,
                  unusedRhs);
   if (!InvertPointBlock(pointBlock, inverse)) return;
@@ -94,19 +77,10 @@ __global__ void ApplyImplicitSchurKernel(
   double pointProduct[3] = {0.0, 0.0, 0.0};
   for (int observation = begin; observation < end; ++observation) {
     const int cameraBase = 9 * observations[observation].cameraSlot;
-    const double* Jc = cameraJacobians + 18 * observation;
-    double projection0 = 0.0, projection1 = 0.0;
+    const double* W = cameraPointBlocks + 27 * observation;
     for (int c = 0; c < 9; ++c) {
-      projection0 += Jc[c] * input[cameraBase + c];
-      projection1 += Jc[9 + c] * input[cameraBase + c];
-    }
-    for (int c = 0; c < 9; ++c) {
-      atomicAdd(&output[cameraBase + c],
-                Jc[c] * projection0 + Jc[9 + c] * projection1);
-      double E[3];
-      CameraPointRow(cameraJacobians, pointJacobians, observation, c, E);
       for (int p = 0; p < 3; ++p) {
-        pointProduct[p] += E[p] * input[cameraBase + c];
+        pointProduct[p] += W[3 * c + p] * input[cameraBase + c];
       }
     }
   }
@@ -118,78 +92,83 @@ __global__ void ApplyImplicitSchurKernel(
   }
   for (int observation = begin; observation < end; ++observation) {
     const int cameraBase = 9 * observations[observation].cameraSlot;
+    const double* W = cameraPointBlocks + 27 * observation;
     for (int c = 0; c < 9; ++c) {
-      double E[3];
-      CameraPointRow(cameraJacobians, pointJacobians, observation, c, E);
       atomicAdd(&output[cameraBase + c],
-                -(E[0] * solvedPoint[0] + E[1] * solvedPoint[1] +
-                  E[2] * solvedPoint[2]));
+                -(W[3 * c] * solvedPoint[0] +
+                  W[3 * c + 1] * solvedPoint[1] +
+                  W[3 * c + 2] * solvedPoint[2]));
     }
   }
 }
 
-__global__ void AddImplicitDampingKernel(int dimension, double lambda,
-                                         const double* damping,
-                                         const double* input,
-                                         double* output) {
-  const int scalar = blockIdx.x * blockDim.x + threadIdx.x;
-  if (scalar < dimension) {
-    output[scalar] +=
-        lambda * (damping ? damping[scalar] : 1.0) * input[scalar];
+__global__ void InitializeImplicitCameraProductKernel(
+    int numCameras, const double* cameraNormalBlocks, double lambda,
+    const double* damping, const double* input, double* output) {
+  const int camera = blockIdx.x * blockDim.x + threadIdx.x;
+  if (camera >= numCameras) return;
+  const int base = 9 * camera;
+  const double* U = cameraNormalBlocks + 81 * camera;
+  for (int row = 0; row < 9; ++row) {
+    double value = 0.0;
+    for (int column = 0; column < 9; ++column) {
+      value += U[9 * row + column] * input[base + column];
+    }
+    value += lambda * (damping ? damping[base + row] : 1.0) *
+             input[base + row];
+    output[base + row] = value;
   }
 }
 
 __global__ void BuildRhsAndCameraBlocksKernel(
     const CudaSfmObservation* observations, const int* pointOffsets,
-    const double* residuals, const double* cameraJacobians,
-    const double* pointJacobians, int numPoints, int cameraDimension,
+    const double* pointNormalBlocks, const double* pointGradient,
+    const double* cameraPointBlocks, int numPoints, int cameraDimension,
     double lambda, const double* damping, double* rhs, double* blocks) {
   const int point = blockIdx.x * blockDim.x + threadIdx.x;
   if (point >= numPoints) return;
   const int begin = pointOffsets[point];
   const int end = pointOffsets[point + 1];
   double pointBlock[9], pointRhs[3], inverse[9];
-  FormPointBlock(residuals, pointJacobians, begin, end,
+  FormPointBlock(pointNormalBlocks, pointGradient, point,
                  cameraDimension + 3 * point, lambda, damping, pointBlock,
                  pointRhs);
   if (!InvertPointBlock(pointBlock, inverse)) return;
 
-  for (int observation = begin; observation < end; ++observation) {
-    const int camera = observations[observation].cameraSlot;
-    const int cameraBase = 9 * camera;
-    const double* J = cameraJacobians + 18 * observation;
-    const double r0 = residuals[2 * observation];
-    const double r1 = residuals[2 * observation + 1];
-    for (int a = 0; a < 9; ++a) {
-      atomicAdd(&rhs[cameraBase + a], -J[a] * r0 - J[9 + a] * r1);
-      for (int b = 0; b < 9; ++b) {
-        atomicAdd(&blocks[81 * camera + 9 * a + b],
-                  J[a] * J[b] + J[9 + a] * J[9 + b]);
-      }
-    }
-  }
-
   for (int obsI = begin; obsI < end; ++obsI) {
     const int cameraI = observations[obsI].cameraSlot;
     const int cameraBase = 9 * cameraI;
+    const double* W_i = cameraPointBlocks + 27 * obsI;
     for (int a = 0; a < 9; ++a) {
-      double Ei[3], EiInv[3];
-      CameraPointRow(cameraJacobians, pointJacobians, obsI, a, Ei);
+      const double* Ei = W_i + 3 * a;
+      double EiInv[3];
       RowTimesInverse(Ei, inverse, EiInv);
       atomicAdd(&rhs[cameraBase + a],
                 -(EiInv[0] * pointRhs[0] + EiInv[1] * pointRhs[1] +
                   EiInv[2] * pointRhs[2]));
       for (int obsJ = begin; obsJ < end; ++obsJ) {
         if (observations[obsJ].cameraSlot != cameraI) continue;
+        const double* W_j = cameraPointBlocks + 27 * obsJ;
         for (int b = 0; b < 9; ++b) {
-          double Ej[3];
-          CameraPointRow(cameraJacobians, pointJacobians, obsJ, b, Ej);
+          const double* Ej = W_j + 3 * b;
           atomicAdd(&blocks[81 * cameraI + 9 * a + b],
                     -(EiInv[0] * Ej[0] + EiInv[1] * Ej[1] +
                       EiInv[2] * Ej[2]));
         }
       }
     }
+  }
+}
+
+__global__ void InitializeCameraPreconditionerKernel(
+    int numCameras, const double* cameraNormalBlocks,
+    const double* cameraGradient, double* rhs, double* blocks) {
+  const int camera = blockIdx.x * blockDim.x + threadIdx.x;
+  if (camera >= numCameras) return;
+  const int base = 9 * camera;
+  for (int i = 0; i < 9; ++i) rhs[base + i] = cameraGradient[base + i];
+  for (int i = 0; i < 81; ++i) {
+    blocks[81 * camera + i] = cameraNormalBlocks[81 * camera + i];
   }
 }
 
@@ -288,8 +267,8 @@ void ValidateDamping(const CudaSfmProjectionBatch& batch, int numCameras,
 
 CudaSfmSchurOperator::CudaSfmSchurOperator(
     const CudaSfmProjectionBatch& batch,
-    const CudaSfmProjectionLinearization& linearization, int numCameras)
-    : batch_(&batch), linearization_(&linearization), numCameras_(numCameras) {}
+    const CudaSfmSchurBlocks& blocks, int numCameras)
+    : batch_(&batch), blocks_(&blocks), numCameras_(numCameras) {}
 
 void CudaSfmSchurOperator::configure(
     double lambda, const CudaDeviceArray<double>* dampingDiagonal) {
@@ -303,22 +282,20 @@ void CudaSfmSchurOperator::apply(const double* input, double* output,
   if (!(lambda_ > 0.0))
     throw std::logic_error("implicit Schur operator is not configured");
   const int cameraDimension = dimension();
-  GTSAM_CUDA_CHECK(cudaMemsetAsync(output, 0,
-                                   sizeof(double) * cameraDimension, stream));
+  if (numCameras_ > 0) {
+    InitializeImplicitCameraProductKernel<<<Grid(numCameras_), kBlockSize, 0,
+                                            stream>>>(
+        numCameras_, blocks_->cameraNormalBlocks.data(), lambda_,
+        dampingDiagonal_ ? dampingDiagonal_->data() : nullptr, input, output);
+    GTSAM_CUDA_CHECK(cudaGetLastError());
+  }
   const int numPoints = static_cast<int>(batch_->numPoints());
   if (numPoints > 0) {
     ApplyImplicitSchurKernel<<<Grid(numPoints), kBlockSize, 0, stream>>>(
         batch_->observations().data(),
         batch_->pointObservationOffsets().data(),
-        linearization_->cameraJacobians.data(),
-        linearization_->pointJacobians.data(), numPoints, cameraDimension,
-        lambda_, dampingDiagonal_ ? dampingDiagonal_->data() : nullptr, input,
-        output);
-    GTSAM_CUDA_CHECK(cudaGetLastError());
-  }
-  if (cameraDimension > 0) {
-    AddImplicitDampingKernel<<<Grid(cameraDimension), kBlockSize, 0, stream>>>(
-        cameraDimension, lambda_,
+        blocks_->pointNormalBlocks.data(),
+        blocks_->cameraPointBlocks.data(), numPoints, cameraDimension, lambda_,
         dampingDiagonal_ ? dampingDiagonal_->data() : nullptr, input, output);
     GTSAM_CUDA_CHECK(cudaGetLastError());
   }
@@ -326,8 +303,8 @@ void CudaSfmSchurOperator::apply(const double* input, double* output,
 
 CudaSfmCameraBlockPreconditioner::CudaSfmCameraBlockPreconditioner(
     const CudaSfmProjectionBatch& batch,
-    const CudaSfmProjectionLinearization& linearization, int numCameras)
-    : batch_(&batch), linearization_(&linearization), numCameras_(numCameras) {}
+    const CudaSfmSchurBlocks& blocks, int numCameras)
+    : batch_(&batch), blocks_(&blocks), numCameras_(numCameras) {}
 
 void CudaSfmCameraBlockPreconditioner::build(
     double lambda, const CudaDeviceArray<double>* dampingDiagonal,
@@ -343,14 +320,21 @@ void CudaSfmCameraBlockPreconditioner::build(
   inverseBlocks_.resize(81 * static_cast<size_t>(numCameras_));
   singularBlocks_.resize(1);
   singularBlocks_.zero(stream);
+  if (numCameras_ > 0) {
+    InitializeCameraPreconditionerKernel<<<Grid(numCameras_), kBlockSize, 0,
+                                           stream>>>(
+        numCameras_, blocks_->cameraNormalBlocks.data(),
+        blocks_->cameraGradient.data(), condensedRhs->data(),
+        cameraBlocks_.data());
+    GTSAM_CUDA_CHECK(cudaGetLastError());
+  }
   const int numPoints = static_cast<int>(batch_->numPoints());
   if (numPoints > 0) {
     BuildRhsAndCameraBlocksKernel<<<Grid(numPoints), kBlockSize, 0, stream>>>(
         batch_->observations().data(),
         batch_->pointObservationOffsets().data(),
-        linearization_->residuals.data(),
-        linearization_->cameraJacobians.data(),
-        linearization_->pointJacobians.data(), numPoints, cameraDimension,
+        blocks_->pointNormalBlocks.data(), blocks_->pointGradient.data(),
+        blocks_->cameraPointBlocks.data(), numPoints, cameraDimension,
         lambda, dampingDiagonal ? dampingDiagonal->data() : nullptr,
         condensedRhs->data(), cameraBlocks_.data());
     GTSAM_CUDA_CHECK(cudaGetLastError());

@@ -246,6 +246,7 @@ struct CudaSfmFullNormalProblem::Impl {
   const double* dampingDiagonal = nullptr;
   bool linearized = false;
   bool prepared = false;
+  bool explicitSystemInitialized = false;
   size_t linearizationCount = 0;
   size_t preparationCount = 0;
   CudaDeviceArray<double> rhs;
@@ -253,8 +254,23 @@ struct CudaSfmFullNormalProblem::Impl {
   CudaDeviceArray<double> pointBlocks;
   CudaDeviceArray<double> cameraFactors;
   CudaDeviceArray<double> pointFactors;
+  DeviceSparseSpdSystem sparseSystem;
   Operator linearOperator;
   Preconditioner preconditioner;
+
+  void setShape(const CudaSfmProjectionBatch& newBatch, int newNumCameras) {
+    if (newNumCameras < 0 ||
+        static_cast<size_t>(newNumCameras) < newBatch.numCameras()) {
+      throw std::invalid_argument("SFM full-normal problem camera mismatch");
+    }
+    batch = &newBatch;
+    numCameras = newNumCameras;
+    numPoints = static_cast<int>(newBatch.numPoints());
+    dimension = 9 * numCameras + 3 * numPoints;
+    linearization = nullptr;
+    linearized = false;
+    prepared = false;
+  }
 
   void applyNormal(const double* input, double* output,
                    cudaStream_t stream) const {
@@ -287,20 +303,24 @@ CudaSfmFullNormalProblem& CudaSfmFullNormalProblem::operator=(
 
 void CudaSfmFullNormalProblem::initialize(
     const CudaSfmProjectionBatch& batch, int numCameras, cudaStream_t) {
-  if (numCameras < 0 || static_cast<size_t>(numCameras) < batch.numCameras()) {
-    throw std::invalid_argument("SFM full-normal problem camera mismatch");
-  }
-  impl_->batch = &batch;
-  impl_->numCameras = numCameras;
-  impl_->numPoints = static_cast<int>(batch.numPoints());
-  impl_->dimension = 9 * numCameras + 3 * impl_->numPoints;
+  impl_->setShape(batch, numCameras);
+  impl_->explicitSystemInitialized = false;
   impl_->rhs.resize(static_cast<size_t>(impl_->dimension));
   impl_->cameraBlocks.resize(81 * static_cast<size_t>(numCameras));
   impl_->pointBlocks.resize(9 * static_cast<size_t>(impl_->numPoints));
   impl_->cameraFactors.resize(81 * static_cast<size_t>(numCameras));
   impl_->pointFactors.resize(9 * static_cast<size_t>(impl_->numPoints));
-  impl_->linearized = false;
-  impl_->prepared = false;
+}
+
+void CudaSfmFullNormalProblem::initializeSparse(
+    const CudaSfmProjectionBatch& batch, int numCameras,
+    const std::vector<int>& rowPointers,
+    const std::vector<int>& columnIndices, cudaStream_t stream,
+    CudaDeviceTransferSummary* transferProfile) {
+  impl_->setShape(batch, numCameras);
+  impl_->sparseSystem.uploadPattern(impl_->dimension, rowPointers,
+                                    columnIndices, stream, transferProfile);
+  impl_->explicitSystemInitialized = true;
 }
 
 void CudaSfmFullNormalProblem::linearize(
@@ -316,6 +336,16 @@ void CudaSfmFullNormalProblem::linearize(
     throw std::invalid_argument("SFM full-normal linearization size mismatch");
   }
   impl_->linearization = &linearization;
+  if (impl_->explicitSystemInitialized) {
+    AccumulateCudaSfmNormalEquations(linearization, *impl_->batch,
+                                     impl_->numCameras,
+                                     &impl_->sparseSystem, stream);
+    impl_->sparseSystem.captureUndampedDiagonal(stream);
+    impl_->linearized = true;
+    impl_->prepared = false;
+    ++impl_->linearizationCount;
+    return;
+  }
   GTSAM_CUDA_CHECK(cudaMemsetAsync(
       impl_->rhs.data(), 0,
       sizeof(double) * static_cast<size_t>(impl_->dimension), stream));
@@ -368,13 +398,57 @@ CudaSfmFullNormalView PrepareFullNormal(
 
 CudaSfmFullNormalView CudaSfmFullNormalProblem::prepare(
     double lambda, cudaStream_t stream) {
+  if (impl_->explicitSystemInitialized) {
+    throw std::logic_error(
+        "explicit SFM full-normal problem requires prepareSparse");
+  }
   return PrepareFullNormal(impl_.get(), lambda, nullptr, stream);
 }
 
 CudaSfmFullNormalView CudaSfmFullNormalProblem::prepare(
     double lambda, const CudaDeviceArray<double>& dampingDiagonal,
     cudaStream_t stream) {
+  if (impl_->explicitSystemInitialized) {
+    throw std::logic_error(
+        "explicit SFM full-normal problem requires prepareSparse");
+  }
   return PrepareFullNormal(impl_.get(), lambda, &dampingDiagonal, stream);
+}
+
+namespace {
+template <class ImplType>
+DeviceSparseSpdSystem& PrepareSparseFullNormal(
+    ImplType* impl, double lambda,
+    const CudaDeviceArray<double>* dampingDiagonal, cudaStream_t stream) {
+  if (!impl->explicitSystemInitialized || !impl->linearized ||
+      !std::isfinite(lambda) || lambda <= 0.0) {
+    throw std::invalid_argument("invalid explicit SFM full-normal preparation");
+  }
+  if (dampingDiagonal &&
+      dampingDiagonal->size() != static_cast<size_t>(impl->dimension)) {
+    throw std::invalid_argument("SFM full-normal damping size mismatch");
+  }
+  if (dampingDiagonal) {
+    impl->sparseSystem.restoreAndAddDiagonal(lambda, *dampingDiagonal, stream);
+  } else {
+    impl->sparseSystem.restoreAndAddDiagonal(lambda, stream);
+  }
+  impl->prepared = true;
+  ++impl->preparationCount;
+  return impl->sparseSystem;
+}
+}  // namespace
+
+DeviceSparseSpdSystem& CudaSfmFullNormalProblem::prepareSparse(
+    double lambda, cudaStream_t stream) {
+  return PrepareSparseFullNormal(impl_.get(), lambda, nullptr, stream);
+}
+
+DeviceSparseSpdSystem& CudaSfmFullNormalProblem::prepareSparse(
+    double lambda, const CudaDeviceArray<double>& dampingDiagonal,
+    cudaStream_t stream) {
+  return PrepareSparseFullNormal(impl_.get(), lambda, &dampingDiagonal,
+                                 stream);
 }
 
 int CudaSfmFullNormalProblem::dimension() const { return impl_->dimension; }

@@ -914,6 +914,8 @@ void printCudaLmDetailedBreakdown(
               << iteration.endLambda << "\n";
     printProfileRow("      ", "damping diagonal",
                     iteration.dampingDiagonalElapsed, iteration.totalElapsed);
+    printProfileRow("      ", "normal equations",
+                    iteration.normalEquationsElapsed, iteration.totalElapsed);
     printProfileRow("      ", "accept trial copy", iteration.acceptTrialElapsed,
                     iteration.totalElapsed);
 

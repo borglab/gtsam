@@ -1,4 +1,5 @@
 #include <gtsam/base/cuda/CudaErrors.h>
+#include <gtsam/slam/cuda/CudaSfmSchurProblem.h>
 #include <gtsam/slam/cuda/CudaSfmSparseSchur.h>
 
 #include <cmath>
@@ -49,42 +50,6 @@ __device__ bool Invert3x3Sparse(const double* A, double* inverse) {
   return true;
 }
 
-__device__ void PointNormal(const double* residuals,
-                            const double* pointJacobians, int begin, int end,
-                            int pointBase, double lambda,
-                            const double* dampingDiagonal, double* block,
-                            double* rhs) {
-  for (int i = 0; i < 9; ++i) block[i] = 0.0;
-  block[0] = lambda * (dampingDiagonal ? dampingDiagonal[pointBase] : 1.0);
-  block[4] =
-      lambda * (dampingDiagonal ? dampingDiagonal[pointBase + 1] : 1.0);
-  block[8] =
-      lambda * (dampingDiagonal ? dampingDiagonal[pointBase + 2] : 1.0);
-  rhs[0] = rhs[1] = rhs[2] = 0.0;
-  for (int observation = begin; observation < end; ++observation) {
-    const double r0 = residuals[2 * observation];
-    const double r1 = residuals[2 * observation + 1];
-    const double* J = pointJacobians + 6 * observation;
-    for (int a = 0; a < 3; ++a) {
-      rhs[a] += -J[a] * r0 - J[3 + a] * r1;
-      for (int b = 0; b < 3; ++b) {
-        block[3 * a + b] += J[a] * J[b] + J[3 + a] * J[3 + b];
-      }
-    }
-  }
-}
-
-__device__ void CameraPointRowSparse(const double* cameraJacobians,
-                                     const double* pointJacobians,
-                                     int observation, int row,
-                                     double* result) {
-  const double* Jc = cameraJacobians + 18 * observation;
-  const double* Jp = pointJacobians + 6 * observation;
-  for (int p = 0; p < 3; ++p) {
-    result[p] = Jc[row] * Jp[p] + Jc[9 + row] * Jp[3 + p];
-  }
-}
-
 __device__ void TimesInverse(const double* row, const double* inverse,
                              double* result) {
   for (int c = 0; c < 3; ++c) {
@@ -93,10 +58,28 @@ __device__ void TimesInverse(const double* row, const double* inverse,
   }
 }
 
+__global__ void InitializeSparseCameraBlocksKernel(
+    int numCameras, const double* cameraNormalBlocks,
+    const double* cameraGradient, const int* rowPointers,
+    const int* columns, double* values, double* rhs) {
+  const int camera = blockIdx.x * blockDim.x + threadIdx.x;
+  if (camera >= numCameras) return;
+  const int base = 9 * camera;
+  const double* U = cameraNormalBlocks + 81 * camera;
+  for (int row = 0; row < 9; ++row) {
+    rhs[base + row] = cameraGradient[base + row];
+    for (int column = row; column < 9; ++column) {
+      const int entry =
+          FindEntry(rowPointers, columns, base + row, base + column);
+      if (entry >= 0) values[entry] = U[9 * row + column];
+    }
+  }
+}
+
 __global__ void AssembleSparseSchurKernel(
     const CudaSfmObservation* observations, const int* pointOffsets,
-    const double* residuals, const double* cameraJacobians,
-    const double* pointJacobians, int numPoints, int cameraDimension,
+    const double* pointNormalBlocks, const double* pointGradient,
+    const double* cameraPointBlocks, int numPoints, int cameraDimension,
     double lambda, const double* dampingDiagonal, const int* rowPointers,
     const int* columns, double* values, double* cameraRhs,
     int* singularPointBlocks) {
@@ -108,38 +91,29 @@ __global__ void AssembleSparseSchurKernel(
   double pointBlock[9];
   double pointRhs[3];
   double inverse[9];
-  PointNormal(residuals, pointJacobians, begin, end,
-              cameraDimension + 3 * point, lambda, dampingDiagonal,
-              pointBlock, pointRhs);
+  const double* undampedPoint = pointNormalBlocks + 9 * point;
+  const double* undampedRhs = pointGradient + 3 * point;
+  for (int i = 0; i < 9; ++i) pointBlock[i] = undampedPoint[i];
+  const int pointBase = cameraDimension + 3 * point;
+  pointBlock[0] +=
+      lambda * (dampingDiagonal ? dampingDiagonal[pointBase] : 1.0);
+  pointBlock[4] +=
+      lambda * (dampingDiagonal ? dampingDiagonal[pointBase + 1] : 1.0);
+  pointBlock[8] +=
+      lambda * (dampingDiagonal ? dampingDiagonal[pointBase + 2] : 1.0);
+  pointRhs[0] = undampedRhs[0];
+  pointRhs[1] = undampedRhs[1];
+  pointRhs[2] = undampedRhs[2];
   if (!Invert3x3Sparse(pointBlock, inverse)) {
     atomicAdd(singularPointBlocks, 1);
     return;
   }
 
-  for (int obs = begin; obs < end; ++obs) {
-    const int cameraBase = 9 * observations[obs].cameraSlot;
-    const double r0 = residuals[2 * obs];
-    const double r1 = residuals[2 * obs + 1];
-    const double* J = cameraJacobians + 18 * obs;
-    for (int a = 0; a < 9; ++a) {
-      atomicAdd(&cameraRhs[cameraBase + a],
-                -J[a] * r0 - J[9 + a] * r1);
-      for (int b = a; b < 9; ++b) {
-        const int entry = FindEntry(rowPointers, columns, cameraBase + a,
-                                    cameraBase + b);
-        if (entry >= 0) {
-          atomicAdd(&values[entry], J[a] * J[b] + J[9 + a] * J[9 + b]);
-        }
-      }
-    }
-  }
-
   for (int obsI = begin; obsI < end; ++obsI) {
     const int cameraIBase = 9 * observations[obsI].cameraSlot;
     for (int a = 0; a < 9; ++a) {
-      double Ei[3];
+      const double* Ei = cameraPointBlocks + 27 * obsI + 3 * a;
       double EiInv[3];
-      CameraPointRowSparse(cameraJacobians, pointJacobians, obsI, a, Ei);
       TimesInverse(Ei, inverse, EiInv);
       atomicAdd(&cameraRhs[cameraIBase + a],
                 -(EiInv[0] * pointRhs[0] + EiInv[1] * pointRhs[1] +
@@ -151,8 +125,7 @@ __global__ void AssembleSparseSchurKernel(
           int row = cameraIBase + a;
           int column = cameraJBase + b;
           if (row > column) continue;
-          double Ej[3];
-          CameraPointRowSparse(cameraJacobians, pointJacobians, obsJ, b, Ej);
+          const double* Ej = cameraPointBlocks + 27 * obsJ + 3 * b;
           const int entry = FindEntry(rowPointers, columns, row, column);
           if (entry >= 0) {
             atomicAdd(&values[entry],
@@ -189,7 +162,7 @@ int Grid(int count) {
 
 void AssembleCudaSfmSparseSchur(
     const CudaSfmProjectionBatch& batch,
-    const CudaSfmProjectionLinearization& linearization, int numCameras,
+    const CudaSfmSchurBlocks& blocks, int numCameras,
     double lambda, const CudaDeviceArray<double>* dampingDiagonal,
     DeviceSparseSpdSystem* system, CudaDeviceArray<int>* singularPointBlocks,
     cudaStream_t stream) {
@@ -209,12 +182,22 @@ void AssembleCudaSfmSparseSchur(
   singularPointBlocks->resize(1);
   singularPointBlocks->zero(stream);
 
+  if (numCameras > 0) {
+    InitializeSparseCameraBlocksKernel<<<Grid(numCameras), kBlockSize, 0,
+                                         stream>>>(
+        numCameras, blocks.cameraNormalBlocks.data(),
+        blocks.cameraGradient.data(), system->rowPointers().data(),
+        system->colIndices().data(), system->values().data(),
+        system->rhs().data());
+    GTSAM_CUDA_CHECK(cudaGetLastError());
+  }
+
   const int numPoints = static_cast<int>(batch.numPoints());
   if (numPoints > 0) {
     AssembleSparseSchurKernel<<<Grid(numPoints), kBlockSize, 0, stream>>>(
         batch.observations().data(), batch.pointObservationOffsets().data(),
-        linearization.residuals.data(), linearization.cameraJacobians.data(),
-        linearization.pointJacobians.data(), numPoints, cameraDimension, lambda,
+        blocks.pointNormalBlocks.data(), blocks.pointGradient.data(),
+        blocks.cameraPointBlocks.data(), numPoints, cameraDimension, lambda,
         dampingDiagonal ? dampingDiagonal->data() : nullptr,
         system->rowPointers().data(), system->colIndices().data(),
         system->values().data(), system->rhs().data(),

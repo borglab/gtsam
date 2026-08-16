@@ -90,6 +90,8 @@ struct CudaSfmLmIterationProfile {
   double endLambda = 0.0;
   double totalElapsed = 0.0;
   double dampingDiagonalElapsed = 0.0;
+  /** Once-per-outer-iteration full-normal system construction. */
+  double normalEquationsElapsed = 0.0;
   double acceptTrialElapsed = 0.0;
   bool acceptedStep = false;
   bool terminated = false;

@@ -24,6 +24,20 @@ struct CudaSfmImplicitSchurView {
   int dimension = 0;
 };
 
+/** Undamped normal-equation blocks retained for one SFM linearization. */
+struct CudaSfmSchurBlocks {
+  /** Per-camera U = Jc'Jc blocks, row-major 9-by-9. */
+  CudaDeviceArray<double> cameraNormalBlocks;
+  /** Per-camera gc = -Jc'r vectors. */
+  CudaDeviceArray<double> cameraGradient;
+  /** Per-point V = Jp'Jp blocks, row-major 3-by-3. */
+  CudaDeviceArray<double> pointNormalBlocks;
+  /** Per-point gp = -Jp'r vectors. */
+  CudaDeviceArray<double> pointGradient;
+  /** Per-observation W = Jc'Jp blocks, row-major 9-by-3. */
+  CudaDeviceArray<double> cameraPointBlocks;
+};
+
 /**
  * Persistent SFM-specific producer for reduced camera Schur systems.
  *
@@ -76,8 +90,10 @@ class GTSAM_EXPORT CudaSfmSchurProblem {
   int cameraDimension() const;
   int totalDimension() const;
   size_t linearizationCount() const;
+  size_t blockBuildCount() const;
   size_t denseAssemblyCount() const;
   const CudaSfmProjectionLinearization& linearization() const;
+  const CudaSfmSchurBlocks& blocks() const;
 
   /** Borrow the current condensed RHS (overwritten in-place by dense solve). */
   const CudaDeviceArray<double>& cameraRhs() const;

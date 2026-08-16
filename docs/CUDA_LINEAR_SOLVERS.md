@@ -14,9 +14,10 @@ letting the general optimizer and SFM use the same solver lifecycle and stats.
   matrix-free `J^T J + lambda D` operator dispatch through
   `CudaLinearSolverSession`.
 - SFM CUDA LM owns projection linearization, Schur/full-normal construction,
-  point recovery, retraction, and LM acceptance. `CudaSfmSchurProblem` keeps
-  projection Jacobians alive once per outer iteration and rebuilds only the
-  lambda-dependent system on retries.
+  point recovery, retraction, and LM acceptance. `CudaSfmSchurProblem` builds
+  and retains undamped camera `U`, point `V`, camera-point `W`, and gradient
+  blocks once per outer iteration; dense, sparse, implicit, and recovery paths
+  rebuild only their lambda-dependent state on retries.
 - The shared layer owns dense cuSOLVER Cholesky, sparse cuDSS analysis/factor/
   solve, generic PCG recurrence, explicit sparse-SPD matvec/Jacobi support,
   backend validation, GTSAM Ordering expansion, and `CudaLinearSolveStats`.
@@ -28,13 +29,17 @@ letting the general optimizer and SFM use the same solver lifecycle and stats.
 | Schur | yes | yes | yes |
 | full normal | no | yes | yes |
 
-Schur + DenseCholesky materializes a column-major reduced camera matrix. Schur
-+ Cudss scatters directly into a stable camera-only upper CSR pattern derived
-from track co-visibility; it does not create the dense matrix. Schur + Pcg
-applies `U p - W V^-1 W^T p` implicitly and uses a 9-by-9 camera-block
-preconditioner. This is the scalable iterative SFM path.
+Schur + DenseCholesky materializes a column-major reduced camera matrix from
+the persistent blocks. Schur + Cudss scatters those blocks directly into a
+stable camera-only upper CSR pattern derived from track co-visibility; it does
+not create the dense matrix. Schur + Pcg applies
+`U p - W V^-1 W^T p` directly from the same blocks and uses a 9-by-9
+camera-block preconditioner. This is the scalable iterative SFM path.
 
-Full-normal + Cudss materializes the camera-plus-point upper CSR system.
+Full-normal + Cudss materializes the undamped camera-plus-point upper CSR
+system once per outer linearization, captures its diagonal, and restores that
+diagonal before applying each lambda; it does not reaccumulate `J^T J` during
+lambda retries.
 Full-normal + Pcg applies `J^T(Jp) + lambda Dp` directly from the persistent
 projection Jacobians with independent 9-by-9 camera and 3-by-3 point block-
 Jacobi factors; it does not assemble CSR storage. It is primarily a

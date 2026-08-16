@@ -1,6 +1,5 @@
 #include <gtsam/base/cuda/CudaErrors.h>
-#include <gtsam/linear/cuda/CudaDenseCholeskySolver.h>
-#include <gtsam/nonlinear/cuda/DeviceGeometryKernels.h>
+#include <gtsam/nonlinear/cuda/DeviceGeometryTypes.h>
 #include <gtsam/slam/cuda/CudaSfmDenseSchurSolver.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionLinearization.h>
 #include <gtsam/slam/cuda/CudaSfmReducedCsrPlan.h>
@@ -20,105 +19,51 @@ namespace {
 constexpr int kDenseSchurBlockSize = 128;
 constexpr int kLongTrackSchurBlockSize = 256;
 
+__global__ void BuildPersistentSchurBlocksKernel(
+    const CudaSfmObservation* observations, const double* residuals,
+    const double* cameraJacobians, const double* pointJacobians,
+    int numObservations, double* cameraNormalBlocks, double* cameraGradient,
+    double* pointNormalBlocks, double* pointGradient,
+    double* cameraPointBlocks) {
+  const int observation = blockIdx.x * blockDim.x + threadIdx.x;
+  if (observation >= numObservations) return;
+
+  const int camera = observations[observation].cameraSlot;
+  const int point = observations[observation].pointSlot;
+  const double r0 = residuals[2 * observation];
+  const double r1 = residuals[2 * observation + 1];
+  const double* Jc = cameraJacobians + 18 * observation;
+  const double* Jp = pointJacobians + 6 * observation;
+  double* U = cameraNormalBlocks + 81 * camera;
+  double* gc = cameraGradient + 9 * camera;
+  double* V = pointNormalBlocks + 9 * point;
+  double* gp = pointGradient + 3 * point;
+  double* W = cameraPointBlocks + 27 * observation;
+
+  for (int row = 0; row < 9; ++row) {
+    atomicAdd(&gc[row], -Jc[row] * r0 - Jc[9 + row] * r1);
+    for (int column = 0; column < 9; ++column) {
+      atomicAdd(&U[9 * row + column],
+                Jc[row] * Jc[column] +
+                    Jc[9 + row] * Jc[9 + column]);
+    }
+    for (int column = 0; column < 3; ++column) {
+      W[3 * row + column] =
+          Jc[row] * Jp[column] + Jc[9 + row] * Jp[3 + column];
+    }
+  }
+  for (int row = 0; row < 3; ++row) {
+    atomicAdd(&gp[row], -Jp[row] * r0 - Jp[3 + row] * r1);
+    for (int column = 0; column < 3; ++column) {
+      atomicAdd(&V[3 * row + column],
+                Jp[row] * Jp[column] +
+                    Jp[3 + row] * Jp[3 + column]);
+    }
+  }
+}
+
 __device__ int DenseColumnMajorIndex(int row, int col, int dimension) {
   return col * dimension + row;
-}
-
-__device__ void AddCameraNormalBlock(const double* residuals,
-                                     const double* cameraJacobians,
-                                     int observationIndex,
-                                     double* denseCameraSystem, double* rhs,
-                                     int cameraDim, int cameraSlot) {
-  const int cameraBase = 9 * cameraSlot;
-  const double residual0 = residuals[2 * observationIndex];
-  const double residual1 = residuals[2 * observationIndex + 1];
-  const double* cameraJacobian = cameraJacobians + 18 * observationIndex;
-  for (int a = 0; a < 9; ++a) {
-    const double Ja0 = cameraJacobian[a];
-    const double Ja1 = cameraJacobian[9 + a];
-    atomicAdd(&rhs[cameraBase + a], -Ja0 * residual0 - Ja1 * residual1);
-    for (int b = 0; b <= a; ++b) {
-      const double Jb0 = cameraJacobian[b];
-      const double Jb1 = cameraJacobian[9 + b];
-      atomicAdd(&denseCameraSystem[DenseColumnMajorIndex(
-                    cameraBase + a, cameraBase + b, cameraDim)],
-                Ja0 * Jb0 + Ja1 * Jb1);
-    }
-  }
-}
-
-__device__ void AddPointNormalBlock(const double* residuals,
-                                    const double* pointJacobians,
-                                    int observationIndex,
-                                    double* pointBlock, double* pointRhs) {
-  const double residual0 = residuals[2 * observationIndex];
-  const double residual1 = residuals[2 * observationIndex + 1];
-  const double* pointJacobian = pointJacobians + 6 * observationIndex;
-  for (int a = 0; a < 3; ++a) {
-    const double Ja0 = pointJacobian[a];
-    const double Ja1 = pointJacobian[3 + a];
-    pointRhs[a] += -Ja0 * residual0 - Ja1 * residual1;
-    for (int b = 0; b < 3; ++b) {
-      const double Jb0 = pointJacobian[b];
-      const double Jb1 = pointJacobian[3 + b];
-      pointBlock[3 * a + b] += Ja0 * Jb0 + Ja1 * Jb1;
-    }
-  }
-}
-
-__device__ void CameraPointBlock(const double* cameraJacobians,
-                                 const double* pointJacobians,
-                                 int observationIndex,
-                                 double* block) {
-  const double* cameraJacobian = cameraJacobians + 18 * observationIndex;
-  const double* pointJacobian = pointJacobians + 6 * observationIndex;
-  for (int a = 0; a < 9; ++a) {
-    const double Ja0 = cameraJacobian[a];
-    const double Ja1 = cameraJacobian[9 + a];
-    for (int b = 0; b < 3; ++b) {
-      block[3 * a + b] =
-          Ja0 * pointJacobian[b] + Ja1 * pointJacobian[3 + b];
-    }
-  }
-}
-
-__device__ void CameraPointRow(const double* cameraJacobians,
-                               const double* pointJacobians,
-                               int observationIndex, int cameraRow,
-                               double* row) {
-  const double* cameraJacobian = cameraJacobians + 18 * observationIndex;
-  const double* pointJacobian = pointJacobians + 6 * observationIndex;
-  const double Ja0 = cameraJacobian[cameraRow];
-  const double Ja1 = cameraJacobian[9 + cameraRow];
-  for (int c = 0; c < 3; ++c) {
-    row[c] = Ja0 * pointJacobian[c] + Ja1 * pointJacobian[3 + c];
-  }
-}
-
-__device__ void CameraPointRowTimesInvPoint(const double* cameraJacobians,
-                                            const double* pointJacobians,
-                                            int observationIndex,
-                                            int cameraRow,
-                                            const double* invPoint,
-                                            double* row) {
-  double cameraPointRow[3];
-  CameraPointRow(cameraJacobians, pointJacobians, observationIndex, cameraRow,
-                 cameraPointRow);
-  for (int c = 0; c < 3; ++c) {
-    row[c] = cameraPointRow[0] * invPoint[c] +
-             cameraPointRow[1] * invPoint[3 + c] +
-             cameraPointRow[2] * invPoint[6 + c];
-  }
-}
-
-__device__ void DecodeLowerTriangular9(int index, int* row, int* col) {
-  int r = 0;
-  while (index > r) {
-    index -= r + 1;
-    ++r;
-  }
-  *row = r;
-  *col = index;
 }
 
 __device__ bool Invert3x3(const double* A, double* inverse) {
@@ -148,27 +93,22 @@ __device__ bool Invert3x3(const double* A, double* inverse) {
   return true;
 }
 
-__device__ void ComputePointNormal(
-    const double* residuals, const double* pointJacobians, int begin, int end,
-    double lambda, const double* dampingDiagonal, int pointBase,
-    double* pointBlock, double* pointRhs) {
-  for (int i = 0; i < 9; ++i) {
-    pointBlock[i] = 0.0;
-  }
-  pointBlock[0] =
+__device__ void LoadDampedPointNormal(
+    const double* pointNormalBlocks, const double* pointGradient,
+    int pointSlot, int pointBase, double lambda,
+    const double* dampingDiagonal, double* pointBlock, double* pointRhs) {
+  const double* undamped = pointNormalBlocks + 9 * pointSlot;
+  const double* gradient = pointGradient + 3 * pointSlot;
+  for (int i = 0; i < 9; ++i) pointBlock[i] = undamped[i];
+  pointBlock[0] +=
       lambda * (dampingDiagonal ? dampingDiagonal[pointBase] : 1.0);
-  pointBlock[4] =
+  pointBlock[4] +=
       lambda * (dampingDiagonal ? dampingDiagonal[pointBase + 1] : 1.0);
-  pointBlock[8] =
+  pointBlock[8] +=
       lambda * (dampingDiagonal ? dampingDiagonal[pointBase + 2] : 1.0);
-  pointRhs[0] = 0.0;
-  pointRhs[1] = 0.0;
-  pointRhs[2] = 0.0;
-
-  for (int obsIndex = begin; obsIndex < end; ++obsIndex) {
-    AddPointNormalBlock(residuals, pointJacobians, obsIndex, pointBlock,
-                        pointRhs);
-  }
+  pointRhs[0] = gradient[0];
+  pointRhs[1] = gradient[1];
+  pointRhs[2] = gradient[2];
 }
 
 __device__ void MultiplyCameraPointByInvPoint(const double* cameraPoint,
@@ -185,10 +125,11 @@ __device__ void MultiplyCameraPointByInvPoint(const double* cameraPoint,
 
 __global__ void AccumulateDenseSchurKernel(
     const CudaSfmObservation* observations, const int* pointOffsets,
-    const double* residuals, const double* cameraJacobians,
-    const double* pointJacobians, int numPoints, int cameraDim, double lambda,
-    const double* dampingDiagonal, double* denseCameraSystem,
-    double* cameraRhs, int* singularPointBlocks) {
+    const double* pointNormalBlocks, const double* pointGradient,
+    const double* cameraPointBlocks, int numPoints, int cameraDim,
+    double lambda, const double* dampingDiagonal,
+    double* denseCameraSystem, double* cameraRhs,
+    int* singularPointBlocks) {
   const int pointSlot = blockIdx.x * blockDim.x + threadIdx.x;
   if (pointSlot >= numPoints) return;
 
@@ -201,25 +142,18 @@ __global__ void AccumulateDenseSchurKernel(
   double pointRhs[3];
   double invPoint[9];
   const int pointBase = cameraDim + 3 * pointSlot;
-  ComputePointNormal(residuals, pointJacobians, begin, end, lambda,
-                     dampingDiagonal, pointBase, pointBlock, pointRhs);
+  LoadDampedPointNormal(pointNormalBlocks, pointGradient, pointSlot,
+                        pointBase, lambda, dampingDiagonal, pointBlock,
+                        pointRhs);
   if (!Invert3x3(pointBlock, invPoint)) {
     atomicAdd(singularPointBlocks, 1);
     return;
   }
 
-  for (int obsIndex = begin; obsIndex < end; ++obsIndex) {
-    const CudaSfmObservation observation = observations[obsIndex];
-    AddCameraNormalBlock(residuals, cameraJacobians, obsIndex,
-                         denseCameraSystem, cameraRhs, cameraDim,
-                         observation.cameraSlot);
-  }
-
   for (int obsI = begin; obsI < end; ++obsI) {
     const CudaSfmObservation observationI = observations[obsI];
-    double E_i[27];
     double E_i_Cinv[27];
-    CameraPointBlock(cameraJacobians, pointJacobians, obsI, E_i);
+    const double* E_i = cameraPointBlocks + 27 * obsI;
     MultiplyCameraPointByInvPoint(E_i, invPoint, E_i_Cinv);
 
     const int cameraIBase = 9 * observationI.cameraSlot;
@@ -232,8 +166,7 @@ __global__ void AccumulateDenseSchurKernel(
 
     for (int obsJ = begin; obsJ < end; ++obsJ) {
       const CudaSfmObservation observationJ = observations[obsJ];
-      double E_j[27];
-      CameraPointBlock(cameraJacobians, pointJacobians, obsJ, E_j);
+      const double* E_j = cameraPointBlocks + 27 * obsJ;
 
       const int cameraJBase = 9 * observationJ.cameraSlot;
       for (int a = 0; a < 9; ++a) {
@@ -258,8 +191,8 @@ __global__ void AccumulateDenseSchurKernel(
 __global__ void AccumulateLongTrackDenseSchurKernel(
     const int* longTrackPointSlots, int numLongTrackPoints,
     const CudaSfmObservation* observations, const int* pointOffsets,
-    const double* residuals, const double* cameraJacobians,
-    const double* pointJacobians, int cameraDim, double lambda,
+    const double* pointNormalBlocks, const double* pointGradient,
+    const double* cameraPointBlocks, int cameraDim, double lambda,
     const double* dampingDiagonal, double* denseCameraSystem,
     double* cameraRhs, int* singularPointBlocks) {
   const int listIndex = blockIdx.x;
@@ -278,8 +211,9 @@ __global__ void AccumulateLongTrackDenseSchurKernel(
 
   if (threadIdx.x == 0) {
     const int pointBase = cameraDim + 3 * pointSlot;
-    ComputePointNormal(residuals, pointJacobians, begin, end, lambda,
-                       dampingDiagonal, pointBase, pointBlock, pointRhs);
+    LoadDampedPointNormal(pointNormalBlocks, pointGradient, pointSlot,
+                          pointBase, lambda, dampingDiagonal, pointBlock,
+                          pointRhs);
     invertible = Invert3x3(pointBlock, invPoint) ? 1 : 0;
     if (!invertible) {
       atomicAdd(singularPointBlocks, 1);
@@ -288,41 +222,18 @@ __global__ void AccumulateLongTrackDenseSchurKernel(
   __syncthreads();
   if (!invertible) return;
 
-  constexpr int kCameraDirectEntries = 9 + 45;
-  for (int work = threadIdx.x; work < degree * kCameraDirectEntries;
-       work += blockDim.x) {
-    const int obsIndex = begin + work / kCameraDirectEntries;
-    const int local = work % kCameraDirectEntries;
-    const CudaSfmObservation observation = observations[obsIndex];
-    const int cameraBase = 9 * observation.cameraSlot;
-    const double residual0 = residuals[2 * obsIndex];
-    const double residual1 = residuals[2 * obsIndex + 1];
-    const double* cameraJacobian = cameraJacobians + 18 * obsIndex;
-
-    if (local < 9) {
-      const int a = local;
-      atomicAdd(&cameraRhs[cameraBase + a],
-                -cameraJacobian[a] * residual0 -
-                    cameraJacobian[9 + a] * residual1);
-    } else {
-      int a;
-      int b;
-      DecodeLowerTriangular9(local - 9, &a, &b);
-      atomicAdd(&denseCameraSystem[DenseColumnMajorIndex(
-                    cameraBase + a, cameraBase + b, cameraDim)],
-                cameraJacobian[a] * cameraJacobian[b] +
-                    cameraJacobian[9 + a] * cameraJacobian[9 + b]);
-    }
-  }
-
   for (int work = threadIdx.x; work < degree * 9; work += blockDim.x) {
     const int obsIndex = begin + work / 9;
     const int a = work % 9;
     const CudaSfmObservation observation = observations[obsIndex];
     const int cameraBase = 9 * observation.cameraSlot;
+    const double* E_i = cameraPointBlocks + 27 * obsIndex + 3 * a;
     double E_i_Cinv_row[3];
-    CameraPointRowTimesInvPoint(cameraJacobians, pointJacobians, obsIndex, a,
-                                invPoint, E_i_Cinv_row);
+    for (int column = 0; column < 3; ++column) {
+      E_i_Cinv_row[column] =
+          E_i[0] * invPoint[column] + E_i[1] * invPoint[3 + column] +
+          E_i[2] * invPoint[6 + column];
+    }
     const double rhsCorrection = E_i_Cinv_row[0] * pointRhs[0] +
                                  E_i_Cinv_row[1] * pointRhs[1] +
                                  E_i_Cinv_row[2] * pointRhs[2];
@@ -347,11 +258,14 @@ __global__ void AccumulateLongTrackDenseSchurKernel(
       continue;
     }
 
+    const double* E_i = cameraPointBlocks + 27 * obsI + 3 * a;
+    const double* E_j_row = cameraPointBlocks + 27 * obsJ + 3 * b;
     double E_i_Cinv_row[3];
-    double E_j_row[3];
-    CameraPointRowTimesInvPoint(cameraJacobians, pointJacobians, obsI, a,
-                                invPoint, E_i_Cinv_row);
-    CameraPointRow(cameraJacobians, pointJacobians, obsJ, b, E_j_row);
+    for (int column = 0; column < 3; ++column) {
+      E_i_Cinv_row[column] =
+          E_i[0] * invPoint[column] + E_i[1] * invPoint[3 + column] +
+          E_i[2] * invPoint[6 + column];
+    }
     const double value = E_i_Cinv_row[0] * E_j_row[0] +
                          E_i_Cinv_row[1] * E_j_row[1] +
                          E_i_Cinv_row[2] * E_j_row[2];
@@ -360,21 +274,35 @@ __global__ void AccumulateLongTrackDenseSchurKernel(
   }
 }
 
-__global__ void AddCameraDampingKernel(int cameraDim, double lambda,
-                                       const double* dampingDiagonal,
-                                       double* denseCameraSystem) {
-  const int i = blockIdx.x * blockDim.x + threadIdx.x;
-  if (i < cameraDim) {
-    denseCameraSystem[i * cameraDim + i] +=
-        lambda * (dampingDiagonal ? dampingDiagonal[i] : 1.0);
+__global__ void InitializeDenseCameraSystemKernel(
+    int numCameras, int cameraDim, const double* cameraNormalBlocks,
+    const double* cameraGradient, double lambda,
+    const double* dampingDiagonal, double* denseCameraSystem,
+    double* cameraRhs) {
+  const int camera = blockIdx.x * blockDim.x + threadIdx.x;
+  if (camera >= numCameras) return;
+  const int base = 9 * camera;
+  const double* U = cameraNormalBlocks + 81 * camera;
+  for (int row = 0; row < 9; ++row) {
+    cameraRhs[base + row] = cameraGradient[base + row];
+    for (int column = 0; column <= row; ++column) {
+      denseCameraSystem[DenseColumnMajorIndex(base + row, base + column,
+                                               cameraDim)] =
+          U[9 * row + column];
+    }
+    denseCameraSystem[DenseColumnMajorIndex(base + row, base + row,
+                                             cameraDim)] +=
+        lambda *
+        (dampingDiagonal ? dampingDiagonal[base + row] : 1.0);
   }
 }
 
 __global__ void RecoverPointDeltaKernel(
     const CudaSfmObservation* observations, const int* pointOffsets,
-    const double* residuals, const double* cameraJacobians,
-    const double* pointJacobians, int numPoints, int cameraDim, double lambda,
-    const double* dampingDiagonal, double* delta, int* singularPointBlocks) {
+    const double* pointNormalBlocks, const double* pointGradient,
+    const double* cameraPointBlocks, int numPoints, int cameraDim,
+    double lambda, const double* dampingDiagonal, double* delta,
+    int* singularPointBlocks) {
   const int pointSlot = blockIdx.x * blockDim.x + threadIdx.x;
   if (pointSlot >= numPoints) return;
 
@@ -384,8 +312,9 @@ __global__ void RecoverPointDeltaKernel(
   double pointRhs[3];
   double invPoint[9];
   const int pointBase = cameraDim + 3 * pointSlot;
-  ComputePointNormal(residuals, pointJacobians, begin, end, lambda,
-                     dampingDiagonal, pointBase, pointBlock, pointRhs);
+  LoadDampedPointNormal(pointNormalBlocks, pointGradient, pointSlot,
+                        pointBase, lambda, dampingDiagonal, pointBlock,
+                        pointRhs);
   if (!Invert3x3(pointBlock, invPoint)) {
     atomicAdd(singularPointBlocks, 1);
     return;
@@ -394,16 +323,12 @@ __global__ void RecoverPointDeltaKernel(
   double reducedRhs[3] = {pointRhs[0], pointRhs[1], pointRhs[2]};
   for (int obsIndex = begin; obsIndex < end; ++obsIndex) {
     const CudaSfmObservation observation = observations[obsIndex];
-    const double* cameraJacobian = cameraJacobians + 18 * obsIndex;
-    const double* pointJacobian = pointJacobians + 6 * obsIndex;
+    const double* cameraPoint = cameraPointBlocks + 27 * obsIndex;
     const int cameraBase = 9 * observation.cameraSlot;
     for (int p = 0; p < 3; ++p) {
       double correction = 0.0;
       for (int c = 0; c < 9; ++c) {
-        const double E_cp =
-            cameraJacobian[c] * pointJacobian[p] +
-            cameraJacobian[9 + c] * pointJacobian[3 + p];
-        correction += E_cp * delta[cameraBase + c];
+        correction += cameraPoint[3 * c + p] * delta[cameraBase + c];
       }
       reducedRhs[p] -= correction;
     }
@@ -461,6 +386,7 @@ struct CudaSfmSchurProblem::Impl {
   CudaDeviceArray<double> denseCameraSystem;
   CudaDeviceArray<double> cameraRhs;
   CudaSfmProjectionLinearization linearization;
+  CudaSfmSchurBlocks blocks;
   CudaDeviceArray<int> singularPointBlocks;
   DeviceSparseSpdSystem sparseSystem;
   std::vector<int> sparseRowPointers;
@@ -474,6 +400,7 @@ struct CudaSfmSchurProblem::Impl {
   int numPoints = 0;
   bool isLinearized = false;
   size_t linearizationCount = 0;
+  size_t blockBuildCount = 0;
   size_t denseAssemblyCount = 0;
 
   void initialize(const CudaSfmProjectionBatch& newBatch,
@@ -490,8 +417,12 @@ struct CudaSfmSchurProblem::Impl {
       throw std::invalid_argument(
           "CudaSfmSchurProblem point offset size mismatch");
     }
-    if (static_cast<size_t>(newNumCameras) >
-        static_cast<size_t>(std::numeric_limits<int>::max() / 9) ||
+    constexpr size_t kMaxInt =
+        static_cast<size_t>(std::numeric_limits<int>::max());
+    if (static_cast<size_t>(newNumCameras) > kMaxInt / 81 ||
+        newBatch.numPoints() > kMaxInt / 9 ||
+        newBatch.numObservations() > kMaxInt / 27 ||
+        newBatch.numObservations() > kMaxInt - kDenseSchurBlockSize + 1 ||
         newBatch.numPoints() >
             static_cast<size_t>((std::numeric_limits<int>::max() -
                                  9 * newNumCameras) /
@@ -523,8 +454,40 @@ struct CudaSfmSchurProblem::Impl {
           "CudaSfmSchurProblem batch/value size mismatch");
     }
     LinearizeCudaSfmProjectionBatch(values, *batch, &linearization, stream);
+    const size_t observations = batch->numObservations();
+    blocks.cameraNormalBlocks.resize(81 * static_cast<size_t>(numCameras));
+    blocks.cameraGradient.resize(9 * static_cast<size_t>(numCameras));
+    blocks.pointNormalBlocks.resize(9 * static_cast<size_t>(numPoints));
+    blocks.pointGradient.resize(3 * static_cast<size_t>(numPoints));
+    blocks.cameraPointBlocks.resize(27 * observations);
+    blocks.cameraNormalBlocks.zero(stream);
+    blocks.cameraGradient.zero(stream);
+    blocks.pointNormalBlocks.zero(stream);
+    blocks.pointGradient.zero(stream);
+    blocks.cameraPointBlocks.zero(stream);
+    if (observations > 0) {
+      if (observations >
+          static_cast<size_t>(std::numeric_limits<int>::max())) {
+        throw std::invalid_argument(
+            "CudaSfmSchurProblem observation count exceeds int range");
+      }
+      const int observationCount = static_cast<int>(observations);
+      const int grid =
+          (observationCount + kDenseSchurBlockSize - 1) /
+          kDenseSchurBlockSize;
+      BuildPersistentSchurBlocksKernel<<<grid, kDenseSchurBlockSize, 0,
+                                         stream>>>(
+          batch->observations().data(), linearization.residuals.data(),
+          linearization.cameraJacobians.data(),
+          linearization.pointJacobians.data(), observationCount,
+          blocks.cameraNormalBlocks.data(), blocks.cameraGradient.data(),
+          blocks.pointNormalBlocks.data(), blocks.pointGradient.data(),
+          blocks.cameraPointBlocks.data());
+      GTSAM_CUDA_CHECK(cudaGetLastError());
+    }
     isLinearized = true;
     ++linearizationCount;
+    ++blockBuildCount;
   }
 
   CudaDenseSpdSystemView prepareDense(
@@ -561,6 +524,19 @@ struct CudaSfmSchurProblem::Impl {
     cameraRhs.zero(stream);
     singularPointBlocks.zero(stream);
 
+    const int cameraBlockGrid =
+        (numCameras + kDenseSchurBlockSize - 1) /
+        kDenseSchurBlockSize;
+    if (cameraBlockGrid > 0) {
+      InitializeDenseCameraSystemKernel<<<cameraBlockGrid,
+                                          kDenseSchurBlockSize, 0, stream>>>(
+          numCameras, cameraDim, blocks.cameraNormalBlocks.data(),
+          blocks.cameraGradient.data(), lambda,
+          dampingDiagonal ? dampingDiagonal->data() : nullptr,
+          denseCameraSystem.data(), cameraRhs.data());
+      GTSAM_CUDA_CHECK(cudaGetLastError());
+    }
+
     const int pointGrid =
         (numPoints + kDenseSchurBlockSize - 1) / kDenseSchurBlockSize;
     if (pointGrid > 0) {
@@ -568,8 +544,8 @@ struct CudaSfmSchurProblem::Impl {
                                    stream>>>(
           batch->observations().data(),
           batch->pointObservationOffsets().data(),
-          linearization.residuals.data(), linearization.cameraJacobians.data(),
-          linearization.pointJacobians.data(), numPoints, cameraDim, lambda,
+          blocks.pointNormalBlocks.data(), blocks.pointGradient.data(),
+          blocks.cameraPointBlocks.data(), numPoints, cameraDim, lambda,
           dampingDiagonal ? dampingDiagonal->data() : nullptr,
           denseCameraSystem.data(), cameraRhs.data(),
           singularPointBlocks.data());
@@ -585,20 +561,13 @@ struct CudaSfmSchurProblem::Impl {
           batch->longTrackPointSlots().data(), longTrackGrid,
           batch->observations().data(),
           batch->pointObservationOffsets().data(),
-          linearization.residuals.data(), linearization.cameraJacobians.data(),
-          linearization.pointJacobians.data(), cameraDim, lambda,
+          blocks.pointNormalBlocks.data(), blocks.pointGradient.data(),
+          blocks.cameraPointBlocks.data(), cameraDim, lambda,
           dampingDiagonal ? dampingDiagonal->data() : nullptr,
           denseCameraSystem.data(), cameraRhs.data(),
           singularPointBlocks.data());
       GTSAM_CUDA_CHECK(cudaGetLastError());
     }
-
-    const int cameraGrid =
-        (cameraDim + kDenseSchurBlockSize - 1) / kDenseSchurBlockSize;
-    AddCameraDampingKernel<<<cameraGrid, kDenseSchurBlockSize, 0, stream>>>(
-        cameraDim, lambda, dampingDiagonal ? dampingDiagonal->data() : nullptr,
-        denseCameraSystem.data());
-    GTSAM_CUDA_CHECK(cudaGetLastError());
 
     ++denseAssemblyCount;
     return {cameraDim, cameraDim, denseCameraSystem.data(), cameraRhs.data()};
@@ -631,7 +600,7 @@ struct CudaSfmSchurProblem::Impl {
       sparseRowPointers = plan.rowPointers();
       sparseColumnIndices = plan.columnIndices();
     }
-    AssembleCudaSfmSparseSchur(*batch, linearization, numCameras, lambda,
+    AssembleCudaSfmSparseSchur(*batch, blocks, numCameras, lambda,
                               dampingDiagonal, &sparseSystem,
                               &singularPointBlocks, stream);
     return sparseSystem;
@@ -646,10 +615,10 @@ struct CudaSfmSchurProblem::Impl {
     }
     if (!implicitOperator) {
       implicitOperator = std::make_unique<CudaSfmSchurOperator>(
-          *batch, linearization, numCameras);
+          *batch, blocks, numCameras);
       implicitPreconditioner =
           std::make_unique<CudaSfmCameraBlockPreconditioner>(
-              *batch, linearization, numCameras);
+              *batch, blocks, numCameras);
     }
     implicitOperator->configure(lambda, dampingDiagonal);
     implicitPreconditioner->build(lambda, dampingDiagonal, &implicitRhs,
@@ -700,8 +669,8 @@ struct CudaSfmSchurProblem::Impl {
       RecoverPointDeltaKernel<<<pointGrid, kDenseSchurBlockSize, 0, stream>>>(
           batch->observations().data(),
           batch->pointObservationOffsets().data(),
-          linearization.residuals.data(), linearization.cameraJacobians.data(),
-          linearization.pointJacobians.data(), numPoints, cameraDim, lambda,
+          blocks.pointNormalBlocks.data(), blocks.pointGradient.data(),
+          blocks.cameraPointBlocks.data(), numPoints, cameraDim, lambda,
           dampingDiagonal ? dampingDiagonal->data() : nullptr,
           fullDelta->data(), singularPointBlocks.data());
       GTSAM_CUDA_CHECK(cudaGetLastError());
@@ -779,6 +748,9 @@ int CudaSfmSchurProblem::totalDimension() const { return impl_->totalDim(); }
 size_t CudaSfmSchurProblem::linearizationCount() const {
   return impl_->linearizationCount;
 }
+size_t CudaSfmSchurProblem::blockBuildCount() const {
+  return impl_->blockBuildCount;
+}
 size_t CudaSfmSchurProblem::denseAssemblyCount() const {
   return impl_->denseAssemblyCount;
 }
@@ -788,6 +760,12 @@ CudaSfmSchurProblem::linearization() const {
     throw std::logic_error("CudaSfmSchurProblem is not linearized");
   }
   return impl_->linearization;
+}
+const CudaSfmSchurBlocks& CudaSfmSchurProblem::blocks() const {
+  if (!impl_->isLinearized) {
+    throw std::logic_error("CudaSfmSchurProblem is not linearized");
+  }
+  return impl_->blocks;
 }
 const CudaDeviceArray<double>& CudaSfmSchurProblem::cameraRhs() const {
   return impl_->cameraRhs;

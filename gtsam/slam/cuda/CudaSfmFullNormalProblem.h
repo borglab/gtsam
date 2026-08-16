@@ -3,11 +3,13 @@
 #include <gtsam/base/cuda/CudaDeviceArray.h>
 #include <gtsam/dllexport.h>
 #include <gtsam/linear/cuda/CudaLinearSystem.h>
+#include <gtsam/linear/cuda/DeviceSparseSpdSystem.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionBatch.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionLinearization.h>
 
 #include <cstddef>
 #include <memory>
+#include <vector>
 
 namespace gtsam::cuda {
 
@@ -36,11 +38,21 @@ class GTSAM_EXPORT CudaSfmFullNormalProblem {
 
   void initialize(const CudaSfmProjectionBatch& batch, int numCameras,
                   cudaStream_t stream = nullptr);
+  void initializeSparse(
+      const CudaSfmProjectionBatch& batch, int numCameras,
+      const std::vector<int>& rowPointers,
+      const std::vector<int>& columnIndices, cudaStream_t stream = nullptr,
+      CudaDeviceTransferSummary* transferProfile = nullptr);
   void linearize(const CudaSfmProjectionLinearization& linearization,
                  cudaStream_t stream = nullptr);
   CudaSfmFullNormalView prepare(double lambda,
                                 cudaStream_t stream = nullptr);
   CudaSfmFullNormalView prepare(
+      double lambda, const CudaDeviceArray<double>& dampingDiagonal,
+      cudaStream_t stream = nullptr);
+  DeviceSparseSpdSystem& prepareSparse(
+      double lambda, cudaStream_t stream = nullptr);
+  DeviceSparseSpdSystem& prepareSparse(
       double lambda, const CudaDeviceArray<double>& dampingDiagonal,
       cudaStream_t stream = nullptr);
 

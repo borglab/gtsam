@@ -7,11 +7,12 @@
 
 namespace gtsam::cuda {
 
+struct CudaSfmSchurBlocks;
+
 class CudaSfmSchurOperator final : public CudaLinearOperator {
  public:
   CudaSfmSchurOperator(const CudaSfmProjectionBatch& batch,
-                       const CudaSfmProjectionLinearization& linearization,
-                       int numCameras);
+                       const CudaSfmSchurBlocks& blocks, int numCameras);
 
   void configure(double lambda,
                  const CudaDeviceArray<double>* dampingDiagonal);
@@ -21,7 +22,7 @@ class CudaSfmSchurOperator final : public CudaLinearOperator {
 
  private:
   const CudaSfmProjectionBatch* batch_;
-  const CudaSfmProjectionLinearization* linearization_;
+  const CudaSfmSchurBlocks* blocks_;
   int numCameras_;
   double lambda_ = 0.0;
   const CudaDeviceArray<double>* dampingDiagonal_ = nullptr;
@@ -31,7 +32,7 @@ class CudaSfmCameraBlockPreconditioner final : public CudaPreconditioner {
  public:
   CudaSfmCameraBlockPreconditioner(
       const CudaSfmProjectionBatch& batch,
-      const CudaSfmProjectionLinearization& linearization, int numCameras);
+      const CudaSfmSchurBlocks& blocks, int numCameras);
 
   void build(double lambda, const CudaDeviceArray<double>* dampingDiagonal,
              CudaDeviceArray<double>* condensedRhs,
@@ -45,7 +46,7 @@ class CudaSfmCameraBlockPreconditioner final : public CudaPreconditioner {
 
  private:
   const CudaSfmProjectionBatch* batch_;
-  const CudaSfmProjectionLinearization* linearization_;
+  const CudaSfmSchurBlocks* blocks_;
   int numCameras_;
   CudaDeviceArray<double> cameraBlocks_;
   CudaDeviceArray<double> inverseBlocks_;

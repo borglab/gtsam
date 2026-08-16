@@ -905,43 +905,43 @@ git commit -m "docs: explain shared CUDA linear solver architecture"
 - Modify only files implicated by a reproduced failure.
 - Record results in: `timing/sfm_ba/cuda_solver_matrix.md`
 
-- [ ] **Step 1: Configure a clean CUDA/cuDSS release build**
+- [x] **Step 1: Configure a clean CUDA/cuDSS release build**
 
 Run: `cmake -S . -B build-cuda-final -DGTSAM_BUILD_WITH_CUDA=ON -DGTSAM_BUILD_WITH_CUDSS=ON -DCMAKE_BUILD_TYPE=Release -DGTSAM_BUILD_TESTS=ON -DGTSAM_BUILD_TIMING_ALWAYS=ON`
 
 Expected: configure succeeds and reports CUDA, cuSOLVER, cuSPARSE, and cuDSS enabled.
 
-- [ ] **Step 2: Build all affected libraries, tests, and benchmarks**
+- [x] **Step 2: Build all affected libraries, tests, and benchmarks**
 
 Run: `cmake --build build-cuda-final --target gtsam testCudaLinearSolver testCudaSparseJacobian testCudaSparseLevenbergMarquardt testCudaSfm timeCudaSparseLM timeCudaSFMBAL -j2`
 
 Expected: all targets build without warnings promoted to errors or unresolved compatibility symbols.
 
-- [ ] **Step 3: Run the complete affected test set**
+- [x] **Step 3: Run the complete affected test set**
 
 Run: `ctest --test-dir build-cuda-final --output-on-failure -R 'testCudaLinearSolver|testCudaSparseJacobian|testCudaSparseLevenbergMarquardt|testCudaSfm'`
 
 Expected: every selected test passes.
 
-- [ ] **Step 4: Run CUDA memory/race validation on focused boundary cases**
+- [x] **Step 4: Run CUDA memory/race validation on focused boundary cases**
 
 Run: `compute-sanitizer --tool memcheck --error-exitcode=99 ./build-cuda-final/gtsam/linear/tests/testCudaLinearSolver && compute-sanitizer --tool memcheck --error-exitcode=99 ./build-cuda-final/gtsam/slam/tests/testCudaSfm && compute-sanitizer --tool racecheck --error-exitcode=99 ./build-cuda-final/gtsam/slam/tests/testCudaSfm`
 
 Expected: zero CUDA API, memory, leak, initialization, and race errors.
 
-- [ ] **Step 5: Run correctness-gated benchmark matrix**
+- [x] **Step 5: Run correctness-gated benchmark matrix**
 
 Run: `./timing/sfm_ba/run_cuda_sfm_bal_benchmarks.sh ./build-cuda-final/timing/sfm_ba/timeCudaSFMBAL && ./build-cuda-final/timing/cuda_sparse/timeCudaSparseLM --all-cuda-configurations --output-format csv`
 
 Expected: every supported configuration reports finite output and passes its objective gate; unsupported configurations are absent.
 
-- [ ] **Step 6: Configure and build without CUDA/cuDSS**
+- [x] **Step 6: Configure and build without CUDA/cuDSS**
 
 Run: `cmake -S . -B build-cpu-final -DGTSAM_BUILD_WITH_CUDA=OFF -DGTSAM_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release && cmake --build build-cpu-final --target gtsam -j2`
 
 Expected: CPU-only GTSAM builds and no CUDA-only header/source is required by a CPU target.
 
-- [ ] **Step 7: Record the measured matrix and commit the audit**
+- [x] **Step 7: Record the measured matrix and commit the audit**
 
 Write GPU model, CUDA/cuDSS versions, dataset/configuration, formulation/backend/ordering, dimensions/nnz, analysis/solve/PCG counts, objective, total wall time, backend wall time, and transfer bytes into `timing/sfm_ba/cuda_solver_matrix.md`.
 
@@ -952,13 +952,13 @@ git commit -m "bench: record final CUDA solver matrix"
 
 ## Completion checklist
 
-- [ ] Both CUDA optimizers use `gtsam/linear/cuda` sessions.
-- [ ] Dense Cholesky is a shared peer of cuDSS and PCG.
-- [ ] General cuDSS and PCG behavior regressions pass.
-- [ ] Dense SFM behavior regression passes.
-- [ ] GTSAM key ordering is expanded and passed through `CUDSS_DATA_USER_PERM`.
-- [ ] SFM Schur works with dense, sparse cuDSS, and implicit PCG.
-- [ ] SFM full normal works through common cuDSS and PCG.
-- [ ] Repeated lambda attempts restore undamped state.
-- [ ] Capability validation, common stats, benchmark records, and docs are complete.
-- [ ] CUDA tests, memcheck, racecheck, benchmark gates, and CPU-only build pass.
+- [x] Both CUDA optimizers use `gtsam/linear/cuda` sessions.
+- [x] Dense Cholesky is a shared peer of cuDSS and PCG.
+- [x] General cuDSS and PCG behavior regressions pass.
+- [x] Dense SFM behavior regression passes.
+- [x] GTSAM key ordering is expanded and passed through `CUDSS_DATA_USER_PERM`.
+- [x] SFM Schur works with dense, sparse cuDSS, and implicit PCG.
+- [x] SFM full normal works through common cuDSS and PCG.
+- [x] Repeated lambda attempts restore undamped state.
+- [x] Capability validation, common stats, benchmark records, and docs are complete.
+- [x] CUDA tests, memcheck, racecheck, benchmark gates, and CPU-only build pass.

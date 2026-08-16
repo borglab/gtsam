@@ -6,7 +6,6 @@
 #include <gtsam/linear/cuda/CudaLinearSolver.h>
 #include <gtsam/nonlinear/BatchFactor.h>
 #include <gtsam/nonlinear/internal/NonlinearOptimizerState.h>
-#include <gtsam/nonlinear/cuda/CudssLinearSolver.h>
 #include <gtsam/nonlinear/cuda/DeviceGeometryKernels.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/slam/cuda/CudaBalCsrStructure.h>
@@ -963,7 +962,6 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
     return result;
   }
 
-  DeviceSparseNormalEquations system;
   CudaDeviceArray<double> delta;
   stageStart = Clock::now();
   std::unique_ptr<CudaLinearSolverSession> fullNormalSession;
@@ -1030,9 +1028,10 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
 
       stageStart = DetailedProfileStart(detailedProfiling);
       CudaDeviceTransferSummary uploadPatternProfile;
-      system.uploadPattern(structure.dimension(), structure.rowPointers(),
-                           structure.colIndices(), context.stream(),
-                           detailedProfiling ? &uploadPatternProfile : nullptr);
+      fullNormalProblem.initializeSparse(
+          batch, numCameras, structure.rowPointers(), structure.colIndices(),
+          context.stream(),
+          detailedProfiling ? &uploadPatternProfile : nullptr);
       result.uploadPatternElapsed =
           DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
                                         context.stream());
@@ -1093,9 +1092,12 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
       LinearizeCudaSfmProjectionBatch(current, batch,
                                       &fullNormalLinearization,
                                       context.stream());
-      if (solverMode == CudaSfmLinearSolverType::PcgFullNormal) {
-        fullNormalProblem.linearize(fullNormalLinearization, context.stream());
-      }
+      stageStart = DetailedProfileStart(detailedProfiling);
+      fullNormalProblem.linearize(fullNormalLinearization, context.stream());
+      iterationProfile.normalEquationsElapsed = DetailedElapsedSinceAfterSync(
+          detailedProfiling, stageStart, context.stream());
+      result.normalEquationsElapsed +=
+          iterationProfile.normalEquationsElapsed;
     }
     if (solverMode == CudaSfmLinearSolverType::PcgSchur) {
       reducedSession->invalidateWarmStart();
@@ -1210,22 +1212,11 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
           fullNormalSession->solve(*view.linearOperator, *view.preconditioner,
                                    view.rhs, &delta, context.stream());
         } else {
-          AccumulateCudaSfmNormalEquations(fullNormalLinearization, batch,
-                                           numCameras, &system,
-                                           context.stream());
-          attemptProfile.normalEquationsElapsed =
-              DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
-                                             context.stream());
-          result.normalEquationsElapsed +=
-              attemptProfile.normalEquationsElapsed;
-
-          stageStart = DetailedProfileStart(detailedProfiling);
-          if (params.dampingParams.diagonalDamping) {
-            system.addDiagonalDamping(lambda, dampingDiagonal,
-                                      context.stream());
-          } else {
-            system.addDiagonalDamping(lambda, context.stream());
-          }
+          DeviceSparseSpdSystem& fullSystem =
+              params.dampingParams.diagonalDamping
+                  ? fullNormalProblem.prepareSparse(
+                        lambda, dampingDiagonal, context.stream())
+                  : fullNormalProblem.prepareSparse(lambda, context.stream());
           attemptProfile.addDampingElapsed =
               DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
                                              context.stream());
@@ -1234,9 +1225,10 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
           if (!solverAnalyzed) {
             stageStart = DetailedProfileStart(detailedProfiling);
             if (!params.ordering) {
-              fullNormalSession->analyze(system, &delta, context.stream());
+              fullNormalSession->analyze(fullSystem, &delta,
+                                         context.stream());
             } else {
-              fullNormalSession->analyze(system, &delta,
+              fullNormalSession->analyze(fullSystem, &delta,
                                          result.appliedScalarPermutation,
                                          context.stream());
             }
@@ -1250,7 +1242,7 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
             solverAnalyzed = true;
           }
           stageStart = DetailedProfileStart(detailedProfiling);
-          fullNormalSession->solve(system, &delta, context.stream());
+          fullNormalSession->solve(fullSystem, &delta, context.stream());
         }
         attemptProfile.cudssSolveElapsed =
             DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,

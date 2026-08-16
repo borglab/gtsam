@@ -4,7 +4,7 @@
 #include <gtsam/nonlinear/BatchFactor.h>
 #include <gtsam/nonlinear/GncOptimizer.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/nonlinear/cuda/CudssLinearSolver.h>
+#include <gtsam/linear/cuda/CudssSpdSolver.h>
 #include <gtsam/nonlinear/cuda/DeviceGeometryKernels.h>
 #include <gtsam/nonlinear/cuda/DeviceGeometryTypes.h>
 #include <gtsam/slam/cuda/CudaBalCsrStructure.h>
@@ -1169,6 +1169,61 @@ TEST(CudaSfmFullNormalProblem, ReusesOneLinearizationAcrossDampingAttempts) {
   EXPECT_LONGS_EQUAL(2, problem.preparationCount());
 }
 
+TEST(CudaSfmFullNormalProblem, RestoresExplicitSystemBetweenDampingAttempts) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData initialData = makePerturbedBalLikeData(measuredData);
+  CudaContext context;
+  DeviceValues values = PackSfmValues(initialData, context.stream());
+  CudaSfmProjectionBatch batch =
+      CudaSfmProjectionBatch::FromSfmData(measuredData, context.stream());
+  CudaSfmProjectionLinearization linearization;
+  LinearizeCudaSfmProjectionBatch(values, batch, &linearization,
+                                  context.stream());
+  const CudaBalCsrStructure structure =
+      CudaBalCsrStructure::FromSfmData(measuredData);
+
+  CudaSfmFullNormalProblem problem;
+  problem.initializeSparse(batch,
+                           static_cast<int>(measuredData.numberCameras()),
+                           structure.rowPointers(), structure.colIndices(),
+                           context.stream());
+  problem.linearize(linearization, context.stream());
+
+  DeviceSparseSpdSystem& first =
+      problem.prepareSparse(1e-3, context.stream());
+  std::vector<double> firstValues;
+  std::vector<double> firstRhs;
+  first.values().download(&firstValues, context.stream());
+  first.rhs().download(&firstRhs, context.stream());
+  context.synchronize();
+
+  DeviceSparseSpdSystem& second =
+      problem.prepareSparse(4e-3, context.stream());
+  std::vector<double> secondValues;
+  second.values().download(&secondValues, context.stream());
+  context.synchronize();
+
+  DeviceSparseSpdSystem& repeatedFirst =
+      problem.prepareSparse(1e-3, context.stream());
+  std::vector<double> repeatedFirstValues;
+  std::vector<double> repeatedFirstRhs;
+  repeatedFirst.values().download(&repeatedFirstValues, context.stream());
+  repeatedFirst.rhs().download(&repeatedFirstRhs, context.stream());
+  context.synchronize();
+
+  EXPECT(firstValues != secondValues);
+  LONGS_EQUAL(firstValues.size(), repeatedFirstValues.size());
+  for (size_t i = 0; i < firstValues.size(); ++i) {
+    DOUBLES_EQUAL(firstValues[i], repeatedFirstValues[i], 1e-12);
+  }
+  LONGS_EQUAL(firstRhs.size(), repeatedFirstRhs.size());
+  for (size_t i = 0; i < firstRhs.size(); ++i) {
+    DOUBLES_EQUAL(firstRhs[i], repeatedFirstRhs[i], 1e-12);
+  }
+  EXPECT_LONGS_EQUAL(1, problem.linearizationCount());
+  EXPECT_LONGS_EQUAL(3, problem.preparationCount());
+}
+
 TEST(CudaSfmProjectionLinearization, ComputesLinearizedErrorChange) {
   constexpr double kTolerance = 1e-6;
 
@@ -2204,6 +2259,13 @@ TEST(CudaSfmLevenbergMarquardt, RecordsDetailedTimingBreakdownForCudss) {
   CHECK(result.cudssAnalyzeElapsed > 0.0);
   CHECK(result.cudssSolveElapsed > 0.0);
   CHECK(!result.iterationProfiles.empty());
+  double attributedNormalEquationsElapsed = 0.0;
+  for (const auto& iteration : result.iterationProfiles) {
+    CHECK(iteration.normalEquationsElapsed > 0.0);
+    attributedNormalEquationsElapsed += iteration.normalEquationsElapsed;
+  }
+  DOUBLES_EQUAL(result.normalEquationsElapsed,
+                attributedNormalEquationsElapsed, 1e-12);
 }
 
 TEST(CudaSfmLevenbergMarquardt, RecordsDetailedTimingBreakdown) {
@@ -2376,6 +2438,185 @@ TEST(CudaSfmSchurProblem, ReusesLinearizationAndRebuildsDamping) {
   }
 }
 
+TEST(CudaSfmSchurProblem, BuildsPersistentNormalBlocksOncePerLinearization) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+  CudaContext context;
+  DeviceValues values = PackSfmValues(data, context.stream());
+  const CudaSfmProjectionBatch batch =
+      CudaSfmProjectionBatch::FromSfmData(data, context.stream());
+
+  CudaSfmSchurProblem problem;
+  problem.initialize(batch, static_cast<int>(data.numberCameras()));
+  problem.linearize(values, context.stream());
+
+  const CudaSfmSchurBlocks& blocks = problem.blocks();
+  const size_t cameras = data.numberCameras();
+  const size_t points = data.numberTracks();
+  const size_t observations = batch.numObservations();
+  EXPECT_LONGS_EQUAL(81 * cameras, blocks.cameraNormalBlocks.size());
+  EXPECT_LONGS_EQUAL(9 * cameras, blocks.cameraGradient.size());
+  EXPECT_LONGS_EQUAL(9 * points, blocks.pointNormalBlocks.size());
+  EXPECT_LONGS_EQUAL(3 * points, blocks.pointGradient.size());
+  EXPECT_LONGS_EQUAL(27 * observations, blocks.cameraPointBlocks.size());
+
+  std::vector<CudaSfmObservation> hostObservations;
+  std::vector<double> residuals, cameraJacobians, pointJacobians;
+  std::vector<double> actualU, actualGc, actualV, actualGp, actualW;
+  batch.observations().download(&hostObservations, context.stream());
+  problem.linearization().residuals.download(&residuals, context.stream());
+  problem.linearization().cameraJacobians.download(&cameraJacobians,
+                                                   context.stream());
+  problem.linearization().pointJacobians.download(&pointJacobians,
+                                                  context.stream());
+  blocks.cameraNormalBlocks.download(&actualU, context.stream());
+  blocks.cameraGradient.download(&actualGc, context.stream());
+  blocks.pointNormalBlocks.download(&actualV, context.stream());
+  blocks.pointGradient.download(&actualGp, context.stream());
+  blocks.cameraPointBlocks.download(&actualW, context.stream());
+  context.synchronize();
+
+  std::vector<double> expectedU(81 * cameras, 0.0);
+  std::vector<double> expectedGc(9 * cameras, 0.0);
+  std::vector<double> expectedV(9 * points, 0.0);
+  std::vector<double> expectedGp(3 * points, 0.0);
+  std::vector<double> expectedW(27 * observations, 0.0);
+  for (size_t observation = 0; observation < observations; ++observation) {
+    const size_t camera = hostObservations[observation].cameraSlot;
+    const size_t point = hostObservations[observation].pointSlot;
+    const double r0 = residuals[2 * observation];
+    const double r1 = residuals[2 * observation + 1];
+    const double* Jc = cameraJacobians.data() + 18 * observation;
+    const double* Jp = pointJacobians.data() + 6 * observation;
+    for (size_t row = 0; row < 9; ++row) {
+      expectedGc[9 * camera + row] += -Jc[row] * r0 - Jc[9 + row] * r1;
+      for (size_t column = 0; column < 9; ++column) {
+        expectedU[81 * camera + 9 * row + column] +=
+            Jc[row] * Jc[column] + Jc[9 + row] * Jc[9 + column];
+      }
+      for (size_t column = 0; column < 3; ++column) {
+        expectedW[27 * observation + 3 * row + column] =
+            Jc[row] * Jp[column] + Jc[9 + row] * Jp[3 + column];
+      }
+    }
+    for (size_t row = 0; row < 3; ++row) {
+      expectedGp[3 * point + row] += -Jp[row] * r0 - Jp[3 + row] * r1;
+      for (size_t column = 0; column < 3; ++column) {
+        expectedV[9 * point + 3 * row + column] +=
+            Jp[row] * Jp[column] + Jp[3 + row] * Jp[3 + column];
+      }
+    }
+  }
+
+  const auto check = [&](const std::vector<double>& expected,
+                         const std::vector<double>& actual) {
+    LONGS_EQUAL(expected.size(), actual.size());
+    for (size_t i = 0; i < expected.size(); ++i) {
+      DOUBLES_EQUAL(expected[i], actual[i], 1e-11);
+    }
+  };
+  check(expectedU, actualU);
+  check(expectedGc, actualGc);
+  check(expectedV, actualV);
+  check(expectedGp, actualGp);
+  check(expectedW, actualW);
+
+  (void)problem.prepareDense(1e-3, context.stream());
+  (void)problem.prepareImplicit(2e-3, context.stream());
+  EXPECT_LONGS_EQUAL(1, problem.blockBuildCount());
+}
+
+TEST(CudaSfmSchurProblem, DensePreparationConsumesPersistentNormalBlocks) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+  CudaContext context;
+  DeviceValues values = PackSfmValues(data, context.stream());
+  const CudaSfmProjectionBatch batch =
+      CudaSfmProjectionBatch::FromSfmData(data, context.stream());
+  CudaSfmSchurProblem problem;
+  problem.initialize(batch, static_cast<int>(data.numberCameras()));
+  problem.linearize(values, context.stream());
+
+  constexpr double lambda = 1e-3;
+  const CudaDenseSpdSystemView before =
+      problem.prepareDense(lambda, context.stream());
+  std::vector<double> beforeValues(before.dimension * before.dimension);
+  std::vector<double> beforeRhs(before.dimension);
+  GTSAM_CUDA_CHECK(cudaMemcpyAsync(
+      beforeValues.data(), before.values, sizeof(double) * beforeValues.size(),
+      cudaMemcpyDeviceToHost, context.stream()));
+  GTSAM_CUDA_CHECK(cudaMemcpyAsync(beforeRhs.data(), before.rhs,
+                                   sizeof(double) * beforeRhs.size(),
+                                   cudaMemcpyDeviceToHost, context.stream()));
+  context.synchronize();
+
+  CudaSfmProjectionLinearization& projection =
+      const_cast<CudaSfmProjectionLinearization&>(problem.linearization());
+  projection.residuals.zero(context.stream());
+  projection.cameraJacobians.zero(context.stream());
+  projection.pointJacobians.zero(context.stream());
+  const CudaDenseSpdSystemView after =
+      problem.prepareDense(lambda, context.stream());
+  std::vector<double> afterValues(after.dimension * after.dimension);
+  std::vector<double> afterRhs(after.dimension);
+  GTSAM_CUDA_CHECK(cudaMemcpyAsync(
+      afterValues.data(), after.values, sizeof(double) * afterValues.size(),
+      cudaMemcpyDeviceToHost, context.stream()));
+  GTSAM_CUDA_CHECK(cudaMemcpyAsync(afterRhs.data(), after.rhs,
+                                   sizeof(double) * afterRhs.size(),
+                                   cudaMemcpyDeviceToHost, context.stream()));
+  context.synchronize();
+
+  LONGS_EQUAL(beforeValues.size(), afterValues.size());
+  for (size_t i = 0; i < beforeValues.size(); ++i) {
+    DOUBLES_EQUAL(beforeValues[i], afterValues[i], 1e-12);
+  }
+  LONGS_EQUAL(beforeRhs.size(), afterRhs.size());
+  for (size_t i = 0; i < beforeRhs.size(); ++i) {
+    DOUBLES_EQUAL(beforeRhs[i], afterRhs[i], 1e-12);
+  }
+}
+
+TEST(CudaSfmSchurProblem, PointRecoveryConsumesPersistentNormalBlocks) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+  CudaContext context;
+  DeviceValues values = PackSfmValues(data, context.stream());
+  const CudaSfmProjectionBatch batch =
+      CudaSfmProjectionBatch::FromSfmData(data, context.stream());
+  CudaSfmSchurProblem problem;
+  problem.initialize(batch, static_cast<int>(data.numberCameras()));
+  problem.linearize(values, context.stream());
+
+  std::vector<double> hostCameraDelta(problem.cameraDimension());
+  for (size_t i = 0; i < hostCameraDelta.size(); ++i) {
+    hostCameraDelta[i] = 1e-3 * static_cast<double>(i + 1);
+  }
+  CudaDeviceArray<double> cameraDelta;
+  cameraDelta.upload(hostCameraDelta, context.stream());
+  CudaDeviceArray<double> before;
+  CudaDeviceArray<double> after;
+  problem.recoverPoints(1e-3, cameraDelta, &before, context.stream());
+  std::vector<double> beforeValues;
+  before.download(&beforeValues, context.stream());
+  context.synchronize();
+
+  CudaSfmProjectionLinearization& projection =
+      const_cast<CudaSfmProjectionLinearization&>(problem.linearization());
+  projection.residuals.zero(context.stream());
+  projection.cameraJacobians.zero(context.stream());
+  projection.pointJacobians.zero(context.stream());
+  problem.recoverPoints(1e-3, cameraDelta, &after, context.stream());
+  std::vector<double> afterValues;
+  after.download(&afterValues, context.stream());
+  context.synchronize();
+
+  LONGS_EQUAL(beforeValues.size(), afterValues.size());
+  for (size_t i = 0; i < beforeValues.size(); ++i) {
+    DOUBLES_EQUAL(beforeValues[i], afterValues[i], 1e-12);
+  }
+}
+
 TEST(CudaSfmSchurProblem, SparseAssemblyMatchesDenseAssembly) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
@@ -2392,6 +2633,11 @@ TEST(CudaSfmSchurProblem, SparseAssemblyMatchesDenseAssembly) {
   constexpr double lambda = 1e-3;
   const CudaDenseSpdSystemView dense =
       problem.prepareDense(lambda, context.stream());
+  CudaSfmProjectionLinearization& projection =
+      const_cast<CudaSfmProjectionLinearization&>(problem.linearization());
+  projection.residuals.zero(context.stream());
+  projection.cameraJacobians.zero(context.stream());
+  projection.pointJacobians.zero(context.stream());
   DeviceSparseSpdSystem& sparse =
       problem.prepareSparse(lambda, plan, context.stream());
 
@@ -2439,6 +2685,11 @@ TEST(CudaSfmSchurProblem, ImplicitOperatorMatchesDenseSchurProduct) {
   constexpr double lambda = 1e-3;
   const CudaDenseSpdSystemView dense =
       problem.prepareDense(lambda, context.stream());
+  CudaSfmProjectionLinearization& projection =
+      const_cast<CudaSfmProjectionLinearization&>(problem.linearization());
+  projection.residuals.zero(context.stream());
+  projection.cameraJacobians.zero(context.stream());
+  projection.pointJacobians.zero(context.stream());
   const CudaSfmImplicitSchurView implicit =
       problem.prepareImplicit(lambda, context.stream());
 
@@ -2450,12 +2701,23 @@ TEST(CudaSfmSchurProblem, ImplicitOperatorMatchesDenseSchurProduct) {
   implicit.linearOperator->apply(input.data(), output.data(), context.stream());
 
   std::vector<double> denseValues(dense.dimension * dense.dimension);
+  std::vector<double> denseRhs(dense.dimension);
   std::vector<double> actual;
+  std::vector<double> implicitRhs(dense.dimension);
   GTSAM_CUDA_CHECK(cudaMemcpyAsync(
       denseValues.data(), dense.values, sizeof(double) * denseValues.size(),
       cudaMemcpyDeviceToHost, context.stream()));
+  GTSAM_CUDA_CHECK(cudaMemcpyAsync(denseRhs.data(), dense.rhs,
+                                   sizeof(double) * denseRhs.size(),
+                                   cudaMemcpyDeviceToHost, context.stream()));
+  GTSAM_CUDA_CHECK(cudaMemcpyAsync(
+      implicitRhs.data(), implicit.rhs, sizeof(double) * implicitRhs.size(),
+      cudaMemcpyDeviceToHost, context.stream()));
   output.download(&actual, context.stream());
   context.synchronize();
+  for (int row = 0; row < dense.dimension; ++row) {
+    DOUBLES_EQUAL(denseRhs[row], implicitRhs[row], 1e-10);
+  }
   for (int row = 0; row < dense.dimension; ++row) {
     double expected = 0.0;
     for (int column = 0; column < dense.dimension; ++column) {
