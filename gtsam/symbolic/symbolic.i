@@ -23,37 +23,37 @@ virtual class SymbolicFactor : gtsam::Factor {
 
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
 #include <gtsam/inference/EliminateableFactorGraph.h>
-template<FACTOR_GRAPH = {gtsam::SymbolicFactorGraph}>
-class EliminateableFactorGraph {
-  gtsam::SymbolicBayesNet* eliminateSequential(
+virtual class SymbolicFactorGraph {
+  std::shared_ptr<gtsam::SymbolicBayesNet> eliminateSequential(
       gtsam::SymbolicFactorGraph::OptionalOrderingType orderingType = std::nullopt,
       const gtsam::SymbolicFactorGraph::Eliminate& function =
           gtsam::SymbolicFactorGraph::Eliminate(
               gtsam::SymbolicFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::SymbolicFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  gtsam::SymbolicBayesNet* eliminateSequential(
+  std::shared_ptr<gtsam::SymbolicBayesNet> eliminateSequential(
       const gtsam::Ordering& ordering,
       const gtsam::SymbolicFactorGraph::Eliminate& function =
           gtsam::SymbolicFactorGraph::Eliminate(
               gtsam::SymbolicFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::SymbolicFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  gtsam::SymbolicBayesTree* eliminateMultifrontal(
+  std::shared_ptr<gtsam::SymbolicBayesTree> eliminateMultifrontal(
       gtsam::SymbolicFactorGraph::OptionalOrderingType orderingType = std::nullopt,
       const gtsam::SymbolicFactorGraph::Eliminate& function =
           gtsam::SymbolicFactorGraph::Eliminate(
               gtsam::SymbolicFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::SymbolicFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  gtsam::SymbolicBayesTree* eliminateMultifrontal(
+  std::shared_ptr<gtsam::SymbolicBayesTree> eliminateMultifrontal(
       const gtsam::Ordering& ordering,
       const gtsam::SymbolicFactorGraph::Eliminate& function =
           gtsam::SymbolicFactorGraph::Eliminate(
               gtsam::SymbolicFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::SymbolicFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  pair<gtsam::SymbolicBayesNet*, gtsam::SymbolicFactorGraph*>
+  pair<std::shared_ptr<gtsam::SymbolicBayesNet>,
+       std::shared_ptr<gtsam::SymbolicFactorGraph>>
   eliminatePartialSequential(
       const gtsam::Ordering& ordering,
       const gtsam::SymbolicFactorGraph::Eliminate& function =
@@ -61,7 +61,8 @@ class EliminateableFactorGraph {
               gtsam::SymbolicFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::SymbolicFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  pair<gtsam::SymbolicBayesNet*, gtsam::SymbolicFactorGraph*>
+  pair<std::shared_ptr<gtsam::SymbolicBayesNet>,
+       std::shared_ptr<gtsam::SymbolicFactorGraph>>
   eliminatePartialSequential(
       const gtsam::KeyVector& variables,
       const gtsam::SymbolicFactorGraph::Eliminate& function =
@@ -69,7 +70,8 @@ class EliminateableFactorGraph {
               gtsam::SymbolicFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::SymbolicFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  pair<gtsam::SymbolicBayesTree*, gtsam::SymbolicFactorGraph*>
+  pair<std::shared_ptr<gtsam::SymbolicBayesTree>,
+       std::shared_ptr<gtsam::SymbolicFactorGraph>>
   eliminatePartialMultifrontal(
       const gtsam::Ordering& ordering,
       const gtsam::SymbolicFactorGraph::Eliminate& function =
@@ -77,7 +79,8 @@ class EliminateableFactorGraph {
               gtsam::SymbolicFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::SymbolicFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  pair<gtsam::SymbolicBayesTree*, gtsam::SymbolicFactorGraph*>
+  pair<std::shared_ptr<gtsam::SymbolicBayesTree>,
+       std::shared_ptr<gtsam::SymbolicFactorGraph>>
   eliminatePartialMultifrontal(
       const gtsam::KeyVector& variables,
       const gtsam::SymbolicFactorGraph::Eliminate& function =
@@ -85,21 +88,21 @@ class EliminateableFactorGraph {
               gtsam::SymbolicFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::SymbolicFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  gtsam::SymbolicBayesNet* marginalMultifrontalBayesNet(
+  std::shared_ptr<gtsam::SymbolicBayesNet> marginalMultifrontalBayesNet(
       const gtsam::Ordering& variables,
       const gtsam::SymbolicFactorGraph::Eliminate& function =
           gtsam::SymbolicFactorGraph::Eliminate(
               gtsam::SymbolicFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::SymbolicFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  gtsam::SymbolicBayesNet* marginalMultifrontalBayesNet(
+  std::shared_ptr<gtsam::SymbolicBayesNet> marginalMultifrontalBayesNet(
       const gtsam::KeyVector& variables,
       const gtsam::SymbolicFactorGraph::Eliminate& function =
           gtsam::SymbolicFactorGraph::Eliminate(
               gtsam::SymbolicFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::SymbolicFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  gtsam::SymbolicBayesNet* marginalMultifrontalBayesNet(
+  std::shared_ptr<gtsam::SymbolicBayesNet> marginalMultifrontalBayesNet(
       const gtsam::Ordering& variables,
       const gtsam::Ordering& marginalizedVariableOrdering,
       const gtsam::SymbolicFactorGraph::Eliminate& function =
@@ -107,7 +110,7 @@ class EliminateableFactorGraph {
               gtsam::SymbolicFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::SymbolicFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  gtsam::SymbolicBayesNet* marginalMultifrontalBayesNet(
+  std::shared_ptr<gtsam::SymbolicBayesNet> marginalMultifrontalBayesNet(
       const gtsam::KeyVector& variables,
       const gtsam::Ordering& marginalizedVariableOrdering,
       const gtsam::SymbolicFactorGraph::Eliminate& function =
@@ -115,17 +118,13 @@ class EliminateableFactorGraph {
               gtsam::SymbolicFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::SymbolicFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  gtsam::SymbolicFactorGraph* marginal(
+  std::shared_ptr<gtsam::SymbolicFactorGraph> marginal(
       const gtsam::KeyVector& variables,
       const gtsam::SymbolicFactorGraph::Eliminate& function =
           gtsam::SymbolicFactorGraph::Eliminate(
               gtsam::SymbolicFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::SymbolicFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-};
-
-virtual class SymbolicFactorGraph
-    : gtsam::EliminateableFactorGraph<gtsam::SymbolicFactorGraph> {
   SymbolicFactorGraph();
   SymbolicFactorGraph(const gtsam::SymbolicBayesNet& bayesNet);
   SymbolicFactorGraph(const gtsam::SymbolicBayesTree& bayesTree);

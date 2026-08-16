@@ -526,107 +526,6 @@ pair<gtsam::GaussianConditional*, gtsam::JacobianFactor*> EliminateQR(
     const gtsam::GaussianFactorGraph& factors, const gtsam::Ordering& keys);
 
 #include <gtsam/inference/EliminateableFactorGraph.h>
-template<FACTOR_GRAPH = {gtsam::GaussianFactorGraph}>
-class EliminateableFactorGraph {
-  gtsam::GaussianBayesNet* eliminateSequential(
-      gtsam::GaussianFactorGraph::OptionalOrderingType orderingType = std::nullopt,
-      const gtsam::GaussianFactorGraph::Eliminate& function =
-          gtsam::GaussianFactorGraph::Eliminate(
-              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
-      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
-      const;
-  gtsam::GaussianBayesNet* eliminateSequential(
-      const gtsam::Ordering& ordering,
-      const gtsam::GaussianFactorGraph::Eliminate& function =
-          gtsam::GaussianFactorGraph::Eliminate(
-              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
-      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
-      const;
-  gtsam::GaussianBayesTree* eliminateMultifrontal(
-      gtsam::GaussianFactorGraph::OptionalOrderingType orderingType = std::nullopt,
-      const gtsam::GaussianFactorGraph::Eliminate& function =
-          gtsam::GaussianFactorGraph::Eliminate(
-              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
-      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
-      const;
-  gtsam::GaussianBayesTree* eliminateMultifrontal(
-      const gtsam::Ordering& ordering,
-      const gtsam::GaussianFactorGraph::Eliminate& function =
-          gtsam::GaussianFactorGraph::Eliminate(
-              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
-      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
-      const;
-  pair<gtsam::GaussianBayesNet*, gtsam::GaussianFactorGraph*>
-  eliminatePartialSequential(
-      const gtsam::Ordering& ordering,
-      const gtsam::GaussianFactorGraph::Eliminate& function =
-          gtsam::GaussianFactorGraph::Eliminate(
-              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
-      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
-      const;
-  pair<gtsam::GaussianBayesNet*, gtsam::GaussianFactorGraph*>
-  eliminatePartialSequential(
-      const gtsam::KeyVector& variables,
-      const gtsam::GaussianFactorGraph::Eliminate& function =
-          gtsam::GaussianFactorGraph::Eliminate(
-              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
-      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
-      const;
-  pair<gtsam::GaussianBayesTree*, gtsam::GaussianFactorGraph*>
-  eliminatePartialMultifrontal(
-      const gtsam::Ordering& ordering,
-      const gtsam::GaussianFactorGraph::Eliminate& function =
-          gtsam::GaussianFactorGraph::Eliminate(
-              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
-      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
-      const;
-  pair<gtsam::GaussianBayesTree*, gtsam::GaussianFactorGraph*>
-  eliminatePartialMultifrontal(
-      const gtsam::KeyVector& variables,
-      const gtsam::GaussianFactorGraph::Eliminate& function =
-          gtsam::GaussianFactorGraph::Eliminate(
-              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
-      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
-      const;
-  gtsam::GaussianBayesNet* marginalMultifrontalBayesNet(
-      const gtsam::Ordering& variables,
-      const gtsam::GaussianFactorGraph::Eliminate& function =
-          gtsam::GaussianFactorGraph::Eliminate(
-              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
-      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
-      const;
-  gtsam::GaussianBayesNet* marginalMultifrontalBayesNet(
-      const gtsam::KeyVector& variables,
-      const gtsam::GaussianFactorGraph::Eliminate& function =
-          gtsam::GaussianFactorGraph::Eliminate(
-              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
-      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
-      const;
-  gtsam::GaussianBayesNet* marginalMultifrontalBayesNet(
-      const gtsam::Ordering& variables,
-      const gtsam::Ordering& marginalizedVariableOrdering,
-      const gtsam::GaussianFactorGraph::Eliminate& function =
-          gtsam::GaussianFactorGraph::Eliminate(
-              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
-      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
-      const;
-  gtsam::GaussianBayesNet* marginalMultifrontalBayesNet(
-      const gtsam::KeyVector& variables,
-      const gtsam::Ordering& marginalizedVariableOrdering,
-      const gtsam::GaussianFactorGraph::Eliminate& function =
-          gtsam::GaussianFactorGraph::Eliminate(
-              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
-      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
-      const;
-  gtsam::GaussianFactorGraph* marginal(
-      const gtsam::KeyVector& variables,
-      const gtsam::GaussianFactorGraph::Eliminate& function =
-          gtsam::GaussianFactorGraph::Eliminate(
-              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
-      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
-      const;
-};
-
 #include <gtsam/linear/HessianFactor.h>
 virtual class HessianFactor : gtsam::GaussianFactor {
   //Constructors
@@ -651,8 +550,108 @@ virtual class HessianFactor : gtsam::GaussianFactor {
 };
 
 #include <gtsam/linear/GaussianFactorGraph.h>
-class GaussianFactorGraph
-    : gtsam::EliminateableFactorGraph<gtsam::GaussianFactorGraph> {
+class GaussianFactorGraph {
+  std::shared_ptr<gtsam::GaussianBayesNet> eliminateSequential(
+      gtsam::GaussianFactorGraph::OptionalOrderingType orderingType = std::nullopt,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
+      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
+      const;
+  std::shared_ptr<gtsam::GaussianBayesNet> eliminateSequential(
+      const gtsam::Ordering& ordering,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
+      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
+      const;
+  std::shared_ptr<gtsam::GaussianBayesTree> eliminateMultifrontal(
+      gtsam::GaussianFactorGraph::OptionalOrderingType orderingType = std::nullopt,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
+      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
+      const;
+  std::shared_ptr<gtsam::GaussianBayesTree> eliminateMultifrontal(
+      const gtsam::Ordering& ordering,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
+      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
+      const;
+  pair<std::shared_ptr<gtsam::GaussianBayesNet>,
+       std::shared_ptr<gtsam::GaussianFactorGraph>>
+  eliminatePartialSequential(
+      const gtsam::Ordering& ordering,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
+      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
+      const;
+  pair<std::shared_ptr<gtsam::GaussianBayesNet>,
+       std::shared_ptr<gtsam::GaussianFactorGraph>>
+  eliminatePartialSequential(
+      const gtsam::KeyVector& variables,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
+      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
+      const;
+  pair<std::shared_ptr<gtsam::GaussianBayesTree>,
+       std::shared_ptr<gtsam::GaussianFactorGraph>>
+  eliminatePartialMultifrontal(
+      const gtsam::Ordering& ordering,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
+      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
+      const;
+  pair<std::shared_ptr<gtsam::GaussianBayesTree>,
+       std::shared_ptr<gtsam::GaussianFactorGraph>>
+  eliminatePartialMultifrontal(
+      const gtsam::KeyVector& variables,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
+      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
+      const;
+  std::shared_ptr<gtsam::GaussianBayesNet> marginalMultifrontalBayesNet(
+      const gtsam::Ordering& variables,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
+      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
+      const;
+  std::shared_ptr<gtsam::GaussianBayesNet> marginalMultifrontalBayesNet(
+      const gtsam::KeyVector& variables,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
+      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
+      const;
+  std::shared_ptr<gtsam::GaussianBayesNet> marginalMultifrontalBayesNet(
+      const gtsam::Ordering& variables,
+      const gtsam::Ordering& marginalizedVariableOrdering,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
+      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
+      const;
+  std::shared_ptr<gtsam::GaussianBayesNet> marginalMultifrontalBayesNet(
+      const gtsam::KeyVector& variables,
+      const gtsam::Ordering& marginalizedVariableOrdering,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
+      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
+      const;
+  std::shared_ptr<gtsam::GaussianFactorGraph> marginal(
+      const gtsam::KeyVector& variables,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
+      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
+      const;
   GaussianFactorGraph();
   GaussianFactorGraph(const gtsam::GaussianBayesNet& bayesNet);
   GaussianFactorGraph(const gtsam::GaussianBayesTree& bayesTree);
