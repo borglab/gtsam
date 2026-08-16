@@ -169,10 +169,9 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
       const HybridValues& values,
       const std::string& str = "HybridGaussianFactorGraph: ",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter,
-      const std::function<bool(const Factor* /*factor*/,
-                               double /*whitenedError*/, size_t /*index*/)>&
-          printCondition =
-              [](const Factor*, double, size_t) { return true; }) const;
+      const FactorErrorPredicate&
+          printCondition = FactorErrorPredicate{
+              [](const Factor*, double, size_t) { return true; }}) const;
 
   // bool equals(const This& fg, double tol = 1e-9) const override;
 

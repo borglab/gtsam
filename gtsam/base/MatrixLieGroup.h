@@ -56,6 +56,9 @@ namespace gtsam {
     using ChartJacobian = typename Base::ChartJacobian;
     using Jacobian = typename Base::Jacobian;
     using TangentVector = typename Base::TangentVector;
+    using Vectorized = Eigen::Matrix<double, internal::product(N, N), 1>;
+    using VectorizedJacobian =
+        OptionalJacobian<internal::product(N, N), D>;
 
     /// @name Matrix Lie Group
     /// @{

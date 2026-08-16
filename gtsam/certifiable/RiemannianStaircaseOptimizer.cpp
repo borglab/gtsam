@@ -243,6 +243,17 @@ Values RiemannianStaircaseOptimizer::padInitialValues(const Values& Y,
 }
 
 /* ************************************************************************* */
+Values RiemannianStaircaseOptimizer::padInitialValues(const Values& Y,
+                                                     int pMin) {
+  if (pMin < 0) {
+    throw std::invalid_argument(
+        "RiemannianStaircaseOptimizer::padInitialValues: pMin must be "
+        "nonnegative.");
+  }
+  return padInitialValues(Y, static_cast<size_t>(pMin));
+}
+
+/* ************************************************************************* */
 RiemannianStaircaseOptimizer::InnerSolveResult
 RiemannianStaircaseOptimizer::runLocalSolver(
     const QcqpProblem& qcqp, const Values& Y0,

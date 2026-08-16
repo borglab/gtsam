@@ -341,13 +341,13 @@ namespace gtsam {
     SharedDiagonal& get_model() { return model_;  }
 
     /** Get a view of the r.h.s. vector b, not weighted by noise */
-    const constBVector getb() const { return Ab_(size()).col(0); }
+    Vector getb() const { return Vector(Ab_(size()).col(0)); }
 
     /** Get a view of the A matrix for the variable pointed to by the given key iterator */
     constABlock getA(const_iterator variable) const { return Ab_(variable - begin()); }
 
     /** Get a view of the A matrix, not weighted by noise */
-    constABlock getA() const { return Ab_.range(0, size()); }
+    Matrix getA() const { return Matrix(Ab_.range(0, size())); }
 
     /** Get a view of the r.h.s. vector b (non-const version) */
     BVector getb() { return Ab_(size()).col(0); }

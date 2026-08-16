@@ -206,7 +206,7 @@ namespace gtsam {
           }
       }
 
-      JacobianFactor::constBVector whitenedb(whitened.getb());
+      const Vector whitenedb = whitened.getb();
       for (size_t i = 0; i < (size_t)whitenedb.size(); i++) {
         double s = whitenedb(i);
         if (std::abs(s) > 1e-12) entries.emplace_back(nrows + i, ncols, s);

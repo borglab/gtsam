@@ -394,10 +394,11 @@ struct GTSAM_EXPORT ISAM2Params {
   }
   KeyFormatter getKeyFormatter() const { return keyFormatter; }
 
-  void setOptimizationParams(OptimizationParams optimizationParams) {
+  void setOptimizationParams(const OptimizationParams& optimizationParams) {
     this->optimizationParams = optimizationParams;
   }
-  void setRelinearizeThreshold(RelinearizationThreshold relinearizeThreshold) {
+  void setRelinearizeThreshold(
+      const RelinearizationThreshold& relinearizeThreshold) {
     this->relinearizeThreshold = relinearizeThreshold;
   }
   void setFactorization(const std::string& factorization) {

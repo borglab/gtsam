@@ -243,7 +243,7 @@ namespace gtsam {
     constABlock S(const_iterator it) const { return BaseFactor::getA(it); }
 
     /** Get a view of the r.h.s. vector d */
-    const constBVector d() const { return BaseFactor::getb(); }
+    Vector d() const { return BaseFactor::getb(); }
 
     /**
      * @brief Compute the determinant of the R matrix.
@@ -311,4 +311,3 @@ struct traits<GaussianConditional> : public Testable<GaussianConditional> {};
 } // \ namespace gtsam
 
 #include <gtsam/linear/GaussianConditional-inl.h>
-

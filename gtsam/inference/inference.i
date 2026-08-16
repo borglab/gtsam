@@ -27,7 +27,7 @@ void PrintKeySet(
 #include <gtsam/inference/Symbol.h>
 class Symbol {
   Symbol();
-  Symbol(char c, uint64_t j);
+  Symbol(char c, size_t j);
   Symbol(gtsam::Key key);
 
   gtsam::Key key() const;
@@ -35,53 +35,53 @@ class Symbol {
   bool equals(const gtsam::Symbol& expected, double tol) const;
 
   char chr() const;
-  uint64_t index() const;
+  size_t index() const;
   string string() const;
 };
 
-gtsam::Key symbol(char chr, uint64_t index);
+gtsam::Key symbol(char chr, size_t index);
 char symbolChr(gtsam::Key key);
-uint64_t symbolIndex(gtsam::Key key);
+size_t symbolIndex(gtsam::Key key);
 
 namespace symbol_shorthand {
-gtsam::Key A(uint64_t j);
-gtsam::Key B(uint64_t j);
-gtsam::Key C(uint64_t j);
-gtsam::Key D(uint64_t j);
-gtsam::Key E(uint64_t j);
-gtsam::Key F(uint64_t j);
-gtsam::Key G(uint64_t j);
-gtsam::Key H(uint64_t j);
-gtsam::Key I(uint64_t j);
-gtsam::Key J(uint64_t j);
-gtsam::Key K(uint64_t j);
-gtsam::Key L(uint64_t j);
-gtsam::Key M(uint64_t j);
-gtsam::Key N(uint64_t j);
-gtsam::Key O(uint64_t j);
-gtsam::Key P(uint64_t j);
-gtsam::Key Q(uint64_t j);
-gtsam::Key R(uint64_t j);
-gtsam::Key S(uint64_t j);
-gtsam::Key T(uint64_t j);
-gtsam::Key U(uint64_t j);
-gtsam::Key V(uint64_t j);
-gtsam::Key W(uint64_t j);
-gtsam::Key X(uint64_t j);
-gtsam::Key Y(uint64_t j);
-gtsam::Key Z(uint64_t j);
+gtsam::Key A(size_t j);
+gtsam::Key B(size_t j);
+gtsam::Key C(size_t j);
+gtsam::Key D(size_t j);
+gtsam::Key E(size_t j);
+gtsam::Key F(size_t j);
+gtsam::Key G(size_t j);
+gtsam::Key H(size_t j);
+gtsam::Key I(size_t j);
+gtsam::Key J(size_t j);
+gtsam::Key K(size_t j);
+gtsam::Key L(size_t j);
+gtsam::Key M(size_t j);
+gtsam::Key N(size_t j);
+gtsam::Key O(size_t j);
+gtsam::Key P(size_t j);
+gtsam::Key Q(size_t j);
+gtsam::Key R(size_t j);
+gtsam::Key S(size_t j);
+gtsam::Key T(size_t j);
+gtsam::Key U(size_t j);
+gtsam::Key V(size_t j);
+gtsam::Key W(size_t j);
+gtsam::Key X(size_t j);
+gtsam::Key Y(size_t j);
+gtsam::Key Z(size_t j);
 }  // namespace symbol_shorthand
 
 #include <gtsam/inference/LabeledSymbol.h>
 class LabeledSymbol {
   LabeledSymbol(gtsam::Key full_key);
   LabeledSymbol(const gtsam::LabeledSymbol& key);
-  LabeledSymbol(unsigned char valType, unsigned char label, uint64_t j);
+  LabeledSymbol(unsigned char valType, unsigned char label, size_t j);
 
   gtsam::Key key() const;
   unsigned char label() const;
   unsigned char chr() const;
-  uint64_t index() const;
+  size_t index() const;
 
   gtsam::LabeledSymbol upper() const;
   gtsam::LabeledSymbol lower() const;
@@ -91,10 +91,10 @@ class LabeledSymbol {
   void print(string s = "") const;
 };
 
-gtsam::Key mrsymbol(unsigned char c, unsigned char label, uint64_t j);
+gtsam::Key mrsymbol(unsigned char c, unsigned char label, size_t j);
 unsigned char mrsymbolChr(gtsam::Key key);
 unsigned char mrsymbolLabel(gtsam::Key key);
-uint64_t mrsymbolIndex(gtsam::Key key);
+size_t mrsymbolIndex(gtsam::Key key);
 
 #include <gtsam/inference/EdgeKey.h>
 class EdgeKey {
@@ -168,8 +168,8 @@ class Ordering {
 
   // Standard interface
   size_t size() const;
-  gtsam::Key at(size_t i) const;
-  void push_back(gtsam::Key key);
+  const gtsam::Key& at(size_t i) const;
+  void push_back(const gtsam::Key& key);
 
   // enabling serialization functionality
   void serialize() const;
@@ -202,7 +202,7 @@ class VariableIndex {
   VariableIndex(const T& factorGraph);
   VariableIndex(const gtsam::VariableIndex& other);
 
-  gtsam::FactorIndices& at(gtsam::Key variable) const;
+  const gtsam::FactorIndices& at(gtsam::Key variable) const;
   bool empty(gtsam::Key variable) const;
 
   // Testable
@@ -219,13 +219,16 @@ class VariableIndex {
 
 #include <gtsam/inference/Factor.h>
 virtual class Factor {
-  void print(string s = "Factor\n", const gtsam::KeyFormatter& keyFormatter =
-                                        gtsam::DefaultKeyFormatter) const;
-  void printKeys(string s = "") const;
+  void print(const string& s = "Factor\n",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+  void printKeys(
+      const string& s = "Factor",
+      const gtsam::KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::Factor& other, double tol = 1e-9) const;
   bool empty() const;
   size_t size() const;
-  gtsam::KeyVector keys() const;
+  const gtsam::KeyVector& keys() const;
 };
 
 }  // namespace gtsam

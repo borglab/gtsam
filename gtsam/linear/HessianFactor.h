@@ -264,12 +264,12 @@ namespace gtsam {
 
     /** Return the complete linear term \f$ g \f$ as described above.
      * @return The linear term \f$ g \f$ */
-    SymmetricBlockMatrix::constBlock linearTerm() const {
+    Matrix linearTerm() const {
 #ifndef NDEBUG
       if(empty()) throw;
 #endif
       // get the last column (except the bottom right block)
-      return info_.aboveDiagonalRange(0, size(), size(), size() + 1);
+      return Matrix(info_.aboveDiagonalRange(0, size(), size(), size() + 1));
     }
 
     /** Return the complete linear term \f$ g \f$ as described above.

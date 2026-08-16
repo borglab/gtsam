@@ -400,10 +400,9 @@ namespace gtsam {
         const VectorValues& x,
         const std::string& str = "GaussianFactorGraph: ",
         const KeyFormatter& keyFormatter = DefaultKeyFormatter,
-        const std::function<bool(const Factor* /*factor*/,
-                                 double /*whitenedError*/, size_t /*index*/)>&
-            printCondition =
-                [](const Factor*, double, size_t) { return true; }) const;
+        const FactorErrorPredicate&
+            printCondition = FactorErrorPredicate{
+                [](const Factor*, double, size_t) { return true; }}) const;
     /// @}
 
   private:

@@ -242,6 +242,8 @@ private:
 
 public:
 
+  inline constexpr static auto calibration_dimension =
+      FixedDimension<CALIBRATION>::value;
   inline constexpr static auto dimension = 6; ///< There are 6 DOF to optimize for
 
   /// @name Standard Constructors
@@ -324,6 +326,11 @@ public:
   bool equals(const Base &camera, double tol = 1e-9) const {
     const PinholePose* e = dynamic_cast<const PinholePose*>(&camera);
     return Base::equals(camera, tol) && K_->equals(e->calibration(), tol);
+  }
+
+  /// Compare with another camera of the same concrete type.
+  bool equals(const PinholePose& camera, double tol = 1e-9) const {
+    return Base::equals(camera, tol) && K_->equals(camera.calibration(), tol);
   }
 
   /// stream operator

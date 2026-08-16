@@ -29,6 +29,7 @@
 #include <gtsam/inference/Key.h>
 
 #include <algorithm>
+#include <functional>
 #include <memory>
 
 namespace gtsam {
@@ -207,5 +208,9 @@ namespace gtsam {
     /// @}
 
   };
+
+  /// Predicate used to select factor errors for graph diagnostics.
+  using FactorErrorPredicate =
+      std::function<bool(const Factor*, double, size_t)>;
 
 } // \namespace gtsam
