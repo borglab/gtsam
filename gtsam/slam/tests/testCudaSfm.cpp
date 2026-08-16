@@ -12,6 +12,7 @@
 #include <gtsam/slam/cuda/CudaSfmLevenbergMarquardt.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionLinearization.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionBatch.h>
+#include <gtsam/slam/cuda/CudaSfmReducedCsrPlan.h>
 #include <gtsam/slam/cuda/CudaSfmValues.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/sfm/SfmData.h>
@@ -496,6 +497,55 @@ std::vector<std::vector<CudaSfmRobustModel>> MakeMixedRobustModelsByTrack(
   return robustModelsByTrack;
 }
 }  // namespace
+
+TEST(CudaSfmReducedCsrPlan, BuildsStableCameraOnlyCovisibilityPattern) {
+  SfmData data;
+  for (int camera = 0; camera < 4; ++camera) {
+    data.cameras.emplace_back(Pose3(), Cal3Bundler(100.0, 0.0, 0.0));
+  }
+  const std::vector<std::vector<size_t>> tracks{{0, 1}, {1, 2}, {0, 2, 3}};
+  for (size_t point = 0; point < tracks.size(); ++point) {
+    SfmTrack track(Point3(static_cast<double>(point), 0.0, 5.0));
+    for (const size_t camera : tracks[point]) {
+      track.measurements.emplace_back(camera, Point2(0.0, 0.0));
+    }
+    data.tracks.push_back(track);
+  }
+  const std::vector<Key> cameraKeys{C(0), C(1), C(2), C(3)};
+  const CudaSfmReducedCsrPlan plan(data, cameraKeys);
+  const CudaSfmReducedCsrPlan repeated(data, cameraKeys);
+
+  LONGS_EQUAL(36, plan.dimension());
+  EXPECT(plan.rowPointers() == repeated.rowPointers());
+  EXPECT(plan.columnIndices() == repeated.columnIndices());
+  EXPECT(plan.hasCameraPair(0, 0));
+  EXPECT(plan.hasCameraPair(0, 1));
+  EXPECT(plan.hasCameraPair(0, 2));
+  EXPECT(plan.hasCameraPair(0, 3));
+  EXPECT(plan.hasCameraPair(1, 2));
+  EXPECT(plan.hasCameraPair(2, 3));
+  EXPECT(!plan.hasCameraPair(1, 3));
+  LONGS_EQUAL(plan.valueOffset(0, 2, 4, 7),
+              plan.valueOffset(2, 0, 7, 4));
+  for (int row = 0; row < plan.dimension(); ++row) {
+    const auto begin = plan.columnIndices().begin() + plan.rowPointers()[row];
+    const auto end =
+        plan.columnIndices().begin() + plan.rowPointers()[row + 1];
+    EXPECT(std::is_sorted(begin, end));
+  }
+
+  const std::vector<int> scalarPermutation = CompileCudaScalarPermutation(
+      plan.cameraBlocks(), Ordering{C(2), C(0), C(3), C(1)});
+  std::vector<int> expected;
+  for (const int camera : {2, 0, 3, 1}) {
+    for (int scalar = 0; scalar < 9; ++scalar) {
+      expected.push_back(9 * camera + scalar);
+    }
+  }
+  EXPECT(expected == scalarPermutation);
+  const Ordering automatic = plan.colamdOrdering();
+  LONGS_EQUAL(4, automatic.size());
+}
 
 TEST(CudaSfmLevenbergMarquardtParams, MapsLinearSolverStringAliases) {
   CudaSfmLevenbergMarquardtParams params;
