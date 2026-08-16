@@ -42,6 +42,10 @@ BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Gaussian, "gtsam_noiseModel_Gaussian"
 BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Unit, "gtsam_noiseModel_Unit")
 BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Isotropic, "gtsam_noiseModel_Isotropic")
 
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Base, "gtsam_noiseModel_mEstimator_Base")
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::GemanMcClure, "gtsam_noiseModel_mEstimator_GemanMcClure")
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::TruncatedLeastSquares, "gtsam_noiseModel_mEstimator_TruncatedLeastSquares")
+
 BOOST_CLASS_EXPORT_GUID(gtsam::SharedNoiseModel, "gtsam_SharedNoiseModel")
 BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal")
 
@@ -122,6 +126,70 @@ TEST (Serialization, SharedDiagonal_noiseModels) {
   EXPECT(equalsDereferencedBinary<SharedDiagonal>(constrained3));
   EXPECT(equalsDereferenced<SharedDiagonal>(constrained3));
   EXPECT(equalsDereferencedXML<SharedDiagonal>(constrained3));
+}
+
+/* ************************************************************************* */
+TEST(Serialization, graduatedLossFunctions) {
+  using noiseModel::mEstimator::GemanMcClure;
+  using noiseModel::mEstimator::TruncatedLeastSquares;
+
+  const double k = 2.5;
+  std::vector<noiseModel::mEstimator::Base::shared_ptr> losses{
+      GemanMcClure::Create(k, GemanMcClure::GradScheme::STANDARD),
+      GemanMcClure::Create(k, GemanMcClure::GradScheme::SCALE_INVARIANT),
+      TruncatedLeastSquares::Create(
+          k, TruncatedLeastSquares::GradScheme::STANDARD),
+      TruncatedLeastSquares::Create(
+          k, TruncatedLeastSquares::GradScheme::GNC_LINEAR),
+      TruncatedLeastSquares::Create(
+          k, TruncatedLeastSquares::GradScheme::GNC_SUPERLINEAR)};
+
+  for (const auto& loss : losses) {
+    EXPECT(equalsDereferenced<noiseModel::mEstimator::Base::shared_ptr>(loss));
+    EXPECT(
+        equalsDereferencedXML<noiseModel::mEstimator::Base::shared_ptr>(loss));
+    EXPECT(equalsDereferencedBinary<noiseModel::mEstimator::Base::shared_ptr>(
+        loss));
+  }
+
+  // Also verify the scheme survives on the concrete pointer types.
+  auto gmc = GemanMcClure::Create(k, GemanMcClure::GradScheme::SCALE_INVARIANT);
+  EXPECT(equalsDereferenced<GemanMcClure::shared_ptr>(gmc));
+  EXPECT(equalsDereferencedXML<GemanMcClure::shared_ptr>(gmc));
+  EXPECT(equalsDereferencedBinary<GemanMcClure::shared_ptr>(gmc));
+
+  auto tls = TruncatedLeastSquares::Create(
+      k, TruncatedLeastSquares::GradScheme::GNC_LINEAR);
+  EXPECT(equalsDereferenced<TruncatedLeastSquares::shared_ptr>(tls));
+  EXPECT(equalsDereferencedXML<TruncatedLeastSquares::shared_ptr>(tls));
+  EXPECT(equalsDereferencedBinary<TruncatedLeastSquares::shared_ptr>(tls));
+}
+
+/* ************************************************************************* */
+// equals() must distinguish two losses that differ only in graduation scheme.
+TEST(Serialization, graduationSchemeInequality) {
+  using noiseModel::mEstimator::GemanMcClure;
+  using noiseModel::mEstimator::TruncatedLeastSquares;
+
+  const double k = 2.5;
+  auto gmcStandard =
+      GemanMcClure::Create(k, GemanMcClure::GradScheme::STANDARD);
+  auto gmcScaleInvariant =
+      GemanMcClure::Create(k, GemanMcClure::GradScheme::SCALE_INVARIANT);
+  EXPECT(gmcStandard->equals(*GemanMcClure::Create(k)));
+  EXPECT(!gmcStandard->equals(*gmcScaleInvariant));
+  EXPECT(!gmcScaleInvariant->equals(*gmcStandard));
+
+  auto tlsStandard = TruncatedLeastSquares::Create(
+      k, TruncatedLeastSquares::GradScheme::STANDARD);
+  auto tlsGncLinear = TruncatedLeastSquares::Create(
+      k, TruncatedLeastSquares::GradScheme::GNC_LINEAR);
+  auto tlsGncSuperlinear = TruncatedLeastSquares::Create(
+      k, TruncatedLeastSquares::GradScheme::GNC_SUPERLINEAR);
+  EXPECT(tlsStandard->equals(*TruncatedLeastSquares::Create(k)));
+  EXPECT(!tlsStandard->equals(*tlsGncLinear));
+  EXPECT(!tlsGncLinear->equals(*tlsGncSuperlinear));
+  EXPECT(!tlsGncSuperlinear->equals(*tlsStandard));
 }
 
 /* Create GUIDs for factors */
