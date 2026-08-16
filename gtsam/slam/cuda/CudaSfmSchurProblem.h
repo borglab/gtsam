@@ -16,6 +16,13 @@ namespace gtsam::cuda {
 
 class CudaSfmReducedCsrPlan;
 
+struct CudaSfmImplicitSchurView {
+  const CudaLinearOperator* linearOperator = nullptr;
+  const CudaPreconditioner* preconditioner = nullptr;
+  const double* rhs = nullptr;
+  int dimension = 0;
+};
+
 /**
  * Persistent SFM-specific producer for reduced camera Schur systems.
  *
@@ -48,6 +55,12 @@ class GTSAM_EXPORT CudaSfmSchurProblem {
   DeviceSparseSpdSystem& prepareSparse(
       double lambda, const CudaDeviceArray<double>& dampingDiagonal,
       const CudaSfmReducedCsrPlan& plan, cudaStream_t stream = nullptr);
+
+  CudaSfmImplicitSchurView prepareImplicit(
+      double lambda, cudaStream_t stream = nullptr);
+  CudaSfmImplicitSchurView prepareImplicit(
+      double lambda, const CudaDeviceArray<double>& dampingDiagonal,
+      cudaStream_t stream = nullptr);
 
   void recoverPoints(double lambda,
                      const CudaDeviceArray<double>& cameraDelta,

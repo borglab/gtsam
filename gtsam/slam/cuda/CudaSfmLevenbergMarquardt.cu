@@ -481,6 +481,8 @@ std::string CudaSfmLevenbergMarquardtParams::getLinearSolver() const {
       return "dense-schur";
     case CudaSfmLinearSolverType::CudssSchur:
       return "cudss-schur";
+    case CudaSfmLinearSolverType::PcgSchur:
+      return "pcg-schur";
     case CudaSfmLinearSolverType::CudssFullNormal:
       return "cudss-full-normal";
   }
@@ -500,6 +502,10 @@ void CudaSfmLevenbergMarquardtParams::setLinearSolver(
   }
   if (normalized == "cudss-schur" || normalized == "schur-cudss") {
     linearSolver = CudaSfmLinearSolverType::CudssSchur;
+    return;
+  }
+  if (normalized == "pcg-schur" || normalized == "schur-pcg") {
+    linearSolver = CudaSfmLinearSolverType::PcgSchur;
     return;
   }
   throw std::invalid_argument("Unknown CUDA SFM linear solver: " + solver);
@@ -708,7 +714,8 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
         "OptimizeCudaSfm point key count does not match SfmData");
   }
 #if !GTSAM_ENABLE_CUDSS
-  if (params.linearSolver != CudaSfmLinearSolverType::DenseSchur) {
+  if (params.linearSolver == CudaSfmLinearSolverType::CudssSchur ||
+      params.linearSolver == CudaSfmLinearSolverType::CudssFullNormal) {
     throw std::runtime_error(
         "OptimizeCudaSfm cuDSS solver requires GTSAM_ENABLE_CUDSS=ON");
   }
@@ -827,18 +834,30 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
   std::unique_ptr<CudaSfmReducedCsrPlan> reducedPlan;
   std::unique_ptr<CudaLinearSolverSession> reducedSession;
   bool reducedAnalyzed = false;
-  if (params.linearSolver == CudaSfmLinearSolverType::CudssSchur) {
-    reducedPlan =
-        std::make_unique<CudaSfmReducedCsrPlan>(data, cameraKeys);
+  if (params.linearSolver == CudaSfmLinearSolverType::CudssSchur ||
+      params.linearSolver == CudaSfmLinearSolverType::PcgSchur) {
     CudaLinearSolverOptions options;
-    options.backend = CudaLinearSolverType::Cudss;
-    options.useUserOrdering = !params.ordering.empty();
+    options.backend = params.linearSolver == CudaSfmLinearSolverType::CudssSchur
+                          ? CudaLinearSolverType::Cudss
+                          : CudaLinearSolverType::Pcg;
+    options.useUserOrdering = options.backend == CudaLinearSolverType::Cudss &&
+                              !params.ordering.empty();
     reducedSession = std::make_unique<CudaLinearSolverSession>(options);
+    if (options.backend == CudaLinearSolverType::Cudss) {
+      reducedPlan =
+          std::make_unique<CudaSfmReducedCsrPlan>(data, cameraKeys);
+    }
     if (options.useUserOrdering) {
       result.appliedScalarPermutation = CompileCudaScalarPermutation(
           reducedPlan->cameraBlocks(), params.ordering);
     }
     sparseSchurProblem.initialize(batch, numCameras);
+    if (options.backend == CudaLinearSolverType::Pcg && numCameras > 0) {
+      reducedSession->analyze(9 * numCameras, params.pcg, context.stream(),
+                              detailedProfiling);
+      cameraDelta.resize(static_cast<size_t>(9 * numCameras));
+      reducedAnalyzed = true;
+    }
   }
   if (params.linearSolver == CudaSfmLinearSolverType::CudssFullNormal) {
     stageStart = Clock::now();
@@ -895,7 +914,8 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
     if (params.linearSolver == CudaSfmLinearSolverType::DenseSchur) {
       denseSchurSolver.linearize(current, batch, numCameras,
                                  context.stream());
-    } else if (params.linearSolver == CudaSfmLinearSolverType::CudssSchur) {
+    } else if (params.linearSolver == CudaSfmLinearSolverType::CudssSchur ||
+               params.linearSolver == CudaSfmLinearSolverType::PcgSchur) {
       sparseSchurProblem.linearize(current, context.stream());
     }
 
@@ -967,6 +987,29 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
             DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
                                           context.stream());
         result.cudssSolveElapsed += attemptProfile.cudssSolveElapsed;
+      } else if (params.linearSolver == CudaSfmLinearSolverType::PcgSchur) {
+        stageStart = DetailedProfileStart(detailedProfiling);
+        const CudaSfmImplicitSchurView implicit =
+            params.diagonalDamping
+                ? sparseSchurProblem.prepareImplicit(
+                      lambda, dampingDiagonal, context.stream())
+                : sparseSchurProblem.prepareImplicit(lambda, context.stream());
+        reducedSession->solve(*implicit.linearOperator,
+                              *implicit.preconditioner, implicit.rhs,
+                              &cameraDelta, context.stream());
+        if (params.diagonalDamping) {
+          sparseSchurProblem.recoverPoints(lambda, dampingDiagonal,
+                                           cameraDelta, &delta,
+                                           context.stream());
+        } else {
+          sparseSchurProblem.recoverPoints(lambda, cameraDelta, &delta,
+                                           context.stream());
+        }
+        attemptProfile.denseSchurSolveElapsed =
+            DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
+                                          context.stream());
+        result.denseSchurSolveElapsed +=
+            attemptProfile.denseSchurSolveElapsed;
       } else {
         stageStart = DetailedProfileStart(detailedProfiling);
         AccumulateCudaSfmNormalEquations(current, batch, numCameras, &system,

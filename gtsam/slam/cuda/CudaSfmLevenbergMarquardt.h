@@ -3,6 +3,7 @@
 #include <gtsam/dllexport.h>
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/linear/cuda/CudaLinearSolver.h>
+#include <gtsam/linear/cuda/CudaPcgSolver.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/nonlinear/NonlinearOptimizerParams.h>
 #include <gtsam/nonlinear/Values.h>
@@ -18,6 +19,7 @@ namespace gtsam::cuda {
 enum class CudaSfmLinearSolverType {
   DenseSchur,
   CudssSchur,
+  PcgSchur,
   CudssFullNormal,
 };
 
@@ -44,6 +46,7 @@ class GTSAM_EXPORT CudaSfmLevenbergMarquardtParams {
   CudaSfmLinearSolverType linearSolver = CudaSfmLinearSolverType::DenseSchur;
   /** Optional camera-only ordering for CudssSchur. */
   Ordering ordering;
+  CudaPcgOptions pcg;
 
   CudaSfmLevenbergMarquardtParams();
 

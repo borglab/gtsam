@@ -1377,6 +1377,31 @@ TEST(CudaSfmLevenbergMarquardt,
              sparseParams.ordering));
 }
 
+TEST(CudaSfmLevenbergMarquardt, ImplicitSchurPcgMatchesDense) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+  CudaSfmLevenbergMarquardtParams denseParams =
+      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  denseParams.maxIterations = 2;
+  denseParams.relativeErrorTol = 0.0;
+  const CudaSfmLevenbergMarquardtResult dense =
+      OptimizeCudaSfmWithoutValueDownload(data, denseParams);
+
+  CudaSfmLevenbergMarquardtParams pcgParams = denseParams;
+  pcgParams.linearSolver = CudaSfmLinearSolverType::PcgSchur;
+  pcgParams.pcg.maxIterations = 200;
+  pcgParams.pcg.relativeTolerance = 1e-10;
+  pcgParams.pcg.convergenceCheckInterval = 1;
+  pcgParams.pcg.warmStart = false;
+  const CudaSfmLevenbergMarquardtResult pcg =
+      OptimizeCudaSfmWithoutValueDownload(data, pcgParams);
+
+  DOUBLES_EQUAL(dense.finalError, pcg.finalError, 1e-5);
+  CHECK(pcg.linearSolveStats.lastPcgConverged);
+  CHECK(pcg.linearSolveStats.solveCount > 0);
+  CHECK(pcg.linearSolveStats.pcgIterationsTotal > 0);
+}
+
 TEST(CudaSfmFactorGraphConversion,
      ConvertsGeneralSfmFactorsWithArbitraryKeys) {
   const SfmData measuredData = makeTrueBalLikeData();
@@ -2270,6 +2295,48 @@ TEST(CudaSfmSchurProblem, SparseAssemblyMatchesDenseAssembly) {
           denseValues[static_cast<size_t>(row) * dense.dimension + column];
       DOUBLES_EQUAL(denseSymmetricEntry, sparseValues[entry], 1e-10);
     }
+  }
+}
+
+TEST(CudaSfmSchurProblem, ImplicitOperatorMatchesDenseSchurProduct) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+  CudaContext context;
+  DeviceValues values = PackSfmValues(data, context.stream());
+  const CudaSfmProjectionBatch batch =
+      CudaSfmProjectionBatch::FromSfmData(data, context.stream());
+  CudaSfmSchurProblem problem;
+  problem.initialize(batch, static_cast<int>(data.numberCameras()));
+  problem.linearize(values, context.stream());
+  constexpr double lambda = 1e-3;
+  const CudaDenseSpdSystemView dense =
+      problem.prepareDense(lambda, context.stream());
+  const CudaSfmImplicitSchurView implicit =
+      problem.prepareImplicit(lambda, context.stream());
+
+  std::vector<double> hostInput(dense.dimension);
+  for (int i = 0; i < dense.dimension; ++i) hostInput[i] = 0.25 + 0.1 * i;
+  CudaDeviceArray<double> input;
+  CudaDeviceArray<double> output(dense.dimension);
+  input.upload(hostInput, context.stream());
+  implicit.linearOperator->apply(input.data(), output.data(), context.stream());
+
+  std::vector<double> denseValues(dense.dimension * dense.dimension);
+  std::vector<double> actual;
+  GTSAM_CUDA_CHECK(cudaMemcpyAsync(
+      denseValues.data(), dense.values, sizeof(double) * denseValues.size(),
+      cudaMemcpyDeviceToHost, context.stream()));
+  output.download(&actual, context.stream());
+  context.synchronize();
+  for (int row = 0; row < dense.dimension; ++row) {
+    double expected = 0.0;
+    for (int column = 0; column < dense.dimension; ++column) {
+      const int lowerRow = std::max(row, column);
+      const int lowerColumn = std::min(row, column);
+      expected += denseValues[lowerColumn * dense.dimension + lowerRow] *
+                  hostInput[column];
+    }
+    DOUBLES_EQUAL(expected, actual[row], 1e-8);
   }
 }
 

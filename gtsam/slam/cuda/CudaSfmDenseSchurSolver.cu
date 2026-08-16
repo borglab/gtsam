@@ -5,6 +5,7 @@
 #include <gtsam/slam/cuda/CudaSfmProjectionLinearization.h>
 #include <gtsam/slam/cuda/CudaSfmReducedCsrPlan.h>
 #include <gtsam/slam/cuda/CudaSfmSchurProblem.h>
+#include <gtsam/slam/cuda/CudaSfmSchurOperator.h>
 #include <gtsam/slam/cuda/CudaSfmSparseSchur.h>
 
 #include <algorithm>
@@ -464,6 +465,9 @@ struct CudaSfmSchurProblem::Impl {
   DeviceSparseSpdSystem sparseSystem;
   std::vector<int> sparseRowPointers;
   std::vector<int> sparseColumnIndices;
+  std::unique_ptr<CudaSfmSchurOperator> implicitOperator;
+  std::unique_ptr<CudaSfmCameraBlockPreconditioner> implicitPreconditioner;
+  CudaDeviceArray<double> implicitRhs;
   const CudaSfmProjectionBatch* batch = nullptr;
   int numCameras = 0;
   int cameraDim = 0;
@@ -499,6 +503,8 @@ struct CudaSfmSchurProblem::Impl {
     cameraDim = 9 * numCameras;
     numPoints = static_cast<int>(newBatch.numPoints());
     isLinearized = false;
+    implicitOperator.reset();
+    implicitPreconditioner.reset();
   }
 
   int totalDim() const { return cameraDim + 3 * numPoints; }
@@ -631,6 +637,27 @@ struct CudaSfmSchurProblem::Impl {
     return sparseSystem;
   }
 
+  CudaSfmImplicitSchurView prepareImplicit(
+      double lambda, const CudaDeviceArray<double>* dampingDiagonal,
+      cudaStream_t stream) {
+    if (!isLinearized || !batch) {
+      throw std::logic_error(
+          "CudaSfmSchurProblem must be linearized before prepareImplicit");
+    }
+    if (!implicitOperator) {
+      implicitOperator = std::make_unique<CudaSfmSchurOperator>(
+          *batch, linearization, numCameras);
+      implicitPreconditioner =
+          std::make_unique<CudaSfmCameraBlockPreconditioner>(
+              *batch, linearization, numCameras);
+    }
+    implicitOperator->configure(lambda, dampingDiagonal);
+    implicitPreconditioner->build(lambda, dampingDiagonal, &implicitRhs,
+                                  stream);
+    return {implicitOperator.get(), implicitPreconditioner.get(),
+            implicitRhs.data(), cameraDim};
+  }
+
   void recoverPoints(double lambda,
                      const CudaDeviceArray<double>* dampingDiagonal,
                      const CudaDeviceArray<double>& cameraDelta,
@@ -720,6 +747,17 @@ DeviceSparseSpdSystem& CudaSfmSchurProblem::prepareSparse(
     double lambda, const CudaDeviceArray<double>& dampingDiagonal,
     const CudaSfmReducedCsrPlan& plan, cudaStream_t stream) {
   return impl_->prepareSparse(lambda, &dampingDiagonal, plan, stream);
+}
+
+CudaSfmImplicitSchurView CudaSfmSchurProblem::prepareImplicit(
+    double lambda, cudaStream_t stream) {
+  return impl_->prepareImplicit(lambda, nullptr, stream);
+}
+
+CudaSfmImplicitSchurView CudaSfmSchurProblem::prepareImplicit(
+    double lambda, const CudaDeviceArray<double>& dampingDiagonal,
+    cudaStream_t stream) {
+  return impl_->prepareImplicit(lambda, &dampingDiagonal, stream);
 }
 
 void CudaSfmSchurProblem::recoverPoints(
