@@ -134,7 +134,7 @@ struct SummaryStatistics {
 
 void ApplyMatrixConfigurationDefaults(RunOptions* options) {
   if (!options || options->gpuSolver != "pcg") return;
-  if (options->pcgTolerance == 0.0) options->pcgTolerance = 1e-10;
+  if (options->pcgTolerance == 0.0) options->pcgTolerance = 1e-6;
   if (options->pcgMaxIterations == 0) options->pcgMaxIterations = 5000;
   if (options->objectiveTolerance == kObjectiveTolerance) {
     options->objectiveTolerance = 1e-3;
@@ -646,7 +646,7 @@ int RunSelfTest() {
   RunOptions matrixPcgOptions;
   matrixPcgOptions.gpuSolver = "pcg";
   ApplyMatrixConfigurationDefaults(&matrixPcgOptions);
-  if (matrixPcgOptions.pcgTolerance != 1e-10 ||
+  if (matrixPcgOptions.pcgTolerance != 1e-6 ||
       matrixPcgOptions.pcgMaxIterations != 5000 ||
       matrixPcgOptions.objectiveTolerance != 1e-3) {
     throw std::runtime_error("PCG matrix defaults self-test failed");

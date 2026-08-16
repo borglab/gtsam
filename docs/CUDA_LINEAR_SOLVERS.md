@@ -145,7 +145,7 @@ compute COLAMD at key/block level, expand it to scalar indices through
 permutation.
 
 The named PCG benchmark rows use a correctness-oriented iterative profile
-(`relativeTolerance=1e-10` and at most 5000 iterations; the general benchmark
+(`relativeTolerance=1e-6` and at most 5000 iterations; the general benchmark
 requires 0.1% final-objective agreement). The runners reject any row in which
 an inner solve reaches that cap, breaks down, or the last solve does not
 converge. These are benchmark controls, not changes to the public

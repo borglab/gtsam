@@ -529,7 +529,7 @@ gtsam::cuda::CudaSfmLevenbergMarquardtParams makeBalCudaLmParams(
   params.setLinearSolver(cudaLinearSolverName(solverOption));
   if (solverOption == CudaLinearSolverOption::PcgSchur ||
       solverOption == CudaLinearSolverOption::PcgFullNormal) {
-    params.pcg.relativeTolerance = 1e-10;
+    params.pcg.relativeTolerance = 1e-6;
     params.pcg.maxIterations = 1000;
   }
   params.enableDetailedProfiling = enableDetailedProfiling;

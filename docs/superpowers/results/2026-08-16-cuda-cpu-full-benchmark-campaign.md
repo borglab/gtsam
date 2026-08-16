@@ -1,5 +1,9 @@
 # CUDA/CPU full benchmark campaign
 
+> This report records the historical `1e-10` PCG benchmark profile. The
+> current named profile and its rerun are documented in
+> [PCG benchmark profile at `1e-6`](2026-08-16-pcg-1e-6-benchmark.md).
+
 Date: 2026-08-16
 
 Revision: `1d1d6c5f0dae` (`codex/cuda-hybrid-final`, clean before results)
