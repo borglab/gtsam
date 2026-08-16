@@ -183,7 +183,7 @@ virtual class TableDistribution : gtsam::DiscreteConditional {
   TableDistribution(const gtsam::DiscreteKey& key, string spec);
 
   gtsam::TableFactor table() const;
-  size_t nrValues() const;
+  uint64_t nrValues() const;
 };
 
 #include <gtsam/discrete/DiscreteBayesNet.h>
