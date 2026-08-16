@@ -726,22 +726,25 @@ TEST(NoiseModel, robustFunctionGemanMcClureGraduatedScaleInvariant) {
 }
 
 /* ************************************************************************* */
-TEST(NoiseModel, GemanMcClureShapeParamFromInfThresh) {
+TEST(NoiseModel, GemanMcClureShapeParameterFromInfluenceThreshold) {
   const double t = 0.1;
   // Tabulated chi2 95th percentiles for dof 1, 2, 3, 6.
   for (const auto& [dof, quantile] : std::map<size_t, double>{
            {1, 3.841459}, {2, 5.991465}, {3, 7.814728}, {6, 12.591587}}) {
     const double c =
-        mEstimator::GemanMcClure::shapeParamFromInfThresh(t, dof, 0.95);
+        mEstimator::GemanMcClure::ShapeParameterFromInfluenceThreshold(t, dof,
+                                                                       0.95);
     const double r = std::sqrt(quantile);
-    EXPECT_DOUBLES_EQUAL(
-        t, r * mEstimator::GemanMcClure::Weight(r * r, c * c), 1e-5);
+    EXPECT_DOUBLES_EQUAL(t, r * mEstimator::GemanMcClure::Weight(r * r, c * c),
+                         1e-5);
     // The influence threshold must lie in (0, r).
-    CHECK_EXCEPTION(mEstimator::GemanMcClure::shapeParamFromInfThresh(
-                        1.1 * r, dof, 0.95),
-                    std::invalid_argument);
     CHECK_EXCEPTION(
-        mEstimator::GemanMcClure::shapeParamFromInfThresh(0.0, dof, 0.95),
+        mEstimator::GemanMcClure::ShapeParameterFromInfluenceThreshold(
+            1.1 * r, dof, 0.95),
+        std::invalid_argument);
+    CHECK_EXCEPTION(
+        mEstimator::GemanMcClure::ShapeParameterFromInfluenceThreshold(0.0, dof,
+                                                                       0.95),
         std::invalid_argument);
   }
 }
@@ -996,9 +999,10 @@ TEST(NoiseModel, graduatedWeightLossAll) {
     DOUBLES_EQUAL(mest->weight(e1), mest->graduatedWeight(e1, 1.0), 1e-5);
     DOUBLES_EQUAL(mest->weight(e2), mest->graduatedWeight(e2, 1.0), 1e-5);
   };
-  auto testLoss = [&](const mEstimator::Base::shared_ptr mest, bool is_dcs) -> void {
+  auto testLoss = [&](const mEstimator::Base::shared_ptr mest,
+                      bool isDcs) -> void {
     // Convex for \mu = 0.0
-    if (is_dcs) {
+    if (isDcs) {
       DOUBLES_EQUAL(e1 * e1, mest->graduatedLoss(e1, 0.0), 1e-5);
       DOUBLES_EQUAL(e2 * e2, mest->graduatedLoss(e2, 0.0), 1e-5);
     } else {
@@ -1028,43 +1032,48 @@ TEST(NoiseModel, graduatedWeightLossAll) {
   auto dcs = mEstimator::DCS::Create(k);
   testWeight(dcs);
   testLoss(dcs, true);
-  auto tls_std = mEstimator::TruncatedLeastSquares::Create(
+  auto tlsStandard = mEstimator::TruncatedLeastSquares::Create(
       k, mEstimator::TruncatedLeastSquares::GradScheme::STANDARD);
-  testWeight(tls_std);
-  testLoss(tls_std, false);
+  testWeight(tlsStandard);
+  testLoss(tlsStandard, false);
 }
 
 TEST(NoiseModel, graduatedWeightLossNonStandard) {
   const double e1 = 1.0, e2 = 10.0, k = 5.0;
 
-  auto tls_lin = mEstimator::TruncatedLeastSquares::Create(
-    k, mEstimator::TruncatedLeastSquares::GradScheme::GNC_LINEAR);
+  auto tlsGncLinear = mEstimator::TruncatedLeastSquares::Create(
+      k, mEstimator::TruncatedLeastSquares::GradScheme::GNC_LINEAR);
   // Yang's theta -> 0 surrogate is degenerate (all weights vanish), so mu=0 is
   // defined as the all-inlier least-squares initialization step.
-  DOUBLES_EQUAL(1.0, tls_lin->graduatedWeight(e1, 0.0), 1e-8);
-  DOUBLES_EQUAL(1.0, tls_lin->graduatedWeight(e2, 0.0), 1e-8);
-  DOUBLES_EQUAL(0.5 * e1 * e1, tls_lin->graduatedLoss(e1, 0.0), 1e-8);
-  DOUBLES_EQUAL(0.5 * e2 * e2, tls_lin->graduatedLoss(e2, 0.0), 1e-8);
+  DOUBLES_EQUAL(1.0, tlsGncLinear->graduatedWeight(e1, 0.0), 1e-8);
+  DOUBLES_EQUAL(1.0, tlsGncLinear->graduatedWeight(e2, 0.0), 1e-8);
+  DOUBLES_EQUAL(0.5 * e1 * e1, tlsGncLinear->graduatedLoss(e1, 0.0), 1e-8);
+  DOUBLES_EQUAL(0.5 * e2 * e2, tlsGncLinear->graduatedLoss(e2, 0.0), 1e-8);
   // TLS Linear matches TLS for mu=1
-  DOUBLES_EQUAL(tls_lin->weight(e1), tls_lin->graduatedWeight(e1, 1.0), 1e-8);
-  DOUBLES_EQUAL(tls_lin->weight(e2), tls_lin->graduatedWeight(e2, 1.0), 1e-8);
-  DOUBLES_EQUAL(tls_lin->loss(e1), tls_lin->graduatedLoss(e1, 1.0), 1e-8);
-  DOUBLES_EQUAL(tls_lin->loss(e2), tls_lin->graduatedLoss(e2, 1.0), 1e-8);
+  DOUBLES_EQUAL(tlsGncLinear->weight(e1),
+                tlsGncLinear->graduatedWeight(e1, 1.0), 1e-8);
+  DOUBLES_EQUAL(tlsGncLinear->weight(e2),
+                tlsGncLinear->graduatedWeight(e2, 1.0), 1e-8);
+  DOUBLES_EQUAL(tlsGncLinear->loss(e1), tlsGncLinear->graduatedLoss(e1, 1.0),
+                1e-8);
+  DOUBLES_EQUAL(tlsGncLinear->loss(e2), tlsGncLinear->graduatedLoss(e2, 1.0),
+                1e-8);
 
-  auto tls_sup = mEstimator::TruncatedLeastSquares::Create(
-    k, mEstimator::TruncatedLeastSquares::GradScheme::GNC_SUPERLINEAR);
+  auto tlsGncSuperlinear = mEstimator::TruncatedLeastSquares::Create(
+      k, mEstimator::TruncatedLeastSquares::GradScheme::GNC_SUPERLINEAR);
   // TLS Super is never generally convex by construction and has no loss
-  DOUBLES_EQUAL(1.0, tls_sup->graduatedWeight(e1, 0.0), 1e-8);
-  DOUBLES_EQUAL(0.5, tls_sup->graduatedWeight(e2, 0.0), 1e-8);
-  DOUBLES_EQUAL(tls_sup->weight(e1), tls_sup->graduatedWeight(e1, 1.0), 1e-8);
-  DOUBLES_EQUAL(tls_sup->weight(e2), tls_sup->graduatedWeight(e2, 1.0), 1e-8);
+  DOUBLES_EQUAL(1.0, tlsGncSuperlinear->graduatedWeight(e1, 0.0), 1e-8);
+  DOUBLES_EQUAL(0.5, tlsGncSuperlinear->graduatedWeight(e2, 0.0), 1e-8);
+  DOUBLES_EQUAL(tlsGncSuperlinear->weight(e1),
+                tlsGncSuperlinear->graduatedWeight(e1, 1.0), 1e-8);
+  DOUBLES_EQUAL(tlsGncSuperlinear->weight(e2),
+                tlsGncSuperlinear->graduatedWeight(e2, 1.0), 1e-8);
 
-  auto gmc_si = mEstimator::GemanMcClure::Create(
-    k, mEstimator::GemanMcClure::GradScheme::SCALE_INVARIANT);
+  auto gmcScaleInvariant = mEstimator::GemanMcClure::Create(
+      k, mEstimator::GemanMcClure::GradScheme::SCALE_INVARIANT);
   // GM Scale Invariant, at mu=0.0 weight depends on shape param
-  DOUBLES_EQUAL(0.961538, gmc_si->graduatedWeight(e1, 0.0), 1e-6);
-  DOUBLES_EQUAL(0.961538, gmc_si->graduatedWeight(e2, 0.0), 1e-6);
-
+  DOUBLES_EQUAL(0.961538, gmcScaleInvariant->graduatedWeight(e1, 0.0), 1e-6);
+  DOUBLES_EQUAL(0.961538, gmcScaleInvariant->graduatedWeight(e2, 0.0), 1e-6);
 }
 
 TEST(NoiseModel, lossFunctionAtZero) {
@@ -1116,10 +1125,10 @@ TEST(NoiseModel, lossFunctionAtZeroGraduated) {
   auto gmc = mEstimator::GemanMcClure::Create(k);
   DOUBLES_EQUAL(gmc->graduatedLoss(0, mu), 0, 1e-8);
   DOUBLES_EQUAL(gmc->graduatedWeight(0, mu), 1, 1e-8);
-  auto gmc_si = mEstimator::GemanMcClure::Create(
+  auto gmcScaleInvariant = mEstimator::GemanMcClure::Create(
       k, mEstimator::GemanMcClure::GradScheme::SCALE_INVARIANT);
-  DOUBLES_EQUAL(gmc_si->graduatedLoss(0, 0.5), 0, 1e-8);
-  DOUBLES_EQUAL(gmc_si->graduatedWeight(0, 0.5), 1, 1e-8);
+  DOUBLES_EQUAL(gmcScaleInvariant->graduatedLoss(0, 0.5), 0, 1e-8);
+  DOUBLES_EQUAL(gmcScaleInvariant->graduatedWeight(0, 0.5), 1, 1e-8);
   auto welsch = mEstimator::Welsch::Create(k);
   DOUBLES_EQUAL(welsch->graduatedLoss(0, mu), 0, 1e-8);
   DOUBLES_EQUAL(welsch->graduatedWeight(0, mu), 1, 1e-8);
@@ -1129,17 +1138,17 @@ TEST(NoiseModel, lossFunctionAtZeroGraduated) {
   auto dcs = mEstimator::DCS::Create(k);
   DOUBLES_EQUAL(dcs->graduatedLoss(0, mu), 0, 1e-8);
   DOUBLES_EQUAL(dcs->graduatedWeight(0, mu), 1, 1e-8);
-  auto tls_std = mEstimator::TruncatedLeastSquares::Create(
+  auto tlsStandard = mEstimator::TruncatedLeastSquares::Create(
       k, mEstimator::TruncatedLeastSquares::GradScheme::STANDARD);
-  DOUBLES_EQUAL(tls_std->graduatedLoss(0, mu), 0, 1e-8);
-  DOUBLES_EQUAL(tls_std->graduatedWeight(0, mu), 1, 1e-8);
-  auto tls_lin = mEstimator::TruncatedLeastSquares::Create(
+  DOUBLES_EQUAL(tlsStandard->graduatedLoss(0, mu), 0, 1e-8);
+  DOUBLES_EQUAL(tlsStandard->graduatedWeight(0, mu), 1, 1e-8);
+  auto tlsGncLinear = mEstimator::TruncatedLeastSquares::Create(
       k, mEstimator::TruncatedLeastSquares::GradScheme::GNC_LINEAR);
-  DOUBLES_EQUAL(tls_lin->graduatedLoss(0, mu), 0, 1e-8);
-  DOUBLES_EQUAL(tls_lin->graduatedWeight(0, mu), 1, 1e-8);
-  auto tls_sup = mEstimator::TruncatedLeastSquares::Create(
+  DOUBLES_EQUAL(tlsGncLinear->graduatedLoss(0, mu), 0, 1e-8);
+  DOUBLES_EQUAL(tlsGncLinear->graduatedWeight(0, mu), 1, 1e-8);
+  auto tlsGncSuperlinear = mEstimator::TruncatedLeastSquares::Create(
       k, mEstimator::TruncatedLeastSquares::GradScheme::GNC_SUPERLINEAR);
-  DOUBLES_EQUAL(tls_sup->graduatedWeight(0, mu), 1, 1e-8);
+  DOUBLES_EQUAL(tlsGncSuperlinear->graduatedWeight(0, mu), 1, 1e-8);
 }
 
 /* ************************************************************************* */

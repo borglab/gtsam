@@ -172,23 +172,24 @@ TEST(Serialization, graduationSchemeInequality) {
   using noiseModel::mEstimator::TruncatedLeastSquares;
 
   const double k = 2.5;
-  auto gmc_std = GemanMcClure::Create(k, GemanMcClure::GradScheme::STANDARD);
-  auto gmc_si =
+  auto gmcStandard =
+      GemanMcClure::Create(k, GemanMcClure::GradScheme::STANDARD);
+  auto gmcScaleInvariant =
       GemanMcClure::Create(k, GemanMcClure::GradScheme::SCALE_INVARIANT);
-  EXPECT(gmc_std->equals(*GemanMcClure::Create(k)));
-  EXPECT(!gmc_std->equals(*gmc_si));
-  EXPECT(!gmc_si->equals(*gmc_std));
+  EXPECT(gmcStandard->equals(*GemanMcClure::Create(k)));
+  EXPECT(!gmcStandard->equals(*gmcScaleInvariant));
+  EXPECT(!gmcScaleInvariant->equals(*gmcStandard));
 
-  auto tls_std = TruncatedLeastSquares::Create(
+  auto tlsStandard = TruncatedLeastSquares::Create(
       k, TruncatedLeastSquares::GradScheme::STANDARD);
-  auto tls_lin = TruncatedLeastSquares::Create(
+  auto tlsGncLinear = TruncatedLeastSquares::Create(
       k, TruncatedLeastSquares::GradScheme::GNC_LINEAR);
-  auto tls_sup = TruncatedLeastSquares::Create(
+  auto tlsGncSuperlinear = TruncatedLeastSquares::Create(
       k, TruncatedLeastSquares::GradScheme::GNC_SUPERLINEAR);
-  EXPECT(tls_std->equals(*TruncatedLeastSquares::Create(k)));
-  EXPECT(!tls_std->equals(*tls_lin));
-  EXPECT(!tls_lin->equals(*tls_sup));
-  EXPECT(!tls_sup->equals(*tls_std));
+  EXPECT(tlsStandard->equals(*TruncatedLeastSquares::Create(k)));
+  EXPECT(!tlsStandard->equals(*tlsGncLinear));
+  EXPECT(!tlsGncLinear->equals(*tlsGncSuperlinear));
+  EXPECT(!tlsGncSuperlinear->equals(*tlsStandard));
 }
 
 /* Create GUIDs for factors */

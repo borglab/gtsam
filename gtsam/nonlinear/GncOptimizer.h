@@ -401,7 +401,7 @@ class GncOptimizer {
   /// Initialize the gnc parameter lambda such that loss is approximately convex (remark 5 in GNC paper).
   double initializeLambda() const {
 
-    double lambda_init = 0.0;
+    double lambdaInit = 0.0;
     // initialize lambda to the value specified in Remark 5 in GNC paper.
     switch (params_.lossType) {
       case GncLossType::GM:
@@ -410,10 +410,10 @@ class GncOptimizer {
          */
         for (size_t k = 0; k < nfg_.size(); k++) {
           if (hasNoise(factorTypes_[k])) {
-            lambda_init = std::max(lambda_init, 2 * nfg_[k]->error(state_) / barcSq_[k]);
+            lambdaInit = std::max(lambdaInit, 2 * nfg_[k]->error(state_) / barcSq_[k]);
           }
         }
-        return lambda_init;  // initial lambda
+        return lambdaInit;  // initial lambda
       case GncLossType::TLS:
         /* surrogate cost is convex for lambda close to zero. initialize as in remark 5 in GNC paper.
          degenerate case: 2 * rmax_sq - params_.barcSq < 0 (handled in the main loop)
@@ -421,20 +421,20 @@ class GncOptimizer {
          however, if the denominator is 0 or negative, we return lambda = -1 which leads to termination of the main GNC loop.
          Since barcSq_ can be different for each factor, we look for the minimimum (positive) quantity in remark 5 in GNC paper
          */
-        lambda_init = std::numeric_limits<double>::infinity();
+        lambdaInit = std::numeric_limits<double>::infinity();
         for (size_t k = 0; k < nfg_.size(); k++) {
           if (hasNoise(factorTypes_[k])) {
             double rk = nfg_[k]->error(state_);
-            lambda_init = (2 * rk - barcSq_[k]) > 0 ? // if positive, update lambda, otherwise keep same
-                std::min(lambda_init, barcSq_[k] / (2 * rk - barcSq_[k]) ) : lambda_init;
+            lambdaInit = (2 * rk - barcSq_[k]) > 0 ? // if positive, update lambda, otherwise keep same
+                std::min(lambdaInit, barcSq_[k] / (2 * rk - barcSq_[k]) ) : lambdaInit;
           }
         }
-        if (lambda_init >= 0 && lambda_init < 1e-6){
-          lambda_init = 1e-6; // if lambda ~ 0 (but positive), that means we have measurements with large errors,
+        if (lambdaInit >= 0 && lambdaInit < 1e-6){
+          lambdaInit = 1e-6; // if lambda ~ 0 (but positive), that means we have measurements with large errors,
           // i.e., rk > barcSq_[k] and rk very large, hence we threshold to 1e-6 to avoid lambda = 0
         }
   
-        return lambda_init > 0 && !std::isinf(lambda_init) ? lambda_init : -1; // if lambda <= 0 or lambda = inf, return -1,
+        return lambdaInit > 0 && !std::isinf(lambdaInit) ? lambdaInit : -1; // if lambda <= 0 or lambda = inf, return -1,
         // which leads to termination of the main gnc loop. In this case, all residuals are already below the threshold
         // and there is no need to robustify (TLS = least squares)
       default:
@@ -572,7 +572,7 @@ class GncOptimizer {
    *    This is the same quantity LossFunctions.h calls \theta for TLS.
    * Both maps are exact inverses of the ones documented in LossFunctions.h.
    */
-  static double normalizedMu(GncLossType lossType, const double lambda) {
+  static double NormalizedMu(GncLossType lossType, const double lambda) {
     switch (lossType) {
       case GncLossType::GM:
         // lambda saturates at 1, which is the final GM loss (mu = 1).
@@ -581,14 +581,14 @@ class GncOptimizer {
         return lambda / (1.0 + lambda);
       default:
         throw std::runtime_error(
-            "GncOptimizer::normalizedMu: called with unknown loss type.");
+            "GncOptimizer::NormalizedMu: called with unknown loss type.");
     }
   }
 
   /// Calculate gnc weights.
   Vector calculateWeights(const Values& currentEstimate, const double lambda) {
     Vector weights = initializeWeightsFromKnownInliersAndOutliers();
-    const double mu = normalizedMu(params_.lossType, lambda);
+    const double mu = NormalizedMu(params_.lossType, lambda);
 
     // update weights of unknown measurements
     switch (params_.lossType) {

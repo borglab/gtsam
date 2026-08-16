@@ -451,8 +451,8 @@ double GemanMcClure::GraduatedWeight(double distance2, double c2, double mu,
     return Weight(distance2, GradShapeSquared(c2, m));
   } else {  // GemanMcClure::GradScheme::SCALE_INVARIANT
     const double d2mu = std::pow(distance2, m);
-    const double sqrt_denom = c2 + d2mu;
-    return (c2 * (c2 + d2mu * (1 - m))) / (sqrt_denom * sqrt_denom);
+    const double sqrtDenominator = c2 + d2mu;
+    return (c2 * (c2 + d2mu * (1 - m))) / (sqrtDenominator * sqrtDenominator);
   }
 }
 
@@ -518,19 +518,18 @@ GemanMcClure::shared_ptr GemanMcClure::Create(
 }
 
 /* ************************************************************************* */
-double GemanMcClure::shapeParamFromInfThresh(double influence_thresh,
-                                             size_t dof,
-                                             double chi2_outlier_thresh) {
+double GemanMcClure::ShapeParameterFromInfluenceThreshold(
+    double influenceThreshold, size_t dof, double chiSquaredOutlierThreshold) {
   const double r =
-      std::sqrt(2 * gtsam_cephes_igami(dof / 2.0, chi2_outlier_thresh));
-  if (!(influence_thresh > 0.0 && influence_thresh < r)) {
+      std::sqrt(2 * gtsam_cephes_igami(dof / 2.0, chiSquaredOutlierThreshold));
+  if (!(influenceThreshold > 0.0 && influenceThreshold < r)) {
     throw std::invalid_argument(
-        "GemanMcClure::shapeParamFromInfThresh: requires 0 < influence_thresh "
-        "< sqrt(chi2 quantile).");
+        "GemanMcClure::ShapeParameterFromInfluenceThreshold: requires 0 < "
+        "influenceThreshold < sqrt(chi2 quantile).");
   }
-  // Equation [d/dx \rho(r) = influence_thresh] solved for c:
+  // Equation [d/dx \rho(r) = influenceThreshold] solved for c:
   //   c² = r²(t + sqrt(t r)) / (r - t)
-  const double t = influence_thresh;
+  const double t = influenceThreshold;
   return r * std::sqrt((t + std::sqrt(t * r)) / (r - t));
 }
 
@@ -895,14 +894,14 @@ AsymmetricCauchy::shared_ptr AsymmetricCauchy::Create(double k, const ReweightSc
 
 Custom::Custom(std::function<double(double)> weight,
                std::function<double(double)> loss,
-               std::optional<std::function<double(double, double)>> grad_weight,
-               std::optional<std::function<double(double, double)>> grad_loss,
+               std::optional<std::function<double(double, double)>> gradWeight,
+               std::optional<std::function<double(double, double)>> gradLoss,
                const ReweightScheme reweight, std::string name)
     : Base(reweight),
       weight_(std::move(weight)),
       loss_(loss),
-      grad_weight_(grad_weight),
-      grad_loss_(grad_loss),
+      gradWeight_(gradWeight),
+      gradLoss_(gradLoss),
       name_(std::move(name)) {}
 
 Custom::Custom(std::function<double(double)> weight,
@@ -916,16 +915,16 @@ double Custom::weight(double distance) const { return weight_(distance); }
 double Custom::loss(double distance) const { return loss_(distance); }
 
 double Custom::graduatedWeight(double distance, double mu) const {
-  if (grad_weight_) {
-    return (*grad_weight_)(distance, mu);
+  if (gradWeight_) {
+    return (*gradWeight_)(distance, mu);
   } else {
     throw std::logic_error("Custom loss provided no graduated form.");
   }
 }
 
 double Custom::graduatedLoss(double distance, double mu) const {
-  if (grad_loss_) {
-    return (*grad_loss_)(distance, mu);
+  if (gradLoss_) {
+    return (*gradLoss_)(distance, mu);
   } else {
     throw std::logic_error("Custom loss provided no graduated form.");
   }
@@ -952,18 +951,18 @@ bool Custom::equals(const Base &expected, double /*tol*/) const {
          weight_.target<double(double)>() ==
              p->weight_.target<double(double)>() &&
          loss_.target<double(double)>() == p->loss_.target<double(double)>() &&
-         sameGraduated(grad_loss_, p->grad_loss_) &&
-         sameGraduated(grad_weight_, p->grad_weight_) &&
+         sameGraduated(gradLoss_, p->gradLoss_) &&
+         sameGraduated(gradWeight_, p->gradWeight_) &&
          reweight_ == p->reweight_;
 }
 
 Custom::shared_ptr Custom::Create(
     std::function<double(double)> weight, std::function<double(double)> loss,
-    std::optional<std::function<double(double, double)>> grad_weight,
-    std::optional<std::function<double(double, double)>> grad_loss,
-    const ReweightScheme reweight, const std::string& name) {
+    std::optional<std::function<double(double, double)>> gradWeight,
+    std::optional<std::function<double(double, double)>> gradLoss,
+    const ReweightScheme reweight, const std::string &name) {
   return std::make_shared<Custom>(std::move(weight), std::move(loss),
-                                  std::move(grad_weight), std::move(grad_loss),
+                                  std::move(gradWeight), std::move(gradLoss),
                                   reweight, name);
 }
 

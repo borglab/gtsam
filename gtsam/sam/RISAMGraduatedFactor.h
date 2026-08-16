@@ -37,7 +37,7 @@ class GTSAM_EXPORT GraduatedFactor {
   /// @{
  protected:
   /// @brief The robust loss for this factor
-  RobustLoss::shared_ptr robust_loss_;
+  RobustLoss::shared_ptr robustLoss_;
   /// @brief The control param ($\mu$) scheduler for this factor
   GraduationScheduler::shared_ptr scheduler_;
 
@@ -58,32 +58,32 @@ class GTSAM_EXPORT GraduatedFactor {
    */
   GraduatedFactor(RobustLoss::shared_ptr loss,
                   GraduationScheduler::shared_ptr scheduler)
-      : robust_loss_(loss), scheduler_(scheduler) {
+      : robustLoss_(loss), scheduler_(scheduler) {
     mu_ = std::make_shared<double>(scheduler_->muInit());
   }
 
   /// @brief Copy constructor
   GraduatedFactor(const GraduatedFactor& other)
-      : robust_loss_(other.robust_loss_), scheduler_(other.scheduler_) {
+      : robustLoss_(other.robustLoss_), scheduler_(other.scheduler_) {
     mu_ = std::make_shared<double>(*(other.mu_));
   }
 
   virtual ~GraduatedFactor() = default;
 
   /** @brief Linearize this factor using the convexification parameter mu
-   *  @param current_estimate: the estimate at which to linearize the factor
+   *  @param currentEstimate: the estimate at which to linearize the factor
    */
   virtual GaussianFactor::shared_ptr linearizeGraduated(
-      const Values& current_estimate) const = 0;
+      const Values& currentEstimate) const = 0;
 
   /// @brief returns the residual of the factor
-  virtual double residual(const Values& current_estimate) const = 0;
+  virtual double residual(const Values& currentEstimate) const = 0;
 
   /// @brief returns the graduated robust loss \rho_\mu(r) of the factor
-  virtual double robustLoss(const Values& current_estimate) const = 0;
+  virtual double robustLoss(const Values& currentEstimate) const = 0;
 
   /// @brief Returns the robust loss for this graduated factor
-  const RobustLoss::shared_ptr& loss() const { return robust_loss_; }
+  const RobustLoss::shared_ptr& loss() const { return robustLoss_; }
 
   /// @brief Returns the graduation scheduler for this factor
   const GraduationScheduler::shared_ptr& scheduler() const {
@@ -139,46 +139,46 @@ class GenericGraduatedFactor : public FACTOR_TYPE, public GraduatedFactor {
 
   /// @brief Linearizes the factor using the current value of mu
   GaussianFactor::shared_ptr linearizeGraduated(
-      const Values& current_estimate) const override {
-    double residual = this->residual(current_estimate);
+      const Values& currentEstimate) const override {
+    double residual = this->residual(currentEstimate);
 
     // Use base factor to linearize
-    auto whitened_linear_system = FACTOR_TYPE::linearize(current_estimate);
-    auto [A, b] = whitened_linear_system->jacobian();
-    const size_t output_dim = b.size();
+    auto whitenedLinearSystem = FACTOR_TYPE::linearize(currentEstimate);
+    auto [A, b] = whitenedLinearSystem->jacobian();
+    const size_t outputDim = b.size();
 
     // Extract the non-dense linear system
-    auto keys = whitened_linear_system->keys();
+    auto keys = whitenedLinearSystem->keys();
     std::vector<Matrix> Ablocks;
-    size_t idx_start = 0;
+    size_t indexStart = 0;
     for (const auto& key : keys) {
-      size_t d = current_estimate.at(key).dim();
-      Ablocks.push_back(A.block(0, idx_start, output_dim, d));
-      idx_start += d;
+      size_t d = currentEstimate.at(key).dim();
+      Ablocks.push_back(A.block(0, indexStart, outputDim, d));
+      indexStart += d;
     }
 
     // Weight the Linearized Blocks
-    const double sqrt_weight =
-        std::sqrt(robust_loss_->graduatedWeight(residual, *mu_));
+    const double sqrtWeight =
+        std::sqrt(robustLoss_->graduatedWeight(residual, *mu_));
     for (Matrix& Aj : Ablocks) {
-      Aj *= sqrt_weight;
+      Aj *= sqrtWeight;
     }
-    b *= sqrt_weight;
+    b *= sqrtWeight;
 
     // Construct a jacobian factor from the weighted system
-    FastMap<Key, Matrix> Ablock_map;
+    FastMap<Key, Matrix> AblockMap;
     for (size_t i = 0; i < Ablocks.size(); i++) {
-      Ablock_map[keys[i]] = Ablocks[i];
+      AblockMap[keys[i]] = Ablocks[i];
     }
-    return std::make_shared<JacobianFactor>(Ablock_map, b);
+    return std::make_shared<JacobianFactor>(AblockMap, b);
   }
 
   /// @brief Linearize the System @see NonlinearFactor::linearize
   GaussianFactor::shared_ptr linearize(
-      const Values& current_estimate) const override {
+      const Values& currentEstimate) const override {
     // Delegate to linearizeGraduated which is required by the GraduatedFactor
     // Interface
-    return linearizeGraduated(current_estimate);
+    return linearizeGraduated(currentEstimate);
   }
 
   /// @brief Returns the graduated robust loss \rho_\mu(r)
@@ -190,13 +190,13 @@ class GenericGraduatedFactor : public FACTOR_TYPE, public GraduatedFactor {
   /// @name Graduated Interface
   /// @{
   /// @brief See GraduatedFactor::residual
-  double residual(const Values& current_estimate) const override {
-    return std::sqrt(2.0 * FACTOR_TYPE::error(current_estimate));
+  double residual(const Values& currentEstimate) const override {
+    return std::sqrt(2.0 * FACTOR_TYPE::error(currentEstimate));
   }
 
   /// @brief See GraduatedFactor::robustLoss
-  double robustLoss(const Values& current_estimate) const override {
-    return robust_loss_->graduatedLoss(residual(current_estimate), *mu_);
+  double robustLoss(const Values& currentEstimate) const override {
+    return robustLoss_->graduatedLoss(residual(currentEstimate), *mu_);
   }
 
   /// @brief See GraduatedFactor::cloneUngraduated

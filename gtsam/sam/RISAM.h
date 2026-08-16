@@ -28,35 +28,35 @@ namespace gtsam {
  */
 struct RISAMParams {
   /// @brief Explicit constructor to use default values.
-  RISAMParams(ISAM2Params isam2_params = ISAM2Params(),
-              bool increment_outlier_mu = true,
-              double outlier_mu_chisq_upper_bound = 0.95,
-              double outlier_mu_chisq_lower_bound = 0.25,
-              double outlier_mu_avg_var_convergence_thresh = 0.01,
-              size_t number_extra_iters = 1)
-      : isam2_params(isam2_params),
-        increment_outlier_mu(increment_outlier_mu),
-        outlier_mu_chisq_upper_bound(outlier_mu_chisq_upper_bound),
-        outlier_mu_chisq_lower_bound(outlier_mu_chisq_lower_bound),
-        outlier_mu_avg_var_convergence_thresh(
-            outlier_mu_avg_var_convergence_thresh),
-        number_extra_iters(number_extra_iters) {}
+  RISAMParams(ISAM2Params isam2Params = ISAM2Params(),
+              bool incrementOutlierMu = true,
+              double outlierMuChiSquaredUpperBound = 0.95,
+              double outlierMuChiSquaredLowerBound = 0.25,
+              double outlierMuAverageVariableConvergenceThreshold = 0.01,
+              size_t numberExtraIterations = 1)
+      : isam2Params(isam2Params),
+        incrementOutlierMu(incrementOutlierMu),
+        outlierMuChiSquaredUpperBound(outlierMuChiSquaredUpperBound),
+        outlierMuChiSquaredLowerBound(outlierMuChiSquaredLowerBound),
+        outlierMuAverageVariableConvergenceThreshold(
+            outlierMuAverageVariableConvergenceThreshold),
+        numberExtraIterations(numberExtraIterations) {}
 
   /// @brief The parameters for the encapsulated iSAM2 algorithm @Note some
   /// are overridden in RISAM::RISAM().
-  ISAM2Params isam2_params;
+  ISAM2Params isam2Params;
 
-  /// @brief Flag to increment mu_init when the value estimate converges.
-  // See RISAM::IncrementMuInit for details.
-  bool increment_outlier_mu;
-  /// @brief Increment mu_init if chi^2 > upper bound.
-  double outlier_mu_chisq_upper_bound;
-  /// @brief  Decrement mu_init if chi^2 < lower bound.
-  double outlier_mu_chisq_lower_bound;
+  /// @brief Flag to increment muInit when the value estimate converges.
+  // See RISAM::incrementMuInits for details.
+  bool incrementOutlierMu;
+  /// @brief Increment muInit if chi^2 > upper bound.
+  double outlierMuChiSquaredUpperBound;
+  /// @brief  Decrement muInit if chi^2 < lower bound.
+  double outlierMuChiSquaredLowerBound;
   /// @brief Average variable delta threshold to identify value convergence.
-  double outlier_mu_avg_var_convergence_thresh;
+  double outlierMuAverageVariableConvergenceThreshold;
   /// @brief The number of extra iterations to perform after mu convergence.
-  size_t number_extra_iters;
+  size_t numberExtraIterations;
 };
 
 /** @brief Struct containing information about the riSAM update.
@@ -66,14 +66,14 @@ struct RISAMParams {
 struct RISAMUpdateResult {
   /// @brief The iSAM2 result from the first internal update.
   /// NOTE: riSAM may run multiple internal ISAM2 updates.
-  ISAM2Result isam2_result;
+  ISAM2Result isam2Result;
 
   /// @brief The set variables directly involved in the update.
-  std::set<Key> involved_variables;
+  std::set<Key> involvedVariables;
   /// @brief The set of variables affected by the update.
-  std::set<Key> affected_variables;
+  std::set<Key> affectedVariables;
   /// @brief The set of factors convexified in this update.
-  std::set<FactorIndex> convexified_factors;
+  std::set<FactorIndex> convexifiedFactors;
 };
 
 /** @brief Robust Incremental Smoothing and Mapping (riSAM) is a robust variant
@@ -108,12 +108,12 @@ class GTSAM_EXPORT RISAM {
   /// If factor i is not Graduated mu_[i] is a pointer to a value of zero.
   FastVector<std::shared_ptr<double>> mu_;
   /// @brief The current initial control parameter values for all factors. If
-  /// factor i is not Graduated mu_inits_[i] is a pointer to a value of zero.
-  FastVector<std::shared_ptr<double>> mu_inits_;
+  /// factor i is not Graduated muInits_[i] is a pointer to a value of zero.
+  FastVector<std::shared_ptr<double>> muInits_;
   /// @brief The set of GraduatedFactors that have been convexified since the
-  /// last mu_init_ increment These are the factors that we can increment mu's
+  /// last muInit_ increment These are the factors that we can increment mu's
   /// for the next time variables converge.
-  FastSet<size_t> factors_to_check_status_;
+  FastSet<size_t> factorsToCheckStatus_;
 
   /**
    * RISAM maintains its own variable index and factors. These match exactly
@@ -122,7 +122,7 @@ class GTSAM_EXPORT RISAM {
    */
   /// @brief VariableIndex for the underlying system.
   /// INVARIANT: matches that of solver_ after every update.
-  VariableIndex variable_index_;
+  VariableIndex variableIndex_;
   /// @brief The Factors for the underlying system.
   /// INVARIANT: matches that of solver_ after every update.
   NonlinearFactorGraph factors_;
@@ -133,7 +133,7 @@ class GTSAM_EXPORT RISAM {
  public:
   /** @brief Constructs an instance of the riSAM algorithm with provided
    * configuration. Note this constructor will override some values in
-   * params.isam2_params.
+   * params.isam2Params.
    * @param params: The configuration parameters for this instance of riSAM.
    */
   RISAM(const Parameters& params) : params_(params) {
@@ -148,38 +148,38 @@ class GTSAM_EXPORT RISAM {
      * being used.
      */
     // We must have relinearization skip as 1.
-    params_.isam2_params.relinearizeSkip = 1;
+    params_.isam2Params.relinearizeSkip = 1;
     // We must not use cached factors.
-    params_.isam2_params.cacheLinearizedFactors = false;
+    params_.isam2Params.cacheLinearizedFactors = false;
 
     // Construct the encapsulated solver using the modified parameters.
-    solver_ = std::make_unique<ISAM2>(params_.isam2_params);
+    solver_ = std::make_unique<ISAM2>(params_.isam2Params);
   }
 
   /// @brief Update Interface. See ISAM2 docs for details as parameters match
   /// (almost) exactly.
-  /// @param extra_gnc_involved_keys - overrides internal RISAM logic and
+  /// @param extraGncInvolvedKeys - overrides internal RISAM logic and
   /// performs a robust update. All extra involved keys will be treated as being
   /// a part of the current update with respect to factor convexification.
   UpdateResult update(
-      const NonlinearFactorGraph& new_factors = NonlinearFactorGraph(),
-      const Values& new_theta = Values(),
-      const std::optional<std::set<Key>> extra_gnc_involved_keys = std::nullopt,
-      const FactorIndices& remove_factor_indices = FactorIndices(),
-      const std::optional<FastMap<Key, int>>& constrained_keys = std::nullopt,
-      const std::optional<FastList<Key>>& no_relin_keys = std::nullopt,
-      const std::optional<FastList<Key>>& extra_reelim_keys = std::nullopt,
+      const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
+      const Values& newTheta = Values(),
+      const std::optional<std::set<Key>> extraGncInvolvedKeys = std::nullopt,
+      const FactorIndices& removeFactorIndices = FactorIndices(),
+      const std::optional<FastMap<Key, int>>& constrainedKeys = std::nullopt,
+      const std::optional<FastList<Key>>& noRelinKeys = std::nullopt,
+      const std::optional<FastList<Key>>& extraReelimKeys = std::nullopt,
       bool force_relinearize = false);
 
   /// @brief Update Interface. See ISAM2 docs for details as parameters match
   /// (almost) exactly.
-  /// @param extra_gnc_involved_keys - overrides internal RISAM logic and
+  /// @param extraGncInvolvedKeys - overrides internal RISAM logic and
   /// performs a robust update. All extra involved keys will be treated as being
   /// a part of the current update with respect to factor convexification.
-  UpdateResult update(
-      const NonlinearFactorGraph& new_factors, const Values& new_theta,
-      const std::optional<std::set<Key>> extra_gnc_involved_keys,
-      const ISAM2UpdateParams& update_params);
+  UpdateResult update(const NonlinearFactorGraph& newFactors,
+                      const Values& newTheta,
+                      const std::optional<std::set<Key>> extraGncInvolvedKeys,
+                      const ISAM2UpdateParams& updateParams);
 
   /// @brief Returns the current estimate from the solver.
   Values calculateEstimate();
@@ -189,112 +189,112 @@ class GTSAM_EXPORT RISAM {
 
   /** @brief Returns the set of measurements (identified by their factor index)
    * that have been deemed outliers. riSAM defines a measurement as an outlier
-   * if its current residual is greater than the chi2_threshold provided.
-   * @param chi2_outlier_thresh - The chi2 threshold used to define outliers.
-   * WARN: Potentially slow since we iterate over all factors.
+   * if its current residual is greater than the chi-squared threshold provided.
+   * @param chiSquaredOutlierThreshold - The chi-squared threshold used to
+   * define outliers. WARN: Potentially slow since we iterate over all factors.
    * @returns The set of factors that are considered outliers by RISAM.
    */
-  std::set<size_t> getOutliers(double chi2_outlier_thresh);
+  std::set<size_t> getOutliers(double chiSquaredOutlierThreshold);
   /// @}
 
   /// @name Private Interface
   /// @{
  protected:
   /** @brief Performs a robust update to the system.
-   * A robust update is required any time new_factors contains GraduatedFactors
+   * A robust update is required any time newFactors contains GraduatedFactors
    * (i.e. there are potentially new inlier/outlier measurements).
    * @see RISAM::update for details on params.
    */
   UpdateResult updateRobust(
-      const NonlinearFactorGraph& new_factors, const Values& new_theta,
-      const std::optional<std::set<Key>>& extra_gnc_involved_keys,
-      const ISAM2UpdateParams& update_params);
+      const NonlinearFactorGraph& newFactors, const Values& newTheta,
+      const std::optional<std::set<Key>>& extraGncInvolvedKeys,
+      const ISAM2UpdateParams& updateParams);
 
   /** @brief Performs a inner loop iteration of a robust update.
-   * @param convex_factors: The set of factors that are convex for this update.
-   * @param mu_update_count: Accum. for # of updates applied to convex factors.
+   * @param convexFactors: The set of factors that are convex for this update.
+   * @param muUpdateCount: Accum. for # of updates applied to convex factors.
    * @returns The set of factors that remain convex after this iteration.
    */
   FactorIndices runRobustIteration(
-      const FactorIndices& convex_factors,
-      std::map<FactorIndex, size_t>& mu_update_count);
+      const FactorIndices& convexFactors,
+      std::map<FactorIndex, size_t>& muUpdateCount);
 
   /** @brief Compute the new value of $\mu$ for a given graduated factor.
-   * @param current_est: The current estimated solution.
+   * @param currentEstimate: The current estimated solution.
    * @param fidx: The index of the graduated factor to update.
-   * @param mu_update_count: Accum. for # of updates applied to convex factors.
-   * @param convex_keys: Accum. for all keys associated with convex factors.
+   * @param muUpdateCount: Accum. for # of updates applied to convex factors.
+   * @param convexKeys: Accum. for all keys associated with convex factors.
    * @note INVARIANT: fidx must index a Graduated Factor.
    */
-  void updateConvexFactorMu(const Values& current_est, const size_t fidx,
-                            std::map<FactorIndex, size_t>& mu_update_count,
-                            FastList<Key>& convex_keys);
+  void updateConvexFactorMu(const Values& currentEstimate, const size_t fidx,
+                            std::map<FactorIndex, size_t>& muUpdateCount,
+                            FastList<Key>& convexKeys);
 
   /** @brief Compute the new set of convex factors after a robust iteration.
-   * @param convex_factors: The set of convex factors after the prev. iter.
+   * @param convexFactors: The set of convex factors after the prev. iter.
    * @return The set of factors that are still convex after the current iter.
    */
-  FactorIndices updateConvexFactors(const FactorIndices& convex_factors) const;
+  FactorIndices updateConvexFactors(const FactorIndices& convexFactors) const;
 
   /** @brief Convexifies factors involved in the update
    * Finds all factors inside the total affected set, and involved in the update
    * defined by new factors. Marks those factors as convex and resets mu_ to the
-   * factors current mu_init_. See RISAM::update for adtl. parameter details.
-   * @param update_result: structure containing information about this update,
+   * factors current muInit_. See RISAM::update for adtl. parameter details.
+   * @param updateResult: structure containing information about this update,
    * modified by this function to fill in info about involved and affected
    * variables as well as convexified factors.
    * @returns The indices of all factors convexified in the update defined by
    * the given parameters.
    */
   FactorIndices convexifyInvolvedFactors(
-      const NonlinearFactorGraph& new_factors, const Values& new_theta,
-      const std::optional<std::set<Key>>& extra_gnc_involved_keys,
-      ISAM2UpdateParams& internal_update_params, UpdateResult& update_result);
+      const NonlinearFactorGraph& newFactors, const Values& newTheta,
+      const std::optional<std::set<Key>>& extraGncInvolvedKeys,
+      ISAM2UpdateParams& internalUpdateParams, UpdateResult& updateResult);
 
   /** @brief Accumulates the keys of all vars directly involved in an update.
-   * @param new_factors The new factors for the update.
-   * @param extra_gnc_involved_keys: User supplied involved keys.
-   * @param update_params: The parameters for the underlying iSAM2 update.
+   * @param newFactors The new factors for the update.
+   * @param extraGncInvolvedKeys: User supplied involved keys.
+   * @param updateParams: The parameters for the underlying iSAM2 update.
    * @returns The set of involved factors.
    */
   KeySet accumulateInvolvedKeys(
-      const NonlinearFactorGraph& new_factors,
-      const std::optional<std::set<Key>>& extra_gnc_involved_keys,
-      ISAM2UpdateParams& update_params) const;
+      const NonlinearFactorGraph& newFactors,
+      const std::optional<std::set<Key>>& extraGncInvolvedKeys,
+      ISAM2UpdateParams& updateParams) const;
 
   /** @brief Convexifies a single factor if it is involved with the update.
    * @param fidx: The factor to convexify if involved.
-   * @param involved_keys: The set of keys involved with the update.
-   * @param affected_keys: The set of keys affected by the update.
-   * @param is_batch_update: Flag indicating all factors are relinearized.
-   * @param convex_factors: Accumulator for the set of all convex factors.
+   * @param involvedKeys: The set of keys involved with the update.
+   * @param affectedKeys: The set of keys affected by the update.
+   * @param isBatchUpdate: Flag indicating all factors are relinearized.
+   * @param convexFactors: Accumulator for the set of all convex factors.
    */
   void convexifyFactorIfInvolved(const FactorIndex fidx,
-                                 const KeySet& involved_keys,
-                                 const KeySet& affected_keys,
-                                 const bool is_batch_update,
-                                 std::set<FactorIndex>& convex_factors);
+                                 const KeySet& involvedKeys,
+                                 const KeySet& affectedKeys,
+                                 const bool isBatchUpdate,
+                                 std::set<FactorIndex>& convexFactors);
 
   /** @brief Update housekeeping information for riSAM this involves:
-   * 1. Determining the indices for new_factors.
-   * 2. Update the riSAM fields: factors_ and variable_index_.
+   * 1. Determining the indices for newFactors.
+   * 2. Update the riSAM fields: factors_ and variableIndex_.
    * NOTE: they will be ahead of those in solver_ until solver.update() is
    * called.
-   * 3. Update mu_ and mu_init_ for the new factors.
-   * @param new_factors: The new factors for the current update.
-   * @param update_params: The update parameters for the current update.
+   * 3. Update mu_ and muInit_ for the new factors.
+   * @param newFactors: The new factors for the current update.
+   * @param updateParams: The update parameters for the current update.
    */
-  void updateHouseKeeping(const NonlinearFactorGraph& new_factors,
-                          const ISAM2UpdateParams& update_params);
+  void updateHousekeeping(const NonlinearFactorGraph& newFactors,
+                          const ISAM2UpdateParams& updateParams);
 
-  /** @brief Extend or update mu and mu_init for new factors.
-   * @param new_factors: The new factors for which to extend the containers.
-   * @param new_factor_indices: the indices assigned to each new_factor.
+  /** @brief Extend or update mu and muInit for new factors.
+   * @param newFactors: The new factors for which to extend the containers.
+   * @param newFactorIndices: the indices assigned to each new factor.
    */
-  void augmentMu(const NonlinearFactorGraph& new_factors,
-                 const FactorIndices& new_factor_indices);
+  void augmentMu(const NonlinearFactorGraph& newFactors,
+                 const FactorIndices& newFactorIndices);
 
-  /** @brief Increments mu_inits_ for any factor recently convexified.
+  /** @brief Increments muInits_ for any factor recently convexified.
    * Used to mitigate the long-term effect of measurements that we are confident
    * are outliers.
    */
@@ -310,7 +310,7 @@ class GTSAM_EXPORT RISAM {
    */
   template <class FACTOR_TYPE, class... Args>
   static typename GenericGraduatedFactor<FACTOR_TYPE>::shared_ptr
-  make_graduated(Args&&... args) {
+  MakeGraduatedFactor(Args&&... args) {
     return std::make_shared<GenericGraduatedFactor<FACTOR_TYPE>>(
         std::forward<Args>(args)...);
   }

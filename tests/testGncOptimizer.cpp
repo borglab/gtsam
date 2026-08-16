@@ -174,21 +174,22 @@ TEST(GncOptimizer, initializeLambda) {
   // testing GM lambda initialization
   GncParams<LevenbergMarquardtParams> gncParams;
   gncParams.setLossType(GncLossType::GM);
-  auto gnc_gm = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial,
-                                                                  gncParams);
-  gnc_gm.setInlierCostThresholds(1.0);
+  auto gncGemanMcClure =
+      GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+  gncGemanMcClure.setInlierCostThresholds(1.0);
   // according to rmk 5 in the gnc paper: m0 = 2 rmax^2 / barcSq
   // (barcSq=1 in this example)
-  EXPECT_DOUBLES_EQUAL(gnc_gm.initializeLambda(), 2 * 198.999, 1e-3);
+  EXPECT_DOUBLES_EQUAL(gncGemanMcClure.initializeLambda(), 2 * 198.999, 1e-3);
 
   // testing TLS lambda initialization
   gncParams.setLossType(GncLossType::TLS);
-  auto gnc_tls = GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial,
-                                                                   gncParams);
-  gnc_tls.setInlierCostThresholds(1.0);
+  auto gncTruncatedLeastSquares =
+      GncOptimizer<GncParams<LevenbergMarquardtParams>>(fg, initial, gncParams);
+  gncTruncatedLeastSquares.setInlierCostThresholds(1.0);
   // according to rmk 5 in the gnc paper: m0 =  barcSq / (2 * rmax^2 - barcSq)
   // (barcSq=1 in this example)
-  EXPECT_DOUBLES_EQUAL(gnc_tls.initializeLambda(), 1 / (2 * 198.999 - 1), 1e-3);
+  EXPECT_DOUBLES_EQUAL(gncTruncatedLeastSquares.initializeLambda(),
+                       1 / (2 * 198.999 - 1), 1e-3);
 }
 
 /* ************************************************************************* */
@@ -402,11 +403,11 @@ TEST(GncOptimizer, calculateWeightsGM) {
 
   // we have 4 factors, 3 with zero errors (inliers), 1 with error 50 = 0.5 *
   // 1/sigma^2 || [1;0] - [0;0] ||^2 (outlier)
-  Vector weights_expected = Vector::Zero(4);
-  weights_expected[0] = 1.0;                             // zero error
-  weights_expected[1] = 1.0;                             // zero error
-  weights_expected[2] = 1.0;                             // zero error
-  weights_expected[3] = std::pow(1.0 / (50.0 + 1.0), 2);  // outlier, error = 50
+  Vector expectedWeights = Vector::Zero(4);
+  expectedWeights[0] = 1.0;                              // zero error
+  expectedWeights[1] = 1.0;                              // zero error
+  expectedWeights[2] = 1.0;                              // zero error
+  expectedWeights[3] = std::pow(1.0 / (50.0 + 1.0), 2);  // outlier, error = 50
 
   GaussNewtonParams gnParams;
   GncParams<GaussNewtonParams> gncParams(gnParams);
@@ -414,18 +415,19 @@ TEST(GncOptimizer, calculateWeightsGM) {
   auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
   gnc.setInlierCostThresholds(1.0);
   double lambda = 1.0;
-  Vector weights_actual = gnc.calculateWeights(initial, lambda);
-  CHECK(assert_equal(weights_expected, weights_actual, tol));
+  Vector actualWeights = gnc.calculateWeights(initial, lambda);
+  CHECK(assert_equal(expectedWeights, actualWeights, tol));
 
   lambda = 2.0;
   double barcSq = 5.0;
-  weights_expected[3] = std::pow(lambda * barcSq / (50.0 + lambda * barcSq), 2);  // outlier, error = 50
+  expectedWeights[3] = std::pow(lambda * barcSq / (50.0 + lambda * barcSq),
+                                2);  // outlier, error = 50
 
-  auto gnc2 = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial,
-                                                         gncParams);
+  auto gnc2 =
+      GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
   gnc2.setInlierCostThresholds(barcSq);
-  weights_actual = gnc2.calculateWeights(initial, lambda);
-  CHECK(assert_equal(weights_expected, weights_actual, tol));
+  actualWeights = gnc2.calculateWeights(initial, lambda);
+  CHECK(assert_equal(expectedWeights, actualWeights, tol));
 }
 
 /* ************************************************************************* */
@@ -437,19 +439,19 @@ TEST(GncOptimizer, calculateWeightsTLS) {
   initial.insert(X(1), p0);
 
   // we have 4 factors, 3 with zero errors (inliers), 1 with error
-  Vector weights_expected = Vector::Zero(4);
-  weights_expected[0] = 1.0;                             // zero error
-  weights_expected[1] = 1.0;                             // zero error
-  weights_expected[2] = 1.0;                             // zero error
-  weights_expected[3] = 0;                               // outliers
+  Vector expectedWeights = Vector::Zero(4);
+  expectedWeights[0] = 1.0;  // zero error
+  expectedWeights[1] = 1.0;  // zero error
+  expectedWeights[2] = 1.0;  // zero error
+  expectedWeights[3] = 0;    // outliers
 
   GaussNewtonParams gnParams;
   GncParams<GaussNewtonParams> gncParams(gnParams);
   gncParams.setLossType(GncLossType::TLS);
   auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
   double lambda = 1.0;
-  Vector weights_actual = gnc.calculateWeights(initial, lambda);
-  CHECK(assert_equal(weights_expected, weights_actual, tol));
+  Vector actualWeights = gnc.calculateWeights(initial, lambda);
+  CHECK(assert_equal(expectedWeights, actualWeights, tol));
 }
 
 /* ************************************************************************* */
@@ -461,11 +463,11 @@ TEST(GncOptimizer, calculateWeightsTLSSuperLinear) {
   initial.insert(X(1), p0);
 
   // we have 4 factors, 3 with zero errors (inliers), 1 with error
-  Vector weights_expected = Vector::Zero(4);
-  weights_expected[0] = 1.0;                             // zero error
-  weights_expected[1] = 1.0;                             // zero error
-  weights_expected[2] = 1.0;                             // zero error
-  weights_expected[3] = 0;                               // outliers
+  Vector expectedWeights = Vector::Zero(4);
+  expectedWeights[0] = 1.0;  // zero error
+  expectedWeights[1] = 1.0;  // zero error
+  expectedWeights[2] = 1.0;  // zero error
+  expectedWeights[3] = 0;    // outliers
 
   GaussNewtonParams gnParams;
   GncParams<GaussNewtonParams> gncParams(gnParams);
@@ -473,20 +475,20 @@ TEST(GncOptimizer, calculateWeightsTLSSuperLinear) {
   gncParams.setScheduler(GncScheduler::SuperLinear);
   auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(fg, initial, gncParams);
   double lambda = 1.0;
-  Vector weights_actual = gnc.calculateWeights(initial, lambda);
-  CHECK(assert_equal(weights_expected, weights_actual, tol));
+  Vector actualWeights = gnc.calculateWeights(initial, lambda);
+  CHECK(assert_equal(expectedWeights, actualWeights, tol));
 }
 
 /* ************************************************************************* */
 TEST(GncOptimizer, calculateWeightsTLS2) {
-
   // create values
   Point2 x_val(0.0, 0.0);
   Point2 x_prior(1.0, 0.0);
   Values initial;
   initial.insert(X(1), x_val);
 
-  // create very simple factor graph with a single factor 0.5 * 1/sigma^2 * || x - [1;0] ||^2
+  // create very simple factor graph with a single factor 0.5 * 1/sigma^2 * || x
+  // - [1;0] ||^2
   double sigma = 1;
   SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(sigma, sigma));
   NonlinearFactorGraph nfg;
@@ -498,64 +500,68 @@ TEST(GncOptimizer, calculateWeightsTLS2) {
   // check the TLS weights are correct: CASE 1: residual below barcsq
   {
     // expected:
-    Vector weights_expected = Vector::Zero(1);
-    weights_expected[0] = 1.0;  // inlier
+    Vector expectedWeights = Vector::Zero(1);
+    expectedWeights[0] = 1.0;  // inlier
     // actual:
     GaussNewtonParams gnParams;
     GncParams<GaussNewtonParams> gncParams(gnParams);
     gncParams.setLossType(GncLossType::TLS);
-    auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial,
-                                                          gncParams);
-    gnc.setInlierCostThresholds(0.51);  // if inlier threshold is slightly larger than 0.5, then measurement is inlier
+    auto gnc =
+        GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial, gncParams);
+    gnc.setInlierCostThresholds(
+        0.51);  // if inlier threshold is slightly larger than 0.5, then
+                // measurement is inlier
 
     double lambda = 1e6;
-    Vector weights_actual = gnc.calculateWeights(initial, lambda);
-    CHECK(assert_equal(weights_expected, weights_actual, tol));
+    Vector actualWeights = gnc.calculateWeights(initial, lambda);
+    CHECK(assert_equal(expectedWeights, actualWeights, tol));
   }
   // check the TLS weights are correct: CASE 2: residual above barcsq
   {
     // expected:
-    Vector weights_expected = Vector::Zero(1);
-    weights_expected[0] = 0.0;  // outlier
+    Vector expectedWeights = Vector::Zero(1);
+    expectedWeights[0] = 0.0;  // outlier
     // actual:
     GaussNewtonParams gnParams;
     GncParams<GaussNewtonParams> gncParams(gnParams);
     gncParams.setLossType(GncLossType::TLS);
-    auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial,
-                                                          gncParams);
-    gnc.setInlierCostThresholds(0.49);  // if inlier threshold is slightly below 0.5, then measurement is outlier
+    auto gnc =
+        GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial, gncParams);
+    gnc.setInlierCostThresholds(0.49);  // if inlier threshold is slightly below
+                                        // 0.5, then measurement is outlier
     double lambda = 1e6;  // very large lambda recovers original TLS cost
-    Vector weights_actual = gnc.calculateWeights(initial, lambda);
-    CHECK(assert_equal(weights_expected, weights_actual, tol));
+    Vector actualWeights = gnc.calculateWeights(initial, lambda);
+    CHECK(assert_equal(expectedWeights, actualWeights, tol));
   }
   // check the TLS weights are correct: CASE 2: residual at barcsq
   {
     // expected:
-    Vector weights_expected = Vector::Zero(1);
-    weights_expected[0] = 0.5;  // undecided
+    Vector expectedWeights = Vector::Zero(1);
+    expectedWeights[0] = 0.5;  // undecided
     // actual:
     GaussNewtonParams gnParams;
     GncParams<GaussNewtonParams> gncParams(gnParams);
     gncParams.setLossType(GncLossType::TLS);
-    auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial,
-                                                          gncParams);
-    gnc.setInlierCostThresholds(0.5);  // if inlier threshold is slightly below 0.5, then measurement is outlier
+    auto gnc =
+        GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial, gncParams);
+    gnc.setInlierCostThresholds(0.5);  // if inlier threshold is slightly below
+                                       // 0.5, then measurement is outlier
     double lambda = 1e6;  // very large lambda recovers original TLS cost
-    Vector weights_actual = gnc.calculateWeights(initial, lambda);
-    CHECK(assert_equal(weights_expected, weights_actual, 1e-5));
+    Vector actualWeights = gnc.calculateWeights(initial, lambda);
+    CHECK(assert_equal(expectedWeights, actualWeights, 1e-5));
   }
 }
 
 /* ************************************************************************* */
 TEST(GncOptimizer, calculateWeightsTLSSuperLinear2) {
-
   // create values
   Point2 x_val(0.0, 0.0);
   Point2 x_prior(1.0, 0.0);
   Values initial;
   initial.insert(X(1), x_val);
 
-  // create very simple factor graph with a single factor 0.5 * 1/sigma^2 * || x - [1;0] ||^2
+  // create very simple factor graph with a single factor 0.5 * 1/sigma^2 * || x
+  // - [1;0] ||^2
   double sigma = 1;
   SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(sigma, sigma));
   NonlinearFactorGraph nfg;
@@ -567,55 +573,58 @@ TEST(GncOptimizer, calculateWeightsTLSSuperLinear2) {
   // check the TLS weights are correct: CASE 1: residual below barcsq
   {
     // expected:
-    Vector weights_expected = Vector::Zero(1);
-    weights_expected[0] = 1.0;  // inlier
+    Vector expectedWeights = Vector::Zero(1);
+    expectedWeights[0] = 1.0;  // inlier
     // actual:
     GaussNewtonParams gnParams;
     GncParams<GaussNewtonParams> gncParams(gnParams);
     gncParams.setLossType(GncLossType::TLS);
     gncParams.setScheduler(GncScheduler::SuperLinear);
-    auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial,
-                                                          gncParams);
-    gnc.setInlierCostThresholds(0.51);  // if inlier threshold is slightly larger than 0.5, then measurement is inlier
+    auto gnc =
+        GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial, gncParams);
+    gnc.setInlierCostThresholds(
+        0.51);  // if inlier threshold is slightly larger than 0.5, then
+                // measurement is inlier
 
     double lambda = 1e6;
-    Vector weights_actual = gnc.calculateWeights(initial, lambda);
-    CHECK(assert_equal(weights_expected, weights_actual, tol));
+    Vector actualWeights = gnc.calculateWeights(initial, lambda);
+    CHECK(assert_equal(expectedWeights, actualWeights, tol));
   }
   // check the TLS weights are correct: CASE 2: residual above barcsq
   {
     // expected:
-    Vector weights_expected = Vector::Zero(1);
-    weights_expected[0] = 0.0;  // outlier
+    Vector expectedWeights = Vector::Zero(1);
+    expectedWeights[0] = 0.0;  // outlier
     // actual:
     GaussNewtonParams gnParams;
     GncParams<GaussNewtonParams> gncParams(gnParams);
     gncParams.setLossType(GncLossType::TLS);
     gncParams.setScheduler(GncScheduler::SuperLinear);
-    auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial,
-                                                          gncParams);
-    gnc.setInlierCostThresholds(0.49);  // if inlier threshold is slightly below 0.5, then measurement is outlier
+    auto gnc =
+        GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial, gncParams);
+    gnc.setInlierCostThresholds(0.49);  // if inlier threshold is slightly below
+                                        // 0.5, then measurement is outlier
     double lambda = 1e6;
-    Vector weights_actual = gnc.calculateWeights(initial, lambda);
-    CHECK(assert_equal(weights_expected, weights_actual, tol));
+    Vector actualWeights = gnc.calculateWeights(initial, lambda);
+    CHECK(assert_equal(expectedWeights, actualWeights, tol));
   }
   // check the TLS weights are correct: CASE 3: residual in transition region
   {
     // expected:
-    Vector weights_expected = Vector::Zero(1);
+    Vector expectedWeights = Vector::Zero(1);
     double barcSq = 0.4;
     double lambda = 1.0;
-    weights_expected[0] = std::sqrt(barcSq / 0.5) * (lambda + 1.0) - lambda;
+    expectedWeights[0] = std::sqrt(barcSq / 0.5) * (lambda + 1.0) - lambda;
     // actual:
     GaussNewtonParams gnParams;
     GncParams<GaussNewtonParams> gncParams(gnParams);
     gncParams.setLossType(GncLossType::TLS);
     gncParams.setScheduler(GncScheduler::SuperLinear);
-    auto gnc = GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial,
-                                                          gncParams);
+    auto gnc =
+        GncOptimizer<GncParams<GaussNewtonParams>>(nfg, initial, gncParams);
     gnc.setInlierCostThresholds(barcSq);
-    Vector weights_actual = gnc.calculateWeights(initial, lambda);
-    CHECK(assert_equal(weights_expected, weights_actual, tol));
+    Vector actualWeights = gnc.calculateWeights(initial, lambda);
+    CHECK(assert_equal(expectedWeights, actualWeights, tol));
   }
 }
 

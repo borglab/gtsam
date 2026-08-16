@@ -497,17 +497,17 @@ class GTSAM_EXPORT GemanMcClure : public Base {
 
   /** @brief Static helper to compute shape param (c) using outlier influence.
    * Computes a shape param such that an outlier will have:
-   *    d/dx(\rho(x)) <= influence_thresh
-   * @param influence_thresh - The max influence permited by an outlier.
+   *    d/dx(\rho(x)) <= influenceThreshold
+   * @param influenceThreshold - The max influence permited by an outlier.
    *                           Must be in (0, sqrt(chi2 quantile))
    * @param dof - The degrees of freedom of the corresponding measurement
-   * @param chi2_outlier_thresh - The threshold for outlier (i.e. 0.95).
+   * @param chiSquaredOutlierThreshold - The threshold for outlier (i.e. 0.95).
    *                              Must be in [0,1]
-   * @throws std::invalid_argument if influence_thresh is outside that range.
+   * @throws std::invalid_argument if influenceThreshold is outside that range.
    * @returns The shape param
    */
-  static double shapeParamFromInfThresh(double influence_thresh, size_t dof,
-                                        double chi2_outlier_thresh);
+  static double ShapeParameterFromInfluenceThreshold(
+      double influenceThreshold, size_t dof, double chiSquaredOutlierThreshold);
 
  protected:
   double c_;
@@ -818,15 +818,15 @@ using CustomGraduatedWeightFunction =
 class GTSAM_EXPORT Custom : public Base {
  protected:
   std::function<double(double)> weight_, loss_;
-  std::optional<std::function<double(double, double)>> grad_weight_, grad_loss_;
+  std::optional<std::function<double(double, double)>> gradWeight_, gradLoss_;
   std::string name_;
 
  public:
   typedef std::shared_ptr<Custom> shared_ptr;
 
   Custom(CustomWeightFunction weight, CustomLossFunction loss,
-         CustomGraduatedWeightFunction grad_weight = std::nullopt,
-         CustomGraduatedLossFunction grad_loss = std::nullopt,
+         CustomGraduatedWeightFunction gradWeight = std::nullopt,
+         CustomGraduatedLossFunction gradLoss = std::nullopt,
          const ReweightScheme reweight = Block, std::string name = "Custom");
   Custom(CustomWeightFunction weight, CustomLossFunction loss,
          const ReweightScheme reweight, std::string name = "Custom");
@@ -838,10 +838,10 @@ class GTSAM_EXPORT Custom : public Base {
   bool equals(const Base& expected, double tol = 1e-8) const override;
   static shared_ptr Create(
       std::function<double(double)> weight, std::function<double(double)> loss,
-      CustomGraduatedWeightFunction grad_weight = std::nullopt,
-      CustomGraduatedLossFunction grad_loss = std::nullopt,
+      CustomGraduatedWeightFunction gradWeight = std::nullopt,
+      CustomGraduatedLossFunction gradLoss = std::nullopt,
       const ReweightScheme reweight = Block,
-      const std::string& name = "Custom");
+      const std::string &name = "Custom");
   static shared_ptr Create(std::function<double(double)> weight,
                            std::function<double(double)> loss,
                            const ReweightScheme reweight,
