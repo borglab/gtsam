@@ -40,4 +40,9 @@ void AccumulateCudaSfmNormalEquations(
     int numCameras, DeviceSparseNormalEquations* system,
     cudaStream_t stream = nullptr);
 
+void AccumulateCudaSfmNormalEquations(
+    const CudaSfmProjectionLinearization& linearization,
+    const CudaSfmProjectionBatch& batch, int numCameras,
+    DeviceSparseNormalEquations* system, cudaStream_t stream = nullptr);
+
 }  // namespace gtsam::cuda

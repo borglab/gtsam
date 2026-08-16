@@ -1000,6 +1000,7 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
   std::unique_ptr<CudaLinearSolverSession> fullNormalSession;
   std::unique_ptr<CudaSparseSpdOperator> fullNormalOperator;
   CudaSparseSpdJacobiPreconditioner fullNormalPreconditioner;
+  CudaSfmProjectionLinearization fullNormalLinearization;
   result.cudssSolverConstructionElapsed = ElapsedSince(stageStart);
   stageStart = Clock::now();
   CudaSfmDenseSchurSolver denseSchurSolver;
@@ -1115,6 +1116,10 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
     } else if (solverMode == CudaSfmLinearSolverType::CudssSchur ||
                solverMode == CudaSfmLinearSolverType::PcgSchur) {
       sparseSchurProblem.linearize(current, context.stream());
+    } else {
+      LinearizeCudaSfmProjectionBatch(current, batch,
+                                      &fullNormalLinearization,
+                                      context.stream());
     }
 
     bool acceptedOrDone = false;
@@ -1209,7 +1214,8 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
             attemptProfile.denseSchurSolveElapsed;
       } else {
         stageStart = DetailedProfileStart(detailedProfiling);
-        AccumulateCudaSfmNormalEquations(current, batch, numCameras, &system,
+        AccumulateCudaSfmNormalEquations(fullNormalLinearization, batch,
+                                         numCameras, &system,
                                          context.stream());
         attemptProfile.normalEquationsElapsed =
             DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,

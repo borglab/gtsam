@@ -276,6 +276,54 @@ __global__ void AccumulateCudaSfmNormalEquationsKernel(
   }
 }
 
+__global__ void AccumulateLinearizedCudaSfmNormalEquationsKernel(
+    const CudaSfmObservation* observations, size_t numObservations,
+    const double* residuals, const double* cameraJacobians,
+    const double* pointJacobians, int numCameras, const int* rowPointers,
+    const int* colIndices, double* values, double* rhs,
+    int* missingEntries) {
+  const size_t i = static_cast<size_t>(blockIdx.x) * blockDim.x + threadIdx.x;
+  if (i >= numObservations) return;
+  const CudaSfmObservation observation = observations[i];
+  const int cameraBase = 9 * observation.cameraSlot;
+  const int pointBase = 9 * numCameras + 3 * observation.pointSlot;
+  int global[kProjectionTangentDim];
+  double jacobian0[kProjectionTangentDim];
+  double jacobian1[kProjectionTangentDim];
+  for (int column = 0; column < 9; ++column) {
+    global[column] = cameraBase + column;
+    jacobian0[column] = cameraJacobians[18 * i + column];
+    jacobian1[column] = cameraJacobians[18 * i + 9 + column];
+  }
+  for (int column = 0; column < 3; ++column) {
+    global[9 + column] = pointBase + column;
+    jacobian0[9 + column] = pointJacobians[6 * i + column];
+    jacobian1[9 + column] = pointJacobians[6 * i + 3 + column];
+  }
+  const double residual0 = residuals[2 * i];
+  const double residual1 = residuals[2 * i + 1];
+  for (int a = 0; a < kProjectionTangentDim; ++a) {
+    atomicAdd(&rhs[global[a]],
+              -jacobian0[a] * residual0 - jacobian1[a] * residual1);
+    for (int b = a; b < kProjectionTangentDim; ++b) {
+      int row = global[a];
+      int column = global[b];
+      if (row > column) {
+        const int temporary = row;
+        row = column;
+        column = temporary;
+      }
+      const int entry = FindCsrEntry(rowPointers, colIndices, row, column);
+      if (entry >= 0) {
+        atomicAdd(&values[entry], jacobian0[a] * jacobian0[b] +
+                                      jacobian1[a] * jacobian1[b]);
+      } else {
+        atomicAdd(missingEntries, 1);
+      }
+    }
+  }
+}
+
 template <bool kWhitened, bool kRobust>
 __global__ void ComputeCudaSfmProjectionErrorKernel(
     const DevicePinholeCameraCal3Bundler* cameras, const DevicePoint3* points,
@@ -842,6 +890,54 @@ void AccumulateCudaSfmNormalEquations(
   if (!hostMissingEntries.empty() && hostMissingEntries[0] != 0) {
     throw std::runtime_error(
         "AccumulateCudaSfmNormalEquations missing CSR entries");
+  }
+}
+
+void AccumulateCudaSfmNormalEquations(
+    const CudaSfmProjectionLinearization& linearization,
+    const CudaSfmProjectionBatch& batch, int numCameras,
+    DeviceSparseNormalEquations* system, cudaStream_t stream) {
+  if (!system || numCameras < 0) {
+    throw std::invalid_argument(
+        "linearized SFM normal equations require valid output/dimension");
+  }
+  const size_t observations = batch.numObservations();
+  if (linearization.residuals.size() != 2 * observations ||
+      linearization.cameraJacobians.size() != 18 * observations ||
+      linearization.pointJacobians.size() != 6 * observations) {
+    throw std::invalid_argument("SFM projection linearization size mismatch");
+  }
+  const size_t dimension =
+      9 * static_cast<size_t>(numCameras) + 3 * batch.numPoints();
+  if (system->rows() != static_cast<int>(dimension)) {
+    throw std::invalid_argument("linearized SFM normal CSR dimension mismatch");
+  }
+  system->zero(stream);
+  if (observations == 0) return;
+  const size_t blocks =
+      (observations + kProjectionLinearizationBlockSize - 1) /
+      kProjectionLinearizationBlockSize;
+  if (blocks > static_cast<size_t>(std::numeric_limits<int>::max())) {
+    throw std::invalid_argument("linearized SFM normal grid exceeds int range");
+  }
+  CudaDeviceArray<int> missingEntries(1);
+  missingEntries.zero(stream);
+  AccumulateLinearizedCudaSfmNormalEquationsKernel
+      <<<static_cast<int>(blocks), kProjectionLinearizationBlockSize, 0,
+         stream>>>(
+          batch.observations().data(), observations,
+          linearization.residuals.data(),
+          linearization.cameraJacobians.data(),
+          linearization.pointJacobians.data(), numCameras,
+          system->rowPointers().data(), system->colIndices().data(),
+          system->values().data(), system->rhs().data(),
+          missingEntries.data());
+  GTSAM_CUDA_CHECK(cudaGetLastError());
+  std::vector<int> missing;
+  missingEntries.download(&missing, stream);
+  GTSAM_CUDA_CHECK(cudaStreamSynchronize(stream));
+  if (!missing.empty() && missing[0] != 0) {
+    throw std::runtime_error("linearized SFM normal equations missing CSR entries");
   }
 }
 
