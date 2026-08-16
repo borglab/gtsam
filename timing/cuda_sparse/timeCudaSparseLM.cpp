@@ -1,14 +1,18 @@
 #include "../timeSFMBAL.h"
 
 #include <cuda_runtime_api.h>
+#include <gtsam/geometry/Cal3_S2Stereo.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/StereoPoint2.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/cuda/CudaSparseLevenbergMarquardt.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/FastSync.h>
 #include <gtsam/slam/PriorFactor.h>
+#include <gtsam/slam/StereoFactor.h>
 #include <gtsam/slam/dataset.h>
 
 #include <algorithm>
@@ -141,13 +145,15 @@ void ApplyMatrixConfigurationDefaults(RunOptions* options) {
   }
 }
 
-enum class WorkloadKind { Bal, Pose2, Pose3 };
+enum class WorkloadKind { Bal, Pose2, Pose3, Stereo };
 
 struct WorkloadSpec {
   std::string name;
   WorkloadKind kind;
   std::string filename;
   std::string exampleDataName;
+  std::string poseFilename;
+  std::string calibrationFilename;
 };
 
 struct LoadedWorkload {
@@ -234,7 +240,8 @@ const std::vector<TimingField>& TimingFields() {
 std::string Usage() {
   return
       "Usage: timeCudaSparseLM [--warmups N] [--repeats N]\n"
-      "  [--datasets bal16,bal135,pose2,pose3] [--data-dir DIR]\n"
+      "  [--datasets bal16,bal135,pose2,pose3,stereo26,stereo77,stereo135]\n"
+      "  [--data-dir DIR]\n"
       "  [--json FILE] [--csv FILE]\n"
       "  [--configuration cudss-auto|cudss-gtsam|pcg]\n"
       "  [--cuda-linear-solver cudss|pcg] [--ordering auto|gtsam]\n"
@@ -275,8 +282,9 @@ size_t ParseSize(const std::string& value, const char* option,
 }
 
 std::vector<std::string> SplitDatasets(const std::string& value) {
-  static const std::set<std::string> supported{"bal16", "bal135", "pose2",
-                                                "pose3"};
+  static const std::set<std::string> supported{
+      "bal16",   "bal135",  "pose2",     "pose3",
+      "stereo26", "stereo77", "stereo135"};
   if (value.empty() || value.back() == ',') {
     throw std::invalid_argument("--datasets contains an empty dataset");
   }
@@ -628,6 +636,15 @@ int RunSelfTest() {
       options.pose2UpstreamSettings) {
     throw std::runtime_error("option parsing self-test failed");
   }
+  const char* stereoArguments[] = {
+      "timeCudaSparseLM", "--datasets", "stereo26,stereo77,stereo135"};
+  const RunOptions stereoOptions =
+      ParseOptions(3, const_cast<char**>(stereoArguments));
+  if (stereoOptions.datasets != std::vector<std::string>(
+                                    {"stereo26", "stereo77", "stereo135"})) {
+    throw std::runtime_error(
+        "stereo workload option parsing self-test failed");
+  }
   const char* fastSyncArguments[] = {"timeCudaSparseLM",
                                      "--pose2-fast-sync"};
   const RunOptions fastSyncOptions =
@@ -706,15 +723,27 @@ const WorkloadSpec& LookupWorkload(const std::string& name) {
   static const std::map<std::string, WorkloadSpec> specifications{
       {"bal16",
        {"bal16", WorkloadKind::Bal, "dubrovnik-16-22106-pre.txt",
-        "dubrovnik-16-22106-pre"}},
+        "dubrovnik-16-22106-pre", "", ""}},
       {"bal135",
        {"bal135", WorkloadKind::Bal, "dubrovnik-135-90642-pre.txt",
-        "dubrovnik-135-90642-pre"}},
+        "dubrovnik-135-90642-pre", "", ""}},
       {"pose2",
-       {"pose2", WorkloadKind::Pose2, "w10000.graph", "w10000"}},
+       {"pose2", WorkloadKind::Pose2, "w10000.graph", "w10000", "", ""}},
       {"pose3",
        {"pose3", WorkloadKind::Pose3, "sphere_smallnoise.graph",
-        "sphere_smallnoise"}},
+        "sphere_smallnoise", "", ""}},
+      {"stereo26",
+       {"stereo26", WorkloadKind::Stereo, "VO_stereo_factors_large.txt",
+        "VO_stereo_factors_large", "VO_camera_poses_large.txt",
+        "VO_calibration.txt"}},
+      {"stereo77",
+       {"stereo77", WorkloadKind::Stereo, "VO_stereo_factors00s.txt",
+        "VO_stereo_factors00s", "VO_camera_poses00s.txt",
+        "VO_calibration00s.txt"}},
+      {"stereo135",
+       {"stereo135", WorkloadKind::Stereo, "VO_stereo_factors00.txt",
+        "VO_stereo_factors00", "VO_camera_poses00.txt",
+        "VO_calibration00.txt"}},
   };
   return specifications.at(name);
 }
