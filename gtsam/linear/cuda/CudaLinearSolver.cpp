@@ -130,6 +130,10 @@ void CudaLinearSolverSession::solve(
   impl_->pcg->solve(linearOperator, preconditioner, rhs, solution, stream);
 }
 
+void CudaLinearSolverSession::invalidateWarmStart() {
+  if (impl_->pcg) impl_->pcg->invalidateWarmStart();
+}
+
 const CudaLinearSolveStats& CudaLinearSolverSession::stats() const {
   switch (impl_->options.backend) {
     case CudaLinearSolverType::DenseCholesky:

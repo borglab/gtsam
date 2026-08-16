@@ -29,6 +29,7 @@ struct CudaLinearSolveStats {
   size_t pcgIterationsTotal = 0;
   size_t pcgMaxIterationHits = 0;
   size_t lastPcgIterations = 0;
+  size_t pcgHostConvergenceChecks = 0;
   bool lastPcgConverged = false;
   bool lastPcgBreakdown = false;
   double lastPcgResidualNormSquared = 0.0;
@@ -76,6 +77,10 @@ class GTSAM_EXPORT CudaLinearSolverSession {
              const CudaPreconditioner& preconditioner, const double* rhs,
              CudaDeviceArray<double>* solution,
              cudaStream_t stream = nullptr);
+
+  /** Discard an iterative warm start after the operator's numerics change.
+   * Direct backends have no warm-start state and treat this as a no-op. */
+  void invalidateWarmStart();
 
   const CudaLinearSolveStats& stats() const;
 

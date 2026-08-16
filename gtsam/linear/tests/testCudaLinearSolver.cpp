@@ -51,7 +51,7 @@ TEST(CudaPcgSolver, SolvesThroughGenericOperatorInterface) {
   CudaPcgOptions options;
   options.maxIterations = 2;
   options.relativeTolerance = 1e-12;
-  options.convergenceCheckInterval = 1;
+  options.convergenceCheckInterval = 2;
   options.warmStart = false;
   CudaPcgSolver solver;
   solver.initialize(2, options);
@@ -70,6 +70,30 @@ TEST(CudaPcgSolver, SolvesThroughGenericOperatorInterface) {
   DOUBLES_EQUAL(7.0 / 11.0, actual[1], 1e-12);
   EXPECT(solver.stats().lastPcgConverged);
   LONGS_EQUAL(2, solver.stats().pcgIterationsTotal);
+  LONGS_EQUAL(3, solver.stats().pcgHostConvergenceChecks);
+}
+
+TEST(CudaLinearSolverSession, InvalidatesPcgWarmStartWhenOperatorChanges) {
+  CudaLinearSolverOptions solverOptions;
+  solverOptions.backend = CudaLinearSolverType::Pcg;
+  CudaLinearSolverSession session(solverOptions);
+  CudaPcgOptions pcgOptions;
+  pcgOptions.maxIterations = 2;
+  pcgOptions.relativeTolerance = 1e-12;
+  pcgOptions.convergenceCheckInterval = 2;
+  session.analyze(2, pcgOptions);
+
+  CudaDeviceArray<double> rhs;
+  CudaDeviceArray<double> solution(2);
+  rhs.upload({1.0, 2.0});
+  solution.zero();
+  session.solve(TwoByTwoOperator{}, IdentityPreconditioner{}, rhs.data(),
+                &solution);
+  session.invalidateWarmStart();
+  session.solve(TwoByTwoOperator{}, IdentityPreconditioner{}, rhs.data(),
+                &solution);
+  LONGS_EQUAL(2, session.stats().solveCount);
+  EXPECT(session.stats().lastPcgConverged);
 }
 
 TEST(DeviceSparseSpdSystem, RestoresUndampedDiagonalBetweenAttempts) {
@@ -277,10 +301,13 @@ TEST(CudaLinearSolverSession, DispatchesOrderedSparsePreparedSystem) {
   CudaLinearSolverSession session(options);
   session.analyze(system, &solution, std::vector<int>{1, 0});
   session.solve(system, &solution);
+  system.values().upload({3.0, 0.25, 2.5});
+  system.rhs().upload({2.0, -1.0});
+  session.solve(system, &solution);
   EXPECT(session.stats().userOrderingApplied);
   LONGS_EQUAL(1, session.stats().analysisCount);
-  LONGS_EQUAL(1, session.stats().factorizationCount);
-  LONGS_EQUAL(1, session.stats().solveCount);
+  LONGS_EQUAL(2, session.stats().factorizationCount);
+  LONGS_EQUAL(2, session.stats().solveCount);
 }
 
 int main() {

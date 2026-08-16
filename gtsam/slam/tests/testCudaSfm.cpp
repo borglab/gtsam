@@ -1404,6 +1404,10 @@ TEST(CudaSfmLevenbergMarquardt,
   CHECK(sparse.linearSolveStats.userOrderingApplied);
   CHECK(sparse.linearSolveStats.analysisCount == 1);
   CHECK(sparse.linearSolveStats.solveCount > 0);
+  CHECK(sparse.formulation == CudaSfmSystemFormulation::Schur);
+  CHECK(sparse.linearBackend == CudaLinearSolverType::Cudss);
+  EXPECT_LONGS_EQUAL(18, sparse.linearSystemDimension);
+  CHECK(sparse.linearSystemNonzeros > 0);
   EXPECT(sparse.appliedScalarPermutation ==
          CompileCudaScalarPermutation(
              CudaSfmReducedCsrPlan(data, {C(0), C(1)}).cameraBlocks(),

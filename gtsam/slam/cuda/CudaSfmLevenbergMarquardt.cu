@@ -836,6 +836,9 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
 #endif
 
   CudaSfmLevenbergMarquardtResult result;
+  result.formulation = params.formulation;
+  result.linearBackend = params.linear.backend;
+  result.linearSolveStats.backend = params.linear.backend;
   const bool detailedProfiling = params.enableDetailedProfiling;
   const auto totalStart = Clock::now();
 
@@ -908,6 +911,14 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
   const int numCameras = static_cast<int>(data.numberCameras());
   const int numPoints = static_cast<int>(data.numberTracks());
   const int totalDimension = 9 * numCameras + 3 * numPoints;
+  result.linearSystemDimension = static_cast<size_t>(
+      params.formulation == CudaSfmSystemFormulation::Schur
+          ? 9 * numCameras
+          : totalDimension);
+  if (solverMode == CudaSfmLinearSolverType::DenseSchur) {
+    result.linearSystemNonzeros =
+        result.linearSystemDimension * result.linearSystemDimension;
+  }
 
   stageStart = Clock::now();
   double currentError =
@@ -963,6 +974,7 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
     if (options.backend == CudaLinearSolverType::Cudss) {
       reducedPlan =
           std::make_unique<CudaSfmReducedCsrPlan>(data, cameraKeys);
+      result.linearSystemNonzeros = reducedPlan->columnIndices().size();
     }
     if (options.useUserOrdering) {
       result.appliedScalarPermutation = CompileCudaScalarPermutation(
@@ -994,6 +1006,7 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
     }
     stageStart = Clock::now();
     const CudaBalCsrStructure structure = CudaBalCsrStructure::FromSfmData(data);
+    result.linearSystemNonzeros = structure.colIndices().size();
     result.csrStructureElapsed = ElapsedSince(stageStart);
 
     stageStart = DetailedProfileStart(detailedProfiling);
@@ -1061,6 +1074,11 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
       LinearizeCudaSfmProjectionBatch(current, batch,
                                       &fullNormalLinearization,
                                       context.stream());
+    }
+    if (solverMode == CudaSfmLinearSolverType::PcgSchur) {
+      reducedSession->invalidateWarmStart();
+    } else if (solverMode == CudaSfmLinearSolverType::PcgFullNormal) {
+      fullNormalSession->invalidateWarmStart();
     }
 
     bool acceptedOrDone = false;

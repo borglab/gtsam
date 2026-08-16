@@ -497,6 +497,10 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
                                context->stream());
       });
 
+      if (deviceBackend == DeviceNormalSolverBackend::Pcg) {
+        linearSession->invalidateWarmStart();
+      }
+
       RunCudaStage("linear analysis", [&] {
         if (linearSession &&
             linearSession->stats().analysisCount == 0) {
