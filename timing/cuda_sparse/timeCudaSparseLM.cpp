@@ -167,6 +167,16 @@ struct LoadedWorkload {
   double initialError = 0.0;
 };
 
+struct StereoWorkloadData {
+  NonlinearFactorGraph graph;
+  Values initial;
+  Ordering ordering;
+};
+
+StereoWorkloadData BuildStereoWorkload(std::istream& calibrationInput,
+                                       std::istream& poseInput,
+                                       std::istream& factorInput);
+
 struct RawRun {
   std::string backend;
   size_t repetition = 0;
@@ -623,6 +633,42 @@ int RunSelfTest() {
         "legacy TORO Pose3 parser rejection self-test failed");
   }
 
+  std::istringstream stereoCalibration("100 100 0 50 40 0.2");
+  std::istringstream stereoPoses(
+      "0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1\n"
+      "1 1 0 0 1 0 1 0 0 0 0 1 0 0 0 0 1\n");
+  std::istringstream stereoFactors(
+      "0 7 60 58 40 1 0 10\n"
+      "1 8 62 60 40 2 0 10\n");
+  const StereoWorkloadData stereo =
+      BuildStereoWorkload(stereoCalibration, stereoPoses, stereoFactors);
+  const std::vector<gtsam::Key> expectedStereoOrdering{
+      gtsam::Symbol('l', 7), gtsam::Symbol('l', 8),
+      gtsam::Symbol('x', 0), gtsam::Symbol('x', 1)};
+  if (stereo.graph.size() != 3 || stereo.initial.size() != 4 ||
+      !stereo.initial.exists(gtsam::Symbol('l', 7)) ||
+      !stereo.initial.exists(gtsam::Symbol('l', 8)) ||
+      std::vector<gtsam::Key>(stereo.ordering.begin(), stereo.ordering.end()) !=
+          expectedStereoOrdering) {
+    throw std::runtime_error("stereo workload construction self-test failed");
+  }
+  if (!Throws([] {
+        std::istringstream calibration("100 100 0 50 40 0.2");
+        std::istringstream poses(
+            "0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1\n");
+        std::istringstream factors("1 7 60 58 40 1 0 10\n");
+        (void)BuildStereoWorkload(calibration, poses, factors);
+      }) ||
+      !Throws([] {
+        std::istringstream calibration("100 100 0 50 40 0.2");
+        std::istringstream poses(
+            "0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1\n");
+        std::istringstream factors("0 7 60 58 40 1 0\n");
+        (void)BuildStereoWorkload(calibration, poses, factors);
+      })) {
+    throw std::runtime_error("stereo workload rejection self-test failed");
+  }
+
   const char* arguments[] = {
       "timeCudaSparseLM", "--warmups", "1", "--repeats", "5",
       "--datasets",       "bal16,bal135,pose2,pose3",
@@ -758,6 +804,159 @@ std::string ResolvePath(const WorkloadSpec& specification,
   return gtsam::findExampleDataFile(specification.exampleDataName);
 }
 
+std::string ResolveStereoAuxiliaryPath(const std::string& filename,
+                                       const RunOptions& options) {
+  if (!options.dataDirectory.empty()) {
+    return (std::filesystem::path(options.dataDirectory) / filename).string();
+  }
+  return gtsam::findExampleDataFile(
+      std::filesystem::path(filename).stem().string());
+}
+
+StereoWorkloadData BuildStereoWorkload(std::istream& calibrationInput,
+                                       std::istream& poseInput,
+                                       std::istream& factorInput) {
+  double fx = 0.0;
+  double fy = 0.0;
+  double skew = 0.0;
+  double principalX = 0.0;
+  double principalY = 0.0;
+  double baseline = 0.0;
+  if (!(calibrationInput >> fx >> fy >> skew >> principalX >> principalY >>
+        baseline)) {
+    throw std::runtime_error("stereo calibration requires six scalars");
+  }
+  std::string trailingToken;
+  if (calibrationInput >> trailingToken) {
+    throw std::runtime_error("stereo calibration has trailing data");
+  }
+  for (const double value :
+       {fx, fy, skew, principalX, principalY, baseline}) {
+    if (!std::isfinite(value)) {
+      throw std::runtime_error("stereo calibration contains non-finite data");
+    }
+  }
+  const auto calibration = std::make_shared<gtsam::Cal3_S2Stereo>(
+      fx, fy, skew, principalX, principalY, baseline);
+
+  StereoWorkloadData result;
+  std::set<gtsam::Key> poseKeys;
+  std::string line;
+  size_t lineNumber = 0;
+  while (std::getline(poseInput, line)) {
+    ++lineNumber;
+    std::istringstream row(line);
+    long long poseIndex = -1;
+    if (!(row >> poseIndex)) {
+      if (row.eof()) continue;
+      throw std::runtime_error("malformed stereo pose row " +
+                               std::to_string(lineNumber));
+    }
+    if (poseIndex < 0) {
+      throw std::runtime_error("negative stereo pose index at row " +
+                               std::to_string(lineNumber));
+    }
+    gtsam::MatrixRowMajor matrix(4, 4);
+    for (int index = 0; index < 16; ++index) {
+      if (!(row >> matrix.data()[index]) ||
+          !std::isfinite(matrix.data()[index])) {
+        throw std::runtime_error("malformed stereo pose matrix at row " +
+                                 std::to_string(lineNumber));
+      }
+    }
+    if (row >> trailingToken) {
+      throw std::runtime_error("stereo pose row has trailing data at row " +
+                               std::to_string(lineNumber));
+    }
+    const gtsam::Key poseKey =
+        gtsam::Symbol('x', static_cast<uint64_t>(poseIndex));
+    if (!poseKeys.insert(poseKey).second) {
+      throw std::runtime_error("duplicate stereo pose at row " +
+                               std::to_string(lineNumber));
+    }
+    result.initial.insert(poseKey, Pose3(matrix));
+  }
+  if (poseInput.bad()) {
+    throw std::runtime_error("failed while reading stereo poses");
+  }
+  if (poseKeys.empty()) {
+    throw std::runtime_error("stereo pose input is empty");
+  }
+
+  const auto measurementModel = gtsam::noiseModel::Isotropic::Sigma(3, 1.0);
+  std::set<gtsam::Key> landmarkKeys;
+  lineNumber = 0;
+  while (std::getline(factorInput, line)) {
+    ++lineNumber;
+    std::istringstream row(line);
+    long long poseIndex = -1;
+    long long landmarkIndex = -1;
+    double uLeft = 0.0;
+    double uRight = 0.0;
+    double v = 0.0;
+    double x = 0.0;
+    double y = 0.0;
+    double z = 0.0;
+    if (!(row >> poseIndex)) {
+      if (row.eof()) continue;
+      throw std::runtime_error("malformed stereo factor row " +
+                               std::to_string(lineNumber));
+    }
+    if (!(row >> landmarkIndex >> uLeft >> uRight >> v >> x >> y >> z) ||
+        poseIndex < 0 || landmarkIndex < 0) {
+      throw std::runtime_error("malformed stereo factor row " +
+                               std::to_string(lineNumber));
+    }
+    for (const double value : {uLeft, uRight, v, x, y, z}) {
+      if (!std::isfinite(value)) {
+        throw std::runtime_error(
+            "stereo factor contains non-finite data at row " +
+            std::to_string(lineNumber));
+      }
+    }
+    if (row >> trailingToken) {
+      throw std::runtime_error("stereo factor row has trailing data at row " +
+                               std::to_string(lineNumber));
+    }
+
+    const gtsam::Key poseKey =
+        gtsam::Symbol('x', static_cast<uint64_t>(poseIndex));
+    if (!result.initial.exists(poseKey)) {
+      throw std::runtime_error("stereo factor references missing pose at row " +
+                               std::to_string(lineNumber));
+    }
+    const gtsam::Key landmarkKey =
+        gtsam::Symbol('l', static_cast<uint64_t>(landmarkIndex));
+    result.graph.emplace_shared<
+        gtsam::GenericStereoFactor<Pose3, gtsam::Point3>>(
+        gtsam::StereoPoint2(uLeft, uRight, v), measurementModel, poseKey,
+        landmarkKey, calibration);
+    if (landmarkKeys.insert(landmarkKey).second) {
+      const Pose3& cameraPose = result.initial.at<Pose3>(poseKey);
+      result.initial.insert(
+          landmarkKey,
+          cameraPose.transformFrom(gtsam::Point3(x, y, z)));
+    }
+  }
+  if (factorInput.bad()) {
+    throw std::runtime_error("failed while reading stereo factors");
+  }
+  if (result.graph.empty() || landmarkKeys.empty()) {
+    throw std::runtime_error("stereo factor input is empty");
+  }
+
+  const gtsam::Key firstPoseKey = *poseKeys.begin();
+  result.graph.emplace_shared<gtsam::PriorFactor<Pose3>>(
+      firstPoseKey, result.initial.at<Pose3>(firstPoseKey),
+      gtsam::noiseModel::Unit::Create(6));
+  result.ordering.reserve(landmarkKeys.size() + poseKeys.size());
+  result.ordering.insert(result.ordering.end(), landmarkKeys.begin(),
+                         landmarkKeys.end());
+  result.ordering.insert(result.ordering.end(), poseKeys.begin(),
+                         poseKeys.end());
+  return result;
+}
+
 std::pair<NonlinearFactorGraph, Values> LoadLegacyToroPose3(
     const std::string& path) {
   Values initial;
@@ -831,7 +1030,7 @@ LoadedWorkload LoadWorkload(const WorkloadSpec& specification,
       workload.initializationWall =
           std::chrono::duration<double>(Clock::now() - start).count();
     }
-  } else {
+  } else if (specification.kind == WorkloadKind::Pose3) {
     auto [graph, initial] = LoadLegacyToroPose3(workload.path);
     if (!initial.exists(0)) {
       throw std::runtime_error("Pose3 dataset is missing pose 0");
@@ -840,6 +1039,31 @@ LoadedWorkload LoadWorkload(const WorkloadSpec& specification,
     workload.initial = std::move(initial);
     workload.graph.emplace_shared<gtsam::PriorFactor<Pose3>>(
         0, workload.initial.at<Pose3>(0), gtsam::noiseModel::Unit::Create(6));
+  } else {
+    const std::string posePath =
+        ResolveStereoAuxiliaryPath(specification.poseFilename, options);
+    const std::string calibrationPath = ResolveStereoAuxiliaryPath(
+        specification.calibrationFilename, options);
+    if (!std::filesystem::is_regular_file(posePath)) {
+      throw std::runtime_error("stereo pose dataset does not exist: " +
+                               posePath);
+    }
+    if (!std::filesystem::is_regular_file(calibrationPath)) {
+      throw std::runtime_error("stereo calibration dataset does not exist: " +
+                               calibrationPath);
+    }
+    std::ifstream calibrationInput(calibrationPath);
+    std::ifstream poseInput(posePath);
+    std::ifstream factorInput(workload.path);
+    if (!calibrationInput || !poseInput || !factorInput) {
+      throw std::runtime_error("cannot open stereo workload inputs: " +
+                               specification.name);
+    }
+    StereoWorkloadData stereo =
+        BuildStereoWorkload(calibrationInput, poseInput, factorInput);
+    workload.graph = std::move(stereo.graph);
+    workload.initial = std::move(stereo.initial);
+    workload.cpuOrdering = std::move(stereo.ordering);
   }
 
   if (workload.graph.empty() || workload.initial.empty()) {
