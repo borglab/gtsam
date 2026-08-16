@@ -12,6 +12,7 @@
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>
+#include <gtsam/nonlinear/cuda/CudaJacobianNormalOperator.h>
 #include <gtsam/nonlinear/cuda/DeviceSparseJacobianNormalEquations.h>
 #include <gtsam/nonlinear/cuda/HostSparseJacobian.h>
 #include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
@@ -51,6 +52,18 @@ static_assert(!std::is_copy_assignable_v<CudaPinnedHostArray<double>>);
 static_assert(
     std::is_nothrow_move_constructible_v<CudaPinnedHostArray<double>>);
 static_assert(std::is_nothrow_move_assignable_v<CudaPinnedHostArray<double>>);
+static_assert(std::is_base_of_v<CudaLinearOperator,
+                                CudaJacobianNormalOperator>);
+static_assert(std::is_base_of_v<CudaPreconditioner,
+                                CudaJacobianNormalPreconditioner>);
+static_assert(std::is_same_v<
+              decltype(std::declval<const DeviceSparseJacobianNormalEquations&>()
+                           .linearOperator()),
+              const CudaLinearOperator&>);
+static_assert(std::is_same_v<
+              decltype(std::declval<const DeviceSparseJacobianNormalEquations&>()
+                           .preconditioner()),
+              const CudaPreconditioner&>);
 
 struct NonzeroValueInitialized {
   int value = 17;

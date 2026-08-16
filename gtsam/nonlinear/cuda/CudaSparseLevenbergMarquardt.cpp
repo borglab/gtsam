@@ -10,6 +10,7 @@
 #include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
 #include <gtsam/linear/cuda/CudaBlockOrdering.h>
 #include <gtsam/linear/cuda/CudaLinearSolver.h>
+#include <gtsam/linear/cuda/CudaPcgSolver.h>
 
 #include <algorithm>
 #include <chrono>
@@ -207,10 +208,23 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
     timings.cudssFactorAndSolve = deviceProfile.cudssFactorAndSolve;
     timings.cudssDataInfoBoundaryWall = deviceProfile.cudssDataInfoBoundaryWall;
     timings.pcgPreconditionerBuild = deviceProfile.pcgPreconditionerBuild;
-    timings.pcgSolve = deviceProfile.pcgSolve;
-    optimizationResult.pcgIterationsTotal = deviceProfile.pcgIterationsTotal;
-    optimizationResult.pcgSolves = deviceProfile.pcgSolveCount;
-    optimizationResult.pcgMaxIterationHits = deviceProfile.pcgMaxIterationHits;
+    if (optimizationResult.linearSolveStats.backend ==
+        CudaLinearSolverType::Pcg) {
+      timings.pcgSolve = optimizationResult.linearSolveStats.solveSeconds;
+      optimizationResult.pcgIterationsTotal =
+          optimizationResult.linearSolveStats.pcgIterationsTotal;
+      optimizationResult.pcgSolves =
+          optimizationResult.linearSolveStats.solveCount;
+      optimizationResult.pcgMaxIterationHits =
+          optimizationResult.linearSolveStats.pcgMaxIterationHits;
+    } else {
+      timings.pcgSolve = deviceProfile.pcgSolve;
+      optimizationResult.pcgIterationsTotal =
+          deviceProfile.pcgIterationsTotal;
+      optimizationResult.pcgSolves = deviceProfile.pcgSolveCount;
+      optimizationResult.pcgMaxIterationHits =
+          deviceProfile.pcgMaxIterationHits;
+    }
     timings.newModelError = deviceProfile.newModelError;
     timings.attemptD2h = deviceProfile.attemptD2h;
     timings.attemptHostBuild = deviceProfile.attemptHostBuild;
@@ -402,13 +416,24 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
       device = std::make_unique<DeviceSparseJacobianNormalEquations>();
       device->initialize(*plan, context->stream(), parameters.collectTiming,
                          solverOptions);
-      if (deviceBackend == DeviceNormalSolverBackend::Cudss) {
-        CudaLinearSolverOptions linearOptions;
-        linearOptions.backend = CudaLinearSolverType::Cudss;
-        linearOptions.useUserOrdering =
-            !solverOptions.scalarPermutation.empty();
-        linearSession =
-            std::make_unique<CudaLinearSolverSession>(linearOptions);
+      CudaLinearSolverOptions linearOptions;
+      linearOptions.backend =
+          deviceBackend == DeviceNormalSolverBackend::Cudss
+              ? CudaLinearSolverType::Cudss
+              : CudaLinearSolverType::Pcg;
+      linearOptions.useUserOrdering =
+          !solverOptions.scalarPermutation.empty();
+      linearSession =
+          std::make_unique<CudaLinearSolverSession>(linearOptions);
+      if (deviceBackend == DeviceNormalSolverBackend::Pcg) {
+        CudaPcgOptions commonPcg;
+        commonPcg.maxIterations = solverOptions.pcg.maxIterations;
+        commonPcg.relativeTolerance = solverOptions.pcg.relativeTolerance;
+        commonPcg.warmStart = solverOptions.pcg.warmStart;
+        commonPcg.convergenceCheckInterval =
+            solverOptions.pcg.convergenceCheckInterval;
+        linearSession->analyze(plan->columns(), commonPcg, context->stream(),
+                               parameters.collectTiming);
       }
     });
     AccumulateTiming(parameters.collectTiming, stageStart,
@@ -484,8 +509,6 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
                                    solverOptions.scalarPermutation,
                                    context->stream());
           }
-        } else if (!linearSession) {
-          device->analyze(context->stream());
         }
       });
 
@@ -500,19 +523,30 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
         attemptRecord.lambda = state.lambda;
 
         RunCudaStage("CUDA linear solve", [&] {
-          if (linearSession) {
+          if (deviceBackend == DeviceNormalSolverBackend::Cudss) {
             device->applyExplicitDamping(state.lambda, context->stream());
             linearSession->solve(device->mutableSystem(),
                                  &device->deviceDelta(), context->stream());
             device->evaluateSolvedDelta(context->stream());
           } else {
-            device->solveAndEvaluate(state.lambda, context->stream());
+            device->prepareOperatorSystem(state.lambda, context->stream());
+            linearSession->solve(
+                device->linearOperator(), device->preconditioner(),
+                device->deviceRhs(), &device->deviceDelta(),
+                context->stream());
+            device->evaluateSolvedDelta(context->stream());
           }
         });
 
         DeviceSparseJacobianAttemptResult deviceAttempt = RunCudaStage(
             "attempt result download",
             [&] { return device->downloadAttemptResult(context->stream()); });
+        if (deviceBackend == DeviceNormalSolverBackend::Pcg) {
+          const CudaLinearSolveStats& stats = linearSession->stats();
+          deviceAttempt.pcgIterations =
+              static_cast<int>(stats.lastPcgIterations);
+          deviceAttempt.pcgConverged = stats.lastPcgConverged;
+        }
         ++state.totalInnerAttempts;
         snapshotCudaProfile();
 

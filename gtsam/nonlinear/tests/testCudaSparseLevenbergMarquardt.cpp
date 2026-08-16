@@ -1016,6 +1016,43 @@ TEST(CudaSparseLevenbergMarquardt,
 }
 
 TEST(CudaSparseLevenbergMarquardt,
+     GeneralPcgUsesSharedSessionAndMatchesDirectObjective) {
+  if (!CanRunCudaSparseLm()) return;
+  const Pose2LmProblem problem = MakePose2LmProblem();
+
+  CudaSparseLevenbergMarquardtParams directParams;
+  LevenbergMarquardtParams::SetCeresDefaults(&directParams);
+  directParams.maxIterations = 5;
+  CudaSparseLevenbergMarquardtOptimizer direct(
+      problem.graph, problem.initial, directParams);
+  (void)direct.optimize();
+
+  CudaSparseLevenbergMarquardtParams pcgParams = directParams;
+  pcgParams.linearSolver = CudaSparseLmLinearSolver::Pcg;
+  pcgParams.pcg.maxIterations = 100;
+  pcgParams.pcg.relativeTolerance = 1e-10;
+  pcgParams.collectTiming = true;
+  CudaSparseLevenbergMarquardtOptimizer pcg(
+      problem.graph, problem.initial, pcgParams);
+  const Values pcgValues = pcg.optimize();
+  const CudaSparseLevenbergMarquardtResult& result = pcg.result();
+
+  DOUBLES_EQUAL(direct.error(), pcg.error(), 1e-9);
+  EXPECT(assert_equal(direct.values(), pcgValues, 1e-7));
+  CHECK(result.linearSolveStats.backend == CudaLinearSolverType::Pcg);
+  EXPECT_LONGS_EQUAL(1, result.linearSolveStats.analysisCount);
+  EXPECT_LONGS_EQUAL(result.lambdaAttempts,
+                     result.linearSolveStats.solveCount);
+  EXPECT_LONGS_EQUAL(result.linearSolveStats.solveCount, result.pcgSolves);
+  EXPECT_LONGS_EQUAL(result.linearSolveStats.pcgIterationsTotal,
+                     result.pcgIterationsTotal);
+  CHECK(result.linearSolveStats.lastPcgConverged);
+  CHECK(result.linearSolveStats.lastPcgIterations > 0);
+  CHECK(result.timings.pcgSolve > 0.0);
+  EXPECT_LONGS_EQUAL(0, result.systemSize.normalNonzeros);
+}
+
+TEST(CudaSparseLevenbergMarquardt,
      NonFiniteJacobianIsFatalWithStageIndexAndType) {
   if (!CanRunCudaSparseLm()) return;
 

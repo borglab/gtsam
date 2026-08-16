@@ -148,6 +148,11 @@ class GTSAM_EXPORT DeviceSparseJacobianNormalEquations {
   void analyze(cudaStream_t stream = nullptr);
   void solveAndEvaluate(double lambda, cudaStream_t stream = nullptr);
   void applyExplicitDamping(double lambda, cudaStream_t stream = nullptr);
+  void prepareOperatorSystem(double lambda,
+                             cudaStream_t stream = nullptr);
+  const CudaLinearOperator& linearOperator() const;
+  const CudaPreconditioner& preconditioner() const;
+  const double* deviceRhs() const;
   void evaluateSolvedDelta(cudaStream_t stream = nullptr);
   size_t analysisCount() const;
   DeviceSparseJacobianAttemptResult downloadAttemptResult(

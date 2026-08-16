@@ -1443,6 +1443,50 @@ void DeviceSparseJacobianNormalEquations::applyExplicitDamping(
   impl_->applyExplicitDamping(lambda, stream);
 }
 
+void DeviceSparseJacobianNormalEquations::prepareOperatorSystem(
+    double lambda, cudaStream_t stream) {
+  if (!impl_ || impl_->backend != DeviceNormalSolverBackend::Pcg ||
+      !impl_->pcgSolver) {
+    throw std::logic_error(
+        "DeviceSparseJacobianNormalEquations has no PCG operator system");
+  }
+  impl_->validateStream(stream);
+  if (!impl_->formed || !impl_->dampingPrepared) {
+    throw std::logic_error(
+        "PCG operator preparation requires a formed system and damping");
+  }
+  impl_->pcgSolver->prepare(lambda, impl_->dampingDiagonal, stream);
+  impl_->attemptReady = false;
+}
+
+const CudaLinearOperator&
+DeviceSparseJacobianNormalEquations::linearOperator() const {
+  if (!impl_ || impl_->backend != DeviceNormalSolverBackend::Pcg ||
+      !impl_->pcgSolver) {
+    throw std::logic_error(
+        "DeviceSparseJacobianNormalEquations has no PCG linear operator");
+  }
+  return impl_->pcgSolver->linearOperator();
+}
+
+const CudaPreconditioner&
+DeviceSparseJacobianNormalEquations::preconditioner() const {
+  if (!impl_ || impl_->backend != DeviceNormalSolverBackend::Pcg ||
+      !impl_->pcgSolver) {
+    throw std::logic_error(
+        "DeviceSparseJacobianNormalEquations has no PCG preconditioner");
+  }
+  return impl_->pcgSolver->preconditioner();
+}
+
+const double* DeviceSparseJacobianNormalEquations::deviceRhs() const {
+  if (!impl_ || impl_->backend != DeviceNormalSolverBackend::Pcg) {
+    throw std::logic_error(
+        "DeviceSparseJacobianNormalEquations has no PCG right-hand side");
+  }
+  return impl_->gradient.data();
+}
+
 void DeviceSparseJacobianNormalEquations::evaluateSolvedDelta(
     cudaStream_t stream) {
   if (!impl_) {

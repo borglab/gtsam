@@ -4,18 +4,13 @@
 #include <cusparse.h>
 #include <gtsam/base/cuda/CudaDeviceArray.h>
 #include <gtsam/dllexport.h>
+#include <gtsam/nonlinear/cuda/CudaJacobianNormalOperator.h>
 
 #include <cstddef>
 #include <memory>
 #include <vector>
 
 namespace gtsam::cuda {
-
-enum class DevicePcgPreconditioner {
-  BlockJacobi,  // per-variable Gram-block inverses (default)
-  Jacobi,       // scalar 1/diag(JtJ + lambda*D), PyPose/BAE-style
-  None,         // unpreconditioned CG (ablation baseline)
-};
 
 struct DevicePcgOptions {
   int maxIterations = 250;
@@ -104,6 +99,15 @@ class GTSAM_EXPORT DevicePcgSolver {
 
   const DevicePcgSolveStats& lastSolveStats() const;
   const DevicePcgProfile& profile() const;
+
+  /** Prepare the borrowed operator and preconditioner for a shared-session
+   * solve. These accessors are the primary path; solve() remains as a source
+   * compatibility facade over the same common CudaPcgSolver recurrence. */
+  void prepare(double lambda,
+               const CudaDeviceArray<double>& dampingDiagonal,
+               cudaStream_t stream);
+  const CudaLinearOperator& linearOperator() const;
+  const CudaPreconditioner& preconditioner() const;
 
  private:
   struct Impl;

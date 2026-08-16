@@ -266,7 +266,11 @@ void CudaPcgSolver::solve(const CudaLinearOperator& linearOperator,
     CheckCuda(cudaStreamSynchronize(stream), "solve completion");
     ++state.statistics.solveCount;
     state.statistics.pcgIterationsTotal += static_cast<size_t>(iteration);
+    state.statistics.lastPcgIterations = static_cast<size_t>(iteration);
     state.statistics.lastPcgConverged = converged;
+    state.statistics.lastPcgBreakdown = breakdown;
+    state.statistics.lastPcgResidualNormSquared = residualNormSquared;
+    state.statistics.lastPcgRhsNormSquared = rhsNormSquared;
     if (!converged && !breakdown &&
         iteration == state.options.maxIterations) {
       ++state.statistics.pcgMaxIterationHits;

@@ -28,7 +28,11 @@ struct CudaLinearSolveStats {
   size_t solveCount = 0;
   size_t pcgIterationsTotal = 0;
   size_t pcgMaxIterationHits = 0;
+  size_t lastPcgIterations = 0;
   bool lastPcgConverged = false;
+  bool lastPcgBreakdown = false;
+  double lastPcgResidualNormSquared = 0.0;
+  double lastPcgRhsNormSquared = 0.0;
   double analysisSeconds = 0.0;
   double factorizationSeconds = 0.0;
   double solveSeconds = 0.0;
