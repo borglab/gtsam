@@ -26,6 +26,7 @@
 #include <limits>
 #include <map>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -33,6 +34,9 @@ using namespace gtsam;
 using namespace gtsam::cuda;
 using gtsam::symbol_shorthand::C;
 using gtsam::symbol_shorthand::P;
+
+static_assert(std::is_base_of_v<LevenbergMarquardtParams,
+                                CudaSfmLevenbergMarquardtParams>);
 
 namespace {
 using BundlerCamera = PinholeCamera<Cal3Bundler>;
@@ -551,22 +555,20 @@ TEST(CudaSfmReducedCsrPlan, BuildsStableCameraOnlyCovisibilityPattern) {
 TEST(CudaSfmLevenbergMarquardtParams, MapsLinearSolverStringAliases) {
   CudaSfmLevenbergMarquardtParams params;
 
-  CHECK(params.linearSolver == CudaSfmLinearSolverType::DenseSchur);
   CHECK(params.getLinearSolver() == "dense-schur");
 
   params.setLinearSolver("cudss-full-normal");
-  CHECK(params.linearSolver == CudaSfmLinearSolverType::CudssFullNormal);
   CHECK(params.getLinearSolver() == "cudss-full-normal");
 
   params.setLinearSolver("DENSE_SCHUR");
-  CHECK(params.linearSolver == CudaSfmLinearSolverType::DenseSchur);
+  CHECK(params.getLinearSolver() == "dense-schur");
 
   params.setLinearSolver("CUDSS_FULL_NORMAL");
-  CHECK(params.linearSolver == CudaSfmLinearSolverType::CudssFullNormal);
+  CHECK(params.getLinearSolver() == "cudss-full-normal");
 
   CHECK_EXCEPTION(params.setLinearSolver("not-a-solver"),
                   std::invalid_argument);
-  CHECK(params.linearSolver == CudaSfmLinearSolverType::CudssFullNormal);
+  CHECK(params.getLinearSolver() == "cudss-full-normal");
 }
 
 TEST(CudaSfmLevenbergMarquardtParams,
@@ -590,6 +592,8 @@ TEST(CudaSfmLevenbergMarquardtParams,
                   std::invalid_argument);
 
   params.setFormulation("schur");
+  params.setCudaLinearSolver("dense-cholesky");
+  CHECK(params.getLinearSolver() == "dense-schur");
   params.setCudaLinearSolver("pcg");
   params.ordering = Ordering{C(0), C(1)};
   CHECK_EXCEPTION(OptimizeCudaSfmWithoutValueDownload(data, params),
@@ -602,7 +606,7 @@ TEST(CudaSfmLevenbergMarquardtParams, ProvidesLmDefaults) {
   CHECK(legacy.maxIterations == 100);
   DOUBLES_EQUAL(1e-5, legacy.lambdaInitial, 0.0);
   DOUBLES_EQUAL(10.0, legacy.lambdaFactor, 0.0);
-  CHECK(!legacy.diagonalDamping);
+  CHECK(!legacy.dampingParams.diagonalDamping);
   CHECK(!legacy.enableDetailedProfiling);
 
   const CudaSfmLevenbergMarquardtParams ceres =
@@ -610,7 +614,7 @@ TEST(CudaSfmLevenbergMarquardtParams, ProvidesLmDefaults) {
   CHECK(ceres.maxIterations == 50);
   DOUBLES_EQUAL(1e-4, ceres.lambdaInitial, 0.0);
   DOUBLES_EQUAL(2.0, ceres.lambdaFactor, 0.0);
-  CHECK(ceres.diagonalDamping);
+  CHECK(ceres.dampingParams.diagonalDamping);
   CHECK(!ceres.useFixedLambdaFactor);
   CHECK(!ceres.enableDetailedProfiling);
 }
@@ -620,13 +624,11 @@ TEST(CudaSfmLevenbergMarquardtOptimizer, ExposesCudaParams) {
   Values initial;
   CudaSfmLevenbergMarquardtParams params =
       CudaSfmLevenbergMarquardtParams::CeresDefaults();
-  params.linearSolver = CudaSfmLinearSolverType::CudssFullNormal;
+  params.setLinearSolver("cudss-full-normal");
   params.maxIterations = 7;
 
   CudaSfmLevenbergMarquardtOptimizer optimizer(graph, initial, params);
 
-  CHECK(optimizer.params().linearSolver ==
-        CudaSfmLinearSolverType::CudssFullNormal);
   CHECK(optimizer.params().getLinearSolver() == "cudss-full-normal");
   CHECK(optimizer.params().maxIterations == 7);
 }
@@ -1360,7 +1362,7 @@ TEST(CudaSfmLevenbergMarquardt, DenseSchurRunsWithoutCudss) {
   const SfmData data = makePerturbedBalLikeData(measuredData);
 
   CudaSfmLevenbergMarquardtParams params;
-  params.linearSolver = CudaSfmLinearSolverType::DenseSchur;
+  params.setLinearSolver("dense-schur");
   params.maxIterations = 1;
   params.relativeErrorTol = 1e-12;
   params.lambdaInitial = 1e-3;
@@ -1393,7 +1395,7 @@ TEST(CudaSfmLevenbergMarquardt,
       OptimizeCudaSfmWithoutValueDownload(data, denseParams);
 
   CudaSfmLevenbergMarquardtParams sparseParams = denseParams;
-  sparseParams.linearSolver = CudaSfmLinearSolverType::CudssSchur;
+  sparseParams.setLinearSolver("cudss-schur");
   sparseParams.ordering = Ordering{C(1), C(0)};
   const CudaSfmLevenbergMarquardtResult sparse =
       OptimizeCudaSfmWithoutValueDownload(data, sparseParams);
@@ -1405,7 +1407,7 @@ TEST(CudaSfmLevenbergMarquardt,
   EXPECT(sparse.appliedScalarPermutation ==
          CompileCudaScalarPermutation(
              CudaSfmReducedCsrPlan(data, {C(0), C(1)}).cameraBlocks(),
-             sparseParams.ordering));
+             *sparseParams.ordering));
 }
 
 TEST(CudaSfmLevenbergMarquardt, ImplicitSchurPcgMatchesDense) {
@@ -1419,7 +1421,7 @@ TEST(CudaSfmLevenbergMarquardt, ImplicitSchurPcgMatchesDense) {
       OptimizeCudaSfmWithoutValueDownload(data, denseParams);
 
   CudaSfmLevenbergMarquardtParams pcgParams = denseParams;
-  pcgParams.linearSolver = CudaSfmLinearSolverType::PcgSchur;
+  pcgParams.setLinearSolver("pcg-schur");
   pcgParams.pcg.maxIterations = 200;
   pcgParams.pcg.relativeTolerance = 1e-10;
   pcgParams.pcg.convergenceCheckInterval = 1;
@@ -1439,7 +1441,7 @@ TEST(CudaSfmLevenbergMarquardt,
   const SfmData data = makePerturbedBalLikeData(measuredData);
   CudaSfmLevenbergMarquardtParams params =
       CudaSfmLevenbergMarquardtParams::CeresDefaults();
-  params.linearSolver = CudaSfmLinearSolverType::CudssFullNormal;
+  params.setLinearSolver("cudss-full-normal");
   params.maxIterations = 1;
   params.ordering = Ordering{P(3), C(1), P(0), C(0), P(1), P(2)};
 
@@ -2108,7 +2110,7 @@ TEST(CudaSfmLevenbergMarquardt,
 
   CudaSfmLevenbergMarquardtParams params =
       CudaSfmLevenbergMarquardtParams::CeresDefaults();
-  params.linearSolver = CudaSfmLinearSolverType::CudssFullNormal;
+  params.setLinearSolver("cudss-full-normal");
   params.maxIterations = 1;
   params.relativeErrorTol = 1e-12;
   params.lambdaInitial = 1e-3;
@@ -2137,7 +2139,7 @@ TEST(CudaSfmLevenbergMarquardt, RecordsDetailedTimingBreakdownForCudss) {
 
   CudaSfmLevenbergMarquardtParams params =
       CudaSfmLevenbergMarquardtParams::CeresDefaults();
-  params.linearSolver = CudaSfmLinearSolverType::CudssFullNormal;
+  params.setLinearSolver("cudss-full-normal");
   params.enableDetailedProfiling = true;
   params.maxIterations = 1;
   params.relativeErrorTol = 1e-12;
@@ -2798,7 +2800,7 @@ TEST(CudaSfmLevenbergMarquardtParams, EqualsComparesFields) {
   CHECK(!a.equals(b));
 
   b = a;
-  b.linearSolver = CudaSfmLinearSolverType::CudssFullNormal;
+  b.setLinearSolver("cudss-full-normal");
   CHECK(!a.equals(b));
 
   b = a;

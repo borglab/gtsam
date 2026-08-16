@@ -5,6 +5,7 @@
 namespace gtsam {
 
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/sfm/SfmData.h>
 
@@ -12,40 +13,19 @@ namespace cuda {
 
 #include <gtsam/slam/cuda/CudaSfmLevenbergMarquardt.h>
 
-enum class CudaSfmLinearSolverType {
-  DenseSchur,
-  CudssSchur,
-  PcgSchur,
-  CudssFullNormal,
-  PcgFullNormal
-};
-
 enum class CudaSfmSystemFormulation {
   Schur,
   FullNormal
 };
 
-class CudaSfmLevenbergMarquardtParams {
+class CudaSfmLevenbergMarquardtParams
+    : gtsam::LevenbergMarquardtParams {
   CudaSfmLevenbergMarquardtParams();
 
   static gtsam::cuda::CudaSfmLevenbergMarquardtParams LegacyDefaults();
   static gtsam::cuda::CudaSfmLevenbergMarquardtParams CeresDefaults();
 
-  int maxIterations;
-  double lambdaInitial;
-  double lambdaFactor;
-  double lambdaUpperBound;
-  double lambdaLowerBound;
-  double relativeErrorTol;
-  double absoluteErrorTol;
-  double errorTol;
-  double minModelFidelity;
-  bool useFixedLambdaFactor;
-  bool diagonalDamping;
   bool enableDetailedProfiling;
-  double minDiagonal;
-  double maxDiagonal;
-  gtsam::cuda::CudaSfmLinearSolverType linearSolver;
   gtsam::cuda::CudaSfmSystemFormulation formulation;
 
   string getLinearSolver() const;
@@ -54,6 +34,10 @@ class CudaSfmLevenbergMarquardtParams {
   void setFormulation(const string& formulationName);
   string getCudaLinearSolver() const;
   void setCudaLinearSolver(const string& solverName);
+  double getMinDiagonal() const;
+  double getMaxDiagonal() const;
+  void setMinDiagonal(double value);
+  void setMaxDiagonal(double value);
   void print(const string& str = "") const;
 };
 

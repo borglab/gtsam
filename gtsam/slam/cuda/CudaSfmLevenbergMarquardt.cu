@@ -36,6 +36,14 @@ using Clock = std::chrono::steady_clock;
 using BundlerProjectionFactor = GeneralSFMFactor<SfmCamera, Point3>;
 using BundlerProjectionBatchFactor = BatchFactor<BundlerProjectionFactor, 2>;
 
+enum class CudaSfmLinearSolverType {
+  DenseSchur,
+  CudssSchur,
+  PcgSchur,
+  CudssFullNormal,
+  PcgFullNormal,
+};
+
 struct CudaSfmLmExecutionOptions {
   bool downloadOptimizedValues = true;
 };
@@ -195,40 +203,19 @@ struct EffectiveSfmLinearConfiguration {
 
 EffectiveSfmLinearConfiguration EffectiveLinearConfiguration(
     const CudaSfmLevenbergMarquardtParams& params) {
-  const bool independentAxesSelected =
-      params.formulation != CudaSfmSystemFormulation::Schur ||
-      params.linear.backend != CudaLinearSolverType::DenseCholesky ||
-      params.linear.useUserOrdering;
-  if (independentAxesSelected) {
-    return {params.formulation, params.linear.backend};
-  }
-  switch (params.linearSolver) {
-    case CudaSfmLinearSolverType::DenseSchur:
-      return {CudaSfmSystemFormulation::Schur,
-              CudaLinearSolverType::DenseCholesky};
-    case CudaSfmLinearSolverType::CudssSchur:
-      return {CudaSfmSystemFormulation::Schur, CudaLinearSolverType::Cudss};
-    case CudaSfmLinearSolverType::PcgSchur:
-      return {CudaSfmSystemFormulation::Schur, CudaLinearSolverType::Pcg};
-    case CudaSfmLinearSolverType::CudssFullNormal:
-      return {CudaSfmSystemFormulation::FullNormal,
-              CudaLinearSolverType::Cudss};
-    case CudaSfmLinearSolverType::PcgFullNormal:
-      return {CudaSfmSystemFormulation::FullNormal, CudaLinearSolverType::Pcg};
-  }
-  throw std::invalid_argument("unknown SFM CUDA solver configuration");
+  return {params.formulation, params.linear.backend};
 }
 
 CudaSfmLinearSolverType ValidateAndSelectSolverMode(
     const CudaSfmLevenbergMarquardtParams& params) {
   const EffectiveSfmLinearConfiguration config =
       EffectiveLinearConfiguration(params);
-  if ((!params.ordering.empty() || params.linear.useUserOrdering) &&
+  if ((params.ordering.has_value() || params.linear.useUserOrdering) &&
       config.backend != CudaLinearSolverType::Cudss) {
     throw std::invalid_argument(
         "SFM CUDA Ordering is supported only by the cuDSS backend");
   }
-  if (params.linear.useUserOrdering && params.ordering.empty()) {
+  if (params.linear.useUserOrdering && !params.ordering) {
     throw std::invalid_argument(
         "SFM CUDA user-ordering mode requires a complete Ordering");
   }
@@ -253,16 +240,6 @@ CudaSfmLinearSolverType ValidateAndSelectSolverMode(
         "SFM full-normal systems do not support dense Cholesky");
   }
   throw std::invalid_argument("unknown SFM full-normal CUDA backend");
-}
-
-NonlinearOptimizerParams BaseParamsAdapter(
-    const CudaSfmLevenbergMarquardtParams& params) {
-  NonlinearOptimizerParams baseParams;
-  baseParams.maxIterations = params.maxIterations;
-  baseParams.relativeErrorTol = params.relativeErrorTol;
-  baseParams.absoluteErrorTol = params.absoluteErrorTol;
-  baseParams.errorTol = params.errorTol;
-  return baseParams;
 }
 
 CudaSfmSqrtInfo2 ExtractProjectionSqrtInfo(
@@ -517,45 +494,21 @@ bool CheckCudaLmConvergence(
 }  // namespace
 
 CudaSfmLevenbergMarquardtParams::CudaSfmLevenbergMarquardtParams()
-    : maxIterations(100),
-      lambdaInitial(1e-5),
-      lambdaFactor(10.0),
-      lambdaUpperBound(1e5),
-      lambdaLowerBound(0.0),
-      relativeErrorTol(1e-5),
-      absoluteErrorTol(1e-5),
-      errorTol(0.0),
-      minModelFidelity(1e-3),
-      useFixedLambdaFactor(true),
-      diagonalDamping(false),
-      enableDetailedProfiling(false),
-      minDiagonal(1e-6),
-      maxDiagonal(1e32),
-      linearSolver(CudaSfmLinearSolverType::DenseSchur) {}
+    : enableDetailedProfiling(false) {
+  LevenbergMarquardtParams::SetLegacyDefaults(this);
+}
 
 CudaSfmLevenbergMarquardtParams
 CudaSfmLevenbergMarquardtParams::LegacyDefaults() {
   CudaSfmLevenbergMarquardtParams p;
+  LevenbergMarquardtParams::SetLegacyDefaults(&p);
   return p;
 }
 
 CudaSfmLevenbergMarquardtParams
 CudaSfmLevenbergMarquardtParams::CeresDefaults() {
   CudaSfmLevenbergMarquardtParams p;
-  p.maxIterations = 50;
-  p.absoluteErrorTol = 0.0;
-  p.relativeErrorTol = 1e-6;
-  p.errorTol = 0.0;
-  p.lambdaUpperBound = 1e32;
-  p.lambdaLowerBound = 1e-16;
-  p.lambdaInitial = 1e-4;
-  p.lambdaFactor = 2.0;
-  p.minModelFidelity = 1e-3;
-  p.useFixedLambdaFactor = false;
-  p.diagonalDamping = true;
-  p.minDiagonal = 1e-6;
-  p.maxDiagonal = 1e32;
-  p.linearSolver = CudaSfmLinearSolverType::DenseSchur;
+  LevenbergMarquardtParams::SetCeresDefaults(&p);
   return p;
 }
 
@@ -577,18 +530,6 @@ std::string CudaSfmLevenbergMarquardtParams::getLinearSolver() const {
   if (config.formulation == CudaSfmSystemFormulation::FullNormal &&
       config.backend == CudaLinearSolverType::Pcg)
     return "pcg-full-normal";
-  switch (linearSolver) {
-    case CudaSfmLinearSolverType::DenseSchur:
-      return "dense-schur";
-    case CudaSfmLinearSolverType::CudssSchur:
-      return "cudss-schur";
-    case CudaSfmLinearSolverType::PcgSchur:
-      return "pcg-schur";
-    case CudaSfmLinearSolverType::CudssFullNormal:
-      return "cudss-full-normal";
-    case CudaSfmLinearSolverType::PcgFullNormal:
-      return "pcg-full-normal";
-  }
   throw std::invalid_argument("Unknown CUDA SFM linear solver type");
 }
 
@@ -596,31 +537,26 @@ void CudaSfmLevenbergMarquardtParams::setLinearSolver(
     const std::string& solver) {
   const std::string normalized = NormalizeLinearSolverName(solver);
   if (normalized == "dense-schur") {
-    linearSolver = CudaSfmLinearSolverType::DenseSchur;
     formulation = CudaSfmSystemFormulation::Schur;
     linear.backend = CudaLinearSolverType::DenseCholesky;
     return;
   }
   if (normalized == "cudss-full-normal") {
-    linearSolver = CudaSfmLinearSolverType::CudssFullNormal;
     formulation = CudaSfmSystemFormulation::FullNormal;
     linear.backend = CudaLinearSolverType::Cudss;
     return;
   }
   if (normalized == "pcg-full-normal" || normalized == "full-normal-pcg") {
-    linearSolver = CudaSfmLinearSolverType::PcgFullNormal;
     formulation = CudaSfmSystemFormulation::FullNormal;
     linear.backend = CudaLinearSolverType::Pcg;
     return;
   }
   if (normalized == "cudss-schur" || normalized == "schur-cudss") {
-    linearSolver = CudaSfmLinearSolverType::CudssSchur;
     formulation = CudaSfmSystemFormulation::Schur;
     linear.backend = CudaLinearSolverType::Cudss;
     return;
   }
   if (normalized == "pcg-schur" || normalized == "schur-pcg") {
-    linearSolver = CudaSfmLinearSolverType::PcgSchur;
     formulation = CudaSfmSystemFormulation::Schur;
     linear.backend = CudaLinearSolverType::Pcg;
     return;
@@ -687,31 +623,36 @@ void CudaSfmLevenbergMarquardtParams::print(const std::string& str) const {
   std::cout << "                   errorTol: " << errorTol << "\n";
   std::cout << "           minModelFidelity: " << minModelFidelity << "\n";
   std::cout << "       useFixedLambdaFactor: " << useFixedLambdaFactor << "\n";
-  std::cout << "            diagonalDamping: " << diagonalDamping << "\n";
+  std::cout << "            diagonalDamping: "
+            << dampingParams.diagonalDamping << "\n";
   std::cout << "     enableDetailedProfiling: " << enableDetailedProfiling
             << "\n";
-  std::cout << "                minDiagonal: " << minDiagonal << "\n";
-  std::cout << "                maxDiagonal: " << maxDiagonal << "\n";
+  std::cout << "                minDiagonal: " << dampingParams.minDiagonal
+            << "\n";
+  std::cout << "                maxDiagonal: " << dampingParams.maxDiagonal
+            << "\n";
   std::cout << "               linearSolver: " << getLinearSolver() << "\n";
 }
 
 bool CudaSfmLevenbergMarquardtParams::equals(
     const CudaSfmLevenbergMarquardtParams& other, double tol) const {
-  return maxIterations == other.maxIterations &&
+  return NonlinearOptimizerParams::equals(other, tol) &&
          std::abs(lambdaInitial - other.lambdaInitial) <= tol &&
          std::abs(lambdaFactor - other.lambdaFactor) <= tol &&
          std::abs(lambdaUpperBound - other.lambdaUpperBound) <= tol &&
          std::abs(lambdaLowerBound - other.lambdaLowerBound) <= tol &&
-         std::abs(relativeErrorTol - other.relativeErrorTol) <= tol &&
-         std::abs(absoluteErrorTol - other.absoluteErrorTol) <= tol &&
-         std::abs(errorTol - other.errorTol) <= tol &&
          std::abs(minModelFidelity - other.minModelFidelity) <= tol &&
          useFixedLambdaFactor == other.useFixedLambdaFactor &&
-         diagonalDamping == other.diagonalDamping &&
+         verbosityLM == other.verbosityLM && logFile == other.logFile &&
+         dampingParams.diagonalDamping ==
+             other.dampingParams.diagonalDamping &&
+         dampingParams.exactHessianDiagonal ==
+             other.dampingParams.exactHessianDiagonal &&
          enableDetailedProfiling == other.enableDetailedProfiling &&
-         std::abs(minDiagonal - other.minDiagonal) <= tol &&
-         std::abs(maxDiagonal - other.maxDiagonal) <= tol &&
-         linearSolver == other.linearSolver &&
+         std::abs(dampingParams.minDiagonal -
+                  other.dampingParams.minDiagonal) <= tol &&
+         std::abs(dampingParams.maxDiagonal -
+                  other.dampingParams.maxDiagonal) <= tol &&
          formulation == other.formulation &&
          linear.backend == other.linear.backend &&
          linear.useUserOrdering == other.linear.useUserOrdering &&
@@ -793,8 +734,7 @@ CudaSfmLevenbergMarquardtOptimizer::CudaSfmLevenbergMarquardtOptimizer(
                      new gtsam::internal::NonlinearOptimizerState(
                          initialValues,
                          std::numeric_limits<double>::quiet_NaN()))),
-      params_(params),
-      baseParams_(BaseParamsAdapter(params)) {}
+      params_(params) {}
 
 const Values& CudaSfmLevenbergMarquardtOptimizer::optimize() {
   auto stageStart = Clock::now();
@@ -1018,7 +958,7 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
                           ? CudaLinearSolverType::Cudss
                           : CudaLinearSolverType::Pcg;
     options.useUserOrdering = options.backend == CudaLinearSolverType::Cudss &&
-                              !params.ordering.empty();
+                              params.ordering.has_value();
     reducedSession = std::make_unique<CudaLinearSolverSession>(options);
     if (options.backend == CudaLinearSolverType::Cudss) {
       reducedPlan =
@@ -1026,7 +966,7 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
     }
     if (options.useUserOrdering) {
       result.appliedScalarPermutation = CompileCudaScalarPermutation(
-          reducedPlan->cameraBlocks(), params.ordering);
+          reducedPlan->cameraBlocks(), *params.ordering);
     }
     sparseSchurProblem.initialize(batch, numCameras);
     if (options.backend == CudaLinearSolverType::Pcg && numCameras > 0) {
@@ -1045,12 +985,12 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
             : CudaLinearSolverType::Pcg;
     fullOptions.useUserOrdering = fullOptions.backend ==
                                        CudaLinearSolverType::Cudss &&
-                                   !params.ordering.empty();
+                                   params.ordering.has_value();
     fullNormalSession =
         std::make_unique<CudaLinearSolverSession>(fullOptions);
     if (fullOptions.useUserOrdering) {
       result.appliedScalarPermutation = CompileCudaScalarPermutation(
-          FullSfmBlockLayout(cameraKeys, pointKeys), params.ordering);
+          FullSfmBlockLayout(cameraKeys, pointKeys), *params.ordering);
     }
     stageStart = Clock::now();
     const CudaBalCsrStructure structure = CudaBalCsrStructure::FromSfmData(data);
@@ -1096,10 +1036,11 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
     iterationProfile.startError = currentError;
     iterationProfile.startLambda = lambda;
 
-    if (params.diagonalDamping) {
+    if (params.dampingParams.diagonalDamping) {
       stageStart = DetailedProfileStart(detailedProfiling);
       ComputeCudaSfmHessianDiagonal(current, batch, numCameras,
-                                    params.minDiagonal, params.maxDiagonal,
+                                    params.dampingParams.minDiagonal,
+                                    params.dampingParams.maxDiagonal,
                                     &dampingDiagonal, context.stream());
       iterationProfile.dampingDiagonalElapsed =
           DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
@@ -1133,7 +1074,7 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
 
       if (solverMode == CudaSfmLinearSolverType::DenseSchur) {
         stageStart = DetailedProfileStart(detailedProfiling);
-        if (params.diagonalDamping) {
+        if (params.dampingParams.diagonalDamping) {
           denseSchurSolver.solveLinearized(lambda, dampingDiagonal, &delta,
                                            context.stream());
         } else {
@@ -1147,7 +1088,7 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
       } else if (solverMode == CudaSfmLinearSolverType::CudssSchur) {
         stageStart = DetailedProfileStart(detailedProfiling);
         DeviceSparseSpdSystem& reducedSystem =
-            params.diagonalDamping
+            params.dampingParams.diagonalDamping
                 ? sparseSchurProblem.prepareSparse(
                       lambda, dampingDiagonal, *reducedPlan, context.stream())
                 : sparseSchurProblem.prepareSparse(lambda, *reducedPlan,
@@ -1160,7 +1101,7 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
 
         if (!reducedAnalyzed) {
           stageStart = DetailedProfileStart(detailedProfiling);
-          if (params.ordering.empty()) {
+          if (!params.ordering) {
             reducedSession->analyze(reducedSystem, &cameraDelta,
                                     context.stream());
           } else {
@@ -1177,7 +1118,7 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
         }
         stageStart = DetailedProfileStart(detailedProfiling);
         reducedSession->solve(reducedSystem, &cameraDelta, context.stream());
-        if (params.diagonalDamping) {
+        if (params.dampingParams.diagonalDamping) {
           sparseSchurProblem.recoverPoints(lambda, dampingDiagonal,
                                            cameraDelta, &delta,
                                            context.stream());
@@ -1192,14 +1133,14 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
       } else if (solverMode == CudaSfmLinearSolverType::PcgSchur) {
         stageStart = DetailedProfileStart(detailedProfiling);
         const CudaSfmImplicitSchurView implicit =
-            params.diagonalDamping
+            params.dampingParams.diagonalDamping
                 ? sparseSchurProblem.prepareImplicit(
                       lambda, dampingDiagonal, context.stream())
                 : sparseSchurProblem.prepareImplicit(lambda, context.stream());
         reducedSession->solve(*implicit.linearOperator,
                               *implicit.preconditioner, implicit.rhs,
                               &cameraDelta, context.stream());
-        if (params.diagonalDamping) {
+        if (params.dampingParams.diagonalDamping) {
           sparseSchurProblem.recoverPoints(lambda, dampingDiagonal,
                                            cameraDelta, &delta,
                                            context.stream());
@@ -1224,7 +1165,7 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
             attemptProfile.normalEquationsElapsed;
 
         stageStart = DetailedProfileStart(detailedProfiling);
-        if (params.diagonalDamping) {
+        if (params.dampingParams.diagonalDamping) {
           system.addDiagonalDamping(lambda, dampingDiagonal, context.stream());
         } else {
           system.addDiagonalDamping(lambda, context.stream());
@@ -1236,7 +1177,7 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
 
         if (!solverAnalyzed) {
           stageStart = DetailedProfileStart(detailedProfiling);
-          if (params.ordering.empty()) {
+          if (!params.ordering) {
             fullNormalSession->analyze(system, &delta, context.stream());
           } else {
             fullNormalSession->analyze(system, &delta,

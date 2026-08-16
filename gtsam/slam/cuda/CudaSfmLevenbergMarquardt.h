@@ -4,8 +4,8 @@
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/linear/cuda/CudaLinearSolver.h>
 #include <gtsam/linear/cuda/CudaPcgSolver.h>
+#include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
-#include <gtsam/nonlinear/NonlinearOptimizerParams.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/sfm/SfmData.h>
 #include <gtsam/slam/cuda/CudaSfmTypes.h>
@@ -16,42 +16,22 @@
 
 namespace gtsam::cuda {
 
-enum class CudaSfmLinearSolverType {
-  DenseSchur,
-  CudssSchur,
-  PcgSchur,
-  CudssFullNormal,
-  PcgFullNormal,
-};
-
 enum class CudaSfmSystemFormulation { Schur, FullNormal };
 
 class CudaSfmLevenbergMarquardtOptimizer;
 
-class GTSAM_EXPORT CudaSfmLevenbergMarquardtParams {
+class GTSAM_EXPORT CudaSfmLevenbergMarquardtParams
+    : public LevenbergMarquardtParams {
  public:
   using OptimizerType = CudaSfmLevenbergMarquardtOptimizer;
 
-  int maxIterations;
-  double lambdaInitial;
-  double lambdaFactor;
-  double lambdaUpperBound;
-  double lambdaLowerBound;
-  double relativeErrorTol;
-  double absoluteErrorTol;
-  double errorTol;
-  double minModelFidelity;
-  bool useFixedLambdaFactor;
-  bool diagonalDamping;
   bool enableDetailedProfiling;
-  double minDiagonal;
-  double maxDiagonal;
-  CudaSfmLinearSolverType linearSolver = CudaSfmLinearSolverType::DenseSchur;
-  /** Independent final configuration axes. */
+  /** The only solver configuration state: mathematical formulation and
+   * numerical backend are independent axes. */
   CudaSfmSystemFormulation formulation = CudaSfmSystemFormulation::Schur;
   CudaLinearSolverOptions linear{CudaLinearSolverType::DenseCholesky, false};
-  /** Optional camera-only ordering for CudssSchur. */
-  Ordering ordering;
+  /** The inherited optional Ordering is camera-only for Schur and contains
+   * camera plus point keys for full normal systems. */
   CudaPcgOptions pcg;
 
   CudaSfmLevenbergMarquardtParams();
@@ -65,7 +45,11 @@ class GTSAM_EXPORT CudaSfmLevenbergMarquardtParams {
   void setFormulation(const std::string& formulationName);
   std::string getCudaLinearSolver() const;
   void setCudaLinearSolver(const std::string& solverName);
-  void print(const std::string& str = "") const;
+  double getMinDiagonal() const { return dampingParams.minDiagonal; }
+  double getMaxDiagonal() const { return dampingParams.maxDiagonal; }
+  void setMinDiagonal(double value) { dampingParams.minDiagonal = value; }
+  void setMaxDiagonal(double value) { dampingParams.maxDiagonal = value; }
+  void print(const std::string& str = "") const override;
   bool equals(const CudaSfmLevenbergMarquardtParams& other,
               double tol = 1e-9) const;
 };
@@ -220,13 +204,10 @@ class GTSAM_EXPORT CudaSfmLevenbergMarquardtOptimizer
   const CudaSfmLevenbergMarquardtResult& result() const { return result_; }
 
  protected:
-  const NonlinearOptimizerParams& _params() const override {
-    return baseParams_;
-  }
+  const NonlinearOptimizerParams& _params() const override { return params_; }
 
  private:
   CudaSfmLevenbergMarquardtParams params_;
-  NonlinearOptimizerParams baseParams_;
   CudaSfmLevenbergMarquardtResult result_;
 };
 

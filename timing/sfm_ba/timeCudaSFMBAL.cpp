@@ -501,23 +501,6 @@ enum class CudaLmDefaults {
   Graph,
 };
 
-gtsam::cuda::CudaSfmLinearSolverType cudaLinearSolverType(
-    CudaLinearSolverOption solver) {
-  switch (solver) {
-    case CudaLinearSolverOption::DenseSchur:
-      return gtsam::cuda::CudaSfmLinearSolverType::DenseSchur;
-    case CudaLinearSolverOption::CudssSchur:
-      return gtsam::cuda::CudaSfmLinearSolverType::CudssSchur;
-    case CudaLinearSolverOption::PcgSchur:
-      return gtsam::cuda::CudaSfmLinearSolverType::PcgSchur;
-    case CudaLinearSolverOption::CudssFullNormal:
-      return gtsam::cuda::CudaSfmLinearSolverType::CudssFullNormal;
-    case CudaLinearSolverOption::PcgFullNormal:
-      return gtsam::cuda::CudaSfmLinearSolverType::PcgFullNormal;
-  }
-  return gtsam::cuda::CudaSfmLinearSolverType::DenseSchur;
-}
-
 gtsam::cuda::CudaSfmLevenbergMarquardtParams makeBalCudaLmParams(
     CudaLinearSolverOption solverOption, CudaLmDefaults defaults,
     bool enableDetailedProfiling) {
@@ -526,7 +509,7 @@ gtsam::cuda::CudaSfmLevenbergMarquardtParams makeBalCudaLmParams(
           ? gtsam::cuda::CudaSfmLevenbergMarquardtParams::CeresDefaults()
           : gtsam::cuda::CudaSfmLevenbergMarquardtParams();
   applyBalBenchmarkLmSettings(params);
-  params.linearSolver = cudaLinearSolverType(solverOption);
+  params.setLinearSolver(cudaLinearSolverName(solverOption));
   params.enableDetailedProfiling = enableDetailedProfiling;
   return params;
 }
@@ -570,11 +553,12 @@ GpuLinearizationBenchmark benchmarkGpuLinearization(const SfmData& db,
   const auto params = makeBalCudaLmParams(CudaLinearSolverOption::DenseSchur,
                                           CudaLmDefaults::Graph, false);
   gtsam::cuda::CudaDeviceArray<double> dampingDiagonal;
-  if (params.diagonalDamping) {
+  if (params.dampingParams.diagonalDamping) {
     const auto computeHessianDiagonal = [&]() {
       gtsam::cuda::ComputeCudaSfmHessianDiagonal(
           values, batch, static_cast<int>(db.numberCameras()),
-          params.minDiagonal, params.maxDiagonal, &dampingDiagonal,
+          params.dampingParams.minDiagonal, params.dampingParams.maxDiagonal,
+          &dampingDiagonal,
           context.stream());
     };
     computeHessianDiagonal();
@@ -592,7 +576,7 @@ GpuLinearizationBenchmark benchmarkGpuLinearization(const SfmData& db,
   gtsam::cuda::CudaSfmDenseSchurSolver solver;
   gtsam::cuda::CudaDeviceArray<double> delta;
   const auto solveOnce = [&]() {
-    if (params.diagonalDamping) {
+    if (params.dampingParams.diagonalDamping) {
       solver.solve(values, batch, static_cast<int>(db.numberCameras()),
                    params.lambdaInitial, dampingDiagonal, &delta,
                    context.stream());
