@@ -305,9 +305,10 @@ virtual class GncParams {
   PARAMS baseOptimizerParams;
   gtsam::GncLossType lossType;
   size_t maxIterations;
-  double muStep;
+  double lambdaStep;
   double relativeCostTol;
   double weightsTol;
+  double lambdaMax;
   gtsam::This::Verbosity verbosity;
   gtsam::This::IndexVector knownInliers;
   gtsam::This::IndexVector knownOutliers;
@@ -316,7 +317,7 @@ virtual class GncParams {
 
   void setLossType(const gtsam::GncLossType type);
   void setMaxIterations(const size_t maxIter);
-  void setMuStep(const double step);
+  void setLambdaStep(const double step);
   void setRelativeCostTol(double value);
   void setWeightsTol(double value);
   void setVerbosityGNC(const gtsam::This::Verbosity value);
@@ -326,7 +327,7 @@ virtual class GncParams {
   void setScheduler(const gtsam::GncScheduler scheduler);
   void print(const string& str = "GncParams: ") const;
 
-  enum Verbosity { SILENT, SUMMARY, MU, WEIGHTS, VALUES };
+  enum Verbosity { SILENT, SUMMARY, LAMBDA, WEIGHTS, VALUES };
 };
 
 typedef gtsam::GncParams<gtsam::GaussNewtonParams> GncGaussNewtonParams;
