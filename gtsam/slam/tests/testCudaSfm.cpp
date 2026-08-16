@@ -1371,6 +1371,10 @@ TEST(CudaSfmLevenbergMarquardt, DenseSchurRunsWithoutCudss) {
   CHECK(result.innerIterations > 0);
   CHECK(result.finalError < result.initialError);
   CHECK(result.optimizedValues.empty());
+  CHECK(result.linearSolveStats.backend ==
+        CudaLinearSolverType::DenseCholesky);
+  EXPECT_LONGS_EQUAL(1, result.linearSolveStats.analysisCount);
+  CHECK(result.linearSolveStats.solveCount > 0);
 }
 
 #endif

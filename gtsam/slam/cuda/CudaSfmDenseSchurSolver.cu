@@ -788,7 +788,10 @@ const CudaDeviceArray<double>& CudaSfmSchurProblem::cameraRhs() const {
 
 struct CudaSfmDenseSchurSolver::Impl {
   CudaSfmSchurProblem problem;
-  CudaDenseCholeskySolver denseSolver;
+  CudaLinearSolverSession denseSession{
+      CudaLinearSolverOptions{CudaLinearSolverType::DenseCholesky, false}};
+  CudaDeviceArray<double> cameraSolution;
+  int analyzedDimension = -1;
 
   void linearize(const DeviceValues& values, const CudaSfmProjectionBatch& batch,
                  int numCameras, cudaStream_t stream) {
@@ -807,12 +810,16 @@ struct CudaSfmDenseSchurSolver::Impl {
       delta->zero(stream);
       return;
     }
-    denseSolver.solveInPlace(dense, stream);
+    if (analyzedDimension != dense.dimension) {
+      denseSession.analyze(dense.dimension, stream);
+      analyzedDimension = dense.dimension;
+    }
+    denseSession.solve(dense, &cameraSolution, stream);
     if (dampingDiagonal) {
-      problem.recoverPoints(lambda, *dampingDiagonal, problem.cameraRhs(),
+      problem.recoverPoints(lambda, *dampingDiagonal, cameraSolution,
                             delta, stream);
     } else {
-      problem.recoverPoints(lambda, problem.cameraRhs(), delta, stream);
+      problem.recoverPoints(lambda, cameraSolution, delta, stream);
     }
   }
 
@@ -867,6 +874,10 @@ size_t CudaSfmDenseSchurSolver::linearizationCount() const {
 
 size_t CudaSfmDenseSchurSolver::denseAssemblyCount() const {
   return impl_->problem.denseAssemblyCount();
+}
+
+const CudaLinearSolveStats& CudaSfmDenseSchurSolver::linearSolveStats() const {
+  return impl_->denseSession.stats();
 }
 
 void CudaSfmDenseSchurSolver::solve(

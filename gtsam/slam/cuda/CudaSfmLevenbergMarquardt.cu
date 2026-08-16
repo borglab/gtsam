@@ -1349,6 +1349,8 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
     result.linearSolveStats = reducedSession->stats();
   } else if (fullNormalSession) {
     result.linearSolveStats = fullNormalSession->stats();
+  } else if (solverMode == CudaSfmLinearSolverType::DenseSchur) {
+    result.linearSolveStats = denseSchurSolver.linearSolveStats();
   }
   if (executionOptions.downloadOptimizedValues) {
     stageStart = Clock::now();

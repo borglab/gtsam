@@ -3,6 +3,7 @@
 #include <gtsam/dllexport.h>
 #include <gtsam/base/cuda/CudaDeviceArray.h>
 #include <gtsam/nonlinear/cuda/DeviceValues.h>
+#include <gtsam/linear/cuda/CudaLinearSolver.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionBatch.h>
 
 #include <cuda_runtime_api.h>
@@ -35,6 +36,7 @@ class GTSAM_EXPORT CudaSfmDenseSchurSolver {
 
   size_t linearizationCount() const;
   size_t denseAssemblyCount() const;
+  const CudaLinearSolveStats& linearSolveStats() const;
 
   void solve(const DeviceValues& values, const CudaSfmProjectionBatch& batch,
              int numCameras, double lambda, CudaDeviceArray<double>* delta,
