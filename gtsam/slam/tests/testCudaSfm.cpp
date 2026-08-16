@@ -569,6 +569,33 @@ TEST(CudaSfmLevenbergMarquardtParams, MapsLinearSolverStringAliases) {
   CHECK(params.linearSolver == CudaSfmLinearSolverType::CudssFullNormal);
 }
 
+TEST(CudaSfmLevenbergMarquardtParams,
+     SeparatesFormulationFromLinearBackend) {
+  CudaSfmLevenbergMarquardtParams params;
+  CHECK(params.formulation == CudaSfmSystemFormulation::Schur);
+  CHECK(params.linear.backend == CudaLinearSolverType::DenseCholesky);
+
+  params.setCudaLinearSolver("cudss");
+  CHECK(params.getFormulation() == "schur");
+  CHECK(params.getCudaLinearSolver() == "cudss");
+  CHECK(params.getLinearSolver() == "cudss-schur");
+
+  params.setFormulation("full_normal");
+  CHECK(params.getFormulation() == "full-normal");
+  CHECK(params.getLinearSolver() == "cudss-full-normal");
+
+  params.setCudaLinearSolver("dense-cholesky");
+  const SfmData data = makeTinyBalData();
+  CHECK_EXCEPTION(OptimizeCudaSfmWithoutValueDownload(data, params),
+                  std::invalid_argument);
+
+  params.setFormulation("schur");
+  params.setCudaLinearSolver("pcg");
+  params.ordering = Ordering{C(0), C(1)};
+  CHECK_EXCEPTION(OptimizeCudaSfmWithoutValueDownload(data, params),
+                  std::invalid_argument);
+}
+
 TEST(CudaSfmLevenbergMarquardtParams, ProvidesLmDefaults) {
   const CudaSfmLevenbergMarquardtParams legacy =
       CudaSfmLevenbergMarquardtParams::LegacyDefaults();

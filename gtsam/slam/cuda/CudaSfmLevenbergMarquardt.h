@@ -23,6 +23,8 @@ enum class CudaSfmLinearSolverType {
   CudssFullNormal,
 };
 
+enum class CudaSfmSystemFormulation { Schur, FullNormal };
+
 class CudaSfmLevenbergMarquardtOptimizer;
 
 class GTSAM_EXPORT CudaSfmLevenbergMarquardtParams {
@@ -44,6 +46,9 @@ class GTSAM_EXPORT CudaSfmLevenbergMarquardtParams {
   double minDiagonal;
   double maxDiagonal;
   CudaSfmLinearSolverType linearSolver = CudaSfmLinearSolverType::DenseSchur;
+  /** Independent final configuration axes. */
+  CudaSfmSystemFormulation formulation = CudaSfmSystemFormulation::Schur;
+  CudaLinearSolverOptions linear{CudaLinearSolverType::DenseCholesky, false};
   /** Optional camera-only ordering for CudssSchur. */
   Ordering ordering;
   CudaPcgOptions pcg;
@@ -55,6 +60,10 @@ class GTSAM_EXPORT CudaSfmLevenbergMarquardtParams {
 
   std::string getLinearSolver() const;
   void setLinearSolver(const std::string& solver);
+  std::string getFormulation() const;
+  void setFormulation(const std::string& formulationName);
+  std::string getCudaLinearSolver() const;
+  void setCudaLinearSolver(const std::string& solverName);
   void print(const std::string& str = "") const;
   bool equals(const CudaSfmLevenbergMarquardtParams& other,
               double tol = 1e-9) const;

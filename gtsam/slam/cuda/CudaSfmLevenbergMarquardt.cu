@@ -187,6 +187,69 @@ std::string NormalizeLinearSolverName(const std::string& solver) {
   return normalized;
 }
 
+struct EffectiveSfmLinearConfiguration {
+  CudaSfmSystemFormulation formulation;
+  CudaLinearSolverType backend;
+};
+
+EffectiveSfmLinearConfiguration EffectiveLinearConfiguration(
+    const CudaSfmLevenbergMarquardtParams& params) {
+  const bool independentAxesSelected =
+      params.formulation != CudaSfmSystemFormulation::Schur ||
+      params.linear.backend != CudaLinearSolverType::DenseCholesky ||
+      params.linear.useUserOrdering;
+  if (independentAxesSelected) {
+    return {params.formulation, params.linear.backend};
+  }
+  switch (params.linearSolver) {
+    case CudaSfmLinearSolverType::DenseSchur:
+      return {CudaSfmSystemFormulation::Schur,
+              CudaLinearSolverType::DenseCholesky};
+    case CudaSfmLinearSolverType::CudssSchur:
+      return {CudaSfmSystemFormulation::Schur, CudaLinearSolverType::Cudss};
+    case CudaSfmLinearSolverType::PcgSchur:
+      return {CudaSfmSystemFormulation::Schur, CudaLinearSolverType::Pcg};
+    case CudaSfmLinearSolverType::CudssFullNormal:
+      return {CudaSfmSystemFormulation::FullNormal,
+              CudaLinearSolverType::Cudss};
+  }
+  throw std::invalid_argument("unknown SFM CUDA solver configuration");
+}
+
+CudaSfmLinearSolverType ValidateAndSelectSolverMode(
+    const CudaSfmLevenbergMarquardtParams& params) {
+  const EffectiveSfmLinearConfiguration config =
+      EffectiveLinearConfiguration(params);
+  if ((!params.ordering.empty() || params.linear.useUserOrdering) &&
+      config.backend != CudaLinearSolverType::Cudss) {
+    throw std::invalid_argument(
+        "SFM CUDA Ordering is supported only by the cuDSS backend");
+  }
+  if (params.linear.useUserOrdering && params.ordering.empty()) {
+    throw std::invalid_argument(
+        "SFM CUDA user-ordering mode requires a complete Ordering");
+  }
+  if (config.formulation == CudaSfmSystemFormulation::Schur) {
+    switch (config.backend) {
+      case CudaLinearSolverType::DenseCholesky:
+        return CudaSfmLinearSolverType::DenseSchur;
+      case CudaLinearSolverType::Cudss:
+        return CudaSfmLinearSolverType::CudssSchur;
+      case CudaLinearSolverType::Pcg:
+        return CudaSfmLinearSolverType::PcgSchur;
+    }
+  }
+  if (config.backend == CudaLinearSolverType::Cudss) {
+    return CudaSfmLinearSolverType::CudssFullNormal;
+  }
+  if (config.backend == CudaLinearSolverType::DenseCholesky) {
+    throw std::invalid_argument(
+        "SFM full-normal systems do not support dense Cholesky");
+  }
+  throw std::invalid_argument(
+      "SFM full-normal PCG is not available in this build");
+}
+
 NonlinearOptimizerParams BaseParamsAdapter(
     const CudaSfmLevenbergMarquardtParams& params) {
   NonlinearOptimizerParams baseParams;
@@ -492,6 +555,20 @@ CudaSfmLevenbergMarquardtParams::CeresDefaults() {
 }
 
 std::string CudaSfmLevenbergMarquardtParams::getLinearSolver() const {
+  const EffectiveSfmLinearConfiguration config =
+      EffectiveLinearConfiguration(*this);
+  if (config.formulation == CudaSfmSystemFormulation::Schur &&
+      config.backend == CudaLinearSolverType::DenseCholesky)
+    return "dense-schur";
+  if (config.formulation == CudaSfmSystemFormulation::Schur &&
+      config.backend == CudaLinearSolverType::Cudss)
+    return "cudss-schur";
+  if (config.formulation == CudaSfmSystemFormulation::Schur &&
+      config.backend == CudaLinearSolverType::Pcg)
+    return "pcg-schur";
+  if (config.formulation == CudaSfmSystemFormulation::FullNormal &&
+      config.backend == CudaLinearSolverType::Cudss)
+    return "cudss-full-normal";
   switch (linearSolver) {
     case CudaSfmLinearSolverType::DenseSchur:
       return "dense-schur";
@@ -510,21 +587,76 @@ void CudaSfmLevenbergMarquardtParams::setLinearSolver(
   const std::string normalized = NormalizeLinearSolverName(solver);
   if (normalized == "dense-schur") {
     linearSolver = CudaSfmLinearSolverType::DenseSchur;
+    formulation = CudaSfmSystemFormulation::Schur;
+    linear.backend = CudaLinearSolverType::DenseCholesky;
     return;
   }
   if (normalized == "cudss-full-normal") {
     linearSolver = CudaSfmLinearSolverType::CudssFullNormal;
+    formulation = CudaSfmSystemFormulation::FullNormal;
+    linear.backend = CudaLinearSolverType::Cudss;
     return;
   }
   if (normalized == "cudss-schur" || normalized == "schur-cudss") {
     linearSolver = CudaSfmLinearSolverType::CudssSchur;
+    formulation = CudaSfmSystemFormulation::Schur;
+    linear.backend = CudaLinearSolverType::Cudss;
     return;
   }
   if (normalized == "pcg-schur" || normalized == "schur-pcg") {
     linearSolver = CudaSfmLinearSolverType::PcgSchur;
+    formulation = CudaSfmSystemFormulation::Schur;
+    linear.backend = CudaLinearSolverType::Pcg;
     return;
   }
   throw std::invalid_argument("Unknown CUDA SFM linear solver: " + solver);
+}
+
+std::string CudaSfmLevenbergMarquardtParams::getFormulation() const {
+  return EffectiveLinearConfiguration(*this).formulation ==
+                 CudaSfmSystemFormulation::Schur
+             ? "schur"
+             : "full-normal";
+}
+
+void CudaSfmLevenbergMarquardtParams::setFormulation(
+    const std::string& formulationName) {
+  const std::string normalized = NormalizeLinearSolverName(formulationName);
+  if (normalized == "schur") {
+    formulation = CudaSfmSystemFormulation::Schur;
+  } else if (normalized == "full-normal" || normalized == "fullnormal") {
+    formulation = CudaSfmSystemFormulation::FullNormal;
+  } else {
+    throw std::invalid_argument("Unknown CUDA SFM formulation: " +
+                                formulationName);
+  }
+}
+
+std::string CudaSfmLevenbergMarquardtParams::getCudaLinearSolver() const {
+  switch (EffectiveLinearConfiguration(*this).backend) {
+    case CudaLinearSolverType::DenseCholesky:
+      return "dense-cholesky";
+    case CudaLinearSolverType::Cudss:
+      return "cudss";
+    case CudaLinearSolverType::Pcg:
+      return "pcg";
+  }
+  throw std::invalid_argument("Unknown CUDA linear solver backend");
+}
+
+void CudaSfmLevenbergMarquardtParams::setCudaLinearSolver(
+    const std::string& solverName) {
+  const std::string normalized = NormalizeLinearSolverName(solverName);
+  if (normalized == "dense" || normalized == "dense-cholesky") {
+    linear.backend = CudaLinearSolverType::DenseCholesky;
+  } else if (normalized == "cudss") {
+    linear.backend = CudaLinearSolverType::Cudss;
+  } else if (normalized == "pcg") {
+    linear.backend = CudaLinearSolverType::Pcg;
+  } else {
+    throw std::invalid_argument("Unknown CUDA linear solver backend: " +
+                                solverName);
+  }
 }
 
 void CudaSfmLevenbergMarquardtParams::print(const std::string& str) const {
@@ -563,7 +695,15 @@ bool CudaSfmLevenbergMarquardtParams::equals(
          enableDetailedProfiling == other.enableDetailedProfiling &&
          std::abs(minDiagonal - other.minDiagonal) <= tol &&
          std::abs(maxDiagonal - other.maxDiagonal) <= tol &&
-         linearSolver == other.linearSolver && ordering == other.ordering;
+         linearSolver == other.linearSolver &&
+         formulation == other.formulation &&
+         linear.backend == other.linear.backend &&
+         linear.useUserOrdering == other.linear.useUserOrdering &&
+         ordering == other.ordering &&
+         pcg.maxIterations == other.pcg.maxIterations &&
+         std::abs(pcg.relativeTolerance - other.pcg.relativeTolerance) <= tol &&
+         pcg.warmStart == other.pcg.warmStart &&
+         pcg.convergenceCheckInterval == other.pcg.convergenceCheckInterval;
 }
 
 CudaSfmFactorGraphData ConvertGeneralSfmGraphToCudaSfmData(
@@ -729,9 +869,11 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
     throw std::invalid_argument(
         "OptimizeCudaSfm point key count does not match SfmData");
   }
+  const CudaSfmLinearSolverType solverMode =
+      ValidateAndSelectSolverMode(params);
 #if !GTSAM_ENABLE_CUDSS
-  if (params.linearSolver == CudaSfmLinearSolverType::CudssSchur ||
-      params.linearSolver == CudaSfmLinearSolverType::CudssFullNormal) {
+  if (solverMode == CudaSfmLinearSolverType::CudssSchur ||
+      solverMode == CudaSfmLinearSolverType::CudssFullNormal) {
     throw std::runtime_error(
         "OptimizeCudaSfm cuDSS solver requires GTSAM_ENABLE_CUDSS=ON");
   }
@@ -850,10 +992,10 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
   std::unique_ptr<CudaSfmReducedCsrPlan> reducedPlan;
   std::unique_ptr<CudaLinearSolverSession> reducedSession;
   bool reducedAnalyzed = false;
-  if (params.linearSolver == CudaSfmLinearSolverType::CudssSchur ||
-      params.linearSolver == CudaSfmLinearSolverType::PcgSchur) {
+  if (solverMode == CudaSfmLinearSolverType::CudssSchur ||
+      solverMode == CudaSfmLinearSolverType::PcgSchur) {
     CudaLinearSolverOptions options;
-    options.backend = params.linearSolver == CudaSfmLinearSolverType::CudssSchur
+    options.backend = solverMode == CudaSfmLinearSolverType::CudssSchur
                           ? CudaLinearSolverType::Cudss
                           : CudaLinearSolverType::Pcg;
     options.useUserOrdering = options.backend == CudaLinearSolverType::Cudss &&
@@ -875,7 +1017,7 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
       reducedAnalyzed = true;
     }
   }
-  if (params.linearSolver == CudaSfmLinearSolverType::CudssFullNormal) {
+  if (solverMode == CudaSfmLinearSolverType::CudssFullNormal) {
     CudaLinearSolverOptions fullOptions;
     fullOptions.backend = CudaLinearSolverType::Cudss;
     fullOptions.useUserOrdering = !params.ordering.empty();
@@ -936,11 +1078,11 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
 
     // Projection Jacobians depend on the accepted outer state, not lambda.
     // Keep them alive across all damping retries in this outer iteration.
-    if (params.linearSolver == CudaSfmLinearSolverType::DenseSchur) {
+    if (solverMode == CudaSfmLinearSolverType::DenseSchur) {
       denseSchurSolver.linearize(current, batch, numCameras,
                                  context.stream());
-    } else if (params.linearSolver == CudaSfmLinearSolverType::CudssSchur ||
-               params.linearSolver == CudaSfmLinearSolverType::PcgSchur) {
+    } else if (solverMode == CudaSfmLinearSolverType::CudssSchur ||
+               solverMode == CudaSfmLinearSolverType::PcgSchur) {
       sparseSchurProblem.linearize(current, context.stream());
     }
 
@@ -953,7 +1095,7 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
       attemptProfile.attempt = attemptIndex++;
       attemptProfile.lambda = lambda;
 
-      if (params.linearSolver == CudaSfmLinearSolverType::DenseSchur) {
+      if (solverMode == CudaSfmLinearSolverType::DenseSchur) {
         stageStart = DetailedProfileStart(detailedProfiling);
         if (params.diagonalDamping) {
           denseSchurSolver.solveLinearized(lambda, dampingDiagonal, &delta,
@@ -966,8 +1108,7 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
                                           context.stream());
         result.denseSchurSolveElapsed +=
             attemptProfile.denseSchurSolveElapsed;
-      } else if (params.linearSolver ==
-                 CudaSfmLinearSolverType::CudssSchur) {
+      } else if (solverMode == CudaSfmLinearSolverType::CudssSchur) {
         stageStart = DetailedProfileStart(detailedProfiling);
         DeviceSparseSpdSystem& reducedSystem =
             params.diagonalDamping
@@ -1012,7 +1153,7 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
             DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
                                           context.stream());
         result.cudssSolveElapsed += attemptProfile.cudssSolveElapsed;
-      } else if (params.linearSolver == CudaSfmLinearSolverType::PcgSchur) {
+      } else if (solverMode == CudaSfmLinearSolverType::PcgSchur) {
         stageStart = DetailedProfileStart(detailedProfiling);
         const CudaSfmImplicitSchurView implicit =
             params.diagonalDamping

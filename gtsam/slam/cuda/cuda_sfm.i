@@ -19,6 +19,11 @@ enum class CudaSfmLinearSolverType {
   CudssFullNormal
 };
 
+enum class CudaSfmSystemFormulation {
+  Schur,
+  FullNormal
+};
+
 class CudaSfmLevenbergMarquardtParams {
   CudaSfmLevenbergMarquardtParams();
 
@@ -40,9 +45,14 @@ class CudaSfmLevenbergMarquardtParams {
   double minDiagonal;
   double maxDiagonal;
   gtsam::cuda::CudaSfmLinearSolverType linearSolver;
+  gtsam::cuda::CudaSfmSystemFormulation formulation;
 
   string getLinearSolver() const;
   void setLinearSolver(const string& solver);
+  string getFormulation() const;
+  void setFormulation(const string& formulationName);
+  string getCudaLinearSolver() const;
+  void setCudaLinearSolver(const string& solverName);
   void print(const string& str = "") const;
 };
 
