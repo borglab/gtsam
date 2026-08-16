@@ -20,9 +20,9 @@ general or SFM implementations.
 ## Main deck
 
 1. **CUDA LM update** — title, presenter, and meeting date.
-2. **Requested on Aug 11 / implemented now** — map Frank's requested shared
-   linear core, backend switching, ordering, and reuse by both optimizers to
-   the current implementation.
+2. **What is implemented** — summarize the shared linear core, backend
+   switching, ordering support, and integration with both optimizers as four
+   current capabilities. Do not frame the slide as a request/response.
 3. **Architecture change** — one before/after diagram. The current state has
    the general hybrid frontend and specialized SFM frontend producing dense,
    sparse, or operator systems for one shared `CudaLinearSolverSession`.
@@ -73,4 +73,3 @@ general or SFM implementations.
   appendix.
 - No text overlaps or overflows after PDF rendering.
 - A content extraction pass shows no placeholders or missing sections.
-
