@@ -18,6 +18,22 @@ from gtsam.utils.test_case import GtsamTestCase
 
 class TestJacobianFactor(GtsamTestCase):
 
+    def test_dense_accessors(self):
+        """getA and getb remain dense arrays at the Python boundary."""
+        A = np.array([[1.0, 2.0], [3.0, 4.0]], order="F")
+        b = np.array([5.0, 6.0])
+        model = gtsam.noiseModel.Diagonal.Sigmas(np.ones(2))
+        factor = gtsam.JacobianFactor(0, A, b, model)
+
+        actual_A = factor.getA()
+        actual_b = factor.getb()
+        self.assertIsInstance(actual_A, np.ndarray)
+        self.assertIsInstance(actual_b, np.ndarray)
+        self.assertEqual(actual_A.shape, (2, 2))
+        self.assertEqual(actual_b.shape, (2,))
+        np.testing.assert_allclose(actual_A, A)
+        np.testing.assert_allclose(actual_b, b)
+
     def test_eliminate(self):
         # Recommended way to specify a matrix (see python/README)
         Ax2 = np.array(

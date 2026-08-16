@@ -497,6 +497,8 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
   gtsam::Vector error_vector(const gtsam::VectorValues& c) const;
 
   // Standard Interface
+  // These are dense wrapper results. The C++ methods return Eigen views, and
+  // the wrapper materializes them at the language boundary.
   gtsam::Matrix getA() const;
   gtsam::Vector getb() const;
   size_t rows() const;
