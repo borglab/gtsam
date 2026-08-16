@@ -304,15 +304,27 @@ class GTSAM_EXPORT RISAM {
   /// @name Static Helpers
   /// @{
  public:
-  /** @brief Constructs a shared_ptr of FACTOR_TYPE graduated factor for riSAM
-   * This identifies a factor as a potential outlier measurement.
-   * @param args: The arguments required to construct the FACTOR_TYPE
+  /** @brief Returns a factory that constructs FACTOR_TYPE graduated factors for
+   * riSAM, identifying them as potential outlier measurements.
+   *
+   * The graduation policy and the factor's own arguments are supplied
+   * separately, as MakeGraduated<FACTOR_TYPE>(graduation arguments)(factor
+   * arguments), so one factory can build many factors that share a graduation
+   * policy. Every constructed factor still carries its own graduation state.
+   *
+   * @param loss: The graduated robust loss applied to the factors
+   * @param scheduler: The control param $\mu$ scheduler for the factors
    */
-  template <class FACTOR_TYPE, class... Args>
-  static typename GenericGraduatedFactor<FACTOR_TYPE>::shared_ptr
-  MakeGraduated(Args&&... args) {
-    return std::make_shared<GenericGraduatedFactor<FACTOR_TYPE>>(
-        std::forward<Args>(args)...);
+  template <class FACTOR_TYPE>
+  static auto MakeGraduated(GraduatedFactor::RobustLoss::shared_ptr loss,
+                            GraduationScheduler::shared_ptr scheduler) {
+    return [loss = std::move(loss),
+            scheduler = std::move(scheduler)](auto&&... factorArgs) ->
+           typename GenericGraduatedFactor<FACTOR_TYPE>::shared_ptr {
+             return std::make_shared<GenericGraduatedFactor<FACTOR_TYPE>>(
+                 loss, scheduler,
+                 std::forward<decltype(factorArgs)>(factorArgs)...);
+           };
   }
   /// @}
 };
