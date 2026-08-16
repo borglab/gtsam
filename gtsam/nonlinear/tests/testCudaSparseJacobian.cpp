@@ -1482,11 +1482,18 @@ TEST(DeviceSparseJacobianNormalEquations,
       DownloadNormalEquationPattern(initialSystem, context.stream());
 
   normalEquations.prepareDamping(false, 0.25, 4.0, context.stream());
-  normalEquations.analyze(context.stream());
-  EXPECT_LONGS_EQUAL(1, normalEquations.analysisCount());
+  CudaLinearSolverOptions directOptions;
+  directOptions.backend = CudaLinearSolverType::Cudss;
+  CudaLinearSolverSession directSolver(directOptions);
+  directSolver.analyze(normalEquations.mutableSystem(),
+                       &normalEquations.deviceDelta(), context.stream());
+  EXPECT_LONGS_EQUAL(1, directSolver.stats().analysisCount);
 
   for (const double lambda : {0.0, 0.1, 1.0}) {
-    normalEquations.solveAndEvaluate(lambda, context.stream());
+    normalEquations.applyExplicitDamping(lambda, context.stream());
+    directSolver.solve(normalEquations.mutableSystem(),
+                       &normalEquations.deviceDelta(), context.stream());
+    normalEquations.evaluateSolvedDelta(context.stream());
     const DeviceSparseJacobianAttemptResult attempt =
         normalEquations.downloadAttemptResult(context.stream());
     const Matrix expectedHessian =
@@ -1555,10 +1562,17 @@ TEST(DeviceSparseJacobianNormalEquations,
 
   normalEquations.prepareDamping(true, minDiagonal, maxDiagonal,
                                  context.stream());
-  normalEquations.analyze(context.stream());
+  CudaLinearSolverOptions directOptions;
+  directOptions.backend = CudaLinearSolverType::Cudss;
+  CudaLinearSolverSession directSolver(directOptions);
+  directSolver.analyze(normalEquations.mutableSystem(),
+                       &normalEquations.deviceDelta(), context.stream());
 
   for (const double lambda : {0.2, 1.1}) {
-    normalEquations.solveAndEvaluate(lambda, context.stream());
+    normalEquations.applyExplicitDamping(lambda, context.stream());
+    directSolver.solve(normalEquations.mutableSystem(),
+                       &normalEquations.deviceDelta(), context.stream());
+    normalEquations.evaluateSolvedDelta(context.stream());
     const DeviceSparseJacobianAttemptResult attempt =
         normalEquations.downloadAttemptResult(context.stream());
     const Matrix expectedHessian =
@@ -1613,9 +1627,12 @@ TEST(DeviceSparseJacobianNormalEquations,
   normalEquations.uploadNumerics(firstHost, context.stream());
   normalEquations.formUndampedSystem(context.stream());
   normalEquations.prepareDamping(false, 0.0, 10.0, context.stream());
-  normalEquations.analyze(context.stream());
-  normalEquations.analyze(context.stream());
-  EXPECT_LONGS_EQUAL(1, normalEquations.analysisCount());
+  CudaLinearSolverOptions directOptions;
+  directOptions.backend = CudaLinearSolverType::Cudss;
+  CudaLinearSolverSession directSolver(directOptions);
+  directSolver.analyze(normalEquations.mutableSystem(),
+                       &normalEquations.deviceDelta(), context.stream());
+  EXPECT_LONGS_EQUAL(1, directSolver.stats().analysisCount);
 
   const DeviceSystemAddresses addresses =
       GetSystemAddresses(normalEquations.system());
@@ -1627,8 +1644,7 @@ TEST(DeviceSparseJacobianNormalEquations,
   normalEquations.uploadNumerics(secondHost, context.stream());
   normalEquations.formUndampedSystem(context.stream());
   normalEquations.prepareDamping(true, 0.5, 5.0, context.stream());
-  normalEquations.analyze(context.stream());
-  EXPECT_LONGS_EQUAL(1, normalEquations.analysisCount());
+  EXPECT_LONGS_EQUAL(1, directSolver.stats().analysisCount);
   CHECK(SystemAddressesEqual(normalEquations.system(), addresses));
 
   constexpr double lambda = 0.4;
@@ -1641,7 +1657,10 @@ TEST(DeviceSparseJacobianNormalEquations,
   Matrix secondDampedHessian =
       secondReference.jacobian.transpose() * secondReference.jacobian;
   secondDampedHessian += (lambda * diagonal).asDiagonal().toDenseMatrix();
-  normalEquations.solveAndEvaluate(lambda, context.stream());
+  normalEquations.applyExplicitDamping(lambda, context.stream());
+  directSolver.solve(normalEquations.mutableSystem(),
+                     &normalEquations.deviceDelta(), context.stream());
+  normalEquations.evaluateSolvedDelta(context.stream());
   const DeviceSparseJacobianAttemptResult secondAttempt =
       normalEquations.downloadAttemptResult(context.stream());
   const DenseAttemptReference secondExpected =
@@ -1661,9 +1680,15 @@ TEST(DeviceSparseJacobianNormalEquations,
   normalEquations.uploadNumerics(secondHost, context.stream());
   normalEquations.formUndampedSystem(context.stream());
   normalEquations.prepareDamping(true, 2.0, 2.0, context.stream());
-  normalEquations.analyze(context.stream());
-  EXPECT_LONGS_EQUAL(1, normalEquations.analysisCount());
-  normalEquations.solveAndEvaluate(lambda, context.stream());
+  CudaLinearSolverSession reinitializedSolver(directOptions);
+  reinitializedSolver.analyze(normalEquations.mutableSystem(),
+                              &normalEquations.deviceDelta(),
+                              context.stream());
+  EXPECT_LONGS_EQUAL(1, reinitializedSolver.stats().analysisCount);
+  normalEquations.applyExplicitDamping(lambda, context.stream());
+  reinitializedSolver.solve(normalEquations.mutableSystem(),
+                            &normalEquations.deviceDelta(), context.stream());
+  normalEquations.evaluateSolvedDelta(context.stream());
   const DeviceSparseJacobianAttemptResult reinitializedAttempt =
       normalEquations.downloadAttemptResult(context.stream());
   const Matrix reinitializedHessian =

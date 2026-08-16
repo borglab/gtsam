@@ -3,6 +3,7 @@
 #include <cuda_runtime_api.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/dllexport.h>
+#include <gtsam/linear/cuda/CudaLinearSolver.h>
 #include <gtsam/nonlinear/cuda/DevicePcgSolver.h>
 #include <gtsam/nonlinear/cuda/DeviceSparseNormalEquations.h>
 #include <gtsam/nonlinear/cuda/HostSparseJacobian.h>
@@ -33,6 +34,7 @@ struct DeviceNormalSolverOptions {
   DeviceNormalSolverBackend backend = DeviceNormalSolverBackend::Cudss;
   DevicePcgOptions pcg;
   std::vector<int> columnBlockOffsets;
+  std::vector<int> scalarPermutation;
 };
 
 struct LinearizedModelErrors {
@@ -145,16 +147,22 @@ class GTSAM_EXPORT DeviceSparseJacobianNormalEquations {
                       double maxDiagonal, cudaStream_t stream = nullptr);
   void analyze(cudaStream_t stream = nullptr);
   void solveAndEvaluate(double lambda, cudaStream_t stream = nullptr);
+  void applyExplicitDamping(double lambda, cudaStream_t stream = nullptr);
+  void evaluateSolvedDelta(cudaStream_t stream = nullptr);
   size_t analysisCount() const;
   DeviceSparseJacobianAttemptResult downloadAttemptResult(
       cudaStream_t stream = nullptr) const;
 
   const DeviceSparseJacobianProfile& profile() const;
+  const CudaLinearSolveStats& linearSolveStats() const;
+  const std::vector<int>& appliedScalarPermutation() const;
 
   // True only in cuDSS mode, where the normal matrix H is materialized;
   // system() throws std::logic_error otherwise.
   bool hasNormalMatrix() const;
+  DeviceSparseNormalEquations& mutableSystem();
   const DeviceSparseNormalEquations& system() const;
+  CudaDeviceArray<double>& deviceDelta();
 
  private:
   struct Impl;

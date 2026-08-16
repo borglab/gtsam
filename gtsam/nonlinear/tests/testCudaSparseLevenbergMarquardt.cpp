@@ -989,6 +989,33 @@ TEST(CudaSparseLevenbergMarquardt,
 }
 
 TEST(CudaSparseLevenbergMarquardt,
+     AppliesCustomGtsamOrderingToCudssWithoutChangingObjective) {
+  if (!CanRunCudaSparseLm()) return;
+  const Pose2LmProblem problem = MakePose2LmProblem();
+
+  CudaSparseLevenbergMarquardtParams automaticParams;
+  LevenbergMarquardtParams::SetCeresDefaults(&automaticParams);
+  automaticParams.maxIterations = 5;
+  CudaSparseLevenbergMarquardtOptimizer automaticOptimizer(
+      problem.graph, problem.initial, automaticParams);
+  const Values automaticValues = automaticOptimizer.optimize();
+
+  CudaSparseLevenbergMarquardtParams orderedParams = automaticParams;
+  orderedParams.setOrdering(Ordering{kPose2, kPose0, kPose1});
+  CudaSparseLevenbergMarquardtOptimizer orderedOptimizer(
+      problem.graph, problem.initial, orderedParams);
+  const Values orderedValues = orderedOptimizer.optimize();
+
+  EXPECT(assert_equal(automaticValues, orderedValues, 1e-9));
+  DOUBLES_EQUAL(automaticOptimizer.error(), orderedOptimizer.error(), 1e-12);
+  EXPECT(!automaticOptimizer.result()
+              .linearSolveStats.userOrderingApplied);
+  EXPECT(orderedOptimizer.result().linearSolveStats.userOrderingApplied);
+  EXPECT(std::vector<int>({6, 7, 8, 0, 1, 2, 3, 4, 5}) ==
+         orderedOptimizer.result().appliedScalarPermutation);
+}
+
+TEST(CudaSparseLevenbergMarquardt,
      NonFiniteJacobianIsFatalWithStageIndexAndType) {
   if (!CanRunCudaSparseLm()) return;
 

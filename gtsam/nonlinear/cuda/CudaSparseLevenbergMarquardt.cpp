@@ -8,6 +8,8 @@
 #include <gtsam/nonlinear/cuda/DeviceSparseJacobianNormalEquations.h>
 #include <gtsam/nonlinear/cuda/HostSparseJacobian.h>
 #include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
+#include <gtsam/linear/cuda/CudaBlockOrdering.h>
+#include <gtsam/linear/cuda/CudaLinearSolver.h>
 
 #include <algorithm>
 #include <chrono>
@@ -126,6 +128,7 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
   std::unique_ptr<HostSparseJacobian> host;
   std::unique_ptr<StreamingSparseJacobianLinearizer> linearizer;
   std::unique_ptr<DeviceSparseJacobianNormalEquations> device;
+  std::unique_ptr<CudaLinearSolverSession> linearSession;
 
   Impl(const NonlinearFactorGraph& inputGraph, const Values& inputValues,
        const CudaSparseLevenbergMarquardtParams& inputParameters)
@@ -179,6 +182,8 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
             ? static_cast<size_t>(device->system().nonzeros())
             : 0;
     const DeviceSparseJacobianProfile& deviceProfile = device->profile();
+    optimizationResult.linearSolveStats =
+        linearSession ? linearSession->stats() : device->linearSolveStats();
     CudaSparseLmTransferCounts& transfers = optimizationResult.transfers;
     transfers.patternH2dBytes = deviceProfile.patternH2dBytes;
     transfers.numericH2dBytes = deviceProfile.numericH2dBytes;
@@ -213,6 +218,7 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
   }
 
   void clearCudaState() {
+    linearSession.reset();
     device.reset();
     linearizer.reset();
     host.reset();
@@ -228,7 +234,9 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
     optimizationResult.lambdaAttempts = state.totalInnerAttempts;
     optimizationResult.finalError = currentError;
     optimizationResult.finalLambda = state.lambda;
-    optimizationResult.cudssAnalyses = device ? device->analysisCount() : 0;
+    optimizationResult.cudssAnalyses =
+        linearSession ? linearSession->stats().analysisCount
+                      : (device ? device->analysisCount() : 0);
   }
 
   const Values& finish(CudaSparseLmTerminationReason reason,
@@ -346,6 +354,22 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
 
     DeviceNormalSolverOptions solverOptions;
     solverOptions.backend = deviceBackend;
+    if (parameters.ordering) {
+      if (deviceBackend != DeviceNormalSolverBackend::Cudss) {
+        throw std::invalid_argument(
+            "CUDA sparse LM GTSAM ordering is supported only by cuDSS");
+      }
+      CudaBlockLayout cudaBlocks;
+      cudaBlocks.reserve(layout->blocks().size());
+      for (const SparseJacobianColumnBlock& block : layout->blocks()) {
+        cudaBlocks.push_back(
+            {block.key, block.columnBegin, block.dimension});
+      }
+      solverOptions.scalarPermutation =
+          CompileCudaScalarPermutation(cudaBlocks, *parameters.ordering);
+      optimizationResult.appliedScalarPermutation =
+          solverOptions.scalarPermutation;
+    }
     if (deviceBackend == DeviceNormalSolverBackend::Pcg) {
       solverOptions.pcg.maxIterations = parameters.pcg.maxIterations;
       solverOptions.pcg.relativeTolerance = parameters.pcg.relativeTolerance;
@@ -378,6 +402,14 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
       device = std::make_unique<DeviceSparseJacobianNormalEquations>();
       device->initialize(*plan, context->stream(), parameters.collectTiming,
                          solverOptions);
+      if (deviceBackend == DeviceNormalSolverBackend::Cudss) {
+        CudaLinearSolverOptions linearOptions;
+        linearOptions.backend = CudaLinearSolverType::Cudss;
+        linearOptions.useUserOrdering =
+            !solverOptions.scalarPermutation.empty();
+        linearSession =
+            std::make_unique<CudaLinearSolverSession>(linearOptions);
+      }
     });
     AccumulateTiming(parameters.collectTiming, stageStart,
                      &optimizationResult.timings.persistentSetupWall);
@@ -440,8 +472,22 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
                                context->stream());
       });
 
-      RunCudaStage("cuDSS analysis",
-                   [&] { device->analyze(context->stream()); });
+      RunCudaStage("linear analysis", [&] {
+        if (linearSession &&
+            linearSession->stats().analysisCount == 0) {
+          if (solverOptions.scalarPermutation.empty()) {
+            linearSession->analyze(device->mutableSystem(),
+                                   &device->deviceDelta(), context->stream());
+          } else {
+            linearSession->analyze(device->mutableSystem(),
+                                   &device->deviceDelta(),
+                                   solverOptions.scalarPermutation,
+                                   context->stream());
+          }
+        } else if (!linearSession) {
+          device->analyze(context->stream());
+        }
+      });
 
       bool accepted = false;
       CudaSparseLmTerminationReason innerTermination =
@@ -453,8 +499,15 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
         attemptRecord.attempt = attemptWithinOuter++;
         attemptRecord.lambda = state.lambda;
 
-        RunCudaStage("cuDSS factorization and solve", [&] {
-          device->solveAndEvaluate(state.lambda, context->stream());
+        RunCudaStage("CUDA linear solve", [&] {
+          if (linearSession) {
+            device->applyExplicitDamping(state.lambda, context->stream());
+            linearSession->solve(device->mutableSystem(),
+                                 &device->deviceDelta(), context->stream());
+            device->evaluateSolvedDelta(context->stream());
+          } else {
+            device->solveAndEvaluate(state.lambda, context->stream());
+          }
         });
 
         DeviceSparseJacobianAttemptResult deviceAttempt = RunCudaStage(

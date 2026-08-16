@@ -5,6 +5,7 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/cuda/StreamingSparseJacobianLinearizer.h>
+#include <gtsam/linear/cuda/CudaLinearSolver.h>
 
 #include <cstddef>
 #include <memory>
@@ -23,9 +24,8 @@ class GTSAM_EXPORT CudaSparseLevenbergMarquardtParams
   using OptimizerType = CudaSparseLevenbergMarquardtOptimizer;
 
   // The CUDA path honors LM damping, trust-region, termination, error,
-  // iteration-hook, and attempt-trace controls. CPU ordering/linear-solver
-  // selection, verbosity, and CSV logging apply only if execution falls back
-  // to ordinary CPU LM; cuDSS chooses the CUDA sparse ordering internally.
+  // iteration-hook, and attempt-trace controls. A supplied GTSAM Ordering is
+  // expanded from variable keys to scalar columns and passed to cuDSS.
 
   bool fallbackOnUnsupported = true;
   bool collectTiming = false;
@@ -174,6 +174,8 @@ struct CudaSparseLevenbergMarquardtResult {
   CudaSparseLmSystemSize systemSize;
   CudaSparseLmTransferCounts transfers;
   CudaSparseLmStageTimings timings;
+  CudaLinearSolveStats linearSolveStats;
+  std::vector<int> appliedScalarPermutation;
   std::vector<CudaSparseLmAttemptRecord> attemptTrace;
 };
 

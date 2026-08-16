@@ -1,7 +1,6 @@
 #include <cusparse.h>
 #include <gtsam/base/cuda/CudaDeviceArray.h>
 #include <gtsam/base/cuda/CudaPinnedHostArray.h>
-#include <gtsam/nonlinear/cuda/CudssLinearSolver.h>
 #include <gtsam/nonlinear/cuda/DevicePcgSolver.h>
 #include <gtsam/nonlinear/cuda/DeviceSparseJacobianNormalEquations.h>
 
@@ -231,6 +230,8 @@ struct DeviceSparseJacobianNormalEquations::Impl {
 
   DeviceNormalSolverBackend backend = DeviceNormalSolverBackend::Cudss;
   DeviceNormalSolverOptions solverOptions;
+  CudaLinearSolveStats linearStats;
+  std::vector<int> appliedPermutation;
 
   CudaDeviceArray<int> jRowPointers;
   CudaDeviceArray<int> jColumnIndices;
@@ -248,7 +249,6 @@ struct DeviceSparseJacobianNormalEquations::Impl {
   CudaDeviceArray<double> squaredTerms;
   CudaDeviceArray<double> oldError;
   CudaDeviceArray<double> newError;
-  std::optional<CudssSpdSolver> solver;
   std::optional<DevicePcgSolver> pcgSolver;
   // PCG mode stores g = Jᵀb here; cuDSS mode keeps it in
   // normalEquations.rhs().
@@ -516,8 +516,7 @@ struct DeviceSparseJacobianNormalEquations::Impl {
                                         gDescriptor && deltaDescriptor &&
                                         jDeltaDescriptor;
     const bool backendDescriptorsValid =
-        cudssMode ? hDescriptor && reuseDescriptor && solver.has_value()
-                  : pcgSolver.has_value();
+        cudssMode ? hDescriptor && reuseDescriptor : pcgSolver.has_value();
     if (!sharedSizesMatch || !backendSizesMatch || !sharedPointersMatch ||
         !backendPointersMatch || !sharedDescriptorsValid ||
         !backendDescriptorsValid) {
@@ -606,6 +605,8 @@ struct DeviceSparseJacobianNormalEquations::Impl {
   void prepare(bool diagonalDamping, double minDiagonal, double maxDiagonal,
                cudaStream_t suppliedStream);
   void analyzeSystem(cudaStream_t suppliedStream);
+  void applyExplicitDamping(double lambda, cudaStream_t suppliedStream);
+  void evaluateSolvedDelta(cudaStream_t suppliedStream);
   void solveAttempt(double lambda, cudaStream_t suppliedStream);
   DeviceSparseJacobianAttemptResult downloadAttempt(
       cudaStream_t suppliedStream);
@@ -971,7 +972,6 @@ void DeviceSparseJacobianNormalEquations::Impl::setup(
     if (backend == DeviceNormalSolverBackend::Cudss) {
       const DiscoveredPattern discovered = discoverNormalPattern();
       createStableNormalStorage(discovered);
-      solver.emplace();
     } else {
       setupPcgStorage();
     }
@@ -1162,20 +1162,60 @@ void DeviceSparseJacobianNormalEquations::Impl::analyzeSystem(
     // analysisCount() semantics intact.
     analyzed = true;
     ++completedAnalysisCount;
+    linearStats.backend = CudaLinearSolverType::Pcg;
+    ++linearStats.analysisCount;
     return;
   }
 
-  try {
-    const size_t analysisSpan = beginEventSpan(&profile.cudssAnalysis);
-    solver->analyze(normalEquations, &delta, stream);
-    endEventSpan(analysisSpan);
-    validatePointers();
-    analyzed = true;
-    ++completedAnalysisCount;
-  } catch (...) {
-    synchronizeNoThrow();
-    throw;
+  // Direct structural analysis belongs to the shared linear session.
+  analyzed = true;
+  ++completedAnalysisCount;
+}
+
+void DeviceSparseJacobianNormalEquations::Impl::applyExplicitDamping(
+    double lambda, cudaStream_t suppliedStream) {
+  validateStream(suppliedStream);
+  validatePointers();
+  if (backend != DeviceNormalSolverBackend::Cudss) {
+    throw std::logic_error(
+        "explicit damping requires the materialized cuDSS system");
   }
+  if (!std::isfinite(lambda) || lambda < 0.0 || !formed ||
+      !dampingPrepared) {
+    throw std::logic_error(
+        "explicit damping requires a formed system and prepared damping");
+  }
+  const size_t stageSpan = beginEventSpan(&profile.dampingApplication);
+  ApplyDampingKernel<<<KernelGridSize(jacobianColumns), kKernelBlockSize, 0,
+                       stream>>>(
+      normalEquations.values().data(), hDiagonalOffsets.data(),
+      undampedDiagonal.data(), dampingDiagonal.data(), jacobianColumns,
+      lambda);
+  CheckCuda(cudaGetLastError(), "damped H diagonal write launch");
+  endEventSpan(stageSpan);
+  attemptReady = false;
+}
+
+void DeviceSparseJacobianNormalEquations::Impl::evaluateSolvedDelta(
+    cudaStream_t suppliedStream) {
+  validateStream(suppliedStream);
+  validatePointers();
+  const size_t newErrorSpan = beginEventSpan(&profile.newModelError);
+  CheckCusparse(cusparseSpMV(handle, kNoTranspose, &kAlpha, jDescriptor,
+                             deltaDescriptor, &kBeta, jDeltaDescriptor,
+                             CUDA_R_64F, kSpMvAlgorithm, spmvBuffer.data()),
+                "J*delta SpMV");
+  NewErrorTermsKernel<<<KernelGridSize(jacobianRows), kKernelBlockSize, 0,
+                        stream>>>(jDelta.data(), b.data(), jacobianRows,
+                                  squaredTerms.data());
+  CheckCuda(cudaGetLastError(), "new model-error terms launch");
+  size_t reductionBytes = cubReductionBuffer.size();
+  CheckCuda(cub::DeviceReduce::Sum(cubReductionBuffer.data(), reductionBytes,
+                                   squaredTerms.data(), newError.data(),
+                                   jacobianRows, stream),
+            "new model-error reduction");
+  endEventSpan(newErrorSpan);
+  attemptReady = true;
 }
 
 void DeviceSparseJacobianNormalEquations::Impl::solveAttempt(
@@ -1206,33 +1246,8 @@ void DeviceSparseJacobianNormalEquations::Impl::solveAttempt(
   attemptReady = false;
   try {
     if (backend == DeviceNormalSolverBackend::Cudss) {
-      // Always reconstruct the diagonal from the saved undamped values so LM
-      // retries never accumulate damping from an earlier lambda.
-      size_t stageSpan = beginEventSpan(&profile.dampingApplication);
-      ApplyDampingKernel<<<KernelGridSize(jacobianColumns), kKernelBlockSize,
-                           0, stream>>>(
-          normalEquations.values().data(), hDiagonalOffsets.data(),
-          undampedDiagonal.data(), dampingDiagonal.data(), jacobianColumns,
-          lambda);
-      CheckCuda(cudaGetLastError(), "damped H diagonal write launch");
-      endEventSpan(stageSpan);
-
-      stageSpan = beginEventSpan(&profile.cudssFactorAndSolve);
-      CudssSpdSolveProfile solverProfile;
-      try {
-        solver->solve(normalEquations, &delta, stream,
-                      collectProfile ? &solverProfile : nullptr);
-      } catch (...) {
-        if (collectProfile) {
-          profile.cudssDataInfoBoundaryWall +=
-              solverProfile.dataInfoBoundaryWall;
-        }
-        throw;
-      }
-      if (collectProfile) {
-        profile.cudssDataInfoBoundaryWall += solverProfile.dataInfoBoundaryWall;
-      }
-      endEventSpan(stageSpan);
+      throw std::logic_error(
+          "direct solve must be dispatched by CudaLinearSolverSession");
     } else {
       pcgSolver->solve(lambda, gradient, dampingDiagonal, &delta, stream);
       const DevicePcgProfile& pcgProfile = pcgSolver->profile();
@@ -1240,24 +1255,14 @@ void DeviceSparseJacobianNormalEquations::Impl::solveAttempt(
       profile.pcgIterationsTotal = pcgProfile.iterationsTotal;
       profile.pcgSolveCount = pcgProfile.solveCount;
       profile.pcgMaxIterationHits = pcgProfile.maxIterationHits;
+      linearStats.backend = CudaLinearSolverType::Pcg;
+      linearStats.solveCount = pcgProfile.solveCount;
+      linearStats.pcgIterationsTotal = pcgProfile.iterationsTotal;
+      linearStats.pcgMaxIterationHits = pcgProfile.maxIterationHits;
+      linearStats.lastPcgConverged = pcgSolver->lastSolveStats().converged;
     }
 
-    const size_t newErrorSpan = beginEventSpan(&profile.newModelError);
-    CheckCusparse(cusparseSpMV(handle, kNoTranspose, &kAlpha, jDescriptor,
-                               deltaDescriptor, &kBeta, jDeltaDescriptor,
-                               CUDA_R_64F, kSpMvAlgorithm, spmvBuffer.data()),
-                  "J*delta SpMV");
-    NewErrorTermsKernel<<<KernelGridSize(jacobianRows), kKernelBlockSize, 0,
-                          stream>>>(jDelta.data(), b.data(), jacobianRows,
-                                    squaredTerms.data());
-    CheckCuda(cudaGetLastError(), "new model-error terms launch");
-    size_t reductionBytes = cubReductionBuffer.size();
-    CheckCuda(cub::DeviceReduce::Sum(cubReductionBuffer.data(), reductionBytes,
-                                     squaredTerms.data(), newError.data(),
-                                     jacobianRows, stream),
-              "new model-error reduction");
-    endEventSpan(newErrorSpan);
-    attemptReady = true;
+    evaluateSolvedDelta(stream);
   } catch (...) {
     synchronizeNoThrow();
     throw;
@@ -1429,6 +1434,24 @@ void DeviceSparseJacobianNormalEquations::solveAndEvaluate(
   impl_->solveAttempt(lambda, stream);
 }
 
+void DeviceSparseJacobianNormalEquations::applyExplicitDamping(
+    double lambda, cudaStream_t stream) {
+  if (!impl_) {
+    throw std::logic_error(
+        "DeviceSparseJacobianNormalEquations is not initialized");
+  }
+  impl_->applyExplicitDamping(lambda, stream);
+}
+
+void DeviceSparseJacobianNormalEquations::evaluateSolvedDelta(
+    cudaStream_t stream) {
+  if (!impl_) {
+    throw std::logic_error(
+        "DeviceSparseJacobianNormalEquations is not initialized");
+  }
+  impl_->evaluateSolvedDelta(stream);
+}
+
 size_t DeviceSparseJacobianNormalEquations::analysisCount() const {
   return impl_ ? impl_->completedAnalysisCount : 0;
 }
@@ -1449,8 +1472,37 @@ DeviceSparseJacobianNormalEquations::profile() const {
   return impl_ ? impl_->profile : emptyProfile;
 }
 
+const CudaLinearSolveStats&
+DeviceSparseJacobianNormalEquations::linearSolveStats() const {
+  static const CudaLinearSolveStats emptyStats;
+  return impl_ ? impl_->linearStats : emptyStats;
+}
+
+const std::vector<int>&
+DeviceSparseJacobianNormalEquations::appliedScalarPermutation() const {
+  static const std::vector<int> emptyPermutation;
+  return impl_ ? impl_->appliedPermutation : emptyPermutation;
+}
+
 bool DeviceSparseJacobianNormalEquations::hasNormalMatrix() const {
   return impl_ && impl_->backend == DeviceNormalSolverBackend::Cudss;
+}
+
+DeviceSparseNormalEquations&
+DeviceSparseJacobianNormalEquations::mutableSystem() {
+  if (!impl_ || impl_->backend != DeviceNormalSolverBackend::Cudss) {
+    throw std::logic_error(
+        "DeviceSparseJacobianNormalEquations has no explicit normal system");
+  }
+  return impl_->normalEquations;
+}
+
+CudaDeviceArray<double>& DeviceSparseJacobianNormalEquations::deviceDelta() {
+  if (!impl_) {
+    throw std::logic_error(
+        "DeviceSparseJacobianNormalEquations is not initialized");
+  }
+  return impl_->delta;
 }
 
 const DeviceSparseNormalEquations& DeviceSparseJacobianNormalEquations::system()
