@@ -1,0 +1,52 @@
+
+Processing BAL file: /home/ubuntu/cu-gtsam/examples/Data/dubrovnik-135-90642-pre.txt
+  sparse-Jacobian CUDA LM comparison
+  untimed warm-ups: 1 ordinary CPU, 1 specialized CUDA, 1 generic sparse CUDA
+  GTSAM_USE_TBB: yes
+  factors: 553336, residual rows: 1106672, scalar columns: 273141, J.nnz: 13280064, H.nnz: 30706857
+  ordinary GTSAM LM total: 7.25550748 s (error 378041.33, iterations 2)
+  existing CUDA SFM specialized LM total: 0.444924172 s (error 378041.33, iterations 2)
+  generic sparse-Jacobian CUDA LM total: 3.07734074 s (error 378041.33, accepted 2, attempts 3)
+  specialized/ordinary objective difference: 5.70435077e-09
+  generic/ordinary objective difference: 2.42143869e-08 (shared tolerance 0.0037804133)
+  generic sparse-Jacobian CUDA LM result:
+    termination: small-cost-change
+    outer linearizations: 3, iterations: 2, accepted steps: 2, lambda attempts: 3, cuDSS analyses: 1
+    final lambda: 1.11111111e-05
+    timing note: total wall contains the CUDA prefix; persistent setup contains device initialization; cuDSS DATA_INFO overlaps factor + solve; worker CPU sums can exceed wall time. Compatibility aggregates are omitted below.
+    stage breakdown:
+      optimizer internal total wall 3.00325655 s (100%)
+      initial nonlinear error       0.009500589 s (0.316342904%)
+      symbolic plan                 0.094353077 s (3.14169221%)
+      persistent setup wall         0.661243788 s (22.0175592%)
+      device initialize wall        0.555121947 s (18.4840002%)
+      pattern H2D                   0.0792899489 s (2.64013239%)
+      transpose/H structure setup   0.10684147 s (3.5575206%)
+      setup D2H                     0.047829567 s (1.59259011%)
+      host zero                     0.03857703 s (1.28450665%)
+      factor linearize + pack wall  0.198795695 s (6.61933776%)
+      factor linearize CPU sum      0.773554765 s (25.7571989%)
+      CSR packing CPU sum           0.336966116 s (11.2200243%)
+      numeric H2D                   0.02026544 s (0.674782178%)
+      transpose update              0.00385344005 s (0.12830872%)
+      J^T J                         0.00651878405 s (0.217057182%)
+      J^T b                         0.000433152005 s (0.014422744%)
+      diagonal extraction           6.75840005e-05 s (0.00225035722%)
+      old model error               6.45119995e-05 s (0.00214806822%)
+      damping preparation           2.15040003e-05 s (0.000716022755%)
+      cuDSS analysis                0 s (0%)
+      damping application           0.000156608 s (0.00521460613%)
+      cuDSS factor + solve          0 s (0%)
+      cuDSS DATA_INFO boundary      0 s (0%)
+      new model error               0.000474111989 s (0.0157865963%)
+      attempt D2H                   0.001273728 s (0.0424115615%)
+      attempt host result build     0.001855169 s (0.0617719122%)
+      Values retract                0.157689278 s (5.25060964%)
+      nonlinear trial error         0.055310697 s (1.84169071%)
+    transfer breakdown:
+      pattern H2D                   0.0792899489 s (2.64013239%) [182559508 B, 2.14430446 GiB/s]
+      numeric H2D                   0.02026544 s (0.674782178%) [345281664 B, 15.8678326 GiB/s]
+      setup D2H                     0.047829567 s (1.59259011%) [247839992 B, 4.82586388 GiB/s]
+      attempt D2H                   0.001273728 s (0.0424115615%) [6555432 B, 4.79319118 GiB/s]
+      total H2D: 527841172 B
+      total D2H: 254395424 B
