@@ -135,7 +135,7 @@ struct SummaryStatistics {
 void ApplyMatrixConfigurationDefaults(RunOptions* options) {
   if (!options || options->gpuSolver != "pcg") return;
   if (options->pcgTolerance == 0.0) options->pcgTolerance = 1e-10;
-  if (options->pcgMaxIterations == 0) options->pcgMaxIterations = 1000;
+  if (options->pcgMaxIterations == 0) options->pcgMaxIterations = 5000;
   if (options->objectiveTolerance == kObjectiveTolerance) {
     options->objectiveTolerance = 1e-3;
   }
@@ -557,6 +557,22 @@ bool Throws(Function&& function) {
   }
 }
 
+void ValidatePcgBenchmarkRun(const RawRun& run) {
+  if (run.linearSolveStats.pcgMaxIterationHits != 0) {
+    throw std::runtime_error(
+        "PCG benchmark reached its iteration cap in one or more solves");
+  }
+  if (run.linearSolveStats.pcgBreakdownCount != 0 ||
+      run.linearSolveStats.lastPcgBreakdown) {
+    throw std::runtime_error("PCG benchmark encountered a solver breakdown");
+  }
+  if (run.linearSolveStats.solveCount == 0 ||
+      !run.linearSolveStats.lastPcgConverged) {
+    throw std::runtime_error(
+        "PCG benchmark did not finish with a converged solve");
+  }
+}
+
 int RunSelfTest() {
   const SummaryStatistics odd = Summarize({5.0, 1.0, 4.0, 2.0, 3.0});
   if (odd.median != 3.0 || odd.mean != 3.0 ||
@@ -626,6 +642,35 @@ int RunSelfTest() {
   if (!upstreamOptions.pose2UpstreamSettings) {
     throw std::runtime_error(
         "Pose2 upstream-settings option parsing self-test failed");
+  }
+  RunOptions matrixPcgOptions;
+  matrixPcgOptions.gpuSolver = "pcg";
+  ApplyMatrixConfigurationDefaults(&matrixPcgOptions);
+  if (matrixPcgOptions.pcgTolerance != 1e-10 ||
+      matrixPcgOptions.pcgMaxIterations != 5000 ||
+      matrixPcgOptions.objectiveTolerance != 1e-3) {
+    throw std::runtime_error("PCG matrix defaults self-test failed");
+  }
+  RawRun convergedPcg;
+  convergedPcg.linearSolveStats.solveCount = 1;
+  convergedPcg.linearSolveStats.lastPcgConverged = true;
+  ValidatePcgBenchmarkRun(convergedPcg);
+  if (!Throws([&] {
+        RawRun capped = convergedPcg;
+        capped.linearSolveStats.pcgMaxIterationHits = 1;
+        ValidatePcgBenchmarkRun(capped);
+      }) ||
+      !Throws([&] {
+        RawRun broken = convergedPcg;
+        broken.linearSolveStats.pcgBreakdownCount = 1;
+        ValidatePcgBenchmarkRun(broken);
+      }) ||
+      !Throws([&] {
+        RawRun unconverged = convergedPcg;
+        unconverged.linearSolveStats.lastPcgConverged = false;
+        ValidatePcgBenchmarkRun(unconverged);
+      })) {
+    throw std::runtime_error("PCG benchmark gate self-test failed");
   }
   if (!Throws([] {
         const char* args[] = {"timeCudaSparseLM", "--repeats", "0"};
@@ -939,6 +984,7 @@ RawRun RunGpu(const LoadedWorkload& workload, size_t repetition,
   run.linearSolveStats = result.linearSolveStats;
   run.attempts = result.attemptTrace;
   ValidateRawRun(run);
+  if (options.gpuSolver == "pcg") ValidatePcgBenchmarkRun(run);
   return run;
 }
 

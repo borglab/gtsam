@@ -140,12 +140,13 @@ compute COLAMD at key/block level, expand it to scalar indices through
 permutation.
 
 The named PCG benchmark rows use a correctness-oriented iterative profile
-(`relativeTolerance=1e-10` and at most 1000 iterations; the general benchmark
-requires 0.1% final-objective agreement). These are benchmark controls, not
-changes to the public `CudaPcgOptions` defaults. An inexact PCG solve can
-legitimately take a different LM trajectory, so comparing it with the direct
-row at the direct solver's `1e-8` objective tolerance is not a meaningful
-pass/fail gate.
+(`relativeTolerance=1e-10` and at most 5000 iterations; the general benchmark
+requires 0.1% final-objective agreement). The runners reject any row in which
+an inner solve reaches that cap, breaks down, or the last solve does not
+converge. These are benchmark controls, not changes to the public
+`CudaPcgOptions` defaults. An inexact PCG solve can legitimately take a
+different LM trajectory, so comparing it with the direct row at the direct
+solver's `1e-8` objective tolerance is not a meaningful pass/fail gate.
 
 In CUDA builds without cuDSS, the same SFM benchmark executable still exposes
 Schur+dense, Schur+PCG, and full-normal+PCG. Only the cuDSS rows are rejected.
