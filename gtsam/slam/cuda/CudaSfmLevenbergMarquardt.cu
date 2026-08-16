@@ -161,6 +161,22 @@ std::vector<Key> DefaultPointKeys(const SfmData& data) {
   return keys;
 }
 
+CudaBlockLayout FullSfmBlockLayout(const std::vector<Key>& cameraKeys,
+                                   const std::vector<Key>& pointKeys) {
+  CudaBlockLayout blocks;
+  blocks.reserve(cameraKeys.size() + pointKeys.size());
+  int offset = 0;
+  for (const Key key : cameraKeys) {
+    blocks.push_back({key, offset, 9});
+    offset += 9;
+  }
+  for (const Key key : pointKeys) {
+    blocks.push_back({key, offset, 3});
+    offset += 3;
+  }
+  return blocks;
+}
+
 std::string NormalizeLinearSolverName(const std::string& solver) {
   std::string normalized;
   normalized.reserve(solver.size());
@@ -823,7 +839,7 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
   DeviceSparseNormalEquations system;
   CudaDeviceArray<double> delta;
   stageStart = Clock::now();
-  CudssSpdSolver solver;
+  std::unique_ptr<CudaLinearSolverSession> fullNormalSession;
   result.cudssSolverConstructionElapsed = ElapsedSince(stageStart);
   stageStart = Clock::now();
   CudaSfmDenseSchurSolver denseSchurSolver;
@@ -860,6 +876,15 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
     }
   }
   if (params.linearSolver == CudaSfmLinearSolverType::CudssFullNormal) {
+    CudaLinearSolverOptions fullOptions;
+    fullOptions.backend = CudaLinearSolverType::Cudss;
+    fullOptions.useUserOrdering = !params.ordering.empty();
+    fullNormalSession =
+        std::make_unique<CudaLinearSolverSession>(fullOptions);
+    if (fullOptions.useUserOrdering) {
+      result.appliedScalarPermutation = CompileCudaScalarPermutation(
+          FullSfmBlockLayout(cameraKeys, pointKeys), params.ordering);
+    }
     stageStart = Clock::now();
     const CudaBalCsrStructure structure = CudaBalCsrStructure::FromSfmData(data);
     result.csrStructureElapsed = ElapsedSince(stageStart);
@@ -1033,7 +1058,13 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
 
         if (!solverAnalyzed) {
           stageStart = DetailedProfileStart(detailedProfiling);
-          solver.analyze(system, &delta, context.stream());
+          if (params.ordering.empty()) {
+            fullNormalSession->analyze(system, &delta, context.stream());
+          } else {
+            fullNormalSession->analyze(system, &delta,
+                                       result.appliedScalarPermutation,
+                                       context.stream());
+          }
           const double analyzeElapsed =
               DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
                                             context.stream());
@@ -1045,7 +1076,7 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
           solverAnalyzed = true;
         }
         stageStart = DetailedProfileStart(detailedProfiling);
-        solver.solve(system, &delta, context.stream());
+        fullNormalSession->solve(system, &delta, context.stream());
         attemptProfile.cudssSolveElapsed =
             DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
                                           context.stream());
@@ -1175,6 +1206,8 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
   result.finalLambda = lambda;
   if (reducedSession) {
     result.linearSolveStats = reducedSession->stats();
+  } else if (fullNormalSession) {
+    result.linearSolveStats = fullNormalSession->stats();
   }
   if (executionOptions.downloadOptimizedValues) {
     stageStart = Clock::now();

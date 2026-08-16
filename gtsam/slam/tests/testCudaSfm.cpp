@@ -1402,6 +1402,29 @@ TEST(CudaSfmLevenbergMarquardt, ImplicitSchurPcgMatchesDense) {
   CHECK(pcg.linearSolveStats.pcgIterationsTotal > 0);
 }
 
+TEST(CudaSfmLevenbergMarquardt,
+     FullNormalCudssAppliesCameraAndPointOrdering) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+  CudaSfmLevenbergMarquardtParams params =
+      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  params.linearSolver = CudaSfmLinearSolverType::CudssFullNormal;
+  params.maxIterations = 1;
+  params.ordering = Ordering{P(3), C(1), P(0), C(0), P(1), P(2)};
+
+  const CudaSfmLevenbergMarquardtResult result =
+      OptimizeCudaSfmWithoutValueDownload(data, params);
+  CHECK(result.linearSolveStats.userOrderingApplied);
+  EXPECT_LONGS_EQUAL(1, result.linearSolveStats.analysisCount);
+  std::vector<int> expected;
+  for (const int scalar : {27, 28, 29, 9, 10, 11, 12, 13, 14, 15, 16, 17,
+                           18, 19, 20, 0, 1, 2, 3, 4, 5, 6, 7, 8, 21, 22,
+                           23, 24, 25, 26}) {
+    expected.push_back(scalar);
+  }
+  EXPECT(expected == result.appliedScalarPermutation);
+}
+
 TEST(CudaSfmFactorGraphConversion,
      ConvertsGeneralSfmFactorsWithArbitraryKeys) {
   const SfmData measuredData = makeTrueBalLikeData();
