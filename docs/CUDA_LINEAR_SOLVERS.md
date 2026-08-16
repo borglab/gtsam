@@ -10,9 +10,9 @@ letting the general optimizer and SFM use the same solver lifecycle and stats.
 
 - General CUDA LM linearizes arbitrary supported GTSAM factors into a sparse
   Jacobian. It owns factor evaluation, damping policy, retraction, nonlinear
-  error, and model acceptance. Its cuDSS direct path dispatches the prepared
-  normal equations through `CudaLinearSolverSession`; its established
-  matrix-free PCG kernels remain optimized for the sparse-Jacobian layout.
+  error, and model acceptance. Both its cuDSS normal-equation system and its
+  matrix-free `J^T J + lambda D` operator dispatch through
+  `CudaLinearSolverSession`.
 - SFM CUDA LM owns projection linearization, Schur/full-normal construction,
   point recovery, retraction, and LM acceptance. `CudaSfmSchurProblem` keeps
   projection Jacobians alive once per outer iteration and rebuilds only the
@@ -39,10 +39,13 @@ Full-normal + Pcg currently applies that explicit sparse SPD system with a
 Jacobi preconditioner. It is primarily a formulation/control baseline; Schur
 + Pcg avoids the larger system and is expected to be faster for BA.
 
-The default remains Schur + DenseCholesky for compatibility. New code should
-set `CudaSfmLevenbergMarquardtParams::formulation` and `linear.backend`
-independently. Legacy spellings such as `dense-schur` and
-`cudss-full-normal` map onto those two axes.
+The default remains Schur + DenseCholesky for compatibility. The specialized
+parameter type inherits `LevenbergMarquardtParams`; therefore iteration,
+lambda, convergence, damping, verbosity, and optional ordering have the same
+source of truth as ordinary GTSAM LM. New code sets only the CUDA-specific
+axes, `formulation` and `linear.backend`, independently. Legacy spellings such
+as `dense-schur` and `cudss-full-normal` map onto those two axes without storing
+a second combined solver enum.
 
 ## GTSAM ordering and cuDSS
 
@@ -104,3 +107,27 @@ BAL examples:
   --cuda-linear-solver pcg-full-normal problem.txt
 ./build-cuda/timing/cuda_sparse/timeCudaSparseLM --help
 ```
+
+The matrix benchmark has stable configuration names and JSON/CSV records:
+
+```bash
+./build-cuda/timing/sfm_ba/timeCudaSFMBAL --list-configurations
+./build-cuda/timing/sfm_ba/timeCudaSFMBAL --cuda-lm \
+  --configuration schur-cudss-gtsam --output-format json problem.txt
+timing/sfm_ba/run_cuda_sfm_bal_benchmarks.sh problem.txt results build-cuda/timing/sfm_ba/timeCudaSFMBAL
+```
+
+Each machine-readable row records formulation, backend, ordering, system
+dimension/nonzeros, analysis/factorization/solve counts, PCG convergence,
+objectives, transfer bytes, frontend wall time, backend time, accepted steps,
+and lambda attempts. The GTSAM-ordering rows compute COLAMD at key/block level,
+expand it to scalar indices through `CompileCudaScalarPermutation`, and verify
+that cuDSS retained the supplied permutation.
+
+The named PCG benchmark rows use a correctness-oriented iterative profile
+(`relativeTolerance=1e-10` and at most 1000 iterations; the general benchmark
+requires 0.1% final-objective agreement). These are benchmark controls, not
+changes to the public `CudaPcgOptions` defaults. An inexact PCG solve can
+legitimately take a different LM trajectory, so comparing it with the direct
+row at the direct solver's `1e-8` objective tolerance is not a meaningful
+pass/fail gate.

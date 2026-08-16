@@ -12,6 +12,7 @@
 #include <gtsam/slam/dataset.h>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <cstddef>
@@ -58,6 +59,7 @@ using gtsam::cuda::CudaSparseLmStageTimings;
 using gtsam::cuda::CudaSparseLmSystemSize;
 using gtsam::cuda::CudaSparseLmTerminationReason;
 using gtsam::cuda::CudaSparseLmTransferCounts;
+using gtsam::cuda::CudaLinearSolveStats;
 
 constexpr double kObjectiveTolerance = 1e-8;
 
@@ -101,6 +103,12 @@ struct RunOptions {
   std::string csvPath = "cuda-sparse-lm-benchmark.csv";
   std::string dataDirectory;
   std::string gpuSolver = "cudss";
+  std::string ordering = "auto";
+  std::string configuration = "cudss-auto";
+  std::string outputFormat = "text";
+  bool listConfigurations = false;
+  bool dryRun = false;
+  bool allCudaConfigurations = false;
   double pcgTolerance = 0.0;   // 0 keeps the library default
   size_t pcgMaxIterations = 0; // 0 keeps the library default
   std::string pcgPreconditioner = "block-jacobi";
@@ -122,6 +130,15 @@ struct SummaryStatistics {
   double minimum = 0.0;
   double maximum = 0.0;
 };
+
+void ApplyMatrixConfigurationDefaults(RunOptions* options) {
+  if (!options || options->gpuSolver != "pcg") return;
+  if (options->pcgTolerance == 0.0) options->pcgTolerance = 1e-10;
+  if (options->pcgMaxIterations == 0) options->pcgMaxIterations = 1000;
+  if (options->objectiveTolerance == kObjectiveTolerance) {
+    options->objectiveTolerance = 1e-3;
+  }
+}
 
 enum class WorkloadKind { Bal, Pose2, Pose3 };
 
@@ -162,6 +179,7 @@ struct RawRun {
   CudaSparseLmSystemSize systemSize;
   CudaSparseLmTransferCounts transfers;
   CudaSparseLmStageTimings timings;
+  CudaLinearSolveStats linearSolveStats;
   std::vector<CudaSparseLmAttemptRecord> attempts;
 };
 
@@ -217,6 +235,10 @@ std::string Usage() {
       "Usage: timeCudaSparseLM [--warmups N] [--repeats N]\n"
       "  [--datasets bal16,bal135,pose2,pose3] [--data-dir DIR]\n"
       "  [--json FILE] [--csv FILE]\n"
+      "  [--configuration cudss-auto|cudss-gtsam|pcg]\n"
+      "  [--cuda-linear-solver cudss|pcg] [--ordering auto|gtsam]\n"
+      "  [--output-format text|csv|json] [--list-configurations] [--dry-run]\n"
+      "  [--all-cuda-configurations]\n"
       "  [--gpu-solver cudss|pcg] [--pcg-tol X] [--pcg-max-iters N]\n"
       "  [--pcg-preconditioner block-jacobi|jacobi|none] [--pcg-no-warm-start]\n"
       "  [--pose2-fast-sync] [--pose2-upstream-settings]\n"
@@ -289,6 +311,12 @@ RunOptions ParseOptions(int argc, char** argv) {
     const std::string argument = argv[index];
     if (argument == "--self-test") {
       options.selfTest = true;
+    } else if (argument == "--list-configurations") {
+      options.listConfigurations = true;
+    } else if (argument == "--dry-run") {
+      options.dryRun = true;
+    } else if (argument == "--all-cuda-configurations") {
+      options.allCudaConfigurations = true;
     } else if (argument == "--help" || argument == "-h") {
       options.help = true;
     } else if (argument == "--warmups") {
@@ -305,10 +333,38 @@ RunOptions ParseOptions(int argc, char** argv) {
       options.csvPath = requireValue(&index, "--csv");
     } else if (argument == "--data-dir") {
       options.dataDirectory = requireValue(&index, "--data-dir");
-    } else if (argument == "--gpu-solver") {
+    } else if (argument == "--configuration") {
+      options.configuration = requireValue(&index, "--configuration");
+      if (options.configuration == "cudss-auto") {
+        options.gpuSolver = "cudss";
+        options.ordering = "auto";
+      } else if (options.configuration == "cudss-gtsam") {
+        options.gpuSolver = "cudss";
+        options.ordering = "gtsam";
+      } else if (options.configuration == "pcg") {
+        options.gpuSolver = "pcg";
+        options.ordering = "auto";
+      } else {
+        throw std::invalid_argument("unknown CUDA configuration: " +
+                                    options.configuration);
+      }
+    } else if (argument == "--cuda-linear-solver" ||
+               argument == "--gpu-solver") {
       options.gpuSolver = requireValue(&index, "--gpu-solver");
       if (options.gpuSolver != "cudss" && options.gpuSolver != "pcg") {
         throw std::invalid_argument("--gpu-solver requires cudss or pcg");
+      }
+    } else if (argument == "--ordering") {
+      options.ordering = requireValue(&index, "--ordering");
+      if (options.ordering != "auto" && options.ordering != "gtsam") {
+        throw std::invalid_argument("--ordering requires auto or gtsam");
+      }
+    } else if (argument == "--output-format") {
+      options.outputFormat = requireValue(&index, "--output-format");
+      if (options.outputFormat != "text" && options.outputFormat != "csv" &&
+          options.outputFormat != "json") {
+        throw std::invalid_argument(
+            "--output-format requires text, csv, or json");
       }
     } else if (argument == "--pcg-tol") {
       const std::string value = requireValue(&index, "--pcg-tol");
@@ -359,6 +415,15 @@ RunOptions ParseOptions(int argc, char** argv) {
       throw std::invalid_argument("unknown option: " + argument);
     }
   }
+  if (options.gpuSolver == "pcg" && options.ordering != "auto") {
+    throw std::invalid_argument(
+        "GTSAM ordering is supported only by the cuDSS backend");
+  }
+  options.configuration =
+      options.gpuSolver == "pcg"
+          ? "pcg"
+          : options.ordering == "gtsam" ? "cudss-gtsam" : "cudss-auto";
+  ApplyMatrixConfigurationDefaults(&options);
   return options;
 }
 
@@ -739,6 +804,13 @@ CudaSparseLevenbergMarquardtParams MakeGpuParams(
     }
     params.pcg.preconditioner = options.pcgPreconditioner;
     params.pcg.warmStart = options.pcgWarmStart;
+  } else if (options.ordering == "gtsam") {
+    if (workload.cpuOrdering) {
+      params.setOrdering(*workload.cpuOrdering);
+    } else {
+      params.setOrdering(
+          Ordering::Create(Ordering::COLAMD, workload.graph));
+    }
   }
   return params;
 }
@@ -852,6 +924,7 @@ RawRun RunGpu(const LoadedWorkload& workload, size_t repetition,
   run.systemSize = result.systemSize;
   run.transfers = result.transfers;
   run.timings = result.timings;
+  run.linearSolveStats = result.linearSolveStats;
   run.attempts = result.attemptTrace;
   ValidateRawRun(run);
   return run;
@@ -884,8 +957,9 @@ std::vector<double> TransferSamples(const std::vector<RawRun>& runs,
 }
 
 WorkloadResult BenchmarkWorkload(const LoadedWorkload& workload,
-                                 const RunOptions& options) {
-  std::cout << "\nLoading complete: " << workload.spec.name << "\n"
+                                 const RunOptions& options, bool humanOutput) {
+  if (humanOutput) {
+    std::cout << "\nLoading complete: " << workload.spec.name << "\n"
             << "  path: " << workload.path << "\n"
             << "  factors: " << workload.graph.size()
             << ", values: " << workload.initial.size()
@@ -896,14 +970,17 @@ WorkloadResult BenchmarkWorkload(const LoadedWorkload& workload,
                     : "raw")
             << " (" << workload.initializationWall << " s)"
             << ", initial error: " << std::setprecision(15)
-            << workload.initialError << std::setprecision(9) << "\n";
+              << workload.initialError << std::setprecision(9) << "\n";
+  }
 
   for (size_t warmup = 0; warmup < options.warmups; ++warmup) {
-    std::cout << "  warm-up " << warmup << ": CPU" << std::flush;
+    if (humanOutput) {
+      std::cout << "  warm-up " << warmup << ": CPU" << std::flush;
+    }
     (void)RunCpu(workload, warmup);
-    std::cout << ", GPU" << std::flush;
+    if (humanOutput) std::cout << ", GPU" << std::flush;
     (void)RunGpu(workload, warmup, options);
-    std::cout << " complete\n";
+    if (humanOutput) std::cout << " complete\n";
   }
 
   WorkloadResult result;
@@ -946,9 +1023,11 @@ WorkloadResult BenchmarkWorkload(const LoadedWorkload& workload,
                   std::abs(result.referenceObjective - gpu.finalError)});
     result.cpuRuns.push_back(std::move(cpu));
     result.gpuRuns.push_back(std::move(gpu));
-    std::cout << "  repetition " << repetition << ": CPU "
-              << result.cpuRuns.back().externalWall << " s, GPU "
-              << result.gpuRuns.back().externalWall << " s\n";
+    if (humanOutput) {
+      std::cout << "  repetition " << repetition << ": CPU "
+                << result.cpuRuns.back().externalWall << " s, GPU "
+                << result.gpuRuns.back().externalWall << " s\n";
+    }
   }
   return result;
 }
@@ -1090,6 +1169,30 @@ void WriteRawRuns(std::ostream& output, const std::vector<RawRun>& runs) {
     WriteTransfers(output, run.transfers);
     output << ",\"timings\":";
     WriteTimings(output, run.timings);
+    output << ",\"linear_solve_stats\":{"
+           << "\"analysis_count\":" << run.linearSolveStats.analysisCount
+           << ",\"factorization_count\":"
+           << run.linearSolveStats.factorizationCount
+           << ",\"solve_count\":" << run.linearSolveStats.solveCount
+           << ",\"pcg_iterations_total\":"
+           << run.linearSolveStats.pcgIterationsTotal
+           << ",\"pcg_max_iteration_hits\":"
+           << run.linearSolveStats.pcgMaxIterationHits
+           << ",\"last_pcg_iterations\":"
+           << run.linearSolveStats.lastPcgIterations
+           << ",\"pcg_host_convergence_checks\":"
+           << run.linearSolveStats.pcgHostConvergenceChecks
+           << ",\"last_pcg_converged\":"
+           << (run.linearSolveStats.lastPcgConverged ? "true" : "false")
+           << ",\"last_pcg_breakdown\":"
+           << (run.linearSolveStats.lastPcgBreakdown ? "true" : "false")
+           << ",\"analysis_seconds\":"
+           << run.linearSolveStats.analysisSeconds
+           << ",\"factorization_seconds\":"
+           << run.linearSolveStats.factorizationSeconds
+           << ",\"solve_seconds\":" << run.linearSolveStats.solveSeconds
+           << ",\"preconditioner_seconds\":"
+           << run.linearSolveStats.preconditionerSeconds << "}";
     output << ",\"attempts\":";
     WriteAttempts(output, run.attempts);
     output << "}";
@@ -1097,7 +1200,8 @@ void WriteRawRuns(std::ostream& output, const std::vector<RawRun>& runs) {
   output << "]";
 }
 
-void WriteWorkloadJson(std::ostream& output, const WorkloadResult& result) {
+void WriteWorkloadJson(std::ostream& output, const WorkloadResult& result,
+                       double objectiveTolerance) {
   const SummaryStatistics cpu = Summarize(ExternalSamples(result.cpuRuns));
   const SummaryStatistics gpu = Summarize(ExternalSamples(result.gpuRuns));
   output << "{\"name\":\"" << JsonEscape(result.name) << "\",\"path\":\""
@@ -1108,7 +1212,7 @@ void WriteWorkloadJson(std::ostream& output, const WorkloadResult& result) {
          << ",\"reference_objective\":" << result.referenceObjective
          << ",\"maximum_objective_difference\":"
          << result.maximumObjectiveDifference
-         << ",\"objective_relative_tolerance\":" << kObjectiveTolerance
+         << ",\"objective_relative_tolerance\":" << objectiveTolerance
          << ",\"cpu_external_wall\":";
   WriteStatistics(output, cpu);
   output << ",\"gpu_external_wall\":";
@@ -1151,7 +1255,9 @@ std::string MakeJson(const RunOptions& options,
          << ",\"compiled_cuda_version\":" << metadata.compiledCudaVersion
          << "},\"configuration\":{\"warmups\":" << options.warmups
          << ",\"repeats\":" << options.repeats
+         << ",\"name\":\"" << options.configuration << "\""
          << ",\"gpu_solver\":\"" << options.gpuSolver << "\""
+         << ",\"ordering\":\"" << options.ordering << "\""
          << ",\"pcg_tolerance\":" << options.pcgTolerance
          << ",\"pcg_max_iterations\":" << options.pcgMaxIterations
          << ",\"pcg_preconditioner\":\"" << options.pcgPreconditioner << "\""
@@ -1173,7 +1279,7 @@ std::string MakeJson(const RunOptions& options,
             "summed as exclusive wall time\"},\"workloads\":[";
   for (size_t index = 0; index < results.size(); ++index) {
     if (index) output << ",";
-    WriteWorkloadJson(output, results[index]);
+    WriteWorkloadJson(output, results[index], options.objectiveTolerance);
   }
   output << "]}\n";
   return output.str();
@@ -1213,11 +1319,16 @@ std::string MakeCsv(const RunOptions& options,
   std::ostringstream output;
   output << std::setprecision(17);
   output
-      << "dataset,backend,factors,values,jacobian_rows,jacobian_columns,"
+      << "configuration,ordering,dataset,backend,factors,values,"
+         "jacobian_rows,jacobian_columns,"
          "jacobian_nonzeros,normal_nonzeros,warmups,repeats,external_median,"
          "external_mean,external_standard_deviation,external_minimum,"
          "external_maximum,initial_error,final_error,iterations,"
          "outer_linearizations,lambda_attempts,accepted_steps,cudss_analyses,"
+         "analysis_count,factorization_count,solve_count,pcg_iterations_total,"
+         "pcg_max_iteration_hits,last_pcg_iterations,last_pcg_converged,"
+         "pcg_host_convergence_checks,last_pcg_breakdown,analysis_seconds,factorization_seconds,"
+         "solve_seconds,preconditioner_seconds,"
          "termination,final_lambda,cpu_over_gpu_speedup,objective_difference,"
          "pattern_h2d_bytes,"
          "numeric_h2d_bytes,setup_d2h_bytes,attempt_d2h_bytes";
@@ -1237,7 +1348,8 @@ std::string MakeCsv(const RunOptions& options,
       const RawRun& representative = runs.front();
       const CudaSparseLmSystemSize& systemSize =
           result.gpuRuns.front().systemSize;
-      output << CsvEscape(result.name) << "," << backend << ","
+      output << options.configuration << "," << options.ordering << ","
+             << CsvEscape(result.name) << "," << backend << ","
              << result.factors << "," << result.values << ","
              << systemSize.jacobianRows << "," << systemSize.jacobianColumns
              << "," << systemSize.jacobianNonzeros << ","
@@ -1251,6 +1363,19 @@ std::string MakeCsv(const RunOptions& options,
              << representative.lambdaAttempts << ","
              << representative.acceptedSteps << ","
              << representative.cudssAnalyses << ","
+             << representative.linearSolveStats.analysisCount << ","
+             << representative.linearSolveStats.factorizationCount << ","
+             << representative.linearSolveStats.solveCount << ","
+             << representative.linearSolveStats.pcgIterationsTotal << ","
+             << representative.linearSolveStats.pcgMaxIterationHits << ","
+             << representative.linearSolveStats.lastPcgIterations << ","
+             << representative.linearSolveStats.lastPcgConverged << ","
+             << representative.linearSolveStats.pcgHostConvergenceChecks << ","
+             << representative.linearSolveStats.lastPcgBreakdown << ","
+             << representative.linearSolveStats.analysisSeconds << ","
+             << representative.linearSolveStats.factorizationSeconds << ","
+             << representative.linearSolveStats.solveSeconds << ","
+             << representative.linearSolveStats.preconditionerSeconds << ","
              << representative.termination << ","
              << representative.finalLambda << "," << speedup << ","
              << result.maximumObjectiveDifference << ",";
@@ -1362,8 +1487,10 @@ void PrintResult(const WorkloadResult& result) {
 
 int RunBenchmark(const RunOptions& options) {
   const HardwareMetadata metadata = QueryHardware();
-  std::cout << std::setprecision(9)
-            << "CUDA direct sparse LM benchmark\n"
+  const bool humanOutput = options.outputFormat == "text";
+  if (humanOutput) {
+    std::cout << std::setprecision(9)
+              << "CUDA direct sparse LM benchmark\n"
             << "GPU: " << metadata.gpuName << " (sm_" << metadata.computeMajor
             << metadata.computeMinor << ", " << metadata.gpuMemoryBytes
             << " bytes)\n"
@@ -1376,21 +1503,93 @@ int RunBenchmark(const RunOptions& options) {
             << (metadata.gitDirty ? " (dirty)" : " (clean)") << "\n"
             << "Warm-ups: " << options.warmups
             << ", measured repeats: " << options.repeats << "\n"
-            << "GPU timing fields overlap; they are not an exclusive sum.\n";
+              << "GPU timing fields overlap; they are not an exclusive sum.\n";
+  }
 
   std::vector<WorkloadResult> results;
   results.reserve(options.datasets.size());
   for (const std::string& dataset : options.datasets) {
     const LoadedWorkload workload =
         LoadWorkload(LookupWorkload(dataset), options);
-    results.push_back(BenchmarkWorkload(workload, options));
-    PrintResult(results.back());
+    results.push_back(BenchmarkWorkload(workload, options, humanOutput));
+    if (humanOutput) PrintResult(results.back());
     WriteAtomically(options.jsonPath, MakeJson(options, metadata, results));
     WriteAtomically(options.csvPath, MakeCsv(options, results));
-    std::cout << "  published " << options.jsonPath << " and "
-              << options.csvPath << "\n";
+    if (humanOutput) {
+      std::cout << "  published " << options.jsonPath << " and "
+                << options.csvPath << "\n";
+    }
+  }
+  if (options.outputFormat == "json") {
+    std::cout << MakeJson(options, metadata, results);
+  } else if (options.outputFormat == "csv") {
+    std::cout << MakeCsv(options, results);
   }
   return 0;
+}
+
+constexpr std::array<const char*, 3> kCudaConfigurations{
+    "cudss-auto", "cudss-gtsam", "pcg"};
+
+void PrintConfigurations() {
+  for (const char* configuration : kCudaConfigurations) {
+    std::cout << configuration << "\n";
+  }
+}
+
+void PrintDryRun(const RunOptions& options) {
+  const auto printJsonRecord = [](const char* configuration) {
+    const bool pcg = std::string(configuration) == "pcg";
+    const bool ordered = std::string(configuration) == "cudss-gtsam";
+    std::cout
+        << "{\"configuration\":\"" << configuration
+        << "\",\"formulation\":\"general-normal\",\"backend\":\""
+        << (pcg ? "pcg" : "cudss") << "\",\"ordering\":\""
+        << (ordered ? "gtsam" : "auto")
+        << "\",\"dimension\":0,\"nnz\":0,\"analysis_count\":0,"
+           "\"factorization_count\":0,\"solve_count\":0,"
+           "\"pcg_iterations\":0,\"pcg_converged\":false,"
+           "\"initial_objective\":0,\"final_objective\":0,"
+           "\"h2d_bytes\":0,\"d2h_bytes\":0,\"frontend_wall_seconds\":0,"
+           "\"analysis_seconds\":0,\"factorization_seconds\":0,"
+           "\"solve_seconds\":0,\"accepted_iterations\":0,"
+           "\"lambda_attempts\":0,\"dry_run\":true}";
+  };
+  if (options.outputFormat == "json") {
+    std::cout << "[";
+    for (size_t i = 0; i < kCudaConfigurations.size(); ++i) {
+      if (i != 0) std::cout << ",";
+      printJsonRecord(kCudaConfigurations[i]);
+    }
+    std::cout << "]\n";
+    return;
+  }
+  if (options.outputFormat == "csv") {
+    std::cout << "configuration,formulation,backend,ordering,dimension,nnz,"
+                 "analysis_count,factorization_count,solve_count,"
+                 "pcg_iterations,pcg_converged,initial_objective,"
+                 "final_objective,h2d_bytes,d2h_bytes,frontend_wall_seconds,"
+                 "analysis_seconds,factorization_seconds,solve_seconds,"
+                 "accepted_iterations,lambda_attempts,dry_run\n";
+    for (const char* configuration : kCudaConfigurations) {
+      const bool pcg = std::string(configuration) == "pcg";
+      const bool ordered = std::string(configuration) == "cudss-gtsam";
+      std::cout << configuration << ",general-normal,"
+                << (pcg ? "pcg" : "cudss") << ","
+                << (ordered ? "gtsam" : "auto")
+                << ",0,0,0,0,0,0,false,0,0,0,0,0,0,0,0,0,0,true\n";
+    }
+    return;
+  }
+  for (const char* configuration : kCudaConfigurations) {
+    std::cout << "configuration=" << configuration
+              << " formulation=general-normal backend="
+              << (std::string(configuration) == "pcg" ? "pcg" : "cudss")
+              << " ordering="
+              << (std::string(configuration) == "cudss-gtsam" ? "gtsam"
+                                                               : "auto")
+              << " dry_run=true\n";
+  }
 }
 
 }  // namespace
@@ -1402,7 +1601,33 @@ int main(int argc, char** argv) {
       std::cout << Usage() << "\n";
       return 0;
     }
+    if (options.listConfigurations) {
+      PrintConfigurations();
+      return 0;
+    }
+    if (options.dryRun) {
+      PrintDryRun(options);
+      return 0;
+    }
     if (options.selfTest) return RunSelfTest();
+    if (options.allCudaConfigurations) {
+      for (const char* configuration : kCudaConfigurations) {
+        RunOptions row = options;
+        row.allCudaConfigurations = false;
+        row.configuration = configuration;
+        row.gpuSolver =
+            std::string(configuration) == "pcg" ? "pcg" : "cudss";
+        row.ordering = std::string(configuration) == "cudss-gtsam"
+                           ? "gtsam"
+                           : "auto";
+        ApplyMatrixConfigurationDefaults(&row);
+        row.jsonPath += "." + row.configuration + ".json";
+        row.csvPath += "." + row.configuration + ".csv";
+        const int status = RunBenchmark(row);
+        if (status != 0) return status;
+      }
+      return 0;
+    }
     return RunBenchmark(options);
   } catch (const std::exception& error) {
     std::cerr << "timeCudaSparseLM: " << error.what() << "\n";

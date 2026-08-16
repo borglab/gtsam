@@ -36,12 +36,14 @@
 #include <gtsam/slam/cuda/CudaSfmLevenbergMarquardt.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionBatch.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionLinearization.h>
+#include <gtsam/slam/cuda/CudaSfmReducedCsrPlan.h>
 #include <gtsam/slam/cuda/CudaSfmValues.h>
 #endif
 
 #include <gtsam/nonlinear/GncOptimizer.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstring>
 #include <filesystem>
@@ -66,6 +68,9 @@ std::string usage() {
          "[--cuda-sparse-lm] [--cuda-sparse-pack-only] "
          "[--gaussian-graph-pack-diagnostic] "
          "[--linearization-benchmark] [--linearization-repeats N] "
+         "[--configuration NAME] [--formulation schur|full-normal] "
+         "[--ordering auto|gtsam] [--output-format text|csv|json] "
+         "[--list-configurations] [--dry-run] "
          "[--cuda-linear-solver dense-schur|cudss-schur|pcg-schur|"
          "cudss-full-normal|pcg-full-normal] "
          "[--cuda-lm-graph-kind raw|point-batch|camera-batch] "
@@ -138,6 +143,11 @@ struct RunOptions {
   GncRunOptions gnc;
   std::vector<std::string> filenames;
   bool help = false;
+  bool listConfigurations = false;
+  bool dryRun = false;
+  std::string matrixConfiguration = "schur-dense";
+  std::string ordering = "auto";
+  std::string outputFormat = "text";
 };
 
 const char* cudaLinearSolverName(CudaLinearSolverOption solver) {
@@ -510,8 +520,37 @@ gtsam::cuda::CudaSfmLevenbergMarquardtParams makeBalCudaLmParams(
           : gtsam::cuda::CudaSfmLevenbergMarquardtParams();
   applyBalBenchmarkLmSettings(params);
   params.setLinearSolver(cudaLinearSolverName(solverOption));
+  if (solverOption == CudaLinearSolverOption::PcgSchur ||
+      solverOption == CudaLinearSolverOption::PcgFullNormal) {
+    params.pcg.relativeTolerance = 1e-10;
+    params.pcg.maxIterations = 1000;
+  }
   params.enableDetailedProfiling = enableDetailedProfiling;
   return params;
+}
+
+void applyCudaMatrixOrdering(
+    const SfmData& data, const RunOptions& options,
+    gtsam::cuda::CudaSfmLevenbergMarquardtParams* params) {
+  if (!params || options.ordering != "gtsam") return;
+  if (options.cudaLinearSolver != CudaLinearSolverOption::CudssSchur &&
+      options.cudaLinearSolver != CudaLinearSolverOption::CudssFullNormal) {
+    throw std::invalid_argument(
+        "GTSAM ordering is supported only by the cuDSS backend");
+  }
+  if (options.cudaLinearSolver == CudaLinearSolverOption::CudssSchur) {
+    std::vector<Key> cameraKeys;
+    cameraKeys.reserve(data.numberCameras());
+    for (size_t index = 0; index < data.numberCameras(); ++index) {
+      cameraKeys.push_back(C(index));
+    }
+    params->setOrdering(
+        gtsam::cuda::CudaSfmReducedCsrPlan(data, cameraKeys).colamdOrdering());
+  } else {
+    const NonlinearFactorGraph graph =
+        bal::buildGeneralSfmGraph(data, options.config);
+    params->setOrdering(Ordering::Create(Ordering::COLAMD, graph));
+  }
 }
 
 struct GpuLinearizationBenchmark {
@@ -613,6 +652,114 @@ CudaBackendLmRun runCudaBackendLm(
     run.result = gtsam::cuda::OptimizeCudaSfmWithoutValueDownload(db, params);
   });
   return run;
+}
+
+std::string jsonEscape(const std::string& value) {
+  std::ostringstream output;
+  for (const char character : value) {
+    switch (character) {
+      case '\\':
+        output << "\\\\";
+        break;
+      case '"':
+        output << "\\\"";
+        break;
+      case '\n':
+        output << "\\n";
+        break;
+      case '\r':
+        output << "\\r";
+        break;
+      case '\t':
+        output << "\\t";
+        break;
+      default:
+        output << character;
+    }
+  }
+  return output.str();
+}
+
+void printCudaMatrixResult(const RunOptions& options,
+                           const std::string& dataset,
+                           const CudaBackendLmRun& run,
+                           bool printCsvHeader) {
+  const auto& result = run.result;
+  const auto& stats = result.linearSolveStats;
+  const char* formulation =
+      result.formulation == gtsam::cuda::CudaSfmSystemFormulation::Schur
+          ? "schur"
+          : "full-normal";
+  const char* backend = "dense-cholesky";
+  if (result.linearBackend == gtsam::cuda::CudaLinearSolverType::Cudss) {
+    backend = "cudss";
+  } else if (result.linearBackend ==
+             gtsam::cuda::CudaLinearSolverType::Pcg) {
+    backend = "pcg";
+  }
+
+  if (options.outputFormat == "json") {
+    std::cout << std::setprecision(17)
+              << "{\"configuration\":\""
+              << jsonEscape(options.matrixConfiguration)
+              << "\",\"dataset\":\"" << jsonEscape(dataset)
+              << "\",\"formulation\":\"" << formulation
+              << "\",\"backend\":\"" << backend
+              << "\",\"ordering\":\"" << options.ordering
+              << "\",\"dimension\":" << result.linearSystemDimension
+              << ",\"nnz\":" << result.linearSystemNonzeros
+              << ",\"matrix_free\":"
+              << (result.linearBackend == gtsam::cuda::CudaLinearSolverType::Pcg
+                      ? "true"
+                      : "false")
+              << ",\"analysis_count\":" << stats.analysisCount
+              << ",\"factorization_count\":" << stats.factorizationCount
+              << ",\"solve_count\":" << stats.solveCount
+              << ",\"pcg_iterations\":" << stats.pcgIterationsTotal
+              << ",\"pcg_host_convergence_checks\":"
+              << stats.pcgHostConvergenceChecks
+              << ",\"pcg_converged\":"
+              << (stats.lastPcgConverged ? "true" : "false")
+              << ",\"initial_objective\":" << result.initialError
+              << ",\"final_objective\":" << result.finalError
+              << ",\"h2d_bytes\":" << result.totalH2dBytes
+              << ",\"d2h_bytes\":" << result.totalD2hBytes
+              << ",\"frontend_wall_seconds\":" << run.elapsed
+              << ",\"analysis_seconds\":" << stats.analysisSeconds
+              << ",\"factorization_seconds\":"
+              << stats.factorizationSeconds << ",\"solve_seconds\":"
+              << stats.solveSeconds << ",\"accepted_iterations\":"
+              << result.acceptedSteps << ",\"lambda_attempts\":"
+              << result.innerIterations << "}\n";
+    return;
+  }
+  if (options.outputFormat == "csv") {
+    if (printCsvHeader) {
+      std::cout
+          << "configuration,dataset,formulation,backend,ordering,dimension,"
+             "nnz,matrix_free,analysis_count,factorization_count,solve_count,"
+             "pcg_iterations,pcg_host_convergence_checks,pcg_converged,"
+             "initial_objective,final_objective,"
+             "h2d_bytes,d2h_bytes,frontend_wall_seconds,analysis_seconds,"
+             "factorization_seconds,solve_seconds,accepted_iterations,"
+             "lambda_attempts\n";
+    }
+    std::cout << std::setprecision(17) << options.matrixConfiguration << ","
+              << dataset << "," << formulation << "," << backend << ","
+              << options.ordering << "," << result.linearSystemDimension << ","
+              << result.linearSystemNonzeros << ","
+              << (result.linearBackend == gtsam::cuda::CudaLinearSolverType::Pcg)
+              << "," << stats.analysisCount << "," << stats.factorizationCount
+              << "," << stats.solveCount << "," << stats.pcgIterationsTotal
+              << "," << stats.pcgHostConvergenceChecks << ","
+              << stats.lastPcgConverged << "," << result.initialError
+              << "," << result.finalError << "," << result.totalH2dBytes << ","
+              << result.totalD2hBytes << "," << run.elapsed << ","
+              << stats.analysisSeconds << "," << stats.factorizationSeconds
+              << "," << stats.solveSeconds << "," << result.acceptedSteps
+              << "," << result.innerIterations << "\n";
+    return;
+  }
 }
 
 const char* yesNo(bool value) { return value ? "yes" : "no"; }
@@ -1143,6 +1290,8 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
       arguments.flag("--gaussian-graph-pack-diagnostic");
   options.linearizationBenchmark =
       arguments.flag("--linearization-benchmark");
+  options.listConfigurations = arguments.flag("--list-configurations");
+  options.dryRun = arguments.flag("--dry-run");
   options.help = arguments.helpRequested();
 
   const auto linearizationRepeats =
@@ -1155,20 +1304,107 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
         "--value", options.linearizationRepeats);
   }
 
+  const auto configuration = arguments.optionalString("--configuration");
+  const auto formulation = arguments.optionalString("--formulation");
   const auto linearSolver = arguments.optionalString("--cuda-linear-solver");
-  options.cudaLinearSolverSpecified = linearSolver.has_value();
-  if (linearSolver == "dense-schur") {
-    options.cudaLinearSolver = CudaLinearSolverOption::DenseSchur;
-  } else if (linearSolver == "cudss-schur") {
-    options.cudaLinearSolver = CudaLinearSolverOption::CudssSchur;
-  } else if (linearSolver == "pcg-schur") {
-    options.cudaLinearSolver = CudaLinearSolverOption::PcgSchur;
-  } else if (linearSolver == "cudss-full-normal") {
-    options.cudaLinearSolver = CudaLinearSolverOption::CudssFullNormal;
-  } else if (linearSolver == "pcg-full-normal") {
-    options.cudaLinearSolver = CudaLinearSolverOption::PcgFullNormal;
-  } else if (linearSolver) {
-    throw std::runtime_error(usage());
+  const auto orderingMode = arguments.optionalString("--ordering");
+  const auto outputFormat = arguments.optionalString("--output-format");
+  options.cudaLinearSolverSpecified =
+      configuration.has_value() || formulation.has_value() ||
+      linearSolver.has_value() || orderingMode.has_value();
+
+  if (orderingMode) options.ordering = *orderingMode;
+  if (options.ordering != "auto" && options.ordering != "gtsam") {
+    throw std::runtime_error("--ordering requires auto or gtsam");
+  }
+  if (outputFormat) options.outputFormat = *outputFormat;
+  if (options.outputFormat != "text" && options.outputFormat != "csv" &&
+      options.outputFormat != "json") {
+    throw std::runtime_error("--output-format requires text, csv, or json");
+  }
+
+  auto selectConfiguration = [&](const std::string& name) {
+    options.matrixConfiguration = name;
+    if (name == "schur-dense") {
+      options.cudaLinearSolver = CudaLinearSolverOption::DenseSchur;
+      options.ordering = "auto";
+    } else if (name == "schur-cudss-auto") {
+      options.cudaLinearSolver = CudaLinearSolverOption::CudssSchur;
+      options.ordering = "auto";
+    } else if (name == "schur-cudss-gtsam") {
+      options.cudaLinearSolver = CudaLinearSolverOption::CudssSchur;
+      options.ordering = "gtsam";
+    } else if (name == "schur-pcg") {
+      options.cudaLinearSolver = CudaLinearSolverOption::PcgSchur;
+      options.ordering = "auto";
+    } else if (name == "full-normal-cudss-auto") {
+      options.cudaLinearSolver = CudaLinearSolverOption::CudssFullNormal;
+      options.ordering = "auto";
+    } else if (name == "full-normal-cudss-gtsam") {
+      options.cudaLinearSolver = CudaLinearSolverOption::CudssFullNormal;
+      options.ordering = "gtsam";
+    } else if (name == "full-normal-pcg") {
+      options.cudaLinearSolver = CudaLinearSolverOption::PcgFullNormal;
+      options.ordering = "auto";
+    } else {
+      throw std::runtime_error("unknown CUDA SFM configuration: " + name);
+    }
+  };
+
+  if (configuration) {
+    selectConfiguration(*configuration);
+    if (orderingMode && options.ordering != *orderingMode) {
+      throw std::runtime_error(
+          "--configuration and --ordering select different modes");
+    }
+  } else {
+    std::string formulationName = formulation.value_or("schur");
+    if (formulationName == "full_normal") formulationName = "full-normal";
+    if (formulationName != "schur" && formulationName != "full-normal") {
+      throw std::runtime_error(
+          "--formulation requires schur or full-normal");
+    }
+    const std::string backend = linearSolver.value_or("dense-cholesky");
+    if (backend == "dense-schur" || backend == "cudss-schur" ||
+        backend == "pcg-schur" || backend == "cudss-full-normal" ||
+        backend == "pcg-full-normal") {
+      if (formulation || orderingMode) {
+        throw std::runtime_error(
+            "combined --cuda-linear-solver names cannot be mixed with "
+            "--formulation or --ordering; use backend-only names");
+      }
+      if (backend == "dense-schur") selectConfiguration("schur-dense");
+      if (backend == "cudss-schur")
+        selectConfiguration("schur-cudss-auto");
+      if (backend == "pcg-schur") selectConfiguration("schur-pcg");
+      if (backend == "cudss-full-normal")
+        selectConfiguration("full-normal-cudss-auto");
+      if (backend == "pcg-full-normal")
+        selectConfiguration("full-normal-pcg");
+    } else if (backend == "dense" || backend == "dense-cholesky") {
+      if (formulationName != "schur") {
+        throw std::runtime_error(
+            "dense Cholesky does not support full-normal SFM systems");
+      }
+      selectConfiguration("schur-dense");
+    } else if (backend == "cudss") {
+      selectConfiguration(formulationName == "schur"
+                              ? (options.ordering == "gtsam"
+                                     ? "schur-cudss-gtsam"
+                                     : "schur-cudss-auto")
+                              : (options.ordering == "gtsam"
+                                     ? "full-normal-cudss-gtsam"
+                                     : "full-normal-cudss-auto"));
+    } else if (backend == "pcg") {
+      if (options.ordering != "auto") {
+        throw std::runtime_error(
+            "GTSAM ordering is supported only by the cuDSS backend");
+      }
+      selectConfiguration(formulationName == "schur" ? "schur-pcg"
+                                                       : "full-normal-pcg");
+    } else if (linearSolver) {
+      throw std::runtime_error(usage());
+    }
   }
 
   const auto graphKind = arguments.optionalString("--cuda-lm-graph-kind");
@@ -1268,6 +1504,18 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
       static_cast<size_t>(options.cudaSparseLm) +
       static_cast<size_t>(options.cudaSparsePackOnly) +
       static_cast<size_t>(options.gaussianGraphPackDiagnostic);
+  if (options.listConfigurations || options.dryRun) {
+    if (options.profile || options.cudaStructureOnly || options.cudaLm ||
+        options.cudaLmGraph || sparseModeCount != 0 ||
+        options.linearizationBenchmark ||
+        options.gnc.backend != GncBackend::None) {
+      throw std::runtime_error(
+          "--list-configurations and --dry-run cannot be combined with a "
+          "benchmark execution mode");
+    }
+    options.filenames.clear();
+    return options;
+  }
   const bool sparseMode = sparseModeCount != 0;
   if (sparseModeCount > 1) {
     throw runtime_error(
@@ -1625,23 +1873,104 @@ void printGncRun(const GncBenchmarkRun& run, const CorruptedBalProblem& problem,
                                           run.solution)
             << " px" << std::setprecision(6) << "\n";
 }
+
+struct MatrixConfigurationRecord {
+  const char* name;
+  const char* formulation;
+  const char* backend;
+  const char* ordering;
+};
+
+constexpr std::array<MatrixConfigurationRecord, 7> kMatrixConfigurations{{
+    {"schur-dense", "schur", "dense-cholesky", "auto"},
+    {"schur-cudss-auto", "schur", "cudss", "auto"},
+    {"schur-cudss-gtsam", "schur", "cudss", "gtsam"},
+    {"schur-pcg", "schur", "pcg", "auto"},
+    {"full-normal-cudss-auto", "full-normal", "cudss", "auto"},
+    {"full-normal-cudss-gtsam", "full-normal", "cudss", "gtsam"},
+    {"full-normal-pcg", "full-normal", "pcg", "auto"},
+}};
+
+void printMatrixConfigurations() {
+  for (const MatrixConfigurationRecord& record : kMatrixConfigurations) {
+    std::cout << record.name << "\n";
+  }
+}
+
+void printMatrixDryRun(const RunOptions& options) {
+  const auto jsonRecord = [](const MatrixConfigurationRecord& record) {
+    std::cout
+        << "{\"configuration\":\"" << record.name
+        << "\",\"formulation\":\"" << record.formulation
+        << "\",\"backend\":\"" << record.backend
+        << "\",\"ordering\":\"" << record.ordering
+        << "\",\"dimension\":0,\"nnz\":0,\"analysis_count\":0,"
+           "\"factorization_count\":0,\"solve_count\":0,"
+           "\"pcg_iterations\":0,\"pcg_converged\":false,"
+           "\"initial_objective\":0,\"final_objective\":0,"
+           "\"h2d_bytes\":0,\"d2h_bytes\":0,\"frontend_wall_seconds\":0,"
+           "\"analysis_seconds\":0,\"factorization_seconds\":0,"
+           "\"solve_seconds\":0,\"accepted_iterations\":0,"
+           "\"lambda_attempts\":0,\"dry_run\":true}";
+  };
+  if (options.outputFormat == "json") {
+    std::cout << "[";
+    for (size_t index = 0; index < kMatrixConfigurations.size(); ++index) {
+      if (index != 0) std::cout << ",";
+      jsonRecord(kMatrixConfigurations[index]);
+    }
+    std::cout << "]\n";
+    return;
+  }
+  if (options.outputFormat == "csv") {
+    std::cout << "configuration,formulation,backend,ordering,dimension,nnz,"
+                 "analysis_count,factorization_count,solve_count,"
+                 "pcg_iterations,pcg_converged,initial_objective,"
+                 "final_objective,h2d_bytes,d2h_bytes,frontend_wall_seconds,"
+                 "analysis_seconds,factorization_seconds,solve_seconds,"
+                 "accepted_iterations,lambda_attempts,dry_run\n";
+    for (const MatrixConfigurationRecord& record : kMatrixConfigurations) {
+      std::cout << record.name << "," << record.formulation << ","
+                << record.backend << "," << record.ordering
+                << ",0,0,0,0,0,0,false,0,0,0,0,0,0,0,0,0,0,true\n";
+    }
+    return;
+  }
+  for (const MatrixConfigurationRecord& record : kMatrixConfigurations) {
+    std::cout << "configuration=" << record.name
+              << " formulation=" << record.formulation
+              << " backend=" << record.backend
+              << " ordering=" << record.ordering << " dry_run=true\n";
+  }
+}
 }  // namespace
 
-int main(int argc, char* argv[]) {
+int RunMain(int argc, char* argv[]) {
   const auto options = parseBalFiles(argc, argv);
   if (options.help) {
     std::cout << usage() << '\n';
     return 0;
   }
+  if (options.listConfigurations) {
+    printMatrixConfigurations();
+    return 0;
+  }
+  if (options.dryRun) {
+    printMatrixDryRun(options);
+    return 0;
+  }
   std::vector<TimingRow> rows;
 #if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
   bool cudaWarmupDone = false;
+  bool cudaMatrixCsvHeaderPending = true;
 #endif
 
   for (const auto& filename : options.filenames) {
     const std::string dataset =
         std::filesystem::path(filename).filename().string();
-    std::cout << "\nProcessing BAL file: " << filename << std::endl;
+    if (options.outputFormat == "text") {
+      std::cout << "\nProcessing BAL file: " << filename << std::endl;
+    }
     const SfmData db = bal::loadDataset(filename);
 
     if (options.gnc.backend != GncBackend::None) {
@@ -1663,15 +1992,19 @@ int main(int argc, char* argv[]) {
       }
 
 #if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
-      const auto cudaParams = makeBalCudaLmParams(options.cudaLinearSolver,
-                                                  CudaLmDefaults::Graph, false);
+      auto cudaParams = makeBalCudaLmParams(options.cudaLinearSolver,
+                                            CudaLmDefaults::Graph, false);
+      applyCudaMatrixOrdering(problem.data, options, &cudaParams);
 
       if (options.cudaWarmupFileSpecified && !cudaWarmupDone) {
         std::cout << "  CUDA GNC warmup file: " << options.cudaWarmupFile
                   << " (timing ignored)\n";
         const SfmData warmupDb = bal::loadDataset(options.cudaWarmupFile);
+        auto warmupParams = makeBalCudaLmParams(
+            options.cudaLinearSolver, CudaLmDefaults::Graph, false);
+        applyCudaMatrixOrdering(warmupDb, options, &warmupParams);
         const CudaBackendLmRun warmupRun =
-            runCudaBackendLm(warmupDb, cudaParams);
+            runCudaBackendLm(warmupDb, warmupParams);
         std::cout << "  CUDA GNC warmup: " << warmupRun.elapsed
                   << " s ignored\n";
         cudaWarmupDone = true;
@@ -1701,25 +2034,41 @@ int main(int argc, char* argv[]) {
 
 #if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
     if (options.cudaLm) {
-      const auto cudaParams = makeBalCudaLmParams(
-          options.cudaLinearSolver, CudaLmDefaults::Backend, options.profile);
+      auto cudaParams = makeBalCudaLmParams(
+          options.cudaLinearSolver, CudaLmDefaults::Backend,
+          options.profile || options.outputFormat != "text");
+      applyCudaMatrixOrdering(db, options, &cudaParams);
 
       if (options.cudaWarmupFileSpecified && !cudaWarmupDone) {
-        std::cout << "  CUDA warmup file: " << options.cudaWarmupFile
-                  << " (timing ignored)\n";
+        if (options.outputFormat == "text") {
+          std::cout << "  CUDA warmup file: " << options.cudaWarmupFile
+                    << " (timing ignored)\n";
+        }
         const SfmData warmupDb = bal::loadDataset(options.cudaWarmupFile);
+        auto warmupParams = makeBalCudaLmParams(
+            options.cudaLinearSolver, CudaLmDefaults::Backend,
+            options.profile || options.outputFormat != "text");
+        applyCudaMatrixOrdering(warmupDb, options, &warmupParams);
         const CudaBackendLmRun warmupRun =
-            runCudaBackendLm(warmupDb, cudaParams);
-        std::cout << "  CUDA warmup: " << warmupRun.elapsed
-                  << " s ignored, final error: " << std::setprecision(15)
-                  << warmupRun.result.finalError
-                  << ", iterations: " << warmupRun.result.iterations
-                  << std::setprecision(6) << "\n";
+            runCudaBackendLm(warmupDb, warmupParams);
+        if (options.outputFormat == "text") {
+          std::cout << "  CUDA warmup: " << warmupRun.elapsed
+                    << " s ignored, final error: " << std::setprecision(15)
+                    << warmupRun.result.finalError
+                    << ", iterations: " << warmupRun.result.iterations
+                    << std::setprecision(6) << "\n";
+        }
         cudaWarmupDone = true;
       }
 
       const CudaBackendLmRun run = runCudaBackendLm(db, cudaParams);
-      printCudaBackendLmRun(run, options.cudaLinearSolver, options.profile);
+      if (options.outputFormat == "text") {
+        printCudaBackendLmRun(run, options.cudaLinearSolver, options.profile);
+      } else {
+        printCudaMatrixResult(options, dataset, run,
+                              cudaMatrixCsvHeaderPending);
+        cudaMatrixCsvHeaderPending = false;
+      }
       continue;
     }
 #elif GTSAM_ENABLE_CUDA
@@ -1891,19 +2240,25 @@ int main(int argc, char* argv[]) {
     }
 
     if (options.cudaLmGraph) {
-      const auto cudaParams = makeBalCudaLmParams(
-          options.cudaLinearSolver, CudaLmDefaults::Graph, options.profile);
+      auto cudaParams = makeBalCudaLmParams(
+          options.cudaLinearSolver, CudaLmDefaults::Graph,
+          options.profile || options.outputFormat != "text");
+      applyCudaMatrixOrdering(db, options, &cudaParams);
 
       if (options.cudaWarmupFileSpecified && !cudaWarmupDone) {
         std::cout << "  CUDA graph warmup file: " << options.cudaWarmupFile
                   << " (timing ignored)\n";
         const SfmData warmupDb = bal::loadDataset(options.cudaWarmupFile);
+        auto warmupParams = makeBalCudaLmParams(
+            options.cudaLinearSolver, CudaLmDefaults::Graph,
+            options.profile || options.outputFormat != "text");
+        applyCudaMatrixOrdering(warmupDb, options, &warmupParams);
         const NonlinearFactorGraph warmupGraph =
             buildCudaGraphSfmGraph(warmupDb, options.cudaGraphKind,
                                    options.batchChunkSize, options.config);
         const Values warmupInitial = bal::buildGeneralSfmInitial(warmupDb);
         const CudaGraphLmRun warmupRun =
-            runCudaGraphLm(warmupGraph, warmupInitial, cudaParams);
+            runCudaGraphLm(warmupGraph, warmupInitial, warmupParams);
         std::cout << "  CUDA graph warmup: " << warmupRun.elapsed
                   << " s ignored, final error: " << std::setprecision(15)
                   << warmupRun.finalError
@@ -1913,8 +2268,15 @@ int main(int argc, char* argv[]) {
       }
 
       const CudaGraphLmRun run = runCudaGraphLm(graph, initial, cudaParams);
-      printCudaGraphLmRun(run, options.cudaLinearSolver, options.cudaGraphKind,
-                          options.profile);
+      if (options.outputFormat == "text") {
+        printCudaGraphLmRun(run, options.cudaLinearSolver,
+                            options.cudaGraphKind, options.profile);
+      } else {
+        const CudaBackendLmRun backendRun{run.elapsed, run.backend};
+        printCudaMatrixResult(options, dataset, backendRun,
+                              cudaMatrixCsvHeaderPending);
+        cudaMatrixCsvHeaderPending = false;
+      }
       continue;
     }
 #else
@@ -1967,4 +2329,13 @@ int main(int argc, char* argv[]) {
               << options.benchmarkActionJsonPath << "\n";
   }
   return 0;
+}
+
+int main(int argc, char* argv[]) {
+  try {
+    return RunMain(argc, argv);
+  } catch (const std::exception& error) {
+    std::cerr << "timeCudaSFMBAL: " << error.what() << "\n";
+    return 1;
+  }
 }
