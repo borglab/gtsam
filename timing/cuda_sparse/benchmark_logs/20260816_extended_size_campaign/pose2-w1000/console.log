@@ -1,0 +1,204 @@
+CUDA direct sparse LM benchmark
+GPU: NVIDIA A100 80GB PCIe (sm_80, 85093777408 bytes)
+NVIDIA driver: 580.173.02, CUDA driver API: 13000
+CUDA runtime: 13000, compiled: 13000
+Build: Release, git: c949b0736afa59a6b884be9242980488d74ebbb6 (clean)
+Warm-ups: 1, measured repeats: 9
+GPU timing fields overlap; they are not an exclusive sum.
+
+Loading complete: pose2
+  path: /tmp/cuda-final-expanded-size-data/pose2-w1000/w10000.graph
+  factors: 3748, values: 1000, initialization: raw (0 s), initial error: 3848.86036401371
+  warm-up 0: CPU, GPU complete
+  repetition 0: CPU 0.313695647 s, GPU 0.122653399 s
+  repetition 1: CPU 0.344722473 s, GPU 0.118020697 s
+  repetition 2: CPU 0.372464886 s, GPU 0.126362712 s
+  repetition 3: CPU 0.368646056 s, GPU 0.123484344 s
+  repetition 4: CPU 0.399639397 s, GPU 0.106617385 s
+  repetition 5: CPU 0.356562316 s, GPU 0.100072246 s
+  repetition 6: CPU 0.369527456 s, GPU 0.103970148 s
+  repetition 7: CPU 0.399341429 s, GPU 0.101713105 s
+  repetition 8: CPU 0.4068483 s, GPU 0.104479138 s
+
+Result: pose2
+  factors 3748, values 1000, residual rows 11244, columns 3000, J.nnz 67455, H.nnz 76446
+  objective 7.09625443400649, maximum CPU/GPU difference 1.86517468137026e-14
+  CPU external wall                   median 0.369527456 s, mean 0.370160884 s, stddev 0.0280769074 s, range [0.313695647, 0.4068483] s
+  GPU external wall                   median 0.106617385 s, mean 0.111930353 s, stddev 0.00992182586 s, range [0.100072246, 0.126362712] s
+  median CPU/GPU speedup: 3.46592121x
+  GPU iterations 24, outer linearizations 24, lambda attempts 24, analyses 1, termination converged
+  GPU detailed timing medians (overlapping fields):
+    totalWall                             0.105685297 s
+    initialError                          0.000389724 s
+    plan                                  0.001682507 s
+    persistentSetupWall                   0.005521417 s
+    deviceInitializeWall                  0.003637735 s
+    patternH2d                            0.000351007997 s
+    structureSetup                        0.00190252799 s
+    setupD2h                              0.000257855996 s
+    hostZero                              0.002708733 s
+    factorLinearizationAndPackingWall     0.022817967 s
+    factorLinearizationCpuSum             0.092190528 s
+    csrPackingCpuSum                      0.044734191 s
+    numericH2d                            0.00180902399 s
+    transposeUpdate                       0.002796064 s
+    normalJtJ                             0.000368640002 s
+    normalJtb                             0.000404480003 s
+    diagonalExtraction                    0.000142336003 s
+    oldModelError                         0.000310272007 s
+    dampingPreparation                    0.000140288001 s
+    dampingApplication                    0.000148864002 s
+    cudssAnalysis                         0 s
+    cudssFactorAndSolve                   0 s
+    cudssDataInfoBoundaryWall             0 s
+    pcgPreconditionerBuild                0 s
+    pcgSolve                              0 s
+    pcgD2h                                0 s
+    newModelError                         0.000644095995 s
+    attemptD2h                            0.000364255997 s
+    attemptHostBuild                      9.5771e-05 s
+    retract                               0.008885694 s
+    nonlinearTrialError                   0.007476633 s
+  GPU median transfer bytes:
+    pattern H2D: 644588
+    numeric H2D: 15110208
+    setup D2H: 635576
+    attempt D2H: 576384
+    PCG convergence D2H: 0
+  published timing/cuda_sparse/benchmark_logs/20260816_extended_size_campaign/pose2-w1000/results.json.cudss-auto.json and timing/cuda_sparse/benchmark_logs/20260816_extended_size_campaign/pose2-w1000/results.csv.cudss-auto.csv
+CUDA direct sparse LM benchmark
+GPU: NVIDIA A100 80GB PCIe (sm_80, 85093777408 bytes)
+NVIDIA driver: 580.173.02, CUDA driver API: 13000
+CUDA runtime: 13000, compiled: 13000
+Build: Release, git: c949b0736afa59a6b884be9242980488d74ebbb6 (clean)
+Warm-ups: 1, measured repeats: 9
+GPU timing fields overlap; they are not an exclusive sum.
+
+Loading complete: pose2
+  path: /tmp/cuda-final-expanded-size-data/pose2-w1000/w10000.graph
+  factors: 3748, values: 1000, initialization: raw (0 s), initial error: 3848.86036401371
+  warm-up 0: CPU, GPU complete
+  repetition 0: CPU 0.338927202 s, GPU 0.171720901 s
+  repetition 1: CPU 0.363710124 s, GPU 0.168928085 s
+  repetition 2: CPU 0.36283788 s, GPU 0.168105447 s
+  repetition 3: CPU 0.388009071 s, GPU 0.151636699 s
+  repetition 4: CPU 0.340941474 s, GPU 0.169064104 s
+  repetition 5: CPU 0.378292095 s, GPU 0.162457398 s
+  repetition 6: CPU 0.402887028 s, GPU 0.16896699 s
+  repetition 7: CPU 0.411014433 s, GPU 0.14906841 s
+  repetition 8: CPU 0.385551415 s, GPU 0.153367508 s
+
+Result: pose2
+  factors 3748, values 1000, residual rows 11244, columns 3000, J.nnz 67455, H.nnz 76446
+  objective 7.09625443400649, maximum CPU/GPU difference 2.48689957516035e-14
+  CPU external wall                   median 0.378292095 s, mean 0.374685636 s, stddev 0.0238090806 s, range [0.338927202, 0.411014433] s
+  GPU external wall                   median 0.168105447 s, mean 0.162590616 s, stddev 0.00832949906 s, range [0.14906841, 0.171720901] s
+  median CPU/GPU speedup: 2.25032622x
+  GPU iterations 24, outer linearizations 24, lambda attempts 24, analyses 1, termination converged
+  GPU detailed timing medians (overlapping fields):
+    totalWall                             0.167501075 s
+    initialError                          0.000459787 s
+    plan                                  0.001764815 s
+    persistentSetupWall                   0.005741548 s
+    deviceInitializeWall                  0.003706928 s
+    patternH2d                            0.000387104009 s
+    structureSetup                        0.00194700804 s
+    setupD2h                              0.000353055999 s
+    hostZero                              0.004502631 s
+    factorLinearizationAndPackingWall     0.029782634 s
+    factorLinearizationCpuSum             0.115366886 s
+    csrPackingCpuSum                      0.073987442 s
+    numericH2d                            0.00280655999 s
+    transposeUpdate                       0.002836 s
+    normalJtJ                             0.000393216001 s
+    normalJtb                             0.000410624003 s
+    diagonalExtraction                    0.000144384004 s
+    oldModelError                         0.000309248006 s
+    dampingPreparation                    0.000147456001 s
+    dampingApplication                    0.000161792004 s
+    cudssAnalysis                         0 s
+    cudssFactorAndSolve                   0 s
+    cudssDataInfoBoundaryWall             0 s
+    pcgPreconditionerBuild                0 s
+    pcgSolve                              0 s
+    pcgD2h                                0 s
+    newModelError                         0.000653311998 s
+    attemptD2h                            0.000469631998 s
+    attemptHostBuild                      0.000109609 s
+    retract                               0.00929995 s
+    nonlinearTrialError                   0.009422156 s
+  GPU median transfer bytes:
+    pattern H2D: 644588
+    numeric H2D: 15110208
+    setup D2H: 635576
+    attempt D2H: 576384
+    PCG convergence D2H: 0
+  published timing/cuda_sparse/benchmark_logs/20260816_extended_size_campaign/pose2-w1000/results.json.cudss-gtsam.json and timing/cuda_sparse/benchmark_logs/20260816_extended_size_campaign/pose2-w1000/results.csv.cudss-gtsam.csv
+CUDA direct sparse LM benchmark
+GPU: NVIDIA A100 80GB PCIe (sm_80, 85093777408 bytes)
+NVIDIA driver: 580.173.02, CUDA driver API: 13000
+CUDA runtime: 13000, compiled: 13000
+Build: Release, git: c949b0736afa59a6b884be9242980488d74ebbb6 (clean)
+Warm-ups: 1, measured repeats: 9
+GPU timing fields overlap; they are not an exclusive sum.
+
+Loading complete: pose2
+  path: /tmp/cuda-final-expanded-size-data/pose2-w1000/w10000.graph
+  factors: 3748, values: 1000, initialization: raw (0 s), initial error: 3848.86036401371
+  warm-up 0: CPU, GPU complete
+  repetition 0: CPU 0.358110185 s, GPU 1.90654145 s
+  repetition 1: CPU 0.343556418 s, GPU 1.90151483 s
+  repetition 2: CPU 0.392370134 s, GPU 1.91077984 s
+  repetition 3: CPU 0.396790382 s, GPU 1.91428534 s
+  repetition 4: CPU 0.376056089 s, GPU 1.91509587 s
+  repetition 5: CPU 0.395005177 s, GPU 1.9125043 s
+  repetition 6: CPU 0.414105624 s, GPU 1.9081826 s
+  repetition 7: CPU 0.402556223 s, GPU 1.90739282 s
+  repetition 8: CPU 0.407519526 s, GPU 1.92068553 s
+
+Result: pose2
+  factors 3748, values 1000, residual rows 11244, columns 3000, J.nnz 67455, H.nnz 0
+  objective 7.09625443400649, maximum CPU/GPU difference 1.38565692253678e-09
+  CPU external wall                   median 0.395005177 s, mean 0.387341084 s, stddev 0.0221791269 s, range [0.343556418, 0.414105624] s
+  GPU external wall                   median 1.91077984 s, mean 1.91077584 s, stddev 0.00531282429 s, range [1.90151483, 1.92068553] s
+  median CPU/GPU speedup: 0.206724589x
+  GPU iterations 24, outer linearizations 24, lambda attempts 24, analyses 1, termination converged
+  GPU detailed timing medians (overlapping fields):
+    totalWall                             1.90983492 s
+    initialError                          0.000430291 s
+    plan                                  0.001890805 s
+    persistentSetupWall                   0.002712392 s
+    deviceInitializeWall                  0.000733519 s
+    patternH2d                            0.000126688004 s
+    structureSetup                        0.000324256003 s
+    setupD2h                              0 s
+    hostZero                              0.004201289 s
+    factorLinearizationAndPackingWall     0.028276721 s
+    factorLinearizationCpuSum             0.112003891 s
+    csrPackingCpuSum                      0.06975359 s
+    numericH2d                            0.002551616 s
+    transposeUpdate                       0.002814688 s
+    normalJtJ                             0 s
+    normalJtb                             0.000431104001 s
+    diagonalExtraction                    0.000260095997 s
+    oldModelError                         0.000416768003 s
+    dampingPreparation                    0.000152576004 s
+    dampingApplication                    0 s
+    cudssAnalysis                         0 s
+    cudssFactorAndSolve                   0 s
+    cudssDataInfoBoundaryWall             0 s
+    pcgPreconditionerBuild                0.000541225 s
+    pcgSolve                              1.82119431 s
+    pcgD2h                                0.044796096 s
+    newModelError                         0.000755488001 s
+    attemptD2h                            0.000374335997 s
+    attemptHostBuild                      8.3389e-05 s
+    retract                               0.008829744 s
+    nonlinearTrialError                   0.009562953 s
+  GPU median transfer bytes:
+    pattern H2D: 314800
+    numeric H2D: 15110208
+    setup D2H: 0
+    attempt D2H: 576384
+    PCG convergence D2H: 80840
+  published timing/cuda_sparse/benchmark_logs/20260816_extended_size_campaign/pose2-w1000/results.json.pcg.json and timing/cuda_sparse/benchmark_logs/20260816_extended_size_campaign/pose2-w1000/results.csv.pcg.csv
