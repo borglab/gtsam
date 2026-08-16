@@ -1456,6 +1456,27 @@ TEST(CudaSfmLevenbergMarquardt,
   EXPECT(expected == result.appliedScalarPermutation);
 }
 
+TEST(CudaSfmLevenbergMarquardt, FullNormalPcgUsesSharedIterativeSession) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+  CudaSfmLevenbergMarquardtParams params =
+      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  params.formulation = CudaSfmSystemFormulation::FullNormal;
+  params.linear.backend = CudaLinearSolverType::Pcg;
+  params.maxIterations = 1;
+  params.pcg.maxIterations = 300;
+  params.pcg.relativeTolerance = 1e-9;
+  params.pcg.convergenceCheckInterval = 1;
+  params.pcg.warmStart = false;
+
+  const CudaSfmLevenbergMarquardtResult result =
+      OptimizeCudaSfmWithoutValueDownload(data, params);
+  CHECK(result.finalError < result.initialError);
+  CHECK(result.linearSolveStats.backend == CudaLinearSolverType::Pcg);
+  CHECK(result.linearSolveStats.lastPcgConverged);
+  CHECK(result.linearSolveStats.pcgIterationsTotal > 0);
+}
+
 TEST(CudaSfmFactorGraphConversion,
      ConvertsGeneralSfmFactorsWithArbitraryKeys) {
   const SfmData measuredData = makeTrueBalLikeData();

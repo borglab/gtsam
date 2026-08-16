@@ -67,7 +67,7 @@ std::string usage() {
          "[--gaussian-graph-pack-diagnostic] "
          "[--linearization-benchmark] [--linearization-repeats N] "
          "[--cuda-linear-solver dense-schur|cudss-schur|pcg-schur|"
-         "cudss-full-normal] "
+         "cudss-full-normal|pcg-full-normal] "
          "[--cuda-lm-graph-kind raw|point-batch|camera-batch] "
          "[--batch-chunk-size N] "
          "[--cuda-warmup-file FILE] "
@@ -89,6 +89,7 @@ enum class CudaLinearSolverOption {
   CudssSchur,
   PcgSchur,
   CudssFullNormal,
+  PcgFullNormal,
 };
 
 enum class CudaGraphKind {
@@ -149,6 +150,8 @@ const char* cudaLinearSolverName(CudaLinearSolverOption solver) {
       return "pcg-schur";
     case CudaLinearSolverOption::CudssFullNormal:
       return "cudss-full-normal";
+    case CudaLinearSolverOption::PcgFullNormal:
+      return "pcg-full-normal";
   }
   return "unknown";
 }
@@ -509,6 +512,8 @@ gtsam::cuda::CudaSfmLinearSolverType cudaLinearSolverType(
       return gtsam::cuda::CudaSfmLinearSolverType::PcgSchur;
     case CudaLinearSolverOption::CudssFullNormal:
       return gtsam::cuda::CudaSfmLinearSolverType::CudssFullNormal;
+    case CudaLinearSolverOption::PcgFullNormal:
+      return gtsam::cuda::CudaSfmLinearSolverType::PcgFullNormal;
   }
   return gtsam::cuda::CudaSfmLinearSolverType::DenseSchur;
 }
@@ -1176,6 +1181,8 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
     options.cudaLinearSolver = CudaLinearSolverOption::PcgSchur;
   } else if (linearSolver == "cudss-full-normal") {
     options.cudaLinearSolver = CudaLinearSolverOption::CudssFullNormal;
+  } else if (linearSolver == "pcg-full-normal") {
+    options.cudaLinearSolver = CudaLinearSolverOption::PcgFullNormal;
   } else if (linearSolver) {
     throw std::runtime_error(usage());
   }

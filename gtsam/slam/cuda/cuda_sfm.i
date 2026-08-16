@@ -16,7 +16,8 @@ enum class CudaSfmLinearSolverType {
   DenseSchur,
   CudssSchur,
   PcgSchur,
-  CudssFullNormal
+  CudssFullNormal,
+  PcgFullNormal
 };
 
 enum class CudaSfmSystemFormulation {

@@ -4,6 +4,7 @@
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/cuda/CudaBlockOrdering.h>
 #include <gtsam/linear/cuda/CudaLinearSolver.h>
+#include <gtsam/linear/cuda/CudaSparseSpdOperator.h>
 #include <gtsam/nonlinear/BatchFactor.h>
 #include <gtsam/nonlinear/internal/NonlinearOptimizerState.h>
 #include <gtsam/nonlinear/cuda/CudssLinearSolver.h>
@@ -212,6 +213,8 @@ EffectiveSfmLinearConfiguration EffectiveLinearConfiguration(
     case CudaSfmLinearSolverType::CudssFullNormal:
       return {CudaSfmSystemFormulation::FullNormal,
               CudaLinearSolverType::Cudss};
+    case CudaSfmLinearSolverType::PcgFullNormal:
+      return {CudaSfmSystemFormulation::FullNormal, CudaLinearSolverType::Pcg};
   }
   throw std::invalid_argument("unknown SFM CUDA solver configuration");
 }
@@ -242,12 +245,14 @@ CudaSfmLinearSolverType ValidateAndSelectSolverMode(
   if (config.backend == CudaLinearSolverType::Cudss) {
     return CudaSfmLinearSolverType::CudssFullNormal;
   }
+  if (config.backend == CudaLinearSolverType::Pcg) {
+    return CudaSfmLinearSolverType::PcgFullNormal;
+  }
   if (config.backend == CudaLinearSolverType::DenseCholesky) {
     throw std::invalid_argument(
         "SFM full-normal systems do not support dense Cholesky");
   }
-  throw std::invalid_argument(
-      "SFM full-normal PCG is not available in this build");
+  throw std::invalid_argument("unknown SFM full-normal CUDA backend");
 }
 
 NonlinearOptimizerParams BaseParamsAdapter(
@@ -569,6 +574,9 @@ std::string CudaSfmLevenbergMarquardtParams::getLinearSolver() const {
   if (config.formulation == CudaSfmSystemFormulation::FullNormal &&
       config.backend == CudaLinearSolverType::Cudss)
     return "cudss-full-normal";
+  if (config.formulation == CudaSfmSystemFormulation::FullNormal &&
+      config.backend == CudaLinearSolverType::Pcg)
+    return "pcg-full-normal";
   switch (linearSolver) {
     case CudaSfmLinearSolverType::DenseSchur:
       return "dense-schur";
@@ -578,6 +586,8 @@ std::string CudaSfmLevenbergMarquardtParams::getLinearSolver() const {
       return "pcg-schur";
     case CudaSfmLinearSolverType::CudssFullNormal:
       return "cudss-full-normal";
+    case CudaSfmLinearSolverType::PcgFullNormal:
+      return "pcg-full-normal";
   }
   throw std::invalid_argument("Unknown CUDA SFM linear solver type");
 }
@@ -595,6 +605,12 @@ void CudaSfmLevenbergMarquardtParams::setLinearSolver(
     linearSolver = CudaSfmLinearSolverType::CudssFullNormal;
     formulation = CudaSfmSystemFormulation::FullNormal;
     linear.backend = CudaLinearSolverType::Cudss;
+    return;
+  }
+  if (normalized == "pcg-full-normal" || normalized == "full-normal-pcg") {
+    linearSolver = CudaSfmLinearSolverType::PcgFullNormal;
+    formulation = CudaSfmSystemFormulation::FullNormal;
+    linear.backend = CudaLinearSolverType::Pcg;
     return;
   }
   if (normalized == "cudss-schur" || normalized == "schur-cudss") {
@@ -982,6 +998,8 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
   CudaDeviceArray<double> delta;
   stageStart = Clock::now();
   std::unique_ptr<CudaLinearSolverSession> fullNormalSession;
+  std::unique_ptr<CudaSparseSpdOperator> fullNormalOperator;
+  CudaSparseSpdJacobiPreconditioner fullNormalPreconditioner;
   result.cudssSolverConstructionElapsed = ElapsedSince(stageStart);
   stageStart = Clock::now();
   CudaSfmDenseSchurSolver denseSchurSolver;
@@ -1017,10 +1035,16 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
       reducedAnalyzed = true;
     }
   }
-  if (solverMode == CudaSfmLinearSolverType::CudssFullNormal) {
+  if (solverMode == CudaSfmLinearSolverType::CudssFullNormal ||
+      solverMode == CudaSfmLinearSolverType::PcgFullNormal) {
     CudaLinearSolverOptions fullOptions;
-    fullOptions.backend = CudaLinearSolverType::Cudss;
-    fullOptions.useUserOrdering = !params.ordering.empty();
+    fullOptions.backend =
+        solverMode == CudaSfmLinearSolverType::CudssFullNormal
+            ? CudaLinearSolverType::Cudss
+            : CudaLinearSolverType::Pcg;
+    fullOptions.useUserOrdering = fullOptions.backend ==
+                                       CudaLinearSolverType::Cudss &&
+                                   !params.ordering.empty();
     fullNormalSession =
         std::make_unique<CudaLinearSolverSession>(fullOptions);
     if (fullOptions.useUserOrdering) {
@@ -1045,6 +1069,13 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
       result.uploadPatternH2dCopyElapsed = uploadPatternProfile.copyElapsed;
       result.uploadPatternH2dBytes = uploadPatternProfile.bytes;
       AddH2dTransfer(uploadPatternProfile, &result);
+    }
+    if (fullOptions.backend == CudaLinearSolverType::Pcg) {
+      fullNormalSession->analyze(totalDimension, params.pcg, context.stream(),
+                                 detailedProfiling);
+      delta.resize(static_cast<size_t>(totalDimension));
+      fullNormalOperator = std::make_unique<CudaSparseSpdOperator>(system);
+      solverAnalyzed = true;
     }
   }
 
@@ -1217,7 +1248,15 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
           solverAnalyzed = true;
         }
         stageStart = DetailedProfileStart(detailedProfiling);
-        fullNormalSession->solve(system, &delta, context.stream());
+        if (solverMode == CudaSfmLinearSolverType::PcgFullNormal) {
+          fullNormalPreconditioner.build(system, context.stream());
+          fullNormalSession->solve(*fullNormalOperator,
+                                   fullNormalPreconditioner,
+                                   system.rhs().data(), &delta,
+                                   context.stream());
+        } else {
+          fullNormalSession->solve(system, &delta, context.stream());
+        }
         attemptProfile.cudssSolveElapsed =
             DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
                                           context.stream());
