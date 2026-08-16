@@ -3,6 +3,7 @@
 #include <gtsam/nonlinear/cuda/DeviceGeometryKernels.h>
 #include <gtsam/slam/cuda/CudaSfmDenseSchurSolver.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionLinearization.h>
+#include <gtsam/slam/cuda/CudaSfmSchurProblem.h>
 
 #include <algorithm>
 #include <cmath>
@@ -452,40 +453,92 @@ void CheckSchurInputs(const DeviceValues& values,
 
 }  // namespace
 
-struct CudaSfmDenseSchurSolver::Impl {
-  CudaDenseCholeskySolver denseSolver;
+struct CudaSfmSchurProblem::Impl {
   CudaDeviceArray<double> denseCameraSystem;
   CudaDeviceArray<double> cameraRhs;
   CudaSfmProjectionLinearization linearization;
   CudaDeviceArray<int> singularPointBlocks;
+  const CudaSfmProjectionBatch* batch = nullptr;
+  int numCameras = 0;
+  int cameraDim = 0;
+  int numPoints = 0;
+  bool isLinearized = false;
+  size_t linearizationCount = 0;
+  size_t denseAssemblyCount = 0;
 
-  void solve(const DeviceValues& values, const CudaSfmProjectionBatch& batch,
-             int numCameras, double lambda, CudaDeviceArray<double>* delta,
-             cudaStream_t stream) {
-    solve(values, batch, numCameras, lambda, nullptr, delta, stream);
+  void initialize(const CudaSfmProjectionBatch& newBatch,
+                  int newNumCameras) {
+    if (newNumCameras < 0) {
+      throw std::invalid_argument("CudaSfmSchurProblem numCameras < 0");
+    }
+    if (newBatch.numCameras() > static_cast<size_t>(newNumCameras)) {
+      throw std::invalid_argument(
+          "CudaSfmSchurProblem batch camera count exceeds numCameras");
+    }
+    if (newBatch.pointObservationOffsets().size() !=
+        newBatch.numPoints() + 1) {
+      throw std::invalid_argument(
+          "CudaSfmSchurProblem point offset size mismatch");
+    }
+    if (static_cast<size_t>(newNumCameras) >
+        static_cast<size_t>(std::numeric_limits<int>::max() / 9) ||
+        newBatch.numPoints() >
+            static_cast<size_t>((std::numeric_limits<int>::max() -
+                                 9 * newNumCameras) /
+                                3)) {
+      throw std::invalid_argument("CudaSfmSchurProblem dimension too large");
+    }
+    batch = &newBatch;
+    numCameras = newNumCameras;
+    cameraDim = 9 * numCameras;
+    numPoints = static_cast<int>(newBatch.numPoints());
+    isLinearized = false;
   }
 
-  void solve(const DeviceValues& values, const CudaSfmProjectionBatch& batch,
-             int numCameras, double lambda,
-             const CudaDeviceArray<double>* dampingDiagonal,
-             CudaDeviceArray<double>* delta, cudaStream_t stream) {
-    CheckSchurInputs(values, batch, numCameras, lambda, dampingDiagonal, delta);
-    const int cameraDim = 9 * numCameras;
-    const int numPoints = static_cast<int>(batch.numPoints());
-    const int totalDim = cameraDim + 3 * numPoints;
-    delta->resize(static_cast<size_t>(totalDim));
-    if (totalDim == 0) {
-      return;
-    }
+  int totalDim() const { return cameraDim + 3 * numPoints; }
 
-    if (cameraDim <= 0) {
-      delta->zero(stream);
-      return;
+  void linearizeValues(const DeviceValues& values, cudaStream_t stream) {
+    if (!batch) {
+      throw std::logic_error(
+          "CudaSfmSchurProblem must be initialized before linearize");
+    }
+    const auto& cameraBlock = values.block<DevicePinholeCameraCal3Bundler>(
+        kDevicePinholeCameraCal3BundlerType);
+    const auto& pointBlock = values.block<DevicePoint3>(kDevicePoint3Type);
+    if (batch->numCameras() > cameraBlock.values.size() ||
+        batch->numPoints() > pointBlock.values.size()) {
+      throw std::invalid_argument(
+          "CudaSfmSchurProblem batch/value size mismatch");
+    }
+    LinearizeCudaSfmProjectionBatch(values, *batch, &linearization, stream);
+    isLinearized = true;
+    ++linearizationCount;
+  }
+
+  CudaDenseSpdSystemView prepareDense(
+      double lambda, const CudaDeviceArray<double>* dampingDiagonal,
+      cudaStream_t stream) {
+    if (!isLinearized || !batch) {
+      throw std::logic_error(
+          "CudaSfmSchurProblem must be linearized before prepareDense");
+    }
+    if (!(lambda > 0.0) || !std::isfinite(lambda)) {
+      throw std::invalid_argument(
+          "CudaSfmSchurProblem requires finite lambda > 0");
+    }
+    if (dampingDiagonal &&
+        dampingDiagonal->size() != static_cast<size_t>(totalDim())) {
+      throw std::invalid_argument(
+          "CudaSfmSchurProblem damping diagonal size mismatch");
+    }
+    if (cameraDim == 0) {
+      ++denseAssemblyCount;
+      return {0, 0, nullptr, nullptr};
     }
     if (static_cast<size_t>(cameraDim) >
         std::numeric_limits<size_t>::max() / static_cast<size_t>(cameraDim)) {
       throw std::invalid_argument(
-          "SolveCudaSfmDenseSchur camera system too big");
+          "CudaSfmSchurProblem camera system too big");
     }
 
     denseCameraSystem.resize(static_cast<size_t>(cameraDim) *
@@ -495,14 +548,14 @@ struct CudaSfmDenseSchurSolver::Impl {
     denseCameraSystem.zero(stream);
     cameraRhs.zero(stream);
     singularPointBlocks.zero(stream);
-    LinearizeCudaSfmProjectionBatch(values, batch, &linearization, stream);
 
     const int pointGrid =
         (numPoints + kDenseSchurBlockSize - 1) / kDenseSchurBlockSize;
     if (pointGrid > 0) {
       AccumulateDenseSchurKernel<<<pointGrid, kDenseSchurBlockSize, 0,
                                    stream>>>(
-          batch.observations().data(), batch.pointObservationOffsets().data(),
+          batch->observations().data(),
+          batch->pointObservationOffsets().data(),
           linearization.residuals.data(), linearization.cameraJacobians.data(),
           linearization.pointJacobians.data(), numPoints, cameraDim, lambda,
           dampingDiagonal ? dampingDiagonal->data() : nullptr,
@@ -512,13 +565,14 @@ struct CudaSfmDenseSchurSolver::Impl {
     }
 
     const int longTrackGrid =
-        static_cast<int>(batch.longTrackPointSlots().size());
+        static_cast<int>(batch->longTrackPointSlots().size());
     if (longTrackGrid > 0) {
       AccumulateLongTrackDenseSchurKernel<<<longTrackGrid,
                                             kLongTrackSchurBlockSize, 0,
                                             stream>>>(
-          batch.longTrackPointSlots().data(), longTrackGrid,
-          batch.observations().data(), batch.pointObservationOffsets().data(),
+          batch->longTrackPointSlots().data(), longTrackGrid,
+          batch->observations().data(),
+          batch->pointObservationOffsets().data(),
           linearization.residuals.data(), linearization.cameraJacobians.data(),
           linearization.pointJacobians.data(), cameraDim, lambda,
           dampingDiagonal ? dampingDiagonal->data() : nullptr,
@@ -534,24 +588,153 @@ struct CudaSfmDenseSchurSolver::Impl {
         denseCameraSystem.data());
     GTSAM_CUDA_CHECK(cudaGetLastError());
 
-    denseSolver.solveInPlace(
-        {cameraDim, cameraDim, denseCameraSystem.data(), cameraRhs.data()},
-        stream);
-    delta->zero(stream);
-    GTSAM_CUDA_CHECK(cudaMemcpyAsync(delta->data(), cameraRhs.data(),
-                                     sizeof(double) * cameraRhs.size(),
-                                     cudaMemcpyDeviceToDevice, stream));
+    ++denseAssemblyCount;
+    return {cameraDim, cameraDim, denseCameraSystem.data(), cameraRhs.data()};
+  }
+
+  void recoverPoints(double lambda,
+                     const CudaDeviceArray<double>* dampingDiagonal,
+                     const CudaDeviceArray<double>& cameraDelta,
+                     CudaDeviceArray<double>* fullDelta,
+                     cudaStream_t stream) {
+    if (!fullDelta) {
+      throw std::invalid_argument(
+          "CudaSfmSchurProblem requires full delta output");
+    }
+    if (!isLinearized || !batch) {
+      throw std::logic_error(
+          "CudaSfmSchurProblem must be linearized before point recovery");
+    }
+    if (!(lambda > 0.0) || !std::isfinite(lambda)) {
+      throw std::invalid_argument(
+          "CudaSfmSchurProblem requires finite lambda > 0");
+    }
+    if (cameraDelta.size() != static_cast<size_t>(cameraDim)) {
+      throw std::invalid_argument(
+          "CudaSfmSchurProblem camera delta size mismatch");
+    }
+    if (dampingDiagonal &&
+        dampingDiagonal->size() != static_cast<size_t>(totalDim())) {
+      throw std::invalid_argument(
+          "CudaSfmSchurProblem damping diagonal size mismatch");
+    }
+
+    fullDelta->resize(static_cast<size_t>(totalDim()));
+    fullDelta->zero(stream);
+    if (cameraDim > 0) {
+      GTSAM_CUDA_CHECK(cudaMemcpyAsync(
+          fullDelta->data(), cameraDelta.data(), sizeof(double) * cameraDim,
+          cudaMemcpyDeviceToDevice, stream));
+    }
 
     singularPointBlocks.zero(stream);
+    const int pointGrid =
+        (numPoints + kDenseSchurBlockSize - 1) / kDenseSchurBlockSize;
     if (pointGrid > 0) {
       RecoverPointDeltaKernel<<<pointGrid, kDenseSchurBlockSize, 0, stream>>>(
-          batch.observations().data(), batch.pointObservationOffsets().data(),
+          batch->observations().data(),
+          batch->pointObservationOffsets().data(),
           linearization.residuals.data(), linearization.cameraJacobians.data(),
           linearization.pointJacobians.data(), numPoints, cameraDim, lambda,
-          dampingDiagonal ? dampingDiagonal->data() : nullptr, delta->data(),
-          singularPointBlocks.data());
+          dampingDiagonal ? dampingDiagonal->data() : nullptr,
+          fullDelta->data(), singularPointBlocks.data());
       GTSAM_CUDA_CHECK(cudaGetLastError());
     }
+  }
+};
+
+CudaSfmSchurProblem::CudaSfmSchurProblem()
+    : impl_(std::make_unique<Impl>()) {}
+CudaSfmSchurProblem::~CudaSfmSchurProblem() = default;
+CudaSfmSchurProblem::CudaSfmSchurProblem(CudaSfmSchurProblem&&) noexcept =
+    default;
+CudaSfmSchurProblem& CudaSfmSchurProblem::operator=(
+    CudaSfmSchurProblem&&) noexcept = default;
+
+void CudaSfmSchurProblem::initialize(const CudaSfmProjectionBatch& batch,
+                                     int numCameras) {
+  impl_->initialize(batch, numCameras);
+}
+
+void CudaSfmSchurProblem::linearize(const DeviceValues& values,
+                                    cudaStream_t stream) {
+  impl_->linearizeValues(values, stream);
+}
+
+CudaDenseSpdSystemView CudaSfmSchurProblem::prepareDense(
+    double lambda, cudaStream_t stream) {
+  return impl_->prepareDense(lambda, nullptr, stream);
+}
+
+CudaDenseSpdSystemView CudaSfmSchurProblem::prepareDense(
+    double lambda, const CudaDeviceArray<double>& dampingDiagonal,
+    cudaStream_t stream) {
+  return impl_->prepareDense(lambda, &dampingDiagonal, stream);
+}
+
+void CudaSfmSchurProblem::recoverPoints(
+    double lambda, const CudaDeviceArray<double>& cameraDelta,
+    CudaDeviceArray<double>* fullDelta, cudaStream_t stream) {
+  impl_->recoverPoints(lambda, nullptr, cameraDelta, fullDelta, stream);
+}
+
+void CudaSfmSchurProblem::recoverPoints(
+    double lambda, const CudaDeviceArray<double>& dampingDiagonal,
+    const CudaDeviceArray<double>& cameraDelta,
+    CudaDeviceArray<double>* fullDelta, cudaStream_t stream) {
+  impl_->recoverPoints(lambda, &dampingDiagonal, cameraDelta, fullDelta,
+                       stream);
+}
+
+int CudaSfmSchurProblem::cameraDimension() const { return impl_->cameraDim; }
+int CudaSfmSchurProblem::totalDimension() const { return impl_->totalDim(); }
+size_t CudaSfmSchurProblem::linearizationCount() const {
+  return impl_->linearizationCount;
+}
+size_t CudaSfmSchurProblem::denseAssemblyCount() const {
+  return impl_->denseAssemblyCount;
+}
+const CudaDeviceArray<double>& CudaSfmSchurProblem::cameraRhs() const {
+  return impl_->cameraRhs;
+}
+
+struct CudaSfmDenseSchurSolver::Impl {
+  CudaSfmSchurProblem problem;
+  CudaDenseCholeskySolver denseSolver;
+
+  void linearize(const DeviceValues& values, const CudaSfmProjectionBatch& batch,
+                 int numCameras, cudaStream_t stream) {
+    problem.initialize(batch, numCameras);
+    problem.linearize(values, stream);
+  }
+
+  void solveLinearized(double lambda,
+                       const CudaDeviceArray<double>* dampingDiagonal,
+                       CudaDeviceArray<double>* delta, cudaStream_t stream) {
+    CudaDenseSpdSystemView dense =
+        dampingDiagonal ? problem.prepareDense(lambda, *dampingDiagonal, stream)
+                        : problem.prepareDense(lambda, stream);
+    if (dense.dimension == 0) {
+      delta->resize(static_cast<size_t>(problem.totalDimension()));
+      delta->zero(stream);
+      return;
+    }
+    denseSolver.solveInPlace(dense, stream);
+    if (dampingDiagonal) {
+      problem.recoverPoints(lambda, *dampingDiagonal, problem.cameraRhs(),
+                            delta, stream);
+    } else {
+      problem.recoverPoints(lambda, problem.cameraRhs(), delta, stream);
+    }
+  }
+
+  void solve(const DeviceValues& values, const CudaSfmProjectionBatch& batch,
+             int numCameras, double lambda,
+             const CudaDeviceArray<double>* dampingDiagonal,
+             CudaDeviceArray<double>* delta, cudaStream_t stream) {
+    CheckSchurInputs(values, batch, numCameras, lambda, dampingDiagonal, delta);
+    linearize(values, batch, numCameras, stream);
+    solveLinearized(lambda, dampingDiagonal, delta, stream);
   }
 };
 
@@ -570,7 +753,32 @@ void CudaSfmDenseSchurSolver::solve(
     const DeviceValues& values, const CudaSfmProjectionBatch& batch,
     int numCameras, double lambda, CudaDeviceArray<double>* delta,
     cudaStream_t stream) {
-  impl_->solve(values, batch, numCameras, lambda, delta, stream);
+  impl_->solve(values, batch, numCameras, lambda, nullptr, delta, stream);
+}
+
+void CudaSfmDenseSchurSolver::linearize(
+    const DeviceValues& values, const CudaSfmProjectionBatch& batch,
+    int numCameras, cudaStream_t stream) {
+  impl_->linearize(values, batch, numCameras, stream);
+}
+
+void CudaSfmDenseSchurSolver::solveLinearized(
+    double lambda, CudaDeviceArray<double>* delta, cudaStream_t stream) {
+  impl_->solveLinearized(lambda, nullptr, delta, stream);
+}
+
+void CudaSfmDenseSchurSolver::solveLinearized(
+    double lambda, const CudaDeviceArray<double>& dampingDiagonal,
+    CudaDeviceArray<double>* delta, cudaStream_t stream) {
+  impl_->solveLinearized(lambda, &dampingDiagonal, delta, stream);
+}
+
+size_t CudaSfmDenseSchurSolver::linearizationCount() const {
+  return impl_->problem.linearizationCount();
+}
+
+size_t CudaSfmDenseSchurSolver::denseAssemblyCount() const {
+  return impl_->problem.denseAssemblyCount();
 }
 
 void CudaSfmDenseSchurSolver::solve(

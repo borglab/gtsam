@@ -13,6 +13,7 @@
 #include <gtsam/slam/cuda/CudaSfmProjectionLinearization.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionBatch.h>
 #include <gtsam/slam/cuda/CudaSfmReducedCsrPlan.h>
+#include <gtsam/slam/cuda/CudaSfmSchurProblem.h>
 #include <gtsam/slam/cuda/CudaSfmValues.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/sfm/SfmData.h>
@@ -2145,6 +2146,51 @@ TEST(CudaSfmDenseSchurSolver, MatchesFullNormalEquationDeltaOnTinyBal) {
   LONGS_EQUAL(full.size(), schur.size());
   for (size_t i = 0; i < full.size(); ++i) {
     DOUBLES_EQUAL(full[i], schur[i], 1e-6);
+  }
+}
+
+TEST(CudaSfmSchurProblem, ReusesLinearizationAndRebuildsDamping) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+  CudaContext context;
+  DeviceValues values = PackSfmValues(data, context.stream());
+  const CudaSfmProjectionBatch batch =
+      CudaSfmProjectionBatch::FromSfmData(data, context.stream());
+
+  CudaSfmSchurProblem problem;
+  problem.initialize(batch, static_cast<int>(data.numberCameras()));
+  problem.linearize(values, context.stream());
+  const CudaDenseSpdSystemView first =
+      problem.prepareDense(1e-3, context.stream());
+  std::vector<double> firstValues(first.dimension * first.dimension);
+  GTSAM_CUDA_CHECK(cudaMemcpyAsync(
+      firstValues.data(), first.values, sizeof(double) * firstValues.size(),
+      cudaMemcpyDeviceToHost, context.stream()));
+  context.synchronize();
+
+  const CudaDenseSpdSystemView second =
+      problem.prepareDense(4e-3, context.stream());
+  std::vector<double> secondValues(second.dimension * second.dimension);
+  GTSAM_CUDA_CHECK(cudaMemcpyAsync(
+      secondValues.data(), second.values, sizeof(double) * secondValues.size(),
+      cudaMemcpyDeviceToHost, context.stream()));
+  context.synchronize();
+
+  const CudaDenseSpdSystemView repeatedFirst =
+      problem.prepareDense(1e-3, context.stream());
+  std::vector<double> repeatedFirstValues(repeatedFirst.dimension *
+                                          repeatedFirst.dimension);
+  GTSAM_CUDA_CHECK(cudaMemcpyAsync(
+      repeatedFirstValues.data(), repeatedFirst.values,
+      sizeof(double) * repeatedFirstValues.size(), cudaMemcpyDeviceToHost,
+      context.stream()));
+  context.synchronize();
+
+  EXPECT_LONGS_EQUAL(1, problem.linearizationCount());
+  EXPECT_LONGS_EQUAL(3, problem.denseAssemblyCount());
+  EXPECT(firstValues != secondValues);
+  for (size_t scalar = 0; scalar < firstValues.size(); ++scalar) {
+    DOUBLES_EQUAL(firstValues[scalar], repeatedFirstValues[scalar], 1e-12);
   }
 }
 

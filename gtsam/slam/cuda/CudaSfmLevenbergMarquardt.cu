@@ -862,6 +862,13 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
           iterationProfile.dampingDiagonalElapsed;
     }
 
+    // Projection Jacobians depend on the accepted outer state, not lambda.
+    // Keep them alive across all damping retries in this outer iteration.
+    if (params.linearSolver == CudaSfmLinearSolverType::DenseSchur) {
+      denseSchurSolver.linearize(current, batch, numCameras,
+                                 context.stream());
+    }
+
     bool acceptedOrDone = false;
     int attemptIndex = 0;
     while (!acceptedOrDone) {
@@ -874,11 +881,10 @@ CudaSfmLevenbergMarquardtResult OptimizeCudaSfmImpl(
       if (params.linearSolver == CudaSfmLinearSolverType::DenseSchur) {
         stageStart = DetailedProfileStart(detailedProfiling);
         if (params.diagonalDamping) {
-          denseSchurSolver.solve(current, batch, numCameras, lambda,
-                                 dampingDiagonal, &delta, context.stream());
+          denseSchurSolver.solveLinearized(lambda, dampingDiagonal, &delta,
+                                           context.stream());
         } else {
-          denseSchurSolver.solve(current, batch, numCameras, lambda, &delta,
-                                 context.stream());
+          denseSchurSolver.solveLinearized(lambda, &delta, context.stream());
         }
         attemptProfile.denseSchurSolveElapsed =
             DetailedElapsedSinceAfterSync(detailedProfiling, stageStart,
