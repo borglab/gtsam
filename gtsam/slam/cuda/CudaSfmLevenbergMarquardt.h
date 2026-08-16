@@ -1,6 +1,8 @@
 #pragma once
 
 #include <gtsam/dllexport.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/linear/cuda/CudaLinearSolver.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/nonlinear/NonlinearOptimizerParams.h>
 #include <gtsam/nonlinear/Values.h>
@@ -15,6 +17,7 @@ namespace gtsam::cuda {
 
 enum class CudaSfmLinearSolverType {
   DenseSchur,
+  CudssSchur,
   CudssFullNormal,
 };
 
@@ -39,6 +42,8 @@ class GTSAM_EXPORT CudaSfmLevenbergMarquardtParams {
   double minDiagonal;
   double maxDiagonal;
   CudaSfmLinearSolverType linearSolver = CudaSfmLinearSolverType::DenseSchur;
+  /** Optional camera-only ordering for CudssSchur. */
+  Ordering ordering;
 
   CudaSfmLevenbergMarquardtParams();
 
@@ -149,6 +154,8 @@ struct CudaSfmLevenbergMarquardtResult {
   int innerIterations = 0;
   int acceptedSteps = 0;
   double finalLambda = 0.0;
+  CudaLinearSolveStats linearSolveStats;
+  std::vector<int> appliedScalarPermutation;
   std::vector<CudaSfmLmIterationProfile> iterationProfiles;
   Values optimizedValues;
 };

@@ -14,6 +14,7 @@ namespace cuda {
 
 enum class CudaSfmLinearSolverType {
   DenseSchur,
+  CudssSchur,
   CudssFullNormal
 };
 

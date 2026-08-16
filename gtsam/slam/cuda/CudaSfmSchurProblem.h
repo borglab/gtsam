@@ -3,6 +3,7 @@
 #include <gtsam/base/cuda/CudaDeviceArray.h>
 #include <gtsam/dllexport.h>
 #include <gtsam/linear/cuda/CudaLinearSystem.h>
+#include <gtsam/linear/cuda/DeviceSparseSpdSystem.h>
 #include <gtsam/nonlinear/cuda/DeviceValues.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionBatch.h>
 
@@ -12,6 +13,8 @@
 #include <memory>
 
 namespace gtsam::cuda {
+
+class CudaSfmReducedCsrPlan;
 
 /**
  * Persistent SFM-specific producer for reduced camera Schur systems.
@@ -38,6 +41,13 @@ class GTSAM_EXPORT CudaSfmSchurProblem {
   CudaDenseSpdSystemView prepareDense(
       double lambda, const CudaDeviceArray<double>& dampingDiagonal,
       cudaStream_t stream = nullptr);
+
+  DeviceSparseSpdSystem& prepareSparse(
+      double lambda, const CudaSfmReducedCsrPlan& plan,
+      cudaStream_t stream = nullptr);
+  DeviceSparseSpdSystem& prepareSparse(
+      double lambda, const CudaDeviceArray<double>& dampingDiagonal,
+      const CudaSfmReducedCsrPlan& plan, cudaStream_t stream = nullptr);
 
   void recoverPoints(double lambda,
                      const CudaDeviceArray<double>& cameraDelta,

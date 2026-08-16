@@ -1345,9 +1345,38 @@ TEST(CudaSfmLevenbergMarquardt, DenseSchurRunsWithoutCudss) {
   CHECK(result.finalError < result.initialError);
   CHECK(result.optimizedValues.empty());
 }
+
 #endif
 
 #if GTSAM_ENABLE_CUDSS
+
+TEST(CudaSfmLevenbergMarquardt,
+     SparseSchurCudssMatchesDenseAndAppliesCameraOrdering) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+  CudaSfmLevenbergMarquardtParams denseParams =
+      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  denseParams.maxIterations = 2;
+  denseParams.relativeErrorTol = 0.0;
+  const CudaSfmLevenbergMarquardtResult dense =
+      OptimizeCudaSfmWithoutValueDownload(data, denseParams);
+
+  CudaSfmLevenbergMarquardtParams sparseParams = denseParams;
+  sparseParams.linearSolver = CudaSfmLinearSolverType::CudssSchur;
+  sparseParams.ordering = Ordering{C(1), C(0)};
+  const CudaSfmLevenbergMarquardtResult sparse =
+      OptimizeCudaSfmWithoutValueDownload(data, sparseParams);
+
+  DOUBLES_EQUAL(dense.finalError, sparse.finalError, 1e-6);
+  CHECK(sparse.linearSolveStats.userOrderingApplied);
+  CHECK(sparse.linearSolveStats.analysisCount == 1);
+  CHECK(sparse.linearSolveStats.solveCount > 0);
+  EXPECT(sparse.appliedScalarPermutation ==
+         CompileCudaScalarPermutation(
+             CudaSfmReducedCsrPlan(data, {C(0), C(1)}).cameraBlocks(),
+             sparseParams.ordering));
+}
+
 TEST(CudaSfmFactorGraphConversion,
      ConvertsGeneralSfmFactorsWithArbitraryKeys) {
   const SfmData measuredData = makeTrueBalLikeData();
@@ -2191,6 +2220,56 @@ TEST(CudaSfmSchurProblem, ReusesLinearizationAndRebuildsDamping) {
   EXPECT(firstValues != secondValues);
   for (size_t scalar = 0; scalar < firstValues.size(); ++scalar) {
     DOUBLES_EQUAL(firstValues[scalar], repeatedFirstValues[scalar], 1e-12);
+  }
+}
+
+TEST(CudaSfmSchurProblem, SparseAssemblyMatchesDenseAssembly) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+  CudaContext context;
+  DeviceValues values = PackSfmValues(data, context.stream());
+  const CudaSfmProjectionBatch batch =
+      CudaSfmProjectionBatch::FromSfmData(data, context.stream());
+  const std::vector<Key> cameraKeys{C(0), C(1)};
+  const CudaSfmReducedCsrPlan plan(data, cameraKeys);
+
+  CudaSfmSchurProblem problem;
+  problem.initialize(batch, static_cast<int>(data.numberCameras()));
+  problem.linearize(values, context.stream());
+  constexpr double lambda = 1e-3;
+  const CudaDenseSpdSystemView dense =
+      problem.prepareDense(lambda, context.stream());
+  DeviceSparseSpdSystem& sparse =
+      problem.prepareSparse(lambda, plan, context.stream());
+
+  std::vector<double> denseValues(dense.dimension * dense.dimension);
+  std::vector<double> denseRhs(dense.dimension);
+  std::vector<int> rowPointers;
+  std::vector<int> columns;
+  std::vector<double> sparseValues;
+  std::vector<double> sparseRhs;
+  GTSAM_CUDA_CHECK(cudaMemcpyAsync(
+      denseValues.data(), dense.values, sizeof(double) * denseValues.size(),
+      cudaMemcpyDeviceToHost, context.stream()));
+  GTSAM_CUDA_CHECK(cudaMemcpyAsync(
+      denseRhs.data(), dense.rhs, sizeof(double) * denseRhs.size(),
+      cudaMemcpyDeviceToHost, context.stream()));
+  sparse.rowPointers().download(&rowPointers, context.stream());
+  sparse.colIndices().download(&columns, context.stream());
+  sparse.values().download(&sparseValues, context.stream());
+  sparse.rhs().download(&sparseRhs, context.stream());
+  context.synchronize();
+
+  EXPECT(plan.rowPointers() == rowPointers);
+  EXPECT(plan.columnIndices() == columns);
+  for (int row = 0; row < dense.dimension; ++row) {
+    DOUBLES_EQUAL(denseRhs[row], sparseRhs[row], 1e-10);
+    for (int entry = rowPointers[row]; entry < rowPointers[row + 1]; ++entry) {
+      const int column = columns[entry];
+      const double denseSymmetricEntry =
+          denseValues[static_cast<size_t>(row) * dense.dimension + column];
+      DOUBLES_EQUAL(denseSymmetricEntry, sparseValues[entry], 1e-10);
+    }
   }
 }
 

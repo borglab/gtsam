@@ -3,12 +3,15 @@
 #include <gtsam/nonlinear/cuda/DeviceGeometryKernels.h>
 #include <gtsam/slam/cuda/CudaSfmDenseSchurSolver.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionLinearization.h>
+#include <gtsam/slam/cuda/CudaSfmReducedCsrPlan.h>
 #include <gtsam/slam/cuda/CudaSfmSchurProblem.h>
+#include <gtsam/slam/cuda/CudaSfmSparseSchur.h>
 
 #include <algorithm>
 #include <cmath>
 #include <limits>
 #include <stdexcept>
+#include <vector>
 
 namespace gtsam::cuda {
 namespace {
@@ -458,6 +461,9 @@ struct CudaSfmSchurProblem::Impl {
   CudaDeviceArray<double> cameraRhs;
   CudaSfmProjectionLinearization linearization;
   CudaDeviceArray<int> singularPointBlocks;
+  DeviceSparseSpdSystem sparseSystem;
+  std::vector<int> sparseRowPointers;
+  std::vector<int> sparseColumnIndices;
   const CudaSfmProjectionBatch* batch = nullptr;
   int numCameras = 0;
   int cameraDim = 0;
@@ -592,6 +598,39 @@ struct CudaSfmSchurProblem::Impl {
     return {cameraDim, cameraDim, denseCameraSystem.data(), cameraRhs.data()};
   }
 
+  DeviceSparseSpdSystem& prepareSparse(
+      double lambda, const CudaDeviceArray<double>* dampingDiagonal,
+      const CudaSfmReducedCsrPlan& plan, cudaStream_t stream) {
+    if (!isLinearized || !batch) {
+      throw std::logic_error(
+          "CudaSfmSchurProblem must be linearized before prepareSparse");
+    }
+    if (!(lambda > 0.0) || !std::isfinite(lambda)) {
+      throw std::invalid_argument(
+          "CudaSfmSchurProblem requires finite lambda > 0");
+    }
+    if (plan.dimension() != cameraDim) {
+      throw std::invalid_argument(
+          "CudaSfmSchurProblem sparse plan dimension mismatch");
+    }
+    if (dampingDiagonal &&
+        dampingDiagonal->size() != static_cast<size_t>(totalDim())) {
+      throw std::invalid_argument(
+          "CudaSfmSchurProblem damping diagonal size mismatch");
+    }
+    if (sparseRowPointers != plan.rowPointers() ||
+        sparseColumnIndices != plan.columnIndices()) {
+      sparseSystem.uploadPattern(plan.dimension(), plan.rowPointers(),
+                                 plan.columnIndices(), stream);
+      sparseRowPointers = plan.rowPointers();
+      sparseColumnIndices = plan.columnIndices();
+    }
+    AssembleCudaSfmSparseSchur(*batch, linearization, numCameras, lambda,
+                              dampingDiagonal, &sparseSystem,
+                              &singularPointBlocks, stream);
+    return sparseSystem;
+  }
+
   void recoverPoints(double lambda,
                      const CudaDeviceArray<double>* dampingDiagonal,
                      const CudaDeviceArray<double>& cameraDelta,
@@ -670,6 +709,17 @@ CudaDenseSpdSystemView CudaSfmSchurProblem::prepareDense(
     double lambda, const CudaDeviceArray<double>& dampingDiagonal,
     cudaStream_t stream) {
   return impl_->prepareDense(lambda, &dampingDiagonal, stream);
+}
+
+DeviceSparseSpdSystem& CudaSfmSchurProblem::prepareSparse(
+    double lambda, const CudaSfmReducedCsrPlan& plan, cudaStream_t stream) {
+  return impl_->prepareSparse(lambda, nullptr, plan, stream);
+}
+
+DeviceSparseSpdSystem& CudaSfmSchurProblem::prepareSparse(
+    double lambda, const CudaDeviceArray<double>& dampingDiagonal,
+    const CudaSfmReducedCsrPlan& plan, cudaStream_t stream) {
+  return impl_->prepareSparse(lambda, &dampingDiagonal, plan, stream);
 }
 
 void CudaSfmSchurProblem::recoverPoints(
