@@ -83,7 +83,7 @@ TEST(RISAMGraduatedFactor, Linearize) {
   GradSch::shared_ptr scheduler = std::make_shared<GradSch>();
 
   NonlinearFactor::shared_ptr factor =
-      RISAM::MakeGraduatedFactor<PriorFactor<double>>(
+      RISAM::MakeGraduated<PriorFactor<double>>(
           robustLoss, scheduler, 0, 0.0, noiseModel::Unit::Create(1));
   gtsam::Values values;
 
@@ -102,7 +102,7 @@ TEST(RISAMGraduatedFactor, Error) {
   GradSch::shared_ptr scheduler = std::make_shared<GradSch>();
 
   NonlinearFactor::shared_ptr factor =
-      RISAM::MakeGraduatedFactor<PriorFactor<double>>(
+      RISAM::MakeGraduated<PriorFactor<double>>(
           robustLoss, scheduler, 0, 0.0, noiseModel::Unit::Create(1));
   gtsam::Values values;
   values.insert(0, 1.0);
@@ -269,11 +269,11 @@ TEST(RISAM, RISAMIntegrationTest) {
     newFactors.emplace_shared<BetweenFactor<Pose2>>(
         i, i + 1, Pose2(1.0, 0.0, 0.0), odoNoise);
     newFactors.push_back(
-        RISAM::MakeGraduatedFactor<BearingRangeFactor<Pose2, Point2>>(
+        RISAM::MakeGraduated<BearingRangeFactor<Pose2, Point2>>(
             robustLoss, scheduler, i, 100, Rot2::fromAngle(M_PI / 2.0), 5.0,
             brNoise));
     newFactors.push_back(
-        RISAM::MakeGraduatedFactor<BearingRangeFactor<Pose2, Point2>>(
+        RISAM::MakeGraduated<BearingRangeFactor<Pose2, Point2>>(
             robustLoss, scheduler, i, 101, Rot2::fromAngle(-M_PI / 2.0), 5.0,
             brNoise));
     fullGraph.push_back(newFactors);
@@ -310,18 +310,18 @@ TEST(RISAM, RISAMIntegrationTest) {
     newFactors.emplace_shared<BetweenFactor<Pose2>>(
         i, i + 1, Pose2(1.0, 0.0, 0.0), odoNoise);
     newFactors.push_back(
-        RISAM::MakeGraduatedFactor<BearingRangeFactor<Pose2, Point2>>(
+        RISAM::MakeGraduated<BearingRangeFactor<Pose2, Point2>>(
             robustLoss, scheduler, i, 100, Rot2::fromAngle((3 * M_PI) / 4.0),
             7.07106, brNoise));
     newFactors.push_back(
-        RISAM::MakeGraduatedFactor<BearingRangeFactor<Pose2, Point2>>(
+        RISAM::MakeGraduated<BearingRangeFactor<Pose2, Point2>>(
             robustLoss, scheduler, i, 101, Rot2::fromAngle(-(3 * M_PI) / 4.0),
             7.07106, brNoise));
     fullGraph.push_back(newFactors);
 
     // Add an Outlier Measurement [is not added to fullGraph]
     newFactors.push_back(
-        RISAM::MakeGraduatedFactor<BearingRangeFactor<Pose2, Point2>>(
+        RISAM::MakeGraduated<BearingRangeFactor<Pose2, Point2>>(
             robustLoss, scheduler, i, 100, Rot2::fromAngle(0.4), 300, brNoise));
 
     Values init;

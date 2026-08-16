@@ -310,7 +310,7 @@ class GTSAM_EXPORT RISAM {
    */
   template <class FACTOR_TYPE, class... Args>
   static typename GenericGraduatedFactor<FACTOR_TYPE>::shared_ptr
-  MakeGraduatedFactor(Args&&... args) {
+  MakeGraduated(Args&&... args) {
     return std::make_shared<GenericGraduatedFactor<FACTOR_TYPE>>(
         std::forward<Args>(args)...);
   }
