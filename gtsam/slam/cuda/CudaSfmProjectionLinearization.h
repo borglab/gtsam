@@ -7,12 +7,20 @@
 
 #include <cuda_runtime_api.h>
 
+#include <cstddef>
+
 namespace gtsam::cuda {
 
 struct CudaSfmProjectionLinearization {
   CudaDeviceArray<double> residuals;
   CudaDeviceArray<double> cameraJacobians;
   CudaDeviceArray<double> pointJacobians;
+};
+
+/** Logical device-to-host traffic caused by a scalar reduction boundary. */
+struct CudaSfmReductionTransferProfile {
+  size_t d2hBytes = 0;
+  double d2hElapsed = 0.0;
 };
 
 void LinearizeCudaSfmProjectionBatch(
@@ -22,7 +30,9 @@ void LinearizeCudaSfmProjectionBatch(
 
 double ComputeCudaSfmProjectionError(const DeviceValues& values,
                                      const CudaSfmProjectionBatch& batch,
-                                     cudaStream_t stream = nullptr);
+                                     cudaStream_t stream = nullptr,
+                                     CudaSfmReductionTransferProfile* profile =
+                                         nullptr);
 
 void ComputeCudaSfmHessianDiagonal(
     const DeviceValues& values, const CudaSfmProjectionBatch& batch,
@@ -34,6 +44,14 @@ double ComputeCudaSfmLinearizedErrorChange(
     int numCameras, const CudaDeviceArray<double>& delta,
     double* oldLinearizedError = nullptr,
     double* newLinearizedError = nullptr, cudaStream_t stream = nullptr);
+
+double ComputeCudaSfmLinearizedErrorChange(
+    const CudaSfmProjectionLinearization& linearization,
+    const CudaSfmProjectionBatch& batch, int numCameras,
+    const CudaDeviceArray<double>& delta,
+    double* oldLinearizedError = nullptr,
+    double* newLinearizedError = nullptr, cudaStream_t stream = nullptr,
+    CudaSfmReductionTransferProfile* profile = nullptr);
 
 void AccumulateCudaSfmNormalEquations(
     const DeviceValues& values, const CudaSfmProjectionBatch& batch,

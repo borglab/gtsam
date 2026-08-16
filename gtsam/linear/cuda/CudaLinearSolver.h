@@ -13,13 +13,16 @@ namespace gtsam::cuda {
 
 struct CudaPcgOptions;
 
+/** Numerical backends owned by a shared CUDA linear-solver session. */
 enum class CudaLinearSolverType { DenseCholesky, Cudss, Pcg };
 
+/** Backend selection and optional externally supplied ordering policy. */
 struct CudaLinearSolverOptions {
   CudaLinearSolverType backend = CudaLinearSolverType::Cudss;
   bool useUserOrdering = false;
 };
 
+/** Cumulative, backend-independent lifecycle, convergence, and timing data. */
 struct CudaLinearSolveStats {
   CudaLinearSolverType backend = CudaLinearSolverType::Cudss;
   bool userOrderingApplied = false;
@@ -28,8 +31,10 @@ struct CudaLinearSolveStats {
   size_t solveCount = 0;
   size_t pcgIterationsTotal = 0;
   size_t pcgMaxIterationHits = 0;
+  size_t pcgBreakdownCount = 0;
   size_t lastPcgIterations = 0;
   size_t pcgHostConvergenceChecks = 0;
+  size_t pcgD2hBytes = 0;
   bool lastPcgConverged = false;
   bool lastPcgBreakdown = false;
   double lastPcgResidualNormSquared = 0.0;
@@ -38,8 +43,16 @@ struct CudaLinearSolveStats {
   double factorizationSeconds = 0.0;
   double solveSeconds = 0.0;
   double preconditionerSeconds = 0.0;
+  double pcgD2hSeconds = 0.0;
 };
 
+/**
+ * Reusable numerical backend with one analyze/solve lifecycle.
+ *
+ * Frontends retain ownership of dense, sparse, or operator system storage.
+ * A session validates that representation against its selected backend and
+ * caches all backend analysis/workspace state across numerical solves.
+ */
 class GTSAM_EXPORT CudaLinearSolverSession {
  public:
   explicit CudaLinearSolverSession(const CudaLinearSolverOptions& options);
@@ -50,8 +63,10 @@ class GTSAM_EXPORT CudaLinearSolverSession {
   CudaLinearSolverSession(CudaLinearSolverSession&&) noexcept;
   CudaLinearSolverSession& operator=(CudaLinearSolverSession&&) noexcept;
 
+  /** Return whether a backend consumes the requested representation. */
   static bool Supports(CudaLinearSolverType backend,
                        CudaLinearSystemKind systemKind);
+  /** Throw when backend, representation, or ordering policy is incompatible. */
   static void Validate(const CudaLinearSolverOptions& options,
                        CudaLinearSystemKind systemKind);
 
@@ -82,6 +97,7 @@ class GTSAM_EXPORT CudaLinearSolverSession {
    * Direct backends have no warm-start state and treat this as a no-op. */
   void invalidateWarmStart();
 
+  /** Harvest completed backend work and return cumulative statistics. */
   const CudaLinearSolveStats& stats() const;
 
  private:

@@ -8,6 +8,7 @@
 
 namespace gtsam::cuda {
 
+/** Backend-independent convergence and warm-start policy for CUDA PCG. */
 struct CudaPcgOptions {
   int maxIterations = 250;
   double relativeTolerance = 1e-6;
@@ -15,6 +16,7 @@ struct CudaPcgOptions {
   int convergenceCheckInterval = 10;
 };
 
+/** Device-resident PCG recurrence over frontend-supplied operator objects. */
 class GTSAM_EXPORT CudaPcgSolver {
  public:
   CudaPcgSolver();

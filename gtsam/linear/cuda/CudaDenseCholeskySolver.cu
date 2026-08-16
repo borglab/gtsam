@@ -136,7 +136,6 @@ void CudaDenseCholeskySolver::solveInPlace(CudaDenseSpdSystemView system,
     throw std::invalid_argument(
         "CudaDenseCholeskySolver requires a nonempty valid dense system");
   }
-  const auto start = std::chrono::steady_clock::now();
   GTSAM_CUSOLVER_CHECK(cusolverDnSetStream(impl_->handle, stream));
   int workspaceSize = 0;
   GTSAM_CUSOLVER_CHECK(cusolverDnDpotrf_bufferSize(
@@ -145,17 +144,21 @@ void CudaDenseCholeskySolver::solveInPlace(CudaDenseSpdSystemView system,
   impl_->workspace.resize(static_cast<size_t>(workspaceSize));
   impl_->info.resize(1);
 
+  const auto factorizationStart = std::chrono::steady_clock::now();
   GTSAM_CUSOLVER_CHECK(cusolverDnDpotrf(
       impl_->handle, CUBLAS_FILL_MODE_LOWER, system.dimension, system.values,
       system.leadingDimension, impl_->workspace.data(), workspaceSize,
       impl_->info.data()));
   CheckDeviceInfo(impl_->info, stream, "cusolverDnDpotrf");
+  const double factorizationSeconds = Elapsed(factorizationStart);
 
+  const auto solveStart = std::chrono::steady_clock::now();
   GTSAM_CUSOLVER_CHECK(cusolverDnDpotrs(
       impl_->handle, CUBLAS_FILL_MODE_LOWER, system.dimension, 1,
       system.values, system.leadingDimension, system.rhs, system.dimension,
       impl_->info.data()));
   CheckDeviceInfo(impl_->info, stream, "cusolverDnDpotrs");
+  const double solveSeconds = Elapsed(solveStart);
 
   impl_->analyzedDimension =
       std::max(impl_->analyzedDimension, system.dimension);
@@ -163,7 +166,8 @@ void CudaDenseCholeskySolver::solveInPlace(CudaDenseSpdSystemView system,
     stats->backend = CudaLinearSolverType::DenseCholesky;
     ++stats->factorizationCount;
     ++stats->solveCount;
-    stats->factorizationSeconds += Elapsed(start);
+    stats->factorizationSeconds += factorizationSeconds;
+    stats->solveSeconds += solveSeconds;
   }
 }
 

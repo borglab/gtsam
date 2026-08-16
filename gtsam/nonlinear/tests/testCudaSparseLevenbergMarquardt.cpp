@@ -188,7 +188,8 @@ bool SparseLmSizesAndTransfersAreExact(
          transfers.numericH2dBytes == expectedNumericH2d &&
          transfers.attemptD2hBytes == expectedAttemptD2h &&
          transfers.totalH2dBytes() == expectedPatternH2d + expectedNumericH2d &&
-         transfers.totalD2hBytes() == expectedSetupD2h + expectedAttemptD2h;
+         transfers.totalD2hBytes() ==
+             expectedSetupD2h + expectedAttemptD2h + transfers.pcgD2hBytes;
 }
 
 bool SparseLmAggregateTimingsAreExact(const CudaSparseLmStageTimings& timings) {
@@ -199,7 +200,7 @@ bool SparseLmAggregateTimingsAreExact(const CudaSparseLmStageTimings& timings) {
          timings.damping ==
              timings.dampingPreparation + timings.dampingApplication &&
          timings.modelError == timings.oldModelError + timings.newModelError &&
-         timings.deltaDownload == timings.attemptD2h;
+         timings.deltaDownload == timings.attemptD2h + timings.pcgD2h;
 }
 
 bool HasCudaDevice() {
@@ -220,6 +221,13 @@ bool CanRunCudaSparseLm() {
 #else
   return false;
 #endif
+}
+
+bool CanRunCudaSparsePcg() {
+  return HasCudaDevice() &&
+         DeviceSparseJacobianNormalEquations::preflightCapability(
+             DeviceNormalSolverBackend::Pcg)
+             .supported;
 }
 
 class HessianOnlyScalarFactor : public NonlinearFactor {
@@ -1028,7 +1036,7 @@ TEST(CudaSparseLevenbergMarquardt,
   (void)direct.optimize();
 
   CudaSparseLevenbergMarquardtParams pcgParams = directParams;
-  pcgParams.linearSolver = CudaSparseLmLinearSolver::Pcg;
+  pcgParams.linear.backend = CudaLinearSolverType::Pcg;
   pcgParams.pcg.maxIterations = 100;
   pcgParams.pcg.relativeTolerance = 1e-10;
   pcgParams.collectTiming = true;
@@ -1049,6 +1057,14 @@ TEST(CudaSparseLevenbergMarquardt,
   CHECK(result.linearSolveStats.lastPcgConverged);
   CHECK(result.linearSolveStats.lastPcgIterations > 0);
   CHECK(result.timings.pcgSolve > 0.0);
+  CHECK(result.linearSolveStats.pcgD2hBytes > 0);
+  EXPECT_LONGS_EQUAL(result.linearSolveStats.pcgD2hBytes,
+                     result.transfers.pcgD2hBytes);
+  DOUBLES_EQUAL(result.linearSolveStats.pcgD2hSeconds,
+                result.timings.pcgD2h, 0.0);
+  CHECK(result.linearSolveStats.pcgD2hSeconds > 0.0);
+  CHECK(result.linearSolveStats.pcgD2hSeconds <
+        result.linearSolveStats.solveSeconds);
   EXPECT_LONGS_EQUAL(0, result.systemSize.normalNonzeros);
 }
 
@@ -1252,6 +1268,25 @@ TEST(CudaSparseLevenbergMarquardt, FallsBackWhenCudssUnavailable) {
       result_, name_, problem.graph, problem.initial,
       CudaSparseLmFallbackReason::CudssUnavailable, DirectJacobianFailure::None,
       std::numeric_limits<size_t>::max(), {}, "cuDSS support is not compiled");
+}
+
+TEST(CudaSparseLevenbergMarquardt, PcgRunsWithoutCudss) {
+  if (!CanRunCudaSparsePcg()) return;
+  const Pose2LmProblem problem = MakePose2LmProblem();
+  CudaSparseLevenbergMarquardtParams params;
+  LevenbergMarquardtParams::SetCeresDefaults(&params);
+  params.linear.backend = CudaLinearSolverType::Pcg;
+  params.fallbackOnUnsupported = false;
+  params.maxIterations = 2;
+  params.pcg.maxIterations = 100;
+  params.pcg.relativeTolerance = 1e-10;
+  CudaSparseLevenbergMarquardtOptimizer optimizer(
+      problem.graph, problem.initial, params);
+  (void)optimizer.optimize();
+  CHECK(optimizer.error() < problem.graph.error(problem.initial));
+  CHECK(optimizer.result().backend == CudaSparseLmBackend::Cuda);
+  CHECK(optimizer.result().linearSolveStats.backend ==
+        CudaLinearSolverType::Pcg);
 }
 #endif
 

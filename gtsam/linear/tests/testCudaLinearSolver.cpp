@@ -71,6 +71,10 @@ TEST(CudaPcgSolver, SolvesThroughGenericOperatorInterface) {
   EXPECT(solver.stats().lastPcgConverged);
   LONGS_EQUAL(2, solver.stats().pcgIterationsTotal);
   LONGS_EQUAL(3, solver.stats().pcgHostConvergenceChecks);
+  LONGS_EQUAL(3 * (2 * sizeof(double) + sizeof(int)),
+              solver.stats().pcgD2hBytes);
+  LONGS_EQUAL(0, solver.stats().pcgMaxIterationHits);
+  LONGS_EQUAL(0, solver.stats().pcgBreakdownCount);
 }
 
 TEST(CudaLinearSolverSession, InvalidatesPcgWarmStartWhenOperatorChanges) {
@@ -142,6 +146,7 @@ TEST(CudaDenseCholeskySolver, SolvesTwoByTwoSpdSystem) {
   DOUBLES_EQUAL(7.0 / 11.0, actual[1], 1e-12);
 }
 
+#if GTSAM_ENABLE_CUDSS
 TEST(CudssSpdSolver, AppliesRequestedPermutationWithoutChangingSolution) {
   DeviceSparseSpdSystem automaticSystem;
   automaticSystem.uploadPattern(4, {0, 2, 4, 6, 7},
@@ -198,6 +203,7 @@ TEST(CudssSpdSolver, RejectsInvalidPermutation) {
       solver.analyze(system, &solution, std::vector<int>{0, 2}),
       std::invalid_argument);
 }
+#endif
 
 TEST(CudaBlockOrdering, ExpandsKeysToScalars) {
   const CudaBlockLayout layout{{X(1), 0, 2},
@@ -289,6 +295,7 @@ TEST(CudaLinearSolverSession, DispatchesDensePreparedSystem) {
   LONGS_EQUAL(1, session.stats().solveCount);
 }
 
+#if GTSAM_ENABLE_CUDSS
 TEST(CudaLinearSolverSession, DispatchesOrderedSparsePreparedSystem) {
   DeviceSparseSpdSystem system;
   system.uploadPattern(2, {0, 2, 3}, {0, 1, 1});
@@ -309,6 +316,7 @@ TEST(CudaLinearSolverSession, DispatchesOrderedSparsePreparedSystem) {
   LONGS_EQUAL(2, session.stats().factorizationCount);
   LONGS_EQUAL(2, session.stats().solveCount);
 }
+#endif
 
 int main() {
   TestResult tr;

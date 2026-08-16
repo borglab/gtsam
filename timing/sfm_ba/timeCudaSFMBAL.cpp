@@ -505,7 +505,7 @@ void printSparsePackingBenchmark(const SparsePackingBenchmark& benchmark,
 }
 #endif
 
-#if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
+#if GTSAM_ENABLE_CUDA
 enum class CudaLmDefaults {
   Backend,
   Graph,
@@ -514,6 +514,13 @@ enum class CudaLmDefaults {
 gtsam::cuda::CudaSfmLevenbergMarquardtParams makeBalCudaLmParams(
     CudaLinearSolverOption solverOption, CudaLmDefaults defaults,
     bool enableDetailedProfiling) {
+#if !GTSAM_ENABLE_CUDSS
+  if (solverOption == CudaLinearSolverOption::CudssSchur ||
+      solverOption == CudaLinearSolverOption::CudssFullNormal) {
+    throw std::runtime_error(
+        "the selected CUDA SFM configuration requires cuDSS support");
+  }
+#endif
   gtsam::cuda::CudaSfmLevenbergMarquardtParams params =
       defaults == CudaLmDefaults::Graph
           ? gtsam::cuda::CudaSfmLevenbergMarquardtParams::CeresDefaults()
@@ -709,15 +716,22 @@ void printCudaMatrixResult(const RunOptions& options,
               << "\",\"dimension\":" << result.linearSystemDimension
               << ",\"nnz\":" << result.linearSystemNonzeros
               << ",\"matrix_free\":"
-              << (result.linearBackend == gtsam::cuda::CudaLinearSolverType::Pcg
+              << (result.linearSystemKind ==
+                          gtsam::cuda::CudaLinearSystemKind::Operator
                       ? "true"
                       : "false")
               << ",\"analysis_count\":" << stats.analysisCount
+              << ",\"user_ordering_applied\":"
+              << (stats.userOrderingApplied ? "true" : "false")
               << ",\"factorization_count\":" << stats.factorizationCount
               << ",\"solve_count\":" << stats.solveCount
               << ",\"pcg_iterations\":" << stats.pcgIterationsTotal
+              << ",\"pcg_max_iteration_hits\":"
+              << stats.pcgMaxIterationHits
+              << ",\"pcg_breakdown_count\":" << stats.pcgBreakdownCount
               << ",\"pcg_host_convergence_checks\":"
               << stats.pcgHostConvergenceChecks
+              << ",\"pcg_d2h_bytes\":" << stats.pcgD2hBytes
               << ",\"pcg_converged\":"
               << (stats.lastPcgConverged ? "true" : "false")
               << ",\"initial_objective\":" << result.initialError
@@ -737,8 +751,10 @@ void printCudaMatrixResult(const RunOptions& options,
     if (printCsvHeader) {
       std::cout
           << "configuration,dataset,formulation,backend,ordering,dimension,"
-             "nnz,matrix_free,analysis_count,factorization_count,solve_count,"
-             "pcg_iterations,pcg_host_convergence_checks,pcg_converged,"
+             "nnz,matrix_free,analysis_count,user_ordering_applied,"
+             "factorization_count,solve_count,"
+             "pcg_iterations,pcg_max_iteration_hits,pcg_breakdown_count,"
+             "pcg_host_convergence_checks,pcg_d2h_bytes,pcg_converged,"
              "initial_objective,final_objective,"
              "h2d_bytes,d2h_bytes,frontend_wall_seconds,analysis_seconds,"
              "factorization_seconds,solve_seconds,accepted_iterations,"
@@ -748,10 +764,15 @@ void printCudaMatrixResult(const RunOptions& options,
               << dataset << "," << formulation << "," << backend << ","
               << options.ordering << "," << result.linearSystemDimension << ","
               << result.linearSystemNonzeros << ","
-              << (result.linearBackend == gtsam::cuda::CudaLinearSolverType::Pcg)
-              << "," << stats.analysisCount << "," << stats.factorizationCount
+              << (result.linearSystemKind ==
+                  gtsam::cuda::CudaLinearSystemKind::Operator)
+              << "," << stats.analysisCount << ","
+              << stats.userOrderingApplied << "," << stats.factorizationCount
               << "," << stats.solveCount << "," << stats.pcgIterationsTotal
-              << "," << stats.pcgHostConvergenceChecks << ","
+              << "," << stats.pcgMaxIterationHits << ","
+              << stats.pcgBreakdownCount << ","
+              << stats.pcgHostConvergenceChecks << "," << stats.pcgD2hBytes
+              << ","
               << stats.lastPcgConverged << "," << result.initialError
               << "," << result.finalError << "," << result.totalH2dBytes << ","
               << result.totalD2hBytes << "," << run.elapsed << ","
@@ -1960,7 +1981,7 @@ int RunMain(int argc, char* argv[]) {
     return 0;
   }
   std::vector<TimingRow> rows;
-#if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
+#if GTSAM_ENABLE_CUDA
   bool cudaWarmupDone = false;
   bool cudaMatrixCsvHeaderPending = true;
 #endif
@@ -1991,7 +2012,7 @@ int RunMain(int argc, char* argv[]) {
         continue;
       }
 
-#if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
+#if GTSAM_ENABLE_CUDA
       auto cudaParams = makeBalCudaLmParams(options.cudaLinearSolver,
                                             CudaLmDefaults::Graph, false);
       applyCudaMatrixOrdering(problem.data, options, &cudaParams);
@@ -2027,12 +2048,11 @@ int RunMain(int argc, char* argv[]) {
       continue;
 #else
       throw std::runtime_error(
-          "--gnc cuda requires configuring with GTSAM_ENABLE_CUDA=ON and "
-          "GTSAM_ENABLE_CUDSS=ON");
+          "--gnc cuda requires configuring with GTSAM_ENABLE_CUDA=ON");
 #endif
     }
 
-#if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
+#if GTSAM_ENABLE_CUDA
     if (options.cudaLm) {
       auto cudaParams = makeBalCudaLmParams(
           options.cudaLinearSolver, CudaLmDefaults::Backend,
@@ -2071,17 +2091,11 @@ int RunMain(int argc, char* argv[]) {
       }
       continue;
     }
-#elif GTSAM_ENABLE_CUDA
-    if (options.cudaLm || options.cudaLmGraph) {
-      throw std::runtime_error(
-          "--cuda-lm and --cuda-lm-graph require configuring with "
-          "GTSAM_ENABLE_CUDSS=ON");
-    }
 #else
     if (options.cudaLm || options.cudaLmGraph) {
       throw std::runtime_error(
           "--cuda-lm and --cuda-lm-graph require configuring with "
-          "GTSAM_ENABLE_CUDA=ON and GTSAM_ENABLE_CUDSS=ON");
+          "GTSAM_ENABLE_CUDA=ON");
     }
 #endif
 
@@ -2168,7 +2182,7 @@ int RunMain(int argc, char* argv[]) {
       printTimingSamples("CPU trial graph.error()", cpuState.trialError,
                          graph.size(), "factors");
 
-#if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
+#if GTSAM_ENABLE_CUDA
       const GpuLinearizationBenchmark gpu =
           benchmarkGpuLinearization(db, options.linearizationRepeats);
       std::cout << "  GPU output observations: " << gpu.observations
@@ -2198,7 +2212,7 @@ int RunMain(int argc, char* argv[]) {
 #else
       throw std::runtime_error(
           "--linearization-benchmark requires configuring with "
-          "GTSAM_ENABLE_CUDA=ON and GTSAM_ENABLE_CUDSS=ON");
+          "GTSAM_ENABLE_CUDA=ON");
 #endif
       std::cout << std::setprecision(6);
       continue;

@@ -89,6 +89,7 @@ constexpr double kObjectiveTolerance = 1e-8;
   FIELD(cudssDataInfoBoundaryWall)                 \
   FIELD(pcgPreconditionerBuild)                    \
   FIELD(pcgSolve)                                  \
+  FIELD(pcgD2h)                                    \
   FIELD(newModelError)                             \
   FIELD(attemptD2h)                                \
   FIELD(attemptHostBuild)                          \
@@ -795,14 +796,25 @@ CudaSparseLevenbergMarquardtParams MakeGpuParams(
   params.collectTiming = true;
   params.collectAttemptTrace = true;
   if (options.gpuSolver == "pcg") {
-    params.linearSolver = gtsam::cuda::CudaSparseLmLinearSolver::Pcg;
+    params.linear.backend = gtsam::cuda::CudaLinearSolverType::Pcg;
     if (options.pcgTolerance > 0.0) {
       params.pcg.relativeTolerance = options.pcgTolerance;
     }
     if (options.pcgMaxIterations > 0) {
       params.pcg.maxIterations = static_cast<int>(options.pcgMaxIterations);
     }
-    params.pcg.preconditioner = options.pcgPreconditioner;
+    if (options.pcgPreconditioner == "block-jacobi") {
+      params.pcgPreconditioner =
+          gtsam::cuda::DevicePcgPreconditioner::BlockJacobi;
+    } else if (options.pcgPreconditioner == "jacobi") {
+      params.pcgPreconditioner =
+          gtsam::cuda::DevicePcgPreconditioner::Jacobi;
+    } else if (options.pcgPreconditioner == "none") {
+      params.pcgPreconditioner = gtsam::cuda::DevicePcgPreconditioner::None;
+    } else {
+      throw std::invalid_argument("unknown PCG preconditioner: " +
+                                  options.pcgPreconditioner);
+    }
     params.pcg.warmStart = options.pcgWarmStart;
   } else if (options.ordering == "gtsam") {
     if (workload.cpuOrdering) {
@@ -1108,6 +1120,7 @@ void WriteTransfers(std::ostream& output,
          << ",\"numeric_h2d_bytes\":" << transfers.numericH2dBytes
          << ",\"setup_d2h_bytes\":" << transfers.setupD2hBytes
          << ",\"attempt_d2h_bytes\":" << transfers.attemptD2hBytes
+         << ",\"pcg_d2h_bytes\":" << transfers.pcgD2hBytes
          << ",\"total_h2d_bytes\":" << transfers.totalH2dBytes()
          << ",\"total_d2h_bytes\":" << transfers.totalD2hBytes() << "}";
 }
@@ -1178,10 +1191,13 @@ void WriteRawRuns(std::ostream& output, const std::vector<RawRun>& runs) {
            << run.linearSolveStats.pcgIterationsTotal
            << ",\"pcg_max_iteration_hits\":"
            << run.linearSolveStats.pcgMaxIterationHits
+           << ",\"pcg_breakdown_count\":"
+           << run.linearSolveStats.pcgBreakdownCount
            << ",\"last_pcg_iterations\":"
            << run.linearSolveStats.lastPcgIterations
            << ",\"pcg_host_convergence_checks\":"
            << run.linearSolveStats.pcgHostConvergenceChecks
+           << ",\"pcg_d2h_bytes\":" << run.linearSolveStats.pcgD2hBytes
            << ",\"last_pcg_converged\":"
            << (run.linearSolveStats.lastPcgConverged ? "true" : "false")
            << ",\"last_pcg_breakdown\":"
@@ -1192,7 +1208,9 @@ void WriteRawRuns(std::ostream& output, const std::vector<RawRun>& runs) {
            << run.linearSolveStats.factorizationSeconds
            << ",\"solve_seconds\":" << run.linearSolveStats.solveSeconds
            << ",\"preconditioner_seconds\":"
-           << run.linearSolveStats.preconditionerSeconds << "}";
+           << run.linearSolveStats.preconditionerSeconds
+           << ",\"pcg_d2h_seconds\":"
+           << run.linearSolveStats.pcgD2hSeconds << "}";
     output << ",\"attempts\":";
     WriteAttempts(output, run.attempts);
     output << "}";
@@ -1326,12 +1344,13 @@ std::string MakeCsv(const RunOptions& options,
          "external_maximum,initial_error,final_error,iterations,"
          "outer_linearizations,lambda_attempts,accepted_steps,cudss_analyses,"
          "analysis_count,factorization_count,solve_count,pcg_iterations_total,"
-         "pcg_max_iteration_hits,last_pcg_iterations,last_pcg_converged,"
-         "pcg_host_convergence_checks,last_pcg_breakdown,analysis_seconds,factorization_seconds,"
-         "solve_seconds,preconditioner_seconds,"
+         "pcg_max_iteration_hits,pcg_breakdown_count,last_pcg_iterations,"
+         "last_pcg_converged,pcg_host_convergence_checks,pcg_d2h_bytes,"
+         "last_pcg_breakdown,analysis_seconds,factorization_seconds,"
+         "solve_seconds,preconditioner_seconds,pcg_d2h_seconds,"
          "termination,final_lambda,cpu_over_gpu_speedup,objective_difference,"
          "pattern_h2d_bytes,"
-         "numeric_h2d_bytes,setup_d2h_bytes,attempt_d2h_bytes";
+         "numeric_h2d_bytes,setup_d2h_bytes,attempt_d2h_bytes,pcg_d2h_bytes";
   for (const TimingField& field : TimingFields()) {
     output << "," << field.name << "_median";
   }
@@ -1368,14 +1387,17 @@ std::string MakeCsv(const RunOptions& options,
              << representative.linearSolveStats.solveCount << ","
              << representative.linearSolveStats.pcgIterationsTotal << ","
              << representative.linearSolveStats.pcgMaxIterationHits << ","
+             << representative.linearSolveStats.pcgBreakdownCount << ","
              << representative.linearSolveStats.lastPcgIterations << ","
              << representative.linearSolveStats.lastPcgConverged << ","
              << representative.linearSolveStats.pcgHostConvergenceChecks << ","
+             << representative.linearSolveStats.pcgD2hBytes << ","
              << representative.linearSolveStats.lastPcgBreakdown << ","
              << representative.linearSolveStats.analysisSeconds << ","
              << representative.linearSolveStats.factorizationSeconds << ","
              << representative.linearSolveStats.solveSeconds << ","
              << representative.linearSolveStats.preconditionerSeconds << ","
+             << representative.linearSolveStats.pcgD2hSeconds << ","
              << representative.termination << ","
              << representative.finalLambda << "," << speedup << ","
              << result.maximumObjectiveDifference << ",";
@@ -1402,9 +1424,15 @@ std::string MakeCsv(const RunOptions& options,
                       Summarize(TransferSamples(
                                     runs, &CudaSparseLmTransferCounts::
                                               attemptD2hBytes))
+                          .median)
+               << ","
+               << static_cast<size_t>(
+                      Summarize(TransferSamples(
+                                    runs,
+                                    &CudaSparseLmTransferCounts::pcgD2hBytes))
                           .median);
       } else {
-        output << ",,,";
+        output << ",,,,";
       }
       for (const TimingField& field : TimingFields()) {
         output << ",";
@@ -1481,6 +1509,12 @@ void PrintResult(const WorkloadResult& result) {
                    Summarize(TransferSamples(
                                  result.gpuRuns,
                                  &CudaSparseLmTransferCounts::attemptD2hBytes))
+                       .median)
+            << "\n    PCG convergence D2H: "
+            << static_cast<size_t>(
+                   Summarize(TransferSamples(
+                                 result.gpuRuns,
+                                 &CudaSparseLmTransferCounts::pcgD2hBytes))
                        .median)
             << "\n";
 }

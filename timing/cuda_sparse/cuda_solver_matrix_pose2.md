@@ -7,12 +7,12 @@ FastSync. CPU and GPU reached the same objective basin (CPU 162.033721791224).
 
 | Configuration | GPU wall (s) | CPU/GPU | GPU objective | Analyze | Factor | Solve | PCG iterations |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| cuDSS auto | 1.113 | 3.78× | 162.033721791206 | 1 | 34 | 34 | 0 |
-| cuDSS + GTSAM COLAMD | 1.551 | 2.75× | 162.033721791141 | 1 | 34 | 34 | 0 |
-| PCG (`1e-10`, max 1000) | 1.891 | 2.26× | 162.069590780010 | 1 | 0 | 33 | 13,100 |
+| cuDSS auto | 1.127 | 3.95× | 162.033721791213 | 1 | 34 | 34 | 0 |
+| cuDSS + GTSAM COLAMD | 1.568 | 2.79× | 162.033721791208 | 1 | 34 | 34 | 0 |
+| PCG (`1e-10`, max 1000) | 1.948 | 2.31× | 162.069600223272 | 1 | 0 | 33 | 13,100 |
 
 On this pose graph, cuDSS automatic ordering is the winner. Supplying GTSAM's
-COLAMD ordering is correct but 39% slower end to end, and strict PCG is 70%
+COLAMD ordering is correct but 39% slower end to end, and strict PCG is 73%
 slower than cuDSS auto. The result does not contradict ordering wins on other
 sparsity patterns: ordering is graph-dependent, which is why both policies are
 exposed and benchmarked instead of hard-coding one. Each backend reuses one

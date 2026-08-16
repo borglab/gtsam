@@ -35,9 +35,11 @@ applies `U p - W V^-1 W^T p` implicitly and uses a 9-by-9 camera-block
 preconditioner. This is the scalable iterative SFM path.
 
 Full-normal + Cudss materializes the camera-plus-point upper CSR system.
-Full-normal + Pcg currently applies that explicit sparse SPD system with a
-Jacobi preconditioner. It is primarily a formulation/control baseline; Schur
-+ Pcg avoids the larger system and is expected to be faster for BA.
+Full-normal + Pcg applies `J^T(Jp) + lambda Dp` directly from the persistent
+projection Jacobians with independent 9-by-9 camera and 3-by-3 point block-
+Jacobi factors; it does not assemble CSR storage. It is primarily a
+formulation/control baseline. Schur + Pcg still avoids the point variables and
+is expected to be faster for BA.
 
 The default remains Schur + DenseCholesky for compatibility. The specialized
 parameter type inherits `LevenbergMarquardtParams`; therefore iteration,
@@ -46,6 +48,12 @@ source of truth as ordinary GTSAM LM. New code sets only the CUDA-specific
 axes, `formulation` and `linear.backend`, independently. Legacy spellings such
 as `dense-schur` and `cudss-full-normal` map onto those two axes without storing
 a second combined solver enum.
+
+The general CUDA LM parameters expose the same `linear` and `pcg` objects.
+Only its preconditioner choice remains frontend-specific because it describes
+how the general Jacobian producer builds block-Jacobi data, not how the shared
+PCG recurrence runs. The old general-only backend enum is no longer a second
+selection axis.
 
 ## GTSAM ordering and cuDSS
 
@@ -68,7 +76,8 @@ ordering are analyzed once, while numerical factorization/solve occurs once per
 lambda attempt. Dense analysis caches the dimension. PCG allocates recurrence
 storage once and reports convergence, accumulated iterations, and maximum-
 iteration hits. `CudaLinearSolveStats` records backend, ordering application,
-analysis/factorization/solve counts, and backend timings. Frontend assembly,
+analysis/factorization/solve counts, aggregate PCG cap/breakdown counts,
+convergence-check D2H bytes/time, and backend timings. Frontend assembly,
 transfers, model evaluation, and retraction stay in optimizer-specific profiles
 and are not counted as backend solve time.
 
@@ -117,12 +126,18 @@ The matrix benchmark has stable configuration names and JSON/CSV records:
 timing/sfm_ba/run_cuda_sfm_bal_benchmarks.sh problem.txt results build-cuda/timing/sfm_ba/timeCudaSFMBAL
 ```
 
-Each machine-readable row records formulation, backend, ordering, system
-dimension/nonzeros, analysis/factorization/solve counts, PCG convergence,
+Each machine-readable row records formulation, backend, actual representation,
+ordering application, system dimension/nonzeros,
+analysis/factorization/solve counts, PCG convergence,
 objectives, transfer bytes, frontend wall time, backend time, accepted steps,
-and lambda attempts. The GTSAM-ordering rows compute COLAMD at key/block level,
-expand it to scalar indices through `CompileCudaScalarPermutation`, and verify
-that cuDSS retained the supplied permutation.
+and lambda attempts. The matrix runner gates every row against the dense-Schur
+objective, requires every PCG solve to avoid the iteration cap and breakdown,
+requires the last solve to converge, and rejects representation/order metadata
+that does not match the requested configuration. PCG convergence polling is
+included in reported D2H totals. The GTSAM-ordering rows
+compute COLAMD at key/block level, expand it to scalar indices through
+`CompileCudaScalarPermutation`, and verify that cuDSS retained the supplied
+permutation.
 
 The named PCG benchmark rows use a correctness-oriented iterative profile
 (`relativeTolerance=1e-10` and at most 1000 iterations; the general benchmark
@@ -131,3 +146,6 @@ changes to the public `CudaPcgOptions` defaults. An inexact PCG solve can
 legitimately take a different LM trajectory, so comparing it with the direct
 row at the direct solver's `1e-8` objective tolerance is not a meaningful
 pass/fail gate.
+
+In CUDA builds without cuDSS, the same SFM benchmark executable still exposes
+Schur+dense, Schur+PCG, and full-normal+PCG. Only the cuDSS rows are rejected.

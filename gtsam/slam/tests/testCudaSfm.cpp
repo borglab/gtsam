@@ -9,6 +9,7 @@
 #include <gtsam/nonlinear/cuda/DeviceGeometryTypes.h>
 #include <gtsam/slam/cuda/CudaBalCsrStructure.h>
 #include <gtsam/slam/cuda/CudaSfmDenseSchurSolver.h>
+#include <gtsam/slam/cuda/CudaSfmFullNormalProblem.h>
 #include <gtsam/slam/cuda/CudaSfmLevenbergMarquardt.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionLinearization.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionBatch.h>
@@ -316,6 +317,7 @@ CudaSfmRobustModel MakeRobustModel(
   return CudaSfmRobustModel{kind, reweightScheme, parameter};
 }
 
+#if GTSAM_ENABLE_CUDSS
 bool ConvertedSfmDataEquals(const CudaSfmFactorGraphData& expected,
                             const CudaSfmFactorGraphData& actual) {
   if (expected.cameraKeys.size() != actual.cameraKeys.size() ||
@@ -393,6 +395,7 @@ bool ConvertedSfmDataEquals(const CudaSfmFactorGraphData& expected,
   }
   return true;
 }
+#endif
 
 Vector2 WhitenResidual(const CudaSfmSqrtInfo2& sqrtInfo,
                        const Vector2& residual) {
@@ -1136,6 +1139,36 @@ TEST(CudaSfmProjectionLinearization, ComputesClampedHessianDiagonal) {
   }
 }
 
+TEST(CudaSfmFullNormalProblem, ReusesOneLinearizationAcrossDampingAttempts) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData initialData = makePerturbedBalLikeData(measuredData);
+  CudaContext context;
+
+  DeviceValues values = PackSfmValues(initialData, context.stream());
+  CudaSfmProjectionBatch batch =
+      CudaSfmProjectionBatch::FromSfmData(measuredData, context.stream());
+  CudaSfmProjectionLinearization linearization;
+  LinearizeCudaSfmProjectionBatch(values, batch, &linearization,
+                                  context.stream());
+
+  CudaSfmFullNormalProblem problem;
+  problem.initialize(batch, static_cast<int>(measuredData.numberCameras()),
+                     context.stream());
+  problem.linearize(linearization, context.stream());
+  const CudaSfmFullNormalView first = problem.prepare(1e-3, context.stream());
+  const CudaSfmFullNormalView second = problem.prepare(1e-2, context.stream());
+  context.synchronize();
+
+  CHECK(first.linearOperator != nullptr);
+  CHECK(first.preconditioner != nullptr);
+  CHECK(first.rhs != nullptr);
+  CHECK(second.linearOperator == first.linearOperator);
+  CHECK(second.preconditioner == first.preconditioner);
+  CHECK(second.rhs == first.rhs);
+  EXPECT_LONGS_EQUAL(1, problem.linearizationCount());
+  EXPECT_LONGS_EQUAL(2, problem.preparationCount());
+}
+
 TEST(CudaSfmProjectionLinearization, ComputesLinearizedErrorChange) {
   constexpr double kTolerance = 1e-6;
 
@@ -1381,6 +1414,62 @@ TEST(CudaSfmLevenbergMarquardt, DenseSchurRunsWithoutCudss) {
 
 #endif
 
+TEST(CudaSfmLevenbergMarquardt, ImplicitSchurPcgMatchesDense) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+  CudaSfmLevenbergMarquardtParams denseParams =
+      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  denseParams.maxIterations = 2;
+  denseParams.relativeErrorTol = 0.0;
+  const CudaSfmLevenbergMarquardtResult dense =
+      OptimizeCudaSfmWithoutValueDownload(data, denseParams);
+
+  CudaSfmLevenbergMarquardtParams pcgParams = denseParams;
+  pcgParams.setLinearSolver("pcg-schur");
+  pcgParams.pcg.maxIterations = 200;
+  pcgParams.pcg.relativeTolerance = 1e-10;
+  pcgParams.pcg.convergenceCheckInterval = 1;
+  pcgParams.pcg.warmStart = false;
+  const CudaSfmLevenbergMarquardtResult pcg =
+      OptimizeCudaSfmWithoutValueDownload(data, pcgParams);
+
+  DOUBLES_EQUAL(dense.finalError, pcg.finalError, 1e-5);
+  CHECK(pcg.linearSolveStats.lastPcgConverged);
+  CHECK(pcg.linearSolveStats.solveCount > 0);
+  CHECK(pcg.linearSolveStats.pcgIterationsTotal > 0);
+}
+
+TEST(CudaSfmLevenbergMarquardt, FullNormalPcgUsesSharedIterativeSession) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+  CudaSfmLevenbergMarquardtParams params =
+      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  params.formulation = CudaSfmSystemFormulation::FullNormal;
+  params.linear.backend = CudaLinearSolverType::Pcg;
+  params.maxIterations = 1;
+  params.pcg.maxIterations = 300;
+  params.pcg.relativeTolerance = 1e-9;
+  params.pcg.convergenceCheckInterval = 1;
+  params.pcg.warmStart = false;
+  params.enableDetailedProfiling = true;
+
+  const CudaSfmLevenbergMarquardtResult result =
+      OptimizeCudaSfmWithoutValueDownload(data, params);
+  CHECK(result.finalError < result.initialError);
+  CHECK(result.linearSolveStats.backend == CudaLinearSolverType::Pcg);
+  CHECK(result.linearSystemKind == CudaLinearSystemKind::Operator);
+  EXPECT_LONGS_EQUAL(0, result.linearSystemNonzeros);
+  CHECK(result.linearSolveStats.lastPcgConverged);
+  CHECK(result.linearSolveStats.pcgIterationsTotal > 0);
+  CHECK(result.linearSolveStats.pcgD2hBytes > 0);
+  CHECK(result.totalD2hBytes >= result.linearSolveStats.pcgD2hBytes);
+  CHECK(result.totalD2hCopyElapsed >=
+        result.linearSolveStats.pcgD2hSeconds);
+  CHECK(result.linearSolveStats.pcgD2hSeconds > 0.0);
+  CHECK(result.linearSolveStats.pcgD2hSeconds <
+        result.linearSolveStats.solveSeconds);
+}
+
 #if GTSAM_ENABLE_CUDSS
 
 TEST(CudaSfmLevenbergMarquardt,
@@ -1414,31 +1503,6 @@ TEST(CudaSfmLevenbergMarquardt,
              *sparseParams.ordering));
 }
 
-TEST(CudaSfmLevenbergMarquardt, ImplicitSchurPcgMatchesDense) {
-  const SfmData measuredData = makeTrueBalLikeData();
-  const SfmData data = makePerturbedBalLikeData(measuredData);
-  CudaSfmLevenbergMarquardtParams denseParams =
-      CudaSfmLevenbergMarquardtParams::CeresDefaults();
-  denseParams.maxIterations = 2;
-  denseParams.relativeErrorTol = 0.0;
-  const CudaSfmLevenbergMarquardtResult dense =
-      OptimizeCudaSfmWithoutValueDownload(data, denseParams);
-
-  CudaSfmLevenbergMarquardtParams pcgParams = denseParams;
-  pcgParams.setLinearSolver("pcg-schur");
-  pcgParams.pcg.maxIterations = 200;
-  pcgParams.pcg.relativeTolerance = 1e-10;
-  pcgParams.pcg.convergenceCheckInterval = 1;
-  pcgParams.pcg.warmStart = false;
-  const CudaSfmLevenbergMarquardtResult pcg =
-      OptimizeCudaSfmWithoutValueDownload(data, pcgParams);
-
-  DOUBLES_EQUAL(dense.finalError, pcg.finalError, 1e-5);
-  CHECK(pcg.linearSolveStats.lastPcgConverged);
-  CHECK(pcg.linearSolveStats.solveCount > 0);
-  CHECK(pcg.linearSolveStats.pcgIterationsTotal > 0);
-}
-
 TEST(CudaSfmLevenbergMarquardt,
      FullNormalCudssAppliesCameraAndPointOrdering) {
   const SfmData measuredData = makeTrueBalLikeData();
@@ -1460,27 +1524,6 @@ TEST(CudaSfmLevenbergMarquardt,
     expected.push_back(scalar);
   }
   EXPECT(expected == result.appliedScalarPermutation);
-}
-
-TEST(CudaSfmLevenbergMarquardt, FullNormalPcgUsesSharedIterativeSession) {
-  const SfmData measuredData = makeTrueBalLikeData();
-  const SfmData data = makePerturbedBalLikeData(measuredData);
-  CudaSfmLevenbergMarquardtParams params =
-      CudaSfmLevenbergMarquardtParams::CeresDefaults();
-  params.formulation = CudaSfmSystemFormulation::FullNormal;
-  params.linear.backend = CudaLinearSolverType::Pcg;
-  params.maxIterations = 1;
-  params.pcg.maxIterations = 300;
-  params.pcg.relativeTolerance = 1e-9;
-  params.pcg.convergenceCheckInterval = 1;
-  params.pcg.warmStart = false;
-
-  const CudaSfmLevenbergMarquardtResult result =
-      OptimizeCudaSfmWithoutValueDownload(data, params);
-  CHECK(result.finalError < result.initialError);
-  CHECK(result.linearSolveStats.backend == CudaLinearSolverType::Pcg);
-  CHECK(result.linearSolveStats.lastPcgConverged);
-  CHECK(result.linearSolveStats.pcgIterationsTotal > 0);
 }
 
 TEST(CudaSfmFactorGraphConversion,
@@ -2231,7 +2274,11 @@ TEST(CudaSfmLevenbergMarquardt, RecordsPureTransferTimingBreakdown) {
   EXPECT_LONGS_EQUAL(expectedValueBytes + expectedProjectionBytes,
                      result.totalH2dBytes);
   EXPECT_LONGS_EQUAL(expectedValueBytes, result.downloadD2hBytes);
-  EXPECT_LONGS_EQUAL(expectedValueBytes, result.totalD2hBytes);
+  // Initial objective, one linearized old/new pair, and one trial objective
+  // each download one reduction block (four doubles total).
+  const size_t expectedReductionBytes = 4 * sizeof(double);
+  EXPECT_LONGS_EQUAL(expectedValueBytes + expectedReductionBytes,
+                     result.totalD2hBytes);
 
   CHECK(result.packValuesHostBuildElapsed >= 0.0);
   CHECK(result.packValuesDeviceAllocElapsed >= 0.0);

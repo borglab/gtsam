@@ -128,16 +128,19 @@ class TestCudaSfm(unittest.TestCase):
 
     def test_cuda_sfm_params_are_wrapped(self):
         params = cuda.CudaSfmLevenbergMarquardtParams.CeresDefaults()
-        params.setLinearSolver("dense-schur")
+        params.setFormulation("schur")
+        params.setCudaLinearSolver("dense-cholesky")
 
         self.assertEqual("dense-schur", params.getLinearSolver())
-        self.assertEqual(cuda.CudaSfmLinearSolverType.DenseSchur,
-                         params.linearSolver)
+        self.assertEqual("schur", params.getFormulation())
+        self.assertEqual("dense-cholesky", params.getCudaLinearSolver())
+        self.assertEqual(cuda.CudaSfmSystemFormulation.Schur,
+                         params.formulation)
 
     def test_optimize_cuda_sfm_runs_from_python(self):
         data = _make_zero_error_sfm_data()
         params = cuda.CudaSfmLevenbergMarquardtParams()
-        params.maxIterations = 0
+        params.setMaxIterations(0)
 
         result = self._run_or_skip_unavailable_runtime(
             lambda: cuda.OptimizeCudaSfm(data, params))
@@ -151,9 +154,9 @@ class TestCudaSfm(unittest.TestCase):
     def test_optimize_cuda_sfm_matches_cpp_tiny_bal_behavior(self):
         data = _make_perturbed_bal_like_data(_make_true_bal_like_data())
         params = cuda.CudaSfmLevenbergMarquardtParams()
-        params.maxIterations = 5
-        params.relativeErrorTol = 1e-12
-        params.lambdaInitial = 1e-3
+        params.setMaxIterations(5)
+        params.setRelativeErrorTol(1e-12)
+        params.setlambdaInitial(1e-3)
 
         result = self._run_or_skip_unavailable_runtime(
             lambda: cuda.OptimizeCudaSfm(data, params))

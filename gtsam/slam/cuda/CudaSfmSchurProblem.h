@@ -6,6 +6,7 @@
 #include <gtsam/linear/cuda/DeviceSparseSpdSystem.h>
 #include <gtsam/nonlinear/cuda/DeviceValues.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionBatch.h>
+#include <gtsam/slam/cuda/CudaSfmProjectionLinearization.h>
 
 #include <cuda_runtime_api.h>
 
@@ -76,6 +77,7 @@ class GTSAM_EXPORT CudaSfmSchurProblem {
   int totalDimension() const;
   size_t linearizationCount() const;
   size_t denseAssemblyCount() const;
+  const CudaSfmProjectionLinearization& linearization() const;
 
   /** Borrow the current condensed RHS (overwritten in-place by dense solve). */
   const CudaDeviceArray<double>& cameraRhs() const;

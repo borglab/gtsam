@@ -3,6 +3,7 @@
 #include <gtsam/slam/cuda/CudaSfmProjectionLinearization.h>
 
 #include <algorithm>
+#include <chrono>
 #include <limits>
 #include <stdexcept>
 #include <string>
@@ -579,7 +580,8 @@ void LinearizeCudaSfmProjectionBatch(
 
 double ComputeCudaSfmProjectionError(const DeviceValues& values,
                                      const CudaSfmProjectionBatch& batch,
-                                     cudaStream_t stream) {
+                                     cudaStream_t stream,
+                                     CudaSfmReductionTransferProfile* profile) {
   const auto& cameraBlock = values.block<DevicePinholeCameraCal3Bundler>(
       kDevicePinholeCameraCal3BundlerType);
   const auto& pointBlock = values.block<DevicePoint3>(kDevicePoint3Type);
@@ -629,8 +631,16 @@ double ComputeCudaSfmProjectionError(const DeviceValues& values,
   GTSAM_CUDA_CHECK(cudaGetLastError());
 
   std::vector<double> hostBlockSums;
+  const auto downloadStart = std::chrono::steady_clock::now();
   blockSums.download(&hostBlockSums, stream);
   GTSAM_CUDA_CHECK(cudaStreamSynchronize(stream));
+  if (profile) {
+    profile->d2hBytes += sizeof(double) * hostBlockSums.size();
+    profile->d2hElapsed +=
+        std::chrono::duration<double>(std::chrono::steady_clock::now() -
+                                      downloadStart)
+            .count();
+  }
 
   double error = 0.0;
   for (double blockSum : hostBlockSums) {
@@ -763,8 +773,43 @@ double ComputeCudaSfmLinearizedErrorChange(
   CudaSfmProjectionLinearization linearization;
   LinearizeCudaSfmProjectionBatch(values, batch, &linearization, stream);
 
+  return ComputeCudaSfmLinearizedErrorChange(
+      linearization, batch, numCameras, delta, oldLinearizedError,
+      newLinearizedError, stream);
+}
+
+double ComputeCudaSfmLinearizedErrorChange(
+    const CudaSfmProjectionLinearization& linearization,
+    const CudaSfmProjectionBatch& batch, int numCameras,
+    const CudaDeviceArray<double>& delta, double* oldLinearizedError,
+    double* newLinearizedError, cudaStream_t stream,
+    CudaSfmReductionTransferProfile* profile) {
+  if (numCameras < 0 ||
+      static_cast<size_t>(numCameras) < batch.numCameras()) {
+    throw std::invalid_argument(
+        "ComputeCudaSfmLinearizedErrorChange camera count mismatch");
+  }
+  const size_t observations = batch.numObservations();
+  if (linearization.residuals.size() != 2 * observations ||
+      linearization.cameraJacobians.size() != 18 * observations ||
+      linearization.pointJacobians.size() != 6 * observations) {
+    throw std::invalid_argument(
+        "ComputeCudaSfmLinearizedErrorChange linearization size mismatch");
+  }
+  const size_t dimension =
+      9 * static_cast<size_t>(numCameras) + 3 * batch.numPoints();
+  if (delta.size() != dimension) {
+    throw std::invalid_argument(
+        "ComputeCudaSfmLinearizedErrorChange delta size mismatch");
+  }
+  if (observations == 0) {
+    if (oldLinearizedError) *oldLinearizedError = 0.0;
+    if (newLinearizedError) *newLinearizedError = 0.0;
+    return 0.0;
+  }
+
   const int gridSize = static_cast<int>(std::min<size_t>(
-      (batch.numObservations() + kProjectionErrorBlockSize - 1) /
+      (observations + kProjectionErrorBlockSize - 1) /
           kProjectionErrorBlockSize,
       4096));
   CudaDeviceArray<double> oldBlockSums(static_cast<size_t>(gridSize));
@@ -773,15 +818,24 @@ double ComputeCudaSfmLinearizedErrorChange(
                                         stream>>>(
       linearization.residuals.data(), linearization.cameraJacobians.data(),
       linearization.pointJacobians.data(), batch.observations().data(),
-      batch.numObservations(), numCameras, delta.data(), oldBlockSums.data(),
+      observations, numCameras, delta.data(), oldBlockSums.data(),
       newBlockSums.data());
   GTSAM_CUDA_CHECK(cudaGetLastError());
 
   std::vector<double> hostOldBlockSums;
   std::vector<double> hostNewBlockSums;
+  const auto downloadStart = std::chrono::steady_clock::now();
   oldBlockSums.download(&hostOldBlockSums, stream);
   newBlockSums.download(&hostNewBlockSums, stream);
   GTSAM_CUDA_CHECK(cudaStreamSynchronize(stream));
+  if (profile) {
+    profile->d2hBytes +=
+        sizeof(double) * (hostOldBlockSums.size() + hostNewBlockSums.size());
+    profile->d2hElapsed +=
+        std::chrono::duration<double>(std::chrono::steady_clock::now() -
+                                      downloadStart)
+            .count();
+  }
 
   double oldError = 0.0;
   double newError = 0.0;

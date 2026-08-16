@@ -5,6 +5,7 @@
 #include <gtsam/nonlinear/cuda/DeviceValues.h>
 #include <gtsam/linear/cuda/CudaLinearSolver.h>
 #include <gtsam/slam/cuda/CudaSfmProjectionBatch.h>
+#include <gtsam/slam/cuda/CudaSfmProjectionLinearization.h>
 
 #include <cuda_runtime_api.h>
 
@@ -36,6 +37,7 @@ class GTSAM_EXPORT CudaSfmDenseSchurSolver {
 
   size_t linearizationCount() const;
   size_t denseAssemblyCount() const;
+  const CudaSfmProjectionLinearization& linearization() const;
   const CudaLinearSolveStats& linearSolveStats() const;
 
   void solve(const DeviceValues& values, const CudaSfmProjectionBatch& batch,

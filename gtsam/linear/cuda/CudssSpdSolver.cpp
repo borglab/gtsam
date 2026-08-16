@@ -1,6 +1,7 @@
 #if GTSAM_ENABLE_CUDA
 
 #include <gtsam/linear/cuda/CudssSpdSolver.h>
+#include <gtsam/base/cuda/CudaErrors.h>
 
 #include <chrono>
 #include <algorithm>
@@ -9,6 +10,42 @@
 #include <stdexcept>
 
 #if GTSAM_ENABLE_CUDSS
+
+class CudaEventSpan {
+ public:
+  CudaEventSpan() {
+    GTSAM_CUDA_CHECK(cudaEventCreate(&begin_));
+    try {
+      GTSAM_CUDA_CHECK(cudaEventCreate(&end_));
+    } catch (...) {
+      cudaEventDestroy(begin_);
+      throw;
+    }
+  }
+  ~CudaEventSpan() {
+    if (end_) cudaEventDestroy(end_);
+    if (begin_) cudaEventDestroy(begin_);
+  }
+  CudaEventSpan(const CudaEventSpan&) = delete;
+  CudaEventSpan& operator=(const CudaEventSpan&) = delete;
+
+  void recordBegin(cudaStream_t stream) {
+    GTSAM_CUDA_CHECK(cudaEventRecord(begin_, stream));
+  }
+  void recordEnd(cudaStream_t stream) {
+    GTSAM_CUDA_CHECK(cudaEventRecord(end_, stream));
+  }
+  double completedSeconds() const {
+    GTSAM_CUDA_CHECK(cudaEventSynchronize(end_));
+    float milliseconds = 0.0f;
+    GTSAM_CUDA_CHECK(cudaEventElapsedTime(&milliseconds, begin_, end_));
+    return static_cast<double>(milliseconds) / 1000.0;
+  }
+
+ private:
+  cudaEvent_t begin_ = nullptr;
+  cudaEvent_t end_ = nullptr;
+};
 #include <cudss.h>
 #endif
 
@@ -209,7 +246,7 @@ cudssStatus_t CreateSpdCsrMatrix(CudssMatrix* matrix,
 }  // namespace
 
 struct CudssSpdSolver::Impl {
-  CudaLinearSolveStats stats;
+  mutable CudaLinearSolveStats stats;
   std::vector<int> appliedPermutation;
 #if GTSAM_ENABLE_CUDSS
   CudssHandle handle;
@@ -226,8 +263,16 @@ struct CudssSpdSolver::Impl {
   const double* rhs = nullptr;
   double* solution = nullptr;
   bool analyzed = false;
+  mutable std::vector<std::unique_ptr<CudaEventSpan>> pendingSolveSpans;
 
   Impl() : data(handle.value) {}
+
+  void harvestSolveTimings() const {
+    for (const auto& span : pendingSolveSpans) {
+      stats.solveSeconds += span->completedSeconds();
+    }
+    pendingSolveSpans.clear();
+  }
 
   void analyze(const DeviceSparseSpdSystem& system,
                CudaDeviceArray<double>* solutionArray,
@@ -266,18 +311,17 @@ struct CudssSpdSolver::Impl {
           scalarPermutation->data(), scalarPermutation->size() * sizeof(int)));
     }
 
-    const auto analysisStart = std::chrono::steady_clock::now();
+    CudaEventSpan analysisSpan;
+    analysisSpan.recordBegin(stream);
     CheckCudssExecute(
         cudssExecute(handle.value, CUDSS_PHASE_ANALYSIS, config.value,
                      data.value, matrix.value, x.value, b.value),
         CUDSS_PHASE_ANALYSIS);
+    analysisSpan.recordEnd(stream);
     stats.backend = CudaLinearSolverType::Cudss;
     stats.userOrderingApplied = scalarPermutation != nullptr;
     ++stats.analysisCount;
-    stats.analysisSeconds +=
-        std::chrono::duration<double>(std::chrono::steady_clock::now() -
-                                      analysisStart)
-            .count();
+    stats.analysisSeconds += analysisSpan.completedSeconds();
     if (scalarPermutation) {
       appliedPermutation.resize(static_cast<size_t>(rows));
       size_t permutationBytes = 0;
@@ -322,16 +366,14 @@ struct CudssSpdSolver::Impl {
     }
 
     GTSAM_CUDSS_CHECK(cudssSetStream(handle.value, stream));
-    const auto factorizationStart = std::chrono::steady_clock::now();
+    CudaEventSpan factorizationSpan;
+    factorizationSpan.recordBegin(stream);
     CheckCudssExecute(
         cudssExecute(handle.value, CUDSS_PHASE_FACTORIZATION, config.value,
                      data.value, matrix.value, x.value, b.value),
         CUDSS_PHASE_FACTORIZATION);
+    factorizationSpan.recordEnd(stream);
     ++stats.factorizationCount;
-    stats.factorizationSeconds +=
-        std::chrono::duration<double>(std::chrono::steady_clock::now() -
-                                      factorizationStart)
-            .count();
 
     int info = 0;
     size_t bytesWritten = 0;
@@ -359,17 +401,19 @@ struct CudssSpdSolver::Impl {
          << " (reordered 1-based first non-positive minor)";
       throw std::runtime_error(os.str());
     }
+    // DATA_INFO is the mandatory numerical-completion boundary. Measure the
+    // completed GPU factorization rather than only cudssExecute enqueue time.
+    stats.factorizationSeconds += factorizationSpan.completedSeconds();
 
-    const auto solveStart = std::chrono::steady_clock::now();
+    auto solveSpan = std::make_unique<CudaEventSpan>();
+    solveSpan->recordBegin(stream);
     CheckCudssExecute(
         cudssExecute(handle.value, CUDSS_PHASE_SOLVE, config.value, data.value,
                      matrix.value, x.value, b.value),
         CUDSS_PHASE_SOLVE);
+    solveSpan->recordEnd(stream);
+    pendingSolveSpans.push_back(std::move(solveSpan));
     ++stats.solveCount;
-    stats.solveSeconds +=
-        std::chrono::duration<double>(std::chrono::steady_clock::now() -
-                                      solveStart)
-            .count();
   }
 #endif
 };
@@ -434,6 +478,9 @@ void CudssSpdSolver::solve(const DeviceSparseSpdSystem& system,
 }
 
 const CudaLinearSolveStats& CudssSpdSolver::stats() const {
+#if GTSAM_ENABLE_CUDSS
+  impl_->harvestSolveTimings();
+#endif
   return impl_->stats;
 }
 

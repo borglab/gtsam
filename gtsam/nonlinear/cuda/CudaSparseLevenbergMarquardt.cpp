@@ -162,7 +162,7 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
                               timings.oldModelError;
     timings.damping = timings.dampingPreparation + timings.dampingApplication;
     timings.modelError = timings.oldModelError + timings.newModelError;
-    timings.deltaDownload = timings.attemptD2h;
+    timings.deltaDownload = timings.attemptD2h + timings.pcgD2h;
   }
 
   void snapshotCudaProfile() {
@@ -190,6 +190,7 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
     transfers.numericH2dBytes = deviceProfile.numericH2dBytes;
     transfers.setupD2hBytes = deviceProfile.setupD2hBytes;
     transfers.attemptD2hBytes = deviceProfile.attemptD2hBytes;
+    transfers.pcgD2hBytes = optimizationResult.linearSolveStats.pcgD2hBytes;
 
     CudaSparseLmStageTimings& timings = optimizationResult.timings;
     timings.deviceInitializeWall = deviceProfile.initializeWall;
@@ -211,6 +212,7 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
     if (optimizationResult.linearSolveStats.backend ==
         CudaLinearSolverType::Pcg) {
       timings.pcgSolve = optimizationResult.linearSolveStats.solveSeconds;
+      timings.pcgD2h = optimizationResult.linearSolveStats.pcgD2hSeconds;
       optimizationResult.pcgIterationsTotal =
           optimizationResult.linearSolveStats.pcgIterationsTotal;
       optimizationResult.pcgSolves =
@@ -328,8 +330,16 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
                             "no CUDA device is available", state);
     }
 
+    if (parameters.linear.backend == CudaLinearSolverType::DenseCholesky) {
+      throw std::invalid_argument(
+          "general CUDA sparse LM does not support dense Cholesky");
+    }
+    if (parameters.linear.useUserOrdering && !parameters.ordering) {
+      throw std::invalid_argument(
+          "general CUDA sparse LM user-ordering mode requires an Ordering");
+    }
     const DeviceNormalSolverBackend deviceBackend =
-        parameters.linearSolver == CudaSparseLmLinearSolver::Pcg
+        parameters.linear.backend == CudaLinearSolverType::Pcg
             ? DeviceNormalSolverBackend::Pcg
             : DeviceNormalSolverBackend::Cudss;
 #if !GTSAM_ENABLE_CUDSS
@@ -368,7 +378,7 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
 
     DeviceNormalSolverOptions solverOptions;
     solverOptions.backend = deviceBackend;
-    if (parameters.ordering) {
+    if (parameters.ordering || parameters.linear.useUserOrdering) {
       if (deviceBackend != DeviceNormalSolverBackend::Cudss) {
         throw std::invalid_argument(
             "CUDA sparse LM GTSAM ordering is supported only by cuDSS");
@@ -388,18 +398,9 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
       solverOptions.pcg.maxIterations = parameters.pcg.maxIterations;
       solverOptions.pcg.relativeTolerance = parameters.pcg.relativeTolerance;
       solverOptions.pcg.warmStart = parameters.pcg.warmStart;
-      if (parameters.pcg.preconditioner == "block-jacobi") {
-        solverOptions.pcg.preconditioner =
-            DevicePcgPreconditioner::BlockJacobi;
-      } else if (parameters.pcg.preconditioner == "jacobi") {
-        solverOptions.pcg.preconditioner = DevicePcgPreconditioner::Jacobi;
-      } else if (parameters.pcg.preconditioner == "none") {
-        solverOptions.pcg.preconditioner = DevicePcgPreconditioner::None;
-      } else {
-        throw std::invalid_argument(
-            "CudaSparseLevenbergMarquardtParams pcg.preconditioner must be "
-            "block-jacobi, jacobi, or none");
-      }
+      solverOptions.pcg.convergenceCheckInterval =
+          parameters.pcg.convergenceCheckInterval;
+      solverOptions.pcg.preconditioner = parameters.pcgPreconditioner;
       solverOptions.columnBlockOffsets.reserve(layout->blocks().size() + 1);
       solverOptions.columnBlockOffsets.push_back(0);
       for (const SparseJacobianColumnBlock& block : layout->blocks()) {
@@ -416,23 +417,12 @@ struct CudaSparseLevenbergMarquardtOptimizer::Impl {
       device = std::make_unique<DeviceSparseJacobianNormalEquations>();
       device->initialize(*plan, context->stream(), parameters.collectTiming,
                          solverOptions);
-      CudaLinearSolverOptions linearOptions;
-      linearOptions.backend =
-          deviceBackend == DeviceNormalSolverBackend::Cudss
-              ? CudaLinearSolverType::Cudss
-              : CudaLinearSolverType::Pcg;
-      linearOptions.useUserOrdering =
-          !solverOptions.scalarPermutation.empty();
+      CudaLinearSolverOptions linearOptions = parameters.linear;
+      linearOptions.useUserOrdering = !solverOptions.scalarPermutation.empty();
       linearSession =
           std::make_unique<CudaLinearSolverSession>(linearOptions);
       if (deviceBackend == DeviceNormalSolverBackend::Pcg) {
-        CudaPcgOptions commonPcg;
-        commonPcg.maxIterations = solverOptions.pcg.maxIterations;
-        commonPcg.relativeTolerance = solverOptions.pcg.relativeTolerance;
-        commonPcg.warmStart = solverOptions.pcg.warmStart;
-        commonPcg.convergenceCheckInterval =
-            solverOptions.pcg.convergenceCheckInterval;
-        linearSession->analyze(plan->columns(), commonPcg, context->stream(),
+        linearSession->analyze(plan->columns(), parameters.pcg, context->stream(),
                                parameters.collectTiming);
       }
     });

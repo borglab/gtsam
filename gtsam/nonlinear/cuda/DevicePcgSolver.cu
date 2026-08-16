@@ -30,7 +30,10 @@ struct DevicePcgSolver::Impl {
   bool collectProfile = false;
   CudaJacobianNormalOperator linearOperator;
   CudaJacobianNormalPreconditioner preconditioner;
-  CudaPcgSolver compatibilitySolver;
+  // The general LM path supplies these producer-owned objects to the shared
+  // CudaLinearSolverSession. Allocate a recurrence engine only if a legacy
+  // caller explicitly invokes DevicePcgSolver::solve().
+  std::unique_ptr<CudaPcgSolver> compatibilitySolver;
   DevicePcgSolveStats lastStats;
   DevicePcgProfile profileData;
 };
@@ -64,8 +67,6 @@ void DevicePcgSolver::initialize(
   state->preconditioner.initialize(columns, jtRowPointers, blockOffsets,
                                    options.preconditioner, stream,
                                    collectProfile);
-  state->compatibilitySolver.initialize(
-      columns, CommonOptions(options, columns), stream, collectProfile);
   state->initialized = true;
   impl_ = std::move(state);
 }
@@ -76,7 +77,9 @@ void DevicePcgSolver::buildPreconditioner(
     throw std::logic_error("DevicePcgSolver is not initialized");
   }
   impl_->preconditioner.build(jtValues, stream);
-  impl_->compatibilitySolver.invalidateWarmStart();
+  if (impl_->compatibilitySolver) {
+    impl_->compatibilitySolver->invalidateWarmStart();
+  }
   impl_->profileData.preconditionerBuild =
       impl_->preconditioner.buildSeconds();
 }
@@ -118,10 +121,16 @@ void DevicePcgSolver::solve(
         "DevicePcgSolver solve storage sizes do not match the system");
   }
   prepare(lambda, dampingDiagonal, stream);
-  impl_->compatibilitySolver.solve(impl_->linearOperator,
-                                   impl_->preconditioner, gradient.data(),
-                                   delta, stream);
-  const CudaLinearSolveStats& after = impl_->compatibilitySolver.stats();
+  if (!impl_->compatibilitySolver) {
+    impl_->compatibilitySolver = std::make_unique<CudaPcgSolver>();
+    impl_->compatibilitySolver->initialize(
+        impl_->columns, CommonOptions(impl_->options, impl_->columns), stream,
+        impl_->collectProfile);
+  }
+  impl_->compatibilitySolver->solve(impl_->linearOperator,
+                                    impl_->preconditioner, gradient.data(),
+                                    delta, stream);
+  const CudaLinearSolveStats& after = impl_->compatibilitySolver->stats();
   impl_->lastStats = {};
   impl_->lastStats.iterations = static_cast<int>(after.lastPcgIterations);
   impl_->lastStats.residualNormSquared =

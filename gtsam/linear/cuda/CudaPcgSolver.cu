@@ -202,7 +202,14 @@ struct CudaPcgSolver::Impl {
   CudaDeviceArray<int> flags;
   CudaPinnedHostArray<double> hostScalars;
   CudaPinnedHostArray<int> hostFlags;
+  cudaEvent_t d2hBegin = nullptr;
+  cudaEvent_t d2hEnd = nullptr;
   CudaLinearSolveStats statistics;
+
+  ~Impl() {
+    if (d2hEnd) cudaEventDestroy(d2hEnd);
+    if (d2hBegin) cudaEventDestroy(d2hBegin);
+  }
 
   void dot(const double* left, const double* right, double* slot,
            cudaStream_t stream) {
@@ -218,6 +225,10 @@ struct CudaPcgSolver::Impl {
   };
 
   CheckResult downloadCheck(cudaStream_t stream) {
+    if (collectProfile) {
+      CheckCuda(cudaEventRecord(d2hBegin, stream),
+                "convergence D2H begin event");
+    }
     CheckCuda(cudaMemcpyAsync(hostScalars.data(), slots.data() + kRr,
                               sizeof(double), cudaMemcpyDeviceToHost, stream),
               "residual-norm download");
@@ -228,8 +239,18 @@ struct CudaPcgSolver::Impl {
     CheckCuda(cudaMemcpyAsync(hostFlags.data(), flags.data(), sizeof(int),
                               cudaMemcpyDeviceToHost, stream),
               "breakdown-flag download");
+    if (collectProfile) {
+      CheckCuda(cudaEventRecord(d2hEnd, stream), "convergence D2H end event");
+    }
     CheckCuda(cudaStreamSynchronize(stream), "convergence-check sync");
     ++statistics.pcgHostConvergenceChecks;
+    statistics.pcgD2hBytes += 2 * sizeof(double) + sizeof(int);
+    if (collectProfile) {
+      float elapsedMilliseconds = 0.0f;
+      CheckCuda(cudaEventElapsedTime(&elapsedMilliseconds, d2hBegin, d2hEnd),
+                "convergence D2H elapsed time");
+      statistics.pcgD2hSeconds += elapsedMilliseconds / 1000.0;
+    }
     return {hostScalars.data()[0], hostScalars.data()[1],
             hostFlags.data()[0] != 0};
   }
@@ -281,6 +302,12 @@ void CudaPcgSolver::initialize(int dimension, const CudaPcgOptions& options,
     replacement->options.maxIterations = std::min(dimension, 250);
   }
   replacement->collectProfile = collectProfile;
+  if (collectProfile) {
+    CheckCuda(cudaEventCreate(&replacement->d2hBegin),
+              "convergence D2H begin event creation");
+    CheckCuda(cudaEventCreate(&replacement->d2hEnd),
+              "convergence D2H end event creation");
+  }
   replacement->residual.resize(static_cast<size_t>(dimension));
   replacement->preconditioned.resize(static_cast<size_t>(dimension));
   replacement->direction.resize(static_cast<size_t>(dimension));
@@ -431,6 +458,7 @@ void CudaPcgSolver::solve(const CudaLinearOperator& linearOperator,
     state.statistics.lastPcgIterations = static_cast<size_t>(iteration);
     state.statistics.lastPcgConverged = converged;
     state.statistics.lastPcgBreakdown = breakdown;
+    if (breakdown) ++state.statistics.pcgBreakdownCount;
     state.statistics.lastPcgResidualNormSquared = residualNormSquared;
     state.statistics.lastPcgRhsNormSquared = rhsNormSquared;
     if (!converged && !breakdown &&

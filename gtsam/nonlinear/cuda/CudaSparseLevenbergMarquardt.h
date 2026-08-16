@@ -6,6 +6,8 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/cuda/StreamingSparseJacobianLinearizer.h>
 #include <gtsam/linear/cuda/CudaLinearSolver.h>
+#include <gtsam/linear/cuda/CudaPcgSolver.h>
+#include <gtsam/nonlinear/cuda/CudaJacobianNormalOperator.h>
 
 #include <cstddef>
 #include <memory>
@@ -15,8 +17,6 @@
 namespace gtsam::cuda {
 
 class CudaSparseLevenbergMarquardtOptimizer;
-
-enum class CudaSparseLmLinearSolver { Cudss, Pcg };
 
 class GTSAM_EXPORT CudaSparseLevenbergMarquardtParams
     : public LevenbergMarquardtParams {
@@ -32,22 +32,16 @@ class GTSAM_EXPORT CudaSparseLevenbergMarquardtParams
   bool collectAttemptTrace = false;
   bool validateStructureEveryIteration = false;
 
-  // Cudss factorizes the assembled normal equations (default). Pcg solves
-  // them matrix-free with block-Jacobi-preconditioned conjugate gradients:
-  // the normal matrix is never formed, no cuDSS analysis runs, and the
-  // backend works even in builds without cuDSS.
-  CudaSparseLmLinearSolver linearSolver = CudaSparseLmLinearSolver::Cudss;
-
-  struct PcgParams {
-    // 0 selects min(columns, 250).
-    int maxIterations = 0;
-    double relativeTolerance = 1e-6;
-    bool warmStart = true;
-    // "block-jacobi" (default), "jacobi" (scalar), or "none"; the scalar and
-    // identity modes exist for ablation studies.
-    std::string preconditioner = "block-jacobi";
-  };
-  PcgParams pcg;
+  // The shared backend configuration used by both general and SFM CUDA LM.
+  // DenseCholesky is rejected because the general frontend produces sparse
+  // or operator systems only. Ordering is meaningful only for cuDSS.
+  CudaLinearSolverOptions linear{CudaLinearSolverType::Cudss, false};
+  CudaPcgOptions pcg;
+  // The preconditioner is a frontend producer choice, not PCG recurrence
+  // state. BlockJacobi is the production default; Jacobi and None are useful
+  // for benchmark ablations.
+  DevicePcgPreconditioner pcgPreconditioner =
+      DevicePcgPreconditioner::BlockJacobi;
 };
 
 enum class CudaSparseLmBackend { Cuda, CpuFallback };
@@ -83,9 +77,12 @@ struct CudaSparseLmTransferCounts {
   size_t numericH2dBytes = 0;
   size_t setupD2hBytes = 0;
   size_t attemptD2hBytes = 0;
+  size_t pcgD2hBytes = 0;
 
   size_t totalH2dBytes() const { return patternH2dBytes + numericH2dBytes; }
-  size_t totalD2hBytes() const { return setupD2hBytes + attemptD2hBytes; }
+  size_t totalD2hBytes() const {
+    return setupD2hBytes + attemptD2hBytes + pcgD2hBytes;
+  }
 };
 
 /**
@@ -95,7 +92,8 @@ struct CudaSparseLmTransferCounts {
  * persistentSetupWall contains deviceInitializeWall; pattern, structure, and
  * setup-D2H device stages overlap deviceInitializeWall; worker CPU sums
  * overlap factorLinearizationAndPackingWall; and the mandatory cuDSS
- * DATA_INFO host boundary overlaps cudssFactorAndSolve. The compatibility
+ * DATA_INFO host boundary overlaps cudssFactorAndSolve. PCG convergence D2H
+ * timing overlaps pcgSolve. The compatibility
  * aggregate fields at the end are aliases assembled from detailed stages and
  * must not be added to those stages again.
  */
@@ -125,6 +123,7 @@ struct CudaSparseLmStageTimings {
   double cudssDataInfoBoundaryWall = 0.0;
   double pcgPreconditionerBuild = 0.0;
   double pcgSolve = 0.0;
+  double pcgD2h = 0.0;
   double newModelError = 0.0;
   double attemptD2h = 0.0;
   double attemptHostBuild = 0.0;

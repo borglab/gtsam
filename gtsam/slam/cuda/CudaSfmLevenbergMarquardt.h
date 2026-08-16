@@ -99,6 +99,7 @@ struct CudaSfmLmIterationProfile {
 struct CudaSfmLevenbergMarquardtResult {
   CudaSfmSystemFormulation formulation = CudaSfmSystemFormulation::Schur;
   CudaLinearSolverType linearBackend = CudaLinearSolverType::DenseCholesky;
+  CudaLinearSystemKind linearSystemKind = CudaLinearSystemKind::Dense;
   size_t linearSystemDimension = 0;
   size_t linearSystemNonzeros = 0;
   double initialError = 0.0;

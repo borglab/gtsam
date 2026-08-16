@@ -782,6 +782,13 @@ size_t CudaSfmSchurProblem::linearizationCount() const {
 size_t CudaSfmSchurProblem::denseAssemblyCount() const {
   return impl_->denseAssemblyCount;
 }
+const CudaSfmProjectionLinearization&
+CudaSfmSchurProblem::linearization() const {
+  if (!impl_->isLinearized) {
+    throw std::logic_error("CudaSfmSchurProblem is not linearized");
+  }
+  return impl_->linearization;
+}
 const CudaDeviceArray<double>& CudaSfmSchurProblem::cameraRhs() const {
   return impl_->cameraRhs;
 }
@@ -874,6 +881,10 @@ size_t CudaSfmDenseSchurSolver::linearizationCount() const {
 
 size_t CudaSfmDenseSchurSolver::denseAssemblyCount() const {
   return impl_->problem.denseAssemblyCount();
+}
+const CudaSfmProjectionLinearization&
+CudaSfmDenseSchurSolver::linearization() const {
+  return impl_->problem.linearization();
 }
 
 const CudaLinearSolveStats& CudaSfmDenseSchurSolver::linearSolveStats() const {
