@@ -66,7 +66,8 @@ std::string usage() {
          "[--cuda-sparse-lm] [--cuda-sparse-pack-only] "
          "[--gaussian-graph-pack-diagnostic] "
          "[--linearization-benchmark] [--linearization-repeats N] "
-         "[--cuda-linear-solver dense-schur|cudss-full-normal] "
+         "[--cuda-linear-solver dense-schur|cudss-schur|pcg-schur|"
+         "cudss-full-normal] "
          "[--cuda-lm-graph-kind raw|point-batch|camera-batch] "
          "[--batch-chunk-size N] "
          "[--cuda-warmup-file FILE] "
@@ -85,6 +86,8 @@ struct TimingRow {
 
 enum class CudaLinearSolverOption {
   DenseSchur,
+  CudssSchur,
+  PcgSchur,
   CudssFullNormal,
 };
 
@@ -140,6 +143,10 @@ const char* cudaLinearSolverName(CudaLinearSolverOption solver) {
   switch (solver) {
     case CudaLinearSolverOption::DenseSchur:
       return "dense-schur";
+    case CudaLinearSolverOption::CudssSchur:
+      return "cudss-schur";
+    case CudaLinearSolverOption::PcgSchur:
+      return "pcg-schur";
     case CudaLinearSolverOption::CudssFullNormal:
       return "cudss-full-normal";
   }
@@ -496,6 +503,10 @@ gtsam::cuda::CudaSfmLinearSolverType cudaLinearSolverType(
   switch (solver) {
     case CudaLinearSolverOption::DenseSchur:
       return gtsam::cuda::CudaSfmLinearSolverType::DenseSchur;
+    case CudaLinearSolverOption::CudssSchur:
+      return gtsam::cuda::CudaSfmLinearSolverType::CudssSchur;
+    case CudaLinearSolverOption::PcgSchur:
+      return gtsam::cuda::CudaSfmLinearSolverType::PcgSchur;
     case CudaLinearSolverOption::CudssFullNormal:
       return gtsam::cuda::CudaSfmLinearSolverType::CudssFullNormal;
   }
@@ -1159,6 +1170,10 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
   options.cudaLinearSolverSpecified = linearSolver.has_value();
   if (linearSolver == "dense-schur") {
     options.cudaLinearSolver = CudaLinearSolverOption::DenseSchur;
+  } else if (linearSolver == "cudss-schur") {
+    options.cudaLinearSolver = CudaLinearSolverOption::CudssSchur;
+  } else if (linearSolver == "pcg-schur") {
+    options.cudaLinearSolver = CudaLinearSolverOption::PcgSchur;
   } else if (linearSolver == "cudss-full-normal") {
     options.cudaLinearSolver = CudaLinearSolverOption::CudssFullNormal;
   } else if (linearSolver) {
