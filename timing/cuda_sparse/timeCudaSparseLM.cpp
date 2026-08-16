@@ -200,6 +200,8 @@ struct RawRun {
   std::vector<CudaSparseLmAttemptRecord> attempts;
 };
 
+void WriteRawRuns(std::ostream& output, const std::vector<RawRun>& runs);
+
 struct TimingField {
   const char* name;
   double CudaSparseLmStageTimings::*member;
@@ -734,6 +736,15 @@ int RunSelfTest() {
         ValidatePcgBenchmarkRun(unconverged);
       })) {
     throw std::runtime_error("PCG benchmark gate self-test failed");
+  }
+  RawRun orderedRun;
+  orderedRun.linearSolveStats.userOrderingApplied = true;
+  std::ostringstream orderedRunJson;
+  WriteRawRuns(orderedRunJson, {orderedRun});
+  if (orderedRunJson.str().find("\"user_ordering_applied\":true") ==
+      std::string::npos) {
+    throw std::runtime_error(
+        "linear solver ordering serialization self-test failed");
   }
   if (!Throws([] {
         const char* args[] = {"timeCudaSparseLM", "--repeats", "0"};
@@ -1482,7 +1493,9 @@ void WriteRawRuns(std::ostream& output, const std::vector<RawRun>& runs) {
     output << ",\"timings\":";
     WriteTimings(output, run.timings);
     output << ",\"linear_solve_stats\":{"
-           << "\"analysis_count\":" << run.linearSolveStats.analysisCount
+           << "\"user_ordering_applied\":"
+           << (run.linearSolveStats.userOrderingApplied ? "true" : "false")
+           << ",\"analysis_count\":" << run.linearSolveStats.analysisCount
            << ",\"factorization_count\":"
            << run.linearSolveStats.factorizationCount
            << ",\"solve_count\":" << run.linearSolveStats.solveCount
@@ -1642,7 +1655,8 @@ std::string MakeCsv(const RunOptions& options,
          "external_mean,external_standard_deviation,external_minimum,"
          "external_maximum,initial_error,final_error,iterations,"
          "outer_linearizations,lambda_attempts,accepted_steps,cudss_analyses,"
-         "analysis_count,factorization_count,solve_count,pcg_iterations_total,"
+         "user_ordering_applied,analysis_count,factorization_count,solve_count,"
+         "pcg_iterations_total,"
          "pcg_max_iteration_hits,pcg_breakdown_count,last_pcg_iterations,"
          "last_pcg_converged,pcg_host_convergence_checks,pcg_d2h_bytes,"
          "last_pcg_breakdown,analysis_seconds,factorization_seconds,"
@@ -1681,6 +1695,7 @@ std::string MakeCsv(const RunOptions& options,
              << representative.lambdaAttempts << ","
              << representative.acceptedSteps << ","
              << representative.cudssAnalyses << ","
+             << representative.linearSolveStats.userOrderingApplied << ","
              << representative.linearSolveStats.analysisCount << ","
              << representative.linearSolveStats.factorizationCount << ","
              << representative.linearSolveStats.solveCount << ","
