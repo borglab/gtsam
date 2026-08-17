@@ -37,12 +37,14 @@ extern "C" {
 #include <mex.h>
 }
 
+#include <cstdint>
 #include <limits>
 #include <list>
 #include <set>
 #include <sstream>
 #include <streambuf>
 #include <string>
+#include <type_traits>
 #include <typeinfo>
 
 using namespace std;
@@ -122,11 +124,31 @@ void checkArguments(const string& name, int nargout, int nargin, int expected) {
 // wrapping C++ basic types in MATLAB arrays
 //*****************************************************************************
 
-// default wrapping throws an error: only basic types are allowed in wrap
+template <typename T>
+struct IsMatlabSizeOrKeyScalar
+    : std::integral_constant<bool, std::is_same<T, size_t>::value ||
+                                       std::is_same<T, uint64_t>::value> {};
+
+// size_t and uint64_t can be the same C++ type, so handle both through the
+// primary template rather than potentially duplicate explicit specializations.
 template <typename Class>
-mxArray* wrap(const Class& value) {
+mxArray* wrapDefault(const Class& value, std::true_type) {
+  mxArray *result = scalar(mxUINT32OR64_CLASS);
+  *static_cast<Class*>(mxGetData(result)) = value;
+  return result;
+}
+
+// Unsupported types retain the generic runtime error.
+template <typename Class>
+mxArray* wrapDefault(const Class&, std::false_type) {
   error("wrap internal error: attempted wrap of invalid type");
   return 0;
+}
+
+// Default wrapping supports size/key scalars and rejects all other types.
+template <typename Class>
+mxArray* wrap(const Class& value) {
+  return wrapDefault(value, IsMatlabSizeOrKeyScalar<Class>());
 }
 
 // specialization to string
@@ -160,29 +182,11 @@ mxArray* wrap<bool>(const bool& value) {
   return result;
 }
 
-// specialization to size_t but skip Win64 size check & CUDACC check
-#if (!defined(_WIN64) && !defined(__LP64__)) || defined(__CUDACC__)
-template<>
-mxArray* wrap<size_t>(const size_t& value) {
-  mxArray *result = scalar(mxUINT32OR64_CLASS);
-  *(size_t*)mxGetData(result) = value;
-  return result;
-}
-#endif
-
 // specialization to int
 template<>
 mxArray* wrap<int>(const int& value) {
   mxArray *result = scalar(mxUINT32OR64_CLASS);
   *(int*)mxGetData(result) = value;
-  return result;
-}
-
-// specialization to gtsam::Key which is an alias for uint64_t
-template<>
-mxArray* wrap<uint64_t>(const uint64_t& value) {
-  mxArray *result = scalar(mxUINT32OR64_CLASS);
-  *(uint64_t*)mxGetData(result) = value;
   return result;
 }
 
@@ -261,12 +265,38 @@ mxArray* wrap_enum(const T x, const std::string& classname) {
 // unwrapping MATLAB arrays into C++ basic types
 //*****************************************************************************
 
-// default unwrapping throws an error
-// as wrap only supports passing a reference or one of the basic types
+// Check for 64-bit, as Mathworks says mxGetScalar only good for 32 bit
 template <typename T>
-T unwrap(const mxArray* array) {
+T myGetScalar(const mxArray* array) {
+  switch (mxGetClassID(array)) {
+    case mxINT64_CLASS:
+      return (T) *(std::int64_t*) mxGetData(array);
+    case mxUINT64_CLASS:
+      return (T) *(std::uint64_t*) mxGetData(array);
+    default:
+      // hope for the best!
+      return (T) mxGetScalar(array);
+  }
+}
+
+// size_t and uint64_t share this path whether they are aliases or distinct.
+template <typename T>
+T unwrapDefault(const mxArray* array, std::true_type) {
+  checkScalar(array, "unwrap<size_t or uint64_t>");
+  return myGetScalar<T>(array);
+}
+
+// Unsupported types retain the generic runtime error.
+template <typename T>
+T unwrapDefault(const mxArray*, std::false_type) {
   error("wrap internal error: attempted unwrap of invalid type");
   return T();
+}
+
+// Default unwrapping supports size/key scalars and rejects all other types.
+template <typename T>
+T unwrap(const mxArray* array) {
+  return unwrapDefault<T>(array, IsMatlabSizeOrKeyScalar<T>());
 }
 
 /// @brief Unwrap from matlab array to C++ enum type
@@ -299,20 +329,6 @@ string unwrap<string>(const mxArray* array) {
   return str;
 }
 
-// Check for 64-bit, as Mathworks says mxGetScalar only good for 32 bit
-template <typename T>
-T myGetScalar(const mxArray* array) {
-  switch (mxGetClassID(array)) {
-    case mxINT64_CLASS:
-      return (T) *(std::int64_t*) mxGetData(array);
-    case mxUINT64_CLASS:
-      return (T) *(std::uint64_t*) mxGetData(array);
-    default:
-      // hope for the best!
-      return (T) mxGetScalar(array);
-  }
-}
-
 // specialization to bool
 template<>
 bool unwrap<bool>(const mxArray* array) {
@@ -340,24 +356,6 @@ int unwrap<int>(const mxArray* array) {
   checkScalar(array,"unwrap<int>");
   return myGetScalar<int>(array);
 }
-
-// specialization to gtsam::Key which is an alias for uint64_t
-template<>
-uint64_t unwrap<uint64_t>(const mxArray* array) {
-  checkScalar(array,"unwrap<uint64_t>");
-  return myGetScalar<uint64_t>(array);
-}
-
-// specialization to size_t; omit it on Win64 because size_t is uint64_t there
-// and would duplicate unwrap<uint64_t>. The __CUDACC__ case intentionally
-// bypasses the Win64 guard when compiling with CUDA.
-#if (!defined(_WIN64) && !defined(__LP64__)) || defined(__CUDACC__)
-template<>
-size_t unwrap<size_t>(const mxArray* array) {
-  checkScalar(array, "unwrap<size_t>");
-  return myGetScalar<size_t>(array);
-}
-#endif
 
 // specialization to double
 template<>
