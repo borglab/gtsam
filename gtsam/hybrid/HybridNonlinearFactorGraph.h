@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/hybrid/HybridFactorGraph.h>
+#include <gtsam/inference/FactorErrorPredicate.h>
 
 namespace gtsam {
 

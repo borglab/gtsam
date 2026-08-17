@@ -23,6 +23,7 @@
 
 #include <cstddef>
 #include <gtsam/inference/EliminateableFactorGraph.h>
+#include <gtsam/inference/FactorErrorPredicate.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/linear/Errors.h>  // Included here instead of fw-declared so we can use Errors::iterator
 #include <gtsam/linear/GaussianFactor.h>

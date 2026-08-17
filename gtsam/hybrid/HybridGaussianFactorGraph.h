@@ -24,11 +24,11 @@
 #include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/inference/EliminateableFactorGraph.h>
+#include <gtsam/inference/FactorErrorPredicate.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/VectorValues.h>
 
-#include <functional>
 #include <optional>
 
 namespace gtsam {

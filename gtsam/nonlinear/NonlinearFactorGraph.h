@@ -26,6 +26,7 @@
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/nonlinear/GraphvizFormatting.h>
 #include <gtsam/inference/FactorGraph.h>
+#include <gtsam/inference/FactorErrorPredicate.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 
 #include <memory>
