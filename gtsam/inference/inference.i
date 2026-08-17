@@ -168,8 +168,8 @@ class Ordering {
 
   // Standard interface
   size_t size() const;
-  gtsam::Key at(size_t i) const;
-  void push_back(gtsam::Key key);
+  const gtsam::Key& at(size_t i) const;
+  void push_back(const gtsam::Key& key);
 
   // enabling serialization functionality
   void serialize() const;
@@ -202,7 +202,7 @@ class VariableIndex {
   VariableIndex(const T& factorGraph);
   VariableIndex(const gtsam::VariableIndex& other);
 
-  gtsam::FactorIndices& at(gtsam::Key variable) const;
+  const gtsam::FactorIndices& at(gtsam::Key variable) const;
   bool empty(gtsam::Key variable) const;
 
   // Testable
@@ -219,13 +219,16 @@ class VariableIndex {
 
 #include <gtsam/inference/Factor.h>
 virtual class Factor {
-  void print(string s = "Factor\n", const gtsam::KeyFormatter& keyFormatter =
-                                        gtsam::DefaultKeyFormatter) const;
-  void printKeys(string s = "") const;
+  void print(const string& s = "Factor\n",
+             const gtsam::KeyFormatter& keyFormatter =
+                 gtsam::DefaultKeyFormatter) const;
+  void printKeys(
+      const string& s = "Factor",
+      const gtsam::KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::Factor& other, double tol = 1e-9) const;
   bool empty() const;
   size_t size() const;
-  gtsam::KeyVector keys() const;
+  const gtsam::KeyVector& keys() const;
 };
 
 }  // namespace gtsam

@@ -67,10 +67,10 @@ class WnoaMotionFactor
 
  public:
   static constexpr int dim = traits<Pose>::dimension;
+  using Velocity = typename gtsam::traits<Pose>::TangentVector;
 
  private:
   // Convenient typedefs
-  using Velocity = typename gtsam::traits<Pose>::TangentVector;
   using MatrixN = Eigen::Matrix<double, dim, dim>;
   using VectorN = Eigen::Matrix<double, dim, 1>;
   using Matrix2N = Eigen::Matrix<double, 2 * dim, 2 * dim>;

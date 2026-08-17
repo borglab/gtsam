@@ -78,8 +78,8 @@ class Values {
 
   // The order is important: gtsam::Vector has to precede Point2/Point3 so `atVector`
   // can work for those fixed-size vectors. Same apparently for Cal3Bundler and Cal3f.
-  void insert(gtsam::Key j, gtsam::Vector vector);
-  void insert(gtsam::Key j, gtsam::Matrix matrix);
+  void insert(gtsam::Key j, const gtsam::Vector& vector);
+  void insert(gtsam::Key j, const gtsam::Matrix& matrix);
   void insert(gtsam::Key j, const gtsam::Point2& point2);
   void insert(gtsam::Key j, const gtsam::Point3& point3);
   void insert(gtsam::Key j, const gtsam::Gal3& T);
@@ -122,12 +122,12 @@ class Values {
   void insert(gtsam::Key j, const gtsam::SphericalCamera& camera);
   void insert(gtsam::Key j, const gtsam::imuBias::ConstantBias& constant_bias);
   void insert(gtsam::Key j, const gtsam::NavState& nav_state);
-  void insert(gtsam::Key j, double c);
+  void insert(gtsam::Key j, const double& c);
 
   // The order is important: gtsam::Vector has to precede Point2/Point3 so `atVector`
   // can work for those fixed-size vectors.
-  void update(gtsam::Key j, gtsam::Vector vector);
-  void update(gtsam::Key j, gtsam::Matrix matrix);
+  void update(gtsam::Key j, const gtsam::Vector& vector);
+  void update(gtsam::Key j, const gtsam::Matrix& matrix);
   void update(gtsam::Key j, const gtsam::Point2& point2);
   void update(gtsam::Key j, const gtsam::Point3& point3);
   void update(gtsam::Key j, const gtsam::Gal3& T);
@@ -170,12 +170,12 @@ class Values {
   void update(gtsam::Key j, const gtsam::SphericalCamera& camera);
   void update(gtsam::Key j, const gtsam::imuBias::ConstantBias& constant_bias);
   void update(gtsam::Key j, const gtsam::NavState& nav_state);
-  void update(gtsam::Key j, double c);
+  void update(gtsam::Key j, const double& c);
 
   // The order is important: gtsam::Vector has to precede Point2/Point3 so `atVector`
   // can work for those fixed-size vectors.
-  void insert_or_assign(gtsam::Key j, gtsam::Vector vector);
-  void insert_or_assign(gtsam::Key j, gtsam::Matrix matrix);
+  void insert_or_assign(gtsam::Key j, const gtsam::Vector& vector);
+  void insert_or_assign(gtsam::Key j, const gtsam::Matrix& matrix);
   void insert_or_assign(gtsam::Key j, const gtsam::Point2& point2);
   void insert_or_assign(gtsam::Key j, const gtsam::Point3& point3);
   void insert_or_assign(gtsam::Key j, const gtsam::Gal3& T);
@@ -218,7 +218,7 @@ class Values {
   void insert_or_assign(gtsam::Key j, const gtsam::SphericalCamera& camera);
   void insert_or_assign(gtsam::Key j, const gtsam::imuBias::ConstantBias& constant_bias);
   void insert_or_assign(gtsam::Key j, const gtsam::NavState& nav_state);
-  void insert_or_assign(gtsam::Key j, double c);
+  void insert_or_assign(gtsam::Key j, const double& c);
 
   template <T = {gtsam::Vector,
                  gtsam::Matrix,

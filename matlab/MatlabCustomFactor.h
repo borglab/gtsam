@@ -6,6 +6,24 @@
 #include <tbb/global_control.h>
 #endif
 
+// On Apple LP64, size_t and uint64_t are distinct C++ types. The develop
+// MATLAB support omits unwrap<size_t> under __LP64__ on the assumption that
+// they are aliases, leaving size_t arguments without a caster on macOS.
+#if defined(__APPLE__) && defined(__LP64__)
+template <>
+mxArray* wrap<size_t>(const size_t& value) {
+  mxArray* result = scalar(mxUINT32OR64_CLASS);
+  *reinterpret_cast<size_t*>(mxGetData(result)) = value;
+  return result;
+}
+
+template <>
+size_t unwrap<size_t>(const mxArray* array) {
+  checkScalar(array, "unwrap<size_t>");
+  return myGetScalar<size_t>(array);
+}
+#endif
+
 namespace gtsam {
 
 /**

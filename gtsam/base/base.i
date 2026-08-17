@@ -38,7 +38,7 @@ class DSFMap {
   DSFMap();
   KEY find(const KEY& key) const;
   void merge(const KEY& x, const KEY& y);
-  std::map<KEY, This::Set> sets();
+  std::map<KEY, This::Set> sets() const;
 };
 
 // Used in Matlab wrapper
@@ -86,7 +86,8 @@ class IndexPairSetMap {
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/MatrixSerialization.h>
-bool linear_independent(gtsam::Matrix A, gtsam::Matrix B, double tol);
+bool linear_independent(const gtsam::Matrix& A, const gtsam::Matrix& B,
+                        double tol = 1e-9);
 
 #include <gtsam/base/Value.h>
 virtual class Value {

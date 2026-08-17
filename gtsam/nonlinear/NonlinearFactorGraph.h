@@ -26,6 +26,7 @@
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/nonlinear/GraphvizFormatting.h>
 #include <gtsam/inference/FactorGraph.h>
+#include <gtsam/inference/FactorErrorPredicate.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 
 #include <memory>
@@ -91,8 +92,9 @@ namespace gtsam {
     /** print errors along with factors*/
     void printErrors(const Values& values, const std::string& str = "NonlinearFactorGraph: ",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter,
-      const std::function<bool(const Factor* /*factor*/, double /*whitenedError*/, size_t /*index*/)>&
-        printCondition = [](const Factor *,double, size_t) {return true;}) const;
+      const FactorErrorPredicate&
+        printCondition = FactorErrorPredicate{
+            [](const Factor*, double, size_t) { return true; }}) const;
 
     /** Test equality */
     bool equals(const NonlinearFactorGraph& other, double tol = 1e-9) const;

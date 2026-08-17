@@ -81,7 +81,7 @@ class TestCertifiableWrappers(unittest.TestCase):
         """Reject negative wrapper ranks before they reach Eigen allocation."""
         values = gtsam.Values()
         values.insert(X(0), np.eye(2))
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             gtsam.RiemannianStaircaseOptimizer.padInitialValues(values, -1)
 
         params = gtsam.RiemannianStaircaseParams()

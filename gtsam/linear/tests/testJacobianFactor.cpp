@@ -17,6 +17,8 @@
  **/
 
 #include <CppUnitLite/TestHarness.h>
+#include <type_traits>
+#include <utility>
 #include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/TestableAssertions.h>
@@ -146,6 +148,31 @@ TEST(JacobianFactor, constructors_and_accessors)
     EXPECT(noise == expected.get_model());
     EXPECT(noise == actual.get_model());
   }
+}
+
+/* ************************************************************************* */
+// Verifies that const accessors retain zero-copy Eigen views into the factor.
+TEST(JacobianFactor, const_accessors_are_views)
+{
+  JacobianFactor factor(0, Matrix{{1.0, 2.0}, {3.0, 4.0}}, Vector{{5.0, 6.0}});
+
+  using ConstABlock = std::remove_cv_t<JacobianFactor::constABlock>;
+  using ConstBVector = std::remove_cv_t<JacobianFactor::constBVector>;
+  static_assert(std::is_same_v<std::remove_cv_t<decltype(
+                                  std::declval<const JacobianFactor&>().getA())>,
+                               ConstABlock>);
+  static_assert(std::is_same_v<std::remove_cv_t<decltype(
+                                  std::declval<const JacobianFactor&>().getb())>,
+                               ConstBVector>);
+
+  const auto A = static_cast<const JacobianFactor&>(factor).getA();
+  const auto b = static_cast<const JacobianFactor&>(factor).getb();
+
+  factor.matrixObject()(0)(0, 0) = 7.0;
+  factor.matrixObject()(1)(0, 0) = 8.0;
+
+  EXPECT_DOUBLES_EQUAL(7.0, A(0, 0), 1e-12);
+  EXPECT_DOUBLES_EQUAL(8.0, b(0), 1e-12);
 }
 
 /* ************************************************************************* */

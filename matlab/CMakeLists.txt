@@ -112,36 +112,9 @@ if(GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX)
     list(APPEND mexFlags -DGTSAM_IMPORT_STATIC)
   endif()
 
-  # PoseRTV and the unstable factors built around it are unavailable when
-  # deprecated APIs are disabled. Keep them out of the optional MATLAB
-  # wrapper in that configuration.
-  set(unstable_ignore ${ignore})
-  if(NOT GTSAM_ALLOW_DEPRECATED_SINCE_V43)
-    list(APPEND unstable_ignore
-         gtsam::PoseRTV
-         gtsam::PriorFactor
-         gtsam::BetweenFactor
-         gtsam::RangeFactor
-         gtsam::RangeFactorRTV
-         gtsam::NonlinearEquality
-         gtsam::IMUFactor
-         gtsam::FullIMUFactor
-         gtsam::DHeightPrior
-         gtsam::DRollPrior
-         gtsam::VelocityPrior
-         gtsam::DGroundConstraint
-         "gtsam::PriorFactor<gtsam::PoseRTV>"
-         "gtsam::BetweenFactor<gtsam::PoseRTV>"
-         "gtsam::RangeFactor<gtsam::PoseRTV,gtsam::PoseRTV>"
-         "gtsam::RangeFactor<gtsam::PoseRTV, gtsam::PoseRTV>"
-         "gtsam::NonlinearEquality<gtsam::PoseRTV>"
-         "gtsam::IMUFactor<gtsam::PoseRTV>"
-         "gtsam::FullIMUFactor<gtsam::PoseRTV>")
-  endif()
-
   # Wrap
   matlab_wrap(${GTSAM_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.i "gtsam_unstable"
-              "${GTSAM_ADDITIONAL_LIBRARIES}" "" "${mexFlags}" "${unstable_ignore}" "${GTSAM_ENABLE_BOOST_SERIALIZATION}")
+              "${GTSAM_ADDITIONAL_LIBRARIES}" "" "${mexFlags}" "${ignore}" "${GTSAM_ENABLE_BOOST_SERIALIZATION}")
   set_target_properties(
     gtsam_unstable_matlab_wrapper
     PROPERTIES BUILD_RPATH

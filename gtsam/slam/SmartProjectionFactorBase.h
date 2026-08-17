@@ -61,6 +61,12 @@ class SmartProjectionFactorBase : public SmartFactorBase<CAMERA> {
   typedef CAMERA Camera;
   typedef CameraSet<CAMERA> Cameras;
 
+  /// Exact linear-factor types produced by this camera specialization.
+  using HessianFactorType = RegularHessianFactor<Base::Dim>;
+  using JacobianFactorType = JacobianFactorQ<Base::Dim, 2>;
+  using SharedHessianFactor = std::shared_ptr<HessianFactorType>;
+  using SharedJacobianFactor = std::shared_ptr<JacobianFactorType>;
+
   /**
    * Default constructor, only for serialization
    */

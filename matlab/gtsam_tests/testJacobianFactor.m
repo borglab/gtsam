@@ -35,6 +35,16 @@ sigmas = [1;1;1;1];
 model4 = noiseModel.Diagonal.Sigmas(sigmas);
 combined = JacobianFactor(x2, Ax2,  l1, Al1, x1, Ax1, b2, model4);
 
+% getA/getb return dense MATLAB arrays while the native C++ accessors remain views.
+A = combined.getA();
+b = combined.getb();
+CHECK('getA returns double', isa(A, 'double'));
+CHECK('getb returns double', isa(b, 'double'));
+CHECK('getA shape', isequal(size(A), [4, 6]));
+CHECK('getb shape', isequal(size(b), [4, 1]));
+CHECK('getA values', norm(A - [Ax2, Al1, Ax1]) < 1e-12);
+CHECK('getb values', norm(b - b2) < 1e-12);
+
 % eliminate the first variable (x2) in the combined factor, destructive !
 ord=Ordering;
 ord.push_back(x2);
