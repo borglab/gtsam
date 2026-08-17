@@ -22,9 +22,13 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Vector.h>
+#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/navigation/EquivariantFilter.h>
+#include <gtsam/navigation/ManifoldEKF.h>
+
+#include <random>
 
 using namespace gtsam;
 
@@ -126,10 +130,10 @@ struct MeasurementFunctor {
   /// Measurement function h(η̂) = c_m * η̂.
   Vector3 operator()(const Unit3& eta_hat,
                      OptionalJacobian<3, 2> H = {}) const {
-    if (H) {
-      *H = c_m_ * eta_hat.basis();
-    }
-    return c_m_ * eta_hat.point3(H);
+    // point3 writes its own Jacobian, so scale afterwards.
+    const Point3 direction = eta_hat.point3(H);
+    if (H) *H *= c_m_;
+    return c_m_ * direction;
   }
 };
 
@@ -350,29 +354,73 @@ TEST(EquivariantFilter_Attitude, Predict) {
   EXPECT(assert_equal(state_expected, filter.state()));
 }
 
-//==============================================================================
-TEST(EquivariantFilter_Attitude, CovarianceRotation) {
-  using namespace attitude_example;
+/* ************************************************************************* */
+namespace covariance_transport {
+using namespace attitude_example;
 
-  Matrix2 Sigma0 = 0.01 * I_2x2;
-  EquivariantFilter<M, Symmetry> filter(eta_ref, Sigma0);
+// Anisotropic and correlated, so that J * P * J^T and J^T * P * J differ.
+const Matrix2 kSigma0{{4e-4, 1.5e-4},  //
+                      {1.5e-4, 1e-4}};
 
-  // Move away from identity so the covariance needs to be rotated.
-  const double dt = 0.02;
-  Matrix3 Sigma_u = 0.1 * I_3x3;
-  Matrix3 Q = processNoise(Sigma_u);
-  Matrix23 B = inputMatrixB(Q0);
-  Matrix2 Qc = B * Q * B.transpose();
-  filter.predict(lift_omega, psi_u, Qc, dt);
-
-  Matrix2 P_error = filter.errorCovariance();
-  Matrix2 J;
-  const typename Symmetry::Diffeomorphism action_at_g(filter.groupEstimate());
-  action_at_g(eta_ref, &J);
-  Matrix2 P_expected = J.transpose() * P_error * J;
-
-  EXPECT(assert_equal(P_expected, filter.covariance(), 1e-9));
+/// Map an error perturbation at the reference state to the corresponding
+/// perturbation of the current state, using only the state relation
+/// η = φ_g(Retract(η_ref, ε)). This deliberately avoids the filter's own
+/// Jacobian, so the tests below do not restate the formula they check.
+Vector2 statePerturbation(const G& g, const Vector2& epsilon) {
+  const typename Symmetry::Diffeomorphism phi_g(g);
+  const M eta_hat = phi_g(eta_ref);
+  const M eta = phi_g(traits<M>::Retract(eta_ref, epsilon));
+  return traits<M>::Local(eta_hat, eta);
 }
+
+// With the group estimate at identity the error coordinates already live in the
+// tangent space at the current state, so covariance() returns P unchanged.
+TEST(EquivariantFilter_Attitude, CovarianceAtIdentity) {
+  EquivariantFilter<M, Symmetry> filter(eta_ref, kSigma0);
+  EXPECT(assert_equal(kSigma0, filter.covariance(), 1e-9));
+}
+
+// covariance() pushes the error covariance forward through the differential of
+// the group action, that is J * P * J^T and not J^T * P * J.
+TEST(EquivariantFilter_Attitude, CovariancePushforward) {
+  EquivariantFilter<M, Symmetry> filter(eta_ref, kSigma0, Q1);
+
+  // Differential of the state relation at zero error, obtained numerically.
+  const Matrix2 D = numericalDerivative11<Vector2, Vector2>(
+      [](const Vector2& epsilon) { return statePerturbation(Q1, epsilon); },
+      Vector2::Zero());
+
+  // The test only has teeth if the two congruence directions disagree here.
+  EXPECT((D * kSigma0 * D.transpose() - D.transpose() * kSigma0 * D).norm() >
+         1e-5);
+
+  EXPECT(assert_equal(Matrix2(D * kSigma0 * D.transpose()), filter.covariance(),
+                      1e-7));
+}
+
+// Sampled errors at the reference state, mapped to the current state, have a
+// sample covariance matching covariance().
+TEST(EquivariantFilter_Attitude, CovarianceMonteCarlo) {
+  EquivariantFilter<M, Symmetry> filter(eta_ref, kSigma0, Q1);
+
+  const Matrix2 L = Eigen::LLT<Matrix2>(kSigma0).matrixL();
+  std::mt19937 rng(42);
+  std::normal_distribution<double> gauss(0.0, 1.0);
+
+  constexpr size_t numSamples = 200000;
+  Matrix2 sampleCovariance = Matrix2::Zero();
+  for (size_t i = 0; i < numSamples; i++) {
+    const Vector2 epsilon = L * Vector2(gauss(rng), gauss(rng));
+    const Vector2 delta = statePerturbation(Q1, epsilon);
+    sampleCovariance += delta * delta.transpose();
+  }
+  sampleCovariance /= numSamples;
+
+  EXPECT(assert_equal(sampleCovariance, filter.covariance(), 1e-5));
+}
+
+}  // namespace covariance_transport
+/* ************************************************************************* */
 
 //==============================================================================
 TEST(EquivariantFilter_Attitude, Update) {
@@ -393,13 +441,19 @@ TEST(EquivariantFilter_Attitude, Update) {
   const G Q_before = filter.groupEstimate();
   const Matrix2 P_before = filter.errorCovariance();
 
-  // 3. Setup Measurement
+  // 3. Setup Measurement. The filter consumes the output matrix in error
+  // coordinates, so convert the Jacobian taken at the current state.
   const Vector3 z = c_m * eta_ref.point3();
   const Matrix3 R_meas = 0.01 * I_3x3;
   MeasurementFunctor h(c_m);
 
+  const M eta_hat = phi_ref(Q_before);
+  Matrix32 H;
+  const Vector3 z_hat = h(eta_hat, H);
+  const Matrix32 Cstar = filter.outputMatrix(H);
+
   // 4. Run Filter Update
-  filter.update(h, z, R_meas);
+  filter.update<Vector3>(z_hat, Cstar, z, R_meas);
 
   const G Q_after = filter.groupEstimate();
   const Matrix2 P_after = filter.errorCovariance();
@@ -412,14 +466,9 @@ TEST(EquivariantFilter_Attitude, Update) {
   Matrix32 InnovationLift =
       Dphi0.completeOrthogonalDecomposition().pseudoInverse();
 
-  // Re-calculate Measurement Matrix H
-  const M eta_hat = phi_ref(Q_before);
-  Matrix H;
-  const Vector3 z_hat = h(eta_hat, H);
-
   // Calculate Gain K
-  Matrix S = H * P_before * H.transpose() + R_meas;
-  Matrix K = P_before * H.transpose() * S.inverse();
+  Matrix S = Cstar * P_before * Cstar.transpose() + R_meas;
+  Matrix K = P_before * Cstar.transpose() * S.inverse();
 
   // Calculate Innovation
   const Vector3 innovation = z_hat - z;
@@ -432,7 +481,7 @@ TEST(EquivariantFilter_Attitude, Update) {
   const G X_expected = Rot3::Expmap(delta_x) * Q_before;
 
   // Update Covariance: Joseph Form
-  Matrix2 I_KC = Matrix2::Identity() - K * H;
+  Matrix2 I_KC = Matrix2::Identity() - K * Cstar;
   Matrix2 P_expected =
       I_KC * P_before * I_KC.transpose() + K * R_meas * K.transpose();
 
@@ -443,6 +492,69 @@ TEST(EquivariantFilter_Attitude, Update) {
   const Unit3 state_expected(Q_after.unrotate(eta_ref.point3()));
   EXPECT(assert_equal(state_expected, filter.state(), 1e-9));
 }
+
+/* ************************************************************************* */
+namespace output_matrix {
+using namespace attitude_example;
+
+const Matrix2 kSigma0{{4e-4, 1.5e-4},  //
+                      {1.5e-4, 1e-4}};
+const Matrix3 kR = 0.01 * I_3x3;
+const MeasurementFunctor kMeasurement(c_m);
+
+/// Measurement as a function of the error coordinates at the reference state,
+/// h(φ_g(Retract(η_ref, ε))). Its derivative at ε = 0 is the output matrix C*.
+Vector3 measurementAtError(const G& g, const Vector2& epsilon) {
+  const typename Symmetry::Diffeomorphism phi_g(g);
+  return kMeasurement(phi_g(traits<M>::Retract(eta_ref, epsilon)));
+}
+
+// outputMatrix() turns a Jacobian taken at the current state into the
+// derivative of the measurement with respect to the error coordinates.
+TEST(EquivariantFilter_Attitude, OutputMatrixIsErrorJacobian) {
+  EquivariantFilter<M, Symmetry> filter(eta_ref, kSigma0, Q1);
+
+  const Matrix32 expected = numericalDerivative11<Vector3, Vector2>(
+      [](const Vector2& epsilon) { return measurementAtError(Q1, epsilon); },
+      Vector2::Zero());
+
+  Matrix32 H;
+  kMeasurement(filter.state(), H);
+
+  // The conversion is not a no-op away from the identity group element.
+  EXPECT((expected - H).norm() > 1e-5);
+
+  EXPECT(assert_equal(expected, filter.outputMatrix(H), 1e-7));
+}
+
+// Fed a correct C*, the update must agree with an ordinary EKF that works
+// entirely in the tangent space at the current state: the two differ only by
+// the congruence J, so a wrong output-matrix frame breaks the agreement.
+TEST(EquivariantFilter_Attitude, UpdateMatchesStateFrameEKF) {
+  EquivariantFilter<M, Symmetry> filter(eta_ref, kSigma0, Q1);
+
+  // Differential of the group action before the update moves the estimate.
+  const Matrix2 J = filter.actionDifferential();
+  const M eta_hat = filter.state();
+
+  Matrix32 H;
+  const Vector3 prediction = kMeasurement(eta_hat, H);
+  const Vector3 z = prediction + Vector3(0.03, -0.02, 0.01);
+
+  // Reference solution: prior pushed forward, plain EKF update at the state.
+  ManifoldEKF<M> ekf(eta_hat, J * kSigma0 * J.transpose());
+  ekf.update<Vector3>(prediction, H, z, kR, /*performReset=*/false);
+
+  filter.update<Vector3>(prediction, filter.outputMatrix(H), z, kR);
+
+  EXPECT(assert_equal(ekf.state(), filter.state(), 1e-9));
+  EXPECT(assert_equal(ekf.covariance(),
+                      Matrix2(J * filter.errorCovariance() * J.transpose()),
+                      1e-9));
+}
+
+}  // namespace output_matrix
+/* ************************************************************************* */
 
 //==============================================================================
 TEST(EquivariantFilter_Attitude, CheckMatrices) {
