@@ -543,7 +543,7 @@ virtual class HessianFactor : gtsam::GaussianFactor {
   //Standard Interface
   size_t rows() const;
   double constantTerm() const;
-  gtsam::Matrix linearTerm() const;
+  gtsam::Vector linearTerm() const;
 
   // enabling serialization functionality
   void serialize() const;
