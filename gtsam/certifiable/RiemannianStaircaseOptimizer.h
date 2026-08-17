@@ -216,9 +216,6 @@ class GTSAM_EXPORT RiemannianStaircaseOptimizer {
   /// Zero-pad each Matrix entry of `Y` to `pMin` columns. Use when entries are narrower than `pMin`.
   static Values padInitialValues(const Values& Y, size_t pMin);
 
-  /// Signed convenience overload that rejects negative ranks.
-  static Values padInitialValues(const Values& Y, int pMin);
-
   /// Run the local solver (ALM here). Returns Y* and multipliers (if the solver provides).
   static InnerSolveResult runLocalSolver(
       const QcqpProblem& qcqp, const Values& Y0,
