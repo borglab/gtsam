@@ -243,7 +243,7 @@ namespace gtsam {
     constABlock S(const_iterator it) const { return BaseFactor::getA(it); }
 
     /** Get a view of the r.h.s. vector d */
-    Vector d() const { return BaseFactor::getb(); }
+    const constBVector d() const { return BaseFactor::getb(); }
 
     /**
      * @brief Compute the determinant of the R matrix.
