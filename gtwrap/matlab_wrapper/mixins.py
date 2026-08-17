@@ -16,6 +16,7 @@ class CheckMixin:
         "char",
         "unsigned char",
         "size_t",
+        "uint64_t",
         "Key",  # This is an alias for a uint64_t
     )
     # Ignore the namespace for these datatypes
