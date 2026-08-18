@@ -1,6 +1,6 @@
 #pragma once
 
-#include <gtsam/base/cuda/CudaPinnedHostArray.h>
+#include <gtsam/base/cuda/PinnedHostArray.h>
 #include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
 
 #include <cstddef>
@@ -32,8 +32,8 @@ class HostSparseJacobian {
 
  private:
   uint64_t structuralFingerprint_ = 0;
-  CudaPinnedHostArray<double> values_;
-  CudaPinnedHostArray<double> rhs_;
+  PinnedHostArray<double> values_;
+  PinnedHostArray<double> rhs_;
 };
 
 }  // namespace gtsam::cuda

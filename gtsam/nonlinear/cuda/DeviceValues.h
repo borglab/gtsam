@@ -1,6 +1,6 @@
 #pragma once
 
-#include <gtsam/base/cuda/CudaDeviceArray.h>
+#include <gtsam/base/cuda/DeviceArray.h>
 #include <gtsam/nonlinear/cuda/DeviceVariableIndex.h>
 
 #include <chrono>
@@ -18,8 +18,8 @@ namespace gtsam::cuda {
 
 template <typename T>
 struct DeviceValueBlock {
-  CudaDeviceArray<T> values;
-  CudaDeviceArray<double> delta;
+  DeviceArray<T> values;
+  DeviceArray<double> delta;
   std::vector<Key> keys;
   int tangentDim = 0;
 };
@@ -33,7 +33,7 @@ class DeviceValues {
                                 const std::vector<Key>& keys,
                                 const std::vector<T>& hostValues,
                                 cudaStream_t stream = nullptr,
-                                CudaDeviceTransferTiming* valuesUploadTiming =
+                                DeviceTransferTiming* valuesUploadTiming =
                                     nullptr,
                                 double* deltaResizeElapsed = nullptr) {
     if (keys.size() != hostValues.size()) {

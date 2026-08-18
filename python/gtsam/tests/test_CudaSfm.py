@@ -109,7 +109,7 @@ def _make_perturbed_bal_like_data(measured_data):
 
 
 @unittest.skipIf(cuda is None, "GTSAM was not built with CUDA")
-class TestCudaSfm(unittest.TestCase):
+class TestSfm(unittest.TestCase):
 
     def _run_or_skip_unavailable_runtime(self, func):
         try:
@@ -127,23 +127,23 @@ class TestCudaSfm(unittest.TestCase):
             raise
 
     def test_cuda_sfm_params_are_wrapped(self):
-        params = cuda.CudaSfmLevenbergMarquardtParams.CeresDefaults()
+        params = cuda.SfmLevenbergMarquardtParams.ceresDefaults()
         params.setFormulation("schur")
-        params.setCudaLinearSolver("dense-cholesky")
+        params.setLinearSolverBackend("dense-cholesky")
 
         self.assertEqual("dense-schur", params.getLinearSolver())
         self.assertEqual("schur", params.getFormulation())
-        self.assertEqual("dense-cholesky", params.getCudaLinearSolver())
-        self.assertEqual(cuda.CudaSfmSystemFormulation.Schur,
+        self.assertEqual("dense-cholesky", params.getLinearSolverBackend())
+        self.assertEqual(cuda.SfmSystemFormulation.Schur,
                          params.formulation)
 
     def test_optimize_cuda_sfm_runs_from_python(self):
         data = _make_zero_error_sfm_data()
-        params = cuda.CudaSfmLevenbergMarquardtParams()
+        params = cuda.SfmLevenbergMarquardtParams()
         params.setMaxIterations(0)
 
         result = self._run_or_skip_unavailable_runtime(
-            lambda: cuda.OptimizeCudaSfm(data, params))
+            lambda: cuda.optimizeSfm(data, params))
 
         self.assertEqual(0, result.iterations)
         self.assertGreaterEqual(result.initialError, 0.0)
@@ -153,13 +153,13 @@ class TestCudaSfm(unittest.TestCase):
 
     def test_optimize_cuda_sfm_matches_cpp_tiny_bal_behavior(self):
         data = _make_perturbed_bal_like_data(_make_true_bal_like_data())
-        params = cuda.CudaSfmLevenbergMarquardtParams()
+        params = cuda.SfmLevenbergMarquardtParams()
         params.setMaxIterations(5)
         params.setRelativeErrorTol(1e-12)
         params.setlambdaInitial(1e-3)
 
         result = self._run_or_skip_unavailable_runtime(
-            lambda: cuda.OptimizeCudaSfm(data, params))
+            lambda: cuda.optimizeSfm(data, params))
 
         self.assertGreater(result.iterations, 0)
         self.assertGreater(result.acceptedSteps, 0)

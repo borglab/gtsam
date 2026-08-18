@@ -1,8 +1,8 @@
 #pragma once
 
-#include <gtsam/base/cuda/CudaDeviceArray.h>
+#include <gtsam/base/cuda/DeviceArray.h>
 #include <gtsam/dllexport.h>
-#include <gtsam/linear/cuda/CudaLinearSolver.h>
+#include <gtsam/linear/cuda/LinearSolver.h>
 #include <gtsam/linear/cuda/DeviceSparseSpdSystem.h>
 
 #include <memory>
@@ -27,10 +27,10 @@ class GTSAM_EXPORT CudssSpdSolver {
   CudssSpdSolver& operator=(CudssSpdSolver&&) noexcept;
 
   void analyze(const DeviceSparseSpdSystem& system,
-               CudaDeviceArray<double>* solution,
+               DeviceArray<double>* solution,
                cudaStream_t stream = nullptr);
   void analyze(const DeviceSparseSpdSystem& system,
-               CudaDeviceArray<double>* solution,
+               DeviceArray<double>* solution,
                const std::vector<int>& scalarPermutation,
                cudaStream_t stream = nullptr);
   /**
@@ -40,12 +40,12 @@ class GTSAM_EXPORT CudssSpdSolver {
    * numerical factorization.
    */
   void solve(const DeviceSparseSpdSystem& system,
-             CudaDeviceArray<double>* solution, cudaStream_t stream = nullptr);
+             DeviceArray<double>* solution, cudaStream_t stream = nullptr);
   void solve(const DeviceSparseSpdSystem& system,
-             CudaDeviceArray<double>* solution, cudaStream_t stream,
+             DeviceArray<double>* solution, cudaStream_t stream,
              CudssSpdSolveProfile* profile);
 
-  const CudaLinearSolveStats& stats() const;
+  const LinearSolveStats& stats() const;
   const std::vector<int>& appliedPermutation() const;
 
  private:
@@ -56,7 +56,7 @@ class GTSAM_EXPORT CudssSpdSolver {
 class GTSAM_EXPORT CudssLinearSolver {
  public:
   void solveSpd(const DeviceSparseSpdSystem& system,
-                CudaDeviceArray<double>* solution,
+                DeviceArray<double>* solution,
                 cudaStream_t stream = nullptr) const;
 };
 

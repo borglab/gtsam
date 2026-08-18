@@ -1,4 +1,4 @@
-#include <gtsam/base/cuda/CudaContext.h>
+#include <gtsam/base/cuda/Context.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/BatchFactor.h>
@@ -7,15 +7,15 @@
 #include <gtsam/linear/cuda/CudssSpdSolver.h>
 #include <gtsam/nonlinear/cuda/DeviceGeometryKernels.h>
 #include <gtsam/nonlinear/cuda/DeviceGeometryTypes.h>
-#include <gtsam/slam/cuda/CudaBalCsrStructure.h>
-#include <gtsam/slam/cuda/CudaSfmDenseSchurSolver.h>
-#include <gtsam/slam/cuda/CudaSfmFullNormalProblem.h>
-#include <gtsam/slam/cuda/CudaSfmLevenbergMarquardt.h>
-#include <gtsam/slam/cuda/CudaSfmProjectionLinearization.h>
-#include <gtsam/slam/cuda/CudaSfmProjectionBatch.h>
-#include <gtsam/slam/cuda/CudaSfmReducedCsrPlan.h>
-#include <gtsam/slam/cuda/CudaSfmSchurProblem.h>
-#include <gtsam/slam/cuda/CudaSfmValues.h>
+#include <gtsam/slam/cuda/BalCsrStructure.h>
+#include <gtsam/slam/cuda/SfmDenseSchurSolver.h>
+#include <gtsam/slam/cuda/SfmFullNormalProblem.h>
+#include <gtsam/slam/cuda/SfmLevenbergMarquardt.h>
+#include <gtsam/slam/cuda/SfmProjectionLinearization.h>
+#include <gtsam/slam/cuda/SfmProjectionBatch.h>
+#include <gtsam/slam/cuda/SfmReducedCsrPlan.h>
+#include <gtsam/slam/cuda/SfmSchurProblem.h>
+#include <gtsam/slam/cuda/SfmValues.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/sfm/SfmData.h>
 
@@ -37,7 +37,7 @@ using gtsam::symbol_shorthand::C;
 using gtsam::symbol_shorthand::P;
 
 static_assert(std::is_base_of_v<LevenbergMarquardtParams,
-                                CudaSfmLevenbergMarquardtParams>);
+                                SfmLevenbergMarquardtParams>);
 
 namespace {
 using BundlerCamera = PinholeCamera<Cal3Bundler>;
@@ -207,7 +207,7 @@ Point3 hostPointFromDevice(const DevicePoint3& devicePoint) {
   return Point3(devicePoint.x, devicePoint.y, devicePoint.z);
 }
 
-bool DeviceCameraEquals(const DevicePinholeCameraCal3Bundler& expected,
+bool deviceCameraEquals(const DevicePinholeCameraCal3Bundler& expected,
                         const DevicePinholeCameraCal3Bundler& actual,
                         double tolerance) {
   for (int i = 0; i < 9; ++i) {
@@ -226,7 +226,7 @@ bool DeviceCameraEquals(const DevicePinholeCameraCal3Bundler& expected,
 }
 
 Vector2 hostResidual(const BundlerCamera& camera, const Point3& point,
-                     const CudaSfmObservation& observation) {
+                     const SfmObservation& observation) {
   const BundlerProjectionFactor factor(
       Point2(observation.measuredU, observation.measuredV),
       noiseModel::Unit::Create(2), C(observation.cameraSlot),
@@ -241,7 +241,7 @@ struct HostNumericJacobians {
 
 HostNumericJacobians hostNumericJacobians(
     const BundlerCamera& camera, const Point3& point,
-    const CudaSfmObservation& observation) {
+    const SfmObservation& observation) {
   constexpr double kEps = 1e-6;
   HostNumericJacobians result{};
 
@@ -306,20 +306,20 @@ bool CameraEquals(const SfmCamera& expected, const SfmCamera& actual) {
              kTolerance;
 }
 
-CudaSfmSqrtInfo2 MakeSqrtInfo(double r00, double r01, double r11) {
-  return CudaSfmSqrtInfo2{r00, r01, r11};
+SfmSqrtInfo2 MakeSqrtInfo(double r00, double r01, double r11) {
+  return SfmSqrtInfo2{r00, r01, r11};
 }
 
-CudaSfmRobustModel MakeRobustModel(
-    CudaSfmRobustModelKind kind, double parameter,
-    CudaSfmRobustReweightScheme reweightScheme =
-        CudaSfmRobustReweightScheme::Block) {
-  return CudaSfmRobustModel{kind, reweightScheme, parameter};
+SfmRobustModel MakeRobustModel(
+    SfmRobustModelKind kind, double parameter,
+    SfmRobustReweightScheme reweightScheme =
+        SfmRobustReweightScheme::Block) {
+  return SfmRobustModel{kind, reweightScheme, parameter};
 }
 
 #if GTSAM_ENABLE_CUDSS
-bool ConvertedSfmDataEquals(const CudaSfmFactorGraphData& expected,
-                            const CudaSfmFactorGraphData& actual) {
+bool ConvertedSfmDataEquals(const SfmFactorGraphData& expected,
+                            const SfmFactorGraphData& actual) {
   if (expected.cameraKeys.size() != actual.cameraKeys.size() ||
       expected.pointKeys.size() != actual.pointKeys.size()) {
     return false;
@@ -397,22 +397,22 @@ bool ConvertedSfmDataEquals(const CudaSfmFactorGraphData& expected,
 }
 #endif
 
-Vector2 WhitenResidual(const CudaSfmSqrtInfo2& sqrtInfo,
+Vector2 WhitenResidual(const SfmSqrtInfo2& sqrtInfo,
                        const Vector2& residual) {
   return Vector2(sqrtInfo.r00 * residual(0) +
                      sqrtInfo.r01 * residual(1),
                  sqrtInfo.r11 * residual(1));
 }
 
-double RobustWeight(const CudaSfmRobustModel& model, double distance) {
+double RobustWeight(const SfmRobustModel& model, double distance) {
   const double absDistance = std::abs(distance);
   switch (model.kind) {
-    case CudaSfmRobustModelKind::None:
+    case SfmRobustModelKind::None:
       return 1.0;
-    case CudaSfmRobustModelKind::Huber:
+    case SfmRobustModelKind::Huber:
       return absDistance <= model.parameter ? 1.0
                                             : model.parameter / absDistance;
-    case CudaSfmRobustModelKind::Tukey: {
+    case SfmRobustModelKind::Tukey: {
       if (absDistance > model.parameter) {
         return 0.0;
       }
@@ -424,17 +424,17 @@ double RobustWeight(const CudaSfmRobustModel& model, double distance) {
   return 1.0;
 }
 
-double RobustLoss(const CudaSfmRobustModel& model, double distance) {
+double RobustLoss(const SfmRobustModel& model, double distance) {
   const double absDistance = std::abs(distance);
   switch (model.kind) {
-    case CudaSfmRobustModelKind::None:
+    case SfmRobustModelKind::None:
       return 0.5 * distance * distance;
-    case CudaSfmRobustModelKind::Huber:
+    case SfmRobustModelKind::Huber:
       if (absDistance <= model.parameter) {
         return 0.5 * distance * distance;
       }
       return model.parameter * (absDistance - 0.5 * model.parameter);
-    case CudaSfmRobustModelKind::Tukey: {
+    case SfmRobustModelKind::Tukey: {
       const double c2 = model.parameter * model.parameter;
       if (absDistance > model.parameter) {
         return c2 / 6.0;
@@ -449,10 +449,10 @@ double RobustLoss(const CudaSfmRobustModel& model, double distance) {
   return 0.5 * distance * distance;
 }
 
-void RobustRowScales(const CudaSfmRobustModel& model,
+void RobustRowScales(const SfmRobustModel& model,
                      const Vector2& whitenedResidual, double* row0Scale,
                      double* row1Scale) {
-  if (model.reweightScheme == CudaSfmRobustReweightScheme::Scalar) {
+  if (model.reweightScheme == SfmRobustReweightScheme::Scalar) {
     *row0Scale = std::sqrt(RobustWeight(model, whitenedResidual(0)));
     *row1Scale = std::sqrt(RobustWeight(model, whitenedResidual(1)));
   } else {
@@ -463,12 +463,12 @@ void RobustRowScales(const CudaSfmRobustModel& model,
   }
 }
 
-std::vector<std::vector<CudaSfmSqrtInfo2>> MakeMixedSqrtInfoByTrack(
+std::vector<std::vector<SfmSqrtInfo2>> MakeMixedSqrtInfoByTrack(
     const SfmData& data) {
-  const CudaSfmSqrtInfo2 models[] = {
+  const SfmSqrtInfo2 models[] = {
       MakeSqrtInfo(2.0, 0.0, 2.0), MakeSqrtInfo(4.0, 0.0, 2.0),
       MakeSqrtInfo(3.0, 0.25, 4.0)};
-  std::vector<std::vector<CudaSfmSqrtInfo2>> sqrtInfoByTrack(
+  std::vector<std::vector<SfmSqrtInfo2>> sqrtInfoByTrack(
       data.numberTracks());
   size_t index = 0;
   for (size_t pointSlot = 0; pointSlot < data.numberTracks(); ++pointSlot) {
@@ -483,14 +483,14 @@ std::vector<std::vector<CudaSfmSqrtInfo2>> MakeMixedSqrtInfoByTrack(
   return sqrtInfoByTrack;
 }
 
-std::vector<std::vector<CudaSfmRobustModel>> MakeMixedRobustModelsByTrack(
+std::vector<std::vector<SfmRobustModel>> MakeMixedRobustModelsByTrack(
     const SfmData& data) {
-  const CudaSfmRobustModel models[] = {
-      MakeRobustModel(CudaSfmRobustModelKind::Huber, 0.25),
-      MakeRobustModel(CudaSfmRobustModelKind::Huber, 0.20,
-                      CudaSfmRobustReweightScheme::Scalar),
-      MakeRobustModel(CudaSfmRobustModelKind::Tukey, 0.75)};
-  std::vector<std::vector<CudaSfmRobustModel>> robustModelsByTrack(
+  const SfmRobustModel models[] = {
+      MakeRobustModel(SfmRobustModelKind::Huber, 0.25),
+      MakeRobustModel(SfmRobustModelKind::Huber, 0.20,
+                      SfmRobustReweightScheme::Scalar),
+      MakeRobustModel(SfmRobustModelKind::Tukey, 0.75)};
+  std::vector<std::vector<SfmRobustModel>> robustModelsByTrack(
       data.numberTracks());
   size_t index = 0;
   for (size_t pointSlot = 0; pointSlot < data.numberTracks(); ++pointSlot) {
@@ -506,7 +506,7 @@ std::vector<std::vector<CudaSfmRobustModel>> MakeMixedRobustModelsByTrack(
 }
 }  // namespace
 
-TEST(CudaSfmReducedCsrPlan, BuildsStableCameraOnlyCovisibilityPattern) {
+TEST(SfmReducedCsrPlan, BuildsStableCameraOnlyCovisibilityPattern) {
   SfmData data;
   for (int camera = 0; camera < 4; ++camera) {
     data.cameras.emplace_back(Pose3(), Cal3Bundler(100.0, 0.0, 0.0));
@@ -520,8 +520,8 @@ TEST(CudaSfmReducedCsrPlan, BuildsStableCameraOnlyCovisibilityPattern) {
     data.tracks.push_back(track);
   }
   const std::vector<Key> cameraKeys{C(0), C(1), C(2), C(3)};
-  const CudaSfmReducedCsrPlan plan(data, cameraKeys);
-  const CudaSfmReducedCsrPlan repeated(data, cameraKeys);
+  const SfmReducedCsrPlan plan(data, cameraKeys);
+  const SfmReducedCsrPlan repeated(data, cameraKeys);
 
   LONGS_EQUAL(36, plan.dimension());
   EXPECT(plan.rowPointers() == repeated.rowPointers());
@@ -542,7 +542,7 @@ TEST(CudaSfmReducedCsrPlan, BuildsStableCameraOnlyCovisibilityPattern) {
     EXPECT(std::is_sorted(begin, end));
   }
 
-  const std::vector<int> scalarPermutation = CompileCudaScalarPermutation(
+  const std::vector<int> scalarPermutation = compileScalarPermutation(
       plan.cameraBlocks(), Ordering{C(2), C(0), C(3), C(1)});
   std::vector<int> expected;
   for (const int camera : {2, 0, 3, 1}) {
@@ -555,8 +555,8 @@ TEST(CudaSfmReducedCsrPlan, BuildsStableCameraOnlyCovisibilityPattern) {
   LONGS_EQUAL(4, automatic.size());
 }
 
-TEST(CudaSfmLevenbergMarquardtParams, MapsLinearSolverStringAliases) {
-  CudaSfmLevenbergMarquardtParams params;
+TEST(SfmLevenbergMarquardtParams, MapsLinearSolverStringAliases) {
+  SfmLevenbergMarquardtParams params;
 
   CHECK(params.getLinearSolver() == "dense-schur");
 
@@ -574,46 +574,46 @@ TEST(CudaSfmLevenbergMarquardtParams, MapsLinearSolverStringAliases) {
   CHECK(params.getLinearSolver() == "cudss-full-normal");
 }
 
-TEST(CudaSfmLevenbergMarquardtParams,
+TEST(SfmLevenbergMarquardtParams,
      SeparatesFormulationFromLinearBackend) {
-  CudaSfmLevenbergMarquardtParams params;
-  CHECK(params.formulation == CudaSfmSystemFormulation::Schur);
-  CHECK(params.linear.backend == CudaLinearSolverType::DenseCholesky);
+  SfmLevenbergMarquardtParams params;
+  CHECK(params.formulation == SfmSystemFormulation::Schur);
+  CHECK(params.linear.backend == LinearSolverType::DenseCholesky);
 
-  params.setCudaLinearSolver("cudss");
+  params.setLinearSolverBackend("cudss");
   CHECK(params.getFormulation() == "schur");
-  CHECK(params.getCudaLinearSolver() == "cudss");
+  CHECK(params.getLinearSolverBackend() == "cudss");
   CHECK(params.getLinearSolver() == "cudss-schur");
 
   params.setFormulation("full_normal");
   CHECK(params.getFormulation() == "full-normal");
   CHECK(params.getLinearSolver() == "cudss-full-normal");
 
-  params.setCudaLinearSolver("dense-cholesky");
+  params.setLinearSolverBackend("dense-cholesky");
   const SfmData data = makeTinyBalData();
-  CHECK_EXCEPTION(OptimizeCudaSfmWithoutValueDownload(data, params),
+  CHECK_EXCEPTION(optimizeSfmWithoutValueDownload(data, params),
                   std::invalid_argument);
 
   params.setFormulation("schur");
-  params.setCudaLinearSolver("dense-cholesky");
+  params.setLinearSolverBackend("dense-cholesky");
   CHECK(params.getLinearSolver() == "dense-schur");
-  params.setCudaLinearSolver("pcg");
+  params.setLinearSolverBackend("pcg");
   params.ordering = Ordering{C(0), C(1)};
-  CHECK_EXCEPTION(OptimizeCudaSfmWithoutValueDownload(data, params),
+  CHECK_EXCEPTION(optimizeSfmWithoutValueDownload(data, params),
                   std::invalid_argument);
 }
 
-TEST(CudaSfmLevenbergMarquardtParams, ProvidesLmDefaults) {
-  const CudaSfmLevenbergMarquardtParams legacy =
-      CudaSfmLevenbergMarquardtParams::LegacyDefaults();
+TEST(SfmLevenbergMarquardtParams, ProvidesLmDefaults) {
+  const SfmLevenbergMarquardtParams legacy =
+      SfmLevenbergMarquardtParams::legacyDefaults();
   CHECK(legacy.maxIterations == 100);
   DOUBLES_EQUAL(1e-5, legacy.lambdaInitial, 0.0);
   DOUBLES_EQUAL(10.0, legacy.lambdaFactor, 0.0);
   CHECK(!legacy.dampingParams.diagonalDamping);
   CHECK(!legacy.enableDetailedProfiling);
 
-  const CudaSfmLevenbergMarquardtParams ceres =
-      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  const SfmLevenbergMarquardtParams ceres =
+      SfmLevenbergMarquardtParams::ceresDefaults();
   CHECK(ceres.maxIterations == 50);
   DOUBLES_EQUAL(1e-4, ceres.lambdaInitial, 0.0);
   DOUBLES_EQUAL(2.0, ceres.lambdaFactor, 0.0);
@@ -622,37 +622,37 @@ TEST(CudaSfmLevenbergMarquardtParams, ProvidesLmDefaults) {
   CHECK(!ceres.enableDetailedProfiling);
 }
 
-TEST(CudaSfmLevenbergMarquardtOptimizer, ExposesCudaParams) {
+TEST(SfmLevenbergMarquardtOptimizer, ExposesCudaParams) {
   NonlinearFactorGraph graph;
   Values initial;
-  CudaSfmLevenbergMarquardtParams params =
-      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  SfmLevenbergMarquardtParams params =
+      SfmLevenbergMarquardtParams::ceresDefaults();
   params.setLinearSolver("cudss-full-normal");
   params.maxIterations = 7;
 
-  CudaSfmLevenbergMarquardtOptimizer optimizer(graph, initial, params);
+  SfmLevenbergMarquardtOptimizer optimizer(graph, initial, params);
 
   CHECK(optimizer.params().getLinearSolver() == "cudss-full-normal");
   CHECK(optimizer.params().maxIterations == 7);
 }
 
-TEST(CudaSfmProjectionLinearization,
+TEST(SfmProjectionLinearization,
      MatchesHostResidualsAndNumericJacobians) {
   constexpr double kResidualTolerance = 1e-7;
   constexpr double kJacobianTolerance = 5e-4;
 
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData initialData = makePerturbedBalLikeData(measuredData);
-  CudaContext context;
+  Context context;
 
-  DeviceValues values = PackSfmValues(initialData, context.stream());
-  CudaSfmProjectionBatch batch =
-      CudaSfmProjectionBatch::FromSfmData(measuredData, context.stream());
-  CudaSfmProjectionLinearization linearization;
-  LinearizeCudaSfmProjectionBatch(values, batch, &linearization,
+  DeviceValues values = packSfmValues(initialData, context.stream());
+  SfmProjectionBatch batch =
+      SfmProjectionBatch::fromSfmData(measuredData, context.stream());
+  SfmProjectionLinearization linearization;
+  linearizeSfmProjectionBatch(values, batch, &linearization,
                                   context.stream());
 
-  std::vector<CudaSfmObservation> observations;
+  std::vector<SfmObservation> observations;
   std::vector<DevicePinholeCameraCal3Bundler> deviceCameras;
   std::vector<DevicePoint3> devicePoints;
   std::vector<double> residuals;
@@ -676,7 +676,7 @@ TEST(CudaSfmProjectionLinearization,
 
   double expectedError = 0.0;
   for (size_t i = 0; i < observations.size(); ++i) {
-    const CudaSfmObservation& observation = observations[i];
+    const SfmObservation& observation = observations[i];
     const BundlerCamera camera =
         hostCameraFromDevice(deviceCameras[observation.cameraSlot]);
     const Point3 point =
@@ -702,11 +702,11 @@ TEST(CudaSfmProjectionLinearization,
   }
 
   const double actualError =
-      ComputeCudaSfmProjectionError(values, batch, context.stream());
+      computeSfmProjectionError(values, batch, context.stream());
   DOUBLES_EQUAL(expectedError, actualError, kResidualTolerance);
 }
 
-TEST(CudaSfmProjectionLinearization,
+TEST(SfmProjectionLinearization,
      AppliesPerObservationGaussianWhitening) {
   constexpr double kResidualTolerance = 1e-7;
   constexpr double kJacobianTolerance = 3e-3;
@@ -714,34 +714,34 @@ TEST(CudaSfmProjectionLinearization,
 
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData initialData = makePerturbedBalLikeData(measuredData);
-  const std::vector<std::vector<CudaSfmSqrtInfo2>> sqrtInfoByTrack =
+  const std::vector<std::vector<SfmSqrtInfo2>> sqrtInfoByTrack =
       MakeMixedSqrtInfoByTrack(measuredData);
-  CudaContext context;
+  Context context;
 
-  DeviceValues values = PackSfmValues(initialData, context.stream());
-  CudaSfmProjectionBatch batch = CudaSfmProjectionBatch::FromSfmData(
+  DeviceValues values = packSfmValues(initialData, context.stream());
+  SfmProjectionBatch batch = SfmProjectionBatch::fromSfmData(
       measuredData, sqrtInfoByTrack, context.stream());
-  CHECK(batch.noiseMode() == CudaSfmProjectionNoiseMode::Whitened);
-  CudaSfmProjectionLinearization linearization;
-  LinearizeCudaSfmProjectionBatch(values, batch, &linearization,
+  CHECK(batch.noiseMode() == SfmProjectionNoiseMode::Whitened);
+  SfmProjectionLinearization linearization;
+  linearizeSfmProjectionBatch(values, batch, &linearization,
                                   context.stream());
 
-  const CudaBalCsrStructure structure =
-      CudaBalCsrStructure::FromSfmData(measuredData);
+  const BalCsrStructure structure =
+      BalCsrStructure::fromSfmData(measuredData);
   DeviceSparseNormalEquations system;
   system.uploadPattern(structure.dimension(), structure.rowPointers(),
                        structure.colIndices(), context.stream());
-  AccumulateCudaSfmNormalEquations(
+  accumulateSfmNormalEquations(
       values, batch, static_cast<int>(structure.numCameras()), &system,
       context.stream());
 
-  CudaDeviceArray<double> actualDeviceDiagonal;
-  ComputeCudaSfmHessianDiagonal(values, batch,
+  DeviceArray<double> actualDeviceDiagonal;
+  computeSfmHessianDiagonal(values, batch,
                                 static_cast<int>(structure.numCameras()), 1e-6,
                                 1e32, &actualDeviceDiagonal, context.stream());
 
-  std::vector<CudaSfmObservation> observations;
-  std::vector<CudaSfmSqrtInfo2> sqrtInfos;
+  std::vector<SfmObservation> observations;
+  std::vector<SfmSqrtInfo2> sqrtInfos;
   std::vector<DevicePinholeCameraCal3Bundler> deviceCameras;
   std::vector<DevicePoint3> devicePoints;
   std::vector<double> residuals;
@@ -770,8 +770,8 @@ TEST(CudaSfmProjectionLinearization,
 
   double expectedError = 0.0;
   for (size_t i = 0; i < observations.size(); ++i) {
-    const CudaSfmObservation& observation = observations[i];
-    const CudaSfmSqrtInfo2& sqrtInfo = sqrtInfos[i];
+    const SfmObservation& observation = observations[i];
+    const SfmSqrtInfo2& sqrtInfo = sqrtInfos[i];
     const BundlerCamera camera =
         hostCameraFromDevice(deviceCameras[observation.cameraSlot]);
     const Point3 point =
@@ -813,7 +813,7 @@ TEST(CudaSfmProjectionLinearization,
   }
 
   const double actualError =
-      ComputeCudaSfmProjectionError(values, batch, context.stream());
+      computeSfmProjectionError(values, batch, context.stream());
   DOUBLES_EQUAL(expectedError, actualError, kResidualTolerance);
 
   const int dimension = structure.dimension();
@@ -823,7 +823,7 @@ TEST(CudaSfmProjectionLinearization,
   std::vector<double> expectedDiagonal(static_cast<size_t>(dimension));
 
   for (size_t i = 0; i < observations.size(); ++i) {
-    const CudaSfmObservation& observation = observations[i];
+    const SfmObservation& observation = observations[i];
     const int cameraBase = 9 * observation.cameraSlot;
     const int pointBase =
         9 * static_cast<int>(structure.numCameras()) + 3 * observation.pointSlot;
@@ -881,30 +881,30 @@ TEST(CudaSfmProjectionLinearization,
   }
 }
 
-TEST(CudaSfmProjectionLinearization,
+TEST(SfmProjectionLinearization,
      AppliesPerObservationRobustWhiteningAndLoss) {
   constexpr double kResidualTolerance = 1e-7;
   constexpr double kJacobianTolerance = 3e-3;
 
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData initialData = makePerturbedBalLikeData(measuredData);
-  const std::vector<std::vector<CudaSfmSqrtInfo2>> sqrtInfoByTrack =
+  const std::vector<std::vector<SfmSqrtInfo2>> sqrtInfoByTrack =
       MakeMixedSqrtInfoByTrack(measuredData);
-  const std::vector<std::vector<CudaSfmRobustModel>> robustModelsByTrack =
+  const std::vector<std::vector<SfmRobustModel>> robustModelsByTrack =
       MakeMixedRobustModelsByTrack(measuredData);
-  CudaContext context;
+  Context context;
 
-  DeviceValues values = PackSfmValues(initialData, context.stream());
-  CudaSfmProjectionBatch batch = CudaSfmProjectionBatch::FromSfmData(
+  DeviceValues values = packSfmValues(initialData, context.stream());
+  SfmProjectionBatch batch = SfmProjectionBatch::fromSfmData(
       measuredData, sqrtInfoByTrack, robustModelsByTrack, context.stream());
-  CHECK(batch.noiseMode() == CudaSfmProjectionNoiseMode::Robust);
-  CudaSfmProjectionLinearization linearization;
-  LinearizeCudaSfmProjectionBatch(values, batch, &linearization,
+  CHECK(batch.noiseMode() == SfmProjectionNoiseMode::Robust);
+  SfmProjectionLinearization linearization;
+  linearizeSfmProjectionBatch(values, batch, &linearization,
                                   context.stream());
 
-  std::vector<CudaSfmObservation> observations;
-  std::vector<CudaSfmSqrtInfo2> sqrtInfos;
-  std::vector<CudaSfmRobustModel> robustModels;
+  std::vector<SfmObservation> observations;
+  std::vector<SfmSqrtInfo2> sqrtInfos;
+  std::vector<SfmRobustModel> robustModels;
   std::vector<DevicePinholeCameraCal3Bundler> deviceCameras;
   std::vector<DevicePoint3> devicePoints;
   std::vector<double> residuals;
@@ -929,9 +929,9 @@ TEST(CudaSfmProjectionLinearization,
 
   double expectedError = 0.0;
   for (size_t i = 0; i < observations.size(); ++i) {
-    const CudaSfmObservation& observation = observations[i];
-    const CudaSfmSqrtInfo2& sqrtInfo = sqrtInfos[i];
-    const CudaSfmRobustModel& robustModel = robustModels[i];
+    const SfmObservation& observation = observations[i];
+    const SfmSqrtInfo2& sqrtInfo = sqrtInfos[i];
+    const SfmRobustModel& robustModel = robustModels[i];
     const BundlerCamera camera =
         hostCameraFromDevice(deviceCameras[observation.cameraSlot]);
     const Point3 point =
@@ -980,27 +980,27 @@ TEST(CudaSfmProjectionLinearization,
   }
 
   const double actualError =
-      ComputeCudaSfmProjectionError(values, batch, context.stream());
+      computeSfmProjectionError(values, batch, context.stream());
   DOUBLES_EQUAL(expectedError, actualError, kResidualTolerance);
 }
 
-TEST(CudaSfmProjectionLinearization,
+TEST(SfmProjectionLinearization,
      AccumulatesProjectionNormalEquationsIntoCsr) {
   constexpr double kTolerance = 1e-6;
 
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData initialData = makePerturbedBalLikeData(measuredData);
-  CudaContext context;
+  Context context;
 
-  DeviceValues values = PackSfmValues(initialData, context.stream());
-  CudaSfmProjectionBatch batch =
-      CudaSfmProjectionBatch::FromSfmData(measuredData, context.stream());
-  CudaSfmProjectionLinearization linearization;
-  LinearizeCudaSfmProjectionBatch(values, batch, &linearization,
+  DeviceValues values = packSfmValues(initialData, context.stream());
+  SfmProjectionBatch batch =
+      SfmProjectionBatch::fromSfmData(measuredData, context.stream());
+  SfmProjectionLinearization linearization;
+  linearizeSfmProjectionBatch(values, batch, &linearization,
                                   context.stream());
 
-  const CudaBalCsrStructure structure =
-      CudaBalCsrStructure::FromSfmData(measuredData);
+  const BalCsrStructure structure =
+      BalCsrStructure::fromSfmData(measuredData);
   DeviceSparseNormalEquations system;
   system.uploadPattern(structure.dimension(), structure.rowPointers(),
                        structure.colIndices(), context.stream());
@@ -1010,11 +1010,11 @@ TEST(CudaSfmProjectionLinearization,
   system.rhs().upload(std::vector<double>(structure.dimension(), -456.0),
                       context.stream());
 
-  AccumulateCudaSfmNormalEquations(
+  accumulateSfmNormalEquations(
       values, batch, static_cast<int>(structure.numCameras()), &system,
       context.stream());
 
-  std::vector<CudaSfmObservation> observations;
+  std::vector<SfmObservation> observations;
   std::vector<double> residuals;
   std::vector<double> cameraJacobians;
   std::vector<double> pointJacobians;
@@ -1034,7 +1034,7 @@ TEST(CudaSfmProjectionLinearization,
   std::vector<double> expectedRhs(static_cast<size_t>(dimension));
 
   for (size_t i = 0; i < observations.size(); ++i) {
-    const CudaSfmObservation& observation = observations[i];
+    const SfmObservation& observation = observations[i];
     const int cameraBase = 9 * observation.cameraSlot;
     const int pointBase =
         9 * static_cast<int>(structure.numCameras()) + 3 * observation.pointSlot;
@@ -1081,25 +1081,25 @@ TEST(CudaSfmProjectionLinearization,
   }
 }
 
-TEST(CudaSfmProjectionLinearization, ComputesClampedHessianDiagonal) {
+TEST(SfmProjectionLinearization, ComputesClampedHessianDiagonal) {
   constexpr double kTolerance = 1e-6;
 
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData initialData = makePerturbedBalLikeData(measuredData);
-  CudaContext context;
+  Context context;
 
-  DeviceValues values = PackSfmValues(initialData, context.stream());
-  CudaSfmProjectionBatch batch =
-      CudaSfmProjectionBatch::FromSfmData(measuredData, context.stream());
-  CudaSfmProjectionLinearization linearization;
-  LinearizeCudaSfmProjectionBatch(values, batch, &linearization,
+  DeviceValues values = packSfmValues(initialData, context.stream());
+  SfmProjectionBatch batch =
+      SfmProjectionBatch::fromSfmData(measuredData, context.stream());
+  SfmProjectionLinearization linearization;
+  linearizeSfmProjectionBatch(values, batch, &linearization,
                                   context.stream());
 
-  CudaDeviceArray<double> actualDeviceDiagonal;
-  ComputeCudaSfmHessianDiagonal(values, batch, 2, 1e-6, 1e32,
+  DeviceArray<double> actualDeviceDiagonal;
+  computeSfmHessianDiagonal(values, batch, 2, 1e-6, 1e32,
                                 &actualDeviceDiagonal, context.stream());
 
-  std::vector<CudaSfmObservation> observations;
+  std::vector<SfmObservation> observations;
   std::vector<double> cameraJacobians;
   std::vector<double> pointJacobians;
   std::vector<double> actualDiagonal;
@@ -1113,7 +1113,7 @@ TEST(CudaSfmProjectionLinearization, ComputesClampedHessianDiagonal) {
                                            3 * measuredData.numberTracks(),
                                        0.0);
   for (size_t i = 0; i < observations.size(); ++i) {
-    const CudaSfmObservation& observation = observations[i];
+    const SfmObservation& observation = observations[i];
     const int cameraBase = 9 * observation.cameraSlot;
     const int pointBase =
         9 * static_cast<int>(measuredData.numberCameras()) +
@@ -1139,24 +1139,24 @@ TEST(CudaSfmProjectionLinearization, ComputesClampedHessianDiagonal) {
   }
 }
 
-TEST(CudaSfmFullNormalProblem, ReusesOneLinearizationAcrossDampingAttempts) {
+TEST(SfmFullNormalProblem, ReusesOneLinearizationAcrossDampingAttempts) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData initialData = makePerturbedBalLikeData(measuredData);
-  CudaContext context;
+  Context context;
 
-  DeviceValues values = PackSfmValues(initialData, context.stream());
-  CudaSfmProjectionBatch batch =
-      CudaSfmProjectionBatch::FromSfmData(measuredData, context.stream());
-  CudaSfmProjectionLinearization linearization;
-  LinearizeCudaSfmProjectionBatch(values, batch, &linearization,
+  DeviceValues values = packSfmValues(initialData, context.stream());
+  SfmProjectionBatch batch =
+      SfmProjectionBatch::fromSfmData(measuredData, context.stream());
+  SfmProjectionLinearization linearization;
+  linearizeSfmProjectionBatch(values, batch, &linearization,
                                   context.stream());
 
-  CudaSfmFullNormalProblem problem;
+  SfmFullNormalProblem problem;
   problem.initialize(batch, static_cast<int>(measuredData.numberCameras()),
                      context.stream());
   problem.linearize(linearization, context.stream());
-  const CudaSfmFullNormalView first = problem.prepare(1e-3, context.stream());
-  const CudaSfmFullNormalView second = problem.prepare(1e-2, context.stream());
+  const SfmFullNormalView first = problem.prepare(1e-3, context.stream());
+  const SfmFullNormalView second = problem.prepare(1e-2, context.stream());
   context.synchronize();
 
   CHECK(first.linearOperator != nullptr);
@@ -1169,20 +1169,20 @@ TEST(CudaSfmFullNormalProblem, ReusesOneLinearizationAcrossDampingAttempts) {
   EXPECT_LONGS_EQUAL(2, problem.preparationCount());
 }
 
-TEST(CudaSfmFullNormalProblem, RestoresExplicitSystemBetweenDampingAttempts) {
+TEST(SfmFullNormalProblem, RestoresExplicitSystemBetweenDampingAttempts) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData initialData = makePerturbedBalLikeData(measuredData);
-  CudaContext context;
-  DeviceValues values = PackSfmValues(initialData, context.stream());
-  CudaSfmProjectionBatch batch =
-      CudaSfmProjectionBatch::FromSfmData(measuredData, context.stream());
-  CudaSfmProjectionLinearization linearization;
-  LinearizeCudaSfmProjectionBatch(values, batch, &linearization,
+  Context context;
+  DeviceValues values = packSfmValues(initialData, context.stream());
+  SfmProjectionBatch batch =
+      SfmProjectionBatch::fromSfmData(measuredData, context.stream());
+  SfmProjectionLinearization linearization;
+  linearizeSfmProjectionBatch(values, batch, &linearization,
                                   context.stream());
-  const CudaBalCsrStructure structure =
-      CudaBalCsrStructure::FromSfmData(measuredData);
+  const BalCsrStructure structure =
+      BalCsrStructure::fromSfmData(measuredData);
 
-  CudaSfmFullNormalProblem problem;
+  SfmFullNormalProblem problem;
   problem.initializeSparse(batch,
                            static_cast<int>(measuredData.numberCameras()),
                            structure.rowPointers(), structure.colIndices(),
@@ -1224,31 +1224,31 @@ TEST(CudaSfmFullNormalProblem, RestoresExplicitSystemBetweenDampingAttempts) {
   EXPECT_LONGS_EQUAL(3, problem.preparationCount());
 }
 
-TEST(CudaSfmProjectionLinearization, ComputesLinearizedErrorChange) {
+TEST(SfmProjectionLinearization, ComputesLinearizedErrorChange) {
   constexpr double kTolerance = 1e-6;
 
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData initialData = makePerturbedBalLikeData(measuredData);
-  CudaContext context;
+  Context context;
 
-  DeviceValues values = PackSfmValues(initialData, context.stream());
-  CudaSfmProjectionBatch batch =
-      CudaSfmProjectionBatch::FromSfmData(measuredData, context.stream());
-  CudaDeviceArray<double> delta;
-  SolveCudaSfmDenseSchur(values, batch,
+  DeviceValues values = packSfmValues(initialData, context.stream());
+  SfmProjectionBatch batch =
+      SfmProjectionBatch::fromSfmData(measuredData, context.stream());
+  DeviceArray<double> delta;
+  solveSfmDenseSchur(values, batch,
                          static_cast<int>(measuredData.numberCameras()),
                          1e-3, &delta, context.stream());
 
   double oldLinearizedError = 0.0;
   double newLinearizedError = 0.0;
-  const double actualChange = ComputeCudaSfmLinearizedErrorChange(
+  const double actualChange = computeSfmLinearizedErrorChange(
       values, batch, static_cast<int>(measuredData.numberCameras()), delta,
       &oldLinearizedError, &newLinearizedError, context.stream());
 
-  CudaSfmProjectionLinearization linearization;
-  LinearizeCudaSfmProjectionBatch(values, batch, &linearization,
+  SfmProjectionLinearization linearization;
+  linearizeSfmProjectionBatch(values, batch, &linearization,
                                   context.stream());
-  std::vector<CudaSfmObservation> observations;
+  std::vector<SfmObservation> observations;
   std::vector<double> residuals;
   std::vector<double> cameraJacobians;
   std::vector<double> pointJacobians;
@@ -1263,7 +1263,7 @@ TEST(CudaSfmProjectionLinearization, ComputesLinearizedErrorChange) {
   double expectedOld = 0.0;
   double expectedNew = 0.0;
   for (size_t i = 0; i < observations.size(); ++i) {
-    const CudaSfmObservation& observation = observations[i];
+    const SfmObservation& observation = observations[i];
     const int cameraBase = 9 * observation.cameraSlot;
     const int pointBase =
         9 * static_cast<int>(measuredData.numberCameras()) +
@@ -1291,17 +1291,17 @@ TEST(CudaSfmProjectionLinearization, ComputesLinearizedErrorChange) {
   DOUBLES_EQUAL(expectedOld - expectedNew, actualChange, kTolerance);
 }
 
-TEST(CudaSfmProjectionLinearization, RejectsIncompleteCsrPattern) {
+TEST(SfmProjectionLinearization, RejectsIncompleteCsrPattern) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData initialData = makePerturbedBalLikeData(measuredData);
-  CudaContext context;
+  Context context;
 
-  DeviceValues values = PackSfmValues(initialData, context.stream());
-  CudaSfmProjectionBatch batch =
-      CudaSfmProjectionBatch::FromSfmData(measuredData, context.stream());
+  DeviceValues values = packSfmValues(initialData, context.stream());
+  SfmProjectionBatch batch =
+      SfmProjectionBatch::fromSfmData(measuredData, context.stream());
 
-  const CudaBalCsrStructure structure =
-      CudaBalCsrStructure::FromSfmData(measuredData);
+  const BalCsrStructure structure =
+      BalCsrStructure::fromSfmData(measuredData);
   std::vector<int> rowPointers = structure.rowPointers();
   std::vector<int> colIndices = structure.colIndices();
 
@@ -1326,24 +1326,24 @@ TEST(CudaSfmProjectionLinearization, RejectsIncompleteCsrPattern) {
   system.uploadPattern(structure.dimension(), rowPointers, colIndices,
                        context.stream());
 
-  CHECK_EXCEPTION(AccumulateCudaSfmNormalEquations(
+  CHECK_EXCEPTION(accumulateSfmNormalEquations(
                       values, batch, static_cast<int>(structure.numCameras()),
                       &system, context.stream()),
                   std::runtime_error);
 }
 
-TEST(CudaSfmProjectionLinearization,
+TEST(SfmProjectionLinearization,
      RejectsInvalidSystemWithoutClearingExistingValues) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData initialData = makePerturbedBalLikeData(measuredData);
-  CudaContext context;
+  Context context;
 
-  DeviceValues values = PackSfmValues(initialData, context.stream());
-  CudaSfmProjectionBatch batch =
-      CudaSfmProjectionBatch::FromSfmData(measuredData, context.stream());
+  DeviceValues values = packSfmValues(initialData, context.stream());
+  SfmProjectionBatch batch =
+      SfmProjectionBatch::fromSfmData(measuredData, context.stream());
 
-  const CudaBalCsrStructure structure =
-      CudaBalCsrStructure::FromSfmData(measuredData);
+  const BalCsrStructure structure =
+      BalCsrStructure::fromSfmData(measuredData);
   std::vector<int> rowPointers = structure.rowPointers();
   std::vector<int> colIndices = structure.colIndices();
   rowPointers.push_back(rowPointers.back() + 1);
@@ -1357,7 +1357,7 @@ TEST(CudaSfmProjectionLinearization,
   system.rhs().upload(std::vector<double>(structure.dimension() + 1, -8.0),
                       context.stream());
 
-  CHECK_EXCEPTION(AccumulateCudaSfmNormalEquations(
+  CHECK_EXCEPTION(accumulateSfmNormalEquations(
                       values, batch, static_cast<int>(structure.numCameras()),
                       &system, context.stream()),
                   std::invalid_argument);
@@ -1377,21 +1377,21 @@ TEST(CudaSfmProjectionLinearization,
 }
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
-TEST(CudaSfmProjectionLinearization, ReturnsZerosForCheiralityFailures) {
+TEST(SfmProjectionLinearization, ReturnsZerosForCheiralityFailures) {
   const SfmData data = makeBehindCameraData();
-  CudaContext context;
+  Context context;
 
-  DeviceValues values = PackSfmValues(data, context.stream());
-  CudaSfmProjectionBatch batch =
-      CudaSfmProjectionBatch::FromSfmData(data, context.stream());
-  CudaSfmProjectionLinearization linearization;
-  LinearizeCudaSfmProjectionBatch(values, batch, &linearization,
+  DeviceValues values = packSfmValues(data, context.stream());
+  SfmProjectionBatch batch =
+      SfmProjectionBatch::fromSfmData(data, context.stream());
+  SfmProjectionLinearization linearization;
+  linearizeSfmProjectionBatch(values, batch, &linearization,
                                   context.stream());
 
   std::vector<double> residuals;
   std::vector<double> cameraJacobians;
   std::vector<double> pointJacobians;
-  std::vector<CudaSfmObservation> observations;
+  std::vector<SfmObservation> observations;
   linearization.residuals.download(&residuals, context.stream());
   linearization.cameraJacobians.download(&cameraJacobians, context.stream());
   linearization.pointJacobians.download(&pointJacobians, context.stream());
@@ -1399,7 +1399,7 @@ TEST(CudaSfmProjectionLinearization, ReturnsZerosForCheiralityFailures) {
   context.synchronize();
 
   EXPECT_LONGS_EQUAL(2, batch.numObservations());
-  for (const CudaSfmObservation& observation : observations) {
+  for (const SfmObservation& observation : observations) {
     const Vector2 expectedResidual =
         hostResidual(data.camera(observation.cameraSlot),
                      data.track(observation.pointSlot).point3(), observation);
@@ -1418,75 +1418,75 @@ TEST(CudaSfmProjectionLinearization, ReturnsZerosForCheiralityFailures) {
 }
 #endif
 
-TEST(CudaSfmProjectionLinearization, RejectsMismatchedValueShapes) {
+TEST(SfmProjectionLinearization, RejectsMismatchedValueShapes) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData smallerValuesData = makeTinyBalData();
   SfmData fewerCamerasData = measuredData;
   fewerCamerasData.cameras.resize(1);
-  CudaContext context;
+  Context context;
 
-  CudaSfmProjectionBatch batch =
-      CudaSfmProjectionBatch::FromSfmData(measuredData, context.stream());
-  CudaSfmProjectionLinearization linearization;
+  SfmProjectionBatch batch =
+      SfmProjectionBatch::fromSfmData(measuredData, context.stream());
+  SfmProjectionLinearization linearization;
 
   DeviceValues fewerCameraValues =
-      PackSfmValues(fewerCamerasData, context.stream());
-  CHECK_EXCEPTION(LinearizeCudaSfmProjectionBatch(
+      packSfmValues(fewerCamerasData, context.stream());
+  CHECK_EXCEPTION(linearizeSfmProjectionBatch(
                       fewerCameraValues, batch, &linearization,
                       context.stream()),
                   std::invalid_argument);
 
   DeviceValues fewerPointValues =
-      PackSfmValues(smallerValuesData, context.stream());
-  CHECK_EXCEPTION(LinearizeCudaSfmProjectionBatch(
+      packSfmValues(smallerValuesData, context.stream());
+  CHECK_EXCEPTION(linearizeSfmProjectionBatch(
                       fewerPointValues, batch, &linearization,
                       context.stream()),
                   std::invalid_argument);
 }
 
 #if !GTSAM_ENABLE_CUDSS
-TEST(CudaSfmLevenbergMarquardt, DenseSchurRunsWithoutCudss) {
+TEST(SfmLevenbergMarquardt, DenseSchurRunsWithoutCudss) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
 
-  CudaSfmLevenbergMarquardtParams params;
+  SfmLevenbergMarquardtParams params;
   params.setLinearSolver("dense-schur");
   params.maxIterations = 1;
   params.relativeErrorTol = 1e-12;
   params.lambdaInitial = 1e-3;
 
-  const CudaSfmLevenbergMarquardtResult result =
-      OptimizeCudaSfmWithoutValueDownload(data, params);
+  const SfmLevenbergMarquardtResult result =
+      optimizeSfmWithoutValueDownload(data, params);
 
   CHECK(result.innerIterations > 0);
   CHECK(result.finalError < result.initialError);
   CHECK(result.optimizedValues.empty());
   CHECK(result.linearSolveStats.backend ==
-        CudaLinearSolverType::DenseCholesky);
+        LinearSolverType::DenseCholesky);
   EXPECT_LONGS_EQUAL(1, result.linearSolveStats.analysisCount);
   CHECK(result.linearSolveStats.solveCount > 0);
 }
 
 #endif
 
-TEST(CudaSfmLevenbergMarquardt, ImplicitSchurPcgMatchesDense) {
+TEST(SfmLevenbergMarquardt, ImplicitSchurPcgMatchesDense) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
-  CudaSfmLevenbergMarquardtParams denseParams =
-      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  SfmLevenbergMarquardtParams denseParams =
+      SfmLevenbergMarquardtParams::ceresDefaults();
   denseParams.maxIterations = 2;
   denseParams.relativeErrorTol = 0.0;
-  const CudaSfmLevenbergMarquardtResult dense =
-      OptimizeCudaSfmWithoutValueDownload(data, denseParams);
+  const SfmLevenbergMarquardtResult dense =
+      optimizeSfmWithoutValueDownload(data, denseParams);
 
-  CudaSfmLevenbergMarquardtParams pcgParams = denseParams;
+  SfmLevenbergMarquardtParams pcgParams = denseParams;
   pcgParams.setLinearSolver("pcg-schur");
   pcgParams.pcg.maxIterations = 200;
   pcgParams.pcg.relativeTolerance = 1e-10;
   pcgParams.pcg.convergenceCheckInterval = 1;
   pcgParams.pcg.warmStart = false;
-  const CudaSfmLevenbergMarquardtResult pcg =
-      OptimizeCudaSfmWithoutValueDownload(data, pcgParams);
+  const SfmLevenbergMarquardtResult pcg =
+      optimizeSfmWithoutValueDownload(data, pcgParams);
 
   DOUBLES_EQUAL(dense.finalError, pcg.finalError, 1e-5);
   CHECK(pcg.linearSolveStats.lastPcgConverged);
@@ -1494,13 +1494,13 @@ TEST(CudaSfmLevenbergMarquardt, ImplicitSchurPcgMatchesDense) {
   CHECK(pcg.linearSolveStats.pcgIterationsTotal > 0);
 }
 
-TEST(CudaSfmLevenbergMarquardt, FullNormalPcgUsesSharedIterativeSession) {
+TEST(SfmLevenbergMarquardt, FullNormalPcgUsesSharedIterativeSession) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
-  CudaSfmLevenbergMarquardtParams params =
-      CudaSfmLevenbergMarquardtParams::CeresDefaults();
-  params.formulation = CudaSfmSystemFormulation::FullNormal;
-  params.linear.backend = CudaLinearSolverType::Pcg;
+  SfmLevenbergMarquardtParams params =
+      SfmLevenbergMarquardtParams::ceresDefaults();
+  params.formulation = SfmSystemFormulation::FullNormal;
+  params.linear.backend = LinearSolverType::Pcg;
   params.maxIterations = 1;
   params.pcg.maxIterations = 300;
   params.pcg.relativeTolerance = 1e-9;
@@ -1508,11 +1508,11 @@ TEST(CudaSfmLevenbergMarquardt, FullNormalPcgUsesSharedIterativeSession) {
   params.pcg.warmStart = false;
   params.enableDetailedProfiling = true;
 
-  const CudaSfmLevenbergMarquardtResult result =
-      OptimizeCudaSfmWithoutValueDownload(data, params);
+  const SfmLevenbergMarquardtResult result =
+      optimizeSfmWithoutValueDownload(data, params);
   CHECK(result.finalError < result.initialError);
-  CHECK(result.linearSolveStats.backend == CudaLinearSolverType::Pcg);
-  CHECK(result.linearSystemKind == CudaLinearSystemKind::Operator);
+  CHECK(result.linearSolveStats.backend == LinearSolverType::Pcg);
+  CHECK(result.linearSystemKind == LinearSystemKind::Operator);
   EXPECT_LONGS_EQUAL(0, result.linearSystemNonzeros);
   CHECK(result.linearSolveStats.lastPcgConverged);
   CHECK(result.linearSolveStats.pcgIterationsTotal > 0);
@@ -1527,49 +1527,49 @@ TEST(CudaSfmLevenbergMarquardt, FullNormalPcgUsesSharedIterativeSession) {
 
 #if GTSAM_ENABLE_CUDSS
 
-TEST(CudaSfmLevenbergMarquardt,
+TEST(SfmLevenbergMarquardt,
      SparseSchurCudssMatchesDenseAndAppliesCameraOrdering) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
-  CudaSfmLevenbergMarquardtParams denseParams =
-      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  SfmLevenbergMarquardtParams denseParams =
+      SfmLevenbergMarquardtParams::ceresDefaults();
   denseParams.maxIterations = 2;
   denseParams.relativeErrorTol = 0.0;
-  const CudaSfmLevenbergMarquardtResult dense =
-      OptimizeCudaSfmWithoutValueDownload(data, denseParams);
+  const SfmLevenbergMarquardtResult dense =
+      optimizeSfmWithoutValueDownload(data, denseParams);
 
-  CudaSfmLevenbergMarquardtParams sparseParams = denseParams;
+  SfmLevenbergMarquardtParams sparseParams = denseParams;
   sparseParams.setLinearSolver("cudss-schur");
   sparseParams.ordering = Ordering{C(1), C(0)};
-  const CudaSfmLevenbergMarquardtResult sparse =
-      OptimizeCudaSfmWithoutValueDownload(data, sparseParams);
+  const SfmLevenbergMarquardtResult sparse =
+      optimizeSfmWithoutValueDownload(data, sparseParams);
 
   DOUBLES_EQUAL(dense.finalError, sparse.finalError, 1e-6);
   CHECK(sparse.linearSolveStats.userOrderingApplied);
   CHECK(sparse.linearSolveStats.analysisCount == 1);
   CHECK(sparse.linearSolveStats.solveCount > 0);
-  CHECK(sparse.formulation == CudaSfmSystemFormulation::Schur);
-  CHECK(sparse.linearBackend == CudaLinearSolverType::Cudss);
+  CHECK(sparse.formulation == SfmSystemFormulation::Schur);
+  CHECK(sparse.linearBackend == LinearSolverType::Cudss);
   EXPECT_LONGS_EQUAL(18, sparse.linearSystemDimension);
   CHECK(sparse.linearSystemNonzeros > 0);
   EXPECT(sparse.appliedScalarPermutation ==
-         CompileCudaScalarPermutation(
-             CudaSfmReducedCsrPlan(data, {C(0), C(1)}).cameraBlocks(),
+         compileScalarPermutation(
+             SfmReducedCsrPlan(data, {C(0), C(1)}).cameraBlocks(),
              *sparseParams.ordering));
 }
 
-TEST(CudaSfmLevenbergMarquardt,
+TEST(SfmLevenbergMarquardt,
      FullNormalCudssAppliesCameraAndPointOrdering) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
-  CudaSfmLevenbergMarquardtParams params =
-      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  SfmLevenbergMarquardtParams params =
+      SfmLevenbergMarquardtParams::ceresDefaults();
   params.setLinearSolver("cudss-full-normal");
   params.maxIterations = 1;
   params.ordering = Ordering{P(3), C(1), P(0), C(0), P(1), P(2)};
 
-  const CudaSfmLevenbergMarquardtResult result =
-      OptimizeCudaSfmWithoutValueDownload(data, params);
+  const SfmLevenbergMarquardtResult result =
+      optimizeSfmWithoutValueDownload(data, params);
   CHECK(result.linearSolveStats.userOrderingApplied);
   EXPECT_LONGS_EQUAL(1, result.linearSolveStats.analysisCount);
   std::vector<int> expected;
@@ -1581,7 +1581,7 @@ TEST(CudaSfmLevenbergMarquardt,
   EXPECT(expected == result.appliedScalarPermutation);
 }
 
-TEST(CudaSfmFactorGraphConversion,
+TEST(SfmFactorGraphConversion,
      ConvertsGeneralSfmFactorsWithArbitraryKeys) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData initialData = makePerturbedBalLikeData(measuredData);
@@ -1609,8 +1609,8 @@ TEST(CudaSfmFactorGraphConversion,
     }
   }
 
-  const CudaSfmFactorGraphData converted =
-      ConvertGeneralSfmGraphToCudaSfmData(graph, initial);
+  const SfmFactorGraphData converted =
+      convertGeneralSfmGraph(graph, initial);
 
   EXPECT_LONGS_EQUAL(cameraKeys.size(), converted.cameraKeys.size());
   EXPECT_LONGS_EQUAL(pointKeys.size(), converted.pointKeys.size());
@@ -1630,7 +1630,7 @@ TEST(CudaSfmFactorGraphConversion,
                      converted.data.track(3).point3()));
 }
 
-TEST(CudaSfmFactorGraphConversion,
+TEST(SfmFactorGraphConversion,
      ConvertsPointBatchedGeneralSfmFactors) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData initialData = makePerturbedBalLikeData(measuredData);
@@ -1664,14 +1664,14 @@ TEST(CudaSfmFactorGraphConversion,
             measurements, pointKeys[pointSlot], model));
   }
 
-  const CudaSfmFactorGraphData raw =
-      ConvertGeneralSfmGraphToCudaSfmData(rawGraph, initial);
-  const CudaSfmFactorGraphData batched =
-      ConvertGeneralSfmGraphToCudaSfmData(batchGraph, initial);
+  const SfmFactorGraphData raw =
+      convertGeneralSfmGraph(rawGraph, initial);
+  const SfmFactorGraphData batched =
+      convertGeneralSfmGraph(batchGraph, initial);
   CHECK(ConvertedSfmDataEquals(raw, batched));
 }
 
-TEST(CudaSfmFactorGraphConversion,
+TEST(SfmFactorGraphConversion,
      ConvertsCameraBatchedGeneralSfmFactors) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData initialData = makePerturbedBalLikeData(measuredData);
@@ -1709,14 +1709,14 @@ TEST(CudaSfmFactorGraphConversion,
             cameraKeys[cameraSlot], measurementsByCamera[cameraSlot], model));
   }
 
-  const CudaSfmFactorGraphData raw =
-      ConvertGeneralSfmGraphToCudaSfmData(rawGraph, initial);
-  const CudaSfmFactorGraphData batched =
-      ConvertGeneralSfmGraphToCudaSfmData(batchGraph, initial);
+  const SfmFactorGraphData raw =
+      convertGeneralSfmGraph(rawGraph, initial);
+  const SfmFactorGraphData batched =
+      convertGeneralSfmGraph(batchGraph, initial);
   CHECK(ConvertedSfmDataEquals(raw, batched));
 }
 
-TEST(CudaSfmFactorGraphConversion,
+TEST(SfmFactorGraphConversion,
      AcceptsFixedGaussianNoiseAndPreservesFlattenedWhiteningOrder) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData initialData = makePerturbedBalLikeData(measuredData);
@@ -1754,8 +1754,8 @@ TEST(CudaSfmFactorGraphConversion,
       measuredData.track(0).measurement(0).second, nullModel, cameraKeys[0],
       pointKeys[0]);
 
-  const CudaSfmFactorGraphData converted =
-      ConvertGeneralSfmGraphToCudaSfmData(graph, initial);
+  const SfmFactorGraphData converted =
+      convertGeneralSfmGraph(graph, initial);
 
   CHECK(!converted.hasRobustNoise);
   CHECK(converted.robustModelsByTrack.empty());
@@ -1777,13 +1777,13 @@ TEST(CudaSfmFactorGraphConversion,
   DOUBLES_EQUAL(0.0, converted.sqrtInfoByTrack[1][1].r01, 1e-12);
   DOUBLES_EQUAL(2.0, converted.sqrtInfoByTrack[1][1].r11, 1e-12);
 
-  CudaContext context;
-  const CudaSfmProjectionBatch batch = CudaSfmProjectionBatch::FromSfmData(
+  Context context;
+  const SfmProjectionBatch batch = SfmProjectionBatch::fromSfmData(
       converted.data, converted.sqrtInfoByTrack, context.stream());
-  CHECK(batch.noiseMode() == CudaSfmProjectionNoiseMode::Whitened);
+  CHECK(batch.noiseMode() == SfmProjectionNoiseMode::Whitened);
 
-  std::vector<CudaSfmObservation> observations;
-  std::vector<CudaSfmSqrtInfo2> sqrtInfos;
+  std::vector<SfmObservation> observations;
+  std::vector<SfmSqrtInfo2> sqrtInfos;
   batch.observations().download(&observations, context.stream());
   batch.sqrtInfos().download(&sqrtInfos, context.stream());
   context.synchronize();
@@ -1801,7 +1801,7 @@ TEST(CudaSfmFactorGraphConversion,
   DOUBLES_EQUAL(2.0, sqrtInfos[3].r00, 1e-12);
 }
 
-TEST(CudaSfmFactorGraphConversion,
+TEST(SfmFactorGraphConversion,
      AcceptsHuberAndTukeyRobustNoiseAndPreservesFlattenedOrder) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData initialData = makePerturbedBalLikeData(measuredData);
@@ -1845,8 +1845,8 @@ TEST(CudaSfmFactorGraphConversion,
       measuredData.track(0).measurement(0).second, huber, cameraKeys[0],
       pointKeys[0]);
 
-  const CudaSfmFactorGraphData converted =
-      ConvertGeneralSfmGraphToCudaSfmData(graph, initial);
+  const SfmFactorGraphData converted =
+      convertGeneralSfmGraph(graph, initial);
 
   CHECK(converted.hasNonUnitNoise);
   CHECK(converted.hasRobustNoise);
@@ -1857,13 +1857,13 @@ TEST(CudaSfmFactorGraphConversion,
   EXPECT_LONGS_EQUAL(2, converted.robustModelsByTrack[0].size());
   EXPECT_LONGS_EQUAL(2, converted.robustModelsByTrack[1].size());
   CHECK(converted.robustModelsByTrack[0][0].kind ==
-        CudaSfmRobustModelKind::Huber);
+        SfmRobustModelKind::Huber);
   CHECK(converted.robustModelsByTrack[0][0].reweightScheme ==
-        CudaSfmRobustReweightScheme::Scalar);
+        SfmRobustReweightScheme::Scalar);
   CHECK(converted.robustModelsByTrack[0][1].kind ==
-        CudaSfmRobustModelKind::Huber);
+        SfmRobustModelKind::Huber);
   CHECK(converted.robustModelsByTrack[1][0].kind ==
-        CudaSfmRobustModelKind::Tukey);
+        SfmRobustModelKind::Tukey);
   DOUBLES_EQUAL(0.75, converted.robustModelsByTrack[1][0].parameter,
                 1e-12);
   DOUBLES_EQUAL(3.0, converted.sqrtInfoByTrack[1][0].r00, 1e-12);
@@ -1874,25 +1874,25 @@ TEST(CudaSfmFactorGraphConversion,
   DOUBLES_EQUAL(1.0, converted.sqrtInfoByTrack[0][1].r00, 1e-12);
   DOUBLES_EQUAL(1.0, converted.sqrtInfoByTrack[0][1].r11, 1e-12);
 
-  CudaContext context;
-  const CudaSfmProjectionBatch batch = CudaSfmProjectionBatch::FromSfmData(
+  Context context;
+  const SfmProjectionBatch batch = SfmProjectionBatch::fromSfmData(
       converted.data, converted.sqrtInfoByTrack,
       converted.robustModelsByTrack, context.stream());
-  CHECK(batch.noiseMode() == CudaSfmProjectionNoiseMode::Robust);
+  CHECK(batch.noiseMode() == SfmProjectionNoiseMode::Robust);
 
-  std::vector<CudaSfmRobustModel> robustModels;
+  std::vector<SfmRobustModel> robustModels;
   batch.robustModels().download(&robustModels, context.stream());
   context.synchronize();
 
   EXPECT_LONGS_EQUAL(4, robustModels.size());
-  CHECK(robustModels[0].kind == CudaSfmRobustModelKind::Huber);
+  CHECK(robustModels[0].kind == SfmRobustModelKind::Huber);
   CHECK(robustModels[0].reweightScheme ==
-        CudaSfmRobustReweightScheme::Scalar);
-  CHECK(robustModels[2].kind == CudaSfmRobustModelKind::Tukey);
+        SfmRobustReweightScheme::Scalar);
+  CHECK(robustModels[2].kind == SfmRobustModelKind::Tukey);
   DOUBLES_EQUAL(0.75, robustModels[2].parameter, 1e-12);
 }
 
-TEST(CudaSfmFactorGraphConversion, RejectsUnsupportedNoiseModels) {
+TEST(SfmFactorGraphConversion, RejectsUnsupportedNoiseModels) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData initialData = makePerturbedBalLikeData(measuredData);
   Values initial;
@@ -1907,7 +1907,7 @@ TEST(CudaSfmFactorGraphConversion, RejectsUnsupportedNoiseModels) {
       measuredData.track(0).measurement(0).second, unsupportedRobust, C(0),
       P(0));
   CHECK_EXCEPTION(
-      ConvertGeneralSfmGraphToCudaSfmData(unsupportedRobustGraph, initial),
+      convertGeneralSfmGraph(unsupportedRobustGraph, initial),
       std::invalid_argument);
 
   NonlinearFactorGraph constrainedGraph;
@@ -1915,7 +1915,7 @@ TEST(CudaSfmFactorGraphConversion, RejectsUnsupportedNoiseModels) {
       measuredData.track(0).measurement(0).second,
       noiseModel::Constrained::All(2), C(0), P(0));
   CHECK_EXCEPTION(
-      ConvertGeneralSfmGraphToCudaSfmData(constrainedGraph, initial),
+      convertGeneralSfmGraph(constrainedGraph, initial),
       std::invalid_argument);
 
   NonlinearFactorGraph wrongDimensionGraph;
@@ -1923,7 +1923,7 @@ TEST(CudaSfmFactorGraphConversion, RejectsUnsupportedNoiseModels) {
       measuredData.track(0).measurement(0).second,
       noiseModel::Isotropic::Sigma(3, 0.5), C(0), P(0));
   CHECK_EXCEPTION(
-      ConvertGeneralSfmGraphToCudaSfmData(wrongDimensionGraph, initial),
+      convertGeneralSfmGraph(wrongDimensionGraph, initial),
       std::invalid_argument);
 
   const auto checkRejectedSqrtInformation = [&](const Matrix2& R) {
@@ -1931,7 +1931,7 @@ TEST(CudaSfmFactorGraphConversion, RejectsUnsupportedNoiseModels) {
     graph.emplace_shared<BundlerProjectionFactor>(
         measuredData.track(0).measurement(0).second,
         noiseModel::Gaussian::SqrtInformation(R, false), C(0), P(0));
-    CHECK_EXCEPTION(ConvertGeneralSfmGraphToCudaSfmData(graph, initial),
+    CHECK_EXCEPTION(convertGeneralSfmGraph(graph, initial),
                     std::invalid_argument);
   };
 
@@ -1950,7 +1950,7 @@ TEST(CudaSfmFactorGraphConversion, RejectsUnsupportedNoiseModels) {
   checkRejectedSqrtInformation(negativeDiagonalR);
 }
 
-TEST(CudaSfmLevenbergMarquardtOptimizer,
+TEST(SfmLevenbergMarquardtOptimizer,
      OptimizesGeneralSfmGraphWithArbitraryKeys) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData initialData = makePerturbedBalLikeData(measuredData);
@@ -1979,11 +1979,11 @@ TEST(CudaSfmLevenbergMarquardtOptimizer,
     }
   }
 
-  CudaSfmLevenbergMarquardtParams params =
-      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  SfmLevenbergMarquardtParams params =
+      SfmLevenbergMarquardtParams::ceresDefaults();
   params.maxIterations = 5;
   params.relativeErrorTol = 1e-12;
-  CudaSfmLevenbergMarquardtOptimizer optimizer(graph, initial, params);
+  SfmLevenbergMarquardtOptimizer optimizer(graph, initial, params);
   const Values& result = optimizer.optimize();
 
   CHECK(graph.error(result) < graph.error(initial));
@@ -2003,7 +2003,7 @@ TEST(CudaSfmLevenbergMarquardtOptimizer,
   DOUBLES_EQUAL(8.0, extra.y(), 1e-12);
 }
 
-TEST(CudaSfmLevenbergMarquardtOptimizer,
+TEST(SfmLevenbergMarquardtOptimizer,
      UsesGraphGaussianNoiseForInitialError) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData initialData = makePerturbedBalLikeData(measuredData);
@@ -2038,10 +2038,10 @@ TEST(CudaSfmLevenbergMarquardtOptimizer,
     }
   }
 
-  CudaSfmLevenbergMarquardtParams params =
-      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  SfmLevenbergMarquardtParams params =
+      SfmLevenbergMarquardtParams::ceresDefaults();
   params.maxIterations = 0;
-  CudaSfmLevenbergMarquardtOptimizer optimizer(graph, initial, params);
+  SfmLevenbergMarquardtOptimizer optimizer(graph, initial, params);
   optimizer.optimize();
 
   const double expectedInitialError = graph.error(initial);
@@ -2049,7 +2049,7 @@ TEST(CudaSfmLevenbergMarquardtOptimizer,
   DOUBLES_EQUAL(expectedInitialError, optimizer.result().finalError, 1e-6);
 }
 
-TEST(CudaSfmLevenbergMarquardtOptimizer,
+TEST(SfmLevenbergMarquardtOptimizer,
      DoesNotEvaluateCpuGraphErrorDuringCudaOptimize) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData initialData = makePerturbedBalLikeData(measuredData);
@@ -2077,19 +2077,19 @@ TEST(CudaSfmLevenbergMarquardtOptimizer,
     }
   }
 
-  CudaSfmLevenbergMarquardtParams params =
-      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  SfmLevenbergMarquardtParams params =
+      SfmLevenbergMarquardtParams::ceresDefaults();
   params.maxIterations = 0;
 
   CountingBundlerProjectionFactor::errorCalls = 0;
-  CudaSfmLevenbergMarquardtOptimizer optimizer(graph, initial, params);
+  SfmLevenbergMarquardtOptimizer optimizer(graph, initial, params);
   optimizer.optimize();
 
   EXPECT_LONGS_EQUAL(0, CountingBundlerProjectionFactor::errorCalls);
   DOUBLES_EQUAL(optimizer.result().finalError, optimizer.error(), 1e-6);
 }
 
-TEST(CudaSfmLevenbergMarquardtOptimizer,
+TEST(SfmLevenbergMarquardtOptimizer,
      UsesGraphRobustNoiseForInitialError) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData initialData = makePerturbedBalLikeData(measuredData);
@@ -2127,10 +2127,10 @@ TEST(CudaSfmLevenbergMarquardtOptimizer,
     }
   }
 
-  CudaSfmLevenbergMarquardtParams params =
-      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  SfmLevenbergMarquardtParams params =
+      SfmLevenbergMarquardtParams::ceresDefaults();
   params.maxIterations = 0;
-  CudaSfmLevenbergMarquardtOptimizer optimizer(graph, initial, params);
+  SfmLevenbergMarquardtOptimizer optimizer(graph, initial, params);
   optimizer.optimize();
 
   const double expectedInitialError = graph.error(initial);
@@ -2138,17 +2138,17 @@ TEST(CudaSfmLevenbergMarquardtOptimizer,
   DOUBLES_EQUAL(expectedInitialError, optimizer.result().finalError, 1e-6);
 }
 
-TEST(CudaSfmLevenbergMarquardt, ReducesTinyBalErrorAndDownloadsValues) {
+TEST(SfmLevenbergMarquardt, ReducesTinyBalErrorAndDownloadsValues) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
 
-  CudaSfmLevenbergMarquardtParams params;
+  SfmLevenbergMarquardtParams params;
   params.maxIterations = 5;
   params.relativeErrorTol = 1e-12;
   params.lambdaInitial = 1e-3;
 
-  const CudaSfmLevenbergMarquardtResult result =
-      OptimizeCudaSfm(data, params);
+  const SfmLevenbergMarquardtResult result =
+      optimizeSfm(data, params);
 
   CHECK(result.iterations > 0);
   CHECK(result.acceptedSteps > 0);
@@ -2164,34 +2164,34 @@ TEST(CudaSfmLevenbergMarquardt, ReducesTinyBalErrorAndDownloadsValues) {
   CHECK(std::isfinite(point0.x()));
 }
 
-TEST(CudaSfmLevenbergMarquardt, CanSkipOptimizedValueDownload) {
+TEST(SfmLevenbergMarquardt, CanSkipOptimizedValueDownload) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
 
-  CudaSfmLevenbergMarquardtParams params;
+  SfmLevenbergMarquardtParams params;
   params.maxIterations = 1;
   params.relativeErrorTol = 1e-12;
   params.lambdaInitial = 1e-3;
-  const CudaSfmLevenbergMarquardtResult result =
-      OptimizeCudaSfmWithoutValueDownload(data, params);
+  const SfmLevenbergMarquardtResult result =
+      optimizeSfmWithoutValueDownload(data, params);
 
   CHECK(result.iterations > 0);
   CHECK(result.optimizedValues.empty());
 }
 
-TEST(CudaSfmLevenbergMarquardt, DetailedProfilingIsDisabledByDefault) {
+TEST(SfmLevenbergMarquardt, DetailedProfilingIsDisabledByDefault) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
 
-  CudaSfmLevenbergMarquardtParams params =
-      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  SfmLevenbergMarquardtParams params =
+      SfmLevenbergMarquardtParams::ceresDefaults();
   params.maxIterations = 1;
   params.relativeErrorTol = 1e-12;
   params.lambdaInitial = 1e-3;
 
   CHECK(!params.enableDetailedProfiling);
-  const CudaSfmLevenbergMarquardtResult result =
-      OptimizeCudaSfm(data, params);
+  const SfmLevenbergMarquardtResult result =
+      optimizeSfm(data, params);
 
   CHECK(result.solveLoopElapsed > 0.0);
   CHECK(result.allocateTrialElapsed >= 0.0);
@@ -2205,21 +2205,21 @@ TEST(CudaSfmLevenbergMarquardt, DetailedProfilingIsDisabledByDefault) {
   CHECK(result.iterationProfiles.empty());
 }
 
-TEST(CudaSfmLevenbergMarquardt,
+TEST(SfmLevenbergMarquardt,
      DetailedProfilingIsDisabledByDefaultForCudss) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
 
-  CudaSfmLevenbergMarquardtParams params =
-      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  SfmLevenbergMarquardtParams params =
+      SfmLevenbergMarquardtParams::ceresDefaults();
   params.setLinearSolver("cudss-full-normal");
   params.maxIterations = 1;
   params.relativeErrorTol = 1e-12;
   params.lambdaInitial = 1e-3;
 
   CHECK(!params.enableDetailedProfiling);
-  const CudaSfmLevenbergMarquardtResult result =
-      OptimizeCudaSfmWithoutValueDownload(data, params);
+  const SfmLevenbergMarquardtResult result =
+      optimizeSfmWithoutValueDownload(data, params);
 
   CHECK(result.solveLoopElapsed > 0.0);
   CHECK(result.csrStructureElapsed >= 0.0);
@@ -2235,20 +2235,20 @@ TEST(CudaSfmLevenbergMarquardt,
   CHECK(result.iterationProfiles.empty());
 }
 
-TEST(CudaSfmLevenbergMarquardt, RecordsDetailedTimingBreakdownForCudss) {
+TEST(SfmLevenbergMarquardt, RecordsDetailedTimingBreakdownForCudss) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
 
-  CudaSfmLevenbergMarquardtParams params =
-      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  SfmLevenbergMarquardtParams params =
+      SfmLevenbergMarquardtParams::ceresDefaults();
   params.setLinearSolver("cudss-full-normal");
   params.enableDetailedProfiling = true;
   params.maxIterations = 1;
   params.relativeErrorTol = 1e-12;
   params.lambdaInitial = 1e-3;
 
-  const CudaSfmLevenbergMarquardtResult result =
-      OptimizeCudaSfmWithoutValueDownload(data, params);
+  const SfmLevenbergMarquardtResult result =
+      optimizeSfmWithoutValueDownload(data, params);
 
   CHECK(result.packValuesElapsed > 0.0);
   CHECK(result.projectionBatchElapsed > 0.0);
@@ -2268,19 +2268,19 @@ TEST(CudaSfmLevenbergMarquardt, RecordsDetailedTimingBreakdownForCudss) {
                 attributedNormalEquationsElapsed, 1e-12);
 }
 
-TEST(CudaSfmLevenbergMarquardt, RecordsDetailedTimingBreakdown) {
+TEST(SfmLevenbergMarquardt, RecordsDetailedTimingBreakdown) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
 
-  CudaSfmLevenbergMarquardtParams params =
-      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  SfmLevenbergMarquardtParams params =
+      SfmLevenbergMarquardtParams::ceresDefaults();
   params.maxIterations = 5;
   params.relativeErrorTol = 1e-12;
   params.lambdaInitial = 1e-3;
   params.enableDetailedProfiling = true;
 
-  const CudaSfmLevenbergMarquardtResult result =
-      OptimizeCudaSfmWithoutValueDownload(data, params);
+  const SfmLevenbergMarquardtResult result =
+      optimizeSfmWithoutValueDownload(data, params);
 
   CHECK(result.solveLoopElapsed > 0.0);
   CHECK(result.packValuesElapsed > 0.0);
@@ -2310,25 +2310,25 @@ TEST(CudaSfmLevenbergMarquardt, RecordsDetailedTimingBreakdown) {
   EXPECT_LONGS_EQUAL(result.innerIterations, attempts);
 }
 
-TEST(CudaSfmLevenbergMarquardt, RecordsPureTransferTimingBreakdown) {
+TEST(SfmLevenbergMarquardt, RecordsPureTransferTimingBreakdown) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
 
-  CudaSfmLevenbergMarquardtParams params =
-      CudaSfmLevenbergMarquardtParams::CeresDefaults();
+  SfmLevenbergMarquardtParams params =
+      SfmLevenbergMarquardtParams::ceresDefaults();
   params.maxIterations = 1;
   params.relativeErrorTol = 1e-12;
   params.lambdaInitial = 1e-3;
   params.enableDetailedProfiling = true;
 
-  const CudaSfmLevenbergMarquardtResult result =
-      OptimizeCudaSfm(data, params);
+  const SfmLevenbergMarquardtResult result =
+      optimizeSfm(data, params);
 
   const size_t expectedValueBytes =
       data.numberCameras() * sizeof(DevicePinholeCameraCal3Bundler) +
       data.numberTracks() * sizeof(DevicePoint3);
   const size_t expectedProjectionBytes =
-      8 * sizeof(CudaSfmObservation) +
+      8 * sizeof(SfmObservation) +
       (data.numberTracks() + 1) * sizeof(int);
 
   EXPECT_LONGS_EQUAL(expectedValueBytes, result.packValuesH2dBytes);
@@ -2353,32 +2353,32 @@ TEST(CudaSfmLevenbergMarquardt, RecordsPureTransferTimingBreakdown) {
   CHECK(result.downloadValuesBuildElapsed >= 0.0);
 }
 
-TEST(CudaSfmDenseSchurSolver, MatchesFullNormalEquationDeltaOnTinyBal) {
+TEST(SfmDenseSchurSolver, MatchesFullNormalEquationDeltaOnTinyBal) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
-  CudaContext context;
+  Context context;
 
-  DeviceValues values = PackSfmValues(data, context.stream());
-  const CudaSfmProjectionBatch batch =
-      CudaSfmProjectionBatch::FromSfmData(data, context.stream());
-  const CudaBalCsrStructure structure = CudaBalCsrStructure::FromSfmData(data);
+  DeviceValues values = packSfmValues(data, context.stream());
+  const SfmProjectionBatch batch =
+      SfmProjectionBatch::fromSfmData(data, context.stream());
+  const BalCsrStructure structure = BalCsrStructure::fromSfmData(data);
   DeviceSparseNormalEquations system;
   system.uploadPattern(structure.dimension(), structure.rowPointers(),
                        structure.colIndices(), context.stream());
 
   constexpr double lambda = 1e-3;
-  AccumulateCudaSfmNormalEquations(values, batch,
+  accumulateSfmNormalEquations(values, batch,
                                    static_cast<int>(structure.numCameras()),
                                    &system, context.stream());
   system.addDiagonalDamping(lambda, context.stream());
 
-  CudaDeviceArray<double> fullDelta;
+  DeviceArray<double> fullDelta;
   CudssSpdSolver fullSolver;
   fullSolver.analyze(system, &fullDelta, context.stream());
   fullSolver.solve(system, &fullDelta, context.stream());
 
-  CudaDeviceArray<double> schurDelta;
-  SolveCudaSfmDenseSchur(values, batch, static_cast<int>(data.numberCameras()),
+  DeviceArray<double> schurDelta;
+  solveSfmDenseSchur(values, batch, static_cast<int>(data.numberCameras()),
                          lambda, &schurDelta, context.stream());
 
   std::vector<double> full;
@@ -2393,18 +2393,18 @@ TEST(CudaSfmDenseSchurSolver, MatchesFullNormalEquationDeltaOnTinyBal) {
   }
 }
 
-TEST(CudaSfmSchurProblem, ReusesLinearizationAndRebuildsDamping) {
+TEST(SfmSchurProblem, ReusesLinearizationAndRebuildsDamping) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
-  CudaContext context;
-  DeviceValues values = PackSfmValues(data, context.stream());
-  const CudaSfmProjectionBatch batch =
-      CudaSfmProjectionBatch::FromSfmData(data, context.stream());
+  Context context;
+  DeviceValues values = packSfmValues(data, context.stream());
+  const SfmProjectionBatch batch =
+      SfmProjectionBatch::fromSfmData(data, context.stream());
 
-  CudaSfmSchurProblem problem;
+  SfmSchurProblem problem;
   problem.initialize(batch, static_cast<int>(data.numberCameras()));
   problem.linearize(values, context.stream());
-  const CudaDenseSpdSystemView first =
+  const DenseSpdSystemView first =
       problem.prepareDense(1e-3, context.stream());
   std::vector<double> firstValues(first.dimension * first.dimension);
   GTSAM_CUDA_CHECK(cudaMemcpyAsync(
@@ -2412,7 +2412,7 @@ TEST(CudaSfmSchurProblem, ReusesLinearizationAndRebuildsDamping) {
       cudaMemcpyDeviceToHost, context.stream()));
   context.synchronize();
 
-  const CudaDenseSpdSystemView second =
+  const DenseSpdSystemView second =
       problem.prepareDense(4e-3, context.stream());
   std::vector<double> secondValues(second.dimension * second.dimension);
   GTSAM_CUDA_CHECK(cudaMemcpyAsync(
@@ -2420,7 +2420,7 @@ TEST(CudaSfmSchurProblem, ReusesLinearizationAndRebuildsDamping) {
       cudaMemcpyDeviceToHost, context.stream()));
   context.synchronize();
 
-  const CudaDenseSpdSystemView repeatedFirst =
+  const DenseSpdSystemView repeatedFirst =
       problem.prepareDense(1e-3, context.stream());
   std::vector<double> repeatedFirstValues(repeatedFirst.dimension *
                                           repeatedFirst.dimension);
@@ -2438,19 +2438,19 @@ TEST(CudaSfmSchurProblem, ReusesLinearizationAndRebuildsDamping) {
   }
 }
 
-TEST(CudaSfmSchurProblem, BuildsPersistentNormalBlocksOncePerLinearization) {
+TEST(SfmSchurProblem, BuildsPersistentNormalBlocksOncePerLinearization) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
-  CudaContext context;
-  DeviceValues values = PackSfmValues(data, context.stream());
-  const CudaSfmProjectionBatch batch =
-      CudaSfmProjectionBatch::FromSfmData(data, context.stream());
+  Context context;
+  DeviceValues values = packSfmValues(data, context.stream());
+  const SfmProjectionBatch batch =
+      SfmProjectionBatch::fromSfmData(data, context.stream());
 
-  CudaSfmSchurProblem problem;
+  SfmSchurProblem problem;
   problem.initialize(batch, static_cast<int>(data.numberCameras()));
   problem.linearize(values, context.stream());
 
-  const CudaSfmSchurBlocks& blocks = problem.blocks();
+  const SfmSchurBlocks& blocks = problem.blocks();
   const size_t cameras = data.numberCameras();
   const size_t points = data.numberTracks();
   const size_t observations = batch.numObservations();
@@ -2460,7 +2460,7 @@ TEST(CudaSfmSchurProblem, BuildsPersistentNormalBlocksOncePerLinearization) {
   EXPECT_LONGS_EQUAL(3 * points, blocks.pointGradient.size());
   EXPECT_LONGS_EQUAL(27 * observations, blocks.cameraPointBlocks.size());
 
-  std::vector<CudaSfmObservation> hostObservations;
+  std::vector<SfmObservation> hostObservations;
   std::vector<double> residuals, cameraJacobians, pointJacobians;
   std::vector<double> actualU, actualGc, actualV, actualGp, actualW;
   batch.observations().download(&hostObservations, context.stream());
@@ -2526,19 +2526,19 @@ TEST(CudaSfmSchurProblem, BuildsPersistentNormalBlocksOncePerLinearization) {
   EXPECT_LONGS_EQUAL(1, problem.blockBuildCount());
 }
 
-TEST(CudaSfmSchurProblem, DensePreparationConsumesPersistentNormalBlocks) {
+TEST(SfmSchurProblem, DensePreparationConsumesPersistentNormalBlocks) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
-  CudaContext context;
-  DeviceValues values = PackSfmValues(data, context.stream());
-  const CudaSfmProjectionBatch batch =
-      CudaSfmProjectionBatch::FromSfmData(data, context.stream());
-  CudaSfmSchurProblem problem;
+  Context context;
+  DeviceValues values = packSfmValues(data, context.stream());
+  const SfmProjectionBatch batch =
+      SfmProjectionBatch::fromSfmData(data, context.stream());
+  SfmSchurProblem problem;
   problem.initialize(batch, static_cast<int>(data.numberCameras()));
   problem.linearize(values, context.stream());
 
   constexpr double lambda = 1e-3;
-  const CudaDenseSpdSystemView before =
+  const DenseSpdSystemView before =
       problem.prepareDense(lambda, context.stream());
   std::vector<double> beforeValues(before.dimension * before.dimension);
   std::vector<double> beforeRhs(before.dimension);
@@ -2550,12 +2550,12 @@ TEST(CudaSfmSchurProblem, DensePreparationConsumesPersistentNormalBlocks) {
                                    cudaMemcpyDeviceToHost, context.stream()));
   context.synchronize();
 
-  CudaSfmProjectionLinearization& projection =
-      const_cast<CudaSfmProjectionLinearization&>(problem.linearization());
+  SfmProjectionLinearization& projection =
+      const_cast<SfmProjectionLinearization&>(problem.linearization());
   projection.residuals.zero(context.stream());
   projection.cameraJacobians.zero(context.stream());
   projection.pointJacobians.zero(context.stream());
-  const CudaDenseSpdSystemView after =
+  const DenseSpdSystemView after =
       problem.prepareDense(lambda, context.stream());
   std::vector<double> afterValues(after.dimension * after.dimension);
   std::vector<double> afterRhs(after.dimension);
@@ -2577,14 +2577,14 @@ TEST(CudaSfmSchurProblem, DensePreparationConsumesPersistentNormalBlocks) {
   }
 }
 
-TEST(CudaSfmSchurProblem, PointRecoveryConsumesPersistentNormalBlocks) {
+TEST(SfmSchurProblem, PointRecoveryConsumesPersistentNormalBlocks) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
-  CudaContext context;
-  DeviceValues values = PackSfmValues(data, context.stream());
-  const CudaSfmProjectionBatch batch =
-      CudaSfmProjectionBatch::FromSfmData(data, context.stream());
-  CudaSfmSchurProblem problem;
+  Context context;
+  DeviceValues values = packSfmValues(data, context.stream());
+  const SfmProjectionBatch batch =
+      SfmProjectionBatch::fromSfmData(data, context.stream());
+  SfmSchurProblem problem;
   problem.initialize(batch, static_cast<int>(data.numberCameras()));
   problem.linearize(values, context.stream());
 
@@ -2592,17 +2592,17 @@ TEST(CudaSfmSchurProblem, PointRecoveryConsumesPersistentNormalBlocks) {
   for (size_t i = 0; i < hostCameraDelta.size(); ++i) {
     hostCameraDelta[i] = 1e-3 * static_cast<double>(i + 1);
   }
-  CudaDeviceArray<double> cameraDelta;
+  DeviceArray<double> cameraDelta;
   cameraDelta.upload(hostCameraDelta, context.stream());
-  CudaDeviceArray<double> before;
-  CudaDeviceArray<double> after;
+  DeviceArray<double> before;
+  DeviceArray<double> after;
   problem.recoverPoints(1e-3, cameraDelta, &before, context.stream());
   std::vector<double> beforeValues;
   before.download(&beforeValues, context.stream());
   context.synchronize();
 
-  CudaSfmProjectionLinearization& projection =
-      const_cast<CudaSfmProjectionLinearization&>(problem.linearization());
+  SfmProjectionLinearization& projection =
+      const_cast<SfmProjectionLinearization&>(problem.linearization());
   projection.residuals.zero(context.stream());
   projection.cameraJacobians.zero(context.stream());
   projection.pointJacobians.zero(context.stream());
@@ -2617,24 +2617,24 @@ TEST(CudaSfmSchurProblem, PointRecoveryConsumesPersistentNormalBlocks) {
   }
 }
 
-TEST(CudaSfmSchurProblem, SparseAssemblyMatchesDenseAssembly) {
+TEST(SfmSchurProblem, SparseAssemblyMatchesDenseAssembly) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
-  CudaContext context;
-  DeviceValues values = PackSfmValues(data, context.stream());
-  const CudaSfmProjectionBatch batch =
-      CudaSfmProjectionBatch::FromSfmData(data, context.stream());
+  Context context;
+  DeviceValues values = packSfmValues(data, context.stream());
+  const SfmProjectionBatch batch =
+      SfmProjectionBatch::fromSfmData(data, context.stream());
   const std::vector<Key> cameraKeys{C(0), C(1)};
-  const CudaSfmReducedCsrPlan plan(data, cameraKeys);
+  const SfmReducedCsrPlan plan(data, cameraKeys);
 
-  CudaSfmSchurProblem problem;
+  SfmSchurProblem problem;
   problem.initialize(batch, static_cast<int>(data.numberCameras()));
   problem.linearize(values, context.stream());
   constexpr double lambda = 1e-3;
-  const CudaDenseSpdSystemView dense =
+  const DenseSpdSystemView dense =
       problem.prepareDense(lambda, context.stream());
-  CudaSfmProjectionLinearization& projection =
-      const_cast<CudaSfmProjectionLinearization&>(problem.linearization());
+  SfmProjectionLinearization& projection =
+      const_cast<SfmProjectionLinearization&>(problem.linearization());
   projection.residuals.zero(context.stream());
   projection.cameraJacobians.zero(context.stream());
   projection.pointJacobians.zero(context.stream());
@@ -2672,31 +2672,31 @@ TEST(CudaSfmSchurProblem, SparseAssemblyMatchesDenseAssembly) {
   }
 }
 
-TEST(CudaSfmSchurProblem, ImplicitOperatorMatchesDenseSchurProduct) {
+TEST(SfmSchurProblem, ImplicitOperatorMatchesDenseSchurProduct) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
-  CudaContext context;
-  DeviceValues values = PackSfmValues(data, context.stream());
-  const CudaSfmProjectionBatch batch =
-      CudaSfmProjectionBatch::FromSfmData(data, context.stream());
-  CudaSfmSchurProblem problem;
+  Context context;
+  DeviceValues values = packSfmValues(data, context.stream());
+  const SfmProjectionBatch batch =
+      SfmProjectionBatch::fromSfmData(data, context.stream());
+  SfmSchurProblem problem;
   problem.initialize(batch, static_cast<int>(data.numberCameras()));
   problem.linearize(values, context.stream());
   constexpr double lambda = 1e-3;
-  const CudaDenseSpdSystemView dense =
+  const DenseSpdSystemView dense =
       problem.prepareDense(lambda, context.stream());
-  CudaSfmProjectionLinearization& projection =
-      const_cast<CudaSfmProjectionLinearization&>(problem.linearization());
+  SfmProjectionLinearization& projection =
+      const_cast<SfmProjectionLinearization&>(problem.linearization());
   projection.residuals.zero(context.stream());
   projection.cameraJacobians.zero(context.stream());
   projection.pointJacobians.zero(context.stream());
-  const CudaSfmImplicitSchurView implicit =
+  const SfmImplicitSchurView implicit =
       problem.prepareImplicit(lambda, context.stream());
 
   std::vector<double> hostInput(dense.dimension);
   for (int i = 0; i < dense.dimension; ++i) hostInput[i] = 0.25 + 0.1 * i;
-  CudaDeviceArray<double> input;
-  CudaDeviceArray<double> output(dense.dimension);
+  DeviceArray<double> input;
+  DeviceArray<double> output(dense.dimension);
   input.upload(hostInput, context.stream());
   implicit.linearOperator->apply(input.data(), output.data(), context.stream());
 
@@ -2730,24 +2730,24 @@ TEST(CudaSfmSchurProblem, ImplicitOperatorMatchesDenseSchurProduct) {
   }
 }
 
-TEST(CudaSfmDenseSchurSolver, MatchesFullNormalEquationDeltaWithDiagonalDamping) {
+TEST(SfmDenseSchurSolver, MatchesFullNormalEquationDeltaWithDiagonalDamping) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
-  CudaContext context;
+  Context context;
 
-  DeviceValues values = PackSfmValues(data, context.stream());
-  const CudaSfmProjectionBatch batch =
-      CudaSfmProjectionBatch::FromSfmData(data, context.stream());
-  const CudaBalCsrStructure structure = CudaBalCsrStructure::FromSfmData(data);
+  DeviceValues values = packSfmValues(data, context.stream());
+  const SfmProjectionBatch batch =
+      SfmProjectionBatch::fromSfmData(data, context.stream());
+  const BalCsrStructure structure = BalCsrStructure::fromSfmData(data);
   DeviceSparseNormalEquations system;
   system.uploadPattern(structure.dimension(), structure.rowPointers(),
                        structure.colIndices(), context.stream());
 
-  CudaSfmProjectionLinearization linearization;
-  LinearizeCudaSfmProjectionBatch(values, batch, &linearization,
+  SfmProjectionLinearization linearization;
+  linearizeSfmProjectionBatch(values, batch, &linearization,
                                   context.stream());
 
-  std::vector<CudaSfmObservation> observations;
+  std::vector<SfmObservation> observations;
   std::vector<double> cameraJacobians;
   std::vector<double> pointJacobians;
   batch.observations().download(&observations, context.stream());
@@ -2757,7 +2757,7 @@ TEST(CudaSfmDenseSchurSolver, MatchesFullNormalEquationDeltaWithDiagonalDamping)
 
   std::vector<double> dampingDiagonal(structure.dimension(), 0.0);
   for (size_t i = 0; i < observations.size(); ++i) {
-    const CudaSfmObservation& observation = observations[i];
+    const SfmObservation& observation = observations[i];
     const int cameraBase = 9 * observation.cameraSlot;
     const int pointBase =
         9 * static_cast<int>(structure.numCameras()) + 3 * observation.pointSlot;
@@ -2776,22 +2776,22 @@ TEST(CudaSfmDenseSchurSolver, MatchesFullNormalEquationDeltaWithDiagonalDamping)
     value = std::min(1e32, std::max(1e-6, value));
   }
 
-  CudaDeviceArray<double> deviceDampingDiagonal;
+  DeviceArray<double> deviceDampingDiagonal;
   deviceDampingDiagonal.upload(dampingDiagonal, context.stream());
 
   constexpr double lambda = 1e-3;
-  AccumulateCudaSfmNormalEquations(values, batch,
+  accumulateSfmNormalEquations(values, batch,
                                    static_cast<int>(structure.numCameras()),
                                    &system, context.stream());
   system.addDiagonalDamping(lambda, deviceDampingDiagonal, context.stream());
 
-  CudaDeviceArray<double> fullDelta;
+  DeviceArray<double> fullDelta;
   CudssSpdSolver fullSolver;
   fullSolver.analyze(system, &fullDelta, context.stream());
   fullSolver.solve(system, &fullDelta, context.stream());
 
-  CudaDeviceArray<double> schurDelta;
-  SolveCudaSfmDenseSchur(values, batch, static_cast<int>(data.numberCameras()),
+  DeviceArray<double> schurDelta;
+  solveSfmDenseSchur(values, batch, static_cast<int>(data.numberCameras()),
                          lambda, deviceDampingDiagonal, &schurDelta,
                          context.stream());
 
@@ -2807,32 +2807,32 @@ TEST(CudaSfmDenseSchurSolver, MatchesFullNormalEquationDeltaWithDiagonalDamping)
   }
 }
 
-TEST(CudaSfmDenseSchurSolver,
+TEST(SfmDenseSchurSolver,
      MatchesFullNormalEquationDeltaOnHighDegreeTrack) {
   const SfmData data = makeHighDegreeBalLikeData();
-  CudaContext context;
+  Context context;
 
-  DeviceValues values = PackSfmValues(data, context.stream());
-  const CudaSfmProjectionBatch batch =
-      CudaSfmProjectionBatch::FromSfmData(data, context.stream());
-  const CudaBalCsrStructure structure = CudaBalCsrStructure::FromSfmData(data);
+  DeviceValues values = packSfmValues(data, context.stream());
+  const SfmProjectionBatch batch =
+      SfmProjectionBatch::fromSfmData(data, context.stream());
+  const BalCsrStructure structure = BalCsrStructure::fromSfmData(data);
   DeviceSparseNormalEquations system;
   system.uploadPattern(structure.dimension(), structure.rowPointers(),
                        structure.colIndices(), context.stream());
 
   constexpr double lambda = 1e-3;
-  AccumulateCudaSfmNormalEquations(values, batch,
+  accumulateSfmNormalEquations(values, batch,
                                    static_cast<int>(structure.numCameras()),
                                    &system, context.stream());
   system.addDiagonalDamping(lambda, context.stream());
 
-  CudaDeviceArray<double> fullDelta;
+  DeviceArray<double> fullDelta;
   CudssSpdSolver fullSolver;
   fullSolver.analyze(system, &fullDelta, context.stream());
   fullSolver.solve(system, &fullDelta, context.stream());
 
-  CudaDeviceArray<double> schurDelta;
-  SolveCudaSfmDenseSchur(values, batch, static_cast<int>(data.numberCameras()),
+  DeviceArray<double> schurDelta;
+  solveSfmDenseSchur(values, batch, static_cast<int>(data.numberCameras()),
                          lambda, &schurDelta, context.stream());
 
   std::vector<double> full;
@@ -2851,7 +2851,7 @@ TEST(CudaSfmDenseSchurSolver,
 TEST(DeviceGeometryKernels, RetractCameraMatchesHostCameraRetract) {
   const SfmData data = makeTrueBalLikeData();
   const DevicePinholeCameraCal3Bundler camera =
-      PackPinholeCameraCal3Bundler(data.camera(1));
+      packPinholeCameraCal3Bundler(data.camera(1));
 
   const double deltaArray[9] = {0.004, -0.003, 0.002, 0.05, -0.04,
                                 0.03,  2.0,    -0.0007, 0.00008};
@@ -2861,25 +2861,25 @@ TEST(DeviceGeometryKernels, RetractCameraMatchesHostCameraRetract) {
   }
 
   const DevicePinholeCameraCal3Bundler actual =
-      RetractCamera(camera, deltaArray);
+      retractCamera(camera, deltaArray);
   const DevicePinholeCameraCal3Bundler expected =
-      PackPinholeCameraCal3Bundler(data.camera(1).retract(delta));
+      packPinholeCameraCal3Bundler(data.camera(1).retract(delta));
 
-  CHECK(DeviceCameraEquals(expected, actual, 1e-10));
+  CHECK(deviceCameraEquals(expected, actual, 1e-10));
 }
 
-TEST(CudaSfmProjectionBatch, PacksOnlyTracksWithAtLeastTwoMeasurements) {
+TEST(SfmProjectionBatch, PacksOnlyTracksWithAtLeastTwoMeasurements) {
   const SfmData data = makeTinySfmData();
-  CudaContext context;
+  Context context;
 
-  CudaSfmProjectionBatch batch =
-      CudaSfmProjectionBatch::FromSfmData(data, context.stream());
+  SfmProjectionBatch batch =
+      SfmProjectionBatch::fromSfmData(data, context.stream());
 
-  CHECK(batch.noiseMode() == CudaSfmProjectionNoiseMode::Unit);
+  CHECK(batch.noiseMode() == SfmProjectionNoiseMode::Unit);
   EXPECT_LONGS_EQUAL(0, batch.sqrtInfos().size());
   EXPECT_LONGS_EQUAL(2, batch.numObservations());
 
-  std::vector<CudaSfmObservation> observations;
+  std::vector<SfmObservation> observations;
   batch.observations().download(&observations, context.stream());
   context.synchronize();
 
@@ -2894,12 +2894,12 @@ TEST(CudaSfmProjectionBatch, PacksOnlyTracksWithAtLeastTwoMeasurements) {
   DOUBLES_EQUAL(21.0, observations[1].measuredV, 1e-12);
 }
 
-TEST(CudaSfmProjectionBatch, PacksLongTrackPointSlots) {
+TEST(SfmProjectionBatch, PacksLongTrackPointSlots) {
   const SfmData data = makeHighDegreeBalLikeData();
-  CudaContext context;
+  Context context;
 
-  CudaSfmProjectionBatch batch =
-      CudaSfmProjectionBatch::FromSfmData(data, context.stream());
+  SfmProjectionBatch batch =
+      SfmProjectionBatch::fromSfmData(data, context.stream());
 
   std::vector<int> longTrackPointSlots;
   batch.longTrackPointSlots().download(&longTrackPointSlots,
@@ -2910,11 +2910,11 @@ TEST(CudaSfmProjectionBatch, PacksLongTrackPointSlots) {
   LONGS_EQUAL(0, longTrackPointSlots[0]);
 }
 
-TEST(CudaSfmValues, PacksCamerasInGtsamConvention) {
+TEST(SfmValues, PacksCamerasInGtsamConvention) {
   const SfmData data = makeTinySfmData();
-  CudaContext context;
+  Context context;
 
-  DeviceValues values = PackSfmValues(data, context.stream());
+  DeviceValues values = packSfmValues(data, context.stream());
   std::vector<DevicePinholeCameraCal3Bundler> cameras;
   std::vector<DevicePoint3> points;
   const auto& cameraBlock = values.block<DevicePinholeCameraCal3Bundler>(
@@ -2961,12 +2961,12 @@ TEST(CudaSfmValues, PacksCamerasInGtsamConvention) {
   DOUBLES_EQUAL(6.0, points[1].z, 1e-12);
 }
 
-TEST(CudaSfmValues, DownloadsValuesWithOriginalKeys) {
+TEST(SfmValues, DownloadsValuesWithOriginalKeys) {
   const SfmData data = makeTinySfmData();
-  CudaContext context;
+  Context context;
 
-  DeviceValues values = PackSfmValues(data, context.stream());
-  const Values downloaded = DownloadSfmValues(values, context.stream());
+  DeviceValues values = packSfmValues(data, context.stream());
+  const Values downloaded = downloadSfmValues(values, context.stream());
 
   EXPECT_LONGS_EQUAL(4, downloaded.size());
   CHECK(downloaded.exists(C(0)));
@@ -2980,9 +2980,9 @@ TEST(CudaSfmValues, DownloadsValuesWithOriginalKeys) {
   CHECK(Point3Equals(data.track(1).point3(), downloaded.at<Point3>(P(1))));
 }
 
-TEST(CudaBalCsrStructure, BuildsUpperTrianglePatternForMeasuredTrack) {
+TEST(BalCsrStructure, BuildsUpperTrianglePatternForMeasuredTrack) {
   const SfmData data = makeTinyBalData();
-  const CudaBalCsrStructure structure = CudaBalCsrStructure::FromSfmData(data);
+  const BalCsrStructure structure = BalCsrStructure::fromSfmData(data);
 
   EXPECT_LONGS_EQUAL(24, structure.dimension());
   EXPECT_LONGS_EQUAL(2, structure.numCameras());
@@ -3103,10 +3103,10 @@ GncTestProblem makeGncBalLikeProblem() {
 
 }  // namespace
 
-TEST(CudaSfmLevenbergMarquardtParams, EqualsComparesFields) {
-  const CudaSfmLevenbergMarquardtParams a =
-      CudaSfmLevenbergMarquardtParams::LegacyDefaults();
-  CudaSfmLevenbergMarquardtParams b = a;
+TEST(SfmLevenbergMarquardtParams, EqualsComparesFields) {
+  const SfmLevenbergMarquardtParams a =
+      SfmLevenbergMarquardtParams::legacyDefaults();
+  SfmLevenbergMarquardtParams b = a;
   CHECK(a.equals(b));
 
   b.lambdaInitial = 2.0 * a.lambdaInitial + 1.0;
@@ -3121,7 +3121,7 @@ TEST(CudaSfmLevenbergMarquardtParams, EqualsComparesFields) {
   CHECK(!a.equals(b));
 }
 
-TEST(GncCudaSfmOptimizer, TlsClassificationMatchesCpuGnc) {
+TEST(GncSfmOptimizer, TlsClassificationMatchesCpuGnc) {
   const GncTestProblem problem = makeGncBalLikeProblem();
 
   GncParams<LevenbergMarquardtParams> cpuGncParams{LevenbergMarquardtParams()};
@@ -3130,10 +3130,10 @@ TEST(GncCudaSfmOptimizer, TlsClassificationMatchesCpuGnc) {
       problem.graph, problem.initial, cpuGncParams);
   const Values cpuResult = cpuGnc.optimize();
 
-  GncParams<CudaSfmLevenbergMarquardtParams> cudaGncParams{
-      CudaSfmLevenbergMarquardtParams::LegacyDefaults()};
+  GncParams<SfmLevenbergMarquardtParams> cudaGncParams{
+      SfmLevenbergMarquardtParams::legacyDefaults()};
   cudaGncParams.setLossType(GncLossType::TLS);
-  GncOptimizer<GncParams<CudaSfmLevenbergMarquardtParams>> cudaGnc(
+  GncOptimizer<GncParams<SfmLevenbergMarquardtParams>> cudaGnc(
       problem.graph, problem.initial, cudaGncParams);
   const Values cudaResult = cudaGnc.optimize();
 
@@ -3158,7 +3158,7 @@ TEST(GncCudaSfmOptimizer, TlsClassificationMatchesCpuGnc) {
   CHECK(cudaInlierError < initialInlierError);
 }
 
-TEST(GncCudaSfmOptimizer, GmClassificationMatchesCpuGnc) {
+TEST(GncSfmOptimizer, GmClassificationMatchesCpuGnc) {
   const GncTestProblem problem = makeGncBalLikeProblem();
 
   GncParams<LevenbergMarquardtParams> cpuGncParams{LevenbergMarquardtParams()};
@@ -3167,10 +3167,10 @@ TEST(GncCudaSfmOptimizer, GmClassificationMatchesCpuGnc) {
       problem.graph, problem.initial, cpuGncParams);
   const Values cpuResult = cpuGnc.optimize();
 
-  GncParams<CudaSfmLevenbergMarquardtParams> cudaGncParams{
-      CudaSfmLevenbergMarquardtParams::LegacyDefaults()};
+  GncParams<SfmLevenbergMarquardtParams> cudaGncParams{
+      SfmLevenbergMarquardtParams::legacyDefaults()};
   cudaGncParams.setLossType(GncLossType::GM);
-  GncOptimizer<GncParams<CudaSfmLevenbergMarquardtParams>> cudaGnc(
+  GncOptimizer<GncParams<SfmLevenbergMarquardtParams>> cudaGnc(
       problem.graph, problem.initial, cudaGncParams);
   const Values cudaResult = cudaGnc.optimize();
 
@@ -3191,7 +3191,7 @@ TEST(GncCudaSfmOptimizer, GmClassificationMatchesCpuGnc) {
   CHECK(problem.inlierGraph.error(cudaResult) < 1e-2);
 }
 
-TEST(GncCudaSfmOptimizer, KnownOutliersProduceZeroInformationGraph) {
+TEST(GncSfmOptimizer, KnownOutliersProduceZeroInformationGraph) {
   // GNC weights a known outlier by zero, which reaches the CUDA backend as a
   // zero-information Gaussian noise model. The corrupted measurement must be
   // ignored by the optimization.
@@ -3211,9 +3211,9 @@ TEST(GncCudaSfmOptimizer, KnownOutliersProduceZeroInformationGraph) {
     }
   }
 
-  CudaSfmLevenbergMarquardtParams params =
-      CudaSfmLevenbergMarquardtParams::LegacyDefaults();
-  CudaSfmLevenbergMarquardtOptimizer optimizer(weightedGraph, problem.initial,
+  SfmLevenbergMarquardtParams params =
+      SfmLevenbergMarquardtParams::legacyDefaults();
+  SfmLevenbergMarquardtOptimizer optimizer(weightedGraph, problem.initial,
                                                params);
   const Values& result = optimizer.optimize();
 

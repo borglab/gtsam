@@ -2,7 +2,7 @@
 
 #include <gtsam/config.h>
 #include <gtsam/nonlinear/cuda/DeviceGeometryTypes.h>
-#include <gtsam/slam/cuda/CudaSfmTypes.h>
+#include <gtsam/slam/cuda/SfmTypes.h>
 
 #include <cuda_runtime_api.h>
 
@@ -138,12 +138,12 @@ __host__ __device__ inline void se3Expmap(const double* xi, double* rotation,
 
 }  // namespace internal
 
-__host__ __device__ inline DevicePoint3 RetractPoint(const DevicePoint3& point,
+__host__ __device__ inline DevicePoint3 retractPoint(const DevicePoint3& point,
                                                      const double* delta3) {
   return {point.x + delta3[0], point.y + delta3[1], point.z + delta3[2]};
 }
 
-__host__ __device__ inline DevicePinholeCameraCal3Bundler RetractCamera(
+__host__ __device__ inline DevicePinholeCameraCal3Bundler retractCamera(
     const DevicePinholeCameraCal3Bundler& camera, const double* delta9) {
   DevicePinholeCameraCal3Bundler result = camera;
 
@@ -178,9 +178,9 @@ __host__ __device__ inline DevicePinholeCameraCal3Bundler RetractCamera(
 }
 
 __host__ __device__ inline DeviceProjectionResult
-EvaluatePinholeBundlerProjection(
+evaluatePinholeBundlerProjection(
     const DevicePinholeCameraCal3Bundler& camera, const DevicePoint3& point,
-    const CudaSfmObservation& observation) {
+    const SfmObservation& observation) {
   const double dx = point.x - camera.t[0];
   const double dy = point.y - camera.t[1];
   const double dz = point.z - camera.t[2];

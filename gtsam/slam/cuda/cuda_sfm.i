@@ -11,29 +11,29 @@ namespace gtsam {
 
 namespace cuda {
 
-#include <gtsam/slam/cuda/CudaSfmLevenbergMarquardt.h>
+#include <gtsam/slam/cuda/SfmLevenbergMarquardt.h>
 
-enum class CudaSfmSystemFormulation {
+enum class SfmSystemFormulation {
   Schur,
   FullNormal
 };
 
-class CudaSfmLevenbergMarquardtParams
+class SfmLevenbergMarquardtParams
     : gtsam::LevenbergMarquardtParams {
-  CudaSfmLevenbergMarquardtParams();
+  SfmLevenbergMarquardtParams();
 
-  static gtsam::cuda::CudaSfmLevenbergMarquardtParams LegacyDefaults();
-  static gtsam::cuda::CudaSfmLevenbergMarquardtParams CeresDefaults();
+  static gtsam::cuda::SfmLevenbergMarquardtParams legacyDefaults();
+  static gtsam::cuda::SfmLevenbergMarquardtParams ceresDefaults();
 
   bool enableDetailedProfiling;
-  gtsam::cuda::CudaSfmSystemFormulation formulation;
+  gtsam::cuda::SfmSystemFormulation formulation;
 
   string getLinearSolver() const;
   void setLinearSolver(const string& solver);
   string getFormulation() const;
   void setFormulation(const string& formulationName);
-  string getCudaLinearSolver() const;
-  void setCudaLinearSolver(const string& solverName);
+  string getLinearSolverBackend() const;
+  void setLinearSolverBackend(const string& solverName);
   double getMinDiagonal() const;
   double getMaxDiagonal() const;
   void setMinDiagonal(double value);
@@ -41,8 +41,8 @@ class CudaSfmLevenbergMarquardtParams
   void print(const string& str = "") const;
 };
 
-class CudaSfmLevenbergMarquardtResult {
-  CudaSfmLevenbergMarquardtResult();
+class SfmLevenbergMarquardtResult {
+  SfmLevenbergMarquardtResult();
 
   double initialError;
   double finalError;
@@ -86,25 +86,25 @@ class CudaSfmLevenbergMarquardtResult {
   gtsam::Values optimizedValues;
 };
 
-gtsam::cuda::CudaSfmLevenbergMarquardtResult OptimizeCudaSfm(
+gtsam::cuda::SfmLevenbergMarquardtResult optimizeSfm(
     const gtsam::SfmData& data,
-    const gtsam::cuda::CudaSfmLevenbergMarquardtParams& params);
+    const gtsam::cuda::SfmLevenbergMarquardtParams& params);
 
-gtsam::cuda::CudaSfmLevenbergMarquardtResult
-OptimizeCudaSfmWithoutValueDownload(
+gtsam::cuda::SfmLevenbergMarquardtResult
+optimizeSfmWithoutValueDownload(
     const gtsam::SfmData& data,
-    const gtsam::cuda::CudaSfmLevenbergMarquardtParams& params);
+    const gtsam::cuda::SfmLevenbergMarquardtParams& params);
 
-virtual class CudaSfmLevenbergMarquardtOptimizer
+virtual class SfmLevenbergMarquardtOptimizer
     : gtsam::NonlinearOptimizer {
-  CudaSfmLevenbergMarquardtOptimizer(
+  SfmLevenbergMarquardtOptimizer(
       const gtsam::NonlinearFactorGraph& graph,
       const gtsam::Values& initialValues,
-      const gtsam::cuda::CudaSfmLevenbergMarquardtParams& params =
-          gtsam::cuda::CudaSfmLevenbergMarquardtParams());
+      const gtsam::cuda::SfmLevenbergMarquardtParams& params =
+          gtsam::cuda::SfmLevenbergMarquardtParams());
 
-  const gtsam::cuda::CudaSfmLevenbergMarquardtParams& params() const;
-  const gtsam::cuda::CudaSfmLevenbergMarquardtResult& result() const;
+  const gtsam::cuda::SfmLevenbergMarquardtParams& params() const;
+  const gtsam::cuda::SfmLevenbergMarquardtResult& result() const;
 };
 
 }  // namespace cuda

@@ -1,7 +1,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/base/cuda/CudaContext.h>
-#include <gtsam/base/cuda/CudaPinnedHostArray.h>
+#include <gtsam/base/cuda/Context.h>
+#include <gtsam/base/cuda/PinnedHostArray.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose2.h>
@@ -12,7 +12,7 @@
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>
-#include <gtsam/nonlinear/cuda/CudaJacobianNormalOperator.h>
+#include <gtsam/nonlinear/cuda/JacobianNormalOperator.h>
 #include <gtsam/nonlinear/cuda/DeviceSparseJacobianNormalEquations.h>
 #include <gtsam/nonlinear/cuda/HostSparseJacobian.h>
 #include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
@@ -47,23 +47,23 @@ constexpr Key kPointKey = 20;
 constexpr Key kFirstStreamingKey = 30;
 constexpr Key kSecondStreamingKey = 40;
 
-static_assert(!std::is_copy_constructible_v<CudaPinnedHostArray<double>>);
-static_assert(!std::is_copy_assignable_v<CudaPinnedHostArray<double>>);
+static_assert(!std::is_copy_constructible_v<PinnedHostArray<double>>);
+static_assert(!std::is_copy_assignable_v<PinnedHostArray<double>>);
 static_assert(
-    std::is_nothrow_move_constructible_v<CudaPinnedHostArray<double>>);
-static_assert(std::is_nothrow_move_assignable_v<CudaPinnedHostArray<double>>);
-static_assert(std::is_base_of_v<CudaLinearOperator,
-                                CudaJacobianNormalOperator>);
-static_assert(std::is_base_of_v<CudaPreconditioner,
-                                CudaJacobianNormalPreconditioner>);
+    std::is_nothrow_move_constructible_v<PinnedHostArray<double>>);
+static_assert(std::is_nothrow_move_assignable_v<PinnedHostArray<double>>);
+static_assert(std::is_base_of_v<LinearOperator,
+                                JacobianNormalOperator>);
+static_assert(std::is_base_of_v<Preconditioner,
+                                JacobianNormalPreconditioner>);
 static_assert(std::is_same_v<
               decltype(std::declval<const DeviceSparseJacobianNormalEquations&>()
                            .linearOperator()),
-              const CudaLinearOperator&>);
+              const LinearOperator&>);
 static_assert(std::is_same_v<
               decltype(std::declval<const DeviceSparseJacobianNormalEquations&>()
                            .preconditioner()),
-              const CudaPreconditioner&>);
+              const Preconditioner&>);
 
 struct NonzeroValueInitialized {
   int value = 17;
@@ -769,15 +769,15 @@ TEST(SparseJacobianPlan, FingerprintAndMatchesIncludeNullMarkers) {
         zeroRowPlan.structuralFingerprint());
 }
 
-TEST(CudaPinnedHostArray, MoveConstructionTransfersOwnership) {
-  CudaPinnedHostArray<int> source(3);
+TEST(PinnedHostArray, MoveConstructionTransfersOwnership) {
+  PinnedHostArray<int> source(3);
   source.data()[0] = 4;
   source.data()[1] = 5;
   source.data()[2] = 6;
   int* sourceAddress = source.data();
   CHECK(isPinnedHostAllocation(sourceAddress));
 
-  CudaPinnedHostArray<int> destination(std::move(source));
+  PinnedHostArray<int> destination(std::move(source));
 
   CHECK(source.data() == nullptr);
   EXPECT_LONGS_EQUAL(0, source.size());
@@ -788,8 +788,8 @@ TEST(CudaPinnedHostArray, MoveConstructionTransfersOwnership) {
   EXPECT_LONGS_EQUAL(6, destination.data()[2]);
 }
 
-TEST(CudaPinnedHostArray, ClearValueInitializesElements) {
-  CudaPinnedHostArray<NonzeroValueInitialized> array(3);
+TEST(PinnedHostArray, ClearValueInitializesElements) {
+  PinnedHostArray<NonzeroValueInitialized> array(3);
   for (size_t i = 0; i < array.size(); ++i) {
     array.data()[i].value = 0;
   }
@@ -803,14 +803,14 @@ TEST(CudaPinnedHostArray, ClearValueInitializesElements) {
   }
 }
 
-TEST(CudaPinnedHostArray, MoveAssignmentTransfersOwnership) {
-  CudaPinnedHostArray<int> source(3);
+TEST(PinnedHostArray, MoveAssignmentTransfersOwnership) {
+  PinnedHostArray<int> source(3);
   source.data()[0] = 7;
   source.data()[1] = 8;
   source.data()[2] = 9;
   int* sourceAddress = source.data();
 
-  CudaPinnedHostArray<int> destination(2);
+  PinnedHostArray<int> destination(2);
   destination.data()[0] = 1;
   destination.data()[1] = 2;
   destination = std::move(source);
@@ -825,8 +825,8 @@ TEST(CudaPinnedHostArray, MoveAssignmentTransfersOwnership) {
   CHECK(isPinnedHostAllocation(destination.data()));
 }
 
-TEST(CudaPinnedHostArray, HandlesZeroSizeAndResize) {
-  CudaPinnedHostArray<double> array;
+TEST(PinnedHostArray, HandlesZeroSizeAndResize) {
+  PinnedHostArray<double> array;
   CHECK(array.data() == nullptr);
   EXPECT_LONGS_EQUAL(0, array.size());
   array.clear();
@@ -860,13 +860,13 @@ TEST(CudaPinnedHostArray, HandlesZeroSizeAndResize) {
   CHECK(array.data() == nullptr);
   EXPECT_LONGS_EQUAL(0, array.size());
 
-  const CudaPinnedHostArray<double> zeroSize(0);
+  const PinnedHostArray<double> zeroSize(0);
   CHECK(zeroSize.data() == nullptr);
   EXPECT_LONGS_EQUAL(0, zeroSize.size());
 }
 
-TEST(CudaPinnedHostArray, OverflowLeavesExistingAllocationValid) {
-  CudaPinnedHostArray<double> array(3);
+TEST(PinnedHostArray, OverflowLeavesExistingAllocationValid) {
+  PinnedHostArray<double> array(3);
   array.data()[0] = 2.5;
   double* address = array.data();
 
@@ -1422,7 +1422,7 @@ TEST(DeviceSparseJacobianNormalEquations,
   const SparseJacobianPlan plan(graph, columns);
   HostSparseJacobian host(plan);
   const StreamingSparseJacobianLinearizer linearizer;
-  CudaContext context;
+  Context context;
   DeviceSparseJacobianNormalEquations normalEquations;
   normalEquations.initialize(plan, context.stream());
 
@@ -1483,7 +1483,7 @@ TEST(DeviceSparseJacobianNormalEquations,
   const Matrix undampedHessian =
       reference.jacobian.transpose() * reference.jacobian;
 
-  CudaContext context;
+  Context context;
   DeviceSparseJacobianNormalEquations normalEquations;
   normalEquations.initialize(plan, context.stream());
   normalEquations.uploadNumerics(host, context.stream());
@@ -1495,9 +1495,9 @@ TEST(DeviceSparseJacobianNormalEquations,
       DownloadNormalEquationPattern(initialSystem, context.stream());
 
   normalEquations.prepareDamping(false, 0.25, 4.0, context.stream());
-  CudaLinearSolverOptions directOptions;
-  directOptions.backend = CudaLinearSolverType::Cudss;
-  CudaLinearSolverSession directSolver(directOptions);
+  LinearSolverOptions directOptions;
+  directOptions.backend = LinearSolverType::Cudss;
+  LinearSolverSession directSolver(directOptions);
   directSolver.analyze(normalEquations.mutableSystem(),
                        &normalEquations.deviceDelta(), context.stream());
   EXPECT_LONGS_EQUAL(1, directSolver.stats().analysisCount);
@@ -1562,7 +1562,7 @@ TEST(DeviceSparseJacobianNormalEquations,
         std::clamp(dampingDiagonal(row), minDiagonal, maxDiagonal);
   }
 
-  CudaContext context;
+  Context context;
   DeviceSparseJacobianNormalEquations normalEquations;
   normalEquations.initialize(plan, context.stream());
   normalEquations.uploadNumerics(host, context.stream());
@@ -1575,9 +1575,9 @@ TEST(DeviceSparseJacobianNormalEquations,
 
   normalEquations.prepareDamping(true, minDiagonal, maxDiagonal,
                                  context.stream());
-  CudaLinearSolverOptions directOptions;
-  directOptions.backend = CudaLinearSolverType::Cudss;
-  CudaLinearSolverSession directSolver(directOptions);
+  LinearSolverOptions directOptions;
+  directOptions.backend = LinearSolverType::Cudss;
+  LinearSolverSession directSolver(directOptions);
   directSolver.analyze(normalEquations.mutableSystem(),
                        &normalEquations.deviceDelta(), context.stream());
 
@@ -1631,7 +1631,7 @@ TEST(DeviceSparseJacobianNormalEquations,
   const SparseJacobianPlan plan(graph, columns);
   HostSparseJacobian firstHost(plan);
   HostSparseJacobian secondHost(plan);
-  CudaContext context;
+  Context context;
   DeviceSparseJacobianNormalEquations normalEquations;
   normalEquations.initialize(plan, context.stream());
   EXPECT_LONGS_EQUAL(0, normalEquations.analysisCount());
@@ -1640,9 +1640,9 @@ TEST(DeviceSparseJacobianNormalEquations,
   normalEquations.uploadNumerics(firstHost, context.stream());
   normalEquations.formUndampedSystem(context.stream());
   normalEquations.prepareDamping(false, 0.0, 10.0, context.stream());
-  CudaLinearSolverOptions directOptions;
-  directOptions.backend = CudaLinearSolverType::Cudss;
-  CudaLinearSolverSession directSolver(directOptions);
+  LinearSolverOptions directOptions;
+  directOptions.backend = LinearSolverType::Cudss;
+  LinearSolverSession directSolver(directOptions);
   directSolver.analyze(normalEquations.mutableSystem(),
                        &normalEquations.deviceDelta(), context.stream());
   EXPECT_LONGS_EQUAL(1, directSolver.stats().analysisCount);
@@ -1693,7 +1693,7 @@ TEST(DeviceSparseJacobianNormalEquations,
   normalEquations.uploadNumerics(secondHost, context.stream());
   normalEquations.formUndampedSystem(context.stream());
   normalEquations.prepareDamping(true, 2.0, 2.0, context.stream());
-  CudaLinearSolverSession reinitializedSolver(directOptions);
+  LinearSolverSession reinitializedSolver(directOptions);
   reinitializedSolver.analyze(normalEquations.mutableSystem(),
                               &normalEquations.deviceDelta(),
                               context.stream());
@@ -1739,7 +1739,7 @@ TEST(DeviceSparseJacobianNormalEquations,
   const SparseJacobianPlan plan(graph, columns);
   HostSparseJacobian host(plan);
   LinearizeSparseJacobian(graph, values, columns, plan, &host);
-  CudaContext context;
+  Context context;
   DeviceSparseJacobianNormalEquations normalEquations;
   normalEquations.initialize(plan, context.stream());
 
@@ -1832,7 +1832,7 @@ TEST(DeviceSparseJacobianNormalEquations,
   HostSparseJacobian host(plan);
   LinearizeSparseJacobian(graph, values, columns, plan, &host);
 
-  CudaContext context;
+  Context context;
   cudaStream_t otherStream = nullptr;
   GTSAM_CUDA_CHECK(cudaStreamCreate(&otherStream));
   {
@@ -1934,7 +1934,7 @@ TEST(DeviceSparseJacobianNormalEquations,
 #if GTSAM_TEST_EXPECT_SPGEMM_REUSE
   HostSparseJacobian secondHost(secondPlan);
 
-  CudaContext context;
+  Context context;
   DeviceSparseJacobianNormalEquations normalEquations;
   normalEquations.initialize(firstPlan, context.stream());
 

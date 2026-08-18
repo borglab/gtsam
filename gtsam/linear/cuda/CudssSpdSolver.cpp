@@ -1,7 +1,7 @@
 #if GTSAM_ENABLE_CUDA
 
 #include <gtsam/linear/cuda/CudssSpdSolver.h>
-#include <gtsam/base/cuda/CudaErrors.h>
+#include <gtsam/base/cuda/Errors.h>
 
 #include <chrono>
 #include <algorithm>
@@ -11,9 +11,9 @@
 
 #if GTSAM_ENABLE_CUDSS
 
-class CudaEventSpan {
+class EventSpan {
  public:
-  CudaEventSpan() {
+  EventSpan() {
     GTSAM_CUDA_CHECK(cudaEventCreate(&begin_));
     try {
       GTSAM_CUDA_CHECK(cudaEventCreate(&end_));
@@ -22,12 +22,12 @@ class CudaEventSpan {
       throw;
     }
   }
-  ~CudaEventSpan() {
+  ~EventSpan() {
     if (end_) cudaEventDestroy(end_);
     if (begin_) cudaEventDestroy(begin_);
   }
-  CudaEventSpan(const CudaEventSpan&) = delete;
-  CudaEventSpan& operator=(const CudaEventSpan&) = delete;
+  EventSpan(const EventSpan&) = delete;
+  EventSpan& operator=(const EventSpan&) = delete;
 
   void recordBegin(cudaStream_t stream) {
     GTSAM_CUDA_CHECK(cudaEventRecord(begin_, stream));
@@ -54,7 +54,7 @@ namespace {
 
 #if GTSAM_ENABLE_CUDSS
 
-const char* CudssStatusName(cudssStatus_t status) {
+const char* cudssStatusName(cudssStatus_t status) {
   switch (status) {
     case CUDSS_STATUS_SUCCESS:
       return "CUDSS_STATUS_SUCCESS";
@@ -76,7 +76,7 @@ const char* CudssStatusName(cudssStatus_t status) {
   return "CUDSS_STATUS_UNKNOWN";
 }
 
-const char* CudssPhaseName(int phase) {
+const char* cudssPhaseName(int phase) {
   switch (phase) {
     case CUDSS_PHASE_ANALYSIS:
       return "CUDSS_PHASE_ANALYSIS";
@@ -88,23 +88,23 @@ const char* CudssPhaseName(int phase) {
   return "CUDSS_PHASE_UNKNOWN";
 }
 
-void CheckCudss(cudssStatus_t status, const char* expression) {
+void checkCudss(cudssStatus_t status, const char* expression) {
   if (status == CUDSS_STATUS_SUCCESS) return;
   std::ostringstream os;
   os << "cuDSS call failed: " << expression << " returned "
-     << CudssStatusName(status) << " (" << static_cast<int>(status) << ")";
+     << cudssStatusName(status) << " (" << static_cast<int>(status) << ")";
   throw std::runtime_error(os.str());
 }
 
-void CheckCudssExecute(cudssStatus_t status, int phase) {
+void checkCudssExecute(cudssStatus_t status, int phase) {
   if (status == CUDSS_STATUS_SUCCESS) return;
   std::ostringstream os;
-  os << "cuDSS " << CudssPhaseName(phase) << " failed with "
-     << CudssStatusName(status) << " (" << static_cast<int>(status) << ")";
+  os << "cuDSS " << cudssPhaseName(phase) << " failed with "
+     << cudssStatusName(status) << " (" << static_cast<int>(status) << ")";
   throw std::runtime_error(os.str());
 }
 
-#define GTSAM_CUDSS_CHECK(expr) CheckCudss((expr), #expr)
+#define GTSAM_CUDSS_CHECK(expr) checkCudss((expr), #expr)
 
 struct CudssHandle {
   cudssHandle_t value = nullptr;
@@ -176,8 +176,8 @@ struct CudssMatrix {
   }
 };
 
-void ValidateSystemForSolve(const DeviceSparseSpdSystem& system,
-                            const CudaDeviceArray<double>* solution) {
+void validateSystemForSolve(const DeviceSparseSpdSystem& system,
+                            const DeviceArray<double>* solution) {
   if (!solution) {
     throw std::invalid_argument("CudssLinearSolver requires solution storage");
   }
@@ -201,7 +201,7 @@ void ValidateSystemForSolve(const DeviceSparseSpdSystem& system,
   }
 }
 
-void ValidatePermutation(const std::vector<int>& permutation, int rows) {
+void validatePermutation(const std::vector<int>& permutation, int rows) {
   if (permutation.size() != static_cast<size_t>(rows)) {
     throw std::invalid_argument(
         "CudssSpdSolver permutation size must equal system dimension");
@@ -220,7 +220,7 @@ void ValidatePermutation(const std::vector<int>& permutation, int rows) {
   }
 }
 
-cudssStatus_t CreateSpdCsrMatrix(CudssMatrix* matrix,
+cudssStatus_t createSpdCsrMatrix(CudssMatrix* matrix,
                                  const DeviceSparseSpdSystem& system) {
   const int rows = system.rows();
   cudssStatus_t csrStatus = cudssMatrixCreateCsr(
@@ -246,7 +246,7 @@ cudssStatus_t CreateSpdCsrMatrix(CudssMatrix* matrix,
 }  // namespace
 
 struct CudssSpdSolver::Impl {
-  mutable CudaLinearSolveStats stats;
+  mutable LinearSolveStats stats;
   std::vector<int> appliedPermutation;
 #if GTSAM_ENABLE_CUDSS
   CudssHandle handle;
@@ -263,7 +263,7 @@ struct CudssSpdSolver::Impl {
   const double* rhs = nullptr;
   double* solution = nullptr;
   bool analyzed = false;
-  mutable std::vector<std::unique_ptr<CudaEventSpan>> pendingSolveSpans;
+  mutable std::vector<std::unique_ptr<EventSpan>> pendingSolveSpans;
 
   Impl() : data(handle.value) {}
 
@@ -275,12 +275,12 @@ struct CudssSpdSolver::Impl {
   }
 
   void analyze(const DeviceSparseSpdSystem& system,
-               CudaDeviceArray<double>* solutionArray,
+               DeviceArray<double>* solutionArray,
                const std::vector<int>* scalarPermutation,
                cudaStream_t stream) {
-    ValidateSystemForSolve(system, solutionArray);
+    validateSystemForSolve(system, solutionArray);
     if (scalarPermutation) {
-      ValidatePermutation(*scalarPermutation, system.rows());
+      validatePermutation(*scalarPermutation, system.rows());
     }
 
     rows = system.rows();
@@ -293,7 +293,7 @@ struct CudssSpdSolver::Impl {
     x.reset();
     b.reset();
 
-    CheckCudss(CreateSpdCsrMatrix(&matrix, system), "cudssMatrixCreateCsr");
+    checkCudss(createSpdCsrMatrix(&matrix, system), "cudssMatrixCreateCsr");
     GTSAM_CUDSS_CHECK(cudssMatrixCreateDn(&x.value, rows, 1, rows,
                                           solutionArray->data(), CUDSS_R_64F,
                                           CUDSS_LAYOUT_COL_MAJOR));
@@ -311,14 +311,14 @@ struct CudssSpdSolver::Impl {
           scalarPermutation->data(), scalarPermutation->size() * sizeof(int)));
     }
 
-    CudaEventSpan analysisSpan;
+    EventSpan analysisSpan;
     analysisSpan.recordBegin(stream);
-    CheckCudssExecute(
+    checkCudssExecute(
         cudssExecute(handle.value, CUDSS_PHASE_ANALYSIS, config.value,
                      data.value, matrix.value, x.value, b.value),
         CUDSS_PHASE_ANALYSIS);
     analysisSpan.recordEnd(stream);
-    stats.backend = CudaLinearSolverType::Cudss;
+    stats.backend = LinearSolverType::Cudss;
     stats.userOrderingApplied = scalarPermutation != nullptr;
     ++stats.analysisCount;
     stats.analysisSeconds += analysisSpan.completedSeconds();
@@ -345,9 +345,9 @@ struct CudssSpdSolver::Impl {
   }
 
   void solve(const DeviceSparseSpdSystem& system,
-             CudaDeviceArray<double>* solutionArray, cudaStream_t stream,
+             DeviceArray<double>* solutionArray, cudaStream_t stream,
              CudssSpdSolveProfile* profile) {
-    ValidateSystemForSolve(system, solutionArray);
+    validateSystemForSolve(system, solutionArray);
     if (!analyzed) {
       throw std::logic_error("CudssSpdSolver::solve called before analyze");
     }
@@ -366,9 +366,9 @@ struct CudssSpdSolver::Impl {
     }
 
     GTSAM_CUDSS_CHECK(cudssSetStream(handle.value, stream));
-    CudaEventSpan factorizationSpan;
+    EventSpan factorizationSpan;
     factorizationSpan.recordBegin(stream);
-    CheckCudssExecute(
+    checkCudssExecute(
         cudssExecute(handle.value, CUDSS_PHASE_FACTORIZATION, config.value,
                      data.value, matrix.value, x.value, b.value),
         CUDSS_PHASE_FACTORIZATION);
@@ -390,7 +390,7 @@ struct CudssSpdSolver::Impl {
       dataInfoStatus = cudssDataGet(handle.value, data.value, CUDSS_DATA_INFO,
                                     &info, sizeof(info), &bytesWritten);
     }
-    CheckCudss(dataInfoStatus, "cudssDataGet(CUDSS_DATA_INFO)");
+    checkCudss(dataInfoStatus, "cudssDataGet(CUDSS_DATA_INFO)");
     if (bytesWritten != sizeof(info)) {
       throw std::runtime_error(
           "cuDSS CUDSS_DATA_INFO returned an unexpected byte count");
@@ -405,9 +405,9 @@ struct CudssSpdSolver::Impl {
     // completed GPU factorization rather than only cudssExecute enqueue time.
     stats.factorizationSeconds += factorizationSpan.completedSeconds();
 
-    auto solveSpan = std::make_unique<CudaEventSpan>();
+    auto solveSpan = std::make_unique<EventSpan>();
     solveSpan->recordBegin(stream);
-    CheckCudssExecute(
+    checkCudssExecute(
         cudssExecute(handle.value, CUDSS_PHASE_SOLVE, config.value, data.value,
                      matrix.value, x.value, b.value),
         CUDSS_PHASE_SOLVE);
@@ -427,7 +427,7 @@ CudssSpdSolver::CudssSpdSolver(CudssSpdSolver&&) noexcept = default;
 CudssSpdSolver& CudssSpdSolver::operator=(CudssSpdSolver&&) noexcept = default;
 
 void CudssSpdSolver::analyze(const DeviceSparseSpdSystem& system,
-                             CudaDeviceArray<double>* solution,
+                             DeviceArray<double>* solution,
                              cudaStream_t stream) {
 #if !GTSAM_ENABLE_CUDSS
   (void)system;
@@ -442,7 +442,7 @@ void CudssSpdSolver::analyze(const DeviceSparseSpdSystem& system,
 
 void CudssSpdSolver::analyze(
     const DeviceSparseSpdSystem& system,
-    CudaDeviceArray<double>* solution,
+    DeviceArray<double>* solution,
     const std::vector<int>& scalarPermutation, cudaStream_t stream) {
 #if !GTSAM_ENABLE_CUDSS
   (void)system;
@@ -451,20 +451,20 @@ void CudssSpdSolver::analyze(
   (void)stream;
   throw std::runtime_error("CudssSpdSolver::analyze requires cuDSS");
 #else
-  ValidatePermutation(scalarPermutation, system.rows());
+  validatePermutation(scalarPermutation, system.rows());
   impl_ = std::make_unique<Impl>();
   impl_->analyze(system, solution, &scalarPermutation, stream);
 #endif
 }
 
 void CudssSpdSolver::solve(const DeviceSparseSpdSystem& system,
-                           CudaDeviceArray<double>* solution,
+                           DeviceArray<double>* solution,
                            cudaStream_t stream) {
   solve(system, solution, stream, nullptr);
 }
 
 void CudssSpdSolver::solve(const DeviceSparseSpdSystem& system,
-                           CudaDeviceArray<double>* solution,
+                           DeviceArray<double>* solution,
                            cudaStream_t stream, CudssSpdSolveProfile* profile) {
 #if !GTSAM_ENABLE_CUDSS
   (void)system;
@@ -477,7 +477,7 @@ void CudssSpdSolver::solve(const DeviceSparseSpdSystem& system,
 #endif
 }
 
-const CudaLinearSolveStats& CudssSpdSolver::stats() const {
+const LinearSolveStats& CudssSpdSolver::stats() const {
 #if GTSAM_ENABLE_CUDSS
   impl_->harvestSolveTimings();
 #endif
@@ -489,7 +489,7 @@ const std::vector<int>& CudssSpdSolver::appliedPermutation() const {
 }
 
 void CudssLinearSolver::solveSpd(const DeviceSparseSpdSystem& system,
-                                 CudaDeviceArray<double>* solution,
+                                 DeviceArray<double>* solution,
                                  cudaStream_t stream) const {
 #if !GTSAM_ENABLE_CUDSS
   (void)system;

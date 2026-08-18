@@ -26,18 +26,18 @@
 #include <gtsam/config.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #if GTSAM_ENABLE_CUDA
-#include <gtsam/base/cuda/CudaContext.h>
-#include <gtsam/nonlinear/cuda/CudaSparseLevenbergMarquardt.h>
+#include <gtsam/base/cuda/Context.h>
+#include <gtsam/nonlinear/cuda/SparseLevenbergMarquardt.h>
 #include <gtsam/nonlinear/cuda/HostSparseJacobian.h>
 #include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
 #include <gtsam/nonlinear/cuda/StreamingSparseJacobianLinearizer.h>
-#include <gtsam/slam/cuda/CudaBalCsrStructure.h>
-#include <gtsam/slam/cuda/CudaSfmDenseSchurSolver.h>
-#include <gtsam/slam/cuda/CudaSfmLevenbergMarquardt.h>
-#include <gtsam/slam/cuda/CudaSfmProjectionBatch.h>
-#include <gtsam/slam/cuda/CudaSfmProjectionLinearization.h>
-#include <gtsam/slam/cuda/CudaSfmReducedCsrPlan.h>
-#include <gtsam/slam/cuda/CudaSfmValues.h>
+#include <gtsam/slam/cuda/BalCsrStructure.h>
+#include <gtsam/slam/cuda/SfmDenseSchurSolver.h>
+#include <gtsam/slam/cuda/SfmLevenbergMarquardt.h>
+#include <gtsam/slam/cuda/SfmProjectionBatch.h>
+#include <gtsam/slam/cuda/SfmProjectionLinearization.h>
+#include <gtsam/slam/cuda/SfmReducedCsrPlan.h>
+#include <gtsam/slam/cuda/SfmValues.h>
 #endif
 
 #include <gtsam/nonlinear/GncOptimizer.h>
@@ -89,7 +89,7 @@ struct TimingRow {
   double newer = 0.0;
 };
 
-enum class CudaLinearSolverOption {
+enum class LinearSolverOption {
   DenseSchur,
   CudssSchur,
   PcgSchur,
@@ -131,7 +131,7 @@ struct RunOptions {
   bool linearizationRepeatsSpecified = false;
   size_t linearizationRepeats = 10;
   bool cudaLinearSolverSpecified = false;
-  CudaLinearSolverOption cudaLinearSolver = CudaLinearSolverOption::DenseSchur;
+  LinearSolverOption cudaLinearSolver = LinearSolverOption::DenseSchur;
   bool cudaGraphKindSpecified = false;
   CudaGraphKind cudaGraphKind = CudaGraphKind::Raw;
   bool batchChunkSizeSpecified = false;
@@ -150,17 +150,17 @@ struct RunOptions {
   std::string outputFormat = "text";
 };
 
-const char* cudaLinearSolverName(CudaLinearSolverOption solver) {
+const char* cudaLinearSolverName(LinearSolverOption solver) {
   switch (solver) {
-    case CudaLinearSolverOption::DenseSchur:
+    case LinearSolverOption::DenseSchur:
       return "dense-schur";
-    case CudaLinearSolverOption::CudssSchur:
+    case LinearSolverOption::CudssSchur:
       return "cudss-schur";
-    case CudaLinearSolverOption::PcgSchur:
+    case LinearSolverOption::PcgSchur:
       return "pcg-schur";
-    case CudaLinearSolverOption::CudssFullNormal:
+    case LinearSolverOption::CudssFullNormal:
       return "cudss-full-normal";
-    case CudaLinearSolverOption::PcgFullNormal:
+    case LinearSolverOption::PcgFullNormal:
       return "pcg-full-normal";
   }
   return "unknown";
@@ -511,24 +511,24 @@ enum class CudaLmDefaults {
   Graph,
 };
 
-gtsam::cuda::CudaSfmLevenbergMarquardtParams makeBalCudaLmParams(
-    CudaLinearSolverOption solverOption, CudaLmDefaults defaults,
+gtsam::cuda::SfmLevenbergMarquardtParams makeBalCudaLmParams(
+    LinearSolverOption solverOption, CudaLmDefaults defaults,
     bool enableDetailedProfiling) {
 #if !GTSAM_ENABLE_CUDSS
-  if (solverOption == CudaLinearSolverOption::CudssSchur ||
-      solverOption == CudaLinearSolverOption::CudssFullNormal) {
+  if (solverOption == LinearSolverOption::CudssSchur ||
+      solverOption == LinearSolverOption::CudssFullNormal) {
     throw std::runtime_error(
         "the selected CUDA SFM configuration requires cuDSS support");
   }
 #endif
-  gtsam::cuda::CudaSfmLevenbergMarquardtParams params =
+  gtsam::cuda::SfmLevenbergMarquardtParams params =
       defaults == CudaLmDefaults::Graph
-          ? gtsam::cuda::CudaSfmLevenbergMarquardtParams::CeresDefaults()
-          : gtsam::cuda::CudaSfmLevenbergMarquardtParams();
+          ? gtsam::cuda::SfmLevenbergMarquardtParams::ceresDefaults()
+          : gtsam::cuda::SfmLevenbergMarquardtParams();
   applyBalBenchmarkLmSettings(params);
   params.setLinearSolver(cudaLinearSolverName(solverOption));
-  if (solverOption == CudaLinearSolverOption::PcgSchur ||
-      solverOption == CudaLinearSolverOption::PcgFullNormal) {
+  if (solverOption == LinearSolverOption::PcgSchur ||
+      solverOption == LinearSolverOption::PcgFullNormal) {
     params.pcg.relativeTolerance = 1e-6;
     params.pcg.maxIterations = 1000;
   }
@@ -538,21 +538,21 @@ gtsam::cuda::CudaSfmLevenbergMarquardtParams makeBalCudaLmParams(
 
 void applyCudaMatrixOrdering(
     const SfmData& data, const RunOptions& options,
-    gtsam::cuda::CudaSfmLevenbergMarquardtParams* params) {
+    gtsam::cuda::SfmLevenbergMarquardtParams* params) {
   if (!params || options.ordering != "gtsam") return;
-  if (options.cudaLinearSolver != CudaLinearSolverOption::CudssSchur &&
-      options.cudaLinearSolver != CudaLinearSolverOption::CudssFullNormal) {
+  if (options.cudaLinearSolver != LinearSolverOption::CudssSchur &&
+      options.cudaLinearSolver != LinearSolverOption::CudssFullNormal) {
     throw std::invalid_argument(
         "GTSAM ordering is supported only by the cuDSS backend");
   }
-  if (options.cudaLinearSolver == CudaLinearSolverOption::CudssSchur) {
+  if (options.cudaLinearSolver == LinearSolverOption::CudssSchur) {
     std::vector<Key> cameraKeys;
     cameraKeys.reserve(data.numberCameras());
     for (size_t index = 0; index < data.numberCameras(); ++index) {
       cameraKeys.push_back(C(index));
     }
     params->setOrdering(
-        gtsam::cuda::CudaSfmReducedCsrPlan(data, cameraKeys).colamdOrdering());
+        gtsam::cuda::SfmReducedCsrPlan(data, cameraKeys).colamdOrdering());
   } else {
     const NonlinearFactorGraph graph =
         bal::buildGeneralSfmGraph(data, options.config);
@@ -570,10 +570,10 @@ struct GpuLinearizationBenchmark {
 
 GpuLinearizationBenchmark benchmarkGpuLinearization(const SfmData& db,
                                                     size_t repeats) {
-  gtsam::cuda::CudaContext context;
-  const auto values = gtsam::cuda::PackSfmValues(db, context.stream());
+  gtsam::cuda::Context context;
+  const auto values = gtsam::cuda::packSfmValues(db, context.stream());
   const auto batch =
-      gtsam::cuda::CudaSfmProjectionBatch::FromSfmData(db, context.stream());
+      gtsam::cuda::SfmProjectionBatch::fromSfmData(db, context.stream());
   context.synchronize();
 
   GpuLinearizationBenchmark benchmark;
@@ -582,13 +582,13 @@ GpuLinearizationBenchmark benchmarkGpuLinearization(const SfmData& db,
   benchmark.hessianDiagonal.seconds.reserve(repeats);
   benchmark.denseSchurCombined.seconds.reserve(repeats);
 
-  gtsam::cuda::CudaSfmProjectionLinearization linearization;
-  gtsam::cuda::LinearizeCudaSfmProjectionBatch(values, batch, &linearization,
+  gtsam::cuda::SfmProjectionLinearization linearization;
+  gtsam::cuda::linearizeSfmProjectionBatch(values, batch, &linearization,
                                                context.stream());
   context.synchronize();
   for (size_t repeat = 0; repeat < repeats; ++repeat) {
     const auto start = std::chrono::steady_clock::now();
-    gtsam::cuda::LinearizeCudaSfmProjectionBatch(values, batch, &linearization,
+    gtsam::cuda::linearizeSfmProjectionBatch(values, batch, &linearization,
                                                  context.stream());
     context.synchronize();
     const auto end = std::chrono::steady_clock::now();
@@ -596,12 +596,12 @@ GpuLinearizationBenchmark benchmarkGpuLinearization(const SfmData& db,
         std::chrono::duration<double>(end - start).count());
   }
 
-  const auto params = makeBalCudaLmParams(CudaLinearSolverOption::DenseSchur,
+  const auto params = makeBalCudaLmParams(LinearSolverOption::DenseSchur,
                                           CudaLmDefaults::Graph, false);
-  gtsam::cuda::CudaDeviceArray<double> dampingDiagonal;
+  gtsam::cuda::DeviceArray<double> dampingDiagonal;
   if (params.dampingParams.diagonalDamping) {
     const auto computeHessianDiagonal = [&]() {
-      gtsam::cuda::ComputeCudaSfmHessianDiagonal(
+      gtsam::cuda::computeSfmHessianDiagonal(
           values, batch, static_cast<int>(db.numberCameras()),
           params.dampingParams.minDiagonal, params.dampingParams.maxDiagonal,
           &dampingDiagonal,
@@ -619,8 +619,8 @@ GpuLinearizationBenchmark benchmarkGpuLinearization(const SfmData& db,
     }
   }
 
-  gtsam::cuda::CudaSfmDenseSchurSolver solver;
-  gtsam::cuda::CudaDeviceArray<double> delta;
+  gtsam::cuda::SfmDenseSchurSolver solver;
+  gtsam::cuda::DeviceArray<double> delta;
   const auto solveOnce = [&]() {
     if (params.dampingParams.diagonalDamping) {
       solver.solve(values, batch, static_cast<int>(db.numberCameras()),
@@ -648,15 +648,15 @@ GpuLinearizationBenchmark benchmarkGpuLinearization(const SfmData& db,
 
 struct CudaBackendLmRun {
   double elapsed = 0.0;
-  gtsam::cuda::CudaSfmLevenbergMarquardtResult result;
+  gtsam::cuda::SfmLevenbergMarquardtResult result;
 };
 
 CudaBackendLmRun runCudaBackendLm(
     const SfmData& db,
-    const gtsam::cuda::CudaSfmLevenbergMarquardtParams& params) {
+    const gtsam::cuda::SfmLevenbergMarquardtParams& params) {
   CudaBackendLmRun run;
   run.elapsed = gtsam::timing::measureSeconds([&] {
-    run.result = gtsam::cuda::OptimizeCudaSfmWithoutValueDownload(db, params);
+    run.result = gtsam::cuda::optimizeSfmWithoutValueDownload(db, params);
   });
   return run;
 }
@@ -694,14 +694,14 @@ void printCudaMatrixResult(const RunOptions& options,
   const auto& result = run.result;
   const auto& stats = result.linearSolveStats;
   const char* formulation =
-      result.formulation == gtsam::cuda::CudaSfmSystemFormulation::Schur
+      result.formulation == gtsam::cuda::SfmSystemFormulation::Schur
           ? "schur"
           : "full-normal";
   const char* backend = "dense-cholesky";
-  if (result.linearBackend == gtsam::cuda::CudaLinearSolverType::Cudss) {
+  if (result.linearBackend == gtsam::cuda::LinearSolverType::Cudss) {
     backend = "cudss";
   } else if (result.linearBackend ==
-             gtsam::cuda::CudaLinearSolverType::Pcg) {
+             gtsam::cuda::LinearSolverType::Pcg) {
     backend = "pcg";
   }
 
@@ -717,7 +717,7 @@ void printCudaMatrixResult(const RunOptions& options,
               << ",\"nnz\":" << result.linearSystemNonzeros
               << ",\"matrix_free\":"
               << (result.linearSystemKind ==
-                          gtsam::cuda::CudaLinearSystemKind::Operator
+                          gtsam::cuda::LinearSystemKind::Operator
                       ? "true"
                       : "false")
               << ",\"analysis_count\":" << stats.analysisCount
@@ -765,7 +765,7 @@ void printCudaMatrixResult(const RunOptions& options,
               << options.ordering << "," << result.linearSystemDimension << ","
               << result.linearSystemNonzeros << ","
               << (result.linearSystemKind ==
-                  gtsam::cuda::CudaLinearSystemKind::Operator)
+                  gtsam::cuda::LinearSystemKind::Operator)
               << "," << stats.analysisCount << ","
               << stats.userOrderingApplied << "," << stats.factorizationCount
               << "," << stats.solveCount << "," << stats.pcgIterationsTotal
@@ -801,7 +801,7 @@ void printTransferRow(const std::string& indent, const std::string& label,
 }
 
 void printCudaLmSetupBreakdown(
-    const gtsam::cuda::CudaSfmLevenbergMarquardtResult& result,
+    const gtsam::cuda::SfmLevenbergMarquardtResult& result,
     const std::string& prefix) {
   std::cout << prefix << "stage breakdown:\n";
   std::cout << "    context: " << result.contextElapsed << " s\n";
@@ -824,7 +824,7 @@ void printCudaLmSetupBreakdown(
 }
 
 void printCudaLmTransferBreakdown(
-    const gtsam::cuda::CudaSfmLevenbergMarquardtResult& result,
+    const gtsam::cuda::SfmLevenbergMarquardtResult& result,
     const std::string& prefix) {
   const double total = result.totalMeasuredElapsed;
   std::cout << prefix << "pure transfer breakdown:\n";
@@ -860,7 +860,7 @@ void printCudaLmTransferBreakdown(
 }
 
 void printCudaLmDetailedBreakdown(
-    const gtsam::cuda::CudaSfmLevenbergMarquardtResult& result,
+    const gtsam::cuda::SfmLevenbergMarquardtResult& result,
     const std::string& prefix) {
   const double solveLoop = result.solveLoopElapsed;
   const double accounted =
@@ -957,7 +957,7 @@ void printCudaLmDetailedBreakdown(
 }
 
 void printCudaBackendLmRun(const CudaBackendLmRun& run,
-                           CudaLinearSolverOption solverOption,
+                           LinearSolverOption solverOption,
                            bool detailedProfiling) {
   const auto& result = run.result;
   std::cout << "  CUDA LM: " << run.elapsed << " s\n";
@@ -992,15 +992,15 @@ struct CudaGraphLmRun {
   double initialError = 0.0;
   double finalError = 0.0;
   size_t iterations = 0;
-  gtsam::cuda::CudaSfmLevenbergMarquardtResult backend;
+  gtsam::cuda::SfmLevenbergMarquardtResult backend;
 };
 
 CudaGraphLmRun runCudaGraphLm(
     const NonlinearFactorGraph& graph, const Values& initial,
-    const gtsam::cuda::CudaSfmLevenbergMarquardtParams& params) {
+    const gtsam::cuda::SfmLevenbergMarquardtParams& params) {
   CudaGraphLmRun run;
   run.elapsed = gtsam::timing::measureSeconds([&] {
-    std::optional<gtsam::cuda::CudaSfmLevenbergMarquardtOptimizer> optimizer;
+    std::optional<gtsam::cuda::SfmLevenbergMarquardtOptimizer> optimizer;
     run.optimizerConstructionElapsed = gtsam::timing::measureSeconds(
         [&] { optimizer.emplace(graph, initial, params); });
     run.optimizeElapsed = gtsam::timing::measureSeconds([&] {
@@ -1018,7 +1018,7 @@ CudaGraphLmRun runCudaGraphLm(
 }
 
 void printCudaGraphLmRun(const CudaGraphLmRun& run,
-                         CudaLinearSolverOption solverOption,
+                         LinearSolverOption solverOption,
                          CudaGraphKind graphKind, bool detailedProfiling) {
   const double graphBackendCallOverhead =
       run.backend.graphBackendCallElapsed - run.backend.totalMeasuredElapsed;
@@ -1105,14 +1105,14 @@ OrdinaryLmComparisonRun runOrdinaryLmComparison(
 
 struct GenericSparseLmRun {
   double elapsed = 0.0;
-  gtsam::cuda::CudaSparseLevenbergMarquardtResult result;
+  gtsam::cuda::SparseLevenbergMarquardtResult result;
 };
 
 GenericSparseLmRun runGenericSparseLm(
     const NonlinearFactorGraph& graph, const Values& initial,
-    const gtsam::cuda::CudaSparseLevenbergMarquardtParams& params) {
+    const gtsam::cuda::SparseLevenbergMarquardtParams& params) {
   const auto start = std::chrono::steady_clock::now();
-  gtsam::cuda::CudaSparseLevenbergMarquardtOptimizer optimizer(graph, initial,
+  gtsam::cuda::SparseLevenbergMarquardtOptimizer optimizer(graph, initial,
                                                                params);
   (void)optimizer.optimize();
   const auto end = std::chrono::steady_clock::now();
@@ -1120,7 +1120,7 @@ GenericSparseLmRun runGenericSparseLm(
   GenericSparseLmRun run;
   run.elapsed = std::chrono::duration<double>(end - start).count();
   run.result = optimizer.result();
-  if (run.result.backend != gtsam::cuda::CudaSparseLmBackend::Cuda) {
+  if (run.result.backend != gtsam::cuda::SparseLevenbergMarquardtBackend::Device) {
     throw std::runtime_error(
         "generic sparse-Jacobian LM did not use the CUDA backend: " +
         run.result.fallbackDetail);
@@ -1129,8 +1129,8 @@ GenericSparseLmRun runGenericSparseLm(
 }
 
 const char* sparseTerminationName(
-    gtsam::cuda::CudaSparseLmTerminationReason reason) {
-  using Reason = gtsam::cuda::CudaSparseLmTerminationReason;
+    gtsam::cuda::SparseLevenbergMarquardtTerminationReason reason) {
+  using Reason = gtsam::cuda::SparseLevenbergMarquardtTerminationReason;
   switch (reason) {
     case Reason::None:
       return "none";
@@ -1349,25 +1349,25 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
   auto selectConfiguration = [&](const std::string& name) {
     options.matrixConfiguration = name;
     if (name == "schur-dense") {
-      options.cudaLinearSolver = CudaLinearSolverOption::DenseSchur;
+      options.cudaLinearSolver = LinearSolverOption::DenseSchur;
       options.ordering = "auto";
     } else if (name == "schur-cudss-auto") {
-      options.cudaLinearSolver = CudaLinearSolverOption::CudssSchur;
+      options.cudaLinearSolver = LinearSolverOption::CudssSchur;
       options.ordering = "auto";
     } else if (name == "schur-cudss-gtsam") {
-      options.cudaLinearSolver = CudaLinearSolverOption::CudssSchur;
+      options.cudaLinearSolver = LinearSolverOption::CudssSchur;
       options.ordering = "gtsam";
     } else if (name == "schur-pcg") {
-      options.cudaLinearSolver = CudaLinearSolverOption::PcgSchur;
+      options.cudaLinearSolver = LinearSolverOption::PcgSchur;
       options.ordering = "auto";
     } else if (name == "full-normal-cudss-auto") {
-      options.cudaLinearSolver = CudaLinearSolverOption::CudssFullNormal;
+      options.cudaLinearSolver = LinearSolverOption::CudssFullNormal;
       options.ordering = "auto";
     } else if (name == "full-normal-cudss-gtsam") {
-      options.cudaLinearSolver = CudaLinearSolverOption::CudssFullNormal;
+      options.cudaLinearSolver = LinearSolverOption::CudssFullNormal;
       options.ordering = "gtsam";
     } else if (name == "full-normal-pcg") {
-      options.cudaLinearSolver = CudaLinearSolverOption::PcgFullNormal;
+      options.cudaLinearSolver = LinearSolverOption::PcgFullNormal;
       options.ordering = "auto";
     } else {
       throw std::runtime_error("unknown CUDA SFM configuration: " + name);
@@ -2103,11 +2103,11 @@ int RunMain(int argc, char* argv[]) {
 
 #if GTSAM_ENABLE_CUDA
     if (options.cudaStructureOnly) {
-      gtsam::cuda::CudaContext context;
-      const auto values = gtsam::cuda::PackSfmValues(db, context.stream());
-      const auto batch = gtsam::cuda::CudaSfmProjectionBatch::FromSfmData(
+      gtsam::cuda::Context context;
+      const auto values = gtsam::cuda::packSfmValues(db, context.stream());
+      const auto batch = gtsam::cuda::SfmProjectionBatch::fromSfmData(
           db, context.stream());
-      const auto csr = gtsam::cuda::CudaBalCsrStructure::FromSfmData(db);
+      const auto csr = gtsam::cuda::BalCsrStructure::fromSfmData(db);
       context.synchronize();
 
       std::cout << "CUDA BAL structure: cameras=" << batch.numCameras()
@@ -2227,7 +2227,7 @@ int RunMain(int argc, char* argv[]) {
 
 #if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
     if (options.cudaSparseLm) {
-      gtsam::cuda::CudaSparseLevenbergMarquardtParams sparseParams;
+      gtsam::cuda::SparseLevenbergMarquardtParams sparseParams;
       LevenbergMarquardtParams::SetCeresDefaults(&sparseParams);
       applyBalBenchmarkLmSettings(sparseParams);
       sparseParams.fallbackOnUnsupported = false;
@@ -2237,7 +2237,7 @@ int RunMain(int argc, char* argv[]) {
 
       const LevenbergMarquardtParams ordinaryParams = sparseParams;
       const auto specializedParams = makeBalCudaLmParams(
-          CudaLinearSolverOption::DenseSchur, CudaLmDefaults::Graph, true);
+          LinearSolverOption::DenseSchur, CudaLmDefaults::Graph, true);
 
       // Warm every implementation once before measuring so library, allocator,
       // and GPU first-use costs do not land asymmetrically in one CUDA row.

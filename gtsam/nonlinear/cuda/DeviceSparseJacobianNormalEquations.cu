@@ -1,6 +1,6 @@
 #include <cusparse.h>
-#include <gtsam/base/cuda/CudaDeviceArray.h>
-#include <gtsam/base/cuda/CudaPinnedHostArray.h>
+#include <gtsam/base/cuda/DeviceArray.h>
+#include <gtsam/base/cuda/PinnedHostArray.h>
 #include <gtsam/nonlinear/cuda/DevicePcgSolver.h>
 #include <gtsam/nonlinear/cuda/DeviceSparseJacobianNormalEquations.h>
 
@@ -36,7 +36,7 @@ constexpr double kAlpha = 1.0;
 constexpr double kBeta = 0.0;
 constexpr int kKernelBlockSize = 256;
 
-void CheckCuda(cudaError_t status, const char* stage) {
+void checkRuntimeStatus(cudaError_t status, const char* stage) {
   if (status == cudaSuccess) return;
   std::ostringstream message;
   message << "CUDA failure during " << stage << ": " << cudaGetErrorName(status)
@@ -44,7 +44,7 @@ void CheckCuda(cudaError_t status, const char* stage) {
   throw std::runtime_error(message.str());
 }
 
-void CheckCusparse(cusparseStatus_t status, const char* stage) {
+void checkCusparse(cusparseStatus_t status, const char* stage) {
   if (status == CUSPARSE_STATUS_SUCCESS) return;
   const char* name = cusparseGetErrorName(status);
   const char* detail = cusparseGetErrorString(status);
@@ -55,7 +55,7 @@ void CheckCusparse(cusparseStatus_t status, const char* stage) {
   throw std::runtime_error(message.str());
 }
 
-void ValidatePositivePlan(const SparseJacobianPlan& plan) {
+void validatePositivePlan(const SparseJacobianPlan& plan) {
   if (plan.rows() <= 0 || plan.columns() <= 0 || plan.nonzeros() <= 0) {
     throw std::invalid_argument(
         "DeviceSparseJacobianNormalEquations positive rows, columns, and "
@@ -63,7 +63,7 @@ void ValidatePositivePlan(const SparseJacobianPlan& plan) {
   }
 }
 
-void ValidateDiscoveredPattern(int rows, int expectedNonzeros,
+void validateDiscoveredPattern(int rows, int expectedNonzeros,
                                const std::vector<int>& rowPointers,
                                const std::vector<int>& columnIndices,
                                std::vector<int>* diagonalOffsets) {
@@ -103,7 +103,7 @@ void ValidateDiscoveredPattern(int rows, int expectedNonzeros,
   }
 }
 
-__global__ void GatherDiagonalKernel(const double* values,
+__global__ void gatherDiagonalKernel(const double* values,
                                      const int* diagonalOffsets, int rows,
                                      double* diagonal) {
   const int row = blockIdx.x * blockDim.x + threadIdx.x;
@@ -114,7 +114,7 @@ __global__ void GatherDiagonalKernel(const double* values,
 
 // PCG mode: diag(JᵀJ) is the vector of squared Jᵀ row norms, computed
 // without forming H.
-__global__ void ColumnSquaredNormsKernel(const int* jtRowPointers,
+__global__ void columnSquaredNormsKernel(const int* jtRowPointers,
                                          const double* jtValues, int columns,
                                          double* diagonal) {
   const int column = blockIdx.x * blockDim.x + threadIdx.x;
@@ -128,7 +128,7 @@ __global__ void ColumnSquaredNormsKernel(const int* jtRowPointers,
   diagonal[column] = sum;
 }
 
-__global__ void PrepareDampingKernel(const double* undampedDiagonal, int rows,
+__global__ void prepareDampingKernel(const double* undampedDiagonal, int rows,
                                      bool diagonalDamping, double minDiagonal,
                                      double maxDiagonal,
                                      double* dampingDiagonal) {
@@ -141,7 +141,7 @@ __global__ void PrepareDampingKernel(const double* undampedDiagonal, int rows,
   }
 }
 
-__global__ void ApplyDampingKernel(double* values, const int* diagonalOffsets,
+__global__ void applyDampingKernel(double* values, const int* diagonalOffsets,
                                    const double* undampedDiagonal,
                                    const double* dampingDiagonal, int rows,
                                    double lambda) {
@@ -152,7 +152,7 @@ __global__ void ApplyDampingKernel(double* values, const int* diagonalOffsets,
   }
 }
 
-__global__ void OldErrorTermsKernel(const double* rhs, int rows,
+__global__ void oldErrorTermsKernel(const double* rhs, int rows,
                                     double* terms) {
   const int row = blockIdx.x * blockDim.x + threadIdx.x;
   if (row < rows) {
@@ -160,7 +160,7 @@ __global__ void OldErrorTermsKernel(const double* rhs, int rows,
   }
 }
 
-__global__ void NewErrorTermsKernel(const double* jDelta, const double* rhs,
+__global__ void newErrorTermsKernel(const double* jDelta, const double* rhs,
                                     int rows, double* terms) {
   const int row = blockIdx.x * blockDim.x + threadIdx.x;
   if (row < rows) {
@@ -169,7 +169,7 @@ __global__ void NewErrorTermsKernel(const double* jDelta, const double* rhs,
   }
 }
 
-int KernelGridSize(int count) {
+int kernelGridSize(int count) {
   return count / kKernelBlockSize + (count % kKernelBlockSize != 0);
 }
 
@@ -182,14 +182,14 @@ struct DiscoveredPattern {
 struct DiscoveryResources {
   cusparseSpMatDescr_t h = nullptr;
   cusparseSpGEMMDescr_t reuse = nullptr;
-  CudaDeviceArray<int> rowPointers;
-  CudaDeviceArray<int> columnIndices;
-  CudaDeviceArray<double> values;
-  CudaDeviceArray<unsigned char> buffer1;
-  CudaDeviceArray<unsigned char> buffer2;
-  CudaDeviceArray<unsigned char> buffer3;
-  CudaDeviceArray<unsigned char> buffer4;
-  CudaDeviceArray<unsigned char> buffer5;
+  DeviceArray<int> rowPointers;
+  DeviceArray<int> columnIndices;
+  DeviceArray<double> values;
+  DeviceArray<unsigned char> buffer1;
+  DeviceArray<unsigned char> buffer2;
+  DeviceArray<unsigned char> buffer3;
+  DeviceArray<unsigned char> buffer4;
+  DeviceArray<unsigned char> buffer5;
 
   ~DiscoveryResources() {
     if (reuse) cusparseSpGEMM_destroyDescr(reuse);
@@ -230,40 +230,40 @@ struct DeviceSparseJacobianNormalEquations::Impl {
 
   DeviceNormalSolverBackend backend = DeviceNormalSolverBackend::Cudss;
   DeviceNormalSolverOptions solverOptions;
-  CudaLinearSolveStats linearStats;
+  LinearSolveStats linearStats;
   std::vector<int> appliedPermutation;
 
-  CudaDeviceArray<int> jRowPointers;
-  CudaDeviceArray<int> jColumnIndices;
-  CudaDeviceArray<double> jValues;
-  CudaDeviceArray<double> b;
-  CudaDeviceArray<int> jtRowPointers;
-  CudaDeviceArray<int> jtColumnIndices;
-  CudaDeviceArray<double> jtValues;
+  DeviceArray<int> jRowPointers;
+  DeviceArray<int> jColumnIndices;
+  DeviceArray<double> jValues;
+  DeviceArray<double> b;
+  DeviceArray<int> jtRowPointers;
+  DeviceArray<int> jtColumnIndices;
+  DeviceArray<double> jtValues;
   DeviceSparseNormalEquations normalEquations;
-  CudaDeviceArray<int> hDiagonalOffsets;
-  CudaDeviceArray<double> undampedDiagonal;
-  CudaDeviceArray<double> dampingDiagonal;
-  CudaDeviceArray<double> delta;
-  CudaDeviceArray<double> jDelta;
-  CudaDeviceArray<double> squaredTerms;
-  CudaDeviceArray<double> oldError;
-  CudaDeviceArray<double> newError;
+  DeviceArray<int> hDiagonalOffsets;
+  DeviceArray<double> undampedDiagonal;
+  DeviceArray<double> dampingDiagonal;
+  DeviceArray<double> delta;
+  DeviceArray<double> jDelta;
+  DeviceArray<double> squaredTerms;
+  DeviceArray<double> oldError;
+  DeviceArray<double> newError;
   std::optional<DevicePcgSolver> pcgSolver;
   // PCG mode stores g = Jᵀb here; cuDSS mode keeps it in
   // normalEquations.rhs().
-  CudaDeviceArray<double> gradient;
+  DeviceArray<double> gradient;
 
-  CudaDeviceArray<unsigned char> csr2cscBuffer;
-  CudaDeviceArray<unsigned char> spmvBuffer;
-  CudaDeviceArray<unsigned char> cubReductionBuffer;
-  CudaDeviceArray<unsigned char> reuseBuffer1;
-  CudaDeviceArray<unsigned char> reuseBuffer2;
-  CudaDeviceArray<unsigned char> reuseBuffer3;
-  CudaDeviceArray<unsigned char> reuseBuffer4;
-  CudaDeviceArray<unsigned char> reuseBuffer5;
-  CudaPinnedHostArray<double> downloadedDelta;
-  CudaPinnedHostArray<double> downloadedErrors;
+  DeviceArray<unsigned char> csr2cscBuffer;
+  DeviceArray<unsigned char> spmvBuffer;
+  DeviceArray<unsigned char> cubReductionBuffer;
+  DeviceArray<unsigned char> reuseBuffer1;
+  DeviceArray<unsigned char> reuseBuffer2;
+  DeviceArray<unsigned char> reuseBuffer3;
+  DeviceArray<unsigned char> reuseBuffer4;
+  DeviceArray<unsigned char> reuseBuffer5;
+  PinnedHostArray<double> downloadedDelta;
+  PinnedHostArray<double> downloadedErrors;
 
   bool numericsUploaded = false;
   bool formed = false;
@@ -335,11 +335,11 @@ struct DeviceSparseJacobianNormalEquations::Impl {
 
     PendingEventSpan span;
     span.accumulator = accumulator;
-    CheckCuda(cudaEventCreate(&span.begin), "profile start-event creation");
+    checkRuntimeStatus(cudaEventCreate(&span.begin), "profile start-event creation");
     const cudaError_t endStatus = cudaEventCreate(&span.end);
     if (endStatus != cudaSuccess) {
       cudaEventDestroy(span.begin);
-      CheckCuda(endStatus, "profile end-event creation");
+      checkRuntimeStatus(endStatus, "profile end-event creation");
     }
     try {
       pendingEventSpans.push_back(span);
@@ -360,7 +360,7 @@ struct DeviceSparseJacobianNormalEquations::Impl {
       cudaEventDestroy(pendingEventSpans[index].end);
       cudaEventDestroy(pendingEventSpans[index].begin);
       pendingEventSpans.pop_back();
-      CheckCuda(recordStatus, "profile start-event record");
+      checkRuntimeStatus(recordStatus, "profile start-event record");
     }
     return index;
   }
@@ -380,7 +380,7 @@ struct DeviceSparseJacobianNormalEquations::Impl {
       throw std::logic_error(
           "DeviceSparseJacobianNormalEquations invalid profile event span");
     }
-    CheckCuda(cudaEventRecord(pendingEventSpans[index].end, stream),
+    checkRuntimeStatus(cudaEventRecord(pendingEventSpans[index].end, stream),
               "profile end-event record");
     pendingEventSpans[index].ended = true;
   }
@@ -415,7 +415,7 @@ struct DeviceSparseJacobianNormalEquations::Impl {
     }
     pendingEventSpans.clear();
     if (firstFailure != cudaSuccess) {
-      CheckCuda(firstFailure, failureStage);
+      checkRuntimeStatus(firstFailure, failureStage);
     }
   }
 
@@ -534,11 +534,11 @@ struct DeviceSparseJacobianNormalEquations::Impl {
     jRowPointers.resize(plan.rowPointers().size());
     jColumnIndices.resize(plan.columnIndices().size());
     const size_t patternSpan = beginEventSpan(&profile.patternH2d);
-    CheckCuda(cudaMemcpyAsync(jRowPointers.data(), plan.rowPointers().data(),
+    checkRuntimeStatus(cudaMemcpyAsync(jRowPointers.data(), plan.rowPointers().data(),
                               sizeof(int) * plan.rowPointers().size(),
                               cudaMemcpyHostToDevice, stream),
               "J row-pointer upload");
-    CheckCuda(
+    checkRuntimeStatus(
         cudaMemcpyAsync(jColumnIndices.data(), plan.columnIndices().data(),
                         sizeof(int) * plan.columnIndices().size(),
                         cudaMemcpyHostToDevice, stream),
@@ -557,7 +557,7 @@ struct DeviceSparseJacobianNormalEquations::Impl {
     jtValues.resize(static_cast<size_t>(jacobianNonzeros));
 
     size_t csr2cscBytes = 0;
-    CheckCusparse(
+    checkCusparse(
         cusparseCsr2cscEx2_bufferSize(
             handle, jacobianRows, jacobianColumns, jacobianNonzeros,
             jValues.data(), jRowPointers.data(), jColumnIndices.data(),
@@ -568,13 +568,13 @@ struct DeviceSparseJacobianNormalEquations::Impl {
     csr2cscBuffer.resize(csr2cscBytes);
     transposeJacobian();
 
-    CheckCusparse(cusparseCreateCsr(&jDescriptor, jacobianRows, jacobianColumns,
+    checkCusparse(cusparseCreateCsr(&jDescriptor, jacobianRows, jacobianColumns,
                                     jacobianNonzeros, jRowPointers.data(),
                                     jColumnIndices.data(), jValues.data(),
                                     CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
                                     CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F),
                   "J descriptor creation");
-    CheckCusparse(
+    checkCusparse(
         cusparseCreateCsr(&jtDescriptor, jacobianColumns, jacobianRows,
                           jacobianNonzeros, jtRowPointers.data(),
                           jtColumnIndices.data(), jtValues.data(),
@@ -585,7 +585,7 @@ struct DeviceSparseJacobianNormalEquations::Impl {
   }
 
   void transposeJacobian() {
-    CheckCusparse(
+    checkCusparse(
         cusparseCsr2cscEx2(
             handle, jacobianRows, jacobianColumns, jacobianNonzeros,
             jValues.data(), jRowPointers.data(), jColumnIndices.data(),
@@ -621,23 +621,23 @@ DeviceSparseJacobianNormalEquations::Impl::discoverNormalPattern() {
     const size_t structureSpan = beginEventSpan(&profile.structureSetup);
     discovery.rowPointers.resize(static_cast<size_t>(jacobianColumns) + 1);
     discovery.rowPointers.zero(stream);
-    CheckCusparse(
+    checkCusparse(
         cusparseCreateCsr(&discovery.h, jacobianColumns, jacobianColumns, 0,
                           discovery.rowPointers.data(), nullptr, nullptr,
                           CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
                           CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F),
         "discovery H descriptor creation");
-    CheckCusparse(cusparseSpGEMM_createDescr(&discovery.reuse),
+    checkCusparse(cusparseSpGEMM_createDescr(&discovery.reuse),
                   "discovery reuse descriptor creation");
 
     size_t bufferSize1 = 0;
-    CheckCusparse(cusparseSpGEMMreuse_workEstimation(
+    checkCusparse(cusparseSpGEMMreuse_workEstimation(
                       handle, kNoTranspose, kNoTranspose, jtDescriptor,
                       jDescriptor, discovery.h, kSpGemmAlgorithm,
                       discovery.reuse, &bufferSize1, nullptr),
                   "discovery reuse work-estimation query");
     discovery.buffer1.resize(bufferSize1);
-    CheckCusparse(cusparseSpGEMMreuse_workEstimation(
+    checkCusparse(cusparseSpGEMMreuse_workEstimation(
                       handle, kNoTranspose, kNoTranspose, jtDescriptor,
                       jDescriptor, discovery.h, kSpGemmAlgorithm,
                       discovery.reuse, &bufferSize1, discovery.buffer1.data()),
@@ -646,7 +646,7 @@ DeviceSparseJacobianNormalEquations::Impl::discoverNormalPattern() {
     size_t bufferSize2 = 0;
     size_t bufferSize3 = 0;
     size_t bufferSize4 = 0;
-    CheckCusparse(
+    checkCusparse(
         cusparseSpGEMMreuse_nnz(
             handle, kNoTranspose, kNoTranspose, jtDescriptor, jDescriptor,
             discovery.h, kSpGemmAlgorithm, discovery.reuse, &bufferSize2,
@@ -655,7 +655,7 @@ DeviceSparseJacobianNormalEquations::Impl::discoverNormalPattern() {
     discovery.buffer2.resize(bufferSize2);
     discovery.buffer3.resize(bufferSize3);
     discovery.buffer4.resize(bufferSize4);
-    CheckCusparse(
+    checkCusparse(
         cusparseSpGEMMreuse_nnz(
             handle, kNoTranspose, kNoTranspose, jtDescriptor, jDescriptor,
             discovery.h, kSpGemmAlgorithm, discovery.reuse, &bufferSize2,
@@ -666,7 +666,7 @@ DeviceSparseJacobianNormalEquations::Impl::discoverNormalPattern() {
     int64_t discoveredRows = 0;
     int64_t discoveredColumns = 0;
     int64_t discoveredNonzeros = 0;
-    CheckCusparse(cusparseSpMatGetSize(discovery.h, &discoveredRows,
+    checkCusparse(cusparseSpMatGetSize(discovery.h, &discoveredRows,
                                        &discoveredColumns, &discoveredNonzeros),
                   "discovery H size query");
     if (discoveredRows != jacobianColumns ||
@@ -683,19 +683,19 @@ DeviceSparseJacobianNormalEquations::Impl::discoverNormalPattern() {
     discovery.columnIndices.resize(static_cast<size_t>(hNonzeros));
     discovery.values.resize(static_cast<size_t>(hNonzeros));
     discovery.values.zero(stream);
-    CheckCusparse(cusparseCsrSetPointers(
+    checkCusparse(cusparseCsrSetPointers(
                       discovery.h, discovery.rowPointers.data(),
                       discovery.columnIndices.data(), discovery.values.data()),
                   "discovery H pointer binding before reuse-copy");
 
     size_t bufferSize5 = 0;
-    CheckCusparse(cusparseSpGEMMreuse_copy(
+    checkCusparse(cusparseSpGEMMreuse_copy(
                       handle, kNoTranspose, kNoTranspose, jtDescriptor,
                       jDescriptor, discovery.h, kSpGemmAlgorithm,
                       discovery.reuse, &bufferSize5, nullptr),
                   "discovery reuse-copy workspace query");
     discovery.buffer5.resize(bufferSize5);
-    CheckCusparse(cusparseSpGEMMreuse_copy(
+    checkCusparse(cusparseSpGEMMreuse_copy(
                       handle, kNoTranspose, kNoTranspose, jtDescriptor,
                       jDescriptor, discovery.h, kSpGemmAlgorithm,
                       discovery.reuse, &bufferSize5, discovery.buffer5.data()),
@@ -705,12 +705,12 @@ DeviceSparseJacobianNormalEquations::Impl::discoverNormalPattern() {
     pattern.rowPointers.resize(static_cast<size_t>(jacobianColumns) + 1);
     pattern.columnIndices.resize(static_cast<size_t>(hNonzeros));
     const size_t setupDownloadSpan = beginEventSpan(&profile.setupD2h);
-    CheckCuda(cudaMemcpyAsync(pattern.rowPointers.data(),
+    checkRuntimeStatus(cudaMemcpyAsync(pattern.rowPointers.data(),
                               discovery.rowPointers.data(),
                               sizeof(int) * pattern.rowPointers.size(),
                               cudaMemcpyDeviceToHost, stream),
               "discovery H row-offset download");
-    CheckCuda(cudaMemcpyAsync(pattern.columnIndices.data(),
+    checkRuntimeStatus(cudaMemcpyAsync(pattern.columnIndices.data(),
                               discovery.columnIndices.data(),
                               sizeof(int) * pattern.columnIndices.size(),
                               cudaMemcpyDeviceToHost, stream),
@@ -718,9 +718,9 @@ DeviceSparseJacobianNormalEquations::Impl::discoverNormalPattern() {
     profile.setupD2hBytes += sizeof(int) * (pattern.rowPointers.size() +
                                             pattern.columnIndices.size());
     endEventSpan(setupDownloadSpan);
-    CheckCuda(cudaStreamSynchronize(stream),
+    checkRuntimeStatus(cudaStreamSynchronize(stream),
               "discovery H pattern download synchronization");
-    ValidateDiscoveredPattern(jacobianColumns, hNonzeros, pattern.rowPointers,
+    validateDiscoveredPattern(jacobianColumns, hNonzeros, pattern.rowPointers,
                               pattern.columnIndices, &pattern.diagonalOffsets);
     return pattern;
   } catch (...) {
@@ -751,7 +751,7 @@ void DeviceSparseJacobianNormalEquations::Impl::createStableNormalStorage(
 
   hDiagonalOffsets.resize(discovered.diagonalOffsets.size());
   const size_t diagonalPatternSpan = beginEventSpan(&profile.patternH2d);
-  CheckCuda(cudaMemcpyAsync(hDiagonalOffsets.data(),
+  checkRuntimeStatus(cudaMemcpyAsync(hDiagonalOffsets.data(),
                             discovered.diagonalOffsets.data(),
                             sizeof(int) * discovered.diagonalOffsets.size(),
                             cudaMemcpyHostToDevice, stream),
@@ -769,23 +769,23 @@ void DeviceSparseJacobianNormalEquations::Impl::createStableNormalStorage(
   // beta is zero, but NVIDIA's reuse sample initializes C before binding it.
   normalEquations.zero(stream);
 
-  CheckCusparse(cusparseCreateCsr(
+  checkCusparse(cusparseCreateCsr(
                     &hDescriptor, jacobianColumns, jacobianColumns, 0,
                     const_cast<int*>(normalEquations.rowPointers().data()),
                     nullptr, nullptr, CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
                     CUSPARSE_INDEX_BASE_ZERO, CUDA_R_64F),
                 "stable H descriptor creation");
-  CheckCusparse(cusparseSpGEMM_createDescr(&reuseDescriptor),
+  checkCusparse(cusparseSpGEMM_createDescr(&reuseDescriptor),
                 "stable reuse descriptor creation");
 
   size_t bufferSize1 = 0;
-  CheckCusparse(cusparseSpGEMMreuse_workEstimation(
+  checkCusparse(cusparseSpGEMMreuse_workEstimation(
                     handle, kNoTranspose, kNoTranspose, jtDescriptor,
                     jDescriptor, hDescriptor, kSpGemmAlgorithm, reuseDescriptor,
                     &bufferSize1, nullptr),
                 "stable reuse work-estimation query");
   reuseBuffer1.resize(bufferSize1);
-  CheckCusparse(cusparseSpGEMMreuse_workEstimation(
+  checkCusparse(cusparseSpGEMMreuse_workEstimation(
                     handle, kNoTranspose, kNoTranspose, jtDescriptor,
                     jDescriptor, hDescriptor, kSpGemmAlgorithm, reuseDescriptor,
                     &bufferSize1, reuseBuffer1.data()),
@@ -794,7 +794,7 @@ void DeviceSparseJacobianNormalEquations::Impl::createStableNormalStorage(
   size_t bufferSize2 = 0;
   size_t bufferSize3 = 0;
   size_t bufferSize4 = 0;
-  CheckCusparse(
+  checkCusparse(
       cusparseSpGEMMreuse_nnz(handle, kNoTranspose, kNoTranspose, jtDescriptor,
                               jDescriptor, hDescriptor, kSpGemmAlgorithm,
                               reuseDescriptor, &bufferSize2, nullptr,
@@ -803,7 +803,7 @@ void DeviceSparseJacobianNormalEquations::Impl::createStableNormalStorage(
   reuseBuffer2.resize(bufferSize2);
   reuseBuffer3.resize(bufferSize3);
   reuseBuffer4.resize(bufferSize4);
-  CheckCusparse(cusparseSpGEMMreuse_nnz(
+  checkCusparse(cusparseSpGEMMreuse_nnz(
                     handle, kNoTranspose, kNoTranspose, jtDescriptor,
                     jDescriptor, hDescriptor, kSpGemmAlgorithm, reuseDescriptor,
                     &bufferSize2, reuseBuffer2.data(), &bufferSize3,
@@ -813,7 +813,7 @@ void DeviceSparseJacobianNormalEquations::Impl::createStableNormalStorage(
   int64_t stableRows = 0;
   int64_t stableColumns = 0;
   int64_t stableNonzeros = 0;
-  CheckCusparse(cusparseSpMatGetSize(hDescriptor, &stableRows, &stableColumns,
+  checkCusparse(cusparseSpMatGetSize(hDescriptor, &stableRows, &stableColumns,
                                      &stableNonzeros),
                 "stable H size query");
   if (stableRows != jacobianColumns || stableColumns != jacobianColumns ||
@@ -825,7 +825,7 @@ void DeviceSparseJacobianNormalEquations::Impl::createStableNormalStorage(
 
   // This is the final H descriptor's only post-creation pointer binding. It
   // occurs before reuse-copy and is never changed afterward.
-  CheckCusparse(
+  checkCusparse(
       cusparseCsrSetPointers(
           hDescriptor, const_cast<int*>(normalEquations.rowPointers().data()),
           const_cast<int*>(normalEquations.colIndices().data()),
@@ -833,13 +833,13 @@ void DeviceSparseJacobianNormalEquations::Impl::createStableNormalStorage(
       "stable H pointer binding before reuse-copy");
 
   size_t bufferSize5 = 0;
-  CheckCusparse(
+  checkCusparse(
       cusparseSpGEMMreuse_copy(handle, kNoTranspose, kNoTranspose, jtDescriptor,
                                jDescriptor, hDescriptor, kSpGemmAlgorithm,
                                reuseDescriptor, &bufferSize5, nullptr),
       "stable reuse-copy workspace query");
   reuseBuffer5.resize(bufferSize5);
-  CheckCusparse(cusparseSpGEMMreuse_copy(handle, kNoTranspose, kNoTranspose,
+  checkCusparse(cusparseSpGEMMreuse_copy(handle, kNoTranspose, kNoTranspose,
                                          jtDescriptor, jDescriptor, hDescriptor,
                                          kSpGemmAlgorithm, reuseDescriptor,
                                          &bufferSize5, reuseBuffer5.data()),
@@ -852,12 +852,12 @@ void DeviceSparseJacobianNormalEquations::Impl::createStableNormalStorage(
   stableColumnIndices.resize(discovered.columnIndices.size());
   try {
     const size_t setupDownloadSpan = beginEventSpan(&profile.setupD2h);
-    CheckCuda(cudaMemcpyAsync(stableRowPointers.data(),
+    checkRuntimeStatus(cudaMemcpyAsync(stableRowPointers.data(),
                               normalEquations.rowPointers().data(),
                               sizeof(int) * stableRowPointers.size(),
                               cudaMemcpyDeviceToHost, stream),
               "stable H row-offset download");
-    CheckCuda(cudaMemcpyAsync(stableColumnIndices.data(),
+    checkRuntimeStatus(cudaMemcpyAsync(stableColumnIndices.data(),
                               normalEquations.colIndices().data(),
                               sizeof(int) * stableColumnIndices.size(),
                               cudaMemcpyDeviceToHost, stream),
@@ -865,7 +865,7 @@ void DeviceSparseJacobianNormalEquations::Impl::createStableNormalStorage(
     profile.setupD2hBytes +=
         sizeof(int) * (stableRowPointers.size() + stableColumnIndices.size());
     endEventSpan(setupDownloadSpan);
-    CheckCuda(cudaStreamSynchronize(stream),
+    checkRuntimeStatus(cudaStreamSynchronize(stream),
               "stable H pattern download synchronization");
   } catch (...) {
     // Keep the host destinations alive until any successful first copy ends.
@@ -902,30 +902,30 @@ void DeviceSparseJacobianNormalEquations::Impl::createSpmvResources() {
   oldError.zero(stream);
   newError.zero(stream);
 
-  CheckCusparse(
+  checkCusparse(
       cusparseCreateDnVec(&bDescriptor, jacobianRows, b.data(), CUDA_R_64F),
       "b dense-vector descriptor creation");
   double* gStorage = backend == DeviceNormalSolverBackend::Cudss
                          ? normalEquations.rhs().data()
                          : gradient.data();
-  CheckCusparse(cusparseCreateDnVec(&gDescriptor, jacobianColumns, gStorage,
+  checkCusparse(cusparseCreateDnVec(&gDescriptor, jacobianColumns, gStorage,
                                     CUDA_R_64F),
                 "g dense-vector descriptor creation");
-  CheckCusparse(cusparseCreateDnVec(&deltaDescriptor, jacobianColumns,
+  checkCusparse(cusparseCreateDnVec(&deltaDescriptor, jacobianColumns,
                                     delta.data(), CUDA_R_64F),
                 "delta dense-vector descriptor creation");
-  CheckCusparse(cusparseCreateDnVec(&jDeltaDescriptor, jacobianRows,
+  checkCusparse(cusparseCreateDnVec(&jDeltaDescriptor, jacobianRows,
                                     jDelta.data(), CUDA_R_64F),
                 "J*delta dense-vector descriptor creation");
 
   size_t transposeMultiplyBytes = 0;
-  CheckCusparse(
+  checkCusparse(
       cusparseSpMV_bufferSize(handle, kNoTranspose, &kAlpha, jtDescriptor,
                               bDescriptor, &kBeta, gDescriptor, CUDA_R_64F,
                               kSpMvAlgorithm, &transposeMultiplyBytes),
       "JT*b SpMV workspace query");
   size_t forwardMultiplyBytes = 0;
-  CheckCusparse(cusparseSpMV_bufferSize(handle, kNoTranspose, &kAlpha,
+  checkCusparse(cusparseSpMV_bufferSize(handle, kNoTranspose, &kAlpha,
                                         jDescriptor, deltaDescriptor, &kBeta,
                                         jDeltaDescriptor, CUDA_R_64F,
                                         kSpMvAlgorithm, &forwardMultiplyBytes),
@@ -933,7 +933,7 @@ void DeviceSparseJacobianNormalEquations::Impl::createSpmvResources() {
   spmvBuffer.resize(std::max(transposeMultiplyBytes, forwardMultiplyBytes));
 
   size_t cubReductionBytes = 0;
-  CheckCuda(
+  checkRuntimeStatus(
       cub::DeviceReduce::Sum(nullptr, cubReductionBytes, squaredTerms.data(),
                              oldError.data(), jacobianRows, stream),
       "CUB model-error reduction workspace query");
@@ -963,9 +963,9 @@ void DeviceSparseJacobianNormalEquations::Impl::setupPcgStorage() {
 void DeviceSparseJacobianNormalEquations::Impl::setup(
     const SparseJacobianPlan& plan) {
   try {
-    CheckCusparse(cusparseCreate(&handle), "handle creation");
-    CheckCusparse(cusparseSetStream(handle, stream), "fixed stream binding");
-    CheckCusparse(cusparseSetPointerMode(handle, CUSPARSE_POINTER_MODE_HOST),
+    checkCusparse(cusparseCreate(&handle), "handle creation");
+    checkCusparse(cusparseSetStream(handle, stream), "fixed stream binding");
+    checkCusparse(cusparseSetPointerMode(handle, CUSPARSE_POINTER_MODE_HOST),
                   "host pointer-mode selection");
 
     createJacobianStorage(plan);
@@ -979,7 +979,7 @@ void DeviceSparseJacobianNormalEquations::Impl::setup(
     capturePointers();
     validatePointers();
     if (collectProfile) {
-      CheckCuda(cudaStreamSynchronize(stream),
+      checkRuntimeStatus(cudaStreamSynchronize(stream),
                 "profiled persistent setup synchronization");
       harvestPendingEvents();
     }
@@ -1012,11 +1012,11 @@ void DeviceSparseJacobianNormalEquations::Impl::upload(
   attemptReady = false;
   try {
     const size_t numericUploadSpan = beginEventSpan(&profile.numericH2d);
-    CheckCuda(cudaMemcpyAsync(jValues.data(), host.valuesData(),
+    checkRuntimeStatus(cudaMemcpyAsync(jValues.data(), host.valuesData(),
                               sizeof(double) * host.valuesSize(),
                               cudaMemcpyHostToDevice, stream),
               "J values upload");
-    CheckCuda(cudaMemcpyAsync(b.data(), host.rhsData(),
+    checkRuntimeStatus(cudaMemcpyAsync(b.data(), host.rhsData(),
                               sizeof(double) * host.rhsSize(),
                               cudaMemcpyHostToDevice, stream),
               "b upload");
@@ -1051,7 +1051,7 @@ void DeviceSparseJacobianNormalEquations::Impl::form(
     if (backend == DeviceNormalSolverBackend::Cudss) {
       stageSpan = beginEventSpan(&profile.normalJtJ);
 #if GTSAM_CUSPARSE_HAS_SPGEMM_REUSE
-      CheckCusparse(
+      checkCusparse(
           cusparseSpGEMMreuse_compute(handle, kNoTranspose, kNoTranspose,
                                       &kAlpha, jtDescriptor, jDescriptor,
                                       &kBeta, hDescriptor, CUDA_R_64F,
@@ -1065,7 +1065,7 @@ void DeviceSparseJacobianNormalEquations::Impl::form(
     }
 
     stageSpan = beginEventSpan(&profile.normalJtb);
-    CheckCusparse(cusparseSpMV(handle, kNoTranspose, &kAlpha, jtDescriptor,
+    checkCusparse(cusparseSpMV(handle, kNoTranspose, &kAlpha, jtDescriptor,
                                bDescriptor, &kBeta, gDescriptor, CUDA_R_64F,
                                kSpMvAlgorithm, spmvBuffer.data()),
                   "JT*b SpMV");
@@ -1073,19 +1073,19 @@ void DeviceSparseJacobianNormalEquations::Impl::form(
 
     if (backend == DeviceNormalSolverBackend::Cudss) {
       stageSpan = beginEventSpan(&profile.diagonalExtraction);
-      GatherDiagonalKernel<<<KernelGridSize(jacobianColumns), kKernelBlockSize,
+      gatherDiagonalKernel<<<kernelGridSize(jacobianColumns), kKernelBlockSize,
                              0, stream>>>(
           normalEquations.values().data(), hDiagonalOffsets.data(),
           jacobianColumns, undampedDiagonal.data());
-      CheckCuda(cudaGetLastError(), "undamped H diagonal gather launch");
+      checkRuntimeStatus(cudaGetLastError(), "undamped H diagonal gather launch");
       endEventSpan(stageSpan);
     } else {
       stageSpan = beginEventSpan(&profile.diagonalExtraction);
-      ColumnSquaredNormsKernel<<<KernelGridSize(jacobianColumns),
+      columnSquaredNormsKernel<<<kernelGridSize(jacobianColumns),
                                  kKernelBlockSize, 0, stream>>>(
           jtRowPointers.data(), jtValues.data(), jacobianColumns,
           undampedDiagonal.data());
-      CheckCuda(cudaGetLastError(), "undamped diagonal column-norm launch");
+      checkRuntimeStatus(cudaGetLastError(), "undamped diagonal column-norm launch");
       endEventSpan(stageSpan);
       pcgSolver->buildPreconditioner(jtValues, stream);
       if (collectProfile) {
@@ -1095,12 +1095,12 @@ void DeviceSparseJacobianNormalEquations::Impl::form(
     }
 
     stageSpan = beginEventSpan(&profile.oldModelError);
-    OldErrorTermsKernel<<<KernelGridSize(jacobianRows), kKernelBlockSize, 0,
+    oldErrorTermsKernel<<<kernelGridSize(jacobianRows), kKernelBlockSize, 0,
                           stream>>>(b.data(), jacobianRows,
                                     squaredTerms.data());
-    CheckCuda(cudaGetLastError(), "old model-error terms launch");
+    checkRuntimeStatus(cudaGetLastError(), "old model-error terms launch");
     size_t reductionBytes = cubReductionBuffer.size();
-    CheckCuda(cub::DeviceReduce::Sum(cubReductionBuffer.data(), reductionBytes,
+    checkRuntimeStatus(cub::DeviceReduce::Sum(cubReductionBuffer.data(), reductionBytes,
                                      squaredTerms.data(), oldError.data(),
                                      jacobianRows, stream),
               "old model-error reduction");
@@ -1133,11 +1133,11 @@ void DeviceSparseJacobianNormalEquations::Impl::prepare(
   attemptReady = false;
   try {
     const size_t dampingSpan = beginEventSpan(&profile.dampingPreparation);
-    PrepareDampingKernel<<<KernelGridSize(jacobianColumns), kKernelBlockSize, 0,
+    prepareDampingKernel<<<kernelGridSize(jacobianColumns), kKernelBlockSize, 0,
                            stream>>>(undampedDiagonal.data(), jacobianColumns,
                                      diagonalDamping, minDiagonal, maxDiagonal,
                                      dampingDiagonal.data());
-    CheckCuda(cudaGetLastError(), "damping diagonal preparation launch");
+    checkRuntimeStatus(cudaGetLastError(), "damping diagonal preparation launch");
     endEventSpan(dampingSpan);
     dampingPrepared = true;
   } catch (...) {
@@ -1162,7 +1162,7 @@ void DeviceSparseJacobianNormalEquations::Impl::analyzeSystem(
     // analysisCount() semantics intact.
     analyzed = true;
     ++completedAnalysisCount;
-    linearStats.backend = CudaLinearSolverType::Pcg;
+    linearStats.backend = LinearSolverType::Pcg;
     ++linearStats.analysisCount;
     return;
   }
@@ -1186,12 +1186,12 @@ void DeviceSparseJacobianNormalEquations::Impl::applyExplicitDamping(
         "explicit damping requires a formed system and prepared damping");
   }
   const size_t stageSpan = beginEventSpan(&profile.dampingApplication);
-  ApplyDampingKernel<<<KernelGridSize(jacobianColumns), kKernelBlockSize, 0,
+  applyDampingKernel<<<kernelGridSize(jacobianColumns), kKernelBlockSize, 0,
                        stream>>>(
       normalEquations.values().data(), hDiagonalOffsets.data(),
       undampedDiagonal.data(), dampingDiagonal.data(), jacobianColumns,
       lambda);
-  CheckCuda(cudaGetLastError(), "damped H diagonal write launch");
+  checkRuntimeStatus(cudaGetLastError(), "damped H diagonal write launch");
   endEventSpan(stageSpan);
   attemptReady = false;
 }
@@ -1201,16 +1201,16 @@ void DeviceSparseJacobianNormalEquations::Impl::evaluateSolvedDelta(
   validateStream(suppliedStream);
   validatePointers();
   const size_t newErrorSpan = beginEventSpan(&profile.newModelError);
-  CheckCusparse(cusparseSpMV(handle, kNoTranspose, &kAlpha, jDescriptor,
+  checkCusparse(cusparseSpMV(handle, kNoTranspose, &kAlpha, jDescriptor,
                              deltaDescriptor, &kBeta, jDeltaDescriptor,
                              CUDA_R_64F, kSpMvAlgorithm, spmvBuffer.data()),
                 "J*delta SpMV");
-  NewErrorTermsKernel<<<KernelGridSize(jacobianRows), kKernelBlockSize, 0,
+  newErrorTermsKernel<<<kernelGridSize(jacobianRows), kKernelBlockSize, 0,
                         stream>>>(jDelta.data(), b.data(), jacobianRows,
                                   squaredTerms.data());
-  CheckCuda(cudaGetLastError(), "new model-error terms launch");
+  checkRuntimeStatus(cudaGetLastError(), "new model-error terms launch");
   size_t reductionBytes = cubReductionBuffer.size();
-  CheckCuda(cub::DeviceReduce::Sum(cubReductionBuffer.data(), reductionBytes,
+  checkRuntimeStatus(cub::DeviceReduce::Sum(cubReductionBuffer.data(), reductionBytes,
                                    squaredTerms.data(), newError.data(),
                                    jacobianRows, stream),
             "new model-error reduction");
@@ -1247,7 +1247,7 @@ void DeviceSparseJacobianNormalEquations::Impl::solveAttempt(
   try {
     if (backend == DeviceNormalSolverBackend::Cudss) {
       throw std::logic_error(
-          "direct solve must be dispatched by CudaLinearSolverSession");
+          "direct solve must be dispatched by LinearSolverSession");
     } else {
       pcgSolver->solve(lambda, gradient, dampingDiagonal, &delta, stream);
       const DevicePcgProfile& pcgProfile = pcgSolver->profile();
@@ -1255,7 +1255,7 @@ void DeviceSparseJacobianNormalEquations::Impl::solveAttempt(
       profile.pcgIterationsTotal = pcgProfile.iterationsTotal;
       profile.pcgSolveCount = pcgProfile.solveCount;
       profile.pcgMaxIterationHits = pcgProfile.maxIterationHits;
-      linearStats.backend = CudaLinearSolverType::Pcg;
+      linearStats.backend = LinearSolverType::Pcg;
       linearStats.solveCount = pcgProfile.solveCount;
       linearStats.pcgIterationsTotal = pcgProfile.iterationsTotal;
       linearStats.pcgMaxIterationHits = pcgProfile.maxIterationHits;
@@ -1282,21 +1282,21 @@ DeviceSparseJacobianNormalEquations::Impl::downloadAttempt(
 
   try {
     const size_t attemptDownloadSpan = beginEventSpan(&profile.attemptD2h);
-    CheckCuda(
+    checkRuntimeStatus(
         cudaMemcpyAsync(downloadedDelta.data(), delta.data(),
                         sizeof(double) * static_cast<size_t>(jacobianColumns),
                         cudaMemcpyDeviceToHost, stream),
         "attempt delta download");
-    CheckCuda(cudaMemcpyAsync(downloadedErrors.data(), oldError.data(),
+    checkRuntimeStatus(cudaMemcpyAsync(downloadedErrors.data(), oldError.data(),
                               sizeof(double), cudaMemcpyDeviceToHost, stream),
               "old model-error download");
-    CheckCuda(cudaMemcpyAsync(downloadedErrors.data() + 1, newError.data(),
+    checkRuntimeStatus(cudaMemcpyAsync(downloadedErrors.data() + 1, newError.data(),
                               sizeof(double), cudaMemcpyDeviceToHost, stream),
               "new model-error download");
     profile.attemptD2hBytes +=
         sizeof(double) * (static_cast<size_t>(jacobianColumns) + 2);
     endEventSpan(attemptDownloadSpan);
-    CheckCuda(cudaStreamSynchronize(stream),
+    checkRuntimeStatus(cudaStreamSynchronize(stream),
               "attempt result download synchronization");
     if (collectProfile) harvestPendingEvents();
   } catch (...) {
@@ -1365,8 +1365,8 @@ DeviceSparseJacobianNormalEquations::preflightCapability(
 void DeviceSparseJacobianNormalEquations::initialize(
     const SparseJacobianPlan& plan, cudaStream_t stream, bool collectProfile,
     const DeviceNormalSolverOptions& solverOptions) {
-  // Validate the host plan before capability checks or any CUDA call.
-  ValidatePositivePlan(plan);
+  // validate the host plan before capability checks or any CUDA call.
+  validatePositivePlan(plan);
   const DeviceSparseNormalEquationCapability capability =
       preflightCapability(solverOptions.backend);
   if (!capability.supported) {
@@ -1459,7 +1459,7 @@ void DeviceSparseJacobianNormalEquations::prepareOperatorSystem(
   impl_->attemptReady = false;
 }
 
-const CudaLinearOperator&
+const LinearOperator&
 DeviceSparseJacobianNormalEquations::linearOperator() const {
   if (!impl_ || impl_->backend != DeviceNormalSolverBackend::Pcg ||
       !impl_->pcgSolver) {
@@ -1469,7 +1469,7 @@ DeviceSparseJacobianNormalEquations::linearOperator() const {
   return impl_->pcgSolver->linearOperator();
 }
 
-const CudaPreconditioner&
+const Preconditioner&
 DeviceSparseJacobianNormalEquations::preconditioner() const {
   if (!impl_ || impl_->backend != DeviceNormalSolverBackend::Pcg ||
       !impl_->pcgSolver) {
@@ -1516,9 +1516,9 @@ DeviceSparseJacobianNormalEquations::profile() const {
   return impl_ ? impl_->profile : emptyProfile;
 }
 
-const CudaLinearSolveStats&
+const LinearSolveStats&
 DeviceSparseJacobianNormalEquations::linearSolveStats() const {
-  static const CudaLinearSolveStats emptyStats;
+  static const LinearSolveStats emptyStats;
   return impl_ ? impl_->linearStats : emptyStats;
 }
 
@@ -1541,7 +1541,7 @@ DeviceSparseJacobianNormalEquations::mutableSystem() {
   return impl_->normalEquations;
 }
 
-CudaDeviceArray<double>& DeviceSparseJacobianNormalEquations::deviceDelta() {
+DeviceArray<double>& DeviceSparseJacobianNormalEquations::deviceDelta() {
   if (!impl_) {
     throw std::logic_error(
         "DeviceSparseJacobianNormalEquations is not initialized");

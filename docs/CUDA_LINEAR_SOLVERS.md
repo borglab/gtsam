@@ -12,15 +12,15 @@ letting the general optimizer and SFM use the same solver lifecycle and stats.
   Jacobian. It owns factor evaluation, damping policy, retraction, nonlinear
   error, and model acceptance. Both its cuDSS normal-equation system and its
   matrix-free `J^T J + lambda D` operator dispatch through
-  `CudaLinearSolverSession`.
+  `LinearSolverSession`.
 - SFM CUDA LM owns projection linearization, Schur/full-normal construction,
-  point recovery, retraction, and LM acceptance. `CudaSfmSchurProblem` builds
+  point recovery, retraction, and LM acceptance. `SfmSchurProblem` builds
   and retains undamped camera `U`, point `V`, camera-point `W`, and gradient
   blocks once per outer iteration; dense, sparse, implicit, and recovery paths
   rebuild only their lambda-dependent state on retries.
 - The shared layer owns dense cuSOLVER Cholesky, sparse cuDSS analysis/factor/
   solve, generic PCG recurrence, explicit sparse-SPD matvec/Jacobi support,
-  backend validation, GTSAM Ordering expansion, and `CudaLinearSolveStats`.
+  backend validation, GTSAM Ordering expansion, and `LinearSolveStats`.
 
 ## SFM capability matrix
 
@@ -63,7 +63,7 @@ selection axis.
 ## GTSAM ordering and cuDSS
 
 An `Ordering` contains variable keys, while cuDSS expects scalar indices.
-`CompileCudaScalarPermutation` validates that every variable appears exactly
+`compileScalarPermutation` validates that every variable appears exactly
 once and expands each key using its block dimension. A camera key expands to
 nine consecutive scalars and an SFM point to three. Schur ordering contains
 only cameras; full-normal ordering contains cameras and points.
@@ -80,7 +80,7 @@ A solver session is created once per optimizer run. Stable sparse patterns and
 ordering are analyzed once, while numerical factorization/solve occurs once per
 lambda attempt. Dense analysis caches the dimension. PCG allocates recurrence
 storage once and reports convergence, accumulated iterations, and maximum-
-iteration hits. `CudaLinearSolveStats` records backend, ordering application,
+iteration hits. `LinearSolveStats` records backend, ordering application,
 analysis/factorization/solve counts, aggregate PCG cap/breakdown counts,
 convergence-check D2H bytes/time, and backend timings. Frontend assembly,
 transfers, model evaluation, and retraction stay in optimizer-specific profiles
@@ -141,7 +141,7 @@ requires the last solve to converge, and rejects representation/order metadata
 that does not match the requested configuration. PCG convergence polling is
 included in reported D2H totals. The GTSAM-ordering rows
 compute COLAMD at key/block level, expand it to scalar indices through
-`CompileCudaScalarPermutation`, and verify that cuDSS retained the supplied
+`compileScalarPermutation`, and verify that cuDSS retained the supplied
 permutation.
 
 The named PCG benchmark rows use a correctness-oriented iterative profile
@@ -149,7 +149,7 @@ The named PCG benchmark rows use a correctness-oriented iterative profile
 requires 0.1% final-objective agreement). The runners reject any row in which
 an inner solve reaches that cap, breaks down, or the last solve does not
 converge. These are benchmark controls, not changes to the public
-`CudaPcgOptions` defaults. An inexact PCG solve can legitimately take a
+`PcgOptions` defaults. An inexact PCG solve can legitimately take a
 different LM trajectory, so comparing it with the direct row at the direct
 solver's `1e-8` objective tolerance is not a meaningful pass/fail gate.
 

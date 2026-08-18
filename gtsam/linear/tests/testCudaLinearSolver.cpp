@@ -1,10 +1,10 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/linear/cuda/CudaBlockOrdering.h>
-#include <gtsam/linear/cuda/CudaDenseCholeskySolver.h>
-#include <gtsam/linear/cuda/CudaLinearSolver.h>
-#include <gtsam/linear/cuda/CudaPcgSolver.h>
+#include <gtsam/linear/cuda/BlockOrdering.h>
+#include <gtsam/linear/cuda/DenseCholeskySolver.h>
+#include <gtsam/linear/cuda/LinearSolver.h>
+#include <gtsam/linear/cuda/PcgSolver.h>
 #include <gtsam/linear/cuda/CudssSpdSolver.h>
 #include <gtsam/linear/cuda/DeviceSparseSpdSystem.h>
 
@@ -18,7 +18,7 @@ using gtsam::symbol_shorthand::X;
 
 namespace {
 
-class TwoByTwoOperator final : public CudaLinearOperator {
+class TwoByTwoOperator final : public LinearOperator {
  public:
   int dimension() const override { return 2; }
   void apply(const double* input, double* output,
@@ -35,7 +35,7 @@ class TwoByTwoOperator final : public CudaLinearOperator {
   }
 };
 
-class IdentityPreconditioner final : public CudaPreconditioner {
+class IdentityPreconditioner final : public Preconditioner {
  public:
   int dimension() const override { return 2; }
   void apply(const double* input, double* output,
@@ -47,17 +47,17 @@ class IdentityPreconditioner final : public CudaPreconditioner {
 
 }  // namespace
 
-TEST(CudaPcgSolver, SolvesThroughGenericOperatorInterface) {
-  CudaPcgOptions options;
+TEST(PcgSolver, SolvesThroughGenericOperatorInterface) {
+  PcgOptions options;
   options.maxIterations = 2;
   options.relativeTolerance = 1e-12;
   options.convergenceCheckInterval = 2;
   options.warmStart = false;
-  CudaPcgSolver solver;
+  PcgSolver solver;
   solver.initialize(2, options);
 
-  CudaDeviceArray<double> rhs;
-  CudaDeviceArray<double> solution(2);
+  DeviceArray<double> rhs;
+  DeviceArray<double> solution(2);
   rhs.upload({1.0, 2.0});
   solution.zero();
   solver.solve(TwoByTwoOperator{}, IdentityPreconditioner{}, rhs.data(),
@@ -77,18 +77,18 @@ TEST(CudaPcgSolver, SolvesThroughGenericOperatorInterface) {
   LONGS_EQUAL(0, solver.stats().pcgBreakdownCount);
 }
 
-TEST(CudaLinearSolverSession, InvalidatesPcgWarmStartWhenOperatorChanges) {
-  CudaLinearSolverOptions solverOptions;
-  solverOptions.backend = CudaLinearSolverType::Pcg;
-  CudaLinearSolverSession session(solverOptions);
-  CudaPcgOptions pcgOptions;
+TEST(LinearSolverSession, InvalidatesPcgWarmStartWhenOperatorChanges) {
+  LinearSolverOptions solverOptions;
+  solverOptions.backend = LinearSolverType::Pcg;
+  LinearSolverSession session(solverOptions);
+  PcgOptions pcgOptions;
   pcgOptions.maxIterations = 2;
   pcgOptions.relativeTolerance = 1e-12;
   pcgOptions.convergenceCheckInterval = 2;
   session.analyze(2, pcgOptions);
 
-  CudaDeviceArray<double> rhs;
-  CudaDeviceArray<double> solution(2);
+  DeviceArray<double> rhs;
+  DeviceArray<double> solution(2);
   rhs.upload({1.0, 2.0});
   solution.zero();
   session.solve(TwoByTwoOperator{}, IdentityPreconditioner{}, rhs.data(),
@@ -115,10 +115,10 @@ TEST(DeviceSparseSpdSystem, RestoresUndampedDiagonalBetweenAttempts) {
   const std::vector<double> expected{9.0, 1.0, 10.0, 2.0, 11.0};
   EXPECT(expected == actual);
 
-  const CudaSparseSpdSystemView view = system.view();
+  const SparseSpdSystemView view = system.view();
   LONGS_EQUAL(3, view.dimension);
   LONGS_EQUAL(5, view.nonzeros);
-  EXPECT(view.triangle == CudaSparseTriangle::Upper);
+  EXPECT(view.triangle == SparseTriangle::Upper);
 }
 
 TEST(DeviceSparseSpdSystem, RejectsMissingDiagonalOnCapture) {
@@ -128,14 +128,14 @@ TEST(DeviceSparseSpdSystem, RejectsMissingDiagonalOnCapture) {
   CHECK_EXCEPTION(system.captureUndampedDiagonal(), std::runtime_error);
 }
 
-TEST(CudaDenseCholeskySolver, SolvesTwoByTwoSpdSystem) {
-  CudaDeviceArray<double> matrix;
-  CudaDeviceArray<double> rhs;
-  CudaDeviceArray<double> solution;
+TEST(DenseCholeskySolver, SolvesTwoByTwoSpdSystem) {
+  DeviceArray<double> matrix;
+  DeviceArray<double> rhs;
+  DeviceArray<double> solution;
   matrix.upload({4.0, 1.0, 1.0, 3.0});
   rhs.upload({1.0, 2.0});
 
-  CudaDenseCholeskySolver solver;
+  DenseCholeskySolver solver;
   solver.solve({2, 2, matrix.data(), rhs.data()}, &solution);
 
   std::vector<double> actual;
@@ -159,12 +159,12 @@ TEST(CudssSpdSolver, AppliesRequestedPermutationWithoutChangingSolution) {
   orderedSystem.values().upload({4.0, 1.0, 3.0, 1.0, 3.0, 1.0, 2.0});
   orderedSystem.rhs().upload({1.0, 2.0, 3.0, 4.0});
 
-  CudaDeviceArray<double> automaticSolution;
+  DeviceArray<double> automaticSolution;
   CudssSpdSolver automaticSolver;
   automaticSolver.analyze(automaticSystem, &automaticSolution);
   automaticSolver.solve(automaticSystem, &automaticSolution);
 
-  CudaDeviceArray<double> orderedSolution;
+  DeviceArray<double> orderedSolution;
   CudssSpdSolver orderedSolver;
   orderedSolver.analyze(orderedSystem, &orderedSolution,
                         std::vector<int>{2, 3, 0, 1});
@@ -192,7 +192,7 @@ TEST(CudssSpdSolver, RejectsInvalidPermutation) {
   system.uploadPattern(2, {0, 2, 3}, {0, 1, 1});
   system.values().upload({2.0, 0.5, 2.0});
   system.rhs().upload({1.0, 1.0});
-  CudaDeviceArray<double> solution;
+  DeviceArray<double> solution;
   CudssSpdSolver solver;
   CHECK_EXCEPTION(solver.analyze(system, &solution, std::vector<int>{0}),
                   std::invalid_argument);
@@ -205,86 +205,86 @@ TEST(CudssSpdSolver, RejectsInvalidPermutation) {
 }
 #endif
 
-TEST(CudaBlockOrdering, ExpandsKeysToScalars) {
-  const CudaBlockLayout layout{{X(1), 0, 2},
+TEST(BlockOrdering, ExpandsKeysToScalars) {
+  const BlockLayout layout{{X(1), 0, 2},
                                {L(4), 2, 3},
                                {X(7), 5, 1}};
   const std::vector<int> expected{2, 3, 4, 0, 1, 5};
   EXPECT(expected ==
-         CompileCudaScalarPermutation(layout, Ordering{L(4), X(1), X(7)}));
+         compileScalarPermutation(layout, Ordering{L(4), X(1), X(7)}));
 }
 
-TEST(CudaBlockOrdering, RejectsInvalidOrderings) {
-  const CudaBlockLayout layout{{X(1), 0, 2}, {X(2), 2, 2}};
-  CHECK_EXCEPTION(CompileCudaScalarPermutation(layout, Ordering{X(1)}),
+TEST(BlockOrdering, RejectsInvalidOrderings) {
+  const BlockLayout layout{{X(1), 0, 2}, {X(2), 2, 2}};
+  CHECK_EXCEPTION(compileScalarPermutation(layout, Ordering{X(1)}),
                   std::invalid_argument);
   CHECK_EXCEPTION(
-      CompileCudaScalarPermutation(layout, Ordering{X(1), X(1)}),
+      compileScalarPermutation(layout, Ordering{X(1), X(1)}),
       std::invalid_argument);
   CHECK_EXCEPTION(
-      CompileCudaScalarPermutation(layout, Ordering{X(1), X(3)}),
+      compileScalarPermutation(layout, Ordering{X(1), X(3)}),
       std::invalid_argument);
 }
 
-TEST(CudaBlockOrdering, RejectsInvalidLayouts) {
-  CHECK_EXCEPTION(CompileCudaScalarPermutation(
+TEST(BlockOrdering, RejectsInvalidLayouts) {
+  CHECK_EXCEPTION(compileScalarPermutation(
                       {{X(1), 0, 2}, {X(2), 3, 1}},
                       Ordering{X(1), X(2)}),
                   std::invalid_argument);
-  CHECK_EXCEPTION(CompileCudaScalarPermutation(
+  CHECK_EXCEPTION(compileScalarPermutation(
                       {{X(1), 0, 2}, {X(1), 2, 1}},
                       Ordering{X(1), X(1)}),
                   std::invalid_argument);
-  CHECK_EXCEPTION(CompileCudaScalarPermutation(
+  CHECK_EXCEPTION(compileScalarPermutation(
                       {{X(1), 0, 0}}, Ordering{X(1)}),
                   std::invalid_argument);
 }
 
-TEST(CudaLinearSolver, CapabilityMatrix) {
-  EXPECT(CudaLinearSolverSession::Supports(
-      CudaLinearSolverType::DenseCholesky, CudaLinearSystemKind::Dense));
-  EXPECT(CudaLinearSolverSession::Supports(CudaLinearSolverType::Cudss,
-                                           CudaLinearSystemKind::Sparse));
-  EXPECT(CudaLinearSolverSession::Supports(CudaLinearSolverType::Pcg,
-                                           CudaLinearSystemKind::Operator));
+TEST(LinearSolver, CapabilityMatrix) {
+  EXPECT(LinearSolverSession::supports(
+      LinearSolverType::DenseCholesky, LinearSystemKind::Dense));
+  EXPECT(LinearSolverSession::supports(LinearSolverType::Cudss,
+                                           LinearSystemKind::Sparse));
+  EXPECT(LinearSolverSession::supports(LinearSolverType::Pcg,
+                                           LinearSystemKind::Operator));
 
-  EXPECT(!CudaLinearSolverSession::Supports(
-      CudaLinearSolverType::DenseCholesky, CudaLinearSystemKind::Sparse));
-  EXPECT(!CudaLinearSolverSession::Supports(CudaLinearSolverType::Cudss,
-                                           CudaLinearSystemKind::Dense));
-  EXPECT(!CudaLinearSolverSession::Supports(CudaLinearSolverType::Pcg,
-                                           CudaLinearSystemKind::Sparse));
+  EXPECT(!LinearSolverSession::supports(
+      LinearSolverType::DenseCholesky, LinearSystemKind::Sparse));
+  EXPECT(!LinearSolverSession::supports(LinearSolverType::Cudss,
+                                           LinearSystemKind::Dense));
+  EXPECT(!LinearSolverSession::supports(LinearSolverType::Pcg,
+                                           LinearSystemKind::Sparse));
 }
 
-TEST(CudaLinearSolver, RejectsOrderingForNonCudssBackend) {
-  CudaLinearSolverOptions options;
-  options.backend = CudaLinearSolverType::Pcg;
+TEST(LinearSolver, RejectsOrderingForNonCudssBackend) {
+  LinearSolverOptions options;
+  options.backend = LinearSolverType::Pcg;
   options.useUserOrdering = true;
-  CHECK_EXCEPTION(CudaLinearSolverSession::Validate(
-                      options, CudaLinearSystemKind::Operator),
+  CHECK_EXCEPTION(LinearSolverSession::validate(
+                      options, LinearSystemKind::Operator),
                   std::invalid_argument);
 }
 
-TEST(CudaLinearSolver, RejectsRepresentationMismatch) {
-  CudaLinearSolverOptions options;
-  options.backend = CudaLinearSolverType::DenseCholesky;
-  CHECK_EXCEPTION(CudaLinearSolverSession::Validate(
-                      options, CudaLinearSystemKind::Sparse),
+TEST(LinearSolver, RejectsRepresentationMismatch) {
+  LinearSolverOptions options;
+  options.backend = LinearSolverType::DenseCholesky;
+  CHECK_EXCEPTION(LinearSolverSession::validate(
+                      options, LinearSystemKind::Sparse),
                   std::invalid_argument);
 }
 
-TEST(CudaLinearSolverSession, DispatchesDensePreparedSystem) {
-  CudaLinearSolverOptions options;
-  options.backend = CudaLinearSolverType::DenseCholesky;
-  CudaLinearSolverSession session(options);
+TEST(LinearSolverSession, DispatchesDensePreparedSystem) {
+  LinearSolverOptions options;
+  options.backend = LinearSolverType::DenseCholesky;
+  LinearSolverSession session(options);
   session.analyze(2);
 
-  CudaDeviceArray<double> matrix;
-  CudaDeviceArray<double> rhs;
-  CudaDeviceArray<double> solution;
+  DeviceArray<double> matrix;
+  DeviceArray<double> rhs;
+  DeviceArray<double> solution;
   matrix.upload({4.0, 1.0, 1.0, 3.0});
   rhs.upload({1.0, 2.0});
-  session.solve(CudaDenseSpdSystemView{2, 2, matrix.data(), rhs.data()},
+  session.solve(DenseSpdSystemView{2, 2, matrix.data(), rhs.data()},
                 &solution);
 
   std::vector<double> actual;
@@ -296,16 +296,16 @@ TEST(CudaLinearSolverSession, DispatchesDensePreparedSystem) {
 }
 
 #if GTSAM_ENABLE_CUDSS
-TEST(CudaLinearSolverSession, DispatchesOrderedSparsePreparedSystem) {
+TEST(LinearSolverSession, DispatchesOrderedSparsePreparedSystem) {
   DeviceSparseSpdSystem system;
   system.uploadPattern(2, {0, 2, 3}, {0, 1, 1});
   system.values().upload({2.0, 0.5, 2.0});
   system.rhs().upload({1.0, 1.0});
-  CudaDeviceArray<double> solution;
-  CudaLinearSolverOptions options;
-  options.backend = CudaLinearSolverType::Cudss;
+  DeviceArray<double> solution;
+  LinearSolverOptions options;
+  options.backend = LinearSolverType::Cudss;
   options.useUserOrdering = true;
-  CudaLinearSolverSession session(options);
+  LinearSolverSession session(options);
   session.analyze(system, &solution, std::vector<int>{1, 0});
   session.solve(system, &solution);
   system.values().upload({3.0, 0.25, 2.5});

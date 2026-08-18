@@ -1,5 +1,5 @@
 #include <CppUnitLite/TestHarness.h>
-#include <gtsam/base/cuda/CudaContext.h>
+#include <gtsam/base/cuda/Context.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -85,7 +85,7 @@ struct ProfiledDeviceRun {
 };
 
 ProfiledDeviceRun RunProfiledDevicePipeline(bool collectProfile) {
-  CudaContext context;
+  Context context;
   Values values;
   values.insert(kProfileKey, Point2(0.0, 0.0));
   NonlinearFactorGraph graph;
@@ -186,7 +186,7 @@ TEST(DeviceVariableIndex, RejectsInvalidSlotMetadata) {
 }
 
 TEST(DeviceValues, AddsAndDownloadsTypedBlock) {
-  CudaContext context;
+  Context context;
   DeviceValues values;
 
   std::vector<Key> keys = {Symbol('t', 0), Symbol('t', 1)};
@@ -241,7 +241,7 @@ TEST(DeviceValues, RejectsInvalidBlockMetadataBeforeUpload) {
 }
 
 TEST(DeviceSparseNormalEquations, UploadsCsrPatternAndRhs) {
-  CudaContext context;
+  Context context;
   DeviceSparseNormalEquations system;
 
   std::vector<int> rowPointers = {0, 2, 3};
@@ -256,7 +256,7 @@ TEST(DeviceSparseNormalEquations, UploadsCsrPatternAndRhs) {
 }
 
 TEST(DeviceSparseNormalEquations, ClearsValuesAndRhs) {
-  CudaContext context;
+  Context context;
   DeviceSparseNormalEquations system;
   system.uploadPattern(2, std::vector<int>{0, 2, 3}, std::vector<int>{0, 1, 1},
                        context.stream());
@@ -281,7 +281,7 @@ TEST(DeviceSparseNormalEquations, ClearsValuesAndRhs) {
 }
 
 TEST(DeviceSparseNormalEquations, AddsDiagonalDamping) {
-  CudaContext context;
+  Context context;
   DeviceSparseNormalEquations system;
   system.uploadPattern(2, std::vector<int>{0, 2, 3}, std::vector<int>{0, 1, 1},
                        context.stream());
@@ -299,7 +299,7 @@ TEST(DeviceSparseNormalEquations, AddsDiagonalDamping) {
 }
 
 TEST(DeviceSparseNormalEquations, RejectsDampingWithoutDiagonal) {
-  CudaContext context;
+  Context context;
   DeviceSparseNormalEquations system;
   system.uploadPattern(2, std::vector<int>{0, 1, 2}, std::vector<int>{1, 1},
                        context.stream());
@@ -338,7 +338,7 @@ TEST(DeviceSparseNormalEquations, RejectsMalformedCsrBeforeUpload) {
 #if !GTSAM_ENABLE_CUDSS
 TEST(CudssLinearSolver, ThrowsWhenCudssDisabled) {
   DeviceSparseNormalEquations system;
-  CudaDeviceArray<double> solution;
+  DeviceArray<double> solution;
   CudssLinearSolver solver;
 
   try {
@@ -351,7 +351,7 @@ TEST(CudssLinearSolver, ThrowsWhenCudssDisabled) {
 
 TEST(CudssSpdSolver, ProfileArgumentIsSourceCompatibleWhenDisabled) {
   DeviceSparseNormalEquations system;
-  CudaDeviceArray<double> solution;
+  DeviceArray<double> solution;
   CudssSpdSolver solver;
   CudssSpdSolveProfile profile;
 
@@ -391,14 +391,14 @@ TEST(DeviceSparseJacobianProfile, DisabledTimingStillAccountsExactBytes) {
 }
 
 TEST(CudssLinearSolver, SolvesSmallSpdSystem) {
-  CudaContext context;
+  Context context;
   DeviceSparseNormalEquations system;
   system.uploadPattern(2, std::vector<int>{0, 2, 3}, std::vector<int>{0, 1, 1},
                        context.stream());
   system.values().upload(std::vector<double>{4.0, 1.0, 3.0}, context.stream());
   system.rhs().upload(std::vector<double>{1.0, 2.0}, context.stream());
 
-  CudaDeviceArray<double> solution;
+  DeviceArray<double> solution;
   CudssLinearSolver solver;
   solver.solveSpd(system, &solution, context.stream());
 
@@ -411,14 +411,14 @@ TEST(CudssLinearSolver, SolvesSmallSpdSystem) {
 }
 
 TEST(CudssSpdSolver, ReusesAnalysisForChangedValues) {
-  CudaContext context;
+  Context context;
   DeviceSparseNormalEquations system;
   system.uploadPattern(2, std::vector<int>{0, 2, 3}, std::vector<int>{0, 1, 1},
                        context.stream());
   system.values().upload(std::vector<double>{4.0, 1.0, 3.0}, context.stream());
   system.rhs().upload(std::vector<double>{1.0, 2.0}, context.stream());
 
-  CudaDeviceArray<double> solution;
+  DeviceArray<double> solution;
   CudssSpdSolver solver;
   solver.analyze(system, &solution, context.stream());
   solver.solve(system, &solution, context.stream());
@@ -440,14 +440,14 @@ TEST(CudssSpdSolver, ReusesAnalysisForChangedValues) {
 }
 
 TEST(CudssSpdSolver, SurfacesIndefiniteFactorizationInfo) {
-  CudaContext context;
+  Context context;
   DeviceSparseNormalEquations system;
   system.uploadPattern(2, std::vector<int>{0, 2, 3}, std::vector<int>{0, 1, 1},
                        context.stream());
   system.values().upload(std::vector<double>{1.0, 2.0, 1.0}, context.stream());
   system.rhs().upload(std::vector<double>{1.0, 1.0}, context.stream());
 
-  CudaDeviceArray<double> solution;
+  DeviceArray<double> solution;
   CudssSpdSolver solver;
   solver.analyze(system, &solution, context.stream());
   try {

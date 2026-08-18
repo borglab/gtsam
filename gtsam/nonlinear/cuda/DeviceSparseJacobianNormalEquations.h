@@ -3,7 +3,7 @@
 #include <cuda_runtime_api.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/dllexport.h>
-#include <gtsam/linear/cuda/CudaLinearSolver.h>
+#include <gtsam/linear/cuda/LinearSolver.h>
 #include <gtsam/nonlinear/cuda/DevicePcgSolver.h>
 #include <gtsam/nonlinear/cuda/DeviceSparseNormalEquations.h>
 #include <gtsam/nonlinear/cuda/HostSparseJacobian.h>
@@ -150,8 +150,8 @@ class GTSAM_EXPORT DeviceSparseJacobianNormalEquations {
   void applyExplicitDamping(double lambda, cudaStream_t stream = nullptr);
   void prepareOperatorSystem(double lambda,
                              cudaStream_t stream = nullptr);
-  const CudaLinearOperator& linearOperator() const;
-  const CudaPreconditioner& preconditioner() const;
+  const LinearOperator& linearOperator() const;
+  const Preconditioner& preconditioner() const;
   const double* deviceRhs() const;
   void evaluateSolvedDelta(cudaStream_t stream = nullptr);
   size_t analysisCount() const;
@@ -159,7 +159,7 @@ class GTSAM_EXPORT DeviceSparseJacobianNormalEquations {
       cudaStream_t stream = nullptr) const;
 
   const DeviceSparseJacobianProfile& profile() const;
-  const CudaLinearSolveStats& linearSolveStats() const;
+  const LinearSolveStats& linearSolveStats() const;
   const std::vector<int>& appliedScalarPermutation() const;
 
   // True only in cuDSS mode, where the normal matrix H is materialized;
@@ -167,7 +167,7 @@ class GTSAM_EXPORT DeviceSparseJacobianNormalEquations {
   bool hasNormalMatrix() const;
   DeviceSparseNormalEquations& mutableSystem();
   const DeviceSparseNormalEquations& system() const;
-  CudaDeviceArray<double>& deviceDelta();
+  DeviceArray<double>& deviceDelta();
 
  private:
   struct Impl;

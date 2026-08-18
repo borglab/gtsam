@@ -1,7 +1,8 @@
 #pragma once
 
-#include <gtsam/base/cuda/CudaDeviceArray.h>
-#include <gtsam/linear/cuda/CudaLinearSystem.h>
+#include <gtsam/base/cuda/DeviceArray.h>
+#include <gtsam/dllexport.h>
+#include <gtsam/linear/cuda/LinearSystem.h>
 
 #include <cstddef>
 #include <limits>
@@ -12,12 +13,12 @@
 namespace gtsam::cuda {
 
 /** Persistent device storage for an int32 upper-CSR SPD system. */
-class DeviceSparseSpdSystem {
+class GTSAM_EXPORT DeviceSparseSpdSystem {
  public:
   void uploadPattern(int rows, const std::vector<int>& rowPointers,
                      const std::vector<int>& colIndices,
                      cudaStream_t stream = nullptr,
-                     CudaDeviceTransferSummary* transferProfile = nullptr,
+                     DeviceTransferSummary* transferProfile = nullptr,
                      cudaEvent_t copyBeginEvent = nullptr,
                      cudaEvent_t copyEndEvent = nullptr) {
     if (rows < 0) {
@@ -58,10 +59,10 @@ class DeviceSparseSpdSystem {
           "DeviceSparseSpdSystem cannot combine transfer profiles");
     }
 
-    CudaDeviceArray<int> newRowPointers;
-    CudaDeviceArray<int> newColIndices;
-    CudaDeviceArray<double> newValues;
-    CudaDeviceArray<double> newRhs;
+    DeviceArray<int> newRowPointers;
+    DeviceArray<int> newColIndices;
+    DeviceArray<double> newValues;
+    DeviceArray<double> newRhs;
 
     try {
       if (copyBeginEvent) {
@@ -117,36 +118,36 @@ class DeviceSparseSpdSystem {
 
   void addDiagonalDamping(double lambda, cudaStream_t stream = nullptr);
   void addDiagonalDamping(double lambda,
-                          const CudaDeviceArray<double>& diagonal,
+                          const DeviceArray<double>& diagonal,
                           cudaStream_t stream = nullptr);
   void captureUndampedDiagonal(cudaStream_t stream = nullptr);
   void restoreAndAddDiagonal(double lambda, cudaStream_t stream = nullptr);
   void restoreAndAddDiagonal(double lambda,
-                             const CudaDeviceArray<double>& diagonal,
+                             const DeviceArray<double>& diagonal,
                              cudaStream_t stream = nullptr);
 
-  CudaSparseSpdSystemView view() {
+  SparseSpdSystemView view() {
     return {rows_, nonzeros(), rowPointers_.data(), colIndices_.data(),
-            values_.data(), rhs_.data(), CudaSparseTriangle::Upper};
+            values_.data(), rhs_.data(), SparseTriangle::Upper};
   }
 
-  const CudaDeviceArray<int>& rowPointers() const { return rowPointers_; }
-  const CudaDeviceArray<int>& colIndices() const { return colIndices_; }
-  CudaDeviceArray<double>& values() { return values_; }
-  const CudaDeviceArray<double>& values() const { return values_; }
-  CudaDeviceArray<double>& rhs() { return rhs_; }
-  const CudaDeviceArray<double>& rhs() const { return rhs_; }
-  const CudaDeviceArray<double>& undampedDiagonal() const {
+  const DeviceArray<int>& rowPointers() const { return rowPointers_; }
+  const DeviceArray<int>& colIndices() const { return colIndices_; }
+  DeviceArray<double>& values() { return values_; }
+  const DeviceArray<double>& values() const { return values_; }
+  DeviceArray<double>& rhs() { return rhs_; }
+  const DeviceArray<double>& rhs() const { return rhs_; }
+  const DeviceArray<double>& undampedDiagonal() const {
     return undampedDiagonal_;
   }
 
  private:
   int rows_ = 0;
-  CudaDeviceArray<int> rowPointers_;
-  CudaDeviceArray<int> colIndices_;
-  CudaDeviceArray<double> values_;
-  CudaDeviceArray<double> rhs_;
-  CudaDeviceArray<double> undampedDiagonal_;
+  DeviceArray<int> rowPointers_;
+  DeviceArray<int> colIndices_;
+  DeviceArray<double> values_;
+  DeviceArray<double> rhs_;
+  DeviceArray<double> undampedDiagonal_;
 };
 
 }  // namespace gtsam::cuda

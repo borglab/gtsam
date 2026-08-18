@@ -14,7 +14,7 @@
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>
-#include <gtsam/nonlinear/cuda/CudaSparseLevenbergMarquardt.h>
+#include <gtsam/nonlinear/cuda/SparseLevenbergMarquardt.h>
 #include <gtsam/nonlinear/cuda/DeviceSparseJacobianNormalEquations.h>
 #include <gtsam/nonlinear/cuda/HostSparseJacobian.h>
 #include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
@@ -62,7 +62,7 @@ bool IsFiniteNonnegativeTiming(double seconds) {
 }
 
 bool AllSparseLmTimingsAreFiniteNonnegative(
-    const CudaSparseLmStageTimings& timings) {
+    const SparseLevenbergMarquardtStageTimings& timings) {
   return IsFiniteNonnegativeTiming(timings.totalWall) &&
          IsFiniteNonnegativeTiming(timings.initialError) &&
          IsFiniteNonnegativeTiming(timings.plan) &&
@@ -98,7 +98,7 @@ bool AllSparseLmTimingsAreFiniteNonnegative(
          IsFiniteNonnegativeTiming(timings.deltaDownload);
 }
 
-bool AllSparseLmTimingsAreZero(const CudaSparseLmStageTimings& timings) {
+bool AllSparseLmTimingsAreZero(const SparseLevenbergMarquardtStageTimings& timings) {
   return timings.totalWall == 0.0 && timings.initialError == 0.0 &&
          timings.plan == 0.0 && timings.persistentSetupWall == 0.0 &&
          timings.deviceInitializeWall == 0.0 && timings.patternH2d == 0.0 &&
@@ -140,9 +140,9 @@ Pose2LmProblem MakePose2LmProblem() {
   return problem;
 }
 
-CudaSparseLevenbergMarquardtResult RunTwoOuterProfiledPose2(
+SparseLevenbergMarquardtResult RunTwoOuterProfiledPose2(
     const Pose2LmProblem& problem, bool collectTiming) {
-  CudaSparseLevenbergMarquardtParams params;
+  SparseLevenbergMarquardtParams params;
   LevenbergMarquardtParams::SetCeresDefaults(&params);
   params.maxIterations = 2;
   params.relativeErrorTol = 0.0;
@@ -151,17 +151,17 @@ CudaSparseLevenbergMarquardtResult RunTwoOuterProfiledPose2(
   params.useFixedLambdaFactor = true;
   params.collectTiming = collectTiming;
 
-  CudaSparseLevenbergMarquardtOptimizer optimizer(problem.graph,
+  SparseLevenbergMarquardtOptimizer optimizer(problem.graph,
                                                   problem.initial, params);
   (void)optimizer.optimize();
   return optimizer.result();
 }
 
 bool SparseLmSizesAndTransfersAreExact(
-    const CudaSparseLevenbergMarquardtResult& result,
+    const SparseLevenbergMarquardtResult& result,
     const NonlinearFactorGraph& graph, const SparseJacobianPlan& plan) {
-  const CudaSparseLmSystemSize& size = result.systemSize;
-  const CudaSparseLmTransferCounts& transfers = result.transfers;
+  const SparseLevenbergMarquardtSystemSize& size = result.systemSize;
+  const SparseLevenbergMarquardtTransferCounts& transfers = result.transfers;
   if (size.factors != graph.size() ||
       size.jacobianRows != static_cast<size_t>(plan.rows()) ||
       size.jacobianColumns != static_cast<size_t>(plan.columns()) ||
@@ -192,7 +192,7 @@ bool SparseLmSizesAndTransfersAreExact(
              expectedSetupD2h + expectedAttemptD2h + transfers.pcgD2hBytes;
 }
 
-bool SparseLmAggregateTimingsAreExact(const CudaSparseLmStageTimings& timings) {
+bool SparseLmAggregateTimingsAreExact(const SparseLevenbergMarquardtStageTimings& timings) {
   return timings.upload == timings.numericH2d &&
          timings.normalEquations == timings.normalJtJ + timings.normalJtb +
                                         timings.diagonalExtraction +
@@ -214,7 +214,7 @@ bool HasCudaDevice() {
   return count > 0;
 }
 
-bool CanRunCudaSparseLm() {
+bool CanRunSparseLevenbergMarquardt() {
 #if GTSAM_ENABLE_CUDSS
   return HasCudaDevice() &&
          DeviceSparseJacobianNormalEquations::preflightCapability().supported;
@@ -521,8 +521,8 @@ struct ReferenceAttempt {
 
 struct ReferenceLmRun {
   Values values;
-  CudaSparseLmTerminationReason termination =
-      CudaSparseLmTerminationReason::None;
+  SparseLevenbergMarquardtTerminationReason termination =
+      SparseLevenbergMarquardtTerminationReason::None;
   size_t outerLinearizations = 0;
   size_t acceptedSteps = 0;
   size_t lambdaAttempts = 0;
@@ -561,11 +561,11 @@ ReferenceLmRun RunCpuTryLambdaReference(
   result.finalLambda = requestedParams.lambdaInitial;
 
   if (result.initialError <= requestedParams.errorTol) {
-    result.termination = CudaSparseLmTerminationReason::ErrorThreshold;
+    result.termination = SparseLevenbergMarquardtTerminationReason::ErrorThreshold;
     return result;
   }
   if (requestedParams.maxIterations == 0) {
-    result.termination = CudaSparseLmTerminationReason::MaxIterations;
+    result.termination = SparseLevenbergMarquardtTerminationReason::MaxIterations;
     return result;
   }
 
@@ -599,16 +599,16 @@ ReferenceLmRun RunCpuTryLambdaReference(
 
     if (!accepted) {
       result.termination = optimizer.lambda() >= cpuParams.lambdaUpperBound
-                               ? CudaSparseLmTerminationReason::LambdaUpperBound
-                               : CudaSparseLmTerminationReason::SmallCostChange;
+                               ? SparseLevenbergMarquardtTerminationReason::LambdaUpperBound
+                               : SparseLevenbergMarquardtTerminationReason::SmallCostChange;
       break;
     }
     if (optimizer.iterations() >= cpuParams.maxIterations) {
-      result.termination = CudaSparseLmTerminationReason::MaxIterations;
+      result.termination = SparseLevenbergMarquardtTerminationReason::MaxIterations;
       break;
     }
     if (checkConvergence(cpuParams, previousError, optimizer.error())) {
-      result.termination = CudaSparseLmTerminationReason::Converged;
+      result.termination = SparseLevenbergMarquardtTerminationReason::Converged;
       break;
     }
   }
@@ -623,25 +623,25 @@ ReferenceLmRun RunCpuTryLambdaReference(
 void CheckCpuFallback(
     TestResult& result_, const std::string& name_,
     const NonlinearFactorGraph& graph, const Values& initial,
-    CudaSparseLmFallbackReason expectedReason,
+    SparseLevenbergMarquardtFallbackReason expectedReason,
     DirectJacobianFailure expectedFailure = DirectJacobianFailure::None,
     size_t expectedFactorIndex = std::numeric_limits<size_t>::max(),
     const std::string& expectedStatusDetail = {},
     const std::string& exactFallbackDetail = {}) {
-  CudaSparseLevenbergMarquardtParams params;
+  SparseLevenbergMarquardtParams params;
   LevenbergMarquardtParams::SetCeresDefaults(&params);
   params.maxIterations = 20;
   params.collectTiming = true;
 
   const Values expected =
       LevenbergMarquardtOptimizer(graph, initial, params).optimize();
-  CudaSparseLevenbergMarquardtOptimizer optimizer(graph, initial, params);
+  SparseLevenbergMarquardtOptimizer optimizer(graph, initial, params);
   const Values actual = optimizer.optimize();
-  const CudaSparseLevenbergMarquardtResult& result = optimizer.result();
+  const SparseLevenbergMarquardtResult& result = optimizer.result();
 
   DOUBLES_EQUAL(graph.error(expected), graph.error(actual), 1e-8);
   EXPECT(assert_equal(expected, actual, 1e-7));
-  CHECK(result.backend == CudaSparseLmBackend::CpuFallback);
+  CHECK(result.backend == SparseLevenbergMarquardtBackend::CpuFallback);
   CHECK(result.fallbackReason == expectedReason);
   CHECK(result.fallbackStatus.failure == expectedFailure);
   CHECK(!result.fallbackDetail.empty());
@@ -653,7 +653,7 @@ void CheckCpuFallback(
   }
   DOUBLES_EQUAL(graph.error(initial), result.initialError, 1e-12);
   DOUBLES_EQUAL(graph.error(actual), result.finalError, 1e-12);
-  if (expectedReason == CudaSparseLmFallbackReason::PlanIncompatible) {
+  if (expectedReason == SparseLevenbergMarquardtFallbackReason::PlanIncompatible) {
     CHECK(std::isfinite(result.timings.plan));
     CHECK(result.timings.plan > 0.0);
   }
@@ -673,7 +673,7 @@ void CheckCpuFallback(
   params.fallbackOnUnsupported = false;
   std::string thrownDetail;
   try {
-    CudaSparseLevenbergMarquardtOptimizer disabled(graph, initial, params);
+    SparseLevenbergMarquardtOptimizer disabled(graph, initial, params);
     (void)disabled.optimize();
     CHECK(false);
   } catch (const std::runtime_error& error) {
@@ -696,26 +696,26 @@ void CheckCpuFallback(
 }  // namespace
 
 static_assert(std::is_base_of_v<LevenbergMarquardtParams,
-                                CudaSparseLevenbergMarquardtParams>);
+                                SparseLevenbergMarquardtParams>);
 
-TEST(CudaSparseLevenbergMarquardt, ExposesPrototypeParamsDefaults) {
-  const CudaSparseLevenbergMarquardtParams params;
+TEST(SparseLevenbergMarquardt, ExposesPrototypeParamsDefaults) {
+  const SparseLevenbergMarquardtParams params;
   CHECK(params.fallbackOnUnsupported);
   CHECK(!params.collectTiming);
   CHECK(!params.collectAttemptTrace);
   CHECK(!params.validateStructureEveryIteration);
 }
 
-TEST(CudaSparseLevenbergMarquardt,
+TEST(SparseLevenbergMarquardt,
      ProfilesTwoAcceptedOuterIterationsWithExactTransfers) {
-  if (!CanRunCudaSparseLm()) return;
+  if (!CanRunSparseLevenbergMarquardt()) return;
   const Pose2LmProblem problem = MakePose2LmProblem();
   const SparseJacobianColumnLayout columns(problem.initial);
   const SparseJacobianPlan plan(problem.graph, columns);
-  const CudaSparseLevenbergMarquardtResult result =
+  const SparseLevenbergMarquardtResult result =
       RunTwoOuterProfiledPose2(problem, true);
 
-  CHECK(result.backend == CudaSparseLmBackend::Cuda);
+  CHECK(result.backend == SparseLevenbergMarquardtBackend::Device);
   EXPECT_LONGS_EQUAL(2, result.outerLinearizations);
   EXPECT_LONGS_EQUAL(2, result.acceptedSteps);
   EXPECT_LONGS_EQUAL(1, result.cudssAnalyses);
@@ -737,16 +737,16 @@ TEST(CudaSparseLevenbergMarquardt,
   CHECK(mappedDeviceStageTotal > 0.0);
 }
 
-TEST(CudaSparseLevenbergMarquardt,
+TEST(SparseLevenbergMarquardt,
      TimingDisabledKeepsTimingsZeroAndExactTransfers) {
-  if (!CanRunCudaSparseLm()) return;
+  if (!CanRunSparseLevenbergMarquardt()) return;
   const Pose2LmProblem problem = MakePose2LmProblem();
   const SparseJacobianColumnLayout columns(problem.initial);
   const SparseJacobianPlan plan(problem.graph, columns);
-  const CudaSparseLevenbergMarquardtResult result =
+  const SparseLevenbergMarquardtResult result =
       RunTwoOuterProfiledPose2(problem, false);
 
-  CHECK(result.backend == CudaSparseLmBackend::Cuda);
+  CHECK(result.backend == SparseLevenbergMarquardtBackend::Device);
   EXPECT_LONGS_EQUAL(2, result.outerLinearizations);
   EXPECT_LONGS_EQUAL(2, result.acceptedSteps);
   EXPECT_LONGS_EQUAL(1, result.cudssAnalyses);
@@ -759,10 +759,10 @@ namespace {
 
 void CheckPose2Parity(TestResult& result_, const std::string& name_,
                       bool diagonalDamping) {
-  if (!CanRunCudaSparseLm()) return;
+  if (!CanRunSparseLevenbergMarquardt()) return;
 
   const Pose2LmProblem problem = MakePose2LmProblem();
-  CudaSparseLevenbergMarquardtParams params;
+  SparseLevenbergMarquardtParams params;
   LevenbergMarquardtParams::SetCeresDefaults(&params);
   params.maxIterations = 20;
   params.dampingParams.diagonalDamping = diagonalDamping;
@@ -770,19 +770,19 @@ void CheckPose2Parity(TestResult& result_, const std::string& name_,
   const Values expected =
       LevenbergMarquardtOptimizer(problem.graph, problem.initial, params)
           .optimize();
-  CudaSparseLevenbergMarquardtOptimizer optimizer(problem.graph,
+  SparseLevenbergMarquardtOptimizer optimizer(problem.graph,
                                                   problem.initial, params);
   const Values actual = optimizer.optimize();
-  const CudaSparseLevenbergMarquardtResult& result = optimizer.result();
+  const SparseLevenbergMarquardtResult& result = optimizer.result();
 
   DOUBLES_EQUAL(problem.graph.error(expected), problem.graph.error(actual),
                 1e-8);
   EXPECT(assert_equal(expected, actual, 1e-7));
   EXPECT(assert_equal(actual, optimizer.values(), 1e-12));
   DOUBLES_EQUAL(problem.graph.error(actual), optimizer.error(), 1e-12);
-  CHECK(result.backend == CudaSparseLmBackend::Cuda);
-  CHECK(result.fallbackReason == CudaSparseLmFallbackReason::None);
-  CHECK(result.termination != CudaSparseLmTerminationReason::None);
+  CHECK(result.backend == SparseLevenbergMarquardtBackend::Device);
+  CHECK(result.fallbackReason == SparseLevenbergMarquardtFallbackReason::None);
+  CHECK(result.termination != SparseLevenbergMarquardtTerminationReason::None);
   DOUBLES_EQUAL(problem.graph.error(problem.initial), result.initialError,
                 1e-12);
   DOUBLES_EQUAL(problem.graph.error(actual), result.finalError, 1e-12);
@@ -791,24 +791,24 @@ void CheckPose2Parity(TestResult& result_, const std::string& name_,
 
 }  // namespace
 
-TEST(CudaSparseLevenbergMarquardt, MatchesCpuPose2Result) {
+TEST(SparseLevenbergMarquardt, MatchesCpuPose2Result) {
   CheckPose2Parity(result_, name_, true);
 }
 
-TEST(CudaSparseLevenbergMarquardt, MatchesCpuPose2ResultWithIdentityDamping) {
+TEST(SparseLevenbergMarquardt, MatchesCpuPose2ResultWithIdentityDamping) {
   CheckPose2Parity(result_, name_, false);
 }
 
-TEST(CudaSparseLevenbergMarquardt, FallsBackForPlanIncompatible) {
-  if (!CanRunCudaSparseLm()) return;
+TEST(SparseLevenbergMarquardt, FallsBackForPlanIncompatible) {
+  if (!CanRunSparseLevenbergMarquardt()) return;
   Pose2LmProblem problem = MakePose2LmProblem();
   problem.initial.insert(Symbol('u', 0), Point2(3.0, -2.0));
   CheckCpuFallback(result_, name_, problem.graph, problem.initial,
-                   CudaSparseLmFallbackReason::PlanIncompatible);
+                   SparseLevenbergMarquardtFallbackReason::PlanIncompatible);
 }
 
-TEST(CudaSparseLevenbergMarquardt, FallsBackForDirectJacobianSemanticFailure) {
-  if (!CanRunCudaSparseLm()) return;
+TEST(SparseLevenbergMarquardt, FallsBackForDirectJacobianSemanticFailure) {
+  if (!CanRunSparseLevenbergMarquardt()) return;
   NonlinearFactorGraph graph;
   graph.emplace_shared<PriorFactor<Pose2>>(kPose0, Pose2(),
                                            noiseModel::Constrained::All(3));
@@ -816,13 +816,13 @@ TEST(CudaSparseLevenbergMarquardt, FallsBackForDirectJacobianSemanticFailure) {
   initial.insert(kPose0, Pose2(0.2, -0.1, 0.05));
 
   CheckCpuFallback(result_, name_, graph, initial,
-                   CudaSparseLmFallbackReason::DirectJacobianUnsupported,
+                   SparseLevenbergMarquardtFallbackReason::DirectJacobianUnsupported,
                    DirectJacobianFailure::ConstrainedFactor, 0);
 }
 
-TEST(CudaSparseLevenbergMarquardt,
+TEST(SparseLevenbergMarquardt,
      FallsBackForReturnedHessianWithExactFactorStatus) {
-  if (!CanRunCudaSparseLm()) return;
+  if (!CanRunSparseLevenbergMarquardt()) return;
 
   NonlinearFactorGraph graph;
   graph.emplace_shared<PriorFactor<double>>(
@@ -832,14 +832,14 @@ TEST(CudaSparseLevenbergMarquardt,
   initial.insert(kScalar0, -3.0);
 
   CheckCpuFallback(result_, name_, graph, initial,
-                   CudaSparseLmFallbackReason::DirectJacobianUnsupported,
+                   SparseLevenbergMarquardtFallbackReason::DirectJacobianUnsupported,
                    DirectJacobianFailure::UnsupportedGaussianFactor, 1,
                    "linearization result is not a JacobianFactor");
 }
 
-TEST(CudaSparseLevenbergMarquardt,
+TEST(SparseLevenbergMarquardt,
      ChangingRowsRestartCpuFromOriginalAfterAcceptedCudaPrefix) {
-  if (!CanRunCudaSparseLm()) return;
+  if (!CanRunSparseLevenbergMarquardt()) return;
 
   const auto changingState = std::make_shared<ChangingRowState>();
   NonlinearFactorGraph graph;
@@ -850,7 +850,7 @@ TEST(CudaSparseLevenbergMarquardt,
   Values initial;
   initial.insert(kScalar0, -2.0);
 
-  CudaSparseLevenbergMarquardtParams params;
+  SparseLevenbergMarquardtParams params;
   LevenbergMarquardtParams::SetCeresDefaults(&params);
   params.maxIterations = 10;
   params.collectTiming = true;
@@ -866,15 +866,15 @@ TEST(CudaSparseLevenbergMarquardt,
                              double newError) {
     hooks.push_back(HookRecord{iteration, oldError, newError});
   };
-  CudaSparseLevenbergMarquardtOptimizer optimizer(graph, initial, params);
+  SparseLevenbergMarquardtOptimizer optimizer(graph, initial, params);
   const Values actual = optimizer.optimize();
-  const CudaSparseLevenbergMarquardtResult& result = optimizer.result();
+  const SparseLevenbergMarquardtResult& result = optimizer.result();
 
   EXPECT(assert_equal(expected, actual, 1e-9));
   DOUBLES_EQUAL(graph.error(expected), graph.error(actual), 1e-10);
-  CHECK(result.backend == CudaSparseLmBackend::CpuFallback);
+  CHECK(result.backend == SparseLevenbergMarquardtBackend::CpuFallback);
   CHECK(result.fallbackReason ==
-        CudaSparseLmFallbackReason::DirectJacobianUnsupported);
+        SparseLevenbergMarquardtFallbackReason::DirectJacobianUnsupported);
   CHECK(result.fallbackStatus.failure ==
         DirectJacobianFailure::StructuralMismatch);
   EXPECT_LONGS_EQUAL(1, result.fallbackStatus.factorIndex);
@@ -934,7 +934,7 @@ TEST(CudaSparseLevenbergMarquardt,
   params.iterationHook = {};
   std::string disabledDetail;
   try {
-    CudaSparseLevenbergMarquardtOptimizer disabled(graph, initial, params);
+    SparseLevenbergMarquardtOptimizer disabled(graph, initial, params);
     (void)disabled.optimize();
     CHECK(false);
   } catch (const std::runtime_error& error) {
@@ -948,9 +948,9 @@ TEST(CudaSparseLevenbergMarquardt,
         std::string::npos);
 }
 
-TEST(CudaSparseLevenbergMarquardt,
+TEST(SparseLevenbergMarquardt,
      ZeroRowOnlyKeyIsPlanIncompatibleButCpuOrderingCanSolve) {
-  if (!CanRunCudaSparseLm()) return;
+  if (!CanRunSparseLevenbergMarquardt()) return;
 
   NonlinearFactorGraph graph;
   graph.emplace_shared<PriorFactor<double>>(kScalar0, 1.5,
@@ -960,7 +960,7 @@ TEST(CudaSparseLevenbergMarquardt,
   initial.insert(kScalar0, -2.0);
   initial.insert(kScalar1, 7.0);
 
-  CudaSparseLevenbergMarquardtParams params;
+  SparseLevenbergMarquardtParams params;
   LevenbergMarquardtParams::SetCeresDefaults(&params);
   params.maxIterations = 10;
   Ordering cpuSolvableOrdering;
@@ -969,14 +969,14 @@ TEST(CudaSparseLevenbergMarquardt,
 
   const Values expected =
       LevenbergMarquardtOptimizer(graph, initial, params).optimize();
-  CudaSparseLevenbergMarquardtOptimizer optimizer(graph, initial, params);
+  SparseLevenbergMarquardtOptimizer optimizer(graph, initial, params);
   const Values actual = optimizer.optimize();
-  const CudaSparseLevenbergMarquardtResult& result = optimizer.result();
+  const SparseLevenbergMarquardtResult& result = optimizer.result();
 
   EXPECT(assert_equal(expected, actual, 1e-9));
   DOUBLES_EQUAL(7.0, actual.at<double>(kScalar1), 1e-12);
-  CHECK(result.backend == CudaSparseLmBackend::CpuFallback);
-  CHECK(result.fallbackReason == CudaSparseLmFallbackReason::PlanIncompatible);
+  CHECK(result.backend == SparseLevenbergMarquardtBackend::CpuFallback);
+  CHECK(result.fallbackReason == SparseLevenbergMarquardtFallbackReason::PlanIncompatible);
   CHECK(result.fallbackStatus.failure == DirectJacobianFailure::None);
   EXPECT_LONGS_EQUAL(std::numeric_limits<size_t>::max(),
                      result.fallbackStatus.factorIndex);
@@ -987,7 +987,7 @@ TEST(CudaSparseLevenbergMarquardt,
   params.fallbackOnUnsupported = false;
   std::string disabledDetail;
   try {
-    CudaSparseLevenbergMarquardtOptimizer disabled(graph, initial, params);
+    SparseLevenbergMarquardtOptimizer disabled(graph, initial, params);
     (void)disabled.optimize();
     CHECK(false);
   } catch (const std::runtime_error& error) {
@@ -996,21 +996,21 @@ TEST(CudaSparseLevenbergMarquardt,
   CHECK(disabledDetail == result.fallbackDetail);
 }
 
-TEST(CudaSparseLevenbergMarquardt,
+TEST(SparseLevenbergMarquardt,
      AppliesCustomGtsamOrderingToCudssWithoutChangingObjective) {
-  if (!CanRunCudaSparseLm()) return;
+  if (!CanRunSparseLevenbergMarquardt()) return;
   const Pose2LmProblem problem = MakePose2LmProblem();
 
-  CudaSparseLevenbergMarquardtParams automaticParams;
+  SparseLevenbergMarquardtParams automaticParams;
   LevenbergMarquardtParams::SetCeresDefaults(&automaticParams);
   automaticParams.maxIterations = 5;
-  CudaSparseLevenbergMarquardtOptimizer automaticOptimizer(
+  SparseLevenbergMarquardtOptimizer automaticOptimizer(
       problem.graph, problem.initial, automaticParams);
   const Values automaticValues = automaticOptimizer.optimize();
 
-  CudaSparseLevenbergMarquardtParams orderedParams = automaticParams;
+  SparseLevenbergMarquardtParams orderedParams = automaticParams;
   orderedParams.setOrdering(Ordering{kPose2, kPose0, kPose1});
-  CudaSparseLevenbergMarquardtOptimizer orderedOptimizer(
+  SparseLevenbergMarquardtOptimizer orderedOptimizer(
       problem.graph, problem.initial, orderedParams);
   const Values orderedValues = orderedOptimizer.optimize();
 
@@ -1023,31 +1023,31 @@ TEST(CudaSparseLevenbergMarquardt,
          orderedOptimizer.result().appliedScalarPermutation);
 }
 
-TEST(CudaSparseLevenbergMarquardt,
+TEST(SparseLevenbergMarquardt,
      GeneralPcgUsesSharedSessionAndMatchesDirectObjective) {
-  if (!CanRunCudaSparseLm()) return;
+  if (!CanRunSparseLevenbergMarquardt()) return;
   const Pose2LmProblem problem = MakePose2LmProblem();
 
-  CudaSparseLevenbergMarquardtParams directParams;
+  SparseLevenbergMarquardtParams directParams;
   LevenbergMarquardtParams::SetCeresDefaults(&directParams);
   directParams.maxIterations = 5;
-  CudaSparseLevenbergMarquardtOptimizer direct(
+  SparseLevenbergMarquardtOptimizer direct(
       problem.graph, problem.initial, directParams);
   (void)direct.optimize();
 
-  CudaSparseLevenbergMarquardtParams pcgParams = directParams;
-  pcgParams.linear.backend = CudaLinearSolverType::Pcg;
+  SparseLevenbergMarquardtParams pcgParams = directParams;
+  pcgParams.linear.backend = LinearSolverType::Pcg;
   pcgParams.pcg.maxIterations = 100;
   pcgParams.pcg.relativeTolerance = 1e-10;
   pcgParams.collectTiming = true;
-  CudaSparseLevenbergMarquardtOptimizer pcg(
+  SparseLevenbergMarquardtOptimizer pcg(
       problem.graph, problem.initial, pcgParams);
   const Values pcgValues = pcg.optimize();
-  const CudaSparseLevenbergMarquardtResult& result = pcg.result();
+  const SparseLevenbergMarquardtResult& result = pcg.result();
 
   DOUBLES_EQUAL(direct.error(), pcg.error(), 1e-9);
   EXPECT(assert_equal(direct.values(), pcgValues, 1e-7));
-  CHECK(result.linearSolveStats.backend == CudaLinearSolverType::Pcg);
+  CHECK(result.linearSolveStats.backend == LinearSolverType::Pcg);
   EXPECT_LONGS_EQUAL(1, result.linearSolveStats.analysisCount);
   EXPECT_LONGS_EQUAL(result.lambdaAttempts,
                      result.linearSolveStats.solveCount);
@@ -1068,9 +1068,9 @@ TEST(CudaSparseLevenbergMarquardt,
   EXPECT_LONGS_EQUAL(0, result.systemSize.normalNonzeros);
 }
 
-TEST(CudaSparseLevenbergMarquardt,
+TEST(SparseLevenbergMarquardt,
      NonFiniteJacobianIsFatalWithStageIndexAndType) {
-  if (!CanRunCudaSparseLm()) return;
+  if (!CanRunSparseLevenbergMarquardt()) return;
 
   NonlinearFactorGraph graph;
   graph.emplace_shared<PriorFactor<double>>(kScalar0, 0.0,
@@ -1079,11 +1079,11 @@ TEST(CudaSparseLevenbergMarquardt,
   Values initial;
   initial.insert(kScalar0, 1.0);
 
-  CudaSparseLevenbergMarquardtParams params;
+  SparseLevenbergMarquardtParams params;
   LevenbergMarquardtParams::SetCeresDefaults(&params);
   std::string detail;
   try {
-    CudaSparseLevenbergMarquardtOptimizer optimizer(graph, initial, params);
+    SparseLevenbergMarquardtOptimizer optimizer(graph, initial, params);
     (void)optimizer.optimize();
     CHECK(false);
   } catch (const std::runtime_error& error) {
@@ -1097,9 +1097,9 @@ TEST(CudaSparseLevenbergMarquardt,
         std::string::npos);
 }
 
-TEST(CudaSparseLevenbergMarquardt,
+TEST(SparseLevenbergMarquardt,
      NonSendableCustomFactorRunsEachCallbackExactlyOnCaller) {
-  if (!CanRunCudaSparseLm()) return;
+  if (!CanRunSparseLevenbergMarquardt()) return;
 
   const auto callbackState = std::make_shared<CustomCallbackState>();
   const std::thread::id callerThread = std::this_thread::get_id();
@@ -1128,18 +1128,18 @@ TEST(CudaSparseLevenbergMarquardt,
   Values initial;
   initial.insert(kScalar0, -3.0);
 
-  CudaSparseLevenbergMarquardtParams params;
+  SparseLevenbergMarquardtParams params;
   LevenbergMarquardtParams::SetCeresDefaults(&params);
   params.maxIterations = 3;
   params.errorTol = 0.0;
   params.relativeErrorTol = 0.0;
   params.absoluteErrorTol = 0.0;
 
-  CudaSparseLevenbergMarquardtOptimizer optimizer(graph, initial, params);
+  SparseLevenbergMarquardtOptimizer optimizer(graph, initial, params);
   (void)optimizer.optimize();
-  const CudaSparseLevenbergMarquardtResult& result = optimizer.result();
+  const SparseLevenbergMarquardtResult& result = optimizer.result();
 
-  CHECK(result.backend == CudaSparseLmBackend::Cuda);
+  CHECK(result.backend == SparseLevenbergMarquardtBackend::Device);
   CHECK(result.outerLinearizations > 0);
   EXPECT_LONGS_EQUAL(result.outerLinearizations,
                      callbackState->jacobianCalls.load());
@@ -1183,11 +1183,11 @@ void CheckStreamedJacobiansAtSnapshots(TestResult& result_,
 
 void CheckHeterogeneousParity(TestResult& result_, const std::string& name_,
                               bool robust) {
-  if (!CanRunCudaSparseLm()) return;
+  if (!CanRunSparseLevenbergMarquardt()) return;
 
   HeterogeneousProblem cpuProblem = MakeHeterogeneousProblem(robust);
   HeterogeneousProblem cudaProblem = MakeHeterogeneousProblem(robust);
-  CudaSparseLevenbergMarquardtParams params;
+  SparseLevenbergMarquardtParams params;
   LevenbergMarquardtParams::SetCeresDefaults(&params);
   params.maxIterations = 20;
   params.dampingParams.diagonalDamping = true;
@@ -1195,10 +1195,10 @@ void CheckHeterogeneousParity(TestResult& result_, const std::string& name_,
   LevenbergMarquardtOptimizer cpuOptimizer(cpuProblem.graph, cpuProblem.initial,
                                            params);
   const Values expected = cpuOptimizer.optimize();
-  CudaSparseLevenbergMarquardtOptimizer cudaOptimizer(
+  SparseLevenbergMarquardtOptimizer cudaOptimizer(
       cudaProblem.graph, cudaProblem.initial, params);
   const Values actual = cudaOptimizer.optimize();
-  const CudaSparseLevenbergMarquardtResult& cudaResult = cudaOptimizer.result();
+  const SparseLevenbergMarquardtResult& cudaResult = cudaOptimizer.result();
 
   std::vector<Values> snapshots;
   {
@@ -1206,7 +1206,7 @@ void CheckHeterogeneousParity(TestResult& result_, const std::string& name_,
     snapshots = cudaProblem.snapshots->linearizationPoints;
   }
 
-  CHECK(cudaResult.backend == CudaSparseLmBackend::Cuda);
+  CHECK(cudaResult.backend == SparseLevenbergMarquardtBackend::Device);
   // The CPU and CUDA direct solvers can take different accepted-step paths
   // after a numerically borderline LM trial while still converging to the
   // same solution.  Correctness is established below by objective and Values
@@ -1232,61 +1232,61 @@ void CheckHeterogeneousParity(TestResult& result_, const std::string& name_,
 
 }  // namespace
 
-TEST(CudaSparseLevenbergMarquardt,
+TEST(SparseLevenbergMarquardt,
      MatchesHeterogeneousGraphWithDiagonalDamping) {
   CheckHeterogeneousParity(result_, name_, false);
 }
 
-TEST(CudaSparseLevenbergMarquardt,
+TEST(SparseLevenbergMarquardt,
      MatchesHeterogeneousHuberGraphWithDiagonalDamping) {
   CheckHeterogeneousParity(result_, name_, true);
 }
 
-TEST(CudaSparseLevenbergMarquardt, FallsBackWhenCudaUnavailable) {
+TEST(SparseLevenbergMarquardt, FallsBackWhenCudaUnavailable) {
   if (HasCudaDevice()) return;
   const Pose2LmProblem problem = MakePose2LmProblem();
   CheckCpuFallback(result_, name_, problem.graph, problem.initial,
-                   CudaSparseLmFallbackReason::CudaUnavailable);
+                   SparseLevenbergMarquardtFallbackReason::RuntimeUnavailable);
 }
 
-TEST(CudaSparseLevenbergMarquardt, FallsBackWhenToolkitUnsupported) {
+TEST(SparseLevenbergMarquardt, FallsBackWhenToolkitUnsupported) {
 #if GTSAM_ENABLE_CUDSS
   if (!HasCudaDevice()) return;
   if (DeviceSparseJacobianNormalEquations::preflightCapability().supported)
     return;
   const Pose2LmProblem problem = MakePose2LmProblem();
   CheckCpuFallback(result_, name_, problem.graph, problem.initial,
-                   CudaSparseLmFallbackReason::CudaToolkitUnsupported);
+                   SparseLevenbergMarquardtFallbackReason::ToolkitUnsupported);
 #endif
 }
 
 #if !GTSAM_ENABLE_CUDSS
-TEST(CudaSparseLevenbergMarquardt, FallsBackWhenCudssUnavailable) {
+TEST(SparseLevenbergMarquardt, FallsBackWhenCudssUnavailable) {
   if (!HasCudaDevice()) return;
   const Pose2LmProblem problem = MakePose2LmProblem();
   CheckCpuFallback(
       result_, name_, problem.graph, problem.initial,
-      CudaSparseLmFallbackReason::CudssUnavailable, DirectJacobianFailure::None,
+      SparseLevenbergMarquardtFallbackReason::CudssUnavailable, DirectJacobianFailure::None,
       std::numeric_limits<size_t>::max(), {}, "cuDSS support is not compiled");
 }
 
-TEST(CudaSparseLevenbergMarquardt, PcgRunsWithoutCudss) {
+TEST(SparseLevenbergMarquardt, PcgRunsWithoutCudss) {
   if (!CanRunCudaSparsePcg()) return;
   const Pose2LmProblem problem = MakePose2LmProblem();
-  CudaSparseLevenbergMarquardtParams params;
+  SparseLevenbergMarquardtParams params;
   LevenbergMarquardtParams::SetCeresDefaults(&params);
-  params.linear.backend = CudaLinearSolverType::Pcg;
+  params.linear.backend = LinearSolverType::Pcg;
   params.fallbackOnUnsupported = false;
   params.maxIterations = 2;
   params.pcg.maxIterations = 100;
   params.pcg.relativeTolerance = 1e-10;
-  CudaSparseLevenbergMarquardtOptimizer optimizer(
+  SparseLevenbergMarquardtOptimizer optimizer(
       problem.graph, problem.initial, params);
   (void)optimizer.optimize();
   CHECK(optimizer.error() < problem.graph.error(problem.initial));
-  CHECK(optimizer.result().backend == CudaSparseLmBackend::Cuda);
+  CHECK(optimizer.result().backend == SparseLevenbergMarquardtBackend::Device);
   CHECK(optimizer.result().linearSolveStats.backend ==
-        CudaLinearSolverType::Pcg);
+        LinearSolverType::Pcg);
 }
 #endif
 
@@ -1295,7 +1295,7 @@ namespace {
 void CheckCudaAgainstReference(TestResult& result_, const std::string& name_,
                                const NonlinearFactorGraph& graph,
                                const Values& initial,
-                               CudaSparseLevenbergMarquardtParams params,
+                               SparseLevenbergMarquardtParams params,
                                const ReferenceLmRun& expected) {
   std::vector<HookRecord> actualHooks;
   params.iterationHook = [&](size_t iteration, double oldError,
@@ -1303,12 +1303,12 @@ void CheckCudaAgainstReference(TestResult& result_, const std::string& name_,
     actualHooks.push_back(HookRecord{iteration, oldError, newError});
   };
 
-  CudaSparseLevenbergMarquardtOptimizer optimizer(graph, initial, params);
+  SparseLevenbergMarquardtOptimizer optimizer(graph, initial, params);
   const Values actualValues = optimizer.optimize();
-  const CudaSparseLevenbergMarquardtResult& actual = optimizer.result();
+  const SparseLevenbergMarquardtResult& actual = optimizer.result();
 
-  CHECK(actual.backend == CudaSparseLmBackend::Cuda);
-  CHECK(actual.fallbackReason == CudaSparseLmFallbackReason::None);
+  CHECK(actual.backend == SparseLevenbergMarquardtBackend::Device);
+  CHECK(actual.fallbackReason == SparseLevenbergMarquardtFallbackReason::None);
   CHECK(actual.termination == expected.termination);
   EXPECT_LONGS_EQUAL(expected.outerLinearizations, actual.outerLinearizations);
   EXPECT_LONGS_EQUAL(expected.acceptedSteps, actual.iterations);
@@ -1322,7 +1322,7 @@ void CheckCudaAgainstReference(TestResult& result_, const std::string& name_,
 
   for (size_t i = 0; i < expected.attempts.size(); ++i) {
     const ReferenceAttempt& reference = expected.attempts[i];
-    const CudaSparseLmAttemptRecord& attempt = actual.attemptTrace[i];
+    const SparseLevenbergMarquardtAttemptRecord& attempt = actual.attemptTrace[i];
     EXPECT_LONGS_EQUAL(reference.acceptedIterationsBeforeAttempt,
                        attempt.acceptedIterationsBeforeAttempt);
     EXPECT_LONGS_EQUAL(reference.attempt, attempt.attempt);
@@ -1353,10 +1353,10 @@ namespace {
 
 void CheckAcceptedTraceMode(TestResult& result_, const std::string& name_,
                             bool useFixedLambdaFactor) {
-  if (!CanRunCudaSparseLm()) return;
+  if (!CanRunSparseLevenbergMarquardt()) return;
   const Pose2LmProblem problem = MakePose2LmProblem();
 
-  CudaSparseLevenbergMarquardtParams params;
+  SparseLevenbergMarquardtParams params;
   LevenbergMarquardtParams::SetCeresDefaults(&params);
   params.maxIterations = 2;
   params.relativeErrorTol = 0.0;
@@ -1367,7 +1367,7 @@ void CheckAcceptedTraceMode(TestResult& result_, const std::string& name_,
 
   const ReferenceLmRun expected =
       RunCpuTryLambdaReference(problem.graph, problem.initial, params);
-  CHECK(expected.termination == CudaSparseLmTerminationReason::MaxIterations);
+  CHECK(expected.termination == SparseLevenbergMarquardtTerminationReason::MaxIterations);
   EXPECT_LONGS_EQUAL(2, expected.outerLinearizations);
   EXPECT_LONGS_EQUAL(2, expected.acceptedSteps);
   EXPECT_LONGS_EQUAL(2, expected.hooks.size());
@@ -1378,22 +1378,22 @@ void CheckAcceptedTraceMode(TestResult& result_, const std::string& name_,
 
 }  // namespace
 
-TEST(CudaSparseLevenbergMarquardt,
+TEST(SparseLevenbergMarquardt,
      MatchesCpuFixedLambdaTraceAndReusesAnalysis) {
   CheckAcceptedTraceMode(result_, name_, true);
 }
 
-TEST(CudaSparseLevenbergMarquardt,
+TEST(SparseLevenbergMarquardt,
      MatchesCpuAdaptiveLambdaTraceAndReusesAnalysis) {
   CheckAcceptedTraceMode(result_, name_, false);
 }
 
-TEST(CudaSparseLevenbergMarquardt, InitialErrorThresholdExitsBeforeCudaSetup) {
+TEST(SparseLevenbergMarquardt, InitialErrorThresholdExitsBeforeCudaSetup) {
   const Pose2LmProblem problem = MakePose2LmProblem();
   const double initialError = problem.graph.error(problem.initial);
   std::vector<HookRecord> hooks;
 
-  CudaSparseLevenbergMarquardtParams params;
+  SparseLevenbergMarquardtParams params;
   LevenbergMarquardtParams::SetCeresDefaults(&params);
   params.errorTol = initialError + 1.0;
   params.fallbackOnUnsupported = false;
@@ -1403,15 +1403,15 @@ TEST(CudaSparseLevenbergMarquardt, InitialErrorThresholdExitsBeforeCudaSetup) {
     hooks.push_back(HookRecord{iteration, oldError, newError});
   };
 
-  CudaSparseLevenbergMarquardtOptimizer optimizer(problem.graph,
+  SparseLevenbergMarquardtOptimizer optimizer(problem.graph,
                                                   problem.initial, params);
   const Values actual = optimizer.optimize();
-  const CudaSparseLevenbergMarquardtResult& result = optimizer.result();
+  const SparseLevenbergMarquardtResult& result = optimizer.result();
 
   EXPECT(assert_equal(problem.initial, actual, 1e-12));
-  CHECK(result.backend == CudaSparseLmBackend::Cuda);
-  CHECK(result.fallbackReason == CudaSparseLmFallbackReason::None);
-  CHECK(result.termination == CudaSparseLmTerminationReason::ErrorThreshold);
+  CHECK(result.backend == SparseLevenbergMarquardtBackend::Device);
+  CHECK(result.fallbackReason == SparseLevenbergMarquardtFallbackReason::None);
+  CHECK(result.termination == SparseLevenbergMarquardtTerminationReason::ErrorThreshold);
   EXPECT_LONGS_EQUAL(0, result.outerLinearizations);
   EXPECT_LONGS_EQUAL(0, result.iterations);
   EXPECT_LONGS_EQUAL(0, result.lambdaAttempts);
@@ -1424,21 +1424,21 @@ TEST(CudaSparseLevenbergMarquardt, InitialErrorThresholdExitsBeforeCudaSetup) {
   DOUBLES_EQUAL(params.lambdaInitial, result.finalLambda, 1e-15);
 }
 
-TEST(CudaSparseLevenbergMarquardt, ZeroMaxIterationsExitsBeforeCudaSetup) {
+TEST(SparseLevenbergMarquardt, ZeroMaxIterationsExitsBeforeCudaSetup) {
   const Pose2LmProblem problem = MakePose2LmProblem();
-  CudaSparseLevenbergMarquardtParams params;
+  SparseLevenbergMarquardtParams params;
   LevenbergMarquardtParams::SetCeresDefaults(&params);
   params.maxIterations = 0;
   params.errorTol = 0.0;
   params.fallbackOnUnsupported = false;
 
-  CudaSparseLevenbergMarquardtOptimizer optimizer(problem.graph,
+  SparseLevenbergMarquardtOptimizer optimizer(problem.graph,
                                                   problem.initial, params);
   const Values actual = optimizer.optimize();
-  const CudaSparseLevenbergMarquardtResult& result = optimizer.result();
+  const SparseLevenbergMarquardtResult& result = optimizer.result();
 
   EXPECT(assert_equal(problem.initial, actual, 1e-12));
-  CHECK(result.termination == CudaSparseLmTerminationReason::MaxIterations);
+  CHECK(result.termination == SparseLevenbergMarquardtTerminationReason::MaxIterations);
   EXPECT_LONGS_EQUAL(0, result.outerLinearizations);
   EXPECT_LONGS_EQUAL(0, result.lambdaAttempts);
   EXPECT_LONGS_EQUAL(0, result.cudssAnalyses);
@@ -1448,12 +1448,12 @@ TEST(CudaSparseLevenbergMarquardt, ZeroMaxIterationsExitsBeforeCudaSetup) {
   DOUBLES_EQUAL(params.lambdaInitial, result.finalLambda, 1e-15);
 }
 
-TEST(CudaSparseLevenbergMarquardt,
+TEST(SparseLevenbergMarquardt,
      RejectedSmallCostAttemptTerminatesWithoutIncreasingLambda) {
-  if (!CanRunCudaSparseLm()) return;
+  if (!CanRunSparseLevenbergMarquardt()) return;
   const Pose2LmProblem problem = MakePose2LmProblem();
 
-  CudaSparseLevenbergMarquardtParams params;
+  SparseLevenbergMarquardtParams params;
   LevenbergMarquardtParams::SetCeresDefaults(&params);
   params.maxIterations = 10;
   params.useFixedLambdaFactor = true;
@@ -1465,7 +1465,7 @@ TEST(CudaSparseLevenbergMarquardt,
 
   const ReferenceLmRun expected =
       RunCpuTryLambdaReference(problem.graph, problem.initial, params);
-  CHECK(expected.termination == CudaSparseLmTerminationReason::SmallCostChange);
+  CHECK(expected.termination == SparseLevenbergMarquardtTerminationReason::SmallCostChange);
   EXPECT_LONGS_EQUAL(1, expected.outerLinearizations);
   EXPECT_LONGS_EQUAL(1, expected.lambdaAttempts);
   EXPECT_LONGS_EQUAL(0, expected.acceptedSteps);
@@ -1480,12 +1480,12 @@ TEST(CudaSparseLevenbergMarquardt,
                             params, expected);
 }
 
-TEST(CudaSparseLevenbergMarquardt,
+TEST(SparseLevenbergMarquardt,
      AdaptiveRejectionsStopAtLambdaUpperBoundAfterHook) {
-  if (!CanRunCudaSparseLm()) return;
+  if (!CanRunSparseLevenbergMarquardt()) return;
   const Pose2LmProblem problem = MakePose2LmProblem();
 
-  CudaSparseLevenbergMarquardtParams params;
+  SparseLevenbergMarquardtParams params;
   LevenbergMarquardtParams::SetCeresDefaults(&params);
   params.maxIterations = 10;
   params.lambdaInitial = 1.0;
@@ -1502,7 +1502,7 @@ TEST(CudaSparseLevenbergMarquardt,
   const ReferenceLmRun expected =
       RunCpuTryLambdaReference(problem.graph, problem.initial, params);
   CHECK(expected.termination ==
-        CudaSparseLmTerminationReason::LambdaUpperBound);
+        SparseLevenbergMarquardtTerminationReason::LambdaUpperBound);
   EXPECT_LONGS_EQUAL(1, expected.outerLinearizations);
   EXPECT_LONGS_EQUAL(2, expected.lambdaAttempts);
   EXPECT_LONGS_EQUAL(0, expected.acceptedSteps);

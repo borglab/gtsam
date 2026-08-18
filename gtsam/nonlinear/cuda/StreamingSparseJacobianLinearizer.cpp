@@ -28,7 +28,7 @@ struct PerFactorTiming {
   double csrPacking = 0.0;
 };
 
-DirectJacobianStatus Failure(DirectJacobianFailure failure,
+DirectJacobianStatus failureStatus(DirectJacobianFailure failure,
                              std::string detail) {
   DirectJacobianStatus status;
   status.failure = failure;
@@ -36,7 +36,7 @@ DirectJacobianStatus Failure(DirectJacobianFailure failure,
   return status;
 }
 
-DirectJacobianStatus FactorFailure(DirectJacobianFailure failure,
+DirectJacobianStatus factorFailureStatus(DirectJacobianFailure failure,
                                    size_t factorIndex, std::string detail) {
   DirectJacobianStatus status;
   status.failure = failure;
@@ -45,28 +45,28 @@ DirectJacobianStatus FactorFailure(DirectJacobianFailure failure,
   return status;
 }
 
-DirectJacobianStatus ValidateOutput(const SparseJacobianPlan& plan,
+DirectJacobianStatus validateOutput(const SparseJacobianPlan& plan,
                                     const HostSparseJacobian* output) {
   if (!output) {
-    return Failure(DirectJacobianFailure::StructuralMismatch, "output is null");
+    return failureStatus(DirectJacobianFailure::StructuralMismatch, "output is null");
   }
   if (output->structuralFingerprint() != plan.structuralFingerprint()) {
-    return Failure(
+    return failureStatus(
         DirectJacobianFailure::StructuralMismatch,
         "output structural fingerprint does not match the sparse plan");
   }
   if (output->valuesSize() != static_cast<size_t>(plan.nonzeros())) {
-    return Failure(DirectJacobianFailure::StructuralMismatch,
+    return failureStatus(DirectJacobianFailure::StructuralMismatch,
                    "output values size does not match the sparse plan");
   }
   if (output->rhsSize() != static_cast<size_t>(plan.rows())) {
-    return Failure(DirectJacobianFailure::StructuralMismatch,
+    return failureStatus(DirectJacobianFailure::StructuralMismatch,
                    "output RHS size does not match the sparse plan");
   }
   return {};
 }
 
-DirectJacobianStatus ScatterOneFactor(
+DirectJacobianStatus scatterOneFactor(
     const std::shared_ptr<GaussianFactor>& gaussian, size_t factorIndex,
     const SparseJacobianPlan& plan, HostSparseJacobian* output) {
   if (!gaussian) {
@@ -75,22 +75,22 @@ DirectJacobianStatus ScatterOneFactor(
 
   const auto* jacobian = dynamic_cast<const JacobianFactor*>(gaussian.get());
   if (!jacobian) {
-    return FactorFailure(DirectJacobianFailure::UnsupportedGaussianFactor,
+    return factorFailureStatus(DirectJacobianFailure::UnsupportedGaussianFactor,
                          factorIndex,
                          "linearization result is not a JacobianFactor");
   }
 
   const SparseJacobianFactorWritePlan& factorPlan = plan.factor(factorIndex);
   if (jacobian->rows() != static_cast<size_t>(factorPlan.rowCount)) {
-    return FactorFailure(DirectJacobianFailure::StructuralMismatch, factorIndex,
+    return factorFailureStatus(DirectJacobianFailure::StructuralMismatch, factorIndex,
                          "Jacobian row count does not match the sparse plan");
   }
   if (jacobian->size() != factorPlan.blocks.size()) {
-    return FactorFailure(DirectJacobianFailure::StructuralMismatch, factorIndex,
+    return factorFailureStatus(DirectJacobianFailure::StructuralMismatch, factorIndex,
                          "Jacobian block count does not match the sparse plan");
   }
   if (jacobian->isConstrained()) {
-    return FactorFailure(DirectJacobianFailure::ConstrainedFactor, factorIndex,
+    return factorFailureStatus(DirectJacobianFailure::ConstrainedFactor, factorIndex,
                          "constrained JacobianFactor is unsupported");
   }
 
@@ -103,24 +103,24 @@ DirectJacobianStatus ScatterOneFactor(
 
   for (const SparseJacobianBlockWritePlan& block : factorPlan.blocks) {
     if (block.localBlockIndex >= source->size()) {
-      return FactorFailure(
+      return factorFailureStatus(
           DirectJacobianFailure::StructuralMismatch, factorIndex,
           "planned local Jacobian block index is out of range");
     }
     if (source->keys()[block.localBlockIndex] != block.key) {
-      return FactorFailure(DirectJacobianFailure::StructuralMismatch,
+      return factorFailureStatus(DirectJacobianFailure::StructuralMismatch,
                            factorIndex,
                            "Jacobian key order does not match the sparse plan");
     }
 
     const auto A = source->getA(source->begin() + block.localBlockIndex);
     if (A.rows() != factorPlan.rowCount) {
-      return FactorFailure(
+      return factorFailureStatus(
           DirectJacobianFailure::StructuralMismatch, factorIndex,
           "Jacobian block row count does not match the sparse plan");
     }
     if (A.cols() != block.width) {
-      return FactorFailure(
+      return factorFailureStatus(
           DirectJacobianFailure::StructuralMismatch, factorIndex,
           "Jacobian block width does not match the sparse plan");
     }
@@ -128,7 +128,7 @@ DirectJacobianStatus ScatterOneFactor(
 
   const auto b = source->getb();
   if (b.size() != factorPlan.rowCount) {
-    return FactorFailure(DirectJacobianFailure::StructuralMismatch, factorIndex,
+    return factorFailureStatus(DirectJacobianFailure::StructuralMismatch, factorIndex,
                          "Jacobian RHS size does not match the sparse plan");
   }
 
@@ -137,7 +137,7 @@ DirectJacobianStatus ScatterOneFactor(
     for (Eigen::Index row = 0; row < A.rows(); ++row) {
       for (Eigen::Index column = 0; column < A.cols(); ++column) {
         if (!std::isfinite(A(row, column))) {
-          return FactorFailure(
+          return factorFailureStatus(
               DirectJacobianFailure::NonFiniteValues, factorIndex,
               "Jacobian block contains a non-finite coefficient");
         }
@@ -146,7 +146,7 @@ DirectJacobianStatus ScatterOneFactor(
   }
   for (Eigen::Index row = 0; row < b.size(); ++row) {
     if (!std::isfinite(b(row))) {
-      return FactorFailure(DirectJacobianFailure::NonFiniteValues, factorIndex,
+      return factorFailureStatus(DirectJacobianFailure::NonFiniteValues, factorIndex,
                            "Jacobian RHS contains a non-finite coefficient");
     }
   }
@@ -185,16 +185,16 @@ DirectJacobianStatus StreamingSparseJacobianLinearizer::linearize(
     *profile = {};
   }
 
-  DirectJacobianStatus status = ValidateOutput(plan, output);
+  DirectJacobianStatus status = validateOutput(plan, output);
   if (!status.ok()) {
     return status;
   }
   if (graph.size() != plan.factors().size()) {
-    return Failure(DirectJacobianFailure::StructuralMismatch,
+    return failureStatus(DirectJacobianFailure::StructuralMismatch,
                    "nonlinear graph slot count does not match the sparse plan");
   }
   if (validateStructure && !columns.matches(values)) {
-    return Failure(DirectJacobianFailure::StructuralMismatch,
+    return failureStatus(DirectJacobianFailure::StructuralMismatch,
                    "Values dimensions do not match the column layout");
   }
 
@@ -216,7 +216,7 @@ DirectJacobianStatus StreamingSparseJacobianLinearizer::linearize(
     if (isSendable != plan.factor(factorIndex).sendable &&
         sendabilityStatus.ok()) {
       sendabilityStatus =
-          FactorFailure(DirectJacobianFailure::StructuralMismatch, factorIndex,
+          factorFailureStatus(DirectJacobianFailure::StructuralMismatch, factorIndex,
                         "factor sendability does not match the sparse plan");
     }
   }
@@ -225,7 +225,7 @@ DirectJacobianStatus StreamingSparseJacobianLinearizer::linearize(
   }
 
   if (validateStructure && !plan.matches(graph, columns)) {
-    return Failure(DirectJacobianFailure::StructuralMismatch,
+    return failureStatus(DirectJacobianFailure::StructuralMismatch,
                    "nonlinear graph structure does not match the sparse plan");
   }
 
@@ -240,7 +240,7 @@ DirectJacobianStatus StreamingSparseJacobianLinearizer::linearize(
     if (!profile) {
       std::shared_ptr<GaussianFactor> gaussian = factor->linearize(values);
       statuses[factorIndex] =
-          ScatterOneFactor(gaussian, factorIndex, plan, output);
+          scatterOneFactor(gaussian, factorIndex, plan, output);
       return;
     }
 
@@ -254,7 +254,7 @@ DirectJacobianStatus StreamingSparseJacobianLinearizer::linearize(
 
     const ProfileClock::time_point packingBegin = ProfileClock::now();
     DirectJacobianStatus factorStatus =
-        ScatterOneFactor(gaussian, factorIndex, plan, output);
+        scatterOneFactor(gaussian, factorIndex, plan, output);
     const ProfileClock::time_point packingEnd = ProfileClock::now();
     timing.csrPacking =
         std::chrono::duration<double>(packingEnd - packingBegin).count();
@@ -311,17 +311,17 @@ DirectJacobianStatus StreamingSparseJacobianLinearizer::linearize(
 DirectJacobianStatus StreamingSparseJacobianLinearizer::packGaussianFactorGraph(
     const GaussianFactorGraph& linear, const SparseJacobianPlan& plan,
     HostSparseJacobian* output) const {
-  DirectJacobianStatus status = ValidateOutput(plan, output);
+  DirectJacobianStatus status = validateOutput(plan, output);
   if (!status.ok()) {
     return status;
   }
   if (linear.size() != plan.factors().size()) {
-    return Failure(DirectJacobianFailure::StructuralMismatch,
+    return failureStatus(DirectJacobianFailure::StructuralMismatch,
                    "Gaussian graph slot count does not match the sparse plan");
   }
 
   for (size_t factorIndex = 0; factorIndex < linear.size(); ++factorIndex) {
-    status = ScatterOneFactor(linear[factorIndex], factorIndex, plan, output);
+    status = scatterOneFactor(linear[factorIndex], factorIndex, plan, output);
     if (!status.ok()) {
       return status;
     }

@@ -8,7 +8,7 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/nonlinear/cuda/CudaSparseLevenbergMarquardt.h>
+#include <gtsam/nonlinear/cuda/SparseLevenbergMarquardt.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/FastSync.h>
 #include <gtsam/slam/PriorFactor.h>
@@ -54,16 +54,16 @@ using gtsam::Ordering;
 using gtsam::Pose2;
 using gtsam::Pose3;
 using gtsam::Values;
-using gtsam::cuda::CudaSparseLevenbergMarquardtOptimizer;
-using gtsam::cuda::CudaSparseLevenbergMarquardtParams;
-using gtsam::cuda::CudaSparseLevenbergMarquardtResult;
-using gtsam::cuda::CudaSparseLmAttemptRecord;
-using gtsam::cuda::CudaSparseLmBackend;
-using gtsam::cuda::CudaSparseLmStageTimings;
-using gtsam::cuda::CudaSparseLmSystemSize;
-using gtsam::cuda::CudaSparseLmTerminationReason;
-using gtsam::cuda::CudaSparseLmTransferCounts;
-using gtsam::cuda::CudaLinearSolveStats;
+using gtsam::cuda::SparseLevenbergMarquardtOptimizer;
+using gtsam::cuda::SparseLevenbergMarquardtParams;
+using gtsam::cuda::SparseLevenbergMarquardtResult;
+using gtsam::cuda::SparseLevenbergMarquardtAttemptRecord;
+using gtsam::cuda::SparseLevenbergMarquardtBackend;
+using gtsam::cuda::SparseLevenbergMarquardtStageTimings;
+using gtsam::cuda::SparseLevenbergMarquardtSystemSize;
+using gtsam::cuda::SparseLevenbergMarquardtTerminationReason;
+using gtsam::cuda::SparseLevenbergMarquardtTransferCounts;
+using gtsam::cuda::LinearSolveStats;
 
 constexpr double kObjectiveTolerance = 1e-8;
 
@@ -193,18 +193,18 @@ struct RawRun {
   size_t pcgMaxIterationHits = 0;
   std::string termination;
   double finalLambda = 0.0;
-  CudaSparseLmSystemSize systemSize;
-  CudaSparseLmTransferCounts transfers;
-  CudaSparseLmStageTimings timings;
-  CudaLinearSolveStats linearSolveStats;
-  std::vector<CudaSparseLmAttemptRecord> attempts;
+  SparseLevenbergMarquardtSystemSize systemSize;
+  SparseLevenbergMarquardtTransferCounts transfers;
+  SparseLevenbergMarquardtStageTimings timings;
+  LinearSolveStats linearSolveStats;
+  std::vector<SparseLevenbergMarquardtAttemptRecord> attempts;
 };
 
 void WriteRawRuns(std::ostream& output, const std::vector<RawRun>& runs);
 
 struct TimingField {
   const char* name;
-  double CudaSparseLmStageTimings::*member;
+  double SparseLevenbergMarquardtStageTimings::*member;
 };
 
 struct HardwareMetadata {
@@ -242,7 +242,7 @@ struct LegacyToroPose3Edge {
 
 const std::vector<TimingField>& TimingFields() {
   static const std::vector<TimingField> fields{
-#define MAKE_TIMING_FIELD(name) {#name, &CudaSparseLmStageTimings::name},
+#define MAKE_TIMING_FIELD(name) {#name, &SparseLevenbergMarquardtStageTimings::name},
       FOR_EACH_TIMING_FIELD(MAKE_TIMING_FIELD)
 #undef MAKE_TIMING_FIELD
   };
@@ -1088,9 +1088,9 @@ LoadedWorkload LoadWorkload(const WorkloadSpec& specification,
   return workload;
 }
 
-CudaSparseLevenbergMarquardtParams MakeGpuParams(
+SparseLevenbergMarquardtParams MakeGpuParams(
     const LoadedWorkload& workload, const RunOptions& options) {
-  CudaSparseLevenbergMarquardtParams params;
+  SparseLevenbergMarquardtParams params;
   if (workload.pose2UpstreamSettings) {
     params.maxIterations = 100;
   } else {
@@ -1105,7 +1105,7 @@ CudaSparseLevenbergMarquardtParams MakeGpuParams(
   params.collectTiming = true;
   params.collectAttemptTrace = true;
   if (options.gpuSolver == "pcg") {
-    params.linear.backend = gtsam::cuda::CudaLinearSolverType::Pcg;
+    params.linear.backend = gtsam::cuda::LinearSolverType::Pcg;
     if (options.pcgTolerance > 0.0) {
       params.pcg.relativeTolerance = options.pcgTolerance;
     }
@@ -1136,19 +1136,19 @@ CudaSparseLevenbergMarquardtParams MakeGpuParams(
   return params;
 }
 
-const char* TerminationName(CudaSparseLmTerminationReason termination) {
+const char* TerminationName(SparseLevenbergMarquardtTerminationReason termination) {
   switch (termination) {
-    case CudaSparseLmTerminationReason::None:
+    case SparseLevenbergMarquardtTerminationReason::None:
       return "none";
-    case CudaSparseLmTerminationReason::ErrorThreshold:
+    case SparseLevenbergMarquardtTerminationReason::ErrorThreshold:
       return "error_threshold";
-    case CudaSparseLmTerminationReason::Converged:
+    case SparseLevenbergMarquardtTerminationReason::Converged:
       return "converged";
-    case CudaSparseLmTerminationReason::MaxIterations:
+    case SparseLevenbergMarquardtTerminationReason::MaxIterations:
       return "max_iterations";
-    case CudaSparseLmTerminationReason::SmallCostChange:
+    case SparseLevenbergMarquardtTerminationReason::SmallCostChange:
       return "small_cost_change";
-    case CudaSparseLmTerminationReason::LambdaUpperBound:
+    case SparseLevenbergMarquardtTerminationReason::LambdaUpperBound:
       return "lambda_upper_bound";
   }
   throw std::runtime_error("unknown CUDA sparse LM termination reason");
@@ -1177,7 +1177,7 @@ void ValidateRawRun(const RawRun& run) {
                                  field.name);
       }
     }
-    for (const CudaSparseLmAttemptRecord& attempt : run.attempts) {
+    for (const SparseLevenbergMarquardtAttemptRecord& attempt : run.attempts) {
       if (!std::isfinite(attempt.lambda) ||
           !std::isfinite(attempt.linearizedChange) ||
           !std::isfinite(attempt.nonlinearChange) ||
@@ -1209,20 +1209,20 @@ RawRun RunCpu(const LoadedWorkload& workload, size_t repetition) {
 
 RawRun RunGpu(const LoadedWorkload& workload, size_t repetition,
               const RunOptions& options) {
-  const CudaSparseLevenbergMarquardtParams params =
+  const SparseLevenbergMarquardtParams params =
       MakeGpuParams(workload, options);
   const auto begin = Clock::now();
-  CudaSparseLevenbergMarquardtOptimizer optimizer(workload.graph,
+  SparseLevenbergMarquardtOptimizer optimizer(workload.graph,
                                                   workload.initial, params);
   (void)optimizer.optimize();
   const auto end = Clock::now();
-  const CudaSparseLevenbergMarquardtResult& result = optimizer.result();
+  const SparseLevenbergMarquardtResult& result = optimizer.result();
 
-  if (result.backend != CudaSparseLmBackend::Cuda) {
+  if (result.backend != SparseLevenbergMarquardtBackend::Device) {
     throw std::runtime_error("GPU benchmark fell back to CPU: " +
                              result.fallbackDetail);
   }
-  if (result.termination == CudaSparseLmTerminationReason::None) {
+  if (result.termination == SparseLevenbergMarquardtTerminationReason::None) {
     throw std::runtime_error("GPU benchmark has no termination reason");
   }
 
@@ -1261,7 +1261,7 @@ std::vector<double> ExternalSamples(const std::vector<RawRun>& runs) {
 
 std::vector<double> TimingSamples(
     const std::vector<RawRun>& runs,
-    double CudaSparseLmStageTimings::*member) {
+    double SparseLevenbergMarquardtStageTimings::*member) {
   std::vector<double> samples;
   samples.reserve(runs.size());
   for (const RawRun& run : runs) samples.push_back(run.timings.*member);
@@ -1269,7 +1269,7 @@ std::vector<double> TimingSamples(
 }
 
 std::vector<double> TransferSamples(const std::vector<RawRun>& runs,
-                                    size_t CudaSparseLmTransferCounts::*member) {
+                                    size_t SparseLevenbergMarquardtTransferCounts::*member) {
   std::vector<double> samples;
   samples.reserve(runs.size());
   for (const RawRun& run : runs) {
@@ -1416,7 +1416,7 @@ void WriteStatistics(std::ostream& output,
 }
 
 void WriteSystemSize(std::ostream& output,
-                     const CudaSparseLmSystemSize& size) {
+                     const SparseLevenbergMarquardtSystemSize& size) {
   output << "{\"factors\":" << size.factors
          << ",\"jacobian_rows\":" << size.jacobianRows
          << ",\"jacobian_columns\":" << size.jacobianColumns
@@ -1425,7 +1425,7 @@ void WriteSystemSize(std::ostream& output,
 }
 
 void WriteTransfers(std::ostream& output,
-                    const CudaSparseLmTransferCounts& transfers) {
+                    const SparseLevenbergMarquardtTransferCounts& transfers) {
   output << "{\"pattern_h2d_bytes\":" << transfers.patternH2dBytes
          << ",\"numeric_h2d_bytes\":" << transfers.numericH2dBytes
          << ",\"setup_d2h_bytes\":" << transfers.setupD2hBytes
@@ -1436,7 +1436,7 @@ void WriteTransfers(std::ostream& output,
 }
 
 void WriteTimings(std::ostream& output,
-                  const CudaSparseLmStageTimings& timings) {
+                  const SparseLevenbergMarquardtStageTimings& timings) {
   output << "{";
   bool first = true;
   for (const TimingField& field : TimingFields()) {
@@ -1448,11 +1448,11 @@ void WriteTimings(std::ostream& output,
 }
 
 void WriteAttempts(std::ostream& output,
-                   const std::vector<CudaSparseLmAttemptRecord>& attempts) {
+                   const std::vector<SparseLevenbergMarquardtAttemptRecord>& attempts) {
   output << "[";
   for (size_t index = 0; index < attempts.size(); ++index) {
     if (index) output << ",";
-    const CudaSparseLmAttemptRecord& attempt = attempts[index];
+    const SparseLevenbergMarquardtAttemptRecord& attempt = attempts[index];
     output << "{\"accepted_iterations_before\":"
            << attempt.acceptedIterationsBeforeAttempt
            << ",\"attempt\":" << attempt.attempt
@@ -1678,7 +1678,7 @@ std::string MakeCsv(const RunOptions& options,
           backend == "cpu" ? result.cpuRuns : result.gpuRuns;
       const SummaryStatistics external = Summarize(ExternalSamples(runs));
       const RawRun& representative = runs.front();
-      const CudaSparseLmSystemSize& systemSize =
+      const SparseLevenbergMarquardtSystemSize& systemSize =
           result.gpuRuns.front().systemSize;
       output << options.configuration << "," << options.ordering << ","
              << CsvEscape(result.name) << "," << backend << ","
@@ -1718,32 +1718,32 @@ std::string MakeCsv(const RunOptions& options,
       if (backend == "gpu") {
         output << static_cast<size_t>(
                       Summarize(TransferSamples(
-                                    runs, &CudaSparseLmTransferCounts::
+                                    runs, &SparseLevenbergMarquardtTransferCounts::
                                               patternH2dBytes))
                           .median)
                << ","
                << static_cast<size_t>(
                       Summarize(TransferSamples(
-                                    runs, &CudaSparseLmTransferCounts::
+                                    runs, &SparseLevenbergMarquardtTransferCounts::
                                               numericH2dBytes))
                           .median)
                << ","
                << static_cast<size_t>(
                       Summarize(TransferSamples(
                                     runs,
-                                    &CudaSparseLmTransferCounts::setupD2hBytes))
+                                    &SparseLevenbergMarquardtTransferCounts::setupD2hBytes))
                           .median)
                << ","
                << static_cast<size_t>(
                       Summarize(TransferSamples(
-                                    runs, &CudaSparseLmTransferCounts::
+                                    runs, &SparseLevenbergMarquardtTransferCounts::
                                               attemptD2hBytes))
                           .median)
                << ","
                << static_cast<size_t>(
                       Summarize(TransferSamples(
                                     runs,
-                                    &CudaSparseLmTransferCounts::pcgD2hBytes))
+                                    &SparseLevenbergMarquardtTransferCounts::pcgD2hBytes))
                           .median);
       } else {
         output << ",,,,";
@@ -1804,31 +1804,31 @@ void PrintResult(const WorkloadResult& result) {
             << static_cast<size_t>(
                    Summarize(TransferSamples(
                                  result.gpuRuns,
-                                 &CudaSparseLmTransferCounts::patternH2dBytes))
+                                 &SparseLevenbergMarquardtTransferCounts::patternH2dBytes))
                        .median)
             << "\n    numeric H2D: "
             << static_cast<size_t>(
                    Summarize(TransferSamples(
                                  result.gpuRuns,
-                                 &CudaSparseLmTransferCounts::numericH2dBytes))
+                                 &SparseLevenbergMarquardtTransferCounts::numericH2dBytes))
                        .median)
             << "\n    setup D2H: "
             << static_cast<size_t>(
                    Summarize(TransferSamples(
                                  result.gpuRuns,
-                                 &CudaSparseLmTransferCounts::setupD2hBytes))
+                                 &SparseLevenbergMarquardtTransferCounts::setupD2hBytes))
                        .median)
             << "\n    attempt D2H: "
             << static_cast<size_t>(
                    Summarize(TransferSamples(
                                  result.gpuRuns,
-                                 &CudaSparseLmTransferCounts::attemptD2hBytes))
+                                 &SparseLevenbergMarquardtTransferCounts::attemptD2hBytes))
                        .median)
             << "\n    PCG convergence D2H: "
             << static_cast<size_t>(
                    Summarize(TransferSamples(
                                  result.gpuRuns,
-                                 &CudaSparseLmTransferCounts::pcgD2hBytes))
+                                 &SparseLevenbergMarquardtTransferCounts::pcgD2hBytes))
                        .median)
             << "\n";
 }

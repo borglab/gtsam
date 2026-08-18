@@ -1,6 +1,6 @@
 #include <gtsam/nonlinear/cuda/DevicePcgSolver.h>
 
-#include <gtsam/linear/cuda/CudaPcgSolver.h>
+#include <gtsam/linear/cuda/PcgSolver.h>
 
 #include <algorithm>
 #include <chrono>
@@ -10,8 +10,8 @@
 namespace gtsam::cuda {
 namespace {
 
-CudaPcgOptions CommonOptions(const DevicePcgOptions& options, int dimension) {
-  CudaPcgOptions common;
+PcgOptions commonOptions(const DevicePcgOptions& options, int dimension) {
+  PcgOptions common;
   common.maxIterations =
       options.maxIterations == 0 ? std::min(dimension, 250)
                                  : options.maxIterations;
@@ -28,12 +28,12 @@ struct DevicePcgSolver::Impl {
   DevicePcgOptions options;
   bool initialized = false;
   bool collectProfile = false;
-  CudaJacobianNormalOperator linearOperator;
-  CudaJacobianNormalPreconditioner preconditioner;
+  JacobianNormalOperator linearOperator;
+  JacobianNormalPreconditioner preconditioner;
   // The general LM path supplies these producer-owned objects to the shared
-  // CudaLinearSolverSession. Allocate a recurrence engine only if a legacy
+  // LinearSolverSession. Allocate a recurrence engine only if a legacy
   // caller explicitly invokes DevicePcgSolver::solve().
-  std::unique_ptr<CudaPcgSolver> compatibilitySolver;
+  std::unique_ptr<PcgSolver> compatibilitySolver;
   DevicePcgSolveStats lastStats;
   DevicePcgProfile profileData;
 };
@@ -46,7 +46,7 @@ DevicePcgSolver& DevicePcgSolver::operator=(DevicePcgSolver&&) noexcept =
 
 void DevicePcgSolver::initialize(
     cusparseHandle_t handle, int rows, int columns, cusparseSpMatDescr_t j,
-    cusparseSpMatDescr_t jt, const CudaDeviceArray<int>& jtRowPointers,
+    cusparseSpMatDescr_t jt, const DeviceArray<int>& jtRowPointers,
     const std::vector<int>& blockOffsets, const DevicePcgOptions& options,
     cudaStream_t stream, bool collectProfile) {
   if (rows <= 0 || columns <= 0) {
@@ -72,7 +72,7 @@ void DevicePcgSolver::initialize(
 }
 
 void DevicePcgSolver::buildPreconditioner(
-    const CudaDeviceArray<double>& jtValues, cudaStream_t stream) {
+    const DeviceArray<double>& jtValues, cudaStream_t stream) {
   if (!impl_->initialized) {
     throw std::logic_error("DevicePcgSolver is not initialized");
   }
@@ -85,7 +85,7 @@ void DevicePcgSolver::buildPreconditioner(
 }
 
 void DevicePcgSolver::prepare(
-    double lambda, const CudaDeviceArray<double>& dampingDiagonal,
+    double lambda, const DeviceArray<double>& dampingDiagonal,
     cudaStream_t stream) {
   if (!impl_->initialized) {
     throw std::logic_error("DevicePcgSolver is not initialized");
@@ -94,14 +94,14 @@ void DevicePcgSolver::prepare(
   impl_->preconditioner.prepare(lambda, dampingDiagonal, stream);
 }
 
-const CudaLinearOperator& DevicePcgSolver::linearOperator() const {
+const LinearOperator& DevicePcgSolver::linearOperator() const {
   if (!impl_->initialized) {
     throw std::logic_error("DevicePcgSolver is not initialized");
   }
   return impl_->linearOperator;
 }
 
-const CudaPreconditioner& DevicePcgSolver::preconditioner() const {
+const Preconditioner& DevicePcgSolver::preconditioner() const {
   if (!impl_->initialized) {
     throw std::logic_error("DevicePcgSolver is not initialized");
   }
@@ -109,9 +109,9 @@ const CudaPreconditioner& DevicePcgSolver::preconditioner() const {
 }
 
 void DevicePcgSolver::solve(
-    double lambda, const CudaDeviceArray<double>& gradient,
-    const CudaDeviceArray<double>& dampingDiagonal,
-    CudaDeviceArray<double>* delta, cudaStream_t stream) {
+    double lambda, const DeviceArray<double>& gradient,
+    const DeviceArray<double>& dampingDiagonal,
+    DeviceArray<double>* delta, cudaStream_t stream) {
   if (!impl_->initialized) {
     throw std::logic_error("DevicePcgSolver is not initialized");
   }
@@ -122,15 +122,15 @@ void DevicePcgSolver::solve(
   }
   prepare(lambda, dampingDiagonal, stream);
   if (!impl_->compatibilitySolver) {
-    impl_->compatibilitySolver = std::make_unique<CudaPcgSolver>();
+    impl_->compatibilitySolver = std::make_unique<PcgSolver>();
     impl_->compatibilitySolver->initialize(
-        impl_->columns, CommonOptions(impl_->options, impl_->columns), stream,
+        impl_->columns, commonOptions(impl_->options, impl_->columns), stream,
         impl_->collectProfile);
   }
   impl_->compatibilitySolver->solve(impl_->linearOperator,
                                     impl_->preconditioner, gradient.data(),
                                     delta, stream);
-  const CudaLinearSolveStats& after = impl_->compatibilitySolver->stats();
+  const LinearSolveStats& after = impl_->compatibilitySolver->stats();
   impl_->lastStats = {};
   impl_->lastStats.iterations = static_cast<int>(after.lastPcgIterations);
   impl_->lastStats.residualNormSquared =

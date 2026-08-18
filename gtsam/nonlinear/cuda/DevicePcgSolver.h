@@ -2,9 +2,9 @@
 
 #include <cuda_runtime_api.h>
 #include <cusparse.h>
-#include <gtsam/base/cuda/CudaDeviceArray.h>
+#include <gtsam/base/cuda/DeviceArray.h>
 #include <gtsam/dllexport.h>
-#include <gtsam/nonlinear/cuda/CudaJacobianNormalOperator.h>
+#include <gtsam/nonlinear/cuda/JacobianNormalOperator.h>
 
 #include <cstddef>
 #include <memory>
@@ -72,7 +72,7 @@ class GTSAM_EXPORT DevicePcgSolver {
    */
   void initialize(cusparseHandle_t handle, int rows, int columns,
                   cusparseSpMatDescr_t j, cusparseSpMatDescr_t jt,
-                  const CudaDeviceArray<int>& jtRowPointers,
+                  const DeviceArray<int>& jtRowPointers,
                   const std::vector<int>& blockOffsets,
                   const DevicePcgOptions& options, cudaStream_t stream,
                   bool collectProfile);
@@ -82,7 +82,7 @@ class GTSAM_EXPORT DevicePcgSolver {
    * numerically refreshed Jᵀ values and invalidate the warm start.
    * Asynchronous except when profiling is enabled.
    */
-  void buildPreconditioner(const CudaDeviceArray<double>& jtValues,
+  void buildPreconditioner(const DeviceArray<double>& jtValues,
                            cudaStream_t stream);
 
   /**
@@ -93,21 +93,21 @@ class GTSAM_EXPORT DevicePcgSolver {
    * numerical breakdown freezes the last finite iterate instead of
    * propagating non-finite values. Synchronizes the stream before returning.
    */
-  void solve(double lambda, const CudaDeviceArray<double>& gradient,
-             const CudaDeviceArray<double>& dampingDiagonal,
-             CudaDeviceArray<double>* delta, cudaStream_t stream);
+  void solve(double lambda, const DeviceArray<double>& gradient,
+             const DeviceArray<double>& dampingDiagonal,
+             DeviceArray<double>* delta, cudaStream_t stream);
 
   const DevicePcgSolveStats& lastSolveStats() const;
   const DevicePcgProfile& profile() const;
 
   /** Prepare the borrowed operator and preconditioner for a shared-session
    * solve. These accessors are the primary path; solve() remains as a source
-   * compatibility facade over the same common CudaPcgSolver recurrence. */
+   * compatibility facade over the same common PcgSolver recurrence. */
   void prepare(double lambda,
-               const CudaDeviceArray<double>& dampingDiagonal,
+               const DeviceArray<double>& dampingDiagonal,
                cudaStream_t stream);
-  const CudaLinearOperator& linearOperator() const;
-  const CudaPreconditioner& preconditioner() const;
+  const LinearOperator& linearOperator() const;
+  const Preconditioner& preconditioner() const;
 
  private:
   struct Impl;
