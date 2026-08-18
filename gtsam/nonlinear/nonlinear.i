@@ -492,6 +492,8 @@ class ISAM2Params {
   bool enableDetailedResults;
   bool enablePartialRelinearizationCheck;
   bool findUnusedFactorSlots;
+  bool enableAdaptiveReorder;
+  double adaptiveReorderThreshold;
 
   enum Factorization { CHOLESKY, QR };
   gtsam::ISAM2Params::Factorization factorization;
@@ -517,6 +519,8 @@ class ISAM2Result {
   size_t getVariablesReeliminated() const;
   gtsam::FactorIndices getNewFactorsIndices() const;
   size_t getCliques() const;
+  size_t getTreeNnz() const;
+  bool getBatchReorderTriggered() const;
   double getErrorBefore() const;
   double getErrorAfter() const;
 };
@@ -627,6 +631,7 @@ class ISAM2 {
   const gtsam::VariableIndex& getVariableIndex() const;
   const gtsam::KeySet& getFixedVariables() const;
   const gtsam::ISAM2Params& params() const;
+  size_t treeNnz() const;
 
   gtsam::VectorValues gradientAtZero() const;
   std::pair<gtsam::KeySet, bool> predictUpdateInfo(
