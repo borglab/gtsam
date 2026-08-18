@@ -16,6 +16,7 @@
 #include <pybind11/operators.h>
 #include <pybind11/functional.h>
 #include <pybind11/iostream.h>
+#include "python/gtsam/optional_jacobian_pybind.h"
 #include "gtsam/config.h"
 #include "gtsam/base/serialization.h"
 #include "gtsam/base/utilities.h"  // for RedirectCout.

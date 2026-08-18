@@ -22,7 +22,7 @@
 
 #include <gtsam/inference/Ordering.h>
 
-#ifdef GTSAM_USE_SYSTEM_SUITESPARSE
+#ifdef GTSAM_USE_SYSTEM_CCOLAMD
 #include <ccolamd.h>
 #else
 // These macros must surround the bundled header to rename its declarations.
@@ -44,7 +44,7 @@ namespace gtsam {
 namespace {
 
 size_t ccolamdRecommended(int nonzeros, int rows, int columns) {
-#ifdef GTSAM_USE_SYSTEM_SUITESPARSE
+#ifdef GTSAM_USE_SYSTEM_CCOLAMD
   return ::ccolamd_recommended(nonzeros, rows, columns);
 #else
   return ::gtsam_ccolamd_recommended(nonzeros, rows, columns);
@@ -52,7 +52,7 @@ size_t ccolamdRecommended(int nonzeros, int rows, int columns) {
 }
 
 void ccolamdSetDefaults(double knobs[CCOLAMD_KNOBS]) {
-#ifdef GTSAM_USE_SYSTEM_SUITESPARSE
+#ifdef GTSAM_USE_SYSTEM_CCOLAMD
   ::ccolamd_set_defaults(knobs);
 #else
   ::gtsam_ccolamd_set_defaults(knobs);
@@ -62,7 +62,7 @@ void ccolamdSetDefaults(double knobs[CCOLAMD_KNOBS]) {
 int ccolamdOrder(int rows, int columns, int arrayLength, int rowIndices[],
                  int columnPointers[], double knobs[CCOLAMD_KNOBS],
                  int stats[CCOLAMD_STATS], int constraintSet[]) {
-#ifdef GTSAM_USE_SYSTEM_SUITESPARSE
+#ifdef GTSAM_USE_SYSTEM_CCOLAMD
   return ::ccolamd(rows, columns, arrayLength, rowIndices, columnPointers,
                    knobs, stats, constraintSet);
 #else

@@ -23,6 +23,8 @@
 #include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/FastVector.h>
 
+#include <utility>
+
 namespace gtsam {
 
   // Forward declarations
@@ -160,10 +162,17 @@ namespace gtsam {
     HessianFactor(const KeyVector& js, const std::vector<Matrix>& Gs,
         const std::vector<Vector>& gs, double f);
 
-    /** Constructor with an arbitrary number of keys and with the augmented information matrix
-    *   specified as a block matrix. */
+    /** Construct from keys and a copied augmented information block matrix. */
     template<typename KEYS>
     HessianFactor(const KEYS& keys, const SymmetricBlockMatrix& augmentedInformation);
+
+    /**
+     * Construct from keys and take ownership of an augmented information block
+     * matrix. This avoids copying when the caller no longer needs the matrix.
+     */
+    template <typename KEYS>
+    HessianFactor(const KEYS& keys,
+                  SymmetricBlockMatrix&& augmentedInformation);
 
     /** Construct from a JacobianFactor (or from a GaussianConditional since it derives from it) */
     explicit HessianFactor(const JacobianFactor& cg);
@@ -379,6 +388,10 @@ namespace gtsam {
     VectorValues solve();
 
  private:
+    /// Validate the shared augmented-information constructor contract.
+    static void CheckAugmentedInformation(
+        size_t keyCount, const SymmetricBlockMatrix& augmentedInformation);
+
     /// Allocate for given scatter pattern
     void Allocate(const Scatter& scatter);
 

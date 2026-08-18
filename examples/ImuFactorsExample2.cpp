@@ -42,7 +42,6 @@ int main(int argc, char* argv[]) {
   params->setAccelerometerCovariance(I_3x3 * 0.1);
   params->setGyroscopeCovariance(I_3x3 * 0.1);
   params->setIntegrationCovariance(I_3x3 * 0.1);
-  params->setUse2ndOrderCoriolis(false);
   params->setOmegaCoriolis(Vector3(0, 0, 0));
 
   Pose3 delta(Rot3::Rodrigues(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20));

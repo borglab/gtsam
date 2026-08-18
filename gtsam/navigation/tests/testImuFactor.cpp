@@ -723,8 +723,13 @@ TEST_PIM(ImuFactor, ErrorWithBiasesAndSensorBodyDisplacement) {
   values.insert(V(2), v2);
   values.insert(B(1), bias);
 
-  // Make sure linearization is correct
-  double diffDelta = 1e-8;
+  // Make sure linearization is correct. Quaternion finite differences need a
+  // larger step to avoid roundoff at the strict Jacobian tolerance on Linux.
+#ifdef GTSAM_USE_QUATERNIONS
+  constexpr double diffDelta = 1e-7;
+#else
+  constexpr double diffDelta = 1e-8;
+#endif
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, diffDelta, 1e-3);
 }
 

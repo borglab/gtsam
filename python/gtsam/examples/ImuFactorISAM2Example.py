@@ -39,7 +39,6 @@ def preintegration_parameters():
     PARAMS.setAccelerometerCovariance(I * 0.1)
     PARAMS.setGyroscopeCovariance(I * 0.1)
     PARAMS.setIntegrationCovariance(I * 0.1)
-    PARAMS.setUse2ndOrderCoriolis(False)
     PARAMS.setOmegaCoriolis(vector3(0, 0, 0))
 
     BIAS_COVARIANCE = gtsam.noiseModel.Isotropic.Variance(6, 0.1)

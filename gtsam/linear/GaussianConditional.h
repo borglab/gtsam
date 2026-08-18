@@ -311,4 +311,3 @@ struct traits<GaussianConditional> : public Testable<GaussianConditional> {};
 } // \ namespace gtsam
 
 #include <gtsam/linear/GaussianConditional-inl.h>
-

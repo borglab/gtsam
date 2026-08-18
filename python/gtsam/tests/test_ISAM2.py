@@ -70,6 +70,40 @@ def create_planar_slam_problem():
 class TestISAM2(GtsamTestCase):
     """Tests for ISAM2 wrapper marginal query methods."""
 
+    def test_optimization_params_variant_setter(self):
+        """The exact variant setter accepts every optimization alternative."""
+        graph, values, _ = create_planar_slam_problem()
+        optimization_params = (
+            gtsam.ISAM2GaussNewtonParams(),
+            gtsam.ISAM2DoglegParams(),
+            gtsam.ISAM2DoglegLineSearchParams(),
+        )
+
+        for optimization_param in optimization_params:
+            params = gtsam.ISAM2Params()
+            params.setOptimizationParams(optimization_param)
+
+            isam = gtsam.ISAM2(params)
+            isam.update(graph, values)
+
+            self.assertEqual(isam.getLinearizationPoint().size(), values.size())
+
+    def test_relinearization_threshold_variant_setter(self):
+        """The exact variant setter accepts scalar and mapped thresholds."""
+        graph, values, _ = create_planar_slam_problem()
+        threshold_map = gtsam.ISAM2ThresholdMap()
+        threshold_map.insert(("x", np.full(3, 0.1)))
+        threshold_map.insert(("l", np.full(2, 0.1)))
+
+        for threshold in (0.1, threshold_map):
+            params = gtsam.ISAM2Params()
+            params.setRelinearizeThreshold(threshold)
+
+            isam = gtsam.ISAM2(params)
+            isam.update(graph, values)
+
+            self.assertEqual(isam.getLinearizationPoint().size(), values.size())
+
     def test_marginal_information_and_covariance(self):
         """ISAM2 single-key marginal queries should match batch Marginals."""
         graph, values, (_, x2, _, _, _) = create_planar_slam_problem()

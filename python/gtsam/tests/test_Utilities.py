@@ -80,6 +80,20 @@ class TestUtilities(GtsamTestCase):
             self.assertTrue(key in ks)
             self.assertEqual(I[i], key)
 
+    def test_KeySet_count_and_erase_return_sizes(self):
+        """KeySet count and erase expose their exact C++ size results."""
+        ks = gtsam.utilities.createKeySet([0, 1, 2])
+
+        count = ks.count(1)
+        erased = ks.erase(1)
+
+        self.assertIs(type(count), int)
+        self.assertIs(type(erased), int)
+        self.assertEqual(count, 1)
+        self.assertEqual(ks.count(3), 0)
+        self.assertEqual(erased, 1)
+        self.assertEqual(ks.erase(1), 0)
+
     def test_extractPoint2(self):
         """Test extractPoint2."""
         initial = gtsam.Values()

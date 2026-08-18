@@ -39,7 +39,7 @@ print_build_options_for_target(gtsam)
 
 print_config("Use System Eigen" "${GTSAM_USE_SYSTEM_EIGEN} (Using version: ${GTSAM_EIGEN_VERSION})")
 print_config("Use System Spectra" "${GTSAM_USE_SYSTEM_SPECTRA}")
-print_config("Use System SuiteSparse" "${GTSAM_USE_SYSTEM_SUITESPARSE}")
+print_config("Use System CCOLAMD" "${GTSAM_USE_SYSTEM_CCOLAMD}")
 print_config("Use System Metis" "${GTSAM_USE_SYSTEM_METIS}")
 print_config("Using Boost version" "${Boost_VERSION}")
 

@@ -100,8 +100,8 @@ set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/geometry/geometry.i
     ${PROJECT_SOURCE_DIR}/gtsam/geometry/cameras.i
     ${PROJECT_SOURCE_DIR}/gtsam/linear/linear.i
-    ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/nonlinear.i
     ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/values.i
+    ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/nonlinear.i
     ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/custom.i
     ${PROJECT_SOURCE_DIR}/gtsam/constrained/constrained.i
     ${PROJECT_SOURCE_DIR}/gtsam/certifiable/certifiable.i
@@ -269,31 +269,6 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             gtsam::gtsfm::MatchIndicesMap
             gtsam::gtsfm::KeypointsVector
             gtsam::gtsfm::SfmTrack2dVector)
-
-    if(NOT GTSAM_ALLOW_DEPRECATED_SINCE_V43)
-        list(APPEND ignore
-             gtsam::PoseRTV
-             gtsam::PriorFactor
-             gtsam::BetweenFactor
-             gtsam::RangeFactor
-             gtsam::RangeFactorRTV
-             gtsam::NonlinearEquality
-             gtsam::IMUFactor
-             gtsam::FullIMUFactor
-             gtsam::DHeightPrior
-             gtsam::DRollPrior
-             gtsam::VelocityPrior
-             gtsam::DGroundConstraint
-             "gtsam::PriorFactor<gtsam::PoseRTV>"
-             "gtsam::BetweenFactor<gtsam::PoseRTV>"
-             "gtsam::RangeFactor<gtsam::PoseRTV,gtsam::PoseRTV>"
-             "gtsam::RangeFactor<gtsam::PoseRTV, gtsam::PoseRTV>"
-             "gtsam::NonlinearEquality<gtsam::PoseRTV>"
-             "gtsam::IMUFactor<gtsam::PoseRTV>"
-             "gtsam::FullIMUFactor<gtsam::PoseRTV>"
-             "gtsam::PartialPriorFactor<gtsam::Pose2>"
-             "gtsam::PartialPriorFactor<gtsam::Pose3>")
-    endif()
 
     pybind_wrap(${GTSAM_PYTHON_UNSTABLE_TARGET} # target
             ${PROJECT_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.i # interface_header

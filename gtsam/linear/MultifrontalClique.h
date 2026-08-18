@@ -26,11 +26,12 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/MultifrontalParameters.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/internal/BatchHessianMapping.h>
 #include <gtsam/nonlinear/LMDampingParams.h>
 #include <gtsam/symbolic/SymbolicFactor.h>
 
-#include <iosfwd>
 #include <cstdint>
+#include <iosfwd>
 #include <map>
 #include <memory>
 #include <optional>
@@ -43,6 +44,7 @@ namespace gtsam {
 
 class BatchJacobianFactorBase;
 class GaussianConditional;
+class HessianFactor;
 class JacobianFactor;
 
 /// Map from variable key to dimension.
@@ -97,7 +99,8 @@ class GTSAM_EXPORT MultifrontalClique {
                               const KeySet& separatorKeys,
                               const KeyDimMap& dims, size_t vbmRows,
                               VectorValues* solution,
-                              const std::unordered_set<Key>* fixedKeys);
+                              const std::unordered_set<Key>* fixedKeys,
+                              size_t numEliminatedFrontals);
 
   /// @name Setup (non-const)
   /// @{
@@ -111,7 +114,7 @@ class GTSAM_EXPORT MultifrontalClique {
                 const MultifrontalParameters& params);
 
   /**
-   * Load factor values into the pre-allocated Ab matrix.
+   * Load factor values into a lazily allocated, reusable Ab matrix.
    * @param graph The factor graph with updated values (structure must match
    *              the graph used to build this clique, apart from updated
    *              numerical values). Only JacobianFactor and BatchJacobianFactor
@@ -171,11 +174,23 @@ class GTSAM_EXPORT MultifrontalClique {
   /// Return the number of frontal keys in this clique.
   size_t numFrontals() const { return frontalPtrs_.size(); }
 
+  /// Return whether every symbolic frontal in this clique is eliminated.
+  bool fullyEliminated() const { return numFrontals() == totalFrontals_; }
+
   /// Return keys ordered by block index (frontals followed by separators).
   const KeyVector& orderedKeys() const { return orderedKeys_; }
 
   /// Build a GaussianConditional from the in-place factorization.
   std::shared_ptr<GaussianConditional> conditional() const;
+
+  /**
+   * Build the assembled factor on variables retained after partial
+   * elimination. The returned factor owns its information because it may
+   * outlive this clique. Consequently, exporting requires one copy of the
+   * active upper-triangular block. The clique must have been prepared, and any
+   * leading eliminated frontals must have been factorized.
+   */
+  std::shared_ptr<HessianFactor> remainingFactor() const;
 
   /// Get the vertical block matrix Ab.
   const VerticalBlockMatrix& Ab() const { return Ab_; }
@@ -185,6 +200,13 @@ class GTSAM_EXPORT MultifrontalClique {
 
   /// Check if this clique is using QR elimination.
   bool useQR() const { return solveMode_ == SolveMode::QrLeaf; }
+
+  /// Check if this leaf avoids materializing its separator Hessian.
+  bool useCompactCholesky() const {
+    return solveMode_ == SolveMode::CompactCholeskyLeaf ||
+           solveMode_ == SolveMode::FusedStarCandidate ||
+           solveMode_ == SolveMode::FusedStarCholeskyLeaf;
+  }
 
   /**
    * Print this clique.
@@ -242,39 +264,129 @@ class GTSAM_EXPORT MultifrontalClique {
                                   const MultifrontalClique& clique);
 
  private:
-  enum class SolveMode { Cholesky, QrLeaf };
+  enum class SolveMode {
+    Cholesky,
+    QrLeaf,
+    CompactCholeskyLeaf,
+    FusedStarCandidate,
+    FusedStarCholeskyLeaf
+  };
 
   /// Cache pointers to frontal and separator update vectors.
   void cacheSolutionPointers(VectorValues* delta, const KeyVector& frontals,
-                             const KeySet& separatorKeys);
+                             const KeyVector& separatorKeys);
 
   /// Linear lookup for block index in small cliques.
   DenseIndex blockIndex(Key key) const;
 
-  enum class FactorLoadKind : uint8_t { Jacobian, Batch };
+  enum class FactorLoadKind : uint8_t { Empty, Jacobian, Batch };
 
   struct FactorLoadPlan {
-    FactorLoadKind kind = FactorLoadKind::Jacobian;
+    FactorLoadKind kind = FactorLoadKind::Empty;
     size_t factorIndex = 0;
     SharedDiagonal model;
     size_t rows = 0;
+    /// Packed row offset in Ab_ for factors that require Jacobian fallback.
+    size_t abRowOffset = 0;
     /// Slot indices for factor keys (or -1 for fixed keys). See
     /// `linear/doc/BatchFactor_Performance_Notes.html` for load-plan usage.
     std::vector<DenseIndex> blockIndices;
-    std::vector<DenseIndex> blockIndicesWithRhs;
-    /// Flattened local key+RHS mapping for each batch row group.
-    /// Built once per clique and reused during direct Hessian updates.
-    /// See `linear/doc/BatchFactor_Performance_Notes.html`.
-    std::vector<DenseIndex> mappedSlots;
+    /// Row-group destinations in this clique's augmented information matrix.
+    internal::BatchHessianMapping localMapping;
+    /// Retained row-group destinations in the parent information matrix.
+    internal::BatchHessianMapping parentMapping;
+    /// Retained row-group destinations in a separator-local accumulator.
+    internal::BatchHessianMapping separatorMapping;
     bool canDirectUpdate = false;
+
+    /// Construct a plan for a null graph entry.
+    static FactorLoadPlan forNullFactor(size_t factorIndex);
+
+    /// Construct a plan for a conventional Jacobian factor.
+    static FactorLoadPlan forJacobian(size_t factorIndex,
+                                      const JacobianFactor& factor,
+                                      const MultifrontalClique& clique);
+
+    /// Construct a plan for a compact batch Jacobian factor.
+    static FactorLoadPlan forBatch(size_t factorIndex,
+                                   const BatchJacobianFactorBase& factor,
+                                   const MultifrontalClique& clique);
+
+    /// Return whether this plan represents a directly assembled batch factor.
+    bool isDirectBatch() const {
+      return kind == FactorLoadKind::Batch && canDirectUpdate;
+    }
+
+    /// Return whether this factor requires packed Jacobian rows in Ab_.
+    bool needsMaterializedRows(const MultifrontalClique& clique) const;
+
+    /// Reserve this plan's packed rows from a clique-wide row cursor.
+    void assignMaterializedRows(size_t* nextRow);
+
+    /// Assert the structural invariants established by the plan factories.
+    void assertInvariants(const GaussianFactor* factor,
+                          const MultifrontalClique& clique) const;
+
+    /// Return whether this factor is supported by a fused star leaf.
+    bool supportsFusedStarLeaf() const;
+
+    /// Cache mappings required by the clique's resolved solve mode.
+    void buildSolveMappings(const BatchJacobianFactorBase& factor,
+                            const MultifrontalClique& clique);
+
+   private:
+    /// Map factor keys to clique-local block indices.
+    void mapKeys(const KeyVector& keys, const MultifrontalClique& clique);
+
+    /// Build the clique-local mapping shared by direct Hessian paths.
+    void buildLocalBatchMapping(const BatchJacobianFactorBase& factor,
+                                const MultifrontalClique& clique);
+
+    /// Map retained factor slots into one compact-update destination.
+    internal::BatchHessianMapping buildRetainedMapping(
+        const BatchJacobianFactorBase& factor, DenseIndex numFrontals,
+        const std::vector<DenseIndex>& targetIndices,
+        const std::vector<DenseIndex>& targetScalarOffsets) const;
   };
 
   /// Build and cache loading metadata for factors in this clique.
-  void buildLoadPlans(const GaussianFactorGraph& graph) const;
+  void buildLoadPlans(const GaussianFactorGraph& graph);
+
+  /// Allocate numerical solve storage after the clique mode is resolved.
+  void allocateSolveStorage();
+
+  /// Resolve deferred QR and fused-star choices after factor plans are known.
+  void resolveLeafSolveMode();
+
+  /// Cache scalar-column destinations for fused Schur updates.
+  void buildFusedStarMappings();
 
   /// Update a parent information matrix with this clique's separator
   /// contribution.
   void updateParentInfo(SymmetricBlockMatrix& parentInfo) const;
+
+  /// Update a separator-local information matrix without parent scattering.
+  void updateSeparatorInfo(SymmetricBlockMatrix& separatorInfo) const;
+
+  /// Assemble only the frontal rows [A B a] of a compact Cholesky leaf.
+  void prepareCompactCholesky();
+
+  /// Factor [A B a] in place into [R S d].
+  void factorizeCompactCholesky();
+
+  /// Factor fused-star frontal rows without allocating an LLT workspace.
+  void factorizeFusedStarCholesky();
+
+  /// Add a fused-star retained update directly into its destination.
+  void updateFusedStarInfo(SymmetricBlockMatrix& targetInfo,
+                           const std::vector<DenseIndex>& targetIndices,
+                           const std::vector<DenseIndex>& targetScalarOffsets,
+                           bool useParentMappedSlots) const;
+
+  /// Add the original separator normal equations directly into the parent.
+  void updateDirectFactors(SymmetricBlockMatrix& targetInfo,
+                           const std::vector<DenseIndex>& targetIndices,
+                           bool useParentMappedSlots) const;
 
   /// Accumulate children separator updates into this clique's info matrix
   /// (single-threaded).
@@ -283,6 +395,9 @@ class GTSAM_EXPORT MultifrontalClique {
   /// Accumulate children separator updates into this clique's info matrix
   /// (multi-threaded).
   void gatherUpdatesParallel(size_t numThreads);
+
+  /// Accumulate identical-separator Cholesky leaves, then scatter once/group.
+  void gatherSameSeparatorUpdates();
 
   /// Compute block dimensions from variable dimensions (excluding RHS).
   std::vector<size_t> blockDims(const KeyDimMap& dims,
@@ -309,35 +424,53 @@ class GTSAM_EXPORT MultifrontalClique {
    * @return Number of rows added.
    */
   size_t addBatchJacobianFactor(const BatchJacobianFactorBase& factor,
-                               size_t rowOffset,
-                               const FactorLoadPlan& plan);
+                                size_t rowOffset, const FactorLoadPlan& plan);
 
-  void setParentIndices(const std::vector<DenseIndex>& indices) {
+  void setParentIndices(const std::vector<DenseIndex>& indices,
+                        const std::vector<DenseIndex>& scalarOffsets) {
     parentIndices_ = indices;
+    parentScalarOffsets_ = scalarOffsets;
   }
 
   // Construction-time metadata (set once in the constructor).
   std::vector<size_t> factorIndices_;
-  KeyVector orderedKeys_;  ///< Keys ordered by block index (frontals+seps).
+  KeyVector orderedKeys_;     ///< Keys ordered by block index (frontals+seps).
+  size_t totalFrontals_ = 0;  ///< Symbolic frontals before a phase split.
   const std::unordered_set<Key>* fixedKeys_ = nullptr;
   std::unordered_map<Key, DenseIndex> blockIndexCache_;
   std::vector<Vector*> frontalPtrs_;          ///< Solution frontals.
   std::vector<const Vector*> separatorPtrs_;  ///< Solution separator.
   std::vector<size_t> blockDims_;  ///< Cached block dimensions (excluding RHS).
-  size_t factorRows_ = 0;          ///< Number of rows allocated in Ab.
+  size_t factorRows_ = 0;  ///< Total symbolic factor rows before packing.
   mutable const GaussianFactorGraph* activeLoadGraph_ = nullptr;
   mutable bool allBatchFactors_ = false;
   mutable bool hasDirectBatchFactors_ = false;
   mutable std::vector<FactorLoadPlan> loadPlans_;
   mutable bool loadPlansBuilt_ = false;
+  mutable size_t materializedRows_ = 0;  ///< Packed fallback rows in Ab_.
   mutable size_t fillRows_ = 0;
 
   // Finalize-time metadata (set once after children are known).
   std::vector<DenseIndex>
       parentIndices_;  ///< Parent block indices for separators + RHS.
+  std::vector<DenseIndex>
+      parentScalarOffsets_;  ///< Cached scalar offsets for parent blocks.
+  std::vector<DenseIndex> separatorIndices_;  ///< Identity separator mapping.
   SolveMode solveMode_ = SolveMode::Cholesky;
+  SolveMode starFallbackMode_ = SolveMode::Cholesky;
+  /// Whether one automatic-QR star awaits inspection of its sole factor.
+  bool deferredSingleFactorAutoQr_ = false;
+  std::vector<DenseIndex> parentSchurScalarOffsets_;
+  std::vector<DenseIndex> separatorSchurScalarOffsets_;
 
-  // Finalize-time allocations.
+  std::vector<std::vector<size_t>> sameSeparatorChildGroups_;
+  std::vector<std::vector<DenseIndex>> sameSeparatorParentIndices_;
+  std::vector<std::vector<DenseIndex>> sameSeparatorParentScalarOffsets_;
+  std::vector<SymmetricBlockMatrix> sameSeparatorInfos_;
+  std::vector<uint8_t> childInSameSeparatorGroup_;
+
+  // Lazily allocated after load-plan construction. Direct batch factors need
+  // no rows; QR additionally reserves frontal damping rows.
   VerticalBlockMatrix Ab_;
 
   // mutable as temporarily updateParentInfo
@@ -346,6 +479,7 @@ class GTSAM_EXPORT MultifrontalClique {
 
   // Elimination-time state.
   bool RSdReady_ = false;
+  bool infoReady_ = false;
 
   // Solve-time scratch space.
   Vector rhsScratch_;        ///< Cached RHS workspace for back-substitution.

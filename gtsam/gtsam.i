@@ -29,14 +29,14 @@ class KeyList {
   void clear();
 
   // structure specific methods
-  gtsam::Key front() const;
-  gtsam::Key back() const;
-  void push_back(gtsam::Key key);
-  void push_front(gtsam::Key key);
+  const gtsam::Key& front() const;
+  const gtsam::Key& back() const;
+  void push_back(const gtsam::Key& key);
+  void push_front(const gtsam::Key& key);
   void pop_back();
   void pop_front();
   void sort();
-  void remove(gtsam::Key key);
+  void remove(const gtsam::Key& key);
 
   void serialize() const;
 
@@ -55,7 +55,7 @@ class KeySet {
 
   // Testable
   void print(string s = "") const;
-  bool equals(const gtsam::KeySet& other) const;
+  bool equals(const gtsam::KeySet& other, double tol = 1e-9) const;
 
   // common STL methods
   size_t size() const;
@@ -65,8 +65,8 @@ class KeySet {
   // structure specific methods
   void insert(gtsam::Key key);
   void merge(const gtsam::KeySet& other);
-  bool erase(gtsam::Key key);        // returns true if value was removed
-  bool count(gtsam::Key key) const;  // returns true if value exists
+  size_t erase(const gtsam::Key& key);
+  size_t count(const gtsam::Key& key) const;
 
   void serialize() const;
 
@@ -114,9 +114,9 @@ class KeyGroupMap {
   void clear();
 
   // structure specific methods
-  int at(gtsam::Key key) const;
-  int erase(gtsam::Key key);
-  bool insert2(gtsam::Key key, int val);
+  const int& at(const gtsam::Key& key) const;
+  size_t erase(const gtsam::Key& key);
+  bool insert2(const gtsam::Key& key, const int& val);
 };
 
 // Actually a FastSet<FactorIndex>
@@ -161,17 +161,17 @@ class FactorIndices {
 namespace utilities {
 
 #include <gtsam/nonlinear/utilities.h>
-gtsam::KeyList createKeyList(gtsam::Vector I);
-gtsam::KeyList createKeyList(string s, gtsam::Vector I);
-gtsam::KeyVector createKeyVector(gtsam::Vector I);
-gtsam::KeyVector createKeyVector(string s, gtsam::Vector I);
-gtsam::KeySet createKeySet(gtsam::Vector I);
-gtsam::KeySet createKeySet(string s, gtsam::Vector I);
+gtsam::KeyList createKeyList(const gtsam::Vector& I);
+gtsam::KeyList createKeyList(string s, const gtsam::Vector& I);
+gtsam::KeyVector createKeyVector(const gtsam::Vector& I);
+gtsam::KeyVector createKeyVector(string s, const gtsam::Vector& I);
+gtsam::KeySet createKeySet(const gtsam::Vector& I);
+gtsam::KeySet createKeySet(string s, const gtsam::Vector& I);
 gtsam::Matrix extractPoint2(const gtsam::Values& values);
 gtsam::Matrix extractPoint3(const gtsam::Values& values);
-gtsam::Values allPose2s(gtsam::Values& values);
+gtsam::Values allPose2s(const gtsam::Values& values);
 gtsam::Matrix extractPose2(const gtsam::Values& values);
-gtsam::Values allPose3s(gtsam::Values& values);
+gtsam::Values allPose3s(const gtsam::Values& values);
 gtsam::Matrix extractPose3(const gtsam::Values& values);
 gtsam::Matrix extractVectors(const gtsam::Values& values, char c);
 void perturbPoint2(gtsam::Values& values, double sigma, int seed = 42u);
@@ -187,20 +187,20 @@ void insertBackprojections(gtsam::Values& values,
 void insertProjectionFactors(
     gtsam::NonlinearFactorGraph& graph, gtsam::Key i, const gtsam::Vector& J,
     gtsam::ConstMatrixView Z,
-    const gtsam::noiseModel::Base* model, const gtsam::Cal3_S2* K,
+    const std::shared_ptr<gtsam::noiseModel::Base>& model,
+    const gtsam::Cal3_S2::shared_ptr K,
     const gtsam::Pose3& body_P_sensor = gtsam::Pose3());
 gtsam::Matrix reprojectionErrors(const gtsam::NonlinearFactorGraph& graph,
                           const gtsam::Values& values);
-gtsam::Values localToWorld(const gtsam::Values& local,
-                           const gtsam::Pose2& base);
-gtsam::Values localToWorld(const gtsam::Values& local, const gtsam::Pose2& base,
-                           const gtsam::KeyVector& keys);
+gtsam::Values localToWorld(
+    const gtsam::Values& local, const gtsam::Pose2& base,
+    const gtsam::KeyVector user_keys = gtsam::KeyVector());
 
 }  // namespace utilities
 
 class RedirectCout {
   RedirectCout();
-  string str();
+  string str() const;
 };
 
 }  // namespace gtsam
