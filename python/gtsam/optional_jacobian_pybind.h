@@ -6,6 +6,22 @@
 #include <gtsam/base/OptionalJacobian.h>
 
 #include <memory>
+#include <vector>
+
+/* gtsam::OptionalMatrixVecType is std::vector<gtsam::Matrix>*, an input/output
+ * argument used by NoiseModelFactor::unwhitenedError and by CustomFactor's
+ * error callback. It must be opaque so that mutations on the Python side are
+ * visible to C++, and so that the `= nullptr` default can round-trip through
+ * None during function registration.
+ *
+ * This lives here rather than in a per-module preamble because every .i file is
+ * generated into its own translation unit including only its own preamble,
+ * whereas this header is included by both module templates. pybind11 requires
+ * PYBIND11_MAKE_OPAQUE to be visible in every translation unit of a module that
+ * touches the type; declaring it per-preamble made it opaque in custom.cpp and
+ * transparent everywhere else.
+ */
+PYBIND11_MAKE_OPAQUE(std::vector<gtsam::Matrix>); // JacobianVector
 
 namespace pybind11 {
 namespace detail {
