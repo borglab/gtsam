@@ -141,6 +141,22 @@ conda run -n py312 python timing/benchmark_range_factor_plaza2.py \
 The helper script runs the benchmark executable, preserves the CSV, and prints a
 short summary that can be copied into a PR description.
 
+## Arbitrary-Arity Fixed Jacobian Benchmark
+
+`timeFixedJacobianFactor` compares a four-key `JacobianFactor` with
+`FixedJacobianFactor<2,1,2,1,2>`. It measures nonlinear linearization, delta
+error, Hessian-diagonal accumulation, and whole and ranged Hessian assembly.
+The executable alternates mode order and verifies equal linear factors and
+Hessians before timing.
+
+From the build directory:
+
+```bash
+make -j6 timeFixedJacobianFactor
+./timing/timeFixedJacobianFactor --trials 9 \
+  --linearize-iterations 100000 --kernel-iterations 200000
+```
+
 ## Binary Factor Pose-Graph Benchmark
 
 This benchmark compares the automatic fixed-size binary linearization of

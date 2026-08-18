@@ -145,8 +145,8 @@ struct NoiseModelFactorAliases<T1, T2, T3, T4, T5, T6, TExtra...> {
  * objects in non-linear manifolds (Lie groups).
  *
  * @tparam OutputVec The error-vector type. A fixed-size vector enables
- * automatic fixed-size Jacobian-factor linearization for fixed-size two- and
- * three-key factors; `Vector` retains generic linearization.
+ * automatic fixed-size Jacobian-factor linearization for any fixed-size
+ * arity; `Vector` retains generic linearization.
  * @tparam ValueTypes The types of the variables connected to this factor, e.g., Pose3, Point3.
  */
 template <class OutputVec, class... ValueTypes>
@@ -313,8 +313,9 @@ class NoiseModelFactorT
   /// @{
 
   /**
-   * Linearize fixed-size two- and three-key factors to specialized Jacobian
-   * factors. All other factors retain the generic implementation.
+   * Linearize factors whose error and argument dimensions are all fixed to an
+   * arbitrary-arity FixedJacobianFactor. Dynamic dimensions retain the generic
+   * implementation.
    */
   std::shared_ptr<GaussianFactor> linearize(
       const Values& values) const override {
@@ -369,7 +370,7 @@ class NoiseModelFactorT
     return Factory::create(this->keys_, jacobians, b, linearModel);
   }
 
-  /** Retain generic linearization for dynamic or unsupported arities. */
+  /** Retain generic linearization for factors with a dynamic dimension. */
   template <typename Factory>
   std::shared_ptr<GaussianFactor> linearizeImpl(const Values& values,
                                                 std::false_type) const {
