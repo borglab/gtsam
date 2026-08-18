@@ -589,13 +589,15 @@ class ISAM2 {
   const gtsam::Values& getLinearizationPoint() const;
   bool valueExists(gtsam::Key key) const;
   gtsam::Values calculateEstimate() const;
-  template <VALUE = {gtsam::Point2,
+  template <VALUE = {double,
+                     gtsam::Point2,
                      gtsam::Rot2,
                      gtsam::Pose2,
                      gtsam::Point3,
                      gtsam::Gal3,
                      gtsam::Rot3,
                      gtsam::Pose3,
+                     gtsam::NavState,
                      gtsam::SL4,
                      gtsam::Similarity2,
                      gtsam::Similarity3,
@@ -1041,9 +1043,11 @@ virtual class BatchFixedLagSmoother : gtsam::FixedLagSmoother {
 
   const gtsam::NonlinearFactorGraph& getFactors() const;
 
-  template <VALUE = {gtsam::Point2, gtsam::Rot2, gtsam::Pose2, gtsam::Point3,
-                     gtsam::Rot3, gtsam::Pose3, gtsam::SL4, gtsam::Similarity2,
+  template <VALUE = {double, gtsam::Point2, gtsam::Rot2, gtsam::Pose2,
+                     gtsam::Point3, gtsam::Rot3, gtsam::Pose3,
+                     gtsam::NavState, gtsam::SL4, gtsam::Similarity2,
                      gtsam::Similarity3, gtsam::Cal3_S2, gtsam::Cal3DS2,
+                     gtsam::imuBias::ConstantBias,
                      gtsam::Vector, gtsam::Matrix}>
   VALUE calculateEstimate(gtsam::Key key) const;
 };
@@ -1061,6 +1065,35 @@ virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
   const gtsam::NonlinearFactorGraph& getFactors() const;
   const gtsam::ISAM2& getISAM2() const;
   const gtsam::ISAM2Result& getISAM2Result() const;
+
+  // Mirrors gtsam::ISAM2::calculateEstimate<VALUE>, which this forwards to.
+  template <VALUE = {double,
+                     gtsam::Point2,
+                     gtsam::Rot2,
+                     gtsam::Pose2,
+                     gtsam::Point3,
+                     gtsam::Gal3,
+                     gtsam::Rot3,
+                     gtsam::Pose3,
+                     gtsam::NavState,
+                     gtsam::SL4,
+                     gtsam::Similarity2,
+                     gtsam::Similarity3,
+                     gtsam::Cal3_S2,
+                     gtsam::Cal3DS2,
+                     gtsam::Cal3f,
+                     gtsam::Cal3Bundler,
+                     gtsam::imuBias::ConstantBias,
+                     gtsam::EssentialMatrix,
+                     gtsam::FundamentalMatrix,
+                     gtsam::SimpleFundamentalMatrix,
+                     gtsam::PinholeCamera<gtsam::Cal3_S2>,
+                     gtsam::PinholeCamera<gtsam::Cal3Bundler>,
+                     gtsam::PinholeCamera<gtsam::Cal3Fisheye>,
+                     gtsam::PinholeCamera<gtsam::Cal3Unified>,
+                     gtsam::Vector,
+                     gtsam::Matrix}>
+  VALUE calculateEstimate(gtsam::Key key) const;
 };
 
 #include <gtsam/nonlinear/ExtendedKalmanFilter.h>
