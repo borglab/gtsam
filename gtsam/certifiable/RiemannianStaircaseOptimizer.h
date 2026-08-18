@@ -66,7 +66,7 @@ struct GTSAM_EXPORT RiemannianStaircaseParams {
   /// Lanczos subspace size. ~100 gives the shift pass enough room to
   /// discriminate a tiny negative eigenvalue from a near-zero one.
   size_t numLanczosVectors = 100;
-  double spectraTol = 1e-4;
+  double spectraTol = 1e-6;
 
   /// Parameters for inner local solver ALM.
   AugmentedLagrangianParams::shared_ptr almParams =
@@ -199,6 +199,7 @@ class GTSAM_EXPORT RiemannianStaircaseOptimizer {
   struct InnerSolveResult {
     Values Y;
     std::vector<Vector> lambdaEq;
+    double stationarity = 0.0;
   };
 
   /// Construct from a QCQP-representable factor graph and an initial
@@ -308,6 +309,7 @@ struct GTSAM_EXPORT RiemannianStaircaseResult {
   std::vector<size_t> ranksVisited;
   std::vector<double> costPerLevel;
   std::vector<double> minEigenvaluePerLevel;
+  std::vector<double> stationarityPerLevel;
   std::vector<double> qcqpBuildTimePerLevel;
   std::vector<double> nlpTimePerLevel;
   std::vector<double> verifyTimePerLevel;
@@ -333,6 +335,9 @@ struct GTSAM_EXPORT RiemannianStaircaseResult {
 
   /// Return the minimum certificate eigenvalue at each staircase level.
   Vector getMinEigenvaluePerLevel() const;
+
+  /// Return the augmented-Lagrangian gradient stationarity at each level.
+  Vector getStationarityPerLevel() const;
 
   /// Return QCQP construction time at each staircase level, in seconds.
   Vector getQcqpBuildTimePerLevel() const;

@@ -837,3 +837,65 @@ int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
 }
+
+/* ************************************************************************* */
+namespace certificate_fixes {
+
+using RingFixture::DefaultAlmParams;
+using RingFixture::RingGraph;
+using RingFixture::RingQcqpValuesD2;
+
+constexpr size_t kNumPoses = 5;
+constexpr double kDelta = 2.0 * kPi / kNumPoses;
+
+// buildDataMatrix and QpCost::error read the same HessianFactor through
+// different views: the certificate takes the natural top-left corner of each
+// expanded block, while the solver uses the whole expansion. Nothing in the
+// type system ties those views together, so check the assembled Q against the
+// cost it is supposed to represent. QpCost evaluates 0.5 * tr(Y' Q Y), hence
+// the factor of 2.
+TEST(RiemannianStaircase, DataMatrixAgreesWithQcqpCost) {
+  const NonlinearFactorGraph graph = RingGraph(kNumPoses, kDelta);
+  const QcqpProblem qcqp(graph, 2);
+  const Values values = RingQcqpValuesD2(kNumPoses, kDelta, 0.05);
+  const auto layout = RiemannianStaircaseOptimizer::Layout::From(values);
+
+  const auto Q = RiemannianStaircaseOptimizer::buildDataMatrix(qcqp, layout);
+  const Matrix Y = layout.stack(values);
+  const double fromDataMatrix = (Y.transpose() * (Q * Y)).trace();
+
+  EXPECT_DOUBLES_EQUAL(2.0 * qcqp.costs().error(values), fromDataMatrix, 1e-9);
+}
+
+// lambda_min comes out of a shift trick as the difference lambda_max -
+// shiftedMax, so an unscaled relative tolerance leaves an absolute error of
+// tol * lambda_max. On a spectrum with a wide dynamic range that error can
+// exceed the eigenvalue itself and flip its sign, which is what produced false
+// certificates. Build a matrix whose spectrum is known exactly and check both
+// the sign and the value.
+TEST(RiemannianStaircase, SpectraResolvesTinyNegativeEigenvalueOnWideSpectrum) {
+  constexpr int n = 60;
+  const double trueMin = -2.4e-02;
+  Eigen::SparseMatrix<double> S(n, n);
+  std::vector<Eigen::Triplet<double>> triplets;
+  triplets.emplace_back(0, 0, trueMin);
+  // Remaining eigenvalues span up to ~5.9e+03, the ratio seen on intel.
+  for (int i = 1; i < n; ++i) {
+    triplets.emplace_back(i, i, 1.0 + 100.0 * static_cast<double>(i));
+  }
+  S.setFromTriplets(triplets.begin(), triplets.end());
+  S.makeCompressed();
+
+  RiemannianStaircaseParams params;
+  params.eta = 1e-4;  // far tighter than tol * lambda_max would allow
+  // verify() dispatches to the Spectra path, which is the default.
+  const auto [passed, lambdaMin, vMin] =
+      RiemannianStaircaseOptimizer::verify(S, params);
+
+  EXPECT(!passed);
+  EXPECT_DOUBLES_EQUAL(trueMin, lambdaMin, 1e-6);
+  EXPECT(lambdaMin < 0.0);
+}
+
+}  // namespace certificate_fixes
+/* ************************************************************************* */

@@ -260,7 +260,8 @@ RiemannianStaircaseOptimizer::runLocalSolver(
         "RiemannianStaircaseOptimizer::runLocalSolver: ALM produced no "
         "progress.");
   }
-  return {Y, alm.progress().back().lambdaEq};
+  const auto& last = alm.progress().back();
+  return {Y, last.lambdaEq, last.augmentedLagrangianStationarity};
 }
 
 /* ************************************************************************* */
@@ -374,7 +375,12 @@ Eigen::SparseMatrix<double> RiemannianStaircaseOptimizer::buildCertificate(
     const QcqpProblem& qcqp, const Layout& layout,
     const std::vector<Vector>& lambdaEq) {
   Eigen::SparseMatrix<double> S = buildDataMatrix(qcqp, layout);
-  S += buildMultiplierMatrix(qcqp, layout, lambdaEq);
+  // The factor of two reconciles the cost and constraint conventions: QpCost is
+  // 0.5 * tr(X' Q X) so its gradient is Q Y, while a QuadraticConstraint
+  // h = tr(X' A X) - b has gradient 2 A X. Stationarity of
+  // L = cost + sum_m lambda_m h_m is therefore (Q + 2 A*(lambda)) Y = 0.
+  // So a factor of 2 is added.
+  S += 2.0 * buildMultiplierMatrix(qcqp, layout, lambdaEq);
   S.makeCompressed();
   return S;
 }
@@ -657,6 +663,10 @@ Vector RiemannianStaircaseResult::getCostPerLevel() const {
 
 Vector RiemannianStaircaseResult::getMinEigenvaluePerLevel() const {
   return ToVector(minEigenvaluePerLevel);
+}
+
+Vector RiemannianStaircaseResult::getStationarityPerLevel() const {
+  return ToVector(stationarityPerLevel);
 }
 
 Vector RiemannianStaircaseResult::getQcqpBuildTimePerLevel() const {
