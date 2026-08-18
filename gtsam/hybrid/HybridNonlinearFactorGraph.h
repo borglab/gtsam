@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/hybrid/HybridFactorGraph.h>
+#include <gtsam/inference/FactorErrorPredicate.h>
 
 namespace gtsam {
 
@@ -68,10 +69,9 @@ class GTSAM_EXPORT HybridNonlinearFactorGraph : public HybridFactorGraph {
       const HybridValues& values,
       const std::string& str = "HybridNonlinearFactorGraph: ",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter,
-      const std::function<bool(const Factor* /*factor*/,
-                               double /*whitenedError*/, size_t /*index*/)>&
-          printCondition =
-              [](const Factor*, double, size_t) { return true; }) const;
+      const FactorErrorPredicate&
+          printCondition = FactorErrorPredicate{
+              [](const Factor*, double, size_t) { return true; }}) const;
 
   /// @}
   /// @name Standard Interface

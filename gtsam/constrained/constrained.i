@@ -73,6 +73,22 @@ class QuadraticConstraint {
   double sigma() const;
 };
 
+#include <gtsam/constrained/ActiveSetSolver.h>
+class ActiveSetSolverParams {
+  enum class QpSubproblemSolver { Sparse, Dense };
+
+  ActiveSetSolverParams();
+
+  size_t maxIterations;
+  double activeTolerance;
+  double stepTolerance;
+  double feasibilityTolerance;
+  double multiplierTolerance;
+  double regularization;
+  double phaseOneFeasibilityTolerance;
+  gtsam::ActiveSetSolverParams::QpSubproblemSolver qpSubproblemSolver;
+};
+
 #include <gtsam/constrained/LpProblem.h>
 class LpCost {
   LpCost(const gtsam::JacobianFactor& factor);
@@ -89,11 +105,11 @@ class LpProblem : gtsam::ConstrainedOptProblem {
   void addConstraint(const gtsam::LinearConstraint& constraint);
 
   double objective(const gtsam::Values& values) const;
-  gtsam::Values optimize(const gtsam::Values& initialValues) const;
-  gtsam::Values optimize() const;
-  std::tuple<double, double, double> evaluate(
-      const gtsam::Values& values) const;
-  std::tuple<size_t, size_t, size_t> dim() const;
+  gtsam::Values optimize(
+      const gtsam::Values& initialValues,
+      std::shared_ptr<gtsam::ActiveSetSolverParams> params = nullptr) const;
+  gtsam::Values optimize(
+      std::shared_ptr<gtsam::ActiveSetSolverParams> params = nullptr) const;
 };
 
 #include <gtsam/constrained/QpCost.h>
@@ -105,12 +121,6 @@ virtual class QpCost : gtsam::NonlinearFactor {
          size_t columnDim = 1);
 
   const gtsam::HessianFactor& hessianFactor() const;
-  void print(const std::string& s = "",
-             const gtsam::KeyFormatter& formatter =
-                 gtsam::DefaultKeyFormatter) const;
-  bool equals(const gtsam::NonlinearFactor& other, double tol = 1e-9) const;
-  double error(const gtsam::Values& values) const;
-  size_t dim() const;
 };
 
 #include <gtsam/constrained/QpProblem.h>
@@ -129,9 +139,6 @@ class QpProblem : gtsam::ConstrainedOptProblem {
       gtsam::QpSolverType solverType = gtsam::QpSolverType::Sparse) const;
   gtsam::Values optimize(
       gtsam::QpSolverType solverType = gtsam::QpSolverType::Sparse) const;
-  std::tuple<double, double, double> evaluate(
-      const gtsam::Values& values) const;
-  std::tuple<size_t, size_t, size_t> dim() const;
 };
 
 #include <gtsam/constrained/QcqpProblem.h>
@@ -144,9 +151,6 @@ class QcqpProblem : gtsam::ConstrainedOptProblem {
   void addConstraint(const gtsam::LinearConstraint& constraint);
   void addConstraint(const gtsam::QuadraticConstraint& constraint);
 
-  std::tuple<double, double, double> evaluate(
-      const gtsam::Values& values) const;
-  std::tuple<size_t, size_t, size_t> dim() const;
 };
 
 #include <gtsam/geometry/Pose2.h>

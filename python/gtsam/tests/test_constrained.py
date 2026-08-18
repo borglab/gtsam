@@ -47,6 +47,16 @@ class TestConstrainedWrappers(unittest.TestCase):
         np.testing.assert_allclose(result.atVector(x), np.array([1.0]))
         self.assertAlmostEqual(problem.objective(result), -1.0)
 
+        params = gtsam.ActiveSetSolverParams()
+        params.maxIterations = 50
+        result_with_params = problem.optimize(initial, params)
+        np.testing.assert_allclose(result_with_params.atVector(x), np.array([1.0]))
+
+        result_with_automatic_initial = problem.optimize(params)
+        np.testing.assert_allclose(
+            result_with_automatic_initial.atVector(x), np.array([1.0])
+        )
+
     def test_qp_problem_wrapper(self):
         """Construct and solve a tiny QP."""
         x = X(0)

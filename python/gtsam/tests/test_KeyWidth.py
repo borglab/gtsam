@@ -25,6 +25,9 @@ class TestKeyWidth(unittest.TestCase):
         """Symbol helpers should preserve indices larger than 32 bits."""
         index = (1 << 32) + 7
 
+        symbol = gtsam.Symbol("x", index)
+        self.assertEqual(symbol.index(), index)
+
         key = gtsam.symbol("x", index)
         self.assertEqual(gtsam.symbolIndex(key), index)
         self.assertEqual(X(index), key)

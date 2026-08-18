@@ -262,7 +262,18 @@ class GTSAM_EXPORT ShonanAveraging {
    * @param values: should be of type SOn
    */
   double computeMinEigenValue(const Values &values,
-                              Vector *minEigenVector = nullptr) const;
+                              Vector *minEigenVector) const;
+
+  /// Compute the minimum eigenvalue without requesting its eigenvector.
+  double computeMinEigenValue(const Values& values) const {
+    return computeMinEigenValue(values, nullptr);
+  }
+
+  /// Compute the minimum eigenvalue and write its eigenvector.
+  double computeMinEigenValue(const Values& values,
+                              Vector& minEigenVector) const {
+    return computeMinEigenValue(values, &minEigenVector);
+  }
 
   /**
    * Compute minimum eigenvalue with accelerated power method.

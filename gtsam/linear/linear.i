@@ -42,11 +42,11 @@ virtual class Base {
 };
 
 virtual class Gaussian : gtsam::noiseModel::Base {
-  static gtsam::noiseModel::Gaussian* Information(gtsam::Matrix R, bool smart = true);
-  static gtsam::noiseModel::Gaussian* SqrtInformation(gtsam::Matrix R, bool smart = true);
-  static gtsam::noiseModel::Gaussian* Covariance(gtsam::Matrix R, bool smart = true);
+  static gtsam::noiseModel::Gaussian* Information(const gtsam::Matrix& R, bool smart = true);
+  static gtsam::noiseModel::Gaussian* SqrtInformation(const gtsam::Matrix& R, bool smart = true);
+  static gtsam::noiseModel::Gaussian* Covariance(const gtsam::Matrix& R, bool smart = true);
 
-  bool equals(gtsam::noiseModel::Base& expected, double tol);
+  bool equals(const gtsam::noiseModel::Base& expected, double tol) const;
 
   // access to noise model
   gtsam::Matrix R() const;
@@ -54,9 +54,9 @@ virtual class Gaussian : gtsam::noiseModel::Base {
   gtsam::Matrix covariance() const;
 
   // Whitening operations
-  gtsam::Vector whiten(gtsam::Vector v) const;
-  gtsam::Vector unwhiten(gtsam::Vector v) const;
-  gtsam::Matrix Whiten(gtsam::Matrix H) const;
+  gtsam::Vector whiten(const gtsam::Vector& v) const;
+  gtsam::Vector unwhiten(const gtsam::Vector& v) const;
+  gtsam::Matrix Whiten(const gtsam::Matrix& H) const;
 
   double negLogConstant() const;
 
@@ -65,27 +65,25 @@ virtual class Gaussian : gtsam::noiseModel::Base {
 };
 
 virtual class Diagonal : gtsam::noiseModel::Gaussian {
-  static gtsam::noiseModel::Diagonal* Sigmas(gtsam::Vector sigmas, bool smart = true);
-  static gtsam::noiseModel::Diagonal* Variances(gtsam::Vector variances, bool smart = true);
-  static gtsam::noiseModel::Diagonal* Precisions(gtsam::Vector precisions, bool smart = true);
-  gtsam::Matrix R() const;
-
+  static gtsam::noiseModel::Diagonal* Sigmas(const gtsam::Vector& sigmas, bool smart = true);
+  static gtsam::noiseModel::Diagonal* Variances(const gtsam::Vector& variances, bool smart = true);
+  static gtsam::noiseModel::Diagonal* Precisions(const gtsam::Vector& precisions, bool smart = true);
   // access to noise model
   gtsam::Vector sigmas() const;
-  gtsam::Vector invsigmas() const;
-  gtsam::Vector precisions() const;
+  const gtsam::Vector& invsigmas() const;
+  const gtsam::Vector& precisions() const;
 
   // enabling serialization functionality
   void serializable() const;
 };
 
 virtual class Constrained : gtsam::noiseModel::Diagonal {
-    static gtsam::noiseModel::Constrained* MixedSigmas(gtsam::Vector mu, gtsam::Vector sigmas);
-    static gtsam::noiseModel::Constrained* MixedSigmas(double m, gtsam::Vector sigmas);
-    static gtsam::noiseModel::Constrained* MixedVariances(gtsam::Vector mu, gtsam::Vector variances);
-    static gtsam::noiseModel::Constrained* MixedVariances(gtsam::Vector variances);
-    static gtsam::noiseModel::Constrained* MixedPrecisions(gtsam::Vector mu, gtsam::Vector precisions);
-    static gtsam::noiseModel::Constrained* MixedPrecisions(gtsam::Vector precisions);
+    static gtsam::noiseModel::Constrained* MixedSigmas(const gtsam::Vector& mu, const gtsam::Vector& sigmas);
+    static gtsam::noiseModel::Constrained* MixedSigmas(double m, const gtsam::Vector& sigmas);
+    static gtsam::noiseModel::Constrained* MixedVariances(const gtsam::Vector& mu, const gtsam::Vector& variances);
+    static gtsam::noiseModel::Constrained* MixedVariances(const gtsam::Vector& variances);
+    static gtsam::noiseModel::Constrained* MixedPrecisions(const gtsam::Vector& mu, const gtsam::Vector& precisions);
+    static gtsam::noiseModel::Constrained* MixedPrecisions(const gtsam::Vector& precisions);
 
     static gtsam::noiseModel::Constrained* All(size_t dim);
     static gtsam::noiseModel::Constrained* All(size_t dim, double mu);
@@ -136,7 +134,10 @@ virtual class Null: gtsam::noiseModel::mEstimator::Base {
 
 virtual class Fair: gtsam::noiseModel::mEstimator::Base {
   Fair(double c);
-  static gtsam::noiseModel::mEstimator::Fair* Create(double c);
+  static gtsam::noiseModel::mEstimator::Fair* Create(
+      double c,
+      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight =
+          gtsam::noiseModel::mEstimator::Base::Block);
 
   // enabling serialization functionality
   void serializable() const;
@@ -149,7 +150,10 @@ virtual class Fair: gtsam::noiseModel::mEstimator::Base {
 
 virtual class Huber: gtsam::noiseModel::mEstimator::Base {
   Huber(double k);
-  static gtsam::noiseModel::mEstimator::Huber* Create(double k);
+  static gtsam::noiseModel::mEstimator::Huber* Create(
+      double k,
+      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight =
+          gtsam::noiseModel::mEstimator::Base::Block);
 
   // enabling serialization functionality
   void serializable() const;
@@ -163,7 +167,10 @@ virtual class Huber: gtsam::noiseModel::mEstimator::Base {
 virtual class Cauchy: gtsam::noiseModel::mEstimator::Base {
   Cauchy(double k);
   Cauchy(double k, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
-  static gtsam::noiseModel::mEstimator::Cauchy* Create(double k);
+  static gtsam::noiseModel::mEstimator::Cauchy* Create(
+      double k,
+      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight =
+          gtsam::noiseModel::mEstimator::Base::Block);
 
   // enabling serialization functionality
   void serializable() const;
@@ -177,7 +184,10 @@ virtual class Cauchy: gtsam::noiseModel::mEstimator::Base {
 virtual class Tukey: gtsam::noiseModel::mEstimator::Base {
   Tukey(double k);
   Tukey(double k, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
-  static gtsam::noiseModel::mEstimator::Tukey* Create(double k);
+  static gtsam::noiseModel::mEstimator::Tukey* Create(
+      double k,
+      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight =
+          gtsam::noiseModel::mEstimator::Base::Block);
 
   // enabling serialization functionality
   void serializable() const;
@@ -191,7 +201,10 @@ virtual class Tukey: gtsam::noiseModel::mEstimator::Base {
 virtual class Welsch: gtsam::noiseModel::mEstimator::Base {
   Welsch(double k);
   Welsch(double k, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
-  static gtsam::noiseModel::mEstimator::Welsch* Create(double k);
+  static gtsam::noiseModel::mEstimator::Welsch* Create(
+      double k,
+      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight =
+          gtsam::noiseModel::mEstimator::Base::Block);
 
   // enabling serialization functionality
   void serializable() const;
@@ -212,6 +225,7 @@ virtual class GemanMcClure: gtsam::noiseModel::mEstimator::Base {
   GemanMcClure(double c,
       gtsam::noiseModel::mEstimator::GemanMcClure::GradScheme graduation,
       gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
+  
   static gtsam::noiseModel::mEstimator::GemanMcClure* Create(double c);
   static gtsam::noiseModel::mEstimator::GemanMcClure* Create(
       double c, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
@@ -268,7 +282,10 @@ virtual class TruncatedLeastSquares: gtsam::noiseModel::mEstimator::Base {
 virtual class DCS: gtsam::noiseModel::mEstimator::Base {
   DCS(double c);
   DCS(double c, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
-  static gtsam::noiseModel::mEstimator::DCS* Create(double c);
+  static gtsam::noiseModel::mEstimator::DCS* Create(
+      double c,
+      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight =
+          gtsam::noiseModel::mEstimator::Base::Block);
 
   // enabling serialization functionality
   void serializable() const;
@@ -282,7 +299,10 @@ virtual class DCS: gtsam::noiseModel::mEstimator::Base {
 virtual class L2WithDeadZone: gtsam::noiseModel::mEstimator::Base {
   L2WithDeadZone(double k);
   L2WithDeadZone(double k, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
-  static gtsam::noiseModel::mEstimator::L2WithDeadZone* Create(double k);
+  static gtsam::noiseModel::mEstimator::L2WithDeadZone* Create(
+      double k,
+      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight =
+          gtsam::noiseModel::mEstimator::Base::Block);
 
   // enabling serialization functionality
   void serializable() const;
@@ -296,7 +316,10 @@ virtual class L2WithDeadZone: gtsam::noiseModel::mEstimator::Base {
 virtual class AsymmetricTukey: gtsam::noiseModel::mEstimator::Base {
   AsymmetricTukey(double k);
   AsymmetricTukey(double k, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
-  static gtsam::noiseModel::mEstimator::AsymmetricTukey* Create(double k);
+  static gtsam::noiseModel::mEstimator::AsymmetricTukey* Create(
+      double k,
+      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight =
+          gtsam::noiseModel::mEstimator::Base::Block);
 
   // enabling serialization functionality
   void serializable() const;
@@ -310,7 +333,10 @@ virtual class AsymmetricTukey: gtsam::noiseModel::mEstimator::Base {
 virtual class AsymmetricCauchy: gtsam::noiseModel::mEstimator::Base {
   AsymmetricCauchy(double k);
   AsymmetricCauchy(double k, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
-  static gtsam::noiseModel::mEstimator::AsymmetricCauchy* Create(double k);
+  static gtsam::noiseModel::mEstimator::AsymmetricCauchy* Create(
+      double k,
+      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight =
+          gtsam::noiseModel::mEstimator::Base::Block);
 
   // enabling serialization functionality
   void serializable() const;
@@ -348,7 +374,7 @@ virtual class Custom: gtsam::noiseModel::mEstimator::Base {
       gtsam::noiseModel::mEstimator::CustomGraduatedWeightFunction gradWeight,
       gtsam::noiseModel::mEstimator::CustomGraduatedLossFunction gradLoss,
       gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight,
-      std::string name);
+      const std::string& name);
 
   // enabling serialization functionality
   void serializable() const;
@@ -364,7 +390,9 @@ virtual class Custom: gtsam::noiseModel::mEstimator::Base {
 
 virtual class Robust : gtsam::noiseModel::Base {
   Robust(const gtsam::noiseModel::mEstimator::Base* robust, const gtsam::noiseModel::Base* noise);
-  static gtsam::noiseModel::Robust* Create(const gtsam::noiseModel::mEstimator::Base* robust, const gtsam::noiseModel::Base* noise);
+  static gtsam::noiseModel::Robust* Create(
+      const std::shared_ptr<gtsam::noiseModel::mEstimator::Base>& robust,
+      const std::shared_ptr<gtsam::noiseModel::Base> noise);
 
   // enabling serialization functionality
   void serializable() const;
@@ -376,13 +404,13 @@ virtual class Robust : gtsam::noiseModel::Base {
 class Sampler {
   // Constructors
   Sampler(gtsam::noiseModel::Diagonal* model, int seed);
-  Sampler(gtsam::Vector sigmas, int seed);
+  Sampler(const gtsam::Vector& sigmas, int seed = 42u);
 
   // Standard Interface
   size_t dim() const;
   gtsam::Vector sigmas() const;
-  gtsam::noiseModel::Diagonal* model() const;
-  gtsam::Vector sample();
+  const std::shared_ptr<gtsam::noiseModel::Diagonal>& model() const;
+  gtsam::Vector sample() const;
 };
 
 #include <gtsam/linear/VectorValues.h>
@@ -403,38 +431,38 @@ class VectorValues {
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::VectorValues& x, double tol) const;
-  void insert(gtsam::Key j, gtsam::Vector value);
+  void insert(gtsam::Key j, const gtsam::Vector& value);
   gtsam::Vector vector() const;
   gtsam::Vector vector(const gtsam::KeyVector& keys) const;
-  gtsam::Vector at(gtsam::Key j) const;
-  void insert(const gtsam::VectorValues& values);
-  void update(const gtsam::VectorValues& values);
+  const gtsam::Vector& at(gtsam::Key j) const;
+  gtsam::VectorValues& insert(const gtsam::VectorValues& values);
+  gtsam::VectorValues& update(const gtsam::VectorValues& values);
 
   //Advanced Interface
   void setZero();
 
   gtsam::VectorValues add(const gtsam::VectorValues& c) const;
-  void addInPlace(const gtsam::VectorValues& c);
+  gtsam::VectorValues& addInPlace(const gtsam::VectorValues& c);
   gtsam::VectorValues subtract(const gtsam::VectorValues& c) const;
   gtsam::VectorValues scale(double a) const;
-  void scaleInPlace(double alpha);
+  gtsam::VectorValues& scaleInPlace(double alpha);
 
-  bool hasSameStructure(const gtsam::VectorValues& other)  const;
+  bool hasSameStructure(gtsam::VectorValues other) const;
   double dot(const gtsam::VectorValues& v) const;
   double norm() const;
   double squaredNorm() const;
 
   // enabling serialization functionality
   void serialize() const;
-  string html() const;
+  string html(const gtsam::KeyFormatter& keyFormatter =
+                  gtsam::DefaultKeyFormatter) const;
 };
 
 #include <gtsam/linear/GaussianFactor.h>
 virtual class GaussianFactor : gtsam::Factor {
-  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
-                                gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::GaussianFactor& lf, double tol) const;
   double error(const gtsam::VectorValues& c) const;
+  double error(const gtsam::HybridValues& c) const;
   gtsam::GaussianFactor* clone() const;
   gtsam::GaussianFactor* negate() const;
   gtsam::Matrix augmentedInformation() const;
@@ -464,15 +492,13 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
                  const gtsam::VariableSlots& p_variableSlots);
   JacobianFactor(const gtsam::GaussianFactor& factor);
 
-  //Testable
-  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
-                                gtsam::DefaultKeyFormatter) const;
-  bool equals(const gtsam::GaussianFactor& lf, double tol) const;
+  // Testable methods are inherited from GaussianFactor.
   gtsam::Vector unweighted_error(const gtsam::VectorValues& c) const;
   gtsam::Vector error_vector(const gtsam::VectorValues& c) const;
-  double error(const gtsam::VectorValues& c) const;
 
   // Standard Interface
+  // These are dense wrapper results. The C++ methods return Eigen views, and
+  // the wrapper materializes them at the language boundary.
   gtsam::Matrix getA() const;
   gtsam::Vector getb() const;
   size_t rows() const;
@@ -481,14 +507,16 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
   pair<gtsam::Matrix, gtsam::Vector> jacobianUnweighted() const;
   gtsam::Matrix augmentedJacobianUnweighted() const;
 
-  void transposeMultiplyAdd(double alpha, gtsam::Vector e, gtsam::VectorValues& x) const;
+  void transposeMultiplyAdd(double alpha, const gtsam::Vector& e,
+                            gtsam::VectorValues& x) const;
   gtsam::JacobianFactor whiten() const;
 
-  pair<gtsam::GaussianConditional*, gtsam::JacobianFactor*> eliminate(const gtsam::Ordering& keys) const;
+  pair<gtsam::GaussianConditional*, gtsam::JacobianFactor*> eliminate(
+      const gtsam::Ordering& keys);
 
-  void setModel(bool anyConstrained, gtsam::Vector sigmas);
+  void setModel(bool anyConstrained, const gtsam::Vector& sigmas);
 
-  gtsam::noiseModel::Diagonal* get_model() const;
+  const std::shared_ptr<gtsam::noiseModel::Diagonal>& get_model() const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -497,6 +525,7 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
 pair<gtsam::GaussianConditional*, gtsam::JacobianFactor*> EliminateQR(
     const gtsam::GaussianFactorGraph& factors, const gtsam::Ordering& keys);
 
+#include <gtsam/inference/EliminateableFactorGraph.h>
 #include <gtsam/linear/HessianFactor.h>
 virtual class HessianFactor : gtsam::GaussianFactor {
   //Constructors
@@ -511,15 +540,8 @@ virtual class HessianFactor : gtsam::GaussianFactor {
       double f);
   HessianFactor(const gtsam::GaussianFactorGraph& factors);
 
-  //Testable
-  void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
-                                gtsam::DefaultKeyFormatter) const;
-  bool equals(const gtsam::GaussianFactor& lf, double tol) const;
-  double error(const gtsam::VectorValues& c) const;
-
   //Standard Interface
   size_t rows() const;
-  gtsam::Matrix information() const;
   double constantTerm() const;
   gtsam::Vector linearTerm() const;
 
@@ -529,6 +551,107 @@ virtual class HessianFactor : gtsam::GaussianFactor {
 
 #include <gtsam/linear/GaussianFactorGraph.h>
 class GaussianFactorGraph {
+  std::shared_ptr<gtsam::GaussianBayesNet> eliminateSequential(
+      gtsam::GaussianFactorGraph::OptionalOrderingType orderingType = std::nullopt,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
+      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
+      const;
+  std::shared_ptr<gtsam::GaussianBayesNet> eliminateSequential(
+      const gtsam::Ordering& ordering,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
+      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
+      const;
+  std::shared_ptr<gtsam::GaussianBayesTree> eliminateMultifrontal(
+      gtsam::GaussianFactorGraph::OptionalOrderingType orderingType = std::nullopt,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
+      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
+      const;
+  std::shared_ptr<gtsam::GaussianBayesTree> eliminateMultifrontal(
+      const gtsam::Ordering& ordering,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
+      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
+      const;
+  pair<std::shared_ptr<gtsam::GaussianBayesNet>,
+       std::shared_ptr<gtsam::GaussianFactorGraph>>
+  eliminatePartialSequential(
+      const gtsam::Ordering& ordering,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
+      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
+      const;
+  pair<std::shared_ptr<gtsam::GaussianBayesNet>,
+       std::shared_ptr<gtsam::GaussianFactorGraph>>
+  eliminatePartialSequential(
+      const gtsam::KeyVector& variables,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
+      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
+      const;
+  pair<std::shared_ptr<gtsam::GaussianBayesTree>,
+       std::shared_ptr<gtsam::GaussianFactorGraph>>
+  eliminatePartialMultifrontal(
+      const gtsam::Ordering& ordering,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
+      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
+      const;
+  pair<std::shared_ptr<gtsam::GaussianBayesTree>,
+       std::shared_ptr<gtsam::GaussianFactorGraph>>
+  eliminatePartialMultifrontal(
+      const gtsam::KeyVector& variables,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
+      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
+      const;
+  std::shared_ptr<gtsam::GaussianBayesNet> marginalMultifrontalBayesNet(
+      const gtsam::Ordering& variables,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
+      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
+      const;
+  std::shared_ptr<gtsam::GaussianBayesNet> marginalMultifrontalBayesNet(
+      const gtsam::KeyVector& variables,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
+      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
+      const;
+  std::shared_ptr<gtsam::GaussianBayesNet> marginalMultifrontalBayesNet(
+      const gtsam::Ordering& variables,
+      const gtsam::Ordering& marginalizedVariableOrdering,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
+      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
+      const;
+  std::shared_ptr<gtsam::GaussianBayesNet> marginalMultifrontalBayesNet(
+      const gtsam::KeyVector& variables,
+      const gtsam::Ordering& marginalizedVariableOrdering,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
+      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
+      const;
+  std::shared_ptr<gtsam::GaussianFactorGraph> marginal(
+      const gtsam::KeyVector& variables,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
+      gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
+      const;
   GaussianFactorGraph();
   GaussianFactorGraph(const gtsam::GaussianBayesNet& bayesNet);
   GaussianFactorGraph(const gtsam::GaussianBayesTree& bayesTree);
@@ -538,7 +661,7 @@ class GaussianFactorGraph {
                                 gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::GaussianFactorGraph& fg, double tol) const;
   size_t size() const;
-  gtsam::GaussianFactor* at(size_t idx) const;
+  const std::shared_ptr<gtsam::GaussianFactor> at(size_t idx) const;
   gtsam::KeySet keys() const;
   gtsam::KeyVector keyVector() const;
   bool exists(size_t idx) const;
@@ -550,51 +673,53 @@ class GaussianFactorGraph {
   void push_back(const gtsam::GaussianBayesNet& bayesNet);
   void push_back(const gtsam::GaussianBayesTree& bayesTree);
   void add(const gtsam::GaussianFactor& factor);
-  void add(gtsam::Vector b);
-  void add(gtsam::Key key1, gtsam::Matrix A1, gtsam::Vector b, const gtsam::noiseModel::Diagonal* model);
-  void add(gtsam::Key key1, gtsam::Matrix A1, gtsam::Key key2, gtsam::Matrix A2, gtsam::Vector b,
-      const gtsam::noiseModel::Diagonal* model);
-  void add(gtsam::Key key1, gtsam::Matrix A1, gtsam::Key key2, gtsam::Matrix A2, gtsam::Key key3, gtsam::Matrix A3,
-      gtsam::Vector b, const gtsam::noiseModel::Diagonal* model);
+  void add(const gtsam::Vector& b);
+  void add(
+      gtsam::Key key1, const gtsam::Matrix& A1, const gtsam::Vector& b,
+      const std::shared_ptr<gtsam::noiseModel::Diagonal>& model =
+          gtsam::SharedDiagonal());
+  void add(
+      gtsam::Key key1, const gtsam::Matrix& A1, gtsam::Key key2,
+      const gtsam::Matrix& A2, const gtsam::Vector& b,
+      const std::shared_ptr<gtsam::noiseModel::Diagonal>& model =
+          gtsam::SharedDiagonal());
+  void add(
+      gtsam::Key key1, const gtsam::Matrix& A1, gtsam::Key key2,
+      const gtsam::Matrix& A2, gtsam::Key key3, const gtsam::Matrix& A3,
+      const gtsam::Vector& b,
+      const std::shared_ptr<gtsam::noiseModel::Diagonal>& model =
+          gtsam::SharedDiagonal());
 
   // error and probability
   double error(const gtsam::VectorValues& x) const;
   double probPrime(const gtsam::VectorValues& c) const;
-  void printErrors(const gtsam::VectorValues& x, string str = "GaussianFactorGraph: ", const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter) const;
+  void printErrors(
+      const gtsam::VectorValues& x,
+      const string& str = "GaussianFactorGraph: ",
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      const gtsam::FactorErrorPredicate& printCondition =
+          gtsam::FactorErrorPredicate{
+              [](const gtsam::Factor*, double, size_t) { return true; }}) const;
 
   gtsam::GaussianFactorGraph clone() const;
   gtsam::GaussianFactorGraph negate() const;
 
   // Optimizing and linear algebra
-  gtsam::VectorValues optimize() const;
+  gtsam::VectorValues optimize(
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate))
+      const;
   gtsam::VectorValues optimizeDensely() const;
-  gtsam::VectorValues optimize(const gtsam::Ordering& ordering) const;
+  gtsam::VectorValues optimize(
+      const gtsam::Ordering& ordering,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate))
+      const;
   gtsam::VectorValues optimizeGradientSearch() const;
   gtsam::VectorValues gradient(const gtsam::VectorValues& x0) const;
   gtsam::VectorValues gradientAtZero() const;
-
-  // Elimination and marginals
-  gtsam::GaussianBayesNet* eliminateSequential();
-  gtsam::GaussianBayesNet* eliminateSequential(gtsam::Ordering::OrderingType type);
-  gtsam::GaussianBayesNet* eliminateSequential(const gtsam::Ordering& ordering);
-  gtsam::GaussianBayesTree* eliminateMultifrontal();
-  gtsam::GaussianBayesTree* eliminateMultifrontal(gtsam::Ordering::OrderingType type);
-  gtsam::GaussianBayesTree* eliminateMultifrontal(const gtsam::Ordering& ordering);
-  pair<gtsam::GaussianBayesNet*, gtsam::GaussianFactorGraph*> eliminatePartialSequential(
-    const gtsam::Ordering& ordering);
-  pair<gtsam::GaussianBayesNet*, gtsam::GaussianFactorGraph*> eliminatePartialSequential(
-    const gtsam::KeyVector& keys);
-  pair<gtsam::GaussianBayesTree*, gtsam::GaussianFactorGraph*> eliminatePartialMultifrontal(
-    const gtsam::Ordering& ordering);
-  pair<gtsam::GaussianBayesTree*, gtsam::GaussianFactorGraph*> eliminatePartialMultifrontal(
-    const gtsam::KeyVector& keys);
-  gtsam::GaussianBayesNet* marginalMultifrontalBayesNet(const gtsam::Ordering& ordering);
-  gtsam::GaussianBayesNet* marginalMultifrontalBayesNet(const gtsam::KeyVector& key_vector);
-  gtsam::GaussianBayesNet* marginalMultifrontalBayesNet(const gtsam::Ordering& ordering,
-    const gtsam::Ordering& marginalizedVariableOrdering);
-  gtsam::GaussianBayesNet* marginalMultifrontalBayesNet(const gtsam::KeyVector& key_vector,
-    const gtsam::Ordering& marginalizedVariableOrdering);
-  gtsam::GaussianFactorGraph* marginal(const gtsam::KeyVector& key_vector);
 
   // Conversion to matrices
   gtsam::Matrix sparseJacobian_() const;
@@ -611,7 +736,7 @@ class GaussianFactorGraph {
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
       const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
   void saveGraph(
-      string s,
+      const string& s,
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
       const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
 
@@ -660,22 +785,15 @@ virtual class GaussianConditional : gtsam::JacobianFactor {
                                                       gtsam::Key parent2, 
                                                       const gtsam::Vector& b,
                                                       double sigma);
-  // Testable
-  void print(string s = "GaussianConditional",
-             const gtsam::KeyFormatter& keyFormatter =
-                 gtsam::DefaultKeyFormatter) const;
-  bool equals(const gtsam::GaussianConditional& cg, double tol) const;
-  
   // Standard Interface
   double negLogConstant() const;
   double logProbability(const gtsam::VectorValues& x) const;
   double evaluate(const gtsam::VectorValues& x) const;
-  double error(const gtsam::VectorValues& c) const;
   gtsam::Key firstFrontalKey() const;
   gtsam::VectorValues solve(const gtsam::VectorValues& parents) const;
   gtsam::JacobianFactor* likelihood(
       const gtsam::VectorValues& frontalValues) const;
-  gtsam::JacobianFactor* likelihood(gtsam::Vector frontal) const;
+  gtsam::JacobianFactor* likelihood(const gtsam::Vector& frontal) const;
 
   gtsam::VectorValues sample(std::mt19937_64 @rng = nullptr) const;
   gtsam::VectorValues sample(const gtsam::VectorValues& parents,
@@ -685,8 +803,8 @@ virtual class GaussianConditional : gtsam::JacobianFactor {
   gtsam::VectorValues solveOtherRHS(const gtsam::VectorValues& parents,
                                     const gtsam::VectorValues& rhs) const;
   void solveTransposeInPlace(gtsam::VectorValues& gy) const;
-  gtsam::Matrix R() const;
-  gtsam::Matrix S() const;
+  gtsam::GaussianConditional::constABlock R() const;
+  gtsam::GaussianConditional::constABlock S() const;
   gtsam::Vector d() const;
 
   // enabling serialization functionality
@@ -695,7 +813,6 @@ virtual class GaussianConditional : gtsam::JacobianFactor {
   // Expose HybridValues versions
   double logProbability(const gtsam::HybridValues& x) const;
   double evaluate(const gtsam::HybridValues& x) const;
-  double error(const gtsam::HybridValues& x) const;
 };
 
 #include <gtsam/linear/GaussianDensity.h>
@@ -707,12 +824,6 @@ virtual class GaussianDensity : gtsam::GaussianConditional {
   static gtsam::GaussianDensity FromMeanAndStddev(gtsam::Key key,
                                                   const gtsam::Vector& mean,
                                                   double sigma);
-
-  // Testable
-  void print(string s = "GaussianDensity",
-             const gtsam::KeyFormatter& keyFormatter =
-                 gtsam::DefaultKeyFormatter) const;
-  bool equals(const gtsam::GaussianDensity& cg, double tol) const;
 
   // Standard Interface
   gtsam::Vector mean() const;
@@ -753,12 +864,10 @@ virtual class GaussianBayesNet {
   gtsam::VectorValues backSubstituteTranspose(const gtsam::VectorValues& gx) const;
 
   // FactorGraph derived interface
-  gtsam::GaussianConditional* at(size_t idx) const;
+  const std::shared_ptr<gtsam::GaussianConditional> at(size_t idx) const;
   gtsam::KeySet keys() const;
   gtsam::KeyVector keyVector() const;
   bool exists(size_t idx) const;
-
-  void saveGraph(const string& s) const;
 
   std::pair<gtsam::Matrix, gtsam::Vector> matrix() const; 
   gtsam::VectorValues gradient(const gtsam::VectorValues& x0) const;
@@ -771,7 +880,7 @@ virtual class GaussianBayesNet {
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
       const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
   void saveGraph(
-      string s,
+      const string& s,
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
       const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
 };
@@ -783,7 +892,7 @@ class GaussianBayesTreeClique {
   bool equals(const gtsam::GaussianBayesTreeClique& other, double tol) const;
   void print(string s = "", const gtsam::KeyFormatter& keyFormatter =
                                 gtsam::DefaultKeyFormatter);
-  const gtsam::GaussianConditional* conditional() const;
+  const gtsam::GaussianConditional::shared_ptr& conditional() const;
   bool isRoot() const;
   gtsam::GaussianBayesTreeClique* parent() const;
   size_t nrChildren() const;
@@ -807,7 +916,7 @@ virtual class GaussianBayesTree {
 
   string dot(const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
-  void saveGraph(string s,
+  void saveGraph(const string& s,
                 const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
 
@@ -824,11 +933,36 @@ virtual class GaussianBayesTree {
       const gtsam::KeyVector& queryKeys) const;
   gtsam::JointMarginal jointMarginalInformation(
       const gtsam::KeyVector& queryKeys) const;
-  gtsam::GaussianConditional* marginalFactor(gtsam::Key key) const;
-  gtsam::GaussianFactorGraph* joint(gtsam::Key key1, gtsam::Key key2) const;
-  gtsam::GaussianFactorGraph* joint(const gtsam::KeyVector& queryKeys) const;
-  gtsam::GaussianBayesNet* jointBayesNet(gtsam::Key key1, gtsam::Key key2) const;
-  gtsam::GaussianBayesNet* jointBayesNet(const gtsam::KeyVector& queryKeys) const;
+  std::shared_ptr<gtsam::GaussianConditional> marginalFactor(
+      gtsam::Key j,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate))
+      const;
+  std::shared_ptr<gtsam::GaussianFactorGraph> joint(
+      gtsam::Key j1, gtsam::Key j2,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate))
+      const;
+  std::shared_ptr<gtsam::GaussianFactorGraph> joint(
+      const gtsam::KeyVector& keys,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate))
+      const;
+  std::shared_ptr<gtsam::GaussianBayesNet> jointBayesNet(
+      gtsam::Key j1, gtsam::Key j2,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate))
+      const;
+  std::shared_ptr<gtsam::GaussianBayesNet> jointBayesNet(
+      const gtsam::KeyVector& keys,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate))
+      const;
   void deleteCachedShortcuts();
 };
 
@@ -846,29 +980,28 @@ virtual class GaussianEliminationTree {
 };
 
 #include <gtsam/linear/GaussianISAM.h>
-class GaussianISAM {
+template<BAYESTREE = {gtsam::GaussianBayesTree}>
+class ISAM : gtsam::GaussianBayesTree {
+  void update(
+      const gtsam::GaussianFactorGraph& newFactors,
+      const gtsam::GaussianFactorGraph::Eliminate& function =
+          gtsam::GaussianFactorGraph::Eliminate(
+              gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate));
+};
+
+class GaussianISAM : gtsam::ISAM<gtsam::GaussianBayesTree> {
   //Constructor
   GaussianISAM();
   GaussianISAM(const gtsam::GaussianBayesTree& bayesTree);
 
-  gtsam::VectorValues optimize() const;
-  gtsam::VectorValues optimizeGradientSearch() const;
-
-  gtsam::GaussianConditional* marginalFactor(gtsam::Key key) const;
-
-  //Standard Interface
-  void update(const gtsam::GaussianFactorGraph& newFactors);
-  void saveGraph(string s) const;
+  // Standard Interface
   void clear();
-
-  void print(const string name = "GaussianISAM: ",
-    const gtsam::KeyFormatter& formatter = gtsam::DefaultKeyFormatter) const;
 };
 
 #include <gtsam/linear/IterativeSolver.h>
 virtual class IterativeOptimizationParameters {
   string getVerbosity() const;
-  void setVerbosity(string s) ;
+  void setVerbosity(const string& s);
 };
 
 //virtual class IterativeSolver {
@@ -925,19 +1058,31 @@ virtual class SubgraphSolver  {
 class KalmanFilter {
   KalmanFilter(size_t n);
   // gtsam::GaussianDensity* init(gtsam::Vector x0, const gtsam::SharedDiagonal& P0);
-  gtsam::GaussianDensity* init(gtsam::Vector x0, gtsam::Matrix P0);
+  gtsam::GaussianDensity* init(
+      const gtsam::Vector& x0, const gtsam::Matrix& P0) const;
   void print(string s = "") const;
   static gtsam::Key step(gtsam::GaussianDensity* p);
-  gtsam::GaussianDensity* predict(gtsam::GaussianDensity* p, gtsam::Matrix F,
-      gtsam::Matrix B, gtsam::Vector u, const gtsam::noiseModel::Diagonal* modelQ);
-  gtsam::GaussianDensity* predictQ(gtsam::GaussianDensity* p, gtsam::Matrix F,
-      gtsam::Matrix B, gtsam::Vector u, gtsam::Matrix Q);
-  gtsam::GaussianDensity* predict2(gtsam::GaussianDensity* p, gtsam::Matrix A0,
-      gtsam::Matrix A1, gtsam::Vector b, const gtsam::noiseModel::Diagonal* model);
-  gtsam::GaussianDensity* update(gtsam::GaussianDensity* p, gtsam::Matrix H,
-      gtsam::Vector z, const gtsam::noiseModel::Diagonal* model);
-  gtsam::GaussianDensity* updateQ(gtsam::GaussianDensity* p, gtsam::Matrix H,
-      gtsam::Vector z, gtsam::Matrix Q);
+  gtsam::GaussianDensity* predict(
+      gtsam::GaussianDensity* p,
+      const gtsam::Matrix& F, const gtsam::Matrix& B, const gtsam::Vector& u,
+      const gtsam::noiseModel::Diagonal* modelQ) const;
+  gtsam::GaussianDensity* predictQ(
+      gtsam::GaussianDensity* p, const gtsam::Matrix& F,
+      const gtsam::Matrix& B, const gtsam::Vector& u,
+      const gtsam::Matrix& Q) const;
+  gtsam::GaussianDensity* predict2(
+      gtsam::GaussianDensity* p,
+      const gtsam::Matrix& A0, const gtsam::Matrix& A1,
+      const gtsam::Vector& b,
+      const gtsam::noiseModel::Diagonal* model = nullptr) const;
+  gtsam::GaussianDensity* update(
+      gtsam::GaussianDensity* p,
+      const gtsam::Matrix& H, const gtsam::Vector& z,
+      const gtsam::noiseModel::Diagonal* model) const;
+  gtsam::GaussianDensity* updateQ(
+      gtsam::GaussianDensity* p,
+      const gtsam::Matrix& H, const gtsam::Vector& z,
+      const gtsam::Matrix& R) const;
 };
 
 }

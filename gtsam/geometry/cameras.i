@@ -9,7 +9,7 @@ virtual class Cal3 {
   // Standard Constructors
   Cal3();
   Cal3(double fx, double fy, double s, double u0, double v0);
-  Cal3(gtsam::Vector v);
+  Cal3(const gtsam::Vector5& v);
 
   // Testable
   void print(string s = "Cal3") const;
@@ -23,9 +23,9 @@ virtual class Cal3 {
   double px() const;
   double py() const;
   gtsam::Point2 principalPoint() const;
-  gtsam::Vector vector() const;
-  gtsam::Matrix K() const;
-  gtsam::Matrix inverse() const;
+  gtsam::Vector5 vector() const;
+  gtsam::Matrix3 K() const;
+  gtsam::Matrix3 inverse() const;
 };
 
 #include <gtsam/geometry/Cal3_S2.h>
@@ -33,28 +33,25 @@ virtual class Cal3_S2 : gtsam::Cal3 {
   // Standard Constructors
   Cal3_S2();
   Cal3_S2(double fx, double fy, double s, double u0, double v0);
-  Cal3_S2(gtsam::Vector v);
+  Cal3_S2(const gtsam::Vector5& v);
   Cal3_S2(double fov, int w, int h);
 
   // Testable
-  void print(string s = "Cal3_S2") const;
   bool equals(const gtsam::Cal3_S2& K, double tol) const;
 
   // Manifold
   static size_t Dim();
   size_t dim() const;
-  gtsam::Cal3_S2 retract(gtsam::Vector d) const;
-  gtsam::Vector localCoordinates(const gtsam::Cal3_S2& T2) const;
+  gtsam::Cal3_S2 retract(const gtsam::Vector& d) const;
+  gtsam::Vector5 localCoordinates(const gtsam::Cal3_S2& T2) const;
 
   // Action on Point2
-  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
   gtsam::Point2 calibrate(const gtsam::Point2& p,
-                          Eigen::Ref<Eigen::MatrixXd> Dcal,
-                          Eigen::Ref<Eigen::MatrixXd> Dp) const;
-  gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+                          gtsam::OptionalJacobian<2, 5> Dcal = nullptr,
+                          gtsam::OptionalJacobian<2, 2> Dp = nullptr) const;
   gtsam::Point2 uncalibrate(const gtsam::Point2& p,
-                            Eigen::Ref<Eigen::MatrixXd> Dcal,
-                            Eigen::Ref<Eigen::MatrixXd> Dp) const;
+                            gtsam::OptionalJacobian<2, 5> Dcal = nullptr,
+                            gtsam::OptionalJacobian<2, 2> Dp = nullptr) const;
 
   // Action on Homogeneous Coordinates
   gtsam::Vector3 calibrate(const gtsam::Vector3& p) const;
@@ -68,9 +65,6 @@ virtual class Cal3DS2_Base : gtsam::Cal3 {
   // Standard Constructors
   Cal3DS2_Base();
 
-  // Testable
-  void print(string s = "") const;
-
   // Standard Interface
   double k1() const;
   double k2() const;
@@ -80,14 +74,12 @@ virtual class Cal3DS2_Base : gtsam::Cal3 {
   gtsam::Vector9 vector() const;
 
   // Action on Point2
-  gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
   gtsam::Point2 uncalibrate(const gtsam::Point2& p,
-                            Eigen::Ref<Eigen::MatrixXd> Dcal,
-                            Eigen::Ref<Eigen::MatrixXd> Dp) const;
-  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
+                            gtsam::OptionalJacobian<2, 9> Dcal = nullptr,
+                            gtsam::OptionalJacobian<2, 2> Dp = nullptr) const;
   gtsam::Point2 calibrate(const gtsam::Point2& p,
-                          Eigen::Ref<Eigen::MatrixXd> Dcal,
-                          Eigen::Ref<Eigen::MatrixXd> Dp) const;
+                          gtsam::OptionalJacobian<2, 9> Dcal = nullptr,
+                          gtsam::OptionalJacobian<2, 2> Dp = nullptr) const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -101,7 +93,7 @@ virtual class Cal3DS2 : gtsam::Cal3DS2_Base {
           double k2);
   Cal3DS2(double fx, double fy, double s, double u0, double v0, double k1,
           double k2, double p1, double p2);
-  Cal3DS2(gtsam::Vector v);
+  Cal3DS2(const gtsam::Vector9& v);
 
   // Testable
   bool equals(const gtsam::Cal3DS2& K, double tol) const;
@@ -109,7 +101,7 @@ virtual class Cal3DS2 : gtsam::Cal3DS2_Base {
   // Manifold
   size_t dim() const;
   static size_t Dim();
-  gtsam::Cal3DS2 retract(gtsam::Vector d) const;
+  gtsam::Cal3DS2 retract(const gtsam::Vector& d) const;
   gtsam::Vector localCoordinates(const gtsam::Cal3DS2& T2) const;
 
   // enabling serialization functionality
@@ -124,7 +116,7 @@ virtual class Cal3Unified : gtsam::Cal3DS2_Base {
               double k2);
   Cal3Unified(double fx, double fy, double s, double u0, double v0, double k1,
               double k2, double p1, double p2, double xi);
-  Cal3Unified(gtsam::Vector v);
+  Cal3Unified(const gtsam::Vector10& v);
 
   // Testable
   bool equals(const gtsam::Cal3Unified& K, double tol) const;
@@ -137,20 +129,18 @@ virtual class Cal3Unified : gtsam::Cal3DS2_Base {
   // Manifold
   size_t dim() const;
   static size_t Dim();
-  gtsam::Cal3Unified retract(gtsam::Vector d) const;
+  gtsam::Cal3Unified retract(const gtsam::Vector& d) const;
   gtsam::Vector localCoordinates(const gtsam::Cal3Unified& T2) const;
 
   // Action on Point2
   // Note: the signature of this functions differ from the functions
   // with equal name in the base class.
-  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
   gtsam::Point2 calibrate(const gtsam::Point2& p,
-                          Eigen::Ref<Eigen::MatrixXd> Dcal,
-                          Eigen::Ref<Eigen::MatrixXd> Dp) const;
-  gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+                          gtsam::OptionalJacobian<2, 10> Dcal = nullptr,
+                          gtsam::OptionalJacobian<2, 2> Dp = nullptr) const;
   gtsam::Point2 uncalibrate(const gtsam::Point2& p,
-                            Eigen::Ref<Eigen::MatrixXd> Dcal,
-                            Eigen::Ref<Eigen::MatrixXd> Dp) const;
+                            gtsam::OptionalJacobian<2, 10> Dcal = nullptr,
+                            gtsam::OptionalJacobian<2, 2> Dp = nullptr) const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -162,27 +152,24 @@ virtual class Cal3Fisheye : gtsam::Cal3 {
   Cal3Fisheye();
   Cal3Fisheye(double fx, double fy, double s, double u0, double v0, double k1,
               double k2, double k3, double k4, double tol = 1e-5);
-  Cal3Fisheye(gtsam::Vector v);
+  Cal3Fisheye(const gtsam::Vector9& v);
 
   // Testable
-  void print(string s = "Cal3Fisheye") const;
   bool equals(const gtsam::Cal3Fisheye& K, double tol) const;
 
   // Manifold
   size_t dim() const;
   static size_t Dim();
-  gtsam::Cal3Fisheye retract(gtsam::Vector d) const;
+  gtsam::Cal3Fisheye retract(const gtsam::Vector& d) const;
   gtsam::Vector localCoordinates(const gtsam::Cal3Fisheye& T2) const;
 
   // Action on Point2
-  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
   gtsam::Point2 calibrate(const gtsam::Point2& p,
-                          Eigen::Ref<Eigen::MatrixXd> Dcal,
-                          Eigen::Ref<Eigen::MatrixXd> Dp) const;
-  gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+                          gtsam::OptionalJacobian<2, 9> Dcal = nullptr,
+                          gtsam::OptionalJacobian<2, 2> Dp = nullptr) const;
   gtsam::Point2 uncalibrate(const gtsam::Point2& p,
-                            Eigen::Ref<Eigen::MatrixXd> Dcal,
-                            Eigen::Ref<Eigen::MatrixXd> Dp) const;
+                            gtsam::OptionalJacobian<2, 9> Dcal = nullptr,
+                            gtsam::OptionalJacobian<2, 2> Dp = nullptr) const;
 
   // Standard Interface
   double k1() const;
@@ -199,17 +186,17 @@ virtual class Cal3_S2Stereo : gtsam::Cal3_S2{
   // Standard Constructors
   Cal3_S2Stereo();
   Cal3_S2Stereo(double fx, double fy, double s, double u0, double v0, double b);
-  Cal3_S2Stereo(gtsam::Vector v);
+  Cal3_S2Stereo(const gtsam::Vector6& v);
   Cal3_S2Stereo(double fov, int w, int h, double b);
 
   // Manifold
   size_t dim() const;
   static size_t Dim();
-  gtsam::Cal3_S2Stereo retract(gtsam::Vector d) const;
-  gtsam::Vector localCoordinates(const gtsam::Cal3_S2Stereo& T2) const;
+  gtsam::Cal3_S2Stereo retract(const gtsam::Vector& d) const;
+  gtsam::Vector6 localCoordinates(
+      const gtsam::Cal3_S2Stereo& T2) const;
 
   // Testable
-  void print(string s = "") const;
   bool equals(const gtsam::Cal3_S2Stereo& other, double tol) const;
 
   // Standard Interface
@@ -217,14 +204,12 @@ virtual class Cal3_S2Stereo : gtsam::Cal3_S2{
   gtsam::Vector6 vector() const;
 
   // Action on Point2
-  gtsam::Point2 calibrate(const gtsam::Point2& p) const;
   gtsam::Point2 calibrate(const gtsam::Point2& p,
-                          Eigen::Ref<Eigen::MatrixXd> Dcal,
-                          Eigen::Ref<Eigen::MatrixXd> Dp) const;
-  gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+                          gtsam::OptionalJacobian<2, 6> Dcal = nullptr,
+                          gtsam::OptionalJacobian<2, 2> Dp = nullptr) const;
   gtsam::Point2 uncalibrate(const gtsam::Point2& p,
-                            Eigen::Ref<Eigen::MatrixXd> Dcal,
-                            Eigen::Ref<Eigen::MatrixXd> Dp) const;
+                            gtsam::OptionalJacobian<2, 6> Dcal = nullptr,
+                            gtsam::OptionalJacobian<2, 2> Dp = nullptr) const;
 };
 
 #include <gtsam/geometry/Cal3Bundler.h>
@@ -234,24 +219,21 @@ virtual class Cal3f : gtsam::Cal3 {
   Cal3f(double fx, double u0, double v0);
 
   // Testable
-  void print(string s = "") const;
   bool equals(const gtsam::Cal3f& K, double tol) const;
 
   // Manifold
   size_t dim() const;
   static size_t Dim();
-  gtsam::Cal3f retract(gtsam::Vector d) const;
-  gtsam::Vector localCoordinates(const gtsam::Cal3f& T2) const;
+  gtsam::Cal3f retract(const gtsam::Vector& d) const;
+  gtsam::Vector1 localCoordinates(const gtsam::Cal3f& T2) const;
 
   // Action on Point2
-  gtsam::Point2 calibrate(const gtsam::Point2& pi) const;
   gtsam::Point2 calibrate(const gtsam::Point2& pi,
-                          Eigen::Ref<Eigen::MatrixXd> Dcal,
-                          Eigen::Ref<Eigen::MatrixXd> Dp) const;
-  gtsam::Point2 uncalibrate(const gtsam::Point2& p) const;
+                          gtsam::OptionalJacobian<2, 1> Dcal = nullptr,
+                          gtsam::OptionalJacobian<2, 2> Dp = nullptr) const;
   gtsam::Point2 uncalibrate(const gtsam::Point2& p,
-                            Eigen::Ref<Eigen::MatrixXd> Dcal,
-                            Eigen::Ref<Eigen::MatrixXd> Dp) const;
+                            gtsam::OptionalJacobian<2, 1> Dcal = nullptr,
+                            gtsam::OptionalJacobian<2, 2> Dp = nullptr) const;
 
   // Standard Interface
   double f() const;
@@ -270,14 +252,13 @@ virtual class Cal3Bundler : gtsam::Cal3f {
               double tol);
 
   // Testable
-  void print(string s = "") const;
   bool equals(const gtsam::Cal3Bundler& K, double tol) const;
 
   // Manifold
   size_t dim() const;
   static size_t Dim();
-  gtsam::Cal3Bundler retract(gtsam::Vector d) const;
-  gtsam::Vector localCoordinates(const gtsam::Cal3Bundler& T2) const;
+  gtsam::Cal3Bundler retract(const gtsam::Vector& d) const;
+  gtsam::Vector3 localCoordinates(const gtsam::Cal3Bundler& T2) const;
 
   // Standard Interface
   double k1() const;
@@ -345,7 +326,7 @@ class CalibratedCamera {
   // Standard Constructors and Named Constructors
   CalibratedCamera();
   CalibratedCamera(const gtsam::Pose3& pose);
-  CalibratedCamera(gtsam::Vector v);
+  CalibratedCamera(const gtsam::Vector& v);
   static gtsam::CalibratedCamera Level(const gtsam::Pose2& pose2,
                                        double height);
 
@@ -356,31 +337,33 @@ class CalibratedCamera {
   // Manifold
   static size_t Dim();
   size_t dim() const;
-  gtsam::CalibratedCamera retract(gtsam::Vector d) const;
+  gtsam::CalibratedCamera retract(const gtsam::Vector& d) const;
   gtsam::Vector localCoordinates(const gtsam::CalibratedCamera& T2) const;
 
   // Action on Point3
-  gtsam::Point2 project(const gtsam::Point3& point) const;
   gtsam::Point2 project(const gtsam::Point3& point,
-                        Eigen::Ref<Eigen::MatrixXd> Dcamera,
-                        Eigen::Ref<Eigen::MatrixXd> Dpoint);
-  gtsam::Point3 backproject(const gtsam::Point2& pn, double depth) const;
-  gtsam::Point3 backproject(const gtsam::Point2& p, double depth,
-                            Eigen::Ref<Eigen::MatrixXd> Dresult_dpose,
-                            Eigen::Ref<Eigen::MatrixXd> Dresult_dp,
-                            Eigen::Ref<Eigen::MatrixXd> Dresult_ddepth);
+                        gtsam::OptionalJacobian<2, 6> Dcamera = nullptr,
+                        gtsam::OptionalJacobian<2, 3> Dpoint = nullptr) const;
+  gtsam::Point3 backproject(const gtsam::Point2& pn, double depth,
+      gtsam::OptionalJacobian<3, 6> Dresult_dpose = nullptr,
+      gtsam::OptionalJacobian<3, 2> Dresult_dp = nullptr,
+      gtsam::OptionalJacobian<3, 1> Dresult_ddepth = nullptr) const;
 
-  static gtsam::Point2 Project(const gtsam::Point3& cameraPoint);
+  static gtsam::Point2 Project(
+      const gtsam::Point3& pc,
+      gtsam::OptionalJacobian<2, 3> Dpoint = nullptr);
 
   // Standard Interface
-  gtsam::Pose3 pose() const;
-  double range(const gtsam::Point3& point) const;
-  double range(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> Dcamera,
-               Eigen::Ref<Eigen::MatrixXd> Dpoint);
-  double range(const gtsam::Pose3& pose) const;
-  double range(const gtsam::Pose3& point, Eigen::Ref<Eigen::MatrixXd> Dcamera,
-               Eigen::Ref<Eigen::MatrixXd> Dpose);
-  double range(const gtsam::CalibratedCamera& camera) const;
+  const gtsam::Pose3& pose() const;
+  double range(const gtsam::Point3& point,
+               gtsam::OptionalJacobian<1, 6> Dcamera = nullptr,
+               gtsam::OptionalJacobian<1, 3> Dpoint = nullptr) const;
+  double range(const gtsam::Pose3& pose,
+               gtsam::OptionalJacobian<1, 6> Dcamera = nullptr,
+               gtsam::OptionalJacobian<1, 6> Dpose = nullptr) const;
+  double range(const gtsam::CalibratedCamera& camera,
+               gtsam::OptionalJacobian<1, 6> H1 = nullptr,
+               gtsam::OptionalJacobian<1, 6> H2 = nullptr) const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -405,46 +388,44 @@ class PinholeCamera {
   bool equals(const This& camera, double tol) const;
 
   // Standard Interface
-  gtsam::Pose3 pose() const;
-  CALIBRATION calibration() const;
+  const gtsam::Pose3& pose() const;
+  const CALIBRATION& calibration() const;
 
   // Manifold
   size_t dim() const;
   static size_t Dim();
-  This retract(gtsam::Vector d) const;
-  gtsam::Vector localCoordinates(const This& T2) const;
+  This retract(const gtsam::Vector& d) const;
+  gtsam::This::VectorK6 localCoordinates(const This& T2) const;
 
   // Transformations and measurement functions
-  static gtsam::Point2 Project(const gtsam::Point3& cameraPoint);
+  static gtsam::Point2 Project(
+      const gtsam::Point3& pc,
+      gtsam::OptionalJacobian<2, 3> Dpoint = nullptr);
   pair<gtsam::Point2, bool> projectSafe(const gtsam::Point3& pw) const;
-  gtsam::Point2 project(const gtsam::Point3& point);
   gtsam::Point2 project(const gtsam::Point3& point,
-    Eigen::Ref<Eigen::MatrixXd> Dpose);
-  gtsam::Point2 project(const gtsam::Point3& point,
-    Eigen::Ref<Eigen::MatrixXd> Dpose,
-    Eigen::Ref<Eigen::MatrixXd> Dpoint);
-  gtsam::Point2 project(const gtsam::Point3& point,
-    Eigen::Ref<Eigen::MatrixXd> Dpose,
-    Eigen::Ref<Eigen::MatrixXd> Dpoint,
-    Eigen::Ref<Eigen::MatrixXd> Dcal);
-  gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
+      gtsam::OptionalJacobian<2, 6> Dpose = nullptr,
+      gtsam::OptionalJacobian<2, 3> Dpoint = nullptr,
+      gtsam::OptionalJacobian<2, This::calibration_dimension> Dcal = nullptr) const;
   gtsam::Point3 backproject(const gtsam::Point2& p, double depth,
-                            Eigen::Ref<Eigen::MatrixXd> Dresult_dpose,
-                            Eigen::Ref<Eigen::MatrixXd> Dresult_dp,
-                            Eigen::Ref<Eigen::MatrixXd> Dresult_ddepth,
-                            Eigen::Ref<Eigen::MatrixXd> Dresult_dcal);
+      gtsam::OptionalJacobian<3, 6> Dresult_dpose = nullptr,
+      gtsam::OptionalJacobian<3, 2> Dresult_dp = nullptr,
+      gtsam::OptionalJacobian<3, 1> Dresult_ddepth = nullptr,
+      gtsam::OptionalJacobian<3, This::calibration_dimension> Dresult_dcal = nullptr) const;
 
-  gtsam::Point2 reprojectionError(const gtsam::Point3& pw, const gtsam::Point2& measured,
-                                  Eigen::Ref<Eigen::MatrixXd> Dpose,
-                                  Eigen::Ref<Eigen::MatrixXd> Dpoint,
-                                  Eigen::Ref<Eigen::MatrixXd> Dcal);
+  gtsam::Point2 reprojectionError(
+      const gtsam::Point3& pw, const gtsam::Point2& measured,
+      gtsam::OptionalJacobian<2, 6> Dpose = nullptr,
+      gtsam::OptionalJacobian<2, 3> Dpoint = nullptr,
+      gtsam::OptionalJacobian<2, This::calibration_dimension> Dcal = nullptr) const;
 
-  double range(const gtsam::Point3& point);
-  double range(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> Dcamera,
-               Eigen::Ref<Eigen::MatrixXd> Dpoint);
-  double range(const gtsam::Pose3& pose);
-  double range(const gtsam::Pose3& pose, Eigen::Ref<Eigen::MatrixXd> Dcamera,
-               Eigen::Ref<Eigen::MatrixXd> Dpose);
+  double range(
+      const gtsam::Point3& point,
+      gtsam::OptionalJacobian<1, This::dimension> Dcamera = nullptr,
+      gtsam::OptionalJacobian<1, 3> Dpoint = nullptr) const;
+  double range(
+      const gtsam::Pose3& pose,
+      gtsam::OptionalJacobian<1, This::dimension> Dcamera = nullptr,
+      gtsam::OptionalJacobian<1, 6> Dpose = nullptr) const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -471,42 +452,45 @@ class PinholePose {
   PinholePose(const gtsam::Pose3& pose, const CALIBRATION* K);
   static This Level(const gtsam::Pose2& pose, double height);
   static This Lookat(const gtsam::Point3& eye, const gtsam::Point3& target,
-                     const gtsam::Point3& upVector, const CALIBRATION* K);
+                     const gtsam::Point3& upVector,
+                     const std::shared_ptr<CALIBRATION>& K);
 
   // Testable
   void print(string s = "PinholePose") const;
   bool equals(const This& camera, double tol) const;
 
   // Standard Interface
-  gtsam::Pose3 pose() const;
-  CALIBRATION calibration() const;
+  const gtsam::Pose3& pose() const;
+  const CALIBRATION& calibration() const;
 
   // Manifold
   size_t dim() const;
   static size_t Dim();
-  This retract(gtsam::Vector d) const;
-  gtsam::Vector localCoordinates(const This& p) const;
+  This retract(const gtsam::Vector6& d) const;
+  gtsam::Vector6 localCoordinates(const This& p) const;
 
   // Transformations and measurement functions
-  static gtsam::Point2 Project(const gtsam::Point3& cameraPoint);
+  static gtsam::Point2 Project(
+      const gtsam::Point3& pc,
+      gtsam::OptionalJacobian<2, 3> Dpoint = nullptr);
   pair<gtsam::Point2, bool> projectSafe(const gtsam::Point3& pw) const;
-  gtsam::Point2 project(const gtsam::Point3& point);
   gtsam::Point2 project(const gtsam::Point3& point,
-                        Eigen::Ref<Eigen::MatrixXd> Dpose,
-                        Eigen::Ref<Eigen::MatrixXd> Dpoint,
-                        Eigen::Ref<Eigen::MatrixXd> Dcal);
-  gtsam::Point3 backproject(const gtsam::Point2& p, double depth) const;
+      gtsam::OptionalJacobian<2, 6> Dpose = nullptr,
+      gtsam::OptionalJacobian<2, 3> Dpoint = nullptr,
+      gtsam::OptionalJacobian<2, This::calibration_dimension> Dcal = nullptr) const;
   gtsam::Point3 backproject(const gtsam::Point2& p, double depth,
-                            Eigen::Ref<Eigen::MatrixXd> Dresult_dpose,
-                            Eigen::Ref<Eigen::MatrixXd> Dresult_dp,
-                            Eigen::Ref<Eigen::MatrixXd> Dresult_ddepth,
-                            Eigen::Ref<Eigen::MatrixXd> Dresult_dcal);
-  double range(const gtsam::Point3& point);
-  double range(const gtsam::Point3& point, Eigen::Ref<Eigen::MatrixXd> Dcamera,
-               Eigen::Ref<Eigen::MatrixXd> Dpoint);
-  double range(const gtsam::Pose3& pose);
-  double range(const gtsam::Pose3& pose, Eigen::Ref<Eigen::MatrixXd> Dcamera,
-               Eigen::Ref<Eigen::MatrixXd> Dpose);
+      gtsam::OptionalJacobian<3, 6> Dresult_dpose = nullptr,
+      gtsam::OptionalJacobian<3, 2> Dresult_dp = nullptr,
+      gtsam::OptionalJacobian<3, 1> Dresult_ddepth = nullptr,
+      gtsam::OptionalJacobian<3, This::calibration_dimension> Dresult_dcal = nullptr) const;
+  double range(
+      const gtsam::Point3& point,
+      gtsam::OptionalJacobian<1, 6> Dcamera = nullptr,
+      gtsam::OptionalJacobian<1, 3> Dpoint = nullptr) const;
+  double range(
+      const gtsam::Pose3& pose,
+      gtsam::OptionalJacobian<1, 6> Dcamera = nullptr,
+      gtsam::OptionalJacobian<1, 6> Dpose = nullptr) const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -532,19 +516,31 @@ class SphericalCamera {
   void print(const std::string& s = "SphericalCamera") const;
 
   // Standard Interface
-  gtsam::Pose3 pose() const;
+  const gtsam::Pose3& pose() const;
   const gtsam::Rot3& rotation() const;
   const gtsam::Point3& translation() const;
 
   // Transformations and measurement functions
   pair<gtsam::Unit3, bool> projectSafe(const gtsam::Point3& pw) const;
-  gtsam::Unit3 project(const gtsam::Point3& point) const;
-  gtsam::Unit3 project2(const gtsam::Point3& point) const;
-  gtsam::Unit3 project2(const gtsam::Unit3& pwu) const;
+  gtsam::Unit3 project(
+      const gtsam::Point3& point,
+      gtsam::OptionalJacobian<2, 6> Dpose = nullptr,
+      gtsam::OptionalJacobian<2, 3> Dpoint = nullptr) const;
+  gtsam::Unit3 project2(
+      const gtsam::Point3& pw,
+      gtsam::OptionalJacobian<2, 6> Dpose = nullptr,
+      gtsam::OptionalJacobian<2, 3> Dpoint = nullptr) const;
+  gtsam::Unit3 project2(
+      const gtsam::Unit3& pwu,
+      gtsam::OptionalJacobian<2, 6> Dpose = nullptr,
+      gtsam::OptionalJacobian<2, 2> Dpoint = nullptr) const;
   gtsam::Point3 backproject(const gtsam::Unit3& p, double depth) const;
   gtsam::Unit3 backprojectPointAtInfinity(const gtsam::Unit3& p) const;
   gtsam::Vector2 reprojectionError(const gtsam::Point3& point,
-                                   const gtsam::Unit3& measured) const;
+                                   const gtsam::Unit3& measured,
+                                   gtsam::OptionalJacobian<2, 6> Dpose = nullptr,
+                                   gtsam::OptionalJacobian<2, 3> Dpoint = nullptr)
+      const;
 
   // Manifold
   gtsam::SphericalCamera retract(const gtsam::Vector6& d) const;
@@ -560,7 +556,7 @@ class CameraSet {
   CameraSet();
 
   // structure specific methods
-  T at(size_t i) const;
+  const T& at(size_t i) const;
   void push_back(const T& cam);
 };
 
@@ -575,15 +571,15 @@ class StereoCamera {
   bool equals(const gtsam::StereoCamera& camera, double tol) const;
 
   // Standard Interface
-  gtsam::Pose3 pose() const;
+  const gtsam::Pose3& pose() const;
   double baseline() const;
-  gtsam::Cal3_S2Stereo calibration() const;
+  const gtsam::Cal3_S2Stereo& calibration() const;
 
   // Manifold
   static size_t Dim();
   size_t dim() const;
-  gtsam::StereoCamera retract(gtsam::Vector v) const;
-  gtsam::Vector localCoordinates(const gtsam::StereoCamera& t2) const;
+  gtsam::StereoCamera retract(const gtsam::Vector& v) const;
+  gtsam::Vector6 localCoordinates(const gtsam::StereoCamera& t2) const;
 
   // Transformations and measurement functions
   gtsam::StereoPoint2 project(const gtsam::Point3& point) const;
@@ -591,12 +587,12 @@ class StereoCamera {
 
   // project with Jacobian
   gtsam::StereoPoint2 project2(const gtsam::Point3& point,
-                              Eigen::Ref<Eigen::MatrixXd> H1,
-                              Eigen::Ref<Eigen::MatrixXd> H2) const;
+      gtsam::OptionalJacobian<3, 6> H1 = nullptr,
+      gtsam::OptionalJacobian<3, 3> H2 = nullptr) const;
 
   gtsam::Point3 backproject2(const gtsam::StereoPoint2& p,
-                             Eigen::Ref<Eigen::MatrixXd> H1,
-                             Eigen::Ref<Eigen::MatrixXd> H2) const;
+      gtsam::OptionalJacobian<3, 6> H1 = nullptr,
+      gtsam::OptionalJacobian<3, 3> H2 = nullptr) const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -641,8 +637,10 @@ class TriangulationParameters {
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
                                 gtsam::Cal3_S2* sharedCal,
                                 const gtsam::Point2Vector& measurements,
-                                double rank_tol, bool optimize,
-                                const gtsam::SharedNoiseModel& model = nullptr);
+                                double rank_tol = 1e-9,
+                                bool optimize = false,
+                                const gtsam::SharedNoiseModel& model = nullptr,
+                                const bool useLOST = false);
 gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3_S2& cameras,
                                 const gtsam::Point2Vector& measurements,
                                 double rank_tol, bool optimize,
@@ -651,10 +649,12 @@ gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3_S2& cameras,
 gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
                                    gtsam::Cal3_S2* sharedCal,
                                    const gtsam::Point2Vector& measurements,
-                                   const gtsam::Point3& initialEstimate);
+                                   const gtsam::Point3& initialEstimate,
+                                   const gtsam::SharedNoiseModel& model = nullptr);
 gtsam::Point3 triangulateNonlinear(const gtsam::CameraSetCal3_S2& cameras,
                                    const gtsam::Point2Vector& measurements,
-                                   const gtsam::Point3& initialEstimate);
+                                   const gtsam::Point3& initialEstimate,
+                                   const gtsam::SharedNoiseModel& model = nullptr);
 gtsam::TriangulationResult triangulateSafe(
     const gtsam::CameraSetCal3_S2& cameras,
     const gtsam::Point2Vector& measurements,
@@ -668,8 +668,10 @@ std::vector<gtsam::TriangulationResult> triangulateSafe(
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
                                 gtsam::Cal3DS2* sharedCal,
                                 const gtsam::Point2Vector& measurements,
-                                double rank_tol, bool optimize,
-                                const gtsam::SharedNoiseModel& model = nullptr);
+                                double rank_tol = 1e-9,
+                                bool optimize = false,
+                                const gtsam::SharedNoiseModel& model = nullptr,
+                                const bool useLOST = false);
 gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3DS2& cameras,
                                 const gtsam::Point2Vector& measurements,
                                 double rank_tol, bool optimize,
@@ -678,10 +680,12 @@ gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3DS2& cameras,
 gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
                                    gtsam::Cal3DS2* sharedCal,
                                    const gtsam::Point2Vector& measurements,
-                                   const gtsam::Point3& initialEstimate);
+                                   const gtsam::Point3& initialEstimate,
+                                   const gtsam::SharedNoiseModel& model = nullptr);
 gtsam::Point3 triangulateNonlinear(const gtsam::CameraSetCal3DS2& cameras,
                                    const gtsam::Point2Vector& measurements,
-                                   const gtsam::Point3& initialEstimate);
+                                   const gtsam::Point3& initialEstimate,
+                                   const gtsam::SharedNoiseModel& model = nullptr);
 gtsam::TriangulationResult triangulateSafe(
     const gtsam::CameraSetCal3DS2& cameras,
     const gtsam::Point2Vector& measurements,
@@ -695,8 +699,10 @@ std::vector<gtsam::TriangulationResult> triangulateSafe(
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
                                 gtsam::Cal3Bundler* sharedCal,
                                 const gtsam::Point2Vector& measurements,
-                                double rank_tol, bool optimize,
-                                const gtsam::SharedNoiseModel& model = nullptr);
+                                double rank_tol = 1e-9,
+                                bool optimize = false,
+                                const gtsam::SharedNoiseModel& model = nullptr,
+                                const bool useLOST = false);
 gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Bundler& cameras,
                                 const gtsam::Point2Vector& measurements,
                                 double rank_tol, bool optimize,
@@ -705,10 +711,12 @@ gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Bundler& cameras,
 gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
                                    gtsam::Cal3Bundler* sharedCal,
                                    const gtsam::Point2Vector& measurements,
-                                   const gtsam::Point3& initialEstimate);
+                                   const gtsam::Point3& initialEstimate,
+                                   const gtsam::SharedNoiseModel& model = nullptr);
 gtsam::Point3 triangulateNonlinear(const gtsam::CameraSetCal3Bundler& cameras,
                                    const gtsam::Point2Vector& measurements,
-                                   const gtsam::Point3& initialEstimate);
+                                   const gtsam::Point3& initialEstimate,
+                                   const gtsam::SharedNoiseModel& model = nullptr);
 gtsam::TriangulationResult triangulateSafe(
     const gtsam::CameraSetCal3Bundler& cameras,
     const gtsam::Point2Vector& measurements,
@@ -722,8 +730,10 @@ std::vector<gtsam::TriangulationResult> triangulateSafe(
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
                                 gtsam::Cal3Fisheye* sharedCal,
                                 const gtsam::Point2Vector& measurements,
-                                double rank_tol, bool optimize,
-                                const gtsam::SharedNoiseModel& model = nullptr);
+                                double rank_tol = 1e-9,
+                                bool optimize = false,
+                                const gtsam::SharedNoiseModel& model = nullptr,
+                                const bool useLOST = false);
 gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Fisheye& cameras,
                                 const gtsam::Point2Vector& measurements,
                                 double rank_tol, bool optimize,
@@ -732,10 +742,12 @@ gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Fisheye& cameras,
 gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
                                    gtsam::Cal3Fisheye* sharedCal,
                                    const gtsam::Point2Vector& measurements,
-                                   const gtsam::Point3& initialEstimate);
+                                   const gtsam::Point3& initialEstimate,
+                                   const gtsam::SharedNoiseModel& model = nullptr);
 gtsam::Point3 triangulateNonlinear(const gtsam::CameraSetCal3Fisheye& cameras,
                                    const gtsam::Point2Vector& measurements,
-                                   const gtsam::Point3& initialEstimate);
+                                   const gtsam::Point3& initialEstimate,
+                                   const gtsam::SharedNoiseModel& model = nullptr);
 gtsam::TriangulationResult triangulateSafe(
     const gtsam::CameraSetCal3Fisheye& cameras,
     const gtsam::Point2Vector& measurements,
@@ -749,8 +761,10 @@ std::vector<gtsam::TriangulationResult> triangulateSafe(
 gtsam::Point3 triangulatePoint3(const gtsam::Pose3Vector& poses,
                                 gtsam::Cal3Unified* sharedCal,
                                 const gtsam::Point2Vector& measurements,
-                                double rank_tol, bool optimize,
-                                const gtsam::SharedNoiseModel& model = nullptr);
+                                double rank_tol = 1e-9,
+                                bool optimize = false,
+                                const gtsam::SharedNoiseModel& model = nullptr,
+                                const bool useLOST = false);
 gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Unified& cameras,
                                 const gtsam::Point2Vector& measurements,
                                 double rank_tol, bool optimize,
@@ -759,10 +773,12 @@ gtsam::Point3 triangulatePoint3(const gtsam::CameraSetCal3Unified& cameras,
 gtsam::Point3 triangulateNonlinear(const gtsam::Pose3Vector& poses,
                                    gtsam::Cal3Unified* sharedCal,
                                    const gtsam::Point2Vector& measurements,
-                                   const gtsam::Point3& initialEstimate);
+                                   const gtsam::Point3& initialEstimate,
+                                   const gtsam::SharedNoiseModel& model = nullptr);
 gtsam::Point3 triangulateNonlinear(const gtsam::CameraSetCal3Unified& cameras,
                                    const gtsam::Point2Vector& measurements,
-                                   const gtsam::Point3& initialEstimate);
+                                   const gtsam::Point3& initialEstimate,
+                                   const gtsam::SharedNoiseModel& model = nullptr);
 gtsam::TriangulationResult triangulateSafe(
     const gtsam::CameraSetCal3Unified& cameras,
     const gtsam::Point2Vector& measurements,
@@ -782,7 +798,8 @@ gtsam::Point3 triangulatePoint3(
 gtsam::Point3 triangulateNonlinear(
     const gtsam::CameraSet<gtsam::SphericalCamera>& cameras,
     const gtsam::SphericalCamera::MeasurementVector& measurements,
-    const gtsam::Point3& initialEstimate);
+    const gtsam::Point3& initialEstimate,
+    const gtsam::SharedNoiseModel& model = nullptr);
 gtsam::TriangulationResult triangulateSafe(
     const gtsam::CameraSet<gtsam::SphericalCamera>& cameras,
     const gtsam::SphericalCamera::MeasurementVector& measurements,

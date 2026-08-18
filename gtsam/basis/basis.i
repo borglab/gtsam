@@ -10,23 +10,25 @@ namespace gtsam {
 #include <gtsam/basis/Fourier.h>
 
 class FourierBasis {
-  static gtsam::Vector CalculateWeights(size_t N, double x);
-  static gtsam::Matrix WeightMatrix(size_t N, gtsam::Vector x);
+  static gtsam::Weights CalculateWeights(size_t N, double x);
+  static gtsam::Matrix WeightMatrix(size_t N, const gtsam::Vector& x);
 
   static gtsam::Matrix DifferentiationMatrix(size_t N);
-  static gtsam::Vector DerivativeWeights(size_t N, double x);
+  static gtsam::Weights DerivativeWeights(size_t N, double x);
 };
 
 #include <gtsam/basis/Chebyshev.h>
 
 class Chebyshev1Basis {
-  static gtsam::Matrix CalculateWeights(size_t N, double x);
-  static gtsam::Matrix WeightMatrix(size_t N, gtsam::Vector X);
+  static gtsam::Weights CalculateWeights(size_t N, double x, double a = -1,
+                                         double b = 1);
+  static gtsam::Matrix WeightMatrix(size_t N, const gtsam::Vector& X);
 };
 
 class Chebyshev2Basis {
-  static gtsam::Matrix CalculateWeights(size_t N, double x);
-  static gtsam::Matrix WeightMatrix(size_t N, gtsam::Vector x);
+  static gtsam::Weights CalculateWeights(size_t N, double x, double a = -1,
+                                         double b = 1);
+  static gtsam::Matrix WeightMatrix(size_t N, const gtsam::Vector& x);
 };
 
 #include <gtsam/basis/Chebyshev2.h>
@@ -37,25 +39,31 @@ class Chebyshev2 {
   static gtsam::Vector Points(size_t N);
   static gtsam::Vector Points(size_t N, double a, double b);
 
-  static gtsam::Matrix WeightMatrix(size_t N, gtsam::Vector X);
-  static gtsam::Matrix WeightMatrix(size_t N, gtsam::Vector X, double a, double b);
+  static gtsam::Matrix WeightMatrix(size_t N, const gtsam::Vector& X);
+  static gtsam::Matrix WeightMatrix(size_t N, const gtsam::Vector& X, double a,
+                                    double b);
 
-  static gtsam::Matrix CalculateWeights(size_t N, double x);
-  static gtsam::Matrix DerivativeWeights(size_t N, double x);
+  static gtsam::Weights CalculateWeights(size_t N, double x, double a = -1,
+                                         double b = 1);
+  static gtsam::Weights DerivativeWeights(size_t N, double x, double a = -1,
+                                          double b = 1);
   
   // Returns the exact (N+1) x N antiderivative matrix.
   static gtsam::Matrix IntegrationMatrix(size_t N);
   static gtsam::Matrix DifferentiationMatrix(size_t N);
-  static gtsam::Matrix IntegrationWeights(size_t N);
-  static gtsam::Matrix DoubleIntegrationWeights(size_t N);
+  static gtsam::Weights IntegrationWeights(size_t N);
+  static gtsam::Weights DoubleIntegrationWeights(size_t N);
 
-  static gtsam::Matrix CalculateWeights(size_t N, double x, double a, double b);
-  static gtsam::Matrix DerivativeWeights(size_t N, double x, double a, double b);
+  static gtsam::Weights CalculateWeights(size_t N, double x, double a,
+                                         double b);
+  static gtsam::Weights DerivativeWeights(size_t N, double x, double a,
+                                          double b);
   // Returns the exact (N+1) x N antiderivative matrix on [a,b].
   static gtsam::Matrix IntegrationMatrix(size_t N, double a, double b);
   static gtsam::Matrix DifferentiationMatrix(size_t N, double a, double b);
-  static gtsam::Matrix IntegrationWeights(size_t N, double a, double b);
-  static gtsam::Matrix DoubleIntegrationWeights(size_t N, double a, double b);
+  static gtsam::Weights IntegrationWeights(size_t N, double a, double b);
+  static gtsam::Weights DoubleIntegrationWeights(size_t N, double a,
+                                                 double b);
 };
 
 #include <gtsam/basis/BasisFactors.h>
@@ -158,10 +166,10 @@ class FitBasis {
 
   static gtsam::NonlinearFactorGraph NonlinearGraph(
       const std::map<double, double>& sequence,
-      const gtsam::noiseModel::Base* model, size_t N);
+      const std::shared_ptr<gtsam::noiseModel::Base>& model, size_t N);
   static gtsam::GaussianFactorGraph::shared_ptr LinearGraph(
       const std::map<double, double>& sequence,
-      const gtsam::noiseModel::Base* model, size_t N);
+      const std::shared_ptr<gtsam::noiseModel::Base>& model, size_t N);
   gtsam::This::Parameters parameters() const;
 };
 

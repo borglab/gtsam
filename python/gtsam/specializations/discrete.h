@@ -15,7 +15,8 @@
 // py::bind_vector<std::vector<gtsam::DiscreteKey>>(m_, "DiscreteKeys");
 
 py::bind_map<gtsam::Assignment<gtsam::Key>>(m_, "AssignmentKey");
-py::bind_map<gtsam::DiscreteValues>(m_, "DiscreteValues");
+py::bind_map<gtsam::DiscreteValues>(
+    m_, "DiscreteValues", py::base<gtsam::Assignment<gtsam::Key>>());
 
 #include <gtsam/discrete/DiscreteValues.h>
 /// DiscreteValues print function for wrapper

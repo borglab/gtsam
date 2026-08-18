@@ -13,6 +13,7 @@ Author: Varun Agrawal
 
 import unittest
 
+import gtsam
 from gtsam.utils.test_case import GtsamTestCase
 
 from gtsam import DecisionTreeFactor, DiscreteConditional, DiscreteKeys
@@ -27,6 +28,20 @@ E = 3, 2
 
 class TestDiscreteConditional(GtsamTestCase):
     """Tests for Discrete Conditionals."""
+
+    def test_assignment_base_evaluate(self):
+        """DiscreteValues should satisfy the exact Assignment<Key> interface."""
+        self.assertTrue(issubclass(gtsam.DiscreteValues, gtsam.AssignmentKey))
+
+        values = gtsam.DiscreteValues()
+        values[0] = 1
+        self.assertIsInstance(values, gtsam.AssignmentKey)
+
+        conditional = DiscreteConditional((0, 2), "1/3")
+        self.assertAlmostEqual(conditional.evaluate(values), 0.75)
+
+        factor = gtsam.TableFactor(gtsam.DecisionTreeFactor((0, 2), "1 3"))
+        self.assertAlmostEqual(factor.evaluate(values), 3.0)
 
     def test_single_value_versions(self):
         X = (0, 2)

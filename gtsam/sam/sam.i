@@ -21,7 +21,7 @@ virtual class RangeFactor : gtsam::NoiseModelFactor {
   // enabling serialization functionality
   void serialize() const;
 
-  const double measured() const;
+  const double& measured() const;
 };
 
 // between points:
@@ -58,7 +58,7 @@ virtual class RangeFactorWithTransform : gtsam::NoiseModelFactor {
   void serialize() const;
 
   // Use `double` instead of template since that is all we need.
-  const double measured() const;
+  const double& measured() const;
 };
 
 typedef gtsam::RangeFactorWithTransform<gtsam::Pose2, gtsam::Point2>
@@ -81,7 +81,7 @@ virtual class RangeFactorWithTransformBias : gtsam::NoiseModelFactor {
   // enabling serialization functionality
   void serialize() const;
 
-  const double measured() const;
+  const double& measured() const;
 };
 
 typedef gtsam::RangeFactorWithTransformBias<gtsam::Pose2, gtsam::Point2>
@@ -115,7 +115,7 @@ virtual class BearingRangeFactor : gtsam::NoiseModelFactor {
                      const BEARING& measuredBearing, const RANGE& measuredRange,
                      const gtsam::noiseModel::Base* noiseModel);
 
-  gtsam::BearingRange<POSE, POINT, BEARING, RANGE> measured() const;
+  const gtsam::BearingRange<POSE, POINT, BEARING, RANGE>& measured() const;
 
   // enabling serialization functionality
   void serialize() const;
