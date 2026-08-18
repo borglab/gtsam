@@ -774,7 +774,7 @@ const DeviceArray<double>& SfmSchurProblem::cameraRhs() const {
 struct SfmDenseSchurSolver::Impl {
   SfmSchurProblem problem;
   LinearSolverSession denseSession{
-      LinearSolverOptions{LinearSolverType::DenseCholesky, false}};
+      LinearSolverOptions{LinearSolverType::DenseCholesky}};
   DeviceArray<double> cameraSolution;
   int analyzedDimension = -1;
 

@@ -128,14 +128,10 @@ class TestSfm(unittest.TestCase):
 
     def test_cuda_sfm_params_are_wrapped(self):
         params = cuda.SfmLevenbergMarquardtParams.ceresDefaults()
-        params.setFormulation("schur")
-        params.setLinearSolverBackend("dense-cholesky")
+        params.setLinearSolver(cuda.LinearSolverType.DenseCholesky)
 
-        self.assertEqual("dense-schur", params.getLinearSolver())
-        self.assertEqual("schur", params.getFormulation())
-        self.assertEqual("dense-cholesky", params.getLinearSolverBackend())
-        self.assertEqual(cuda.SfmSystemFormulation.Schur,
-                         params.formulation)
+        self.assertEqual(cuda.LinearSolverType.DenseCholesky,
+                         params.getLinearSolver())
 
     def test_optimize_cuda_sfm_runs_from_python(self):
         data = _make_zero_error_sfm_data()

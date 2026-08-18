@@ -2,7 +2,6 @@
 
 #include <gtsam/base/cuda/DeviceArray.h>
 #include <gtsam/dllexport.h>
-#include <gtsam/linear/cuda/DeviceSparseSpdSystem.h>
 #include <gtsam/nonlinear/cuda/DeviceValues.h>
 #include <gtsam/slam/cuda/SfmProjectionBatch.h>
 
@@ -58,17 +57,5 @@ GTSAM_EXPORT double computeSfmLinearizedErrorChange(
     double* oldLinearizedError = nullptr,
     double* newLinearizedError = nullptr, cudaStream_t stream = nullptr,
     SfmReductionTransferProfile* profile = nullptr);
-
-/** Accumulates projection factors into a sparse normal-equation system. */
-GTSAM_EXPORT void accumulateSfmNormalEquations(
-    const DeviceValues& values, const SfmProjectionBatch& batch,
-    int numCameras, DeviceSparseSpdSystem* system,
-    cudaStream_t stream = nullptr);
-
-/** Accumulates a cached projection linearization into normal equations. */
-GTSAM_EXPORT void accumulateSfmNormalEquations(
-    const SfmProjectionLinearization& linearization,
-    const SfmProjectionBatch& batch, int numCameras,
-    DeviceSparseSpdSystem* system, cudaStream_t stream = nullptr);
 
 }  // namespace gtsam::cuda

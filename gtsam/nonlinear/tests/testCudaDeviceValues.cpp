@@ -2,7 +2,6 @@
 #include <gtsam/base/cuda/Context.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/linear/cuda/CudssSpdSolver.h>
 #include <gtsam/linear/cuda/DeviceSparseSpdSystem.h>
 #include <gtsam/linear/cuda/LinearSolver.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -110,7 +109,7 @@ ProfiledDeviceRun RunProfiledDevicePipeline(bool collectProfile) {
   device.formUndampedSystem(context.stream());
   device.prepareDamping(false, 0.0, 0.0, context.stream());
   LinearSolverSession session(
-      LinearSolverOptions{LinearSolverType::Cudss, false});
+      LinearSolverOptions{LinearSolverType::Cudss});
   session.analyze(device.mutableSystem(), &device.deviceDelta(),
                   context.stream());
 
@@ -348,13 +347,14 @@ TEST(DeviceSparseSpdSystem, RejectsMalformedCsrBeforeUpload) {
 }
 
 #if !GTSAM_ENABLE_CUDSS
-// Verifies CudssSpdSolver::ThrowsWhenCudssDisabled.
-TEST(CudssSpdSolver, ThrowsWhenCudssDisabled) {
+// Verifies LinearSolverSession::ThrowsWhenCudssDisabled.
+TEST(LinearSolverSession, ThrowsWhenCudssDisabled) {
   DeviceSparseSpdSystem system;
+  system.uploadPattern(1, {0, 1}, {0});
   DeviceArray<double> solution;
-  CudssSpdSolver solver;
+  LinearSolverSession solver({LinearSolverType::Cudss});
 
-  CHECK_EXCEPTION(solver.solve(system, &solution), std::runtime_error);
+  CHECK_EXCEPTION(solver.analyze(system, &solution), std::runtime_error);
 }
 #endif
 
@@ -387,8 +387,8 @@ TEST(DeviceSparseJacobianProfile, DisabledTimingStillAccountsExactBytes) {
   EXPECT_LONGS_EQUAL(1, run.analysisCount);
 }
 
-// Verifies CudssSpdSolver::ReusesAnalysisForChangedValues.
-TEST(CudssSpdSolver, ReusesAnalysisForChangedValues) {
+// Verifies LinearSolverSession::ReusesAnalysisForChangedValues.
+TEST(LinearSolverSession, ReusesCudssAnalysisForChangedValues) {
   Context context;
   DeviceSparseSpdSystem system;
   system.uploadPattern(2, std::vector<int>{0, 2, 3}, std::vector<int>{0, 1, 1},
@@ -397,7 +397,7 @@ TEST(CudssSpdSolver, ReusesAnalysisForChangedValues) {
   system.rhs().upload(std::vector<double>{1.0, 2.0}, context.stream());
 
   DeviceArray<double> solution;
-  CudssSpdSolver solver;
+  LinearSolverSession solver({LinearSolverType::Cudss});
   solver.analyze(system, &solution, context.stream());
   solver.solve(system, &solution, context.stream());
 
@@ -417,8 +417,8 @@ TEST(CudssSpdSolver, ReusesAnalysisForChangedValues) {
   DOUBLES_EQUAL(-2.0 / 11.0, actual[1], 1e-10);
 }
 
-// Verifies CudssSpdSolver::SurfacesIndefiniteFactorizationInfo.
-TEST(CudssSpdSolver, SurfacesIndefiniteFactorizationInfo) {
+// Verifies LinearSolverSession::SurfacesIndefiniteFactorizationInfo.
+TEST(LinearSolverSession, SurfacesCudssIndefiniteFactorizationInfo) {
   Context context;
   DeviceSparseSpdSystem system;
   system.uploadPattern(2, std::vector<int>{0, 2, 3}, std::vector<int>{0, 1, 1},
@@ -427,7 +427,7 @@ TEST(CudssSpdSolver, SurfacesIndefiniteFactorizationInfo) {
   system.rhs().upload(std::vector<double>{1.0, 1.0}, context.stream());
 
   DeviceArray<double> solution;
-  CudssSpdSolver solver;
+  LinearSolverSession solver({LinearSolverType::Cudss});
   solver.analyze(system, &solution, context.stream());
   try {
     solver.solve(system, &solution, context.stream());

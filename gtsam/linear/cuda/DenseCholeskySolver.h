@@ -1,7 +1,6 @@
 #pragma once
 
 #include <gtsam/base/cuda/DeviceArray.h>
-#include <gtsam/dllexport.h>
 #include <gtsam/linear/cuda/LinearSolver.h>
 
 #include <memory>
@@ -9,7 +8,7 @@
 namespace gtsam::cuda {
 
 /** Persistent cuSOLVER DN Cholesky backend for column-major SPD systems. */
-class GTSAM_EXPORT DenseCholeskySolver {
+class DenseCholeskySolver {
  public:
   DenseCholeskySolver();
   ~DenseCholeskySolver();

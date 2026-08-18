@@ -1,7 +1,6 @@
 #pragma once
 
 #include <gtsam/base/cuda/DeviceArray.h>
-#include <gtsam/dllexport.h>
 #include <gtsam/linear/cuda/LinearSolver.h>
 #include <gtsam/linear/cuda/DeviceSparseSpdSystem.h>
 
@@ -11,7 +10,7 @@
 namespace gtsam::cuda {
 
 /** Reusable cuDSS analysis, factorization, and solve state for one CSR pattern. */
-class GTSAM_EXPORT CudssSpdSolver {
+class CudssSpdSolver {
  public:
   CudssSpdSolver();
   ~CudssSpdSolver();

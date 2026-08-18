@@ -62,11 +62,6 @@ void LinearSolverSession::validate(
     throw std::invalid_argument(
         "CUDA linear solver does not support the requested system kind");
   }
-  if (options.useUserOrdering &&
-      options.backend != LinearSolverType::Cudss) {
-    throw std::invalid_argument(
-        "CUDA user ordering is supported only by cuDSS");
-  }
 }
 
 void LinearSolverSession::analyze(int denseDimension,
@@ -80,10 +75,6 @@ void LinearSolverSession::analyze(
     const DeviceSparseSpdSystem& system,
     DeviceArray<double>* solution, cudaStream_t stream) {
   validate(impl_->options, LinearSystemKind::Sparse);
-  if (impl_->options.useUserOrdering) {
-    throw std::invalid_argument(
-        "CUDA linear session requires the configured user ordering");
-  }
   impl_->cudss->analyze(system, solution, stream);
 }
 
@@ -92,10 +83,6 @@ void LinearSolverSession::analyze(
     DeviceArray<double>* solution,
     const std::vector<int>& scalarPermutation, cudaStream_t stream) {
   validate(impl_->options, LinearSystemKind::Sparse);
-  if (!impl_->options.useUserOrdering) {
-    throw std::invalid_argument(
-        "CUDA linear session received an ordering in automatic mode");
-  }
   impl_->cudss->analyze(system, solution, scalarPermutation, stream);
 }
 

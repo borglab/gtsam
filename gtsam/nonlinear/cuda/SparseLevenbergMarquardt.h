@@ -4,12 +4,10 @@
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/cuda/StreamingSparseJacobianLinearizer.h>
 #include <gtsam/linear/cuda/LinearSolver.h>
-#include <gtsam/linear/cuda/PcgSolver.h>
-#include <gtsam/nonlinear/cuda/JacobianNormalOperator.h>
 
 #include <cstddef>
+#include <limits>
 #include <memory>
 #include <string>
 #include <vector>
@@ -36,13 +34,8 @@ class GTSAM_EXPORT SparseLevenbergMarquardtParams
   // The shared backend configuration used by both general and SFM CUDA LM.
   // DenseCholesky is rejected because the general frontend produces sparse
   // or operator systems only. Ordering is meaningful only for cuDSS.
-  LinearSolverOptions linear{gtsam::cuda::LinearSolverType::Cudss, false};
+  LinearSolverOptions linear{gtsam::cuda::LinearSolverType::Cudss};
   PcgOptions pcg;
-  // The preconditioner is a frontend producer choice, not PCG recurrence
-  // state. BlockJacobi is the production default; Jacobi and None are useful
-  // for benchmark ablations.
-  DevicePcgPreconditioner pcgPreconditioner =
-      DevicePcgPreconditioner::BlockJacobi;
 };
 
 /** Backend that produced the final optimization result. */
@@ -66,6 +59,24 @@ enum class SparseLevenbergMarquardtFallbackReason {
   CudssUnavailable,
   PlanIncompatible,
   DirectJacobianUnsupported,
+};
+
+/** Cause reported when direct CUDA Jacobian construction cannot continue. */
+enum class DirectJacobianFailure {
+  None,
+  StructuralMismatch,
+  UnsupportedGaussianFactor,
+  ConstrainedFactor,
+  NonFiniteValues,
+};
+
+/** Location and description of a direct Jacobian construction failure. */
+struct DirectJacobianStatus {
+  DirectJacobianFailure failure = DirectJacobianFailure::None;
+  size_t factorIndex = std::numeric_limits<size_t>::max();
+  std::string detail;
+
+  bool ok() const { return failure == DirectJacobianFailure::None; }
 };
 
 /** Sparse system dimensions recorded after plan construction. */

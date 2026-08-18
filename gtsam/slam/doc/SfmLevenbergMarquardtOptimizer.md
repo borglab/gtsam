@@ -17,15 +17,10 @@ single-iteration operation.
 
 ## Solver selection
 
-`SfmLevenbergMarquardtParams::formulation` and `linear.backend` are independent:
-
-| Formulation | Backends |
-|---|---|
-| `Schur` | `DenseCholesky`, `Cudss`, or `Pcg` |
-| `FullNormal` | `Cudss` or `Pcg` |
-
-cuDSS backends require `GTSAM_ENABLE_CUDSS`. Dense Cholesky and PCG require only
-a CUDA build. A supplied `Ordering` is expanded to scalar indices for cuDSS.
+`SfmLevenbergMarquardtParams::linear.backend` selects the solver for the
+camera-only Schur complement: `DenseCholesky`, `Cudss`, or `Pcg`. cuDSS
+requires `GTSAM_ENABLE_CUDSS`; the other backends require only CUDA. A supplied
+camera `Ordering` is expanded to scalar indices for cuDSS.
 
 ## C++ usage
 
@@ -40,8 +35,7 @@ Values initial = /* cameras and points */;
 
 SfmLevenbergMarquardtParams params =
     SfmLevenbergMarquardtParams::ceresDefaults();
-params.formulation = SfmSystemFormulation::Schur;
-params.linear.backend = LinearSolverType::DenseCholesky;
+params.setLinearSolver(LinearSolverType::DenseCholesky);
 
 SfmLevenbergMarquardtOptimizer optimizer(graph, initial, params);
 const Values& result = optimizer.optimize();
@@ -49,8 +43,5 @@ const SfmLevenbergMarquardtResult& diagnostics = optimizer.result();
 ```
 
 Set `enableDetailedProfiling = true` to collect per-iteration and per-attempt
-profiles. The result also records the selected formulation, linear-system kind,
-backend statistics, transfer counts, and final optimized values.
-
-See [SfmGncOptimizer](SfmGncOptimizer.md) for robust optimization using this
-batch optimizer as the GNC inner solver.
+profiles. The result also records the linear-system kind, backend statistics,
+transfer counts, and final optimized values.

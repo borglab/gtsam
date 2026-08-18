@@ -2,10 +2,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/cuda/BlockOrdering.h>
-#include <gtsam/linear/cuda/DenseCholeskySolver.h>
 #include <gtsam/linear/cuda/LinearSolver.h>
-#include <gtsam/linear/cuda/PcgSolver.h>
-#include <gtsam/linear/cuda/CudssSpdSolver.h>
 #include <gtsam/linear/cuda/DeviceSparseSpdSystem.h>
 
 #include <stdexcept>
@@ -46,37 +43,6 @@ class IdentityPreconditioner final : public Preconditioner {
   }
 };
 
-// Verifies PcgSolver::SolvesThroughGenericOperatorInterface.
-TEST(PcgSolver, SolvesThroughGenericOperatorInterface) {
-  PcgOptions options;
-  options.maxIterations = 2;
-  options.relativeTolerance = 1e-12;
-  options.convergenceCheckInterval = 2;
-  options.warmStart = false;
-  PcgSolver solver;
-  solver.initialize(2, options);
-
-  DeviceArray<double> rhs;
-  DeviceArray<double> solution(2);
-  rhs.upload({1.0, 2.0});
-  solution.zero();
-  solver.solve(TwoByTwoOperator{}, IdentityPreconditioner{}, rhs.data(),
-               &solution);
-
-  std::vector<double> actual;
-  solution.download(&actual);
-  GTSAM_CUDA_CHECK(cudaDeviceSynchronize());
-  DOUBLES_EQUAL(1.0 / 11.0, actual[0], 1e-12);
-  DOUBLES_EQUAL(7.0 / 11.0, actual[1], 1e-12);
-  EXPECT(solver.stats().lastPcgConverged);
-  LONGS_EQUAL(2, solver.stats().pcgIterationsTotal);
-  LONGS_EQUAL(3, solver.stats().pcgHostConvergenceChecks);
-  LONGS_EQUAL(3 * (2 * sizeof(double) + sizeof(int)),
-              solver.stats().pcgD2hBytes);
-  LONGS_EQUAL(0, solver.stats().pcgMaxIterationHits);
-  LONGS_EQUAL(0, solver.stats().pcgBreakdownCount);
-}
-
 // Verifies LinearSolverSession::InvalidatesPcgWarmStartWhenOperatorChanges.
 TEST(LinearSolverSession, InvalidatesPcgWarmStartWhenOperatorChanges) {
   LinearSolverOptions solverOptions;
@@ -97,6 +63,11 @@ TEST(LinearSolverSession, InvalidatesPcgWarmStartWhenOperatorChanges) {
   session.invalidateWarmStart();
   session.solve(TwoByTwoOperator{}, IdentityPreconditioner{}, rhs.data(),
                 &solution);
+  std::vector<double> actual;
+  solution.download(&actual);
+  GTSAM_CUDA_CHECK(cudaDeviceSynchronize());
+  DOUBLES_EQUAL(1.0 / 11.0, actual[0], 1e-12);
+  DOUBLES_EQUAL(7.0 / 11.0, actual[1], 1e-12);
   LONGS_EQUAL(2, session.stats().solveCount);
   EXPECT(session.stats().lastPcgConverged);
 }
@@ -130,86 +101,6 @@ TEST(DeviceSparseSpdSystem, RejectsMissingDiagonalOnCapture) {
   system.values().upload({1.0, 2.0});
   CHECK_EXCEPTION(system.captureUndampedDiagonal(), std::runtime_error);
 }
-
-// Verifies DenseCholeskySolver::SolvesTwoByTwoSpdSystem.
-TEST(DenseCholeskySolver, SolvesTwoByTwoSpdSystem) {
-  DeviceArray<double> matrix;
-  DeviceArray<double> rhs;
-  DeviceArray<double> solution;
-  matrix.upload({4.0, 1.0, 1.0, 3.0});
-  rhs.upload({1.0, 2.0});
-
-  DenseCholeskySolver solver;
-  solver.solve({2, 2, matrix.data(), rhs.data()}, &solution);
-
-  std::vector<double> actual;
-  solution.download(&actual);
-  GTSAM_CUDA_CHECK(cudaDeviceSynchronize());
-  LONGS_EQUAL(2, actual.size());
-  DOUBLES_EQUAL(1.0 / 11.0, actual[0], 1e-12);
-  DOUBLES_EQUAL(7.0 / 11.0, actual[1], 1e-12);
-}
-
-#if GTSAM_ENABLE_CUDSS
-// Verifies CudssSpdSolver::AppliesRequestedPermutationWithoutChangingSolution.
-TEST(CudssSpdSolver, AppliesRequestedPermutationWithoutChangingSolution) {
-  DeviceSparseSpdSystem automaticSystem;
-  automaticSystem.uploadPattern(4, {0, 2, 4, 6, 7},
-                                {0, 1, 1, 2, 2, 3, 3});
-  automaticSystem.values().upload({4.0, 1.0, 3.0, 1.0, 3.0, 1.0, 2.0});
-  automaticSystem.rhs().upload({1.0, 2.0, 3.0, 4.0});
-  DeviceSparseSpdSystem orderedSystem;
-  orderedSystem.uploadPattern(4, {0, 2, 4, 6, 7},
-                              {0, 1, 1, 2, 2, 3, 3});
-  orderedSystem.values().upload({4.0, 1.0, 3.0, 1.0, 3.0, 1.0, 2.0});
-  orderedSystem.rhs().upload({1.0, 2.0, 3.0, 4.0});
-
-  DeviceArray<double> automaticSolution;
-  CudssSpdSolver automaticSolver;
-  automaticSolver.analyze(automaticSystem, &automaticSolution);
-  automaticSolver.solve(automaticSystem, &automaticSolution);
-
-  DeviceArray<double> orderedSolution;
-  CudssSpdSolver orderedSolver;
-  orderedSolver.analyze(orderedSystem, &orderedSolution,
-                        std::vector<int>{2, 3, 0, 1});
-  orderedSolver.solve(orderedSystem, &orderedSolution);
-
-  std::vector<double> automatic;
-  std::vector<double> ordered;
-  automaticSolution.download(&automatic);
-  orderedSolution.download(&ordered);
-  GTSAM_CUDA_CHECK(cudaDeviceSynchronize());
-  LONGS_EQUAL(automatic.size(), ordered.size());
-  for (size_t i = 0; i < automatic.size(); ++i) {
-    DOUBLES_EQUAL(automatic[i], ordered[i], 1e-12);
-  }
-  EXPECT(!automaticSolver.stats().userOrderingApplied);
-  EXPECT(orderedSolver.stats().userOrderingApplied);
-  EXPECT(std::vector<int>({2, 3, 0, 1}) ==
-         orderedSolver.appliedPermutation());
-  LONGS_EQUAL(1, orderedSolver.stats().analysisCount);
-  LONGS_EQUAL(1, orderedSolver.stats().solveCount);
-}
-
-// Verifies CudssSpdSolver::RejectsInvalidPermutation.
-TEST(CudssSpdSolver, RejectsInvalidPermutation) {
-  DeviceSparseSpdSystem system;
-  system.uploadPattern(2, {0, 2, 3}, {0, 1, 1});
-  system.values().upload({2.0, 0.5, 2.0});
-  system.rhs().upload({1.0, 1.0});
-  DeviceArray<double> solution;
-  CudssSpdSolver solver;
-  CHECK_EXCEPTION(solver.analyze(system, &solution, std::vector<int>{0}),
-                  std::invalid_argument);
-  CHECK_EXCEPTION(
-      solver.analyze(system, &solution, std::vector<int>{0, 0}),
-      std::invalid_argument);
-  CHECK_EXCEPTION(
-      solver.analyze(system, &solution, std::vector<int>{0, 2}),
-      std::invalid_argument);
-}
-#endif
 
 // Verifies BlockOrdering::ExpandsKeysToScalars.
 TEST(BlockOrdering, ExpandsKeysToScalars) {
@@ -266,16 +157,6 @@ TEST(LinearSolver, CapabilityMatrix) {
                                            LinearSystemKind::Sparse));
 }
 
-// Verifies LinearSolver::RejectsOrderingForNonCudssBackend.
-TEST(LinearSolver, RejectsOrderingForNonCudssBackend) {
-  LinearSolverOptions options;
-  options.backend = LinearSolverType::Pcg;
-  options.useUserOrdering = true;
-  CHECK_EXCEPTION(LinearSolverSession::validate(
-                      options, LinearSystemKind::Operator),
-                  std::invalid_argument);
-}
-
 // Verifies LinearSolver::RejectsRepresentationMismatch.
 TEST(LinearSolver, RejectsRepresentationMismatch) {
   LinearSolverOptions options;
@@ -318,7 +199,6 @@ TEST(LinearSolverSession, DispatchesOrderedSparsePreparedSystem) {
   DeviceArray<double> solution;
   LinearSolverOptions options;
   options.backend = LinearSolverType::Cudss;
-  options.useUserOrdering = true;
   LinearSolverSession session(options);
   session.analyze(system, &solution, std::vector<int>{1, 0});
   session.solve(system, &solution);

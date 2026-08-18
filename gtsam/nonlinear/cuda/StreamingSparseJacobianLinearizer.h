@@ -1,11 +1,11 @@
 #pragma once
 
 #include <gtsam/dllexport.h>
+#include <gtsam/nonlinear/cuda/SparseLevenbergMarquardt.h>
 #include <gtsam/nonlinear/cuda/HostSparseJacobian.h>
 #include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
 
 #include <cstddef>
-#include <limits>
 #include <string>
 
 namespace gtsam {
@@ -13,22 +13,6 @@ namespace gtsam {
 class GaussianFactorGraph;
 
 namespace cuda {
-
-enum class DirectJacobianFailure {
-  None,
-  StructuralMismatch,
-  UnsupportedGaussianFactor,
-  ConstrainedFactor,
-  NonFiniteValues,
-};
-
-struct DirectJacobianStatus {
-  DirectJacobianFailure failure = DirectJacobianFailure::None;
-  size_t factorIndex = std::numeric_limits<size_t>::max();
-  std::string detail;
-
-  bool ok() const { return failure == DirectJacobianFailure::None; }
-};
 
 struct StreamingLinearizationStats {
   size_t sendableFactors = 0;

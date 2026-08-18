@@ -11,17 +11,21 @@
 
 namespace gtsam::cuda {
 
-struct PcgOptions;
+/** Backend-independent convergence and warm-start policy for CUDA PCG. */
+struct PcgOptions {
+  int maxIterations = 250;
+  double relativeTolerance = 1e-6;
+  bool warmStart = true;
+  int convergenceCheckInterval = 10;
+};
 
 /** Numerical backends owned by a shared CUDA linear-solver session. */
 enum class LinearSolverType { DenseCholesky, Cudss, Pcg };
 
-/** Backend selection and optional externally supplied ordering policy. */
+/** Numerical backend selection. */
 struct LinearSolverOptions {
   /** Numerical backend used by the session. */
   LinearSolverType backend = LinearSolverType::Cudss;
-  /** Require a caller-supplied scalar permutation for supported backends. */
-  bool useUserOrdering = false;
 };
 
 /** Cumulative, backend-independent lifecycle, convergence, and timing data. */

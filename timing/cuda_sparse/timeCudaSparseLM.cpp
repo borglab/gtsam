@@ -121,15 +121,12 @@ struct RunOptions {
   bool allCudaConfigurations = false;
   double pcgTolerance = 0.0;   // 0 keeps the library default
   size_t pcgMaxIterations = 0; // 0 keeps the library default
-  std::string pcgPreconditioner = "block-jacobi";
-  bool pcgWarmStart = true;
   bool pose2FastSync = false;
   bool pose2UpstreamSettings = false;
   // Relative CPU/GPU final-objective tolerance. The strict default assumes a
   // direct solver; inexact PCG takes a different LM trajectory and needs an
   // explicit, recorded loosening.
   double objectiveTolerance = kObjectiveTolerance;
-  bool selfTest = false;
   bool help = false;
 };
 
@@ -265,9 +262,8 @@ std::string Usage() {
       "  [--output-format text|csv|json] [--list-configurations] [--dry-run]\n"
       "  [--all-cuda-configurations]\n"
       "  [--gpu-solver cudss|pcg] [--pcg-tol X] [--pcg-max-iters N]\n"
-      "  [--pcg-preconditioner block-jacobi|jacobi|none] [--pcg-no-warm-start]\n"
       "  [--pose2-fast-sync] [--pose2-upstream-settings]\n"
-      "  [--objective-tol X] [--self-test] [--help]";
+      "  [--objective-tol X] [--help]";
 }
 
 size_t ParseSize(const std::string& value, const char* option,
@@ -335,9 +331,7 @@ RunOptions ParseOptions(int argc, char** argv) {
 
   for (int index = 1; index < argc; ++index) {
     const std::string argument = argv[index];
-    if (argument == "--self-test") {
-      options.selfTest = true;
-    } else if (argument == "--list-configurations") {
+    if (argument == "--list-configurations") {
       options.listConfigurations = true;
     } else if (argument == "--dry-run") {
       options.dryRun = true;
@@ -407,17 +401,6 @@ RunOptions ParseOptions(int argc, char** argv) {
     } else if (argument == "--pcg-max-iters") {
       options.pcgMaxIterations = ParseSize(
           requireValue(&index, "--pcg-max-iters"), "--pcg-max-iters", true);
-    } else if (argument == "--pcg-preconditioner") {
-      options.pcgPreconditioner =
-          requireValue(&index, "--pcg-preconditioner");
-      if (options.pcgPreconditioner != "block-jacobi" &&
-          options.pcgPreconditioner != "jacobi" &&
-          options.pcgPreconditioner != "none") {
-        throw std::invalid_argument(
-            "--pcg-preconditioner requires block-jacobi, jacobi, or none");
-      }
-    } else if (argument == "--pcg-no-warm-start") {
-      options.pcgWarmStart = false;
     } else if (argument == "--pose2-fast-sync") {
       options.pose2FastSync = true;
     } else if (argument == "--pose2-upstream-settings") {
@@ -572,15 +555,6 @@ std::optional<LegacyToroPose3Edge> ParseLegacyToroPose3Edge(
   return edge;
 }
 
-template <class Function>
-bool Throws(Function&& function) {
-  try {
-    function();
-    return false;
-  } catch (const std::exception&) {
-    return true;
-  }
-}
 
 void ValidatePcgBenchmarkRun(const RawRun& run) {
   if (run.linearSolveStats.pcgMaxIterationHits != 0) {
@@ -598,188 +572,6 @@ void ValidatePcgBenchmarkRun(const RawRun& run) {
   }
 }
 
-int RunSelfTest() {
-  const SummaryStatistics odd = Summarize({5.0, 1.0, 4.0, 2.0, 3.0});
-  if (odd.median != 3.0 || odd.mean != 3.0 ||
-      std::abs(odd.standardDeviation - std::sqrt(2.0)) > 1e-12 ||
-      odd.minimum != 1.0 || odd.maximum != 5.0) {
-    throw std::runtime_error("odd statistics self-test failed");
-  }
-  const SummaryStatistics even = Summarize({4.0, 1.0, 3.0, 2.0});
-  if (even.median != 2.5) {
-    throw std::runtime_error("even median self-test failed");
-  }
-  if (!Throws([] { (void)Summarize({}); })) {
-    throw std::runtime_error("empty statistics self-test failed");
-  }
-
-  ValidateObjective(100.0, 100.0 + 5e-7, 1e-8);
-  if (!Throws([] { ValidateObjective(100.0, 101.0, 1e-8); })) {
-    throw std::runtime_error("objective mismatch self-test failed");
-  }
-  if (CsvEscape("a,\"b\"") != "\"a,\"\"b\"\"\"" ||
-      JsonEscape("a\n\"b\"") != "a\\n\\\"b\\\"") {
-    throw std::runtime_error("escaping self-test failed");
-  }
-  const auto edge =
-      ParseLegacyToroPose3Edge("EDGE3 4 9 1 2 3 0.1 0.2 0.3");
-  if (!edge || edge->key1 != 4 || edge->key2 != 9 ||
-      (edge->measured.translation() - gtsam::Point3(1, 2, 3)).norm() >
-          1e-12 ||
-      ParseLegacyToroPose3Edge("VERTEX3 4 1 2 3 0.1 0.2 0.3")) {
-    throw std::runtime_error("legacy TORO Pose3 parser self-test failed");
-  }
-  if (!Throws([] {
-        (void)ParseLegacyToroPose3Edge("EDGE3 4 9 1 2");
-      }) ||
-      !Throws([] {
-        (void)ParseLegacyToroPose3Edge(
-            "EDGE3 4 9 1 2 3 0.1 0.2 0.3 1.0");
-      })) {
-    throw std::runtime_error(
-        "legacy TORO Pose3 parser rejection self-test failed");
-  }
-
-  std::istringstream stereoCalibration("100 100 0 50 40 0.2");
-  std::istringstream stereoPoses(
-      "0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1\n"
-      "1 1 0 0 1 0 1 0 0 0 0 1 0 0 0 0 1\n");
-  std::istringstream stereoFactors(
-      "0 7 60 58 40 1 0 10\n"
-      "1 8 62 60 40 2 0 10\n");
-  const StereoWorkloadData stereo =
-      BuildStereoWorkload(stereoCalibration, stereoPoses, stereoFactors);
-  const std::vector<gtsam::Key> expectedStereoOrdering{
-      gtsam::Symbol('l', 7), gtsam::Symbol('l', 8),
-      gtsam::Symbol('x', 0), gtsam::Symbol('x', 1)};
-  if (stereo.graph.size() != 3 || stereo.initial.size() != 4 ||
-      !stereo.initial.exists(gtsam::Symbol('l', 7)) ||
-      !stereo.initial.exists(gtsam::Symbol('l', 8)) ||
-      std::vector<gtsam::Key>(stereo.ordering.begin(), stereo.ordering.end()) !=
-          expectedStereoOrdering) {
-    throw std::runtime_error("stereo workload construction self-test failed");
-  }
-  if (!Throws([] {
-        std::istringstream calibration("100 100 0 50 40 0.2");
-        std::istringstream poses(
-            "0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1\n");
-        std::istringstream factors("1 7 60 58 40 1 0 10\n");
-        (void)BuildStereoWorkload(calibration, poses, factors);
-      }) ||
-      !Throws([] {
-        std::istringstream calibration("100 100 0 50 40 0.2");
-        std::istringstream poses(
-            "0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1\n");
-        std::istringstream factors("0 7 60 58 40 1 0\n");
-        (void)BuildStereoWorkload(calibration, poses, factors);
-      })) {
-    throw std::runtime_error("stereo workload rejection self-test failed");
-  }
-
-  const char* arguments[] = {
-      "timeCudaSparseLM", "--warmups", "1", "--repeats", "5",
-      "--datasets",       "bal16,bal135,pose2,pose3",
-      "--json",           "results.json", "--csv", "results.csv"};
-  RunOptions options =
-      ParseOptions(static_cast<int>(std::size(arguments)),
-                   const_cast<char**>(arguments));
-  if (options.warmups != 1 || options.repeats != 5 ||
-      options.datasets.size() != 4 || options.jsonPath != "results.json" ||
-      options.csvPath != "results.csv" || options.pose2FastSync ||
-      options.pose2UpstreamSettings) {
-    throw std::runtime_error("option parsing self-test failed");
-  }
-  const char* stereoArguments[] = {
-      "timeCudaSparseLM", "--datasets", "stereo26,stereo77,stereo135"};
-  const RunOptions stereoOptions =
-      ParseOptions(3, const_cast<char**>(stereoArguments));
-  if (stereoOptions.datasets != std::vector<std::string>(
-                                    {"stereo26", "stereo77", "stereo135"})) {
-    throw std::runtime_error(
-        "stereo workload option parsing self-test failed");
-  }
-  const char* fastSyncArguments[] = {"timeCudaSparseLM",
-                                     "--pose2-fast-sync"};
-  const RunOptions fastSyncOptions =
-      ParseOptions(2, const_cast<char**>(fastSyncArguments));
-  if (!fastSyncOptions.pose2FastSync) {
-    throw std::runtime_error("Pose2 FastSync option parsing self-test failed");
-  }
-  const char* upstreamArguments[] = {"timeCudaSparseLM",
-                                     "--pose2-upstream-settings"};
-  const RunOptions upstreamOptions =
-      ParseOptions(2, const_cast<char**>(upstreamArguments));
-  if (!upstreamOptions.pose2UpstreamSettings) {
-    throw std::runtime_error(
-        "Pose2 upstream-settings option parsing self-test failed");
-  }
-  RunOptions matrixPcgOptions;
-  matrixPcgOptions.gpuSolver = "pcg";
-  ApplyMatrixConfigurationDefaults(&matrixPcgOptions);
-  if (matrixPcgOptions.pcgTolerance != 1e-6 ||
-      matrixPcgOptions.pcgMaxIterations != 5000 ||
-      matrixPcgOptions.objectiveTolerance != 1e-3) {
-    throw std::runtime_error("PCG matrix defaults self-test failed");
-  }
-  RawRun convergedPcg;
-  convergedPcg.linearSolveStats.solveCount = 1;
-  convergedPcg.linearSolveStats.lastPcgConverged = true;
-  ValidatePcgBenchmarkRun(convergedPcg);
-  if (!Throws([&] {
-        RawRun capped = convergedPcg;
-        capped.linearSolveStats.pcgMaxIterationHits = 1;
-        ValidatePcgBenchmarkRun(capped);
-      }) ||
-      !Throws([&] {
-        RawRun broken = convergedPcg;
-        broken.linearSolveStats.pcgBreakdownCount = 1;
-        ValidatePcgBenchmarkRun(broken);
-      }) ||
-      !Throws([&] {
-        RawRun unconverged = convergedPcg;
-        unconverged.linearSolveStats.lastPcgConverged = false;
-        ValidatePcgBenchmarkRun(unconverged);
-      })) {
-    throw std::runtime_error("PCG benchmark gate self-test failed");
-  }
-  RawRun orderedRun;
-  orderedRun.linearSolveStats.userOrderingApplied = true;
-  std::ostringstream orderedRunJson;
-  WriteRawRuns(orderedRunJson, {orderedRun});
-  if (orderedRunJson.str().find("\"user_ordering_applied\":true") ==
-      std::string::npos) {
-    throw std::runtime_error(
-        "linear solver ordering serialization self-test failed");
-  }
-  if (!Throws([] {
-        const char* args[] = {"timeCudaSparseLM", "--repeats", "0"};
-        (void)ParseOptions(3, const_cast<char**>(args));
-      }) ||
-      !Throws([] {
-        const char* args[] = {"timeCudaSparseLM", "--datasets", "pose2,pose2"};
-        (void)ParseOptions(3, const_cast<char**>(args));
-      }) ||
-      !Throws([] {
-        const char* args[] = {"timeCudaSparseLM", "--warmups", "-1"};
-        (void)ParseOptions(3, const_cast<char**>(args));
-      }) ||
-      !Throws([] {
-        const char* args[] = {"timeCudaSparseLM", "--warmups", "+1"};
-        (void)ParseOptions(3, const_cast<char**>(args));
-      }) ||
-      !Throws([] {
-        const char* args[] = {"timeCudaSparseLM", "--datasets", "pose2,"};
-        (void)ParseOptions(3, const_cast<char**>(args));
-      }) ||
-      !Throws([] {
-        const char* args[] = {"timeCudaSparseLM", "--unknown"};
-        (void)ParseOptions(2, const_cast<char**>(args));
-      })) {
-    throw std::runtime_error("option rejection self-test failed");
-  }
-  std::cout << "timeCudaSparseLM self-test passed\n";
-  return 0;
-}
 
 const WorkloadSpec& LookupWorkload(const std::string& name) {
   static const std::map<std::string, WorkloadSpec> specifications{
@@ -1117,19 +909,6 @@ SparseLevenbergMarquardtParams MakeGpuParams(
     if (options.pcgMaxIterations > 0) {
       params.pcg.maxIterations = static_cast<int>(options.pcgMaxIterations);
     }
-    if (options.pcgPreconditioner == "block-jacobi") {
-      params.pcgPreconditioner =
-          gtsam::cuda::DevicePcgPreconditioner::BlockJacobi;
-    } else if (options.pcgPreconditioner == "jacobi") {
-      params.pcgPreconditioner =
-          gtsam::cuda::DevicePcgPreconditioner::Jacobi;
-    } else if (options.pcgPreconditioner == "none") {
-      params.pcgPreconditioner = gtsam::cuda::DevicePcgPreconditioner::None;
-    } else {
-      throw std::invalid_argument("unknown PCG preconditioner: " +
-                                  options.pcgPreconditioner);
-    }
-    params.pcg.warmStart = options.pcgWarmStart;
   } else if (options.ordering == "gtsam") {
     if (workload.cpuOrdering) {
       params.setOrdering(*workload.cpuOrdering);
@@ -1595,8 +1374,8 @@ std::string MakeJson(const RunOptions& options,
          << ",\"ordering\":\"" << options.ordering << "\""
          << ",\"pcg_tolerance\":" << options.pcgTolerance
          << ",\"pcg_max_iterations\":" << options.pcgMaxIterations
-         << ",\"pcg_preconditioner\":\"" << options.pcgPreconditioner << "\""
-         << ",\"pcg_warm_start\":" << (options.pcgWarmStart ? "true" : "false")
+         << ",\"pcg_preconditioner\":\"block-jacobi\""
+         << ",\"pcg_warm_start\":true"
          << ",\"pose2_fast_sync\":"
          << (options.pose2FastSync ? "true" : "false")
          << ",\"pose2_upstream_settings\":"
@@ -1966,7 +1745,6 @@ int main(int argc, char** argv) {
       PrintDryRun(options);
       return 0;
     }
-    if (options.selfTest) return RunSelfTest();
     if (options.allCudaConfigurations) {
       for (const char* configuration : kCudaConfigurations) {
         RunOptions row = options;

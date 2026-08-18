@@ -12,9 +12,10 @@ namespace cuda {
 
 #include <gtsam/slam/cuda/SfmLevenbergMarquardt.h>
 
-enum class SfmSystemFormulation {
-  Schur,
-  FullNormal
+enum class LinearSolverType {
+  DenseCholesky,
+  Cudss,
+  Pcg
 };
 
 class SfmLevenbergMarquardtParams
@@ -25,14 +26,8 @@ class SfmLevenbergMarquardtParams
   static gtsam::cuda::SfmLevenbergMarquardtParams ceresDefaults();
 
   bool enableDetailedProfiling;
-  gtsam::cuda::SfmSystemFormulation formulation;
-
-  string getLinearSolver() const;
-  void setLinearSolver(const string& solver);
-  string getFormulation() const;
-  void setFormulation(const string& formulationName);
-  string getLinearSolverBackend() const;
-  void setLinearSolverBackend(const string& solverName);
+  gtsam::cuda::LinearSolverType getLinearSolver() const;
+  void setLinearSolver(gtsam::cuda::LinearSolverType solver);
   double getMinDiagonal() const;
   double getMaxDiagonal() const;
   void setMinDiagonal(double value);
@@ -61,13 +56,7 @@ class SfmLevenbergMarquardtResult {
   double projectionBatchH2dCopyElapsed;
   size_t projectionBatchH2dBytes;
   double initialErrorElapsed;
-  double cudssSolverConstructionElapsed;
   double denseSchurSolverConstructionElapsed;
-  double csrStructureElapsed;
-  double uploadPatternElapsed;
-  double uploadPatternDeviceAllocElapsed;
-  double uploadPatternH2dCopyElapsed;
-  size_t uploadPatternH2dBytes;
   double firstCudssAnalyzeElapsed;
   double downloadElapsed;
   double downloadHostAllocElapsed;

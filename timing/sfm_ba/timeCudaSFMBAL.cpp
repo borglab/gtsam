@@ -25,25 +25,16 @@
 
 #include <gtsam/config.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/nonlinear/GncOptimizer.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #if GTSAM_ENABLE_CUDA
-#include <gtsam/base/cuda/Context.h>
 #include <gtsam/nonlinear/cuda/SparseLevenbergMarquardt.h>
-#include <gtsam/nonlinear/cuda/HostSparseJacobian.h>
-#include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
-#include <gtsam/nonlinear/cuda/StreamingSparseJacobianLinearizer.h>
-#include <gtsam/slam/cuda/BalCsrStructure.h>
-#include <gtsam/slam/cuda/SfmDenseSchurSolver.h>
 #include <gtsam/slam/cuda/SfmLevenbergMarquardt.h>
 #include <gtsam/slam/cuda/SfmProjectionBatch.h>
-#include <gtsam/slam/cuda/SfmProjectionLinearization.h>
 #include <gtsam/slam/cuda/SfmReducedCsrPlan.h>
-#include <gtsam/slam/cuda/SfmValues.h>
 #endif
 
-#include <gtsam/nonlinear/GncOptimizer.h>
-
 #include <algorithm>
-#include <array>
 #include <cmath>
 #include <cstring>
 #include <filesystem>
@@ -54,6 +45,7 @@
 #include <map>
 #include <optional>
 #include <random>
+#include <vector>
 
 namespace {
 using namespace gtsam;
@@ -63,16 +55,12 @@ using symbol_shorthand::P;
 namespace bal = gtsam::timing::bal;
 
 std::string usage() {
-  return "Usage: timeCudaSFMBAL [--colamd] [--profile] [--cuda-structure-only] "
+  return "Usage: timeCudaSFMBAL [--colamd] [--profile] "
          "[--cuda-lm] [--cuda-lm-graph] "
-         "[--cuda-sparse-lm] [--cuda-sparse-pack-only] "
-         "[--gaussian-graph-pack-diagnostic] "
-         "[--linearization-benchmark] [--linearization-repeats N] "
-         "[--configuration NAME] [--formulation schur|full-normal] "
+         "[--cuda-sparse-lm] [--configuration NAME] "
          "[--ordering auto|gtsam] [--output-format text|csv|json] "
          "[--list-configurations] [--dry-run] "
-         "[--cuda-linear-solver dense-schur|cudss-schur|pcg-schur|"
-         "cudss-full-normal|pcg-full-normal] "
+         "[--cuda-linear-solver dense-cholesky|cudss|pcg] "
          "[--cuda-lm-graph-kind raw|point-batch|camera-batch] "
          "[--batch-chunk-size N] "
          "[--cuda-warmup-file FILE] "
@@ -93,8 +81,6 @@ enum class LinearSolverOption {
   DenseSchur,
   CudssSchur,
   PcgSchur,
-  CudssFullNormal,
-  PcgFullNormal,
 };
 
 enum class CudaGraphKind {
@@ -121,15 +107,9 @@ struct GncRunOptions {
 struct RunOptions {
   bal::BalBenchmarkConfig config;
   bool profile = false;
-  bool cudaStructureOnly = false;
   bool cudaLm = false;
   bool cudaLmGraph = false;
   bool cudaSparseLm = false;
-  bool cudaSparsePackOnly = false;
-  bool gaussianGraphPackDiagnostic = false;
-  bool linearizationBenchmark = false;
-  bool linearizationRepeatsSpecified = false;
-  size_t linearizationRepeats = 10;
   bool cudaLinearSolverSpecified = false;
   LinearSolverOption cudaLinearSolver = LinearSolverOption::DenseSchur;
   bool cudaGraphKindSpecified = false;
@@ -158,10 +138,6 @@ const char* cudaLinearSolverName(LinearSolverOption solver) {
       return "cudss-schur";
     case LinearSolverOption::PcgSchur:
       return "pcg-schur";
-    case LinearSolverOption::CudssFullNormal:
-      return "cudss-full-normal";
-    case LinearSolverOption::PcgFullNormal:
-      return "pcg-full-normal";
   }
   return "unknown";
 }
@@ -219,6 +195,7 @@ void printProfileRow(const std::string& indent, const std::string& label,
   std::cout << "\n";
 }
 
+#if GTSAM_ENABLE_CUDSS
 bool gtsamBuiltWithTbb() {
 #ifdef GTSAM_USE_TBB
   return true;
@@ -226,284 +203,8 @@ bool gtsamBuiltWithTbb() {
   return false;
 #endif
 }
-
-struct TimingSamples {
-  std::vector<double> seconds;
-
-  double mean() const {
-    double total = 0.0;
-    for (const double sample : seconds) total += sample;
-    return total / static_cast<double>(seconds.size());
-  }
-
-  double minimum() const {
-    return *std::min_element(seconds.begin(), seconds.end());
-  }
-
-  double maximum() const {
-    return *std::max_element(seconds.begin(), seconds.end());
-  }
-};
-
-struct CpuLinearizationBenchmark {
-  TimingSamples timing;
-  size_t linearizedFactors = 0;
-};
-
-struct CpuStateBenchmark {
-  TimingSamples retract;
-  TimingSamples trialError;
-  size_t retractedValues = 0;
-  double error = 0.0;
-};
-
-VectorValues makeBenchmarkDelta(const Values& initial) {
-  VectorValues delta = initial.zeroVectors();
-  for (Key key : initial.keys()) {
-    Vector& value = delta.at(key);
-    value.setConstant(1e-6);
-  }
-  return delta;
-}
-
-CpuLinearizationBenchmark benchmarkCpuLinearization(
-    const NonlinearFactorGraph& graph, const Values& initial, size_t repeats) {
-  GaussianFactorGraph::shared_ptr warmup = graph.linearize(initial);
-  warmup.reset();
-
-  CpuLinearizationBenchmark benchmark;
-  benchmark.timing.seconds.reserve(repeats);
-  for (size_t repeat = 0; repeat < repeats; ++repeat) {
-    const auto start = std::chrono::steady_clock::now();
-    GaussianFactorGraph::shared_ptr linear = graph.linearize(initial);
-    const auto end = std::chrono::steady_clock::now();
-    benchmark.timing.seconds.push_back(
-        std::chrono::duration<double>(end - start).count());
-    benchmark.linearizedFactors = linear->size();
-  }
-  return benchmark;
-}
-
-CpuStateBenchmark benchmarkCpuState(const NonlinearFactorGraph& graph,
-                                    const Values& initial,
-                                    const VectorValues& delta, size_t repeats) {
-  initial.retract(delta);
-
-  CpuStateBenchmark benchmark;
-  benchmark.retract.seconds.reserve(repeats);
-  benchmark.trialError.seconds.reserve(repeats);
-  for (size_t repeat = 0; repeat < repeats; ++repeat) {
-    const auto start = std::chrono::steady_clock::now();
-    {
-      const Values retracted = initial.retract(delta);
-      const auto end = std::chrono::steady_clock::now();
-      benchmark.retract.seconds.push_back(
-          std::chrono::duration<double>(end - start).count());
-      benchmark.retractedValues = retracted.size();
-    }
-  }
-
-  const Values trial = initial.retract(delta);
-  graph.error(trial);
-  for (size_t repeat = 0; repeat < repeats; ++repeat) {
-    const auto start = std::chrono::steady_clock::now();
-    benchmark.error = graph.error(trial);
-    const auto end = std::chrono::steady_clock::now();
-    benchmark.trialError.seconds.push_back(
-        std::chrono::duration<double>(end - start).count());
-  }
-  if (!std::isfinite(benchmark.error)) {
-    throw std::runtime_error("CPU trial graph.error() is not finite");
-  }
-  return benchmark;
-}
-
-void printTimingSamples(const std::string& label, const TimingSamples& timing,
-                        size_t workItems, const std::string& workItemLabel) {
-  std::cout << "  " << label << "\n";
-  for (size_t repeat = 0; repeat < timing.seconds.size(); ++repeat) {
-    std::cout << "    repeat " << repeat << ": " << timing.seconds[repeat]
-              << " s\n";
-  }
-  std::cout << "    mean: " << timing.mean() << " s\n";
-  std::cout << "    min:  " << timing.minimum() << " s\n";
-  std::cout << "    max:  " << timing.maximum() << " s\n";
-  if (timing.mean() > 0.0) {
-    std::cout << "    throughput: "
-              << static_cast<double>(workItems) / timing.mean() << " "
-              << workItemLabel << "/s\n";
-  }
-}
-
-#if GTSAM_ENABLE_CUDA
-enum class SparsePackingPath { Streaming, GaussianGraph };
-
-struct SparsePackingContext {
-  gtsam::cuda::SparseJacobianColumnLayout columns;
-  gtsam::cuda::SparseJacobianPlan plan;
-  gtsam::cuda::HostSparseJacobian host;
-  gtsam::cuda::StreamingSparseJacobianLinearizer linearizer;
-
-  SparsePackingContext(const NonlinearFactorGraph& graph, const Values& values)
-      : columns(values), plan(graph, columns), host(plan) {}
-};
-
-struct SparsePackingBenchmark {
-  TimingSamples hostClear;
-  TimingSamples combinedWall;
-  TimingSamples streamingWall;
-  TimingSamples factorLinearizationCpuSum;
-  TimingSamples csrPackingCpuSum;
-  TimingSamples gaussianGraphLinearization;
-  TimingSamples gaussianGraphPacking;
-  size_t factors = 0;
-  int residualRows = 0;
-  int scalarColumns = 0;
-  int jacobianNonzeros = 0;
-  gtsam::cuda::StreamingLinearizationStats streamingStats;
-};
-
-void requireDirectJacobianSuccess(
-    const char* operation, const gtsam::cuda::DirectJacobianStatus& status) {
-  if (status.ok()) return;
-
-  std::string detail = std::string(operation) + " failed";
-  if (status.factorIndex != std::numeric_limits<size_t>::max()) {
-    detail += " at factor " + std::to_string(status.factorIndex);
-  }
-  if (!status.detail.empty()) detail += ": " + status.detail;
-  throw std::runtime_error(detail);
-}
-
-SparsePackingBenchmark benchmarkSparsePacking(const NonlinearFactorGraph& graph,
-                                              const Values& values,
-                                              size_t repeats,
-                                              SparsePackingPath path) {
-  SparsePackingContext context(graph, values);
-  SparsePackingBenchmark benchmark;
-  benchmark.factors = graph.size();
-  benchmark.residualRows = context.plan.rows();
-  benchmark.scalarColumns = context.plan.columns();
-  benchmark.jacobianNonzeros = context.plan.nonzeros();
-  benchmark.hostClear.seconds.reserve(repeats);
-  benchmark.combinedWall.seconds.reserve(repeats);
-  if (path == SparsePackingPath::Streaming) {
-    benchmark.streamingWall.seconds.reserve(repeats);
-    benchmark.factorLinearizationCpuSum.seconds.reserve(repeats);
-    benchmark.csrPackingCpuSum.seconds.reserve(repeats);
-  } else {
-    benchmark.gaussianGraphLinearization.seconds.reserve(repeats);
-    benchmark.gaussianGraphPacking.seconds.reserve(repeats);
-  }
-
-  const auto runOnce = [&](bool measured) {
-    const auto clearStart = std::chrono::steady_clock::now();
-    context.host.clear();
-    const auto clearEnd = std::chrono::steady_clock::now();
-    if (measured) {
-      benchmark.hostClear.seconds.push_back(
-          std::chrono::duration<double>(clearEnd - clearStart).count());
-    }
-
-    const auto combinedStart = std::chrono::steady_clock::now();
-    if (path == SparsePackingPath::Streaming) {
-      gtsam::cuda::StreamingLinearizationStats stats;
-      gtsam::cuda::StreamingLinearizationProfile profile;
-      const auto streamingStart = std::chrono::steady_clock::now();
-      const gtsam::cuda::DirectJacobianStatus status =
-          context.linearizer.linearize(graph, values, context.columns,
-                                       context.plan, &context.host, &stats,
-                                       false, &profile);
-      const auto streamingEnd = std::chrono::steady_clock::now();
-      requireDirectJacobianSuccess("streaming sparse Jacobian", status);
-      if (measured) {
-        benchmark.streamingStats = stats;
-        benchmark.streamingWall.seconds.push_back(
-            std::chrono::duration<double>(streamingEnd - streamingStart)
-                .count());
-        benchmark.combinedWall.seconds.push_back(
-            std::chrono::duration<double>(streamingEnd - combinedStart)
-                .count());
-        benchmark.factorLinearizationCpuSum.seconds.push_back(
-            profile.factorLinearizationCpuSum);
-        benchmark.csrPackingCpuSum.seconds.push_back(profile.csrPackingCpuSum);
-      }
-    } else {
-      // Keep each temporary Gaussian graph alive through its corresponding
-      // pack, then destroy it before the next repeat.
-      const auto linearizationStart = std::chrono::steady_clock::now();
-      GaussianFactorGraph::shared_ptr linear = graph.linearize(values);
-      const auto linearizationEnd = std::chrono::steady_clock::now();
-      const auto packingStart = std::chrono::steady_clock::now();
-      const gtsam::cuda::DirectJacobianStatus status =
-          context.linearizer.packGaussianFactorGraph(*linear, context.plan,
-                                                     &context.host);
-      const auto packingEnd = std::chrono::steady_clock::now();
-      requireDirectJacobianSuccess("GaussianFactorGraph CSR packing", status);
-      if (measured) {
-        benchmark.gaussianGraphLinearization.seconds.push_back(
-            std::chrono::duration<double>(linearizationEnd - linearizationStart)
-                .count());
-        benchmark.gaussianGraphPacking.seconds.push_back(
-            std::chrono::duration<double>(packingEnd - packingStart).count());
-        benchmark.combinedWall.seconds.push_back(
-            std::chrono::duration<double>(packingEnd - combinedStart).count());
-      }
-    }
-  };
-
-  runOnce(false);  // Untimed warm-up using the same plan and host storage.
-  for (size_t repeat = 0; repeat < repeats; ++repeat) runOnce(true);
-  return benchmark;
-}
-
-void printSparsePackingBenchmark(const SparsePackingBenchmark& benchmark,
-                                 SparsePackingPath path, size_t repeats) {
-  std::cout << std::setprecision(9);
-  std::cout << "  generic sparse-Jacobian packing benchmark\n";
-  std::cout << "  path: "
-            << (path == SparsePackingPath::Streaming
-                    ? "streaming temporary-factor pack"
-                    : "GaussianFactorGraph construction plus identical CSR "
-                      "pack")
-            << "\n";
-  std::cout << "  GTSAM_USE_TBB: " << (gtsamBuiltWithTbb() ? "yes" : "no")
-            << "\n";
-  std::cout << "  factors: " << benchmark.factors
-            << ", residual rows: " << benchmark.residualRows
-            << ", scalar columns: " << benchmark.scalarColumns
-            << ", J.nnz: " << benchmark.jacobianNonzeros << "\n";
-  std::cout << "  warm-up calls: 1 (not timed)\n";
-  std::cout << "  measured repeats: " << repeats << "\n";
-  printTimingSamples("host buffer clear", benchmark.hostClear,
-                     static_cast<size_t>(benchmark.jacobianNonzeros) +
-                         static_cast<size_t>(benchmark.residualRows),
-                     "scalars");
-  if (path == SparsePackingPath::Streaming) {
-    std::cout << "  scheduling: " << benchmark.streamingStats.sendableFactors
-              << " sendable, " << benchmark.streamingStats.nonSendableFactors
-              << " non-sendable factors\n";
-    printTimingSamples("streaming factor linearization + CSR pack wall",
-                       benchmark.streamingWall, benchmark.factors, "factors");
-    printTimingSamples("sum of per-factor linearize CPU time",
-                       benchmark.factorLinearizationCpuSum, benchmark.factors,
-                       "factors");
-    printTimingSamples("sum of per-factor CSR scatter CPU time",
-                       benchmark.csrPackingCpuSum, benchmark.factors,
-                       "factors");
-  } else {
-    printTimingSamples("GaussianFactorGraph graph.linearize() wall",
-                       benchmark.gaussianGraphLinearization, benchmark.factors,
-                       "factors");
-    printTimingSamples("GaussianFactorGraph-to-CSR pack wall",
-                       benchmark.gaussianGraphPacking, benchmark.factors,
-                       "factors");
-  }
-  printTimingSamples("combined path wall (excluding host clear)",
-                     benchmark.combinedWall, benchmark.factors, "factors");
-  std::cout << std::setprecision(6);
-}
 #endif
+
 
 #if GTSAM_ENABLE_CUDA
 enum class CudaLmDefaults {
@@ -515,8 +216,7 @@ gtsam::cuda::SfmLevenbergMarquardtParams makeBalCudaLmParams(
     LinearSolverOption solverOption, CudaLmDefaults defaults,
     bool enableDetailedProfiling) {
 #if !GTSAM_ENABLE_CUDSS
-  if (solverOption == LinearSolverOption::CudssSchur ||
-      solverOption == LinearSolverOption::CudssFullNormal) {
+  if (solverOption == LinearSolverOption::CudssSchur) {
     throw std::runtime_error(
         "the selected CUDA SFM configuration requires cuDSS support");
   }
@@ -526,9 +226,18 @@ gtsam::cuda::SfmLevenbergMarquardtParams makeBalCudaLmParams(
           ? gtsam::cuda::SfmLevenbergMarquardtParams::ceresDefaults()
           : gtsam::cuda::SfmLevenbergMarquardtParams();
   applyBalBenchmarkLmSettings(params);
-  params.setLinearSolver(cudaLinearSolverName(solverOption));
-  if (solverOption == LinearSolverOption::PcgSchur ||
-      solverOption == LinearSolverOption::PcgFullNormal) {
+  switch (solverOption) {
+    case LinearSolverOption::DenseSchur:
+      params.setLinearSolver(gtsam::cuda::LinearSolverType::DenseCholesky);
+      break;
+    case LinearSolverOption::CudssSchur:
+      params.setLinearSolver(gtsam::cuda::LinearSolverType::Cudss);
+      break;
+    case LinearSolverOption::PcgSchur:
+      params.setLinearSolver(gtsam::cuda::LinearSolverType::Pcg);
+      break;
+  }
+  if (solverOption == LinearSolverOption::PcgSchur) {
     params.pcg.relativeTolerance = 1e-6;
     params.pcg.maxIterations = 1000;
   }
@@ -540,111 +249,19 @@ void applyCudaMatrixOrdering(
     const SfmData& data, const RunOptions& options,
     gtsam::cuda::SfmLevenbergMarquardtParams* params) {
   if (!params || options.ordering != "gtsam") return;
-  if (options.cudaLinearSolver != LinearSolverOption::CudssSchur &&
-      options.cudaLinearSolver != LinearSolverOption::CudssFullNormal) {
+  if (options.cudaLinearSolver != LinearSolverOption::CudssSchur) {
     throw std::invalid_argument(
         "GTSAM ordering is supported only by the cuDSS backend");
   }
-  if (options.cudaLinearSolver == LinearSolverOption::CudssSchur) {
-    std::vector<Key> cameraKeys;
-    cameraKeys.reserve(data.numberCameras());
-    for (size_t index = 0; index < data.numberCameras(); ++index) {
-      cameraKeys.push_back(C(index));
-    }
-    params->setOrdering(
-        gtsam::cuda::SfmReducedCsrPlan(data, cameraKeys).colamdOrdering());
-  } else {
-    const NonlinearFactorGraph graph =
-        bal::buildGeneralSfmGraph(data, options.config);
-    params->setOrdering(Ordering::Create(Ordering::COLAMD, graph));
+  std::vector<Key> cameraKeys;
+  cameraKeys.reserve(data.numberCameras());
+  for (size_t index = 0; index < data.numberCameras(); ++index) {
+    cameraKeys.push_back(C(index));
   }
+  params->setOrdering(
+      gtsam::cuda::SfmReducedCsrPlan(data, cameraKeys).colamdOrdering());
 }
 
-struct GpuLinearizationBenchmark {
-  TimingSamples projectionLinearization;
-  TimingSamples hessianDiagonal;
-  TimingSamples denseSchurCombined;
-  size_t observations = 0;
-  size_t deltaDimension = 0;
-};
-
-GpuLinearizationBenchmark benchmarkGpuLinearization(const SfmData& db,
-                                                    size_t repeats) {
-  gtsam::cuda::Context context;
-  const auto values = gtsam::cuda::packSfmValues(db, context.stream());
-  const auto batch =
-      gtsam::cuda::SfmProjectionBatch::fromSfmData(db, context.stream());
-  context.synchronize();
-
-  GpuLinearizationBenchmark benchmark;
-  benchmark.observations = batch.numObservations();
-  benchmark.projectionLinearization.seconds.reserve(repeats);
-  benchmark.hessianDiagonal.seconds.reserve(repeats);
-  benchmark.denseSchurCombined.seconds.reserve(repeats);
-
-  gtsam::cuda::SfmProjectionLinearization linearization;
-  gtsam::cuda::linearizeSfmProjectionBatch(values, batch, &linearization,
-                                               context.stream());
-  context.synchronize();
-  for (size_t repeat = 0; repeat < repeats; ++repeat) {
-    const auto start = std::chrono::steady_clock::now();
-    gtsam::cuda::linearizeSfmProjectionBatch(values, batch, &linearization,
-                                                 context.stream());
-    context.synchronize();
-    const auto end = std::chrono::steady_clock::now();
-    benchmark.projectionLinearization.seconds.push_back(
-        std::chrono::duration<double>(end - start).count());
-  }
-
-  const auto params = makeBalCudaLmParams(LinearSolverOption::DenseSchur,
-                                          CudaLmDefaults::Graph, false);
-  gtsam::cuda::DeviceArray<double> dampingDiagonal;
-  if (params.dampingParams.diagonalDamping) {
-    const auto computeHessianDiagonal = [&]() {
-      gtsam::cuda::computeSfmHessianDiagonal(
-          values, batch, static_cast<int>(db.numberCameras()),
-          params.dampingParams.minDiagonal, params.dampingParams.maxDiagonal,
-          &dampingDiagonal,
-          context.stream());
-    };
-    computeHessianDiagonal();
-    context.synchronize();
-    for (size_t repeat = 0; repeat < repeats; ++repeat) {
-      const auto start = std::chrono::steady_clock::now();
-      computeHessianDiagonal();
-      context.synchronize();
-      const auto end = std::chrono::steady_clock::now();
-      benchmark.hessianDiagonal.seconds.push_back(
-          std::chrono::duration<double>(end - start).count());
-    }
-  }
-
-  gtsam::cuda::SfmDenseSchurSolver solver;
-  gtsam::cuda::DeviceArray<double> delta;
-  const auto solveOnce = [&]() {
-    if (params.dampingParams.diagonalDamping) {
-      solver.solve(values, batch, static_cast<int>(db.numberCameras()),
-                   params.lambdaInitial, dampingDiagonal, &delta,
-                   context.stream());
-    } else {
-      solver.solve(values, batch, static_cast<int>(db.numberCameras()),
-                   params.lambdaInitial, &delta, context.stream());
-    }
-  };
-
-  solveOnce();
-  context.synchronize();
-  for (size_t repeat = 0; repeat < repeats; ++repeat) {
-    const auto start = std::chrono::steady_clock::now();
-    solveOnce();
-    context.synchronize();
-    const auto end = std::chrono::steady_clock::now();
-    benchmark.denseSchurCombined.seconds.push_back(
-        std::chrono::duration<double>(end - start).count());
-  }
-  benchmark.deltaDimension = delta.size();
-  return benchmark;
-}
 
 struct CudaBackendLmRun {
   double elapsed = 0.0;
@@ -693,10 +310,6 @@ void printCudaMatrixResult(const RunOptions& options,
                            bool printCsvHeader) {
   const auto& result = run.result;
   const auto& stats = result.linearSolveStats;
-  const char* formulation =
-      result.formulation == gtsam::cuda::SfmSystemFormulation::Schur
-          ? "schur"
-          : "full-normal";
   const char* backend = "dense-cholesky";
   if (result.linearBackend == gtsam::cuda::LinearSolverType::Cudss) {
     backend = "cudss";
@@ -710,7 +323,6 @@ void printCudaMatrixResult(const RunOptions& options,
               << "{\"configuration\":\""
               << jsonEscape(options.matrixConfiguration)
               << "\",\"dataset\":\"" << jsonEscape(dataset)
-              << "\",\"formulation\":\"" << formulation
               << "\",\"backend\":\"" << backend
               << "\",\"ordering\":\"" << options.ordering
               << "\",\"dimension\":" << result.linearSystemDimension
@@ -750,7 +362,7 @@ void printCudaMatrixResult(const RunOptions& options,
   if (options.outputFormat == "csv") {
     if (printCsvHeader) {
       std::cout
-          << "configuration,dataset,formulation,backend,ordering,dimension,"
+          << "configuration,dataset,backend,ordering,dimension,"
              "nnz,matrix_free,analysis_count,user_ordering_applied,"
              "factorization_count,solve_count,"
              "pcg_iterations,pcg_max_iteration_hits,pcg_breakdown_count,"
@@ -761,7 +373,7 @@ void printCudaMatrixResult(const RunOptions& options,
              "lambda_attempts\n";
     }
     std::cout << std::setprecision(17) << options.matrixConfiguration << ","
-              << dataset << "," << formulation << "," << backend << ","
+              << dataset << "," << backend << ","
               << options.ordering << "," << result.linearSystemDimension << ","
               << result.linearSystemNonzeros << ","
               << (result.linearSystemKind ==
@@ -811,12 +423,8 @@ void printCudaLmSetupBreakdown(
   std::cout << "    projection batch: " << result.projectionBatchElapsed
             << " s\n";
   std::cout << "    initial error: " << result.initialErrorElapsed << " s\n";
-  std::cout << "    cuDSS solver construction: "
-            << result.cudssSolverConstructionElapsed << " s\n";
   std::cout << "    dense Schur solver construction: "
             << result.denseSchurSolverConstructionElapsed << " s\n";
-  std::cout << "    CSR structure: " << result.csrStructureElapsed << " s\n";
-  std::cout << "    upload pattern: " << result.uploadPatternElapsed << " s\n";
   std::cout << "    first cuDSS analyze (solve loop): "
             << result.firstCudssAnalyzeElapsed << " s\n";
   std::cout << "    download values (post solve): " << result.downloadElapsed
@@ -842,11 +450,6 @@ void printCudaLmTransferBreakdown(
   printTransferRow("    ", "projection H2D memcpy",
                    result.projectionBatchH2dCopyElapsed,
                    result.projectionBatchH2dBytes, total);
-  printProfileRow("    ", "CSR pattern device alloc",
-                  result.uploadPatternDeviceAllocElapsed, total);
-  printTransferRow("    ", "CSR pattern H2D memcpy",
-                   result.uploadPatternH2dCopyElapsed,
-                   result.uploadPatternH2dBytes, total);
   printTransferRow("    ", "total H2D memcpy", result.totalH2dCopyElapsed,
                    result.totalH2dBytes, total);
   printProfileRow("    ", "download host alloc",
@@ -1080,6 +683,7 @@ void printCudaGraphLmRun(const CudaGraphLmRun& run,
             << std::setprecision(6) << "\n";
 }
 
+#if GTSAM_ENABLE_CUDSS
 struct OrdinaryLmComparisonRun {
   double elapsed = 0.0;
   double initialError = 0.0;
@@ -1288,6 +892,7 @@ void printSparseLmComparison(const OrdinaryLmComparisonRun& ordinary,
   std::cout << std::setprecision(6);
 }
 #endif
+#endif
 
 void writeBenchmarkActionJson(const std::vector<TimingRow>& rows,
                               const std::string& outputPath) {
@@ -1304,37 +909,19 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
   RunOptions options;
   options.config.useSchur = !arguments.flag("--colamd");
   options.profile = arguments.flag("--profile");
-  options.cudaStructureOnly = arguments.flag("--cuda-structure-only");
   options.cudaLm = arguments.flag("--cuda-lm");
   options.cudaLmGraph = arguments.flag("--cuda-lm-graph");
   options.cudaSparseLm = arguments.flag("--cuda-sparse-lm");
-  options.cudaSparsePackOnly = arguments.flag("--cuda-sparse-pack-only");
-  options.gaussianGraphPackDiagnostic =
-      arguments.flag("--gaussian-graph-pack-diagnostic");
-  options.linearizationBenchmark =
-      arguments.flag("--linearization-benchmark");
   options.listConfigurations = arguments.flag("--list-configurations");
   options.dryRun = arguments.flag("--dry-run");
   options.help = arguments.helpRequested();
 
-  const auto linearizationRepeats =
-      arguments.optionalString("--linearization-repeats");
-  options.linearizationRepeatsSpecified = linearizationRepeats.has_value();
-  if (linearizationRepeats) {
-    gtsam::timing::Arguments valueArguments(
-        {"--value", *linearizationRepeats});
-    options.linearizationRepeats = valueArguments.sizeValue(
-        "--value", options.linearizationRepeats);
-  }
-
   const auto configuration = arguments.optionalString("--configuration");
-  const auto formulation = arguments.optionalString("--formulation");
   const auto linearSolver = arguments.optionalString("--cuda-linear-solver");
   const auto orderingMode = arguments.optionalString("--ordering");
   const auto outputFormat = arguments.optionalString("--output-format");
   options.cudaLinearSolverSpecified =
-      configuration.has_value() || formulation.has_value() ||
-      linearSolver.has_value() || orderingMode.has_value();
+      configuration || linearSolver || orderingMode;
 
   if (orderingMode) options.ordering = *orderingMode;
   if (options.ordering != "auto" && options.ordering != "gtsam") {
@@ -1346,7 +933,7 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
     throw std::runtime_error("--output-format requires text, csv, or json");
   }
 
-  auto selectConfiguration = [&](const std::string& name) {
+  const auto selectConfiguration = [&](const std::string& name) {
     options.matrixConfiguration = name;
     if (name == "schur-dense") {
       options.cudaLinearSolver = LinearSolverOption::DenseSchur;
@@ -1360,15 +947,6 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
     } else if (name == "schur-pcg") {
       options.cudaLinearSolver = LinearSolverOption::PcgSchur;
       options.ordering = "auto";
-    } else if (name == "full-normal-cudss-auto") {
-      options.cudaLinearSolver = LinearSolverOption::CudssFullNormal;
-      options.ordering = "auto";
-    } else if (name == "full-normal-cudss-gtsam") {
-      options.cudaLinearSolver = LinearSolverOption::CudssFullNormal;
-      options.ordering = "gtsam";
-    } else if (name == "full-normal-pcg") {
-      options.cudaLinearSolver = LinearSolverOption::PcgFullNormal;
-      options.ordering = "auto";
     } else {
       throw std::runtime_error("unknown CUDA SFM configuration: " + name);
     }
@@ -1381,51 +959,20 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
           "--configuration and --ordering select different modes");
     }
   } else {
-    std::string formulationName = formulation.value_or("schur");
-    if (formulationName == "full_normal") formulationName = "full-normal";
-    if (formulationName != "schur" && formulationName != "full-normal") {
-      throw std::runtime_error(
-          "--formulation requires schur or full-normal");
-    }
     const std::string backend = linearSolver.value_or("dense-cholesky");
-    if (backend == "dense-schur" || backend == "cudss-schur" ||
-        backend == "pcg-schur" || backend == "cudss-full-normal" ||
-        backend == "pcg-full-normal") {
-      if (formulation || orderingMode) {
-        throw std::runtime_error(
-            "combined --cuda-linear-solver names cannot be mixed with "
-            "--formulation or --ordering; use backend-only names");
-      }
-      if (backend == "dense-schur") selectConfiguration("schur-dense");
-      if (backend == "cudss-schur")
-        selectConfiguration("schur-cudss-auto");
-      if (backend == "pcg-schur") selectConfiguration("schur-pcg");
-      if (backend == "cudss-full-normal")
-        selectConfiguration("full-normal-cudss-auto");
-      if (backend == "pcg-full-normal")
-        selectConfiguration("full-normal-pcg");
-    } else if (backend == "dense" || backend == "dense-cholesky") {
-      if (formulationName != "schur") {
-        throw std::runtime_error(
-            "dense Cholesky does not support full-normal SFM systems");
-      }
+    if (backend == "dense-cholesky") {
       selectConfiguration("schur-dense");
     } else if (backend == "cudss") {
-      selectConfiguration(formulationName == "schur"
-                              ? (options.ordering == "gtsam"
-                                     ? "schur-cudss-gtsam"
-                                     : "schur-cudss-auto")
-                              : (options.ordering == "gtsam"
-                                     ? "full-normal-cudss-gtsam"
-                                     : "full-normal-cudss-auto"));
+      selectConfiguration(options.ordering == "gtsam"
+                              ? "schur-cudss-gtsam"
+                              : "schur-cudss-auto");
     } else if (backend == "pcg") {
       if (options.ordering != "auto") {
         throw std::runtime_error(
             "GTSAM ordering is supported only by the cuDSS backend");
       }
-      selectConfiguration(formulationName == "schur" ? "schur-pcg"
-                                                       : "full-normal-pcg");
-    } else if (linearSolver) {
+      selectConfiguration("schur-pcg");
+    } else {
       throw std::runtime_error(usage());
     }
   }
@@ -1523,15 +1070,11 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
   if (options.help) return options;
 
   const bool gnc = options.gnc.backend != GncBackend::None;
-  const size_t sparseModeCount =
-      static_cast<size_t>(options.cudaSparseLm) +
-      static_cast<size_t>(options.cudaSparsePackOnly) +
-      static_cast<size_t>(options.gaussianGraphPackDiagnostic);
+  const size_t cudaModeCount = static_cast<size_t>(options.cudaLm) +
+                               static_cast<size_t>(options.cudaLmGraph) +
+                               static_cast<size_t>(options.cudaSparseLm);
   if (options.listConfigurations || options.dryRun) {
-    if (options.profile || options.cudaStructureOnly || options.cudaLm ||
-        options.cudaLmGraph || sparseModeCount != 0 ||
-        options.linearizationBenchmark ||
-        options.gnc.backend != GncBackend::None) {
+    if (options.profile || cudaModeCount != 0 || gnc) {
       throw std::runtime_error(
           "--list-configurations and --dry-run cannot be combined with a "
           "benchmark execution mode");
@@ -1539,52 +1082,17 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
     options.filenames.clear();
     return options;
   }
-  const bool sparseMode = sparseModeCount != 0;
-  if (sparseModeCount > 1) {
-    throw runtime_error(
-        "--cuda-sparse-lm, --cuda-sparse-pack-only, and "
-        "--gaussian-graph-pack-diagnostic are mutually exclusive");
-  }
-  if (sparseMode &&
-      (options.profile || options.cudaStructureOnly || options.cudaLm ||
-       options.cudaLmGraph || options.linearizationBenchmark ||
-       options.benchmarkActionJson || gnc)) {
-    throw runtime_error(
-        "sparse-Jacobian modes cannot be combined with another run mode");
+  if (cudaModeCount > 1) {
+    throw std::runtime_error("CUDA benchmark modes are mutually exclusive");
   }
   if (options.profile && !options.filenames.empty()) {
     throw std::runtime_error(usage());
   }
-  if ((options.profile || options.cudaStructureOnly || options.cudaLm ||
-       options.cudaLmGraph) &&
-      options.benchmarkActionJson) {
+  if (cudaModeCount != 0 && options.benchmarkActionJson) {
     throw std::runtime_error(usage());
   }
-  if ((options.cudaLm && options.cudaStructureOnly) ||
-      (options.cudaLmGraph && options.cudaStructureOnly) ||
-      (options.cudaLm && options.cudaLmGraph)) {
-    throw std::runtime_error(usage());
-  }
-  if (options.linearizationBenchmark &&
-      (options.profile || options.cudaStructureOnly || options.cudaLm ||
-       options.cudaLmGraph || options.benchmarkActionJson || gnc)) {
-    throw std::runtime_error(
-        "--linearization-benchmark cannot be combined with another run mode");
-  }
-  const bool repeatedLinearizationMode = options.linearizationBenchmark ||
-                                         options.cudaSparsePackOnly ||
-                                         options.gaussianGraphPackDiagnostic;
-  if (options.linearizationRepeatsSpecified && !repeatedLinearizationMode) {
-    throw std::runtime_error(
-        "--linearization-repeats requires --linearization-benchmark, "
-        "--cuda-sparse-pack-only, or --gaussian-graph-pack-diagnostic");
-  }
-  if (repeatedLinearizationMode && options.linearizationRepeats == 0) {
-    throw std::runtime_error("--linearization-repeats must be positive");
-  }
-  if (gnc &&
-      (options.cudaLm || options.cudaLmGraph || options.cudaStructureOnly ||
-       options.profile || options.benchmarkActionJson)) {
+  if (gnc && (cudaModeCount != 0 || options.profile ||
+              options.benchmarkActionJson)) {
     throw std::runtime_error("--gnc cannot be combined with other run modes");
   }
   if (gncOptionSpecified && !gnc) {
@@ -1594,11 +1102,6 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
     throw std::runtime_error(
         "--projection-noise cannot be combined with --gnc: GNC replaces "
         "robust noise with its own weighting");
-  }
-  if (options.linearizationBenchmark && projectionNoiseSpecified) {
-    throw std::runtime_error(
-        "--projection-noise cannot be combined with "
-        "--linearization-benchmark");
   }
   if (projectionNoiseSpecified && options.cudaLm) {
     throw std::runtime_error(
@@ -1624,17 +1127,15 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
   }
 
   if (options.filenames.empty()) {
-    if (options.profile || options.linearizationBenchmark ||
-        options.cudaSparsePackOnly || options.gaussianGraphPackDiagnostic) {
-      options.filenames = {bal::profileDataset()};
-    } else if (options.benchmarkActionJson || gnc) {
-      options.filenames = {bal::defaultDataset()};
-    } else {
-      options.filenames = bal::standardDatasets();
-    }
+    options.filenames =
+        options.profile ? std::vector<std::string>{bal::profileDataset()}
+                        : (options.benchmarkActionJson || gnc)
+                              ? std::vector<std::string>{bal::defaultDataset()}
+                              : bal::standardDatasets();
   }
   return options;
 }
+
 double runSolver(const NonlinearFactorGraph& graph, const Values& initial,
                  const Ordering& ordering,
                  NonlinearOptimizerParams::LinearSolverType solverType,
@@ -1672,6 +1173,7 @@ NonlinearFactorGraph buildCudaGraphSfmGraph(
   }
   return bal::buildGeneralSfmGraph(data, config);
 }
+
 /* ************************************************************************* */
 // GNC benchmarking
 
@@ -1710,8 +1212,6 @@ CorruptedBalProblem corruptBalMeasurements(const SfmData& db,
   CorruptedBalProblem problem;
   problem.data = db;
 
-  // Global factor slots follow buildGeneralSfmGraph order: tracks with < 2
-  // measurements are skipped entirely.
   std::vector<size_t> trackSizes(db.numberTracks(), 0);
   size_t numFactors = 0;
   for (size_t j = 0; j < db.numberTracks(); ++j) {
@@ -1729,8 +1229,6 @@ CorruptedBalProblem corruptBalMeasurements(const SfmData& db,
 
   std::mt19937 angleRng(seed);
   std::uniform_real_distribution<double> angle(0.0, 2.0 * M_PI);
-
-  // Corrupt the chosen measurements in the SfmData copy.
   std::vector<std::vector<bool>> corruptByTrack(db.numberTracks());
   for (const auto& [trackIndex, measIndex] : selected) {
     SfmMeasurement& measurement =
@@ -1810,7 +1308,6 @@ double inlierRmsReprojectionError(const NonlinearFactorGraph& graph,
   size_t count = 0;
   for (size_t i = 0; i < graph.size(); ++i) {
     if (isOutlier[i]) continue;
-    // error() is 0.5 * ||r||^2 for the unit-noise BAL factors.
     sumSquared += 2.0 * graph.at(i)->error(solution);
     ++count;
   }
@@ -1832,7 +1329,6 @@ GncBenchmarkRun runGncBenchmark(const NonlinearFactorGraph& graph,
                                 const GncRunOptions& gncOptions) {
   GncParams<BaseParams> gncParams(baseParams);
   gncParams.setLossType(gncOptions.lossType);
-  gncParams.enableTiming = true;
   if (gncOptions.maxOuterIterations != gncParams.maxIterations) {
     gncParams.maxIterations = gncOptions.maxOuterIterations;
   }
@@ -1899,20 +1395,18 @@ void printGncRun(const GncBenchmarkRun& run, const CorruptedBalProblem& problem,
 
 struct MatrixConfigurationRecord {
   const char* name;
-  const char* formulation;
   const char* backend;
   const char* ordering;
 };
 
-constexpr std::array<MatrixConfigurationRecord, 7> kMatrixConfigurations{{
-    {"schur-dense", "schur", "dense-cholesky", "auto"},
-    {"schur-cudss-auto", "schur", "cudss", "auto"},
-    {"schur-cudss-gtsam", "schur", "cudss", "gtsam"},
-    {"schur-pcg", "schur", "pcg", "auto"},
-    {"full-normal-cudss-auto", "full-normal", "cudss", "auto"},
-    {"full-normal-cudss-gtsam", "full-normal", "cudss", "gtsam"},
-    {"full-normal-pcg", "full-normal", "pcg", "auto"},
-}};
+const std::vector<MatrixConfigurationRecord> kMatrixConfigurations{
+    {"schur-dense", "dense-cholesky", "auto"},
+#if GTSAM_ENABLE_CUDSS
+    {"schur-cudss-auto", "cudss", "auto"},
+    {"schur-cudss-gtsam", "cudss", "gtsam"},
+#endif
+    {"schur-pcg", "pcg", "auto"},
+};
 
 void printMatrixConfigurations() {
   for (const MatrixConfigurationRecord& record : kMatrixConfigurations) {
@@ -1924,7 +1418,6 @@ void printMatrixDryRun(const RunOptions& options) {
   const auto jsonRecord = [](const MatrixConfigurationRecord& record) {
     std::cout
         << "{\"configuration\":\"" << record.name
-        << "\",\"formulation\":\"" << record.formulation
         << "\",\"backend\":\"" << record.backend
         << "\",\"ordering\":\"" << record.ordering
         << "\",\"dimension\":0,\"nnz\":0,\"analysis_count\":0,"
@@ -1946,22 +1439,21 @@ void printMatrixDryRun(const RunOptions& options) {
     return;
   }
   if (options.outputFormat == "csv") {
-    std::cout << "configuration,formulation,backend,ordering,dimension,nnz,"
+    std::cout << "configuration,backend,ordering,dimension,nnz,"
                  "analysis_count,factorization_count,solve_count,"
                  "pcg_iterations,pcg_converged,initial_objective,"
                  "final_objective,h2d_bytes,d2h_bytes,frontend_wall_seconds,"
                  "analysis_seconds,factorization_seconds,solve_seconds,"
                  "accepted_iterations,lambda_attempts,dry_run\n";
     for (const MatrixConfigurationRecord& record : kMatrixConfigurations) {
-      std::cout << record.name << "," << record.formulation << ","
-                << record.backend << "," << record.ordering
+      std::cout << record.name << "," << record.backend << ","
+                << record.ordering
                 << ",0,0,0,0,0,0,false,0,0,0,0,0,0,0,0,0,0,true\n";
     }
     return;
   }
   for (const MatrixConfigurationRecord& record : kMatrixConfigurations) {
     std::cout << "configuration=" << record.name
-              << " formulation=" << record.formulation
               << " backend=" << record.backend
               << " ordering=" << record.ordering << " dry_run=true\n";
   }
@@ -2101,131 +1593,19 @@ int RunMain(int argc, char* argv[]) {
     }
 #endif
 
-#if GTSAM_ENABLE_CUDA
-    if (options.cudaStructureOnly) {
-      gtsam::cuda::Context context;
-      const auto values = gtsam::cuda::packSfmValues(db, context.stream());
-      const auto batch = gtsam::cuda::SfmProjectionBatch::fromSfmData(
-          db, context.stream());
-      const auto csr = gtsam::cuda::BalCsrStructure::fromSfmData(db);
-      context.synchronize();
-
-      std::cout << "CUDA BAL structure: cameras=" << batch.numCameras()
-                << " points=" << batch.numPoints()
-                << " observations=" << batch.numObservations()
-                << " packed_values=" << values.index().size()
-                << " dimension=" << csr.dimension()
-                << " csr_nnz=" << csr.colIndices().size() << std::endl;
-      continue;
-    }
-#else
-    if (options.cudaStructureOnly) {
-      throw std::runtime_error(
-          "--cuda-structure-only requires configuring with "
-          "GTSAM_ENABLE_CUDA=ON");
-    }
-#endif
 
     NonlinearFactorGraph graph = buildCudaGraphSfmGraph(
         db, options.cudaGraphKind, options.batchChunkSize, options.config);
     Values initial = bal::buildGeneralSfmInitial(db);
 
-#if GTSAM_ENABLE_CUDA
-    if (options.cudaSparsePackOnly || options.gaussianGraphPackDiagnostic) {
-      const SparsePackingPath path = options.cudaSparsePackOnly
-                                         ? SparsePackingPath::Streaming
-                                         : SparsePackingPath::GaussianGraph;
-      const SparsePackingBenchmark benchmark = benchmarkSparsePacking(
-          graph, initial, options.linearizationRepeats, path);
-      printSparsePackingBenchmark(benchmark, path,
-                                  options.linearizationRepeats);
-      continue;
-    }
-#else
-    if (options.cudaSparsePackOnly || options.gaussianGraphPackDiagnostic) {
-      throw std::runtime_error(
-          "sparse-Jacobian packing modes require configuring with "
-          "GTSAM_ENABLE_CUDA=ON");
-    }
-#endif
-
-    if (options.linearizationBenchmark) {
-      if (!gtsamBuiltWithTbb()) {
-        throw std::runtime_error(
-            "--linearization-benchmark requires GTSAM_USE_TBB");
-      }
-      std::cout << std::setprecision(9);
-      std::cout << "  SFM linearization feasibility benchmark\n";
-      std::cout << "  graph representation: raw GeneralSFMFactor\n";
-      std::cout << "  GTSAM_USE_TBB: " << (gtsamBuiltWithTbb() ? "yes" : "no")
-                << "\n";
-      std::cout << "  cameras: " << db.numberCameras()
-                << ", points: " << db.numberTracks()
-                << ", observations/factors: " << graph.size()
-                << ", values: " << initial.size() << "\n";
-      std::cout << "  warm-up calls per path: 1 (not timed)\n";
-      std::cout << "  measured repeats: " << options.linearizationRepeats
-                << "\n";
-
-      const CpuLinearizationBenchmark cpu = benchmarkCpuLinearization(
-          graph, initial, options.linearizationRepeats);
-      std::cout << "  CPU output linear factors: " << cpu.linearizedFactors
-                << "\n";
-      printTimingSamples("CPU/TBB graph.linearize()", cpu.timing, graph.size(),
-                         "factors");
-      const VectorValues delta = makeBenchmarkDelta(initial);
-      const CpuStateBenchmark cpuState = benchmarkCpuState(
-          graph, initial, delta, options.linearizationRepeats);
-      std::cout << "  CPU state validation: retracted values: "
-                << cpuState.retractedValues
-                << ", trial error: " << cpuState.error << "\n";
-      printTimingSamples("CPU Values retract()", cpuState.retract,
-                         initial.size(), "values");
-      printTimingSamples("CPU trial graph.error()", cpuState.trialError,
-                         graph.size(), "factors");
-
-#if GTSAM_ENABLE_CUDA
-      const GpuLinearizationBenchmark gpu =
-          benchmarkGpuLinearization(db, options.linearizationRepeats);
-      std::cout << "  GPU output observations: " << gpu.observations
-                << ", delta dimension: " << gpu.deltaDimension << "\n";
-      printTimingSamples("GPU projection residual/Jacobian generation",
-                         gpu.projectionLinearization, gpu.observations,
-                         "observations");
-      if (!gpu.hessianDiagonal.seconds.empty()) {
-        printTimingSamples("GPU Hessian diagonal generation",
-                           gpu.hessianDiagonal, gpu.observations,
-                           "observations");
-      }
-      printTimingSamples(
-          "GPU dense Schur combined (linearize + Schur/Hessian + solve + "
-          "recover; precomputed damping diagonal)",
-          gpu.denseSchurCombined, gpu.observations, "observations");
-      std::cout << "  comparison\n";
-      std::cout << "    CPU linearize / GPU projection linearize: "
-                << cpu.timing.mean() / gpu.projectionLinearization.mean()
-                << "x\n";
-      if (!gpu.hessianDiagonal.seconds.empty()) {
-        std::cout << "    CPU linearize / GPU Hessian diagonal: "
-                  << cpu.timing.mean() / gpu.hessianDiagonal.mean() << "x\n";
-      }
-      std::cout << "    CPU linearize / GPU dense Schur combined: "
-                << cpu.timing.mean() / gpu.denseSchurCombined.mean() << "x\n";
-#else
-      throw std::runtime_error(
-          "--linearization-benchmark requires configuring with "
-          "GTSAM_ENABLE_CUDA=ON");
-#endif
-      std::cout << std::setprecision(6);
-      continue;
-    }
 
     Ordering ordering;
     if (options.config.useSchur) {
       ordering = bal::createSchurOrdering(db, false);
     }
 
-#if GTSAM_ENABLE_CUDA && GTSAM_ENABLE_CUDSS
+#if GTSAM_ENABLE_CUDA
+#if GTSAM_ENABLE_CUDSS
     if (options.cudaSparseLm) {
       gtsam::cuda::SparseLevenbergMarquardtParams sparseParams;
       LevenbergMarquardtParams::SetCeresDefaults(&sparseParams);
@@ -2254,6 +1634,12 @@ int RunMain(int argc, char* argv[]) {
       printSparseLmComparison(ordinary, specialized, generic);
       continue;
     }
+#else
+    if (options.cudaSparseLm) {
+      throw std::runtime_error(
+          "--cuda-sparse-lm requires configuring with GTSAM_ENABLE_CUDSS=ON");
+    }
+#endif
 
     if (options.cudaLmGraph) {
       auto cudaParams = makeBalCudaLmParams(
@@ -2317,11 +1703,8 @@ int RunMain(int argc, char* argv[]) {
       rows.push_back({dataset, legacyTime, newTime});
     }
   }
-  if (!options.profile && !options.cudaStructureOnly && !options.cudaLm &&
-      !options.cudaLmGraph && !options.cudaSparseLm &&
-      !options.cudaSparsePackOnly && !options.gaussianGraphPackDiagnostic &&
-      !options.linearizationBenchmark &&
-      options.gnc.backend == GncBackend::None) {
+  if (!options.profile && !options.cudaLm && !options.cudaLmGraph &&
+      !options.cudaSparseLm && options.gnc.backend == GncBackend::None) {
     std::cout
         << "\n| Dataset | Legacy (Cholesky) s | New (Solver) s | Speedup |\n";
     std::cout << "| --- | --- | --- | --- |\n";
@@ -2333,10 +1716,8 @@ int RunMain(int argc, char* argv[]) {
     }
   }
 
-  if (options.benchmarkActionJson && !options.cudaStructureOnly &&
-      !options.cudaLm && !options.cudaLmGraph && !options.cudaSparseLm &&
-      !options.cudaSparsePackOnly && !options.gaussianGraphPackDiagnostic &&
-      !options.linearizationBenchmark) {
+  if (options.benchmarkActionJson && !options.cudaLm &&
+      !options.cudaLmGraph && !options.cudaSparseLm) {
     if (rows.empty()) {
       throw runtime_error("No benchmark rows found to write.");
     }

@@ -94,10 +94,7 @@ class GncParams {
   double weightsTol = 1e-4;  ///< If the weights are within weightsTol from being binary, stop iterating (only for TLS)
   double lambdaMax = 1e16;  ///< Maximum value of lambda in GNC, acts as a cap (only for TLS)
   Verbosity verbosity = SILENT;  ///< Verbosity level
-  bool allowNonNoiseModelFactors = false;  ///< If true, factors without noise
-                                           ///< models are neither reweighted nor
-                                           ///< included in lambda calculation
-  bool enableTiming = false;  ///< Collect detailed optimize() stage timings
+  bool allowNonNoiseModelFactors = false;  ///< If true, factors without noise model are not reweighted and not not included in lambda calculation
 
   /// Use IndexVector for inliers and outliers since it is fast
   using IndexVector = FastVector<uint64_t>;
@@ -186,8 +183,7 @@ class GncParams {
         && scheduler == other.scheduler
         && verbosity == other.verbosity && knownInliers == other.knownInliers
         && knownOutliers == other.knownOutliers
-        && allowNonNoiseModelFactors == other.allowNonNoiseModelFactors
-        && enableTiming == other.enableTiming;
+        && allowNonNoiseModelFactors == other.allowNonNoiseModelFactors;
   }
 
   /// Print.
@@ -223,7 +219,6 @@ class GncParams {
     for (size_t i = 0; i < knownOutliers.size(); i++)
       std::cout << "knownOutliers: " << knownOutliers[i] << "\n";
     std::cout << "allowNonNoiseModelFactors: " << allowNonNoiseModelFactors << "\n";
-    std::cout << "enableTiming: " << enableTiming << "\n";
     baseOptimizerParams.print("Base optimizer params: ");
   }
 };

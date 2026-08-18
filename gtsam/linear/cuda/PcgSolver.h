@@ -1,23 +1,14 @@
 #pragma once
 
 #include <gtsam/base/cuda/DeviceArray.h>
-#include <gtsam/dllexport.h>
 #include <gtsam/linear/cuda/LinearSolver.h>
 
 #include <memory>
 
 namespace gtsam::cuda {
 
-/** Backend-independent convergence and warm-start policy for CUDA PCG. */
-struct PcgOptions {
-  int maxIterations = 250;
-  double relativeTolerance = 1e-6;
-  bool warmStart = true;
-  int convergenceCheckInterval = 10;
-};
-
 /** Device-resident PCG recurrence over frontend-supplied operator objects. */
-class GTSAM_EXPORT PcgSolver {
+class PcgSolver {
  public:
   PcgSolver();
   ~PcgSolver();

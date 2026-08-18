@@ -7,9 +7,7 @@
 #include <gtsam/nonlinear/BatchFactor.h>
 #include <gtsam/nonlinear/cuda/DeviceGeometryKernels.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
-#include <gtsam/slam/cuda/BalCsrStructure.h>
 #include <gtsam/slam/cuda/SfmDenseSchurSolver.h>
-#include <gtsam/slam/cuda/SfmFullNormalProblem.h>
 #include <gtsam/slam/cuda/SfmLevenbergMarquardt.h>
 #include <gtsam/slam/cuda/SfmProjectionLinearization.h>
 #include <gtsam/slam/cuda/SfmReducedCsrPlan.h>
@@ -17,7 +15,6 @@
 #include <gtsam/slam/cuda/SfmValues.h>
 
 #include <algorithm>
-#include <cctype>
 #include <chrono>
 #include <cmath>
 #include <limits>
@@ -38,9 +35,19 @@ enum class SfmLinearSolverType {
   DenseSchur,
   CudssSchur,
   PcgSchur,
-  CudssFullNormal,
-  PcgFullNormal,
 };
+
+const char* linearSolverName(LinearSolverType backend) {
+  switch (backend) {
+    case LinearSolverType::DenseCholesky:
+      return "DenseCholesky";
+    case LinearSolverType::Cudss:
+      return "Cudss";
+    case LinearSolverType::Pcg:
+      return "Pcg";
+  }
+  return "Unknown";
+}
 
 struct SfmLevenbergMarquardtExecutionOptions {
   bool downloadOptimizedValues = true;
@@ -175,76 +182,22 @@ std::vector<Key> defaultPointKeys(const SfmData& data) {
   return keys;
 }
 
-BlockLayout fullSfmBlockLayout(const std::vector<Key>& cameraKeys,
-                                   const std::vector<Key>& pointKeys) {
-  BlockLayout blocks;
-  blocks.reserve(cameraKeys.size() + pointKeys.size());
-  int offset = 0;
-  for (const Key key : cameraKeys) {
-    blocks.push_back({key, offset, 9});
-    offset += 9;
-  }
-  for (const Key key : pointKeys) {
-    blocks.push_back({key, offset, 3});
-    offset += 3;
-  }
-  return blocks;
-}
-
-std::string normalizeLinearSolverName(const std::string& solver) {
-  std::string normalized;
-  normalized.reserve(solver.size());
-  for (const unsigned char c : solver) {
-    normalized.push_back(
-        c == '_' ? '-' : static_cast<char>(std::tolower(c)));
-  }
-  return normalized;
-}
-
-struct EffectiveSfmLinearConfiguration {
-  SfmSystemFormulation formulation;
-  LinearSolverType backend;
-};
-
-EffectiveSfmLinearConfiguration effectiveLinearConfiguration(
-    const SfmLevenbergMarquardtParams& params) {
-  return {params.formulation, params.linear.backend};
-}
-
 SfmLinearSolverType validateAndSelectSolverMode(
     const SfmLevenbergMarquardtParams& params) {
-  const EffectiveSfmLinearConfiguration config =
-      effectiveLinearConfiguration(params);
-  if ((params.ordering.has_value() || params.linear.useUserOrdering) &&
-      config.backend != gtsam::cuda::LinearSolverType::Cudss) {
+  if (params.ordering &&
+      params.linear.backend != gtsam::cuda::LinearSolverType::Cudss) {
     throw std::invalid_argument(
         "SFM CUDA Ordering is supported only by the cuDSS backend");
   }
-  if (params.linear.useUserOrdering && !params.ordering) {
-    throw std::invalid_argument(
-        "SFM CUDA user-ordering mode requires a complete Ordering");
+  switch (params.linear.backend) {
+    case gtsam::cuda::LinearSolverType::DenseCholesky:
+      return SfmLinearSolverType::DenseSchur;
+    case gtsam::cuda::LinearSolverType::Cudss:
+      return SfmLinearSolverType::CudssSchur;
+    case gtsam::cuda::LinearSolverType::Pcg:
+      return SfmLinearSolverType::PcgSchur;
   }
-  if (config.formulation == SfmSystemFormulation::Schur) {
-    switch (config.backend) {
-      case gtsam::cuda::LinearSolverType::DenseCholesky:
-        return SfmLinearSolverType::DenseSchur;
-      case gtsam::cuda::LinearSolverType::Cudss:
-        return SfmLinearSolverType::CudssSchur;
-      case gtsam::cuda::LinearSolverType::Pcg:
-        return SfmLinearSolverType::PcgSchur;
-    }
-  }
-  if (config.backend == gtsam::cuda::LinearSolverType::Cudss) {
-    return SfmLinearSolverType::CudssFullNormal;
-  }
-  if (config.backend == gtsam::cuda::LinearSolverType::Pcg) {
-    return SfmLinearSolverType::PcgFullNormal;
-  }
-  if (config.backend == gtsam::cuda::LinearSolverType::DenseCholesky) {
-    throw std::invalid_argument(
-        "SFM full-normal systems do not support dense Cholesky");
-  }
-  throw std::invalid_argument("unknown SFM full-normal CUDA backend");
+  throw std::invalid_argument("unknown CUDA SFM linear solver backend");
 }
 
 SfmSqrtInfo2 extractProjectionSqrtInfo(
@@ -517,105 +470,6 @@ SfmLevenbergMarquardtParams::ceresDefaults() {
   return p;
 }
 
-std::string SfmLevenbergMarquardtParams::getLinearSolver() const {
-  const EffectiveSfmLinearConfiguration config =
-      effectiveLinearConfiguration(*this);
-  if (config.formulation == SfmSystemFormulation::Schur &&
-      config.backend == gtsam::cuda::LinearSolverType::DenseCholesky)
-    return "dense-schur";
-  if (config.formulation == SfmSystemFormulation::Schur &&
-      config.backend == gtsam::cuda::LinearSolverType::Cudss)
-    return "cudss-schur";
-  if (config.formulation == SfmSystemFormulation::Schur &&
-      config.backend == gtsam::cuda::LinearSolverType::Pcg)
-    return "pcg-schur";
-  if (config.formulation == SfmSystemFormulation::FullNormal &&
-      config.backend == gtsam::cuda::LinearSolverType::Cudss)
-    return "cudss-full-normal";
-  if (config.formulation == SfmSystemFormulation::FullNormal &&
-      config.backend == gtsam::cuda::LinearSolverType::Pcg)
-    return "pcg-full-normal";
-  throw std::invalid_argument("Unknown CUDA SFM linear solver type");
-}
-
-void SfmLevenbergMarquardtParams::setLinearSolver(
-    const std::string& solver) {
-  const std::string normalized = normalizeLinearSolverName(solver);
-  if (normalized == "dense-schur") {
-    formulation = SfmSystemFormulation::Schur;
-    linear.backend = gtsam::cuda::LinearSolverType::DenseCholesky;
-    return;
-  }
-  if (normalized == "cudss-full-normal") {
-    formulation = SfmSystemFormulation::FullNormal;
-    linear.backend = gtsam::cuda::LinearSolverType::Cudss;
-    return;
-  }
-  if (normalized == "pcg-full-normal") {
-    formulation = SfmSystemFormulation::FullNormal;
-    linear.backend = gtsam::cuda::LinearSolverType::Pcg;
-    return;
-  }
-  if (normalized == "cudss-schur") {
-    formulation = SfmSystemFormulation::Schur;
-    linear.backend = gtsam::cuda::LinearSolverType::Cudss;
-    return;
-  }
-  if (normalized == "pcg-schur") {
-    formulation = SfmSystemFormulation::Schur;
-    linear.backend = gtsam::cuda::LinearSolverType::Pcg;
-    return;
-  }
-  throw std::invalid_argument("Unknown CUDA SFM linear solver: " + solver);
-}
-
-std::string SfmLevenbergMarquardtParams::getFormulation() const {
-  return effectiveLinearConfiguration(*this).formulation ==
-                 SfmSystemFormulation::Schur
-             ? "schur"
-             : "full-normal";
-}
-
-void SfmLevenbergMarquardtParams::setFormulation(
-    const std::string& formulationName) {
-  const std::string normalized = normalizeLinearSolverName(formulationName);
-  if (normalized == "schur") {
-    formulation = SfmSystemFormulation::Schur;
-  } else if (normalized == "full-normal") {
-    formulation = SfmSystemFormulation::FullNormal;
-  } else {
-    throw std::invalid_argument("Unknown CUDA SFM formulation: " +
-                                formulationName);
-  }
-}
-
-std::string SfmLevenbergMarquardtParams::getLinearSolverBackend() const {
-  switch (effectiveLinearConfiguration(*this).backend) {
-    case gtsam::cuda::LinearSolverType::DenseCholesky:
-      return "dense-cholesky";
-    case gtsam::cuda::LinearSolverType::Cudss:
-      return "cudss";
-    case gtsam::cuda::LinearSolverType::Pcg:
-      return "pcg";
-  }
-  throw std::invalid_argument("Unknown CUDA linear solver backend");
-}
-
-void SfmLevenbergMarquardtParams::setLinearSolverBackend(
-    const std::string& solverName) {
-  const std::string normalized = normalizeLinearSolverName(solverName);
-  if (normalized == "dense-cholesky") {
-    linear.backend = gtsam::cuda::LinearSolverType::DenseCholesky;
-  } else if (normalized == "cudss") {
-    linear.backend = gtsam::cuda::LinearSolverType::Cudss;
-  } else if (normalized == "pcg") {
-    linear.backend = gtsam::cuda::LinearSolverType::Pcg;
-  } else {
-    throw std::invalid_argument("Unknown CUDA linear solver backend: " +
-                                solverName);
-  }
-}
-
 void SfmLevenbergMarquardtParams::print(const std::string& str) const {
   std::cout << str << "\n";
   std::cout << "              maxIterations: " << maxIterations << "\n";
@@ -636,7 +490,8 @@ void SfmLevenbergMarquardtParams::print(const std::string& str) const {
             << "\n";
   std::cout << "                maxDiagonal: " << dampingParams.maxDiagonal
             << "\n";
-  std::cout << "               linearSolver: " << getLinearSolver() << "\n";
+  std::cout << "               linearBackend: "
+            << linearSolverName(linear.backend) << "\n";
 }
 
 bool SfmLevenbergMarquardtParams::equals(
@@ -658,9 +513,7 @@ bool SfmLevenbergMarquardtParams::equals(
                   other.dampingParams.minDiagonal) <= tol &&
          std::abs(dampingParams.maxDiagonal -
                   other.dampingParams.maxDiagonal) <= tol &&
-         formulation == other.formulation &&
          linear.backend == other.linear.backend &&
-         linear.useUserOrdering == other.linear.useUserOrdering &&
          ordering == other.ordering &&
          pcg.maxIterations == other.pcg.maxIterations &&
          std::abs(pcg.relativeTolerance - other.pcg.relativeTolerance) <= tol &&
@@ -822,15 +675,13 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
   const SfmLinearSolverType solverMode =
       validateAndSelectSolverMode(params);
 #if !GTSAM_ENABLE_CUDSS
-  if (solverMode == SfmLinearSolverType::CudssSchur ||
-      solverMode == SfmLinearSolverType::CudssFullNormal) {
+  if (solverMode == SfmLinearSolverType::CudssSchur) {
     throw std::runtime_error(
         "optimizeSfm cuDSS solver requires GTSAM_ENABLE_CUDSS=ON");
   }
 #endif
 
   SfmLevenbergMarquardtResult result;
-  result.formulation = params.formulation;
   result.linearBackend = params.linear.backend;
   result.linearSolveStats.backend = params.linear.backend;
   const bool detailedProfiling = params.enableDetailedProfiling;
@@ -905,16 +756,12 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
   const int numCameras = static_cast<int>(data.numberCameras());
   const int numPoints = static_cast<int>(data.numberTracks());
   const int totalDimension = 9 * numCameras + 3 * numPoints;
-  result.linearSystemDimension = static_cast<size_t>(
-      params.formulation == SfmSystemFormulation::Schur
-          ? 9 * numCameras
-          : totalDimension);
+  result.linearSystemDimension = static_cast<size_t>(9 * numCameras);
   if (solverMode == SfmLinearSolverType::DenseSchur) {
     result.linearSystemKind = LinearSystemKind::Dense;
     result.linearSystemNonzeros =
         result.linearSystemDimension * result.linearSystemDimension;
-  } else if (solverMode == SfmLinearSolverType::CudssSchur ||
-             solverMode == SfmLinearSolverType::CudssFullNormal) {
+  } else if (solverMode == SfmLinearSolverType::CudssSchur) {
     result.linearSystemKind = LinearSystemKind::Sparse;
   } else {
     result.linearSystemKind = LinearSystemKind::Operator;
@@ -952,14 +799,8 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
 
   DeviceArray<double> delta;
   stageStart = Clock::now();
-  std::unique_ptr<LinearSolverSession> fullNormalSession;
-  SfmFullNormalProblem fullNormalProblem;
-  SfmProjectionLinearization fullNormalLinearization;
-  result.cudssSolverConstructionElapsed = elapsedSince(stageStart);
-  stageStart = Clock::now();
   SfmDenseSchurSolver denseSchurSolver;
   result.denseSchurSolverConstructionElapsed = elapsedSince(stageStart);
-  bool solverAnalyzed = false;
   SfmSchurProblem sparseSchurProblem;
   DeviceArray<double> cameraDelta;
   std::unique_ptr<SfmReducedCsrPlan> reducedPlan;
@@ -971,15 +812,13 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
     options.backend = solverMode == SfmLinearSolverType::CudssSchur
                           ? gtsam::cuda::LinearSolverType::Cudss
                           : gtsam::cuda::LinearSolverType::Pcg;
-    options.useUserOrdering = options.backend == gtsam::cuda::LinearSolverType::Cudss &&
-                              params.ordering.has_value();
     reducedSession = std::make_unique<LinearSolverSession>(options);
     if (options.backend == gtsam::cuda::LinearSolverType::Cudss) {
       reducedPlan =
           std::make_unique<SfmReducedCsrPlan>(data, cameraKeys);
       result.linearSystemNonzeros = reducedPlan->columnIndices().size();
     }
-    if (options.useUserOrdering) {
+    if (params.ordering) {
       result.appliedScalarPermutation = compileScalarPermutation(
           reducedPlan->cameraBlocks(), *params.ordering);
     }
@@ -989,53 +828,6 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
                               detailedProfiling);
       cameraDelta.resize(static_cast<size_t>(9 * numCameras));
       reducedAnalyzed = true;
-    }
-  }
-  if (solverMode == SfmLinearSolverType::CudssFullNormal ||
-      solverMode == SfmLinearSolverType::PcgFullNormal) {
-    LinearSolverOptions fullOptions;
-    fullOptions.backend =
-        solverMode == SfmLinearSolverType::CudssFullNormal
-            ? gtsam::cuda::LinearSolverType::Cudss
-            : gtsam::cuda::LinearSolverType::Pcg;
-    fullOptions.useUserOrdering = fullOptions.backend ==
-                                       gtsam::cuda::LinearSolverType::Cudss &&
-                                   params.ordering.has_value();
-    fullNormalSession =
-        std::make_unique<LinearSolverSession>(fullOptions);
-    if (fullOptions.useUserOrdering) {
-      result.appliedScalarPermutation = compileScalarPermutation(
-          fullSfmBlockLayout(cameraKeys, pointKeys), *params.ordering);
-    }
-    if (fullOptions.backend == gtsam::cuda::LinearSolverType::Cudss) {
-      stageStart = Clock::now();
-      const BalCsrStructure structure =
-          BalCsrStructure::fromSfmData(data);
-      result.linearSystemNonzeros = structure.colIndices().size();
-      result.csrStructureElapsed = elapsedSince(stageStart);
-
-      stageStart = detailedProfileStart(detailedProfiling);
-      DeviceTransferSummary uploadPatternProfile;
-      fullNormalProblem.initializeSparse(
-          batch, numCameras, structure.rowPointers(), structure.colIndices(),
-          context.stream(),
-          detailedProfiling ? &uploadPatternProfile : nullptr);
-      result.uploadPatternElapsed =
-          detailedElapsedSinceAfterSync(detailedProfiling, stageStart,
-                                        context.stream());
-      if (detailedProfiling) {
-        result.uploadPatternDeviceAllocElapsed =
-            uploadPatternProfile.resizeElapsed;
-        result.uploadPatternH2dCopyElapsed = uploadPatternProfile.copyElapsed;
-        result.uploadPatternH2dBytes = uploadPatternProfile.bytes;
-        addH2dTransfer(uploadPatternProfile, &result);
-      }
-    } else {
-      fullNormalSession->analyze(totalDimension, params.pcg, context.stream(),
-                                 detailedProfiling);
-      delta.resize(static_cast<size_t>(totalDimension));
-      fullNormalProblem.initialize(batch, numCameras, context.stream());
-      solverAnalyzed = true;
     }
   }
 
@@ -1073,24 +865,11 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
     if (solverMode == SfmLinearSolverType::DenseSchur) {
       denseSchurSolver.linearize(current, batch, numCameras,
                                  context.stream());
-    } else if (solverMode == SfmLinearSolverType::CudssSchur ||
-               solverMode == SfmLinearSolverType::PcgSchur) {
-      sparseSchurProblem.linearize(current, context.stream());
     } else {
-      linearizeSfmProjectionBatch(current, batch,
-                                      &fullNormalLinearization,
-                                      context.stream());
-      stageStart = detailedProfileStart(detailedProfiling);
-      fullNormalProblem.linearize(fullNormalLinearization, context.stream());
-      iterationProfile.normalEquationsElapsed = detailedElapsedSinceAfterSync(
-          detailedProfiling, stageStart, context.stream());
-      result.normalEquationsElapsed +=
-          iterationProfile.normalEquationsElapsed;
+      sparseSchurProblem.linearize(current, context.stream());
     }
     if (solverMode == SfmLinearSolverType::PcgSchur) {
       reducedSession->invalidateWarmStart();
-    } else if (solverMode == SfmLinearSolverType::PcgFullNormal) {
-      fullNormalSession->invalidateWarmStart();
     }
 
     bool acceptedOrDone = false;
@@ -1183,59 +962,6 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
                                           context.stream());
         result.denseSchurSolveElapsed +=
             attemptProfile.denseSchurSolveElapsed;
-      } else {
-        stageStart = detailedProfileStart(detailedProfiling);
-        if (solverMode == SfmLinearSolverType::PcgFullNormal) {
-          const SfmFullNormalView view =
-              params.dampingParams.diagonalDamping
-                  ? fullNormalProblem.prepare(lambda, dampingDiagonal,
-                                              context.stream())
-                  : fullNormalProblem.prepare(lambda, context.stream());
-          attemptProfile.normalEquationsElapsed =
-              detailedElapsedSinceAfterSync(detailedProfiling, stageStart,
-                                             context.stream());
-          result.normalEquationsElapsed +=
-              attemptProfile.normalEquationsElapsed;
-          stageStart = detailedProfileStart(detailedProfiling);
-          fullNormalSession->solve(*view.linearOperator, *view.preconditioner,
-                                   view.rhs, &delta, context.stream());
-        } else {
-          DeviceSparseSpdSystem& fullSystem =
-              params.dampingParams.diagonalDamping
-                  ? fullNormalProblem.prepareSparse(
-                        lambda, dampingDiagonal, context.stream())
-                  : fullNormalProblem.prepareSparse(lambda, context.stream());
-          attemptProfile.addDampingElapsed =
-              detailedElapsedSinceAfterSync(detailedProfiling, stageStart,
-                                             context.stream());
-          result.addDampingElapsed += attemptProfile.addDampingElapsed;
-
-          if (!solverAnalyzed) {
-            stageStart = detailedProfileStart(detailedProfiling);
-            if (!params.ordering) {
-              fullNormalSession->analyze(fullSystem, &delta,
-                                         context.stream());
-            } else {
-              fullNormalSession->analyze(fullSystem, &delta,
-                                         result.appliedScalarPermutation,
-                                         context.stream());
-            }
-            const double analyzeElapsed = detailedElapsedSinceAfterSync(
-                detailedProfiling, stageStart, context.stream());
-            result.firstCudssAnalyzeElapsed = analyzeElapsed;
-            if (detailedProfiling) {
-              attemptProfile.cudssAnalyzeElapsed = analyzeElapsed;
-              result.cudssAnalyzeElapsed += analyzeElapsed;
-            }
-            solverAnalyzed = true;
-          }
-          stageStart = detailedProfileStart(detailedProfiling);
-          fullNormalSession->solve(fullSystem, &delta, context.stream());
-        }
-        attemptProfile.cudssSolveElapsed =
-            detailedElapsedSinceAfterSync(detailedProfiling, stageStart,
-                                          context.stream());
-        result.cudssSolveElapsed += attemptProfile.cudssSolveElapsed;
       }
       ++result.innerIterations;
 
@@ -1245,11 +971,8 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
       const SfmProjectionLinearization* activeLinearization = nullptr;
       if (solverMode == SfmLinearSolverType::DenseSchur) {
         activeLinearization = &denseSchurSolver.linearization();
-      } else if (solverMode == SfmLinearSolverType::CudssSchur ||
-                 solverMode == SfmLinearSolverType::PcgSchur) {
-        activeLinearization = &sparseSchurProblem.linearization();
       } else {
-        activeLinearization = &fullNormalLinearization;
+        activeLinearization = &sparseSchurProblem.linearization();
       }
       SfmReductionTransferProfile linearizedErrorTransfer;
       const double linearizedCostChange =
@@ -1380,8 +1103,6 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
   result.finalLambda = lambda;
   if (reducedSession) {
     result.linearSolveStats = reducedSession->stats();
-  } else if (fullNormalSession) {
-    result.linearSolveStats = fullNormalSession->stats();
   } else if (solverMode == SfmLinearSolverType::DenseSchur) {
     result.linearSolveStats = denseSchurSolver.linearSolveStats();
   }

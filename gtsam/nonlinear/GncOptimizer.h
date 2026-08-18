@@ -276,18 +276,14 @@ class GncOptimizer {
       return std::chrono::duration<double>(Clock::now() - start).count();
     };
     timing_ = GncTiming();
-    const bool timingEnabled = params_.enableTiming;
-    Clock::time_point totalStart;
-    if (timingEnabled) totalStart = Clock::now();
+    const auto totalStart = Clock::now();
 
     validateLossSchedulerCombination();
     NonlinearFactorGraph graph_initial = this->makeWeightedGraph(weights_);
     BaseOptimizer baseOptimizer(
         graph_initial, state_, params_.baseOptimizerParams);
     Values result = baseOptimizer.optimize();
-    if (timingEnabled) {
-      timing_.initialOptimizeElapsed = elapsedSince(totalStart);
-    }
+    timing_.initialOptimizeElapsed = elapsedSince(totalStart);
     double lambda = initializeLambda();
     double prev_cost = graph_initial.error(result);
     double cost = 0.0;  // this will be updated in the main loop
@@ -319,14 +315,13 @@ class GncOptimizer {
       if (params_.verbosity >= GncParameters::Verbosity::VALUES) {
         result.print("result\n");
       }
-      if (timingEnabled) timing_.totalElapsed = elapsedSince(totalStart);
+      timing_.totalElapsed = elapsedSince(totalStart);
       return result;
     }
 
     size_t iter;
     for (iter = 0; iter < params_.maxIterations; iter++) {
-      Clock::time_point iterationStart;
-      if (timingEnabled) iterationStart = Clock::now();
+      const auto iterationStart = Clock::now();
       GncIterationTiming iterationTiming;
 
       // display info
@@ -341,35 +336,26 @@ class GncOptimizer {
         result.print("result\n");
       }
       // weights update
-      Clock::time_point stageStart;
-      if (timingEnabled) stageStart = Clock::now();
+      auto stageStart = Clock::now();
       weights_ = calculateWeights(result, lambda);
-      if (timingEnabled) {
-        iterationTiming.weightsUpdateElapsed = elapsedSince(stageStart);
-      }
+      iterationTiming.weightsUpdateElapsed = elapsedSince(stageStart);
 
       // variable/values update
-      if (timingEnabled) stageStart = Clock::now();
+      stageStart = Clock::now();
       NonlinearFactorGraph graph_iter = this->makeWeightedGraph(weights_);
-      if (timingEnabled) {
-        iterationTiming.makeGraphElapsed = elapsedSince(stageStart);
-        stageStart = Clock::now();
-      }
+      iterationTiming.makeGraphElapsed = elapsedSince(stageStart);
+      stageStart = Clock::now();
       BaseOptimizer baseOptimizer_iter(
           graph_iter, state_, params_.baseOptimizerParams);
       result = baseOptimizer_iter.optimize();
-      if (timingEnabled) {
-        iterationTiming.baseOptimizeElapsed = elapsedSince(stageStart);
-      }
+      iterationTiming.baseOptimizeElapsed = elapsedSince(stageStart);
 
       // stopping condition
-      if (timingEnabled) stageStart = Clock::now();
+      stageStart = Clock::now();
       cost = graph_iter.error(result);
-      if (timingEnabled) {
-        iterationTiming.costEvaluationElapsed = elapsedSince(stageStart);
-        iterationTiming.totalElapsed = elapsedSince(iterationStart);
-        timing_.iterations.push_back(iterationTiming);
-      }
+      iterationTiming.costEvaluationElapsed = elapsedSince(stageStart);
+      iterationTiming.totalElapsed = elapsedSince(iterationStart);
+      timing_.iterations.push_back(iterationTiming);
       if (checkConvergence(lambda, weights_, cost, prev_cost)) {
         break;
       }
@@ -396,7 +382,7 @@ class GncOptimizer {
     if (params_.verbosity >= GncParameters::Verbosity::WEIGHTS) {
       std::cout << "final weights: " << weights_ << std::endl;
     }
-    if (timingEnabled) timing_.totalElapsed = elapsedSince(totalStart);
+    timing_.totalElapsed = elapsedSince(totalStart);
     return result;
   }
 

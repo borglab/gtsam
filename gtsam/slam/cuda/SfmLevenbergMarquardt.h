@@ -3,7 +3,6 @@
 #include <gtsam/dllexport.h>
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/linear/cuda/LinearSolver.h>
-#include <gtsam/linear/cuda/PcgSolver.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/sfm/SfmData.h>
@@ -15,9 +14,6 @@
 
 namespace gtsam::cuda {
 
-/// Mathematical system formulation used by the SFM optimizer.
-enum class SfmSystemFormulation { Schur, FullNormal };
-
 class SfmLevenbergMarquardtOptimizer;
 
 /** Parameters for CUDA-resident SFM Levenberg-Marquardt optimization. */
@@ -27,13 +23,10 @@ class GTSAM_EXPORT SfmLevenbergMarquardtParams
   using OptimizerType = SfmLevenbergMarquardtOptimizer;
 
   bool enableDetailedProfiling;
-  /** The only solver configuration state: mathematical formulation and
-   * numerical backend are independent axes. */
-  SfmSystemFormulation formulation = SfmSystemFormulation::Schur;
+  /// Numerical backend for the reduced Schur-complement system.
   LinearSolverOptions linear{
-      gtsam::cuda::LinearSolverType::DenseCholesky, false};
-  /** The inherited optional Ordering is camera-only for Schur and contains
-   * camera plus point keys for full normal systems. */
+      gtsam::cuda::LinearSolverType::DenseCholesky};
+  /// The inherited optional Ordering contains camera keys only.
   PcgOptions pcg;
 
   /// Creates parameters using GTSAM's legacy LM defaults.
@@ -44,18 +37,14 @@ class GTSAM_EXPORT SfmLevenbergMarquardtParams
   /// Returns parameters initialized with GTSAM's Ceres-style LM defaults.
   static SfmLevenbergMarquardtParams ceresDefaults();
 
-  /// Returns the combined formulation/backend solver name.
-  std::string getLinearSolver() const;
-  /// Sets formulation and backend from a combined solver name.
-  void setLinearSolver(const std::string& solver);
-  /// Returns the mathematical formulation name.
-  std::string getFormulation() const;
-  /// Sets the mathematical formulation independently of the backend.
-  void setFormulation(const std::string& formulationName);
-  /// Returns the numerical backend name.
-  std::string getLinearSolverBackend() const;
-  /// Sets the numerical backend independently of the formulation.
-  void setLinearSolverBackend(const std::string& solverName);
+  /// Returns the numerical backend for the reduced Schur system.
+  gtsam::cuda::LinearSolverType getLinearSolver() const {
+    return linear.backend;
+  }
+  /// Sets the numerical backend for the reduced Schur system.
+  void setLinearSolver(gtsam::cuda::LinearSolverType solver) {
+    linear.backend = solver;
+  }
   /// Returns the lower clamp applied to damping diagonals.
   double getMinDiagonal() const { return dampingParams.minDiagonal; }
   /// Returns the upper clamp applied to damping diagonals.
@@ -107,7 +96,7 @@ struct SfmLevenbergMarquardtIterationProfile {
   double endLambda = 0.0;
   double totalElapsed = 0.0;
   double dampingDiagonalElapsed = 0.0;
-  /** Once-per-outer-iteration full-normal system construction. */
+  /** Once-per-attempt reduced-system construction. */
   double normalEquationsElapsed = 0.0;
   double acceptTrialElapsed = 0.0;
   bool acceptedStep = false;
@@ -116,7 +105,6 @@ struct SfmLevenbergMarquardtIterationProfile {
 };
 
 struct SfmLevenbergMarquardtResult {
-  SfmSystemFormulation formulation = SfmSystemFormulation::Schur;
   LinearSolverType linearBackend = gtsam::cuda::LinearSolverType::DenseCholesky;
   LinearSystemKind linearSystemKind = LinearSystemKind::Dense;
   size_t linearSystemDimension = 0;
@@ -143,13 +131,7 @@ struct SfmLevenbergMarquardtResult {
   double projectionBatchH2dCopyElapsed = 0.0;
   size_t projectionBatchH2dBytes = 0;
   double initialErrorElapsed = 0.0;
-  double cudssSolverConstructionElapsed = 0.0;
   double denseSchurSolverConstructionElapsed = 0.0;
-  double csrStructureElapsed = 0.0;
-  double uploadPatternElapsed = 0.0;
-  double uploadPatternDeviceAllocElapsed = 0.0;
-  double uploadPatternH2dCopyElapsed = 0.0;
-  size_t uploadPatternH2dBytes = 0;
   double firstCudssAnalyzeElapsed = 0.0;
   double downloadElapsed = 0.0;
   double downloadHostAllocElapsed = 0.0;

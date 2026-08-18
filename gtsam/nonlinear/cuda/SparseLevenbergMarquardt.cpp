@@ -8,6 +8,7 @@
 #include <gtsam/nonlinear/cuda/DeviceSparseJacobianNormalEquations.h>
 #include <gtsam/nonlinear/cuda/HostSparseJacobian.h>
 #include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
+#include <gtsam/nonlinear/cuda/StreamingSparseJacobianLinearizer.h>
 #include <gtsam/linear/cuda/BlockOrdering.h>
 #include <gtsam/linear/cuda/LinearSolver.h>
 #include <gtsam/linear/cuda/PcgSolver.h>
@@ -319,10 +320,6 @@ struct SparseLevenbergMarquardtOptimizer::Impl {
       throw std::invalid_argument(
           "general CUDA sparse LM does not support dense Cholesky");
     }
-    if (parameters.linear.useUserOrdering && !parameters.ordering) {
-      throw std::invalid_argument(
-          "general CUDA sparse LM user-ordering mode requires an Ordering");
-    }
     const DeviceNormalSolverBackend deviceBackend =
         parameters.linear.backend == LinearSolverType::Pcg
             ? DeviceNormalSolverBackend::Pcg
@@ -363,7 +360,7 @@ struct SparseLevenbergMarquardtOptimizer::Impl {
 
     DeviceNormalSolverOptions solverOptions;
     solverOptions.backend = deviceBackend;
-    if (parameters.ordering || parameters.linear.useUserOrdering) {
+    if (parameters.ordering) {
       if (deviceBackend != DeviceNormalSolverBackend::Cudss) {
         throw std::invalid_argument(
             "CUDA sparse LM GTSAM ordering is supported only by cuDSS");
@@ -385,7 +382,8 @@ struct SparseLevenbergMarquardtOptimizer::Impl {
       solverOptions.pcg.warmStart = parameters.pcg.warmStart;
       solverOptions.pcg.convergenceCheckInterval =
           parameters.pcg.convergenceCheckInterval;
-      solverOptions.pcg.preconditioner = parameters.pcgPreconditioner;
+      solverOptions.pcg.preconditioner =
+          DevicePcgPreconditioner::BlockJacobi;
       solverOptions.columnBlockOffsets.reserve(layout->blocks().size() + 1);
       solverOptions.columnBlockOffsets.push_back(0);
       for (const SparseJacobianColumnBlock& block : layout->blocks()) {
@@ -402,10 +400,8 @@ struct SparseLevenbergMarquardtOptimizer::Impl {
       device = std::make_unique<DeviceSparseJacobianNormalEquations>();
       device->initialize(*plan, context->stream(), parameters.collectTiming,
                          solverOptions);
-      LinearSolverOptions linearOptions = parameters.linear;
-      linearOptions.useUserOrdering = !solverOptions.scalarPermutation.empty();
       linearSession =
-          std::make_unique<LinearSolverSession>(linearOptions);
+          std::make_unique<LinearSolverSession>(parameters.linear);
       if (deviceBackend == DeviceNormalSolverBackend::Pcg) {
         linearSession->analyze(plan->columns(), parameters.pcg, context->stream(),
                                parameters.collectTiming);
