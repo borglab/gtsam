@@ -50,11 +50,8 @@ def navstate_problem():
 
 
 def timestamps(*pairs):
-    """Build a FixedLagSmootherKeyTimestampMap from (key, time) pairs."""
-    stamps = gtsam.FixedLagSmootherKeyTimestampMap()
-    for key, time in pairs:
-        stamps.insert(gtsam.FixedLagSmootherKeyTimestampMapValue(key, time))
-    return stamps
+    """Key-timestamp map for the smoothers, which take a plain dict."""
+    return {key: time for key, time in pairs}
 
 
 class TestISAM2TargetedEstimate(GtsamTestCase):
