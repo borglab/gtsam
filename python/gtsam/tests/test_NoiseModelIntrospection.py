@@ -83,6 +83,21 @@ class TestNoiseModelIntrospection(GtsamTestCase):
             gtsam.noiseModel.mEstimator.Huber.Create(1.345), base)
         self.assertEqual(robust.dim(), 3)
 
+    def test_sigmas_unsupported_raises_cleanly(self):
+        """Robust has no sigmas of its own, and says so intelligibly.
+
+        Base::sigmas() is the fallback for models that cannot answer. It
+        must surface as a Python exception carrying its message, not as
+        pybind's unknown-exception catch-all.
+        """
+        robust = gtsam.noiseModel.Robust.Create(
+            gtsam.noiseModel.mEstimator.Huber.Create(1.345),
+            gtsam.noiseModel.Isotropic.Sigma(1, 1.0))
+
+        with self.assertRaises(RuntimeError) as ctx:
+            robust.sigmas()
+        self.assertIn("not implemented", str(ctx.exception))
+
 
 class TestRobustAccessors(GtsamTestCase):
     """Tests for noiseModel::Robust::robust() and ::noise()."""
