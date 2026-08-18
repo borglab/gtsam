@@ -20,7 +20,7 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/linear/TernaryJacobianFactor.h>
+#include <gtsam/linear/FixedJacobianFactor.h>
 #include <gtsam_unstable/dynamics/SimpleHelicopter.h>
 
 /* ************************************************************************* */
@@ -102,7 +102,7 @@ TEST(Reconstruction, TernaryLinearization) {
   const auto generic = factor.NoiseModelFactor::linearize(values);
   const auto optimized = factor.linearize(values);
   const bool isTernary = static_cast<bool>(
-      std::dynamic_pointer_cast<TernaryJacobianFactor<6, 6, 6, 6>>(
+      std::dynamic_pointer_cast<FixedJacobianFactor<6, 6, 6, 6>>(
           optimized));
   CHECK(isTernary);
   EXPECT(assert_equal(*generic, *optimized, 1e-12));

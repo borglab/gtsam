@@ -27,7 +27,7 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/linear/Sampler.h>
-#include <gtsam/linear/TernaryJacobianFactor.h>
+#include <gtsam/linear/FixedJacobianFactor.h>
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/navigation/ScenarioRunner.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
@@ -303,7 +303,7 @@ TEST_PIM(ImuFactor2, TernaryLinearizationIsBitwiseIdentical) {
   const auto actual = std::dynamic_pointer_cast<JacobianFactor>(actualBase);
 
   const bool isTernary = static_cast<bool>(
-      std::dynamic_pointer_cast<TernaryJacobianFactor<9, 9, 9, 6>>(actualBase));
+      std::dynamic_pointer_cast<FixedJacobianFactor<9, 9, 9, 6>>(actualBase));
   CHECK(isTernary);
   CHECK(expected);
   CHECK(actual);

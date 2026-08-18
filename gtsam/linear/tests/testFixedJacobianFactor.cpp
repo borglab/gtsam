@@ -170,6 +170,24 @@ TEST(FixedJacobianFactor, UnaryNonlinearLinearization) {
   const auto fixed = factor.linearize(nonlinearValues);
   CHECK((std::dynamic_pointer_cast<UnaryFactor>(fixed)));
   EXPECT(assert_equal(*generic, *fixed, 1e-12));
+
+  const KeyVector infoKeys{kKey1};
+  const std::vector<size_t> dimensions{2, 1};
+  SymmetricBlockMatrix expectedInfo(dimensions), wholeInfo(dimensions),
+      rangedInfo(dimensions);
+  expectedInfo.setZero();
+  wholeInfo.setZero();
+  rangedInfo.setZero();
+  generic->updateHessian(infoKeys, &expectedInfo);
+  fixed->updateHessian(infoKeys, &wholeInfo);
+  for (DenseIndex column = 0; column < rangedInfo.nBlocks(); ++column) {
+    fixed->updateHessian(infoKeys, &rangedInfo, column, column + 1);
+  }
+
+  EXPECT(assert_equal(Matrix(expectedInfo.selfadjointView()),
+                      Matrix(wholeInfo.selfadjointView()), 1e-12));
+  EXPECT(assert_equal(Matrix(expectedInfo.selfadjointView()),
+                      Matrix(rangedInfo.selfadjointView()), 1e-12));
 }
 
 // Verifies fixed-output quaternary nonlinear factors select the fixed path.

@@ -21,7 +21,7 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/linear/BinaryJacobianFactor.h>
+#include <gtsam/linear/FixedJacobianFactor.h>
 #include <gtsam/geometry/StereoCamera.h>
 #include <gtsam/geometry/Cal3_S2Stereo.h>
 #include <gtsam/geometry/Pose3.h>
@@ -224,7 +224,7 @@ bool checkStereoLinearization(const TestStereoFactor& factor,
   const auto expected = factor.NoiseModelFactor::linearize(values);
   const auto actual = factor.linearize(values);
   const bool isBinary = static_cast<bool>(
-      std::dynamic_pointer_cast<BinaryJacobianFactor<3, 6, 3>>(actual));
+      std::dynamic_pointer_cast<FixedJacobianFactor<3, 6, 3>>(actual));
   return isBinary && assert_equal(*expected, *actual, 1e-9);
 }
 

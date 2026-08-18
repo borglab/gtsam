@@ -16,7 +16,7 @@
  * @author  Codex, prompted by Frank Dellaert
  */
 
-#include <gtsam/linear/BinaryJacobianFactor.h>
+#include <gtsam/linear/FixedJacobianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -105,7 +105,7 @@ NonlinearFactorGraph makeGenericGraph(const NonlinearFactorGraph& source,
 size_t countBinaryJacobians(const gtsam::GaussianFactorGraph& graph) {
   size_t count = 0;
   for (const auto& factor : graph) {
-    if (std::dynamic_pointer_cast<gtsam::BinaryJacobianFactor<3, 3, 3>>(
+    if (std::dynamic_pointer_cast<gtsam::FixedJacobianFactor<3, 3, 3>>(
             factor)) {
       ++count;
     }

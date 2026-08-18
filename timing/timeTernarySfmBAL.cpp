@@ -15,8 +15,7 @@
  */
 
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/linear/BinaryJacobianFactor.h>
-#include <gtsam/linear/TernaryJacobianFactor.h>
+#include <gtsam/linear/FixedJacobianFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 
@@ -319,11 +318,11 @@ int main(int argc, char** argv) {
   const auto genericLinear = genericGraph.linearize(splitInitial);
   const auto ternaryLinear = ternaryGraph.linearize(splitInitial);
   const auto packedLinear = packedGraph.linearize(packedInitial);
-  using Ternary = gtsam::TernaryJacobianFactor<2, 6, 3, 3>;
-  using Binary = gtsam::BinaryJacobianFactor<2, 9, 3>;
-  if (countLinearFactors<Ternary>(*genericLinear) != 0 ||
-      countLinearFactors<Ternary>(*ternaryLinear) != projectionFactors ||
-      countLinearFactors<Binary>(*packedLinear) != projectionFactors) {
+  using SplitFixed = gtsam::FixedJacobianFactor<2, 6, 3, 3>;
+  using PackedFixed = gtsam::FixedJacobianFactor<2, 9, 3>;
+  if (countLinearFactors<SplitFixed>(*genericLinear) != 0 ||
+      countLinearFactors<SplitFixed>(*ternaryLinear) != projectionFactors ||
+      countLinearFactors<PackedFixed>(*packedLinear) != projectionFactors) {
     throw std::runtime_error(
         "BAL graphs did not produce expected factor types");
   }

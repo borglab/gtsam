@@ -19,7 +19,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/linear/BinaryJacobianFactor.h>
+#include <gtsam/linear/FixedJacobianFactor.h>
 #include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/sam/BearingRangeFactor.h>
 
@@ -72,7 +72,7 @@ TEST(BearingRangeFactor, 3D) {
 namespace binary_linearization {
 
 // Calls the base implementation explicitly to obtain a generic JacobianFactor,
-// then checks that the normal call returns an equal BinaryJacobianFactor<M,N1,N2>,
+// then checks that the normal call returns an equal FixedJacobianFactor<M,N1,N2>,
 // where M is the residual dimension and N1/N2 are variable tangent dimensions.
 TEST(BearingRangeFactor, BinaryLinearization) {
   // The 2D measurement stacks a one-dimensional Rot2 bearing and one range,
@@ -85,7 +85,7 @@ TEST(BearingRangeFactor, BinaryLinearization) {
   const auto generic2D = factor2D.NoiseModelFactor::linearize(values2D);
   const auto optimized2D = factor2D.linearize(values2D);
   const bool isBinary2D = static_cast<bool>(
-      std::dynamic_pointer_cast<BinaryJacobianFactor<2, 3, 2>>(optimized2D));
+      std::dynamic_pointer_cast<FixedJacobianFactor<2, 3, 2>>(optimized2D));
   CHECK(isBinary2D);
   EXPECT(assert_equal(*generic2D, *optimized2D, 1e-9));
 
@@ -100,7 +100,7 @@ TEST(BearingRangeFactor, BinaryLinearization) {
   const auto generic3D = factor3D.NoiseModelFactor::linearize(values3D);
   const auto optimized3D = factor3D.linearize(values3D);
   const bool isBinary3D = static_cast<bool>(
-      std::dynamic_pointer_cast<BinaryJacobianFactor<3, 6, 3>>(optimized3D));
+      std::dynamic_pointer_cast<FixedJacobianFactor<3, 6, 3>>(optimized3D));
   CHECK(isBinary3D);
   EXPECT(assert_equal(*generic3D, *optimized3D, 1e-9));
 }

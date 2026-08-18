@@ -17,7 +17,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/linear/TernaryJacobianFactor.h>
+#include <gtsam/linear/FixedJacobianFactor.h>
 #include <gtsam/navigation/DopplerFactor.h>
 #include <gtsam/navigation/tests/gnssTestHelpers.h>
 #include <gtsam/nonlinear/factorTesting.h>
@@ -82,7 +82,7 @@ TEST(TestDopplerFactor, TernaryLinearization) {
 
   const auto generic = factor.NoiseModelFactor::linearize(values);
   const auto fixed = factor.linearize(values);
-  CHECK((std::dynamic_pointer_cast<TernaryJacobianFactor<1, 3, 1, 1>>(fixed)));
+  CHECK((std::dynamic_pointer_cast<FixedJacobianFactor<1, 3, 1, 1>>(fixed)));
   EXPECT(assert_equal(*generic, *fixed, 1e-12));
 }
 

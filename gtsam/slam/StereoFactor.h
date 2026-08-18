@@ -20,7 +20,7 @@
 
 #include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/StereoCamera.h>
-#include <gtsam/linear/BinaryJacobianFactor.h>
+#include <gtsam/linear/FixedJacobianFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 

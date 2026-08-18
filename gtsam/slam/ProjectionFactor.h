@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include <gtsam/linear/BinaryJacobianFactor.h>
+#include <gtsam/linear/FixedJacobianFactor.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/geometry/PinholeCamera.h>

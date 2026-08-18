@@ -34,9 +34,8 @@
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/linear/BinaryJacobianFactor.h>
+#include <gtsam/linear/FixedJacobianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
-#include <gtsam/linear/TernaryJacobianFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
@@ -47,6 +46,7 @@
 #include <stdexcept>
 #include <string>
 #include <type_traits>
+#include <vector>
 
 namespace boost {
 namespace serialization {
@@ -183,9 +183,8 @@ class GeneralSFMFactor
     const Key key1 = this->key1(), key2 = this->key2();
     JacobianC Dcamera;
     JacobianL Dlandmark;
-    ErrorVector b =
-        -evaluateError(values.at<CAMERA>(key1), values.at<LANDMARK>(key2),
-                       Dcamera, Dlandmark);
+    ErrorVector b = -evaluateError(
+        values.at<CAMERA>(key1), values.at<LANDMARK>(key2), Dcamera, Dlandmark);
 
     const SharedNoiseModel& noiseModel = this->noiseModel();
     if (noiseModel && static_cast<size_t>(ZDim) != noiseModel->dim()) {
@@ -211,8 +210,9 @@ class GeneralSFMFactor
       linearModel = constrained->unit();
     }
 
-    return std::make_shared<BinaryJacobianFactor<ZDim, DimC, DimL>>(
-        key1, Dcamera, key2, Dlandmark, b, linearModel);
+    return std::make_shared<FixedJacobianFactor<ZDim, DimC, DimL>>(
+        KeyVector{key1, key2}, std::vector<Matrix>{Dcamera, Dlandmark}, b,
+        linearModel);
   }
 
   /** return the measured */

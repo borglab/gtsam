@@ -187,15 +187,15 @@ trial for more detailed analysis.
 
 `timeTernarySfmBAL` compares variable-calibration BAL in three forms: a split
 Pose3/Point3/Cal3Bundler graph forced through generic linearization, the same
-graph using `TernaryJacobianFactor<2,6,3,3>`, and the existing packed-camera
-graph using `BinaryJacobianFactor<2,9,3>`. The generic and ternary runs have
+graph using `FixedJacobianFactor<2,6,3,3>`, and the existing packed-camera
+graph using `FixedJacobianFactor<2,9,3>`. The generic and ternary runs have
 identical nonlinear factors, values, ordering, and iteration counts.
 
 `timeTernaryImuFactor` builds a deterministic NavState/bias chain with one
 second of preintegrated stationary IMU data per interval and weak anchors every
 100 intervals to keep the long Cholesky solve well-conditioned. It compares
 `ImuFactor2` forced through generic linearization against automatic
-`TernaryJacobianFactor<9,9,9,6>` linearization. Before timing, it requires the
+`FixedJacobianFactor<9,9,9,6>` linearization. Before timing, it requires the
 keys, all three whitened Jacobian blocks, RHS, and noise model of every factor
 to be bitwise identical. Both executables alternate trial order, verify
 concrete linear-factor types, and reject numerically different optimization

@@ -77,14 +77,14 @@ TEST(ConstantVelocityFactor, VelocityFactor) {
                         state2_err_state0, tol));
 
     // A fixed 9-vector error and two fixed 9-dimensional NavStates select the
-    // automatic BinaryJacobianFactor<9, 9, 9> path. Its coefficients must
+    // automatic FixedJacobianFactor<9, 9, 9> path. Its coefficients must
     // remain identical to the explicitly selected generic implementation.
     const Values values{{x1, genericValue(state0)},
                         {x2, genericValue(state1)}};
     const auto expected = factor.NoiseModelFactor::linearize(values);
     const auto actual = factor.linearize(values);
     const bool isBinary = static_cast<bool>(
-        std::dynamic_pointer_cast<BinaryJacobianFactor<9, 9, 9>>(actual));
+        std::dynamic_pointer_cast<FixedJacobianFactor<9, 9, 9>>(actual));
     CHECK(isBinary);
     EXPECT(assert_equal(*expected, *actual, tol));
 }

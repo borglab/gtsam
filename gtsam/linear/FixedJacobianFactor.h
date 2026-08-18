@@ -74,7 +74,10 @@ bool dimensionsMatch(const std::vector<Matrix>& jacobians,
  */
 template <int M, int... Ns>
 struct FixedJacobianFactor : JacobianFactor {
+  /// Number of variable blocks in the factor.
   inline constexpr static size_t arity = sizeof...(Ns);
+
+  /// Compile-time dimension of each variable block.
   inline constexpr static std::array<int, arity> dimensions{Ns...};
 
  private:
@@ -210,49 +213,19 @@ struct FixedJacobianFactor : JacobianFactor {
   }
 
  public:
-  static_assert(M > 0 && ((Ns > 0) && ...),
-                "Fixed factor dimensions must be positive");
+  static_assert(arity > 0 && M > 0 && ((Ns > 0) && ...),
+                "Fixed factor arity and dimensions must be positive");
 
-  /** Construct from keys, dynamic Jacobian blocks, and a right-hand side. */
+  /**
+   * Construct from keys, Jacobian blocks, and a right-hand side.
+   *
+   * The number and dimensions of the dynamic Jacobian matrices are checked
+   * against the compile-time dimensions.
+   */
   FixedJacobianFactor(const KeyVector& keys,
                       const std::vector<Matrix>& jacobians, const Vector& b,
                       const SharedDiagonal& model = SharedDiagonal())
       : JacobianFactor(keys, augmentedMatrix(jacobians, b), model) {}
-
-  /** Source-compatible constructor for BinaryJacobianFactor. */
-  template <size_t Arity = arity, std::enable_if_t<Arity == 2, int> = 0>
-  FixedJacobianFactor(Key key1, const Eigen::Matrix<double, M, N<0>>& A1,
-                      Key key2, const Eigen::Matrix<double, M, N<1>>& A2,
-                      const Eigen::Matrix<double, M, 1>& b,
-                      const SharedDiagonal& model = SharedDiagonal())
-      : JacobianFactor(key1, A1, key2, A2, b, model) {}
-
-  /** Source-compatible constructor for TernaryJacobianFactor. */
-  template <size_t Arity = arity, std::enable_if_t<Arity == 3, int> = 0>
-  FixedJacobianFactor(Key key1, const Eigen::Matrix<double, M, N<0>>& A1,
-                      Key key2, const Eigen::Matrix<double, M, N<1>>& A2,
-                      Key key3, const Eigen::Matrix<double, M, N<2>>& A3,
-                      const Eigen::Matrix<double, M, 1>& b,
-                      const SharedDiagonal& model = SharedDiagonal())
-      : JacobianFactor(key1, A1, key2, A2, key3, A3, b, model) {}
-
-  /// Return the first key when this factor has one.
-  template <size_t Arity = arity, std::enable_if_t<(Arity >= 1), int> = 0>
-  Key key1() const {
-    return keys_[0];
-  }
-
-  /// Return the second key when this factor has one.
-  template <size_t Arity = arity, std::enable_if_t<(Arity >= 2), int> = 0>
-  Key key2() const {
-    return keys_[1];
-  }
-
-  /// Return the third key when this factor has one.
-  template <size_t Arity = arity, std::enable_if_t<(Arity >= 3), int> = 0>
-  Key key3() const {
-    return keys_[2];
-  }
 
   /** Add the Hessian diagonal using fixed-size matrix operations. */
   void hessianDiagonalAdd(VectorValues& diagonal) const override {
@@ -310,7 +283,8 @@ struct FixedJacobianFactor : JacobianFactor {
     const internal::FixedJacobianBlock<M, 1> b(Ab_.matrix(), 0, offsets[arity]);
     updateJacobianHessians(factorSlots, slotB, b, info,
                            std::make_index_sequence<arity>{});
-    updateCrossHessians(factorSlots, info, std::make_index_sequence<arity>{});
+    updateCrossHessians(factorSlots, info,
+                        std::make_index_sequence<arity - 1>{});
     internal::updateSelfHessian<M, 1>(slotB, b, info);
   }
 
@@ -333,7 +307,7 @@ struct FixedJacobianFactor : JacobianFactor {
     updateOwnedSelfAndRhsHessians(factorSlots, slotB, b, ownsColumn, info,
                                   std::make_index_sequence<arity>{});
     updateOwnedCrossHessians(factorSlots, ownsColumn, info,
-                             std::make_index_sequence<arity>{});
+                             std::make_index_sequence<arity - 1>{});
     if (ownsColumn(slotB)) {
       internal::updateSelfHessian<M, 1>(slotB, b, info);
     }
@@ -349,9 +323,11 @@ namespace internal {
 /** Construct the fixed-size Jacobian factor for a dimension pack. */
 template <int M, int... Ns>
 struct FixedJacobianFactorFactory {
+  /// Whether every factor dimension is fixed at compile time.
   inline constexpr static bool available =
       M != Eigen::Dynamic && ((Ns != Eigen::Dynamic) && ...);
 
+  /// Construct a fixed-size factor behind the GaussianFactor interface.
   static std::shared_ptr<GaussianFactor> create(
       const KeyVector& keys, const std::vector<Matrix>& jacobians,
       const Vector& b, const SharedDiagonal& model) {
