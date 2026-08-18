@@ -47,6 +47,7 @@ option(GTSAM_WITH_EIGEN_MKL                 "Eigen will use Intel MKL if availab
 option(GTSAM_WITH_EIGEN_MKL_OPENMP          "Eigen, when using Intel MKL, will also use OpenMP for multithreading if available" OFF)
 option(GTSAM_THROW_CHEIRALITY_EXCEPTION     "Throw exception when a triangulated point is behind a camera" ON)
 option(GTSAM_BUILD_PYTHON                   "Enable/Disable building & installation of Python module with pybind11" OFF)
+option(GTSAM_USE_SYSTEM_PYBIND              "Find and use system-installed pybind11. If 'off', use the one bundled with GTSAM" OFF)
 option(GTSAM_INSTALL_MATLAB_TOOLBOX         "Enable/Disable installation of matlab toolbox"  OFF)
 option(GTSAM_ALLOW_DEPRECATED_SINCE_V43     "Allow use of methods/functions deprecated in GTSAM 4.3" ON)
 option(GTSAM_SUPPORT_NESTED_DISSECTION      "Support Metis-based nested dissection" ON)

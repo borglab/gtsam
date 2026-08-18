@@ -54,6 +54,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             'ConstMatrixView': 'double',
             'int': 'numeric',
             'size_t': 'numeric',
+            'uint64_t': 'numeric',
             'Key': 'numeric',
             'bool': 'logical'
         }
@@ -64,6 +65,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
             'char': 'char',
             'unsigned char': 'unsigned char',
             'size_t': 'int',
+            'uint64_t': 'numeric',
             'int': 'int',
             'double': 'double',
             'Point2': 'double',

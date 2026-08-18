@@ -174,6 +174,7 @@ if(GTSAM_BUILD_PYTHON OR GTSAM_INSTALL_MATLAB_TOOLBOX)
         CACHE STRING "The Python version to use for wrapping")
     # Set the include directory for matlab.h
     set(GTWRAP_INCLUDE_NAME "wrap")
+    set(GTWRAP_USE_SYSTEM_PYBIND ${GTSAM_USE_SYSTEM_PYBIND})
 
     # Copy matlab.h to the correct folder.
     configure_file(${PROJECT_SOURCE_DIR}/wrap/matlab.h

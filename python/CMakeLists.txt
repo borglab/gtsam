@@ -41,8 +41,6 @@ if(POLICY CMP0057)
     cmake_policy(SET CMP0057 NEW)
 endif()
 
-option(GTSAM_USE_SYSTEM_PYBIND "Find and use system-installed Pybind. If 'off', use the one bundled with GTSAM" OFF)
-
 if(GTSAM_USE_SYSTEM_PYBIND)
     # try to find pybind11 on system
     find_package(pybind11 REQUIRED)

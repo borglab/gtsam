@@ -268,6 +268,52 @@ class TestWrap(unittest.TestCase):
             actual = osp.join(self.MATLAB_ACTUAL_DIR, file)
             self.compare_and_diff(file, actual)
 
+    def test_size_t_round_trip(self):
+        """Generated size_t wrappers use alias-safe scalar conversions."""
+        file = osp.join(self.INTERFACE_DIR, 'matlab_integer_aliases.i')
+
+        wrapper = MatlabWrapper(
+            module_name='matlab_integer_aliases',
+            top_module_namespace=['gtsam'],
+            ignore_classes=[''],
+        )
+        wrapper.wrap([file], path=self.MATLAB_ACTUAL_DIR)
+
+        cpp_file = osp.join(self.MATLAB_ACTUAL_DIR,
+                            'matlab_integer_aliases_wrapper.cpp')
+        with open(cpp_file, 'r', encoding='UTF-8') as generated_file:
+            cpp_content = generated_file.read()
+
+        self.assertIn('size_t value = unwrap< size_t >(in[0]);', cpp_content)
+        self.assertIn(
+            'out[0] = wrap< size_t >(roundTripSizeT(value));',
+            cpp_content)
+        self.assertIn('uint64_t value = unwrap< uint64_t >(in[0]);',
+                      cpp_content)
+        self.assertIn(
+            'out[0] = wrap< uint64_t >(roundTripUint64(value));',
+            cpp_content)
+        self.assertNotIn('unwrap_shared_ptr< uint64_t >', cpp_content)
+        self.assertNotIn('wrap_shared_ptr(std::make_shared<uint64_t>',
+                         cpp_content)
+
+        uint64_file = osp.join(self.MATLAB_ACTUAL_DIR, 'roundTripUint64.m')
+        with open(uint64_file, 'r', encoding='UTF-8') as generated_file:
+            uint64_content = generated_file.read()
+        self.assertIn("isa(varargin{1},'numeric')", uint64_content)
+
+        matlab_header = osp.join(self.TEST_DIR, '..', 'matlab.h')
+        with open(matlab_header, 'r', encoding='UTF-8') as header_file:
+            header_content = header_file.read()
+
+        self.assertIn('struct IsMatlabSizeOrKeyScalar', header_content)
+        self.assertIn('std::is_same<T, size_t>::value', header_content)
+        self.assertIn('std::is_same<T, uint64_t>::value', header_content)
+        self.assertNotIn('mxArray* wrap<size_t>', header_content)
+        self.assertNotIn('size_t unwrap<size_t>', header_content)
+        self.assertIn('attempted wrap of invalid type', header_content)
+        self.assertIn('attempted unwrap of invalid type', header_content)
+
     def test_enum(self):
         """Test interface file with only enum info."""
         file = osp.join(self.INTERFACE_DIR, 'enum.i')
